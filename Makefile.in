@@ -204,10 +204,10 @@ mp-tools = mp-construct mp-overlap mp-expectation \
 infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-ioverlap mp-itebd2 \
                  mp-ieigen mp-idmrg3 mp-icorrelation mp-idmrg4 mp-idmrg5 mp-iexcitation mp-iexcitation2 \
                  mp-bdmrg mp-imake-transverse-lattice mp-imake-transverse-lattice-folded mp-iexpectation-sz \
-                 mp-iexpectation-sz2 mp-iparity
+                 mp-iexpectation-sz2 mp-iparity mp-idump mp-itebd mp-icorrelation
 
-infinite-tools = mp-iorthogonalize mp-idmrg5 mp-icorrelation mp-ispectrum mp-ioverlap mp-iinfo \
-                 mp-idump mp-itebd mp-iexpectation2 mp-iexpectation3 mp-ispectral-expansion mp-igradient \
+infinite-tools = mp-idmrg5 mp-ispectrum \
+                 mp-iexpectation2 mp-iexpectation3 mp-ispectral-expansion mp-igradient \
                  mp-ireorder-symmetry mp-irename-symmetry
 
 mp-tools-not-functional = mp-add2 mp-exp mp-stringcorrelation-su2 mp-canonical
@@ -262,7 +262,8 @@ dep : $(cxx_depend)
 
 .PHONY: clean mrproper dep test all install uninstall dist-clean \
         maintaner-clean install-dirs dist-dir tar-dir tar install-models install-tools \
-        tools models mp-tools default
+        tools models mp-tools default install_tools install_models models-install models_install \
+        tools-install tools_install install-itools install_itools itools-install itools_install
 
 # turn off some implicit rules that we don't want
 %.o : %.cpp
@@ -609,6 +610,24 @@ install-itools : $(infinite-tools) install-dirs
 install-models : $(mp-models) install-dirs
 	for i in $(mp-models) ; do \
 	$(INSTALL_PROGRAM) $$i $(BINDIR) ; done
+
+install_models : install-models
+
+models-install : install-models
+
+models_install : install-models
+
+install_tools : install-tools
+
+tools-install : install-tools
+
+tools_install : install-tools
+
+install_itools : install-itools
+
+itools-install : install-itools
+
+itools_install : install-itools
 
 install-mv : $(mp-tools) install-dirs
 	for i in $(mp-tools) ; do \
