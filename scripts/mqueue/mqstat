@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+# $Id: mqsub 368 2006-11-30 17:07:10Z ianmcc $
+"""\
+ mqstat - wrapper for qstat
+ Manual queuing system, Created 2006-11-07 Ian McCulloch
+"""
+
+from mqconfig import *
+import os,sys
+
+def usage():
+   print "usage: mqstat"
+
+def main():
+    os.system('qstat '+' '.join(sys.argv[1:]))
+
+    RunQueue = open(RunQueueFile, "r")
+    for line in RunQueue:
+        print "mqueue:pending   "+line.split(' ')[1]
+        
+if __name__ == '__main__': main()

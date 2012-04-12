@@ -1,0 +1,37 @@
+#!/usr/bin/perl
+
+sub DoStage
+{
+(my $lattice, my $in, my $out, my $timestep1, my $timestep2, my $nstates) = @_;
+system("mp-apply $lattice \"TrotterO((0,$timestep1))\" $in $out $nstates") == 0
+  || die "fatal: could not execute mp-apply";
+system("mp-apply $lattice \"TrotterE((0,$timestep2))\" $out $out $nstates") == 0
+  || die "fatal: could not execute mp-apply";
+}
+
+if ($#ARGV != 4)
+{
+  die "usage: apply-trotter4 <lattice> <in.psi> <out.psi> <timestep> <number-of-states>\n"
+}
+(my $lattice, my $in, my $out, my $timestep, my $nstates) = @ARGV;
+
+my $t1=$timestep * 0.4;
+my $t2=$timestep * 0.16998980503278;
+my $t3=$timestep * -0.1;
+my $t4=$timestep * -0.097336042636896;
+my $t5=$timestep * 0.15;
+my $t6=$timestep * 0.85469247520823;
+
+print "stage 1\n";
+DoStage($lattice, $in, $out, $t1, $t2, $nstates);
+print "stage 2\n";
+DoStage($lattice, $out, $out, $t3, $t4, $nstates);
+print "stage 3\n";
+DoStage($lattice, $out, $out, $t5, $t6, $nstates);
+print "stage 4\n";
+DoStage($lattice, $out, $out, $t5, $t4, $nstates);
+print "stage 5\n";
+DoStage($lattice, $out, $out, $t3, $t2, $nstates);
+print "final odd step\n";
+system("mp-apply $lattice \"TrotterO((0,$t1))\" $out $out $nstates") == 0
+  || die "fatal: could not execute mp-apply";

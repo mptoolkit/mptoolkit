@@ -1,0 +1,377 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"
+ http-equiv="content-type">
+  <title>Matrix Product Toolkit Tutorial</title>
+</head>
+<body>
+<h1 style="text-align: center;">Matrix Product Toolkit</h1>
+<h2>1. Spin 1/2 Heisenberg chain</h2>
+The first step is to construct a lattice, and the associated
+operators.&nbsp; All operators that are used for a particular lattice
+are stored in one file, and indexed by name.&nbsp; This includes all
+operators that are
+defined by the site basis, named as
+"Operator(coordinates)", the identity operator "I" and the Hamiltonian
+"H".&nbsp; For example, "Sz(5)" is the operator
+that measures the z-component of the spin at coordinate 5.<br>
+<br>
+There is a program to generate the lattice and operators for a
+one-dimensional isotropic nearest neighbor spin chain with open
+boundary conditions,
+named <span style="font-weight: bold;">mp-spinchain</span>.&nbsp; <br>
+<pre>Usage: mp-spinchain &lt;L&gt; &lt;EdgeSpin&gt; &lt;BulkSpin&gt; &lt;J&gt; &lt;J2&gt; &lt;outfile&gt;<br></pre>
+Here, <span style="font-weight: bold;">L</span> is the number of
+lattice sites.&nbsp; <span style="font-weight: bold;">EdgeSpin</span>
+and <span style="font-weight: bold;">BulkSpin</span> specify the
+magnitude of the spins at the left/right boundaries and in the bulk,
+respectively.&nbsp; The EdgeSpin is mostly useful to reduce edge
+effects in
+integer spin chains.&nbsp; <span style="font-weight: bold;">J</span>
+is the strength of the bilinear coupling <span
+ style="font-weight: bold;">S(i) S(i+1)</span>, and <span
+ style="font-weight: bold;">J2</span> is the strength of the
+biquadratic coupling <span style="font-weight: bold;">(S(i) S(i+1))<sup>2</sup></span>.&nbsp;
+<span style="font-weight: bold;">outfile</span> is the name of the file
+that will store the lattice and Hamiltonian description.<br>
+<br>
+To generate a Hamiltonian for a 60 site spin-1/2 Heisenberg chain, use<br>
+<pre>mp-spinchain 60 0.5 0.5 1 0 spinhalf-60<br></pre>
+This will take a few seconds.&nbsp; Once this is complete, we can see
+the dimensions of each symmetry sector of the Hilbert space, using the <span
+ style="font-weight: bold;">mp-dimensions</span> program.<br>
+<br>
+<pre>mp-dimensions spinhalf-60<br></pre>
+You might need to scroll up the terminal, or pipe the output through <span
+ style="font-weight: bold;">'more'</span> to see all of the output,
+especially for a long chain.&nbsp; The most interesting symmetry sector
+is Sz=0, which is also the largest.&nbsp; How does the dimension of
+this sector compare to what could be done with exact
+diagonalization?&nbsp; How much would additional symmetries (eg, spin
+reflection or translation symmetry) help?<br>
+<br>
+Using the lattice description, we can generate some matrix product
+states.&nbsp; Firstly, we will construct the N&eacute;el state.&nbsp;
+The program <span style="font-weight: bold;">mp-construct</span> is
+used to construct <span style="font-style: italic;">m=1</span> matrix
+product states.&nbsp;
+These simply correspond to basis states of the original lattice,
+specified by a list of basis states, one for each lattice site.&nbsp;
+Thus, the Ne&eacute;l state, which looks like<br>
+<br>
+<img style="width: 361px; height: 39px;" alt="Neel state" src="neel.jpg"><br>
+<br>
+can be constructed by specifying an input list of basis states, one
+state on each line.&nbsp; These&nbsp; are specified from right to left,
+thus to
+reproduce the N&eacute;el state with a down-spin on the left hand edge
+and an
+up-spin on the right hand edge we need a file that <span
+ style="font-style: italic;">starts </span>with 0.5 and&nbsp;<span
+ style="font-style: italic;">ends </span>with -0.5;<br>
+<br>
+<table
+ style="text-align: left; background-color: rgb(255, 255, 192); width: 87px; height: 166px;"
+ border="0" cellspacing="0">
+  <tbody>
+    <tr>
+      <td> 0.5<br>
+-0.5<br>
+0.5<br>
+-0.5<br>
+0.5<br>
+-0.5<br>
+0.5<br>
+-0.5<br>
+0.5<br>
+-0.5<br>
+0.5<br>
+-0.5<br>
+0.5<br>
+-0.5<br>
+0.5<br>
+-0.5<br>
+0.5<br>
+-0.5<br>
+0.5<br>
+-0.5<br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+Use your favourite editor to construct this, or simply cut&amp;paste
+from this page (<span style="font-style: italic;">three times</span>,
+since
+this only includes 20 lines and you need 60).&nbsp; Save this text file
+as <span style="font-weight: bold;">neel-in</span>.&nbsp; If you have
+fewer basis states than exist in the physical lattice, the program will
+fail.&nbsp; Extra lines are ignored.<br>
+<br>
+To generate the matrix product representation of the N&eacute;el state,
+use<br>
+<pre>mp-construct spinhalf-60 neel-in neel-state<br></pre>
+This command takes the lattice we defined before (<span
+ style="font-weight: bold;">spinhalf-60</span>), the description of the
+basis state (<span style="font-weight: bold;">neel-in</span>), and
+saves the matrix product wavefunction as <span
+ style="font-weight: bold;">neel-state</span>.<br>
+<br>
+With any matrix product wavefunction, we can calculate
+expectation values, overlaps and so on.&nbsp; A rather trivial example
+is,<br>
+<pre>mp-overlap neel-state neel-state</pre>
+which should give '1', since the state is normalized.&nbsp; Note that
+the lattice description is not needed to calculate overlaps between
+wavefunctions.&nbsp; Almost as trivial, <br>
+<pre>mp-expectation spinhalf-60 neel-state 'Sz(1)' neel-state<br></pre>
+calculates the expectation value <span style="font-weight: bold;">&lt;neel-state
+| Sz(1) | neel-state&gt;</span>, the z-component of the first spin on
+the lattice, which, all being well, will be -0.5.&nbsp; The quotes ('
+or ") are
+needed to stop the shell from interpreting the '(' itself.&nbsp; We can
+also calculate a correlation function;<br>
+<pre>mp-correlation spinhalf-60 neel-state Sz 5 Sz 15<br></pre>
+which calculates the expectation value of the operator 'Sz(5) * Sz(j)',
+for j = 5,6,...,15.&nbsp; (mp-expectation does not yet understand
+expressions, otherwise you could enter an expression like 'Sz(5) *
+Sz(6)' into <span style="font-weight: bold;">mp-expectation</span>
+directly).<br>
+<br>
+We can also
+calculate the expectation value of the energy for this state;<br>
+<pre>mp-expectation spinhalf-60 neel-state H neel-state<br></pre>
+which will be exactly (-0.25) * 59 = -14.75.<br>
+<br>
+We still have some work to do
+before we get to the ground state.&nbsp; We can, in principle, use any
+state as an initial state for an eigensolver, but a truely
+random state always works better.&nbsp; Lets generate one:<br>
+<pre>mp-random spinhalf-60 0 10 random-state<br></pre>
+This will use our lattice <span style="font-weight: bold;">(spinhalf-60)</span>
+to generate a random state with quantum number Sz=0 that is a
+superposition of 10 basis vectors, and save the resulting wavefunction
+as <span style="font-weight: bold;">random-state</span>.&nbsp; If you
+want, you can verify that this state is normalized using the <span
+ style="font-weight: bold;">mp-overlap</span> function.&nbsp; You can
+also calculate the overlap with our N&eacute;el state, or an
+expectation
+value, in the same way that we did before.&nbsp; The chances of the
+overlap being non-zero however, are very small (Homework question:
+exactly how small do you expect <span style="font-weight: bold;">mp-overlap
+neel-state random-state</span> to be?).&nbsp; [NOTE: currently, <span
+ style="font-weight: bold;">mp-random</span> does nothing special to
+initialize the random seed.&nbsp; So, if you enter the same parameters
+twice, you are likely to get exactly the same 'random' state out.]<br>
+<br>
+To see some information about our random state, try<br>
+<pre>mp-info random-state | more<br></pre>
+This will show the reduced density matrix eigenvalues for every
+possible partition, from left to right.&nbsp; The eigenvalues are the
+square of the wavefunction amplitudes of the Schmidt factorization, or,
+equivalently, the square of the singular values of the singular value
+decomposition.&nbsp; The number of eigenvalues is the <span
+ style="font-style: italic;">m</span> parameter familiar from
+DMRG.&nbsp; The 'Quantum Number' column here is the the quantum number
+(in this case, the z-component of the spin) of the basis state in the
+right partition.&nbsp; (what does this imply about
+the quantum numbers of the <span style="font-style: italic;">left</span>
+partition?)&nbsp; If the wavefunction contains a lot of states but you
+only
+want to see information for a few of them, you can supply a second
+argument which is the maximum number of eigenvalues to show.<br>
+<br>
+We now have a lot of options to start evolving this state to the ground
+state.&nbsp; So we can compare different methods, make a copy of the
+wavefunction, as 'state1'<br>
+<pre>cp random-state state1</pre>
+Firstly, we will do a truncated Lanczos diagonalization starting from
+the
+random state.&nbsp; This is done with the <span
+ style="font-weight: bold;">mp-lanczos</span> command.&nbsp; The usage
+is<br>
+<pre>usage: mp-lanczos &lt;lattice&gt; &lt;operator&gt; &lt;wavefunction&gt; &lt;iterations&gt; [&lt;max-states&gt;]<br></pre>
+Generallly, the operator will be the Hamiltonian, <span
+ style="font-weight: bold;">H</span>.&nbsp; The wavefunction is the
+initial 'guess' vector, the iterations is the number of Lanczos steps
+to perform, and max-states is the maximum number of states to keep (the
+parameter <span style="font-style: italic;">m</span>, from
+DMRG).&nbsp; If you don't specify max-states, it is taken to be
+infinite.&nbsp; The calculation then becomes equivalent to an exact
+diagonalization, so don't expect it to converge quickly for a large
+lattice!&nbsp; In our case, we want to do a simple diagonalization
+starting from a copy of our random state, so try<br>
+<pre>mp-lanczos spinhalf-60 H state1 10 50<br></pre>
+For each iteration, the output is the <span style="font-weight: bold;">a</span>
+and <span style="font-weight: bold;">b<sup>2</sup></span> matrix
+elements of the
+tri-diagonal form of the Hamiltonian, the estimated energy, the
+squared-norm of the added Krylov vector, and the normalized overlap
+between the added Krylov vector and the initial guess vector.&nbsp; In
+principle the overlap should be zero, but numerical loss of
+orthogonality is inevitable in any Lanczos calculation and typically
+occurs at the point where the energy has reached convergence.&nbsp; If
+you play around with the number of states, you will see that the
+truncation has a severe effect on this overlap and it typically becomes
+large even when the energy is a long way from convergence.&nbsp; The
+reason for this is that the truncation operator does not commute with
+the Hamiltonian, so the only way to get a robust algorithm would be to
+explicitly re-orthogonalize at every step.&nbsp; This is not yet
+implemented, so instead you will need to limit the number of iterations
+(depending on the number of states kept, a dozen or so might be OK),
+and 'restart' the diagonalization.&nbsp; At the
+end of the specified number of iterations, you will see the full set of
+Lanczos eigenvalues, and the program will calculate the Lanczos vector
+and save it back to the wavefunction file.<br>
+<br>
+NOTE: the
+<span style="font-weight: bold;">mp-lanczos</span> program uses the
+wavefunction file as temporary work space during the calculation.&nbsp;
+This means that if you interrupt the caclulation before it is complete,
+or the program fails for some reason, the wavefunction file will almost
+certainly be corrupted.&nbsp; If you
+want to avoid this, make a copy of the wavefunction before you run <span
+ style="font-weight: bold;">mp-lanczos</span>.&nbsp; This applies for
+most of the other <span style="font-weight: bold;">mp</span> tools too.<br>
+<br>
+Repeat the mp-lanczos calculation a few times until you get
+bored.&nbsp; If you really want to get close to the groundstate, you
+will probably need to restart the Lanczos a dozen or so times, and keep
+in mind that 50 states is very small by DMRG standards.&nbsp; But don't
+waste time on this, later we will do the same calculation with DMRG,
+which will get to the groundstate much faster.<br>
+<br>
+Now we can calculate some interesting physics.&nbsp; Firstly, some
+correlation functions.&nbsp; Try<br>
+<pre>mp-correlation spinhalf-60 state1 Sz 10 Sz 30<br></pre>
+You should see decaying antiferromagnetic
+correlations.&nbsp; Now, try calculating the overlap between our ground
+state and the N&eacute;el state.&nbsp; <br>
+<br>
+Now we will try some DMRG.&nbsp; The 'traditional' approach to DMRG is
+to have two 'bare' sites at the lattice partition, and this is probably
+the most robust.&nbsp; This program is called <span
+ style="font-weight: bold;">mp-dmrg-2site</span>.&nbsp; <br>
+<pre>usage: mp-dmrg-2site &lt;lattice&gt; &lt;operator&gt; &lt;psi&gt; [lanczos-iter] [&lt;maxstates&gt;]</pre>
+This program also uses Lanczos, but in a completely different way to
+the <span style="font-weight: bold;">mp-lanczos</span> program; here
+it is used as the superblock eigensolver [the Davidson algorithm is
+often used in DMRG, but Lanczos is almost as good in this
+application].&nbsp; In DMRG, there is a tradeoff with the accuracy of
+the superblock diagonalization, versus the number of sweeps.&nbsp; In
+general, it is better to spend less time diagonalizing the superblock,
+and instead do extra sweeps.&nbsp; This can help avoid getting stuck in
+a local minima, but too few Lanczos iterations will fail to
+converge.&nbsp;
+10 is conservative choice that should work well in most cases.<br>
+<br>
+Firstly, make another copy of the random state,<br>
+<pre>cp random-state state2</pre>
+and then try a dmrg sweep:<br>
+<pre>mp-dmrg-2site spinhalf-60 H state2 2 50</pre>
+This performs one complete DMRG sweep (moving the partition all the way
+to the right, and then back to the left), outputting the location of
+the partition, the energy, and the number of non-zero density matrix
+eigenvalues (the <span style="font-style: italic;">Schmidt number</span>).&nbsp;
+Our initial state has only <span style="font-style: italic;">m=10</span>
+states, for which 2 Lanczos iterations works fine.&nbsp; We keep a
+maximum of 50 states, which probably won't be reached on the first
+sweep.&nbsp; One DMRG sweep takes a comparable amount of time to a
+single iteration using the <span style="font-weight: bold;">mp-lanczos</span>
+program, but notice the rate of convergence!<br>
+<br>
+Do one more sweep, this time increasing the number of Lanczos
+iterations to 10.&nbsp; This should give you the ground state energy to
+about 0.01%.&nbsp; One more sweep and the energy will be converged for
+this number of basis states.&nbsp; To get an estimate of how accurate
+the energy is, increase the number of states to 100, and then to
+200.&nbsp; You may need to do two sweeps to get complete
+convergence.&nbsp; Notice that the number of basis states never
+actually reaches 200 - the calculation is essentially exact.&nbsp; Use <span
+ style="font-weight: bold;">mp-info</span> to
+have a look at the truncation error.&nbsp; [Question: sometimes the
+truncation error is a small <span style="font-style: italic;">negative</span>
+number.&nbsp; Why?&nbsp; Another question: Do you notice any pattern in
+the density matrix eigenvalues?&nbsp; What causes this?&nbsp; (Hint:
+look at the quantum numbers too!)]<br>
+<br>
+What is the overlap between the groundstate obtained from <span
+ style="font-weight: bold;">mp-lanczos</span> versus the DMRG
+groundstate?&nbsp; What is the overlap with the Neel state?<br>
+<br>
+A variant on DMRG is to only have a single 'bare site'.&nbsp; This
+algorithm has rather different properties; the 'truncation error' is
+identically zero, so the energy decreases assymptotically (rather than
+'traditional' DMRG, where the energy typically oscillates within some
+small interval).&nbsp; It is also not possible to increase the number
+of basis states with this algorithm.&nbsp; If you try single-site DMRG
+from the <span style="font-style: italic;">m=10</span> random state,
+it will most likely fail.&nbsp; While it runs a bit faster than
+two-site DMRG it also converges somewhat slower, making it not so
+useful except in the final stages of a calculation where the
+zero-truncation-error property is desirable for calculating observables
+[Question: Why?].&nbsp; This program is called <span
+ style="font-weight: bold;">mp-dmrg</span>, and has the same parameters
+for <span style="font-weight: bold;">mp-dmrg-2site</span>.&nbsp; An
+interesting approach is to mix single-site DMRG with an iteration or
+two of the power method (with <span style="font-weight: bold;">mp-apply</span>
+followed by <span style="font-weight: bold;">mp-normalize</span>), 1st
+order imaginary time evolution (with <span style="font-weight: bold;">mp-itime</span>),
+or matrix-product Lanczos using <span style="font-weight: bold;">mp-lanczos</span>.<br>
+<br>
+<h2>2.&nbsp; Spin 1 Heisenberg Chain</h2>
+The spin-1 antiferromagnetic heisenberg spin chain has a VBS
+groundstate, where an open boundary or impurity traps an effective
+spin-1/2 particle.&nbsp; To partially compensate for this, we can
+indroduce real spin-1/2 states at the boundary.&nbsp; The prototypical
+VBS state is the AKLT state, which is solved exactly with DMRG.&nbsp;
+The AKLT Hamiltonian has a biquadratic interaction of strength
+1/3.&nbsp; To generate this for a 40 site lattice (you could also try
+60 sites, but it will take a little longer to converge), use<br>
+<pre>mp-spinchain 40 0.5 1 1 0.3333333333 spin1-40-aklt</pre>
+To generate an initial state with Schmidt number <span
+ style="font-style: italic;">m=10</span>, named <span
+ style="font-weight: bold;">akltstate,</span> use<br>
+<pre>mp-random spin1-40-aklt 0 10 akltstate</pre>
+and evolve it towards the groundstate with<br>
+<pre>mp-dmrg-2site spin1-40-aklt H akltstate 4 10</pre>
+Repeat this command until the energy converges.&nbsp; What happens to
+the Schmidt number?&nbsp; use '<span style="font-weight: bold;">mp-info
+akltstate</span>' to see what is happening.&nbsp; The two-fold spin
+degeneracy is removed by using <span style="font-style: italic;">SU(2)</span>
+symmetry, which reduces the Schmidt number to <span
+ style="font-style: italic;">m=1</span>, and makes it possible to
+construct the AKLT state using the mp-construct program, as we did
+earlier for the Neel state.&nbsp; This will be possible in the final
+version of this program.&nbsp; [Harder questions: why isn't the energy <span
+ style="font-style: italic;">exactly</span> -26.0 ?&nbsp; What is the
+limit here on the precision?&nbsp; Is this avoidable?]<br>
+<br>
+Calculate the spin-spin correlation function of this state, with<br>
+<pre>mp-correlation spin1-40-aklt akltstate Sz 2 Sz 20</pre>
+What is the correlation length?<br>
+<br>
+There is a program to calculate the 'string' correlation
+function.&nbsp; This inserts an operator (-1)<sup>Sz</sup>, of the
+total z-spin between the left and right sites of the correlation
+function.&nbsp; Run this with<br>
+<pre>mp-stringcorrelation spin1-40-aklt akltstate Sz 2 Sz 20</pre>
+What is the difference compared with the two-point correlator?<br>
+<br>
+<br>
+Repeat the calculation for the pure Heisenberg model with no
+biquadratic interaction.&nbsp; You will need to keep more than 10
+states to get a good groundstate!&nbsp; What happens to the two-point
+and string correlation functions?&nbsp; What is the overlap between the
+pure Heisenberg groundstate and the AKLT state?<br>
+<br>
+If you construct an initial state with Sz=1 rather than Sz=0, you can
+calculate the Haldane gap.&nbsp; Note however that the gap is somewhat
+renormalized by the open boundary conditions.&nbsp; This can be
+minimized by adusting the interaction strength at the boundaries, to
+smooth out the spin density fluctuations from the open boundary
+conditions.&nbsp; But you cannot specify such couplings separately, yet.<br>
+<br>
+</body>
+</html>

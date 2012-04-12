@@ -1,0 +1,56 @@
+
+We want to include fluctuations in the density matrix that are optimal, in some sense.
+
+the idea: our basis size is 2m.  keep m of these states, reserve the other m for the reserve list.
+
+How do we choose the m states to keep?  The implication is that we keep some states that have zero (or very small) weight in the density matrix.
+
+The old DMRG algorithm: the KeepList says that if a state is included at some point, then we must ensure that that state can exist in the environment on the return sweep.  To do that we make sure that, for each state we keep at step N, we keep at least one state in each symmetry sector of that state \otimes new basis.  The set of all such states that we keep in the basis (whether naturally or forced) becomes the new KeepList.
+
+We still want this in some form.
+
+When we add another site, we take the tensor product of the reserved set with the single site density matrix.  This gives 2m states, the "current reserved states".
+
+Add this to the new density matrix, using the natural normalization?  (need to check this)
+
+
+
+Summary:
+
+Put 2m states as the environment states.
+truncate to m states, put another m states into the reserved list, truncate the remainder.
+
+Add a site: calculate the groundstate in a superblock of 2m * 2m states (assuming 2 DOF in local basis)
+
+Construct the density matrix as the reserved list \otimes single site DM + ordinary DM.  Note that the states from the reserved list are orthogonal to the ordinary DM states, we can treat them completely separately.  The total number of such states is bounded by 3m (2m in the ordinary DM, m in the reserved list).  
+
+The top m are kept, the next m are put into the new reserve list, the remainder (m) are discarded.
+
+Now, a failure case is when a state is on the reserved list, gets ressurected at the next iteration,
+but then has zero weight and is discarded completely.  If it had been kept on the reserve list instead it
+might have survived.  
+
+The solution: even if a state is ressurected, keep it in the reserve list.  but need to keep track of it.
+This means that the reserve list and the current states will not be orthogonal.
+
+If a state was on the reserved list, it stays on the reserved list.
+
+Algorithm:
+1. Start with the basis carried over from the previous step (m) and the keep list carried over.  These are not orthogonal.
+Add the site to get the new basis (2m).
+2. Obtain density matrix, trace holds the current norm2.
+3. Construct the tensor product of the keep list and the single-site density matrix.  This gives another m states, not
+necessarily orthogonal to the density matrix.
+4. Construct the full density matrix as (actual DM + const . keep DM) ?
+5. first m states are kept, second m states are stored for the environment and keep list, third m states are discarded.
+6. The keep list needs to be updated as keep list' = (old keep list + new keep list) / 2
+
+
+
+
+When used as an environment block, we have all 2m states.
+
+Does this scheme produce the correct truncation error?  I think it ought to, the states are only delayed in truncation, not removed completely.  But what happens to the truncated energy?
+
+
+

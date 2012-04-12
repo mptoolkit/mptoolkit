@@ -1,0 +1,25 @@
+#!/usr/bin/perl
+
+if ($#ARGV != 1)
+{
+  die "usage: make-trotter4 <lattice> <timestep>\n"
+}
+
+(my $lattice, my $timestep) = @ARGV;
+
+my $t1=$timestep * 0.4;
+my $t2=$timestep * 0.16998980503278;
+my $t3=$timestep * -0.1;
+my $t4=$timestep * -0.097336042636896;
+my $t5=$timestep * 0.15;
+my $t6=$timestep * 0.85469247520823;
+
+print "Stages are $t1 $t2 $t3 $t4 $t5 $t6\n";
+
+system("mp-trotter $lattice \"(0,$t1)\"") == 0 || die "fatal: could not execute mp-trotter\n";
+system("mp-trotter $lattice \"(0,$t2)\"") == 0 || die "fatal: could not execute mp-trotter\n";
+system("mp-trotter $lattice \"(0,$t3)\"") == 0 || die "fatal: could not execute mp-trotter\n";
+system("mp-trotter $lattice \"(0,$t4)\"") == 0 || die "fatal: could not execute mp-trotter\n";
+system("mp-trotter $lattice \"(0,$t5)\"") == 0 || die "fatal: could not execute mp-trotter\n";
+system("mp-trotter $lattice \"(0,$t6)\"") == 0 || die "fatal: could not execute mp-trotter\n";
+

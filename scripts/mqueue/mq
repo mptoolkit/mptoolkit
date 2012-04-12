@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+# $Id$
+"""\
+ mq - if there is room on the PBS queue, add some more jobs to it
+ Manual queuing system, Created 2006-11-07 Ian McCulloch
+
+ bugs: probably lots
+"""
+
+from mqcommon import *
+import getopt
+
+def main():
+    # if we are not running on the frontend node, ssh there
+    if socket.gethostname() != ExecHost:
+        os.system('/usr/bin/ssh ' + ExecHost + ' mqassert ' + ' '.join(sys.argv[1:]))
+    else:
+        optlist,args = getopt.getopt(sys.argv[1:], '', 'ignore=')
+        TrySubmitJobs([x[1][0:5] for x in optlist if x[0] == '--ignore'])
+
+if __name__ == '__main__': main()

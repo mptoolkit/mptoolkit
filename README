@@ -1,0 +1,62 @@
+
+Boost libraries
+===============
+The mptoolkit now requires the Boost program_options library.
+
+You can make this with the boost configure script:
+
+[from the boost directory]
+./configure --with-libraries=program_options
+make
+make install
+
+Note: by default, boost installs into /usr/local.  you might want to use --prefix=$HOME instead.
+In this case, you will need to set LD_LIBRARY_PATH to point to $HOME/lib as well.
+
+
+Using Subversion
+================
+If you have problems with .svn directories while copying the program
+to the cluster, try the svn export command.  svn help export to see how it
+works.  I use
+(from the directory containing the mptoolkit-0.2.7.5/ subdirectory)
+svn export mptoolkit-0.2.7.5 mptoolkit
+rsync -avzub mptoolkit ianmcc@lxtccl2:
+
+
+Environment variables
+=====================
+From version 0.7.3 onward, some programs make use of the MP_CACHESIZE environment string.  
+Set this to the number of bytes you want for the cache of binary files.  Typical value would be 8M.  
+A larger value might increase performance, in some situations.
+
+From version 0.7.3 onwards, some programs use the MP_BINPATH environment string.
+Programs that use temporary disk space store the file in this directory.
+
+Truncation error
+================
+The scheme for truncating uses 3 parameters, MinStates, MaxStates, and Truncation.
+We guarantee always m >= min(MinStates, dimension) && m <= MaxStates,
+and within these bounds we try to ensure the truncation error is less than
+Truncation.  Thus, to use a fixed number of states we can either set Truncation
+to be very small and set MaxStates, or set Truncation to be very large
+and set MinStates.  The preferred way is the latter: set Truncation to 1
+and use MinStates as the number of states to keep.
+For consistency, we should use the same options in all programs:
+MinStates: min-states,m
+MaxStates: max-states,x
+Truncation: trunc,r
+
+This doesn't work so well when the truncation error is measured in absolute units (for example, in mp-add).
+The initial problem that led to this convention is that, if we are specifying states rather than
+truncation error, we want to maake sure we keep signular values even if they are zero or negative.
+A default truncation of 0 would not guarantee this.
+
+An alternative scheme is to set the default maximum truncation to be negative (any negative would do, say -1).
+That way, unless trunc is specified, all singular values will be used up to max-states.
+
+This gives:
+
+min-states,
+max-states,m
+trunc,r

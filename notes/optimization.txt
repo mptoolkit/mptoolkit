@@ -1,0 +1,71 @@
+
+Ideas for optimization:
+
+Fixed layout block-sparse matrix for the A-matrices.  This means that some operations,
+such as inner product on scalar operators, can be a single BLAS-1 call.
+
+Split A-matrices into real and complex parts.  Perhaps a boost::optional imaginary part.
+
+E-matrices can use the existing sparse format, but use a variant<scalar,block>
+or similar.  
+
+Use SVD instead of calculating the density matrix, where possible.
+
+A fixed layout block-sparse matrix means that we can formulate the
+matrix-vector multiply as a sequence of multiplies at fixed addresses.
+
+A flag on the A-matrices, to denote whether they are left/right orthonormalized.
+
+
+The block-sparse matrix:
+Indexing should be just as fast whether row-major or column-major.
+We could demand the basis is regular.
+
+
+A matrix layout:
+================
+
+It probably isn't worth having separate structures for normal vs y-junctions.
+
+Single block of memory, separate real and imaginary parts.
+
+Perhaps a low level structure: pvalue_ptr to an object describing the structure (basis, etc),
+and a block of data.
+
+Optimal structure for the Y-junction multiply.  
+
+ E^alpha_i'i F^beta_j'j G^gamma_k'k H_alpha_beta_gamma A^j_ik
+
+
+1. W^{alpha j}_{i' k} = E^alpha_i'i A^j_ik    O(m^4 M)
+
+2. X^{beta gamma j}_{i' k} =  H_alpha_beta_gamma W^{alpha j}_{i' k}      O(m^3 M^3)
+
+3. Y^{beta j}_{i' k'} = X^{beta gamma j}_{i' k} G^gamma_k'k       O(m^4 M^2)
+
+4. A'^{j'}_{ik} = F^beta_j'j Y^{beta j}_{i' k'}                  O(m^4 M)
+
+
+
+In practice, is the O(m^4 M^2) term a problem?  
+
+
+
+Singular value decomposition of H:  H_alpha_beta_gamma = U_{alpha, mu} d_ii V^T_{mu, beta gamma}
+
+X^{mu j}_{i' k} =  U_{alpha, mu} W^{alpha j}_{i' k}                      O(m^3 M^2)
+
+
+
+
+Conventional multiply
+
+E^alpha_i'i F^{\dagger beta}_{j'j} H^{s's}_{alpha beta} A^s_{ij}
+
+W^{alpha s}_{i' j} = E^alpha_i'i A^s_{ij}    O(m^3 d M)
+
+X^{beta s'}_{i'j} = H^{s's}_{alpha beta} W^{alpha s}_{i' j}     O(m^2 d^2 M^2)
+
+A'^{s'}_{i'j'} = X^{beta s'}_{i'j} F^{\dagger beta}_{j'j}     O(m^3 d M)
+
+

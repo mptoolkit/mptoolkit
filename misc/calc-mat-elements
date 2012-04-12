@@ -1,0 +1,71 @@
+#!/bin/bash
+
+if [ $# -le 3 ] ; then
+  echo "usage: calc-matrix <Hamiltonian> <Output-prefix> <Lv> [<more-vectors> ...]"
+  echo "Writes output to files \"prefix.Ident\" \"prefix.H\" \"prefix.H2\""
+  exit 1
+fi
+
+Ham=$1 ; shift
+OutPrefix=$1 ; shift
+
+ColonLoc=$(expr index "$Ham" ':')
+Lattice=${Ham:0:$ColonLoc-1}
+BareHam=${Ham:$ColonLoc}
+
+Ham2="$Lattice:($BareHam)^2"
+
+echo "Calculating matrix elements for $# files."
+
+echo "Calculating matrix elements of identity operator."
+if [ -f Identity ]
+then
+	rm -f Identity
+fi
+touch Identity
+(for (( i = 0 ; i < $# ; i++ ))
+do
+	for (( j = 0 ; j <= $i ; j++ ))
+	do
+		ii=$((i+1))
+		jj=$((j+1))
+		echo -n "$i $j " 
+		mp-overlap ${!ii} ${!jj}
+	done
+done) | tee $OutPrefix.Ident
+
+echo "Calculating matrix elements of Hamiltonian, $Ham"
+if [ -f H ]
+then
+	rm -f H
+fi
+touch H
+(for (( i = 0 ; i < $# ; i++ ))
+do
+	for (( j = 0 ; j <= $i ; j++ ))
+	do
+		ii=$((i+1))
+		jj=$((j+1))
+		echo -n "$i $j " 
+		mp-expectation ${!ii} "$Ham" ${!jj}
+	done
+done) | tee $OutPrefix.H
+
+echo "Calculating matrix elements of square of Hamiltonian, $Ham2"
+if [ -f H2 ]
+then
+	rm -f H2
+fi
+touch H2
+(for (( i = 0 ; i < $# ; i++ ))
+do
+	for (( j = 0 ; j <= $i ; j++ ))
+	do
+		ii=$((i+1))
+		jj=$((j+1))
+		echo -n "$i $j " 
+		mp-expectation ${!ii} "$Ham2" ${!jj}
+	done
+done) | tee $OutPrefix.H2
+
+echo "Finished."

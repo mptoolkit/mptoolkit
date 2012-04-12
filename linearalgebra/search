@@ -1,0 +1,21 @@
+<!-- Site-Flavored Google Search -->
+ <form method=GET action="http://www.google.com/search">
+ <table bgcolor=#FFFFFF>
+ <tr><td>
+ <a href="http://www.google.com/services/siteflavored.html">
+ <img src="http://labs.google.com/images/gp/google_kaltix_site_flavored_searchbox.gif" border=0 alt=Google align=absmiddle></a> <input type=text name=q size=31 maxlength=255 value=''>
+ <input type=hidden name=site_flavored value=on>
+ <input type=hidden name=client value=site_flavored>
+ <input type=hidden name=hl value=en>
+ <input type=hidden name=interests value=62|65>
+<span id=site_flavored_name></span>
+ <script language=javascript>
+ homeHTML = "<input type=hidden name=site_flavored_name value=" + document.location +">";
+ document.getElementById("site_flavored_name").innerHTML = homeHTML;
+ </script>
+ <input type=submit name=sa value='Custom Search'>
+ <font face=arial,sans-serif size=-1><br> </font><br>
+ </td></tr></table>
+ </form>
+ <!-- Site-Flavored Google Search --> 
+ 

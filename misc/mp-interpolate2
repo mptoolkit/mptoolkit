@@ -1,0 +1,181 @@
+#!/usr/bin/env python
+# $Id: mp-interpolate 899 2008-05-02 12:40:56Z ianmcc $
+
+import sys,os,string,getopt
+
+Options = ""
+
+def ReadSplitComplex(Str):
+    [r,i] = Str.split()
+    return complex(float(r),float(i))
+
+def Norm(x, y):
+    return ReadSplitComplex(os.popen("mp-overlap -r -i "+x+" "+y).readline()[:-1])
+
+def NormConj(x, y):
+    return ReadSplitComplex(os.popen("mp-overlap-conj -r -i "+x+" "+y).readline()[:-1])
+
+def Expectation(File, Op, i):
+    return ReadSplitComplex(os.popen("mp-expectation -r -i "
+                                     +File+" \""+Op+"\" "+i).readline()[:-1])
+
+def ExpectationConj(File, Op, i):
+    return ReadSplitComplex(os.popen("mp-expectation-conj -r -i "
+                                     +File+" \""+Op+"\" "+i).readline()[:-1])
+
+def ReadAttribute(File, Attr):
+    return os.popen("mp-attr "+File+" "+Attr, 'r').readline()[:-1]
+
+def PrintCppComplex(z):
+    return "("+repr(z.real)+","+repr(z.imag)+")"
+
+def usage():
+    print >> sys.stderr, "usage: mp-interpolate <Lv> [<Cv> <Cv> ...]"
+
+def main():
+    argv = sys.argv[1:]
+
+    try:
+        optlist,args = getopt.getopt(argv, Options)
+    except getopt.getoptError:
+        print >> sys.stderr, "mp-interpolate: error: error parsing options"
+        usage()
+        sys.exit(2)
+
+    if len(args) < 3:
+        print >> sys.stderr, "mp-interpolate: error: need a Lanczos vector and at least two correction vectors."
+        usage()
+        sys.exit(2)
+        
+    # get the Hamiltonian, broadening, groundstate energy, ...
+    Energy = float(ReadAttribute(args[1], "GroundstateEnergy"))
+    Ham = ReadAttribute(args[1], "Hamiltonian")
+    Eta = float(ReadAttribute(args[1], "Broadening"))
+
+    print >> sys.stderr,  "GroundStateEnergy="+str(Energy)+" Broadening="+str(Eta)
+
+    # divine the square of the Hamiltonian
+    Ind = Ham.index(':')
+    Lattice = Ham[0:Ind]
+    BareHam = Ham[Ind+1:]
+
+    Ham2 = Lattice+":("+BareHam+")^2"
+
+    # get the minimum and maximum frequencies
+    MinFreq = MaxFreq = float(ReadAttribute(args[1], "Frequency"))
+    for cv in args[2:]:
+        f = float(ReadAttribute(cv, "Frequency"))
+        if f < MinFreq:
+            MinFreq = f
+        if f > MaxFreq:
+            MaxFreq = f
+
+    print >> sys.stderr,  "min-freq =",MinFreq," max-freq =",MaxFreq
+
+    # calculate the matrix elements
+    print >> sys.stderr,  "Calculating matrix elements of identity operator"
+    IdentFile = open("Ident", "w")
+    Len = len(args)
+    i = 0
+    for v1 in args:
+        j = i
+        for v2 in args[i:]:
+            x = Norm(v1, v2)
+            print >> sys.stderr,  "<"+v1+"|"+v2+"> = "+PrintCppComplex(x)
+            Line = str(i)+' '+str(j)+' '+PrintCppComplex(x)+'\n'
+            IdentFile.writelines(Line)
+            if i != 0:
+                Line = str(i+Len-1)+' '+str(j+Len-1)+' '+PrintCppComplex(x.conjugate())+'\n'
+                IdentFile.writelines(Line)
+            j=j+1
+        i=i+1
+    i=0
+    for v1 in args:
+        j=i
+        if j==0:
+            j=1
+        for v2 in args[j:]:
+            x = NormConj(v1,v2)
+            print >> sys.stderr,  "<"+v1+"|conj("+v2+")> = "+PrintCppComplex(x)
+            Line = str(i)+' '+str(j+Len-1)+' '+PrintCppComplex(x)+'\n'
+            IdentFile.writelines(Line)
+            if i != 0 and i != j:
+                Line = str(i+Len-1)+' '+str(j)+' '+PrintCppComplex(x.conjugate())+'\n'
+                IdentFile.writelines(Line)
+            j=j+1
+        i=i+1
+    IdentFile.close()
+
+    print >> sys.stderr,  "Calculating matrix elements of the Hamiltonian"
+    HFile = open("H", "w")
+    i = 0
+    for v1 in args:
+        j = i
+        for v2 in args[i:]:
+            print >> sys.stderr,  "<"+v1+"|"+Ham+"|"+v2+"> = "+PrintCppComplex(x)
+            x = Expectation(v1, Ham, v2)
+            Line = str(i)+' '+str(j)+' '+PrintCppComplex(x)+'\n'
+            HFile.writelines(Line)
+            if i != 0:
+                Line = str(i+Len-1)+' '+str(j+Len-1)+' '+PrintCppComplex(x.conjugate())+'\n'
+                HFile.writelines(Line)
+            j=j+1
+        i=i+1
+    i=0
+    for v1 in args:
+        j=i
+        if j==0:
+            j=1
+        for v2 in args[j:]:
+            print >> sys.stderr,  "<"+v1+"|"+Ham+"|conj("+v2+")> = "+PrintCppComplex(x)
+            x = ExpectationConj(v1, Ham, v2)
+            Line = str(i)+' '+str(j+Len-1)+' '+PrintCppComplex(x)+'\n'
+            HFile.writelines(Line)
+            if i != 0 and i != j:
+                Line = str(i+Len-1)+' '+str(j)+' '+PrintCppComplex(x.conjugate())+'\n'
+                HFile.writelines(Line)
+            j=j+1
+        i=i+1
+    HFile.close()
+
+    print >> sys.stderr,  "Calculating matrix elements of the Hamiltonian squared"
+    H2File = open("H2", "w")
+    i = 0
+    for v1 in args:
+        j = i
+        for v2 in args[i:]:
+            print >> sys.stderr, "<"+v1+"|"+Ham2+"|"+v2+"> = "+PrintCppComplex(x)
+            x = Expectation(v1, Ham2, v2)
+            Line = str(i)+' '+str(j)+' '+PrintCppComplex(x)+'\n'
+            H2File.writelines(Line)
+            if i != 0:
+                Line = str(i+Len-1)+' '+str(j+Len-1)+' '+PrintCppComplex(x.conjugate())+'\n'
+                H2File.writelines(Line)
+            j=j+1
+        i=i+1
+    i=0
+    for v1 in args:
+        j=i
+        if j==0:
+            j=1
+        for v2 in args[j:]:
+            print >> sys.stderr,  "<"+v1+"|"+Ham2+"|conj("+v2+")> = "+PrintCppComplex(x)
+            x = ExpectationConj(v1, Ham2, v2)
+            Line = str(i)+' '+str(j+Len-1)+' '+PrintCppComplex(x)+'\n'
+            H2File.writelines(Line)
+            if i != 0 and i != j:
+                Line = str(i+Len-1)+' '+str(j)+' '+PrintCppComplex(x.conjugate())+'\n'
+                H2File.writelines(Line)
+            j=j+1
+        i=i+1
+    H2File.close()
+
+    # call mp-min-resid
+    CmdLine = "mp-min-resid -c 21 -i Ident -h H -2 H2 -v -v -B "+str(Eta)+" -G "+str(Energy)
+    CmdLine = CmdLine+" -m "+str(MinFreq)+" -x "+str(MaxFreq)
+
+    print >> sys.stderr,  CmdLine
+    os.system(CmdLine)
+    
+
+if __name__ == '__main__': main()

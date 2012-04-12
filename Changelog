@@ -1,0 +1,14 @@
+
+Changes in 0.7.3.0
+	Added mp-evolve-krylov
+	Added mp-attr
+	More programs use the boost::program_options lib
+	Attributes have been added.  These are arbitrary properties of wavefunction files,
+	that can get/set using mp-attr.  Some tools use them as default parameters.  For example,
+	the Hamiltonian attribute can be used instead of the --Hamiltonian parameter in
+	mp-dmrg-init.
+	
+Changes in 0.7.2.8
+	Fixed bug in mp-correlation, calculating < Op1(0) Op1(x) > instead of < Op1(0) Op2(x) >
+
+	

@@ -1,0 +1,25 @@
+#!/usr/bin/env python
+# $Id$
+"""\
+ mqassertadd - low-level submit, requires that we run it from the frontend.
+ (this is to prevent a loop if the ExecName differs from the hostname returned
+ by gethostname())
+ Manual queuing system, Created 2006-11-07 Ian McCulloch
+
+ bugs: probably lots
+"""
+
+from mqcommon import *
+
+def main():
+    argv = sys.argv[1:]
+    # if we are not running on the frontend node, ssh there
+    if socket.gethostname() != ExecHost:
+        print('mqadd: error: expecting mqassertadd to be called from host '
+              +ExecHost+', but it was called from host '+socket.gethostname())
+        sys.exit(2)
+
+    AddToRunQueue(argv)
+    TrySubmitJobs()
+
+if __name__ == '__main__': main()

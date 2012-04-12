@@ -1,0 +1,218 @@
+% $Id$
+\documentclass{article}[10pt]
+\usepackage{showlabels}
+
+\input{macros}
+
+\begin{document}
+
+\title{Notes on Density Matrix Preconditioning}
+
+\author{I. P. McCulloch}
+\date{\today}
+
+\maketitle
+
+\section{Motivation}
+Motivation: conventional density matrix schemes (ie. the two-site algorithm, and White's
+single-site algorithm with density matrix mixing) fail for a variety of inhomogeneous
+states, including for example a double-well potential.
+The reason for this is that the system splits into regions where the reduced density matrix
+eigenstates coincide with eigenstates of the Hamiltonian. Thus, there is only a single
+non-zero eigenstate in the reduced density matrix and fluctuations are suppressed. 
+This is fine if the wavefunction in this region coincides with the groundstate
+for the complete system, but if the Hamiltonian has any global symmetry, then
+this will only happen by random fluke. The reason is our reduced density matrix eigenstate
+will be the lowest energy state of one symmetry sector of the Hamiltonian,
+which will be chosen essentially at random and there is no reason to suppose it will
+be in the correct symmetry sector for the global groundstate.
+
+There are numerous ways around this: we could introduce a small interaction between the
+different $m=1$ regions, or break the global symmetry (say by introducing particle creation
+at some chemical potential), or starting from a specially crafted initial state.
+In these notes, we look instead for the most general solution: a method for introducing
+the required fluctuations into the density matrix itself, with no knowledge of the
+particular problem domain. The idea is that if a scheme can be found that works even in the
+most pessimistic of circumstances, then there is a good chance that in better behaved
+systems the convergence will be accelerated. 
+
+\section{Two-site DMRG formulated as a single-site algorithm}
+In conventional two-site DMRG, the system and environment block states are both taken to
+be the tensor product of the $m$ states of the block excluding the edge site, with the
+full $d$-dimensional local basis, giving a superblock basis of dimension $d^2m^2$.
+The symmetry of this situation is artificial however, as there is really only one site
+that is updated; the system site. The density matrix for the environment block is discarded.
+
+Thus, we can equivalently formulate this algorithm as modifying just a single site, where
+the environment is constructed (possibly on the previous sweep) from the eigenstates of
+$\rho_e = \rho_k \otimes I$, where $\rho_k$ is the density matrix for the environment block,
+excluding the edge site, and $I$ is the identity operator. This statement is of course
+rather trivial. But it demonstrates that we can formulate the two-site algorithm as
+the single-site algorithm with a specific choice of environment states.
+We see also that it leads to generalizations. Firstly, if the dimension of the
+single-site basis is larger than 2, we could consider truncating some of the states in an
+attempt to accelerate the calculation. Keeping the best $m$ states here (supposing we
+knew what the `best' states actually were) would give an optimal single-site algorithm,
+although we will argue later that a single-site algorithm that produces exactly $m$ non-zero
+eigenvalues is not actually desirable and it is better in practice to have a non-zero truncation
+error. Thus, we assume, for the time being, that the optimal number of states in the 
+environment is $2m$.
+
+In this scheme, we have taken every state in the edge of the environment block to be equally
+probable. This is unlikely: an obvious improvement would be to take instead the eigenstates of
+$\rho_e = \rho_k \otimes \rho_s$, where $\rho_s$ is the single-site density matrix. 
+In practice, we might want to mix in a small component of the identity operator still, to
+avoid catastrophes if the single-site density matrix is completely wrong - eg if it has
+a rank less than the dimension of the single-site basis. Thus we use
+\beq
+\rho_e = \rho_k \otimes (\rho_s + \epsilon I) \; ,
+\eeq
+for some small number $\epsilon$.
+
+\section{White's preconditioning scheme}
+The scheme used by White, is to construct a modified density matrix for the system block,
+\beq
+\rho' = \rho + c \sum_\alpha E^\alpha \rho E^{\alpha\dagger}
+\eeq
+Here, the $E$ matrices are the system block operators used in the Hamiltonian-wavefunction multiply,
+\beq
+\Psi' = \sum_{\alpha} E^\alpha \psi F^{\alpha\dagger}
+\eeq
+where $\ket{\Psi} = \sum_{ij} \psi_{ij} \ket{i} \otimes \ket{j}$ is the matrix form of the
+superblock wavefunction, and the $F^\alpha$ matrices are the environment block operators.
+
+This introduces fluctuations into the density matrix from the system block operators. Typical
+terms in the $E^\alpha$ matrices are the block Hamiltonian, the identity operator (which
+has no effect here), and interaction terms, such as $c^\dagger$ and $c$ acting on the
+edge site of the block. These later terms are the important ones, introducing density
+fluctuations into the density matrix.
+
+Note that this scheme modifies the \textit{system} density matrix, in contrast to the
+first scheme, where we modified the \textit{environment} density matrix.
+In general, we should be very careful about adding terms to the system block density matrix. 
+The actual density matrix
+is special in that the resulting eigenstates maximize the overlap 
+$|| \; \ket{\Psi_{\mbox{\small trunc}}} - \ket{\Psi} \; ||^2$. Any other choice of
+states to keep does not obey this. For this reason, we
+focus here on methods that modify only the environment density matrix. Thus, we are searching
+for a scheme for increasing the dimension of the environment block beyond $m$ states; typically
+to $2m$ states but we would need to compare the overall efficiency versus increasing it to $dm$
+states (in the case where $d > 2$).
+
+Aside: I was very careful not to use the word `optimal' in the preceeding paragraph. Maximizing
+the overlap between the original and truncated wavefunctions is only `optimal' if that
+is in fact precisely the quantity that we are trying to optimize. Even in DMRG this is not true,
+the quantity we are tring to optimize is the groundstate energy. These are \textit{not} equivalent,
+finding the truncation operator that optimizes the energy is a non-linear problem. 
+This difference is negligable for DMRG, as all of the density matrix eigenstates
+have approximately the same energy so the contribution to the energy of some particular state
+is approximately equal to its weight in the wavefunction. This is in contrast to the case
+for correction vectors. In that case, we want to minimize the residual norm 
+$|| \; A\ket{\Psi_{\mbox{\small trunc}}} - \ket{b} \; ||$, 
+and there is a significant difference between this
+optimization problem and the choice of optimizing the overlap. The error we make in
+choosing the eigenstates to keep is determined by the condition number $k_A$ of the operator $A$. 
+That is, the actual
+contribution $w$ of some state $\ket{\rho}$ to the residual can be anything
+from $\rho / k_A \leq w \leq \rho k_A$. 
+\textbf{Need to check that is actually correct (is it $k^2$?)
+For the energy, we can probably make a similar statement, where $k$ is something 
+like the condition number of the superblock Hamiltonian.}
+End aside.
+
+A simple option would be to use White's mixing scheme, but apply it to the environment rather than
+the system. However, this is only useful for selecting which states to choose if we wanted
+to truncate the environment (in the case $d \gg 2$), it gives no new states.
+
+\section{Environment mixing}
+Divide the system block states into two classes, the states that are kept ($k$) and the 
+states that are discarded ($t$),
+\beq
+\rho = \rho_k + \rho_t \; ,
+\eeq
+with $\rho_k \rho_t = 0$. 
+Similarly, we divide the environment block states into two classes, the $m$ states
+that were kept on the previous sweep, $\rho_k$, and $m$ (or more) states that we introduce 
+as part of
+the fluctuations in the environent, $\rho_e$.  This leads to yet another formulation of the two-site
+algorithm, where the choice of environment states is set to be exactly the discarded states at
+the same step of the previous sweep, $\rho_e = \rho_t$.
+
+To add somewhere in the introduction: a section on exactly why single-site DMRG 
+(with $\rho_e = 0$) fails, and how
+a similar effect can happen in two-site DMRG, for a poorly behaved system (ie. let
+the single-site basis at some point be only 1 state!).
+
+Also to add somewhere: point out that the states that are truncated each step
+are all orthogonal to each other. That is, if we truncate $\rho_t$ at some step,
+then at the next step there are no states of the form $\ket{\rho_t} \otimes \ket{s}$ in
+the basis. This is obvious, but needs to be mentioned.
+
+In principle, the convergence problems of DMRG can be solved by an $N-site$ algorithm,
+where we modify $N$ bare sites at a time, for large enough $N$. In the case of a double-well
+potential, the $N$ would need to be large enough to span both wells.
+This corresponds to the choice of environment states 
+$\rho^N_e = \rho'_k \otimes I \otimes ... \otimes I$, where $\rho'_k$ is the kept states
+for the block at $N$ sites in from the edge of the environment block.
+
+Can we make a better choice for the environment states? Again, the obvious improvement
+for the $N$-site algorithm is to replace the identity operators with $\rho_s$. (Again, we would
+in practice add a term $\epsilon I$ to preserve full rank. We implicitly assume this.) 
+Now we are in a position to construct a superposition of
+$\rho^i_e$ over all $i$, that is, $\rho_e = \sum_i w_i \rho^i_e$,
+where we have included some weights $w_i$, with $\sum_i w_i = 1/N$. 
+Note that $\rho^{i-1}_e$ is not orthogonal to $\rho^{i}_e$. This isn't really a problem,
+but clearly there is no need to count twice the states from $\rho^{i}_e$ that were kept,
+and hence also appear in $\rho^{i-1}_e$. Thus it is sufficient to include in $\rho_e$ the
+states that were \textit{discarded},
+\beq
+\rho^i_e = \rho'_t \otimes \rho_s \otimes ... \otimes \rho_s \; .
+\label{eq:RhoE}
+\eeq
+
+We can also arrive at the same formula, from a general argument. At some step in the calculation,
+suppose we have $L_1$ states in the system block and $L_2$ states in the environment.
+Our system block is $dm$ states, and we want to include the $2m$ (or maybe $dm$) states
+in the environment. Obviously, we should include at least the $m$ environment states that
+are already included in the wavefunction. For the remaining $m$ states we can, in principle,
+choose any other states from the Hilbert space; states that were, at some point, truncated.
+The optimal choice is then to choose, out of all the remaining states in the Hilbert space,
+the ones with the largest weight. We have a problem, though: for states that were discarded
+at some earlier point when the environment block was smaller, firstly how do we construct
+a corresponding state for the current environment block, and secondly what is the corresponding
+weight? In principle, we could take each discarded superblock state, and trace over all sites
+from the current environment. This is likely to be computationally expensive, but it could be done.
+That is, write each state in the discarded set as a tensor product 
+$\psi_{lcr} \ket{l}\ket{c}\ket{r}$ of
+the current system block $\ket{l}$, the section of the first $N$ sites of the current environment
+$\ket{c}$, and the original environment $\ket{r}$. Tracing over the system block, we get,
+for each discarded state $\ket{r}$,
+\beq
+\rho^r_{c'c} = \sum_l \psi_{lc'r} \psi^*_{lcr}
+\eeq
+That is, for each discarded state $\ket{r}$, we get a large number of non-zero eigenvalues
+in the density matrix. Taking the trace over $r$ as well, to get the complete density matrix,
+we get a highly mixed state. That is, a state that was truncated at a large distance away
+from the current step is likely to contribute with a very small weight to a large number of 
+environment states. Thus, we approximate $\rho_c = \rho_{s_1} \otimes \rho_{s_2} \otimes \cdots$,
+which is equivalent to the previous \refeq{eq:RhoE}
+
+The exception is when the truncated states are maximally entangled with
+the states $\ket{c}$. 
+
+This scheme works when the `missing' region is an $m=1$ state.  What happens if it is an $m=2$
+GHZ or AKLT state? In that case, our approximation is not going to be effective.
+An example would be a doped $S=1$ AKLT chain in an external potential such that the holes
+phase separate into two or more regions. 
+
+To handle this case, we need the full states, no approximation for the
+local density matrices. This is computationally
+expensive, essentially $m^4$ as we need a separate local wavefunction for each state.
+
+\section{Specifics}
+
+Here, we describe in detail the algorithm.
+
+
+
+\end{document}

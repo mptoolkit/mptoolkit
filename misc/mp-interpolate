@@ -1,0 +1,111 @@
+#!/usr/bin/env python
+# $Id$
+
+import sys,os,string,getopt
+
+Options = ""
+
+def Norm(x, y):
+    return os.popen("mp-overlap "+x+" "+y).readline()[:-1]
+
+def Expectation(File, Op, i):
+    return os.popen("mp-expectation "+File+" \""+Op+"\" "+i).readline()[:-1]
+
+def ReadAttribute(File, Attr):
+    return os.popen("mp-attr "+File+" "+Attr, 'r').readline()[:-1]
+
+def usage():
+    print "usage: mp-interpolate <Lv> [<Cv> <Cv> ...]"
+
+def main():
+    argv = sys.argv[1:]
+
+    try:
+        optlist,args = getopt.getopt(argv, Options)
+    except getopt.getoptError:
+        print "mp-interpolate: error: error parsing options"
+        usage()
+        sys.exit(2)
+
+    if len(args) < 3:
+        print "mp-interpolate: error: need a Lanczos vector and at least two correction vectors."
+        usage()
+        sys.exit(2)
+        
+    # get the Hamiltonian, broadening, groundstate energy, ...
+    Energy = float(ReadAttribute(args[1], "GroundstateEnergy"))
+    Ham = ReadAttribute(args[1], "Hamiltonian")
+    Eta = float(ReadAttribute(args[1], "Broadening"))
+
+    print "GroundStateEnergy="+str(Energy)+" Broadening="+str(Eta)
+
+    # divine the square of the Hamiltonian
+    Ind = Ham.index(':')
+    Lattice = Ham[0:Ind]
+    BareHam = Ham[Ind+1:]
+
+    Ham2 = Lattice+":("+BareHam+")^2"
+
+    # get the minimum and maximum frequencies
+    MinFreq = MaxFreq = float(ReadAttribute(args[1], "Frequency"))
+    for cv in args[2:]:
+        f = float(ReadAttribute(cv, "Frequency"))
+        if f < MinFreq:
+            MinFreq = f
+        if f > MaxFreq:
+            MaxFreq = f
+
+    print "min-freq =",MinFreq," max-freq =",MaxFreq
+
+    # calculate the matrix elements
+    print "Calculating matrix elements of identity operator"
+    IdentFile = open("Ident", "w")
+    i = 0
+    for v1 in args:
+        j = i
+        for v2 in args[i:]:
+            x = Norm(v1, v2)
+            print "<"+v1+"|"+v2+"> = "+x
+            Line = str(i)+' '+str(j)+' '+x+'\n'
+            IdentFile.writelines(Line)
+            j=j+1
+        i=i+1
+    IdentFile.close()
+
+    print "Calculating matrix elements of the Hamiltonian"
+    HFile = open("H", "w")
+    i = 0
+    for v1 in args:
+        j = i
+        for v2 in args[i:]:
+            print "<"+v1+"|"+Ham+"|"+v2+"> = "+x
+            x = Expectation(v1, Ham, v2)
+            Line = str(i)+' '+str(j)+' '+x+'\n'
+            HFile.writelines(Line)
+            j=j+1
+        i=i+1
+    HFile.close()
+
+    print "Calculating matrix elements of the Hamiltonian squared"
+    H2File = open("H2", "w")
+    i = 0
+    for v1 in args:
+        j = i
+        for v2 in args[i:]:
+            print "<"+v1+"|"+Ham2+"|"+v2+"> = "+x
+            x = Expectation(v1, Ham2, v2)
+            Line = str(i)+' '+str(j)+' '+x+'\n'
+            H2File.writelines(Line)
+            j=j+1
+        i=i+1
+    H2File.close()
+
+    # call mp-min-resid
+    CmdLine = "mp-min-resid -i Ident -h H -2 H2 -v -v -B "+str(Eta)+" -G "+str(Energy)
+    CmdLine = CmdLine+" -m "+str(MinFreq)+" -x "+str(MaxFreq)
+
+    print CmdLine
+    os.system(CmdLine)
+    
+
+if __name__ == '__main__': main()

@@ -1,0 +1,31 @@
+#!/bin/bash
+
+if [ $# -lt 2 ] ; then
+   echo "usage: <num-steps> <timestep>"
+   exit 1
+fi
+
+./mp-imake-transverse-lattice -w psi-lam -n $1 -t $2 -H itf --J -1 -l mylat
+mp-random -l mylat -o psitrans
+#mp-apply mylat:"Op2*Op1" psitrans psitrans1
+mp-apply mylat:"Op" psitrans psitrans1
+cp psitrans1 psitrans
+mp-norm psitrans
+mp-normalize psitrans
+#mp-apply mylat:"Op2*Op1" psitrans psitrans1
+mp-apply mylat:"Op" psitrans psitrans1
+cp psitrans1 psitrans
+mp-norm psitrans
+mp-normalize psitrans
+#mp-dmrg -H mylat:"-Op2*Op1" -w psitrans -S arnoldi -m 40 -s 2 -2
+mp-dmrg -H mylat:"-Op" -w psitrans -S arnoldi -m 40 -s 2 -2
+mp-dmrg -H mylat:"-Op" -w psitrans -S arnoldi -m 40 -s 2 -2
+cp psitrans psitransherm
+#mp-dmrg -H mylat:"-adjoint(Op2*Op1)" -w psitransherm -S arnoldi -m 40 -s 2 -2
+mp-dmrg -H mylat:"-adjoint(Op)" -w psitransherm -S arnoldi -m 40 -s 2 -2
+mp-dmrg -H mylat:"-adjoint(Op)" -w psitransherm -S arnoldi -m 40 -s 2 -2
+echo -n "$1 $2 " >> out.txt
+#echo -n $(mp-expectation psitransherm mylat:"Op2*Obs" psitrans) >> out.txt
+echo -n $(mp-expectation psitransherm mylat:"Ob" psitrans) >> out.txt
+echo -n $(mp-overlap psitransherm psitrans) >> out.txt
+echo >> out.txt

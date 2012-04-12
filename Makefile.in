@@ -1,0 +1,694 @@
+# $Id$
+
+SHELL = /bin/sh
+
+SRCDIR = @srcdir@
+TOP_SRCDIR = @top_srcdir@
+
+LDFLAGS = @LDFLAGS@ $(LDFLAGS_EXTRA)
+CXX = @CXX@
+CXXFLAGS = -I. -I$(SRCDIR) @CPPFLAGS@ @CXXFLAGS@ -DHAVE_CONFIG_H $(CXXFLAGS_EXTRA)
+# -DBLAS1_TRACE_DETAILED \
+# -DBLAS3_TRACE_DETAILED \
+# -DLAPACK_TRACE_DETAILED \
+# -DLAPACK_TRACE_DETAILED \
+# -DPHEAP_TRACE_DETAILED \
+# -DDATABLOCK_TRACE_DETAILED -DPOOL_ALLOCATOR_VERBOSE -DPOOLALLOC_TRACE_DETAILED \
+
+MAKEDEPENDFLAGS = -I. -I$(SRCDIR) $(MAKEDEPENDFLAGS_EXTRA)
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+BINDIR = @bindir@
+
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+
+F77 = @F77@
+FFLAGS = @FFLAGS@
+FLIBS = @FLIBS@
+LAPACK_LIBS = @LAPACK_LIBS@
+BLAS_LIBS = @BLAS_LIBS@
+LIBS = @LIBS@ $(LIBS_EXTRA)
+
+PACKAGE_NAME=@PACKAGE_NAME@
+PACKAGE_TARNAME=@PACKAGE_TARNAME@
+PACKAGE_VERSION=@PACKAGE_VERSION@
+PACKAGE_STRING=@PACKAGE_STRING@
+PACKAGE_FULLNAME=$(PACKAGE_TARNAME)-$(PACKAGE_VERSION)
+
+LIBARPACK=@LIBARPACK@
+
+PBS_LIB=-L/opt/pbs/lib -lpbs
+
+DISTDIR=$(PACKAGE_FULLNAME)
+
+TARDIR=$(PACKAGE_TARNAME)
+
+LIB = $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LIBS_EXTRA)
+
+SRCDIRS = common common/private quantumnumbers pstream pheap \
+          tensor siteoperator blockoperator models mp-algorithms \
+          tutorial mp linearalgebra misc conf scripts utils interface expokit mpo \
+          benchmark misc misc/oogl junk mpo mps
+
+TESTDIRS = tensor/test siteoperator/test linearalgebra/test matrixproduct/test pheap/test \
+           common/test quantumnumbers/test mp-algorithms/test mpo/test
+
+DIRS = $(SRCDIRS) $(TESTDIRS)
+
+SRCSUBDIRS = $(patsubst %,$(SRCDIR)/%, $(DIRS))
+
+VPATH = $(SRCDIR) $(SRCSUBDIRS)
+
+GSRCDIRS = examples/pheap
+GSRCSUBDIRS = $(patsubst %,$(SRCDIR)/%, $(GSRCDIRS))
+
+# GPATH = $(GSRCSUBDIRS)
+
+quantumnumbersobj = quantumnumber.o symmetrybase.o symmetrylist.o \
+		    coupling.o u1.o su2.o null-quantumnumber.o z2.o
+
+tensorobj = tensorproduct.o tensorsum.o basis.o regularize.o tensor_eigen.o
+
+blockoperatorobj = blockoperator.o
+
+siteoperatorobj = siteoperator.o
+
+dmrgobj = $(tensorobj) density.o
+
+pheapobj = bufferalloc.o pagefile.o pheapstream.o pheapfsblock.o \
+           pheapallocator.o pheap.o pheapfsv4.o pagestream.o rawpagestream.o inittemp.o
+
+pstreamobj = pstream.o pfilestream.o
+
+linearalgebraobj = eigen.o
+
+#matrixproductobj = density.o mpexponential.o mpopcomponent.o mpopcompressed.o \
+#                   mpoperatorlist.o mpstate.o lattice.o linearwavefunction.o wavefunc-utils.o \
+
+mpoobj = operator_component.o #triangularoperator.o
+
+mpsobj = state_component.o linearwavefunction.o infinitewavefunction.o density.o operator_actions.o
+
+mpobj = $(mpoobj) $(mpsobj) $(siteoperatorobj) attributes.o
+
+#mpobj = mpopcomponent.o mpoperatorlist.o siteoperator.o eigen.o mpstate.o \
+#        attributes.o mpopcompressed.o lattice.o \
+#        vectorbasissum.o linearwavefunction.o wavefunc-utils.o \
+#        centerwavefunction.o linearoperator.o operator-parser.o inittemp.o
+
+commonobj = niftycounter.o poolallocator.o hash.o proccontrol.o \
+	    halfint.o stackallocator.o conflist.o terminal.o
+
+debugobj = backtrace.o debughandler.o
+
+simplecommonobj = poolallocator.o stackallocator.o backtrace.o debughandler.o catchsegv.o
+
+expokitobj = zgpadm.o exponential.o tensor_exponential.o
+
+objects = $(quantumnumbersobj) \
+          $(dmrgobj)           \
+          $(pheapobj)          \
+          $(pstreamobj)        \
+          $(linearalgebraobj)  \
+          $(commonobj)
+
+linearalgebra_tests = testmapvector testhashvector teststdvector \
+                      testvector testcomplexvector \
+                      testmatrix testlinearsolvespd testvectorcomplex \
+                      testlinearsolvehpd testfixedvector \
+                      testdirectproduct testcoefficientmultiply \
+                      testmultiply-nn testmultiply-tn \
+                      testscalarmatrix testsparsematrix testdiagonalizesymmetric \
+                      testdiagonalizehermitian testconj testequal testnorminf \
+                      testrangeprod testdirectsum testindex testtrig testmatrixserialize \
+                      testproject12 testfill testmultiply-corner testvectorswap \
+                      testvectorstring testvectorserialize testinverthpd testsum \
+                      testtrace testmatrixbinarytransform testflatten testmatrixrange \
+                      testmatrixminmax testcholesky testinverttri testmultiplyself \
+                      testexponential testrational testnormfrob_matrix testherm testqr testhaar
+
+linearalgebra_extra_tests = testcprod testcomplexvector \
+                            testmatrixsection testslicereal testsliceblas \
+                            testhermproduct testmatrixparallel testrangerange \
+                            testmatrixrangeslice testvectorrange testmatrixio \
+                            testinnerprod testparallelprod testmatrixvectorviewmem testdiagonalmatrix
+
+mp-algorithms_tests = test-arnoldi test-gmres
+
+tensor_tests = testbasis testtensor testadjoint testscalarprod testtensorsum \
+               testtensorprod testtripleprod \
+               testvectorbasis testregularize testprodherm testdeltaprod testred
+
+siteoperator_tests = testsitebasis testsiteoperator testcomplexsiteoperator
+
+blockoperator_tests = testblockoperator
+
+matrixproduct_tests = testmpstate testdensity testperiodicwavefunction testscalardirectprod \
+                      testtriangularaddition testsvd-decompose testpackunpack
+
+mpo_tests = test_operator_decompose
+
+pheap_tests = testpheap-write testpheap-read testpheap-read-xdr
+
+common_tests = testrunlengthcompressed
+
+quantumnumber_tests = testcoupling
+
+alltests = $(linearalgebra_tests) $(tensor_tests) $(siteoperator_tests) \
+           $(matrixproduct_tests) $(common_tests) $(quantumnumber_tests)
+
+allobj = $(quantumnumbersobj) \
+	 $(dmrgobj)           \
+	 $(pheapobj)          \
+	 $(pstreamobj)        \
+	 $(linearalgebraobj)  \
+	 $(commonobj)
+
+mp-models = hubbard-u1u1 hubbard-t-u1u1 hubbard-u1su2 hubbard-so4 hubbard-t-so4 \
+            hubbard-trap-u1su2 bosehubbard-spinless-u1 bosehubbard-spinless hubbardladder-so4 \
+            klm-2channel-so4 bosehubbard-u1su2 bosehubbard-2bosons-u1u1 klm-u1u1 \
+            siam-u1u1 siam-u1su2 siam-factorized-u1u1 makeparams-siam makeparams-siam-linear \
+            spinchain-u1 spinchain-su2 spinchain-zigzag-su2 \
+            spinladder-su2 kondo-factorized-u1u1 \
+            siam-cluster2-factorized-u1u1 hubbard-canonical-u1u1 hubbard-canonical-so4 \
+            spinlessfermion-u1 klm-so4 hubbard-t-U-V-u1su2\
+            peierls-hubbard-ramp-u1su2 makeparams-2site hubbard-boundary-u1su2 \
+            bosehubbard-2bosons-split-u1u1 nuclear-shell-u1 spinchain-zigzag-u1 \
+            spinchain-canonical-u1 spinchain-zigzag-canonical-u1 \
+	    spinchain-zigzag-canonical-su2 rlm-u1 spinchain siam-u1 hubbard-tj-u1su2 \
+            spinchain-pbc-su2 spinchain-pbc-u1 hubbard-t1t2-u1su2 kondo-canonical-u1u1 \
+            kondo-u1u1 hubbard-periodic-u1su2 kondo-gc-u1u1 \
+            bichromatic-BH-spinless-u1 spinlessfermion-3fermions-u1u1 \
+            tj-zigzag-u1su2 tj-zigzag-u1u1 spinladder cf-ladder-u1
+
+mp-tools = mp-construct mp-overlap mp-expectation \
+           mp-apply mp-norm mp-norm2 mp-info mp-debug mp-scale mp-random mp-add  \
+           mp-diff mp-diff2 mp-dmrg mp-apply-opt mp-dimensions mp-sub \
+           mp-stringcorrelation mp-normalize \
+           mp-conj mp-opprod mp-attr \
+           mp-dmrg-init mp-dmrg-resume mp-gmres-init mp-gmres-resume mp-gf mp-split \
+           mp-correlation mp-evolve-krylov \
+           mp-tridiag mp-trispectral mp-make-k mp-expectation2 mp-defrag \
+           mp-localcorrelation mp-evolve-krylov-simple \
+           mp-localexpectation mp-trunc mp-opinfo mp-local-fourpoint \
+           mp-chiral-correlator-su2 mp-canonical \
+           mp-apply-multiple mp-load-0.7.3 mp-wigner-eckart mp-residualnorm mp-theta2 \
+           mp-density-overlap mp-fastgmres mp-make-k-periodic \
+           mp-shift-basis mp-scale-basis mp-rename-symmetry mp-reorder-basis \
+           mp-reorder-symmetry mp-local-fourpoint-ex mp-evolve-bonds \
+           mp-overlap-conj mp-expectation-conj mp-make-positive
+
+infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-ioverlap mp-itebd2 \
+                 mp-ieigen mp-idmrg3 mp-icorrelation mp-idmrg4 mp-idmrg5 mp-iexcitation mp-iexcitation2 \
+                 mp-bdmrg mp-imake-transverse-lattice mp-imake-transverse-lattice-folded mp-iexpectation-sz \
+                 mp-iexpectation-sz2 mp-iparity
+
+infinite-tools = mp-iorthogonalize mp-idmrg5 mp-icorrelation mp-ispectrum mp-ioverlap mp-iinfo \
+                 mp-idump mp-itebd mp-iexpectation2 mp-iexpectation3 mp-ispectral-expansion mp-igradient \
+                 mp-ireorder-symmetry mp-irename-symmetry
+
+mp-tools-not-functional = mp-add2 mp-exp mp-stringcorrelation-su2 mp-canonical
+
+mp-tools-experimental = mp-cg mp-cg-sym mp-simplecg-sym mp-simplecg mp-ddmrg \
+                        mp-bicg mp-global-cg mp-gmres momentum-projector mp-evolve-magnus \
+                        mp-evolve-mixed mp-makesqueeze mp-generalizedstring \
+                        mp-dmrg-infinite-klm mp-evolve-krylov-simple \
+                        mp-dmrg-test mp-effective cgcalculator mp-idmrg  mp-trotter \
+                        mp-rme mp-overlap-bigmem kondo-exactdiag \
+                        $(infinite-tools) \
+                        mp-cv2 mp-simple-marshall-qmc
+
+benchmarks = benchtripleprod
+
+misc-progs = untridiagonalize tridiag-kspace mp-min-resid seqgen2
+
+
+default : mp-tools
+
+all : mp-tools mp-models
+
+mp-tools : $(mp-tools)
+
+infinite-tools : $(infinite-tools)
+
+tools : mp-tools
+
+mp-models : $(mp-models)
+
+models : mp-models
+
+itools : infinite-tools
+
+dist_files = config.h.in configure configure.ac aclocal.m4 Makefile.in  generate-testreport.sh \
+             depend.sh install-sh stamp-h.in README TODO mkinstalldirs \
+             $(SRCDIRS)
+
+cxxsrcglob = *.cpp $(patsubst %,%/*.cpp, $(subst :, ,$(VPATH))) \
+	     $(patsubst %,%/*.cpp, $(subst :, ,$(GPATH))) 
+
+cxx_source := $(notdir $(wildcard $(cxxsrcglob)))
+cxx_depend = $(cxx_source:%.cpp=%.d)
+
+nodep-targets = clean mrproper dep uninstall dist distclean maintainer-clean dist-dir tar-dir tar
+
+ifeq (,$(filter $(nodep-targets),$(MAKECMDGOALS)))
+-include $(cxx_depend)
+endif
+
+dep : $(cxx_depend)
+
+.PHONY: clean mrproper dep test all install uninstall dist-clean \
+        maintaner-clean install-dirs dist-dir tar-dir tar install-models install-tools \
+        tools models mp-tools default
+
+# turn off some implicit rules that we don't want
+%.o : %.cpp
+%.o : %.cc
+%.o : %.c
+%.o : %.f
+
+% : %.o
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ $(LIB) $(LIBS_$@) -o $@
+
+% : %.cpp
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ $(LIB) -o $@
+
+%.o : %.cpp %.d
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+%.o : %.f
+	$(F77) $(FFLAGS) -c $< -o $@
+
+%.d : %.cpp
+	$(SRCDIR)/depend.sh -- $(MAKEDEPENDFLAGS) -- $< > $@
+
+.SECONDARY: $(cxx_depend)
+
+clean :
+	rm -f *.o
+	rm -f *.d
+	rm -f $(alltests)
+	rm -f $(mp-tools)
+	rm -f $(mp-models)
+
+mrproper :
+	rm -f *.o
+	rm -f *.d
+	rm -f $(alltests)
+	rm -f $(mp-tools)
+	rm -f $(mp-models)
+	rm -f -- $(patsubst %,%/*~, $(subst :, ,$(VPATH)))
+
+depclean :
+	rm -f *.d
+
+test : $(alltests)
+	$(SRCDIR)/generate-testreport.sh $(alltests:%=./%)
+
+test_tensor : $(tensor_tests)
+	$(SRCDIR)/generate-testreport.sh $(tensor_tests:%=./%)
+
+testla : $(linearalgebra_tests)
+	$(SRCDIR)/generate-testreport.sh $(linearalgebra_tests:%=./%)
+
+$(mp-tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
+              $(dmrgobj) $(mpobj)
+
+$(infinite-tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
+              $(dmrgobj) $(mpobj)
+
+$(infinite-tools-exp) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
+              $(dmrgobj) $(mpobj)
+
+$(mp-tools-experimental) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
+              $(dmrgobj) $(mpobj)
+
+$(mp-models) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
+               $(dmrgobj) $(mpobj)
+
+$(mp-misc) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
+               $(dmrgobj) $(mpobj)
+
+#
+# dependencies for tensor tests
+#
+
+$(tensor_tests) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) basis.o
+
+spin1test : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) basis.o
+
+testbasis : basis.o
+testvectorbasis : basis.o tensorsum.o tensorproduct.o
+testtensor : basis.o
+testtensorsum : basis.o tensorsum.o
+testtensorprod : basis.o tensorproduct.o
+testtripleprod : basis.o
+testregularize : basis.o regularize.o
+testdeltaprod : basis.o tensorproduct.o
+
+#
+# dependencies for matrixproduct tests
+#
+
+$(matrixproduct_tests) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) $(tensorobj)
+
+testtriangularaddition : mpstate.o triangularoperator.o siteoperator.o mpopcomponent.o eigen.o
+
+testmpstate : mpstate.o
+testmpstateu1 : mpstate.o
+testmpstatesu2 : mpstate.o
+testdensity : density.o eigen.o
+testlattice : mpstate.o mpopcomponent.o siteoperator.o
+testmpopcompressed : mpopcompressed.o siteoperator.o eigen.o mpopcomponent.o
+testmpoperator : mpopcompressed.o siteoperator.o eigen.o mpopcomponent.o lattice.o
+testmodel : mpopcompressed.o siteoperator.o eigen.o mpopcomponent.o lattice.o mpoperatorlist.o
+testcg : eigen.o
+testsvd-decompose : density.o eigen.o mpstate.o
+testpackunpack : packunpack.o mpstate.o eigen.o
+
+#
+# dependencies for mpo tests
+#
+
+$(mpo_tests) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) $(tensorobj) $(siteoperatorobj)
+
+test_operator_decompose : $(expokitobj) $(mpoobj) eigen.o
+
+#
+# dependencies for siteoperator tests
+#
+
+$(siteoperator_tests) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) $(tensorobj) $(siteoperatorobj)
+
+#
+# dependencies for linearalgebra tests
+#
+
+$(linearalgebra_tests) : $(commonobj) $(linearalgebraobj)
+
+$(linearalgebra_extra_tests) : $(commonobj) eigen.o
+
+testsiteoperator : eigen.o
+testsitebasis : eigen.o
+testcomplexsiteoperator : eigen.o
+testmpstate : eigen.o
+testexponential : eigen.o zgpadm.o exponential.o
+
+#
+# dependencies for mp-algorithms tests
+#
+
+$(mp-algorithms_tests) : $(commonobj) $(linearalgebraobj) eigen.o 
+
+#$(mp-algorithms_tests) : $(commonobj) $(linearalgebraobj) $(expokitobj) eigen.o 
+
+#
+# dependencies for pheap tests
+#
+
+$(pheap_tests) : $(commonobj) $(pstreamobj) $(pheapobj)
+
+testmatrixserialize : $(pstreamobj)
+testvectorserialize : $(pstreamobj)
+
+#
+# dependencies for quantumnumber tests
+#
+
+$(quantumnumber_tests) : $(commonobj)
+
+testcoupling : coupling.o
+
+
+testperiodicwavefunction : periodicwavefunction.o mpstate.o eigen.o
+
+$(blockoperator_tests) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) $(tensorobj) $(blockoperatorobj)
+
+testsite : testsite.o $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) $(tensorobj)
+
+testsitebasis2 : testsitebasis2.o $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) $(tensorobj) $(siteobj)
+
+perf-sparse : poolallocator.o
+
+cgcalculator : coupling.o halfint.o
+
+spin1-unit : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) $(tensorobj) siteoperator.o eigen.o
+
+
+# benchmarks
+
+bench-tripleprod : $(commonobj) $(linearalgebraobj) $(tensorobj) $(pstreamobj) $(pheapobj) $(quantumnumbersobj)
+
+bench-rotate :  $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
+              $(dmrgobj) $(mpobj)
+
+# mp-tools
+
+mp-cg : cg.o
+mp-gmres : cg.o
+mp-cg-sym : cg.o
+mp-bicg : cg.o
+mp-simplecg-sym : simplecg.o
+mp-simplecg : simplecg.o
+mp-simplegmres : simplecg.o
+mp-ddmrg : ddmrg.o
+mp-dmrg-init : dmrg.o stateslist.o
+mp-dmrg-resume : dmrg.o stateslist.o
+mp-gmres-init : simplecg.o solver-gmres.o stateslist.o
+mp-gmres-resume : simplecg.o solver-gmres.o stateslist.o
+mp-trotter : mpexponential.o $(expokitobj)
+mp-dmrg : dmrg.o 
+mp-evolve-krylov : progressivekrylov.o krylovloop.o $(expokitobj)
+mp-evolve-magnus : progressivekrylov.o krylovloop.o $(expokitobj)
+mp-dmrg-2site : dmrg.o
+mp-apply-opt : prodoptimizer.o
+mp-apply-multiple : prodoptimizer.o
+mp-evolve-mixed : aggregator.o $(expokitobj)
+mp-dmrg-infinite-klm : dmrg.o
+mp-evolve-krylov-simple : simplekrylov.o $(expokitobj)
+mp-wigner-eckart : wigner_eckart.o
+
+mp-cv2 : functional-solver.o
+
+mp-dmrg-init mp-random : random_wavefunc.o
+
+mp-misc = make-vb-state make-vb-su2
+
+mp-simple-marshall-qmc : random_wavefunc.o
+
+mp-idmrg : triangularoperator.o
+mp-idmrg2 : triangularoperator.o infinitewavefunction.o
+mp-idmrg3 : triangularoperator.o infinitewavefunction.o
+mp-idmrg4 : triangularoperator.o infinitewavefunction.o random_wavefunc.o
+mp-idmrg5 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o
+mp-ireorder-symmetry : triangular_operator.o mpoperator.o infinitewavefunction.o eigen.o
+mp-irename-symmetry : triangular_operator.o mpoperator.o infinitewavefunction.o eigen.o
+mp-iparity : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o
+mp-bdmrg : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o
+mp-iexpectation2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
+mp-iexpectation3 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
+mp-iexpectation-sz : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
+mp-iexpectation-sz2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
+mp-iexcitation : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
+mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
+mp-igradient : triangularoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
+mp-ispectral-expansion : triangularoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
+mp-ioverlap : infinitewavefunction.o
+mp-icorrelation : infinitewavefunction.o
+mp-iortho : triangularoperator.o infinitewavefunction.o
+mp-iinfo : triangularoperator.o infinitewavefunction.o
+mp-iorthogonalize : triangularoperator.o infinitewavefunction.o
+mp-pwfrg : triangularoperator.o match_basis.o
+mp-itebd : mpexponential.o $(expokitobj) infinitewavefunction.o
+mp-itebd2 : $(expokitobj) infinitewavefunction.o eigen.o random_wavefunc.o
+mp-evolve-bonds : local-evolution.o $(expokitobj)
+mp-ispectrum : infinitewavefunction.o packunpack.o eigen.o arpack_wrapper.o
+mp-ieigen : triangularoperator.o infinitewavefunction.o 
+mp-idump : infinitewavefunction.o
+mp-imake-transverse-lattice : triangularoperator.o infinitewavefunction.o random_wavefunc.o eigen.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
+mp-imake-transverse-lattice-folded : triangularoperator.o infinitewavefunction.o random_wavefunc.o eigen.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
+
+
+LIBS_mp-ispectrum = $(LIBARPACK)
+
+#LIBS_mp-idmrg5 = $(LIBARPACK)
+
+mp-idmrgx : dmrg.o match_basis.o
+
+mp-min-resid : $(commonobj) $(linearalgebraobj)
+
+# $(mp-tools) : $(expokitobj)
+# $(mp-tools-experimental) : $(expokitobj)
+
+#mp-overlap-bigmem : threads.o
+
+testdmrg :  $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
+            $(dmrgobj) eigen.o mpstate.o mpopcomponent.o mpoperatorlist.o
+
+testlanczos : $(commonobj) eigen.o
+
+testdlamch : 
+
+kondo-exactdiag : $(expokitobj)
+
+
+# misc progs
+
+untridiagonalize : eigen.o stackallocator.o poolallocator.o
+tridiag-kspace : eigen.o stackallocator.o poolallocator.o
+
+readsurf : oogl.o poolallocator.o
+
+seqgen : eigen.o stackallocator.o poolallocator.o
+seqgen2 : $(commonobj) $(pstreamobj) $(pheapobj) $(quantumnumbersobj) $(linearalgebraobj) $(mpobj) $(tensorobj)
+seqgen-dm : eigen.o stackallocator.o poolallocator.o
+
+# old stuff for the pheap examples
+examples/pheap/example1 : $(commonobj)
+examples/pheap/example2 : $(commonobj) $(pstreamobj) $(pheapobj)
+examples/pheap/example3 : $(commonobj) $(pstreamobj) $(pheapobj)
+examples/pheap/example4-init : $(commonobj) $(pstreamobj) $(pheapobj)
+examples/pheap/example4-resume : $(commonobj) $(pstreamobj) $(pheapobj)
+
+examples/linearalgebra/matrix-example1 : $(commonobj) $(linearalgebraobj)
+
+testmp : mpstate.o mpopcomponent.o $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
+            $(dmrgobj) eigen.o
+
+testassoc : coupling.o halfint.o
+
+testvector : $(commonobj)
+
+testslice : $(commonobj)
+
+examples/la-tng/vectorexample : $(commonobj)
+
+testvectortransform : $(commonobj)
+
+testmatelem : $(commonobj)  $(pstreamobj) $(pheapobj) $(quantumnumbersobj) $(linearalgebraobj) $(mpobj) $(tensorobj)
+
+# utils
+
+diag-list : eigen.o stackallocator.o poolallocator.o
+
+# examples
+
+examples/example1 : $(commonobj)
+
+# misc dependencies
+
+qshifttop.o : qshifttop.cpp
+	$(CXX) $(CXXFLAGS) -I/opt/pbs/include -c $< -o $@
+
+qshifttop : qshifttop.o
+	$(CXX) $(CXXFLAGS) $^ $(LIB) $(PBS_LIB) -o $@
+
+averagecorr : averagecorr.o
+	$(CXX) $(CXXFLAGS) $^ -lm -o $@
+
+make-pi : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
+              $(dmrgobj) mpopcomponent.o mpoperatorlist.o siteoperator.o eigen.o mpstate.o
+
+make-pi-u1 : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
+              $(dmrgobj) mpopcomponent.o mpoperatorlist.o siteoperator.o eigen.o mpstate.o
+
+install-dirs :
+	test -d $(BINDIR) || $(SRCDIR)/mkinstalldirs $(BINDIR)
+
+install-tools : $(mp-tools) install-dirs
+	for i in $(mp-tools) ; do \
+	$(INSTALL_PROGRAM) $$i $(BINDIR) ; done
+
+install-itools : $(infinite-tools) install-dirs
+	for i in $(infinite-tools) ; do \
+	$(INSTALL_PROGRAM) $$i $(BINDIR) ; done
+
+install-models : $(mp-models) install-dirs
+	for i in $(mp-models) ; do \
+	$(INSTALL_PROGRAM) $$i $(BINDIR) ; done
+
+install-mv : $(mp-tools) install-dirs
+	for i in $(mp-tools) ; do \
+	mv $$i $(BINDIR) ; done
+
+install-mv-models : $(mp-models) install-dirs
+	for i in $(mp-models) ; do \
+	mv $$i $(BINDIR) ; done
+
+install : install-tools
+
+install-x : install-dirs
+	for i in $(mp-models) $(mp-tools) $(mp-tools-experimental) ; do \
+	if [ -f $$i ] ; then $(INSTALL_PROGRAM) $$i $(BINDIR) ; fi ; done
+
+uninstall :
+	for i in $(mp-tools) $(mp-models) ; do \
+	rm -f $(BINDIR)/$$i ; done
+
+dist-dir :
+	test -d $(DISTDIR) || mkdir $(DISTDIR)
+
+dist : dist-dir
+	for i in $(dist_files) ; do \
+	cp -a $(SRCDIR)/$$i $(DISTDIR)/ ; done
+	tar cfz $(DISTDIR).tar.gz $(DISTDIR)
+
+tar-dir :
+	test -d $(TARDIR) || mkdir $(TARDIR)
+
+tar : tar-dir
+	for i in $(dist_files) ; do \
+	cp -a $(SRCDIR)/$$i $(TARDIR)/ ; done
+	tar cfz $(TARDIR).tar.gz $(TARDIR)
+
+svn-export :
+	svn export $(SRCDIR) mptoolkit
+
+distclean : clean
+	rm -f config.h stamp-h config.status config.cache config.log 
+
+maintainer-clean : distclean
+	rm -Rf $(DISTDIR)
+	rm -f $(DISTDIR).tar.gz
+
+# automatic re-running of configure if the configure.in file has changed
+# if we have aclocal.m4 then we would want it as a dependency along with
+# configure.in
+
+$(SRCDIR)/configure: $(SRCDIR)/configure.ac $(SRCDIR)/aclocal.m4
+	cd $(SRCDIR) && autoconf
+
+# autoheader might not change config.h.in, so touch a stamp file.
+#
+# stamp-h is touched when config.status constructs config.h
+# stamp-h.in is touched when autoheader constructs config.h.in
+
+
+${SRCDIR}/config.h.in : ${SRCDIR}/stamp-h.in
+
+#${SRCDIR}/stamp-h.in : configure.ac config.h.in
+
+${SRCDIR}/stamp-h.in : configure.ac aclocal.m4
+	cd ${SRCDIR} && autoheader
+	echo timestamp > ${SRCDIR}/stamp-h.in
+
+#	rm -f ${srcdir}/stamp-h
+
+config.h : config.h.in stamp-h
+
+stamp-h : config.status ${SRCDIR}/stamp-h.in
+	./config.status
+
+ifeq (,$(filter $(nodep-targets),$(MAKECMDGOALS)))
+Makefile : Makefile.in config.status
+	./config.status
+endif
+
+config.status : configure
+	./config.status --recheck
+#	rm -f config.cache
+#	$(SRCDIR)/configure ${CONFFLAGS}
+

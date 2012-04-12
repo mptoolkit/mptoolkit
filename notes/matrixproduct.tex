@@ -1,0 +1,144 @@
+
+\documentclass[12pt]{article}
+
+\input{macros}
+
+\begin{document}
+
+\title{Matrix Product Operators}
+
+\author{I. P. McCulloch}
+\date{2004-08-29}
+
+\newcommand{\mps}[1]{\mbox{\boldmath $#1$}}
+
+\maketitle
+
+\section{Basic formulas}
+
+Basic notation: for a matrix product state $\mps{A}$,
+the matrix acting on site $j$ is $A^{s_j}_j$, where
+$s_j$ is the single-site basis. The dimension of the
+matrices $A^{s_j}_j$ must be the same for all $s_j$, but
+can depend on $j$. The matrices are not necessarily square, but
+clearly $\mbox{cols}(A_j) = \mbox{rows}(A_{j+1})$. We refer to 
+the dimension of the matrices as $m$ (or $m_A$ if we need
+to refer to a specific matrix product state $\mps{A}$), 
+with the understanding of implicit dependence on $j$.
+
+Matrix product state:
+\[
+\ket{A} = \Tr \Pi_{j=1}^L \sum_{s_j} A^{s_j}_j \ket{s_j}
+\]
+
+From now on, we will always assume the summation over $s_j$, and omit
+it from the formulas. 
+If the site basis state $\ket{s_j}$ has quantum numbers $q(s_j)$, then
+$A^{s_j}_j$ transforms as a rank $q(s_j)$ tensor. 
+If the matrix product state has open boundary conditions, then
+$A_1$ is a $1\times m$ matrix and $A_L$ is a $m \times 1$ matrix.
+
+Matrix product operator:
+\[
+\hat{O} = \Tr \Pi_{j=1}^L O^{s'_j s_j}_j \ket{s'_j} \bra{s_j}
+\]
+
+We can also attach a quantum number label to $O^{s'_j s_j}_j$;
+that is, by $s'_j,s_j$ we mean a basis for all operators acting on
+the single site. In the non-Abelian case, the projection onto a
+given quantum number subspace makes the matrix product non-associative.
+Applying matrices from right to left, let $X^{[k_i]}_i$ represent the product
+of matrices from $O_i \ldots O_L$ which transforms as quantum number $k_i$.
+Then
+\[
+X^{[k_i]}_{i} = \left[ O^{s'_i s_i}_i \times X^{[k_{i+1}]}_{i+1}\right]^{[k_i]}
+\]
+In the general case, the operator will be \textit{reducible}, so we need
+to sum over the $k_j$.  Of course, for observables the operator will
+be a scalar, so the final projection will be onto $k_1 = 0$ (for the
+right-to-left product) or $k_L=0$ (for the left-to-right product).
+
+Sum of two operators:
+\[
+\begin{array}{l}
+\quad \Tr \Pi_{j=1}^L O^{s'_j s_j}_j \ket{s'_j} \bra{s_j}
+\: + \:
+\Tr \Pi_{j=1}^L P^{s'_j s_j}_j \ket{s'_j} \bra{s_j}
+\\
+= \; \Tr \Pi_{j=1}^L \left( O^{s'_j s_j}_j \oplus P^{s'_j s_j}_j \right)
+ \ket{s'_j} \bra{s_j}
+\end{array}
+\]
+This results in a matrix product state with $m_O + m_P$ states, and
+is exactly the same for the sum of two wavefunctions.
+
+Product of two operators:
+\[
+\begin{array}{l}
+\quad \Tr \Pi_{j=1}^L O^{s'_j s^{''}_j}_j \ket{s'_j} \bra{s^{''}_j}
+\: \times \:
+\Tr \Pi_{j=1}^L P^{s^{''}_j s_j}_j \ket{s^{''}_j} \bra{s_j}
+\\
+= \; \Tr \Pi_{j=1}^L \left( \sum_{s^{''}_j} O^{s'_j s^{''}_j}_j \otimes 
+  P^{s^{''}_j s_j}_j \right)
+ \ket{s'_j} \bra{s_j}
+\end{array}
+\]
+The resulting matrix
+product state has $m_O m_P$ states.
+As usual, for the non-Abelian case we need to insert a $6j$ coefficient
+into the product of the single-site operators. 
+
+An operator acting on a wavefunction:
+\[
+\begin{array}{l}
+\Tr \Pi_{j=1}^L O^{s'_j s_j}_j \ket{s'_j} \bra{s_j}
+\: \times \: \Tr \Pi_{j=1}^L A^{s_j}_j \ket{s_j}
+\\ = \;
+\Tr \Pi_{j=1}^L
+\left( \sum_{s_j} O^{s'_j s_j}_j \otimes A^{s_j}_j \right) \ket{s'_j}
+\end{array}
+\]
+which is essentially identical to the product of two operators.
+In a computation, the direct product factorizes so that it is more
+efficient to calculate an expectation value as
+$\bigbraket{A}{O}{B}$ rather than calculating $\ket{C} = O\ket{B}$
+and then calculating $\braket{A}{C}$.
+
+\section{Expectation Values}
+
+An expectation value $\bigbraket{B}{X}{A}$ is
+\[
+\bigbraket{B}{X}{A} = \Tr \Pi_{i=1}^{L} B^{*s'_i}_i \otimes X^{s_i's_i}_i \otimes A^{s_i}_i
+\]
+For open boundary conditions, we can simplify this by starting from a boundary and working inwards.
+From the left-hand-side, suppressing the site label but adding the auxiliary space labels:
+\[
+E^a_{ij} = B^{*s'}_{0i} \: X^{s's}_{0a} \: A^s_{0j}
+\]
+or, supressing the auxiliary space label again,
+\[
+E^a = X^{s's}_{0a} \: B^{s' \dagger} \cdot A^s
+\]
+where $0$ represents the vacuum state.
+Working towards the center, adding a site gives
+\[
+E^{'a} = X^{s's}_{a'a} \: B^{s' \dagger} E^{a'} A^s
+\]
+Working from the right-hand-side, it is convenient to take the \textit{complex conjugate} matrix element:
+\[
+F^a_{ij} = B^{s'} \: X^{*s's}_{a0} \: A^{*s}_{j0}
+\]
+this makes the site-addition formula more regular:
+\[
+F^{'a'} = X^{*s's}_{a'a} \: B^{s'} F^a A^{s \dagger}
+\]
+which gives the expectation value
+\[
+\bigbraket{B}{X}{A} = \Tr E^a \; F^{a \dagger}
+\]
+this is equivalent to the inner product $\braket{E^a}{F^a}$.  We need to remember, if we evaluate
+matrix elements from the right to the left, to conjugate the final result.
+
+
+\end{document}

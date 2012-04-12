@@ -1,0 +1,15 @@
+#!/usr/bin/python
+#
+#
+# Wrapper script around the checkpoint/restartable DMRG program
+#
+
+QSubCommand = 'qsub'
+
+WorkDirectory = os.getenv('WORK')
+
+ScratchDirectory = os.getenv('SCRATCH')
+
+
+
+def main():

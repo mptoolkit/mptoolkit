@@ -1,0 +1,96 @@
+#!/usr/bin/env python
+# $Id$
+"""\
+ mqsub - wrapper for qsub
+ Manual queuing system, Created 2006-11-07 Ian McCulloch
+
+ bugs: of any of the arguments to qsub (except the script itself)
+       are relative paths, they will get
+       messed up when we copy the script file.
+"""
+
+from mqconfig import *
+from mqcommon import QsubOptions
+import os,sys,getopt,tempfile,os.path,socket
+
+def read_script(file):
+    'Read the script file'
+
+def first(list): return list[0]
+
+def usage():
+   print "usage: mqsub [-a  date_time] [-A account_string] [-c interval] "
+   print "[-C directive_prefix] [-e path] [-h] [-j join] [-k keep] "
+   print "[-l resource_list] [-m mail_options] [-M user_list] [-N name] "
+   print "[-o path] [-p priority] [-q  destination]  [-r c]  [-S path_list] "
+   print "[-u user_list] [-v variable_list] [-V] [-W additional_attributes] "
+   print "[-z] [--top] [script]"
+   print
+   print "See man qsub(1B) for an explanation."
+   print "The --top option places the job at the top of the runqueue."
+
+def main():
+    argv = sys.argv[1:]
+    try:
+        optlist,args = getopt.getopt(argv, QsubOptions, 'top')
+    except getopt.GetoptError:
+        print "mqsub: error: error parsing options"
+        usage()
+        sys.exit(2)
+
+    if len(args) > 1:  # more than one script argument?
+        print "mqsub: error: more than one script supplied"
+        usage()
+        sys.exit(2)
+
+    # read the script
+    if not args or args[0] == '-' : # read the script from standard input
+        print "reading script from stdin"
+        Script = sys.stdin.readlines()
+        args = ['STDIN']
+    else:        # read from the supplied argument
+        try:
+            fi = open(args[0], 'r')
+        except IOError:
+            print "mqsub: error: cannot read the batch script"
+            sys.exit(1)
+        Script = fi.readlines()
+        fi.close()
+
+    # insert the preamble
+    HasNameOverride=False
+    if ScriptStartupCommand:
+        HashCount=0
+        for line in Script:
+            if line[0] != '#': break
+            if line.strip().replace(' ','')[0:6] == '#PBS-N':
+                HasNameOverride=True
+            HashCount=HashCount+1
+        Script[HashCount:HashCount] = [ScriptStartupCommand+'\n']
+    Script.append(ScriptShutdownCommand+'\n')
+
+    # if there wasn't a -N option for the script name, supply it ourselves
+    if not HasNameOverride and not map(lambda x: x[0], optlist).count('-N'):
+        optlist.append(('-N',os.path.basename(args[0])))
+
+    # copy the script to the pending-scripts directory
+    if not os.path.exists(ScriptDir):
+       os.makedirs(ScriptDir)
+    (ScriptFD,ScriptPath) = tempfile.mkstemp(prefix=ScriptPrefix, dir=ScriptDir)
+    os.write(ScriptFD, ''.join(Script))
+    os.close(ScriptFD)
+
+    # assemble the complete options + script name
+    CmdLine = ' '.join(map(lambda x: x[0]+' '+x[1], optlist))
+    CmdLine += ' '+ScriptPath
+    print "job script is stored at",ScriptPath
+
+    # run the mqadd command
+    if socket.gethostname() == ExecHost:
+        RunStr = MQAddCommand+' '+CmdLine
+    else:
+        RunStr = "ssh "+ExecHost+' '+MQAddCommand+' '+CmdLine
+    print RunStr
+    os.system(RunStr)
+
+if __name__ == '__main__': main()

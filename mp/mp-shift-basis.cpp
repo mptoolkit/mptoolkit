@@ -1,0 +1,79 @@
+// -*- C++ -*- $Id$
+
+#include "matrixproduct/lattice.h"
+#include "matrixproduct/mpwavefunction.h"
+#include "matrixproduct/mpoperatorlist.h"
+#include "quantumnumbers/all_symmetries.h"
+#include "pheap/pheap.h"
+#include "mp/copyright.h"
+#include <iostream>
+#include "interface/inittemp.h"
+#include "interface/operator-parser.h"
+#include "common/terminal.h"
+#include "common/environment.h"
+#include <boost/program_options.hpp>
+
+namespace prog_opt = boost::program_options;
+
+LinearWavefunction ShiftLocalBasis(LinearWavefunction const& Psi, QuantumNumber LocalShift)
+{
+   // the running quantum number that we shift the matrix basis.  initially zero
+   QuantumNumber MatrixShift(Psi.GetSymmetryList());
+
+   LinearWavefunction Result(Psi.GetSymmetryList());
+   LinearWavefunction::const_iterator I = Psi.end();
+   while (I != Psi.begin())
+   {
+      --I;
+      Result.push_front(ShiftLocalBasis(*I, LocalShift, MatrixShift));
+      MatrixShift = transform_targets(MatrixShift, LocalShift)[0]; // update running shift
+   }
+   return Result;
+}
+
+int main(int argc, char** argv)
+{
+   try
+   {
+      if (argc != 4)
+      {
+	 print_copyright(std::cerr);
+	 std::cerr << "usage: mp-shift-basis <quantum-number-name> <shift> <psi>\n";
+	 return 1;
+      }
+
+      std::string QName = argv[1];
+      std::string Shift = argv[2];
+      std::string FName = argv[3];
+      pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(FName, mp_pheap::CacheSize());
+
+      // get the symmetry type
+      int const s = Psi->GetSymmetryList().WhichSymmetry(QName);
+      if (s == -1)
+      {
+	 std::cerr << "mp-shift-basis: warning: \"" + QName 
+	    + "\" does not name a quantum number.\n";
+	 pheap::ShutdownPersistent(Psi);
+	 return 0; // this isn't really an error
+      }
+
+      // construct the shift quantum number
+      // firstly, a symmetry list consisting only of the relevant symmetry
+      std::string SL = QName + ':' + Psi->GetSymmetryList().SymmetryType(s);
+      QuantumNumber ShiftQ(SL, Shift); // construct the 1-component quantum number
+      ShiftQ.Coerce(Psi->GetSymmetryList()); // map that into the full symmetry list
+
+      Psi = pvalue_ptr<MPWavefunction>(new MPWavefunction(ShiftLocalBasis(*Psi, ShiftQ)));
+      pheap::ShutdownPersistent(Psi);
+   }
+   catch (std::exception& e)
+   {
+      std::cerr << "Exception: " << e.what() << '\n';
+      return 1;
+   }
+   catch (...)
+   {
+      std::cerr << "Unknown exception!\n";
+      return 1;
+   }
+}

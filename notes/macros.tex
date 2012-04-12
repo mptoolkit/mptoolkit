@@ -1,0 +1,880 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                            %%
+%%             MACRO FILE for the PhD thesis of Ian Peter McCulloch           %%
+%%                                                                            %%
+%%                  (Last modified: Sunday 16th March, 1997)                  %%
+%%                                                                            %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%       NEW COMMANDS AND SHORTHAND NOTATIONS                                 %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                            %%
+%%       Definition of some useful Commands                                   %%
+%%                                                                            %%
+%%       \militarytime   :  24hr clock time                                   %%
+%%       \beq            :  \begin{equation}                                  %%
+%%       \eeq            :  \end{equation}                                    %%
+%%       \bea            :  \begin{eqnarray}                                  %%
+%%       \eea            :  \end{eqnarray}                                    %%
+%%       \beqstar        :  \begin{displaymath}                               %%
+%%       \eeqstar        :  \end{displaymath}                                 %%
+%%       \beastar        :  \begin{eqnarray*}                                 %%
+%%       \eeastar        :  \end{eqnarray*}                                   %%
+%%       \vektor         :  bold math                                         %%
+%%       \smvektor       :  small bold math                                   %%
+%%       \refeq{#1}      :  refer to an equation as Eq. (\ref{#1})            %%
+%%       \refsec{#1}      :  refer to a section as section \ref{#1}           %%
+%%       \reffig{#1}     :  refer to a figure as Fig. \ref{#1}                %%
+%%       \sreffig{#1}    :  refer to a figure as Fig. \ref{#1}  (start of sentence) %%
+%%                             (designed for the start of a sentence)         %%
+%%       \drawbox        :  draws a box at (#1,#2) of size #3 x#4             %%
+%%       \drawdmrg       :  draws schematic DMRG blocks at (#1,#2) of         %%
+%%                          widths #3 (left block) and #4 (right block)       %%
+%%                                                                            %%
+
+   \newcount\hour
+   \newcount\minute
+   \newtoks\amorpm
+   \hour=\time\divide\hour by60
+   \minute=\time{\multiply\hour by60 \global\advance\minute by-\hour}
+   \edef\militarytime{\number\hour:\ifnum\minute<10 0\fi\number\minute}
+
+   \newcommand{\beq}{\begin{equation}}
+   \newcommand{\eeq}{\end{equation}}
+   \newcommand{\bea}{\begin{eqnarray}}
+   \newcommand{\eea}{\end{eqnarray}}
+   \newcommand{\beqstar}{\begin{displaymath}}
+   \newcommand{\eeqstar}{\end{displaymath}}
+   \newcommand{\beastar}{\begin{eqnarray*}}
+   \newcommand{\eeastar}{\end{eqnarray*}}
+   \newcommand{\vektor}[1]{\mbox{\boldmath $#1$}}
+   \newcommand{\smvektor}[1]{\mbox{\boldmath \scriptsize $#1$}}
+   \newcommand{\refeq}[1]{Eq.\ (\ref{#1})}
+   \newcommand{\refsec}[1]{section \ref{#1}}
+   \newcommand{\reffig}[1]{Fig.\ \ref{#1}}
+   \newcommand{\sreffig}[1]{Fig.\ \ref{#1}}
+
+   \newcount\x \newcount\xx \newcount\y \newcount\yy
+
+\def\drawbox#1#2#3#4{
+\x=#1 \y=#2 \xx = #1 \advance \xx by #3 \yy = #2 \advance \yy by #4
+\put(\x,\y){\line(1,0){#3}}
+\put(\x,\yy){\line(1,0){#3}}
+\put(\x,\y){\line(0,1){#4}}
+\put(\xx,\y){\line(0,1){#4}}
+}
+
+\def\drawdmrg#1#2#3#4{
+\drawbox{#1}{#2}{#3}{2}
+\x=#1
+\y=#2
+\xx=#1 \advance \xx by 1 \advance \xx by #3
+\yy=#2 \advance \yy by 1
+\put(\xx,\yy){\circle*{0.8}}
+\advance \xx by 2
+\put(\xx,\yy){\circle*{0.8}}
+\advance \xx by 1
+\drawbox{\xx}{\y}{#4}{2}
+}
+
+%%                                                                            %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                            %%
+%%       Definition of some common Text Shorthands                            %%
+%%                                                                            %%
+%%       \ie          :  i.e.     id est                     (that is)        %%
+%%       \eg          :  e.g.     exempli gratia             (for example)    %%
+%%       \etc         :  etc.     et cetera                  (and so on)      %%
+%%       \etal        :  et al.   et alii/aliae/alia/alius   (and others)     %%
+%%       \cf          :  cf.      confer                     (compare)        %%
+%%       \cetpar      :  ceteris paribus               (all else being equal) %%
+%%       \apriori     :  a priori                      (from cause to effect) %%
+%%       \perse       :  per se                              ( by itself)     %%
+%%       \viceversa   :  vice versa                           ( in reverse)   %%
+%%       \primafacie  :  prima facie   (sufficient unless or until disproved) %%
+%%                                                                            %%
+
+   \newcommand{\ie}{\mbox{\it i.e. \/}}
+   \newcommand{\eg}{\mbox{\it e.g. \/}}
+   \newcommand{\etc}{\mbox{\it etc. \/}}
+   \newcommand{\etal}{\mbox{\it et al. \/}}
+   \newcommand{\cf}{\mbox{\it cf. \/}}
+   \newcommand{\cetpar}{\mbox{\it ceteris paribis \/}}
+   \newcommand{\apriori}{\mbox{\it a priori \/}}
+   \newcommand{\perse}{\mbox{\it per se \/}}
+   \newcommand{\viceversa}{\mbox{\it vice versa \/}}
+   \newcommand{\primafacie}{\mbox{\it prima facie \/}}
+
+%%                                                                            %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                            %%
+%%       Definition of some common Mathematical Symbols and Notation          %%
+%%                                                                            %%
+%%       \rat=Q       :  The set of Rational Numbers                          %%
+%%       \nat=N       :  The set of Natural Numbers                           %%
+%%       \integer=Z   :  The set of Integers  (I have a replacement!)         %%
+%%       \reals=R     :  The set of Real Numbers                              %%
+%%       \field=K     :                                                       %%
+%%       \complex=C   :  The set of Complex Numbers                           %%
+%%       \domain=D    :                                                       %%
+%%                                                                            %%
+%%       \smallfrac{#1}{#2}       :  Produces a small fraction                %%
+%%       \bmath{#1}               :  Produces bold math characters            %%
+%%       \bmaths{#1}              :  Produces scriptsize bold math characters %%
+%%                                :  (especially for lower case greek letters)%%
+%%       \bigsum                  :  Produces a big summation sign            %%
+%%       \bigint                  :  Produces a big integral sign             %%
+%%       \bigprod                  :  Produces a big product sign             %%
+%%                                                                            %%
+%%       \chem{#1}                :  chemical formula. Roman math.            %%
+%%       \tr       \Tr            :  Trace of a matrix                        %%
+%%       \real     \imag          :  Real and Imaginary parts                 %%
+%%       \plus     \minus         :  + and - with smaller spaces              %%
+%%       \te  \tz  \td  \tv       :  The 4 standard theta functions (1,2,3,4) %%
+%%   \p \q \qs  \ELL \ELLs \ELLt  :  The elliptic nome and quantum group par. %%
+%%       \ket{#1}                 :  Dirac notation | #1 >                    %%
+%%       \bra{#1}                 :  Dirac notation < #1 |                    %%
+%%       \rket{#1}                :  reduced ket  || #1 >                     %%
+%%       \rbra{#1}                :  reduced bra < #1 ||                      %%
+%%       \mpket{#1}               :  Dirac notation | #1 >_{MP}               %%
+%%       \braket{#2}              :  < #1 | #2 >                              %%
+%%       \rbraket{#2}             :  < #1 || #2 >                             %%
+%%       \bigbraket{#3}           :  < #1 | #2 | #3 >                         %%
+%%       \mpbigbraket{#3}         :  < #1 | #2 | #3 >_{MP}                    %%
+%%       \rbigbraket{#3}          :  < #1 || #2 || #3 >                       %%
+%%       \com{#2}                 :  [#1,#2]                                  %%
+%%       \anticom{#2}             :  \{#1,#2\}                                %%
+%%       \itensor                 :  \vektor{#1}^{[#2]}                       %%
+%%       \itensordag                 :  \vektor{#1}^{\dagger[#2]}             %%
+%%       \citensor                 :  \vektor{\bar{#1}}^{[#2]}                %%
+%%       \itensorcomp             :  \hbox{{#1}^{[#2]}_{#3}}                  %%
+%%       \itensors                :  \vektor{#1}^{[#2]}_{#3}                  %%
+%%       \itensorss               :  \vektor{#1}^{[#2]#3}_{#4}                %%
+%%       \smitensor               :  \smvektor{#1}^{[#2]}                     %%
+%%       \itensorcoupling}        :  \left( #1 \bmath{\times}#2\right)^{[#3]} %%
+%%       \JRKKY                   :  J_{RKKY}                                 %%
+%%       \rmsub{#1}               :  roman scriptsize                         %%
+%%                                                                            %%
+
+   \makeatletter
+
+   \newcommand{\nat}{{\rm I \mkern-2.5mu \nonscript\mkern-.5mu I \mkern-5.5mu 
+                      N}} 
+%   \newcommand{\integer}{{\setbox0\hbox{\m@th$\fam\sffam Z$}
+%                          \setbox1\hbox{\rm\kern.05\wd0 \rlap{\vrule 
+%                          height.93\ht0 depth-.75\ht0 width.056\wd0 }%
+%                          \kern-.13\wd0 \copy0 \kern-.6\wd0 \copy0 
+%                          \kern-.1\wd0 \llap{\vrule height.25\ht0 depth\z@ 
+%                          width.056\wd0}% 
+%                          \kern.05\wd0} \mathchoice{\copy1}{\copy1}{\mit 
+%                          Z\mkern-8mu Z}{\mit Z\mkern-7.5mu Z} }} 
+   \newcommand{\integer}{\:\mbox{\sf Z} \hspace{-0.82em} \mbox{\sf Z}\,}
+   \def\@@insvline#1#2{{\setbox0\hbox{\m@th$#1\rm I$} \rlap{\m@th$#1 \mkern5mu 
+                        \vrule height.92\ht0 depth-.05\ht0 width.09\ht0 $} 
+                        {\rm #2} }} 
+   \newcommand{\rat}{\mathpalette\@@insvline{Q}}
+   \newcommand{\reals}{{\rm I \mkern-2.5mu \nonscript\mkern-.5mu R}}
+   \newcommand{\complex}{\mathpalette\@@insvline{C}} 
+   \newcommand{\field}{{\rm I \mkern-2.5mu \nonscript\mkern-.5mu K}} 
+   \newcommand{\domain}{{\rm I \mkern-2.5mu \nonscript\mkern-.5mu D}} 
+   \newcommand{\smallfrac}[2]{\mbox{\small $\frac{#1}{#2}$}}
+   \newcommand{\bmath}[1]{\mbox{\boldmath{$#1$}}}
+   \newcommand{\bmaths}[1]{\mbox{\boldmath{\scriptsize $#1$}}}
+
+   \font\largesignfont=cmex10 scaled \magstep2
+   \newcommand{\bigint}[2]{\hbox{$\textfont3=\largesignfont\displaystyle
+               \int_{#1}^{#2}$}}
+   \newcommand{\bigsum}[2]{\hbox{$\textfont3=\largesignfont\displaystyle
+               \,\sum_{#1}^{#2}\,$}}
+   \newcommand{\bigprod}[2]{\hbox{$\textfont3=\largesignfont\displaystyle
+               \,\prod_{#1}^{#2}\,$}}
+   
+   \newcommand{\tr}{\mathop{\rm tr}}
+   \newcommand{\Tr}{\mathop{\rm Tr}}
+   \newcommand{\real}{\mathop{\it {\Re}e}}
+   \newcommand{\imag}{\mathop{\it {\Im}m}}
+   \newcommand{\plus}{\mathop{\!+\!}}
+   \newcommand{\minus}{\mathop{\!-\!}}
+   \newcommand{\te}{\vartheta_1}
+   \newcommand{\tz}{\vartheta_2}
+   \newcommand{\td}{\vartheta_3}
+   \newcommand{\tv}{\vartheta_4}
+   \newcommand{\p}{\mbox{p}}
+   \newcommand{\q}{\mbox{q}}
+   \newcommand{\qs}{\mbox{\scriptsize q}}
+   \newcommand{\ELL}{\mathrm{L}}
+   \newcommand{\ELLs}{\mathrm{\scriptscriptstyle L}}
+   \newcommand{\ELLt}{\mbox{\tiny L}}
+   \newcommand\vpint{{\rm -}\kern -1.1em\int_{-\infty}^\infty}
+
+   \newcommand{\ket}[1]{\hbox{$\mid \! {#1} \rangle$}}
+   \newcommand{\bra}[1]{\langle #1 |}
+
+   \newcommand{\rket}[1]{\| #1 \rangle}
+   \newcommand{\rbra}[1]{\langle #1 \|}
+
+   \newcommand{\mpket}[1]{| #1 \rangle_{\scriptstyle MP}}
+   \newcommand{\mpbigbraket}[3]{\langle \, #1 \, | \, #2 \, | \, #3 \, \rangle_{\scriptstyle MP}}
+   \newcommand{\mpbraket}[2]{\langle \, #1 \, | \, #2 \, \rangle_{\scriptstyle MP}}
+
+   \newcommand{\braket}[2]{\langle #1 | #2 \rangle}
+   \newcommand{\bigbraket}[3]{\langle \, #1 \, | \, #2 \, | \, #3 \, \rangle}
+
+   \newcommand{\rbraket}[2]{\langle #1 \| #2 \rangle}
+   \newcommand{\rbigbraket}[3]{\langle \, #1 \, \| \, #2 \, \| \, #3 \, \rangle}
+
+   \newcommand{\com}[2]{{\big[} #1 \, , \, #2 {\big]}}
+   \newcommand{\anticom}[2]{{\big\{} #1 \, , \, #2 {\big\}}}
+
+   \newcommand{\gcom}[3]{\left[ #1 \, , \, #2 \right]^{[#3]}}
+   \newcommand{\ganticom}[3]{\left\{ #1 \, , \, #2 \right\}^{[#3]}}
+
+   \newcommand{\theorem}[1]{{\it #1}}
+
+   \newcommand{\definition}[2]{{\bf Definition} \quad {\it #1} \\ {#2}}
+
+   \newcommand{\itensor}[2]{\hbox{$\vektor{#1}^{[#2]}$}}
+   \newcommand{\citensor}[2]{\hbox{$\vektor{\bar{#1}}^{[#2]}$}}
+   \newcommand{\itensorcomp}[3]{\hbox{${#1}^{[#2]}_{#3}$}}
+   \newcommand{\itensors}[3]{\hbox{$\vektor{#1}^{[#2]}_{#3}$}}
+   \newcommand{\itensorss}[4]{\hbox{$\vektor{#1}^{[#2]#3}_{#4}$}}
+   \newcommand{\smitensor}[2]{\hbox{$\smvektor{#1}^{\scriptscriptstyle [#2]}$}}
+
+   \newcommand{\itensordag}[2]{\hbox{$\vektor{#1}^{\dagger[#2]}$}}
+   \newcommand{\itensordags}[3]{\hbox{$\vektor{#1}^{\dagger[#2]}_{#3}$}}
+
+
+   \newcommand{\itensorcoupling}[3]{\hbox{${\big[} #1 \bmath{\times} #2 {\big]}$}^{[#3]}}
+
+   \newcommand{\itensoroutercoupling}[3]{\hbox{${\big[} #1 \bmath{\otimes} #2 {\big]}$}^{[#3]}}
+
+   \newcommand{\lsim}{\;{\lower4pt\hbox{$\stackrel  {\displaystyle <} \sim$}}\;}
+   \newcommand{\gsim}{\;{\lower4pt\hbox{$\stackrel  {\displaystyle >} \sim$}}\;}
+
+   \newcommand{\rmsub}[1]{\mbox{\scriptsize #1}}
+
+   \newcommand{\JRKKY}{J_{\mbox{\scriptsize RKKY}}}
+
+   \newcommand{\chem}[1]{\hbox{$\rm #1$}}
+
+   \makeatother
+
+%%                                                                            %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                            %%
+%%      Definition of some useful  Shorthands                                 %%
+%%                                                                            %%
+%%                            {1}{2}{3}                                       %%
+%%      \qcg              :  C                                                %%
+%%                            {4}{5}{6}                                       %%
+%%                                                                            %%
+%%                            ( {1}{2}{3} )                                   %%
+%%      \qsixj            :   <           >                                   %%
+%%                            ( {4}{5}{6} ){7}                                %%
+%%                                                                            %%
+%%      \qthreej         :    ( {1}{2}{3} )                                   %%
+%%                            ( {4}{5}{6} )                                   %%
+
+   \newcommand{\qcg}[6]{ \mbox{$C {}^{#1}_{#4} {}^{#2}_{#5} {}^{#3}_{#6}$} }
+
+   \newcommand{\gencg}[7]{ \mbox{$\left( {}^{#1}_{#2} {}^{#3}_{#4} \vert 
+                {}^{#5}_{#6} {}^{,#7} \right)$} }
+
+   \newcommand{\gencginv}[7]{ \mbox{$\left( {}^{#3,}_{} {}^{#1}_{#2} \vert 
+        {}^{#4}_{#5} {}^{#6}_{#7} \right)$} }
+
+   \newcommand{\qracah}[6]{ W \left( {#1},{#2},{#3},{#4} ; {#5},{#6} \right) }
+
+   \newcommand{\qsixj}[6]{\mbox{$\left\{ \begin{array}{ccc} \!{#1}\! &
+                                \!{#2}\! & \!{#3}\! \\ \!{#4}\! & \!{#5}\! &
+                                \!{#6}\! \end{array} \right\}$}}
+
+   \newcommand{\qthreej}[6]{\mbox{$\left( \begin{array}{ccc} \!{#1}\! &
+                                \!{#2}\! & \!{#3}\! \\ \!{#4}\! & \!{#5}\! &
+                                \!{#6}\! \end{array} \right)$}}
+
+   \newcommand{\qsixjx}[7]{\mbox{$\left\{ \begin{array}{ccc} \!{#1}\! &
+                                \!{#2}\! & \!{#3}\! \\ \!{#4}\! & \!{#5}\! &
+                                \!{#6}\! \end{array} \right\}_{\!\!\mbox{\scriptsize 
+                                #7}}$}}
+
+   \newcommand{\qninej}[9]{\mbox{$\left\{ \begin{array}{ccc} \!{#1}\! &
+                                \!{#2}\! & \!{#3}\! \\ \!{#4}\! & \!{#5}\! &
+                                \!{#6}\! \\ \!{#7}\! & \!{#8}\! & \!{#9}\! 
+                                \end{array} \right\}$}}
+
+   \newcommand{\qninejsq}[9]{\mbox{$\left[ \begin{array}{ccc} \!{#1}\! &
+                                \!{#2}\! & \!{#3}\! \\ \!{#4}\! & \!{#5}\! &
+                                \!{#6}\! \\ \!{#7}\! & \!{#8}\! & \!{#9}\! 
+                                \end{array} \right]$}}
+
+%%                                                                            %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                            %%
+%%      Definition of some useful S-matrix and Lattice Stat. Mech. Pictures   %%
+%%                                                                            %%
+%%      \picsmatrix{a}{b}{c}{d}{theta1}{theta2}                               %%
+%%      \picupcoupling{a}{b}{c}                                               %%
+%%      \picdowncoupling{a}{b}{c}                                             %%
+%%      \picleftfactorisation                                                 %%
+%%      \picrightfactorisation                                                %%
+%%      \picleftbootstrap                                                     %%
+%%      \picrightbootstrap                                                    %%
+%%      \picboltzmannweight{a}{b}{u}{v}{k}                                    %%
+%%      \pictransfermatrix{a}{b}{u}{v}{k}                                     %%
+%%      \piclattice                                                           %%
+%%      \pickinkprojmap                                                       %%
+%%      \pickinkscatt                                                         %%
+%%      \picstheta                                                            %%
+%%      \pictwopart                                                           %%
+%%                                                                            %%
+
+   \newcommand{\picsmatrix}[6]{\setlength{\unitlength}{4mm}
+                  \rule[-3.7\unitlength]{0mm}{6\unitlength}
+                  \hspace{4\unitlength} \begin{picture}(4,3)(0,0)
+                  {\thicklines
+                  \put(-3.0,-2.5){\line(1,1){5}} \put(-3.0,2.5){\line(1,-1){5}}
+                  }
+                  \put(-2.5,-0.2){\makebox(0,0)[c]{\mbox{$#1$}}}
+                  \put(1.5,-0.2){\makebox(0,0)[c]{\mbox{$#2$}}}
+                  \put(-0.5,-2.0){\makebox(0,0)[c]{\mbox{$#3$}}}
+                  \put(-0.5,1.8){\makebox(0,0)[c]{\mbox{$#4$}}}
+                  \put(-3.2,-3.2){\makebox(0,0)[c]{\mbox{$#5$}}}
+                  \put(2.4,-3.2){\makebox(0,0)[c]{\mbox{$#6$}}}
+                  \end{picture}}
+   \newcommand{\picupcoupling}[3]{\setlength{\unitlength}{3mm}
+                  \rule[-3.7\unitlength]{0mm}{6\unitlength}
+                  \hspace{4\unitlength} \begin{picture}(4,3)(0,0)
+                  {\thicklines
+                  \put(-0.5,0){\line(-1,-1){2.5}}
+                  \put(-0.5,0){\line(1,-1){2.5}}
+                  \put(-0.5,0){\line(0,1){2.8}}
+                  }
+                  \put(-2.2,0.6){\makebox(0,0)[c]{\mbox{$#1$}}}
+                  \put(1.2,0.6){\makebox(0,0)[c]{\mbox{$#2$}}}
+                  \put(-0.5,-2.0){\makebox(0,0)[c]{\mbox{$#3$}}}
+                  \end{picture}}
+   \newcommand{\picdowncoupling}[3]{\setlength{\unitlength}{3mm}
+                  \rule[-3.7\unitlength]{0mm}{6\unitlength}
+                  \hspace{4\unitlength} \begin{picture}(4,3)(0,0)
+                  {\thicklines
+                  \put(-0.5,0){\line(-1,1){2.5}}
+                  \put(-0.5,0){\line(1,1){2.5}}
+                  \put(-0.5,0){\line(0,-1){2.8}}
+                  }
+                  \put(-2.2,-0.6){\makebox(0,0)[c]{\mbox{$#1$}}}
+                  \put(1.2,-0.6){\makebox(0,0)[c]{\mbox{$#2$}}}
+                  \put(-0.5,2.0){\makebox(0,0)[c]{\mbox{$#3$}}}
+                  \end{picture}}
+   \newcommand{\picleftfactorisation}{\setlength{\unitlength}{3mm}
+                  \rule[-9\unitlength]{0mm}{6\unitlength} \hspace{6\unitlength}
+                  \begin{picture}(8,8)(0,0) 
+                  {\thicklines 
+                  \put(-1.5,-7.5){\line(0,1){15}}
+                  \put(-5.5,6.0){\line(3,-2){12.2}}
+                  \put(-5.5,-6.0){\line(3,2){12.2}}
+                  }
+                  \put(-3.4,-0.1){\makebox(0,0)[c]{\mbox{$\alpha$}}}
+                  \put(-3.0,-6.2){\makebox(0,0)[c]{\mbox{$\beta$}}}
+                  \put(2.0,-4.2){\makebox(0,0)[c]{\mbox{$\gamma$}}}
+                  \put(5.8,0.0){\makebox(0,0)[c]{\mbox{$\delta$}}}
+                  \put(2.0,3.6){\makebox(0,0)[c]{\mbox{$\epsilon$}}}
+                  \put(-3.0,6.0){\makebox(0,0)[c]{\mbox{$\eta$}}}
+                  \put(0.2,-0.2){\makebox(0,0)[c]{\mbox{$\mu$}}}
+                  \put(-5.8,-6.8){\makebox(0,0)[c]{\mbox{$\theta_{1}$}}}
+                  \put(-1.4,-8.4){\makebox(0,0)[c]{\mbox{$\theta_{2}$}}}
+                  \put(7.4,-2.6){\makebox(0,0)[c]{\mbox{$\theta_{3}$}}}
+                  \end{picture}
+                  \hspace{2\unitlength}}
+   \newcommand{\picrightfactorisation}{\setlength{\unitlength}{3mm}
+                  \rule[-9\unitlength]{0mm}{6\unitlength}
+                  \hspace{10\unitlength} \begin{picture}(8,8)(0,0)
+                  {\thicklines
+                  \put(1.5,-7.5){\line(0,1){15}}
+                  \put(5.5,6.0){\line(-3,-2){12.2}}
+                  \put(5.5,-6.0){\line(-3,2){12.2}}
+                  }
+                  \put(-5.6,-0.1){\makebox(0,0)[c]{\mbox{$\alpha$}}}
+                  \put(2.9,-6.1){\makebox(0,0)[c]{\mbox{$\gamma$}}}
+                  \put(-2.2,-4.2){\makebox(0,0)[c]{\mbox{$\beta$}}}
+                  \put(3.4,0.0){\makebox(0,0)[c]{\mbox{$\delta$}}}
+                  \put(-2.2,3.6){\makebox(0,0)[c]{\mbox{$\eta$}}}
+                  \put(3.1,6.0){\makebox(0,0)[c]{\mbox{$\epsilon$}}}
+                  \put(-0.3,-0.2){\makebox(0,0)[c]{\mbox{$\mu$}}}
+                  \put(6.2,-6.6){\makebox(0,0)[c]{\mbox{$\theta_{3}$}}}
+                  \put(1.6,-8.4){\makebox(0,0)[c]{\mbox{$\theta_{2}$}}}
+                  \put(-7.0,-3.0){\makebox(0,0)[c]{\mbox{$\theta_{1}$}}}
+                  \end{picture}}
+   \newcommand{\picleftbootstrap}{\setlength{\unitlength}{3mm}
+                  \rule[-9\unitlength]{0mm}{6\unitlength}
+                  \hspace{6\unitlength} \begin{picture}(8,8)(0,0)
+                  {\thicklines
+                  \put(-1.0,-2.5){\line(-1,-1){3.5}}
+                  \put(-1.0,-2.5){\line(1,-4){1.0}}
+                  \put(-1.0,-2.5){\line(2,5){2.0}}
+                  \put(1.0,2.5){\line(1,1){3.5}}
+                  \put(1.0,2.5){\line(-1,4){1.18}}
+                  \put(-5.0,2.0){\line(2,-1){10.0}}
+                  }
+                  \put(-3.4,-1.8){\makebox(0,0)[c]{\mbox{$\alpha$}}}
+                  \put(-2.0,-5.6){\makebox(0,0)[c]{\mbox{$\beta$}}}
+                  \put(1.6,-3.8){\makebox(0,0)[c]{\mbox{$\gamma$}}}
+                  \put(3.0,0.8){\makebox(0,0)[c]{\mbox{$\delta$}}}
+                  \put(1.8,4.8){\makebox(0,0)[c]{\mbox{$\epsilon$}}}
+                  \put(-1.8,2.8){\makebox(0,0)[c]{\mbox{$\eta$}}}
+                  \put(-4.8,-6.8){\makebox(0,0)[c]{\mbox{$\theta_{1}$}}}
+                  \put(0.4,-7.4){\makebox(0,0)[c]{\mbox{$\theta_{2}$}}}
+                  \put(5.8,-3.6){\makebox(0,0)[c]{\mbox{$\theta_{3}$}}}
+                  \end{picture}
+                  \hspace{2\unitlength}}
+   \newcommand{\picrightbootstrap}{\setlength{\unitlength}{3mm}
+                  \rule[-9\unitlength]{0mm}{6\unitlength}
+                  \hspace{10\unitlength} \begin{picture}(8,8)(0,0)
+                  {\thicklines
+                  \put(-1.0,-2.5){\line(-1,-1){3.5}}
+                  \put(-1.0,-2.5){\line(1,-4){1.0}}
+                  \put(-1.0,-2.5){\line(2,5){1.0}}
+                  \put(0.0,0.0){\line(1,1){6.0}}
+                  \put(0.0,0.0){\line(-1,4){1.8}}
+                  \put(-5.5,6.0){\line(2,-1){12.0}}
+                  }
+                  \put(-3.0,0.4){\makebox(0,0)[c]{\mbox{$\alpha$}}}
+                  \put(-2.0,-5.6){\makebox(0,0)[c]{\mbox{$\beta$}}}
+                  \put(2.4,-2.0){\makebox(0,0)[c]{\mbox{$\gamma$}}}
+                  \put(5.4,2.8){\makebox(0,0)[c]{\mbox{$\delta$}}}
+                  \put(1.4,4.8){\makebox(0,0)[c]{\mbox{$\epsilon$}}}
+                  \put(-2.8,6.0){\makebox(0,0)[c]{\mbox{$\eta$}}}
+                  \put(0.6,1.8){\makebox(0,0)[c]{\mbox{$\mu$}}}
+                  \put(7.2,-0.6){\makebox(0,0)[c]{\mbox{$\theta_{3}$}}}
+                  \put(0.4,-7.4){\makebox(0,0)[c]{\mbox{$\theta_{2}$}}}
+                  \put(-4.8,-6.8){\makebox(0,0)[c]{\mbox{$\theta_{1}$}}}
+                  \end{picture}}
+   \newcommand{\picboltzmannweight}[5]{\setlength{\unitlength}{4mm}
+                  \hspace{2\unitlength} \rule[-3.7\unitlength]{0mm}{
+                  6.2\unitlength} \begin{picture}(6,3)(0,-0.3)
+                  {\thicklines
+                  \put(2.5,-2.5){\line(0,1){5}} \put(5,0){\line(-1,0){5}}
+                  }
+                  \put(2.6,-3.4){\makebox(0,0)[b]{\mbox{$#4_{#5}$}}}
+                  \put(-0.5,0){\makebox(0,0)[r]{\mbox{$#3$}}}
+                  \put(1.4,0.8){\makebox(0,0)[b]{\mbox{$#2_{#5}$}}}
+                  \put(4.1,0.8){\makebox(0,0)[b]{\mbox{$#2_{#5+1}$}}}
+                  \put(1.4,-1.4){\makebox(0,0)[b]{\mbox{$#1_{#5}$}}}
+                  \put(4.1,-1.4){\makebox(0,0)[b]{\mbox{$#1_{#5+1}$}}}
+                  \end{picture}}
+   \newcommand{\pictransfermatrix}[5]{\setlength{\unitlength}{4mm}
+                  \hspace{2\unitlength} \rule[-3.7\unitlength]{0mm}{
+                  6.2\unitlength} \begin{picture}(17,3)(0,-0.3) 
+                  {\thicklines
+                  \put(2.5,-2.5){\line(0,1){5}} \put(6,-2.5){\line(0,1){5}}
+                  \put(8.5,0){\line(-1,0){8.5}} \put(11.5,0){\line(1,0){5}}
+                  \put(14,-2.5){\line(0,1){5}} 
+                  }
+                  \put(9.4,0){\makebox(0,0)[l]{\mbox{$\ldots$}}} 
+                  \put(-0.5,0){\makebox(0,0)[r]{\mbox{$#3$}}}
+                  \put(2.7,-3.4){\makebox(0,0)[b]{\mbox{$#4_{1}$}}}
+                  \put(6.2,-3.4){\makebox(0,0)[b]{\mbox{$#4_{2}$}}}
+                  \put(14.3,-3.4){\makebox(0,0)[b]{\mbox{$#4_{#5}$}}}
+                  \put(1.4,0.8){\makebox(0,0)[b]{\mbox{$#2_{1}$}}}
+                  \put(4.3,0.8){\makebox(0,0)[b]{\mbox{$#2_{2}$}}}
+                  \put(15.4,0.8){\makebox(0,0)[b]{\mbox{$#2_{1}$}}}
+                  \put(7.4,0.8){\makebox(0,0)[b]{\mbox{$#2_{3}$}}}
+                  \put(12.9,0.8){\makebox(0,0)[b]{\mbox{$#2_{#5}$}}}
+                  \put(1.4,-1.4){\makebox(0,0)[b]{\mbox{$#1_{1}$}}}
+                  \put(4.3,-1.4){\makebox(0,0)[b]{\mbox{$#1_{2}$}}}
+                  \put(15.4,-1.4){\makebox(0,0)[b]{\mbox{$#1_{1}$}}}
+                  \put(7.4,-1.4){\makebox(0,0)[b]{\mbox{$#1_{3}$}}}
+                  \put(12.9,-1.4){\makebox(0,0)[b]{\mbox{$#1_{#5}$}}}
+                  \end{picture}}
+
+   \newcommand{\piclattice}{\setlength{\unitlength}{12mm}
+                  \begin{picture}(10,9.5)(0,-0.5)
+                  {\thicklines
+                  \multiput(1.0,0.0)(1,0){3}{\line(0,1){3.5}}
+                  \multiput(1.0,5.5)(1,0){3}{\line(0,1){2.5}}
+                  \multiput(8.0,0.0)(1,0){2}{\line(0,1){3.5}}
+                  \multiput(8.0,5.5)(1,0){2}{\line(0,1){2.5}}
+                  \multiput(0.0,1.0)(0,1){3}{\line(1,0){3.5}}
+                  \multiput(7.5,1.0)(0,1){3}{\line(1,0){2.5}}
+                  \multiput(0.0,6.0)(0,1){2}{\line(1,0){3.5}}
+                  \multiput(7.5,6.0)(0,1){2}{\line(1,0){2.5}}
+                  \qbezier[30](3.5,1.0)(5.5,1.0)(7.5,1.0)
+                  \qbezier[30](3.5,2.0)(5.5,2.0)(7.5,2.0)
+                  \qbezier[30](3.5,3.0)(5.5,3.0)(7.5,3.0)
+                  \qbezier[30](3.5,6.0)(5.5,6.0)(7.5,6.0)
+                  \qbezier[30](3.5,7.0)(5.5,7.0)(7.5,7.0)
+                  \qbezier[15](0.985,3.5)(0.985,4.5)(0.985,5.5)
+                  \qbezier[15](1.99,3.5)(1.99,4.5)(1.99,5.5)
+                  \qbezier[15](2.99,3.5)(2.99,4.5)(2.99,5.5)
+                  \qbezier[15](7.985,3.5)(7.985,4.5)(7.985,5.5)
+                  \qbezier[15](8.985,3.5)(8.985,4.5)(8.985,5.5)
+                  \qbezier[34](3.625,3.625)(5.5,4.5)(7.375,5.375)
+                  }
+                  {\thinlines
+                  \multiput(0.5,0.5)(0.267,0){12}{\line(1,0){0.1}}
+                  \multiput(7.5,0.5)(0.272,0){8}{\line(1,0){0.1}}
+                  \multiput(0.5,7.5)(0.267,0){12}{\line(1,0){0.1}}
+                  \multiput(7.5,7.5)(0.27,0){8}{\line(1,0){0.1}}
+                  \multiput(0.5,0.5)(0,0.26){12}{\line(0,1){0.18}}
+                  \multiput(9.5,0.5)(0,0.26){12}{\line(0,1){0.18}}
+                  \multiput(0.5,5.5)(0,0.26){8}{\line(0,1){0.18}}
+                  \multiput(9.5,5.5)(0,0.26){8}{\line(0,1){0.18}}
+                  \qbezier[30](3.5,0.5)(5.5,0.5)(7.5,0.5)
+                  \qbezier[30](3.5,7.5)(5.5,7.5)(7.5,7.5)
+                  \qbezier[15](0.49,3.5)(0.49,4.5)(0.49,5.5)
+                  \qbezier[15](9.495,3.5)(9.495,4.5)(9.495,5.5)
+                  }
+                  \put(-0.5,1.0){\makebox(0,0)[c]{\mbox{$u_{1}$}}}
+                  \put(-0.5,2.0){\makebox(0,0)[c]{\mbox{$u_{2}$}}}
+                  \put(-0.5,3.0){\makebox(0,0)[c]{\mbox{$u_{3}$}}}
+                  \put(-0.5,6.0){\makebox(0,0)[c]{\mbox{$u_{M-1}$}}}
+                  \put(-0.5,7.0){\makebox(0,0)[c]{\mbox{$u_{M}$}}}
+                  \put(1.05,-0.5){\makebox(0,0)[c]{\mbox{$v_{1}$}}}
+                  \put(2.1,-0.5){\makebox(0,0)[c]{\mbox{$v_{2}$}}}
+                  \put(3.1,-0.5){\makebox(0,0)[c]{\mbox{$v_{3}$}}}
+                  \put(8.2,-0.5){\makebox(0,0)[c]{\mbox{$v_{N-1}$}}}
+                  \put(9.15,-0.5){\makebox(0,0)[c]{\mbox{$v_{N}$}}}
+                  \put(0.5,0.5){\makebox(0,0)[c]{\mbox{$a_{1}^{(1)}$}}}
+                  \put(1.5,0.5){\makebox(0,0)[c]{\mbox{$a_{2}^{(1)}$}}}
+                  \put(2.5,0.5){\makebox(0,0)[c]{\mbox{$a_{3}^{(1)}$}}}
+                  \put(8.5,0.5){\makebox(0,0)[c]{\mbox{$a_{N}^{(1)}$}}}
+                  \put(9.5,0.5){\makebox(0,0)[c]{\mbox{$a_{1}^{(1)}$}}}
+                  \put(0.5,1.5){\makebox(0,0)[c]{\mbox{$a_{1}^{(2)}$}}}
+                  \put(1.5,1.5){\makebox(0,0)[c]{\mbox{$a_{2}^{(2)}$}}}
+                  \put(2.5,1.5){\makebox(0,0)[c]{\mbox{$a_{3}^{(2)}$}}}
+                  \put(8.5,1.5){\makebox(0,0)[c]{\mbox{$a_{N}^{(2)}$}}}
+                  \put(9.5,1.5){\makebox(0,0)[c]{\mbox{$a_{1}^{(2)}$}}}
+                  \put(0.5,2.5){\makebox(0,0)[c]{\mbox{$a_{1}^{(3)}$}}}
+                  \put(1.5,2.5){\makebox(0,0)[c]{\mbox{$a_{2}^{(3)}$}}}
+                  \put(2.5,2.5){\makebox(0,0)[c]{\mbox{$a_{3}^{(3)}$}}}
+                  \put(8.5,2.5){\makebox(0,0)[c]{\mbox{$a_{N}^{(3)}$}}}
+                  \put(9.5,2.5){\makebox(0,0)[c]{\mbox{$a_{1}^{(3)}$}}}
+                  \put(0.5,6.5){\makebox(0,0)[c]{\mbox{$a_{1}^{(M)}$}}}
+                  \put(1.5,6.5){\makebox(0,0)[c]{\mbox{$a_{2}^{(M)}$}}}
+                  \put(2.5,6.5){\makebox(0,0)[c]{\mbox{$a_{3}^{(M)}$}}}
+                  \put(8.5,6.5){\makebox(0,0)[c]{\mbox{$a_{N}^{(M)}$}}}
+                  \put(9.5,6.5){\makebox(0,0)[c]{\mbox{$a_{1}^{(M)}$}}}
+                  \put(0.5,7.5){\makebox(0,0)[c]{\mbox{$a_{1}^{(1)}$}}}
+                  \put(1.5,7.5){\makebox(0,0)[c]{\mbox{$a_{2}^{(1)}$}}}
+                  \put(2.5,7.5){\makebox(0,0)[c]{\mbox{$a_{3}^{(1)}$}}}
+                  \put(8.5,7.5){\makebox(0,0)[c]{\mbox{$a_{N}^{(1)}$}}}
+                  \put(9.5,7.5){\makebox(0,0)[c]{\mbox{$a_{1}^{(1)}$}}}
+                  \end{picture}}
+
+   \newcommand{\pickinkprojmap}{\setlength{\unitlength}{6mm}
+                  \rule[-3.7\unitlength]{0mm}{6.2\unitlength}
+                  \begin{picture}(19,9)(-2,-3)
+                  {\thicklines
+                  \put(2.5,-4.0){\line(0,1){8}} \put(6,-4.0){\line(0,1){8}}
+                  \put(14.9,-4.0){\line(0,1){8}}
+                  }
+                  {\thinlines
+                  \multiput(0.75,3.2)(1.01,0){8}{\line(1,0){0.5}}
+                  \multiput(0.75,-3.2)(1.01,0){8}{\line(1,0){0.5}}
+                  \multiput(12.146,3.2)(1.0,0){5}{\line(1,0){0.5}}
+                  \multiput(12.146,-3.2)(1.0,0){5}{\line(1,0){0.5}}
+                  \multiput(0.75,-3.2)(0,0.33){20}{\line(0,1){0.13}}
+                  \multiput(16.65,-3.2)(0,0.33){20}{\line(0,1){0.13}}
+                  \put(9.4,-6.4){\vector(1,0){7.25}}
+                  \put(8,-6.4){\vector(-1,0){7.25}}
+                  \put(-1.8,0.7){\vector(0,1){2.5}}
+                  \put(-1.8,-0.7){\vector(0,-1){2.5}}
+                  }
+                  \put(-1.8,0){\makebox(0,0)[c]{\mbox{$R$}}}
+                  \put(8.7,-6.4){\makebox(0,0)[c]{\mbox{$L$}}}
+                  \put(9.74,0){\makebox(0,0)[l]{\mbox{$\ldots$}}}
+                  \put(2.7,-5.2){\makebox(0,0)[b]{\mbox{$\theta_{1}$}}}
+                  \put(6.2,-5.2){\makebox(0,0)[b]{\mbox{$\theta_{2}$}}}
+                  \put(15.3,-5.2){\makebox(0,0)[b]{\mbox{$\theta_{N}$}}}
+                  \put(0.8,0.0){\makebox(0,0)[c]{\mbox{$\alpha_{1}$}}}
+                  \put(4.3,0.0){\makebox(0,0)[c]{\mbox{$\alpha_{2}$}}}
+                  \put(16.7,0.0){\makebox(0,0)[c]{\mbox{$\alpha_{1}$}}}
+                  \put(7.8,0.0){\makebox(0,0)[c]{\mbox{$\alpha_{3}$}}}
+                  \put(13.14,0.0){\makebox(0,0)[c]{\mbox{$\alpha_{N}$}}}
+                  \end{picture}}
+
+   \newcommand{\pickinkscatt}{\setlength{\unitlength}{7mm}
+                  \begin{picture}(19,12)(-1,-6.5)
+                  {\thicklines
+                  \put(2.5,-4.0){\line(0,1){8}} \put(14.9,-4.0){\line(0,1){8}}
+                  \put(8.7,-4.0){\line(0,1){1.65}}
+                  \put(8.7,2.35){\line(0,1){1.65}}
+                  \put(6.95,-4.0){\line(0,1){8}}
+                  \put(10.45,-4.0){\line(0,1){8}}
+                  \put(1.625,0.0){\line(6,1){2.125}}
+                  \put(15.775,0.0){\line(-6,-1){2.125}}
+                  \put(5.7,0.679){\line(6,1){0.99}}
+                  \put(11.7,-0.679){\line(-6,-1){0.9}}
+                  \qbezier(6.7,0.84)(8.8,1.12)(8.678,2.356)
+                  \qbezier(8.685,-2.356)(8.6,-1.12)(10.75,-0.84)
+                  }
+                  {\thinlines
+                  \multiput(1.625,-4.0)(0,0.3275){25}{\line(0,1){0.13}}
+                  \multiput(15.775,-4.0)(0,0.3275){25}{\line(0,1){0.13}}
+                  \qbezier[15](13.65,-0.354)(12.675,-0.5165)(11.7,-0.679)
+                  \qbezier[15](3.75,0.354)(4.725,0.5165)(5.7,0.679)
+                  \put(9.4,-6.4){\vector(1,0){6.375}}
+                  \put(8,-6.4){\vector(-1,0){6.375}}
+                  \put(-0.5,0.7){\vector(0,1){3.3}}
+                  \put(-0.5,-0.7){\vector(0,-1){3.3}}
+                  }
+                  \put(-0.5,0){\makebox(0,0)[c]{\mbox{$R$}}}
+                  \put(8.7,-6.4){\makebox(0,0)[c]{\mbox{$L$}}}
+                  \put(4.725,0.0){\makebox(0,0)[c]{\mbox{$\ldots$}}}
+                  \put(12.675,0.0){\makebox(0,0)[c]{\mbox{$\ldots$}}}
+                  \put(2.55,-4.8){\makebox(0,0)[c]{\mbox{$\theta_{1}$}}}
+                  \put(7.25,-4.8){\makebox(0,0)[c]{\mbox{$\theta_{k-1}$}}}
+                  \put(8.8,-4.8){\makebox(0,0)[c]{\mbox{$\theta_{k}$}}}
+                  \put(10.75,-4.8){\makebox(0,0)[c]{\mbox{$\theta_{k+1}$}}}
+                  \put(15.05,-4.8){\makebox(0,0)[c]{\mbox{$\theta_{N}$}}}
+                  \put(1.625,-2.5){\makebox(0,0)[c]{\mbox{$\alpha_{1}$}}}
+                  \put(3.375,-2.5){\makebox(0,0)[c]{\mbox{$\alpha_{2}$}}}
+                  \put(6.075,-2.5){\makebox(0,0)[c]{\mbox{$\alpha_{k-1}$}}}
+                  \put(7.825,-2.5){\makebox(0,0)[c]{\mbox{$\alpha_{k}$}}}
+                  \put(9.575,-2.5){\makebox(0,0)[c]{\mbox{$\alpha_{k+1}$}}}
+                  \put(11.325,-2.5){\makebox(0,0)[c]{\mbox{$\alpha_{k+2}$}}}
+                  \put(14.025,-2.5){\makebox(0,0)[c]{\mbox{$\alpha_{N}$}}}
+                  \put(15.775,-2.5){\makebox(0,0)[c]{\mbox{$\alpha_{1}$}}}
+                  \put(1.625,2.5){\makebox(0,0)[c]{\mbox{$\beta_{1}$}}}
+                  \put(3.375,2.5){\makebox(0,0)[c]{\mbox{$\beta_{2}$}}}
+                  \put(6.075,2.5){\makebox(0,0)[c]{\mbox{$\beta_{k-1}$}}}
+                  \put(7.825,2.5){\makebox(0,0)[c]{\mbox{$\beta_{k}$}}}
+                  \put(9.575,2.5){\makebox(0,0)[c]{\mbox{$\beta_{k+1}$}}}
+                  \put(11.325,2.5){\makebox(0,0)[c]{\mbox{$\beta_{k+2}$}}}
+                  \put(14.025,2.5){\makebox(0,0)[c]{\mbox{$\beta_{N}$}}}
+                  \put(15.775,2.5){\makebox(0,0)[c]{\mbox{$\beta_{1}$}}}
+                  \end{picture}}
+
+   \newcommand{\picstheta}{\setlength{\unitlength}{6.2mm}
+                  \begin{picture}(26,10)(2,-5)
+                  {\thicklines
+                  \put(2.0,0.15){\line(1,0){3.5}}
+                  \put(2.0,-0.15){\line(1,0){3.5}}
+                  \put(8.5,0.15){\line(1,0){3.175}}
+                  \put(8.5,-0.15){\line(1,0){3.175}}
+                  \put(5.5,0.005){\oval(0.3,0.3)[br]}
+                  \put(5.5,0.005){\oval(0.3,0.3)[tr]}
+                  \put(8.5,0.005){\oval(0.3,0.3)[bl]}
+                  \put(8.5,0.005){\oval(0.3,0.3)[tl]}
+                  \put(16.25,0){\line(1,0){9.325}}
+                  \put(16.25,3.0){\line(1,0){9.325}}
+                  \put(16.25,-3.0){\line(1,0){9.325}}
+                  }
+                  {\thinlines
+                  \put(2,0){\vector(1,0){10}} \put(16,0){\vector(1,0){10}}
+                  \put(4,-4){\vector(0,1){8}} \put(21,-4){\vector(0,1){8}}
+                  \multiput(2.075,-0.15)(0.075,0){48}{\line(0,1){0.3}}
+                  \multiput(2.075,-0.075)(0,0.075){3}{\line(1,0){3.55}}
+                  \multiput(8.425,-0.15)(0.075,0){43}{\line(0,1){0.3}}
+                  \multiput(8.4,-0.075)(0,0.075){3}{\line(1,0){3.175}}
+                  \multiput(5.675,-4)(0,0.41){20}{\line(0,1){0.2}}
+                  \multiput(8.325,-4)(0,0.41){20}{\line(0,1){0.2}}
+                  }
+                  \multiput(6.5,0)(0.5,0){3}{\circle*{0.2}}
+                  \multiput(21,1.0)(0,0.5){3}{\circle*{0.2}}
+                  \put(3.15,3.5){\makebox(0,0)[c]{\mbox{$\scriptstyle 
+                                 \imag(s)$}}}
+                  \put(11.5,-0.5){\makebox(0,0)[c]{\mbox{$\scriptstyle
+                                 \real(s)$}}}
+                  \put(20.15,3.5){\makebox(0,0)[c]{\mbox{$\scriptstyle
+                                 \imag(\theta)$}}}
+                  \put(25.5,-0.5){\makebox(0,0)[c]{\mbox{$\scriptstyle
+                                 \real(\theta)$}}}
+                  \put(9.35,0.5){\makebox(0,0)[c]{\mbox{\scriptsize I}}}
+                  \put(9.35,-0.5){\makebox(0,0)[c]{\mbox{\scriptsize II}}}
+                  \put(4.5,0.5){\makebox(0,0)[c]{\mbox{\scriptsize III}}}
+                  \put(4.5,-0.5){\makebox(0,0)[c]{\mbox{\scriptsize IV}}}
+                  \put(23.5,0.35){\makebox(0,0)[c]{\mbox{\scriptsize I}}}
+                  \put(18.5,0.35){\makebox(0,0)[c]{\mbox{\scriptsize II}}}
+                  \put(23.5,2.65){\makebox(0,0)[c]{\mbox{\scriptsize III}}}
+                  \put(18.5,2.65){\makebox(0,0)[c]{\mbox{\scriptsize IV}}}
+                  \put(9.6,-3.0){\makebox(0,0)[c]{\mbox{$\scriptstyle
+                                 (\!m_{1}\!+m_{2}\!)^{2}$}}}
+                  \put(4.5,-3.0){\makebox(0,0)[c]{\mbox{$\scriptstyle
+                                 (\!m_{1}\!-m_{2}\!)^{2}$}}}
+                  \put(20.625,2.725){\makebox(0,0)[c]{\mbox{$\scriptstyle 
+                                 i\pi$}}}
+                  \put(20.75,-0.3){\makebox(0,0)[c]{\mbox{$\scriptstyle 0$}}}
+                  \put(20.4,-3.29){\makebox(0,0)[c]{\mbox{$\scriptstyle
+                                 -i\pi$}}}
+                  \put(16,1.8){\makebox(0,0)[c]{\mbox{\scriptsize
+                                 \textit{Physical}}}}
+                  \put(16,1.2){\makebox(0,0)[c]{\mbox{\scriptsize
+                                 \textit{Branch}}}}
+                  \put(7,-5){\makebox(0,0)[c]{\mbox{(a)}}}
+                  \put(21,-5){\makebox(0,0)[c]{\mbox{(b)}}}
+                  \end{picture}}
+
+   \newcommand{\pictwopart}{\setlength{\unitlength}{4mm}
+                  \rule[-3.7\unitlength]{0mm}{6\unitlength}
+                  \begin{picture}(3,6)(-1.0,-1.0)
+                  {\thicklines
+                  \put(-3.0,-2.5){\line(1,1){1.75}}
+                  \put(-3.0,2.5){\line(1,-1){1.75}}
+                  \put(2.0,-2.5){\line(-1,1){1.75}}
+                  \put(2.0,2.5){\line(-1,-1){1.75}}
+                  \put(-0.5,0){\circle{2}}
+                  \put(-2.3,-1.8){\vector(1,1){0.45}}
+                  \put(1.3,-1.8){\vector(-1,1){0.45}}
+                  \put(0.95,1.45){\vector(1,1){0.45}}
+                  \put(-1.95,1.45){\vector(-1,1){0.45}}
+                  }
+                  {\thinlines
+                  \put(-1.4,-0.6){\line(0,1){1.2}}
+                  \put(-1.2,-0.8){\line(0,1){1.6}}
+                  \put(-1.0,-0.9){\line(0,1){1.8}}
+                  \put(-0.8,-1.0){\line(0,1){2.0}}
+                  \put(-0.6,-1.05){\line(0,1){2.1}}
+                  \put(-0.4,-1.05){\line(0,1){2.1}}
+                  \put(-0.2,-1.0){\line(0,1){2.0}}
+                  \put(0.0,-0.9){\line(0,1){1.8}}
+                  \put(0.2,-0.8){\line(0,1){1.6}}
+                  \put(0.4,-0.6){\line(0,1){1.2}}
+                  }
+                  \put(-3.3,-3.2){\makebox(0,0)[c]{\mbox{$A_{1}$}}}
+                  \put(2.4,-3.2){\makebox(0,0)[c]{\mbox{$A_{2}$}}}
+                  \put(-3.3,3.2){\makebox(0,0)[c]{\mbox{$A_{3}$}}}
+                  \put(2.4,3.2){\makebox(0,0)[c]{\mbox{$A_{4}$}}}
+                  \put(-0.35,0){\makebox(0,0)[c]{\mbox{$\bmath{\mathcal{S}^{\prime}}$}}}
+                  \end{picture}}
+
+   \newcommand{\bootpicA}[6]{\setlength{\unitlength}{2.5mm}
+                  \begin{picture}(20,24)(-10,-12)
+                  {\thicklines
+                  \put(-8,-8){\line(5,3){5}} \put(3,5){\line(5,3){5}}
+                  \put(8,-8){\line(-5,3){5}} \put(-3,5){\line(-5,3){5}}
+                  \put(-3,-5){\line(1,0){6}} \put(-3,5){\line(1,0){6}}
+                  \put(-3,-5){\line(3,5){6}} \put(-3,5){\line(3,-5){6}}
+                  }
+                  \put(-8.5,-9){\makebox(0,0)[c]{\mbox{\small $#1$}}}
+                  \put(8.5,9){\makebox(0,0)[c]{\mbox{\small $#1$}}}
+                  \put(8.5,-9){\makebox(0,0)[c]{\mbox{\small $#2$}}}
+                  \put(-8.5,9){\makebox(0,0)[c]{\mbox{\small $#2$}}}
+                  \put(0,-6){\makebox(0,0)[c]{\mbox{\scriptsize $#3$}}}
+                  \put(0,6){\makebox(0,0)[c]{\mbox{\scriptsize $#3$}}}
+                  \put(-3,-2.5){\makebox(0,0)[c]{\mbox{\scriptsize $#4$}}}
+                  \put(3,2.5){\makebox(0,0)[c]{\mbox{\scriptsize $#4$}}}
+                  \put(-3,2.5){\makebox(0,0)[c]{\mbox{\scriptsize $#5$}}}
+                  \put(3,-2.5){\makebox(0,0)[c]{\mbox{\scriptsize $#5$}}}
+                  \put(0,-12){\makebox(0,0)[c]{\mbox{#6}}}
+                  \end{picture}}
+
+   \newcommand{\bootpicB}[8]{\setlength{\unitlength}{2.5mm}
+                  \begin{picture}(20,24)(-10,-12)
+                  {\thicklines
+                  \put(-8,-8){\line(3,2){3}} \put(5,6){\line(3,2){3}}
+                  \put(8,-8){\line(-3,2){3}} \put(-5,6){\line(-3,2){3}}
+                  \put(0,-4){\line(0,1){8}}
+                  \put(-5,-6){\line(5,6){10}} \put(5,-6){\line(-5,6){10}}
+                  \put(0,4){\line(5,2){5}} \put(0,4){\line(-5,2){5}}
+                  \put(0,-4){\line(5,-2){5}} \put(0,-4){\line(-5,-2){5}}
+                  }
+                  \put(-8.5,-9){\makebox(0,0)[c]{\mbox{\small $#1$}}}
+                  \put(8.5,9){\makebox(0,0)[c]{\mbox{\small $#1$}}}
+                  \put(8.5,-9){\makebox(0,0)[c]{\mbox{\small $#2$}}}
+                  \put(-8.5,9){\makebox(0,0)[c]{\mbox{\small $#2$}}}
+                  \put(-1.8,-6){\makebox(0,0)[c]{\mbox{\scriptsize $#3$}}}
+                  \put(2,6){\makebox(0,0)[c]{\mbox{\scriptsize $#3$}}}
+                  \put(2,-6){\makebox(0,0)[c]{\mbox{\scriptsize $#4$}}}
+                  \put(-1.8,6){\makebox(0,0)[c]{\mbox{\scriptsize $#4$}}}
+                  \put(-3.4,-2.5){\makebox(0,0)[c]{\mbox{\scriptsize $#5$}}}
+                  \put(3.6,2.5){\makebox(0,0)[c]{\mbox{\scriptsize $#5$}}}
+                  \put(1,3){\makebox(0,0)[c]{\mbox{\scriptsize $#6$}}}
+                  \put(-0.8,-3){\makebox(0,0)[c]{\mbox{\scriptsize $#6$}}}
+                  \put(3.6,-2.5){\makebox(0,0)[c]{\mbox{\scriptsize $#7$}}}
+                  \put(-3.4,2.5){\makebox(0,0)[c]{\mbox{\scriptsize $#7$}}}
+                  \put(0,0){\circle*{1}}
+                  \put(0,-12){\makebox(0,0)[c]{\mbox{#8}}}
+                  \end{picture}} 
+
+%%                                                                            %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                            %%
+%%      Definition of References                                              %%
+%%                                                                            %%
+%%      \journal{author}{title}{name}{number}{page}{year}                     %%
+%%                                                                            %%
+%%      Shortcut commands for the journal name                                %%
+%%                                                                            %%
+%%            \CMP           :   Communications in Mathematical Physics       %%   
+%%            \CPC           :   Computer Physics Communications              %%
+%%            \IJMP          :   International Journal of Modern Physics      %%
+%%            \JMP           :   Journal of Mathematical Physics              %%
+%%            \JP            :   Journal of Physics                           %%
+%%            \JSP           :   Journal of Statistical Physics               %%
+%%            \NP            :   Nuclear Physics                              %%
+%%            \PHYSLETT      :   Physics Letters                              %%
+%%            \PHYSREP       :   Physics Reports                              %%
+%%            \PHYSREV       :   Physical Review                              %%
+%%            \PRB           :   Physical Review B                            %%
+%%            \PHYSREVLETT   :   Physical Review Letters                      %%
+%%            \RMP           :   Reviews of Modern Physics                    %%
+%%            \EUROPHYS      :   Europhys Letters                            %%
+%%                                                                            %%
+%%      \preprint{author}{title}{name&number}                                 %%
+%%      \hepth{author}{title}{number}                                         %%
+%%      \condmat{author}{title}{number}                                       %%
+%%      \condmattoappear{author}{title}{journal to appear}{number}            %%
+%%      \quantph{author}{title}{number}                                       %%
+%%      \book{author}{title}{publisher, city, year}                           %%
+%%      \webarticle{author}{title}{URL}                                       %%
+
+   \newcommand{\journal}[6]{#1: #2, \textit{#3} \textbf{#4} #5, (#6).}
+         \newcommand{\CMP}{Commun. Math. Phys.}
+         \newcommand{\CPC}{Comp. Phys. Comm.}
+         \newcommand{\IJMP}{Int. J. Mod. Phys.}
+         \newcommand{\JMP}{J. Math. Phys.}
+         \newcommand{\JP}{J. Phys.}
+         \newcommand{\JSP}{J. Stat. Phys.}
+         \newcommand{\NP}{Nucl. Phys.}
+         \newcommand{\PHYSLETT}{Phys. Lett.}
+         \newcommand{\PHYSREP}{Phys. Rep.}
+         \newcommand{\PHYSREV}{Phys. Rev.}
+         \newcommand{\PRB}{Phys. Rev. B}
+         \newcommand{\PHYSREVLETT}{Phys. Rev. Lett.}
+         \newcommand{\PRL}{Phys. Rev. Lett.}
+         \newcommand{\RMP}{Rev. Mod. Phys.}
+         \newcommand{\EUROPHYS}{Europhys. Lett.}
+   \newcommand{\preprint}[3]{#1: #2, \textit{Preprint} #3.}
+   \newcommand{\hepth}[3]{#1: #2, \textit{hep--th/}#3.}
+   \newcommand{\quantph}[3]{#1: #2, \textit{quant--ph/}#3.}
+   \newcommand{\condmat}[3]{#1: #2, \textit{cond--mat/}#3.}
+   \newcommand{\condmatsubmitted}[3]{#1: #2, \textit{to be submitted, see cond--mat/}#3.}
+   \newcommand{\condmattoappear}[3]{#1: #2, \textit{to appear, see cond--mat/}#3.}
+   \newcommand{\condmattoappearin}[4]{#1: #2, \textit{to appear in #3, see cond--mat/}#4.}
+   \newcommand{\book}[3]{#1: \textit{#2}, #3.}
+   \newcommand{\webarticle}[3]{#1: #2, \textit{URL:} #3.}
+   \newcommand{\genericarticle}[3]{#1: #2, #3.}
+
+%%                                                                            %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%       END OF FILE                                                          %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

@@ -1,0 +1,134 @@
+// -*- C++ -*- $Id$
+
+#include "regularize.h"
+
+namespace Tensor
+{
+
+
+IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>
+Regularize(VectorBasis const& b)
+{
+   typedef IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis> ResultType;
+   // Iterate through b and determine the total dimension of
+   // each quantum number space, and also map the subspaces of b
+   // onto a range of the total space.
+   typedef std::map<QuantumNumbers::QuantumNumber, int> SizeMapType;
+   SizeMapType SizeMap;
+   std::vector<LinearAlgebra::Range> RangeOfSubspace;
+   RangeOfSubspace.reserve(b.size());
+
+   for (std::size_t i = 0; i < b.size(); ++i)
+   {
+      int Sz = SizeMap[b[i]];     
+      RangeOfSubspace.push_back(LinearAlgebra::range(Sz, Sz+b.dim(i)));
+      SizeMap[b[i]] += b.dim(i);
+   }
+
+   // Now construct the basis
+   SizeMapType IndexOfQ;
+   {
+      int i = 0;
+      for (SizeMapType::const_iterator I = SizeMap.begin(); I != SizeMap.end(); ++I)
+         IndexOfQ[I->first] = i++;
+   }
+
+   VectorBasis RegularBasis(SizeMap.begin(), SizeMap.end());
+   ResultType Result(RegularBasis, b, QuantumNumbers::QuantumNumber(b.GetSymmetryList()));
+   for (std::size_t i = 0; i < b.size(); ++i)
+   {
+      int Dest = IndexOfQ[b[i]];
+      if (size1(Result(Dest, i)) == 0)
+         Result(Dest, i) = LinearAlgebra::Matrix<double>(RegularBasis.dim(Dest),
+                                                         b.dim(i),
+                                                         0.0);
+
+      Result(Dest,i)(RangeOfSubspace[i], LinearAlgebra::all) 
+         = LinearAlgebra::identity_matrix<double>(b.dim(i));
+   }
+
+   return Result;
+}
+
+bool is_regular_basis(VectorBasis const& b)
+{
+   std::set<QuantumNumber> Used;
+   for (std::size_t i = 0; i < b.size(); ++i)
+   {
+      if (Used.find(b[i]) != Used.end())
+         return false;
+
+      Used.insert(b[i]);
+   }
+   return true;
+}
+
+IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, BasisList>
+Regularize(BasisList const& b)
+{
+   typedef IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, BasisList> ResultType;
+   // Iterate through b and determine the total dimension of
+   // each quantum number space, and also map the subspaces of b
+   // onto an index of the total space.
+   typedef std::map<QuantumNumbers::QuantumNumber, int> SizeMapType;
+   SizeMapType SizeMap;
+   std::vector<int> IndexOfSubspace;      // the multiplicity of the quantum number in the basis
+   IndexOfSubspace.reserve(b.size());
+
+   for (std::size_t i = 0; i < b.size(); ++i)
+   {
+      IndexOfSubspace.push_back(SizeMap[b[i]]++);
+   }
+
+   // Now make another quantum number map, this time enumerating the quantum numbers in order
+   SizeMapType IndexOfQ;
+   {
+      int i = 0;
+      for (SizeMapType::const_iterator I = SizeMap.begin(); I != SizeMap.end(); ++I)
+         IndexOfQ[I->first] = i++;
+   }
+
+   // Make the final basis
+   VectorBasis RegularBasis(SizeMap.begin(), SizeMap.end());
+
+   // and the transform operator
+   ResultType Result(RegularBasis, b, QuantumNumbers::QuantumNumber(b.GetSymmetryList()));
+   for (std::size_t i = 0; i < b.size(); ++i)
+   {
+      int Dest = IndexOfQ[b[i]];
+      if (size1(Result(Dest, i)) == 0)
+         Result(Dest, i) = LinearAlgebra::Matrix<double>(RegularBasis.dim(Dest),1, 0.0);
+
+      Result(Dest,i)(IndexOfSubspace[i], 0) = 1.0;
+   }
+
+   return Result;
+}
+
+IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, BasisList>
+SplitBasis(VectorBasis const& b)
+{
+   BasisList ResultBasis(b.GetSymmetryList());
+   for (unsigned i = 0; i < b.size(); ++i)
+   {
+      for (int j = 0; j < b.dim(i); ++j)
+      {
+         ResultBasis.push_back(b[i]);
+      }
+   }
+
+   IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, BasisList> Result(b, ResultBasis, QuantumNumber(b.GetSymmetryList()));
+   int Index = 0;
+   for (unsigned i = 0; i < b.size(); ++i)
+   {
+      for (int j = 0; j < b.dim(i); ++j)
+      {
+         Result(i, Index) = LinearAlgebra::Matrix<double>(b.dim(i), 1, 0.0);
+         Result(i, Index)(j, 0) = 1.0;
+         ++Index;
+      }
+   }
+   return Result;
+}
+
+} // namespace Tensor

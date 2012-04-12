@@ -1,0 +1,44 @@
+// -*- C++ -*- $Id$
+
+#include "matrixproduct/lattice.h"
+#include "matrixproduct/mpoperatorlist.h"
+#include "matrixproduct/operatoratsite.h"
+#include "pheap/pheap.h"
+
+int main(int argc, char** argv)
+{
+   if (argc != 2)
+   {
+      std::cerr << "usage: make-pi-u1 <lattice>\n";
+      return 1;
+   }
+
+   // load the lattice file
+   pvalue_ptr<OperatorList> System = pheap::OpenPersistent(argv[1], 655360);
+
+   // get the lattice size
+   int LatticeSize = System->size();
+
+   // a shortcut to refer to the "S" (spin) operator   
+   OperatorAtSite<OperatorList const, int> Sp(*System, "Sp");
+   OperatorAtSite<OperatorList const, int> Sm(*System, "Sm");
+   OperatorAtSite<OperatorList const, int> Sz(*System, "Sz");
+
+   // construct our output operator
+   MPOperator Spip, Spim, Spiz;
+
+   for (int i = 1; i <= LatticeSize; ++i)
+   {
+      Spip += pow(-1, i) * Sp(i);
+      Spim += pow(-1, i) * Sm(i);
+      Spiz += pow(-1, i) * Sz(i);
+   }
+
+   // insert our operator into the lattice
+   (*System.mutate())["Spip"] = Spip;
+   (*System.mutate())["Spim"] = Spim;
+   (*System.mutate())["Spiz"] = Spiz;
+
+   // save the lattice
+   pheap::ShutdownPersistent(System);
+}
