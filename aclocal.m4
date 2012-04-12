@@ -68,7 +68,7 @@ AC_DEFUN(
    acx_cv_cxx_restrict=unsupported
     AC_LANG_PUSH(C++)
     for acx_kw in restrict __restrict__ __restrict ; do
-     AC_COMPILE_IFELSE(AC_LANG_PROGRAM([], [[double* $acx_kw x; ]]), 
+     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [[double* $acx_kw x; ]])], 
 	               acx_cv_cxx_restrict="$acx_kw" ; break)
     done
     AC_LANG_POP(C++)
@@ -98,7 +98,7 @@ AC_DEFUN(
    acx_cv_cxx_noreturn=unsupported
     AC_LANG_PUSH(C++)
     for acx_kw in "__attribute__((noreturn))" ; do
-     AC_COMPILE_IFELSE(AC_LANG_PROGRAM([], [[void foo() $acx_kw; ]]), 
+     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [[void foo() $acx_kw; ]])], 
 	               acx_cv_cxx_noreturn="$acx_kw" ; break)
     done
     AC_LANG_POP(C++)
@@ -141,9 +141,9 @@ dnl search for boost include files
   acx_save_CPPFLAGS="$CPPFLAGS"
   for try_incdir in $boost_search_dir; do
    CPPFLAGS="$acx_save_CPPFLAGS -I$try_incdir"
-   AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[
+   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <boost/config.hpp>
-]], []),
+]], [])],
       acx_boost_incdir=$try_incdir ; break)
   done
   CPPFLAGS="$acx_save_CPPFLAGS"
@@ -184,7 +184,7 @@ AC_DEFUN([AX_BOOST_PROGRAM_OPTIONS],
   ax_plib="$ax_program_options_lib"
   for ax_lib in "$ax_plib" "-l$ax_plib" "-lboost_program_options-$ax_plib" "-l$ax_plib-$CC" "-lboost_program_options" "-lboost_program_options-$CC"; do
     LIBS="$LIBS $ax_lib"
-    AC_LINK_IFELSE(AC_LANG_SOURCE(
+    AC_LINK_IFELSE([AC_LANG_SOURCE(
      [[
       #include <boost/program_options.hpp>
       namespace po = boost::program_options;
@@ -199,7 +199,7 @@ AC_DEFUN([AX_BOOST_PROGRAM_OPTIONS],
         po::store(po::parse_command_line(ac, av, desc), vm);
         po::notify(vm); }
       ]]
-     ), [BOOST_PROGRAM_OPTIONS_LIB=$ax_lib ; break])
+     )], [BOOST_PROGRAM_OPTIONS_LIB=$ax_lib ; break])
      LIBS="$save_LIBS"
   done
   AC_LANG_POP(C++)
@@ -229,7 +229,7 @@ AC_DEFUN(
     LIBS_save="$LIBS"
     LIBS="$BLAS_LIBS $FLIBS"
     CXXFLAGS="-I. -I$srcdir $CXXFLAGS"
-    AC_RUN_IFELSE(AC_LANG_SOURCE([[
+    AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #define FORTRAN_COMPLEX_RETURN_FIRST_ARG
 #include "common/blas1f.h"
 #include <complex>
@@ -242,8 +242,8 @@ int main()
    complex res = BLAS::zdotu(10, &(*v1.begin()), 1, &(*v2.begin()), 1);
    return std::abs(res - complex(20.0, 20.0)) < 1E-10 ? 0 : 1;
 }
-    ]]), acx_cv_fortran_complex_return=pass_as_first_argument,
-	AC_RUN_IFELSE(AC_LANG_SOURCE([[
+    ]])], acx_cv_fortran_complex_return=pass_as_first_argument,
+	[AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #define FORTRAN_COMPLEX_RETURN_IN_REGISTER
 #include "common/blas1f.h"
 #include <complex>
@@ -256,16 +256,17 @@ int main()
    complex res = BLAS::zdotu(10, &(*v1.begin()), 1, &(*v2.begin()), 1);
    return std::abs(res - complex(20.0, 20.0)) < 1E-10 ? 0 : 1;
 }
-    ]]), acx_cv_fortran_complex_return=return_in_register))
+    ]])], acx_cv_fortran_complex_return=return_in_register)])
     LIBS="$LIBS_save"
     CXXFLAGS="$CXXFLAGS_save"
     AC_LANG_POP(C++)
    )
-   if test "$acx_cv_fortran_complex_return" == pass_as_first_argument ; then
+   AS_IF([test "$acx_cv_fortran_complex_return" == pass_as_first_argument], [
      AC_DEFINE(FORTRAN_COMPLEX_RETURN_FIRST_ARG,,[Defined if the Fortran returns complex as first arg])
-   elif test "$acx_cv_fortran_complex_return" == return_in_register ; then
+   ], [AS_IF([test "$acx_cv_fortran_complex_return" == return_in_register], [
      AC_DEFINE(FORTRAN_COMPLEX_RETURN_IN_REGISTER,,[Defined if the Fortran returns complex in registers])
-   fi
+      ]
+   )])
  ]
 ) dnl ACX_FORTRAN_COMPLEX_RETURN
 

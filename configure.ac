@@ -1,7 +1,8 @@
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([mptoolkit], [HEAD-0.7.4.0], ianmcc@physics.uq.edu.au)
+AC_INIT([Matrix Product Toolkit], [HEAD-0.7.4.0], [ianmcc@physics.uq.edu.au], 
+        [mptoolkit], [http://physics.uq.edu.au/people/ianmcc/mptoolkit])
 
 AC_CONFIG_SRCDIR([common/trace.h])
 AC_CONFIG_HEADER(config.h)
