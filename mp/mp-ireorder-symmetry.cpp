@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: mp-reorder-symmetry.cpp 802 2007-12-08 06:55:30Z ianmcc $
+// -*- C++ -*- $Id$
 
 #include "mps/infinitewavefunction.h"
 #include "quantumnumbers/all_symmetries.h"

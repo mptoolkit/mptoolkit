@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: mp-idmrg.cpp 809 2008-01-07 07:54:39Z ianmcc $
+// -*- C++ -*- $Id$
 
 // variant of iDMRG where we keep intact the unit cell.
 // This prohibits relfection symmetry.

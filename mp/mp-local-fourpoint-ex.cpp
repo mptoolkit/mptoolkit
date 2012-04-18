@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: mp-local-fourpoint.cpp 586 2007-05-16 15:59:02Z ianmcc $
+// -*- C++ -*- $Id$
 
 #include "matrixproduct/lattice.h"
 #include "matrixproduct/mpwavefunction.h"

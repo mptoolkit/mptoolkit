@@ -1,4 +1,4 @@
-/* -*- C++ -*- $Id: matrixproductoperations.h 357 2006-11-24 19:27:23Z ianmcc $
+/* -*- C++ -*- $Id$
 
    Created 2009-03-17 by Ian McCulloch
 

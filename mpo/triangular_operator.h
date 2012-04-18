@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: triangularoperator.h 986 2009-02-09 00:58:30Z ianmcc $
+// -*- C++ -*- $Id$
 //
 // TriangularOperator: a representation for lattice operators that are in triangular form
 // This is the new version, not yet completed.  When it is completed, it will obsolete

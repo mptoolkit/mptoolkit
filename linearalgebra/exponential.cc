@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: eigen.cc 809 2008-01-07 07:54:39Z ianmcc $
+// -*- C++ -*- $Id$
 
 namespace LinearAlgebra
 {

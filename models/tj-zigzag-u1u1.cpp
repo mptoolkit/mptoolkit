@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: hubbard-u1su2.cpp 819 2008-01-14 05:03:01Z ianmcc $
+// -*- C++ -*- $Id$
 
 #include "pheap/pheap.h"
 #include "matrixproduct/lattice.h"

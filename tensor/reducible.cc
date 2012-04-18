@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: tensor.cc 638 2007-06-15 01:15:19Z ianmcc $
+// -*- C++ -*- $Id$
 
 namespace Tensor
 {

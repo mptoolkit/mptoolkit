@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: testmpstatesu2.cpp 540 2007-04-23 21:45:31Z ianmcc $
+// -*- C++ -*- $Id$
 
 #include "matrixproduct/mpstate.h"
 #include "quantumnumbers/su2.h"

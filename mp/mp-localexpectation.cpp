@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: mp-localcorrelation.cpp 490 2007-03-28 21:43:42Z ianmcc $
+// -*- C++ -*- $Id$
 
 #include "matrixproduct/lattice.h"
 #include "matrixproduct/mpwavefunction.h"

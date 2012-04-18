@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: hubbard-u1su2.h 831 2008-01-22 03:20:45Z ianmcc $
+// -*- C++ -*- $Id$
 
 #include "siteoperator/siteoperator.h"
 #include "quantumnumbers/u1.h"

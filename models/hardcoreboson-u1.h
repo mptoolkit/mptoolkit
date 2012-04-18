@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: spinlessfermion-u1.h 540 2007-04-23 21:45:31Z ianmcc $
+// -*- C++ -*- $Id$
 
 #include "siteoperator/siteoperator.h"
 #include "quantumnumbers/u1.h"

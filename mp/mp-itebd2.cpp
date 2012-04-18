@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: mp-itebd.cpp 847 2008-02-21 11:20:31Z ianmcc $
+// -*- C++ -*- $Id$
 
 #include "quantumnumbers/all_symmetries.h"
 #include "mp-algorithms/lanczos.h"

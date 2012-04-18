@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: bosehubbard-spinless-u1.cpp 920 2008-06-24 18:04:10Z ianmcc $
+// -*- C++ -*- $Id$
 
 #include "pheap/pheap.h"
 #include "matrixproduct/lattice.h"

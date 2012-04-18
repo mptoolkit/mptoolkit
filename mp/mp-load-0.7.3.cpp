@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: mp-defrag.cpp 489 2007-03-28 21:37:16Z ianmcc $
+// -*- C++ -*- $Id$
 
 #include "matrixproduct/mpwavefunction-compat.h"
 #include "quantumnumbers/all_symmetries.h"

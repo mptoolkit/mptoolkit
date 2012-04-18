@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: lanczos.h 978 2009-01-09 15:22:31Z ianmcc $
+// -*- C++ -*- $Id$
 
 // lanczos function for a non-orthogonal basis.  This means that we
 // additionally supply functors for the inner_prod and the norm_frob.

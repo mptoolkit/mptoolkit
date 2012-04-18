@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: bosehubbard-spinless-u1.h 920 2008-06-24 18:04:10Z ianmcc $
+// -*- C++ -*- $Id$
 
 #include "siteoperator/siteoperator.h"
 #include "quantumnumbers/u1.h"

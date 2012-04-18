@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: hubbard-canonical-u1u1.cpp 491 2007-03-29 15:54:48Z ianmcc $
+// -*- C++ -*- $Id$
 
 #include "pheap/pheap.h"
 #include "matrixproduct/lattice.h"

@@ -1,4 +1,4 @@
-/* -*- C++ -*- $Id: complexvector.h 357 2006-11-24 19:27:23Z ianmcc $
+/* -*- C++ -*- $Id$
 
   complex.h
 

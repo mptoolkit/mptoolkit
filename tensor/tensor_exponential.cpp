@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: tensor_eigen.cpp 809 2008-01-07 07:54:39Z ianmcc $
+// -*- C++ -*- $Id$
 
 #include "tensor_exponential.h"
 #include "linearalgebra/exponential.h"

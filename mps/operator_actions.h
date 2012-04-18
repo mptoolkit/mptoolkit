@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: linearwavefunction.h 1103 2010-04-16 01:44:00Z ianmcc $
+// -*- C++ -*- $Id$
 //
 // functions for operators acting on wavefunctions
 

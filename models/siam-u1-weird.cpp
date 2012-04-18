@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: siam-factorized-u1u1.cpp 514 2007-04-15 01:58:00Z ianmcc $
+// -*- C++ -*- $Id$
 
 #include "pheap/pheap.h"
 #include "matrixproduct/lattice.h"

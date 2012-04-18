@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: spin-u1.h 1011 2009-04-22 14:36:31Z ianmcc $
+// -*- C++ -*- $Id$
 // SU(3) spin chain in the fundamental representation,
 // broken down to U(1)xU(1)
 
