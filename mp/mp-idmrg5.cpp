@@ -566,14 +566,14 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
 }
 
 #if defined(ENABLE_ONE_SITE_SCHEME)
-void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double& LastEnergy, MatrixOperator& C, 
+void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double& LastEnergy, MatrixOperator& C,
                    TriangularOperator const& HamMPO,
-                   QuantumNumber const& QShift, 
+                   QuantumNumber const& QShift,
                    std::deque<StateComponent>& LeftBlock,
                    std::deque<StateComponent>& RightBlock,
                    StatesInfo const& SInfo, int MinIter, int NumIter,
                    double MixFactor, int NumSteps, bool Verbose)
-                   
+
 {
    bool TwoSite = false;
 
@@ -624,23 +624,23 @@ void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double&
                              FidelityAv, TwoSite, MixFactor);
 
          // now comes the slightly tricky part, where we turn around
-         
+
          // retrieve the wrapped around left block from the last iteration
          LeftBlock = std::deque<StateComponent>(1, SaveLeftBlock);
-         
+
          C = InvertDiagonal(DiagonalL, InverseTol) * C;
          C = herm(ExpanderL) * C;
          C = delta_shift(PsiR, QShift) * C;
          // C is now dm x dm
-	 
+
          DEBUG_CHECK_EQUAL(C.Basis1(), LeftBlock.back().Basis2());
-	 
-         LeftBlock.back().front() -= LastEnergy * 
+
+         LeftBlock.back().front() -= LastEnergy *
             MatrixOperator::make_identity(LeftBlock.back().front().Basis2());
          //std::cout << "EShift=" << LastEnergy << '\n';
-	 
+
          // solve
-         
+
          double Energy;
          double Fidelity;
          int Iterations;
@@ -650,20 +650,20 @@ void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double&
             Tol = std::min(std::sqrt(FidelityAv.value()) * FidelityScale, MaxTol);
             C *= 1.0 / norm_frob(C);
             MatrixOperator COld = C;
-            
+
             //	       TRACE(C.Basis1().total_degree())(C.Basis2().total_degree());
-            
+
             Energy = Lanczos(C, SuperblockMultiply(LeftBlock.back(), RightBlock.front()),
                              Iterations,
                              Tol, MinIter);
             Fidelity = std::max(1.0 - norm_frob(inner_prod(COld, C)), 0.0);
             FidelityAv.push(Fidelity);
          }
-         
+
          LastEnergy = Energy;
-	 
+
          PsiL = C;
-         
+
          {
             // truncate the left block
             MatrixOperator RhoL = scalar_prod(C, herm(C));
@@ -674,25 +674,25 @@ void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double&
             }
             DensityMatrix<MatrixOperator> DML(RhoL);
             TruncationInfo Info;
-            MatrixOperator TruncL = DML.ConstructTruncator(DML.begin(), 
+            MatrixOperator TruncL = DML.ConstructTruncator(DML.begin(),
                                                            TruncateFixTruncationErrorAbsolute(DML.begin(),
                                                                                               DML.end(),
                                                                                               SInfo,
                                                                                               Info));
-            std::cout << "A Energy=" << Energy 
+            std::cout << "A Energy=" << Energy
                       << " States=" << Info.KeptStates()
                       << " TruncError=" << Info.TruncationError()
-                      << " Entropy=" << Info.KeptEntropy() 
+                      << " Entropy=" << Info.KeptEntropy()
                       << " Fidelity=" << Fidelity
                       << " Iter=" << Iterations
                       << " Tol=" << Tol
                       << '\n';
-            
+
             C = TruncL * C;
             LeftBlock.back() = triple_prod(TruncL, LeftBlock.back(), herm(TruncL));
-            
+
          }
-         
+
          {
             // DiagonalL becomes the matrix of singular values in the m-dimensional truncated basis
             MatrixOperator U;
@@ -700,35 +700,35 @@ void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double&
             C = DiagonalL * ExpanderL;
             LeftBlock.back() = triple_prod(herm(U), LeftBlock.back(), U);
          }
-         
+
          DEBUG_CHECK_EQUAL(C.Basis2(), RightBlock.front().Basis1());
-         
+
          SaveRightBlock = RightBlock.front();  // the right block at the left-hand edge of the unit cell
          SaveRightBlock = delta_shift(SaveRightBlock, adjoint(QShift));
-         
+
          // right-moving sweep
-	 
+
          C = DoDMRGSweepRight(C, MyPsi, HamMPO, LeftBlock, RightBlock, SInfo, NumIter,
                               FidelityAv, TwoSite, MixFactor);
-         
+
          // turn around at the right-hand side
          SaveLeftBlock = LeftBlock.back();
          SaveLeftBlock = delta_shift(SaveLeftBlock, QShift);
-         
+
          // retrieve the wrapped-around block
          RightBlock = std::deque<StateComponent>(1, SaveRightBlock);
-         
+
          C = C * InvertDiagonal(DiagonalR, InverseTol);
          C = C * herm(ExpanderR);
          C = C * delta_shift(PsiL, adjoint(QShift));
-         
+
          DEBUG_CHECK_EQUAL(C.Basis2(), RightBlock.front().Basis1());
-         
+
          // make the energy zero
-         RightBlock.front().back() -= LastEnergy * 
+         RightBlock.front().back() -= LastEnergy *
             MatrixOperator::make_identity(RightBlock.front().back().Basis2());
          //	    std::cout << "EShift=" << LastEnergy << '\n';
-	 
+
          // solve
          {
             Iterations = NumIter;
@@ -741,10 +741,10 @@ void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double&
             Fidelity = std::max(1.0 - norm_frob(inner_prod(COld, C)), 0.0);
             FidelityAv.push(Fidelity);
          }
-         
+
          LastEnergy = Energy;
          PsiR = C;
-         
+
          // truncate the right block
          {
             MatrixOperator RhoR = scalar_prod(herm(C), C);
@@ -755,12 +755,12 @@ void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double&
             }
             DensityMatrix<MatrixOperator> DMR(RhoR);
             TruncationInfo Info;
-            MatrixOperator TruncR = DMR.ConstructTruncator(DMR.begin(), 
+            MatrixOperator TruncR = DMR.ConstructTruncator(DMR.begin(),
                                                            TruncateFixTruncationErrorAbsolute(DMR.begin(),
                                                                                               DMR.end(),
                                                                                               SInfo,
                                                                                               Info));
-            std::cout << "B Energy=" << Energy 
+            std::cout << "B Energy=" << Energy
                       << " States=" << Info.KeptStates()
                       << " TruncError=" << Info.TruncationError()
                       << " Entropy=" << Info.KeptEntropy()
@@ -783,13 +783,13 @@ void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double&
             RightBlock.front() = triple_prod(Vt, RightBlock.front(), herm(Vt));
             //LeftBlock.back() = triple_prod(herm(U), LeftBlock.back(), U);
          }
-         
+
          //PsiR = C;
-         
+
          ++NumIterationsCompleted;
          ProcControl::TestAsyncCheckpoint();
       }
-      
+
    }
    catch (ProcControl::Checkpoint& c)
    {
@@ -893,7 +893,7 @@ int main(int argc, char** argv)
          ("help", "show this help message")
          ("Hamiltonian,H", prog_opt::value(&HamStr),
           "model Hamiltonian.  Valid choices: itf, itf-z2, xxx-su2, xxx-u1, xxx, tj-zigzag-u1su2, "
-          "tj-zigzag-u1, sf-zigzag-u1, klm-u1su2, klm-u1, bh, bh2, bh-u1, bh2-u1, kagome-su2")
+          "tj-zigzag-u1, sf-zigzag-u1, klm-u1su2, klm-u1, bh, bh2, bh-u1, bh2-u1, kagome-su2, kagome-su2-xc, kagome-su2-yc")
          ("wavefunction,w", prog_opt::value(&FName),
           "wavefunction to apply DMRG (required)")
 	 ("two-site,2", prog_opt::bool_switch(&TwoSite), "Modify two sites at once (default)")
@@ -942,7 +942,7 @@ int main(int argc, char** argv)
 	  FormatDefault("The tolerance of the eigensolver is min(maxtol, fidelityscale * sqrt(fidelity))",
 			FidelityScale).c_str())
          ("initialfidelity", prog_opt::value(&InitialFidelity),
-          FormatDefault("Initial value for the fidelity to set the eigensolver tolerance, for the first iteration", 
+          FormatDefault("Initial value for the fidelity to set the eigensolver tolerance, for the first iteration",
                         InitialFidelity).c_str())
 	 ("spin", prog_opt::value(&Spin),
 	  FormatDefault("spin (for xxx,xxz,xyz hamiltonians)", Spin).c_str())
@@ -975,10 +975,10 @@ int main(int argc, char** argv)
 	 ("mu", prog_opt::value(&mu),
 	  FormatDefault("Chemical potential (bose-hubbard)", mu).c_str())
 	 ("kagome-cell", prog_opt::value(&KagomeUnitCell),
-	  FormatDefault("Unit cell for kagome with plaquette (for Kagome strip with field, kagome-field-su2)", 
+	  FormatDefault("Unit cell for kagome with plaquette (for Kagome strip with field, kagome-field-su2)",
                         KagomeUnitCell).c_str())
 	 ("nlegs", prog_opt::value(&NLegs),
-	  FormatDefault("Number of legs (for triangular ladder)", NLegs).c_str())
+	  FormatDefault("Number of legs (for triangular ladder or Kagome cylinder)", NLegs).c_str())
 	 ("twist", prog_opt::value(&Twist),
 	  FormatDefault("twist period (for xxx-u1 model only)", Twist).c_str())
 	 ("tprime", prog_opt::value(&tprime),
@@ -1012,7 +1012,7 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      unsigned int RandSeed = vm.count("seed") ? (vm["seed"].as<unsigned long>() % RAND_MAX) 
+      unsigned int RandSeed = vm.count("seed") ? (vm["seed"].as<unsigned long>() % RAND_MAX)
          : (ext::get_unique() % RAND_MAX);
       srand(RandSeed);
 
@@ -1047,7 +1047,7 @@ int main(int argc, char** argv)
          std::cout << "Expected energy is (-ln 3 - pi/(3*sqrt(3)) + 2/3)/2 per site"
                    << " = " << (0.5*(-log(3.0) - math_const::pi / (3.0 * std::sqrt(3.0)) + 2.0/3.0))
                    << '\n';
-         
+
          // see Aguado - PRB 79, 012408 (2009)
          SiteBlock Site = CreateU1U1SpinSite();
          TriangularOperator Ham;
@@ -1108,7 +1108,7 @@ int main(int argc, char** argv)
                    << '\n';
 	 SiteBlock Site = CreateU1SpinSite(Spin);
 	 TriangularOperator Ham;
-         
+
          // N-site unit cell
          std::vector<BasisList> Sites(NLegs, Site["I"].Basis().Basis());
          // couplings in the leg direction
@@ -1142,7 +1142,7 @@ int main(int argc, char** argv)
          if (!vm.count("Jz"))
             Jz = J;
 	 std::cout << "Hamiltonian is XXX model with spin S=" << Spin << ", theta="<<Theta
-		   << ", J=" << J << ",beta=" << Beta << ", Jz=" << Jz << ", J2=" 
+		   << ", J=" << J << ",beta=" << Beta << ", Jz=" << Jz << ", J2="
                    << J2 << ", D=" << D << ", delta=" << delta << '\n';
          std::complex<double> TwistFactor = std::exp(std::complex<double>(0.0, 1.0) * 2.0 * math_const::pi / double(Twist));
          std::complex<double> TwistFactorConj = LinearAlgebra::conj(TwistFactor);
@@ -1185,7 +1185,7 @@ int main(int argc, char** argv)
          if (!vm.count("Jz"))
             Jz = J;
 	 std::cout << "Hamiltonian is XXX model with spin S=" << Spin << ", theta="<<Theta
-		   << ", J=" << J << ", Jz=" << Jz << ", J2=" 
+		   << ", J=" << J << ", Jz=" << Jz << ", J2="
                    << J2 << ", D=" << D << ", delta=" << delta << '\n';
 
 	 SiteBlock Site = CreateZ2SpinSite(Spin);
@@ -1366,7 +1366,7 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "bhj-u1")
       {
-	 std::cout << "Hamiltonian is spinless Bose-Hubbard, U(1), J/U=" << J 
+	 std::cout << "Hamiltonian is spinless Bose-Hubbard, U(1), J/U=" << J
                    << ", mu=" << mu << ", V=" << V << "\n";
 	 SiteBlock Site = CreateBoseHubbardSpinlessU1Site(NMax);
 	 TriangularOperator Ham;
@@ -1445,6 +1445,78 @@ int main(int argc, char** argv)
             + TwoPointOperator(Sites, 1, Site["S"], 3, Site["S"])
             + TwoPointOperator(Sites, 0, Site["S"], 2, Site["S"])
             + TwoPointOperator(Sites, 2, Site["S"], 3, Site["S"]);
+         // SU(2) factor
+         Ham *= -sqrt(3.0);
+         HamMPO = Ham;
+      }
+      else if (HamStr == "kagome-su2-xc")
+      {
+         std::cout << "Hamiltonian is XC Kagome cylinder with J = 1 and NLegs = "<<NLegs<<'\n';
+         SiteBlock Site = CreateSU2SpinSite(0.5);
+         // 6-site unit cell
+         std::vector<BasisList> Sites(NLegs*6, Site["I"].Basis().Basis());
+         TriangularOperator Ham;
+         for(int i = 0; i < NLegs; ++i)
+         {
+            // intra-unit-cell interactions
+            Ham += TwoPointOperator(Sites, i*6, Site["S"], i*6+1, Site["S"])
+               + TwoPointOperator(Sites, i*6, Site["S"], i*6+2, Site["S"])
+               + TwoPointOperator(Sites, i*6+1, Site["S"], i*6+5, Site["S"])
+               + TwoPointOperator(Sites, i*6+2, Site["S"], i*6+4, Site["S"])
+               + TwoPointOperator(Sites, i*6+2, Site["S"], i*6+3, Site["S"])
+               + TwoPointOperator(Sites, i*6+3, Site["S"], i*6+4, Site["S"]);
+            // inter-unit-cell interactions: horizontals
+            Ham += TwoPointOperator(Sites, i*6+5, Site["S"], (NLegs+i)*6, Site["S"])
+               + TwoPointOperator(Sites, i*6+5, Site["S"], (NLegs+i)*6+1, Site["S"])
+               + TwoPointOperator(Sites, i*6+4, Site["S"], (NLegs+i)*6, Site["S"])
+               + TwoPointOperator(Sites, i*6+4, Site["S"], (NLegs+i)*6+2, Site["S"]);
+         }
+         // couplings along the strip - i.e. vertical interactions
+         for(int i = 0; i < NLegs-1; ++i)
+         {
+            Ham += TwoPointOperator(Sites, i*6+1, Site["S"], (i+1)*6+3, Site["S"])
+               + TwoPointOperator(Sites, i*6+5, Site["S"], (i+1)*6+3, Site["S"]);
+         }
+         // cylinder wrapping
+         Ham += TwoPointOperator(Sites, (NLegs-2)*6+1, Site["S"], 3, Site["S"])
+            + TwoPointOperator(Sites, (NLegs-2)*6+5, Site["S"], 3, Site["S"]);
+         // SU(2) factor
+         Ham *= -sqrt(3.0);
+         HamMPO = Ham;
+      }
+      else if (HamStr == "kagome-su2-yc")
+      {
+         std::cout << "Hamiltonian is YC Kagome cylinder with J = 1 and NLegs = "<<NLegs<<'\n';
+         SiteBlock Site = CreateSU2SpinSite(0.5);
+         // 6-site unit cell
+         std::vector<BasisList> Sites(NLegs*6, Site["I"].Basis().Basis());
+         TriangularOperator Ham;
+         for(int i = 0; i < NLegs; ++i)
+         {
+            // intra-unit-cell interactions
+            Ham += TwoPointOperator(Sites, i*6, Site["S"], i*6+1, Site["S"])
+               + TwoPointOperator(Sites, i*6, Site["S"], i*6+2, Site["S"])
+               + TwoPointOperator(Sites, i*6+1, Site["S"], i*6+2, Site["S"])
+               + TwoPointOperator(Sites, i*6+2, Site["S"], i*6+3, Site["S"])
+               + TwoPointOperator(Sites, i*6+3, Site["S"], i*6+4, Site["S"])
+               + TwoPointOperator(Sites, i*6+4, Site["S"], i*6+5, Site["S"]);
+            // inter-unit-cell interactions: horizontals
+            Ham += TwoPointOperator(Sites, i*6+4, Site["S"], (NLegs+i)*6, Site["S"])
+               + TwoPointOperator(Sites, i*6+5, Site["S"], (NLegs+i)*6, Site["S"]);
+         }
+         // couplings along the strip - i.e. vertical interactions
+         for(int i = 0; i < NLegs-1; ++i)
+         {
+            Ham += TwoPointOperator(Sites, i*6+2, Site["S"], (i+1)*6+1, Site["S"])
+               + TwoPointOperator(Sites, i*6+3, Site["S"], (i+1)*6+1, Site["S"])
+               + TwoPointOperator(Sites, i*6+3, Site["S"], (i+1)*6+5, Site["S"])
+               + TwoPointOperator(Sites, i*6+4, Site["S"], (i+1)*6+5, Site["S"]);
+         }
+         // cylinder wrapping
+         Ham += TwoPointOperator(Sites, (NLegs-2)*6+2, Site["S"], 1, Site["S"])
+            + TwoPointOperator(Sites, (NLegs-2)*6+3, Site["S"], 1, Site["S"])
+            + TwoPointOperator(Sites, (NLegs-2)*6+3, Site["S"], 5, Site["S"])
+            + TwoPointOperator(Sites, (NLegs-2)*6+4, Site["S"], 5, Site["S"]);
          // SU(2) factor
          Ham *= -sqrt(3.0);
          HamMPO = Ham;
@@ -1830,7 +1902,7 @@ int main(int argc, char** argv)
                   C *= 1.0 / norm_frob(C);
                   Iterations = 1;
                }
-              
+
 	       Fidelity = std::max(1.0 - norm_frob(inner_prod(COld, C)), 0.0);
 	       FidelityAv.push(Fidelity);
 	    }
