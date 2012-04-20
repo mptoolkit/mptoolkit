@@ -818,6 +818,10 @@ TriangularOperator TwoPointOperator(std::vector<BasisList> const& Sites,
                                     int n1, SimpleOperator const& x1,
                                     int n2, SimpleOperator const& x2)
 {
+   // Normal order the sites.
+   if (n1 > n2)
+      return TwoPointOperator(Sites, n2, x2, n1, x1);
+
    int const Size = Sites.size();
 
    // construct a list of added quantum numbers that are needed for the bond bases
