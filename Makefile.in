@@ -208,7 +208,7 @@ infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-
 
 infinite-tools = mp-idmrg5 mp-ispectrum \
                  mp-iexpectation2 mp-iexpectation3 mp-ispectral-expansion mp-igradient \
-                 mp-ireorder-symmetry mp-irename-symmetry
+                 mp-ireorder-symmetry mp-irename-symmetry mp-iinfo mp-ioverlap
 
 mp-tools-not-functional = mp-add2 mp-exp mp-stringcorrelation-su2 mp-canonical
 
@@ -497,10 +497,10 @@ mp-iexcitation : triangular_operator.o mpoperator.o infinitewavefunction.o rando
 mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
 mp-igradient : triangularoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
 mp-ispectral-expansion : triangularoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
-mp-ioverlap : infinitewavefunction.o
-mp-icorrelation : infinitewavefunction.o
+mp-ioverlap : infinitewavefunction.o eigen.o
+mp-icorrelation : infinitewavefunction.o eigen.o
 mp-iortho : triangularoperator.o infinitewavefunction.o
-mp-iinfo : triangularoperator.o infinitewavefunction.o
+mp-iinfo : triangularoperator.o infinitewavefunction.o eigen.o
 mp-iorthogonalize : triangularoperator.o infinitewavefunction.o
 mp-pwfrg : triangularoperator.o match_basis.o
 mp-itebd : mpexponential.o $(expokitobj) infinitewavefunction.o

@@ -1,5 +1,5 @@
 
-#include "matrixproduct/infinitewavefunction.h"
+#include "mps/infinitewavefunction.h"
 #include "common/environment.h"
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
@@ -17,6 +17,7 @@
 #include "models/kondo-u1su2.h"
 #include "models/kondo-u1.h"
 #include "models/hubbard-so4.h"
+#include "models/bosehubbard-spinless-u1.h"
 
 // For simplicity we don't do cross-correlations here, since that would require
 // first calculating the identity operator between the two states.  In fact,
@@ -36,6 +37,7 @@ int main(int argc, char** argv)
    std::string Symmetry = argv[1];
    std::string Op1Str = argv[2];
    std::string Op2Str = argv[3];
+   int NMax = 3;
 
    SiteBlock Site;
    if (Symmetry == "sf-u1")
@@ -77,6 +79,10 @@ int main(int argc, char** argv)
    else if (Symmetry == "hubbard-so4")
    {
       Site = CreateSO4HubbardSiteA();
+   }
+   else if (Symmetry == "bh-u1")
+   {
+      Site = CreateBoseHubbardSpinlessU1Site(NMax);
    }
    else
    {

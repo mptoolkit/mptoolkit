@@ -4,7 +4,7 @@
 #include "mps/infinitewavefunction.h"
 #include "common/environment.h"
 #include "common/terminal.h"
-#include <boost/program_options.hpp>
+#include "common/prog_options.h"
 #include "common/environment.h"
 #include "interface/inittemp.h"
 #include "mp-algorithms/gmres.h"
@@ -358,7 +358,7 @@ int main(int argc, char** argv)
       InverseTol = 1E-6;
       for (int Iter = 0; Iter < 10000; ++Iter)
       {
-         for (int i = 0; i < Op.Basis1().size(); ++i)
+         for (unsigned i = 0; i < Op.Basis1().size(); ++i)
          {
             RightVector[i] = Eigenvector[Op.Basis1().size()-i-1];
          }

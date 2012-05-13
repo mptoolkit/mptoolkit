@@ -355,7 +355,7 @@ void orthogonalize(InfiniteWavefunction& x)
 
    CHECK(EtaL.real() > 0)("Eigenvalue must be positive");
 
-   TRACE(EtaL);
+   DEBUG_TRACE(EtaL);
 
    if (trace(LeftEigen).real() < 0)
       LeftEigen = -LeftEigen;
@@ -403,7 +403,7 @@ void orthogonalize(InfiniteWavefunction& x)
       RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
       EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, x.QShift), Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    }
-   TRACE(EtaR);
+   DEBUG_TRACE(EtaR);
 
    if (trace(RightEigen).real() < 0)
       RightEigen = -RightEigen;

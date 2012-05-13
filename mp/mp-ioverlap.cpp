@@ -1,5 +1,5 @@
 
-#include "matrixproduct/infinitewavefunction.h"
+#include "mps/infinitewavefunction.h"
 #include "mp/copyright.h"
 #include <boost/program_options.hpp>
 #include "common/environment.h"

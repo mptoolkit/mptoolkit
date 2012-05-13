@@ -820,9 +820,10 @@ struct ScalarProd<HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> >,
                if (Result.Basis1()[J1.index2()] == Result.Basis2()[J2.index2()])
                   add_element(Result.data(), J1.index2(), J2.index2(), 
                               (InnerDegree / degree(Result.Basis1()[J1.index2()])) * f_(herm(*J1), *J2));
-            }
+	    }
          }
       }
+      CHECK(!isnan(norm_frob_sq(Result)));
       return Result;
    }
 

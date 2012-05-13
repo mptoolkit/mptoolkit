@@ -13,7 +13,7 @@ SiteBlock CreateSU2HubbardSite(std::string const& Sym1 = "N", std::string const&
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":SU(2)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
-   SiteOperator C, CH, P, R, N, S, I, Hu, Pdouble, Ep, Em, Ns, Nh, Pg, CP, CHP;
+   SiteOperator C, CH, P, R, N, S, I, Hu, Pdouble, Ep, Em, Ns, Nh, Pg, CP, CHP, ES;
    SiteBlock Block;
 
 #if defined(NEW_SITE_ORDERING)
@@ -87,6 +87,10 @@ SiteBlock CreateSU2HubbardSite(std::string const& Sym1 = "N", std::string const&
    // S
    S("single", "single")   = std::sqrt(0.75);
 
+   // exp(i * pi * S)
+   ES = I;
+   ES("single", "single") = std::complex<double>(0.0, 1.0);
+
    // number of spins
    Ns("single", "single") = 1;
 
@@ -108,5 +112,6 @@ SiteBlock CreateSU2HubbardSite(std::string const& Sym1 = "N", std::string const&
    Block["Em"] = Em;
    Block["N_S"] = Ns;
    Block["N_H"] = Nh;
+   Block["ES"] = ES;
    return Block;
 }

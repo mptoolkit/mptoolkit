@@ -12,7 +12,7 @@
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "common/proccontrol.h"
-#include <boost/program_options.hpp>
+#include "common/prog_options.h"
 #include <iostream>
 #include "common/environment.h"
 #include "common/statistics.h"
@@ -31,6 +31,7 @@
 #include "models/kondo-u1.h"
 #include "models/hubbard-so4.h"
 #include "models/hubbard-u1u1.h"
+#include "models/hubbard-u1su2.h"
 #include "models/spinlessfermion-u1.h"
 #include "models/bosehubbard-spinless.h"
 #include "models/bosehubbard-spinless-u1.h"
@@ -453,6 +454,7 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
       C = ExpandBasis1Used(R, *H);
       RightBlockHam.push_front(operator_prod(*H, R, RightBlockHam.front(), herm(R)));
       LeftBlockHam.pop_back();
+
    }
 
    // cleanup
@@ -856,6 +858,7 @@ int main(int argc, char** argv)
       double Jx = 1.0;
       double Jy = 1.0;
       double t = 1.0;
+      double tc = 1.0;
       double tprime = 1.0;
       double delta = 0.0;
       double Theta = 0.0;
@@ -948,6 +951,10 @@ int main(int argc, char** argv)
 	  FormatDefault("spin (for xxx,xxz,xyz hamiltonians)", Spin).c_str())
 	 ("J", prog_opt::value(&J),
 	  FormatDefault("nearest-neighbor exchange J (for xxx,itf, etc)", J).c_str())
+	 ("t", prog_opt::value(&t),
+	  FormatDefault("nearest-neighbor hopping (for hubbard etc)", t).c_str())
+	 ("tc", prog_opt::value(&tc),
+	  FormatDefault("cluster hopping (for triangular cluster)", tc).c_str())
 	 ("Jperp", prog_opt::value(&Jperp),
 	  FormatDefault("perpendicular exchange exchange J (for xxx-ladder)", Jperp).c_str())
          ("periodic", prog_opt::bool_switch(&Periodic),
@@ -1397,6 +1404,25 @@ int main(int argc, char** argv)
       	    + U * TriangularOneSite(Site["N2"]) + 2.0 * TriangularOneSite(Site["N"]);
       	 HamMPO = Ham;
       }
+      else if (HamStr == "bh-dilute-u1")
+      {
+      	 std::cout << "Hamiltonian is spinless Bose-Hubbard, U1 symmetry, T=1, U=" << U << ", V=" << V << ", Nmax=" << NMax << "\n";
+      	 SiteBlock Site = CreateBoseHubbardSpinlessU1Site(NMax);
+	 double tConst =  UnitCellSize * UnitCellSize / (math_const::pi * math_const::pi);
+	 double UConst = 1.0 / (math_const::pi * math_const::pi);
+	 std::vector<BasisList> Sites(UnitCellSize, Site["I"].Basis().Basis());
+      	 TriangularOperator Ham;
+	 for (int i = 0; i < UnitCellSize; ++i)
+	 {
+	    Ham += -tConst * TwoPointOperator(Sites, i, Site["BH"], i+1, Site["B"]);
+	    Ham += -tConst * TwoPointOperator(Sites, i, Site["B"], i+1, Site["BH"]);
+	    Ham += U*UConst * OnePointOperator(Sites, i, Site["N2"]);
+	    double muConst = V*cos(math_const::pi * (i) / UnitCellSize) * cos(math_const::pi * (i) / UnitCellSize) 
+	       + 2*tConst;
+	    Ham += muConst * OnePointOperator(Sites, i, Site["N"]);
+	 }
+      	 HamMPO = Ham;
+      }
       else if (HamStr == "bh2-u1")
       {
          // These parameters are defined in this form to match the Lieb-Liniger model, U = m g dz / hbar^2, energy scaled by hbar^2 / 2 m dz^2
@@ -1521,6 +1547,62 @@ int main(int argc, char** argv)
          Ham *= -sqrt(3.0);
          HamMPO = Ham;
       }
+      else if (HamStr == "tricluster")
+      {
+	 std::cout << "Hamiltonian is SU(2) Hubbard triangular cluster with t=" << t << ", tc=" << tc
+		   << ", U=" << U << '\n';
+	 SiteBlock Site = CreateSU2HubbardSite();
+	 double tSqrt2 = (-sqrt(2.0)) * t;  // the -sqrt(2) is an SU(2) factor
+	 double tcSqrt2 = (-sqrt(2.0)) * tc;  // the -sqrt(2) is an SU(2) factor
+	 // 3-site unit cell
+	 std::vector<BasisList> Sites(3, Site["I"].Basis().Basis());
+	 TriangularOperator Ham;
+	 Ham += -tcSqrt2 * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 1, Site["C"])
+			    + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 1, Site["CH"]));
+	 Ham += -tcSqrt2 * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 2, Site["C"])
+			    + TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 2, Site["CH"]));
+	 Ham += -tcSqrt2 * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 2, Site["C"])
+			    + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 2, Site["CH"]));
+	 Ham += -tSqrt2 * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 4, Site["C"])
+			    + TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 4, Site["CH"]));
+	 Ham += U * OnePointOperator(Sites, 0, Site["Pdouble"]);
+	 Ham += U * OnePointOperator(Sites, 1, Site["Pdouble"]);
+	 Ham += U * OnePointOperator(Sites, 2, Site["Pdouble"]);
+	 HamMPO = Ham;
+      }
+      else if (HamStr == "tricluster-u1")
+      {
+	 std::cout << "Hamiltonian is U(1) Hubbard triangular cluster with t=" << t << ", tc=" << tc
+		   << ", U=" << U << '\n';
+	 SiteBlock Site = CreateU1HubbardSite();
+	 // 3-site unit cell
+	 std::vector<BasisList> Sites(3, Site["I"].Basis().Basis());
+	 TriangularOperator Ham;
+	 Ham += -tc * (TwoPointStringOperator(Sites, 0, Site["CHupP"], Site["P"], 1, Site["Cup"])
+			    - TwoPointStringOperator(Sites, 0, Site["CupP"], Site["P"], 1, Site["CHup"])
+		       + TwoPointStringOperator(Sites, 0, Site["CHdownP"], Site["P"], 1, Site["Cdown"])
+			    - TwoPointStringOperator(Sites, 0, Site["CdownP"], Site["P"], 1, Site["CHdown"]));
+
+	 Ham += -tc * (TwoPointStringOperator(Sites, 1, Site["CHupP"], Site["P"], 2, Site["Cup"])
+			    - TwoPointStringOperator(Sites, 1, Site["CupP"], Site["P"], 2, Site["CHup"])
+		       + TwoPointStringOperator(Sites, 1, Site["CHdownP"], Site["P"], 2, Site["Cdown"])
+			    - TwoPointStringOperator(Sites, 1, Site["CdownP"], Site["P"], 2, Site["CHdown"]));
+
+	 Ham += -tc * (TwoPointStringOperator(Sites, 0, Site["CHupP"], Site["P"], 2, Site["Cup"])
+			    - TwoPointStringOperator(Sites, 0, Site["CupP"], Site["P"], 2, Site["CHup"])
+		       + TwoPointStringOperator(Sites, 0, Site["CHdownP"], Site["P"], 2, Site["Cdown"])
+			    - TwoPointStringOperator(Sites, 0, Site["CdownP"], Site["P"], 2, Site["CHdown"]));
+
+	 Ham += -t * (TwoPointStringOperator(Sites, 1, Site["CHupP"], Site["P"], 4, Site["Cup"])
+		      - TwoPointStringOperator(Sites, 1, Site["CupP"], Site["P"], 4, Site["CHup"])
+		      + TwoPointStringOperator(Sites, 1, Site["CHdownP"], Site["P"], 4, Site["Cdown"])
+		      - TwoPointStringOperator(Sites, 1, Site["CdownP"], Site["P"], 4, Site["CHdown"]));
+
+	 Ham += U * OnePointOperator(Sites, 0, Site["Pdouble"]);
+	 Ham += U * OnePointOperator(Sites, 1, Site["Pdouble"]);
+	 Ham += U * OnePointOperator(Sites, 2, Site["Pdouble"]);
+	 HamMPO = Ham;
+      }
       else
       {
 	 std::cerr << "mp-idmrg: error: Hamiltonian parameter must be one of itf, xxx-su2, xxx-u1, "
@@ -1546,6 +1628,8 @@ int main(int argc, char** argv)
          QuantumNumbers::QuantumNumber BoundaryQ(HamMPO[0].GetSymmetryList());
          if (BoundaryState != "")
             BoundaryQ = QuantumNumbers::QuantumNumber(HamMPO[0].GetSymmetryList(), BoundaryState);
+
+	 TRACE(BoundaryQ);
 
          CHECK_EQUAL(num_transform_targets(q, BoundaryQ), 1)
             ("The boundary quantum number is incompatible with the target quantum number");
@@ -1889,8 +1973,8 @@ int main(int argc, char** argv)
 	       C *= 1.0 / norm_frob(C);
 	       MatrixOperator COld = C;
                if (EvolveDelta == 0.0)
-               {
-                  Energy = Lanczos(C, SuperblockMultiply(LeftBlock.back(), RightBlock.front()),
+               { 
+		  Energy = Lanczos(C, SuperblockMultiply(LeftBlock.back(), RightBlock.front()),
                                    Iterations,
                                    Tol);
                }

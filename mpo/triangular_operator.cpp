@@ -814,6 +814,42 @@ int smod(int n, int k)
    return r;
 }
 
+TriangularOperator OnePointOperator(std::vector<BasisList> const& Sites, 
+                                    int n, SimpleOperator const& x)
+{
+   int const Size = Sites.size();
+
+   // construct a list of added quantum numbers that are needed for the bond bases
+   std::vector<BasisList> BondBasis(Size, BasisList(Sites[0].GetSymmetryList()));
+
+   // Add the identity component to the bond basis
+   for (int i = 0; i < Size; ++i)
+   {
+      BondBasis[i].push_back(QuantumNumber(Sites[0].GetSymmetryList()));
+   }
+
+   // the actual operator
+   for (int i = 0; i < Size; ++i)
+   {
+      BondBasis[i].push_back(QuantumNumber(Sites[0].GetSymmetryList()));
+   }
+
+   // Assemble the operators
+   MPOperator Result(Size);
+   for (int i = 0; i < Size; ++i)
+   {
+      Result[i] = OperatorComponent(Sites[i], Sites[i], BondBasis[i], BondBasis[smod(i+1,Size)]);
+      Result[i](0,0) = SimpleOperator::make_identity(Sites[i]);
+      Result[i](BondBasis[i].size()-1, BondBasis[smod(i+1,Size)].size()-1) 
+         = SimpleOperator::make_identity(Sites[i]);
+   }
+
+   // now the operators.  Keep track of which component we insert them into
+   std::vector<int> Loc(Size, 0);
+   Result[smod(n,Size)](1,0) = x;
+   return TriangularOperator(Result.data());
+}
+
 TriangularOperator TwoPointOperator(std::vector<BasisList> const& Sites, 
                                     int n1, SimpleOperator const& x1,
                                     int n2, SimpleOperator const& x2)
@@ -864,6 +900,59 @@ TriangularOperator TwoPointOperator(std::vector<BasisList> const& Sites,
       ++Loc[smod(i-1,Size)];
       Result[smod(i,Size)](Loc[smod(i-1,Size)], Loc[smod(i,Size)]) 
          = SimpleOperator::make_identity(Sites[smod(i,Size)]);
+   }
+   Result[smod(n1,Size)](Loc[smod(n1-1,Size)]+1,Loc[smod(n1,Size)]) = x1;
+   return TriangularOperator(Result.data());
+}
+
+TriangularOperator TwoPointStringOperator(std::vector<BasisList> const& Sites, 
+					  int n1, SimpleOperator const& x1,
+					  SimpleOperator const& String,
+					  int n2, SimpleOperator const& x2)
+{
+   CHECK(n1 < n2)("TwoPointStringOperator: error: sites must be normal ordered.")(n1)(n2);
+
+   int const Size = Sites.size();
+
+   // construct a list of added quantum numbers that are needed for the bond bases
+   std::vector<BasisList> BondBasis(Size, BasisList(Sites[0].GetSymmetryList()));
+
+   // Add the identity component to the bond basis
+   for (int i = 0; i < Size; ++i)
+   {
+      BondBasis[i].push_back(QuantumNumber(Sites[0].GetSymmetryList()));
+   }
+
+   // the actual operator
+   for (int i = n2; i > n1; --i)
+   {
+      BondBasis[smod(i,Size)].push_back(x2.TransformsAs());
+   }
+   
+   // Finally, the Hamiltonian component
+   for (int i = 0; i < Size; ++i)
+   {
+      BondBasis[i].push_back(QuantumNumber(Sites[0].GetSymmetryList()));
+   }
+
+   // Assemble the operators
+   MPOperator Result(Size);
+   for (int i = 0; i < Size; ++i)
+   {
+      Result[i] = OperatorComponent(Sites[i], Sites[i], BondBasis[i], BondBasis[smod(i+1,Size)]);
+      Result[i](0,0) = SimpleOperator::make_identity(Sites[i]);
+      Result[i](BondBasis[i].size()-1, BondBasis[smod(i+1,Size)].size()-1) 
+         = SimpleOperator::make_identity(Sites[i]);
+   }
+
+   // now the operators.  Keep track of which component we insert them into
+   std::vector<int> Loc(Size, 0);
+   Result[smod(n2,Size)](1,0) = x2;
+   ++Loc[smod(n2-1,Size)];
+   for (int i = n2-1; i > n1; --i)
+   {
+      ++Loc[smod(i-1,Size)];
+      Result[smod(i,Size)](Loc[smod(i-1,Size)], Loc[smod(i,Size)]) = String;
    }
    Result[smod(n1,Size)](Loc[smod(n1-1,Size)]+1,Loc[smod(n1,Size)]) = x1;
    return TriangularOperator(Result.data());

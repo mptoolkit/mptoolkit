@@ -5,7 +5,7 @@
 #include "mps/operator_actions.h"
 #include "common/environment.h"
 #include "common/terminal.h"
-#include <boost/program_options.hpp>
+#include "common/prog_options.h"
 #include "common/prog_opt_accum.h"
 #include "common/environment.h"
 #include "interface/inittemp.h"
@@ -24,6 +24,7 @@
 #include "models/kondo-u1.h"
 #include "models/bosehubbard-spinless-u1.h"
 #include "models/hubbard-u1u1.h"
+#include "models/hubbard-u1su2.h"
 
 #include "linearalgebra/arpack_wrapper.h"
 
@@ -133,7 +134,7 @@ struct RightMultiplyString
 
    RightMultiplyString(LinearWavefunction const& L_, QuantumNumber const& QShift_,
                        std::vector<SimpleOperator> const& StringOp_) 
-      : L(L_), QShift(QShift_) 
+      : L(L_), QShift(QShift_) , StringOp(StringOp_)
    {
       CHECK_EQUAL(L.size(), StringOp.size())("The string operator must be the same length as the unit cell");
    }
@@ -221,7 +222,7 @@ struct MultFuncString
    MultFuncString(LinearWavefunction const& Psi, QuantumNumber const& QShift, 
                   QuantumNumbers::QuantumNumber const& q,
                   std::vector<SimpleOperator> const& StringOp)
-      : Mult(Psi, QShift, StringOp), Pack(Psi.Basis2(), Psi.Basis2(), q) {}
+      : Mult(Psi, QShift, StringOp), Pack(Psi.Basis2(), Psi.Basis2(), q) { }
 
    void operator()(std::complex<double> const* In, std::complex<double>* Out) const
    {
@@ -239,7 +240,7 @@ struct MultFuncStringTrans
    MultFuncStringTrans(LinearWavefunction const& Psi, QuantumNumber const& QShift, 
                        QuantumNumbers::QuantumNumber const& q,
                        std::vector<SimpleOperator> const& StringOp)
-      : Mult(Psi, QShift, StringOp), Pack(Psi.Basis2(), Psi.Basis2(), q) {}
+      : Mult(Psi, QShift, StringOp), Pack(Psi.Basis2(), Psi.Basis2(), q) { }
 
    void operator()(std::complex<double> const* In, std::complex<double>* Out) const
    {
@@ -541,6 +542,14 @@ int main(int argc, char** argv)
       else if (Model == "hubbard-u1")
       {
          Site = CreateU1HubbardSite();
+      }
+      else if (Model == "hubbard-u1su2")
+      {
+         Site = CreateSU2HubbardSite();
+      }
+      else if (Model != "")
+      {
+	 PANIC("Unknown model");
       }
 
       if (!OpL.empty())

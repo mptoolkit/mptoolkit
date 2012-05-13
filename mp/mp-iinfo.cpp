@@ -1,5 +1,5 @@
 
-#include "matrixproduct/infinitewavefunction.h"
+#include "mps/infinitewavefunction.h"
 #include "tensor/tensor_eigen.h"
 #include "common/environment.h"
 #include "common/terminal.h"
@@ -65,6 +65,8 @@ int main(int argc, char** argv)
       bool ShowDensity = vm.count("density-matrix") || vm.count("limit");
       bool ShowTrans = vm.count("trans");
 
+      TRACE(ShowDensity);
+
       std::string Wavefunc = vm["input-wavefunction"].as<std::string>();
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
@@ -107,62 +109,62 @@ int main(int argc, char** argv)
 	 TRACE(norm_frob(I-J));
       }
 
-      if (ShowCasimir || ShowBasis || ShowEntropy)
+      if (ShowCasimir || ShowBasis || ShowEntropy || ShowDensity)
       {
 
 	 std::cout << "quantities in the unit cell:\n";
-      if (ShowCasimir)
-      {
-	 SymmetryList const SList = P.GetSymmetryList();
-	 int const NumCasimir = SList.NumCasimirOperators();
-	 for (int i = 0; i < NumCasimir; ++i)
-	 {
-	    if (i != 0)
-	       std::cout << " ";
-	    std::string Name = "#" + SList.CasimirName(i);
-	    std::cout << std::setw(20) << Name;
-	 }
-      std::cout << '\n';
-      }
-
-      for (int i = 0; i < P.size(); ++i)
-      {
-	 MatrixOperator Rho = scalar_prod(P.C_right, herm(P.C_right));
-
-	 if (ShowEntropy)
-	 {
-	    DensityMatrix<MatrixOperator> DM(Rho);
-	    double Entropy = DensityEntropy(DM.begin(), DM.end(), DM.EigenSum(), Base2);
-	    std::cout << Entropy << '\n';
-	 }
-
-	 if (ShowBasis)
-	 {
-	    std::cout << Rho.Basis1() << '\n';
-	 }
-
 	 if (ShowCasimir)
 	 {
 	    SymmetryList const SList = P.GetSymmetryList();
 	    int const NumCasimir = SList.NumCasimirOperators();
-	    DensityMatrix<MatrixOperator> DM(Rho);
 	    for (int i = 0; i < NumCasimir; ++i)
 	    {
-	       if (i != 0) 
-		  std::cout << ' ';
-	       std::cout << std::setw(20) << DM.EvaluateCasimir(i);
+	       if (i != 0)
+		  std::cout << " ";
+	       std::string Name = "#" + SList.CasimirName(i);
+	       std::cout << std::setw(20) << Name;
 	    }
 	    std::cout << '\n';
 	 }
 
-	 if (ShowDensity)
+	 for (int i = 0; i < P.size(); ++i)
 	 {
-	    DensityMatrix<MatrixOperator> DM(Rho);
-	    DM.DensityMatrixReport(std::cout, MaxEigenvalues, Base2);
-	 }
+	    MatrixOperator Rho = scalar_prod(P.C_right, herm(P.C_right));
 
-	 P = rotate_left(P, 1);
-      }
+	    if (ShowEntropy)
+	    {
+	       DensityMatrix<MatrixOperator> DM(Rho);
+	       double Entropy = DensityEntropy(DM.begin(), DM.end(), DM.EigenSum(), Base2);
+	       std::cout << Entropy << '\n';
+	    }
+
+	    if (ShowBasis)
+	    {
+	       std::cout << Rho.Basis1() << '\n';
+	    }
+
+	    if (ShowCasimir)
+	    {
+	       SymmetryList const SList = P.GetSymmetryList();
+	       int const NumCasimir = SList.NumCasimirOperators();
+	       DensityMatrix<MatrixOperator> DM(Rho);
+	       for (int i = 0; i < NumCasimir; ++i)
+	       {
+		  if (i != 0) 
+		     std::cout << ' ';
+		  std::cout << std::setw(20) << DM.EvaluateCasimir(i);
+	       }
+	       std::cout << '\n';
+	    }
+
+	    if (ShowDensity)
+	    {
+	       DensityMatrix<MatrixOperator> DM(Rho);
+	       DM.DensityMatrixReport(std::cout, MaxEigenvalues, Base2);
+	    }
+
+	    P = rotate_left(P, 1);
+	 }
       }
 
    }

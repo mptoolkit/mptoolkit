@@ -14,7 +14,7 @@ SiteBlock CreateU1HubbardSite(std::string const& Sym1 = "N",
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::U1> QN(Symmetry);
    SiteBasis Basis(Symmetry);
-   SiteOperator CHup, Cup, CHdown, Cdown, P, R, N, Sp, Sm, Sz, Qp, Qm, Qz, I, Hu, Pdouble, X, N_S, N_H;
+   SiteOperator CHup, Cup, CHdown, Cdown, P, R, N, Sp, Sm, Sz, Qp, Qm, Qz, I, Hu, Pdouble, X, N_S, N_H, ES;
    SiteBlock Block;
 
 #if defined(NEW_SITE_ORDERING)
@@ -136,6 +136,11 @@ SiteBlock CreateU1HubbardSite(std::string const& Sym1 = "N",
    Qz("double", "double") =  0.5;
    Qz("empty",  "empty")  = -0.5;
    
+   // exp(i * pi * Sz)
+   ES = I;
+   ES("up",   "up")   = std::complex<double>(0.0,  1.0);
+   ES("down", "down") = std::complex<double>(0.0, -1.0);
+
    Block["I"] = I;
    Block[ParityOp] = P;
    Block["N"] = N;
@@ -161,5 +166,6 @@ SiteBlock CreateU1HubbardSite(std::string const& Sym1 = "N",
    Block["X"] = X;
    Block["N_S"] = N_S;
    Block["N_H"] = N_H;
+   Block["ES"] = ES;
    return Block;
 }

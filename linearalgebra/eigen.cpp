@@ -56,6 +56,20 @@ void EigenvaluesHermitian(int Size, std::complex<double>* Data,
    DiagonalizeHermitian(Size, Data, LeadingDim, Eigen);
 }
 
+// for debugging
+Matrix<double> makeMatrix(double const* Data, int Size, int LeadingDim)
+{
+   Matrix<double> M(Size, Size);
+   for (int i = 0; i < Size; ++i)
+   {
+      for (int j = 0; j < Size; ++j)
+      {
+	 M(i,j) = Data[i*LeadingDim + j];
+      }
+   }
+   return M;
+}
+
 void DiagonalizeSymmetric(int Size, double* Data, int LeadingDim, double* Eigen)
 {
    char jobz = 'V';
@@ -74,7 +88,7 @@ void DiagonalizeSymmetric(int Size, double* Data, int LeadingDim, double* Eigen)
    // do the actual call
    LAPACK::dsyev(jobz, uplo, Size, Data, LeadingDim, Eigen, work, lwork, info);
 
-   CHECK(info == 0)("LAPACK::dsyev")(info);
+   CHECK(info == 0)("LAPACK::dsyev")(info)(makeMatrix(Data, Size, LeadingDim));
 
    StackAlloc::deallocate(work, lwork * sizeof(double));
 }

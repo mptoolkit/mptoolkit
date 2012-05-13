@@ -7,6 +7,7 @@
 #include "common/proccontrol.h"
 #include <iostream>
 #include <cmath>
+#include <fstream>
 
 double const LanczosBetaTol = 1E-14;
 
@@ -22,6 +23,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
    VectorType w = Guess;
 
    double Beta = norm_frob(w);
+   CHECK(!isnan(Beta));
    // double OrigBeta = Beta;      // original norm, not used
    w *= 1.0 / Beta;
    v.push_back(w);
@@ -65,6 +67,21 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       // solution of the tridiagonal subproblem
       LinearAlgebra::Matrix<double> M = SubH(LinearAlgebra::range(0,i+1),
 					     LinearAlgebra::range(0,i+1));
+      if (isnan(M(0,0)))
+      {
+	 std::ofstream Out("lanczos_debug.txt");
+	 Out << "NAN encountered in Lanczos\n"
+	     << "Beta=" << Beta << "\n\n"
+	     << "norm_frob(Guess)=" << norm_frob(Guess) << "\n\n"
+	     << "Guess=" << Guess << "\n\n"
+	     << "M=" << "\n\n"
+	     << "SubH=" << SubH << "\n\n";
+	 for (unsigned n = 0; n < v.size(); ++n)
+	 {
+	    Out << "V[" << n << "]=" << v[n] << "\n\n";
+	 }
+      }
+
       LinearAlgebra::Vector<double> EValues = DiagonalizeHermitian(M);
       double Theta = EValues[0];    // smallest eigenvalue
       VectorType y = M(0,0) * v[0];

@@ -107,10 +107,27 @@ TriangularOperator TriangularThreeSite(SimpleOperator const& x,
                                        SimpleOperator const& z);
 
 // a two point interaction between sites n1 and n2 of a lattice
+// this is assumed to be a bosonic operator; if n2 < n1 we swap the sites
+// (which is incorrect for fermions)
 TriangularOperator TwoPointOperator(std::vector<BasisList> const& Sites, 
                                     int n1, SimpleOperator const& x1,
                                     int n2, SimpleOperator const& x2);
 
+// a two-point string operator where the String term is inserted
+// at sites n1+1, n1+2, ..., n2-1.
+// Because this function can be used to implement fermionic operators,
+// we demand normal ordering of sites; it is an error to call this function
+// with n2<n1.
+TriangularOperator TwoPointStringOperator(std::vector<BasisList> const& Sites, 
+					  int n1, SimpleOperator const& x1,
+					  SimpleOperator const& String,
+					  int n2, SimpleOperator const& x2);
+
+// A one-site operator on a lattice
+TriangularOperator OnePointOperator(std::vector<BasisList> const& Sites, 
+                                    int n, SimpleOperator const& x);
+
+// replicate an operator on a unit cell this many times
 TriangularOperator repeat(TriangularOperator const& x, int Count);
 
 // Two triangular operators are *compatible* if they have the same operator on the
