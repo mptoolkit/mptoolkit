@@ -57,7 +57,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
    int ido = 0;  // first call
    char bmat = 'I'; // standard eigenvalue problem
    char which[3] = "LM";                      // largest magnitude
-   int const nev = NumEigen; // number of eigenvalues to be computed
+   int const nev = std::min(NumEigen, n-1); // number of eigenvalues to be computed
    std::vector<std::complex<double> > resid(n);  // residual
    ncv = std::min(std::max(ncv, 2*nev + 10), n);            // length of the arnoldi sequence
    std::vector<std::complex<double> > v(n*ncv);   // arnoldi vectors
