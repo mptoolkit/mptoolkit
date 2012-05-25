@@ -85,7 +85,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
    ARPACK::znaupd(&ido, bmat, n, which, nev, tol, &resid[0], ncv,
                   &v[0], ldv, &iparam, &ipntr, &workd[0],
                   &workl[0], lworkl, &rwork[0], &info);
-   CHECK(info >= 0)(info)(n);
+   CHECK(info >= 0)(info)(n)(nev)(ncv);
    
    while (ido != 99)
    {

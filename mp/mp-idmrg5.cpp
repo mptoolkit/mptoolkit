@@ -1504,8 +1504,8 @@ int main(int argc, char** argv)
                + TwoPointOperator(Sites, i*6+5, Site["S"], (i+1)*6+3, Site["S"]);
          }
          // cylinder wrapping
-         Ham += TwoPointOperator(Sites, (NLegs-2)*6+1, Site["S"], 3, Site["S"])
-            + TwoPointOperator(Sites, (NLegs-2)*6+5, Site["S"], 3, Site["S"]);
+         Ham += TwoPointOperator(Sites, (NLegs-1)*6+1, Site["S"], 3, Site["S"])
+            + TwoPointOperator(Sites, (NLegs-1)*6+5, Site["S"], 3, Site["S"]);
          // SU(2) factor
          Ham *= -sqrt(3.0);
          HamMPO = Ham;
@@ -1539,10 +1539,10 @@ int main(int argc, char** argv)
                + TwoPointOperator(Sites, i*6+4, Site["S"], (i+1)*6+5, Site["S"]);
          }
          // cylinder wrapping
-         Ham += TwoPointOperator(Sites, (NLegs-2)*6+2, Site["S"], 1, Site["S"])
-            + TwoPointOperator(Sites, (NLegs-2)*6+3, Site["S"], 1, Site["S"])
-            + TwoPointOperator(Sites, (NLegs-2)*6+3, Site["S"], 5, Site["S"])
-            + TwoPointOperator(Sites, (NLegs-2)*6+4, Site["S"], 5, Site["S"]);
+         Ham += TwoPointOperator(Sites, (NLegs-1)*6+2, Site["S"], 1, Site["S"])
+            + TwoPointOperator(Sites, (NLegs-1)*6+3, Site["S"], 1, Site["S"])
+            + TwoPointOperator(Sites, (NLegs-1)*6+3, Site["S"], 5, Site["S"])
+            + TwoPointOperator(Sites, (NLegs-1)*6+4, Site["S"], 5, Site["S"]);
          // SU(2) factor
          Ham *= -sqrt(3.0);
          HamMPO = Ham;

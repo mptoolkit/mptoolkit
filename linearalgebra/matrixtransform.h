@@ -23,7 +23,6 @@ template <typename BaseProxyReference, typename F>
 class MatrixTransformProxy
 {
    public:
-      typedef BOOST_MPL_ASSERT((is_proxy_reference<BaseProxyReference>)) dummy;
 
       typedef typename F::result_type reference;
       typedef typename make_const_reference<reference>::type const_reference;

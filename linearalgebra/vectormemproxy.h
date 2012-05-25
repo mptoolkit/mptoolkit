@@ -143,7 +143,6 @@ class VectorMemProxy<T, tagVariable>
    : public VectorBase<VectorMemProxy<T, tagVariable> >
 {
    public:
-      typedef BOOST_MPL_ASSERT_NOT((boost::is_reference<T>)) dummy;
 
       typedef typename basic_type<T>::type value_type;
       typedef typename make_reference<T>::type reference;
