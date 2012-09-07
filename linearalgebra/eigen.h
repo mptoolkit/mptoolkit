@@ -55,6 +55,23 @@ LinearSolveHPD(M1 const& m, M2 const& rhs,
 	       typename boost::enable_if<is_matrix<M2> >::type* = 0);
 
 //
+// LinearSolve
+//
+// Solves a general system of linear equations  M*v=rhs.
+// For input M is a generic matrix,
+// and RHS is a matrix, with rows representing different right hand sides,
+// for which the SoEq is to be solved.
+// Returns the solutions v as column vectors.
+// Postcondition:
+// Satisfies m * result' = rhs
+
+template <typename M1, typename M2>
+Matrix<double, ColMajor> 
+LinearSolve(M1 const& m, M2 const& rhs,
+            typename boost::enable_if<is_matrix<M1> >::type* = 0,
+            typename boost::enable_if<is_matrix<M2> >::type* = 0);
+
+//
 // SingularValueDecomposition
 //
 // Singular value decomposition of a real matrix.  For input matrix A,

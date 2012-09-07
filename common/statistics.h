@@ -6,6 +6,7 @@
   A few statistics manipulations
 
   Created 2001-04-25 Ian McCulloch
+  2012-02-04: Added size() function to moving_average
 */
 
 #if !defined(STATISTICS_H_DSHR489UFHVFEIUNF48U398UCSAHU)
@@ -13,6 +14,7 @@
 
 #include <iterator>
 #include <deque>
+#include <numeric>
 
 namespace statistics
 {
@@ -76,6 +78,10 @@ class moving_average
 
       value_type operator()() const
       { return this->value(); }
+
+      // returns the actual number of items in the average
+      std::size_t size() const
+      { return Data->size(); }
 
    private:
       moving_average(); // not implemented

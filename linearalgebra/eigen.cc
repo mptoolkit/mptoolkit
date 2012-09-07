@@ -14,6 +14,8 @@ void LinearSolveSPD(int Size, int Nrhs, double* A, int ldA, double* B, int ldB);
 void LinearSolveHPD(int Size, int Nrhs, std::complex<double>* A, 
 		    int ldA, std::complex<double>* B, int ldB);
 
+void LinearSolve(int Size, int Nrhs, double* A, int ldA, double* B, int ldB);
+
 void SingularValueDecomposition(int Size1, int Size2, double* A, double* U,
 				double* D, double* VT);
 
@@ -188,6 +190,56 @@ LinearSolveHPD(M1 const& m, M2 const& rhs,
 			 typename interface<M1>::type(), 
 			 typename interface<M2>::type());
 }
+
+// LinearSolve
+
+template <typename M1, typename M2>
+inline
+void ImplementLinearSolve(M1& m, M2& rhs)
+{
+   PRECONDITION_EQUAL(size1(m), size2(m));
+   PRECONDITION_EQUAL(size1(rhs), size1(m));
+
+   // m is hermitian, so it makes a difference whether it is row- or column-major.
+   // we require column major here.
+   PRECONDITION(is_blas_matrix(m));
+   PRECONDITION_EQUAL(stride1(m), 1);
+   PRECONDITION(is_blas_matrix(rhs));
+   PRECONDITION_EQUAL(stride1(rhs), 1);
+
+   //   DEBUG_PRECONDITION(is_hermitian(m));
+   //   DEBUG_PRECONDITION(min(EigenvaluesHermitian(m)) > 0.0);
+
+   Private::LinearSolve(size1(m), size2(rhs), data(m), leading_dimension(m),
+                        data(rhs), stride2(rhs) );
+}
+
+template <typename M1, typename M2, typename T1, typename T2>
+inline
+Matrix<double, ColMajor> 
+LinearSolve(M1 const& m, M2 const& rhs, 
+            MATRIX_EXPRESSION(double, T1), 
+            MATRIX_EXPRESSION(double, T2))
+{
+   Matrix<double, ColMajor> TempM(m);
+   Matrix<double, ColMajor> TempRhs(rhs);
+   ImplementLinearSolve(TempM, TempRhs);
+   return TempRhs;
+}
+
+template <typename M1, typename M2>
+inline
+Matrix<double, ColMajor> 
+LinearSolve(M1 const& m, M2 const& rhs,
+	       typename boost::enable_if<is_matrix<M1> >::type*,
+	       typename boost::enable_if<is_matrix<M2> >::type*)
+{
+   return LinearSolve(m, rhs, 
+                      typename interface<M1>::type(), 
+                      typename interface<M2>::type());
+}
+
+
 
 // DiagonalizeSymmetric
 

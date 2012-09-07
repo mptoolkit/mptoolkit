@@ -16,7 +16,7 @@ namespace LinearAlgebra
 namespace Private
 {
 
-void LinearSolveSPD(int Size, int Nrhs, double* A, int ldA, double* B, int ldB)//HERE
+void LinearSolveSPD(int Size, int Nrhs, double* A, int ldA, double* B, int ldB)
 {
    char uplo = 'L';
    Fortran::integer info = 0;
@@ -40,6 +40,17 @@ void LinearSolveHPD(int Size, int Nrhs,
    CHECK(info == 0)("LAPACK::zposv")(info);
 }
 
+void LinearSolve(int Size, int Nrhs, double* A, int ldA, double* B, int ldB)
+{
+   Fortran::integer info = 0;
+
+   Fortran::integer* IPiv = new Fortran::integer[Size];
+   // do the actual call
+   LAPACK::dgesv(Size, Nrhs, A, ldA, IPiv, B, ldB, info);
+   delete[] IPiv;
+
+   CHECK(info == 0)("LAPACK::dgesv")(info);
+}
 
 void EigenvaluesSymmetric(int Size, double* Data, int LeadingDim, double* Eigen)
 {

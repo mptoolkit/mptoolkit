@@ -19,7 +19,6 @@
 #include "common/prog_opt_accum.h"
 #include "mp-algorithms/gmres.h"
 #include "mp-algorithms/arnoldi.h"
-
 #include "models/spin-su2.h"
 #include "models/spin-u1.h"
 #include "models/spin-u1u1.h"
@@ -863,6 +862,15 @@ int main(int argc, char** argv)
       double delta = 0.0;
       double Theta = 0.0;
       double Beta = 0.0;
+      double Dipole = 0.0;
+      double Quadrapole = 0.0;
+      double Hexapole = 0.0;
+      double Octapole = 0.0;
+      double p0 = 0.0;
+      double p1 = 0.0;
+      double p2 = 0.0;
+      double p3 = 0.0;
+      double p4 = 0.0;
       double mu = 0.0;
       half_int Spin = 0.5;
       double Jleg = 1.0;
@@ -997,6 +1005,16 @@ int main(int argc, char** argv)
 	  FormatDefault("theta (for biquadratic xxx)", Theta).c_str())
 	 ("Beta", prog_opt::value(&Beta),
 	  FormatDefault("Beta (for biquadratic xxx)", Beta).c_str())
+	 ("p0", prog_opt::value(&p0),
+	  FormatDefault("p0 projector (for spin 2 xxx)", p0).c_str())
+	 ("p1", prog_opt::value(&p1),
+	  FormatDefault("p0 projector (for spin 2 xxx)", p1).c_str())
+	 ("p2", prog_opt::value(&p2),
+	  FormatDefault("p0 projector (for spin 2 xxx)", p2).c_str())
+	 ("p3", prog_opt::value(&p3),
+	  FormatDefault("p0 projector (for spin 2 xxx)", p3).c_str())
+	 ("p4", prog_opt::value(&p4),
+	  FormatDefault("p0 projector (for spin 2 xxx)", p4).c_str())
 	 ("lambda", prog_opt::value(&Lambda),
 	  FormatDefault("transverse field strength (for itf hamiltonian)", Lambda).c_str())
          ("seed", prog_opt::value<unsigned long>(), "random seed")
@@ -1077,26 +1095,45 @@ int main(int argc, char** argv)
             J = cos(Theta * math_const::pi);
             Beta = sin(Theta * math_const::pi);
          }
-	 std::cout << "Hamiltonian is XXX model with spin S=" << Spin << ", theta="<<Theta
-		   << ", J=" << J << ",beta=" << Beta << ", J2=" << J2
-            //                   << ", gamma=" << Gamma << ", delta=" << Delta
-                   << '\n';
 
 	 // Transform from (J,beta) coordinates into (a,b), with
 	 // H = a*(S.S) + b*(Q.Q) + c
 	 // using (Q.Q) = -1/3 (S^2 . S^2) + (S.S)^2 + 1/2 S.S
-	 double a = J - 0.5*Beta;
-	 double b = Beta;
-	 double c = b * (1.0 / 3.0) * pow(Spin * (Spin+1), 2);  // this is an energy shift per bond
+	 Dipole = -(J - 0.5*Beta);
+	 Quadrapole = Beta;
+	 double c = Beta * (1.0 / 3.0) * pow(Spin * (Spin+1), 2);  // this is an energy shift per bond
 
-	 TRACE(a)(b)(c);
+         if (vm.count("p0") || vm.count("p1") || vm.count("p2") || vm.count("p3") || vm.count("p4"))
+         {
+            std::cout << "Using projector coordinates, p0=" << p0 << ", p1=" << p1 
+                      << ", p2=" << p2 << ", p3=" << p3 
+                      << ", p4=" << p4 << "\n";
+            // These magic values for the spin 2 model projectors come from solving the equations
+            // in misc/spin2.cpp
+            Dipole     = (-1/50.0)  * p0 + (-1/20.0) * p1 + (-1/20.0)  * p2 + (0.0)     * p3 + (3/25.0)    * p4;
+            Quadrapole = (-1/105.0) * p0 + (-1/70.0) * p1 + (1/98.0)   * p2 + (4/105.0) * p3 + (-6/245.0)  * p4;
+            Hexapole   = (-1/180.0) * p0 + (0.0)     * p1 + (1/63.0)   * p2 + (-1/72.0) * p3 + (1/280.0)   * p4;
+            Octapole   = (-1/180.0) * p0 + (1/90.0)  * p1 + (-1/126.0) * p2 + (1/360.0) * p3 + (-1/2520.0) * p4;
+            c          = (1/25.0)   * p0 + (3/25.0)  * p1 + (1/5.0)    * p2 + (7/25.0)  * p3 + (9/25.0)    * p4;
+         }
+	 std::cout << "Hamiltonian is XXX model with spin S=" << Spin << ", theta="<<Theta
+		   << ", J=" << J << ",beta=" << Beta << ", J2=" << J2
+            //                   << ", gamma=" << Gamma << ", delta=" << Delta
+                   << "Dipole=" << Dipole << ", Quadrapole=" << Quadrapole 
+                   << ",Hexapole=" << Hexapole << ", Octapole=" << Octapole
+                   << ", eshift=" << c
+                   << '\n';
 
 	 SiteBlock Site = CreateSU2SpinSite(Spin);
 	 TriangularOperator Ham;
-	 Ham = a*TriangularTwoSite(-sqrt(3.0)*Site["S"], Site["S"], Site["I"].TransformsAs());
-	 // The Beta*1.2 here is an SU(2) factor, because we use Q.Q instead of (S.S)^2
-	 if (b != 0.0)
-	    Ham = Ham + b * TriangularTwoSite(sqrt(5.0)*Site["Q"], Site["Q"], Site["I"].TransformsAs());
+         Ham = Dipole * TriangularTwoSite(-sqrt(3.0)*Site["S"], Site["S"], Site["I"].TransformsAs());
+	 if (Quadrapole != 0.0)
+	    Ham = Ham + Quadrapole * TriangularTwoSite(-sqrt(5.0)*Site["Q"], Site["Q"], Site["I"].TransformsAs());
+         if (Hexapole != 0.0)
+	    Ham = Ham + Hexapole * TriangularTwoSite(-sqrt(7.0)*Site["T"], Site["T"], Site["I"].TransformsAs());
+         if (Octapole != 0.0)
+	    Ham = Ham + Octapole * TriangularTwoSite(-sqrt(9.0)*Site["F"], Site["F"], Site["I"].TransformsAs());
+          
 	 if (J2 != 0.0)
 	    Ham = Ham + J2 * TriangularThreeSite(-sqrt(3.0)*Site["S"],
 						 Site["I"], Site["S"]);

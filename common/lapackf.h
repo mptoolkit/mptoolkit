@@ -31,6 +31,9 @@ using namespace Fortran;
 
 // real
 
+void dgesv(integer n, integer nrhs, double *a, integer lda, integer* restrict ipiv, 
+           double *b, integer ldb, integer& restrict info);
+
 void dposv(char uplo, integer n, integer nrhs, double *a, integer lda,
 	   double *b, integer ldb, integer& restrict info);
 
@@ -133,6 +136,11 @@ namespace raw
 
 extern "C"
 {
+
+void F77NAME(dgesv)(integer const* n, integer const* nrhs, double *a, integer const* lda, 
+                    integer* restrict ipiv, 
+                    double *b, integer const* ldb, integer* restrict info);
+
 
 void F77NAME(dposv)(char const* uplo, integer const* n, integer const* nrhs, 
                     double* restrict a, integer const* lda,
@@ -254,6 +262,14 @@ void F77NAME(zgelqf)(integer const* m, integer const* n, complex* restrict a, in
 } // namespace raw
 
 // implementation of the wrappers
+
+inline
+void dgesv(integer n, integer nrhs, double* restrict a, integer lda, integer* restrict ipiv,
+	   double* restrict b, integer ldb, integer& restrict info)
+{
+   TRACE_LAPACK("dgesv")(n)(nrhs)(a)(lda)(ipiv)(b)(ldb)(info);
+   raw::F77NAME(dgesv)(&n, &nrhs, a, &lda, ipiv, b, &ldb, &info);
+}
 
 inline
 void dposv(char uplo, integer n, integer nrhs, double* restrict a, integer lda,

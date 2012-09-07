@@ -204,11 +204,11 @@ mp-tools = mp-construct mp-overlap mp-expectation \
 infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-ioverlap mp-itebd2 \
                  mp-ieigen mp-idmrg3 mp-icorrelation mp-idmrg4 mp-idmrg5 mp-iexcitation mp-iexcitation2 \
                  mp-bdmrg mp-imake-transverse-lattice mp-imake-transverse-lattice-folded mp-iexpectation-sz \
-                 mp-iexpectation-sz2 mp-iparity mp-idump mp-itebd mp-icorrelation
+                 mp-iexpectation-sz2 mp-iparity mp-idump mp-itebd mp-icorrelation mp-idmrg5-spin2
 
 infinite-tools = mp-idmrg5 mp-ispectrum \
                  mp-iexpectation2 mp-iexpectation3 mp-ispectral-expansion mp-igradient \
-                 mp-ireorder-symmetry mp-irename-symmetry mp-iinfo mp-ioverlap
+                 mp-ireorder-symmetry mp-irename-symmetry mp-iinfo
 
 mp-tools-not-functional = mp-add2 mp-exp mp-stringcorrelation-su2 mp-canonical
 
@@ -219,7 +219,7 @@ mp-tools-experimental = mp-cg mp-cg-sym mp-simplecg-sym mp-simplecg mp-ddmrg \
                         mp-dmrg-test mp-effective cgcalculator mp-idmrg  mp-trotter \
                         mp-rme mp-overlap-bigmem kondo-exactdiag \
                         $(infinite-tools) \
-                        mp-cv2 mp-simple-marshall-qmc
+                        mp-cv2 mp-simple-marshall-qmc spin2
 
 benchmarks = benchtripleprod
 
@@ -485,6 +485,7 @@ mp-idmrg2 : triangularoperator.o infinitewavefunction.o
 mp-idmrg3 : triangularoperator.o infinitewavefunction.o
 mp-idmrg4 : triangularoperator.o infinitewavefunction.o random_wavefunc.o
 mp-idmrg5 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o
+mp-idmrg5-spin2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o
 mp-ireorder-symmetry : triangular_operator.o mpoperator.o infinitewavefunction.o eigen.o
 mp-irename-symmetry : triangular_operator.o mpoperator.o infinitewavefunction.o eigen.o
 mp-iparity : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o
@@ -497,10 +498,10 @@ mp-iexcitation : triangular_operator.o mpoperator.o infinitewavefunction.o rando
 mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
 mp-igradient : triangularoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
 mp-ispectral-expansion : triangularoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
-mp-ioverlap : infinitewavefunction.o eigen.o
-mp-icorrelation : infinitewavefunction.o eigen.o
+mp-ioverlap : infinitewavefunction.o
+mp-icorrelation : infinitewavefunction.o
 mp-iortho : triangularoperator.o infinitewavefunction.o
-mp-iinfo : triangularoperator.o infinitewavefunction.o eigen.o
+mp-iinfo : eigen.o triangularoperator.o infinitewavefunction.o
 mp-iorthogonalize : triangularoperator.o infinitewavefunction.o
 mp-pwfrg : triangularoperator.o match_basis.o
 mp-itebd : mpexponential.o $(expokitobj) infinitewavefunction.o
@@ -570,6 +571,8 @@ examples/la-tng/vectorexample : $(commonobj)
 testvectortransform : $(commonobj)
 
 testmatelem : $(commonobj)  $(pstreamobj) $(pheapobj) $(quantumnumbersobj) $(linearalgebraobj) $(mpobj) $(tensorobj)
+
+spin2 : eigen.o
 
 # utils
 

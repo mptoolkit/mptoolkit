@@ -35,6 +35,11 @@ template <typename T>
 IrredTensor<T, BasisList, BasisList>
 map_1x1_operator(IrredTensor<LinearAlgebra::Matrix<T>, BasisList, BasisList> const& Op);
 
+   // convert a simple operator to a matrix operator
+template <typename T>
+IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
+ToMatrixOperator(IrredTensor<T, BasisList, BasisList> const& Op);
+
 } // namespace Tensor
 
 #include "regularize.cc"
