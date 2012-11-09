@@ -904,7 +904,7 @@ int main(int argc, char** argv)
          ("help", "show this help message")
          ("Hamiltonian,H", prog_opt::value(&HamStr),
           "model Hamiltonian.  Valid choices: itf, itf-z2, xxx-su2, xxx-u1, xxx, tj-zigzag-u1su2, "
-          "tj-zigzag-u1, sf-zigzag-u1, klm-u1su2, klm-u1, bh, bh2, bh-u1, bh2-u1, kagome-su2, kagome-su2-xc, kagome-su2-yc")
+          "tj-zigzag-u1, tjcylinder, sf-zigzag-u1, klm-u1su2, klm-u1, bh, bh2, bh-u1, bh2-u1, kagome-su2, kagome-su2-yc")
          ("wavefunction,w", prog_opt::value(&FName),
           "wavefunction to apply DMRG (required)")
 	 ("two-site,2", prog_opt::bool_switch(&TwoSite), "Modify two sites at once (default)")
@@ -1105,8 +1105,8 @@ int main(int argc, char** argv)
 
          if (vm.count("p0") || vm.count("p1") || vm.count("p2") || vm.count("p3") || vm.count("p4"))
          {
-            std::cout << "Using projector coordinates, p0=" << p0 << ", p1=" << p1 
-                      << ", p2=" << p2 << ", p3=" << p3 
+            std::cout << "Using projector coordinates, p0=" << p0 << ", p1=" << p1
+                      << ", p2=" << p2 << ", p3=" << p3
                       << ", p4=" << p4 << "\n";
             // These magic values for the spin 2 model projectors come from solving the equations
             // in misc/spin2.cpp
@@ -1119,7 +1119,7 @@ int main(int argc, char** argv)
 	 std::cout << "Hamiltonian is XXX model with spin S=" << Spin << ", theta="<<Theta
 		   << ", J=" << J << ",beta=" << Beta << ", J2=" << J2
             //                   << ", gamma=" << Gamma << ", delta=" << Delta
-                   << "Dipole=" << Dipole << ", Quadrapole=" << Quadrapole 
+                   << "Dipole=" << Dipole << ", Quadrapole=" << Quadrapole
                    << ",Hexapole=" << Hexapole << ", Octapole=" << Octapole
                    << ", eshift=" << c
                    << '\n';
@@ -1133,7 +1133,7 @@ int main(int argc, char** argv)
 	    Ham = Ham + Hexapole * TriangularTwoSite(-sqrt(7.0)*Site["T"], Site["T"], Site["I"].TransformsAs());
          if (Octapole != 0.0)
 	    Ham = Ham + Octapole * TriangularTwoSite(-sqrt(9.0)*Site["F"], Site["F"], Site["I"].TransformsAs());
-          
+
 	 if (J2 != 0.0)
 	    Ham = Ham + J2 * TriangularThreeSite(-sqrt(3.0)*Site["S"],
 						 Site["I"], Site["S"]);
@@ -1454,7 +1454,7 @@ int main(int argc, char** argv)
 	    Ham += -tConst * TwoPointOperator(Sites, i, Site["BH"], i+1, Site["B"]);
 	    Ham += -tConst * TwoPointOperator(Sites, i, Site["B"], i+1, Site["BH"]);
 	    Ham += U*UConst * OnePointOperator(Sites, i, Site["N2"]);
-	    double muConst = V*cos(math_const::pi * (i) / UnitCellSize) * cos(math_const::pi * (i) / UnitCellSize) 
+	    double muConst = V*cos(math_const::pi * (i) / UnitCellSize) * cos(math_const::pi * (i) / UnitCellSize)
 	       + 2*tConst;
 	    Ham += muConst * OnePointOperator(Sites, i, Site["N"]);
 	 }
@@ -1512,76 +1512,79 @@ int main(int argc, char** argv)
          Ham *= -sqrt(3.0);
          HamMPO = Ham;
       }
-      else if (HamStr == "kagome-su2-xc")
+      else if (HamStr == "kagome-su2-yc")
       {
-         std::cout << "Hamiltonian is XC Kagome cylinder with J = 1 and NLegs = "<<NLegs<<'\n';
+//          J = vm["J"].as<double>();
+         std::cout << "Hamiltonian is J1-J2 YC Kagome cylinder with J1 = 1, J2 = "<<J2<<" and NLegs = "<<NLegs<<'\n';
          SiteBlock Site = CreateSU2SpinSite(0.5);
-         // 6-site unit cell
-         std::vector<BasisList> Sites(NLegs*6, Site["I"].Basis().Basis());
+         // 3-site unit cell
+         std::vector<BasisList> Sites(NLegs*3, Site["I"].Basis().Basis());
+
+         // J1 interaction
          TriangularOperator Ham;
          for(int i = 0; i < NLegs; ++i)
          {
             // intra-unit-cell interactions
-            Ham += TwoPointOperator(Sites, i*6, Site["S"], i*6+1, Site["S"])
-               + TwoPointOperator(Sites, i*6, Site["S"], i*6+2, Site["S"])
-               + TwoPointOperator(Sites, i*6+1, Site["S"], i*6+5, Site["S"])
-               + TwoPointOperator(Sites, i*6+2, Site["S"], i*6+4, Site["S"])
-               + TwoPointOperator(Sites, i*6+2, Site["S"], i*6+3, Site["S"])
-               + TwoPointOperator(Sites, i*6+3, Site["S"], i*6+4, Site["S"]);
-            // inter-unit-cell interactions: horizontals
-            Ham += TwoPointOperator(Sites, i*6+5, Site["S"], (NLegs+i)*6, Site["S"])
-               + TwoPointOperator(Sites, i*6+5, Site["S"], (NLegs+i)*6+1, Site["S"])
-               + TwoPointOperator(Sites, i*6+4, Site["S"], (NLegs+i)*6, Site["S"])
-               + TwoPointOperator(Sites, i*6+4, Site["S"], (NLegs+i)*6+2, Site["S"]);
+            Ham += TwoPointOperator(Sites, i*3, Site["S"], i*3+1, Site["S"])
+               + TwoPointOperator(Sites, i*3, Site["S"], i*3+2, Site["S"])
+               + TwoPointOperator(Sites, i*3+1, Site["S"], i*3+2, Site["S"]);
+
+            // inter-unit cell: vertical
+            Ham += TwoPointOperator(Sites, i*3+1, Site["S"], ((i+1)%NLegs)*3, Site["S"]);
+
+            // inter-unit cell: horizontal
+            Ham += TwoPointOperator(Sites, i*3+2, Site["S"], (NLegs+i)*3, Site["S"])
+               + TwoPointOperator(Sites, i*3+2, Site["S"], (NLegs+i-1)*3+1, Site["S"]);
          }
-         // couplings along the strip - i.e. vertical interactions
-         for(int i = 0; i < NLegs-1; ++i)
+
+         // J2 interaction
+         TriangularOperator Htwo;
+         for(int i = 0; i < NLegs; ++i)
          {
-            Ham += TwoPointOperator(Sites, i*6+1, Site["S"], (i+1)*6+3, Site["S"])
-               + TwoPointOperator(Sites, i*6+5, Site["S"], (i+1)*6+3, Site["S"]);
+            Htwo += TwoPointOperator(Sites, i*3, Site["S"], ((i+1)%NLegs)*3, Site["S"])
+               + TwoPointOperator(Sites, i*3,  Site["S"], (i+NLegs)*3, Site["S"])
+               + TwoPointOperator(Sites, i*3,  Site["S"], (i+NLegs)*3-1, Site["S"])
+               + TwoPointOperator(Sites, i*3,  Site["S"], ((i+NLegs)*3-1)%(3*NLegs), Site["S"])
+               + TwoPointOperator(Sites, i*3+1, Site["S"], ((i+1)%NLegs)*3+1, Site["S"])
+               + TwoPointOperator(Sites, i*3+1, Site["S"], ((i+1)%NLegs)*3+2, Site["S"])
+               + TwoPointOperator(Sites, i*3+1, Site["S"], (i+NLegs)*3-2, Site["S"])
+               + TwoPointOperator(Sites, i*3+1, Site["S"], (i+NLegs)*3, Site["S"])
+               + TwoPointOperator(Sites, i*3+2, Site["S"], (i+NLegs)*3-1, Site["S"])
+               + TwoPointOperator(Sites, i*3+2, Site["S"], (i+NLegs)*3+1, Site["S"])
+               + TwoPointOperator(Sites, i*3+2, Site["S"], (i+NLegs)*3+2, Site["S"])
+               + TwoPointOperator(Sites, i*3+2, Site["S"], (i+NLegs-1)*3, Site["S"]);
          }
-         // cylinder wrapping
-         Ham += TwoPointOperator(Sites, (NLegs-1)*6+1, Site["S"], 3, Site["S"])
-            + TwoPointOperator(Sites, (NLegs-1)*6+5, Site["S"], 3, Site["S"]);
+         Htwo *= J2;
+         Ham += Htwo;
+
          // SU(2) factor
          Ham *= -sqrt(3.0);
          HamMPO = Ham;
       }
-      else if (HamStr == "kagome-su2-yc")
+      else if (HamStr == "tjcylinder") // t-J Hubbard model defined on a cylinder
       {
-         std::cout << "Hamiltonian is YC Kagome cylinder with J = 1 and NLegs = "<<NLegs<<'\n';
-         SiteBlock Site = CreateSU2SpinSite(0.5);
-         // 6-site unit cell
-         std::vector<BasisList> Sites(NLegs*6, Site["I"].Basis().Basis());
-         TriangularOperator Ham;
+         std::cout << "Hamiltonian is U(1)xSU(2) t-J Hubbard model with t = "<<t<<", J = "<<J2<<" defined on "<<NLegs<<" rows\n";
+         SiteBlock Site = CreateU1SU2tJSite();
+
+         // 'Strip'
+         std::vector<BasisList> Sites(NLegs, Site["I"].Basis().Basis());
+
+         double tSqrt2 = (-sqrt(2.0))*t; // SU(2) factor
+         double JSqrt3 = (-sqrt(3.0))*J2; // SU(2) factor
+         TriangularOperator Ht;
+         TriangularOperator Hj;
          for(int i = 0; i < NLegs; ++i)
          {
-            // intra-unit-cell interactions
-            Ham += TwoPointOperator(Sites, i*6, Site["S"], i*6+1, Site["S"])
-               + TwoPointOperator(Sites, i*6, Site["S"], i*6+2, Site["S"])
-               + TwoPointOperator(Sites, i*6+1, Site["S"], i*6+2, Site["S"])
-               + TwoPointOperator(Sites, i*6+2, Site["S"], i*6+3, Site["S"])
-               + TwoPointOperator(Sites, i*6+3, Site["S"], i*6+4, Site["S"])
-               + TwoPointOperator(Sites, i*6+4, Site["S"], i*6+5, Site["S"]);
-            // inter-unit-cell interactions: horizontals
-            Ham += TwoPointOperator(Sites, i*6+4, Site["S"], (NLegs+i)*6, Site["S"])
-               + TwoPointOperator(Sites, i*6+5, Site["S"], (NLegs+i)*6, Site["S"]);
+            Ht += -tSqrt2 * ( TwoPointOperator(Sites, i, Site["CHP"], (i+1)%NLegs, Site["C"])
+                        + TwoPointOperator(Sites, i, Site["CP"], (i+1)%NLegs, Site["CH"])
+                        + TwoPointOperator(Sites, i, Site["CHP"], i+NLegs, Site["C"])
+                        + TwoPointOperator(Sites, i, Site["CP"], i+NLegs, Site["CH"]) );
+            Hj += JSqrt3 * (TwoPointOperator(Sites, i, Site["S"], (i+1)%NLegs, Site["S"])
+                        + TwoPointOperator(Sites, i, Site["S"], i+NLegs, Site["S"]));
+            Hj += 0.25 * J2 * (TwoPointOperator(Sites, i, Site["N"], (i+1)%NLegs, Site["N"])
+                        + TwoPointOperator(Sites, i, Site["N"], i+NLegs, Site["N"]) );
          }
-         // couplings along the strip - i.e. vertical interactions
-         for(int i = 0; i < NLegs-1; ++i)
-         {
-            Ham += TwoPointOperator(Sites, i*6+2, Site["S"], (i+1)*6+1, Site["S"])
-               + TwoPointOperator(Sites, i*6+3, Site["S"], (i+1)*6+1, Site["S"])
-               + TwoPointOperator(Sites, i*6+3, Site["S"], (i+1)*6+5, Site["S"])
-               + TwoPointOperator(Sites, i*6+4, Site["S"], (i+1)*6+5, Site["S"]);
-         }
-         // cylinder wrapping
-         Ham += TwoPointOperator(Sites, (NLegs-1)*6+2, Site["S"], 1, Site["S"])
-            + TwoPointOperator(Sites, (NLegs-1)*6+3, Site["S"], 1, Site["S"])
-            + TwoPointOperator(Sites, (NLegs-1)*6+3, Site["S"], 5, Site["S"])
-            + TwoPointOperator(Sites, (NLegs-1)*6+4, Site["S"], 5, Site["S"]);
-         // SU(2) factor
-         Ham *= -sqrt(3.0);
+         TriangularOperator Ham = Ht+Hj;
          HamMPO = Ham;
       }
       else if (HamStr == "tricluster")
@@ -2010,7 +2013,7 @@ int main(int argc, char** argv)
 	       C *= 1.0 / norm_frob(C);
 	       MatrixOperator COld = C;
                if (EvolveDelta == 0.0)
-               { 
+               {
 		  Energy = Lanczos(C, SuperblockMultiply(LeftBlock.back(), RightBlock.front()),
                                    Iterations,
                                    Tol);
