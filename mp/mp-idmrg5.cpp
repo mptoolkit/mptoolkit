@@ -1119,8 +1119,8 @@ int main(int argc, char** argv)
 	 std::cout << "Hamiltonian is XXX model with spin S=" << Spin << ", theta="<<Theta
 		   << ", J=" << J << ",beta=" << Beta << ", J2=" << J2
             //                   << ", gamma=" << Gamma << ", delta=" << Delta
-                   << "Dipole=" << Dipole << ", Quadrapole=" << Quadrapole
-                   << ",Hexapole=" << Hexapole << ", Octapole=" << Octapole
+                   << ", Dipole=" << Dipole << ", Quadrapole=" << Quadrapole 
+                   << ", Hexapole=" << Hexapole << ", Octapole=" << Octapole
                    << ", eshift=" << c
                    << '\n';
 

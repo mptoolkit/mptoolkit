@@ -19,7 +19,7 @@
 #include <vector>
 #include <stdio.h>
 //#if defined(__DECCXX)
-using std::FILE;
+//using std::FILE;
 //#endif
 //#include "pstream.h"
 #include "gmp.h"

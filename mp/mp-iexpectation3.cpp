@@ -22,6 +22,7 @@
 #include "models/hubbard-so4.h"
 #include "models/bosehubbard-spinless.h"
 #include "models/bosehubbard-spinless-u1.h"
+#include "models/hubbard-u1su2.h"
 
 // binomial coefficient n choose k
 long Binomial(int n, int k)
@@ -309,7 +310,7 @@ operator_prod(HermitianProxy<OperatorComponent> const& M,
 {
    //   DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis2(), A.base().Basis2());
    DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis1(), B.LocalBasis());
-   DEBUG_PRECONDITION_EQUAL(M.base().Basis1().size(), E.size());
+   //   DEBUG_PRECONDITION_EQUAL(M.base().Basis1().size(), E.size());
    
    std::vector<MomentumPolynomialType> Result(M.base().Basis2().size());
 
@@ -389,7 +390,7 @@ inject_left_mask(std::vector<MomentumPolynomialType> const& In,
 {
    PRECONDITION_EQUAL(Psi1.size(), Op.size());
    PRECONDITION_EQUAL(Psi1.size(), Psi2.size());
-   PRECONDITION_EQUAL(Op.Basis1().size(), In.size());
+   //   PRECONDITION_EQUAL(Op.Basis1().size(), In.size());
 
    LinearWavefunction::const_iterator I1 = Psi1.begin();
    LinearWavefunction::const_iterator I2 = Psi2.begin();
@@ -421,6 +422,8 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
    typedef Polynomial<MatrixOperator> PolyType;
    typedef Polynomial<std::complex<double> > ComplexPolyType;
    int Dim = Op.Basis1().size();  // dimension of the MPO
+
+   Dim = Op.front().data().size1();
 
    typedef Polynomial<std::complex<double> > ComplexPolyType;
    typedef std::map<std::complex<double>, ComplexPolyType, CompareComplex> KComplexPolyType;
@@ -617,6 +620,59 @@ ExtractOverlap(Polynomial<MatrixOperator> const& E, MatrixOperator const& Rho)
    return Overlap;
 }
 
+TriangularOperator ConstructIsingOperator()
+{
+   SiteBlock Site = CreateSpinSite(0.5);
+   double J = 1.0;
+   double Lambda = 1.0;
+   TriangularOperator Op = J * 4.0 * TriangularTwoSite(Site["Sz"], Site["Sz"])
+      + Lambda * 2.0 * TriangularOneSite(Site["Sx"]);
+   return Op;
+}
+
+TriangularOperator ConstructTriOperator()
+{
+   double t = 1;
+   double tc = 0.25;
+   double U = 1.0;
+
+   SiteBlock Site = CreateSU2HubbardSite();
+   double tSqrt2 = (-sqrt(2.0)) * t;  // the -sqrt(2) is an SU(2) factor
+   double tcSqrt2 = (-sqrt(2.0)) * tc;  // the -sqrt(2) is an SU(2) factor
+   // 3-site unit cell
+   std::vector<BasisList> Sites(3, Site["I"].Basis().Basis());
+   TriangularOperator Ham;
+#if 0
+   Ham += -tcSqrt2 * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 1, Site["C"])
+		      + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 1, Site["CH"]));
+   Ham += -tcSqrt2 * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 2, Site["C"])
+		      + TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 2, Site["CH"]));
+   Ham += -tcSqrt2 * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 2, Site["C"])
+		      + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 2, Site["CH"]));
+   Ham += -tSqrt2 * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 4, Site["C"])
+		     + TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 4, Site["CH"]));
+#endif
+
+   TriangularOperator Current;
+   Current += -tcSqrt2 * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 1, Site["C"])
+		      - TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 1, Site["CH"]));
+   Current += -tcSqrt2 * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 2, Site["C"])
+		      - TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 2, Site["CH"]));
+   Current += -tcSqrt2 * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 2, Site["C"])
+		      - TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 2, Site["CH"]));
+   Current += -tSqrt2 * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 4, Site["C"])
+		     - TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 4, Site["CH"]));
+
+
+   Ham += U * OnePointOperator(Sites, 0, Site["Pdouble"]);
+   Ham += U * OnePointOperator(Sites, 1, Site["Pdouble"]);
+   Ham += U * OnePointOperator(Sites, 2, Site["Pdouble"]);
+   //TRACE(TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 4, Site["CH"]));
+   //   Ham += 0.4169289468088717698 * OnePointOperator(Sites, 0, Site["I"]);
+   //   return Ham*Ham;
+   return Current*Current;
+}
+
 int main(int argc, char** argv)
 {
    if (argc < 2 || argc > 2)
@@ -628,56 +684,17 @@ int main(int argc, char** argv)
    long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
    pvalue_ptr<InfiniteWavefunction> PsiPtr = pheap::OpenPersistent(argv[1], CacheSize, true);
    InfiniteWavefunction Psi = *PsiPtr;
+   int UnitCellSize = Psi.Psi.size();
 
-#if 0
-   SiteBlock Site = CreateSpinSite(0.5);
-   double J = 1.0;
-   double Lambda = 1.0;
    TriangularOperator Op;
-   Op = J * 4.0 * TriangularTwoSite(Site["Sz"], Site["Sz"])
-      + Lambda * 2.0 * TriangularOneSite(Site["Sx"]);
-#endif
 
-#if 0
-   SiteBlock Site = CreateSpinSite(0.5);
-   double J = -1.0;
-   double Jz = 1;
-   TriangularOperator Op;
-   Op = J * 0.5 * (TriangularTwoSite(Site["Sp"], Site["Sm"])
-                   + TriangularTwoSite(Site["Sm"], Site["Sp"]))
-      + Jz * TriangularTwoSite(Site["Sz"], Site["Sz"]);
-#endif
+   // Construct the operator
 
-#if 0
-   SiteBlock Site = CreateSpinSite(1);
-   TriangularOperator Op;
-   double const k = math_const::pi*0.75;
-   Op = TriangularOneSite(Site["Sp"], k) * TriangularOneSite(Site["Sm"], -k);
+   //   Op = ConstructIsingOperator();
+   Op = ConstructTriOperator();
+   //   TRACE(Op);
 
-   double J =  1.0;
-   double Jz = 1;
-   TriangularOperator H = J * 0.5 * (TriangularTwoSite(Site["Sp"], Site["Sm"])
-                                     + TriangularTwoSite(Site["Sm"], Site["Sp"]))
-      + Jz * TriangularTwoSite(Site["Sz"], Site["Sz"]);
-
-   TriangularOperator HB = TriangularOneSite(Site["Sp"], k) * H * TriangularOneSite(Site["Sm"], -k);
-
-   //Op = HB;
-#endif
-
-#if 1
-   // These parameters are defined in this form to match the Lieb-Liniger model, U = m g dz / hbar^2, energy scaled by hbar^2 / 2 m dz^2
-   //   std::cout << "Hamiltonian is spinless Bose-Hubbard, U1 symmetry, T=1, U=" << U << ", Nmax=" << NMax << "\n";
-   int NMax = 3;
-   SiteBlock Site = CreateBoseHubbardSpinlessU1Site(NMax);
-   TriangularOperator Op;
-#endif
-
-   //   MpOpTriangular Ham;
-   //   Ham = -1.0 * TriangularTwoSite(Site["BH"], Site["B"]) - 1.0 * TriangularTwoSite(Site["B"], Site["BH"])
-   //      + U * TriangularOneSite(Site["N2"]) + 2.0 * TriangularOneSite(Site["N"]);
-   //   HamMPO.push_back(Ham.data());
-
+   // Make a LinearWavefunction in the symmetric orthogonality constraint
    MatrixOperator Identity = MatrixOperator::make_identity(Psi.Psi.Basis1());
    MatrixOperator Rho = scalar_prod(Psi.C_right, herm(Psi.C_right));
    LinearWavefunction Phi = Psi.Psi; // no need to bugger around with C_old,C_right
@@ -692,62 +709,26 @@ int main(int argc, char** argv)
    Rho = Psi.C_old;
    Identity = Rho;
 
+   // Rho and Identity are the same matrix in this representation
+
    //   TRACE(norm_frob(operator_prod(herm(Phi), Identity, Phi) - Identity));
    //   TRACE(norm_frob(operator_prod(Phi, Rho, herm(Phi)) - Rho));
 
    std::cout.precision(14);
 
-   double Delta = 0.001;
-   for (double k = 0; k < 1+Delta/2; k += Delta)
-   {
-      Op = TriangularOneSite(Site["BH"], k*math_const::pi) * TriangularOneSite(Site["B"], -k*math_const::pi);
+   // make Op the same size as our unit cell
+   Op = repeat(Op, UnitCellSize / Op.size());
 
-#if 0
-      TriangularOperator H = J * 0.5 * (TriangularTwoSite(Site["Sp"], Site["Sm"])
-                                        + TriangularTwoSite(Site["Sm"], Site["Sp"]))
-         + Jz * TriangularTwoSite(Site["Sz"], Site["Sz"]);
+   std::map<std::complex<double>, Polynomial<MatrixOperator>, CompareComplex> 
+      E = SolveMPO_Left(Phi, Psi.QShift, Op, Rho, Identity, Verbose);
+   Polynomial<std::complex<double> > aNorm = ExtractOverlap(E[1.0], Rho);
 
-      TriangularOperator HSmCom = H * TriangularOneSite(Site["Sm"], -k*math_const::pi) - TriangularOneSite(Site["Sm"], -k*math_const::pi) * H;
-
-      remove_redundant(HSmCom.data().front());
-
-      HSmCom = H*HSmCom - HSmCom*H;
-      remove_redundant(HSmCom.data().front());
-      std::cout << HSmCom.Basis1().size() << '\n';
-#endif
-
-#if 0
-      if (HSmCom.Basis1().size() != 12 || k == Delta)
+   std::cout << "#degree #real #imag\n";
+   for (int i = 0; i <= aNorm.degree(); ++i)
       {
-         std::cout << HSmCom << '\n';
+         std::cout << i << ' ' << aNorm[i].real() << ' ' << aNorm[i].imag() << '\n';
       }
-#endif
-
-      //      HB =  TriangularOneSite(Site["Sp"], k*math_const::pi) * HSmCom;
-
-      //HB = TriangularOneSite(Site["Sp"], k*math_const::pi) 
-      // * H * H * TriangularOneSite(Site["Sm"], -k*math_const::pi);
-
-      Op = extend(Op, 2);
-      //      HB = extend(HB, 2);
-
-      std::map<std::complex<double>, Polynomial<MatrixOperator>, CompareComplex> 
-         E = SolveMPO_Left(Phi, Psi.QShift, Op, Rho, Identity, Verbose);
-      Polynomial<std::complex<double> > aNorm = ExtractOverlap(E[1.0], Rho);
-
-      //      E = SolveMPO_Left(Phi, Psi.QShift, HB, Rho, Identity, Verbose);
-      //      Polynomial<std::complex<double> > aEnergy = ExtractOverlap(E[1.0], Rho);
-      
-      std::cout << k;
-      for (int i = 0; i <= aNorm.degree(); ++i)
-      {
-         std::cout << ' ' << aNorm[i].real();
-      }
-      std::cout << std::endl;
-
-      //      std::cout << "at k=" << k << " pi, E = " 
-      //                << (aEnergy[2].real() / aNorm[1].real()) << "*N + " << (aEnergy[1].real() / aNorm[1].real()) << '\n';
-   }
+   std::cout << std::endl;
 
    pheap::Shutdown();
 }

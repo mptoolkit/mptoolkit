@@ -5,9 +5,10 @@
 std::ostream&
 operator<<(std::ostream& out, MPOperator const& op)
 {
+   out << "Operator has a unit cell of " << op.size() << " sites.\n";
    for (unsigned i = 0; i < op.size(); ++i)
    {
-      out << op[i] << '\n';
+      out << "Site " << i << ": " << op[i] << '\n';
    }
    return out;
 }

@@ -63,7 +63,7 @@ class TriangularOperator
       value_type const& back() const { return Data_.back(); }
       value_type& back() { return Data_.back(); }
 
-      QuantumNumber const& TransformsAs() const { return this->Basis().back(); }
+      QuantumNumber const& TransformsAs() const { return this->Basis().front(); }
 
       // returns the component at entry (i,j).  Result is a 1x1 MPOperator
       MPOperator operator()(int i, int j) const;
@@ -106,7 +106,9 @@ TriangularOperator TriangularThreeSite(SimpleOperator const& x,
                                        SimpleOperator const& y, 
                                        SimpleOperator const& z);
 
-// a two point interaction between sites n1 and n2 of a lattice
+// a two point interaction between sites n1 and n2 of a lattice.
+// This probably should use SiteOperator's rather than SimpleOperator's, so that
+// we can handle fermions, especially for the case n2<n1.
 // this is assumed to be a bosonic operator; if n2 < n1 we swap the sites
 // (which is incorrect for fermions)
 TriangularOperator TwoPointOperator(std::vector<BasisList> const& Sites, 

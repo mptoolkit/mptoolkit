@@ -466,6 +466,7 @@ TriangularOperator operator-(TriangularOperator const& x, TriangularOperator con
 TriangularOperator operator*(TriangularOperator const& x, TriangularOperator const& y)
 {
    PRECONDITION_EQUAL(x.size(), y.size());
+   //   PRECONDITION(is_transform_target(y.TransformsAs(), x.TransformsAs(), q);
 
    TriangularOperator Result(x.size());
    for (unsigned Here = 0; Here < x.size(); ++Here)
@@ -475,8 +476,50 @@ TriangularOperator operator*(TriangularOperator const& x, TriangularOperator con
 
       OperatorComponent Op(x[Here].LocalBasis1(), y[Here].LocalBasis2(), B1.Basis(), B2.Basis());
 
-      Op.data() = direct_product(x[Here].data(), y[Here].data(), 
-                                 LinearAlgebra::Multiplication<SimpleRedOperator, SimpleRedOperator>());
+      for (OperatorComponent::const_iterator I1 = iterate(x[Here].data()); I1; ++I1)
+      {
+	 for (OperatorComponent::const_inner_iterator I2 = iterate(I1); I2; ++I2)
+	 {
+
+	    for (OperatorComponent::const_iterator J1 = iterate(y[Here].data()); J1; ++J1)
+	    {
+	       for (OperatorComponent::const_inner_iterator J2 = iterate(J1); J2; ++J2)
+	       {
+		  SimpleRedOperator const x = (*I2) * (*J2);
+		 
+		  std::set<QuantumNumbers::QuantumNumber> qn = x.components();
+		  ProductBasis<BasisList, BasisList>::const_iterator B1Iter = B1.begin(I2.index1(), J2.index1());
+		  ProductBasis<BasisList, BasisList>::const_iterator B1End = B1.end(I2.index1(), J2.index1());
+
+		  ProductBasis<BasisList, BasisList>::const_iterator B2Iter = B2.begin(I2.index2(), J2.index2());
+		  ProductBasis<BasisList, BasisList>::const_iterator B2End = B2.end(I2.index2(), J2.index2());
+
+		  while (B1Iter != B1End)
+		  {
+		     while (B2Iter != B2End)
+		     {
+			SimpleRedOperator ToInsert(x.Basis1(), x.Basis2());
+			for (std::set<QuantumNumbers::QuantumNumber>::const_iterator q = qn.begin(); q != qn.end(); ++q)
+			{
+			   if (is_transform_target(B2[*B2Iter], *q, B1[*B1Iter]))
+			   {
+			      ToInsert += x.project(*q);
+			   }
+			}
+			Op.data()(*B1Iter, *B2Iter) = ToInsert;
+			++B2Iter;
+		     }
+		     ++B1Iter;
+		  }
+	       }
+	    }
+	 }
+      }
+
+			
+
+      //      Op.data() = direct_product(x[Here].data(), y[Here].data(), 
+      //                                 LinearAlgebra::Multiplication<SimpleRedOperator, SimpleRedOperator>());
 
       Result[Here] = Op;
    }
