@@ -69,6 +69,13 @@ class ProductBasisBase
       ProductBasisBase(left_basis_type const& B1, right_basis_type const& B2, 
                        QuantumNumber const& q);
 
+      // Named constructor for making a basis for a lower-triangular operator that projects onto some irreducible
+      // component in the final element.  This is the same as a normal product basis between Basis1_ and Basis2_,
+      // except that for the last element in Basis1_ and Basis2_, we take only the single projection q.
+      static
+      ProductBasisBase
+      MakeTriangularProjected(left_basis_type Basis1_, right_basis_type Basis2_, QuantumNumbers::QuantumNumber const& q);
+
       basis_type Basis_;
       left_basis_type Left_;
       right_basis_type Right_;
@@ -90,9 +97,16 @@ class ProductBasis<BasisList, BasisList>
       ProductBasis(left_basis_type const& B1, right_basis_type const& B2)
          : base_type(B1, B2) {}
 
+      // A product basis that projects onto a single quantum number only
       ProductBasis(left_basis_type const& B1, right_basis_type const& B2, 
                    QuantumNumber const& q)
          : base_type(B1, B2, q) {}
+
+      // Named constructor for making a basis for a lower-triangular operator that projects onto some irreducible
+      // component in the final element.  This is the same as a normal product basis between Basis1_ and Basis2_,
+      // except that for the last element in Basis1_ and Basis2_, we take only the single projection q.
+      static
+      ProductBasis MakeTriangularProjected(LeftBasisType Basis1_, RightBasisType Basis2_, QuantumNumber const& q);
 
    friend PStream::opstream& operator<< <>(PStream::opstream& out, ProductBasis const& B);
    friend PStream::ipstream& operator>> <>(PStream::ipstream& in, ProductBasis& B);

@@ -95,6 +95,8 @@ class BasisList
    friend void CoerceSymmetryList(BasisList& b, SymmetryList const& sl);
 };
 
+   typedef BasisList SimpleBasis;
+
 BasisList make_vacuum_basis(SymmetryList const& S);
 
 std::ostream& operator<<(std::ostream& out, BasisList const& b);
