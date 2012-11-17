@@ -475,16 +475,17 @@ TriangularOperator prod(TriangularOperator const& x, TriangularOperator const& y
    PRECONDITION(is_transform_target(y.TransformsAs(), x.TransformsAs(), q))(x.TransformsAs())(y.TransformsAs())(q);
    PRECONDITION_EQUAL(x.size(), y.size());
 
+   typedef Tensor::ProductBasis<BasisList, BasisList> PBasisType;
+
    TriangularOperator Result(x.size());
 
    // The basis that wraps around gets the final element projected onto component q only
-   Tensor::ProductBasis<BasisList, BasisList> ProjectedBasis = 
-      Tensor::ProductBasis<BasisList, BasisList>::MakeTriangularProjected(x.front().Basis1(), y.front().Basis1(), q);
+   PBasisType ProjectedBasis = PBasisType::MakeTriangularProjected(x.front().Basis1(), y.front().Basis1(), q);
 
    for (unsigned Here = 0; Here < x.size(); ++Here)
    {
-      Tensor::ProductBasis<BasisList, BasisList> B1(x[Here].Basis1(), y[Here].Basis1());
-      Tensor::ProductBasis<BasisList, BasisList> B2(x[Here].Basis2(), y[Here].Basis2());
+      Tensor::ProductBasis<BasisList, BasisList> B1 = (Here == 0) ? ProjectedBasis : PBasisType(x[Here].Basis1(), y[Here].Basis1());
+      Tensor::ProductBasis<BasisList, BasisList> B2 = (Here == x.size()-1) ? ProjectedBasis : PBasisType(x[Here].Basis2(), y[Here].Basis2());
 
       OperatorComponent Op(x[Here].LocalBasis1(), y[Here].LocalBasis2(), B1.Basis(), B2.Basis());
 

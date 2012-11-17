@@ -309,10 +309,6 @@ operator_prod(HermitianProxy<OperatorComponent> const& M,
               std::vector<int> const& OutMask,
               std::vector<int> const& InMask)
 {
-   //   DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis2(), A.base().Basis2());
-   DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis1(), B.LocalBasis());
-   //   DEBUG_PRECONDITION_EQUAL(M.base().Basis1().size(), E.size());
-   
    std::vector<MomentumPolynomialType> Result(M.base().Basis2().size());
 
    // Iterate over the components in M, first index
@@ -646,6 +642,30 @@ TriangularOperator ConstructHeisOperatorSU2()
    return Op*Op;
 }
 
+TriangularOperator ConstructSpinOperatorSU2()
+{
+   SiteBlock Site = CreateSU2SpinSite(0.5);
+   TriangularOperator Op = TriangularOneSite(Site["S"]);
+   Op = prod(Op, Op, Site["I"].TransformsAs());
+
+   //return Op;
+   return Op*Op;
+}
+
+TriangularOperator ConstructSpinOperator()
+{
+   SiteBlock Site = CreateSpinSite(0.5);
+   TriangularOperator Sz = TriangularOneSite(Site["Sz"]);
+   TriangularOperator Sp = TriangularOneSite(Site["Sp"]);
+   TriangularOperator Sm = TriangularOneSite(Site["Sm"]);
+
+   TriangularOperator Op = Sz*Sz + 0.5*(Sp*Sm + Sm*Sp);
+
+   return Op;
+}
+
+
+
 TriangularOperator ConstructTriOperator()
 {
    double t = 1;
@@ -698,7 +718,8 @@ int main(int argc, char** argv)
 
    //   Op = ConstructIsingOperator();
    //Op = ConstructHeisOperatorSU2();
-   Op = ConstructTriOperator();
+   //   Op = ConstructTriOperator();
+   Op = ConstructSpinOperator();
    TRACE(Op);
 
    // Make a LinearWavefunction in the symmetric orthogonality constraint

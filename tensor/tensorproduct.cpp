@@ -71,4 +71,11 @@ ProductBasis<VectorBasis, BasisList>::ProductBasis(VectorBasis const& B1, BasisL
    }
 }
 
+ProductBasis<BasisList, BasisList>
+ProductBasis<BasisList, BasisList>::MakeTriangularProjected(left_basis_type Basis1_, right_basis_type Basis2_, 
+							    QuantumNumbers::QuantumNumber const& q)
+{
+   return ProductBasis<BasisList, BasisList>(base_type::MakeTriangularProjected(Basis1_, Basis2_, q));
+}
+
 } // namespace Tensor

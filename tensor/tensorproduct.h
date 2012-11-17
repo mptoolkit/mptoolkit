@@ -74,7 +74,9 @@ class ProductBasisBase
       // except that for the last element in Basis1_ and Basis2_, we take only the single projection q.
       static
       ProductBasisBase
-      MakeTriangularProjected(left_basis_type Basis1_, right_basis_type Basis2_, QuantumNumbers::QuantumNumber const& q);
+      MakeTriangularProjected(left_basis_type const& Basis1_, 
+			      right_basis_type const& Basis2_, 
+			      QuantumNumbers::QuantumNumber const& q);
 
       basis_type Basis_;
       left_basis_type Left_;
@@ -91,6 +93,8 @@ class ProductBasis<BasisList, BasisList>
    private:
       typedef ProductBasisBase<BasisList, BasisList, BasisList> base_type;
 
+      ProductBasis(base_type const& x) : base_type(x) {}
+
    public:
       ProductBasis() {}
 
@@ -106,7 +110,8 @@ class ProductBasis<BasisList, BasisList>
       // component in the final element.  This is the same as a normal product basis between Basis1_ and Basis2_,
       // except that for the last element in Basis1_ and Basis2_, we take only the single projection q.
       static
-      ProductBasis MakeTriangularProjected(LeftBasisType Basis1_, RightBasisType Basis2_, QuantumNumber const& q);
+      ProductBasis MakeTriangularProjected(left_basis_type Basis1_, right_basis_type Basis2_, 
+					   QuantumNumbers::QuantumNumber const& q);
 
    friend PStream::opstream& operator<< <>(PStream::opstream& out, ProductBasis const& B);
    friend PStream::ipstream& operator>> <>(PStream::ipstream& in, ProductBasis& B);
