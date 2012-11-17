@@ -16,6 +16,8 @@ void LinearSolveHPD(int Size, int Nrhs, std::complex<double>* A,
 
 void LinearSolve(int Size, int Nrhs, double* A, int ldA, double* B, int ldB);
 
+void LeastSquares(int Size, int Size2, int Nrhs, double* A, int ldA, double* B, int ldB);
+
 void SingularValueDecomposition(int Size1, int Size2, double* A, double* U,
 				double* D, double* VT);
 
@@ -197,10 +199,9 @@ template <typename M1, typename M2>
 inline
 void ImplementLinearSolve(M1& m, M2& rhs)
 {
-   PRECONDITION_EQUAL(size1(m), size2(m));
+   //PRECONDITION_EQUAL(size1(m), size2(m));
    PRECONDITION_EQUAL(size1(rhs), size1(m));
 
-   // m is hermitian, so it makes a difference whether it is row- or column-major.
    // we require column major here.
    PRECONDITION(is_blas_matrix(m));
    PRECONDITION_EQUAL(stride1(m), 1);
@@ -240,8 +241,68 @@ LinearSolve(M1 const& m, M2 const& rhs,
 }
 
 
+template <typename M, typename V>
+inline
+void ImplementLeastSquares(M& m, V& rhs)
+{
+   //PRECONDITION_EQUAL(size1(m), size2(m));
+   PRECONDITION_EQUAL(size(rhs), size1(m));
+
+   // we require column major here.
+   PRECONDITION(is_blas_matrix(m));
+   PRECONDITION_EQUAL(stride1(m), 1);
+
+   //   DEBUG_PRECONDITION(is_hermitian(m));
+   //   DEBUG_PRECONDITION(min(EigenvaluesHermitian(m)) > 0.0);
+
+   Private::LeastSquares(size1(m), size2(m), 1, data(m), leading_dimension(m),
+			 data(rhs), size(rhs) );
+}
+
+template <typename M, typename V, typename T1, typename T2>
+inline
+Vector<double> 
+LeastSquares(M const& m, V const& rhs, 
+            MATRIX_EXPRESSION(double, T1), 
+            VECTOR_EXPRESSION(double, T2))
+{
+   Matrix<double, ColMajor> TempM(m);
+   Vector<double> TempRhs(rhs);
+   ImplementLeastSquares(TempM, TempRhs);
+   Vector<double> Result(size2(m));
+   Result = TempRhs[LinearAlgebra::range(0, size2(m))];
+   return Result;
+}
+
+template <typename M, typename V>
+inline
+Vector<double> 
+LeastSquares(M const& m, V const& rhs,
+	       typename boost::enable_if<is_matrix<M> >::type*,
+	       typename boost::enable_if<is_vector<V> >::type*)
+{
+   return LeastSquares(m, rhs, 
+		       typename interface<M>::type(), 
+		       typename interface<V>::type());
+}
 
 // DiagonalizeSymmetric
+
+template <typename M, typename Mi>
+struct ImplementDiagonalizeSymmetric<M, CONTIGUOUS_MATRIX(double, RowMajor, Mi)>
+{
+   typedef Vector<double> result_type;
+   static result_type apply(M& m)
+   {
+      PRECONDITION_EQUAL(size1(m), size2(m));
+      //      DEBUG_PRECONDITION(is_symmetric(M));        // this is an expensive test
+      result_type Result(size1(m));
+      DEBUG_CHECK_EQUAL(stride2(m),1);
+      DEBUG_CHECK_EQUAL(difference_type(stride1(m)), difference_type(size2(m)));
+      Private::DiagonalizeSymmetric(size1(m), data(m), stride1(m), data(Result));
+      return Result;
+   }
+};
 
 template <typename M, typename Mi>
 struct ImplementDiagonalizeSymmetric<M, STRIDE_MATRIX(double, RowMajor, Mi)>
@@ -262,22 +323,6 @@ struct ImplementDiagonalizeSymmetric<M, STRIDE_MATRIX(double, RowMajor, Mi)>
       result_type Result(size1(m));
       DEBUG_CHECK_EQUAL(stride2(m),1);
       DEBUG_CHECK_EQUAL(int(stride1(m)),int(size2(m)));
-      Private::DiagonalizeSymmetric(size1(m), data(m), stride1(m), data(Result));
-      return Result;
-   }
-};
-
-template <typename M, typename Mi>
-struct ImplementDiagonalizeSymmetric<M, CONTIGUOUS_MATRIX(double, RowMajor, Mi)>
-{
-   typedef Vector<double> result_type;
-   static result_type apply(M& m)
-   {
-      PRECONDITION_EQUAL(size1(m), size2(m));
-      //      DEBUG_PRECONDITION(is_symmetric(M));        // this is an expensive test
-      result_type Result(size1(m));
-      DEBUG_CHECK_EQUAL(stride2(m),1);
-      DEBUG_CHECK_EQUAL(difference_type(stride1(m)), difference_type(size2(m)));
       Private::DiagonalizeSymmetric(size1(m), data(m), stride1(m), data(Result));
       return Result;
    }
@@ -306,6 +351,25 @@ struct ImplementDiagonalizeHermitian<M, MATRIX_EXPRESSION(double, Mi)>
 template <typename M, typename Mi>
 struct ImplementDiagonalizeHermitian<
    M
+ ,CONTIGUOUS_MATRIX(std::complex<double>, RowMajor, Mi)
+>
+{
+   typedef Vector<double> result_type;
+   static result_type apply(M& m)
+   {
+      PRECONDITION_EQUAL(size1(m), size2(m));
+      //      DEBUG_PRECONDITION(is_hermitian(M));        // this is an expensive test
+      result_type Result(size1(m));
+      DEBUG_CHECK_EQUAL(stride2(m),1);
+      DEBUG_CHECK_EQUAL(stride1(m), size2(m));
+      Private::DiagonalizeHermitian(size1(m), data(m), stride1(m), data(Result));
+      return Result;
+   }
+};
+
+template <typename M, typename Mi>
+struct ImplementDiagonalizeHermitian<
+   M
  , STRIDE_MATRIX(std::complex<double>, RowMajor, Mi)
 >
 {
@@ -325,25 +389,6 @@ struct ImplementDiagonalizeHermitian<
       result_type Result(size1(m));
       DEBUG_CHECK_EQUAL(stride2(m),1);
       DEBUG_CHECK_EQUAL(std::size_t(stride1(m)),size2(m));
-      Private::DiagonalizeHermitian(size1(m), data(m), stride1(m), data(Result));
-      return Result;
-   }
-};
-
-template <typename M, typename Mi>
-struct ImplementDiagonalizeHermitian<
-   M
- ,CONTIGUOUS_MATRIX(std::complex<double>, RowMajor, Mi)
->
-{
-   typedef Vector<double> result_type;
-   static result_type apply(M& m)
-   {
-      PRECONDITION_EQUAL(size1(m), size2(m));
-      //      DEBUG_PRECONDITION(is_hermitian(M));        // this is an expensive test
-      result_type Result(size1(m));
-      DEBUG_CHECK_EQUAL(stride2(m),1);
-      DEBUG_CHECK_EQUAL(stride1(m), size2(m));
       Private::DiagonalizeHermitian(size1(m), data(m), stride1(m), data(Result));
       return Result;
    }

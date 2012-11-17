@@ -63,7 +63,7 @@ class TriangularOperator
       value_type const& back() const { return Data_.back(); }
       value_type& back() { return Data_.back(); }
 
-      QuantumNumber const& TransformsAs() const { return this->Basis().front(); }
+      QuantumNumber const& TransformsAs() const { return this->Basis().back(); }
 
       // returns the component at entry (i,j).  Result is a 1x1 MPOperator
       MPOperator operator()(int i, int j) const;
@@ -161,6 +161,8 @@ TriangularOperator coarse_grain(TriangularOperator const& x);
 
 // Multiplication of triangular MPO's.  This doesn't depend on the
 // compatibility of the operators.
+TriangularOperator prod(TriangularOperator const& x, TriangularOperator const& y, QuantumNumbers::QuantumNumber const& q);
+
 TriangularOperator operator*(TriangularOperator const& x, TriangularOperator const& y);
 
 TriangularOperator& operator*=(TriangularOperator& x, TriangularOperator const& y);

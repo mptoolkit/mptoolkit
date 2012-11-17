@@ -25,9 +25,9 @@
 #if !defined(ITEROPERATIONS_H_SKDJHCSOIUGHYUIHVOPHPRO)
 #define ITEROPERATIONS_H_SKDJHCSOIUGHYUIHVOPHPRO
 
+#include "scalar.h"
 #include "vectorinterface.h"
 #include "vecptriterator.h"
-#include "scalar.h"
 #include <cstring>
 
 namespace LinearAlgebra

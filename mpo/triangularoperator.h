@@ -1,6 +1,6 @@
 // -*- C++ -*- $Id$
 //
-// ***OBSOLETE***
+// ***OBSOLETE DO NOT USE THIS HEADER***
 //
 // infinite matrix product operator.  This is the old version, that will be replaced
 // by the triangular_operator.h header later.

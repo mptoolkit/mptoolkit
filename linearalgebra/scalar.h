@@ -147,7 +147,18 @@ struct PromoteTraits<std::complex<T>, std::complex<T> >
    typedef std::complex<T> result_type;
 };
 
+//
+// Any type that has PromoteTraits defined is assumed to be a scalar
+//
 
+template <typename T>
+struct interface<T,
+		 typename boost::enable_if<
+   exists<typename PromoteTraits<T, T>::value_type> >::type>
+{
+   typedef AnyScalar<T> type;
+   typedef T value_type;
+};
 
 //
 // ScalarProxy
@@ -213,19 +224,6 @@ struct Scalar<T, AnyScalar<T> > : Identity<T> { };
 
 template <typename T>
 struct ScalarRef<T, AnyScalar<T> > : IdentityRef<T> { };
-
-//
-// Any type that has PromoteTraits defined is assumed to be a scalar
-//
-
-template <typename T>
-struct interface<T,
-		 typename boost::enable_if<
-   exists<typename PromoteTraits<T, T>::value_type> >::type>
-{
-   typedef AnyScalar<T> type;
-   typedef T value_type;
-};
 
 template <typename T, typename S>
 struct ZeroAll<T&, AnyScalar<S> >

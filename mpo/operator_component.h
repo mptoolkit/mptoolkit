@@ -229,6 +229,7 @@ OperatorComponent triple_prod(SimpleOperator const& x, OperatorComponent const& 
 OperatorComponent local_tensor_prod(OperatorComponent const& A, OperatorComponent const& B);
 
 // constructs the tensor product in the auxiliary basis, and ordinary product in the local basis.
+// This is the operation that gives the product of MPO's.
 // This used to be called mp_prod
 OperatorComponent aux_tensor_prod(OperatorComponent const& A, OperatorComponent const& B);
 

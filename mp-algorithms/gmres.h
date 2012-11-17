@@ -156,6 +156,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
            tol = resid;
            max_iter = j;
            delete [] v;
+	   DEBUG_TRACE("GMRES return")(resid);
            return 0;
         }
         //TRACE(resid);
@@ -169,6 +170,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
         tol = resid;
         max_iter = j;
         delete [] v;
+	DEBUG_TRACE("GMRES return")(resid);
         return 0;
      }
      DEBUG_TRACE(resid)(norm_frob(Precondition(b - MatVecMultiply(x))) / normb)

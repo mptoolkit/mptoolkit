@@ -71,6 +71,7 @@ LinearSolve(Func F, MatrixOperator Rhs)
    int m = 30;
    int max_iter = 10000;
    double tol = 1e-15;
+   DEBUG_TRACE("running GMRES");
    GmRes(Guess, F, Rhs, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>());
    return Guess;
 }
@@ -423,8 +424,6 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
    typedef Polynomial<std::complex<double> > ComplexPolyType;
    int Dim = Op.Basis1().size();  // dimension of the MPO
 
-   Dim = Op.front().data().size1();
-
    typedef Polynomial<std::complex<double> > ComplexPolyType;
    typedef std::map<std::complex<double>, ComplexPolyType, CompareComplex> KComplexPolyType;
 
@@ -576,7 +575,7 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 
 	       double RhsNorm2 = norm_frob_sq(Rhs);
 	       RhsNorm2 = RhsNorm2 / (Rhs.Basis1().total_degree()*Rhs.Basis2().total_degree());
-	       //TRACE(RhsNorm2);
+	       DEBUG_TRACE(RhsNorm2);
 	       if (RhsNorm2 > 1E-22)
 	       {
 		  E[K][m] = LinearSolve(OneMinusTransfer(K*conj(Classification.factor()), Psi, QShift, Rho, Identity), Rhs);
@@ -627,7 +626,24 @@ TriangularOperator ConstructIsingOperator()
    double Lambda = 1.0;
    TriangularOperator Op = J * 4.0 * TriangularTwoSite(Site["Sz"], Site["Sz"])
       + Lambda * 2.0 * TriangularOneSite(Site["Sx"]);
-   return Op;
+   return Op*Op;
+}
+
+TriangularOperator ConstructHeisOperator()
+{
+   SiteBlock Site = CreateSpinSite(0.5);
+   TriangularOperator Op = TriangularTwoSite(Site["Sz"], Site["Sz"])
+      + 0.5 * (TriangularTwoSite(Site["Sp"], Site["Sm"])
+	       + TriangularTwoSite(Site["Sm"], Site["Sp"]));
+   return Op*Op;
+}
+
+TriangularOperator ConstructHeisOperatorSU2()
+{
+   SiteBlock Site = CreateSU2SpinSite(0.5);
+   TriangularOperator Op = -1.0 * TriangularTwoSite(-sqrt(3.0)*Site["S"], Site["S"], Site["I"].TransformsAs());
+   TRACE(Op);
+   return Op*Op;
 }
 
 TriangularOperator ConstructTriOperator()
@@ -642,7 +658,7 @@ TriangularOperator ConstructTriOperator()
    // 3-site unit cell
    std::vector<BasisList> Sites(3, Site["I"].Basis().Basis());
    TriangularOperator Ham;
-#if 0
+
    Ham += -tcSqrt2 * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 1, Site["C"])
 		      + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 1, Site["CH"]));
    Ham += -tcSqrt2 * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 2, Site["C"])
@@ -651,26 +667,16 @@ TriangularOperator ConstructTriOperator()
 		      + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 2, Site["CH"]));
    Ham += -tSqrt2 * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 4, Site["C"])
 		     + TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 4, Site["CH"]));
-#endif
-
-   TriangularOperator Current;
-   Current += -tcSqrt2 * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 1, Site["C"])
-		      - TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 1, Site["CH"]));
-   Current += -tcSqrt2 * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 2, Site["C"])
-		      - TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 2, Site["CH"]));
-   Current += -tcSqrt2 * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 2, Site["C"])
-		      - TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 2, Site["CH"]));
-   Current += -tSqrt2 * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 4, Site["C"])
-		     - TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 4, Site["CH"]));
-
 
    Ham += U * OnePointOperator(Sites, 0, Site["Pdouble"]);
    Ham += U * OnePointOperator(Sites, 1, Site["Pdouble"]);
    Ham += U * OnePointOperator(Sites, 2, Site["Pdouble"]);
-   //TRACE(TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 4, Site["CH"]));
-   //   Ham += 0.4169289468088717698 * OnePointOperator(Sites, 0, Site["I"]);
+
+   return Ham*Ham; //(Ham+Ham2)*(Ham2+Ham);
+
+   //Ham += 0.4169289468088717698 * OnePointOperator(Sites, 0, Site["I"]);
    //   return Ham*Ham;
-   return Current*Current;
+   //return Current*Current;
 }
 
 int main(int argc, char** argv)
@@ -691,8 +697,9 @@ int main(int argc, char** argv)
    // Construct the operator
 
    //   Op = ConstructIsingOperator();
+   //Op = ConstructHeisOperatorSU2();
    Op = ConstructTriOperator();
-   //   TRACE(Op);
+   TRACE(Op);
 
    // Make a LinearWavefunction in the symmetric orthogonality constraint
    MatrixOperator Identity = MatrixOperator::make_identity(Psi.Psi.Basis1());

@@ -33,10 +33,7 @@ struct ImplementLinearSolveSPD {};
 
 template <typename M1, typename M2>
 typename ImplementLinearSolveSPD<M1, M2>::result_type
-LinearSolveSPD(M1 const& m, M2 const& rhs)
-{
-   return ImplementLinearSolveSPD<M1, M2>::apply(m, rhs);
-}
+LinearSolveSPD(M1 const& m, M2 const& rhs);
 
 //
 // LinearSolveHPD
@@ -70,6 +67,17 @@ Matrix<double, ColMajor>
 LinearSolve(M1 const& m, M2 const& rhs,
             typename boost::enable_if<is_matrix<M1> >::type* = 0,
             typename boost::enable_if<is_matrix<M2> >::type* = 0);
+
+//
+// LeastSquares
+//
+// Least squares fit to a system of equations
+
+template <typename M, typename V>
+Vector<double> 
+LeastSquares(M const& m, V const& v,
+            typename boost::enable_if<is_matrix<M> >::type* = 0,
+            typename boost::enable_if<is_vector<V> >::type* = 0);
 
 //
 // SingularValueDecomposition
@@ -107,18 +115,12 @@ struct ImplementDiagonalizeSymmetric {};
 
 template <typename M>
 typename ImplementDiagonalizeSymmetric<M>::result_type
-DiagonalizeSymmetric(M& m)
-{
-   return ImplementDiagonalizeSymmetric<M>::apply(m);
-}
+DiagonalizeSymmetric(M& m);
 
 template <typename M>
 typename boost::enable_if<is_mutable_proxy<M>,
                           ImplementDiagonalizeSymmetric<M> >::type::result_type
-DiagonalizeSymmetric(M const& m)
-{
-   return ImplementDiagonalizeSymmetric<M>::apply(const_cast<M&>(m));
-}
+DiagonalizeSymmetric(M const& m);
 
 //
 // DiagonalizeHermitian
@@ -134,18 +136,12 @@ struct ImplementDiagonalizeHermitian {};
 
 template <typename M>
 typename ImplementDiagonalizeHermitian<M>::result_type
-DiagonalizeHermitian(M& m)
-{
-   return ImplementDiagonalizeHermitian<M>::apply(m);
-}
+DiagonalizeHermitian(M& m);
 
 template <typename M>
 typename boost::enable_if<is_mutable_proxy<M>,
                           ImplementDiagonalizeHermitian<M> >::type::result_type
-DiagonalizeHermitian(M const& m)
-{
-   return ImplementDiagonalizeHermitian<M>::apply(const_cast<M&>(m));
-}
+DiagonalizeHermitian(M const& m);
 
 //
 // Diagonalize
@@ -376,5 +372,47 @@ InvertUpperTriangular(M& m)
 } // namespace LinearAlgebra
 
 #include "eigen.cc"
+
+namespace LinearAlgebra
+{
+
+template <typename M>
+typename ImplementDiagonalizeSymmetric<M>::result_type
+DiagonalizeSymmetric(M& m)
+{
+   return ImplementDiagonalizeSymmetric<M>::apply(m);
+}
+
+template <typename M>
+typename boost::enable_if<is_mutable_proxy<M>,
+                          ImplementDiagonalizeSymmetric<M> >::type::result_type
+DiagonalizeSymmetric(M const& m)
+{
+   return ImplementDiagonalizeSymmetric<M>::apply(const_cast<M&>(m));
+}
+
+template <typename M1, typename M2>
+typename ImplementLinearSolveSPD<M1, M2>::result_type
+LinearSolveSPD(M1 const& m, M2 const& rhs)
+{
+   return ImplementLinearSolveSPD<M1, M2>::apply(m, rhs);
+}
+
+template <typename M>
+typename ImplementDiagonalizeHermitian<M>::result_type
+DiagonalizeHermitian(M& m)
+{
+   return ImplementDiagonalizeHermitian<M>::apply(m);
+}
+
+template <typename M>
+typename boost::enable_if<is_mutable_proxy<M>,
+                          ImplementDiagonalizeHermitian<M> >::type::result_type
+DiagonalizeHermitian(M const& m)
+{
+   return ImplementDiagonalizeHermitian<M>::apply(const_cast<M&>(m));
+}
+
+} // namespace LinearAlgebra
 
 #endif

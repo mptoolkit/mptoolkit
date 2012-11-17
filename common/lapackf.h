@@ -31,8 +31,12 @@ using namespace Fortran;
 
 // real
 
-void dgesv(integer n, integer nrhs, double *a, integer lda, integer* restrict ipiv, 
-           double *b, integer ldb, integer& restrict info);
+void dgesv(integer n, integer nrhs, double* a, integer lda, integer* restrict ipiv, 
+           double* b, integer ldb, integer& restrict info);
+
+void dgels(char trans, integer m, integer n, integer nrhs, 
+	   double* a, integer lda, double* b, integer ldb, 
+	   double* work, integer lwork, integer& restrict info);
 
 void dposv(char uplo, integer n, integer nrhs, double *a, integer lda,
 	   double *b, integer ldb, integer& restrict info);
@@ -137,10 +141,16 @@ namespace raw
 extern "C"
 {
 
-void F77NAME(dgesv)(integer const* n, integer const* nrhs, double *a, integer const* lda, 
+void F77NAME(dgesv)(integer const* n, integer const* nrhs, 
+		    double* restrict a, integer const* lda, 
                     integer* restrict ipiv, 
-                    double *b, integer const* ldb, integer* restrict info);
+                    double* restrict b, integer const* ldb, integer* restrict info);
 
+void F77NAME(dgels)(char const* trans, integer const* m, integer const* n, 
+		    integer const* nrhs, double* restrict a, integer const* lda, 
+		    double* restrict b, integer const* ldb, double* restrict work, 
+		    integer const* lwork, 
+		    integer* restrict info);
 
 void F77NAME(dposv)(char const* uplo, integer const* n, integer const* nrhs, 
                     double* restrict a, integer const* lda,
@@ -269,6 +279,15 @@ void dgesv(integer n, integer nrhs, double* restrict a, integer lda, integer* re
 {
    TRACE_LAPACK("dgesv")(n)(nrhs)(a)(lda)(ipiv)(b)(ldb)(info);
    raw::F77NAME(dgesv)(&n, &nrhs, a, &lda, ipiv, b, &ldb, &info);
+}
+
+inline
+void dgels(char trans, integer m, integer n, integer nrhs, 
+	   double* a, integer lda, double* b, integer ldb, 
+	   double* work, integer lwork, integer& restrict info)
+{
+   TRACE_LAPACK("dgels")(trans)(m)(n)(nrhs)(a)(lda)(b)(ldb)(work)(lwork)(info);
+   raw::F77NAME(dgels)(&trans, &m, &n, &nrhs, a, &lda, b, &ldb, work, &lwork, &info);
 }
 
 inline

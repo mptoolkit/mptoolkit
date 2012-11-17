@@ -228,6 +228,9 @@ OperatorComponent local_tensor_prod(OperatorComponent const& A, OperatorComponen
    return Result;
 }
 
+#if 0
+//  *** This isn't correct for SU(2), the direct_product of the matrix doesn't
+// give the same thing as the ProductBasis. ***
 OperatorComponent aux_tensor_prod(OperatorComponent const& A, OperatorComponent const& B)
 {
    DEBUG_PRECONDITION_EQUAL(A.LocalBasis2(), B.LocalBasis1());
@@ -239,6 +242,8 @@ OperatorComponent aux_tensor_prod(OperatorComponent const& A, OperatorComponent 
    return Result;
 }
 
+//  *** This isn't correct for SU(2), the direct_product of the matrix doesn't
+// give the same thing as the ProductBasis. ***
 OperatorComponent global_tensor_prod(OperatorComponent const& A, OperatorComponent const& B)
 {
    ProductBasis<BasisList, BasisList> B1(A.Basis1(), B.Basis1());
@@ -250,6 +255,7 @@ OperatorComponent global_tensor_prod(OperatorComponent const& A, OperatorCompone
    Result.data() = direct_product(A.data(), B.data(), Tensor::TensorProd<SimpleRedOperator, SimpleRedOperator>());
    return Result;
 }
+#endif
 
 OperatorComponent exchange(OperatorComponent const& A)
 {

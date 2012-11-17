@@ -465,10 +465,22 @@ TriangularOperator operator-(TriangularOperator const& x, TriangularOperator con
 
 TriangularOperator operator*(TriangularOperator const& x, TriangularOperator const& y)
 {
+   QuantumNumbers::QuantumNumberList ql = transform_targets(x.TransformsAs(), y.TransformsAs());
+   CHECK_EQUAL(ql.size(), 1)("Operator product is not irreducible - must specify a quantum number")(ql);
+   return prod(x, y, ql.front());
+}
+
+TriangularOperator prod(TriangularOperator const& x, TriangularOperator const& y, QuantumNumbers::QuantumNumber const& q)
+{
+   PRECONDITION(is_transform_target(y.TransformsAs(), x.TransformsAs(), q))(x.TransformsAs())(y.TransformsAs())(q);
    PRECONDITION_EQUAL(x.size(), y.size());
-   //   PRECONDITION(is_transform_target(y.TransformsAs(), x.TransformsAs(), q);
 
    TriangularOperator Result(x.size());
+
+   // The basis that wraps around gets the final element projected onto component q only
+   Tensor::ProductBasis<BasisList, BasisList> ProjectedBasis = 
+      Tensor::ProductBasis<BasisList, BasisList>::MakeTriangularProjected(x.front().Basis1(), y.front().Basis1(), q);
+
    for (unsigned Here = 0; Here < x.size(); ++Here)
    {
       Tensor::ProductBasis<BasisList, BasisList> B1(x[Here].Basis1(), y[Here].Basis1());
@@ -485,28 +497,49 @@ TriangularOperator operator*(TriangularOperator const& x, TriangularOperator con
 	    {
 	       for (OperatorComponent::const_inner_iterator J2 = iterate(J1); J2; ++J2)
 	       {
-		  SimpleRedOperator const x = (*I2) * (*J2);
-		 
-		  std::set<QuantumNumbers::QuantumNumber> qn = x.components();
-		  ProductBasis<BasisList, BasisList>::const_iterator B1Iter = B1.begin(I2.index1(), J2.index1());
-		  ProductBasis<BasisList, BasisList>::const_iterator B1End = B1.end(I2.index1(), J2.index1());
 
-		  ProductBasis<BasisList, BasisList>::const_iterator B2Iter = B2.begin(I2.index2(), J2.index2());
+		  ProductBasis<BasisList, BasisList>::const_iterator B1End = B1.end(I2.index1(), J2.index1());
 		  ProductBasis<BasisList, BasisList>::const_iterator B2End = B2.end(I2.index2(), J2.index2());
+
+		  ProductBasis<BasisList, BasisList>::const_iterator B1Iter = B1.begin(I2.index1(), J2.index1());
 
 		  while (B1Iter != B1End)
 		  {
+		     ProductBasis<BasisList, BasisList>::const_iterator B2Iter = B2.begin(I2.index2(), J2.index2());
 		     while (B2Iter != B2End)
 		     {
-			SimpleRedOperator ToInsert(x.Basis1(), x.Basis2());
-			for (std::set<QuantumNumbers::QuantumNumber>::const_iterator q = qn.begin(); q != qn.end(); ++q)
+			SimpleRedOperator ToInsert(x[Here].LocalBasis1(), y[Here].LocalBasis2());
+
+			// iterate over components of the reducible operators *I1 and *I2
+			for (SimpleRedOperator::const_iterator IComponent = I2->begin(); IComponent != I2->end(); ++IComponent)
 			{
-			   if (is_transform_target(B2[*B2Iter], *q, B1[*B1Iter]))
+			   for (SimpleRedOperator::const_iterator JComponent = J2->begin(); JComponent != J2->end(); ++JComponent)
 			   {
-			      ToInsert += x.project(*q);
+
+			      QuantumNumbers::QuantumNumberList ql = transform_targets(IComponent->TransformsAs(),
+										       JComponent->TransformsAs());
+
+			      for (QuantumNumbers::QuantumNumberList::const_iterator q = ql.begin(); q != ql.end(); ++q)
+			      {
+				 if (is_transform_target(B2[*B2Iter], *q, B1[*B1Iter]))
+				 {
+				    SimpleOperator Next = 
+				       tensor_coefficient(B1, B2, 
+							  IComponent->TransformsAs(), JComponent->TransformsAs(), *q,
+							  I2.index1(), J2.index1(), *B1Iter,
+							  I2.index2(), J2.index2(), *B2Iter) *
+				       prod(*IComponent, *JComponent, *q);
+				    if (!is_zero(Next.data()))
+				       ToInsert += Next;
+
+				 }
+			      }
 			   }
 			}
-			Op.data()(*B1Iter, *B2Iter) = ToInsert;
+
+			if (!ToInsert.empty())
+			   Op.data()(*B1Iter, *B2Iter) = ToInsert;
+
 			++B2Iter;
 		     }
 		     ++B1Iter;
@@ -515,11 +548,6 @@ TriangularOperator operator*(TriangularOperator const& x, TriangularOperator con
 	    }
 	 }
       }
-
-			
-
-      //      Op.data() = direct_product(x[Here].data(), y[Here].data(), 
-      //                                 LinearAlgebra::Multiplication<SimpleRedOperator, SimpleRedOperator>());
 
       Result[Here] = Op;
    }

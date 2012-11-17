@@ -52,6 +52,19 @@ void LinearSolve(int Size, int Nrhs, double* A, int ldA, double* B, int ldB)
    CHECK(info == 0)("LAPACK::dgesv")(info);
 }
 
+void LeastSquares(int M, int N, int Nrhs, double* A, int ldA, double* B, int ldB)
+{
+   Fortran::integer info = 0;
+
+   Fortran::integer LWork = std::max(1, std::min(M,N) + std::max(std::min(M,N), Nrhs));
+   double* Work = new double[LWork];
+   // do the actual call
+   LAPACK::dgels('N', M, N, Nrhs, A, ldA, B, ldB, Work, LWork, info);
+   delete[] Work;
+
+   CHECK(info == 0)("LAPACK::dgels")(info);
+}
+
 void EigenvaluesSymmetric(int Size, double* Data, int LeadingDim, double* Eigen)
 {
    // FIXME: we can do better than this by calling LAPACK such that we don't

@@ -110,7 +110,14 @@ class ProductBasis<SimpleBasis, SimpleBasis> : public SimpleBasis
 
       ProductBasis(LeftBasisType Basis1_, RightBasisType Basis2_);
 
+      // A product basis that projects onto a single quantum number only
       ProductBasis(LeftBasisType Basis1_, RightBasisType Basis2_, QuantumNumber const& q);
+
+      // Named constructor for making a basis for a lower-triangular operator that projects onto some irreducible
+      // component in the final element.  This is the same as a normal product basis between Basis1_ and Basis2_,
+      // except that for the last element in Basis1_ and Basis2_, we take only the single projection q.
+      static
+      ProductBasis MakeTriangularProjected(LeftBasisType Basis1_, RightBasisType Basis2_, QuantumNumber const& q);
 
       const_iterator begin(int s1, int s2) const { return TransformData(s1,s2).begin(); }
       const_iterator end(int s1, int s2) const { return TransformData(s1,s2).end(); }
@@ -134,6 +141,8 @@ class ProductBasis<SimpleBasis, SimpleBasis> : public SimpleBasis
       SimpleBasis const& Basis() const { return *this; }
 
    private:
+      ProductBasis(QuantumNumbers::SymmetryList const& sl) : SimpleBasis(sl) {}
+
       SimpleBasis& base() { return *this; }
 
       LeftBasisType B1;

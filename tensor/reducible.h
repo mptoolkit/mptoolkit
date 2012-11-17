@@ -103,6 +103,7 @@ class ReducibleTensor
 
       bool is_null() const { return this->empty(); }
 
+      // returns the number of irreducible components
       size_type size() const { return data_.size(); }
 
       SymmetryList GetSymmetryList() const { return Basis1_.GetSymmetryList(); }
