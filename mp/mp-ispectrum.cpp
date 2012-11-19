@@ -682,7 +682,7 @@ int main(int argc, char** argv)
             LinOpL[i] = OperatorComponent(Site.Basis1().Basis(), 
                                           BasisList(adjoint(Site[OpL].TransformsAs())),
                                           BasisList(adjoint(Site[OpL].TransformsAs())));
-            LinOpL[i](0,0) = (i == 1) ? Site[OpL2] : (i == 2) ? Site[OpL3] : (i == 3) ? Site[Op4] : Site["I"];
+            LinOpL[i](0,0) = (i == 1) ? Site[OpL2] : (i == 2) ? Site[OpL3] : (i == 3) ? Site[OLp4] : Site["I"];
          }
 
          LinOpR = LinearOperator(Psi.size());
