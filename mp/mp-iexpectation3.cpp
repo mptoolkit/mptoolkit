@@ -647,14 +647,20 @@ TriangularOperator ConstructHeisOperatorSU2()
    return Op*Op;
 }
 
-TriangularOperator ConstructSpinOperatorSU2()
+TriangularOperator ConstructSU2SpinOperator()
 {
    SiteBlock Site = CreateSU2SpinSite(0.5);
    TriangularOperator Op = TriangularOneSite(Site["S"]);
    Op = prod(Op, Op, Site["I"].TransformsAs());
+   return Op;
+}
 
-   //return Op;
-   return Op*Op;
+TriangularOperator ConstructU1SU2SpinOperator()
+{
+   SiteBlock Site = CreateSU2HubbardSite();
+   TriangularOperator Op = TriangularOneSite(Site["S"]);
+   Op = prod(Op, Op, Site["I"].TransformsAs());
+   return Op;
 }
 
 TriangularOperator ConstructSpinOperator()
@@ -765,6 +771,10 @@ int main(int argc, char** argv)
 
       if (Operator == "tri")
 	 Op = ConstructTriOperator(t, tc, U);
+      else if (Operator == "su2spin")
+	 Op = ConstructSU2SpinOperator();
+      else if (Operator == "u1su2spin")
+	 Op = ConstructU1SU2SpinOperator();
       else
       {
 	 std::cerr << "Unknown operator!\n";
