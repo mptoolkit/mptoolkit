@@ -674,16 +674,16 @@ int main(int argc, char** argv)
          }
 
          LinOpR = LinearOperator(Psi.size());
-         LinOpR[0] = OperatorComponent(Site.Basis1().Basis(), 
+         LinOpR[Psi.size()-1] = OperatorComponent(Site.Basis1().Basis(), 
                                        BasisList(Site[OpR].TransformsAs()),
                                        BasisList(QuantumNumber(Psi.GetSymmetryList())));
-         LinOpR[0](0,0) = Site[OpR];
-         for (unsigned i = 1; i < Psi.size(); ++i)
+         LinOpR[Psi.size()-1](0,0) = Site[OpR];
+         for (int i = int(Psi.size())-2; i >= 0; --i)
          {
             LinOpR[i] = OperatorComponent(Site.Basis1().Basis(), 
                                           BasisList(QuantumNumber(Psi.GetSymmetryList())),
                                           BasisList(QuantumNumber(Psi.GetSymmetryList())));
-            LinOpR[i](0,0) = (i ==1 ) ? Site[OpR2] : Site["I"];
+            LinOpR[i](0,0) = (i == int(Psi.size())-2) ? Site[OpR2] : Site["I"];
          }
       }
 
