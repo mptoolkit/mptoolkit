@@ -681,8 +681,8 @@ int main(int argc, char** argv)
          for (int i = int(Psi.size())-2; i >= 0; --i)
          {
             LinOpR[i] = OperatorComponent(Site.Basis1().Basis(), 
-                                          BasisList(QuantumNumber(Psi.GetSymmetryList())),
-                                          BasisList(QuantumNumber(Psi.GetSymmetryList())));
+                                          BasisList(Site[OpR].TransformsAs()),
+                                          BasisList(Site[OpR].TransformsAs()));
             LinOpR[i](0,0) = (i == int(Psi.size())-2) ? Site[OpR2] : Site["I"];
          }
       }
