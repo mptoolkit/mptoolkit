@@ -454,7 +454,7 @@ int main(int argc, char** argv)
 	  "Calculate the expansion coefficients of this operator acting on the left")
 	 ("l2", prog_opt::value(&OpL2),
 	  "Hack to do a 2-site operator")
-	 ("22", prog_opt::value(&OpR2),
+	 ("r2", prog_opt::value(&OpR2),
 	  "Hack to do a 2-site operator")
 	 ("rcoefficients,r", prog_opt::value(&OpR), 
 	  "Calculate the expansion coefficients of this operator acting on the right")
