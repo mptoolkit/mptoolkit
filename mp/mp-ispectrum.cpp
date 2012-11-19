@@ -426,6 +426,8 @@ int main(int argc, char** argv)
       std::string Model;
       std::string OpL2 = "I";
       std::string OpR2 = "I";
+      std::string OpL3 = "I";
+      std::string OpR3 = "I";
       double Spin = 0.5;
       int NMax = 3;
       bool ShowEigenvaluesCart = false;      // show the eigenvalues in (real,imag) units
@@ -456,6 +458,10 @@ int main(int argc, char** argv)
 	  "Hack to do a 2-site operator")
 	 ("r2", prog_opt::value(&OpR2),
 	  "Hack to do a 2-site operator")
+	 ("l3", prog_opt::value(&OpL3),
+	  "Hack to do a 3-site operator")
+	 ("r3", prog_opt::value(&OpR3),
+	  "Hack to do a 3-site operator")
 	 ("rcoefficients,r", prog_opt::value(&OpR), 
 	  "Calculate the expansion coefficients of this operator acting on the right")
 	 ("symmetric,s", prog_opt::bool_switch(&Symmetric),
@@ -670,7 +676,7 @@ int main(int argc, char** argv)
             LinOpL[i] = OperatorComponent(Site.Basis1().Basis(), 
                                           BasisList(adjoint(Site[OpL].TransformsAs())),
                                           BasisList(adjoint(Site[OpL].TransformsAs())));
-            LinOpL[i](0,0) = (i == 1) ? Site[OpL2] : Site["I"];
+            LinOpL[i](0,0) = (i == 1) ? Site[OpL2] : (i == 2) ? Site[OpL3] : Site["I"];
          }
 
          LinOpR = LinearOperator(Psi.size());
@@ -683,7 +689,8 @@ int main(int argc, char** argv)
             LinOpR[i] = OperatorComponent(Site.Basis1().Basis(), 
                                           BasisList(Site[OpR].TransformsAs()),
                                           BasisList(Site[OpR].TransformsAs()));
-            LinOpR[i](0,0) = (i == int(Psi.size())-2) ? Site[OpR2] : Site["I"];
+            LinOpR[i](0,0) = (i == int(Psi.size())-2) ? Site[OpR2] 
+	       : (i == int(Psi.size())-3) ? Site[OpR3] : Site["I"];
          }
       }
 
