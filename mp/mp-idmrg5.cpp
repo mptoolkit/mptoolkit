@@ -857,6 +857,7 @@ int main(int argc, char** argv)
       double Jx = 1.0;
       double Jy = 1.0;
       double t = 1.0;
+      double t2 = 0.0;
       double tc = 1.0;
       double tprime = 1.0;
       double delta = 0.0;
@@ -961,6 +962,8 @@ int main(int argc, char** argv)
 	  FormatDefault("nearest-neighbor exchange J (for xxx,itf, etc)", J).c_str())
 	 ("t", prog_opt::value(&t),
 	  FormatDefault("nearest-neighbor hopping (for hubbard etc)", t).c_str())
+	 ("t2", prog_opt::value(&t2),
+	  FormatDefault("next-nearest-neighbor hopping (for hubbard etc)", t2).c_str())
 	 ("tc", prog_opt::value(&tc),
 	  FormatDefault("cluster hopping (for triangular cluster)", tc).c_str())
 	 ("Jperp", prog_opt::value(&Jperp),
@@ -1099,7 +1102,7 @@ int main(int argc, char** argv)
 	 // Transform from (J,beta) coordinates into (a,b), with
 	 // H = a*(S.S) + b*(Q.Q) + c
 	 // using (Q.Q) = -1/3 (S^2 . S^2) + (S.S)^2 + 1/2 S.S
-	 Dipole = -(J - 0.5*Beta);
+	 Dipole = (J - 0.5*Beta);
 	 Quadrapole = Beta;
 	 double c = Beta * (1.0 / 3.0) * pow(Spin * (Spin+1), 2);  // this is an energy shift per bond
 
@@ -1377,13 +1380,20 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "hubbard-u1")
       {
-	 std::cout << "Hamiltonian is Hubbard model U(1) with t=" << t << ", U = " << U << '\n';
+	 std::cout << "Hamiltonian is Hubbard model U(1) with t=" << t << ", t2=" << t2 
+		   << ", U = " << U << '\n';
 	 SiteBlock Site = CreateU1HubbardSite();
 	 TriangularOperator Ham;
          Ham =  -t * (TriangularTwoSite(Site["CHupP"], Site["Cup"])
                       - TriangularTwoSite(Site["CupP"], Site["CHup"])
                       + TriangularTwoSite(Site["CHdownP"], Site["Cdown"])
                       - TriangularTwoSite(Site["CdownP"], Site["CHdown"]));
+	 if (t2 != 0)
+	    Ham =  -t2 * (TriangularThreeSite(Site["CHupP"], Site["P"], Site["Cup"])
+			 - TriangularThreeSite(Site["CupP"], Site["P"], Site["CHup"])
+			 + TriangularThreeSite(Site["CHdownP"], Site["P"], Site["Cdown"])
+			 - TriangularThreeSite(Site["CdownP"], Site["P"], Site["CHdown"]));
+
          if (U != 0)
             Ham = Ham + (U*0.25) * TriangularOneSite(Site["P"]);
 
