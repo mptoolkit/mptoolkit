@@ -141,6 +141,11 @@ SiteBlock CreateU1HubbardSite(std::string const& Sym1 = "N",
    ES("up",   "up")   = std::complex<double>(0.0,  1.0);
    ES("down", "down") = std::complex<double>(0.0, -1.0);
 
+   // exp(i * pi * Qz)
+   EQ = I;
+   EQ("double", "double") = std::complex<double>(0.0,  1.0);
+   EQ("empty",  "empty")  = std::complex<double>(0.0, -1.0);
+
    Block["I"] = I;
    Block[ParityOp] = P;
    Block["N"] = N;
@@ -167,5 +172,6 @@ SiteBlock CreateU1HubbardSite(std::string const& Sym1 = "N",
    Block["N_S"] = N_S;
    Block["N_H"] = N_H;
    Block["ES"] = ES;
+   Block["EQ"] = EQ;
    return Block;
 }
