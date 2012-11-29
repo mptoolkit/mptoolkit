@@ -201,8 +201,6 @@ mp-tools = mp-construct mp-overlap mp-expectation \
            mp-reorder-symmetry mp-local-fourpoint-ex mp-evolve-bonds \
            mp-overlap-conj mp-expectation-conj mp-make-positive
 
-mpi-tools = mp-dmrg-init-mpi mp-dmrg-resume-mpi
-
 infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-ioverlap mp-itebd2 \
                  mp-ieigen mp-idmrg3 mp-icorrelation mp-idmrg4 mp-idmrg5 mp-iexcitation mp-iexcitation2 \
                  mp-bdmrg mp-imake-transverse-lattice mp-imake-transverse-lattice-folded mp-iexpectation-sz \
@@ -231,8 +229,6 @@ misc-progs = untridiagonalize tridiag-kspace mp-min-resid seqgen2
 default : mp-tools
 
 all : mp-tools mp-models
-
-mpi : $(mpi-tools)
 
 mp-tools : $(mp-tools)
 
