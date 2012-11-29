@@ -1220,6 +1220,15 @@ int main(int argc, char** argv)
                                        + TriangularThreeSite(Site["Sm"], Site["I"], Site["Sp"])));
          if (D != 0)
             Ham = Ham + D * TriangularOneSite(Site["Sz2"]);
+
+         if (Lambda != 0)
+         {
+            std::cout << "Adding exponential decay S(i) S(j) lambda^|j-i-1|\n";
+            Ham = Ham +  TriangularTwoSiteExponential(Site["Sz"], Site["Sz"], Lambda)
+               + 0.5 * (TriangularTwoSiteExponential(Site["Sp"], Site["Sm"], Lambda)
+                            +TriangularTwoSiteExponential(Site["Sm"], Site["Sp"], Lambda));
+         }
+
 	 HamMPO = Ham;
       }
       else if (HamStr == "xxx-z2")

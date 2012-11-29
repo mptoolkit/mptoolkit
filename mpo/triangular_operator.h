@@ -102,6 +102,12 @@ TriangularOperator TriangularTwoSite(SimpleOperator const& x, SimpleOperator con
 
 TriangularOperator TriangularTwoSite(SimpleOperator const& x, SimpleOperator const& y);
 
+TriangularOperator TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperator const& y, 
+                                                std::complex<double> Factor, QuantumNumber const& Trans);
+
+TriangularOperator TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperator const& y, 
+                                                std::complex<double> Factor);
+
 TriangularOperator TriangularThreeSite(SimpleOperator const& x, 
                                        SimpleOperator const& y, 
                                        SimpleOperator const& z);

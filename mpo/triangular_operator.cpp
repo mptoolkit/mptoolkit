@@ -130,6 +130,38 @@ TriangularOperator TriangularTwoSite(SimpleOperator const& x, SimpleOperator con
    return TriangularTwoSite(x, y, q);
 }
 
+TriangularOperator TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperator const& y, std::complex<double> Factor, QuantumNumber const& Trans)
+{
+   QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
+   BasisList b(x.GetSymmetryList());
+   b.push_back(Ident);
+   b.push_back(y.TransformsAs());
+   b.push_back(Trans);
+
+   SimpleOperator I = SimpleOperator::make_identity(x.Basis1());
+
+   OperatorComponent data(x.Basis1(), b, b);
+   data.set_operator(0,0,I);
+   data.set_operator(2,2,I);
+   data.set_operator(1,1,Factor*I);
+   data.set_operator(1,0,y);
+   data.set_operator(2,1,x);
+
+   return TriangularOperator(data);
+}
+
+TriangularOperator TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperator const& y, std::complex<double> Factor)
+{
+   QuantumNumber q;
+   if (num_transform_targets(x.TransformsAs(), y.TransformsAs()) == 1)
+      q = transform_targets(x.TransformsAs(), y.TransformsAs())[0];
+   else
+      q = QuantumNumber(x.GetSymmetryList());
+   return TriangularTwoSiteExponential(x, y, Factor, q);
+}
+
+
+
 TriangularOperator TriangularThreeSite(SimpleOperator const& x, SimpleOperator const& y, SimpleOperator const& z, 
 				   QuantumNumber const& yz_trans)
 {
