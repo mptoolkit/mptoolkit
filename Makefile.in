@@ -201,6 +201,8 @@ mp-tools = mp-construct mp-overlap mp-expectation \
            mp-reorder-symmetry mp-local-fourpoint-ex mp-evolve-bonds \
            mp-overlap-conj mp-expectation-conj mp-make-positive
 
+mpi-tools = mp-dmrg-init-mpi mp-dmrg-resume-mpi
+
 infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-ioverlap mp-itebd2 \
                  mp-ieigen mp-idmrg3 mp-icorrelation mp-idmrg4 mp-idmrg5 mp-iexcitation mp-iexcitation2 \
                  mp-bdmrg mp-imake-transverse-lattice mp-imake-transverse-lattice-folded mp-iexpectation-sz \
@@ -230,6 +232,8 @@ default : mp-tools
 
 all : mp-tools mp-models
 
+mpi : $(mpi-tools)
+
 mp-tools : $(mp-tools)
 
 infinite-tools : $(infinite-tools)
@@ -247,7 +251,7 @@ dist_files = config.h.in configure configure.ac aclocal.m4 Makefile.in  generate
              $(SRCDIRS)
 
 cxxsrcglob = *.cpp $(patsubst %,%/*.cpp, $(subst :, ,$(VPATH))) \
-	     $(patsubst %,%/*.cpp, $(subst :, ,$(GPATH))) 
+	     $(patsubst %,%/*.cpp, $(subst :, ,$(GPATH)))
 
 cxx_source := $(notdir $(wildcard $(cxxsrcglob)))
 cxx_depend = $(cxx_source:%.cpp=%.d)
@@ -402,9 +406,9 @@ testexponential : eigen.o zgpadm.o exponential.o
 # dependencies for mp-algorithms tests
 #
 
-$(mp-algorithms_tests) : $(commonobj) $(linearalgebraobj) eigen.o 
+$(mp-algorithms_tests) : $(commonobj) $(linearalgebraobj) eigen.o
 
-#$(mp-algorithms_tests) : $(commonobj) $(linearalgebraobj) $(expokitobj) eigen.o 
+#$(mp-algorithms_tests) : $(commonobj) $(linearalgebraobj) $(expokitobj) eigen.o
 
 #
 # dependencies for pheap tests
@@ -461,7 +465,7 @@ mp-dmrg-resume : dmrg.o stateslist.o
 mp-gmres-init : simplecg.o solver-gmres.o stateslist.o
 mp-gmres-resume : simplecg.o solver-gmres.o stateslist.o
 mp-trotter : mpexponential.o $(expokitobj)
-mp-dmrg : dmrg.o 
+mp-dmrg : dmrg.o
 mp-evolve-krylov : progressivekrylov.o krylovloop.o $(expokitobj)
 mp-evolve-magnus : progressivekrylov.o krylovloop.o $(expokitobj)
 mp-dmrg-2site : dmrg.o
@@ -508,7 +512,7 @@ mp-itebd : mpexponential.o $(expokitobj) infinitewavefunction.o
 mp-itebd2 : $(expokitobj) infinitewavefunction.o eigen.o random_wavefunc.o
 mp-evolve-bonds : local-evolution.o $(expokitobj)
 mp-ispectrum : infinitewavefunction.o packunpack.o eigen.o arpack_wrapper.o
-mp-ieigen : triangularoperator.o infinitewavefunction.o 
+mp-ieigen : triangularoperator.o infinitewavefunction.o
 mp-idump : infinitewavefunction.o
 mp-imake-transverse-lattice : triangularoperator.o infinitewavefunction.o random_wavefunc.o eigen.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
 mp-imake-transverse-lattice-folded : triangularoperator.o infinitewavefunction.o random_wavefunc.o eigen.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
@@ -532,7 +536,7 @@ testdmrg :  $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
 
 testlanczos : $(commonobj) eigen.o
 
-testdlamch : 
+testdlamch :
 
 kondo-exactdiag : $(expokitobj)
 
@@ -670,7 +674,7 @@ svn-export :
 	svn export $(SRCDIR) mptoolkit
 
 distclean : clean
-	rm -f config.h stamp-h config.status config.cache config.log 
+	rm -f config.h stamp-h config.status config.cache config.log
 
 maintainer-clean : distclean
 	rm -Rf $(DISTDIR)

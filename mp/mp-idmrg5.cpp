@@ -1122,7 +1122,7 @@ int main(int argc, char** argv)
 	 std::cout << "Hamiltonian is XXX model with spin S=" << Spin << ", theta="<<Theta
 		   << ", J=" << J << ",beta=" << Beta << ", J2=" << J2
             //                   << ", gamma=" << Gamma << ", delta=" << Delta
-                   << ", Dipole=" << Dipole << ", Quadrapole=" << Quadrapole 
+                   << ", Dipole=" << Dipole << ", Quadrapole=" << Quadrapole
                    << ", Hexapole=" << Hexapole << ", Octapole=" << Octapole
                    << ", eshift=" << c
                    << '\n';
@@ -1389,7 +1389,7 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "hubbard-u1")
       {
-	 std::cout << "Hamiltonian is Hubbard model U(1) with t=" << t << ", t2=" << t2 
+	 std::cout << "Hamiltonian is Hubbard model U(1) with t=" << t << ", t2=" << t2
 		   << ", U = " << U << '\n';
 	 SiteBlock Site = CreateU1HubbardSite();
 	 TriangularOperator Ham;
@@ -1533,7 +1533,6 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "kagome-su2-yc")
       {
-//          J = vm["J"].as<double>();
          std::cout << "Hamiltonian is J1-J2 YC Kagome cylinder with J1 = 1, J2 = "<<J2<<" and NLegs = "<<NLegs<<'\n';
          SiteBlock Site = CreateSU2SpinSite(0.5);
          // 3-site unit cell
@@ -1582,7 +1581,7 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "tjcylinder") // t-J Hubbard model defined on a cylinder
       {
-         std::cout << "Hamiltonian is U(1)xSU(2) t-J Hubbard model with t = "<<t<<", J = "<<J2<<" defined on "<<NLegs<<" rows\n";
+         std::cout << "Hamiltonian is the fermionic U(1)xSU(2) t-J-Hubbard model with t = "<<t<<", J = "<<J2<<" defined on "<<NLegs<<" rows\n";
          SiteBlock Site = CreateU1SU2tJSite();
 
          // 'Strip'
@@ -1590,20 +1589,29 @@ int main(int argc, char** argv)
 
          double tSqrt2 = (-sqrt(2.0))*t; // SU(2) factor
          double JSqrt3 = (-sqrt(3.0))*J2; // SU(2) factor
-         TriangularOperator Ht;
-         TriangularOperator Hj;
-         for(int i = 0; i < NLegs; ++i)
+         TriangularOperator Ham;
+
+         for(int i = 0; i < NLegs-1; ++i)
          {
-            Ht += -tSqrt2 * ( TwoPointOperator(Sites, i, Site["CHP"], (i+1)%NLegs, Site["C"])
-                        + TwoPointOperator(Sites, i, Site["CP"], (i+1)%NLegs, Site["CH"])
-                        + TwoPointOperator(Sites, i, Site["CHP"], i+NLegs, Site["C"])
-                        + TwoPointOperator(Sites, i, Site["CP"], i+NLegs, Site["CH"]) );
-            Hj += JSqrt3 * (TwoPointOperator(Sites, i, Site["S"], (i+1)%NLegs, Site["S"])
-                        + TwoPointOperator(Sites, i, Site["S"], i+NLegs, Site["S"]));
-            Hj += 0.25 * J2 * (TwoPointOperator(Sites, i, Site["N"], (i+1)%NLegs, Site["N"])
-                        + TwoPointOperator(Sites, i, Site["N"], i+NLegs, Site["N"]) );
+            Ham += tSqrt2 * ( TwoPointStringOperator(Sites, i, Site["CHP"], Site["P"], i+1, Site["C"])
+                     + TwoPointStringOperator(Sites, i, Site["CP"], Site["P"], i+1, Site["CH"])
+                     + TwoPointStringOperator(Sites, i, Site["CHP"], Site["P"], i+NLegs, Site["C"])
+                     + TwoPointStringOperator(Sites, i, Site["CP"], Site["P"], i+NLegs, Site["CH"]) );
+            Ham += JSqrt3 * (TwoPointOperator(Sites, i, Site["S"], i+1, Site["S"])
+                     + TwoPointOperator(Sites, i, Site["S"], i+NLegs, Site["S"]));
+            Ham += -0.25 * J2 * (TwoPointOperator(Sites, i, Site["N"], i+1, Site["N"])
+                     + TwoPointOperator(Sites, i, Site["N"], i+NLegs, Site["N"]) );
          }
-         TriangularOperator Ham = Ht+Hj;
+            // close the periodic boundary conditions
+         Ham += tSqrt2 * ( TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], NLegs-1, Site["C"])
+                     + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], NLegs-1, Site["CH"])
+                     + TwoPointStringOperator(Sites, NLegs-1, Site["CHP"], Site["P"], 2*NLegs-1, Site["C"])
+                     + TwoPointStringOperator(Sites, NLegs-1, Site["CP"], Site["P"], 2*NLegs-1, Site["CH"]) );
+         Ham += JSqrt3 * (TwoPointOperator(Sites, 0, Site["S"], NLegs-1, Site["S"])
+                     + TwoPointOperator(Sites, NLegs-1, Site["S"], 2*NLegs-1, Site["S"]));
+         Ham += -0.25 * J2 * (TwoPointOperator(Sites, 0, Site["N"], NLegs-1, Site["N"])
+                     + TwoPointOperator(Sites, NLegs-1, Site["N"], 2*NLegs-1, Site["N"]) );
+
          HamMPO = Ham;
       }
       else if (HamStr == "tricluster")
