@@ -892,7 +892,7 @@ int main(int argc, char** argv)
       bool UseOneSiteScheme = false;
 #endif
       std::string TargetState;
-      std::string BoundaryState;
+      std::vector<std::string> BoundaryState;
       double EvolveDelta = 0.0;
       double InitialFidelity = 1E-7;
       int KagomeUnitCell = 24;
@@ -935,7 +935,7 @@ int main(int argc, char** argv)
 	  "the target quantum number per unit cell")
 	 ("boundary", prog_opt::value(&BoundaryState),
 	  "use this boundary quantum number for initializing the unit cell "
-          "(useful for integer spin chains)")
+          "(useful for integer spin chains, can be used multiple times)")
 	 ("bootstrap,b", prog_opt::bool_switch(&NoFixedPoint),
 	  "boostrap iterations by starting from a single unit cell, "
 	  "instead of obtaining the fixed point Hamiltonian "
@@ -960,7 +960,7 @@ int main(int argc, char** argv)
 	  FormatDefault("spin (for xxx,xxz,xyz hamiltonians)", Spin).c_str())
 	 ("J", prog_opt::value(&J),
 	  FormatDefault("nearest-neighbor exchange J (for xxx,itf, etc)", J).c_str())
-	 ("t", prog_opt::value(&t),
+	 ("t,tt", prog_opt::value(&t),
 	  FormatDefault("nearest-neighbor hopping (for hubbard etc)", t).c_str())
 	 ("t2", prog_opt::value(&t2),
 	  FormatDefault("next-nearest-neighbor hopping (for hubbard etc)", t2).c_str())
@@ -1692,22 +1692,40 @@ int main(int argc, char** argv)
 	 QuantumNumbers::QuantumNumber q(HamMPO[0].GetSymmetryList(), TargetState);
 	 std::cout << "Target quantum number = " << q << '\n';
 
-         QuantumNumbers::QuantumNumber BoundaryQ(HamMPO[0].GetSymmetryList());
-         if (BoundaryState != "")
-            BoundaryQ = QuantumNumbers::QuantumNumber(HamMPO[0].GetSymmetryList(), BoundaryState);
+         QuantumNumbers::QuantumNumberList BoundaryQ;
+         if (BoundaryState.empty())
+	 {
+	    BoundaryQ.push_back(QuantumNumbers::QuantumNumber(HamMPO[0].GetSymmetryList()));
+	 }
+	 else
+	 {
+	    for (unsigned i = 0; i < BoundaryState.size(); ++i)
+	    {
+	       std::cout << "Adding boundary quantum number " << BoundaryState[i] << '\n';
+	       BoundaryQ.push_back(QuantumNumbers::QuantumNumber(HamMPO[0].GetSymmetryList(), BoundaryState[i]));
+	    }
+	 }
 
-	 TRACE(BoundaryQ);
+	 //         CHECK_EQUAL(num_transform_targets(q, BoundaryQ), 1)
+	 //            ("The boundary quantum number is incompatible with the target quantum number");
 
-         CHECK_EQUAL(num_transform_targets(q, BoundaryQ), 1)
-            ("The boundary quantum number is incompatible with the target quantum number");
-
-         QuantumNumbers::QuantumNumber ActualBoundary = transform_targets(q, BoundaryQ)[0];
+         QuantumNumbers::QuantumNumberList LeftBoundary;
+	 for (unsigned i = 0; i < BoundaryQ.size(); ++i)
+	 {
+	    LeftBoundary.push_back(transform_targets(q, BoundaryQ[i])[0]);
+	 }
 
 	 LinearWavefunction W;
 	 VectorBasis B1(HamMPO.front().GetSymmetryList());
-	 B1.push_back(ActualBoundary, 1);
+	 for (unsigned i = 0; i < LeftBoundary.size(); ++i)
+	 {
+	    B1.push_back(LeftBoundary[i], 1);
+	 }
 	 VectorBasis B2(HamMPO.front().GetSymmetryList());
-	 B2.push_back(BoundaryQ, 1);
+	 for (unsigned i = 0; i < BoundaryQ.size(); ++i)
+	 {
+	    B2.push_back(BoundaryQ[i], 1);
+	 }
 	 W.push_back(ConstructFromLeftBasis(FullBL[0], B1));
 	 for (int i = 1; i < UnitCellSize; ++i)
 	 {
