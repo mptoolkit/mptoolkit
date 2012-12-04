@@ -960,7 +960,7 @@ int main(int argc, char** argv)
 	  FormatDefault("spin (for xxx,xxz,xyz hamiltonians)", Spin).c_str())
 	 ("J", prog_opt::value(&J),
 	  FormatDefault("nearest-neighbor exchange J (for xxx,itf, etc)", J).c_str())
-	 ("t,tt", prog_opt::value(&t),
+	 ("tt,t", prog_opt::value(&t),
 	  FormatDefault("nearest-neighbor hopping (for hubbard etc)", t).c_str())
 	 ("t2", prog_opt::value(&t2),
 	  FormatDefault("next-nearest-neighbor hopping (for hubbard etc)", t2).c_str())
