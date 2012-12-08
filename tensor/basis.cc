@@ -136,4 +136,10 @@ int VectorBasis::total_dimension() const
    return std::accumulate(Dimension_.begin(), Dimension_.end(), 0);
 }
 
+inline
+VectorBasis adjoint(VectorBasis const& b)
+{
+   return VectorBasis(adjoint(b.Basis_), b.Dimension_);
+}
+
 } // namespace Tensor

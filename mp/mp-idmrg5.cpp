@@ -28,6 +28,7 @@
 #include "models/tj-u1.h"
 #include "models/kondo-u1su2.h"
 #include "models/kondo-u1.h"
+#include "models/kondo-u1u1.h"
 #include "models/hubbard-so4.h"
 #include "models/hubbard-u1u1.h"
 #include "models/hubbard-u1su2.h"
@@ -1362,6 +1363,23 @@ int main(int argc, char** argv)
 	 double J = J2;
 	 std::cout << "Hamiltonian is U(1) Kondo Lattice with J=" << J << ", Jz=" << Jz << '\n';
 	 SiteBlock Site = CreateU1KondoSite();
+	 TriangularOperator Ham;
+         Ham =  -t * (TriangularTwoSite(Site["CHupP"], Site["Cup"])
+                      - TriangularTwoSite(Site["CupP"], Site["CHup"])
+                      + TriangularTwoSite(Site["CHdownP"], Site["Cdown"])
+                      - TriangularTwoSite(Site["CdownP"], Site["CHdown"]));
+         if (J != 0)
+            Ham = Ham + J * TriangularOneSite(Site["ScSf"]);
+         if (Jz != 0)
+            Ham = Ham + Jz * TriangularOneSite(Site["SczSfz"]);
+
+	 HamMPO = Ham;
+      }
+      else if (HamStr == "klm-u1u1")
+      {
+	 double J = J2;
+	 std::cout << "Hamiltonian is U(1)xU(1) Kondo Lattice with J=" << J << ", Jz=" << Jz << '\n';
+	 SiteBlock Site = CreateU1U1KondoSite();
 	 TriangularOperator Ham;
          Ham =  -t * (TriangularTwoSite(Site["CHupP"], Site["Cup"])
                       - TriangularTwoSite(Site["CupP"], Site["CHup"])

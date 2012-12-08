@@ -53,6 +53,28 @@ void PrintFormat(TransEigenInfo const& x, bool ShowRealPart, bool ShowImagPart, 
    std::cout << std::endl;
 }
 
+InfiniteWavefunction reflect(InfiniteWavefunction const& Psi)
+{
+   InfiniteWavefunction Ret;
+   Ret.C_old = flip_conj(adjoint(Psi.C_right));
+   Ret.C_right = flip_conj(adjoint(Psi.C_old)); 
+   //   Ret.C_old = delta_shift(Ret.C_old, adjoint(Psi.QShift));
+   //   Ret.c_right = delta_shift(Ret.C_right, Psi.QShift);
+   Ret.Attr = Psi.Attr;
+   Ret.QShift = Psi.QShift;
+   Ret.Psi = LinearWavefunction(Psi.Psi.GetSymmetryList());
+   for (LinearWavefunction::const_iterator I = Psi.Psi.begin();
+        I != Psi.Psi.end(); ++I)
+   {
+      Ret.Psi.push_front(reflect(*I));
+   }
+
+   CHECK_EQUAL(Ret.C_right.Basis1(), Ret.Psi.Basis2());
+   CHECK_EQUAL(Ret.C_old.Basis1(), Ret.Psi.Basis1());
+
+   return Ret;
+}
+
 int main(int argc, char** argv)
 {
    try
@@ -67,6 +89,7 @@ int main(int argc, char** argv)
       int Iter = 30;
       bool Sort = false;
       bool Quiet = false;
+      bool Reflect = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -82,6 +105,8 @@ int main(int argc, char** argv)
           "(faster, but needs enough RAM)")
          ("rotate", prog_opt::value(&Rotate),
           "rotate the unit cell of psi2 this many sites to the left before calculating the overlap [default 0]")
+         ("reflect", prog_opt::bool_switch(&Reflect),
+          "reflect psi2 (gives parity eigenvalue)")
          ("q,quantumnumber", prog_opt::value(&Sector),
           "calculate the overlap only in this quantum number sector, "
           "can be used multiple times [default is to calculate all sectors]")
@@ -158,6 +183,13 @@ int main(int argc, char** argv)
       if (Rotate > 0)
          *Psi2.mutate() = rotate_left(*Psi2, Rotate);
 #endif
+
+      if (Reflect)
+      {
+         if (Verbose)
+            std::cout << "Reflecting psi2..." << std::endl;
+         *Psi2.mutate() = reflect(*Psi2);
+      }
 
       // get the list of quantum number sectors
       std::set<QuantumNumber> Sectors;

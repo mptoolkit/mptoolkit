@@ -314,6 +314,11 @@ StateComponent operator*(std::complex<double> y, StateComponent const& x)
    return Res;
 }
 
+// A reflection of an MPS, which is a conjugate-transpose combined with a flip-conjugation
+// of the quantum numbers.  This preserves the local basis but transforms the
+// auxiliary basis into the adjoint.
+StateComponent reflect(StateComponent const& S);
+
 // does Result' = sum_{s,t} M(s,t) * A^s * herm(B^t)
 // Result' transforms the same way as M.
 MatrixOperator operator_prod(SimpleOperator const& M, 

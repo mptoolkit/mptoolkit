@@ -22,6 +22,7 @@
 #include "models/spinlessfermion-u1.h"
 #include "models/kondo-u1su2.h"
 #include "models/kondo-u1.h"
+#include "models/kondo-u1u1.h"
 #include "models/bosehubbard-spinless-u1.h"
 #include "models/hubbard-u1u1.h"
 #include "models/hubbard-u1su2.h"
@@ -561,6 +562,14 @@ int main(int argc, char** argv)
       else if (Model == "hubbard-u1su2")
       {
          Site = CreateSU2HubbardSite();
+      }
+      else if (Model == "klm-u1")
+      {
+         Site = CreateU1KondoSite();
+      }
+      else if (Model == "klm-u1u1")
+      {
+         Site = CreateU1U1KondoSite();
       }
       else if (Model != "")
       {

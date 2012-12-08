@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*- $Id: kondo-u1.h 1012 2009-04-24 01:24:29Z ianmcc $
 //
 // Site block for a hubbard-like site with an impurity spin
 
@@ -10,46 +10,45 @@
 typedef Block<SiteOperator> SiteBlock;
 
 inline
-SiteBlock CreateU1KondoSite(std::string const& Sym = "N")
+SiteBlock CreateU1U1KondoSite(std::string const& Sym = "N", std::string const& SpinSym = "Sz")
 {
-   SymmetryList Symmetry(Sym+":U(1)");
-   QuantumNumbers::QNConstructor<QuantumNumbers::U1> QN(Symmetry);
+   SymmetryList Symmetry(Sym+":U(1),"+SpinSym+":U(1)");
+   QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::U1> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator Cup, Cdown, CHup, CHdown, P, R, N, Sp, Sm, Sz, Sfp, Sfm, Sfz, Scp, Scm, Scz,
       ScpSfm, ScmSfp, SczSfz, ScSf, I, Hu, Pdouble, 
-      Ep, Em, Ns, Nh, Pg, CupP, CdownP, CHupP, CHdownP, Rs, Sx, Sy, Sfx, Sfy, Scx, Scy,
-      mSz, Top;
+      Ep, Em, Ns, Nh, Pg, CupP, CdownP, CHupP, CHdownP, Rs, mSz, Top;
    SiteBlock Block;
 
-   Basis.push_back("empty-up",  QN(0));
-   Basis.push_back("empty-down",  QN(0));
-   Basis.push_back("double-up", QN(2));
-   Basis.push_back("double-down", QN(2));
-   Basis.push_back("singlet", QN(1));            // (1/sqrt(2)) ( |up DOWN> - |down UP>)
-   Basis.push_back("triplet-down", QN(1));
-   Basis.push_back("triplet-zero", QN(1));
-   Basis.push_back("triplet-up", QN(1));
+   Basis.push_back("empty-up",  QN(0,0.5));
+   Basis.push_back("empty-down",  QN(0,-0.5));
+   Basis.push_back("double-up", QN(2,0.5));
+   Basis.push_back("double-down", QN(2,-0.5));
+   Basis.push_back("singlet", QN(1,0));            // (1/sqrt(2)) ( |up DOWN> - |down UP>)
+   Basis.push_back("triplet-down", QN(1,-1));
+   Basis.push_back("triplet-zero", QN(1,0));
+   Basis.push_back("triplet-up", QN(1,1));
 
-   Cup = SiteOperator(Basis, QN(-1), LatticeCommute::Fermionic);
-   P = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   R = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   N = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   Hu = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   Pdouble = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   Pg = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   Sp = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   Sz = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   mSz = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   Top = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   Sfp = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   Sfz = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   Scp = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   Scz = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   I = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   Ns = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   Nh = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   Rs = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   ScSf = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
+   Cup = SiteOperator(Basis, QN(-1,-0.5), LatticeCommute::Fermionic);
+   Cdown = SiteOperator(Basis, QN(-1,0.5), LatticeCommute::Fermionic);
+   P = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   R = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   N = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   Hu = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   Pdouble = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   Pg = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   Sp = SiteOperator(Basis, QN(0,1), LatticeCommute::Bosonic);
+   Sz = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   mSz = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   Top = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   Sfp = SiteOperator(Basis, QN(0,1), LatticeCommute::Bosonic);
+   Sfz = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   Scp = SiteOperator(Basis, QN(0,1), LatticeCommute::Bosonic);
+   Scz = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   I = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   Ns = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   Nh = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   ScSf = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
 
    // annihilate up fermion
    Cup("empty-down",   "singlet")      =  sqrt(0.5);
@@ -59,21 +58,13 @@ SiteBlock CreateU1KondoSite(std::string const& Sym = "N")
    Cup("triplet-zero", "double-up")    =  sqrt(0.5);
    Cup("triplet-down", "double-down")  =  1.0;
 
-   // spin reflection
-   Rs("empty-down",   "empty-up")     =  1.0;
-   Rs("empty-up",     "empty-down")   =  1.0;
-
-   Rs("double-down",  "double-up")    = -1.0;   // double-occupied singlet is antisymmetric
-   Rs("double-up",    "double-down")  = -1.0;
-   
-   Rs("singlet",      "singlet")      = -1.0; // again, an antisymmetric triplet
-   
-   Rs("triplet-down", "triplet-up")   =  1.0;
-   Rs("triplet-zero", "triplet-zero") =  1.0;
-   Rs("triplet-up",   "triplet-down") =  1.0;
-
    // annihilate down fermion
-   Cdown = Rs * Cup * Rs;
+   Cdown("empty-up",     "singlet")     = -sqrt(0.5);
+   Cdown("empty-up",     "triplet-zero")=  sqrt(0.5);
+   Cdown("empty-down",   "triplet-down")=  1.0;
+   Cdown("singlet",      "double-down") = -sqrt(0.5);
+   Cdown("triplet-zero", "double-down") = -sqrt(0.5);
+   Cdown("triplet-up",   "double-up")   = -1.0;
 
    // create up fermion
    CHup = adjoint(Cup);
@@ -238,24 +229,6 @@ SiteBlock CreateU1KondoSite(std::string const& Sym = "N")
    ScSf("triplet-zero", "triplet-zero") =  0.25;
    ScSf("triplet-up",   "triplet-up")   =  0.25;
 
-   // the x,y components of the spin
-   // Sp = Sx + iSy
-   // Sm = Sx - iSy
-   // so that 
-   // Sx = (Sp + Sm) / 2
-   // Sy = (Sp - Sm)/2i
-
-   std::complex<double> const i(0.0, 1.0);
-
-   Sx = 0.5*(Sp + Sm);
-   Sy = (-0.5*i)*(Sp - Sm);
-
-   Scx = 0.5*(Scp + Scm);
-   Scy = (-0.5*i)*(Scp - Scm);
-
-   Sfx = 0.5*(Sfp + Sfm);
-   Sfy = (-0.5*i)*(Sfp - Sfm);
-
    // number of holons
    Nh = I - Ns;
 
@@ -292,12 +265,6 @@ SiteBlock CreateU1KondoSite(std::string const& Sym = "N")
    Block["ScmSfp"] = ScmSfp;
    Block["SczSfz"] = SczSfz;
    Block["ScSf"] = ScSf;
-   Block["Sx"] = Sx;
-   Block["Sy"] = Sy;
-   Block["Sfx"] = Sfx;
-   Block["Sfy"] = Sfy;
-   Block["Scx"] = Scx;
-   Block["Scy"] = Scy;
 
    return Block;
 }

@@ -80,6 +80,17 @@ operator-(StateComponent const& x, StateComponent const& y)
    return Result;
 }
 
+StateComponent reflect(StateComponent const& S)
+{
+   StateComponent Result(S.LocalBasis(), adjoint(S.Basis2()), adjoint(S.Basis1()));
+   int n=0;
+   for (StateComponent::const_iterator I = S.begin(); I != S.end(); ++I)
+   {
+      Result[n++] = flip_conj(adjoint(*I));
+   }
+   return Result;
+}
+
 namespace LinearAlgebra
 {
 

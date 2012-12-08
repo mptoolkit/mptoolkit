@@ -185,7 +185,7 @@ class VectorBasis
       BasisList const& Basis() const { return Basis_; }
       BasisList& Basis() { return Basis_; }
 
-      // implicit conversion to BasisList
+      // implicit conversion to BasisList **OUCH** why is this here?
       operator BasisList const&() const { return Basis_; }
 
  private:
@@ -213,6 +213,7 @@ class VectorBasis
 
    friend VectorBasis RenameSymmetry(VectorBasis const& BL, SymmetryList const& NewSL);
 
+   friend VectorBasis adjoint(VectorBasis const& b);
 };
 
 inline
