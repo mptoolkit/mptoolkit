@@ -29,6 +29,7 @@
 #include "models/kondo-u1su2.h"
 #include "models/kondo-u1.h"
 #include "models/kondo-u1u1.h"
+#include "models/kondo-so4.h"
 #include "models/hubbard-so4.h"
 #include "models/hubbard-u1u1.h"
 #include "models/hubbard-u1su2.h"
@@ -1346,9 +1347,26 @@ int main(int argc, char** argv)
 	 HamList.push_back(H2[0]);
          HamMPO = TriangularOperator(HamList);
       }
+      else if (HamStr == "klm-so4")
+      {
+	 std::cout << "Hamiltonian is Kondo Lattice SO(4) with J=" << J << ", U=" << U << '\n';
+	 SiteBlock SiteA = CreateSO4KondoSiteA();
+	 SiteBlock SiteB = CreateSO4KondoSiteB();
+	 std::vector<BasisList> Sites(2, SiteA["I"].Basis().Basis());
+	 TriangularOperator Ham = -2.0 * t * TwoPointOperator(Sites, 0, SiteA["CHP"], 1, SiteB["C"]);
+	 Ham += -2.0 * t * TwoPointOperator(Sites, 1, SiteB["CHP"], 2, SiteA["C"]);
+	 if (U != 0)
+	 {
+	    Ham += U * (OnePointOperator(Sites, 0, SiteA["Hu"]) + OnePointOperator(Sites, 1, SiteB["Hu"]));
+	 }
+	 if (J != 0)
+	 {
+	    Ham += J * (OnePointOperator(Sites, 0, SiteA["ScSf"]) + OnePointOperator(Sites, 1, SiteB["ScSf"]));
+	 }
+         HamMPO = Ham;
+      }
       else if (HamStr == "klm-u1su2")
       {
-	 double J = J2;
 	 std::cout << "Hamiltonian is Kondo Lattice with J=" << J << '\n';
 	 SiteBlock Site = CreateU1SU2KondoSite();
 	 TriangularOperator Ham;
@@ -1360,7 +1378,6 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "klm-u1")
       {
-	 double J = J2;
 	 std::cout << "Hamiltonian is U(1) Kondo Lattice with J=" << J << ", Jz=" << Jz << '\n';
 	 SiteBlock Site = CreateU1KondoSite();
 	 TriangularOperator Ham;
@@ -1377,7 +1394,6 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "klm-u1u1")
       {
-	 double J = J2;
 	 std::cout << "Hamiltonian is U(1)xU(1) Kondo Lattice with J=" << J << ", Jz=" << Jz << '\n';
 	 SiteBlock Site = CreateU1U1KondoSite();
 	 TriangularOperator Ham;
