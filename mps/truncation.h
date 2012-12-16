@@ -64,11 +64,24 @@ struct EigenInfo
 
 };
 
+//
+// There are two ways we can sort the eigenvalues, by total weight or
+// by eigenvalue (ignoring degeneracy).  Sorting by total weight
+// is slightly better for finite systems, but possibly doesnt
+// work well in iDMRG where it favours higher spin representations
+// that increase the degeneracy of the groundstate unnecessarily.
+//
+
+inline
+bool EigenCompareWeight(EigenInfo const& x, EigenInfo const& y)
+{
+   return y.Eigenvalue*y.Degree < x.Eigenvalue*x.Degree;
+}
+
 inline
 bool EigenCompare(EigenInfo const& x, EigenInfo const& y)
 {
-   //return y.Eigenvalue < x.Eigenvalue;  // this is an alternate definition, that doesn't work as well
-   return y.Eigenvalue*y.Degree < x.Eigenvalue*x.Degree;
+   return y.Eigenvalue < x.Eigenvalue;
 }
 
 // the information we use to determine which states to keep is getting bigger, make it a structure

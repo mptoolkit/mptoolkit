@@ -893,6 +893,7 @@ int main(int argc, char** argv)
 #if defined(ENABLE_ONE_SITE_SCHEME)
       bool UseOneSiteScheme = false;
 #endif
+      bool DoRandom = false; // true if we want to start an iteration from a random centre matrix
       std::string TargetState;
       std::vector<std::string> BoundaryState;
       double EvolveDelta = 0.0;
@@ -929,6 +930,8 @@ int main(int argc, char** argv)
           "Instead of Lanczos, do imaginary time evolution with this timestep")
 	 ("random,a", prog_opt::bool_switch(&Create),
 	  "Create a new wavefunction starting from a random state")
+	 ("startrandom", prog_opt::bool_switch(&DoRandom),
+	  "Start the first iDMRG iteration from a random centre matrix")
 	 ("exactdiag,e", prog_opt::bool_switch(&ExactDiag),
 	  "Start from an effective exact diagonalization of the unit cell")
 	 ("unitcell,u", prog_opt::value(&UnitCellSize),
@@ -1998,6 +2001,13 @@ int main(int argc, char** argv)
 
                if (EvolveDelta == 0.0)
                {
+                  if (DoRandom)
+                  {
+                     if (Verbose)
+                        std::cout << "Randomizing centre matrix.\n";
+                     C = MakeRandomMatrixOperator(C.Basis1(), C.Basis2());
+                     //DoRandom = false;
+                  }
                   Energy = Lanczos(C, SuperblockMultiply(LeftBlock.back(), RightBlock.front()),
                                    Iterations,
                                    Tol);
