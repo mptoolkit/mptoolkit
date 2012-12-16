@@ -85,24 +85,24 @@ DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalu
    out << std::scientific;
    if (MaxEigenvalues < 0) MaxEigenvalues = EigenInfoList.size();
    out << "Eigenvalue sum = " << this->EigenSum() << '\n';
+   out << "von Neumann Entropy " << (Base2 ? "(base 2)" : "(base e)") << " = " << this->Entropy() << '\n';
    if (MaxEigenvalues > 0)
-      out << "Number            Eigenvalue  Degeneracy                 Sigma               Entropy   Quantum Number\n";
+      out << "Number            Eigenvalue  Degeneracy                 Sigma                Energy   Quantum Number\n";
    int n = 0;
    double Sigma = 1.0;
-   double Entropy = 0;
    int TotalDegree = 0;
-   for (const_iterator Iter = begin(); Iter != end() && n < MaxEigenvalues; ++Iter)
+   for (const_iterator Iter = this->begin(); Iter != this->end() && n < MaxEigenvalues; ++Iter)
    {
       double EVal = Iter->Eigenvalue / this->EigenSum();
+      double Energy = EVal > 0 ? -log(EVal) : 0.0;
       Sigma -= EVal * Iter->Degree;
-      if (EVal > 0) Entropy -= EVal * (Base2 ? log2(EVal) : log(EVal)) * Iter->Degree;
       TotalDegree += Iter->Degree;
       ++n;
       out << std::right << std::setw(6) << n << "  " 
 	  << std::right << std::setw(20) << Iter->Eigenvalue 
           << "  " << std::setw(10) << Iter->Degree
           << "  " << std::setw(20) << Sigma
-	  << "  " << std::setw(20) << Entropy
+	  << "  " << std::setw(20) << Energy
 	  << "   " << std::left 
 	  << this->Lookup(Iter->Subspace) << '\n';
    }
@@ -110,6 +110,19 @@ DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalu
    out << "Total degree = " << TotalDegree << '\n';
    outstream << out.str();
    return outstream;
+}
+
+double
+DensityMatrixBase::Entropy(bool Base2) const
+{
+   double x = 0;
+   for (const_iterator Iter = begin(); Iter != end(); ++Iter)
+   {
+      double EVal = Iter->Eigenvalue / this->EigenSum();
+      if (EVal > 0)
+	 x -= EVal * (Base2 ? log2(EVal) : log(EVal)) * Iter->Degree;
+   }
+   return x;
 }
 
 double

@@ -155,6 +155,8 @@ class DensityMatrixBase
       // returns the sum of the eigenvalues
       double EigenSum() const { return ESum; }
 
+      double Entropy(bool Base2 = false) const;
+
       double EvaluateCasimir(int n) const;
 
    protected:
