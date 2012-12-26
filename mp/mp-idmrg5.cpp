@@ -53,6 +53,7 @@ using statistics::moving_exponential;
 // The actual tolerance is min(MaxTol, FidelityScale * sqrt(Fidelity))
 double MaxTol = 4E-4;
 double FidelityScale = 0.1;
+int Verbose = 0;
 
 bool EarlyTermination = false;  // we set this to true if we get a checkpoint
 
@@ -406,7 +407,7 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
       {
          Energy = Lanczos(C, SuperblockMultiply(LeftBlockHam.back(), RightBlockHam.front()),
                           Iterations,
-                          Tol, MinIter);
+                          Tol, MinIter, Verbose);
       }
       else
       {
@@ -507,7 +508,7 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
       {
          Energy = Lanczos(C, SuperblockMultiply(LeftBlockHam.back(), RightBlockHam.front()),
                           Iterations,
-                          Tol, MinIter);
+                          Tol, MinIter, Verbose);
       }
       else
       {
@@ -658,7 +659,7 @@ void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double&
 
             Energy = Lanczos(C, SuperblockMultiply(LeftBlock.back(), RightBlock.front()),
                              Iterations,
-                             Tol, MinIter);
+                             Tol, MinIter, Verbose);
             Fidelity = std::max(1.0 - norm_frob(inner_prod(COld, C)), 0.0);
             FidelityAv.push(Fidelity);
          }
@@ -740,7 +741,7 @@ void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double&
             MatrixOperator COld = C;
             Energy = Lanczos(C, SuperblockMultiply(LeftBlock.back(), RightBlock.front()),
                              Iterations,
-                             Tol, MinIter);
+                             Tol, MinIter, Verbose);
             Fidelity = std::max(1.0 - norm_frob(inner_prod(COld, C)), 0.0);
             FidelityAv.push(Fidelity);
          }
@@ -884,7 +885,6 @@ int main(int argc, char** argv)
       bool OneSite = false;
       double MixFactor = 0.0;
       bool NoFixedPoint = false;
-      int Verbose = 0;
       bool NoOrthogonalize = false;
       bool Create = false;
       bool ExactDiag = false;
@@ -2010,7 +2010,7 @@ int main(int argc, char** argv)
                   }
                   Energy = Lanczos(C, SuperblockMultiply(LeftBlock.back(), RightBlock.front()),
                                    Iterations,
-                                   Tol);
+                                   Tol, MinIter, Verbose);
                }
                else
                {
@@ -2105,7 +2105,7 @@ int main(int argc, char** argv)
                {
 		  Energy = Lanczos(C, SuperblockMultiply(LeftBlock.back(), RightBlock.front()),
                                    Iterations,
-                                   Tol);
+                                   Tol, MinIter, Verbose);
                }
                else
                {

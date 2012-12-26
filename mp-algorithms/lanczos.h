@@ -64,6 +64,26 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       w -= SubH(i,i) * v[i];
       Beta = norm_frob(w);
 
+
+      if (Beta < LanczosBetaTol)
+      {
+         // Early return, we can't improve over the previous energy and eigenvector
+	 if (Verbose)
+	    std::cerr << "lanczos: early return, invariant subspace found, Beta="
+		      << Beta << ", iterations=" << (i+1) << '\n';
+	 Iterations = i+1;
+         LinearAlgebra::Matrix<double> M = SubH(LinearAlgebra::range(0,i),
+                                                LinearAlgebra::range(0,i));
+         LinearAlgebra::Vector<double> EValues = DiagonalizeHermitian(M);
+         double Theta = EValues[0];    // smallest eigenvalue
+         VectorType y = M(0,0) * v[0];
+         for (int j = 1; j <= i; ++j)
+            y += M(0,j) * v[j];
+    	 Tol = Beta;
+	 Guess = y;
+	 return Theta;
+      }
+
       // solution of the tridiagonal subproblem
       LinearAlgebra::Matrix<double> M = SubH(LinearAlgebra::range(0,i+1),
 					     LinearAlgebra::range(0,i+1));
@@ -102,17 +122,6 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 		      << ResidNorm << ", iterations=" << (i+1) << '\n';
 	 Iterations = i+1;
 	 Tol = ResidNorm/fabs(Theta);
-	 Guess = y;
-	 return Theta;
-      }
-
-      if (Beta < LanczosBetaTol)
-      {
-	 if (Verbose)
-	    std::cerr << "lanczos: early return, invariant subspace found, Beta="
-		      << Beta << ", iterations=" << (i+1) << '\n';
-	 Iterations = i+1;
-    	 Tol = Beta;
 	 Guess = y;
 	 return Theta;
       }

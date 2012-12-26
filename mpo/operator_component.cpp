@@ -716,7 +716,7 @@ flip_conj(OperatorComponent const& x)
    {
       for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
       {
-         TRACE(*J)(flip_conj(*J));
+         DEBUG_TRACE(*J)(flip_conj(*J));
          Result(J.index1(), J.index2()) = flip_conj(*J);
       }
    }

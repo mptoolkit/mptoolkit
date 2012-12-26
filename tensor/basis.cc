@@ -27,7 +27,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, BasisList& B)
 
 template <typename FwdIter>
 BasisList::BasisList(FwdIter first, FwdIter last)
-   : S_(first->GetSymmetryList()), Q_(first, last)
+   : S_(first == last ? QuantumNumbers::SymmetryList() : first->GetSymmetryList()), Q_(first, last)
 {
    DEBUG_CHECK(first != last)("The list must be non-empty");
 }

@@ -679,6 +679,8 @@ MatrixOperator ExpandBasis2Used(StateComponent& A, std::vector<int> const& Used)
    }
    DEBUG_TRACE(A.size())(UsedBasis.size());
 
+   CHECK(UsedBasis.size() != 0)(UsedBasis)(LinearAlgebra::Vector<int>(Used));
+
    ProductBasis<VectorBasis, BasisList> FullBasis2(A.Basis1(), adjoint(UsedBasis));
    StateComponent Result(A.LocalBasis(), A.Basis1(), FullBasis2.Basis());
    for (std::size_t t = 0; t < FullBasis2.size(); ++t)
