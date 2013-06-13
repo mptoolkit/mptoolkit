@@ -23,9 +23,11 @@
 #include "models/kondo-u1su2.h"
 #include "models/kondo-u1.h"
 #include "models/kondo-u1u1.h"
+#include "models/kondo-so4.h"
 #include "models/bosehubbard-spinless-u1.h"
 #include "models/hubbard-u1u1.h"
 #include "models/hubbard-u1su2.h"
+#include "models/hubbard-so4.h"
 
 #include "linearalgebra/arpack_wrapper.h"
 
@@ -563,6 +565,10 @@ int main(int argc, char** argv)
       {
          Site = CreateSU2HubbardSite();
       }
+      else if (Model == "hubbard-so4")
+      {
+         Site = CreateSO4HubbardSiteA();
+      }
       else if (Model == "klm-u1")
       {
          Site = CreateU1KondoSite();
@@ -570,6 +576,10 @@ int main(int argc, char** argv)
       else if (Model == "klm-u1u1")
       {
          Site = CreateU1U1KondoSite();
+      }
+      else if (Model == "klm-so4")
+      {
+         Site = CreateSO4KondoSiteA();
       }
       else if (Model != "")
       {

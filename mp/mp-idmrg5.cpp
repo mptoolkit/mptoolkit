@@ -1676,7 +1676,7 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "tricluster-u1")
       {
-	 std::cout << "Hamiltonian is U(1) Hubbard triangular cluster with t=" << t << ", tc=" << tc
+	 std::cout << "Hamiltonian is U(1) Hubbard triangular cluster with t=" << t << ", t2=" << t2 << ", tc=" << tc
 		   << ", U=" << U << '\n';
 	 SiteBlock Site = CreateU1HubbardSite();
 	 // 3-site unit cell
@@ -1701,6 +1701,14 @@ int main(int argc, char** argv)
 		      - TwoPointStringOperator(Sites, 1, Site["CupP"], Site["P"], 4, Site["CHup"])
 		      + TwoPointStringOperator(Sites, 1, Site["CHdownP"], Site["P"], 4, Site["Cdown"])
 		      - TwoPointStringOperator(Sites, 1, Site["CdownP"], Site["P"], 4, Site["CHdown"]));
+
+	 if (t2 != 0)
+	 {
+	    Ham += -t2 * (TwoPointStringOperator(Sites, 1, Site["CHupP"], Site["P"], 7, Site["Cup"])
+			  - TwoPointStringOperator(Sites, 1, Site["CupP"], Site["P"], 7, Site["CHup"])
+			  + TwoPointStringOperator(Sites, 1, Site["CHdownP"], Site["P"], 7, Site["Cdown"])
+			  - TwoPointStringOperator(Sites, 1, Site["CdownP"], Site["P"], 7, Site["CHdown"]));
+	 }
 
 	 Ham += U * OnePointOperator(Sites, 0, Site["Pdouble"]);
 	 Ham += U * OnePointOperator(Sites, 1, Site["Pdouble"]);
