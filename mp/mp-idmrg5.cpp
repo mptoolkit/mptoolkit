@@ -1466,14 +1466,19 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "bhj-u1")
       {
-	 std::cout << "Hamiltonian is spinless Bose-Hubbard, U(1), J/U=" << J
+	 std::cout << "Hamiltonian is spinless Bose-Hubbard, U(1), J=" << J << ", J2=" << J2 << ", U=" << U
                    << ", mu=" << mu << ", V=" << V << "\n";
 	 SiteBlock Site = CreateBoseHubbardSpinlessU1Site(NMax);
 	 TriangularOperator Ham;
-	 Ham = -J * TriangularTwoSite(Site["BH"], Site["B"]) - J * TriangularTwoSite(Site["B"], Site["BH"])
-	    + 0.5 * TriangularOneSite(Site["N2"]) - mu * TriangularOneSite(Site["N"]);
+	 Ham = -J * TriangularTwoSite(Site["BH"], Site["B"]) - J * TriangularTwoSite(Site["B"], Site["BH"]);
+	 if (U != 0)
+	    Ham += 0.5*U * TriangularOneSite(Site["N2"]);
+	 if (mu != 0)
+	    Ham += -mu * TriangularOneSite(Site["N"]);
          if (V != 0)
             Ham += V * TriangularTwoSite(Site["N"], Site["N"]);
+	 if (J2 != 0)
+	    Ham += -J2 * TriangularThreeSite(Site["BH"], Site["I"], Site["B"]) - J2 * TriangularThreeSite(Site["B"], Site["I"], Site["BH"]);
 	 HamMPO = Ham;
       }
       else if (HamStr == "bh2")

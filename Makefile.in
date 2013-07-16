@@ -275,7 +275,7 @@ dep : $(cxx_depend)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ $(LIB) $(LIBS_$@) -o $@
 
 % : %.cpp
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ $(LIB) -o $@
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ $(LIB) $(LIBS_$@) -o $@
 
 %.o : %.cpp %.d
 	$(CXX) $(CXXFLAGS) -c $< -o $@
