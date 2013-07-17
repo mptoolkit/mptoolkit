@@ -73,6 +73,8 @@ int main(int argc, char** argv)
 
       pvalue_ptr<InfiniteWavefunction> Psi = pheap::OpenPersistent(Wavefunc, mp_pheap::CacheSize(), true);
 
+      std::cout << "Symmetry list=" << Psi->C_right.GetSymmetryList() << '\n';
+      std::cout << "Transforms as=" << Psi->shift() << '\n';
       
       std::cout << "Number of states=" << Psi->C_right.Basis1().total_dimension() << '\n';
       std::cout << "Degree=" << Psi->C_right.Basis1().total_degree() << '\n';
