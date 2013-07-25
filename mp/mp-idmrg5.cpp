@@ -884,6 +884,8 @@ int main(int argc, char** argv)
       double Jcross = 1.0;
       int NLegs = 1;
       int NMax = 3;  // maximum number of particles for Bose-Hubbard mode
+      std::vector<double> LongRangeCoeff;
+      std::vector<double> LongRangeExp;
       bool TwoSite = true;
       bool OneSite = false;
       double MixFactor = 0.0;
@@ -1032,6 +1034,10 @@ int main(int argc, char** argv)
 	  FormatDefault("p0 projector (for spin 2 xxx)", p4).c_str())
 	 ("lambda", prog_opt::value(&Lambda),
 	  FormatDefault("transverse field strength (for itf hamiltonian)", Lambda).c_str())
+	 ("coeff", prog_opt::value(&LongRangeCoeff),
+	  "Coefficient a in long-range exponential a*lambda^x")
+	 ("exp", prog_opt::value(&LongRangeExp),
+	  "Exponent lambda in long-range exponential a*lambda^x")
          ("seed", prog_opt::value<unsigned long>(), "random seed")
 	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
 	  ;
@@ -1066,10 +1072,20 @@ int main(int argc, char** argv)
       if (HamStr == "itf")
       {
 	 std::cout << "Hamiltonian is transverse-field Ising, J=" << J << ", Lambda=" << Lambda << "\n";
+	 std::cout << "Number of long range terms = " << LongRangeCoeff.size() << '\n';
+	 CHECK_EQUAL(LongRangeCoeff.size(), LongRangeExp.size())
+	    ("Must supply equal numbers of coefficients and exponents");
 	 SiteBlock Site = CreateSpinSite(0.5);
 	 TriangularOperator Ham;
 	 Ham = J * 4.0 * TriangularTwoSite(Site["Sz"], Site["Sz"])
 	    + Lambda * 2.0 * TriangularOneSite(Site["Sx"]);
+
+	 for (unsigned i = 0; i < LongRangeCoeff.size(); ++i)
+	 {
+	    std::cout << "Long range term coefficient=" << LongRangeCoeff[i] 
+		      << ", exponent=" << LongRangeExp[i] << '\n';
+	    Ham += LongRangeCoeff[i] * TriangularTwoSiteExponential(Site["Sz"], Site["Sz"], LongRangeExp[i]);
+	 }
          HamMPO = Ham;
       }
       else if (HamStr == "itf-z2")
