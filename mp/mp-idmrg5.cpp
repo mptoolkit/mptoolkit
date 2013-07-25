@@ -36,6 +36,7 @@
 #include "models/spinlessfermion-u1.h"
 #include "models/bosehubbard-spinless.h"
 #include "models/bosehubbard-spinless-u1.h"
+#include "models/bosehubbard-2bosons-u1z2.h"
 #include "tensor/tensor_eigen.h"
 #include "tensor/regularize.h"
 
@@ -855,6 +856,8 @@ int main(int argc, char** argv)
       double B = 0;
       double D = 0;
       double U = 0;
+      double U12 = 0;
+      double Omega = 0;
       double V = 0;
       double Jz = 1.0;
       double Jx = 1.0;
@@ -983,6 +986,10 @@ int main(int argc, char** argv)
 	  FormatDefault("nearest-neighbor coulomb (for bhj-u1)", V).c_str())
 	 ("U", prog_opt::value(&U),
 	  FormatDefault("coulomb repulsion", U).c_str())
+	 ("U12", prog_opt::value(&U12),
+	  FormatDefault("coulomb repulsion between species 1,2", U12).c_str())
+	 ("Omega", prog_opt::value(&Omega),
+	  FormatDefault("Mixing between species", Omega).c_str())
 	 ("B", prog_opt::value(&B),
 	  FormatDefault("magnetic field (for xxx)", B).c_str())
 	 ("Jz", prog_opt::value(&Jz),
@@ -1424,11 +1431,12 @@ int main(int argc, char** argv)
 	 HamList.push_back(H2[0]);
          HamMPO = TriangularOperator(HamList);
       }
-      else if (HamStr == "hubbard-u1")
+      else if (HamStr == "hubbard-u1u1")
       {
-	 std::cout << "Hamiltonian is Hubbard model U(1) with t=" << t << ", t2=" << t2
-		   << ", U = " << U << '\n';
-	 SiteBlock Site = CreateU1HubbardSite();
+	 std::cout << "Hamiltonian is Hubbard model U(1)xU(1) with t=" << t << ", t2=" << t2
+		   << ", U = " << U
+		   << ", Delta=" << delta << '\n';
+	 SiteBlock Site = CreateU1U1HubbardSite();
 	 TriangularOperator Ham;
          Ham =  -t * (TriangularTwoSite(Site["CHupP"], Site["Cup"])
                       - TriangularTwoSite(Site["CupP"], Site["CHup"])
@@ -1442,6 +1450,14 @@ int main(int argc, char** argv)
 
          if (U != 0)
             Ham = Ham + (U*0.25) * TriangularOneSite(Site["P"]);
+
+	 if (delta != 0)
+	 {
+	    // This doubles the size of the unit cell
+	    Ham = extend(Ham, 2);
+	    Ham = Ham + OnePointOperator(Ham.LocalBasis1List(), 0,  0.5*Site["N"]);
+	    Ham = Ham + OnePointOperator(Ham.LocalBasis1List(), 1, -0.5*Site["N"]);
+	 }
 
          HamMPO = Ham;
       }
@@ -1479,6 +1495,25 @@ int main(int argc, char** argv)
             Ham += V * TriangularTwoSite(Site["N"], Site["N"]);
 	 if (J2 != 0)
 	    Ham += -J2 * TriangularThreeSite(Site["BH"], Site["I"], Site["B"]) - J2 * TriangularThreeSite(Site["B"], Site["I"], Site["BH"]);
+	 HamMPO = Ham;
+      }
+      else if (HamStr == "bh-u1z2")
+      {
+	 std::cout << "Hamiltonian is two species Bose-Hubbard, U(1)xZ2, J=" << J << ", U=" << U << ", U12=" << U12
+		   << ", Omega=" << Omega << "\n";
+
+	 SiteBlock Site = CreateBoseHubbard2BosonsU1Z2Site(NMax);
+	 TriangularOperator Ham;
+	 Ham = -J * (TriangularTwoSite(Site["BH_S"], Site["B_S"]) + TriangularTwoSite(Site["B_S"], Site["BH_S"])
+		     + TriangularTwoSite(Site["BH_A"], Site["B_A"]) + TriangularTwoSite(Site["B_A"], Site["BH_A"]));
+
+	 SiteOperator LocalHamiltonian = Omega * (Site["N_S"] - Site["N_A"]);
+	 LocalHamiltonian += U * Site["N_S"] * Site["N_A"] 
+	    + 0.5 * (Site["N2_S"] + Site["N2_A"]) 
+	    + 0.25 * (Site["BH2_S"]*Site["B2_A"] + Site["BH2_A"]*Site["B2_S"]);
+	 LocalHamiltonian += U12 * (Site["N2_S"] + Site["N2_A"] 
+				    - Site["BH2_S"]*Site["B2_A"] - Site["BH2_A"]*Site["B2_S"]);
+	 Ham += TriangularOneSite(LocalHamiltonian);
 	 HamMPO = Ham;
       }
       else if (HamStr == "bh2")
@@ -1683,7 +1718,7 @@ int main(int argc, char** argv)
       {
 	 std::cout << "Hamiltonian is U(1) Hubbard triangular cluster with t=" << t << ", t2=" << t2 << ", tc=" << tc
 		   << ", U=" << U << '\n';
-	 SiteBlock Site = CreateU1HubbardSite();
+	 SiteBlock Site = CreateU1U1HubbardSite();
 	 // 3-site unit cell
 	 std::vector<BasisList> Sites(3, Site["I"].Basis().Basis());
 	 TriangularOperator Ham;

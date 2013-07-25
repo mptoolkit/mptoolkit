@@ -59,6 +59,10 @@ class MPOperator
 
       QuantumNumbers::SymmetryList GetSymmetryList() const { return Data_[0].GetSymmetryList(); }
 
+      // returns the list of local hilbert spaces for this operator
+      std::vector<BasisList> LocalBasis1List() const;
+      std::vector<BasisList> LocalBasis2List() const;
+
       std::vector<OperatorComponent> const& data() const { return Data_; }
 
    private:

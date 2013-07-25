@@ -2,6 +2,30 @@
 
 #include "mpoperator.h"
 
+std::vector<BasisList> 
+MPOperator::LocalBasis1List() const
+{
+   std::vector<BasisList> Result;
+   Result.reserve(Data_.size());
+   for (unsigned i = 0; i < Data_.size(); ++i)
+   {
+      Result.push_back(Data_[i].LocalBasis1());
+   }
+   return Result;
+}
+
+std::vector<BasisList> 
+MPOperator::LocalBasis2List() const
+{
+   std::vector<BasisList> Result;
+   Result.reserve(Data_.size());
+   for (unsigned i = 0; i < Data_.size(); ++i)
+   {
+      Result.push_back(Data_[i].LocalBasis2());
+   }
+   return Result;
+}
+
 std::ostream&
 operator<<(std::ostream& out, MPOperator const& op)
 {

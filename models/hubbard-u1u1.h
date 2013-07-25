@@ -7,7 +7,7 @@
 typedef Block<SiteOperator> SiteBlock;
 
 inline
-SiteBlock CreateU1HubbardSite(std::string const& Sym1 = "N", 
+SiteBlock CreateU1U1HubbardSite(std::string const& Sym1 = "N", 
 			      std::string const& Sym2 = "Sz",
 			      std::string const& ParityOp = "P")
 {

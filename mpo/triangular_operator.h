@@ -71,9 +71,13 @@ class TriangularOperator
       // extracts a diagonal operator.  This is either null, or a product of SimpleRedOperator's.
       std::vector<SimpleRedOperator> diagonal(int i) const;
 
-     MPOperator const& data() const { return Data_; }
+      // returns the list of local hilbert spaces for this operator
+      std::vector<BasisList> LocalBasis1List() const { return Data_.LocalBasis1List(); }
+      std::vector<BasisList> LocalBasis2List() const { return Data_.LocalBasis2List(); }
 
-     MPOperator& data() { return Data_; }  // dangerous, probably shouldn't exist
+      MPOperator const& data() const { return Data_; }
+
+      MPOperator& data() { return Data_; }  // dangerous, probably shouldn't exist
 
       QuantumNumbers::SymmetryList GetSymmetryList() const { return Data_.GetSymmetryList(); }
 
