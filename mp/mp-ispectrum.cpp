@@ -557,9 +557,9 @@ int main(int argc, char** argv)
       {
 	 Site = CreateBoseHubbardSpinlessU1Site(NMax);
       }
-      else if (Model == "hubbard-u1")
+      else if (Model == "hubbard-u1u1")
       {
-         Site = CreateU1HubbardSite();
+         Site = CreateU1U1HubbardSite();
       }
       else if (Model == "hubbard-u1su2")
       {
