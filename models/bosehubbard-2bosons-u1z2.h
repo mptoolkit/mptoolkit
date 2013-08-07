@@ -60,7 +60,7 @@ SiteBlock CreateBoseHubbard2BosonsU1Z2Site(int MaxN, std::string const& Sym1 = "
 	 l2 = BH_A.Basis2().LookupOrNeg(Coord(n, m));
 	 if (l1 >= 0 && l2 >= 0) 
 	 {
-	    BH_S(Coord(n+1, 1), Coord(n, 1)) = std::sqrt(double(n + 1));
+	    BH_S(Coord(n+1, m), Coord(n, m)) = std::sqrt(double(n + 1));
 	 }
 
 	 Z(Basis.LookupOrNeg(Coord(n, m)), Basis.LookupOrNeg(Coord(n, m))) = Parity(m);
