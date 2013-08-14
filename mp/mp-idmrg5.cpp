@@ -853,9 +853,12 @@ int main(int argc, char** argv)
       double Jperp = 0.0;
       bool Periodic = false;
       double J2 = 0.0;
+      double J1 = 0.0;
       double B = 0;
       double D = 0;
       double U = 0;
+      double U1 = 0;
+      double U2 = 0;
       double U12 = 0;
       double Omega = 0;
       double V = 0;
@@ -982,11 +985,17 @@ int main(int argc, char** argv)
           "periodic in the perendicular direction (for xxx-ladder)")
 	 ("J2", prog_opt::value(&J2),
 	  FormatDefault("next-nearest-neighbor exchange J2 (for xxx)", J2).c_str())
+	 ("J1", prog_opt::value(&J1),
+	  FormatDefault("next-nearest-neighbor exchange J1 (for bh2-u1)", J1).c_str())
 	 ("D", prog_opt::value(&D),
 	  FormatDefault("single-ion anisotropy (for xxx-u1 and xxx)", D).c_str())
 	 ("V", prog_opt::value(&V),
 	  FormatDefault("nearest-neighbor coulomb (for bhj-u1)", V).c_str())
 	 ("U", prog_opt::value(&U),
+	  FormatDefault("coulomb repulsion", U).c_str())
+	 ("U1", prog_opt::value(&U1),
+	  FormatDefault("coulomb repulsion", U).c_str())
+	 ("U2", prog_opt::value(&U2),
 	  FormatDefault("coulomb repulsion", U).c_str())
 	 ("U12", prog_opt::value(&U12),
 	  FormatDefault("coulomb repulsion between species 1,2", U12).c_str())
@@ -1511,6 +1520,26 @@ int main(int argc, char** argv)
             Ham += V * TriangularTwoSite(Site["N"], Site["N"]);
 	 if (J2 != 0)
 	    Ham += -J2 * TriangularThreeSite(Site["BH"], Site["I"], Site["B"]) - J2 * TriangularThreeSite(Site["B"], Site["I"], Site["BH"]);
+	 HamMPO = Ham;
+      }
+      else if (HamStr == "bh2-u1")
+      {
+	 std::cout << "Hamiltonian is spinless Bose-Hubbard two species, U(1), J1=" << J1 << ", J2=" << J2
+		   << ", U1=" << U1 << ", U2=" << U2 << ", U12=" << U12 << ", Omega=" << Omega 
+		   << '\n';
+	 SiteBlock Site = CreateBoseHubbardSpinlessU1Site(NMax);
+         std::vector<BasisList> Sites(2, Site["I"].Basis().Basis());
+	 TriangularOperator Ham;
+	 Ham = -J1 * (TwoPointOperator(Sites, 0, Site["BH"], 2, Site["B"]) + TwoPointOperator(Sites, 0, Site["B"], 2, Site["BH"]) );
+	 Ham += -J2 * (TwoPointOperator(Sites, 1, Site["BH"], 3, Site["B"]) + TwoPointOperator(Sites, 1, Site["B"], 3, Site["BH"]) );
+	 if (U1 != 0)
+	    Ham += 0.5*U1 * OnePointOperator(Sites, 0, Site["N2"]);
+	 if (U2 != 0)
+	    Ham += 0.5*U2 * OnePointOperator(Sites, 1, Site["N2"]);
+	 if (U12 != 0)
+	    Ham += U12 * TwoPointOperator(Sites, 0, Site["N"], 1, Site["N"]);
+	 if (Omega != 0)
+	    Ham += -Omega * (TwoPointOperator(Sites, 0, Site["BH"], 1, Site["B"]) + TwoPointOperator(Sites, 0, Site["B"], 1, Site["BH"]) );
 	 HamMPO = Ham;
       }
       else if (HamStr == "bh-u1z2")
