@@ -483,10 +483,10 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 	 }
 	 EMatK[Col] = E;
       }
-      else if (Classification.is_prop_identity())
+      else if (Classification.is_prop_string())
       {
          // Operator is proportional to the identity
-         DEBUG_TRACE("diagonal element proportional to identity")(Col)(Diag)(Classification.factor());
+         DEBUG_TRACE("diagonal element proportional to a unitary")(Col)(Diag)(Classification.factor());
 
          KComplexPolyType EParallel;  // components parallel to the identity at momentum factor(), may be zero
 
@@ -596,6 +596,10 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 
          EMatK[Col] = E;
       }
+      else
+      {
+	 PANIC("Unclassified diagonal component")(Diag);
+      }
 
       --Col;
    }
@@ -683,7 +687,6 @@ int main(int argc, char** argv)
 	    TriangularOperator Op2 = OnePointStringOperator(Sites, FermionString, j, Site["Cup"], -k*math_const::pi);
 
 	    TriangularOperator Op = Op1 * Op2;
-	    //TriangularOperator Op = TwoPointOperator(Sites, i, Site["CHup"], j, Site["Cup"]);
 
 	    std::map<std::complex<double>, Polynomial<MatrixOperator>, CompareComplex> 
 	       E = SolveMPO_Left(Phi, Psi.QShift, Op, Rho, Identity, Verbose);

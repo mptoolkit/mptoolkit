@@ -941,7 +941,7 @@ TriangularOperator OnePointStringOperator(std::vector<BasisList> const& Sites,
    CHECK_EQUAL(x.Basis1(), Sites[n]);
    CHECK_EQUAL(x.Basis2(), Sites[n]);
    int const Size = Sites.size();
-   std::complex<double> r = std::exp(std::complex<double>(0.0, 1.0) * (Momentum / Size));
+   std::complex<double> r = std::exp(std::complex<double>(0.0, 1.0) * Momentum);
 
    // construct a list of added quantum numbers that are needed for the bond bases
    std::vector<BasisList> BondBasis(Size, BasisList(Sites[0].GetSymmetryList()));
@@ -966,7 +966,7 @@ TriangularOperator OnePointStringOperator(std::vector<BasisList> const& Sites,
       CHECK_EQUAL(String[i].Basis2(), Sites[i]);
 
       Result[i] = OperatorComponent(Sites[i], Sites[i], BondBasis[i], BondBasis[smod(i+1,Size)]);
-      Result[i](0,0) = r * String[i];
+      Result[i](0,0) = i == 0 ? (r * String[i]) : String[i];
       Result[i](1,1) = SimpleOperator::make_identity(Sites[i]);
    }
 
