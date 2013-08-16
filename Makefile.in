@@ -208,7 +208,8 @@ infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-
 
 infinite-tools = mp-idmrg5 mp-ispectrum \
                  mp-iexpectation2 mp-iexpectation3 mp-ispectral-expansion mp-igradient \
-                 mp-ireorder-symmetry mp-irename-symmetry mp-iinfo mp-iproject mp-icorrelation
+                 mp-ireorder-symmetry mp-irename-symmetry mp-iinfo mp-iproject mp-icorrelation \
+                 mp-iexpectation-tri
 
 mp-tools-not-functional = mp-add2 mp-exp mp-stringcorrelation-su2 mp-canonical
 
@@ -513,6 +514,7 @@ mp-ieigen : triangularoperator.o infinitewavefunction.o
 mp-idump : infinitewavefunction.o
 mp-imake-transverse-lattice : triangularoperator.o infinitewavefunction.o random_wavefunc.o eigen.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
 mp-imake-transverse-lattice-folded : triangularoperator.o infinitewavefunction.o random_wavefunc.o eigen.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
+mp-iexpectation-tri : infinitewavefunction.o eigen.o triangular_operator.o eigen.o mpoperator.o packunpack.o
 
 
 LIBS_mp-ispectrum = $(LIBARPACK)

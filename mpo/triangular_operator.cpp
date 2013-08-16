@@ -75,6 +75,7 @@ TriangularOperator TriangularOneSite(SimpleOperator const& x)
    SimpleOperator I = SimpleOperator::make_identity(x.Basis1());
 
    OperatorComponent data(x.Basis1(), b, b);
+
    data.set_operator(0,0,I);
    data.set_operator(1,1,I);
    data.set_operator(1,0,x);
@@ -497,6 +498,8 @@ TriangularOperator operator-(TriangularOperator const& x, TriangularOperator con
 
 TriangularOperator operator*(TriangularOperator const& x, TriangularOperator const& y)
 {
+   QuantumNumber qx = x.TransformsAs();
+   QuantumNumber qy = y.TransformsAs();
    QuantumNumbers::QuantumNumberList ql = transform_targets(x.TransformsAs(), y.TransformsAs());
    CHECK_EQUAL(ql.size(), 1)("Operator product is not irreducible - must specify a quantum number")(ql);
    return prod(x, y, ql.front());
@@ -918,10 +921,27 @@ int smod(int n, int k)
    return r;
 }
 
-TriangularOperator OnePointOperator(std::vector<BasisList> const& Sites, 
-                                    int n, SimpleOperator const& x)
+std::vector<SimpleOperator>
+MakeIdentityUnitCell(std::vector<BasisList> const& Sites)
 {
+   std::vector<SimpleOperator> Result;
+   for (unsigned i = 0; i < Sites.size(); ++i)
+   {
+      Result.push_back(SimpleOperator::make_identity(Sites[i]));
+   }
+   return Result;
+}
+
+TriangularOperator OnePointStringOperator(std::vector<BasisList> const& Sites, 
+					  std::vector<SimpleOperator> const& String,
+					  int n, SimpleOperator const& x, double Momentum)
+{
+   CHECK(n >= 0 && n < int(Sites.size()))(n)(Sites.size());
+   CHECK_EQUAL(Sites.size(), String.size());
+   CHECK_EQUAL(x.Basis1(), Sites[n]);
+   CHECK_EQUAL(x.Basis2(), Sites[n]);
    int const Size = Sites.size();
+   std::complex<double> r = std::exp(std::complex<double>(0.0, 1.0) * (Momentum / Size));
 
    // construct a list of added quantum numbers that are needed for the bond bases
    std::vector<BasisList> BondBasis(Size, BasisList(Sites[0].GetSymmetryList()));
@@ -935,23 +955,29 @@ TriangularOperator OnePointOperator(std::vector<BasisList> const& Sites,
    // the actual operator
    for (int i = 0; i < Size; ++i)
    {
-      BondBasis[i].push_back(QuantumNumber(Sites[0].GetSymmetryList()));
+      BondBasis[i].push_back(x.TransformsAs());
    }
 
    // Assemble the operators
    MPOperator Result(Size);
    for (int i = 0; i < Size; ++i)
    {
+      CHECK_EQUAL(String[i].Basis1(), Sites[i]);
+      CHECK_EQUAL(String[i].Basis2(), Sites[i]);
+
       Result[i] = OperatorComponent(Sites[i], Sites[i], BondBasis[i], BondBasis[smod(i+1,Size)]);
-      Result[i](0,0) = SimpleOperator::make_identity(Sites[i]);
-      Result[i](BondBasis[i].size()-1, BondBasis[smod(i+1,Size)].size()-1) 
-         = SimpleOperator::make_identity(Sites[i]);
+      Result[i](0,0) = r * String[i];
+      Result[i](1,1) = SimpleOperator::make_identity(Sites[i]);
    }
 
-   // now the operators.  Keep track of which component we insert them into
-   std::vector<int> Loc(Size, 0);
-   Result[smod(n,Size)](1,0) = x;
+   Result[n](1,0) = x;
    return TriangularOperator(Result.data());
+}
+
+TriangularOperator OnePointOperator(std::vector<BasisList> const& Sites, 
+                                    int n, SimpleOperator const& x, double Momentum)
+{
+   return OnePointStringOperator(Sites, MakeIdentityUnitCell(Sites), n, x, Momentum);
 }
 
 TriangularOperator TwoPointOperator(std::vector<BasisList> const& Sites, 
@@ -961,6 +987,8 @@ TriangularOperator TwoPointOperator(std::vector<BasisList> const& Sites,
    // Normal order the sites.
    if (n1 > n2)
       return TwoPointOperator(Sites, n2, x2, n1, x1);
+   else if (n1 == n2)
+      return OnePointOperator(Sites, n1, x1*x2);
 
    int const Size = Sites.size();
 

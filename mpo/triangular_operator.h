@@ -63,7 +63,7 @@ class TriangularOperator
       value_type const& back() const { return Data_.back(); }
       value_type& back() { return Data_.back(); }
 
-      QuantumNumber const& TransformsAs() const { return this->Basis().back(); }
+      QuantumNumber TransformsAs() const { return this->Basis().back(); }
 
       // returns the component at entry (i,j).  Result is a 1x1 MPOperator
       MPOperator operator()(int i, int j) const;
@@ -135,9 +135,18 @@ TriangularOperator TwoPointStringOperator(std::vector<BasisList> const& Sites,
 					  SimpleOperator const& String,
 					  int n2, SimpleOperator const& x2);
 
-// A one-site operator on a lattice
+// A one-site operator on a lattice with a given momentum, in angular units per unit cell
 TriangularOperator OnePointOperator(std::vector<BasisList> const& Sites, 
-                                    int n, SimpleOperator const& x);
+                                    int n, SimpleOperator const& x, double Momentum = 0);
+
+// A one-site operator on a lattice with a given momentum, in angular units per unit cell
+TriangularOperator OnePointStringOperator(std::vector<BasisList> const& Sites, 
+					  std::vector<SimpleOperator> const& String,
+					  int n, SimpleOperator const& x, double Momentum = 0);
+
+// Helper function to make a list of identity operators over a unit cell
+std::vector<SimpleOperator>
+MakeIdentityUnitCell(std::vector<BasisList> const& Sites);
 
 // replicate an operator on a unit cell this many times
 TriangularOperator repeat(TriangularOperator const& x, int Count);
