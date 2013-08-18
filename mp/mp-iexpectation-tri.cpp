@@ -650,7 +650,7 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
          }
 
 	 // Finally, set the E matrix element at this column
-	 TRACE(E[1.0]);
+	 DEBUG_TRACE(E[1.0]);
          EMatK[Col] = E;
       }
 
@@ -705,7 +705,7 @@ int main(int argc, char** argv)
    MatrixOperator LambdaSqrt = SqrtDiagonal(Psi.C_old);
    MatrixOperator LambdaInvSqrt = InvertDiagonal(LambdaSqrt, InverseTol);
 
-   bool Verbose = true;
+   bool Verbose = false;
 
    Phi.set_front(prod(LambdaInvSqrt, Phi.get_front()));
    Phi.set_back(prod(Phi.get_back(), delta_shift(LambdaSqrt, adjoint(Psi.QShift))));
