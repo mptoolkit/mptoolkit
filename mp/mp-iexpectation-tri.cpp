@@ -723,7 +723,8 @@ int main(int argc, char** argv)
    {
       for (int j = 0; j < UnitCellSize; ++j)
       {
-	 std::cout << "#" << i << "," << j << " ";
+	 std::cout << "#" << i << "," << j << "-real ";
+	 std::cout << "#" << i << "," << j << "-imag ";
       }
    }
    std::cout << std::endl;
@@ -754,7 +755,7 @@ int main(int argc, char** argv)
 	       }
 	    }
 	    else
-	       std::cout << aNorm[1].real() << ' ';
+	       std::cout << aNorm[1].real() << ' ' << aNorm[1].imag() << ' ';
 	 }
       }
       std::cout << std::endl;
