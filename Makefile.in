@@ -88,7 +88,7 @@ linearalgebraobj = eigen.o
 #matrixproductobj = density.o mpexponential.o mpopcomponent.o mpopcompressed.o \
 #                   mpoperatorlist.o mpstate.o lattice.o linearwavefunction.o wavefunc-utils.o \
 
-mpoobj = operator_component.o #triangularoperator.o
+mpoobj = operator_component.o mpoperator.o #triangularoperator.o
 
 mpsobj = state_component.o linearwavefunction.o infinitewavefunction.o density.o operator_actions.o
 
@@ -207,7 +207,6 @@ infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-
                  mp-iexpectation-sz2 mp-iparity mp-idump mp-itebd mp-icorrelation mp-idmrg5-spin2
 
 infinite-tools = mp-idmrg5 mp-ispectrum \
-                 mp-iexpectation2 mp-iexpectation3 mp-ispectral-expansion mp-igradient \
                  mp-ireorder-symmetry mp-irename-symmetry mp-iinfo mp-iproject mp-icorrelation \
                  mp-iexpectation-tri
 
@@ -357,7 +356,7 @@ testdeltaprod : basis.o tensorproduct.o
 
 $(matrixproduct_tests) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) $(tensorobj)
 
-testtriangularaddition : mpstate.o triangularoperator.o siteoperator.o mpopcomponent.o eigen.o
+testtriangularaddition : mpstate.o siteoperator.o mpopcomponent.o eigen.o
 
 testmpstate : mpstate.o
 testmpstateu1 : mpstate.o
@@ -481,10 +480,6 @@ mp-misc = make-vb-state make-vb-su2
 
 mp-simple-marshall-qmc : random_wavefunc.o
 
-mp-idmrg : triangularoperator.o
-mp-idmrg2 : triangularoperator.o infinitewavefunction.o
-mp-idmrg3 : triangularoperator.o infinitewavefunction.o
-mp-idmrg4 : triangularoperator.o infinitewavefunction.o random_wavefunc.o
 mp-idmrg5 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o
 mp-idmrg5-spin2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o
 mp-ireorder-symmetry : triangular_operator.o mpoperator.o infinitewavefunction.o eigen.o
@@ -497,23 +492,23 @@ mp-iexpectation-sz : triangular_operator.o mpoperator.o infinitewavefunction.o r
 mp-iexpectation-sz2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
 mp-iexcitation : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
 mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
-mp-igradient : triangularoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
-mp-ispectral-expansion : triangularoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
+mp-igradient : triangular_operator.o infinitewavefunction.o random_wavefunc.o eigen.o
+mp-ispectral-expansion : triangular_operator.o infinitewavefunction.o random_wavefunc.o eigen.o
 mp-ioverlap : infinitewavefunction.o eigen.o
 mp-iproject : infinitewavefunction.o eigen.o
 mp-icorrelation : infinitewavefunction.o eigen.o
-mp-iortho : triangularoperator.o infinitewavefunction.o
-mp-iinfo : eigen.o triangularoperator.o infinitewavefunction.o
-mp-iorthogonalize : triangularoperator.o infinitewavefunction.o
-mp-pwfrg : triangularoperator.o match_basis.o
+mp-iortho : triangular_operator.o infinitewavefunction.o
+mp-iinfo : eigen.o triangular_operator.o infinitewavefunction.o
+mp-iorthogonalize : triangular_operator.o infinitewavefunction.o
+mp-pwfrg : triangular_operator.o match_basis.o
 mp-itebd : mpexponential.o $(expokitobj) infinitewavefunction.o
 mp-itebd2 : $(expokitobj) infinitewavefunction.o eigen.o random_wavefunc.o
 mp-evolve-bonds : local-evolution.o $(expokitobj)
 mp-ispectrum : infinitewavefunction.o packunpack.o eigen.o arpack_wrapper.o
-mp-ieigen : triangularoperator.o infinitewavefunction.o
+mp-ieigen : triangular_operator.o infinitewavefunction.o
 mp-idump : infinitewavefunction.o
-mp-imake-transverse-lattice : triangularoperator.o infinitewavefunction.o random_wavefunc.o eigen.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
-mp-imake-transverse-lattice-folded : triangularoperator.o infinitewavefunction.o random_wavefunc.o eigen.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
+mp-imake-transverse-lattice : triangular_operator.o infinitewavefunction.o random_wavefunc.o eigen.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
+mp-imake-transverse-lattice-folded : triangular_operator.o infinitewavefunction.o random_wavefunc.o eigen.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
 mp-iexpectation-tri : infinitewavefunction.o eigen.o triangular_operator.o eigen.o mpoperator.o packunpack.o
 
 

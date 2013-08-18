@@ -224,7 +224,7 @@ MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const
 	 Result += herm(*J) * triple_prod(herm(A.base()[J.index1()]), 
 					  MatrixOperator::make_identity(B.Basis1()),
 					  B[J.index2()], 
-					  Result.TransformsAs(),
+					  adjoint(Result.TransformsAs()),
 					  Result.TransformsAs());
       }
    }

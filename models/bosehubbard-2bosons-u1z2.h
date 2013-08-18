@@ -88,7 +88,7 @@ SiteBlock CreateBoseHubbard2BosonsU1Z2Site(int MaxN, std::string const& Sym1 = "
    Block["N2_S"]  = prod(Block["N_S"], Block["N_S"]-Block["I"], QN(0,1));
    Block["N"]     = Block["N_A"] + Block["N_S"];
    
-   DEBUG_TRACE(BH_A)(B_A)(BH_S)(B_S)(I)(N_A)(N2_A)(N_S)(N2_S);
+   DEBUG_TRACE(Z)(BH_A)(BH_S);
 
    return Block;
 }

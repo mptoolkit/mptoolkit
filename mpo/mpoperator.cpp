@@ -48,6 +48,58 @@ MPOperator::is_null() const
    return true;
 }
 
+PStream::opstream& operator<<(PStream::opstream& out, MPOperator const& op)
+{
+   return out << op.Data_;
+}
+
+PStream::ipstream& operator>>(PStream::ipstream& in, MPOperator& op)
+{
+   return in >> op.Data_;
+}
+
+MPOperator&
+operator*=(MPOperator& x, double a)
+{
+   x.front() *= a;
+   return x;
+}
+
+MPOperator&
+operator*=(MPOperator& x, std::complex<double> a)
+{
+   x.front() *= a;
+   return x;
+}
+
+MPOperator operator*(double a, MPOperator const& x)
+{
+   MPOperator Result(x);
+   Result *= a;
+   return Result;
+}
+
+MPOperator operator*(MPOperator const& x, double a)
+{
+   MPOperator Result(x);
+   Result *= a;
+   return Result;
+}
+
+MPOperator operator*(std::complex<double> a, MPOperator const& x)
+{
+   MPOperator Result(x);
+   Result *= a;
+   return Result;
+}
+
+MPOperator operator*(MPOperator const& x, std::complex<double> a)
+{
+   MPOperator Result(x);
+   Result *= a;
+   return Result;
+}
+
 void zero_unused_elements(MPOperator& Op)
 {
    bool Done = false;
@@ -336,8 +388,8 @@ SimpleOperator make_projector_onto(BasisList const& Basis, std::set<int> const& 
 // classification
 
 MPOperatorClassification::MPOperatorClassification()
-   : Factor_(0.0), Product_(false), String_(false),
-     Identity_(false), PropString_(false), PropIdentity_(false), Null_(false)
+   : Factor_(0.0), Product_(false), Unitary_(false),
+     Identity_(false), PropUnitary_(false), PropIdentity_(false), Null_(false)
 {
 }
 
@@ -351,14 +403,14 @@ bool MPOperatorClassification::is_product() const
    return Product_;
 }
 
-bool MPOperatorClassification::is_string() const
+bool MPOperatorClassification::is_unitary() const
 {
-   return String_;
+   return Unitary_;
 }
 
-bool MPOperatorClassification::is_prop_string() const
+bool MPOperatorClassification::is_prop_unitary() const
 {
-   return PropString_;
+   return PropUnitary_;
 }
 
 bool MPOperatorClassification::is_prop_identity() const
@@ -385,9 +437,10 @@ std::ostream& operator<<(std::ostream& out, MPOperatorClassification const& Clas
 {
    out << "null: " << Class.is_null() << '\n';
    out << "product: " << Class.is_product() << '\n';
-   out << "string: " << Class.is_string() << '\n';
-   out << "prop_string: " << Class.is_prop_string() << '\n';
+   out << "unitary: " << Class.is_unitary() << '\n';
+   out << "prop_unitary: " << Class.is_prop_unitary() << '\n';
    out << "prop_identity: " << Class.is_prop_identity() << '\n';
+   out << "complex_identity: " << Class.is_complex_identity() << '\n';
    out << "identity: " << Class.is_identity() << '\n';
    out << "factor: " << Class.factor() << '\n';
    return out;
@@ -469,7 +522,7 @@ MPOperatorClassification classify(MPOperator const& Op)
    Result.Product_ = true;
    if (IsPropUnitary)
    {
-      Result.PropString_ = true;
+      Result.PropUnitary_ = true;
 
       if (IsPropIdentity)
       {
@@ -481,12 +534,12 @@ MPOperatorClassification classify(MPOperator const& Op)
          if (Result.Identity_)
             Factor = 1.0;
 
-         Result.String_ = norm_frob(norm_frob(Factor) - 1.0) < std::numeric_limits<double>::epsilon()*100;
+         Result.Unitary_ = norm_frob(norm_frob(Factor) - 1.0) < std::numeric_limits<double>::epsilon()*100;
          Result.Factor_ = Factor;
       }
       else
       {
-         Result.String_ = IsUnitUnitary;
+         Result.Unitary_ = IsUnitUnitary;
       }
    }
 

@@ -67,10 +67,27 @@ class MPOperator
 
    private:
       DataType Data_;
+
+   friend PStream::opstream& operator<<(PStream::opstream& out, MPOperator const& op);
+   friend PStream::ipstream& operator>>(PStream::ipstream& in, MPOperator& op);
 };
 
 std::ostream&
 operator<<(std::ostream& out, MPOperator const& op);
+
+PStream::opstream&
+operator<<(PStream::opstream& out, MPOperator const& op);
+
+PStream::ipstream&
+operator>>(PStream::ipstream& in, MPOperator& op);
+
+MPOperator& operator*=(MPOperator& x, double a);
+MPOperator& operator*=(MPOperator& x, std::complex<double> a);
+
+MPOperator operator*(double a, MPOperator const& x);
+MPOperator operator*(MPOperator const& x, double a);
+MPOperator operator*(std::complex<double> a, MPOperator const& x);
+MPOperator operator*(MPOperator const& x, std::complex<double> a);
 
 // remove unused matrix elements
 void cull_unused_elements(MPOperator& Op);
@@ -92,14 +109,20 @@ struct MPOperatorClassification
    bool is_product() const;
 
    // indicates that the operator is a unitary product state, ie a string operator
-   bool is_string() const;
+   bool is_unitary() const;
 
    // indicates that the operator is proportional to a unitary product state,
-   // up to some complex factor
-   bool is_prop_string() const;
+   // up to some factor
+   bool is_prop_unitary() const;
 
    // indicates that the operator is proportional to the identity operator
    bool is_prop_identity() const;
+
+   // returns true if the operator is the identity multiplied by a complex phase factor of magnitude 1
+   bool is_complex_identity() const
+   {
+      return this->is_prop_identity() && norm_frob(norm_frob(this->factor())-1.0) < 1E-12;
+   }
 
    // indicates that the operator is equal to the identity
    bool is_identity() const;
@@ -113,9 +136,9 @@ struct MPOperatorClassification
    // private use only
    std::complex<double> Factor_;
    bool Product_;
-   bool String_;
+   bool Unitary_;
    bool Identity_;
-   bool PropString_;
+   bool PropUnitary_;
    bool PropIdentity_;
    bool Null_;
 

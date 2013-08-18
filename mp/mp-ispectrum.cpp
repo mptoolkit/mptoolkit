@@ -25,6 +25,7 @@
 #include "models/kondo-u1u1.h"
 #include "models/kondo-so4.h"
 #include "models/bosehubbard-spinless-u1.h"
+#include "models/bosehubbard-2bosons-u1z2.h"
 #include "models/hubbard-u1u1.h"
 #include "models/hubbard-u1su2.h"
 #include "models/hubbard-so4.h"
@@ -557,6 +558,10 @@ int main(int argc, char** argv)
       {
 	 Site = CreateBoseHubbardSpinlessU1Site(NMax);
       }
+      else if (Model == "bh2-u1z2")
+      {
+	 Site = CreateBoseHubbard2BosonsU1Z2Site(NMax);
+      }
       else if (Model == "hubbard-u1u1")
       {
          Site = CreateU1U1HubbardSite();
@@ -687,11 +692,11 @@ int main(int argc, char** argv)
       std::cout << '\n';
 
       // initialize the linear operators for the observables
-      LinearOperator LinOpL, LinOpR;
+      MPOperator LinOpL, LinOpR;
 
       if (vm.count("lcoefficients"))
       {
-         LinOpL = LinearOperator(Psi.size());
+         LinOpL = MPOperator(Psi.size());
          LinOpL[0] = OperatorComponent(Site.Basis1().Basis(), 
                                        BasisList(QuantumNumber(Psi.GetSymmetryList())),
                                        BasisList(adjoint(Site[OpL].TransformsAs())));
@@ -704,7 +709,7 @@ int main(int argc, char** argv)
             LinOpL[i](0,0) = (i == 1) ? Site[OpL2] : (i == 2) ? Site[OpL3] : (i == 3) ? Site[OpL4] : Site["I"];
          }
 
-         LinOpR = LinearOperator(Psi.size());
+         LinOpR = MPOperator(Psi.size());
          LinOpR[Psi.size()-1] = OperatorComponent(Site.Basis1().Basis(), 
                                        BasisList(Site[OpR].TransformsAs()),
                                        BasisList(QuantumNumber(Psi.GetSymmetryList())));
@@ -722,10 +727,10 @@ int main(int argc, char** argv)
       // Get the left and right operators, if applicable
       MatrixOperator LeftOp;
       if (!LinOpL.is_null())
-         LeftOp = transfer_from_left(delta_shift(LeftIdent, QShift), LinOpL, Psi);
+         LeftOp = apply_right_qshift(LeftIdent, LinOpL, Psi, QShift);
       MatrixOperator RightOp;
       if (!LinOpR.is_null())
-         RightOp = delta_shift(transfer_from_right(RightIdent, LinOpR, Psi), adjoint(QShift));
+         RightOp = apply_left_qshift(RightIdent, LinOpR, Psi, QShift);
 
       if (!LinOpL.is_null() && !LinOpR.is_null())
       {

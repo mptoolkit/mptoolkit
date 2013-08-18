@@ -244,9 +244,7 @@ triple_prod(HermitianProxy<IrredTensor<T1, B1, B2, S1> > const& x,
    QuantumNumber Transy = y.TransformsAs();
    QuantumNumber TransE = E.TransformsAs();
    PRECONDITION(is_transform_target(Transy, qxy, Transx))(Transy)(qxy)(Transx);
-   //PRECONDITION(is_transform_target(Transx, qxy, Transy))(Transx)(qxy)(Transy);
    PRECONDITION(is_transform_target(qEp, qxy, TransE))(qEp)(qxy)(TransE);
-   //PRECONDITION(is_transform_target(TransE, qxy, qEp))(qEp)(qxy)(TransE);
    DEBUG_PRECONDITION_EQUAL(x.base().Basis1(), E.Basis1());
    DEBUG_PRECONDITION_EQUAL(E.Basis2(), y.Basis1());
 
