@@ -1542,7 +1542,7 @@ int main(int argc, char** argv)
 	    Ham += -Omega * (TwoPointOperator(Sites, 0, Site["BH"], 1, Site["B"]) + TwoPointOperator(Sites, 0, Site["B"], 1, Site["BH"]) );
 	 HamMPO = Ham;
       }
-      else if (HamStr == "bh-u1z2")
+      else if (HamStr == "bh2-u1z2")
       {
 	 std::cout << "Hamiltonian is two species Bose-Hubbard, U(1)xZ2, J=" << J << ", U=" << U << ", U12=" << U12
 		   << ", Omega=" << Omega << "\n";
@@ -1560,7 +1560,7 @@ int main(int argc, char** argv)
 	 Ham += TriangularOneSite(LocalHamiltonian);
 	 HamMPO = Ham;
       }
-      else if (HamStr == "bh2")
+      else if (HamStr == "bh-ll")
       {
          // These parameters are defined in this form to match the Lieb-Liniger model, U = m g dz / hbar^2, energy scaled by hbar^2 / 2 m dz^2
 	 std::cout << "Hamiltonian is spinless Bose-Hubbard with next-nearest neighbour tunnelling, no symmetry, T=4/3, Tprime=" << tprime << "/-12, U=" << U << ", mu=" << mu << " - 2.5 \n";
@@ -1600,7 +1600,7 @@ int main(int argc, char** argv)
 	 }
       	 HamMPO = Ham;
       }
-      else if (HamStr == "bh2-u1")
+      else if (HamStr == "bh-ll-u1")
       {
          // These parameters are defined in this form to match the Lieb-Liniger model, U = m g dz / hbar^2, energy scaled by hbar^2 / 2 m dz^2
       	 std::cout << "Hamiltonian is spinless Bose-Hubbard with next-nearest neighbour tunnelling, U1 symmetry, T=4/3, Tprime=" << tprime << "/-12, U=" << U << ", Nmax=3\n";
