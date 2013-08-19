@@ -56,7 +56,7 @@ apply_left_qshift(MatrixOperator const& m,
 		  LinearWavefunction const& Psi,
 		  QuantumNumber const& QShift)
 {
-   return apply_left(delta_shift(m, adjoint(QShift)), Op, Psi);
+   return delta_shift(apply_left(m, Op, Psi), adjoint(QShift));
 }
 
 StateComponent 
@@ -86,5 +86,5 @@ apply_right_qshift(MatrixOperator const& m,
 		   LinearWavefunction const& Psi,
 		   QuantumNumber const& QShift)
 {
-   return delta_shift(apply_right(m, Op, Psi), QShift);
+   return apply_right(delta_shift(m, QShift), Op, Psi);
 }
