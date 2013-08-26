@@ -1,16 +1,15 @@
 // -*- C++ -*- $Id$
 
-#include "siteoperator/siteoperator.h"
+#include "latticesite.h"
 
-template <typename T>
-void CoerceSymmetryList(Block<T>& block, QuantumNumbers::SymmetryList const& sl)
+void
+CoerceSymmetryList(LatticeSite& site, QuantumNumbers::SymmetryList const& sl)
 {
-   block.CoerceSymmetryList(sl);
+   site.CoerceSymmetryList(sl);
 }
 
-template <typename T>
 void
-Block<T>::CoerceSymmetryList(QuantumNumbers::SymmetryList const& sl)
+LatticeSite::CoerceSymmetryList(QuantumNumbers::SymmetryList const& sl)
 {
    using ::CoerceSymmetryList;
    typename ptr_type::lock_type Lock(Data.lock());
@@ -20,17 +19,16 @@ Block<T>::CoerceSymmetryList(QuantumNumbers::SymmetryList const& sl)
    }
 }
 
-template <typename OperatorT>
-OperatorT const&
-Block<OperatorT>::operator[](std::string const& s) const
+SiteOperator const&
+LatticeSite::operator[](std::string const& s) const
 { 
    typename DataType::const_iterator I = Data->find(s); 
-   CHECK(I != Data->end()) << "The block does not contain any operator named " << s;
+   CHECK(I != Data->end()) << "The site does not contain any operator named " << s;
    return I->second; 
 }
 
-template <typename OperatorT>
-SymmetryList Block<OperatorT>::GetSymmetryList() const
+SymmetryList
+LatticeSite::GetSymmetryList() const
 {
    CHECK(!Data->empty());
    // if we're debugging, verify that the symmetry list is the same for all operators
@@ -44,9 +42,8 @@ SymmetryList Block<OperatorT>::GetSymmetryList() const
    return Data->begin()->second.GetSymmetryList();
 }
 
-template <typename OperatorT>
-typename Block<OperatorT>::basis1_type const&
-Block<OperatorT>::Basis1() const
+LatticeSite::basis1_type const&
+LatticeSite::Basis1() const
 {
    CHECK(!Data->empty());
    // if we're debugging, verify that the basis is the same for all operators
@@ -60,9 +57,8 @@ Block<OperatorT>::Basis1() const
    return Data->begin()->second.Basis1();
 }
 
-template <typename OperatorT>
-typename Block<OperatorT>::basis2_type const&
-Block<OperatorT>::Basis2() const
+LatticeSite::basis2_type const&
+LatticeSite::Basis2() const
 {
    CHECK(!Data->empty());
    // if we're debugging, verify that the basis is the same for all operators
@@ -76,14 +72,12 @@ Block<OperatorT>::Basis2() const
    return Data->begin()->second.Basis2();
 }
 
-template <typename OperatorT>
-PStream::opstream& operator<<(PStream::opstream& out, Block<OperatorT> const& B)
+PStream::opstream& operator<<(PStream::opstream& out, LatticeSite const& B)
 {
    return out << B.Data;
 }
 
-template <typename OperatorT>
-PStream::ipstream& operator>>(PStream::ipstream& in, Block<OperatorT>& B)
+PStream::ipstream& operator>>(PStream::ipstream& in, LatticeSite& B)
 {
    return in >> B.Data;
 }

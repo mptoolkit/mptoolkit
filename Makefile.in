@@ -74,7 +74,7 @@ tensorobj = tensorproduct.o tensorsum.o basis.o regularize.o tensor_eigen.o
 
 blockoperatorobj = blockoperator.o
 
-siteoperatorobj = siteoperator.o
+siteoperatorobj = siteoperator.o latticesite.o unitcell.o
 
 dmrgobj = $(tensorobj) density.o
 

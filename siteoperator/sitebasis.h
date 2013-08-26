@@ -71,7 +71,8 @@ class SiteBasis
       // Returns the string label of a given basis state
       std::string const& Label(int l) const { return (*Label_)[l]; }
 
-      BasisList const& Basis() const { return Basis_; }
+      // implicit conversion to BasisList
+      operator BasisList const&() const { return Basis_; }
 
       SymmetryList const& GetSymmetryList() const { return Basis_.GetSymmetryList(); }
 
