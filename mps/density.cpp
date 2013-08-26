@@ -91,10 +91,20 @@ DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalu
    int n = 0;
    double Sigma = 1.0;
    int TotalDegree = 0;
+   double EShift = 0;
+   double EScale = 1.0;
+#if 0
+   if (EigenInfoList.size() >= 2)
+   {
+      EShift = -log(EigenInfoList[0].Eigenvalue / this->EigenSum());
+      double E2 = -log(EigenInfoList[1].Eigenvalue / this->EigenSum());
+      EScale = E2 - EShift;
+   }
+#endif
    for (const_iterator Iter = this->begin(); Iter != this->end() && n < MaxEigenvalues; ++Iter)
    {
       double EVal = Iter->Eigenvalue / this->EigenSum();
-      double Energy = EVal > 0 ? -log(EVal) : 0.0;
+      double Energy = EVal > 0 ? ((-log(EVal) - EShift) / EScale) : 0.0;
       Sigma -= EVal * Iter->Degree;
       TotalDegree += Iter->Degree;
       ++n;

@@ -88,7 +88,7 @@ linearalgebraobj = eigen.o
 #matrixproductobj = density.o mpexponential.o mpopcomponent.o mpopcompressed.o \
 #                   mpoperatorlist.o mpstate.o lattice.o linearwavefunction.o wavefunc-utils.o \
 
-mpoobj = operator_component.o mpoperator.o #triangularoperator.o
+mpoobj = operator_component.o generic_mpo.o finite_mpo.o triangular_mpo.o
 
 mpsobj = state_component.o linearwavefunction.o infinitewavefunction.o density.o operator_actions.o
 
@@ -480,7 +480,9 @@ mp-misc = make-vb-state make-vb-su2
 
 mp-simple-marshall-qmc : random_wavefunc.o
 
-mp-idmrg5 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o
+# infinite tools
+
+mp-idmrg5 : $(mpoobj) infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o
 mp-idmrg5-spin2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o
 mp-ireorder-symmetry : triangular_operator.o mpoperator.o infinitewavefunction.o eigen.o
 mp-irename-symmetry : triangular_operator.o mpoperator.o infinitewavefunction.o eigen.o

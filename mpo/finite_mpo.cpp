@@ -1,19 +1,19 @@
 // -*- C++ -*- $Id$
 
-#include "linear_operator.h"
+#include "finite_mpo.h"
 #include "pstream/variant.h"
 #include <algorithm>
 
 using QuantumNumbers::QuantumNumber;
 
-bool LinearOperator::is_irreducible() const
+bool FiniteMPO::is_irreducible() const
 {
    //   return (!this->is_null() && this->Basis1().size() == 1);
    return (this->is_null() || this->Basis1().size() == 1);
 }
 
 QuantumNumbers::QuantumNumber 
-LinearOperator::TransformsAs() const
+FiniteMPO::TransformsAs() const
 {
    if (this->is_null())
       return QuantumNumbers::QuantumNumber();
@@ -21,12 +21,12 @@ LinearOperator::TransformsAs() const
    return this->Basis1()[0];
 }
 
-PStream::opstream& operator<<(PStream::opstream& out, LinearOperator const& op)
+PStream::opstream& operator<<(PStream::opstream& out, FiniteMPO const& op)
 {
    return out << op.data();
 }
 
-PStream::ipstream& operator>>(PStream::ipstream& in, LinearOperator& op)
+PStream::ipstream& operator>>(PStream::ipstream& in, FiniteMPO& op)
 {
    return in >> op.data();
 }

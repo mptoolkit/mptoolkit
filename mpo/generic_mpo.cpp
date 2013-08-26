@@ -1,9 +1,9 @@
 // -*- C++ -*- $Id$
 
-#include "mpoperator.h"
+#include "generic_mpo.h"
 
 std::vector<BasisList> 
-MPOperator::LocalBasis1List() const
+GenericMPO::LocalBasis1List() const
 {
    std::vector<BasisList> Result;
    Result.reserve(Data_.size());
@@ -15,7 +15,7 @@ MPOperator::LocalBasis1List() const
 }
 
 std::vector<BasisList> 
-MPOperator::LocalBasis2List() const
+GenericMPO::LocalBasis2List() const
 {
    std::vector<BasisList> Result;
    Result.reserve(Data_.size());
@@ -27,7 +27,7 @@ MPOperator::LocalBasis2List() const
 }
 
 std::ostream&
-operator<<(std::ostream& out, MPOperator const& op)
+operator<<(std::ostream& out, GenericMPO const& op)
 {
    out << "Operator has a unit cell of " << op.size() << " sites.\n";
    for (unsigned i = 0; i < op.size(); ++i)
@@ -38,7 +38,7 @@ operator<<(std::ostream& out, MPOperator const& op)
 }
 
 bool
-MPOperator::is_null() const
+GenericMPO::is_null() const
 {
    for (unsigned i = 0; i < Data_.size(); ++i)
    {
@@ -48,66 +48,66 @@ MPOperator::is_null() const
    return true;
 }
 
-PStream::opstream& operator<<(PStream::opstream& out, MPOperator const& op)
+PStream::opstream& operator<<(PStream::opstream& out, GenericMPO const& op)
 {
    return out << op.Data_;
 }
 
-PStream::ipstream& operator>>(PStream::ipstream& in, MPOperator& op)
+PStream::ipstream& operator>>(PStream::ipstream& in, GenericMPO& op)
 {
    return in >> op.Data_;
 }
 
-MPOperator&
-operator*=(MPOperator& x, double a)
+GenericMPO&
+operator*=(GenericMPO& x, double a)
 {
    x.front() *= a;
    return x;
 }
 
-MPOperator&
-operator*=(MPOperator& x, std::complex<double> a)
+GenericMPO&
+operator*=(GenericMPO& x, std::complex<double> a)
 {
    x.front() *= a;
    return x;
 }
 
-MPOperator operator*(double a, MPOperator const& x)
+GenericMPO operator*(double a, GenericMPO const& x)
 {
-   MPOperator Result(x);
+   GenericMPO Result(x);
    Result *= a;
    return Result;
 }
 
-MPOperator operator*(MPOperator const& x, double a)
+GenericMPO operator*(GenericMPO const& x, double a)
 {
-   MPOperator Result(x);
+   GenericMPO Result(x);
    Result *= a;
    return Result;
 }
 
-MPOperator operator*(std::complex<double> a, MPOperator const& x)
+GenericMPO operator*(std::complex<double> a, GenericMPO const& x)
 {
-   MPOperator Result(x);
+   GenericMPO Result(x);
    Result *= a;
    return Result;
 }
 
-MPOperator operator*(MPOperator const& x, std::complex<double> a)
+GenericMPO operator*(GenericMPO const& x, std::complex<double> a)
 {
-   MPOperator Result(x);
+   GenericMPO Result(x);
    Result *= a;
    return Result;
 }
 
-void zero_unused_elements(MPOperator& Op)
+void zero_unused_elements(GenericMPO& Op)
 {
    bool Done = false;
    while (!Done)
    {
       Done = true;
       std::set<int> NextKeep;
-      MPOperator::iterator I = Op.begin();
+      GenericMPO::iterator I = Op.begin();
 
       std::set<int> RowsToKeep;
       for (unsigned i = 0; i < I->size1(); ++i)
@@ -286,7 +286,7 @@ bool cull_boundary(OperatorComponent& x, OperatorComponent& y)
    return false;
 }
 
-void cull_unused_elements(MPOperator& Op)
+void cull_unused_elements(GenericMPO& Op)
 {
    // We need at least one bond to optimize
    if (Op.size() < 2)
@@ -296,8 +296,8 @@ void cull_unused_elements(MPOperator& Op)
    while (!Done)
    {
       Done = true;
-      MPOperator::iterator I = Op.begin();
-      MPOperator::iterator J = I; ++J;
+      GenericMPO::iterator I = Op.begin();
+      GenericMPO::iterator J = I; ++J;
 
       while (J != Op.end())
       {
@@ -320,12 +320,12 @@ void cull_unused_elements(MPOperator& Op)
    } // while (!Done)
 }
 
-void mask_unused_elements(MPOperator const& Op, std::vector<std::vector<int> >& Mask)
+void mask_unused_elements(GenericMPO const& Op, std::vector<std::vector<int> >& Mask)
 {
    if (Op.size() < 1)
       return;
 
-   MPOperator::const_iterator I = Op.begin();
+   GenericMPO::const_iterator I = Op.begin();
    std::vector<std::vector<int> >::iterator M1 = Mask.begin();
    std::vector<std::vector<int> >::iterator M2 = Mask.begin()+1;
 
@@ -358,7 +358,7 @@ void mask_unused_elements(MPOperator const& Op, std::vector<std::vector<int> >& 
    }
 }
 
-void initialize_mask(MPOperator const& Op, std::vector<std::vector<int> >& Mask)
+void initialize_mask(GenericMPO const& Op, std::vector<std::vector<int> >& Mask)
 {
    std::vector<std::vector<int> >(Op.size()+1).swap(Mask);
    for (unsigned i = 0; i < Op.size(); ++i)
@@ -387,53 +387,53 @@ SimpleOperator make_projector_onto(BasisList const& Basis, std::set<int> const& 
 
 // classification
 
-MPOperatorClassification::MPOperatorClassification()
+GenericMPOClassification::GenericMPOClassification()
    : Factor_(0.0), Product_(false), Unitary_(false),
      Identity_(false), PropUnitary_(false), PropIdentity_(false), Null_(false)
 {
 }
 
-bool MPOperatorClassification::is_null() const
+bool GenericMPOClassification::is_null() const
 {
    return Null_;
 }
 
-bool MPOperatorClassification::is_product() const
+bool GenericMPOClassification::is_product() const
 {
    return Product_;
 }
 
-bool MPOperatorClassification::is_unitary() const
+bool GenericMPOClassification::is_unitary() const
 {
    return Unitary_;
 }
 
-bool MPOperatorClassification::is_prop_unitary() const
+bool GenericMPOClassification::is_prop_unitary() const
 {
    return PropUnitary_;
 }
 
-bool MPOperatorClassification::is_prop_identity() const
+bool GenericMPOClassification::is_prop_identity() const
 {
    return PropIdentity_;
 }
 
-bool MPOperatorClassification::is_identity() const
+bool GenericMPOClassification::is_identity() const
 {
    return Identity_;
 }
 
-bool MPOperatorClassification::is_unclassified() const
+bool GenericMPOClassification::is_unclassified() const
 {
    return !Product_ && !Null_;
 }
 
-std::complex<double> MPOperatorClassification::factor() const
+std::complex<double> GenericMPOClassification::factor() const
 {
    return Factor_;
 }
 
-std::ostream& operator<<(std::ostream& out, MPOperatorClassification const& Class)
+std::ostream& operator<<(std::ostream& out, GenericMPOClassification const& Class)
 {
    out << "null: " << Class.is_null() << '\n';
    out << "product: " << Class.is_product() << '\n';
@@ -458,9 +458,9 @@ std::complex<double> PropIdent(SimpleOperator const& X)
    return x;
 }
 
-MPOperatorClassification classify(MPOperator const& Op)
+GenericMPOClassification classify(GenericMPO const& Op)
 {
-   MPOperatorClassification Result;
+   GenericMPOClassification Result;
 
    // Early return if the operator is null
    if (Op.is_null())
@@ -547,7 +547,7 @@ MPOperatorClassification classify(MPOperator const& Op)
 }
 
 std::vector<BasisList>
-ExtractLocalBasis1(MPOperator const& Op)
+ExtractLocalBasis1(GenericMPO const& Op)
 {
    std::vector<BasisList> Result(Op.size());
    for (unsigned i = 0; i < Op.size(); ++i)

@@ -1,15 +1,14 @@
 // -*- C++ -*- $Id$
 
-// MPOperator is the basic class for a matrix product operator.
-// It provides direct access, unlike the compressed LinearOperator.
+// GenericMPO represents an MPO that is in no particular form
 
-#if !defined(MPOPERATOR_H_JDCHJKEHY589758YUER89H489)
-#define MPOPERATOR_H_JDCHJKEHY589758YUER89H489
+#if !defined(GENERIC_MPO_H_JDCHJKEHY589758YUER89H489)
+#define GENERIC_MPO_H_JDCHJKEHY589758YUER89H489
 
 #include "operator_component.h"
 #include <vector>
 
-class MPOperator
+class GenericMPO
 {
    private:
       typedef std::vector<OperatorComponent> DataType;
@@ -21,18 +20,18 @@ class MPOperator
       typedef value_type::basis1_type basis1_type;
       typedef value_type::basis2_type basis2_type;
 
-      MPOperator() {}
+      GenericMPO() {}
 
-      explicit MPOperator(int Size) : Data_(Size) {}
+      explicit GenericMPO(int Size) : Data_(Size) {}
 
-      explicit MPOperator(OperatorComponent const& x) : Data_(1, x) {}
+      explicit GenericMPO(OperatorComponent const& x) : Data_(1, x) {}
 
       // Size repeated copies of x
-      MPOperator(int Size, OperatorComponent const& x) : Data_(Size, x) {}
+      GenericMPO(int Size, OperatorComponent const& x) : Data_(Size, x) {}
 
       // from an iterator
       template <typename InIter>
-      MPOperator(InIter first, InIter last) : Data_(first, last) {}
+      GenericMPO(InIter first, InIter last) : Data_(first, last) {}
 
       bool empty() const { return Data_.empty(); }
       std::size_t size() const { return Data_.size(); }
@@ -68,39 +67,39 @@ class MPOperator
    private:
       DataType Data_;
 
-   friend PStream::opstream& operator<<(PStream::opstream& out, MPOperator const& op);
-   friend PStream::ipstream& operator>>(PStream::ipstream& in, MPOperator& op);
+   friend PStream::opstream& operator<<(PStream::opstream& out, GenericMPO const& op);
+   friend PStream::ipstream& operator>>(PStream::ipstream& in, GenericMPO& op);
 };
 
 std::ostream&
-operator<<(std::ostream& out, MPOperator const& op);
+operator<<(std::ostream& out, GenericMPO const& op);
 
 PStream::opstream&
-operator<<(PStream::opstream& out, MPOperator const& op);
+operator<<(PStream::opstream& out, GenericMPO const& op);
 
 PStream::ipstream&
-operator>>(PStream::ipstream& in, MPOperator& op);
+operator>>(PStream::ipstream& in, GenericMPO& op);
 
-MPOperator& operator*=(MPOperator& x, double a);
-MPOperator& operator*=(MPOperator& x, std::complex<double> a);
+GenericMPO& operator*=(GenericMPO& x, double a);
+GenericMPO& operator*=(GenericMPO& x, std::complex<double> a);
 
-MPOperator operator*(double a, MPOperator const& x);
-MPOperator operator*(MPOperator const& x, double a);
-MPOperator operator*(std::complex<double> a, MPOperator const& x);
-MPOperator operator*(MPOperator const& x, std::complex<double> a);
+GenericMPO operator*(double a, GenericMPO const& x);
+GenericMPO operator*(GenericMPO const& x, double a);
+GenericMPO operator*(std::complex<double> a, GenericMPO const& x);
+GenericMPO operator*(GenericMPO const& x, std::complex<double> a);
 
 // remove unused matrix elements
-void cull_unused_elements(MPOperator& Op);
+void cull_unused_elements(GenericMPO& Op);
 
 // As an alternative to cull_unused_elements(), we can use a mask vector which indicates which components are unused
-void initialize_mask(MPOperator const& Op, std::vector<std::vector<int> >& Mask);
+void initialize_mask(GenericMPO const& Op, std::vector<std::vector<int> >& Mask);
 
-void mask_unused_elements(MPOperator const& Op, std::vector<std::vector<int> >& Mask);
+void mask_unused_elements(GenericMPO const& Op, std::vector<std::vector<int> >& Mask);
 
 // Does a 2-1 coarse graining of an operator.  The length must be a multiple of 2
-MPOperator coarse_grain(MPOperator const& Op);
+GenericMPO coarse_grain(GenericMPO const& Op);
 
-struct MPOperatorClassification
+struct GenericMPOClassification
 {
    // indicates that the operator is zero
    bool is_null() const;
@@ -142,12 +141,12 @@ struct MPOperatorClassification
    bool PropIdentity_;
    bool Null_;
 
-   MPOperatorClassification();
+   GenericMPOClassification();
 };
 
-std::ostream& operator<<(std::ostream& out, MPOperatorClassification const& Class);
+std::ostream& operator<<(std::ostream& out, GenericMPOClassification const& Class);
 
-MPOperatorClassification classify(MPOperator const& Op);
+GenericMPOClassification classify(GenericMPO const& Op);
 
 // plus various functions for acting on states etc
 
@@ -156,6 +155,6 @@ MPOperatorClassification classify(MPOperator const& Op);
 SimpleOperator make_projector_onto(BasisList const& Basis, std::set<int> const& Onto);
 
 std::vector<BasisList>
-ExtractLocalBasis1(MPOperator const& Op);
+ExtractLocalBasis1(GenericMPO const& Op);
 
 #endif

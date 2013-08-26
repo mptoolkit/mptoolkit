@@ -72,8 +72,8 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 	    std::cerr << "lanczos: early return, invariant subspace found, Beta="
 		      << Beta << ", iterations=" << (i+1) << '\n';
 	 Iterations = i+1;
-         LinearAlgebra::Matrix<double> M = SubH(LinearAlgebra::range(0,i),
-                                                LinearAlgebra::range(0,i));
+         LinearAlgebra::Matrix<double> M = SubH(LinearAlgebra::range(0,i+1),
+                                                LinearAlgebra::range(0,i+1));
          LinearAlgebra::Vector<double> EValues = DiagonalizeHermitian(M);
          double Theta = EValues[0];    // smallest eigenvalue
          VectorType y = M(0,0) * v[0];

@@ -3,9 +3,10 @@
 #include "operator_actions.h"
 #include "mpo/operator_component.h"
 
-MatrixOperator apply_right(MatrixOperator const& m, 
-			   MPOperator const& Op, 
-			   LinearWavefunction const& Psi)
+MatrixOperator 
+inject_left(MatrixOperator const& m, 
+            GenericMPO const& Op, 
+            LinearWavefunction const& Psi)
 {
    if (Op.is_null())
       return MatrixOperator();
@@ -17,7 +18,7 @@ MatrixOperator apply_right(MatrixOperator const& m,
    StateComponent E(Op.Basis1(), m.Basis1(), m.Basis2());
    E[0] = m;
    LinearWavefunction::const_iterator I = Psi.begin();
-   MPOperator::const_iterator OpIter = Op.begin();
+   GenericMPO::const_iterator OpIter = Op.begin();
    while (I != Psi.end())
    {
       E = operator_prod(herm(*OpIter), herm(*I), E, *I);
@@ -27,9 +28,10 @@ MatrixOperator apply_right(MatrixOperator const& m,
 }
 
 
-MatrixOperator apply_left(MatrixOperator const& m, 
-			  MPOperator const& Op, 
-			  LinearWavefunction const& Psi)
+MatrixOperator
+inject_right(MatrixOperator const& m, 
+             GenericMPO const& Op, 
+             LinearWavefunction const& Psi)
 {
    if (Op.is_null())
       return MatrixOperator();
@@ -41,7 +43,7 @@ MatrixOperator apply_left(MatrixOperator const& m,
    E[0] = m;
    MatrixOperator Result = m;
    LinearWavefunction::const_iterator I = Psi.end();
-   MPOperator::const_iterator OpIter = Op.end();
+   GenericMPO::const_iterator OpIter = Op.end();
    while (I != Psi.begin())
    {
       --I; --OpIter;
@@ -51,18 +53,18 @@ MatrixOperator apply_left(MatrixOperator const& m,
 }
 
 MatrixOperator 
-apply_left_qshift(MatrixOperator const& m, 
-		  MPOperator const& Op, 
-		  LinearWavefunction const& Psi,
-		  QuantumNumber const& QShift)
+inject_right_qshift(MatrixOperator const& m, 
+                    GenericMPO const& Op, 
+                    LinearWavefunction const& Psi,
+                    QuantumNumber const& QShift)
 {
-   return delta_shift(apply_left(m, Op, Psi), adjoint(QShift));
+   return delta_shift(inject_right(m, Op, Psi), adjoint(QShift));
 }
 
 StateComponent 
-apply_right(StateComponent const& In, 
+inject_left(StateComponent const& In, 
             LinearWavefunction const& Psi1, 
-            MPOperator const& Op,
+            GenericMPO const& Op,
             LinearWavefunction const& Psi2)
 {
    PRECONDITION_EQUAL(Psi1.size(), Op.size());
@@ -70,7 +72,7 @@ apply_right(StateComponent const& In,
    StateComponent Result = In;
    LinearWavefunction::const_iterator I1 = Psi1.begin();
    LinearWavefunction::const_iterator I2 = Psi2.begin();
-   MPOperator::const_iterator OpIter = Op.begin();
+   GenericMPO::const_iterator OpIter = Op.begin();
 
    while (OpIter != Op.end())
    {
@@ -81,10 +83,10 @@ apply_right(StateComponent const& In,
 }
 
 MatrixOperator
-apply_right_qshift(MatrixOperator const& m, 
-		   MPOperator const& Op, 
+inject_left_qshift(MatrixOperator const& m, 
+		   GenericMPO const& Op, 
 		   LinearWavefunction const& Psi,
 		   QuantumNumber const& QShift)
 {
-   return apply_right(delta_shift(m, QShift), Op, Psi);
+   return inject_left(delta_shift(m, QShift), Op, Psi);
 }
