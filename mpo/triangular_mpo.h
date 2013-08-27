@@ -1,6 +1,6 @@
 // -*- C++ -*- $Id$
 //
-// TriangularMPO: a representation for lattice operators that are in triangular form.
+// TriangularMPO: a representation for lattice operators that are in upper triangular form.
 //
 // It is up to the user to ensure that the TriangularOperator stays in lower-triangular form.
 // All functions defined in this header are OK though, the only way to generate a non-lower-triangular
@@ -60,8 +60,15 @@ class TriangularMPO
       QuantumNumber TransformsAs() const { return this->Basis().back(); }
 
       // returns the component at entry (i,j).  Result is a 1x1 MPO.
-      // In principle this is a FiniteMPO
       FiniteMPO operator()(int i, int j) const;
+
+      // Returns the 1x1 MPO on the top left diagonal, the left 'string' term,
+      // equivalent to operator()(0,0)
+      FiniteMPO top_left() const;
+
+      // Returns the 1x1 MPO on the bottom right diagonal, the right 'string' term,
+      // equivalent to operator()(Basis().size()-1, Basis().size())
+      FiniteMPO bottom_right() const;
 
       operator GenericMPO const&() const { return Data_; }
 
@@ -78,13 +85,18 @@ class TriangularMPO
 
       QuantumNumbers::SymmetryList GetSymmetryList() const { return Data_.GetSymmetryList(); }
 
+      void check_structure() const;
+      void debug_check_structure() const;
+
    private:
       data_type Data_;
 };
 
+inline
 std::ostream&
 operator<<(std::ostream& out, TriangularMPO const& op);
 
+#if 0
 // extracts a single column from a triangular operator.  Result is an Nx1 row-vector operator
 GenericMPO extract_column(TriangularMPO const& Op, int Col);
 
@@ -92,6 +104,7 @@ GenericMPO extract_column(TriangularMPO const& Op, int Col);
 GenericMPO extract_lower_column(TriangularMPO const& Op, int Col);
 
 void mask_lower_column(TriangularMPO const& Op, int Col, std::vector<std::vector<int> >& Mask);
+#endif
 
 TriangularMPO TriangularOneSite(SimpleOperator const& x);
 
@@ -190,5 +203,14 @@ StateComponent Initial_F(TriangularMPO const& m);
 // initial matrices for a given vector basis
 StateComponent Initial_E(TriangularMPO const& m, VectorBasis const& B);
 StateComponent Initial_F(TriangularMPO const& m, VectorBasis const& B);
+
+inline
+void
+TriangularMPO::debug_check_structure() const
+{
+#if defined(NDEBUG)
+   this->check_structure();
+#endif
+}
 
 #endif

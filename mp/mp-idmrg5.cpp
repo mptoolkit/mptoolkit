@@ -131,13 +131,13 @@ struct FrontProductLeft
    MatrixOperator operator()(MatrixOperator const& In) const
    {
       StateComponent Guess = E;
-      Guess.front() = In;
+      Guess.back() = In;
       TriangularMPO::const_iterator OpIter = Op.begin();
       for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I, ++OpIter)
       {
 	 Guess = operator_prod(herm(*OpIter), herm(*I), Guess, *I);
       }
-      return Guess.front() - Energy * Guess.back();
+      return Guess.back() - Energy * Guess.front();
    }
 
    LinearWavefunction const& Psi;
@@ -263,17 +263,17 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
 {
    ProductLeft Prod(Psi, Op, QShift);
    Guess = Initial_E(Op, DeltaShift(Psi.Basis1(), adjoint(QShift)));
-   MatrixOperator Ident = Guess.back();
+   MatrixOperator Ident = Guess.front();
    for (int i = 0; i < int(Guess.size())-1; ++i)
    {
-      Guess.front() *= 0.0;
+      Guess.back() *= 0.0;
       Guess = Prod(Guess);
-      Guess.back() = Ident;
+      Guess.front() = Ident;
    }
    // calculate the energy
    double Energy = inner_prod(Guess.front(), Rho).real();
 
-   MatrixOperator H0 = Guess.front() - Energy*Guess.back();
+   MatrixOperator H0 = Guess.back() - Energy*Guess.front();
    // Now we want the fixed point of H = U(H) + H_0
    // where U(H) is the shift one site.
    // Let F(H) = H - U(H).  Then we want the solution of F(H) = H_0
@@ -284,11 +284,11 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
    int m = 30;
    int max_iter = 1000;
    double tol = 1e-14;
-   GmRes(Guess.front(), ProdL, H0, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>());
+   GmRes(Guess.back(), ProdL, H0, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>());
 
    // remove the spurious constant term from the energy
    DEBUG_TRACE("Spurious part")(inner_prod(Guess.front(), Rho));
-   Guess.front() -= inner_prod(Guess.front(), Rho) * Guess.back();
+   Guess.back() -= inner_prod(Guess.back(), Rho) * Guess.front();
 
    return Energy;
 }
@@ -300,17 +300,17 @@ MPO_EigenvaluesRight(StateComponent& Guess, LinearWavefunction const& Psi,
 {
    ProductRight Prod(Psi, Op, QShift);
    Guess = Initial_F(Op, Psi.Basis2());
-   MatrixOperator Ident = Guess.front();
+   MatrixOperator Ident = Guess.back();
    for (int i = 0; i < int(Guess.size())-1; ++i)
    {
-      Guess.back() *= 0.0;
+      Guess.front() *= 0.0;
       Guess = Prod(Guess);
-      Guess.front() = Ident;
+      Guess.back() = Ident;
    }
    // calculate the energy
-   double Energy = inner_prod(Guess.back(), Rho).real();
+   double Energy = inner_prod(Guess.front(), Rho).real();
 
-   MatrixOperator H0 = Guess.back() - Energy*Guess.front();
+   MatrixOperator H0 = Guess.front() - Energy*Guess.back();
 
    // Now we want the fixed point of H = U(H) + H_0
    // where U(H) is the shift one site.
@@ -321,10 +321,10 @@ MPO_EigenvaluesRight(StateComponent& Guess, LinearWavefunction const& Psi,
    int m = 30;
    int max_iter = 1000;
    double tol = 1e-14;
-   GmRes(Guess.back(), ProdR, H0, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>());
+   GmRes(Guess.front(), ProdR, H0, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>());
 
    // remove the spurious constant term from the energy
-   Guess.back() =  Guess.back() - inner_prod(Guess.back(), Rho) * Guess.front();
+   Guess.front() =  Guess.front() - inner_prod(Guess.front(), Rho) * Guess.back();
 
    return Energy;
 }
@@ -640,9 +640,7 @@ void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double&
 
          DEBUG_CHECK_EQUAL(C.Basis1(), LeftBlock.back().Basis2());
 
-         LeftBlock.back().front() -= LastEnergy *
-            MatrixOperator::make_identity(LeftBlock.back().front().Basis2());
-         //std::cout << "EShift=" << LastEnergy << '\n';
+         LeftBlock.back().back() -= LastEnergy * LeftBlock.back().front();
 
          // solve
 
@@ -730,9 +728,7 @@ void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double&
          DEBUG_CHECK_EQUAL(C.Basis2(), RightBlock.front().Basis1());
 
          // make the energy zero
-         RightBlock.front().back() -= LastEnergy *
-            MatrixOperator::make_identity(RightBlock.front().back().Basis2());
-         //	    std::cout << "EShift=" << LastEnergy << '\n';
+         RightBlock.front().front() -= LastEnergy * RightBlock.front().back();
 
          // solve
          {
@@ -1967,10 +1963,12 @@ int main(int argc, char** argv)
       double LastEnergy = inner_prod(C, operator_prod(LeftBlock.back(), C, herm(RightBlock.front()))).real();
       DEBUG_TRACE(LastEnergy);
       // subtract the constant energy from the Hamiltonian component of the LeftBlock
-      LeftBlock.back().front() -= LastEnergy * LeftBlock.back().back();
+      LeftBlock.back().back() -= LastEnergy * LeftBlock.back().front();
 #else
       double LastEnergy = 0.0;
 #endif
+
+      TRACE(LeftBlock.back().front());
 
       I = MyPsi.begin();
       HI = HamMPO.begin();
@@ -1983,8 +1981,8 @@ int main(int argc, char** argv)
       }
 
       DEBUG_TRACE(inner_prod(C, operator_prod(LeftBlock.back(), C, herm(RightBlock.front()))));
-      DEBUG_TRACE(inner_prod(LeftBlock.back().front(), scalar_prod(C, herm(C))));
-      DEBUG_TRACE(inner_prod(RightBlock.front().back(), scalar_prod(herm(C), C)));
+      DEBUG_TRACE(inner_prod(LeftBlock.back().back(), scalar_prod(C, herm(C))));
+      DEBUG_TRACE(inner_prod(RightBlock.front().front(), scalar_prod(herm(C), C)));
 
 #if 0
       I = MyPsi.begin();
@@ -2073,8 +2071,8 @@ int main(int argc, char** argv)
 
 	    DEBUG_CHECK_EQUAL(C.Basis1(), LeftBlock.back().Basis2());
 
-	    LeftBlock.back().front() -= LastEnergy *
-	       MatrixOperator::make_identity(LeftBlock.back().front().Basis2());
+            // Subtract off the energy
+	    LeftBlock.back().back() -= LastEnergy * LeftBlock.back().front();
 	    //std::cout << "EShift=" << LastEnergy << '\n';
 
 	    // solve
@@ -2183,9 +2181,7 @@ int main(int argc, char** argv)
 	    DEBUG_CHECK_EQUAL(C.Basis2(), RightBlock.front().Basis1());
 
 	    // make the energy zero
-	    RightBlock.front().back() -= LastEnergy *
-	       MatrixOperator::make_identity(RightBlock.front().back().Basis2());
-	    //	    std::cout << "EShift=" << LastEnergy << '\n';
+	    RightBlock.front().front() -= LastEnergy * RightBlock.front().back();
 
 	    // solve
 	    {

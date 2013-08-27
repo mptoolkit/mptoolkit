@@ -2,6 +2,11 @@
 
 #include "triangular_mpo.h"
 
+void
+TriangularMPO::check_structure() const
+{
+}
+
 GenericMPO extract_column(TriangularMPO const& Op, int Col)
 {
    GenericMPO MPOp(Op.begin(), Op.end());
@@ -78,7 +83,7 @@ TriangularMPO TriangularOneSite(SimpleOperator const& x)
 
    data.set_operator(0,0,I);
    data.set_operator(1,1,I);
-   data.set_operator(1,0,x);
+   data.set_operator(0,1,x);
 
    return TriangularMPO(data);
 }
@@ -97,7 +102,7 @@ TriangularMPO TriangularOneSite(SimpleOperator const& x, double Momentum)
    OperatorComponent data(x.Basis1(), b, b);
    data.set_operator(0,0,r*I);
    data.set_operator(1,1,I);
-   data.set_operator(1,0,x);
+   data.set_operator(0,1,x);
 
    return TriangularMPO(data);
 }
@@ -107,7 +112,7 @@ TriangularMPO TriangularTwoSite(SimpleOperator const& x, SimpleOperator const& y
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
    BasisList b(x.GetSymmetryList());
    b.push_back(Ident);
-   b.push_back(y.TransformsAs());
+   b.push_back(x.TransformsAs());
    b.push_back(Trans);
 
    SimpleOperator I = SimpleOperator::make_identity(x.Basis1());
@@ -115,8 +120,8 @@ TriangularMPO TriangularTwoSite(SimpleOperator const& x, SimpleOperator const& y
    OperatorComponent data(x.Basis1(), b, b);
    data.set_operator(0,0,I);
    data.set_operator(2,2,I);
-   data.set_operator(1,0,y);
-   data.set_operator(2,1,x);
+   data.set_operator(0,1,x);
+   data.set_operator(1,2,y);
 
    return TriangularMPO(data);
 }
@@ -136,7 +141,7 @@ TriangularMPO TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperat
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
    BasisList b(x.GetSymmetryList());
    b.push_back(Ident);
-   b.push_back(y.TransformsAs());
+   b.push_back(x.TransformsAs());
    b.push_back(Trans);
 
    SimpleOperator I = SimpleOperator::make_identity(x.Basis1());
@@ -145,8 +150,8 @@ TriangularMPO TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperat
    data.set_operator(0,0,I);
    data.set_operator(2,2,I);
    data.set_operator(1,1,Factor*I);
-   data.set_operator(1,0,y);
-   data.set_operator(2,1,x);
+   data.set_operator(0,1,x);
+   data.set_operator(1,2,y);
 
    return TriangularMPO(data);
 }
@@ -164,14 +169,14 @@ TriangularMPO TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperat
 
 
 TriangularMPO TriangularThreeSite(SimpleOperator const& x, SimpleOperator const& y, SimpleOperator const& z, 
-				   QuantumNumber const& yz_trans)
+				   QuantumNumber const& xy_trans)
 {
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
 
    BasisList b(x.GetSymmetryList());
    b.push_back(Ident);
-   b.push_back(z.TransformsAs());
-   b.push_back(yz_trans);
+   b.push_back(x.TransformsAs());
+   b.push_back(xy_trans);
    b.push_back(Ident);
 
    SimpleOperator I = SimpleOperator::make_identity(x.Basis1());
@@ -179,9 +184,9 @@ TriangularMPO TriangularThreeSite(SimpleOperator const& x, SimpleOperator const&
    OperatorComponent data(x.Basis1(), b, b);
    data.set_operator(0,0,I);
    data.set_operator(3,3,I);
-   data.set_operator(1,0,z);
-   data.set_operator(2,1,y);
-   data.set_operator(3,2,x);
+   data.set_operator(0,1,x);
+   data.set_operator(1,2,y);
+   data.set_operator(2,3,z);
 
    return TriangularMPO(data);
 }
@@ -192,10 +197,10 @@ TriangularMPO TriangularStretchedTwoSite(SimpleOperator const& x, int NumNeighbo
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
    BasisList b(x.GetSymmetryList());
    b.push_back(Ident);
-   b.push_back(y.TransformsAs());
+   b.push_back(x.TransformsAs());
    for (int i = 0; i < NumNeighbors; ++i)
    {
-      b.push_back(y.TransformsAs());
+      b.push_back(x.TransformsAs());
    }
    b.push_back(Ident);
 
@@ -203,12 +208,12 @@ TriangularMPO TriangularStretchedTwoSite(SimpleOperator const& x, int NumNeighbo
 
    OperatorComponent data(x.Basis1(), b, b);
    data.set_operator(0,0,I);
-   data.set_operator(1,0,y);
+   data.set_operator(0,1,x);
    for (int i = 0; i < NumNeighbors; ++i)
    {
-      data.set_operator(i+2, i+1, I);
+      data.set_operator(i+1, i+2, I);
    }
-   data.set_operator(2+NumNeighbors,1+NumNeighbors,x);
+   data.set_operator(1+NumNeighbors,2+NumNeighbors,y);
    data.set_operator(2+NumNeighbors,2+NumNeighbors,I);
 
    return TriangularMPO(data);
@@ -217,23 +222,22 @@ TriangularMPO TriangularStretchedTwoSite(SimpleOperator const& x, int NumNeighbo
 
 TriangularMPO TriangularThreeSite(SimpleOperator const& x, SimpleOperator const& y, SimpleOperator const& z)
 {
-   QuantumNumbers::QuantumNumberList ql = transform_targets(y.TransformsAs(), z.TransformsAs());
-   CHECK_EQUAL(ql.size(), 1)("ambiguous coupling of y and z")(y.TransformsAs())(z.TransformsAs());
+   QuantumNumbers::QuantumNumberList ql = transform_targets(x.TransformsAs(), y.TransformsAs());
+   CHECK_EQUAL(ql.size(), 1)("ambiguous coupling of x and y")(x.TransformsAs())(y.TransformsAs());
    return TriangularThreeSite(x,y,z, ql[0]);
 }
 
-TriangularMPO TriangularFourSite(SimpleOperator const& w, SimpleOperator const& x, 
-                                  SimpleOperator const& y, SimpleOperator const& z, 
-                                  QuantumNumber const& xyz_trans,
-                                  QuantumNumber const& yz_trans)
+TriangularMPO TriangularFourSite(SimpleOperator const& w, SimpleOperator const& x, QuantumNumber const& wx_trans,
+                                 SimpleOperator const& y, QuantumNumber const& wxy_trans,
+                                 SimpleOperator const& z)
 {
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
 
-   BasisList b(x.GetSymmetryList());
+   BasisList b(w.GetSymmetryList());
    b.push_back(Ident);
-   b.push_back(z.TransformsAs());
-   b.push_back(yz_trans);
-   b.push_back(xyz_trans);
+   b.push_back(w.TransformsAs());
+   b.push_back(wx_trans);
+   b.push_back(wxy_trans);
    b.push_back(Ident);
 
    SimpleOperator I = SimpleOperator::make_identity(x.Basis1());
@@ -241,10 +245,10 @@ TriangularMPO TriangularFourSite(SimpleOperator const& w, SimpleOperator const& 
    OperatorComponent data(x.Basis1(), b, b);
    data.set_operator(0,0,I);
    data.set_operator(4,4,I);
-   data.set_operator(1,0,z);
-   data.set_operator(2,1,y);
-   data.set_operator(3,2,x);
-   data.set_operator(4,3,w);
+   data.set_operator(0,1,w);
+   data.set_operator(1,2,x);
+   data.set_operator(2,3,y);
+   data.set_operator(3,4,z);
 
    return TriangularMPO(data);
 }
@@ -252,19 +256,19 @@ TriangularMPO TriangularFourSite(SimpleOperator const& w, SimpleOperator const& 
 TriangularMPO TriangularFourSite(SimpleOperator const& w, SimpleOperator const& x, 
                                   SimpleOperator const& y, SimpleOperator const& z)
 {
-   QuantumNumbers::QuantumNumberList ql = transform_targets(y.TransformsAs(), z.TransformsAs());
-   CHECK_EQUAL(ql.size(), 1)("ambiguous coupling of y and z")(y.TransformsAs())(z.TransformsAs());
-   QuantumNumber yz = ql[0];
+   QuantumNumbers::QuantumNumberList ql = transform_targets(w.TransformsAs(), x.TransformsAs());
+   CHECK_EQUAL(ql.size(), 1)("ambiguous coupling of w and x")(w.TransformsAs())(x.TransformsAs());
+   QuantumNumber wx = ql[0];
 
-   ql = transform_targets(x.TransformsAs(), yz);
-   CHECK_EQUAL(ql.size(), 1)("ambiguous coupling of x and yz")(x.TransformsAs())
+   ql = transform_targets(wx, y.TransformsAs());
+   CHECK_EQUAL(ql.size(), 1)("ambiguous coupling of wx and y")(y.TransformsAs())
       (y.TransformsAs())(z.TransformsAs());
-   QuantumNumber xyz = ql[0];
+   QuantumNumber wxy = ql[0];
 
-   return TriangularFourSite(w, x, y, z, xyz, yz);
+   return TriangularFourSite(w, x, wx, y, wxy, z);
 }
 
-
+#if 0
 TriangularMPO ZigZagChain(SimpleOperator const& S, SimpleOperator const& T, double J1, double J2)
 {
    QuantumNumbers::QuantumNumber Ident(S.GetSymmetryList());
@@ -344,6 +348,7 @@ TriangularMPO TriangularTwoSitePBC_Boundary(SimpleOperator const& x, SimpleOpera
    CHECK_EQUAL(num_transform_targets(x.TransformsAs(), y.TransformsAs()), 1);
    return TriangularTwoSitePBC_Boundary(x, y, transform_targets(x.TransformsAs(), y.TransformsAs())[0]);
 }
+#endif
 
 TriangularMPO repeat(TriangularMPO const& x, int Count)
 {
@@ -366,8 +371,8 @@ TriangularMPO& operator*=(TriangularMPO& Op, double x)
    {
       for (unsigned j = 1; j < Op[i].Basis1().size(); ++j)
       {
-         if (iterate_at(Op[i].data(), j, 0))
-            set_element(Op[i].data(), j, 0, get_element(Op[i].data(),j,0) * x);
+         if (iterate_at(Op[i].data(), 0, j))
+            set_element(Op[i].data(), 0, j, get_element(Op[i].data(),0,j) * x);
       }
    }
    return Op;
@@ -379,8 +384,8 @@ TriangularMPO& operator*=(TriangularMPO& Op, std::complex<double> x)
    {
       for (unsigned j = 1; j < Op[i].Basis1().size(); ++j)
       {
-         if (iterate_at(Op[i].data(), j, 0))
-            set_element(Op[i].data(), j, 0, get_element(Op[i].data(),j,0) * x);
+         if (iterate_at(Op[i].data(), 0, j))
+            set_element(Op[i].data(), 0, j, get_element(Op[i].data(),0,j) * x);
       }
    }
    return Op;
@@ -429,49 +434,50 @@ TriangularMPO operator+(TriangularMPO const& x, TriangularMPO const& y)
 
    for (unsigned Here = 0; Here < x.size(); ++Here)
    {
+      int x_rows = x[Here].Basis1().size();
+      int y_rows = y[Here].Basis1().size();
 
-      int xSz1 = x[Here].Basis1().size();
-      int ySz1 = y[Here].Basis1().size();
+      int x_cols = x[Here].Basis2().size();
+      int y_cols = y[Here].Basis2().size();
 
-      int xSz2 = x[Here].Basis2().size();
-      int ySz2 = y[Here].Basis2().size();
+      CHECK(norm_frob(x[Here](0,0) - y[Here](0,0)) < 1E-10)(x[Here](0,0))(y[Here](0,0));
+      CHECK(norm_frob(x[Here](x_rows-1, x_cols-1) - y[Here](y_rows-1, x_rows-1)) < 1E-10)
+            (x[Here](x_rows-1, x_cols-1))(y[Here](y_rows-1, x_rows-1));
 
       // This is a somewhat simplistic approach.  We just combine the first and last
       // rows/columns, and join the remainder.
 
       BasisList NewBasis1(x.GetSymmetryList());
-      for (int i = 0; i < xSz1-1; ++i)
+      for (int i = 0; i < x_rows-1; ++i)
          NewBasis1.push_back(x[Here].Basis1()[i]);
-      for (int i = 1; i < ySz1; ++i)
+      for (int i = 1; i < y_rows; ++i)
          NewBasis1.push_back(y[Here].Basis1()[i]);
 
       SimpleOperator xProjector1(NewBasis1, x[Here].Basis1());
-      for (int i = 0; i < xSz1-1; ++i)         // include the first row in x only
+      for (int i = 0; i < x_rows-1; ++i)         // include the first row in x only
          xProjector1(i,i) = 1.0;
-      xProjector1(xSz1+ySz1-3, xSz1-1) = 1.0;   // last row is special
+      xProjector1(x_rows+y_rows-3, x_rows-1) = 1.0;   // last row is special
 
       SimpleOperator yProjector1(NewBasis1, y[Here].Basis1());
       yProjector1(0, 0) = 1.0;  // first row is special
-      for (int i = 1; i < ySz1; ++i)
-         yProjector1(i+xSz1-2,i) = 1.0;
-
-
+      for (int i = 1; i < y_rows; ++i)
+         yProjector1(i+x_rows-2,i) = 1.0;
 
       BasisList NewBasis2(x.GetSymmetryList());
-      for (int i = 0; i < xSz2-1; ++i)
+      for (int i = 0; i < x_cols-1; ++i)
          NewBasis2.push_back(x[Here].Basis2()[i]);
-      for (int i = 1; i < ySz2; ++i)
+      for (int i = 1; i < y_cols; ++i)
          NewBasis2.push_back(y[Here].Basis2()[i]);
 
       SimpleOperator xProjector2(NewBasis2, x[Here].Basis2());
-      for (int i = 0; i < xSz2-1; ++i)         // include the first row in x only
+      for (int i = 0; i < x_cols-1; ++i)         // include the first row in x only
          xProjector2(i,i) = 1.0;
-      xProjector2(xSz2+ySz2-3, xSz2-1) = 1.0;   // last row is special
+      xProjector2(x_cols+y_cols-3, x_cols-1) = 1.0;   // last row is special
 
       SimpleOperator yProjector2(NewBasis2, y[Here].Basis2());
       yProjector2(0, 0) = 1.0;  // first row is special
-      for (int i = 1; i < ySz2; ++i)
-         yProjector2(i+xSz2-2,i) = 1.0;
+      for (int i = 1; i < y_cols; ++i)
+         yProjector2(i+x_cols-2,i) = 1.0;
 
       OperatorComponent Next = triple_prod(xProjector1, x[Here], herm(xProjector2)) 
          + triple_prod(yProjector1, y[Here], herm(yProjector2));
@@ -604,14 +610,14 @@ TriangularMPO extend(TriangularMPO const& x, int count)
 StateComponent Initial_E(TriangularMPO const& m, VectorBasis const& Vac)
 {
    StateComponent Result(m.data().Basis1(), Vac, Vac);
-   Result[m.data().Basis1().size()-1] = MatrixOperator::make_identity(Vac);
+   Result[0] = MatrixOperator::make_identity(Vac);
    return Result;
 }
 
 StateComponent Initial_F(TriangularMPO const& m, VectorBasis const& Vac)
 {
    StateComponent Result(m.data().Basis2(), Vac, Vac);
-   Result[0] = MatrixOperator::make_identity(Vac);
+   Result[m.data().Basis2().size()-1] = MatrixOperator::make_identity(Vac);
    return Result;
 }
 
@@ -630,14 +636,14 @@ StateComponent Initial_F(TriangularMPO const& m)
 StateComponent Initial_E(OperatorComponent const& m, VectorBasis const& Vac)
 {
    StateComponent Result(m.Basis1(), Vac, Vac);
-   Result[m.Basis1().size()-1] = MatrixOperator::make_identity(Vac);
+   Result[0] = MatrixOperator::make_identity(Vac);
    return Result;
 }
 
 StateComponent Initial_F(OperatorComponent const& m, VectorBasis const& Vac)
 {
    StateComponent Result(m.Basis2(), Vac, Vac);
-   Result[0] = MatrixOperator::make_identity(Vac);
+   Result[m.Basis2().size()-1] = MatrixOperator::make_identity(Vac);
    return Result;
 }
 
@@ -970,7 +976,7 @@ TriangularMPO OnePointStringOperator(std::vector<BasisList> const& Sites,
       Result[i](1,1) = SimpleOperator::make_identity(Sites[i]);
    }
 
-   Result[n](1,0) = x;
+   Result[n](0,1) = x;
    return TriangularMPO(Result.data());
 }
 
@@ -1004,7 +1010,7 @@ TriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
    // the actual operator
    for (int i = n2; i > n1; --i)
    {
-      BondBasis[smod(i,Size)].push_back(x2.TransformsAs());
+      BondBasis[smod(i,Size)].push_back(x1.TransformsAs());
    }
    
    // Finally, the Hamiltonian component
@@ -1019,13 +1025,13 @@ TriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
    {
       Result[i] = OperatorComponent(Sites[i], Sites[i], BondBasis[i], BondBasis[smod(i+1,Size)]);
       Result[i](0,0) = SimpleOperator::make_identity(Sites[i]);
-      Result[i](BondBasis[i].size()-1, BondBasis[smod(i+1,Size)].size()-1) 
+      Result[i](BondBasis[smod(i+1,Size)].size()-1, BondBasis[i].size()-1) 
          = SimpleOperator::make_identity(Sites[i]);
    }
 
    // now the operators.  Keep track of which component we insert them into
    std::vector<int> Loc(Size, 0);
-   Result[smod(n2,Size)](1,0) = x2;
+   Result[smod(n2,Size)](0,1) = x1;
    ++Loc[smod(n2-1,Size)];
    for (int i = n2-1; i > n1; --i)
    {
@@ -1033,7 +1039,7 @@ TriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
       Result[smod(i,Size)](Loc[smod(i-1,Size)], Loc[smod(i,Size)]) 
          = SimpleOperator::make_identity(Sites[smod(i,Size)]);
    }
-   Result[smod(n1,Size)](Loc[smod(n1-1,Size)]+1,Loc[smod(n1,Size)]) = x1;
+   Result[smod(n1,Size)](Loc[smod(n1,Size)],Loc[smod(n1-1,Size)+1]) = x2;
    return TriangularMPO(Result.data());
 }
 
@@ -1058,7 +1064,7 @@ TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
    // the actual operator
    for (int i = n2; i > n1; --i)
    {
-      BondBasis[smod(i,Size)].push_back(x2.TransformsAs());
+      BondBasis[smod(i,Size)].push_back(x1.TransformsAs());
    }
    
    // Finally, the Hamiltonian component
@@ -1073,19 +1079,19 @@ TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
    {
       Result[i] = OperatorComponent(Sites[i], Sites[i], BondBasis[i], BondBasis[smod(i+1,Size)]);
       Result[i](0,0) = SimpleOperator::make_identity(Sites[i]);
-      Result[i](BondBasis[i].size()-1, BondBasis[smod(i+1,Size)].size()-1) 
+      Result[i](BondBasis[smod(i+1,Size)].size()-1, BondBasis[i].size()-1) 
          = SimpleOperator::make_identity(Sites[i]);
    }
 
    // now the operators.  Keep track of which component we insert them into
    std::vector<int> Loc(Size, 0);
-   Result[smod(n2,Size)](1,0) = x2;
+   Result[smod(n2,Size)](0,1) = x1;
    ++Loc[smod(n2-1,Size)];
    for (int i = n2-1; i > n1; --i)
    {
       ++Loc[smod(i-1,Size)];
-      Result[smod(i,Size)](Loc[smod(i-1,Size)], Loc[smod(i,Size)]) = String;
+      Result[smod(i,Size)](Loc[smod(i,Size)], Loc[smod(i-1,Size)]) = String;
    }
-   Result[smod(n1,Size)](Loc[smod(n1-1,Size)]+1,Loc[smod(n1,Size)]) = x1;
+   Result[smod(n1,Size)](Loc[smod(n1,Size)],Loc[smod(n1-1,Size)+1]) = x2;
    return TriangularMPO(Result.data());
 }
