@@ -2,14 +2,14 @@
 // SU(3) spin chain in the fundamental representation,
 // broken down to U(1)xU(1)
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/u1.h"
-#include "siteoperator/block.h"
 
-typedef Block<SiteOperator> SiteBlock;
+
+
 
 inline
-SiteBlock CreateU1U1SpinSite()
+LatticeSite CreateU1U1SpinSite()
 {
    SymmetryList Symmetry("Sz:U(1),Qz:U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1, QuantumNumbers::U1> 
@@ -19,7 +19,7 @@ SiteBlock CreateU1U1SpinSite()
    SiteOperator Tp, Tm, Up, Um, Vp, Vm, Sz, Qz;
 
    SiteOperator R, P, I, U;
-   SiteBlock Block;
+   LatticeSite Site;
 
    // Basis is labelled by Sz = L3/2 and Qz = L8 * sqrt(3)/2
    // we label the local basis as 1,-1,0, the eigenvalue of L3
@@ -87,19 +87,19 @@ SiteBlock CreateU1U1SpinSite()
    U("-1", "-1")  = -1.0;
    U("0", "0")    =  1.0;
    
-   Block["I"] = I;
-   Block["P"] = P;
-   Block["R"] = R;
-   Block["U"] = U;
-   Block["L3"] = L3;
-   Block["L8"] = L8;
-   Block["Sz"] = Sz;
-   Block["Qz"] = Qz;
-   Block["Tp"] = Tp;
-   Block["Tm"] = Tm;
-   Block["Vp"] = Vp;
-   Block["Vm"] = Vm;
-   Block["Up"] = Up;
-   Block["Um"] = Um;
-   return Block;
+   Site["I"] = I;
+   Site["P"] = P;
+   Site["R"] = R;
+   Site["U"] = U;
+   Site["L3"] = L3;
+   Site["L8"] = L8;
+   Site["Sz"] = Sz;
+   Site["Qz"] = Qz;
+   Site["Tp"] = Tp;
+   Site["Tm"] = Tm;
+   Site["Vp"] = Vp;
+   Site["Vm"] = Vm;
+   Site["Up"] = Up;
+   Site["Um"] = Um;
+   return Site;
 }

@@ -5,20 +5,20 @@
 // but the z-component of spin is a parameter.
 //
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/u1.h"
-#include "siteoperator/block.h"
 
-typedef Block<SiteOperator> SiteBlock;
+
+
 
 inline
-SiteBlock CreateFermionSite(half_int m, std::string const& Sym1 = "N", std::string const& Sym2 = "Sz")
+LatticeSite CreateFermionSite(half_int m, std::string const& Sym1 = "N", std::string const& Sym2 = "Sz")
 {
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::U1> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator CHup, Cup, CHdown, Cdown, P, R, N, Sz, I, Pdouble, X, N_S, N_H;
-   SiteBlock Block;
+   LatticeSite Site;
 
    Basis.push_back("empty",  QN(0, 0));
    Basis.push_back("up" ,    QN(1, m));
@@ -95,19 +95,19 @@ SiteBlock CreateFermionSite(half_int m, std::string const& Sym1 = "N", std::stri
    Sz("up",   "up")       =  m.to_double();
    Sz("down", "down")     = -m.to_double();
 
-   Block["I"] = I;
-   Block["P"] = P;
-   Block["N"] = N;
-   Block[Sym1] = N;
-   Block["Pdouble"] = Pdouble;
-   Block["Sz"] = Sz;
-   Block[Sym2] = Sz;
-   Block["CHup"] = CHup;
-   Block["Cup"] = Cup;
-   Block["CHdown"] = CHdown;
-   Block["Cdown"] = Cdown;
-   Block["X"] = X;
-   Block["N_S"] = N_S;
-   Block["N_H"] = N_H;
-   return Block;
+   Site["I"] = I;
+   Site["P"] = P;
+   Site["N"] = N;
+   Site[Sym1] = N;
+   Site["Pdouble"] = Pdouble;
+   Site["Sz"] = Sz;
+   Site[Sym2] = Sz;
+   Site["CHup"] = CHup;
+   Site["Cup"] = Cup;
+   Site["CHdown"] = CHdown;
+   Site["Cdown"] = Cdown;
+   Site["X"] = X;
+   Site["N_S"] = N_S;
+   Site["N_H"] = N_H;
+   return Site;
 }

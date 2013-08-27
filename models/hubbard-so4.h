@@ -3,23 +3,23 @@
 #if !defined(HUBBARD_SO4_H)
 #define HUBBARD_SO4_H
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/su2.h"
-#include "siteoperator/block.h"
+
 #include <cmath>
 
-typedef Block<SiteOperator> SiteBlock;
+
 
 using std::sqrt;
 
 inline
-SiteBlock CreateSO4HubbardSiteCommon(std::string const& Sym1 = "Q", std::string const& Sym2 = "S")
+LatticeSite CreateSO4HubbardSiteCommon(std::string const& Sym1 = "Q", std::string const& Sym2 = "S")
 {
    SymmetryList Symmetry(Sym1+":SU(2),"+Sym2+":SU(2)");
    QuantumNumbers::QNConstructor<QuantumNumbers::SU2,QuantumNumbers::SU2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator C_A, C_B, CH_A, CH_B, P, R, N, N_S, N_H, S, Q, I, X;
-   SiteBlock Block;
+   LatticeSite Site;
 
    Basis.push_back("holon",  QN(0.5, 0));
    Basis.push_back("spinon", QN(0, 0.5));
@@ -75,29 +75,29 @@ SiteBlock CreateSO4HubbardSiteCommon(std::string const& Sym1 = "Q", std::string 
    I("spinon", "spinon") =  1;
    I("holon",  "holon")  =  1;
    
-   Block["I"] = I;
-   Block["P"] = P;
-   Block["N"] = N;
-   Block["N_S"] = N_S;
-   Block["N_H"] = N_H;
-   Block[Sym1] = Q;
-   Block[Sym2] = S;
-   Block["C_A"] = C_A;
-   Block["C_B"] = C_B;
-   Block["CH_A"] = CH_A;
-   Block["CH_B"] = CH_B;
-   Block["CP_A"] = CP_A;
-   Block["CP_B"] = CP_B;
-   Block["CHP_A"] = CHP_A;
-   Block["CHP_B"] = CHP_B;
-   Block["X"] = X;
-   return Block;
+   Site["I"] = I;
+   Site["P"] = P;
+   Site["N"] = N;
+   Site["N_S"] = N_S;
+   Site["N_H"] = N_H;
+   Site[Sym1] = Q;
+   Site[Sym2] = S;
+   Site["C_A"] = C_A;
+   Site["C_B"] = C_B;
+   Site["CH_A"] = CH_A;
+   Site["CH_B"] = CH_B;
+   Site["CP_A"] = CP_A;
+   Site["CP_B"] = CP_B;
+   Site["CHP_A"] = CHP_A;
+   Site["CHP_B"] = CHP_B;
+   Site["X"] = X;
+   return Site;
 }
 
 inline
-SiteBlock CreateSO4HubbardSiteA(std::string const& Sym1 = "Q", std::string const& Sym2 = "S")
+LatticeSite CreateSO4HubbardSiteA(std::string const& Sym1 = "Q", std::string const& Sym2 = "S")
 {
-   SiteBlock Site = CreateSO4HubbardSiteCommon(Sym1, Sym2);
+   LatticeSite Site = CreateSO4HubbardSiteCommon(Sym1, Sym2);
    Site["C"] = Site["C_A"];
    Site["CH"] = Site["CH_A"];
    Site["CP"] = Site["CP_A"];
@@ -106,9 +106,9 @@ SiteBlock CreateSO4HubbardSiteA(std::string const& Sym1 = "Q", std::string const
 }
 
 inline
-SiteBlock CreateSO4HubbardSiteB(std::string const& Sym1 = "Q", std::string const& Sym2 = "S")
+LatticeSite CreateSO4HubbardSiteB(std::string const& Sym1 = "Q", std::string const& Sym2 = "S")
 {
-   SiteBlock Site = CreateSO4HubbardSiteCommon(Sym1, Sym2);
+   LatticeSite Site = CreateSO4HubbardSiteCommon(Sym1, Sym2);
    Site["C"] = Site["C_B"];
    Site["CH"] = Site["CH_B"];
    Site["CP"] = Site["CP_B"];

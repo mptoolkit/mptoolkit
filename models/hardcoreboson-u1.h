@@ -1,19 +1,19 @@
 // -*- C++ -*- $Id$
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/u1.h"
-#include "siteoperator/block.h"
 
-typedef Block<SiteOperator> SiteBlock;
+
+
 
 inline
-SiteBlock CreateU1HardcoreBoson(std::string const& Sym = "N")
+LatticeSite CreateU1HardcoreBoson(std::string const& Sym = "N")
 {
    SymmetryList Symmetry(Sym+":U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator BH, B, N, P, R, I;
-   SiteBlock Block;
+   LatticeSite Site;
 
    Basis.push_back("empty", QN(0));
    Basis.push_back("boson", QN(1));
@@ -38,11 +38,11 @@ SiteBlock CreateU1HardcoreBoson(std::string const& Sym = "N")
    P("empty", "empty") = 1.0;
    P("boson", "boson") = 1.0;
    
-   Block["I"] = I;
-   Block["P"] = P;
-   Block["R"] = R;
-   Block["N"] = N;
-   Block["B"] = B;
-   Block["BH"] = BH;
-   return Block;
+   Site["I"] = I;
+   Site["P"] = P;
+   Site["R"] = R;
+   Site["N"] = N;
+   Site["B"] = B;
+   Site["BH"] = BH;
+   return Site;
 }

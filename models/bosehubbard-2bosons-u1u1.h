@@ -1,11 +1,11 @@
 // -*- C++ -*- $Id$
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/u1.h"
 #include "quantumnumbers/su2.h"
-#include "siteoperator/block.h"
 
-typedef Block<SiteOperator> SiteBlock;
+
+
 
 void SetMatElement(SiteOperator& s, int n1, int n2, double x)
 {
@@ -28,7 +28,7 @@ std::string Coord(int i, int j)
 
 
 inline
-SiteBlock CreateBoseHubbard2BosonsU1U1Site(int MaxN, std::string const& Sym1 = "NA", std::string const& Sym2 = "NB")
+LatticeSite CreateBoseHubbard2BosonsU1U1Site(int MaxN, std::string const& Sym1 = "NA", std::string const& Sym2 = "NB")
 {
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1, QuantumNumbers::U1> QN(Symmetry);
@@ -36,7 +36,7 @@ SiteBlock CreateBoseHubbard2BosonsU1U1Site(int MaxN, std::string const& Sym1 = "
    SiteOperator B_A, BH_A, N_A, N2_A;
 	SiteOperator B_B, BH_B, N_B, N2_B;
 	SiteOperator P, R, Q, I;
-   SiteBlock Block;
+   LatticeSite Site;
 
    // Setup the site basis
    for (int n = 0; n <= MaxN; ++n)
@@ -87,30 +87,30 @@ SiteBlock CreateBoseHubbard2BosonsU1U1Site(int MaxN, std::string const& Sym1 = "
    }
 
 	I = SiteOperator::Identity(Basis);
-   Block["I"] = I;
+   Site["I"] = I;
    R = I;
-   Block["R"] = R;
+   Site["R"] = R;
 	
-   Block["BH_A"] = BH_A;
-	Block["BH_B"] = BH_B;
+   Site["BH_A"] = BH_A;
+	Site["BH_B"] = BH_B;
 
    B_A = adjoint(BH_A);
-   Block["B_A"] = B_A;
+   Site["B_A"] = B_A;
 	
 	B_B = adjoint(BH_B);
-   Block["B_B"] = B_B;
+   Site["B_B"] = B_B;
       
    N_A = prod(BH_A, B_A, QN(0,0));
-   Block["N_A"] = N_A;
+   Site["N_A"] = N_A;
    N2_A = prod(N_A, N_A-I, QN(0,0));
-   Block["N2_A"] = N2_A;
+   Site["N2_A"] = N2_A;
 	
 	N_B = prod(BH_B, B_B, QN(0,0));
-   Block["N_B"] = N_B;
+   Site["N_B"] = N_B;
    N2_B = prod(N_B, N_B-I, QN(0,0));
-   Block["N2_B"] = N2_B;
+   Site["N2_B"] = N2_B;
    
    DEBUG_TRACE(BH_A)(B_A)(I)(N_A)(N2_A)(BH_B)(B_B)(N_B)(N2_B);
 
-   return Block;
+   return Site;
 }

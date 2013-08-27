@@ -1,13 +1,10 @@
 // -*- C++ -*- $Id$
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/u1.h"
-#include "siteoperator/block.h"
-
-typedef Block<SiteOperator> SiteBlock;
 
 inline
-SiteBlock CreateU1U1HubbardSite(std::string const& Sym1 = "N", 
+LatticeSite CreateU1U1HubbardSite(std::string const& Sym1 = "N", 
 			      std::string const& Sym2 = "Sz",
 			      std::string const& ParityOp = "P")
 {
@@ -15,26 +12,12 @@ SiteBlock CreateU1U1HubbardSite(std::string const& Sym1 = "N",
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::U1> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator CHup, Cup, CHdown, Cdown, P, R, N, Sp, Sm, Sz, Qp, Qm, Qz, I, Hu, Pdouble, X, N_S, N_H, ES, EQ;
-   SiteBlock Block;
+   LatticeSite Site;
 
-#if defined(NEW_SITE_ORDERING)
-#pragma warning "using new site ordering."
    Basis.push_back("empty",  QN(0, 0));
    Basis.push_back("double", QN(2, 0));
    Basis.push_back("down" ,  QN(1,-0.5));
    Basis.push_back("up" ,    QN(1, 0.5));
-#elif defined(OLD_SITE_ORDERING)
-   Basis.push_back("empty",  QN(0, 0));
-   Basis.push_back("up" ,    QN(1, 0.5));
-   Basis.push_back("down" ,  QN(1,-0.5));
-   Basis.push_back("double", QN(2, 0));
-#else
-#pragma warning "using old site ordering."
-   Basis.push_back("empty",  QN(0, 0));
-   Basis.push_back("down" ,  QN(1,-0.5));
-   Basis.push_back("up" ,    QN(1, 0.5));
-   Basis.push_back("double", QN(2, 0));
-#endif
 
    LatticeCommute Fermionic = ParityOp == "P" ? LatticeCommute::Fermionic : LatticeCommute(ParityOp);
 
@@ -146,32 +129,32 @@ SiteBlock CreateU1U1HubbardSite(std::string const& Sym1 = "N",
    EQ("double", "double") = std::complex<double>(0.0,  1.0);
    EQ("empty",  "empty")  = std::complex<double>(0.0, -1.0);
 
-   Block["I"] = I;
-   Block[ParityOp] = P;
-   Block["N"] = N;
-   Block[Sym1] = N;
-   Block["Hu"] = Hu;
-   Block["Pdouble"] = Pdouble;
-   Block["Sp"] = Sp;
-   Block["Sm"] = Sm;
-   Block["Sz"] = Sz;
-   Block[Sym2] = Sz;
-   Block["Qp"] = Qp;
-   Block["Qm"] = Qm;
-   Block["Qz"] = Qz;
-   Block["R"] = R;
-   Block["CHup"] = CHup;
-   Block["Cup"] = Cup;
-   Block["CHdown"] = CHdown;
-   Block["Cdown"] = Cdown;
-   Block["CHupP"] = CHup*P;
-   Block["CupP"] = Cup*P;
-   Block["CHdownP"] = CHdown*P;
-   Block["CdownP"] = Cdown*P;
-   Block["X"] = X;
-   Block["N_S"] = N_S;
-   Block["N_H"] = N_H;
-   Block["ES"] = ES;
-   Block["EQ"] = EQ;
-   return Block;
+   Site["I"] = I;
+   Site[ParityOp] = P;
+   Site["N"] = N;
+   Site[Sym1] = N;
+   Site["Hu"] = Hu;
+   Site["Pdouble"] = Pdouble;
+   Site["Sp"] = Sp;
+   Site["Sm"] = Sm;
+   Site["Sz"] = Sz;
+   Site[Sym2] = Sz;
+   Site["Qp"] = Qp;
+   Site["Qm"] = Qm;
+   Site["Qz"] = Qz;
+   Site["R"] = R;
+   Site["CHup"] = CHup;
+   Site["Cup"] = Cup;
+   Site["CHdown"] = CHdown;
+   Site["Cdown"] = Cdown;
+   Site["CHupP"] = CHup*P;
+   Site["CupP"] = Cup*P;
+   Site["CHdownP"] = CHdown*P;
+   Site["CdownP"] = Cdown*P;
+   Site["X"] = X;
+   Site["N_S"] = N_S;
+   Site["N_H"] = N_H;
+   Site["ES"] = ES;
+   Site["EQ"] = EQ;
+   return Site;
 }

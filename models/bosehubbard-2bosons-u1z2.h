@@ -3,12 +3,12 @@
 // Bose-Hubbard model with two species of bosons,
 // symmetric under interchange of species.
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/u1.h"
 #include "quantumnumbers/z2.h"
-#include "siteoperator/block.h"
 
-typedef Block<SiteOperator> SiteBlock;
+
+
 
 std::string Coord(int i, int j)
 {
@@ -23,13 +23,13 @@ int Parity(int m)
 }
 
 inline
-SiteBlock CreateBoseHubbard2BosonsU1Z2Site(int MaxN, std::string const& Sym1 = "N", std::string const& Sym2 = "Z")
+LatticeSite CreateBoseHubbard2BosonsU1Z2Site(int MaxN, std::string const& Sym1 = "N", std::string const& Sym2 = "Z")
 {
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":Z2");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1, QuantumNumbers::Z2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator BH_A, BH_S, I, Z;
-   SiteBlock Block;
+   LatticeSite Site;
 
    // Setup the site basis
    for (int n = 0; n <= MaxN; ++n)
@@ -68,27 +68,27 @@ SiteBlock CreateBoseHubbard2BosonsU1Z2Site(int MaxN, std::string const& Sym1 = "
    }
 
    I = SiteOperator::Identity(Basis);
-   Block["I"] = I;
-   Block["R"] = I;
-   Block["P"] = I;
+   Site["I"] = I;
+   Site["R"] = I;
+   Site["P"] = I;
 
-   Block["Z"]     = Z;
-   Block["BH_A"]  = BH_A;
-   Block["BH_S"]  = BH_S;
-   Block["B_A"]   = adjoint(BH_A);
-   Block["B_S"]   = adjoint(BH_S);
+   Site["Z"]     = Z;
+   Site["BH_A"]  = BH_A;
+   Site["BH_S"]  = BH_S;
+   Site["B_A"]   = adjoint(BH_A);
+   Site["B_S"]   = adjoint(BH_S);
 
-   Block["BH2_A"] = prod(Block["BH_A"], Block["BH_A"], QN(2, 1));;
-   Block["B2_A"]  = prod(Block["B_A"], Block["B_A"], QN(-2, 1));
-   Block["BH2_S"] = prod(Block["BH_S"], Block["BH_S"], QN(2, 1));;
-   Block["B2_S"]  = prod(Block["B_S"], Block["B_S"], QN(-2, 1));
-   Block["N_A"]   = prod(Block["BH_A"], Block["B_A"], QN(0,1));
-   Block["N2_A"]  = prod(Block["N_A"], Block["N_A"]-Block["I"], QN(0,1));
-   Block["N_S"]   = prod(Block["BH_S"], Block["B_S"], QN(0,1));
-   Block["N2_S"]  = prod(Block["N_S"], Block["N_S"]-Block["I"], QN(0,1));
-   Block["N"]     = Block["N_A"] + Block["N_S"];
+   Site["BH2_A"] = prod(Site["BH_A"], Site["BH_A"], QN(2, 1));;
+   Site["B2_A"]  = prod(Site["B_A"], Site["B_A"], QN(-2, 1));
+   Site["BH2_S"] = prod(Site["BH_S"], Site["BH_S"], QN(2, 1));;
+   Site["B2_S"]  = prod(Site["B_S"], Site["B_S"], QN(-2, 1));
+   Site["N_A"]   = prod(Site["BH_A"], Site["B_A"], QN(0,1));
+   Site["N2_A"]  = prod(Site["N_A"], Site["N_A"]-Site["I"], QN(0,1));
+   Site["N_S"]   = prod(Site["BH_S"], Site["B_S"], QN(0,1));
+   Site["N2_S"]  = prod(Site["N_S"], Site["N_S"]-Site["I"], QN(0,1));
+   Site["N"]     = Site["N_A"] + Site["N_S"];
    
    DEBUG_TRACE(Z)(BH_A)(BH_S);
 
-   return Block;
+   return Site;
 }

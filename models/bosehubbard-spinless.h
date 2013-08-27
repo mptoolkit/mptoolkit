@@ -1,12 +1,12 @@
 // -*- C++ -*- $Id$
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/u1.h"
 #include "quantumnumbers/su2.h"
 
-#include "siteoperator/block.h"
 
-typedef Block<SiteOperator> SiteBlock;
+
+
 
 void SetMatElement(SiteOperator& s, int n1, int n2, double x)
 {
@@ -21,13 +21,13 @@ void SetMatElement(SiteOperator& s, int n1, int n2, double x)
 }
 
 inline
-SiteBlock CreateBoseHubbardSpinlessSite(int MaxN)
+LatticeSite CreateBoseHubbardSpinlessSite(int MaxN)
 {
    SymmetryList Symmetry("N:Null");
    QuantumNumbers::QuantumNumber QNum(Symmetry); // no symmetries, only one quantum number
    SiteBasis Basis(Symmetry);
    SiteOperator B, BH, P, R, N, N2, Q, I, U;
-   SiteBlock Block;
+   LatticeSite Site;
 
    // Setup the site basis
    for (int n = 0; n <= MaxN; ++n)
@@ -42,25 +42,25 @@ SiteBlock CreateBoseHubbardSpinlessSite(int MaxN)
      SetMatElement(BH, n+1, n, std::sqrt(double(n + 1)));
    }
 
-   Block["BH"] = BH;
+   Site["BH"] = BH;
 
    B = adjoint(BH);
-   Block["B"] = B;
+   Site["B"] = B;
    I = SiteOperator::Identity(Basis);
-   Block["I"] = I;
+   Site["I"] = I;
    N = prod(BH, B, QNum);
-   Block["N"] = N;
+   Site["N"] = N;
    N2 = prod(N, N-I, QNum);
-   Block["N2"] = N2;
+   Site["N2"] = N2;
    R = I;
-   Block["R"] = R;
+   Site["R"] = R;
 
    U = SiteOperator(Basis, QNum, LatticeCommute::Bosonic);
    for (int n = 0; n <= MaxN; ++n)
    {
       SetMatElement(U, n, n, minus1pow(n));
    }
-   Block["U"] = U;
+   Site["U"] = U;
 
    // projections onto each state
    for (int n = 0; n <= MaxN; ++n)
@@ -69,10 +69,10 @@ SiteBlock CreateBoseHubbardSpinlessSite(int MaxN)
       SetMatElement(X, n, n, 1);
       std::string OpName = std::string("P_")
 	+ boost::lexical_cast<std::string>(n);
-      Block[OpName] = X;
+      Site[OpName] = X;
    }
 
    DEBUG_TRACE(BH)(B)(I)(N)(N2)(U);
 
-   return Block;
+   return Site;
 }

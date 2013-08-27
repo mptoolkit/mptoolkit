@@ -49,7 +49,7 @@ TARDIR=$(PACKAGE_TARNAME)
 LIB = $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LIBS_EXTRA)
 
 SRCDIRS = common common/private quantumnumbers pstream pheap \
-          tensor siteoperator blockoperator models mp-algorithms \
+          tensor siteoperator models mp-algorithms \
           tutorial mp linearalgebra misc conf scripts utils interface expokit mpo \
           benchmark misc misc/oogl junk mpo mps
 
@@ -71,8 +71,6 @@ quantumnumbersobj = quantumnumber.o symmetrybase.o symmetrylist.o \
 		    coupling.o u1.o su2.o null-quantumnumber.o z2.o
 
 tensorobj = tensorproduct.o tensorsum.o basis.o regularize.o tensor_eigen.o
-
-blockoperatorobj = blockoperator.o
 
 siteoperatorobj = siteoperator.o latticesite.o unitcell.o
 
@@ -143,8 +141,6 @@ tensor_tests = testbasis testtensor testadjoint testscalarprod testtensorsum \
                testvectorbasis testregularize testprodherm testdeltaprod testred
 
 siteoperator_tests = testsitebasis testsiteoperator testcomplexsiteoperator
-
-blockoperator_tests = testblockoperator
 
 matrixproduct_tests = testmpstate testdensity testperiodicwavefunction testscalardirectprod \
                       testtriangularaddition testsvd-decompose testpackunpack
@@ -425,8 +421,6 @@ testcoupling : coupling.o
 
 
 testperiodicwavefunction : periodicwavefunction.o mpstate.o eigen.o
-
-$(blockoperator_tests) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) $(tensorobj) $(blockoperatorobj)
 
 testsite : testsite.o $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) $(tensorobj)
 

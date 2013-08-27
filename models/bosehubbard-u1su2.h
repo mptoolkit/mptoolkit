@@ -1,11 +1,11 @@
 // -*- C++ -*- $Id$
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/u1.h"
 #include "quantumnumbers/su2.h"
-#include "siteoperator/block.h"
 
-typedef Block<SiteOperator> SiteBlock;
+
+
 
 void SetMatElement(SiteOperator& s, int n1, int s1, int n2, int s2, double x)
 {
@@ -22,7 +22,7 @@ void SetMatElement(SiteOperator& s, int n1, int s1, int n2, int s2, double x)
 }
 
 inline
-SiteBlock CreateU1SU2BoseHubbardSite(int MaxN, int MaxS, 
+LatticeSite CreateU1SU2BoseHubbardSite(int MaxN, int MaxS, 
 				     std::string const& Sym1 = "N", 
 				     std::string const& Sym2 = "S")
 {
@@ -33,7 +33,7 @@ SiteBlock CreateU1SU2BoseHubbardSite(int MaxN, int MaxS,
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator B, BH, P, R, S, S2, N, N2, Q, I;
-   SiteBlock Block;
+   LatticeSite Site;
 
    // Setup the site basis
    for (int n = 0; n <= MaxN; ++n)
@@ -69,24 +69,24 @@ SiteBlock CreateU1SU2BoseHubbardSite(int MaxN, int MaxS,
    SetMatElement(BH, 5,3, 4,2, std::sqrt(5.0 * 27.0 / 35.0));
    SetMatElement(BH, 5,3, 4,4, std::sqrt(5.0 * 8.0 / 35.0));
 
-   Block["BH"] = BH;
+   Site["BH"] = BH;
 
    B = adjoint(BH);
-   Block["B"] = B;
+   Site["B"] = B;
    I = SiteOperator::Identity(Basis);
-   Block["I"] = I;
+   Site["I"] = I;
    N = sqrt(3.0) * prod(BH, B, QN(0,0));
-   Block["N"] = N;
+   Site["N"] = N;
    N2 = prod(N, N-I, QN(0,0));
-   Block["N2"] = N2;
+   Site["N2"] = N2;
    R = I;
-   Block["R"] = R;
+   Site["R"] = R;
    S = sqrt(2.0) * prod(BH, B, QN(0,1));
-   Block["S"] = S;
+   Site["S"] = S;
    S2 = -sqrt(3.0) * prod(S, S, QN(0,0));
-   Block["S2"] = S2;
+   Site["S2"] = S2;
    Q = prod(S, S, QN(0,2));
-   Block["Q"] = Q;
+   Site["Q"] = Q;
 
    // projections onto each state
    for (int n = 0; n <= MaxN; ++n)
@@ -98,11 +98,11 @@ SiteBlock CreateU1SU2BoseHubbardSite(int MaxN, int MaxS,
 	 std::string OpName = std::string("P(")
 	    + boost::lexical_cast<std::string>(n) + "," 
 	    + boost::lexical_cast<std::string>(s) + ")";
-	 Block[OpName] = X;
+	 Site[OpName] = X;
       }
    }
 
    DEBUG_TRACE(BH)(B)(I)(N)(N2)(S)(S2)(Q);
 
-   return Block;
+   return Site;
 }

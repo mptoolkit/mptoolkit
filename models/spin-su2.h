@@ -1,19 +1,17 @@
 // -*- C++ -*- $Id$
 
-#include "siteoperator/siteoperator.h"
-#include "siteoperator/block.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/su2.h"
 
-typedef Block<SiteOperator> SiteBlock;
-
 inline
-SiteBlock CreateSU2SpinSite(half_int Spin, std::string const& Sym = "S")
+LatticeSite
+CreateSU2SpinSite(half_int Spin, std::string const& Sym = "S")
 {
    SymmetryList Symmetry(Sym+":SU(2)");
    QuantumNumbers::QNConstructor<QuantumNumbers::SU2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator S, Sn, R, P, I, Q, T, F;
-   SiteBlock Block;
+   LatticeSite Site;
 
    std::string SpinName = boost::lexical_cast<std::string>(Spin);
    Basis.push_back(SpinName, QN(Spin));
@@ -34,13 +32,13 @@ SiteBlock CreateSU2SpinSite(half_int Spin, std::string const& Sym = "S")
    T = prod(Q, S, QN(3));
    F = prod(Q, Q, QN(4));
    
-   Block["I"] = I;
-   Block["P"] = P;
-   Block["R"] = R;
-   Block["S"] = S;
-   Block["Sn"] = Sn;
-   Block["Q"] = Q;
-   Block["T"] = T;
-   Block["F"] = F;
-   return Block;
+   Site["I"] = I;
+   Site["P"] = P;
+   Site["R"] = R;
+   Site["S"] = S;
+   Site["Sn"] = Sn;
+   Site["Q"] = Q;
+   Site["T"] = T;
+   Site["F"] = F;
+   return Site;
 }

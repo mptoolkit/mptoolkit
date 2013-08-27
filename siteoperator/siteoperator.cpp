@@ -85,7 +85,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, SiteBasis& B)
 
 SiteProductBasis::SiteProductBasis(SiteBasis const& B1, SiteBasis const& B2)
   : Basis_(B1.GetSymmetryList()), 
-    Basis1_(B1), Basis2_(B2), ProductBasis_(B1.Basis(), B2.Basis())
+    Basis1_(B1), Basis2_(B2), ProductBasis_(B1, B2)
 {
    for (std::size_t i = 0; i < ProductBasis_.size(); ++i)
    {

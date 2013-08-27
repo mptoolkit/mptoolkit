@@ -1084,7 +1084,7 @@ int main(int argc, char** argv)
 	 std::cout << "Number of long range terms = " << LongRangeCoeff.size() << '\n';
 	 CHECK_EQUAL(LongRangeCoeff.size(), LongRangeExp.size())
 	    ("Must supply equal numbers of coefficients and exponents");
-	 SiteBlock Site = CreateSpinSite(0.5);
+	 LatticeSite Site = CreateSpinSite(0.5);
 	 TriangularMPO Ham;
 	 Ham = J * 4.0 * TriangularTwoSite(Site["Sz"], Site["Sz"])
 	    + Lambda * 2.0 * TriangularOneSite(Site["Sx"]);
@@ -1100,7 +1100,7 @@ int main(int argc, char** argv)
       else if (HamStr == "itf-z2")
       {
 	 std::cout << "Hamiltonian is transverse-field Ising with Z2, J=" << J << ", Lambda=" << Lambda << "\n";
-	 SiteBlock Site = CreateZ2SpinSite(0.5);
+	 LatticeSite Site = CreateZ2SpinSite(0.5);
 	 TriangularMPO Ham;
 	 Ham = J * 4.0 * TriangularTwoSite(Site["Sz"], Site["Sz"])
 	    + Lambda * 2.0 * TriangularOneSite(Site["Sx"]);
@@ -1114,7 +1114,7 @@ int main(int argc, char** argv)
                    << '\n';
 
          // see Aguado - PRB 79, 012408 (2009)
-         SiteBlock Site = CreateU1U1SpinSite();
+         LatticeSite Site = CreateU1U1SpinSite();
          TriangularMPO Ham;
          Ham = (J/2) * (0.25 * (TriangularTwoSite(Site["Tp"], Site["Tm"])
                                 + TriangularTwoSite(Site["Tm"], Site["Tp"])
@@ -1164,7 +1164,7 @@ int main(int argc, char** argv)
                    << ", eshift=" << c
                    << '\n';
 
-	 SiteBlock Site = CreateSU2SpinSite(Spin);
+	 LatticeSite Site = CreateSU2SpinSite(Spin);
 	 TriangularMPO Ham;
          Ham = Dipole * TriangularTwoSite(-sqrt(3.0)*Site["S"], Site["S"], Site["I"].TransformsAs());
 	 if (Quadrapole != 0.0)
@@ -1190,11 +1190,11 @@ int main(int argc, char** argv)
 	 std::cout << "Hamiltonian is XXX ladder model with spin S=" << Spin << ", nlegs="<<NLegs
                    << ", J=" << J << ", Jperp=" << Jperp << ", periodic=" << Periodic
                    << '\n';
-	 SiteBlock Site = CreateU1SpinSite(Spin);
+	 LatticeSite Site = CreateU1SpinSite(Spin);
 	 TriangularMPO Ham;
 
          // N-site unit cell
-         std::vector<BasisList> Sites(NLegs, Site["I"].Basis().Basis());
+         std::vector<BasisList> Sites(NLegs, Site["I"].Basis());
          // couplings in the leg direction
          for (int i = 0; i < NLegs; ++i)
          {
@@ -1234,7 +1234,7 @@ int main(int argc, char** argv)
          {
             std::cout << "using twist " << Twist << '\n';
          }
-	 SiteBlock Site = CreateU1SpinSite(Spin);
+	 LatticeSite Site = CreateU1SpinSite(Spin);
 	 TriangularMPO Ham;
 	 Ham = Jz * TriangularTwoSite(Site["Sz"], Site["Sz"])
             + J * 0.5 * (TwistFactor * TriangularTwoSite(Site["Sp"], Site["Sm"])
@@ -1281,7 +1281,7 @@ int main(int argc, char** argv)
 		   << ", J=" << J << ", Jz=" << Jz << ", J2="
                    << J2 << ", D=" << D << ", delta=" << delta << '\n';
 
-	 SiteBlock Site = CreateZ2SpinSite(Spin);
+	 LatticeSite Site = CreateZ2SpinSite(Spin);
 
 	 TriangularMPO Ham;
 	 Ham = Jz * TriangularTwoSite(Site["Sz"], Site["Sz"], Site["I"].TransformsAs())
@@ -1299,7 +1299,7 @@ int main(int argc, char** argv)
       {
 	 std::cout << "Hamiltonian is XXX model with spin S=" << Spin
 		   << ", J=" << J << ", Jz=" << Jz << ", J2=" << J2 << ", D=" << D << ", B=" << B << '\n';
-	 SiteBlock Site = CreateSpinSite(Spin);
+	 LatticeSite Site = CreateSpinSite(Spin);
 	 TriangularMPO Ham;
 	 Ham = Jz*TriangularTwoSite(Site["Sz"], Site["Sz"], Site["I"].TransformsAs())
             + 0.5 * J * (TriangularTwoSite(Site["Sp"], Site["Sm"], Site["I"].TransformsAs())
@@ -1318,7 +1318,7 @@ int main(int argc, char** argv)
       {
 	 std::cout << "Hamiltonian is XYZ model with spin S=" << Spin
 		   << ", Jx=" << Jx << ", Jy=" << Jy << ", Jz=" << Jz << '\n';
-	 SiteBlock Site = CreateSpinSite(Spin);
+	 LatticeSite Site = CreateSpinSite(Spin);
 	 TriangularMPO Ham;
 	 Ham = Jz*TriangularTwoSite(Site["Sz"], Site["Sz"])
             + Jx*TriangularTwoSite(Site["Sx"], Site["Sx"])
@@ -1329,7 +1329,7 @@ int main(int argc, char** argv)
       {
 	 std::cout << "Hamiltonian is t-J model with t=" << t << ", t'=" << tprime
 		   << ", delta=" << delta << '\n';
-	 SiteBlock Site = CreateU1SU2tJSite();
+	 LatticeSite Site = CreateU1SU2tJSite();
 	 double tSqrt2 = (-sqrt(2.0)) * t;  // the -sqrt(2) is an SU(2) factor
 	 double tprimeSqrt2 = (-sqrt(2.0)) * tprime;  // the -sqrt(2) is an SU(2) factor
 	 TriangularMPO H1 = -tSqrt2 * (TriangularTwoSite(Site["CHP"], Site["C"])
@@ -1348,7 +1348,7 @@ int main(int argc, char** argv)
       {
 	 std::cout << "Hamiltonian is t-J model with t=" << t << ", t'=" << tprime
 		   << ", delta=" << delta << '\n';
-	 SiteBlock Site = CreateU1tJSite();
+	 LatticeSite Site = CreateU1tJSite();
 	 TriangularMPO H1 = -t * (TriangularTwoSite(Site["CHupP"], Site["Cup"])
 				   - TriangularTwoSite(Site["CupP"], Site["CHup"])
 				   + TriangularTwoSite(Site["CHdownP"], Site["Cdown"])
@@ -1369,7 +1369,7 @@ int main(int argc, char** argv)
       {
 	 std::cout << "Hamiltonian is spinless fermions with t=" << t << ", t'=" << tprime
 		   << ", delta=" << delta << '\n';
-	 SiteBlock Site = CreateU1SpinlessFermion();
+	 LatticeSite Site = CreateU1SpinlessFermion();
 	 TriangularMPO H1 = -t * (TriangularTwoSite(Site["CHP"], Site["C"])
 				   - TriangularTwoSite(Site["CP"], Site["CH"]))
 	    + (-tprime) * (TriangularThreeSite(Site["CHP"], Site["P"], Site["C"])
@@ -1385,9 +1385,9 @@ int main(int argc, char** argv)
       else if (HamStr == "klm-so4")
       {
 	 std::cout << "Hamiltonian is Kondo Lattice SO(4) with J=" << J << ", U=" << U << '\n';
-	 SiteBlock SiteA = CreateSO4KondoSiteA();
-	 SiteBlock SiteB = CreateSO4KondoSiteB();
-	 std::vector<BasisList> Sites(2, SiteA["I"].Basis().Basis());
+	 LatticeSite SiteA = CreateSO4KondoSiteA();
+	 LatticeSite SiteB = CreateSO4KondoSiteB();
+	 std::vector<BasisList> Sites(2, SiteA["I"].Basis());
 	 TriangularMPO Ham = -2.0 * t * TwoPointOperator(Sites, 0, SiteA["CHP"], 1, SiteB["C"]);
 	 Ham += -2.0 * t * TwoPointOperator(Sites, 1, SiteB["CHP"], 2, SiteA["C"]);
 	 if (U != 0)
@@ -1403,7 +1403,7 @@ int main(int argc, char** argv)
       else if (HamStr == "klm-u1su2")
       {
 	 std::cout << "Hamiltonian is Kondo Lattice with J=" << J << '\n';
-	 SiteBlock Site = CreateU1SU2KondoSite();
+	 LatticeSite Site = CreateU1SU2KondoSite();
 	 TriangularMPO Ham;
 	 double tSqrt2 = (-sqrt(2.0)) * t;  // the -sqrt(2) is an SU(2) factor
          Ham = -tSqrt2 * (TriangularTwoSite(Site["CHP"], Site["C"])
@@ -1414,7 +1414,7 @@ int main(int argc, char** argv)
       else if (HamStr == "klm-u1")
       {
 	 std::cout << "Hamiltonian is U(1) Kondo Lattice with J=" << J << ", Jz=" << Jz << '\n';
-	 SiteBlock Site = CreateU1KondoSite();
+	 LatticeSite Site = CreateU1KondoSite();
 	 TriangularMPO Ham;
          Ham =  -t * (TriangularTwoSite(Site["CHupP"], Site["Cup"])
                       - TriangularTwoSite(Site["CupP"], Site["CHup"])
@@ -1430,7 +1430,7 @@ int main(int argc, char** argv)
       else if (HamStr == "klm-u1u1")
       {
 	 std::cout << "Hamiltonian is U(1)xU(1) Kondo Lattice with J=" << J << ", Jz=" << Jz << '\n';
-	 SiteBlock Site = CreateU1U1KondoSite();
+	 LatticeSite Site = CreateU1U1KondoSite();
 	 TriangularMPO Ham;
          Ham =  -t * (TriangularTwoSite(Site["CHupP"], Site["Cup"])
                       - TriangularTwoSite(Site["CupP"], Site["CHup"])
@@ -1446,7 +1446,7 @@ int main(int argc, char** argv)
       else if (HamStr == "hubbard-so4")
       {
 	 std::cout << "Hamiltonian is Hubbard model with t=" << t << ", U = " << U << '\n';
-	 SiteBlock Site = CreateSO4HubbardSiteA();
+	 LatticeSite Site = CreateSO4HubbardSiteA();
 	 TriangularMPO H1 = -2.0 * t * TriangularTwoSite(Site["C_A"], Site["C_B"]);
 	 TriangularMPO H2 = -2.0 * t * TriangularTwoSite(Site["C_B"], Site["C_A"]);
 	 H1 = H1 + 0.25 * U * TriangularOneSite(Site["P"]);
@@ -1461,7 +1461,7 @@ int main(int argc, char** argv)
 	 std::cout << "Hamiltonian is Hubbard model U(1)xU(1) with t=" << t << ", t2=" << t2
 		   << ", U = " << U
 		   << ", Delta=" << delta << '\n';
-	 SiteBlock Site = CreateU1U1HubbardSite();
+	 LatticeSite Site = CreateU1U1HubbardSite();
 	 TriangularMPO Ham;
          Ham =  -t * (TriangularTwoSite(Site["CHupP"], Site["Cup"])
                       - TriangularTwoSite(Site["CupP"], Site["CHup"])
@@ -1490,7 +1490,7 @@ int main(int argc, char** argv)
       {
          // These parameters (e.g. mu) are defined in this form to match the Lieb-Liniger model, U = m g dz / hbar^2, energy scaled by hbar^2 / 2 m dz^2
 	 std::cout << "Hamiltonian is spinless Bose-Hubbard, no symmetry, T=1, U=" << U << ", mu=" << mu << "- 2.0 \n";
-	 SiteBlock Site = CreateBoseHubbardSpinlessSite(3);
+	 LatticeSite Site = CreateBoseHubbardSpinlessSite(3);
 	 TriangularMPO Ham;
 	 Ham = -1.0 * TriangularTwoSite(Site["BH"], Site["B"]) - 1.0 * TriangularTwoSite(Site["B"], Site["BH"])
 	    + U * TriangularOneSite(Site["N2"]) - (mu - 2.0) * TriangularOneSite(Site["N"]);
@@ -1499,7 +1499,7 @@ int main(int argc, char** argv)
       else if (HamStr == "bhj")
       {
 	 std::cout << "Hamiltonian is spinless Bose-Hubbard, no symmetry, J/U=" << J << ", mu=" << mu << "\n";
-	 SiteBlock Site = CreateBoseHubbardSpinlessSite(NMax);
+	 LatticeSite Site = CreateBoseHubbardSpinlessSite(NMax);
 	 TriangularMPO Ham;
 	 Ham = -J * TriangularTwoSite(Site["BH"], Site["B"]) - J * TriangularTwoSite(Site["B"], Site["BH"])
 	    + 0.5 * TriangularOneSite(Site["N2"]) - mu * TriangularOneSite(Site["N"]);
@@ -1509,7 +1509,7 @@ int main(int argc, char** argv)
       {
 	 std::cout << "Hamiltonian is spinless Bose-Hubbard, U(1), J=" << J << ", J2=" << J2 << ", U=" << U
                    << ", mu=" << mu << ", V=" << V << "\n";
-	 SiteBlock Site = CreateBoseHubbardSpinlessU1Site(NMax);
+	 LatticeSite Site = CreateBoseHubbardSpinlessU1Site(NMax);
 	 TriangularMPO Ham;
 	 Ham = -J * TriangularTwoSite(Site["BH"], Site["B"]) - J * TriangularTwoSite(Site["B"], Site["BH"]);
 	 if (U != 0)
@@ -1527,8 +1527,8 @@ int main(int argc, char** argv)
 	 std::cout << "Hamiltonian is spinless Bose-Hubbard two species, U(1), J1=" << J1 << ", J2=" << J2
 		   << ", U1=" << U1 << ", U2=" << U2 << ", U12=" << U12 << ", Omega=" << Omega 
 		   << '\n';
-	 SiteBlock Site = CreateBoseHubbardSpinlessU1Site(NMax);
-         std::vector<BasisList> Sites(2, Site["I"].Basis().Basis());
+	 LatticeSite Site = CreateBoseHubbardSpinlessU1Site(NMax);
+         std::vector<BasisList> Sites(2, Site["I"].Basis());
 	 TriangularMPO Ham;
 	 Ham = -J1 * (TwoPointOperator(Sites, 0, Site["BH"], 2, Site["B"]) + TwoPointOperator(Sites, 0, Site["B"], 2, Site["BH"]) );
 	 Ham += -J2 * (TwoPointOperator(Sites, 1, Site["BH"], 3, Site["B"]) + TwoPointOperator(Sites, 1, Site["B"], 3, Site["BH"]) );
@@ -1547,7 +1547,7 @@ int main(int argc, char** argv)
 	 std::cout << "Hamiltonian is two species Bose-Hubbard, U(1)xZ2, J=" << J << ", U=" << U << ", U12=" << U12
 		   << ", Omega=" << Omega << "\n";
 
-	 SiteBlock Site = CreateBoseHubbard2BosonsU1Z2Site(NMax);
+	 LatticeSite Site = CreateBoseHubbard2BosonsU1Z2Site(NMax);
 	 TriangularMPO Ham;
 	 Ham = -J * (TriangularTwoSite(Site["BH_S"], Site["B_S"]) + TriangularTwoSite(Site["B_S"], Site["BH_S"])
 		     + TriangularTwoSite(Site["BH_A"], Site["B_A"]) + TriangularTwoSite(Site["B_A"], Site["BH_A"]));
@@ -1564,7 +1564,7 @@ int main(int argc, char** argv)
       {
          // These parameters are defined in this form to match the Lieb-Liniger model, U = m g dz / hbar^2, energy scaled by hbar^2 / 2 m dz^2
 	 std::cout << "Hamiltonian is spinless Bose-Hubbard with next-nearest neighbour tunnelling, no symmetry, T=4/3, Tprime=" << tprime << "/-12, U=" << U << ", mu=" << mu << " - 2.5 \n";
-	 SiteBlock Site = CreateBoseHubbardSpinlessSite(3);
+	 LatticeSite Site = CreateBoseHubbardSpinlessSite(3);
 	 TriangularMPO Ham;
 	 Ham = -4.0/3.0 * TriangularTwoSite(Site["BH"], Site["B"]) - 4.0/3.0 * TriangularTwoSite(Site["B"], Site["BH"])
 	       + 1.0/12.0*tprime * TriangularThreeSite(Site["B"], Site["I"], Site["BH"]) + 1.0/12.0*tprime * TriangularThreeSite(Site["BH"], Site["I"], Site["B"])
@@ -1575,7 +1575,7 @@ int main(int argc, char** argv)
       {
          // These parameters are defined in this form to match the Lieb-Liniger model, U = m g dz / hbar^2, energy scaled by hbar^2 / 2 m dz^2
       	 std::cout << "Hamiltonian is spinless Bose-Hubbard, U1 symmetry, T=1, U=" << U << ", Nmax=" << NMax << "\n";
-      	 SiteBlock Site = CreateBoseHubbardSpinlessU1Site(NMax);
+      	 LatticeSite Site = CreateBoseHubbardSpinlessU1Site(NMax);
       	 TriangularMPO Ham;
       	 Ham = -1.0 * TriangularTwoSite(Site["BH"], Site["B"]) - 1.0 * TriangularTwoSite(Site["B"], Site["BH"])
       	    + U * TriangularOneSite(Site["N2"]) + 2.0 * TriangularOneSite(Site["N"]);
@@ -1584,10 +1584,10 @@ int main(int argc, char** argv)
       else if (HamStr == "bh-dilute-u1")
       {
       	 std::cout << "Hamiltonian is spinless Bose-Hubbard, U1 symmetry, T=1, U=" << U << ", V=" << V << ", Nmax=" << NMax << "\n";
-      	 SiteBlock Site = CreateBoseHubbardSpinlessU1Site(NMax);
+      	 LatticeSite Site = CreateBoseHubbardSpinlessU1Site(NMax);
 	 double tConst =  UnitCellSize * UnitCellSize / (math_const::pi * math_const::pi);
 	 double UConst = 1.0 / (math_const::pi * math_const::pi);
-	 std::vector<BasisList> Sites(UnitCellSize, Site["I"].Basis().Basis());
+	 std::vector<BasisList> Sites(UnitCellSize, Site["I"].Basis());
       	 TriangularMPO Ham;
 	 for (int i = 0; i < UnitCellSize; ++i)
 	 {
@@ -1604,7 +1604,7 @@ int main(int argc, char** argv)
       {
          // These parameters are defined in this form to match the Lieb-Liniger model, U = m g dz / hbar^2, energy scaled by hbar^2 / 2 m dz^2
       	 std::cout << "Hamiltonian is spinless Bose-Hubbard with next-nearest neighbour tunnelling, U1 symmetry, T=4/3, Tprime=" << tprime << "/-12, U=" << U << ", Nmax=3\n";
-      	 SiteBlock Site = CreateBoseHubbardSpinlessU1Site(3);
+      	 LatticeSite Site = CreateBoseHubbardSpinlessU1Site(3);
       	 TriangularMPO Ham;
       	 Ham = -4.0/3.0 * TriangularTwoSite(Site["BH"], Site["B"]) - 4.0/3.0 * TriangularTwoSite(Site["B"], Site["BH"])
       	       + 1.0/12.0*tprime * TriangularThreeSite(Site["B"], Site["I"], Site["BH"]) + 1.0/12.0*tprime * TriangularThreeSite(Site["BH"], Site["I"], Site["B"])
@@ -1614,9 +1614,9 @@ int main(int argc, char** argv)
       else if (HamStr == "kagome-su2")
       {
 	 std::cout << "Hamiltonian is Kagome strip, Jleg=" << Jleg << ", Jcross=" << Jcross << '\n';
-	 SiteBlock Site = CreateSU2SpinSite(0.5);
+	 LatticeSite Site = CreateSU2SpinSite(0.5);
          // 3-site unit cell
-         std::vector<BasisList> Sites(3, Site["I"].Basis().Basis());
+         std::vector<BasisList> Sites(3, Site["I"].Basis());
          TriangularMPO Ham = Jcross * (TwoPointOperator(Sites, 0, Site["S"], 1, Site["S"])
                                             + TwoPointOperator(Sites, 0, Site["S"], 2, Site["S"])
                                             + TwoPointOperator(Sites, 1, Site["S"], 3, Site["S"])
@@ -1630,9 +1630,9 @@ int main(int argc, char** argv)
       else if (HamStr == "kagome-field-su2")
       {
 	 std::cout << "Hamiltonian is Kagome strip with field, Jleg=" << Jleg << ", Jcross=" << Jcross << '\n';
-	 SiteBlock Site = CreateSU2SpinSite(0.5);
+	 LatticeSite Site = CreateSU2SpinSite(0.5);
          // 24-site unit cell
-         std::vector<BasisList> Sites(KagomeUnitCell, Site["I"].Basis().Basis());
+         std::vector<BasisList> Sites(KagomeUnitCell, Site["I"].Basis());
          TriangularMPO Ham;
          for (int k = 0; k < KagomeUnitCell / 3; ++k)
          {
@@ -1655,9 +1655,9 @@ int main(int argc, char** argv)
       else if (HamStr == "kagome-su2-yc")
       {
          std::cout << "Hamiltonian is J1-J2 YC Kagome cylinder with J1 = 1, J2 = "<<J2<<" and NLegs = "<<NLegs<<'\n';
-         SiteBlock Site = CreateSU2SpinSite(0.5);
+         LatticeSite Site = CreateSU2SpinSite(0.5);
          // 3-site unit cell
-         std::vector<BasisList> Sites(NLegs*3, Site["I"].Basis().Basis());
+         std::vector<BasisList> Sites(NLegs*3, Site["I"].Basis());
 
          // J1 interaction
          TriangularMPO Ham;
@@ -1703,10 +1703,10 @@ int main(int argc, char** argv)
       else if (HamStr == "tjcylinder") // t-J Hubbard model defined on a cylinder
       {
          std::cout << "Hamiltonian is the fermionic U(1)xSU(2) t-J-Hubbard model with t = "<<t<<", J = "<<J2<<" defined on "<<NLegs<<" rows\n";
-         SiteBlock Site = CreateU1SU2tJSite();
+         LatticeSite Site = CreateU1SU2tJSite();
 
          // 'Strip'
-         std::vector<BasisList> Sites(NLegs, Site["I"].Basis().Basis());
+         std::vector<BasisList> Sites(NLegs, Site["I"].Basis());
 
          double tSqrt2 = (-sqrt(2.0))*t; // SU(2) factor
          double JSqrt3 = (-sqrt(3.0))*J2; // SU(2) factor
@@ -1739,11 +1739,11 @@ int main(int argc, char** argv)
       {
 	 std::cout << "Hamiltonian is SU(2) Hubbard triangular cluster with t=" << t << ", tc=" << tc
 		   << ", U=" << U << '\n';
-	 SiteBlock Site = CreateSU2HubbardSite();
+	 LatticeSite Site = CreateSU2HubbardSite();
 	 double tSqrt2 = (-sqrt(2.0)) * t;  // the -sqrt(2) is an SU(2) factor
 	 double tcSqrt2 = (-sqrt(2.0)) * tc;  // the -sqrt(2) is an SU(2) factor
 	 // 3-site unit cell
-	 std::vector<BasisList> Sites(3, Site["I"].Basis().Basis());
+	 std::vector<BasisList> Sites(3, Site["I"].Basis());
 	 TriangularMPO Ham;
 	 Ham += -tcSqrt2 * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 1, Site["C"])
 			    + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 1, Site["CH"]));
@@ -1762,9 +1762,9 @@ int main(int argc, char** argv)
       {
 	 std::cout << "Hamiltonian is U(1) Hubbard triangular cluster with t=" << t << ", t2=" << t2 << ", tc=" << tc
 		   << ", U=" << U << '\n';
-	 SiteBlock Site = CreateU1U1HubbardSite();
+	 LatticeSite Site = CreateU1U1HubbardSite();
 	 // 3-site unit cell
-	 std::vector<BasisList> Sites(3, Site["I"].Basis().Basis());
+	 std::vector<BasisList> Sites(3, Site["I"].Basis());
 	 TriangularMPO Ham;
 	 Ham += -tc * (TwoPointStringOperator(Sites, 0, Site["CHupP"], Site["P"], 1, Site["Cup"])
 			    - TwoPointStringOperator(Sites, 0, Site["CupP"], Site["P"], 1, Site["CHup"])

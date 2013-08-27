@@ -1,18 +1,15 @@
 // -*- C++ -*- $Id$
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/u1.h"
-#include "siteoperator/block.h"
-
-typedef Block<SiteOperator> SiteBlock;
 
 inline
-SiteBlock CreateSpinSite(half_int Spin)
+LatticeSite CreateSpinSite(half_int Spin)
 {
    SymmetryList Symmetry("S:Null");
    SiteBasis Basis(Symmetry);
    SiteOperator Sp, Sm, Sz, Sx, Sy, mSz, mSx, mSy, R, P, I;
-   SiteBlock Block;
+   LatticeSite Site;
 
    QuantumNumbers::QuantumNumber q(Symmetry); // no symmetries, only one quantum number
 
@@ -71,17 +68,17 @@ SiteBlock CreateSpinSite(half_int Spin)
       mSy = I - (8.0/3.0)*Sy*Sy + (2.0/3.0)*Sy*Sy*Sy*Sy;
    }
    
-   Block["I"] = I;
-   Block["P"] = P;
-   Block["R"] = R;
-   Block["Sp"] = Sp;
-   Block["Sm"] = Sm;
-   Block["Sx"] = Sx;
-   Block["Sy"] = Sy;
-   Block["Sz"] = Sz;
-   Block["mSz"] = mSz;
-   Block["mSy"] = mSy;
-   Block["mSx"] = mSx;
-   Block["Sz2"] = prod(Sz, Sz, q);
-   return Block;
+   Site["I"] = I;
+   Site["P"] = P;
+   Site["R"] = R;
+   Site["Sp"] = Sp;
+   Site["Sm"] = Sm;
+   Site["Sx"] = Sx;
+   Site["Sy"] = Sy;
+   Site["Sz"] = Sz;
+   Site["mSz"] = mSz;
+   Site["mSy"] = mSy;
+   Site["mSx"] = mSx;
+   Site["Sz2"] = prod(Sz, Sz, q);
+   return Site;
 }

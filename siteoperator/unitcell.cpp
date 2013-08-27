@@ -98,14 +98,14 @@ UnitCell::UnitCell(UnitCell const& x1, UnitCell const& x2)
 }
 
 UnitCell::UnitCell(UnitCell const& x1, UnitCell const& x2, UnitCell const& x3)
-   : Data_(x1.Data_),
+   : Data_(x1.Data_)
 {
    Data_.push_back(x2.Data_);
    Data_.push_back(x3.Data_);
 }
 
 UnitCell::UnitCell(UnitCell const& x1, UnitCell const& x2, UnitCell const& x3, UnitCell const& x4)
-   : Data_(x1.Data_),
+   : Data_(x1.Data_)
 {
    Data_.push_back(x2.Data_);
    Data_.push_back(x3.Data_);
@@ -113,12 +113,12 @@ UnitCell::UnitCell(UnitCell const& x1, UnitCell const& x2, UnitCell const& x3, U
 }
 
 UnitCell::UnitCell(int Size, LatticeSite const& s)
-   : Data_(Size, run_length_compressed<LatticeSite>(s)),
+   : Data_(Size, run_length_compressed<LatticeSite>(s))
 {
 }
 
 UnitCell::UnitCell(LatticeSite const& s, std::string const& Coord)
-   : Data_(s),
+   : Data_(s)
 {
 }
 
@@ -136,7 +136,7 @@ PStream::opstream& operator<<(PStream::opstream& out, UnitCell const& L)
    return out << L.Data_;
 }
 
-PStream::ipstream& operator>>(PStream::ipstream& in, Lattice& L)
+PStream::ipstream& operator>>(PStream::ipstream& in, UnitCell& L)
 {
    in >>  L.Data_;
    return in;

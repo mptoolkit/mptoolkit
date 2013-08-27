@@ -1,21 +1,21 @@
 // -*- C++ -*- $Id$
 
-#include "siteoperator/siteoperator.h"
-#include "siteoperator/block.h"
+#include "siteoperator/latticesite.h"
 
-typedef Block<SiteOperator> SiteBlock;
 
-SiteBlock SiteTensorProduct(SiteBlock const& A, SiteBlock const& B)
+
+
+LatticeSite SiteTensorProduct(LatticeSite const& A, LatticeSite const& B)
 {
    SiteBasis ABasis = A.Basis1();
    SiteBasis BBasis = B.Basis1();
    SiteProductBasis Basis(ABasis, BBasis);
 
-   SiteBlock Result;
+   LatticeSite Result;
 
-   for (SiteBlock::const_iterator ai = A.begin(); ai != A.end(); ++ai)
+   for (LatticeSite::const_iterator ai = A.begin(); ai != A.end(); ++ai)
    {
-      for (SiteBlock::const_iterator bi = B.begin(); bi != B.end(); ++bi)
+      for (LatticeSite::const_iterator bi = B.begin(); bi != B.end(); ++bi)
       {
 	 if (!(ai->first == "I" || ai->first == "P" || bi->first == "I" || bi->first == "P"))
 	    continue;

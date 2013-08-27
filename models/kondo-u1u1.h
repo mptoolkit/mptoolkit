@@ -2,15 +2,15 @@
 //
 // Site block for a hubbard-like site with an impurity spin
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/u1.h"
 #include "quantumnumbers/su2.h"
-#include "siteoperator/block.h"
 
-typedef Block<SiteOperator> SiteBlock;
+
+
 
 inline
-SiteBlock CreateU1U1KondoSite(std::string const& Sym = "N", std::string const& SpinSym = "Sz")
+LatticeSite CreateU1U1KondoSite(std::string const& Sym = "N", std::string const& SpinSym = "Sz")
 {
    SymmetryList Symmetry(Sym+":U(1),"+SpinSym+":U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::U1> QN(Symmetry);
@@ -18,7 +18,7 @@ SiteBlock CreateU1U1KondoSite(std::string const& Sym = "N", std::string const& S
    SiteOperator Cup, Cdown, CHup, CHdown, P, R, N, Sp, Sm, Sz, Sfp, Sfm, Sfz, Scp, Scm, Scz,
       ScpSfm, ScmSfp, SczSfz, ScSf, I, Hu, Pdouble, 
       Ep, Em, Ns, Nh, Pg, CupP, CdownP, CHupP, CHdownP, Rs, mSz, Top;
-   SiteBlock Block;
+   LatticeSite Site;
 
    Basis.push_back("empty-up",  QN(0,0.5));
    Basis.push_back("empty-down",  QN(0,-0.5));
@@ -232,39 +232,39 @@ SiteBlock CreateU1U1KondoSite(std::string const& Sym = "N", std::string const& S
    // number of holons
    Nh = I - Ns;
 
-   Block["I"] = I;
-   Block["P"] = P;
-   Block[Sym] = N;
-   Block["Hu"] = Hu;
-   Block["Pdouble"] = Pdouble;
-   Block["Pg"] = Pg;
-   Block["Sp"] = Sp;
-   Block["Sm"] = Sm;
-   Block["Sz"] = Sz;
-   Block["mSz"] = mSz;
-   Block["Top"] = Top;
-   Block["Sfp"] = Sfp;
-   Block["Sfm"] = Sfm;
-   Block["Sfz"] = Sfz;
-   Block["Scp"] = Scp;
-   Block["Scm"] = Scm;
-   Block["Scz"] = Scz;
-   Block["Cup"] = Cup;
-   Block["CHup"] = CHup;
-   Block["Cdown"] = Cdown;
-   Block["CHdown"] = CHdown;
-   Block["CupP"] = CupP;
-   Block["CHupP"] = CHupP;
-   Block["CdownP"] = CdownP;
-   Block["CHdownP"] = CHdownP;
-   Block["Ep"] = Ep;
-   Block["Em"] = Em;
-   Block["N_S"] = Ns;
-   Block["N_H"] = Nh;
-   Block["ScpSfm"] = ScpSfm;
-   Block["ScmSfp"] = ScmSfp;
-   Block["SczSfz"] = SczSfz;
-   Block["ScSf"] = ScSf;
+   Site["I"] = I;
+   Site["P"] = P;
+   Site[Sym] = N;
+   Site["Hu"] = Hu;
+   Site["Pdouble"] = Pdouble;
+   Site["Pg"] = Pg;
+   Site["Sp"] = Sp;
+   Site["Sm"] = Sm;
+   Site["Sz"] = Sz;
+   Site["mSz"] = mSz;
+   Site["Top"] = Top;
+   Site["Sfp"] = Sfp;
+   Site["Sfm"] = Sfm;
+   Site["Sfz"] = Sfz;
+   Site["Scp"] = Scp;
+   Site["Scm"] = Scm;
+   Site["Scz"] = Scz;
+   Site["Cup"] = Cup;
+   Site["CHup"] = CHup;
+   Site["Cdown"] = Cdown;
+   Site["CHdown"] = CHdown;
+   Site["CupP"] = CupP;
+   Site["CHupP"] = CHupP;
+   Site["CdownP"] = CdownP;
+   Site["CHdownP"] = CHdownP;
+   Site["Ep"] = Ep;
+   Site["Em"] = Em;
+   Site["N_S"] = Ns;
+   Site["N_H"] = Nh;
+   Site["ScpSfm"] = ScpSfm;
+   Site["ScmSfp"] = ScmSfp;
+   Site["SczSfz"] = SczSfz;
+   Site["ScSf"] = ScSf;
 
-   return Block;
+   return Site;
 }

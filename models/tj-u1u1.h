@@ -1,19 +1,19 @@
 // -*- C++ -*- $Id$
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/u1.h"
-#include "siteoperator/block.h"
 
-typedef Block<SiteOperator> SiteBlock;
+
+
 
 inline
-SiteBlock CreateU1tJSite(std::string const& Sym1 = "N")
+LatticeSite CreateU1tJSite(std::string const& Sym1 = "N")
 {
    SymmetryList Symmetry(Sym1+":U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator CHup, Cup, CHdown, Cdown, P, R, N, Sp, Sm, Sz, Qp, Qm, Qz, I, Hu, Pdouble, X, N_S, N_H;
-   SiteBlock Block;
+   LatticeSite Site;
 
    Basis.push_back("empty",  QN(0));
    Basis.push_back("down" ,  QN(1));
@@ -90,26 +90,26 @@ SiteBlock CreateU1tJSite(std::string const& Sym1 = "N")
    Sz("up",   "up")       =  0.5;
    Sz("down", "down")     = -0.5;
 
-   Block["I"] = I;
-   Block["P"] = P;
-   Block["N"] = N;
-   Block[Sym1] = N;
-   Block["Hu"] = Hu;
-   Block["Pdouble"] = Pdouble;
-   Block["Sp"] = Sp;
-   Block["Sm"] = Sm;
-   Block["Sz"] = Sz;
-   Block["R"] = R;
-   Block["CHup"] = CHup;
-   Block["Cup"] = Cup;
-   Block["CHdown"] = CHdown;
-   Block["Cdown"] = Cdown;
-   Block["CHupP"] = prod(CHup, P, QN(1));
-   Block["CupP"] = prod(Cup, P, QN(-1));
-   Block["CHdownP"] = prod(CHdown, P, QN(1));
-   Block["CdownP"] = prod(Cdown, P, QN(-1));
-   Block["X"] = X;
-   Block["N_S"] = N_S;
-   Block["N_H"] = N_H;
-   return Block;
+   Site["I"] = I;
+   Site["P"] = P;
+   Site["N"] = N;
+   Site[Sym1] = N;
+   Site["Hu"] = Hu;
+   Site["Pdouble"] = Pdouble;
+   Site["Sp"] = Sp;
+   Site["Sm"] = Sm;
+   Site["Sz"] = Sz;
+   Site["R"] = R;
+   Site["CHup"] = CHup;
+   Site["Cup"] = Cup;
+   Site["CHdown"] = CHdown;
+   Site["Cdown"] = Cdown;
+   Site["CHupP"] = prod(CHup, P, QN(1));
+   Site["CupP"] = prod(Cup, P, QN(-1));
+   Site["CHdownP"] = prod(CHdown, P, QN(1));
+   Site["CdownP"] = prod(Cdown, P, QN(-1));
+   Site["X"] = X;
+   Site["N_S"] = N_S;
+   Site["N_H"] = N_H;
+   return Site;
 }

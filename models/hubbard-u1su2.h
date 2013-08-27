@@ -1,20 +1,20 @@
 // -*- C++ -*- $Id$
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/u1.h"
 #include "quantumnumbers/su2.h"
-#include "siteoperator/block.h"
 
-typedef Block<SiteOperator> SiteBlock;
+
+
 
 inline
-SiteBlock CreateSU2HubbardSite(std::string const& Sym1 = "N", std::string const& Sym2 = "S")
+LatticeSite CreateSU2HubbardSite(std::string const& Sym1 = "N", std::string const& Sym2 = "S")
 {
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":SU(2)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator C, CH, P, R, N, S, I, Hu, Pdouble, Ep, Em, Ns, Nh, Pg, CP, CHP, ES;
-   SiteBlock Block;
+   LatticeSite Site;
 
 #if defined(NEW_SITE_ORDERING)
 #warning "using new site ordering."
@@ -97,21 +97,21 @@ SiteBlock CreateSU2HubbardSite(std::string const& Sym1 = "N", std::string const&
    // number of holons
    Nh = I - Ns;
 
-   Block["I"] = I;
-   Block["P"] = P;
-   Block[Sym1] = N;
-   Block["Hu"] = Hu;
-   Block["Pdouble"] = Pdouble;
-   Block["Pg"] = Pg;
-   Block[Sym2] = S;
-   Block["C"] = C;
-   Block["CH"] = CH;
-   Block["CP"] = CP;
-   Block["CHP"] = CHP;
-   Block["Ep"] = Ep;
-   Block["Em"] = Em;
-   Block["N_S"] = Ns;
-   Block["N_H"] = Nh;
-   Block["ES"] = ES;
-   return Block;
+   Site["I"] = I;
+   Site["P"] = P;
+   Site[Sym1] = N;
+   Site["Hu"] = Hu;
+   Site["Pdouble"] = Pdouble;
+   Site["Pg"] = Pg;
+   Site[Sym2] = S;
+   Site["C"] = C;
+   Site["CH"] = CH;
+   Site["CP"] = CP;
+   Site["CHP"] = CHP;
+   Site["Ep"] = Ep;
+   Site["Em"] = Em;
+   Site["N_S"] = Ns;
+   Site["N_H"] = Nh;
+   Site["ES"] = ES;
+   return Site;
 }

@@ -6,14 +6,14 @@
 // (0 up) \otimes (0 down) sites.
 //
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/u1.h"
-#include "siteoperator/block.h"
 
-typedef Block<SiteOperator> SiteBlock;
+
+
 
 inline
-SiteBlock FactorizedSite(int MyN, half_int MySz, 
+LatticeSite FactorizedSite(int MyN, half_int MySz, 
                          std::string const& Sym1 = "N", 
                          std::string const& Sym2 = "Sz")
 {
@@ -21,7 +21,7 @@ SiteBlock FactorizedSite(int MyN, half_int MySz,
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::U1> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator CH, C, P, R, N, I, Sz;
-   SiteBlock Block;
+   LatticeSite Site;
 
    Basis.push_back("0", QN(0,0));
    Basis.push_back("1", QN(MyN,MySz));
@@ -56,12 +56,12 @@ SiteBlock FactorizedSite(int MyN, half_int MySz,
    // z-component of spin
    Sz("1", "1") = MySz.to_double();
 
-   Block["I"] = I;
-   Block["P"] = P;
-   Block["R"] = R;
-   Block["N"] = N;
-   Block["Sz"] = Sz;
-   Block["CH"] = CH;
-   Block["C"] = C;
-   return Block;
+   Site["I"] = I;
+   Site["P"] = P;
+   Site["R"] = R;
+   Site["N"] = N;
+   Site["Sz"] = Sz;
+   Site["CH"] = CH;
+   Site["C"] = C;
+   return Site;
 }

@@ -1,20 +1,20 @@
 // -*- C++ -*- $Id$
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/u1.h"
 #include "quantumnumbers/su2.h"
-#include "siteoperator/block.h"
 
-typedef Block<SiteOperator> SiteBlock;
+
+
 
 inline
-SiteBlock CreateU1SU2tJSite(std::string const& Sym1 = "N", std::string const& Sym2 = "S")
+LatticeSite CreateU1SU2tJSite(std::string const& Sym1 = "N", std::string const& Sym2 = "S")
 {
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":SU(2)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator C, CH, P, R, N, S, I, Hu, Ns, Nh, Pg, CP, CHP;
-   SiteBlock Block;
+   LatticeSite Site;
 
    Basis.push_back("empty",  QN(0, 0));
    Basis.push_back("single", QN(1, 0.5));
@@ -68,16 +68,16 @@ SiteBlock CreateU1SU2tJSite(std::string const& Sym1 = "N", std::string const& Sy
    // number of holons
    Nh = I - Ns;
 
-   Block["I"] = I;
-   Block["P"] = P;
-   Block[Sym1] = N;
-   Block["Hu"] = Hu;
-   Block[Sym2] = S;
-   Block["C"] = C;
-   Block["CH"] = CH;
-   Block["CP"] = CP;
-   Block["CHP"] = CHP;
-   Block["N_S"] = Ns;
-   Block["N_H"] = Nh;
-   return Block;
+   Site["I"] = I;
+   Site["P"] = P;
+   Site[Sym1] = N;
+   Site["Hu"] = Hu;
+   Site[Sym2] = S;
+   Site["C"] = C;
+   Site["CH"] = CH;
+   Site["CP"] = CP;
+   Site["CHP"] = CHP;
+   Site["N_S"] = Ns;
+   Site["N_H"] = Nh;
+   return Site;
 }

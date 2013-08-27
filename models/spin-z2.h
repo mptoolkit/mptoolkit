@@ -1,10 +1,10 @@
 // -*- C++ -*- $Id$
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/z2.h"
-#include "siteoperator/block.h"
 
-typedef Block<SiteOperator> SiteBlock;
+
+
 
 std::string StateName(half_int s, bool Symmetric)
 {
@@ -14,13 +14,13 @@ std::string StateName(half_int s, bool Symmetric)
 }
 
 inline
-SiteBlock CreateZ2SpinSite(half_int Spin)
+LatticeSite CreateZ2SpinSite(half_int Spin)
 {
    SymmetryList Symmetry("Z:Z2");
    QuantumNumbers::QNConstructor<QuantumNumbers::Z2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator Sz, Sx, Sy, mSz, R, P, I, Z;
-   SiteBlock Block;
+   LatticeSite Site;
 
    PRECONDITION(Spin >= 0)("Spin must be >= 0")(Spin);
 
@@ -120,13 +120,13 @@ SiteBlock CreateZ2SpinSite(half_int Spin)
    Z("a", "a") = -1.0;
 #endif
 
-   Block["I"] = I;
-   Block["P"] = P;
-   Block["R"] = R;
-   Block["Sx"] = Sx;
-   Block["Sy"] = Sy;
-   Block["Sz"] = Sz;
-   Block["Sz2"] = Sz * Sz;
-   Block["Z"] = Z;
-   return Block;
+   Site["I"] = I;
+   Site["P"] = P;
+   Site["R"] = R;
+   Site["Sx"] = Sx;
+   Site["Sy"] = Sy;
+   Site["Sz"] = Sz;
+   Site["Sz2"] = Sz * Sz;
+   Site["Z"] = Z;
+   return Site;
 }

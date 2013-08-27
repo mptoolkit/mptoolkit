@@ -1,19 +1,19 @@
 // -*- C++ -*- $Id$
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/u1.h"
-#include "siteoperator/block.h"
 
-typedef Block<SiteOperator> SiteBlock;
+
+
 
 inline
-SiteBlock CreateU1SpinSite(half_int Spin, std::string const& Sym = "Sz")
+LatticeSite CreateU1SpinSite(half_int Spin, std::string const& Sym = "Sz")
 {
    SymmetryList Symmetry(Sym+":U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator Sp, Sm, Sz, mSz, R, P, I, Spp, Smm, Sz2;
-   SiteBlock Block;
+   LatticeSite Site;
 
    std::map<half_int, std::string> SpinBasis;
    for (half_int s = -Spin; s <= Spin; ++s)
@@ -60,16 +60,16 @@ SiteBlock CreateU1SpinSite(half_int Spin, std::string const& Sym = "Sz")
 
    Sz2 = Sz * Sz;
    
-   Block["I"] = I;
-   Block["P"] = P;
-   Block["R"] = R;
-   Block["Sp"] = Sp;
-   Block["Sm"] = Sm;
-   Block["Sz"] = Sz;
-   Block["mSz"] = mSz;
-   Block["Sz2"] = prod(Sz, Sz, QN(0));
-   Block["Spp"] = Spp;
-   Block["Smm"] = Smm;
-   Block["Sz2"] = Sz2;
-   return Block;
+   Site["I"] = I;
+   Site["P"] = P;
+   Site["R"] = R;
+   Site["Sp"] = Sp;
+   Site["Sm"] = Sm;
+   Site["Sz"] = Sz;
+   Site["mSz"] = mSz;
+   Site["Sz2"] = prod(Sz, Sz, QN(0));
+   Site["Spp"] = Spp;
+   Site["Smm"] = Smm;
+   Site["Sz2"] = Sz2;
+   return Site;
 }

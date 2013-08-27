@@ -157,11 +157,11 @@ class SiteOperator : public IrredTensor<std::complex<double> >
       SiteOperator() {}
 
       SiteOperator(SiteBasis const& B, QuantumNumber const& q, LatticeCommute Com = LatticeCommute::None)
-	 : base_type(B.Basis(), q), Basis_(B), Com_(Com) {}
+	 : base_type(B, q), Basis_(B), Com_(Com) {}
 
       SiteOperator(SiteBasis const& B, base_type const& b, LatticeCommute Com = LatticeCommute::None) 
 	 : base_type(b), Basis_(B), Com_(Com)
-	 { CHECK_EQUAL(b.Basis1(), b.Basis2()); CHECK_EQUAL(B.Basis(), b.Basis1()); }
+	 { CHECK_EQUAL(b.Basis1(), b.Basis2()); CHECK_EQUAL(B, b.Basis1()); }
 
       SiteBasis const& Basis() const { return Basis_; }
       SiteBasis const& Basis1() const { return Basis_; }

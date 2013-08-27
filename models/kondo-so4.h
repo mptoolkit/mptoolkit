@@ -2,22 +2,22 @@
 //
 // Site block for a hubbard-like site with an impurity spin
 
-#include "siteoperator/siteoperator.h"
+#include "siteoperator/latticesite.h"
 #include "quantumnumbers/u1.h"
 #include "quantumnumbers/su2.h"
-#include "siteoperator/block.h"
 
-typedef Block<SiteOperator> SiteBlock;
+
+
 
 inline
-SiteBlock CreateSO4KondoSiteCommon(std::string const& Sym1 = "Q", std::string const& Sym2 = "S")
+LatticeSite CreateSO4KondoSiteCommon(std::string const& Sym1 = "Q", std::string const& Sym2 = "S")
 {
    SymmetryList Symmetry(Sym1+":SU(2),"+Sym2+":SU(2)");
    QuantumNumbers::QNConstructor<QuantumNumbers::SU2,QuantumNumbers::SU2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator C_A, C_B, CH_A, CH_B, P, R, N, S, Sf, Sc, ScSf, I, Hu, Pdouble, 
       Ep, Em, Ns, Nh, Pg;
-   SiteBlock Block;
+   LatticeSite Site;
 
    Basis.push_back("singlet", QN(0, 0));
    Basis.push_back("triplet", QN(0, 1));
@@ -102,31 +102,31 @@ SiteBlock CreateSO4KondoSiteCommon(std::string const& Sym1 = "Q", std::string co
    // number of holons
    Nh = I - Ns;
 
-   Block["I"] = I;
-   Block["P"] = P;
-   Block[Sym1] = N;
-   Block["Hu"] = Hu;
-   Block[Sym2] = S;
-   Block[Sym2+'f'] = Sf;
-   Block[Sym2+'c'] = Sc;
-   Block["C_A"] = C_A;
-   Block["CH_A"] = CH_A;
-   Block["CP_A"] = CP_A;
-   Block["CHP_A"] = CHP_A;
-   Block["C_B"] = C_B;
-   Block["CH_B"] = CH_B;
-   Block["CP_B"] = CP_B;
-   Block["CHP_B"] = CHP_B;
-   Block["N_S"] = Ns;
-   Block["N_H"] = Nh;
-   Block[Sym2+'c'+Sym2+'f'] = ScSf;
-   return Block;
+   Site["I"] = I;
+   Site["P"] = P;
+   Site[Sym1] = N;
+   Site["Hu"] = Hu;
+   Site[Sym2] = S;
+   Site[Sym2+'f'] = Sf;
+   Site[Sym2+'c'] = Sc;
+   Site["C_A"] = C_A;
+   Site["CH_A"] = CH_A;
+   Site["CP_A"] = CP_A;
+   Site["CHP_A"] = CHP_A;
+   Site["C_B"] = C_B;
+   Site["CH_B"] = CH_B;
+   Site["CP_B"] = CP_B;
+   Site["CHP_B"] = CHP_B;
+   Site["N_S"] = Ns;
+   Site["N_H"] = Nh;
+   Site[Sym2+'c'+Sym2+'f'] = ScSf;
+   return Site;
 }
 
 inline
-SiteBlock CreateSO4KondoSiteA(std::string const& Sym1 = "Q", std::string const& Sym2 = "S")
+LatticeSite CreateSO4KondoSiteA(std::string const& Sym1 = "Q", std::string const& Sym2 = "S")
 {
-   SiteBlock Site = CreateSO4KondoSiteCommon(Sym1, Sym2);
+   LatticeSite Site = CreateSO4KondoSiteCommon(Sym1, Sym2);
    Site["C"] = Site["C_A"];
    Site["CH"] = Site["CH_A"];
    Site["CP"] = Site["CP_A"];
@@ -135,9 +135,9 @@ SiteBlock CreateSO4KondoSiteA(std::string const& Sym1 = "Q", std::string const& 
 }
 
 inline
-SiteBlock CreateSO4KondoSiteB(std::string const& Sym1 = "Q", std::string const& Sym2 = "S")
+LatticeSite CreateSO4KondoSiteB(std::string const& Sym1 = "Q", std::string const& Sym2 = "S")
 {
-   SiteBlock Site = CreateSO4KondoSiteCommon(Sym1, Sym2);
+   LatticeSite Site = CreateSO4KondoSiteCommon(Sym1, Sym2);
    Site["C"] = Site["C_B"];
    Site["CH"] = Site["CH_B"];
    Site["CP"] = Site["CP_B"];
