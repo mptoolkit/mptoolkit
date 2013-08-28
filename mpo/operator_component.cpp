@@ -8,6 +8,7 @@
 
 //using namespace LinearAlgebra;
 using LinearAlgebra::operator*;
+using LinearAlgebra::adjoint;
 
 OperatorComponent::OperatorComponent(BasisList const& LocalB, 
                                      BasisList const& B1, BasisList const& B2)
@@ -21,6 +22,28 @@ OperatorComponent::OperatorComponent(BasisList const& LocalB1, BasisList const& 
    : LocalBasis1_(LocalB1), LocalBasis2_(LocalB2), Basis1_(B1), Basis2_(B2),
      Data_(Basis1_.size(), Basis2_.size())
 {
+}
+
+double
+norm_frob_sq(OperatorComponent const& x)
+{
+   return norm_frob_sq(local_inner_prod(herm(x), x));
+}
+
+void
+OperatorComponent::check_structure() const
+{
+   for (const_iterator I = iterate(*this); I; ++I)
+   {
+      for (const_inner_iterator J = iterate(I); J; ++J)
+      {
+         for (SimpleRedOperator::const_iterator q = J->begin(); q != J->end(); ++q)
+         {
+            CHECK(is_transform_target(this->Basis2()[J.index2()], q->TransformsAs(), this->Basis1()[J.index1()]))
+               (this->Basis2()[J.index2()])(q->TransformsAs())(this->Basis1());
+         }
+      }
+   }
 }
 
 std::ostream&
@@ -69,6 +92,18 @@ operator+(OperatorComponent const& A, OperatorComponent const& B)
    return Result;
 }
 
+OperatorComponent 
+operator-(OperatorComponent const& A, OperatorComponent const& B)
+{
+   DEBUG_CHECK_EQUAL(A.LocalBasis1(), B.LocalBasis1());
+   DEBUG_CHECK_EQUAL(A.LocalBasis2(), B.LocalBasis2());
+   DEBUG_CHECK_EQUAL(A.Basis1(), B.Basis1());
+   DEBUG_CHECK_EQUAL(A.Basis2(), B.Basis2());
+   OperatorComponent Result(A.LocalBasis1(), A.LocalBasis2(), A.Basis1(), A.Basis2());
+   Result.data() = A.data() - B.data();
+   return Result;
+}
+
 OperatorComponent
 tensor_sum(OperatorComponent const& A, OperatorComponent const& B,
            SumBasis<BasisList> const& B1, SumBasis<BasisList> const& B2)
@@ -95,6 +130,7 @@ tensor_sum(OperatorComponent const& A, OperatorComponent const& B,
          Result(B1(1,J.index1()), B2(1,J.index2())) = *J;
       }
    }
+   Result.debug_check_structure();
    return Result;
 }
 
@@ -126,6 +162,7 @@ tensor_row_sum(OperatorComponent const& A,
          Result(J.index1(),B2(1, J.index2())) = *J;
       }
    }
+   Result.debug_check_structure();
    return Result;
 }
  
@@ -157,6 +194,7 @@ tensor_col_sum(OperatorComponent const& A,
          Result(B1(1,J.index1()), J.index2()) = *J;
       }
    }
+   Result.debug_check_structure();
    return Result;
 }
 
@@ -228,20 +266,141 @@ OperatorComponent local_tensor_prod(OperatorComponent const& A, OperatorComponen
    return Result;
 }
 
-#if 0
-//  *** This isn't correct for SU(2), the direct_product of the matrix doesn't
-// give the same thing as the ProductBasis. ***
-OperatorComponent aux_tensor_prod(OperatorComponent const& A, OperatorComponent const& B)
+SimpleOperator
+local_inner_prod(HermitianProxy<OperatorComponent> const& A, OperatorComponent const& B)
 {
-   DEBUG_PRECONDITION_EQUAL(A.LocalBasis2(), B.LocalBasis1());
-   ProductBasis<BasisList, BasisList> B1(A.Basis1(), B.Basis1());
-   ProductBasis<BasisList, BasisList> B2(A.Basis2(), B.Basis2());
+   DEBUG_PRECONDITION_EQUAL(A.base().Basis1(), B.Basis1());
 
-   OperatorComponent Result(A.LocalBasis1(), B.LocalBasis2(), B1.Basis(), B2.Basis());
-   Result.data() = direct_product(A.data(), B.data(), LinearAlgebra::Multiplication<SimpleRedOperator, SimpleRedOperator>());
+   SimpleOperator Result(A.base().Basis2(), B.Basis2());
+
+   OperatorComponent::const_iterator AI = iterate(A.base());
+   OperatorComponent::const_iterator BI = iterate(B);
+   while (AI)
+   {
+      for (OperatorComponent::const_inner_iterator AJ = iterate(AI); AJ; ++AJ)
+      {
+         for (OperatorComponent::const_inner_iterator BJ = iterate(BI); BJ; ++BJ)
+         {
+            Result(AJ.index2(), BJ.index2()) = inner_prod(*AJ, *BJ);
+         }
+      }
+      ++AI;
+      ++BI;
+   }
+   Result.debug_check_structure();
    return Result;
 }
 
+
+SimpleOperator
+local_inner_prod(OperatorComponent const& A, HermitianProxy<OperatorComponent> const& B)
+{
+   DEBUG_PRECONDITION_EQUAL(A.Basis2(), B.base().Basis2());
+
+   SimpleOperator Result(A.Basis1(), B.base().Basis1());
+
+   for (OperatorComponent::const_iterator AI = iterate(A); AI; ++AI)
+   {
+      for (OperatorComponent::const_iterator BI = iterate(B.base()); BI; ++BI)
+      {
+         OperatorComponent::const_inner_iterator AJ = iterate(AI);
+         OperatorComponent::const_inner_iterator BJ = iterate(BI);
+
+         while (AJ && BJ)
+         {
+            if (AJ.index2() == BJ.index2())
+            {
+               Result(AJ.index1(), BJ.index1()) += conj(inner_prod(*BJ, *AJ));
+            }
+            else if (AJ.index2() < BJ.index2())
+            {
+               ++AJ;
+            }
+            else
+            {
+               ++BJ;
+            }
+         }
+      }
+   }
+   Result.debug_check_structure();
+   return Result;
+}
+
+OperatorComponent
+local_adjoint(OperatorComponent const& A)
+{
+   OperatorComponent Result(A.LocalBasis2(), A.LocalBasis1(), adjoint(A.Basis1()), adjoint(A.Basis2()));
+   for (OperatorComponent::const_iterator I = iterate(A); I; ++I)
+   {
+      for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
+      {
+         Result(J.index1(), J.index2()) = adjoint(*J);
+      }
+   }
+   Result.debug_check_structure();
+   return Result;
+}
+
+OperatorComponent aux_tensor_prod(OperatorComponent const& ML, OperatorComponent const& MR)
+{
+   DEBUG_PRECONDITION_EQUAL(ML.LocalBasis2(), MR.LocalBasis1());
+   ProductBasis<BasisList, BasisList> PBasis1(ML.Basis1(), MR.Basis1());
+   ProductBasis<BasisList, BasisList> PBasis2(ML.Basis2(), MR.Basis2());
+
+   OperatorComponent Result(ML.LocalBasis1(), MR.LocalBasis2(), PBasis1.Basis(), PBasis2.Basis());
+
+   for (OperatorComponent::const_iterator iL = iterate(ML); iL; ++iL)
+   {
+      for (OperatorComponent::const_iterator iR = iterate(MR); iR; ++iR)
+      {
+
+         for (OperatorComponent::const_inner_iterator jL = iterate(iL); jL; ++jL)
+         {
+            for (OperatorComponent::const_inner_iterator jR = iterate(iR); jR; ++jR)
+            {
+
+               ProductBasis<BasisList, BasisList>::const_iterator TiIter, 
+                  TiEnd = PBasis1.end(jL.index1(), jR.index1());
+               for (TiIter = PBasis1.begin(jL.index1(), jR.index1()); TiIter != TiEnd; ++TiIter)
+               {
+		  ProductBasis<BasisList, BasisList>::const_iterator TjIter, 
+		     TjEnd = PBasis2.end(jL.index2(), jR.index2());
+		  for (TjIter = PBasis2.begin(jL.index2(), jR.index2()); TjIter != TjEnd; 
+		       ++TjIter)
+                  {
+                     for (SimpleRedOperator::const_iterator RedL = jL->begin(); RedL != jL->end(); ++RedL)
+                     {
+                        for (SimpleRedOperator::const_iterator RedR = jR->begin(); RedR != jR->end(); ++RedR)
+                        {
+                           QuantumNumbers::QuantumNumberList FinalQ = transform_targets(RedL->TransformsAs(), RedR->TransformsAs());
+                           for (QuantumNumbers::QuantumNumberList::const_iterator q = FinalQ.begin(); q != FinalQ.end(); ++q)
+                           {
+                              if (is_transform_target(PBasis2[*TjIter], *q, PBasis1[*TiIter]))
+                              {
+                                 double Coeff = tensor_coefficient(PBasis1, PBasis2, 
+                                                                   RedL->TransformsAs(), RedR->TransformsAs(), *q,
+                                                                   jL.index1(), jR.index1(), *TiIter, 
+                                                                   jL.index2(), jR.index2(), *TjIter);
+                                 if (LinearAlgebra::norm_2(Coeff) > 1E-14)
+                                 {
+                                    Result(*TiIter, *TjIter) += Coeff * prod(*RedL, *RedR, *q);
+                                 }
+                              }
+                           }
+                        }
+                     }
+		  }
+	       }
+	    }
+	 }
+      }
+   }
+   Result.debug_check_structure();
+   return Result;
+}
+
+#if 0
 //  *** This isn't correct for SU(2), the direct_product of the matrix doesn't
 // give the same thing as the ProductBasis. ***
 OperatorComponent global_tensor_prod(OperatorComponent const& A, OperatorComponent const& B)
@@ -282,7 +441,241 @@ OperatorComponent exchange(OperatorComponent const& A)
          }
       }
    }
+   Result.debug_check_structure();
    return Result;
+}
+
+SimpleOperator TruncateBasis1(OperatorComponent& A)
+{
+   // We want to work from the last row to the first, so that we preserve the last row exactly.
+   // We don't have to worry about accidentally eliminating the first row of a triangular MPO,
+   // since if it is triangular then the last column cannot be parallel to anything else
+
+   // iterate through the rows of A and remove any that are parallel with a previous.
+   // We cannot safely remove rows that are merely linearly dependent on the previous
+   // rows without potential trouble with catastrophic cancellation.
+
+   // if the operator is trivially zero, then return early
+   if (A.Basis1().size() == 0)
+   {
+      return SimpleOperator(A.Basis1(), A.Basis1(), QuantumNumber(A.GetSymmetryList()));
+   }
+   else if (A.Basis2().size() == 0) 
+   {
+      SimpleOperator Result(A.Basis1(), A.Basis2(), QuantumNumber(A.GetSymmetryList()));
+      A = OperatorComponent(A.LocalBasis1(), A.LocalBasis2(), A.Basis2(), A.Basis2());
+      return Result;
+   }
+
+   int Size = A.Basis1().size();
+
+   // Calculate the matrix of overlaps of each row
+   SimpleOperator Overlaps = local_inner_prod(A, herm(A));
+
+   // This is the transform that truncates the rows of A.
+   // row[i] = NewRows[i].second * A(NewRows[i].second, all)
+   // The flag value -1 indicates that the row is not needed
+   std::vector<std::pair<int, std::complex<double> > > NewRows(Size, std::make_pair(-1, 1.0));
+   std::set<int> KeepStates; // the states that we are going to keep
+   for (int i = Size-1; i >= 0; --i)
+   {
+      double imat = Overlaps(i,i).real();
+      // if the row is zero, we can eliminate it completely.
+      // Because we've normalized everything, then it is either 1 or ~epsilon here.
+      if (imat == 0)
+         continue;    // skip this row
+
+      bool Parallel = false;  // is vector i parallel to some other vector?
+      // loop to find out if row i is parallel to row j
+      for (int j = A.Basis1().size()-1; j > i; --j)
+      {
+         // can only have non-zero determinant if the quantum numbers match
+         if (A.Basis1()[i] != A.Basis1()[j])
+            continue;
+
+         // If row j was removed from the basis, then we are not parallel to it
+         if (NewRows[j].first == -1)
+            continue;
+
+         double const OverlapEpsilon = 1E-14;
+
+         double jmat = Overlaps(j,j).real();
+         std::complex<double> ijmat = Overlaps(i,j);
+         // are rows i and j parallel?
+         if ((imat*jmat - LinearAlgebra::norm_frob_sq(ijmat)) / (imat*imat + jmat*jmat) < OverlapEpsilon)
+         {
+            NewRows[i] = std::make_pair(j, ijmat / jmat);
+            // corner case: i is parallel to j, but we might have previously determined that
+            // j is parallel to some other row k.  Does this ever happen in practice?
+            if (NewRows[j].first != j)
+            {
+               WARNING("parallel row vectors have a non-transitive equivalence")(i)(j)(NewRows[j].first);
+               DEBUG_TRACE(A);
+               while (NewRows[i].first != i && NewRows[NewRows[i].first].first != NewRows[i].first)
+               {
+                  NewRows[i] = std::make_pair(NewRows[NewRows[i].first].first,
+                                              NewRows[NewRows[i].first].second * NewRows[i].second);
+               }
+            }
+            Parallel = true;
+            break;  // we have a parallel vector, break out of the loop
+         }
+      }
+      if (!Parallel)
+         KeepStates.insert(i);
+   }
+
+   //TRACE_IF(KeepStates.size() != A.Basis1().size());
+
+   // construct the reduced basis
+   BasisList NewBasis(A.GetSymmetryList());
+   std::map<unsigned, unsigned> BasisMapping;  // maps the kept states into the new basis
+   for (std::set<int>::const_iterator I = KeepStates.begin(); I != KeepStates.end(); ++I)
+   {
+     BasisMapping[*I] = NewBasis.size();
+     NewBasis.push_back(A.Basis1()[*I]);
+   }
+
+   // construct the projector from the old onto the new basis
+   SimpleOperator Trunc(NewBasis, A.Basis1(), QuantumNumber(A.GetSymmetryList()));
+   for (std::set<int>::const_iterator I = KeepStates.begin(); I != KeepStates.end(); ++I)
+   {
+      Trunc(BasisMapping[*I], *I) = 1.0;
+   }
+
+   // construct the regularizer to give the full basis from the reduced basis
+   SimpleOperator Reg(A.Basis1(), NewBasis, QuantumNumber(A.GetSymmetryList()));
+   for (unsigned i = 0; i < NewRows.size(); ++i)
+   {
+      if (NewRows[i].first != -1)
+         Reg(i, BasisMapping[NewRows[i].first]) = NewRows[i].second;
+   }
+
+   OperatorComponent tA = prod(Trunc, A); // the result
+
+#if !defined(NDEBUG)
+   // verify that prod(Reg, tA) is the same as A.  
+   OperatorComponent ACheck = prod(Reg, tA);
+   CHECK(norm_frob(A - ACheck) < 1E-10)(tA)(ACheck)(Trunc)(Reg)(Overlaps);
+#endif
+
+   A = tA;
+   return Reg;
+}
+
+SimpleOperator TruncateBasis2(OperatorComponent& A)
+{
+   // We want to work from the first column to last, so that we preserve the first column exactly.
+   // We don't have to worry about accidentally eliminating the last column of a triangular MPO,
+   // since if it is triangular then the last column cannot be parallel to anything else
+
+   // if the operator is trivially zero, then return early
+   if (A.Basis2().size() == 0)
+   {
+      return SimpleOperator(A.Basis2(), A.Basis2(), QuantumNumber(A.GetSymmetryList()));
+   }
+   else if (A.Basis1().size() == 0)
+   {
+      SimpleOperator Result(A.Basis1(), A.Basis2(), QuantumNumber(A.GetSymmetryList()));
+      A = OperatorComponent(A.LocalBasis1(), A.LocalBasis2(), A.Basis1(), A.Basis1());
+      return Result;
+   }
+
+   SimpleOperator Overlaps = local_inner_prod(herm(A), A);
+
+   // This is the transform that truncates the columns of A.
+   // row[i] = NewCols[i].second * A(all, NewCols[i].second)
+   std::vector<std::pair<int, std::complex<double> > > NewCols;
+   std::set<int> KeepStates; // the states that we are going to keep
+   for (int i = 0; i < int(A.Basis2().size()); ++i)
+   {
+      NewCols.push_back(std::make_pair(i, 1.0));
+      double imat = Overlaps(i,i).real();
+      // if the row is zero, we can eliminate it completely
+      if (imat == 0)
+      {
+         NewCols.back().first = -1;  // special value, indicates the row is not needed
+         continue;
+      }
+      bool Parallel = false;  // is vector i parallel to some other vector?
+      // loop to find out if row i is parallel to row j
+      for (int j = 0; j < i; ++j)
+      {
+         // can only have non-zero determinant if the quantum numbers match
+         if (A.Basis2()[i] != A.Basis2()[j])
+            continue;
+
+         // If column j was removed from the basis, then we are not parallel to it
+         if (NewCols[j].first == -1)
+            continue;
+
+         double const OverlapEpsilon = 1E-14;
+
+         double jmat = Overlaps(j,j).real();
+         std::complex<double> ijmat = Overlaps(j,i);
+         // are rows i and j parallel?
+         if ((imat*jmat - LinearAlgebra::norm_frob_sq(ijmat)) / (imat*imat + jmat*jmat) < OverlapEpsilon)
+         {
+            NewCols[i] = std::make_pair(j, ijmat / jmat);
+            // corner case: i is parallel to j, but we might have previously determined that
+            // j is parallel to some other column k.  Does this ever happen in practice?
+            if (NewCols[j].first != j)
+            {
+               WARNING("parallel column vectors have a non-transitive equivalence")(i)(j)(NewCols[j].first);
+               DEBUG_TRACE(A);
+               while (NewCols[i].first != i && NewCols[NewCols[i].first].first != NewCols[i].first)
+               {
+                  NewCols[i] = std::make_pair(NewCols[NewCols[i].first].first,
+                                              NewCols[NewCols[i].first].second * NewCols[i].second);
+               }
+            }
+            Parallel = true;
+            break;  // we have a parallel vector, break out of the loop
+         }
+      }
+      if (!Parallel)
+         KeepStates.insert(i);
+   }
+
+   //TRACE_IF(KeepStates.size() != A.Basis1().size());
+
+   // construct the reduced basis
+   BasisList NewBasis(A.GetSymmetryList());
+   std::map<unsigned, unsigned> BasisMapping;  // maps the kept states into the new basis
+   for (std::set<int>::const_iterator I = KeepStates.begin(); I != KeepStates.end(); ++I)
+   {
+     BasisMapping[*I] = NewBasis.size();
+     NewBasis.push_back(A.Basis2()[*I]);
+   }
+
+   // construct the projector from the old onto the new basis
+   SimpleOperator Trunc(A.Basis2(), NewBasis, QuantumNumber(A.GetSymmetryList()));
+   for (std::set<int>::const_iterator I = KeepStates.begin(); I != KeepStates.end(); ++I)
+   {
+      Trunc(*I, BasisMapping[*I]) = 1.0;
+   }
+
+   // construct the regularizer to give the full basis from the reduced basis
+   SimpleOperator Reg(NewBasis, A.Basis2(), QuantumNumber(A.GetSymmetryList()));
+   for (unsigned i = 0; i < NewCols.size(); ++i)
+   {
+      if (NewCols[i].first != -1)
+         Reg(BasisMapping[NewCols[i].first], i) = NewCols[i].second;
+   }
+
+   // adjust for the normalizer
+   //   Reg = Reg * InverseNormalizer;
+
+   OperatorComponent tA = prod(A, Trunc); // the result
+
+#if !defined(NDEBUG)
+   // verify that prod(tA, Reg) is the same as A.  
+   OperatorComponent ACheck = prod(tA, Reg);
+   CHECK(norm_frob(A - ACheck) < 1E-10)(tA)(ACheck)(Trunc)(Reg)(Overlaps);
+#endif
+
+   A = tA;
+   return Reg;
 }
 
 StateComponent
@@ -854,4 +1247,29 @@ MatrixOperator ExpandBasis2Used(StateComponent& A, OperatorComponent const& Op)
    update_mask_basis2(Mask, Op, Mask2);
 
    return ExpandBasis2Used(A, Mask2);
+}
+
+SimpleOperator CollapseBasis(BasisList const& b)
+{
+   std::set<QuantumNumber> QN(b.begin(), b.end());
+   BasisList NewB(b.GetSymmetryList(), QN.begin(), QN.end());
+   SimpleOperator C(NewB, b);
+   for (unsigned j = 0; j < b.size(); ++j)
+   {
+      unsigned i = std::find(NewB.begin(), NewB.end(), b[j]) - NewB.begin();
+      C(i,j) = 1.0;
+   }
+   return C;
+}
+
+SimpleOperator ProjectBasis(BasisList const& b, QuantumNumbers::QuantumNumber const& q)
+{
+   BasisList NewB(q);
+   SimpleOperator Result(NewB, b);
+   for (unsigned j = 0; j < b.size(); ++j)
+   {
+      if (b[j] == q)
+         Result(0, j) = 1.0;
+   }
+   return Result;
 }

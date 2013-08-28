@@ -10,6 +10,26 @@ namespace Tensor
 // BasisList
 //
 
+bool
+BasisList::is_identity() const
+{
+   return this->size() == 1 && is_scalar(this->front());
+}
+
+bool
+BasisList::is_regular() const
+{
+   std::set<QuantumNumber> Used;
+   for (const_iterator I = this->begin(); I != this->end(); ++I)
+   {
+      if (Used.find(*I) != Used.end())
+         return false;
+
+      Used.insert(*I);
+   }
+   return true;
+}
+
 int BasisList::total_degree() const
 {
    int Deg = 0;

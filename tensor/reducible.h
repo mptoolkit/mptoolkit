@@ -569,7 +569,6 @@ struct InnerProd<Tensor::ReducibleTensor<T1, B1, B2, S1>,
 // parallel_prod - do we need this?
 
 // scalar_prod
-// TODO: this is a bit of a hack, we ignore the functor
 
 template <typename T1, typename B1, typename B2, typename S1, 
           typename T2, typename B3, typename S2, typename Functor>
@@ -593,10 +592,12 @@ struct ScalarProd<Tensor::ReducibleTensor<T1, B1, B2, S1>,
 	 return result_type();
 
       result_type Result = scalar_prod(x.project_assert(*I), herm(y.base().project_assert(*I)));
+      //Impl_(x.project_assert(*I), herm(y.base().project_assert(*I)));
       ++I;
       while (I != IEnd)
       {
 	 Result += scalar_prod(x.project_assert(*I), herm(y.base().project_assert(*I)));
+         //Impl_(x.project_assert(*I), herm(y.base().project_assert(*I)));
 	 ++I;
       }
       return Result;
@@ -779,6 +780,31 @@ struct Multiplication<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::ReducibleTens
    : ReducibleProd<Tensor::IrredTensor<T1, B1, B2, S1>, 
                    Tensor::ReducibleTensor<T2, B2, B3, S2>,
                    Multiplication<T1, T2> > {};
+
+template <typename T, typename B1, typename B2, typename S, typename F>
+struct TensorAdjoint<Tensor::ReducibleTensor<T, B1, B2, S>, F>
+{
+   TensorAdjoint(F f = F()) : f_(f) {}
+
+   typedef Tensor::ReducibleTensor<typename result_value<F>::type, B2, B1> result_type;
+   typedef Tensor::ReducibleTensor<T, B1, B2, S> const& argument_type;
+
+   result_type operator()(Tensor::ReducibleTensor<T, B1, B2, S> const& x) const
+   {
+      result_type Result(x.Basis2(), x.Basis1());
+      for (typename Tensor::ReducibleTensor<T, B1, B2, S>::const_iterator I = x.begin(); I != x.end(); ++I)
+      {
+         Result += adjoint(*I, f_);
+      }
+      return Result;
+   }
+
+   F f_;
+};
+
+template <typename T, typename B1, typename B2, typename S>
+struct Adjoint<Tensor::ReducibleTensor<T, B1, B2, S> > : TensorAdjoint<Tensor::ReducibleTensor<T, B1, B2, S>,
+                                                                       Adjoint<typename Tensor::IrredTensor<T, B1, B2, S>::value_type> > {};
 
 } // namespace LinearAlgebra
 

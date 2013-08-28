@@ -96,7 +96,7 @@ inline
 typename TensorAdjoint<T, Func>::result_type
 adjoint(T const& x, Func const& f)
 {
-   return TensorAdjoint<T, Func>()(x);
+   return TensorAdjoint<T, Func>(f)(x);
 }
 
 // InvAdjoint

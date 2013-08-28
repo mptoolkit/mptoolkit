@@ -74,6 +74,12 @@ class BasisList
       void push_back(QuantumNumber const& q) 
          { DEBUG_PRECONDITION_EQUAL(q.GetSymmetryList(), S_); Q_.push_back(q); }
 
+      // returns true if this BasisList contains only one element, which transforms as the scalar quantum number
+      bool is_identity() const;
+
+      // returns true if this BasisList is 'regular'; that is, each quantum number occurs at most once in the basis
+      bool is_regular() const;
+
       int total_degree() const;
 
       SymmetryList const& GetSymmetryList() const { return S_; }
@@ -95,7 +101,7 @@ class BasisList
    friend void CoerceSymmetryList(BasisList& b, SymmetryList const& sl);
 };
 
-   typedef BasisList SimpleBasis;
+   typedef BasisList SimpleBasis;  // for backwards compatibility
 
 BasisList make_vacuum_basis(SymmetryList const& S);
 

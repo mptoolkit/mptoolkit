@@ -55,6 +55,12 @@ class FiniteMPO
       const_iterator begin() const { return Data.begin(); }
       const_iterator end() const { return Data.end(); }
 
+      value_type& front() { return Data.front(); }
+      value_type const& front() const { return Data.front(); }
+
+      value_type& back() { return Data.back(); }
+      value_type const& back() const { return Data.back(); }
+
       // small problem here: if this->is_null(), this will not work.
       SymmetryList GetSymmetryList() const { return Data.front().GetSymmetryList(); }
 
@@ -107,22 +113,12 @@ FiniteMPO conj(FiniteMPO const& x);
 // Adjoint
 FiniteMPO adjoint(FiniteMPO const& x);
 
-// output to a stream
-inline
-std::ostream& operator<<(std::ostream& out, FiniteMPO const& x)
-{
-   for (FiniteMPO::const_iterator I = x.begin(); I != x.end(); ++I)
-   {
-      out << *I << '\n';
-   }
-   return out;
-}
+// optimize the representation
+void optimize(FiniteMPO& Op);
 
-inline
-FiniteMPO::FiniteMPO(GenericMPO const& Other)
-   : Data(Other)
-{
-   // TODO: verify that it really is in the form of a finite MPO
-}
+// output to a stream
+std::ostream& operator<<(std::ostream& out, FiniteMPO const& x);
+
+#include "finite_mpo.cc"
 
 #endif

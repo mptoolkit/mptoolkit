@@ -105,6 +105,9 @@ class OperatorComponent
 
       static OperatorComponent make_identity(BasisList const& LocalBasis);
 
+      void check_structure() const;
+      void debug_check_structure() const;
+
    friend PStream::opstream& 
           operator<<(PStream::opstream& out, OperatorComponent const& Op);
    friend PStream::ipstream& 
@@ -115,6 +118,15 @@ class OperatorComponent
       BasisList Basis1_, Basis2_;
       data_type Data_;
 };
+
+inline
+void
+OperatorComponent::debug_check_structure() const
+{
+#if !defined(NDEBUG)
+   this->check_structure();
+#endif
+}
 
 std::ostream&
 operator<<(std::ostream& out, OperatorComponent const& op);
@@ -176,18 +188,6 @@ struct Herm<OperatorComponent>
    }
 };
 
-#if 0
-// do we need this ever?
-// scalar_prod
-// does Result' = sum_s A[s] * herm(B[s])
-
-struct ScalarProd<OperatorComponent, HermitianProxy<OperatorComponent> >
-{
-   typedef SimpleOperator result_type;
-   
-};
-#endif
-
 } // namespace LinearAlgebra
 
 // Constructs a MPOpComponent that represents the sum of A and B.
@@ -236,6 +236,18 @@ OperatorComponent aux_tensor_prod(OperatorComponent const& A, OperatorComponent 
 // construct the tensor product in both local and aux basis
 OperatorComponent global_tensor_prod(OperatorComponent const& A, OperatorComponent const& B);
 
+// Constructs the matrix of overlaps Result'_{ij} = inner_prod(A(i,k), B(k,j)
+SimpleOperator
+local_inner_prod(HermitianProxy<OperatorComponent> const& A, OperatorComponent const& B);
+
+SimpleOperator
+local_inner_prod(OperatorComponent const& A, HermitianProxy<OperatorComponent> const& B);
+
+// Performs the adjoint operation on the local operators.  The auxiliary basis
+// transforms into the adjoint basis but preserves the basis1 / basis2 relationship
+OperatorComponent
+local_adjoint(OperatorComponent const& A);
+
 // Flip-conjugates all bases
 OperatorComponent flip_conj(OperatorComponent const& A);
 
@@ -243,23 +255,28 @@ OperatorComponent flip_conj(OperatorComponent const& A);
 // transpose operation on the 4-index tensor.  
 OperatorComponent exchange(OperatorComponent const& A);
 
+// Basis truncation via removal of parallel components.
+// Returns the projection operator P such that P * A' = A
+// This function preserves the last row of the MPO intact
+// (which is required to preserve upper triangular MPO's)
+SimpleOperator
+TruncateBasis1(OperatorComponent& A);
+
+// Basis truncation via removal of parallel components.
+// Returns the projection operator P such that A' * P = A
+// This function preserves the first column of the MPO intact
+// (which is required to preserve upper triangular MPO's)
+SimpleOperator
+TruncateBasis2(OperatorComponent& A);
+
 OperatorComponent 
 operator+(OperatorComponent const& A, OperatorComponent const& Op);
 
-inline
 OperatorComponent 
-operator*(OperatorComponent const& A, SimpleOperator const& Op)
-{
-   return prod(A, Op);
-}
+operator-(OperatorComponent const& A, OperatorComponent const& Op);
 
-inline
-OperatorComponent 
-operator*(SimpleOperator const& Op, OperatorComponent const& A)
-{
-   return prod(Op, A);
-}
-
+#if 0
+// dont need these, linearalgebra::multiplication<> takes care
 inline
 OperatorComponent 
 operator*(OperatorComponent const& A, LinearAlgebra::HermitianProxy<SimpleOperator> const& Op)
@@ -272,6 +289,25 @@ OperatorComponent
 operator*(LinearAlgebra::HermitianProxy<SimpleOperator> const& Op, OperatorComponent const& A)
 {
    return prod(Op, A);
+}
+#endif
+
+inline
+OperatorComponent
+operator*(double x, OperatorComponent const& Op)
+{
+   OperatorComponent Result(Op);
+   Result *= x;
+   return Result;
+}
+
+inline
+OperatorComponent
+operator*(std::complex<double> x, OperatorComponent const& Op)
+{
+   OperatorComponent Result(Op);
+   Result *= x;
+   return Result;
 }
 
 OperatorComponent
@@ -323,6 +359,16 @@ operator_prod_inner(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
                     LinearAlgebra::HermitianProxy<StateComponent> const& A, 
                     StateComponent const& E,
                     StateComponent const& B);
+
+double
+norm_frob_sq(OperatorComponent const& x);
+
+inline
+double
+norm_frob(OperatorComponent const& x)
+{
+   return std::sqrt(norm_frob_sq(x));
+}
 
 // returns the specified row of the MPO
 LinearAlgebra::MapVector<SimpleRedOperator>
@@ -395,6 +441,71 @@ update_mask_basis2(std::vector<int> const& Mask1, OperatorComponent const& Op, s
 
 MatrixOperator ExpandBasis1Used(StateComponent& A, OperatorComponent const& Op);
 MatrixOperator ExpandBasis2Used(StateComponent& A, OperatorComponent const& Op);
+
+// helper function to construct an operator that merges repeated
+// quantum numbers in the basis.  
+SimpleOperator CollapseBasis(BasisList const& b);
+
+// helper function to construct an operator that projects onto a single quantum number component
+SimpleOperator ProjectBasis(BasisList const& b, QuantumNumbers::QuantumNumber const& q);
+
+namespace LinearAlgebra
+{
+
+template <>
+struct Multiplication<SimpleOperator, OperatorComponent>
+{
+   typedef SimpleOperator first_argument_type;
+   typedef OperatorComponent second_argument_type;
+   typedef OperatorComponent result_type;
+
+   result_type operator()(first_argument_type const& x, second_argument_type const& y) const
+   {
+      return prod(x, y);
+   }
+};
+
+template <>
+struct Multiplication<OperatorComponent, SimpleOperator>
+{
+   typedef OperatorComponent first_argument_type;
+   typedef SimpleOperator second_argument_type;
+   typedef OperatorComponent result_type;
+
+   result_type operator()(first_argument_type const& x, second_argument_type const& y) const
+   {
+      return prod(x, y);
+   }
+};
+
+template <>
+struct Multiplication<HermitianProxy<SimpleOperator>, OperatorComponent>
+{
+   typedef HermitianProxy<SimpleOperator> first_argument_type;
+   typedef OperatorComponent second_argument_type;
+   typedef OperatorComponent result_type;
+
+   result_type operator()(first_argument_type const& x, second_argument_type const& y) const
+   {
+      return prod(x, y);
+   }
+};
+
+template <>
+struct Multiplication<OperatorComponent, HermitianProxy<SimpleOperator> >
+{
+   typedef OperatorComponent first_argument_type;
+   typedef HermitianProxy<SimpleOperator> second_argument_type;
+   typedef OperatorComponent result_type;
+
+   result_type operator()(first_argument_type const& x, second_argument_type const& y) const
+   {
+      return prod(x, y);
+   }
+};
+
+} // namespace LinearAlgebra
+
 
 #include "operator_component.cc"
 
