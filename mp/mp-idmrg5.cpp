@@ -340,10 +340,11 @@ struct SuperblockMultiply
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
    {
-      return operator_prod(Left, Psi, herm(Right));
+      return operator_prod_regular(Left, Psi, herm(Right));
    }
 
-   StateComponent Left, Right;
+   StateComponent const& Left;
+   StateComponent const& Right;
 };
 
 inline

@@ -294,7 +294,7 @@ operator_prod(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
 // Variants for a regular triangular MPO
 
 // Precondition: The MPS is normalized, such that scalar_prod(A, herm(B)) = 1,
-// F[0] = 1, M is lower-triangular, M(0,0) = 1, and M(size-1,size-1) = 1
+// F.back() = 1, M is upper triangular normal form.
 StateComponent
 operator_prod_regular(OperatorComponent const& M,
 		      StateComponent const& A, 
@@ -302,7 +302,7 @@ operator_prod_regular(OperatorComponent const& M,
 		      LinearAlgebra::HermitianProxy<StateComponent> const& B);
 
 // Precondition: The MPS is normalized, such that scalar_prod(herm(A), B) = 1,
-// E[size-1] = 1, M is lower-triangular, M(0,0) = 1, and M(size-1,size-1) = 1
+// E.front = 1, M is upper triangular normal form.
 StateComponent
 operator_prod_regular(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
 		      LinearAlgebra::HermitianProxy<StateComponent> const& A, 

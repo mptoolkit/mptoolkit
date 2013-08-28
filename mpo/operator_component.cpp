@@ -384,7 +384,40 @@ operator_prod_regular(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
 		      StateComponent const& E,
 		      StateComponent const& B)
 {
-   return operator_prod(M, A, E, B);
+   DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis2(), A.base().LocalBasis());
+   DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis1(), B.LocalBasis());
+   DEBUG_PRECONDITION_EQUAL(M.base().Basis1(), E.LocalBasis());
+   DEBUG_PRECONDITION_EQUAL(A.base().Basis1(), E.Basis1());
+   DEBUG_PRECONDITION_EQUAL(E.Basis2(), B.Basis1());
+
+   DEBUG_PRECONDITION_EQUAL(A.base().Basis2(), B.Basis2());
+   DEBUG_PRECONDITION_EQUAL(E.Basis1(), E.Basis2());
+
+   StateComponent Result(M.base().Basis2(), A.base().Basis2(), B.Basis2());
+
+   // First component is identity
+   Result.front() = MatrixOperator::make_identity(B.Basis2());
+   for (unsigned alpha = 1; alpha < M.base().Basis2().size(); ++alpha)
+   {
+      Result[alpha] = MatrixOperator(B.Basis2(), B.Basis2(), M.base().Basis2()[alpha]);
+      // only need to iterate to alpha, since upper triangular
+
+      // alphap = 0 part, in this case we assume E[0] = identity so simplifies further
+      if (M.base().iterate_at(0, alpha))
+      {
+         // TODO: we could further optimize this if M(0,alpha) is proportional to identity,
+         // but this only happens if the MPO is non-optimsl?
+         Result[alpha] += operator_prod(herm(M.base()(0,alpha)), A, B);
+      }
+      for (unsigned alphap = 1; alphap < alpha; ++alphap)
+      {
+         if (M.base().iterate_at(alphap, alpha))
+         {
+            Result[alpha] += operator_prod(herm(M.base()(alphap, alpha)), A, E[alphap], B, M.base().Basis2()[alpha]);
+         }
+      }
+   }
+   return Result;
 }
 
 StateComponent

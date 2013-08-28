@@ -205,6 +205,18 @@ MatrixOperator operator_prod(SimpleOperator const& M,
    return Result;
 }
 
+MatrixOperator operator_prod(SimpleRedOperator const& M, 
+                             StateComponent const& A, 
+                             LinearAlgebra::HermitianProxy<StateComponent> const& B)
+{
+   MatrixOperator Result;
+   for (SimpleRedOperator::const_iterator I = M.begin(); I != M.end(); ++I)
+   {
+      Result += operator_prod(*I, A, B);
+   }
+   return Result;
+}
+
 MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const& M,
                              LinearAlgebra::HermitianProxy<StateComponent> const& A, 
                              StateComponent const& B)
@@ -227,6 +239,18 @@ MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const
 					  adjoint(Result.TransformsAs()),
 					  Result.TransformsAs());
       }
+   }
+   return Result;
+}
+
+MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleRedOperator> const& M, 
+                             LinearAlgebra::HermitianProxy<StateComponent> const& A, 
+                             StateComponent const& B)
+{
+   MatrixOperator Result;
+   for (SimpleRedOperator::const_iterator I = M.base().begin(); I != M.base().end(); ++I)
+   {
+      Result += operator_prod(herm(*I), A, B);
    }
    return Result;
 }
@@ -348,6 +372,29 @@ MatrixOperator operator_prod(StateComponent const& A,
    {
       Result += triple_prod(A[i], E, herm(B.base()[i]), Ident, E.TransformsAs());
    }
+   return Result;
+}
+
+MatrixOperator
+operator_prod_regular(StateComponent const& A, 
+                      MatrixOperator const& E,
+                      LinearAlgebra::HermitianProxy<StateComponent> const& B)
+{
+   DEBUG_PRECONDITION_EQUAL(A.Basis2(), E.Basis1());
+   DEBUG_PRECONDITION_EQUAL(E.Basis2(), B.base().Basis2());
+   DEBUG_PRECONDITION_EQUAL(A.LocalBasis(), B.base().LocalBasis());
+   DEBUG_CHECK(norm_frob(A.front() - MatrixOperator::make_identity(A.front().Basis1())) < 1E-10);
+   DEBUG_CHECK(norm_frob(B.base().back() - MatrixOperator::make_identity(B.base().back().Basis1())) < 1E-10);
+
+   MatrixOperator Result(A.Basis1(), B.base().Basis1(), E.TransformsAs());
+   QuantumNumbers::QuantumNumber Ident(A.GetSymmetryList());
+
+   Result += E * herm(B.base().front());
+   for (std::size_t i = 1; i < A.size()-1; ++i)
+   {
+      Result += triple_prod(A[i], E, herm(B.base()[i]), Ident, E.TransformsAs());
+   }
+   Result += prod(A.back(), E, E.TransformsAs());
    return Result;
 }
 

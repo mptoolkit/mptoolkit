@@ -325,9 +325,17 @@ MatrixOperator operator_prod(SimpleOperator const& M,
                              StateComponent const& A, 
                              LinearAlgebra::HermitianProxy<StateComponent> const& B);
 
+MatrixOperator operator_prod(SimpleRedOperator const& M, 
+                             StateComponent const& A, 
+                             LinearAlgebra::HermitianProxy<StateComponent> const& B);
+
 // does Result' = sum_{s,t} conj(M(s,t)) * herm(A^s) * B^t
 // Result' transforms as adjoint(M).
 MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const& M, 
+                             LinearAlgebra::HermitianProxy<StateComponent> const& A, 
+                             StateComponent const& B);
+
+MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleRedOperator> const& M, 
                              LinearAlgebra::HermitianProxy<StateComponent> const& A, 
                              StateComponent const& B);
 
@@ -374,6 +382,14 @@ MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<StateComponent> const
 MatrixOperator operator_prod(StateComponent const& A, 
                              MatrixOperator const& E,
                              LinearAlgebra::HermitianProxy<StateComponent> const& B);
+
+// Variant for A,B matrices arising from a triangular MPO, where 
+// A.front() = identity and B.back() = identity
+MatrixOperator
+operator_prod_regular(StateComponent const& A, 
+                      MatrixOperator const& E,
+                      LinearAlgebra::HermitianProxy<StateComponent> const& B);
+
 
 // returns the operator M(s,t) = trace(herm(A^s) B^t)
 // This is necessarily a scalar operator (the trace of a non-scalar operator is zero).
