@@ -2,7 +2,8 @@
 //
 // Matrix product operator defined on finite support.
 // The boundary states are normally one dimensional
-// (we allow the operator to be reducible, representing a sum of quantum number components)
+// (we also allow the operator to be reducible, 
+// representing a sum of quantum number components)
 
 #if !defined(FINITE_MPO_H_JDCHJKEHY589758YUER89H489)
 #define FINITE_MPO_H_JDCHJKEHY589758YUER89H489

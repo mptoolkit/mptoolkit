@@ -112,7 +112,7 @@ TriangularMPO TriangularTwoSite(SimpleOperator const& x, SimpleOperator const& y
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
    BasisList b(x.GetSymmetryList());
    b.push_back(Ident);
-   b.push_back(x.TransformsAs());
+   b.push_back(y.TransformsAs());
    b.push_back(Trans);
 
    SimpleOperator I = SimpleOperator::make_identity(x.Basis1());
@@ -141,7 +141,7 @@ TriangularMPO TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperat
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
    BasisList b(x.GetSymmetryList());
    b.push_back(Ident);
-   b.push_back(x.TransformsAs());
+   b.push_back(y.TransformsAs());
    b.push_back(Trans);
 
    SimpleOperator I = SimpleOperator::make_identity(x.Basis1());
@@ -175,7 +175,7 @@ TriangularMPO TriangularThreeSite(SimpleOperator const& x, SimpleOperator const&
 
    BasisList b(x.GetSymmetryList());
    b.push_back(Ident);
-   b.push_back(x.TransformsAs());
+   b.push_back(y.TransformsAs());
    b.push_back(xy_trans);
    b.push_back(Ident);
 
@@ -197,10 +197,10 @@ TriangularMPO TriangularStretchedTwoSite(SimpleOperator const& x, int NumNeighbo
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
    BasisList b(x.GetSymmetryList());
    b.push_back(Ident);
-   b.push_back(x.TransformsAs());
+   b.push_back(y.TransformsAs());
    for (int i = 0; i < NumNeighbors; ++i)
    {
-      b.push_back(x.TransformsAs());
+      b.push_back(y.TransformsAs());
    }
    b.push_back(Ident);
 
@@ -235,9 +235,9 @@ TriangularMPO TriangularFourSite(SimpleOperator const& w, SimpleOperator const& 
 
    BasisList b(w.GetSymmetryList());
    b.push_back(Ident);
-   b.push_back(w.TransformsAs());
-   b.push_back(wx_trans);
-   b.push_back(wxy_trans);
+   b.push_back(adjoint(w.TransformsAs()));
+   b.push_back(adjoint(wx_trans));
+   b.push_back(adjoint(wxy_trans));
    b.push_back(Ident);
 
    SimpleOperator I = SimpleOperator::make_identity(x.Basis1());
@@ -441,8 +441,8 @@ TriangularMPO operator+(TriangularMPO const& x, TriangularMPO const& y)
       int y_cols = y[Here].Basis2().size();
 
       CHECK(norm_frob(x[Here](0,0) - y[Here](0,0)) < 1E-10)(x[Here](0,0))(y[Here](0,0));
-      CHECK(norm_frob(x[Here](x_rows-1, x_cols-1) - y[Here](y_rows-1, x_rows-1)) < 1E-10)
-            (x[Here](x_rows-1, x_cols-1))(y[Here](y_rows-1, x_rows-1));
+      CHECK(norm_frob(x[Here](x_rows-1, x_cols-1) - y[Here](y_rows-1, y_cols-1)) < 1E-10)
+            (x[Here](x_rows-1, x_cols-1))(y[Here](y_rows-1, y_cols-1));
 
       // This is a somewhat simplistic approach.  We just combine the first and last
       // rows/columns, and join the remainder.

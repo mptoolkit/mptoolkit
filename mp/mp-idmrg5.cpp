@@ -271,7 +271,7 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
       Guess.front() = Ident;
    }
    // calculate the energy
-   double Energy = inner_prod(Guess.front(), Rho).real();
+   double Energy = inner_prod(Guess.back(), Rho).real();
 
    MatrixOperator H0 = Guess.back() - Energy*Guess.front();
    // Now we want the fixed point of H = U(H) + H_0
@@ -1969,7 +1969,7 @@ int main(int argc, char** argv)
       double LastEnergy = 0.0;
 #endif
 
-      TRACE(LeftBlock.back().front());
+      DEBUG_TRACE(LeftBlock.back().front());
 
       I = MyPsi.begin();
       HI = HamMPO.begin();
