@@ -8,7 +8,8 @@
   Created 2002-07-12, but based on pheapfsv3
 
   A PageFile represents a sequence of pages on disk.
-  Each page is a fixed length, supplied when constructing the PageFile.
+  Pages are fixed-size buffers that must be allocated with allocate_buffer(),
+  and can then be written to disk or read back.
 
   The first page is reserved for the implementation, and is used to store metadata associated
   with the PageFile itself.

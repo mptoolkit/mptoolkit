@@ -84,7 +84,8 @@ void irawpagestream::underflow()
    NextPage = this->read<uint32>();
 }
 
-void irawpagestream::free()
+std::list<size_t>
+irawpagestream::defer_free()
 {
    if (this->buf_begin()) MyPageFile->deallocate_buffer(this->buf_begin());
 
@@ -98,6 +99,13 @@ void irawpagestream::free()
      MyPageFile->deallocate_buffer(Buf);
    }
    this->set_buffer(NULL, NULL, NULL);
+
+   return Pages;
+}
+
+void irawpagestream::free()
+{
+   this->defer_free();
 
    // Walk the Pages list and deallocate the pages.
    while (!Pages.empty())

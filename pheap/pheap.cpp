@@ -39,6 +39,7 @@ struct GlobalHeapDataType
    std::set<PHeapObject*> PendingFlushList;
    size_t MyDefaultPageSize;
    int DefaultFormat;
+   std::list<PageId> MetadataPages;
 
    static GlobalHeapDataType* Data;
 };
@@ -102,6 +103,12 @@ atomic<id_type>& SequenceNumber()
 size_t& GlobalDefaultPageSize()
 {
    return GlobalHeapDataType::Data->MyDefaultPageSize;
+}
+
+std::list<PageId>&
+GlobalMetadataPages()
+{
+   return GlobalHeapDataType::Data->MetadataPages;
 }
 
 PHeapObject* PendingFlushListTop()
@@ -589,17 +596,20 @@ void Initialize(std::string const& FileName, int NumFiles, size_t PageSize,
    }
 }
 
-PHeapObject* OpenPersistent(std::string const& FileName, size_t PageCacheByteSize, bool ReadOnly)
+PHeapObject* OpenPersistent(std::string const& FileName, size_t PageCacheByteSize, bool IsReadOnly)
 {
    PRECONDITION(GetFileSystem() == NULL);
    FileSystem() = new PHeapFileSystem::BlockFileSystem();
-   PageId MetaId = FileSystem()->open(FileName, PageCacheByteSize, ReadOnly);
+   PageId MetaId = FileSystem()->open(FileName, PageCacheByteSize, IsReadOnly);
 
    ipagestream MetaIn(FileSystem(), MetaId, PStream::format::XDR);
    id_type MainObjectID = MetaIn.read<uint64>();
 
    HeapType HeapRecords;
    ReadHeap(FileSystem(), MetaIn, HeapRecords);
+
+   // Save the metadata pages so that we don't overwrite them
+   GlobalMetadataPages() = MetaIn.pages();
 
    for (HeapType::const_iterator I = HeapRecords.begin(); I != HeapRecords.end(); ++I)
    {
@@ -615,6 +625,11 @@ void ShutdownPersistent(PHeapObject* MainObject)
    PRECONDITION(MainObject != NULL);
    //   pthread::mutex::sentry Lock(GlobalHeapMutex());
    PRECONDITION(GetFileSystem() != NULL);
+
+   // we can delete the old metadata
+   GlobalMetadataPages().clear();
+
+   //   FileSystem()->defragment();
 
    // write the metadata
 

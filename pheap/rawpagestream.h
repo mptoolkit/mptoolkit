@@ -42,9 +42,15 @@ class irawpagestream : public PStream::ipstream
 
       ~irawpagestream();
 
-      // deallocates the pages, so they can be reused by the PageFile.  This must be done explicitly,
+      // deallocates the pages, so they can be reused by the PageFile.  
+      // This must be done explicitly,
       // simply destructing the irawpagestream is not enough.
       void free();
+
+      // deallocates memory, but instead of deallocating file pages,
+      // return the list of used pages.  This is to support transactions,
+      // so that the metadata pages are not overwritten immediately.
+      std::list<size_t> defer_free();
 
    private:
       virtual void underflow();

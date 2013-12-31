@@ -12,7 +12,7 @@
   before calling commit(), the pages will be reclaimed safely, although this
   is almost certainly a bug and a warning is issued).
   
-  The ipagestream constsructor takes the PageId that is the head of the list.
+  The ipagestream constructor takes the PageId that is the head of the list.
   
 */
 
@@ -52,6 +52,9 @@ class ipagestream : public PStream::ipstream
       ipagestream(PHeapFileSystem::FileSystem* FS_, PageId FirstPage, int Format = PStream::format::XDR);
 
       ~ipagestream();
+
+      // returns the list of all pages used so far by this stream
+      std::list<PageId> pages();
 
       // deallocates the pages, so they can be reused by the filesystem.  This must be done explicitly,
       // simply destructing the ipagestream is not enough.

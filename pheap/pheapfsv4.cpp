@@ -335,6 +335,7 @@ void FileSystem::create(std::string const& FilePath, int NumFiles,
       PF->create(PageSize, Path + '/' + GetFileName(NumFiles, i), Unlink);
       PageFileList.push_back(PF);
       PageFileNames.push_back(GetFileName(NumFiles, i));
+      PageFileMetaPages.push_back(std::list<size_t>());
    }
    notify_log(10, pheap::PHeapLog) << "raw file system initialized.  PageSize = " << PageSize << '\n';
 }
@@ -373,7 +374,7 @@ int FileSystem::ReadPageFileMetadata(std::string const& Path, std::string const&
 
    if (std::string(Magic) != "PHFS")
    {
-      PANIC("Invalid page - (probably caused by a corrupt file)")(FileName);
+      PANIC("Invalid page, probably caused by a corrupt file")(FileName);
    }
 
    uint32_t CheckVersion = MetaIn.read<uint32>();
@@ -472,8 +473,13 @@ int FileSystem::ReadPageFileMetadata(std::string const& Path, std::string const&
 	Private::PageInfoType(0, 0, GlobalPageNumber, NULL, this, PF, LocalPageNumber);
    }
 
-   // Finished with the metadata
-   MetaIn.free();
+   // We no longer free the metadata, so that we don't overwrite it
+   // to allow transactions.  Instead we do a deferred free, and store
+   // the list of pages used for metadata
+   if (PageFileMetaPages.empty())
+      PageFileMetaPages.resize(PageFileNames.size());
+
+   PageFileMetaPages[PageFileNumber] = MetaIn.defer_free();
 
    return PageFileNumber;
 }
@@ -583,8 +589,19 @@ void FileSystem::flush()
 
 void FileSystem::persistent_shutdown(PageId UserPage)
 {
-   // flush all in-memory pages to disk
-   flush();
+   // Now we can delete the old metadata pages that we deferred deallocating
+   for (size_t i = 0; i < PageFileList.size(); ++i)
+   {
+      while (!PageFileMetaPages[i].empty())
+      {
+         PageFileList[i]->deallocate(PageFileMetaPages[i].front());
+         PageFileMetaPages[i].pop_front();
+      }
+   }
+
+   // Defragment pages and flush all in-memory pages to disk
+   this->defragment();
+   this->flush();
 
    notify_log(20, pheap::PHeapLog) << "writing pheapfsv4 metadata...\n";
 

@@ -906,6 +906,8 @@ int main(int argc, char** argv)
       int KagomeUnitCell = 24;
       //      bool TwoSiteTurn = true;  // we can control whether we want two sites at the turning points separately
 
+      pvalue_ptr<InfiniteWavefunction> PsiPtr;
+
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -1890,7 +1892,7 @@ int main(int argc, char** argv)
       else
       {
 	 long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
-	 pvalue_ptr<InfiniteWavefunction> PsiPtr = pheap::OpenPersistent(FName, CacheSize);
+	 PsiPtr = pheap::OpenPersistent(FName, CacheSize);
 	 Psi = *PsiPtr;
       }
 
@@ -2316,7 +2318,7 @@ int main(int argc, char** argv)
       DEBUG_CHECK_EQUAL(Psi.Psi.Basis2(), Psi.C_right.Basis1());
       DEBUG_CHECK_EQUAL(Psi.Psi.Basis1(), DeltaShift(Psi.C_right.Basis2(), Psi.QShift));
 
-      pvalue_ptr<InfiniteWavefunction> PsiPtr = new InfiniteWavefunction(Psi);
+      PsiPtr = new InfiniteWavefunction(Psi);
       pheap::ShutdownPersistent(PsiPtr);
 
       ProcControl::Shutdown();

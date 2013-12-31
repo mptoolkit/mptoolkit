@@ -319,6 +319,7 @@ class FileSystem
       int CurrentPageFile;  // an index into the PageFileList.
       std::vector<PageFile*> PageFileList;
       std::vector<std::string> PageFileNames;
+      std::vector<std::list<size_t> > PageFileMetaPages;
 
       size_t PageSize;  // size in bytes of each page
 

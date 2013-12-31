@@ -24,7 +24,7 @@
 #include <iterator>
 
 /*
-  the format of the per-file metadata is:
+  the version 1 format of the per-file metadata is:
 
   Page 0 is reserved, and contains
 
@@ -43,6 +43,15 @@
   UserData is an unsigned 64 bit number that is supplied by the caller.  This number is
   returned by a subsequent call to open().  The UserData field is a hook for higher level
   libraries to store their own metadata.
+
+  Version 2 moves the free list to the end of the metadata:
+
+  uint32 FreeListSize
+  vector<uint32> FreeList number of additional pages
+  vector<uint32> FreeList first part
+
+  Followed by, for each page on the FreeList additional pages, another
+  vector<uint32> FreeList
 */
 
 namespace PHeapFileSystem
@@ -56,7 +65,8 @@ using inttype::uint64;
 
 // a 64-bit 'random' number that identifies binary page files.
 uint64 PageFileMagic = 0x1fe03dc25ba47986LL;
-uint32 PageFileMetadataVersion = 1;
+uint32 PageFileMetadataVersion = 2;
+int PageFileMinHeaderSize = 8+4+4+4+8+4+4+4;
 
 class PageFileImpl
 {
@@ -108,6 +118,10 @@ class PageFileImpl
 
       pthread::mutex FreeListMutex;
       std::set<size_t> FreeList;
+
+      // Additional pages used to store the free list; we can deallocate these
+      // when we close the file.
+      std::list<inttype::uint32> FreeListAdditionalPages;
 
       bool ReadOnly;
 
@@ -176,9 +190,9 @@ uint64 PageFileImpl::open(std::string const& FileName_, bool ReadOnly_)
    uint32 Version = MetaIn.read<uint32>();
    notify_log(40, pheap::PHeapLog) << "PageFile " << FileName_ << " version number is " << Version << '\n';
 
-   if (Version != 1)
+   if (Version > 2)
    {
-      PANIC("PageFile version mismatch")(FileName_)(Version) << "expected version 1";
+      PANIC("PageFile version mismatch")(FileName_)(Version) << "expected version <= 2";
    }
 
    PageSize = MetaIn.read<uint32>();
@@ -188,15 +202,41 @@ uint64 PageFileImpl::open(std::string const& FileName_, bool ReadOnly_)
    // Now we know the page size, get an allocator
    Alloc = BufferAllocator::GetAllocator(PageSize);
 
-   // retrieve the free list.  This is a vector of uint32, we need
-   // to convert from the default size_t
-   off_t Offset = off_t(NumAllocatedPages) * off_t(PageSize);
-   MetaIn.lseek(Offset, SEEK_SET);
+   if (Version == 1)
+   {
+      // Version 1 free list
 
-   std::vector<inttype::uint32> TempFreeList;
-   MetaIn >> TempFreeList;
+      // This is a vector of uint32 stored at the end of the file.  We need
+      // to convert from the default size_t
+      off_t Offset = off_t(NumAllocatedPages) * off_t(PageSize);
+      MetaIn.lseek(Offset, SEEK_SET);
 
-   FreeList = std::set<size_t>(TempFreeList.begin(), TempFreeList.end());
+      std::vector<inttype::uint32> TempFreeList;
+      MetaIn >> TempFreeList;
+
+      FreeList = std::set<size_t>(TempFreeList.begin(), TempFreeList.end());
+   }
+   else if (Version == 2)
+   {
+      //      TRACE("Found a version 2 file");
+      // The version 2 free list stores it in allocated pages
+      MetaIn >> FreeListAdditionalPages;
+      std::vector<inttype::uint32> TempFreeList;
+      MetaIn >> TempFreeList;
+      FreeList = std::set<size_t>(TempFreeList.begin(), TempFreeList.end());
+
+      for (std::list<inttype::uint32>::const_iterator I = FreeListAdditionalPages.begin();
+           I != FreeListAdditionalPages.end(); ++I)
+      {
+         MetaIn.lseek(off_t(PageSize) * (*I), SEEK_SET);
+         MetaIn >> TempFreeList;
+         FreeList.insert(TempFreeList.begin(), TempFreeList.end());
+      }
+   }
+   else
+   {
+      PANIC("Unsupported version number")(Version);
+   }
 
    return UserData;
 }
@@ -218,6 +258,9 @@ std::ostream& operator<<(std::ostream& out, std::set<std::size_t> const& l)
 
 void PageFileImpl::persistent_shutdown(uint64 UserData)
 {
+#if 0
+   // old version 1 format
+
    // write the free list at the end of the page file
    off_t Offset = off_t(NumAllocatedPages) * off_t(PageSize);
    lseek(FD, Offset, SEEK_SET);
@@ -243,6 +286,70 @@ void PageFileImpl::persistent_shutdown(uint64 UserData)
    MetaOut.flush();
    MetaOut.close();
    FD = -1;
+
+
+#else
+   // Current version 2 format
+
+   // We can free the old free list pages
+   while (!FreeListAdditionalPages.empty())
+   {
+      this->deallocate(FreeListAdditionalPages.front());
+      FreeListAdditionalPages.pop_front();
+   }
+
+   // Determine how many additional pages we need to store the free list
+   uint32 FreeListBytes = FreeList.size() * 4;
+   uint32 FirstPageBytes = PageSize - PageFileMinHeaderSize;
+   while (FreeListBytes > FirstPageBytes)
+   {
+      // In this case we need to allocate additional pages
+      FreeListAdditionalPages.push_back(this->AllocatePage());
+      FreeListBytes = FreeList.size() * 4;
+      FreeListBytes -= (PageSize - 4) * FreeListAdditionalPages.size();
+      FirstPageBytes -= 4;   // for the 4 bytes to store the additional page number
+   }
+
+   opfilestream MetaOut(PStream::format::XDR);
+   MetaOut.set_fd(FD);
+
+   // truncate the file after the last allocated page
+   off_t Offset = off_t(NumAllocatedPages) * off_t(PageSize);
+   MetaOut.lseek(Offset, SEEK_SET);
+   MetaOut.truncate();
+
+   MetaOut.lseek(0, SEEK_SET);
+   MetaOut << PageFileMagic
+	   << PageFileMetadataVersion
+	   << uint32(PageSize)
+	   << uint32(NumAllocatedPages)
+	   << UserData
+           << FreeListAdditionalPages;
+
+   std::vector<uint32> TempFreeList(FreeList.begin(), FreeList.end());
+   uint32 Index = FirstPageBytes / 4;
+   if (Index > TempFreeList.size())
+      Index = TempFreeList.size();
+   std::vector<uint32> FreeListSection(TempFreeList.begin(), TempFreeList.begin()+Index);
+   MetaOut << FreeListSection;
+   for (std::list<inttype::uint32>::const_iterator I = FreeListAdditionalPages.begin();
+        I != FreeListAdditionalPages.end(); ++I)
+   {
+      MetaOut.lseek(off_t(PageSize) * (*I), SEEK_SET);
+      uint32 NextIndex = Index + PageSize/4 - 1;
+      if (NextIndex > TempFreeList.size())
+         NextIndex = TempFreeList.size();
+      FreeListSection = std::vector<uint32>(TempFreeList.begin()+Index,
+                                            TempFreeList.begin()+NextIndex);
+      Index = NextIndex;
+      MetaOut << FreeListSection;
+   }
+
+   MetaOut.flush();
+   MetaOut.close();
+   FD = -1;
+
+#endif
 }
 
 unsigned char const* PageFileImpl::read(size_t Page)
@@ -251,34 +358,8 @@ unsigned char const* PageFileImpl::read(size_t Page)
    ++PagesRead;
 
    off_t Offset = off_t(Page) * off_t(PageSize);
-
    return Alloc->read_file(FD, Offset);
 }
-
-#if 0 // old implementation, before BufferAllocator::read_file() existed
-
-   unsigned char* Buffer = Alloc->allocate();
-   //   std::cout << "Reading page " << Page << " into buffer " << (void*) Buffer << std::endl;
-   ssize_t Read = ::pread(FD, Buffer, PageSize, Offset);
-
-   if (Read == -1)
-   {
-      int Err = errno;
-      switch (Err)
-      {
-         case EBADF  : PANIC("pheap file descriptor is bad.");
-         default     : PANIC("cannot read from persistent heap file")(Err);
-      }
-   }
-   else if (Read < PageSize)
-   {
-      // partial read
-      PANIC("Did not read a complete page - is the file corrupt?");
-   }
-
-   return Buffer;
-}
-#endif
 
 size_t PageFileImpl::write(unsigned char const* Buffer)
 {

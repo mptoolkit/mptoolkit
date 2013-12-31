@@ -76,13 +76,19 @@ void ipagestream::underflow()
    // if we've underflowed, there should be pages left to read
    //   CHECK(NextPage != PageId());
 
-  //  std::cout << "ipagestream::underflow(), NextPage = " << NextPage << std::endl;
+   //   std::cout << "ipagestream::underflow(), NextPage = " << NextPage << std::endl;
    Buf = ReadBuffer(NextPage);
    this->set_buffer(Buf.buffer(), Buf.buffer()+MyFS->get_page_size(), Buf.buffer());
-   //   std::cout << "Buffer is " << (void*) this->buf_begin() << ", " << (void*) this->buf_ptr()
-   //     << ", " << (void*) this->buf_end() << std::endl;
+   //std::cout << "Buffer is " << (void*) this->buf_begin() << ", " << (void*) this->buf_ptr()
+   //        << ", " << (void*) this->buf_end() << std::endl;
    Pages.push_back(NextPage);
    NextPage = MyFS->read_page_id(*this);
+}
+
+std::list<PageId>
+ipagestream::pages()
+{
+   return Pages;
 }
 
 void ipagestream::free()
