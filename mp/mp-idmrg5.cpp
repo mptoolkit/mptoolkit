@@ -1742,7 +1742,7 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "tricluster")
       {
-	 std::cout << "Hamiltonian is SU(2) Hubbard triangular cluster with t=" << t << ", tc=" << tc
+	 std::cout << "Hamiltonian is SU(2) Hubbard triangular cluster with t=" << t << ", t2=" << t2 << ", tc=" << tc
 		   << ", U=" << U << '\n';
 	 LatticeSite Site = CreateSU2HubbardSite();
 	 double tSqrt2 = (-sqrt(2.0)) * t;  // the -sqrt(2) is an SU(2) factor
@@ -1758,6 +1758,11 @@ int main(int argc, char** argv)
 			    + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 2, Site["CH"]));
 	 Ham += -tSqrt2 * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 4, Site["C"])
 			    + TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 4, Site["CH"]));
+         if (t2 != 0)
+         {
+	    Ham += - (-sqrt(2.0)*t2) * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 7, Site["C"])
+			              + TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 7, Site["CH"]));
+         }
 	 Ham += U * OnePointOperator(Sites, 0, Site["Pdouble"]);
 	 Ham += U * OnePointOperator(Sites, 1, Site["Pdouble"]);
 	 Ham += U * OnePointOperator(Sites, 2, Site["Pdouble"]);
