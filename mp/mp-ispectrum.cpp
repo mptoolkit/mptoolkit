@@ -1,7 +1,7 @@
 
 #include "mps/infinitewavefunction.h"
 #include "mps/packunpack.h"
-#include "mpo/linear_operator.h"
+#include "siteoperator/latticesite.h"
 #include "mps/operator_actions.h"
 #include "common/environment.h"
 #include "common/terminal.h"
@@ -525,7 +525,7 @@ int main(int argc, char** argv)
       //      }
 
       SimpleOperator MyOpL, MyOpR, MyOpL2;
-      SiteBlock Site;
+      LatticeSite Site;
       if (Model == "spin")
       {
 	 Site = CreateSpinSite(Spin);
@@ -692,31 +692,31 @@ int main(int argc, char** argv)
       std::cout << '\n';
 
       // initialize the linear operators for the observables
-      MPOperator LinOpL, LinOpR;
+      GenericMPO LinOpL, LinOpR;
 
       if (vm.count("lcoefficients"))
       {
-         LinOpL = MPOperator(Psi.size());
-         LinOpL[0] = OperatorComponent(Site.Basis1().Basis(), 
+         LinOpL = GenericMPO(Psi.size());
+         LinOpL[0] = OperatorComponent(Site.Basis1(),
                                        BasisList(QuantumNumber(Psi.GetSymmetryList())),
                                        BasisList(adjoint(Site[OpL].TransformsAs())));
          LinOpL[0](0,0) = Site[OpL];
          for (unsigned i = 1; i < Psi.size(); ++i)
          {
-            LinOpL[i] = OperatorComponent(Site.Basis1().Basis(), 
+            LinOpL[i] = OperatorComponent(Site.Basis1(), 
                                           BasisList(adjoint(Site[OpL].TransformsAs())),
                                           BasisList(adjoint(Site[OpL].TransformsAs())));
             LinOpL[i](0,0) = (i == 1) ? Site[OpL2] : (i == 2) ? Site[OpL3] : (i == 3) ? Site[OpL4] : Site["I"];
          }
 
-         LinOpR = MPOperator(Psi.size());
-         LinOpR[Psi.size()-1] = OperatorComponent(Site.Basis1().Basis(), 
+         LinOpR = GenericMPO(Psi.size());
+         LinOpR[Psi.size()-1] = OperatorComponent(Site.Basis1(), 
                                        BasisList(Site[OpR].TransformsAs()),
                                        BasisList(QuantumNumber(Psi.GetSymmetryList())));
          LinOpR[Psi.size()-1](0,0) = Site[OpR];
          for (int i = int(Psi.size())-2; i >= 0; --i)
          {
-            LinOpR[i] = OperatorComponent(Site.Basis1().Basis(), 
+            LinOpR[i] = OperatorComponent(Site.Basis1(), 
                                           BasisList(Site[OpR].TransformsAs()),
                                           BasisList(Site[OpR].TransformsAs()));
             LinOpR[i](0,0) = (i == int(Psi.size())-2) ? Site[OpR2] 
@@ -727,10 +727,10 @@ int main(int argc, char** argv)
       // Get the left and right operators, if applicable
       MatrixOperator LeftOp;
       if (!LinOpL.is_null())
-         LeftOp = apply_right_qshift(LeftIdent, LinOpL, Psi, QShift);
+         LeftOp = inject_left_qshift(LeftIdent, LinOpL, Psi, QShift);
       MatrixOperator RightOp;
       if (!LinOpR.is_null())
-         RightOp = apply_left_qshift(RightIdent, LinOpR, Psi, QShift);
+         RightOp = inject_right_qshift(RightIdent, LinOpR, Psi, QShift);
 
       if (!LinOpL.is_null() && !LinOpR.is_null())
       {

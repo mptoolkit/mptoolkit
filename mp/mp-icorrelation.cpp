@@ -1,5 +1,6 @@
 
 #include "mps/infinitewavefunction.h"
+#include "siteoperator/latticesite.h"
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "mp/copyright.h"
@@ -119,7 +120,7 @@ int main(int argc, char** argv)
       mp_pheap::InitializeTempPHeap();
       pvalue_ptr<InfiniteWavefunction> Psi = pheap::ImportHeap(PsiStr);
 
-      SiteBlock Site;
+      LatticeSite Site;
       if (Model == "sf-u1")
       {
 	 Site = CreateU1SpinlessFermion();

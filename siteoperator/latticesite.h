@@ -2,7 +2,7 @@
 
   Created 2004-09-05 Ian McCulloch
 
-  originally a 'block' in DMRG terminology, now a LatticeSite is
+  originally a 'site block' in DMRG terminology, now a LatticeSite is
   a collection of SiteOperator's defined on some fixed Hilbert space.
 */
 
@@ -23,11 +23,11 @@ class LatticeSite
       typedef std::map<std::string, SiteOperator> DataType;
 
    public:
-      typedef typename DataType::value_type        value_type;
-      typedef typename DataType::iterator          iterator;
-      typedef typename DataType::const_iterator    const_iterator;
-      typedef typename SiteOperator::basis1_type   basis1_type;
-      typedef typename SiteOperator::basis2_type   basis2_type;
+      typedef DataType::value_type        value_type;
+      typedef DataType::iterator          iterator;
+      typedef DataType::const_iterator    const_iterator;
+      typedef SiteOperator::basis1_type   basis1_type;
+      typedef SiteOperator::basis2_type   basis2_type;
 
       LatticeSite() : Data(new DataType()) {}
 

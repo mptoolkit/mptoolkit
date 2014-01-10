@@ -1572,12 +1572,18 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "bh-u1")
       {
-         // These parameters are defined in this form to match the Lieb-Liniger model, U = m g dz / hbar^2, energy scaled by hbar^2 / 2 m dz^2
       	 std::cout << "Hamiltonian is spinless Bose-Hubbard, U1 symmetry, T=1, U=" << U << ", Nmax=" << NMax << "\n";
+	 if (D != 0)
+	    std::cout << "D = " << D << ", lambda=" << Lambda << '\n';
+
       	 LatticeSite Site = CreateBoseHubbardSpinlessU1Site(NMax);
       	 TriangularMPO Ham;
       	 Ham = -1.0 * TriangularTwoSite(Site["BH"], Site["B"]) - 1.0 * TriangularTwoSite(Site["B"], Site["BH"])
-      	    + U * TriangularOneSite(Site["N2"]) + 2.0 * TriangularOneSite(Site["N"]);
+	 + (U/2) * TriangularOneSite(Site["N2"]);
+	 if (D != 0)
+	 {
+	    Ham += D * Lambda * TriangularTwoSiteExponential(Site["N"], Site["N"], Lambda);
+	 }
       	 HamMPO = Ham;
       }
       else if (HamStr == "bh-dilute-u1")

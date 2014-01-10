@@ -12,7 +12,7 @@ void
 LatticeSite::CoerceSymmetryList(QuantumNumbers::SymmetryList const& sl)
 {
    using ::CoerceSymmetryList;
-   typename ptr_type::lock_type Lock(Data.lock());
+   ptr_type::lock_type Lock(Data.lock());
    for (iterator I = Lock->begin(); I != Lock->end(); ++I)
    {
       CoerceSymmetryList(I->second, sl);
@@ -22,7 +22,7 @@ LatticeSite::CoerceSymmetryList(QuantumNumbers::SymmetryList const& sl)
 SiteOperator const&
 LatticeSite::operator[](std::string const& s) const
 { 
-   typename DataType::const_iterator I = Data->find(s); 
+   DataType::const_iterator I = Data->find(s); 
    CHECK(I != Data->end()) << "The site does not contain any operator named " << s;
    return I->second; 
 }

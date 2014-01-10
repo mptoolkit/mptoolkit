@@ -74,6 +74,9 @@ class SiteBasis
       // implicit conversion to BasisList
       operator BasisList const&() const { return Basis_; }
 
+      // explicit conversion, and backwards compatibility
+      BasisList const& Basis() const { return Basis_; }
+
       SymmetryList const& GetSymmetryList() const { return Basis_.GetSymmetryList(); }
 
       bool operator==(SiteBasis const& S2) const

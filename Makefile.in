@@ -203,8 +203,8 @@ infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-
                  mp-iexpectation-sz2 mp-iparity mp-idump mp-itebd mp-icorrelation mp-idmrg5-spin2
 
 infinite-tools = mp-idmrg5 mp-ispectrum \
-                 mp-ireorder-symmetry mp-irename-symmetry mp-iinfo mp-iproject mp-icorrelation \
-                 mp-iexpectation-tri
+                 mp-iinfo mp-iproject mp-icorrelation
+#                 mp-iexpectation-tri
 
 mp-tools-not-functional = mp-add2 mp-exp mp-stringcorrelation-su2 mp-canonical
 
@@ -494,7 +494,7 @@ mp-ioverlap : infinitewavefunction.o eigen.o
 mp-iproject : infinitewavefunction.o eigen.o
 mp-icorrelation : infinitewavefunction.o eigen.o
 mp-iortho : triangular_operator.o infinitewavefunction.o
-mp-iinfo : eigen.o triangular_operator.o infinitewavefunction.o
+mp-iinfo : eigen.o infinitewavefunction.o
 mp-iorthogonalize : triangular_operator.o infinitewavefunction.o
 mp-pwfrg : triangular_operator.o match_basis.o
 mp-itebd : mpexponential.o $(expokitobj) infinitewavefunction.o
