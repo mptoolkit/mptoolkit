@@ -27,29 +27,31 @@ UnitCell::UnitCell()
 }
 
 UnitCell::UnitCell(LatticeSite const& s)
-   : Data_(s)
+   : Data_(new UnitCellType(s))
 {
 }
 
 UnitCell::UnitCell(LatticeSite const& s, LatticeSite const& t)
-   : Data_(s)
+   : Data_(new UnitCellType(s))
 {
-   Data_.push_back(t);
+   Data_.mutate()->push_back(t);
 }
 
 UnitCell::UnitCell(LatticeSite const& s, LatticeSite const& t, LatticeSite const& u)
-   : Data_(s)
+   : Data_(new UnitCellType(s))
 {
-   Data_.push_back(t);
-   Data_.push_back(u);
+   pvalue_lock<UnitCellType> Lock(Data_);
+   Lock->push_back(t);
+   Lock->push_back(u);
 }
 
 UnitCell::UnitCell(LatticeSite const& s, LatticeSite const& t, LatticeSite const& u, LatticeSite const& v)
-   : Data_(s)
+   : Data_(new UnitCellType(s))
 {
-   Data_.push_back(t);
-   Data_.push_back(u);
-   Data_.push_back(v);
+   pvalue_lock<UnitCellType> Lock(Data_);
+   Lock->push_back(t);
+   Lock->push_back(u);
+   Lock->push_back(v);
 }
 
 LatticeSite CoerceSL(SymmetryList const& sl, LatticeSite const& s)
@@ -60,65 +62,69 @@ LatticeSite CoerceSL(SymmetryList const& sl, LatticeSite const& s)
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s)
-   : Data_(CoerceSL(sl,s))
+   : Data_(new UnitCellType(CoerceSL(sl,s)))
 {
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t)
-   : Data_(CoerceSL(sl, s))
+   : Data_(new UnitCellType(CoerceSL(sl, s)))
 {
-   Data_.push_back(CoerceSL(sl, t));
+   Data_.mutate()->push_back(CoerceSL(sl, t));
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t, LatticeSite const& u)
-   : Data_(CoerceSL(sl, s))
+   : Data_(new UnitCellType(CoerceSL(sl, s)))
 {
-   Data_.push_back(CoerceSL(sl, t));
-   Data_.push_back(CoerceSL(sl, u));
+   pvalue_lock<UnitCellType> Lock(Data_);
+   Lock->push_back(CoerceSL(sl, t));
+   Lock->push_back(CoerceSL(sl, u));
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t, 
                  LatticeSite const& u, LatticeSite const& v)
-   : Data_(CoerceSL(sl, s))
+   : Data_(new UnitCellType(CoerceSL(sl, s)))
 {
-   Data_.push_back(CoerceSL(sl, t));
-   Data_.push_back(CoerceSL(sl, u));
-   Data_.push_back(CoerceSL(sl, v));
+   pvalue_lock<UnitCellType> Lock(Data_);
+   Lock->push_back(CoerceSL(sl, t));
+   Lock->push_back(CoerceSL(sl, u));
+   Lock->push_back(CoerceSL(sl, v));
 }
 
 UnitCell::UnitCell(int RepeatCount, UnitCell const& l)
-   : Data_(RepeatCount, l.data())
+   : Data_(new UnitCellType(RepeatCount, l.data()))
 {
 }
 
 UnitCell::UnitCell(UnitCell const& x1, UnitCell const& x2)
    : Data_(x1.Data_)
 {
-   Data_.push_back(x2.Data_);
+   Data_.mutate()->push_back(*x2.Data_);
 }
 
 UnitCell::UnitCell(UnitCell const& x1, UnitCell const& x2, UnitCell const& x3)
    : Data_(x1.Data_)
 {
-   Data_.push_back(x2.Data_);
-   Data_.push_back(x3.Data_);
+   pvalue_lock<UnitCellType> Lock(Data_);
+   Lock->push_back(*x2.Data_);
+   Lock->push_back(*x3.Data_);
 }
 
 UnitCell::UnitCell(UnitCell const& x1, UnitCell const& x2, UnitCell const& x3, UnitCell const& x4)
    : Data_(x1.Data_)
 {
-   Data_.push_back(x2.Data_);
-   Data_.push_back(x3.Data_);
-   Data_.push_back(x4.Data_);
+   pvalue_lock<UnitCellType> Lock(Data_);
+   Lock->push_back(*x2.Data_);
+   Lock->push_back(*x3.Data_);
+   Lock->push_back(*x4.Data_);
 }
 
 UnitCell::UnitCell(int Size, LatticeSite const& s)
-   : Data_(Size, run_length_compressed<LatticeSite>(s))
+   : Data_(new UnitCellType(Size, run_length_compressed<LatticeSite>(s)))
 {
 }
 
 UnitCell::UnitCell(LatticeSite const& s, std::string const& Coord)
-   : Data_(s)
+   : Data_(new UnitCellType(s))
 {
 }
 
@@ -166,5 +172,42 @@ UnitCell join(UnitCell const& x, UnitCell const& y, UnitCell const& z, UnitCell 
 	     UnitCell const& v)
 {
    return join(UnitCell(x,y,z,w), v);
+}
+
+bool
+operator==(UnitCell const& u1, UnitCell const& u2)
+{
+   if (u1.Data_ == u2.Data_)
+      return true;
+   // else
+   if (u1.Data_.is_null() || u2.Data_.is_null())
+      return false;
+   // else
+   if (u1.size() != u2.size())
+      return false;
+   // else
+   // Here we need to do a deep comparison of the unit cells.  Since we don't have comparison
+   // on LatticeSite objects (which could be added but is relatively expensive) we'll cheat
+   // and just compare the local hilbert space.
+   int Sz = u1.size();
+   for (int i = 0; i < Sz; ++i)
+   {
+      if (u1[i].Basis1() != u2[i].Basis1() || u1[i].Basis2() != u2[i].Basis2())
+	 return false;
+   }
+   return true;
+}
+
+bool
+operator!=(UnitCell const& u1, UnitCell const& u2)
+{
+   return !(u1 == u2);
+}
+
+std::ostream&
+operator<<(std::ostream& out, UnitCell const& u)
+{
+   out << "UnitCell object size " << u.size() << "\n";
+   return out;
 }
 

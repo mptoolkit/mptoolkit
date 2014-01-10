@@ -24,10 +24,14 @@ class FiniteMPO
 
       FiniteMPO() {}
 
+      FiniteMPO(FiniteMPO const& Other) : Data(Other.Data) {}
+
       explicit FiniteMPO(int Size) : Data(Size) {}
 
       // Construction from a generic MPO.  The generic MPO must already be in finite form.
       explicit FiniteMPO(GenericMPO const& Other);
+
+      FiniteMPO& operator=(FiniteMPO const& Other) { Data = Other.Data; return *this; }
 
       // returns the total number of sites this operator contains
       int size() const { return Data.size(); }
@@ -39,6 +43,10 @@ class FiniteMPO
       // returns true if the operator transforms irreducibly.  This is true
       // iff the left basis contains only a single state.
       bool is_irreducible() const;
+
+      // returns true if this MPO is the identity operator, that is, a 1x1 MPO that
+      // is a product of identity operators.
+      bool is_identity() const;
 
       // precondition: is_irreducible
       QuantumNumbers::QuantumNumber TransformsAs() const;
@@ -78,6 +86,14 @@ class FiniteMPO
 
 PStream::opstream& operator<<(PStream::opstream& out, FiniteMPO const& op);
 PStream::ipstream& operator>>(PStream::ipstream& in, FiniteMPO& op);
+
+// Returns the MPO that is Op1 \otimes Op2.
+// PRECONDITION: Op1.Basis2() == Op2.Basis1()
+FiniteMPO join(FiniteMPO const& Op1, FiniteMPO const& Op2);
+
+// Repeats Op Count number of times, Op^{\oprod Count}.
+// PRECONDITION: Op.Basis2() == Op.Basis1()
+FiniteMPO repeat(FiniteMPO const& Op, int Count);
 
 FiniteMPO& operator*=(FiniteMPO& x, double a);
 FiniteMPO& operator*=(FiniteMPO& x, std::complex<double> a);

@@ -12,6 +12,7 @@
 
 #include "siteoperator/latticesite.h"
 #include "common/runlengthcompressed.h"
+#include "pheap/pvalueptr.h"
 
 class UnitCell
 {
@@ -46,20 +47,20 @@ class UnitCell
       template <typename T>
       UnitCell(LatticeSite const& s, T const& Coord);
 
-      run_length_compressed<LatticeSite> const& data() const { return Data_; }
+      run_length_compressed<LatticeSite> const& data() const { return *Data_; }
 
-      SymmetryList GetSymmetryList() const { return Data_.front().GetSymmetryList(); }
+      SymmetryList GetSymmetryList() const { return Data_->front().GetSymmetryList(); }
    
       // fowards to run_length_compressed
-      bool empty() const { return Data_.empty(); }
-      int size() const { return Data_.size(); }
-      int leaf_count() const { return Data_.leaf_count(); }
-      int node_count() const { return Data_.node_count(); }
-      value_type const& front() const { return Data_.front(); }
-      value_type const& back() const { return Data_.back(); }
+      bool empty() const { return Data_->empty(); }
+      int size() const { return Data_->size(); }
+      int leaf_count() const { return Data_->leaf_count(); }
+      int node_count() const { return Data_->node_count(); }
+      value_type const& front() const { return Data_->front(); }
+      value_type const& back() const { return Data_->back(); }
 
-      const_iterator begin() const { return Data_.begin(); }
-      const_iterator end() const { return Data_.end(); }
+      const_iterator begin() const { return Data_->begin(); }
+      const_iterator end() const { return Data_->end(); }
 
       template <typename Visitor>
       typename Visitor::result_type
@@ -71,11 +72,19 @@ class UnitCell
 
       LatticeSite const& operator[](int i) const;
 
+      // returns the local basis at site i of the lattice
+      SiteBasis LocalBasis(int i) const
+      { return this->operator[](i)["I"].Basis(); }
+
    private:
-      run_length_compressed<LatticeSite> Data_;
+      typedef run_length_compressed<LatticeSite> UnitCellType;
+      pvalue_ptr<UnitCellType> Data_;
 
    friend PStream::opstream& operator<<(PStream::opstream& out, UnitCell const& L);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, UnitCell& L);
+
+   friend bool operator==(UnitCell const& u1, UnitCell const& u2);
+   friend bool operator!=(UnitCell const& u1, UnitCell const& u2);
 };
 
 // Make a new lattice out of RepeatCount copies of x
@@ -87,6 +96,15 @@ UnitCell join(UnitCell const& x, UnitCell const& y, UnitCell const& z);
 UnitCell join(UnitCell const& x, UnitCell const& y, UnitCell const& z, UnitCell const& w);
 UnitCell join(UnitCell const& x, UnitCell const& y, UnitCell const& z, UnitCell const& w,
 	     UnitCell const& v);
+
+bool
+operator==(UnitCell const& u1, UnitCell const& u2);
+
+bool
+operator!=(UnitCell const& u1, UnitCell const& u2);
+
+std::ostream&
+operator<<(std::ostream& out, UnitCell const& u);
 
 #include "unitcell.cc"
 

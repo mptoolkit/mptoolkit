@@ -2,9 +2,13 @@
 //
 // TriangularMPO: a representation for lattice operators that are in upper triangular form.
 //
-// It is up to the user to ensure that the TriangularOperator stays in lower-triangular form.
-// All functions defined in this header are OK though, the only way to generate a non-lower-triangular
+// It is up to the user to ensure that the TriangularOperator stays in uper-triangular form.
+// All functions defined in this header are OK though, the only way to generate a non-upper-triangular
 // operator is to modify the components by hand (don't do that!).
+//
+// Some operations return a "1x1" MPO.  This is an MPO where the Basis1() and Basis2() both have
+// dimension 1.  If the operator has a non-trivial unit cell then it may be that some internal
+// dimensions are larger than 1.
 
 #if !defined(TRIANGULAR_MPO_H_SDJFHU47894789H9O43)
 #define TRIANGULAR_MPO_H_SDJFHU47894789H9O43
@@ -109,6 +113,12 @@ GenericMPO extract_lower_column(TriangularMPO const& Op, int Col);
 
 void mask_lower_column(TriangularMPO const& Op, int Col, std::vector<std::vector<int> >& Mask);
 #endif
+
+
+
+
+
+
 
 TriangularMPO TriangularOneSite(SimpleOperator const& x);
 
