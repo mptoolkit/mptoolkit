@@ -196,9 +196,6 @@ TriangularMPO& operator-=(TriangularMPO& Op, TriangularMPO const& x);
 TriangularMPO operator+(TriangularMPO const& x, TriangularMPO const& y);
 TriangularMPO operator-(TriangularMPO const& x, TriangularMPO const& y);
 
-// extends an operator by repeating it count times
-TriangularMPO extend(TriangularMPO const& x, int count);
-
 // does a 2-1 coarse-graining of the operator, which must have an even size
 TriangularMPO coarse_grain(TriangularMPO const& x);
 

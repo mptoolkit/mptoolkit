@@ -58,6 +58,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, GenericMPO& op)
    return in >> op.Data_;
 }
 
+#if 0
 GenericMPO&
 operator*=(GenericMPO& x, double a)
 {
@@ -99,6 +100,7 @@ GenericMPO operator*(GenericMPO const& x, std::complex<double> a)
    Result *= a;
    return Result;
 }
+#endif
 
 void zero_unused_elements(GenericMPO& Op)
 {

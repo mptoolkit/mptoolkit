@@ -13,7 +13,6 @@
 class FiniteMPO
 {
    private:
-   //      typedef std::deque<OperatorComponent> data_type;
       typedef GenericMPO data_type;
 
    public:

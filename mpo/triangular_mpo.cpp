@@ -350,19 +350,6 @@ TriangularMPO TriangularTwoSitePBC_Boundary(SimpleOperator const& x, SimpleOpera
 }
 #endif
 
-TriangularMPO repeat(TriangularMPO const& x, int Count)
-{
-   std::vector<OperatorComponent> Op;
-   for (int i = 0; i < Count; ++i)
-   {
-      for (unsigned j = 0; j < x.size(); ++j)
-      {
-         Op.push_back(x[j]);
-      }
-   }
-   return TriangularMPO(Op);
-}
-
 // arithmetic
 
 TriangularMPO& operator*=(TriangularMPO& Op, double x)
@@ -596,7 +583,8 @@ TriangularMPO prod(TriangularMPO const& x, TriangularMPO const& y, QuantumNumber
    return Result;
 }
 
-TriangularMPO extend(TriangularMPO const& x, int count)
+TriangularMPO
+repeat(TriangularMPO const& x, int count)
 {
    TriangularMPO Result(x.size() * count);
    for (int i = 0; i < count; ++i)
