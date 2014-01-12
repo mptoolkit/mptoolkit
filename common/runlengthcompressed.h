@@ -15,7 +15,8 @@
 // with a function object that implements operator() for T itself,
 // run_length_repeat<T> and run_length_array<T>.  The latter two types
 // act as containers of run_length_compressed<T> objects.
-// Note that the size() function returns the physical size of the container,
+// Note that for run_length_array and run_length_repeat, the
+// size() function returns the physical size of the container,
 // which is NOT the same as the logical size returned by 
 // run_length_compressed::size().  The repeat and array objects have
 // instead a logical_size() function that takes into account the

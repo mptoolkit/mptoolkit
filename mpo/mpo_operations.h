@@ -7,6 +7,8 @@
 // examples of possible syntax:
 // sum over a 1-site unit cell (or pretend its a 1-site unit cell)
 // sum(j=0, C(j)*C(j+1))
+// equivalent to sum(j, C(j)*C(j+1)), since the offset is irrelevant for a 1-site unit cell
+// OR make sum(j, ...) equivalent to sum(j=0, ....)
 //
 // sum over a 2-site unit cell
 // sum(j=0 by 2, C(J)*C(j+1) + D(j+1)*D(j+2))

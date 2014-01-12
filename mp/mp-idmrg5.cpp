@@ -1478,7 +1478,7 @@ int main(int argc, char** argv)
 	 if (delta != 0)
 	 {
 	    // This doubles the size of the unit cell
-	    Ham = extend(Ham, 2);
+	    Ham = repeat(Ham, 2);
 	    Ham = Ham + OnePointOperator(Ham.LocalBasis1List(), 0,  0.5*Site["N"]);
 	    Ham = Ham + OnePointOperator(Ham.LocalBasis1List(), 1, -0.5*Site["N"]);
 	 }
