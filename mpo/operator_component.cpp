@@ -40,7 +40,7 @@ OperatorComponent::check_structure() const
          for (SimpleRedOperator::const_iterator q = J->begin(); q != J->end(); ++q)
          {
             CHECK(is_transform_target(this->Basis2()[J.index2()], q->TransformsAs(), this->Basis1()[J.index1()]))
-               (this->Basis2()[J.index2()])(q->TransformsAs())(this->Basis1());
+               (this->Basis1())(J.index1())(this->Basis2())(J.index2())(q->TransformsAs());
          }
       }
    }

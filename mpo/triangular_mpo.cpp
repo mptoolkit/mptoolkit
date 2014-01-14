@@ -5,6 +5,10 @@
 void
 TriangularMPO::check_structure() const
 {
+   for (unsigned i = 0; i < this->size(); ++i)
+   {
+      Data_[i].check_structure();
+   }
 }
 
 GenericMPO extract_column(TriangularMPO const& Op, int Col)
@@ -978,6 +982,7 @@ TriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
                                     int n1, SimpleOperator const& x1,
                                     int n2, SimpleOperator const& x2)
 {
+   TRACE(n1)(x1)(n2)(x2);
    // Normal order the sites.
    if (n1 > n2)
       return TwoPointOperator(Sites, n2, x2, n1, x1);
@@ -996,9 +1001,9 @@ TriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
    }
 
    // the actual operator
-   for (int i = n2; i > n1; --i)
+   for (int i = n1+1; i <= n2; ++i)
    {
-      BondBasis[smod(i,Size)].push_back(x1.TransformsAs());
+      BondBasis[smod(i,Size)].push_back(x2.TransformsAs());
    }
    
    // Finally, the Hamiltonian component
@@ -1013,22 +1018,26 @@ TriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
    {
       Result[i] = OperatorComponent(Sites[i], Sites[i], BondBasis[i], BondBasis[smod(i+1,Size)]);
       Result[i](0,0) = SimpleOperator::make_identity(Sites[i]);
-      Result[i](BondBasis[smod(i+1,Size)].size()-1, BondBasis[i].size()-1) 
+      Result[i](BondBasis[i].size()-1, BondBasis[smod(i+1,Size)].size()-1) 
          = SimpleOperator::make_identity(Sites[i]);
    }
 
    // now the operators.  Keep track of which component we insert them into
    std::vector<int> Loc(Size, 0);
-   Result[smod(n2,Size)](0,1) = x1;
-   ++Loc[smod(n2-1,Size)];
-   for (int i = n2-1; i > n1; --i)
+   Result[smod(n1,Size)](0,1) = x1;
+   ++Loc[smod(n1+1,Size)];
+   for (int i = n1+1; i < n2; ++i)
    {
-      ++Loc[smod(i-1,Size)];
-      Result[smod(i,Size)](Loc[smod(i-1,Size)], Loc[smod(i,Size)]) 
+      ++Loc[smod(i+1,Size)];
+      Result[smod(i,Size)](Loc[smod(i,Size)], Loc[smod(i+1,Size)]) 
          = SimpleOperator::make_identity(Sites[smod(i,Size)]);
    }
-   Result[smod(n1,Size)](Loc[smod(n1,Size)],Loc[smod(n1-1,Size)+1]) = x2;
-   return TriangularMPO(Result.data());
+   //   TRACE(n1)(n2)(LinearAlgebra::Vector<int>(Loc));
+   Result[smod(n2,Size)](Loc[smod(n2,Size)],Loc[smod(n2+1,Size)]+1) = x2;
+   TriangularMPO TriResult(Result.data());
+   //   TRACE(TriResult);
+   TriResult.debug_check_structure();
+   return TriResult;
 }
 
 TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites, 
@@ -1052,7 +1061,7 @@ TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
    // the actual operator
    for (int i = n2; i > n1; --i)
    {
-      BondBasis[smod(i,Size)].push_back(x1.TransformsAs());
+      BondBasis[smod(i,Size)].push_back(x2.TransformsAs());
    }
    
    // Finally, the Hamiltonian component
@@ -1067,19 +1076,19 @@ TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
    {
       Result[i] = OperatorComponent(Sites[i], Sites[i], BondBasis[i], BondBasis[smod(i+1,Size)]);
       Result[i](0,0) = SimpleOperator::make_identity(Sites[i]);
-      Result[i](BondBasis[smod(i+1,Size)].size()-1, BondBasis[i].size()-1) 
+      Result[i](BondBasis[i].size()-1, BondBasis[smod(i+1,Size)].size()-1) 
          = SimpleOperator::make_identity(Sites[i]);
    }
 
    // now the operators.  Keep track of which component we insert them into
    std::vector<int> Loc(Size, 0);
-   Result[smod(n2,Size)](0,1) = x1;
+   Result[smod(n2,Size)](0,1) = x2;
    ++Loc[smod(n2-1,Size)];
    for (int i = n2-1; i > n1; --i)
    {
       ++Loc[smod(i-1,Size)];
       Result[smod(i,Size)](Loc[smod(i,Size)], Loc[smod(i-1,Size)]) = String;
    }
-   Result[smod(n1,Size)](Loc[smod(n1,Size)],Loc[smod(n1-1,Size)+1]) = x2;
+   Result[smod(n1,Size)](Loc[smod(n1,Size)],Loc[smod(n1-1,Size)+1]) = x1;
    return TriangularMPO(Result.data());
 }

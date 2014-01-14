@@ -219,7 +219,7 @@ inline
 void
 TriangularMPO::debug_check_structure() const
 {
-#if defined(NDEBUG)
+#if !defined(NDEBUG)
    this->check_structure();
 #endif
 }
