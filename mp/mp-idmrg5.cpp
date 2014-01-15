@@ -287,7 +287,7 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
    GmRes(Guess.back(), ProdL, H0, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>());
 
    // remove the spurious constant term from the energy
-   DEBUG_TRACE("Spurious part")(inner_prod(Guess.front(), Rho));
+   DEBUG_TRACE("Spurious part")(inner_prod(Guess.back(), Rho));
    Guess.back() -= inner_prod(Guess.back(), Rho) * Guess.front();
 
    return Energy;
@@ -340,7 +340,9 @@ struct SuperblockMultiply
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
    {
+      //     TRACE(Left.front())(Right.back());
       return operator_prod_regular(Left, Psi, herm(Right));
+      //return operator_prod(Left, Psi, herm(Right));
    }
 
    StateComponent const& Left;
@@ -1233,6 +1235,10 @@ int main(int argc, char** argv)
          {
             std::cout << "using twist " << Twist << '\n';
          }
+         else
+         {
+            TwistFactor = TwistFactorConj = 1.0;
+         }
 	 LatticeSite Site = CreateU1SpinSite(Spin);
 	 TriangularMPO Ham;
 	 Ham = Jz * TriangularTwoSite(Site["Sz"], Site["Sz"])
@@ -1467,11 +1473,10 @@ int main(int argc, char** argv)
                       + TriangularTwoSite(Site["CHdownP"], Site["Cdown"])
                       - TriangularTwoSite(Site["CdownP"], Site["CHdown"]));
 	 if (t2 != 0)
-	    Ham =  -t2 * (TriangularThreeSite(Site["CHupP"], Site["P"], Site["Cup"])
+	    Ham +=  -t2 * (TriangularThreeSite(Site["CHupP"], Site["P"], Site["Cup"])
 			 - TriangularThreeSite(Site["CupP"], Site["P"], Site["CHup"])
-			 + TriangularThreeSite(Site["CHdownP"], Site["P"], Site["Cdown"])
-			 - TriangularThreeSite(Site["CdownP"], Site["P"], Site["CHdown"]));
-
+		         + TriangularThreeSite(Site["CHdownP"], Site["P"], Site["Cdown"])
+	      	         - TriangularThreeSite(Site["CdownP"], Site["P"], Site["CHdown"]));
          if (U != 0)
             Ham = Ham + (U*0.25) * TriangularOneSite(Site["P"]);
 
@@ -1508,7 +1513,12 @@ int main(int argc, char** argv)
       {
 	 std::cout << "Hamiltonian is spinless Bose-Hubbard, U(1), J=" << J << ", J2=" << J2 << ", U=" << U
                    << ", mu=" << mu << ", V=" << V << "\n";
+
 	 LatticeSite Site = CreateBoseHubbardSpinlessU1Site(NMax);
+
+	 std::vector<BasisList> Sites(1, Site["I"].Basis());
+
+
 	 TriangularMPO Ham;
 	 Ham = -J * TriangularTwoSite(Site["BH"], Site["B"]) - J * TriangularTwoSite(Site["B"], Site["BH"]);
 	 if (U != 0)
@@ -1518,7 +1528,10 @@ int main(int argc, char** argv)
          if (V != 0)
             Ham += V * TriangularTwoSite(Site["N"], Site["N"]);
 	 if (J2 != 0)
-	    Ham += -J2 * TriangularThreeSite(Site["BH"], Site["I"], Site["B"]) - J2 * TriangularThreeSite(Site["B"], Site["I"], Site["BH"]);
+            // 	    Ham += -J2 * TriangularThreeSite(Site["BH"], Site["I"], Site["B"]) 
+            // 	      - J2 * TriangularThreeSite(Site["B"], Site["I"], Site["BH"]);
+	 Ham += -J2 * TwoPointOperator(Sites, 0, Site["BH"], 2, Site["B"]) 
+	   - J2 *  TwoPointOperator(Sites, 0, Site["B"], 2, Site["BH"]);
 	 HamMPO = Ham;
       }
       else if (HamStr == "bh2-u1")
@@ -1968,8 +1981,8 @@ int main(int argc, char** argv)
       TriangularMPO::const_iterator HI = HamMPO.begin();
 
       DEBUG_TRACE(inner_prod(C, operator_prod(LeftBlock.back(), C, herm(RightBlock.front()))));
-      DEBUG_TRACE(inner_prod(LeftBlock.back().front(), scalar_prod(C, herm(C))));
-      DEBUG_TRACE(inner_prod(RightBlock.front().back(), scalar_prod(herm(C), C)));
+      DEBUG_TRACE(inner_prod(LeftBlock.back().back(), scalar_prod(C, herm(C))));
+      DEBUG_TRACE(inner_prod(RightBlock.front().front(), scalar_prod(herm(C), C)));
 
       // set the initial energy to zero, so that we get the correct energy per unit cell
       // even from the first iteration
@@ -1997,22 +2010,6 @@ int main(int argc, char** argv)
       DEBUG_TRACE(inner_prod(C, operator_prod(LeftBlock.back(), C, herm(RightBlock.front()))));
       DEBUG_TRACE(inner_prod(LeftBlock.back().back(), scalar_prod(C, herm(C))));
       DEBUG_TRACE(inner_prod(RightBlock.front().front(), scalar_prod(herm(C), C)));
-
-#if 0
-      I = MyPsi.begin();
-      HI = HamMPO.begin();
-      LeftBlock.back() = delta_shift(LeftBlock.back(), QShift);
-      while (I != MyPsi.end())
-      {
-	 LeftBlock.push_back(operator_prod(herm(*HI), herm(*I), LeftBlock.back(), *I));
-	 ++HI;
-	 ++I;
-      }
-      TRACE(inner_prod(C, operator_prod(LeftBlock.back(), C, herm(RightBlock.front()))));
-      TRACE(inner_prod(C, operator_prod(herm(LeftBlock.back()), C, RightBlock.front())));
-      TRACE(inner_prod(LeftBlock.back().front(), scalar_prod(C, herm(C))));
-      TRACE(inner_prod(RightBlock.front().back(), scalar_prod(herm(C), C)));
-#endif
 
       // initialization of the blocks
 
@@ -2064,6 +2061,8 @@ int main(int argc, char** argv)
       //      moving_average<double> FidelityAv(UnitCellSize*2);
       moving_exponential<double> FidelityAv(exp(log(0.25)/UnitCellSize));
       FidelityAv.push(InitialFidelity); // initialization
+
+      DEBUG_TRACE(HamMPO);
 
       try
       {

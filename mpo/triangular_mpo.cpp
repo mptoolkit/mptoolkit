@@ -173,14 +173,14 @@ TriangularMPO TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperat
 
 
 TriangularMPO TriangularThreeSite(SimpleOperator const& x, SimpleOperator const& y, SimpleOperator const& z, 
-				   QuantumNumber const& xy_trans)
+				   QuantumNumber const& yz_trans)
 {
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
 
    BasisList b(x.GetSymmetryList());
    b.push_back(Ident);
-   b.push_back(y.TransformsAs());
-   b.push_back(xy_trans);
+   b.push_back(yz_trans);
+   b.push_back(z.TransformsAs());
    b.push_back(Ident);
 
    SimpleOperator I = SimpleOperator::make_identity(x.Basis1());
@@ -226,8 +226,8 @@ TriangularMPO TriangularStretchedTwoSite(SimpleOperator const& x, int NumNeighbo
 
 TriangularMPO TriangularThreeSite(SimpleOperator const& x, SimpleOperator const& y, SimpleOperator const& z)
 {
-   QuantumNumbers::QuantumNumberList ql = transform_targets(x.TransformsAs(), y.TransformsAs());
-   CHECK_EQUAL(ql.size(), 1)("ambiguous coupling of x and y")(x.TransformsAs())(y.TransformsAs());
+   QuantumNumbers::QuantumNumberList ql = transform_targets(y.TransformsAs(), z.TransformsAs());
+   CHECK_EQUAL(ql.size(), 1)("ambiguous coupling of y and z")(y.TransformsAs())(z.TransformsAs());
    return TriangularThreeSite(x,y,z, ql[0]);
 }
 
@@ -360,7 +360,7 @@ TriangularMPO& operator*=(TriangularMPO& Op, double x)
 {
    for (unsigned i = 0; i < Op.size(); ++i)
    {
-      for (unsigned j = 1; j < Op[i].Basis1().size(); ++j)
+      for (unsigned j = 1; j < Op[i].Basis2().size(); ++j)
       {
          if (iterate_at(Op[i].data(), 0, j))
             set_element(Op[i].data(), 0, j, get_element(Op[i].data(),0,j) * x);
@@ -373,7 +373,7 @@ TriangularMPO& operator*=(TriangularMPO& Op, std::complex<double> x)
 {
    for (unsigned i = 0; i < Op.size(); ++i)
    {
-      for (unsigned j = 1; j < Op[i].Basis1().size(); ++j)
+      for (unsigned j = 1; j < Op[i].Basis2().size(); ++j)
       {
          if (iterate_at(Op[i].data(), 0, j))
             set_element(Op[i].data(), 0, j, get_element(Op[i].data(),0,j) * x);
@@ -478,6 +478,8 @@ TriangularMPO operator+(TriangularMPO const& x, TriangularMPO const& y)
 
       Result[Here] = Next;
    }
+
+   //   TRACE(x)(y)(Result);
 
    return Result;
 }
@@ -982,7 +984,7 @@ TriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
                                     int n1, SimpleOperator const& x1,
                                     int n2, SimpleOperator const& x2)
 {
-   TRACE(n1)(x1)(n2)(x2);
+   DEBUG_TRACE(n1)(x1)(n2)(x2);
    // Normal order the sites.
    if (n1 > n2)
       return TwoPointOperator(Sites, n2, x2, n1, x1);
@@ -1028,14 +1030,14 @@ TriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
    ++Loc[smod(n1+1,Size)];
    for (int i = n1+1; i < n2; ++i)
    {
-      ++Loc[smod(i+1,Size)];
-      Result[smod(i,Size)](Loc[smod(i,Size)], Loc[smod(i+1,Size)]) 
+      Result[smod(i,Size)](Loc[smod(i,Size)], Loc[smod(i+1,Size)]+1) 
          = SimpleOperator::make_identity(Sites[smod(i,Size)]);
+      ++Loc[smod(i+1,Size)];
    }
    //   TRACE(n1)(n2)(LinearAlgebra::Vector<int>(Loc));
    Result[smod(n2,Size)](Loc[smod(n2,Size)],Loc[smod(n2+1,Size)]+1) = x2;
    TriangularMPO TriResult(Result.data());
-   //   TRACE(TriResult);
+   //TRACE(TriResult);
    TriResult.debug_check_structure();
    return TriResult;
 }
@@ -1059,7 +1061,7 @@ TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
    }
 
    // the actual operator
-   for (int i = n2; i > n1; --i)
+   for (int i = n1+1; i <= n2; ++i)
    {
       BondBasis[smod(i,Size)].push_back(x2.TransformsAs());
    }
@@ -1082,13 +1084,13 @@ TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
 
    // now the operators.  Keep track of which component we insert them into
    std::vector<int> Loc(Size, 0);
-   Result[smod(n2,Size)](0,1) = x2;
-   ++Loc[smod(n2-1,Size)];
-   for (int i = n2-1; i > n1; --i)
+   Result[smod(n1,Size)](0,1) = x1;
+   ++Loc[smod(n1+1,Size)];
+   for (int i = n1+1; i < n2; ++i)
    {
-      ++Loc[smod(i-1,Size)];
-      Result[smod(i,Size)](Loc[smod(i,Size)], Loc[smod(i-1,Size)]) = String;
+      Result[smod(i,Size)](Loc[smod(i,Size)], Loc[smod(i+1,Size)]+1) = String;
+      ++Loc[smod(i+1,Size)];
    }
-   Result[smod(n1,Size)](Loc[smod(n1,Size)],Loc[smod(n1-1,Size)+1]) = x1;
+   Result[smod(n2,Size)](Loc[smod(n2,Size)],Loc[smod(n2+1,Size)]+1) = x2;
    return TriangularMPO(Result.data());
 }

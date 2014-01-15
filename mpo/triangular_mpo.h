@@ -100,7 +100,6 @@ class TriangularMPO
       data_type Data_;
 };
 
-inline
 std::ostream&
 operator<<(std::ostream& out, TriangularMPO const& op);
 
