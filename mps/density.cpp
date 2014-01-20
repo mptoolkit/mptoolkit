@@ -334,7 +334,7 @@ void UpdateKeepList(KeepListType& KeepList,
    typedef std::set<QuantumNumbers::QuantumNumber> SiteQNType;
    typedef std::list<EigenInfo> StatesListType;
 
-   // Make a set of all quantum numbers that are already kepy
+   // Make a set of all quantum numbers that are already kept
    typedef std::set<QuantumNumbers::QuantumNumber> qnType;
    qnType KeptQN;
    for (StatesListType::const_iterator I = KeepStates.begin(); I != KeepStates.end(); ++I)

@@ -439,7 +439,8 @@ size_t PageFileImpl::try_defragment(size_t Page)
       unsigned char const* Buf = this->read(Page);
       this->deallocate(Page);
       Page = this->write(Buf);
-      this->get_allocator()->deallocate(Buf);
+      //      this->get_allocator()->deallocate(Buf);
+      // We don't need to deallocate the buffer: write() does it for us
    }
    return Page;
 }

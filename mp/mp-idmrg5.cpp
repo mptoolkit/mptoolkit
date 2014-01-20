@@ -1585,7 +1585,7 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "bh-u1")
       {
-      	 std::cout << "Hamiltonian is spinless Bose-Hubbard, U1 symmetry, T=1, U=" << U << ", Nmax=" << NMax << "\n";
+      	 std::cout << "Hamiltonian is spinless Bose-Hubbard, U1 symmetry, J=1, U=" << U << ", Nmax=" << NMax << "\n";
 	 if (D != 0)
 	    std::cout << "D = " << D << ", lambda=" << Lambda << '\n';
 
