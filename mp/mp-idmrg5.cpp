@@ -1165,9 +1165,14 @@ int main(int argc, char** argv)
                    << ", eshift=" << c
                    << '\n';
 
+	 std::cout << "Number of long range terms = " << LongRangeCoeff.size() << '\n';
+	 CHECK_EQUAL(LongRangeCoeff.size(), LongRangeExp.size())
+	    ("Must supply equal numbers of coefficients and exponents");
+
 	 LatticeSite Site = CreateSU2SpinSite(Spin);
 	 TriangularMPO Ham;
-         Ham = Dipole * TriangularTwoSite(-sqrt(3.0)*Site["S"], Site["S"], Site["I"].TransformsAs());
+	 if (Dipole != 0)
+	    Ham = Ham + Dipole * TriangularTwoSite(-sqrt(3.0)*Site["S"], Site["S"], Site["I"].TransformsAs());
 	 if (Quadrapole != 0.0)
 	    Ham = Ham + Quadrapole * TriangularTwoSite(-sqrt(5.0)*Site["Q"], Site["Q"], Site["I"].TransformsAs());
          if (Hexapole != 0.0)
@@ -1182,6 +1187,14 @@ int main(int argc, char** argv)
 	 {
 	    Ham = Ham + c * TriangularOneSite(Site["I"]);
 	 }
+
+	 for (unsigned i = 0; i < LongRangeCoeff.size(); ++i)
+	 {
+	    std::cout << "Long range term coefficient=" << LongRangeCoeff[i] 
+		      << ", exponent=" << LongRangeExp[i] << '\n';
+	    Ham += LongRangeCoeff[i] * TriangularTwoSiteExponential(-sqrt(3.0)*Site["S"], Site["S"], LongRangeExp[i]);
+	 }
+
 	 HamMPO = Ham;
       }
       else if (HamStr == "xxx-ladder-u1")
