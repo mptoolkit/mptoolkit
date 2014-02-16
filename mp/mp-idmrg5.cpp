@@ -1035,13 +1035,13 @@ int main(int argc, char** argv)
 	 ("p0", prog_opt::value(&p0),
 	  FormatDefault("p0 projector (for spin 2 xxx)", p0).c_str())
 	 ("p1", prog_opt::value(&p1),
-	  FormatDefault("p0 projector (for spin 2 xxx)", p1).c_str())
+	  FormatDefault("p1 projector (for spin 2 xxx)", p1).c_str())
 	 ("p2", prog_opt::value(&p2),
-	  FormatDefault("p0 projector (for spin 2 xxx)", p2).c_str())
+	  FormatDefault("p2 projector (for spin 2 xxx)", p2).c_str())
 	 ("p3", prog_opt::value(&p3),
-	  FormatDefault("p0 projector (for spin 2 xxx)", p3).c_str())
+	  FormatDefault("p3 projector (for spin 2 xxx)", p3).c_str())
 	 ("p4", prog_opt::value(&p4),
-	  FormatDefault("p0 projector (for spin 2 xxx)", p4).c_str())
+	  FormatDefault("p4 projector (for spin 2 xxx)", p4).c_str())
 	 ("lambda", prog_opt::value(&Lambda),
 	  FormatDefault("transverse field strength (for itf hamiltonian)", Lambda).c_str())
 	 ("coeff", prog_opt::value(&LongRangeCoeff),

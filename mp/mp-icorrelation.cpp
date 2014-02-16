@@ -14,6 +14,7 @@
 #include "models/spin.h"
 #include "models/spin-u1.h"
 #include "models/spin-su2.h"
+#include "models/spin-z2.h"
 #include "models/tj-u1su2.h"
 #include "models/tj-u1.h"
 #include "models/spinlessfermion-u1.h"
@@ -140,6 +141,10 @@ int main(int argc, char** argv)
       else if (Model == "spin-u1")
       {
 	 Site = CreateU1SpinSite(0.5);
+      }
+      else if (Model == "spin-z2")
+      {
+	 Site = CreateZ2SpinSite(0.5);
       }
       else if (Model == "tj-u1")
       {
