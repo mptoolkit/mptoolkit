@@ -75,6 +75,27 @@ InfiniteWavefunction reflect(InfiniteWavefunction const& Psi)
    return Ret;
 }
 
+InfiniteWavefunction conj(InfiniteWavefunction const& Psi)
+{
+   InfiniteWavefunction Ret;
+   Ret.C_old = conj(Psi.C_right);
+   Ret.C_right = conj(Psi.C_old); 
+   Ret.Attr = Psi.Attr;
+   Ret.QShift = Psi.QShift;
+   Ret.Psi = LinearWavefunction(Psi.Psi.GetSymmetryList());
+   for (LinearWavefunction::const_iterator I = Psi.Psi.begin();
+        I != Psi.Psi.end(); ++I)
+   {
+      Ret.Psi.push_back(conj(*I));
+   }
+
+   CHECK_EQUAL(Ret.C_right.Basis1(), Ret.Psi.Basis2());
+   CHECK_EQUAL(Ret.C_old.Basis1(), Ret.Psi.Basis1());
+
+   return Ret;
+}
+
+
 int main(int argc, char** argv)
 {
    try
@@ -90,6 +111,7 @@ int main(int argc, char** argv)
       bool Sort = false;
       bool Quiet = false;
       bool Reflect = false;
+      bool Conj = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -107,6 +129,8 @@ int main(int argc, char** argv)
           "rotate the unit cell of psi2 this many sites to the left before calculating the overlap [default 0]")
          ("reflect", prog_opt::bool_switch(&Reflect),
           "reflect psi2 (gives parity eigenvalue)")
+         ("conj", prog_opt::bool_switch(&Conj),
+          "complex conjugate psi2")
          ("q,quantumnumber", prog_opt::value(&Sector),
           "calculate the overlap only in this quantum number sector, "
           "can be used multiple times [default is to calculate all sectors]")
@@ -190,6 +214,14 @@ int main(int argc, char** argv)
             std::cout << "Reflecting psi2..." << std::endl;
          *Psi2.mutate() = reflect(*Psi2);
       }
+
+      if (Conj)
+      {
+         if (Verbose)
+            std::cout << "Conjugating psi2..." << std::endl;
+         *Psi2.mutate() = conj(*Psi2);
+      }
+
 
       // get the list of quantum number sectors
       std::set<QuantumNumber> Sectors;

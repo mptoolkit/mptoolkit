@@ -197,13 +197,13 @@ mp-tools = mp-construct mp-overlap mp-expectation \
            mp-reorder-symmetry mp-local-fourpoint-ex mp-evolve-bonds \
            mp-overlap-conj mp-expectation-conj mp-make-positive
 
-infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-ioverlap mp-itebd2 \
+infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-itebd2 \
                  mp-ieigen mp-idmrg3 mp-icorrelation mp-idmrg4 mp-idmrg5 mp-iexcitation mp-iexcitation2 \
                  mp-bdmrg mp-imake-transverse-lattice mp-imake-transverse-lattice-folded mp-iexpectation-sz \
                  mp-iexpectation-sz2 mp-iparity mp-idump mp-itebd mp-icorrelation mp-idmrg5-spin2
 
 infinite-tools = mp-idmrg5 mp-ispectrum \
-                 mp-iinfo mp-iproject mp-icorrelation
+                 mp-iinfo mp-iproject mp-icorrelation mp-ioverlap
 #                 mp-iexpectation-tri
 
 mp-tools-not-functional = mp-add2 mp-exp mp-stringcorrelation-su2 mp-canonical

@@ -186,10 +186,12 @@ int main(int argc, char** argv)
       {
 	 PANIC("mp-icorrelation: fatal: model parameter should be one of tj-u1, tj-u1su2, sf-u1, klm-u1su2.");
       }
-
+ 
+      QuantumNumber Ident(Psi->GetSymmetryList());
+ 
       SimpleOperator Op1 = Site[Op1Str];
       SimpleOperator Op2 = Site[Op2Str];
-      SimpleOperator Op1Op2 = Op1 * Op2;  // do this now so that we don't include the string term
+      SimpleOperator Op1Op2 = prod(Op1, Op2, Ident);  // do this now so that we don't include the string term
       SimpleOperator StringOp = Site[StringOpStr];
       if (IncludeFirst)
       {
@@ -201,8 +203,6 @@ int main(int argc, char** argv)
 
       std::cout.precision(14);
       
-      QuantumNumber Ident(Psi->GetSymmetryList());
-
       // for each site in the unit cell, make the right hand operator
       std::list<MatrixOperator> F;
       LinearWavefunction::const_iterator I = PsiOrtho.end();
