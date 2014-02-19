@@ -18,6 +18,9 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
    {
       std::cerr << "Total dimension = " << n << '\n';
    }
+   // save the arpack debug log level so we can restore it later
+   int DebugOutputLevelSave = ARPACK::debug().mceupd;
+   ARPACK::debug().mceupd = Verbose;
 
    LinearAlgebra::Vector<std::complex<double> > Result;
 
@@ -65,7 +68,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
    ARPACK::iparam_t iparam;
    iparam.ishift = 1;      // exact shifts
    iparam.mxiter = 10000;  // maximum number of arnoldi iterations (restarts?)
-   iparam.mode = 1;  // ordinery eigenvalue problem
+   iparam.mode = 1;  // ordinary eigenvalue problem
    ARPACK::zn_ipntr_t ipntr;
    std::vector<std::complex<double> > workd(3*n);
    int const lworkl = 3*ncv*ncv + 5*ncv;
@@ -79,8 +82,6 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
    }
 
    int NumMultiplies = 0;
-
-   //   TRACE(tol);
 
    ARPACK::znaupd(&ido, bmat, n, which, nev, tol, &resid[0], ncv,
                   &v[0], ldv, &iparam, &ipntr, &workd[0],
@@ -109,7 +110,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
 
    if (Verbose >= 1)
    {
-      std::cerr << "\nFinished ARPACK, nev=" << nev << ", ncv=" << ncv << ", NumMultiplies=" << NumMultiplies << '\n';
+      std::cerr << "\nFinished ARPACK, nev=" << nev << ", ncv=" << ncv << ", NumMultiplies=" << NumMultiplies << " " << iparam << '\n';
    }
 
    // get the eigenvalues
@@ -125,7 +126,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
                   bmat, n, which, nev, tol, &resid[0], ncv, &v[0], ldv, 
                   &iparam, &ipntr, &workd[0],
                   &workl[0], lworkl, &rwork[0], &info);
-   CHECK(info >= 0)(info); 
+   CHECK(info >= 0)("arpack::zneupd")(info); 
 
    Result = LinearAlgebra::Vector<std::complex<double> >(nev);
    for (int i = 0; i < nev; ++i)
@@ -165,6 +166,9 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
 	 }
       }
    }
+
+   // restore the ARPACK debug log level before returning
+   ARPACK::debug().mceupd = DebugOutputLevelSave;
 
    return Result;
 }

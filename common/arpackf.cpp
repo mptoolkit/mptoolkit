@@ -31,6 +31,19 @@ void iparam_t::put_to_raw(int* raw)
    raw[10] = numreo;
 }
 
+std::ostream&
+operator<<(std::ostream& out, iparam_t const& param)
+{
+   out << "ishift=" << param.ishift
+       << ", mxiter=" << param.mxiter
+       << ", nconv=" << param.nconv
+       << ", mode=" << param.mode
+       << ", np=" << param.np
+       << ", numop=" << param.numop
+       << ", numreo=" << param.numreo;
+   return out;
+}
+
 // ipntr_t
 
 void ipntr_t::get_from_raw(int const* raw)

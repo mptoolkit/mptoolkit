@@ -40,6 +40,7 @@ int main(int argc, char** argv)
       bool IncludeFirst = false, Fermionic = false;
       int Verbose = 0;
       int NMax = 5;
+      double Spin = 0.5;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -54,6 +55,8 @@ int main(int argc, char** argv)
          ("includefirst,d", prog_opt::bool_switch(&IncludeFirst),
           "when calculating a string correlation, apply the string operator also "
           "to the first site, as operator1*S")
+         ("spin", prog_opt::value(&Spin),
+          "spin (for su(2) models)")
          ("fermionic,f", prog_opt::bool_switch(&Fermionic),
           "take the correlator to be fermionic; equivalent to \"--string P --includefirst\"")
          ("length,n", prog_opt::value(&Length),
@@ -128,7 +131,7 @@ int main(int argc, char** argv)
       }
       else if (Model == "spin")
       {
-	 Site = CreateSpinSite(0.5);
+	 Site = CreateSpinSite(Spin);
       }
       else if (Model == "spin1")
       {
@@ -136,11 +139,11 @@ int main(int argc, char** argv)
       }
       else if (Model == "spin-su2")
       {
-	 Site = CreateSU2SpinSite(0.5);
+	 Site = CreateSU2SpinSite(Spin);
       }
       else if (Model == "spin-u1")
       {
-	 Site = CreateU1SpinSite(0.5);
+	 Site = CreateU1SpinSite(Spin);
       }
       else if (Model == "spin-z2")
       {

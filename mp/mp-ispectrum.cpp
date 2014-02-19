@@ -325,6 +325,11 @@ get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
    double tolsave = tol;
    int ncvsave = ncv;
 
+   if (Verbose >= 1)
+   {
+      std::cerr << "Calculating right eigenvalues\n";
+   }
+
    std::vector<std::complex<double> >* OutVec 
       = RightVectors ? new std::vector<std::complex<double> >() : NULL;
    LinearAlgebra::Vector<std::complex<double> >  RightEigen = 
@@ -333,6 +338,10 @@ get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 
    if (LeftVectors)
    {
+      if (Verbose >= 1)
+      {
+         std::cerr << "Calculating left eigenvalues\n";
+      }
       tol = tolsave;
       ncv = ncvsave;
       std::vector<std::complex<double> >* OutLeftVec = new std::vector<std::complex<double> >();

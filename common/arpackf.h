@@ -16,10 +16,24 @@
 
 #include "common/fortran.h"
 
+#include <ostream>
+
 namespace ARPACK
 {
 
 using namespace Fortran;
+
+// debug "common" statement.
+
+struct DebugInfo
+{
+   integer logfil, ndigit, mgetv0;
+   integer msaupd, msaup2, msaitr, mseigt, msapps, msgets, mseupd;
+   integer mnaupd, mnaup2, mnaitr, mneigt, mnapps, mngets, mneupd;
+   integer mcaupd, mcaup2, mcaitr, mceigt, mcapps, mcgets, mceupd;
+};
+
+   // DebugInfo& debug;  // debug structure, declared later
 
 // some structs for the ARPACK parameters
 
@@ -38,7 +52,12 @@ struct iparam_t
 
    void get_from_raw(int const* raw);
    void put_to_raw(int* raw);
+
 };
+   
+int const size_iparam_t = 11;
+
+std::ostream& operator<<(std::ostream& out, iparam_t const& param);
 
 // pointers into the workd and workl arrays for double precision variants.  
 // These are converted between 0-based arrays
@@ -64,6 +83,8 @@ struct dn_ipntr_t
    void get_from_raw(int const* raw);
    void put_to_raw(int* raw);
 };
+
+int const size_dn_ipntr_t = 11;
 
 // pointers into the workd and workl arrays for complex variants.  
 // These are converted between 0-based arrays
@@ -93,6 +114,8 @@ struct zn_ipntr_t
    void get_from_raw(int const* raw);
    void put_to_raw(int* raw);
 };
+
+int const size_zn_ipntr_t = 14;
 
 // wrapper functions to the fortran ARPACK routines
 
@@ -151,15 +174,7 @@ namespace raw
 extern "C"
 {
 
-// debug "common" statement.
-
-/*   struct {  */
-/*     integer logfil, ndigit, mgetv0; */
-/*     integer msaupd, msaup2, msaitr, mseigt, msapps, msgets, mseupd; */
-/*     integer mnaupd, mnaup2, mnaitr, mneigt, mnapps, mngets, mneupd; */
-/*     integer mcaupd, mcaup2, mcaitr, mceigt, mcapps, mcgets, mceupd; */
-/*   } F77NAME(debug); */
-
+extern DebugInfo F77NAME(debug);
 
 // double precision symmetric routines.
 
@@ -269,6 +284,12 @@ void F77NAME(zneupd)(logical const* rvec, char const* howmny,
 
 } // namespace raw
 
+inline
+DebugInfo& debug()
+{
+   return raw::F77NAME(debug);
+}
+
 // iparam_t
 
 inline
@@ -296,6 +317,21 @@ void iparam_t::put_to_raw(int* raw)
    raw[8] = numop;
    raw[9] = numopb;
    raw[10] = numreo;
+}
+
+
+inline
+std::ostream&
+operator<<(std::ostream& out, iparam_t const& param)
+{
+   out << "ishift=" << param.ishift
+       << ", mxiter=" << param.mxiter
+       << ", nconv=" << param.nconv
+       << ", mode=" << param.mode
+       << ", np=" << param.np
+       << ", numop=" << param.numop
+       << ", numreo=" << param.numreo;
+   return out;
 }
 
 // dn_ipntr_t
@@ -381,8 +417,8 @@ void dsaupd(integer* ido, char bmat, integer n, char const* which,
             iparam_t* iparam, dn_ipntr_t* ipntr, double *workd,
             double *workl, integer lworkl, integer* info)
 {
-   integer raw_iparam[11];
-   integer raw_ipntr[11];
+   integer raw_iparam[size_iparam_t];
+   integer raw_ipntr[size_dn_ipntr_t];
 
    iparam->put_to_raw(raw_iparam);
    ipntr->put_to_raw(raw_ipntr);
@@ -408,8 +444,8 @@ void dseupd(bool rvec, char HowMny, logical* select,
             integer lworkl, integer* info)
 {
    logical rvec_raw = rvec;
-   integer raw_iparam[11];
-   integer raw_ipntr[11];
+   integer raw_iparam[size_iparam_t];
+   integer raw_ipntr[size_dn_ipntr_t];
 
    iparam->put_to_raw(raw_iparam);
    ipntr->put_to_raw(raw_ipntr);
@@ -443,8 +479,8 @@ void znaupd(integer* restrict ido, char bmat,
             double* restrict rwork,
             integer* restrict info)
 {
-   integer raw_iparam[11];
-   integer raw_ipntr[11];
+   integer raw_iparam[size_iparam_t];
+   integer raw_ipntr[size_zn_ipntr_t];
 
    iparam->put_to_raw(raw_iparam);
    ipntr->put_to_raw(raw_ipntr);
@@ -478,8 +514,8 @@ void zneupd(bool rvec, char howmny,
             double* restrict rwork,
             integer* restrict info)
 {
-   integer raw_iparam[11];
-   integer raw_ipntr[11];
+   integer raw_iparam[size_iparam_t];
+   integer raw_ipntr[size_zn_ipntr_t];
 
    iparam->put_to_raw(raw_iparam);
    ipntr->put_to_raw(raw_ipntr);
