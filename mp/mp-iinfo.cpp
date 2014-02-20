@@ -18,15 +18,18 @@ int main(int argc, char** argv)
    try 
    {
       int MaxEigenvalues = 10000;
-      bool ShowLocal = false;
       bool Base2 = false;
+      bool ShowDegen = false;
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
          ("entropy,e", "show the entropy at each partition")
          ("states,s", "show the number of states at each partition")
 	 ("basis,a", "show the complete basis at each partition")
+         ("localbasis,b", "show the local basis at each site")
          ("density-matrix,d", "show the density matrix eigenvalues")
+         ("degen", prog_opt::bool_switch(&ShowDegen),
+          "Show degeneracies in the density matrix as repeated eigenvalues (only with -d)")
 	 ("casimir,c", "show the values of the casimir invariant operators at each partition")
 	 ("trans,t", "calculate left/right eigenvectors of the transfer operator and show how far they deviate from unity")
          ("limit,l", prog_opt::value<int>(&MaxEigenvalues), 
@@ -60,12 +63,11 @@ int main(int argc, char** argv)
       
       bool ShowEntropy = vm.count("entropy");
       bool ShowStates = vm.count("states");
+      bool ShowLocalBasis = vm.count("localbasis");
       bool ShowBasis = vm.count("basis");
       bool ShowCasimir = vm.count("casimir");
       bool ShowDensity = vm.count("density-matrix") || vm.count("limit");
       bool ShowTrans = vm.count("trans");
-
-      TRACE(ShowDensity);
 
       std::string Wavefunc = vm["input-wavefunction"].as<std::string>();
 
@@ -109,6 +111,27 @@ int main(int argc, char** argv)
 	 I = MatrixOperator::make_identity(PsiR.Basis2());
 	 J = transfer_from_right(I, PsiR);
 	 TRACE(norm_frob(I-J));
+      }
+
+      if (ShowStates || ShowLocalBasis)
+      {
+	 std::cout << "quantities in the unit cell:\n";
+         int i=0;
+         for (LinearWavefunction::const_iterator I = P.Psi.begin();
+              I != P.Psi.end(); ++I)
+         {
+            std::cout << "Site " << i++ << '\n';
+            if (ShowStates)
+            {
+               std::cout << "LeftStates: " << I->Basis1().total_dimension()
+                         << " RightStates: " << I->Basis2().total_dimension()
+                         << "\n";
+            }
+            if (ShowLocalBasis)
+            {
+               std::cout << "LocalBasis: " << I->LocalBasis() << '\n';
+            }
+         }
       }
 
       if (ShowCasimir || ShowBasis || ShowEntropy || ShowDensity)
@@ -162,10 +185,14 @@ int main(int argc, char** argv)
 	    if (ShowDensity)
 	    {
 	       DensityMatrix<MatrixOperator> DM(Rho);
-	       DM.DensityMatrixReport(std::cout, MaxEigenvalues, Base2);
+	       DM.DensityMatrixReport(std::cout, MaxEigenvalues, Base2, ShowDegen);
 	    }
 
-	    P = rotate_left(P, 1);
+            // only rotate if we're not on the final iteration
+            if (i+1 < P.size())
+            {
+               P = rotate_left(P, 1);
+            }
 	 }
       }
 

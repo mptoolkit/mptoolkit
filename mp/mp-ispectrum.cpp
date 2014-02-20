@@ -731,6 +731,10 @@ int main(int argc, char** argv)
             LinOpR[i](0,0) = (i == int(Psi.size())-2) ? Site[OpR2] 
 	       : (i == int(Psi.size())-3) ? Site[OpR3] : (i == int(Psi.size())-4) ? Site[OpR4] : Site["I"];
          }
+
+         // Verify that the local basis matches, and abort otherwise
+         local_basis_compatible_or_abort(Psi, LinOpL);
+         local_basis_compatible_or_abort(Psi, LinOpR);
       }
 
       // Get the left and right operators, if applicable

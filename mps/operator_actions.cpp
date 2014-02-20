@@ -90,3 +90,44 @@ inject_left_qshift(MatrixOperator const& m,
 {
    return inject_left(delta_shift(m, QShift), Op, Psi);
 }
+
+bool
+is_local_basis_compatible(LinearWavefunction const& Psi, GenericMPO const& M)
+{
+   // If the MPO has a different support to Psi then we are not compatible
+   if (Psi.size() != M.size())
+      return false;
+
+   // Also check the individual local basis at each step
+   LinearWavefunction::const_iterator iPsi = Psi.begin();
+   GenericMPO::const_iterator iM = M.begin();
+   while (iPsi != Psi.end())
+   {
+      if (iPsi->LocalBasis() != iM->LocalBasis1()
+          || iPsi->LocalBasis() != iM->LocalBasis2())
+         return false;
+
+      ++iPsi; ++iM;
+   }
+   return true;
+}
+
+void
+local_basis_compatible_or_abort(LinearWavefunction const& Psi, GenericMPO const& M)
+{
+   CHECK_EQUAL(Psi.size(), M.size())("Wavefunction and MPO must have the same size unit cell!");
+
+   int SiteNumber = 0;
+   LinearWavefunction::const_iterator iPsi = Psi.begin();
+   GenericMPO::const_iterator iM = M.begin();
+   while (iPsi != Psi.end())
+   {
+      CHECK_EQUAL(iPsi->LocalBasis(), iM->LocalBasis1())
+         ("Local basis for wavefunction does not match local basis 1 of the MPO at a site!")(SiteNumber);
+
+      CHECK_EQUAL(iPsi->LocalBasis(), iM->LocalBasis2())
+         ("Local basis for wavefunction does not match local basis 2 of the MPO at a site!")(SiteNumber);
+      
+      ++iPsi; ++iM; ++SiteNumber;
+   }
+}

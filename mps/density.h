@@ -150,7 +150,10 @@ class DensityMatrixBase
       // shows a report of the density matrix eigenvalues, showing at most MaxEigenvalues of
       // the eigenvalue, cumulative truncation error, 
       // TODO: fix the code rot
-      std::ostream& DensityMatrixReport(std::ostream& out, int MaxEigenvalues = -1, bool Base2 = false);
+      // Base2 means show entropy as base 2 rather than natural log
+      // ShowDegen shows multiplets as repeated eigenvalues
+      std::ostream& DensityMatrixReport(std::ostream& out, int MaxEigenvalues = -1, bool Base2 = false,
+                                     bool ShowDegen = false);
 
       // returns the sum of the eigenvalues
       double EigenSum() const { return ESum; }

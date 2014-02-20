@@ -136,4 +136,13 @@ inject_left(StateComponent const& In,
             GenericMPO const& Op,
             LinearWavefunction const& Psi2);
 
+// verify that the local basis of an MPO matches the local basis of a wavefunction
+// and that the size is correct
+bool
+is_local_basis_compatible(LinearWavefunction const& Psi, GenericMPO const& M);
+
+// aborts with an error message if !is_local_basis_compatible(Psi,M)
+void
+local_basis_compatible_or_abort(LinearWavefunction const& Psi, GenericMPO const& M);
+
 #endif

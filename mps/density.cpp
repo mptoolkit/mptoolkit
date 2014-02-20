@@ -78,7 +78,7 @@ LinearBasis<BasisList>::ReverseLookup(int s, int index) const
 }
 
 std::ostream& 
-DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalues, bool Base2)
+DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalues, bool Base2, bool ShowDegen)
 {
    std::ostringstream out;
    out.precision(12);
@@ -105,18 +105,38 @@ DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalu
    {
       double EVal = Iter->Eigenvalue / this->EigenSum();
       double Energy = EVal > 0 ? ((-log(EVal) - EShift) / EScale) : 0.0;
-      Sigma -= EVal * Iter->Degree;
-      TotalDegree += Iter->Degree;
-      ++n;
-      out << std::right << std::setw(6) << n << "  " 
-	  << std::right << std::setw(20) << Iter->Eigenvalue 
-          << "  " << std::setw(10) << Iter->Degree
-          << "  " << std::setw(20) << Sigma
-	  << "  " << std::setw(20) << Energy
-	  << "   " << std::left 
-	  << this->Lookup(Iter->Subspace) << '\n';
+
+      if (ShowDegen)
+      {
+         for (int i = 0; i < Iter->Degree; ++i)
+         {
+            Sigma -= EVal;
+            TotalDegree += 1;
+            ++n;
+            out << std::right << std::setw(6) << n << "  " 
+                << std::right << std::setw(20) << Iter->Eigenvalue 
+                << "  " << std::setw(10) << 1
+                << "  " << std::setw(20) << Sigma
+                << "  " << std::setw(20) << Energy
+                << "   " << std::left 
+                << this->Lookup(Iter->Subspace) << '\n';
+         }
+      }
+      else
+      {
+         Sigma -= EVal * Iter->Degree;
+         TotalDegree += Iter->Degree;
+         ++n;
+         out << std::right << std::setw(6) << n << "  " 
+             << std::right << std::setw(20) << Iter->Eigenvalue 
+             << "  " << std::setw(10) << Iter->Degree
+             << "  " << std::setw(20) << Sigma
+             << "  " << std::setw(20) << Energy
+             << "   " << std::left 
+             << this->Lookup(Iter->Subspace) << '\n';
+      }
    }
-   out << n << " out of " << EigenInfoList.size() << " eigenvalues shown.  ";
+   out << n << " out of " << (ShowDegen ? TotalDegree : EigenInfoList.size()) << " eigenvalues shown.  ";
    out << "Total degree = " << TotalDegree << '\n';
    outstream << out.str();
    return outstream;

@@ -158,6 +158,7 @@ GenericMPOClassification classify(GenericMPO const& Op);
 // Construct an operator that projects onto a given subset of a basis.
 SimpleOperator make_projector_onto(BasisList const& Basis, std::set<int> const& Onto);
 
+// extract the local basis at each site of the MPO
 std::vector<BasisList>
 ExtractLocalBasis1(GenericMPO const& Op);
 
