@@ -80,6 +80,7 @@ int main(int argc, char** argv)
       
       std::cout << "Number of states=" << Psi->C_right.Basis1().total_dimension() << '\n';
       std::cout << "Degree=" << Psi->C_right.Basis1().total_degree() << '\n';
+      std::cout << "Unit cell size=" << Psi->Psi.size() << '\n';
       
       std::cout << "Orthogonality fidelity=" << (1.0 - orthogonality_fidelity(*Psi)) << '\n';
 

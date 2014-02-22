@@ -1152,9 +1152,9 @@ int main(int argc, char** argv)
             // These magic values for the spin 2 model projectors come from solving the equations
             // in misc/spin2.cpp
             Dipole     = (-1/50.0)  * p0 + (-1/20.0) * p1 + (-1/20.0)  * p2 + (0.0)     * p3 + (3/25.0)    * p4;
-            Quadrapole = (-1/105.0) * p0 + (-1/70.0) * p1 + (1/98.0)   * p2 + (4/105.0) * p3 + (-6/245.0)  * p4;
+            Quadrapole = (1/105.0)  * p0 + (1/70.0)  * p1 + (-1/98.0)  * p2 + (-4/105.0)* p3 + (6/245.0)   * p4;
             Hexapole   = (-1/180.0) * p0 + (0.0)     * p1 + (1/63.0)   * p2 + (-1/72.0) * p3 + (1/280.0)   * p4;
-            Octapole   = (-1/180.0) * p0 + (1/90.0)  * p1 + (-1/126.0) * p2 + (1/360.0) * p3 + (-1/2520.0) * p4;
+            Octapole   = (1/180.0)  * p0 + (-1/90.0) * p1 + (1/126.0) * p2 + (-1/360.0) * p3 + (1/2520.0)  * p4;
             c          = (1/25.0)   * p0 + (3/25.0)  * p1 + (1/5.0)    * p2 + (7/25.0)  * p3 + (9/25.0)    * p4;
          }
 	 std::cout << "Hamiltonian is XXX model with spin S=" << Spin << ", theta="<<Theta
@@ -1174,11 +1174,11 @@ int main(int argc, char** argv)
 	 if (Dipole != 0)
 	    Ham = Ham + Dipole * TriangularTwoSite(-sqrt(3.0)*Site["S"], Site["S"], Site["I"].TransformsAs());
 	 if (Quadrapole != 0.0)
-	    Ham = Ham + Quadrapole * TriangularTwoSite(-sqrt(5.0)*Site["Q"], Site["Q"], Site["I"].TransformsAs());
+	    Ham = Ham + Quadrapole * TriangularTwoSite(sqrt(5.0)*Site["Q"], Site["Q"], Site["I"].TransformsAs());
          if (Hexapole != 0.0)
 	    Ham = Ham + Hexapole * TriangularTwoSite(-sqrt(7.0)*Site["T"], Site["T"], Site["I"].TransformsAs());
          if (Octapole != 0.0)
-	    Ham = Ham + Octapole * TriangularTwoSite(-sqrt(9.0)*Site["F"], Site["F"], Site["I"].TransformsAs());
+	    Ham = Ham + Octapole * TriangularTwoSite(sqrt(9.0)*Site["F"], Site["F"], Site["I"].TransformsAs());
 
 	 if (J2 != 0.0)
 	    Ham = Ham + J2 * TriangularThreeSite(-sqrt(3.0)*Site["S"],

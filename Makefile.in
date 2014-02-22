@@ -203,7 +203,7 @@ infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-
                  mp-iexpectation-sz2 mp-iparity mp-idump mp-itebd mp-icorrelation mp-idmrg5-spin2
 
 infinite-tools = mp-idmrg5 mp-ispectrum \
-                 mp-iinfo mp-iproject mp-icorrelation mp-ioverlap
+                 mp-iinfo mp-iprint mp-iproject mp-icorrelation mp-ioverlap
 #                 mp-iexpectation-tri
 
 mp-tools-not-functional = mp-add2 mp-exp mp-stringcorrelation-su2 mp-canonical
@@ -215,7 +215,7 @@ mp-tools-experimental = mp-cg mp-cg-sym mp-simplecg-sym mp-simplecg mp-ddmrg \
                         mp-dmrg-test mp-effective cgcalculator mp-idmrg  mp-trotter \
                         mp-rme mp-overlap-bigmem kondo-exactdiag \
                         $(infinite-tools) \
-                        mp-cv2 mp-simple-marshall-qmc spin2
+                        mp-cv2 mp-simple-marshall-qmc spin2 spin1
 
 benchmarks = benchtripleprod
 
@@ -495,6 +495,7 @@ mp-iproject : infinitewavefunction.o eigen.o
 mp-icorrelation : infinitewavefunction.o eigen.o
 mp-iortho : triangular_operator.o infinitewavefunction.o
 mp-iinfo : eigen.o infinitewavefunction.o
+mp-iprint : eigen.o infinitewavefunction.o
 mp-iorthogonalize : triangular_operator.o infinitewavefunction.o
 mp-pwfrg : triangular_operator.o match_basis.o
 mp-itebd : mpexponential.o $(expokitobj) infinitewavefunction.o
@@ -567,6 +568,9 @@ testvectortransform : $(commonobj)
 testmatelem : $(commonobj)  $(pstreamobj) $(pheapobj) $(quantumnumbersobj) $(linearalgebraobj) $(mpobj) $(tensorobj)
 
 spin2 : eigen.o
+
+spin1 : eigen.o
+
 
 # utils
 
