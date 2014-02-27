@@ -11,11 +11,11 @@
 // Calculates the operator contraction, with a matrix
 // actong on the left hand side of the wavefunction.
 // Op must have 1x1 boundaries
-// +-Psi*-
-// |  |
-// m  Op
-// |  |
-// +-Psi-
+// +-Psi*- ... Psi*-
+// |  |         |
+// m  Op-- ...  Op
+// |  |         |
+// +-Psi-- ... Psi--
 MatrixOperator 
 inject_left(MatrixOperator const& m, 
             GenericMPO const& Op, 
@@ -66,13 +66,24 @@ struct InjectLeftQShift
    QuantumNumber const& QShift_;
 };
 
+// Generalization of the operator contraction
+//
+// +-Psi1*-     Psi1*-
+// |  |          |
+// E--Op--- ...  Op---
+// |  |          |
+// +-Psi2-- ... Psi2--
 
-// Calculates the operator contraction, Op must have 1x1 boundaries
-// -Psi--+
-//   |   |
-//   Op* m
-//   |   |
-// -Psi*-+
+StateComponent 
+inject_left(StateComponent const& E, 
+            LinearWavefunction const& Psi1, 
+            GenericMPO const& Op,
+            LinearWavefunction const& Psi2);
+
+//
+// inject right variants
+//
+
 MatrixOperator 
 inject_right(MatrixOperator const& m, 
              GenericMPO const& Op, 
@@ -124,17 +135,18 @@ struct InjectRightQShift
 };
 
 
-// Calculates the operator contraction
-// +-Psi1*-
-// |  |
-// In-Op
-// |  |
-// +-Psi2-
+/*
+currently not used anywhere, but can be added
+
 StateComponent 
-inject_left(StateComponent const& In, 
-            LinearWavefunction const& Psi1, 
-            GenericMPO const& Op,
-            LinearWavefunction const& Psi2);
+inject_right(LinearWavefunction const& Psi1, 
+             MPOperator const& Op,
+             LinearWavefunction const& Psi2,
+             StateComponent const& In);
+*/
+
+
+// miscellaneous functions
 
 // verify that the local basis of an MPO matches the local basis of a wavefunction
 // and that the size is correct

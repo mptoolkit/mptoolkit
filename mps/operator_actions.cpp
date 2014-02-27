@@ -27,6 +27,35 @@ inject_left(MatrixOperator const& m,
    return E[0];
 }
 
+MatrixOperator
+inject_left_qshift(MatrixOperator const& m, 
+		   GenericMPO const& Op, 
+		   LinearWavefunction const& Psi,
+		   QuantumNumber const& QShift)
+{
+   return inject_left(delta_shift(m, QShift), Op, Psi);
+}
+
+StateComponent 
+inject_left(StateComponent const& In, 
+            LinearWavefunction const& Psi1, 
+            GenericMPO const& Op,
+            LinearWavefunction const& Psi2)
+{
+   PRECONDITION_EQUAL(Psi1.size(), Op.size());
+   PRECONDITION_EQUAL(Psi1.size(), Psi2.size());
+   StateComponent Result = In;
+   LinearWavefunction::const_iterator I1 = Psi1.begin();
+   LinearWavefunction::const_iterator I2 = Psi2.begin();
+   GenericMPO::const_iterator OpIter = Op.begin();
+
+   while (OpIter != Op.end())
+   {
+      Result = operator_prod(herm(*OpIter), herm(*I1), Result, *I2);
+      ++I1; ++I2; ++OpIter;
+   }
+   return Result;
+}
 
 MatrixOperator
 inject_right(MatrixOperator const& m, 
@@ -59,36 +88,6 @@ inject_right_qshift(MatrixOperator const& m,
                     QuantumNumber const& QShift)
 {
    return delta_shift(inject_right(m, Op, Psi), adjoint(QShift));
-}
-
-StateComponent 
-inject_left(StateComponent const& In, 
-            LinearWavefunction const& Psi1, 
-            GenericMPO const& Op,
-            LinearWavefunction const& Psi2)
-{
-   PRECONDITION_EQUAL(Psi1.size(), Op.size());
-   PRECONDITION_EQUAL(Psi1.size(), Psi2.size());
-   StateComponent Result = In;
-   LinearWavefunction::const_iterator I1 = Psi1.begin();
-   LinearWavefunction::const_iterator I2 = Psi2.begin();
-   GenericMPO::const_iterator OpIter = Op.begin();
-
-   while (OpIter != Op.end())
-   {
-      Result = operator_prod(herm(*OpIter), herm(*I1), Result, *I2);
-      ++I1; ++I2; ++OpIter;
-   }
-   return Result;
-}
-
-MatrixOperator
-inject_left_qshift(MatrixOperator const& m, 
-		   GenericMPO const& Op, 
-		   LinearWavefunction const& Psi,
-		   QuantumNumber const& QShift)
-{
-   return inject_left(delta_shift(m, QShift), Op, Psi);
 }
 
 bool

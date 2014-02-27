@@ -103,7 +103,7 @@ void mask_unused_elements(GenericMPO const& Op, std::vector<std::vector<int> >& 
 // Does a 2-1 coarse graining of an operator.  The length must be a multiple of 2
 GenericMPO coarse_grain(GenericMPO const& Op);
 
-struct GenericMPOClassification
+struct OperatorClassification
 {
    // indicates that the operator is zero
    bool is_null() const;
@@ -145,12 +145,12 @@ struct GenericMPOClassification
    bool PropIdentity_;
    bool Null_;
 
-   GenericMPOClassification();
+   OperatorClassification();
 };
 
-std::ostream& operator<<(std::ostream& out, GenericMPOClassification const& Class);
+std::ostream& operator<<(std::ostream& out, OperatorClassification const& Class);
 
-GenericMPOClassification classify(GenericMPO const& Op);
+OperatorClassification classify(GenericMPO const& Op);
 
 // plus various functions for acting on states etc
 

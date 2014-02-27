@@ -389,53 +389,53 @@ SimpleOperator make_projector_onto(BasisList const& Basis, std::set<int> const& 
 
 // classification
 
-GenericMPOClassification::GenericMPOClassification()
+OperatorClassification::OperatorClassification()
    : Factor_(0.0), Product_(false), Unitary_(false),
      Identity_(false), PropUnitary_(false), PropIdentity_(false), Null_(false)
 {
 }
 
-bool GenericMPOClassification::is_null() const
+bool OperatorClassification::is_null() const
 {
    return Null_;
 }
 
-bool GenericMPOClassification::is_product() const
+bool OperatorClassification::is_product() const
 {
    return Product_;
 }
 
-bool GenericMPOClassification::is_unitary() const
+bool OperatorClassification::is_unitary() const
 {
    return Unitary_;
 }
 
-bool GenericMPOClassification::is_prop_unitary() const
+bool OperatorClassification::is_prop_unitary() const
 {
    return PropUnitary_;
 }
 
-bool GenericMPOClassification::is_prop_identity() const
+bool OperatorClassification::is_prop_identity() const
 {
    return PropIdentity_;
 }
 
-bool GenericMPOClassification::is_identity() const
+bool OperatorClassification::is_identity() const
 {
    return Identity_;
 }
 
-bool GenericMPOClassification::is_unclassified() const
+bool OperatorClassification::is_unclassified() const
 {
    return !Product_ && !Null_;
 }
 
-std::complex<double> GenericMPOClassification::factor() const
+std::complex<double> OperatorClassification::factor() const
 {
    return Factor_;
 }
 
-std::ostream& operator<<(std::ostream& out, GenericMPOClassification const& Class)
+std::ostream& operator<<(std::ostream& out, OperatorClassification const& Class)
 {
    out << "null: " << Class.is_null() << '\n';
    out << "product: " << Class.is_product() << '\n';
@@ -460,9 +460,9 @@ std::complex<double> PropIdent(SimpleOperator const& X)
    return x;
 }
 
-GenericMPOClassification classify(GenericMPO const& Op)
+OperatorClassification classify(GenericMPO const& Op)
 {
-   GenericMPOClassification Result;
+   OperatorClassification Result;
 
    // Early return if the operator is null
    if (Op.is_null())
