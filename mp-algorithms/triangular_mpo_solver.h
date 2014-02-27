@@ -12,7 +12,7 @@
 KMatrixPolyType
 SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
               TriangularMPO const& Op, MatrixOperator const& Rho,
-              MatrixOperator const& Identity, bool Verbose = false);
+              MatrixOperator const& Identity, int Verbose = 0);
 
 
 #endif

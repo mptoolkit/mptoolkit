@@ -103,7 +103,6 @@ class TriangularMPO
 std::ostream&
 operator<<(std::ostream& out, TriangularMPO const& op);
 
-#if 0
 // extracts a single column from a triangular operator.  Result is an Nx1 row-vector operator
 GenericMPO extract_column(TriangularMPO const& Op, int Col);
 
@@ -111,13 +110,6 @@ GenericMPO extract_column(TriangularMPO const& Op, int Col);
 GenericMPO extract_lower_column(TriangularMPO const& Op, int Col);
 
 void mask_lower_column(TriangularMPO const& Op, int Col, std::vector<std::vector<int> >& Mask);
-#endif
-
-
-
-
-
-
 
 TriangularMPO TriangularOneSite(SimpleOperator const& x);
 

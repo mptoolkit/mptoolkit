@@ -43,6 +43,10 @@
 #include "interface/inittemp.h"
 #include "mp-algorithms/random_wavefunc.h"
 
+#if !defined(NDEBUG)
+#include "mp-algorithms/triangular_mpo_solver.h"
+#endif
+
 namespace prog_opt = boost::program_options;
 
 using statistics::moving_average;
@@ -289,6 +293,12 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
    // remove the spurious constant term from the energy
    DEBUG_TRACE("Spurious part")(inner_prod(Guess.back(), Rho));
    Guess.back() -= inner_prod(Guess.back(), Rho) * Guess.front();
+
+#if !defined(NDEBUG)
+   KMatrixPolyType CheckEMat = SolveMPO_Left(Psi, QShift, Op, Rho, Ident, 1);
+   ComplexPolyType EValues = ExtractOverlap(CheckEMat[std::complex<double>(1.0,0.0)], Rho);
+   TRACE(EValues);
+#endif
 
    return Energy;
 }

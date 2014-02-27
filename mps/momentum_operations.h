@@ -69,15 +69,7 @@ MultiplyLeft(std::vector<MatrixPolyType> const& E,
 //  E* Rho
 //  |---|
 ComplexPolyType
-ExtractOverlap(MatrixPolyType const& E, MatrixOperator const& Rho)
-{
-   Polynomial<std::complex<double> > Overlap;
-   for (Polynomial<MatrixOperator>::const_iterator I = E.begin(); I != E.end(); ++I)
-   {
-      Overlap[I->first] = inner_prod(I->second, Rho);
-   }
-   return Overlap;
-}
+ExtractOverlap(MatrixPolyType const& E, MatrixOperator const& Rho);
 
 //
 // With momentum

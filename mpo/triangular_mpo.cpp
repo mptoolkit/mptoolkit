@@ -63,6 +63,7 @@ TriangularMPO::operator()(int Row, int Col) const
    std::set<int> Cols;
    Cols.insert(Col);
    MPOp.back() = project_columns(MPOp.back(), Cols);
+   TRACE(MPOp.back());
 
    cull_unused_elements(MPOp);
    return FiniteMPO(MPOp);

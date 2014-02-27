@@ -3,7 +3,10 @@
 // Matrix product operator defined on finite support.
 // The boundary states are normally one dimensional
 // (we also allow the operator to be reducible, 
-// representing a sum of quantum number components)
+// representing a sum of quantum number components).
+// We used to require that the Basis2() was a scalar, but no longer,
+// this isn't possible for extracted components of triangular or
+// generic operators
 
 #if !defined(FINITE_MPO_H_JDCHJKEHY589758YUER89H489)
 #define FINITE_MPO_H_JDCHJKEHY589758YUER89H489
