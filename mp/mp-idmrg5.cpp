@@ -1317,6 +1317,11 @@ int main(int argc, char** argv)
       {
 	 std::cout << "Hamiltonian is XXX model with spin S=" << Spin
 		   << ", J=" << J << ", Jz=" << Jz << ", J2=" << J2 << ", D=" << D << ", B=" << B << '\n';
+
+	 std::cout << "Number of long range terms = " << LongRangeCoeff.size() << '\n';
+	 CHECK_EQUAL(LongRangeCoeff.size(), LongRangeExp.size())
+	    ("Must supply equal numbers of coefficients and exponents");
+
 	 LatticeSite Site = CreateSpinSite(Spin);
 	 TriangularMPO Ham;
 	 Ham = Jz*TriangularTwoSite(Site["Sz"], Site["Sz"], Site["I"].TransformsAs())
@@ -1330,6 +1335,17 @@ int main(int argc, char** argv)
             Ham = Ham + D * TriangularOneSite(Site["Sz2"]);
          if (B != 0)
             Ham = Ham - B * TriangularOneSite(Site["Sz"]);
+
+	 for (unsigned i = 0; i < LongRangeCoeff.size(); ++i)
+	 {
+	    std::cout << "Long range term coefficient=" << LongRangeCoeff[i] 
+		      << ", exponent=" << LongRangeExp[i] << '\n';
+	    Ham += LongRangeCoeff[i] * (0.5 * TriangularTwoSiteExponential(Site["Sp"], Site["Sm"], LongRangeExp[i])
+                                        + 0.5 * TriangularTwoSiteExponential(Site["Sm"], Site["Sp"], LongRangeExp[i])
+                                        + TriangularTwoSiteExponential(Site["Sz"], Site["Sz"], LongRangeExp[i]));
+	 }
+
+
 	 HamMPO = Ham;
       }
       else if (HamStr == "xyz")
