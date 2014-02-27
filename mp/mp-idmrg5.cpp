@@ -298,6 +298,7 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
    KMatrixPolyType CheckEMat = SolveMPO_Left(Psi, QShift, Op, Rho, Ident, 1);
    ComplexPolyType EValues = ExtractOverlap(CheckEMat[std::complex<double>(1.0,0.0)], Rho);
    TRACE(EValues);
+   TRACE(CheckEMat[std::complex<double>(1.0,0.0)]);
 #endif
 
    return Energy;

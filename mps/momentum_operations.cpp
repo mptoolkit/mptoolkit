@@ -60,6 +60,7 @@ inject_left(MatrixPolyType const& In,
    return Vec[0];
 }
 
+#if 0
 // Calculates result' = C[column] = sum_{j > Column} E[j] * T_Op(j, Column)
 // Assumes that E[j] is defined, for j > Column
 MatrixPolyType
@@ -77,6 +78,7 @@ MultiplyLeft(std::vector<MatrixPolyType> const& E,
    std::vector<MatrixPolyType> C = inject_left(E, Psi, OpCol, Psi);
    return delta_shift(C[Column], QShift);
 }
+#endif
 
 Polynomial<std::complex<double> >
 ExtractOverlap(Polynomial<MatrixOperator> const& E, MatrixOperator const& Rho)

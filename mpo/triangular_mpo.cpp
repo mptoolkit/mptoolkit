@@ -43,14 +43,6 @@ GenericMPO extract_lower_column(TriangularMPO const& Op, int Col)
    return MPOp;
 }
 
-void mask_lower_column(TriangularMPO const& Op, int Col, std::vector<std::vector<int> >& Mask)
-{
-   initialize_mask(Op.data(), Mask);
-   std::fill(Mask.back().begin(), Mask.back().end(), false);
-   Mask.back()[Col] = true;
-   mask_unused_elements(Op.data(), Mask);
-}
-
 FiniteMPO 
 TriangularMPO::operator()(int Row, int Col) const
 {

@@ -1,3 +1,4 @@
+// -*- C++ -*- $Id$
 
 #include "triangular_mpo_solver.h"
 #include "mps/momentum_operations.h"
@@ -224,12 +225,17 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
    int Dim = Op.Basis1().size();       // dimension of the MPO
    std::vector<KMatrixPolyType> EMatK(Dim);  // the vector of E matrices
 
-   // Initialize the first E matrix
-   EMatK[Dim-1][1.0] = MatrixPolyType(Identity);
+   // solve recursively column 0 onwards
 
-   // solve recursively
-   int Col = Dim-2;
-   while (Col >= 0)
+   // Make sure the (0,0) part is identity
+   OperatorClassification CheckIdent = classify(Op(0,0));
+   CHECK(CheckIdent.is_identity())("(0,0) component of the MPO must be identity!")(CheckIdent);
+
+   // Initialize the first E matrix
+   EMatK[0][1.0] = MatrixPolyType(Identity);
+
+   int Col = 1;
+   while (Col < Dim)
    {
       if (Verbose)
       {
@@ -239,14 +245,8 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
       // Generate the next C matrices, C(n) = sum_{j>Col} Op(j,Col) E_j(n)
       KMatrixPolyType C;
 
-#if 0
-      FiniteMPO M = extract_lower_column(Op, Col);
-      C = apply_right(EMatK, Psi, M, Psi)[0];
-#else
-      std::vector<std::vector<int> > Mask;
-      mask_lower_column(Op, Col, Mask);
+      std::vector<std::vector<int> > Mask = mask_column(Op, Col);
       C = inject_left_mask(EMatK, Psi, QShift, Op.data(), Psi, Mask)[Col];
-#endif
 
       // Now do the classification, based on the properties of the diagonal operator
       FiniteMPO Diag = Op(Col, Col);
@@ -330,9 +330,9 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
          EMatK[Col] = E;
       }
 
-      --Col;
+      ++Col;
    }
 
-   // The return value is column 0 of our E matrices
-   return EMatK[0];
+   // The return value is the last column of our E matrices
+   return EMatK.back();
 }

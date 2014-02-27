@@ -95,10 +95,21 @@ GenericMPO operator*(GenericMPO const& x, std::complex<double> a);
 // remove unused matrix elements
 void cull_unused_elements(GenericMPO& Op);
 
-// As an alternative to cull_unused_elements(), we can use a mask vector which indicates which components are unused
-void initialize_mask(GenericMPO const& Op, std::vector<std::vector<int> >& Mask);
+// As an alternative to cull_unused_elements(), we can use a mask vector which indicates which components are unused.
+// This is a 2D array, indexed by the bond number of the MPO, and then the index into the auxiliary basis.
+// initialize_mask sets
+typedef std::vector<std::vector<int> > MPOMaskType;
+void initialize_mask(GenericMPO const& Op, MPOMaskType& Mask);
 
+// Updates a mask to exclude matrix elements that won't be used because they would be zero or don't contribute
+// to the result.
 void mask_unused_elements(GenericMPO const& Op, std::vector<std::vector<int> >& Mask);
+
+// Construct a mask that singles out a particular column of the MPO
+MPOMaskType mask_column(GenericMPO const& Op, int Col);
+
+// Construct a mask that singles out a particular row of the MPO
+MPOMaskType mask_row(GenericMPO const& Op, int Row);
 
 // Does a 2-1 coarse graining of an operator.  The length must be a multiple of 2
 GenericMPO coarse_grain(GenericMPO const& Op);

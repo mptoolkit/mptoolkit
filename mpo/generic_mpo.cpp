@@ -370,6 +370,28 @@ void initialize_mask(GenericMPO const& Op, std::vector<std::vector<int> >& Mask)
    Mask.back() = std::vector<int>(Op.Basis2().size(), true);
 }
 
+std::vector<std::vector<int> >
+mask_column(GenericMPO const& Op, int Col)
+{
+   std::vector<std::vector<int> > Mask;
+   initialize_mask(Op, Mask);
+   std::fill(Mask.back().begin(), Mask.back().end(), false);
+   Mask.back()[Col] = true;
+   mask_unused_elements(Op, Mask);
+   return Mask;
+}
+
+std::vector<std::vector<int> >
+mask_row(GenericMPO const& Op, int Row)
+{
+   std::vector<std::vector<int> > Mask;
+   initialize_mask(Op, Mask);
+   std::fill(Mask.front().begin(), Mask.front().end(), false);
+   Mask.front()[Row] = true;
+   mask_unused_elements(Op, Mask);
+   return Mask;
+}
+
 SimpleOperator make_projector_onto(BasisList const& Basis, std::set<int> const& Onto)
 {
    BasisList ProjectedBasis(Basis.GetSymmetryList());
