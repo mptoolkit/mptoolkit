@@ -222,6 +222,11 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
               TriangularMPO const& Op, MatrixOperator const& Rho,
               MatrixOperator const& Identity, int Verbose)
 {
+   CHECK_EQUAL(Rho.Basis1(), Psi.Basis1());
+   CHECK_EQUAL(Rho.Basis2(), Psi.Basis1());
+   CHECK_EQUAL(Identity.Basis1(), Psi.Basis1());
+   CHECK_EQUAL(Identity.Basis2(), Psi.Basis1());
+
    int Dim = Op.Basis1().size();       // dimension of the MPO
    std::vector<KMatrixPolyType> EMatK(Dim);  // the vector of E matrices
 
@@ -231,7 +236,7 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
    OperatorClassification CheckIdent = classify(Op(0,0));
    CHECK(CheckIdent.is_identity())("(0,0) component of the MPO must be identity!")(CheckIdent);
 
-   // Initialize the first E matrix
+   // Initialize the first E matrix.  These are operators acting in the Basis1()
    EMatK[0][1.0] = MatrixPolyType(Identity);
 
    int Col = 1;
@@ -272,7 +277,7 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 	 // Multiplication factor and the left and right eigenvalues.
 	 std::complex<double> Factor = Classification.factor();
 	 MatrixOperator UnitMatrixLeft = Identity;
-	 MatrixOperator UnitMatrixRight = Rho;
+	 MatrixOperator UnitMatrixRight = delta_shift(Rho, QShift);
 
 	 // If the diagonal operator is unitary, it might have an eigenvalue of magnitude 1
 	 if (Classification.is_unitary() && !Classification.is_complex_identity())
@@ -296,7 +301,7 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 	       UnitMatrixRight = UnitMatrixLeft;
 	       // we have an eigenvalue of magnitude 1.  Find the right eigenvalue too
 	       std::complex<double> EtaR = FindLargestEigenvalue(UnitMatrixRight, 
-								 InjectLeftQShift(Diag, Psi, QShift), Verbose);
+								 InjectRightQShift(Diag, Psi, QShift), Verbose);
 	       CHECK(norm_frob(EtaL-EtaR) < 1E-12)("Left and right eigenvalues do not agree!")(EtaL)(EtaR);
 	       Factor = EtaL / norm_frob(EtaL);
 	    }
@@ -307,6 +312,7 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
          if (std::abs(norm_frob(Factor) - 1.0) < 1E-12)
          {
 	    Magnitude1 = true;
+	    TRACE(UnitMatrixLeft)(UnitMatrixRight);
 	    EParallel = DecomposeParallelParts(C, Factor, UnitMatrixLeft, UnitMatrixRight);
 	 }
 

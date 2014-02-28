@@ -215,18 +215,6 @@ LinearWavefunction prod(LinearOperator const& Op, LinearWavefunction const& Psi,
 // Calculates the operator contraction, with a matrix
 // actong on the left hand side of the wavefunction.
 // (the transfer matrix of the unit cell)
-// +-Psi*- ... Psi*-
-// |  |         |
-// m  |         |
-// |  |         |
-// +-Psi-- ... Psi--
-
-MatrixOperator
-inject_left(MatrixOperator const& m, LinearWavefunction const& Psi);
-
-// Calculates the operator contraction, with a matrix
-// actong on the left hand side of the wavefunction.
-// (the transfer matrix of the unit cell)
 // Two argument version, for a different wavefunction on the left and right.
 // +-Psi1*- ... Psi1*-
 // |  |          |
@@ -238,17 +226,9 @@ inject_left(MatrixOperator const& m,
             LinearWavefunction const& Psi1,
             LinearWavefunction const& Psi2);
 
-// Calculates the operator contraction, with a matrix
-// actong on the left hand side of the wavefunction.
-// (the transfer matrix of the unit cell)
-// --Psi-- ... Psi--+
-//    |         |   |
-//    |         |   m
-//    |         |   |
-// --Psi*- ... Psi*-+
-
+// equivalent to inject_left(m, Psi, Psi);
 MatrixOperator
-inject_right(MatrixOperator const& m, LinearWavefunction const& Psi);
+inject_left(MatrixOperator const& m, LinearWavefunction const& Psi);
 
 // Calculates the operator contraction, with a matrix
 // actong on the left hand side of the wavefunction.
@@ -263,6 +243,11 @@ MatrixOperator
 inject_right(MatrixOperator const& m, 
             LinearWavefunction const& Psi1,
             LinearWavefunction const& Psi2);
+
+// equivalent to inject_right(m, Psi, Psi)
+MatrixOperator
+inject_right(MatrixOperator const& m, LinearWavefunction const& Psi);
+
 
 HermitianProxy<LinearWavefunction>
 inline

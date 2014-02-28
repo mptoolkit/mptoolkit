@@ -295,8 +295,8 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
    Guess.back() -= inner_prod(Guess.back(), Rho) * Guess.front();
 
 #if !defined(NDEBUG)
-   KMatrixPolyType CheckEMat = SolveMPO_Left(Psi, QShift, Op, Rho, Ident, 1);
-   ComplexPolyType EValues = ExtractOverlap(CheckEMat[std::complex<double>(1.0,0.0)], Rho);
+   KMatrixPolyType CheckEMat = SolveMPO_Left(Psi, QShift, Op, Rho, delta_shift(Ident, QShift), 1);
+   ComplexPolyType EValues = ExtractOverlap(CheckEMat[std::complex<double>(1.0,0.0)], delta_shift(Rho, QShift));
    TRACE(EValues);
    TRACE(CheckEMat[std::complex<double>(1.0,0.0)]);
 #endif
@@ -1253,6 +1253,10 @@ int main(int argc, char** argv)
 	 std::cout << "Hamiltonian is XXX model with spin S=" << Spin << ", theta="<<Theta
 		   << ", J=" << J << ",beta=" << Beta << ", Jz=" << Jz << ", J2="
                    << J2 << ", D=" << D << ", delta=" << delta << '\n';
+	 std::cout << "Number of long range terms = " << LongRangeCoeff.size() << '\n';
+	 CHECK_EQUAL(LongRangeCoeff.size(), LongRangeExp.size())
+	    ("Must supply equal numbers of coefficients and exponents");
+
          std::complex<double> TwistFactor = std::exp(std::complex<double>(0.0, 1.0) * 2.0 * math_const::pi / double(Twist));
          std::complex<double> TwistFactorConj = LinearAlgebra::conj(TwistFactor);
          if (vm.count("twist"))
@@ -1287,13 +1291,14 @@ int main(int argc, char** argv)
          if (D != 0)
             Ham = Ham + D * TriangularOneSite(Site["Sz2"]);
 
-         if (Lambda != 0)
-         {
-            std::cout << "Adding exponential decay S(i) S(j) lambda^|j-i-1|\n";
-            Ham = Ham +  TriangularTwoSiteExponential(Site["Sz"], Site["Sz"], Lambda)
-               + 0.5 * (TriangularTwoSiteExponential(Site["Sp"], Site["Sm"], Lambda)
-                            +TriangularTwoSiteExponential(Site["Sm"], Site["Sp"], Lambda));
-         }
+	 for (unsigned i = 0; i < LongRangeCoeff.size(); ++i)
+	 {
+	    std::cout << "Long range term coefficient=" << LongRangeCoeff[i] 
+		      << ", exponent=" << LongRangeExp[i] << '\n';
+	    Ham += LongRangeCoeff[i] * (0.5 * TriangularTwoSiteExponential(Site["Sp"], Site["Sm"], LongRangeExp[i])
+                                        + 0.5 * TriangularTwoSiteExponential(Site["Sm"], Site["Sp"], LongRangeExp[i])
+                                        + TriangularTwoSiteExponential(Site["Sz"], Site["Sz"], LongRangeExp[i]));
+	 }
 
 	 HamMPO = Ham;
       }

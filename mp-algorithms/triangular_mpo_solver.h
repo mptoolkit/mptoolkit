@@ -8,7 +8,9 @@
 #include "mps/momentum_operations.h"
 
 // Solve an MPO in the left-handed sense, as x_L * Op = lambda * x_L
-// We currently assume there is only one eigenvalue 1 of the transfer operator
+// We currently assume there is only one eigenvalue 1 of the transfer operator.
+// The Rho and Identity are the right and left eigenmatrices of the transfer operator,
+// constructed in the Basis1() of Psi.
 KMatrixPolyType
 SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
               TriangularMPO const& Op, MatrixOperator const& Rho,

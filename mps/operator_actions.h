@@ -13,7 +13,7 @@
 // Op must have 1x1 boundaries
 // +-Psi*- ... Psi*-
 // |  |         |
-// m  Op-- ...  Op
+// m  Op*- ...  Op*
 // |  |         |
 // +-Psi-- ... Psi--
 MatrixOperator 
@@ -70,7 +70,7 @@ struct InjectLeftQShift
 //
 // +-Psi1*-     Psi1*-
 // |  |          |
-// E--Op--- ...  Op---
+// E--Op*-- ...  Op*--
 // |  |          |
 // +-Psi2-- ... Psi2--
 

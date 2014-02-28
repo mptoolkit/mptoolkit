@@ -28,6 +28,28 @@
 
 namespace prog_opt = boost::program_options;
 
+void DisplayHeading(bool ShowReal, bool ShowImag)
+{
+   // Output the heading
+   std::cout << "#i #j";
+   if (ShowReal)
+      std::cout << " #real";
+   if (ShowImag)
+      std::cout << " #imag";
+   std::cout << '\n';
+}
+
+void
+Display(std::complex<double> x, int s1, int s2, bool ShowReal, bool ShowImag)
+{
+   std::cout << s1 << "    " << s2 << "   ";
+   if (ShowReal)
+      std::cout << x.real() << "   ";
+   if (ShowImag)
+      std::cout << x.imag();
+   std::cout << '\n';
+}
+
 int main(int argc, char** argv)
 {
    try
@@ -41,6 +63,8 @@ int main(int argc, char** argv)
       int Verbose = 0;
       int NMax = 5;
       double Spin = 0.5;
+
+      std::cout.precision(14);
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -189,8 +213,8 @@ int main(int argc, char** argv)
       {
 	 PANIC("mp-icorrelation: fatal: model parameter should be one of tj-u1, tj-u1su2, sf-u1, klm-u1su2.");
       }
- 
-      QuantumNumber Ident(Psi->GetSymmetryList());
+
+       QuantumNumber Ident(Psi->GetSymmetryList());
  
       SimpleOperator Op1 = Site[Op1Str];
       SimpleOperator Op2 = Site[Op2Str];
@@ -203,126 +227,131 @@ int main(int argc, char** argv)
 
       LinearWavefunction PsiOrtho = get_orthogonal_wavefunction(*Psi);
       MatrixOperator Rho = scalar_prod(Psi->C_right, herm(Psi->C_right));
-
       MatrixOperator Identity = MatrixOperator::make_identity(PsiOrtho.Basis1());
+      QuantumNumber QShift = Psi->shift();
 
-      MatrixOperator I2 = inject_left(Identity, PsiOrtho, PsiOrtho);
-      TRACE(norm_frob(I2-Identity));
+      int PsiSize = PsiOrtho.size();
 
-      MatrixOperator Rho2 = inject_right(Rho, PsiOrtho, PsiOrtho);
-      TRACE(norm_frob(Rho2-Rho));
+      // paranoid check the orthogonalization of the wavefunction
+      DEBUG_CHECK(norm_frob(delta_shift(inject_left(Identity, PsiOrtho, PsiOrtho), QShift) - Identity) < 1E-10);
+      DEBUG_CHECK(norm_frob(inject_right(Rho, PsiOrtho, PsiOrtho) - delta_shift(Rho, QShift)) < 1E-10);
 
-      std::cout.precision(14);
-      
-      // for each site in the unit cell, make the right hand operator
-      std::list<MatrixOperator> F;
+      // for each site in the unit cell, make the right hand operator.
+      // We start with Rho (the right-identity-vector), and construct the operator
+      // at the i'th site of the unit cell.
+      // F[i] is Op2(i)
+      std::vector<MatrixOperator> F(PsiSize, Rho);
       LinearWavefunction::const_iterator I = PsiOrtho.end();
+      int s1 = PsiSize;
       while (I != PsiOrtho.begin())
       {
-	 --I;
-	 // add string operator to each existing operator
-	 for (std::list<MatrixOperator>::iterator J = F.begin(); J != F.end(); ++J)
+	 --I; --s1;
+	 for (int i = 0; i < PsiSize; ++i)
 	 {
-	    *J = operator_prod(StringOp, *I, *J, herm(*I));
+	    if (i < s1)
+	       F[i] = operator_prod(*I, F[i], herm(*I));
+	    else if (i == s1)
+	       F[i] = operator_prod(Op2, *I, F[i], herm(*I));
+	    else if (i > s1)
+	       F[i] = operator_prod(StringOp, *I, F[i], herm(*I));
 	 }
+      }
+      // Shift the F-matrices back to the Basis2()
+      for (int i = 0; i < PsiSize; ++i)
+      {
+	 F[i] = delta_shift(F[i], adjoint(QShift));
+      }
 
-      // next site
-      F.push_back(operator_prod(Op2, *I, herm(*I)));
-   }
-
-      // now the left hand operators.   We also do the correlators for the first unit cell
-      typedef std::list<std::pair<int, MatrixOperator> > EType;
-      typedef std::list<std::pair<std::pair<int, int>, MatrixOperator> > CorrType;
-      std::list<std::pair<int, MatrixOperator> > E;
-      std::list<std::pair<std::pair<int, int>, MatrixOperator> > Corr;  // first unit cell correlators
+      // now the left hand operators.  We now start from the Identity (left-identity-vector)
+      // and similarly construct the Op1 for each site of the unit cell
+      // E[i] is Op1(i)
+      std::vector<MatrixOperator> E(PsiSize, Identity);
+      s1 = 0;
       I = PsiOrtho.begin();
-      int pLoc = 1;
       while (I != PsiOrtho.end())
       {
-	 // add identity operator to each existing first unit cell operator
-	 for (CorrType::iterator J = Corr.begin(); J != Corr.end(); ++J)
+	 for (int i = 0; i < PsiSize; ++i)
 	 {
-	    J->second = operator_prod(herm(*I), J->second, *I);
+	    if (i < s1)
+	       E[i] = operator_prod(herm(*I), E[i], *I);
+	    else if (i == s1)
+	       E[i] = operator_prod(herm(Op1), herm(*I), E[i], *I);
+	    else if (i > s1)
+	       E[i] = operator_prod(herm(StringOp), herm(*I), E[i], *I);
 	 }
-	 // Add the zero-point correlator to the unit cell correlations
-	 Corr.push_back(std::make_pair(std::make_pair(pLoc, pLoc),
-				       operator_prod(herm(Op1Op2), herm(*I), *I)));
-	 // add the next site to the first unit cell correlator
-	 for (EType::const_iterator J = E.begin(); J != E.end(); ++J)
-	 {
-	    Corr.push_back(std::make_pair(std::make_pair(J->first, pLoc),
-					  operator_prod(herm(Op2), herm(*I), J->second, *I, Ident)));
-	 }
-	 // add the string operator to each existing operator
-	 for (EType::iterator J = E.begin(); J != E.end(); ++J)
-	 {
-	    J->second = operator_prod(herm(StringOp), herm(*I), J->second, *I);
-	 }
-	 // next site
-	 E.push_back(std::make_pair(pLoc, operator_prod(herm(Op1), herm(*I), *I)));
-	 ++I;
-	 ++pLoc;
+	 ++I; ++s1;
       }
 
-      // Output the heading
-      std::cout << "#i #j";
-      if (ShowReal)
-	 std::cout << " #real";
-      if (ShowImag)
-	 std::cout << " #imag";
-      std::cout << '\n';
-      // output the first unit cell
-      for (CorrType::const_iterator J = Corr.begin(); J != Corr.end(); ++J)
+      // Start of output
+      DisplayHeading(ShowReal, ShowImag);
+
+      // Terms internal to the unit cell
+      MatrixOperator Initial = Identity;  // track the identity operator as it passes through the unit cell
+      s1 = 0;
+      I = PsiOrtho.begin();
+      while (I != PsiOrtho.end())
       {
-	 std::complex<double> x = inner_prod(J->second, Rho);
-	 std::cout << J->first.first << "    " << J->first.second << "   ";
-	 if (ShowReal)
-	    std::cout << x.real() << "   ";
-	 if (ShowImag)
-	    std::cout << x.imag();
-	 std::cout << '\n';
+	 // The (s1,s1) component
+	 MatrixOperator E_ss = operator_prod(herm(prod(Op1,Op2,Ident)), herm(*I), Initial, *I);
+	 // E-matrix for Op1(s1)
+	 MatrixOperator ThisE = operator_prod(herm(Op1), herm(*I), Initial, *I);
+
+	 int const s1sRemain = PsiSize-s1-1;
+	 std::vector<MatrixOperator> E_s_2(s1sRemain);  // operators Op1(s1) * Op2(s2)
+	 // Now loop over remaining sites
+	 LinearWavefunction::const_iterator I2 = I;
+	 int s2 = s1;
+	 ++I2; ++s2;
+	 while (I2 != PsiOrtho.end())
+	 {
+	    // firstly do the (s1,s1) component
+	    E_ss = operator_prod(herm(*I2), E_ss, *I2);
+
+	    // now the (s1,s2) terms
+	    for (int j = 0; j < s2-s1-1; ++j)
+	    {
+	       // add identity to the terms we've already constructed
+	       E_s_2[j] = operator_prod(herm(*I2), E_s_2[j], *I2);
+	    }
+	    // construct the next term
+	    E_s_2[s2-s1-1] = operator_prod(herm(Op2), herm(*I2), ThisE, *I2, Ident);
+	    ThisE = operator_prod(herm(*I2), ThisE, *I2); 	    // add a site to ThisE
+	    ++I2; ++s2;
+	 }
+
+	 // print out the results
+	 std::complex<double> x = inner_prod(E_ss, Rho);
+	 Display(x, s1, s1, ShowReal, ShowImag);
+
+	 for (int j = 0; j < s1sRemain; ++j)
+	 {
+	    // s2 = s1+j+1
+	    x = inner_prod(E_s_2[j], Rho);
+	    Display(x, s1, s1+j+1, ShowReal, ShowImag);
+	 }
+
+	 // Update the Initializer identity matrix
+	 Initial = operator_prod(herm(*I), Initial, *I);
+	 ++I; ++s1;
       }
 
+      // terms between unit cells
       int NCell = 1; // number of cells
-      while (NCell * int(PsiOrtho.size()) < Length)
+      while (NCell*PsiSize < Length)
       {
-	 for (EType::iterator J = E.begin(); J != E.end(); ++J)
+	 for (int ei = 0; ei < PsiSize; ++ei)
 	 {
-	    J->second = delta_shift(J->second, Psi->QShift);
+	    for (int fi = 0; fi < PsiSize; ++fi)
+	    {
+	       std::complex<double> x = inner_prod(E[ei], F[fi]);
+	       Display(x, ei, NCell*PsiSize + fi, ShowReal, ShowImag);
+	    }
 	 }
 
-	 Corr.clear();
-	 for (LinearWavefunction::const_iterator I = PsiOrtho.begin(); I != PsiOrtho.end(); ++I)
+	 // next unit cell
+	 for (int i = 0; i < PsiSize; ++i)
 	 {
-	    // add identity site to operators already in Corr
-	    for (CorrType::iterator J = Corr.begin(); J != Corr.end(); ++J)
-	    {
-	       J->second = operator_prod(herm(*I), J->second, *I);
-	    }
-	    // add next site
-	    for (EType::const_iterator J = E.begin(); J != E.end(); ++J)
-	    {
-	       Corr.push_back(std::make_pair(std::make_pair(J->first, pLoc), 
-					     operator_prod(herm(Op2), herm(*I), J->second, *I, Ident)));
-	    }
-	    // add identity operator to E
-	    for (EType::iterator J = E.begin(); J != E.end(); ++J)
-	    {
-	       J->second = operator_prod(herm(*I), J->second, *I);
-	    }
-	    ++pLoc;
-	 }
-
-	 // output
-	 for (CorrType::const_iterator J = Corr.begin(); J != Corr.end(); ++J)
-	 {
-	    std::complex<double> x = inner_prod(J->second, Rho);
-	    std::cout << J->first.first << "    " << J->first.second << "   ";
-	    if (ShowReal)
-	       std::cout << x.real() << "   ";
-	    if (ShowImag)
-	       std::cout << x.imag();
-	    std::cout << '\n';
+	    E[i] = inject_left(delta_shift(E[i], Psi->shift()), PsiOrtho, PsiOrtho);
 	 }
 	 ++NCell;
       }
