@@ -204,6 +204,14 @@ int main(int argc, char** argv)
       LinearWavefunction PsiOrtho = get_orthogonal_wavefunction(*Psi);
       MatrixOperator Rho = scalar_prod(Psi->C_right, herm(Psi->C_right));
 
+      MatrixOperator Identity = MatrixOperator::make_identity(PsiOrtho.Basis1());
+
+      MatrixOperator I2 = inject_left(Identity, PsiOrtho, PsiOrtho);
+      TRACE(norm_frob(I2-Identity));
+
+      MatrixOperator Rho2 = inject_right(Rho, PsiOrtho, PsiOrtho);
+      TRACE(norm_frob(Rho2-Rho));
+
       std::cout.precision(14);
       
       // for each site in the unit cell, make the right hand operator

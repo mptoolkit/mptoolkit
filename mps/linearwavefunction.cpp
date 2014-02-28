@@ -182,7 +182,8 @@ LinearWavefunction operator-(LinearWavefunction const& x, LinearWavefunction con
    return x+z;
 }
 
-MatrixOperator transfer_from_left(MatrixOperator const& m, LinearWavefunction const& Psi)
+MatrixOperator
+inject_left(MatrixOperator const& m, LinearWavefunction const& Psi)
 {
    MatrixOperator Result = m;
    LinearWavefunction::const_iterator I = Psi.begin();
@@ -194,7 +195,25 @@ MatrixOperator transfer_from_left(MatrixOperator const& m, LinearWavefunction co
    return Result;
 }
 
-MatrixOperator transfer_from_right(MatrixOperator const& m, LinearWavefunction const& Psi)
+MatrixOperator 
+inject_left(MatrixOperator const& m, 
+            LinearWavefunction const& Psi1,
+            LinearWavefunction const& Psi2)
+{
+   CHECK_EQUAL(Psi1.size(), Psi2.size());
+   MatrixOperator Result = m;
+   LinearWavefunction::const_iterator I1 = Psi1.begin();
+   LinearWavefunction::const_iterator I2 = Psi2.begin();
+   while (I1 != Psi2.end())
+   {
+      Result = operator_prod(herm(*I1), Result, *I2);
+      ++I1; ++I2;
+   }
+   return Result;
+}
+
+MatrixOperator
+inject_right(MatrixOperator const& m, LinearWavefunction const& Psi)
 {
    MatrixOperator Result = m;
    LinearWavefunction::const_iterator I = Psi.end();
@@ -202,6 +221,23 @@ MatrixOperator transfer_from_right(MatrixOperator const& m, LinearWavefunction c
    {
       --I;
       Result = operator_prod(*I, Result, herm(*I));
+   }
+   return Result;
+}
+
+MatrixOperator
+inject_right(MatrixOperator const& m, 
+            LinearWavefunction const& Psi1,
+            LinearWavefunction const& Psi2)
+{
+   CHECK_EQUAL(Psi1.size(), Psi2.size());
+   MatrixOperator Result = m;
+   LinearWavefunction::const_iterator I1 = Psi1.end();
+   LinearWavefunction::const_iterator I2 = Psi2.end();
+   while (I1 != Psi1.begin())
+   {
+      --I1; --I2;
+      Result = operator_prod(*I1, Result, herm(*I2));
    }
    return Result;
 }

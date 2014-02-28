@@ -212,11 +212,57 @@ LinearWavefunction prod(LinearOperator const& Op, LinearWavefunction const& Psi,
                         QuantumNumbers::QuantumNumber const& q);
 #endif
 
-// from left to right, calculates the action of the transfer operator R = A^\dagger m A
-MatrixOperator transfer_from_left(MatrixOperator const& m, LinearWavefunction const& Psi);
+// Calculates the operator contraction, with a matrix
+// actong on the left hand side of the wavefunction.
+// (the transfer matrix of the unit cell)
+// +-Psi*- ... Psi*-
+// |  |         |
+// m  |         |
+// |  |         |
+// +-Psi-- ... Psi--
 
-// from right to left, calculates the action of the transfer operator R = A m A^\dagger
-MatrixOperator transfer_from_right(MatrixOperator const& m, LinearWavefunction const& Psi);
+MatrixOperator
+inject_left(MatrixOperator const& m, LinearWavefunction const& Psi);
+
+// Calculates the operator contraction, with a matrix
+// actong on the left hand side of the wavefunction.
+// (the transfer matrix of the unit cell)
+// Two argument version, for a different wavefunction on the left and right.
+// +-Psi1*- ... Psi1*-
+// |  |          |
+// m  |          |
+// |  |          |
+// +-Psi2-- ... Psi2--
+MatrixOperator 
+inject_left(MatrixOperator const& m, 
+            LinearWavefunction const& Psi1,
+            LinearWavefunction const& Psi2);
+
+// Calculates the operator contraction, with a matrix
+// actong on the left hand side of the wavefunction.
+// (the transfer matrix of the unit cell)
+// --Psi-- ... Psi--+
+//    |         |   |
+//    |         |   m
+//    |         |   |
+// --Psi*- ... Psi*-+
+
+MatrixOperator
+inject_right(MatrixOperator const& m, LinearWavefunction const& Psi);
+
+// Calculates the operator contraction, with a matrix
+// actong on the left hand side of the wavefunction.
+// (the transfer matrix of the unit cell)
+// --Psi1-- ... Psi1--+
+//    |         |     |
+//    |         |     m
+//    |         |     |
+// --Psi2*- ... Psi2*-+
+// Two argument version, for a different wavefunction on the left and right.
+MatrixOperator 
+inject_right(MatrixOperator const& m, 
+            LinearWavefunction const& Psi1,
+            LinearWavefunction const& Psi2);
 
 HermitianProxy<LinearWavefunction>
 inline
