@@ -46,6 +46,7 @@ LatticeSite CreateBoseHubbardSpinlessU1Site(int MaxN, std::string const& Sym1 = 
    B = adjoint(BH);
    Site["B"] = B;
    I = SiteOperator::Identity(Basis);
+   P = I;
    Site["I"] = I;
    N = prod(BH, B, QN(0));
    Site["N"] = N;
@@ -53,6 +54,7 @@ LatticeSite CreateBoseHubbardSpinlessU1Site(int MaxN, std::string const& Sym1 = 
    Site["N2"] = N2;
    R = I;
    Site["R"] = R;
+   Site["P"] = P;
 
    U = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
    for (int n = 0; n <= MaxN; ++n)
@@ -60,6 +62,16 @@ LatticeSite CreateBoseHubbardSpinlessU1Site(int MaxN, std::string const& Sym1 = 
       SetMatElementU1(U, n, n, minus1pow(n));
    }
    Site["U"] = U;
+
+   Site["BN"] = B*N;
+   Site["BN2"] = B*N*N;
+   Site["BN3"] = B*N*N*N;
+   Site["BU"] = B*U;
+
+   Site["BHN"] = BH*N;
+   Site["BHN2"] = BH*N*N;
+   Site["BHN3"] = BH*N*N*N;
+   Site["BHU"] = BH*U;
 
    // projections onto each state
    for (int n = 0; n <= MaxN; ++n)
