@@ -100,7 +100,7 @@ int main(int argc, char** argv)
       if (ShowTrans)
       {
 	 MatrixOperator I = MatrixOperator::make_identity(Psi->Psi.Basis1());
-	 MatrixOperator J = transfer_from_left(I, Psi->Psi);
+	 MatrixOperator J = inject_left(I, Psi->Psi);
 	 TRACE(norm_frob(I-J));
 
 	 LinearWavefunction PsiR = Psi->Psi;
@@ -110,7 +110,7 @@ int main(int argc, char** argv)
 	 PsiR.set_back(prod(PsiR.get_back(), Lambda));
 
 	 I = MatrixOperator::make_identity(PsiR.Basis2());
-	 J = transfer_from_right(I, PsiR);
+	 J = inject_right(I, PsiR);
 	 TRACE(norm_frob(I-J));
       }
 

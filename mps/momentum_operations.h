@@ -33,7 +33,11 @@ struct CompareComplex
    }
 };
 
-// Momentum-dependent complex polynomial
+// Momentum-dependent complex polynomial.
+// Currently this is stored as a std::map, indexed by the complex phase.
+// This probably isn't good enough in the long term, eg how to round
+// addition of momenta, and what happens if momenta sum to epsilon rather than zero.
+// This could be done with a customized map, that handles the rounding.
 typedef std::map<std::complex<double>, ComplexPolyType, CompareComplex> KComplexPolyType;
 
 // momentum-dependent matrix polynomial,

@@ -8,6 +8,17 @@
 
    If the iterations are performed without convergence, the Tol on exit is set to
    the negative of the current residual norm.
+
+   The SolverMode selects which eigenvalue we want, out of:
+   LargestAlgebraicReal:  eigenvalue e with highest e.real (top of the spectrum)
+   SmallestAlgebraicReal: eigenvalue e with lowest e.real  (bottom of the spectrum)
+   LargestMagnitude:      eigenvalue e with largest |e|
+
+   SmallestAlgebraicReal will find the same eigenvector as LargestAlgebraicReal 
+   with the negative matrix.
+
+   TODO: we could forward this to ARPACK, if its available
+   
 */
 
 #include "linearalgebra/eigen.h"
@@ -27,11 +38,11 @@ namespace LinearSolvers
 
 using namespace LinearAlgebra;
 
-   double const DGKS_Threshold = 1.0 / std::sqrt(2.0); // 1.0; // between 0 and 1.
+double const DGKS_Threshold = 1.0 / std::sqrt(2.0); // 1.0; // between 0 and 1.
 
 double const ArnoldiBetaTol = 1E-14;
 
-   enum SolverMode { LargestAlgebraicReal, LargestMagnitudeReal, LargestMagnitude, ClosestUnity };
+enum SolverMode { LargestAlgebraicReal, LargestMagnitudeReal, LargestMagnitude };
 
 template <typename VectorType, typename MultiplyFunctor>
 std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iterations,
@@ -133,7 +144,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
          case LargestMagnitudeReal : ThetaMag = norm_frob(Theta.real()); break;
          case LargestAlgebraicReal : ThetaMag = Theta.real(); break;
          case LargestMagnitude : ThetaMag = norm_frob(Theta); break;
-         case ClosestUnity : ThetaMag = -norm_frob(1.0 - Theta.real()); break;
+	    //         case ClosestUnity : ThetaMag = -norm_frob(1.0 - Theta); break;
       }
 
       for (unsigned i = 1; i < size(Eigen); ++i)
@@ -144,7 +155,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
             case LargestMagnitudeReal : NextMag = norm_frob(Eigen[i].real()); break;
             case LargestAlgebraicReal : NextMag = Eigen[i].real(); break;
    	    case LargestMagnitude : NextMag = norm_frob(Eigen[i]); break;
-            case ClosestUnity : NextMag = -norm_frob(1.0 - Eigen[i].real()); break;
+	       //            case ClosestUnity : NextMag = -norm_frob(1.0 - Eigen[i]); break;
 	 }
 	 if (NextMag > ThetaMag)
 	 {

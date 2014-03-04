@@ -491,7 +491,7 @@ mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunction.o rand
 mp-igradient : triangular_operator.o infinitewavefunction.o random_wavefunc.o eigen.o
 mp-ispectral-expansion : triangular_operator.o infinitewavefunction.o random_wavefunc.o eigen.o
 mp-ioverlap : infinitewavefunction.o eigen.o
-mp-iproject : infinitewavefunction.o eigen.om
+mp-iproject : infinitewavefunction.o eigen.o
 mp-icorrelation : infinitewavefunction.o eigen.o
 pp-iortho : triangular_operator.o infinitewavefunction.o
 mp-iinfo : eigen.o infinitewavefunction.o

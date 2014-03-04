@@ -6,42 +6,57 @@
 #include "mp-algorithms/arnoldi.h"
 #include "mp-algorithms/gmres.h"
 
+// binomial function.  This can be implemented with integer arithmetic.
+// gmp contains a version with arbitrary size integers, but we're never going
+// to overflow a long (or even an int!) with an MPO contraction.
 long Binomial(int n, int k)
 {
    if (k > n/2)
       k = n-k;     // take advantage of symmetry
-   double r = 1.0;
-   for (int i = 1; i <= k; ++i)
+   long r = 1;
+   long n_k = n-k;
+   for (long i = 1; i <= k; ++i)
    {
-      r *= double(n-k+i) / double(i);
+      DEBUG_CHECK((r*(n_k-i))%i == 0);
+      r = (r * (n_k+i)) / i;
    }
-   return long(r+0.5); // round to nearest
+   return r;
 }
 
-// Functor to evaluate (1-T)(Psi) where T is the generalized transfer matrix
-struct OneMinusTransfer
+// Functor to evaluate (1-T)(x) where T is the generalized transfer matrix.
+// x is defined in the Basis1.  Optionally, we also optionally orthogonalize against a
+// Unit matrix, which is an eigenvalue 1 of T
+//      -Psi*-
+//        |
+//  T =  Op*
+//        |
+//      -Psi--
+struct OneMinusTransferLeft
 {
-   OneMinusTransfer(FiniteMPO const& T, LinearWavefunction const& Psi, QuantumNumber const& QShift, 
-                    MatrixOperator const& Rho,
-                    MatrixOperator const& Identity, bool Orthogonalize)
-      : T_(T), Psi_(Psi), 
-	QShift_(QShift), Rho_(Rho), 
-	Identity_(Identity), Orthogonalize_(Orthogonalize) {}
+   OneMinusTransferLeft(FiniteMPO const& Op, LinearWavefunction const& Psi, QuantumNumber const& QShift, 
+			MatrixOperator const& LeftUnit,
+			MatrixOperator const& RightUnit, bool Orthogonalize)
+      : Op_(Op), Psi_(Psi), 
+	QShift_(QShift), LeftUnit_(LeftUnit), 
+	RightUnit_(RightUnit), Orthogonalize_(Orthogonalize) { }
 
    MatrixOperator operator()(MatrixOperator const& x) const
    {
-      MatrixOperator r = x-delta_shift(inject_left(x, T_, Psi_), QShift_);
-      //      r = delta_shift(r, QShift_);
+      MatrixOperator r = x-delta_shift(inject_left(x, Op_, Psi_), QShift_);
       if (Orthogonalize_ && is_scalar(r.TransformsAs()))
-          r -= inner_prod(r, Rho_) * Identity_; // orthogonalize to the identity
+	 {
+	    TRACE(inner_prod(r, RightUnit_));
+	    TRACE(inner_prod(r, LeftUnit_));
+          r -= inner_prod(r, RightUnit_) * LeftUnit_; // orthogonalize to the identity
+	 }
       return r;
    }
 
-   FiniteMPO const& T_;
+   FiniteMPO const& Op_;
    LinearWavefunction const& Psi_;
    QuantumNumber const& QShift_;
-   MatrixOperator const& Rho_;
-   MatrixOperator const& Identity_;
+   MatrixOperator const& LeftUnit_;
+   MatrixOperator const& RightUnit_;
    bool Orthogonalize_;
 };
 
@@ -59,19 +74,20 @@ LinearSolve(Func F, MatrixOperator Rhs)
 }
 
 
-
+// Calculate the (complex) eigenvalue that is closest to 1.0
+// using Arnoldi.
 template <typename T>
 std::complex<double>
-FindLargestEigenvalue(MatrixOperator& M, T Func, int Verbose)
+FindClosestUnitEigenvalue(MatrixOperator& M, T Func, int Verbose)
 {
    int Iterations = 20;
    double Tol = 1E-14;
    std::complex<double> EtaL;
-   EtaL = LinearSolvers::Arnoldi(M, Func, Iterations, Tol, LinearSolvers::LargestMagnitude, Verbose);
+   EtaL = LinearSolvers::Arnoldi(M, Func, Iterations, Tol, LinearSolvers::LargestAlgebraicReal, Verbose);
    while (Iterations == 20)
    {
       Tol = 1E-14;
-      EtaL = LinearSolvers::Arnoldi(M, Func, Iterations, Tol, LinearSolvers::LargestMagnitude, Verbose);
+      EtaL = LinearSolvers::Arnoldi(M, Func, Iterations, Tol, LinearSolvers::LargestAlgebraicReal, Verbose);
    }
    return EtaL;
 }
@@ -148,14 +164,14 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
 			    MatrixOperator const& UnitMatrixRight, 
 			    LinearWavefunction const& Psi,
 			    QuantumNumber const& QShift,
-			    bool Magnitude1)
+			    bool HasEigenvalue1)
 {
    // Components perpendicular to the identity satisfy equation (24)
    KMatrixPolyType E;
    for (KMatrixPolyType::const_iterator I = C.begin(); I != C.end(); ++I) // sum over momenta
    {
       std::complex<double> K = I->first;  // the momentum (complex phase)
-      DEBUG_TRACE("Momentum")(K);
+      DEBUG_TRACE("Momentum")(K)(HasEigenvalue1);
       for (int m = I->second.degree(); m >= 0; --m)
       {
 	 DEBUG_TRACE("degree")(m);
@@ -167,7 +183,7 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
             
 	 // orthogonalize Rhs against the identity again, which is a kind of
 	 // DGKS correction
-	 if (is_scalar(Rhs.TransformsAs()))
+	 if (HasEigenvalue1 && is_scalar(Rhs.TransformsAs()))
 	    Rhs -= inner_prod(UnitMatrixRight, Rhs) * UnitMatrixLeft;
 
 	 double RhsNorm2 = norm_frob_sq(Rhs);
@@ -175,10 +191,11 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
 	 //TRACE(RhsNorm2);
 	 if (RhsNorm2 > 1E-22)
 	 {
-	    E[K][m] = LinearSolve(OneMinusTransfer(K*Diag, Psi, QShift, UnitMatrixRight, UnitMatrixLeft, Magnitude1), 
+	    E[K][m] = LinearSolve(OneMinusTransferLeft(K*Diag, Psi, QShift, 
+						       UnitMatrixLeft, UnitMatrixRight, HasEigenvalue1), 
 				  Rhs);
 	    // do another orthogonalization
-	    if (Magnitude1 && is_scalar(E[K][m].TransformsAs()))
+	    if (HasEigenvalue1 && is_scalar(E[K][m].TransformsAs()))
 	       E[K][m] -= inner_prod(UnitMatrixRight, E[K][m]) * UnitMatrixLeft;
 	 }
       }
@@ -219,13 +236,13 @@ SolveZeroDiagonal(KMatrixPolyType const& C)
 
 KMatrixPolyType
 SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
-              TriangularMPO const& Op, MatrixOperator const& Rho,
-              MatrixOperator const& Identity, int Verbose)
+              TriangularMPO const& Op, MatrixOperator const& LeftIdentity,
+              MatrixOperator const& RightIdentity, int Verbose)
 {
-   CHECK_EQUAL(Rho.Basis1(), Psi.Basis1());
-   CHECK_EQUAL(Rho.Basis2(), Psi.Basis1());
-   CHECK_EQUAL(Identity.Basis1(), Psi.Basis1());
-   CHECK_EQUAL(Identity.Basis2(), Psi.Basis1());
+   CHECK_EQUAL(RightIdentity.Basis1(), Psi.Basis1());
+   CHECK_EQUAL(RightIdentity.Basis2(), Psi.Basis1());
+   CHECK_EQUAL(LeftIdentity.Basis1(), Psi.Basis1());
+   CHECK_EQUAL(LeftIdentity.Basis2(), Psi.Basis1());
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
    std::vector<KMatrixPolyType> EMatK(Dim);  // the vector of E matrices
@@ -237,17 +254,16 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
    CHECK(CheckIdent.is_identity())("(0,0) component of the MPO must be identity!")(CheckIdent);
 
    // Initialize the first E matrix.  These are operators acting in the Basis1()
-   EMatK[0][1.0] = MatrixPolyType(Identity);
+   EMatK[0][1.0] = MatrixPolyType(LeftIdentity);
 
-   int Col = 1;
-   while (Col < Dim)
+   for (int Col = 1; Col < Dim; ++Col)
    {
       if (Verbose)
       {
          std::cerr << "Solving column " << Col << '\n';
       }
 
-      // Generate the next C matrices, C(n) = sum_{j>Col} Op(j,Col) E_j(n)
+      // Generate the next C matrices, C(n) = sum_{j<Col} Op(j,Col) E_j(n)
       KMatrixPolyType C;
 
       std::vector<std::vector<int> > Mask = mask_column(Op, Col);
@@ -276,8 +292,8 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 
 	 // Multiplication factor and the left and right eigenvalues.
 	 std::complex<double> Factor = Classification.factor();
-	 MatrixOperator UnitMatrixLeft = Identity;
-	 MatrixOperator UnitMatrixRight = delta_shift(Rho, QShift);
+	 MatrixOperator UnitMatrixLeft = LeftIdentity;
+	 MatrixOperator UnitMatrixRight = delta_shift(RightIdentity, QShift);
 
 	 // If the diagonal operator is unitary, it might have an eigenvalue of magnitude 1
 	 if (Classification.is_unitary() && !Classification.is_complex_identity())
@@ -287,10 +303,10 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 	    
 	    // Find the largest eigenvalue
 	    // We need initial guess vectors in the correct symmetry sector
-	    UnitMatrixLeft = MakeRandomMatrixOperator(Identity.Basis1(), Identity.Basis2(), Diag.Basis2()[0]);
+	    UnitMatrixLeft = MakeRandomMatrixOperator(LeftIdentity.Basis1(), LeftIdentity.Basis2(), Diag.Basis2()[0]);
 
-	    std::complex<double> EtaL = FindLargestEigenvalue(UnitMatrixLeft, 
-							      InjectLeftQShift(Diag, Psi, QShift), Verbose);
+	    std::complex<double> EtaL = FindClosestUnitEigenvalue(UnitMatrixLeft, 
+								  InjectLeftQShift(Diag, Psi, QShift), Verbose);
 
 	    if (Verbose)
 	       std::cerr << "Eigenvalue of unitary operator is " << EtaL << std::endl;
@@ -300,18 +316,23 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 
 	       UnitMatrixRight = UnitMatrixLeft;
 	       // we have an eigenvalue of magnitude 1.  Find the right eigenvalue too
-	       std::complex<double> EtaR = FindLargestEigenvalue(UnitMatrixRight, 
-								 InjectRightQShift(Diag, Psi, QShift), Verbose);
+	       std::complex<double> EtaR = FindClosestUnitEigenvalue(UnitMatrixRight, 
+								     InjectRightQShift(Diag, Psi, QShift), Verbose);
 	       CHECK(norm_frob(EtaL-EtaR) < 1E-12)("Left and right eigenvalues do not agree!")(EtaL)(EtaR);
+	       // we already determined that the norm is sufficiently close to 1, but 
+	       // fine-tune normalization
 	       Factor = EtaL / norm_frob(EtaL);
+
+	       // normalize the left/right eigenvector pair
+	       UnitMatrixLeft *= 1.0 / (inner_prod(UnitMatrixLeft, UnitMatrixRight));
 	    }
 	 }
 
-	 // If we have an eigenvalue with magnitude 1, then decompose C into parallel and perpendicular parts
-	 bool Magnitude1 = false;
+	 // If we have an eigenvalue equal to 1, then decompose C into parallel and perpendicular parts
+	 bool HasEigenvalue1 = false;
          if (std::abs(norm_frob(Factor) - 1.0) < 1E-12)
          {
-	    Magnitude1 = true;
+	    HasEigenvalue1 = true;
 	    TRACE(UnitMatrixLeft)(UnitMatrixRight);
 	    EParallel = DecomposeParallelParts(C, Factor, UnitMatrixLeft, UnitMatrixRight);
 	 }
@@ -320,14 +341,14 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 	 // to an eigenvector of magnitude 1
       
          KMatrixPolyType E = DecomposePerpendicularParts(C, Diag, UnitMatrixLeft, UnitMatrixRight, 
-							 Psi, QShift, Magnitude1);
+							 Psi, QShift, HasEigenvalue1);
 
          // Reinsert the components parallel to the unit matrix (if any)
          for (KComplexPolyType::const_iterator I = EParallel.begin(); I != EParallel.end(); ++I)
          {
 	    for (ComplexPolyType::const_iterator J = I->second.begin(); J != I->second.end(); ++J)
 	    {
-	       E[I->first][J->first] += J->second * Identity;
+	       E[I->first][J->first] += J->second * LeftIdentity;
 	    }
          }
 
@@ -336,7 +357,6 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
          EMatK[Col] = E;
       }
 
-      ++Col;
    }
 
    // The return value is the last column of our E matrices
