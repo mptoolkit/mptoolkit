@@ -2,7 +2,7 @@
 //
 // Site block for a hubbard-like site with an impurity spin
 
-#include "siteoperator/latticesite.h"
+#include "lattice/latticesite.h"
 #include "quantumnumbers/u1.h"
 #include "quantumnumbers/su2.h"
 

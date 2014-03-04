@@ -29,7 +29,7 @@ class LatticeOperator
       int size() const;
 
       // returns the Jordan-Wigner string associated with this operator
-      ProductOperator const& JordanWignerString() const;
+      std::string JordanWignerString() const;
 
       // Returns a finite version of the operator.  If it is
       // a triangular operator, then close off the boundaries
@@ -73,7 +73,7 @@ class LatticeOperator
 
    private:
       pvalue_ptr<UnitCell> pUnitCell;
-      ProductOperator JWString;
+      std::string JWString;
       boost::variant<FiniteMPO, TriangularMPO> Operator;
 };
 

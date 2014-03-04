@@ -3,7 +3,7 @@
 #if !defined(TJ_U1_H_SDHFOUIERYT8934758934789)
 #define TJ_U1_H_SDHFOUIERYT8934758934789
 
-#include "siteoperator/latticesite.h"
+#include "lattice/latticesite.h"
 #include "quantumnumbers/u1.h"
 
 

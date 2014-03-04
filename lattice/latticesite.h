@@ -48,7 +48,7 @@ class LatticeSite
 
       const_iterator find(std::string const& s) const { return Data->find(s); }
 
-      bool exists(std::string const& s) const { return Data->find(s) != Data->end(); }
+      bool operator_exists(std::string const& s) const { return Data->find(s) != Data->end(); }
 
       void CoerceSymmetryList(QuantumNumbers::SymmetryList const& sl);
 

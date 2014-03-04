@@ -6,7 +6,7 @@
 // (0 up) \otimes (0 down) sites.
 //
 
-#include "siteoperator/latticesite.h"
+#include "lattice/latticesite.h"
 #include "quantumnumbers/u1.h"
 
 

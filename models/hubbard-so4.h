@@ -3,7 +3,7 @@
 #if !defined(HUBBARD_SO4_H)
 #define HUBBARD_SO4_H
 
-#include "siteoperator/latticesite.h"
+#include "lattice/latticesite.h"
 #include "quantumnumbers/su2.h"
 
 #include <cmath>

@@ -5,7 +5,7 @@
 // but the z-component of spin is a parameter.
 //
 
-#include "siteoperator/latticesite.h"
+#include "lattice/latticesite.h"
 #include "quantumnumbers/u1.h"
 
 

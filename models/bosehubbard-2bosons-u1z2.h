@@ -3,7 +3,7 @@
 // Bose-Hubbard model with two species of bosons,
 // symmetric under interchange of species.
 
-#include "siteoperator/latticesite.h"
+#include "lattice/latticesite.h"
 #include "quantumnumbers/u1.h"
 #include "quantumnumbers/z2.h"
 

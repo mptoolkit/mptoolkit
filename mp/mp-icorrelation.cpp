@@ -1,6 +1,6 @@
 
 #include "mps/infinitewavefunction.h"
-#include "siteoperator/latticesite.h"
+#include "lattice/latticesite.h"
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "mp/copyright.h"

@@ -49,7 +49,7 @@ TARDIR=$(PACKAGE_TARNAME)
 LIB = $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LIBS_EXTRA)
 
 SRCDIRS = common common/private quantumnumbers pstream pheap \
-          tensor siteoperator models mp-algorithms \
+          tensor lattice models mp-algorithms \
           tutorial mp linearalgebra misc conf scripts utils interface expokit mpo \
           benchmark misc misc/oogl junk mpo mps
 
@@ -72,7 +72,7 @@ quantumnumbersobj = quantumnumber.o symmetrybase.o symmetrylist.o \
 
 tensorobj = tensorproduct.o tensorsum.o basis.o regularize.o tensor_eigen.o
 
-siteoperatorobj = siteoperator.o latticesite.o unitcell.o
+latticeobj = siteoperator.o latticesite.o
 
 dmrgobj = $(tensorobj) density.o
 
@@ -90,7 +90,7 @@ mpoobj = operator_component.o generic_mpo.o finite_mpo.o triangular_mpo.o
 
 mpsobj = state_component.o linearwavefunction.o infinitewavefunction.o density.o operator_actions.o
 
-mpobj = $(mpoobj) $(mpsobj) $(siteoperatorobj) attributes.o
+mpobj = $(mpoobj) $(mpsobj) $(latticeobj) attributes.o
 
 #mpobj = mpopcomponent.o mpoperatorlist.o siteoperator.o eigen.o mpstate.o \
 #        attributes.o mpopcompressed.o lattice.o \
@@ -140,7 +140,7 @@ tensor_tests = testbasis testtensor testadjoint testscalarprod testtensorsum \
                testtensorprod testtripleprod \
                testvectorbasis testregularize testprodherm testdeltaprod testred
 
-siteoperator_tests = testsitebasis testsiteoperator testcomplexsiteoperator
+lattice_tests = testsitebasis testsiteoperator testcomplexsiteoperator
 
 matrixproduct_tests = testmpstate testdensity testperiodicwavefunction testscalardirectprod \
                       testtriangularaddition testsvd-decompose testpackunpack
@@ -153,7 +153,7 @@ common_tests = testrunlengthcompressed
 
 quantumnumber_tests = testcoupling
 
-alltests = $(linearalgebra_tests) $(tensor_tests) $(siteoperator_tests) \
+alltests = $(linearalgebra_tests) $(tensor_tests) $(lattice_tests) \
            $(matrixproduct_tests) $(common_tests) $(quantumnumber_tests)
 
 allobj = $(quantumnumbersobj) \
@@ -370,15 +370,15 @@ testpackunpack : packunpack.o mpstate.o eigen.o
 # dependencies for mpo tests
 #
 
-$(mpo_tests) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) $(tensorobj) $(siteoperatorobj)
+$(mpo_tests) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) $(tensorobj) $(latticeobj)
 
 test_operator_decompose : $(expokitobj) $(mpoobj) eigen.o
 
 #
-# dependencies for siteoperator tests
+# dependencies for lattice tests
 #
 
-$(siteoperator_tests) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) $(tensorobj) $(siteoperatorobj)
+$(lattice_tests) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) $(tensorobj) $(latticeobj)
 
 #
 # dependencies for linearalgebra tests

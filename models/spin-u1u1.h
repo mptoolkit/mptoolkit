@@ -2,7 +2,7 @@
 // SU(3) spin chain in the fundamental representation,
 // broken down to U(1)xU(1)
 
-#include "siteoperator/latticesite.h"
+#include "lattice/latticesite.h"
 #include "quantumnumbers/u1.h"
 
 

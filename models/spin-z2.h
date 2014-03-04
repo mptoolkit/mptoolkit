@@ -1,6 +1,6 @@
 // -*- C++ -*- $Id$
 
-#include "siteoperator/latticesite.h"
+#include "lattice/latticesite.h"
 #include "quantumnumbers/z2.h"
 
 

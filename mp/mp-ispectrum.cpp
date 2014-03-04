@@ -1,7 +1,7 @@
 
 #include "mps/infinitewavefunction.h"
 #include "mps/packunpack.h"
-#include "siteoperator/latticesite.h"
+#include "lattice/latticesite.h"
 #include "mps/operator_actions.h"
 #include "common/environment.h"
 #include "common/terminal.h"
