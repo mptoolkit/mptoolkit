@@ -7,6 +7,7 @@
 #include "common/terminal.h"
 #include "common/environment.h"
 #include "common/prog_options.h"
+#include "models/hubbard-u1su2.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -72,6 +73,28 @@ InfiniteWavefunction reflect(InfiniteWavefunction const& Psi)
    return Ret;
 }
 
+// version of reflect where we apply a local operator also
+InfiniteWavefunction reflect(InfiniteWavefunction const& Psi, std::vector<SimpleOperator> const& Op)
+{
+   CHECK_EQUAL(Psi.size(), int(Op.size()));
+   InfiniteWavefunction Ret;
+   Ret.C_old = flip_conj(adjoint(Psi.C_right));
+   Ret.C_right = flip_conj(adjoint(Psi.C_old)); 
+   //   Ret.C_old = delta_shift(Ret.C_old, adjoint(Psi.QShift));
+   //   Ret.c_right = delta_shift(Ret.C_right, Psi.QShift);
+   Ret.Attr = Psi.Attr;
+   Ret.QShift = Psi.QShift;
+   Ret.Psi = LinearWavefunction(Psi.Psi.GetSymmetryList());
+   std::vector<SimpleOperator>::const_iterator OpI = Op.begin();
+   for (LinearWavefunction::const_iterator I = Psi.Psi.begin();
+        I != Psi.Psi.end(); ++I, ++OpI)
+   {
+      Ret.Psi.push_front(local_prod(*OpI, reflect(*I)));
+   }
+
+   return Ret;
+}
+
 InfiniteWavefunction conj(InfiniteWavefunction const& Psi)
 {
    InfiniteWavefunction Ret;
@@ -106,6 +129,7 @@ int main(int argc, char** argv)
       bool Quiet = false;
       bool Reflect = false;
       bool Conj = false;
+      std::string Model;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -123,6 +147,8 @@ int main(int argc, char** argv)
           "rotate the unit cell of psi2 this many sites to the left before calculating the overlap [default 0]")
          ("reflect", prog_opt::bool_switch(&Reflect),
           "reflect psi2 (gives parity eigenvalue)")
+	 ("model", prog_opt::value(&Model),
+	  "with the --reflect option, also apply the local reflection operator for this model")
          ("conj", prog_opt::bool_switch(&Conj),
           "complex conjugate psi2")
          ("q,quantumnumber", prog_opt::value(&Sector),
@@ -206,7 +232,26 @@ int main(int argc, char** argv)
       {
          if (Verbose)
             std::cout << "Reflecting psi2..." << std::endl;
-         *Psi2.mutate() = reflect(*Psi2);
+	 if (!Model.empty())
+	 {
+	    if (Verbose)
+	       std::cout << "Reflecting using model " << Model << std::endl;
+	    std::vector<SimpleOperator> ReflectionOp;
+	    if (Model == "hubbard-u1su2")
+	    {
+	       LatticeSite Site = CreateSU2HubbardSite();
+	       ReflectionOp = std::vector<SimpleOperator>(Psi2->size(), Site["R"]);
+	    }
+	    else
+	    {
+	       PANIC("Unknown model")(Model);
+	    }
+	    *Psi2.mutate() = reflect(*Psi2, ReflectionOp);
+	 }
+	 else
+	 {
+	    *Psi2.mutate() = reflect(*Psi2);
+	 }
       }
 
       if (Conj)
