@@ -328,7 +328,7 @@ reduced_matrix_element(LinearWavefunction const& Psi1,
       --I1; --I2; --Mi;
       E = operator_prod(*Mi, *I1, E, herm(*I2));
    }
-   return conj(E);
+   return E;
 }
 
 StateComponent
@@ -348,8 +348,11 @@ reduced_matrix_element_conj(LinearWavefunction const& Psi1,
       --I1; --I2; --Mi;
       E = operator_prod(*Mi, *I1, E, herm(conj(*I2)));
    }
-   return conj(E);
+   return E;
 }
+
+// These have been updated on trunk/.  Don't use these versions
+// as they are here.
 
 std::complex<double>
 expectation(LinearWavefunction const& Psi1, 

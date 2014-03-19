@@ -318,8 +318,8 @@ MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const
    {
       for (const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
       {
-         Result += (*J) * triple_prod(herm(A.base()[J.index1()]), E, B[J.index2()], 
-				      M.base().TransformsAs(), q);
+         Result += herm(*J) * triple_prod(herm(A.base()[J.index1()]), E, B[J.index2()], 
+					  M.base().TransformsAs(), q);
       }
    }
    return Result;

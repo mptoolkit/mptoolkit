@@ -17,13 +17,13 @@
 #include "pheap/pvalueptr.h"
 
 // InfiniteMPO is currently a typedef for TriangularMPO,
-// but will 
+// but will eventually be some kind of variant for a TriangularMPO and ProductMPO
 typedef TriangularMPO InfiniteMPO;
 
 class InfiniteLattice
 {
    public:
-      typedef InfiniteMPO value_type;       // will eventually become some kind of variant
+      typedef InfiniteMPO                       value_type;      
       typedef std::map<std::string, value_type> operator_map_type;
       typedef operator_map_type::const_iterator const_iterator;
 
@@ -46,7 +46,7 @@ class InfiniteLattice
 
    private:
       UnitCell UnitCell_;
-      opertor_map_type OperatorMap_;
+      operator_map_type OperatorMap_;
 
    friend PStream::opstream& operator<<(PStream::opstream& out, InfiniteLattice const& L);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, InfiniteLattice& L);

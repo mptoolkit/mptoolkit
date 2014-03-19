@@ -88,6 +88,10 @@ class UnitCell
       // lookup a unit cell operator (not a local operator)
       FiniteMPO const& Operator(std::string const& Op) const;
 
+      // lookup a unit cell operator (not a local operator), or
+      // adds it if it doesn't already exist.
+      FiniteMPO& Operator(std::string const& Op);
+
       // lookup the Jordan Wigner string of the specified operator
       std::string JWString(std::string const& Op) const;
 

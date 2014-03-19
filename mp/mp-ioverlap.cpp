@@ -69,9 +69,6 @@ InfiniteWavefunction reflect(InfiniteWavefunction const& Psi)
       Ret.Psi.push_front(reflect(*I));
    }
 
-   CHECK_EQUAL(Ret.C_right.Basis1(), Ret.Psi.Basis2());
-   CHECK_EQUAL(Ret.C_old.Basis1(), Ret.Psi.Basis1());
-
    return Ret;
 }
 
@@ -88,9 +85,6 @@ InfiniteWavefunction conj(InfiniteWavefunction const& Psi)
    {
       Ret.Psi.push_back(conj(*I));
    }
-
-   CHECK_EQUAL(Ret.C_right.Basis1(), Ret.Psi.Basis2());
-   CHECK_EQUAL(Ret.C_old.Basis1(), Ret.Psi.Basis1());
 
    return Ret;
 }
