@@ -113,5 +113,6 @@ LatticeSite CreateSU2HubbardSite(std::string const& Sym1 = "N", std::string cons
    Site["N_S"] = Ns;
    Site["N_H"] = Nh;
    Site["ES"] = ES;
+   Site["R"] = R;
    return Site;
 }
