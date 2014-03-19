@@ -9,6 +9,7 @@
 #include "common/prog_options.h"
 #include "models/hubbard-u1su2.h"
 #include "models/hubbard-u1u1.h"
+#include "models/hubbard-u1u1-old.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -246,6 +247,11 @@ int main(int argc, char** argv)
 	    else if (Model == "hubbard-u1u1")
 	    {
 	       LatticeSite Site = CreateU1U1HubbardSite();
+	       ReflectionOp = std::vector<SimpleOperator>(Psi2->size(), Site["R"]);
+	    }
+	    else if (Model == "hubbard-u1u1-old")
+	    {
+	       LatticeSite Site = CreateU1U1HubbardOldOrderingSite();
 	       ReflectionOp = std::vector<SimpleOperator>(Psi2->size(), Site["R"]);
 	    }
 	    else
