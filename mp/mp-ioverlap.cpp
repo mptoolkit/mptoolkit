@@ -100,8 +100,8 @@ InfiniteWavefunction reflect(InfiniteWavefunction const& Psi, std::vector<Simple
 InfiniteWavefunction conj(InfiniteWavefunction const& Psi)
 {
    InfiniteWavefunction Ret;
-   Ret.C_old = conj(Psi.C_right);
-   Ret.C_right = conj(Psi.C_old); 
+   Ret.C_old = conj(Psi.C_old);
+   Ret.C_right = conj(Psi.C_right); 
    Ret.Attr = Psi.Attr;
    Ret.QShift = Psi.QShift;
    Ret.Psi = LinearWavefunction(Psi.Psi.GetSymmetryList());
