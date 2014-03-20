@@ -311,4 +311,8 @@ struct Resize<Matrix<T, Orient>&>
 
 #include "matrix.cc"
 
+#if !defined(LINEARALGEBRA_NO_BLAS)
+#include "matrixproductblas_impl.cc"
+#endif
+
 #endif

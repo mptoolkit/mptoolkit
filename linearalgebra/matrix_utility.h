@@ -130,6 +130,20 @@ diagonal_matrix(T const& v)
 }
 
 template <typename T>
+Vector<T>
+diagonal_vector(Matrix<T> const& v)
+{
+   CHECK_EQUAL(size1(v), size2(v));
+   size_type sz = size1(v);
+   Vector<T> Result(sz);
+   for (size_type i = 0U; i < sz; ++i)
+   {
+      Result[i] = v(i,i);
+   }
+   return Result;
+}
+
+template <typename T>
 bool is_symmetric(T const& x, typename boost::enable_if<is_matrix<T> >::type* = 0)
 {
    return equal(x, transpose(x));

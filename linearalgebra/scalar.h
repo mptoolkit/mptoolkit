@@ -431,7 +431,7 @@ template <typename T>
 struct RealInterface<std::complex<T>, AnyScalar<std::complex<T> > >
 {
    typedef T result_type;
-   typedef std::complex<T>argument_type;
+   typedef std::complex<T> argument_type;
    result_type operator()(argument_type const& x) const
    {
       return reinterpret_cast<T const*>(&x)[0];
@@ -471,7 +471,7 @@ template <typename T>
 struct Imag<std::complex<T> >
 {
    typedef boost::mpl::true_ idempotent;
-   typedef T const& result_type;
+   typedef T result_type;
    typedef std::complex<T> argument_type;
    result_type operator()(argument_type const& x) const
    {
