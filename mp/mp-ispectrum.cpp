@@ -24,8 +24,8 @@
 #include "models/kondo-u1.h"
 #include "models/kondo-u1u1.h"
 #include "models/kondo-so4.h"
-#include "models/bosehubbard-spinless-u1.h"
-#include "models/bosehubbard-2bosons-u1z2.h"
+#include "models/boson-u1.h"
+#include "models/boson-2component-u1z2.h"
 #include "models/hubbard-u1u1.h"
 #include "models/hubbard-u1su2.h"
 #include "models/hubbard-so4.h"
@@ -565,7 +565,7 @@ int main(int argc, char** argv)
       }
       else if (Model == "bh-u1")
       {
-	 Site = CreateBoseHubbardSpinlessU1Site(NMax);
+	 Site = BosonU1(NMax);
       }
       else if (Model == "bh2-u1z2")
       {

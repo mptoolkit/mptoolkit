@@ -34,9 +34,9 @@
 #include "models/hubbard-u1u1.h"
 #include "models/hubbard-u1su2.h"
 #include "models/spinlessfermion-u1.h"
-#include "models/bosehubbard-spinless.h"
-#include "models/bosehubbard-spinless-u1.h"
-#include "models/bosehubbard-2bosons-u1z2.h"
+#include "models/boson.h"
+#include "models/boson-u1.h"
+#include "models/boson-2component-u1z2.h"
 #include "tensor/tensor_eigen.h"
 #include "tensor/regularize.h"
 
@@ -1559,7 +1559,7 @@ int main(int argc, char** argv)
 	 std::cout << "Hamiltonian is spinless Bose-Hubbard, U(1), J=" << J << ", J2=" << J2 << ", U=" << U
                    << ", mu=" << mu << ", V=" << V << "\n";
 
-	 LatticeSite Site = CreateBoseHubbardSpinlessU1Site(NMax);
+	 LatticeSite Site = BosonU1(NMax);
 
 	 std::vector<BasisList> Sites(1, Site["I"].Basis());
 
@@ -1584,7 +1584,7 @@ int main(int argc, char** argv)
 	 std::cout << "Hamiltonian is spinless Bose-Hubbard two species, U(1), J1=" << J1 << ", J2=" << J2
 		   << ", U1=" << U1 << ", U2=" << U2 << ", U12=" << U12 << ", Omega=" << Omega 
 		   << '\n';
-	 LatticeSite Site = CreateBoseHubbardSpinlessU1Site(NMax);
+	 LatticeSite Site = BosonU1(NMax);
          std::vector<BasisList> Sites(2, Site["I"].Basis());
 	 TriangularMPO Ham;
 	 Ham = -J1 * (TwoPointOperator(Sites, 0, Site["BH"], 2, Site["B"]) + TwoPointOperator(Sites, 0, Site["B"], 2, Site["BH"]) );
@@ -1634,7 +1634,7 @@ int main(int argc, char** argv)
 	 if (D != 0)
 	    std::cout << "D = " << D << ", lambda=" << Lambda << '\n';
 
-      	 LatticeSite Site = CreateBoseHubbardSpinlessU1Site(NMax);
+      	 LatticeSite Site = BosonU1(NMax);
       	 TriangularMPO Ham;
       	 Ham = -1.0 * TriangularTwoSite(Site["BH"], Site["B"]) - 1.0 * TriangularTwoSite(Site["B"], Site["BH"])
 	 + (U/2) * TriangularOneSite(Site["N2"]);
@@ -1647,7 +1647,7 @@ int main(int argc, char** argv)
       else if (HamStr == "bh-dilute-u1")
       {
       	 std::cout << "Hamiltonian is spinless Bose-Hubbard, U1 symmetry, T=1, U=" << U << ", V=" << V << ", Nmax=" << NMax << "\n";
-      	 LatticeSite Site = CreateBoseHubbardSpinlessU1Site(NMax);
+      	 LatticeSite Site = BosonU1(NMax);
 	 double tConst =  UnitCellSize * UnitCellSize / (math_const::pi * math_const::pi);
 	 double UConst = 1.0 / (math_const::pi * math_const::pi);
 	 std::vector<BasisList> Sites(UnitCellSize, Site["I"].Basis());
@@ -1667,7 +1667,7 @@ int main(int argc, char** argv)
       {
          // These parameters are defined in this form to match the Lieb-Liniger model, U = m g dz / hbar^2, energy scaled by hbar^2 / 2 m dz^2
       	 std::cout << "Hamiltonian is spinless Bose-Hubbard with next-nearest neighbour tunnelling, U1 symmetry, T=4/3, Tprime=" << tprime << "/-12, U=" << U << ", Nmax=3\n";
-      	 LatticeSite Site = CreateBoseHubbardSpinlessU1Site(3);
+      	 LatticeSite Site = BosonU1(3);
       	 TriangularMPO Ham;
       	 Ham = -4.0/3.0 * TriangularTwoSite(Site["BH"], Site["B"]) - 4.0/3.0 * TriangularTwoSite(Site["B"], Site["BH"])
       	       + 1.0/12.0*tprime * TriangularThreeSite(Site["B"], Site["I"], Site["BH"]) + 1.0/12.0*tprime * TriangularThreeSite(Site["BH"], Site["I"], Site["B"])

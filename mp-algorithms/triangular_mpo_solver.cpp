@@ -45,8 +45,8 @@ struct OneMinusTransferLeft
       MatrixOperator r = x-delta_shift(inject_left(x, Op_, Psi_), QShift_);
       if (Orthogonalize_ && is_scalar(r.TransformsAs()))
 	 {
-	    TRACE(inner_prod(r, RightUnit_));
-	    TRACE(inner_prod(r, LeftUnit_));
+	    DEBUG_TRACE(inner_prod(r, RightUnit_));
+	    DEBUG_TRACE(inner_prod(r, LeftUnit_));
           r -= inner_prod(r, RightUnit_) * LeftUnit_; // orthogonalize to the identity
 	 }
       return r;
@@ -59,7 +59,6 @@ struct OneMinusTransferLeft
    MatrixOperator const& RightUnit_;
    bool Orthogonalize_;
 };
-
 
 template <typename Func>
 MatrixOperator
@@ -293,7 +292,7 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 	 // Multiplication factor and the left and right eigenvalues.
 	 std::complex<double> Factor = Classification.factor();
 	 MatrixOperator UnitMatrixLeft = LeftIdentity;
-	 MatrixOperator UnitMatrixRight = delta_shift(RightIdentity, QShift);
+	 MatrixOperator UnitMatrixRight = RightIdentity; //delta_shift(RightIdentity, QShift);
 
 	 // If the diagonal operator is unitary, it might have an eigenvalue of magnitude 1
 	 if (Classification.is_unitary() && !Classification.is_complex_identity())
@@ -333,7 +332,7 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
          if (std::abs(norm_frob(Factor) - 1.0) < 1E-12)
          {
 	    HasEigenvalue1 = true;
-	    TRACE(UnitMatrixLeft)(UnitMatrixRight);
+	    DEBUG_TRACE(UnitMatrixLeft)(UnitMatrixRight);
 	    EParallel = DecomposeParallelParts(C, Factor, UnitMatrixLeft, UnitMatrixRight);
 	 }
 

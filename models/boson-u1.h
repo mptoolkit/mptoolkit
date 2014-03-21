@@ -20,14 +20,11 @@ void SetMatElementU1(SiteOperator& s, int n1, int n2, double x)
 }
 
 inline
-LatticeSite CreateBoseHubbardSpinlessU1Site(int MaxN, std::string const& Sym1 = "N")
+LatticeSite BosonU1(int MaxN, std::string const& Sym1 = "N")
 {
    SymmetryList Symmetry(Sym1+":U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1> QN(Symmetry);
    SiteBasis Basis(Symmetry);
-   SiteOperator B, BH, P, R, N, N2, Q, I, U;
-   LatticeSite Site;
-
    // Setup the site basis
    for (int n = 0; n <= MaxN; ++n)
    {
@@ -35,43 +32,47 @@ LatticeSite CreateBoseHubbardSpinlessU1Site(int MaxN, std::string const& Sym1 = 
       Basis.push_back(q, QN(n));
    }
 
+   LatticeSite Site;
+
+   // identity
+   SiteOperator& I = Site["I"];
+   I = SiteOperator::Identity(Basis);
+
+   // creation
+   SiteOperator& BH = Site["BH"];
    BH = SiteOperator(Basis, QN(1), LatticeCommute::Bosonic);
    for (int n = 0; n <= MaxN; ++n)
    {
      SetMatElementU1(BH, n+1, n, std::sqrt(double(n + 1)));
    }
 
-   Site["BH"] = BH;
-
+   // annihilation
+   SiteOperator& B = Site["B"];
    B = adjoint(BH);
-   Site["B"] = B;
-   I = SiteOperator::Identity(Basis);
-   P = I;
-   Site["I"] = I;
-   N = prod(BH, B, QN(0));
-   Site["N"] = N;
-   N2 = prod(N, N-I, QN(0));
-   Site["N2"] = N2;
-   R = I;
-   Site["R"] = R;
-   Site["P"] = P;
 
+   // parity, is identity
+   SiteOperator& P = Site["P"];
+   P = I;
+
+   // number operator
+   SiteOperator& N = Site["N"];
+   N = prod(BH, B, QN(0));
+
+   // N2 is N*(N-1)
+   SiteOperator& N2 = Site["N2"];
+   N2 = prod(N, N-I, QN(0));
+
+   // Reflection operator is identity
+   SiteOperator& R = Site["R"];
+   R = I;
+
+   // U is (-1)^N
+   SiteOperator& U = Site["U"];
    U = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
    for (int n = 0; n <= MaxN; ++n)
    {
       SetMatElementU1(U, n, n, minus1pow(n));
    }
-   Site["U"] = U;
-
-   Site["BN"] = B*N;
-   Site["BN2"] = B*N*N;
-   Site["BN3"] = B*N*N*N;
-   Site["BU"] = B*U;
-
-   Site["BHN"] = BH*N;
-   Site["BHN2"] = BH*N*N;
-   Site["BHN3"] = BH*N*N*N;
-   Site["BHU"] = BH*U;
 
    // projections onto each state
    for (int n = 0; n <= MaxN; ++n)
@@ -82,8 +83,6 @@ LatticeSite CreateBoseHubbardSpinlessU1Site(int MaxN, std::string const& Sym1 = 
 	+ boost::lexical_cast<std::string>(n);
       Site[OpName] = X;
    }
-
-   DEBUG_TRACE(BH)(B)(I)(N)(N2)(U);
 
    return Site;
 }

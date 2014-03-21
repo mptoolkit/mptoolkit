@@ -23,8 +23,7 @@
 #include "models/kondo-u1su2.h"
 #include "models/kondo-u1.h"
 #include "models/hubbard-so4.h"
-#include "models/bosehubbard-spinless.h"
-#include "models/bosehubbard-spinless-u1.h"
+#include "models/boson-u1.h"
 #include "models/hubbard-u1su2.h"
 
 #include "mps/momentum_operations.h"
@@ -32,67 +31,6 @@
 
 namespace prog_opt = boost::program_options;
 
-// binomial coefficient n choose k
-long Binomial(int n, int k)
-{
-   if (k > n/2)
-      k = n-k;     // take advantage of symmetry
-   double r = 1.0;
-   for (int i = 1; i <= k; ++i)
-   {
-      r *= double(n-k+i) / double(i);
-   }
-   return long(r+0.5); // round to nearest
-}
-
-// calculate (1-sT)(x) where s is some complex scale factor (typically norm 1)
-// The identity and rho matrices are used to remove any spurious component
-// in the direction of the identity
-struct OneMinusTransfer
-{
-   OneMinusTransfer(std::complex<double> ScaleFactor, LinearWavefunction const& Psi, QuantumNumber const& QShift, 
-                    MatrixOperator const& Rho,
-                    MatrixOperator const& Identity)
-      : Scale_(ScaleFactor), Psi_(Psi), QShift_(QShift), Rho_(Rho), Identity_(Identity) {}
-
-   MatrixOperator operator()(MatrixOperator const& x) const
-   {
-      MatrixOperator r = x-Scale_*delta_shift(transfer_from_left(x, Psi_), QShift_);
-      //      r = delta_shift(r, QShift_);
-      if (is_scalar(r.TransformsAs()))
-          r -= inner_prod(r, Rho_) * Identity_; // orthogonalize to the identity
-      return r;
-   }
-
-   std::complex<double> Scale_;
-   LinearWavefunction const& Psi_;
-   QuantumNumber const& QShift_;
-   MatrixOperator const& Rho_;
-   MatrixOperator const& Identity_;
-};
-
-template <typename Func>
-MatrixOperator
-LinearSolve(Func F, MatrixOperator Rhs)
-{
-   MatrixOperator Guess = Rhs;
-   int m = 30;
-   int max_iter = 10000;
-   double tol = 1e-15;
-   DEBUG_TRACE("running GMRES");
-   GmRes(Guess, F, Rhs, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>());
-   return Guess;
-}
-
-template <typename T>
-struct EigenPair
-{
-   T LeftVector;
-   T RightVector;
-   std::complex<double> Eigenvalue;
-};
-
-void remove_redundant(OperatorComponent& Op);
 
 int main(int argc, char** argv)
 {
@@ -104,6 +42,7 @@ int main(int argc, char** argv)
    double U = 0;
    int Power = 1;
    bool Verbose = false;
+   int NMax = 3;
 
    std::cout.precision(getenv_or_default("MP_PRECISION", 14));
  
@@ -118,6 +57,8 @@ int main(int argc, char** argv)
 	  FormatDefault("cluster hopping (for triangular cluster)", tc).c_str())
 	 ("U", prog_opt::value(&U),
 	  FormatDefault("coulomb repulsion", U).c_str())
+	 ("nmax", prog_opt::value(&NMax),
+          FormatDefault("Maximum number of particles (for bose-hubbard model)", NMax).c_str())
 	 ("power", prog_opt::value(&Power),
 	  FormatDefault("Calculate expectation value of operator to this power", Power).c_str())
          ("verbose,v", prog_opt::bool_switch(&Verbose),
@@ -165,6 +106,12 @@ int main(int argc, char** argv)
 	 Op = TriangularOneSite(Site["S"]);
 	 Op = -sqrt(3.0) * prod(Op, Op, QuantumNumber(Op.GetSymmetryList()));
       }
+      if (Operator == "bh-M")
+      {
+	 LatticeSite Site = BosonU1(NMax);
+	 std::vector<BasisList> Sites(2, Site["I"].Basis());
+	 Op = OnePointOperator(Sites, 0, Site["N"]) - OnePointOperator(Sites, 1, Site["N"]);
+      }
       else
       {
 	 std::cerr << "Unknown operator!\n";
@@ -184,6 +131,9 @@ int main(int argc, char** argv)
       MatrixOperator Rho = scalar_prod(Psi.C_right, herm(Psi.C_right));
       LinearWavefunction Phi = Psi.Psi; // no need to bugger around with C_old,C_right
  
+      Rho = delta_shift(Rho, Psi.QShift);
+
+#if 0
       MatrixOperator LambdaSqrt = SqrtDiagonal(Psi.C_old);
       MatrixOperator LambdaInvSqrt = InvertDiagonal(LambdaSqrt, InverseTol);
 
@@ -191,6 +141,7 @@ int main(int argc, char** argv)
       Phi.set_back(prod(Phi.get_back(), delta_shift(LambdaSqrt, adjoint(Psi.QShift))));
       Rho = Psi.C_old;
       Identity = Rho;
+#endif
 
       // Rho and Identity are the same matrix in this representation
 
@@ -201,7 +152,7 @@ int main(int argc, char** argv)
       Op = repeat(Op, UnitCellSize / Op.size());
 
       std::map<std::complex<double>, Polynomial<MatrixOperator>, CompareComplex> 
-	 E = SolveMPO_Left(Phi, Psi.QShift, Op, Rho, Identity, Verbose);
+	 E = SolveMPO_Left(Phi, Psi.QShift, Op, Identity, Rho, Verbose);
       Polynomial<std::complex<double> > aNorm = ExtractOverlap(E[1.0], Rho);
 
       std::cout << "#degree #real #imag\n";
