@@ -934,6 +934,9 @@ TriangularMPO OnePointStringOperator(std::vector<BasisList> const& Sites,
    CHECK_EQUAL(x.Basis1(), Sites[n]);
    CHECK_EQUAL(x.Basis2(), Sites[n]);
    int const Size = Sites.size();
+
+   // The way we handle momentum here is probably incorrect, we should do the entire momentum
+   // on site 0
    std::complex<double> r = std::exp(std::complex<double>(0.0, 1.0) * (Momentum / Size));
 
    // construct a list of added quantum numbers that are needed for the bond bases
@@ -964,6 +967,142 @@ TriangularMPO OnePointStringOperator(std::vector<BasisList> const& Sites,
    }
 
    Result[n](0,1) = x;
+   return TriangularMPO(Result.data());
+}
+
+TriangularMPO OnePointStringOperatorExclude(std::vector<BasisList> const& Sites, 
+					    std::vector<SimpleOperator> const& String,
+					    int n, SimpleOperator const& x, double Momentum)
+{
+   CHECK(n >= 0 && n < int(Sites.size()))(n)(Sites.size());
+   CHECK_EQUAL(Sites.size(), String.size());
+   CHECK_EQUAL(x.Basis1(), Sites[n]);
+   CHECK_EQUAL(x.Basis2(), Sites[n]);
+   int const Size = Sites.size();
+
+   // The way we handle momentum here is probably incorrect, we should do the entire momentum
+   // on site 0
+   std::complex<double> r = std::exp(std::complex<double>(0.0, 1.0) * (Momentum / Size));
+
+   // construct a list of added quantum numbers that are needed for the bond bases
+   std::vector<BasisList> BondBasis(Size, BasisList(Sites[0].GetSymmetryList()));
+
+   // Add the identity component to the bond basis
+   for (int i = 0; i < Size; ++i)
+   {
+      BondBasis[i].push_back(QuantumNumber(Sites[0].GetSymmetryList()));
+   }
+
+   // Intermediate identity parts
+   for (int i = 1; i <= n; ++i)
+   {
+      BondBasis[i].push_back(QuantumNumber(Sites[0].GetSymmetryList()));
+   }
+
+   // the actual operator
+   for (int i = 0; i < Size; ++i)
+   {
+      BondBasis[i].push_back(x.TransformsAs());
+   }
+
+   // Assemble the operators
+   GenericMPO Result(Size);
+   for (int i = 0; i < Size; ++i)
+   {
+      CHECK_EQUAL(String[i].Basis1(), Sites[i]);
+      CHECK_EQUAL(String[i].Basis2(), Sites[i]);
+
+      Result[i] = OperatorComponent(Sites[i], Sites[i], BondBasis[i], BondBasis[smod(i+1,Size)]);
+      Result[i](0,0) = i == 0 ? (r * String[i]) : r * String[i];
+
+      if (i == 0 && i < n)
+      {
+	 Result[i](0,1) = SimpleOperator::make_identity(Sites[i]);
+	 Result[i](1,2) = SimpleOperator::make_identity(Sites[i]);
+      }
+      else if (i == 0 && i == n)
+      {
+	 Result[i](0,1) = x;
+	 Result[i](1,1) = SimpleOperator::make_identity(Sites[i]);
+      }
+      else if (i < n)
+      {
+	 Result[i](1,1) = SimpleOperator::make_identity(Sites[i]);
+	 Result[i](2,2) = SimpleOperator::make_identity(Sites[i]);
+      }
+      else if (i == n)
+      {
+	 Result[i](1,1) = x;
+	 Result[i](2,1) = SimpleOperator::make_identity(Sites[i]);
+      }
+      else
+      {
+	 Result[i](1,1) = SimpleOperator::make_identity(Sites[i]);
+      }
+   }
+   return TriangularMPO(Result.data());
+}
+
+TriangularMPO OneCellStringOperator(std::vector<BasisList> const& Sites, 
+				    std::vector<SimpleOperator> const& String,
+				    std::vector<SimpleOperator> const& CellOp,
+				    double Momentum)
+{
+   CHECK_EQUAL(Sites.size(), String.size());
+   CHECK_EQUAL(CellOp.size(), String.size());
+   int const Size = Sites.size();
+
+   // The way we handle momentum here is probably incorrect, we should do the entire momentum
+   // on site 0
+   std::complex<double> r = std::exp(std::complex<double>(0.0, 1.0) * (Momentum / Size));
+
+   // construct a list of added quantum numbers that are needed for the bond bases
+   std::vector<BasisList> BondBasis(Size, BasisList(Sites[0].GetSymmetryList()));
+
+   // Add the identity component to the bond basis
+   for (int i = 0; i < Size; ++i)
+   {
+      BondBasis[i].push_back(QuantumNumber(Sites[0].GetSymmetryList()));
+   }
+
+   // Intermediate identity parts
+   for (int i = 1; i < Size; ++i)
+   {
+      BondBasis[i].push_back(QuantumNumber(Sites[0].GetSymmetryList()));
+   }
+
+   // the actual operator
+   for (int i = 0; i < Size; ++i)
+   {
+      BondBasis[i].push_back(QuantumNumber(Sites[0].GetSymmetryList()));
+   }
+
+   // Assemble the operators
+   GenericMPO Result(Size);
+   for (int i = 0; i < Size; ++i)
+   {
+      CHECK_EQUAL(String[i].Basis1(), Sites[i]);
+      CHECK_EQUAL(String[i].Basis2(), Sites[i]);
+
+      Result[i] = OperatorComponent(Sites[i], Sites[i], BondBasis[i], BondBasis[smod(i+1,Size)]);
+      Result[i](0,0) = i == 0 ? (r * String[i]) : r * String[i];
+
+      if (i == 0)
+      {
+	 Result[i](0,1) = CellOp[i];
+	 Result[i](1,2) = SimpleOperator::make_identity(Sites[i]);
+      }
+      else if (i < Size-1)
+      {
+	 Result[i](1,1) = CellOp[i];
+	 Result[i](2,2) = SimpleOperator::make_identity(Sites[i]);
+      }
+      else if (i == Size-1)
+      {
+	 Result[i](1,1) = CellOp[i];
+	 Result[i](2,1) = SimpleOperator::make_identity(Sites[i]);
+      }
+   }
    return TriangularMPO(Result.data());
 }
 

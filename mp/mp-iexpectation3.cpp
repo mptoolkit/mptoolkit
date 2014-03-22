@@ -25,6 +25,7 @@
 #include "models/hubbard-so4.h"
 #include "models/boson-u1.h"
 #include "models/hubbard-u1su2.h"
+#include "models/hubbard-u1u1-old.h"
 
 #include "mps/momentum_operations.h"
 #include "mp-algorithms/triangular_mpo_solver.h"
@@ -98,7 +99,6 @@ int main(int argc, char** argv)
 
       TriangularMPO Op;
 
-      
       if (Operator == "su2spin")
       {
 	 double Spin = 0.5;
@@ -106,11 +106,44 @@ int main(int argc, char** argv)
 	 Op = TriangularOneSite(Site["S"]);
 	 Op = -sqrt(3.0) * prod(Op, Op, QuantumNumber(Op.GetSymmetryList()));
       }
-      if (Operator == "bh-M")
+      else if (Operator == "bh-M")
       {
 	 LatticeSite Site = BosonU1(NMax);
 	 std::vector<BasisList> Sites(2, Site["I"].Basis());
 	 Op = OnePointOperator(Sites, 0, Site["N"]) - OnePointOperator(Sites, 1, Site["N"]);
+      }
+      else if (Operator == "tri-string")
+      {
+	 LatticeSite Site = CreateU1U1HubbardOldOrderingSite();
+	 std::vector<BasisList> Sites(3, Site["I"].Basis());
+	 std::vector<SimpleOperator> String(3, Site["ES"]);
+	 Op = OnePointStringOperator(Sites, String, 0, Site["Sz"])
+	     + OnePointStringOperator(Sites, String, 1, Site["Sz"])
+	     + OnePointStringOperator(Sites, String, 2, Site["Sz"]);
+	 
+	 std::vector<SimpleOperator> Pt0(3, Site["I"]);
+	 std::vector<SimpleOperator> Pt1 = Pt0;
+	 std::vector<SimpleOperator> Pt2 = Pt0;
+	 Pt0[0] = Site["Sz"];
+	 Pt1[1] = Site["Sz"];
+	 Pt2[2] = Site["Sz"];
+
+	 TriangularMPO OpX = OneCellStringOperator(Sites, String, Pt0)
+	    + OneCellStringOperator(Sites, String, Pt1)
+	    + OneCellStringOperator(Sites, String, Pt2);
+	    
+	 std::vector<SimpleOperator> Ptx0(3, Site["ES"]);
+	 std::vector<SimpleOperator> Ptx1 = Ptx0;
+	 std::vector<SimpleOperator> Ptx2 = Ptx0;
+	 Ptx0[0] = Site["ES"] * Site["Sz"];
+	 Ptx1[1] = Site["ES"] * Site["Sz"];
+	 Ptx2[2] = Site["ES"] * Site["Sz"];
+
+	 TriangularMPO OpA = OneCellStringOperator(Sites, String, Ptx0)
+	    + OneCellStringOperator(Sites, String, Ptx1)
+	    + OneCellStringOperator(Sites, String, Ptx2);
+
+	 Op = OpA * adjoint(OpX);
       }
       else
       {
@@ -151,8 +184,7 @@ int main(int argc, char** argv)
       // make Op the same size as our unit cell
       Op = repeat(Op, UnitCellSize / Op.size());
 
-      std::map<std::complex<double>, Polynomial<MatrixOperator>, CompareComplex> 
-	 E = SolveMPO_Left(Phi, Psi.QShift, Op, Identity, Rho, Verbose);
+      KMatrixPolyType E = SolveMPO_Left(Phi, Psi.QShift, Op, Identity, Rho, Verbose);
       Polynomial<std::complex<double> > aNorm = ExtractOverlap(E[1.0], Rho);
 
       std::cout << "#degree #real #imag\n";

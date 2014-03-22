@@ -9,6 +9,7 @@
 #include "mps/linearwavefunction.h"
 #include "mpo/generic_mpo.h"
 #include "mpo/triangular_mpo.h"
+#include "common/angle_map.h"
 
 //
 // Polynomial operations, for triangular expectation values (no momentum)
@@ -20,29 +21,17 @@ typedef Polynomial<MatrixOperator> MatrixPolyType;
 // polynomial with complex coefficients
 typedef Polynomial<std::complex<double> > ComplexPolyType;
 
-// Comparitor for complex numbers.  This is so that we can put them in a map,
-// the choice of comparison operation is arbitrary
-struct CompareComplex
-{
-   typedef std::complex<double> first_argument_type;
-   typedef std::complex<double> second_argument_type;
-   typedef bool result_type;
-   bool operator()(std::complex<double> const& x, std::complex<double> const& y) const
-   {
-      return (x.real() < y.real()) || (x.real() == y.real() && x.imag() < y.imag());
-   }
-};
 
 // Momentum-dependent complex polynomial.
 // Currently this is stored as a std::map, indexed by the complex phase.
 // This probably isn't good enough in the long term, eg how to round
 // addition of momenta, and what happens if momenta sum to epsilon rather than zero.
 // This could be done with a customized map, that handles the rounding.
-typedef std::map<std::complex<double>, ComplexPolyType, CompareComplex> KComplexPolyType;
+typedef angle_map<ComplexPolyType> KComplexPolyType;
 
 // momentum-dependent matrix polynomial,
 // this represents an E matrix
-typedef std::map<std::complex<double>, MatrixPolyType, CompareComplex> KMatrixPolyType;
+typedef angle_map<MatrixPolyType> KMatrixPolyType;
 
 
 MatrixPolyType

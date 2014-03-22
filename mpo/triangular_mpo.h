@@ -159,6 +159,17 @@ TriangularMPO OnePointStringOperator(std::vector<BasisList> const& Sites,
 					  std::vector<SimpleOperator> const& String,
 					  int n, SimpleOperator const& x, double Momentum = 0);
 
+// A one-site operator on a lattice with a given momentum, in angular units per unit cell
+// Here we exclude the string term on the unit cell where the operator is defined
+TriangularMPO OnePointStringOperatorExclude(std::vector<BasisList> const& Sites, 
+					    std::vector<SimpleOperator> const& String,
+					    int n, SimpleOperator const& x, double Momentum = 0);
+
+TriangularMPO OneCellStringOperator(std::vector<BasisList> const& Sites, 
+				    std::vector<SimpleOperator> const& String,
+				    std::vector<SimpleOperator> const& CellOp,
+				    double Momentum = 0);
+
 // Helper function to make a list of identity operators over a unit cell
 std::vector<SimpleOperator>
 MakeIdentityUnitCell(std::vector<BasisList> const& Sites);
@@ -214,5 +225,77 @@ TriangularMPO::debug_check_structure() const
    this->check_structure();
 #endif
 }
+
+namespace LinearAlgebra
+{
+
+template <>
+struct interface<TriangularMPO>
+{
+   typedef void type;
+};
+
+template <>
+struct Herm<TriangularMPO>
+{
+   typedef TriangularMPO const& argument_type;
+   typedef HermitianProxy<TriangularMPO> result_type;
+
+   result_type operator()(argument_type x) const 
+   { return result_type(x); }
+};
+
+template <>
+struct Conj<TriangularMPO>
+{
+   typedef TriangularMPO const& argument_type;
+   typedef TriangularMPO result_type;
+
+   result_type operator()(argument_type x) const 
+   { 
+      TriangularMPO Result(x);
+      for (TriangularMPO::iterator I = Result.begin(); I != Result.end(); ++I)
+      {
+	 *I = conj(*I);
+      }
+      return Result;
+   }
+};
+
+template <>
+struct Adjoint<TriangularMPO>
+{
+   typedef TriangularMPO const& argument_type;
+   typedef TriangularMPO result_type;
+
+   result_type operator()(argument_type x) const 
+   { 
+      TriangularMPO Result(x);
+      for (TriangularMPO::iterator I = Result.begin(); I != Result.end(); ++I)
+      {
+	 *I = adjoint(*I);
+      }
+      return Result;
+   }
+};
+
+template <>
+struct InvAdjoint<TriangularMPO>
+{
+   typedef TriangularMPO const& argument_type;
+   typedef TriangularMPO result_type;
+
+   result_type operator()(argument_type x) const 
+   {
+      TriangularMPO Result(x);
+      for (TriangularMPO::iterator I = Result.begin(); I != Result.end(); ++I)
+      {
+	 *I = inv_adjoint(*I);
+      }
+      return Result;
+   }
+};
+
+} // namespace LinearAlgebra
 
 #endif

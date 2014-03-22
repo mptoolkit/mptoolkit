@@ -173,4 +173,76 @@ SimpleOperator make_projector_onto(BasisList const& Basis, std::set<int> const& 
 std::vector<BasisList>
 ExtractLocalBasis1(GenericMPO const& Op);
 
+namespace LinearAlgebra
+{
+
+template <>
+struct interface<GenericMPO>
+{
+   typedef void type;
+};
+
+template <>
+struct Herm<GenericMPO>
+{
+   typedef GenericMPO const& argument_type;
+   typedef HermitianProxy<GenericMPO> result_type;
+
+   result_type operator()(argument_type x) const 
+   { return result_type(x); }
+};
+
+template <>
+struct Conj<GenericMPO>
+{
+   typedef GenericMPO const& argument_type;
+   typedef GenericMPO result_type;
+
+   result_type operator()(argument_type x) const 
+   { 
+      GenericMPO Result(x);
+      for (GenericMPO::iterator I = Result.begin(); I != Result.end(); ++I)
+      {
+	 *I = conj(*I);
+      }
+      return Result;
+   }
+};
+
+template <>
+struct Adjoint<GenericMPO>
+{
+   typedef GenericMPO const& argument_type;
+   typedef GenericMPO result_type;
+
+   result_type operator()(argument_type x) const 
+   { 
+      GenericMPO Result(x);
+      for (GenericMPO::iterator I = Result.begin(); I != Result.end(); ++I)
+      {
+	 *I = adjoint(*I);
+      }
+      return Result;
+   }
+};
+
+template <>
+struct InvAdjoint<GenericMPO>
+{
+   typedef GenericMPO const& argument_type;
+   typedef GenericMPO result_type;
+
+   result_type operator()(argument_type x) const 
+   {
+      GenericMPO Result(x);
+      for (GenericMPO::iterator I = Result.begin(); I != Result.end(); ++I)
+      {
+	 *I = inv_adjoint(*I);
+      }
+      return Result;
+   }
+};
+
+} // namespace LinearAlgebra
+
 #endif

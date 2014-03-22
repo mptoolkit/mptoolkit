@@ -96,7 +96,7 @@ void ApplyPlaneRotation(Real &dx, Real &dy, Real &cs, Real &sn)
 template <typename Vector, typename MultiplyFunc, typename PrecFunc>
 int 
 GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
-      int& m, int& max_iter, double& tol, PrecFunc Precondition)
+      int& m, int& max_iter, double& tol, PrecFunc Precondition, int Verbose = 0)
 {
    double resid;
   int i, j = 1, k;
@@ -156,6 +156,9 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
            tol = resid;
            max_iter = j;
            delete [] v;
+	   if (Verbose)
+	      std::cerr << "GMRES finished, iter=" << (j-1) << ", resid=" << resid << std::endl;
+
 	   DEBUG_TRACE("GMRES return")(resid);
            return 0;
         }
@@ -170,8 +173,15 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
         tol = resid;
         max_iter = j;
         delete [] v;
+	if (Verbose)
+	   std::cerr << "GMRES finished, iter=" << (j-1) << ", resid=" << resid << std::endl;
 	DEBUG_TRACE("GMRES return")(resid);
         return 0;
+     }
+     else
+     {
+	if (Verbose)
+	   std::cerr << "GMRES restarting, iter=" << (j-1) << std::endl;
      }
      DEBUG_TRACE(resid)(norm_frob(Precondition(b - MatVecMultiply(x))) / normb)
         (norm_frob(b - MatVecMultiply(x)) / norm_frob(b));

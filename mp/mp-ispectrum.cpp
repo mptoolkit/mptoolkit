@@ -26,6 +26,7 @@
 #include "models/kondo-so4.h"
 #include "models/boson-u1.h"
 #include "models/boson-2component-u1z2.h"
+#include "models/hubbard-u1u1-old.h"
 #include "models/hubbard-u1u1.h"
 #include "models/hubbard-u1su2.h"
 #include "models/hubbard-so4.h"
@@ -419,6 +420,8 @@ get_principal_eigenpair(LinearWavefunction const& Psi, QuantumNumber const& QShi
    }
    DEBUG_TRACE(EtaR);
 
+   RightEigen *= 1.0 / inner_prod(LeftEigen, RightEigen);
+
    return std::make_pair(LeftEigen, RightEigen);
 }
 
@@ -574,6 +577,10 @@ int main(int argc, char** argv)
       else if (Model == "hubbard-u1u1")
       {
          Site = CreateU1U1HubbardSite();
+      }
+      else if (Model == "hubbard-u1u1-old")
+      {
+         Site = CreateU1U1HubbardOldOrderingSite();
       }
       else if (Model == "hubbard-u1su2")
       {

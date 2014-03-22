@@ -188,6 +188,68 @@ struct Herm<OperatorComponent>
    }
 };
 
+// conjugation
+
+template <>
+struct Conj<OperatorComponent>
+{
+   typedef OperatorComponent const& argument_type;
+   typedef OperatorComponent result_type;
+
+   result_type operator()(argument_type x) const 
+   { 
+      OperatorComponent Result(x);
+      for (OperatorComponent::iterator I = iterate(Result); I; ++I)
+      {
+	 for (OperatorComponent::inner_iterator J = iterate(I); J; ++J)
+	 {
+	    *J = conj(*J);
+	 }
+      }
+      return Result;
+   }
+};
+
+template <>
+struct Adjoint<OperatorComponent>
+{
+   typedef OperatorComponent const& argument_type;
+   typedef OperatorComponent result_type;
+
+   result_type operator()(argument_type x) const 
+   { 
+      OperatorComponent Result(x);
+      for (OperatorComponent::iterator I = iterate(Result); I; ++I)
+      {
+	 for (OperatorComponent::inner_iterator J = iterate(I); J; ++J)
+	 {
+	    *J = adjoint(*J);
+	 }
+      }
+      return Result;
+   }
+};
+
+template <>
+struct InvAdjoint<OperatorComponent>
+{
+   typedef OperatorComponent const& argument_type;
+   typedef OperatorComponent result_type;
+
+   result_type operator()(argument_type x) const 
+   {
+      OperatorComponent Result(x);
+      for (OperatorComponent::iterator I = iterate(Result); I; ++I)
+      {
+	 for (OperatorComponent::inner_iterator J = iterate(I); J; ++J)
+	 {
+	    *J = inv_adjoint(*J);
+	 }
+      }
+      return Result;
+   }
+};
+
 } // namespace LinearAlgebra
 
 // Constructs a MPOpComponent that represents the sum of A and B.

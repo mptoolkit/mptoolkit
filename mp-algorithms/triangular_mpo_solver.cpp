@@ -6,6 +6,17 @@
 #include "mp-algorithms/arnoldi.h"
 #include "mp-algorithms/gmres.h"
 
+// A note on orthogonalizing vectors in non-orthogonal Hilbert spaces.
+// Suppose <l| and |r> are left and right eigenvectors, satisfying <l|r>=1.
+// If we want to orthogonalize some bra <x| against <l|, we want do do:
+// <x'| = <x| - conj(c)*<l|
+// where c = <x|r>
+// Proof: <x'|r> = <x|r> - c*<l|r> = 0
+//
+// In the other direction, if we want to orthogonalize |y> against |r>, then
+// |y'> = |y> - c*|r>
+// where c = <l|y>
+
 // binomial function.  This can be implemented with integer arithmetic.
 // gmp contains a version with arbitrary size integers, but we're never going
 // to overflow a long (or even an int!) with an MPO contraction.
@@ -45,9 +56,10 @@ struct OneMinusTransferLeft
       MatrixOperator r = x-delta_shift(inject_left(x, Op_, Psi_), QShift_);
       if (Orthogonalize_ && is_scalar(r.TransformsAs()))
 	 {
-	    DEBUG_TRACE(inner_prod(r, RightUnit_));
-	    DEBUG_TRACE(inner_prod(r, LeftUnit_));
-          r -= inner_prod(r, RightUnit_) * LeftUnit_; // orthogonalize to the identity
+	    DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be small");
+	    DEBUG_TRACE(inner_prod(LeftUnit_, r));
+	    r -= conj(inner_prod(r, RightUnit_)) * LeftUnit_; // orthogonalize to the identity
+	    DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be zero");
 	 }
       return r;
    }
@@ -62,13 +74,13 @@ struct OneMinusTransferLeft
 
 template <typename Func>
 MatrixOperator
-LinearSolve(Func F, MatrixOperator Rhs)
+LinearSolve(Func F, MatrixOperator Rhs, bool Verbose = false)
 {
    MatrixOperator Guess = Rhs;
    int m = 30;
    int max_iter = 10000;
-   double tol = 1e-15;
-   GmRes(Guess, F, Rhs, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>());
+   double tol = 1e-12;
+   GmRes(Guess, F, Rhs, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
    return Guess;
 }
 
@@ -112,7 +124,10 @@ DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
 	    continue;
 
 	 std::complex<double> Overlap = inner_prod(I->second, UnitMatrixRight);
-	 I->second -= Overlap*UnitMatrixLeft;
+	 DEBUG_TRACE(Overlap);
+	 I->second -= conj(Overlap)*UnitMatrixLeft;
+	 DEBUG_TRACE(inner_prod(I->second, UnitMatrixRight))("should be zero");
+	 DEBUG_TRACE(inner_prod(UnitMatrixLeft, UnitMatrixRight));
 	 if (norm_frob(Overlap) > 1E-16)
 	    CParallel[I->first] = Overlap;
       }
@@ -163,16 +178,24 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
 			    MatrixOperator const& UnitMatrixRight, 
 			    LinearWavefunction const& Psi,
 			    QuantumNumber const& QShift,
-			    bool HasEigenvalue1)
+			    bool HasEigenvalue1,
+			    int Verbose)
 {
    // Components perpendicular to the identity satisfy equation (24)
    KMatrixPolyType E;
    for (KMatrixPolyType::const_iterator I = C.begin(); I != C.end(); ++I) // sum over momenta
    {
       std::complex<double> K = I->first;  // the momentum (complex phase)
+
+      if (Verbose)
+	 std::cerr << "Momentum " << K << std::endl;
+
       DEBUG_TRACE("Momentum")(K)(HasEigenvalue1);
       for (int m = I->second.degree(); m >= 0; --m)
       {
+	 if (Verbose)
+	    std::cerr << "Degree " << m << std::endl;
+
 	 DEBUG_TRACE("degree")(m);
 	 MatrixOperator Rhs = conj(K) * I->second[m];
 	 for (int k = m+1; k <= I->second.degree(); ++k)
@@ -182,8 +205,14 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
             
 	 // orthogonalize Rhs against the identity again, which is a kind of
 	 // DGKS correction
+
+	 DEBUG_TRACE(inner_prod(Rhs, UnitMatrixRight))("should be small");
+	 DEBUG_TRACE(inner_prod(Rhs, UnitMatrixLeft));
+
 	 if (HasEigenvalue1 && is_scalar(Rhs.TransformsAs()))
-	    Rhs -= inner_prod(UnitMatrixRight, Rhs) * UnitMatrixLeft;
+	    Rhs -= conj(inner_prod(Rhs, UnitMatrixRight)) * UnitMatrixLeft;
+
+	 DEBUG_TRACE(inner_prod(Rhs, UnitMatrixRight))("should be zero");
 
 	 double RhsNorm2 = norm_frob_sq(Rhs);
 	 RhsNorm2 = RhsNorm2 / (Rhs.Basis1().total_degree()*Rhs.Basis2().total_degree());
@@ -192,10 +221,14 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
 	 {
 	    E[K][m] = LinearSolve(OneMinusTransferLeft(K*Diag, Psi, QShift, 
 						       UnitMatrixLeft, UnitMatrixRight, HasEigenvalue1), 
-				  Rhs);
+				  Rhs, Verbose);
 	    // do another orthogonalization
 	    if (HasEigenvalue1 && is_scalar(E[K][m].TransformsAs()))
-	       E[K][m] -= inner_prod(UnitMatrixRight, E[K][m]) * UnitMatrixLeft;
+	    {
+	       DEBUG_TRACE(inner_prod(E[K][m], UnitMatrixRight))("should be small");
+	       E[K][m] -= conj(inner_prod(E[K][m], UnitMatrixRight)) * UnitMatrixLeft;
+	       DEBUG_TRACE(inner_prod(E[K][m], UnitMatrixRight))("should be zero");
+	    }
 	 }
       }
    }
@@ -246,11 +279,14 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
    int Dim = Op.Basis1().size();       // dimension of the MPO
    std::vector<KMatrixPolyType> EMatK(Dim);  // the vector of E matrices
 
+   if (Verbose)
+      std::cerr << "SolveMPO_Left: dimension is " << Dim << std::endl;
+
    // solve recursively column 0 onwards
 
    // Make sure the (0,0) part is identity
    OperatorClassification CheckIdent = classify(Op(0,0));
-   CHECK(CheckIdent.is_identity())("(0,0) component of the MPO must be identity!")(CheckIdent);
+   CHECK(CheckIdent.is_identity())("(0,0) component of the MPO must be identity!")(CheckIdent)(Op(0,0));
 
    // Initialize the first E matrix.  These are operators acting in the Basis1()
    EMatK[0][1.0] = MatrixPolyType(LeftIdentity);
@@ -298,7 +334,8 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 	 if (Classification.is_unitary() && !Classification.is_complex_identity())
 	 {
 	    if (Verbose)
-	       std::cerr << "Non-trivial unitary at column " << Col << std::endl;
+	       std::cerr << "Non-trivial unitary at column " << Col 
+			 << ", finding left eigenvalue..." << std::endl;
 	    
 	    // Find the largest eigenvalue
 	    // We need initial guess vectors in the correct symmetry sector
@@ -312,18 +349,25 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 
 	    if (std::abs(norm_frob(EtaL) - 1.0) < 1E-12)
 	    {
+	       if (Verbose)
+		  std::cerr << "Found an eigenvalue 1, so we need the right eigenvector..." << std::endl;
 
 	       UnitMatrixRight = UnitMatrixLeft;
 	       // we have an eigenvalue of magnitude 1.  Find the right eigenvalue too
 	       std::complex<double> EtaR = FindClosestUnitEigenvalue(UnitMatrixRight, 
 								     InjectRightQShift(Diag, Psi, QShift), Verbose);
+	       if (Verbose)
+		  std::cerr << "Right eigenvalue is " << EtaR << std::endl;
+
 	       CHECK(norm_frob(EtaL-EtaR) < 1E-12)("Left and right eigenvalues do not agree!")(EtaL)(EtaR);
 	       // we already determined that the norm is sufficiently close to 1, but 
 	       // fine-tune normalization
 	       Factor = EtaL / norm_frob(EtaL);
 
 	       // normalize the left/right eigenvector pair
-	       UnitMatrixLeft *= 1.0 / (inner_prod(UnitMatrixLeft, UnitMatrixRight));
+	       //	       UnitMatrixLeft *= 1.0 / (inner_prod(UnitMatrixRight, UnitMatrixLeft));
+	       UnitMatrixRight *= 1.0 / (inner_prod(UnitMatrixLeft, UnitMatrixRight));
+	       DEBUG_TRACE(inner_prod(UnitMatrixLeft, UnitMatrixRight));
 	    }
 	 }
 
@@ -332,27 +376,33 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
          if (std::abs(norm_frob(Factor) - 1.0) < 1E-12)
          {
 	    HasEigenvalue1 = true;
-	    DEBUG_TRACE(UnitMatrixLeft)(UnitMatrixRight);
+	    //DEBUG_TRACE(UnitMatrixLeft)(UnitMatrixRight);
+	    if (Verbose)
+	       std::cout << "Decomposing parts parallel to the unit matrix" << std::endl;
 	    EParallel = DecomposeParallelParts(C, Factor, UnitMatrixLeft, UnitMatrixRight);
 	 }
 
          // Now the remaining components, which is anything that is not proportional
 	 // to an eigenvector of magnitude 1
       
+	 if (Verbose)
+	    std::cout << "Decomposing parts perpendicular to the unit matrix" << std::endl;
          KMatrixPolyType E = DecomposePerpendicularParts(C, Diag, UnitMatrixLeft, UnitMatrixRight, 
-							 Psi, QShift, HasEigenvalue1);
+							 Psi, QShift, HasEigenvalue1, Verbose);
 
          // Reinsert the components parallel to the unit matrix (if any)
          for (KComplexPolyType::const_iterator I = EParallel.begin(); I != EParallel.end(); ++I)
          {
 	    for (ComplexPolyType::const_iterator J = I->second.begin(); J != I->second.end(); ++J)
 	    {
-	       E[I->first][J->first] += J->second * LeftIdentity;
+	       // Conj here because this comes form an overlap(x, RightUnitMatrix)
+	       E[I->first][J->first] += conj(J->second) * UnitMatrixLeft;
+	       DEBUG_TRACE(inner_prod(E[I->first][J->first], UnitMatrixRight));
 	    }
          }
 
 	 // Finally, set the E matrix element at this column
-	 DEBUG_TRACE(E[1.0]);
+	 //DEBUG_TRACE(E[1.0]);
          EMatK[Col] = E;
       }
 

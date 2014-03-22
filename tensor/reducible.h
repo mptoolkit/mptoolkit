@@ -806,6 +806,31 @@ template <typename T, typename B1, typename B2, typename S>
 struct Adjoint<Tensor::ReducibleTensor<T, B1, B2, S> > : TensorAdjoint<Tensor::ReducibleTensor<T, B1, B2, S>,
                                                                        Adjoint<typename Tensor::IrredTensor<T, B1, B2, S>::value_type> > {};
 
+template <typename T, typename B1, typename B2, typename S, typename F>
+struct TensorInvAdjoint<Tensor::ReducibleTensor<T, B1, B2, S>, F>
+{
+   TensorInvAdjoint(F f = F()) : f_(f) {}
+
+   typedef Tensor::ReducibleTensor<typename result_value<F>::type, B2, B1> result_type;
+   typedef Tensor::ReducibleTensor<T, B1, B2, S> const& argument_type;
+
+   result_type operator()(Tensor::ReducibleTensor<T, B1, B2, S> const& x) const
+   {
+      result_type Result(x.Basis2(), x.Basis1());
+      for (typename Tensor::ReducibleTensor<T, B1, B2, S>::const_iterator I = x.begin(); I != x.end(); ++I)
+      {
+         Result += inv_adjoint(*I, f_);
+      }
+      return Result;
+   }
+
+   F f_;
+};
+
+template <typename T, typename B1, typename B2, typename S>
+struct InvAdjoint<Tensor::ReducibleTensor<T, B1, B2, S> > : TensorInvAdjoint<Tensor::ReducibleTensor<T, B1, B2, S>,
+                                                                       InvAdjoint<typename Tensor::IrredTensor<T, B1, B2, S>::value_type> > {};
+
 } // namespace LinearAlgebra
 
 namespace Tensor
