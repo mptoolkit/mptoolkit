@@ -9,6 +9,7 @@
 #include <complex>
 #include <map>
 #include <cmath>
+#include <ostream>
 
 double const default_angle_resolution = 1E-10;
 
@@ -39,6 +40,10 @@ class angle_map
       angle_map(angle_map const& other);
 
       T& operator[](std::complex<double> const& c);
+
+      T lookup_or_default(std::complex<double> const& c);
+
+      bool has_element(std::complex<double> const& c);
 
       iterator begin() { return Map.begin(); }
       iterator end() { return Map.end(); }
@@ -97,15 +102,101 @@ angle_map<T>::operator[](std::complex<double> const& c)
    if (I == Map.end())
    {
       // new angle
-      TRACE("Adding new angle")(c);
+      DEBUG_TRACE("Adding new angle")(c);
       return Map[c];
    }
    // else
    return I->second;
 }
 
+template <typename T>
+T
+angle_map<T>::lookup_or_default(std::complex<double> const& c)
+{
+   double r = c.real()*c.real() + c.imag()*c.imag();
+   CHECK(std::abs(r - 1.0) <= Resolution)("complex angle is not sufficiently close to the unit circle!")(r);
 
+   // Firstly, we treat angle 0 and pi as special cases
+   double angle = atan2(c.imag(), c.real());
+   if (-Resolution < angle && angle < Resolution)
+   {
+      // we have a zero angle
+      const_iterator I = Map.find(std::complex<double>(1.0, 0.0));
+      return I == Map.end() ? T() : I->second;
+   }
+   // else
 
+   if (math_const::pi-Resolution < angle || angle < -math_const::pi+Resolution)
+   {
+      // we have a pi angle
+      const_iterator I = Map.find(std::complex<double>(-1.0, 0.0));
+      return I == Map.end() ? T() : I->second;
+   }
+   // else
 
+   // Now search through the map
+   iterator I = Map.begin();
+   while (I != Map.end() && std::abs(c - I->first) > Resolution*Resolution)
+   {
+      ++I;
+   }
+
+   if (I == Map.end())
+   {
+      // not found
+      return T();
+   }
+   // else
+   return I->second;
+}
+
+template <typename T>
+bool
+angle_map<T>::has_element(std::complex<double> const& c)
+{
+   double r = c.real()*c.real() + c.imag()*c.imag();
+   CHECK(std::abs(r - 1.0) <= Resolution)("complex angle is not sufficiently close to the unit circle!")(r);
+
+   // Firstly, we treat angle 0 and pi as special cases
+   double angle = atan2(c.imag(), c.real());
+   if (-Resolution < angle && angle < Resolution)
+   {
+      // we have a zero angle
+      return Map.find(std::complex<double>(1.0,0.0)) != Map.end();
+   }
+   // else
+
+   if (math_const::pi-Resolution < angle || angle < -math_const::pi+Resolution)
+   {
+      // we have a pi angle
+      return Map.find(std::complex<double>(-1.0,0.0)) != Map.end();
+   }
+   // else
+
+   // Now search through the map
+   iterator I = Map.begin();
+   while (I != Map.end() && std::abs(c - I->first) > Resolution*Resolution)
+   {
+      ++I;
+   }
+
+   if (I == Map.end())
+   {
+      return false;
+   }
+   return true;
+}
+
+template <typename T>
+inline
+std::ostream&
+operator<<(std::ostream& out, angle_map<T> const& m)
+{
+   for (typename angle_map<T>::const_iterator I = m.begin(); I != m.end(); ++I)
+   {
+      out << I->first << " " << I->second << '\n';
+   }
+   return out;
+}
 
 #endif

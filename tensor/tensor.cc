@@ -726,6 +726,12 @@ delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
 	    QuantumNumbers::Projection p,
 	    B1 const& NewBasis1, B2 const& NewBasis2)
 {
+   if (x.is_null())
+   {
+      DEBUG_TRACE("delta_shift: null tensor");
+      return x;
+   }
+
    DEBUG_CHECK_EQUAL(NewBasis1, DeltaShift(x.Basis1(), p));
    DEBUG_CHECK_EQUAL(NewBasis2, DeltaShift(x.Basis2(), p));
 

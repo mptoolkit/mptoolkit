@@ -120,6 +120,12 @@ DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
       std::complex<double> K = Ck->first;  // the momentum (complex phase)
       for (MatrixPolyType::iterator I = Ck->second.begin(); I != Ck->second.end(); ++I)
       {
+	 if (I->second.is_null())
+	 {
+	    TRACE(Ck->second);
+	    PANIC("oops");
+	 }
+
 	 if (!is_scalar(I->second.TransformsAs()))
 	    continue;
 
@@ -200,19 +206,21 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
 	 MatrixOperator Rhs = conj(K) * I->second[m];
 	 for (int k = m+1; k <= I->second.degree(); ++k)
 	 {
-	    Rhs -= double(Binomial(k,m)) * E[K][k];
+	    // avoid accessing E[K][k] if it doesn't exist, to avoid adding a null term
+	    if (E.has_element(K) && E[K].has_term(k))
+	       Rhs -= double(Binomial(k,m)) * E[K][k];
 	 }
             
 	 // orthogonalize Rhs against the identity again, which is a kind of
 	 // DGKS correction
-
-	 DEBUG_TRACE(inner_prod(Rhs, UnitMatrixRight))("should be small");
-	 DEBUG_TRACE(inner_prod(Rhs, UnitMatrixLeft));
-
 	 if (HasEigenvalue1 && is_scalar(Rhs.TransformsAs()))
+	 {
+	    DEBUG_TRACE(inner_prod(Rhs, UnitMatrixRight))("should be small");
 	    Rhs -= conj(inner_prod(Rhs, UnitMatrixRight)) * UnitMatrixLeft;
+	    DEBUG_TRACE(inner_prod(Rhs, UnitMatrixRight))("should be zero");
+	    DEBUG_TRACE(inner_prod(Rhs, UnitMatrixLeft));
+	 }
 
-	 DEBUG_TRACE(inner_prod(Rhs, UnitMatrixRight))("should be zero");
 
 	 double RhsNorm2 = norm_frob_sq(Rhs);
 	 RhsNorm2 = RhsNorm2 / (Rhs.Basis1().total_degree()*Rhs.Basis2().total_degree());
@@ -222,6 +230,8 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
 	    E[K][m] = LinearSolve(OneMinusTransferLeft(K*Diag, Psi, QShift, 
 						       UnitMatrixLeft, UnitMatrixRight, HasEigenvalue1), 
 				  Rhs, Verbose);
+
+	    DEBUG_CHECK(!E[K][m].is_null());
 	    // do another orthogonalization
 	    if (HasEigenvalue1 && is_scalar(E[K][m].TransformsAs()))
 	    {
@@ -251,10 +261,14 @@ SolveZeroDiagonal(KMatrixPolyType const& C)
       for (int i = MaxDegree; i >= 0; --i)
       {
 	 if (I->second.has_term(i))
+	 {
+	    DEBUG_CHECK(!I->second[i].is_null());
 	    E[K][i] = conj(K) * I->second[i];
+	 }
 	 for (int j = i+1; j <= MaxDegree; ++j)
 	 {
-	    E[K][i] -= double(Binomial(j,i)) * E[K][j];
+	    DEBUG_CHECK(!E[K][j].is_null());
+	    E[K][i] -= double(Binomial(j,i)) * E.lookup_or_default(K)[j];
 	 }
       }
    }

@@ -44,6 +44,7 @@ int main(int argc, char** argv)
    int Power = 1;
    bool Verbose = false;
    int NMax = 3;
+   double Spin = 0.5;
 
    std::cout.precision(getenv_or_default("MP_PRECISION", 14));
  
@@ -58,6 +59,8 @@ int main(int argc, char** argv)
 	  FormatDefault("cluster hopping (for triangular cluster)", tc).c_str())
 	 ("U", prog_opt::value(&U),
 	  FormatDefault("coulomb repulsion", U).c_str())
+	 ("spin,s", prog_opt::value(&Spin),
+	  FormatDefault("spin", Spin).c_str())
 	 ("nmax", prog_opt::value(&NMax),
           FormatDefault("Maximum number of particles (for bose-hubbard model)", NMax).c_str())
 	 ("power", prog_opt::value(&Power),
@@ -101,7 +104,6 @@ int main(int argc, char** argv)
 
       if (Operator == "su2spin")
       {
-	 double Spin = 0.5;
 	 LatticeSite Site = CreateSU2SpinSite(Spin);	 
 	 Op = TriangularOneSite(Site["S"]);
 	 Op = -sqrt(3.0) * prod(Op, Op, QuantumNumber(Op.GetSymmetryList()));
@@ -111,6 +113,11 @@ int main(int argc, char** argv)
 	 LatticeSite Site = BosonU1(NMax);
 	 std::vector<BasisList> Sites(2, Site["I"].Basis());
 	 Op = OnePointOperator(Sites, 0, Site["N"]) - OnePointOperator(Sites, 1, Site["N"]);
+      }
+      else if (Operator == "bh-N")
+      {
+	 LatticeSite Site = BosonU1(NMax);
+	 Op = TriangularOneSite(Site["N"]);
       }
       else if (Operator == "tri-string")
       {
