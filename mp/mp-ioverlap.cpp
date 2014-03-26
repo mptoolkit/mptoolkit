@@ -249,6 +249,11 @@ int main(int argc, char** argv)
 	       LatticeSite Site = CreateU1U1HubbardSite();
 	       ReflectionOp = std::vector<SimpleOperator>(Psi2->size(), Site["R"]);
 	    }
+	    else if (Model == "hubbard-u1su2")
+	    {
+	       LatticeSite Site = CreateSU2HubbardSite();
+	       ReflectionOp = std::vector<SimpleOperator>(Psi2->size(), Site["R"]);
+	    }
 	    else if (Model == "hubbard-u1u1-old")
 	    {
 	       LatticeSite Site = CreateU1U1HubbardOldOrderingSite();
