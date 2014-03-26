@@ -26,6 +26,7 @@
 #include "models/boson-u1.h"
 #include "models/hubbard-u1su2.h"
 #include "models/hubbard-u1u1-old.h"
+#include "models/hubbard-u1u1.h"
 
 #include "mps/momentum_operations.h"
 #include "mp-algorithms/triangular_mpo_solver.h"
@@ -119,9 +120,9 @@ int main(int argc, char** argv)
 	 LatticeSite Site = BosonU1(NMax);
 	 Op = TriangularOneSite(Site["N"]);
       }
-      else if (Operator == "tri-string")
+      else if (Operator == "tri-string" || Operator == "tri-string-new")
       {
-	 LatticeSite Site = CreateU1U1HubbardOldOrderingSite();
+	 LatticeSite Site = Operator == "tri-string" ? CreateU1U1HubbardOldOrderingSite() : CreateU1U1HubbardSite();
 	 std::vector<BasisList> Sites(3, Site["I"].Basis());
 	 std::vector<SimpleOperator> String(3, Site["ES"]);
 	 Op = OnePointStringOperator(Sites, String, 0, Site["Sz"])
