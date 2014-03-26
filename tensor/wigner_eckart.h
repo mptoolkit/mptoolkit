@@ -27,6 +27,10 @@ class WignerEckartBasis<VectorBasis>
                         QPSetType& AllowedProjections,
                         SymmetryList const& FinalSL);
 
+      // constructs a WignerEckartBasis from a given VectorBasis, taking all possible projections
+      WignerEckartBasis(VectorBasis const& B,
+                        SymmetryList const& FinalSL);
+
       basis_type const& NonAbelianBasis() const { return NonAbBasis; }
       basis_type const& AbelianBasis() const { return AbBasis; }
 

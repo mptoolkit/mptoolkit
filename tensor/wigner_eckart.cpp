@@ -32,6 +32,25 @@ WignerEckartBasis(VectorBasis const& B,
    AllowedProjections = UsedProjections;
 }
 
+WignerEckartBasis<VectorBasis>::
+WignerEckartBasis(VectorBasis const& B,
+                  SymmetryList const& FinalSL)
+   : NonAbBasis(B),
+     AbBasis(FinalSL),
+     Mapping(B.size())
+{
+   QPSetType UsedProjections;
+   for (unsigned i = 0; i < NonAbBasis.size(); ++i)
+   {
+      ProjectionList p = enumerate_projections(NonAbBasis[i]);
+      for (unsigned pi = 0; pi < p.size(); ++pi)
+      {
+         Mapping[i][pi] = AbBasis.size();
+         AbBasis.push_back(map_projection_to_quantum(p[pi], FinalSL), NonAbBasis.dim(i));
+      }
+   }
+}
+
 void InsertAllowedProjections(QPSetType const& qp, QPSetType& Result, QuantumNumber const& q)
 {
    ProjectionList pl = enumerate_projections(q);
