@@ -120,9 +120,10 @@ int main(int argc, char** argv)
 	 LatticeSite Site = BosonU1(NMax);
 	 Op = TriangularOneSite(Site["N"]);
       }
-      else if (Operator == "tri-string" || Operator == "tri-string-new")
+      else if (Operator == "tri-string" || Operator == "tri-string-new"
+               || Operator == "tri-string2" || Operator == "tri-string2-new")
       {
-	 LatticeSite Site = Operator == "tri-string" ? CreateU1U1HubbardOldOrderingSite() : CreateU1U1HubbardSite();
+	 LatticeSite Site = (Operator == "tri-string" || Operator == "tri-string2") ? CreateU1U1HubbardOldOrderingSite() : CreateU1U1HubbardSite();
 	 std::vector<BasisList> Sites(3, Site["I"].Basis());
 	 std::vector<SimpleOperator> String(3, Site["ES"]);
 	 Op = OnePointStringOperator(Sites, String, 0, Site["Sz"])
@@ -152,6 +153,9 @@ int main(int argc, char** argv)
 	    + OneCellStringOperator(Sites, String, Ptx2);
 
 	 Op = OpA * adjoint(OpX);
+
+         if (Operator == "tri-string2" || Operator == "tri-string2-new")
+            Op = Op * adjoint(Op);
       }
       else
       {
