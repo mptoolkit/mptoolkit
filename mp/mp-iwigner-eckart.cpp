@@ -1,5 +1,11 @@
 // -*- C++ -*- $Id: mp-wigner-eckart.cpp 1149 2012-04-18 03:12:37Z ianmcc $
 
+//
+// Project a wavefunction using the Wigner-Eckart theorem
+//
+// The Regularize option is bugged - somehow the C_right and C_old
+// matrices end up with incompatible bases, perhaps due to sorting of quantum numbers?
+
 #include "mps/infinitewavefunction.h"
 #include "quantumnumbers/all_symmetries.h"
 #include "pheap/pheap.h"
@@ -106,7 +112,7 @@ int main(int argc, char** argv)
    SymmetryList FinalSL = SymmetryList(FinalSLStr);
 
    pvalue_ptr<InfiniteWavefunction> PsiNew = new InfiniteWavefunction(WignerProjectWavefunction(*PsiIn,
-                                                                                                FinalSL, true));
+                                                                                                FinalSL, false));
 
 
    pheap::ShutdownPersistent(PsiNew);

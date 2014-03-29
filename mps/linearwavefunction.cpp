@@ -204,7 +204,6 @@ inject_left(MatrixOperator const& m,
    MatrixOperator Result = m;
    LinearWavefunction::const_iterator I1 = Psi1.begin();
    LinearWavefunction::const_iterator I2 = Psi2.begin();
-   int k =0;
    while (I1 != Psi1.end())
    {
       Result = operator_prod(herm(*I1), Result, *I2);
