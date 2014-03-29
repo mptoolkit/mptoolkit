@@ -1800,9 +1800,9 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "tricluster")
       {
-	 std::cout << "Hamiltonian is SU(2) Hubbard triangular cluster with t=" << t << ", t2=" << t2 << ", tc=" << tc
+	 std::cout << "Hamiltonian is U(1)xSU(2) Hubbard triangular cluster with t=" << t << ", t2=" << t2 << ", tc=" << tc
 		   << ", U=" << U << '\n';
-	 LatticeSite Site = CreateSU2HubbardSite();
+	 LatticeSite Site = CreateU1SU2HubbardSite();
 	 double tSqrt2 = (-sqrt(2.0)) * t;  // the -sqrt(2) is an SU(2) factor
 	 double tcSqrt2 = (-sqrt(2.0)) * tc;  // the -sqrt(2) is an SU(2) factor
 	 // 3-site unit cell

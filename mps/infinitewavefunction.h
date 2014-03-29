@@ -93,4 +93,11 @@ void orthogonalize(InfiniteWavefunction& x);
 std::complex<double> overlap(InfiniteWavefunction const& x, InfiniteWavefunction const& y,
                              QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, bool Verbose = false);
 
+// Spatial reflection of a wavefunction
+InfiniteWavefunction reflect(InfiniteWavefunction const& Psi);
+
+// version of reflect where we apply a local operator also
+InfiniteWavefunction reflect(InfiniteWavefunction const& Psi, std::vector<SimpleOperator> const& Op);
+
+
 #endif

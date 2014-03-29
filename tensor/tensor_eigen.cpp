@@ -42,7 +42,20 @@ DiagonalizeHermitian(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
 
    DEBUG_CHECK(is_scalar(x.TransformsAs()));
    DEBUG_CHECK_EQUAL(x.Basis1(), x.Basis2());
-   DEBUG_CHECK(is_regular_basis(x.Basis1()))(x.Basis1());
+   //   DEBUG_CHECK(is_regular_basis(x.Basis1()))(x.Basis1());
+
+   // handle the case of a non-regular basis
+   if (!is_regular_basis(x.Basis1()))
+   {
+      IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>
+         U = Regularize(x.Basis1());
+      IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
+         M = triple_prod(U, x, herm(U));
+      IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis> 
+         Result = DiagonalizeHermitian(M);
+      x = triple_prod(herm(U), M, U);
+      return triple_prod(herm(U), Result, U);
+   }
 
    TensorType Result(x);
    for (iterator<TensorType>::type I = iterate(Result); I; ++I)

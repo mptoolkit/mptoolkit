@@ -56,46 +56,6 @@ void PrintFormat(TransEigenInfo const& x, bool ShowRealPart, bool ShowImagPart, 
    std::cout << std::endl;
 }
 
-InfiniteWavefunction reflect(InfiniteWavefunction const& Psi)
-{
-   InfiniteWavefunction Ret;
-   Ret.C_old = flip_conj(adjoint(Psi.C_right));
-   Ret.C_right = flip_conj(adjoint(Psi.C_old)); 
-   //   Ret.C_old = delta_shift(Ret.C_old, adjoint(Psi.QShift));
-   //   Ret.c_right = delta_shift(Ret.C_right, Psi.QShift);
-   Ret.Attr = Psi.Attr;
-   Ret.QShift = Psi.QShift;
-   Ret.Psi = LinearWavefunction(Psi.Psi.GetSymmetryList());
-   for (LinearWavefunction::const_iterator I = Psi.Psi.begin();
-        I != Psi.Psi.end(); ++I)
-   {
-      Ret.Psi.push_front(reflect(*I));
-   }
-
-   return Ret;
-}
-
-// version of reflect where we apply a local operator also
-InfiniteWavefunction reflect(InfiniteWavefunction const& Psi, std::vector<SimpleOperator> const& Op)
-{
-   CHECK_EQUAL(Psi.size(), int(Op.size()));
-   InfiniteWavefunction Ret;
-   Ret.C_old = flip_conj(adjoint(Psi.C_right));
-   Ret.C_right = flip_conj(adjoint(Psi.C_old)); 
-   //   Ret.C_old = delta_shift(Ret.C_old, adjoint(Psi.QShift));
-   //   Ret.c_right = delta_shift(Ret.C_right, Psi.QShift);
-   Ret.Attr = Psi.Attr;
-   Ret.QShift = Psi.QShift;
-   Ret.Psi = LinearWavefunction(Psi.Psi.GetSymmetryList());
-   std::vector<SimpleOperator>::const_iterator OpI = Op.begin();
-   for (LinearWavefunction::const_iterator I = Psi.Psi.begin();
-        I != Psi.Psi.end(); ++I, ++OpI)
-   {
-      Ret.Psi.push_front(local_prod(*OpI, reflect(*I)));
-   }
-
-   return Ret;
-}
 
 InfiniteWavefunction conj(InfiniteWavefunction const& Psi)
 {
@@ -241,17 +201,12 @@ int main(int argc, char** argv)
 	    std::vector<SimpleOperator> ReflectionOp;
 	    if (Model == "hubbard-u1su2")
 	    {
-	       LatticeSite Site = CreateSU2HubbardSite();
+	       LatticeSite Site = CreateU1SU2HubbardSite();
 	       ReflectionOp = std::vector<SimpleOperator>(Psi2->size(), Site["R"]);
 	    }
 	    else if (Model == "hubbard-u1u1")
 	    {
 	       LatticeSite Site = CreateU1U1HubbardSite();
-	       ReflectionOp = std::vector<SimpleOperator>(Psi2->size(), Site["R"]);
-	    }
-	    else if (Model == "hubbard-u1su2")
-	    {
-	       LatticeSite Site = CreateSU2HubbardSite();
 	       ReflectionOp = std::vector<SimpleOperator>(Psi2->size(), Site["R"]);
 	    }
 	    else if (Model == "hubbard-u1u1-old")
@@ -317,6 +272,7 @@ int main(int argc, char** argv)
          std::cout << std::left;
       }
 
+      // Calculate the actual overlaps
       std::vector<TransEigenInfo> EigenList;
       for (std::set<QuantumNumber>::const_iterator I = Sectors.begin(); I != Sectors.end(); ++I)
       {

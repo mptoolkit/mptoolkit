@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*- $Id: hubbard-u1su2.h 1333 2014-03-19 15:08:24Z ianmcc $
 
 #include "lattice/latticesite.h"
 #include "quantumnumbers/u1.h"
@@ -8,7 +8,7 @@
 
 
 inline
-LatticeSite CreateU1SU2HubbardSite(std::string const& Sym1 = "N", std::string const& Sym2 = "S")
+LatticeSite CreateU1SU2HubbardOldOrderingSite(std::string const& Sym1 = "N", std::string const& Sym2 = "S")
 {
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":SU(2)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2> QN(Symmetry);
@@ -17,8 +17,8 @@ LatticeSite CreateU1SU2HubbardSite(std::string const& Sym1 = "N", std::string co
    LatticeSite Site;
 
    Basis.push_back("empty",  QN(0, 0));
-   Basis.push_back("double", QN(2, 0));
    Basis.push_back("single", QN(1, 0.5));
+   Basis.push_back("double", QN(2, 0));
 
    C = SiteOperator(Basis, QN(-1,0.5), LatticeCommute::Fermionic);
    CH = SiteOperator(Basis, QN(1,0.5), LatticeCommute::Fermionic);

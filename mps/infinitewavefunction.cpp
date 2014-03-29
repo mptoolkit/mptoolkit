@@ -622,3 +622,46 @@ std::complex<double> overlap(InfiniteWavefunction const& x, InfiniteWavefunction
 
    return Eta;
 }
+
+
+InfiniteWavefunction reflect(InfiniteWavefunction const& Psi)
+{
+   InfiniteWavefunction Ret;
+   Ret.C_old = flip_conj(adjoint(Psi.C_right));
+   Ret.C_right = flip_conj(adjoint(Psi.C_old)); 
+   Ret.C_old = delta_shift(Ret.C_old, adjoint(Psi.QShift));
+   Ret.C_right = delta_shift(Ret.C_right, Psi.QShift);
+   Ret.Attr = Psi.Attr;
+   Ret.QShift = Psi.QShift;
+   Ret.Psi = LinearWavefunction(Psi.Psi.GetSymmetryList());
+   for (LinearWavefunction::const_iterator I = Psi.Psi.begin();
+        I != Psi.Psi.end(); ++I)
+   {
+      Ret.Psi.push_front(reflect(*I));
+   }
+
+   return Ret;
+}
+
+// version of reflect where we apply a local operator also
+InfiniteWavefunction reflect(InfiniteWavefunction const& Psi, std::vector<SimpleOperator> const& Op)
+{
+   CHECK_EQUAL(Psi.size(), int(Op.size()));
+   InfiniteWavefunction Ret;
+   Ret.C_old = flip_conj(adjoint(Psi.C_right));
+   Ret.C_right = flip_conj(adjoint(Psi.C_old)); 
+   //   Ret.C_old = delta_shift(Ret.C_old, adjoint(Psi.QShift));
+   //   Ret.c_right = delta_shift(Ret.C_right, Psi.QShift);
+   Ret.Attr = Psi.Attr;
+   Ret.QShift = Psi.QShift;
+   Ret.Psi = LinearWavefunction(Psi.Psi.GetSymmetryList());
+   std::vector<SimpleOperator>::const_iterator OpI = Op.begin();
+   for (LinearWavefunction::const_iterator I = Psi.Psi.begin();
+        I != Psi.Psi.end(); ++I, ++OpI)
+   {
+      Ret.Psi.push_front(local_prod(*OpI, reflect(*I)));
+   }
+
+   return Ret;
+}
+

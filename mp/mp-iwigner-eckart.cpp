@@ -32,6 +32,8 @@ InfiniteWavefunction WignerProjectWavefunction(InfiniteWavefunction const& Psi,
    Result.QShift = change(QuantumNumber(FinalSL), QPL[0]);
    
    Result.C_old = wigner_eckart(Psi.C_old, IdentP, W1, W1);
+   if (RegularizeBasis)
+      Result.C_old = triple_prod(Reg1, Result.C_old, herm(Reg1));
 
    LinearWavefunction::const_iterator I = Psi.Psi.begin();
 
@@ -77,6 +79,8 @@ InfiniteWavefunction WignerProjectWavefunction(InfiniteWavefunction const& Psi,
    }
 
    Result.C_right = wigner_eckart(Psi.C_right, IdentP, W1, W1);
+   if (RegularizeBasis)
+      Result.C_right = triple_prod(Reg1, Result.C_right, herm(Reg1));
 
    // normalize
    //   Result *= double(degree(Psi.Psi.TransformsAs()));
@@ -102,7 +106,7 @@ int main(int argc, char** argv)
    SymmetryList FinalSL = SymmetryList(FinalSLStr);
 
    pvalue_ptr<InfiniteWavefunction> PsiNew = new InfiniteWavefunction(WignerProjectWavefunction(*PsiIn,
-                                                                                                FinalSL));
+                                                                                                FinalSL, true));
 
 
    pheap::ShutdownPersistent(PsiNew);

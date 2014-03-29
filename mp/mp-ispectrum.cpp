@@ -584,7 +584,7 @@ int main(int argc, char** argv)
       }
       else if (Model == "hubbard-u1su2")
       {
-         Site = CreateSU2HubbardSite();
+         Site = CreateU1SU2HubbardSite();
       }
       else if (Model == "hubbard-so4")
       {
