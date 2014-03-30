@@ -627,7 +627,7 @@ std::complex<double> overlap(InfiniteWavefunction const& x, InfiniteWavefunction
 InfiniteWavefunction reflect(InfiniteWavefunction const& Psi)
 {
    InfiniteWavefunction Ret;
-   QuantumNumber Shift = Psi.QShift;
+   QuantumNumber Shift = QuantumNumber(Psi.GetSymmetryList()); //Psi.QShift;
    Ret.C_old = delta_shift(flip_conj(adjoint(Psi.C_right)), Shift);
    Ret.C_right = delta_shift(flip_conj(adjoint(Psi.C_old)), Shift);
    Ret.Attr = Psi.Attr;

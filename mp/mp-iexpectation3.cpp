@@ -39,8 +39,9 @@ int main(int argc, char** argv)
    std::string FName;
    std::string Operator;
 
-   double t = 1;
-   double tc = 0.25;
+   double t = 0;
+   double t2 = 0;
+   double tc = 0;
    double U = 0;
    int Power = 1;
    bool Verbose = false;
@@ -56,6 +57,8 @@ int main(int argc, char** argv)
          ("help", "show this help message")
 	 ("t", prog_opt::value(&t),
 	  FormatDefault("nearest-neighbor hopping (for hubbard etc)", t).c_str())
+	 ("t2", prog_opt::value(&t2),
+	  FormatDefault("next-nearest-neighbor hopping (for hubbard etc)", t2).c_str())
 	 ("tc", prog_opt::value(&tc),
 	  FormatDefault("cluster hopping (for triangular cluster)", tc).c_str())
 	 ("U", prog_opt::value(&U),
@@ -156,6 +159,71 @@ int main(int argc, char** argv)
 
          if (Operator == "tri-string2" || Operator == "tri-string2-new")
             Op = Op * adjoint(Op);
+      }
+      else if (Operator == "tri-su2")
+      {
+	 LatticeSite Site = CreateU1SU2HubbardSite();
+	 double tSqrt2 = (-sqrt(2.0)) * t;  // the -sqrt(2) is an SU(2) factor
+	 double tcSqrt2 = (-sqrt(2.0)) * tc;  // the -sqrt(2) is an SU(2) factor
+	 // 3-site unit cell
+	 std::vector<BasisList> Sites(3, Site["I"].Basis());
+	 TriangularMPO Ham;
+	 Ham += -tcSqrt2 * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 1, Site["C"])
+			    + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 1, Site["CH"]));
+	 Ham += -tcSqrt2 * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 2, Site["C"])
+			    + TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 2, Site["CH"]));
+	 Ham += -tcSqrt2 * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 2, Site["C"])
+			    + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 2, Site["CH"]));
+	 Ham += -tSqrt2 * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 4, Site["C"])
+			    + TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 4, Site["CH"]));
+         if (t2 != 0)
+         {
+	    Ham += - (-sqrt(2.0)*t2) * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 7, Site["C"])
+			              + TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 7, Site["CH"]));
+         }
+	 Ham += U * OnePointOperator(Sites, 0, Site["Pdouble"]);
+	 Ham += U * OnePointOperator(Sites, 1, Site["Pdouble"]);
+	 Ham += U * OnePointOperator(Sites, 2, Site["Pdouble"]);
+	 Op = Ham;
+      }
+      else if (Operator == "tri-u1")
+      {
+	 LatticeSite Site = CreateU1U1HubbardSite();
+	 // 3-site unit cell
+	 std::vector<BasisList> Sites(3, Site["I"].Basis());
+	 TriangularMPO Ham;
+	 Ham += -tc * (TwoPointStringOperator(Sites, 0, Site["CHupP"], Site["P"], 1, Site["Cup"])
+			    - TwoPointStringOperator(Sites, 0, Site["CupP"], Site["P"], 1, Site["CHup"])
+		       + TwoPointStringOperator(Sites, 0, Site["CHdownP"], Site["P"], 1, Site["Cdown"])
+			    - TwoPointStringOperator(Sites, 0, Site["CdownP"], Site["P"], 1, Site["CHdown"]));
+
+	 Ham += -tc * (TwoPointStringOperator(Sites, 1, Site["CHupP"], Site["P"], 2, Site["Cup"])
+			    - TwoPointStringOperator(Sites, 1, Site["CupP"], Site["P"], 2, Site["CHup"])
+		       + TwoPointStringOperator(Sites, 1, Site["CHdownP"], Site["P"], 2, Site["Cdown"])
+			    - TwoPointStringOperator(Sites, 1, Site["CdownP"], Site["P"], 2, Site["CHdown"]));
+
+	 Ham += -tc * (TwoPointStringOperator(Sites, 0, Site["CHupP"], Site["P"], 2, Site["Cup"])
+			    - TwoPointStringOperator(Sites, 0, Site["CupP"], Site["P"], 2, Site["CHup"])
+		       + TwoPointStringOperator(Sites, 0, Site["CHdownP"], Site["P"], 2, Site["Cdown"])
+			    - TwoPointStringOperator(Sites, 0, Site["CdownP"], Site["P"], 2, Site["CHdown"]));
+
+	 Ham += -t * (TwoPointStringOperator(Sites, 1, Site["CHupP"], Site["P"], 4, Site["Cup"])
+		      - TwoPointStringOperator(Sites, 1, Site["CupP"], Site["P"], 4, Site["CHup"])
+		      + TwoPointStringOperator(Sites, 1, Site["CHdownP"], Site["P"], 4, Site["Cdown"])
+		      - TwoPointStringOperator(Sites, 1, Site["CdownP"], Site["P"], 4, Site["CHdown"]));
+
+	 if (t2 != 0)
+	 {
+	    Ham += -t2 * (TwoPointStringOperator(Sites, 1, Site["CHupP"], Site["P"], 7, Site["Cup"])
+			  - TwoPointStringOperator(Sites, 1, Site["CupP"], Site["P"], 7, Site["CHup"])
+			  + TwoPointStringOperator(Sites, 1, Site["CHdownP"], Site["P"], 7, Site["Cdown"])
+			  - TwoPointStringOperator(Sites, 1, Site["CdownP"], Site["P"], 7, Site["CHdown"]));
+	 }
+
+	 Ham += U * OnePointOperator(Sites, 0, Site["Pdouble"]);
+	 Ham += U * OnePointOperator(Sites, 1, Site["Pdouble"]);
+	 Ham += U * OnePointOperator(Sites, 2, Site["Pdouble"]);
+	 Op = Ham;
       }
       else
       {
