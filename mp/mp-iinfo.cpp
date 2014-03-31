@@ -20,6 +20,7 @@ int main(int argc, char** argv)
       int MaxEigenvalues = 10000;
       bool Base2 = false;
       bool ShowDegen = false;
+      std::vector<int> Partition;
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
@@ -35,6 +36,8 @@ int main(int argc, char** argv)
          ("limit,l", prog_opt::value<int>(&MaxEigenvalues), 
           "limit the density matrix display to N eigenvalues (implies --density-matrix)")
 	 ("base2,2", prog_opt::bool_switch(&Base2), "show the entropy using base 2 instead of base e")
+         ("partition,p", prog_opt::value(&Partition), 
+          "show quantities only for this parition (zero-based, can be used more than once; use --partition 0 to show only quantities at the edge of the unit cell")
          ;
 
       prog_opt::options_description hidden("Hidden options");
@@ -87,15 +90,19 @@ int main(int argc, char** argv)
       MatrixOperator Rho = scalar_prod(Psi->C_right, herm(Psi->C_right));
       DensityMatrix<MatrixOperator> DM(Rho);
       double Entropy1 = DensityEntropy(DM.begin(), DM.end(), DM.EigenSum(), Base2);
-      std::cout << "Entropy1=" << Entropy1 << '\n';
+      std::cout << "Entropy=" << Entropy1 << '\n';
 
-      MatrixOperator Rho0 = scalar_prod(Psi->C_old, herm(Psi->C_old));
-      DensityMatrix<MatrixOperator> DM0(Rho0);
-      double Entropy0 = DensityEntropy(DM0.begin(), DM0.end(), DM0.EigenSum(), Base2);
-      std::cout << "Entropy0=" << Entropy0 << '\n';
 
       // rotate through the unit cell and calculate the entropy
       InfiniteWavefunction P = *Psi;
+
+      std::sort(Partition.begin(), Partition.end());
+      if (Partition.empty())
+      {
+         // all partitions
+         for (int i = 0; i < Psi->size(); ++i)
+            Partition.push_back(i);
+      }
 
       if (ShowTrans)
       {
@@ -153,8 +160,14 @@ int main(int argc, char** argv)
 	    std::cout << '\n';
 	 }
 
-	 for (int i = 0; i < P.size(); ++i)
+         int pOld = 0;  // current partition
+	 for (unsigned i = 0; i < Partition.size(); ++i)
 	 {
+            // rotate the wavefunction to the new partition
+            P = rotate_left(P, Partition[i] - pOld);
+            pOld = Partition[i];
+            std::cout << "#Partition " << pOld << '\n';
+
 	    MatrixOperator Rho = scalar_prod(P.C_right, herm(P.C_right));
 
 	    if (ShowEntropy)
@@ -189,11 +202,6 @@ int main(int argc, char** argv)
 	       DM.DensityMatrixReport(std::cout, MaxEigenvalues, Base2, ShowDegen);
 	    }
 
-            // only rotate if we're not on the final iteration
-            if (i+1 < P.size())
-            {
-               P = rotate_left(P, 1);
-            }
 	 }
       }
 

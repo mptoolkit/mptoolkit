@@ -18,6 +18,10 @@ double OrthoTol = getenv_or_default("MP_ORTHO_TOL", 1E-9);
 
 InfiniteWavefunction rotate_left(InfiniteWavefunction const& Psi, int Count)
 {
+   // quick return for null operation
+   if (Count == 0)
+      return Psi;
+
    // this function assumes the wavefunction is orthogonal
    LinearWavefunction Result(Psi.GetSymmetryList());
    LinearWavefunction::const_iterator Pivot = Psi.Psi.begin();
