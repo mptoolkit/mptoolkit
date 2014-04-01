@@ -209,6 +209,7 @@ using LinearAlgebra::scalar_prod;
 using LinearAlgebra::adjoint;
 using LinearAlgebra::inv_adjoint;
 using LinearAlgebra::nnz;
+using LinearAlgebra::exp;
 
 template <typename T, 
           typename Basis1T = BasisList, 

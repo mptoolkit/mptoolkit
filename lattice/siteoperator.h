@@ -5,6 +5,7 @@
 
 #include "sitebasis.h"
 #include "linearalgebra/eigen.h"
+#include "tensor/tensor_exponential.h"
 
 using Tensor::IrredTensor;
 
@@ -293,6 +294,21 @@ struct Negate<SiteOperator>
    result_type operator()(argument_type x) const 
    { return SiteOperator(x.Basis(), -x.base(), x.Commute()); }
 };
+
+template <>
+struct Exp<SiteOperator>
+{
+   typedef SiteOperator const& argument_type;
+   typedef SiteOperator result_type;
+
+   result_type operator()(argument_type x) const 
+   { 
+      SiteOperator Result(x);
+      Result.base() = Tensor::Exponentiate(x.base());
+      return Result;
+   }
+};
+
 
 // binary operators
 

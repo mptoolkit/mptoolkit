@@ -316,10 +316,10 @@ $(mp-tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
               $(dmrgobj) $(mpobj)
 
 $(infinite-tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-              $(dmrgobj) $(mpobj)
+              $(dmrgobj) $(mpobj) $(expokitobj)
 
 $(infinite-tools-exp) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-              $(dmrgobj) $(mpobj)
+              $(dmrgobj) $(mpobj) $(expokitobj)
 
 $(mp-tools-experimental) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
               $(dmrgobj) $(mpobj)

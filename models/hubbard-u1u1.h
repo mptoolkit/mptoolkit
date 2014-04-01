@@ -129,6 +129,9 @@ LatticeSite CreateU1U1HubbardSite(std::string const& Sym1 = "N",
    EQ("double", "double") = std::complex<double>(0.0,  1.0);
    EQ("empty",  "empty")  = std::complex<double>(0.0, -1.0);
 
+   // Same as ES above
+   Site["mSz"] = LinearAlgebra::exp(std::complex<double>(0.0,math_const::pi) * Sz);
+   Site["m2Sz"] = LinearAlgebra::exp(std::complex<double>(0.0,2.0*math_const::pi) * Sz);
    Site["I"] = I;
    Site[ParityOp] = P;
    Site["N"] = N;

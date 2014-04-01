@@ -24,11 +24,14 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
 
    LinearAlgebra::Vector<std::complex<double> > Result;
 
-   if (NumEigen >= n)
+   if (NumEigen >= n-1)
    {
       // This is a case that ARPACK doesn't handle - it is apparently not
-      // capable of producting more than n-1 eigenvalues.  Instead we handle this
-      // case by converting to a dense matrix
+      // capable of producting more than n-2 eigenvalues.  Instead we handle this
+      // case by converting to a dense matrix.
+      // 2014-04-01: n-2 because we require NCV-NEV >= 2, and NCV <= N.
+      // There is a (harmless?) bug here in that if we only want n-1 eigenvalues
+      // then we'll actually get all n of them.
       if (Verbose >= 1)
       {
          std::cerr << "Constructing matrix for direct diagonalization\n";
@@ -60,7 +63,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
    int ido = 0;  // first call
    char bmat = 'I'; // standard eigenvalue problem
    char which[3] = "LM";                      // largest magnitude
-   int const nev = std::min(NumEigen, n-1); // number of eigenvalues to be computed
+   int const nev = std::min(NumEigen, n-2); // number of eigenvalues to be computed
    std::vector<std::complex<double> > resid(n);  // residual
    ncv = std::min(std::max(ncv, 2*nev + 10), n);            // length of the arnoldi sequence
    std::vector<std::complex<double> > v(n*ncv);   // arnoldi vectors
@@ -126,7 +129,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
                   bmat, n, which, nev, tol, &resid[0], ncv, &v[0], ldv, 
                   &iparam, &ipntr, &workd[0],
                   &workl[0], lworkl, &rwork[0], &info);
-   CHECK(info >= 0)("arpack::zneupd")(info); 
+   CHECK(info >= 0)("arpack::zneupd")(info)(nev)(ncv); 
 
    Result = LinearAlgebra::Vector<std::complex<double> >(nev);
    for (int i = 0; i < nev; ++i)
