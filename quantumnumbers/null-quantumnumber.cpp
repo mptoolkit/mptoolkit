@@ -25,4 +25,8 @@ void NullQN::Register()
    RegisterStaticSymmetry<NullQN>();
 }
 
+SymmetryList NullSymmetryList("Null:Null");
+
+QuantumNumber Null(NullSymmetryList);
+
 } // namespace QuantumNumbers

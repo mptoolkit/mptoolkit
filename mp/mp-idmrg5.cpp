@@ -1162,11 +1162,11 @@ int main(int argc, char** argv)
                       << ", p4=" << p4 << "\n";
             // These magic values for the spin 2 model projectors come from solving the equations
             // in misc/spin2.cpp
-            Dipole     = (-1/50.0)  * p0 + (-1/20.0) * p1 + (-1/20.0)  * p2 + (0.0)     * p3 + (3/25.0)    * p4;
-            Quadrapole = (1/105.0)  * p0 + (1/70.0)  * p1 + (-1/98.0)  * p2 + (-4/105.0)* p3 + (6/245.0)   * p4;
-            Hexapole   = (-1/180.0) * p0 + (0.0)     * p1 + (1/63.0)   * p2 + (-1/72.0) * p3 + (1/280.0)   * p4;
+            Dipole     = (-1/50.0)  * p0 + (-1/20.0) * p1 + (-1/20.0) * p2 + (0.0)      * p3 + (3/25.0)    * p4;
+            Quadrapole = (1/105.0)  * p0 + (1/70.0)  * p1 + (-1/98.0) * p2 + (-4/105.0) * p3 + (6/245.0)   * p4;
+            Hexapole   = (-1/180.0) * p0 + (0.0)     * p1 + (1/63.0)  * p2 + (-1/72.0)  * p3 + (1/280.0)   * p4;
             Octapole   = (1/180.0)  * p0 + (-1/90.0) * p1 + (1/126.0) * p2 + (-1/360.0) * p3 + (1/2520.0)  * p4;
-            c          = (1/25.0)   * p0 + (3/25.0)  * p1 + (1/5.0)    * p2 + (7/25.0)  * p3 + (9/25.0)    * p4;
+            c          = (1/25.0)   * p0 + (3/25.0)  * p1 + (1/5.0)   * p2 + (7/25.0)   * p3 + (9/25.0)    * p4;
          }
 	 std::cout << "Hamiltonian is XXX model with spin S=" << Spin << ", theta="<<Theta
 		   << ", J=" << J << ",beta=" << Beta << ", J2=" << J2
@@ -1208,14 +1208,41 @@ int main(int argc, char** argv)
 
 	 HamMPO = Ham;
       }
+      else if (HamStr == "xxx-ladder-su2")
+      {
+         if (!vm.count("Jperp"))
+            Jperp = J;
+	 std::cout << "Hamiltonian is SU(2) XXX ladder model with spin S=" << Spin << ", nlegs="<<NLegs
+                   << ", J=" << J << ", Jperp=" << Jperp << ", periodic=" << Periodic
+                   << '\n';
+	 LatticeSite Site = CreateSU2SpinSite(Spin);
+	 TriangularMPO Ham;
+
+         // N-site unit cell
+         std::vector<BasisList> Sites(NLegs, Site["I"].Basis());
+         // couplings in the leg direction
+         for (int i = 0; i < NLegs; ++i)
+         {
+            Ham += J * TwoPointOperator(Sites, i, -sqrt(3.0) * Site["S"], i+NLegs, Site["S"]);
+         }
+         for (int i = 0; i < NLegs-1; ++i)
+         {
+            // couplings along the leg
+            Ham += Jperp * TwoPointOperator(Sites, i, -sqrt(3.0) * Site["S"], i+1, Site["S"]);
+         }
+         // periodic wrapping
+         if (Periodic)
+            Ham += Jperp * TwoPointOperator(Sites, 0, -sqrt(3.0) * Site["S"], NLegs-1, Site["S"]);
+         HamMPO = Ham;
+      }
       else if (HamStr == "xxx-ladder-u1")
       {
          if (!vm.count("Jperp"))
             Jperp = J;
-	 std::cout << "Hamiltonian is XXX ladder model with spin S=" << Spin << ", nlegs="<<NLegs
+	 std::cout << "Hamiltonian is U(1) XXX ladder model with spin S=" << Spin << ", nlegs="<<NLegs
                    << ", J=" << J << ", Jperp=" << Jperp << ", periodic=" << Periodic
                    << '\n';
-	 LatticeSite Site = CreateU1SpinSite(Spin);
+	 LatticeSite Site = CreateSU2SpinSite(Spin);
 	 TriangularMPO Ham;
 
          // N-site unit cell

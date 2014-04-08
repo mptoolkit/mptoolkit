@@ -30,6 +30,7 @@
 #include "models/hubbard-u1u1.h"
 #include "models/hubbard-u1su2.h"
 #include "models/hubbard-so4.h"
+#include "models/hubbard.h"
 
 #include "linearalgebra/arpack_wrapper.h"
 
@@ -285,6 +286,10 @@ int main(int argc, char** argv)
       else if (Model == "bh2-u1z2")
       {
 	 Site = CreateBoseHubbard2BosonsU1Z2Site(NMax);
+      }
+      else if (Model == "hubbard")
+      {
+         Site = CreateHubbardSite();
       }
       else if (Model == "hubbard-u1u1")
       {

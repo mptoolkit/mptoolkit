@@ -204,7 +204,7 @@ infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-
 
 infinite-tools = mp-idmrg5 mp-ispectrum \
                  mp-iinfo mp-iprint mp-iproject mp-icorrelation mp-ioverlap \
-                 mp-iexpectation3 mp-iwigner-eckart mp-isymmetry
+                 mp-iexpectation3 mp-iwigner-eckart mp-isymmetry mp-ireorder-symmetry
 
 mp-tools-not-functional = mp-add2 mp-exp mp-stringcorrelation-su2 mp-canonical
 

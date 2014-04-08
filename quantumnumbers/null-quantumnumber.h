@@ -45,6 +45,12 @@ class NullQN
       bool operator!=(NullQN const&) const { return false; }
 };
 
+// the empty symmetry list Null:Null
+extern SymmetryList NullSymmetryList;
+
+// the null quantum number
+extern QuantumNumber Null;
+
 inline
 std::ostream& operator<<(std::ostream& out, NullQN const& s)
 {

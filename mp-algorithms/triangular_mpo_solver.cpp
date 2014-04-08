@@ -278,8 +278,6 @@ SolveZeroDiagonal(KMatrixPolyType const& C)
 // Solve an MPO in the left-handed sense, as x_L * Op = lambda * x_L
 // We currently assume there is only one eigenvalue 1 of the transfer operator
 
-// TODO: flip from lower-triangular to upper-triangular representation
-
 KMatrixPolyType
 SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
               TriangularMPO const& Op, MatrixOperator const& LeftIdentity,
