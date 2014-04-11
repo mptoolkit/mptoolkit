@@ -16,6 +16,7 @@
 #include "common/trace.h"
 #include "symmetrybase.h"
 #include "pstream/pstream.h"
+#include "common/niftycounter.h"
 #include <vector>
 #include <list>
 #include <string>
@@ -107,6 +108,9 @@ class SymmetryListImpl
 
       // searches the static instance list for an already created list of the same name.
       static SymmetryListImpl* SearchForCreated(std::string const& Name);
+ 
+      // Initialize the Instances list -- called at startup via a NiftyCounter
+      static void InitializeInstances();
 
    private:
       SymmetryListImpl(SymmetryListImpl const&); // not implemented
@@ -124,7 +128,7 @@ class SymmetryListImpl
       InstanceListType::iterator MyInstance;  // iterator into the list of all instances
 
       // maintain a static list of all instances
-      static InstanceListType Instances;
+      static InstanceListType* Instances;
 };
 
 class SymmetryList
@@ -359,6 +363,11 @@ SymmetryList::operator=(SymmetryList const& QList)
    pImpl = QList.pImpl;
    return *this;
 }
+
+namespace
+{
+   NiftyCounter::nifty_counter<SymmetryListImpl::InitializeInstances> SymmetryListInitCounter;
+} // namespace
 
 } // namespace QuantumNumbers
 

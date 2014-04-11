@@ -56,7 +56,15 @@ SymmetryListImpl* CreateSymmetryList(std::string const& List)
 // SymmetryListImpl
 //
 
-SymmetryListImpl::InstanceListType SymmetryListImpl::Instances;
+// declared as a pointer so that it is statically initialized.  The
+// real initialization is done in InitializeInstances via a nifty counter
+SymmetryListImpl::InstanceListType* SymmetryListImpl::Instances = NULL;
+
+void
+SymmetryListImpl::InitializeInstances()
+{
+   Instances = new InstanceListType();
+}
 
 SymmetryListImpl::SymmetryListImpl(std::string const& FName_)
   : FName(FName_), count(0), projectionCount(0)
@@ -64,8 +72,8 @@ SymmetryListImpl::SymmetryListImpl(std::string const& FName_)
    QN_TRACE("SymmetryListImpl::SymmetryListImpl()")(this);
 
    // add this instance to the static list
-   Instances.push_front(this);
-   MyInstance = Instances.begin();
+   Instances->push_front(this);
+   MyInstance = Instances->begin();
 }
 
 SymmetryListImpl::~SymmetryListImpl()
@@ -77,7 +85,7 @@ SymmetryListImpl::~SymmetryListImpl()
       delete Data[i];
    }
    // remove this from the static list
-   Instances.erase(MyInstance);
+   Instances->erase(MyInstance);
 }
 
 void
@@ -94,7 +102,7 @@ SymmetryListImpl::Append(std::string const& Name, SymmetryBase const* N)
 
 SymmetryListImpl* SymmetryListImpl::SearchForCreated(std::string const& Name)
 {
-   for (InstanceListType::const_iterator I = Instances.begin(); I != Instances.end(); ++I)
+   for (InstanceListType::const_iterator I = Instances->begin(); I != Instances->end(); ++I)
    {
       if ((*I)->FullName() == Name) return *I;
    }
