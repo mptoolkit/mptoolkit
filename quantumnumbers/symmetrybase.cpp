@@ -6,41 +6,35 @@
 namespace QuantumNumbers
 {
 
-namespace
-{
-
-// this is a local static singleton, to avoid global
-// static construction ordering problems.
-// This data is not freed before program exit (deliberate & harmless leak).
-std::vector<SymmetryFactory*>& 
-RegisteredObjects()
-{
-   static std::vector<SymmetryFactory*> Instance;
-   return Instance;
-}
-
-} // namespace
-
 //
 // SymmetryBase
 //
 
-std::map<std::string, SymmetryBase*> SymmetryBase::CreatedInstances;
+// global data, initialized by nifty counter
+std::map<std::string, SymmetryBase*>* SymmetryBase::CreatedInstances = NULL;
+std::vector<SymmetryFactory*>* RegisteredObjects = NULL;
+
+void
+SymmetryBase::InitializeInstances()
+{
+   SymmetryBase::CreatedInstances = new std::map<std::string, SymmetryBase*>();
+   RegisteredObjects = new std::vector<SymmetryFactory*>();
+}
 
 SymmetryBase* SymmetryBase::Create(std::string const& Type)
 {
-   if (CreatedInstances.count(Type)) return CreatedInstances[Type];
+   if (CreatedInstances->count(Type)) return (*CreatedInstances)[Type];
 
    SymmetryBase* S = NULL;
    std::size_t i = 0;
-   while (S == NULL && i != RegisteredObjects().size())
+   while (S == NULL && i != RegisteredObjects->size())
    {
-      S = RegisteredObjects()[i]->AttemptCreate(Type);
+      S = (*RegisteredObjects)[i]->AttemptCreate(Type);
       ++i;
    }
    if (S == NULL) { PANIC(Type)("Construction of quantum number failed, unrecognized symmetry type."); }
 
-   CreatedInstances[Type] = S;
+   (*CreatedInstances)[Type] = S;
    return S;
 }
 
@@ -54,7 +48,7 @@ SymmetryFactory::~SymmetryFactory()
 
 void SymmetryFactory::Register(SymmetryFactory* F)
 {
-   RegisteredObjects().push_back(F);
+   RegisteredObjects->push_back(F);
 }
 
 } // namespace QuantumNumbers

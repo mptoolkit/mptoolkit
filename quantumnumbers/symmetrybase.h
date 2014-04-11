@@ -13,6 +13,7 @@
 #include "pstream/pstream.h"
 #include "common/stringutil.h"
 #include "common/convertstring.h"
+#include "common/niftycounter.h"
 
 namespace QuantumNumbers
 {
@@ -181,12 +182,15 @@ class SymmetryBase
       // returns an instance of SymmetryBase that will handle a quantum number of the given Name
       static SymmetryBase* Create(std::string const& Type);
 
+      // initialize the CreatedInstances and global data, called from nifty counter
+      static void InitializeInstances();
+
    private:
       int count, projectionCount;
 
       // So we don't construct an instance more than once for each symmetry type, we keep
-      // a list of all objects created via Create()
-      static std::map<std::string, SymmetryBase*> CreatedInstances;
+      // a list of all objects created via Create().  Initialized via NiftyCounter
+      static std::map<std::string, SymmetryBase*>* CreatedInstances;
 };
 
 template <typename T>
@@ -235,6 +239,11 @@ void RegisterSymmetry(SymmetryFactory* F)
 {
   SymmetryFactory::Register(F);
 }
+
+namespace
+{
+    NiftyCounter::nifty_counter<SymmetryBase::InitializeInstances> SymmetryBaseInitCounter;
+} // namespace
 
 } // namespace QuantumNumbers
 
