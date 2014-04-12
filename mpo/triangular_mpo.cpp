@@ -1175,9 +1175,18 @@ TriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
 }
 
 TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites, 
-					  int n1, SimpleOperator const& x1,
-					  SimpleOperator const& String,
-					  int n2, SimpleOperator const& x2)
+                                     int n1, SimpleOperator const& x1,
+                                     SimpleOperator const& String,
+                                     int n2, SimpleOperator const& x2)
+{
+   return TwoPointStringOperator(Sites, n1, x1, std::vector<SimpleOperator>(Sites.size(), String),
+                                 n2, x2);
+}
+
+TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites, 
+                                     int n1, SimpleOperator const& x1,
+                                     std::vector<SimpleOperator> const& String,
+                                     int n2, SimpleOperator const& x2)
 {
    CHECK(n1 < n2)("TwoPointStringOperator: error: sites must be normal ordered.")(n1)(n2);
 
@@ -1220,7 +1229,7 @@ TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
    ++Loc[smod(n1+1,Size)];
    for (int i = n1+1; i < n2; ++i)
    {
-      Result[smod(i,Size)](Loc[smod(i,Size)], Loc[smod(i+1,Size)]+1) = String;
+      Result[smod(i,Size)](Loc[smod(i,Size)], Loc[smod(i+1,Size)]+1) = String[smod(i,Size)];
       ++Loc[smod(i+1,Size)];
    }
    Result[smod(n2,Size)](Loc[smod(n2,Size)],Loc[smod(n2+1,Size)]+1) = x2;

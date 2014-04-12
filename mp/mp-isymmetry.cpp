@@ -346,20 +346,25 @@ int main(int argc, char** argv)
          std::cout << "Eigenvalue " << OperatorStr[i] << " is " << e << std::endl;
 
          v *= std::sqrt(Dim); // make it properly unitary
+
+         std::cout << "Trace " << (trace(v) / Dim) << std::endl;
          U.push_back(v);
       }
 
       // Now go through each operator pair
-      std::cout << "#Op1       #Op2       #Real             #Imag\n";
+      std::cout << "#Op1       #Op2       #Commutator-Real  #Commutator-Imag  #Trace-Real    #Trace-Imag\n";
       for (unsigned i = 0; i < U.size(); ++i)
       {
          for (unsigned j = i+1; j < U.size(); ++j)
          {
             std::complex<double> x = inner_prod(U[i]*U[j], U[j]*U[i]) / Dim;
+            std::complex<double> tr = trace(U[i]*U[j]) / Dim;
             std::cout << std::setw(10) << std::left << OperatorStr[i] << " "
                       << std::setw(10) << std::left << OperatorStr[j] << " "
                       << std::setw(17) << std::right << std::fixed << x.real() << " "
-                      << std::setw(17) << std::right << std::fixed << x.imag() << std::endl;
+                      << std::setw(17) << std::right << std::fixed << x.imag() << " "
+                      << std::setw(17) << std::right << std::fixed << tr.real() << " "
+                      << std::setw(17) << std::right << std::fixed << tr.imag() << std::endl;
          }
       }
       pheap::Shutdown();

@@ -345,6 +345,32 @@ struct Subtraction<SiteOperator, SiteOperator>
 };
 
 template <>
+struct Multiplication<SiteOperator, int>
+{
+   typedef SiteOperator const& first_argument_type;
+   typedef int second_argument_type;
+   typedef SiteOperator result_type;
+
+   result_type operator()(first_argument_type x, second_argument_type y) const 
+   { 
+      return SiteOperator(x.Basis(), x.base() * double(y), x.Commute()); 
+   }
+};
+
+template <>
+struct Multiplication<int, SiteOperator>
+{
+   typedef int first_argument_type;
+   typedef SiteOperator const& second_argument_type;
+   typedef SiteOperator result_type;
+
+   result_type operator()(first_argument_type x, second_argument_type y) const 
+   { 
+      return SiteOperator(y.Basis(), double(x) * y.base(), y.Commute()); 
+   }
+};
+
+template <>
 struct Multiplication<SiteOperator, double>
 {
    typedef SiteOperator const& first_argument_type;

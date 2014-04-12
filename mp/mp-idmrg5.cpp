@@ -858,6 +858,7 @@ int main(int argc, char** argv)
       //bool UseDGKS = false;
       std::string FName;
       std::string HamStr;
+      std::string CouplingFile;
       double Lambda = 1.0;
       double J = 1.0;
       double Jperp = 0.0;
@@ -875,6 +876,7 @@ int main(int argc, char** argv)
       double Jz = 1.0;
       double Jx = 1.0;
       double Jy = 1.0;
+      double Jr = 0.0;
       double t = 1.0;
       double t2 = 0.0;
       double tc = 1.0;
@@ -892,6 +894,7 @@ int main(int argc, char** argv)
       double p3 = 0.0;
       double p4 = 0.0;
       double mu = 0.0;
+      double alpha = 0.0;
       half_int Spin = 0.5;
       double Jleg = 1.0;
       double Jcross = 1.0;
@@ -1021,12 +1024,19 @@ int main(int argc, char** argv)
 	  FormatDefault("Jx coupling (for xyz)", Jx).c_str())
 	 ("Jy", prog_opt::value(&Jy),
 	  FormatDefault("Jy coupling (for xyz)", Jy).c_str())
+	 ("Jr", prog_opt::value(&Jr),
+	  FormatDefault("Jr Rashbah coupling (for xyz)", Jr).c_str())
+	 ("alpha", prog_opt::value(&alpha),
+	  FormatDefault("alpha parameter for xyz, use with U (U'/U) for eq 7 arXiv:1403.3350.", 
+                        alpha).c_str())
 	 ("Jleg", prog_opt::value(&Jleg),
 	  FormatDefault("Jleg coupling (for Kagome strop)", Jleg).c_str())
 	 ("Jcross", prog_opt::value(&Jcross),
 	  FormatDefault("Jcross coupling (for Kagome strip)", Jcross).c_str())
 	 ("mu", prog_opt::value(&mu),
 	  FormatDefault("Chemical potential (bose-hubbard)", mu).c_str())
+	 ("coupling", prog_opt::value(&CouplingFile),
+	  "File for the long-range couplings [lr-itf model]")
 	 ("kagome-cell", prog_opt::value(&KagomeUnitCell),
 	  FormatDefault("Unit cell for kagome with plaquette (for Kagome strip with field, kagome-field-su2)",
                         KagomeUnitCell).c_str())
@@ -1107,6 +1117,50 @@ int main(int argc, char** argv)
 		      << ", exponent=" << LongRangeExp[i] << '\n';
 	    Ham += LongRangeCoeff[i] * TriangularTwoSiteExponential(Site["Sz"], Site["Sz"], LongRangeExp[i]);
 	 }
+         HamMPO = Ham;
+      }
+      else if (HamStr == "lr-itf")
+      {
+         if (!vm.count("coupling"))
+         {
+            std::cerr << "error: --coupling <file> is required for the lr-itf model\n";
+            exit(1);
+         }
+         std::cout << "Hamiltonian is long-range Ising model, nlegs=" << NLegs << ", lambda=" << Lambda << "\n"
+                   << "Reading couplings from file " << CouplingFile << "\n";
+         std::ifstream In(CouplingFile.c_str());
+         if (!In)
+         {
+            std::cerr << "error: cannot open coupling file " << CouplingFile << '\n';
+            exit(1);
+         }
+	 LatticeSite Site = CreateSpinSite(0.5);
+         std::vector<BasisList> Sites(NLegs, Site["I"].Basis());
+	 TriangularMPO Ham;
+         int i,j,r2;
+         double Alpha, Beta;
+         while (In >> i >> j >> Alpha >> Beta >> r2)
+         {
+            std::vector<SimpleOperator> StringOp(NLegs, Site["I"]);
+            if (j < NLegs)
+            {
+               std::cout << "Adding local term " << Alpha << " * Sz(" << i << ") * Sz(" << j << ")\n";
+            }
+            else
+            {
+               std::cout << "Adding term sum_{n=0}^\\infty " << Alpha << " * Sz(" << i << ") * (" 
+                         << Beta << ")^{n+1} * Sz((n*"<<NLegs<<"+"<<j<<")\n";
+               StringOp[(i+1)%NLegs] = Beta*Site["I"];
+            }
+            Ham += Alpha * TwoPointStringOperator(Sites, i, 2*Site["Sz"], StringOp, j, 2*Site["Sz"]);
+         }
+         if (Lambda != 0.0)
+         {
+            for (i = 0; i < NLegs; ++i)
+            {
+               Ham += Lambda*OnePointOperator(Sites, i, 2*Site["Sx"]);
+            }
+         }
          HamMPO = Ham;
       }
       else if (HamStr == "itf-z2")
@@ -1393,13 +1447,25 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "xyz")
       {
+         if (vm.count("alpha") || vm.count("U"))
+         {
+            std::cout << "Using parameters alpha=" << alpha << ", (U'/U)=" << U << '\n';
+            Jx = -cos(2*alpha);
+            Jy = -1.0;
+            Jz = (1 - 2*U) * cos(2*alpha);
+            Jr = U * sin(2*alpha);
+         }
 	 std::cout << "Hamiltonian is XYZ model with spin S=" << Spin
-		   << ", Jx=" << Jx << ", Jy=" << Jy << ", Jz=" << Jz << '\n';
+		   << ", Jx=" << Jx << ", Jy=" << Jy << ", Jz=" << Jz 
+                   << ", Jr=" << Jr << '\n';
 	 LatticeSite Site = CreateSpinSite(Spin);
 	 TriangularMPO Ham;
 	 Ham = Jz*TriangularTwoSite(Site["Sz"], Site["Sz"])
             + Jx*TriangularTwoSite(Site["Sx"], Site["Sx"])
             + Jy*TriangularTwoSite(Site["Sy"], Site["Sy"]);
+         if (Jr != 0)
+            Ham = Ham + Jr * (TriangularTwoSite(Site["Sz"], Site["Sx"])
+                              - TriangularTwoSite(Site["Sx"], Site["Sz"]));
 	 HamMPO = Ham;
       }
       else if (HamStr == "tj-zigzag-u1su2")

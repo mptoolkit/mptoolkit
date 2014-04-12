@@ -146,9 +146,14 @@ TriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
 // we demand normal ordering of sites; it is an error to call this function
 // with n2<n1.
 TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites, 
-					  int n1, SimpleOperator const& x1,
-					  SimpleOperator const& String,
-					  int n2, SimpleOperator const& x2);
+                                     int n1, SimpleOperator const& x1,
+                                     SimpleOperator const& String,
+                                     int n2, SimpleOperator const& x2);
+
+TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites, 
+                                     int n1, SimpleOperator const& x1,
+                                     std::vector<SimpleOperator> const& String,
+                                     int n2, SimpleOperator const& x2);
 
 // A one-site operator on a lattice with a given momentum, in angular units per unit cell
 TriangularMPO OnePointOperator(std::vector<BasisList> const& Sites, 
