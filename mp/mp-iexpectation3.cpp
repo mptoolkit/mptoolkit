@@ -17,6 +17,7 @@
 #include "models/spin.h"
 #include "models/spin-u1.h"
 #include "models/spin-su2.h"
+#include "models/spin-z2.h"
 #include "models/tj-u1su2.h"
 #include "models/tj-u1.h"
 #include "models/spinlessfermion-u1.h"
@@ -106,7 +107,23 @@ int main(int argc, char** argv)
 
       TriangularMPO Op;
 
-      if (Operator == "su2spin")
+      if (Operator == "Sz")
+      {
+	 LatticeSite Site = CreateSpinSite(Spin);
+         Op = TriangularOneSite(Site["Sz"]);
+      }
+      else if (Operator == "Sz-stag")
+      {
+	 LatticeSite Site = CreateSpinSite(Spin);	 
+	 std::vector<BasisList> Sites(2, Site["I"].Basis());
+	 Op = OnePointOperator(Sites, 0, Site["Sz"]) - OnePointOperator(Sites, 1, Site["Sz"]);
+      }
+      else if (Operator == "Sz-z2")
+      {
+	 LatticeSite Site = CreateZ2SpinSite(Spin);	 
+	 Op = TriangularOneSite(Site["Sz"]);
+      }
+      else if (Operator == "su2spin")
       {
 	 LatticeSite Site = CreateSU2SpinSite(Spin);	 
 	 Op = TriangularOneSite(Site["S"]);

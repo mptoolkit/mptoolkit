@@ -183,9 +183,13 @@ class SiteOperator : public IrredTensor<std::complex<double> >
 
       void SetCommute(LatticeCommute x) { Com_ = x; }
 
+      std::string const& Description() const { return Description_; }
+      void SetDescription(std::string const& s) { Description_ = s; }
+
      static SiteOperator Identity(SiteBasis const& Basis);
 
    private:
+      std::string Description_;
       SiteBasis Basis_;
       LatticeCommute Com_;
 

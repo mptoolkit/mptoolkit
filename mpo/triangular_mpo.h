@@ -140,6 +140,17 @@ TriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
                                     int n1, SimpleOperator const& x1,
                                     int n2, SimpleOperator const& x2);
 
+// This is a restricted implementation; we must have
+// PRECONDITION: 0 <= n1 < Sites.size()
+// PRECONDITION: Sites.size() <= n2 < 2*Sites.size()
+// That is, the operator1 must be in the first unit cell, the operator2 must be
+// in the second unit cell.
+TriangularMPO TwoPointExponentialOperator(std::vector<BasisList> const& Sites, 
+                                          int n1, SimpleOperator const& x1,
+                                          int n2, SimpleOperator const& x2,
+                                          std::complex<double> Factor);
+
+
 // a two-point string operator where the String term is inserted
 // at sites n1+1, n1+2, ..., n2-1.
 // Because this function can be used to implement fermionic operators,

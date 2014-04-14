@@ -4,6 +4,9 @@
 
   originally a 'site block' in DMRG terminology, now a LatticeSite is
   a collection of SiteOperator's defined on some fixed Hilbert space.
+
+  This also has a description, which is just used for informational
+  purposes, eg "Fermion site", "Boson site", etc
 */
 
 #if !defined(LATTICESITE_H_853YF987RHVHYC85HYT87HGGO2)
@@ -29,7 +32,9 @@ class LatticeSite
       typedef SiteOperator::basis1_type   basis1_type;
       typedef SiteOperator::basis2_type   basis2_type;
 
-      LatticeSite() : Data(new DataType()) {}
+      LatticeSite() : pImpl(new ImplType()) {}
+
+      explicit LatticeSite(std::string const& Description) : pImpl(new ImplType()) {}
 
       // precondition: !empty()
       SymmetryList GetSymmetryList() const;
@@ -38,23 +43,35 @@ class LatticeSite
       basis1_type const& Basis1() const;
       basis2_type const& Basis2() const;
 
-      bool empty() const { return Data->empty(); }
+      bool empty() const { return pImpl->Data.empty(); }
 
-      const_iterator begin() const { return Data->begin(); }
-      const_iterator end() const { return Data->end(); }
+      const_iterator begin() const { return pImpl->Data.begin(); }
+      const_iterator end() const { return pImpl->Data.end(); }
 
-      SiteOperator& operator[](std::string const& s) { return (*Data.mutate())[s]; }
+      SiteOperator& operator[](std::string const& s) { return pImpl.mutate()->Data[s]; }
       SiteOperator const& operator[](std::string const& s) const;
 
-      const_iterator find(std::string const& s) const { return Data->find(s); }
+      const_iterator find(std::string const& s) const { return pImpl->Data.find(s); }
 
-      bool operator_exists(std::string const& s) const { return Data->find(s) != Data->end(); }
+      bool operator_exists(std::string const& s) const { return pImpl->Data.find(s) != pImpl->Data.end(); }
 
       void CoerceSymmetryList(QuantumNumbers::SymmetryList const& sl);
 
+      std::string const& Description() const { return pImpl->Description; }
+      void SetDescription(std::string const& s) { pImpl.mutate()->Description = s; }
+
+      struct ImplType
+      {
+         std::string Description;
+         DataType Data;
+
+         friend PStream::opstream& operator<<(PStream::opstream& out, ImplType const& Impl);
+         friend PStream::ipstream& operator>>(PStream::ipstream& in, ImplType& Impl);
+      };
+
    private:
-      typedef pvalue_ptr<DataType> ptr_type;
-      ptr_type Data;
+      typedef pvalue_ptr<ImplType> ptr_type;
+      ptr_type pImpl;
 
    friend PStream::opstream& operator<<(PStream::opstream& out, LatticeSite const& B);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, LatticeSite& B);

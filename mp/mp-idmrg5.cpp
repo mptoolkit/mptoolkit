@@ -1148,11 +1148,15 @@ int main(int argc, char** argv)
             }
             else
             {
+               if (j-NLegs > i)
+               {
+                  std::cout << "Warning: term will act on the first unit cell also.\n";
+               }
                std::cout << "Adding term sum_{n=0}^\\infty " << Alpha << " * Sz(" << i << ") * (" 
                          << Beta << ")^{n+1} * Sz((n*"<<NLegs<<"+"<<j<<")\n";
                StringOp[(i+1)%NLegs] = Beta*Site["I"];
             }
-            Ham += Alpha * TwoPointStringOperator(Sites, i, 2*Site["Sz"], StringOp, j, 2*Site["Sz"]);
+            Ham += Alpha * TwoPointExponentialOperator(Sites, i, 2*Site["Sz"], j, 2*Site["Sz"], Beta);
          }
          if (Lambda != 0.0)
          {
@@ -1449,11 +1453,11 @@ int main(int argc, char** argv)
       {
          if (vm.count("alpha") || vm.count("U"))
          {
-            std::cout << "Using parameters alpha=" << alpha << ", (U'/U)=" << U << '\n';
-            Jx = -cos(2*alpha);
+            std::cout << "Using parameters alpha=" << alpha << "*pi, (U'/U)=" << U << '\n';
+            Jx = -cos(2*alpha*math_const::pi);
             Jy = -1.0;
-            Jz = (1 - 2*U) * cos(2*alpha);
-            Jr = U * sin(2*alpha);
+            Jz = (1 - 2*U) * cos(2*alpha*math_const::pi);
+            Jr = U * sin(2*alpha*math_const::pi);
          }
 	 std::cout << "Hamiltonian is XYZ model with spin S=" << Spin
 		   << ", Jx=" << Jx << ", Jy=" << Jy << ", Jz=" << Jz 

@@ -1174,6 +1174,57 @@ TriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
    return TriResult;
 }
 
+TriangularMPO TwoPointExponentialOperator(std::vector<BasisList> const& Sites, 
+                                          int n1, SimpleOperator const& x1,
+                                          int n2, SimpleOperator const& x2,
+                                          std::complex<double> Factor)
+{
+   DEBUG_TRACE(n1)(x1)(n2)(x2);
+   PRECONDITION(n1 < n2)(n1)(n2);
+   PRECONDITION(n1 < int(Sites.size()));
+   PRECONDITION(n2 < 2*Sites.size());
+
+   int const Size = Sites.size();
+
+   // construct a list of added quantum numbers that are needed for the bond bases
+   std::vector<BasisList> BondBasis(Size, BasisList(Sites[0].GetSymmetryList()));
+
+   // Add the identity component to the bond basis
+   for (int i = 0; i < Size; ++i)
+   {
+      BondBasis[i].push_back(QuantumNumber(Sites[0].GetSymmetryList()));
+   }
+
+   // The string component, transforms the same way as x1
+   for (int i = 0; i < Size; ++i)
+   {
+      BondBasis[i].push_back(x1.TransformsAs());
+   }
+   
+   // Finally, the Hamiltonian component
+   for (int i = 0; i < Size; ++i)
+   {
+      BondBasis[i].push_back(QuantumNumber(Sites[0].GetSymmetryList()));
+   }
+
+   // Assemble the operators
+   GenericMPO Result(Size);
+   for (int i = 0; i < Size; ++i)
+   {
+      Result[i] = OperatorComponent(Sites[i], Sites[i], BondBasis[i], BondBasis[smod(i+1,Size)]);
+      Result[i](0,0) = SimpleOperator::make_identity(Sites[i]);
+      Result[i](1,1) = (i == 0 ? Factor : 1.0) * SimpleOperator::make_identity(Sites[i]);
+      Result[i](2,2) = SimpleOperator::make_identity(Sites[i]);
+   }
+
+   Result[n1](0,1) = x1;
+   Result[smod(n2,Size)](1,2) = x2;
+
+   TriangularMPO TriResult(Result.data());
+   TriResult.debug_check_structure();
+   return TriResult;
+}
+
 TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites, 
                                      int n1, SimpleOperator const& x1,
                                      SimpleOperator const& String,

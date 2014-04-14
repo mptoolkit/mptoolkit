@@ -53,10 +53,10 @@ int main(int argc, char** argv)
       // our unit cell is two sites
       UnitCell Cell(Site, Site);
 
-      LocalOperator N(Cell, "N");
+      LocalOperator B(Cell, "B");
       LocalOperator BH(Cell, "BH");
-      LocalOperator B(Cell, "N");
-      LocalOperator B(Cell, "N2");
+      LocalOperator N(Cell, "N");
+      LocalOperator N2(Cell, "N2");
 
       // Total particle number
       Cell.Operator("N") = N[0] + N[1];
