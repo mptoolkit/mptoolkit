@@ -1145,6 +1145,7 @@ int main(int argc, char** argv)
             if (j < NLegs)
             {
                std::cout << "Adding local term " << Alpha << " * Sz(" << i << ") * Sz(" << j << ")\n";
+               Ham += Alpha * TwoPointOperator(Sites, i, 2*Site["Sz"], j, 2*Site["Sz"]);
             }
             else
             {
@@ -1153,10 +1154,10 @@ int main(int argc, char** argv)
                   std::cout << "Warning: term will act on the first unit cell also.\n";
                }
                std::cout << "Adding term sum_{n=0}^\\infty " << Alpha << " * Sz(" << i << ") * (" 
-                         << Beta << ")^{n+1} * Sz((n*"<<NLegs<<"+"<<j<<")\n";
+                         << Beta << ")^n * Sz((n*"<<NLegs<<"+"<<j<<")\n";
                StringOp[(i+1)%NLegs] = Beta*Site["I"];
+               Ham += Alpha * TwoPointExponentialOperator(Sites, i, 2*Site["Sz"], j, 2*Site["Sz"], Beta);
             }
-            Ham += Alpha * TwoPointExponentialOperator(Sites, i, 2*Site["Sz"], j, 2*Site["Sz"], Beta);
          }
          if (Lambda != 0.0)
          {
@@ -2076,6 +2077,11 @@ int main(int argc, char** argv)
       std::cout << SInfo << '\n';
 
       // replicate the HamMPO until it has the same size as the unit cell
+      if (UnitCellSize % HamMPO.size() != 0)
+      {
+         std::cout << "mp-idmrg5: fatal: the wavefunction unit cell must be a multiple of the Hamiltonian unit cell.\n";
+         return 1;
+      }
       HamMPO = repeat(HamMPO, UnitCellSize / HamMPO.size());
       CHECK_EQUAL(int(HamMPO.size()), UnitCellSize);
 

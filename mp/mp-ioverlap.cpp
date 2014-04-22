@@ -10,6 +10,7 @@
 #include "models/hubbard-u1su2.h"
 #include "models/hubbard-u1u1.h"
 #include "models/hubbard-u1u1-old.h"
+#include "models/spin-u1.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -92,6 +93,8 @@ int main(int argc, char** argv)
       bool Reflect = false;
       bool Conj = false;
       std::string Model;
+      std::string String("I");
+      double Spin = 0.5;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -111,11 +114,15 @@ int main(int argc, char** argv)
           "reflect psi2 (gives parity eigenvalue)")
 	 ("model", prog_opt::value(&Model),
 	  "with the --reflect option, also apply the local reflection operator for this model")
+         ("string", prog_opt::value(&String),
+          "use this local operator as a string operator for the overlap")
          ("conj", prog_opt::bool_switch(&Conj),
           "complex conjugate psi2")
          ("q,quantumnumber", prog_opt::value(&Sector),
           "calculate the overlap only in this quantum number sector, "
           "can be used multiple times [default is to calculate all sectors]")
+	 ("spin", prog_opt::value(&Spin),
+          "spin (for spin models, default 0.5)")
          ("sort,s", prog_opt::bool_switch(&Sort),
           "sort the eigenvalues by magnitude")
          ("tol", prog_opt::value(&Tol),
@@ -190,40 +197,47 @@ int main(int argc, char** argv)
          *Psi2.mutate() = rotate_left(*Psi2, Rotate);
 #endif
 
+      LatticeSite Site;
+      if (!Model.empty())
+      {
+         if (Verbose)
+            std::cout << "using model " << Model << std::endl;
+         std::vector<SimpleOperator> ReflectionOp;
+         if (Model == "hubbard-u1su2")
+	 {
+            Site = CreateU1SU2HubbardSite();
+         }
+         else if (Model == "hubbard-u1u1")
+	 {
+            Site = CreateU1U1HubbardSite();
+         }
+         else if (Model == "spin-u1")
+	 {
+            Site = CreateU1SpinSite(Spin);
+         }
+         else if (Model == "hubbard-u1u1-old")
+	 {
+            Site = CreateU1U1HubbardOldOrderingSite();
+         }
+         else
+	 {
+            PANIC("Unknown model")(Model);
+         }
+      }
+
       if (Reflect)
       {
          if (Verbose)
             std::cout << "Reflecting psi2..." << std::endl;
-	 if (!Model.empty())
-	 {
-	    if (Verbose)
-	       std::cout << "Reflecting using model " << Model << std::endl;
-	    std::vector<SimpleOperator> ReflectionOp;
-	    if (Model == "hubbard-u1su2")
-	    {
-	       LatticeSite Site = CreateU1SU2HubbardSite();
-	       ReflectionOp = std::vector<SimpleOperator>(Psi2->size(), Site["R"]);
-	    }
-	    else if (Model == "hubbard-u1u1")
-	    {
-	       LatticeSite Site = CreateU1U1HubbardSite();
-	       ReflectionOp = std::vector<SimpleOperator>(Psi2->size(), Site["R"]);
-	    }
-	    else if (Model == "hubbard-u1u1-old")
-	    {
-	       LatticeSite Site = CreateU1U1HubbardOldOrderingSite();
-	       ReflectionOp = std::vector<SimpleOperator>(Psi2->size(), Site["R"]);
-	    }
-	    else
-	    {
-	       PANIC("Unknown model")(Model);
-	    }
-	    *Psi2.mutate() = reflect(*Psi2, ReflectionOp);
-	 }
-	 else
-	 {
-	    *Psi2.mutate() = reflect(*Psi2);
-	 }
+         if (!Model.empty())
+         {
+            std::vector<SimpleOperator> ReflectionOp = std::vector<SimpleOperator>(Psi2->size(), Site["R"]);
+            *Psi2.mutate() = reflect(*Psi2, ReflectionOp);
+         }
+         else
+         {
+            *Psi2.mutate() = reflect(*Psi2);
+         }
       }
 
       if (Conj)
@@ -233,6 +247,19 @@ int main(int argc, char** argv)
          *Psi2.mutate() = conj(*Psi2);
       }
 
+      std::vector<SimpleOperator> StringOp;
+      if (vm.count("string"))
+      {
+         if (Model.empty())
+         {
+            PANIC("--string option requires --model!");
+         }
+         StringOp = std::vector<SimpleOperator>(Psi2->size(), Site[String]);
+      }
+      else
+      {
+         StringOp = make_identity_string_operator(ExtractLocalBasis(Psi2->Psi));
+      }
 
       // get the list of quantum number sectors
       std::set<QuantumNumber> Sectors;
@@ -276,7 +303,7 @@ int main(int argc, char** argv)
       std::vector<TransEigenInfo> EigenList;
       for (std::set<QuantumNumber>::const_iterator I = Sectors.begin(); I != Sectors.end(); ++I)
       {
-         TransEigenInfo Info(*I, overlap(*Psi1, *Psi2, *I, Iter, Tol, Verbose));
+         TransEigenInfo Info(*I, overlap(*Psi1, StringOp, *Psi2, *I, Iter, Tol, Verbose));
          if (Sort)
             EigenList.push_back(Info);
          else

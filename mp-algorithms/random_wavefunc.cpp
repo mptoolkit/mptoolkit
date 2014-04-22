@@ -269,15 +269,3 @@ Amplitude(LinearWavefunction const& Psi, WavefunctionDesc const& Config)
       return x(0,0)(0,0);
    else return 0.0;
 }
-
-std::vector<BasisList>
-ExtractLocalBasis(LinearWavefunction const& Psi)
-{
-   std::vector<BasisList> Basis(Psi.size());
-   LinearWavefunction::const_iterator Li = Psi.begin();
-   for (unsigned i = 0; i < Psi.size(); ++i, ++Li)
-   {
-      Basis[i] = Li->LocalBasis();
-   }
-   return Basis;
-}

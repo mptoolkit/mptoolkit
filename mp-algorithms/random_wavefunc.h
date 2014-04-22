@@ -52,9 +52,6 @@ struct WavefunctionDesc
 
 std::ostream& operator<<(std::ostream& out, WavefunctionDesc const& Config);
 
-std::vector<BasisList>
-ExtractLocalBasis(LinearWavefunction const& Psi);
-
 WavefunctionDesc
 CreateRandomConfiguration(std::vector<BasisList> const& Basis, 
                           QuantumNumber const& q, double Beta);

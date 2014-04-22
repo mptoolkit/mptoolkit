@@ -13,6 +13,7 @@
 #include "common/prog_opt_accum.h"
 #include "mp/copyright.h"
 #include "common/prog_options.h"
+#include <fstream>
 
 #include "models/spin.h"
 #include "models/spin-u1.h"
@@ -44,10 +45,13 @@ int main(int argc, char** argv)
    double t2 = 0;
    double tc = 0;
    double U = 0;
+   double Lambda = 0;
    int Power = 1;
    bool Verbose = false;
    int NMax = 3;
+   int NLegs = 1;
    double Spin = 0.5;
+   std::string CouplingFile;
 
    std::cout.precision(getenv_or_default("MP_PRECISION", 14));
  
@@ -64,10 +68,16 @@ int main(int argc, char** argv)
 	  FormatDefault("cluster hopping (for triangular cluster)", tc).c_str())
 	 ("U", prog_opt::value(&U),
 	  FormatDefault("coulomb repulsion", U).c_str())
+	 ("lambda", prog_opt::value(&Lambda),
+	  FormatDefault("transverse field strength (for itf hamiltonian)", Lambda).c_str())
 	 ("spin,s", prog_opt::value(&Spin),
 	  FormatDefault("spin", Spin).c_str())
 	 ("nmax", prog_opt::value(&NMax),
           FormatDefault("Maximum number of particles (for bose-hubbard model)", NMax).c_str())
+	 ("coupling", prog_opt::value(&CouplingFile),
+	  "File for the long-range couplings [lr-itf operator]")
+	 ("nlegs", prog_opt::value(&NLegs),
+	  FormatDefault("Number of legs (for triangular ladder or Kagome cylinder)", NLegs).c_str())
 	 ("power", prog_opt::value(&Power),
 	  FormatDefault("Calculate expectation value of operator to this power", Power).c_str())
          ("verbose,v", prog_opt::bool_switch(&Verbose),
@@ -242,6 +252,54 @@ int main(int argc, char** argv)
 	 Ham += U * OnePointOperator(Sites, 2, Site["Pdouble"]);
 	 Op = Ham;
       }
+      else if (Operator == "lr-itf")
+      {
+         if (!vm.count("coupling"))
+         {
+            std::cerr << "error: --coupling <file> is required for the lr-itf model\n";
+            exit(1);
+         }
+         std::ifstream In(CouplingFile.c_str());
+         if (!In)
+         {
+            std::cerr << "error: cannot open coupling file " << CouplingFile << '\n';
+            exit(1);
+         }
+	 LatticeSite Site = CreateSpinSite(0.5);
+         std::vector<BasisList> Sites(NLegs, Site["I"].Basis());
+	 TriangularMPO Ham;
+         int i,j,r2;
+         double Alpha, Beta;
+         while (In >> i >> j >> Alpha >> Beta >> r2)
+         {
+            std::vector<SimpleOperator> StringOp(NLegs, Site["I"]);
+            if (j < NLegs)
+            {
+               std::cout << "Adding local term " << Alpha << " * Sz(" << i << ") * Sz(" << j << ")\n";
+               Ham += Alpha * TwoPointOperator(Sites, i, 2*Site["Sz"], j, 2*Site["Sz"]);
+            }
+            else
+            {
+               if (j-NLegs > i)
+               {
+                  std::cout << "Warning: term will act on the first unit cell also.\n";
+               }
+               std::cout << "Adding term sum_{n=0}^\\infty " << Alpha << " * Sz(" << i << ") * (" 
+                         << Beta << ")^n * Sz((n*"<<NLegs<<"+"<<j<<")\n";
+               StringOp[(i+1)%NLegs] = Beta*Site["I"];
+               Ham += Alpha * TwoPointExponentialOperator(Sites, i, 2*Site["Sz"], j, 2*Site["Sz"], Beta);
+            }
+         }
+         if (Lambda != 0.0)
+         {
+            for (i = 0; i < NLegs; ++i)
+            {
+               Ham += Lambda*OnePointOperator(Sites, i, 2*Site["Sx"]);
+            }
+         }
+         Op = Ham;
+         
+      }
       else
       {
 	 std::cerr << "Unknown operator!\n";
@@ -279,6 +337,13 @@ int main(int argc, char** argv)
       //   TRACE(norm_frob(operator_prod(Phi, Rho, herm(Phi)) - Rho));
 
       // make Op the same size as our unit cell
+      if (UnitCellSize % Op.size() != 0)
+      {
+         std::cout << "mp-iexpectation: fatal: the wavefunction unit cell "
+            "must be a multiple of the operator unit cell.\n";
+         return 1;
+      }
+
       Op = repeat(Op, UnitCellSize / Op.size());
 
       KMatrixPolyType E = SolveMPO_Left(Phi, Psi.QShift, Op, Identity, Rho, Verbose);

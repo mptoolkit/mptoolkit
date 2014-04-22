@@ -105,6 +105,8 @@ class run_length_compressed
          return boost::apply_visitor(v, Data);
       }
 
+      // should the Visitor be non-const here?  I don't see why not,
+      // but check boost docs!
       template <typename Visitor>
       typename Visitor::result_type
       apply_visitor(Visitor const& v)

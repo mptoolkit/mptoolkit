@@ -553,3 +553,27 @@ void project(LinearWavefunction& x, QuantumNumbers::QuantumNumber const& q)
    *It = prod(C, *It);
    //   x = multiply_left(C, x);
 }
+
+std::vector<SimpleOperator>
+make_identity_string_operator(std::vector<BasisList> const& Basis)
+{
+   std::vector<SimpleOperator> Result;
+   Result.reserve(Basis.size());
+   for (unsigned i = 0; i < Basis.size(); ++i)
+   {
+      Result.push_back(SimpleOperator::make_identity(Basis[i]));
+   }
+   return Result;
+}
+   
+std::vector<BasisList>
+ExtractLocalBasis(LinearWavefunction const& Psi)
+{
+   std::vector<BasisList> Basis(Psi.size());
+   LinearWavefunction::const_iterator Li = Psi.begin();
+   for (unsigned i = 0; i < Psi.size(); ++i, ++Li)
+   {
+      Basis[i] = Li->LocalBasis();
+   }
+   return Basis;
+}

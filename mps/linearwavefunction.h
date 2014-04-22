@@ -326,6 +326,14 @@ void truncate(LinearWavefunction& Psi, StatesInfo const& SInfo, bool ShowStates 
 
 MatrixOperator CollapseBasis(VectorBasis const& b);
 
+// function to extract the local basis (as a vector of BasisList) from a wavefunction
+std::vector<BasisList>
+ExtractLocalBasis(LinearWavefunction const& Psi);
+
+// function to return a StringOperator given an array of local basis
+std::vector<SimpleOperator>
+make_identity_string_operator(std::vector<BasisList> const& Basis);
+
 double const EigenvalueEpsilon = std::numeric_limits<double>::epsilon() * 4;
 
 inline

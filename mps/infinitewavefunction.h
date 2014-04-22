@@ -90,7 +90,12 @@ void orthogonalize(InfiniteWavefunction& x);
 
 // calculates the overlap of two iMPS, per unit cell.
 // The eigenvector can be in any allowable symmetry sector.
-std::complex<double> overlap(InfiniteWavefunction const& x, InfiniteWavefunction const& y,
+std::complex<double> overlap(InfiniteWavefunction const& x,  InfiniteWavefunction const& y,
+                             QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, bool Verbose = false);
+
+// This version allows a string operator also
+std::complex<double> overlap(InfiniteWavefunction const& x, std::vector<SimpleOperator> const& StringOp,
+                             InfiniteWavefunction const& y,
                              QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, bool Verbose = false);
 
 // Spatial reflection of a wavefunction

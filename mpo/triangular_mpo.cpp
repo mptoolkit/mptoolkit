@@ -1182,7 +1182,7 @@ TriangularMPO TwoPointExponentialOperator(std::vector<BasisList> const& Sites,
    DEBUG_TRACE(n1)(x1)(n2)(x2);
    PRECONDITION(n1 < n2)(n1)(n2);
    PRECONDITION(n1 < int(Sites.size()));
-   PRECONDITION(n2 < 2*Sites.size());
+   PRECONDITION(n2 < 2*int(Sites.size()));
 
    int const Size = Sites.size();
 
@@ -1213,7 +1213,7 @@ TriangularMPO TwoPointExponentialOperator(std::vector<BasisList> const& Sites,
    {
       Result[i] = OperatorComponent(Sites[i], Sites[i], BondBasis[i], BondBasis[smod(i+1,Size)]);
       Result[i](0,0) = SimpleOperator::make_identity(Sites[i]);
-      Result[i](1,1) = (i == 0 ? Factor : 1.0) * SimpleOperator::make_identity(Sites[i]);
+      Result[i](1,1) = (i == n1 ? Factor : 1.0) * SimpleOperator::make_identity(Sites[i]);
       Result[i](2,2) = SimpleOperator::make_identity(Sites[i]);
    }
 
