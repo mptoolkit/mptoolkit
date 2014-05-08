@@ -386,6 +386,7 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
 		std::deque<StateComponent>& RightBlockHam,
 		StatesInfo const& SInfo, int MinIter, int NumIter,
 		moving_exponential<double>& FidelityAv, bool TwoSite, double MixFactor,
+                double RandomMixFactor,
                 double EvolveDelta)
 {
    LinearWavefunction Result;
@@ -395,6 +396,7 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
 
    StateComponent R = prod(*I, C_r);
    MatrixOperator C = ExpandBasis1Used(R, *H);
+   //MatrixOperator C = ExpandBasis1(R);
    RightBlockHam.push_front(operator_prod(*H, R, RightBlockHam.front(), herm(R)));
    LeftBlockHam.pop_back();
    while (I != Psi.begin())
@@ -406,7 +408,8 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
       if (TwoSite)
       {
 	 L = prod(L, C);
-	 C = ExpandBasis2Used(L, *H);
+         C = ExpandBasis2Used(L, *H);
+	 //C = ExpandBasis2(L);
 
 	 LeftBlockHam.pop_back();
 	 LeftBlockHam.push_back(operator_prod(herm(*H), herm(L), LeftBlockHam.back(), L));
@@ -443,6 +446,12 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
 	 MatrixOperator RhoMix = operator_prod(herm(RightBlockHam.front()), Rho, RightBlockHam.front());
 	 Rho += (MixFactor / trace(RhoMix)) * RhoMix;
       }
+      if (RandomMixFactor > 0)
+      {
+	 MatrixOperator RhoMix = MakeRandomMatrixOperator(Rho.Basis1(), Rho.Basis2());
+         RhoMix = herm(RhoMix) * RhoMix;
+	 Rho += (RandomMixFactor / trace(RhoMix)) * RhoMix;
+      }
       DensityMatrix<MatrixOperator> DM(Rho);
       TruncationInfo Info;
       DensityMatrix<MatrixOperator>::const_iterator DMPivot =
@@ -469,6 +478,7 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
       Result.push_front(R);
       R = prod(L, C);
       C = ExpandBasis1Used(R, *H);
+      //C = ExpandBasis1(R);
       RightBlockHam.push_front(operator_prod(*H, R, RightBlockHam.front(), herm(R)));
       LeftBlockHam.pop_back();
 
@@ -488,6 +498,7 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
 		 std::deque<StateComponent>& RightBlockHam,
 		 StatesInfo const& SInfo, int MinIter, int NumIter,
 		 moving_exponential<double>& FidelityAv, bool TwoSite, double MixFactor,
+                 double RandomMixFactor,
                  double EvolveDelta)
 {
    LinearWavefunction Result;
@@ -497,6 +508,7 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
 
    StateComponent L = prod(C_l, *I);
    MatrixOperator C = ExpandBasis2Used(L, *H);
+   //MatrixOperator C = ExpandBasis2(L);
    LeftBlockHam.push_back(operator_prod(herm(*H), herm(L), LeftBlockHam.back(), L));
    RightBlockHam.pop_front();
 
@@ -508,7 +520,8 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
       if (TwoSite)
       {
 	 R = prod(C, R);
-	 C = ExpandBasis1Used(R, *H);
+         C = ExpandBasis1Used(R, *H);
+	 //C = ExpandBasis1(R);
 	 RightBlockHam.pop_front();
 	 RightBlockHam.push_front(operator_prod(*H, R, RightBlockHam.front(), herm(R)));
       }
@@ -544,6 +557,12 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
 	 MatrixOperator RhoMix = operator_prod(LeftBlockHam.back(), Rho, herm(LeftBlockHam.back()));
 	 Rho += (MixFactor / trace(RhoMix)) * RhoMix;
       }
+      if (RandomMixFactor > 0)
+      {
+	 MatrixOperator RhoMix = MakeRandomMatrixOperator(Rho.Basis1(), Rho.Basis2());
+         RhoMix = herm(RhoMix) * RhoMix;
+	 Rho += (RandomMixFactor / trace(RhoMix)) * RhoMix;
+      }
       DensityMatrix<MatrixOperator> DM(Rho);
       TruncationInfo Info;
       DensityMatrix<MatrixOperator>::const_iterator DMPivot =
@@ -570,6 +589,7 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
       Result.push_back(L);
       L = prod(C, R);
       C = ExpandBasis2Used(L, *H);
+      //C = ExpandBasis2(L);
       LeftBlockHam.push_back(operator_prod(herm(*H), herm(L), LeftBlockHam.back(), L));
       RightBlockHam.pop_front();
 
@@ -640,7 +660,7 @@ void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double&
       for (int i = 0; i < NumSteps; ++i)
       {
          C = DoDMRGSweepLeft(MyPsi, C, HamMPO, LeftBlock, RightBlock, SInfo, NumIter,
-                             FidelityAv, TwoSite, MixFactor);
+                             FidelityAv, TwoSite, MixFactor, RandomMixFactor);
 
          // now comes the slightly tricky part, where we turn around
 
@@ -689,6 +709,12 @@ void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double&
                MatrixOperator RhoMix = operator_prod(LeftBlock.back(), RhoL, herm(LeftBlock.back()));
                RhoL += (MixFactor / trace(RhoMix)) * RhoMix;
             }
+               if (RandomMixFactor > 0)
+               {
+                  MatrixOperator RhoMix = MakeRandomMatrixOperator(RhoL.Basis1(), RhoL.Basis2());
+                  RhoMix = herm(RhoMix) * RhoMix;
+                  RhoL += (RandomMixFactor / trace(RhoMix)) * RhoMix;
+               }
             DensityMatrix<MatrixOperator> DML(RhoL);
             TruncationInfo Info;
             MatrixOperator TruncL = DML.ConstructTruncator(DML.begin(),
@@ -726,7 +752,7 @@ void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double&
          // right-moving sweep
 
          C = DoDMRGSweepRight(C, MyPsi, HamMPO, LeftBlock, RightBlock, SInfo, NumIter,
-                              FidelityAv, TwoSite, MixFactor);
+                              FidelityAv, TwoSite, MixFactor, RandomMixFactor);
 
          // turn around at the right-hand side
          SaveLeftBlock = LeftBlock.back();
@@ -768,6 +794,12 @@ void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double&
                MatrixOperator RhoMix = operator_prod(herm(RightBlock.front()), RhoR, RightBlock.front());
                RhoR += (MixFactor / trace(RhoMix)) * RhoMix;
             }
+               if (RandomMixFactor > 0)
+               {
+                  MatrixOperator RhoMix = MakeRandomMatrixOperator(Rho.Basis1(), Rho.Basis2());
+                  RhoMix = herm(RhoMix) * RhoMix;
+                  Rho += (RandomMixFactor / trace(RhoMix)) * RhoMix;
+               }
             DensityMatrix<MatrixOperator> DMR(RhoR);
             TruncationInfo Info;
             MatrixOperator TruncR = DMR.ConstructTruncator(DMR.begin(),
@@ -905,6 +937,7 @@ int main(int argc, char** argv)
       bool TwoSite = true;
       bool OneSite = false;
       double MixFactor = 0.0;
+      double RandomMixFactor = 0.0;
       bool NoFixedPoint = false;
       bool NoOrthogonalize = false;
       bool Create = false;
@@ -949,6 +982,8 @@ int main(int argc, char** argv)
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
 	 ("mix-factor,f", prog_opt::value(&MixFactor),
 	  FormatDefault("Mixing coefficient for the density matrix", MixFactor).c_str())
+	 ("random-mix-factor", prog_opt::value(&RandomMixFactor),
+	  FormatDefault("Random mixing for the density matrix", RandomMixFactor).c_str())
          ("evolve", prog_opt::value(&EvolveDelta),
           "Instead of Lanczos, do imaginary time evolution with this timestep")
 	 ("random,a", prog_opt::bool_switch(&Create),
@@ -2218,7 +2253,7 @@ int main(int argc, char** argv)
 	 for (int i = 0; i < NumSteps; ++i)
 	 {
 	    C = DoDMRGSweepLeft(MyPsi, C, HamMPO, LeftBlock, RightBlock, SInfo, MinIter, NumIter,
-				FidelityAv, TwoSite, MixFactor, EvolveDelta);
+				FidelityAv, TwoSite, MixFactor, RandomMixFactor, EvolveDelta);
 
 	    // now comes the slightly tricky part, where we turn around
 
@@ -2288,6 +2323,12 @@ int main(int argc, char** argv)
 		  MatrixOperator RhoMix = operator_prod(LeftBlock.back(), RhoL, herm(LeftBlock.back()));
 		  RhoL += (MixFactor / trace(RhoMix)) * RhoMix;
 	       }
+               if (RandomMixFactor > 0)
+               {
+                  MatrixOperator RhoMix = MakeRandomMatrixOperator(RhoL.Basis1(), RhoL.Basis2());
+                  RhoMix = herm(RhoMix) * RhoMix;
+                  RhoL += (RandomMixFactor / trace(RhoMix)) * RhoMix;
+               }
 	       DensityMatrix<MatrixOperator> DML(RhoL);
 	       TruncationInfo Info;
 	       MatrixOperator TruncL = DML.ConstructTruncator(DML.begin(),
@@ -2326,7 +2367,7 @@ int main(int argc, char** argv)
 	    // right-moving sweep
 
 	    C = DoDMRGSweepRight(C, MyPsi, HamMPO, LeftBlock, RightBlock, SInfo, MinIter, NumIter,
-				 FidelityAv, TwoSite, MixFactor, EvolveDelta);
+				 FidelityAv, TwoSite, MixFactor, RandomMixFactor, EvolveDelta);
 
 	    // turn around at the right-hand side
 	    SaveLeftBlock = LeftBlock.back();
@@ -2380,6 +2421,12 @@ int main(int argc, char** argv)
 		  MatrixOperator RhoMix = operator_prod(herm(RightBlock.front()), RhoR, RightBlock.front());
 		  RhoR += (MixFactor / trace(RhoMix)) * RhoMix;
 	       }
+               if (RandomMixFactor > 0)
+               {
+                  MatrixOperator RhoMix = MakeRandomMatrixOperator(RhoR.Basis1(), RhoR.Basis2());
+                  RhoMix = herm(RhoMix) * RhoMix;
+                  RhoR += (RandomMixFactor / trace(RhoMix)) * RhoMix;
+               }
 	       DensityMatrix<MatrixOperator> DMR(RhoR);
 	       TruncationInfo Info;
 	       MatrixOperator TruncR = DMR.ConstructTruncator(DMR.begin(),
