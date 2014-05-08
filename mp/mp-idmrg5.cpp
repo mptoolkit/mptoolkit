@@ -1071,7 +1071,7 @@ int main(int argc, char** argv)
 	 ("mu", prog_opt::value(&mu),
 	  FormatDefault("Chemical potential (bose-hubbard)", mu).c_str())
 	 ("coupling", prog_opt::value(&CouplingFile),
-	  "File for the long-range couplings [lr-itf model]")
+	  "File for the long-range couplings [lr-itf, lr-itf-z2 model]")
 	 ("kagome-cell", prog_opt::value(&KagomeUnitCell),
 	  FormatDefault("Unit cell for kagome with plaquette (for Kagome strip with field, kagome-field-su2)",
                         KagomeUnitCell).c_str())
@@ -1154,22 +1154,24 @@ int main(int argc, char** argv)
 	 }
          HamMPO = Ham;
       }
-      else if (HamStr == "lr-itf")
+      else if (HamStr == "lr-itf" || HamStr == "lr-itf-z2")
       {
          if (!vm.count("coupling"))
          {
             std::cerr << "error: --coupling <file> is required for the lr-itf model\n";
             exit(1);
          }
-         std::cout << "Hamiltonian is long-range Ising model, nlegs=" << NLegs << ", lambda=" << Lambda << "\n"
-                   << "Reading couplings from file " << CouplingFile << "\n";
+         std::cout << "Hamiltonian is long-range Ising model, nlegs=" << NLegs << ", lambda=" << Lambda << "\n";
+         if (HamStr == "lr-itf-z2")
+            std::cout << "Using Z2 symmetry.\n";
+         std::cout << "Reading couplings from file " << CouplingFile << "\n";
          std::ifstream In(CouplingFile.c_str());
          if (!In)
          {
             std::cerr << "error: cannot open coupling file " << CouplingFile << '\n';
             exit(1);
          }
-	 LatticeSite Site = CreateSpinSite(0.5);
+	 LatticeSite Site = HamStr == "lr-itf" ? CreateSpinSite(0.5) : CreateZ2SpinSite(0.5);
          std::vector<BasisList> Sites(NLegs, Site["I"].Basis());
 	 TriangularMPO Ham;
          int i,j,r2;

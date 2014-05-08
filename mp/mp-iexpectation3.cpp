@@ -75,7 +75,7 @@ int main(int argc, char** argv)
 	 ("nmax", prog_opt::value(&NMax),
           FormatDefault("Maximum number of particles (for bose-hubbard model)", NMax).c_str())
 	 ("coupling", prog_opt::value(&CouplingFile),
-	  "File for the long-range couplings [lr-itf operator]")
+	  "File for the long-range couplings [lr-itf, lr-itf-z2 operator]")
 	 ("nlegs", prog_opt::value(&NLegs),
 	  FormatDefault("Number of legs (for triangular ladder or Kagome cylinder)", NLegs).c_str())
 	 ("power", prog_opt::value(&Power),
@@ -252,7 +252,7 @@ int main(int argc, char** argv)
 	 Ham += U * OnePointOperator(Sites, 2, Site["Pdouble"]);
 	 Op = Ham;
       }
-      else if (Operator == "lr-itf")
+      else if (Operator == "lr-itf" || Operator == "lr-itf-z2")
       {
          if (!vm.count("coupling"))
          {
@@ -265,7 +265,7 @@ int main(int argc, char** argv)
             std::cerr << "error: cannot open coupling file " << CouplingFile << '\n';
             exit(1);
          }
-	 LatticeSite Site = CreateSpinSite(0.5);
+	 LatticeSite Site = Operator == "lr-itf" ? CreateSpinSite(0.5) : CreateZ2SpinSite(0.5);
          std::vector<BasisList> Sites(NLegs, Site["I"].Basis());
 	 TriangularMPO Ham;
          int i,j,r2;
