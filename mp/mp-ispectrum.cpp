@@ -11,6 +11,7 @@
 #include "interface/inittemp.h"
 #include "tensor/tensor_eigen.h"
 #include "mp-algorithms/arnoldi.h"
+#include "lattice/siteoperator-parser.h"
 
 #include "models/spin.h"
 #include "models/spin-u1.h"
@@ -648,6 +649,7 @@ int main(int argc, char** argv)
 
       // Assemble the string operator (which may be the identity)
       std::vector<SimpleOperator> MyStringOp;
+      SiteOperator SiteStringOp = ParseSiteOperator(Site, StringOp);
       for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
       {
          if (StringOp == "I")
@@ -656,7 +658,7 @@ int main(int argc, char** argv)
          }
          else
          {
-            MyStringOp.push_back(Site[StringOp]);
+            MyStringOp.push_back(SiteStringOp);
          }
       }
 
@@ -712,31 +714,41 @@ int main(int argc, char** argv)
 
       if (vm.count("lcoefficients"))
       {
+	 SiteOperator SiteOpL = ParseSiteOperator(Site, OpL);
+	 SiteOperator SiteOpL2 = ParseSiteOperator(Site, OpL2);
+	 SiteOperator SiteOpL3 = ParseSiteOperator(Site, OpL3);
+	 SiteOperator SiteOpL4 = ParseSiteOperator(Site, OpL4);
+
+	 SiteOperator SiteOpR = ParseSiteOperator(Site, OpR);
+	 SiteOperator SiteOpR2 = ParseSiteOperator(Site, OpR2);
+	 SiteOperator SiteOpR3 = ParseSiteOperator(Site, OpR3);
+	 SiteOperator SiteOpR4 = ParseSiteOperator(Site, OpR4);
+
          LinOpL = GenericMPO(Psi.size());
          LinOpL[0] = OperatorComponent(Site.Basis1(),
                                        BasisList(QuantumNumber(Psi.GetSymmetryList())),
-                                       BasisList(adjoint(Site[OpL].TransformsAs())));
+                                       BasisList(adjoint(SiteOpL.TransformsAs())));
          LinOpL[0](0,0) = Site[OpL];
          for (unsigned i = 1; i < Psi.size(); ++i)
          {
             LinOpL[i] = OperatorComponent(Site.Basis1(), 
-                                          BasisList(adjoint(Site[OpL].TransformsAs())),
-                                          BasisList(adjoint(Site[OpL].TransformsAs())));
-            LinOpL[i](0,0) = (i == 1) ? Site[OpL2] : (i == 2) ? Site[OpL3] : (i == 3) ? Site[OpL4] : Site["I"];
+                                          BasisList(adjoint(SiteOpL.TransformsAs())),
+                                          BasisList(adjoint(SiteOpL.TransformsAs())));
+            LinOpL[i](0,0) = (i == 1) ? SiteOpL2 : (i == 2) ? SiteOpL3 : (i == 3) ? SiteOpL4 : Site["I"];
          }
 
          LinOpR = GenericMPO(Psi.size());
          LinOpR[Psi.size()-1] = OperatorComponent(Site.Basis1(), 
-                                       BasisList(Site[OpR].TransformsAs()),
+                                       BasisList(SiteOpR.TransformsAs()),
                                        BasisList(QuantumNumber(Psi.GetSymmetryList())));
-         LinOpR[Psi.size()-1](0,0) = Site[OpR];
+         LinOpR[Psi.size()-1](0,0) = SiteOpR;
          for (int i = int(Psi.size())-2; i >= 0; --i)
          {
             LinOpR[i] = OperatorComponent(Site.Basis1(), 
-                                          BasisList(Site[OpR].TransformsAs()),
-                                          BasisList(Site[OpR].TransformsAs()));
-            LinOpR[i](0,0) = (i == int(Psi.size())-2) ? Site[OpR2] 
-	       : (i == int(Psi.size())-3) ? Site[OpR3] : (i == int(Psi.size())-4) ? Site[OpR4] : Site["I"];
+                                          BasisList(SiteOpR.TransformsAs()),
+                                          BasisList(SiteOpR.TransformsAs()));
+            LinOpR[i](0,0) = (i == int(Psi.size())-2) ? SiteOpR2 
+	       : (i == int(Psi.size())-3) ? SiteOpR3 : (i == int(Psi.size())-4) ? SiteOpR4 : Site["I"];
          }
 
          // Verify that the local basis matches, and abort otherwise
