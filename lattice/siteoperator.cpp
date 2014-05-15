@@ -285,3 +285,25 @@ SiteOperator flip_conj(SiteOperator const& s, SiteBasis const& ReflectedBasis)
    Result.data() = s.data();
    return Result;
 }
+
+SiteOperator
+pow(SiteOperator const& Op, int n)
+{
+   if (n == 0)
+   {
+      return SiteOperator::Identity(Op.Basis1(), Op.Basis2());
+   }
+   else if (n%2 == 0)
+   {
+      return pow(Op*Op, n/2);
+   }
+   else if (n == 1)
+   {
+      return Op;
+   }
+   else
+   {
+      return Op*pow(Op*Op, (n-1)/2);
+   }
+}
+

@@ -497,7 +497,7 @@ mp-ireorder-symmetry : infinitewavefunction.o eigen.o
 
 
 mp-iproject : infinitewavefunction.o eigen.o
-mp-icorrelation : infinitewavefunction.o eigen.o
+mp-icorrelation : infinitewavefunction.o eigen.o siteoperator-parser.o
 pp-iortho : triangular_operator.o infinitewavefunction.o
 mp-iinfo : eigen.o infinitewavefunction.o
 mp-iprint : eigen.o infinitewavefunction.o

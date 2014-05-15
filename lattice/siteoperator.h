@@ -186,7 +186,8 @@ class SiteOperator : public IrredTensor<std::complex<double> >
       std::string const& Description() const { return Description_; }
       void SetDescription(std::string const& s) { Description_ = s; }
 
-     static SiteOperator Identity(SiteBasis const& Basis);
+      static SiteOperator Identity(SiteBasis const& Basis);
+      static SiteOperator Identity(SiteBasis const& Basis1, SiteBasis const& Basis2);
 
    private:
       std::string Description_;
@@ -209,6 +210,13 @@ SiteOperator SiteOperator::Identity(SiteBasis const& Basis)
    return Result;
 }
 
+inline
+SiteOperator SiteOperator::Identity(SiteBasis const& Basis1, SiteBasis const& Basis2)
+{
+   CHECK_EQUAL(Basis1, Basis2);
+   return SiteOperator::Identity(Basis1);
+}
+
 std::ostream& operator<<(std::ostream& out, SiteOperator const& Op);
 
 inline
@@ -225,6 +233,11 @@ SiteOperator flip_conj(SiteOperator const& s)
 {
    return flip_conj(s, adjoint(s.Basis()));
 }
+
+// this should be a function in LinearAlgebra, not sure if it exists yet
+// Power of a site operator, n must be positive.  By repeated squaring.
+SiteOperator
+pow(SiteOperator const& Op, int n);
 
 namespace LinearAlgebra
 {

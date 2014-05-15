@@ -8,8 +8,8 @@
 #include "common/environment.h"
 #include "common/prog_options.h"
 #include "interface/inittemp.h"
-
 #include "tensor/tensor_eigen.h"
+#include "lattice/siteoperator-parser.h"
 
 #include "models/spin.h"
 #include "models/spin-u1.h"
@@ -219,12 +219,12 @@ int main(int argc, char** argv)
 	 PANIC("mp-icorrelation: fatal: model parameter should be one of tj-u1, tj-u1su2, sf-u1, klm-u1su2.");
       }
 
-       QuantumNumber Ident(Psi->GetSymmetryList());
- 
-      SimpleOperator Op1 = Site[Op1Str];
-      SimpleOperator Op2 = Site[Op2Str];
+      QuantumNumber Ident(Psi->GetSymmetryList());
+      
+      SimpleOperator Op1 = ParseSiteOperator(Site, Op1Str);
+      SimpleOperator Op2 = ParseSiteOperator(Site, Op2Str);
       SimpleOperator Op1Op2 = prod(Op1, Op2, Ident);  // do this now so that we don't include the string term
-      SimpleOperator StringOp = Site[StringOpStr];
+      SimpleOperator StringOp = ParseSiteOperator(Site, StringOpStr);
       if (IncludeFirst)
       {
 	 Op1 = Op1 * StringOp;

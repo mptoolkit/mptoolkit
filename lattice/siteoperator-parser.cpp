@@ -16,11 +16,10 @@
 #include <string>
 #include <complex>
 #include "common/math_const.h"
-#include "matrixproduct/mpoperator.h"
 
 ////////////////////////////////////////////////////////////////////////////
 
-using namespace boost::spirit;
+using namespace boost::spirit::classic;
 
 typedef std::complex<double> complex;
 
@@ -46,7 +45,7 @@ struct unary_math : boost::static_visitor<complex>
    template <typename T>
    complex operator()(T const& t) const
    {
-      PANIC("Cannot apply a mathematical function to this object")(std::typeid(t).name());
+      PANIC("Cannot apply a mathematical function to this object")(typeid(t).name());
       return complex();
    }
 
@@ -180,7 +179,7 @@ struct unary_funcs : symbols<unary_func_type>
       add
          ("sin", make_unary_math(&csin))
          ("cos", make_unary_math(&ccos))
-         ("exp", make_unary_math(&cexp))
+         ("exp", make_apply_unary_math(ElementExp()))
          ("ln", make_unary_math(&cln))
          ("log", make_unary_math(&cln))
          ("log10", make_unary_math(&clog10))
@@ -227,7 +226,7 @@ struct binary_addition : boost::static_visitor<element_type>
    binary_addition(LatticeSite const& Site_) : Site(Site_) {}
 
    element_type operator()(complex const& x, complex const& y) const
-   {
+   { 
       return element_type(x+y);
    }
 
@@ -238,15 +237,15 @@ struct binary_addition : boost::static_visitor<element_type>
 
    element_type operator()(complex const& x, SiteOperator const& y) const
    {
-      return element_type(x*OpList["I"] + y);
+      return element_type(x*Site["I"] + y);
    }
 
    element_type operator()(SiteOperator const& x, complex const& y) const
    {
-      return element_type(x + y*OpList["I"]);
+      return element_type(x + y*Site["I"]);
    }
 
-   SiteOperator const& Site;
+   LatticeSite const& Site;
 };
 
 struct binary_subtraction : boost::static_visitor<element_type>
@@ -368,7 +367,98 @@ struct binary_dot_product : boost::static_visitor<element_type>
 
    element_type operator()(SiteOperator const& x, SiteOperator const& y) const
    {
-      return dot(x,y);
+      return std::sqrt(x.TransformsAs().degree()) * 
+	 prod(x,y,QuantumNumbers::QuantumNumber(x.GetSymmetryList()));
+   }
+};
+
+//
+// outer_product: outer product of tensor operators.
+// We choose among the possible transform_targets the
+// quantum number with the largest degree.
+struct binary_outer_product : boost::static_visitor<element_type>
+{
+   element_type operator()(complex const& x, complex const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(complex const& x, SiteOperator const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(SiteOperator const& x, complex const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(SiteOperator const& x, SiteOperator const& y) const
+   {
+      QuantumNumbers::QuantumNumberList L = transform_targets(x.TransformsAs(), y.TransformsAs());
+      QuantumNumbers::QuantumNumber q = L[0];
+      for (unsigned i = 1; i < L.size(); ++i)
+      {
+	 if (degree(L[i]) > degree(q))
+	    q = L[i];
+      }
+
+      return std::sqrt(double(degree(q))) * prod(x,y,q);
+   }
+};
+
+//
+// cross_product: outer product of tensor operators.
+// We choose among the possible transform_targets the
+// quantum number with the largest degree.
+struct binary_cross_product : boost::static_visitor<element_type>
+{
+   element_type operator()(complex const& x, complex const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(complex const& x, SiteOperator const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(SiteOperator const& x, complex const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(SiteOperator const& x, SiteOperator const& y) const
+   {
+      if (degree(x.TransformsAs()) != degree(y.TransformsAs()))
+      {
+	 PANIC("cross product requires oprators that transform as the same degree")(x.TransformsAs())(y.TransformsAs());
+      }
+      // search for a candidate quantum number that has the same degree as the original operators
+      QuantumNumbers::QuantumNumberList L = transform_targets(x.TransformsAs(), y.TransformsAs());
+      QuantumNumbers::QuantumNumber q = L[0];
+      for (unsigned i = 1; i < L.size(); ++i)
+      {
+	 // we have a candidate
+	 if (degree(L[i]) == degree(x.TransformsAs()))
+	 {
+	    // is it unique?
+	    if (degree(L[i]) == degree(q))
+	    {
+	       PANIC("cross product cannot idenfity a unique target quantum number, there are 2 or more candidates")
+		  (L[i])(q);
+	    }
+	    q = L[i];
+	 }
+      }
+      // but make sure we found a candidate
+      if (degree(q) != degree(x.TransformsAs()))
+      {
+	 PANIC("cross product cannot identity a larget quantum number with the same degree as the inputs")
+	    (x.TransformsAs())(y.TransformsAs());
+      }
+
+      return std::complex<double>(0.0, 1.0) * std::sqrt(double(degree(q))) * prod(x,y,q);
    }
 };
 
@@ -380,6 +470,8 @@ struct binary_funcs : symbols<binary_func_type>
    {
       add
          ("dot", make_apply_binary_math(binary_dot_product()))
+         ("outer", make_apply_binary_math(binary_outer_product()))
+	 ("cross", make_apply_binary_math(binary_cross_product()))
          ;
    }
 };
@@ -520,8 +612,8 @@ template <typename BinaryFunc>
 struct invoke_binary
 {
    invoke_binary(std::stack<element_type >& eval_) : eval(eval_) {}
-   invoke_binary(std::stack<element_type >& eval_, OperatorList const& OpList) 
-      : eval(eval_), f(OpList) {}
+   invoke_binary(std::stack<element_type >& eval_, LatticeSite const& Site) 
+      : eval(eval_), f(Site) {}
 
    invoke_binary(std::stack<element_type >& eval_, BinaryFunc f_) : eval(eval_), f(f_) {}
 
@@ -564,18 +656,18 @@ struct do_negate
 
 struct push_operator
 {
-   push_operator(OperatorList const& OpList_, std::stack<element_type >& eval_)
-      : OpList(OpList_), eval(eval_) {}
+   push_operator(LatticeSite const& Site_, std::stack<element_type >& eval_)
+      : Site(Site_), eval(eval_) {}
 
    void operator()(char const* str, char const* end) const
    {
       std::string OpName(str, end);
 
-      CHECK(OpList.HasOperator(OpName))("Operator does not exist in lattice")(OpName);
-      eval.push(element_type(OpList[OpName]));
+      CHECK(Site.operator_exists(OpName))("Operator does not exist at the lattice site")(OpName);
+      eval.push(element_type(Site[OpName]));
    }
 
-   OperatorList const& OpList;
+   LatticeSite const& Site;
    std::stack<element_type >& eval;
 };
 
@@ -591,8 +683,8 @@ struct calculator : public grammar<calculator>
     calculator(std::stack<element_type >& eval_, 
                std::stack<unary_func_type>& func_stack_,
                std::stack<binary_func_type>& bin_func_stack_,
-               OperatorList const& OpList_)
-       : eval(eval_), func_stack(func_stack_), bin_func_stack(bin_func_stack_), OpList(OpList_) {}
+               LatticeSite const& Site_)
+       : eval(eval_), func_stack(func_stack_), bin_func_stack(bin_func_stack_), Site(Site_) {}
 
     template <typename ScannerT>
     struct definition
@@ -607,7 +699,8 @@ struct calculator : public grammar<calculator>
 
             bracket_expr = '(' >> *((anychar_p - chset<>("()")) | bracket_expr) >> ')';
 
-            lattice_operator = (identifier >> !bracket_expr)[push_operator(self.OpList, self.eval)];
+            //lattice_operator = (identifier >> !bracket_expr)[push_operator(self.Site, self.eval)];
+            lattice_operator = (identifier)[push_operator(self.Site, self.eval)];
 
             unary_function = 
                eps_p(unary_funcs_p >> '(') 
@@ -652,8 +745,8 @@ struct calculator : public grammar<calculator>
 
             expression =
                 term
-                >> *(  ('+' >> term)[invoke_binary<binary_addition>(self.eval, self.OpList)]
-                    |   ('-' >> term)[invoke_binary<binary_subtraction>(self.eval, self.OpList)]
+                >> *(  ('+' >> term)[invoke_binary<binary_addition>(self.eval, self.Site)]
+                    |   ('-' >> term)[invoke_binary<binary_subtraction>(self.eval, self.Site)]
                     )
                     ;
         }
@@ -665,10 +758,10 @@ struct calculator : public grammar<calculator>
         start() const { return expression; }
     };
 
-   mutable std::stack<element_type>& eval;
-   mutable std::stack<unary_func_type>& func_stack;
-   mutable std::stack<binary_func_type>& bin_func_stack;
-   OperatorList const& OpList;
+   std::stack<element_type>& eval;
+   std::stack<unary_func_type>& func_stack;
+   std::stack<binary_func_type>& bin_func_stack;
+   LatticeSite const& Site;
 };
 
 SiteOperator
