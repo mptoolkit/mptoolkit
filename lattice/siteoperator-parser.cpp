@@ -1,6 +1,6 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*- $Id: operator-parser.cpp 1326 2014-03-04 10:56:37Z ianmcc $
 
-#include "operator-parser.h"
+#include "siteoperator-parser.h"
 #include <boost/spirit/include/classic_core.hpp>
 #include <boost/spirit/include/classic_chset.hpp>
 #include <boost/spirit/include/classic_symbols.hpp>
@@ -29,7 +29,7 @@ distinct_parser<> const keyword_p("0-9a-zA-Z_");
 distinct_directive<> const keyword_d("0-9a-zA-Z_");
 
 // our element type for the calculator stack
-typedef boost::variant<complex, MPOperator> element_type;
+typedef boost::variant<complex, SiteOperator> element_type;
 
 // apply a unary math function to an element
 template <typename Func>
@@ -43,9 +43,10 @@ struct unary_math : boost::static_visitor<complex>
       return f(c);
    }
 
-   complex operator()(MPOperator const& x) const
+   template <typename T>
+   complex operator()(T const& t) const
    {
-      PANIC("Cannot apply a mathematical function to an MPOperator");
+      PANIC("Cannot apply a mathematical function to this object")(std::typeid(t).name());
       return complex();
    }
 
@@ -140,7 +141,7 @@ struct ElementConj : boost::static_visitor<element_type>
       return LinearAlgebra::conj(c);
    }
 
-   element_type operator()(MPOperator const& x) const
+   element_type operator()(SiteOperator const& x) const
    {
       return conj(x);
    }
@@ -153,9 +154,22 @@ struct ElementAdjoint : boost::static_visitor<element_type>
       return LinearAlgebra::conj(c);
    }
 
-   element_type operator()(MPOperator const& x) const
+   element_type operator()(SiteOperator const& x) const
    {
       return adjoint(x);
+   }
+};
+
+struct ElementExp : boost::static_visitor<element_type>
+{
+   element_type operator()(complex c) const
+   {
+      return std::exp(c);
+   }
+
+   element_type operator()(SiteOperator const& x) const
+   {
+      return exp(x);
    }
 };
 
@@ -210,56 +224,56 @@ apply_binary_math<F> make_apply_binary_math(F const& f)
 
 struct binary_addition : boost::static_visitor<element_type>
 {
-   binary_addition(OperatorList const& OpList_) : OpList(OpList_) {}
+   binary_addition(LatticeSite const& Site_) : Site(Site_) {}
 
    element_type operator()(complex const& x, complex const& y) const
    {
       return element_type(x+y);
    }
 
-   element_type operator()(MPOperator const& x, MPOperator const& y) const
+   element_type operator()(SiteOperator const& x, SiteOperator const& y) const
    {
       return element_type(x+y);
    }
 
-   element_type operator()(complex const& x, MPOperator const& y) const
+   element_type operator()(complex const& x, SiteOperator const& y) const
    {
       return element_type(x*OpList["I"] + y);
    }
 
-   element_type operator()(MPOperator const& x, complex const& y) const
+   element_type operator()(SiteOperator const& x, complex const& y) const
    {
       return element_type(x + y*OpList["I"]);
    }
 
-   OperatorList const& OpList;
+   SiteOperator const& Site;
 };
 
 struct binary_subtraction : boost::static_visitor<element_type>
 {
-   binary_subtraction(OperatorList const& OpList_) : OpList(OpList_) {}
+   binary_subtraction(LatticeSite const& Site_) : Site(Site_) {}
 
    element_type operator()(complex const& x, complex const& y) const
    {
       return element_type(x-y);
    }
 
-   element_type operator()(MPOperator const& x, MPOperator const& y) const
+   element_type operator()(SiteOperator const& x, SiteOperator const& y) const
    {
       return element_type(x-y);
    }
 
-   element_type operator()(complex const& x, MPOperator const& y) const
+   element_type operator()(complex const& x, SiteOperator const& y) const
    {
-      return element_type(x*OpList["I"] - y);
+      return element_type(x*Site["I"] - y);
    }
 
-   element_type operator()(MPOperator const& x, complex const& y) const
+   element_type operator()(SiteOperator const& x, complex const& y) const
    {
-      return element_type(x - y*OpList["I"]);
+      return element_type(x - y*Site["I"]);
    }
 
-   OperatorList const& OpList;
+   LatticeSite const& Site;
 };
 
 struct binary_multiplication : boost::static_visitor<element_type>
@@ -278,18 +292,18 @@ struct binary_division : boost::static_visitor<element_type>
       return element_type(x/y);
    }
 
-   element_type operator()(MPOperator const& x, MPOperator const& y) const
+   element_type operator()(SiteOperator const& x, SiteOperator const& y) const
    {
       return element_type(x-y);
    }
 
-   element_type operator()(complex const& x, MPOperator const& y) const
+   element_type operator()(complex const& x, SiteOperator const& y) const
    {
       PANIC("An operator cannot be used as a divisor");
       return element_type(complex());
    }
 
-   element_type operator()(MPOperator const& x, complex const& y) const
+   element_type operator()(SiteOperator const& x, complex const& y) const
    {
       return element_type((1.0 / y) * x);
    }
@@ -303,13 +317,13 @@ struct binary_power : boost::static_visitor<element_type>
    }
 
    template <typename T>
-   element_type operator()(T& x, MPOperator const& y) const
+   element_type operator()(T& x, SiteOperator const& y) const
    {
-      PANIC("Cannot evaluate exponent of an MPOperator");
+      PANIC("Cannot evaluate exponent of an SiteOperator");
       return element_type(complex(0));
    }
 
-   element_type operator()(MPOperator const& x, complex const& y) const
+   element_type operator()(SiteOperator const& x, complex const& y) const
    {
       int i = int(y.real()+0.5);
       CHECK(std::norm(complex(double(i)) - y) < 1E-7)("cannot take fractional power of an operator");
@@ -328,7 +342,7 @@ struct binary_commutator : boost::static_visitor<element_type>
    }
 
    // [operator,operator]
-   element_type operator()(MPOperator const& x, MPOperator const& y) const
+   element_type operator()(SiteOperator const& x, SiteOperator const& y) const
    {
       element_type Result = element_type(x*y - y*x);
       return Result;
@@ -342,17 +356,17 @@ struct binary_dot_product : boost::static_visitor<element_type>
       return element_type(x*y);
    }
 
-   element_type operator()(complex const& x, MPOperator const& y) const
+   element_type operator()(complex const& x, SiteOperator const& y) const
    {
       return element_type(x*y);
    }
 
-   element_type operator()(MPOperator const& x, complex const& y) const
+   element_type operator()(SiteOperator const& x, complex const& y) const
    {
       return element_type(x*y);
    }
 
-   element_type operator()(MPOperator const& x, MPOperator const& y) const
+   element_type operator()(SiteOperator const& x, SiteOperator const& y) const
    {
       return dot(x,y);
    }
@@ -657,28 +671,15 @@ struct calculator : public grammar<calculator>
    OperatorList const& OpList;
 };
 
-std::pair<OperatorList, MPOperator>
-ParseLatticeAndOperator(std::string const& str)
+SiteOperator
+ParseSiteOperator(LatticeSite const& Site, std::string const& Str)
 {
-   std::string::const_iterator Delim = std::find(str.begin(), str.end(), ':');
-   if (Delim == str.end())
-   {
-      PANIC("fatal: expression of the form \"lattice:expression\" expected.")(str);
-   }
-
-   std::string Lattice = std::string(str.begin(), Delim);
-   boost::trim(Lattice);
-   pvalue_ptr<OperatorList> System = pheap::ImportHeap(Lattice);
-
-   ++Delim;
-   std::string Expr(Delim, str.end());
-
    std::stack<element_type> eval;
    std::stack<unary_func_type> func_stack;
    std::stack<binary_func_type> bin_func_stack;
    
-   calculator calc(eval, func_stack, bin_func_stack, *System); //  Our parser
-   parse_info<> info = parse(Expr.c_str(), calc, space_p);
+   calculator calc(eval, func_stack, bin_func_stack, Site); //  Our parser
+   parse_info<> info = parse(Str.c_str(), calc, space_p);
    if (!info.full)
    {
       PANIC("Operator parser failed, stopped at")(info.stop);
@@ -690,13 +691,12 @@ ParseLatticeAndOperator(std::string const& str)
    eval.pop();
    CHECK(eval.empty());
 
-   MPOperator* Op = boost::get<MPOperator>(&Result);
+   SiteOperator* Op = boost::get<SiteOperator>(&Result);
    if (Op)
    {
-      return std::make_pair(*System, *Op);
+      return *Op;
    }
-   // else
+   // else, we also handle the case where the operator is a number
    complex x = boost::get<complex>(Result);
-
-   return std::make_pair(*System, x * (*System)["I"]);
+   return x*Site["I"];
 }
