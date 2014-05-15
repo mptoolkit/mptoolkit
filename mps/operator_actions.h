@@ -11,15 +11,21 @@
 // Calculates the operator contraction, with a matrix
 // actong on the left hand side of the wavefunction.
 // Op must have 1x1 boundaries
-// +-Psi*- ... Psi*-
+// +-Psi1*-... Psi1*-
 // |  |         |
 // m  Op*- ...  Op*
 // |  |         |
-// +-Psi-- ... Psi--
+// +-Psi2--... Psi2--
 MatrixOperator 
 inject_left(MatrixOperator const& m, 
             GenericMPO const& Op, 
             LinearWavefunction const& Psi);
+
+MatrixOperator 
+inject_left(MatrixOperator const& m, 
+            LinearWavefunction const& Psi,
+            GenericMPO const& Op, 
+            LinearWavefunction const& Psi2);
 
 MatrixOperator 
 inject_left_qshift(MatrixOperator const& m, 

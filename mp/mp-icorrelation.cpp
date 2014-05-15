@@ -10,6 +10,8 @@
 #include "interface/inittemp.h"
 #include "tensor/tensor_eigen.h"
 #include "lattice/siteoperator-parser.h"
+#include "mpo/generic_mpo.h"
+#include "mps/operator_actions.h"
 
 #include "models/spin.h"
 #include "models/spin-u1.h"
@@ -225,6 +227,7 @@ int main(int argc, char** argv)
       SimpleOperator Op2 = ParseSiteOperator(Site, Op2Str);
       SimpleOperator Op1Op2 = prod(Op1, Op2, Ident);  // do this now so that we don't include the string term
       SimpleOperator StringOp = ParseSiteOperator(Site, StringOpStr);
+      TRACE(StringOp);
       if (IncludeFirst)
       {
 	 Op1 = Op1 * StringOp;
@@ -241,23 +244,32 @@ int main(int argc, char** argv)
       DEBUG_CHECK(norm_frob(delta_shift(inject_left(Identity, PsiOrtho, PsiOrtho), QShift) - Identity) < 1E-10);
       DEBUG_CHECK(norm_frob(inject_right(Rho, PsiOrtho, PsiOrtho) - delta_shift(Rho, QShift)) < 1E-10);
 
+      // Make a GenericMPO for our string operator
+      GenericMPO StringMPO(PsiSize, OperatorComponent(StringOp.Basis1(), 
+						      BasisList(QuantumNumber(StringOp.GetSymmetryList())),
+						      BasisList(QuantumNumber(StringOp.GetSymmetryList()))));
+      for (int i = 0; i < PsiSize; ++i)
+      {
+	 StringMPO[i](0,0) = StringOp;
+      }
+
       // for each site in the unit cell, make the right hand operator.
       // We start with Rho (the right-identity-vector), and construct the operator
       // at the i'th site of the unit cell.
       // F[i] is Op2(i)
       std::vector<MatrixOperator> F(PsiSize, Rho);
       LinearWavefunction::const_iterator I = PsiOrtho.end();
-      int s1 = PsiSize;
+      int s2 = PsiSize;
       while (I != PsiOrtho.begin())
       {
-	 --I; --s1;
+	 --I; --s2;
 	 for (int i = 0; i < PsiSize; ++i)
 	 {
-	    if (i < s1)
+	    if (i < s2)
 	       F[i] = operator_prod(*I, F[i], herm(*I));
-	    else if (i == s1)
+	    else if (i == s2)
 	       F[i] = operator_prod(Op2, *I, F[i], herm(*I));
-	    else if (i > s1)
+	    else if (i > s2)
 	       F[i] = operator_prod(StringOp, *I, F[i], herm(*I));
 	 }
       }
@@ -271,18 +283,18 @@ int main(int argc, char** argv)
       // and similarly construct the Op1 for each site of the unit cell
       // E[i] is Op1(i)
       std::vector<MatrixOperator> E(PsiSize, Identity);
-      s1 = 0;
+      int s1 = 0;
       I = PsiOrtho.begin();
       while (I != PsiOrtho.end())
       {
 	 for (int i = 0; i < PsiSize; ++i)
 	 {
 	    if (i < s1)
-	       E[i] = operator_prod(herm(*I), E[i], *I);
+	       E[i] = operator_prod(herm(StringOp), herm(*I), E[i], *I);
 	    else if (i == s1)
 	       E[i] = operator_prod(herm(Op1), herm(*I), E[i], *I);
 	    else if (i > s1)
-	       E[i] = operator_prod(herm(StringOp), herm(*I), E[i], *I);
+	       E[i] = operator_prod(herm(*I), E[i], *I);
 	 }
 	 ++I; ++s1;
       }
@@ -320,7 +332,7 @@ int main(int argc, char** argv)
 	    }
 	    // construct the next term
 	    E_s_2[s2-s1-1] = operator_prod(herm(Op2), herm(*I2), ThisE, *I2, Ident);
-	    ThisE = operator_prod(herm(*I2), ThisE, *I2); 	    // add a site to ThisE
+	    ThisE = operator_prod(herm(StringOp), herm(*I2), ThisE, *I2); 	    // add a site to ThisE
 	    ++I2; ++s2;
 	 }
 
@@ -356,7 +368,7 @@ int main(int argc, char** argv)
 	 // next unit cell
 	 for (int i = 0; i < PsiSize; ++i)
 	 {
-	    E[i] = inject_left(delta_shift(E[i], Psi->shift()), PsiOrtho, PsiOrtho);
+	    E[i] = inject_left(delta_shift(E[i], Psi->shift()), PsiOrtho, StringMPO, PsiOrtho);
 	 }
 	 ++NCell;
       }

@@ -5,9 +5,11 @@
 
 MatrixOperator 
 inject_left(MatrixOperator const& m, 
+            LinearWavefunction const& Psi1,
             GenericMPO const& Op, 
-            LinearWavefunction const& Psi)
+            LinearWavefunction const& Psi2)
 {
+   CHECK_EQUAL(Psi1.size(), Psi2.size());
    if (Op.is_null())
       return MatrixOperator();
 
@@ -17,14 +19,24 @@ inject_left(MatrixOperator const& m,
    MatrixOperator Result = m;
    StateComponent E(Op.Basis1(), m.Basis1(), m.Basis2());
    E[0] = m;
-   LinearWavefunction::const_iterator I = Psi.begin();
+   LinearWavefunction::const_iterator I1 = Psi1.begin();
+   LinearWavefunction::const_iterator I2 = Psi2.begin();
    GenericMPO::const_iterator OpIter = Op.begin();
-   while (I != Psi.end())
+   while (I1 != Psi1.end())
    {
-      E = operator_prod(herm(*OpIter), herm(*I), E, *I);
-      ++I; ++OpIter;
+      E = operator_prod(herm(*OpIter), herm(*I1), E, *I2);
+      ++I1; ++I2; ++OpIter;
    }
    return E[0];
+}
+
+
+MatrixOperator 
+inject_left(MatrixOperator const& m, 
+            GenericMPO const& Op, 
+            LinearWavefunction const& Psi)
+{
+   return inject_left(m, Psi, Op, Psi);
 }
 
 MatrixOperator
