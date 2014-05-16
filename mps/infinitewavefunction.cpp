@@ -11,10 +11,12 @@
 
 #include "mps/spectrum_arpack.h"
 
-double InverseTol = getenv_or_default("MP_INVERSE_TOL", InverseTolDefault);
+double const InverseTol = getenv_or_default("MP_INVERSE_TOL", InverseTolDefault);
 
 // the tol used in the orthogonalization can apparently be a bit smaller
-double OrthoTol = getenv_or_default("MP_ORTHO_TOL", 1E-9);
+double const OrthoTol = getenv_or_default("MP_ORTHO_TOL", 1E-9);
+
+double const ArnoldiTol = getenv_or_default("MP_ARNOLDI_TOL", 1E-12);
 
 InfiniteWavefunction rotate_left(InfiniteWavefunction const& Psi, int Count)
 {
@@ -221,12 +223,12 @@ void orthogonalize(InfiniteWavefunction& x)
 
    // get the eigenmatrix.  Do some dodgy explict restarts.
    int Iterations = 20;
-   double Tol = 1E-12;
+   double Tol = ArnoldiTol;
    std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, x.QShift), 
                                                       Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    while (Iterations == 20)
    {
-      Iterations = 20; Tol = 1E-12;
+      Iterations = 20; Tol = ArnoldiTol;
       EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, x.QShift), Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    }
 
@@ -250,13 +252,13 @@ void orthogonalize(InfiniteWavefunction& x)
    //   DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
 
    // get the eigenmatrix
-   Iterations = 20; Tol = 1E-12;
+   Iterations = 20; Tol = ArnoldiTol;
    std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, x.QShift), 
                                                       Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    //   DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
    while (Iterations == 20)
    {
-      Iterations = 20; Tol = 1E-12;
+      Iterations = 20; Tol = ArnoldiTol;
       EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, x.QShift), Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
       //      DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
       RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
@@ -354,13 +356,15 @@ void orthogonalize(InfiniteWavefunction& x)
 
    // get the eigenmatrix.  Do some dodgy explict restarts.
    int Iterations = 20;
-   double Tol = 1E-14;
+   double Tol = ArnoldiTol;
    LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
    std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, x.QShift), 
                                                       Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    while (Iterations == 20)
    {
-      Iterations = 20; Tol = 1E-14;
+      std::cerr << "LeftEigen: Arnoldi not converged, restarting.  EValue=" 
+                << EtaL << ", Tol=" << Tol << "\n";
+      Iterations = 20; Tol = ArnoldiTol;
       LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
       EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, x.QShift), Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    }
@@ -404,14 +408,16 @@ void orthogonalize(InfiniteWavefunction& x)
    MatrixOperator RightEigen = scalar_prod(herm(Xu), Xu); //delta_shift(scalar_prod(Xu, herm(Xu)), adjoint(x.QShift));
 
    // get the eigenmatrix
-   Iterations = 20; Tol = 1E-14;
+   Iterations = 20; Tol = ArnoldiTol;
    RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
    std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, x.QShift), 
                                                       Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    //   DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
    while (Iterations == 20)
    {
-      Iterations = 20; Tol = 1E-14;
+      std::cerr << "RightEigen: Arnoldi not converged, restarting.  EValue=" 
+                << EtaR << ", Tol=" << Tol << "\n";
+      Iterations = 20; Tol = ArnoldiTol;
       RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
       EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, x.QShift), Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    }
@@ -481,12 +487,14 @@ void orthogonalize(InfiniteWavefunction& x)
 
    // get the eigenmatrix.  Do some dodgy explict restarts.
    int Iterations = 20;
-   double Tol = 1E-14;
+   double Tol = ArnoldiTol;
    std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, x.QShift), 
                                                       Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    while (Iterations == 20)
    {
-      Iterations = 20; Tol = 1E-14;
+      std::cerr << "LeftEigen: Arnoldi not converged, restarting.  EValue=" 
+                << EtaL << ", Tol=" << Tol << "\n";
+      Iterations = 20; Tol = ArnoldiTol;
       EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, x.QShift), Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    }
 
@@ -510,13 +518,15 @@ void orthogonalize(InfiniteWavefunction& x)
    //   DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
 
    // get the eigenmatrix
-   Iterations = 20; Tol = 1E-15;
+   Iterations = 20; Tol = ArnoldiTol;
    std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, x.QShift), 
                                                       Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    //   DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
    while (Iterations == 20)
    {
-      Iterations = 20; Tol = 1E-15;
+      std::cerr << "RightEigen: Arnoldi not converged, restarting.  EValue=" 
+                << EtaR << ", Tol=" << Tol << "\n";
+      Iterations = 20; Tol = ArnoldiTol;
       EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, x.QShift), Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
       //      DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
       //      RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));

@@ -67,7 +67,7 @@ class InfiniteWavefunction
 // small elements.  This is set to the environment variable MP_INVERSE_TOL, or if that variable
 // is not defined, it is set to InverseTolDefault.
 double const InverseTolDefault = 1E-7;
-extern double InverseTol;
+extern double const InverseTol;
 
 // rotate sites in the unit cell, by taking the left-most site and putting 
 // it on the right hand side, repeat Count times
