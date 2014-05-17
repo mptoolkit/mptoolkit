@@ -51,7 +51,7 @@ LIB = $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LIBS_EXTRA)
 SRCDIRS = common common/private quantumnumbers pstream pheap \
           tensor lattice models mp-algorithms \
           tutorial mp linearalgebra misc conf scripts utils interface expokit mpo \
-          benchmark misc misc/oogl junk mpo mps
+          benchmark misc misc/oogl junk mpo mps parser
 
 TESTDIRS = tensor/test siteoperator/test linearalgebra/test matrixproduct/test pheap/test \
            common/test quantumnumbers/test mp-algorithms/test mpo/test
