@@ -145,6 +145,9 @@ UnitCell join(UnitCell const& x, UnitCell const& y, UnitCell const& z, UnitCell 
 FiniteMPO
 identity_mpo(UnitCell const& c);
 
+FiniteMPO
+identity_mpo(UnitCell const& c, QuantumNumbers::QuantumNumber const& q);
+
 #if 0 // These operators probably don't make much sense
 bool
 operator==(UnitCell const& u1, UnitCell const& u2);

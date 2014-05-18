@@ -39,6 +39,12 @@
 
 #include "linearalgebra/arpack_wrapper.h"
 
+//
+// TODO: the decomposition into left/right operators is bogus, since the magnitudes of the left/right operators
+// is also unspecified.  We should get rid of that, and add one (pair) column for each left/right pair that
+// makes physical sense (ie the quantum numbers match)
+//
+
 namespace prog_opt = boost::program_options;
 
 struct LeftMultiply
@@ -419,6 +425,33 @@ get_principal_eigenpair(LinearWavefunction const& Psi, QuantumNumber const& QShi
    return std::make_pair(LeftEigen, RightEigen);
 }
 
+
+
+void PrintEigenvalue(std::ostream& out, std::complex<double> x, bool ShowCart, bool ShowRadians)
+{
+   if (ShowCart)
+   {
+      out << std::setw(21) << std::scientific << x.real() << "  "
+	  << std::setw(21) << std::scientific << x.imag() << "  ";
+   }
+   else
+   {
+      double Magnitude = norm_frob(x);
+      double Arg = std::atan2(x.imag(), x.real());
+      if (!ShowRadians)
+	 Arg *= 180.0 / math_const::pi;
+      out << std::setw(21) << std::scientific << Magnitude << "  "
+	  << std::setw(21) << std::fixed << Arg << "  ";
+   }
+}
+
+void PrintEmptyEigenvalue(std::ostream& out, bool ShowCart, bool ShowRadians)
+{
+   out << std::setw(21) << ' ' << "  "
+       << std::setw(21) << ' ' << "  ";
+}
+
+
 int main(int argc, char** argv)
 {
    try
@@ -428,18 +461,12 @@ int main(int argc, char** argv)
       //      double EigenCutoff = 0.1;
       int MaxEigen = 10;
       std::string Target;
-      std::string OpL, OpR;
+      std::vector<std::string> OpL, OpR;
       double Tol = 1e-10;
       int Verbose = 0;
       int KrylovLength = 0;
       bool Symmetric = false;
       std::string Model;
-      std::string OpL2 = "I";
-      std::string OpR2 = "I";
-      std::string OpL3 = "I";
-      std::string OpR3 = "I";
-      std::string OpL4 = "I";
-      std::string OpR4 = "I";
       double Spin = 0.5;
       int NMax = 3;
       bool ShowEigenvaluesCart = false;      // show the eigenvalues in (real,imag) units
@@ -465,9 +492,9 @@ int main(int argc, char** argv)
 	 ("spin", prog_opt::value(&Spin), "for spin models, the value of the spin [default 0.5]")
          ("nmax", prog_opt::value(&NMax), "for Bose-Hubbard model, the max number of bosons per site")
 	 ("lcoefficients,l", prog_opt::value(&OpL), 
-	  "Calculate the expansion coefficients of this operator acting on the left")
+	  "Calculate the expansion coefficients of this operator acting on the left (can be used more than once)")
 	 ("rcoefficients,r", prog_opt::value(&OpR), 
-	  "Calculate the expansion coefficients of this operator acting on the right")
+	  "Calculate the expansion coefficients of this operator acting on the right (can be used more than once)")
 	 ("symmetric,s", prog_opt::bool_switch(&Symmetric),
 	  "Transform the state to the approximate symmetric orthonormalization constraint")
 	 ("krylov,k", prog_opt::value(&KrylovLength), 
@@ -587,6 +614,19 @@ int main(int argc, char** argv)
             "not a multiple of the primitive unit cell!\n";
       }
 
+      // show the help info
+      if (Verbose >= 0)
+      {
+	 if (ShowCorrelationLength)
+	    std::cout << "#Unit cell for the correlation lengths is " << UnitCellSize << "sites.\n";
+	 if (!OpL.empty() || !OpR.empty())
+	 {
+	    std::cout << "#Absolute phases for left and right observables is arbitrary.\n"
+		      << "#Relative phases of operators between the same eigenvalue are well-defined.\n"
+		      << "#The product of a left operator with a right operator has a well-defined phase.\n";
+	 }
+      }
+
       // show the title
       if (ShowEigenvaluesCart)
          std::cout << "#sector      #n  #e-value_real          #e-value_imag          ";
@@ -596,39 +636,39 @@ int main(int argc, char** argv)
          std::cout << " #xi                   ";
 
       if (!OpL.empty())
+	 std::cout << "#L ";
+      for (unsigned j = 0; j < OpL.size(); ++j)
       {
-         if (ShowEigenvaluesCart)
-            std::cout << "#overlap_real          #overlap_imag        ";
-         else
-            std::cout << " #overlap_mag             #overlap_arg      ";
+	 std::cout << "#" << std::left << std::setw(20) 
+		   << (OpL[j] + (ShowEigenvaluesCart ? " (real)" : " (mag)")) << "  ";
+	 std::cout << "#" << std::left << std::setw(20) 
+		   << (OpL[j] + (ShowEigenvaluesCart ? " (imag)" : " (arg)")) << "  ";
       }
-      std::cout << '\n';
+      if (!OpR.empty())
+	 std::cout << "#R ";
+      for (unsigned j = 0; j < OpR.size(); ++j)
+      {
+	 std::cout << "#" << std::left << std::setw(20) 
+		   << (OpR[j] + (ShowEigenvaluesCart ? " (real)" : " (mag)")) << "  ";
+	 std::cout << "#" << std::left << std::setw(20) 
+		   << (OpR[j] + (ShowEigenvaluesCart ? " (imag)" : " (arg)")) << "  ";
+      }
+      std::cout << '\n' << std::right;
 
       // initialize the linear operators for the observables
-      GenericMPO LinOpL, LinOpR;
+      std::vector<MatrixOperator> LeftObservables, RightObservables;
 
-      if (vm.count("lcoefficients"))
+      for (unsigned i = 0; i < OpL.size(); ++i)
       {
-	 LinOpL = ParseUnitCellOperator(Cell, OpL);
-	 // TODO: extend the operator to the same size as Psi, if necessary
-	 LinOpR = ParseUnitCellOperator(Cell, OpR);
-
-         // Verify that the local basis matches, and abort otherwise
-         local_basis_compatible_or_abort(Psi, LinOpL);
-         local_basis_compatible_or_abort(Psi, LinOpR);
+	 GenericMPO Op = ParseUnitCellOperator(Cell, OpL[i]);
+         local_basis_compatible_or_abort(Psi, Op);
+         LeftObservables.push_back(inject_left_qshift(LeftIdent, Op, Psi, QShift));
       }
-
-      // Get the left and right operators, if applicable
-      MatrixOperator LeftOp;
-      if (!LinOpL.is_null())
-         LeftOp = inject_left_qshift(LeftIdent, LinOpL, Psi, QShift);
-      MatrixOperator RightOp;
-      if (!LinOpR.is_null())
-         RightOp = inject_right_qshift(RightIdent, LinOpR, Psi, QShift);
-
-      if (!LinOpL.is_null() && !LinOpR.is_null())
+      for (unsigned i = 0; i < OpR.size(); ++i)
       {
-         CHECK_EQUAL(LeftOp.TransformsAs(), RightOp.TransformsAs())("The left and right operators must couple as scalars");
+	 GenericMPO Op = ParseUnitCellOperator(Cell, OpR[i]);
+         local_basis_compatible_or_abort(Psi, Op);
+	 RightObservables.push_back(inject_right_qshift(RightIdent, Op, Psi, QShift));
       }
 
       // iterate over the relevant quantum number sectors
@@ -638,44 +678,30 @@ int main(int argc, char** argv)
          LinearAlgebra::Vector<MatrixOperator> LeftEigenvectors;
          LinearAlgebra::Vector<std::complex<double> > EValues;
 
-         LinearAlgebra::Vector<MatrixOperator>* RightEigenvectorsPtr = NULL;
-         LinearAlgebra::Vector<MatrixOperator>* LeftEigenvectorsPtr = NULL;
-
-         if (!RightOp.is_null() && RightOp.TransformsAs() == *qI)
-         {
-            RightEigenvectorsPtr = &RightEigenvectors;
-            LeftEigenvectorsPtr = &LeftEigenvectors;
-         }
-
          // determine the spectrum
-         EValues = get_spectrum_string(Psi, QShift, MyStringOp, MaxEigen, *qI, Tol, RightEigenvectorsPtr, 
-                                       LeftEigenvectorsPtr, KrylovLength, true, Verbose);
+         EValues = get_spectrum_string(Psi, QShift, MyStringOp*identity_mpo(Cell, *qI), 
+				       MaxEigen, *qI, Tol, &RightEigenvectors, 
+                                       &LeftEigenvectors, KrylovLength, true, Verbose);
 
-         if (!RightOp.is_null() && RightOp.TransformsAs() == *qI && ShowEigenvectorOverlaps)
-         {
-            LinearAlgebra::Matrix<double> EigenOverlaps(size(RightEigenvectors), size(LeftEigenvectors));
-            for (unsigned i = 0; i < size(RightEigenvectors); ++i)
-               for (unsigned j = 0; j < size(LeftEigenvectors); ++j)
-                  EigenOverlaps(i,j) = norm_frob(inner_prod(LeftEigenvectors[j], RightEigenvectors[i]));
-            std::cerr << "Eigenvector overlap matrix:\n" << EigenOverlaps << '\n';
+	 if (ShowEigenvectorOverlaps)
+	 {
+	    LinearAlgebra::Matrix<double> EigenOverlaps(size(RightEigenvectors), size(LeftEigenvectors));
+	    for (unsigned i = 0; i < size(RightEigenvectors); ++i)
+	       for (unsigned j = 0; j < size(LeftEigenvectors); ++j)
+		  EigenOverlaps(i,j) = norm_frob(inner_prod(LeftEigenvectors[j], RightEigenvectors[i]));
+	    std::cerr << "Eigenvector overlap matrix:\n" << EigenOverlaps << '\n';
          }
 
          for (int i = 0; i < int(size(EValues)); ++i)
          {
+	    std::map<int, std::complex<double> > LeftOverlaps;
+	    std::map<int, std::complex<double> > RightOverlaps;
+
             std::cout << std::setw(7) << boost::lexical_cast<std::string>(*qI) << "  "
                       << std::setw(6) << i << "  ";
-            if (ShowEigenvaluesCart)
-               std::cout << std::setw(21) << std::scientific << EValues[i].real() << "  "
-                         << std::setw(21) << std::scientific << EValues[i].imag() << "  ";
-            else
-            {
-               double Magnitude = norm_frob(EValues[i]);
-               double Arg = std::atan2(EValues[i].imag(), EValues[i].real());
-               if (!ShowRadians)
-                  Arg *= 180.0 / math_const::pi;
-               std::cout << std::setw(21) << std::scientific << Magnitude << "  "
-                         << std::setw(21) << std::fixed << Arg << "  ";
-            }
+
+	    PrintEigenvalue(std::cout, EValues[i], ShowEigenvaluesCart, ShowRadians);
+
             if (ShowCorrelationLength)
             {
                double CorrLen = -1.0 / std::log(norm_frob(EValues[i]));
@@ -683,51 +709,44 @@ int main(int argc, char** argv)
                std::cout << std::setw(21) << std::scientific << CorrLen << "  ";
             }
 
-            // show eigenvector info?
-            if (!RightOp.is_null() && RightOp.TransformsAs() == *qI)
-            {
+	    // The phase of each component is arbitrary, only the relative phase counts.
+	    // Also the phase of a left observable multplied by a right observable is well-defined.
+	    if (!LeftObservables.empty())
+	       std::cout << "   "; // for the "#L " title
+	    for (unsigned j = 0; j < LeftObservables.size(); ++j)
+	    {
+	       if (LeftObservables[j].TransformsAs() == *qI)
+	       {
+		  std::complex<double> E = inner_prod(LeftObservables[j], LeftEigenvectors[i]);
+		  PrintEigenvalue(std::cout, E, ShowEigenvaluesCart, ShowRadians);
+	       }
+	       else
+	       {
+		  PrintEmptyEigenvalue(std::cout, ShowEigenvaluesCart, ShowRadians);
+	       }
+	    }
 
-               // LeftIdent corresponds to RightEigenvectors
-            
-               std::complex<double> Overlap = inner_prod(LeftOp, LeftEigenvectors[i]) 
-                  * inner_prod(RightEigenvectors[i], RightOp)
-                  / (inner_prod(RightEigenvectors[i], LeftEigenvectors[i]) * IdentNormalizationFactor);
-               
-               if (ShowEigenvaluesCart)
-                  std::cout << std::setw(21) << std::scientific << Overlap.real() << "  "
-                            << std::setw(21) << std::scientific << Overlap.imag() << "  ";
-               else
-               {
-                  double Magnitude = norm_frob(Overlap);
-                  double Arg = std::atan2(Overlap.imag(), Overlap.real());
-                  if (!ShowRadians)
-                     Arg *= 180.0 / math_const::pi;
-                  std::cout << std::setw(21) << std::scientific << Magnitude << "  "
-                            << std::setw(21) << std::fixed << Arg << "  ";
-               }
-            }
+	    if (!RightObservables.empty())
+	       std::cout << "   "; // for the "#R " title
+	    for (unsigned j = 0; j < RightObservables.size(); ++j)
+	    {
+	       if (RightObservables[j].TransformsAs() == *qI)
+	       {
+		  std::complex<double> E = inner_prod(RightEigenvectors[i], RightObservables[j])
+		     / (inner_prod(RightEigenvectors[i], LeftEigenvectors[i])*IdentNormalizationFactor);
+		  PrintEigenvalue(std::cout, E, ShowEigenvaluesCart, ShowRadians);
+	       }
+	       else
+	       {
+		  PrintEmptyEigenvalue(std::cout, ShowEigenvaluesCart, ShowRadians);
+	       }
+	    }
 
             std::cout << '\n';
 
          }// for i
 
       } // for qI
-
-
-#if 0
-      LinearAlgebra::Matrix<std::complex<double> > Overlaps(size(Eigenvectors), size(Eigenvectors));
-      for (unsigned i = 0; i < size(Eigenvectors); ++i)
-      {
-         for (unsigned j = i; j < size(Eigenvectors); ++j)
-	 {
-            Overlaps(i,j) = inner_prod(Eigenvectors[i], Eigenvectors[j]);
-            Overlaps(j,i) = conj(Overlaps(i,j));
-         }
-      }
-
-      TRACE(Overlaps);
-      TRACE(transform(Overlaps, LinearAlgebra::NormFrob<std::complex<double> >()));
-#endif
 
       pheap::Shutdown();
    }

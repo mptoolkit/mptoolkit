@@ -253,17 +253,22 @@ UnitCell::Parse(std::string const& s)
 #endif
 
 FiniteMPO
-identity_mpo(UnitCell const& c)
+identity_mpo(UnitCell const& c, QuantumNumbers::QuantumNumber const& q)
 {
    FiniteMPO Result(c.size());
-   QuantumNumbers::QuantumNumber Ident(c.GetSymmetryList());
-   BasisList b(c.GetSymmetryList());
-   b.push_back(Ident);
+   BasisList b(q.GetSymmetryList());
+   b.push_back(q);
    for (int i = 0; i < c.size(); ++i)
    {
       Result[i] = OperatorComponent(c.LocalBasis(i), b, b);
       Result[i](0,0) = c[i]["I"];
    }
    return Result;
+}
+
+FiniteMPO
+identity_mpo(UnitCell const& c)
+{
+   return identity_mpo(c, QuantumNumbers::QuantumNumber(c.GetSymmetryList()));
 }
 
