@@ -3,10 +3,10 @@
 // Matrix product operator defined on finite support.
 // The boundary states are normally one dimensional
 // (we also allow the operator to be reducible, 
-// representing a sum of quantum number components).
+// representing a sum of quantum number components, in which case the Basis1() will have dimension > 1).
 // We used to require that the Basis2() was a scalar, but no longer,
 // this isn't possible for extracted components of triangular or
-// generic operators
+// generic operators.  But we can always do a delta_shift to give a scalar (can we??!?)
 
 #if !defined(FINITE_MPO_H_JDCHJKEHY589758YUER89H489)
 #define FINITE_MPO_H_JDCHJKEHY589758YUER89H489
@@ -21,6 +21,7 @@ class FiniteMPO
    public:
       typedef OperatorComponent         value_type; 
       typedef data_type::const_iterator const_iterator;
+      typedef data_type::iterator       iterator;
       typedef OperatorComponent::basis1_type basis1_type;
       typedef OperatorComponent::basis2_type basis2_type;
 
@@ -46,6 +47,10 @@ class FiniteMPO
       // iff the left basis contains only a single state.
       bool is_irreducible() const;
 
+      // returns true if the operator transforms as a rotational invariant, ie
+      // it is irreducible in the scalar symmetry sector
+      bool is_scalar() const;
+
       // returns true if this MPO is the identity operator, that is, a 1x1 MPO that
       // is a product of identity operators.
       bool is_identity() const;
@@ -66,6 +71,9 @@ class FiniteMPO
       const_iterator begin() const { return Data.begin(); }
       const_iterator end() const { return Data.end(); }
 
+      iterator begin() { return Data.begin(); }
+      iterator end() { return Data.end(); }
+
       value_type& front() { return Data.front(); }
       value_type const& front() const { return Data.front(); }
 
@@ -78,7 +86,19 @@ class FiniteMPO
       // implicit conversion to a const GenericMPO
       operator GenericMPO const&() const { return Data; }
 
-      // direct access to the MPOpCompressed
+      // Return the local basis at the n'th site
+      BasisList const& LocalBasis1(int n) const
+      { return Data.LocalBasis1(n); }
+      BasisList const& LocalBasis2(int n) const
+      { return Data.LocalBasis2(n); }
+
+      // returns the list of local hilbert spaces for this operator
+      std::vector<BasisList> LocalBasis1List() const
+      { return Data.LocalBasis1List(); }
+      std::vector<BasisList> LocalBasis2List() const
+      { return Data.LocalBasis2List(); }
+
+      // direct access to the GenericMPO
       data_type& data() { return Data; }
       data_type const& data() const { return Data; }
 
@@ -123,8 +143,11 @@ FiniteMPO dot(FiniteMPO const& x, FiniteMPO const& y);
 // project a (reducible) quantum number onto an irreducible component
 FiniteMPO project(FiniteMPO const& x, QuantumNumbers::QuantumNumber const& q);
 
-// power of an operator.  Requires n > 1.  Only useful for n small!
+// power of an operator.  Requires n > 1.
 FiniteMPO pow(FiniteMPO const& x, int n);
+
+// Exponential operator.
+FiniteMPO exp(FiniteMPO const& x);
 
 // Conjugate
 FiniteMPO conj(FiniteMPO const& x);
@@ -134,6 +157,22 @@ FiniteMPO adjoint(FiniteMPO const& x);
 
 // optimize the representation
 void optimize(FiniteMPO& Op);
+
+// completely coarse-grain the MPO into a simple operator.
+// The dimensions of this operator are exponentially big in the number of sites
+// in x, so be careful!
+// For non-abelian symmetries, this coarse-grain occurs from left to right.
+SimpleRedOperator coarse_grain(FiniteMPO const& x);
+
+// The opposite of coarse_grain - decompose an operator acting on the entire Hilbert space
+// into a FiniteMPO
+FiniteMPO fine_grain(SimpleOperator const& x,
+		     std::vector<BasisList> const& LocalBasis1,
+		     std::vector<BasisList> const& LocalBasis2);
+
+// Make an identity operator that acts on the same local Hilbert space as x
+FiniteMPO
+MakeIdentityFrom(FiniteMPO const& x);
 
 // output to a stream
 std::ostream& operator<<(std::ostream& out, FiniteMPO const& x);

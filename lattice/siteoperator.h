@@ -217,6 +217,14 @@ SiteOperator SiteOperator::Identity(SiteBasis const& Basis1, SiteBasis const& Ba
    return SiteOperator::Identity(Basis1);
 }
 
+inline
+SiteOperator
+MakeIdentityFrom(SiteOperator const& x)
+{
+   CHECK_EQUAL(x.Basis1(), x.Basis2());
+   return SiteOperator::Identity(x.Basis1());
+}
+
 std::ostream& operator<<(std::ostream& out, SiteOperator const& Op);
 
 inline

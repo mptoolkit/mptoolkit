@@ -93,6 +93,32 @@ inject_right(MatrixOperator const& m,
    return E[0];
 }
 
+MatrixOperator
+inject_right(MatrixOperator const& m, 
+             LinearWavefunction const& Psi1,
+             GenericMPO const& Op, 
+             LinearWavefunction const& Psi2)
+{
+   if (Op.is_null())
+      return MatrixOperator();
+
+   // we currently only support simple irreducible operators
+   CHECK_EQUAL(Op.Basis1().size(), 1);
+   CHECK_EQUAL(Op.Basis2().size(), 1);
+   StateComponent E(Op.Basis2(), m.Basis1(), m.Basis2());
+   E[0] = m;
+   MatrixOperator Result = m;
+   LinearWavefunction::const_iterator I1 = Psi1.end();
+   LinearWavefunction::const_iterator I2 = Psi2.end();
+   GenericMPO::const_iterator OpIter = Op.end();
+   while (I1 != Psi1.begin())
+   {
+      --I1; --I2; --OpIter;
+      E = operator_prod(*OpIter, *I1, E, herm(*I2));
+   }
+   return E[0];
+}
+
 MatrixOperator 
 inject_right_qshift(MatrixOperator const& m, 
                     GenericMPO const& Op, 

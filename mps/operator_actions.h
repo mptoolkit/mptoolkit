@@ -95,6 +95,12 @@ inject_right(MatrixOperator const& m,
              GenericMPO const& Op, 
              LinearWavefunction const& Psi);
 
+MatrixOperator
+inject_right(MatrixOperator const& m, 
+             LinearWavefunction const& Psi1,
+             GenericMPO const& Op, 
+             LinearWavefunction const& Psi2);
+
 MatrixOperator 
 inject_right_qshift(MatrixOperator const& m, 
                     GenericMPO const& Op, 

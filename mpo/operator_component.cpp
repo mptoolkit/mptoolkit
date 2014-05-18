@@ -167,6 +167,17 @@ tensor_row_sum(OperatorComponent const& A,
 }
  
 OperatorComponent 
+tensor_row_sum(OperatorComponent const& A, 
+	       OperatorComponent const& B)
+{
+   if (A.is_null())
+      return B;
+   if (B.is_null())
+      return A;
+   return tensor_row_sum(A, B, SumBasis<BasisList>(A.Basis2(), B.Basis2()));
+}
+
+OperatorComponent 
 tensor_col_sum(OperatorComponent const& A, 
 	       OperatorComponent const& B, 
 	       SumBasis<BasisList> const& B1)
@@ -196,6 +207,17 @@ tensor_col_sum(OperatorComponent const& A,
    }
    Result.debug_check_structure();
    return Result;
+}
+
+OperatorComponent 
+tensor_col_sum(OperatorComponent const& A, 
+	       OperatorComponent const& B)
+{
+   if (A.is_null())
+      return B;
+   if (B.is_null())
+      return A;
+   return tensor_col_sum(A, B, SumBasis<BasisList>(A.Basis1(), B.Basis1()));
 }
 
 OperatorComponent prod(OperatorComponent const& A, SimpleOperator const& Op)
@@ -311,6 +333,8 @@ local_inner_prod(OperatorComponent const& A, HermitianProxy<OperatorComponent> c
             if (AJ.index2() == BJ.index2())
             {
                Result(AJ.index1(), BJ.index1()) += conj(inner_prod(*BJ, *AJ));
+	       ++AJ;
+	       ++BJ;
             }
             else if (AJ.index2() < BJ.index2())
             {
@@ -479,6 +503,7 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
    std::set<int> KeepStates; // the states that we are going to keep
    for (int i = Size-1; i >= 0; --i)
    {
+      NewRows[i] = std::make_pair(i, 1.0);
       double imat = Overlaps(i,i).real();
       // if the row is zero, we can eliminate it completely.
       // Because we've normalized everything, then it is either 1 or ~epsilon here.
@@ -553,11 +578,11 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
 
    OperatorComponent tA = prod(Trunc, A); // the result
 
-#if !defined(NDEBUG)
+   //#if !defined(NDEBUG)
    // verify that prod(Reg, tA) is the same as A.  
    OperatorComponent ACheck = prod(Reg, tA);
    CHECK(norm_frob(A - ACheck) < 1E-10)(tA)(ACheck)(Trunc)(Reg)(Overlaps);
-#endif
+   //#endif
 
    A = tA;
    return Reg;
@@ -953,9 +978,6 @@ decompose_tensor_prod(SimpleOperator const& Op,
                       ProductBasis<BasisList, BasisList> const& B1,
                       ProductBasis<BasisList, BasisList> const& B2)
 {
-   // the norm of the operator sets the scale for removing small components
-   double NormScale = norm_frob(Op) / std::sqrt(double(Op.Basis1().size() * Op.Basis2().size()));
-
    // Firstly, decompose the tensor product of Op
    typedef std::map<Tensor::PartialProdIndex, std::complex<double> > PartialProdType;
    PartialProdType PartialProd = Tensor::decompose_tensor_prod(Op, B1, B2);
@@ -1020,12 +1042,14 @@ decompose_tensor_prod(SimpleOperator const& Op,
       LinearAlgebra::Vector<double> D;
       SingularValueDecomposition(Mat, U, D, Vh);
 
-      //CHECK(norm_frob(Mat - U*diagonal_matrix(D)*Vh) < 1E-10)(Mat)(U*diagonal_matrix(D)*Vh);
+      // This sets the scale of the singular values.  Any singular values smaller than
+      // KeepThreshold are removed.
+      double KeepThreshold = std::numeric_limits<double>::epsilon() * LinearAlgebra::max(D) * 10;
 
       // split into pairs of operators, keeping only the non-zero singular values
       for (unsigned k = 0; k < size(D); ++k)
       {
-         if (D[k] > std::numeric_limits<double>::epsilon() * NormScale * 10)
+         if (D[k] > KeepThreshold)
          {
             double Coeff = std::sqrt(D[k]);  // distribute sqrt(D) to each operator
             SimpleOperator L(B1.Left(), B2.Left(), adjoint(*qUsedIter));
@@ -1066,10 +1090,63 @@ decompose_tensor_prod(SimpleOperator const& Op,
    // test
 #if !defined(NDEBUG)
    SimpleOperator OpTest = local_tensor_prod(MA, MB)(0,0).scalar();
-   CHECK(norm_frob(OpTest - Op) < 1E-13 * NormScale)(Op)(OpTest)(norm_frob(OpTest-Op));
+   CHECK(norm_frob(OpTest - Op) < 1E-13 * norm_frob(OpTest))(Op)(OpTest)(norm_frob(OpTest-Op));
 #endif
 
    return std::pair<OperatorComponent, OperatorComponent>(MA, MB);
+}
+
+std::pair<OperatorComponent, OperatorComponent>
+decompose_tensor_prod(OperatorComponent const& Op, 
+                      ProductBasis<BasisList, BasisList> const& B1,
+                      ProductBasis<BasisList, BasisList> const& B2)
+{
+   BasisList Vacuum(Op.GetSymmetryList());
+   OperatorComponent Left(B1.Left(), B2.Left(), Op.Basis1(), Vacuum);
+   OperatorComponent Right(B1.Right(), B2.Right(), Vacuum, Op.Basis2());
+   // we treat this as a sum and separately decompose each part
+   for (OperatorComponent::const_iterator I = iterate(Op); I; ++I)
+   {
+      for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
+      {
+	 // Make 1xN and Nx1 OperatorComponent's for *J
+	 OperatorComponent L, R;
+	 for (SimpleRedOperator::const_iterator RI = J->begin(); RI != J->end(); ++RI)
+	 {
+	    OperatorComponent l, r;
+	    boost::tie(l, r) = decompose_tensor_prod(*RI, B1, B2);
+	    L = tensor_row_sum(L, l);
+	    R = tensor_col_sum(R, r);
+	 }
+	 // move (L,R) into the (i,j) component
+	 OperatorComponent TL(B1.Left(), B2.Left(), Op.Basis1(), L.Basis2());
+	 for (OperatorComponent::const_iterator T1 = iterate(L); T1; ++T1)
+	 {
+	    for (OperatorComponent::const_inner_iterator T2 = iterate(T1); T2; ++T2)
+	    {
+	       TL(J.index1(), T2.index2()) = *T2;
+	    }
+	 }
+	 OperatorComponent TR(B1.Right(), B2.Right(), R.Basis1(), Op.Basis2());
+	 for (OperatorComponent::const_iterator T1 = iterate(R); T1; ++T1)
+	 {
+	    for (OperatorComponent::const_inner_iterator T2 = iterate(T1); T2; ++T2)
+	    {
+	       TR(T2.index1(), J.index2()) = *T2;
+	    }
+	 }
+	 // Now we can sum to the result
+	 Left = tensor_row_sum(Left, TL);
+	 Right = tensor_col_sum(Right, TR);
+      }
+   }
+   // This is likely to leave the middle bond basis quite big, so optimize it.
+   // (We maybe need to iterate this function?)
+   SimpleOperator T = TruncateBasis1(Right);
+   Left = Left * T;
+   T = TruncateBasis2(Left);
+   Right = T * Right;
+   return std::make_pair(Left, Right);
 }
 
 std::pair<OperatorComponent, OperatorComponent>

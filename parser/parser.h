@@ -243,13 +243,13 @@ struct binary_addition : boost::static_visitor<element_type>
    template <typename T>
    element_type operator()(complex const& x, T const& y) const
    {
-      return element_type(x*T::Identity(y.Basis1(), y.Basis2()) + y);
+      return element_type(x*MakeIdentityFrom(y) + y);
    }
 
    template <typename T>
    element_type operator()(T const& x, complex const& y) const
    {
-      return element_type(x + y*T::Identity(x.Basis1(), x.Basis2()));
+      return element_type(x + y*MakeIdentityFrom(x));
    }
 
    template <typename T, typename U>
@@ -270,13 +270,13 @@ struct binary_subtraction : boost::static_visitor<element_type>
    template <typename T>
    element_type operator()(complex const& x, T const& y) const
    {
-      return element_type(x*T::Identity(y.Basis1(), y.Basis2()) - y);
+      return element_type(x*MakeIdentityFrom(y) - y);
    }
 
    template <typename T>
    element_type operator()(T const& x, complex const& y) const
    {
-      return element_type(x - y*T::Identity(x.Basis1(), x.Basis2()));
+      return element_type(x - y*MakeIdentityFrom(x));
    }
 
    template <typename T, typename U>

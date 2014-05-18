@@ -267,6 +267,11 @@ tensor_row_sum(OperatorComponent const& A,
 	       OperatorComponent const& B, 
 	       SumBasis<BasisList> const& B2);
 
+OperatorComponent 
+tensor_row_sum(OperatorComponent const& A, 
+	       OperatorComponent const& B);
+
+
 // Constructs a MPOpComponent that represents the sum of A and B,
 // at the right boundary of the matrix product state.
 // Precondition: A.Basis2() == B.Basis2()
@@ -276,6 +281,10 @@ OperatorComponent
 tensor_col_sum(OperatorComponent const& A, 
 	       OperatorComponent const& B, 
 	       SumBasis<BasisList> const& B1);
+
+OperatorComponent 
+tensor_col_sum(OperatorComponent const& A, 
+	       OperatorComponent const& B);
 
 OperatorComponent prod(OperatorComponent const& A, SimpleOperator const& Op);
 OperatorComponent prod(SimpleOperator const& Op, OperatorComponent const& A);
@@ -318,14 +327,14 @@ OperatorComponent flip_conj(OperatorComponent const& A);
 OperatorComponent exchange(OperatorComponent const& A);
 
 // Basis truncation via removal of parallel components.
-// Returns the projection operator P such that P * A' = A
+// Returns the operator P such that P * A' = A
 // This function preserves the last row of the MPO intact
 // (which is required to preserve upper triangular MPO's)
 SimpleOperator
 TruncateBasis1(OperatorComponent& A);
 
 // Basis truncation via removal of parallel components.
-// Returns the projection operator P such that A' * P = A
+// Returns the operator P such that A' * P = A
 // This function preserves the first column of the MPO intact
 // (which is required to preserve upper triangular MPO's)
 SimpleOperator
@@ -452,6 +461,12 @@ project_columns(OperatorComponent const& x, std::set<int> const& Cols);
 // decompose it into a two-site MPO.  This is a kind of fine-graining operation
 std::pair<OperatorComponent, OperatorComponent>
 decompose_tensor_prod(SimpleOperator const& Op, 
+                      ProductBasis<BasisList, BasisList> const& B1,
+                      ProductBasis<BasisList, BasisList> const& B2);
+
+// fine-grain an OperatorComponent
+std::pair<OperatorComponent, OperatorComponent>
+decompose_tensor_prod(OperatorComponent const& Op, 
                       ProductBasis<BasisList, BasisList> const& B1,
                       ProductBasis<BasisList, BasisList> const& B2);
 

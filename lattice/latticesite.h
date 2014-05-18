@@ -77,4 +77,12 @@ class LatticeSite
    friend PStream::ipstream& operator>>(PStream::ipstream& in, LatticeSite& B);
 };
 
+inline
+LatticeSite CoerceSL(SymmetryList const& sl, LatticeSite const& s)
+{
+   LatticeSite r(s);
+   r.CoerceSymmetryList(sl);
+   return r;
+}
+
 #endif

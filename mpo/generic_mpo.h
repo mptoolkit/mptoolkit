@@ -58,6 +58,12 @@ class GenericMPO
 
       QuantumNumbers::SymmetryList GetSymmetryList() const { return Data_[0].GetSymmetryList(); }
 
+      // Return the local basis at the n'th site
+      BasisList const& LocalBasis1(int n) const
+      { return Data_[n].LocalBasis1(); }
+      BasisList const& LocalBasis2(int n) const
+      { return Data_[n].LocalBasis2(); }
+
       // returns the list of local hilbert spaces for this operator
       std::vector<BasisList> LocalBasis1List() const;
       std::vector<BasisList> LocalBasis2List() const;
@@ -112,7 +118,7 @@ MPOMaskType mask_column(GenericMPO const& Op, int Col);
 MPOMaskType mask_row(GenericMPO const& Op, int Row);
 
 // Does a 2-1 coarse graining of an operator.  The length must be a multiple of 2
-GenericMPO coarse_grain(GenericMPO const& Op);
+GenericMPO coarse_grain_pairs(GenericMPO const& Op);
 
 struct OperatorClassification
 {
@@ -172,6 +178,9 @@ SimpleOperator make_projector_onto(BasisList const& Basis, std::set<int> const& 
 // extract the local basis at each site of the MPO
 std::vector<BasisList>
 ExtractLocalBasis1(GenericMPO const& Op);
+
+std::vector<BasisList>
+ExtractLocalBasis2(GenericMPO const& Op);
 
 namespace LinearAlgebra
 {

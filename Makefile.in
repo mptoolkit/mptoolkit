@@ -216,7 +216,7 @@ mp-tools-experimental = mp-cg mp-cg-sym mp-simplecg-sym mp-simplecg mp-ddmrg \
                         mp-rme mp-overlap-bigmem kondo-exactdiag \
                         $(infinite-tools) \
 			mp-ireorder-symmetry \
-                        mp-cv2 mp-simple-marshall-qmc spin2 spin1
+                        mp-cv2 mp-simple-marshall-qmc spin2 spin1 mp-ispectrum2
 
 benchmarks = benchtripleprod
 
@@ -507,6 +507,7 @@ mp-itebd : mpexponential.o $(expokitobj) infinitewavefunction.o
 mp-itebd2 : $(expokitobj) infinitewavefunction.o eigen.o random_wavefunc.o
 mp-evolve-bonds : local-evolution.o $(expokitobj)
 mp-ispectrum : infinitewavefunction.o packunpack.o eigen.o arpack_wrapper.o siteoperator-parser.o
+mp-ispectrum2 : infinitewavefunction.o packunpack.o eigen.o arpack_wrapper.o unitcell-parser.o unitcell.o latticesite.o $(expokitobj)
 mp-ieigen : triangular_operator.o infinitewavefunction.o
 mp-idump : infinitewavefunction.o
 mp-imake-transverse-lattice : triangular_operator.o infinitewavefunction.o random_wavefunc.o eigen.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
@@ -516,6 +517,8 @@ mp-iwigner-eckart : eigen.o infinitewavefunction.o wigner_eckart.o
 
 
 LIBS_mp-ispectrum = $(LIBARPACK)
+
+LIBS_mp-ispectrum2 = $(LIBARPACK)
 
 LIBS_mp-isymmetry = $(LIBARPACK)
 

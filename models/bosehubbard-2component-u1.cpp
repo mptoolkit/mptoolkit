@@ -34,7 +34,7 @@ int main(int argc, char** argv)
       if (vm.count("help") || !vm.count("LatticeSize") || !vm.count("out"))
       {
          print_copyright(std::cerr);
-         std::cerr << "usage: boson-2component-u1 [options]\n";
+         std::cerr << "usage: bosehubbard-2component-u1 [options]\n";
          std::cerr << desc << '\n';
          std::cerr << "Defined operators:\n"
                    << "H_Ja         Nearest-neighbor hopping for component a\n"
