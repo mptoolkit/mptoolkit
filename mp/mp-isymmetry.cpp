@@ -11,6 +11,8 @@
 #include "interface/inittemp.h"
 #include "tensor/tensor_eigen.h"
 #include "mp-algorithms/arnoldi.h"
+#include "lattice/unitcell.h"
+#include "lattice/unitcell-parser.h"
 
 #include "models/spin.h"
 #include "models/spin-u1.h"
@@ -36,65 +38,32 @@
 
 namespace prog_opt = boost::program_options;
 
-struct LeftMultiplyString
+template <typename Func>
+struct PackApplyFunc
 {
-   typedef MatrixOperator argument_type;
-   typedef MatrixOperator result_type;
-
-   LeftMultiplyString(LinearWavefunction const& L1_, LinearWavefunction const& L2_, 
-                      QuantumNumber const& QShift_,
-                      std::vector<SimpleOperator> const& StringOp_) 
-      : L1(L1_), L2(L2_), QShift(QShift_), StringOp(StringOp_) 
-   {
-      CHECK_EQUAL(L1.size(), L2.size())
-         ("The two wavefunctions must be the same length");
-      CHECK_EQUAL(L1.size(), StringOp.size())
-         ("The string operator must be the same length as the unit cell");
-   }
-
-   result_type operator()(argument_type const& x) const
-   {
-      result_type r = delta_shift(x, QShift);;
-      std::vector<SimpleOperator>::const_iterator OpI = StringOp.begin();
-      LinearWavefunction::const_iterator I1 = L1.begin();
-      for (LinearWavefunction::const_iterator I2 = L2.begin(); I2 != L2.end(); ++I1, ++I2, ++OpI)
-      {
-	 r = operator_prod(herm(*OpI), herm(*I1), r, *I2);
-      }
-      return r;
-   }
-
-   LinearWavefunction const& L1;
-   LinearWavefunction const& L2;
-   QuantumNumber QShift;
-   std::vector<SimpleOperator> StringOp;
-};
-   
-
-struct MultFuncString
-{
-   MultFuncString(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
-                  QuantumNumber const& QShift, 
-                  QuantumNumbers::QuantumNumber const& q,
-                  std::vector<SimpleOperator> const& StringOp)
-      : Mult(Psi1, Psi2, QShift, StringOp), Pack(Psi1.Basis2(), Psi2.Basis2(), q) { }
+   PackApplyFunc(PackMatrixOperator const& Pack_, Func f_) : Pack(Pack_), f(f_) {}
 
    void operator()(std::complex<double> const* In, std::complex<double>* Out) const
    {
       MatrixOperator x = Pack.unpack(In);
-      x = Mult(x);
+      x = f(x);
       Pack.pack(x, Out);
-   }
-
-   LeftMultiplyString Mult;
+   } 
    PackMatrixOperator Pack;
+   Func f;
 };
 
+template <typename Func>
+PackApplyFunc<Func>
+MakePackApplyFunc(PackMatrixOperator const& Pack_, Func f_)
+{
+   return PackApplyFunc<Func>(Pack_, f_);
+}
 
 std::pair<std::complex<double>, MatrixOperator>
 get_left_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, 
                      QuantumNumber const& QShift, 
-                     std::vector<SimpleOperator> StringOp,
+                     FiniteMPO const& StringOp,
                      double tol = 1E-14, int Verbose = 0)
 {
    int ncv = 0;
@@ -107,92 +76,14 @@ get_left_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& P
 
    std::vector<std::complex<double> > OutVec;
       LinearAlgebra::Vector<std::complex<double> > LeftEigen = 
-         LinearAlgebra::DiagonalizeARPACK(MultFuncString(Psi1, Psi2, QShift, Ident, StringOp),
-                                          n, NumEigen, tol, &OutVec, ncv, false, Verbose);
+         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(PackMatrixOperator(Psi1.Basis1(),
+									       Psi1.Basis2(), Ident),
+							    LeftMultiplyString(Psi1, Psi2, QShift, StringOp)),
+					  n, NumEigen, tol, &OutVec, ncv, false, Verbose);
 
    MatrixOperator LeftVector = Pack.unpack(&(OutVec[0]));
       
    return std::make_pair(LeftEigen[0], LeftVector);
-}
-
-struct RightMultiplyString
-{
-   typedef MatrixOperator argument_type;
-   typedef MatrixOperator result_type;
-
-   RightMultiplyString(LinearWavefunction const& L1_, LinearWavefunction const& L2_, 
-                       QuantumNumber const& QShift_,
-                       std::vector<SimpleOperator> const& StringOp_) 
-      : L1(L1_), L2(L2_), QShift(QShift_) , StringOp(StringOp_)
-   {
-      CHECK_EQUAL(L1.size(), StringOp.size())("The string operator must be the same length as the unit cell");
-   }
-
-   result_type operator()(argument_type const& x) const
-   {
-      result_type r = delta_shift(x, adjoint(QShift)); 
-      LinearWavefunction::const_iterator I1 = L1.end();
-      LinearWavefunction::const_iterator I2 = L2.end();
-      std::vector<SimpleOperator>::const_iterator OpI = StringOp.end();
-      while (I1 != L1.begin())
-      {
-         --I1;
-         --I2;
-         --OpI;
-	 r = operator_prod(*OpI, *I1, r, herm(*I2));
-      }
-      return r;
-   }
-
-   LinearWavefunction const& L1;
-   LinearWavefunction const& L2;
-   QuantumNumber QShift;
-   std::vector<SimpleOperator> StringOp;
-};
-
-struct MultFuncStringTrans
-{
-   MultFuncStringTrans(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, 
-                       QuantumNumber const& QShift, 
-                       QuantumNumbers::QuantumNumber const& q,
-                       std::vector<SimpleOperator> const& StringOp)
-      : Mult(Psi1, Psi2, QShift, StringOp), Pack(Psi1.Basis1(), Psi2.Basis1(), q) { }
-
-   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
-   {
-      MatrixOperator x = Pack.unpack(In);
-      x = Mult(x);
-      Pack.pack(x, Out);
-   }
-
-   RightMultiplyString Mult;
-   PackMatrixOperator Pack;
-};
-
-
-
-std::pair<std::complex<double>, MatrixOperator>
-get_right_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, 
-                      QuantumNumber const& QShift, 
-                      std::vector<SimpleOperator> StringOp,
-                      double tol = 1E-14, int Verbose = 0)
-{
-   int ncv = 0;
-   QuantumNumber Ident(Psi1.GetSymmetryList());
-   PackMatrixOperator Pack(Psi1.Basis1(), Psi2.Basis1(), Ident);
-   int n = Pack.size();
-   //   double tolsave = tol;
-   //   int ncvsave = ncv;
-   int NumEigen = 1;
-
-   std::vector<std::complex<double> > OutVec;
-      LinearAlgebra::Vector<std::complex<double> > RightEigen = 
-         LinearAlgebra::DiagonalizeARPACK(MultFuncStringTrans(Psi1, Psi2, QShift, Ident, StringOp),
-                                          n, NumEigen, tol, &OutVec, ncv, false, Verbose);
-
-   MatrixOperator RightVector = Pack.unpack(&(OutVec[0]));
-      
-   return std::make_pair(RightEigen[0], RightVector);
 }
 
 int main(int argc, char** argv)
@@ -206,6 +97,7 @@ int main(int argc, char** argv)
       std::string Model;
       double Spin = 0.5;
       int NMax = 3;
+      int UnitCellSize = 1;
       std::vector<std::string> OperatorStr;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -324,6 +216,8 @@ int main(int argc, char** argv)
 	 PANIC("Unknown model");
       }
 
+      UnitCell Cell = UnitCell(UnitCellSize, Site);
+
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       pvalue_ptr<InfiniteWavefunction> Psi1 
          = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
@@ -337,7 +231,9 @@ int main(int argc, char** argv)
 
       for (unsigned i = 0; i < OperatorStr.size(); ++i)
       {
-         std::vector<SimpleOperator> StringOperator(Psi.size(), Site[OperatorStr[i]]);
+	 FiniteMPO StringOperator = ParseUnitCellOperator(Cell, OperatorStr[i]);
+
+	 StringOperator = repeat(StringOperator, Psi.size() / UnitCellSize);
 
          std::complex<double> e;
          MatrixOperator v;

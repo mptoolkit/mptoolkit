@@ -30,7 +30,7 @@ inline void print_copyright(std::ostream& out)
       "Using Boost version " << (BOOST_VERSION / 100000) 
        << "." << (BOOST_VERSION / 100 % 1000)
        << "." << (BOOST_VERSION % 100) << "\n"
-      "Copyright (c) Ian McCulloch 1999-2010 All Rights Reserved\n"
+      "Copyright (c) Ian McCulloch 1999-2014 All Rights Reserved\n"
       "For license conditions email " PACKAGE_BUGREPORT "\n"
       ;
 }

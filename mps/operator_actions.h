@@ -164,9 +164,41 @@ inject_right(LinearWavefunction const& Psi1,
 // and that the size is correct
 bool
 is_local_basis_compatible(LinearWavefunction const& Psi, GenericMPO const& M);
-
+ 
 // aborts with an error message if !is_local_basis_compatible(Psi,M)
 void
 local_basis_compatible_or_abort(LinearWavefunction const& Psi, GenericMPO const& M);
+
+
+struct LeftMultiplyString
+{
+   typedef MatrixOperator argument_type;
+   typedef MatrixOperator result_type;
+
+   LeftMultiplyString(LinearWavefunction const& L1_, LinearWavefunction const& L2_, 
+		      QuantumNumber const& QShift_,
+                      GenericMPO const& StringOp_) 
+      : L1(L1_), L2(L2_), QShift(QShift_), StringOp(StringOp_) 
+   {
+      CHECK_EQUAL(L1.size(), L2.size())
+         ("The two wavefunctions must be the same length");
+      CHECK_EQUAL(L1.size(), StringOp.size())
+         ("The string operator must be the same length as the unit cell");
+   }
+
+   result_type operator()(argument_type const& x) const
+   {
+      result_type r = delta_shift(x, QShift);
+      r = inject_left(r, L1, StringOp, L2);
+      return r;
+   }
+
+   LinearWavefunction const& L1;
+   LinearWavefunction const& L2;
+   QuantumNumber QShift;
+   GenericMPO StringOp;
+};
+
+
 
 #endif
