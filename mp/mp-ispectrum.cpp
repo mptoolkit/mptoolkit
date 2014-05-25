@@ -58,12 +58,12 @@ struct LeftMultiply
    QuantumNumber QShift;
 };
 
-struct LeftMultiplyString
+struct LeftMultiplyStringSimple
 {
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   LeftMultiplyString(LinearWavefunction const& L_, QuantumNumber const& QShift_,
+   LeftMultiplyStringSimple(LinearWavefunction const& L_, QuantumNumber const& QShift_,
                       std::vector<SimpleOperator> const& StringOp_) 
       : L(L_), QShift(QShift_), StringOp(StringOp_) 
    {
@@ -86,29 +86,6 @@ struct LeftMultiplyString
    std::vector<SimpleOperator> StringOp;
 };
    
-struct LeftMultiplyOp
-{
-   typedef MatrixOperator argument_type;
-   typedef MatrixOperator result_type;
-
-   LeftMultiplyOp(LinearWavefunction const& L_, QuantumNumber const& QShift_, SimpleOperator const& Op_) 
-      : L(L_), QShift(QShift_), Op(Op_) {}
-
-   result_type operator()(argument_type const& x) const
-   {
-      result_type r = delta_shift(x, QShift);
-      for (LinearWavefunction::const_iterator I = L.begin(); I != L.end(); ++I)
-      {
-	 r = operator_prod(herm(Op), herm(*I), r, *I);
-      }
-      return r;
-   }
-
-   LinearWavefunction const& L;
-   QuantumNumber QShift;
-   SimpleOperator const& Op;
-};
-
 struct RightMultiply
 {
    typedef MatrixOperator argument_type;
@@ -237,7 +214,7 @@ struct MultFuncString
       Pack.pack(x, Out);
    }
 
-   LeftMultiplyString Mult;
+   LeftMultiplyStringSimple Mult;
    PackMatrixOperator Pack;
 };
 
