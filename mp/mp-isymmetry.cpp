@@ -54,7 +54,7 @@ struct LeftMultiplyString
 
    result_type operator()(argument_type const& x) const
    {
-      result_type r = delta_shift(r, QShift);;
+      result_type r = delta_shift(x, QShift);;
       std::vector<SimpleOperator>::const_iterator OpI = StringOp.begin();
       LinearWavefunction::const_iterator I1 = L1.begin();
       for (LinearWavefunction::const_iterator I2 = L2.begin(); I2 != L2.end(); ++I1, ++I2, ++OpI)
