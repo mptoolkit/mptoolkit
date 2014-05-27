@@ -107,8 +107,8 @@ LatticeSite CreateHubbardSite()
    Sz("up",   "up")       =  0.5;
    Sz("down", "down")     = -0.5;
 
-   Sx = Sp + Sm;
-   Sy = std::complex<double>(0.0,  1.0) * (Sp - Sm);
+   Sx = 0.5 * (Sp + Sm);
+   Sy = std::complex<double>(0.0,  0.5) * (Sp - Sm);
 
    mSx =  LinearAlgebra::exp(std::complex<double>(0.0,math_const::pi) * Sx);
    mSy =  LinearAlgebra::exp(std::complex<double>(0.0,math_const::pi) * Sy);
