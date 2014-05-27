@@ -32,7 +32,7 @@ PackMatrixOperator::PackMatrixOperator(VectorBasis const& Basis1,
                                        VectorBasis const& Basis2, 
                                        QuantumNumbers::QuantumNumber const& q)
 {
-   Initialize(Basis1, Basis2, q);
+   this->Initialize(Basis1, Basis2, q);
 }
 
 PackMatrixOperator::PackMatrixOperator(MatrixOperator const& m)

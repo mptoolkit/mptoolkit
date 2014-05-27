@@ -10,6 +10,8 @@ inject_left(MatrixOperator const& m,
             LinearWavefunction const& Psi2)
 {
    CHECK_EQUAL(Psi1.size(), Psi2.size());
+   DEBUG_CHECK_EQUAL(m.Basis1(), Psi1.Basis1());
+   DEBUG_CHECK_EQUAL(m.Basis2(), Psi2.Basis1());
    if (Op.is_null())
       return MatrixOperator();
 

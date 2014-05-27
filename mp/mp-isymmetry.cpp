@@ -1,3 +1,4 @@
+// -*- C++ -*- $Id$
 
 #include "mps/infinitewavefunction.h"
 #include "mps/packunpack.h"
@@ -49,7 +50,7 @@ struct PackApplyFunc
       x = f(x);
       Pack.pack(x, Out);
    } 
-   PackMatrixOperator Pack;
+   PackMatrixOperator const& Pack;
    Func f;
 };
 
@@ -68,7 +69,7 @@ get_left_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& P
 {
    int ncv = 0;
    QuantumNumber Ident(Psi1.GetSymmetryList());
-   PackMatrixOperator Pack(Psi1.Basis1(), Psi2.Basis1(), Ident);
+   PackMatrixOperator Pack(Psi1.Basis2(), Psi2.Basis2(), Ident);
    int n = Pack.size();
    //   double tolsave = tol;
    //   int ncvsave = ncv;
@@ -76,8 +77,7 @@ get_left_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& P
 
    std::vector<std::complex<double> > OutVec;
       LinearAlgebra::Vector<std::complex<double> > LeftEigen = 
-         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(PackMatrixOperator(Psi1.Basis1(),
-									       Psi1.Basis2(), Ident),
+         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
 							    LeftMultiplyString(Psi1, Psi2, QShift, StringOp)),
 					  n, NumEigen, tol, &OutVec, ncv, false, Verbose);
 
@@ -99,6 +99,7 @@ int main(int argc, char** argv)
       int NMax = 3;
       int UnitCellSize = 1;
       std::vector<std::string> OperatorStr;
+      std::vector<std::string> CommutatorStr;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -107,6 +108,7 @@ int main(int argc, char** argv)
 	 ("model", prog_opt::value(&Model), "use this model for the operators [required]")
 	 ("spin", prog_opt::value(&Spin), "for spin models, the value of the spin [default 0.5]")
          ("nmax", prog_opt::value(&NMax), "for Bose-Hubbard model, the max number of bosons per site")
+	 ("commutator,c", prog_opt::value(&CommutatorStr), "calculate the commutator phase angle, U X X^\\dagger = exp(i*theta) X")
 	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
          ;
 
@@ -263,6 +265,24 @@ int main(int argc, char** argv)
                       << std::setw(17) << std::right << std::fixed << tr.imag() << std::endl;
          }
       }
+
+      // Now calculate the commutators
+      for (unsigned j = 0; j < CommutatorStr.size(); ++j)
+      {
+	 FiniteMPO Op = ParseUnitCellOperator(Cell, CommutatorStr[j]);
+	 Op = repeat(Op, Psi.size() / UnitCellSize);
+	 MatrixOperator O = MatrixOperator::make_identity(Psi.Basis2());
+	 O = inject_left_qshift(O, Op, Psi, Psi1->shift());
+
+	 for (unsigned i = 0; i < U.size(); ++i)
+	 {
+
+	    MatrixOperator Obar = triple_prod(U[i], O, herm(U[i]));
+	    std::complex<double> Phase = inner_prod(O, Obar) / inner_prod(O, O);
+	    std::cout << "Phase " << CommutatorStr[j] << " with " << OperatorStr[i] << " = " << Phase << '\n';
+	 }
+      }
+
       pheap::Shutdown();
    }
    catch (std::exception& e)

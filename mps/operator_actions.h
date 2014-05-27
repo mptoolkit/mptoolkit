@@ -188,6 +188,8 @@ struct LeftMultiplyString
 
    result_type operator()(argument_type const& x) const
    {
+      DEBUG_CHECK_EQUAL(x.Basis1(), L1.Basis2());
+      DEBUG_CHECK_EQUAL(x.Basis2(), L2.Basis2());
       result_type r = delta_shift(x, QShift);
       r = inject_left(r, L1, StringOp, L2);
       return r;
