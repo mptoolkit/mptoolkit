@@ -29,6 +29,8 @@ LatticeSite CreateHubbardSite()
    Sp = SiteOperator(Basis, Null, LatticeCommute::Bosonic);
    Sm = SiteOperator(Basis, Null, LatticeCommute::Bosonic);
    Sz = SiteOperator(Basis, Null, LatticeCommute::Bosonic);
+   Sx = SiteOperator(Basis, Null, LatticeCommute::Bosonic);
+   Sy = SiteOperator(Basis, Null, LatticeCommute::Bosonic);
    Qp = SiteOperator(Basis, Null, LatticeCommute::Bosonic);
    Qm = SiteOperator(Basis, Null, LatticeCommute::Bosonic);
    Qz = SiteOperator(Basis, Null, LatticeCommute::Bosonic);
@@ -134,6 +136,8 @@ LatticeSite CreateHubbardSite()
    // Same as ES above
    Site["mSz"] = LinearAlgebra::exp(std::complex<double>(0.0,math_const::pi) * Sz);
    Site["m2Sz"] = LinearAlgebra::exp(std::complex<double>(0.0,2.0*math_const::pi) * Sz);
+   Site["Qx"] = Qp + Qm;
+   Site["Qy"] = std::complex<double>(0.0, 1.0) * (Qp - Qm);
    Site["I"] = I;
    Site["P"] = P;
    Site["N"] = N;
