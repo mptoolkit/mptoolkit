@@ -1,3 +1,4 @@
+// -*- C++ -*- $Id$
 
 #include "mps/infinitewavefunction.h"
 #include "lattice/latticesite.h"
@@ -227,7 +228,6 @@ int main(int argc, char** argv)
       SimpleOperator Op2 = ParseSiteOperator(Site, Op2Str);
       SimpleOperator Op1Op2 = prod(Op1, Op2, Ident);  // do this now so that we don't include the string term
       SimpleOperator StringOp = ParseSiteOperator(Site, StringOpStr);
-      TRACE(StringOp);
       if (IncludeFirst)
       {
 	 Op1 = Op1 * StringOp;
@@ -252,6 +252,8 @@ int main(int argc, char** argv)
       {
 	 StringMPO[i](0,0) = StringOp;
       }
+
+      local_basis_compatible_or_abort(Psi->Psi, StringMPO);
 
       // for each site in the unit cell, make the right hand operator.
       // We start with Rho (the right-identity-vector), and construct the operator
