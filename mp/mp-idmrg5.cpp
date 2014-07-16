@@ -2018,7 +2018,11 @@ int main(int argc, char** argv)
 	 std::vector<BasisList> FullBL = BL;
 	 while (int(FullBL.size()) < UnitCellSize)
 	    std::copy(BL.begin(), BL.end(), std::back_inserter(FullBL));
-	 UnitCellSize = FullBL.size();
+	 if (UnitCellSize != int(FullBL.size()))
+	 {
+	    std::cout << "mp-idmrg5: fatal: the wavefunction unit cell must be a multiple of the Hamiltonian unit cell.\n";
+	    return 1;
+	 }
 	 std::cout << "Creating exact diagonalization basis.  Unit cell size = " << UnitCellSize << '\n';
 
 	 QuantumNumbers::QuantumNumber q(HamMPO[0].GetSymmetryList(), TargetState);
@@ -2076,6 +2080,11 @@ int main(int argc, char** argv)
       else if (Create)
       {
 	 std::cout << "Creating wavefunction.  Unit cell size = " << UnitCellSize << '\n';
+	 if (UnitCellSize % HamMPO.size() != 0)
+	 {
+	    std::cout << "mp-idmrg5: fatal: the wavefunction unit cell must be a multiple of the Hamiltonian unit cell.\n";
+	    return 1;
+	 }
 	 pheap::Initialize(FName, 1, mp_pheap::PageSize(), mp_pheap::CacheSize());
 	 std::vector<BasisList> BL = ExtractLocalBasis1(HamMPO.data());
 	 std::vector<BasisList> FullBL = BL;
@@ -2102,6 +2111,11 @@ int main(int argc, char** argv)
 
       UnitCellSize = Psi.Psi.size();
       std::cout << "Unit cell size = " << UnitCellSize << '\n';
+      if (UnitCellSize % HamMPO.size() != 0)
+      {
+         std::cout << "mp-idmrg5: fatal: the wavefunction unit cell must be a multiple of the Hamiltonian unit cell.\n";
+         return 1;
+      }
 
       if (vm.count("evolve"))
          std::cout << "Evolving with timestep " << EvolveDelta << '\n';
@@ -2114,11 +2128,6 @@ int main(int argc, char** argv)
       std::cout << SInfo << '\n';
 
       // replicate the HamMPO until it has the same size as the unit cell
-      if (UnitCellSize % HamMPO.size() != 0)
-      {
-         std::cout << "mp-idmrg5: fatal: the wavefunction unit cell must be a multiple of the Hamiltonian unit cell.\n";
-         return 1;
-      }
       HamMPO = repeat(HamMPO, UnitCellSize / HamMPO.size());
       CHECK_EQUAL(int(HamMPO.size()), UnitCellSize);
 
