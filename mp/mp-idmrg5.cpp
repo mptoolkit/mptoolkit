@@ -911,6 +911,7 @@ int main(int argc, char** argv)
       double Jr = 0.0;
       double t = 1.0;
       double t2 = 0.0;
+      double tp = 0.0;
       double tc = 1.0;
       double tprime = 1.0;
       double delta = 0.0;
@@ -1025,6 +1026,8 @@ int main(int argc, char** argv)
 	  FormatDefault("nearest-neighbor exchange J (for xxx,itf, etc)", J).c_str())
 	 ("tt,t", prog_opt::value(&t),
 	  FormatDefault("nearest-neighbor hopping (for hubbard etc)", t).c_str())
+	 ("tp", prog_opt::value(&tp),
+	  FormatDefault("nearest-neighbor hopping (for other points in triangular cluster)", tp).c_str())
 	 ("t2", prog_opt::value(&t2),
 	  FormatDefault("next-nearest-neighbor hopping (for hubbard etc)", t2).c_str())
 	 ("tc", prog_opt::value(&tc),
@@ -1935,7 +1938,7 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "tricluster")
       {
-	 std::cout << "Hamiltonian is U(1)xSU(2) Hubbard triangular cluster with t=" << t << ", t2=" << t2 << ", tc=" << tc
+	 std::cout << "Hamiltonian is U(1)xSU(2) Hubbard triangular cluster with t=" << t << ", tp=" << tp << ", t2=" << t2 << ", tc=" << tc
 		   << ", U=" << U << '\n';
 	 LatticeSite Site = CreateU1SU2HubbardSite();
 	 double tSqrt2 = (-sqrt(2.0)) * t;  // the -sqrt(2) is an SU(2) factor
@@ -1951,7 +1954,16 @@ int main(int argc, char** argv)
 			    + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 2, Site["CH"]));
 	 Ham += -tSqrt2 * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 4, Site["C"])
 			    + TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 4, Site["CH"]));
-         if (t2 != 0)
+         
+	 if (tp != 0)
+	 {
+	    Ham += - (-sqrt(2.0)*tp) * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 3, Site["C"])
+	                              + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 3, Site["CH"]));
+	 
+	    Ham += - (-sqrt(2.0)*tp) * (TwoPointStringOperator(Sites, 2, Site["CHP"], Site["P"], 5, Site["C"])
+	                              + TwoPointStringOperator(Sites, 2, Site["CP"], Site["P"], 5, Site["CH"]));
+	 }
+	 if (t2 != 0)
          {
 	    Ham += - (-sqrt(2.0)*t2) * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 7, Site["C"])
 			              + TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 7, Site["CH"]));
