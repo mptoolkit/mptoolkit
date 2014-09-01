@@ -272,7 +272,12 @@ inline
 double
 norm_frob_sq(StateComponent const& x)
 {
-   return trace(scalar_prod(x, herm(x))).real();
+   double r = 0;
+   for (MPStateComponent::const_iterator cmp = x.begin(); cmp != x.end(); ++cmp)
+   {
+      r += norm_frob_sq(*cmp);
+   }
+   return r;
 }
 
 inline
