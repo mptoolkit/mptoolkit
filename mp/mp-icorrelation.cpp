@@ -28,6 +28,7 @@
 #include "models/hubbard-u1u1.h"
 #include "models/hubbard-u1u1-old.h"
 #include "models/boson-u1.h"
+#include "models/boson.h"
 #include "models/boson-2component-u1z2.h"
 
 namespace prog_opt = boost::program_options;
@@ -212,6 +213,10 @@ int main(int argc, char** argv)
       else if (Model == "bh-u1")
       {
 	 Site = BosonU1(NMax);
+      }
+      else if (Model == "bh")
+      {
+	 Site = Boson(NMax);
       }
       else if (Model == "bh2-u1z2")
       {

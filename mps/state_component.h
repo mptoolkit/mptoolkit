@@ -273,7 +273,7 @@ double
 norm_frob_sq(StateComponent const& x)
 {
    double r = 0;
-   for (MPStateComponent::const_iterator cmp = x.begin(); cmp != x.end(); ++cmp)
+   for (StateComponent::const_iterator cmp = x.begin(); cmp != x.end(); ++cmp)
    {
       r += norm_frob_sq(*cmp);
    }

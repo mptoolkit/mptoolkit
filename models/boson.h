@@ -21,7 +21,7 @@ void SetMatElement(SiteOperator& s, int n1, int n2, double x)
 }
 
 inline
-LatticeSite CreateBoseHubbardSpinlessSite(int MaxN)
+LatticeSite Boson(int MaxN)
 {
    SymmetryList Symmetry("N:Null");
    QuantumNumbers::QuantumNumber QNum(Symmetry); // no symmetries, only one quantum number

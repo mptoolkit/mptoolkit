@@ -1677,7 +1677,7 @@ int main(int argc, char** argv)
       {
          // These parameters (e.g. mu) are defined in this form to match the Lieb-Liniger model, U = m g dz / hbar^2, energy scaled by hbar^2 / 2 m dz^2
 	 std::cout << "Hamiltonian is spinless Bose-Hubbard, no symmetry, T=1, U=" << U << ", mu=" << mu << "- 2.0 \n";
-	 LatticeSite Site = CreateBoseHubbardSpinlessSite(3);
+	 LatticeSite Site = Boson(3);
 	 TriangularMPO Ham;
 	 Ham = -1.0 * TriangularTwoSite(Site["BH"], Site["B"]) - 1.0 * TriangularTwoSite(Site["B"], Site["BH"])
 	    + U * TriangularOneSite(Site["N2"]) - (mu - 2.0) * TriangularOneSite(Site["N"]);
@@ -1686,7 +1686,7 @@ int main(int argc, char** argv)
       else if (HamStr == "bhj")
       {
 	 std::cout << "Hamiltonian is spinless Bose-Hubbard, no symmetry, J/U=" << J << ", mu=" << mu << "\n";
-	 LatticeSite Site = CreateBoseHubbardSpinlessSite(NMax);
+	 LatticeSite Site = Boson(NMax);
 	 TriangularMPO Ham;
 	 Ham = -J * TriangularTwoSite(Site["BH"], Site["B"]) - J * TriangularTwoSite(Site["B"], Site["BH"])
 	    + 0.5 * TriangularOneSite(Site["N2"]) - mu * TriangularOneSite(Site["N"]);
@@ -1759,7 +1759,7 @@ int main(int argc, char** argv)
       {
          // These parameters are defined in this form to match the Lieb-Liniger model, U = m g dz / hbar^2, energy scaled by hbar^2 / 2 m dz^2
 	 std::cout << "Hamiltonian is spinless Bose-Hubbard with next-nearest neighbour tunnelling, no symmetry, T=4/3, Tprime=" << tprime << "/-12, U=" << U << ", mu=" << mu << " - 2.5 \n";
-	 LatticeSite Site = CreateBoseHubbardSpinlessSite(3);
+	 LatticeSite Site = Boson(3);
 	 TriangularMPO Ham;
 	 Ham = -4.0/3.0 * TriangularTwoSite(Site["BH"], Site["B"]) - 4.0/3.0 * TriangularTwoSite(Site["B"], Site["BH"])
 	       + 1.0/12.0*tprime * TriangularThreeSite(Site["B"], Site["I"], Site["BH"]) + 1.0/12.0*tprime * TriangularThreeSite(Site["BH"], Site["I"], Site["B"])
