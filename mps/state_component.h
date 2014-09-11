@@ -93,6 +93,11 @@ struct BasicStateComponent
                                                        VectorBasis const& Basis2);
    static BasicStateComponent<T> ConstructFullBasis2(VectorBasis const& Basis1, 
                                                        BasisList const& LocalBasis);
+
+   // Verifies that Data[i].TransformsAs() == SBasis[i]
+   void check_structure() const;
+
+   void debug_check_structure() const;
    
    BasisList SBasis;
    VectorBasis VBasis1, VBasis2;
@@ -118,6 +123,25 @@ void BasicStateComponent<T>::delta_shift(QuantumNumbers::QuantumNumber const& q,
       DEBUG_TRACE(*I)(I->Basis1())(I->Basis2());
    }
    DEBUG_TRACE("after")(scalar_prod(*this, herm(*this)))(scalar_prod(herm(*this), *this));
+}
+
+template <typename T>
+void
+BasicStateComponent<T>::check_structure() const
+{
+   CHECK_EQUAL(Data.size(), SBasis.size())("StateComponent local basis size mismatch");
+   for (unsigned i = 0; i < Data.size(); ++i)
+   {
+      CHECK_EQUAL(Data[i].TransformsAs(), SBasis[i])("StateComponent TransformsAs() doesn't match local basis");
+   }
+}
+
+template <typename T>
+void BasicStateComponent<T>::debug_check_structure() const
+{
+#if !defined(NDEBUG)
+   this->check_structure();
+#endif
 }
 
 typedef BasicStateComponent<MatrixOperator> StateComponent;

@@ -18,9 +18,11 @@ inject_left(MatrixOperator const& m,
    // we currently only support simple irreducible operators
    CHECK_EQUAL(Op.Basis1().size(), 1);
    CHECK_EQUAL(Op.Basis2().size(), 1);
+   CHECK_EQUAL(Op.Basis1()[0], m.TransformsAs());
    MatrixOperator Result = m;
    StateComponent E(Op.Basis1(), m.Basis1(), m.Basis2());
    E[0] = m;
+   E.debug_check_structure();
    LinearWavefunction::const_iterator I1 = Psi1.begin();
    LinearWavefunction::const_iterator I2 = Psi2.begin();
    GenericMPO::const_iterator OpIter = Op.begin();
@@ -59,6 +61,7 @@ inject_left(StateComponent const& In,
    PRECONDITION_EQUAL(Psi1.size(), Op.size());
    PRECONDITION_EQUAL(Psi1.size(), Psi2.size());
    StateComponent Result = In;
+   In.debug_check_structure();
    LinearWavefunction::const_iterator I1 = Psi1.begin();
    LinearWavefunction::const_iterator I2 = Psi2.begin();
    GenericMPO::const_iterator OpIter = Op.begin();
@@ -84,6 +87,7 @@ inject_right(MatrixOperator const& m,
    CHECK_EQUAL(Op.Basis2().size(), 1);
    StateComponent E(Op.Basis2(), m.Basis1(), m.Basis2());
    E[0] = m;
+   E.debug_check_structure();
    MatrixOperator Result = m;
    LinearWavefunction::const_iterator I = Psi.end();
    GenericMPO::const_iterator OpIter = Op.end();

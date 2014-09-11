@@ -249,10 +249,11 @@ int main(int argc, char** argv)
       DEBUG_CHECK(norm_frob(delta_shift(inject_left(Identity, PsiOrtho, PsiOrtho), QShift) - Identity) < 1E-10);
       DEBUG_CHECK(norm_frob(inject_right(Rho, PsiOrtho, PsiOrtho) - delta_shift(Rho, QShift)) < 1E-10);
 
-      // Make a GenericMPO for our string operator
-      GenericMPO StringMPO(PsiSize, OperatorComponent(StringOp.Basis1(), 
-						      BasisList(QuantumNumber(StringOp.GetSymmetryList())),
-						      BasisList(QuantumNumber(StringOp.GetSymmetryList()))));
+      // Make a GenericMPO for our string operator.  The 'vacuum' basis here is
+      // the quantum number of our operator
+      BasisList StringMPOBasis(StringOp.GetSymmetryList());
+      StringMPOBasis.push_back(adjoint(Op1.TransformsAs()));
+      GenericMPO StringMPO(PsiSize, OperatorComponent(StringOp.Basis1(), StringMPOBasis, StringMPOBasis));
       for (int i = 0; i < PsiSize; ++i)
       {
 	 StringMPO[i](0,0) = StringOp;
