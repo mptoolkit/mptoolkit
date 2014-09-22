@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*- $Id: mp-idmrg5.cpp, No.8 (proffesional list), Ver 1.0.0, Authors: S.N.Saadatmand, I.P.McCulloch, and B.Powell, Created in: 2014/Feb/03, 16:26 EST, Last modified in: 2014/Sep/19, 11:21 EST$
 
 // variant of iDMRG where we keep intact the unit cell.
 // This prohibits relfection symmetry.
@@ -1824,6 +1824,46 @@ int main(int argc, char** argv)
                                             + TwoPointOperator(Sites, 2, Site["S"], 3, Site["S"]));
          Ham += Jleg * (TwoPointOperator(Sites, 1, Site["S"], 4, Site["S"])
                         + TwoPointOperator(Sites, 2, Site["S"], 5, Site["S"]));
+         // SU(2) factor
+         Ham *= -sqrt(3.0);
+         HamMPO = Ham;
+      }
+      else if (HamStr == "J1-J2-triangular-su2")
+      {
+         std::cout << "Hamiltonian is triangular Heisenberg J1-J2 model, J1=" << J1 << ", J2=" << J2 << '\n';
+         LatticeSite Site = CreateSU2SpinSite(0.5);
+         // 3-site unit cell
+         std::vector<BasisList> Sites(3*3, Site["I"].Basis());
+         
+         // J1 interactions
+         TriangularMPO Ham;
+         
+          // Site [0] interactions
+           Ham += TwoPointOperator(Sites, 0, Site["S"], 1, Site["S"])
+                + TwoPointOperator(Sites, 0, Site["S"], 3, Site["S"])
+                + TwoPointOperator(Sites, 0, Site["S"], 5, Site["S"]);
+          // Site [1] interactions
+           Ham += TwoPointOperator(Sites, 1, Site["S"], 2, Site["S"])
+                + TwoPointOperator(Sites, 1, Site["S"], 4, Site["S"])
+                + TwoPointOperator(Sites, 1, Site["S"], 3, Site["S"]);
+          // Site [2] interactions
+           Ham += TwoPointOperator(Sites, 2, Site["S"], 0, Site["S"])
+                + TwoPointOperator(Sites, 2, Site["S"], 5, Site["S"])
+                + TwoPointOperator(Sites, 2, Site["S"], 4, Site["S"]);
+          Ham += J1*Ham; 
+         
+         // J2 interactions
+         TriangularMPO Htwo;
+          
+          Htwo += 2*( TwoPointOperator(Sites, 0, Site["S"], 4, Site["S"])
+                   + TwoPointOperator(Sites, 1, Site["S"], 5, Site["S"])
+                   + TwoPointOperator(Sites, 2, Site["S"], 3, Site["S"]));
+
+          Htwo += TwoPointOperator(Sites, 0, Site["S"], 8, Site["S"])
+                + TwoPointOperator(Sites, 1, Site["S"], 6, Site["S"])
+                + TwoPointOperator(Sites, 2, Site["S"], 7, Site["S"]);
+          Ham += J2*Htwo;
+         
          // SU(2) factor
          Ham *= -sqrt(3.0);
          HamMPO = Ham;
