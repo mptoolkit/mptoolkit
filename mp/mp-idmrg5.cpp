@@ -913,6 +913,9 @@ int main(int argc, char** argv)
       double t2 = 0.0;
       double tp = 0.0;
       double tc = 1.0;
+      double tc1 = 1.0;
+      double tc2 = 1.0;
+      double tc3 = 1.0;
       double tprime = 1.0;
       double delta = 0.0;
       double Theta = 0.0;
@@ -1032,6 +1035,12 @@ int main(int argc, char** argv)
 	  FormatDefault("next-nearest-neighbor hopping (for hubbard etc)", t2).c_str())
 	 ("tc", prog_opt::value(&tc),
 	  FormatDefault("cluster hopping (for triangular cluster)", tc).c_str())
+	 ("tc1", prog_opt::value(&tc),
+	  FormatDefault("leg hopping (for triladder)", tc1).c_str())
+	 ("tc2", prog_opt::value(&tc),
+	  FormatDefault("leg hopping (for triladder)", tc2).c_str())
+	 ("tc3", prog_opt::value(&tc),
+	  FormatDefault("leg hopping (for triladder)", tc3).c_str())
 	 ("Jperp", prog_opt::value(&Jperp),
 	  FormatDefault("perpendicular exchange exchange J (for xxx-ladder)", Jperp).c_str())
          ("periodic", prog_opt::bool_switch(&Periodic),
@@ -2014,7 +2023,7 @@ int main(int argc, char** argv)
 	 HamMPO = Ham;
       }
       else if (HamStr == "tricluster-u1")
-      {
+      
 	 std::cout << "Hamiltonian is U(1) Hubbard triangular cluster with t=" << t << ", t2=" << t2 << ", tc=" << tc
 		   << ", U=" << U << '\n';
 	 LatticeSite Site = CreateU1U1HubbardSite();
@@ -2048,6 +2057,34 @@ int main(int argc, char** argv)
 			  + TwoPointStringOperator(Sites, 1, Site["CHdownP"], Site["P"], 7, Site["Cdown"])
 			  - TwoPointStringOperator(Sites, 1, Site["CdownP"], Site["P"], 7, Site["CHdown"]));
 	 }
+
+	 Ham += U * OnePointOperator(Sites, 0, Site["Pdouble"]);
+	 Ham += U * OnePointOperator(Sites, 1, Site["Pdouble"]);
+	 Ham += U * OnePointOperator(Sites, 2, Site["Pdouble"]);
+	 HamMPO = Ham;
+      }
+      else if (HamStr == "triladder")
+      {
+	 std::cout << "Hamiltonian is U(1)xSU(2) Hubbard triangular ladder/tube with t=" << t 
+                   << ", tc1=" << tc1 << ", tc2=" << tc2 << ", tc3=" << tc3 << ", U=" << U << '\n';
+	 LatticeSite Site = CreateU1SU2HubbardSite();
+	 double tSqrt2 = (-sqrt(2.0)) * t;  // the -sqrt(2) is an SU(2) factor
+	 // 3-site unit cell
+	 std::vector<BasisList> Sites(3, Site["I"].Basis());
+	 TriangularMPO Ham;
+	 Ham += - (-sqrt(2.0)*tc1) * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 1, Site["C"])
+			    + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 1, Site["CH"]));
+	 Ham += - (-sqrt(2.0)*tc2) * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 2, Site["C"])
+			    + TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 2, Site["CH"]));
+	 Ham += - (-sqrt(2.0)*tc3) * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 2, Site["C"])
+			    + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 2, Site["CH"]));
+
+	 Ham += -tSqrt2 * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 4, Site["C"])
+			    + TwoPointStringOperator(Sites, 1, Site["CP"], Site["P"], 4, Site["CH"]));
+	 Ham += -tSqrt2 * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 3, Site["C"])
+	                    + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 3, Site["CH"]));
+	 Ham += -tSqrt2 * (TwoPointStringOperator(Sites, 2, Site["CHP"], Site["P"], 5, Site["C"])
+	                    + TwoPointStringOperator(Sites, 2, Site["CP"], Site["P"], 5, Site["CH"]));
 
 	 Ham += U * OnePointOperator(Sites, 0, Site["Pdouble"]);
 	 Ham += U * OnePointOperator(Sites, 1, Site["Pdouble"]);
