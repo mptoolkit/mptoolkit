@@ -2023,7 +2023,7 @@ int main(int argc, char** argv)
 	 HamMPO = Ham;
       }
       else if (HamStr == "tricluster-u1")
-      
+      {
 	 std::cout << "Hamiltonian is U(1) Hubbard triangular cluster with t=" << t << ", t2=" << t2 << ", tc=" << tc
 		   << ", U=" << U << '\n';
 	 LatticeSite Site = CreateU1U1HubbardSite();
