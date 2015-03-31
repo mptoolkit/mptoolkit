@@ -63,7 +63,7 @@ class TriangularMPO
 
       QuantumNumber TransformsAs() const { return this->Basis().back(); }
 
-      // returns the component at entry (i,j).  Result is a 1x1 MPO.
+      // returns the component at entry (i,j).  Result is a 1x1 MPO (although the internal bond dimension might be bigger)
       FiniteMPO operator()(int i, int j) const;
 
       // Returns the 1x1 MPO on the top left diagonal, the left 'string' term,

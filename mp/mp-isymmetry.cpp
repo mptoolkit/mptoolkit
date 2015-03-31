@@ -108,7 +108,8 @@ int main(int argc, char** argv)
 	 ("model", prog_opt::value(&Model), "use this model for the operators [required]")
 	 ("spin", prog_opt::value(&Spin), "for spin models, the value of the spin [default 0.5]")
          ("nmax", prog_opt::value(&NMax), "for Bose-Hubbard model, the max number of bosons per site")
-	 ("commutator,c", prog_opt::value(&CommutatorStr), "calculate the commutator phase angle, U X X^\\dagger = exp(i*theta) X")
+	 ("commutator,c", prog_opt::value(&CommutatorStr), 
+	  "calculate the commutator phase angle, U X X^\\dagger = exp(i*theta) X")
 	 ("unitcell,u", prog_opt::value(&UnitCellSize), "Unit cell size for the operator parser")
 	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
          ;

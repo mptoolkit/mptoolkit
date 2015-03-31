@@ -31,6 +31,8 @@ class FiniteMPO
 
       explicit FiniteMPO(int Size) : Data(Size) {}
 
+      FiniteMPO(int Size, LatticeCommute Com) : Data(Size, Com) {}
+
       // Construction from a generic MPO.  The generic MPO must already be in finite form.
       explicit FiniteMPO(GenericMPO const& Other);
 
@@ -97,6 +99,9 @@ class FiniteMPO
       { return Data.LocalBasis1List(); }
       std::vector<BasisList> LocalBasis2List() const
       { return Data.LocalBasis2List(); }
+
+      LatticeCommute Commute() const { return Data.Commute(); }
+      void SetCommute(LatticeCommute x) { Data.SetCommute(x); }
 
       // direct access to the GenericMPO
       data_type& data() { return Data; }

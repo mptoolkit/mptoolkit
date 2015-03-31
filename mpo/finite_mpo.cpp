@@ -38,6 +38,26 @@ PStream::ipstream& operator>>(PStream::ipstream& in, FiniteMPO& op)
 }
 
 FiniteMPO
+join(FiniteMPO const& Op1, FiniteMPO const& Op2)
+{
+   if (Op1.is_null())
+      return Op2;
+   if (Op2.is_null())
+      return Op1;
+   CHECK_EQUAL(Op1.Basis2(), Op2.Basis1());
+   FiniteMPO Result(Op1.size() + Op2.size());
+   for (int i = 0; i < Op1.size(); ++i)
+   {
+      Result[i] = Op1[i];
+   }
+   for (int i = 0; i < Op2.size(); ++i)
+   {
+      Result[i+Op1.size()] = Op2[i];
+   }
+   return Result;
+}
+
+FiniteMPO
 repeat(FiniteMPO const& Op, int Count)
 {
    CHECK_EQUAL(Op.Basis1(), Op.Basis2());

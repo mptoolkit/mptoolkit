@@ -172,14 +172,22 @@ UnitCell::operator_exists(std::string const& Op, int n) const
    return Data_[n].operator_exists(Op);
 }
 
+LatticeCommute
+UnitCell::Commute(std::string const& Op, int n) const
+{
+   CHECK(0 <= n && n < int(Data_.size()))("Site index is out of range")(n)(Data_.size());
+   return Data_[n][Op].Commute();
+}
+
 FiniteMPO
 UnitCell::Operator(std::string const& Op, int n) const
 {
    CHECK(0 <= n && n < int(Data_.size()))("Site index is out of range")(n)(Data_.size());
 
-   SimpleOperator Operator = Data_[n][Op];
+   SiteOperator Operator = Data_[n][Op];
+   std::string SignOperator = Operator.Commute().SignOperator();
 
-   FiniteMPO Result(Data_.size());
+   FiniteMPO Result(Data_.size(), Operator.Commute());
 
    BasisList Vacuum(Operator.GetSymmetryList());
    Vacuum.push_back(QuantumNumber(Operator.GetSymmetryList()));
@@ -187,11 +195,16 @@ UnitCell::Operator(std::string const& Op, int n) const
    BasisList Basis(Operator.GetSymmetryList());
    Basis.push_back(Operator.TransformsAs());
 
+   // Assemble the JW-string.
    for (int i = 0; i < n; ++i)
    {
-      SimpleOperator I = Data_[i]["I"];
-      Result[i] = OperatorComponent(I.Basis1(), I.Basis2(), Basis, Basis);
-      Result[i](0,0) = I;
+      if (!Data_[i].operator_exists(SignOperator))
+      {
+	 WARNING("JW-string operator doesn't exist at a lattice site, using the identity")(i)(SignOperator);
+      }
+      SimpleOperator Op = Data_[i].operator_exists(SignOperator) ? Data_[i][SignOperator] : Data_[i]["I"];
+      Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Basis, Basis);
+      Result[i](0,0) = Op;
    }
    Result[n] = OperatorComponent(Operator.Basis1(), Operator.Basis2(), Basis, Vacuum);
    Result[n](0,0) = Operator;
@@ -203,6 +216,46 @@ UnitCell::Operator(std::string const& Op, int n) const
    }
 
    return Result;
+}
+
+FiniteMPO
+UnitCell::JWString(std::string const& Op, int n) const
+{
+   CHECK(0 <= n && n < int(Data_.size()))("Site index is out of range")(n)(Data_.size());
+
+   SiteOperator Operator = Data_[n][Op];
+   std::string SignOperator = Operator.Commute().SignOperator();
+
+   // All JW strings are in the identity quantum number sector, so bosonic
+   FiniteMPO Result(Data_.size(), LatticeCommute::Bosonic);
+
+   BasisList Vacuum(Operator.GetSymmetryList());
+   Vacuum.push_back(QuantumNumber(Operator.GetSymmetryList()));
+
+   // Assemble the JW-string
+   for (int i = 0; i < this->size(); ++i)
+   {
+      if (!Data_[i].operator_exists(SignOperator))
+      {
+	 WARNING("JW-string operator doesn't exist at a lattice site, using the identity")(i)(SignOperator);
+      }
+      SimpleOperator Op = Data_[i].operator_exists(SignOperator) ? Data_[i][SignOperator] : Data_[i]["I"];
+      Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Vacuum, Vacuum);
+      Result[i](0,0) = Op;
+   }
+
+   return Result;
+}
+
+
+std::string
+UnitCell::JWStringName(std::string const& Op, int n) const
+{
+   CHECK(0 <= n && n < int(Data_.size()))("Site index is out of range")(n)(Data_.size());
+
+   SiteOperator Operator = Data_[n][Op];
+   std::string SignOperator = Operator.Commute().SignOperator();
+   return SignOperator;
 }
 
 PStream::opstream& operator<<(PStream::opstream& out, UnitCell const& L)
@@ -255,7 +308,7 @@ UnitCell::Parse(std::string const& s)
 FiniteMPO
 identity_mpo(UnitCell const& c, QuantumNumbers::QuantumNumber const& q)
 {
-   FiniteMPO Result(c.size());
+   FiniteMPO Result(c.size(), LatticeCommute::Bosonic);
    BasisList b(q.GetSymmetryList());
    b.push_back(q);
    for (int i = 0; i < c.size(); ++i)

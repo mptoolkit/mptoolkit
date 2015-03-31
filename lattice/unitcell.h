@@ -106,7 +106,7 @@ class UnitCell
       FiniteMPO& Operator(std::string const& Op);
 
       // lookup the Jordan Wigner string of the specified operator
-      std::string JWString(std::string const& Op) const;
+      //std::string JWString(std::string const& Op) const;
 
       // returns true if the specified local operator Op[n] exists at site n of the UnitCell.
       bool operator_exists(std::string const& Op, int n) const;
@@ -117,7 +117,20 @@ class UnitCell
       // Parse an operator of the form O or O[n]
    //      FiniteMPO Parse(std::string const& s);
 
-   //std::string JWString(std::string const& Op, int n) const;
+      // returns the commutation attribute of the operator
+      LatticeCommute Commute(std::string const& Op, int n) const;
+
+      // Returns the J-W string associated with the operator
+      FiniteMPO JWString(std::string const& Op, int n) const;
+
+      // returns the name of the J-W string operator
+      std::string JWStringName(std::string const& Op, int n) const;
+
+      // returns the JW string associated with a given LatticeCommute
+      FiniteMPO JWString(LatticeCommute Com) const
+      {
+	 return this->JWString(Com.SignOperator());
+      }
 
       // returns a begin() iterator into the unit cell operators (not local operators!)
       const_operator_iterator operator_begin() const;

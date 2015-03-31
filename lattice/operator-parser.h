@@ -3,6 +3,8 @@
   operator-parser.h
 
   Spirit-based parser for parsing operators.
+
+  *** OBSOLETE ***
 */
 
 #if !defined(OPERATOR_PARSER_H_JDSHCIUYY876Y76Y743YT66IUREYT473YTRKH)

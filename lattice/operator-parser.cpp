@@ -1,5 +1,7 @@
 // -*- C++ -*- $Id$
 
+// *** OBSOLETE ***
+
 #include "operator-parser.h"
 #include <boost/spirit/include/classic_core.hpp>
 #include <boost/spirit/include/classic_chset.hpp>

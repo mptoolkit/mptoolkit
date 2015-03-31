@@ -1,11 +1,15 @@
 // -*- C++ -*- $Id$
 
 // GenericMPO represents an MPO that is in no particular form
+// It contains a LatticeCommute, so that we can determine the
+// Jordan-Wigner string that should be used when extending the
+// operator onto a lattice.
 
 #if !defined(GENERIC_MPO_H_JDCHJKEHY589758YUER89H489)
 #define GENERIC_MPO_H_JDCHJKEHY589758YUER89H489
 
 #include "operator_component.h"
+#include "lattice/siteoperator.h"      // for LatticeCommute
 #include <vector>
 
 class GenericMPO
@@ -25,6 +29,9 @@ class GenericMPO
       explicit GenericMPO(int Size) : Data_(Size) {}
 
       explicit GenericMPO(OperatorComponent const& x) : Data_(1, x) {}
+
+      GenericMPO(int Size, LatticeCommute Com) : Data_(Size), Commute_(Com) {}
+      GenericMPO(OperatorComponent const& x, LatticeCommute Com) : Data_(1, x), Commute_(Com) {}
 
       // Size repeated copies of x
       GenericMPO(int Size, OperatorComponent const& x) : Data_(Size, x) {}
@@ -56,6 +63,9 @@ class GenericMPO
       basis1_type Basis1() const { DEBUG_CHECK(!this->empty()); return Data_.front().Basis1(); }
       basis2_type Basis2() const { DEBUG_CHECK(!this->empty()); return Data_.back().Basis2(); }
 
+      LatticeCommute Commute() const { return Commute_; }
+      void SetCommute(LatticeCommute x) { Commute_ = x; }
+
       QuantumNumbers::SymmetryList GetSymmetryList() const { return Data_[0].GetSymmetryList(); }
 
       // Return the local basis at the n'th site
@@ -72,6 +82,7 @@ class GenericMPO
 
    private:
       DataType Data_;
+      LatticeCommute Commute_;
 
    friend PStream::opstream& operator<<(PStream::opstream& out, GenericMPO const& op);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, GenericMPO& op);
