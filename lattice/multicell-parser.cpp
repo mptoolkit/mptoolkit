@@ -7,35 +7,39 @@ using namespace Parser;
 
 typedef boost::variant<complex, FiniteMPO> element_type;
 
-// a unit cell operator that has no unit cell index attached, so the unit cell number is implicitly zero
+// a unit cell operator that has no unit cell index attached.
+// This is only possible if we only have one cell (NumCells == 1)
 struct push_operator_no_cell
 {
-   push_operator(UnitCell const& Cell_, 
+   push_operator(UnitCell const& Cell_, int NumCells,
 		 std::stack<std::string>& IdentifierStack_, 
 		 std::stack<element_type>& eval_)
-      : Cell(Cell_), IdentifierStack(IdentifierStack_), eval(eval_) {}
+      : Cell(Cell_), NumCells(NumCells_), IdentifierStack(IdentifierStack_), eval(eval_) {}
 
    void operator()(char const*, char const*) const
    {
       std::string OpName = IdentifierStack.top();
       IdentifierStack.pop();
 
+      CHECK_EQUAL(NumCells, 1)("Operator must supply a cell index")(OpName);
       CHECK(Cell.operator_exists(OpName))("Operator does not exist in the unit cell")(OpName);
       eval.push(element_type(Cell.Operator(OpName)));
    }
 
    UnitCell const& Cell;
+   int NumCells;
    std::stack<std::string>& IdentifierStack;
    std::stack<element_type >& eval;
 };
 
-// a unit cell operator with cell index attached
+// a unit cell operator with cell index attached.
+// The cell number j must satisfy j >= 0 && (NumCells == 0 || j < NumCells)
 struct push_operator_cell
 {
-   push_operator(UnitCell const& Cell_, 
+   push_operator(UnitCell const& Cell_, int NumCells,
 		 std::stack<std::string>& IdentifierStack_, 
 		 std::stack<element_type>& eval_)
-      : Cell(Cell_), IdentifierStack(IdentifierStack_), eval(eval_) {}
+      : Cell(Cell_), NumCells(NumCells_), IdentifierStack(IdentifierStack_), eval(eval_) {}
 
    void operator()(char const*, char const*) const
    {
@@ -46,7 +50,8 @@ struct push_operator_cell
       eval.pop();
       int j = int(SiteIndex.real() + 0.5);
       CHECK(norm_frob(SiteIndex - double(n)) < 1E-7)("Cell index must be an integer")(CellIndex);
-
+      CHECK(j >= 0)("Cell index must be non-negative")(j)(OpName);
+      CHECK(NumCells == 0 || j < NumCells)("Cell index out of bounds")(j)(NumCells);
       CHECK(Cell.operator_exists(OpName))("Operator does not exist in the unit cell")(OpName);
 
       FiniteMPO CellOperator = Cell.Operator(OpName);
@@ -57,22 +62,26 @@ struct push_operator_cell
    }
 
    UnitCell const& Cell;
+   int NumCells;
    std::stack<std::string>& IdentifierStack;
    std::stack<element_type >& eval;
 };
 
 // a local operator that has no cell index attached
+// This is only possible if we only have one cell (NumCells == 1)
 struct push_local_operator_no_cell
 {
-   push_local_operator_no_cell(UnitCell const& Cell_, 
+   push_local_operator_no_cell(UnitCell const& Cell_, int NumCells_,
 			       std::stack<std::string>& IdentifierStack_, 
 			       std::stack<element_type>& eval_)
-      : Cell(Cell_), IdentifierStack(IdentifierStack_), eval(eval_) {}
+      : Cell(Cell_), NumCells(NumCells_), IdentifierStack(IdentifierStack_), eval(eval_) {}
 
    void operator()(char const*, char const*) const
    {
       std::string OpName = IdentifierStack.top();
       IdentifierStack.pop();
+
+      CHECK_EQUAL(NumCells, 1)("Operator must supply a cell index")(OpName);
 
       complex SiteIndex = boost::get<complex>(eval.top());
       eval.pop();
@@ -84,6 +93,7 @@ struct push_local_operator_no_cell
    }
 
    UnitCell const& Cell;
+   int NumCells;
    std::stack<std::string>& IdentifierStack;
    std::stack<element_type >& eval;
 };
@@ -92,10 +102,10 @@ struct push_local_operator_no_cell
 // The cell index was pushed first, in the notation Op(j)[n]
 struct push_local_operator_index_cell
 {
-   push_local_operator_index_cell(UnitCell const& Cell_, 
+   push_local_operator_index_cell(UnitCell const& Cell_, int NumCells,
 				  std::stack<std::string>& IdentifierStack_, 
 				  std::stack<element_type>& eval_)
-      : Cell(Cell_), IdentifierStack(IdentifierStack_), eval(eval_) {}
+      : Cell(Cell_), NumCells(NumCells_), IdentifierStack(IdentifierStack_), eval(eval_) {}
 
    void operator()(char const*, char const*) const
    {
@@ -111,7 +121,8 @@ struct push_local_operator_index_cell
       eval.pop();
       int j = int(SiteIndex.real() + 0.5);
       CHECK(norm_frob(SiteIndex - double(n)) < 1E-7)("Cell index must be an integer")(CellIndex);
-
+      CHECK(j >= 0)("Cell index must be non-negative")(j)(OpName);
+      CHECK(NumCells == 0 || j < NumCells)("Cell index out of bounds")(j)(NumCells);
       CHECK(Cell.operator_exists(OpName, n))("Local operator does not exist in the unit cell")(OpName)(n);
 
       // Fetch the operator and JW string
@@ -123,6 +134,7 @@ struct push_local_operator_index_cell
    }
 
    UnitCell const& Cell;
+   int NumCells;
    std::stack<std::string>& IdentifierStack;
    std::stack<element_type >& eval;
 };
@@ -131,10 +143,10 @@ struct push_local_operator_index_cell
 // The site number was pushed first, in the notation Op[n](j)
 struct push_local_operator_cell_index
 {
-   push_local_operator_cell_index(UnitCell const& Cell_, 
+   push_local_operator_cell_index(UnitCell const& Cell_, int NumCells,
 				  std::stack<std::string>& IdentifierStack_, 
 				  std::stack<element_type>& eval_)
-      : Cell(Cell_), IdentifierStack(IdentifierStack_), eval(eval_) {}
+      : Cell(Cell_), NumCells(NumCells_), IdentifierStack(IdentifierStack_), eval(eval_) {}
 
    void operator()(char const*, char const*) const
    {
@@ -150,7 +162,8 @@ struct push_local_operator_cell_index
       eval.pop();
       int n = int(SiteIndex.real() + 0.5);
       CHECK(norm_frob(SiteIndex - double(n)) < 1E-7)("Site index must be an integer")(SiteIndex);
-
+      CHECK(j >= 0)("Cell index must be non-negative")(j)(OpName);
+      CHECK(NumCells == 0 || j < NumCells)("Cell index out of bounds")(j)(NumCells);
       CHECK(Cell.operator_exists(OpName, n))("Local operator does not exist in the unit cell")(OpName)(n);
 
       // Fetch the operator and JW string
@@ -162,6 +175,7 @@ struct push_local_operator_cell_index
    }
 
    UnitCell const& Cell;
+   int NumCells;
    std::stack<std::string>& IdentifierStack;
    std::stack<element_type >& eval;
 };
@@ -180,7 +194,7 @@ struct push_identifier
    std::stack<std::string>& eval;
 };
 
-struct MultiCellParser : public grammar<MultiCellParser>
+struct UnitCellParser : public grammar<MultiCellParser>
 {
    typedef boost::variant<complex, FiniteMPO> element_type;
    typedef boost::function<element_type(element_type)> unary_func_type;
@@ -195,18 +209,18 @@ struct MultiCellParser : public grammar<MultiCellParser>
    static unary_funcs<element_type>  unary_funcs_p;
    static binary_funcs<element_type> binary_funcs_p;
 
-   MultiCellParser(ElementStackType& eval_, 
+   UnitCellParser(ElementStackType& eval_, 
 		  IdentifierStackType& identifier_stack_,
 		  UnaryFuncStackType& func_stack_,
 		  BinaryFuncStackType& bin_func_stack_,
-		  UnitCell const& Cell_)
+		  UnitCell const& Cell_, int NumCells_)
       : eval(eval_), identifier_stack(identifier_stack_), 
-	func_stack(func_stack_), bin_func_stack(bin_func_stack_), Cell(Cell_) {}
+	func_stack(func_stack_), bin_func_stack(bin_func_stack_), Cell(Cell_), NumCells(NumCells_) {}
    
    template <typename ScannerT>
    struct definition
    {
-      definition(MultiCellParser const& self)
+      definition(UnitCellParser const& self)
       {
 	 real = ureal_p[push_real<element_type>(self.eval)];
 	 
@@ -220,23 +234,23 @@ struct MultiCellParser : public grammar<MultiCellParser>
 	 
 	 // cell operator with no cell index specified
 	 cell_operator = identifier
-	    [push_operator_no_cell(self.Cell, self.identifier_stack, self.eval)];
+	    [push_operator_no_cell(self.Cell, self.NumCells, self.identifier_stack, self.eval)];
 
 	 // a cell operator with an index in brackets
 	 cell_operator_cell = (identifier >> bracket_expr)
-	    [push_operator_cell(self.Cell, self.identifier_stack, self.eval)];
+	    [push_operator_cell(self.Cell, self.NumCells, self.identifier_stack, self.eval)];
 
 	 // a local operator with no cell index specified
 	 local_operator = (identifier >> sq_bracket_expr)
-	    [push_local_operator_no_cell(self.Cell, self.identifier_stack, self.eval)];
+	    [push_local_operator_no_cell(self.Cell, self.NumCells, self.identifier_stack, self.eval)];
 
 	 // a local operator with cell index, Op[n](j)
 	 local_operator_index_cell = (identifier >> sq_bracket_expr >> bracket_expr)
-	    [push_local_operator_index_cell(self.Cell, self.identifier_stack, self.eval)];
+	    [push_local_operator_index_cell(self.Cell, self.NumCells, self.identifier_stack, self.eval)];
 
 	 // a local operator with cell index, Op(j)[n]
 	 local_operator_cell_index = (identifier >> bracket_expr >> sq_bracket_expr)
-	    [push_local_operator_cell_index(self.Cell, self.identifier_stack, self.eval)];
+	    [push_local_operator_cell_index(self.Cell, self.NumCells, self.identifier_stack, self.eval)];
 	 
 	 unary_function = 
 	    eps_p(unary_funcs_p >> '(') 
@@ -312,22 +326,22 @@ struct MultiCellParser : public grammar<MultiCellParser>
 };
 
 
-// global variables (static members of MultiCellParser)
-constants MultiCellParser::constants_p;
-unary_funcs<MultiCellParser::element_type> MultiCellParser::unary_funcs_p;
-binary_funcs<MultiCellParser::element_type> MultiCellParser::binary_funcs_p;
+// global variables (static members of UnitCellParser)
+constants UnitCellParser::constants_p;
+unary_funcs<UnitCellParser::element_type> UnitCellParser::unary_funcs_p;
+binary_funcs<UnitCellParser::element_type> UnitCellParser::binary_funcs_p;
 
 FiniteMPO
-ParseMultiCellOperator(UnitCell const& Cell, std::string const& Str)
+ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& Str)
 {
-   typedef MultiCellParser::element_type element_type;
+   typedef UnitCellParser::element_type element_type;
 
-   MultiCellParser::ElementStackType ElementStack;
-   MultiCellParser::IdentifierStackType IdentifierStack;
-   MultiCellParser::UnaryFuncStackType UnaryFuncStack;
-   MultiCellParser::BinaryFuncStackType BinaryFuncStack;
+   UnitCellParser::ElementStackType ElementStack;
+   UnitCellParser::IdentifierStackType IdentifierStack;
+   UnitCellParser::UnaryFuncStackType UnaryFuncStack;
+   UnitCellParser::BinaryFuncStackType BinaryFuncStack;
 
-   MultiCellParser Parser(ElementStack, IdentifierStack, UnaryFuncStack, BinaryFuncStack, Cell);
+   UnitCellParser Parser(ElementStack, IdentifierStack, UnaryFuncStack, BinaryFuncStack, Cell, NumCells);
 
    parse_info<> info = parse(Str.c_str(), Parser, space_p);
    if (!info.full)
