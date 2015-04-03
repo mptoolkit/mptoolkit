@@ -72,7 +72,7 @@ quantumnumbersobj = quantumnumber.o symmetrybase.o symmetrylist.o \
 
 tensorobj = tensorproduct.o tensorsum.o basis.o regularize.o tensor_eigen.o
 
-latticeobj = siteoperator.o latticesite.o
+latticeobj = siteoperator.o latticesite.o unitcell.o unitcell-parser.o
 
 dmrgobj = $(tensorobj) density.o
 
@@ -204,7 +204,7 @@ infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-
 
 infinite-tools = mp-idmrg5 mp-ispectrum \
                  mp-iinfo mp-iprint mp-iproject mp-icorrelation mp-ioverlap \
-                 mp-iexpectation3 mp-iwigner-eckart mp-isymmetry mp-ireorder-symmetry
+                 mp-iexpectation3 mp-iexpectation mp-iwigner-eckart mp-isymmetry mp-ireorder-symmetry
 
 mp-tools-not-functional = mp-add2 mp-exp mp-stringcorrelation-su2 mp-canonical
 
@@ -482,7 +482,7 @@ mp-idmrg5-spin2 : triangular_operator.o mpoperator.o infinitewavefunction.o rand
 mp-irename-symmetry : triangular_operator.o mpoperator.o infinitewavefunction.o eigen.o
 mp-iparity : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o
 mp-bdmrg : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o
-mp-iexpectation2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
+mp-iexpectation : $(mpoobj) infinitewavefunction.o random_wavefunc.o eigen.o
 mp-iexpectation3 : $(mpoobj) triangular_mpo_solver.o momentum_operations.o infinitewavefunction.o random_wavefunc.o eigen.o triangular_mpo_solver.o
 mp-iexpectation-sz : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
 mp-iexpectation-sz2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o

@@ -10,16 +10,16 @@ using QuantumNumbers::QuantumNumber;
 
 bool FiniteMPO::is_irreducible() const
 {
-   return this->is_null() || (this->Basis1().size() == 1 && is_scalar(this->qn2()));
+   return this->is_null() || (this->Basis1().size() == 1 && QuantumNumbers::is_scalar(this->qn2()));
 }
 
 bool FiniteMPO::is_scalar() const
 {
-   return this->is_null() || (this->Basis1().size() == 1 && is_scalar(this->qn1()) && is_scalar(this->qn2()));
+   return this->is_null() || (this->Basis1().size() == 1 && QuantumNumbers::is_scalar(this->qn1()) 
+			      && QuantumNumbers::is_scalar(this->qn2()));
 }
 
-#if 0
-// DEPRECATED
+#if !defined(DISABLE_FINITE_MPO_TRANSFORMS_AS)
 QuantumNumbers::QuantumNumber 
 FiniteMPO::TransformsAs() const
 {
@@ -66,7 +66,7 @@ join(FiniteMPO const& Op1, FiniteMPO const& Op2)
    if (Op2.is_null())
       return Op1;
    CHECK_EQUAL(Op1.Basis2(), Op2.Basis1());
-   FiniteMPO Result(Op1.size() + Op2.size());
+   FiniteMPO Result(Op1.size() + Op2.size(), Op1.Commute()*Op2.Commute());
    for (int i = 0; i < Op1.size(); ++i)
    {
       Result[i] = Op1[i];
@@ -82,7 +82,7 @@ FiniteMPO
 repeat(FiniteMPO const& Op, int Count)
 {
    CHECK_EQUAL(Op.Basis1(), Op.Basis2());
-   FiniteMPO Result(Op.size()*Count);
+   FiniteMPO Result(Op.size()*Count, Op.Commute()*Count);
    for (int i = 0; i < Result.size(); ++i)
    {
       Result[i] = Op[i%Op.size()];
@@ -139,6 +139,7 @@ operator+=(FiniteMPO& x, FiniteMPO const& y)
    }
    if (y.empty())
       return x;
+   CHECK_EQUAL(x.Commute(), y.Commute());
 
    SumBasis<BasisList> sb1(x.Basis1(), y.Basis1());
    SimpleOperator C = CollapseBasis(sb1.Basis());
@@ -162,8 +163,9 @@ operator+(FiniteMPO const& x, FiniteMPO const& y)
       return y;
    if (y.empty())
       return x;
+   CHECK_EQUAL(x.Commute(), y.Commute());
 
-   FiniteMPO Result(x.size());
+   FiniteMPO Result(x.size(), x.Commute());
 
    SumBasis<BasisList> sb1(x.Basis1(), y.Basis1());
    SimpleOperator C = CollapseBasis(sb1.Basis());
@@ -187,8 +189,9 @@ operator-(FiniteMPO const& x, FiniteMPO const& y)
       return y;
    if (y.empty())
       return x;
+   CHECK_EQUAL(x.Commute(), y.Commute());
 
-   FiniteMPO Result(x.size());
+   FiniteMPO Result(x.size(), x.Commute());
 
    SumBasis<BasisList> sb1(x.Basis1(), y.Basis1());
    SimpleOperator C = CollapseBasis(sb1.Basis());
@@ -224,6 +227,7 @@ operator-=(FiniteMPO& x, FiniteMPO const& y)
    }
    if (y.empty())
       return x;
+   CHECK_EQUAL(x.Commute(), y.Commute());
 
    SumBasis<BasisList> sb1(x.Basis1(), y.Basis1());
    SimpleOperator C = CollapseBasis(sb1.Basis());
@@ -292,7 +296,6 @@ operator*(std::complex<double> x, FiniteMPO const& m)
    return Result;
 }
 
-
 FiniteMPO
 operator*(FiniteMPO const& x, FiniteMPO const& y)
 {
@@ -300,8 +303,8 @@ operator*(FiniteMPO const& x, FiniteMPO const& y)
       return x;
    if (y.empty())
       return y;
-
-   FiniteMPO Result(x.size());
+   CHECK_EQUAL(x.size(), y.size());
+   FiniteMPO Result(x.size(), x.Commute()*y.Commute());
    for (int i = 0; i < x.size(); ++i)
    {
       Result[i] = aux_tensor_prod(x[i], y[i]);
@@ -351,7 +354,7 @@ FiniteMPO dot(FiniteMPO const& x, FiniteMPO const& y)
       {
          if (is_transform_target(*xI, *yI, Ident))
          {
-            FiniteMPO Temp = project(x, *xI) * project(y, *yI);
+            FiniteMPO Temp = prod(project(x, *xI), project(y, *yI), QuantumNumber(x.GetSymmetryList()));
             Temp *= std::sqrt(double(degree(*xI)));
             Result += Temp;
          }
@@ -426,7 +429,7 @@ SimpleRedOperator coarse_grain(FiniteMPO const& x)
    return Result;
 }
 
-FiniteMPO fine_grain(SimpleOperator const& x,
+FiniteMPO fine_grain(SimpleOperator const& x, LatticeCommute Com,
 		     std::vector<BasisList> const& LocalBasis1,
 		     std::vector<BasisList> const& LocalBasis2)
 {
@@ -439,7 +442,7 @@ FiniteMPO fine_grain(SimpleOperator const& x,
    if (LocalBasis1.size() == 1)
    {
       // Turn the operator into a 1x1 MPO
-      FiniteMPO Result(1);
+      FiniteMPO Result(1, Com);
       BasisList Vacuum = make_vacuum_basis(x.GetSymmetryList());
       BasisList B1(x.GetSymmetryList());
       B1.push_back(x.TransformsAs());
@@ -463,7 +466,7 @@ FiniteMPO fine_grain(SimpleOperator const& x,
    }
 
    // And now reverse the decomposition
-   FiniteMPO Result(LocalBasis1.size());
+   FiniteMPO Result(LocalBasis1.size(), Com);
    OperatorComponent R1, R2;
    boost::tie(R1, R2) = decompose_tensor_prod(x, TensorProdBasis1.top(), TensorProdBasis2.top());
    int i = LocalBasis1.size()-1;
@@ -488,17 +491,19 @@ FiniteMPO fine_grain(SimpleOperator const& x,
 FiniteMPO exp(FiniteMPO const& x)
 {
    CHECK(x.is_scalar())("Must be a scalar operator to calculate the operator exponential!");
+   CHECK_EQUAL(x.Commute(), LatticeCommute::Bosonic)
+      ("Must be a bosonic operator to calculate the operator exponential!");
 
    SimpleOperator Op = coarse_grain(x).scalar();
    Op = Tensor::Exponentiate(Op);
-   FiniteMPO Result = fine_grain(Op, x.LocalBasis1List(), x.LocalBasis2List());
+   FiniteMPO Result = fine_grain(Op, LatticeCommute::Bosonic, x.LocalBasis1List(), x.LocalBasis2List());
    return Result;
 }
 
 FiniteMPO
 MakeIdentityFrom(FiniteMPO const& x)
 {
-   FiniteMPO Result(x.size());
+   FiniteMPO Result(x.size(), LatticeCommute::Bosonic);
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
    BasisList b(x.GetSymmetryList());
    b.push_back(Ident);

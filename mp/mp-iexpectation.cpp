@@ -1,378 +1,300 @@
+// -*- C++ -*- $Id$
 
-#include "mpo/triangularoperator.h"
 #include "mps/infinitewavefunction.h"
+#include "lattice/latticesite.h"
 #include "common/environment.h"
 #include "common/terminal.h"
+#include "mp/copyright.h"
 #include <boost/program_options.hpp>
 #include "common/environment.h"
+#include "common/prog_options.h"
 #include "interface/inittemp.h"
-#include "mp-algorithms/gmres.h"
-#include "mp-algorithms/arnoldi.h"
-
 #include "tensor/tensor_eigen.h"
+#include "lattice/unitcell-parser.h"
+#include "mpo/finite_mpo.h"
+#include "mps/operator_actions.h"
 
 #include "models/spin.h"
 #include "models/spin-u1.h"
 #include "models/spin-su2.h"
+#include "models/spin-z2.h"
 #include "models/tj-u1su2.h"
 #include "models/tj-u1.h"
 #include "models/spinlessfermion-u1.h"
 #include "models/kondo-u1su2.h"
 #include "models/kondo-u1.h"
+#include "models/kondo-u1u1.h"
 #include "models/hubbard-so4.h"
+#include "models/hubbard-u1u1.h"
+#include "models/hubbard-u1u1-old.h"
+#include "models/boson-u1.h"
+#include "models/boson.h"
+#include "models/boson-2component-u1z2.h"
 
-template <typename CoefficientField>
-class Polynomial
+namespace prog_opt = boost::program_options;
+
+void DisplayHeading(bool ShowReal, bool ShowImag)
 {
-   public:
-      typedef CoefficientField coefficient_type;
-      typedef coefficient_type data_type;
-      typedef int key_type;
-
-      typedef std::map<int, coefficient_type> container_type;
-
-      typedef typename container_type::iterator       iterator;
-      typedef typename container_type::const_iterator const_iterator;
-      typedef typename container_type::value_type value_type;
-
-      Polynomial() {}
-
-      // initialize as a constant polynomial
-      explicit Polynomial(coefficient_type const& c);
-      
-      coefficient_type& operator[](int n) { return data_[n]; }
- 
-      // returns the coefficient of the term x^n, or a default constructed coefficient
-      // if the term is zero
-      coefficient_type coefficient(int n) const;
-
-      bool empty() const { return data_.empty(); }
-      int degree() const;
-
-      // returns the number of non-zero coefficients
-      int size() const { return int(data_.size()); }
-
-      iterator begin() { return data_.begin(); }
-      iterator end() { return data_.end(); }
-
-      const_iterator begin() const { return data_.begin(); }
-      const_iterator end() const { return data_.end(); }
-
-      std::map<int, coefficient_type> data_;
-};
-
-template <typename CF>
-Polynomial<CF>::Polynomial(coefficient_type const& c)
-{
-   data_[0] = c;
+   // Output the heading
+   std::cout << "#i #j";
+   if (ShowReal)
+      std::cout << " #real";
+   if (ShowImag)
+      std::cout << " #imag";
+   std::cout << '\n';
 }
 
-template <typename CF>
-int Polynomial<CF>::degree() const
+void
+Display(std::complex<double> x, int s1, int s2, bool ShowReal, bool ShowImag)
 {
-   if (data_.empty())
-      return 0;
-   // else
-   const_iterator i = data_.end();
-   --i;
-   return i->first;
+   std::cout << s1 << "    " << s2 << "   ";
+   if (ShowReal)
+      std::cout << x.real() << "   ";
+   if (ShowImag)
+      std::cout << x.imag();
+   std::cout << '\n';
 }
 
-template <typename CF>
-CF Polynomial<CF>::coefficient(int n) const
-{
-   const_iterator I = data_.find(n);
-   if (I == data_.end())
-      return coefficient_type();
-   return I->second;
-}
-
-template <typename CF>
-std::ostream&
-operator<<(std::ostream& out, Polynomial<CF> const& x)
-{
-   if (x.empty())
-   {
-      return out << "zero polynomial\n";
-   }
-
-   for (typename Polynomial<CF>::const_iterator I = x.begin(); I != x.end(); ++I)
-   {
-      out << "Coefficient of x^" << I->first << " = " << I->second << '\n';
-   }
-   return out;
-}
-
-long Binomial(int n, int k)
-{
-   if (k > n/2)
-      k = n-k;     // take advantage of symmetry
-   double r = 1.0;
-   for (int i = 1; i <= k; ++i)
-   {
-      r *= double(n-k+i) / double(i);
-   }
-   return long(r+0.5); // round to nearest
-}
-
-struct OneMinusTransfer
-{
-   OneMinusTransfer(double ScaleFactor, StateComponent const& Psi, MatrixOperator const& Rho,
-                    MatrixOperator const& Identity)
-      : Scale_(ScaleFactor), Psi_(Psi), Rho_(Rho), Identity_(Identity) {}
-
-   MatrixOperator operator()(MatrixOperator const& x) const
-   {
-      MatrixOperator r = x-Scale_*operator_prod(herm(Psi_), x, Psi_);
-      //      MatrixOperator r = x-Scale_*0.5*(operator_prod(herm(Psi_), x, Psi_) 
-      // + operator_prod(Psi_, x, herm(Psi_)));
-      r -= inner_prod(r, Rho_) * Identity_; // orthogonalize to the identity
-      return r;
-   }
-
-   double Scale_;
-   StateComponent const& Psi_;
-   MatrixOperator const& Rho_;
-   MatrixOperator const& Identity_;
-};
-
-template <typename Func>
+// inject_left for a FiniteMPO.  This can have support on multiple wavefunction unit cells
 MatrixOperator
-LinearSolve(Func F, MatrixOperator Rhs)
+inject_left(MatrixOperator const& m, 
+            LinearWavefunction const& Psi1,
+	    QuantumNumbers::QuantumNumber const& QShift,
+            FiniteMPO const& Op, 
+            LinearWavefunction const& Psi2)
 {
-   MatrixOperator Guess = Rhs;
-   int m = 30;
-   int max_iter = 10000;
-   double tol = 1e-15;
-   GmRes(Guess, F, Rhs, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>());
-   return Guess;
-}
+   CHECK_EQUAL(Psi1.size(), Psi2.size());
+   DEBUG_CHECK_EQUAL(m.Basis1(), Psi1.Basis1());
+   DEBUG_CHECK_EQUAL(m.Basis2(), Psi2.Basis1());
+   if (Op.is_null())
+      return MatrixOperator();
 
-
-Polynomial<MatrixOperator>
-SolveMPO_Left(StateComponent const& Psi,
-              MpOpTriangular const& Op, MatrixOperator const& Rho,
-              MatrixOperator const& Identity, bool Verbose = false)
-{
-   typedef Polynomial<MatrixOperator> PolyType;
-   typedef Polynomial<std::complex<double> > ComplexPolyType;
-   int Dim = Op.Basis1().size();  // dimension of the MPO
-   std::vector<PolyType> EMat(Dim);  // The E-matrices
-
-   // Initialize the first E matrix
-   EMat[Dim-1] = PolyType(Identity);
-
-   // solve recursively
-   int Col = Dim-2;
-   while (Col >= 0)
+   // we currently only support simple irreducible operators
+   CHECK_EQUAL(Op.Basis1().size(), 1);
+   CHECK_EQUAL(Op.Basis2().size(), 1);
+   CHECK_EQUAL(Op.Basis1()[0], m.TransformsAs());
+   MatrixOperator Result = m;
+   StateComponent E(Op.Basis1(), m.Basis1(), m.Basis2());
+   E[0] = m;
+   E.debug_check_structure();
+   LinearWavefunction::const_iterator I1 = Psi1.begin();
+   LinearWavefunction::const_iterator I2 = Psi2.begin();
+   GenericMPO::const_iterator OpIter = Op.begin();
+   while (OpIter != Op.end())
    {
-      if (Verbose)
+      if (I1 == Psi1.end())
       {
-         std::cerr << "Solving column " << Col << '\n';
+	 I1 = Psi1.begin();
+	 I2 = Psi2.begin();
+	 E = delta_shift(E, QShift);
       }
-      // Generate the next C matrices, C(n) = sum_{j>Col} Op(j,Col) E_j(n)
-      PolyType C;
-      for (int j = Col+1; j < Dim; ++j)
-      {
-         SimpleRedOperator const M = Op(j,Col);
-         if (!M.is_null())
-         {
-            for (PolyType::const_iterator I = EMat[j].begin(); I != EMat[j].end(); ++I)
-            {
-               for (SimpleRedOperator::const_iterator MIter = M.begin(); 
-                    MIter != M.end(); ++MIter)
-               {
-                  // TODO: add a variant for a SimpleRedOperator to state_component.h
-                  C[I->first] += operator_prod(herm(*MIter), herm(Psi), I->second, Psi,
-                                               Op.Basis1()[Col]);
-               }
-            }
-         }
-      }
-
-      // Now do the classification, based on the properties of the diagonal operator
-      SimpleRedOperator Diag = Op(Col, Col);
-      if (norm_frob(scalar(Diag)) < 1E-10)
-      {
-         // the operator is zero.  In this case the solution is simply
-         // E(n) = C(n-1)
-         DEBUG_TRACE("Zero diagonal element")(Col)(Diag);
-         PolyType E;
-         int MaxDegree = C.degree();
-         for (int i = MaxDegree; i >= 0; --i)
-         {
-            E[i] = C[i];
-            for (int j = i+1; j <= MaxDegree; ++j)
-            {
-               E[i] -= double(Binomial(j,i)) * E[j];
-            }
-         }
-         EMat[Col] = E;
-      }
-      else
-      {
-         // operator is not zero, assume it is proportional to the identity
-         DEBUG_TRACE("Non-zero diagonal element")(Col)(Diag);
-
-         ComplexPolyType EParallel;  // components parallel to the identity, may be zero
-         double Fac = norm_frob_sq(scalar(Diag));
-         Fac = std::sqrt(Fac / Diag.Basis1().total_degree());
-         // is Fac == 1 ?
-         if (fabs(Fac - 1.0) < 1E-10)
-         {
-            // diagonal element is the identity
-            DEBUG_TRACE("Unit diagonal element")(Col)(Diag);
-         
-            // decompose C into components parallel and perpendicular to the identity
-            ComplexPolyType CParallel;
-            for (PolyType::iterator I = C.begin(); I != C.end(); ++I)
-            {
-               std::complex<double> Overlap = inner_prod(I->second, Rho);
-               I->second -= Overlap*Identity;
-               if (norm_frob(Overlap) > 1E-16)
-                  CParallel[I->first] = Overlap;
-            }
-
-            // components parallel to the identity satisfy equation (23) of the notes
-            for (int m = CParallel.degree(); m >= 0; --m)
-            {
-               EParallel[m+1] = CParallel[m];
-               for (int k = m+2; k <= CParallel.degree()+1; ++k)
-               {
-                  EParallel[m+1] -= double(Binomial(k,m)) * EParallel[k];
-               }
-               EParallel[m+1] *= 1.0 / (1.0 + m);
-            }
-         }
-
-         // if we get here, then Fac <= 1
-         // do the components perpendicular to the identity
-      
-         // Components perpendicular to the identity satisfy equation (24)
-         PolyType E;
-         for (int m = C.degree(); m >= 0; --m)
-         {
-            MatrixOperator Rhs = C[m];
-            for (int k = m+1; k <= C.degree(); ++k)
-            {
-               Rhs -= double(Binomial(k,m)) * E[k];
-            }
-
-            // orthogonalize Rhs against the identity again, which is a kind of
-            // DGKS correction
-            Rhs -= inner_prod(Rho, Rhs) * Identity;
-
-            double RhsNorm2 = norm_frob_sq(Rhs);
-            RhsNorm2 = RhsNorm2 / (Rhs.Basis1().total_degree()*Rhs.Basis2().total_degree());
-            //TRACE(RhsNorm2);
-            if (RhsNorm2 > 1E-22)
-            {
-               E[m] = LinearSolve(OneMinusTransfer(Fac, Psi, Rho, Identity), Rhs);
-               // do another orthogonalization
-               E[m] -= inner_prod(Rho, E[m]) * Identity;
-            }
-         }
-
-         // Reinsert the components parallel to the identity
-         for (ComplexPolyType::const_iterator I = EParallel.begin(); I != EParallel.end(); ++I)
-         {
-            E[I->first] += I->second * Identity;
-         }
-
-         // finished this column
-         EMat[Col] = E;
-      }
-
-      --Col;
+      E = operator_prod(herm(*OpIter), herm(*I1), E, *I2);
+      ++I1; ++I2; ++OpIter;
    }
-
-   return EMat[0];
-}
-
-Polynomial<std::complex<double> >
-ExtractOverlap(Polynomial<MatrixOperator> const& E, MatrixOperator const& Rho)
-{
-   Polynomial<std::complex<double> > Overlap;
-   for (Polynomial<MatrixOperator>::const_iterator I = E.begin(); I != E.end(); ++I)
-   {
-      Overlap[I->first] = inner_prod(I->second, Rho);
-   }
-   return Overlap;
+   return E[0];
 }
 
 int main(int argc, char** argv)
 {
-   if (argc < 2 || argc > 2)
+   try
    {
-      std::cout << "usage: mp-iexpectation <psi>\n";
+      bool ShowReal = false, ShowImag = false;
+      std::string Model, PsiStr;
+      std::string OpStr;
+      int UnitCellSize = 1;
+      int Verbose = 0;
+      int NMax = 5;
+      double Spin = 0.5;
+
+      std::cout.precision(14);
+
+      prog_opt::options_description desc("Allowed options", terminal::columns());
+      desc.add_options()
+         ("help", "show this help message")
+	 ("real,r", prog_opt::bool_switch(&ShowReal),
+	  "display only the real part of the result")
+	 ("imag,i", prog_opt::bool_switch(&ShowImag),
+	  "display only the imaginary part of the result")
+	 ("unitcell,u", prog_opt::value(&UnitCellSize),
+	  "Size of the Hamiltonian unit cell")
+         ("spin", prog_opt::value(&Spin),
+          "spin (for su(2) models)")
+	 ("nmax", prog_opt::value(&NMax),
+	  FormatDefault("Maximum number of bosons per site [for bosonic models]", NMax).c_str())
+         ("verbose,v", prog_opt_ext::accum_value(&Verbose),
+          "Verbose output (use multiple times for more output)")
+         ;
+
+      prog_opt::options_description hidden("Hidden options");
+      hidden.add_options()
+         ("model", prog_opt::value(&Model), "model")
+         ("psi", prog_opt::value(&PsiStr), "psi")
+         ("op", prog_opt::value(&OpStr), "op")
+         ;
+
+      prog_opt::positional_options_description p;
+      p.add("model", 1);
+      p.add("psi", 1);
+      p.add("op", 1);
+
+      prog_opt::options_description opt;
+      opt.add(desc).add(hidden);
+
+      prog_opt::variables_map vm;        
+      prog_opt::store(prog_opt::command_line_parser(argc, argv).
+                      options(opt).positional(p).run(), vm);
+      prog_opt::notify(vm);    
+
+      if (vm.count("help") > 0 || vm.count("op") == 0)
+      {
+         print_copyright(std::cerr);
+         std::cerr << "usage: mp-iexpectation [options] <model> <psi> <operator>\n";
+         std::cerr << desc << '\n';
+         return 1;
+      }
+
+      // If no real or imag specifiation is used, show both parts
+      if (!ShowReal && !ShowImag)
+         ShowReal = ShowImag = true;
+
+      bool FermionicWarning = false;  // set to true if we have already warned the user about 
+      // a possible fermionic problem
+
+      mp_pheap::InitializeTempPHeap();
+      pvalue_ptr<InfiniteWavefunction> Psi = pheap::ImportHeap(PsiStr);
+
+      LatticeSite Site;
+      if (Model == "sf-u1")
+      {
+	 Site = CreateU1SpinlessFermion();
+      }
+      else if (Model == "spin")
+      {
+	 Site = CreateSpinSite(Spin);
+      }
+      else if (Model == "spin1")
+      {
+	 Site = CreateSpinSite(1.0);
+      }
+      else if (Model == "spin-su2")
+      {
+	 Site = CreateSU2SpinSite(Spin);
+      }
+      else if (Model == "spin-u1")
+      {
+	 Site = CreateU1SpinSite(Spin);
+      }
+      else if (Model == "spin-z2")
+      {
+	 Site = CreateZ2SpinSite(0.5);
+      }
+      else if (Model == "tj-u1")
+      {
+	 Site = CreateU1tJSite();
+      }
+      else if (Model == "tj-u1su2")
+      {
+	 Site = CreateU1SU2tJSite();
+      }
+      else if (Model == "klm-u1su2")
+      {
+	 Site = CreateU1SU2KondoSite();
+      }
+      else if (Model == "klm-u1")
+      {
+	 Site = CreateU1KondoSite();
+      }
+      else if (Model == "klm-u1u1")
+      {
+	 Site = CreateU1U1KondoSite();
+      }
+      else if (Model == "hubbard-so4")
+      {
+	 Site = CreateSO4HubbardSiteA();
+      }
+      else if (Model == "hubbard-u1u1")
+      {
+	 Site = CreateU1U1HubbardSite();
+      }
+      else if (Model == "hubbard-u1u1-old")
+      {
+	 Site = CreateU1U1HubbardOldOrderingSite();
+      }
+      else if (Model == "bh-u1")
+      {
+	 Site = BosonU1(NMax);
+      }
+      else if (Model == "bh")
+      {
+	 Site = Boson(NMax);
+      }
+      else if (Model == "bh2-u1z2")
+      {
+	 Site = CreateBoseHubbard2BosonsU1Z2Site(NMax);
+      }
+      else
+      {
+	 PANIC("mp-iexpectation: fatal: model parameter unrecognised.");
+      }
+
+      QuantumNumber Ident(Psi->GetSymmetryList());
+      
+      UnitCell Cell = repeat(Site, UnitCellSize);
+
+      FiniteMPO Op = ParseUnitCellOperator(Cell, 0, OpStr);
+
+      TRACE(Op);
+
+      // Check that Op is bosonic, otherwise it is not defined
+      CHECK(Op.Commute() == LatticeCommute::Bosonic)("Cannot evaluate non-bosonic operator")(Op.Commute());
+
+      LinearWavefunction PsiOrtho = get_orthogonal_wavefunction(*Psi);
+      MatrixOperator Rho = scalar_prod(Psi->C_right, herm(Psi->C_right));
+      MatrixOperator Identity = MatrixOperator::make_identity(PsiOrtho.Basis1());
+      QuantumNumber QShift = Psi->shift();
+
+      int PsiSize = PsiOrtho.size();
+
+      // paranoid check the orthogonalization of the wavefunction
+      DEBUG_CHECK(norm_frob(delta_shift(inject_left(Identity, PsiOrtho, PsiOrtho), QShift) - Identity) < 1E-10);
+      DEBUG_CHECK(norm_frob(inject_right(Rho, PsiOrtho, PsiOrtho) - delta_shift(Rho, QShift)) < 1E-10);
+
+      // extend Op1 to a multiple of the wavefunction size
+      while (Op.size() % PsiOrtho.size() != 0)
+      {
+	 Op = join(Op, identity_mpo(Cell));
+      }
+
+      // now calculate the actual expectation value
+      MatrixOperator X = Identity;
+      X = inject_left(X, PsiOrtho, QShift, Op, PsiOrtho);
+
+      TRACE(X)(Rho);
+
+      std::complex<double> x = inner_prod(X, Rho);
+
+      if (!ShowReal && !ShowImag)
+	 std::cout << x;
+      else
+      {
+	 if (ShowReal)
+	    std::cout << x.real() << "   ";
+	 if (ShowImag)
+	    std::cout << x.imag();
+      }
+      std::cout << '\n';
+
+      pheap::Shutdown();
+
+   }
+   catch (std::exception& e)
+   {
+      std::cerr << "Exception: " << e.what() << '\n';
       return 1;
    }
-
-   long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
-   pvalue_ptr<InfiniteWavefunction> PsiPtr = pheap::OpenPersistent(argv[1], CacheSize, true);
-   InfiniteWavefunction Psi = *PsiPtr;
-
-#if 0
-   SiteBlock Site = CreateSpinSite(0.5);
-   double J = -1.0;
-   double Lambda = 1.0;
-   MpOpTriangular Op;
-   Op = J * 4.0 * TriangularTwoSite(Site["Sz"], Site["Sz"])
-      + Lambda * 2.0 * TriangularOneSite(Site["Sx"]);
-#endif
-
-#if 1
-   SiteBlock Site = CreateSpinSite(0.5);
-   double J = -1.0;
-   double Jz = 1;
-   MpOpTriangular Op;
-   Op = J * 0.5 * (TriangularTwoSite(Site["Sp"], Site["Sm"])
-                   + TriangularTwoSite(Site["Sm"], Site["Sp"]))
-      + Jz * TriangularTwoSite(Site["Sz"], Site["Sz"]);
-#endif
-
-   MpOpTriangular Ham = Op;
-
-   //Op = Op + 1.2732394790856 * TriangularOneSite(Site["I"]);
-
-   MpOpTriangular Const = TriangularOneSite(Site["I"]);
-   MpOpTriangular Const2 = Const*Const;
-   MpOpTriangular Const4 = Const2*Const2;
-
-   //Op = Op*Const;
-   Op = Op*Op;
-
-   //Op = Op - 1.2883390008989e-07 * TriangularOneSite(Site["I"]);
-   //Op = Op - 1.6211387711023 * Const2;
-   //Op=Op*Op;
-
-   //Op = Op - 6.1807994119478e-06 * TriangularOneSite(Site["I"]);
-   //   Op = Op - 2.6280909151706540665585451556 * Const4;
-   //Op = Op*Op; // H^8
-
-   //   Op = Const4;
-
-   MatrixOperator Identity = MatrixOperator::make_identity(Psi.Psi.Basis1());
-   MatrixOperator Rho = scalar_prod(Psi.C_right, herm(Psi.C_right));
-   StateComponent Phi = Psi.Psi.get_front(); // no need to bugger around with C_old,C_right
- 
-   MatrixOperator LambdaSqrt = SqrtDiagonal(Psi.C_old);
-   MatrixOperator LambdaInvSqrt = InvertDiagonal(LambdaSqrt, InverseTol);
-
-   bool Verbose = false;
-
-   Phi = prod(prod(LambdaInvSqrt, Phi), LambdaSqrt);
-   Rho = Psi.C_old;
-   Identity = Rho;
-
-   TRACE(norm_frob(operator_prod(herm(Phi), Identity, Phi) - Identity));
-   TRACE(norm_frob(operator_prod(Phi, Rho, herm(Phi)) - Rho));
-
-   std::cout.precision(14);
-
-   Polynomial<MatrixOperator> E = SolveMPO_Left(Phi, Op, Rho, Identity, Verbose);
-   Polynomial<std::complex<double> > a = ExtractOverlap(E, Rho);
-   std::cout << a;
-
-   pheap::Shutdown();
+   catch (...)
+   {
+      std::cerr << "Unknown exception!\n";
+      return 1;
+   }
 }

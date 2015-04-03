@@ -303,7 +303,8 @@ local_inner_prod(HermitianProxy<OperatorComponent> const& A, OperatorComponent c
       {
          for (OperatorComponent::const_inner_iterator BJ = iterate(BI); BJ; ++BJ)
          {
-            Result(AJ.index2(), BJ.index2()) = inner_prod(*AJ, *BJ);
+	    if (A.base().Basis2()[AJ.index2()] == B.Basis2()[BJ.index2()])
+	       Result(AJ.index2(), BJ.index2()) = inner_prod(*AJ, *BJ);
          }
       }
       ++AI;
@@ -332,7 +333,8 @@ local_inner_prod(OperatorComponent const& A, HermitianProxy<OperatorComponent> c
          {
             if (AJ.index2() == BJ.index2())
             {
-               Result(AJ.index1(), BJ.index1()) += conj(inner_prod(*BJ, *AJ));
+	       if (A.Basis1()[AJ.index1()] == B.base().Basis1()[BJ.index1()])
+		  Result(AJ.index1(), BJ.index1()) += adjoint(inner_prod(*BJ, *AJ));
 	       ++AJ;
 	       ++BJ;
             }
@@ -503,12 +505,13 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
    std::set<int> KeepStates; // the states that we are going to keep
    for (int i = Size-1; i >= 0; --i)
    {
-      NewRows[i] = std::make_pair(i, 1.0);
       double imat = Overlaps(i,i).real();
       // if the row is zero, we can eliminate it completely.
       // Because we've normalized everything, then it is either 1 or ~epsilon here.
       if (imat == 0)
          continue;    // skip this row
+
+      NewRows[i] = std::make_pair(i, 1.0);
 
       bool Parallel = false;  // is vector i parallel to some other vector?
       // loop to find out if row i is parallel to row j

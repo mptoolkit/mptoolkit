@@ -29,7 +29,9 @@ class FiniteMPO
 
       FiniteMPO(FiniteMPO const& Other) : Data(Other.Data) {}
 
-      explicit FiniteMPO(int Size) : Data(Size) {}
+      // Removed this constructor because it doesn't make much sense to define a FiniteMPO
+      // without specifying the LatticeCommute
+      //      explicit FiniteMPO(int Size) : Data(Size) {}
 
       FiniteMPO(int Size, LatticeCommute Com) : Data(Size, Com) {}
 
@@ -193,7 +195,7 @@ SimpleRedOperator coarse_grain(FiniteMPO const& x);
 
 // The opposite of coarse_grain - decompose an operator acting on the entire Hilbert space
 // into a FiniteMPO
-FiniteMPO fine_grain(SimpleOperator const& x,
+FiniteMPO fine_grain(SimpleOperator const& x, LatticeCommute Com,
 		     std::vector<BasisList> const& LocalBasis1,
 		     std::vector<BasisList> const& LocalBasis2);
 

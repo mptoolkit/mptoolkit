@@ -3,9 +3,119 @@
 #include "unitcell-parser.h"
 #include "parser/parser.h"
 
+
 using namespace Parser;
 
 typedef boost::variant<complex, FiniteMPO> element_type;
+
+namespace Parser
+{
+
+// We have a problem: for operators with indefinite support, we need to extend MPOs as necessary
+// so that binary operations act on operands with the same number of unit cells.  We can't do that
+// without knowing the actual unit cell, since it might be some operator that mixes the basis around etc.
+// This means that the binary functions declared in parser.h need to move into here.
+// Or better yet, specializ them.
+
+#if 0
+template <>
+struct binary_addition<element_type> : boost::static_visitor<element_type>
+{
+   binary_addition(UnitCell const& Cell_) 
+      : Cell(Cell_) {}
+
+   element_type operator()(complex const& x, complex const& y) const
+   { 
+      return element_type(x+y);
+   }
+
+   element_type operator()(complex const& x, FiniteMPO const& y) const
+   {
+      return element_type(x*MakeIdentityFrom(y) + y);
+   }
+
+   element_type operator()(FiniteMPO const& x, complex const& y) const
+   {
+      return element_type(x + y*MakeIdentityFrom(x));
+   }
+
+   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   {
+      if (x.size() < y.size())
+      {
+	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 return element_type(xExtend+y);
+      }
+      else if (x.size() > y.size())
+      {
+	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 return element_type(x+yExtend);
+      }
+      // else
+      return element_type(x+y);
+   }
+
+   UnitCell const& Cell;
+};
+#endif
+
+template <>
+struct binary_dot_product<element_type> : boost::static_visitor<element_type>
+{
+   binary_dot_product(UnitCell const& Cell_) 
+      : Cell(Cell_) {}
+
+   element_type operator()(complex const& x, complex const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(complex const& x, FiniteMPO const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(FiniteMPO const& x, complex const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   {
+      if (x.size() < y.size())
+      {
+	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 return dot(xExtend, y);
+      }
+      else if (x.size() > y.size())
+      {
+	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 return dot(x, yExtend);
+      }
+      // else
+      return dot(x,y);
+   }
+
+   UnitCell const& Cell;
+
+};
+
+template <>
+struct binary_funcs<element_type> : symbols<boost::function<element_type(element_type, element_type)> >
+{
+   typedef boost::function<element_type(element_type, element_type)> binary_func_type;
+   binary_funcs(UnitCell const& Cell)
+   {
+      this->add.operator()
+         ("dot", make_apply_binary_math<element_type>(binary_dot_product<element_type>(Cell)))
+	 //         ("outer", make_apply_binary_math<element_type>(binary_outer_product<element_type>()))
+	 //	 ("cross", make_apply_binary_math<element_type>(binary_cross_product<element_type>()))
+         ;
+   }
+};
+
+} // namespace Parser
+
 
 // a unit cell operator that has no unit cell index attached.
 // This is only possible if we only have one cell (NumCells == 1)
@@ -66,6 +176,9 @@ struct push_operator_cell
       {
 	 Op = join(Op, repeat(identity_mpo(Cell), NumCells-j-1));
       }
+
+      TRACE(Op);
+
       eval.push(element_type(Op));
    }
 
@@ -107,10 +220,10 @@ struct push_local_operator_no_cell
 };
 
 // a local operator that specifies a cell index as well.
-// The cell index was pushed first, in the notation Op(j)[n]
-struct push_local_operator_index_cell
+// The cell index was pushed first, in the notation Op(n)[j]
+struct push_local_operator_cell_index
 {
-   push_local_operator_index_cell(UnitCell const& Cell_, int NumCells_,
+   push_local_operator_cell_index(UnitCell const& Cell_, int NumCells_,
 				  std::stack<std::string>& IdentifierStack_, 
 				  std::stack<element_type>& eval_)
       : Cell(Cell_), NumCells(NumCells_), IdentifierStack(IdentifierStack_), eval(eval_) {}
@@ -155,10 +268,10 @@ struct push_local_operator_index_cell
 };
 
 // a local operator that specifies a cell index as well.
-// The site number was pushed first, in the notation Op[n](j)
-struct push_local_operator_cell_index
+// The site number was pushed first, in the notation Op[j](n)
+struct push_local_operator_index_cell
 {
-   push_local_operator_cell_index(UnitCell const& Cell_, int NumCells_,
+   push_local_operator_index_cell(UnitCell const& Cell_, int NumCells_,
 				  std::stack<std::string>& IdentifierStack_, 
 				  std::stack<element_type>& eval_)
       : Cell(Cell_), NumCells(NumCells_), IdentifierStack(IdentifierStack_), eval(eval_) {}
@@ -202,20 +315,6 @@ struct push_local_operator_cell_index
    std::stack<element_type >& eval;
 };
 
-
-struct push_identifier
-{
-   push_identifier(std::stack<std::string>& eval_)
-      : eval(eval_) {}
-
-   void operator()(char const* str, char const* end) const
-   {
-      eval.push(std::string(str, end));
-   }
-
-   std::stack<std::string>& eval;
-};
-
 struct UnitCellParser : public grammar<UnitCellParser>
 {
    typedef boost::variant<complex, FiniteMPO> element_type;
@@ -229,7 +328,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
 
    static constants                  constants_p;
    static unary_funcs<element_type>  unary_funcs_p;
-   static binary_funcs<element_type> binary_funcs_p;
+   //   static binary_funcs<element_type> binary_funcs_p;
 
    UnitCellParser(ElementStackType& eval_, 
 		  IdentifierStackType& identifier_stack_,
@@ -237,7 +336,8 @@ struct UnitCellParser : public grammar<UnitCellParser>
 		  BinaryFuncStackType& bin_func_stack_,
 		  UnitCell const& Cell_, int NumCells_)
       : eval(eval_), identifier_stack(identifier_stack_), 
-	func_stack(func_stack_), bin_func_stack(bin_func_stack_), Cell(Cell_), NumCells(NumCells_) {}
+	func_stack(func_stack_), bin_func_stack(bin_func_stack_), Cell(Cell_), NumCells(NumCells_),
+	binary_funcs_p(Cell_) {}
    
    template <typename ScannerT>
    struct definition
@@ -249,10 +349,36 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	 imag = lexeme_d[ureal_p >> chset<>("iIjJ")][push_imag<element_type>(self.eval)];
 	 
 	 identifier = lexeme_d[alpha_p >> *(alnum_p | '_')][push_identifier(self.identifier_stack)];
-	 
+
+	 // We re-use the identifier_stack for quantum numbers, and rely on the grammar rules to
+	 // avoid chaos!
+	 quantumnumber = '"' >> lexeme_d[*(anychar_p - chset<>("\""))]
+	    [push_identifier(self.identifier_stack)] >> '"';
+
+	 prod_expression = ("prod(" >> expression >> ',' >> expression >> ',' >> quantumnumber >> ')')
+	    [push_prod<element_type>(self.identifier_stack, self.eval)];
+ 
 	 bracket_expr = '(' >> expression >> ')';
 
 	 sq_bracket_expr = '[' >> expression >> ']';
+
+	 cell_operator_cell = 
+	    identifier 
+	    >> (bracket_expr >> (sq_bracket_expr
+   [push_local_operator_cell_index(self.Cell, self.NumCells, self.identifier_stack, self.eval)] 
+				  |
+				  eps_p
+   [push_operator_cell(self.Cell, self.NumCells, self.identifier_stack, self.eval)]
+				  )
+	     | (sq_bracket_expr >> (bracket_expr
+   [push_local_operator_index_cell(self.Cell, self.NumCells, self.identifier_stack, self.eval)]
+				    |
+				    eps_p
+   [push_local_operator_no_cell(self.Cell, self.NumCells, self.identifier_stack, self.eval)]
+				    )
+		)
+		 )
+	    | eps_p[push_operator_no_cell(self.Cell, self.NumCells, self.identifier_stack, self.eval)];
 	 
 	 // cell operator with no cell index specified
 	 cell_operator = identifier
@@ -280,8 +406,8 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	    >>  ('(' >> expression >> ')')[eval_unary<element_type>(self.func_stack, self.eval)];
 	 
 	 binary_function = 
-	    eps_p(binary_funcs_p >> '(') 
-	    >>  binary_funcs_p[push_binary<element_type>(self.bin_func_stack)]
+	    eps_p(self.binary_funcs_p >> '(') 
+	    >>  self.binary_funcs_p[push_binary<element_type>(self.bin_func_stack)]
 	    >>  ('(' >> expression >> ','  >> expression >> ')')
 	    [eval_binary<element_type>(self.bin_func_stack, self.eval)];
 	 
@@ -295,15 +421,16 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	    |   unary_function
 	    |   binary_function
 	    |   keyword_d[constants_p[push_real<element_type>(self.eval)]]
+	    |   prod_expression
 	    |   commutator_bracket
 	    |   '(' >> expression >> ')'
 	    |   ('-' >> factor)[do_negate<element_type>(self.eval)]
 	    |   ('+' >> factor)
-	    |   local_operator_cell_index
-	    |   local_operator_index_cell
-	    |   local_operator
+	    //	    |   local_operator_cell_index
+	    //	    |   local_operator_index_cell
+	    //	    |   local_operator
 	    |   cell_operator_cell
-	    |   cell_operator
+	    //	    |   cell_operator
 	    ;
 	 
 	 // power operator, next precedence, operates to the right
@@ -333,7 +460,8 @@ struct UnitCellParser : public grammar<UnitCellParser>
       }
       
       rule<ScannerT> expression, term, factor, real, imag, operator_literal, unary_function,
-	 binary_function, bracket_expr, sq_bracket_expr, cell_operator, cell_operator_cell,
+	 binary_function, bracket_expr, quantumnumber, prod_expression, sq_bracket_expr, 
+	 cell_operator, cell_operator_cell,
 	 local_operator, local_operator_cell_index, local_operator_index_cell, 
 	 identifier, pow_term, commutator_bracket;
       rule<ScannerT> const&
@@ -346,13 +474,15 @@ struct UnitCellParser : public grammar<UnitCellParser>
    std::stack<binary_func_type>& bin_func_stack;
    UnitCell const& Cell;
    int NumCells;
+
+   binary_funcs<element_type> binary_funcs_p;
 };
 
 
 // global variables (static members of UnitCellParser)
 constants UnitCellParser::constants_p;
 unary_funcs<UnitCellParser::element_type> UnitCellParser::unary_funcs_p;
-binary_funcs<UnitCellParser::element_type> UnitCellParser::binary_funcs_p;
+//binary_funcs<UnitCellParser::element_type> UnitCellParser::binary_funcs_p;
 
 FiniteMPO
 ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& Str)
@@ -374,6 +504,7 @@ ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& Str
 
    CHECK(UnaryFuncStack.empty());
    CHECK(BinaryFuncStack.empty());
+   CHECK(IdentifierStack.empty());
    CHECK(!ElementStack.empty());
    element_type Result = ElementStack.top();
    ElementStack.pop();

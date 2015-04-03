@@ -21,6 +21,7 @@
 #include <string>
 #include <complex>
 #include "common/math_const.h"
+#include "quantumnumbers/quantumnumber.h"  // for the ternary_prod implementation
 
 namespace Parser
 {
@@ -493,8 +494,63 @@ struct binary_funcs : symbols<boost::function<element_type(element_type, element
 };
 
 //
+// Ternary functions
+//
+
+template <typename element_type>
+struct ternary_product : boost::static_visitor<element_type>
+{
+   ternary_product(std::string const& q_)
+      : q(q_) {}
+
+   element_type operator()(complex const& x, complex const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   template <typename T>
+   element_type operator()(complex const& x, T const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   template <typename T>
+   element_type operator()(T const& x, complex const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   template <typename T1, typename T2>
+   element_type operator()(T1 const& x, T2 const& y) const
+   {
+      // legitimate use of TransformsAs() on MPOs
+#if !defined(DISABLE_FINITE_MPO_TRANSFORMS_AS)
+      QuantumNumbers::QuantumNumber qn(x.TransformsAs(), q);
+      return element_type(prod(x,y,q));
+#else
+      return x;
+#endif
+   }
+
+   std::string q;
+};
+
+//
 //  Semantic actions
 //
+
+struct push_identifier
+{
+   push_identifier(std::stack<std::string>& eval_)
+      : eval(eval_) {}
+
+   void operator()(char const* str, char const* end) const
+   {
+      eval.push(std::string(str, end));
+   }
+
+   std::stack<std::string>& eval;
+};
 
 template <typename element_type>
 struct push_int
@@ -667,6 +723,31 @@ struct do_negate
 
     std::stack<element_type >& eval;
 };
+
+template <typename element_type>
+struct push_prod
+{
+   push_prod(std::stack<std::string>& identifier_stack_, std::stack<element_type >& eval_)
+      : identifier_stack(identifier_stack_), eval(eval_) {}
+
+   void operator()(char const*, char const*) const
+   {
+      element_type op2 = eval.top();
+      eval.pop();
+      element_type op1 = eval.top();
+      eval.pop();
+      std::string q = identifier_stack.top();
+      identifier_stack.pop();
+
+      eval.push(boost::apply_visitor(ternary_product<element_type>(q), op1, op2));
+   }
+
+   std::stack<std::string>& identifier_stack;
+   std::stack<element_type>& eval;
+};
+
+
+
 
 } //namespace Parser
 
