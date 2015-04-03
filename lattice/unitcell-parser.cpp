@@ -11,9 +11,9 @@ typedef boost::variant<complex, FiniteMPO> element_type;
 // This is only possible if we only have one cell (NumCells == 1)
 struct push_operator_no_cell
 {
-   push_operator(UnitCell const& Cell_, int NumCells,
-		 std::stack<std::string>& IdentifierStack_, 
-		 std::stack<element_type>& eval_)
+   push_operator_no_cell(UnitCell const& Cell_, int NumCells_,
+			 std::stack<std::string>& IdentifierStack_, 
+			 std::stack<element_type>& eval_)
       : Cell(Cell_), NumCells(NumCells_), IdentifierStack(IdentifierStack_), eval(eval_) {}
 
    void operator()(char const*, char const*) const
@@ -23,6 +23,7 @@ struct push_operator_no_cell
 
       CHECK_EQUAL(NumCells, 1)("Operator must supply a cell index")(OpName);
       CHECK(Cell.operator_exists(OpName))("Operator does not exist in the unit cell")(OpName);
+
       eval.push(element_type(Cell.Operator(OpName)));
    }
 
@@ -36,9 +37,9 @@ struct push_operator_no_cell
 // The cell number j must satisfy j >= 0 && (NumCells == 0 || j < NumCells)
 struct push_operator_cell
 {
-   push_operator(UnitCell const& Cell_, int NumCells,
-		 std::stack<std::string>& IdentifierStack_, 
-		 std::stack<element_type>& eval_)
+   push_operator_cell(UnitCell const& Cell_, int NumCells_,
+		      std::stack<std::string>& IdentifierStack_, 
+		      std::stack<element_type>& eval_)
       : Cell(Cell_), NumCells(NumCells_), IdentifierStack(IdentifierStack_), eval(eval_) {}
 
    void operator()(char const*, char const*) const
@@ -48,17 +49,24 @@ struct push_operator_cell
 
       complex CellIndex = boost::get<complex>(eval.top());
       eval.pop();
-      int j = int(SiteIndex.real() + 0.5);
-      CHECK(norm_frob(SiteIndex - double(n)) < 1E-7)("Cell index must be an integer")(CellIndex);
+      int j = int(CellIndex.real() + 0.5);
+      CHECK(norm_frob(CellIndex - double(j)) < 1E-7)("Cell index must be an integer")(CellIndex);
       CHECK(j >= 0)("Cell index must be non-negative")(j)(OpName);
       CHECK(NumCells == 0 || j < NumCells)("Cell index out of bounds")(j)(NumCells);
       CHECK(Cell.operator_exists(OpName))("Operator does not exist in the unit cell")(OpName);
 
       FiniteMPO CellOperator = Cell.Operator(OpName);
-      FiniteMPO JWOperator = Cell.JWString(CellOperator.Commute());
+      FiniteMPO JWOperator = jw_string_mpo(Cell, CellOperator);
 
       // The actual operator is j copies of the JW string, followed by the cell operator
-      eval.push(element_type(join(repeat(JWOperator, j), CellOperator)));
+      FiniteMPO Op = join(repeat(JWOperator, j), CellOperator);
+
+      // extend the operator to have support over NumCells
+      if (NumCells != 0 && j < NumCells-1)
+      {
+	 Op = join(Op, repeat(identity_mpo(Cell), NumCells-j-1));
+      }
+      eval.push(element_type(Op));
    }
 
    UnitCell const& Cell;
@@ -102,7 +110,7 @@ struct push_local_operator_no_cell
 // The cell index was pushed first, in the notation Op(j)[n]
 struct push_local_operator_index_cell
 {
-   push_local_operator_index_cell(UnitCell const& Cell_, int NumCells,
+   push_local_operator_index_cell(UnitCell const& Cell_, int NumCells_,
 				  std::stack<std::string>& IdentifierStack_, 
 				  std::stack<element_type>& eval_)
       : Cell(Cell_), NumCells(NumCells_), IdentifierStack(IdentifierStack_), eval(eval_) {}
@@ -119,18 +127,25 @@ struct push_local_operator_index_cell
 
       complex CellIndex = boost::get<complex>(eval.top());
       eval.pop();
-      int j = int(SiteIndex.real() + 0.5);
-      CHECK(norm_frob(SiteIndex - double(n)) < 1E-7)("Cell index must be an integer")(CellIndex);
+      int j = int(CellIndex.real() + 0.5);
+      CHECK(norm_frob(CellIndex - double(j)) < 1E-7)("Cell index must be an integer")(CellIndex);
       CHECK(j >= 0)("Cell index must be non-negative")(j)(OpName);
       CHECK(NumCells == 0 || j < NumCells)("Cell index out of bounds")(j)(NumCells);
       CHECK(Cell.operator_exists(OpName, n))("Local operator does not exist in the unit cell")(OpName)(n);
 
       // Fetch the operator and JW string
       FiniteMPO CellOperator = Cell.Operator(OpName, n);
-      FiniteMPO JWOperator = Cell.JWString(OpName, n);
+      FiniteMPO JWOperator = jw_string_mpo(Cell, CellOperator);
 
       // The actual operator is j copies of the JW string, followed by the cell operator
-      eval.push(element_type(join(repeat(JWOperator, j), CellOperator)));
+      FiniteMPO Op = join(repeat(JWOperator, j), CellOperator);
+
+      // extend the operator to have support over NumCells
+      if (NumCells != 0 && j < NumCells-1)
+      {
+	 Op = join(Op, repeat(identity_mpo(Cell), NumCells-j-1));
+      }
+      eval.push(element_type(Op));
    }
 
    UnitCell const& Cell;
@@ -143,7 +158,7 @@ struct push_local_operator_index_cell
 // The site number was pushed first, in the notation Op[n](j)
 struct push_local_operator_cell_index
 {
-   push_local_operator_cell_index(UnitCell const& Cell_, int NumCells,
+   push_local_operator_cell_index(UnitCell const& Cell_, int NumCells_,
 				  std::stack<std::string>& IdentifierStack_, 
 				  std::stack<element_type>& eval_)
       : Cell(Cell_), NumCells(NumCells_), IdentifierStack(IdentifierStack_), eval(eval_) {}
@@ -155,23 +170,30 @@ struct push_local_operator_cell_index
 
       complex CellIndex = boost::get<complex>(eval.top());
       eval.pop();
-      int j = int(SiteIndex.real() + 0.5);
-      CHECK(norm_frob(SiteIndex - double(n)) < 1E-7)("Cell index must be an integer")(CellIndex);
+      int j = int(CellIndex.real() + 0.5);
+      CHECK(norm_frob(CellIndex - double(j)) < 1E-7)("Cell index must be an integer")(CellIndex);
+      CHECK(j >= 0)("Cell index must be non-negative")(j)(OpName);
+      CHECK(NumCells == 0 || j < NumCells)("Cell index out of bounds")(j)(NumCells);
 
       complex SiteIndex = boost::get<complex>(eval.top());
       eval.pop();
       int n = int(SiteIndex.real() + 0.5);
       CHECK(norm_frob(SiteIndex - double(n)) < 1E-7)("Site index must be an integer")(SiteIndex);
-      CHECK(j >= 0)("Cell index must be non-negative")(j)(OpName);
-      CHECK(NumCells == 0 || j < NumCells)("Cell index out of bounds")(j)(NumCells);
       CHECK(Cell.operator_exists(OpName, n))("Local operator does not exist in the unit cell")(OpName)(n);
 
       // Fetch the operator and JW string
       FiniteMPO CellOperator = Cell.Operator(OpName, n);
-      FiniteMPO JWOperator = Cell.JWString(OpName, n);
+      FiniteMPO JWOperator = jw_string_mpo(Cell, CellOperator);
 
       // The actual operator is j copies of the JW string, followed by the cell operator
-      eval.push(element_type(join(repeat(JWOperator, j), CellOperator)));
+      FiniteMPO Op = join(repeat(JWOperator, j), CellOperator);
+
+      // extend the operator to have support over NumCells
+      if (NumCells != 0 && j < NumCells-1)
+      {
+	 Op = join(Op, repeat(identity_mpo(Cell), NumCells-j-1));
+      }
+      eval.push(element_type(Op));
    }
 
    UnitCell const& Cell;
@@ -194,7 +216,7 @@ struct push_identifier
    std::stack<std::string>& eval;
 };
 
-struct UnitCellParser : public grammar<MultiCellParser>
+struct UnitCellParser : public grammar<UnitCellParser>
 {
    typedef boost::variant<complex, FiniteMPO> element_type;
    typedef boost::function<element_type(element_type)> unary_func_type;
@@ -323,6 +345,7 @@ struct UnitCellParser : public grammar<MultiCellParser>
    std::stack<unary_func_type>& func_stack;
    std::stack<binary_func_type>& bin_func_stack;
    UnitCell const& Cell;
+   int NumCells;
 };
 
 

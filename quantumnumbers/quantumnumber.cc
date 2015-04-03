@@ -252,8 +252,31 @@ int multiplicity(QuantumNumber const& q1, QuantumNumber const& q2, QuantumNumber
 }
 
 inline
+bool cross_product_exists(QuantumNumber const& q1, QuantumNumber const& q2)
+{
+   DEBUG_PRECONDITION(q1.GetSymmetryList() == q2.GetSymmetryList());
+   return q1.GetSymmetryList().cross_product_exists(q1.begin(), q2.begin());
+}
+
+inline
+QuantumNumber cross_product_transforms_as(QuantumNumber const& q1, QuantumNumber const& q2)
+{
+   DEBUG_PRECONDITION(q1.GetSymmetryList() == q2.GetSymmetryList());
+   QuantumNumber Ret(q1.GetSymmetryList());
+   q1.GetSymmetryList().cross_product_transforms_as(q1.begin(), q2.begin(), Ret.begin());
+   return Ret;
+}
+
+inline
+std::complex<double> cross_product_factor(QuantumNumber const& q1, QuantumNumber const& q2)
+{
+   DEBUG_PRECONDITION(q1.GetSymmetryList() == q2.GetSymmetryList());
+   return q1.GetSymmetryList().cross_product_factor(q1.begin(), q2.begin());
+}
+
+inline
 double clebsch_gordan(QuantumNumber const& q1, QuantumNumber const& q2, QuantumNumber const& q,
-	  Projection const&    m1, Projection const&    m2, Projection const&    m)
+		      Projection const&    m1, Projection const&    m2, Projection const&    m)
 {
    DEBUG_PRECONDITION(q.GetSymmetryList() == q1.GetSymmetryList());
    DEBUG_PRECONDITION(q.GetSymmetryList() == q2.GetSymmetryList());

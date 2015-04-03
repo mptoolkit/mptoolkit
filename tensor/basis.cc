@@ -46,10 +46,20 @@ BasisList adjoint(BasisList const& b)
 }
 
 inline
-BasisList make_vacuum_basis(SymmetryList const& S)
+BasisList
+make_vacuum_basis(SymmetryList const& S)
 {
    BasisList Result(S);
    Result.push_back(QuantumNumber(S));
+   return Result;
+}
+
+inline
+BasisList
+make_single_basis(QuantumNumbers::QuantumNumber const& q)
+{
+   BasisList Result(q.GetSymmetryList());
+   Result.push_back(q);
    return Result;
 }
 

@@ -201,6 +201,44 @@ double SymmetryList::trace(sc_iter q) const
    return d;
 }
 
+bool
+SymmetryList::cross_product_exists(sc_iter q1, sc_iter q2) const
+{
+   DEBUG_CHECK(pImpl);
+   for (int i = 0; i < pImpl->NumSymmetries(); ++i)
+   {
+      if (!(pImpl->GetSymmetryBase(i)->cross_product_exists(q1+pImpl->QuantumNumberOffset(i), 
+							    q2+pImpl->QuantumNumberOffset(i))))
+	 return false;
+   }
+   return true;
+}
+
+void
+SymmetryList::cross_product_transforms_as(sc_iter q1, sc_iter q2, s_iter qOut) const
+{
+   DEBUG_CHECK(pImpl);
+   for (int i = 0; i < pImpl->NumSymmetries(); ++i)
+   {
+      int Offset = pImpl->QuantumNumberOffset(i);
+      pImpl->GetSymmetryBase(i)->cross_product_transforms_as(q1+Offset, q2+Offset, qOut+Offset);
+   }
+}
+
+std::complex<double>
+SymmetryList::cross_product_factor(sc_iter q1, sc_iter q2) const
+{
+   DEBUG_CHECK(pImpl); 
+   // the result is the product of the cross product factor of each symmetry
+   std::complex<double> d = 1.0;
+   for (int i = 0; i < pImpl->NumSymmetries(); ++i)
+   {
+      d *= pImpl->GetSymmetryBase(i)->cross_product_factor(q1+pImpl->QuantumNumberOffset(i), 
+							   q2+pImpl->QuantumNumberOffset(i));
+   }
+   return d;
+}
+
 double SymmetryList::recoupling(sc_iter q1, sc_iter q3, sc_iter q13,
 				sc_iter q2, sc_iter q,  sc_iter q23) const
 {

@@ -87,6 +87,26 @@ int multiplicity(NullQN const&, NullQN const&, NullQN const&)
 }
 
 inline
+bool cross_product_exists(NullQN const&, NullQN const&)
+{
+   return true;
+}
+
+inline
+NullQN cross_product_transforms_as(NullQN const&, NullQN const&)
+{
+   return NullQN();
+}
+
+inline
+std::complex<double> cross_product_factor(NullQN const&, NullQN const&)
+{
+   return 1.0;
+}
+
+
+
+inline
 double clebsch_gordan(NullQN const& q1, NullQN const& q2, NullQN const& q,
 		      NullQNProjection const& m1,  NullQNProjection const& m2,  NullQNProjection const& m)
 {

@@ -86,6 +86,24 @@ int multiplicity(Z2 const& q1, Z2 const& q2, Z2 const& q)
 }
 
 inline
+bool cross_product_exists(Z2 const&, Z2 const&)
+{
+   return true;
+}
+
+inline
+Z2 cross_product_transforms_as(Z2 const& q1, Z2 const& q2)
+{
+   return Z2(q1.x*q2.x);
+}
+
+inline
+std::complex<double> cross_product_factor(Z2 const&, Z2 const&)
+{
+   return 1.0;
+}
+
+inline
 double clebsch_gordan(Z2 const& q1, Z2 const& q2, Z2 const& q,
 	  Z2Projection const& m1,  Z2Projection const& m2,  Z2Projection const& m)
 {

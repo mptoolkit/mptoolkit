@@ -410,8 +410,7 @@ struct binary_dot_product : boost::static_visitor<element_type>
    template <typename T1, typename T2>
    element_type operator()(T1 const& x, T2 const& y) const
    {
-      return std::sqrt(x.TransformsAs().degree()) * 
-	 prod(x,y,QuantumNumbers::QuantumNumber(x.GetSymmetryList()));
+      return dot(x,y);
    }
 };
 
@@ -442,15 +441,7 @@ struct binary_outer_product : boost::static_visitor<element_type>
    template <typename T1, typename T2>
    element_type operator()(T1 const& x, T2 const& y) const
    {
-      QuantumNumbers::QuantumNumberList L = transform_targets(x.TransformsAs(), y.TransformsAs());
-      QuantumNumbers::QuantumNumber q = L[0];
-      for (unsigned i = 1; i < L.size(); ++i)
-      {
-	 if (degree(L[i]) > degree(q))
-	    q = L[i];
-      }
-
-      return std::sqrt(double(degree(q))) * prod(x,y,q);
+      return outer(x,y);
    }
 };
 
@@ -481,35 +472,7 @@ struct binary_cross_product : boost::static_visitor<element_type>
    template <typename T1, typename T2>
    element_type operator()(T1 const& x, T2 const& y) const
    {
-      if (degree(x.TransformsAs()) != degree(y.TransformsAs()))
-      {
-	 PANIC("cross product requires oprators that transform as the same degree")(x.TransformsAs())(y.TransformsAs());
-      }
-      // search for a candidate quantum number that has the same degree as the original operators
-      QuantumNumbers::QuantumNumberList L = transform_targets(x.TransformsAs(), y.TransformsAs());
-      QuantumNumbers::QuantumNumber q = L[0];
-      for (unsigned i = 1; i < L.size(); ++i)
-      {
-	 // we have a candidate
-	 if (degree(L[i]) == degree(x.TransformsAs()))
-	 {
-	    // is it unique?
-	    if (degree(L[i]) == degree(q))
-	    {
-	       PANIC("cross product cannot idenfity a unique target quantum number, there are 2 or more candidates")
-		  (L[i])(q);
-	    }
-	    q = L[i];
-	 }
-      }
-      // but make sure we found a candidate
-      if (degree(q) != degree(x.TransformsAs()))
-      {
-	 PANIC("cross product cannot identity a larget quantum number with the same degree as the inputs")
-	    (x.TransformsAs())(y.TransformsAs());
-      }
-
-      return std::complex<double>(0.0, 1.0) * std::sqrt(double(degree(q))) * prod(x,y,q);
+      return cross(x,y);
    }
 };
 

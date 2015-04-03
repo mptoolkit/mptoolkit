@@ -230,12 +230,14 @@ int main(int argc, char** argv)
       LinearWavefunction Psi = get_orthogonal_wavefunction(*Psi1);
       double Dim = Psi.Basis1().total_degree();
 
+      int const NumUnitCells = Psi.size() / UnitCellSize;
+
       // The list of U matrices, for each operator
       std::vector<MatrixOperator> U;
 
       for (unsigned i = 0; i < OperatorStr.size(); ++i)
       {
-	 FiniteMPO StringOperator = ParseUnitCellOperator(Cell, OperatorStr[i]);
+	 FiniteMPO StringOperator = ParseUnitCellOperator(Cell, NumUnitCells, OperatorStr[i]);
 
 	 StringOperator = repeat(StringOperator, Psi.size() / UnitCellSize);
 
@@ -271,7 +273,7 @@ int main(int argc, char** argv)
       // Now calculate the commutators
       for (unsigned j = 0; j < CommutatorStr.size(); ++j)
       {
-	 FiniteMPO Op = ParseUnitCellOperator(Cell, CommutatorStr[j]);
+	 FiniteMPO Op = ParseUnitCellOperator(Cell, NumUnitCells, CommutatorStr[j]);
 	 Op = repeat(Op, Psi.size() / UnitCellSize);
 	 MatrixOperator O = MatrixOperator::make_identity(Psi.Basis2());
 	 O = inject_left_qshift(O, Op, Psi, Psi1->shift());

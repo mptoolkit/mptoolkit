@@ -32,7 +32,7 @@ using QuantumNumbers::Projection;
 class BasisList
 {
    public:
-     typedef QuantumNumber value_type;
+      typedef QuantumNumber value_type;
 
       BasisList() {}
 
@@ -101,9 +101,16 @@ class BasisList
    friend void CoerceSymmetryList(BasisList& b, SymmetryList const& sl);
 };
 
-   typedef BasisList SimpleBasis;  // for backwards compatibility
+typedef BasisList SimpleBasis;  // for backwards compatibility
 
-BasisList make_vacuum_basis(SymmetryList const& S);
+// Helper to construct a basis with a single state, the identity quantum number
+BasisList
+make_vacuum_basis(SymmetryList const& S);
+
+// Helper to construct a basis with a single state of the specified quantum number
+BasisList
+make_single_basis(QuantumNumbers::QuantumNumber const& q);
+
 
 std::ostream& operator<<(std::ostream& out, BasisList const& b);
 

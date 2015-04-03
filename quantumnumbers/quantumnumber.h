@@ -614,6 +614,16 @@ double identity(QuantumNumber const& q);
 // one day we will maybe do SU(3) ?  And this will be useful ;)
 int multiplicity(QuantumNumber const& q1, QuantumNumber const& q2, QuantumNumber const& q);
 
+// true if the cross product between operators transforming as these quantum numbers exists.
+bool cross_product_exists(QuantumNumber const& q1, QuantumNumber const& q2);
+
+// returns the quantum number of the cross product of q1 x q2
+QuantumNumber cross_product_transforms_as(QuantumNumber const& q1, QuantumNumber const& q2);
+
+// The cross product of operators transforming as q1 x a2 is defined to be:
+// cross_product_factor(q1,q2) * prod(q1,q2,cross_product_transforms_as(q1,q2))
+std::complex<double> cross_product_factor(QuantumNumber const& q1, QuantumNumber const& q2);
+
 // returns the Clebsch-Gordan coefficient, such that the matrix elements of an operator are
 // < q m | T[q2,m2] | q1 m1 > = GC(q1, q2, q, m1, m2, m) * < q || T[q2] || q1 >
 // precondition: multiplicity(q1,q2,q) == 1

@@ -140,6 +140,29 @@ int multiplicity(SU2 const& q1, SU2 const& q2, SU2 const& q)
    return 1;
 }
 
+// we only know how to define the cross product for vectors
+inline
+bool cross_product_exists(SU2 const& q1, SU2 const& q2)
+{
+   return q1.j == 1 && q2.j == 1;
+}
+
+inline
+SU2 cross_product_transforms_as(SU2 const& q1, SU2 const& q2)
+{
+   DEBUG_CHECK_EQUAL(q1.j, 1);
+   DEBUG_CHECK_EQUAL(q2.j, 1);
+   return q1;
+}
+
+inline
+std::complex<double> cross_product_factor(SU2 const& q1, SU2 const& q2)
+{
+   DEBUG_CHECK_EQUAL(q1.j, 1);
+   DEBUG_CHECK_EQUAL(q2.j, 1);
+   return std::complex<double>(0.0, std::sqrt(2.0));
+}
+
 inline
 double clebsch_gordan(SU2 const& q1, SU2 const& q2, SU2 const& q,
 		      Sz const& m1,  Sz const& m2,  Sz const& m)

@@ -38,110 +38,98 @@ class UnitCell
       typedef LatticeSite               value_type;
       typedef std::vector<LatticeSite>  data_type;
       typedef data_type::const_iterator const_iterator;
-
+      
       typedef std::map<std::string, FiniteMPO>  operator_map_type;
       typedef operator_map_type::const_iterator const_operator_iterator;
-
+      
       UnitCell();
       UnitCell(LatticeSite const& s);
       UnitCell(LatticeSite const& s, LatticeSite const& t);
       UnitCell(LatticeSite const& s, LatticeSite const& t, LatticeSite const& u);
       UnitCell(LatticeSite const& s, LatticeSite const& t, LatticeSite const& u, LatticeSite const& v);
-
+   
       UnitCell(SymmetryList const& sl, LatticeSite const& s);
       UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t);
       UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t, 
-              LatticeSite const& u);
+	       LatticeSite const& u);
       UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t, 
-              LatticeSite const& u, LatticeSite const& v);
-
+	       LatticeSite const& u, LatticeSite const& v);
+      
       UnitCell(int RepeatCount, UnitCell const& l);
       UnitCell(UnitCell const& x1, UnitCell const& x2);
       UnitCell(UnitCell const& x1, UnitCell const& x2, UnitCell const& x3);
       UnitCell(UnitCell const& x1, UnitCell const& x2, UnitCell const& x3, UnitCell const& x4);
-
+      
       UnitCell(int Size, LatticeSite const& s);
-
+      
       SymmetryList GetSymmetryList() const { return Data_.front().GetSymmetryList(); }
-
+      
       // functions acting on the LatticeSite
-   
+      
       bool empty() const { return Data_.empty(); }
       int size() const { return Data_.size(); }
       value_type const& front() const { return Data_.front(); }
       value_type const& back() const { return Data_.back(); }
-
+      
       const_iterator begin() const { return Data_.begin(); }
       const_iterator end() const { return Data_.end(); }
-
+      
       // returns the i'th LatticeSite
       LatticeSite const& operator[](int i) const;
-
+      
 #if 0
       // Visitor pattern tools for iterating over the LatticeSite's
       template <typename Visitor>
       typename Visitor::result_type
       apply_for_each_site(Visitor const& v) const;
-
+      
       template <typename Visitor>
       typename Visitor::result_type
       apply_for_each_site(Visitor const& v);
 #endif
-
+      
       // returns the local basis at site i of the lattice
       SiteBasis LocalBasis(int i) const
       { return this->operator[](i).Basis2(); }
-
+      
       // Functions for the associated operators
-
+      
       // returns true if the named operator exists on this unit cell
       bool operator_exists(std::string const& s) const;
-
+      
       // lookup a unit cell operator, which can be a local operator
       // if the unit cell size is one site.
       FiniteMPO Operator(std::string const& Op) const;
-
+      
       // lookup a unit cell operator (not a local operator), or
       // adds it if it doesn't already exist.
       FiniteMPO& Operator(std::string const& Op);
-
+      
       // lookup the Jordan Wigner string of the specified operator
       //std::string JWString(std::string const& Op) const;
-
+      
       // returns true if the specified local operator Op[n] exists at site n of the UnitCell.
       bool operator_exists(std::string const& Op, int n) const;
-
+      
       // lookup a local operator
       FiniteMPO Operator(std::string const& Op, int n) const;
-
+      
       // Parse an operator of the form O or O[n]
-   //      FiniteMPO Parse(std::string const& s);
-
+      //      FiniteMPO Parse(std::string const& s);
+      
       // returns the commutation attribute of the operator
-      LatticeCommute Commute(std::string const& Op, int n) const;
-
-      // Returns the J-W string associated with the operator
-      FiniteMPO JWString(std::string const& Op, int n) const;
-
-      // returns the name of the J-W string operator
-      std::string JWStringName(std::string const& Op, int n) const;
-
-      // returns the JW string associated with a given LatticeCommute
-      FiniteMPO JWString(LatticeCommute Com) const
-      {
-	 return this->JWString(Com.SignOperator());
-      }
-
+      LatticeCommute Commute(std::string const& OpName, int n) const;
+      
       // returns a begin() iterator into the unit cell operators (not local operators!)
       const_operator_iterator operator_begin() const;
       const_operator_iterator operator_end() const;
-
+      
    private:
       data_type Data_;
       operator_map_type OperatorMap_;
-
-   friend PStream::opstream& operator<<(PStream::opstream& out, UnitCell const& L);
-   friend PStream::ipstream& operator>>(PStream::ipstream& in, UnitCell& L);
+      
+      friend PStream::opstream& operator<<(PStream::opstream& out, UnitCell const& L);
+      friend PStream::ipstream& operator>>(PStream::ipstream& in, UnitCell& L);
 };
 
 // Make a new lattice out of RepeatCount copies of x
@@ -160,6 +148,29 @@ identity_mpo(UnitCell const& c);
 
 FiniteMPO
 identity_mpo(UnitCell const& c, QuantumNumbers::QuantumNumber const& q);
+
+// constructs a string operator as the product of local operators OpName at each site in
+// the unit cell
+FiniteMPO
+string_mpo(UnitCell const& c, std::string const& OpName, QuantumNumbers::QuantumNumber const& Trans);
+
+// constructs a string operator as the product of local operators OpName at each site in
+// the unit cell
+inline
+FiniteMPO
+string_mpo(UnitCell const& c, LatticeCommute Com, QuantumNumbers::QuantumNumber const& Trans)
+{
+   return string_mpo(c, Com.SignOperator(), Trans);
+}
+
+// utility function to construct the Jordan-Wigner string operator
+// associated with the given MPO
+inline
+FiniteMPO
+jw_string_mpo(UnitCell const& c, FiniteMPO const& Op)
+{
+   return string_mpo(c, Op.Commute().SignOperator(), Op.qn1());
+}
 
 #if 0 // These operators probably don't make much sense
 bool

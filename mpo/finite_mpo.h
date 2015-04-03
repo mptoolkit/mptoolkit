@@ -46,7 +46,9 @@ class FiniteMPO
       bool is_null() const { return Data.empty() || Data.front().Basis1().size() == 0; }
 
       // returns true if the operator transforms irreducibly.  This is true
-      // iff the left basis contains only a single state.
+      // iff the left basis contains only a single state, and the right basis contains the vacuum.
+      // Note that finite MPO's are not irreducible tensor operators as such (they are more like
+      // Wigner operators)
       bool is_irreducible() const;
 
       // returns true if the operator transforms as a rotational invariant, ie
@@ -58,7 +60,20 @@ class FiniteMPO
       bool is_identity() const;
 
       // precondition: is_irreducible
+      // WARNING: Use qn1() instead of TransformsAs() where appropriate.
+      // For debugging purposes, to audit usage of TransformsAs, we have an include guard
+#if !defined(DISABLE_FINITE_MPO_TRANSFORMS_AS)
       QuantumNumbers::QuantumNumber TransformsAs() const;
+#endif
+
+      // returns the quantum number in the left basis.  If the right basis is the vacuum
+      // then this is also the TransformsAs()
+      // precondition: Basis1().size() == 1
+      QuantumNumbers::QuantumNumber qn1() const;
+
+      // returns the quantum number in the right basis.
+      // This doesn't have to be the vacuum state.
+      QuantumNumbers::QuantumNumber qn2() const;
 
       // returns the left-most basis.  This is guaranteed to contain each
       // quantum number at most once.
@@ -144,6 +159,13 @@ FiniteMPO operator*(FiniteMPO const& x, FiniteMPO const& y);
 
 // dot product - takes into account the multiplicity to rescale the result
 FiniteMPO dot(FiniteMPO const& x, FiniteMPO const& y);
+
+// cross product (if it exists)
+FiniteMPO cross(FiniteMPO const& x, FiniteMPO const& y);
+
+// outer product of tensors.  This is defined as the product to the maximum
+// degree quantum number q.  There is also a scaling factor sqrt(degree(q))
+FiniteMPO outer(FiniteMPO const& x, FiniteMPO const& y);
 
 // project a (reducible) quantum number onto an irreducible component
 FiniteMPO project(FiniteMPO const& x, QuantumNumbers::QuantumNumber const& q);

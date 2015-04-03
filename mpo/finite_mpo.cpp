@@ -10,14 +10,16 @@ using QuantumNumbers::QuantumNumber;
 
 bool FiniteMPO::is_irreducible() const
 {
-   return this->is_null() || this->Basis1().size() == 1;
+   return this->is_null() || (this->Basis1().size() == 1 && is_scalar(this->qn2()));
 }
 
 bool FiniteMPO::is_scalar() const
 {
-   return this->is_null() || (this->Basis1().size() == 1 && QuantumNumbers::is_scalar(this->Basis1()[0]));
+   return this->is_null() || (this->Basis1().size() == 1 && is_scalar(this->qn1()) && is_scalar(this->qn2()));
 }
 
+#if 0
+// DEPRECATED
 QuantumNumbers::QuantumNumber 
 FiniteMPO::TransformsAs() const
 {
@@ -25,6 +27,25 @@ FiniteMPO::TransformsAs() const
       return QuantumNumbers::QuantumNumber();
    CHECK(this->is_irreducible());
    return this->Basis1()[0];
+}
+#endif
+
+QuantumNumbers::QuantumNumber 
+FiniteMPO::qn1() const
+{
+   if (this->is_null())
+      return QuantumNumbers::QuantumNumber();
+   CHECK_EQUAL(this->Basis1().size(), 1);
+   return this->Basis1()[0];
+}
+
+QuantumNumbers::QuantumNumber 
+FiniteMPO::qn2() const
+{
+   if (this->is_null())
+      return QuantumNumbers::QuantumNumber();
+   DEBUG_CHECK_EQUAL(this->Basis2().size(), 1);  // DEBUG since this should always be true
+   return this->Basis2()[0];
 }
 
 PStream::opstream& operator<<(PStream::opstream& out, FiniteMPO const& op)
@@ -337,6 +358,38 @@ FiniteMPO dot(FiniteMPO const& x, FiniteMPO const& y)
       }
    }
    return Result;
+}
+
+FiniteMPO
+cross(FiniteMPO const& x, FiniteMPO const& y)
+{
+   // Legitimate uses of FiniteMPO::TransformsAs()
+#if !defined(DISABLE_FINITE_MPO_TRANSFORMS_AS)
+   CHECK(cross_product_exists(x.TransformsAs(), y.TransformsAs()))("Cross product does not exist for these operators")
+      (x.TransformsAs())(y.TransformsAs());
+
+   return cross_product_factor(x.TransformsAs(), y.TransformsAs())
+      * prod(x, y, cross_product_transforms_as(x.TransformsAs(), y.TransformsAs()));
+#else
+   return x;
+#endif
+}
+
+FiniteMPO outer(FiniteMPO const& x, FiniteMPO const& y)
+{
+   // Legitimate uses of FiniteMPO::TransformsAs()
+#if !defined(DISABLE_FINITE_MPO_TRANSFORMS_AS)
+   QuantumNumbers::QuantumNumberList L = transform_targets(x.TransformsAs(), y.TransformsAs());
+   QuantumNumbers::QuantumNumber q = L[0];
+   for (unsigned i = 1; i < L.size(); ++i)
+   {
+      if (degree(L[i]) > degree(q))
+	 q = L[i];
+   }
+   return std::sqrt(double(degree(q))) * prod(x,y,q);
+#else
+   return x;
+#endif
 }
 
 FiniteMPO conj(FiniteMPO const& x)

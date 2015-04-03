@@ -218,6 +218,12 @@ class SymmetryList
 
       bool is_transform_target(sc_iter q1, sc_iter q2, sc_iter q) const;
 
+      bool cross_product_exists(sc_iter q1, sc_iter q2) const;
+
+      void cross_product_transforms_as(sc_iter q1, sc_iter q2, s_iter qOut) const;
+
+      std::complex<double> cross_product_factor(sc_iter q1, sc_iter q2) const;
+
       double recoupling(sc_iter q1, sc_iter q3, sc_iter q13,
 			sc_iter q2, sc_iter q, sc_iter q23) const;
 

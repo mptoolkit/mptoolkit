@@ -65,6 +65,16 @@ class SymmetryBase
       // of q1 \otimes q2
       virtual int multiplicity(int const* q1, int const* q2, int const* q) const = 0;
 
+      // returns true if the cross product between operators transforming as these quantum numbers exists.
+      virtual bool cross_product_exists(int const* q1, int const* q2) const = 0;
+
+      // returns the quantum number of the cross product of q1 x q2
+      virtual void cross_product_transforms_as(int const* q1, int const* q2, int* q) const = 0;
+
+      // The cross product of operators transforming as q1 x a2 is defined to be:
+      // cross_product_factor(q1,q2) * prod(q1,q2,cross_product_transforms_as(q1,q2))
+      virtual std::complex<double> cross_product_factor(int const* q1, int const* q2) const = 0;
+
       // the coupling coefficient between < q1, q2q3(q23) q | q1q3(q13) q2 q >
       virtual double recoupling(int const* q1, int const* q3, int const* q13,
 				int const* q2, int const* q,  int const* q23) const = 0;

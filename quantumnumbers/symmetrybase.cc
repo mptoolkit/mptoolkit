@@ -41,6 +41,12 @@ class BasicSymmetry : public SymmetryBase
 
       virtual int multiplicity(int const* q1, int const* q2, int const* q) const;
 
+      virtual bool cross_product_exists(int const* q1, int const* q2) const;
+
+      virtual void cross_product_transforms_as(int const* q1, int const* q2, int* q) const;
+
+      virtual std::complex<double> cross_product_factor(int const* q1, int const* q2) const;
+
       virtual double recoupling(int const* q1, int const* q3, int const* q13,
 				int const* q2, int const* q,  int const* q23) const;
 
@@ -214,6 +220,29 @@ int ADL_multiplicity(T const* S, int const* q1, int const* q2, int const* q)
 {
    return multiplicity(S->MakeQN(q1), S->MakeQN(q2), S->MakeQN(q));
 }
+
+template <typename T>
+inline
+bool
+ADL_cross_product_exists(T const* S, int const* q1, int const* q2)
+{
+   return cross_product_exists(S->MakeQN(q1), S->MakeQN(q2));
+}
+
+template <typename T>
+void
+ADL_cross_product_transforms_as(T const* S, int const* q1, int const* q2, int* q)
+{
+   cross_product_transforms_as(S->MakeQN(q1), S->MakeQN(q2)).Convert(q);
+}
+
+template <typename T>
+std::complex<double>
+ADL_cross_product_factor(T const* S, int const* q1, int const* q2)
+{
+   return cross_product_factor(S->MakeQN(q1), S->MakeQN(q2));
+}
+
 
 template <typename T>
 inline
@@ -450,6 +479,28 @@ template <typename T>
 int BasicSymmetry<T>::multiplicity(int const* q1, int const* q2, int const* q) const
 {
    return QuantumNumbers::ADL_multiplicity(this, q1, q2, q);
+}
+
+
+template <typename T>
+bool
+BasicSymmetry<T>::cross_product_exists(int const* q1, int const* q2) const
+{
+   return QuantumNumbers::ADL_cross_product_exists(this, q1, q2);
+}
+
+template <typename T>
+void
+BasicSymmetry<T>::cross_product_transforms_as(int const* q1, int const* q2, int* q) const
+{
+   QuantumNumbers::ADL_cross_product_transforms_as(this, q1, q2, q);
+}
+
+template <typename T>
+std::complex<double>
+BasicSymmetry<T>::cross_product_factor(int const* q1, int const* q2) const
+{
+   return QuantumNumbers::ADL_cross_product_factor(this, q1, q2);
 }
 
 template <typename T>
