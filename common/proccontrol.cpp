@@ -498,7 +498,6 @@ int CreateUniqueFile(std::string& Name, bool Unlink)
    strncpy(Buf, Name.c_str(), 300-1);
    int Res = mkstemp(Buf);
    Name = Buf;
-   DEBUG_TRACE(Buf)(Res)(Unlink);
    if (Unlink && Res != -1)
    {
       //unlink(Buf);  // it seems that unlink() doesn't work here, but remove() does?  why?

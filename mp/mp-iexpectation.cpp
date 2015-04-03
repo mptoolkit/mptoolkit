@@ -243,8 +243,6 @@ int main(int argc, char** argv)
 
       FiniteMPO Op = ParseUnitCellOperator(Cell, 0, OpStr);
 
-      TRACE(Op);
-
       // Check that Op is bosonic, otherwise it is not defined
       CHECK(Op.Commute() == LatticeCommute::Bosonic)("Cannot evaluate non-bosonic operator")(Op.Commute());
 
@@ -269,19 +267,12 @@ int main(int argc, char** argv)
       MatrixOperator X = Identity;
       X = inject_left(X, PsiOrtho, QShift, Op, PsiOrtho);
 
-      TRACE(X)(Rho);
-
       std::complex<double> x = inner_prod(X, Rho);
 
-      if (!ShowReal && !ShowImag)
-	 std::cout << x;
-      else
-      {
-	 if (ShowReal)
-	    std::cout << x.real() << "   ";
-	 if (ShowImag)
-	    std::cout << x.imag();
-      }
+      if (ShowReal)
+	 std::cout << x.real() << "   ";
+      if (ShowImag)
+	 std::cout << x.imag();
       std::cout << '\n';
 
       pheap::Shutdown();

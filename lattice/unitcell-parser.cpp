@@ -17,7 +17,6 @@ namespace Parser
 // This means that the binary functions declared in parser.h need to move into here.
 // Or better yet, specializ them.
 
-#if 0
 template <>
 struct binary_addition<element_type> : boost::static_visitor<element_type>
 {
@@ -57,7 +56,6 @@ struct binary_addition<element_type> : boost::static_visitor<element_type>
 
    UnitCell const& Cell;
 };
-#endif
 
 template <>
 struct binary_dot_product<element_type> : boost::static_visitor<element_type>
@@ -176,8 +174,6 @@ struct push_operator_cell
       {
 	 Op = join(Op, repeat(identity_mpo(Cell), NumCells-j-1));
       }
-
-      TRACE(Op);
 
       eval.push(element_type(Op));
    }
@@ -452,7 +448,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	 expression =
 	    term
 	    >> *(  ('+' >> term)[invoke_binary<element_type, 
-				 binary_addition<element_type> >(self.eval)]
+				 binary_addition<element_type> >(self.eval, binary_addition<element_type>(self.Cell))]
 		   |   ('-' >> term)[invoke_binary<element_type, 
 				     binary_subtraction<element_type> >(self.eval)]
 		   )
