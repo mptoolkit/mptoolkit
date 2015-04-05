@@ -216,6 +216,20 @@ UnitCell::Operator(std::string const& Op, int n) const
 }
 
 FiniteMPO
+UnitCell::OperatorFunction(std::string const& Op, 
+			   std::vector<std::complex<double> > const& Params) const
+{
+   PANIC("Operator function is not defined");
+}
+
+FiniteMPO
+UnitCell::OperatorFunction(std::string const& Op, int n,
+			   std::vector<std::complex<double> > const& Params) const
+{
+   PANIC("Operator function is not defined");
+}
+
+FiniteMPO
 string_mpo(UnitCell const& c, std::string const& OpName, QuantumNumbers::QuantumNumber const& Trans)
 {
    // All string operators are in the identity quantum number sector, so bosonic

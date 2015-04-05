@@ -113,11 +113,20 @@ class UnitCell
       
       // lookup a local operator
       FiniteMPO Operator(std::string const& Op, int n) const;
-      
+     
+       // lookup an operator function
+      FiniteMPO OperatorFunction(std::string const& Op, 
+				 std::vector<std::complex<double> > const& Params) const;
+
+      // lookup a local operator function
+      FiniteMPO OperatorFunction(std::string const& Op, int n,
+				 std::vector<std::complex<double> > const& Params) const;
+
       // Parse an operator of the form O or O[n]
       //      FiniteMPO Parse(std::string const& s);
       
-      // returns the commutation attribute of the operator
+      // returns the commutation attribute of the operator, equivalent
+      // to Operaotor(OpName, n).Commute()
       LatticeCommute Commute(std::string const& OpName, int n) const;
       
       // returns a begin() iterator into the unit cell operators (not local operators!)
