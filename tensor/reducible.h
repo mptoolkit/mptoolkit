@@ -732,8 +732,8 @@ struct ReducibleProd<Tensor::ReducibleTensor<T1, B1, B2, S1>,
 
 template <typename T1, typename B1, typename B2, typename S1, 
           typename T2, typename B3, typename S2, typename Nest>
-struct IrredProd<Tensor::IrredTensor<T1, B1, B2, S1>, 
-                 Tensor::ReducibleTensor<T2, B2, B3, S2>, Nest >
+struct ReducibleProd<Tensor::IrredTensor<T1, B1, B2, S1>, 
+		     Tensor::ReducibleTensor<T2, B2, B3, S2>, Nest >
 {
    typedef Tensor::IrredTensor<T1, B1, B2, S1> const& first_argument_type;
    typedef Tensor::ReducibleTensor<T2, B2, B3, S2> const& second_argument_type;

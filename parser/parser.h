@@ -291,7 +291,7 @@ template <typename element_type>
 struct binary_multiplication : boost::static_visitor<element_type>
 {
    template <typename T1, typename T2>
-   element_type operator()(T1& x, T2& y) const
+   element_type operator()(T1 const& x, T2 const& y) const
    {
       return element_type(x*y);
    }
@@ -525,8 +525,8 @@ struct ternary_product : boost::static_visitor<element_type>
    {
       // legitimate use of TransformsAs() on MPOs
 #if !defined(DISABLE_FINITE_MPO_TRANSFORMS_AS)
-      QuantumNumbers::QuantumNumber qn(x.TransformsAs(), q);
-      return element_type(prod(x,y,q));
+      QuantumNumbers::QuantumNumber qn(x.GetSymmetryList(), q);
+      return element_type(prod(x,y,qn));
 #else
       return x;
 #endif

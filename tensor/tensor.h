@@ -808,19 +808,19 @@ struct ScalarProd<HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> >,
 
       result_type Result(x.base().Basis2(), y.Basis2(), QuantumNumbers::QuantumNumber(y.GetSymmetryList()));
 
-      iter1 I1 = iterate(x.base());
-      iter2 I2 = iterate(y);
-      for ( ; I1; ++I1, ++I2)
+      iter1 xI = iterate(x.base());
+      iter2 yI = iterate(y);
+      for ( ; xI; ++xI, ++yI)
       {
-         double InnerDegree = degree(y.Basis1()[I2.index()]);
-         for (inner1 J1 = iterate(I1); J1; ++J1)
+         double InnerDegree = degree(y.Basis1()[yI.index()]);
+         for (inner1 xJ = iterate(xI); xJ; ++xI)
          {
-            for (inner2 J2 = iterate(I2); J2; ++J2)
+            for (inner2 yJ = iterate(yI); yJ; ++yJ)
             {
                // accept only scalar elements (diagonal in the quantum number)
-               if (Result.Basis1()[J1.index2()] == Result.Basis2()[J2.index2()])
-                  add_element(Result.data(), J1.index2(), J2.index2(), 
-                              (InnerDegree / degree(Result.Basis1()[J1.index2()])) * f_(herm(*J1), *J2));
+               if (Result.Basis1()[xJ.index2()] == Result.Basis2()[yJ.index2()])
+                  add_element(Result.data(), xJ.index2(), yJ.index2(), 
+                              (InnerDegree / degree(Result.Basis1()[xJ.index2()])) * f_(herm(*xJ), *yJ));
 	    }
          }
       }

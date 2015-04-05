@@ -296,7 +296,7 @@ OperatorComponent triple_prod(SimpleOperator const& x, OperatorComponent const& 
 
 // constructs the tensor product in the local basis, the matrices
 // C[(s's),(t't)] = A[(s's)] * B[(t't)]
-// This is a coarse graining operation.
+// This is a coarse graining operation.  Ordinary product in the aux basis, tensor product in the local basis
 OperatorComponent local_tensor_prod(OperatorComponent const& A, OperatorComponent const& B);
 
 // constructs the tensor product in the auxiliary basis, and ordinary product in the local basis.
@@ -307,7 +307,7 @@ OperatorComponent aux_tensor_prod(OperatorComponent const& A, OperatorComponent 
 // construct the tensor product in both local and aux basis
 OperatorComponent global_tensor_prod(OperatorComponent const& A, OperatorComponent const& B);
 
-// Constructs the matrix of overlaps Result'_{ij} = inner_prod(A(i,k), B(k,j)
+// Constructs the matrix of overlaps Result'_{ij} = inner_prod(A(i,k), B(k,j))
 SimpleOperator
 local_inner_prod(HermitianProxy<OperatorComponent> const& A, OperatorComponent const& B);
 
@@ -457,30 +457,39 @@ project_rows(OperatorComponent const& x, std::set<int> const& Rows);
 OperatorComponent
 project_columns(OperatorComponent const& x, std::set<int> const& Cols);
 
-// Given a scalar SimpleOperator defined over a tensor product basis,
-// decompose it into a two-site MPO.  This is a kind of fine-graining operation
-std::pair<OperatorComponent, OperatorComponent>
+// Utility function to decompose a SimpleOperator defined over a tensor product basis
+// into a sum of products of operators over the original basis.
+// This is a fine-graining operation on the operator,
+// the inverse of the tensor_prod
+std::vector<std::pair<SimpleRedOperator, SimpleRedOperator> >
 decompose_tensor_prod(SimpleOperator const& Op, 
                       ProductBasis<BasisList, BasisList> const& B1,
                       ProductBasis<BasisList, BasisList> const& B2);
 
-// fine-grain an OperatorComponent
+// fine-grain an OperatorComponent, the inverse of local_tensor_prod
 std::pair<OperatorComponent, OperatorComponent>
-decompose_tensor_prod(OperatorComponent const& Op, 
-                      ProductBasis<BasisList, BasisList> const& B1,
-                      ProductBasis<BasisList, BasisList> const& B2);
+decompose_local_tensor_prod(OperatorComponent const& Op, 
+			    ProductBasis<BasisList, BasisList> const& B1,
+			    ProductBasis<BasisList, BasisList> const& B2);
+
+// Decompose a SimpleOperator into an MPO, with vacuum on the right basis,
+// single on the left basis.
+std::pair<OperatorComponent, OperatorComponent>
+decompose_local_tensor_prod(SimpleOperator const& Op, 
+			    ProductBasis<BasisList, BasisList> const& B1,
+			    ProductBasis<BasisList, BasisList> const& B2);
 
 // Version for when the Basis1 and Basis2 of the SimpleOperator are the same
 std::pair<OperatorComponent, OperatorComponent>
-decompose_tensor_prod(SimpleOperator const& Op, 
-                      ProductBasis<BasisList, BasisList> const& B);
+decompose_local_tensor_prod(SimpleOperator const& Op, 
+			    ProductBasis<BasisList, BasisList> const& B);
 
 // Version for when the Basis1 and Basis2 of the SimpleOperator are the same,
 // and the product basis is a simple cartesian product of two BasisList's.
 // BasisA and BasisB will be the local_basis of the two result OperatorComponent's
 std::pair<OperatorComponent, OperatorComponent>
-decompose_tensor_prod(SimpleOperator const& Op, 
-                      BasisList const& BasisA, BasisList const& BasisB);
+decompose_local_tensor_prod(SimpleOperator const& Op, 
+			    BasisList const& BasisA, BasisList const& BasisB);
 
 // Take a state component A^s(i,j) and rotate it into an operator component
 // M(s,0)(i,j), where (i,j) is the new local basis and the right boundary

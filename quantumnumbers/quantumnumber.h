@@ -633,12 +633,13 @@ double clebsch_gordan(QuantumNumber const& q1, QuantumNumber const& q2, QuantumN
 // coupling coefficent c such that 
 // <q' | AB(k) | q > = sum_{q''} c * < q' | A(k1) | q'' > < q'' | B(k2) | q >
 double product_coefficient(QuantumNumber const& k1, QuantumNumber const& k2, QuantumNumber const& k,
-			  QuantumNumber const& qp, QuantumNumber const& q, QuantumNumber const& qpp);
+			   QuantumNumber const& qp, QuantumNumber const& q, QuantumNumber const& qpp);
 
 // coupling coefficent c such that a product can be decomposed as
 // < q' | A(k1) | q'' > < q'' | B(k2) | q > = sum_k c * <q' | AB(k) | q >
-double inverse_product_coefficient(QuantumNumber const& k1, QuantumNumber const& k2, QuantumNumber const& k,
-			  QuantumNumber const& qp, QuantumNumber const& q, QuantumNumber const& qpp);
+double 
+inverse_product_coefficient(QuantumNumber const& k1, QuantumNumber const& k2, QuantumNumber const& k,
+			    QuantumNumber const& qp, QuantumNumber const& q, QuantumNumber const& qpp);
 
 // coupling coefficient <q' | (A \otimes B)(k) | q> = c * <q1' | A(k1) | q1> <q2' | B(k2) | q2>
 // precondition: (k1,k2,k), (q1p, q2p, qp), (q1, q2, q) are all valid transform triplets.

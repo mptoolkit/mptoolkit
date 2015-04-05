@@ -5,6 +5,8 @@
 #include "linearalgebra/eigen.h"
 #include "tensor/regularize.h"
 #include "linearalgebra/matrix_utility.h"
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 
 //using namespace LinearAlgebra;
 using LinearAlgebra::operator*;
@@ -40,7 +42,7 @@ OperatorComponent::check_structure() const
          for (SimpleRedOperator::const_iterator q = J->begin(); q != J->end(); ++q)
          {
             CHECK(is_transform_target(this->Basis2()[J.index2()], q->TransformsAs(), this->Basis1()[J.index1()]))
-               (this->Basis1())(J.index1())(this->Basis2())(J.index2())(q->TransformsAs());
+               (this->Basis1())(J.index1())(this->Basis2())(J.index2())(q->TransformsAs())(*this);
          }
       }
    }
@@ -283,8 +285,36 @@ OperatorComponent local_tensor_prod(OperatorComponent const& A, OperatorComponen
 
    typedef OperatorComponent::data_type MatType;
 
-   Result.data() = LinearAlgebra::MatrixMatrixMultiplication<MatType, MatType, Tensor::TensorProd<SimpleRedOperator, SimpleRedOperator> >()(A.data(), B.data(), Tensor::TensorProd<SimpleRedOperator, SimpleRedOperator>());
-
+   for (const_iterator<MatType>::type AI = iterate(A); AI; ++AI)
+   {
+      for (const_inner_iterator<MatType>::type AJ = iterate(AI); AJ; ++AJ)
+      {
+	 const_iterator<MatType>::type BI = iterate(B);
+	 BI += AJ.index2();
+	 for (const_inner_iterator<MatType>::type BJ = iterate(BI); BJ; ++BJ)
+	 {
+	    for (SimpleRedOperator::const_iterator AComp = AJ->begin(); AComp != AJ->end(); ++AComp)
+	    {
+	       for (SimpleRedOperator::const_iterator BComp = BJ->begin(); BComp != BJ->end(); ++BComp)
+	       {
+		  QuantumNumbers::QuantumNumberList qL = transform_targets(BComp->TransformsAs(), AComp->TransformsAs());
+		  for (QuantumNumbers::QuantumNumberList::const_iterator qI = qL.begin(); qI != qL.end(); ++qI)
+		  {
+		     // Ensure that the final operator is a possible target
+		     if (is_transform_target(B.Basis2()[BJ.index2()], *qI, A.Basis1()[AJ.index1()]))
+		     {
+			double Coeff = product_coefficient(AComp->TransformsAs(), BComp->TransformsAs(), *qI,
+							   A.Basis1()[AJ.index1()], B.Basis2()[BJ.index2()], B.Basis1()[BJ.index1()]);
+			if (LinearAlgebra::norm_2(Coeff) > 1E-14)
+			   Result(AJ.index1(), BJ.index2()) += Coeff * tensor_prod(*AComp, *BComp, *qI);
+		     }
+		  }
+	       }
+	    }
+	 }
+      }
+   }
+   Result.debug_check_structure();
    return Result;
 }
 
@@ -293,19 +323,25 @@ local_inner_prod(HermitianProxy<OperatorComponent> const& A, OperatorComponent c
 {
    DEBUG_PRECONDITION_EQUAL(A.base().Basis1(), B.Basis1());
 
+   // The coupling coefficient for the auxiliary basis is a simple rescaling, 
+   // same as for the tensor ScalarProd operation
+
    SimpleOperator Result(A.base().Basis2(), B.Basis2());
 
+   // AI/BI point at the same quantum number, and is the inner summation of the product
    OperatorComponent::const_iterator AI = iterate(A.base());
    OperatorComponent::const_iterator BI = iterate(B);
    while (AI)
    {
+      double InnerDegree = degree(B.Basis1()[BI.index()]);
+
       for (OperatorComponent::const_inner_iterator AJ = iterate(AI); AJ; ++AJ)
       {
          for (OperatorComponent::const_inner_iterator BJ = iterate(BI); BJ; ++BJ)
          {
 	    if (A.base().Basis2()[AJ.index2()] == B.Basis2()[BJ.index2()])
-	       Result(AJ.index2(), BJ.index2()) = inner_prod(*AJ, *BJ);
-         }
+	       Result(AJ.index2(), BJ.index2()) = InnerDegree / degree(Result.Basis1()[AJ.index2()]) * inner_prod(*AJ, *BJ);
+	 }
       }
       ++AI;
       ++BI;
@@ -319,6 +355,9 @@ SimpleOperator
 local_inner_prod(OperatorComponent const& A, HermitianProxy<OperatorComponent> const& B)
 {
    DEBUG_PRECONDITION_EQUAL(A.Basis2(), B.base().Basis2());
+
+   // FIXME: is there another coupling coefficient here for the product?
+   // That we are taking a scalar product simplifies it a bit, but there should still be a coefficient.
 
    SimpleOperator Result(A.Basis1(), B.base().Basis1());
 
@@ -976,7 +1015,7 @@ project_columns(OperatorComponent const& x, std::set<int> const& Cols)
    return Result;
 }
 
-std::pair<OperatorComponent, OperatorComponent>
+std::vector<std::pair<SimpleRedOperator, SimpleRedOperator> >
 decompose_tensor_prod(SimpleOperator const& Op, 
                       ProductBasis<BasisList, BasisList> const& B1,
                       ProductBasis<BasisList, BasisList> const& B2)
@@ -989,182 +1028,373 @@ decompose_tensor_prod(SimpleOperator const& Op,
    // To do this, we write the decomposed operator as a matrix indexed by
    // (qLeft,Left1,Left2), (qRight,Right1,Right2)
    // and do a SVD of it.  
-   // Because we assume a scalar operator, qLeft is the adjoint of qRight,
-   // and the resulting matrix is block diagonal with respect to qRight/qLeft.
    
-   std::set<QuantumNumber> qUsed;
+   BasisList BondBasis(Op.GetSymmetryList()); // bond of the MPO
+   std::vector<SimpleRedOperator> MatLeft, MatRight; // decompose into sum_i MatLeft[i] * MatRight[i]
+
+   // linearize the tuples (qLeft,Left1,Left2) and (qRight,Right1,Right2) into integers.
+   // We also keep the inverse map, so we can quickly convert the integer back into a tuple
+   typedef boost::tuple<QuantumNumbers::QuantumNumber, int, int> PartialProdIndex;
+   std::map<PartialProdIndex, int> LeftIndex, RightIndex;
+   std::vector<PartialProdIndex> LeftReverse, RightReverse;
    for (PartialProdType::const_iterator I = PartialProd.begin(); I != PartialProd.end(); ++I)
-   {
-      qUsed.insert(I->first.qRight);
+   { 
+      PartialProdIndex Left(I->first.qLeft, I->first.Left1, I->first.Left2);
+      // If Left doesn't exist yet, then add it as the next successive integer (given by LeftIndex.size())
+      if (LeftIndex.find(Left) == LeftIndex.end())
+      {
+	 LeftIndex[Left] = LeftReverse.size();
+	 LeftReverse.push_back(Left);
+      }
+	 
+      // same for the right index
+      PartialProdIndex Right(I->first.qRight, I->first.Right1, I->first.Right2);
+      // If Right doesn't exist yet, then add it as the next successive integer (given by RightIndex.size())
+      if (RightIndex.find(Right) == RightIndex.end())
+      {
+	 RightIndex[Right] = RightReverse.size();
+	 RightReverse.push_back(Right);
+      }
    }
 
-   BasisList BondBasis(Op.GetSymmetryList()); // bond of the MPO
-   std::vector<SimpleOperator> MatLeft, MatRight; // decompose into sum_i MatLeft[i] * MatRight[i]
-
-   // for each quantum number (block diagonal of the partial transpose),
-   // assemble the matrix indexed by (left1,left2) (right1,right2) and construct the SVD
-   for (std::set<QuantumNumber>::const_iterator qUsedIter = qUsed.begin(); qUsedIter != qUsed.end(); ++qUsedIter)
+   // Now assemble the matrix
+   LinearAlgebra::Matrix<std::complex<double> > Mat(LeftIndex.size(), RightIndex.size(), 0.0);
+   for (PartialProdType::const_iterator I = PartialProd.begin(); I != PartialProd.end(); ++I)
    {
-      // linearize the (left1,left2) and (right1,right2) indices
-      LinearAlgebra::Matrix<int> LeftMap(B1.Left().size(), B2.Left().size(), -1);
-      LinearAlgebra::Matrix<int> RightMap(B1.Right().size(), B2.Right().size(), -1);
-      std::vector<std::pair<int, int> > LeftInverseMap, RightInverseMap;
-      int LeftCount = 0, RightCount = 0;
-      for (PartialProdType::const_iterator I = PartialProd.begin(); I != PartialProd.end(); ++I)
+      PartialProdIndex Left(I->first.qLeft, I->first.Left1, I->first.Left2);
+      PartialProdIndex Right(I->first.qRight, I->first.Right1, I->first.Right2);
+      Mat(LeftIndex[Left], RightIndex[Right]) = I->second;
+   }
+   
+   // Perform the singular decomposition
+   LinearAlgebra::Matrix<std::complex<double> > U, Vh;
+   LinearAlgebra::Vector<double> D;
+   SingularValueDecomposition(Mat, U, D, Vh);
+
+   // This sets the scale of the singular values.  Any singular values smaller than
+   // KeepThreshold are removed.
+   double KeepThreshold = std::numeric_limits<double>::epsilon() * LinearAlgebra::max(D) * 10;
+      
+   // split into pairs of operators, keeping only the non-zero singular values
+   std::vector<std::pair<SimpleRedOperator, SimpleRedOperator> > Result;
+   for (unsigned k = 0; k < size(D); ++k)
+   {
+      DEBUG_TRACE(D[k]);
+      if (D[k] > KeepThreshold)
       {
-         // only look at the components that transform properly
-         if (I->first.qRight != *qUsedIter)
-            continue;
+	 double Coeff = std::sqrt(D[k]);  // distribute sqrt(D) to each operator
+	 SimpleRedOperator L(B1.Left(), B2.Left());
+	 for (unsigned x = 0; x < size1(U); ++x)
+	 {
+	    if (norm_frob(U(x,k)) > std::numeric_limits<double>::epsilon() * 10)
+	    {
+	       L.project(LeftReverse[x].get<0>())
+		  (LeftReverse[x].get<1>(), LeftReverse[x].get<2>()) = U(x,k) * Coeff;
+	    }
+	 }
+	 
+	 SimpleRedOperator R(B1.Right(), B2.Right());
+	 for (unsigned x = 0; x < size2(Vh); ++x)
+	 {
+	    if (norm_frob(Vh(k,x)) > std::numeric_limits<double>::epsilon() * 10)
+	    {
+	       R.project(RightReverse[x].get<0>())
+		  (RightReverse[x].get<1>(), RightReverse[x].get<2>()) = Vh(k,x) * Coeff;
+	    }
+	 }
 
-         if (LeftMap(I->first.Left1, I->first.Left2) == -1)
-         {
-            LeftInverseMap.push_back(std::make_pair(I->first.Left1, I->first.Left2));
-            LeftMap(I->first.Left1, I->first.Left2) = LeftCount++;
-         }
-
-         if (RightMap(I->first.Right1, I->first.Right2) == -1)
-         {
-            RightInverseMap.push_back(std::make_pair(I->first.Right1, I->first.Right2));
-            RightMap(I->first.Right1, I->first.Right2) = RightCount++;
-         }
+	 Result.push_back(std::make_pair(L, R));
       }
+   }
+
+#if !defined(NDEBUG)
+   SimpleOperator OpTest;
+   for (unsigned i = 0; i < Result.size(); ++i)
+   {
+      // We really need an IrredProd for reducible tensors, it would be more efficient here
+      OpTest += project(Result[i].first * Result[i].second, Op.TransformsAs());
+   }
+   CHECK(norm_frob(OpTest - Op) < 1E-13 * norm_frob(OpTest))(Op)(OpTest)(norm_frob(OpTest-Op))
+      (MatLeft)(MatRight);
+#endif
+
+   return Result;
+}
+
+std::pair<OperatorComponent, OperatorComponent>
+decompose_local_tensor_prod(OperatorComponent const& Op, 
+			    ProductBasis<BasisList, BasisList> const& B1,
+			    ProductBasis<BasisList, BasisList> const& B2)
+{
+   // A scale factor for determining whether to keep numerically small values
+   double ScaleFactor = norm_frob_sq(Op) / std::sqrt(Op.Basis1().size() * Op.Basis2().size() * Op.LocalBasis1().size() * Op.LocalBasis2().size());
+
+   typedef std::map<Tensor::PartialProdIndex, std::complex<double> > PartialProdType;
+
+   // ComponentIndex is an index to a particular matrix element of the MPO,
+   // ComponentIndex(aux, local1, local2, q)
+   typedef boost::tuple<int, int, int, QuantumNumbers::QuantumNumber> ComponentIndex;
+
+   // The full index stores the ComponentIndex for the left and right operators
+   typedef std::pair<ComponentIndex, ComponentIndex> FullIndex;
+
+   // Represent a decomposed tensor product for a single internal quantum number
+   typedef std::map<FullIndex, std::complex<double> > DecomposedMPOType;
+
+   // and finally sum over possible internal quantum numbers
+   typedef std::map<QuantumNumbers::QuantumNumber, DecomposedMPOType> DecomposedByQuantumType;
+   DecomposedByQuantumType DecomposedOperator;
+
+   // Mapping from the ComponentIndex to a linear integer index, for the left and right operators
+   std::map<QuantumNumbers::QuantumNumber, std::map<ComponentIndex, int> > LeftMapping, RightMapping;
+   // Reverse mapping from integer index to ComponentIndex for left and right operators
+   std::map<QuantumNumbers::QuantumNumber, std::vector<ComponentIndex> > LeftRevMapping, RightRevMapping;
+
+   for (OperatorComponent::const_iterator I = iterate(Op); I; ++I)
+   {
+      int LeftAux1 = I.index();
+      for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
+      {
+	 int RightAux2 = J.index2();
+	 for (SimpleRedOperator::const_iterator RI = J->begin(); RI != J->end(); ++RI)
+	 {
+	    // Decompose the tensor product component
+	    PartialProdType PartialProd = Tensor::decompose_tensor_prod(*RI, B1, B2);
+
+	    // decompose the product in the auxiliary basis
+	    // This is the operator <q' | AB(k) | q > where
+	    // q' = Basis1[J.index1()]
+	    // q = Basis2[J.index2()]
+	    // k = RI->TransformsAs()
+	    // decomposed into < q' | A(k1) | q'' > < q'' | B(k2) | q > = sum_k <q' | AB(k) | q >
+	    // with 
+	    // k1 = PartialProd.qLeft
+	    // k2 = PartialProd.qRight
+	    // and we sum over q'', being all possible internal quantum numbers,
+	    // and this determines internal basis.
+
+	    // For each possible q'', we assemble the matrix, into DecomposedOperator[q'']
+	    for (PartialProdType::const_iterator P = PartialProd.begin(); P != PartialProd.end(); ++P)
+	    {
+	       QuantumNumbers::QuantumNumberList QL 
+		  = transform_targets(Op.Basis2()[RightAux2], P->first.qRight);
+
+	       for (QuantumNumbers::QuantumNumberList::const_iterator Qpp = QL.begin(); Qpp != QL.end(); ++Qpp)
+	       {
+		  // Skip quantum numbers that are not possible (structural zero in the coupling coefficient)
+		  if (!is_transform_target(*Qpp,  P->first.qLeft, Op.Basis1()[LeftAux1]))
+		     continue;
+
+		  double Coeff = inverse_product_coefficient(P->first.qLeft, P->first.qRight, RI->TransformsAs(),
+							     Op.Basis1()[J.index1()], Op.Basis2()[J.index2()], *Qpp);
+		  if (LinearAlgebra::norm_2(Coeff) > 1E-14)
+		  {
+		     ComponentIndex LeftIndex 
+			= boost::make_tuple(LeftAux1, P->first.Left1, P->first.Left2,
+					    P->first.qLeft);
+		     if (LeftMapping[*Qpp].find(LeftIndex) == LeftMapping[*Qpp].end())
+		     {
+			LeftMapping[*Qpp][LeftIndex] = LeftRevMapping[*Qpp].size();
+			LeftRevMapping[*Qpp].push_back(LeftIndex);
+		     }
+
+		     ComponentIndex RightIndex
+			= boost::make_tuple(RightAux2, P->first.Right1, P->first.Right2,
+					    P->first.qRight);
+		     if (RightMapping[*Qpp].find(RightIndex) == RightMapping[*Qpp].end())
+		     {
+			RightMapping[*Qpp][RightIndex] = RightRevMapping[*Qpp].size();
+			RightRevMapping[*Qpp].push_back(RightIndex);
+		     }
+
+		     DecomposedOperator[*Qpp][std::make_pair(LeftIndex, RightIndex)]
+			= Coeff * P->second;
+		  }
+	       }
+	    }
+	 }
+      }
+   }
+
+   // Now we loop over the quantum numbers q'', assemble each matrix and do the SVD
+   // We can't assemble this directly into MPOs since we need to know the internal basis first.
+   // So instead we keep a list of kept singular vectors
+
+   typedef std::map<ComponentIndex, std::complex<double> > SingularVectorType;
+   typedef std::vector<SingularVectorType> SingularVectorListType;
+   std::map<QuantumNumbers::QuantumNumber, SingularVectorListType> LeftSingularVectors, RightSingularVectors;
+
+   BasisList Inner(Op.GetSymmetryList()); // we can assemble the inner basis at the same time
+
+   // For deciding which singular values to keep, we need a scale factor, so we need the largest singular value.
+   // First pass, calculate the largest singular value
+   double LargestSingular = 0.0;
+   for (DecomposedByQuantumType::const_iterator Q = DecomposedOperator.begin(); 
+	Q != DecomposedOperator.end(); ++Q)
+   {
+      QuantumNumbers::QuantumNumber Qpp = Q->first;
 
       // assemble the matrix
-      LinearAlgebra::Matrix<std::complex<double> > Mat(LeftCount, RightCount, 0.0);
-      for (PartialProdType::const_iterator I = PartialProd.begin(); I != PartialProd.end(); ++I)
+      LinearAlgebra::Matrix<std::complex<double> > Mat(LeftMapping[Qpp].size(), RightMapping[Qpp].size(), 0.0);
+      for (DecomposedMPOType::const_iterator I = Q->second.begin(); I != Q->second.end(); ++I)
       {
-         // only look at the components that transform properly
-         if (I->first.qRight != *qUsedIter)
-            continue;
-
-         Mat(LeftMap(I->first.Left1, I->first.Left2), RightMap(I->first.Right1, I->first.Right2)) = I->second;
+	 Mat(LeftMapping[Qpp][I->first.first], RightMapping[Qpp][I->first.second]) = I->second;
       }
 
-      // Perform the singular decomposition
+      // Do the SVD
       LinearAlgebra::Matrix<std::complex<double> > U, Vh;
       LinearAlgebra::Vector<double> D;
       SingularValueDecomposition(Mat, U, D, Vh);
 
-      // This sets the scale of the singular values.  Any singular values smaller than
-      // KeepThreshold are removed.
-      double KeepThreshold = std::numeric_limits<double>::epsilon() * LinearAlgebra::max(D) * 10;
+      double m = LinearAlgebra::max(D);
+      if (m > LargestSingular)
+	 LargestSingular = m;
+   }
 
-      // split into pairs of operators, keeping only the non-zero singular values
+   DEBUG_TRACE(LargestSingular);
+
+   // This sets the scale of the singular values.  Any singular values smaller than
+   // KeepThreshold are removed.
+   double KeepThreshold = std::numeric_limits<double>::epsilon() * LargestSingular * 100;
+
+   // Second pass, collate the kept singular values
+   for (DecomposedByQuantumType::const_iterator Q = DecomposedOperator.begin(); 
+	Q != DecomposedOperator.end(); ++Q)
+   {
+      QuantumNumbers::QuantumNumber Qpp = Q->first;
+
+      // assemble the matrix
+      LinearAlgebra::Matrix<std::complex<double> > Mat(LeftMapping[Qpp].size(), RightMapping[Qpp].size(), 0.0);
+      for (DecomposedMPOType::const_iterator I = Q->second.begin(); I != Q->second.end(); ++I)
+      {
+	 Mat(LeftMapping[Qpp][I->first.first], RightMapping[Qpp][I->first.second]) = I->second;
+      }
+
+      // Do the SVD
+      LinearAlgebra::Matrix<std::complex<double> > U, Vh;
+      LinearAlgebra::Vector<double> D;
+      SingularValueDecomposition(Mat, U, D, Vh);
+
+      // Assemble the singular vectors
       for (unsigned k = 0; k < size(D); ++k)
       {
-         if (D[k] > KeepThreshold)
-         {
-            double Coeff = std::sqrt(D[k]);  // distribute sqrt(D) to each operator
-            SimpleOperator L(B1.Left(), B2.Left(), adjoint(*qUsedIter));
-            for (unsigned x = 0; x < size1(U); ++x)
-            {
-               if (norm_frob(U(x,k)) > std::numeric_limits<double>::epsilon() * 10)
-               {
-                  L(LeftInverseMap[x].first, LeftInverseMap[x].second) = U(x,k) * Coeff;
-               }
-            }
+	 // Skip over vectors that don't reach the threshold
+	 //	 if (D[k] < KeepThreshold)
+	 //	    continue;
 
-            SimpleOperator R(B1.Right(), B2.Right(), *qUsedIter);
-            for (unsigned x = 0; x < size2(Vh); ++x)
-            {
-               if (norm_frob(Vh(k,x)) > std::numeric_limits<double>::epsilon() * 10)
-               {
-                  R(RightInverseMap[x].first, RightInverseMap[x].second) = Vh(k,x) * Coeff;
-               }
-            }
+	 double Coeff = std::sqrt(D[k]);  // distribute sqrt(D) to each operator
 
-            BondBasis.push_back(*qUsedIter);  // add the entry to the bond basis for this operator
-            MatLeft.push_back(L);
-            MatRight.push_back(R);
-         }
+	 SingularVectorType LeftVec;
+	 for (unsigned x = 0; x < size1(U); ++x)
+	 {
+	    // We might have some components that are in forbidden quantum number sectors - these should be small
+	    // Haven't encountered any yet in debugging, might be hard to trigger.
+	    if (!is_transform_target(Qpp, LeftRevMapping[Qpp][x].get<3>(), Op.Basis1()[LeftRevMapping[Qpp][x].get<0>()])
+		|| !is_transform_target(B2.Left()[LeftRevMapping[Qpp][x].get<2>()], Qpp, B1.Left()[LeftRevMapping[Qpp][x].get<1>()]))
+	    {
+	       TRACE("Ignoring forbidden off-diagonal matrix element")
+		  (U(x,k))(Qpp)(LeftRevMapping[Qpp][x].get<3>())(Op.Basis1()[LeftRevMapping[Qpp][x].get<0>()])
+		  (B2.Left()[LeftRevMapping[Qpp][x].get<2>()])(Qpp)(B1.Left()[LeftRevMapping[Qpp][x].get<1>()]);
+	    }
+	    else if (norm_frob(U(x,k)) > std::numeric_limits<double>::epsilon() * 10)
+	    {
+	       LeftVec[LeftRevMapping[Qpp][x]] = Coeff*U(x,k);
+	    }
+	 }
+
+	 SingularVectorType RightVec;
+	 for (unsigned x = 0; x < size2(Vh); ++x)
+	 {
+	    if (norm_frob(Vh(k,x)) > std::numeric_limits<double>::epsilon() * 10)
+	    {
+	       RightVec[RightRevMapping[Qpp][x]] = Coeff*Vh(k,x);
+	    }
+	 }
+
+	 LeftSingularVectors[Qpp].push_back(LeftVec);
+	 RightSingularVectors[Qpp].push_back(RightVec);
+
+	 // Add the quantum number to the inner basis
+	 Inner.push_back(Qpp);
       }
    }
 
-   // Now we have the final operator decomposition and bond basis, construct the MPO's.
+   // Now the inner basis is complete we can construct the OperatorComponents
+   OperatorComponent MA(B1.Left(), B2.Left(), Op.Basis1(), Inner);
+   OperatorComponent MB(B1.Right(), B2.Right(), Inner, Op.Basis2());
 
-   OperatorComponent MA(B1.Left(), B2.Left(), make_vacuum_basis(Op.GetSymmetryList()), BondBasis);
-   OperatorComponent MB(B1.Right(), B2.Right(), BondBasis, make_vacuum_basis(Op.GetSymmetryList()));
-   for (unsigned i = 0; i < BondBasis.size(); ++i)
+   int b = 0; // linear index into the Inner basis
+   for (DecomposedByQuantumType::const_iterator Q = DecomposedOperator.begin(); 
+	Q != DecomposedOperator.end(); ++Q)
    {
-      MA(0,i) = MatLeft[i];
-      MB(i,0) = MatRight[i];
-   }
-
-   // test
-#if !defined(NDEBUG)
-   SimpleOperator OpTest = local_tensor_prod(MA, MB)(0,0).scalar();
-   CHECK(norm_frob(OpTest - Op) < 1E-13 * norm_frob(OpTest))(Op)(OpTest)(norm_frob(OpTest-Op));
-#endif
-
-   return std::pair<OperatorComponent, OperatorComponent>(MA, MB);
-}
-
-std::pair<OperatorComponent, OperatorComponent>
-decompose_tensor_prod(OperatorComponent const& Op, 
-                      ProductBasis<BasisList, BasisList> const& B1,
-                      ProductBasis<BasisList, BasisList> const& B2)
-{
-   BasisList Vacuum(Op.GetSymmetryList());
-   OperatorComponent Left(B1.Left(), B2.Left(), Op.Basis1(), Vacuum);
-   OperatorComponent Right(B1.Right(), B2.Right(), Vacuum, Op.Basis2());
-   // we treat this as a sum and separately decompose each part
-   for (OperatorComponent::const_iterator I = iterate(Op); I; ++I)
-   {
-      for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
+      QuantumNumbers::QuantumNumber Qpp = Q->first;
+      for (unsigned i = 0; i < LeftSingularVectors[Qpp].size(); ++i)
       {
-	 // Make 1xN and Nx1 OperatorComponent's for *J
-	 OperatorComponent L, R;
-	 for (SimpleRedOperator::const_iterator RI = J->begin(); RI != J->end(); ++RI)
+	 SingularVectorType LeftVec = LeftSingularVectors[Qpp][i];
+	 for (SingularVectorType::const_iterator I = LeftVec.begin(); I != LeftVec.end(); ++I)
 	 {
-	    OperatorComponent l, r;
-	    boost::tie(l, r) = decompose_tensor_prod(*RI, B1, B2);
-	    L = tensor_row_sum(L, l);
-	    R = tensor_col_sum(R, r);
+	    project(MA(I->first.get<0>(), b), I->first.get<3>())
+	       (I->first.get<1>(), I->first.get<2>())
+	       = I->second;
 	 }
-	 // move (L,R) into the (i,j) component
-	 OperatorComponent TL(B1.Left(), B2.Left(), Op.Basis1(), L.Basis2());
-	 for (OperatorComponent::const_iterator T1 = iterate(L); T1; ++T1)
+
+	 SingularVectorType RightVec = RightSingularVectors[Qpp][i];
+	 for (SingularVectorType::const_iterator I = RightVec.begin(); I != RightVec.end(); ++I)
 	 {
-	    for (OperatorComponent::const_inner_iterator T2 = iterate(T1); T2; ++T2)
-	    {
-	       TL(J.index1(), T2.index2()) = *T2;
-	    }
+	    project(MB(b, I->first.get<0>()), I->first.get<3>())
+	       (I->first.get<1>(), I->first.get<2>())
+	       = I->second;
 	 }
-	 OperatorComponent TR(B1.Right(), B2.Right(), R.Basis1(), Op.Basis2());
-	 for (OperatorComponent::const_iterator T1 = iterate(R); T1; ++T1)
-	 {
-	    for (OperatorComponent::const_inner_iterator T2 = iterate(T1); T2; ++T2)
-	    {
-	       TR(T2.index1(), J.index2()) = *T2;
-	    }
-	 }
-	 // Now we can sum to the result
-	 Left = tensor_row_sum(Left, TL);
-	 Right = tensor_col_sum(Right, TR);
+
+	 ++b;
       }
    }
+
+   MA.debug_check_structure();
+   MB.debug_check_structure();
+
+#if 0
    // This is likely to leave the middle bond basis quite big, so optimize it.
    // (We maybe need to iterate this function?)
    SimpleOperator T = TruncateBasis1(Right);
    Left = Left * T;
    T = TruncateBasis2(Left);
    Right = T * Right;
-   return std::make_pair(Left, Right);
+#endif
+
+#if !defined(NDEBUG)
+   OperatorComponent OpTest = local_tensor_prod(MA, MB);
+   CHECK(norm_frob(OpTest - Op) < 1E-13 * norm_frob(OpTest))(Op)(OpTest)(norm_frob(OpTest-Op))
+      (MA)(MB);
+#endif
+
+   return std::make_pair(MA, MB);
 }
 
 std::pair<OperatorComponent, OperatorComponent>
-decompose_tensor_prod(SimpleOperator const& Op, 
-                      ProductBasis<BasisList, BasisList> const& B)
+decompose_local_tensor_prod(SimpleOperator const& Op, 
+			    ProductBasis<BasisList, BasisList> const& B1,
+			    ProductBasis<BasisList, BasisList> const& B2)
 {
-   return decompose_tensor_prod(Op, B, B);
+   OperatorComponent OpC(Op.Basis1(), Op.Basis2(),
+			 make_single_basis(Op.TransformsAs()), make_vacuum_basis(Op.GetSymmetryList()));
+   project(OpC(0,0), Op.TransformsAs()) = Op;
+   return decompose_local_tensor_prod(OpC, B1, B2);
 }
 
 std::pair<OperatorComponent, OperatorComponent>
-decompose_tensor_prod(SimpleOperator const& Op, 
-                      BasisList const& BasisA, BasisList const& BasisB)
+decompose_local_tensor_prod(SimpleOperator const& Op, 
+			    ProductBasis<BasisList, BasisList> const& B)
+{
+   return decompose_local_tensor_prod(Op, B, B);
+}
+
+std::pair<OperatorComponent, OperatorComponent>
+decompose_local_tensor_prod(SimpleOperator const& Op, 
+			    BasisList const& BasisA, BasisList const& BasisB)
 {
    ProductBasis<BasisList, BasisList> B(BasisA, BasisB);
-   return decompose_tensor_prod(Op, B, B);
+   return decompose_local_tensor_prod(Op, B, B);
 }
 
 OperatorComponent

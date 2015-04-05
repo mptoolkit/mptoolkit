@@ -14,8 +14,7 @@ namespace Parser
 // We have a problem: for operators with indefinite support, we need to extend MPOs as necessary
 // so that binary operations act on operands with the same number of unit cells.  We can't do that
 // without knowing the actual unit cell, since it might be some operator that mixes the basis around etc.
-// This means that the binary functions declared in parser.h need to move into here.
-// Or better yet, specializ them.
+// This means that we need to specialize the functions from parser.h
 
 template <>
 struct binary_addition<element_type> : boost::static_visitor<element_type>
@@ -52,6 +51,117 @@ struct binary_addition<element_type> : boost::static_visitor<element_type>
       }
       // else
       return element_type(x+y);
+   }
+
+   UnitCell const& Cell;
+};
+
+template <>
+struct binary_subtraction<element_type> : boost::static_visitor<element_type>
+{
+   binary_subtraction(UnitCell const& Cell_) 
+      : Cell(Cell_) {}
+
+   element_type operator()(complex const& x, complex const& y) const
+   { 
+      return element_type(x-y);
+   }
+
+   element_type operator()(complex const& x, FiniteMPO const& y) const
+   {
+      return element_type(x*MakeIdentityFrom(y) - y);
+   }
+
+   element_type operator()(FiniteMPO const& x, complex const& y) const
+   {
+      return element_type(x - y*MakeIdentityFrom(x));
+   }
+
+   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   {
+      if (x.size() < y.size())
+      {
+	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 return element_type(xExtend-y);
+      }
+      else if (x.size() > y.size())
+      {
+	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 return element_type(x-yExtend);
+      }
+      // else
+      return element_type(x-y);
+   }
+
+   UnitCell const& Cell;
+};
+
+template <>
+struct binary_commutator<element_type> : boost::static_visitor<element_type>
+{
+   binary_commutator(UnitCell const& Cell_) 
+      : Cell(Cell_) {}
+
+   element_type operator()(complex const& x, complex const& y) const
+   { 
+      return complex(0.0);
+   }
+
+   element_type operator()(complex const& x, FiniteMPO const& y) const
+   {
+      return complex(0.0);
+   }
+
+   element_type operator()(FiniteMPO const& x, complex const& y) const
+   {
+      return complex(0.0);
+   }
+
+   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   {
+      if (x.size() < y.size())
+      {
+	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 return element_type(xExtend*y - y*xExtend);
+      }
+      else if (x.size() > y.size())
+      {
+	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 return element_type(x*yExtend - yExtend*x);
+      }
+      // else
+      return element_type(x*y - y*x);
+   }
+
+   UnitCell const& Cell;
+};
+
+template <>
+struct binary_multiplication<element_type> : boost::static_visitor<element_type>
+{
+   binary_multiplication(UnitCell const& Cell_) 
+      : Cell(Cell_) {}
+
+   template <typename T1, typename T2>
+   element_type operator()(T1 const& x, T2 const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   {
+      if (x.size() < y.size())
+      {
+	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 return element_type(xExtend*y);
+      }
+      else if (x.size() > y.size())
+      {
+	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 return element_type(x*yExtend);
+      }
+      // else
+      return element_type(x*y);
    }
 
    UnitCell const& Cell;
@@ -99,6 +209,73 @@ struct binary_dot_product<element_type> : boost::static_visitor<element_type>
 };
 
 template <>
+struct ternary_product<element_type> : boost::static_visitor<element_type>
+{
+   ternary_product(UnitCell const& Cell_, std::string const& q_)
+      : Cell(Cell_), q(Cell_.GetSymmetryList(), q_) {}
+
+   element_type operator()(complex const& x, complex const& y) const
+   {
+      CHECK(is_scalar(q));
+      return element_type(x*y);
+   }
+
+   element_type operator()(complex const& x, FiniteMPO const& y) const
+   {
+      CHECK_EQUAL(q, y.TransformsAs());
+      return element_type(x*y);
+   }
+
+   element_type operator()(FiniteMPO const& x, complex const& y) const
+   {
+      CHECK_EQUAL(q, x.TransformsAs());
+      return element_type(x*y);
+   }
+
+   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   {
+      if (x.size() < y.size())
+      {
+	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 return prod(xExtend, y, q);
+      }
+      else if (x.size() > y.size())
+      {
+	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 return prod(x, yExtend, q);
+      }
+      // else
+      return prod(x,y,q);
+   }
+
+   UnitCell const& Cell;
+   QuantumNumbers::QuantumNumber q;
+};
+
+template <>
+struct push_prod<element_type>
+{
+   push_prod(UnitCell const& Cell_, std::stack<std::string>& identifier_stack_, std::stack<element_type >& eval_)
+      : Cell(Cell_), identifier_stack(identifier_stack_), eval(eval_) {}
+
+   void operator()(char const*, char const*) const
+   {
+      element_type op2 = eval.top();
+      eval.pop();
+      element_type op1 = eval.top();
+      eval.pop();
+      std::string q = identifier_stack.top();
+      identifier_stack.pop();
+
+      eval.push(boost::apply_visitor(ternary_product<element_type>(Cell, q), op1, op2));
+   }
+
+   UnitCell const& Cell;
+   std::stack<std::string>& identifier_stack;
+   std::stack<element_type>& eval;
+};
+
+template <>
 struct binary_funcs<element_type> : symbols<boost::function<element_type(element_type, element_type)> >
 {
    typedef boost::function<element_type(element_type, element_type)> binary_func_type;
@@ -123,7 +300,7 @@ struct push_operator_no_cell
 			 std::stack<std::string>& IdentifierStack_, 
 			 std::stack<element_type>& eval_)
       : Cell(Cell_), NumCells(NumCells_), IdentifierStack(IdentifierStack_), eval(eval_) {}
-
+   
    void operator()(char const*, char const*) const
    {
       std::string OpName = IdentifierStack.top();
@@ -348,11 +525,11 @@ struct UnitCellParser : public grammar<UnitCellParser>
 
 	 // We re-use the identifier_stack for quantum numbers, and rely on the grammar rules to
 	 // avoid chaos!
-	 quantumnumber = '"' >> lexeme_d[*(anychar_p - chset<>("\""))]
-	    [push_identifier(self.identifier_stack)] >> '"';
+	 quantumnumber = lexeme_d[*(anychar_p - chset<>("()"))]
+	    [push_identifier(self.identifier_stack)];
 
 	 prod_expression = ("prod(" >> expression >> ',' >> expression >> ',' >> quantumnumber >> ')')
-	    [push_prod<element_type>(self.identifier_stack, self.eval)];
+	    [push_prod<element_type>(self.Cell, self.identifier_stack, self.eval)];
  
 	 bracket_expr = '(' >> expression >> ')';
 
@@ -409,7 +586,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	 
 	 commutator_bracket = 
 	    ('[' >> expression >> ',' >> expression >> ']')[invoke_binary<element_type, 
-							    binary_commutator<element_type> >(self.eval)];
+							    binary_commutator<element_type> >(self.eval, binary_commutator<element_type>(self.Cell))];
 	 
 	 factor =
 	    imag
@@ -439,7 +616,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	 term =
 	    pow_term
 	    >> *(   ('*' >> pow_term)[invoke_binary<element_type, 
-				      binary_multiplication<element_type> >(self.eval)]
+				      binary_multiplication<element_type> >(self.eval, binary_multiplication<element_type>(self.Cell))]
                     |   ('/' >> pow_term)[invoke_binary<element_type, 
 					  binary_division<element_type> >(self.eval)]
                     )
@@ -450,7 +627,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	    >> *(  ('+' >> term)[invoke_binary<element_type, 
 				 binary_addition<element_type> >(self.eval, binary_addition<element_type>(self.Cell))]
 		   |   ('-' >> term)[invoke_binary<element_type, 
-				     binary_subtraction<element_type> >(self.eval)]
+				     binary_subtraction<element_type> >(self.eval, binary_subtraction<element_type>(self.Cell))]
 		   )
 	    ;
       }

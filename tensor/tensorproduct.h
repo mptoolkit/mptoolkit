@@ -274,10 +274,10 @@ tensor_prod(IrredTensor<T1, B1, B2, S1> const& ML, IrredTensor<T2, B3, B4, S2> c
                            set_new_element(Result.data(), 
                                            *TiIter, *TjIter, 
                                            Coeff * TensorProd(*jL, *jR));
-                        else if (Coeff != 0)
-                        {
-                           DEBUG_WARNING("Coeff is small")(Coeff);
-                        }
+                        //else if (Coeff != 0)
+                        //{
+			//   DEBUG_WARNING("Coeff is small")(Coeff);
+                        //}
                      }
 		  }
 	       }
@@ -430,6 +430,14 @@ struct PartialProdIndex
 	qRight(qRight_), Right1(Right1_), Right2(Right2_)
    {}
 };
+
+inline
+std::ostream& operator<<(std::ostream& out, PartialProdIndex const& p)
+{
+   out << p.qLeft << ": (" << p.Left1 << "," << p.Left2 << ")  "
+       << p.qRight << ": (" << p.Right1 << "," << p.Right2 << ")  ";
+   return out;
+}
 
 inline
 bool operator<(PartialProdIndex const& x, PartialProdIndex const& y)
