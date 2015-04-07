@@ -684,8 +684,6 @@ MatrixOperator ExpandBasis1Used(StateComponent& A, std::vector<int> const& Used)
          UsedBasis.push_back(A.LocalBasis()[i]);
       }
    }
-   DEBUG_TRACE(A.size())(UsedBasis.size());
-
    ProductBasis<BasisList, VectorBasis> FullBasis1(UsedBasis, A.Basis2());
    QuantumNumber Ident(A.GetSymmetryList());
    StateComponent Result(A.LocalBasis(), FullBasis1.Basis(), A.Basis2());
@@ -724,8 +722,6 @@ MatrixOperator ExpandBasis2Used(StateComponent& A, std::vector<int> const& Used)
          UsedBasis.push_back(A.LocalBasis()[i]);
       }
    }
-   DEBUG_TRACE(A.size())(UsedBasis.size());
-
    CHECK(UsedBasis.size() != 0)(UsedBasis)(LinearAlgebra::Vector<int>(Used));
 
    ProductBasis<VectorBasis, BasisList> FullBasis2(A.Basis1(), adjoint(UsedBasis));

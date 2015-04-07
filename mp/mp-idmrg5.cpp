@@ -1654,6 +1654,31 @@ int main(int argc, char** argv)
 	 HamList.push_back(H2[0]);
          HamMPO = TriangularMPO(HamList);
       }
+      else if (HamStr == "hubbard-u1su2")
+      {
+	 std::cout << "Hamiltonian is Hubbard model U(1)xSU(2) with t=" << t << ", t2=" << t2
+		   << ", U = " << U
+		   << ", Delta=" << delta << '\n';
+	 LatticeSite Site = CreateU1SU2HubbardSite();
+	 TriangularMPO Ham;
+         Ham =  -t * sqrt(2.0) * (TriangularTwoSite(Site["CHP"], Site["C"])
+                      + TriangularTwoSite(Site["CP"], Site["CH"]));
+	 if (t2 != 0)
+	    Ham +=  -t2 * sqrt(2.0) * (TriangularThreeSite(Site["CHP"], Site["P"], Site["C"])
+	      	         - TriangularThreeSite(Site["CP"], Site["P"], Site["CH"]));
+         if (U != 0)
+            Ham = Ham + (U*0.25) * TriangularOneSite(Site["P"]);
+
+	 if (delta != 0)
+	 {
+	    // This doubles the size of the unit cell
+	    Ham = repeat(Ham, 2);
+	    Ham = Ham + OnePointOperator(Ham.LocalBasis1List(), 0,  0.5*Site["N"]);
+	    Ham = Ham + OnePointOperator(Ham.LocalBasis1List(), 1, -0.5*Site["N"]);
+	 }
+
+         HamMPO = Ham;
+      }
       else if (HamStr == "hubbard-u1u1")
       {
 	 std::cout << "Hamiltonian is Hubbard model U(1)xU(1) with t=" << t << ", t2=" << t2
