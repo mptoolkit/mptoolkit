@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*- $Id: mp-icorrelation.cpp 1383 2014-09-11 04:39:37Z ianmcc$
 
 #include "mps/infinitewavefunction.h"
 #include "lattice/latticesite.h"
@@ -170,6 +170,10 @@ int main(int argc, char** argv)
       {
 	 Site = CreateSU2SpinSite(Spin);
       }
+      else if (Model == "J1-J2-triangular-su2")
+      {
+         Site = CreateSU2SpinSite(Spin);
+      }
       else if (Model == "spin-u1")
       {
 	 Site = CreateU1SpinSite(Spin);
@@ -224,7 +228,7 @@ int main(int argc, char** argv)
       }
       else
       {
-	 PANIC("mp-icorrelation: fatal: model parameter should be one of tj-u1, tj-u1su2, sf-u1, klm-u1su2.");
+	 PANIC("mp-icorrelation: fatal: model parameter should be one of tj-u1, tj-u1su2, sf-u1, klm-u1su2, or J1-J2-triangular-su2.");
       }
 
       QuantumNumber Ident(Psi->GetSymmetryList());

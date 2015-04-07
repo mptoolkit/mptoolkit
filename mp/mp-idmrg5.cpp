@@ -1,4 +1,5 @@
-// -*- C++ -*- $Id: mp-idmrg5.cpp, No.8 (proffesional list), Ver 1.0.0, Authors: S.N.Saadatmand, I.P.McCulloch, and B.Powell, Created in: 2014/Feb/03, 16:26 EST, Last modified in: 2014/Sep/19, 11:21 EST$
+// -*- C++ -*- $Id$ 
+// Ver 1.1.3, Authors: S.N.Saadatmand and I.P.McCulloch, Created in: 3/Feb/2014
 
 // variant of iDMRG where we keep intact the unit cell.
 // This prohibits relfection symmetry.
@@ -1837,42 +1838,283 @@ int main(int argc, char** argv)
          Ham *= -sqrt(3.0);
          HamMPO = Ham;
       }
-      else if (HamStr == "J1-J2-triangular-su2")
+      else if (HamStr == "J1J2-triangular-su2-3leg")
       {
-         std::cout << "Hamiltonian is triangular Heisenberg J1-J2 model, J1=" << J1 << ", J2=" << J2 << '\n';
+         std::cout << "Hamiltonian is triangular Heisenberg J1-J2 model on a 3-leg cylinder, theta=" << Theta << '\n';
+         
+         J1 = cos(Theta * math_const::pi);
+         J2 = sin(Theta * math_const::pi);
+          
          LatticeSite Site = CreateSU2SpinSite(0.5);
-         // 3-site unit cell
-         std::vector<BasisList> Sites(3*3, Site["I"].Basis());
+         // (3xNLegs)-site unit cell
+         std::vector<BasisList> Sites(3*NLegs, Site["I"].Basis());
          
          // J1 interactions
          TriangularMPO Ham;
          
-          // Site [0] interactions
-           Ham += TwoPointOperator(Sites, 0, Site["S"], 1, Site["S"])
-                + TwoPointOperator(Sites, 0, Site["S"], 3, Site["S"])
-                + TwoPointOperator(Sites, 0, Site["S"], 5, Site["S"]);
-          // Site [1] interactions
-           Ham += TwoPointOperator(Sites, 1, Site["S"], 2, Site["S"])
-                + TwoPointOperator(Sites, 1, Site["S"], 4, Site["S"])
-                + TwoPointOperator(Sites, 1, Site["S"], 3, Site["S"]);
-          // Site [2] interactions
-           Ham += TwoPointOperator(Sites, 2, Site["S"], 0, Site["S"])
-                + TwoPointOperator(Sites, 2, Site["S"], 5, Site["S"])
-                + TwoPointOperator(Sites, 2, Site["S"], 4, Site["S"]);
-          Ham += J1*Ham; 
+         for(int i = 0; i < NLegs; ++i)
+         {
+          // [Zeroth] site interactions
+           Ham += TwoPointOperator(Sites, i*3, Site["S"], i*3+1, Site["S"])
+                + TwoPointOperator(Sites, i*3, Site["S"], i*3+3, Site["S"])
+                + TwoPointOperator(Sites, i*3, Site["S"], i*3+5, Site["S"]);
+          // [First] site interactions
+           Ham += TwoPointOperator(Sites, i*3+1, Site["S"], i*3+2, Site["S"])
+                + TwoPointOperator(Sites, i*3+1, Site["S"], i*3+4, Site["S"])
+                + TwoPointOperator(Sites, i*3+1, Site["S"], i*3+3, Site["S"]);
+          // [Second] site interactions
+           Ham += TwoPointOperator(Sites, i*3+2, Site["S"], i*3, Site["S"])
+                + TwoPointOperator(Sites, i*3+2, Site["S"], i*3+5, Site["S"])
+                + TwoPointOperator(Sites, i*3+2, Site["S"], i*3+4, Site["S"]);
+         }
+         Ham *= J1; 
          
          // J2 interactions
          TriangularMPO Htwo;
-          
-          Htwo += 2*( TwoPointOperator(Sites, 0, Site["S"], 4, Site["S"])
-                   + TwoPointOperator(Sites, 1, Site["S"], 5, Site["S"])
-                   + TwoPointOperator(Sites, 2, Site["S"], 3, Site["S"]));
-
-          Htwo += TwoPointOperator(Sites, 0, Site["S"], 8, Site["S"])
-                + TwoPointOperator(Sites, 1, Site["S"], 6, Site["S"])
-                + TwoPointOperator(Sites, 2, Site["S"], 7, Site["S"]);
-          Ham += J2*Htwo;
          
+         for(int i = 0; i < NLegs; ++i)
+         { 
+          Htwo += 2*( TwoPointOperator(Sites, i*3, Site["S"], i*3+4, Site["S"])
+                    + TwoPointOperator(Sites, i*3+1, Site["S"], i*3+5, Site["S"])
+                    + TwoPointOperator(Sites, i*3+2, Site["S"], i*3+3, Site["S"]));
+
+          Htwo += TwoPointOperator(Sites, i*3, Site["S"], i*3+8, Site["S"])
+                + TwoPointOperator(Sites, i*3+1, Site["S"], i*3+6, Site["S"])
+                + TwoPointOperator(Sites, i*3+2, Site["S"], i*3+7, Site["S"]);
+         } 
+         Ham += J2*Htwo;
+         
+         // SU(2) factor
+         Ham *= -sqrt(3.0);
+         HamMPO = Ham;
+      }
+      else if (HamStr == "J1J2-triangular-su2-6leg")
+      {
+         std::cout << "Hamiltonian is triangular Heisenberg J1-J2 model on a 6-leg cylinder, theta=" << Theta << '\n';
+
+         J1 = cos(Theta * math_const::pi);
+         J2 = sin(Theta * math_const::pi);
+
+         LatticeSite Site = CreateSU2SpinSite(0.5);
+         // (6xNLegs)-site unit cell
+         std::vector<BasisList> Sites(6*NLegs, Site["I"].Basis());
+
+         // J1 interactions
+         TriangularMPO Ham;
+
+         for(int i = 0; i < NLegs; ++i)
+         { 
+          for(int j = 0; j < 6; ++j)
+           {
+           Ham += TwoPointOperator(Sites, j+(6*i), Site["S"], (j+1)%6+(6*i), Site["S"])
+                + TwoPointOperator(Sites, j+(6*i), Site["S"], j+6+(6*i), Site["S"])
+                + TwoPointOperator(Sites, j+(6*i), Site["S"], (j+5)%6+6+(6*i), Site["S"]);
+           } 
+         }
+         Ham *= J1; 
+         
+         // J2 interactions
+         TriangularMPO Htwo;
+
+         for(int i = 0; i < NLegs; ++i)
+         { 
+          for(int j = 0; j < 6; ++j)
+           {
+           Htwo += TwoPointOperator(Sites, j+(6*i), Site["S"], (j+1)%6+6+(6*i), Site["S"])
+                 + TwoPointOperator(Sites, j+(6*i), Site["S"], (j+5)%6+12+(6*i), Site["S"])
+                 + TwoPointOperator(Sites, j+(6*i), Site["S"], (j+4)%6+6+(6*i), Site["S"]);
+           }
+         }  
+         Ham += J2*Htwo;
+         
+         // SU(2) factor
+         Ham *= -sqrt(3.0);
+         HamMPO = Ham;
+      }
+      else if (HamStr == "J1J2-triangular-su2-9leg")
+      {
+         std::cout << "Hamiltonian is triangular Heisenberg J1-J2 model on a 9-leg cylinder, theta=" << Theta << '\n';
+
+         J1 = cos(Theta * math_const::pi);
+         J2 = sin(Theta * math_const::pi);
+
+         LatticeSite Site = CreateSU2SpinSite(0.5);
+         // (9xNLegs)-site unit cell
+         std::vector<BasisList> Sites(9*NLegs, Site["I"].Basis());
+
+         // J1 interactions
+         TriangularMPO Ham;
+
+         for(int i = 0; i < NLegs; ++i)
+         {
+          for(int j = 0; j < 9; ++j)
+           {
+           Ham += TwoPointOperator(Sites, j+(9*i), Site["S"], (j+1)%9+(9*i), Site["S"])
+                + TwoPointOperator(Sites, j+(9*i), Site["S"], j+9+(9*i), Site["S"])
+                + TwoPointOperator(Sites, j+(9*i), Site["S"], (j+8)%9+9+(9*i), Site["S"]);
+           }
+         }
+         Ham *= J1;
+
+         // J2 interactions
+         TriangularMPO Htwo;
+
+         for(int i = 0; i < NLegs; ++i)
+         {
+          for(int j = 0; j < 9; ++j)
+           {
+           Htwo += TwoPointOperator(Sites, j+(9*i), Site["S"], (j+1)%9+9+(9*i), Site["S"])
+                 + TwoPointOperator(Sites, j+(9*i), Site["S"], (j+8)%9+18+(9*i), Site["S"])
+                 + TwoPointOperator(Sites, j+(9*i), Site["S"], (j+7)%9+9+(9*i), Site["S"]);
+           }
+         }
+         Ham += J2*Htwo;
+
+         // SU(2) factor
+         Ham *= -sqrt(3.0);
+         HamMPO = Ham;
+      }
+      else if (HamStr == "J1J2-triangular-su2-12leg")
+      {
+         std::cout << "Hamiltonian is triangular Heisenberg J1-J2 model on a 12-leg cylinder, theta=" << Theta << '\n';
+
+         J1 = cos(Theta * math_const::pi);
+         J2 = sin(Theta * math_const::pi);
+
+         LatticeSite Site = CreateSU2SpinSite(0.5);
+         // (12xNLegs)-site unit cell
+         std::vector<BasisList> Sites(12*NLegs, Site["I"].Basis());
+
+         // J1 interactions
+         TriangularMPO Ham;
+
+         for(int i = 0; i < NLegs; ++i)
+         { 
+          for(int j = 0; j < 12; ++j)
+           {
+           Ham += TwoPointOperator(Sites, j+(12*i), Site["S"], (j+1)%12+(12*i), Site["S"])
+                + TwoPointOperator(Sites, j+(12*i), Site["S"], j+12+(12*i), Site["S"])
+                + TwoPointOperator(Sites, j+(12*i), Site["S"], (j+11)%12+12+(12*i), Site["S"]);
+           }
+         }
+         Ham *= J1;
+
+         // J2 interactions
+         TriangularMPO Htwo;
+
+         for(int i = 0; i < NLegs; ++i)
+         { 
+          for(int j = 0; j < 12; ++j)
+           {
+           Htwo += TwoPointOperator(Sites, j+(12*i), Site["S"], (j+1)%12+12+(12*i), Site["S"])
+                 + TwoPointOperator(Sites, j+(12*i), Site["S"], (j+11)%12+24+(12*i), Site["S"])
+                 + TwoPointOperator(Sites, j+(12*i), Site["S"], (j+10)%12+12+(12*i), Site["S"]);
+           }
+         }
+         Ham += J2*Htwo;
+
+         // SU(2) factor
+         Ham *= -sqrt(3.0);
+         HamMPO = Ham;
+      }
+      else if (HamStr == "J1J2-triangular-su2-5leg")
+      {
+         std::cout << "Hamiltonian is triangular Heisenberg J1-J2 model on a 5-leg cylinder, theta=" << Theta << '\n';
+
+         J1 = cos(Theta * math_const::pi);
+         J2 = sin(Theta * math_const::pi);
+
+         LatticeSite Site = CreateSU2SpinSite(0.5);
+         // (5xNLegs)-site unit cell
+         std::vector<BasisList> Sites(5*NLegs, Site["I"].Basis());
+
+         // J1 interactions
+         TriangularMPO Ham;
+
+         for(int i = 0; i < NLegs; ++i)
+         { for(int j = 0; j < 5; ++j)
+           {
+           Ham += TwoPointOperator(Sites, j+(5*i), Site["S"], j+1+(5*i), Site["S"])
+                + TwoPointOperator(Sites, j+(5*i), Site["S"], j+5+(5*i), Site["S"])
+                + TwoPointOperator(Sites, j+(5*i), Site["S"], j+4+(5*i), Site["S"]);
+           }
+         }
+         Ham *= J1;
+
+         // J2 interactions
+         TriangularMPO Htwo;
+
+         for(int i = 0; i < NLegs; ++i)
+         { for(int j = 0; j < 5; ++j)
+           {
+           Htwo += TwoPointOperator(Sites, j+(5*i), Site["S"], j+6+(5*i), Site["S"])
+                 + TwoPointOperator(Sites, j+(5*i), Site["S"], j+9+(5*i), Site["S"])
+                 + TwoPointOperator(Sites, j+(5*i), Site["S"], j+3+(5*i), Site["S"]);
+           }
+         }
+         Ham += J2*Htwo;
+
+         // SU(2) factor
+         Ham *= -sqrt(3.0);
+         HamMPO = Ham;
+      }      
+      else if (HamStr == "J1J2-triangular-su2-4leg")
+      {
+         std::cout << "Hamiltonian is triangular Heisenberg J1-J2 model on a 4-leg cylinder, theta=" << Theta << '\n';
+
+         J1 = cos(Theta * math_const::pi);
+         J2 = sin(Theta * math_const::pi);
+
+         LatticeSite Site = CreateSU2SpinSite(0.5);
+         // (4xNLegs)-site unit cell
+         std::vector<BasisList> Sites(4*NLegs, Site["I"].Basis());
+
+         // J1 interactions
+         TriangularMPO Ham;
+
+         for(int i = 0; i < NLegs; ++i)
+         { 
+           // Site [0]
+           Ham += TwoPointOperator(Sites, (4*i), Site["S"], 1+(4*i), Site["S"])
+                + TwoPointOperator(Sites, (4*i), Site["S"], 4+(4*i), Site["S"]);
+           // Site [1]
+           Ham += TwoPointOperator(Sites, 1+(4*i), Site["S"], 2+(4*i), Site["S"])
+                + TwoPointOperator(Sites, 1+(4*i), Site["S"], 5+(4*i), Site["S"])
+                + TwoPointOperator(Sites, 1+(4*i), Site["S"], 4+(4*i), Site["S"]);
+           // Site [2]
+           Ham += TwoPointOperator(Sites, 2+(4*i), Site["S"], 3+(4*i), Site["S"])
+                + TwoPointOperator(Sites, 2+(4*i), Site["S"], 6+(4*i), Site["S"])
+                + TwoPointOperator(Sites, 2+(4*i), Site["S"], 5+(4*i), Site["S"]);
+           // Site [3]
+           Ham += TwoPointOperator(Sites, 3+(4*i), Site["S"], 8+(4*i), Site["S"])
+                + TwoPointOperator(Sites, 3+(4*i), Site["S"], 7+(4*i), Site["S"])
+                + TwoPointOperator(Sites, 3+(4*i), Site["S"], 6+(4*i), Site["S"])
+                + TwoPointOperator(Sites, 3+(4*i), Site["S"], 4+(4*i), Site["S"]); // the additional one
+         }
+         Ham *= J1;
+
+         // J2 interactions
+         TriangularMPO Htwo;
+
+         for(int i = 0; i < NLegs; ++i)
+         { 
+           // Site [0]
+           Htwo += 2*TwoPointOperator(Sites, (4*i), Site["S"], 5+(4*i), Site["S"])
+                 +   TwoPointOperator(Sites, (4*i), Site["S"], 3+(4*i), Site["S"]);
+           // Site [1]
+           Htwo += TwoPointOperator(Sites, 1+(4*i), Site["S"], 6+(4*i), Site["S"])
+                 + TwoPointOperator(Sites, 1+(4*i), Site["S"], 8+(4*i), Site["S"]);
+           // Site [2]
+           Htwo +=   TwoPointOperator(Sites, 2+(4*i), Site["S"], 7+(4*i), Site["S"])
+                 +   TwoPointOperator(Sites, 2+(4*i), Site["S"], 9+(4*i), Site["S"])
+                 + 2*TwoPointOperator(Sites, 2+(4*i), Site["S"], 4+(4*i), Site["S"]);
+           // Site [3]
+           Htwo += TwoPointOperator(Sites, 3+(4*i), Site["S"], 12+(4*i), Site["S"])
+                 + TwoPointOperator(Sites, 3+(4*i), Site["S"], 10+(4*i), Site["S"])
+                 + TwoPointOperator(Sites, 3+(4*i), Site["S"], 5+(4*i), Site["S"]);        
+         }
+         Ham += J2*Htwo;
+
          // SU(2) factor
          Ham *= -sqrt(3.0);
          HamMPO = Ham;
