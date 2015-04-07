@@ -104,31 +104,37 @@ struct constants : symbols<complex>
 // pre-defined unary operators
 
 // can't find a direct way of wrapping the std:: overloaded functions :(
+inline
 complex csin(complex x)
 {
    return sin(x);
 }
 
+inline
 complex ccos(complex x)
 {
    return cos(x);
 }
 
+inline
 complex cexp(complex x)
 {
    return exp(x);
 }
 
+inline
 complex cln(complex x)
 {
    return log(x);
 }
 
+inline
 complex clog10(complex x)
 {
    return log10(x);
 }
 
+inline
 complex csqrt(complex x)
 {
    return sqrt(x);

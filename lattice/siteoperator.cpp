@@ -307,3 +307,33 @@ pow(SiteOperator const& Op, int n)
    }
 }
 
+SiteOperator
+dot(SiteOperator const& Op1, SiteOperator const& Op2)
+{
+   CHECK_EQUAL(Op1.TransformsAs(), adjoint(Op2.TransformsAs()))("dot product must produce e scalar");
+   return std::sqrt(double(degree(Op1.TransformsAs()))) 
+      * prod(Op1, Op2, QuantumNumber(Op1.GetSymmetryList()));
+}
+
+SiteOperator
+outer(SiteOperator const& x, SiteOperator const& y)
+{
+   QuantumNumbers::QuantumNumberList L = transform_targets(x.TransformsAs(), y.TransformsAs());
+   QuantumNumbers::QuantumNumber q = L[0];
+   bool Unique = true;
+   for (unsigned i = 1; i < L.size(); ++i)
+   {
+      if (degree(L[i]) > degree(q))
+      {
+	 q = L[i];
+	 Unique = true;
+      }
+      else if (degree(L[i]) == degree(q))
+      {
+	 Unique = false;
+      }
+   }
+   CHECK(Unique)("outer product is not defined for these operators")
+      (x.TransformsAs())(y.TransformsAs());
+   return std::sqrt(double(degree(q))) * prod(x,y,q);
+}

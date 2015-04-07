@@ -186,7 +186,11 @@ class SiteOperator : public IrredTensor<std::complex<double> >
       std::string const& Description() const { return Description_; }
       void SetDescription(std::string const& s) { Description_ = s; }
 
+
+      // Make an identity operator over the given basis
       static SiteOperator Identity(SiteBasis const& Basis);
+
+      // Make an identity operator over the given basis - this is an error if Basis1 != Basis2
       static SiteOperator Identity(SiteBasis const& Basis1, SiteBasis const& Basis2);
 
    private:
@@ -199,40 +203,12 @@ class SiteOperator : public IrredTensor<std::complex<double> >
    friend void CoerceSymmetryList(SiteOperator& s, SymmetryList const& sl);
 };
 
-inline
-SiteOperator SiteOperator::Identity(SiteBasis const& Basis)
-{
-   SiteOperator Result(Basis, QuantumNumber(Basis.GetSymmetryList()), LatticeCommute::Bosonic);
-   for (std::size_t i = 0; i < Basis.size(); ++i)
-   {
-      Result(i,i) = 1.0;
-   }
-   return Result;
-}
-
-inline
-SiteOperator SiteOperator::Identity(SiteBasis const& Basis1, SiteBasis const& Basis2)
-{
-   CHECK_EQUAL(Basis1, Basis2);
-   return SiteOperator::Identity(Basis1);
-}
-
-inline
-SiteOperator
-MakeIdentityFrom(SiteOperator const& x)
-{
-   CHECK_EQUAL(x.Basis1(), x.Basis2());
-   return SiteOperator::Identity(x.Basis1());
-}
+// Make an identity operator over the same basis as for operator x
+SiteOperator MakeIdentityFrom(SiteOperator const& x);
 
 std::ostream& operator<<(std::ostream& out, SiteOperator const& Op);
 
-inline
-void CoerceSymmetryList(SiteOperator& s, SymmetryList const& sl)
-{
-   CoerceSymmetryList(s.Basis_, sl);
-   CoerceSymmetryList(static_cast<IrredTensor<std::complex<double> >&>(s), sl);
-}
+void CoerceSymmetryList(SiteOperator& s, SymmetryList const& sl);
 
 SiteOperator flip_conj(SiteOperator const& s, SiteBasis const& ReflectedBasis);
 
@@ -243,9 +219,20 @@ SiteOperator flip_conj(SiteOperator const& s)
 }
 
 // this should be a function in LinearAlgebra, not sure if it exists yet
-// Power of a site operator, n must be positive.  By repeated squaring.
+// Power of a site operator, n must be positive.
 SiteOperator
 pow(SiteOperator const& Op, int n);
+
+SiteOperator
+dot(SiteOperator const& Op1, SiteOperator const& Op2);
+
+// For completeness, the cross product
+SiteOperator
+cross(SiteOperator const& x, SiteOperator const& y);
+
+// And the outer product
+SiteOperator
+outer(SiteOperator const& x, SiteOperator const& y);
 
 namespace LinearAlgebra
 {

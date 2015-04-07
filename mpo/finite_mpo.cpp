@@ -368,7 +368,8 @@ cross(FiniteMPO const& x, FiniteMPO const& y)
 {
    // Legitimate uses of FiniteMPO::TransformsAs()
 #if !defined(DISABLE_FINITE_MPO_TRANSFORMS_AS)
-   CHECK(cross_product_exists(x.TransformsAs(), y.TransformsAs()))("Cross product does not exist for these operators")
+   CHECK(cross_product_exists(x.TransformsAs(), y.TransformsAs()))
+      ("Cross product does not exist for these operators")
       (x.TransformsAs())(y.TransformsAs());
 
    return cross_product_factor(x.TransformsAs(), y.TransformsAs())
@@ -384,11 +385,21 @@ FiniteMPO outer(FiniteMPO const& x, FiniteMPO const& y)
 #if !defined(DISABLE_FINITE_MPO_TRANSFORMS_AS)
    QuantumNumbers::QuantumNumberList L = transform_targets(x.TransformsAs(), y.TransformsAs());
    QuantumNumbers::QuantumNumber q = L[0];
+   bool Unique = true;
    for (unsigned i = 1; i < L.size(); ++i)
    {
       if (degree(L[i]) > degree(q))
+      {
 	 q = L[i];
+	 Unique = true;
+      }
+      else if (degree(L[i]) == degree(q))
+      {
+	 Unique = false;
+      }
    }
+   CHECK(Unique)("outer product is not defined for these operators")
+      (x.TransformsAs())(y.TransformsAs());
    return std::sqrt(double(degree(q))) * prod(x,y,q);
 #else
    return x;

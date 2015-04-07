@@ -1,6 +1,39 @@
 // -*- C++ -*- $Id$
 
 inline
+SiteOperator SiteOperator::Identity(SiteBasis const& Basis)
+{
+   SiteOperator Result(Basis, QuantumNumber(Basis.GetSymmetryList()), LatticeCommute::Bosonic);
+   for (std::size_t i = 0; i < Basis.size(); ++i)
+   {
+      Result(i,i) = 1.0;
+   }
+   return Result;
+}
+
+inline
+SiteOperator SiteOperator::Identity(SiteBasis const& Basis1, SiteBasis const& Basis2)
+{
+   CHECK_EQUAL(Basis1, Basis2);
+   return SiteOperator::Identity(Basis1);
+}
+
+inline
+SiteOperator
+MakeIdentityFrom(SiteOperator const& x)
+{
+   CHECK_EQUAL(x.Basis1(), x.Basis2());
+   return SiteOperator::Identity(x.Basis1());
+}
+
+inline
+void CoerceSymmetryList(SiteOperator& s, SymmetryList const& sl)
+{
+   CoerceSymmetryList(s.Basis_, sl);
+   CoerceSymmetryList(static_cast<IrredTensor<std::complex<double> >&>(s), sl);
+}
+
+inline
 SiteOperator prod(SiteOperator const& x, SiteOperator const& y, QuantumNumber Trans)
 {
    DEBUG_PRECONDITION_EQUAL(x.Basis(), y.Basis());
@@ -48,4 +81,16 @@ tensor_prod(SiteOperator const& S1, SiteOperator const& S2)
    CHECK_EQUAL(ql.size(), 1);
    return tensor_prod(S1, S2, ql[0]);
 }
+
+inline
+SiteOperator
+cross(SiteOperator const& x, SiteOperator const& y)
+{
+   CHECK(cross_product_exists(x.TransformsAs(), y.TransformsAs()))
+      ("Cross product does not exist for these operators")
+      (x.TransformsAs())(y.TransformsAs());
+   return cross_product_factor(x.TransformsAs(), y.TransformsAs())
+      * prod(x, y, cross_product_transforms_as(x.TransformsAs(), y.TransformsAs()));
+}
+
 

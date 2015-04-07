@@ -220,6 +220,7 @@ UnitCell::OperatorFunction(std::string const& Op,
 			   std::vector<std::complex<double> > const& Params) const
 {
    PANIC("Operator function is not defined");
+   return FiniteMPO();
 }
 
 FiniteMPO
@@ -227,6 +228,7 @@ UnitCell::OperatorFunction(std::string const& Op, int n,
 			   std::vector<std::complex<double> > const& Params) const
 {
    PANIC("Operator function is not defined");
+   return FiniteMPO();
 }
 
 FiniteMPO
