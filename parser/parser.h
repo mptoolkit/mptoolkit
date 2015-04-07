@@ -174,6 +174,21 @@ struct ElementAdjoint : boost::static_visitor<element_type>
 };
 
 template <typename element_type>
+struct ElementSq : boost::static_visitor<element_type>
+{
+   element_type operator()(complex c) const
+   {
+      return complex(c.real()*c.real() + c.imag()*c.imag());
+   }
+
+   template <typename T>
+   element_type operator()(T const& x) const
+   {
+      return dot(adjoint(x),x);
+   }
+};
+
+template <typename element_type>
 struct ElementExp : boost::static_visitor<element_type>
 {
    element_type operator()(complex c) const
@@ -204,6 +219,7 @@ struct unary_funcs : symbols<boost::function<element_type(element_type)> >
          ("conj", make_apply_unary_math<element_type>(ElementConj<element_type>()))
          ("ad", make_apply_unary_math<element_type>(ElementAdjoint<element_type>()))
          ("adjoint", make_apply_unary_math<element_type>(ElementAdjoint<element_type>()))
+         ("sq", make_apply_unary_math<element_type>(ElementSq<element_type>()))
          ;
    }
 };
@@ -421,6 +437,34 @@ struct binary_dot_product : boost::static_visitor<element_type>
    }
 };
 
+template <typename element_type>
+struct binary_inner_product : boost::static_visitor<element_type>
+{
+   element_type operator()(complex const& x, complex const& y) const
+   {
+      return element_type(LinearAlgebra::conj(x)*y);
+   }
+
+   template <typename T>
+   element_type operator()(complex const& x, T const& y) const
+   {
+      return element_type(LinearAlgebra::conj(x)*y);
+   }
+
+   template <typename T>
+   element_type operator()(T const& x, complex const& y) const
+   {
+      return element_type(adjoint(x)*y);
+   }
+
+   // assume here we have operators
+   template <typename T1, typename T2>
+   element_type operator()(T1 const& x, T2 const& y) const
+   {
+      return dot(adjoint(x),y);
+   }
+};
+
 //
 // outer_product: outer product of tensor operators.
 // We choose among the possible transform_targets the
@@ -493,6 +537,7 @@ struct binary_funcs : symbols<boost::function<element_type(element_type, element
    {
       this->add.operator()
          ("dot", make_apply_binary_math<element_type>(binary_dot_product<element_type>()))
+         ("inner", make_apply_binary_math<element_type>(binary_inner_product<element_type>()))
          ("outer", make_apply_binary_math<element_type>(binary_outer_product<element_type>()))
 	 ("cross", make_apply_binary_math<element_type>(binary_cross_product<element_type>()))
          ;

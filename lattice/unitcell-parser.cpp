@@ -283,8 +283,9 @@ struct binary_funcs<element_type> : symbols<boost::function<element_type(element
    {
       this->add.operator()
          ("dot", make_apply_binary_math<element_type>(binary_dot_product<element_type>(Cell)))
-	 //         ("outer", make_apply_binary_math<element_type>(binary_outer_product<element_type>()))
-	 //	 ("cross", make_apply_binary_math<element_type>(binary_cross_product<element_type>()))
+         ("inner", make_apply_binary_math<element_type>(binary_inner_product<element_type>()))
+	 ("outer", make_apply_binary_math<element_type>(binary_outer_product<element_type>()))
+	 ("cross", make_apply_binary_math<element_type>(binary_cross_product<element_type>()))
          ;
    }
 };

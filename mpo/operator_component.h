@@ -210,6 +210,9 @@ struct Conj<OperatorComponent>
    }
 };
 
+// The adjoint of a component takes the adjoint of the local operator,
+// hence swapping the local indices.  It does a 'flip conjugation'
+// in the auxiliary indices.
 template <>
 struct Adjoint<OperatorComponent>
 {
@@ -218,14 +221,15 @@ struct Adjoint<OperatorComponent>
 
    result_type operator()(argument_type x) const 
    { 
-      OperatorComponent Result(x);
-      for (OperatorComponent::iterator I = iterate(Result); I; ++I)
+      OperatorComponent Result(x.LocalBasis2(), x.LocalBasis1(), adjoint(x.Basis1()), adjoint(x.Basis2()));
+      for (OperatorComponent::const_iterator I = iterate(x); I; ++I)
       {
-	 for (OperatorComponent::inner_iterator J = iterate(I); J; ++J)
+	 for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
 	 {
-	    *J = adjoint(*J);
+	    Result(J.index1(), J.index2()) = adjoint(*J);
 	 }
       }
+      Result.debug_check_structure();
       return Result;
    }
 };
@@ -238,14 +242,15 @@ struct InvAdjoint<OperatorComponent>
 
    result_type operator()(argument_type x) const 
    {
-      OperatorComponent Result(x);
-      for (OperatorComponent::iterator I = iterate(Result); I; ++I)
+      OperatorComponent Result(x.LocalBasis2(), x.LocalBasis1(), adjoint(x.Basis1()), adjoint(x.Basis2()));
+      for (OperatorComponent::const_iterator I = iterate(x); I; ++I)
       {
-	 for (OperatorComponent::inner_iterator J = iterate(I); J; ++J)
+	 for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
 	 {
-	    *J = inv_adjoint(*J);
+	    Result(J.index1(), J.index2()) = inv_adjoint(*J);
 	 }
       }
+      Result.debug_check_structure();
       return Result;
    }
 };

@@ -80,7 +80,7 @@ inject_left(MatrixOperator const& m,
    E.debug_check_structure();
    LinearWavefunction::const_iterator I1 = Psi1.begin();
    LinearWavefunction::const_iterator I2 = Psi2.begin();
-   GenericMPO::const_iterator OpIter = Op.begin();
+   FiniteMPO::const_iterator OpIter = Op.begin();
    while (OpIter != Op.end())
    {
       if (I1 == Psi1.end())
