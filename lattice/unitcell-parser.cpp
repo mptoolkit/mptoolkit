@@ -209,6 +209,129 @@ struct binary_dot_product<element_type> : boost::static_visitor<element_type>
 };
 
 template <>
+struct binary_cross_product<element_type> : boost::static_visitor<element_type>
+{
+   binary_cross_product(UnitCell const& Cell_) 
+      : Cell(Cell_) {}
+
+   element_type operator()(complex const& x, complex const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(complex const& x, FiniteMPO const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(FiniteMPO const& x, complex const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   {
+      if (x.size() < y.size())
+      {
+	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 return cross(xExtend, y);
+      }
+      else if (x.size() > y.size())
+      {
+	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 return cross(x, yExtend);
+      }
+      // else
+      return cross(x,y);
+   }
+
+   UnitCell const& Cell;
+
+};
+
+template <>
+struct binary_outer_product<element_type> : boost::static_visitor<element_type>
+{
+   binary_outer_product(UnitCell const& Cell_) 
+      : Cell(Cell_) {}
+
+   element_type operator()(complex const& x, complex const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(complex const& x, FiniteMPO const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(FiniteMPO const& x, complex const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   {
+      if (x.size() < y.size())
+      {
+	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 return outer(xExtend, y);
+      }
+      else if (x.size() > y.size())
+      {
+	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 return outer(x, yExtend);
+      }
+      // else
+      return outer(x,y);
+   }
+
+   UnitCell const& Cell;
+
+};
+
+template <>
+struct binary_inner_product<element_type> : boost::static_visitor<element_type>
+{
+   binary_inner_product(UnitCell const& Cell_) 
+      : Cell(Cell_) {}
+
+   element_type operator()(complex const& x, complex const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(complex const& x, FiniteMPO const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(FiniteMPO const& x, complex const& y) const
+   {
+      return element_type(x*y);
+   }
+
+   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   {
+      if (x.size() < y.size())
+      {
+	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 return dot(adjoint(xExtend), y);
+      }
+      else if (x.size() > y.size())
+      {
+	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 return dot(adjoint(x), yExtend);
+      }
+      // else
+      return dot(adjoint(x),y);
+   }
+
+   UnitCell const& Cell;
+
+};
+
+template <>
 struct ternary_product<element_type> : boost::static_visitor<element_type>
 {
    ternary_product(UnitCell const& Cell_, std::string const& q_)
@@ -283,9 +406,9 @@ struct binary_funcs<element_type> : symbols<boost::function<element_type(element
    {
       this->add.operator()
          ("dot", make_apply_binary_math<element_type>(binary_dot_product<element_type>(Cell)))
-         ("inner", make_apply_binary_math<element_type>(binary_inner_product<element_type>()))
-	 ("outer", make_apply_binary_math<element_type>(binary_outer_product<element_type>()))
-	 ("cross", make_apply_binary_math<element_type>(binary_cross_product<element_type>()))
+         ("inner", make_apply_binary_math<element_type>(binary_inner_product<element_type>(Cell)))
+	 ("outer", make_apply_binary_math<element_type>(binary_outer_product<element_type>(Cell)))
+	 ("cross", make_apply_binary_math<element_type>(binary_cross_product<element_type>(Cell)))
          ;
    }
 };
