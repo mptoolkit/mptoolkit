@@ -813,7 +813,7 @@ struct ScalarProd<HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> >,
       for ( ; xI; ++xI, ++yI)
       {
          double InnerDegree = degree(y.Basis1()[yI.index()]);
-         for (inner1 xJ = iterate(xI); xJ; ++xI)
+         for (inner1 xJ = iterate(xI); xJ; ++xJ)
          {
             for (inner2 yJ = iterate(yI); yJ; ++yJ)
             {
