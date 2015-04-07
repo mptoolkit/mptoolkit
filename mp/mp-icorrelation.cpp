@@ -26,6 +26,7 @@
 #include "models/kondo-u1u1.h"
 #include "models/hubbard-so4.h"
 #include "models/hubbard-u1u1.h"
+#include "models/hubbard-u1su2.h"
 #include "models/hubbard-u1u1-old.h"
 #include "models/boson-u1.h"
 #include "models/boson.h"
@@ -206,6 +207,10 @@ int main(int argc, char** argv)
       {
 	 Site = CreateU1U1HubbardSite();
       }
+      else if (Model == "hubbard-u1su2")
+      {
+	 Site = CreateU1SU2HubbardSite();
+      }
       else if (Model == "hubbard-u1u1-old")
       {
 	 Site = CreateU1U1HubbardOldOrderingSite();
@@ -224,7 +229,7 @@ int main(int argc, char** argv)
       }
       else
       {
-	 PANIC("mp-icorrelation: fatal: model parameter should be one of tj-u1, tj-u1su2, sf-u1, klm-u1su2.");
+	 PANIC("mp-icorrelation: fatal: model parameter not recognised.");
       }
 
       QuantumNumber Ident(Psi->GetSymmetryList());

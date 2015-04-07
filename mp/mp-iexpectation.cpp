@@ -26,6 +26,7 @@
 #include "models/kondo-u1u1.h"
 #include "models/hubbard-so4.h"
 #include "models/hubbard-u1u1.h"
+#include "models/hubbard-u1su2.h"
 #include "models/hubbard-u1u1-old.h"
 #include "models/boson-u1.h"
 #include "models/boson.h"
@@ -211,6 +212,10 @@ int main(int argc, char** argv)
       else if (Model == "hubbard-so4")
       {
 	 Site = CreateSO4HubbardSiteA();
+      }
+      else if (Model == "hubbard-u1su2")
+      {
+	 Site = CreateU1SU2HubbardSite();
       }
       else if (Model == "hubbard-u1u1")
       {
