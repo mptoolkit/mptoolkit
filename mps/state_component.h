@@ -450,6 +450,7 @@ StateComponent local_prod(SimpleOperator const& x, StateComponent const& A);
 
 // constructs the tensor product in the local basis, the matrices
 // C[k1,k2] = A[k1] * B[k2]
+// This is a coarse-graining operation
 StateComponent local_tensor_prod(StateComponent const& A, StateComponent const& B);
 
 StateComponent triple_prod(MatrixOperator const& Op1, 

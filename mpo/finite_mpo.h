@@ -127,6 +127,9 @@ class FiniteMPO
       void check_structure() const { Data.check_structure(); }
       void debug_check_structure() const { Data.debug_check_structure(); }
 
+      // Make an identity MPO over the given unit cell basis
+      static FiniteMPO make_identity(std::vector<BasisList> const& Basis);
+
    private:
       data_type Data;
 };
@@ -205,6 +208,11 @@ FiniteMPO fine_grain(SimpleOperator const& x, LatticeCommute Com,
 // Make an identity operator that acts on the same local Hilbert space as x
 FiniteMPO
 MakeIdentityFrom(FiniteMPO const& x);
+
+// Make an identity operator that acts on the same local Hilbert space as x,
+// with the given quantum number in the auxiliary basis
+FiniteMPO
+MakeIdentityFrom(FiniteMPO const& x, QuantumNumber const& q);
 
 // output to a stream
 std::ostream& operator<<(std::ostream& out, FiniteMPO const& x);

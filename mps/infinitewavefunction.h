@@ -37,6 +37,7 @@
 #define INFINITEWAVEFUNCTION_H_SDJKLCHUIORYH8945Y89Y98
 
 #include "linearwavefunction.h"
+#include "mpo/finite_mpo.h"
 
 class InfiniteWavefunction
 {
@@ -93,8 +94,15 @@ void orthogonalize(InfiniteWavefunction& x);
 std::complex<double> overlap(InfiniteWavefunction const& x,  InfiniteWavefunction const& y,
                              QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, bool Verbose = false);
 
-// This version allows a string operator also
+#if 0
 std::complex<double> overlap(InfiniteWavefunction const& x, std::vector<SimpleOperator> const& StringOp,
+                             InfiniteWavefunction const& y,
+                             QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, bool Verbose = false);
+#endif
+
+// This version allows a string operator also
+// This version takes a FiniteMPO as the string operator - this should become a ProductMPO once they are finished
+std::complex<double> overlap(InfiniteWavefunction const& x, FiniteMPO const& StringOp,
                              InfiniteWavefunction const& y,
                              QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, bool Verbose = false);
 

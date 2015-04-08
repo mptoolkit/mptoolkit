@@ -11,6 +11,9 @@
 #include "models/hubbard-u1u1.h"
 #include "models/hubbard-u1u1-old.h"
 #include "models/spin-u1.h"
+#include "models/spin-su2.h"
+#include "lattice/unitcell.h"
+#include "lattice/unitcell-parser.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -84,6 +87,7 @@ int main(int argc, char** argv)
       bool NoTempFile = false;
       bool ShowRealPart = false, ShowImagPart = false, ShowMagnitude = false;
       int Rotate = 0;
+      int UnitCellSize = 1;
       std::string LhsStr, RhsStr;
       std::vector<std::string> Sector;
       double Tol = 1E-10;
@@ -197,7 +201,9 @@ int main(int argc, char** argv)
          *Psi2.mutate() = rotate_left(*Psi2, Rotate);
 #endif
 
+      UnitCell Cell;
       LatticeSite Site;
+      FiniteMPO StringOp;
       if (!Model.empty())
       {
          if (Verbose)
@@ -207,6 +213,10 @@ int main(int argc, char** argv)
 	 {
             Site = CreateU1SU2HubbardSite();
          }
+	 else if (Model == "spin-su2")
+	 {
+	    Site = CreateSU2SpinSite(Spin);
+	 }
          else if (Model == "hubbard-u1u1")
 	 {
             Site = CreateU1U1HubbardSite();
@@ -223,6 +233,10 @@ int main(int argc, char** argv)
 	 {
             PANIC("Unknown model")(Model);
          }
+	 Cell = repeat(Site, UnitCellSize);
+	 if (String != "I")
+	 {
+	 }
       }
 
       if (Reflect)
@@ -247,18 +261,19 @@ int main(int argc, char** argv)
          *Psi2.mutate() = conj(*Psi2);
       }
 
-      std::vector<SimpleOperator> StringOp;
       if (vm.count("string"))
       {
          if (Model.empty())
          {
             PANIC("--string option requires --model!");
          }
-         StringOp = std::vector<SimpleOperator>(Psi2->size(), Site[String]);
+	 StringOp = ParseUnitCellOperator(Cell, 0, String);
+	 StringOp = repeat(StringOp, Psi1->size() / StringOp.size());
+	 CHECK_EQUAL(StringOp.size(), Psi1->size());
       }
       else
       {
-         StringOp = make_identity_string_operator(ExtractLocalBasis(Psi2->Psi));
+         StringOp = FiniteMPO::make_identity(ExtractLocalBasis(Psi2->Psi));
       }
 
       // get the list of quantum number sectors

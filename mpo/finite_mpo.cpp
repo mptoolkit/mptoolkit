@@ -512,22 +512,6 @@ FiniteMPO exp(FiniteMPO const& x)
 }
 
 FiniteMPO
-MakeIdentityFrom(FiniteMPO const& x)
-{
-   FiniteMPO Result(x.size(), LatticeCommute::Bosonic);
-   QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
-   BasisList b(x.GetSymmetryList());
-   b.push_back(Ident);
-   for (int i = 0; i < x.size(); ++i)
-   {
-      CHECK_EQUAL(x.LocalBasis1(i), x.LocalBasis2(i));
-      Result[i] = OperatorComponent(x.LocalBasis1(i), x.LocalBasis1(i), b, b);
-      Result[i](0,0) = SimpleOperator::make_identity(x.LocalBasis1(i));
-   }
-   return Result;
-}
-
-FiniteMPO
 pow(FiniteMPO const& x, int n)
 {
    if (n == 0)
@@ -559,4 +543,52 @@ adjoint(FiniteMPO const& x)
    return Result;
 }
 
+FiniteMPO
+FiniteMPO::make_identity(std::vector<BasisList> const& Basis)
+{
+   FiniteMPO Result(Basis.size(), LatticeCommute::Bosonic);
+   if (Basis.empty())
+      return Result;
+
+   QuantumNumbers::QuantumNumber Ident(Basis[0].GetSymmetryList());
+   BasisList b(Basis[0].GetSymmetryList());
+   b.push_back(Ident);
+   for (unsigned i = 0; i < Basis.size(); ++i)
+   {
+      Result[i] = OperatorComponent(Basis[i], Basis[i], b, b);
+      Result[i](0,0) = SimpleOperator::make_identity(Basis[i]);
+   }
+   return Result;
+}
+
+FiniteMPO
+MakeIdentityFrom(FiniteMPO const& x)
+{
+   FiniteMPO Result(x.size(), LatticeCommute::Bosonic);
+   QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
+   BasisList b(x.GetSymmetryList());
+   b.push_back(Ident);
+   for (int i = 0; i < x.size(); ++i)
+   {
+      CHECK_EQUAL(x.LocalBasis1(i), x.LocalBasis2(i));
+      Result[i] = OperatorComponent(x.LocalBasis1(i), x.LocalBasis1(i), b, b);
+      Result[i](0,0) = SimpleOperator::make_identity(x.LocalBasis1(i));
+   }
+   return Result;
+}
+
+FiniteMPO
+MakeIdentityFrom(FiniteMPO const& x, QuantumNumber const& q)
+{
+   FiniteMPO Result(x.size(), LatticeCommute::Bosonic);
+   BasisList b(x.GetSymmetryList());
+   b.push_back(q);
+   for (int i = 0; i < x.size(); ++i)
+   {
+      CHECK_EQUAL(x.LocalBasis1(i), x.LocalBasis2(i));
+      Result[i] = OperatorComponent(x.LocalBasis1(i), x.LocalBasis1(i), b, b);
+      Result[i](0,0) = SimpleOperator::make_identity(x.LocalBasis1(i));
+   }
+   return Result;
+}
 

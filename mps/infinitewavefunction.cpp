@@ -10,6 +10,7 @@
 #include <fstream>
 
 #include "mps/spectrum_arpack.h"
+#include "mps/operator_actions.h"
 
 double const InverseTol = getenv_or_default("MP_INVERSE_TOL", InverseTolDefault);
 
@@ -165,41 +166,6 @@ struct RightMultiply
    }
 
    LinearWavefunction const& R;
-   QuantumNumber QShift;
-};
-
-struct GeneralizedLeftMultiply
-{
-   typedef MatrixOperator argument_type;
-   typedef MatrixOperator result_type;
-
-   GeneralizedLeftMultiply(LinearWavefunction const& L1_, 
-                           std::vector<SimpleOperator> const& LocalOp_,
-                           LinearWavefunction const& L2_,
-                           QuantumNumber const& QShift_) 
-      : L1(L1_), LocalOp(LocalOp_), L2(L2_), QShift(QShift_) {}
-
-   GeneralizedLeftMultiply(LinearWavefunction const& L1_, 
-                           LinearWavefunction const& L2_,
-                           QuantumNumber const& QShift_) 
-      : L1(L1_), LocalOp(make_identity_string_operator(ExtractLocalBasis(L2_))), L2(L2_), QShift(QShift_) {}
-
-   result_type operator()(argument_type const& x) const
-   {
-      result_type r = x; //delta_shift(x, QShift);
-      LinearWavefunction::const_iterator I1 = L1.begin();
-      LinearWavefunction::const_iterator I2 = L2.begin();
-      std::vector<SimpleOperator>::const_iterator IOp = LocalOp.begin();
-      for ( ; I1 != L1.end(); ++I1, ++I2, ++IOp)
-      {
-	 r = operator_prod(herm(*I1), r, local_prod(*IOp, *I2));
-      }
-      return delta_shift(r, QShift);
-   }
-
-   LinearWavefunction const& L1;
-   std::vector<SimpleOperator> LocalOp;
-   LinearWavefunction const& L2;
    QuantumNumber QShift;
 };
 
@@ -602,7 +568,7 @@ void orthogonalize(InfiniteWavefunction& x)
 #endif
 #endif
 
-std::complex<double> overlap(InfiniteWavefunction const& x, std::vector<SimpleOperator> const& StringOp,
+std::complex<double> overlap(InfiniteWavefunction const& x, FiniteMPO const& StringOp,
                              InfiniteWavefunction const& y,
                              QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, bool Verbose)
 {
@@ -623,8 +589,11 @@ std::complex<double> overlap(InfiniteWavefunction const& x, std::vector<SimpleOp
    int TotalIterations = 0;
    double MyTol = Tol;
    std::complex<double> Eta = LinearSolvers::Arnoldi(Init, 
-                                                     GeneralizedLeftMultiply(xPsi, StringOp, yPsi, x.QShift), 
-                                                     Iterations, MyTol, LinearSolvers::LargestMagnitude, false, Verbose);
+                LeftMultiplyString(xPsi, StringOp * MakeIdentityFrom(StringOp, Sector),
+				   yPsi, x.QShift), 
+                                                     Iterations, 
+						     MyTol, 
+						     LinearSolvers::LargestMagnitude, false, Verbose);
    TotalIterations += Iterations;
    DEBUG_TRACE(Eta)(Iterations);
 
@@ -634,7 +603,8 @@ std::complex<double> overlap(InfiniteWavefunction const& x, std::vector<SimpleOp
          std::cerr << "Restarting Arnoldi, eta=" << Eta << ", Tol=" << -MyTol << '\n';
       Iterations = Iter;
       MyTol = Tol;
-      Eta = LinearSolvers::Arnoldi(Init, GeneralizedLeftMultiply(xPsi, StringOp, yPsi, x.QShift), 
+      Eta = LinearSolvers::Arnoldi(Init, LeftMultiplyString(xPsi, StringOp * MakeIdentityFrom(StringOp, Sector), 
+							    yPsi, x.QShift), 
 				   Iterations, MyTol, LinearSolvers::LargestMagnitude, false, Verbose);
       TotalIterations += Iterations;
       DEBUG_TRACE(Eta)(Iterations);
@@ -649,7 +619,7 @@ std::complex<double> overlap(InfiniteWavefunction const& x, std::vector<SimpleOp
 std::complex<double> overlap(InfiniteWavefunction const& x,  InfiniteWavefunction const& y,
                              QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, bool Verbose)
 {
-   return overlap(x, make_identity_string_operator(ExtractLocalBasis(y.Psi)), y, Sector, Iter, Tol, Verbose);
+   return overlap(x, FiniteMPO::make_identity(ExtractLocalBasis(y.Psi)), y, Sector, Iter, Tol, Verbose);
 }
 
 InfiniteWavefunction reflect(InfiniteWavefunction const& Psi)
