@@ -565,7 +565,7 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
    // A norm for the overlaps matrix
    double Scale = trace(Overlaps).real() / Overlaps.Basis1().size();
 
-   double const OverlapEpsilon = 1E-14;
+   double const OverlapEpsilon = 1E-13;
 
    // This is the transform that truncates the rows of A.
    // row[i] = NewRows[i].second * A(NewRows[i].second, all)
@@ -682,7 +682,7 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
    // A norm for the overlaps matrix
    double Scale = trace(Overlaps).real() / Overlaps.Basis1().size();
 
-   double const OverlapEpsilon = 1E-14;
+   double const OverlapEpsilon = 1E-13;
 	 
    // This is the transform that truncates the columns of A.
    // row[i] = NewCols[i].second * A(all, NewCols[i].second)
