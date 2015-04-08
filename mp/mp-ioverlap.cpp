@@ -112,6 +112,8 @@ int main(int argc, char** argv)
          ("notempfile", prog_opt::bool_switch(&NoTempFile),
           "don't use a temporary data file, keep everything in RAM "
           "(faster, but needs enough RAM)")
+	 ("unitcell,u", prog_opt::value(&UnitCellSize),
+	  "Size of the Hamiltonian unit cell")
          ("rotate", prog_opt::value(&Rotate),
           "rotate the unit cell of psi2 this many sites to the left before calculating the overlap [default 0]")
          ("reflect", prog_opt::bool_switch(&Reflect),
