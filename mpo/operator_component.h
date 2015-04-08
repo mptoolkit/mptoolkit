@@ -141,6 +141,20 @@ OperatorComponent::make_identity(BasisList const& LocalBasis)
    return Result;
 }
 
+// Constructs the swap gate, that maps from the tensor product basis of B1 * B2 into
+// the basis B2 * B1, such that state |i,j> maps into |j,i>
+SimpleOperator
+swap_gate(BasisList const& B1, BasisList const& B2, 
+	  ProductBasis<BasisList, BasisList> const& Basis_21,
+	  ProductBasis<BasisList, BasisList> const& Basis_12);
+
+inline
+SimpleOperator
+swap_gate(BasisList const& B1, BasisList const& B2)
+{
+   return swap_gate(B1, B2, ProductBasis<BasisList, BasisList>(B2,B1), ProductBasis<BasisList, BasisList>(B1,B2));
+}
+
 namespace LinearAlgebra
 {
 

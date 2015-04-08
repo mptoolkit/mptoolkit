@@ -48,6 +48,31 @@ OperatorComponent::check_structure() const
    }
 }
 
+SimpleOperator
+swap_gate(BasisList const& B1, BasisList const& B2, 
+	  ProductBasis<BasisList, BasisList> const& Basis_21,
+	  ProductBasis<BasisList, BasisList> const& Basis_12)
+{
+   QuantumNumbers::QuantumNumber Ident(B1.GetSymmetryList());
+
+   SimpleOperator Result(Basis_21.Basis(), Basis_12.Basis(), Ident);
+   for (unsigned i = 0; i < Basis_12.size(); ++i)
+   {
+      std::pair<int,int> x = Basis_12.rmap(i);
+
+      // Find the corresponding element in Basis1 with swapped indices
+      for (ProductBasis<BasisList>::const_iterator I = Basis_21.begin(x.second, x.first); I != Basis_21.end(x.second, x.first); ++I)
+      {
+	 if (Basis_21[*I] == Basis_12[i])
+	 {
+	    Result(*I, i) = conj_phase(Ident, Basis_21[*I], Basis_12[i]);
+	 }
+      }
+   }
+   TRACE(Result)(Result.Basis1())(Result.Basis2());
+   return Result;
+}
+
 std::ostream&
 operator<<(std::ostream& out, OperatorComponent const& op)
 {

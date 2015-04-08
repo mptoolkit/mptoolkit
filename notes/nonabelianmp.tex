@@ -251,6 +251,7 @@ For tensors that commute, there is a phase factor from the coupling;
 \beq
 (\itensor{P}{j_1} \times \itensor{Q}{j_2})^{[j]} = (-1)^{j_1+j_2-j}
 (\itensor{Q}{j_2} \times \itensor{P}{j_1})^{[j]}
+\label{eq:CommutationPhase}
 \eeq
 
 The definition of the $6j$ symbols in terms of the Clebsch-Gordan coefficients is
@@ -531,7 +532,8 @@ $\itensor{T^\invad}{k}$.
 
 Note: this sign convention used here is different to that used in my thesis,
 and different to that currently used in the MPToolkit, where the alternate convention
-with phase $(-1)^{j+k-j'}$ is used. This was accidental, but of no real consequence;
+with phase $(-1)^{j+k-j'}$ is used instead of $j'+k-j$ used in \refeq{eq:AdjointDef}. 
+This was accidental, but of no real consequence;
 the adjoint operation in MPToolkit is equivalent to the inverse adjoint in these notes.
 
 We now determine the scalar product of $S \cdot T^\dagger$ and
@@ -1547,6 +1549,27 @@ and sum over $k$. Using the orthogonality constraint \refeq{eq:6jortho} this giv
 \end{array}
 \eeq
 which is pleasingly symmetric with \refeq{eq:TensorProduct}.
+
+\section{Swap gates}
+
+In this section we deduce the matrix elements of an MPO that effect the swap gate between two sites.
+The swap gate is a scalar operator that acts on two sites, and has the matrix elements
+\beq
+\mbox{Swap}\rket{j_1} \rket{j_2} = \rket{j_2}\rket{j_1} \; ,
+\eeq
+or, more explicitly, the full matrix elements are
+\beq
+\rbigbraket{j'(j'_1 j'_2 \alpha'_1 \alpha'_2)}{\mbox{Swap}}{j(j_1 j_2 \alpha_1 \alpha_2)}
+= \delta_{j' j} \delta_{j'_1 j_2} \delta_{j'_2 j_1} \delta_{\alpha'_1 \alpha_2} \delta_{\alpha'_2 \alpha_1} \; .
+\eeq
+The commutation of indices $j'_1, j'_2$ brings in a phase factor, \refeq{eq:CommutationPhase},
+\beq
+\rbigbraket{j'(j'_2 j'_1 \alpha'_2 \alpha'_1)}{\mbox{Swap}}{j(j_1 j_2 \alpha_1 \alpha_2)}
+= (-1)^{j_1+j_2-0}
+\delta_{j' j} \delta_{j'_1 j_1} \delta_{j'_2 j_2} \delta_{\alpha'_1 \alpha_1} \delta_{\alpha'_2 \alpha_2} \; .
+\eeq
+The right hand side is just the identity operation with a phase factor.
+
 
 \section{TODO}
 

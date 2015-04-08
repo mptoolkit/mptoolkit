@@ -254,6 +254,59 @@ string_mpo(UnitCell const& c, std::string const& OpName, QuantumNumbers::Quantum
    return Result;
 }
 
+FiniteMPO
+UnitCell::swap_gate(int i, int j) const
+{
+   return this->swap_gate(0,i,0,j);
+}
+
+FiniteMPO
+UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
+{
+   // normal-order the sites
+   if (Cell_i > Cell_j || (Cell_i == Cell_j && i > j))
+   {
+      std::swap(Cell_i, Cell_j);
+      std::swap(i,j);
+   }
+
+   BasisList Basis_i = this->operator[](i).Basis1();
+   BasisList Basis_j = this->operator[](j).Basis1();
+
+   ProductBasis<BasisList, BasisList> Basis_ij(Basis_i, Basis_j);
+   ProductBasis<BasisList, BasisList> Basis_ji(Basis_j, Basis_i);
+
+   // The actual gate operator
+   SimpleOperator Op = ::swap_gate(Basis_i, Basis_j, Basis_ji, Basis_ij);
+
+   // Turn this into an OperatorComponent, so we can decompose it easier
+   BasisList Vacuum = make_vacuum_basis(this->GetSymmetryList());
+   QuantumNumbers::QuantumNumber Ident(this->GetSymmetryList());
+   OperatorComponent OpComp(Vacuum, Vacuum, Op.Basis1(), Op.Basis2());
+   project(OpComp(0,0), Ident) = Op;
+   
+   OperatorComponent R1, R2;
+   boost::tie(R1, R2) = decompose_local_tensor_prod(OpComp, Basis_ji, Basis_ij);
+
+   // now turn this into a FiniteMPO
+   FiniteMPO Result(this->size() * (Cell_j+1), LatticeCommute::Bosonic);
+   for (int n = 0; n < Cell_i*this->size() + i; ++n)
+   {
+      Result[n] = OperatorComponent::make_identity(this->LocalBasis(n % this->size()));
+   }
+   Result[Cell_i*this->size() + i] = R1;
+   for (int n = Cell_i*this->size() + i + 1; n < Cell_j*this->size() + j; ++n)
+   {
+      Result[n] = OperatorComponent::make_identity(this->LocalBasis(n % this->size()));
+   }
+   Result[Cell_j*this->size() + j] = R2;
+   for (int n = Cell_j*this->size() + j + 1; n < (Cell_j+1)*this->size(); ++n)
+   {
+      Result[n] = OperatorComponent::make_identity(this->LocalBasis(n % this->size()));
+   }
+   return Result;
+}
+
 PStream::opstream& operator<<(PStream::opstream& out, UnitCell const& L)
 {
    out << L.Data_;

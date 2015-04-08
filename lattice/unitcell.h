@@ -122,6 +122,12 @@ class UnitCell
       FiniteMPO OperatorFunction(std::string const& Op, int n,
 				 std::vector<std::complex<double> > const& Params) const;
 
+      // Returns an MPO that effects a swap gate between sites i and j
+      FiniteMPO swap_gate(int i, int j) const;
+
+      // Returns an MPO that effects a swap gate between different unit cells
+      FiniteMPO swap_gate(int iCell, int i, int jCell, int j) const;
+
       // Parse an operator of the form O or O[n]
       //      FiniteMPO Parse(std::string const& s);
       

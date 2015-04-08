@@ -11,6 +11,16 @@ typedef boost::variant<complex, FiniteMPO> element_type;
 namespace Parser
 {
 
+   // utility to pop an integer off the element stack
+int pop_int(std::stack<element_type>& eval)
+{
+   complex x = boost::get<complex>(eval.top());
+   eval.pop();
+   int j = int(x.real() + 0.5);
+   CHECK(norm_frob(x - double(j)) < 1E-7)("index must be an integer")(x);
+   return j;
+}
+
 // We have a problem: for operators with indefinite support, we need to extend MPOs as necessary
 // so that binary operations act on operands with the same number of unit cells.  We can't do that
 // without knowing the actual unit cell, since it might be some operator that mixes the basis around etc.
@@ -923,6 +933,129 @@ struct push_parameter_pack<element_type>
    std::stack<std::stack<element_type> >& ParamStack;
 };
 
+struct push_swap_cell_site
+{
+   push_swap_cell_site(UnitCell const& Cell_, int NumCells_,
+		       std::stack<element_type>& eval_)
+      : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
+
+   void operator()(char const*, char const*) const
+   {
+      int Site2 = pop_int(eval);
+      int Site1 = pop_int(eval);
+      int Cell2 = pop_int(eval);
+      int Cell1 = pop_int(eval);
+
+      CHECK(NumCells == 0 || (Cell1 >= 0 && Cell1 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
+      CHECK(NumCells == 0 || (Cell2 >= 0 && Cell2 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
+
+      FiniteMPO Op = Cell.swap_gate(Cell1, Site1, Cell2, Site2);
+      // extend the operator to have support over NumCells
+      if (NumCells != 0 && Op.size() < NumCells*Cell.size())
+      {
+	 Op = join(Op, repeat(identity_mpo(Cell), (NumCells*Cell.size()-Op.size())/Cell.size()));
+      }
+
+      eval.push(element_type(Op));
+   }
+
+   UnitCell const& Cell;
+   int NumCells;
+   std::stack<element_type >& eval;
+};
+
+struct push_swap_site_cell
+{
+   push_swap_site_cell(UnitCell const& Cell_, int NumCells_,
+		       std::stack<element_type>& eval_)
+      : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
+
+   void operator()(char const*, char const*) const
+   {
+      int Cell2 = pop_int(eval);
+      int Cell1 = pop_int(eval);
+      int Site2 = pop_int(eval);
+      int Site1 = pop_int(eval);
+
+      CHECK(NumCells == 0 || (Cell1 >= 0 && Cell1 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
+      CHECK(NumCells == 0 || (Cell2 >= 0 && Cell2 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
+
+      FiniteMPO Op = Cell.swap_gate(Cell1, Site1, Cell2, Site2);
+      // extend the operator to have support over NumCells
+      if (NumCells != 0 && Op.size() < NumCells*Cell.size())
+      {
+	 Op = join(Op, repeat(identity_mpo(Cell), (NumCells*Cell.size()-Op.size())/Cell.size()));
+      }
+
+      eval.push(element_type(Op));
+   }
+
+   UnitCell const& Cell;
+   int NumCells;
+   std::stack<element_type >& eval;
+};
+
+struct push_swap_site
+{
+   push_swap_site(UnitCell const& Cell_, int NumCells_,
+		  std::stack<element_type>& eval_)
+      : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
+
+   void operator()(char const*, char const*) const
+   {
+      CHECK(NumCells == 0 || NumCells == 1)("Cell index required");
+      int Cell2 = 0;
+      int Cell1 = 0;
+      int Site2 = pop_int(eval);
+      int Site1 = pop_int(eval);
+
+      FiniteMPO Op = Cell.swap_gate(Cell1, Site1, Cell2, Site2);
+      // extend the operator to have support over NumCells
+      if (NumCells != 0 && Op.size() < NumCells*Cell.size())
+      {
+	 Op = join(Op, repeat(identity_mpo(Cell), (NumCells*Cell.size()-Op.size())/Cell.size()));
+      }
+
+      eval.push(element_type(Op));
+   }
+
+   UnitCell const& Cell;
+   int NumCells;
+   std::stack<element_type >& eval;
+};
+
+struct push_swap_cell
+{
+   push_swap_cell(UnitCell const& Cell_, int NumCells_,
+		  std::stack<element_type>& eval_)
+      : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
+
+   void operator()(char const*, char const*) const
+   {
+      CHECK_EQUAL(Cell.size(), 1)("Unit cell is more than one sit, so a site index required here");
+      int Cell2 = pop_int(eval);
+      int Cell1 = pop_int(eval);
+      int Site2 = 0;
+      int Site1 = 0;
+
+      CHECK(NumCells == 0 || (Cell1 >= 0 && Cell1 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
+      CHECK(NumCells == 0 || (Cell2 >= 0 && Cell2 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
+
+      FiniteMPO Op = Cell.swap_gate(Cell1, Site1, Cell2, Site2);
+      // extend the operator to have support over NumCells
+      if (NumCells != 0 && Op.size() < NumCells*Cell.size())
+      {
+	 Op = join(Op, repeat(identity_mpo(Cell), (NumCells*Cell.size()-Op.size())/Cell.size()));
+      }
+
+      eval.push(element_type(Op));
+   }
+
+   UnitCell const& Cell;
+   int NumCells;
+   std::stack<element_type >& eval;
+};
+
 struct UnitCellParser : public grammar<UnitCellParser>
 {
    typedef boost::variant<complex, FiniteMPO> element_type;
@@ -971,12 +1104,20 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	 parameter_list = ch_p('{')[push_parameter_pack<element_type>(self.param_stack)]
 	    >> parameter >> *(',' >> parameter) >> '}';
 
-	 prod_expression = ("prod(" >> expression >> ',' >> expression >> ',' >> quantumnumber >> ')')
+	 prod_expression = (str_p("prod") >> '(' >> expression >> ',' >> expression >> ',' >> quantumnumber >> ')')
 	    [push_prod<element_type>(self.Cell, self.identifier_stack, self.eval)];
  
 	 bracket_expr = '(' >> expression >> ')';
 
 	 sq_bracket_expr = '[' >> expression >> ']';
+
+	 swap_cell_expr = (str_p("swap") >> '(' >> expression >> ',' >> expression >> ')')
+	    >> (('[' >> expression >> ',' >> expression >> ']')[push_swap_cell_site(self.Cell, self.NumCells, self.eval)]
+		|  eps_p[push_swap_cell(self.Cell, self.NumCells, self.eval)]);
+
+	 swap_site_expr =  (str_p("swap") >> '[' >> expression >> ',' >> expression >> ']')
+	    >> (('(' >> expression >> ',' >> expression >> ')')[push_swap_site_cell(self.Cell, self.NumCells, self.eval)]
+		|  eps_p[push_swap_site(self.Cell, self.NumCells, self.eval)]);
 
 	 // an operator of the form Op(u)[i]
 	 // If there is a parameter pack then it is a local operator function
@@ -1071,6 +1212,8 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	    |   keyword_d[constants_p[push_real<element_type>(self.eval)]]
 	    |   prod_expression
 	    |   commutator_bracket
+	    |   swap_cell_expr
+	    |   swap_site_expr
 	    |   '(' >> expression >> ')'
 	    |   ('-' >> factor)[do_negate<element_type>(self.eval)]
 	    |   ('+' >> factor)
@@ -1106,7 +1249,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
       rule<ScannerT> expression, term, factor, real, imag, operator_literal, unary_function,
 	 binary_function, bracket_expr, quantumnumber, prod_expression, sq_bracket_expr, 
 	 operator_expression, operator_bracket_sq, operator_sq_bracket, operator_bracket, operator_sq,
-	 parameter, parameter_list, 
+	 parameter, parameter_list, swap_cell_expr, swap_site_expr,
 	 local_operator, local_operator_cell_site, local_operator_site_cell, 
 	 identifier, pow_term, commutator_bracket;
       rule<ScannerT> const&
