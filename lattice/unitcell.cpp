@@ -279,14 +279,9 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
    // The actual gate operator
    SimpleOperator Op = ::swap_gate(Basis_i, Basis_j, Basis_ji, Basis_ij);
 
-   // Turn this into an OperatorComponent, so we can decompose it easier
-   BasisList Vacuum = make_vacuum_basis(this->GetSymmetryList());
-   QuantumNumbers::QuantumNumber Ident(this->GetSymmetryList());
-   OperatorComponent OpComp(Vacuum, Vacuum, Op.Basis1(), Op.Basis2());
-   project(OpComp(0,0), Ident) = Op;
-   
+   // decompose it back into sites   
    OperatorComponent R1, R2;
-   boost::tie(R1, R2) = decompose_local_tensor_prod(OpComp, Basis_ji, Basis_ij);
+   boost::tie(R1, R2) = decompose_local_tensor_prod(Op, Basis_ji, Basis_ij);
 
    // now turn this into a FiniteMPO
    FiniteMPO Result(this->size() * (Cell_j+1), LatticeCommute::Bosonic);
@@ -297,13 +292,15 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
    Result[Cell_i*this->size() + i] = R1;
    for (int n = Cell_i*this->size() + i + 1; n < Cell_j*this->size() + j; ++n)
    {
-      Result[n] = OperatorComponent::make_identity(this->LocalBasis(n % this->size()));
+      Result[n] = OperatorComponent::make_identity(this->LocalBasis(n % this->size()), R1.Basis2());
    }
    Result[Cell_j*this->size() + j] = R2;
    for (int n = Cell_j*this->size() + j + 1; n < (Cell_j+1)*this->size(); ++n)
    {
       Result[n] = OperatorComponent::make_identity(this->LocalBasis(n % this->size()));
    }
+
+   Result.debug_check_structure();
    return Result;
 }
 

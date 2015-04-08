@@ -103,7 +103,11 @@ class OperatorComponent
       data_type& data() { return Data_; }
       data_type const& data() const { return Data_; }
 
+      // Makes a 1x1 MPO with the local identity operator
       static OperatorComponent make_identity(BasisList const& LocalBasis);
+
+      // Makes a diagonl MPO with the local identity operator repeated in each position of the AuxBasis
+      static OperatorComponent make_identity(BasisList const& LocalBasis, BasisList const& AuxBasis);
 
       void check_structure() const;
       void debug_check_structure() const;
@@ -119,15 +123,6 @@ class OperatorComponent
       data_type Data_;
 };
 
-inline
-void
-OperatorComponent::debug_check_structure() const
-{
-#if !defined(NDEBUG)
-   this->check_structure();
-#endif
-}
-
 std::ostream&
 operator<<(std::ostream& out, OperatorComponent const& op);
 
@@ -138,6 +133,19 @@ OperatorComponent::make_identity(BasisList const& LocalBasis)
    BasisList bl = Tensor::make_vacuum_basis(LocalBasis.GetSymmetryList());
    OperatorComponent Result(LocalBasis, LocalBasis, bl, bl);
    Result(0,0) = SimpleRedOperator::make_identity(LocalBasis);
+   return Result;
+}
+
+inline
+OperatorComponent 
+OperatorComponent::make_identity(BasisList const& LocalBasis, BasisList const& AuxBasis)
+{
+   OperatorComponent Result(LocalBasis, LocalBasis, AuxBasis, AuxBasis);
+   SimpleRedOperator I = SimpleRedOperator::make_identity(LocalBasis);
+   for (unsigned i = 0; i < AuxBasis.size(); ++i)
+   {
+      Result(i,i) = I;
+   }
    return Result;
 }
 

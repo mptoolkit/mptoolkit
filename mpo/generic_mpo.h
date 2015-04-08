@@ -80,6 +80,10 @@ class GenericMPO
 
       std::vector<OperatorComponent> const& data() const { return Data_; }
 
+      void check_structure() const;
+
+      void debug_check_structure() const;
+
    private:
       DataType Data_;
       LatticeCommute Commute_;
@@ -264,5 +268,7 @@ struct InvAdjoint<GenericMPO>
 };
 
 } // namespace LinearAlgebra
+
+#include "generic_mpo.cc"
 
 #endif

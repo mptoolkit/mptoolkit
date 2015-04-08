@@ -69,7 +69,7 @@ swap_gate(BasisList const& B1, BasisList const& B2,
 	 }
       }
    }
-   TRACE(Result)(Result.Basis1())(Result.Basis2());
+   //TRACE(Result)(Result.Basis1())(Result.Basis2());
    return Result;
 }
 
@@ -648,7 +648,7 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
    //#if !defined(NDEBUG)
    // verify that prod(Reg, tA) is the same as A.  
    OperatorComponent ACheck = prod(Reg, tA);
-   CHECK(norm_frob(A - ACheck) < 1E-10)(tA)(ACheck)(Trunc)(Reg)(Overlaps);
+   CHECK(norm_frob(A - ACheck) < 1E-10)(A)(ACheck)(A-ACheck)(Trunc)(Reg)(Overlaps);
    //#endif
 
    A = tA;
@@ -675,6 +675,11 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
 
    SimpleOperator Overlaps = local_inner_prod(herm(A), A);
 
+   // A norm for the overlaps matrix
+   double Scale = trace(Overlaps).real() / Overlaps.Basis1().size();
+
+   double const OverlapEpsilon = 1E-14;
+	 
    // This is the transform that truncates the columns of A.
    // row[i] = NewCols[i].second * A(all, NewCols[i].second)
    std::vector<std::pair<int, std::complex<double> > > NewCols;
@@ -684,13 +689,13 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
       NewCols.push_back(std::make_pair(i, 1.0));
       double imat = Overlaps(i,i).real();
       // if the row is zero, we can eliminate it completely
-      if (imat == 0)
+      if (imat <= Scale * OverlapEpsilon)
       {
          NewCols.back().first = -1;  // special value, indicates the row is not needed
          continue;
       }
       bool Parallel = false;  // is vector i parallel to some other vector?
-      // loop to find out if row i is parallel to row j
+      // loop to find out if row i is parallel to some previous column j
       for (int j = 0; j < i; ++j)
       {
          // can only have non-zero determinant if the quantum numbers match
@@ -701,8 +706,6 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
          if (NewCols[j].first == -1)
             continue;
 
-         double const OverlapEpsilon = 1E-14;
-
          double jmat = Overlaps(j,j).real();
          std::complex<double> ijmat = Overlaps(j,i);
          // are rows i and j parallel?
@@ -710,10 +713,12 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
          {
             NewCols[i] = std::make_pair(j, ijmat / jmat);
             // corner case: i is parallel to j, but we might have previously determined that
-            // j is parallel to some other column k.  Does this ever happen in practice?
+            // j is parallel to some other column k, whereas we found that column i is NOT
+	    // parallel to k.
             if (NewCols[j].first != j)
             {
-               WARNING("parallel column vectors have a non-transitive equivalence")(i)(j)(NewCols[j].first);
+               WARNING("parallel column vectors have a non-transitive equivalence")(i)(j)(NewCols[j].first)
+		  (Overlaps(j,i))(Overlaps(NewCols[j].first,i))(Overlaps(NewCols[j].first,j))(imat)(jmat);
                DEBUG_TRACE(A);
                while (NewCols[i].first != i && NewCols[NewCols[i].first].first != NewCols[i].first)
                {
@@ -763,7 +768,7 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
 #if !defined(NDEBUG)
    // verify that prod(tA, Reg) is the same as A.  
    OperatorComponent ACheck = prod(tA, Reg);
-   CHECK(norm_frob(A - ACheck) < 1E-10)(tA)(ACheck)(Trunc)(Reg)(Overlaps);
+   CHECK(norm_frob(A - ACheck) < 1E-10)(A)(ACheck)(A-ACheck)(Trunc)(Reg)(Overlaps);
 #endif
 
    A = tA;
@@ -1156,7 +1161,8 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 
    typedef std::map<Tensor::PartialProdIndex, std::complex<double> > PartialProdType;
 
-   // ComponentIndex is an index to a particular matrix element of the MPO,
+   // ComponentIndex is an index to a particular matrix element of the MPO transforming as q,
+   // between local indices local1,local2 and auxiliary index aux
    // ComponentIndex(aux, local1, local2, q)
    typedef boost::tuple<int, int, int, QuantumNumbers::QuantumNumber> ComponentIndex;
 
@@ -1209,6 +1215,8 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 		  // Skip quantum numbers that are not possible (structural zero in the coupling coefficient)
 		  if (!is_transform_target(*Qpp,  P->first.qLeft, Op.Basis1()[LeftAux1]))
 		     continue;
+
+		  // Qpp is the quantum number of the inner basis
 
 		  double Coeff = inverse_product_coefficient(P->first.qLeft, P->first.qRight, RI->TransformsAs(),
 							     Op.Basis1()[J.index1()], Op.Basis2()[J.index2()], *Qpp);
@@ -1276,7 +1284,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 	 LargestSingular = m;
    }
 
-   DEBUG_TRACE(LargestSingular);
+   //TRACE(LargestSingular);
 
    // This sets the scale of the singular values.  Any singular values smaller than
    // KeepThreshold are removed.
@@ -1312,10 +1320,18 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 	 SingularVectorType LeftVec;
 	 for (unsigned x = 0; x < size1(U); ++x)
 	 {
-	    // We might have some components that are in forbidden quantum number sectors - these should be small
-	    // Haven't encountered any yet in debugging, might be hard to trigger.
+	    // We might have some components that are in forbidden quantum number sectors - these should be small.
+	    // In the auxiliary space, we should have a matrix element that transforms as q,
+	    // with q1 = aux, q2 = Qpp
+	    // In the local space, we have a matrix element that transforms as q,
+	    // with q1 = local1, q2 = local2,
+	    // where
+	    // LeftRevMapping[Qpp][x] is a ComponentIndex(aux, local1, local2, q)
+
 	    if (!is_transform_target(Qpp, LeftRevMapping[Qpp][x].get<3>(), Op.Basis1()[LeftRevMapping[Qpp][x].get<0>()])
-		|| !is_transform_target(B2.Left()[LeftRevMapping[Qpp][x].get<2>()], Qpp, B1.Left()[LeftRevMapping[Qpp][x].get<1>()]))
+		|| !is_transform_target(B2.Left()[LeftRevMapping[Qpp][x].get<2>()], 
+					LeftRevMapping[Qpp][x].get<3>(), 
+					B1.Left()[LeftRevMapping[Qpp][x].get<1>()]))
 	    {
 	       TRACE("Ignoring forbidden off-diagonal matrix element")
 		  (U(x,k))(Qpp)(LeftRevMapping[Qpp][x].get<3>())(Op.Basis1()[LeftRevMapping[Qpp][x].get<0>()])

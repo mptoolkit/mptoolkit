@@ -124,6 +124,9 @@ class FiniteMPO
       data_type& data() { return Data; }
       data_type const& data() const { return Data; }
 
+      void check_structure() const { Data.check_structure(); }
+      void debug_check_structure() const { Data.debug_check_structure(); }
+
    private:
       data_type Data;
 };

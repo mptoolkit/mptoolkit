@@ -26,6 +26,20 @@ GenericMPO::LocalBasis2List() const
    return Result;
 }
 
+void
+GenericMPO::check_structure() const
+{
+   const_iterator I = this->begin();
+   while (I != this->end())
+   {
+      I->check_structure();
+      const_iterator J = I;
+      ++I;
+      if (I != this->end())
+	 CHECK_EQUAL(J->Basis2(), I->Basis1());
+   }
+}
+
 std::ostream&
 operator<<(std::ostream& out, GenericMPO const& op)
 {
