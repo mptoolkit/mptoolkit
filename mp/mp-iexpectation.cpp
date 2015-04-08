@@ -106,6 +106,7 @@ int main(int argc, char** argv)
       int Verbose = 0;
       int NMax = 5;
       double Spin = 0.5;
+      bool Print = false;
 
       std::cout.precision(14);
 
@@ -120,6 +121,7 @@ int main(int argc, char** argv)
 	  "Size of the Hamiltonian unit cell")
          ("spin", prog_opt::value(&Spin),
           "spin (for su(2) models)")
+         ("print,p", prog_opt::bool_switch(&Print), "Print the MPO to standard output")
 	 ("nmax", prog_opt::value(&NMax),
 	  FormatDefault("Maximum number of bosons per site [for bosonic models]", NMax).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose),
@@ -247,6 +249,11 @@ int main(int argc, char** argv)
       UnitCell Cell = repeat(Site, UnitCellSize);
 
       FiniteMPO Op = ParseUnitCellOperator(Cell, 0, OpStr);
+
+      if (Print)
+      {
+	 std::cout << Op << '\n';
+      };
 
       // Check that Op is bosonic, otherwise it is not defined
       CHECK(Op.Commute() == LatticeCommute::Bosonic)("Cannot evaluate non-bosonic operator")(Op.Commute());

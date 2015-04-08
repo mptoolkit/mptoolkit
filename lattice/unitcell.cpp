@@ -270,6 +270,11 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
       std::swap(i,j);
    }
 
+   if (Cell_i == Cell_j && i == j)
+   {
+      return identity_mpo(*this);
+   }
+
    BasisList Basis_i = this->operator[](i).Basis1();
    BasisList Basis_j = this->operator[](j).Basis1();
 

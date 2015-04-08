@@ -365,7 +365,7 @@ local_inner_prod(HermitianProxy<OperatorComponent> const& A, OperatorComponent c
          for (OperatorComponent::const_inner_iterator BJ = iterate(BI); BJ; ++BJ)
          {
 	    if (A.base().Basis2()[AJ.index2()] == B.Basis2()[BJ.index2()])
-	       Result(AJ.index2(), BJ.index2()) = InnerDegree / degree(Result.Basis1()[AJ.index2()]) * inner_prod(*AJ, *BJ);
+	       Result(AJ.index2(), BJ.index2()) += InnerDegree / degree(Result.Basis1()[AJ.index2()]) * inner_prod(*AJ, *BJ);
 	 }
       }
       ++AI;
@@ -562,6 +562,11 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
    // Calculate the matrix of overlaps of each row
    SimpleOperator Overlaps = local_inner_prod(A, herm(A));
 
+   // A norm for the overlaps matrix
+   double Scale = trace(Overlaps).real() / Overlaps.Basis1().size();
+
+   double const OverlapEpsilon = 1E-14;
+
    // This is the transform that truncates the rows of A.
    // row[i] = NewRows[i].second * A(NewRows[i].second, all)
    // The flag value -1 indicates that the row is not needed
@@ -570,9 +575,8 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
    for (int i = Size-1; i >= 0; --i)
    {
       double imat = Overlaps(i,i).real();
-      // if the row is zero, we can eliminate it completely.
-      // Because we've normalized everything, then it is either 1 or ~epsilon here.
-      if (imat == 0)
+      // if the row is numerically zero, we can eliminate it completely.
+      if (imat <= Scale * OverlapEpsilon)
          continue;    // skip this row
 
       NewRows[i] = std::make_pair(i, 1.0);

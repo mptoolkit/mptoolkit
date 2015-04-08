@@ -1032,7 +1032,7 @@ struct push_swap_cell
 
    void operator()(char const*, char const*) const
    {
-      CHECK_EQUAL(Cell.size(), 1)("Unit cell is more than one sit, so a site index required here");
+      CHECK_EQUAL(Cell.size(), 1)("Unit cell is more than one site, so a site index required here");
       int Cell2 = pop_int(eval);
       int Cell1 = pop_int(eval);
       int Site2 = 0;

@@ -1,13 +1,10 @@
 // -*- C++ -*- $Id$
 
 inline
-std::ostream& operator<<(std::ostream& out, FiniteMPO const& x)
+std::ostream&
+operator<<(std::ostream& out, FiniteMPO const& x)
 {
-   for (FiniteMPO::const_iterator I = x.begin(); I != x.end(); ++I)
-   {
-      out << *I << '\n';
-   }
-   return out;
+   return out << x.data();
 }
 
 inline

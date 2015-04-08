@@ -121,7 +121,7 @@ void optimize(FiniteMPO& Op)
       for (int i = Op.size()-2; i >= 1; --i)
       {
          Op[i] = Op[i] * T;
-         T = TruncateBasis1(Op[i]);
+	 T = TruncateBasis1(Op[i]);
          if (T.size1() != T.size2())
             Reduced = true;
       }
