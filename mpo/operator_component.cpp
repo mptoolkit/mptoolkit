@@ -65,7 +65,7 @@ swap_gate(BasisList const& B1, BasisList const& B2,
       {
 	 if (Basis_21[*I] == Basis_12[i])
 	 {
-	    Result(*I, i) = conj_phase(Ident, Basis_21[*I], Basis_12[i]);
+	    Result(*I, i) = 1; //conj_phase(Ident, Basis_21[*I], Basis_12[i]);
 	 }
       }
    }
