@@ -477,7 +477,7 @@ mp-simple-marshall-qmc : random_wavefunc.o
 
 # infinite tools
 
-mp-idmrg5 : $(mpoobj) infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o triangular_mpo_solver.o momentum_operations.o
+mp-idmrg5 : $(mpoobj) infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o
 mp-idmrg5-spin2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o
 mp-irename-symmetry : triangular_operator.o mpoperator.o infinitewavefunction.o eigen.o
 mp-iparity : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o

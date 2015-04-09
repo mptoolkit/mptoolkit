@@ -32,6 +32,8 @@ class TriangularMPO
 
       explicit TriangularMPO(int Size) : Data_(Size) {}
 
+      TriangularMPO(int Size, LatticeCommute Com) : Data_(Size, Com) {}
+
       // construction as a single-site operator
       explicit TriangularMPO(value_type const& x) : Data_(1, x) {}
 
@@ -232,6 +234,8 @@ StateComponent Initial_F(TriangularMPO const& m);
 // initial matrices for a given vector basis
 StateComponent Initial_E(TriangularMPO const& m, VectorBasis const& B);
 StateComponent Initial_F(TriangularMPO const& m, VectorBasis const& B);
+
+TriangularMPO sum_unit(FiniteMPO const& Op, int UnitCellSize);
 
 inline
 void

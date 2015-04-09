@@ -13,6 +13,7 @@
 #define MPTOOLKIT_LATTICE_INFINITELATTICE_H
 
 #include "unitcell.h"
+#include "mpo/triangular_mpo.h"
 #include <vector>
 #include "pheap/pvalueptr.h"
 
@@ -29,7 +30,7 @@ class InfiniteLattice
 
       InfiniteLattice(UnitCell const& uc);
 
-      UnitCell& GetUnitCell() const { return UnitCell_; }
+      UnitCell const& GetUnitCell() const { return UnitCell_; }
 
       // returns true if the given InfiniteMPO exists
       bool operator_exists(std::string const& s) const;
@@ -42,7 +43,7 @@ class InfiniteLattice
       const_iterator end() const { return OperatorMap_.end(); }
 
       // Add the operator to the lattice
-      void add(std::string const& Op, InfiniteMPO const& Op);
+      void add(std::string const& Name, InfiniteMPO const& Op);
 
    private:
       UnitCell UnitCell_;
@@ -51,5 +52,10 @@ class InfiniteLattice
    friend PStream::opstream& operator<<(PStream::opstream& out, InfiniteLattice const& L);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, InfiniteLattice& L);
 };
+
+// Constucts a TriangularMPO from the summation over unit cell translations of a finite MPO.
+// The Op must have a size() that is a multiple of UnitCellSize, and the local basis of the
+/// unit cell must be consistent
+TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op);
 
 #endif

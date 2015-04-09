@@ -48,6 +48,8 @@
 #include "mp-algorithms/triangular_mpo_solver.h"
 #endif
 
+#include "lattice/infinitelattice.h"
+
 namespace prog_opt = boost::program_options;
 
 using statistics::moving_average;
@@ -1251,6 +1253,18 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "xxx-su2")
       {
+#if 0
+	 // new way of constructing the MPO
+	 LatticeSite Site = CreateSU2SpinSite(Spin);
+	 UnitCell Cell(Site);
+
+	 FiniteMPO S = Cell.Operator("S", 0);
+	 FiniteMPO SI = join(S, identity_mpo(Cell, S.qn2()));
+	 FiniteMPO IS = join(identity_mpo(Cell, S.qn1()), S);
+	 FiniteMPO Ham = -1.0 * dot(SI, IS);
+	 TRACE(Ham);
+	 HamMPO = sum_unit(Cell, Ham);
+#else
          if (vm.count("theta"))
          {
             J = cos(Theta * math_const::pi);
@@ -1316,6 +1330,7 @@ int main(int argc, char** argv)
 	 }
 
 	 HamMPO = Ham;
+#endif
       }
       else if (HamStr == "xxx-ladder-su2")
       {

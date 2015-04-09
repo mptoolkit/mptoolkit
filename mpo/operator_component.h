@@ -313,6 +313,7 @@ OperatorComponent
 tensor_col_sum(OperatorComponent const& A, 
 	       OperatorComponent const& B);
 
+// Multiplies the component by a SimpleOperator acting on the auxiliary space
 OperatorComponent prod(OperatorComponent const& A, SimpleOperator const& Op);
 OperatorComponent prod(SimpleOperator const& Op, OperatorComponent const& A);
 

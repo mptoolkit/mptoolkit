@@ -36,7 +36,9 @@ GenericMPO::check_structure() const
       const_iterator J = I;
       ++I;
       if (I != this->end())
+      {
 	 CHECK_EQUAL(J->Basis2(), I->Basis1());
+      }
    }
 }
 
