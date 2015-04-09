@@ -1,3 +1,4 @@
+// -*- C++ -*- $Id$
 
 #include "mps/infinitewavefunction.h"
 #include "mp/copyright.h"

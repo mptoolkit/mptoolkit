@@ -78,7 +78,7 @@ get_left_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& P
    std::vector<std::complex<double> > OutVec;
       LinearAlgebra::Vector<std::complex<double> > LeftEigen = 
          LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
-							    LeftMultiplyString(Psi1, Psi2, QShift, StringOp)),
+							    LeftMultiplyString(Psi1, StringOp, Psi2, QShift)),
 					  n, NumEigen, tol, &OutVec, ncv, false, Verbose);
 
    MatrixOperator LeftVector = Pack.unpack(&(OutVec[0]));

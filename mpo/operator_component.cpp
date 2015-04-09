@@ -8,6 +8,13 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
+// Epsilon for truncation overlaps.
+// The scale of Epsilon here is the square of the machine precision
+// This needs some deeper analysis - the problem is we get numerically near parallel
+// vectors although one of them is small and mostly noise, so we then end up with
+// some spurious large matrix elements.
+double const TruncateOverlapEpsilon = 1E-14;
+
 //using namespace LinearAlgebra;
 using LinearAlgebra::operator*;
 using LinearAlgebra::adjoint;
@@ -65,7 +72,16 @@ swap_gate(BasisList const& B1, BasisList const& B2,
       {
 	 if (Basis_21[*I] == Basis_12[i])
 	 {
-	    Result(*I, i) = 1; //conj_phase(Ident, Basis_21[*I], Basis_12[i]);
+
+	    Result(*I, i) = conj_phase(Basis_12.Right()[x.second], Basis_12.Left()[x.first], Basis_12[i]);
+
+	    // This phase factor works for the xxx spin chain
+	    Result(*I, i) = conj_phase(Basis_12[i], adjoint(Basis_12.Left()[x.first]), Basis_12.Right()[x.second]);
+
+
+
+	    //	    Result(*I, i) = conj_phase(Basis_12.Right()[x.second], Basis_12.Left()[x.first], Basis_12[i]);
+	    //  Basis_21[*I], Basis_12[i]);
 	 }
       }
    }
@@ -565,8 +581,6 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
    // A norm for the overlaps matrix
    double Scale = trace(Overlaps).real() / Overlaps.Basis1().size();
 
-   double const OverlapEpsilon = 1E-13;
-
    // This is the transform that truncates the rows of A.
    // row[i] = NewRows[i].second * A(NewRows[i].second, all)
    // The flag value -1 indicates that the row is not needed
@@ -576,7 +590,7 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
    {
       double imat = Overlaps(i,i).real();
       // if the row is numerically zero, we can eliminate it completely.
-      if (imat <= Scale * OverlapEpsilon)
+      if (imat <= Scale * TruncateOverlapEpsilon)
          continue;    // skip this row
 
       NewRows[i] = std::make_pair(i, 1.0);
@@ -593,19 +607,18 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
          if (NewRows[j].first == -1)
             continue;
 
-         double const OverlapEpsilon = 1E-14;
-
          double jmat = Overlaps(j,j).real();
          std::complex<double> ijmat = Overlaps(i,j);
          // are rows i and j parallel?
-         if ((imat*jmat - LinearAlgebra::norm_frob_sq(ijmat)) / (imat*imat + jmat*jmat) < OverlapEpsilon)
+         if ((imat*jmat - LinearAlgebra::norm_frob_sq(ijmat)) / (imat*imat + jmat*jmat) < TruncateOverlapEpsilon)
          {
             NewRows[i] = std::make_pair(j, ijmat / jmat);
             // corner case: i is parallel to j, but we might have previously determined that
             // j is parallel to some other row k.  Does this ever happen in practice?
             if (NewRows[j].first != j)
             {
-               WARNING("parallel row vectors have a non-transitive equivalence")(i)(j)(NewRows[j].first);
+               WARNING("parallel row vectors have a non-transitive equivalence")(i)(j)(NewRows[j].first)
+		  (Overlaps(j,i))(Overlaps(NewRows[j].first,i))(Overlaps(NewRows[j].first,j))(imat)(jmat);
                DEBUG_TRACE(A);
                while (NewRows[i].first != i && NewRows[NewRows[i].first].first != NewRows[i].first)
                {
@@ -652,7 +665,7 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
    //#if !defined(NDEBUG)
    // verify that prod(Reg, tA) is the same as A.  
    OperatorComponent ACheck = prod(Reg, tA);
-   CHECK(norm_frob(A - ACheck) < 1E-10)(A)(ACheck)(A-ACheck)(Trunc)(Reg)(Overlaps);
+   CHECK(norm_frob_sq(A - ACheck) < Scale*TruncateOverlapEpsilon)(norm_frob_sq(A - ACheck))(A)(ACheck)(A-ACheck)(Trunc)(Reg)(Overlaps);
    //#endif
 
    A = tA;
@@ -682,8 +695,6 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
    // A norm for the overlaps matrix
    double Scale = trace(Overlaps).real() / Overlaps.Basis1().size();
 
-   double const OverlapEpsilon = 1E-13;
-	 
    // This is the transform that truncates the columns of A.
    // row[i] = NewCols[i].second * A(all, NewCols[i].second)
    std::vector<std::pair<int, std::complex<double> > > NewCols;
@@ -693,7 +704,7 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
       NewCols.push_back(std::make_pair(i, 1.0));
       double imat = Overlaps(i,i).real();
       // if the row is zero, we can eliminate it completely
-      if (imat <= Scale * OverlapEpsilon)
+      if (imat <= Scale * TruncateOverlapEpsilon)
       {
          NewCols.back().first = -1;  // special value, indicates the row is not needed
          continue;
@@ -713,7 +724,7 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
          double jmat = Overlaps(j,j).real();
          std::complex<double> ijmat = Overlaps(j,i);
          // are rows i and j parallel?
-         if ((imat*jmat - LinearAlgebra::norm_frob_sq(ijmat)) / (imat*imat + jmat*jmat) < OverlapEpsilon)
+         if ((imat*jmat - LinearAlgebra::norm_frob_sq(ijmat)) / (imat*imat + jmat*jmat) < TruncateOverlapEpsilon)
          {
             NewCols[i] = std::make_pair(j, ijmat / jmat);
             // corner case: i is parallel to j, but we might have previously determined that
@@ -772,7 +783,7 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
 #if !defined(NDEBUG)
    // verify that prod(tA, Reg) is the same as A.  
    OperatorComponent ACheck = prod(tA, Reg);
-   CHECK(norm_frob(A - ACheck) < 1E-10)(A)(ACheck)(A-ACheck)(Trunc)(Reg)(Overlaps);
+   CHECK(norm_frob_sq(A - ACheck) < (Scale*TruncateOverlapEpsilon))(norm_frob_sq(A - ACheck))(A)(ACheck)(A-ACheck)(Trunc)(Reg)(Overlaps);
 #endif
 
    A = tA;
