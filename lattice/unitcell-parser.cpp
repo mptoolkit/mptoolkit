@@ -485,7 +485,7 @@ struct push_operator_cell
       CHECK(NumCells == 0 || j < NumCells)("Cell index out of bounds")(j)(NumCells);
       CHECK(Cell.operator_exists(OpName))("Operator does not exist in the unit cell")(OpName);
 
-      eval.push(element_type(Cell.Operator(OpName)));
+      eval.push(element_type(Cell.OperatorAtCell(OpName, j)));
    }
 
    UnitCell const& Cell;
@@ -516,7 +516,7 @@ struct push_operator_site
       CHECK(norm_frob(SiteIndex - double(n)) < 1E-7)("Site index must be an integer")(SiteIndex);
 
       CHECK(Cell.operator_exists(OpName, n))("Local operator does not exist in the unit cell")(OpName)(n);
-      eval.push(element_type(Cell.Operator(OpName, n)));
+      eval.push(element_type(Cell.LocalOperator(OpName, n)));
    }
 
    UnitCell const& Cell;
@@ -553,7 +553,7 @@ struct push_operator_cell_site
       CHECK(Cell.operator_exists(OpName, n))("Local operator does not exist in the unit cell")(OpName)(n);
 
       // Fetch the operator and JW string
-      eval.push(element_type(Cell.Operator(OpName, n)));
+      eval.push(element_type(Cell.LocalOperator(OpName, j, n)));
    }
 
    UnitCell const& Cell;
@@ -590,7 +590,7 @@ struct push_operator_site_cell
       CHECK(Cell.operator_exists(OpName, n))("Local operator does not exist in the unit cell")(OpName)(n);
 
       // Fetch the operator and JW string
-      eval.push(element_type(Cell.Operator(OpName, n)));
+      eval.push(element_type(Cell.LocalOperator(OpName, j, n)));
    }
 
    UnitCell const& Cell;

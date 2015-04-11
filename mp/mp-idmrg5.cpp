@@ -49,6 +49,7 @@
 #endif
 
 #include "lattice/infinitelattice.h"
+#include "lattice/unitcelloperator.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -1257,13 +1258,10 @@ int main(int argc, char** argv)
 	 // new way of constructing the MPO
 	 LatticeSite Site = CreateSU2SpinSite(Spin);
 	 UnitCell Cell(Site);
+	 UnitCellOperator S(Cell, "S");
+	 UnitCellMPO Ham = -1.0 * dot(S(0), S(1));
 
-	 FiniteMPO S = Cell.Operator("S", 0);
-	 FiniteMPO SI = join(S, identity_mpo(Cell, S.qn2()));
-	 FiniteMPO IS = join(identity_mpo(Cell, S.qn1()), S);
-	 FiniteMPO Ham = -1.0 * dot(SI, IS);
-	 TRACE(Ham);
-	 HamMPO = sum_unit(Cell, Ham);
+	 HamMPO = sum_unit(Ham);
 #else
          if (vm.count("theta"))
          {

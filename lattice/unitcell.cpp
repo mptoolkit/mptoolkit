@@ -176,8 +176,24 @@ UnitCell::Operator(std::string const& Op) const
       PANIC("Operator not found in unit cell")(Op);
    }
 
-   return this->Operator(Op, 0);
+   return this->LocalOperator(Op, 0);
 }
+
+UnitCellMPO
+UnitCell::OperatorAtCell(std::string const& Op, int n) const
+{
+   operator_map_type::const_iterator I = OperatorMap_.find(Op);
+   if (I != OperatorMap_.end())
+      return UnitCellMPO(this, I->second.MPO(), I->second.Commute(), I->second.offset()+n);
+
+   if (Data_.size() != 1)
+   {
+      PANIC("Operator not found in unit cell")(Op);
+   }
+
+   return this->LocalOperator(Op, n, 0);
+}
+
 
 UnitCellMPO&
 UnitCell::Operator(std::string const& Op)
@@ -201,7 +217,7 @@ UnitCell::Commute(std::string const& Op, int n) const
 }
 
 UnitCellMPO
-UnitCell::Operator(std::string const& Op, int n) const
+UnitCell::LocalOperator(std::string const& Op, int Cell, int n) const
 {
    CHECK(0 <= n && n < int(Data_.size()))("Site index is out of range")(n)(Data_.size());
 
@@ -233,7 +249,13 @@ UnitCell::Operator(std::string const& Op, int n) const
       Result[i](0,0) = I;
    }
 
-   return UnitCellMPO(this, Result, Operator.Commute(), 0);
+   return UnitCellMPO(this, Result, Operator.Commute(), Cell*this->size());
+}
+
+UnitCellMPO
+UnitCell::LocalOperator(std::string const& Op, int n) const
+{
+   return this->LocalOperator(Op, 0, n);
 }
 
 UnitCellMPO

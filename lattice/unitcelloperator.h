@@ -1,58 +1,56 @@
 // -*- C++ -*- $Id$
 //
-// A UnitCellOperator is an operator that exists within a UnitCell, ie it has finite support
-// and is represented by a FiniteMPO and a JordanWignerString.  The JordanWignerString is
-// stored as a string, so that we can commute properly with arbitrary other unit cells.
-// The JordanWignerString should itself be a UnitCellOperator that has a trivial ("I") 
-// `nested` J-W string.
-
-// ** This is currently obsolete, the operators are directly part of the UnitCell.
-// We probably want to turn this class into some kind of proxy, similar to the old OperatorAtSite.
+// A proxy class to represent a UnitCellMPO
 
 #if !defined(MPTOOLKIT_LATTICE_UNITCELLOPERATOR_H)
 #define MPTOOLKIT_LATTICE_UNITCELLOPERATOR_H
 
-#include "unitcell.h"
-#include "mpo/finite_mpo.h"
-#include "mpo/triangular_mpo.h"
+#include "lattice/unitcell.h"
+
+class UnitCellOperatorAtCell
+{
+   public:
+      UnitCellOperatorAtCell();  // not defined
+
+      UnitCellOperatorAtCell(UnitCell const& Cell_, std::string const& Name_, int n_);
+
+      // returns the local operator at the given site
+      UnitCellMPO operator[](int i) const;
+
+      // conversion to UnitCellMPO, only possible if the unit cell is 1 site
+      operator UnitCellMPO() const;
+
+   private:
+      UnitCell const* Cell;
+      std::string Name;
+      int n;
+};
 
 class UnitCellOperator
 {
    public:
+      UnitCellOperator();  // not defined
 
-      // returns the number of sites that this operator is defined over.
-      // This is always a multiple of the unit cell size.
-      int size() const;
+      UnitCellOperator(UnitCell& Cell_, std::string const& Name_);
 
-      // returns the Jordan-Wigner string associated with this operator
-      std::string JordanWignerString() const;
+      UnitCellOperatorAtCell operator()(int n);
 
-      // Returns a finite version of the operator.  If it is
-      // a triangular operator, then close off the boundaries
-      // to make it finite on the unit cell.
-      // PRECONDITION: operator is finite or triangular
-      FiniteMPO AsFiniteMPO() const;
+      // Returns a local operator at the given site number in the 0'th cell
+      UnitCellMPO operator[](int i) const;
 
-      // returns the UnitCell of this operator
-      UnitCell const& GetUnitCell() const { return *pUnitCell; }
+      // conversion to a UnitCellMPO, as an operator spanning the 0'th cell
+      operator UnitCellMPO&();
 
-      // shorthand for GetUnitCell().size()
-      int UnitCellSize() const { return pUnitCell->size(); }
+      operator UnitCellMPO const&() const;
+
+      UnitCellOperator& operator=(UnitCellMPO const& Op);
 
    private:
-      pvalue_ptr<UnitCell> pUnitCell;
-      std::string JWString;
-      boost::variant<FiniteMPO, TriangularMPO> Operator;
+      UnitCell* Cell;
+      std::string Name;
 };
 
-UnitCellOperator operator+(UnitCellOperator const& A, UnitCellOperator const& B);
-
-UnitCellOperator operator*(UnitCellOperator const& A, UnitCellOperator const& B);
-
-UnitCellOperator operator*(double x, UnitCellOperator const& Op);
-
-UnitCellOperator operator*(std::complex<double> x, UnitCellOperator const& Op);
-
+#include "unitcelloperator.cc"
 
 #endif
 

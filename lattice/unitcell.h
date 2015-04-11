@@ -111,14 +111,20 @@ class UnitCell
       // adds it if it doesn't already exist.
       UnitCellMPO& Operator(std::string const& Op);
       
+      // returns the operator, shifted to to the given cell number
+      UnitCellMPO OperatorAtCell(std::string const& Op, int n) const;
+
       // lookup the Jordan Wigner string of the specified operator
       //std::string JWString(std::string const& Op) const;
       
       // returns true if the specified local operator Op[n] exists at site n of the UnitCell.
       bool operator_exists(std::string const& Op, int n) const;
       
-      // lookup a local operator
-      UnitCellMPO Operator(std::string const& Op, int n) const;
+      // lookup a local operator, at cell 0
+      UnitCellMPO LocalOperator(std::string const& Op, int n) const;
+
+      // Lookup a local operator on a given unit cell index
+      UnitCellMPO LocalOperator(std::string const& Op, int Cell, int n) const;
      
        // lookup an operator function
       UnitCellMPO OperatorFunction(std::string const& Op, 
