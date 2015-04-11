@@ -175,7 +175,7 @@ FiniteMPO cross(FiniteMPO const& x, FiniteMPO const& y);
 // degree quantum number q.  There is also a scaling factor sqrt(degree(q))
 FiniteMPO outer(FiniteMPO const& x, FiniteMPO const& y);
 
-// project a (reducible) quantum number onto an irreducible component
+// project a (reducible) operator onto an irreducible component
 FiniteMPO project(FiniteMPO const& x, QuantumNumbers::QuantumNumber const& q);
 
 // power of an operator.  Requires n > 1.

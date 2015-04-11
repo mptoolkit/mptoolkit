@@ -15,6 +15,7 @@
 #include <iterator>
 #include <deque>
 #include <numeric>
+#include <cstdlib>     // for abs(int)
 
 namespace statistics
 {
@@ -22,6 +23,29 @@ namespace statistics
 // distance is a useful stats function
 using std::distance;
 using std::size_t;
+
+// Greatest Common Divisor using Euclid's algorithm for positive numbers
+inline
+int gcd_pos(int a, int b)
+{
+   if (a == b)
+      return a;
+   if (a > b)
+      return gcd_pos(a-b, b);
+   return gcd_pos(a, b-a);
+}
+
+inline
+int gcd(int a, int b)
+{
+   return gcd_pos(std::abs(a),std::abs(b));
+}
+
+inline
+int lcm(int a, int b)
+{
+   return std::abs(a*b) / gcd(a,b);
+}
 
 // calculates the mean of a sequence.  Returns 0 if the sequence is empty
 template <class FwdIter>

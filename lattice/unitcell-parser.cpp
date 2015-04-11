@@ -6,7 +6,7 @@
 
 using namespace Parser;
 
-typedef boost::variant<complex, FiniteMPO> element_type;
+typedef boost::variant<complex, UnitCellMPO> element_type;
 
 namespace Parser
 {
@@ -26,6 +26,7 @@ int pop_int(std::stack<element_type>& eval)
 // without knowing the actual unit cell, since it might be some operator that mixes the basis around etc.
 // This means that we need to specialize the functions from parser.h
 
+#if 0
 template <>
 struct binary_addition<element_type> : boost::static_visitor<element_type>
 {
@@ -37,26 +38,26 @@ struct binary_addition<element_type> : boost::static_visitor<element_type>
       return element_type(x+y);
    }
 
-   element_type operator()(complex const& x, FiniteMPO const& y) const
+   element_type operator()(complex const& x, UnitCellMPO const& y) const
    {
       return element_type(x*MakeIdentityFrom(y) + y);
    }
 
-   element_type operator()(FiniteMPO const& x, complex const& y) const
+   element_type operator()(UnitCellMPO const& x, complex const& y) const
    {
       return element_type(x + y*MakeIdentityFrom(x));
    }
 
-   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
    {
       if (x.size() < y.size())
       {
-	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
 	 return element_type(xExtend+y);
       }
       else if (x.size() > y.size())
       {
-	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
 	 return element_type(x+yExtend);
       }
       // else
@@ -77,26 +78,26 @@ struct binary_subtraction<element_type> : boost::static_visitor<element_type>
       return element_type(x-y);
    }
 
-   element_type operator()(complex const& x, FiniteMPO const& y) const
+   element_type operator()(complex const& x, UnitCellMPO const& y) const
    {
       return element_type(x*MakeIdentityFrom(y) - y);
    }
 
-   element_type operator()(FiniteMPO const& x, complex const& y) const
+   element_type operator()(UnitCellMPO const& x, complex const& y) const
    {
       return element_type(x - y*MakeIdentityFrom(x));
    }
 
-   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
    {
       if (x.size() < y.size())
       {
-	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
 	 return element_type(xExtend-y);
       }
       else if (x.size() > y.size())
       {
-	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
 	 return element_type(x-yExtend);
       }
       // else
@@ -117,26 +118,26 @@ struct binary_commutator<element_type> : boost::static_visitor<element_type>
       return complex(0.0);
    }
 
-   element_type operator()(complex const& x, FiniteMPO const& y) const
+   element_type operator()(complex const& x, UnitCellMPO const& y) const
    {
       return complex(0.0);
    }
 
-   element_type operator()(FiniteMPO const& x, complex const& y) const
+   element_type operator()(UnitCellMPO const& x, complex const& y) const
    {
       return complex(0.0);
    }
 
-   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
    {
       if (x.size() < y.size())
       {
-	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
 	 return element_type(xExtend*y - y*xExtend);
       }
       else if (x.size() > y.size())
       {
-	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
 	 return element_type(x*yExtend - yExtend*x);
       }
       // else
@@ -158,16 +159,16 @@ struct binary_multiplication<element_type> : boost::static_visitor<element_type>
       return element_type(x*y);
    }
 
-   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
    {
       if (x.size() < y.size())
       {
-	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
 	 return element_type(xExtend*y);
       }
       else if (x.size() > y.size())
       {
-	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
 	 return element_type(x*yExtend);
       }
       // else
@@ -188,26 +189,26 @@ struct binary_dot_product<element_type> : boost::static_visitor<element_type>
       return element_type(x*y);
    }
 
-   element_type operator()(complex const& x, FiniteMPO const& y) const
+   element_type operator()(complex const& x, UnitCellMPO const& y) const
    {
       return element_type(x*y);
    }
 
-   element_type operator()(FiniteMPO const& x, complex const& y) const
+   element_type operator()(UnitCellMPO const& x, complex const& y) const
    {
       return element_type(x*y);
    }
 
-   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
    {
       if (x.size() < y.size())
       {
-	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
 	 return dot(xExtend, y);
       }
       else if (x.size() > y.size())
       {
-	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
 	 return dot(x, yExtend);
       }
       // else
@@ -229,26 +230,26 @@ struct binary_cross_product<element_type> : boost::static_visitor<element_type>
       return element_type(x*y);
    }
 
-   element_type operator()(complex const& x, FiniteMPO const& y) const
+   element_type operator()(complex const& x, UnitCellMPO const& y) const
    {
       return element_type(x*y);
    }
 
-   element_type operator()(FiniteMPO const& x, complex const& y) const
+   element_type operator()(UnitCellMPO const& x, complex const& y) const
    {
       return element_type(x*y);
    }
 
-   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
    {
       if (x.size() < y.size())
       {
-	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
 	 return cross(xExtend, y);
       }
       else if (x.size() > y.size())
       {
-	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
 	 return cross(x, yExtend);
       }
       // else
@@ -270,26 +271,26 @@ struct binary_outer_product<element_type> : boost::static_visitor<element_type>
       return element_type(x*y);
    }
 
-   element_type operator()(complex const& x, FiniteMPO const& y) const
+   element_type operator()(complex const& x, UnitCellMPO const& y) const
    {
       return element_type(x*y);
    }
 
-   element_type operator()(FiniteMPO const& x, complex const& y) const
+   element_type operator()(UnitCellMPO const& x, complex const& y) const
    {
       return element_type(x*y);
    }
 
-   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
    {
       if (x.size() < y.size())
       {
-	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
 	 return outer(xExtend, y);
       }
       else if (x.size() > y.size())
       {
-	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
 	 return outer(x, yExtend);
       }
       // else
@@ -311,26 +312,26 @@ struct binary_inner_product<element_type> : boost::static_visitor<element_type>
       return element_type(x*y);
    }
 
-   element_type operator()(complex const& x, FiniteMPO const& y) const
+   element_type operator()(complex const& x, UnitCellMPO const& y) const
    {
       return element_type(x*y);
    }
 
-   element_type operator()(FiniteMPO const& x, complex const& y) const
+   element_type operator()(UnitCellMPO const& x, complex const& y) const
    {
       return element_type(x*y);
    }
 
-   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
    {
       if (x.size() < y.size())
       {
-	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
 	 return dot(adjoint(xExtend), y);
       }
       else if (x.size() > y.size())
       {
-	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
 	 return dot(adjoint(x), yExtend);
       }
       // else
@@ -353,28 +354,28 @@ struct ternary_product<element_type> : boost::static_visitor<element_type>
       return element_type(x*y);
    }
 
-   element_type operator()(complex const& x, FiniteMPO const& y) const
+   element_type operator()(complex const& x, UnitCellMPO const& y) const
    {
       CHECK_EQUAL(q, y.TransformsAs());
       return element_type(x*y);
    }
 
-   element_type operator()(FiniteMPO const& x, complex const& y) const
+   element_type operator()(UnitCellMPO const& x, complex const& y) const
    {
       CHECK_EQUAL(q, x.TransformsAs());
       return element_type(x*y);
    }
 
-   element_type operator()(FiniteMPO const& x, FiniteMPO const& y) const
+   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
    {
       if (x.size() < y.size())
       {
-	 FiniteMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
+	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
 	 return prod(xExtend, y, q);
       }
       else if (x.size() > y.size())
       {
-	 FiniteMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
+	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
 	 return prod(x, yExtend, q);
       }
       // else
@@ -422,6 +423,8 @@ struct binary_funcs<element_type> : symbols<boost::function<element_type(element
          ;
    }
 };
+
+#endif
 
 } // namespace Parser
 
@@ -482,19 +485,7 @@ struct push_operator_cell
       CHECK(NumCells == 0 || j < NumCells)("Cell index out of bounds")(j)(NumCells);
       CHECK(Cell.operator_exists(OpName))("Operator does not exist in the unit cell")(OpName);
 
-      FiniteMPO CellOperator = Cell.Operator(OpName);
-      FiniteMPO JWOperator = jw_string_mpo(Cell, CellOperator);
-
-      // The actual operator is j copies of the JW string, followed by the cell operator
-      FiniteMPO Op = join(repeat(JWOperator, j), CellOperator);
-
-      // extend the operator to have support over NumCells
-      if (NumCells != 0 && j < NumCells-1)
-      {
-	 Op = join(Op, repeat(identity_mpo(Cell), NumCells-j-1));
-      }
-
-      eval.push(element_type(Op));
+      eval.push(element_type(Cell.Operator(OpName)));
    }
 
    UnitCell const& Cell;
@@ -562,18 +553,7 @@ struct push_operator_cell_site
       CHECK(Cell.operator_exists(OpName, n))("Local operator does not exist in the unit cell")(OpName)(n);
 
       // Fetch the operator and JW string
-      FiniteMPO CellOperator = Cell.Operator(OpName, n);
-      FiniteMPO JWOperator = jw_string_mpo(Cell, CellOperator);
-
-      // The actual operator is j copies of the JW string, followed by the cell operator
-      FiniteMPO Op = join(repeat(JWOperator, j), CellOperator);
-
-      // extend the operator to have support over NumCells
-      if (NumCells != 0 && j < NumCells-1)
-      {
-	 Op = join(Op, repeat(identity_mpo(Cell), NumCells-j-1));
-      }
-      eval.push(element_type(Op));
+      eval.push(element_type(Cell.Operator(OpName, n)));
    }
 
    UnitCell const& Cell;
@@ -610,18 +590,7 @@ struct push_operator_site_cell
       CHECK(Cell.operator_exists(OpName, n))("Local operator does not exist in the unit cell")(OpName)(n);
 
       // Fetch the operator and JW string
-      FiniteMPO CellOperator = Cell.Operator(OpName, n);
-      FiniteMPO JWOperator = jw_string_mpo(Cell, CellOperator);
-
-      // The actual operator is j copies of the JW string, followed by the cell operator
-      FiniteMPO Op = join(repeat(JWOperator, j), CellOperator);
-
-      // extend the operator to have support over NumCells
-      if (NumCells != 0 && j < NumCells-1)
-      {
-	 Op = join(Op, repeat(identity_mpo(Cell), NumCells-j-1));
-      }
-      eval.push(element_type(Op));
+      eval.push(element_type(Cell.Operator(OpName, n)));
    }
 
    UnitCell const& Cell;
@@ -704,19 +673,7 @@ struct push_operator_cell_param
       ParamStack.pop();
 
       // Construct the operator
-      FiniteMPO CellOperator = Cell.OperatorFunction(OpName, Params);
-      FiniteMPO JWOperator = jw_string_mpo(Cell, CellOperator);
-
-      // The actual operator is j copies of the JW string, followed by the cell operator
-      FiniteMPO Op = join(repeat(JWOperator, j), CellOperator);
-
-      // extend the operator to have support over NumCells
-      if (NumCells != 0 && j < NumCells-1)
-      {
-	 Op = join(Op, repeat(identity_mpo(Cell), NumCells-j-1));
-      }
-
-      eval.push(element_type(Op));
+      eval.push(element_type(Cell.OperatorFunction(OpName, Params)));
    }
 
    UnitCell const& Cell;
@@ -806,20 +763,7 @@ struct push_operator_cell_site_param
 	 ParamStack.top().pop();
       }
       ParamStack.pop();
-
-      // Fetch the operator and JW string
-      FiniteMPO CellOperator = Cell.OperatorFunction(OpName, n, Params);
-      FiniteMPO JWOperator = jw_string_mpo(Cell, CellOperator);
-
-      // The actual operator is j copies of the JW string, followed by the cell operator
-      FiniteMPO Op = join(repeat(JWOperator, j), CellOperator);
-
-      // extend the operator to have support over NumCells
-      if (NumCells != 0 && j < NumCells-1)
-      {
-	 Op = join(Op, repeat(identity_mpo(Cell), NumCells-j-1));
-      }
-      eval.push(element_type(Op));
+      eval.push(element_type(Cell.OperatorFunction(OpName, n, Params)));
    }
 
    UnitCell const& Cell;
@@ -868,18 +812,7 @@ struct push_operator_site_cell_param
       ParamStack.pop();
 
       // Fetch the operator and JW string
-      FiniteMPO CellOperator = Cell.OperatorFunction(OpName, n, Params);
-      FiniteMPO JWOperator = jw_string_mpo(Cell, CellOperator);
-
-      // The actual operator is j copies of the JW string, followed by the cell operator
-      FiniteMPO Op = join(repeat(JWOperator, j), CellOperator);
-
-      // extend the operator to have support over NumCells
-      if (NumCells != 0 && j < NumCells-1)
-      {
-	 Op = join(Op, repeat(identity_mpo(Cell), NumCells-j-1));
-      }
-      eval.push(element_type(Op));
+      eval.push(element_type(Cell.OperatorFunction(OpName, n, Params)));
    }
 
    UnitCell const& Cell;
@@ -949,14 +882,7 @@ struct push_swap_cell_site
       CHECK(NumCells == 0 || (Cell1 >= 0 && Cell1 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
       CHECK(NumCells == 0 || (Cell2 >= 0 && Cell2 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
 
-      FiniteMPO Op = Cell.swap_gate(Cell1, Site1, Cell2, Site2);
-      // extend the operator to have support over NumCells
-      if (NumCells != 0 && Op.size() < NumCells*Cell.size())
-      {
-	 Op = join(Op, repeat(identity_mpo(Cell), (NumCells*Cell.size()-Op.size())/Cell.size()));
-      }
-
-      eval.push(element_type(Op));
+      eval.push(element_type(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
    }
 
    UnitCell const& Cell;
@@ -980,14 +906,7 @@ struct push_swap_site_cell
       CHECK(NumCells == 0 || (Cell1 >= 0 && Cell1 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
       CHECK(NumCells == 0 || (Cell2 >= 0 && Cell2 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
 
-      FiniteMPO Op = Cell.swap_gate(Cell1, Site1, Cell2, Site2);
-      // extend the operator to have support over NumCells
-      if (NumCells != 0 && Op.size() < NumCells*Cell.size())
-      {
-	 Op = join(Op, repeat(identity_mpo(Cell), (NumCells*Cell.size()-Op.size())/Cell.size()));
-      }
-
-      eval.push(element_type(Op));
+      eval.push(element_type(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
    }
 
    UnitCell const& Cell;
@@ -1009,14 +928,7 @@ struct push_swap_site
       int Site2 = pop_int(eval);
       int Site1 = pop_int(eval);
 
-      FiniteMPO Op = Cell.swap_gate(Cell1, Site1, Cell2, Site2);
-      // extend the operator to have support over NumCells
-      if (NumCells != 0 && Op.size() < NumCells*Cell.size())
-      {
-	 Op = join(Op, repeat(identity_mpo(Cell), (NumCells*Cell.size()-Op.size())/Cell.size()));
-      }
-
-      eval.push(element_type(Op));
+      eval.push(element_type(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
    }
 
    UnitCell const& Cell;
@@ -1041,14 +953,7 @@ struct push_swap_cell
       CHECK(NumCells == 0 || (Cell1 >= 0 && Cell1 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
       CHECK(NumCells == 0 || (Cell2 >= 0 && Cell2 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
 
-      FiniteMPO Op = Cell.swap_gate(Cell1, Site1, Cell2, Site2);
-      // extend the operator to have support over NumCells
-      if (NumCells != 0 && Op.size() < NumCells*Cell.size())
-      {
-	 Op = join(Op, repeat(identity_mpo(Cell), (NumCells*Cell.size()-Op.size())/Cell.size()));
-      }
-
-      eval.push(element_type(Op));
+      eval.push(element_type(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
    }
 
    UnitCell const& Cell;
@@ -1058,7 +963,7 @@ struct push_swap_cell
 
 struct UnitCellParser : public grammar<UnitCellParser>
 {
-   typedef boost::variant<complex, FiniteMPO> element_type;
+   typedef boost::variant<complex, UnitCellMPO> element_type;
    typedef boost::function<element_type(element_type)> unary_func_type;
    typedef boost::function<element_type(element_type, element_type)> binary_func_type;
 
@@ -1081,7 +986,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
       : eval(eval_), identifier_stack(identifier_stack_), 
 	param_stack(param_stack_),
 	func_stack(func_stack_), bin_func_stack(bin_func_stack_), Cell(Cell_), NumCells(NumCells_),
-	binary_funcs_p(Cell_) {}
+	binary_funcs_p() {}
    
    template <typename ScannerT>
    struct definition
@@ -1105,7 +1010,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	    >> parameter >> *(',' >> parameter) >> '}';
 
 	 prod_expression = (str_p("prod") >> '(' >> expression >> ',' >> expression >> ',' >> quantumnumber >> ')')
-	    [push_prod<element_type>(self.Cell, self.identifier_stack, self.eval)];
+	    [push_prod<element_type>(self.identifier_stack, self.eval)];
  
 	 bracket_expr = '(' >> expression >> ')';
 
@@ -1202,7 +1107,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	 
 	 commutator_bracket = 
 	    ('[' >> expression >> ',' >> expression >> ']')[invoke_binary<element_type, 
-							    binary_commutator<element_type> >(self.eval, binary_commutator<element_type>(self.Cell))];
+							    binary_commutator<element_type> >(self.eval)];
 	 
 	 factor =
 	    imag
@@ -1230,7 +1135,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	 term =
 	    pow_term
 	    >> *(   ('*' >> pow_term)[invoke_binary<element_type, 
-				      binary_multiplication<element_type> >(self.eval, binary_multiplication<element_type>(self.Cell))]
+				      binary_multiplication<element_type> >(self.eval)]
                     |   ('/' >> pow_term)[invoke_binary<element_type, 
 					  binary_division<element_type> >(self.eval)]
                     )
@@ -1239,9 +1144,9 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	 expression =
 	    term
 	    >> *(  ('+' >> term)[invoke_binary<element_type, 
-				 binary_addition<element_type> >(self.eval, binary_addition<element_type>(self.Cell))]
+				 binary_addition<element_type> >(self.eval)]
 		   |   ('-' >> term)[invoke_binary<element_type, 
-				     binary_subtraction<element_type> >(self.eval, binary_subtraction<element_type>(self.Cell))]
+				     binary_subtraction<element_type> >(self.eval)]
 		   )
 	    ;
       }
@@ -1273,7 +1178,7 @@ constants UnitCellParser::constants_p;
 unary_funcs<UnitCellParser::element_type> UnitCellParser::unary_funcs_p;
 //binary_funcs<UnitCellParser::element_type> UnitCellParser::binary_funcs_p;
 
-FiniteMPO
+UnitCellMPO
 ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& Str)
 {
    typedef UnitCellParser::element_type element_type;
@@ -1302,7 +1207,7 @@ ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& Str
    ElemStack.pop();
    CHECK(ElemStack.empty());
 
-   FiniteMPO* Op = boost::get<FiniteMPO>(&Result);
+   UnitCellMPO* Op = boost::get<UnitCellMPO>(&Result);
    if (Op)
    {
       return *Op;

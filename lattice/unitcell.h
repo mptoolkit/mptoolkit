@@ -26,8 +26,8 @@
 #if !defined(MPTOOLKIT_LATTICE_UNITCELL_H)
 #define MPTOOLKIT_LATTICE_UNITCELL_H
 
-#include "latticesite.h"
-#include "mpo/finite_mpo.h"
+#include "lattice/latticesite.h"
+#include "lattice/unitcell_mpo.h"
 #include <vector>
 #include <map>
 #include <string>
@@ -39,10 +39,14 @@ class UnitCell
       typedef std::vector<LatticeSite>  data_type;
       typedef data_type::const_iterator const_iterator;
       
-      typedef std::map<std::string, FiniteMPO>  operator_map_type;
+      typedef std::map<std::string, UnitCellMPO>  operator_map_type;
       typedef operator_map_type::const_iterator const_operator_iterator;
       
       UnitCell();
+
+      // Copy ctor is non-trivial since we need to reset the back-pointer in the UnitCellMPO's
+      UnitCell(UnitCell const& Other);
+
       UnitCell(LatticeSite const& s);
       UnitCell(LatticeSite const& s, LatticeSite const& t);
       UnitCell(LatticeSite const& s, LatticeSite const& t, LatticeSite const& u);
@@ -61,6 +65,8 @@ class UnitCell
       UnitCell(UnitCell const& x1, UnitCell const& x2, UnitCell const& x3, UnitCell const& x4);
       
       UnitCell(int Size, LatticeSite const& s);
+
+      UnitCell& operator=(UnitCell const& Other);
       
       SymmetryList GetSymmetryList() const { return Data_.front().GetSymmetryList(); }
       
@@ -87,7 +93,7 @@ class UnitCell
       typename Visitor::result_type
       apply_for_each_site(Visitor const& v);
 #endif
-      
+
       // returns the local basis at site i of the lattice
       SiteBasis LocalBasis(int i) const
       { return this->operator[](i).Basis2(); }
@@ -99,11 +105,11 @@ class UnitCell
       
       // lookup a unit cell operator, which can be a local operator
       // if the unit cell size is one site.
-      FiniteMPO Operator(std::string const& Op) const;
+      UnitCellMPO Operator(std::string const& Op) const;
       
       // lookup a unit cell operator (not a local operator), or
       // adds it if it doesn't already exist.
-      FiniteMPO& Operator(std::string const& Op);
+      UnitCellMPO& Operator(std::string const& Op);
       
       // lookup the Jordan Wigner string of the specified operator
       //std::string JWString(std::string const& Op) const;
@@ -112,33 +118,47 @@ class UnitCell
       bool operator_exists(std::string const& Op, int n) const;
       
       // lookup a local operator
-      FiniteMPO Operator(std::string const& Op, int n) const;
+      UnitCellMPO Operator(std::string const& Op, int n) const;
      
        // lookup an operator function
-      FiniteMPO OperatorFunction(std::string const& Op, 
+      UnitCellMPO OperatorFunction(std::string const& Op, 
 				 std::vector<std::complex<double> > const& Params) const;
 
       // lookup a local operator function
-      FiniteMPO OperatorFunction(std::string const& Op, int n,
+      UnitCellMPO OperatorFunction(std::string const& Op, int n,
 				 std::vector<std::complex<double> > const& Params) const;
 
       // Returns an MPO that effects a swap gate between sites i and j
-      FiniteMPO swap_gate(int i, int j) const;
+      UnitCellMPO swap_gate(int i, int j) const;
 
       // Returns an MPO that effects a swap gate between different unit cells
-      FiniteMPO swap_gate(int iCell, int i, int jCell, int j) const;
+      UnitCellMPO swap_gate(int iCell, int i, int jCell, int j) const;
 
       // Parse an operator of the form O or O[n]
-      //      FiniteMPO Parse(std::string const& s);
+      //      UnitCellMPO Parse(std::string const& s);
       
       // returns the commutation attribute of the operator, equivalent
-      // to Operaotor(OpName, n).Commute()
+      // to Operator(OpName, n).Commute()
       LatticeCommute Commute(std::string const& OpName, int n) const;
       
       // returns a begin() iterator into the unit cell operators (not local operators!)
       const_operator_iterator operator_begin() const;
       const_operator_iterator operator_end() const;
-      
+
+
+      // returns the FiniteMPO for the identity operator acting on the unit cell
+      FiniteMPO identity_mpo() const;
+
+      // returns the FiniteMPO for the identity operator acting on the unit cell
+      // with quantum number q in the auxiliary basis
+      FiniteMPO identity_mpo(QuantumNumbers::QuantumNumber const& q) const;
+
+      // Returns the string MPO corresponding to the given local operator name
+      FiniteMPO string_mpo(std::string const& OpName, QuantumNumbers::QuantumNumber const& Trans) const;
+
+      // Returns the Jordan-Wigner string MPO corresponding to the given LatticeCommute
+      FiniteMPO string_mpo(LatticeCommute Com, QuantumNumbers::QuantumNumber const& Trans) const;
+
    private:
       data_type Data_;
       operator_map_type OperatorMap_;
@@ -155,37 +175,7 @@ UnitCell join(UnitCell const& x, UnitCell const& y);
 UnitCell join(UnitCell const& x, UnitCell const& y, UnitCell const& z);
 UnitCell join(UnitCell const& x, UnitCell const& y, UnitCell const& z, UnitCell const& w);
 UnitCell join(UnitCell const& x, UnitCell const& y, UnitCell const& z, UnitCell const& w,
-	     UnitCell const& v);
-
-// Utility function to make the identity MPO
-FiniteMPO
-identity_mpo(UnitCell const& c);
-
-FiniteMPO
-identity_mpo(UnitCell const& c, QuantumNumbers::QuantumNumber const& q);
-
-// constructs a string operator as the product of local operators OpName at each site in
-// the unit cell
-FiniteMPO
-string_mpo(UnitCell const& c, std::string const& OpName, QuantumNumbers::QuantumNumber const& Trans);
-
-// constructs a string operator as the product of local operators OpName at each site in
-// the unit cell
-inline
-FiniteMPO
-string_mpo(UnitCell const& c, LatticeCommute Com, QuantumNumbers::QuantumNumber const& Trans)
-{
-   return string_mpo(c, Com.SignOperator(), Trans);
-}
-
-// utility function to construct the Jordan-Wigner string operator
-// associated with the given MPO
-inline
-FiniteMPO
-jw_string_mpo(UnitCell const& c, FiniteMPO const& Op)
-{
-   return string_mpo(c, Op.Commute().SignOperator(), Op.qn1());
-}
+	      UnitCell const& v);
 
 #if 0 // These operators probably don't make much sense
 bool

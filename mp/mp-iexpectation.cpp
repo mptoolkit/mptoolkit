@@ -92,7 +92,7 @@ inject_left(MatrixOperator const& m,
       E = operator_prod(herm(*OpIter), herm(*I1), E, *I2);
       ++I1; ++I2; ++OpIter;
    }
-   return E[0];
+   return delta_shift(E[0], QShift);
 }
 
 int main(int argc, char** argv)
@@ -248,7 +248,7 @@ int main(int argc, char** argv)
       
       UnitCell Cell = repeat(Site, UnitCellSize);
 
-      FiniteMPO Op = ParseUnitCellOperator(Cell, 0, OpStr);
+      UnitCellMPO Op = ParseUnitCellOperator(Cell, 0, OpStr);
 
       if (Print)
       {
@@ -270,16 +270,13 @@ int main(int argc, char** argv)
       DEBUG_CHECK(norm_frob(inject_right(Rho, PsiOrtho, PsiOrtho) - delta_shift(Rho, QShift)) < 1E-10);
 
       // extend Op1 to a multiple of the wavefunction size
-      while (Op.size() % PsiOrtho.size() != 0)
-      {
-	 Op = join(Op, identity_mpo(Cell));
-      }
+      Op.ExtendToCoverUnitCell(PsiOrtho.size());
 
       // now calculate the actual expectation value
       MatrixOperator X = Identity;
-      X = inject_left(X, PsiOrtho, QShift, Op, PsiOrtho);
+      X = inject_left(X, PsiOrtho, QShift, Op.MPO(), PsiOrtho);
 
-      std::complex<double> x = inner_prod(X, Rho);
+      std::complex<double> x = inner_prod(X, delta_shift(Rho, QShift));
 
       if (ShowReal)
 	 std::cout << x.real() << "   ";

@@ -17,8 +17,9 @@
 #define MPTOOLKIT_LATTICE_UNITCELL_PARSER_H
 
 #include "unitcell.h"
+#include "unitcell_mpo.h"
 
-FiniteMPO
+UnitCellMPO
 ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& str);
 
 #endif

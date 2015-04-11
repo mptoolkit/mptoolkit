@@ -72,7 +72,7 @@ quantumnumbersobj = quantumnumber.o symmetrybase.o symmetrylist.o \
 
 tensorobj = tensorproduct.o tensorsum.o basis.o regularize.o tensor_eigen.o
 
-latticeobj = siteoperator.o latticesite.o unitcell.o unitcell-parser.o
+latticeobj = siteoperator.o latticesite.o unitcell.o unitcell-parser.o unitcell_mpo.o
 
 dmrgobj = $(tensorobj) density.o
 
