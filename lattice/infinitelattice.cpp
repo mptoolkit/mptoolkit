@@ -26,7 +26,12 @@ SetComponents(OperatorComponent& C, OperatorComponent const& Op, int xStart, int
    }
 }
 
-TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op)
+TriangularMPO sum_unit(UnitCellMPO const& Op)
+{
+   return sum_unit(Op.GetUnitCell(), Op.MPO(), Op.Commute());
+}
+
+TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute Com)
 {
    CHECK(Op.is_irreducible());
    CHECK(Op.size() % Cell.size() == 0)
@@ -75,12 +80,12 @@ TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op)
    }
 
    // And we need th JW string
-   FiniteMPO JW = jw_string_mpo(Cell, Op);
+   FiniteMPO JW = Cell.string_mpo(Com.SignOperator(), Op.qn1());
    
    // and finally the identity operator
-   FiniteMPO Ident = identity_mpo(Cell);
+   FiniteMPO Ident = Cell.identity_mpo(Op.qn2());
 
-   TriangularMPO Result(Cell.size(), Op.Commute());
+   TriangularMPO Result(Cell.size(), Com);
    for (int i = 0; i < Cell.size(); ++i)
    {
       // Construct the basis

@@ -270,9 +270,11 @@ int main(int argc, char** argv)
          {
             PANIC("--string option requires --model!");
          }
-	 StringOp = ParseUnitCellOperator(Cell, 0, String);
+	 UnitCellMPO StrOp = ParseUnitCellOperator(Cell, 0, String);
+	 StringOp = StrOp.MPO();
 	 StringOp = repeat(StringOp, Psi1->size() / StringOp.size());
-	 CHECK_EQUAL(StringOp.size(), Psi1->size());
+	 CHECK_EQUAL(StringOp.size(), Psi1->size())
+	    ("string operator cannot (yet!) be larger than the wavefunction");
       }
       else
       {

@@ -56,6 +56,8 @@ class InfiniteLattice
 // Constucts a TriangularMPO from the summation over unit cell translations of a finite MPO.
 // The Op must have a size() that is a multiple of UnitCellSize, and the local basis of the
 /// unit cell must be consistent
-TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op);
+TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute Com);
+
+TriangularMPO sum_unit(UnitCellMPO const& Op);
 
 #endif
