@@ -8,7 +8,7 @@ using namespace Parser;
 
 typedef boost::variant<complex, UnitCellMPO> element_type;
 
-namespace Parser
+namespace UP
 {
 
    // utility to pop an integer off the element stack
@@ -20,413 +20,6 @@ int pop_int(std::stack<element_type>& eval)
    CHECK(norm_frob(x - double(j)) < 1E-7)("index must be an integer")(x);
    return j;
 }
-
-// We have a problem: for operators with indefinite support, we need to extend MPOs as necessary
-// so that binary operations act on operands with the same number of unit cells.  We can't do that
-// without knowing the actual unit cell, since it might be some operator that mixes the basis around etc.
-// This means that we need to specialize the functions from parser.h
-
-#if 0
-template <>
-struct binary_addition<element_type> : boost::static_visitor<element_type>
-{
-   binary_addition(UnitCell const& Cell_) 
-      : Cell(Cell_) {}
-
-   element_type operator()(complex const& x, complex const& y) const
-   { 
-      return element_type(x+y);
-   }
-
-   element_type operator()(complex const& x, UnitCellMPO const& y) const
-   {
-      return element_type(x*MakeIdentityFrom(y) + y);
-   }
-
-   element_type operator()(UnitCellMPO const& x, complex const& y) const
-   {
-      return element_type(x + y*MakeIdentityFrom(x));
-   }
-
-   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
-   {
-      if (x.size() < y.size())
-      {
-	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
-	 return element_type(xExtend+y);
-      }
-      else if (x.size() > y.size())
-      {
-	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
-	 return element_type(x+yExtend);
-      }
-      // else
-      return element_type(x+y);
-   }
-
-   UnitCell const& Cell;
-};
-
-template <>
-struct binary_subtraction<element_type> : boost::static_visitor<element_type>
-{
-   binary_subtraction(UnitCell const& Cell_) 
-      : Cell(Cell_) {}
-
-   element_type operator()(complex const& x, complex const& y) const
-   { 
-      return element_type(x-y);
-   }
-
-   element_type operator()(complex const& x, UnitCellMPO const& y) const
-   {
-      return element_type(x*MakeIdentityFrom(y) - y);
-   }
-
-   element_type operator()(UnitCellMPO const& x, complex const& y) const
-   {
-      return element_type(x - y*MakeIdentityFrom(x));
-   }
-
-   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
-   {
-      if (x.size() < y.size())
-      {
-	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
-	 return element_type(xExtend-y);
-      }
-      else if (x.size() > y.size())
-      {
-	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
-	 return element_type(x-yExtend);
-      }
-      // else
-      return element_type(x-y);
-   }
-
-   UnitCell const& Cell;
-};
-
-template <>
-struct binary_commutator<element_type> : boost::static_visitor<element_type>
-{
-   binary_commutator(UnitCell const& Cell_) 
-      : Cell(Cell_) {}
-
-   element_type operator()(complex const& x, complex const& y) const
-   { 
-      return complex(0.0);
-   }
-
-   element_type operator()(complex const& x, UnitCellMPO const& y) const
-   {
-      return complex(0.0);
-   }
-
-   element_type operator()(UnitCellMPO const& x, complex const& y) const
-   {
-      return complex(0.0);
-   }
-
-   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
-   {
-      if (x.size() < y.size())
-      {
-	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
-	 return element_type(xExtend*y - y*xExtend);
-      }
-      else if (x.size() > y.size())
-      {
-	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
-	 return element_type(x*yExtend - yExtend*x);
-      }
-      // else
-      return element_type(x*y - y*x);
-   }
-
-   UnitCell const& Cell;
-};
-
-template <>
-struct binary_multiplication<element_type> : boost::static_visitor<element_type>
-{
-   binary_multiplication(UnitCell const& Cell_) 
-      : Cell(Cell_) {}
-
-   template <typename T1, typename T2>
-   element_type operator()(T1 const& x, T2 const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
-   {
-      if (x.size() < y.size())
-      {
-	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
-	 return element_type(xExtend*y);
-      }
-      else if (x.size() > y.size())
-      {
-	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
-	 return element_type(x*yExtend);
-      }
-      // else
-      return element_type(x*y);
-   }
-
-   UnitCell const& Cell;
-};
-
-template <>
-struct binary_dot_product<element_type> : boost::static_visitor<element_type>
-{
-   binary_dot_product(UnitCell const& Cell_) 
-      : Cell(Cell_) {}
-
-   element_type operator()(complex const& x, complex const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   element_type operator()(complex const& x, UnitCellMPO const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   element_type operator()(UnitCellMPO const& x, complex const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
-   {
-      if (x.size() < y.size())
-      {
-	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
-	 return dot(xExtend, y);
-      }
-      else if (x.size() > y.size())
-      {
-	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
-	 return dot(x, yExtend);
-      }
-      // else
-      return dot(x,y);
-   }
-
-   UnitCell const& Cell;
-
-};
-
-template <>
-struct binary_cross_product<element_type> : boost::static_visitor<element_type>
-{
-   binary_cross_product(UnitCell const& Cell_) 
-      : Cell(Cell_) {}
-
-   element_type operator()(complex const& x, complex const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   element_type operator()(complex const& x, UnitCellMPO const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   element_type operator()(UnitCellMPO const& x, complex const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
-   {
-      if (x.size() < y.size())
-      {
-	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
-	 return cross(xExtend, y);
-      }
-      else if (x.size() > y.size())
-      {
-	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
-	 return cross(x, yExtend);
-      }
-      // else
-      return cross(x,y);
-   }
-
-   UnitCell const& Cell;
-
-};
-
-template <>
-struct binary_outer_product<element_type> : boost::static_visitor<element_type>
-{
-   binary_outer_product(UnitCell const& Cell_) 
-      : Cell(Cell_) {}
-
-   element_type operator()(complex const& x, complex const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   element_type operator()(complex const& x, UnitCellMPO const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   element_type operator()(UnitCellMPO const& x, complex const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
-   {
-      if (x.size() < y.size())
-      {
-	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
-	 return outer(xExtend, y);
-      }
-      else if (x.size() > y.size())
-      {
-	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
-	 return outer(x, yExtend);
-      }
-      // else
-      return outer(x,y);
-   }
-
-   UnitCell const& Cell;
-
-};
-
-template <>
-struct binary_inner_product<element_type> : boost::static_visitor<element_type>
-{
-   binary_inner_product(UnitCell const& Cell_) 
-      : Cell(Cell_) {}
-
-   element_type operator()(complex const& x, complex const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   element_type operator()(complex const& x, UnitCellMPO const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   element_type operator()(UnitCellMPO const& x, complex const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
-   {
-      if (x.size() < y.size())
-      {
-	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
-	 return dot(adjoint(xExtend), y);
-      }
-      else if (x.size() > y.size())
-      {
-	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
-	 return dot(adjoint(x), yExtend);
-      }
-      // else
-      return dot(adjoint(x),y);
-   }
-
-   UnitCell const& Cell;
-
-};
-
-template <>
-struct ternary_product<element_type> : boost::static_visitor<element_type>
-{
-   ternary_product(UnitCell const& Cell_, std::string const& q_)
-      : Cell(Cell_), q(Cell_.GetSymmetryList(), q_) {}
-
-   element_type operator()(complex const& x, complex const& y) const
-   {
-      CHECK(is_scalar(q));
-      return element_type(x*y);
-   }
-
-   element_type operator()(complex const& x, UnitCellMPO const& y) const
-   {
-      CHECK_EQUAL(q, y.TransformsAs());
-      return element_type(x*y);
-   }
-
-   element_type operator()(UnitCellMPO const& x, complex const& y) const
-   {
-      CHECK_EQUAL(q, x.TransformsAs());
-      return element_type(x*y);
-   }
-
-   element_type operator()(UnitCellMPO const& x, UnitCellMPO const& y) const
-   {
-      if (x.size() < y.size())
-      {
-	 UnitCellMPO xExtend = join(x, repeat(identity_mpo(Cell, x.qn2()), (y.size()-x.size())/Cell.size()));
-	 return prod(xExtend, y, q);
-      }
-      else if (x.size() > y.size())
-      {
-	 UnitCellMPO yExtend = join(y, repeat(identity_mpo(Cell, y.qn2()), (x.size()-y.size())/Cell.size()));
-	 return prod(x, yExtend, q);
-      }
-      // else
-      return prod(x,y,q);
-   }
-
-   UnitCell const& Cell;
-   QuantumNumbers::QuantumNumber q;
-};
-
-template <>
-struct push_prod<element_type>
-{
-   push_prod(UnitCell const& Cell_, std::stack<std::string>& identifier_stack_, std::stack<element_type >& eval_)
-      : Cell(Cell_), identifier_stack(identifier_stack_), eval(eval_) {}
-
-   void operator()(char const*, char const*) const
-   {
-      element_type op2 = eval.top();
-      eval.pop();
-      element_type op1 = eval.top();
-      eval.pop();
-      std::string q = identifier_stack.top();
-      identifier_stack.pop();
-
-      eval.push(boost::apply_visitor(ternary_product<element_type>(Cell, q), op1, op2));
-   }
-
-   UnitCell const& Cell;
-   std::stack<std::string>& identifier_stack;
-   std::stack<element_type>& eval;
-};
-
-template <>
-struct binary_funcs<element_type> : symbols<boost::function<element_type(element_type, element_type)> >
-{
-   typedef boost::function<element_type(element_type, element_type)> binary_func_type;
-   binary_funcs(UnitCell const& Cell)
-   {
-      this->add.operator()
-         ("dot", make_apply_binary_math<element_type>(binary_dot_product<element_type>(Cell)))
-         ("inner", make_apply_binary_math<element_type>(binary_inner_product<element_type>(Cell)))
-	 ("outer", make_apply_binary_math<element_type>(binary_outer_product<element_type>(Cell)))
-	 ("cross", make_apply_binary_math<element_type>(binary_cross_product<element_type>(Cell)))
-         ;
-   }
-};
-
-#endif
-
-} // namespace Parser
 
 // We have 5 variants of operator expressions.
 // Op(n)[j]  - local operator at site j of the n'th unit cell
@@ -961,6 +554,10 @@ struct push_swap_cell
    std::stack<element_type >& eval;
 };
 
+} // namespace UP
+
+using namespace UP;
+
 struct UnitCellParser : public grammar<UnitCellParser>
 {
    typedef boost::variant<complex, UnitCellMPO> element_type;
@@ -975,7 +572,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
 
    static constants                  constants_p;
    static unary_funcs<element_type>  unary_funcs_p;
-   //   static binary_funcs<element_type> binary_funcs_p;
+   static binary_funcs<element_type> binary_funcs_p;
 
    UnitCellParser(ElemStackType& eval_, 
 		  IdentStackType& identifier_stack_,
@@ -985,8 +582,8 @@ struct UnitCellParser : public grammar<UnitCellParser>
 		  UnitCell const& Cell_, int NumCells_)
       : eval(eval_), identifier_stack(identifier_stack_), 
 	param_stack(param_stack_),
-	func_stack(func_stack_), bin_func_stack(bin_func_stack_), Cell(Cell_), NumCells(NumCells_),
-	binary_funcs_p() {}
+	func_stack(func_stack_), bin_func_stack(bin_func_stack_), Cell(Cell_), NumCells(NumCells_)
+   {}
    
    template <typename ScannerT>
    struct definition
@@ -1168,15 +765,13 @@ struct UnitCellParser : public grammar<UnitCellParser>
    std::stack<binary_func_type>& bin_func_stack;
    UnitCell const& Cell;
    int NumCells;
-
-   binary_funcs<element_type> binary_funcs_p;
 };
 
 
 // global variables (static members of UnitCellParser)
 constants UnitCellParser::constants_p;
 unary_funcs<UnitCellParser::element_type> UnitCellParser::unary_funcs_p;
-//binary_funcs<UnitCellParser::element_type> UnitCellParser::binary_funcs_p;
+binary_funcs<UnitCellParser::element_type> UnitCellParser::binary_funcs_p;
 
 UnitCellMPO
 ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& Str)

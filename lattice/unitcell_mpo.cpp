@@ -196,6 +196,11 @@ UnitCellMPO dot(UnitCellMPO const& x, UnitCellMPO const& y)
    return UnitCellMPO(&xCopy.GetUnitCell(), dot(xCopy.MPO(), yCopy.MPO()), xCopy.Commute(), xCopy.offset());
 }
 
+UnitCellMPO inner(UnitCellMPO const& x, UnitCellMPO const& y)
+{
+   return dot(adjoint(x),y);
+}
+
 UnitCellMPO cross(UnitCellMPO const& x, UnitCellMPO const& y)
 {
    UnitCellMPO xCopy(x);

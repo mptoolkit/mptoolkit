@@ -254,6 +254,17 @@ void ExportHeap(std::string const& FileName, pvalue_ptr<T>& MainObject,
    ExportHeap(FileName, MainObject.get_handle(), NumFiles, PageSize);
 }
 
+// helper function, equivalent to
+// ExportHeap(FileName, pvalue_ptr<T>(new T(Obj)), NumFiles, PageSize)
+template <typename T>
+void
+ExportObject(std::string const& FileName, T const& Obj, 
+	     int NumFiles = 1, size_t PageSize = 0)
+{
+   pvalue_ptr<T> Ptr(new T(Obj));
+   ExportHeap(FileName, Ptr, NumFiles, PageSize);
+}
+
 } // namespace pheap
 
 #include "pvalueptr.cc"

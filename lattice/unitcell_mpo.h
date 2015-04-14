@@ -132,6 +132,9 @@ UnitCellMPO operator*(UnitCellMPO const& x, UnitCellMPO const& y);
 // dot product - takes into account the multiplicity to rescale the result
 UnitCellMPO dot(UnitCellMPO const& x, UnitCellMPO const& y);
 
+// inner product - equivalent to dot(adjoint(x),y)
+UnitCellMPO inner(UnitCellMPO const& x, UnitCellMPO const& y);
+
 // cross product (if it exists)
 UnitCellMPO cross(UnitCellMPO const& x, UnitCellMPO const& y);
 

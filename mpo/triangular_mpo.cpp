@@ -11,6 +11,20 @@ TriangularMPO::check_structure() const
    }
 }
 
+PStream::opstream&
+ operator<<(PStream::opstream& out, TriangularMPO const& Op)
+{
+   out << Op.Data_;
+   return out;
+}
+
+PStream::ipstream&
+ operator>>(PStream::ipstream& in, TriangularMPO& Op)
+{
+   in >> Op.Data_;
+   return in;
+}
+
 GenericMPO extract_column(TriangularMPO const& Op, int Col)
 {
    GenericMPO MPOp(Op.begin(), Op.end());
@@ -590,6 +604,79 @@ repeat(TriangularMPO const& x, int count)
       for (unsigned j = 0; j < x.size(); ++j)
          Result[i*x.size()+j] = x[j];
    return Result;
+}
+
+TriangularMPO dot(TriangularMPO const& x, TriangularMPO const& y)
+{
+   if (x.empty())
+      return x;
+   if (y.empty())
+      return y;
+   // If the MPO's are reducible then sum over every combination that
+   // leads to a scalar.  I'm not sure if this is physically useful?
+   QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
+   CHECK(is_transform_target(x.TransformsAs(), y.TransformsAs(), Ident));
+   return std::sqrt(double(degree(x.TransformsAs()))) * prod(x, y, Ident);
+}
+
+TriangularMPO cross(TriangularMPO const& x, TriangularMPO const& y)
+{
+   CHECK(cross_product_exists(x.TransformsAs(), y.TransformsAs()))
+      ("Cross product does not exist for these operators")
+      (x.TransformsAs())(y.TransformsAs());
+
+   return cross_product_factor(x.TransformsAs(), y.TransformsAs())
+      * prod(x, y, cross_product_transforms_as(x.TransformsAs(), y.TransformsAs()));
+}
+
+TriangularMPO outer(TriangularMPO const& x, TriangularMPO const& y)
+{
+   QuantumNumbers::QuantumNumberList L = transform_targets(x.TransformsAs(), y.TransformsAs());
+   QuantumNumbers::QuantumNumber q = L[0];
+   bool Unique = true;
+   for (unsigned i = 1; i < L.size(); ++i)
+   {
+      if (degree(L[i]) > degree(q))
+      {
+	 q = L[i];
+	 Unique = true;
+      }
+      else if (degree(L[i]) == degree(q))
+      {
+	 Unique = false;
+      }
+   }
+   CHECK(Unique)("outer product is not defined for these operators")
+      (x.TransformsAs())(y.TransformsAs());
+   return std::sqrt(double(degree(q))) * prod(x,y,q);
+}
+
+TriangularMPO
+pow(TriangularMPO const& x, int n)
+{
+   if (n == 0)
+   {
+      PANIC("TriangularOperator to power zero is not yet implemented!");
+      return x;
+   }
+   else if (n%2 == 0)
+   {
+      return pow(x*x, n/2);
+   }
+   else if (n == 1)
+   {
+      return x;
+   }
+   else
+   {
+      return x*pow(x*x, (n-1)/2);
+   }
+}
+
+TriangularMPO
+operator-(TriangularMPO const& x)
+{
+   return x * -1.0;
 }
 			 
 // initial operators

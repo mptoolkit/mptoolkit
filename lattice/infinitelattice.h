@@ -24,30 +24,37 @@ typedef TriangularMPO InfiniteMPO;
 class InfiniteLattice
 {
    public:
-      typedef InfiniteMPO                       value_type;      
-      typedef std::map<std::string, value_type> operator_map_type;
-      typedef operator_map_type::const_iterator const_iterator;
+      typedef std::map<std::string, TriangularMPO> triangular_map_type;
+      typedef triangular_map_type::const_iterator  const_triangular_iterator;
 
-      InfiniteLattice(UnitCell const& uc);
+      InfiniteLattice();
+
+      explicit InfiniteLattice(UnitCell const& uc);
 
       UnitCell const& GetUnitCell() const { return UnitCell_; }
 
       // returns true if the given InfiniteMPO exists
-      bool operator_exists(std::string const& s) const;
+      bool triangular_operator_exists(std::string const& s) const;
 
       // Lookup the specified InfiniteMPO
-      InfiniteMPO const& Operator(std::string const& Op) const;
+      TriangularMPO const& TriangularOperator(std::string const& Op) const;
+
+      TriangularMPO TriangularOperatorFunction(std::string const& Op,
+					       std::vector<std::complex<double> > const& Params) const;	 
+
+      TriangularMPO& operator[](std::string const& Op);
+      TriangularMPO const& operator[](std::string const& Op) const;
 
       // iterators over the infinite support operators
-      const_iterator begin() const { return OperatorMap_.begin(); }
-      const_iterator end() const { return OperatorMap_.end(); }
+      const_triangular_iterator begin_triangular() const { return OperatorMap_.begin(); }
+      const_triangular_iterator end_triangular() const { return OperatorMap_.end(); }
 
       // Add the operator to the lattice
-      void add(std::string const& Name, InfiniteMPO const& Op);
+      void add_triangular(std::string const& Name, InfiniteMPO const& Op);
 
    private:
       UnitCell UnitCell_;
-      operator_map_type OperatorMap_;
+      triangular_map_type OperatorMap_;
 
    friend PStream::opstream& operator<<(PStream::opstream& out, InfiniteLattice const& L);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, InfiniteLattice& L);
@@ -59,5 +66,8 @@ class InfiniteLattice
 TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute Com);
 
 TriangularMPO sum_unit(UnitCellMPO const& Op);
+
+// Constructs a zero triangular MPO
+TriangularMPO make_zero(UnitCell const& Cell);
 
 #endif

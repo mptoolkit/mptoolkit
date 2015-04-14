@@ -2,7 +2,81 @@
 
 #include "infinitelattice.h"
 
+InfiniteLattice::InfiniteLattice()
+{
+}
 
+InfiniteLattice::InfiniteLattice(UnitCell const& uc)
+   : UnitCell_(uc)
+{
+}
+
+bool
+InfiniteLattice::triangular_operator_exists(std::string const& s) const
+{
+   triangular_map_type::const_iterator I = OperatorMap_.find(s);
+   return I != OperatorMap_.end();
+}
+
+TriangularMPO const&
+InfiniteLattice::TriangularOperator(std::string const& Op) const
+{
+   triangular_map_type::const_iterator I = OperatorMap_.find(Op);
+   CHECK(I != OperatorMap_.end())("Operator does not exist in the lattice!")(Op);
+   return I->second;
+}
+
+TriangularMPO const&
+InfiniteLattice::operator[](std::string const& Op) const
+{
+   triangular_map_type::const_iterator I = OperatorMap_.find(Op);
+   CHECK(I != OperatorMap_.end())("Operator does not exist in the lattice!")(Op);
+   return I->second;
+}
+
+TriangularMPO&
+InfiniteLattice::operator[](std::string const& Op)
+{
+   triangular_map_type::iterator I = OperatorMap_.find(Op);
+   if (I == OperatorMap_.end())
+   {
+      OperatorMap_[Op] = make_zero(this->GetUnitCell());
+      I = OperatorMap_.find(Op);
+   }
+   return I->second;
+}
+
+TriangularMPO
+InfiniteLattice::TriangularOperatorFunction(std::string const& Op,
+					    std::vector<std::complex<double> > const& Params) const
+{
+   PANIC("Triangular operator functions are not yet implemented");
+   return TriangularMPO();
+}
+
+void
+InfiniteLattice::add_triangular(std::string const& Name, InfiniteMPO const& Op)
+{
+   OperatorMap_[Name] = Op;
+}
+
+PStream::opstream&
+operator<<(PStream::opstream& out, InfiniteLattice const& L)
+{
+   out << L.UnitCell_;
+   out << L.OperatorMap_;
+   return out;
+}
+
+PStream::ipstream&
+operator>>(PStream::ipstream& in, InfiniteLattice& L)
+{
+   in >> L.UnitCell_;
+   in >> L.OperatorMap_;
+   return in;
+}
+
+// utility to join another basis list to the end of an existing basis
 void
 JoinBasis(BasisList& b, BasisList const& Other)
 {
@@ -89,8 +163,8 @@ TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute
    for (int i = 0; i < Cell.size(); ++i)
    {
       // Construct the basis
-      BasisList Basis1(Op.GetSymmetryList());
-      BasisList Basis2(Op.GetSymmetryList());
+      BasisList Basis1(Cell.GetSymmetryList());
+      BasisList Basis2(Cell.GetSymmetryList());
       if (i != 0)
 	 JoinBasis(Basis1, JW[i].Basis1());
       JoinBasis(Basis2, JW[i].Basis2());
@@ -139,6 +213,29 @@ TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute
       
       C.debug_check_structure();
 
+      Result[i] = C;
+   }
+
+   Result.check_structure();
+   return Result;
+}
+
+TriangularMPO make_zero(UnitCell const& Cell)
+{
+   // The auxiliary basis is the same at every site
+   // Construct the basis
+   BasisList b(Cell.GetSymmetryList());
+   QuantumNumbers::QuantumNumber Ident(Cell.GetSymmetryList());
+   b.push_back(Ident);
+   b.push_back(Ident);
+
+   TriangularMPO Result(Cell.size(), LatticeCommute::Bosonic);
+   for (int i = 0; i < Cell.size(); ++i)
+   {
+      
+      OperatorComponent C(Cell[i].Basis1(), Cell[i].Basis2(), b, b);
+      C(0,0) = SimpleOperator::make_identity(Cell[i].Basis1());
+      C(1,1) = SimpleOperator::make_identity(Cell[i].Basis1());
       Result[i] = C;
    }
 

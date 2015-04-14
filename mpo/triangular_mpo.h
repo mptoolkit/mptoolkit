@@ -100,6 +100,9 @@ class TriangularMPO
 
    private:
       data_type Data_;
+
+      friend PStream::opstream& operator<<(PStream::opstream& out, TriangularMPO const& Op);
+      friend PStream::ipstream& operator>>(PStream::ipstream& in, TriangularMPO& Op);
 };
 
 std::ostream&
@@ -216,12 +219,27 @@ TriangularMPO& operator-=(TriangularMPO& Op, TriangularMPO const& x);
 TriangularMPO operator+(TriangularMPO const& x, TriangularMPO const& y);
 TriangularMPO operator-(TriangularMPO const& x, TriangularMPO const& y);
 
+// unary negation
+TriangularMPO operator-(TriangularMPO const& x);
+
 // does a 2-1 coarse-graining of the operator, which must have an even size
 TriangularMPO coarse_grain(TriangularMPO const& x);
 
 // Multiplication of triangular MPO's.  This doesn't depend on the
 // compatibility of the operators.
 TriangularMPO prod(TriangularMPO const& x, TriangularMPO const& y, QuantumNumbers::QuantumNumber const& q);
+
+// dot product - takes into account the multiplicity to rescale the result
+TriangularMPO dot(TriangularMPO const& x, TriangularMPO const& y);
+
+// cross product (if it exists)
+TriangularMPO cross(TriangularMPO const& x, TriangularMPO const& y);
+
+// outer product of tensors.  This is defined as the product to the maximum
+// degree quantum number q.  There is also a scaling factor sqrt(degree(q))
+TriangularMPO outer(TriangularMPO const& x, TriangularMPO const& y);
+
+TriangularMPO pow(TriangularMPO const& x, int n);
 
 TriangularMPO operator*(TriangularMPO const& x, TriangularMPO const& y);
 

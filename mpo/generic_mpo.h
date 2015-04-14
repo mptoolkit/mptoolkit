@@ -5,8 +5,8 @@
 // Jordan-Wigner string that should be used when extending the
 // operator onto a lattice.
 
-#if !defined(GENERIC_MPO_H_JDCHJKEHY589758YUER89H489)
-#define GENERIC_MPO_H_JDCHJKEHY589758YUER89H489
+#if !defined(MPTOOLKIT_MPO_GENERIC_MPO_H)
+#define MPTOOLKIT_MPO_GENERIC_MPO_H
 
 #include "operator_component.h"
 #include "lattice/siteoperator.h"      // for LatticeCommute

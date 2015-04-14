@@ -72,7 +72,8 @@ quantumnumbersobj = quantumnumber.o symmetrybase.o symmetrylist.o \
 
 tensorobj = tensorproduct.o tensorsum.o basis.o regularize.o tensor_eigen.o
 
-latticeobj = siteoperator.o latticesite.o unitcell.o unitcell-parser.o unitcell_mpo.o
+latticeobj = siteoperator.o latticesite.o unitcell.o unitcell-parser.o unitcell_mpo.o \
+             infinitelattice.o infinitelattice-parser.o
 
 dmrgobj = $(tensorobj) density.o
 
@@ -163,6 +164,8 @@ allobj = $(quantumnumbersobj) \
 	 $(linearalgebraobj)  \
 	 $(commonobj)
 
+infinite-models = spinchain-su2 spinchain-spin2-su2
+
 mp-models = hubbard-u1u1 hubbard-t-u1u1 hubbard-u1su2 hubbard-so4 hubbard-t-so4 \
             hubbard-trap-u1su2 bosehubbard-spinless-u1 bosehubbard-spinless hubbardladder-so4 \
             klm-2channel-so4 bosehubbard-u1su2 bosehubbard-2bosons-u1u1 klm-u1u1 \
@@ -202,7 +205,7 @@ infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-
                  mp-bdmrg mp-imake-transverse-lattice mp-imake-transverse-lattice-folded mp-iexpectation-sz \
                  mp-iexpectation-sz2 mp-iparity mp-idump mp-itebd mp-idmrg5-spin2 mp-iexpectation3
 
-infinite-tools = mp-idmrg5 mp-ispectrum \
+infinite-tools = mp-idmrg5 mp-idmrg mp-ispectrum \
                  mp-iinfo mp-iprint mp-iproject mp-icorrelation mp-ioverlap \
                  mp-iexpectation3 mp-iexpectation mp-iwigner-eckart mp-isymmetry mp-ireorder-symmetry
 
@@ -316,10 +319,14 @@ $(mp-tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
               $(dmrgobj) $(mpobj)
 
 $(infinite-tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-              $(dmrgobj) $(mpobj) $(expokitobj)
+              $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj)
+
+
+$(infinite-models) :  $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
+              $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj)
 
 $(infinite-tools-exp) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-              $(dmrgobj) $(mpobj) $(expokitobj)
+              $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj)
 
 $(mp-tools-experimental) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
               $(dmrgobj) $(mpobj)
@@ -477,43 +484,44 @@ mp-simple-marshall-qmc : random_wavefunc.o
 
 # infinite tools
 
-mp-idmrg5 : $(mpoobj) infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o
-mp-idmrg5-spin2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o
-mp-irename-symmetry : triangular_operator.o mpoperator.o infinitewavefunction.o eigen.o
-mp-iparity : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o
-mp-bdmrg : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o packunpack.o
-mp-iexpectation : $(mpoobj) infinitewavefunction.o random_wavefunc.o eigen.o
-mp-iexpectation3 : $(mpoobj) triangular_mpo_solver.o momentum_operations.o infinitewavefunction.o random_wavefunc.o eigen.o triangular_mpo_solver.o
-mp-iexpectation-sz : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
-mp-iexpectation-sz2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
-mp-iexcitation : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
-mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o eigen.o
-mp-igradient : triangular_operator.o infinitewavefunction.o random_wavefunc.o eigen.o
-mp-ispectral-expansion : triangular_operator.o infinitewavefunction.o random_wavefunc.o eigen.o
-mp-ioverlap : infinitewavefunction.o eigen.o
-mp-isymmetry : infinitewavefunction.o eigen.o packunpack.o arpack_wrapper.o unitcell-parser.o unitcell.o
+mp-idmrg5 : $(mpoobj) infinitewavefunction.o random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o
+mp-idmrg : $(mpoobj) infinitewavefunction.o random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o
+mp-idmrg5-spin2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o packunpack.o
+mp-irename-symmetry : triangular_operator.o mpoperator.o infinitewavefunction.o
+mp-iparity : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o packunpack.o
+mp-bdmrg : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o packunpack.o
+mp-iexpectation : $(mpoobj) infinitewavefunction.o random_wavefunc.o
+mp-iexpectation3 : $(mpoobj) triangular_mpo_solver.o momentum_operations.o infinitewavefunction.o random_wavefunc.o triangular_mpo_solver.o
+mp-iexpectation-sz : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o
+mp-iexpectation-sz2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o
+mp-iexcitation : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o
+mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o
+mp-igradient : triangular_operator.o infinitewavefunction.o random_wavefunc.o
+mp-ispectral-expansion : triangular_operator.o infinitewavefunction.o random_wavefunc.o
+mp-ioverlap : infinitewavefunction.o
+mp-isymmetry : infinitewavefunction.o packunpack.o arpack_wrapper.o unitcell-parser.o unitcell.o
 
-mp-ireorder-symmetry : infinitewavefunction.o eigen.o 
+mp-ireorder-symmetry : infinitewavefunction.o 
 
 
-mp-iproject : infinitewavefunction.o eigen.o
-mp-icorrelation : infinitewavefunction.o eigen.o siteoperator-parser.o
+mp-iproject : infinitewavefunction.o
+mp-icorrelation : infinitewavefunction.o siteoperator-parser.o
 pp-iortho : triangular_operator.o infinitewavefunction.o
-mp-iinfo : eigen.o infinitewavefunction.o
-mp-iprint : eigen.o infinitewavefunction.o
+mp-iinfo : infinitewavefunction.o
+mp-iprint : infinitewavefunction.o
 mp-iorthogonalize : triangular_operator.o infinitewavefunction.o
 mp-pwfrg : triangular_operator.o match_basis.o
 mp-itebd : mpexponential.o $(expokitobj) infinitewavefunction.o
-mp-itebd2 : $(expokitobj) infinitewavefunction.o eigen.o random_wavefunc.o
+mp-itebd2 : $(expokitobj) infinitewavefunction.o random_wavefunc.o
 mp-evolve-bonds : local-evolution.o $(expokitobj)
-mp-ispectrum : infinitewavefunction.o packunpack.o eigen.o arpack_wrapper.o siteoperator-parser.o
-mp-ispectrum2 : infinitewavefunction.o packunpack.o eigen.o arpack_wrapper.o unitcell-parser.o unitcell.o latticesite.o $(expokitobj)
+mp-ispectrum : infinitewavefunction.o packunpack.o arpack_wrapper.o siteoperator-parser.o
+mp-ispectrum2 : infinitewavefunction.o packunpack.o arpack_wrapper.o unitcell-parser.o unitcell.o latticesite.o $(expokitobj)
 mp-ieigen : triangular_operator.o infinitewavefunction.o
 mp-idump : infinitewavefunction.o
-mp-imake-transverse-lattice : triangular_operator.o infinitewavefunction.o random_wavefunc.o eigen.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
-mp-imake-transverse-lattice-folded : triangular_operator.o infinitewavefunction.o random_wavefunc.o eigen.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
-mp-iexpectation-tri : infinitewavefunction.o eigen.o triangular_operator.o eigen.o mpoperator.o packunpack.o
-mp-iwigner-eckart : eigen.o infinitewavefunction.o wigner_eckart.o
+mp-imake-transverse-lattice : triangular_operator.o infinitewavefunction.o random_wavefunc.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
+mp-imake-transverse-lattice-folded : triangular_operator.o infinitewavefunction.o random_wavefunc.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
+mp-iexpectation-tri : infinitewavefunction.o triangular_operator.o mpoperator.o packunpack.o
+mp-iwigner-eckart : infinitewavefunction.o wigner_eckart.o
 
 
 LIBS_mp-ispectrum = $(LIBARPACK)
