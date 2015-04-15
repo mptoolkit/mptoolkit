@@ -100,6 +100,15 @@ UnitCellMPO::ExtendToCoverUnitCell(int OtherSize)
 
 UnitCellMPO& operator+=(UnitCellMPO& x, UnitCellMPO const& y)
 {
+   if (x.is_null())
+   {
+      x = y;
+      return x;
+   }
+   if (y.is_null())
+   {
+      return x;
+   }
    x.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
@@ -109,6 +118,15 @@ UnitCellMPO& operator+=(UnitCellMPO& x, UnitCellMPO const& y)
    
 UnitCellMPO& operator-=(UnitCellMPO& x, UnitCellMPO const& y)
 {
+   if (x.is_null())
+   {
+      x = -y;
+      return x;
+   }
+   if (y.is_null())
+   {
+      return x;
+   }
    x.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
@@ -119,6 +137,11 @@ UnitCellMPO& operator-=(UnitCellMPO& x, UnitCellMPO const& y)
 
 UnitCellMPO operator+(UnitCellMPO const& x, UnitCellMPO const& y)
 {
+   if (x.is_null())
+      return y;
+   if (y.is_null())
+      return x;
+
    UnitCellMPO xCopy(x);
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
@@ -128,6 +151,11 @@ UnitCellMPO operator+(UnitCellMPO const& x, UnitCellMPO const& y)
 
 UnitCellMPO operator-(UnitCellMPO const& x, UnitCellMPO const& y)
 {
+   if (x.is_null())
+      return -y;
+   if (y.is_null())
+      return x;
+
    UnitCellMPO xCopy(x);
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
@@ -137,6 +165,8 @@ UnitCellMPO operator-(UnitCellMPO const& x, UnitCellMPO const& y)
 
 UnitCellMPO operator-(UnitCellMPO const& x)
 {
+   if (x.is_null())
+      return x;
    return UnitCellMPO(&x.GetUnitCell(), -x.MPO(), x.Commute(), x.offset());
 }
 

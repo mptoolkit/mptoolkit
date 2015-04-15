@@ -596,3 +596,42 @@ ExtractLocalBasis1(GenericMPO const& Op)
    }
    return Result;
 }
+
+void optimize(GenericMPO& Op)
+{
+   if (Op.size() < 2)
+      return;
+
+   bool Reduced = true; // flag to indicate that we reduced a dimension
+   // loop until we do a complete sweep with no reduction in dimensions
+   while (Reduced)
+   {
+      Reduced = false;
+
+      // Working left to right, optimize the Basis2
+      SimpleOperator T = TruncateBasis2(Op.front());
+      if (T.size1() != T.size2())
+         Reduced = true;
+      for (int i = 1; i < Op.size()-1; ++i)
+      {
+         Op[i] = T * Op[i];
+         T = TruncateBasis2(Op[i]);
+         if (T.size1() != T.size2())
+            Reduced = true;
+      }
+      Op.back() = T * Op.back();
+      
+      // Working right to left, optimize Basis1
+      T = TruncateBasis1(Op.back());
+      if (T.size1() != T.size2())
+         Reduced = true;
+      for (int i = Op.size()-2; i >= 1; --i)
+      {
+         Op[i] = Op[i] * T;
+	 T = TruncateBasis1(Op[i]);
+         if (T.size1() != T.size2())
+            Reduced = true;
+      }
+      Op.front() = Op.front() * T;
+   }
+}

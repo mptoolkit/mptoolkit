@@ -1006,11 +1006,11 @@ int main(int argc, char** argv)
       // Hamiltonian
       TriangularMPO HamMPO;
       InfiniteLattice Lattice;
+      boost::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
       int const UnitCellSize = Lattice.GetUnitCell().size();
+      TRACE(UnitCellSize);
       if (WavefuncUnitCellSize == 0)
 	 WavefuncUnitCellSize = UnitCellSize;
-
-      boost::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
 
       // load the wavefunction
       if (ExactDiag)
