@@ -224,7 +224,7 @@ UnitCell::LocalOperator(std::string const& Op, int Cell, int n) const
    SiteOperator Operator = Data_[n][Op];
    std::string SignOperator = Operator.Commute().SignOperator();
 
-   FiniteMPO Result(Data_.size(), Operator.Commute());
+   FiniteMPO Result(Data_.size());
 
    BasisList Vacuum = make_vacuum_basis(Operator.GetSymmetryList());
    BasisList Basis = make_single_basis(Operator.TransformsAs());
@@ -309,7 +309,7 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
    boost::tie(R1, R2) = decompose_local_tensor_prod(Op, Basis_ji, Basis_ij);
 
    // now turn this into a FiniteMPO
-   FiniteMPO Result(this->size() * (Cell_j-Cell_i+1), LatticeCommute::Bosonic);
+   FiniteMPO Result(this->size() * (Cell_j-Cell_i+1));
    for (int n = 0; n <i; ++n)
    {
       Result[n] = OperatorComponent::make_identity(this->LocalBasis(n % this->size()));
@@ -332,7 +332,7 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
 FiniteMPO
 UnitCell::identity_mpo(QuantumNumbers::QuantumNumber const& q) const
 {
-   FiniteMPO Result(this->size(), LatticeCommute::Bosonic);
+   FiniteMPO Result(this->size());
    BasisList b = make_single_basis(q);
    for (int i = 0; i < this->size(); ++i)
    {
@@ -351,8 +351,7 @@ UnitCell::identity_mpo() const
 FiniteMPO
 UnitCell::string_mpo(std::string const& OpName, QuantumNumbers::QuantumNumber const& Trans) const
 {
-   // All string operators are in the identity quantum number sector, so bosonic
-   FiniteMPO Result(this->size(), LatticeCommute::Bosonic);
+   FiniteMPO Result(this->size());
 
    BasisList Vacuum = make_single_basis(Trans);
 

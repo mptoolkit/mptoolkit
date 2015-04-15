@@ -16,10 +16,14 @@
 #if !defined(MPTOOLKIT_LATTICE_UNITCELL_PARSER_H)
 #define MPTOOLKIT_LATTICE_UNITCELL_PARSER_H
 
-#include "unitcell.h"
-#include "unitcell_mpo.h"
+#include "lattice/unitcell.h"
+#include "lattice/unitcell_mpo.h"
+#include "lattice/infinitelattice.h"
 
 UnitCellMPO
 ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& str);
+
+std::pair<UnitCellMPO, InfiniteLattice>
+ParseUnitCellOperatorAndLattice(std::string const& Str);
 
 #endif

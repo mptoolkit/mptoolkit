@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+ // -*- C++ -*- $Id$
 
 #include "triangular_mpo.h"
 

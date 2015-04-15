@@ -33,7 +33,7 @@ class FiniteMPO
       // without specifying the LatticeCommute
       //      explicit FiniteMPO(int Size) : Data(Size) {}
 
-      FiniteMPO(int Size, LatticeCommute Com) : Data(Size, Com) {}
+      explicit FiniteMPO(int Size) : Data(Size) {}
 
       // Construction from a generic MPO.  The generic MPO must already be in finite form.
       explicit FiniteMPO(GenericMPO const& Other);
@@ -117,9 +117,6 @@ class FiniteMPO
       std::vector<BasisList> LocalBasis2List() const
       { return Data.LocalBasis2List(); }
 
-      LatticeCommute Commute() const { return Data.Commute(); }
-      void SetCommute(LatticeCommute x) { Data.SetCommute(x); }
-
       // direct access to the GenericMPO
       data_type& data() { return Data; }
       data_type const& data() const { return Data; }
@@ -201,7 +198,7 @@ SimpleRedOperator coarse_grain(FiniteMPO const& x);
 
 // The opposite of coarse_grain - decompose an operator acting on the entire Hilbert space
 // into a FiniteMPO
-FiniteMPO fine_grain(SimpleOperator const& x, LatticeCommute Com,
+FiniteMPO fine_grain(SimpleOperator const& x,
 		     std::vector<BasisList> const& LocalBasis1,
 		     std::vector<BasisList> const& LocalBasis2);
 

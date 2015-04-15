@@ -32,8 +32,6 @@ class TriangularMPO
 
       explicit TriangularMPO(int Size) : Data_(Size) {}
 
-      TriangularMPO(int Size, LatticeCommute Com) : Data_(Size, Com) {}
-
       // construction as a single-site operator
       explicit TriangularMPO(value_type const& x) : Data_(1, x) {}
 

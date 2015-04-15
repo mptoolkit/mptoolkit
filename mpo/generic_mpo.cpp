@@ -612,7 +612,7 @@ void optimize(GenericMPO& Op)
       SimpleOperator T = TruncateBasis2(Op.front());
       if (T.size1() != T.size2())
          Reduced = true;
-      for (int i = 1; i < Op.size()-1; ++i)
+      for (unsigned i = 1; i < Op.size()-1; ++i)
       {
          Op[i] = T * Op[i];
          T = TruncateBasis2(Op[i]);

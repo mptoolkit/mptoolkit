@@ -11,26 +11,7 @@
 #include "interface/inittemp.h"
 #include "tensor/tensor_eigen.h"
 #include "lattice/unitcell-parser.h"
-#include "mpo/finite_mpo.h"
 #include "mps/operator_actions.h"
-
-#include "models/spin.h"
-#include "models/spin-u1.h"
-#include "models/spin-su2.h"
-#include "models/spin-z2.h"
-#include "models/tj-u1su2.h"
-#include "models/tj-u1.h"
-#include "models/spinlessfermion-u1.h"
-#include "models/kondo-u1su2.h"
-#include "models/kondo-u1.h"
-#include "models/kondo-u1u1.h"
-#include "models/hubbard-so4.h"
-#include "models/hubbard-u1u1.h"
-#include "models/hubbard-u1su2.h"
-#include "models/hubbard-u1u1-old.h"
-#include "models/boson-u1.h"
-#include "models/boson.h"
-#include "models/boson-2component-u1z2.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -100,12 +81,9 @@ int main(int argc, char** argv)
    try
    {
       bool ShowReal = false, ShowImag = false;
-      std::string Model, PsiStr;
+      std::string PsiStr;
       std::string OpStr;
-      int UnitCellSize = 1;
       int Verbose = 0;
-      int NMax = 5;
-      double Spin = 0.5;
       bool Print = false;
 
       std::cout.precision(14);
@@ -117,26 +95,18 @@ int main(int argc, char** argv)
 	  "display only the real part of the result")
 	 ("imag,i", prog_opt::bool_switch(&ShowImag),
 	  "display only the imaginary part of the result")
-	 ("unitcell,u", prog_opt::value(&UnitCellSize),
-	  "Size of the Hamiltonian unit cell")
-         ("spin", prog_opt::value(&Spin),
-          "spin (for su(2) models)")
          ("print,p", prog_opt::bool_switch(&Print), "Print the MPO to standard output")
-	 ("nmax", prog_opt::value(&NMax),
-	  FormatDefault("Maximum number of bosons per site [for bosonic models]", NMax).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose),
           "Verbose output (use multiple times for more output)")
          ;
 
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
-         ("model", prog_opt::value(&Model), "model")
          ("psi", prog_opt::value(&PsiStr), "psi")
          ("op", prog_opt::value(&OpStr), "op")
          ;
 
       prog_opt::positional_options_description p;
-      p.add("model", 1);
       p.add("psi", 1);
       p.add("op", 1);
 
@@ -151,7 +121,7 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("op") == 0)
       {
          print_copyright(std::cerr);
-         std::cerr << "usage: mp-iexpectation [options] <model> <psi> <operator>\n";
+         std::cerr << "usage: mp-iexpectation [options] <psi> <operator>\n";
          std::cerr << desc << '\n';
          return 1;
       }
@@ -166,89 +136,9 @@ int main(int argc, char** argv)
       mp_pheap::InitializeTempPHeap();
       pvalue_ptr<InfiniteWavefunction> Psi = pheap::ImportHeap(PsiStr);
 
-      LatticeSite Site;
-      if (Model == "sf-u1")
-      {
-	 Site = CreateU1SpinlessFermion();
-      }
-      else if (Model == "spin")
-      {
-	 Site = CreateSpinSite(Spin);
-      }
-      else if (Model == "spin1")
-      {
-	 Site = CreateSpinSite(1.0);
-      }
-      else if (Model == "spin-su2")
-      {
-	 Site = CreateSU2SpinSite(Spin);
-      }
-      else if (Model == "spin-u1")
-      {
-	 Site = CreateU1SpinSite(Spin);
-      }
-      else if (Model == "spin-z2")
-      {
-	 Site = CreateZ2SpinSite(0.5);
-      }
-      else if (Model == "tj-u1")
-      {
-	 Site = CreateU1tJSite();
-      }
-      else if (Model == "tj-u1su2")
-      {
-	 Site = CreateU1SU2tJSite();
-      }
-      else if (Model == "klm-u1su2")
-      {
-	 Site = CreateU1SU2KondoSite();
-      }
-      else if (Model == "klm-u1")
-      {
-	 Site = CreateU1KondoSite();
-      }
-      else if (Model == "klm-u1u1")
-      {
-	 Site = CreateU1U1KondoSite();
-      }
-      else if (Model == "hubbard-so4")
-      {
-	 Site = CreateSO4HubbardSiteA();
-      }
-      else if (Model == "hubbard-u1su2")
-      {
-	 Site = CreateU1SU2HubbardSite();
-      }
-      else if (Model == "hubbard-u1u1")
-      {
-	 Site = CreateU1U1HubbardSite();
-      }
-      else if (Model == "hubbard-u1u1-old")
-      {
-	 Site = CreateU1U1HubbardOldOrderingSite();
-      }
-      else if (Model == "bh-u1")
-      {
-	 Site = BosonU1(NMax);
-      }
-      else if (Model == "bh")
-      {
-	 Site = Boson(NMax);
-      }
-      else if (Model == "bh2-u1z2")
-      {
-	 Site = CreateBoseHubbard2BosonsU1Z2Site(NMax);
-      }
-      else
-      {
-	 PANIC("mp-iexpectation: fatal: model parameter unrecognised.");
-      }
-
-      QuantumNumber Ident(Psi->GetSymmetryList());
-      
-      UnitCell Cell = repeat(Site, UnitCellSize);
-
-      UnitCellMPO Op = ParseUnitCellOperator(Cell, 0, OpStr);
+      UnitCellMPO Op;
+      InfiniteLattice Lattice;
+      boost::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(OpStr);     
 
       if (Print)
       {

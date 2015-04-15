@@ -109,6 +109,8 @@ UnitCellMPO& operator+=(UnitCellMPO& x, UnitCellMPO const& y)
    {
       return x;
    }
+   CHECK_EQUAL(x.Commute(), y.Commute());
+
    x.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
@@ -127,6 +129,8 @@ UnitCellMPO& operator-=(UnitCellMPO& x, UnitCellMPO const& y)
    {
       return x;
    }
+   CHECK_EQUAL(x.Commute(), y.Commute());
+
    x.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
@@ -141,6 +145,7 @@ UnitCellMPO operator+(UnitCellMPO const& x, UnitCellMPO const& y)
       return y;
    if (y.is_null())
       return x;
+   CHECK_EQUAL(x.Commute(), y.Commute());
 
    UnitCellMPO xCopy(x);
    xCopy.ExtendToCover(y.size(), y.offset());
@@ -155,6 +160,7 @@ UnitCellMPO operator-(UnitCellMPO const& x, UnitCellMPO const& y)
       return -y;
    if (y.is_null())
       return x;
+   CHECK_EQUAL(x.Commute(), y.Commute());
 
    UnitCellMPO xCopy(x);
    xCopy.ExtendToCover(y.size(), y.offset());
@@ -196,7 +202,8 @@ UnitCellMPO prod(UnitCellMPO const& x, UnitCellMPO const& y, QuantumNumbers::Qua
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(&xCopy.GetUnitCell(), prod(xCopy.MPO(), yCopy.MPO(), q), xCopy.Commute(), xCopy.offset());
+   return UnitCellMPO(&xCopy.GetUnitCell(), prod(xCopy.MPO(), yCopy.MPO(), q), 
+		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
 UnitCellMPO prod(UnitCellMPO const& x, UnitCellMPO const& y)
@@ -205,16 +212,19 @@ UnitCellMPO prod(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(&xCopy.GetUnitCell(), prod(xCopy.MPO(), yCopy.MPO()), xCopy.Commute(), xCopy.offset());
+   return UnitCellMPO(&xCopy.GetUnitCell(), prod(xCopy.MPO(), yCopy.MPO()), 
+		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
 UnitCellMPO operator*(UnitCellMPO const& x, UnitCellMPO const& y)
 {
+   return prod(x,y);
    UnitCellMPO xCopy(x);
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(&xCopy.GetUnitCell(), xCopy.MPO() * yCopy.MPO(), xCopy.Commute(), xCopy.offset());
+   return UnitCellMPO(&xCopy.GetUnitCell(), prod(xCopy.MPO(), yCopy.MPO()), 
+		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
 UnitCellMPO dot(UnitCellMPO const& x, UnitCellMPO const& y)
@@ -223,7 +233,8 @@ UnitCellMPO dot(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(&xCopy.GetUnitCell(), dot(xCopy.MPO(), yCopy.MPO()), xCopy.Commute(), xCopy.offset());
+   return UnitCellMPO(&xCopy.GetUnitCell(), dot(xCopy.MPO(), yCopy.MPO()), 
+		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
 UnitCellMPO inner(UnitCellMPO const& x, UnitCellMPO const& y)
@@ -237,7 +248,8 @@ UnitCellMPO cross(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(&xCopy.GetUnitCell(), cross(xCopy.MPO(), yCopy.MPO()), xCopy.Commute(), xCopy.offset());
+   return UnitCellMPO(&xCopy.GetUnitCell(), cross(xCopy.MPO(), yCopy.MPO()), 
+		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
 UnitCellMPO outer(UnitCellMPO const& x, UnitCellMPO const& y)
@@ -246,7 +258,8 @@ UnitCellMPO outer(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(&xCopy.GetUnitCell(), outer(xCopy.MPO(), yCopy.MPO()), xCopy.Commute(), xCopy.offset());
+   return UnitCellMPO(&xCopy.GetUnitCell(), outer(xCopy.MPO(), yCopy.MPO()), 
+		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
 // project a (reducible) operator onto an irreducible component

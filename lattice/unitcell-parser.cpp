@@ -2,7 +2,7 @@
 
 #include "unitcell-parser.h"
 #include "parser/parser.h"
-
+#include <boost/algorithm/string.hpp>
 
 using namespace Parser;
 
@@ -810,4 +810,24 @@ ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& Str
    // else, we also handle the case where the operator is a number
    complex x = boost::get<complex>(Result);
    return x*Cell.Operator("I");
+}
+
+std::pair<UnitCellMPO, InfiniteLattice>
+ParseUnitCellOperatorAndLattice(std::string const& Str)
+{
+   std::string::const_iterator Delim = std::find(Str.begin(), Str.end(), ':');
+   if (Delim == Str.end())
+   {
+      PANIC("fatal: expression of the form \"lattice:expression\" expected.")(Str);
+   }
+
+   std::string LatticeFile = std::string(Str.begin(), Delim);
+   boost::trim(LatticeFile);
+   pvalue_ptr<InfiniteLattice> Lattice = pheap::ImportHeap(LatticeFile);
+
+   ++Delim;
+   std::string Expr(Delim, Str.end());
+
+   UnitCellMPO Op = ParseUnitCellOperator(Lattice->GetUnitCell(), 0, Expr);
+   return std::make_pair(Op, *Lattice);
 }

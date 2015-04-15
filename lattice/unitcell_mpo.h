@@ -9,6 +9,7 @@
 #define MPTOOLKIT_LATTICE_UNITCELL_MPO_H
 
 #include "mpo/finite_mpo.h"
+#include "lattice/siteoperator.h"  // for LatticeCommute
 
 class UnitCell;
 

@@ -159,7 +159,7 @@ TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute
    // and finally the identity operator
    FiniteMPO Ident = Cell.identity_mpo(Op.qn2());
 
-   TriangularMPO Result(Cell.size(), Com);
+   TriangularMPO Result(Cell.size());
    for (int i = 0; i < Cell.size(); ++i)
    {
       // Construct the basis
@@ -229,7 +229,7 @@ TriangularMPO make_zero(UnitCell const& Cell)
    b.push_back(Ident);
    b.push_back(Ident);
 
-   TriangularMPO Result(Cell.size(), LatticeCommute::Bosonic);
+   TriangularMPO Result(Cell.size());
    for (int i = 0; i < Cell.size(); ++i)
    {
       
