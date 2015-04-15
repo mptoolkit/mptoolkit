@@ -118,7 +118,7 @@ int main(int argc, char** argv)
       //   TRACE(norm_frob(operator_prod(Phi, Rho, herm(Phi)) - Rho));
 
       // make Op the same size as our unit cell
-      if (UnitCellSize % Op.size() != 0)
+      if (WavefuncUnitCellSize % Op.size() != 0)
       {
          std::cout << "mp-iexpectation: fatal: the wavefunction unit cell "
             "must be a multiple of the operator unit cell.\n";
