@@ -67,6 +67,12 @@ int main(int argc, char** argv)
 		   << "Operators:\n"
 		   << "H_J1    - nearest neighbor spin exchange\n"
 		   << "H_J2    - next-nearest neighbor spin exchange\n"
+		   << "\nIf the lattice is tripartite (width is a multiple of 3) then we define sublattice\n"
+		   << "spin operators on width*3 unit cells,\n"
+		   << "S_A     - tripartite sublattice spin, including site S(0)[0]\n"
+		   << "S_B     - tripartite sublattice spin, including site S(0)[1]\n"
+		   << "S_C     - tripartite sublattice spin, including site S(0)[2]\n"
+
 	    ;
          return 1;
       }
