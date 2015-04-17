@@ -102,13 +102,31 @@ SetComponents(OperatorComponent& C, OperatorComponent const& Op, int xStart, int
 
 TriangularMPO sum_unit(UnitCellMPO const& Op)
 {
-   return sum_unit(Op.GetUnitCell(), Op.MPO(), Op.Commute());
+   if (Op.is_null())
+      return TriangularMPO();
+   return sum_unit(Op.GetUnitCell(), Op.MPO(), Op.Commute(), Op.GetUnitCell().size());
+}
+
+TriangularMPO sum_unit(UnitCellMPO const& Op, int UnitCellSize)
+{
+   if (Op.is_null())
+      return TriangularMPO();
+   return sum_unit(Op.GetUnitCell(), Op.MPO(), Op.Commute(), UnitCellSize);
 }
 
 TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute Com)
 {
+   return sum_unit(Cell, Op, Com, Cell.size());
+}
+
+TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize)
+{
+   if (Op.is_null())
+      return TriangularMPO();
    CHECK(Op.is_irreducible());
-   CHECK(Op.size() % Cell.size() == 0)
+   CHECK(UnitCellSize % Cell.size() == 0)
+      ("UnitCellSize for sum_unit() must be a multiple of UnitCell.size()");
+   CHECK(Op.size() % UnitCellSize == 0)
       ("Operator for sum_unit() must be a multiple of the unit cell");
 
    // Suppose that the unit cell size is 1.  Then if Op is A \times B \otimes C, then
@@ -139,16 +157,16 @@ TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute
    // which is the desired operator.  This is quite straightforward,
    // since X,A have 1 row, and F,I have 1 column.
 
-   TRACE(Op.size())(Cell.size());
+   DEBUG_TRACE(Op.size())(UnitCellSize)(Cell.size());
 
-   // To construct this operator, we firstly split Op into unit cells
+   // To construct this operator, we firstly split Op into UnitCellSize pieces
    std::vector<std::vector<OperatorComponent> > SplitOp;
    int n = 0;
    FiniteMPO::const_iterator I = Op.begin();
    FiniteMPO::const_iterator J = I;
    while (J != Op.end())
    {
-      std::advance(J, Cell.size());
+      std::advance(J, UnitCellSize);
       SplitOp.push_back(std::vector<OperatorComponent>(I,J));
       I = J;
    }
@@ -159,26 +177,26 @@ TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute
    // and finally the identity operator
    FiniteMPO Ident = Cell.identity_mpo(Op.qn2());
 
-   TriangularMPO Result(Cell.size());
-   for (int i = 0; i < Cell.size(); ++i)
+   TriangularMPO Result(UnitCellSize);
+   for (int i = 0; i < UnitCellSize; ++i)
    {
       // Construct the basis
       BasisList Basis1(Cell.GetSymmetryList());
       BasisList Basis2(Cell.GetSymmetryList());
       if (i != 0)
-	 JoinBasis(Basis1, JW[i].Basis1());
-      JoinBasis(Basis2, JW[i].Basis2());
+	 JoinBasis(Basis1, JW[i%Cell.size()].Basis1());
+      JoinBasis(Basis2, JW[i%Cell.size()].Basis2());
 
       for (unsigned n = 0; n < SplitOp.size(); ++n)
       {
 	 JoinBasis(Basis1, SplitOp[n][i].Basis1());
 	 JoinBasis(Basis2, SplitOp[n][i].Basis2());
       }
-      JoinBasis(Basis1, Ident[i].Basis1());
-      if (i != int(Cell.size())-1)
-	 JoinBasis(Basis2, Ident[i].Basis2());
+      JoinBasis(Basis1, Ident[i%Cell.size()].Basis1());
+      if (i != int(UnitCellSize)-1)
+	 JoinBasis(Basis2, Ident[i%Cell.size()].Basis2());
 
-      TRACE(Basis1)(Basis2)(SplitOp.size());
+      DEBUG_TRACE(Basis1)(Basis2)(SplitOp.size());
 
       // Construct the OperatorComponent
       OperatorComponent C(Op[i].LocalBasis1(), Op[i].LocalBasis2(), Basis1, Basis2);
@@ -186,30 +204,30 @@ TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute
       // The JW goes in the top left
       int r = 0;
       int c = 0;
-      SetComponents(C, JW[i], r, c);
+      SetComponents(C, JW[i%Cell.size()], r, c);
       if (i != 0)
-	 r += JW[i].Basis1().size();
-      c += JW[i].Basis2().size();
+	 r += JW[i%Cell.size()].Basis1().size();
+      c += JW[i%Cell.size()].Basis2().size();
 
       // the finite MPO components go along the diagonal
       for (unsigned n = 0; n < SplitOp.size()-1; ++n)
       {
-	 SetComponents(C, SplitOp[n][i], r, c);
+	 SetComponents(C, SplitOp[n][i%Cell.size()], r, c);
 	 r += SplitOp[n][i].Basis1().size();
 	 c += SplitOp[n][i].Basis2().size();
       }
       SetComponents(C, SplitOp.back()[i], r, c);
       r += SplitOp.back()[i].Basis1().size();
-      if (i != int(Cell.size())-1)
+      if (i != int(UnitCellSize)-1)
 	 c += SplitOp.back()[i].Basis2().size();
       // The identity goes in the bottom right
-      SetComponents(C, Ident[i], r, c);
+      SetComponents(C, Ident[i%Cell.size()], r, c);
 
       // check that we're at the end
-      CHECK_EQUAL(r+Ident[i].Basis1().size(), Basis1.size());
-      CHECK_EQUAL(c+Ident[i].Basis2().size(), Basis2.size());
+      CHECK_EQUAL(r+Ident[i%Cell.size()].Basis1().size(), Basis1.size());
+      CHECK_EQUAL(c+Ident[i%Cell.size()].Basis2().size(), Basis2.size());
 
-      TRACE(C);
+      DEBUG_TRACE(C);
       
       C.debug_check_structure();
 

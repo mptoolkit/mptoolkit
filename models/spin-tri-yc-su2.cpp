@@ -4,24 +4,25 @@
 // YC configuration of a triangular lattice
 // The unit cell is size Width*2.
 //
-// Example for a width-5 lattice (site numbers in brackets are periodic repeats)
+// Example for a width-5 lattice (site numbers in brackets are periodic repeats in the vertical
+// direction (ie top-left (0) is the same site as the bottom-left 0).
+// Sites 5,6,7,8,9 are the second unit cell, eg 5 is (1)[0]
 //
-//(0) (0)
-// |(5)|
-// 4<| 4
+//    (0)
+//  (5)|
+//(0)| 4
 // | 9<|
-// 3<| 3
+// 4<| 3
 // | 8<|
-// 2<| 2
+// 3<| 2
 // | 7<|
-// 1<| 1
+// 2<| 1
 // | 6<|
-// 0<| 0
+// 1<| 0
 // | 5<|
-//(4)|(4)
-//  (9)
-//
-// A B A
+// 0<|(4)
+// |(9)
+//(4)
 //
 
 #include "pheap/pheap.h"
@@ -39,14 +40,14 @@ int main(int argc, char** argv)
    try
    {
       half_int Spin = 0.5;
-      int Width = 4;
+      int w = 4;
       std::string LatticeName;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
-	 ("width,w", prog_opt::value(&Width), "width of the cylinder [default 4]")
+	 ("width,w", prog_opt::value(&w), "width of the cylinder [default 4]")
          ("out,o", prog_opt::value(&LatticeName), "output filename [required]")
          ;
       
@@ -71,51 +72,59 @@ int main(int argc, char** argv)
       }
 
       LatticeSite Site = CreateSU2SpinSite(Spin);
-      UnitCell Cell = repeat(Site, Width*2);
+      UnitCell Cell = repeat(Site, w);
       UnitCellOperator S(Cell, "S");
 
       // Add some operators on the unit cell
-      for (int i = 0; i < Width*2; ++i)
+      for (int i = 0; i < w; ++i)
       {
 	 S += S[i];     // total spin
       }
 
+      // if we have tripartite symmetry, add operators for the sublattice magnetization
+      UnitCellMPO S_A, S_B, S_C;
+      if (w%3 == 0)
+      {
+	 for (int i = 0; i < w; i += 3)
+	 {
+	    S_A += S(0)[i]   + S(1)[(i+1)%w] + S(2)[(i+2)%w];
+	    S_B += S(0)[i+1] + S(1)[(i+2)%w] + S(2)[i%w];
+	    S_C += S(0)[i+2] + S(1)[i%w]     + S(2)[(i+1)%w];
+	 }
+      }
+
+      // Now we construct the InfiniteLattice
       InfiniteLattice Lattice(Cell);
 
       // Construct the Hamiltonian for a single unit cell
       UnitCellMPO H1, H2;
-      for (int i = 0; i < Width; ++i)
+      for (int i = 0; i < w; ++i)
       {
 	 // Nearest neighbor bonds
-	 // Strip A
 	 // vertical bonds
-	 H1 += inner(S(0)[i], S(0)[(i+1)%Width]);
+	 H1 += inner(S(0)[i], S(0)[(i+1)%w]);
 	 // 60 degree bonds
-	 H1 += inner(S(0)[i], S(0)[i+Width]);
-	 H1 += inner(S(0)[i], S(0)[(i+1)%Width+Width]);
-
-	 // strip B
-	 // vertical bonds
-	 H1 += inner(S(0)[i+Width], S(0)[(i+1)%Width+Width]);
-	 // 60 degree bonds
-	 H1 += inner(S(0)[i+Width], S(1)[i]);
-	 H1 += inner(S(0)[i+Width], S(1)[(i+Width-1)%Width]);
+	 H1 += inner(S(0)[i], S(1)[i]);
+	 H1 += inner(S(0)[i], S(1)[(i+w-1)%w]);
 
 	 // next-nearest neighbor bonds
-	 H2 += inner(S(0)[i], S(1)[i]);
-	 H2 += inner(S(0)[i], S(0)[(i+2)%Width+Width]);
-	 H2 += inner(S(0)[i], S(0)[(i+Width-1)%Width+Width]);
-
-	 H2 += inner(S(0)[i+Width], S(1)[i+Width]);
-	 H2 += inner(S(0)[i+Width], S(1)[(i+1)%Width]);
-	 H2 += inner(S(0)[i+Width], S(1)[(i+Width-2)%Width]);
+	 H2 += inner(S(0)[i], S(2)[i]);             // horizontal
+	 H2 += inner(S(0)[i], S(1)[(i+1)%w]);       // up-right
+	 H2 += inner(S(0)[i], S(1)[(i+w-2)%w]);     // down-right   
       }
 
       Lattice["H_J1"] = sum_unit(H1);
       Lattice["H_J2"] = sum_unit(H2);
 
-      TRACE(Lattice.GetUnitCell().size());
+      // Add the tripartite sublattice magnetization operators
+      if (w%3 == 0)
+      {
+	 Lattice["S_A"] = sum_unit(S_A, w*3);
+	 Lattice["S_B"] = sum_unit(S_B, w*3);
+	 Lattice["S_C"] = sum_unit(S_C, w*3);
+      }
 
+      // save the lattice
       pheap::ExportObject(LatticeName, Lattice);
    }
    catch (std::exception& e)
