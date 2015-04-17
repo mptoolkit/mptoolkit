@@ -7,6 +7,7 @@
 #include <iomanip>
 #include "config.h"
 #include <boost/version.hpp>
+#include <boost/algorithm/string.hpp>
 
 #define AS_STRING(X) AS_STRING2(X)
 #define AS_STRING2(X) #X
@@ -38,5 +39,12 @@ inline void print_copyright(std::ostream& out)
 
 #undef AS_STRING
 #undef AS_STRING2
+
+// The basename() function is useful in help messages for printing the program name
+inline
+std::string basename(std::string const& FName)
+{
+   return std::string(boost::find_last(FName, "/").begin(), FName.end());
+}
 
 #endif

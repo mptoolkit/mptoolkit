@@ -61,7 +61,7 @@ int main(int argc, char** argv)
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
-         std::cerr << "usage: spin-yc-su2 [options]\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
 	 std::cerr << "Constructs a triangular lattice in the YC configuration with lattice vector (0,1)\n"
 		   << "Operators:\n"
