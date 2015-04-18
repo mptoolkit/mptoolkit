@@ -3,6 +3,7 @@
 #include "finite_mpo.h"
 #include "pstream/variant.h"
 #include "tensor/tensor_exponential.h"
+#include "lattice/siteoperator-parser.h"
 #include <algorithm>
 #include <stack>
 
@@ -633,3 +634,26 @@ FiniteMPO string_mpo(SiteListType const& SiteList, std::string const& OpName)
       return FiniteMPO();
    return string_mpo(SiteList, OpName, QuantumNumbers::QuantumNumber(SiteList[0].GetSymmetryList()));
 }
+
+FiniteMPO
+ParseStringOperator(SiteListType const& SiteList, std::string const& Expr, int Size)
+{
+   CHECK(Size % SiteList.size() == 0)
+      ("The size of the string operator must be a multiple of the unit cell");
+
+   FiniteMPO Result(SiteList.size());
+   
+   BasisList Vacuum = make_vacuum_basis(SiteList[0].GetSymmetryList());
+
+   for (unsigned i = 0; i < SiteList.size(); ++i)
+   {
+      SiteOperator Op = ParseSiteOperator(SiteList[i], Expr);
+      CHECK_EQUAL(Op.Commute(), LatticeCommute::Bosonic)("String operator must have bosonic commutation");
+      Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Vacuum, Vacuum);
+      Result[i](0,0) = Op;
+   }
+   Result = repeat(Result, Size / SiteList.size());
+   
+   return Result;
+}   
+

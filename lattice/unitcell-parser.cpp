@@ -554,6 +554,29 @@ struct push_swap_cell
    std::stack<element_type >& eval;
 };
 
+struct push_string
+{
+   push_string(UnitCell const& Cell_, int NumCells_,
+	       std::stack<element_type>& eval_)
+      : Cell(Cell_), NumCells(NumCells_), eval(eval_) 
+   {
+      // If the number of unit cells is unspecified, use 1
+      if (NumCells == 0)
+	 NumCells = 1;
+   }
+   
+   void operator()(char const* Start, char const* End) const
+   {
+      FiniteMPO Op = ParseStringOperator(*Cell.GetSiteList(), 
+					 std::string(Start, End), NumCells*Cell.size());
+      eval.push(UnitCellMPO(Cell.GetSiteList(), Op, LatticeCommute::Bosonic, 0));
+   }
+
+   UnitCell const& Cell;
+   int NumCells;
+   std::stack<element_type >& eval;
+};
+
 } // namespace UP
 
 using namespace UP;
@@ -691,6 +714,14 @@ struct UnitCellParser : public grammar<UnitCellParser>
        [push_operator(self.Cell, self.NumCells, self.identifier_stack, self.eval)]
 		);
 	 
+	 expression_string = lexeme_d[+((anychar_p - chset<>("()"))
+					| (ch_p('(') >> expression_string >> ch_p(')')))];
+
+	 string_expression = str_p("string")
+	    >> '(' 
+	    >> expression_string[push_string(self.Cell, self.NumCells, self.eval)]
+	    >> ')';
+
 	 unary_function = 
 	    eps_p(unary_funcs_p >> '(') 
 	    >>  unary_funcs_p[push_unary<element_type>(self.func_stack)]
@@ -753,6 +784,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	 operator_expression, operator_bracket_sq, operator_sq_bracket, operator_bracket, operator_sq,
 	 parameter, parameter_list, swap_cell_expr, swap_site_expr,
 	 local_operator, local_operator_cell_site, local_operator_site_cell, 
+	 expression_string, string_expression,
 	 identifier, pow_term, commutator_bracket;
       rule<ScannerT> const&
       start() const { return expression; }

@@ -228,6 +228,11 @@ FiniteMPO string_mpo(SiteListType const& SiteList,
 
 FiniteMPO string_mpo(SiteListType const& SiteList, std::string const& OpName);
 
+// Given an expression, parse it as a SiteOperator on each site of SitesList,
+// and form it into a scalar MPO.  The result is a string operator.
+FiniteMPO
+ParseStringOperator(SiteListType const& SiteList, std::string const& Expr, int Size);
+
 #include "finite_mpo.cc"
 
 #endif
