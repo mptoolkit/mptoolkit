@@ -85,4 +85,7 @@ LatticeSite CoerceSL(SymmetryList const& sl, LatticeSite const& s)
    return r;
 }
 
+// This is used by UnitCell and UnitCellMPO
+typedef std::vector<LatticeSite> SiteListType;
+typedef pvalue_ptr<SiteListType> SiteListPtrType;
 #endif

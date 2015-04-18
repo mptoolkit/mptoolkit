@@ -29,111 +29,138 @@ UnitCell::UnitCell()
 UnitCell::UnitCell(UnitCell const& Other)
    : Data_(Other.Data_), OperatorMap_(Other.OperatorMap_)
 {
-   for (operator_map_type::iterator I = OperatorMap_.begin(); I != OperatorMap_.end(); ++I)
-   {
-      I->second.SetUnitCell(this);
-   }
 }
 
 UnitCell::UnitCell(LatticeSite const& s)
-   : Data_(1, s)
+   : Data_(new SiteListType(1, s))
 {
-   OperatorMap_["I"] = UnitCellMPO(this, this->identity_mpo(), LatticeCommute::Bosonic, 0);
+   this->SetDefaultOperators();
 }
 
 UnitCell::UnitCell(LatticeSite const& s, LatticeSite const& t)
-   : Data_(1, s)
+   : Data_(new SiteListType(1, s))
 {
-   Data_.push_back(t);
-   OperatorMap_["I"] = UnitCellMPO(this, this->identity_mpo(), LatticeCommute::Bosonic, 0);
+   {
+      pvalue_lock<SiteListType> Lock(Data_);
+      Lock->push_back(t);
+   }
+   this->SetDefaultOperators();
 }
 
 UnitCell::UnitCell(LatticeSite const& s, LatticeSite const& t, LatticeSite const& u)
-   : Data_(1, s)
+   : Data_(new SiteListType(1, s))
 {
-   Data_.push_back(t);
-   Data_.push_back(u);
-   OperatorMap_["I"] = UnitCellMPO(this, this->identity_mpo(), LatticeCommute::Bosonic, 0);
+   {
+      pvalue_lock<SiteListType> Lock(Data_);
+      Lock->push_back(t);
+      Lock->push_back(u);
+   }
+   this->SetDefaultOperators();
 }
 
 UnitCell::UnitCell(LatticeSite const& s, LatticeSite const& t, LatticeSite const& u, LatticeSite const& v)
-   : Data_(1, s)
+   : Data_(new SiteListType(1, s))
 {
-   Data_.push_back(t);
-   Data_.push_back(u);
-   Data_.push_back(v);
-   OperatorMap_["I"] = UnitCellMPO(this, this->identity_mpo(), LatticeCommute::Bosonic, 0);
+   {
+      pvalue_lock<SiteListType> Lock(Data_);
+      Lock->push_back(t);
+      Lock->push_back(u);
+      Lock->push_back(v);
+   }
+   this->SetDefaultOperators();
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s)
-   : Data_(1, CoerceSL(sl,s))
+   : Data_(new SiteListType(1, CoerceSL(sl,s)))
 {
-   OperatorMap_["I"] = UnitCellMPO(this, this->identity_mpo(), LatticeCommute::Bosonic, 0);
+   this->SetDefaultOperators();
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t)
-   : Data_(1, CoerceSL(sl, s))
+   : Data_(new SiteListType(1, CoerceSL(sl, s)))
 {
-   Data_.push_back(CoerceSL(sl, t));
-   OperatorMap_["I"] = UnitCellMPO(this, this->identity_mpo(), LatticeCommute::Bosonic, 0);
+   {
+      pvalue_lock<SiteListType> Lock(Data_);
+      Lock->push_back(CoerceSL(sl, t));
+   }
+   this->SetDefaultOperators();
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t, LatticeSite const& u)
-   : Data_(1, CoerceSL(sl, s))
+   : Data_(new SiteListType(1, CoerceSL(sl, s)))
 {
-   Data_.push_back(CoerceSL(sl, t));
-   Data_.push_back(CoerceSL(sl, u));
-   OperatorMap_["I"] = UnitCellMPO(this, this->identity_mpo(), LatticeCommute::Bosonic, 0);
+   {
+      pvalue_lock<SiteListType> Lock(Data_);
+      Lock->push_back(CoerceSL(sl, t));
+      Lock->push_back(CoerceSL(sl, u));
+   }
+   this->SetDefaultOperators();
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t, 
-                 LatticeSite const& u, LatticeSite const& v)
-   : Data_(1, CoerceSL(sl, s))
+		   LatticeSite const& u, LatticeSite const& v)
+   : Data_(new SiteListType(1, CoerceSL(sl, s)))
 {
-   Data_.push_back(CoerceSL(sl, t));
-   Data_.push_back(CoerceSL(sl, u));
-   Data_.push_back(CoerceSL(sl, v));
-   OperatorMap_["I"] = UnitCellMPO(this, this->identity_mpo(), LatticeCommute::Bosonic, 0);
+   {
+      pvalue_lock<SiteListType> Lock(Data_);
+      Lock->push_back(CoerceSL(sl, t));
+      Lock->push_back(CoerceSL(sl, u));
+      Lock->push_back(CoerceSL(sl, v));
+   }
+   this->SetDefaultOperators();
 }
 
 UnitCell::UnitCell(int RepeatCount, UnitCell const& l)
+   : Data_(new SiteListType())
 {
-   Data_.reserve(l.size()*RepeatCount);
-   for (int i = 0; i < RepeatCount; ++i)
    {
-      Data_.insert(Data_.end(), l.begin(), l.end());
+      pvalue_lock<SiteListType> Lock(Data_);
+      Lock->reserve(l.size()*RepeatCount);
+      for (int i = 0; i < RepeatCount; ++i)
+      {
+	 Lock->insert(Lock->end(), l.Data_->begin(), l.Data_->end());
+      }
    }
-   OperatorMap_["I"] = UnitCellMPO(this, this->identity_mpo(), LatticeCommute::Bosonic, 0);
+   this->SetDefaultOperators();
 }
 
 UnitCell::UnitCell(UnitCell const& x1, UnitCell const& x2)
    : Data_(x1.Data_)
 {
-   Data_.insert(Data_.end(), x2.begin(), x2.end());
-   OperatorMap_["I"] = UnitCellMPO(this, this->identity_mpo(), LatticeCommute::Bosonic, 0);
+   {
+      pvalue_lock<SiteListType> Lock(Data_);
+      Lock->insert(Lock->end(), x2.Data_->begin(), x2.Data_->end());
+   }
+   this->SetDefaultOperators();
 }
 
 UnitCell::UnitCell(UnitCell const& x1, UnitCell const& x2, UnitCell const& x3)
    : Data_(x1.Data_)
 {
-   Data_.insert(Data_.end(), x2.begin(), x2.end());
-   Data_.insert(Data_.end(), x3.begin(), x3.end());
-   OperatorMap_["I"] = UnitCellMPO(this, this->identity_mpo(), LatticeCommute::Bosonic, 0);
+   {
+      pvalue_lock<SiteListType> Lock(Data_);
+      Lock->insert(Lock->end(), x2.Data_->begin(), x2.Data_->end());
+      Lock->insert(Lock->end(), x3.Data_->begin(), x3.Data_->end());
+   }
+   this->SetDefaultOperators();
 }
 
 UnitCell::UnitCell(UnitCell const& x1, UnitCell const& x2, UnitCell const& x3, UnitCell const& x4)
    : Data_(x1.Data_)
 {
-   Data_.insert(Data_.end(), x2.begin(), x2.end());
-   Data_.insert(Data_.end(), x3.begin(), x3.end());
-   Data_.insert(Data_.end(), x4.begin(), x4.end());
-   OperatorMap_["I"] = UnitCellMPO(this, this->identity_mpo(), LatticeCommute::Bosonic, 0);
+   {
+      pvalue_lock<SiteListType> Lock(Data_);
+      Lock->insert(Lock->end(), x2.Data_->begin(), x2.Data_->end());
+      Lock->insert(Lock->end(), x3.Data_->begin(), x3.Data_->end());
+      Lock->insert(Lock->end(), x4.Data_->begin(), x4.Data_->end());
+   }
+   this->SetDefaultOperators();
 }
 
 UnitCell::UnitCell(int Size, LatticeSite const& s)
-   : Data_(Size, s)
+   : Data_(new SiteListType(Size, s))
 {
-   OperatorMap_["I"] = UnitCellMPO(this, this->identity_mpo(), LatticeCommute::Bosonic, 0);
+   this->SetDefaultOperators();
 }
 
 UnitCell&
@@ -141,17 +168,13 @@ UnitCell::operator=(UnitCell const& Other)
 {
    Data_ = Other.Data_;
    OperatorMap_ = Other.OperatorMap_;
-   for (operator_map_type::iterator I = OperatorMap_.begin(); I != OperatorMap_.end(); ++I)
-   {
-      I->second.SetUnitCell(this);
-   }
    return *this;
 }
 
 LatticeSite const& 
 UnitCell::operator[](int n) const
 {
-   return Data_[n];
+   return (*Data_)[n];
 }
 
 bool
@@ -159,7 +182,7 @@ UnitCell::operator_exists(std::string const& s) const
 {
    if (OperatorMap_.find(s) != OperatorMap_.end())
       return true;
-   if (Data_.size() == 1 && Data_.front().operator_exists(s))
+   if (Data_->size() == 1 && Data_->front().operator_exists(s))
       return true;
    return false;
 }
@@ -171,7 +194,7 @@ UnitCell::Operator(std::string const& Op) const
    if (I != OperatorMap_.end())
       return I->second;
 
-   if (Data_.size() != 1)
+   if (Data_->size() != 1)
    {
       PANIC("Operator not found in unit cell")(Op);
    }
@@ -184,9 +207,9 @@ UnitCell::OperatorAtCell(std::string const& Op, int n) const
 {
    operator_map_type::const_iterator I = OperatorMap_.find(Op);
    if (I != OperatorMap_.end())
-      return UnitCellMPO(this, I->second.MPO(), I->second.Commute(), I->second.offset()+n);
+      return UnitCellMPO(Data_, I->second.MPO(), I->second.Commute(), I->second.offset()+n);
 
-   if (Data_.size() != 1)
+   if (Data_->size() != 1)
    {
       PANIC("Operator not found in unit cell")(Op);
    }
@@ -204,27 +227,27 @@ UnitCell::Operator(std::string const& Op)
 bool
 UnitCell::operator_exists(std::string const& Op, int n) const
 {
-   if (n < 0 || n >= int(Data_.size()))
+   if (n < 0 || n >= int(Data_->size()))
       return false;
-   return Data_[n].operator_exists(Op);
+   return (*Data_)[n].operator_exists(Op);
 }
 
 LatticeCommute
 UnitCell::Commute(std::string const& Op, int n) const
 {
-   CHECK(0 <= n && n < int(Data_.size()))("Site index is out of range")(n)(Data_.size());
-   return Data_[n][Op].Commute();
+   CHECK(0 <= n && n < int(Data_->size()))("Site index is out of range")(n)(Data_->size());
+   return (*Data_)[n][Op].Commute();
 }
 
 UnitCellMPO
 UnitCell::LocalOperator(std::string const& Op, int Cell, int n) const
 {
-   CHECK(0 <= n && n < int(Data_.size()))("Site index is out of range")(n)(Data_.size());
+   CHECK(0 <= n && n < int(Data_->size()))("Site index is out of range")(n)(Data_->size());
 
-   SiteOperator Operator = Data_[n][Op];
+   SiteOperator Operator = (*Data_)[n][Op];
    std::string SignOperator = Operator.Commute().SignOperator();
 
-   FiniteMPO Result(Data_.size());
+   FiniteMPO Result(Data_->size());
 
    BasisList Vacuum = make_vacuum_basis(Operator.GetSymmetryList());
    BasisList Basis = make_single_basis(Operator.TransformsAs());
@@ -232,11 +255,11 @@ UnitCell::LocalOperator(std::string const& Op, int Cell, int n) const
    // Assemble the JW-string.
    for (int i = 0; i < n; ++i)
    {
-      if (!Data_[i].operator_exists(SignOperator))
+      if (!(*Data_)[i].operator_exists(SignOperator))
       {
 	 WARNING("JW-string operator doesn't exist at a lattice site, using the identity")(i)(SignOperator);
       }
-      SimpleOperator Op = Data_[i].operator_exists(SignOperator) ? Data_[i][SignOperator] : Data_[i]["I"];
+      SimpleOperator Op = (*Data_)[i].operator_exists(SignOperator) ? (*Data_)[i][SignOperator] : (*Data_)[i]["I"];
       Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Basis, Basis);
       Result[i](0,0) = Op;
    }
@@ -244,12 +267,12 @@ UnitCell::LocalOperator(std::string const& Op, int Cell, int n) const
    Result[n](0,0) = Operator;
    for (int i = n+1; i < this->size(); ++i)
    {
-      SimpleOperator I = Data_[i]["I"];
+      SimpleOperator I = (*Data_)[i]["I"];
       Result[i] = OperatorComponent(I.Basis1(), I.Basis2(), Vacuum, Vacuum);
       Result[i](0,0) = I;
    }
 
-   return UnitCellMPO(this, Result, Operator.Commute(), Cell*this->size());
+   return UnitCellMPO(Data_, Result, Operator.Commute(), Cell*this->size());
 }
 
 UnitCellMPO
@@ -263,7 +286,7 @@ UnitCell::OperatorFunction(std::string const& Op,
 			   std::vector<std::complex<double> > const& Params) const
 {
    PANIC("Operator function is not defined");
-   return UnitCellMPO(this, FiniteMPO(), LatticeCommute::None, 0);
+   return UnitCellMPO(Data_, FiniteMPO(), LatticeCommute::None, 0);
 }
 
 UnitCellMPO
@@ -271,7 +294,7 @@ UnitCell::OperatorFunction(std::string const& Op, int n,
 			   std::vector<std::complex<double> > const& Params) const
 {
    PANIC("Operator function is not defined");
-   return UnitCellMPO(this, FiniteMPO(), LatticeCommute::None, 0);
+   return UnitCellMPO(Data_, FiniteMPO(), LatticeCommute::None, 0);
 }
 
 UnitCellMPO
@@ -292,7 +315,7 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
 
    if (Cell_i == Cell_j && i == j)
    {
-      return UnitCellMPO(this, this->identity_mpo(), LatticeCommute::Bosonic, Cell_i);
+      return UnitCellMPO(Data_, identity_mpo(*Data_), LatticeCommute::Bosonic, Cell_i);
    }
 
    BasisList Basis_i = this->operator[](i).Basis1();
@@ -326,9 +349,23 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
    }
 
    Result.debug_check_structure();
-   return UnitCellMPO(this, Result, LatticeCommute::Bosonic, Cell_i);
+   return UnitCellMPO(Data_, Result, LatticeCommute::Bosonic, Cell_i);
 }
 
+void
+UnitCell::SetDefaultOperators()
+{
+   // do nothing if the UnitCell is null
+   if (this->empty())
+      return;
+
+   OperatorMap_["I"] = UnitCellMPO(Data_, identity_mpo(*Data_), LatticeCommute::Bosonic, 0);
+
+   // we don't need the R operator if we have string() in the parser.
+   //   OperatorMap_["R"] = UnitCellMPO(Data_, string_mpo(Data_, ), LatticeCommute::Bosonic, 0);
+}
+
+#if 0
 FiniteMPO
 UnitCell::identity_mpo(QuantumNumbers::QuantumNumber const& q) const
 {
@@ -362,7 +399,7 @@ UnitCell::string_mpo(std::string const& OpName, QuantumNumbers::QuantumNumber co
       {
 	 WARNING("JW-string operator doesn't exist at a lattice site, using the identity")(i)(OpName);
       }
-      SimpleOperator Op = Data_[i].operator_exists(OpName) ? Data_[i][OpName] : this->operator[](i)["I"];
+      SimpleOperator Op = (*Data)[i].operator_exists(OpName) ? (*Data)[i][OpName] : this->operator[](i)["I"];
       Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Vacuum, Vacuum);
       Result[i](0,0) = Op;
    }
@@ -374,6 +411,8 @@ UnitCell::string_mpo(LatticeCommute Com, QuantumNumbers::QuantumNumber const& Tr
 {
    return this->string_mpo(Com.SignOperator(), Trans);
 }
+#endif
+
 
 PStream::opstream& operator<<(PStream::opstream& out, UnitCell const& L)
 {
@@ -386,11 +425,6 @@ PStream::ipstream& operator>>(PStream::ipstream& in, UnitCell& L)
 {
    in >>  L.Data_;
    in >>  L.OperatorMap_;
-   // set the UnitCell member of each UnitCellOperator
-   for (UnitCell::operator_map_type::iterator I = L.OperatorMap_.begin(); I != L.OperatorMap_.end(); ++I)
-   {
-      I->second.SetUnitCell(&L);
-   }
    return in;
 }
 

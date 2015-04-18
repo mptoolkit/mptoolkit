@@ -68,17 +68,17 @@ class UnitCell
 
       UnitCell& operator=(UnitCell const& Other);
       
-      SymmetryList GetSymmetryList() const { return Data_.front().GetSymmetryList(); }
+      SymmetryList GetSymmetryList() const { return Data_->front().GetSymmetryList(); }
       
       // functions acting on the LatticeSite
       
-      bool empty() const { return Data_.empty(); }
-      int size() const { return Data_.size(); }
-      value_type const& front() const { return Data_.front(); }
-      value_type const& back() const { return Data_.back(); }
+      bool empty() const { return Data_->empty(); }
+      int size() const { return Data_->size(); }
+      value_type const& front() const { return Data_->front(); }
+      value_type const& back() const { return Data_->back(); }
       
-      const_iterator begin() const { return Data_.begin(); }
-      const_iterator end() const { return Data_.end(); }
+      const_iterator begin() const { return Data_->begin(); }
+      const_iterator end() const { return Data_->end(); }
       
       // returns the i'th LatticeSite
       LatticeSite const& operator[](int i) const;
@@ -93,6 +93,8 @@ class UnitCell
       typename Visitor::result_type
       apply_for_each_site(Visitor const& v);
 #endif
+
+      SiteListPtrType const& GetSiteList() const { return Data_; }
 
       // returns the local basis at site i of the lattice
       SiteBasis LocalBasis(int i) const
@@ -151,7 +153,7 @@ class UnitCell
       const_operator_iterator operator_begin() const;
       const_operator_iterator operator_end() const;
 
-
+#if 0
       // returns the FiniteMPO for the identity operator acting on the unit cell
       FiniteMPO identity_mpo() const;
 
@@ -164,9 +166,14 @@ class UnitCell
 
       // Returns the Jordan-Wigner string MPO corresponding to the given LatticeCommute
       FiniteMPO string_mpo(LatticeCommute Com, QuantumNumbers::QuantumNumber const& Trans) const;
+#endif
 
    private:
-      data_type Data_;
+      // Set the default operators - currently the Identity operator I.
+      // Called after Data_ is initialized.
+      void SetDefaultOperators();
+
+      pvalue_ptr<SiteListType> Data_;
       operator_map_type OperatorMap_;
       
       friend PStream::opstream& operator<<(PStream::opstream& out, UnitCell const& L);

@@ -12,6 +12,7 @@
 #define FINITE_MPO_H_JDCHJKEHY589758YUER89H489
 
 #include "generic_mpo.h"
+#include "lattice/latticesite.h"
 
 class FiniteMPO
 {
@@ -213,6 +214,19 @@ MakeIdentityFrom(FiniteMPO const& x, QuantumNumber const& q);
 
 // output to a stream
 std::ostream& operator<<(std::ostream& out, FiniteMPO const& x);
+
+// returns the FiniteMPO for the identity operator acting on the unit cell
+// with quantum number q in the auxiliary basis
+FiniteMPO identity_mpo(SiteListType const& SiteList, QuantumNumbers::QuantumNumber const& q);
+
+// returns the FiniteMPO for the identity operator acting on the unit cell
+FiniteMPO identity_mpo(SiteListType const& SiteList);
+
+// Returns the string MPO corresponding to the given local operator name
+FiniteMPO string_mpo(SiteListType const& SiteList,
+		     std::string const& OpName, QuantumNumbers::QuantumNumber const& Trans);
+
+FiniteMPO string_mpo(SiteListType const& SiteList, std::string const& OpName);
 
 #include "finite_mpo.cc"
 

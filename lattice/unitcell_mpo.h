@@ -9,9 +9,7 @@
 #define MPTOOLKIT_LATTICE_UNITCELL_MPO_H
 
 #include "mpo/finite_mpo.h"
-#include "lattice/siteoperator.h"  // for LatticeCommute
-
-class UnitCell;
+#include "lattice/latticesite.h"
 
 class UnitCellMPO
 {
@@ -21,7 +19,7 @@ class UnitCellMPO
 
       UnitCellMPO();
 
-      UnitCellMPO(UnitCell const* Cell_, FiniteMPO const& Op_, LatticeCommute Com_, int Offset_ = 0);
+      UnitCellMPO(SiteListPtrType const& SiteList_, FiniteMPO const& Op_, LatticeCommute Com_, int Offset_ = 0);
 
       // compiler-defined default ctor, copy and assignment will work OK
 
@@ -79,7 +77,7 @@ class UnitCellMPO
 
       LatticeCommute Commute() const { return Com; }
 
-      UnitCell const& GetUnitCell() const { return *Cell; }
+      SiteListPtrType const& GetSiteList() const { return SiteList; }
 
       // Extends the MPO with JW-strings on the left and identity on the right
       // so that it covers at least all sites from OtherOffset to OtherOffset+OtherSite.
@@ -90,22 +88,13 @@ class UnitCellMPO
       void ExtendToCoverUnitCell(int OtherSize);
 
    private:
-      // private constructor used by UnitCell
-      //UnitCellMPO(UnitCell const* Call_, int Size, LatticeCommute Com_, int Offset_);
-
-      // Sets the unit cell.  This is needed when reading an operator from a stream
-      void SetUnitCell(UnitCell const* Cell_) { Cell = Cell_; }
-
-      UnitCell const* Cell;
+      SiteListPtrType SiteList;
       FiniteMPO Op;
       LatticeCommute Com;
       int Offset;
 
       friend PStream::opstream& operator<<(PStream::opstream& out, UnitCellMPO const& L);
       friend PStream::ipstream& operator>>(PStream::ipstream& in, UnitCellMPO& L);
-      friend PStream::ipstream& operator>>(PStream::ipstream& in, UnitCell& L);
-
-      friend class UnitCell;
 };
 
 std::ostream& operator<<(std::ostream& out, UnitCellMPO const& Op);

@@ -140,6 +140,8 @@ int main(int argc, char** argv)
       InfiniteLattice Lattice;
       boost::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(OpStr);     
 
+      CHECK(Op.GetSiteList() == Lattice.GetUnitCell().GetSiteList());
+
       if (Print)
       {
 	 std::cout << Op << '\n';
@@ -156,8 +158,9 @@ int main(int argc, char** argv)
       int PsiSize = PsiOrtho.size();
 
       // paranoid check the orthogonalization of the wavefunction
-      DEBUG_CHECK(norm_frob(delta_shift(inject_left(Identity, PsiOrtho, PsiOrtho), QShift) - Identity) < 1E-10);
-      DEBUG_CHECK(norm_frob(inject_right(Rho, PsiOrtho, PsiOrtho) - delta_shift(Rho, QShift)) < 1E-10);
+      //DEBUG_CHECK(norm_frob(delta_shift(inject_left(Identity, PsiOrtho, PsiOrtho), QShift) - Identity) < 1E-10)
+      //	 (delta_shift(inject_left(Identity, PsiOrtho, PsiOrtho), QShift))(Identity)(norm_frob(delta_shift(inject_left(Identity, PsiOrtho, PsiOrtho), QShift) - Identity));
+	 //DEBUG_CHECK(norm_frob(inject_right(Rho, PsiOrtho, PsiOrtho) - delta_shift(Rho, QShift)) < 1E-10);
 
       // extend Op1 to a multiple of the wavefunction size
       Op.ExtendToCoverUnitCell(PsiOrtho.size());

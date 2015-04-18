@@ -5,32 +5,23 @@
 #include "common/statistics.h"
 
 UnitCellMPO::UnitCellMPO()
-   : Cell(NULL)
 {
 }
 
-UnitCellMPO::UnitCellMPO(UnitCell const* Cell_, FiniteMPO const& Op_, LatticeCommute Com_, int Offset_)
-   : Cell(Cell_), Op(Op_), Com(Com_), Offset(Offset_)
+UnitCellMPO::UnitCellMPO(SiteListPtrType const& SiteList_, FiniteMPO const& Op_, LatticeCommute Com_, int Offset_)
+   : SiteList(SiteList_), Op(Op_), Com(Com_), Offset(Offset_)
 {
 }
-
-#if 0
-UnitCellMPO::UnitCellMPO(UnitCell const* Cell_, int Size, LatticeCommute Com_, int Offset_)
-   : Cell(Cell_), Op(Size, Com_), Com(Com_), Offset(Offset_)
-{
-}
-#endif
 
 PStream::opstream& operator<<(PStream::opstream& out, UnitCellMPO const& L)
 {
-   out << L.Op << L.Com << L.Offset;
+   out << L.SiteList << L.Op << L.Com << L.Offset;
    return out;
 }
 
 PStream::ipstream& operator>>(PStream::ipstream& in, UnitCellMPO& L)
 {
-   in >> L.Op >> L.Com >> L.Offset;
-   L.Cell = NULL;
+   in >> L.SiteList >> L.Op >> L.Com >> L.Offset;
    return in;
 }
 
@@ -61,14 +52,16 @@ UnitCellMPO::ExtendToCover(int OtherSize, int OtherOffset)
    if (Offset > OtherOffset)
    {
       // need to extend this operator at the front with JW strings
-      Op = join(repeat(Cell->string_mpo(Com, Op.qn1()), (Offset-OtherOffset) / Cell->size()), Op);
+      Op = join(repeat(string_mpo(*SiteList, Com.SignOperator(), Op.qn1()), 
+		       (Offset-OtherOffset) / SiteList->size()), Op);
       Offset = OtherOffset;
    }
 
    // do we need to extend the operator on the right?
    if (Offset+Op.size() < OtherOffset+OtherSize)
    {
-      Op = join(Op, repeat(Cell->identity_mpo(Op.qn2()), (OtherOffset+OtherSize-Offset-Op.size())/Cell->size()));
+      Op = join(Op, repeat(identity_mpo(*SiteList, Op.qn2()), 
+			   (OtherOffset+OtherSize-Offset-Op.size())/SiteList->size()));
    }
 }
 
@@ -151,7 +144,7 @@ UnitCellMPO operator+(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(&xCopy.GetUnitCell(), xCopy.MPO()+yCopy.MPO(), xCopy.Commute(), xCopy.offset());
+   return UnitCellMPO(xCopy.GetSiteList(), xCopy.MPO()+yCopy.MPO(), xCopy.Commute(), xCopy.offset());
 }
 
 UnitCellMPO operator-(UnitCellMPO const& x, UnitCellMPO const& y)
@@ -166,34 +159,34 @@ UnitCellMPO operator-(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(&xCopy.GetUnitCell(), xCopy.MPO()-yCopy.MPO(), xCopy.Commute(), xCopy.offset());
+   return UnitCellMPO(xCopy.GetSiteList(), xCopy.MPO()-yCopy.MPO(), xCopy.Commute(), xCopy.offset());
 }
 
 UnitCellMPO operator-(UnitCellMPO const& x)
 {
    if (x.is_null())
       return x;
-   return UnitCellMPO(&x.GetUnitCell(), -x.MPO(), x.Commute(), x.offset());
+   return UnitCellMPO(x.GetSiteList(), -x.MPO(), x.Commute(), x.offset());
 }
 
 UnitCellMPO operator*(double a, UnitCellMPO const& x)
 {
-   return UnitCellMPO(&x.GetUnitCell(), a*x.MPO(), x.Commute(), x.offset());
+   return UnitCellMPO(x.GetSiteList(), a*x.MPO(), x.Commute(), x.offset());
 }
 
 UnitCellMPO operator*(UnitCellMPO const& x, double a)
 {
-   return UnitCellMPO(&x.GetUnitCell(), x.MPO()*a, x.Commute(), x.offset());
+   return UnitCellMPO(x.GetSiteList(), x.MPO()*a, x.Commute(), x.offset());
 }
 
 UnitCellMPO operator*(std::complex<double> a, UnitCellMPO const& x)
 {
-   return UnitCellMPO(&x.GetUnitCell(), a*x.MPO(), x.Commute(), x.offset());
+   return UnitCellMPO(x.GetSiteList(), a*x.MPO(), x.Commute(), x.offset());
 }
 
 UnitCellMPO operator*(UnitCellMPO const& x, std::complex<double> a)
 {
-   return UnitCellMPO(&x.GetUnitCell(), x.MPO()*a, x.Commute(), x.offset());
+   return UnitCellMPO(x.GetSiteList(), x.MPO()*a, x.Commute(), x.offset());
 }
 
 UnitCellMPO prod(UnitCellMPO const& x, UnitCellMPO const& y, QuantumNumbers::QuantumNumber const& q)
@@ -202,7 +195,7 @@ UnitCellMPO prod(UnitCellMPO const& x, UnitCellMPO const& y, QuantumNumbers::Qua
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(&xCopy.GetUnitCell(), prod(xCopy.MPO(), yCopy.MPO(), q), 
+   return UnitCellMPO(xCopy.GetSiteList(), prod(xCopy.MPO(), yCopy.MPO(), q), 
 		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
@@ -212,7 +205,7 @@ UnitCellMPO prod(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(&xCopy.GetUnitCell(), prod(xCopy.MPO(), yCopy.MPO()), 
+   return UnitCellMPO(xCopy.GetSiteList(), prod(xCopy.MPO(), yCopy.MPO()), 
 		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
@@ -223,7 +216,7 @@ UnitCellMPO operator*(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(&xCopy.GetUnitCell(), prod(xCopy.MPO(), yCopy.MPO()), 
+   return UnitCellMPO(xCopy.GetSiteList(), prod(xCopy.MPO(), yCopy.MPO()), 
 		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
@@ -233,7 +226,7 @@ UnitCellMPO dot(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(&xCopy.GetUnitCell(), dot(xCopy.MPO(), yCopy.MPO()), 
+   return UnitCellMPO(xCopy.GetSiteList(), dot(xCopy.MPO(), yCopy.MPO()), 
 		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
@@ -248,7 +241,7 @@ UnitCellMPO cross(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(&xCopy.GetUnitCell(), cross(xCopy.MPO(), yCopy.MPO()), 
+   return UnitCellMPO(xCopy.GetSiteList(), cross(xCopy.MPO(), yCopy.MPO()), 
 		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
@@ -258,41 +251,41 @@ UnitCellMPO outer(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(&xCopy.GetUnitCell(), outer(xCopy.MPO(), yCopy.MPO()), 
+   return UnitCellMPO(xCopy.GetSiteList(), outer(xCopy.MPO(), yCopy.MPO()), 
 		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
 // project a (reducible) operator onto an irreducible component
 UnitCellMPO project(UnitCellMPO const& x, QuantumNumbers::QuantumNumber const& q)
 {
-   return UnitCellMPO(&x.GetUnitCell(), project(x.MPO(), q), x.Commute(), x.offset());
+   return UnitCellMPO(x.GetSiteList(), project(x.MPO(), q), x.Commute(), x.offset());
 }
 
 UnitCellMPO pow(UnitCellMPO const& x, int n)
 {
-   return UnitCellMPO(&x.GetUnitCell(), pow(x.MPO(), n), x.Commute()*n, x.offset());
+   return UnitCellMPO(x.GetSiteList(), pow(x.MPO(), n), x.Commute()*n, x.offset());
 }
 
 // Exponential operator.
 UnitCellMPO exp(UnitCellMPO const& x)
 {
    CHECK_EQUAL(x.Commute(), LatticeCommute::Bosonic)("Operator must be bosonic to calculate the exponential");
-   return UnitCellMPO(&x.GetUnitCell(), exp(x.MPO()), LatticeCommute::Bosonic, x.offset());
+   return UnitCellMPO(x.GetSiteList(), exp(x.MPO()), LatticeCommute::Bosonic, x.offset());
 }
 
 // Conjugate
 UnitCellMPO conj(UnitCellMPO const& x)
 {
-   return UnitCellMPO(&x.GetUnitCell(), conj(x.MPO()), x.Commute(), x.offset());
+   return UnitCellMPO(x.GetSiteList(), conj(x.MPO()), x.Commute(), x.offset());
 }
 
 // Adjoint
 UnitCellMPO adjoint(UnitCellMPO const& x)
 {
-   return UnitCellMPO(&x.GetUnitCell(), adjoint(x.MPO()), x.Commute(), x.offset());
+   return UnitCellMPO(x.GetSiteList(), adjoint(x.MPO()), x.Commute(), x.offset());
 }
 
 UnitCellMPO MakeIdentityFrom(UnitCellMPO const& x)
 {
-   return UnitCellMPO(&x.GetUnitCell(), x.GetUnitCell().identity_mpo(), LatticeCommute::Bosonic, x.offset());
+   return UnitCellMPO(x.GetSiteList(), identity_mpo(*x.GetSiteList()), LatticeCommute::Bosonic, x.offset());
 }

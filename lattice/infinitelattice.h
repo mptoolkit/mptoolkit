@@ -61,17 +61,17 @@ class InfiniteLattice
 };
 
 // Constucts a TriangularMPO from the summation over unit cell translations of a finite MPO.
-// The Op must have a size() that is a multiple of UnitCellSize, which must itself be an
-// integer multiple of UnitCell.size().
-TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
+// The Op must have a size() that is a multiple of SiteListTypeSize, which must itself be an
+// integer multiple of SiteListType.size().
+TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
 
-TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute Com);
+TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& Op, LatticeCommute Com);
 
 TriangularMPO sum_unit(UnitCellMPO const& Op, int UnitCellSize);
 
 TriangularMPO sum_unit(UnitCellMPO const& Op);
 
 // Constructs a zero triangular MPO
-TriangularMPO make_zero(UnitCell const& Cell);
+TriangularMPO make_zero(SiteListType const& SiteList);
 
 #endif

@@ -586,3 +586,50 @@ MakeIdentityFrom(FiniteMPO const& x, QuantumNumber const& q)
    return Result;
 }
 
+FiniteMPO identity_mpo(SiteListType const& SiteList, QuantumNumbers::QuantumNumber const& q)
+{
+   FiniteMPO Result(SiteList.size());
+   BasisList b = make_single_basis(q);
+   for (unsigned i = 0; i < SiteList.size(); ++i)
+   {
+      Result[i] = OperatorComponent(SiteList[i].Basis1(), b, b);
+      Result[i](0,0) = SiteList[i]["I"];
+   }
+   return Result;
+}
+
+FiniteMPO identity_mpo(SiteListType const& SiteList)
+{
+   if (SiteList.empty())
+      return FiniteMPO();
+   return identity_mpo(SiteList, QuantumNumbers::QuantumNumber(SiteList[0].GetSymmetryList()));
+}
+
+FiniteMPO string_mpo(SiteListType const& SiteList,
+		     std::string const& OpName, QuantumNumbers::QuantumNumber const& Trans)
+{
+   FiniteMPO Result(SiteList.size());
+
+   BasisList Vacuum = make_single_basis(Trans);
+
+   // Assemble the JW-string
+   for (unsigned i = 0; i < SiteList.size(); ++i)
+   {
+      if (!SiteList[i].operator_exists(OpName))
+      {
+	 WARNING("JW-string operator doesn't exist at a lattice site, using the identity")(i)(OpName);
+      }
+      SimpleOperator Op = SiteList[i].operator_exists(OpName) ? SiteList[i][OpName] 
+	 : SiteList[i]["I"];
+      Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Vacuum, Vacuum);
+      Result[i](0,0) = Op;
+   }
+   return Result;
+}   
+
+FiniteMPO string_mpo(SiteListType const& SiteList, std::string const& OpName)
+{
+   if (SiteList.empty())
+      return FiniteMPO();
+   return string_mpo(SiteList, OpName, QuantumNumbers::QuantumNumber(SiteList[0].GetSymmetryList()));
+}

@@ -164,7 +164,8 @@ allobj = $(quantumnumbersobj) \
 	 $(linearalgebraobj)  \
 	 $(commonobj)
 
-infinite-models = spinchain-su2 spinchain-spin2-su2 spin-tri-yc-su2 hubbard-u1su2 hubbard-tri-u1su2
+infinite-models = spinchain-su2 spinchain-spin2-su2 spin-tri-yc-su2 hubbard-u1su2 \
+                  hubbard-tri-u1su2 bosehubbard-ladder-u1 bosehubbard-flux-u1
 
 mp-models = hubbard-u1u1 hubbard-t-u1u1 hubbard-u1su2 hubbard-so4 hubbard-t-so4 \
             hubbard-trap-u1su2 bosehubbard-spinless-u1 bosehubbard-spinless hubbardladder-so4 \

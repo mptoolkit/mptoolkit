@@ -40,7 +40,7 @@ InfiniteLattice::operator[](std::string const& Op)
    triangular_map_type::iterator I = OperatorMap_.find(Op);
    if (I == OperatorMap_.end())
    {
-      OperatorMap_[Op] = make_zero(this->GetUnitCell());
+      OperatorMap_[Op] = make_zero(*this->GetUnitCell().GetSiteList());
       I = OperatorMap_.find(Op);
    }
    return I->second;
@@ -104,27 +104,27 @@ TriangularMPO sum_unit(UnitCellMPO const& Op)
 {
    if (Op.is_null())
       return TriangularMPO();
-   return sum_unit(Op.GetUnitCell(), Op.MPO(), Op.Commute(), Op.GetUnitCell().size());
+   return sum_unit(*Op.GetSiteList(), Op.MPO(), Op.Commute(), Op.GetSiteList()->size());
 }
 
 TriangularMPO sum_unit(UnitCellMPO const& Op, int UnitCellSize)
 {
    if (Op.is_null())
       return TriangularMPO();
-   return sum_unit(Op.GetUnitCell(), Op.MPO(), Op.Commute(), UnitCellSize);
+   return sum_unit(*Op.GetSiteList(), Op.MPO(), Op.Commute(), UnitCellSize);
 }
 
 TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute Com)
 {
-   return sum_unit(Cell, Op, Com, Cell.size());
+   return sum_unit(*Cell.GetSiteList(), Op, Com, Cell.size());
 }
 
-TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize)
+TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize)
 {
    if (Op.is_null())
       return TriangularMPO();
    CHECK(Op.is_irreducible());
-   CHECK(UnitCellSize % Cell.size() == 0)
+   CHECK(UnitCellSize % SiteList.size() == 0)
       ("UnitCellSize for sum_unit() must be a multiple of UnitCell.size()");
    CHECK(Op.size() % UnitCellSize == 0)
       ("Operator for sum_unit() must be a multiple of the unit cell");
@@ -157,7 +157,7 @@ TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute
    // which is the desired operator.  This is quite straightforward,
    // since X,A have 1 row, and F,I have 1 column.
 
-   DEBUG_TRACE(Op.size())(UnitCellSize)(Cell.size());
+   DEBUG_TRACE(Op.size())(UnitCellSize)(SiteList.size());
 
    // To construct this operator, we firstly split Op into UnitCellSize pieces
    std::vector<std::vector<OperatorComponent> > SplitOp;
@@ -172,29 +172,29 @@ TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute
    }
 
    // And we need th JW string
-   FiniteMPO JW = Cell.string_mpo(Com.SignOperator(), Op.qn1());
+   FiniteMPO JW = string_mpo(SiteList, Com.SignOperator(), Op.qn1());
    
    // and finally the identity operator
-   FiniteMPO Ident = Cell.identity_mpo(Op.qn2());
+   FiniteMPO Ident = identity_mpo(SiteList, Op.qn2());
 
    TriangularMPO Result(UnitCellSize);
    for (int i = 0; i < UnitCellSize; ++i)
    {
       // Construct the basis
-      BasisList Basis1(Cell.GetSymmetryList());
-      BasisList Basis2(Cell.GetSymmetryList());
+      BasisList Basis1(Op.GetSymmetryList());
+      BasisList Basis2(Op.GetSymmetryList());
       if (i != 0)
-	 JoinBasis(Basis1, JW[i%Cell.size()].Basis1());
-      JoinBasis(Basis2, JW[i%Cell.size()].Basis2());
+	 JoinBasis(Basis1, JW[i%SiteList.size()].Basis1());
+      JoinBasis(Basis2, JW[i%SiteList.size()].Basis2());
 
       for (unsigned n = 0; n < SplitOp.size(); ++n)
       {
 	 JoinBasis(Basis1, SplitOp[n][i].Basis1());
 	 JoinBasis(Basis2, SplitOp[n][i].Basis2());
       }
-      JoinBasis(Basis1, Ident[i%Cell.size()].Basis1());
+      JoinBasis(Basis1, Ident[i%SiteList.size()].Basis1());
       if (i != int(UnitCellSize)-1)
-	 JoinBasis(Basis2, Ident[i%Cell.size()].Basis2());
+	 JoinBasis(Basis2, Ident[i%SiteList.size()].Basis2());
 
       DEBUG_TRACE(Basis1)(Basis2)(SplitOp.size());
 
@@ -204,15 +204,15 @@ TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute
       // The JW goes in the top left
       int r = 0;
       int c = 0;
-      SetComponents(C, JW[i%Cell.size()], r, c);
+      SetComponents(C, JW[i%SiteList.size()], r, c);
       if (i != 0)
-	 r += JW[i%Cell.size()].Basis1().size();
-      c += JW[i%Cell.size()].Basis2().size();
+	 r += JW[i%SiteList.size()].Basis1().size();
+      c += JW[i%SiteList.size()].Basis2().size();
 
       // the finite MPO components go along the diagonal
       for (unsigned n = 0; n < SplitOp.size()-1; ++n)
       {
-	 SetComponents(C, SplitOp[n][i%Cell.size()], r, c);
+	 SetComponents(C, SplitOp[n][i%SiteList.size()], r, c);
 	 r += SplitOp[n][i].Basis1().size();
 	 c += SplitOp[n][i].Basis2().size();
       }
@@ -221,11 +221,11 @@ TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute
       if (i != int(UnitCellSize)-1)
 	 c += SplitOp.back()[i].Basis2().size();
       // The identity goes in the bottom right
-      SetComponents(C, Ident[i%Cell.size()], r, c);
+      SetComponents(C, Ident[i%SiteList.size()], r, c);
 
       // check that we're at the end
-      CHECK_EQUAL(r+Ident[i%Cell.size()].Basis1().size(), Basis1.size());
-      CHECK_EQUAL(c+Ident[i%Cell.size()].Basis2().size(), Basis2.size());
+      CHECK_EQUAL(r+Ident[i%SiteList.size()].Basis1().size(), Basis1.size());
+      CHECK_EQUAL(c+Ident[i%SiteList.size()].Basis2().size(), Basis2.size());
 
       DEBUG_TRACE(C);
       
@@ -238,22 +238,25 @@ TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute
    return Result;
 }
 
-TriangularMPO make_zero(UnitCell const& Cell)
+TriangularMPO make_zero(SiteListType const& SiteList)
 {
+   if (SiteList.empty())
+      return TriangularMPO();
+
    // The auxiliary basis is the same at every site
    // Construct the basis
-   BasisList b(Cell.GetSymmetryList());
-   QuantumNumbers::QuantumNumber Ident(Cell.GetSymmetryList());
+   BasisList b(SiteList[0].GetSymmetryList());
+   QuantumNumbers::QuantumNumber Ident(SiteList[0].GetSymmetryList());
    b.push_back(Ident);
    b.push_back(Ident);
 
-   TriangularMPO Result(Cell.size());
-   for (int i = 0; i < Cell.size(); ++i)
+   TriangularMPO Result(SiteList.size());
+   for (unsigned i = 0; i < SiteList.size(); ++i)
    {
       
-      OperatorComponent C(Cell[i].Basis1(), Cell[i].Basis2(), b, b);
-      C(0,0) = SimpleOperator::make_identity(Cell[i].Basis1());
-      C(1,1) = SimpleOperator::make_identity(Cell[i].Basis1());
+      OperatorComponent C(SiteList[i].Basis1(), SiteList[i].Basis2(), b, b);
+      C(0,0) = SimpleOperator::make_identity(SiteList[i].Basis1());
+      C(1,1) = SimpleOperator::make_identity(SiteList[i].Basis1());
       Result[i] = C;
    }
 

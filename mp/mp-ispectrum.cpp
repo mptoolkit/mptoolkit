@@ -13,26 +13,6 @@
 #include "tensor/tensor_eigen.h"
 #include "mp-algorithms/arnoldi.h"
 #include "lattice/siteoperator-parser.h"
-
-#include "models/spin.h"
-#include "models/spin-u1.h"
-#include "models/spin-u1u1.h"
-#include "models/spin-z2.h"
-#include "models/spin-su2.h"
-#include "models/tj-u1su2.h"
-#include "models/tj-u1.h"
-#include "models/spinlessfermion-u1.h"
-#include "models/kondo-u1su2.h"
-#include "models/kondo-u1.h"
-#include "models/kondo-u1u1.h"
-#include "models/kondo-so4.h"
-#include "models/boson-u1.h"
-#include "models/boson-2component-u1z2.h"
-#include "models/hubbard-u1u1-old.h"
-#include "models/hubbard-u1u1.h"
-#include "models/hubbard-u1su2.h"
-#include "models/hubbard-so4.h"
-
 #include "linearalgebra/arpack_wrapper.h"
 
 namespace prog_opt = boost::program_options;
@@ -517,81 +497,15 @@ int main(int argc, char** argv)
 
       SimpleOperator MyOpL, MyOpR, MyOpL2;
       LatticeSite Site;
-      if (Model == "spin")
-      {
-	 Site = CreateSpinSite(Spin);
-      }
-      else if (Model == "spin-su2")
-      {
-	 Site = CreateSU2SpinSite(Spin);
-      }
-      else if (Model == "spin-u1")
-      {
-	 Site = CreateU1SpinSite(Spin);
-      }
-      else if (Model == "uls")
-      {
-	 Site = CreateU1U1SpinSite();
-      }
-      else if (Model == "spin-z2")
-      {
-	 Site = CreateZ2SpinSite(Spin);
-      }
-      else if (Model == "tj-u1")
-      {
-	 Site = CreateU1tJSite();
-      }
-      else if (Model == "sf-u1")
-      {
-	 Site = CreateU1SpinlessFermion();
-      }
-      else if (Model == "bh-u1")
-      {
-	 Site = BosonU1(NMax);
-      }
-      else if (Model == "bh2-u1z2")
-      {
-	 Site = CreateBoseHubbard2BosonsU1Z2Site(NMax);
-      }
-      else if (Model == "hubbard-u1u1")
-      {
-         Site = CreateU1U1HubbardSite();
-      }
-      else if (Model == "hubbard-u1u1-old")
-      {
-         Site = CreateU1U1HubbardOldOrderingSite();
-      }
-      else if (Model == "hubbard-u1su2")
-      {
-         Site = CreateU1SU2HubbardSite();
-      }
-      else if (Model == "hubbard-so4")
-      {
-         Site = CreateSO4HubbardSiteA();
-      }
-      else if (Model == "klm-u1")
-      {
-         Site = CreateU1KondoSite();
-      }
-      else if (Model == "klm-u1u1")
-      {
-         Site = CreateU1U1KondoSite();
-      }
-      else if (Model == "klm-so4")
-      {
-         Site = CreateSO4KondoSiteA();
-      }
-      else if (Model != "")
-      {
-	 PANIC("Unknown model");
-      }
 
-      if (!OpL.empty())
-	 MyOpL = Site[OpL];
-      if (!OpL2.empty())
-	 MyOpL2 = Site[OpL2];
-      if (!OpR.empty())
-	 MyOpR = Site[OpR];
+
+
+
+
+
+
+
+
 
       QuantumNumbers::QuantumNumberList OpLTransformsAs(1, MyOpL.TransformsAs());
       if (OpL2 != "I")
