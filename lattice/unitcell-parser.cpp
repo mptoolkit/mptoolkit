@@ -747,6 +747,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	    |   commutator_bracket
 	    |   swap_cell_expr
 	    |   swap_site_expr
+	    |   string_expression
 	    |   '(' >> expression >> ')'
 	    |   ('-' >> factor)[do_negate<element_type>(self.eval)]
 	    |   ('+' >> factor)
