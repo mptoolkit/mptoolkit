@@ -113,6 +113,16 @@ class UnitCell
       // adds it if it doesn't already exist.
       UnitCellMPO& Operator(std::string const& Op);
       
+      UnitCellMPO& operator[](std::string const& Op)
+      {
+	 return this->Operator(Op);
+      }
+
+      UnitCellMPO operator[](std::string const& Op) const
+      {
+	 return this->Operator(Op);
+      }
+
       // returns the operator, shifted to to the given cell number
       UnitCellMPO OperatorAtCell(std::string const& Op, int n) const;
 

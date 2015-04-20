@@ -47,15 +47,23 @@ int main(int argc, char** argv)
 
       LatticeSite Site = CreateU1SU2HubbardSite();
       UnitCell Cell(repeat(Site, 3));
-      InfiniteLattice Lattice(Cell);
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), Pdouble(Cell, "Pdouble"),
-	 Hu(Cell, "Hu"), N(Cell, "N");
+	 Hu(Cell, "Hu"), N(Cell, "N"), R(Cell, "R");
+      // parity operators
+      // **NOTE** Currently the swap_gate doesn't do fermion signs, so we
+      // need to add this by hand
+      Cell["Parity"] = Cell.swap_gate(0,2) * exp(math_const::pi*std::complex<double>(0,1)
+						 *((N[0]+N[2])*N[1]+N[0]*N[2]));
+      // Reflection operator.
+      R = R[0]*R[1]*R[2];
+
+      InfiniteLattice Lattice(Cell);
 
       Lattice["H_t"]  = sum_unit(-(dot(CH(0)[1], C(1)[1]) + dot(C(0)[1], CH(1)[1])));
       Lattice["H_t2"] = sum_unit(-(dot(CH(0)[1], C(2)[1]) + dot(C(0)[1], CH(2)[1])));
-      Lattice["H_tc"] = sum_unit(-(dot(CH(0)[0], C(0)[1]) + dot(C(0)[0], CH(1)[1])
-				   + dot(CH(0)[1], C(0)[2]) + dot(C(0)[1], CH(1)[2])
-				   + dot(CH(0)[0], C(0)[2]) + dot(C(0)[0], CH(1)[2])));
+      Lattice["H_tc"] = sum_unit(-(dot(CH(0)[0], C(0)[1]) + dot(C(0)[0], CH(0)[1])
+				   + dot(CH(0)[1], C(0)[2]) + dot(C(0)[1], CH(0)[2])
+				   + dot(CH(0)[0], C(0)[2]) + dot(C(0)[0], CH(0)[2])));
       Lattice["H_tp"] = sum_unit(-(dot(CH(0)[0], C(1)[0]) + dot(C(0)[0], CH(1)[0])
 				   + dot(CH(0)[2], C(1)[2]) + dot(C(0)[2], CH(1)[2])));
       Lattice["H_U"]  = sum_unit(Pdouble(0)[0] + Pdouble(0)[1] + Pdouble(0)[2]);

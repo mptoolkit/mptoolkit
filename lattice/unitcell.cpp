@@ -306,6 +306,8 @@ UnitCell::swap_gate(int i, int j) const
 UnitCellMPO
 UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
 {
+   CHECK(i >= 0 && i < this->size())("Site index is outside the unit cell!")(i)(this->size());
+   CHECK(j >= 0 && j < this->size())("Site index is outside the unit cell!")(j)(this->size());
    // normal-order the sites
    if (Cell_i > Cell_j || (Cell_i == Cell_j && i > j))
    {

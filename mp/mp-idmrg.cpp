@@ -886,7 +886,6 @@ int main(int argc, char** argv)
       bool NoOrthogonalize = false;
       bool Create = false;
       bool ExactDiag = false;
-      int Twist = 1;
 #if defined(ENABLE_ONE_SITE_SCHEME)
       bool UseOneSiteScheme = false;
 #endif

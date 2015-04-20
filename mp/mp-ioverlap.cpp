@@ -8,11 +8,6 @@
 #include "common/terminal.h"
 #include "common/environment.h"
 #include "common/prog_options.h"
-#include "models/hubbard-u1su2.h"
-#include "models/hubbard-u1u1.h"
-#include "models/hubbard-u1u1-old.h"
-#include "models/spin-u1.h"
-#include "models/spin-su2.h"
 #include "lattice/unitcell.h"
 #include "lattice/unitcell-parser.h"
 
@@ -97,9 +92,7 @@ int main(int argc, char** argv)
       bool Quiet = false;
       bool Reflect = false;
       bool Conj = false;
-      std::string Model;
-      std::string String("I");
-      double Spin = 0.5;
+      std::string String;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -113,23 +106,17 @@ int main(int argc, char** argv)
          ("notempfile", prog_opt::bool_switch(&NoTempFile),
           "don't use a temporary data file, keep everything in RAM "
           "(faster, but needs enough RAM)")
-	 ("unitcell,u", prog_opt::value(&UnitCellSize),
-	  "Size of the Hamiltonian unit cell")
          ("rotate", prog_opt::value(&Rotate),
           "rotate the unit cell of psi2 this many sites to the left before calculating the overlap [default 0]")
          ("reflect", prog_opt::bool_switch(&Reflect),
           "reflect psi2 (gives parity eigenvalue)")
-	 ("model", prog_opt::value(&Model),
-	  "with the --reflect option, also apply the local reflection operator for this model")
          ("string", prog_opt::value(&String),
-          "use this local operator as a string operator for the overlap")
+          "use this unit cell operator as a string operator for the overlap")
          ("conj", prog_opt::bool_switch(&Conj),
           "complex conjugate psi2")
          ("q,quantumnumber", prog_opt::value(&Sector),
           "calculate the overlap only in this quantum number sector, "
           "can be used multiple times [default is to calculate all sectors]")
-	 ("spin", prog_opt::value(&Spin),
-          "spin (for spin models, default 0.5)")
          ("sort,s", prog_opt::bool_switch(&Sort),
           "sort the eigenvalues by magnitude")
          ("tol", prog_opt::value(&Tol),
@@ -164,11 +151,17 @@ int main(int argc, char** argv)
       {
          print_copyright(std::cerr);
          std::cerr << "usage: mp-ioverlap [options] <psi1> <psi2>\n";
-         std::cerr << desc << '\n' 
-                   << "If none of --real, --imag, --mag are specified, then the default output is a C++ formatted complex number.\n";
+         std::cerr << desc << '\n';
          return 1;
       }
 
+      // default is to show the real and imag parts
+      if (!ShowRealPart && !ShowImagPart && !ShowMagnitude)
+      {
+	 ShowRealPart = true;
+	 ShowImagPart = true;
+      }
+      
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
 
       if (Verbose)
@@ -193,68 +186,34 @@ int main(int argc, char** argv)
          std::cout << "Calculating overlap...\n";
 
       // Rotate as necessary.  Do this BEFORE determining the quantum number sectors!
-#if 0
-      while (Rotate > 0)
-      {
-         *Psi2.mutate() = rotate_left(*Psi2, 1);
-         --Rotate;
-      }
-#else
       if (Rotate > 0)
          *Psi2.mutate() = rotate_left(*Psi2, Rotate);
-#endif
 
       UnitCell Cell;
       LatticeSite Site;
+
       FiniteMPO StringOp;
-      if (!Model.empty())
+      if (vm.count("string"))
       {
-         if (Verbose)
-            std::cout << "using model " << Model << std::endl;
-         std::vector<SimpleOperator> ReflectionOp;
-         if (Model == "hubbard-u1su2")
-	 {
-            Site = CreateU1SU2HubbardSite();
-         }
-	 else if (Model == "spin-su2")
-	 {
-	    Site = CreateSU2SpinSite(Spin);
-	 }
-         else if (Model == "hubbard-u1u1")
-	 {
-            Site = CreateU1U1HubbardSite();
-         }
-         else if (Model == "spin-u1")
-	 {
-            Site = CreateU1SpinSite(Spin);
-         }
-         else if (Model == "hubbard-u1u1-old")
-	 {
-            Site = CreateU1U1HubbardOldOrderingSite();
-         }
-         else
-	 {
-            PANIC("Unknown model")(Model);
-         }
-	 Cell = repeat(Site, UnitCellSize);
-	 if (String != "I")
-	 {
-	 }
+	 InfiniteLattice Lattice;
+	 UnitCellMPO Op;
+	 boost::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(String);
+	 // Make sure that the operator starts from unit cell 0
+	 Op.ExtendToCover(Lattice.GetUnitCell().size(), 0);
+	 StringOp = repeat(Op.MPO(), Psi1->size() / Op.size());
+	 CHECK_EQUAL(StringOp.size(), Psi1->size())
+	    ("string operator cannot (yet!) be larger than the wavefunction");
+      }
+      else
+      {
+         StringOp = FiniteMPO::make_identity(ExtractLocalBasis(Psi2->Psi));
       }
 
       if (Reflect)
       {
          if (Verbose)
             std::cout << "Reflecting psi2..." << std::endl;
-         if (!Model.empty())
-         {
-            std::vector<SimpleOperator> ReflectionOp = std::vector<SimpleOperator>(Psi2->size(), Site["R"]);
-            *Psi2.mutate() = reflect(*Psi2, ReflectionOp);
-         }
-         else
-         {
-            *Psi2.mutate() = reflect(*Psi2);
-         }
+	 *Psi2.mutate() = reflect(*Psi2);
       }
 
       if (Conj)
@@ -262,23 +221,6 @@ int main(int argc, char** argv)
          if (Verbose)
             std::cout << "Conjugating psi2..." << std::endl;
          *Psi2.mutate() = conj(*Psi2);
-      }
-
-      if (vm.count("string"))
-      {
-         if (Model.empty())
-         {
-            PANIC("--string option requires --model!");
-         }
-	 UnitCellMPO StrOp = ParseUnitCellOperator(Cell, 0, String);
-	 StringOp = StrOp.MPO();
-	 StringOp = repeat(StringOp, Psi1->size() / StringOp.size());
-	 CHECK_EQUAL(StringOp.size(), Psi1->size())
-	    ("string operator cannot (yet!) be larger than the wavefunction");
-      }
-      else
-      {
-         StringOp = FiniteMPO::make_identity(ExtractLocalBasis(Psi2->Psi));
       }
 
       // get the list of quantum number sectors
