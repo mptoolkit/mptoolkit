@@ -242,6 +242,61 @@ struct push_sum_unit
    std::stack<element_type >& eval;
 };
 
+struct push_sum_k
+{
+   push_sum_k(InfiniteLattice const& Lattice_,
+	      std::stack<element_type>& eval_)
+      : Lattice(Lattice_), eval(eval_) {}
+   
+   void operator()(char const* Start, char const* End) const
+   {
+      std::complex<double> k = boost::get<std::complex<double> >(eval.top());
+      eval.pop();
+      TRACE("Parsing UnitCellMPO")(std::string(Start,End));
+      UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End));
+      eval.push(sum_k(k, Op));
+   }
+
+   InfiniteLattice const& Lattice;
+   std::stack<element_type >& eval;
+};
+
+struct push_sum_kink
+{
+   push_sum_kink(InfiniteLattice const& Lattice_,
+		 std::stack<element_type>& eval_)
+      : Lattice(Lattice_), eval(eval_) {}
+   
+   void operator()(char const* Start, char const* End) const
+   {
+      // Find the comma separating the two operators
+      int nBracket = 0;
+      char const* Comma = Start;
+      while (Comma != End && (*Comma != ',' || nBracket > 0))
+      {
+	 if (*Comma == '(')
+	    ++nBracket;
+	 else if (*Comma == ')')
+	    --nBracket;
+	 ++Comma;
+      }
+      if (Comma == End)
+      {
+	 PANIC("Failed to parse two parameters in sum_kink");
+      }
+
+      TRACE("Parsing UnitCellMPO")(std::string(Start,End));
+      UnitCellMPO Kink = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, Comma));
+      ++Comma; // skip over the comma
+      UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Comma, End));
+
+      eval.push(sum_kink(Kink, Op));
+   }
+
+   InfiniteLattice const& Lattice;
+   std::stack<element_type >& eval;
+};
+
 } // namespace ILP;
 
 using namespace ILP;
@@ -308,7 +363,18 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 	    >> '(' 
 	    >> expression_string[push_sum_unit(self.Lattice, self.eval)]
 	    >> ')';
+
+	 sum_kink_expression = str_p("sum_kink")
+	    >> '(' 
+	    >> expression_string[push_sum_kink(self.Lattice, self.eval)]
+	    >> ')';
 	 
+	 sum_k_expression = str_p("sum_k")
+	    >> '(' 
+	    >> expression >> ','
+	    >> expression_string[push_sum_k(self.Lattice, self.eval)]
+	    >> ')';
+
 	 operator_expression = 
 	    identifier
 	    >> (parameter_list[push_operator_param(self.Lattice, 
@@ -341,6 +407,8 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 	    |   keyword_d[constants_p[push_real<element_type>(self.eval)]]
 	    |   prod_expression
 	    |   sum_unit_expression
+	    |   sum_kink_expression
+	    |   sum_k_expression
 	    |   commutator_bracket
 	    |   '(' >> expression >> ')'
 	    |   ('-' >> factor)[do_negate<element_type>(self.eval)]
@@ -377,7 +445,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
       rule<ScannerT> expression, term, factor, real, imag, operator_literal, unary_function,
 	 binary_function, bracket_expr, quantumnumber, prod_expression, sq_bracket_expr, 
 	 operator_expression, operator_bracket_sq, operator_sq_bracket, operator_bracket, operator_sq,
-	    parameter, parameter_list, expression_string, sum_unit_expression,
+	 parameter, parameter_list, expression_string, sum_unit_expression, sum_kink_expression, sum_k_expression,
 	 identifier, pow_term, commutator_bracket;
       rule<ScannerT> const&
       start() const { return expression; }

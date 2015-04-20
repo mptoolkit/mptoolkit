@@ -63,6 +63,8 @@ class InfiniteLattice
 // Constucts a TriangularMPO from the summation over unit cell translations of a finite MPO.
 // The Op must have a size() that is a multiple of SiteListTypeSize, which must itself be an
 // integer multiple of SiteListType.size().
+TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& JW, FiniteMPO const& Op, int UnitCellSize);
+
 TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
 
 TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& Op, LatticeCommute Com);
@@ -70,6 +72,22 @@ TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& Op, Lattic
 TriangularMPO sum_unit(UnitCellMPO const& Op, int UnitCellSize);
 
 TriangularMPO sum_unit(UnitCellMPO const& Op);
+
+// Variant of sum_unit where we add the kink operator (generally will be unitary) to the left hand side
+TriangularMPO sum_kink(SiteListType const& SiteList, FiniteMPO const& Kink,
+		       FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
+
+TriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op, int UnitCellSize);
+
+TriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op);
+
+TriangularMPO sum_k(SiteListType const& SiteList, std::complex<double> const& k,
+		       FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
+
+TriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op, int UnitCellSize);
+
+TriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op);
+
 
 // Constructs a zero triangular MPO
 TriangularMPO make_zero(SiteListType const& SiteList);

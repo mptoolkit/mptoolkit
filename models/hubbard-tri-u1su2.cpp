@@ -4,7 +4,7 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/hubbard-u1su2.h"
+#include "models/fermion-u1su2.h"
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 
@@ -45,10 +45,10 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      LatticeSite Site = CreateU1SU2HubbardSite();
+      LatticeSite Site = FermionU1SU2();
       UnitCell Cell(repeat(Site, 3));
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), Pdouble(Cell, "Pdouble"),
-	 Hu(Cell, "Hu"), N(Cell, "N"), R(Cell, "R");
+	 Hu(Cell, "Hu"), N(Cell, "N"), R(Cell, "R"), S(Cell, "S");
       // parity operators
       // **NOTE** Currently the swap_gate doesn't do fermion signs, so we
       // need to add this by hand
@@ -56,6 +56,10 @@ int main(int argc, char** argv)
 						 *((N[0]+N[2])*N[1]+N[0]*N[2]));
       // Reflection operator.
       R = R[0]*R[1]*R[2];
+
+      // some operators per unit cell
+      N = N[0] + N[1] + N[2];
+      S = S[0] + S[1] + S[2];
 
       InfiniteLattice Lattice(Cell);
 

@@ -3,11 +3,8 @@
 #include "lattice/latticesite.h"
 #include "quantumnumbers/u1.h"
 
-
-
-
 inline
-LatticeSite CreateU1SpinSite(half_int Spin, std::string const& Sym = "Sz")
+LatticeSite SpinU1(half_int Spin, std::string const& Sym = "Sz")
 {
    SymmetryList Symmetry(Sym+":U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1> QN(Symmetry);

@@ -4,7 +4,7 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/hubbard-u1su2.h"
+#include "models/fermion-u1su2.h"
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 
@@ -45,7 +45,7 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      LatticeSite Site = CreateU1SU2HubbardSite();
+      LatticeSite Site = FermionU1SU2();
       UnitCell Cell(Site);
       InfiniteLattice Lattice(Cell);
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), Pdouble(Cell, "Pdouble"),

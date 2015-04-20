@@ -4,7 +4,7 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/spin-su2.h"
+#include "models/spin-u1.h"
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 
@@ -34,38 +34,39 @@ int main(int argc, char** argv)
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
-         std::cerr << "usage: spinchain-su2 [options]\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
 	 std::cerr << "Operators:\n"
-		   << "H_J1    - nearest neighbor spin exchange\n"
-		   << "H_J2    - next-nearest neighbor spin exchange\n"
-		   << "H_J3    - next-next-nearest neighbor spin exchange\n"
+		   << "H_J1z   - nearest neighbor spin coupling Sz Sz\n"
+		   << "H_J1t   - nearest neighbor spin exchange Sp Sm + Sm Sp\n"
+		   << "H_J1    - nearest neighbor spin exchange = H_J1z + H_J1t\n"
+		   << "H_J2z   - next-nearest neighbor spin coupling Sz Sz\n"
+		   << "H_J2t   - next-nearest neighbor spin exchange Sp Sm + Sm Sp\n"
+		   << "H_J2    - next-nearest neighbor spin exchange = H_J1z + H_J1t\n"
 		   << "H_B1    - nearest neighbor biquadratic spin exchange (S.S)^2\n"
 		   << "H_B2    - next-nearest neighbor biquadratic spin exchange (S.S)^2\n"
-		   << "H_B3    - next-next-nearest neighbor biquadratic spin exchange (S.S)^2\n"
-		   << "H_Q1    - nearest neighbor quadrupole exchange (Q.Q)\n"
-		   << "H_Q2    - next-nearest neighbor quadrupole exchange (Q.Q)\n"
-		   << "H_Q3    - next-next-nearest neighbor quadrupole exchange (Q.Q)\n"
+		   << "H_mu    - single-ion anistotropy, H_mu = sum_i Sz(i)^2\n"
 	    ;
          return 1;
       }
 
-      LatticeSite Site = SpinSU2(Spin);
+      LatticeSite Site = SpinU1(Spin);
       UnitCell Cell(Site);
       InfiniteLattice Lattice(Cell);
-      UnitCellOperator S(Cell, "S"), Q(Cell, "Q");
+      UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
 
-      Lattice["H_J1"] = sum_unit(inner(S(0), S(1)));
-      Lattice["H_J2"] = sum_unit(inner(S(0), S(2)));
-      Lattice["H_J3"] = sum_unit(inner(S(0), S(3)));
+      Lattice["H_J1z"] = sum_unit(Sz(0)*Sz(1));
+      Lattice["H_J1t"] = sum_unit(0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)));
+      Lattice["H_J1"] = sum_unit(Sz(0)*Sz(1) + 0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)));
 
-      Lattice["H_B1"] = sum_unit(pow(inner(S(0), S(1)), 2));
-      Lattice["H_J2"] = sum_unit(pow(inner(S(0), S(2)), 2));
-      Lattice["H_J3"] = sum_unit(pow(inner(S(0), S(3)), 2));
+      Lattice["H_J2z"] = sum_unit(Sz(0)*Sz(2));
+      Lattice["H_J2t"] = sum_unit(0.5*(Sp(0)*Sm(2) + Sm(0)*Sp(2)));
+      Lattice["H_J2"] = sum_unit(Sz(0)*Sz(2) + 0.5*(Sp(0)*Sm(2) + Sm(0)*Sp(2)));
 
-      Lattice["H_Q1"] = sum_unit(inner(Q(0), Q(1)));
-      Lattice["H_Q2"] = sum_unit(inner(Q(0), Q(2)));
-      Lattice["H_Q3"] = sum_unit(inner(Q(0), Q(3)));
+      Lattice["H_B1"] = sum_unit(pow(Sz(0)*Sz(1) + 0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)), 2));
+      Lattice["H_B2"] = sum_unit(pow(Sz(0)*Sz(2) + 0.5*(Sp(0)*Sm(2) + Sm(0)*Sp(2)), 2));
+
+      Lattice["H_mu"] = sum_unit(Sz(0)*Sz(0));
 
       pheap::ExportObject(LatticeName, Lattice);
    }

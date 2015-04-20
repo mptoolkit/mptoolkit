@@ -77,7 +77,7 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      LatticeSite Site = CreateSU2SpinSite(Spin);
+      LatticeSite Site = SpinSU2(Spin);
       UnitCell Cell = repeat(Site, w);
       UnitCellOperator S(Cell, "S");
 

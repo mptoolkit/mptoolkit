@@ -5,7 +5,7 @@
 
 inline
 LatticeSite
-CreateSU2SpinSite(half_int Spin, std::string const& Sym = "S")
+SpinSU2(half_int Spin, std::string const& Sym = "S")
 {
    SymmetryList Symmetry(Sym+":SU(2)");
    QuantumNumbers::QNConstructor<QuantumNumbers::SU2> QN(Symmetry);

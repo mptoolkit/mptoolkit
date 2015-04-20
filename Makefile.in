@@ -165,7 +165,7 @@ allobj = $(quantumnumbersobj) \
 	 $(commonobj)
 
 infinite-models = spinchain-su2 spinchain-spin2-su2 spin-tri-yc-su2 hubbard-u1su2 \
-                  hubbard-tri-u1su2 bosehubbard-ladder-u1 bosehubbard-flux-u1
+                  hubbard-tri-u1su2 bosehubbard-ladder-u1 bosehubbard-flux-u1 spinchain-u1
 
 mp-models = hubbard-u1u1 hubbard-t-u1u1 hubbard-u1su2 hubbard-so4 hubbard-t-so4 \
             hubbard-trap-u1su2 bosehubbard-spinless-u1 bosehubbard-spinless hubbardladder-so4 \
@@ -235,6 +235,8 @@ mp-tools : $(mp-tools)
 
 infinite-tools : $(infinite-tools)
 
+infinite-models : $(infinite-models)
+
 tools : mp-tools
 
 mp-models : $(mp-models)
@@ -242,6 +244,8 @@ mp-models : $(mp-models)
 models : mp-models
 
 itools : infinite-tools
+
+imodels : infinite-models
 
 dist_files = config.h.in configure configure.ac aclocal.m4 Makefile.in  generate-testreport.sh \
              depend.sh install-sh stamp-h.in README TODO mkinstalldirs \
@@ -264,7 +268,8 @@ dep : $(cxx_depend)
 .PHONY: clean mrproper dep test all install uninstall dist-clean \
         maintaner-clean install-dirs dist-dir tar-dir tar install-models install-tools \
         tools models mp-tools default install_tools install_models models-install models_install \
-        tools-install tools_install install-itools install_itools itools-install itools_install
+        tools-install tools_install install-itools install_itools itools-install itools_install imodels \
+        install-imodels
 
 # turn off some implicit rules that we don't want
 %.o : %.cpp
@@ -628,6 +633,10 @@ install-itools : $(infinite-tools) install-dirs
 	for i in $(infinite-tools) ; do \
 	$(INSTALL_PROGRAM) $$i $(BINDIR) ; done
 
+install-imodels : $(infinite-models) install-dirs
+	for i in $(infinite-models) ; do \
+	$(INSTALL_PROGRAM) $$i $(BINDIR) ; done
+
 install-models : $(mp-models) install-dirs
 	for i in $(mp-models) ; do \
 	$(INSTALL_PROGRAM) $$i $(BINDIR) ; done
@@ -649,6 +658,10 @@ install_itools : install-itools
 itools-install : install-itools
 
 itools_install : install-itools
+
+imodels_install : install-imodels
+
+install_imodels : install-imodels
 
 install-mv : $(mp-tools) install-dirs
 	for i in $(mp-tools) ; do \
