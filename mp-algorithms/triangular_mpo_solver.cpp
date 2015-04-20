@@ -74,7 +74,7 @@ struct OneMinusTransferLeft
 
 template <typename Func>
 MatrixOperator
-LinearSolve(Func F, MatrixOperator Rhs, bool Verbose = false)
+LinearSolve(Func F, MatrixOperator Rhs, int Verbose = 0)
 {
    MatrixOperator Guess = Rhs;
    int m = 30;
