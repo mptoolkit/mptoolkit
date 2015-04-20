@@ -18,6 +18,7 @@
 #include "lattice/infinitelattice-parser.h"
 #include "mps/momentum_operations.h"
 #include "mp-algorithms/triangular_mpo_solver.h"
+#include "common/prog_opt_accum.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -33,7 +34,7 @@ int main(int argc, char** argv)
    double U = 0;
    double Lambda = 0;
    int Power = 1;
-   bool Verbose = false;
+   int Verbose = 0;
    int NMax = 3;
    int NLegs = 1;
    double Spin = 0.5;
@@ -48,8 +49,8 @@ int main(int argc, char** argv)
          ("help", "show this help message")
 	 ("power", prog_opt::value(&Power),
 	  FormatDefault("Calculate expectation value of operator to this power", Power).c_str())
-         ("verbose,v", prog_opt::bool_switch(&Verbose),
-          "extra debug output")
+         ("verbose,v", prog_opt_ext::accum_value(&Verbose),
+          "extra debug output (can be used more than once)")
 	 ;
 
       prog_opt::options_description hidden("Hidden options");

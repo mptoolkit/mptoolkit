@@ -132,6 +132,9 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
     
      for (i = 0; i < m && j <= max_iter; i++, j++) 
      {
+	if (Verbose > 1)
+	   std::cerr << "GMRES iteration " << i << std::endl;
+
         w = Precondition(MatVecMultiply(v[i]));
         for (k = 0; k <= i; k++) 
         {
