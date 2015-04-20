@@ -208,9 +208,9 @@ infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-
 
 infinite-tools = mp-idmrg5 mp-idmrg \
                  mp-iinfo mp-iprint mp-iproject \
-                 mp-icumulant mp-iexpectation mp-iwigner-eckart mp-isymmetry mp-ireorder-symmetry
+                 mp-icumulant mp-iexpectation mp-iwigner-eckart mp-ireorder-symmetry
 
-mp-tools-not-functional = mp-add2 mp-exp mp-stringcorrelation-su2 mp-canonical mp-icorrelation mp-ispectrum  mp-ioverlap
+mp-tools-not-functional = mp-add2 mp-exp mp-stringcorrelation-su2 mp-canonical mp-icorrelation mp-ispectrum  mp-ioverlap  mp-isymmetry
 
 mp-tools-experimental = mp-cg mp-cg-sym mp-simplecg-sym mp-simplecg mp-ddmrg \
                         mp-bicg mp-global-cg mp-gmres momentum-projector mp-evolve-magnus \
