@@ -61,7 +61,7 @@ class TriangularMPO
       value_type const& back() const { return Data_.back(); }
       value_type& back() { return Data_.back(); }
 
-      QuantumNumber TransformsAs() const { return this->Basis().back(); }
+      QuantumNumber TransformsAs() const { return this->Basis().front(); }
 
       // returns the component at entry (i,j).  Result is a 1x1 MPO (although the internal bond dimension might be bigger)
       FiniteMPO operator()(int i, int j) const;

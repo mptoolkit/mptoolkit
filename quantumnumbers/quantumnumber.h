@@ -345,7 +345,7 @@ class QuantumNumberList
       value_type& operator[](size_type x) { return Impl[x]; }
 
       value_type const& back() const { return Impl.back(); }
-      value_type const& front() const { return Impl.back(); }
+      value_type const& front() const { return Impl.front(); }
 
       void clear() { Impl.clear(); }
 

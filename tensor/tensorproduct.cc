@@ -83,6 +83,9 @@ ProductBasisBase<BL, BR, Base>::MakeTriangularProjected(left_basis_type const& L
 {
    DEBUG_PRECONDITION_EQUAL(Left_.GetSymmetryList(), Right_.GetSymmetryList());
 
+   // This works the same way as the constructor above, except that for the first element in each basis,
+   // we only keep one target state (Target).  So s1=s2=0 is special.
+
    ProductBasisBase<BL, BR, Base> Result;
    Result.Basis_ = basis_type(Left_.GetSymmetryList());
    Result.Left_ = Left_;
@@ -93,9 +96,34 @@ ProductBasisBase<BL, BR, Base>::MakeTriangularProjected(left_basis_type const& L
    // copy it later into a LinearAlgebra::Vector so we have reference counting.
    std::vector<source_type> RMap;
 
-   for (std::size_t s1 = 0; s1 < Left_.size()-1; ++s1)
+   int s1 = 0;
+   int s2 = 0;
+
+   CHECK(is_transform_target(Left_[s1], Right_[s2], Target))(Left_[s1])(Right_[s2])(Target);
+   int s = Result.Basis_.size();
+   Result.Basis_.push_back(Target);
+   RMap.push_back(source_type(s1, s2));
+   Result.TransformData_(s1, s2).push_back(s);
+
+   // do the remaining parts with s1=0, and s2>0
+   for (std::size_t s2 = 1; s2 < Right_.size(); ++s2)
    {
-      for (std::size_t s2 = 0; s2 < Right_.size(); ++s2)
+      std::list<QuantumNumber> QNList;
+      transform_targets(Left_[s1], Right_[s2], std::back_inserter(QNList));
+
+      for (std::list<QuantumNumber>::iterator I = QNList.begin(); I != QNList.end(); ++I)
+      {
+	 int s = Result.Basis_.size();
+	 Result.Basis_.push_back(*I);
+	 RMap.push_back(source_type(s1, s2));
+	 Result.TransformData_(s1, s2).push_back(s);
+      }
+   }
+
+   // Now s1>0 and all s2
+   for (s1 = 1; s1 < Left_.size(); ++s1)
+   {
+      for (s2 = 0; s2 < Right_.size(); ++s2)
       {
 	 std::list<QuantumNumber> QNList;
 	 transform_targets(Left_[s1], Right_[s2], std::back_inserter(QNList));
@@ -109,27 +137,6 @@ ProductBasisBase<BL, BR, Base>::MakeTriangularProjected(left_basis_type const& L
 	 }
       }
    }
-
-   std::size_t s1 = Left_.size()-1;
-   for (std::size_t s2 = 0; s2 < Right_.size()-1; ++s2)
-   {
-      std::list<QuantumNumber> QNList;
-      transform_targets(Left_[s1], Right_[s2], std::back_inserter(QNList));
-
-      for (std::list<QuantumNumber>::iterator I = QNList.begin(); I != QNList.end(); ++I)
-      {
-	 int s = Result.Basis_.size();
-	 Result.Basis_.push_back(*I);
-	 RMap.push_back(source_type(s1, s2));
-	 Result.TransformData_(s1, s2).push_back(s);
-      }
-   }
-   std::size_t s2 = Right_.size()-1;
-   CHECK(is_transform_target(Left_[s1], Right_[s2], Target));
-   int s = Result.Basis_.size();
-   Result.Basis_.push_back(Target);
-   RMap.push_back(source_type(s1, s2));
-   Result.TransformData_(s1, s2).push_back(s);
 
    Result.ReverseMapping_ = SourceListType(RMap.begin(), RMap.end());
 

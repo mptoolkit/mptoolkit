@@ -513,7 +513,8 @@ TriangularMPO operator*(TriangularMPO const& x, TriangularMPO const& y)
 
 TriangularMPO prod(TriangularMPO const& x, TriangularMPO const& y, QuantumNumbers::QuantumNumber const& q)
 {
-   PRECONDITION(is_transform_target(y.TransformsAs(), x.TransformsAs(), q))(x.TransformsAs())(y.TransformsAs())(q);
+   PRECONDITION(is_transform_target(y.TransformsAs(), x.TransformsAs(), q))(x.TransformsAs())(y.TransformsAs())(q)
+      (x.Basis())(x.Basis().front());
    PRECONDITION_EQUAL(x.size(), y.size());
 
    typedef Tensor::ProductBasis<BasisList, BasisList> PBasisType;
