@@ -1123,6 +1123,10 @@ int main(int argc, char** argv)
       std::cout << SInfo << '\n';
 
       StatesList MyStates(States);
+      if (vm.count("steps") && MyStates.size() == 1)
+      {
+	 MyStates.Repeat(NumSteps);
+      }
       std::cout << MyStates << '\n';
 
       // replicate the HamMPO until it has the same size as the unit cell
