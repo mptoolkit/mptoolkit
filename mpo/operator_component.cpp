@@ -665,7 +665,7 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
    //#if !defined(NDEBUG)
    // verify that prod(Reg, tA) is the same as A.  
    OperatorComponent ACheck = prod(Reg, tA);
-   CHECK(norm_frob_sq(A - ACheck) < Scale*TruncateOverlapEpsilon)(norm_frob_sq(A - ACheck))(A)(ACheck)(A-ACheck)(Trunc)(Reg)(Overlaps);
+   CHECK(norm_frob_sq(A - ACheck) <= Scale*TruncateOverlapEpsilon)(norm_frob_sq(A - ACheck))(A)(ACheck)(A-ACheck)(Trunc)(Reg)(Overlaps);
    //#endif
 
    A = tA;

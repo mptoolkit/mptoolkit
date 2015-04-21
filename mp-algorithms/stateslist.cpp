@@ -5,6 +5,49 @@
 #include <iterator>
 #include <iostream>
 
+// StateParams
+
+StateParams::StateParams()
+   : NumStates(0),
+     Wait(false),
+     Test(false),
+     Save(false),
+     Variance(false)
+{
+}
+
+StateParams
+StateParams::ContinueFrom(StateParams const& Other)
+{
+   StateParams Result;
+   Result.NumStates = Other.NumStates;
+   return Result;
+}
+
+PStream::opstream& operator<<(PStream::opstream& out, StateParams const& Info)
+{
+   return out << Info.NumStates << Info.Wait << Info.Test << Info.Save << Info.Variance;
+}
+
+PStream::ipstream& operator>>(PStream::ipstream& in, StateParams& Info)
+{
+   return in >> Info.NumStates >> Info.Wait >> Info.Test >> Info.Save >> Info.Variance;
+}
+
+std::ostream& operator<<(std::ostream& out, StateParams const& Info)
+{
+   out << Info.NumStates;
+   if (Info.Wait)
+      out << 'w';
+   if (Info.Test)
+      out << 't';
+   if (Info.Save)
+      out << 's';
+   if (Info.Variance)
+      out << 'v';
+   return out;
+}
+
 // StatesList
 
 StatesList::StatesList(char const* str)
@@ -17,228 +60,180 @@ StatesList::StatesList(std::string const& str)
    Append(str.c_str());
 }
 
-StatesList::~StatesList()
-{ 
+StatesList::StatesList(int NumSweeps, int NumStates)
+{
+   StateParams i;
+   i.NumStates = NumStates;
+   Info = std::vector<StateParams>(NumSweeps, i);
 }
 
-int const DefaultNumStates = 50000;
-
-void StatesList::Append(char const* str)
+void StatesList::AppendToken(char const* s)
 {
-   std::istringstream Stream(str);
-   std::string S;
-   while (Stream >> S)
+   // notation is (symbols in quotes are literals, capitals are numbers)
+   // N[[".."M | "+"A] "x"A]["w"]["t"]
+
+   StateParams I;
+   if (!Info.empty())
+      I = StateParams::ContinueFrom(Info.back());
+
+   int NumSweeps = 1;
+   int FinalStates = 0;
+   int Increment = 0;
+
+   char* p = const_cast<char*>(s);
+   // parse the leading number
+   I.NumStates = std::strtol(s, &p, 10);
+   if (p == s)
    {
-      InfoType I;
-      I.Physics = false;
-      I.Corrs = false;
-      I.Wait = false;
-      I.Save = false;
-      I.Test = false;
-      I.Broad = 0.0;
-      I.Trunc = -1.0;
-      I.MixFactor = -1.0;
-      int Count = 1;
-      int Increment = 0;
-      // the first part is a number
-      std::istringstream Token(S);
-      Token >> I.NumStates;
-      if (I.NumStates == 0)
-	 I.NumStates = DefaultNumStates;
-      char c;
-      while (Token >> c)
+      PANIC("Did not find a number in the StatesList")(s);
+   }
+   s = p;
+
+   // see what we have next
+   if (s[0] == '\0')
+   {
+      // we have the complete info
+      Info.push_back(I);
+      return;
+   }
+   else if (s[0] == '.' && s[1] == '.')
+   {
+      // we have N..MxA notation
+      s += 2;
+      // parse the final number
+      FinalStates =  std::strtol(s, &p, 10);
+      if (p == s)
       {
-	 switch (c)
+	 PANIC("Did not find a final number in N..MxS notation in the StatesList")(s);
+      }
+      // and now we must get the "x"S part
+      s = p;
+      if (s[0] != 'x')
+      {
+	 PANIC("N..M must be followed by x<number> in StatesList");
+      }
+      ++s;
+      NumSweeps = std::strtol(s, &p, 10);
+      if (p == s)
+      {
+	 PANIC("N..M must be followed by x<number> in StatesList");
+      }
+      s = p;
+   }
+   else if (s[0] == '+')
+   {
+      // we have N+MxA notation
+      ++s; // skip over the '+'
+      // parse the increment
+      Increment = std::strtol(s, &p, 10);
+      if (p == s)
+      {
+	 PANIC("Did not find an increment in N+M notation in the StatesList")(s);
+      }
+      // and now we must get the "x"S part
+      s = p;
+      if (s[0] != 'x')
+      {
+	 PANIC("N+M must be followed by x<number> in StatesList");
+      }
+      ++s;
+      NumSweeps = std::strtol(s, &p, 10);
+      if (p == s)
+      {
+	 PANIC("N+M must be followed by x<number> in StatesList");
+      }
+      s = p;
+   }
+   else if (s[0] == 'x')
+   {
+      // we can have MxA on its own
+      ++s;
+      NumSweeps = std::strtol(s, &p, 10);
+      if (p == s)
+      {
+	 PANIC("'x' must be followed by <number> in StatesList");
+      }
+      s = p;
+   }
+   else
+   {
+      // Parse any flags - these are only allowed if we have a single sweep
+      while (s[0] != '\0')
+      {
+	 switch (s[0])
 	 {
- 	    case 'c' : I.Corrs = true;               break;
- 	    case 'p' : I.Physics = true;             break;
- 	    case 's' : I.Save = true;                break;
- 	    case 'w' : I.Wait = true; I.Test = true; break;
- 	    case 't' : I.Test = true;                break;
- 	    case '*' : I.Wait = true;                break;
-	    case 'b' : Token >> I.Broad;             break;
-	    case 'r' : Token >> I.Trunc;             break;
-            case 'f' : Token >> I.MixFactor;         break;
-	    case 'x' : Token >> Count;               break;
-	    case '+' : Token >> Increment;           break;
+	 case 'w' : I.Wait = true; I.Test = true; break;
+	 case 't' : I.Test = true;                break;
+	 case 'v' : I.Variance = true;            break;
+	 case 's' : I.Save = true;                break;
+	 default  : PANIC("Unknown flag in StatesList")(s);
 	 }
+	 ++s;
       }
-      for (int i = 0; i < Count; ++i)
+   }
+
+   if (s[0] != '\0')
+   {
+      PANIC("Extra characters at end of NumStates line")(s);
+   }
+
+   int InitialStates = I.NumStates;
+   // Now put it together if we have repeats
+   for (int i = 0; i < NumSweeps; ++i)
+   {
+      if (FinalStates != 0)
       {
-         Info.push_back(I);
-	 I.NumStates += Increment;
+	 I.NumStates = InitialStates + i*double((FinalStates-InitialStates)/double(NumSweeps-1));
       }
+      else if (Increment != 0)
+      {
+	 I.NumStates = InitialStates + i*Increment;
+      }
+      Info.push_back(I);
    }
 }
 
-void StatesList::OverrideNoPhysics()
+void StatesList::Append(char const* s)
 {
-   for (std::size_t i = 0; i < Info.size(); ++i)
+   char const* End = s;
+   while (End[0] != '\0')
    {
-      Info[i].Physics = false;
+      while (End[0] != '\0' && !isspace(*End) && End[0] != ',')
+	 ++End;
+
+      // did we find a token?
+      if (End != s)
+	 this->AppendToken(std::string(s,End).c_str());
+
+      // skip the trailing whitespace
+      while (isspace(*End) || End[0] == ',')
+	 ++End;
+
+      // next token
+      s = End;
    }
 }
 
-void StatesList::OverrideNoCorrelations()
+void
+StatesList::Repeat(int n)
 {
-   for (std::size_t i = 0; i < Info.size(); ++i)
+   while (n > 1)
    {
-      Info[i].Corrs = false;
+      Info.push_back(Info.back());
+      --n;
    }
 }
 
-void StatesList::ShowOptions(std::ostream& out) const
+std::ostream& operator<<(std::ostream& out, StatesList const& States)
 {
-   out << "Number of sweeps: " << NumSweeps() << '\n'
+   out << "Number of sweeps: " << States.size() << '\n'
        << "Number of states at each sweep: ";
-   for (int i = 0; i < NumSweeps(); ++i)
+   for (int i = 0; i < States.size(); ++i)
    {
-      out << NumStates(i) << ' ';
+      out << States[i] << ' ';
    }
-
-   bool AnyPhysics = false;
-   for (int i = 0; i < NumSweeps(); ++i)
-      if (CalculatePhysics(i)) AnyPhysics = true;
-   if (AnyPhysics)
-   {
-      out << '\n'
-          << "Calculating physics on sweeps ";
-      for (int i = 0; i < NumSweeps(); ++i)
-      {
-         if (CalculatePhysics(i)) 
-            out << (i+1) << ' ';
-      }
-   }
-
-   bool AnyCorrs = false;
-   for (int i = 0; i < NumSweeps(); ++i)
-      if (CalculateCorrelations(i)) AnyCorrs = true;
-   if (AnyCorrs)
-   {
-      out << '\n'
-          << "Calculating correlations on sweeps ";
-      for (int i = 0; i < NumSweeps(); ++i)
-      {
-         if (CalculateCorrelations(i)) 
-            out << (i+1) << ' ';
-      }
-   }
-
-   bool AnyTest = false;
-   for (int i = 0; i < NumSweeps(); ++i)
-      if (TestConverge(i)) AnyTest = true;
-   if (AnyTest)
-   {
-      out << '\n'
-          << "Test convergence on sweeps ";
-      for (int i = 0; i < NumSweeps(); ++i)
-      {
-         if (TestConverge(i)) 
-            out << (i+1) << ' ';
-      }
-   }
-
-   bool AnyWait = false;
-   for (int i = 0; i < NumSweeps(); ++i)
-      if (WaitConverge(i)) AnyWait = true;
-   if (AnyWait)
-   {
-      out << '\n'
-          << "Wait for convergence on sweeps ";
-      for (int i = 0; i < NumSweeps(); ++i)
-      {
-         if (WaitConverge(i)) 
-            out << (i+1) << ' ';
-      }
-   }
-
-   bool AnySave = false;
-   for (int i = 0; i < NumSweeps(); ++i)
-      if (SaveState(i)) AnySave = true;
-   if (AnySave)
-   {
-      out << '\n'
-          << "Save wavefunction on sweeps ";
-      for (int i = 0; i < NumSweeps(); ++i)
-      {
-         if (SaveState(i)) 
-            out << (i+1) << ' ';
-      }
-   }
-
-   bool AnyTrunc = false;
-   for (int i = 0; i < NumSweeps(); ++i)
-      if (TruncationError(i) != -1) AnyTrunc = true;
-   if (AnyTrunc)
-   {
-      out << '\n'
-          << "Changing the truncation error as\n";
-      for (int i = 0; i < NumSweeps(); ++i)
-      {
-         if (TruncationError(i) != -1.0) 
-            out << "    Sweep " << (i+1) << " truncation error = " << TruncationError(i) << '\n';
-      }
-   }
-
-   bool AnyBroad = false;
-   for (int i = 0; i < NumSweeps(); ++i)
-      if (Broadening(i) != 0) AnyBroad = true;
-   if (AnyBroad)
-   {
-      out << '\n'
-          << "Changing the broadening as\n";
-      for (int i = 0; i < NumSweeps(); ++i)
-      {
-         if (Broadening(i) != 0) 
-            out << "    Sweep " << (i+1) << " broadening = " << Broadening(i) << '\n';
-      }
-   }
-   
-   bool AnyMixFactor = false;
-   for (int i = 0; i < NumSweeps(); ++i)
-      if (MixFactor(i) != -1) AnyMixFactor = true;
-   if (AnyMixFactor)
-   {
-      out << '\n'
-          << "Changing the mix factor as\n";
-      for (int i = 0; i < NumSweeps(); ++i)
-      {
-         if (MixFactor(i) != -1) 
-            out << "    Sweep " << (i+1) << " mix factor = " << MixFactor(i) << '\n';
-      }
-   }
-
    out << '\n';
-}
-
-bool StatesList::AnyPhysics() const 
-{
-   for (int i = 0; i < NumSweeps(); ++i)
-   {
-      if (CalculatePhysics(i)) return true;
-   }
-   return false;
-}
-
-bool StatesList::AnyCorrelations() const 
-{
-   for (int i = 0; i < NumSweeps(); ++i)
-   {
-      if (CalculateCorrelations(i)) return true;
-   }
-   return false;
-}
-
-PStream::opstream& operator<<(PStream::opstream& out, StatesList::InfoType const& i)
-{
-   return out << i.NumStates << i.Physics << i.Corrs << i.Wait << i.Test << i.Save 
-              << i.Trunc << i.Broad << i.MixFactor;
-}
-
-PStream::ipstream& operator>>(PStream::ipstream& in, StatesList::InfoType& i)
-{
-   return in >> i.NumStates >> i.Physics >> i.Corrs >> i.Wait >> i.Test >> i.Save 
-             >> i.Trunc >> i.Broad >> i.MixFactor;
+   return out;
 }
 
 PStream::opstream& operator<<(PStream::opstream& out, StatesList const& s)
@@ -249,42 +244,4 @@ PStream::opstream& operator<<(PStream::opstream& out, StatesList const& s)
 PStream::ipstream& operator>>(PStream::ipstream& in, StatesList& s)
 {
    return in >> s.Info;
-}
-
-// WeightsList
-
-WeightsList:: WeightsList(char const* str)
-{
-   std::istringstream Stream(str);
-   double W;
-   while (Stream >> W)
-   {
-      Weights.push_back(W);
-   }
-}
-
-void WeightsList::ShowOptions(std::ostream& out) const
-{
-   out << "Number of wavefunctions to calculate: " << this->NumWeights() 
-       << "\nWeights: ";
-   std::copy(this->Weights.begin(), this->Weights.end(), std::ostream_iterator<double>(out, " "));
-   out << '\n';
-}
-
-PStream::opstream& operator<<(PStream::opstream& out, WeightsList const& s)
-{
-   return out << s.Weights;
-}
-
-PStream::ipstream& operator>>(PStream::ipstream& in, WeightsList& s)
-{
-   return in >> s.Weights;
-}
-
-StatesInfo StatesList::GetStatesInfo(StatesInfo const& Default, int s) const
-{
-   StatesInfo Result = Default;
-   Result.MaxStates = this->NumStates(s);
-   Result.TruncationCutoff = this->TruncationError(s);
-   return Result;
 }

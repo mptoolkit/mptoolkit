@@ -1,119 +1,87 @@
 // -*- C++ -*- $Id$
 /*
-  readstates.h
+  stateslist.h
 
   utility class for parsing the NumStates line.
 
   Created 2001-04-26 Ian McCulloch
+  Heavily modified 2015-04-21
 
-  2002-10-27: Added the WeightsList for controlling density matrix weights for multiple wavefunctions.
+  a StatesList is a sequence of directives, separated by whitespace or commas.
+  A single directive is of the following forms:
 
-  2002-12-11: Extended the syntax to allow 'xN' and '+N'.  Usage is, eg 10x5 (equivalent to 10 10 10 10 10),
-              or 10x5+5 (equivalent to 10 15 20 25 30).  'x' and '+' fields can occur in any order.
-              Also added 'w' as an alternative to '*' to wait for convergence.  '*' is a bit confusing
-              when combined with '+'.
-	      Also added the Append() method to increase the StatesList on the fly.
+  N..MxS             meaning: perform S sweeps, with the number of states increasing uniformly from N to M
+  N+IxS              meaning: perform S sweeps, starting with N states and increasing by I each sweel
+  NxS                meaning: perform S sweeps with N states in each sweep
+  N                  meaning: perform a single sweep with N states.
 
-  2007-04-30: Added TruncationError and Broadening fields to the states list.  This is
-              done with, for example, 100r1e-5, meaning keep max 100 states with truncation error
-              1e-5.  If the number of states is zero, then it is set to DefaultMaxStates.
-              Broadening works a similar way, with a suffix b1e-5.
+  If just a single sweep is specified, then additionally flags can be specified, in any order,
+  w : wait for convergence (keep sweeping until the convergence criteria is satisfied)
+  t : test for convergence (do the convergence test and report only, don't wait if the criteria is not satisfied)
+  s : save the wavefunction at the end of the sweep (if combined with w, only save once converged)
+  v : calculate the variance at the end of this sweep
 */
 
-#if !defined(READSTATES_H_FDSKJFDS89U8UFRHUFRHUFR895T7Y547THFDS8)
-#define READSTATES_H_FDSKJFDS89U8UFRHUFRHUFR895T7Y547THFDS8
+#if !defined(MPTOOLKIT_MP_ALGORITHMS_TATESLIST_H)
+#define MPTOOLKIT_MP_ALGORITHMS_STATESLIST_H
 
 #include "common/trace.h"
 #include "pstream/pstream.h"
-#include "matrixproduct/density.h"  // for definition of StatesInfo
+#include "mps/density.h"  // for definition of StatesInfo
 #include <string>
 #include <vector>
 #include <iostream>
 
+struct StateParams
+{
+   // The default constructor initializes the members to the default values
+   StateParams();
+
+   int NumStates;
+   bool Wait;
+   bool Test;
+   bool Save;
+   bool Variance;
+
+   // Named constructor to continue a sequence of StateParams.
+   // Currently this just copies the NumStates and sets everything else false
+   static StateParams ContinueFrom(StateParams const& Info);
+};
+
+PStream::opstream& operator<<(PStream::opstream& out, StateParams const& Info);
+PStream::ipstream& operator>>(PStream::ipstream& in, StateParams& Info);
+
+std::ostream& operator<<(std::ostream& out, StateParams const& Info);
+
 class StatesList
 {
    public:
-      StatesList() {}
-
-      ~StatesList();
-
-      StatesList(char const* str);
+      explicit StatesList(char const* str);
       
-      StatesList(std::string const& str);
+      explicit StatesList(std::string const& str);
+
+      StatesList(int NumSweeps, int NumStates);
 
       void Append(char const* str);
 
-      // overrides the current settings and sets CalculatePhysics() to false for all sweeps
-      void OverrideNoPhysics();
+      void Append(std::string const& s);
 
-      // overrides the current settings and sets CalculateCorrelations() to false for all sweeps
-      void OverrideNoCorrelations();
+      // repeat the previous sweep n times (including the exising; add n-1 new sweeps)
+      void Repeat(int n);
 
-      int NumSweeps() const { return Info.size(); }
-      int NumStates(int s) const { RANGE_CHECK(s, 0, int(Info.size()-1)); return Info[s].NumStates; }
-      bool CalculatePhysics(int s) const { RANGE_CHECK(s, 0, int(Info.size())-1); return Info[s].Physics; }
-      bool CalculateCorrelations(int s) const { RANGE_CHECK(s, 0, int(Info.size())-1); return Info[s].Corrs; }
+      int size() const { return Info.size(); }
 
-      double TruncationError(int s) const { RANGE_CHECK(s, 0, int(Info.size())-1); return Info[s].Trunc; }
-      double Broadening(int s) const { RANGE_CHECK(s, 0, int(Info.size())-1); return Info[s].Broad; }
-
-      double MixFactor(int s) const { RANGE_CHECK(s, 0, int(Info.size())-1); return Info[s].MixFactor; }
-
-      bool WaitConverge(int s) const { RANGE_CHECK(s, 0, int(Info.size())-1); return Info[s].Wait; }
-      bool SaveState(int s) const { RANGE_CHECK(s, 0, int(Info.size())-1); return Info[s].Save; }
-      bool TestConverge(int s) const { RANGE_CHECK(s, 0, int(Info.size())-1); return Info[s].Test; }
-
-      StatesInfo GetStatesInfo(StatesInfo const& Default, int s) const;
-
-      // returns true if any physical operators are wanted, on any sweep
-      bool AnyPhysics() const;
-
-      // returns true if any correlations are wanted, on any sweep
-      bool AnyCorrelations() const;
-
-      void ShowOptions(std::ostream& out) const;
+      StateParams const& operator[](int i) const { return Info[i]; }
 
    private:
-      struct InfoType
-      {
-	 int NumStates;
-	 bool Physics;
-	 bool Corrs;
-	 bool Wait;
-         bool Test;
-	 bool Save;
-	 double Trunc;
-	 double Broad;
-         double MixFactor;
-      };
+      void AppendToken(char const* str);
 
-      std::vector<InfoType> Info;
-
-   friend PStream::opstream& operator<<(PStream::opstream& out, InfoType const& i);
-   friend PStream::ipstream& operator>>(PStream::ipstream& in, InfoType& i);
+      std::vector<StateParams> Info;
 
    friend PStream::opstream& operator<<(PStream::opstream& out, StatesList const& s);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, StatesList& s);
 };
 
-class WeightsList
-{
-   public:
-      WeightsList() {}
-
-      WeightsList(char const* str);
-
-      int NumWeights() const { return Weights.size(); }
-
-      double Weight(int n) const { return Weights[n]; }
-
-      void ShowOptions(std::ostream& out) const;
-
-  private:
-      std::vector<double> Weights;
-
-   friend PStream::opstream& operator<<(PStream::opstream& out, WeightsList const& s);
-   friend PStream::ipstream& operator>>(PStream::ipstream& in, WeightsList& s);
-};
+std::ostream& operator<<(std::ostream& out, StatesList const& States);
 
 #endif

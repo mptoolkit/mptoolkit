@@ -21,6 +21,7 @@
 #include "mp-algorithms/arnoldi.h"
 #include "tensor/tensor_eigen.h"
 #include "tensor/regularize.h"
+#include "mp-algorithms/stateslist.h"
 
 #include "interface/inittemp.h"
 #include "mp-algorithms/random_wavefunc.h"
@@ -866,7 +867,7 @@ int main(int argc, char** argv)
       int NumIter = 20;
       int MinIter = 4;
       int MinStates = 1;
-      int MaxStates = 100000;
+      std::string States = "100";
       //double MixFactor = 0.01;
       //bool TwoSite = false;
       int NumSteps = 10;
@@ -912,8 +913,8 @@ int main(int argc, char** argv)
 #if defined(ENABLE_ONE_SITE_SCHEME)
          ("onesiteboundary", prog_opt::bool_switch(&UseOneSiteScheme), "Modify one site also at the boundary")
 #endif
-	 ("max-states,m", prog_opt::value<int>(&MaxStates),
-	  FormatDefault("Maximum number of states to keep", MaxStates).c_str())
+	 ("states,m", prog_opt::value(&States),
+	  FormatDefault("number of states, or a StatesList", States).c_str())
          ("min-states", prog_opt::value<int>(&MinStates),
 	  FormatDefault("Minimum number of states to keep", MinStates).c_str())
          ("trunc,r", prog_opt::value<double>(&TruncCutoff),
@@ -1116,10 +1117,13 @@ int main(int argc, char** argv)
 
       StatesInfo SInfo;
       SInfo.MinStates = MinStates;
-      SInfo.MaxStates = MaxStates;
+      SInfo.MaxStates = 0;
       SInfo.TruncationCutoff = TruncCutoff;
       SInfo.EigenvalueCutoff = EigenCutoff;
       std::cout << SInfo << '\n';
+
+      StatesList MyStates(States);
+      std::cout << MyStates << '\n';
 
       // replicate the HamMPO until it has the same size as the unit cell
       HamMPO = repeat(HamMPO, WavefuncUnitCellSize / HamMPO.size());
@@ -1254,9 +1258,10 @@ int main(int argc, char** argv)
 
       try
       {
-
-	 for (int i = 0; i < NumSteps; ++i)
+	 for (int i = 0; i < MyStates.size(); ++i)
 	 {
+	    SInfo.MaxStates = MyStates[i].NumStates;
+
 	    C = DoDMRGSweepLeft(MyPsi, C, HamMPO, LeftBlock, RightBlock, SInfo, MinIter, NumIter,
 				FidelityAv, TwoSite, MixFactor, RandomMixFactor, EvolveDelta);
 
