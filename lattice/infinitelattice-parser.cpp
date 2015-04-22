@@ -232,7 +232,7 @@ struct push_sum_unit
    
    void operator()(char const* Start, char const* End) const
    {
-      TRACE("Parsing UnitCellMPO")(std::string(Start,End));
+      DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
       UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End));
 
       eval.push(sum_unit(Op));
@@ -252,7 +252,7 @@ struct push_sum_k
    {
       std::complex<double> k = boost::get<std::complex<double> >(eval.top());
       eval.pop();
-      TRACE("Parsing UnitCellMPO")(std::string(Start,End));
+      DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
       UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End));
       eval.push(sum_k(k, Op));
    }
@@ -285,7 +285,7 @@ struct push_sum_kink
 	 PANIC("Failed to parse two parameters in sum_kink");
       }
 
-      TRACE("Parsing UnitCellMPO")(std::string(Start,End));
+      DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
       UnitCellMPO Kink = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, Comma));
       ++Comma; // skip over the comma
       UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Comma, End));
