@@ -48,7 +48,7 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      LatticeSite Site = Spin(S);
+      LatticeSite Site = SpinSite(S);
       UnitCell Cell(Site);
       InfiniteLattice Lattice(Cell);
       UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz");

@@ -298,13 +298,13 @@ UnitCell::OperatorFunction(std::string const& Op, int n,
 }
 
 UnitCellMPO
-UnitCell::swap_gate(int i, int j) const
+UnitCell::swap_gate_no_sign(int i, int j) const
 {
-   return this->swap_gate(0,i,0,j);
+   return this->swap_gate_no_sign(0,i,0,j);
 }
 
 UnitCellMPO
-UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
+UnitCell::swap_gate_no_sign(int Cell_i, int i, int Cell_j, int j) const
 {
    CHECK(i >= 0 && i < this->size())("Site index is outside the unit cell!")(i)(this->size());
    CHECK(j >= 0 && j < this->size())("Site index is outside the unit cell!")(j)(this->size());

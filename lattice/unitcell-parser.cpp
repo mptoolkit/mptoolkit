@@ -459,6 +459,89 @@ struct push_parameter_pack<element_type>
    std::stack<std::stack<element_type> >& ParamStack;
 };
 
+//
+// swapb - swap without fermion signs
+//
+
+// notation for swapb(cell1,cell2)[site1,site2]
+struct push_swapb_cell_site
+{
+   push_swapb_cell_site(UnitCell const& Cell_, int NumCells_,
+		       std::stack<element_type>& eval_)
+      : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
+
+   void operator()(char const*, char const*) const
+   {
+      int Site2 = pop_int(eval);
+      int Site1 = pop_int(eval);
+      int Cell2 = pop_int(eval);
+      int Cell1 = pop_int(eval);
+
+      CHECK(NumCells == 0 || (Cell1 >= 0 && Cell1 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
+      CHECK(NumCells == 0 || (Cell2 >= 0 && Cell2 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
+
+      eval.push(element_type(Cell.swap_gate_no_sign(Cell1, Site1, Cell2, Site2)));
+   }
+
+   UnitCell const& Cell;
+   int NumCells;
+   std::stack<element_type >& eval;
+};
+
+// notation for swapb[site1,site2]
+struct push_swapb_site
+{
+   push_swapb_site(UnitCell const& Cell_, int NumCells_,
+		  std::stack<element_type>& eval_)
+      : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
+
+   void operator()(char const*, char const*) const
+   {
+      CHECK(NumCells == 0 || NumCells == 1)("Cell index required");
+      int Cell2 = 0;
+      int Cell1 = 0;
+      int Site2 = pop_int(eval);
+      int Site1 = pop_int(eval);
+
+      eval.push(element_type(Cell.swap_gate_no_sign(Cell1, Site1, Cell2, Site2)));
+   }
+
+   UnitCell const& Cell;
+   int NumCells;
+   std::stack<element_type >& eval;
+};
+
+// notation for swapb(cell1,cell2)
+struct push_swapb_cell
+{
+   push_swapb_cell(UnitCell const& Cell_, int NumCells_,
+		  std::stack<element_type>& eval_)
+      : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
+
+   void operator()(char const*, char const*) const
+   {
+      CHECK_EQUAL(Cell.size(), 1)("Unit cell is more than one site, so a site index required here");
+      int Cell2 = pop_int(eval);
+      int Cell1 = pop_int(eval);
+      int Site2 = 0;
+      int Site1 = 0;
+
+      CHECK(NumCells == 0 || (Cell1 >= 0 && Cell1 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
+      CHECK(NumCells == 0 || (Cell2 >= 0 && Cell2 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
+
+      eval.push(element_type(Cell.swap_gate_no_sign(Cell1, Site1, Cell2, Site2)));
+   }
+
+   UnitCell const& Cell;
+   int NumCells;
+   std::stack<element_type >& eval;
+};
+
+//
+// swap (with fermion signs)
+//
+
+// notation for swap(cell1,cell2)[site1,site2]
 struct push_swap_cell_site
 {
    push_swap_cell_site(UnitCell const& Cell_, int NumCells_,
@@ -475,7 +558,8 @@ struct push_swap_cell_site
       CHECK(NumCells == 0 || (Cell1 >= 0 && Cell1 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
       CHECK(NumCells == 0 || (Cell2 >= 0 && Cell2 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
 
-      eval.push(element_type(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
+      PANIC("Swap() is not yet implemented");
+      //eval.push(element_type(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
    }
 
    UnitCell const& Cell;
@@ -483,30 +567,7 @@ struct push_swap_cell_site
    std::stack<element_type >& eval;
 };
 
-struct push_swap_site_cell
-{
-   push_swap_site_cell(UnitCell const& Cell_, int NumCells_,
-		       std::stack<element_type>& eval_)
-      : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
-
-   void operator()(char const*, char const*) const
-   {
-      int Cell2 = pop_int(eval);
-      int Cell1 = pop_int(eval);
-      int Site2 = pop_int(eval);
-      int Site1 = pop_int(eval);
-
-      CHECK(NumCells == 0 || (Cell1 >= 0 && Cell1 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
-      CHECK(NumCells == 0 || (Cell2 >= 0 && Cell2 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
-
-      eval.push(element_type(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
-   }
-
-   UnitCell const& Cell;
-   int NumCells;
-   std::stack<element_type >& eval;
-};
-
+// notation for swap[site1,site2]
 struct push_swap_site
 {
    push_swap_site(UnitCell const& Cell_, int NumCells_,
@@ -521,7 +582,8 @@ struct push_swap_site
       int Site2 = pop_int(eval);
       int Site1 = pop_int(eval);
 
-      eval.push(element_type(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
+      PANIC("Swap() is not yet implemented");
+      //eval.push(element_type(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
    }
 
    UnitCell const& Cell;
@@ -529,6 +591,7 @@ struct push_swap_site
    std::stack<element_type >& eval;
 };
 
+// notation for swapb(cell1,cell2)
 struct push_swap_cell
 {
    push_swap_cell(UnitCell const& Cell_, int NumCells_,
@@ -546,7 +609,8 @@ struct push_swap_cell
       CHECK(NumCells == 0 || (Cell1 >= 0 && Cell1 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
       CHECK(NumCells == 0 || (Cell2 >= 0 && Cell2 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
 
-      eval.push(element_type(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
+      PANIC("Swap() is not yet implemented");
+      //      eval.push(element_type(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
    }
 
    UnitCell const& Cell;
@@ -636,13 +700,19 @@ struct UnitCellParser : public grammar<UnitCellParser>
 
 	 sq_bracket_expr = '[' >> expression >> ']';
 
+	 swapb_cell_expr = (str_p("swapb") >> '(' >> expression >> ',' >> expression >> ')')
+	    >> (('[' >> expression >> ',' >> expression >> ']')[push_swapb_cell_site(self.Cell, self.NumCells, self.eval)]
+		|  eps_p[push_swapb_cell(self.Cell, self.NumCells, self.eval)]);
+
+	 swapb_site_expr =  (str_p("swapb") >> '[' >> expression >> ',' >> expression >> ']')
+	    [push_swapb_site(self.Cell, self.NumCells, self.eval)];
+
 	 swap_cell_expr = (str_p("swap") >> '(' >> expression >> ',' >> expression >> ')')
 	    >> (('[' >> expression >> ',' >> expression >> ']')[push_swap_cell_site(self.Cell, self.NumCells, self.eval)]
 		|  eps_p[push_swap_cell(self.Cell, self.NumCells, self.eval)]);
 
 	 swap_site_expr =  (str_p("swap") >> '[' >> expression >> ',' >> expression >> ']')
-	    >> (('(' >> expression >> ',' >> expression >> ')')[push_swap_site_cell(self.Cell, self.NumCells, self.eval)]
-		|  eps_p[push_swap_site(self.Cell, self.NumCells, self.eval)]);
+	    [push_swap_site(self.Cell, self.NumCells, self.eval)];
 
 	 // an operator of the form Op(u)[i]
 	 // If there is a parameter pack then it is a local operator function
@@ -745,6 +815,8 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	    |   keyword_d[constants_p[push_real<element_type>(self.eval)]]
 	    |   prod_expression
 	    |   commutator_bracket
+	    |   swapb_cell_expr
+	    |   swapb_site_expr
 	    |   swap_cell_expr
 	    |   swap_site_expr
 	    |   string_expression
@@ -783,7 +855,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
       rule<ScannerT> expression, term, factor, real, imag, operator_literal, unary_function,
 	 binary_function, bracket_expr, quantumnumber, prod_expression, sq_bracket_expr, 
 	 operator_expression, operator_bracket_sq, operator_sq_bracket, operator_bracket, operator_sq,
-	 parameter, parameter_list, swap_cell_expr, swap_site_expr,
+	 parameter, parameter_list, swap_cell_expr, swap_site_expr, swapb_cell_expr, swapb_site_expr,
 	 local_operator, local_operator_cell_site, local_operator_site_cell, 
 	 expression_string, string_expression,
 	 identifier, pow_term, commutator_bracket;

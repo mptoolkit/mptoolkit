@@ -14,28 +14,8 @@
 #include "mp-algorithms/arnoldi.h"
 #include "lattice/unitcell.h"
 #include "lattice/unitcell-parser.h"
-
-#include "models/spin.h"
-#include "models/spin-u1.h"
-#include "models/spin-u1u1.h"
-#include "models/spin-z2.h"
-#include "models/spin-su2.h"
-#include "models/tj-u1su2.h"
-#include "models/tj-u1.h"
-#include "models/spinlessfermion-u1.h"
-#include "models/kondo-u1su2.h"
-#include "models/kondo-u1.h"
-#include "models/kondo-u1u1.h"
-#include "models/kondo-so4.h"
-#include "models/boson-u1.h"
-#include "models/boson-2component-u1z2.h"
-#include "models/hubbard-u1u1-old.h"
-#include "models/hubbard-u1u1.h"
-#include "models/hubbard-u1su2.h"
-#include "models/hubbard-so4.h"
-#include "models/hubbard.h"
-
 #include "linearalgebra/arpack_wrapper.h"
+#include <boost/algorithm/string/predicate.hpp>
 
 namespace prog_opt = boost::program_options;
 
@@ -91,13 +71,10 @@ int main(int argc, char** argv)
    try
    {
       std::string PsiStr;
-      std::string OpL, OpR;
+      std::string LatticeFile;
       //      double Tol = 1e-10;
       int Verbose = 0;
-      std::string Model;
-      double Spin = 0.5;
-      int NMax = 3;
-      int UnitCellSize = 1;
+      bool Quiet = false;
       std::vector<std::string> OperatorStr;
       std::vector<std::string> CommutatorStr;
 
@@ -105,12 +82,10 @@ int main(int argc, char** argv)
       desc.add_options()
          ("help", "show this help message")
          ("wavefunction,w", prog_opt::value(&PsiStr), "Wavefunction [required]")
-	 ("model", prog_opt::value(&Model), "use this model for the operators [required]")
-	 ("spin", prog_opt::value(&Spin), "for spin models, the value of the spin [default 0.5]")
-         ("nmax", prog_opt::value(&NMax), "for Bose-Hubbard model, the max number of bosons per site")
+	 ("lattice,l", prog_opt::value(&LatticeFile), "use this lattice file for the operators [required]")
 	 ("commutator,c", prog_opt::value(&CommutatorStr), 
 	  "calculate the commutator phase angle, U X X^\\dagger = exp(i*theta) X")
-	 ("unitcell,u", prog_opt::value(&UnitCellSize), "Unit cell size for the operator parser")
+	 ("quiet,q", prog_opt::bool_switch(&Quiet), "suppress informational preamble about each operator")
 	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
          ;
 
@@ -133,7 +108,10 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("wavefunction") < 1)
       {
          std::cerr << "usage: mp-isymmetry [options] Operator1 [Operator2] ...\n";
-         std::cerr << "-w (--wavefunction) and --model are required options.\n";
+         std::cerr << "-w (--wavefunction) and -l [--lattice] are required options.\n";
+	 std::cerr << "Calculates the commutator phase of operator pairs <X Y X\u2020 Y\u2020>\n";
+	 std::cerr << "For complex conjugation, prefix the operator expression with c&\n";
+	 std::cerr << "For spatial reflection, prefix with r& (cr& or rc& for conjugate-reflection)\n";
          std::cerr << desc << '\n';
          return 1;
       }
@@ -145,131 +123,146 @@ int main(int argc, char** argv)
       //         EigenCutoff = 0;
       //      }
 
-      SimpleOperator MyOpL, MyOpR, MyOpL2;
-      LatticeSite Site;
-      if (Model == "spin")
-      {
-	 Site = CreateSpinSite(Spin);
-      }
-      else if (Model == "spin-su2")
-      {
-	 Site = CreateSU2SpinSite(Spin);
-      }
-      else if (Model == "spin-u1")
-      {
-	 Site = CreateU1SpinSite(Spin);
-      }
-      else if (Model == "uls")
-      {
-	 Site = CreateU1U1SpinSite();
-      }
-      else if (Model == "spin-z2")
-      {
-	 Site = CreateZ2SpinSite(Spin);
-      }
-      else if (Model == "tj-u1")
-      {
-	 Site = CreateU1tJSite();
-      }
-      else if (Model == "sf-u1")
-      {
-	 Site = CreateU1SpinlessFermion();
-      }
-      else if (Model == "bh-u1")
-      {
-	 Site = BosonU1(NMax);
-      }
-      else if (Model == "bh2-u1z2")
-      {
-	 Site = CreateBoseHubbard2BosonsU1Z2Site(NMax);
-      }
-      else if (Model == "hubbard")
-      {
-         Site = CreateHubbardSite();
-      }
-      else if (Model == "hubbard-u1u1")
-      {
-         Site = CreateU1U1HubbardSite();
-      }
-      else if (Model == "hubbard-u1u1-old")
-      {
-         Site = CreateU1U1HubbardOldOrderingSite();
-      }
-      else if (Model == "hubbard-u1su2")
-      {
-         Site = CreateU1SU2HubbardSite();
-      }
-      else if (Model == "hubbard-so4")
-      {
-         Site = CreateSO4HubbardSiteA();
-      }
-      else if (Model == "klm-u1")
-      {
-         Site = CreateU1KondoSite();
-      }
-      else if (Model == "klm-u1u1")
-      {
-         Site = CreateU1U1KondoSite();
-      }
-      else if (Model == "klm-so4")
-      {
-         Site = CreateSO4KondoSiteA();
-      }
-      else if (Model != "")
-      {
-	 PANIC("Unknown model");
-      }
 
-      UnitCell Cell = UnitCell(UnitCellSize, Site);
-
+      // Load the wavefunction
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
-      pvalue_ptr<InfiniteWavefunction> Psi1 
+      pvalue_ptr<InfiniteWavefunction> Psi 
          = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
 
-      // The wavefunction
-      LinearWavefunction Psi = get_orthogonal_wavefunction(*Psi1);
-      double Dim = Psi.Basis1().total_degree();
+      // Load the unit cell
+      pvalue_ptr<InfiniteLattice> Lattice = pheap::ImportHeap(LatticeFile);
+      UnitCell Cell = Lattice->GetUnitCell();
+      int UnitCellSize = Cell.size();
 
-      int const NumUnitCells = Psi.size() / UnitCellSize;
+      int const NumUnitCells = Psi->size() / UnitCellSize;
+
+      // orthogonalize the wavefunction
+      LinearWavefunction Psi1 = get_orthogonal_wavefunction(*Psi);
+      MatrixOperator Rho = scalar_prod(Psi->C_right, herm(Psi->C_right));
+      MatrixOperator Identity = MatrixOperator::make_identity(Psi1.Basis1());
+      double Dim = Psi1.Basis1().total_degree();
+
+      // reflected and conjugated versions of the wavefunction - we leave them as null
+      // until they are actually needed
+      LinearWavefunction PsiR, PsiC, PsiRC;
 
       // The list of U matrices, for each operator
       std::vector<MatrixOperator> U;
 
       for (unsigned i = 0; i < OperatorStr.size(); ++i)
       {
-	 FiniteMPO StringOperator = ParseUnitCellOperator(Cell, NumUnitCells, OperatorStr[i]).MPO();
+	 std::string OpStr = OperatorStr[i];
+	 bool Reflect = false;
+	 bool Conjugate = false;
+	 LinearWavefunction* Psi2 = &Psi1;
+	 // Do we have time reversal or reflection?
+	 if (boost::starts_with(OpStr, "r&"))
+	 {
+	    Reflect = true;
+	    OpStr = std::string(OpStr.begin()+2, OpStr.end());
+	    if (PsiR.empty())
+	    {
+	       InfiniteWavefunction PR = reflect(*Psi);
+	       orthogonalize(PR);
+	       PsiR = get_orthogonal_wavefunction(PR);
+	       //TRACE(PR.C_right)(Psi->C_right);
+	    }
+	    Psi2 = &PsiR;
+	 }
+	 else if (boost::starts_with(OpStr,"c&"))
+	 {
+	    Conjugate = true;
+	    OpStr = std::string(OpStr.begin()+2, OpStr.end());
+	    if (PsiC.empty())
+	    {
+	       PsiC = conj(Psi1);
+	    }
+	    Psi2 = &PsiC;
+	 }
+	 else if (boost::starts_with(OpStr,"rc&") || boost::starts_with(OpStr,"cr&"))
+	 {
+	    Reflect = true;
+	    Conjugate = true;
+	    OpStr = std::string(OpStr.begin()+3, OpStr.end());
+	    if (PsiR.empty())
+	    {
+	       InfiniteWavefunction PR = reflect(*Psi);
+	       orthogonalize(PR);
+	       PsiR = get_orthogonal_wavefunction(PR);
+	    }
+	    if (PsiRC.empty())
+	    {
+	       PsiRC = conj(PsiR);
+	    }
+	    Psi2 = &PsiRC;
+	 }
 
-	 StringOperator = repeat(StringOperator, Psi.size() / UnitCellSize);
+	 FiniteMPO StringOperator = ParseUnitCellOperator(Cell, 1, OpStr).MPO();
+
+	 StringOperator = repeat(StringOperator, Psi1.size() / StringOperator.size());
 
          std::complex<double> e;
          MatrixOperator v;
-         boost::tie(e, v) = get_left_eigenvector(Psi, Psi, Psi1->shift(), StringOperator);
-
-         std::cout << "Eigenvalue " << OperatorStr[i] << " is " << e << std::endl;
+         boost::tie(e, v) = get_left_eigenvector(Psi1, *Psi2, Psi->shift(), StringOperator);
 
          v *= std::sqrt(Dim); // make it properly unitary
-
-         std::cout << "Trace " << (trace(v) / Dim) << std::endl;
          U.push_back(v);
+
+	 //	 TRACE(v); //(scalar_prod(herm(v),v));
+	 TRACE(SingularValues(v));
+
+	 TRACE(inner_prod(v, conj(v)));
+
+#if 0
+	 // Make v the closest approximation to a unitary
+	 MatrixOperator U, D, Vh;
+	 SingularValueDecomposition(v, U, D, Vh);
+	 v = U*Vh;
+#endif
+
+	 // check if v is unitary; this will be close to zero
+	 double u = norm_frob(scalar_prod(herm(v), v) - Identity);
+
+	 if (!Quiet)
+	    std::cout << "Operator: " << OperatorStr[i] 
+		      << " eigenvalue=" << e
+		      << " expectation=" << trace(v*Rho)
+		      << " unitary=" << u << std::endl;
+	 
+	 // The eigenvalue should be nearly 1, or it isn't a unitary operator
+	 if (LinearAlgebra::norm_frob(LinearAlgebra::norm_frob(e)-1.0) > 1E-5)
+	 {
+	    WARNING("Operator is not unitary - eigenvalue is not modulus 1!")(OperatorStr[i])(e);
+	 }
+
+	 // And the eigenvector should be a unitary matrix
+	 if (u > 1E-5)
+	 {
+	    WARNING("Operator is not unitary - U U\\dagger is not identity!")(OperatorStr[i])(u);
+	 }
       }
+      if (!Quiet)
+	 std::cout << '\n';
 
       // Now go through each operator pair
-      std::cout << "#Op1       #Op2       #Commutator-Real  #Commutator-Imag  #Trace-Real    #Trace-Imag\n";
+      std::cout << "#Op1                 #Op2                 #Commutator-Real  #Commutator-Imag\n";
       for (unsigned i = 0; i < U.size(); ++i)
       {
          for (unsigned j = i+1; j < U.size(); ++j)
          {
-            std::complex<double> x = inner_prod(U[i]*U[j], U[j]*U[i]) / Dim;
-            std::complex<double> tr = trace(U[i]*U[j]) / Dim;
-            std::cout << std::setw(10) << std::left << OperatorStr[i] << " "
-                      << std::setw(10) << std::left << OperatorStr[j] << " "
+	    //            std::complex<double> x = inner_prod(U[i]*U[j], U[j]*U[i]) / Dim;
+            std::complex<double> x = inner_prod(scalar_prod(herm(U[i]*U[j]), U[j]*U[i]), Rho);
+	    //            std::complex<double> tr = trace(U[i]*U[j]*Rho);
+	    //	    TRACE(scalar_prod(herm(U[i]*U[j]), U[i]*U[j]));
+            std::cout << std::setw(20) << std::left << OperatorStr[i] << " "
+                      << std::setw(20) << std::left << OperatorStr[j] << " "
                       << std::setw(17) << std::right << std::fixed << x.real() << " "
                       << std::setw(17) << std::right << std::fixed << x.imag() << " "
-                      << std::setw(17) << std::right << std::fixed << tr.real() << " "
-                      << std::setw(17) << std::right << std::fixed << tr.imag() << std::endl;
+		      << std::endl;
          }
       }
 
+#if 0
       // Now calculate the commutators
       for (unsigned j = 0; j < CommutatorStr.size(); ++j)
       {
@@ -286,6 +279,7 @@ int main(int argc, char** argv)
 	    std::cout << "Phase " << CommutatorStr[j] << " with " << OperatorStr[i] << " = " << Phase << '\n';
 	 }
       }
+#endif
 
       pheap::Shutdown();
    }

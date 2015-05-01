@@ -147,10 +147,10 @@ class UnitCell
 				 std::vector<std::complex<double> > const& Params) const;
 
       // Returns an MPO that effects a swap gate between sites i and j
-      UnitCellMPO swap_gate(int i, int j) const;
+      UnitCellMPO swap_gate_no_sign(int i, int j) const;
 
       // Returns an MPO that effects a swap gate between different unit cells
-      UnitCellMPO swap_gate(int iCell, int i, int jCell, int j) const;
+      UnitCellMPO swap_gate_no_sign(int iCell, int i, int jCell, int j) const;
 
       // Parse an operator of the form O or O[n]
       //      UnitCellMPO Parse(std::string const& s);

@@ -1157,7 +1157,7 @@ int main(int argc, char** argv)
 	 std::cout << "Number of long range terms = " << LongRangeCoeff.size() << '\n';
 	 CHECK_EQUAL(LongRangeCoeff.size(), LongRangeExp.size())
 	    ("Must supply equal numbers of coefficients and exponents");
-	 LatticeSite Site = CreateSpinSite(0.5);
+	 LatticeSite Site = SpinSite(0.5);
 	 TriangularMPO Ham;
 	 Ham = J * 4.0 * TriangularTwoSite(Site["Sz"], Site["Sz"])
 	    + Lambda * 2.0 * TriangularOneSite(Site["Sx"]);
@@ -1187,7 +1187,7 @@ int main(int argc, char** argv)
             std::cerr << "error: cannot open coupling file " << CouplingFile << '\n';
             exit(1);
          }
-	 LatticeSite Site = HamStr == "lr-itf" ? CreateSpinSite(0.5) : CreateZ2SpinSite(0.5);
+	 LatticeSite Site = HamStr == "lr-itf" ? SpinSite(0.5) : CreateZ2SpinSite(0.5);
          std::vector<BasisList> Sites(NLegs, Site["I"].Basis());
 	 TriangularMPO Ham;
          int i,j,r2;
@@ -1487,7 +1487,7 @@ int main(int argc, char** argv)
 	 CHECK_EQUAL(LongRangeCoeff.size(), LongRangeExp.size())
 	    ("Must supply equal numbers of coefficients and exponents");
 
-	 LatticeSite Site = CreateSpinSite(Spin);
+	 LatticeSite Site = SpinSite(Spin);
 	 TriangularMPO Ham;
 	 Ham = Jz*TriangularTwoSite(Site["Sz"], Site["Sz"], Site["I"].TransformsAs())
             + 0.5 * J * (TriangularTwoSite(Site["Sp"], Site["Sm"], Site["I"].TransformsAs())
@@ -1526,7 +1526,7 @@ int main(int argc, char** argv)
 	 std::cout << "Hamiltonian is XYZ model with spin S=" << Spin
 		   << ", Jx=" << Jx << ", Jy=" << Jy << ", Jz=" << Jz 
                    << ", Jr=" << Jr << '\n';
-	 LatticeSite Site = CreateSpinSite(Spin);
+	 LatticeSite Site = SpinSite(Spin);
 	 TriangularMPO Ham;
 	 Ham = Jz*TriangularTwoSite(Site["Sz"], Site["Sz"])
             + Jx*TriangularTwoSite(Site["Sx"], Site["Sx"])

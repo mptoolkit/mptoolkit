@@ -205,7 +205,8 @@ mp-tools = mp-construct mp-overlap mp-expectation \
 infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-itebd2 \
                  mp-ieigen mp-idmrg3 mp-icorrelation mp-idmrg4 mp-idmrg5 mp-iexcitation mp-iexcitation2 \
                  mp-bdmrg mp-imake-transverse-lattice mp-imake-transverse-lattice-folded mp-iexpectation-sz \
-                 mp-iexpectation-sz2 mp-iparity mp-idump mp-itebd mp-idmrg5-spin2 mp-iexpectation3
+                 mp-iexpectation-sz2 mp-iparity mp-idump mp-itebd mp-idmrg5-spin2 mp-iexpectation3 mp-isymmetry \
+                 mp-ispectrum
 
 infinite-tools = mp-idmrg mp-idmrg5 mp-ioverlap \
                  mp-iinfo mp-iprint mp-iproject \
@@ -506,7 +507,7 @@ mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunction.o rand
 mp-igradient : triangular_operator.o infinitewavefunction.o random_wavefunc.o
 mp-ispectral-expansion : triangular_operator.o infinitewavefunction.o random_wavefunc.o
 mp-ioverlap : infinitewavefunction.o
-mp-isymmetry : infinitewavefunction.o packunpack.o arpack_wrapper.o unitcell-parser.o unitcell.o
+mp-isymmetry : infinitewavefunction.o packunpack.o
 
 mp-ireorder-symmetry : infinitewavefunction.o 
 

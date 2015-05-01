@@ -4,7 +4,7 @@
 #include "quantumnumbers/u1.h"
 
 inline
-LatticeSite Spin(half_int S)
+LatticeSite SpinSite(half_int S)
 {
    SymmetryList Symmetry("S:Null");
    SiteBasis Basis(Symmetry);
