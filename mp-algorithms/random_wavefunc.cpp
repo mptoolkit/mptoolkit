@@ -170,7 +170,7 @@ LinearWavefunction CreateRandomWavefunction(std::vector<BasisList> const& Basis,
 {
    WavefunctionDesc Psi = CreateRandomConfiguration(Basis, q, Beta, RightBoundary);
 
-   BasisList Vac = make_vacuum_basis(Basis[0].GetSymmetryList());
+   BasisList Vac = make_single_basis(RightBoundary);
    VectorBasis B2(Vac);
    QuantumNumber Ident(Basis[0].GetSymmetryList());  // the scalar quantum number
 

@@ -2462,7 +2462,28 @@ int main(int argc, char** argv)
 
 	 QuantumNumbers::QuantumNumber q(HamMPO[0].GetSymmetryList(), TargetState);
 	 std::cout << "Target quantum number = " << q << '\n';
-	 LinearWavefunction W = CreateRandomWavefunction(FullBL, q, 3);
+	 QuantumNumber LBoundary, RBoundary;
+	 if (BoundaryState.empty())
+	 {
+	    RBoundary = QuantumNumber(HamMPO[0].GetSymmetryList());
+	    RBoundary = q;
+	 }
+	 else
+	 {
+	    RBoundary = QuantumNumber(HamMPO[0].GetSymmetryList(), BoundaryState[0]);
+	    std::cout << "Boundary quantum number is " << RBoundary << '\n';
+	    if (BoundaryState.size() > 1)
+	    {
+	       std::cout << "WARNING: ignoring addititional boundary quantum numbers in random wavefunction\n";
+	    }
+	    QuantumNumbers::QuantumNumberList QL = transform_targets(q, RBoundary);
+	    if (QL.size() > 1)
+	    {
+	       PANIC("Don't know how to handle non-scalar non-abelian target state")(RBoundary)(q);
+	    }
+	    LBoundary = QL[0];
+	 }
+	 LinearWavefunction W = CreateRandomWavefunction(FullBL, LBoundary, 3, RBoundary);
 	 Psi.QShift = q;
 	 Psi.C_old = MatrixOperator::make_identity(W.Basis2());
 	 MatrixOperator C = MatrixOperator::make_identity(W.Basis1());

@@ -60,6 +60,12 @@ LinearWavefunction
 CreateRandomWavefunction(std::vector<BasisList> const& Basis, 
                          QuantumNumber const& q, double Beta);
 
+LinearWavefunction 
+CreateRandomWavefunction(std::vector<BasisList> const& Basis, 
+                         QuantumNumber const& q, double Beta,
+			 QuantumNumber const& RightBoundary);
+
+
 #if 0
 LinearWavefunction 
 CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q, double Beta);
