@@ -52,8 +52,8 @@ int main(int argc, char** argv)
       // parity operators
       // **NOTE** Currently the swap_gate doesn't do fermion signs, so we
       // need to add this by hand
-      Cell["Parity"] = Cell.swap_gate(0,2) * exp(math_const::pi*std::complex<double>(0,1)
-						 *((N[0]+N[2])*N[1]+N[0]*N[2]));
+      Cell["Parity"] = Cell.swap_gate_no_sign(0,2) * exp(math_const::pi*std::complex<double>(0,1)
+							 *((N[0]+N[2])*N[1]+N[0]*N[2]));
       // Reflection operator.
       R = R[0]*R[1]*R[2];
 
