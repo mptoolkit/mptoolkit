@@ -433,6 +433,69 @@ local_inner_prod(OperatorComponent const& A, HermitianProxy<OperatorComponent> c
    return Result;
 }
 
+SimpleOperator
+local_inner_tensor_prod(HermitianProxy<OperatorComponent> const& A, OperatorComponent const& B)
+{
+   DEBUG_PRECONDITION_EQUAL(A.base().Basis1(), B.Basis1());
+
+   ProductBasis<BasisList, BasisList> PBasis1(adjoint(A.base().Basis1()), B.Basis1());
+   ProductBasis<BasisList, BasisList> PBasis2(adjoint(A.base().Basis2()), B.Basis2());
+
+   QuantumNumbers::QuantumNumber Ident(B.GetSymmetryList());
+
+   SimpleOperator Result(PBasis1.Basis(), PBasis2.Basis(), Ident);
+
+   for (OperatorComponent::const_iterator iL = iterate(A.base()); iL; ++iL)
+   {
+      for (OperatorComponent::const_iterator iR = iterate(B); iR; ++iR)
+      {
+
+         for (OperatorComponent::const_inner_iterator jL = iterate(iL); jL; ++jL)
+         {
+            for (OperatorComponent::const_inner_iterator jR = iterate(iR); jR; ++jR)
+            {
+
+               ProductBasis<BasisList, BasisList>::const_iterator TiIter, 
+                  TiEnd = PBasis1.end(jL.index1(), jR.index1());
+               for (TiIter = PBasis1.begin(jL.index1(), jR.index1()); TiIter != TiEnd; ++TiIter)
+               {
+		  ProductBasis<BasisList, BasisList>::const_iterator TjIter, 
+		     TjEnd = PBasis2.end(jL.index2(), jR.index2());
+		  for (TjIter = PBasis2.begin(jL.index2(), jR.index2()); TjIter != TjEnd; 
+		       ++TjIter)
+                  {
+                     for (SimpleRedOperator::const_iterator RedL = jL->begin(); RedL != jL->end(); ++RedL)
+                     {
+                        for (SimpleRedOperator::const_iterator RedR = jR->begin(); RedR != jR->end(); ++RedR)
+                        {
+			   // we are taking the inner product, so we require the quantum numbers match
+			   if (RedL->TransformsAs() != RedR->TransformsAs())
+			      continue;
+			   
+			   if (!is_transform_target(PBasis2[*TjIter], Ident, PBasis1[*TiIter]))
+			      continue;
+
+			   double Coeff = tensor_coefficient(PBasis1, PBasis2, 
+							     adjoint(RedL->TransformsAs()), RedR->TransformsAs(), Ident,
+							     jL.index1(), jR.index1(), *TiIter, 
+							     jL.index2(), jR.index2(), *TjIter);
+			   if (LinearAlgebra::norm_2(Coeff) > 1E-14)
+			   {
+			      Result(*TiIter, *TjIter) += Coeff * inner_prod(*RedL, *RedR);
+			   }
+                        }
+                     }
+		  }
+	       }
+	    }
+	 }
+      }
+   }
+   Result.debug_check_structure();
+   return Result;
+}
+   
+
 OperatorComponent
 local_adjoint(OperatorComponent const& A)
 {
@@ -783,7 +846,7 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
 #if !defined(NDEBUG)
    // verify that prod(tA, Reg) is the same as A.  
    OperatorComponent ACheck = prod(tA, Reg);
-   CHECK(norm_frob_sq(A - ACheck) < (Scale*TruncateOverlapEpsilon))(norm_frob_sq(A - ACheck))(A)(ACheck)(A-ACheck)(Trunc)(Reg)(Overlaps);
+   CHECK(norm_frob_sq(A - ACheck) <= (Scale*TruncateOverlapEpsilon))(norm_frob_sq(A - ACheck))(A)(ACheck)(A-ACheck)(Trunc)(Reg)(Overlaps);
 #endif
 
    A = tA;

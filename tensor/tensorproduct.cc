@@ -121,9 +121,9 @@ ProductBasisBase<BL, BR, Base>::MakeTriangularProjected(left_basis_type const& L
    }
 
    // Now s1>0 and all s2
-   for (s1 = 1; s1 < Left_.size(); ++s1)
+   for (unsigned s1 = 1; s1 < Left_.size(); ++s1)
    {
-      for (s2 = 0; s2 < Right_.size(); ++s2)
+      for (unsigned s2 = 0; s2 < Right_.size(); ++s2)
       {
 	 std::list<QuantumNumber> QNList;
 	 transform_targets(Left_[s1], Right_[s2], std::back_inserter(QNList));

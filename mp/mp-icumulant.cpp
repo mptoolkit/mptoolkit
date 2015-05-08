@@ -38,7 +38,7 @@ int main(int argc, char** argv)
    int NMax = 3;
    int NLegs = 1;
    double Spin = 0.5;
-   std::string CouplingFile;
+   bool Print = false;
 
    std::cout.precision(getenv_or_default("MP_PRECISION", 14));
  
@@ -49,6 +49,7 @@ int main(int argc, char** argv)
          ("help", "show this help message")
 	 ("power", prog_opt::value(&Power),
 	  FormatDefault("Calculate expectation value of operator to this power", Power).c_str())
+         ("print,p", prog_opt::bool_switch(&Print), "Print the MPO to standard output")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose),
           "extra debug output (can be used more than once)")
 	 ;
@@ -96,6 +97,14 @@ int main(int argc, char** argv)
 	 Op = Op * Temp;
 	 --Power;
       }
+
+      if (Print)
+      {
+	 std::cout << Op << '\n';
+	 std::cout << "\nTransfer matrix:" << construct_transfer_matrix(herm(GenericMPO(Op)),
+									GenericMPO(Op)) << '\n';
+      };
+
 
       // Make a LinearWavefunction in the symmetric orthogonality constraint
       MatrixOperator Identity = MatrixOperator::make_identity(Psi.Psi.Basis1());

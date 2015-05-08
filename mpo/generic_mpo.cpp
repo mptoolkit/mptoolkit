@@ -425,6 +425,19 @@ SimpleOperator make_projector_onto(BasisList const& Basis, std::set<int> const& 
    return Result;
 }
 
+SimpleOperator
+construct_transfer_matrix(HermitianProxy<GenericMPO> const& A, GenericMPO const& B)
+{
+   CHECK_EQUAL(A.base().size(), B.size());
+
+   SimpleOperator Result = local_inner_tensor_prod(herm(A.base()[0]), B[0]);
+   for (unsigned i = 1; i < B.size(); ++i)
+   {
+      Result = Result *  local_inner_tensor_prod(herm(A.base()[i]), B[i]);
+   }
+   return Result;
+}
+
 // classification
 
 OperatorClassification::OperatorClassification()

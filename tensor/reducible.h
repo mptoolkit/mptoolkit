@@ -556,9 +556,9 @@ struct InnerProd<Tensor::ReducibleTensor<T1, B1, B2, S1>,
       using QuantumNumbers::QuantumNumber;
       result_type Result = 0;
       std::set<QuantumNumber> q1 = x.components(), q2 = y.components();
-      intersection_iterator<std::set<QuantumNumber> > IEnd = set_intersection_end(q1,q2);
-      for (intersection_iterator<std::set<QuantumNumber> > I = set_intersection_begin(q1,q2);
-	   I != IEnd; ++I)
+      std::set<QuantumNumber> Intersect;
+      std::set_intersection(q1.begin(), q1.end(), q2.begin(), q2.end(), std::inserter(Intersect, Intersect.begin()));
+      for (std::set<QuantumNumber>::const_iterator I = Intersect.begin(); I != Intersect.end(); ++I)
       {
 	 Result += inner_prod(x.project_assert(*I), y.project_assert(*I));
       }

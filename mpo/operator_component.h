@@ -342,6 +342,11 @@ local_inner_prod(HermitianProxy<OperatorComponent> const& A, OperatorComponent c
 SimpleOperator
 local_inner_prod(OperatorComponent const& A, HermitianProxy<OperatorComponent> const& B);
 
+// constructs the tensor product matrix Result((i',j'), (i,j)) = inner(A(i',i), B(j',j))
+// This is the matrix representation of the MPO transfer matrix
+SimpleOperator
+local_inner_tensor_prod(HermitianProxy<OperatorComponent> const& A, OperatorComponent const& B);
+
 // Performs the adjoint operation on the local operators.  The auxiliary basis
 // transforms into the adjoint basis but preserves the basis1 / basis2 relationship
 OperatorComponent

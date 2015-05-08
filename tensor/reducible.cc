@@ -120,9 +120,10 @@ std::set<QuantumNumber>
 ReducibleTensor<T, B1, B2, S>::components() const
 {
    std::set<QuantumNumber> Result;
-   for (const_iterator I = this->begin(); I != this->end(); ++I)
+   for (const_map_iterator I = data_.begin(); I != data_.end(); ++I)
    {
-      Result.insert(I->TransformsAs());
+      DEBUG_CHECK_EQUAL(I->first, I->second.TransformsAs())("Structure error in ReducibleTensor");
+      Result.insert(I->first);
    }
    return Result;
 }

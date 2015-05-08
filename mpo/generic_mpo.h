@@ -127,6 +127,11 @@ MPOMaskType mask_row(GenericMPO const& Op, int Row);
 // Does a 2-1 coarse graining of an operator.  The length must be a multiple of 2
 GenericMPO coarse_grain_pairs(GenericMPO const& Op);
 
+// constructs the transfer operator as
+// prod_i local_inner_tensor_prod(herm(A.base()[i]), B[i])
+SimpleOperator
+construct_transfer_matrix(HermitianProxy<GenericMPO> const& A, GenericMPO const& B);
+
 struct OperatorClassification
 {
    // indicates that the operator is zero
