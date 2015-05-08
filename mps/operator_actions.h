@@ -201,6 +201,36 @@ struct LeftMultiplyString
    QuantumNumber QShift;
 };
 
+struct LeftMultiplyOperator
+{
+   typedef StateComponent argument_type;
+   typedef StateComponent result_type;
+
+   LeftMultiplyOperator(LinearWavefunction const& L1_, 
+			GenericMPO const& StringOp_,
+			LinearWavefunction const& L2_, 
+			QuantumNumber const& QShift_) 
+      : L1(L1_), StringOp(StringOp_) , L2(L2_), QShift(QShift_)
+   {
+      CHECK_EQUAL(L1.size(), L2.size())
+         ("The two wavefunctions must be the same length");
+      CHECK_EQUAL(L1.size(), StringOp.size())
+         ("The string operator must be the same length as the unit cell");
+   }
+
+   result_type operator()(argument_type const& x) const
+   {
+      DEBUG_CHECK_EQUAL(x.Basis1(), L1.Basis1());
+      DEBUG_CHECK_EQUAL(x.Basis2(), L2.Basis1());
+      return delta_shift(inject_left(x, L1, StringOp, L2), QShift);
+   }
+
+   LinearWavefunction const& L1;
+   GenericMPO StringOp;
+   LinearWavefunction const& L2;
+   QuantumNumber QShift;
+};
+
 
 
 #endif

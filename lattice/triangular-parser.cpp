@@ -1,6 +1,6 @@
 // -*- C++ -*- $Id$
 
-#include "infinitelattice-parser.h"
+#include "triangular-parser.h"
 #include "parser/parser.h"
 #include "unitcell-parser.h"
 #include <boost/algorithm/string.hpp>
@@ -139,7 +139,7 @@ struct push_operator
 
       CHECK(Lattice.triangular_operator_exists(OpName))("Operator does not exist in the lattice")(OpName);
 
-      eval.push(element_type(Lattice.TriangularOperator(OpName)));
+      eval.push(element_type(Lattice.Triangular(OpName)));
    }
 
    InfiniteLattice const& Lattice;
@@ -503,7 +503,7 @@ ParseTriangularOperator(InfiniteLattice const& Lattice, std::string const& Str)
    }
    // else, we also handle the case where the operator is a number
    complex x = boost::get<complex>(Result);
-   return x*Lattice.TriangularOperator("I");
+   return x*Lattice.Triangular("I");
 }
 
 std::pair<TriangularMPO, InfiniteLattice>

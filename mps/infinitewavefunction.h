@@ -38,6 +38,7 @@
 
 #include "linearwavefunction.h"
 #include "mpo/finite_mpo.h"
+#include "mpo/product_mpo.h"
 
 class InfiniteWavefunction
 {
@@ -103,6 +104,10 @@ std::complex<double> overlap(InfiniteWavefunction const& x, std::vector<SimpleOp
 // This version allows a string operator also
 // This version takes a FiniteMPO as the string operator - this should become a ProductMPO once they are finished
 std::complex<double> overlap(InfiniteWavefunction const& x, FiniteMPO const& StringOp,
+                             InfiniteWavefunction const& y,
+                             QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, bool Verbose = false);
+
+std::complex<double> overlap(InfiniteWavefunction const& x, ProductMPO const& StringOp,
                              InfiniteWavefunction const& y,
                              QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, bool Verbose = false);
 

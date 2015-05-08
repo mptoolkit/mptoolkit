@@ -497,27 +497,25 @@ struct binary_outer_product : boost::static_visitor<element_type>
 };
 
 //
-// cross_product: outer product of tensor operators.
-// We choose among the possible transform_targets the
-// quantum number with the largest degree.
+// cross_product
 template <typename element_type>
 struct binary_cross_product : boost::static_visitor<element_type>
 {
    element_type operator()(complex const& x, complex const& y) const
    {
-      return element_type(x*y);
+      return element_type(0.0);
    }
 
    template <typename T>
    element_type operator()(complex const& x, T const& y) const
    {
-      return element_type(x*y);
+      return element_type(0.0);
    }
 
    template <typename T>
    element_type operator()(T const& x, complex const& y) const
    {
-      return element_type(x*y);
+      return element_type(0.0);
    }
 
    template <typename T1, typename T2>

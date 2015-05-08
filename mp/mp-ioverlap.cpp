@@ -9,7 +9,7 @@
 #include "common/environment.h"
 #include "common/prog_options.h"
 #include "lattice/unitcell.h"
-#include "lattice/unitcell-parser.h"
+#include "lattice/product-parser.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -192,21 +192,18 @@ int main(int argc, char** argv)
       UnitCell Cell;
       LatticeSite Site;
 
-      FiniteMPO StringOp;
+      ProductMPO StringOp;
       if (vm.count("string"))
       {
 	 InfiniteLattice Lattice;
-	 UnitCellMPO Op;
-	 boost::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(String);
-	 // Make sure that the operator starts from unit cell 0
-	 Op.ExtendToCover(Lattice.GetUnitCell().size(), 0);
-	 StringOp = repeat(Op.MPO(), Psi1->size() / Op.size());
+	 boost::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(String);
+	 StringOp = repeat(StringOp, Psi1->size() / StringOp.size());
 	 CHECK_EQUAL(StringOp.size(), Psi1->size())
 	    ("string operator cannot (yet!) be larger than the wavefunction");
       }
       else
       {
-         StringOp = FiniteMPO::make_identity(ExtractLocalBasis(Psi2->Psi));
+         StringOp = ProductMPO::make_identity(ExtractLocalBasis(Psi2->Psi));
       }
 
       if (Reflect)
@@ -265,6 +262,7 @@ int main(int argc, char** argv)
       std::vector<TransEigenInfo> EigenList;
       for (std::set<QuantumNumber>::const_iterator I = Sectors.begin(); I != Sectors.end(); ++I)
       {
+	 //FiniteMPO StringOp = FiniteMPO::make_identity(ExtractLocalBasis(Psi2->Psi));
          TransEigenInfo Info(*I, overlap(*Psi1, StringOp, *Psi2, *I, Iter, Tol, Verbose));
          if (Sort)
             EigenList.push_back(Info);

@@ -15,7 +15,7 @@
 #include "mp/copyright.h"
 #include "common/prog_options.h"
 #include <fstream>
-#include "lattice/infinitelattice-parser.h"
+#include "lattice/triangular-parser.h"
 #include "mps/momentum_operations.h"
 #include "mp-algorithms/triangular_mpo_solver.h"
 #include "common/prog_opt_accum.h"

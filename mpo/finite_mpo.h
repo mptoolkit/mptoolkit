@@ -58,10 +58,6 @@ class FiniteMPO
       // it is irreducible in the scalar symmetry sector
       bool is_scalar() const;
 
-      // returns true if this MPO is the identity operator, that is, a 1x1 MPO that
-      // is a product of identity operators.
-      bool is_identity() const;
-
       // precondition: is_irreducible
       // WARNING: Use qn1() instead of TransformsAs() where appropriate.
       // For debugging purposes, to audit usage of TransformsAs, we have an include guard
@@ -127,6 +123,8 @@ class FiniteMPO
 
       // Make an identity MPO over the given unit cell basis
       static FiniteMPO make_identity(std::vector<BasisList> const& Basis);
+      static FiniteMPO make_identity(std::vector<BasisList> const& Basis,
+				     QuantumNumber const& q);
 
    private:
       data_type Data;

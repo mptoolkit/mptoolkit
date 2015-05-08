@@ -284,12 +284,20 @@ struct ScalarProd<HermitianProxy<StateComponent>, StateComponent>
 } // namespace LinearAlgebra
 
 
-// some quick hacks
+std::complex<double>
+inner_prod(StateComponent const& x, StateComponent const& y);
+
 inline
 std::complex<double>
 inner_prod(StateComponent const& x, StateComponent const& y)
 {
-   return trace(scalar_prod(x, herm(y)));
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   std::complex<double> r = 0.0;
+   for (unsigned i = 0; i < x.size(); ++i)
+   {
+      r += inner_prod(x[i], y[i]);
+   }
+   return r;
 }
 
 inline
@@ -597,6 +605,8 @@ StateComponent tensor_accumulate(FwdIter first, FwdIter last,
    return Result;
 }
 
+// utility functions to generate random matrices.
+// Typically used to initialize iterative eigensolvers etc
 MatrixOperator MakeRandomMatrixOperator(VectorBasis const& B1, VectorBasis const& B2,
 					QuantumNumber q);
 
@@ -605,6 +615,10 @@ MatrixOperator MakeRandomMatrixOperator(VectorBasis const& B1, VectorBasis const
 {
    return MakeRandomMatrixOperator(B1, B2, QuantumNumber(B1.GetSymmetryList()));
 }
+
+StateComponent
+MakeRandomStateComponent(BasisList const& Local, VectorBasis const& B1, VectorBasis const& B2);
+
 
 // this belongs somewhere else
 MatrixOperator RenameSymmetry(MatrixOperator const& Op, SymmetryList const& NewSL);

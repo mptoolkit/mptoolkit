@@ -991,3 +991,14 @@ MatrixOperator MakeRandomMatrixOperator(VectorBasis const& B1,
    }
    return Result;
 }
+
+StateComponent
+MakeRandomStateComponent(BasisList const& Local, VectorBasis const& B1, VectorBasis const& B2)
+{
+   StateComponent Result(Local, B1, B2);
+   for (unsigned i = 0; i < Result.size(); ++i)
+   {
+      Result[i] = MakeRandomMatrixOperator(B1, B2, Local[i]);
+   }
+   return Result;
+}

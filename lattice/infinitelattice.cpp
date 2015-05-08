@@ -19,15 +19,7 @@ InfiniteLattice::triangular_operator_exists(std::string const& s) const
 }
 
 TriangularMPO const&
-InfiniteLattice::TriangularOperator(std::string const& Op) const
-{
-   triangular_map_type::const_iterator I = OperatorMap_.find(Op);
-   CHECK(I != OperatorMap_.end())("Operator does not exist in the lattice!")(Op);
-   return I->second;
-}
-
-TriangularMPO const&
-InfiniteLattice::operator[](std::string const& Op) const
+InfiniteLattice::Triangular(std::string const& Op) const
 {
    triangular_map_type::const_iterator I = OperatorMap_.find(Op);
    CHECK(I != OperatorMap_.end())("Operator does not exist in the lattice!")(Op);
@@ -35,7 +27,7 @@ InfiniteLattice::operator[](std::string const& Op) const
 }
 
 TriangularMPO&
-InfiniteLattice::operator[](std::string const& Op)
+InfiniteLattice::Triangular(std::string const& Op)
 {
    triangular_map_type::iterator I = OperatorMap_.find(Op);
    if (I == OperatorMap_.end())
@@ -58,6 +50,35 @@ void
 InfiniteLattice::add_triangular(std::string const& Name, InfiniteMPO const& Op)
 {
    OperatorMap_[Name] = Op;
+}
+
+bool
+InfiniteLattice::product_operator_exists(std::string const& s) const
+{
+   return false;
+}
+
+ProductMPO const& 
+InfiniteLattice::Product(std::string const& Op) const
+{
+   static ProductMPO x;
+   return x;
+}
+
+
+ProductMPO& 
+InfiniteLattice::Product(std::string const& Op)
+{
+   static ProductMPO x;
+   return x;
+}
+
+ProductMPO 
+InfiniteLattice::ProductOperatorFunction(std::string const& Op,
+			std::vector<std::complex<double> > const& Params) const
+{
+   PANIC("Product operator functions are not yet implemented");
+   return ProductMPO();
 }
 
 PStream::opstream&

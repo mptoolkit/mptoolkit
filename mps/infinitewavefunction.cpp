@@ -568,6 +568,56 @@ void orthogonalize(InfiniteWavefunction& x)
 #endif
 #endif
 
+std::complex<double> overlap(InfiniteWavefunction const& x, ProductMPO const& StringOp,
+                             InfiniteWavefunction const& y,
+                             QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, bool Verbose)
+{
+   //   TRACE(x.C_old);
+   CHECK_EQUAL(x.QShift, y.QShift)("The wavefunctions must have the same quantum number per unit cell");
+   MatrixOperator x_unit =  x.C_right * delta_shift(InvertDiagonal(x.C_old, InverseTol), adjoint(x.QShift));
+   MatrixOperator y_unit =  y.C_right * delta_shift(InvertDiagonal(y.C_old, InverseTol), adjoint(y.QShift));
+   
+   LinearWavefunction xPsi = x.Psi;
+   xPsi.set_back(prod(xPsi.get_back(), x_unit));
+
+   LinearWavefunction yPsi = y.Psi;
+   yPsi.set_back(prod(yPsi.get_back(), y_unit));
+
+   ProductMPO Str = StringOp * ProductMPO::make_identity(StringOp.LocalBasis2List(), Sector);
+
+   StateComponent Init = MakeRandomStateComponent(Str.Basis1(), x.Psi.Basis1(), y.Psi.Basis1());
+
+   int Iterations = Iter;
+   int TotalIterations = 0;
+   double MyTol = Tol;
+   std::complex<double> Eta = LinearSolvers::Arnoldi(Init, 
+						     LeftMultiplyOperator(xPsi, Str, yPsi, x.QShift), 
+                                                     Iterations, 
+						     MyTol, 
+						     LinearSolvers::LargestMagnitude, false, Verbose);
+   TotalIterations += Iterations;
+   DEBUG_TRACE(Eta)(Iterations);
+
+   while (MyTol < 0)
+   {
+      if (Verbose)
+         std::cerr << "Restarting Arnoldi, eta=" << Eta << ", Tol=" << -MyTol << '\n';
+      Iterations = Iter;
+      MyTol = Tol;
+      Eta = LinearSolvers::Arnoldi(Init, LeftMultiplyOperator(xPsi, Str, yPsi, x.QShift), 
+				   Iterations, MyTol, LinearSolvers::LargestMagnitude, false, Verbose);
+      TotalIterations += Iterations;
+      DEBUG_TRACE(Eta)(Iterations);
+   }
+   if (Verbose)
+      std::cerr << "Converged.  TotalIterations=" << TotalIterations
+                << ", Tol=" << MyTol << '\n';
+
+   TRACE(norm_frob_sq(Init));
+
+   return Eta;
+}
+
 std::complex<double> overlap(InfiniteWavefunction const& x, FiniteMPO const& StringOp,
                              InfiniteWavefunction const& y,
                              QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, bool Verbose)

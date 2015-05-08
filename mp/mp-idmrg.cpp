@@ -32,7 +32,7 @@
 
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
-#include "lattice/infinitelattice-parser.h"
+#include "lattice/triangular-parser.h"
 
 namespace prog_opt = boost::program_options;
 

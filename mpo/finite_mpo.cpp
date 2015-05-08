@@ -557,6 +557,22 @@ FiniteMPO::make_identity(std::vector<BasisList> const& Basis)
 }
 
 FiniteMPO
+FiniteMPO::make_identity(std::vector<BasisList> const& Basis, QuantumNumber const& q)
+{
+   FiniteMPO Result(Basis.size());
+   if (Basis.empty())
+      return Result;
+   BasisList b(Basis[0].GetSymmetryList());
+   b.push_back(q);
+   for (unsigned i = 0; i < Basis.size(); ++i)
+   {
+      Result[i] = OperatorComponent(Basis[i], Basis[i], b, b);
+      Result[i](0,0) = SimpleOperator::make_identity(Basis[i]);
+   }
+   return Result;
+}
+
+FiniteMPO
 MakeIdentityFrom(FiniteMPO const& x)
 {
    FiniteMPO Result(x.size());

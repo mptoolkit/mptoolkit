@@ -46,7 +46,7 @@ class UnitCellMPO
 
       // returns true if this MPO is the identity operator, that is, a 1x1 MPO that
       // is a product of identity operators.
-      bool is_identity() const { return Op.is_identity(); }
+      //      bool is_identity() const { return Op.is_identity(); }
 
       // small problem here: if this->is_null(), this will not work.
       SymmetryList GetSymmetryList() const { return Op.GetSymmetryList(); }

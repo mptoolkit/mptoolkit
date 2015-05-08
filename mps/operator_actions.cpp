@@ -14,8 +14,6 @@ inject_left(MatrixOperator const& m,
    DEBUG_CHECK_EQUAL(m.Basis2(), Psi2.Basis1());
    if (Op.is_null())
       return MatrixOperator();
-
-   // we currently only support simple irreducible operators
    CHECK_EQUAL(Op.Basis1().size(), 1);
    CHECK_EQUAL(Op.Basis2().size(), 1);
    CHECK_EQUAL(Op.Basis1()[0], m.TransformsAs());
@@ -23,14 +21,7 @@ inject_left(MatrixOperator const& m,
    StateComponent E(Op.Basis1(), m.Basis1(), m.Basis2());
    E[0] = m;
    E.debug_check_structure();
-   LinearWavefunction::const_iterator I1 = Psi1.begin();
-   LinearWavefunction::const_iterator I2 = Psi2.begin();
-   GenericMPO::const_iterator OpIter = Op.begin();
-   while (I1 != Psi1.end())
-   {
-      E = operator_prod(herm(*OpIter), herm(*I1), E, *I2);
-      ++I1; ++I2; ++OpIter;
-   }
+   E = inject_left(E, Psi1, Op, Psi2);
    return E[0];
 }
 
@@ -71,6 +62,8 @@ inject_left(StateComponent const& In,
       Result = operator_prod(herm(*OpIter), herm(*I1), Result, *I2);
       ++I1; ++I2; ++OpIter;
    }
+   DEBUG_CHECK(I1 == Psi1.end());
+   DEBUG_CHECK(I2 == Psi2.end());
    return Result;
 }
 

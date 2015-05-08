@@ -14,6 +14,7 @@
 
 #include "unitcell.h"
 #include "mpo/triangular_mpo.h"
+#include "mpo/product_mpo.h"
 #include <vector>
 #include "pheap/pvalueptr.h"
 
@@ -27,23 +28,27 @@ class InfiniteLattice
       typedef std::map<std::string, TriangularMPO> triangular_map_type;
       typedef triangular_map_type::const_iterator  const_triangular_iterator;
 
+      typedef std::map<std::string, TriangularMPO> product_map_type;
+      typedef triangular_map_type::const_iterator  const_product_iterator;
+
       InfiniteLattice();
 
       explicit InfiniteLattice(UnitCell const& uc);
 
       UnitCell const& GetUnitCell() const { return UnitCell_; }
 
+      // TriangularMPO functions
+
       // returns true if the given InfiniteMPO exists
       bool triangular_operator_exists(std::string const& s) const;
 
-      // Lookup the specified InfiniteMPO
-      TriangularMPO const& TriangularOperator(std::string const& Op) const;
+      // Lookup the named opreator
+      TriangularMPO& Triangular(std::string const& Op);
+      TriangularMPO const& Triangular(std::string const& Op) const;
 
+      // invoke the given function
       TriangularMPO TriangularOperatorFunction(std::string const& Op,
 					       std::vector<std::complex<double> > const& Params) const;	 
-
-      TriangularMPO& operator[](std::string const& Op);
-      TriangularMPO const& operator[](std::string const& Op) const;
 
       // iterators over the infinite support operators
       const_triangular_iterator begin_triangular() const { return OperatorMap_.begin(); }
@@ -51,6 +56,16 @@ class InfiniteLattice
 
       // Add the operator to the lattice
       void add_triangular(std::string const& Name, InfiniteMPO const& Op);
+
+      // ProductMPO functions
+
+      bool product_operator_exists(std::string const& s) const;
+
+      ProductMPO const& Product(std::string const& Op) const;
+      ProductMPO& Product(std::string const& Op);
+
+      ProductMPO ProductOperatorFunction(std::string const& Op,
+					 std::vector<std::complex<double> > const& Params) const;	 
 
    private:
       UnitCell UnitCell_;

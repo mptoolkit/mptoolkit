@@ -4,12 +4,14 @@
 // product, such as a unitary or non-unitary evolution operator.
 //
 // Addition isn't defined for ProductMPO.
-// These operators necessarily transform as scalars.  ?maybe?
+// These operators necessarily transform as scalars. 
+// (?maybe? in principle we could have an infinite cross product of vector operators?)
 
 #if !defined(MPTOOLKIT_MPO_PRODUCT_MPO_H)
 #define MPTOOLKIT_MPO_PRODUCT_MPO_H
 
-#include "product_mpo.h"
+#include "generic_mpo.h"
+#include "finite_mpo.h"
 
 class ProductMPO
 {
@@ -27,13 +29,9 @@ class ProductMPO
 
       ProductMPO(ProductMPO const& Other) : Data(Other.Data) {}
 
-      // Removed this constructor because it doesn't make much sense to define a ProductMPO
-      // without specifying the LatticeCommute
-      //      explicit ProductMPO(int Size) : Data(Size) {}
+      explicit ProductMPO(int Size) : Data(Size) {}
 
-      ProductMPO(int Size, LatticeCommute Com) : Data(Size, Com) {}
-
-      // Construction from a generic MPO.  The generic MPO must already be in finite form.
+      // Construction from a generic MPO.  The generic MPO must already be in appropriate form.
       explicit ProductMPO(GenericMPO const& Other);
 
       ProductMPO& operator=(ProductMPO const& Other) { Data = Other.Data; return *this; }
@@ -45,31 +43,13 @@ class ProductMPO
       bool empty() const { return Data.empty() || Data.front().Basis1().size() == 0; }
       bool is_null() const { return Data.empty() || Data.front().Basis1().size() == 0; }
 
-      // returns true if the operator transforms irreducibly.  This is true
-      // iff the left basis contains only a single state, and the right basis contains the vacuum.
-      // Note that finite MPO's are not irreducible tensor operators as such (they are more like
-      // Wigner operators)
-      bool is_irreducible() const;
-
-      // returns true if the operator transforms as a rotational invariant, ie
-      // it is irreducible in the scalar symmetry sector
-      bool is_scalar() const;
-
       // returns true if this MPO is the identity operator, that is, a 1x1 MPO that
       // is a product of identity operators.
       bool is_identity() const;
 
-      // precondition: is_irreducible
-      QuantumNumbers::QuantumNumber TransformsAs() const;
-
-      // returns the quantum number in the left basis.  If the right basis is the vacuum
-      // then this is also the TransformsAs()
-      // precondition: Basis1().size() == 1
-      QuantumNumbers::QuantumNumber qn1() const;
-
-      // returns the quantum number in the right basis.
-      // This doesn't have to be the vacuum state.
-      QuantumNumbers::QuantumNumber qn2() const;
+      // returns true if this MPO is a 'string' operator with respect to the unit cell,
+      // that is, a 1x1 MPO
+      bool is_string() const;
 
       // returns the left-most basis.  This is guaranteed to contain each
       // quantum number at most once.
@@ -99,20 +79,11 @@ class ProductMPO
       // implicit conversion to a const GenericMPO
       operator GenericMPO const&() const { return Data; }
 
-      // Return the local basis at the n'th site
-      BasisList const& LocalBasis1(int n) const
-      { return Data.LocalBasis1(n); }
-      BasisList const& LocalBasis2(int n) const
-      { return Data.LocalBasis2(n); }
-
       // returns the list of local hilbert spaces for this operator
       std::vector<BasisList> LocalBasis1List() const
       { return Data.LocalBasis1List(); }
       std::vector<BasisList> LocalBasis2List() const
       { return Data.LocalBasis2List(); }
-
-      LatticeCommute Commute() const { return Data.Commute(); }
-      void SetCommute(LatticeCommute x) { Data.SetCommute(x); }
 
       // direct access to the GenericMPO
       data_type& data() { return Data; }
@@ -123,6 +94,10 @@ class ProductMPO
 
       // Make an identity MPO over the given unit cell basis
       static ProductMPO make_identity(std::vector<BasisList> const& Basis);
+
+      // identity operator acting in the given quantum number sector
+      static ProductMPO make_identity(std::vector<BasisList> const& Basis, 
+				      QuantumNumber const& q);
 
    private:
       data_type Data;
@@ -139,36 +114,21 @@ ProductMPO join(ProductMPO const& Op1, ProductMPO const& Op2);
 // PRECONDITION: Op.Basis2() == Op.Basis1()
 ProductMPO repeat(ProductMPO const& Op, int Count);
 
-ProductMPO& operator*=(ProductMPO& x, double a);
-ProductMPO& operator*=(ProductMPO& x, std::complex<double> a);
+// multiply by scalar isn't defined for ProductMPO
 
-ProductMPO operator*(double a, ProductMPO const& x);
-ProductMPO operator*(ProductMPO const& x, double a);
-ProductMPO operator*(std::complex<double> a, ProductMPO const& x);
-ProductMPO operator*(ProductMPO const& x, std::complex<double> a);
-
-ProductMPO prod(ProductMPO const& x, ProductMPO const& y, QuantumNumbers::QuantumNumber const& q);
 ProductMPO prod(ProductMPO const& x, ProductMPO const& y);
 ProductMPO operator*(ProductMPO const& x, ProductMPO const& y);
 
-// dot product - takes into account the multiplicity to rescale the result
-ProductMPO dot(ProductMPO const& x, ProductMPO const& y);
+inline
+ProductMPO dot(ProductMPO const& x, ProductMPO const& y)
+{
+   return x*y;
+}
 
-// cross product (if it exists)
-ProductMPO cross(ProductMPO const& x, ProductMPO const& y);
-
-// outer product of tensors.  This is defined as the product to the maximum
-// degree quantum number q.  There is also a scaling factor sqrt(degree(q))
-ProductMPO outer(ProductMPO const& x, ProductMPO const& y);
-
-// project a (reducible) operator onto an irreducible component
-ProductMPO project(ProductMPO const& x, QuantumNumbers::QuantumNumber const& q);
+ProductMPO inner(ProductMPO const& x, ProductMPO const& y);
 
 // power of an operator.  Requires n > 1.
 ProductMPO pow(ProductMPO const& x, int n);
-
-// Exponential operator.
-ProductMPO exp(ProductMPO const& x);
 
 // Conjugate
 ProductMPO conj(ProductMPO const& x);
@@ -176,33 +136,26 @@ ProductMPO conj(ProductMPO const& x);
 // Adjoint
 ProductMPO adjoint(ProductMPO const& x);
 
-// optimize the representation
-void optimize(ProductMPO& Op);
+// Constructs a ProductMPO as the infinite product of translations of Op.
+// Op.size() must be an integer multiple of UnitCellSize,
+// and the local basis of Op[i] must be the same as the local basis of Op[i%UnitCellSize]
+// This does the products in the left-to-right sense, that is, if our operator is
+// AB then the product is ... * A(0)B(1) * A(1)B(2) * A(2)B(3) * ...
+// = B(0)A(0) B(1)A(1) B(2)A(2) ...
+ProductMPO prod_unit_left_to_right(FiniteMPO const& Op, int UnitCellSize);
 
-// completely coarse-grain the MPO into a simple operator.
-// The dimensions of this operator are exponentially big in the number of sites
-// in x, so be careful!
-// For non-abelian symmetries, this coarse-grain occurs from left to right.
-SimpleRedOperator coarse_grain(ProductMPO const& x);
+// Constructs a ProductMPO as the infinite product of translations of Op.
+// Op.size() must be an integer multiple of UnitCellSize,
+// and the local basis of Op[i] must be the same as the local basis of Op[i%UnitCellSize]
+// This does the products in the right-to-left sense, that is, if our operator is
+// AB then the product is .... * A(2)B(3) * A(1)B(2) * A(0)B(1) * ...
+// = A(0)B(0) A(1)B(1) A(2)B(2) ...
+ProductMPO prod_unit_right_to_left(FiniteMPO const& Op, int UnitCellSize);
 
-// The opposite of coarse_grain - decompose an operator acting on the entire Hilbert space
-// into a ProductMPO
-ProductMPO fine_grain(SimpleOperator const& x, LatticeCommute Com,
-		     std::vector<BasisList> const& LocalBasis1,
-		     std::vector<BasisList> const& LocalBasis2);
-
-// Make an identity operator that acts on the same local Hilbert space as x
-ProductMPO
-MakeIdentityFrom(ProductMPO const& x);
-
-// Make an identity operator that acts on the same local Hilbert space as x,
-// with the given quantum number in the auxiliary basis
-ProductMPO
-MakeIdentityFrom(ProductMPO const& x, QuantumNumber const& q);
+// optimize the representation - no idea how to do this!
+//void optimize(ProductMPO& Op);
 
 // output to a stream
 std::ostream& operator<<(std::ostream& out, ProductMPO const& x);
-
-#include "product_mpo.cc"
 
 #endif

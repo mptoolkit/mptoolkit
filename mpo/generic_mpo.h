@@ -93,18 +93,6 @@ operator<<(PStream::opstream& out, GenericMPO const& op);
 PStream::ipstream&
 operator>>(PStream::ipstream& in, GenericMPO& op);
 
-#if 0
-// operations on a generic MPO shouldn't exist, there is no consistent
-// way of implementing them
-GenericMPO& operator*=(GenericMPO& x, double a);
-GenericMPO& operator*=(GenericMPO& x, std::complex<double> a);
-
-GenericMPO operator*(double a, GenericMPO const& x);
-GenericMPO operator*(GenericMPO const& x, double a);
-GenericMPO operator*(std::complex<double> a, GenericMPO const& x);
-GenericMPO operator*(GenericMPO const& x, std::complex<double> a);
-#endif
-
 // remove unused matrix elements
 void cull_unused_elements(GenericMPO& Op);
 
