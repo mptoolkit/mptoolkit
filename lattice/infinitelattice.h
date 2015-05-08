@@ -46,6 +46,9 @@ class InfiniteLattice
       TriangularMPO& Triangular(std::string const& Op);
       TriangularMPO const& Triangular(std::string const& Op) const;
 
+      TriangularMPO& operator[](std::string const& Op) { return this->Triangular(Op); }
+      TriangularMPO const& operator[](std::string const& Op) const { return this->Triangular(Op); }
+
       // invoke the given function
       TriangularMPO TriangularOperatorFunction(std::string const& Op,
 					       std::vector<std::complex<double> > const& Params) const;	 
