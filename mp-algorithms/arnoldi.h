@@ -140,6 +140,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
          NormFrobSqF = norm_frob_sq(w);
 
 #if 0
+	 // attempt to detect breakdown of orthogonality - doesn't really work
          if (NormFrobSqF < DGKS_Threshold * DGKS_Threshold * NormFrobSqH)
          {
             // breakdown
@@ -194,14 +195,18 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
       for (int i = 1; i <= j; ++i)
 	 y += Right(EigenIndex,i) * v[i];
 
-#if 1
-      // Residual r = H*y - Theta*y
+      // Calculate the residual vector r = H*y - Theta*y
       VectorType r = (-Theta) * y;
       TRACE_ARNOLDI(norm_frob(r));
       for (int i = 0; i <= j; ++i)
 	 r += Right(EigenIndex,i) * Hv[i];
 
       double ResidNorm = norm_frob(r);
+      
+      if (Verbose > 1)
+	 std::cerr << "arnoldi: iterations=" << (j+1) 
+		   << ", ResidNorm=" << ResidNorm 
+		   << ", evalue=" << Theta << '\n';
 
       TRACE_ARNOLDI(ResidNorm);
 
@@ -220,10 +225,12 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
 	 return Theta;
       }
       //TRACE(norm_frob_sq(r));
-#endif
 
       if (j == Iterations-1)  // finished?
       {
+	 if (Verbose > 0)
+	    std::cerr << "arnoldi: reached the maximum number of iterations, ResidNorm=" 
+		      << ResidNorm << '\n';
 	 Guess = y;
 	 if (Normalize)
 	    Guess *= OrigBeta;
@@ -248,6 +255,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
          Tol = Beta;
 	 return Theta;
       }
+
    }
 
    return -1; // we never get here
