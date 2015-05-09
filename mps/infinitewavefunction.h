@@ -93,23 +93,19 @@ void orthogonalize(InfiniteWavefunction& x);
 // calculates the overlap of two iMPS, per unit cell.
 // The eigenvector can be in any allowable symmetry sector.
 std::complex<double> overlap(InfiniteWavefunction const& x,  InfiniteWavefunction const& y,
-                             QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, bool Verbose = false);
-
-#if 0
-std::complex<double> overlap(InfiniteWavefunction const& x, std::vector<SimpleOperator> const& StringOp,
-                             InfiniteWavefunction const& y,
-                             QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, bool Verbose = false);
-#endif
+                             QuantumNumbers::QuantumNumber const& Sector, 
+			     int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
 // This version allows a string operator also
-// This version takes a FiniteMPO as the string operator - this should become a ProductMPO once they are finished
 std::complex<double> overlap(InfiniteWavefunction const& x, FiniteMPO const& StringOp,
                              InfiniteWavefunction const& y,
-                             QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, bool Verbose = false);
+                             QuantumNumbers::QuantumNumber const& Sector, 
+			     int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
 std::complex<double> overlap(InfiniteWavefunction const& x, ProductMPO const& StringOp,
                              InfiniteWavefunction const& y,
-                             QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, bool Verbose = false);
+                             QuantumNumbers::QuantumNumber const& Sector, 
+			     int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
 // Spatial reflection of a wavefunction
 InfiniteWavefunction reflect(InfiniteWavefunction const& Psi);

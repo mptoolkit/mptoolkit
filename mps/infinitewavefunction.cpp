@@ -570,7 +570,7 @@ void orthogonalize(InfiniteWavefunction& x)
 
 std::complex<double> overlap(InfiniteWavefunction const& x, ProductMPO const& StringOp,
                              InfiniteWavefunction const& y,
-                             QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, bool Verbose)
+                             QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
 {
    //   TRACE(x.C_old);
    CHECK_EQUAL(x.QShift, y.QShift)("The wavefunctions must have the same quantum number per unit cell");
@@ -590,6 +590,10 @@ std::complex<double> overlap(InfiniteWavefunction const& x, ProductMPO const& St
    int Iterations = Iter;
    int TotalIterations = 0;
    double MyTol = Tol;
+   if (Verbose > 1)
+   {
+      std::cerr << "Starting Arnoldi, Tol=" << MyTol << ", Iterations=" << Iter << '\n';
+   }
    std::complex<double> Eta = LinearSolvers::Arnoldi(Init, 
 						     LeftMultiplyOperator(xPsi, Str, yPsi, x.QShift), 
                                                      Iterations, 
@@ -600,7 +604,7 @@ std::complex<double> overlap(InfiniteWavefunction const& x, ProductMPO const& St
 
    while (MyTol < 0)
    {
-      if (Verbose)
+      if (Verbose > 0)
          std::cerr << "Restarting Arnoldi, eta=" << Eta << ", Tol=" << -MyTol << '\n';
       Iterations = Iter;
       MyTol = Tol;
@@ -609,7 +613,7 @@ std::complex<double> overlap(InfiniteWavefunction const& x, ProductMPO const& St
       TotalIterations += Iterations;
       DEBUG_TRACE(Eta)(Iterations);
    }
-   if (Verbose)
+   if (Verbose > 0)
       std::cerr << "Converged.  TotalIterations=" << TotalIterations
                 << ", Tol=" << MyTol << '\n';
 
@@ -620,7 +624,7 @@ std::complex<double> overlap(InfiniteWavefunction const& x, ProductMPO const& St
 
 std::complex<double> overlap(InfiniteWavefunction const& x, FiniteMPO const& StringOp,
                              InfiniteWavefunction const& y,
-                             QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, bool Verbose)
+                             QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
 {
    //   TRACE(x.C_old);
    CHECK_EQUAL(x.QShift, y.QShift)("The wavefunctions must have the same quantum number per unit cell");
@@ -667,9 +671,9 @@ std::complex<double> overlap(InfiniteWavefunction const& x, FiniteMPO const& Str
 }
 
 std::complex<double> overlap(InfiniteWavefunction const& x,  InfiniteWavefunction const& y,
-                             QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, bool Verbose)
+                             QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
 {
-   return overlap(x, FiniteMPO::make_identity(ExtractLocalBasis(y.Psi)), y, Sector, Iter, Tol, Verbose);
+   return overlap(x, ProductMPO::make_identity(ExtractLocalBasis(y.Psi)), y, Sector, Iter, Tol, Verbose);
 }
 
 InfiniteWavefunction reflect(InfiniteWavefunction const& Psi)

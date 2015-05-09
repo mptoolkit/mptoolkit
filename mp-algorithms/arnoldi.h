@@ -4,9 +4,9 @@
 
    The preconditioning step is missing.
 
-   A typical value for Tol is 1E-12, typical subspace (iterations) is 20 - 30.
+   A typical value for Tol is 1E-12, typical subspace size (iterations) is 20 - 30.
 
-   If the iterations are performed without convergence, the Tol on exit is set to
+   If the iterations are stopped before convergence, the Tol on exit is set to
    the negative of the current residual norm.
 
    The SolverMode selects which eigenvalue we want, out of:
@@ -14,8 +14,8 @@
    SmallestAlgebraicReal: eigenvalue e with lowest e.real  (bottom of the spectrum)
    LargestMagnitude:      eigenvalue e with largest |e|
 
-   SmallestAlgebraicReal will find the same eigenvector as LargestAlgebraicReal 
-   with the negative matrix.
+   SmallestAlgebraicReal will find the same eigenvector that 
+   LargestAlgebraicReal would find if we used the negative of the operator
 
    TODO: we could forward this to ARPACK, if its available
    
@@ -46,7 +46,7 @@ enum SolverMode { LargestAlgebraicReal, LargestMagnitudeReal, LargestMagnitude }
 
 template <typename VectorType, typename MultiplyFunctor>
 std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iterations,
-			     double& Tol, SolverMode Mode, bool Normalize = true, bool Verbose = false)
+			     double& Tol, SolverMode Mode, bool Normalize = true, int Verbose = 0)
 {
    typedef std::complex<double> complex;
    std::vector<VectorType> v;                                 // the subspace vectors
@@ -63,7 +63,18 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
    w *= 1.0 / Beta;
    v.push_back(w);
 
-   w = MatVecMultiply(v[0]);
+   if (Verbose > 1)
+   {
+      std::cerr << "arnoldi: starting matrix-vector multiply\n";
+      double Start = ProcControl::GetCPUTime();
+      w = MatVecMultiply(v[0]);
+      double CPU = ProcControl::GetCPUTime() - Start;
+      std::cerr << "arnoldi: matrix-vector multiply took " << CPU << " seconds\n";
+   }
+   else
+   {
+      w = MatVecMultiply(v[0]);
+   }
    SubH(0,0) = inner_prod(v[0], w);
    Hv.push_back(w);
    w -= SubH(0,0) * v[0];
@@ -72,7 +83,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
    TRACE_ARNOLDI(Beta);
    if (Beta < ArnoldiBetaTol)
    {
-      if (Verbose)
+      if (Verbose > 0)
          std::cerr << "arnoldi: immediate return, invariant subspace found, Beta=" << Beta << '\n';
       TRACE_ARNOLDI("Immediate return - invariant subspace found")(Beta);
       Guess = v[0];
@@ -90,7 +101,18 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
       v.push_back(w);
 
       // Matrix vector multiply
-      w = MatVecMultiply(v[j]);
+      if (Verbose > 1)
+      {
+	 std::cerr << "arnoldi: starting matrix-vector multiply\n";
+	 double Start = ProcControl::GetCPUTime();
+	 w = MatVecMultiply(v[0]);
+	 double CPU = ProcControl::GetCPUTime() - Start;
+	 std::cerr << "arnoldi: matrix-vector multiply took " << CPU << " seconds\n";
+      }
+      else
+      {
+	 w = MatVecMultiply(v[0]);
+      }
       Hv.push_back(w);
       // Subspace matrix elements
       double NormFrobSqH = 0;
@@ -184,7 +206,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
 
       if (ResidNorm < Tol)
       {
-         if (Verbose)
+         if (Verbose > 0)
             std::cerr << "arnoldi: early return, residual norm below threshold, ResidNorm=" << ResidNorm 
                       << ", iterations=" << (j+1) << '\n';
 	 TRACE_ARNOLDI("Early return - residual below threshold")(ResidNorm)(j);
@@ -213,7 +235,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
       TRACE_ARNOLDI(Beta);
       if (Beta < ArnoldiBetaTol)
       {
-         if (Verbose)
+         if (Verbose > 0)
             std::cerr << "arnoldi: early return, invariant subspace found, Beta=" << Beta 
                       << ", iterations=" << (j+1) << '\n';
 	 TRACE_ARNOLDI("Early return - invariant subspace found")(Beta)(j);

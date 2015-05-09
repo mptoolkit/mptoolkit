@@ -79,7 +79,7 @@ int main(int argc, char** argv)
 {
    try
    {
-      bool Verbose = false;
+      int Verbose = 0;
       bool NoTempFile = false;
       bool ShowRealPart = false, ShowImagPart = false, ShowMagnitude = false;
       int Rotate = 0;
@@ -125,8 +125,8 @@ int main(int argc, char** argv)
           FormatDefault("Maximum subspace size in the Arnoldi basis", Iter).c_str())
          ("quiet", prog_opt::bool_switch(&Quiet),
           "don't show the column headings")
-         ("verbose,v", prog_opt::bool_switch(&Verbose),
-          "extra debug output")
+         ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
+          "extra debug output [can be used multiple times]")
          ;
 
       prog_opt::options_description hidden("Hidden options");
