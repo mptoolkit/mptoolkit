@@ -617,8 +617,6 @@ std::complex<double> overlap(InfiniteWavefunction const& x, ProductMPO const& St
       std::cerr << "Converged.  TotalIterations=" << TotalIterations
                 << ", Tol=" << MyTol << '\n';
 
-   TRACE(norm_frob_sq(Init));
-
    return Eta;
 }
 

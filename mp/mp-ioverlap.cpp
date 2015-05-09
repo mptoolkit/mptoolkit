@@ -92,6 +92,7 @@ int main(int argc, char** argv)
       bool Quiet = false;
       bool Reflect = false;
       bool Conj = false;
+      bool Print = false;
       std::string String;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -125,6 +126,7 @@ int main(int argc, char** argv)
           FormatDefault("Maximum subspace size in the Arnoldi basis", Iter).c_str())
          ("quiet", prog_opt::bool_switch(&Quiet),
           "don't show the column headings")
+         ("print,p", prog_opt::bool_switch(&Print), "with --string, Print the MPO to standard output")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "extra debug output [can be used multiple times]")
          ;
@@ -197,6 +199,10 @@ int main(int argc, char** argv)
       {
 	 InfiniteLattice Lattice;
 	 boost::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(String);
+	 if (Print)
+	 {
+	    std::cout << "String MPO is:\n" << StringOp << '\n';
+	 }
 	 StringOp = repeat(StringOp, Psi1->size() / StringOp.size());
 	 CHECK_EQUAL(StringOp.size(), Psi1->size())
 	    ("string operator cannot (yet!) be larger than the wavefunction");

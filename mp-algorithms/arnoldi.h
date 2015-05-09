@@ -105,13 +105,13 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
       {
 	 std::cerr << "arnoldi: starting matrix-vector multiply\n";
 	 double Start = ProcControl::GetCPUTime();
-	 w = MatVecMultiply(v[0]);
+	 w = MatVecMultiply(v[j]);
 	 double CPU = ProcControl::GetCPUTime() - Start;
 	 std::cerr << "arnoldi: matrix-vector multiply took " << CPU << " seconds\n";
       }
       else
       {
-	 w = MatVecMultiply(v[0]);
+	 w = MatVecMultiply(v[j]);
       }
       Hv.push_back(w);
       // Subspace matrix elements
@@ -197,6 +197,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
 #if 1
       // Residual r = H*y - Theta*y
       VectorType r = (-Theta) * y;
+      TRACE_ARNOLDI(norm_frob(r));
       for (int i = 0; i <= j; ++i)
 	 r += Right(EigenIndex,i) * Hv[i];
 
