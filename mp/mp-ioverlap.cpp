@@ -28,31 +28,37 @@ bool operator<(TransEigenInfo const& x, TransEigenInfo const& y)
    return LinearAlgebra::norm_frob_sq(x.x) > LinearAlgebra::norm_frob_sq(y.x);
 }
 
-void PrintFormat(TransEigenInfo const& x, bool ShowRealPart, bool ShowImagPart, bool ShowMagnitude)
+void PrintFormat(TransEigenInfo const& x, bool ShowRealPart, bool ShowImagPart, 
+		 bool ShowCorrLength, bool ShowMagnitude, bool ShowArgument,
+		 bool ShowRadians, double ScaleFactor)
 {
    std::string SectorStr = boost::lexical_cast<std::string>(x.q);
+   std::complex<double> Value = std::pow(x.x, ScaleFactor);
    std::cout << std::setw(11) << SectorStr << ' ';
-   if (ShowRealPart || ShowImagPart || ShowMagnitude)
+   if (ShowRealPart)
    {
-      if (ShowRealPart)
-      {
-         std::cout << std::setw(20) << x.x.real();
-         if (ShowImagPart || ShowMagnitude)
-            std::cout << "    ";
-      }
-      if (ShowImagPart)
-      {
-         std::cout << std::setw(20) << x.x.imag();
-         if (ShowMagnitude)
-            std::cout << "    ";
-      }
-      if (ShowMagnitude)
-      {
-         std::cout << std::setw(20) << LinearAlgebra::norm_frob(x.x);
-      }
+      std::cout << std::setw(20) << Value.real() << "    ";
    }
-   else // default to C++ complex output
-      std::cout << std::setw(40) << x.x;
+   if (ShowImagPart)
+   {
+      std::cout << std::setw(20) << Value.imag() << "    ";
+   }
+   if (ShowCorrLength)
+   {
+      std::cout << std::setw(20) << (-1.0/std::log(LinearAlgebra::norm_frob(Value)))
+		<< "    ";
+   }
+   if (ShowMagnitude)
+   {
+      std::cout << std::setw(20) << LinearAlgebra::norm_frob(x.x) << "    ";
+   }
+   if (ShowArgument)
+   {
+      double Arg =  std::atan2(Value.imag(), Value.real());
+      if (ShowRadians)
+	 Arg *= 180.0 / math_const::pi;
+      std::cout << std::setw(20) << Arg << "    ";
+   }
    std::cout << std::endl;
 }
 
@@ -82,8 +88,10 @@ int main(int argc, char** argv)
       int Verbose = 0;
       bool NoTempFile = false;
       bool ShowRealPart = false, ShowImagPart = false, ShowMagnitude = false;
+      bool ShowCartesian = false, ShowPolar = false, ShowArgument = false;
+      bool ShowRadians = false, ShowCorrLength = false;
       int Rotate = 0;
-      int UnitCellSize = 1;
+      int UnitCellSize = 0;
       std::string LhsStr, RhsStr;
       std::vector<std::string> Sector;
       double Tol = 1E-10;
@@ -98,12 +106,24 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
+	 ("cart,c", prog_opt::bool_switch(&ShowCartesian),
+	  "show the result in cartesian coordinates (real,imag) [default]")
+	 ("polar,p", prog_opt::bool_switch(&ShowPolar),
+	  "show the result in polar coodinates (magnitude,argument)")
 	 ("real,r", prog_opt::bool_switch(&ShowRealPart),
 	  "display the real part of the result")
 	 ("imag,i", prog_opt::bool_switch(&ShowImagPart),
 	  "display the imaginary part of the result")
          ("mag,m", prog_opt::bool_switch(&ShowMagnitude),
           "display the magnitude of the result")
+         ("arg,a", prog_opt::bool_switch(&ShowArgument),
+          "display the argument (angle) of the result")
+	 ("radians,r", prog_opt::bool_switch(&ShowRadians),
+	  "display the argument in radians instead of degrees")
+	 ("corr,x", prog_opt::bool_switch(&ShowCorrLength),
+	  "display the equivalent correlation length")
+	 ("unitcell,u", prog_opt::value(&UnitCellSize),
+	  "scale the results to use this unit cell size [default wavefunction unit cell]")
          ("notempfile", prog_opt::bool_switch(&NoTempFile),
           "don't use a temporary data file, keep everything in RAM "
           "(faster, but needs enough RAM)")
@@ -126,7 +146,7 @@ int main(int argc, char** argv)
           FormatDefault("Maximum subspace size in the Arnoldi basis", Iter).c_str())
          ("quiet", prog_opt::bool_switch(&Quiet),
           "don't show the column headings")
-         ("print,p", prog_opt::bool_switch(&Print), "with --string, Print the MPO to standard output")
+         ("print", prog_opt::bool_switch(&Print), "with --string, Print the MPO to standard output")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "extra debug output [can be used multiple times]")
          ;
@@ -157,13 +177,27 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      // default is to show the real and imag parts
-      if (!ShowRealPart && !ShowImagPart && !ShowMagnitude)
+      // If no output switches are used, default to cartesian coordinates
+      if (!ShowRealPart && !ShowImagPart && !ShowMagnitude
+	  && !ShowPolar && !ShowArgument
+	  && !ShowRadians && !ShowCorrLength)
+      {
+	 ShowCartesian = true;
+      }
+      
+      if (ShowCartesian)
       {
 	 ShowRealPart = true;
 	 ShowImagPart = true;
       }
-      
+      if (ShowPolar)
+      {
+	 ShowMagnitude = true;
+	 ShowArgument = true;
+      }
+      if (ShowRadians)
+	 ShowArgument = true;      
+
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
 
       if (Verbose)
@@ -187,6 +221,13 @@ int main(int argc, char** argv)
       if (Verbose)
          std::cout << "Calculating overlap...\n";
 
+      // The default UnitCellSize for output is the wavefunction size
+      if (UnitCellSize == 0)
+      {
+	 UnitCellSize = Psi1->Psi.size();
+      }
+      double ScaleFactor = double(UnitCellSize) / double(Psi1->Psi.size());
+	 
       // Rotate as necessary.  Do this BEFORE determining the quantum number sectors!
       if (Rotate > 0)
          *Psi2.mutate() = rotate_left(*Psi2, Rotate);
@@ -251,15 +292,22 @@ int main(int argc, char** argv)
 
       if (!Quiet)
       {
+	 std::cout << "#" << argv[0];
+	 for (int i = 1; i < argc; ++i)
+	    std::cout << ' ' << argv[i];
+	 std::cout << "\n#quantities are calculated per unit cell size of " << UnitCellSize 
+		   << (UnitCellSize == 1 ? " site\n" : " sites\n");
          std::cout << "#sector     ";
-         if (!ShowRealPart && !ShowImagPart && !ShowMagnitude)
-            std::cout << "#value";
          if (ShowRealPart)
             std::cout << "#real                   ";
          if (ShowImagPart)
             std::cout << "#imag                   ";
+         if (ShowCorrLength)
+            std::cout << "#corr_length            ";
          if (ShowMagnitude)
             std::cout << "#magnitude              ";
+         if (ShowArgument)
+            std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
          std::cout << '\n';
          std::cout << std::left;
       }
@@ -273,7 +321,8 @@ int main(int argc, char** argv)
          if (Sort)
             EigenList.push_back(Info);
          else
-            PrintFormat(Info, ShowRealPart, ShowImagPart, ShowMagnitude);
+            PrintFormat(Info, ShowRealPart, ShowImagPart, ShowCorrLength, ShowMagnitude,
+			ShowArgument, ShowRadians, ScaleFactor);
       }
 
       if (Sort)
@@ -281,7 +330,8 @@ int main(int argc, char** argv)
          std::sort(EigenList.begin(), EigenList.end());
          for (unsigned i = 0; i < EigenList.size(); ++i)
          {
-            PrintFormat(EigenList[i], ShowRealPart, ShowImagPart, ShowMagnitude);
+            PrintFormat(EigenList[i], ShowRealPart, ShowImagPart, ShowCorrLength, ShowMagnitude, ShowArgument,
+			ShowRadians, ScaleFactor);
          }
       }
 
