@@ -55,7 +55,7 @@ void PrintFormat(TransEigenInfo const& x, bool ShowRealPart, bool ShowImagPart,
    if (ShowArgument)
    {
       double Arg =  std::atan2(Value.imag(), Value.real());
-      if (ShowRadians)
+      if (!ShowRadians)
 	 Arg *= 180.0 / math_const::pi;
       std::cout << std::setw(20) << Arg << "    ";
    }
