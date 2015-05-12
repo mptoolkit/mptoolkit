@@ -54,12 +54,12 @@ int main(int argc, char** argv)
 
       InfiniteLattice Lattice(Cell);
       
-      UnitCellMPO HJ = -(BH_A(0)*B_A(0) + BH_S(0)*B_S(0));
+      UnitCellMPO HJ = -(BH_A(0)*B_A(1) + B_A(0)*BH_A(1) + BH_S(0)*B_S(1) + B_S(0)*BH_S(1));
       UnitCellMPO HK = -(N_S(0) - N_A(0));
       
       UnitCellMPO PairHopping = pow(BH_S(0)*B_A(0),2) + pow(BH_A(0)*B_S(0),2);
       
-      UnitCellMPO HU = N_S(0) + N_A(0) + 0.25 * (N2_S(0) + N2_A(0) + PairHopping);
+      UnitCellMPO HU = N_S(0)*N_A(0) + 0.25 * (N2_S(0) + N2_A(0) + PairHopping);
       UnitCellMPO HU12 = 0.25 * (N2_S(0) + N2_A(0) - PairHopping);
 
       Lattice["H_J"]   = sum_unit(HJ);
