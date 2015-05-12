@@ -43,6 +43,9 @@
 class InfiniteWavefunction
 {
    public:
+      typedef LinearWavefunction::iterator       iterator;
+      typedef LinearWavefunction::const_iterator const_iterator;
+
       InfiniteWavefunction() {}
 
       QuantumNumbers::SymmetryList GetSymmetryList() const { return C_old.GetSymmetryList(); }
@@ -52,6 +55,17 @@ class InfiniteWavefunction
 
       // the target quantum number, per unit cell
       QuantumNumbers::QuantumNumber const& shift() const { return QShift; }
+
+      // returns the left-most basis.
+      VectorBasis Basis1() const { return Psi.Basis1(); }
+      // returns the right-most basis.
+      VectorBasis Basis2() const { return Psi.Basis2(); }
+
+      iterator begin() { return Psi.begin(); }
+      iterator end() { return Psi.begin(); }
+
+      const_iterator begin() const { return Psi.begin(); }
+      const_iterator end() const { return Psi.begin(); }
 
       MatrixOperator C_old;  // By convention, this is kept in a diagonal basis
 
@@ -74,6 +88,17 @@ extern double const InverseTol;
 // rotate sites in the unit cell, by taking the left-most site and putting 
 // it on the right hand side, repeat Count times
 InfiniteWavefunction rotate_left(InfiniteWavefunction const& Psi, int Count);
+
+// Join two wavefunctions together.  Precondition: Psi1.Basis2() == Psi2.Basis1()
+InfiniteWavefunction join(InfiniteWavefunction const& Psi1, InfiniteWavefunction const& Psi2);
+
+// Join two wavefunctions together, with a delta shift of Psi1.  Equivalent to
+// join(delta_shift(Psi1, Psi2.shift()), Psi2)
+// Precondition: Psi1.Basis2() == Psi2.Basis2()
+InfiniteWavefunction join_shift(InfiniteWavefunction const& Psi1, InfiniteWavefunction const& Psi2);
+
+// Extend the unit cell of the wavefunction by repeating it Count number of times
+InfiniteWavefunction repeat(InfiniteWavefunction const& Psi, int Count);
 
 // returns a linear wavefunction that is in pure left-orthogonal form.
 // Note that this is the opposite of the 'normal form' used for finite-size MPS.

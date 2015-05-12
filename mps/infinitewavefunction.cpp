@@ -64,6 +64,51 @@ InfiniteWavefunction rotate_left(InfiniteWavefunction const& Psi, int Count)
    return Ret;
 }
 
+InfiniteWavefunction join(InfiniteWavefunction const& Psi1, InfiniteWavefunction const& Psi2)
+{
+   CHECK_EQUAL(Psi1.Basis2(), Psi2.Basis1());
+   InfiniteWavefunction Result = Psi1;
+   for (InfiniteWavefunction::const_iterator I = Psi2.begin(); I != Psi2.end(); ++I)
+   {
+      Result.Psi.push_back(*I);
+   }
+   Result.C_right = Psi2.C_right;
+   return Result;
+}
+
+InfiniteWavefunction join_shift(InfiniteWavefunction const& Psi1, InfiniteWavefunction const& Psi2)
+{
+   // in principle we could have a different shift() for the wavefunctions, but the Basis2() must match
+   CHECK_EQUAL(Psi1.Basis2(), Psi2.Basis2());
+   // Start with Psi1, and delta_shift it so that we can join on Psi2
+   InfiniteWavefunction Result = Psi1;
+   Result.C_old = delta_shift(Psi1.C_old, Psi2.shift());
+   for (InfiniteWavefunction::iterator I = Result.begin(); I != Result.end(); ++I)
+   {
+      *I = delta_shift(*I, Psi2.shift());
+   }
+   Result.C_old = delta_shift(Result.C_old, Psi2.shift());
+   for (InfiniteWavefunction::const_iterator I = Psi2.begin(); I != Psi2.end(); ++I)
+   {
+      Result.Psi.push_back(*I);
+   }
+   Result.C_right = Psi2.C_right;
+   return Result;
+}
+
+InfiniteWavefunction repeat(InfiniteWavefunction const& Psi, int Count)
+{
+   if (Count == 0)
+      return InfiniteWavefunction();
+
+   InfiniteWavefunction Result = Psi;
+   for (int i = 1; i < Count; ++i)
+   {
+      Result = join_shift(Result, Psi);
+   }
+   return Result;
+}
+
 PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunction const& psi)
 {
    out << psi.C_old;

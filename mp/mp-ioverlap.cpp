@@ -10,6 +10,7 @@
 #include "common/prog_options.h"
 #include "lattice/unitcell.h"
 #include "lattice/product-parser.h"
+#include "common/statistics.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -80,19 +81,6 @@ InfiniteWavefunction conj(InfiniteWavefunction const& Psi)
    return Ret;
 }
 
-LinearWavefunction repeat(LinearWavefunction const& Psi, int Count)
-{
-   LinearWavefunction Result = Psi;
-   for (int i = 1; i < Count; ++i)
-   {
-      for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
-      {
-	 Result.push_back(*I);
-      }
-   }
-   return Result;
-}
-
 int main(int argc, char** argv)
 {
    try
@@ -119,9 +107,9 @@ int main(int argc, char** argv)
       desc.add_options()
          ("help", "show this help message")
 	 ("cart,c", prog_opt::bool_switch(&ShowCartesian),
-	  "show the result in cartesian coordinates (real,imag) [default]")
+	  "show the result in cartesian coordinates [equivalent to --real --imag]")
 	 ("polar,p", prog_opt::bool_switch(&ShowPolar),
-	  "show the result in polar coodinates (magnitude,argument)")
+	  "show the result in polar coodinates [equivalent to --mag --arg]")
 	 ("real,r", prog_opt::bool_switch(&ShowRealPart),
 	  "display the real part of the result")
 	 ("imag,i", prog_opt::bool_switch(&ShowImagPart),
@@ -189,12 +177,14 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      // If no output switches are used, default to cartesian coordinates
+      // If no output switches are used, default to showing everything
       if (!ShowRealPart && !ShowImagPart && !ShowMagnitude
-	  && !ShowPolar && !ShowArgument
+	  && !ShowCartesian && !ShowPolar && !ShowArgument
 	  && !ShowRadians && !ShowCorrLength)
       {
 	 ShowCartesian = true;
+	 ShowPolar = true;
+	 ShowCorrLength = true;
       }
       
       if (ShowCartesian)
@@ -254,21 +244,16 @@ int main(int argc, char** argv)
          *Psi2.mutate() = conj(*Psi2);
       }
 
-      if (Psi1->Psi.size() > Psi2->Psi.size())
+      // If the wavefunctions don't match in size, then increase them to the lowest common multiple
+      if (Psi1->Psi.size() != Psi2->Psi.size())
       {
-	 if (Psi1->Psi.size() % Psi2->Psi.size() != 0)
+	 int Size = statistics::lcm(Psi1->Psi.size(), Psi2->Psi.size());
+	 if (Verbose)
 	 {
-	    PANIC("Unit cell sizes are not compatible");
+	    std::cerr << "Wavefunction unit cells differ, extending to the common multiple size of " << Size << '\n';
 	 }
-	 Psi2.mutate()->Psi = repeat(Psi2->Psi, Psi1->Psi.size() / Psi2->Psi.size());
-      }
-      else if (Psi2->Psi.size() > Psi1->Psi.size())
-      {
-	 if (Psi2->Psi.size() % Psi1->Psi.size() != 0)
-	 {
-	    PANIC("Unit cell sizes are not compatible");
-	 }
-	 Psi1.mutate()->Psi = repeat(Psi1->Psi, Psi2->Psi.size() / Psi1->Psi.size());
+	 *Psi1.mutate() = repeat(*Psi1, Size/Psi1->size());
+	 *Psi2.mutate() = repeat(*Psi2, Size/Psi2->size());
       }
 
       // The default UnitCellSize for output is the wavefunction size
