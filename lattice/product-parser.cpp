@@ -294,6 +294,16 @@ struct binary_commutator<element_type> : boost::static_visitor<element_type>
 namespace ILP // to avoid confusion of duplicate names
 {
 
+// utility to pop an integer off the element stack
+int pop_int(std::stack<element_type>& eval)
+{
+   complex x = boost::get<complex>(eval.top());
+   eval.pop();
+   int j = int(x.real() + 0.5);
+   CHECK(norm_frob(x - double(j)) < 1E-7)("index must be an integer")(x);
+   return j;
+}
+
 struct push_operator
 {
    push_operator(InfiniteLattice const& Lattice_,
@@ -393,6 +403,42 @@ struct push_parameter_pack<element_type>
    std::stack<std::stack<element_type> >& ParamStack;
 };
 
+// convert the top of the expression stack from a number of cells
+// to a number of sites, by multiplying by the unit cell size
+struct scale_cells_to_sites
+{
+   scale_cells_to_sites(InfiniteLattice const& Lattice_,
+			std::stack<element_type>& eval_)
+      : Lattice(Lattice_), eval(eval_) {}
+   
+   void operator()(char const*, char const*) const
+   {
+      TRACE("Scaling");
+      int Cells = pop_int(eval);
+      eval.push(std::complex<double>(double(Cells*Lattice.GetUnitCell().size())));
+   }
+
+   InfiniteLattice const& Lattice;
+   std::stack<element_type >& eval;
+};
+
+// push the number of sites in the lattice onto the top of the expression stack
+struct push_number_of_sites
+{
+   push_number_of_sites(InfiniteLattice const& Lattice_,
+			std::stack<element_type>& eval_)
+      : Lattice(Lattice_), eval(eval_) {}
+   
+   void operator()(char const*, char const*) const
+   {
+      TRACE("Pushing sites");
+      eval.push(std::complex<double>(double(Lattice.GetUnitCell().size())));
+   }
+
+   InfiniteLattice const& Lattice;
+   std::stack<element_type >& eval;
+};
+
 struct push_prod_unit
 {
    push_prod_unit(InfiniteLattice const& Lattice_,
@@ -401,10 +447,12 @@ struct push_prod_unit
    
    void operator()(char const* Start, char const* End) const
    {
+      int Sites = pop_int(eval);
+      int Cells = Sites / Lattice.GetUnitCell().size();
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
       UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End));
-
-      eval.push(prod_unit_left_to_right(Op.MPO(), Lattice.GetUnitCell().size()));
+      Op.ExtendToCoverUnitCell(Sites);
+      eval.push(prod_unit_left_to_right(Op.MPO(), Sites));
    }
 
    InfiniteLattice const& Lattice;
@@ -419,10 +467,12 @@ struct push_prod_unit_r
    
    void operator()(char const* Start, char const* End) const
    {
+      int Sites = pop_int(eval);
+      int Cells = Sites / Lattice.GetUnitCell().size();
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
       UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End));
-
-      eval.push(prod_unit_right_to_left(Op.MPO(), Lattice.GetUnitCell().size()));
+      Op.ExtendToCoverUnitCell(Sites);
+      eval.push(prod_unit_right_to_left(Op.MPO(), Sites));
    }
 
    InfiniteLattice const& Lattice;
@@ -504,6 +554,12 @@ struct ProductParser : public grammar<ProductParser>
 	 expression_string = lexeme_d[+((anychar_p - chset<>("()"))
 					| (ch_p('(') >> expression_string >> ch_p(')')))];
 
+	 num_cells = (eps_p((str_p("cells") | str_p("sites")) >> '=')
+		      >> ((str_p("cells") >> '=' >> expression >> ',')
+			  [scale_cells_to_sites(self.Lattice, self.eval)]
+			  | (str_p("sites") >> '=' >> expression >> ',')))
+	    | eps_p[push_number_of_sites(self.Lattice, self.eval)];
+
 	 string_expression = str_p("string")
 	    >> '(' 
 	    >> expression_string[push_string(self.Lattice, self.eval)]
@@ -511,11 +567,13 @@ struct ProductParser : public grammar<ProductParser>
 
 	 prod_unit_expression = str_p("prod_unit")
 	    >> '(' 
+	    >> num_cells
 	    >> expression_string[push_prod_unit(self.Lattice, self.eval)]
 	    >> ')';
 
 	 prod_unit_r_expression = str_p("prod_unit_r")
 	    >> '(' 
+	    >> num_cells
 	    >> expression_string[push_prod_unit_r(self.Lattice, self.eval)]
 	    >> ')';
 
@@ -588,7 +646,7 @@ struct ProductParser : public grammar<ProductParser>
 	 binary_function, bracket_expr, quantumnumber, sq_bracket_expr, 
 	 operator_expression, operator_bracket_sq, operator_sq_bracket, operator_bracket, operator_sq,
 	 parameter, parameter_list, expression_string, prod_unit_expression, prod_unit_r_expression,
-	 string_expression,
+	 string_expression, num_cells,
 	 identifier, pow_term, commutator_bracket;
       rule<ScannerT> const&
       start() const { return expression; }

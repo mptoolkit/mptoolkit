@@ -272,9 +272,10 @@ int main(int argc, char** argv)
 	 {
 	    std::cout << "String MPO is:\n" << StringOp << '\n';
 	 }
+	 CHECK(Psi1->size() % StringOp.size() == 0)
+	    ("Wavefunction size must be a multiple of the string operator size")
+	    (Psi1->size())(StringOp.size());
 	 StringOp = repeat(StringOp, Psi1->size() / StringOp.size());
-	 CHECK_EQUAL(StringOp.size(), Psi1->size())
-	    ("string operator cannot (yet!) be larger than the wavefunction");
       }
       else
       {
