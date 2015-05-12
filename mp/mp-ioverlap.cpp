@@ -80,6 +80,18 @@ InfiniteWavefunction conj(InfiniteWavefunction const& Psi)
    return Ret;
 }
 
+LinearWavefunction repeat(LinearWavefunction const& Psi, int Count)
+{
+   LinearWavefunction Result = Psi;
+   for (int i = 1; i < Count; ++i)
+   {
+      for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
+      {
+	 Result.push_back(*I);
+      }
+   }
+   return Result;
+}
 
 int main(int argc, char** argv)
 {
@@ -235,6 +247,37 @@ int main(int argc, char** argv)
       UnitCell Cell;
       LatticeSite Site;
 
+      if (Reflect)
+      {
+         if (Verbose)
+            std::cout << "Reflecting psi2..." << std::endl;
+	 *Psi2.mutate() = reflect(*Psi2);
+      }
+
+      if (Conj)
+      {
+         if (Verbose)
+            std::cout << "Conjugating psi2..." << std::endl;
+         *Psi2.mutate() = conj(*Psi2);
+      }
+
+      if (Psi1->Psi.size() > Psi2->Psi.size())
+      {
+	 if (Psi1->Psi.size() % Psi2->Psi.size() != 0)
+	 {
+	    PANIC("Unit cell sizes are not compatible");
+	 }
+	 Psi2.mutate()->Psi = repeat(Psi2->Psi, Psi1->Psi.size() / Psi2->Psi.size());
+      }
+      else if (Psi2->Psi.size() > Psi1->Psi.size())
+      {
+	 if (Psi2->Psi.size() % Psi1->Psi.size() != 0)
+	 {
+	    PANIC("Unit cell sizes are not compatible");
+	 }
+	 Psi1.mutate()->Psi = repeat(Psi1->Psi, Psi2->Psi.size() / Psi1->Psi.size());
+      }
+
       ProductMPO StringOp;
       if (vm.count("string"))
       {
@@ -251,20 +294,6 @@ int main(int argc, char** argv)
       else
       {
          StringOp = ProductMPO::make_identity(ExtractLocalBasis(Psi2->Psi));
-      }
-
-      if (Reflect)
-      {
-         if (Verbose)
-            std::cout << "Reflecting psi2..." << std::endl;
-	 *Psi2.mutate() = reflect(*Psi2);
-      }
-
-      if (Conj)
-      {
-         if (Verbose)
-            std::cout << "Conjugating psi2..." << std::endl;
-         *Psi2.mutate() = conj(*Psi2);
       }
 
       // get the list of quantum number sectors
