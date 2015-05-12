@@ -4,7 +4,7 @@
 #include "parser/parser.h"
 #include "unitcell-parser.h"
 #include <boost/algorithm/string.hpp>
-
+#include <boost/math/special_functions/round.hpp>
 
 using namespace Parser;
 
@@ -57,7 +57,7 @@ struct binary_power<element_type> : boost::static_visitor<element_type>
    template <typename T>
    element_type operator()(T const& x, complex const& y) const
    {
-      int i = int(y.real()+0.5);
+      int i = boost::math::iround(y.real());
       CHECK(std::norm(complex(double(i)) - y) < 1E-7)("cannot take fractional power of an operator");
       CHECK(i >= 0)("cannot take negative power of an operator");
       return i == 0 ? element_type(complex(1.0,0.0)) : pow(x, i);
@@ -299,7 +299,7 @@ int pop_int(std::stack<element_type>& eval)
 {
    complex x = boost::get<complex>(eval.top());
    eval.pop();
-   int j = int(x.real() + 0.5);
+   int j = boost::math::iround(x.real());
    CHECK(norm_frob(x - double(j)) < 1E-7)("index must be an integer")(x);
    return j;
 }

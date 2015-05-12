@@ -97,6 +97,7 @@ struct constants : symbols<complex>
       add
          ("pi", math_const::pi)
          ("e", math_const::e)
+         ("i", std::complex<double>(0.0, 1.0))
          ;
    }
 };

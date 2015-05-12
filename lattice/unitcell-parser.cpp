@@ -3,6 +3,7 @@
 #include "unitcell-parser.h"
 #include "parser/parser.h"
 #include <boost/algorithm/string.hpp>
+#include <boost/math/special_functions/round.hpp>
 
 using namespace Parser;
 
@@ -16,7 +17,7 @@ int pop_int(std::stack<element_type>& eval)
 {
    complex x = boost::get<complex>(eval.top());
    eval.pop();
-   int j = int(x.real() + 0.5);
+   int j = boost::math::iround(x.real());
    CHECK(norm_frob(x - double(j)) < 1E-7)("index must be an integer")(x);
    return j;
 }
@@ -70,12 +71,8 @@ struct push_operator_cell
       std::string OpName = IdentStack.top();
       IdentStack.pop();
 
-      complex CellIndex = boost::get<complex>(eval.top());
-      eval.pop();
-      int j = int(CellIndex.real() + 0.5);
-      CHECK(norm_frob(CellIndex - double(j)) < 1E-7)("Cell index must be an integer")(CellIndex);
-      CHECK(j >= 0)("Cell index must be non-negative")(j)(OpName);
-      CHECK(NumCells == 0 || j < NumCells)("Cell index out of bounds")(j)(NumCells);
+      int j = pop_int(eval);
+      CHECK(NumCells == 0 || (j >= 0 && j < NumCells))("Cell index out of bounds")(j)(NumCells);
       CHECK(Cell.operator_exists(OpName))("Operator does not exist in the unit cell")(OpName);
 
       eval.push(element_type(Cell.OperatorAtCell(OpName, j)));
@@ -103,11 +100,7 @@ struct push_operator_site
 
       CHECK_EQUAL(NumCells, 1)("Operator must supply a cell index")(OpName);
 
-      complex SiteIndex = boost::get<complex>(eval.top());
-      eval.pop();
-      int n = int(SiteIndex.real() + 0.5);
-      CHECK(norm_frob(SiteIndex - double(n)) < 1E-7)("Site index must be an integer")(SiteIndex);
-
+      int n = pop_int(eval);
       CHECK(Cell.operator_exists(OpName, n))("Local operator does not exist in the unit cell")(OpName)(n);
       eval.push(element_type(Cell.LocalOperator(OpName, n)));
    }
@@ -132,17 +125,9 @@ struct push_operator_cell_site
       std::string OpName = IdentStack.top();
       IdentStack.pop();
 
-      complex SiteIndex = boost::get<complex>(eval.top());
-      eval.pop();
-      int n = int(SiteIndex.real() + 0.5);
-      CHECK(norm_frob(SiteIndex - double(n)) < 1E-7)("Site index must be an integer")(SiteIndex);
-
-      complex CellIndex = boost::get<complex>(eval.top());
-      eval.pop();
-      int j = int(CellIndex.real() + 0.5);
-      CHECK(norm_frob(CellIndex - double(j)) < 1E-7)("Cell index must be an integer")(CellIndex);
-      CHECK(j >= 0)("Cell index must be non-negative")(j)(OpName);
-      CHECK(NumCells == 0 || j < NumCells)("Cell index out of bounds")(j)(NumCells);
+      int n = pop_int(eval);
+      int j = pop_int(eval);
+      CHECK(NumCells == 0 || (j >= 0 && j < NumCells))("Site index out of bounds")(j)(NumCells);
       CHECK(Cell.operator_exists(OpName, n))("Local operator does not exist in the unit cell")(OpName)(n);
 
       // Fetch the operator and JW string
@@ -169,17 +154,10 @@ struct push_operator_site_cell
       std::string OpName = IdentStack.top();
       IdentStack.pop();
 
-      complex CellIndex = boost::get<complex>(eval.top());
-      eval.pop();
-      int j = int(CellIndex.real() + 0.5);
-      CHECK(norm_frob(CellIndex - double(j)) < 1E-7)("Cell index must be an integer")(CellIndex);
-      CHECK(j >= 0)("Cell index must be non-negative")(j)(OpName);
-      CHECK(NumCells == 0 || j < NumCells)("Cell index out of bounds")(j)(NumCells);
+      int j = pop_int(eval);
+      CHECK(NumCells == 0 || (j >= 0 && j < NumCells))("Cell index out of bounds")(j)(NumCells);
 
-      complex SiteIndex = boost::get<complex>(eval.top());
-      eval.pop();
-      int n = int(SiteIndex.real() + 0.5);
-      CHECK(norm_frob(SiteIndex - double(n)) < 1E-7)("Site index must be an integer")(SiteIndex);
+      int n = pop_int(eval);
       CHECK(Cell.operator_exists(OpName, n))("Local operator does not exist in the unit cell")(OpName)(n);
 
       // Fetch the operator and JW string
@@ -248,12 +226,8 @@ struct push_operator_cell_param
       std::string OpName = IdentStack.top();
       IdentStack.pop();
 
-      complex CellIndex = boost::get<complex>(eval.top());
-      eval.pop();
-      int j = int(CellIndex.real() + 0.5);
-      CHECK(norm_frob(CellIndex - double(j)) < 1E-7)("Cell index must be an integer")(CellIndex);
-      CHECK(j >= 0)("Cell index must be non-negative")(j)(OpName);
-      CHECK(NumCells == 0 || j < NumCells)("Cell index out of bounds")(j)(NumCells);
+      int j = pop_int(eval);
+      CHECK(NumCells == 0 || (j >= 0 && j < NumCells))("Cell index out of bounds")(j)(NumCells);
  
       // Convert the parameter stack into a vector of numbers
       int NumParam = ParamStack.top().size(); // number of parameters
@@ -294,10 +268,7 @@ struct push_operator_site_param
 
       CHECK_EQUAL(NumCells, 1)("Operator must supply a cell index")(OpName);
 
-      complex SiteIndex = boost::get<complex>(eval.top());
-      eval.pop();
-      int n = int(SiteIndex.real() + 0.5);
-      CHECK(norm_frob(SiteIndex - double(n)) < 1E-7)("Site index must be an integer")(SiteIndex);
+      int n = pop_int(eval);
 
       // Convert the parameter stack into a vector of numbers
       int NumParam = ParamStack.top().size(); // number of parameters
@@ -335,17 +306,12 @@ struct push_operator_cell_site_param
       std::string OpName = IdentStack.top();
       IdentStack.pop();
 
-      complex SiteIndex = boost::get<complex>(eval.top());
-      eval.pop();
-      int n = int(SiteIndex.real() + 0.5);
-      CHECK(norm_frob(SiteIndex - double(n)) < 1E-7)("Site index must be an integer")(SiteIndex);
+      int n = pop_int(eval);
 
       complex CellIndex = boost::get<complex>(eval.top());
       eval.pop();
-      int j = int(CellIndex.real() + 0.5);
-      CHECK(norm_frob(CellIndex - double(j)) < 1E-7)("Cell index must be an integer")(CellIndex);
-      CHECK(j >= 0)("Cell index must be non-negative")(j)(OpName);
-      CHECK(NumCells == 0 || j < NumCells)("Cell index out of bounds")(j)(NumCells);
+      int j = pop_int(eval);
+      CHECK(NumCells == 0 || (j >= 0 && j < NumCells))("Cell index out of bounds")(j)(NumCells);
 
       // Convert the parameter stack into a vector of numbers
       int NumParam = ParamStack.top().size(); // number of parameters
@@ -382,17 +348,10 @@ struct push_operator_site_cell_param
       std::string OpName = IdentStack.top();
       IdentStack.pop();
 
-      complex CellIndex = boost::get<complex>(eval.top());
-      eval.pop();
-      int j = int(CellIndex.real() + 0.5);
-      CHECK(norm_frob(CellIndex - double(j)) < 1E-7)("Cell index must be an integer")(CellIndex);
-      CHECK(j >= 0)("Cell index must be non-negative")(j)(OpName);
-      CHECK(NumCells == 0 || j < NumCells)("Cell index out of bounds")(j)(NumCells);
+      int j = pop_int(eval);
+      CHECK(NumCells == 0 || (j >= 0 && j < NumCells))("Cell index out of bounds")(j)(NumCells);
 
-      complex SiteIndex = boost::get<complex>(eval.top());
-      eval.pop();
-      int n = int(SiteIndex.real() + 0.5);
-      CHECK(norm_frob(SiteIndex - double(n)) < 1E-7)("Site index must be an integer")(SiteIndex);
+      int n = pop_int(eval);
 
       // Convert the parameter stack into a vector of numbers
       int NumParam = ParamStack.top().size(); // number of parameters
