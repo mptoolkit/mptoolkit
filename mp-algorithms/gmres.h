@@ -133,7 +133,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
      for (i = 0; i < m && j <= max_iter; i++, j++) 
      {
 	if (Verbose > 1)
-	   std::cerr << "GMRES iteration " << i << std::endl;
+	   std::cerr << "GMRES: iteration " << i << std::endl;
 
         w = Precondition(MatVecMultiply(v[i]));
         for (k = 0; k <= i; k++) 
@@ -142,7 +142,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
            w -= H(k, i) * v[k];
         }
         H(i+1, i) = norm_frob(w);
-        v[i+1] = w * (1.0 / H(i+1, i)); // ??? w / H(i+1, i)
+        v[i+1] = w * (1.0 / H(i+1, i));
 
         for (k = 0; k < i; k++)
            ApplyPlaneRotation(H(k,i), H(k+1,i), cs[k], sn[k]);
@@ -160,31 +160,36 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
            max_iter = j;
            delete [] v;
 	   if (Verbose)
-	      std::cerr << "GMRES finished, iter=" << (j-1) << ", resid=" << resid << std::endl;
+	      std::cerr << "GMRES: finished, iter=" << (j-1) << ", resid=" << resid << std::endl;
 
 	   DEBUG_TRACE("GMRES return")(resid);
            return 0;
         }
+
+	if (Verbose > 1)
+	   std::cerr << "GMRES: resid=" << resid << '\n';
+
         //TRACE(resid);
      }
      //TRACE(H);
-     Update(x, i - 1, H, s, v);
+     Update(x, m-1, H, s, v);
      r = Precondition(b - MatVecMultiply(x));
      beta = norm_frob(r);
+
      if ((resid = beta / normb) < tol) 
      {
         tol = resid;
         max_iter = j;
         delete [] v;
 	if (Verbose)
-	   std::cerr << "GMRES finished, iter=" << (j-1) << ", resid=" << resid << std::endl;
+	   std::cerr << "GMRES: finished, iter=" << (j-1) << ", resid=" << resid << std::endl;
 	DEBUG_TRACE("GMRES return")(resid);
         return 0;
      }
      else
      {
 	if (Verbose)
-	   std::cerr << "GMRES restarting, iter=" << (j-1) << std::endl;
+	   std::cerr << "GMRES: restarting, iter=" << (j-1) << ", resid=" << resid << '\n';
      }
      DEBUG_TRACE(resid)(norm_frob(Precondition(b - MatVecMultiply(x))) / normb)
         (norm_frob(b - MatVecMultiply(x)) / norm_frob(b));

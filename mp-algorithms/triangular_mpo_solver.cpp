@@ -54,7 +54,7 @@ struct OneMinusTransferLeft
    MatrixOperator operator()(MatrixOperator const& x) const
    {
       MatrixOperator r = x-delta_shift(inject_left(x, Op_, Psi_), QShift_);
-      if (Orthogonalize_ && is_scalar(r.TransformsAs()))
+      if (Orthogonalize_ && r.TransformsAs() == RightUnit_.TransformsAs())
 	 {
 	    DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be small");
 	    DEBUG_TRACE(inner_prod(LeftUnit_, r));
@@ -76,7 +76,8 @@ template <typename Func>
 MatrixOperator
 LinearSolve(Func F, MatrixOperator Rhs, int Verbose = 0)
 {
-   MatrixOperator Guess = Rhs;
+   MatrixOperator Guess = MakeRandomMatrixOperator(Rhs.Basis1(), Rhs.Basis2(), Rhs.TransformsAs());
+   //Rhs;
    int m = 30;
    int max_iter = 10000;
    double tol = 1e-12;
@@ -213,7 +214,7 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
             
 	 // orthogonalize Rhs against the identity again, which is a kind of
 	 // DGKS correction
-	 if (HasEigenvalue1 && is_scalar(Rhs.TransformsAs()))
+	 if (HasEigenvalue1 && Rhs.TransformsAs() == UnitMatrixRight.TransformsAs())
 	 {
 	    DEBUG_TRACE(inner_prod(Rhs, UnitMatrixRight))("should be small");
 	    Rhs -= conj(inner_prod(Rhs, UnitMatrixRight)) * UnitMatrixLeft;
@@ -224,7 +225,8 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
 
 	 double RhsNorm2 = norm_frob_sq(Rhs);
 	 RhsNorm2 = RhsNorm2 / (Rhs.Basis1().total_degree()*Rhs.Basis2().total_degree());
-	 //TRACE(RhsNorm2);
+	 DEBUG_TRACE(RhsNorm2);
+	 DEBUG_TRACE(HasEigenvalue1)(UnitMatrixLeft)(UnitMatrixRight)(K)(Diag)(Rhs);
 	 if (RhsNorm2 > 1E-22)
 	 {
 	    E[K][m] = LinearSolve(OneMinusTransferLeft(K*Diag, Psi, QShift, 
@@ -343,7 +345,10 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 	 MatrixOperator UnitMatrixRight = RightIdentity; //delta_shift(RightIdentity, QShift);
 
 	 // If the diagonal operator is unitary, it might have an eigenvalue of magnitude 1
-	 if (Classification.is_unitary() && !Classification.is_complex_identity())
+	 // Or if we are not in the scalar sector, then there might be an additional eigenvalue 1
+	 // due to symmetry.  We don't attempt to handle the case where we have more than one
+	 // eigenvalue 1 in the same symmetry sector.
+	 if (Classification.is_unitary() && (!is_scalar(Diag.Basis2()[0]) || !Classification.is_complex_identity()))
 	 {
 	    if (Verbose)
 	       std::cerr << "Non-trivial unitary at column " << Col 

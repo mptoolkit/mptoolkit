@@ -541,7 +541,6 @@ int main(int argc, char** argv)
 
       // Assemble the string operator (which may be the identity)
       std::vector<SimpleOperator> MyStringOp;
-      SiteOperator SiteStringOp = ParseSiteOperator(Site, StringOp);
       for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
       {
          if (StringOp == "I")
@@ -550,6 +549,7 @@ int main(int argc, char** argv)
          }
          else
          {
+	    SiteOperator SiteStringOp = ParseSiteOperator(Site, StringOp);
             MyStringOp.push_back(SiteStringOp);
          }
       }
