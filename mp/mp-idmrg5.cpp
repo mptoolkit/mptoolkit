@@ -1790,7 +1790,7 @@ int main(int argc, char** argv)
 	 std::cout << "Hamiltonian is two species Bose-Hubbard, U(1)xZ2, J=" << J << ", U=" << U << ", U12=" << U12
 		   << ", Omega=" << Omega << "\n";
 
-	 LatticeSite Site = CreateBoseHubbard2BosonsU1Z2Site(NMax);
+	 LatticeSite Site = Boson2ComponentU1Z2(NMax);
 	 TriangularMPO Ham;
 	 Ham = -J * (TriangularTwoSite(Site["BH_S"], Site["B_S"]) + TriangularTwoSite(Site["B_S"], Site["BH_S"])
 		     + TriangularTwoSite(Site["BH_A"], Site["B_A"]) + TriangularTwoSite(Site["B_A"], Site["BH_A"]));

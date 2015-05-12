@@ -4,7 +4,7 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/boson-u1.h"
+#include "models/boson-2component-u1z2.h"
 #include "common/terminal.h"
 #include "common/prog_options.h"
 #include <boost/program_options.hpp>
@@ -17,15 +17,12 @@ int main(int argc, char** argv)
    {
       std::string LatticeName;
       int MaxN = 5;
-      int Width = 2;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
 	 ("NumBosons,N", prog_opt::value(&MaxN), 
 	  FormatDefault("Maximum number of bosons per site", MaxN).c_str())
-	 ("width,w", prog_opt::value(&Width),
-	  FormatDefault("Width of the ladder", Width).c_str())
 	 ("out,o", prog_opt::value(&LatticeName), "output filename [required]")
 	 ;
       
@@ -43,35 +40,27 @@ int main(int argc, char** argv)
          std::cerr << desc << '\n';
 	 std::cerr << "Operators:\n"
 		   << "H_J   - nearest neighbor hopping on the legs\n"
-		   << "H_K   - nearest neighbor hopping on the rungs\n"
-		   << "H_U   - on-site Coulomb repulsion N*(N-1)/2\n"
-		   << "H_U12 - nearest-neighbor Coulomb repulsion on the rungs\n"
+		   << "H_K   - tunneling between components\n"
+		   << "H_U   - inter-species Coulomb repulsion\n"
+		   << "H_U12 - intra-species Coulomb repulsion\n"
 	    ;
          return 1;
       }
 
-      LatticeSite Site = BosonU1(MaxN);
-      UnitCell Cell(repeat(Site, Width));
-      UnitCellOperator BH(Cell, "BH"), B(Cell, "B"), N(Cell, "N"), N2(Cell, "N2"),
-	 Delta(Cell, "D");
-
-      // difference of boson occupation numbers between edges of the ladder
-      Delta = N(0)[Width-1] - N(0)[0];
+      LatticeSite Site = Boson2ComponentU1Z2(MaxN);
+      UnitCell Cell = Site;
+      UnitCellOperator BH_A(Cell, "BH_A"), B_A(Cell, "B_A"), N_A(Cell, "N_A"), N2_A(Cell, "N2_A"),
+	 BH_S(Cell, "BH_S"), B_S(Cell, "B_S"), N_S(Cell, "N_S"), N2_S(Cell, "N2_S");
 
       InfiniteLattice Lattice(Cell);
       
-      UnitCellMPO HJ, HK, HU, HU12;
-      for (int i = 0; i < Width; ++i)
-      {
-	 HJ -= BH(0)[i]*B(1)[i] + B(0)[i]*BH(1)[i];
-      }
-
-      for (int i = 0; i < Width-1; ++i)
-      {
-	 HK -= BH(0)[i]*B(0)[i+1] + B(0)[i]*BH(0)[i+1];
-	 HU += 0.5*N2(0)[i];
-      }
-      HU12 = N(0)[0] * N(0)[Width-1];
+      UnitCellMPO HJ = -(BH_A(0)*B_A(0) + BH_S(0)*B_S(0));
+      UnitCellMPO HK = -(N_S(0) - N_A(0));
+      
+      UnitCellMPO PairHopping = pow(BH_S(0)*B_A(0),2) + pow(BH_A(0)*B_S(0),2);
+      
+      UnitCellMPO HU = N_S(0) + N_A(0) + 0.25 * (N2_S(0) + N2_A(0) + PairHopping);
+      UnitCellMPO HU12 = 0.25 * (N2_S(0) + N2_A(0) - PairHopping);
 
       Lattice["H_J"]   = sum_unit(HJ);
       Lattice["H_K"]   = sum_unit(HK);

@@ -23,7 +23,7 @@ int Parity(int m)
 }
 
 inline
-LatticeSite CreateBoseHubbard2BosonsU1Z2Site(int MaxN, std::string const& Sym1 = "N", std::string const& Sym2 = "Z")
+LatticeSite Boson2ComponentU1Z2(int MaxN, std::string const& Sym1 = "N", std::string const& Sym2 = "Z")
 {
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":Z2");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1, QuantumNumbers::Z2> QN(Symmetry);
