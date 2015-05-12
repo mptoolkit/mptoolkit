@@ -41,14 +41,14 @@ int main(int argc, char** argv)
    {
       half_int Spin = 0.5;
       int w = 4;
-      std::string LatticeName;
+      std::string FileName;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
 	 ("width,w", prog_opt::value(&w), "width of the cylinder [default 4]")
-         ("out,o", prog_opt::value(&LatticeName), "output filename [required]")
+         ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
       
       prog_opt::variables_map vm;        
@@ -131,7 +131,7 @@ int main(int argc, char** argv)
       }
 
       // save the lattice
-      pheap::ExportObject(LatticeName, Lattice);
+      pheap::ExportObject(FileName, Lattice);
    }
    catch (std::exception& e)
    {

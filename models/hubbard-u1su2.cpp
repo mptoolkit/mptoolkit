@@ -14,12 +14,12 @@ int main(int argc, char** argv)
 {
    try
    {
-      std::string LatticeName;
+      std::string FileName;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("out,o", prog_opt::value(&LatticeName), "output filename [required]")
+         ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
       
       prog_opt::variables_map vm;        
@@ -58,7 +58,7 @@ int main(int argc, char** argv)
       Lattice["H_V"]  = sum_unit(dot(N(0), N(1)));
       Lattice["H_J"]  = sum_unit(std::complex<double>(0,1)*(dot(CH(0), C(1)) - dot(C(0), CH(1))));
 
-      pheap::ExportObject(LatticeName, Lattice);
+      pheap::ExportObject(FileName, Lattice);
    }
    catch (std::exception& e)
    {

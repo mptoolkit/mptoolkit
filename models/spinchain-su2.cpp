@@ -15,13 +15,13 @@ int main(int argc, char** argv)
    try
    {
       half_int Spin = 0.5;
-      std::string LatticeName;
+      std::string FileName;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
-         ("out,o", prog_opt::value(&LatticeName), "output filename [required]")
+         ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
       
       prog_opt::variables_map vm;        
@@ -67,7 +67,7 @@ int main(int argc, char** argv)
       Lattice["H_Q2"] = sum_unit(inner(Q(0), Q(2)));
       Lattice["H_Q3"] = sum_unit(inner(Q(0), Q(3)));
 
-      pheap::ExportObject(LatticeName, Lattice);
+      pheap::ExportObject(FileName, Lattice);
    }
    catch (std::exception& e)
    {

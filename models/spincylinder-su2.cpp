@@ -17,7 +17,7 @@ int main(int argc, char** argv)
       half_int Spin = 0.5;
       int x = 0;
       int y = 4;
-      std::string LatticeName;
+      std::string FileName;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -25,7 +25,7 @@ int main(int argc, char** argv)
          ("Spin,S", prog_opt::value(&Spin), FormatDefault("magnitude of the spin", Spin).c_str())
 	 (",x", prog_opt::value(&x), FormatDefault("x wrapping vector", x).c_str())
 	 (",y", prog_opt::value(&y), FormatDefault("y wrapping vector", y).c_str())
-         ("out,o", prog_opt::value(&LatticeName), "output filename [required]")
+         ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
       
       prog_opt::variables_map vm;        
@@ -85,7 +85,7 @@ int main(int argc, char** argv)
       Lattice["H_J1y"] = sum_unit(J1y);
       Lattice["H_J1"] = sum_unit(J1x+J1y);
 
-      pheap::ExportObject(LatticeName, Lattice);
+      pheap::ExportObject(FileName, Lattice);
    }
    catch (std::exception& e)
    {

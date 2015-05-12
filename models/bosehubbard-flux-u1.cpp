@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 {
    try
    {
-      std::string LatticeName;
+      std::string FileName;
       int MaxN = 5;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -50,7 +50,7 @@ int main(int argc, char** argv)
          ("help", "show this help message")
 	 ("NumBosons,N", prog_opt::value(&MaxN), 
 	  FormatDefault("Maximum number of bosons per site", MaxN).c_str())
-	 ("out,o", prog_opt::value(&LatticeName), "output filename [required]")
+	 ("out,o", prog_opt::value(&FileName), "output filename [required]")
 	 ;
       
       prog_opt::variables_map vm;        
@@ -111,7 +111,7 @@ int main(int argc, char** argv)
       Lattice["H_Kc"] = sum_unit(HKc);
       Lattice["H_U"] = sum_unit(HU);
       
-      pheap::ExportObject(LatticeName, Lattice);
+      pheap::ExportObject(FileName, Lattice);
    }
    catch (std::exception& e)
    {

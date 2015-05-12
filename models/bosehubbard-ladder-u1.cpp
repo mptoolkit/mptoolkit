@@ -15,7 +15,7 @@ int main(int argc, char** argv)
 {
    try
    {
-      std::string LatticeName;
+      std::string FileName;
       int MaxN = 5;
       int Width = 2;
 
@@ -26,7 +26,7 @@ int main(int argc, char** argv)
 	  FormatDefault("Maximum number of bosons per site", MaxN).c_str())
 	 ("width,w", prog_opt::value(&Width),
 	  FormatDefault("Width of the ladder", Width).c_str())
-	 ("out,o", prog_opt::value(&LatticeName), "output filename [required]")
+	 ("out,o", prog_opt::value(&FileName), "output filename [required]")
 	 ;
       
       prog_opt::variables_map vm;        
@@ -78,7 +78,7 @@ int main(int argc, char** argv)
       Lattice["H_U"]   = sum_unit(HU);
       Lattice["H_U12"] = sum_unit(HU12);
       
-      pheap::ExportObject(LatticeName, Lattice);
+      pheap::ExportObject(FileName, Lattice);
    }
    catch (std::exception& e)
    {
