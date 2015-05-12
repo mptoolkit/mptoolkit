@@ -14,6 +14,16 @@ typedef boost::variant<complex, TriangularMPO> element_type;
 namespace Parser
 {
 
+// utility to pop an integer off the element stack
+int pop_int(std::stack<element_type>& eval)
+{
+   complex x = boost::get<complex>(eval.top());
+   eval.pop();
+   int j = int(x.real() + 0.5);
+   CHECK(norm_frob(x - double(j)) < 1E-7)("index must be an integer")(x);
+   return j;
+}
+
 template <>
 struct ElementExp<element_type> : boost::static_visitor<element_type>
 {
@@ -224,6 +234,42 @@ struct push_parameter_pack<element_type>
    std::stack<std::stack<element_type> >& ParamStack;
 };
 
+// convert the top of the expression stack from a number of cells
+// to a number of sites, by multiplying by the unit cell size
+struct scale_cells_to_sites
+{
+   scale_cells_to_sites(InfiniteLattice const& Lattice_,
+			std::stack<element_type>& eval_)
+      : Lattice(Lattice_), eval(eval_) {}
+   
+   void operator()(char const*, char const*) const
+   {
+      TRACE("Scaling");
+      int Cells = pop_int(eval);
+      eval.push(std::complex<double>(double(Cells*Lattice.GetUnitCell().size())));
+   }
+
+   InfiniteLattice const& Lattice;
+   std::stack<element_type >& eval;
+};
+
+// push the number of sites in the lattice onto the top of the expression stack
+struct push_number_of_sites
+{
+   push_number_of_sites(InfiniteLattice const& Lattice_,
+			std::stack<element_type>& eval_)
+      : Lattice(Lattice_), eval(eval_) {}
+   
+   void operator()(char const*, char const*) const
+   {
+      TRACE("Pushing sites");
+      eval.push(std::complex<double>(double(Lattice.GetUnitCell().size())));
+   }
+
+   InfiniteLattice const& Lattice;
+   std::stack<element_type >& eval;
+};
+
 struct push_sum_unit
 {
    push_sum_unit(InfiniteLattice const& Lattice_,
@@ -232,10 +278,12 @@ struct push_sum_unit
    
    void operator()(char const* Start, char const* End) const
    {
-      DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
+      int Sites = pop_int(eval);
+      int Cells = Sites / Lattice.GetUnitCell().size();
+      DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End))(Sites);
       UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End));
-
-      eval.push(sum_unit(Op));
+      Op.ExtendToCover(0, Sites);
+      eval.push(sum_unit(Op, Sites));
    }
 
    InfiniteLattice const& Lattice;
@@ -252,9 +300,12 @@ struct push_sum_k
    {
       std::complex<double> k = boost::get<std::complex<double> >(eval.top());
       eval.pop();
+      int Sites = pop_int(eval);
+      int Cells = Sites / Lattice.GetUnitCell().size();
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
       UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End));
-      eval.push(sum_k(k, Op));
+      Op.ExtendToCover(0, Sites);
+      eval.push(sum_k(k, Op, Sites));
    }
 
    InfiniteLattice const& Lattice;
@@ -269,6 +320,9 @@ struct push_sum_kink
    
    void operator()(char const* Start, char const* End) const
    {
+      int Sites = pop_int(eval);
+      int Cells = Sites / Lattice.GetUnitCell().size();
+
       // Find the comma separating the two operators
       int nBracket = 0;
       char const* Comma = Start;
@@ -289,8 +343,9 @@ struct push_sum_kink
       UnitCellMPO Kink = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, Comma));
       ++Comma; // skip over the comma
       UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Comma, End));
+      Op.ExtendToCover(0, Sites);
 
-      eval.push(sum_kink(Kink, Op));
+      eval.push(sum_kink(Kink, Op, Sites));
    }
 
    InfiniteLattice const& Lattice;
@@ -359,18 +414,26 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 	 expression_string = lexeme_d[+((anychar_p - chset<>("()"))
 					| (ch_p('(') >> expression_string >> ch_p(')')))];
 
+	 num_cells = (eps_p((str_p("cells") | str_p("sites")) >> '=')
+		      >> ((str_p("cells") >> '=' >> expression >> ',')[scale_cells_to_sites(self.Lattice, self.eval)]
+			  | (str_p("sites") >> '=' >> expression >> ',')))
+	    | eps_p[push_number_of_sites(self.Lattice, self.eval)];
+      
 	 sum_unit_expression = str_p("sum_unit")
-	    >> '(' 
+	    >> '('
+	    >> num_cells
 	    >> expression_string[push_sum_unit(self.Lattice, self.eval)]
 	    >> ')';
 
 	 sum_kink_expression = str_p("sum_kink")
 	    >> '(' 
+	    >> num_cells
 	    >> expression_string[push_sum_kink(self.Lattice, self.eval)]
 	    >> ')';
 	 
 	 sum_k_expression = str_p("sum_k")
 	    >> '(' 
+	    >> num_cells
 	    >> expression >> ','
 	    >> expression_string[push_sum_k(self.Lattice, self.eval)]
 	    >> ')';
@@ -446,7 +509,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 	 binary_function, bracket_expr, quantumnumber, prod_expression, sq_bracket_expr, 
 	 operator_expression, operator_bracket_sq, operator_sq_bracket, operator_bracket, operator_sq,
 	 parameter, parameter_list, expression_string, sum_unit_expression, sum_kink_expression, sum_k_expression,
-	 identifier, pow_term, commutator_bracket;
+	 identifier, pow_term, commutator_bracket, num_cells;
       rule<ScannerT> const&
       start() const { return expression; }
    };

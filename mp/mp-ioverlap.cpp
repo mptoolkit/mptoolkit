@@ -250,7 +250,7 @@ int main(int argc, char** argv)
 	 int Size = statistics::lcm(Psi1->Psi.size(), Psi2->Psi.size());
 	 if (Verbose)
 	 {
-	    std::cerr << "Wavefunction unit cells differ, extending to the common multiple size of " << Size << '\n';
+	    std::cerr << "Wavefunction unit cells differ, extending wavefunctions to size " << Size << '\n';
 	 }
 	 *Psi1.mutate() = repeat(*Psi1, Size/Psi1->size());
 	 *Psi2.mutate() = repeat(*Psi2, Size/Psi2->size());

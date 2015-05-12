@@ -153,7 +153,8 @@ TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& JW, Finite
    CHECK(UnitCellSize % SiteList.size() == 0)
       ("UnitCellSize for sum_unit() must be a multiple of UnitCell.size()");
    CHECK(Op.size() % UnitCellSize == 0)
-      ("Operator for sum_unit() must be a multiple of the unit cell");
+      ("Operator for sum_unit() must be a multiple of the unit cell")
+      (Op.size())(UnitCellSize);
 
    // Suppose that the unit cell size is 1.  Then if Op is A \times B \otimes C, then
    // the resulting TriangularMPO is

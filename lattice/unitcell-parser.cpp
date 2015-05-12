@@ -11,7 +11,7 @@ typedef boost::variant<complex, UnitCellMPO> element_type;
 namespace UP
 {
 
-   // utility to pop an integer off the element stack
+// utility to pop an integer off the element stack
 int pop_int(std::stack<element_type>& eval)
 {
    complex x = boost::get<complex>(eval.top());
