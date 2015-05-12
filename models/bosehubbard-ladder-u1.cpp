@@ -77,6 +77,8 @@ int main(int argc, char** argv)
       Lattice["H_K"]   = sum_unit(HK);
       Lattice["H_U"]   = sum_unit(HU);
       Lattice["H_U12"] = sum_unit(HU12);
+      Lattice["D"]     = sum_unit(Delta);
+      Lattice["D2"]    = sum_unit(Delta*Delta);
       
       pheap::ExportObject(FileName, Lattice);
    }

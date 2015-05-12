@@ -34,7 +34,8 @@ class LatticeSite
 
       LatticeSite() : pImpl(new ImplType()) {}
 
-      explicit LatticeSite(std::string const& Description) : pImpl(new ImplType()) {}
+      explicit LatticeSite(std::string const& Description) 
+	 : pImpl(new ImplType(Description)) {}
 
       // precondition: !empty()
       SymmetryList GetSymmetryList() const;
@@ -64,6 +65,9 @@ class LatticeSite
       {
          std::string Description;
          DataType Data;
+
+	 ImplType() {}
+	 ImplType(std::string const& Desc_) : Description(Desc_) {}
 
          friend PStream::opstream& operator<<(PStream::opstream& out, ImplType const& Impl);
          friend PStream::ipstream& operator>>(PStream::ipstream& in, ImplType& Impl);

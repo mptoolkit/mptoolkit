@@ -62,10 +62,14 @@ int main(int argc, char** argv)
       UnitCellMPO HU = N_S(0)*N_A(0) + 0.25 * (N2_S(0) + N2_A(0) + PairHopping);
       UnitCellMPO HU12 = 0.25 * (N2_S(0) + N2_A(0) - PairHopping);
 
+      UnitCellMPO D = BH_A(0)*B_S(0) + BH_S(0)*B_A(0);  // the order parameter, is antisymmetric in this basis
+
       Lattice["H_J"]   = sum_unit(HJ);
       Lattice["H_K"]   = sum_unit(HK);
       Lattice["H_U"]   = sum_unit(HU);
       Lattice["H_U12"] = sum_unit(HU12);
+      Lattice["D"]     = sum_unit(D);
+      Lattice["D2"]    = sum_unit(D*D);
       
       pheap::ExportObject(FileName, Lattice);
    }

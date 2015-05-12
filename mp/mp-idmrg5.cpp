@@ -1797,9 +1797,12 @@ int main(int argc, char** argv)
 
 	 SiteOperator LocalHamiltonian = -Omega * (Site["N_S"] - Site["N_A"]);
 	 LocalHamiltonian += U * (Site["N_S"] * Site["N_A"] 
-				  + 0.25 * (Site["N2_S"] + Site["N2_A"] + Site["BH2_S"]*Site["B2_A"] + Site["BH2_A"]*Site["B2_S"]));
+				  + 0.25 * (Site["N2_S"] + Site["N2_A"] 
+					    + Site["BH_S"]*Site["B_A"]*Site["BH_S"]*Site["B_A"]
+					    + Site["BH_A"]*Site["B_S"]*Site["BH_A"]*Site["B_S"]));
 	 LocalHamiltonian += U12 * 0.25 * (Site["N2_S"] + Site["N2_A"] 
-					   - Site["BH2_S"]*Site["B2_A"] - Site["BH2_A"]*Site["B2_S"]);
+					   - Site["BH_S"]*Site["B_A"]*Site["BH_S"]*Site["B_A"] 
+					   - Site["BH_A"]*Site["B_S"]*Site["BH_A"]*Site["B_S"]);
 	 Ham += TriangularOneSite(LocalHamiltonian);
 	 HamMPO = Ham;
       }
