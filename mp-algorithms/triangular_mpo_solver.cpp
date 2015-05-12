@@ -127,8 +127,8 @@ DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
 	    PANIC("oops");
 	 }
 
-	 if (!is_scalar(I->second.TransformsAs()))
-	    continue;
+	 //if (!is_scalar(I->second.TransformsAs()))
+	 //continue;
 
 	 std::complex<double> Overlap = inner_prod(I->second, UnitMatrixRight);
 	 DEBUG_TRACE(Overlap);
@@ -235,7 +235,7 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
 
 	    DEBUG_CHECK(!E[K][m].is_null());
 	    // do another orthogonalization
-	    if (HasEigenvalue1 && is_scalar(E[K][m].TransformsAs()))
+	    if (HasEigenvalue1 && E[K][m].TransformsAs() == UnitMatrixRight.TransformsAs())
 	    {
 	       DEBUG_TRACE(inner_prod(E[K][m], UnitMatrixRight))("should be small");
 	       E[K][m] -= conj(inner_prod(E[K][m], UnitMatrixRight)) * UnitMatrixLeft;
@@ -412,7 +412,7 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
          {
 	    for (ComplexPolyType::const_iterator J = I->second.begin(); J != I->second.end(); ++J)
 	    {
-	       // Conj here because this comes form an overlap(x, RightUnitMatrix)
+	       // Conj here because this comes from an overlap(x, RightUnitMatrix)
 	       E[I->first][J->first] += conj(J->second) * UnitMatrixLeft;
 	       DEBUG_TRACE(inner_prod(E[I->first][J->first], UnitMatrixRight));
 	    }
