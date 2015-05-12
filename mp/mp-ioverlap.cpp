@@ -233,13 +233,6 @@ int main(int argc, char** argv)
       if (Verbose)
          std::cout << "Calculating overlap...\n";
 
-      // The default UnitCellSize for output is the wavefunction size
-      if (UnitCellSize == 0)
-      {
-	 UnitCellSize = Psi1->Psi.size();
-      }
-      double ScaleFactor = double(UnitCellSize) / double(Psi1->Psi.size());
-	 
       // Rotate as necessary.  Do this BEFORE determining the quantum number sectors!
       if (Rotate > 0)
          *Psi2.mutate() = rotate_left(*Psi2, Rotate);
@@ -278,6 +271,13 @@ int main(int argc, char** argv)
 	 Psi1.mutate()->Psi = repeat(Psi1->Psi, Psi2->Psi.size() / Psi1->Psi.size());
       }
 
+      // The default UnitCellSize for output is the wavefunction size
+      if (UnitCellSize == 0)
+      {
+	 UnitCellSize = Psi1->Psi.size();
+      }
+      double ScaleFactor = double(UnitCellSize) / double(Psi1->Psi.size());
+	 
       ProductMPO StringOp;
       if (vm.count("string"))
       {
