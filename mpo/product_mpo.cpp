@@ -167,17 +167,17 @@ adjoint(ProductMPO const& x)
    return Result;
 }
 
-// For the left to right product, we want
-//  ... * A(0)B(1) * A(1)B(2) * A(2)B(3) * ...
+// For the right to left product, we want
+// .... * A(2)B(3) * A(1)B(2) * A(0)B(1) * ...
 // or, as a quantum circuit,
 //
 //     A B | | |
-//       A B | |
-//         A B |
-//           A B ...
+//     | A B | |
+//     | | A B |
+//     | | | A B ...
 // so that our unit cell is the tensor product B \otimes A
 ProductMPO
-prod_unit_left_to_right(FiniteMPO const& Op, int UnitCellSize)
+prod_unit_right_to_left(FiniteMPO const& Op, int UnitCellSize)
 {
    CHECK(Op.size() % UnitCellSize == 0)("prod_unit: Operator must be a multiple of the unit cell size!")
       (Op.size())(UnitCellSize);
@@ -200,18 +200,18 @@ prod_unit_left_to_right(FiniteMPO const& Op, int UnitCellSize)
    return Result;
 }
 
-// For the right to left product, we want
-// .... * A(2)B(3) * A(1)B(2) * A(0)B(1) * ...
+// For the left to right product, we want
+//  ... * A(0)B(1) * A(1)B(2) * A(2)B(3) * ...
 // or, as a quantum circuit,
 //
 //     | | | | A B ...
-//     | | | A B
-//     | | A B
-//     | A B
-// ... A B 
+//     | | | A B |
+//     | | A B | |
+//     | A B | | |
+// ... A B | | | |
 // so that our unit cell is the tensor product A \otimes B
 ProductMPO
-prod_unit_right_to_left(FiniteMPO const& Op, int UnitCellSize)
+prod_unit_left_to_right(FiniteMPO const& Op, int UnitCellSize)
 {
    CHECK(Op.size() % UnitCellSize == 0)("prod_unit: Operator must be a multiple of the unit cell size!")
       (Op.size())(UnitCellSize);
