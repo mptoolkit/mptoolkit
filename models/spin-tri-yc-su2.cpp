@@ -4,25 +4,29 @@
 // YC configuration of a triangular lattice
 // The unit cell is size Width*2.
 //
-// Example for a width-5 lattice (site numbers in brackets are periodic repeats in the vertical
+// Example for a width-6 lattice (site numbers in brackets are periodic repeats in the vertical
 // direction (ie top-left (0) is the same site as the bottom-left 0).
-// Sites 5,6,7,8,9 are the second unit cell, eg 5 is (1)[0]
+// Sites 6,7,8,9,10,11 are the second unit cell, eg 6 is (1)[0]
 //
-//    (0)
-//  (5)|
-//(0)| 4
-// | 9<|
-// 4<| 3
-// | 8<|
-// 3<| 2
-// | 7<|
-// 2<| 1
-// | 6<|
-// 1<| 0
-// | 5<|
-// 0<|(4)
-// |(9)
-//(4)
+// Note that sites 5,6 are NOT nearest neighbor.
+//
+//     (18)
+//  (6)  |
+//(0) | 17
+// | 11< |
+// 5< | 16
+// | 10< |
+// 4< | 15
+// |  9< |
+// 3< | 14
+// |  8< |
+// 2< | 13
+// |  7< |
+// 1< | 12
+// |  6< |
+// 0< |(17)
+// |(11)
+//(5)
 //
 
 #include "pheap/pheap.h"
