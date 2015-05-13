@@ -245,7 +245,6 @@ struct scale_cells_to_sites
    
    void operator()(char const*, char const*) const
    {
-      TRACE("Scaling");
       int Cells = pop_int(eval);
       eval.push(std::complex<double>(double(Cells*Lattice.GetUnitCell().size())));
    }
@@ -263,7 +262,6 @@ struct push_number_of_sites
    
    void operator()(char const*, char const*) const
    {
-      TRACE("Pushing sites");
       eval.push(std::complex<double>(double(Lattice.GetUnitCell().size())));
    }
 
