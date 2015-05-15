@@ -62,10 +62,10 @@ class InfiniteWavefunction
       VectorBasis Basis2() const { return Psi.Basis2(); }
 
       iterator begin() { return Psi.begin(); }
-      iterator end() { return Psi.begin(); }
+      iterator end() { return Psi.end(); }
 
       const_iterator begin() const { return Psi.begin(); }
-      const_iterator end() const { return Psi.begin(); }
+      const_iterator end() const { return Psi.end(); }
 
       MatrixOperator C_old;  // By convention, this is kept in a diagonal basis
 

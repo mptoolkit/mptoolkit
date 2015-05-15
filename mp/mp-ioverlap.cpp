@@ -254,6 +254,7 @@ int main(int argc, char** argv)
 	 }
 	 *Psi1.mutate() = repeat(*Psi1, Size/Psi1->size());
 	 *Psi2.mutate() = repeat(*Psi2, Size/Psi2->size());
+	 DEBUG_CHECK_EQUAL(Psi1->size(), Psi2->size());
       }
 
       // The default UnitCellSize for output is the wavefunction size
