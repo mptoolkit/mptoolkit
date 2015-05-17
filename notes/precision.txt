@@ -1,0 +1,11 @@
+
+Variance calculations:
+
+The way this can go wrong is that the energy germ gets big, so that in the E matrix elements the part proportional to the identity swamps out the remainder.
+This isn't a problem with a small unit cell, but in finite-size calculations (or idmrg with a large enough unit cell), things will go wrong.
+
+The way to control this is keep track of the parts proportional to the identity at each site of the wavefunction, not just overall.  This should be fine, we just need
+the left and right identity vectors at each step of the calculation too.
+
+This applies mostly to mp-expectation.  For a large unit cell then it is also needed for mp-icumulant.
+
