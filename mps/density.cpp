@@ -404,8 +404,6 @@ void UpdateKeepList(KeepListType& KeepList,
    //std::cout << '\n';
 }
 
-#if 1
-
 //
 // Singular value decomposition
 //
@@ -662,5 +660,3 @@ ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
       }
    }
 }
-   
-#endif

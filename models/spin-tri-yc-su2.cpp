@@ -118,7 +118,7 @@ int main(int argc, char** argv)
 	 H1 += inner(S(0)[i], S(1)[(i+w-1)%w]);
 
 	 // next-nearest neighbor bonds
-	 H2 += inner(S(0)[i], S(2)[i]);             // horizontal
+	 H2 += inner(S(0)[i], S(2)[(i+w-1)%w]);             // horizontal
 	 H2 += inner(S(0)[i], S(1)[(i+1)%w]);       // up-right
 	 H2 += inner(S(0)[i], S(1)[(i+w-2)%w]);     // down-right   
       }
