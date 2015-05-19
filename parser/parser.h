@@ -6,6 +6,8 @@
 #if !defined(MPTOOLKIT_PARSER_PARSER_H)
 #define MPTOOLKIT_PARSER_PARSER_H
 
+#include "common/math_const.h"
+#include "quantumnumbers/quantumnumber.h"  // for the ternary_prod implementation
 #include <boost/spirit/include/classic_core.hpp>
 #include <boost/spirit/include/classic_chset.hpp>
 #include <boost/spirit/include/classic_symbols.hpp>
@@ -15,13 +17,12 @@
 #include <boost/bind.hpp>
 #include <boost/variant.hpp>
 #include <boost/variant/static_visitor.hpp>
+#include <boost/math/complex.hpp>
 #include <iostream>
 #include <stack>
 #include <functional>
 #include <string>
 #include <complex>
-#include "common/math_const.h"
-#include "quantumnumbers/quantumnumber.h"  // for the ternary_prod implementation
 
 namespace Parser
 {
@@ -118,6 +119,30 @@ complex ccos(complex x)
 }
 
 inline
+complex ctan(complex x)
+{
+   return tan(x);
+}
+
+inline
+complex casin(complex x)
+{
+   return boost::math::asin(x);
+}
+
+inline
+complex cacos(complex x)
+{
+   return boost::math::acos(x);
+}
+
+inline
+complex catan(complex x)
+{
+   return boost::math::atan(x);
+}
+
+inline
 complex cexp(complex x)
 {
    return exp(x);
@@ -210,9 +235,13 @@ struct unary_funcs : symbols<boost::function<element_type(element_type)> >
    unary_funcs()
    {
       this->add.operator()
-         ("sin", make_unary_math<element_type>(&csin))
+         ("sin", make_unary_math<element_type>(&csin)) 
          ("cos", make_unary_math<element_type>(&ccos))
-         ("exp", make_apply_unary_math<element_type>(ElementExp<element_type>()))
+         ("tan", make_unary_math<element_type>(&ctan))
+         ("asin", make_unary_math<element_type>(&casin))
+         ("acos", make_unary_math<element_type>(&cacos))
+         ("atan", make_unary_math<element_type>(&catan))
+	 ("exp", make_apply_unary_math<element_type>(ElementExp<element_type>()))
          ("ln", make_unary_math<element_type>(&cln))
          ("log", make_unary_math<element_type>(&cln))
          ("log10", make_unary_math<element_type>(&clog10))
