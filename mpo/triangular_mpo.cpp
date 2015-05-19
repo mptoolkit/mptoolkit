@@ -1374,3 +1374,7 @@ TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
    Result[smod(n2,Size)](Loc[smod(n2,Size)],Loc[smod(n2+1,Size)]+1) = x2;
    return TriangularMPO(Result.data());
 }
+
+void optimize(TriangularMPO& Op)
+{
+}

@@ -84,6 +84,8 @@ int main(int argc, char** argv)
       LatticeSite Site = SpinSU2(Spin);
       UnitCell Cell = repeat(Site, w);
       UnitCellOperator S(Cell, "S");
+      UnitCellOperator H1(Cell, "H1");
+      UnitCellOperator H2(Cell, "H2");
 
       // Add some operators on the unit cell
       for (int i = 0; i < w; ++i)
@@ -103,11 +105,8 @@ int main(int argc, char** argv)
 	 }
       }
 
-      // Now we construct the InfiniteLattice
-      InfiniteLattice Lattice(Cell);
-
       // Construct the Hamiltonian for a single unit cell
-      UnitCellMPO H1, H2;
+      //      UnitCellMPO H1, H2;
       for (int i = 0; i < w; ++i)
       {
 	 // Nearest neighbor bonds
@@ -122,6 +121,10 @@ int main(int argc, char** argv)
 	 H2 += inner(S(0)[i], S(1)[(i+1)%w]);       // up-right
 	 H2 += inner(S(0)[i], S(1)[(i+w-2)%w]);     // down-right   
       }
+
+      // Now we construct the InfiniteLattice.  Note that it is important that
+      // we construct all UnitCellOperator's *before* constructing the Lattice object
+      InfiniteLattice Lattice(Cell);
 
       Lattice["H_J1"] = sum_unit(H1);
       Lattice["H_J2"] = sum_unit(H2);

@@ -45,7 +45,9 @@ struct push_operator
       std::string OpName = IdentStack.top();
       IdentStack.pop();
 
-      CHECK_EQUAL(NumCells, 1)("Operator must supply a cell index")(OpName);
+      CHECK_EQUAL(NumCells, 1)
+	 ("Identifier looks like an operator, but it doesn't supply a cell index!")
+	 (OpName);
       CHECK(Cell.operator_exists(OpName))("Operator does not exist in the unit cell")(OpName);
 
       eval.push(element_type(Cell.Operator(OpName)));

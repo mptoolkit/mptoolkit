@@ -29,44 +29,6 @@ WavefunctionDesc::Flip(std::vector<BasisList> const& Basis, int Site, int NewSta
    return true;
 }
 
-#if 0
-WavefunctionDesc::WavefunctionDesc(Lattice const& L) : State(L.size()), Height(L.size()+1)
-{
-   QuantumNumber Q(L.front().GetSymmetryList());
-   Height[L.size()] = Q;
-   Lattice::const_iterator Li = L.end();
-   for (int i = L.size()-1; i >= 0; --i)
-   {
-      --Li;
-      BasisList Basis = Li->Basis1().Basis();
-      State[i] = rand() % Basis.size();
-
-      QuantumNumbers::QuantumNumberList QList = transform_targets(Q, Basis[State[i]]);
-      Q = QList[rand() % QList.size()];
-      Height[i] = Q;
-   }
-}
-
-WavefunctionDesc::WavefunctionDesc(Lattice const& L,
-                                   QuantumNumber Q) 
-   : State(L.size()), Height(L.size()+1)
-{
-   Height[L.size()] = Q;
-   Lattice::const_iterator Li = L.end();
-   for (int i = L.size()-1; i >= 0; --i)
-   {
-      --Li;
-      BasisList Basis = Li->Basis1().Basis();
-      State[i] = rand() % Basis.size();
-
-      QuantumNumbers::QuantumNumberList QList = transform_targets(Q, Basis[State[i]]);
-      Q = QList[rand() % QList.size()];
-      Height[i] = Q;
-   }
-}
-
-#endif
-
 WavefunctionDesc::WavefunctionDesc(std::vector<BasisList> const& L) 
    : State(L.size()), Height(L.size()+1)
 {

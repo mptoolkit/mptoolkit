@@ -737,7 +737,8 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
 
 SimpleOperator TruncateBasis2(OperatorComponent& A)
 {
-   // We want to work from the first column to last, so that we preserve the first column exactly.
+   // We want to work from the first column to first, so that we preserve the first column exactly.
+   // For a TriangularMPO the first column will contain the identity.
    // We don't have to worry about accidentally eliminating the last column of a triangular MPO,
    // since if it is triangular then the last column cannot be parallel to anything else
 

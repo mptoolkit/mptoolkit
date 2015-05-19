@@ -1099,7 +1099,7 @@ int main(int argc, char** argv)
 	 if (BoundaryState.empty())
 	 {
 	    RBoundary = QuantumNumber(HamMPO[0].GetSymmetryList());
-	    RBoundary = q;
+	    LBoundary = q;
 	 }
 	 else
 	 {

@@ -251,6 +251,8 @@ StateComponent Initial_F(TriangularMPO const& m);
 StateComponent Initial_E(TriangularMPO const& m, VectorBasis const& B);
 StateComponent Initial_F(TriangularMPO const& m, VectorBasis const& B);
 
+void optimize(TriangularMPO& Op);
+
 inline
 void
 TriangularMPO::debug_check_structure() const
