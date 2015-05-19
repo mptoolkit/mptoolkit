@@ -165,7 +165,7 @@ TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& JW, Finite
    // ( 0 0 B 0 )
    // ( 0 0 0 C )
    // ( 0 0 0 I )
-   // where X is the commutation operator.
+   // where X is the JW string operator.
 
    // If the unit cell is larger than 1 site, we can follow a more general procedure,
    // eg 6-site operator ABCDEF on a 3-site unit cell, construct operators
@@ -262,6 +262,7 @@ TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& JW, Finite
    }
 
    Result.check_structure();
+   optimize(Result);
    return Result;
 }
 
@@ -333,5 +334,6 @@ TriangularMPO make_zero(SiteListType const& SiteList)
    }
 
    Result.check_structure();
+   optimize(Result);
    return Result;
 }

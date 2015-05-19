@@ -538,6 +538,8 @@ TriangularMPO operator+(TriangularMPO const& x, TriangularMPO const& y)
 
    //   TRACE(x)(y)(Result);
 
+   optimize(Result);
+
    return Result;
 }
 
@@ -644,6 +646,7 @@ TriangularMPO prod(TriangularMPO const& x, TriangularMPO const& y, QuantumNumber
 
       Result[Here] = Op;
    }
+   optimize(Result);
    return Result;
 }
 
