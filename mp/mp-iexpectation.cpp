@@ -144,9 +144,10 @@ int main(int argc, char** argv)
 
       if (Print)
       {
-	 std::cout << Op << '\n';
-	 std::cout << "\nTransfer matrix:" << construct_transfer_matrix(herm(GenericMPO(Op.MPO())),
-									GenericMPO(Op.MPO())) << '\n';
+	 print_structure(Op.MPO(), std::cout);
+	 //	 std::cout << Op << '\n';
+	 //std::cout << "\nTransfer matrix:" << construct_transfer_matrix(herm(GenericMPO(Op.MPO())),
+	 //							GenericMPO(Op.MPO())) << '\n';
       };
 
       // Check that Op is bosonic, otherwise it is not defined

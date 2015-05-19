@@ -59,6 +59,16 @@ PStream::ipstream& operator>>(PStream::ipstream& in, FiniteMPO& op)
    return in >> op.data();
 }
 
+void print_structure(FiniteMPO const& Op, std::ostream& out)
+{
+   out << "FiniteMPO has " << Op.size() << " sites\n";
+   for (unsigned i = 0; i < Op.size(); ++i)
+   {
+      out << "Site " << i << " dimension " << Op[i].size1() << " x " << Op[i].size2() << '\n';
+      print_structure(Op[i], out);
+   }
+}
+
 FiniteMPO
 join(FiniteMPO const& Op1, FiniteMPO const& Op2)
 {

@@ -499,18 +499,6 @@ std::ostream& operator<<(std::ostream& out, OperatorClassification const& Class)
    return out;
 }
 
-std::complex<double> PropIdent(SimpleOperator const& X)
-{
-   DEBUG_PRECONDITION_EQUAL(X.Basis1(), X.Basis2());
-   SimpleOperator Ident = SimpleOperator::make_identity(X.Basis1());
-   std::complex<double> x = inner_prod(Ident, X) / norm_frob_sq(Ident);
-   //   TRACE(x);
-   //TRACE(X-x*Ident);
-   if (norm_frob(X-x*Ident) > std::numeric_limits<double>::epsilon()*10)
-      x = 0.0;
-   return x;
-}
-
 OperatorClassification classify(GenericMPO const& Op)
 {
    OperatorClassification Result;

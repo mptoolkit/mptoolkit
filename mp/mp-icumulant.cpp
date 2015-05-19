@@ -100,9 +100,11 @@ int main(int argc, char** argv)
 
       if (Print)
       {
-	 std::cout << Op << '\n';
-	 std::cout << "\nTransfer matrix:" << construct_transfer_matrix(herm(GenericMPO(Op)),
-									GenericMPO(Op)) << '\n';
+	 optimize(Op);
+	 print_structure(Op, std::cout);
+	 //	 std::cout << Op << '\n';
+	 //std::cout << "\nTransfer matrix:" << construct_transfer_matrix(herm(GenericMPO(Op)),
+	 //								GenericMPO(Op)) << '\n';
       };
 
 

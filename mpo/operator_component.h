@@ -126,6 +126,10 @@ class OperatorComponent
 std::ostream&
 operator<<(std::ostream& out, OperatorComponent const& op);
 
+// prints the structure of the component, as an 'x' for a non-zero
+// component or blank for a zero component
+void print_structure(OperatorComponent const& Op, std::ostream& out);
+
 inline
 OperatorComponent 
 OperatorComponent::make_identity(BasisList const& LocalBasis)
@@ -567,6 +571,10 @@ SimpleOperator CollapseBasis(BasisList const& b);
 
 // helper function to construct an operator that projects onto a single quantum number component
 SimpleOperator ProjectBasis(BasisList const& b, QuantumNumbers::QuantumNumber const& q);
+
+// Utility function - if X is proportional to identity operator then return the constant of
+// proportionality.  Otherwise return 0.0
+std::complex<double> PropIdent(SimpleOperator const& X);
 
 namespace LinearAlgebra
 {

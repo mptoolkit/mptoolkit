@@ -103,6 +103,50 @@ operator<<(std::ostream& out, OperatorComponent const& op)
    return out;
 }
 
+void print_structure(OperatorComponent const& Op, std::ostream& out)
+{
+   for (unsigned i = 0; i < Op.size1(); ++i)
+   {
+      out << '[';
+      for (unsigned j = 0; j < Op.size2(); ++j)
+      {
+	 if (Op.iterate_at(i,j))
+	 {
+	    SimpleRedOperator X = Op(i,j);
+	    if (X.size() > 1)
+	       out << 'x';       // some compound operator
+	    else if (!is_scalar(X.begin()->TransformsAs()))
+	    {
+	       out << 'v';       // a non-scalar
+	    }
+	    else
+	    {
+	       SimpleOperator Y = X.scalar();
+	    
+	       std::complex<double> x = PropIdent(Y);
+	       if (x == 0.0)
+	       {
+		  std::complex<double> x = PropIdent(scalar_prod(herm(Y),Y));
+		  if (norm_frob(x-1.0) < 1E-12)
+		     out << 'U';      // a unitary
+		  else
+		     out << 's';      // a generic scalar
+	       }
+	       else if (norm_frob(x-1.0) < 1E-12)
+	       {
+		  out << 'I';         // the identity
+	       }
+	       else
+		  out << 'i';         // something proportional to the identity
+	    }
+	 }
+	 else
+	    out << ' ';
+      }
+      out << "]\n";
+   }
+}
+
 PStream::opstream& 
 operator<<(PStream::opstream& out, OperatorComponent const& Op)
 {
@@ -1703,3 +1747,16 @@ SimpleOperator ProjectBasis(BasisList const& b, QuantumNumbers::QuantumNumber co
    }
    return Result;
 }
+
+std::complex<double> PropIdent(SimpleOperator const& X)
+{
+   DEBUG_PRECONDITION_EQUAL(X.Basis1(), X.Basis2());
+   SimpleOperator Ident = SimpleOperator::make_identity(X.Basis1());
+   std::complex<double> x = inner_prod(Ident, X) / norm_frob_sq(Ident);
+   //   TRACE(x);
+   //TRACE(X-x*Ident);
+   if (norm_frob(X-x*Ident) > std::numeric_limits<double>::epsilon()*10)
+      x = 0.0;
+   return x;
+}
+

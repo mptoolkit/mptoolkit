@@ -37,7 +37,7 @@ class TriangularMPO
 
       explicit TriangularMPO(std::vector<value_type> const& x) : Data_(x.begin(), x.end()) {}
 
-      std::size_t size() const { return Data_.size(); }
+      int size() const { return Data_.size(); }
 
       bool empty() const { return Data_.empty(); }
 
@@ -105,6 +105,10 @@ class TriangularMPO
 
 std::ostream&
 operator<<(std::ostream& out, TriangularMPO const& op);
+
+// prints the structure of the component, as an 'x' for a non-zero
+// component or blank for a zero component
+void print_structure(TriangularMPO const& Op, std::ostream& out);
 
 #if 0
 // extracts a single column from a triangular operator.  Result is an Nx1 row-vector operator

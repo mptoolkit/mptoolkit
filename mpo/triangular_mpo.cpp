@@ -5,7 +5,7 @@
 void
 TriangularMPO::check_structure() const
 {
-   for (unsigned i = 0; i < this->size(); ++i)
+   for (int i = 0; i < this->size(); ++i)
    {
       Data_[i].check_structure();
    }
@@ -79,6 +79,56 @@ std::ostream&
 operator<<(std::ostream& out, TriangularMPO const& op)
 {
    return out << op.data();
+}
+
+void optimize(TriangularMPO& Op)
+{
+   if (Op.size() < 2)
+      return;
+
+   bool Reduced = true; // flag to indicate that we reduced a dimension
+   // loop until we do a complete sweep with no reduction in dimensions
+   while (Reduced)
+   {
+      Reduced = false;
+
+      // Working left to right, optimize the Basis2
+      SimpleOperator T = TruncateBasis2(Op.front());
+      if (T.size1() != T.size2())
+         Reduced = true;
+      for (int i = 1; i < Op.size(); ++i)
+      {
+         Op[i] = T * Op[i];
+         T = TruncateBasis2(Op[i]);
+         if (T.size1() != T.size2())
+            Reduced = true;
+      }
+      Op.front() = T * Op.front();
+      
+      // Working right to left, optimize Basis1
+      T = TruncateBasis1(Op.back());
+      if (T.size1() != T.size2())
+         Reduced = true;
+      for (int i = Op.size()-2; i >= 0; --i)
+      {
+         Op[i] = Op[i] * T;
+	 T = TruncateBasis1(Op[i]);
+         if (T.size1() != T.size2())
+            Reduced = true;
+      }
+      Op.back() = Op.back() * T;
+   }
+}
+
+
+void print_structure(TriangularMPO const& Op, std::ostream& out)
+{
+   out << "TriangularMPO has " << Op.size() << " sites\n";
+   for (int i = 0; i < Op.size(); ++i)
+   {
+      out << "Site " << i << " dimension " << Op[i].size1() << " x " << Op[i].size2() << '\n';
+      print_structure(Op[i], out);
+   }
 }
 
 TriangularMPO TriangularOneSite(SimpleOperator const& x)
@@ -365,7 +415,7 @@ TriangularMPO TriangularTwoSitePBC_Boundary(SimpleOperator const& x, SimpleOpera
 
 TriangularMPO& operator*=(TriangularMPO& Op, double x)
 {
-   for (unsigned i = 0; i < Op.size(); ++i)
+   for (int i = 0; i < Op.size(); ++i)
    {
       for (unsigned j = 1; j < Op[i].Basis2().size(); ++j)
       {
@@ -378,7 +428,7 @@ TriangularMPO& operator*=(TriangularMPO& Op, double x)
 
 TriangularMPO& operator*=(TriangularMPO& Op, std::complex<double> x)
 {
-   for (unsigned i = 0; i < Op.size(); ++i)
+   for (int i = 0; i < Op.size(); ++i)
    {
       for (unsigned j = 1; j < Op[i].Basis2().size(); ++j)
       {
@@ -430,7 +480,7 @@ TriangularMPO operator+(TriangularMPO const& x, TriangularMPO const& y)
 
    TriangularMPO Result(x.size());
 
-   for (unsigned Here = 0; Here < x.size(); ++Here)
+   for (int Here = 0; Here < x.size(); ++Here)
    {
       int x_rows = x[Here].Basis1().size();
       int y_rows = y[Here].Basis1().size();
@@ -524,7 +574,7 @@ TriangularMPO prod(TriangularMPO const& x, TriangularMPO const& y, QuantumNumber
    // The basis that wraps around gets the final element projected onto component q only
    PBasisType ProjectedBasis = PBasisType::MakeTriangularProjected(x.front().Basis1(), y.front().Basis1(), q);
 
-   for (unsigned Here = 0; Here < x.size(); ++Here)
+   for (int Here = 0; Here < x.size(); ++Here)
    {
       Tensor::ProductBasis<BasisList, BasisList> B1 = (Here == 0) ? ProjectedBasis : PBasisType(x[Here].Basis1(), y[Here].Basis1());
       Tensor::ProductBasis<BasisList, BasisList> B2 = (Here == x.size()-1) ? ProjectedBasis : PBasisType(x[Here].Basis2(), y[Here].Basis2());
@@ -602,7 +652,7 @@ repeat(TriangularMPO const& x, int count)
 {
    TriangularMPO Result(x.size() * count);
    for (int i = 0; i < count; ++i)
-      for (unsigned j = 0; j < x.size(); ++j)
+      for (int j = 0; j < x.size(); ++j)
          Result[i*x.size()+j] = x[j];
    return Result;
 }
@@ -1373,8 +1423,4 @@ TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
    }
    Result[smod(n2,Size)](Loc[smod(n2,Size)],Loc[smod(n2+1,Size)]+1) = x2;
    return TriangularMPO(Result.data());
-}
-
-void optimize(TriangularMPO& Op)
-{
 }
