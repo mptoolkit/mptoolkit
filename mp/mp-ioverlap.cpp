@@ -51,7 +51,7 @@ void PrintFormat(TransEigenInfo const& x, bool ShowRealPart, bool ShowImagPart,
    }
    if (ShowMagnitude)
    {
-      std::cout << std::setw(20) << LinearAlgebra::norm_frob(x.x) << "    ";
+      std::cout << std::setw(20) << LinearAlgebra::norm_frob(Value) << "    ";
    }
    if (ShowArgument)
    {
@@ -118,7 +118,7 @@ int main(int argc, char** argv)
           "display the magnitude of the result")
          ("arg,a", prog_opt::bool_switch(&ShowArgument),
           "display the argument (angle) of the result")
-	 ("radians,r", prog_opt::bool_switch(&ShowRadians),
+	 ("radians", prog_opt::bool_switch(&ShowRadians),
 	  "display the argument in radians instead of degrees")
 	 ("corr,x", prog_opt::bool_switch(&ShowCorrLength),
 	  "display the equivalent correlation length")

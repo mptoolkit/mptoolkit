@@ -6,6 +6,11 @@
 #include "mp-algorithms/arnoldi.h"
 #include "mp-algorithms/gmres.h"
 
+// For identifying an eigenvalue 1 of the transfer matrix, we need
+// an epsilon tolerance.  1E-12 proved to be a bit too small in some
+// cases.
+double const EigenUnityEpsilon = 1E-10;
+
 // A note on orthogonalizing vectors in non-orthogonal Hilbert spaces.
 // Suppose <l| and |r> are left and right eigenvectors, satisfying <l|r>=1.
 // If we want to orthogonalize some bra <x| against <l|, we want do do:
@@ -93,7 +98,7 @@ std::complex<double>
 FindClosestUnitEigenvalue(MatrixOperator& M, T Func, int Verbose)
 {
    int Iterations = 20;
-   double Tol = 1E-14;
+   double Tol = 1E-16;
    std::complex<double> EtaL;
    EtaL = LinearSolvers::Arnoldi(M, Func, Iterations, Tol, LinearSolvers::LargestAlgebraicReal, Verbose);
    while (Iterations == 20)
@@ -364,7 +369,7 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 	    if (Verbose)
 	       std::cerr << "Eigenvalue of unitary operator is " << EtaL << std::endl;
 
-	    if (std::abs(norm_frob(EtaL) - 1.0) < 1E-12)
+	    if (std::abs(norm_frob(EtaL) - 1.0) < EigenUnityEpsilon)
 	    {
 	       if (Verbose)
 		  std::cerr << "Found an eigenvalue 1, so we need the right eigenvector..." << std::endl;
@@ -385,6 +390,13 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 	       //	       UnitMatrixLeft *= 1.0 / (inner_prod(UnitMatrixRight, UnitMatrixLeft));
 	       UnitMatrixRight *= 1.0 / (inner_prod(UnitMatrixLeft, UnitMatrixRight));
 	       DEBUG_TRACE(inner_prod(UnitMatrixLeft, UnitMatrixRight));
+	    }
+	    else if (std::abs(norm_frob(EtaL) - 1.0) < EigenUnityEpsilon*100)
+	    {
+	       // If we get here, then we have an eigenvalue that is close to 1, but
+	       // misses the test
+	       std::cerr << "SolveMPO_Left: warning: Eigenvalue misses tolerance but is near 1"
+			 << ", epsilon=" << std::abs(norm_frob(EtaL)-1.0) << '\n';
 	    }
 	 }
 

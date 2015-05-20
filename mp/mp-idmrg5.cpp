@@ -31,7 +31,7 @@
 #include "models/kondo-u1.h"
 #include "models/kondo-u1u1.h"
 #include "models/kondo-so4.h"
-#include "models/hubbard-so4.h"
+#include "models/fermion-so4.h"
 #include "models/hubbard-u1u1.h"
 #include "models/fermion-u1su2.h"
 #include "models/spinlessfermion-u1.h"
@@ -1657,7 +1657,7 @@ int main(int argc, char** argv)
       else if (HamStr == "hubbard-so4")
       {
 	 std::cout << "Hamiltonian is Hubbard model with t=" << t << ", U = " << U << '\n';
-	 LatticeSite Site = CreateSO4HubbardSiteA();
+	 LatticeSite Site = FermionSO4_A();
 	 TriangularMPO H1 = -2.0 * t * TriangularTwoSite(Site["C_A"], Site["C_B"]);
 	 TriangularMPO H2 = -2.0 * t * TriangularTwoSite(Site["C_B"], Site["C_A"]);
 	 H1 = H1 + 0.25 * U * TriangularOneSite(Site["P"]);

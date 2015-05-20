@@ -22,6 +22,30 @@
 
 namespace prog_opt = boost::program_options;
 
+void PrintFormat(std::complex<double> const& Value, bool ShowRealPart, bool ShowImagPart, 
+		 bool ShowMagnitude, bool ShowArgument,
+		 bool ShowRadians)
+{
+   if (ShowRealPart)
+   {
+      std::cout << std::setw(20) << Value.real() << "    ";
+   }
+   if (ShowImagPart)
+   {
+      std::cout << std::setw(20) << Value.imag() << "    ";
+   }
+   if (ShowMagnitude)
+   {
+      std::cout << std::setw(20) << LinearAlgebra::norm_frob(Value) << "    ";
+   }
+   if (ShowArgument)
+   {
+      double Arg =  std::atan2(Value.imag(), Value.real());
+      if (!ShowRadians)
+	 Arg *= 180.0 / math_const::pi;
+      std::cout << std::setw(20) << Arg << "    ";
+   }
+}
 
 int main(int argc, char** argv)
 {
@@ -39,8 +63,18 @@ int main(int argc, char** argv)
    int NLegs = 1;
    double Spin = 0.5;
    bool Print = false;
+   bool ShowRealPart = false;
+   bool ShowImagPart = false;
+   bool ShowMagnitude = false;
+   bool ShowArgument = false;
+   bool ShowRadians = false;
+   bool ShowPolar = false;
+   bool ShowCartesian = false;
+   bool Quiet = false;
+   bool Columns = false;
 
    std::cout.precision(getenv_or_default("MP_PRECISION", 14));
+   std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
  
    try
    {
@@ -49,6 +83,23 @@ int main(int argc, char** argv)
          ("help", "show this help message")
 	 ("power", prog_opt::value(&Power),
 	  FormatDefault("Calculate expectation value of operator to this power", Power).c_str())
+	 ("cart,c", prog_opt::bool_switch(&ShowCartesian),
+	  "show the result in cartesian coordinates [equivalent to --real --imag]")
+	 ("polar,p", prog_opt::bool_switch(&ShowPolar),
+	  "show the result in polar coodinates [equivalent to --mag --arg]")
+	 ("real,r", prog_opt::bool_switch(&ShowRealPart),
+	  "display the real part of the result")
+	 ("imag,i", prog_opt::bool_switch(&ShowImagPart),
+	  "display the imaginary part of the result")
+         ("mag,m", prog_opt::bool_switch(&ShowMagnitude),
+          "display the magnitude of the result")
+         ("arg,a", prog_opt::bool_switch(&ShowArgument),
+          "display the argument (angle) of the result")
+	 ("radians", prog_opt::bool_switch(&ShowRadians),
+	  "display the argument in radians instead of degrees")
+	 ("columns", prog_opt::bool_switch(&Columns),
+	  "Show the prefactors of each degree in columns rather than rows")
+	 ("quiet,q", prog_opt::bool_switch(&Quiet), "Don't show column headings")
          ("print,p", prog_opt::bool_switch(&Print), "Print the MPO to standard output")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose),
           "extra debug output (can be used more than once)")
@@ -80,6 +131,28 @@ int main(int argc, char** argv)
          return 1;
       }
       
+      // If no output switches are used, default to showing everything
+      if (!ShowRealPart && !ShowImagPart && !ShowMagnitude
+	  && !ShowCartesian && !ShowPolar && !ShowArgument
+	  && !ShowRadians)
+      {
+	 ShowCartesian = true;
+	 ShowPolar = true;
+      }
+      
+      if (ShowCartesian)
+      {
+	 ShowRealPart = true;
+	 ShowImagPart = true;
+      }
+      if (ShowPolar)
+      {
+	 ShowMagnitude = true;
+	 ShowArgument = true;
+      }
+      if (ShowRadians)
+	 ShowArgument = true;      
+
       long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
       pvalue_ptr<InfiniteWavefunction> PsiPtr = pheap::OpenPersistent(FName, CacheSize, true);
       InfiniteWavefunction Psi = *PsiPtr;
@@ -142,12 +215,54 @@ int main(int argc, char** argv)
       KMatrixPolyType E = SolveMPO_Left(Phi, Psi.QShift, Op, Identity, Rho, Verbose);
       Polynomial<std::complex<double> > aNorm = ExtractOverlap(E[1.0], Rho);
 
-      std::cout << "#degree #real #imag\n";
-      for (int i = 0; i <= aNorm.degree(); ++i)
+      if (!Quiet)
+      {
+	 std::cout << "#" << argv[0];
+	 for (int i = 1; i < argc; ++i)
+	    std::cout << ' ' << argv[i];
+	 std::cout << "\n#quantities are calculated per unit cell size of " << WavefuncUnitCellSize 
+		   << (WavefuncUnitCellSize == 1 ? " site\n" : " sites\n");
+	 if (Columns)
 	 {
-	    std::cout << i << ' ' << aNorm[i].real() << ' ' << aNorm[i].imag() << '\n';
+	    int d = aNorm.degree();
+	    for (int i = 1; i <= d; ++i)
+	    {
+	       if (ShowRealPart)
+		  std::cout << '#' << i << "-real                 ";
+	       if (ShowImagPart)
+		  std::cout << '#' << i << "-imag                 ";
+	       if (ShowMagnitude)
+		  std::cout << '#' << i << "-magnitude            ";
+	       if (ShowArgument)
+		  std::cout << '#' << i << "-argument" << (ShowRadians ? "(rad)" : "(deg)") << "        ";
+	    }
 	 }
-      std::cout << std::endl;
+	 else
+	 {
+	    std::cout << "#degree     ";
+	    if (ShowRealPart)
+	       std::cout << "#real                   ";
+	    if (ShowImagPart)
+	       std::cout << "#imag                   ";
+	    if (ShowMagnitude)
+	       std::cout << "#magnitude              ";
+	    if (ShowArgument)
+	       std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
+	 }
+         std::cout << '\n';
+         std::cout << std::left;
+      }
+
+      for (int i = 1; i <= aNorm.degree(); ++i)
+      {
+	 if (!Columns)
+	    std::cout << std::setw(11) << i << ' ';
+	 PrintFormat(aNorm[i], ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
+	 if (!Columns)
+	    std::cout << std::endl;
+      }
+      if (Columns)
+	 std::cout << std::endl;
 
       pheap::Shutdown();
    }
