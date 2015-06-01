@@ -551,9 +551,7 @@ OperatorClassification classify(GenericMPO const& Op)
             }
             else
             {
-               if (norm_frob(x - 1.0) + norm_frob(y - 1.0) > std::numeric_limits<double>::epsilon()*200)
-                  IsUnitUnitary = false;
-
+	       Factor *= std::sqrt(x);
             }
          }
 
@@ -569,18 +567,20 @@ OperatorClassification classify(GenericMPO const& Op)
       {
          Result.PropIdentity_ = true;
          //TRACE(Factor);
-         Result.Identity_ = norm_frob(Factor - std::complex<double>(1.0, 0)) < std::numeric_limits<double>::epsilon()*100;
+         Result.Identity_ = LinearAlgebra::norm_frob_sq(Factor - std::complex<double>(1.0, 0)) 
+	    < std::numeric_limits<double>::epsilon()*1000;
 
          // if we claim to be an identity operator, we might as well make it exact
          if (Result.Identity_)
             Factor = 1.0;
 
-         Result.Unitary_ = norm_frob(norm_frob(Factor) - 1.0) < std::numeric_limits<double>::epsilon()*100;
+         Result.Unitary_ = LinearAlgebra::norm_frob_sq(norm_frob(Factor) - 1.0) < std::numeric_limits<double>::epsilon()*1000;
          Result.Factor_ = Factor;
       }
       else
       {
-         Result.Unitary_ = IsUnitUnitary;
+         Result.Unitary_ = LinearAlgebra::norm_frob_sq(norm_frob(Factor) - 1.0) < std::numeric_limits<double>::epsilon()*1000;
+         Result.Factor_ = Factor;
       }
    }
 

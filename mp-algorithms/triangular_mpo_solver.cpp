@@ -314,7 +314,7 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
    {
       if (Verbose)
       {
-         std::cerr << "Solving column " << Col << '\n';
+         std::cerr << "Solving column " << Col << " of " << (Dim-1) << '\n';
       }
 
       // Generate the next C matrices, C(n) = sum_{j<Col} Op(j,Col) E_j(n)
@@ -397,6 +397,14 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 	       // misses the test
 	       std::cerr << "SolveMPO_Left: warning: Eigenvalue misses tolerance but is near 1"
 			 << ", epsilon=" << std::abs(norm_frob(EtaL)-1.0) << '\n';
+	    }
+	 }
+	 else
+	 {
+	    if (Verbose)
+	    {
+	       std::cerr << "Diagonal component is not unitary, assuming spectral radius < 1\n";
+	       DEBUG_TRACE(Diag)(Classification);
 	    }
 	 }
 

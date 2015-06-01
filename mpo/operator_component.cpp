@@ -1752,10 +1752,10 @@ std::complex<double> PropIdent(SimpleOperator const& X)
 {
    DEBUG_PRECONDITION_EQUAL(X.Basis1(), X.Basis2());
    SimpleOperator Ident = SimpleOperator::make_identity(X.Basis1());
-   std::complex<double> x = inner_prod(Ident, X) / norm_frob_sq(Ident);
+   std::complex<double> x = inner_prod(Ident, X) / double(X.Basis1().total_degree());
    //   TRACE(x);
    //TRACE(X-x*Ident);
-   if (norm_frob(X-x*Ident) > std::numeric_limits<double>::epsilon()*10)
+   if (norm_frob_sq(X-x*Ident) > std::numeric_limits<double>::epsilon()*1000)
       x = 0.0;
    return x;
 }
