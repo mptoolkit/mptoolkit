@@ -165,7 +165,7 @@ allobj = $(quantumnumbersobj) \
 	 $(commonobj)
 
 infinite-models = spinchain-su2 spinchain-spin2-su2 spin-tri-yc-su2 spin-tri-yc-su2-EfficientNumbering \
-                  hubbard-u1su2 hubbard-tri-u1su2 bosehubbard-flux-u1 spinchain-u1 spincylinder-su2 \
+                  hubbard-u1su2 hubbard-tri-u1su2 bosehubbard-flux-u1 bosehubbard-flux-3leg-u1 spinchain-u1 spincylinder-su2 \
                   spinchain bosehubbard-ladder-u1 bosehubbard-2component-u1z2 \
                   hubbard-so4 bosehubbard-u1
 
