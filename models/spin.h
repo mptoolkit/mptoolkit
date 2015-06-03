@@ -4,7 +4,7 @@
 #include "quantumnumbers/u1.h"
 
 inline
-LatticeSite CreateSpinSite(half_int Spin)
+LatticeSite SpinSite(half_int S)
 {
    SymmetryList Symmetry("S:Null");
    SiteBasis Basis(Symmetry);
@@ -14,7 +14,7 @@ LatticeSite CreateSpinSite(half_int Spin)
    QuantumNumbers::QuantumNumber q(Symmetry); // no symmetries, only one quantum number
 
    std::map<half_int, std::string> SpinBasis;
-   for (half_int s = -Spin; s <= Spin; ++s)
+   for (half_int s = -S; s <= S; ++s)
    {
       SpinBasis[s] = boost::lexical_cast<std::string>(s);
       Basis.push_back(SpinBasis[s], q);
@@ -35,8 +35,8 @@ LatticeSite CreateSpinSite(half_int Spin)
 
    // for the mSz operator, we want (-1)^Sz, but for half-integer spin
    // this is imaginary, so we want to multiply it by i in that case
-   half_int Fudge = Spin.is_integral() ? 0.0 : 0.5;
-   for (half_int s = -Spin; s <= Spin; ++s)
+   half_int Fudge = S.is_integral() ? 0.0 : 0.5;
+   for (half_int s = -S; s <= S; ++s)
    {
       I(SpinBasis[s], SpinBasis[s]) = 1.0;
       P(SpinBasis[s], SpinBasis[s]) = 1.0;
@@ -45,9 +45,9 @@ LatticeSite CreateSpinSite(half_int Spin)
       mSz(SpinBasis[s], SpinBasis[s]) = minus1pow((s+Fudge).to_int());
    }
 
-   for (half_int s = -Spin; s < Spin; ++s)
+   for (half_int s = -S; s < S; ++s)
    {
-      Sp(SpinBasis[s+1], SpinBasis[s]) = std::sqrt((Spin - s) * (Spin + s + 1));
+      Sp(SpinBasis[s+1], SpinBasis[s]) = std::sqrt((S - s) * (S + s + 1));
    }
 
    Sm = adjoint(Sp);
@@ -57,17 +57,20 @@ LatticeSite CreateSpinSite(half_int Spin)
 
    // the mSx and mSz operators.  I don't know the general formula, so
    // we'll just cover the cases I need
-   if (Spin == 1)
+   if (S == 1)
    {
       mSx = I - 2.0*Sx*Sx;
       mSy = I - 2.0*Sy*Sy;
    }
-   else if (Spin == 2)
+   else if (S == 2)
    {
       mSx = I - (8.0/3.0)*Sx*Sx + (2.0/3.0)*Sx*Sx*Sx*Sx;
       mSy = I - (8.0/3.0)*Sy*Sy + (2.0/3.0)*Sy*Sy*Sy*Sy;
    }
    
+   mSx = exp(std::complex<double>(0,math_const::pi) * Sx);
+   mSy = exp(std::complex<double>(0,math_const::pi) * Sy);
+
    Site["I"] = I;
    Site["P"] = P;
    Site["R"] = R;
@@ -79,6 +82,6 @@ LatticeSite CreateSpinSite(half_int Spin)
    Site["mSz"] = mSz;
    Site["mSy"] = mSy;
    Site["mSx"] = mSx;
-   Site["Sz2"] = prod(Sz, Sz, q);
+   Site["Sz2"] = Sz*Sz;
    return Site;
 }

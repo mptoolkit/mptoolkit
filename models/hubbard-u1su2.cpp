@@ -1,89 +1,73 @@
 // -*- C++ -*- $Id$
 
 #include "pheap/pheap.h"
-#include "matrixproduct/lattice.h"
-#include "matrixproduct/mpoperatorlist.h"
-#include "matrixproduct/operatoratsite.h"
+#include "lattice/infinitelattice.h"
+#include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/hubbard-u1su2.h"
+#include "models/fermion-u1su2.h"
+#include "common/terminal.h"
+#include <boost/program_options.hpp>
 
-typedef std::complex<double> complex;
+namespace prog_opt = boost::program_options;
 
 int main(int argc, char** argv)
 {
-   if (argc != 5)
+   try
    {
-      print_copyright(std::cerr);
-      std::cerr << "usage: hubbard-u1su2 <L> <t> <U> <outfile>\n"
-                << "L = number of lattice sites\n"
-                << "t = hopping integral\n"
-                << "U = coupling constant\n"
-                << "outfile = file name for output lattice.\n";
+      std::string FileName;
+
+      prog_opt::options_description desc("Allowed options", terminal::columns());
+      desc.add_options()
+         ("help", "show this help message")
+         ("out,o", prog_opt::value(&FileName), "output filename [required]")
+         ;
+      
+      prog_opt::variables_map vm;        
+      prog_opt::store(prog_opt::command_line_parser(argc, argv).
+                      options(desc).style(prog_opt::command_line_style::default_style ^
+					  prog_opt::command_line_style::allow_guessing).
+		      run(), vm);
+      prog_opt::notify(vm);    
+      
+      if (vm.count("help") || !vm.count("out"))
+      {
+         print_copyright(std::cerr);
+         std::cerr << "usage: " << argv[0] << " [options]\n";
+         std::cerr << desc << '\n';
+	 std::cerr << "Operators:\n"
+		   << "H_t     - nearest neighbor hopping\n"
+		   << "H_t2    - next-nearest neighbor hopping\n"
+		   << "H_U     - on-site Coulomb interaction n_up*n_down\n"
+		   << "H_Us    - on-site Coulomb interaction (n_up-1/2)(n_down-1/2)\n"
+		   << "H_V     - nearest-neighbor Coulomb interaction\n"
+		   << "H_J     - nearest-neighbor complex hopping i*(C^\\dagger_i C_{i+1} - H.c.)\n"
+	    ;
+         return 1;
+      }
+
+      LatticeSite Site = FermionU1SU2();
+      UnitCell Cell(Site);
+      InfiniteLattice Lattice(Cell);
+      UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), Pdouble(Cell, "Pdouble"),
+	 Hu(Cell, "Hu"), N(Cell, "N");
+
+      Lattice["H_t"]  = sum_unit(dot(CH(0), C(1)) + dot(C(0), CH(1)));
+      Lattice["H_t2"] = sum_unit(dot(CH(0), C(2)) + dot(C(0), CH(2)));
+      Lattice["H_U"]  = sum_unit(Pdouble(0));
+      Lattice["H_Us"] = sum_unit(Hu(0));
+      Lattice["H_V"]  = sum_unit(dot(N(0), N(1)));
+      Lattice["H_J"]  = sum_unit(std::complex<double>(0,1)*(dot(CH(0), C(1)) - dot(C(0), CH(1))));
+
+      pheap::ExportObject(FileName, Lattice);
+   }
+   catch (std::exception& e)
+   {
+      std::cerr << "Exception: " << e.what() << '\n';
       return 1;
    }
-
-   int L = boost::lexical_cast<int>(argv[1]);
-   std::complex<double> t = boost::lexical_cast<complex>(argv[2]);
-   double U = boost::lexical_cast<double>(argv[3]);
-
-   TRACE(L)(t)(U);
-
-   // Construct the site block
-   SiteBlock Site = CreateSU2HubbardSite();
-
-   // construct a lattice of L copies of Site
-   Lattice MyLattice = repeat(Site, L);
-   MyLattice.fix_coordinates();
-
-   // construct the operator list for the lattice
-   OperatorList OpList(MyLattice);
-
-   OperatorAtSite<OperatorList const, int> CH(OpList, "CH");
-   OperatorAtSite<OperatorList const, int> C(OpList, "C");
-   OperatorAtSite<OperatorList const, int> P(OpList, "P");
-   OperatorAtSite<OperatorList const, int> N(OpList, "N");
-   OperatorAtSite<OperatorList const, int> LocalPg(OpList, "Pg");
-   OperatorAtSite<OperatorList, int> Bond(OpList, "Bond");
-   MPOperator& Hamiltonian = OpList["H"];
-   MPOperator& Hop = OpList["Hopping"];
-   MPOperator& Coulomb = OpList["Coulomb"];
-   MPOperator& Pg = OpList["Pg"];                // Gutzwiller projector
-
-   QuantumNumber Ident(MyLattice.GetSymmetryList());  // the scalar quantum number
-   // hopping matrix elements
-
-   complex Sqrt2t = -std::sqrt(2.0) * t;
-
-   for (int i = 1; i < L; ++i)
+   catch (...)
    {
-      MPOperator Hopping 
-         = Sqrt2t * prod(CH(i), C(i%L+1), Ident) + conj(Sqrt2t) * prod(C(i), CH(i%L+1), Ident);
-      Hop += Hopping;
-      Hamiltonian += Hopping;
-      Bond(i) = Hopping;
-      std::cout << "Working.... " << i << "\n";
+      std::cerr << "Unknown exception!\n";
+      return 1;
    }
-   // coulomb repulsion
-   for (int i = 1; i <= L; ++i)
-   {
-      Pg = Pg * LocalPg(i);  // Gutzwiller projector
-
-      Coulomb += 0.25 * P(i);
-      Hamiltonian = Hamiltonian + (U/4.0) * P(i);
-
-      // distribute the interaction among the bond terms.
-      // There are choices in how to do this.      
-      if (i < L) 
-         Bond(i) += (U/4.0) * P(i);
-      else
-         Bond(i-1) += (U/4.0) * P(i);
-
-      std::cout << "Working.... " << i << "\n";
-   }
-
-   // make a copy of OpList that exists on the persistent heap
-   pvalue_ptr<OperatorList> OList = new OperatorList(OpList);
-
-   pheap::Initialize(argv[4], 1, 65536, 655360);
-   pheap::ShutdownPersistent(OList);
 }
