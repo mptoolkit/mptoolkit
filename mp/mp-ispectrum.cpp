@@ -14,8 +14,47 @@
 #include "mp-algorithms/arnoldi.h"
 #include "lattice/siteoperator-parser.h"
 #include "linearalgebra/arpack_wrapper.h"
+#include "lattice/infinitelattice.h"
+#include "lattice/unitcell-parser.h"
+#include "lattice/product-parser.h"
 
 namespace prog_opt = boost::program_options;
+
+
+void PrintFormat(QuantumNumber const& q, std::complex<double> x, int n, bool ShowRealPart, bool ShowImagPart, 
+		 bool ShowCorrLength, bool ShowMagnitude, bool ShowArgument,
+		 bool ShowRadians, double ScaleFactor)
+{
+   std::string SectorStr = boost::lexical_cast<std::string>(q);
+   std::complex<double> Value = std::pow(x, ScaleFactor);
+   std::cout << std::setw(11) << SectorStr << ' ';
+   std::cout << std::setw(4) << n << ' ';
+   if (ShowRealPart)
+   {
+      std::cout << std::setw(20) << Value.real() << "    ";
+   }
+   if (ShowImagPart)
+   {
+      std::cout << std::setw(20) << Value.imag() << "    ";
+   }
+   if (ShowCorrLength)
+   {
+      std::cout << std::setw(20) << (-1.0/std::log(LinearAlgebra::norm_frob(Value)))
+		<< "    ";
+   }
+   if (ShowMagnitude)
+   {
+      std::cout << std::setw(20) << LinearAlgebra::norm_frob(Value) << "    ";
+   }
+   if (ShowArgument)
+   {
+      double Arg =  std::atan2(Value.imag(), Value.real());
+      if (!ShowRadians)
+	 Arg *= 180.0 / math_const::pi;
+      std::cout << std::setw(20) << Arg << "    ";
+   }
+}
+
 
 struct LeftMultiply
 {
@@ -45,26 +84,22 @@ struct LeftMultiplyStringSimple
    typedef MatrixOperator result_type;
 
    LeftMultiplyStringSimple(LinearWavefunction const& L_, QuantumNumber const& QShift_,
-                      std::vector<SimpleOperator> const& StringOp_) 
+                      ProductMPO const& StringOp_) 
       : L(L_), QShift(QShift_), StringOp(StringOp_) 
    {
-      CHECK_EQUAL(L.size(), StringOp.size())("The string operator must be the same length as the unit cell");
+      CHECK_EQUAL(int(L.size()), StringOp.size())("The string operator must be the same length as the unit cell");
    }
 
    result_type operator()(argument_type const& x) const
    {
       result_type r = delta_shift(x, QShift);
-      std::vector<SimpleOperator>::const_iterator OpI = StringOp.begin();
-      for (LinearWavefunction::const_iterator I = L.begin(); I != L.end(); ++I, ++OpI)
-      {
-	 r = operator_prod(herm(*OpI), herm(*I), r, *I);
-      }
+      r = inject_left(r, StringOp, L);
       return r;
    }
 
    LinearWavefunction const& L;
    QuantumNumber QShift;
-   std::vector<SimpleOperator> StringOp;
+   ProductMPO StringOp;
 };
    
 struct RightMultiply
@@ -97,29 +132,20 @@ struct RightMultiplyString
    typedef MatrixOperator result_type;
 
    RightMultiplyString(LinearWavefunction const& L_, QuantumNumber const& QShift_,
-                       std::vector<SimpleOperator> const& StringOp_) 
+                       ProductMPO const& StringOp_) 
       : L(L_), QShift(QShift_) , StringOp(StringOp_)
    {
-      CHECK_EQUAL(L.size(), StringOp.size())("The string operator must be the same length as the unit cell");
+      CHECK_EQUAL(int(L.size()), StringOp.size())("The string operator must be the same length as the unit cell");
    }
 
    result_type operator()(argument_type const& x) const
    {
-      result_type r = x; 
-      LinearWavefunction::const_iterator I = L.end();
-      std::vector<SimpleOperator>::const_iterator OpI = StringOp.end();
-      while (I != L.begin())
-      {
-         --I;
-         --OpI;
-	 r = operator_prod(*OpI, *I, r, herm(*I));
-      }
-      return delta_shift(r, adjoint(QShift));
+      return inject_right_qshift(x, StringOp, L, QShift);
    }
 
    LinearWavefunction const& L;
    QuantumNumber QShift;
-   std::vector<SimpleOperator> StringOp;
+   ProductMPO StringOp;
 };
 
 struct RightMultiplyOp
@@ -185,7 +211,7 @@ struct MultFuncString
 {
    MultFuncString(LinearWavefunction const& Psi, QuantumNumber const& QShift, 
                   QuantumNumbers::QuantumNumber const& q,
-                  std::vector<SimpleOperator> const& StringOp)
+                  ProductMPO const& StringOp)
       : Mult(Psi, QShift, StringOp), Pack(Psi.Basis2(), Psi.Basis2(), q) { }
 
    void operator()(std::complex<double> const* In, std::complex<double>* Out) const
@@ -203,7 +229,7 @@ struct MultFuncStringTrans
 {
    MultFuncStringTrans(LinearWavefunction const& Psi, QuantumNumber const& QShift, 
                        QuantumNumbers::QuantumNumber const& q,
-                       std::vector<SimpleOperator> const& StringOp)
+                       ProductMPO const& StringOp)
       : Mult(Psi, QShift, StringOp), Pack(Psi.Basis2(), Psi.Basis2(), q) { }
 
    void operator()(std::complex<double> const* In, std::complex<double>* Out) const
@@ -273,7 +299,7 @@ get_spectrum(LinearWavefunction const& Psi, QuantumNumber const& QShift, int Num
 
 LinearAlgebra::Vector<std::complex<double> > 
 get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift, 
-                    std::vector<SimpleOperator> StringOp,
+                    ProductMPO const& StringOp,
                     int NumEigen,
                     QuantumNumbers::QuantumNumber const& q, double tol = 1e-10,
                     LinearAlgebra::Vector<MatrixOperator>* RightVectors = NULL, 
@@ -388,82 +414,79 @@ int main(int argc, char** argv)
 {
    try
    {
-      //bool Verbose = false;
-      std::string PsiStr;
-      //      double EigenCutoff = 0.1;
-      int MaxEigen = 10;
-      std::string Target;
-      std::string OpL, OpR;
-      double Tol = 1e-10;
       int Verbose = 0;
-      int KrylovLength = 0;
+      bool NoTempFile = false;
+      bool ShowRealPart = false, ShowImagPart = false, ShowMagnitude = false;
+      bool ShowCartesian = false, ShowPolar = false, ShowArgument = false;
+      bool ShowRadians = false, ShowCorrLength = false;
+      int UnitCellSize = 0;
+      std::string PsiStr;
+      std::vector<std::string> Sector;
+      double Tol = 1E-10;
+      int Iter = 30;
+      bool Sort = false;
+      bool Quiet = false;
+      bool Reflect = false;
+      bool Conj = false;
+      bool Print = false;
       bool Symmetric = false;
-      std::string Model;
-      std::string OpL2 = "I";
-      std::string OpR2 = "I";
-      std::string OpL3 = "I";
-      std::string OpR3 = "I";
-      std::string OpL4 = "I";
-      std::string OpR4 = "I";
-      double Spin = 0.5;
-      int NMax = 3;
-      bool ShowEigenvaluesCart = false;      // show the eigenvalues in (real,imag) units
-      bool ShowRadians = false;              // show the angle in radians instead of degrees
-      bool ShowCorrelationLength = false;
-      int UnitCellSize = 1;
-      bool ShowEigenvectorOverlaps = false;
-      bool Debug = false;
-      std::string StringOp = "I";
+      int KrylovLength = 0;
+      std::string String;
+      int MaxEigen = 10;
+      std::vector<std::string> LeftOpStr;
+      std::vector<std::string> RightOpStr;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 //         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff), 
-	 //          ("Cutoff threshold for eigenvalues [default "
-	 //           +boost::lexical_cast<std::string>(EigenCutoff)+"]").c_str())
-         ("num-eigenvalues,n", prog_opt::value(&MaxEigen),
-	  FormatDefault("Number of eigenvalues to calculate", MaxEigen).c_str())
-	 ("quantumnumber,q", prog_opt::value(&Target), "Calculate spectrum only in this symmetry sector")
-	 ("tol,t", prog_opt::value(&Tol), FormatDefault("Tolerance of eigensolver", Tol).c_str())
-	 ("model", prog_opt::value(&Model), "use this model for the operator to examine "
-	  "(spin, spin-su2, spin-u1, tj-u1, sf-u1, spin-z2)")
-	 ("spin", prog_opt::value(&Spin), "for spin models, the value of the spin [default 0.5]")
-         ("nmax", prog_opt::value(&NMax), "for Bose-Hubbard model, the max number of bosons per site")
-	 ("lcoefficients,l", prog_opt::value(&OpL), 
+	 ("cart,c", prog_opt::bool_switch(&ShowCartesian),
+	  "show the result in cartesian coordinates [equivalent to --real --imag]")
+	 ("polar,p", prog_opt::bool_switch(&ShowPolar),
+	  "show the result in polar coodinates [equivalent to --mag --arg]")
+	 ("real,r", prog_opt::bool_switch(&ShowRealPart),
+	  "display the real part of the result")
+	 ("imag,i", prog_opt::bool_switch(&ShowImagPart),
+	  "display the imaginary part of the result")
+         ("mag,m", prog_opt::bool_switch(&ShowMagnitude),
+          "display the magnitude of the result")
+         ("arg,a", prog_opt::bool_switch(&ShowArgument),
+          "display the argument (angle) of the result")
+	 ("radians", prog_opt::bool_switch(&ShowRadians),
+	  "display the argument in radians instead of degrees")
+	 ("corr,x", prog_opt::bool_switch(&ShowCorrLength),
+	  "display the equivalent correlation length")
+	 ("unitcell,u", prog_opt::value(&UnitCellSize),
+	  "scale the results to use this unit cell size [default wavefunction unit cell]")
+	 ("left,l", prog_opt::value(&LeftOpStr), 
 	  "Calculate the expansion coefficients of this operator acting on the left")
-	 ("l2", prog_opt::value(&OpL2),
-	  "Hack to do a 2-site operator")
-	 ("r2", prog_opt::value(&OpR2),
-	  "Hack to do a 2-site operator")
-	 ("l3", prog_opt::value(&OpL3),
-	  "Hack to do a 3-site operator")
-	 ("r3", prog_opt::value(&OpR3),
-	  "Hack to do a 3-site operator")
-	 ("l4", prog_opt::value(&OpL3),
-	  "Hack to do a 4-site operator")
-	 ("r4", prog_opt::value(&OpR3),
-	  "Hack to do a 4-site operator")
-	 ("rcoefficients,r", prog_opt::value(&OpR), 
+	 ("right,r", prog_opt::value(&RightOpStr), 
 	  "Calculate the expansion coefficients of this operator acting on the right")
-	 ("symmetric,s", prog_opt::bool_switch(&Symmetric),
-	  "Transform the state to the approximate symmetric orthonormalization constraint")
+         ("notempfile", prog_opt::bool_switch(&NoTempFile),
+          "don't use a temporary data file, keep everything in RAM "
+          "(faster, but needs enough RAM)")
+         ("string", prog_opt::value(&String),
+          "use this product operator as a string operator")
+         ("conj", prog_opt::bool_switch(&Conj),
+          "complex conjugate psi2")
+         ("q,quantumnumber", prog_opt::value(&Sector),
+          "calculate the overlap only in this quantum number sector, "
+          "can be used multiple times [default is to calculate all sectors]")
+         ("sort,s", prog_opt::bool_switch(&Sort),
+          "sort the eigenvalues by magnitude")
+         ("tol", prog_opt::value(&Tol),
+          FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
+         //("iter", prog_opt::value(&Iter),
+	 //FormatDefault("Maximum subspace size in the Arnoldi basis", Iter).c_str())
 	 ("krylov,k", prog_opt::value(&KrylovLength), 
 	  "Length of the Krylov sequence [default 2*num-eigenvalues]")
-	 ("cart", prog_opt::bool_switch(&ShowEigenvaluesCart),
-	  "Show the real and imaginary parts of the eigenvalue, instead of (magnitude,argument)")
-         ("radians", prog_opt::bool_switch(&ShowRadians),
-          "Show the argument of the eigenvalues in radians, instead of degrees")
-         ("corr", prog_opt::bool_switch(&ShowCorrelationLength),
-          "Show the correlation length of the eigenvalue")
-         ("unitcell", prog_opt::value(&UnitCellSize),
-          "The size of the primitive unit cell, for the correlation functions")
-         ("string", prog_opt::value(&StringOp),
-          FormatDefault("String operator", StringOp).c_str())
-         ("overlaps", prog_opt::bool_switch(&ShowEigenvectorOverlaps),
-          "Write the matrix of overlaps of the left/right eigenvectors to cerr (for debugging)")
-	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
-	 ("debug", prog_opt::bool_switch(&Debug), "debug mode")
-         ;
+         ("quiet", prog_opt::bool_switch(&Quiet),
+          "don't show the column headings")
+         ("print", prog_opt::bool_switch(&Print), "with --string, Print the MPO to standard output")
+	 //         ("overlaps", prog_opt::bool_switch(&ShowEigenvectorOverlaps),
+	 //"Write the matrix of overlaps of the left/right eigenvectors to cerr (for debugging)")
+         ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
+          "extra debug output [can be used multiple times]")
+	 ;
 
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
@@ -488,32 +511,40 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      // if the number of eigenvalues is specified but
-      // the cutoff is not, then set the cutoff to zero
-      //      if (vm.count("num-eigenvalues") == 1 && vm.count("eigen-cutoff") == 0)
-      //      {
-      //         EigenCutoff = 0;
-      //      }
+      // If no output switches are used, default to showing everything
+      if (!ShowRealPart && !ShowImagPart && !ShowMagnitude
+	  && !ShowCartesian && !ShowPolar && !ShowArgument
+	  && !ShowRadians && !ShowCorrLength)
+      {
+	 ShowCartesian = true;
+	 ShowPolar = true;
+	 ShowCorrLength = true;
+      }
+      
+      if (ShowCartesian)
+      {
+	 ShowRealPart = true;
+	 ShowImagPart = true;
+      }
+      if (ShowPolar)
+      {
+	 ShowMagnitude = true;
+	 ShowArgument = true;
+      }
+      if (ShowRadians)
+	 ShowArgument = true;      
+
+      std::cout.precision(getenv_or_default("MP_PRECISION", 14));
+
+
+
 
       SimpleOperator MyOpL, MyOpR, MyOpL2;
       LatticeSite Site;
 
+      if (Verbose)
+         std::cout << "Loading wavefunction...\n";
 
-
-
-
-
-
-
-
-
-      QuantumNumbers::QuantumNumberList OpLTransformsAs(1, MyOpL.TransformsAs());
-      if (OpL2 != "I")
-      {
-	 OpLTransformsAs = transform_targets(MyOpL.TransformsAs(), MyOpL2.TransformsAs());
-      }
-
-      std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       pvalue_ptr<InfiniteWavefunction> Psi1 
          = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
 
@@ -531,35 +562,51 @@ int main(int argc, char** argv)
          Psi.set_front(prod(LambdaInvSqrt, Psi.get_front()));
       }
 
-      if (Debug)
-         std::cerr << Psi.get_front() << '\n';
+      if (Verbose)
+         std::cout << "Solving principal eigenpair...\n";
 
       // now get the principal eigenpair
       MatrixOperator LeftIdent, RightIdent;
       boost::tie(LeftIdent, RightIdent) = get_principal_eigenpair(Psi, QShift);
       std::complex<double> IdentNormalizationFactor = inner_prod(LeftIdent, RightIdent);
 
-      // Assemble the string operator (which may be the identity)
-      std::vector<SimpleOperator> MyStringOp;
-      for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
+      // Get the string operator
+      ProductMPO StringOp;
+      if (vm.count("string"))
       {
-         if (StringOp == "I")
-         {
-            MyStringOp.push_back(SimpleOperator::make_identity(I->LocalBasis()));
-         }
-         else
-         {
-	    SiteOperator SiteStringOp = ParseSiteOperator(Site, StringOp);
-            MyStringOp.push_back(SiteStringOp);
-         }
+	 InfiniteLattice Lattice;
+	 boost::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(String);
+	 if (Print)
+	 {
+	    std::cout << "String MPO is:\n" << StringOp << '\n';
+	 }
+	 CHECK(Psi.size() % StringOp.size() == 0)
+	    ("Wavefunction size must be a multiple of the string operator size")
+	    (Psi.size())(StringOp.size());
+	 StringOp = repeat(StringOp, Psi.size() / StringOp.size());
       }
+      else
+      {
+         StringOp = ProductMPO::make_identity(ExtractLocalBasis(Psi));
+      }
+
+      // The default UnitCellSize for output is the wavefunction size
+      if (UnitCellSize == 0)
+      {
+	 UnitCellSize = Psi.size();
+      }
+      double ScaleFactor = double(UnitCellSize) / double(Psi1->Psi.size());
 
       // get the set of quantum numbers to show
       typedef std::set<QuantumNumbers::QuantumNumber> QSetType;
       QSetType QL;
       if (vm.count("quantumnumber") != 0)
       {
-	 QL.insert(QuantumNumbers::QuantumNumber(Psi.GetSymmetryList(), Target));
+	 while (!Sector.empty())
+	 {
+	    QL.insert(QuantumNumbers::QuantumNumber(Psi.GetSymmetryList(), Sector.back()));
+	    Sector.pop_back();
+	 }
       }
       else
       {
@@ -575,90 +622,61 @@ int main(int argc, char** argv)
          }
       }
 
-      // the wavefunction size should be a multiple of the primitive unit cell size,
-      // but there is no bad consequences here if it isn't, except that the correlation length
-      // will be a strange number
-      if (ShowCorrelationLength && (Psi.size() % UnitCellSize != 0))
-      {
-         std::cerr << "mp-ispectrum: warning: the wavefunction unit cell is "
-            "not a multiple of the primitive unit cell!\n";
-      }
-
       // show the title
-      if (ShowEigenvaluesCart)
-         std::cout << "#sector      #n  #e-value_real          #e-value_imag          ";
-      else
-         std::cout << "#sector      #n   #e-value_mag            #e-value_arg         ";
-      if (ShowCorrelationLength)
-         std::cout << " #xi                   ";
-
-      if (!OpL.empty())
+      if (!Quiet)
       {
-         if (ShowEigenvaluesCart)
-            std::cout << "#overlap_real          #overlap_imag        ";
-         else
-            std::cout << " #overlap_mag             #overlap_arg      ";
-      }
-      std::cout << '\n';
+	 std::cout << "#" << argv[0];
+	 for (int i = 1; i < argc; ++i)
+	    std::cout << ' ' << argv[i];
+	 std::cout << "\n#quantities are calculated per unit cell size of " << UnitCellSize 
+		   << (UnitCellSize == 1 ? " site\n" : " sites\n");
+         std::cout << "#sector     #n   ";
+         if (ShowRealPart)
+            std::cout << "#real                   ";
+         if (ShowImagPart)
+            std::cout << "#imag                   ";
+         if (ShowCorrLength)
+            std::cout << "#corr_length            ";
+         if (ShowMagnitude)
+            std::cout << "#magnitude              ";
+         if (ShowArgument)
+            std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
 
-      // initialize the linear operators for the observables
-      GenericMPO LinOpL, LinOpR;
-
-      if (vm.count("lcoefficients"))
-      {
-	 SiteOperator SiteOpL = ParseSiteOperator(Site, OpL);
-	 SiteOperator SiteOpL2 = ParseSiteOperator(Site, OpL2);
-	 SiteOperator SiteOpL3 = ParseSiteOperator(Site, OpL3);
-	 SiteOperator SiteOpL4 = ParseSiteOperator(Site, OpL4);
-
-	 SiteOperator SiteOpR = ParseSiteOperator(Site, OpR);
-	 SiteOperator SiteOpR2 = ParseSiteOperator(Site, OpR2);
-	 SiteOperator SiteOpR3 = ParseSiteOperator(Site, OpR3);
-	 SiteOperator SiteOpR4 = ParseSiteOperator(Site, OpR4);
-
-         LinOpL = GenericMPO(Psi.size());
-         LinOpL[0] = OperatorComponent(Site.Basis1(),
-                                       BasisList(QuantumNumber(Psi.GetSymmetryList())),
-                                       BasisList(adjoint(SiteOpL.TransformsAs())));
-         LinOpL[0](0,0) = Site[OpL];
-         for (unsigned i = 1; i < Psi.size(); ++i)
-         {
-            LinOpL[i] = OperatorComponent(Site.Basis1(), 
-                                          BasisList(adjoint(SiteOpL.TransformsAs())),
-                                          BasisList(adjoint(SiteOpL.TransformsAs())));
-            LinOpL[i](0,0) = (i == 1) ? SiteOpL2 : (i == 2) ? SiteOpL3 : (i == 3) ? SiteOpL4 : Site["I"];
-         }
-
-         LinOpR = GenericMPO(Psi.size());
-         LinOpR[Psi.size()-1] = OperatorComponent(Site.Basis1(), 
-                                       BasisList(SiteOpR.TransformsAs()),
-                                       BasisList(QuantumNumber(Psi.GetSymmetryList())));
-         LinOpR[Psi.size()-1](0,0) = SiteOpR;
-         for (int i = int(Psi.size())-2; i >= 0; --i)
-         {
-            LinOpR[i] = OperatorComponent(Site.Basis1(), 
-                                          BasisList(SiteOpR.TransformsAs()),
-                                          BasisList(SiteOpR.TransformsAs()));
-            LinOpR[i](0,0) = (i == int(Psi.size())-2) ? SiteOpR2 
-	       : (i == int(Psi.size())-3) ? SiteOpR3 : (i == int(Psi.size())-4) ? SiteOpR4 : Site["I"];
-         }
-
-         // Verify that the local basis matches, and abort otherwise
-         local_basis_compatible_or_abort(Psi, LinOpL);
-         local_basis_compatible_or_abort(Psi, LinOpR);
+	 // titles for the overlaps
+	 for (unsigned i = 0; i < LeftOpStr.size(); ++i)
+	 {
+	    for (unsigned j = 0; j < RightOpStr.size(); ++j)
+	    {
+	       std::string Title = "#overlap_" + boost::lexical_cast<std::string>(i) + '_'
+		  + boost::lexical_cast<std::string>(j); 
+	       if (ShowRealPart)
+		  std::cout << std::setw(20) << Title << "_real      ";
+	       if (ShowImagPart)
+		  std::cout << std::setw(20) << Title << "_imag      ";
+	       if (ShowMagnitude)
+		  std::cout << std::setw(20) << Title << "_mag      ";
+	       if (ShowArgument)
+		  std::cout << std::setw(20) << Title << "_arg" << (ShowRadians ? "(rad)" : "(deg)") << "     ";
+	    }
+	 }
+         std::cout << '\n';
+         std::cout << std::left;
       }
 
-      // Get the left and right operators, if applicable
-      MatrixOperator LeftOp;
-      if (!LinOpL.is_null())
-         LeftOp = inject_left_qshift(LeftIdent, LinOpL, Psi, QShift);
-      MatrixOperator RightOp;
-      if (!LinOpR.is_null())
-         RightOp = inject_right_qshift(RightIdent, LinOpR, Psi, QShift);
+      // initialize the finite operators for the observables
+      std::vector<MatrixOperator> LeftOp;
+      std::vector<MatrixOperator> RightOp;
 
-      if (!LinOpL.is_null() && !LinOpR.is_null())
+      for (unsigned i = 0; i < LeftOpStr.size(); ++i)
       {
-         CHECK_EQUAL(LeftOp.TransformsAs(), RightOp.TransformsAs())("The left and right operators must couple as scalars");
+	 UnitCellMPO Op = ParseUnitCellOperatorAndLattice(LeftOpStr[i]).first;
+	 LeftOp.push_back(inject_left_qshift(LeftIdent, Op.MPO(), Psi, QShift));
+      }
+
+      for (unsigned i = 0; i < RightOpStr.size(); ++i)
+      {
+	 UnitCellMPO Op = ParseUnitCellOperatorAndLattice(RightOpStr[i]).first;
+	 RightOp.push_back(inject_right_qshift(RightIdent, Op.MPO(), Psi, QShift));
       }
 
       // iterate over the relevant quantum number sectors
@@ -671,16 +689,18 @@ int main(int argc, char** argv)
          LinearAlgebra::Vector<MatrixOperator>* RightEigenvectorsPtr = NULL;
          LinearAlgebra::Vector<MatrixOperator>* LeftEigenvectorsPtr = NULL;
 
-         if (!RightOp.is_null() && RightOp.TransformsAs() == *qI)
+	 if (!RightOp.empty())
          {
             RightEigenvectorsPtr = &RightEigenvectors;
             LeftEigenvectorsPtr = &LeftEigenvectors;
          }
 
          // determine the spectrum
-         EValues = get_spectrum_string(Psi, QShift, MyStringOp, MaxEigen, *qI, Tol, RightEigenvectorsPtr, 
+         EValues = get_spectrum_string(Psi, QShift, StringOp * ProductMPO::make_identity(StringOp.LocalBasis2List(), *qI),
+				       MaxEigen, *qI, Tol, RightEigenvectorsPtr, 
                                        LeftEigenvectorsPtr, KrylovLength, true, Verbose);
 
+#if 0
          if (!RightOp.is_null() && RightOp.TransformsAs() == *qI && ShowEigenvectorOverlaps)
          {
             LinearAlgebra::Matrix<double> EigenOverlaps(size(RightEigenvectors), size(LeftEigenvectors));
@@ -689,75 +709,48 @@ int main(int argc, char** argv)
                   EigenOverlaps(i,j) = norm_frob(inner_prod(LeftEigenvectors[j], RightEigenvectors[i]));
             std::cerr << "Eigenvector overlap matrix:\n" << EigenOverlaps << '\n';
          }
+#endif
 
          for (int i = 0; i < int(size(EValues)); ++i)
          {
-            std::cout << std::setw(7) << boost::lexical_cast<std::string>(*qI) << "  "
-                      << std::setw(6) << i << "  ";
-            if (ShowEigenvaluesCart)
-               std::cout << std::setw(21) << std::scientific << EValues[i].real() << "  "
-                         << std::setw(21) << std::scientific << EValues[i].imag() << "  ";
-            else
-            {
-               double Magnitude = norm_frob(EValues[i]);
-               double Arg = std::atan2(EValues[i].imag(), EValues[i].real());
-               if (!ShowRadians)
-                  Arg *= 180.0 / math_const::pi;
-               std::cout << std::setw(21) << std::scientific << Magnitude << "  "
-                         << std::setw(21) << std::fixed << Arg << "  ";
-            }
-            if (ShowCorrelationLength)
-            {
-               double CorrLen = -1.0 / std::log(norm_frob(EValues[i]));
-               CorrLen *= double(Psi.size()) / UnitCellSize;
-               std::cout << std::setw(21) << std::scientific << CorrLen << "  ";
-            }
+            PrintFormat(*qI, EValues[i], i, ShowRealPart, ShowImagPart, ShowCorrLength, ShowMagnitude,
+			ShowArgument, ShowRadians, ScaleFactor);
 
             // show eigenvector info?
-            if (!RightOp.is_null() && RightOp.TransformsAs() == *qI)
-            {
-
-               // LeftIdent corresponds to RightEigenvectors
-            
-               std::complex<double> Overlap = inner_prod(LeftOp, LeftEigenvectors[i]) 
-                  * inner_prod(RightEigenvectors[i], RightOp)
-                  / (inner_prod(RightEigenvectors[i], LeftEigenvectors[i]) * IdentNormalizationFactor);
-               
-               if (ShowEigenvaluesCart)
-                  std::cout << std::setw(21) << std::scientific << Overlap.real() << "  "
-                            << std::setw(21) << std::scientific << Overlap.imag() << "  ";
-               else
-               {
-                  double Magnitude = norm_frob(Overlap);
-                  double Arg = std::atan2(Overlap.imag(), Overlap.real());
-                  if (!ShowRadians)
-                     Arg *= 180.0 / math_const::pi;
-                  std::cout << std::setw(21) << std::scientific << Magnitude << "  "
-                            << std::setw(21) << std::fixed << Arg << "  ";
-               }
-            }
-
+	    for (unsigned iL = 0; iL < LeftOp.size(); ++iL)
+	    {
+	       for (unsigned iR = 0; iR < RightOp.size(); ++iR)
+	       {
+		  if (LeftOp[iL].TransformsAs() == LeftEigenvectors[i].TransformsAs()
+		      && RightOp[iR].TransformsAs() == RightEigenvectors[i].TransformsAs())
+		  {
+		     std::complex<double> Overlap = inner_prod(LeftOp[iL], LeftEigenvectors[i]) 
+			* inner_prod(RightEigenvectors[i], RightOp[iR])
+			/ (inner_prod(RightEigenvectors[i], LeftEigenvectors[i]) * IdentNormalizationFactor);
+		     
+		     if (ShowRealPart)
+			std::cout << std::setw(21) << std::scientific << Overlap.real() << "  ";
+		     if (ShowImagPart)
+			std::cout << std::setw(21) << std::scientific << Overlap.imag() << "  ";
+#if 0
+		     else
+		     {
+			double Magnitude = norm_frob(Overlap);
+			double Arg = std::atan2(Overlap.imag(), Overlap.real());
+			if (!ShowRadians)
+			   Arg *= 180.0 / math_const::pi;
+			std::cout << std::setw(21) << std::scientific << Magnitude << "  "
+				  << std::setw(21) << std::fixed << Arg << "  ";
+		     }
+#endif
+		  }
+	       }
+	    }
             std::cout << '\n';
 
          }// for i
 
       } // for qI
-
-
-#if 0
-      LinearAlgebra::Matrix<std::complex<double> > Overlaps(size(Eigenvectors), size(Eigenvectors));
-      for (unsigned i = 0; i < size(Eigenvectors); ++i)
-      {
-         for (unsigned j = i; j < size(Eigenvectors); ++j)
-	 {
-            Overlaps(i,j) = inner_prod(Eigenvectors[i], Eigenvectors[j]);
-            Overlaps(j,i) = conj(Overlaps(i,j));
-         }
-      }
-
-      TRACE(Overlaps);
-      TRACE(transform(Overlaps, LinearAlgebra::NormFrob<std::complex<double> >()));
-#endif
 
       pheap::Shutdown();
    }

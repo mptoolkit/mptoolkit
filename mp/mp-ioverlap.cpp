@@ -132,7 +132,7 @@ int main(int argc, char** argv)
          ("reflect", prog_opt::bool_switch(&Reflect),
           "reflect psi2 (gives parity eigenvalue)")
          ("string", prog_opt::value(&String),
-          "use this unit cell operator as a string operator for the overlap")
+          "use this product operator as a string operator for the overlap")
          ("conj", prog_opt::bool_switch(&Conj),
           "complex conjugate psi2")
          ("q,quantumnumber", prog_opt::value(&Sector),
