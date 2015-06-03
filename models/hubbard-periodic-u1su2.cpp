@@ -11,22 +11,23 @@ typedef std::complex<double> complex;
 
 int main(int argc, char** argv)
 {
-   if (argc != 5)
+   if (argc != 3)
    {
       print_copyright(std::cerr);
-      std::cerr << "usage: hubbard-u1su2 <L> <t> <U> <outfile>\n"
+      std::cerr << "usage: hubbard-periodic-u1su2 <L> <outfile>\n"
                 << "L = number of lattice sites\n"
-                << "t = hopping integral\n"
-                << "U = coupling constant\n"
-                << "outfile = file name for output lattice.\n";
+                << "outfile = file name for output lattice.\n"
+                << "\nOperators are:\n"
+                << "H_t = symmetric (real) hopping (periodic)\n"
+                << "H_j = antisymmetric (imaginary) hopping (periodic)\n"
+                << "H_U = on-site Coulomb interaction (particle-hole symmetric)\n"
+                << "H_J = nearest-neighbor spin exchange (periodic)\n"
+                << "H_V = nearest-neighbor coulomb interaction (periodic)\n";
       return 1;
    }
 
    int L = boost::lexical_cast<int>(argv[1]);
-   std::complex<double> t = boost::lexical_cast<complex>(argv[2]);
-   double U = boost::lexical_cast<double>(argv[3]);
-
-   TRACE(L)(t)(U);
+   std::string OutFile = argv[2];
 
    // Construct the site block
    SiteBlock Site = CreateSU2HubbardSite();
@@ -42,48 +43,37 @@ int main(int argc, char** argv)
    OperatorAtSite<OperatorList const, int> C(OpList, "C");
    OperatorAtSite<OperatorList const, int> P(OpList, "P");
    OperatorAtSite<OperatorList const, int> N(OpList, "N");
+   OperatorAtSite<OperatorList const, int> S(OpList, "S");
    OperatorAtSite<OperatorList const, int> LocalPg(OpList, "Pg");
-   OperatorAtSite<OperatorList, int> Bond(OpList, "Bond");
-   MPOperator& Hamiltonian = OpList["H"];
-   MPOperator& Hop = OpList["Hopping"];
-   MPOperator& Coulomb = OpList["Coulomb"];
-   MPOperator& Pg = OpList["Pg"];                // Gutzwiller projector
+   MPOperator& H_t = OpList["H_t"];
+   MPOperator& H_j = OpList["H_j"];
+   MPOperator& H_U = OpList["H_U"];
+   MPOperator& H_J = OpList["H_J"];
+   MPOperator& H_V = OpList["H_V"];
 
    QuantumNumber Ident(MyLattice.GetSymmetryList());  // the scalar quantum number
    // hopping matrix elements
 
-   complex Sqrt2t = -std::sqrt(2.0) * t;
-
-   for (int i = 1; i < L; ++i)
-   {
-      MPOperator Hopping 
-         = Sqrt2t * prod(CH(i), C(i%L+1), Ident) + conj(Sqrt2t) * prod(C(i), CH(i%L+1), Ident);
-      Hop += Hopping;
-      Hamiltonian += Hopping;
-      Bond(i) = Hopping;
-      std::cout << "Working.... " << i << "\n";
-   }
-   // coulomb repulsion
+   // nearest neighbor terms
    for (int i = 1; i <= L; ++i)
    {
-      Pg = Pg * LocalPg(i);  // Gutzwiller projector
+      H_t -= dot(CH(i), C(i%L+1)) + dot(C(i), CH(i%L+1));  // coefficient is -t
+      H_j -= complex(0.0, 1.0) * (dot(CH(i), C(i%L+1)) - dot(C(i), CH(i%L+1)));  // coefficient is -t
+      H_J -= dot(S(i), S(i%L+1));  // minus sign for SU(2) axial vector
+      H_V += N(i)*N(i%L+1);
+      std::cout << "Working.... " << i << "\n";
+   }
 
-      Coulomb += 0.25 * P(i);
-      Hamiltonian = Hamiltonian + (U/4.0) * P(i);
-
-      // distribute the interaction among the bond terms.
-      // There are choices in how to do this.      
-      if (i < L) 
-         Bond(i) += (U/4.0) * P(i);
-      else
-         Bond(i-1) += (U/4.0) * P(i);
-
+   // on-site terms
+   for (int i = 1; i <= L; ++i)
+   {
+      H_U += 0.25 * P(i);
       std::cout << "Working.... " << i << "\n";
    }
 
    // make a copy of OpList that exists on the persistent heap
    pvalue_ptr<OperatorList> OList = new OperatorList(OpList);
 
-   pheap::Initialize(argv[4], 1, 65536, 655360);
+   pheap::Initialize(OutFile, 1, 65536, 655360);
    pheap::ShutdownPersistent(OList);
 }

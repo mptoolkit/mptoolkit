@@ -17,13 +17,8 @@ int main(int argc, char** argv)
    {
       double J = 1;
       double Beta = 0;
-      double JEdge = 1;
-      double BetaEdge = 0;
-      //      double J2 = 0;
-      //      double Beta2 = 0;
       int L = 0;
       half_int Spin = 0.5;
-      half_int SpinEdge = 0;
       std::string LatticeName;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -31,12 +26,9 @@ int main(int argc, char** argv)
          ("help", "show this help message")
          ("LatticeSize,L", prog_opt::value(&L), "lattice size [required]")
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin in the bulk [default 0.5]")
-         ("SpinEdge", prog_opt::value(&SpinEdge), "magnitude of the spin at the edges [default Spin]")
          ("J", prog_opt::value(&J), "nearest neighbor bilinear coupling [default 1]")
-         ("JEdge", prog_opt::value(&JEdge), "bilinear coupling at the edge bonds [default J]")
          ("Beta", prog_opt::value(&Beta), 
 	  "nearest neighbor biquadratic coupling [default 0]")
-         ("BetaEdge", prog_opt::value(&BetaEdge), "biquadratic coupling at the edge bonds [default Beta]")
          ("out,o", prog_opt::value(&LatticeName), "output filename [required]")
          ;
       
@@ -52,39 +44,33 @@ int main(int argc, char** argv)
          print_copyright(std::cerr);
          std::cerr << "usage: spinchain-su2 [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Alternatively, use the separated components\n"
-		   << "H1Bulk - bilinear spin exchange for the bulk\n"
-		   << "H1Edge - bilinear spin exchange at the edges\n"
-		   << "H2Bulk - biquadratic spin exchange for the bulk\n"
-		   << "H2Edge - biquadratic spin exchange at the edges\n"
-		   << "H1p    - bilinear spin exchange across the boundary (perioidic)\n"
-		   << "H2p    - biquadratic spin exchange across the boundary (perioidic)\n"
-		   << "H1px   - bilinear spin exchange across the boundary ignoring edge sites\n"
-		   << "H2px   - biquadratic spin exchange across the boundary ignoring edge sites\n"
-		   << "\nOr the shortcuts\n"
-		   << "H1 = JEdge*H1Edge + J*H1Bulk\n"
-		   << "H2 = BetaEdge*H2Edge + Beta*H2Bulk\n"
-		   << "H = H1 + H2\n";
+	 std::cerr << "\nAlternatively, use shortcut operators\n"
+		   << "H1 - bilinear term\n"
+		   << "H2 - biquadratic term\n"
+		   << "\nH = J*H1 + Neta*H2\n";
          return 1;
       }
 
-      // Set the dependent defaults if necessary
-      if (!vm.count("SpinEdge"))
-         SpinEdge = Spin;
-      if (!vm.count("JEdge"))
-         JEdge = J;
-      if (!vm.count("BetaEdge"))
-         BetaEdge = Beta;
-
-      TRACE(Spin)(SpinEdge)(J)(JEdge)(Beta)(BetaEdge);
+      TRACE(Spin)(J)(Beta);
 
       // Construct the site block
-      SiteBlock EdgeSite = CreateSU2SpinSite(SpinEdge);
-      SiteBlock BulkSite = CreateSU2SpinSite(Spin);
+      SiteBlock Site = CreateSU2SpinSite(Spin);
 
       // construct a lattice of L copies of Site
-      Lattice MyLattice = join(EdgeSite, repeat(BulkSite, L-2), EdgeSite);
-      MyLattice.fix_coordinates();
+      Lattice MyLattice = repeat(Site, L);
+      // The optimal numbering of the sites is different for PBC.
+      // We want to interlace them as
+      // 1  L  2  L-1  3  L-2  ...  L/2  L/2+1
+      std::list<std::string> Coords;
+      for (int i = 1; i <= L/2; ++i)
+      {
+	 Coords.push_back(boost::lexical_cast<std::string>(i));
+	 Coords.push_back(boost::lexical_cast<std::string>(L-i+1));
+      }
+      if (L%2 == 1) // if the lattice size is odd, add in the final site
+	 Coords.push_back(boost::lexical_cast<std::string>(L/2+1));
+
+      MyLattice.fix_coordinates_from_sequence(Coords.begin(), Coords.end());
 
       // construct the operator list for the lattice
       OperatorList OpList(MyLattice);
@@ -97,47 +83,20 @@ int main(int argc, char** argv)
       // Split operators.  H1 is the bilinear term, H2 is biquadratic
       MPOperator& H1 = OpList["H1"];
       MPOperator& H2 = OpList["H2"];
-      MPOperator& H1p = OpList["H1p"];
-      MPOperator& H2p = OpList["H2p"];
-      MPOperator& H1px = OpList["H1px"];
-      MPOperator& H2px = OpList["H2px"];
-      MPOperator& H1Edge = OpList["H1Edge"];
-      MPOperator& H2Edge = OpList["H2Edge"];
-      MPOperator& H1Bulk = OpList["H1Bulk"];
-      MPOperator& H2Bulk = OpList["H2Bulk"];
 
       QuantumNumber Ident(MyLattice.GetSymmetryList());  // the scalar quantum number
       // interaction matrix elements
       std::cout << "Working" << std::flush;
-      for (int i = 1; i < L; ++i)
+      for (int i = 1; i <= L; ++i)
       {
-         //double CurrentJ = (i == 1 || i == L) ? JEdge : J;
-         //double CurrentBeta = (i == 1 || i == L) ? BetaEdge : Beta;
-
-         MPOperator SS = -sqrt(3.0) * prod(S(i), S(i%L+1), Ident);
-         MPOperator SS2 = prod(SS, SS, Ident);
-
-         if (i == 1 || i == L-1)
-         {
-            H1Edge += SS;
-            H2Edge += SS2;
-         }
-         else
-         {
-            H1Bulk += SS;
-            H2Bulk += SS2;
-         }
+	 MPOperator SS = -sqrt(3.0) * prod(S(i), S(i%L+1), Ident);
+         H1 += SS;
+         H2 += prod(SS, SS, Ident);
          std::cout << '.' << std::flush;
       }
       std::cout << "done!" << std::endl;
-      H1p = -sqrt(3.0) * prod(S(1), S(L), Ident);
-      H2p = prod(H1p, H1p, Ident);
-      H1px = -sqrt(3.0) * prod(S(2), S(L-1), Ident);
-      H2px = prod(H1px, H2px, Ident);
-      H1 = JEdge*H1Edge + J*H1Bulk;
-      H2 = BetaEdge*H2Edge + Beta*H2Bulk;
 
-      Hamiltonian = H1+H2;
+      Hamiltonian = J*H1 + Beta*H2;
 
       // make a copy of OpList that exists on the persistent heap
       pvalue_ptr<OperatorList> OList = new OperatorList(OpList);

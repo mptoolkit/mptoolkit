@@ -95,7 +95,7 @@ LatticeSite CreateSO4HubbardSiteCommon(std::string const& Sym1 = "Q", std::strin
 }
 
 inline
-LatticeSite FermionSO4_A(std::string const& Sym1 = "Q", std::string const& Sym2 = "S")
+LatticeSite CreateSO4HubbardSiteA(std::string const& Sym1 = "Q", std::string const& Sym2 = "S")
 {
    LatticeSite Site = CreateSO4HubbardSiteCommon(Sym1, Sym2);
    Site["C"] = Site["C_A"];
@@ -106,7 +106,7 @@ LatticeSite FermionSO4_A(std::string const& Sym1 = "Q", std::string const& Sym2 
 }
 
 inline
-LatticeSite FermionSO4_B(std::string const& Sym1 = "Q", std::string const& Sym2 = "S")
+LatticeSite CreateSO4HubbardSiteB(std::string const& Sym1 = "Q", std::string const& Sym2 = "S")
 {
    LatticeSite Site = CreateSO4HubbardSiteCommon(Sym1, Sym2);
    Site["C"] = Site["C_B"];

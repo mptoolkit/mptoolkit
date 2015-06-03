@@ -4,8 +4,11 @@
 #include "quantumnumbers/u1.h"
 #include "quantumnumbers/su2.h"
 
+
+
+
 inline
-LatticeSite FermionU1SU2(std::string const& Sym1 = "N", std::string const& Sym2 = "S")
+LatticeSite CreateU1SU2HubbardSite(std::string const& Sym1 = "N", std::string const& Sym2 = "S")
 {
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":SU(2)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2> QN(Symmetry);

@@ -5,7 +5,7 @@
 #include "matrixproduct/mpoperatorlist.h"
 #include "matrixproduct/operatoratsite.h"
 #include "mp/copyright.h"
-#include "models/hubbard-u1su2.h"
+#include "models/hubbard-so4.h"
 
 typedef std::complex<double> complex;
 
@@ -14,7 +14,7 @@ int main(int argc, char** argv)
    if (argc != 5)
    {
       print_copyright(std::cerr);
-      std::cerr << "usage: hubbard-u1su2 <L> <t> <U> <outfile>\n"
+      std::cerr << "usage: so4hubbard <L> <t> <U> <outfile>\n"
                 << "L = number of lattice sites\n"
                 << "t = hopping integral\n"
                 << "U = coupling constant\n"
@@ -23,63 +23,70 @@ int main(int argc, char** argv)
    }
 
    int L = boost::lexical_cast<int>(argv[1]);
-   std::complex<double> t = boost::lexical_cast<complex>(argv[2]);
+   complex t = boost::lexical_cast<complex>(argv[2]);
    double U = boost::lexical_cast<double>(argv[3]);
 
    TRACE(L)(t)(U);
 
-   // Construct the site block
-   SiteBlock Site = CreateSU2HubbardSite();
+   // Construct the site blocks
+   SiteBlock SiteA = CreateSO4HubbardSiteA();
+   SiteBlock SiteB = CreateSO4HubbardSiteB();
+
+   Lattice UnitCellAB(SiteA, SiteB);
+   UnitCellAB.fix_coordinates("", "aux");
+
+   Lattice UnitCellBA(SiteB, SiteA);
+   UnitCellBA.fix_coordinates("", "aux");
+
+   Lattice SuperCell(UnitCellAB, UnitCellBA);
 
    // construct a lattice of L copies of Site
-   Lattice MyLattice = repeat(Site, L);
+   Lattice MyLattice = repeat(SuperCell, L/2);
+   if (L%2 == 1)
+      MyLattice = join(MyLattice, UnitCellAB);
    MyLattice.fix_coordinates();
 
    // construct the operator list for the lattice
    OperatorList OpList(MyLattice);
 
-   OperatorAtSite<OperatorList const, int> CH(OpList, "CH");
    OperatorAtSite<OperatorList const, int> C(OpList, "C");
+   OperatorAtSite<OperatorList const, int> CH(OpList, "CH");
    OperatorAtSite<OperatorList const, int> P(OpList, "P");
-   OperatorAtSite<OperatorList const, int> N(OpList, "N");
-   OperatorAtSite<OperatorList const, int> LocalPg(OpList, "Pg");
-   OperatorAtSite<OperatorList, int> Bond(OpList, "Bond");
+   OperatorAtSite<OperatorList const, int> S(OpList, "S");
+   OperatorAtSite<OperatorList const, int> Q(OpList, "Q");
+   OperatorAtSite<OperatorList const, std::string, int> AuxC(OpList, "C");
+   OperatorAtSite<OperatorList const, std::string, int> AuxCH(OpList, "CH");
+   OperatorAtSite<OperatorList const, std::string, int> AuxS(OpList, "S");
+   OperatorAtSite<OperatorList const, std::string, int> AuxQ(OpList, "Q");
    MPOperator& Hamiltonian = OpList["H"];
-   MPOperator& Hop = OpList["Hopping"];
-   MPOperator& Coulomb = OpList["Coulomb"];
-   MPOperator& Pg = OpList["Pg"];                // Gutzwiller projector
+   MPOperator& IG = OpList["IG"];
+   MPOperator& IGH = OpList["IGH"];
+   MPOperator IGX;
 
    QuantumNumber Ident(MyLattice.GetSymmetryList());  // the scalar quantum number
    // hopping matrix elements
 
-   complex Sqrt2t = -std::sqrt(2.0) * t;
+   complex HoppingValue = -2.0 * t;
 
    for (int i = 1; i < L; ++i)
    {
-      MPOperator Hopping 
-         = Sqrt2t * prod(CH(i), C(i%L+1), Ident) + conj(Sqrt2t) * prod(C(i), CH(i%L+1), Ident);
-      Hop += Hopping;
+      MPOperator Hopping = HoppingValue * prod(C(i), CH(i%L+1), Ident);
       Hamiltonian += Hopping;
-      Bond(i) = Hopping;
+      IGX += HoppingValue * prod(AuxC("aux",i), AuxCH("aux",i%L+1), Ident);
       std::cout << "Working.... " << i << "\n";
    }
    // coulomb repulsion
    for (int i = 1; i <= L; ++i)
    {
-      Pg = Pg * LocalPg(i);  // Gutzwiller projector
-
-      Coulomb += 0.25 * P(i);
       Hamiltonian = Hamiltonian + (U/4.0) * P(i);
-
-      // distribute the interaction among the bond terms.
-      // There are choices in how to do this.      
-      if (i < L) 
-         Bond(i) += (U/4.0) * P(i);
-      else
-         Bond(i-1) += (U/4.0) * P(i);
-
+      MPOperator X = prod(C(i), AuxCH("aux", i), Ident);
+      IGX += X;
+      IG = IG + X - 1.0 * std::sqrt(3.0) * prod(AuxS("aux",i), S(i), Ident)
+	 - 1.0 * std::sqrt(3.0) * prod(AuxQ("aux", i), Q(i), Ident);
       std::cout << "Working.... " << i << "\n";
    }
+
+   IGH = IG + 0.1 * (Hamiltonian + IGX);
 
    // make a copy of OpList that exists on the persistent heap
    pvalue_ptr<OperatorList> OList = new OperatorList(OpList);
