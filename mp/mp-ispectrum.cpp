@@ -506,6 +506,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") > 0 || vm.count("psi") < 1)
       {
+         print_copyright(std::cerr);
          std::cerr << "usage: mp-ispectrum [options] <psi>\n";
          std::cerr << desc << '\n';
          return 1;
