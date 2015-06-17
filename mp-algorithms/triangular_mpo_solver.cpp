@@ -6,10 +6,6 @@
 #include "mp-algorithms/arnoldi.h"
 #include "mp-algorithms/gmres.h"
 
-// For identifying an eigenvalue 1 of the transfer matrix, we need
-// an epsilon tolerance.  1E-12 proved to be a bit too small in some
-// cases.
-double const EigenUnityEpsilon = 1E-10;
 
 // A note on orthogonalizing vectors in non-orthogonal Hilbert spaces.
 // Suppose <l| and |r> are left and right eigenvectors, satisfying <l|r>=1.
@@ -288,7 +284,8 @@ SolveZeroDiagonal(KMatrixPolyType const& C)
 KMatrixPolyType
 SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
               TriangularMPO const& Op, MatrixOperator const& LeftIdentity,
-              MatrixOperator const& RightIdentity, int Verbose)
+              MatrixOperator const& RightIdentity, double EigenUnityEpsilon,
+	      int Verbose)
 {
    CHECK_EQUAL(RightIdentity.Basis1(), Psi.Basis1());
    CHECK_EQUAL(RightIdentity.Basis2(), Psi.Basis1());

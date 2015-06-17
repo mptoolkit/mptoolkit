@@ -1,5 +1,8 @@
 // -*- C++ -*- $Id$
 
+#if !defined(MPTOOLKIT_MODELS_BOSON_U1_H)
+#define MPTOOLKIT_MODELS_BOSON_U1_H
+
 #include "lattice/latticesite.h"
 #include "quantumnumbers/u1.h"
 
@@ -85,3 +88,5 @@ LatticeSite BosonU1(int MaxN, std::string const& Sym1 = "N")
 
    return Site;
 }
+
+#endif

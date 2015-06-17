@@ -72,6 +72,7 @@ int main(int argc, char** argv)
    bool ShowCartesian = false;
    bool Quiet = false;
    bool Columns = false;
+   double UnityEpsilon = DefaultEigenUnityEpsilon;
 
    std::cout.precision(getenv_or_default("MP_PRECISION", 14));
    std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
@@ -101,6 +102,8 @@ int main(int argc, char** argv)
 	  "Show the prefactors of each degree in columns rather than rows")
 	 ("quiet,q", prog_opt::bool_switch(&Quiet), "Don't show column headings")
          ("print,p", prog_opt::bool_switch(&Print), "Print the MPO to standard output")
+	 ("unityepsilon", prog_opt::value(&UnityEpsilon),
+	  FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose),
           "extra debug output (can be used more than once)")
 	 ;

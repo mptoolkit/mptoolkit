@@ -18,6 +18,11 @@
 
 #include "mps/momentum_operations.h"
 
+// For identifying an eigenvalue 1 of the transfer matrix, we need
+// an epsilon tolerance.  1E-12 proved to be a bit too small in some
+// cases.
+double const DefaultEigenUnityEpsilon = 1E-10;
+
 // Solve an MPO in the left-handed sense, as x_L * Op = lambda * x_L
 // We currently assume there is only one eigenvalue 1 of the transfer operator.
 // The LeftIdentity and RightIdentity are the right and left eigenmatrices of the 
@@ -27,7 +32,8 @@
 KMatrixPolyType
 SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
               TriangularMPO const& Op, MatrixOperator const& LeftIdentity,
-              MatrixOperator const& RightIdentity, int Verbose = 0);
+              MatrixOperator const& RightIdentity, 
+	      double EigenUnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
 
 // Solve an MPO in the right-handed sense, as Op * x_R = x_R * lambda
 // We currently assume there is only one eigenvalue 1 of the transfer operator.

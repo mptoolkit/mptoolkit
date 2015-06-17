@@ -1,10 +1,10 @@
 // -*- C++ -*- $Id$
 
-#include "lattice/latticesite.h"
-#include "quantumnumbers/u1.h"
+#if !defined(MPTOOLKIT_MODELS_BOSON_H)
+#define MPTOOLKIT_MODELS_BOSON_H
 
-// default maximum number of bosons per site
-int const DefaultMaxN = 5;
+#include "lattice/latticesite.h"
+#include "models/boson-u1.h"    // for DefaultMaxN
 
 void SetMatElement(SiteOperator& s, int n1, int n2, double x)
 {
@@ -74,3 +74,5 @@ LatticeSite Boson(int MaxN)
 
    return Site;
 }
+
+#endif
