@@ -2,7 +2,6 @@
 
 #include "lattice/latticesite.h"
 #include "quantumnumbers/u1.h"
-#include "quantumnumbers/su2.h"
 
 // default maximum number of bosons per site
 int const DefaultMaxN = 5;
