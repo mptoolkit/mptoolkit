@@ -4,8 +4,8 @@
 #include "quantumnumbers/u1.h"
 #include "quantumnumbers/su2.h"
 
-
-
+// default maximum number of bosons per site
+int const DefaultMaxN = 5;
 
 void SetMatElementU1(SiteOperator& s, int n1, int n2, double x)
 {

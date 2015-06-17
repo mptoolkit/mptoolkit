@@ -1,5 +1,6 @@
 // -*- C++ -*- $Id$
 
+#include "mp/copyright.h"
 #include "mps/infinitewavefunction.h"
 #include "mps/packunpack.h"
 #include "lattice/latticesite.h"
@@ -415,7 +416,6 @@ int main(int argc, char** argv)
    try
    {
       int Verbose = 0;
-      bool NoTempFile = false;
       bool ShowRealPart = false, ShowImagPart = false, ShowMagnitude = false;
       bool ShowCartesian = false, ShowPolar = false, ShowArgument = false;
       bool ShowRadians = false, ShowCorrLength = false;
@@ -427,7 +427,6 @@ int main(int argc, char** argv)
       bool Sort = false;
       bool Quiet = false;
       bool Reflect = false;
-      bool Conj = false;
       bool Print = false;
       bool Symmetric = false;
       int KrylovLength = 0;
@@ -461,13 +460,8 @@ int main(int argc, char** argv)
 	  "Calculate the expansion coefficients of this operator acting on the left")
 	 ("right,r", prog_opt::value(&RightOpStr), 
 	  "Calculate the expansion coefficients of this operator acting on the right")
-         ("notempfile", prog_opt::bool_switch(&NoTempFile),
-          "don't use a temporary data file, keep everything in RAM "
-          "(faster, but needs enough RAM)")
          ("string", prog_opt::value(&String),
           "use this product operator as a string operator")
-         ("conj", prog_opt::bool_switch(&Conj),
-          "complex conjugate psi2")
          ("q,quantumnumber", prog_opt::value(&Sector),
           "calculate the overlap only in this quantum number sector, "
           "can be used multiple times [default is to calculate all sectors]")
