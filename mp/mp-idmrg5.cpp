@@ -299,7 +299,8 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
    Guess.back() -= inner_prod(Guess.back(), Rho) * Guess.front();
 
 #if !defined(NDEBUG)
-   KMatrixPolyType CheckEMat = SolveMPO_Left(Psi, QShift, Op, delta_shift(Ident, QShift), Rho, 1);
+   KMatrixPolyType CheckEMat = SolveMPO_Left(Psi, QShift, Op, delta_shift(Ident, QShift), Rho, 
+					     DefaultEigenUnityEpsilon, 1);
    ComplexPolyType EValues = ExtractOverlap(CheckEMat[std::complex<double>(1.0,0.0)], delta_shift(Rho, QShift));
    TRACE(EValues);
    TRACE(CheckEMat[std::complex<double>(1.0,0.0)]);

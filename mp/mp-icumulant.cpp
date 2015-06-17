@@ -215,7 +215,7 @@ int main(int argc, char** argv)
 
       Op = repeat(Op, WavefuncUnitCellSize / Op.size());
 
-      KMatrixPolyType E = SolveMPO_Left(Phi, Psi.QShift, Op, Identity, Rho, Verbose);
+      KMatrixPolyType E = SolveMPO_Left(Phi, Psi.QShift, Op, Identity, Rho, UnityEpsilon, Verbose);
       Polynomial<std::complex<double> > aNorm = ExtractOverlap(E[1.0], Rho);
 
       if (!Quiet)
