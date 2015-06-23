@@ -34,6 +34,7 @@
 //
 // Current operator is derivative with respect to flux, so
 //
+// 
 // (following equations are for 2-leg ladder!)
 // j_c = -sin(pi*alpha)*H_J0 + cos(pi*alpha)*H_Jc0
 //
@@ -79,10 +80,12 @@ int main(int argc, char** argv)
 	 std::cerr << "Operators:\n"
 		   << "H_J0   - nearest neighbor leg 0 hopping\n"
 		   << "H_J1   - nearest neighbor leg 1 hopping\n"
-		   << "H_J    - nearest neighbor leg hopping = H_J0 + H_J1\n"
+		   << "H_J2   - nearest neighbor leg 2 hopping\n"
+		   << "H_J    - nearest neighbor leg hopping = H_J0 + H_J1 + H_J2\n"
 		   << "H_Jc0  - nearest neighbor leg 0 current\n"
 		   << "H_Jc1  - nearest neighbor leg 1 current\n"
-		   << "H_Jc   - edge current H_Jc0 - H_Jc1\n"
+		   << "H_Jc2  - nearest neighbor leg 2 current\n"
+            //<< "H_Jc   - edge current H_Jc0 - H_Jc2\n"
 		   << "H_K    - nearest neighbor rung hopping\n"
 		   << "H_Kc   - nearest neighbor rung current\n"
 		   << "H_U    - on-site Coulomb repulsion N*(N-1)/2\n"
@@ -95,11 +98,14 @@ int main(int argc, char** argv)
       LatticeSite Site = BosonU1(MaxN);
       UnitCell Cell(repeat(Site, 3));
       UnitCellOperator BH(Cell, "BH"), B(Cell, "B"), N(Cell, "N"), N2(Cell, "N2"),
-	 j0(Cell, "j0"), j1(Cell, "j1"), j2(Cell, "j2");
+	 j0(Cell, "j0"), j1(Cell, "j1"), j2(Cell, "j2"), k0(Cell, "k0"), k1(Cell, "k1");
 
       j0 = std::complex<double>(0,1)*(BH(0)[0]*B(1)[0] - B(0)[0]*BH(1)[0]);
       j1 = std::complex<double>(0,1)*(BH(0)[1]*B(1)[1] - B(0)[1]*BH(1)[1]);
       j2 = std::complex<double>(0,1)*(BH(0)[2]*B(1)[2] - B(0)[2]*BH(1)[2]);
+
+      k0 = std::complex<double>(0,1)*(BH(0)[0]*B(0)[1] - B(0)[0]*BH(0)[1]);
+      k1 = std::complex<double>(0,1)*(BH(0)[1]*B(0)[2] - B(0)[1]*BH(0)[2]);
 
       InfiniteLattice Lattice(Cell);
       

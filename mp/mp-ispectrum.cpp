@@ -426,7 +426,6 @@ int main(int argc, char** argv)
       int Iter = 30;
       bool Sort = false;
       bool Quiet = false;
-      bool Reflect = false;
       bool Print = false;
       bool Symmetric = false;
       int KrylovLength = 0;
@@ -456,6 +455,8 @@ int main(int argc, char** argv)
 	  "display the equivalent correlation length")
 	 ("unitcell,u", prog_opt::value(&UnitCellSize),
 	  "scale the results to use this unit cell size [default wavefunction unit cell]")
+         ("numeigen,n", prog_opt::value(&MaxEigen),
+          FormatDefault("Number of eigenvalues to calculate in each sector", MaxEigen).c_str())
 	 ("left,l", prog_opt::value(&LeftOpStr), 
 	  "Calculate the expansion coefficients of this operator acting on the left")
 	 ("right,r", prog_opt::value(&RightOpStr), 

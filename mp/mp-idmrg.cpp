@@ -1104,7 +1104,7 @@ int main(int argc, char** argv)
 	 else
 	 {
 	    RBoundary = QuantumNumber(HamMPO[0].GetSymmetryList(), BoundaryState[0]);
-	    std::cout << "Boundary quantum number is " << RBoundary << '\n';
+	    std::cout << "Rignt boundary quantum number is " << RBoundary << '\n';
 	    if (BoundaryState.size() > 1)
 	    {
 	       std::cout << "WARNING: ignoring addititional boundary quantum numbers in random wavefunction\n";
@@ -1115,6 +1115,7 @@ int main(int argc, char** argv)
 	       PANIC("Don't know how to handle non-scalar non-abelian target state")(RBoundary)(q);
 	    }
 	    LBoundary = QL[0];
+	    std::cout << "Left boundary quantum number is " << LBoundary << '\n';
 	 }
 	 LinearWavefunction W = CreateRandomWavefunction(FullBL, LBoundary, 3, RBoundary);
 	 Psi.QShift = q;

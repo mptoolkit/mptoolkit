@@ -31,7 +31,7 @@ int main(int argc, char** argv)
 
    // the 2nd order moments
    double t2_1 = k2;
-   double t2_2 = k1*k1;
+   double t2_2 = sqrt(t4_4);
 
    // Effective length
    double L = Scale * xi;

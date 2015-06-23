@@ -96,11 +96,11 @@ FindClosestUnitEigenvalue(MatrixOperator& M, T Func, int Verbose)
    int Iterations = 20;
    double Tol = 1E-16;
    std::complex<double> EtaL;
-   EtaL = LinearSolvers::Arnoldi(M, Func, Iterations, Tol, LinearSolvers::LargestAlgebraicReal, Verbose);
+   EtaL = LinearSolvers::Arnoldi(M, Func, Iterations, Tol, LinearSolvers::LargestMagnitude, Verbose);
    while (Iterations == 20)
    {
       Tol = 1E-14;
-      EtaL = LinearSolvers::Arnoldi(M, Func, Iterations, Tol, LinearSolvers::LargestAlgebraicReal, Verbose);
+      EtaL = LinearSolvers::Arnoldi(M, Func, Iterations, Tol, LinearSolvers::LargestMagnitude, Verbose);
    }
    return EtaL;
 }
@@ -136,7 +136,11 @@ DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
 	 I->second -= conj(Overlap)*UnitMatrixLeft;
 	 DEBUG_TRACE(inner_prod(I->second, UnitMatrixRight))("should be zero");
 	 DEBUG_TRACE(inner_prod(UnitMatrixLeft, UnitMatrixRight));
-	 if (norm_frob(Overlap) > 1E-16)
+
+         // **comparison** we always want to add here to get the degree of the polynomial correct.
+         // This is the important one
+         //	 if (norm_frob(Overlap) > 1E-16)
+
 	    CParallel[I->first] = Overlap;
       }
 
@@ -228,7 +232,9 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
 	 RhsNorm2 = RhsNorm2 / (Rhs.Basis1().total_degree()*Rhs.Basis2().total_degree());
 	 DEBUG_TRACE(RhsNorm2);
 	 DEBUG_TRACE(HasEigenvalue1)(UnitMatrixLeft)(UnitMatrixRight)(K)(Diag)(Rhs);
-	 if (RhsNorm2 > 1E-22)
+
+         //if (RhsNorm2 > 1E-22)
+
 	 {
 	    E[K][m] = LinearSolve(OneMinusTransferLeft(K*Diag, Psi, QShift, 
 						       UnitMatrixLeft, UnitMatrixRight, HasEigenvalue1), 
@@ -362,9 +368,9 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 
 	    std::complex<double> EtaL = FindClosestUnitEigenvalue(UnitMatrixLeft, 
 								  InjectLeftQShift(Diag, Psi, QShift), Verbose);
-
 	    if (Verbose)
 	       std::cerr << "Eigenvalue of unitary operator is " << EtaL << std::endl;
+            Factor = EtaL;
 
 	    if (std::abs(norm_frob(EtaL) - 1.0) < EigenUnityEpsilon)
 	    {
@@ -407,7 +413,7 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 
 	 // If we have an eigenvalue equal to 1, then decompose C into parallel and perpendicular parts
 	 bool HasEigenvalue1 = false;
-         if (std::abs(norm_frob(Factor) - 1.0) < 1E-12)
+         if (std::abs(norm_frob(Factor) - 1.0) < EigenUnityEpsilon)
          {
 	    HasEigenvalue1 = true;
 	    //DEBUG_TRACE(UnitMatrixLeft)(UnitMatrixRight);
