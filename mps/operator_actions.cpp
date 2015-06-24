@@ -76,6 +76,7 @@ inject_right(MatrixOperator const& m,
       return MatrixOperator();
 
    // we currently only support simple irreducible operators
+   PRECONDITION_EQUAL(Psi.size(), Op.size());
    CHECK_EQUAL(Op.Basis1().size(), 1);
    CHECK_EQUAL(Op.Basis2().size(), 1);
    StateComponent E(Op.Basis2(), m.Basis1(), m.Basis2());
@@ -102,6 +103,8 @@ inject_right(MatrixOperator const& m,
       return MatrixOperator();
 
    // we currently only support simple irreducible operators
+   PRECONDITION_EQUAL(Psi1.size(), Op.size());
+   PRECONDITION_EQUAL(Psi1.size(), Psi2.size());
    CHECK_EQUAL(Op.Basis1().size(), 1);
    CHECK_EQUAL(Op.Basis2().size(), 1);
    StateComponent E(Op.Basis2(), m.Basis1(), m.Basis2());

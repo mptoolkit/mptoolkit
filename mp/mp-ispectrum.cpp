@@ -244,6 +244,85 @@ struct MultFuncStringTrans
    PackMatrixOperator Pack;
 };
 
+
+// inject_left for a FiniteMPO.  This can have support on multiple wavefunction unit cells
+MatrixOperator
+inject_left(MatrixOperator const& m, 
+            LinearWavefunction const& Psi1,
+	    QuantumNumbers::QuantumNumber const& QShift,
+            FiniteMPO const& Op, 
+            LinearWavefunction const& Psi2)
+{
+   CHECK_EQUAL(Psi1.size(), Psi2.size());
+   DEBUG_CHECK_EQUAL(m.Basis1(), Psi1.Basis1());
+   DEBUG_CHECK_EQUAL(m.Basis2(), Psi2.Basis1());
+   if (Op.is_null())
+      return MatrixOperator();
+
+   // we currently only support simple irreducible operators
+   CHECK_EQUAL(Op.Basis1().size(), 1);
+   CHECK_EQUAL(Op.Basis2().size(), 1);
+   CHECK_EQUAL(Op.Basis1()[0], m.TransformsAs());
+   MatrixOperator Result = m;
+   StateComponent E(Op.Basis1(), m.Basis1(), m.Basis2());
+   E[0] = m;
+   E.debug_check_structure();
+   LinearWavefunction::const_iterator I1 = Psi1.begin();
+   LinearWavefunction::const_iterator I2 = Psi2.begin();
+   FiniteMPO::const_iterator OpIter = Op.begin();
+   while (OpIter != Op.end())
+   {
+      if (I1 == Psi1.end())
+      {
+	 I1 = Psi1.begin();
+	 I2 = Psi2.begin();
+	 E = delta_shift(E, QShift);
+      }
+      E = operator_prod(herm(*OpIter), herm(*I1), E, *I2);
+      ++I1; ++I2; ++OpIter;
+   }
+   return delta_shift(E[0], QShift);
+}
+
+MatrixOperator
+inject_right(MatrixOperator const& m, 
+             LinearWavefunction const& Psi1,
+             QuantumNumbers::QuantumNumber const& QShift,
+             GenericMPO const& Op, 
+             LinearWavefunction const& Psi2)
+{
+   PRECONDITION_EQUAL(Psi1.size(), Psi2.size());
+   if (Op.is_null())
+      return MatrixOperator();
+
+   // we currently only support simple irreducible operators
+   CHECK_EQUAL(Op.Basis1().size(), 1);
+   CHECK_EQUAL(Op.Basis2().size(), 1);
+   StateComponent E(Op.Basis2(), m.Basis1(), m.Basis2());
+   E[0] = m;
+   MatrixOperator Result = m;
+   LinearWavefunction::const_iterator I1 = Psi1.end();
+   LinearWavefunction::const_iterator I2 = Psi2.end();
+   GenericMPO::const_iterator OpIter = Op.end();
+   while (OpIter != Op.begin())
+   {
+      if (I1 == Psi1.begin())
+      {
+         I1 = Psi1.end();
+         I2 = Psi2.end();
+         E = delta_shift(E, adjoint(QShift));
+      }
+      --I1; --I2; --OpIter;
+      E = operator_prod(*OpIter, *I1, E, herm(*I2));
+   }
+   return delta_shift(E[0], adjoint(QShift));
+}
+
+
+
+
+
+
 LinearAlgebra::Vector<std::complex<double> > 
 get_spectrum(LinearWavefunction const& Psi, QuantumNumber const& QShift, int NumEigen,
              QuantumNumbers::QuantumNumber const& q, double tol = 1e-10,
@@ -457,13 +536,13 @@ int main(int argc, char** argv)
 	  "scale the results to use this unit cell size [default wavefunction unit cell]")
          ("numeigen,n", prog_opt::value(&MaxEigen),
           FormatDefault("Number of eigenvalues to calculate in each sector", MaxEigen).c_str())
-	 ("left,l", prog_opt::value(&LeftOpStr), 
+	 ("left", prog_opt::value(&LeftOpStr), 
 	  "Calculate the expansion coefficients of this operator acting on the left")
-	 ("right,r", prog_opt::value(&RightOpStr), 
+	 ("right", prog_opt::value(&RightOpStr), 
 	  "Calculate the expansion coefficients of this operator acting on the right")
          ("string", prog_opt::value(&String),
           "use this product operator as a string operator")
-         ("q,quantumnumber", prog_opt::value(&Sector),
+         ("quantumnumber,q", prog_opt::value(&Sector),
           "calculate the overlap only in this quantum number sector, "
           "can be used multiple times [default is to calculate all sectors]")
          ("sort,s", prog_opt::bool_switch(&Sort),
@@ -666,13 +745,19 @@ int main(int argc, char** argv)
       for (unsigned i = 0; i < LeftOpStr.size(); ++i)
       {
 	 UnitCellMPO Op = ParseUnitCellOperatorAndLattice(LeftOpStr[i]).first;
-	 LeftOp.push_back(inject_left_qshift(LeftIdent, Op.MPO(), Psi, QShift));
+         Op.ExtendToCoverUnitCell(Psi.size());
+         // Adjust the MPO so that the left basis is the identity
+         FiniteMPO Mpo = Op.MPO() * FiniteMPO::make_identity(Op.MPO().LocalBasis2List(), 
+                                                              adjoint(Op.TransformsAs()));
+         Mpo = project(Mpo, QuantumNumbers::QuantumNumber(Op.GetSymmetryList()));
+	 LeftOp.push_back(inject_left(LeftIdent, Psi, QShift, Mpo, Psi));
       }
 
       for (unsigned i = 0; i < RightOpStr.size(); ++i)
       {
 	 UnitCellMPO Op = ParseUnitCellOperatorAndLattice(RightOpStr[i]).first;
-	 RightOp.push_back(inject_right_qshift(RightIdent, Op.MPO(), Psi, QShift));
+         Op.ExtendToCoverUnitCell(Psi.size());
+	 RightOp.push_back(inject_right(RightIdent, Psi, QShift, Op.MPO(), Psi));
       }
 
       // iterate over the relevant quantum number sectors

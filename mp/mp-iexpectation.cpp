@@ -130,9 +130,6 @@ int main(int argc, char** argv)
       if (!ShowReal && !ShowImag)
          ShowReal = ShowImag = true;
 
-      bool FermionicWarning = false;  // set to true if we have already warned the user about 
-      // a possible fermionic problem
-
       mp_pheap::InitializeTempPHeap();
       pvalue_ptr<InfiniteWavefunction> Psi = pheap::ImportHeap(PsiStr);
 
@@ -157,8 +154,6 @@ int main(int argc, char** argv)
       MatrixOperator Rho = scalar_prod(Psi->C_right, herm(Psi->C_right));
       MatrixOperator Identity = MatrixOperator::make_identity(PsiOrtho.Basis1());
       QuantumNumber QShift = Psi->shift();
-
-      int PsiSize = PsiOrtho.size();
 
       // paranoid check the orthogonalization of the wavefunction
       //DEBUG_CHECK(norm_frob(delta_shift(inject_left(Identity, PsiOrtho, PsiOrtho), QShift) - Identity) < 1E-10)

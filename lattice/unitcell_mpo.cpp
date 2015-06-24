@@ -65,6 +65,24 @@ UnitCellMPO::ExtendToCover(int OtherSize, int OtherOffset)
    }
 }
 
+// round n up to the nearest multiple of m, assuming m positive
+int round_up(int n, int m)
+{
+   int nn = n - n%m;
+   if (nn < n)
+      nn += m;
+   return nn;
+}
+
+// round n down to the nearest multiple of m, assuming m positive
+int round_down(int n, int m)
+{
+   int nn = n - n%m;
+   if (nn > n)
+      nn -= m;
+   return nn;
+}
+
 void
 UnitCellMPO::ExtendToCoverUnitCell(int OtherSize)
 {
@@ -72,18 +90,9 @@ UnitCellMPO::ExtendToCoverUnitCell(int OtherSize)
    // on the left hand side, we want to decrease the offset to a multiple of OtherSize
    if (Offset % OtherSize != 0)
    {
-      if (Offset < 0)
-      {
-	 // Offset is negative - increase it to a multiple of OtherSize
-	 NewOffset = -statistics::lcm(-Offset, OtherSize);
-      }
-      else
-      {
-	 // Offset is positive - reduce it to be a multiple of OtherSize
-	 NewOffset = Offset - (Offset%OtherSize);
-      }
+      NewOffset = round_down(Offset, OtherSize);
    }
-   int NewSize = statistics::lcm(Op.size(), OtherSize);
+   int NewSize = round_up(Op.size()+(Offset-NewOffset), OtherSize);
    this->ExtendToCover(NewSize, NewOffset);
 }
 
