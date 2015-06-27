@@ -22,6 +22,10 @@ using Tensor::SumBasis;
 using QuantumNumbers::SymmetryList;
 using LinearAlgebra::size_type;
 
+// default epsilon for detecting whether an eigenvalue is equal to 1 for
+// operator classifications
+double const DefaultClassifyUnityEpsilon = 1E-14;
+
 // a simple reducible operator typedef
 typedef ReducibleTensor<std::complex<double>, BasisList, BasisList> SimpleRedOperator;
 
@@ -128,7 +132,13 @@ operator<<(std::ostream& out, OperatorComponent const& op);
 
 // prints the structure of the component, as an 'x' for a non-zero
 // component or blank for a zero component
-void print_structure(OperatorComponent const& Op, std::ostream& out);
+void print_structure(OperatorComponent const& Op, std::ostream& out, double UnityEpsilon);
+
+inline
+void print_structure(OperatorComponent const& Op, std::ostream& out)
+{
+   print_structure(Op, out, DefaultClassifyUnityEpsilon);
+}
 
 inline
 OperatorComponent 
@@ -574,7 +584,13 @@ SimpleOperator ProjectBasis(BasisList const& b, QuantumNumbers::QuantumNumber co
 
 // Utility function - if X is proportional to identity operator then return the constant of
 // proportionality.  Otherwise return 0.0
-std::complex<double> PropIdent(SimpleOperator const& X);
+std::complex<double> PropIdent(SimpleOperator const& X, double UnityEpsilon);
+
+inline
+std::complex<double> PropIdent(SimpleOperator const& X)
+{
+   return PropIdent(X, DefaultClassifyUnityEpsilon);
+}
 
 namespace LinearAlgebra
 {

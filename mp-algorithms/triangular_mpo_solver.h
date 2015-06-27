@@ -21,7 +21,7 @@
 // For identifying an eigenvalue 1 of the transfer matrix, we need
 // an epsilon tolerance.  1E-12 proved to be a bit too small in some
 // cases.
-double const DefaultEigenUnityEpsilon = 1E-10;
+double const DefaultEigenUnityEpsilon = 1E-12;
 
 // Solve an MPO in the left-handed sense, as x_L * Op = lambda * x_L
 // We currently assume there is only one eigenvalue 1 of the transfer operator.
@@ -29,10 +29,30 @@ double const DefaultEigenUnityEpsilon = 1E-10;
 // transfer operator in the Basis1 of Psi.
 // If Psi is left-orthogonal then LeftIdentity = I and RightIdentity = Rho
 // if Psi is right-orthogonal then LeftIdentity = rho and RightIdentity = I
-KMatrixPolyType
+// The return value is the complete set of E matrices.  The final expectation value
+// is contained in the last element.
+// If NeedFinalMatrix is false, then we don't calculate the final matrix elements
+// (components perpendicular to the identity) for the last component.  This corresponds
+// to the case where we want to calculate an expectation value only, and we
+// don't need the complete matrix elements.
+std::vector<KMatrixPolyType>
 SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
               TriangularMPO const& Op, MatrixOperator const& LeftIdentity,
               MatrixOperator const& RightIdentity, 
+	      bool NeedFinalMatrix,
+	      double EigenUnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
+
+// In this variant we take an initial value for EMatK, which is assumed to be a
+// partial solution - that is, the EMatK vector contains the first EMatK.size() components
+// of the final solution (this isn't checked, but the behaviour will be unspecified otherwise).
+// This is intended, eg for calculating higher powers of an MPO, where the solution at a lower
+// power can be re-used to speed up the next power.
+std::vector<KMatrixPolyType>
+SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
+	      std::vector<KMatrixPolyType> EMatK,
+              TriangularMPO const& Op, MatrixOperator const& LeftIdentity,
+              MatrixOperator const& RightIdentity, 
+	      bool NeedFinalMatrix,
 	      double EigenUnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
 
 // Solve an MPO in the right-handed sense, as Op * x_R = x_R * lambda

@@ -167,7 +167,13 @@ struct OperatorClassification
 
 std::ostream& operator<<(std::ostream& out, OperatorClassification const& Class);
 
-OperatorClassification classify(GenericMPO const& Op);
+OperatorClassification classify(GenericMPO const& Op, double UnityEpsilon);
+
+inline
+OperatorClassification classify(GenericMPO const& Op)
+{
+   return classify(Op, DefaultClassifyUnityEpsilon);
+}
 
 // plus various functions for acting on states etc
 

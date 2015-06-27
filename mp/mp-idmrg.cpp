@@ -1008,7 +1008,6 @@ int main(int argc, char** argv)
       InfiniteLattice Lattice;
       boost::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
       int const UnitCellSize = Lattice.GetUnitCell().size();
-      TRACE(UnitCellSize);
       if (WavefuncUnitCellSize == 0)
 	 WavefuncUnitCellSize = UnitCellSize;
 
@@ -1302,6 +1301,8 @@ int main(int argc, char** argv)
 	    C = delta_shift(PsiR, QShift) * C;
 	    // C is now dm x dm
 
+            DEBUG_TRACE(trace(scalar_prod(C,herm(C))));
+
 	    DEBUG_CHECK_EQUAL(C.Basis1(), LeftBlock.back().Basis2());
 
             // Subtract off the energy
@@ -1416,6 +1417,8 @@ int main(int argc, char** argv)
 	    C = C * InvertDiagonal(DiagonalR, InverseTol);
 	    C = C * herm(ExpanderR);
 	    C = C * delta_shift(PsiL, adjoint(QShift));
+
+            DEBUG_TRACE(trace(scalar_prod(C,herm(C))));
 
 	    DEBUG_CHECK_EQUAL(C.Basis2(), RightBlock.front().Basis1());
 

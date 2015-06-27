@@ -499,7 +499,7 @@ std::ostream& operator<<(std::ostream& out, OperatorClassification const& Class)
    return out;
 }
 
-OperatorClassification classify(GenericMPO const& Op)
+OperatorClassification classify(GenericMPO const& Op, double UnityEpsilon)
 {
    OperatorClassification Result;
 
@@ -531,7 +531,7 @@ OperatorClassification classify(GenericMPO const& Op)
                IsPropIdentity = false;
             else
             {
-               std::complex<double> x = PropIdent(X.scalar());
+               std::complex<double> x = PropIdent(X.scalar(), UnityEpsilon);
                if (x == 0.0)
                   IsPropIdentity = false;
                else
@@ -542,8 +542,8 @@ OperatorClassification classify(GenericMPO const& Op)
          if (!IsPropIdentity)
          {
             // is it unitary?
-            std::complex<double> x = PropIdent(scalar_prod(X, herm(X)));
-            std::complex<double> y = PropIdent(scalar_prod(herm(X), X));
+            std::complex<double> x = PropIdent(scalar_prod(X, herm(X)), UnityEpsilon);
+            std::complex<double> y = PropIdent(scalar_prod(herm(X), X), UnityEpsilon);
 
             if (x == 0.0 || y == 0.0)
             {
@@ -566,20 +566,19 @@ OperatorClassification classify(GenericMPO const& Op)
       if (IsPropIdentity)
       {
          Result.PropIdentity_ = true;
-         //TRACE(Factor);
          Result.Identity_ = LinearAlgebra::norm_frob_sq(Factor - std::complex<double>(1.0, 0)) 
-	    < std::numeric_limits<double>::epsilon()*1000;
+	    < UnityEpsilon*UnityEpsilon;
 
          // if we claim to be an identity operator, we might as well make it exact
          if (Result.Identity_)
             Factor = 1.0;
 
-         Result.Unitary_ = LinearAlgebra::norm_frob_sq(norm_frob(Factor) - 1.0) < std::numeric_limits<double>::epsilon()*1000;
+         Result.Unitary_ = LinearAlgebra::norm_frob_sq(norm_frob(Factor) - 1.0) < UnityEpsilon*UnityEpsilon;
          Result.Factor_ = Factor;
       }
       else
       {
-         Result.Unitary_ = LinearAlgebra::norm_frob_sq(norm_frob(Factor) - 1.0) < std::numeric_limits<double>::epsilon()*1000;
+         Result.Unitary_ = LinearAlgebra::norm_frob_sq(norm_frob(Factor) - 1.0) < UnityEpsilon*UnityEpsilon;
          Result.Factor_ = Factor;
       }
    }

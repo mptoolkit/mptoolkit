@@ -103,7 +103,7 @@ operator<<(std::ostream& out, OperatorComponent const& op)
    return out;
 }
 
-void print_structure(OperatorComponent const& Op, std::ostream& out)
+void print_structure(OperatorComponent const& Op, std::ostream& out, double UnityEpsilon)
 {
    for (unsigned i = 0; i < Op.size1(); ++i)
    {
@@ -126,7 +126,7 @@ void print_structure(OperatorComponent const& Op, std::ostream& out)
 	       std::complex<double> x = PropIdent(Y);
 	       if (x == 0.0)
 	       {
-		  std::complex<double> x = PropIdent(scalar_prod(herm(Y),Y));
+		  std::complex<double> x = PropIdent(scalar_prod(herm(Y),Y), UnityEpsilon);
 		  if (norm_frob(x-1.0) < 1E-12)
 		     out << 'U';      // a unitary
 		  else
@@ -1748,14 +1748,12 @@ SimpleOperator ProjectBasis(BasisList const& b, QuantumNumbers::QuantumNumber co
    return Result;
 }
 
-std::complex<double> PropIdent(SimpleOperator const& X)
+std::complex<double> PropIdent(SimpleOperator const& X, double UnityEpsilon)
 {
    DEBUG_PRECONDITION_EQUAL(X.Basis1(), X.Basis2());
    SimpleOperator Ident = SimpleOperator::make_identity(X.Basis1());
    std::complex<double> x = inner_prod(Ident, X) / double(X.Basis1().total_degree());
-   //   TRACE(x);
-   //TRACE(X-x*Ident);
-   if (norm_frob_sq(X-x*Ident) > std::numeric_limits<double>::epsilon()*1000)
+   if (norm_frob_sq(X-x*Ident) > UnityEpsilon*UnityEpsilon)
       x = 0.0;
    return x;
 }

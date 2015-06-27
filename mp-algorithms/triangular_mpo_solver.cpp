@@ -287,11 +287,24 @@ SolveZeroDiagonal(KMatrixPolyType const& C)
 // Solve an MPO in the left-handed sense, as x_L * Op = lambda * x_L
 // We currently assume there is only one eigenvalue 1 of the transfer operator
 
-KMatrixPolyType
+std::vector<KMatrixPolyType>
 SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
               TriangularMPO const& Op, MatrixOperator const& LeftIdentity,
-              MatrixOperator const& RightIdentity, double EigenUnityEpsilon,
-	      int Verbose)
+              MatrixOperator const& RightIdentity, bool NeedFinalMatrix,
+	      double EigenUnityEpsilon, int Verbose)
+{
+   std::vector<KMatrixPolyType> EMatK;
+   return SolveMPO_Left(Psi, QShift, EMatK, Op, LeftIdentity, RightIdentity,
+			NeedFinalMatrix,
+			EigenUnityEpsilon, Verbose);
+}
+
+std::vector<KMatrixPolyType>
+SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
+	      std::vector<KMatrixPolyType> EMatK,
+              TriangularMPO const& Op, MatrixOperator const& LeftIdentity,
+              MatrixOperator const& RightIdentity, bool NeedFinalMatrix,
+	      double EigenUnityEpsilon, int Verbose)
 {
    CHECK_EQUAL(RightIdentity.Basis1(), Psi.Basis1());
    CHECK_EQUAL(RightIdentity.Basis2(), Psi.Basis1());
@@ -299,21 +312,30 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
    CHECK_EQUAL(LeftIdentity.Basis2(), Psi.Basis1());
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
-   std::vector<KMatrixPolyType> EMatK(Dim);  // the vector of E matrices
+   EMatK.reserve(Dim);
 
    if (Verbose)
       std::cerr << "SolveMPO_Left: dimension is " << Dim << std::endl;
 
-   // solve recursively column 0 onwards
+   if (EMatK.empty())
+   {
+      // Make sure the (0,0) part is identity
+      OperatorClassification CheckIdent = classify(Op(0,0), EigenUnityEpsilon);
+      CHECK(CheckIdent.is_identity())("(0,0) component of the MPO must be identity!")(CheckIdent)(Op(0,0));
 
-   // Make sure the (0,0) part is identity
-   OperatorClassification CheckIdent = classify(Op(0,0));
-   CHECK(CheckIdent.is_identity())("(0,0) component of the MPO must be identity!")(CheckIdent)(Op(0,0));
+      // Initialize the first E matrix.  These are operators acting in the Basis1()
+      EMatK.push_back(KMatrixPolyType());
+      EMatK[0][1.0] = MatrixPolyType(LeftIdentity);
+   }
 
-   // Initialize the first E matrix.  These are operators acting in the Basis1()
-   EMatK[0][1.0] = MatrixPolyType(LeftIdentity);
+   int StartCol = EMatK.size();
 
-   for (int Col = 1; Col < Dim; ++Col)
+   // fill out the remainder of EMat with zero
+   while (int(EMatK.size()) < Dim)
+      EMatK.push_back(KMatrixPolyType());
+
+   // solve recursively column 1 onwards
+   for (int Col = StartCol; Col < Dim; ++Col)
    {
       if (Verbose)
       {
@@ -328,7 +350,7 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 
       // Now do the classification, based on the properties of the diagonal operator
       FiniteMPO Diag = Op(Col, Col);
-      OperatorClassification Classification = classify(Diag);
+      OperatorClassification Classification = classify(Diag, EigenUnityEpsilon);
       if (Classification.is_null())
       {
          DEBUG_TRACE("Zero diagonal element")(Col)(Diag);
@@ -418,17 +440,27 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 	    HasEigenvalue1 = true;
 	    //DEBUG_TRACE(UnitMatrixLeft)(UnitMatrixRight);
 	    if (Verbose)
-	       std::cout << "Decomposing parts parallel to the unit matrix" << std::endl;
+	       std::cerr << "Decomposing parts parallel to the unit matrix\n";
 	    EParallel = DecomposeParallelParts(C, Factor, UnitMatrixLeft, UnitMatrixRight);
 	 }
 
          // Now the remaining components, which is anything that is not proportional
 	 // to an eigenvector of magnitude 1
-      
-	 if (Verbose)
-	    std::cout << "Decomposing parts perpendicular to the unit matrix" << std::endl;
-         KMatrixPolyType E = DecomposePerpendicularParts(C, Diag, UnitMatrixLeft, UnitMatrixRight, 
-							 Psi, QShift, HasEigenvalue1, Verbose);
+
+	 KMatrixPolyType E;
+	 // if we are on the last column and we don't need the matrix elements, then we can
+	 // skip this operation
+	 if (Col < Dim-1 || NeedFinalMatrix)
+	 {
+	    if (Verbose)
+	       std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
+	    E = DecomposePerpendicularParts(C, Diag, UnitMatrixLeft, UnitMatrixRight, 
+					    Psi, QShift, HasEigenvalue1, Verbose);
+	 }
+	 else if (Verbose)
+	 {
+	    std::cerr << "Skipping parts perpendicular to the unit matrix for the last column.\n";
+	 }
 
          // Reinsert the components parallel to the unit matrix (if any)
          for (KComplexPolyType::const_iterator I = EParallel.begin(); I != EParallel.end(); ++I)
@@ -447,7 +479,5 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
       }
 
    }
-
-   // The return value is the last column of our E matrices
-   return EMatK.back();
+   return EMatK;
 }

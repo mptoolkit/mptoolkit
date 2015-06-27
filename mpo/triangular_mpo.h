@@ -108,7 +108,13 @@ operator<<(std::ostream& out, TriangularMPO const& op);
 
 // prints the structure of the component, as an 'x' for a non-zero
 // component or blank for a zero component
-void print_structure(TriangularMPO const& Op, std::ostream& out);
+void print_structure(TriangularMPO const& Op, std::ostream& out, double UnityEpsilon);
+
+inline
+void print_structure(TriangularMPO const& Op, std::ostream& out)
+{
+   print_structure(Op, out, DefaultClassifyUnityEpsilon);
+}
 
 #if 0
 // extracts a single column from a triangular operator.  Result is an Nx1 row-vector operator

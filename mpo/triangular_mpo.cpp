@@ -121,13 +121,13 @@ void optimize(TriangularMPO& Op)
 }
 
 
-void print_structure(TriangularMPO const& Op, std::ostream& out)
+void print_structure(TriangularMPO const& Op, std::ostream& out, double UnityEpsilon)
 {
    out << "TriangularMPO has " << Op.size() << " sites\n";
    for (int i = 0; i < Op.size(); ++i)
    {
       out << "Site " << i << " dimension " << Op[i].size1() << " x " << Op[i].size2() << '\n';
-      print_structure(Op[i], out);
+      print_structure(Op[i], out, UnityEpsilon);
    }
 }
 
