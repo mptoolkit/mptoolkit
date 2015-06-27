@@ -62,8 +62,8 @@ void ShowMoments(std::vector<Polynomial<std::complex<double> > > const& Moments,
 	 std::cout << "#magnitude              ";
       if (ShowArgument)
 	 std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
+      std::cout << '\n';
    }
-   std::cout << '\n';
    std::cout << std::left;
 
    for (unsigned n = 0; n < Moments.size(); ++n)
@@ -78,7 +78,7 @@ void ShowMoments(std::vector<Polynomial<std::complex<double> > > const& Moments,
    }
 }
 
-void ShowCumulants(std::vector<std::complex<double> > const& Cumulants, 
+void ShowCumulants(std::vector<std::complex<double> > const& Cumulants,
 		   bool Quiet, bool Columns, bool ShowRealPart, bool ShowImagPart, 
 		   bool ShowMagnitude, bool ShowArgument, bool ShowRadians)
 {
@@ -93,8 +93,8 @@ void ShowCumulants(std::vector<std::complex<double> > const& Cumulants,
 	 std::cout << "#magnitude              ";
       if (ShowArgument)
 	 std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
+      std::cout << '\n';
    }
-   std::cout << '\n';
    std::cout << std::left;
    for (unsigned n = 1; n < Cumulants.size(); ++n)
    {
@@ -107,7 +107,8 @@ void ShowCumulants(std::vector<std::complex<double> > const& Cumulants,
 // given an array of moment polynomials (ordered by degree, and in multiples of the
 // degree of the first moment), calculate the corresponding cumulants
 std::vector<std::complex<double> >
-MomentsToCumulants(std::vector<Polynomial<std::complex<double> > > const& Moments)
+MomentsToCumulants(std::vector<Polynomial<std::complex<double> > > const& Moments,
+		   double Epsilon = 1E-15, bool Quiet = false)
 {
    int const Degree = Moments.back().degree();
    int const FirstMoment = Moments.front().degree();
@@ -137,7 +138,8 @@ MomentsToCumulants(std::vector<Polynomial<std::complex<double> > > const& Moment
    {
       // we have only every second moment
       // mu_2 = kappa_2 L + kappa_1^2 L^2
-      std::cout << "#WARNING: sign of kappa_1 is unspecified.\n";
+      (Quiet ? std::cerr : std::cout)
+	 << "#WARNING: sign of kappa_1 is unspecified.\n";
       Cumulants[1] = std::sqrt(Moments[0][2]); 
       Cumulants[2] = Moments[0][1];
 
@@ -147,7 +149,19 @@ MomentsToCumulants(std::vector<Polynomial<std::complex<double> > > const& Moment
 	 // mu_4 = kappa_4 L + (4 \kappa_3 \kappa_1 + 3 \kappa_2^2) L^2 
 	 //        + 6 \kappa_2 \kappa_1^2 L^3 + \kappa_1^4 L^4
 	 // NOTE: we cannot get the sign of kappa_3 correct in this case
-	 std::cout << "#WARNING: sign of kappa_3 is unspecified.\n";
+	 (Quiet ? std::cerr : std::cout)
+	    << "#WARNING: sign of kappa_3 is unspecified.\n";
+	 // if kappa_1 is very small then we can have a catastrophic loss of precision here.
+	 // The subtraction mu_1(2) - 3*kappa_2^2 may be very small.
+	 std::complex<double> Diff = Moments[1][2] - 3.0*Cumulants[2]*Cumulants[2];
+	 double Eps = std::abs(Diff) / (std::abs(Moments[1][2]) 
+					+ std::abs(3.0*Cumulants[2]*Cumulants[2]));
+	 if (Eps < Epsilon*1000)
+	 {
+	    (Quiet ? std::cerr : std::cout)
+	       << "# *** WARNING *** catastrophic loss of precision calculating kappa_3 *** \n";
+	 }
+	 DEBUG_TRACE(Diff)(Eps)(Epsilon);
 	 Cumulants[3] = (Moments[1][2] - 3.0*Cumulants[2]*Cumulants[2]) / (4.0 * Cumulants[1]);
 	 Cumulants[4] = Moments[1][1];
 
@@ -160,14 +174,16 @@ MomentsToCumulants(std::vector<Polynomial<std::complex<double> > > const& Moment
 	    //        + 45 kappa_2^2 kappa_1^2 L^4
 	    //        + 15 kappa_2 kappa_1^4 L^5
 	    //        + kappa_1^6 L^6  
-	    std::cout << "#WARNING: sign of kappa_5 is unspecified.\n";
+	    (Quiet ? std::cerr : std::cout)
+	       << "#WARNING: sign of kappa_5 is unspecified.\n";
 	    Cumulants[5] = (Moments[2][2] - 15.0 * Cumulants[2]*Cumulants[4] 
 			    - 10.0*Cumulants[3]*Cumulants[3]) / (6.0 * Cumulants[1]);
 	    Cumulants[6] = Moments[2][1];
 	    
 	    if (Moments.size() > 4)
 	    {
-	       std::cout << "#WARNING: Cumulants > 6 are not yet implemented!\n";
+	       (Quiet ? std::cerr : std::cout)
+		  << "#WARNING: Cumulants > 6 are not yet implemented!\n";
 	    }
 	 }
       }
@@ -207,6 +223,7 @@ int main(int argc, char** argv)
    bool Columns = false;
    bool CalculateCumulants = false;
    double UnityEpsilon = DefaultEigenUnityEpsilon;
+   double Tol = 1E-14;
 
    std::cout.precision(getenv_or_default("MP_PRECISION", 14));
    std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
@@ -238,6 +255,8 @@ int main(int argc, char** argv)
 	  "Show the prefactors of each degree in columns rather than rows")
 	 ("quiet,q", prog_opt::bool_switch(&Quiet), "Don't show column headings")
          ("print,p", prog_opt::bool_switch(&Print), "Print the MPO to standard output")
+	 ("tol", prog_opt::value(&Tol),
+	  FormatDefault("Linear solver convergence tolerance", Tol).c_str())
 	 ("unityepsilon", prog_opt::value(&UnityEpsilon),
 	  FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose),
@@ -362,8 +381,8 @@ int main(int argc, char** argv)
       std::vector<Polynomial<std::complex<double> > > Moments;
 
       // first power
-      std::vector<KMatrixPolyType> 
-	 E = SolveMPO_Left(Phi, Psi.QShift, Op, Identity, Rho, Power > 1, UnityEpsilon, Verbose);
+      std::vector<KMatrixPolyType> E;
+      SolveMPO_Left(E, Phi, Psi.QShift, Op, Identity, Rho, Power > 1, Tol, UnityEpsilon, Verbose);
       Moments.push_back(ExtractOverlap(E.back()[1.0], Rho));
 
       // loop over the powers of the operator
@@ -378,13 +397,14 @@ int main(int argc, char** argv)
 	 // to multiply the new operator on the left, where the identity in the top right corner (A_00)
 	 // will correspond to the already calculated terms.
 	 Op = OriginalOp * Op;
-	 E = SolveMPO_Left(Phi, Psi.QShift, E, Op, Identity, Rho, p < Power-1, UnityEpsilon, Verbose);
+	 SolveMPO_Left(E, Phi, Psi.QShift, Op, Identity, Rho, p < Power-1, 
+		       Tol, UnityEpsilon, Verbose);
 	 Moments.push_back(ExtractOverlap(E.back()[1.0], Rho));
       }
 
       if (CalculateCumulants)
       {
-	 std::vector<std::complex<double> > Cumulants = MomentsToCumulants(Moments);
+	 std::vector<std::complex<double> > Cumulants = MomentsToCumulants(Moments, Tol, Quiet);
 
 	 ShowCumulants(Cumulants, Quiet, Columns, ShowRealPart, 
 		       ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);

@@ -23,6 +23,9 @@
 // cases.
 double const DefaultEigenUnityEpsilon = 1E-12;
 
+// default tolerance for eigensolver and linear solver
+double const DefaultTol = 1E-14;
+
 // Solve an MPO in the left-handed sense, as x_L * Op = lambda * x_L
 // We currently assume there is only one eigenvalue 1 of the transfer operator.
 // The LeftIdentity and RightIdentity are the right and left eigenmatrices of the 
@@ -35,25 +38,23 @@ double const DefaultEigenUnityEpsilon = 1E-12;
 // (components perpendicular to the identity) for the last component.  This corresponds
 // to the case where we want to calculate an expectation value only, and we
 // don't need the complete matrix elements.
-std::vector<KMatrixPolyType>
-SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
-              TriangularMPO const& Op, MatrixOperator const& LeftIdentity,
-              MatrixOperator const& RightIdentity, 
-	      bool NeedFinalMatrix,
-	      double EigenUnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
-
-// In this variant we take an initial value for EMatK, which is assumed to be a
-// partial solution - that is, the EMatK vector contains the first EMatK.size() components
-// of the final solution (this isn't checked, but the behaviour will be unspecified otherwise).
+// The EMatK is a vector of the already-converged E-matrix elements.
+// If no matrix elements are known then this can be initialized to the empty matrix.
+// If EMatK is non-empty, then the supplied elements MUST be exactly the 
+// elements of the final solution (this isn't checked, but the behaviour 
+// will be unspecified otherwise).
 // This is intended, eg for calculating higher powers of an MPO, where the solution at a lower
 // power can be re-used to speed up the next power.
-std::vector<KMatrixPolyType>
-SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
-	      std::vector<KMatrixPolyType> EMatK,
+// The final matrix element is EMatK.back()' on exit, the expectation value is the
+// overlap of this matrix element with the density matrix (RightIdentity).
+void
+SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
+	      LinearWavefunction const& Psi, QuantumNumber const& QShift,
               TriangularMPO const& Op, MatrixOperator const& LeftIdentity,
               MatrixOperator const& RightIdentity, 
-	      bool NeedFinalMatrix,
+	      bool NeedFinalMatrix, double Tol = DefaultTol,
 	      double EigenUnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
+
 
 // Solve an MPO in the right-handed sense, as Op * x_R = x_R * lambda
 // We currently assume there is only one eigenvalue 1 of the transfer operator.
