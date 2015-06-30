@@ -8,6 +8,7 @@
 #include "config.h"
 #include <boost/version.hpp>
 #include <boost/algorithm/string.hpp>
+#include <time.h>
 
 #define AS_STRING(X) AS_STRING2(X)
 #define AS_STRING2(X) #X
@@ -45,6 +46,40 @@ inline
 std::string basename(std::string const& FName)
 {
    return std::string(boost::find_last(FName, "/").begin(), FName.end());
+}
+
+// Escape an argument for bash (eg, to print the command-line arguments)
+inline
+std::string
+EscapeArgument(std::string const& s)
+{
+   if (s.find_first_of(" |#^&;<>\n\t(){}[]$\\`'") != std::string::npos)
+   {
+      std::string Result = s;
+      // escape some special characters explicitly
+      boost::algorithm::replace_all(Result, "\\", "\\\\");
+      boost::algorithm::replace_all(Result, "\"", "\\\"");
+      boost::algorithm::replace_all(Result, "$", "\\$");
+      return '"' + Result + '"';
+   }
+   else
+      return s;
+}
+
+// Print a useful preamble, consisting of the
+// program name and arguments, and the date.
+inline
+void print_preamble(std::ostream& out, int argc, char** argv)
+{
+   out << "#" << EscapeArgument(argv[0]);
+   for (int i = 1; i < argc; ++i)
+      out << ' ' << EscapeArgument(argv[i]);
+   time_t now = time(NULL);
+   char s[200];
+   int const max = 200;
+   strftime(s, max, "%a, %d %b %Y %T %z", localtime(&now));
+   out << "\n#Date: " << s;
+   out << std::endl;
 }
 
 #endif

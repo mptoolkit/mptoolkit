@@ -19,6 +19,8 @@
 #include "mps/momentum_operations.h"
 #include "mp-algorithms/triangular_mpo_solver.h"
 #include "common/prog_opt_accum.h"
+#include <boost/algorithm/string.hpp>
+#include <time.h>
 
 namespace prog_opt = boost::program_options;
 
@@ -139,7 +141,7 @@ MomentsToCumulants(std::vector<Polynomial<std::complex<double> > > const& Moment
       // we have only every second moment
       // mu_2 = kappa_2 L + kappa_1^2 L^2
       (Quiet ? std::cerr : std::cout)
-	 << "#WARNING: sign of kappa_1 is unspecified.\n";
+	 << "#WARNING: sign of kappa_1 is unspecified, choosing +ve value.\n";
       Cumulants[1] = std::sqrt(Moments[0][2]); 
       Cumulants[2] = Moments[0][1];
 
@@ -150,7 +152,7 @@ MomentsToCumulants(std::vector<Polynomial<std::complex<double> > > const& Moment
 	 //        + 6 \kappa_2 \kappa_1^2 L^3 + \kappa_1^4 L^4
 	 // NOTE: we cannot get the sign of kappa_3 correct in this case
 	 (Quiet ? std::cerr : std::cout)
-	    << "#WARNING: sign of kappa_3 is unspecified.\n";
+	    << "#WARNING: sign of kappa_3 is relative to the sign of kappa_1.\n";
 	 // if kappa_1 is very small then we can have a catastrophic loss of precision here.
 	 // The subtraction mu_1(2) - 3*kappa_2^2 may be very small.
 	 std::complex<double> Diff = Moments[1][2] - 3.0*Cumulants[2]*Cumulants[2];
@@ -159,10 +161,10 @@ MomentsToCumulants(std::vector<Polynomial<std::complex<double> > > const& Moment
 	 if (Eps < Epsilon*1000)
 	 {
 	    (Quiet ? std::cerr : std::cout)
-	       << "# *** WARNING *** catastrophic loss of precision calculating kappa_3 *** \n";
+	       << "# *** WARNING *** catastrophic loss of precision in kappa_3 *** \n";
 	 }
 	 DEBUG_TRACE(Diff)(Eps)(Epsilon);
-	 Cumulants[3] = (Moments[1][2] - 3.0*Cumulants[2]*Cumulants[2]) / (4.0 * Cumulants[1]);
+	 Cumulants[3] = (Diff) / (4.0 * Cumulants[1]);
 	 Cumulants[4] = Moments[1][1];
 
 	 if (Moments.size() > 3)
@@ -175,7 +177,7 @@ MomentsToCumulants(std::vector<Polynomial<std::complex<double> > > const& Moment
 	    //        + 15 kappa_2 kappa_1^4 L^5
 	    //        + kappa_1^6 L^6  
 	    (Quiet ? std::cerr : std::cout)
-	       << "#WARNING: sign of kappa_5 is unspecified.\n";
+	       << "#WARNING: sign of kappa_5 is relative to the sign of kappa_1.\n";
 	    Cumulants[5] = (Moments[2][2] - 15.0 * Cumulants[2]*Cumulants[4] 
 			    - 10.0*Cumulants[3]*Cumulants[3]) / (6.0 * Cumulants[1]);
 	    Cumulants[6] = Moments[2][1];
@@ -290,12 +292,7 @@ int main(int argc, char** argv)
       }
 
       if (!Quiet)
-      {
-	 std::cout << "#" << argv[0];
-	 for (int i = 1; i < argc; ++i)
-	    std::cout << ' ' << argv[i];
-	 std::cout << std::endl;
-      }
+	 print_preamble(std::cout, argc, argv);
       
       // If no output switches are used, default to showing everything
       if (!ShowRealPart && !ShowImagPart && !ShowMagnitude
