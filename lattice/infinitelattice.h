@@ -13,66 +13,121 @@
 #define MPTOOLKIT_LATTICE_INFINITELATTICE_H
 
 #include "unitcell.h"
-#include "mpo/triangular_mpo.h"
-#include "mpo/product_mpo.h"
+#include "mpo/infinite_mpo.h"
 #include <vector>
 #include "pheap/pvalueptr.h"
-
-// InfiniteMPO is currently a typedef for TriangularMPO,
-// but will eventually be some kind of variant for a TriangularMPO and ProductMPO
-typedef TriangularMPO InfiniteMPO;
+#include "lattice/function.h"
 
 class InfiniteLattice
 {
    public:
-      typedef std::map<std::string, TriangularMPO> triangular_map_type;
-      typedef triangular_map_type::const_iterator  const_triangular_iterator;
+      typedef InfiniteMPO                operator_type;
+      typedef Function::OperatorFunction function_type;
+      typedef Function::Argument         argument_type;
 
-      typedef std::map<std::string, TriangularMPO> product_map_type;
-      typedef triangular_map_type::const_iterator  const_product_iterator;
+   private:
+      typedef std::map<std::string, operator_type>    OperatorListType;
+      typedef std::map<std::string, function_type>    FunctionListType;
+      typedef Function::ArgumentList                  ArgumentListType;
+
+   public:
+      typedef OperatorListType::iterator        operator_iterator;
+      typedef OperatorListType::const_iterator  const_operator_iterator;
+
+      typedef FunctionListType::iterator        function_iterator;
+      typedef FunctionListType::const_iterator  const_function_iterator;
+
+      typedef ArgumentListType::iterator        argument_iterator;
+      typedef ArgumentListType::const_iterator  const_argument_iterator;
 
       InfiniteLattice();
 
       explicit InfiniteLattice(UnitCell const& uc);
 
+      InfiniteLattice(std::string const& Description, UnitCell const& uc);
+
       UnitCell const& GetUnitCell() const { return UnitCell_; }
 
-      // TriangularMPO functions
+      std::string Description() const { return Description_; }
+      void SetDescription(std::string s) { Description_ = s; }
 
-      // returns true if the given InfiniteMPO exists
+      // operators
+
+      const_operator_iterator begin_operator() const
+      { return Operators_.begin(); }
+      const_operator_iterator end_operator() const
+      { return Operators_.end(); }
+
+      // returns true if the given operator exits
+      bool operator_exists(std::string const& s) const;
+
+      // returns true if the given operator exists, and is a TriangularMPO
       bool triangular_operator_exists(std::string const& s) const;
 
-      // Lookup the named opreator
-      TriangularMPO& Triangular(std::string const& Op);
-      TriangularMPO const& Triangular(std::string const& Op) const;
-
-      TriangularMPO& operator[](std::string const& Op) { return this->Triangular(Op); }
-      TriangularMPO const& operator[](std::string const& Op) const { return this->Triangular(Op); }
-
-      // invoke the given function
-      TriangularMPO TriangularOperatorFunction(std::string const& Op,
-					       std::vector<std::complex<double> > const& Params) const;	 
-
-      // iterators over the infinite support operators
-      const_triangular_iterator begin_triangular() const { return OperatorMap_.begin(); }
-      const_triangular_iterator end_triangular() const { return OperatorMap_.end(); }
-
-      // Add the operator to the lattice
-      void add_triangular(std::string const& Name, InfiniteMPO const& Op);
-
-      // ProductMPO functions
-
+      // returns true if the given operator exists, and is a ProductMPO
       bool product_operator_exists(std::string const& s) const;
 
-      ProductMPO const& Product(std::string const& Op) const;
-      ProductMPO& Product(std::string const& Op);
+      // Lookup the named operator
+      InfiniteMPO& operator[](std::string const& Op);
+      InfiniteMPO const& operator[](std::string const& Op) const;
+      TriangularMPO const& as_triangular_mpo(std::string const& Op) const;
+      ProductMPO const& as_product_mpo(std::string const& Op) const;
 
-      ProductMPO ProductOperatorFunction(std::string const& Op,
-					 std::vector<std::complex<double> > const& Params) const;	 
+      // arguments
+
+      bool arg_empty() const { return Arguments_.empty(); }
+      
+      const_argument_iterator begin_arg() const { return Arguments_.begin(); }
+      const_argument_iterator end_arg() const { return Arguments_.end(); }
+
+      const_argument_iterator find_arg(std::string const& s) const
+      { return Arguments_.find(s); }
+
+      argument_iterator find_arg(std::string const& s)
+      { return Arguments_.find(s); }
+
+      std::complex<double> arg(std::string const& a) const;
+
+      std::complex<double>& arg(std::string const& a) 
+      { return Arguments_[a]; }
+
+      // functions
+
+      bool function_empty() const { return Functions_.empty(); }
+ 
+      // iterators
+      const_function_iterator begin_function() const { return Functions_.begin(); }
+      const_function_iterator end_function() const { return Functions_.end(); }
+
+      // find
+      const_function_iterator find_function(std::string const& s) const 
+      { return Functions_.find(s); }
+
+      bool function_exists(std::string const& s) const 
+      { return Functions_.find(s) != Functions_.end(); }
+
+      // lookup
+      function_type& func(std::string const& s) { return Functions_[s]; }
+
+      function_type func(std::string const& s) const;
+
+      // evaluate a function
+      InfiniteMPO
+      eval_function(Function::OperatorFunction const& Func,
+		    Function::ParameterList const& Params) const;
+
+      InfiniteMPO
+      eval_function(std::string const& Func,
+		    Function::ParameterList const& Params) const;
 
    private:
+      std::string Description_;
+      std::string CommandLine_;
+      std::string Timestamp_;
       UnitCell UnitCell_;
-      triangular_map_type OperatorMap_;
+      OperatorListType Operators_;
+      ArgumentListType Arguments_;
+      FunctionListType Functions_;
 
    friend PStream::opstream& operator<<(PStream::opstream& out, InfiniteLattice const& L);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, InfiniteLattice& L);
@@ -98,6 +153,8 @@ TriangularMPO sum_kink(SiteListType const& SiteList, FiniteMPO const& Kink,
 TriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op, int UnitCellSize);
 
 TriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op);
+
+// sum_k
 
 TriangularMPO sum_k(SiteListType const& SiteList, std::complex<double> const& k,
 		       FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);

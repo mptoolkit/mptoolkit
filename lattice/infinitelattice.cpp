@@ -1,6 +1,7 @@
 // -*- C++ -*- $Id$
 
 #include "infinitelattice.h"
+#include "lattice/infinite-parser.h"
 
 InfiniteLattice::InfiniteLattice()
 {
@@ -11,89 +12,141 @@ InfiniteLattice::InfiniteLattice(UnitCell const& uc)
 {
 }
 
+InfiniteLattice::InfiniteLattice(std::string const& Description, UnitCell const& uc)
+   : Description_(Description), UnitCell_(uc)
+{
+}
+
+// operators
+
+
+bool
+InfiniteLattice::operator_exists(std::string const& s) const
+{
+   return (Operators_.find(s) != Operators_.end());
+}
+
 bool
 InfiniteLattice::triangular_operator_exists(std::string const& s) const
 {
-   triangular_map_type::const_iterator I = OperatorMap_.find(s);
-   return I != OperatorMap_.end();
-}
-
-TriangularMPO const&
-InfiniteLattice::Triangular(std::string const& Op) const
-{
-   triangular_map_type::const_iterator I = OperatorMap_.find(Op);
-   CHECK(I != OperatorMap_.end())("Operator does not exist in the lattice!")(Op);
-   return I->second;
-}
-
-TriangularMPO&
-InfiniteLattice::Triangular(std::string const& Op)
-{
-   triangular_map_type::iterator I = OperatorMap_.find(Op);
-   if (I == OperatorMap_.end())
-   {
-      OperatorMap_[Op] = make_zero(*this->GetUnitCell().GetSiteList());
-      I = OperatorMap_.find(Op);
-   }
-   return I->second;
-}
-
-TriangularMPO
-InfiniteLattice::TriangularOperatorFunction(std::string const& Op,
-					    std::vector<std::complex<double> > const& Params) const
-{
-   PANIC("Triangular operator functions are not yet implemented");
-   return TriangularMPO();
-}
-
-void
-InfiniteLattice::add_triangular(std::string const& Name, InfiniteMPO const& Op)
-{
-   OperatorMap_[Name] = Op;
+   OperatorListType::const_iterator I = Operators_.find(s);
+   return I != Operators_.end() && I->second.is_triangular();
 }
 
 bool
 InfiniteLattice::product_operator_exists(std::string const& s) const
 {
-   return false;
+   OperatorListType::const_iterator I = Operators_.find(s);
+   return I != Operators_.end() && I->second.is_product();
 }
 
-ProductMPO const& 
-InfiniteLattice::Product(std::string const& Op) const
+InfiniteMPO const&
+InfiniteLattice::operator[](std::string const& Op) const
 {
-   static ProductMPO x;
-   return x;
+   OperatorListType::const_iterator I = Operators_.find(Op);
+   CHECK(I != Operators_.end())("Operator does not exist in the lattice!")(Op);
+   return I->second;
 }
 
-
-ProductMPO& 
-InfiniteLattice::Product(std::string const& Op)
+InfiniteMPO&
+InfiniteLattice::operator[](std::string const& Op)
 {
-   static ProductMPO x;
-   return x;
+   return Operators_[Op];
 }
 
-ProductMPO 
-InfiniteLattice::ProductOperatorFunction(std::string const& Op,
-			std::vector<std::complex<double> > const& Params) const
+TriangularMPO const&
+InfiniteLattice::as_triangular_mpo(std::string const& Op) const
 {
-   PANIC("Product operator functions are not yet implemented");
-   return ProductMPO();
+   OperatorListType::const_iterator I = Operators_.find(Op);
+   CHECK(I != Operators_.end())("Operator does not exist in the lattice!")(Op);
+   return I->second.as_triangular_mpo();
 }
+
+ProductMPO const&
+InfiniteLattice::as_product_mpo(std::string const& Op) const
+{
+   OperatorListType::const_iterator I = Operators_.find(Op);
+   CHECK(I != Operators_.end())("Operator does not exist in the lattice!")(Op);
+   return I->second.as_product_mpo();
+}
+
+// arguments
+
+std::complex<double>
+InfiniteLattice::arg(std::string const& a) const
+{
+   const_argument_iterator I = this->find_arg(a);
+   if (I != this->end_arg())
+      return I->second;
+   return 0.0;
+}
+
+// functions
+
+InfiniteLattice::function_type
+InfiniteLattice::func(std::string const& s) const
+{
+   const_function_iterator I = this->find_function(s);
+   CHECK(I != this->end_function())("Function not found")(s);
+   return I->second;
+}
+
+// functor to parse default arguments of a UnitCell operator
+struct ParseInfiniteArgument
+{
+   ParseInfiniteArgument(InfiniteLattice const& Lattice_) : Lattice(Lattice_) {}
+
+   std::complex<double> operator()(Function::ArgumentList const& Args,
+				   std::string const& Str) const
+   {
+      return ParseInfiniteNumber(Lattice, Str, Args);
+   }
+
+   InfiniteLattice const& Lattice;
+};
+
+InfiniteMPO
+InfiniteLattice::eval_function(Function::OperatorFunction const& Func,
+			       Function::ParameterList const& Params) const
+{
+   TRACE(Params);
+   Function::ArgumentList Args = GetArguments(Func.Args, Params, 
+					      ParseInfiniteArgument(*this));
+   TRACE(Args.size());
+   return ParseInfiniteOperator(*this, Func.Def, Args);
+}
+
+InfiniteMPO
+InfiniteLattice::eval_function(std::string const& Func,
+			       Function::ParameterList const& Params) const
+{
+   return this->eval_function(this->func(Func), Params);
+}
+
 
 PStream::opstream&
 operator<<(PStream::opstream& out, InfiniteLattice const& L)
 {
+   out << L.Description_;
+   out << L.CommandLine_;
+   out << L.Timestamp_;
    out << L.UnitCell_;
-   out << L.OperatorMap_;
+   out << L.Operators_;
+   out << L.Arguments_;
+   out << L.Functions_;
    return out;
 }
 
 PStream::ipstream&
 operator>>(PStream::ipstream& in, InfiniteLattice& L)
 {
+   in >> L.Description_;
+   in >> L.CommandLine_;
+   in >> L.Timestamp_;
    in >> L.UnitCell_;
-   in >> L.OperatorMap_;
+   in >> L.Operators_;
+   in >> L.Arguments_;
+   in >> L.Functions_;
    return in;
 }
 

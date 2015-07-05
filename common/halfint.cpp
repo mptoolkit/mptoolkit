@@ -2,6 +2,7 @@
 
 #include "halfint.h"
 #include <iomanip>
+#include <sstream>
 
 std::ostream& operator<<(std::ostream& out, const half_int& H)
 {
@@ -38,4 +39,18 @@ std::istream& operator>>(std::istream& in, half_int& H)
 void half_int::throw_cannot_convert()
 {
    throw std::runtime_error("half_int: cannot convert odd half_int to integer!"); 
+}
+
+std::string to_string_fraction(half_int h)
+{
+   std::ostringstream s;
+   if (is_integral(h))
+   {
+      s << to_int_assert(h);
+   }
+   else
+   {
+      s << h.twice() << "/2";
+   }
+   return s.str();
 }

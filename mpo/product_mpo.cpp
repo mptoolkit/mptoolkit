@@ -108,19 +108,20 @@ operator*(ProductMPO const& x, ProductMPO const& y)
    return Result;
 }
 
+ProductMPO& operator*=(ProductMPO& x, ProductMPO const& y)
+{
+   x = x*y;
+   return x;
+}
+
 ProductMPO inner(ProductMPO const& x, ProductMPO const& y)
 {
-   if (x.empty())
-      return x;
-   if (y.empty())
-      return y;
-   CHECK_EQUAL(x.size(), y.size());
-   ProductMPO Result(x.size());
-   for (int i = 0; i < x.size(); ++i)
-   {
-      Result[i] = aux_tensor_prod(adjoint(x[i]), y[i]);
-   }
-   return Result;
+   return x*y;
+}
+
+ProductMPO outer(ProductMPO const& x, ProductMPO const& y)
+{
+   return x*y;
 }
 
 ProductMPO
@@ -163,6 +164,17 @@ adjoint(ProductMPO const& x)
    for (ProductMPO::iterator I = Result.begin(); I != Result.end(); ++I)
    {
       *I = adjoint(*I);
+   }
+   return Result;
+}
+
+ProductMPO
+inv_adjoint(ProductMPO const& x)
+{
+   ProductMPO Result(x);
+   for (ProductMPO::iterator I = Result.begin(); I != Result.end(); ++I)
+   {
+      *I = inv_adjoint(*I);
    }
    return Result;
 }

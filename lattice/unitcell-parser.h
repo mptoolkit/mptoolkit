@@ -20,10 +20,37 @@
 #include "lattice/unitcell_mpo.h"
 #include "lattice/infinitelattice.h"
 
+typedef boost::variant<UnitCellMPO, std::complex<double> >
+UnitCellElementType;
+
+UnitCellElementType
+ParseUnitCellElement(UnitCell const& Cell, int NumCells, std::string const& str,
+		     Function::ArgumentList const& Args = Function::ArgumentList());
+
 UnitCellMPO
-ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& str);
+ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& str,
+		      Function::ArgumentList const& Args = Function::ArgumentList());
+
+std::complex<double>
+ParseUnitCellNumber(UnitCell const& Cell, int NumCells, std::string const& str,
+		    Function::ArgumentList const& Args = Function::ArgumentList());
 
 std::pair<UnitCellMPO, InfiniteLattice>
 ParseUnitCellOperatorAndLattice(std::string const& Str);
+   
+namespace Parser
+{
+
+// conversion of an element_type to a c-number
+inline
+std::complex<double>
+as_number(boost::variant<std::complex<double>, UnitCellMPO> const& x)
+{
+   return boost::get<std::complex<double> >(x);
+}
+
+} // namespace Parser
+
+
 
 #endif

@@ -57,17 +57,17 @@ int main(int argc, char** argv)
 
       // (Q.Q) = -1/3 (S^2 . S^2) + (S.S)^2 + 1/2 S.S
 
-      TriangularMPO& H_dipole = Lattice["H_dipole"];
-      TriangularMPO& H_quad   = Lattice["H_quad"];
-      TriangularMPO& H_hex    = Lattice["H_hex"];
-      TriangularMPO& H_oct    = Lattice["H_oct"];
+      InfiniteMPO& H_dipole = Lattice["H_dipole"];
+      InfiniteMPO& H_quad   = Lattice["H_quad"];
+      InfiniteMPO& H_hex    = Lattice["H_hex"];
+      InfiniteMPO& H_oct    = Lattice["H_oct"];
 
       H_dipole = sum_unit(inner(S(0), S(1)));
       H_quad   = sum_unit(inner(Q(0), Q(1)));
       H_hex    = sum_unit(inner(T(0), T(1)));
       H_oct    = sum_unit(inner(F(0), F(1)));
 
-      TriangularMPO c = sum_unit(I(0)); // constant energy shift
+      InfiniteMPO c = sum_unit(I(0)); // constant energy shift
 
       // These magic values for the spin 2 model projectors come from solving the equations
       // in misc/spin2.cpp

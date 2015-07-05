@@ -41,9 +41,12 @@ class UnitCellOperator
       // conversion to a UnitCellMPO, as an operator spanning the 0'th cell
       operator UnitCellMPO&();
 
-      operator UnitCellMPO const&() const;
+      operator UnitCellMPO() const;
 
       UnitCellOperator& operator=(UnitCellMPO const& Op);
+
+      // we could define this - conversion from complex to an operator
+      //      UnitCellOperator& operator=(std::complex<double> c);
 
    private:
       UnitCell* Cell;

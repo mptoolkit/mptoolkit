@@ -11,7 +11,7 @@ SpinSU2(half_int Spin, std::string const& Sym = "S")
    QuantumNumbers::QNConstructor<QuantumNumbers::SU2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator S, Sn, R, P, I, Q, T, F;
-   LatticeSite Site;
+   LatticeSite Site("SU(2) Spin "+boost::lexical_cast<std::string>(S));
 
    std::string SpinName = boost::lexical_cast<std::string>(Spin);
    Basis.push_back(SpinName, QN(Spin));

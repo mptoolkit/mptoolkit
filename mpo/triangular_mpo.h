@@ -240,6 +240,9 @@ TriangularMPO prod(TriangularMPO const& x, TriangularMPO const& y, QuantumNumber
 // dot product - takes into account the multiplicity to rescale the result
 TriangularMPO dot(TriangularMPO const& x, TriangularMPO const& y);
 
+// inner product - equivalent to dot(adjoint(x),y)
+TriangularMPO inner(TriangularMPO const& x, TriangularMPO const& y);
+
 // cross product (if it exists)
 TriangularMPO cross(TriangularMPO const& x, TriangularMPO const& y);
 

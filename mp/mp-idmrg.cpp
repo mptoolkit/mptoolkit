@@ -32,7 +32,7 @@
 
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
-#include "lattice/triangular-parser.h"
+#include "lattice/infinite-parser.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -281,11 +281,13 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
    DEBUG_TRACE("Spurious part")(inner_prod(Guess.back(), Rho));
    Guess.back() -= inner_prod(Guess.back(), Rho) * Guess.front();
 
+#if 0
 #if !defined(NDEBUG)
    KMatrixPolyType CheckEMat = SolveMPO_Left(Psi, QShift, Op, delta_shift(Ident, QShift), Rho, 1);
    ComplexPolyType EValues = ExtractOverlap(CheckEMat[std::complex<double>(1.0,0.0)], delta_shift(Rho, QShift));
    TRACE(EValues);
    TRACE(CheckEMat[std::complex<double>(1.0,0.0)]);
+#endif
 #endif
 
    return Energy;

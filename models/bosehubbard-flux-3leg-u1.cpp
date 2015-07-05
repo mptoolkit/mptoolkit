@@ -131,6 +131,12 @@ int main(int argc, char** argv)
       Lattice["H_K"] = sum_unit(HK);
       Lattice["H_Kc"] = sum_unit(HKc);
       Lattice["H_U"] = sum_unit(HU);
+
+      // For parameters J, K = J_\perp, U, alpha, the Hamiltonian is:
+      // J*(H_J1 + cos(pi*alpha)*(H_J2 + H_J0) + sin(pi*alpha)*(H_Jc2 - H_Jc0)) + K*H_K + U*H_U
+
+      Lattice.func("H")("K", arg("alpha")=0.0, arg("U")=0.0, arg("J")=1.0)
+	 = "J*(H_J1 + cos(pi*alpha)*(H_J2 + H_J0) + sin(pi*alpha)*(H_Jc2 - H_Jc0)) + K*H_K + U*H_U";
       
       pheap::ExportObject(FileName, Lattice);
    }

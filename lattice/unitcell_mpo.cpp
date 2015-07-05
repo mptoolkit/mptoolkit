@@ -294,6 +294,12 @@ UnitCellMPO adjoint(UnitCellMPO const& x)
    return UnitCellMPO(x.GetSiteList(), adjoint(x.MPO()), x.Commute(), x.offset());
 }
 
+// Inverse Adjoint
+UnitCellMPO inv_adjoint(UnitCellMPO const& x)
+{
+   return UnitCellMPO(x.GetSiteList(), inv_adjoint(x.MPO()), x.Commute(), x.offset());
+}
+
 UnitCellMPO MakeIdentityFrom(UnitCellMPO const& x)
 {
    return UnitCellMPO(x.GetSiteList(), identity_mpo(*x.GetSiteList()), LatticeCommute::Bosonic, x.offset());

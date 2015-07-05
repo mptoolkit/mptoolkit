@@ -549,6 +549,17 @@ adjoint(FiniteMPO const& x)
 }
 
 FiniteMPO
+inv_adjoint(FiniteMPO const& x)
+{
+   FiniteMPO Result(x);
+   for (FiniteMPO::iterator I = Result.begin(); I != Result.end(); ++I)
+   {
+      *I = inv_adjoint(*I);
+   }
+   return Result;
+}
+
+FiniteMPO
 FiniteMPO::make_identity(std::vector<BasisList> const& Basis)
 {
    FiniteMPO Result(Basis.size());
@@ -620,7 +631,7 @@ FiniteMPO identity_mpo(SiteListType const& SiteList, QuantumNumbers::QuantumNumb
    for (unsigned i = 0; i < SiteList.size(); ++i)
    {
       Result[i] = OperatorComponent(SiteList[i].Basis1(), b, b);
-      Result[i](0,0) = SiteList[i]["I"];
+      Result[i](0,0) = SiteList[i].identity();
    }
    return Result;
 }
@@ -646,8 +657,8 @@ FiniteMPO string_mpo(SiteListType const& SiteList,
       {
 	 WARNING("JW-string operator doesn't exist at a lattice site, using the identity")(i)(OpName);
       }
-      SimpleOperator Op = SiteList[i].operator_exists(OpName) ? SiteList[i][OpName] 
-	 : SiteList[i]["I"];
+      SimpleOperator Op = SiteList[i].operator_exists(OpName) ? SiteList[i][OpName]
+	 : SiteList[i].identity();
       Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Vacuum, Vacuum);
       Result[i](0,0) = Op;
    }

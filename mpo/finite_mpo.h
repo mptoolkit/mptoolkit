@@ -186,6 +186,9 @@ FiniteMPO conj(FiniteMPO const& x);
 // Adjoint
 FiniteMPO adjoint(FiniteMPO const& x);
 
+// Inverse Adjoint
+FiniteMPO inv_adjoint(FiniteMPO const& x);
+
 // optimize the representation
 void optimize(FiniteMPO& Op);
 

@@ -10,13 +10,13 @@ inline
 UnitCellMPO
 UnitCellOperatorAtCell::operator[](int i) const
 {
-   return Cell->LocalOperator(Name, n, i);
+   return Cell->local_operator(Name, n, i);
 }
 
 inline
 UnitCellOperatorAtCell::operator UnitCellMPO() const
 {
-   return Cell->OperatorAtCell(Name, n);
+   return (*Cell)(Name, n);
 }
 
 
@@ -37,25 +37,25 @@ inline
 UnitCellMPO
 UnitCellOperator::operator[](int i) const
 {
-   return Cell->LocalOperator(Name, i);
+   return Cell->local_operator(Name, i);
 }
 
 inline
 UnitCellOperator::operator UnitCellMPO&()
 {
-   return Cell->Operator(Name);
+   return (*Cell)[Name];
 }
 
 inline
-UnitCellOperator::operator UnitCellMPO const&() const
+UnitCellOperator::operator UnitCellMPO() const
 {
-   return Cell->Operator(Name);
+   return (*Cell)[Name];
 }
 
 inline
 UnitCellOperator&
 UnitCellOperator::operator=(UnitCellMPO const& Op)
 {
-   Cell->Operator(Name) = Op;
+   (*Cell)[Name] = Op;
    return *this;
 }

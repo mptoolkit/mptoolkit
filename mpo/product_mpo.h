@@ -116,6 +116,10 @@ ProductMPO repeat(ProductMPO const& Op, int Count);
 
 // multiply by scalar isn't defined for ProductMPO
 
+ProductMPO& operator*=(ProductMPO& x, ProductMPO const& y);
+
+// ProductMPO always represents a scalar, so we don't need the
+// 3-argument version of prod()
 ProductMPO prod(ProductMPO const& x, ProductMPO const& y);
 ProductMPO operator*(ProductMPO const& x, ProductMPO const& y);
 
@@ -127,6 +131,8 @@ ProductMPO dot(ProductMPO const& x, ProductMPO const& y)
 
 ProductMPO inner(ProductMPO const& x, ProductMPO const& y);
 
+ProductMPO outer(ProductMPO const& x, ProductMPO const& y);
+
 // power of an operator.  Requires n > 1.
 ProductMPO pow(ProductMPO const& x, int n);
 
@@ -135,6 +141,10 @@ ProductMPO conj(ProductMPO const& x);
 
 // Adjoint
 ProductMPO adjoint(ProductMPO const& x);
+ProductMPO inv_adjoint(ProductMPO const& x);
+
+// constructs a ProductMPO as a repeated string of some FiniteMPO
+ProductMPO string(FiniteMPO const& Op);
 
 // Constructs a ProductMPO as the infinite product of translations of Op.
 // Op.size() must be an integer multiple of UnitCellSize,

@@ -259,9 +259,7 @@ int main(int argc, char** argv)
 
       // The default UnitCellSize for output is the wavefunction size
       if (UnitCellSize == 0)
-      {
 	 UnitCellSize = Psi1->Psi.size();
-      }
       double ScaleFactor = double(UnitCellSize) / double(Psi1->Psi.size());
 	 
       ProductMPO StringOp;

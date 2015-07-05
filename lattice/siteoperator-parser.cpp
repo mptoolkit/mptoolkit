@@ -2,14 +2,16 @@
 
 #include "siteoperator-parser.h"
 #include "parser/parser.h"
+#include "function.h"
 
 using namespace Parser;
 
-template <typename element_type>
-struct push_operator
+typedef boost::variant<SiteOperator, std::complex<double> > element_type;
+
+struct push_site_operator
 {
-   push_operator(LatticeSite const& Site_, std::stack<element_type>& eval_)
-      : Site(Site_), eval(eval_) {}
+   push_site_operator(std::stack<element_type>& eval_, LatticeSite const& Site_)
+      : eval(eval_), Site(Site_) {}
 
    void operator()(char const* str, char const* end) const
    {
@@ -19,19 +21,43 @@ struct push_operator
       eval.push(element_type(Site[OpName]));
    }
 
+   std::stack<element_type>& eval;
    LatticeSite const& Site;
-   std::stack<element_type >& eval;
+};
+
+struct eval_function
+{
+   eval_function(std::stack<std::string>& FuncStack_, 
+		 std::stack<Function::ParameterList>& ParamStack_,
+		 std::stack<element_type>& eval_,
+		 LatticeSite const& Site_)
+      : FuncStack(FuncStack_), ParamStack(ParamStack_), eval(eval_), Site(Site_) {}
+
+   void operator()(char const*, char const*) const
+   {
+      eval.push(Site.eval_function(FuncStack.top(), ParamStack.top()));
+      FuncStack.pop();
+      ParamStack.pop();
+   }
+
+   std::stack<std::string>& FuncStack;
+   std::stack<Function::ParameterList>& ParamStack;
+   std::stack<element_type>& eval;
+   LatticeSite const& Site;
 };
 
 struct SiteOperatorParser : public grammar<SiteOperatorParser>
 {
-   typedef boost::variant<complex, SiteOperator> element_type;
    typedef boost::function<element_type(element_type)> unary_func_type;
    typedef boost::function<element_type(element_type, element_type)> binary_func_type;
 
-   typedef std::stack<element_type>     ElementStackType;
-   typedef std::stack<unary_func_type>  UnaryFuncStackType;
-   typedef std::stack<binary_func_type> BinaryFuncStackType;
+   typedef std::stack<element_type>            ElementStackType;
+   typedef std::stack<unary_func_type>         UnaryFuncStackType;
+   typedef std::stack<binary_func_type>        BinaryFuncStackType;
+   typedef std::stack<std::string>             IdentifierStackType;
+   typedef std::stack<std::string>             FunctionStackType;
+   typedef std::stack<Function::ParameterList> ParameterStackType;
+   typedef symbols<complex>                    ArgumentType;
 
    static constants                  constants_p;
    static unary_funcs<element_type>  unary_funcs_p;
@@ -40,15 +66,22 @@ struct SiteOperatorParser : public grammar<SiteOperatorParser>
    SiteOperatorParser(ElementStackType& eval_, 
 		      UnaryFuncStackType& func_stack_,
 		      BinaryFuncStackType& bin_func_stack_,
+		      IdentifierStackType& IdentifierStack_,
+		      FunctionStackType& Functions_,
+		      ParameterStackType& Parameters_,
+		      ArgumentType& Arguments_,
 		      LatticeSite const& Site_)
-      : eval(eval_), func_stack(func_stack_), bin_func_stack(bin_func_stack_), Site(Site_) {}
+      : eval(eval_), func_stack(func_stack_), bin_func_stack(bin_func_stack_), 
+	IdentifierStack(IdentifierStack_), FunctionStack(Functions_),
+	ParameterStack(Parameters_), 
+	Arguments(Arguments_), Site(Site_) {}
    
    template <typename ScannerT>
    struct definition
    {
       definition(SiteOperatorParser const& self)
       {
-	 real = ureal_p[push_real<element_type>(self.eval)];
+	 real = ureal_p[push_value<element_type>(self.eval)];
 	 
 	 imag = lexeme_d[ureal_p >> chset<>("iIjJ")][push_imag<element_type>(self.eval)];
 	 
@@ -56,13 +89,33 @@ struct SiteOperatorParser : public grammar<SiteOperatorParser>
 	 
 	 bracket_expr = '(' >> *((anychar_p - chset<>("()")) | bracket_expr) >> ')';
 	 
-	 //lattice_operator = (identifier >> !bracket_expr)[push_operator(self.Site, self.eval)];
-	 lattice_operator = (identifier)[push_operator<element_type>(self.Site, self.eval)];
+	 lattice_operator = identifier[push_site_operator(self.eval, self.Site)];
+
+	 named_parameter = eps_p(identifier >> '=')
+	    >> identifier[push_identifier(self.IdentifierStack)]
+	    >> '='
+	    >> expression[push_named_parameter<element_type>(self.eval, 
+							     self.IdentifierStack, 
+							     self.ParameterStack)];
+
+	 parameter = expression[push_parameter<element_type>(self.eval, self.ParameterStack)];
+
+	 // parameter_list is a comma-separated list of parameters, may be empty
+	 // at least one parameter
+	 parameter_list = !((named_parameter | parameter) % ',');
 	 
+	 siteoperator_function = eps_p(identifier >> '{')
+	    >> identifier[push_function(self.FunctionStack, self.ParameterStack)]
+	    >> ('{' >> parameter_list >> '}')[eval_function(self.FunctionStack,
+							    self.ParameterStack,
+							    self.eval,
+							    self.Site)];
+
 	 unary_function = 
 	    eps_p(unary_funcs_p >> '(') 
 	    >>  unary_funcs_p[push_unary<element_type>(self.func_stack)]
-	    >>  ('(' >> expression >> ')')[eval_unary<element_type>(self.func_stack, self.eval)];
+	    >>  ('(' >> expression >> ')')[eval_unary<element_type>(self.func_stack, 
+								    self.eval)];
 	 
 	 binary_function = 
 	    eps_p(binary_funcs_p >> '(') 
@@ -73,17 +126,19 @@ struct SiteOperatorParser : public grammar<SiteOperatorParser>
 	 commutator_bracket = 
 	    ('[' >> expression >> ',' >> expression >> ']')[invoke_binary<element_type, 
 							    binary_commutator<element_type> >(self.eval)];
-	 
+
 	 factor =
 	    imag
 	    |   real
 	    |   unary_function
 	    |   binary_function
-	    |   keyword_d[constants_p[push_real<element_type>(self.eval)]]
+	    |   keyword_d[constants_p[push_value<element_type>(self.eval)]]
+	    |   keyword_d[self.Arguments[push_value<element_type>(self.eval)]]
 	    |   commutator_bracket
 	    |   '(' >> expression >> ')'
 	    |   ('-' >> factor)[do_negate<element_type>(self.eval)]
 	    |   ('+' >> factor)
+	    |   siteoperator_function
 	    |   lattice_operator
 	    ;
 	 
@@ -114,34 +169,54 @@ struct SiteOperatorParser : public grammar<SiteOperatorParser>
       }
       
       rule<ScannerT> expression, term, factor, real, imag, operator_literal, unary_function,
-	 binary_function,
+	 binary_function, parameter, named_parameter, parameter_list, siteoperator_function,
 	 bracket_expr, lattice_operator, identifier, pow_term, commutator_bracket;
       rule<ScannerT> const&
       start() const { return expression; }
    };
    
-   std::stack<element_type>& eval;
-   std::stack<unary_func_type>& func_stack;
-   std::stack<binary_func_type>& bin_func_stack;
+   ElementStackType& eval;
+   UnaryFuncStackType& func_stack;
+   BinaryFuncStackType& bin_func_stack;
+   IdentifierStackType& IdentifierStack;
+   FunctionStackType& FunctionStack;
+   ParameterStackType& ParameterStack;
+   ArgumentType& Arguments;
    LatticeSite const& Site;
 };
 
-
 // global variables (static members of SiteOperatorParser)
 constants SiteOperatorParser::constants_p;
-unary_funcs<SiteOperatorParser::element_type> SiteOperatorParser::unary_funcs_p;
-binary_funcs<SiteOperatorParser::element_type> SiteOperatorParser::binary_funcs_p;
+unary_funcs<element_type> SiteOperatorParser::unary_funcs_p;
+binary_funcs<element_type> SiteOperatorParser::binary_funcs_p;
 
-SiteOperator
-ParseSiteOperator(LatticeSite const& Site, std::string const& Str)
+SiteElementType
+ParseSiteElement(LatticeSite const& Site, 
+		 std::string const& Str, 
+		 Function::ArgumentList const& Args)
 {
-   typedef SiteOperatorParser::element_type element_type;
-
-   SiteOperatorParser::ElementStackType ElementStack;
-   SiteOperatorParser::UnaryFuncStackType UnaryFuncStack;
+   SiteOperatorParser::ElementStackType    ElementStack;
+   SiteOperatorParser::UnaryFuncStackType  UnaryFuncStack;
    SiteOperatorParser::BinaryFuncStackType BinaryFuncStack;
+   SiteOperatorParser::IdentifierStackType IdentifierStack;
+   SiteOperatorParser::FunctionStackType   FunctionStack;
+   SiteOperatorParser::ParameterStackType  ParameterStack;
+   SiteOperatorParser::ArgumentType        Arguments;
 
-   SiteOperatorParser Parser(ElementStack, UnaryFuncStack, BinaryFuncStack, Site);
+   // put Args into Arguments
+   for (Function::ArgumentList::const_iterator I = Args.begin(); I != Args.end(); ++I)
+   {
+      Arguments.add(I->first.c_str(), I->second);
+   }
+
+   // Put the lattice args into Arguments - this won't override existing values
+   for (LatticeSite::const_argument_iterator I = Site.begin_arg(); I != Site.end_arg(); ++I)
+   {
+      Arguments.add(I->first.c_str(), I->second);
+   }
+
+   SiteOperatorParser Parser(ElementStack, UnaryFuncStack, BinaryFuncStack, 
+			     IdentifierStack, FunctionStack, ParameterStack, Arguments, Site);
 
    parse_info<> info = parse(Str.c_str(), Parser, space_p);
    if (!info.full)
@@ -149,12 +224,24 @@ ParseSiteOperator(LatticeSite const& Site, std::string const& Str)
       PANIC("Operator parser failed, stopped at")(info.stop);
    }
 
+   CHECK(!ElementStack.empty());
    CHECK(UnaryFuncStack.empty());
    CHECK(BinaryFuncStack.empty());
-   CHECK(!ElementStack.empty());
+   CHECK(FunctionStack.empty());
+   CHECK(ParameterStack.empty());
    element_type Result = ElementStack.top();
    ElementStack.pop();
    CHECK(ElementStack.empty());
+
+   return Result;
+}
+
+SiteOperator
+ParseSiteOperator(LatticeSite const& Site, 
+		  std::string const& Str, 
+		  Function::ArgumentList const& Args)
+{
+   SiteElementType Result = ParseSiteElement(Site, Str, Args);
 
    SiteOperator* Op = boost::get<SiteOperator>(&Result);
    if (Op)
@@ -163,5 +250,16 @@ ParseSiteOperator(LatticeSite const& Site, std::string const& Str)
    }
    // else, we also handle the case where the operator is a number
    complex x = boost::get<complex>(Result);
-   return x*Site["I"];
+   return x*Site.identity();
+}
+
+std::complex<double>
+ParseSiteNumber(LatticeSite const& Site, 
+		std::string const& Str,
+		Function::ArgumentList const& Args)
+{
+   SiteElementType Result = ParseSiteElement(Site, Str, Args);
+   complex* x = boost::get<complex>(&Result);
+   CHECK(x)("expression is an operator, but a c-number was expected!")(Str);
+   return *x;
 }

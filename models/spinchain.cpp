@@ -50,7 +50,7 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinSite(S);
       UnitCell Cell(Site);
-      InfiniteLattice Lattice(Cell);
+      InfiniteLattice Lattice("Spin chain", Cell);
       UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz");
 
       Lattice["H_xx"] = sum_unit(Sx(0)*Sx(1));

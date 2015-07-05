@@ -673,6 +673,11 @@ TriangularMPO dot(TriangularMPO const& x, TriangularMPO const& y)
    return std::sqrt(double(degree(x.TransformsAs()))) * prod(x, y, Ident);
 }
 
+TriangularMPO inner(TriangularMPO const& x, TriangularMPO const& y)
+{
+   return dot(adjoint(x), y);
+}
+
 TriangularMPO cross(TriangularMPO const& x, TriangularMPO const& y)
 {
    CHECK(cross_product_exists(x.TransformsAs(), y.TransformsAs()))

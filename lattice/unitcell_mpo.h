@@ -30,6 +30,9 @@ class UnitCellMPO
       // This must be a multiple of the unit cell size.
       int offset() const { return Offset; }
 
+      // Translates the operator by some number of lattice sites
+      void translate(int Shift) { Offset += Shift; }
+
       // returns true if this is a zero operator
       bool empty() const { return Op.empty(); }
       bool is_null() const { return Op.is_null(); }
@@ -146,6 +149,9 @@ UnitCellMPO conj(UnitCellMPO const& x);
 
 // Adjoint
 UnitCellMPO adjoint(UnitCellMPO const& x);
+
+// Inverse Adjoint
+UnitCellMPO inv_adjoint(UnitCellMPO const& x);
 
 UnitCellMPO MakeIdentityFrom(UnitCellMPO const& x);
 

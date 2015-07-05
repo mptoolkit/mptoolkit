@@ -73,7 +73,8 @@ quantumnumbersobj = quantumnumber.o symmetrybase.o symmetrylist.o \
 tensorobj = tensorproduct.o tensorsum.o basis.o regularize.o tensor_eigen.o
 
 latticeobj = siteoperator.o latticesite.o unitcell.o unitcell-parser.o unitcell_mpo.o \
-             infinitelattice.o triangular-parser.o siteoperator-parser.o product-parser.o
+             infinitelattice.o siteoperator-parser.o infinite-parser.o \
+             function.o
 
 dmrgobj = $(tensorobj) density.o
 
@@ -87,7 +88,7 @@ linearalgebraobj = eigen.o
 #matrixproductobj = density.o mpexponential.o mpopcomponent.o mpopcompressed.o \
 #                   mpoperatorlist.o mpstate.o lattice.o linearwavefunction.o wavefunc-utils.o \
 
-mpoobj = operator_component.o generic_mpo.o finite_mpo.o triangular_mpo.o product_mpo.o
+mpoobj = operator_component.o generic_mpo.o finite_mpo.o triangular_mpo.o product_mpo.o infinite_mpo.o
 
 mpsobj = state_component.o linearwavefunction.o infinitewavefunction.o density.o operator_actions.o
 
@@ -209,7 +210,7 @@ infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-
                  mp-iexpectation-sz2 mp-iparity mp-idump mp-itebd mp-idmrg5-spin2 mp-iexpectation3 mp-isymmetry \
                  mp-ispectrum
 
-infinite-tools = mp-idmrg mp-idmrg5 mp-ioverlap \
+infinite-tools = mp-idmrg mp-ioverlap \
                  mp-iinfo mp-iprint mp-iproject \
                  mp-icumulant mp-iexpectation mp-iwigner-eckart mp-ireorder-symmetry \
                  mp-ispectrum

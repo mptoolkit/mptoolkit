@@ -10,7 +10,7 @@ LatticeSite SpinU1(half_int Spin, std::string const& Sym = "Sz")
    QuantumNumbers::QNConstructor<QuantumNumbers::U1> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator Sp, Sm, Sz, mSz, R, P, I, Spp, Smm, Sz2;
-   LatticeSite Site;
+   LatticeSite Site("U(1)-Spin-"+to_string_fraction(Spin));
 
    std::map<half_int, std::string> SpinBasis;
    for (half_int s = -Spin; s <= Spin; ++s)
@@ -56,7 +56,13 @@ LatticeSite SpinU1(half_int Spin, std::string const& Sym = "Sz")
    Smm(SpinBasis[-Spin], SpinBasis[Spin]) = 1.0;
 
    Sz2 = Sz * Sz;
-   
+
+   // Example of defining a named constant (argument)
+   Site.arg("Spin") = Spin.to_double();
+
+   // Example of defining a function.  The first parameter has a default value
+   Site.func("U")(arg("theta") = math_const::pi) = "exp(theta*i*Sz)";
+
    Site["I"] = I;
    Site["P"] = P;
    Site["R"] = R;

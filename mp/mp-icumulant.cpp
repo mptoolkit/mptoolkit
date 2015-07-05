@@ -15,7 +15,7 @@
 #include "mp/copyright.h"
 #include "common/prog_options.h"
 #include <fstream>
-#include "lattice/triangular-parser.h"
+#include "lattice/infinite-parser.h"
 #include "mps/momentum_operations.h"
 #include "mp-algorithms/triangular_mpo_solver.h"
 #include "common/prog_opt_accum.h"
@@ -50,8 +50,9 @@ void PrintFormat(std::complex<double> const& Value, bool ShowRealPart, bool Show
 }
 
 void ShowMoments(std::vector<Polynomial<std::complex<double> > > const& Moments, 
-		 bool Quiet, bool Columns, bool ShowRealPart, bool ShowImagPart, 
-		 bool ShowMagnitude, bool ShowArgument, bool ShowRadians)
+		 bool Quiet, bool ShowRealPart, bool ShowImagPart, 
+		 bool ShowMagnitude, bool ShowArgument, bool ShowRadians,
+		 double ScaleFactor)
 {
    if (!Quiet)
    {
@@ -74,15 +75,18 @@ void ShowMoments(std::vector<Polynomial<std::complex<double> > > const& Moments,
       for (int i = 1; i <= m; ++i)
       {
 	 std::cout << std::setw(7) << m << ' ' << std::setw(7) << i << ' ';
-	 PrintFormat(Moments[n][i], ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
+	 PrintFormat(Moments[n][i] * pow(ScaleFactor, double(i)), 
+		     ShowRealPart, ShowImagPart, ShowMagnitude, 
+		     ShowArgument, ShowRadians);
 	 std::cout << '\n';
       }
    }
 }
 
 void ShowCumulants(std::vector<std::complex<double> > const& Cumulants,
-		   bool Quiet, bool Columns, bool ShowRealPart, bool ShowImagPart, 
-		   bool ShowMagnitude, bool ShowArgument, bool ShowRadians)
+		   bool Quiet, bool ShowRealPart, bool ShowImagPart, 
+		   bool ShowMagnitude, bool ShowArgument, bool ShowRadians,
+		   double ScaleFactor)
 {
    if (!Quiet)
    {
@@ -101,7 +105,8 @@ void ShowCumulants(std::vector<std::complex<double> > const& Cumulants,
    for (unsigned n = 1; n < Cumulants.size(); ++n)
    {
       std::cout << std::setw(9) << n << ' ';
-      PrintFormat(Cumulants[n], ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
+      PrintFormat(Cumulants[n]*ScaleFactor, ShowRealPart, 
+		  ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
       std::cout << '\n';
    }
 }
@@ -212,6 +217,7 @@ int main(int argc, char** argv)
    int Verbose = 0;
    int NMax = 3;
    int NLegs = 1;
+   int UnitCellSize = 0;
    double Spin = 0.5;
    bool Print = false;
    bool ShowRealPart = false;
@@ -222,7 +228,6 @@ int main(int argc, char** argv)
    bool ShowPolar = false;
    bool ShowCartesian = false;
    bool Quiet = false;
-   bool Columns = false;
    bool CalculateCumulants = false;
    double UnityEpsilon = DefaultEigenUnityEpsilon;
    double Tol = 1E-14;
@@ -237,7 +242,7 @@ int main(int argc, char** argv)
          ("help", "show this help message")
 	 ("power", prog_opt::value(&Power),
 	  FormatDefault("Calculate expectation value of operator to this power", Power).c_str())
-         ("cumulants,u", prog_opt::bool_switch(&CalculateCumulants),
+         ("cumulants,t", prog_opt::bool_switch(&CalculateCumulants),
           "calculate the commulants kappa")
 	 ("cart,c", prog_opt::bool_switch(&ShowCartesian),
 	  "show the result in cartesian coordinates [equivalent to --real --imag]")
@@ -253,8 +258,8 @@ int main(int argc, char** argv)
           "display the argument (angle) of the result")
 	 ("radians", prog_opt::bool_switch(&ShowRadians),
 	  "display the argument in radians instead of degrees")
-	 ("columns", prog_opt::bool_switch(&Columns),
-	  "Show the prefactors of each degree in columns rather than rows")
+	 ("unitcell,u", prog_opt::value(&UnitCellSize),
+	  "scale the results to use this unit cell size [default wavefunction unit cell]")
 	 ("quiet,q", prog_opt::bool_switch(&Quiet), "Don't show column headings")
          ("print,p", prog_opt::bool_switch(&Print), "Print the MPO to standard output")
 	 ("tol", prog_opt::value(&Tol),
@@ -321,10 +326,15 @@ int main(int argc, char** argv)
       InfiniteWavefunction Psi = *PsiPtr;
       int WavefuncUnitCellSize = Psi.Psi.size();
 
+      // The default UnitCellSize for output is the wavefunction size
+      if (UnitCellSize == 0)
+	 UnitCellSize = WavefuncUnitCellSize;
+      double ScaleFactor = double(UnitCellSize) / double(WavefuncUnitCellSize);
+
       if (!Quiet)
       {
-	 std::cout << "#quantities are calculated per unit cell size of " << WavefuncUnitCellSize 
-		   << (WavefuncUnitCellSize == 1 ? " site\n" : " sites\n");
+	 std::cout << "#quantities are calculated per unit cell size of " << UnitCellSize 
+		   << (UnitCellSize == 1 ? " site\n" : " sites\n");
       }
       
       TriangularMPO Op;
@@ -403,12 +413,14 @@ int main(int argc, char** argv)
       {
 	 std::vector<std::complex<double> > Cumulants = MomentsToCumulants(Moments, Tol, Quiet);
 
-	 ShowCumulants(Cumulants, Quiet, Columns, ShowRealPart, 
-		       ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
+	 ShowCumulants(Cumulants, Quiet, ShowRealPart, 
+		       ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians,
+		       ScaleFactor);
       }
       else
-	 ShowMoments(Moments, Quiet, Columns, ShowRealPart, ShowImagPart, 
-		     ShowMagnitude, ShowArgument, ShowRadians);
+	 ShowMoments(Moments, Quiet, ShowRealPart, ShowImagPart, 
+		     ShowMagnitude, ShowArgument, ShowRadians,
+		     ScaleFactor);
 
 
       pheap::Shutdown();

@@ -8,15 +8,23 @@
 
 #include "common/math_const.h"
 #include "quantumnumbers/quantumnumber.h"  // for the ternary_prod implementation
+#include "linearalgebra/scalar.h"
+#include "parser/visitor_actions.h"
+#include "lattice/function.h"
+
 #include <boost/spirit/include/classic_core.hpp>
 #include <boost/spirit/include/classic_chset.hpp>
 #include <boost/spirit/include/classic_symbols.hpp>
 #include <boost/spirit/include/classic_refactoring.hpp>
 #include <boost/spirit/include/classic_distinct.hpp>
+
+//#include <boost/spirit/include/qi_core.hpp>
+
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/variant.hpp>
 #include <boost/variant/static_visitor.hpp>
+#include <boost/variant/get.hpp>
 #include <boost/math/complex.hpp>
 #include <iostream>
 #include <stack>
@@ -27,13 +35,23 @@
 namespace Parser
 {
 
-using namespace boost::spirit::classic;
+#if 0
+// conversion of an element_type to a c-number
+template <typename T>
+std::complex<double>
+as_number(T const& x)
+{
+   return boost::get<std::complex<double> >(x);
+}
+#endif
 
-typedef std::complex<double> complex;
+using namespace boost::spirit::classic;
 
 distinct_parser<> const keyword_p("0-9a-zA-Z_");
 
 distinct_directive<> const keyword_d("0-9a-zA-Z_");
+
+typedef std::complex<double> complex;
 
 // apply a unary math function to an element
 template <typename Func>
@@ -96,6 +114,8 @@ struct constants : symbols<complex>
    constants()
    {
       add
+         ("inf", std::numeric_limits<double>::infinity())
+         ("nan", std::numeric_limits<double>::quiet_NaN())
          ("pi", math_const::pi)
          ("e", math_const::e)
          ("i", std::complex<double>(0.0, 1.0))
@@ -170,66 +190,6 @@ complex csqrt(complex x)
 //typedef boost::function<element_type(element_type)> unary_func_type;
 
 template <typename element_type>
-struct ElementConj : boost::static_visitor<element_type>
-{
-   element_type operator()(complex c) const
-   {
-      return LinearAlgebra::conj(c);
-   }
-
-   template <typename T>
-   element_type operator()(T const& x) const
-   {
-      return conj(x);
-   }
-};
-
-template <typename element_type>
-struct ElementAdjoint : boost::static_visitor<element_type>
-{
-   element_type operator()(complex c) const
-   {
-      return LinearAlgebra::conj(c);
-   }
-
-   template <typename T>
-   element_type operator()(T const& x) const
-   {
-      return adjoint(x);
-   }
-};
-
-template <typename element_type>
-struct ElementSq : boost::static_visitor<element_type>
-{
-   element_type operator()(complex c) const
-   {
-      return complex(c.real()*c.real() + c.imag()*c.imag());
-   }
-
-   template <typename T>
-   element_type operator()(T const& x) const
-   {
-      return dot(adjoint(x),x);
-   }
-};
-
-template <typename element_type>
-struct ElementExp : boost::static_visitor<element_type>
-{
-   element_type operator()(complex c) const
-   {
-      return std::exp(c);
-   }
-
-   template <typename T>
-   element_type operator()(T const& x) const
-   {
-      return exp(x);
-   }
-};
-
-template <typename element_type>
 struct unary_funcs : symbols<boost::function<element_type(element_type)> >
 {
    unary_funcs()
@@ -249,6 +209,7 @@ struct unary_funcs : symbols<boost::function<element_type(element_type)> >
          ("conj", make_apply_unary_math<element_type>(ElementConj<element_type>()))
          ("ad", make_apply_unary_math<element_type>(ElementAdjoint<element_type>()))
          ("adjoint", make_apply_unary_math<element_type>(ElementAdjoint<element_type>()))
+         ("inv_adjoint", make_apply_unary_math<element_type>(ElementInvAdjoint<element_type>()))
          ("sq", make_apply_unary_math<element_type>(ElementSq<element_type>()))
          ;
    }
@@ -285,276 +246,6 @@ make_apply_binary_math(F const& f)
    return apply_binary_math<element_type, F>(f);
 }
 
-template <typename element_type>
-struct binary_addition : boost::static_visitor<element_type>
-{
-   element_type operator()(complex const& x, complex const& y) const
-   { 
-      return element_type(x+y);
-   }
-
-   template <typename T>
-   element_type operator()(complex const& x, T const& y) const
-   {
-      return element_type(x*MakeIdentityFrom(y) + y);
-   }
-
-   template <typename T>
-   element_type operator()(T const& x, complex const& y) const
-   {
-      return element_type(x + y*MakeIdentityFrom(x));
-   }
-
-   template <typename T, typename U>
-   element_type operator()(T const& x, U const& y) const
-   {
-      return element_type(x+y);
-   }
-};
-
-template <typename element_type>
-struct binary_subtraction : boost::static_visitor<element_type>
-{
-   element_type operator()(complex const& x, complex const& y) const
-   {
-      return element_type(x-y);
-   }
-
-   template <typename T>
-   element_type operator()(complex const& x, T const& y) const
-   {
-      return element_type(x*MakeIdentityFrom(y) - y);
-   }
-
-   template <typename T>
-   element_type operator()(T const& x, complex const& y) const
-   {
-      return element_type(x - y*MakeIdentityFrom(x));
-   }
-
-   template <typename T, typename U>
-   element_type operator()(T const& x, U const& y) const
-   {
-      return element_type(x-y);
-   }
-};
-
-template <typename element_type>
-struct binary_multiplication : boost::static_visitor<element_type>
-{
-   template <typename T1, typename T2>
-   element_type operator()(T1 const& x, T2 const& y) const
-   {
-      return element_type(x*y);
-   }
-};
-
-template <typename element_type>
-struct binary_division : boost::static_visitor<element_type>
-{
-   element_type operator()(complex const& x, complex const& y) const
-   {
-      return element_type(x/y);
-   }
-
-   template <typename T>
-   element_type operator()(complex const& x, T const& y) const
-   {
-      PANIC("Cannot use operator as divisor")(typeid(y).name());
-      return element_type(complex());
-   }
-
-   template <typename T>
-   element_type operator()(T const& x, complex const& y) const
-   {
-      return element_type((1.0 / y) * x);
-   }
-
-   template <typename T, typename U>
-   element_type operator()(T const& x, U const& y) const
-   {
-      PANIC("Cannot divide these types")(typeid(x).name())(typeid(y).name());
-      return element_type(complex());
-   }
-};
-
-template <typename element_type>
-struct binary_power : boost::static_visitor<element_type>
-{
-   element_type operator()(complex const& x, complex const& y) const
-   {
-      return std::pow(x,y);
-   }
-
-   template <typename T>
-   element_type operator()(T const& x, complex const& y) const
-   {
-      int i = int(y.real()+0.5);
-      CHECK(std::norm(complex(double(i)) - y) < 1E-7)("cannot take fractional power of an operator");
-      CHECK(i >= 0)("cannot take negative power of an operator");
-      return i == 0 ? element_type(complex(1.0,0.0)) : pow(x, i);
-   }
-
-   // a^X == exp(ln(a)*X), so we can handle the case where a is a complex number
-   template <typename T>
-   element_type operator()(complex const& x, T const& y) const
-   {
-      return exp(std::log(x)*y);
-   }
-
-   template <typename T, typename U>
-   element_type operator()(T const& x, U const& y) const
-   {
-      PANIC("Cannot evaluate exponent with an operator")(typeid(y).name());
-      return element_type(complex(0));
-   }
-};
-
-template <typename element_type>
-struct binary_commutator : boost::static_visitor<element_type>
-{
-   // commutator is zero whenever we have something that commutes
-   element_type operator()(complex const&, complex const&) const
-   {
-      return complex(0.0);
-   }
-
-   template <typename T>
-   element_type operator()(T const&, complex const&) const
-   {
-      return complex(0.0);
-   }
-
-   template <typename T>
-   element_type operator()(complex const&, T const&) const
-   {
-      return complex(0.0);
-   }
-
-   // in the generic case, calculate the actual commutator
-   template <typename T1, typename T2>
-   element_type operator()(T1 const& x, T2 const& y) const
-   {
-      return element_type(x*y - y*x);
-   }
-};
-
-template <typename element_type>
-struct binary_dot_product : boost::static_visitor<element_type>
-{
-   element_type operator()(complex const& x, complex const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   template <typename T>
-   element_type operator()(complex const& x, T const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   template <typename T>
-   element_type operator()(T const& x, complex const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   // assume here we have operators
-   template <typename T1, typename T2>
-   element_type operator()(T1 const& x, T2 const& y) const
-   {
-      return dot(x,y);
-   }
-};
-
-template <typename element_type>
-struct binary_inner_product : boost::static_visitor<element_type>
-{
-   element_type operator()(complex const& x, complex const& y) const
-   {
-      return element_type(LinearAlgebra::conj(x)*y);
-   }
-
-   template <typename T>
-   element_type operator()(complex const& x, T const& y) const
-   {
-      return element_type(LinearAlgebra::conj(x)*y);
-   }
-
-   template <typename T>
-   element_type operator()(T const& x, complex const& y) const
-   {
-      return element_type(adjoint(x)*y);
-   }
-
-   // assume here we have operators
-   template <typename T1, typename T2>
-   element_type operator()(T1 const& x, T2 const& y) const
-   {
-      return dot(adjoint(x),y);
-   }
-};
-
-//
-// outer_product: outer product of tensor operators.
-// We choose among the possible transform_targets the
-// quantum number with the largest degree.
-template <typename element_type>
-struct binary_outer_product : boost::static_visitor<element_type>
-{
-   element_type operator()(complex const& x, complex const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   template <typename T>
-   element_type operator()(complex const& x, T const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   template <typename T>
-   element_type operator()(T const& x, complex const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   template <typename T1, typename T2>
-   element_type operator()(T1 const& x, T2 const& y) const
-   {
-      return outer(x,y);
-   }
-};
-
-//
-// cross_product
-template <typename element_type>
-struct binary_cross_product : boost::static_visitor<element_type>
-{
-   element_type operator()(complex const& x, complex const& y) const
-   {
-      return element_type(0.0);
-   }
-
-   template <typename T>
-   element_type operator()(complex const& x, T const& y) const
-   {
-      return element_type(0.0);
-   }
-
-   template <typename T>
-   element_type operator()(T const& x, complex const& y) const
-   {
-      return element_type(0.0);
-   }
-
-   template <typename T1, typename T2>
-   element_type operator()(T1 const& x, T2 const& y) const
-   {
-      return cross(x,y);
-   }
-};
-
 // the standard binary functions are put in a table
 
 template <typename element_type>
@@ -570,48 +261,6 @@ struct binary_funcs : symbols<boost::function<element_type(element_type, element
 	 ("cross", make_apply_binary_math<element_type>(binary_cross_product<element_type>()))
          ;
    }
-};
-
-//
-// Ternary functions
-//
-
-template <typename element_type>
-struct ternary_product : boost::static_visitor<element_type>
-{
-   ternary_product(std::string const& q_)
-      : q(q_) {}
-
-   element_type operator()(complex const& x, complex const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   template <typename T>
-   element_type operator()(complex const& x, T const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   template <typename T>
-   element_type operator()(T const& x, complex const& y) const
-   {
-      return element_type(x*y);
-   }
-
-   template <typename T1, typename T2>
-   element_type operator()(T1 const& x, T2 const& y) const
-   {
-      // legitimate use of TransformsAs() on MPOs
-#if !defined(DISABLE_FINITE_MPO_TRANSFORMS_AS)
-      QuantumNumbers::QuantumNumber qn(x.GetSymmetryList(), q);
-      return element_type(prod(x,y,qn));
-#else
-      return x;
-#endif
-   }
-
-   std::string q;
 };
 
 //
@@ -648,28 +297,41 @@ struct push_int
 };
 
 template <typename element_type>
-struct push_real
+struct push_value
 {
-    push_real(std::stack<element_type >& eval_)
+   push_value(std::stack<element_type >& eval_)
     : eval(eval_) {}
-
+   
    void operator()(double n) const
    {
-        eval.push(n);
-    }
+      TRACE(n)(eval.size());
+      element_type c(n);
+      TRACE(as_number(c));
+      eval.push(element_type(n));
+      TRACE(as_number(eval.top()));
+   }
+   
+   void operator()(std::complex<double> n) const
+   {
+      TRACE(n);
+      eval.push(n);
+   }
 
+#if 0
    void operator()(element_type n) const
    {
         eval.push(n);
     }
+#endif
 
     void operator()(char const* str, char const* /*end*/) const
     {
-        double n = strtod(str, 0);
-        eval.push(n);
+       double n = strtod(str, 0);
+       TRACE(n);
+       eval.push(n);
     }
-
-    std::stack<element_type >& eval;
+   
+    std::stack<element_type>& eval;
 };
 
 template <typename element_type>
@@ -778,16 +440,6 @@ struct invoke_binary
 };
 
 template <typename element_type>
-struct negate_element : boost::static_visitor<element_type>
-{
-   template <typename T>
-   element_type operator()(T const& x) const
-   {
-      return element_type(-x);
-   }
-};
-
-template <typename element_type>
 struct do_negate
 {
     do_negate(std::stack<element_type >& eval_)
@@ -825,8 +477,63 @@ struct push_prod
    std::stack<element_type>& eval;
 };
 
+// functions
 
+// Adds a function name to the function stack, and adds a new (initially empty) ParameterList
+// to the parameter stack
+struct push_function
+{   push_function(std::stack<std::string>& FuncStack_, std::stack<Function::ParameterList>& ParamStack_)
+      : FuncStack(FuncStack_), ParamStack(ParamStack_) {}
 
+   void operator()(char const* str, char const* end) const
+   {
+      FuncStack.push(std::string(str, end));
+      ParamStack.push(Function::ParameterList());
+   }
+
+   std::stack<std::string>& FuncStack;
+   std::stack<Function::ParameterList>& ParamStack;
+};
+
+template <typename element_type>
+struct push_parameter
+{
+   push_parameter(std::stack<element_type>& eval_,
+		  std::stack<Function::ParameterList>& ParamStack_)
+      : eval(eval_), ParamStack(ParamStack_) {}
+
+   void operator()(char const*, char const*) const
+   {
+      TRACE(eval.size());
+      TRACE(ParamStack.size());
+      ParamStack.top().push_back(Function::Parameter(boost::get<complex>(eval.top())));
+      eval.pop();
+   }
+
+   std::stack<element_type>& eval;
+   std::stack<Function::ParameterList>& ParamStack;
+};
+
+template <typename element_type>
+struct push_named_parameter
+{
+   push_named_parameter(std::stack<element_type>& eval_,
+			std::stack<std::string>& IdentifierStack_,
+			std::stack<Function::ParameterList>& ParamStack_)
+      : eval(eval_), IdentifierStack(IdentifierStack_), ParamStack(ParamStack_) {}
+
+   void operator()(char const*, char const*) const
+   {
+      ParamStack.top().push_back(Function::Parameter(IdentifierStack.top(), 
+						     boost::get<complex>(eval.top())));
+      IdentifierStack.pop();
+      eval.pop();
+   }
+
+   std::stack<element_type>& eval;
+   std::stack<std::string>& IdentifierStack;
+   std::stack<Function::ParameterList>& ParamStack;
+};
 
 } //namespace Parser
 

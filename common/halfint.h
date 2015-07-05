@@ -6,6 +6,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <math.h>
+#include <string>
 #include "convertstring.h"
 #include "trace.h"
 
@@ -98,6 +99,10 @@ bool is_integral(half_int h);
 
 int to_int(half_int h);             // throws if h is not integral
 int to_int_assert(half_int h);       // assumes h is integral as a precondition (faster)
+
+// conversion to string, as a fraction,
+// if h is half-integral then the string is of the forn "n/2"
+std::string to_string_fraction(half_int h);
 
 // A function for (-1)^x
 long minus1pow(long x);
@@ -246,7 +251,8 @@ int minus1pow(int x)
 }
 
 //
-// returns true if (a,b,c) satisfies the triangle condition |a-c| <= b <= a+c and a+b+c is integral.
+// returns true if (a,b,c) satisfies the triangle condition 
+// |a-c| <= b <= a+c and a+b+c is integral.
 // a,b,c are assumed positive.
 inline
 bool is_triangle(half_int a, half_int b, half_int c)
