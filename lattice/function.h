@@ -8,7 +8,10 @@
 // x=1/y, y=1/x as two parameters, only one of which needs to be specified.
 //
 // Parameters may be named.  Unnamed parameters are taken in left-to-right
-// order
+// order.
+//
+// TODO: does it make more sense for default parameters to be parsed in right-to-left order?
+//
 
 #if !defined(MPTOOLKIT_LATTICE_FUNCTION_H)
 #define MPTOOLKIT_LATTICE_FUNCTION_H
