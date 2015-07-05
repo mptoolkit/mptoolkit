@@ -304,30 +304,18 @@ struct push_value
    
    void operator()(double n) const
    {
-      TRACE(n)(eval.size());
       element_type c(n);
-      TRACE(as_number(c));
       eval.push(element_type(n));
-      TRACE(as_number(eval.top()));
    }
    
    void operator()(std::complex<double> n) const
    {
-      TRACE(n);
       eval.push(n);
    }
-
-#if 0
-   void operator()(element_type n) const
-   {
-        eval.push(n);
-    }
-#endif
 
     void operator()(char const* str, char const* /*end*/) const
     {
        double n = strtod(str, 0);
-       TRACE(n);
        eval.push(n);
     }
    
@@ -504,8 +492,6 @@ struct push_parameter
 
    void operator()(char const*, char const*) const
    {
-      TRACE(eval.size());
-      TRACE(ParamStack.size());
       ParamStack.top().push_back(Function::Parameter(boost::get<complex>(eval.top())));
       eval.pop();
    }

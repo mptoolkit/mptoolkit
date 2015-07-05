@@ -109,10 +109,8 @@ InfiniteMPO
 InfiniteLattice::eval_function(Function::OperatorFunction const& Func,
 			       Function::ParameterList const& Params) const
 {
-   TRACE(Params);
    Function::ArgumentList Args = GetArguments(Func.Args, Params, 
 					      ParseInfiniteArgument(*this));
-   TRACE(Args.size());
    return ParseInfiniteOperator(*this, Func.Def, Args);
 }
 
