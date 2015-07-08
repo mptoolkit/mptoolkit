@@ -2,7 +2,6 @@
 
 //
 // YC configuration of a triangular lattice
-// The unit cell is size Width*2.
 //
 // Example for a width-6 lattice (site numbers in brackets are periodic repeats in the vertical
 // direction (ie top-left (0) is the same site as the bottom-left 0).
