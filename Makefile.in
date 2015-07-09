@@ -185,7 +185,8 @@ mp-models = hubbard-u1u1 hubbard-t-u1u1 hubbard-u1su2 hubbard-so4 hubbard-t-so4 
             spinchain-pbc-su2 spinchain-pbc-u1 hubbard-t1t2-u1su2 kondo-canonical-u1u1 \
             kondo-u1u1 hubbard-periodic-u1su2 kondo-gc-u1u1 \
             bichromatic-BH-spinless-u1 spinlessfermion-3fermions-u1u1 \
-            tj-zigzag-u1su2 tj-zigzag-u1u1 spinladder cf-ladder-u1
+            tj-zigzag-u1su2 tj-zigzag-u1u1 spinladder cf-ladder-u1 \
+            spin-tri-1SiteUnitCell-su2 TransverseIsing-tri-yc-z2
 
 mp-tools = mp-construct mp-overlap mp-expectation \
            mp-apply mp-norm mp-norm2 mp-info mp-debug mp-scale mp-random mp-add  \

@@ -6,6 +6,7 @@
 
 #include "common/niftycounter.h"
 #include "quantumnumber.h"
+#include "common/halfint.h"
 #include <boost/lexical_cast.hpp>
 
 namespace QuantumNumbers
