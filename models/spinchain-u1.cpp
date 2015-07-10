@@ -38,10 +38,10 @@ int main(int argc, char** argv)
          std::cerr << desc << '\n';
 	 std::cerr << "Operators:\n"
 		   << "H_J1z   - nearest neighbor spin coupling Sz Sz\n"
-		   << "H_J1t   - nearest neighbor spin exchange Sp Sm + Sm Sp\n"
+		   << "H_J1t   - nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)\n"
 		   << "H_J1    - nearest neighbor spin exchange = H_J1z + H_J1t\n"
 		   << "H_J2z   - next-nearest neighbor spin coupling Sz Sz\n"
-		   << "H_J2t   - next-nearest neighbor spin exchange Sp Sm + Sm Sp\n"
+		   << "H_J2t   - next-nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)\n"
 		   << "H_J2    - next-nearest neighbor spin exchange = H_J1z + H_J1t\n"
 		   << "H_B1    - nearest neighbor biquadratic spin exchange (S.S)^2\n"
 		   << "H_B2    - next-nearest neighbor biquadratic spin exchange (S.S)^2\n"
