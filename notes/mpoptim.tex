@@ -1,0 +1,85 @@
+% notes on coupling coefficients for SU(2)
+% $Id$
+\documentclass{article}[10pt]
+\usepackage{fullpage}
+\usepackage{amsmath}
+
+\input{macros}
+
+   \newcommand{\qninejc}[9]{\mbox{$\left( \begin{array}{ccc} \!{#1}\! &
+                                \!{#2}\! & \!{#3}\! \\ \!{#4}\! & \!{#5}\! &
+                                \!{#6}\! \\ \!{#7}\! & \!{#8}\! & \!{#9}\! 
+                                \end{array} \right)$}}
+
+\newcommand{\ad}{\ddagger}
+\newcommand{\invad}{{\ddagger \ddagger \ddagger}}
+
+\begin{document}
+
+\title{Optimizing operations on matrix product states}
+
+\author{I. P. McCulloch}
+\date{\today}
+
+\maketitle
+
+let $\dim(a') = \dim(a) = M$, be the dimension of the MPO. Let $\dim(s') = \dim(s) = d$, the dimension
+of the local basis. Let $\dim{i} = \dim{j} = \dim{i'} = \dim{j'} = D$ be the number of symmetry sectors
+in the basis. Thus the total demension of the MPO is $dM \times dM$.
+
+The contraction from the right-hand side to build an F-matrix is,
+
+\begin{equation}
+F^{a'} = A^{s'} F^a B^{\dagger,s} M^{s's}_{a'a}
+\end{equation}
+
+(Note: nonabelianmp.tex might have the complex conjugation in the wrong place? In any event,
+what the code actually implements is as written above) In detail, 
+\beq
+\itensor{F}{a'}_{i'j'} =
+\sum_{a,i,j,k,s,s'}
+\qninejsq{j}{s}{j'}{a}{k}{a'}{i}{s'}{i'}
+%{j}{a}{i}{s}{k}{s'}{j'}{a'}{i'}
+\itensor{M}{k}^{s's}_{a'a} \itensor{A}{s'}_{i'i} \itensor{B^{*}}{s}_{j'j} 
+\itensor{E}{a}_{ij}
+\eeq
+
+This is implemented by the function 
+\begin{verbatim}Fprime = operator_prod(M, A, F, herm(B))\end{verbatim}
+
+The question is, what is the most efficient way to evaluate this product? The naive way is to sum over
+$k$, $s'$, $s$, $a'$, $a$, so a loop of up to $d^2 M^2$ operations, each involves roughly $D^2$ multiplies
+of $(m/D)^3$, for a total of $d^2 M^2 m^3 / D$ operations. This is a bound - more precisely, the
+$d^2 M^2$ term is the number of non-zero matrix elements in the MPO, which is typically $O(dM)$, eg with 
+a prefactor of perhaps 2. But in principle, even if the MPO isn't sparse, the cost of the operation is bounded
+by $d M m^3 / D$, because we can construct the intermediate products,
+\beq
+G^{s,a}_{j'ij} = B^{*s}_{j'j} E^a_{ij}
+\eeq
+and there will be roughly $D^2 dM$ such terms (depends on the combinations allowed by the fusion rules), 
+each of which has a cost of
+$(m/D)^3$, so the total cost is roughly $dM m^3/D$.
+It is tempting to sum over $j$ here, but we cannot because the coupling coefficient appears and
+this depends on the other quantum numbers. If the coupling coefficients factorize (eg for abelian quantum numbers)
+then we could sum over $j$.
+
+Given these intermediate terms, we can form the sums
+\beq
+H^{(s'a'i')}_{ij'} = \sum_{s a k j}
+\qninejsq{j}{s}{j'}{a}{k}{a'}{i}{s'}{i'} \:
+M^{[k]s's}_{a'a}
+G^{s's,a}_{j'ij}
+\eeq
+and there will again be roughly $D^2 dM$ of these.
+Note that the only appearance of $s'$, $a'$, $i'$ here is in the coupling coefficient.
+It may be possible to optimize the formation of these sums by finding common factors.
+
+From the $H$ matrices, we can obtain the final result,
+\beq
+F^{a'}_{i'j'} = \sum_{j s'} A^{s'}_{i'i} H^{(s'a'i')}_{ij'}
+\eeq
+which again has $D^2 dM$ terms, for a total cost of $d M m^3 / D$.
+
+
+
+\end{document}
