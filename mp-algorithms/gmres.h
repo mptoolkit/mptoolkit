@@ -33,6 +33,8 @@ using LinearAlgebra::range;
 using LinearAlgebra::norm_2_sq;
 using LinearAlgebra::norm_2;
 
+double const DGKS_Threshold = 1.0 / std::sqrt(2.0); // 1.0; // between 0 and 1.
+
 template < typename Matrix, typename Vector1, typename Vector2 >
 void 
 Update(Vector1 &x, int k, Matrix &h, Vector2 &s, Vector1 v[])
@@ -132,15 +134,33 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
     
      for (i = 0; i < m && j <= max_iter; i++, j++) 
      {
-	if (Verbose > 1)
+	if (Verbose > 2)
 	   std::cerr << "GMRES: iteration " << i << std::endl;
+
+	double NormFrobSqH = 0; // for DGKS correction
 
         w = Precondition(MatVecMultiply(v[i]));
         for (k = 0; k <= i; k++) 
         {
-           H(k, i) = inner_prod(w, v[k]);
+           H(k, i) = inner_prod(v[k], w);
            w -= H(k, i) * v[k];
+	   NormFrobSqH += LinearAlgebra::norm_frob_sq(H(k,i));
         }
+
+	// Apply DGKS correction, if necessary
+	double NormFrobSqF = norm_frob_sq(w);
+	if (NormFrobSqF < DGKS_Threshold * DGKS_Threshold * NormFrobSqH)
+	{
+	   DEBUG_TRACE("DGKS correction in GMRES")(NormFrobSqF / (DGKS_Threshold * DGKS_Threshold * NormFrobSqH));
+	   for (k = 0; k <= i; k++) 
+	   {
+	      value_type z = inner_prod(v[k], w);
+	      H(k, i) += z;
+	      w -= z * v[k];
+	   }
+	}
+
+	// Continue with our normal schedule...
         H(i+1, i) = norm_frob(w);
         v[i+1] = w * (1.0 / H(i+1, i));
 
@@ -166,7 +186,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
            return 0;
         }
 
-	if (Verbose > 1)
+	if (Verbose > 2)
 	   std::cerr << "GMRES: resid=" << resid << '\n';
 
         //TRACE(resid);
@@ -188,7 +208,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
      }
      else
      {
-	if (Verbose)
+	if (Verbose > 1)
 	   std::cerr << "GMRES: restarting, iter=" << (j-1) << ", resid=" << resid << '\n';
      }
      DEBUG_TRACE(resid)(norm_frob(Precondition(b - MatVecMultiply(x))) / normb)

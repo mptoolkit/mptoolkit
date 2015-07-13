@@ -75,15 +75,26 @@ struct OneMinusTransferLeft
 
 template <typename Func>
 MatrixOperator
-LinearSolve(Func F, MatrixOperator Rhs, double Tol = 1E-14, int Verbose = 0)
+LinearSolve(Func F, MatrixOperator const& Rhs, double Tol = 1E-14, int Verbose = 0)
 {
    MatrixOperator Guess = MakeRandomMatrixOperator(Rhs.Basis1(), Rhs.Basis2(), Rhs.TransformsAs());
-   //Rhs;
+   LinearSolve(Guess, F, Rhs, Tol, Verbose);
+   return Guess;
+}
+
+template <typename Func>
+void
+LinearSolve(MatrixOperator& x, Func F, MatrixOperator const& Rhs, double Tol = 1E-14, int Verbose = 0)
+{
    int m = 30;
    int max_iter = 10000;
    double tol = Tol;
-   GmRes(Guess, F, Rhs, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
-   return Guess;
+   int Ret = GmRes(x, F, Rhs, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
+   if (Ret != 0)
+   {
+      // failed
+      PANIC("Linear solver failed to converge after max_iter iterations")(max_iter);
+   }
 }
 
 
@@ -232,21 +243,34 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
 	 double RhsNorm2 = norm_frob_sq(Rhs);
 	 RhsNorm2 = RhsNorm2 / (Rhs.Basis1().total_degree()*Rhs.Basis2().total_degree());
 	 DEBUG_TRACE(RhsNorm2);
-	 DEBUG_TRACE(HasEigenvalue1)(UnitMatrixLeft)(UnitMatrixRight)(K)(Diag)(Rhs);
+	 //	 DEBUG_TRACE(HasEigenvalue1)(UnitMatrixLeft)(UnitMatrixRight)(K)(Diag)(Rhs);
 
          //if (RhsNorm2 > 1E-22)
 
 	 {
-	    E[K][m] = LinearSolve(OneMinusTransferLeft(K*Diag, Psi, QShift, 
-						       UnitMatrixLeft, UnitMatrixRight, HasEigenvalue1), 
-				  Rhs, Tol, Verbose);
+	    //TRACE(norm_frob_sq(Rhs))(inner_prod(Rhs, UnitMatrixRight));
+	    // Initial guess vector
+	    E[K][m] = MakeRandomMatrixOperator(Rhs.Basis1(), Rhs.Basis2(), Rhs.TransformsAs());
+	    // Orthogonalize the initial guess -- this is important for the numerical stability
+	    if (HasEigenvalue1 && Rhs.TransformsAs() == UnitMatrixRight.TransformsAs())
+	    {
+	       E[K][m] -= conj(inner_prod(E[K][m], UnitMatrixRight)) * UnitMatrixLeft;
+	    }
 
-	    DEBUG_CHECK(!E[K][m].is_null());
-	    // do another orthogonalization
+	    LinearSolve(E[K][m], OneMinusTransferLeft(K*Diag, Psi, QShift, 
+						      UnitMatrixLeft, UnitMatrixRight, HasEigenvalue1), 
+			Rhs, Tol, Verbose);
+
+	    // do another orthogonalization -- this should be unncessary but for the paranoid...
 	    if (HasEigenvalue1 && E[K][m].TransformsAs() == UnitMatrixRight.TransformsAs())
 	    {
-	       DEBUG_TRACE(inner_prod(E[K][m], UnitMatrixRight))("should be small");
-	       E[K][m] -= conj(inner_prod(E[K][m], UnitMatrixRight)) * UnitMatrixLeft;
+	       std::complex<double> z = inner_prod(E[K][m], UnitMatrixRight);
+	       DEBUG_TRACE(z);
+	       if (LinearAlgebra::norm_frob_sq(z) > 1E-10)
+	       {
+		  WARNING("Possible numerical instability in triangular MPO solver")(z);
+	       };
+	       E[K][m] -= conj(z) * UnitMatrixLeft;
 	       DEBUG_TRACE(inner_prod(E[K][m], UnitMatrixRight))("should be zero");
 	    }
 	 }
@@ -312,7 +336,29 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
       // Make sure the (0,0) part is identity
       DEBUG_TRACE(UnityEpsilon);
       OperatorClassification CheckIdent = classify(Op(0,0), UnityEpsilon);
-      CHECK(CheckIdent.is_identity())("(0,0) component of the MPO must be identity!")(CheckIdent);
+      if (!CheckIdent.is_identity())
+      {
+	 std::cerr << "SolveMPO_Left: fatal: (0,0) component of the MPO must be the identity operator.\n";
+	 // the (0,0) component isn't the identity operator, which is a fatal error.
+	 // Show some diagnosics and quit.
+	 if (!CheckIdent.is_product())
+	 {
+	    std::cerr << "SolveMPO_Left: fatal: component is not a product operator!\n";
+	 }
+	 else
+	 {
+	    if (CheckIdent.is_unitary())
+	       std::cerr << "SolveMPO_Left: fatal: component is a unitary operator, but not the identity.\n";
+	    else if (CheckIdent.is_prop_identity())
+	    {
+	       std::cerr << "SolveMPO_Left: fatal: component is proportional "
+			 << "to the identity, with prefactor " << CheckIdent.factor() << '\n';
+	    }
+	    else
+	       std::cerr << "SolveMPO_Left: fatal: component has unknown classification.\n";
+	 }
+	 PANIC("Fatal")(CheckIdent);
+      }
 
       // Initialize the first E matrix.  These are operators acting in the Basis1()
       EMatK.push_back(KMatrixPolyType());
@@ -418,13 +464,9 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
 			 << ", epsilon=" << std::abs(norm_frob(EtaL)-1.0) << '\n';
 	    }
 	 }
-	 else
+	 else if (Verbose && Classification.is_identity())
 	 {
-	    if (Verbose)
-	    {
-	       std::cerr << "Diagonal component is not unitary, assuming spectral radius < 1\n";
-	       DEBUG_TRACE(Diag)(Classification);
-	    }
+	    std::cerr << "Diagonal component is the identity\n";
 	 }
 
 	 // If we have an eigenvalue equal to 1, then decompose C into parallel and perpendicular parts
@@ -436,6 +478,14 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
 	    if (Verbose)
 	       std::cerr << "Decomposing parts parallel to the unit matrix\n";
 	    EParallel = DecomposeParallelParts(C, Factor, UnitMatrixLeft, UnitMatrixRight, UnityEpsilon);
+	 }
+	 else
+	 {
+	    if (Verbose)
+	    {
+	       std::cerr << "Diagonal component is not unitary, assuming spectral radius < 1\n";
+	       DEBUG_TRACE(Diag)(Classification);
+	    }
 	 }
 
          // Now the remaining components, which is anything that is not proportional

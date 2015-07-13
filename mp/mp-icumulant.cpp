@@ -49,37 +49,35 @@ void PrintFormat(std::complex<double> const& Value, bool ShowRealPart, bool Show
    }
 }
 
-void ShowMoments(std::vector<Polynomial<std::complex<double> > > const& Moments, 
-		 bool Quiet, bool ShowRealPart, bool ShowImagPart, 
+void ShowMomentsHeading(bool ShowRealPart, bool ShowImagPart, 
+			bool ShowMagnitude, bool ShowArgument, bool ShowRadians)
+{
+   std::cout << "#moment #degree ";
+   if (ShowRealPart)
+      std::cout << "#real                   ";
+   if (ShowImagPart)
+      std::cout << "#imag                   ";
+   if (ShowMagnitude)
+      std::cout << "#magnitude              ";
+   if (ShowArgument)
+      std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
+   std::cout << std::endl;
+}
+
+void ShowMoments(Polynomial<std::complex<double> > const& Moments, 
+		 bool ShowRealPart, bool ShowImagPart, 
 		 bool ShowMagnitude, bool ShowArgument, bool ShowRadians,
 		 double ScaleFactor)
 {
-   if (!Quiet)
-   {
-      std::cout << "#moment #degree ";
-      if (ShowRealPart)
-	 std::cout << "#real                   ";
-      if (ShowImagPart)
-	 std::cout << "#imag                   ";
-      if (ShowMagnitude)
-	 std::cout << "#magnitude              ";
-      if (ShowArgument)
-	 std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
-      std::cout << '\n';
-   }
    std::cout << std::left;
-
-   for (unsigned n = 0; n < Moments.size(); ++n)
+   int m = Moments.degree();
+   for (int i = 1; i <= m; ++i)
    {
-      int m = Moments[n].degree();
-      for (int i = 1; i <= m; ++i)
-      {
-	 std::cout << std::setw(7) << m << ' ' << std::setw(7) << i << ' ';
-	 PrintFormat(Moments[n][i] * pow(ScaleFactor, double(i)), 
-		     ShowRealPart, ShowImagPart, ShowMagnitude, 
-		     ShowArgument, ShowRadians);
-	 std::cout << '\n';
-      }
+      std::cout << std::setw(7) << m << ' ' << std::setw(7) << i << ' ';
+      PrintFormat(Moments[i] * pow(ScaleFactor, double(i)), 
+		  ShowRealPart, ShowImagPart, ShowMagnitude, 
+		  ShowArgument, ShowRadians);
+      std::cout << std::endl;
    }
 }
 
@@ -228,6 +226,7 @@ int main(int argc, char** argv)
    bool ShowPolar = false;
    bool ShowCartesian = false;
    bool Quiet = false;
+   bool CalculateMoments = false;
    bool CalculateCumulants = false;
    double UnityEpsilon = DefaultEigenUnityEpsilon;
    double Tol = 1E-14;
@@ -242,6 +241,8 @@ int main(int argc, char** argv)
          ("help", "show this help message")
 	 ("power", prog_opt::value(&Power),
 	  FormatDefault("Calculate expectation value of operator to this power", Power).c_str())
+         ("moments", prog_opt::bool_switch(&CalculateMoments),
+          "calculate the moments [default, unless --cumulants is specified]")
          ("cumulants,t", prog_opt::bool_switch(&CalculateCumulants),
           "calculate the commulants kappa")
 	 ("cart,c", prog_opt::bool_switch(&ShowCartesian),
@@ -319,7 +320,11 @@ int main(int argc, char** argv)
 	 ShowArgument = true;
       }
       if (ShowRadians)
-	 ShowArgument = true;      
+	 ShowArgument = true;
+
+      // If none of --cumulants and --moments are specified, then the default is to calculate moments
+      if (!CalculateMoments && !CalculateCumulants)
+	 CalculateMoments = true;
 
       long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
       pvalue_ptr<InfiniteWavefunction> PsiPtr = pheap::OpenPersistent(FName, CacheSize, true);
@@ -387,10 +392,21 @@ int main(int argc, char** argv)
 
       std::vector<Polynomial<std::complex<double> > > Moments;
 
+      // If we're not calculating the cumulants, then we can print the moments as we calculate them.
+      // BUT, if we have Verbose > 0, then don't print anything until the end, so that it doesn't get
+      // mixed up with the verbose output.
+      if (CalculateMoments && !Quiet && !Verbose)
+	 ShowMomentsHeading(ShowRealPart, ShowImagPart, 
+			    ShowMagnitude, ShowArgument, ShowRadians);
+
       // first power
       std::vector<KMatrixPolyType> E;
       SolveMPO_Left(E, Phi, Psi.QShift, Op, Identity, Rho, Power > 1, Tol, UnityEpsilon, Verbose);
       Moments.push_back(ExtractOverlap(E.back()[1.0], Rho));
+      if (CalculateMoments && !Verbose)
+	 ShowMoments(Moments.back(), ShowRealPart, ShowImagPart, 
+		     ShowMagnitude, ShowArgument, ShowRadians,
+		     ScaleFactor);
 
       // loop over the powers of the operator
       for (int p = 1; p < Power; ++p)
@@ -407,21 +423,37 @@ int main(int argc, char** argv)
 	 SolveMPO_Left(E, Phi, Psi.QShift, Op, Identity, Rho, p < Power-1, 
 		       Tol, UnityEpsilon, Verbose);
 	 Moments.push_back(ExtractOverlap(E.back()[1.0], Rho));
+	 if (CalculateMoments && !Verbose)
+	    ShowMoments(Moments.back(), ShowRealPart, ShowImagPart, 
+			ShowMagnitude, ShowArgument, ShowRadians,
+			ScaleFactor);
+      }
+
+      // if we had verbose output, then we delay printing the moments until now
+      if (CalculateMoments && Verbose)
+      {
+	 if (!Quiet)
+	    ShowMomentsHeading(ShowRealPart, ShowImagPart, 
+			       ShowMagnitude, ShowArgument, ShowRadians);
+	 for (unsigned i = 0; i < Moments.size(); ++i)
+	 {
+	    ShowMoments(Moments[i], ShowRealPart, ShowImagPart, 
+			ShowMagnitude, ShowArgument, ShowRadians,
+			ScaleFactor);
+	 }
       }
 
       if (CalculateCumulants)
       {
-	 std::vector<std::complex<double> > Cumulants = MomentsToCumulants(Moments, Tol, Quiet);
+	 // If we calculated the moments, then put in a blank line to separate them
+	 if (CalculateMoments)
+	    std::cout << '\n';
 
+	 std::vector<std::complex<double> > Cumulants = MomentsToCumulants(Moments, Tol, Quiet);
 	 ShowCumulants(Cumulants, Quiet, ShowRealPart, 
 		       ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians,
 		       ScaleFactor);
       }
-      else
-	 ShowMoments(Moments, Quiet, ShowRealPart, ShowImagPart, 
-		     ShowMagnitude, ShowArgument, ShowRadians,
-		     ScaleFactor);
-
 
       pheap::Shutdown();
    }

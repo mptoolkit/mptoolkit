@@ -464,19 +464,19 @@ operator_prod_regular(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
 		      StateComponent const& B);
 
 
-// does Result'(s')(i',j') = M(s',s)(a,b) A(a)(i',i) E(s)(i',j) B(b)(j',j)^*
+// does Result'(s')(i',j') = M(s',s)(a,b) E(a)(i',i) A(s)(i',j) F(b)(j',j)^*
 // This is the action of an operator on a state
 StateComponent
 operator_prod_inner(OperatorComponent const& M,
-                    StateComponent const& A, 
-                    StateComponent const& F,
-                    LinearAlgebra::HermitianProxy<StateComponent> const& B);
+                    StateComponent const& E, 
+                    StateComponent const& A,
+                    LinearAlgebra::HermitianProxy<StateComponent> const& F);
 
 StateComponent
 operator_prod_inner(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
-                    LinearAlgebra::HermitianProxy<StateComponent> const& A, 
-                    StateComponent const& E,
-                    StateComponent const& B);
+                    LinearAlgebra::HermitianProxy<StateComponent> const& E, 
+                    StateComponent const& A,
+                    StateComponent const& F);
 
 double
 norm_frob_sq(OperatorComponent const& x);
