@@ -249,8 +249,9 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
 
 	 {
 	    //TRACE(norm_frob_sq(Rhs))(inner_prod(Rhs, UnitMatrixRight));
-	    // Initial guess vector
-	    E[K][m] = MakeRandomMatrixOperator(Rhs.Basis1(), Rhs.Basis2(), Rhs.TransformsAs());
+	    // Initial guess vector -- scale it by the norm of Rhs, improves the stability
+	    E[K][m] = std::sqrt(RhsNorm2) * 
+	       MakeRandomMatrixOperator(Rhs.Basis1(), Rhs.Basis2(), Rhs.TransformsAs());
 	    // Orthogonalize the initial guess -- this is important for the numerical stability
 	    if (HasEigenvalue1 && Rhs.TransformsAs() == UnitMatrixRight.TransformsAs())
 	    {

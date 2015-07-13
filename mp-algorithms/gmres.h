@@ -109,14 +109,43 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
   typedef LinearAlgebra::Vector<value_type> VecType;
   VecType s(m+1), cs(m+1), sn(m+1);
   LinearAlgebra::Matrix<value_type> H(m+1, m+1, 0.0);
-  
+
   double normb = norm_frob(Precondition(b));
   Vector r = Precondition(b - MatVecMultiply(x));
   double beta = norm_frob(r);
+
+  // Initial guess for x:
+  // let r = MatVecMultiply(x);
+  // minimize choose prefactor to minimize norm_frob_sq(b - a*r)
+  // This means 
+  // norm_frob_sq(b) + |a|^2 norm_frob_sq(r) - <b|ar> - <ar|b>
+  // let <b|r> = c
+  // then norm_frob_sq(b) + |a|^2 norm_frob_sq(r) - 2*real(ac)
+  // So choose a = k*conj(c), for k real
+  // Then minimize:
+  // f(k) = norm_frob_sq(b) + k^2 |c|^2 norm_frob_sq(r) - 2*k*|c|^2
+  // minimize with respect to k:
+  // df/dk = 0 =>
+  // 2k |c|^2 norm_frob_sq(r) - 2|c|^2 = 0
+  // -> k = 1/norm_frob_sq(r)
+  // so scale r => r*conj(<b|r>)/norm_frob(r)
+  // r -> <r|b>/norm_frob(r)
+  // In practice, this seems to have negligble effect versus simply scaling
+  // the guess vector by the norm of b, so it is currently disabled.
+  // Also I don't understand the complex conjugation here.
   
+#if 0
+  TRACE(norm_frob(r));
+  r = MatVecMultiply(x);
+  r = Precondition(b - (inner_prod(b,r)/norm_frob_sq(r))*r);
+  beta = norm_frob(r);
+  TRACE(norm_frob(r));
+#endif
+
   if (normb == 0.0)
     normb = 1;
   resid = norm_frob(r) / normb;
+  DEBUG_TRACE(norm_frob(b))(norm_frob(MatVecMultiply(x)));
   DEBUG_TRACE(resid)(norm_frob(b - MatVecMultiply(x)) / norm_frob(b));
   if ((resid = norm_frob(r) / normb) <= tol) {
     tol = resid;
