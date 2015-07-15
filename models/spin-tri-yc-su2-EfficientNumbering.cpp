@@ -71,6 +71,7 @@ int main(int argc, char** argv)
 		   << "efficient way of numbering 1D chain. Operators are:\n"
 		   << "H_J1    - nearest neighbor spin exchange\n"
 		   << "H_J2    - next-nearest neighbor spin exchange\n"
+                   << "S       - total spin on a leg of cylinder\n"
 		   << "\nIf the lattice could potentially be tripartite (width is a multiple of 3), then we\n"
 		   << "define sublattice spin operators on width*3 unit cells,\n"
 		   << "S_A     - tripartite sublattice spin, including site S(0)[0]\n"
@@ -83,9 +84,9 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinSU2(Spin);
       UnitCell Cell = repeat(Site, w);
-      UnitCellOperator S(Cell, "S");
 
       // Add some operators on the unit cell
+      UnitCellOperator S(Cell, "S");
       for (int i = 0; i < w; ++i)
       {
 	 S += S[i];     // total spin on a leg of cylinder

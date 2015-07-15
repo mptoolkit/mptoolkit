@@ -1,4 +1,4 @@
-// *** C++ *** $Id: spin-tri-1SiteUnitCell-su2.cpp 1490 2015-05-19 09:15:06Z seyed $
+// *** C++ *** $Id: spin-tri-2SiteUnitCell-su2.cpp 1490 2015-05-19 09:15:06Z seyed $
 // Authors: Ian P. McCulloch and Seyed N. Saadatmand
 // Contact: s.saadatmand@uq.edu.au
 
@@ -40,7 +40,7 @@ int main(int argc, char** argv)
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Constructs a triangular lattice in the C_wrapping=(-1,w) cylindrical configuration with a 1-site size unit-cell,\n"
+	 std::cerr << "Constructs a triangular lattice in the C_wrapping=(-1,w) cylindrical configuration with a 2-site size unit-cell,\n"
 		   << "efficient way of numbering for 1D chain. Operators are:\n"
                    << "S_w     - total spin on a leg of cylinder\n"
 		   << "H_J1    - nearest neighbor spin exchange\n"
@@ -50,33 +50,36 @@ int main(int argc, char** argv)
       }
 
       LatticeSite Site = SpinSU2(Spin);
-      UnitCell Cell(Site);
+      UnitCell Cell = repeat(Site,2);
       UnitCellOperator S(Cell, "S");
 
       // Add some operators on the unit-cell
       UnitCellMPO S_w;
       for (int i = 0; i < w; ++i)
       {
-	 S_w += S(i);     // total spin on a leg of cylinder
+	 S_w += S(i)[0];     // total spin on a leg of cylinder
       }
 
       // Now we construct the InfiniteLattice,
       InfiniteLattice Lattice(Cell);
 
-      // Construct the Hamiltonian for a single unit-cell
+      // Construct the Hamiltonian for a single unit-cell,
       UnitCellMPO H1, H2;
     
+      for (int i = 0; i < 2; ++i)
+       {
 	 // Nearest neighbor bonds
 	 // vertical bonds
-	 H1 += inner( S(0) , S(1) );
+	 H1 += inner( S(0)[i] , S(1)[i] );
 	 // 60 degree bonds
-	 H1 += inner( S(0) , S(w) );           // up-right
-	 H1 += inner( S(0) , S(w+1) );         // down-right
+	 H1 += inner( S(0)[i] , S(i*w)[(i+1)%2] );      // up-right
+	 H1 += inner( S(0)[0] , S(i*w+1)[(i+1)%2] );    // down-right
 
 	 // next-nearest neighbor bonds
-	 H2 += inner( S(0) , S(2*w+1) );        // horizontal
-	 H2 += inner( S(0) , S(w-1) );          // up-right
-	 H2 += inner( S(0) , S(w+2) );          // down-right   
+	 H2 += inner( S(0)[i] , S(w+1)[i] );            // horizontal
+	 H2 += inner( S(0)[i] , S(i*w-1)[(i+1)%2] );    // up-right
+	 H2 += inner( S(0)[i] , S(i*w+2)[(i+1)%2] );    // down-right   
+       }
 
       Lattice["H_J1"] = sum_unit(H1);
       Lattice["H_J2"] = sum_unit(H2);
