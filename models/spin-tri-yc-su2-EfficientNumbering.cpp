@@ -7,28 +7,26 @@
 // The default unit-cell size is the width value.
 //
 // Example for a width-6 lattice (site numbers in brackets are periodic repeats in the vertical
-// direction (ie top-left (0) is the same site as the bottom-left 0).
-// Sites 6,7,8,9,10,11 are the second unit cell, eg 6 is (1)[0]
+// direction (i.e. top-left (5) is the same site as the bottom-left 5).
+// Sites 6,7,8,9,10,11 are the second unit cell, e.g. 6 is (1)[0].
 //
-// Note that sites 5,6 are NOT nearest neighbor.
-//
-//     (18)
-//  (6)  |
-//(0) | 17
-// | 11< |
-// 5< | 16
-// | 10< |
-// 4< | 15
-// |  9< |
-// 3< | 14
-// |  8< |
-// 2< | 13
-// |  7< |
-// 1< | 12
+//      (17)
+//  (11) |
+//(5) | 12
 // |  6< |
-// 0< |(17)
-// |(11)
-//(5)
+// 0< | 13
+// |  7< |
+// 1< | 14
+// |  8< |
+// 2< | 15
+// |  9< |
+// 3< | 16
+// | 10< |
+// 4< | 17
+// | 11< |
+// 5< | (12)
+// | (6)
+//(0)
 //
 
 #include "pheap/pheap.h"
@@ -105,10 +103,10 @@ int main(int argc, char** argv)
 	 }
       }
 
-      // Now we construct the InfiniteLattice
+      // Now we construct the InfiniteLattice,
       InfiniteLattice Lattice(Cell);
 
-      // Construct the Hamiltonian for a single unit cell
+      // Construct the Hamiltonian for a single unit-cell,
       UnitCellMPO H1, H2;
       for (int i = 0; i < w; ++i)
       {
