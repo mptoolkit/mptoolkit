@@ -81,6 +81,9 @@ int main(int argc, char** argv)
       Lattice["H_J1"] = sum_unit(H1);
       Lattice["H_J2"] = sum_unit(H2);
 
+      Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
+	 = "J1*H_J1 + J2*H_J2";
+
       // save the lattice
       pheap::ExportObject(FileName, Lattice);
    }

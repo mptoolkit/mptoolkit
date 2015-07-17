@@ -129,7 +129,7 @@ QuantumNumber Coerce(QuantumNumber const& q, SymmetryList const& SList)
       else
       {
 	 // copy the quantum number from *this into Other
- 	 CHECK(q.GetSymmetryList().GetSymmetryBase(ThisWhere) == S);
+ 	 CHECK_EQUAL(q.GetSymmetryList().GetSymmetryBase(ThisWhere), S);
 	 size_t ThisOffset = q.GetSymmetryList().QuantumNumberOffset(ThisWhere);
 
 	 QN_TRACE(ThisOffset);
@@ -139,10 +139,18 @@ QuantumNumber Coerce(QuantumNumber const& q, SymmetryList const& SList)
       }
       Iter += Size;
    }
+
+   // Remove the limitation that the symmetry must be included - this lets us remove
+   // symmetries from the symmetry list
+   // NOTE: we should do a check here that any symmetry we've removed is abelian.
+   // Removing a non-abelian symmetry will do very weird things!  Or more precisely,
+   // the quantum number should have degree 1 in the component that we removed.
+#if 0
    // make sure that we've included all symmetries
-   //   CHECK(ThisCountCheck == q.GetSymmetryList().NumSymmetries())
-   //        ("Quantum number cannot be coerced into the symmetry list")
-   //        (q)(q.GetSymmetryList())(SList);
+   CHECK(ThisCountCheck == q.GetSymmetryList().NumSymmetries())
+      ("Quantum number cannot be coerced into the symmetry list")
+      (q)(q.GetSymmetryList())(SList);
+#endif
 
    return Other;
 }

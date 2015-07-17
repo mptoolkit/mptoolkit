@@ -331,8 +331,10 @@ GetArguments(FormalArgumentList const& FormalArgs, ParameterList const& Params,
 
    // For the remaining arguments, we take the default values.
    // This requires invoking the parser with the existing arguments.
+   // We work from right to left, so that default arguments set on the right hand side
+   // can be used in expressions further to the left.
 
-   for (unsigned i = 0; i < FormalArgs.size(); ++i)
+   for (int i = int(FormalArgs.size())-1; i >= 0; --i)
    {
       // is the argument not set yet?
       if (Args.find(FormalArgs[i].Name) == Args.end())
@@ -342,7 +344,7 @@ GetArguments(FormalArgumentList const& FormalArgs, ParameterList const& Params,
 	    ("Function argument has no default value")
 	    (FormalArgs[i].Name);
 	 // Make sure that we don't add the argument until 
-	 // we've finished parsing it
+	 // we've finished parsing it, so make a temporary before calling Args[...]
 	 std::complex<double> c = ParseDefaultArgument(Args, 
 						       FormalArgs[i].Default);
 	 Args[FormalArgs[i].Name] = c;

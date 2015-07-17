@@ -461,6 +461,12 @@ StateComponent local_prod(SimpleOperator const& x, StateComponent const& A);
 // This is a coarse-graining operation
 StateComponent local_tensor_prod(StateComponent const& A, StateComponent const& B);
 
+// Calculates the 'reyni product' A * B
+// This is the component Result'[s] = A[s] \otimes B[s]
+// corresponds to the wavefunction where the amplitude of some state
+// s1, s2, .... is A(s1,s2,...) * B(s1,s2,....)
+StateComponent renyi_product(StateComponent const& A, StateComponent const& B);
+
 StateComponent triple_prod(MatrixOperator const& Op1, 
                              StateComponent const& A, 
                              LinearAlgebra::HermitianProxy<MatrixOperator> const&Op2);
