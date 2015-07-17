@@ -40,8 +40,8 @@ int main(int argc, char** argv)
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Constructs a triangular lattice in the C_wrapping=(-1,w) cylindrical configuration with a 2-site size unit-cell,\n"
-		   << "efficient way of numbering for 1D chain. Operators are:\n"
+	 std::cerr << "Constructs a triangular lattice in the C_wrapping=(-2,w) cylindrical configuration with a 2-site size unit-cell,\n"
+		   << "and efficient way of numbering for 1D chain. Operators are:\n"
                    << "S_w     - total spin on a leg of cylinder\n"
 		   << "H_J1    - nearest neighbor spin exchange\n"
 		   << "H_J2    - next-nearest neighbor spin exchange\n"
@@ -73,7 +73,7 @@ int main(int argc, char** argv)
 	 H1 += inner( S(0)[i] , S(1)[i] );
 	 // 60 degree bonds
 	 H1 += inner( S(0)[i] , S(i*w)[(i+1)%2] );      // up-right
-	 H1 += inner( S(0)[0] , S(i*w+1)[(i+1)%2] );    // down-right
+	 H1 += inner( S(0)[i] , S(i*w+1)[(i+1)%2] );    // down-right
 
 	 // next-nearest neighbor bonds
 	 H2 += inner( S(0)[i] , S(w+1)[i] );            // horizontal
