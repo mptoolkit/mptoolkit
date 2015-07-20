@@ -180,7 +180,7 @@ struct SubProductLeftProject
        {
 	  Result = operator_prod(herm(*I), Result, *I);
        }
-      Result -= inner_prod(Result, Proj) * Ident;
+      Result -= inner_prod(Proj, Result) * Ident;
       return In - Result;
    }
 
@@ -237,7 +237,7 @@ struct SubProductRightProject
 	 Result = operator_prod(*I, Result, herm(*I));
       }
       Result = delta_shift(Result, adjoint(QShift));
-      Result -= inner_prod(Result, Proj) * Ident;
+      Result -= inner_prod(Proj, Result) * Ident;
       return In - Result;
    }
 
@@ -273,9 +273,10 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
    SubProductLeftProject ProdL(Psi, QShift, Rho, Ident);
 
    int m = 30;
-   int max_iter = 1000;
+   int max_iter = 10000;
    double tol = 1e-14;
-   GmRes(Guess.back(), ProdL, H0, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>());
+   int Res = GmRes(Guess.back(), ProdL, H0, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(),1);
+   CHECK_EQUAL(Res, 0);
 
    // remove the spurious constant term from the energy
    DEBUG_TRACE("Spurious part")(inner_prod(Guess.back(), Rho));
@@ -319,9 +320,10 @@ MPO_EigenvaluesRight(StateComponent& Guess, LinearWavefunction const& Psi,
    SubProductRightProject ProdR(Psi, QShift, Rho, Ident);
 
    int m = 30;
-   int max_iter = 1000;
+   int max_iter = 10000;
    double tol = 1e-14;
-   GmRes(Guess.front(), ProdR, H0, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>());
+   int Res = GmRes(Guess.front(), ProdR, H0, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(),1);
+   CHECK_EQUAL(Res, 0);
 
    // remove the spurious constant term from the energy
    Guess.front() =  Guess.front() - inner_prod(Rho, Guess.front()) * Guess.back();
