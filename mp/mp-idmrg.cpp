@@ -279,7 +279,7 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
 
    // remove the spurious constant term from the energy
    DEBUG_TRACE("Spurious part")(inner_prod(Guess.back(), Rho));
-   Guess.back() -= inner_prod(Guess.back(), Rho) * Guess.front();
+   Guess.back() -= inner_prod(Rho, Guess.back()) * Guess.front();
 
 #if 0
 #if !defined(NDEBUG)
@@ -324,7 +324,7 @@ MPO_EigenvaluesRight(StateComponent& Guess, LinearWavefunction const& Psi,
    GmRes(Guess.front(), ProdR, H0, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>());
 
    // remove the spurious constant term from the energy
-   Guess.front() =  Guess.front() - inner_prod(Guess.front(), Rho) * Guess.back();
+   Guess.front() =  Guess.front() - inner_prod(Rho, Guess.front()) * Guess.back();
 
    return Energy;
 }
