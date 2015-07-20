@@ -416,7 +416,7 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
 	 // Or if we are not in the scalar sector, then there might be an additional eigenvalue 1
 	 // due to symmetry.  We don't attempt to handle the case where we have more than one
 	 // eigenvalue 1 in the same symmetry sector.
-	 if (Classification.is_unitary() && (!is_scalar(Diag.Basis2()[0]) || !Classification.is_complex_identity()))
+	 if (Classification.is_unitary())// && (!is_scalar(Diag.Basis2()[0]) || !Classification.is_complex_identity()))
 	 {
 	    if (Verbose)
 	       std::cerr << "Non-trivial unitary at column " << Col 
@@ -429,6 +429,7 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
 	    std::complex<double> EtaL = FindClosestUnitEigenvalue(UnitMatrixLeft, 
 								  InjectLeftQShift(Diag, Psi, QShift), 
 								  Tol, Verbose);
+	    EtaL = conj(EtaL); // left eigenvalue, so conjugate (see comment at operator_actions.h)
 	    if (Verbose)
 	       std::cerr << "Eigenvalue of unitary operator is " << EtaL << std::endl;
             Factor = EtaL;

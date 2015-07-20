@@ -35,9 +35,9 @@ using LinearAlgebra::norm_2;
 
 double const DGKS_Threshold = 1.0 / std::sqrt(2.0); // 1.0; // between 0 and 1.
 
-template < typename Matrix, typename Vector1, typename Vector2 >
+template <typename Matrix, typename Vector1, typename Vector2>
 void 
-Update(Vector1 &x, int k, Matrix &h, Vector2 &s, Vector1 v[])
+Update(Vector1& x, int k, Matrix const& h, Vector2 const& s, Vector1 v[])
 {
   Vector2 y(s);
 
@@ -86,11 +86,9 @@ void GeneratePlaneRotation(Real &dx, Real &dy, Real &cs, Real &sn)
 }
 
 template<typename Real> 
-void ApplyPlaneRotation(Real &dx, Real &dy, Real &cs, Real &sn)
+void ApplyPlaneRotation(Real &dx, Real &dy, Real cs, Real sn)
 {
-   //Real temp  =  cs * dx + conj(sn) * dy * (cs / conj(cs));
-   //   TRACE(LinearAlgebra::norm_frob_sq(cs/conj(cs)));
-   Real temp  =  cs * dx + sn * dy;
+   Real temp  =  conj(cs) * dx + conj(sn) * dy;
    dy = -sn * dx + cs * dy;
    dx = temp;
 }
@@ -100,10 +98,6 @@ int
 GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
       int& m, int& max_iter, double& tol, PrecFunc Precondition, int Verbose = 0)
 {
-   double resid;
-  int i, j = 1, k;
-  Vector w;
-
   //  typedef typename Vector::value_type value_type;
   typedef std::complex<double> value_type;
   typedef LinearAlgebra::Vector<value_type> VecType;
@@ -144,7 +138,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
 
   if (normb == 0.0)
     normb = 1;
-  resid = norm_frob(r) / normb;
+  double resid = norm_frob(r) / normb;
   DEBUG_TRACE(norm_frob(b))(norm_frob(MatVecMultiply(x)));
   DEBUG_TRACE(resid)(norm_frob(b - MatVecMultiply(x)) / norm_frob(b));
   if ((resid = norm_frob(r) / normb) <= tol) {
@@ -153,15 +147,19 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
     return 0;
   }
 
+  Vector w;
+
   Vector* v = new Vector[m+1];
 
-  while (j <= max_iter) 
+  int j = 1;
+  while (j <= max_iter)
   {
      v[0] = (1.0 / beta) * r;
      zero_all(s);
      s[0] = beta;
-    
-     for (i = 0; i < m && j <= max_iter; i++, j++) 
+
+     int i = 0;
+     while (i < m && j <= max_iter && resid >= tol)
      {
 	if (Verbose > 2)
 	   std::cerr << "GMRES: iteration " << i << std::endl;
@@ -169,7 +167,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
 	double NormFrobSqH = 0; // for DGKS correction
 
         w = Precondition(MatVecMultiply(v[i]));
-        for (k = 0; k <= i; k++) 
+        for (int k = 0; k <= i; k++) 
         {
            H(k, i) = inner_prod(v[k], w);
            w -= H(k, i) * v[k];
@@ -181,7 +179,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
 	if (NormFrobSqF < DGKS_Threshold * DGKS_Threshold * NormFrobSqH)
 	{
 	   DEBUG_TRACE("DGKS correction in GMRES")(NormFrobSqF / (DGKS_Threshold * DGKS_Threshold * NormFrobSqH));
-	   for (k = 0; k <= i; k++) 
+	   for (int k = 0; k <= i; k++) 
 	   {
 	      value_type z = inner_prod(v[k], w);
 	      H(k, i) += z;
@@ -193,35 +191,33 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
         H(i+1, i) = norm_frob(w);
         v[i+1] = w * (1.0 / H(i+1, i));
 
-        for (k = 0; k < i; k++)
+        for (int k = 0; k < i; k++)
            ApplyPlaneRotation(H(k,i), H(k+1,i), cs[k], sn[k]);
       
         GeneratePlaneRotation(H(i,i), H(i+1,i), cs[i], sn[i]);
         ApplyPlaneRotation(H(i,i), H(i+1,i), cs[i], sn[i]);
-        //TRACE(H(i,i))(H(i+1,i));
-
         ApplyPlaneRotation(s[i], s[i+1], cs[i], sn[i]);
       
-        if ((resid = norm_2(s[i+1]) / normb) < tol) 
-        {
-           Update(x, i, H, s, v);
-           tol = resid;
-           max_iter = j;
-           delete [] v;
-	   if (Verbose)
-	      std::cerr << "GMRES: finished, iter=" << (j-1) << ", resid=" << resid << std::endl;
-
-	   DEBUG_TRACE("GMRES return")(resid);
-           return 0;
-        }
+	resid = norm_2(s[i+1]) / normb;
 
 	if (Verbose > 2)
 	   std::cerr << "GMRES: resid=" << resid << '\n';
 
-        //TRACE(resid);
+	++i;
+	++j;
+
+#if 0
+	// debugging check
+	{
+	   Vector X2 = x;
+	   Update(X2, i-1, H, s, v);
+	   Vector R = Precondition(b - MatVecMultiply(X2));
+	   TRACE(i)(norm_2(s[i]))(norm_frob(R));
+	}
+#endif
+
      }
-     //TRACE(H);
-     Update(x, m-1, H, s, v);
+     Update(x, i-1, H, s, v);
      r = Precondition(b - MatVecMultiply(x));
      beta = norm_frob(r);
 

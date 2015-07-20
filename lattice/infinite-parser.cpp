@@ -395,6 +395,9 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 	    |   keyword_d[constants_p[push_value<ElementType>(self.eval)]]
 	    |   keyword_d[self.Arguments[push_value<ElementType>(self.eval)]]
 	    |   prod_expression
+	    |   prod_unit_expression
+	    |   prod_unit_r_expression
+	    |   string_expression
 	    |   sum_unit_expression
 	    |   sum_kink_expression
 	    |   sum_k_expression

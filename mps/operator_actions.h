@@ -1,7 +1,18 @@
 // -*- C++ -*- $Id$
 //
 // functions for operators acting on wavefunctions
-
+//
+// These are designed so that the left matrices (E matrices)
+// are Hermitian conjugates of the right matrices (F matrices).
+//
+// If we contact over part of a network using E matrices and
+// part-way with F matrices, the final expectation value is
+// inner_prod(E, F), or equivalently scalar_prod(herm(E), F).
+//
+// This means however that if we calculate eigenvalues of
+// some MPO from the left, then the resulting eigenvalue
+// is the conjgate of what we would expect.
+  
 #if !defined(OPERATOR_ACTIONS_H_SDH47589FOIJHO9JEW)
 #define OPERATOR_ACTIONS_H_SDH47589FOIJHO9JEW
 
@@ -94,6 +105,15 @@ MatrixOperator
 inject_right(MatrixOperator const& m, 
              GenericMPO const& Op, 
              LinearWavefunction const& Psi);
+
+// Calculates the operator contraction, with a matrix
+// actong on the left hand side of the wavefunction.
+// Op must have 1x1 boundaries
+// --Psi1--... Psi1--+
+//    |         |    |
+//    Op- ...  Op    m
+//    |         |    |
+// --Psi2*-... Psi2*-+
 
 MatrixOperator
 inject_right(MatrixOperator const& m, 

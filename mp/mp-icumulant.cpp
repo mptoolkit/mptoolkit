@@ -302,8 +302,7 @@ int main(int argc, char** argv)
       
       // If no output switches are used, default to showing everything
       if (!ShowRealPart && !ShowImagPart && !ShowMagnitude
-	  && !ShowCartesian && !ShowPolar && !ShowArgument
-	  && !ShowRadians)
+	  && !ShowCartesian && !ShowPolar && !ShowArgument)
       {
 	 ShowCartesian = true;
 	 ShowPolar = true;
