@@ -221,14 +221,17 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
      r = Precondition(b - MatVecMultiply(x));
      beta = norm_frob(r);
 
-     if ((resid = beta / normb) < tol) 
+     // use the old value of resid here, to avoid cases 
+     // where the recalculation no longer satisfies the convergence criteria
+     if (resid < tol) 
      {
-        tol = resid;
+	double UpdatedResid = beta / normb;
+        tol = UpdatedResid;
         max_iter = j;
         delete [] v;
 	if (Verbose)
-	   std::cerr << "GMRES: finished, iter=" << (j-1) << ", resid=" << resid << std::endl;
-	DEBUG_TRACE("GMRES return")(resid);
+	   std::cerr << "GMRES: finished, iter=" << (j-1) << ", approx resid=" << resid 
+		     << ", actual resid=" << UpdatedResid << std::endl;
         return 0;
      }
      else
@@ -236,6 +239,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
 	if (Verbose > 1)
 	   std::cerr << "GMRES: restarting, iter=" << (j-1) << ", resid=" << resid << '\n';
      }
+     resid = beta / normb;
      DEBUG_TRACE(resid)(norm_frob(Precondition(b - MatVecMultiply(x))) / normb)
         (norm_frob(b - MatVecMultiply(x)) / norm_frob(b));
   }
