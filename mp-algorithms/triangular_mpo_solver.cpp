@@ -416,7 +416,12 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
 	 // Or if we are not in the scalar sector, then there might be an additional eigenvalue 1
 	 // due to symmetry.  We don't attempt to handle the case where we have more than one
 	 // eigenvalue 1 in the same symmetry sector.
-	 if (Classification.is_unitary())// && (!is_scalar(Diag.Basis2()[0]) || !Classification.is_complex_identity()))
+#if defined(NDEBUG)
+	 if (Classification.is_unitary() && (!is_scalar(Diag.Basis2()[0]) || !Classification.is_complex_identity()))
+#else
+	 // if we're debugging, then find the eigenvector anyway, even if its the identity
+	 if (Classification.is_unitary())
+#endif
 	 {
 	    if (Verbose)
 	       std::cerr << "Non-trivial unitary at column " << Col 
