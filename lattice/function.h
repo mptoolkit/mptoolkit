@@ -310,7 +310,7 @@ GetArguments(FormalArgumentList const& FormalArgs, ParameterList const& Params,
    Function::ArgumentList Args;
 
    // keep an index into the current argument number for unnamed arguments
-   int CurrentAnonArg = 0;
+   unsigned CurrentAnonArg = 0;
 
    for (unsigned i = 0; i < Params.size(); ++i)
    {
