@@ -389,6 +389,9 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
       // Now do the classification, based on the properties of the diagonal operator
       FiniteMPO Diag = Op(Col, Col);
       OperatorClassification Classification = classify(Diag, UnityEpsilon);
+
+      TRACE(Classification);
+
       if (Classification.is_null())
       {
          DEBUG_TRACE("Zero diagonal element")(Col)(Diag);
@@ -474,6 +477,10 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
 	 else if (Verbose && Classification.is_identity())
 	 {
 	    std::cerr << "Diagonal component is the identity\n";
+	 }
+	 else if (Verbose && Classification.is_complex_identity())
+	 {
+	    std::cerr << "Diagonal component is proportional to the identity\n";
 	 }
 
 	 // If we have an eigenvalue equal to 1, then decompose C into parallel and perpendicular parts
