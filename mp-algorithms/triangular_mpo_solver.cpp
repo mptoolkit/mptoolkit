@@ -390,8 +390,6 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
       FiniteMPO Diag = Op(Col, Col);
       OperatorClassification Classification = classify(Diag, UnityEpsilon);
 
-      TRACE(Classification);
-
       if (Classification.is_null())
       {
          DEBUG_TRACE("Zero diagonal element")(Col)(Diag);
@@ -427,9 +425,19 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
 #endif
 	 {
 	    if (Verbose)
-	       std::cerr << "Non-trivial unitary at column " << Col 
+	    {
+	       if (Classification.is_complex_identity())
+	       {
+	       std::cerr << "Identity in non-scalar sector at " << Col 
 			 << ", finding left eigenvalue..." << std::endl;
-	    
+	       }
+	       else
+	       {
+		  std::cerr << "Non-trivial unitary at column " << Col 
+			    << ", finding left eigenvalue..." << std::endl;
+	       }
+	    }
+
 	    // Find the largest eigenvalue
 	    // We need initial guess vectors in the correct symmetry sector
 	    UnitMatrixLeft = MakeRandomMatrixOperator(LeftIdentity.Basis1(), LeftIdentity.Basis2(), Diag.Basis2()[0]);
