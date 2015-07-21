@@ -96,7 +96,7 @@ dnl Checks for programs
 AC_PROG_INSTALL
 
 dnl ACX_SUBVERSION_VERSION
-if test x"${PACKAGE_VERSION:0:4}" == xHEAD ; then
+if test x"${PACKAGE_VERSION:0:8}" == x"SVN-HEAD" ; then
  if (svnversion . > /dev/null 2>&1) ; then
   CXXFLAGS="$CXXFLAGS -DSVN_VERSION=\`svnversion \$(SRCDIR)\`"
  else

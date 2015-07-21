@@ -12135,7 +12135,7 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL}'
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
 
-if test x"${PACKAGE_VERSION:0:4}" == xHEAD ; then
+if test x"${PACKAGE_VERSION:0:8}" == x"SVN-HEAD" ; then
  if (svnversion . > /dev/null 2>&1) ; then
   CXXFLAGS="$CXXFLAGS -DSVN_VERSION=\`svnversion \$(SRCDIR)\`"
  else
