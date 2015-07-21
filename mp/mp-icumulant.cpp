@@ -216,6 +216,7 @@ int main(int argc, char** argv)
    int NMax = 3;
    int NLegs = 1;
    int UnitCellSize = 0;
+   int Degree = 0;
    double Spin = 0.5;
    bool Print = false;
    bool ShowRealPart = false;
@@ -261,6 +262,8 @@ int main(int argc, char** argv)
 	  "display the argument in radians instead of degrees")
 	 ("unitcell,u", prog_opt::value(&UnitCellSize),
 	  "scale the results to use this unit cell size [default wavefunction unit cell]")
+	 ("degree,d", prog_opt::value(&Degree),
+	  "force setting the degree of the MPO")
 	 ("quiet,q", prog_opt::bool_switch(&Quiet), "Don't show column headings")
          ("print,p", prog_opt::bool_switch(&Print), "Print the MPO to standard output")
 	 ("tol", prog_opt::value(&Tol),
@@ -402,6 +405,9 @@ int main(int argc, char** argv)
       std::vector<KMatrixPolyType> E;
       SolveMPO_Left(E, Phi, Psi.QShift, Op, Identity, Rho, Power > 1, Tol, UnityEpsilon, Verbose);
       Moments.push_back(ExtractOverlap(E.back()[1.0], Rho));
+      // Force the degree of the MPO
+      if (Degree != 0)
+	 Moments.back()[Degree] += 0.0;
       if (CalculateMoments && !Verbose)
 	 ShowMoments(Moments.back(), ShowRealPart, ShowImagPart, 
 		     ShowMagnitude, ShowArgument, ShowRadians,
@@ -422,6 +428,9 @@ int main(int argc, char** argv)
 	 SolveMPO_Left(E, Phi, Psi.QShift, Op, Identity, Rho, p < Power-1, 
 		       Tol, UnityEpsilon, Verbose);
 	 Moments.push_back(ExtractOverlap(E.back()[1.0], Rho));
+	 // Force the degree of the MPO
+	 if (Degree != 0)
+	    Moments.back()[std::pow(Degree, p+1)] += 0.0;
 	 if (CalculateMoments && !Verbose)
 	    ShowMoments(Moments.back(), ShowRealPart, ShowImagPart, 
 			ShowMagnitude, ShowArgument, ShowRadians,
