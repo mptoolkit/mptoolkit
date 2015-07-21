@@ -16,6 +16,7 @@
 #if !defined(MPTOOLKIT_LATTICE_FUNCTION_H)
 #define MPTOOLKIT_LATTICE_FUNCTION_H
 
+#include "common/trace.h"
 #include <pstream/pstream.h>
 #include <string>
 #include <vector>
@@ -325,8 +326,13 @@ GetArguments(FormalArgumentList const& FormalArgs, ParameterList const& Params,
 	 CHECK(CurrentAnonArg < FormalArgs.size())
 	    ("Too many parameters supplied to function")
 	    (Params);
+	 Args[FormalArgs[CurrentAnonArg++].Name] = Params[i].Value;
       }
-      Args[FormalArgs[CurrentAnonArg++].Name] = Params[i].Value;
+      else
+      {
+	 // named parameter
+	 Args[Params[i].Name] = Params[i].Value;
+      }
    }
 
    // For the remaining arguments, we take the default values.
@@ -349,6 +355,7 @@ GetArguments(FormalArgumentList const& FormalArgs, ParameterList const& Params,
 						       FormalArgs[i].Default);
 	 Args[FormalArgs[i].Name] = c;
       }
+      DEBUG_TRACE("value for argument")(FormalArgs[i].Name)(Args[FormalArgs[i].Name]);
    }
 
    return Args;
