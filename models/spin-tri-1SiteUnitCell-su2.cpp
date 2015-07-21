@@ -1,4 +1,4 @@
-// *** C++ *** $Id: spin-tri-1SiteUnitCell-su2.cpp 1490 2015-05-19 09:15:06Z seyed $
+// -*- C++ -*- $Id: spin-tri-1SiteUnitCell-su2.cpp 1490 2015-05-19 09:15:06Z seyed $
 // Authors: Ian P. McCulloch and Seyed N. Saadatmand
 // Contact: s.saadatmand@uq.edu.au
 

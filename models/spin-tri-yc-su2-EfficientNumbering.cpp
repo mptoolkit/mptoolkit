@@ -1,4 +1,4 @@
-// *** C++ *** $Id: spin-tri-yc-su2.EfficientNumbering.cpp 1490 2015-05-19 09:15:06Z ianmcc $
+// -*- C++ -*- $Id: spin-tri-yc-su2.EfficientNumbering.cpp 1490 2015-05-19 09:15:06Z ianmcc $
 // Authors: Ian P. McCulloch and Seyed N. Saadatmand
 // Contact: s.saadatmand@uq.edu.au
 
@@ -126,6 +126,9 @@ int main(int argc, char** argv)
 
       Lattice["H_J1"] = sum_unit(H1);
       Lattice["H_J2"] = sum_unit(H2);
+
+      Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
+	 = "J1*H_J1 + J2*H_J2";
 
       // Add the tripartite sublattice magnetization operators
       if (w%3 == 0)
