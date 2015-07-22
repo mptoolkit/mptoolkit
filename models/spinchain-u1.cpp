@@ -15,13 +15,13 @@ int main(int argc, char** argv)
    try
    {
       half_int Spin = 0.5;
-      std::string LatticeName;
+      std::string LatticeFileName;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
-         ("out,o", prog_opt::value(&LatticeName), "output filename [required]")
+         ("out,o", prog_opt::value(&LatticeFileName), "output filename [required]")
          ;
       
       prog_opt::variables_map vm;        
@@ -31,21 +31,25 @@ int main(int argc, char** argv)
 		      run(), vm);
       prog_opt::notify(vm);    
       
+      OperatorDescriptions OpDescriptions;
+      OpDescriptions.add_operators()
+	 ("H_J1z", "nearest neighbor spin coupling Sz Sz")
+	 ("H_J1t", "nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
+	 ("H_J1" , "nearest neighbor spin exchange = H_J1z + H_J1t")
+	 ("H_J2z", "next-nearest neighbor spin coupling Sz Sz")
+	 ("H_J2t", "next-nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
+	 ("H_J2" , "next-nearest neighbor spin exchange = H_J1z + H_J1t")
+	 ("H_B1" , "nearest neighbor biquadratic spin exchange (S.S)^2")
+	 ("H_B2" , "next-nearest neighbor biquadratic spin exchange (S.S)^2")
+	 ("H_mu" , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
+	 ;
+
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Operators:\n"
-		   << "H_J1z   - nearest neighbor spin coupling Sz Sz\n"
-		   << "H_J1t   - nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)\n"
-		   << "H_J1    - nearest neighbor spin exchange = H_J1z + H_J1t\n"
-		   << "H_J2z   - next-nearest neighbor spin coupling Sz Sz\n"
-		   << "H_J2t   - next-nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)\n"
-		   << "H_J2    - next-nearest neighbor spin exchange = H_J1z + H_J1t\n"
-		   << "H_B1    - nearest neighbor biquadratic spin exchange (S.S)^2\n"
-		   << "H_B2    - next-nearest neighbor biquadratic spin exchange (S.S)^2\n"
-		   << "H_mu    - single-ion anistotropy, H_mu = sum_i Sz(i)^2\n"
+	 std::cerr << "Operators:\n" << OpDescriptions;
 	    ;
          return 1;
       }
@@ -68,7 +72,13 @@ int main(int argc, char** argv)
 
       Lattice["H_mu"] = sum_unit(Sz(0)*Sz(0));
 
-      pheap::ExportObject(LatticeName, Lattice);
+      // Information about the lattice
+      Lattice.set_description("Spin chain");
+      Lattice.set_command_line(argc, argv);
+      Lattice.set_operator_descriptions(OpDescriptions);
+
+      // save the lattice to disc
+      pheap::ExportObject(LatticeFileName, Lattice);
    }
    catch (std::exception& e)
    {

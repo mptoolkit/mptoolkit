@@ -156,22 +156,7 @@
 namespace PStream
 {
 
-//
-// Currently defined stream classes:
-//
-// 0   opbinarybuf<NativeFormat>
-// 1   opbinarybuf<Linux_i386>
-// 2   opbinarybuf<Tru64_Alpha>
-// 3   opbinarybuf<Format_XDR>
-// 4   optextbuf     (not yet implemented)
-//
-
-// The intention behind NativeFormat is that it is used exclusively on a
-// single architecture, and can therefore make various assumptions
-// that the other formats cannot.  For example, a POD type could be streamed
-// as a simple memcpy of the size of the type thus ignoring padding issues.
-// This is not normally possible because the platform-aware formats don't
-// know how to handle padding.  None of this is implemented yet, however.
+// see pstreamformats.h for {i|o}pstreambuf formats
 
 int const NumConcreteStreamClasses = 4;
 

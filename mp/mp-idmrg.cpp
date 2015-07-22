@@ -868,6 +868,9 @@ int main(int argc, char** argv)
    ProcControl::Initialize(argv[0], 0, 0, true);
    try
    {
+      // flush cout if we write to cerr
+      std::cerr.tie(&std::cout);
+
       int NumIter = 20;
       int MinIter = 4;
       int MinStates = 1;

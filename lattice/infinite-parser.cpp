@@ -432,6 +432,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 		   |   ('-' >> term)[invoke_binary<ElementType, 
 				     binary_subtraction<ElementType> >(self.eval)]
 		   )
+	    >> !end_p     // skip trailing whitespace
 	    ;
       }
       

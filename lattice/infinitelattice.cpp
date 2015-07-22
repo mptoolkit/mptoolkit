@@ -2,6 +2,7 @@
 
 #include "infinitelattice.h"
 #include "lattice/infinite-parser.h"
+#include "mp/copyright.h" // for EscapeArgument
 
 InfiniteLattice::InfiniteLattice()
 {
@@ -17,8 +18,50 @@ InfiniteLattice::InfiniteLattice(std::string const& Description, UnitCell const&
 {
 }
 
+void
+InfiniteLattice::set_command_line(int argc, char** argv)
+{
+   std::ostringstream Out;
+   Out << EscapeArgument(argv[0]);
+   for (int i = 1; i < argc; ++i)
+      Out << ' ' << EscapeArgument(argv[i]);
+   CommandLine_ = Out.str();
+
+   // timestamp
+   time_t now = time(NULL);
+   char s[200];
+   int const max = 200;
+   strftime(s, max, "%a, %d %b %Y %T %z", localtime(&now));
+   Timestamp_ = s;
+}
+
 // operators
 
+void
+InfiniteLattice::set_operator_descriptions(OperatorDescriptions const& Desc)
+{
+   // iterate through the descriptions
+   for (OperatorDescriptions::const_iterator I = Desc.begin(); I != Desc.end(); ++I)
+   {
+      if (this->operator_exists(I->first))
+      {
+	 Operators_[I->first].set_description(I->second);
+      }
+      else
+      {
+	 std::cerr << "warning: operator " << I->first << " has a description but is not defined in the lattice.\n";
+      }
+   }
+
+   // Now go through the operators and check for any that don't have a description
+   for (const_operator_iterator I = this->begin_operator(); I != this->end_operator(); ++I)
+   {
+      if (I->second.description().empty())
+      {
+	 std::cerr << "warning: lattice operator " << I->first << " has no description.\n";
+      }
+   }
+}
 
 bool
 InfiniteLattice::operator_exists(std::string const& s) const
@@ -125,6 +168,8 @@ InfiniteLattice::eval_function(std::string const& Func,
 PStream::opstream&
 operator<<(PStream::opstream& out, InfiniteLattice const& L)
 {
+   int Version = 0;
+   out << Version;
    out << L.Description_;
    out << L.CommandLine_;
    out << L.Timestamp_;
@@ -138,6 +183,18 @@ operator<<(PStream::opstream& out, InfiniteLattice const& L)
 PStream::ipstream&
 operator>>(PStream::ipstream& in, InfiniteLattice& L)
 {
+   int Version;
+   in >> Version;
+   if (Version > 0)
+   {
+      PANIC("This program is too old to read this lattice file format,"
+	    " expected Version=0")(Version);
+   }
+   if (Version < 0)
+   {
+      PANIC("Lattice file is too old, please reconstruct the lattice."
+	    " expected Version=0")(Version);
+   }
    in >> L.Description_;
    in >> L.CommandLine_;
    in >> L.Timestamp_;

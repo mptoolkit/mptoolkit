@@ -10,6 +10,9 @@
 #include <boost/algorithm/string.hpp>
 #include <time.h>
 
+#include <complex>
+#include <sstream>
+
 #define AS_STRING(X) AS_STRING2(X)
 #define AS_STRING2(X) #X
 

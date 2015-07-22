@@ -134,8 +134,8 @@ class UnitCell
       // operators
 
       // iterators
-      const_operator_iterator begin_operator() const;
-      const_operator_iterator end_operator() const;
+      const_operator_iterator begin_operator() const { return Operators.begin(); }
+      const_operator_iterator end_operator() const { return Operators.end(); }
 
       // returns the identity operator on the UnitCell      
       operator_type identity() const;

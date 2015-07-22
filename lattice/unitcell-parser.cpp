@@ -769,6 +769,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
 		   |   ('-' >> term)[invoke_binary<ElementType, 
 				     binary_subtraction<ElementType> >(self.eval)]
 		   )
+	    >> !end_p     // skip trailing whitespace
 	    ;
       }
       

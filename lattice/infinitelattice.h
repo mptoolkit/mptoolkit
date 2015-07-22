@@ -17,6 +17,7 @@
 #include <vector>
 #include "pheap/pvalueptr.h"
 #include "lattice/function.h"
+#include "lattice/operator_descriptions.h"
 
 class InfiniteLattice
 {
@@ -48,8 +49,16 @@ class InfiniteLattice
 
       UnitCell const& GetUnitCell() const { return UnitCell_; }
 
-      std::string Description() const { return Description_; }
-      void SetDescription(std::string s) { Description_ = s; }
+      std::string description() const { return Description_; }
+      void set_description(std::string s) { Description_ = s; }
+
+      // Set the command_line used to construct the lattice.  Also sets the timestamp.
+      void set_command_line(int argc, char** argv);
+
+      std::string command_line() const { return CommandLine_; }
+      std::string timestamp() const { return Timestamp_; }
+
+      SymmetryList GetSymmetryList() const { return this->GetUnitCell().GetSymmetryList(); }
 
       // operators
 
@@ -66,6 +75,11 @@ class InfiniteLattice
 
       // returns true if the given operator exists, and is a ProductMPO
       bool product_operator_exists(std::string const& s) const;
+
+      // Sets the description of the operators according to Desc.  Prints a warning to cerr
+      // if there are extra operators named in Desc that are not part of the lattice,
+      // or if any operators don't have a name.
+      void set_operator_descriptions(OperatorDescriptions const& Desc);
 
       // Lookup the named operator
       InfiniteMPO& operator[](std::string const& Op);

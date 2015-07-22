@@ -15,6 +15,7 @@ PStream::opstream&
 operator<<(PStream::opstream& out, InfiniteMPO const& Op)
 {
    out << Op.Operator;
+   out << Op.Description;
    return out;
 }
 
@@ -22,6 +23,7 @@ PStream::ipstream&
 operator>>(PStream::ipstream& in, InfiniteMPO& Op)
 {
    in >> Op.Operator;
+   in >> Op.Description;
    return in;
 }
 

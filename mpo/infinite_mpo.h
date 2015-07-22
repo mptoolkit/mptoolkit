@@ -24,13 +24,13 @@ class InfiniteMPO
       InfiniteMPO() {}
 
       InfiniteMPO(operator_type const& Op) : Operator(Op) {}
-      InfiniteMPO(InfiniteMPO const& Op) : Operator(Op.op()) {}
+      InfiniteMPO(InfiniteMPO const& Op) : Operator(Op.Operator), Description(Op.Description) {}
       InfiniteMPO(std::complex<double> const& x) : Operator(x) {}
       InfiniteMPO(double x) : Operator(std::complex<double>(x)) {}
       InfiniteMPO(TriangularMPO const& Op) : Operator(Op) {}
       InfiniteMPO(ProductMPO const& Op) : Operator(Op) {}
 
-      InfiniteMPO& operator=(InfiniteMPO const& Op) { Operator=Op.op(); return *this; }
+      InfiniteMPO& operator=(InfiniteMPO const& Op) { Operator=Op.op(); Description = Op.Description; return *this; }
       InfiniteMPO& operator=(std::complex<double> const& x) { Operator=x; return *this; }
       InfiniteMPO& operator=(double x) { Operator=std::complex<double>(x); return *this; }
       InfiniteMPO& operator=(TriangularMPO const& Op) { Operator=Op; return *this; }
@@ -58,6 +58,13 @@ class InfiniteMPO
       operator_type& op() { return Operator; }
       operator_type const& op() const { return Operator; }
 
+
+      void set_description(std::string const& s)
+      { Description = s; }
+
+      std::string const& description() const
+      { return Description; }
+
 #if 0
       template <typename Visitor>
       typename Visitor::result_type
@@ -76,6 +83,7 @@ class InfiniteMPO
 
    private:
       operator_type Operator;
+      std::string Description;
 
       friend PStream::opstream& operator<<(PStream::opstream& out, InfiniteMPO const& Op);
       friend PStream::ipstream& operator>>(PStream::ipstream& in, InfiniteMPO& Op);

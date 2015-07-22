@@ -23,6 +23,22 @@
 #include <ostream>
 #include <boost/optional.hpp>
 
+// utility function - this should be somewhere else
+inline
+std::string
+format_complex(std::complex<double> const& c)
+{
+   std::ostringstream Out;
+   Out.precision(16);
+   Out << c.real();
+   if (c.imag() > 0)
+      Out << '+' << c.imag() << 'i';
+   else if (c.imag() < 0)
+      Out << c.imag() << 'i';
+   Out.flush();
+   return Out.str();
+}
+
 namespace Function
 {
 
@@ -59,15 +75,7 @@ struct ArgHelper
 
    FormalArgument operator=(std::complex<double> const& c) const
    {
-      std::ostringstream Out;
-      Out.precision(16);
-      Out << c.real();
-      if (c.imag() > 0)
-	 Out << '+' << c.imag() << 'i';
-      else if (c.imag() < 0)
-	 Out << c.imag() << 'i';
-      Out.flush();
-      return FormalArgument(Name, Out.str());
+      return FormalArgument(Name, format_complex(c));
    }
 
    std::string Name;

@@ -165,6 +165,7 @@ struct SiteOperatorParser : public grammar<SiteOperatorParser>
 		   |   ('-' >> term)[invoke_binary<element_type, 
 				     binary_subtraction<element_type> >(self.eval)]
 		   )
+	    >> !end_p     // skip trailing whitespace
 	    ;
       }
       

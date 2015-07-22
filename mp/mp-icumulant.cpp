@@ -383,7 +383,7 @@ int main(int argc, char** argv)
       // make Op the same size as our unit cell
       if (WavefuncUnitCellSize % Op.size() != 0)
       {
-         std::cout << "mp-iexpectation: fatal: the wavefunction unit cell "
+         std::cout << "mp-icumulant: fatal: the wavefunction unit cell "
             "must be a multiple of the operator unit cell.\n";
          return 1;
       }
