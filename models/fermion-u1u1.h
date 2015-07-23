@@ -11,7 +11,7 @@ LatticeSite FermionU1U1(std::string const& Sym1 = "N",
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::U1> QN(Symmetry);
    SiteBasis Basis(Symmetry);
-   SiteOperator CHup, Cup, CHdown, Cdown, P, R, N, Sp, Sm, Sz, Ep, Em, Ez, I, Nup, Ndown,
+   SiteOperator CHup, Cup, CHdown, Cdown, P, R, N, Sp, Sm, Sz, Qp, Qm, Qz, I, Nup, Ndown,
       Hu, Pdouble, ES, N_S, N_H;
    LatticeSite Site;
 
@@ -32,9 +32,9 @@ LatticeSite FermionU1U1(std::string const& Sym1 = "N",
       ("Cdown"   , "annihilation down spin fermion")
       ("CHup"    , "creation up spin fermion")
       ("CHdown"  , "creation down spin fermion")
-      ("Ep"      , "eta raising operator (create double-occupied site)")
-      ("Em"      , "eta lowering operator (annihiliate double-occupied site)")
-      ("Ez"      , "eta z-operator, equivalent to (N-1)/2")
+      ("Qp"      , "eta raising operator (create double-occupied site)")
+      ("Qm"      , "eta lowering operator (annihiliate double-occupied site)")
+      ("Qz"      , "eta z-operator, equivalent to (N-1)/2")
       ("N"       , "number operator")
       ("Nup"     , "number of up spins")
       ("Ndown"   , "number of down spins")
@@ -43,6 +43,7 @@ LatticeSite FermionU1U1(std::string const& Sym1 = "N",
       ("ES"      , "exp(i*pi*s)")
       ("Hu"      , "symmetrized Coulomb operator (n_up - 1/2) * (n_down - 1/2)")
       ("Pdouble" , "projector onto the double-occupied site") 
+      ("Pg"      , "Gutswiller projector = 1-Pdouble")
       ;
 
 
@@ -62,9 +63,9 @@ LatticeSite FermionU1U1(std::string const& Sym1 = "N",
    Sp = SiteOperator(Basis, QN(0,1), LatticeCommute::Bosonic);
    Sm = SiteOperator(Basis, QN(0,-1), LatticeCommute::Bosonic);
    Sz = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
-   Ep = SiteOperator(Basis, QN(2,0), LatticeCommute::Bosonic);
-   Em = SiteOperator(Basis, QN(-2,0), LatticeCommute::Bosonic);
-   Ez = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   Qp = SiteOperator(Basis, QN(2,0), LatticeCommute::Bosonic);
+   Qm = SiteOperator(Basis, QN(-2,0), LatticeCommute::Bosonic);
+   Qz = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    I = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    ES = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    N_S = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
@@ -144,15 +145,15 @@ LatticeSite FermionU1U1(std::string const& Sym1 = "N",
    Sz("up",   "up")       =  0.5;
    Sz("down", "down")     = -0.5;
 
-   // E^+
-   Ep("double", "empty") = 1;
+   // Q^+
+   Qp("double", "empty") = 1;
 
-   // E^-
-   Em("empty", "double") = 1;
+   // Q^-
+   Qm("empty", "double") = 1;
 
-   // E^z
-   Ez("double", "double") =  0.5;
-   Ez("empty",  "empty")  = -0.5;
+   // Q^z
+   Qz("double", "double") =  0.5;
+   Qz("empty",  "empty")  = -0.5;
    
    Site["I"] = I;
    Site[ParityOp] = P;
@@ -162,13 +163,14 @@ LatticeSite FermionU1U1(std::string const& Sym1 = "N",
    Site[Sym1] = N;
    Site["Hu"] = Hu;
    Site["Pdouble"] = Pdouble;
+   Site["Pg"] = I - Pdouble;
    Site["Sp"] = Sp;
    Site["Sm"] = Sm;
    Site["Sz"] = Sz;
    Site[Sym2] = Sz;
-   Site["Ep"] = Ep;
-   Site["Em"] = Em;
-   Site["Ez"] = Ez;
+   Site["Qp"] = Qp;
+   Site["Qm"] = Qm;
+   Site["Qz"] = Qz;
    Site["R"] = R;
    Site["CHup"] = CHup;
    Site["Cup"] = Cup;

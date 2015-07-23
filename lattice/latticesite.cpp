@@ -103,7 +103,8 @@ LatticeSite::set_operator_descriptions(OperatorDescriptions const& Desc)
       }
       else
       {
-	 std::cerr << "warning: operator " << I->first << " has a description but is not defined in the lattice site.\n";
+	 std::cerr << "warning: operator " << I->first 
+		   << " has a description but is not defined in the lattice site.\n";
       }
    }
 

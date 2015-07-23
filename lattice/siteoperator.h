@@ -189,7 +189,9 @@ class SiteOperator : public IrredTensor<std::complex<double> >
 
       void SetCommute(LatticeCommute x) { Com_ = x; }
 
-      std::string description() const { return Description_.empty() ? "(no description)" : Description_; }
+      std::string const& description() const { return Description_; }
+      std::string description_or_none() const 
+      { return Description_.empty() ? "(no description)" : Description_; }
       void set_description(std::string const& s) { Description_ = s; }
 
       // Make an identity operator over the given basis

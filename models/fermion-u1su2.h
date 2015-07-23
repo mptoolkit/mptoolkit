@@ -10,7 +10,7 @@ LatticeSite FermionU1SU2(std::string const& Sym1 = "N", std::string const& Sym2 
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":SU(2)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
-   SiteOperator C, CH, P, R, N, S, I, Hu, Pdouble, Ep, Em, Ez, N_S, N_H, Pg, ES;
+   SiteOperator C, CH, P, R, N, S, I, Hu, Pdouble, Qp, Qm, Qz, N_S, N_H, Pg, ES;
    LatticeSite Site;
 
    Basis.push_back("empty",  QN(0, 0));
@@ -28,12 +28,13 @@ LatticeSite FermionU1SU2(std::string const& Sym1 = "N", std::string const& Sym2 
       ("N"       , "number operator")
       ("N_S"     , "number of spins")
       ("N_H"     , "number of holons")
-      ("Ep"      , "eta raising operator (create double-occupied site)")
-      ("Em"      , "eta lowering operator (annihiliate double-occupied site)")
-      ("Ez"      , "eta z operator, equivalent to (N-1)/2")
+      ("Qp"      , "eta raising operator (create double-occupied site)")
+      ("Qm"      , "eta lowering operator (annihiliate double-occupied site)")
+      ("Qz"      , "eta z operator, equivalent to (N-1)/2")
       ("ES"      , "exp(i*pi*s)")
       ("Hu"      , "symmetrized Coulomb operator (n_up - 1/2) * (n_down - 1/2)")
       ("Pdouble" , "projector onto the double-occupied site") 
+      ("Pg"      , "Gutswiller projector = 1-Pdouble")
       ;
 
    C = SiteOperator(Basis, QN(-1,0.5), LatticeCommute::Fermionic);
@@ -57,8 +58,8 @@ LatticeSite FermionU1SU2(std::string const& Sym1 = "N", std::string const& Sym2 
    CH = adjoint(C);
 
    // create double occupied site (eta pairing)
-   Ep = sqrt(2.0) * prod(CH, CH, QN(2,0));
-   Em = sqrt(2.0) * prod(C, C, QN(-2,0));
+   Qp = sqrt(2.0) * prod(CH, CH, QN(2,0));
+   Qm = sqrt(2.0) * prod(C, C, QN(-2,0));
 
    // parity = (-1)^N   
    P("empty",  "empty")     =  1;
@@ -111,9 +112,9 @@ LatticeSite FermionU1SU2(std::string const& Sym1 = "N", std::string const& Sym2 
    Site[Sym2] = S;
    Site["C"] = C;
    Site["CH"] = CH;
-   Site["Ep"] = Ep;
-   Site["Em"] = Em;
-   Site["Ez"] = 0.5*(N-I);
+   Site["Qp"] = Qp;
+   Site["Qm"] = Qm;
+   Site["Qz"] = 0.5*(N-I);
    Site["N_S"] = N_S;
    Site["N_H"] = N_H;
    Site["ES"] = ES;

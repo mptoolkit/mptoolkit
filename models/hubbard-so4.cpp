@@ -29,16 +29,20 @@ int main(int argc, char** argv)
 		      run(), vm);
       prog_opt::notify(vm);    
       
+      OperatorDescriptions OpDescriptions;
+      OpDescriptions.add_operators()
+	 ("H_t"  , "nearest neighbor hopping")
+	 ("H_Us" , "on-site Coulomb interaction (n_up-1/2)(n_down-1/2)")
+	 ("H_J"  , "nearest-neighbor complex hopping i*(C^\\dagger_i C_{i+1} - H.c.)")
+	 ;
+
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
          std::cerr << "usage: " << argv[0] << " [options]\n";
          std::cerr << desc << '\n';
 	 std::cerr << "The unit cell is two sites.\n";
-	 std::cerr << "Operators:\n"
-		   << "H_t     - nearest neighbor hopping\n"
-		   << "H_Us    - on-site Coulomb interaction (n_up-1/2)(n_down-1/2)\n"
-	    ;
+	 std::cerr << "Operators:\n" << OpDescriptions;
          return 1;
       }
 
@@ -50,7 +54,15 @@ int main(int argc, char** argv)
 
       Lattice["H_t"]  = sum_unit(dot(CH(0)[0], C(0)[1]) + dot(CH(0)[1], C(1)[0]));
       Lattice["H_Us"] = sum_unit(0.25*(P(0)[0] + P(0)[1]));
+      Lattice["H_J"]  = sum_unit(std::complex<double>(0,1)
+				 *(dot(CH(0)[0], C(0)[1]) - dot(CH(0)[1], C(1)[0])));
 
+      // Information about the lattice
+      Lattice.set_description("SO(4) Fermi Hubbard model");
+      Lattice.set_command_line(argc, argv);
+      Lattice.set_operator_descriptions(OpDescriptions);
+
+      // save the lattice
       pheap::ExportObject(FileName, Lattice);
    }
    catch (std::exception& e)

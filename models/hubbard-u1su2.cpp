@@ -59,7 +59,8 @@ int main(int argc, char** argv)
       Lattice["H_U"]  = sum_unit(Pdouble(0));
       Lattice["H_Us"] = sum_unit(Hu(0));
       Lattice["H_V"]  = sum_unit(dot(N(0), N(1)));
-      Lattice["H_J"]  = sum_unit(std::complex<double>(0,1)*(dot(CH(0), C(1)) - dot(C(0), CH(1))));
+      Lattice["H_J"]  = sum_unit(std::complex<double>(0,1)
+				 *(dot(CH(0), C(1)) - dot(C(0), CH(1))));
 
       // Information about the lattice
       Lattice.set_description("U(1)xSU(2) Fermi Hubbard model");

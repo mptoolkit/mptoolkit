@@ -45,7 +45,7 @@ void DescribeLattice(InfiniteLattice const& L, int Verbose)
 	      I != L.GetUnitCell()[i].end_operator(); ++I)
 	 {
 	    std::cout << "         " << std::setw(10) << std::left << I->first
-		      << " - " << I->second.description() << '\n';
+		      << " - " << I->second.description_or_none() << '\n';
 	    if (Verbose > 1)
 	    {
 	       // show the actual operator
