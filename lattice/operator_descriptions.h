@@ -1,4 +1,11 @@
 // -*- C++ -*- $Id$
+//
+// Class to hold operator descriptions.
+//
+// To use:
+// Similar to the program_options pattern,
+// OperatorDescrptions OpDescriptions;
+// OpDescriptions.add_operators()("First operator", "First operator description")("second operator", "description) ... ;
 
 #if !defined(MPTOOLKIT_LATTICE_OPERATOR_DESCRIPTIONS_H)
 #define MPTOOLKIT_LATTICE_OPERATOR_DESCRIPTIONS_H
@@ -12,7 +19,7 @@ class OperatorDescriptions
 {
    public:
       typedef std::pair<std::string, std::string> value_type;
-      typedef std::map<std::string, std::string> data_type;
+      typedef std::vector<value_type> data_type;
 
       typedef data_type::const_iterator const_iterator;
 
@@ -24,14 +31,23 @@ class OperatorDescriptions
       OperatorDescriptions& operator()(std::string const& Name,
 				       std::string const& Desc)
       {
-	 Descriptions[Name] = Desc;
+	 if (Index.find(Name) == Index.end())
+	 {
+	    Index[Name] = Descriptions.size();
+	    Descriptions.push_back(std::make_pair(Name, Desc));
+	 }
+	 else
+	 {
+	    Descriptions[Index[Name]] = std::make_pair(Name, Desc);
+	 }
 	 return *this;
       }
 
       OperatorDescriptions& add_operators() { return *this; }
 
    private:
-      std::map<std::string, std::string> Descriptions;
+      data_type Descriptions;
+      std::map<std::string, int> Index;
 
 };
 

@@ -9,6 +9,10 @@
 
 using Tensor::IrredTensor;
 
+// version number for the lattice file format - the global variable is a bit of a hack,
+// will not work if we simultaneously read in two lattices in different threads!
+extern int LatticeVersion;
+
 struct LatticeCommute
 {
    enum Values { Fermionic = -1, None = 0, Bosonic = 1, Custom = 2 };
@@ -157,11 +161,13 @@ class SiteOperator : public IrredTensor<std::complex<double> >
 
       SiteOperator() {}
 
-      SiteOperator(SiteBasis const& B, QuantumNumber const& q, LatticeCommute Com = LatticeCommute::None)
-	 : base_type(B, q), Basis_(B), Com_(Com) {}
+      SiteOperator(SiteBasis const& B, QuantumNumber const& q, LatticeCommute Com = LatticeCommute::None,
+		   std::string Description = "")
+	 : base_type(B, q), Basis_(B), Com_(Com), Description_(Description) {}
 
-      SiteOperator(SiteBasis const& B, base_type const& b, LatticeCommute Com = LatticeCommute::None) 
-	 : base_type(b), Basis_(B), Com_(Com)
+      SiteOperator(SiteBasis const& B, base_type const& b, LatticeCommute Com = LatticeCommute::None,
+		   std::string Description = "")
+	 : base_type(b), Basis_(B), Com_(Com), Description_(Description)
 	 { CHECK_EQUAL(b.Basis1(), b.Basis2()); CHECK_EQUAL(B, b.Basis1()); }
 
       SiteBasis const& Basis() const { return Basis_; }
@@ -183,9 +189,8 @@ class SiteOperator : public IrredTensor<std::complex<double> >
 
       void SetCommute(LatticeCommute x) { Com_ = x; }
 
-      std::string const& Description() const { return Description_; }
-      void SetDescription(std::string const& s) { Description_ = s; }
-
+      std::string description() const { return Description_.empty() ? "(no description)" : Description_; }
+      void set_description(std::string const& s) { Description_ = s; }
 
       // Make an identity operator over the given basis
       static SiteOperator Identity(SiteBasis const& Basis);
@@ -194,9 +199,9 @@ class SiteOperator : public IrredTensor<std::complex<double> >
       static SiteOperator Identity(SiteBasis const& Basis1, SiteBasis const& Basis2);
 
    private:
-      std::string Description_;
       SiteBasis Basis_;
       LatticeCommute Com_;
+      std::string Description_;
 
    friend PStream::opstream& operator<<(PStream::opstream& out, SiteOperator const& Op);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, SiteOperator& Op);

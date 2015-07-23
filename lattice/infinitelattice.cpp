@@ -168,7 +168,7 @@ InfiniteLattice::eval_function(std::string const& Func,
 PStream::opstream&
 operator<<(PStream::opstream& out, InfiniteLattice const& L)
 {
-   int Version = 0;
+   int Version = 1;
    out << Version;
    out << L.Description_;
    out << L.CommandLine_;
@@ -185,15 +185,16 @@ operator>>(PStream::ipstream& in, InfiniteLattice& L)
 {
    int Version;
    in >> Version;
-   if (Version > 0)
+   LatticeVersion = Version;      // a bit of a hack
+   if (Version > 1)
    {
       PANIC("This program is too old to read this lattice file format,"
-	    " expected Version=0")(Version);
+	    "  Expected Version = 1")(Version);
    }
    if (Version < 0)
    {
       PANIC("Lattice file is too old, please reconstruct the lattice."
-	    " expected Version=0")(Version);
+	    "  Expected Version >= 0")(Version);
    }
    in >> L.Description_;
    in >> L.CommandLine_;

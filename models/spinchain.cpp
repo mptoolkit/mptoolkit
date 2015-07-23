@@ -14,13 +14,13 @@ int main(int argc, char** argv)
 {
    try
    {
-      half_int S = 0.5;
+      half_int Spin = 0.5;
       std::string FileName;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Spin,S", prog_opt::value(&S), "magnitude of the spin [default 0.5]")
+         ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
       
@@ -31,35 +31,65 @@ int main(int argc, char** argv)
 		      run(), vm);
       prog_opt::notify(vm);    
       
+      OperatorDescriptions OpDescriptions;
+      OpDescriptions.add_operators()
+	 ("H_xx", "nearest neighbor spin coupling Sx Sx")
+	 ("H_yy", "nearest neighbor spin exchange Sy Sy")
+	 ("H_zz", "nearest neighbor spin exchange Sz Sz")
+	 ("H_x" , "magnetic field in the x direction")
+	 ("H_y" , "magnetic field in the y direction")
+	 ("H_z" , "magnetic field in the z direction")
+	 ("H_J1z", "same as H_zz")
+	 ("H_J1t", "transverse spin exchange, H_xx + H_yy")
+	 ("H_J1" , "nearest neighbor spin exchange = H_J1z + H_J1t")
+	 ("H_B1" , "nearest neighbor biquadratic spin exchange (S.S)^2")
+	 ("H_mu" , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
+	 ;
+
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Operators:\n"
-		   << "H_xx    - nearest neighbor spin coupling Sx Sx\n"
-		   << "H_yy    - nearest neighbor spin exchange Sy Sy\n"
-		   << "H_zz    - nearest neighbor spin exchange Sz Sz\n"
-		   << "H_x     - magnetic field in the x direction\n"
-		   << "H_y     - magnetic field in the y direction\n"
-		   << "H_z     - magnetic field in the z direction\n"
-
-	    ;
+	 std::cerr << "Operators:\n" << OpDescriptions;
+	 std::cerr << "only for spin-1: H_AKLT  - AKLT Hamiltonian H+J1 + (1/3)*H_B1\n";
          return 1;
       }
 
-      LatticeSite Site = SpinSite(S);
+      LatticeSite Site = SpinSite(Spin);
       UnitCell Cell(Site);
       InfiniteLattice Lattice("Spin chain", Cell);
       UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz");
 
+      UnitCellMPO SpinExchange = Sx(0)*Sx(1) + Sy(0)*Sy(1) + Sz(0)*Sz(1);
+
       Lattice["H_xx"] = sum_unit(Sx(0)*Sx(1));
       Lattice["H_yy"] = sum_unit(Sy(0)*Sy(1));
       Lattice["H_zz"] = sum_unit(Sz(0)*Sz(1));
+
       Lattice["H_x"] = sum_unit(Sx(0));
       Lattice["H_y"] = sum_unit(Sy(0));
       Lattice["H_z"] = sum_unit(Sz(0));
 
+      Lattice["H_J1z"] = Lattice["H_zz"];
+      Lattice["H_J1t"] = Lattice["H_xx"] + Lattice["H_yy"];
+      Lattice["H_J1"] = sum_unit(SpinExchange);
+      Lattice["H_B1"] = sum_unit(SpinExchange*SpinExchange);
+
+      Lattice["H_mu"] = sum_unit(Sz(0)*Sz(0));
+
+      if (Spin == 1)
+      {
+	 Lattice["H_AKLT"] = Lattice["H_J1"] + (1.0/3.0)*Lattice["H_B1"];
+	 Lattice["H_AKLT"].set_description("AKLT Hamiltonian H_J1 + (1/3)*H_B1");
+      }
+
+      // Information about the lattice
+      Lattice.set_description("SU(2) Spin chain");
+      Lattice.set_command_line(argc, argv);
+      Lattice.set_operator_descriptions(OpDescriptions);
+
+      // save the lattice to disc
       pheap::ExportObject(FileName, Lattice);
    }
    catch (std::exception& e)

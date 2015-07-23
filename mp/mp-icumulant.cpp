@@ -2,25 +2,22 @@
 
 #include "mpo/triangular_mpo.h"
 #include "mps/infinitewavefunction.h"
+#include "mps/operator_actions.h"
 #include "common/environment.h"
 #include "common/terminal.h"
-#include <boost/program_options.hpp>
 #include "common/environment.h"
 #include "interface/inittemp.h"
 #include "mp-algorithms/gmres.h"
 #include "mp-algorithms/arnoldi.h"
 #include "common/polynomial.h"
 #include "tensor/tensor_eigen.h"
-#include "common/prog_opt_accum.h"
 #include "mp/copyright.h"
 #include "common/prog_options.h"
-#include <fstream>
 #include "lattice/infinite-parser.h"
 #include "mps/momentum_operations.h"
 #include "mp-algorithms/triangular_mpo_solver.h"
 #include "common/prog_opt_accum.h"
 #include <boost/algorithm/string.hpp>
-#include <time.h>
 
 namespace prog_opt = boost::program_options;
 
@@ -295,7 +292,7 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("operator") == 0)
       {
          print_copyright(std::cerr);
-         std::cerr << "usage: " << argv[0] << " <psi1> <operator>\n";
+         std::cerr << "usage: " << basename(argv[0]) << " <psi1> <operator>\n";
          std::cerr << desc << '\n';
          return 1;
       }
@@ -390,6 +387,9 @@ int main(int argc, char** argv)
 
       Op = repeat(Op, WavefuncUnitCellSize / Op.size());
 
+      // Check that the local basis for the wavefunction and hamiltonian are compatible
+      local_basis_compatible_or_abort(Psi.Psi, Op);
+      
       TriangularMPO OriginalOp = Op;  // keep a copy so we can do repeated powers
 
       std::vector<Polynomial<std::complex<double> > > Moments;

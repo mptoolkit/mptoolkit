@@ -3,6 +3,8 @@
 #include "siteoperator.h"
 #include <boost/lexical_cast.hpp>
 
+int LatticeVersion = 0;
+
 // SiteBasis
 
 SiteBasis::SiteBasis(SymmetryList const& SList)
@@ -114,18 +116,23 @@ std::ostream& operator<<(std::ostream& out, SiteProductBasis const& Basis)
 
 PStream::opstream& operator<<(PStream::opstream& out, SiteOperator const& Op)
 {
-   return out << Op.base() << Op.Basis_ << Op.Com_;
+   out << Op.base() << Op.Basis_ << Op.Com_ << Op.Description_;
+   return out;
 }
 
 PStream::ipstream& operator>>(PStream::ipstream& in, SiteOperator& Op)
 {
    in >> Op.base() >> Op.Basis_ >> Op.Com_;
+   if (LatticeVersion > 0)
+      in >> Op.Description_;
+   else
+      Op.Description_ = "";
    return in;
 }
 
 std::ostream& operator<<(std::ostream& out, SiteOperator const& Op)
 {
-   out << '[' << Op.TransformsAs() << "] ";
+   out << Op.Commute() << " [" << Op.TransformsAs() << "] ";
    bool first = true;
    for (std::size_t i = 0; i < Op.size1(); ++i)
    {
@@ -159,6 +166,8 @@ std::ostream& operator<<(std::ostream& out, SiteOperator const& Op)
 	 out << "|" << Op.Basis().Label(i) << "><" << Op.Basis().Label(j) << "|";
       }
    }
+   if (first)
+      out << "(zero)";
    return out;
 }
 

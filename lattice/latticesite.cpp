@@ -91,6 +91,33 @@ LatticeSite::Basis2() const
    return this->operator[]("I").Basis2();
 }
 
+void
+LatticeSite::set_operator_descriptions(OperatorDescriptions const& Desc)
+{
+   // iterate through the descriptions
+   for (OperatorDescriptions::const_iterator I = Desc.begin(); I != Desc.end(); ++I)
+   {
+      if (this->operator_exists(I->first))
+      {
+	 this->operator[](I->first).set_description(I->second);
+      }
+      else
+      {
+	 std::cerr << "warning: operator " << I->first << " has a description but is not defined in the lattice site.\n";
+      }
+   }
+
+   // Now go through the operators and check for any that don't have a description
+   for (const_operator_iterator I = this->begin_operator(); I != this->end_operator(); ++I)
+   {
+      if (I->second.description().empty())
+      {
+	 std::cerr << "warning: local operator " << I->first << " has no description.\n";
+      }
+   }
+}
+
+
 // functor to parse default arguments of a LatticeSite operator
 struct ParseSiteExpression
 {

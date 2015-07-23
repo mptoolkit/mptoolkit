@@ -17,6 +17,7 @@
 #include "quantumnumbers/symmetrylist.h"
 #include "siteoperator.h"
 #include "function.h"
+#include "operator_descriptions.h"
 #include <boost/variant.hpp>
 #include <map>
 
@@ -65,6 +66,11 @@ class LatticeSite
       basis2_type const& Basis2() const;
 
       void CoerceSymmetryList(QuantumNumbers::SymmetryList const& sl);
+
+      // Sets the description of the operators according to Desc.  Prints a warning to cerr
+      // if there are extra operators named in Desc that are not part of the lattice,
+      // or if any operators don't have a name.
+      void set_operator_descriptions(OperatorDescriptions const& Desc);
 
       // operators
       // returns the identity operator

@@ -15,13 +15,13 @@ int main(int argc, char** argv)
    try
    {
       half_int Spin = 0.5;
-      std::string LatticeFileName;
+      std::string FileName;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
-         ("out,o", prog_opt::value(&LatticeFileName), "output filename [required]")
+         ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
       
       prog_opt::variables_map vm;        
@@ -50,7 +50,7 @@ int main(int argc, char** argv)
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
 	 std::cerr << "Operators:\n" << OpDescriptions;
-	    ;
+	 std::cerr << "only for spin-1: H_AKLT  - AKLT Hamiltonian H+J1 + (1/3)*H_B1\n";
          return 1;
       }
 
@@ -72,13 +72,19 @@ int main(int argc, char** argv)
 
       Lattice["H_mu"] = sum_unit(Sz(0)*Sz(0));
 
+      if (Spin == 1)
+      {
+	 Lattice["H_AKLT"] = Lattice["H_J1"] + (1.0/3.0)*Lattice["H_B1"];
+	 Lattice["H_AKLT"].set_description("AKLT Hamiltonian H_J1 + (1/3)*H_B1");
+      }
+
       // Information about the lattice
-      Lattice.set_description("Spin chain");
+      Lattice.set_description("U(1) Spin chain");
       Lattice.set_command_line(argc, argv);
       Lattice.set_operator_descriptions(OpDescriptions);
 
       // save the lattice to disc
-      pheap::ExportObject(LatticeFileName, Lattice);
+      pheap::ExportObject(FileName, Lattice);
    }
    catch (std::exception& e)
    {

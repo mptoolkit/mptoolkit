@@ -904,8 +904,8 @@ operator_prod(OperatorComponent const& M,
               StateComponent const& E,
               HermitianProxy<StateComponent> const& B)
 {
-   DEBUG_PRECONDITION_EQUAL(M.LocalBasis1(), A.LocalBasis());
-   DEBUG_PRECONDITION_EQUAL(M.LocalBasis2(), B.base().LocalBasis());
+   PRECONDITION_EQUAL(M.LocalBasis1(), A.LocalBasis());
+   PRECONDITION_EQUAL(M.LocalBasis2(), B.base().LocalBasis());
    DEBUG_PRECONDITION_EQUAL(M.Basis2(), E.LocalBasis());
    DEBUG_PRECONDITION_EQUAL(A.Basis2(), E.Basis1());
    DEBUG_PRECONDITION_EQUAL(E.Basis2(), B.base().Basis2());
@@ -946,8 +946,8 @@ operator_prod(HermitianProxy<OperatorComponent> const& M,
               StateComponent const& E,
               StateComponent const& B)
 {
-   DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis2(), A.base().LocalBasis());
-   DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis1(), B.LocalBasis());
+   PRECONDITION_EQUAL(M.base().LocalBasis2(), A.base().LocalBasis());
+   PRECONDITION_EQUAL(M.base().LocalBasis1(), B.LocalBasis());
    DEBUG_PRECONDITION_EQUAL(M.base().Basis1(), E.LocalBasis());
    DEBUG_PRECONDITION_EQUAL(A.base().Basis1(), E.Basis1());
    DEBUG_PRECONDITION_EQUAL(E.Basis2(), B.Basis1());
@@ -997,8 +997,8 @@ operator_prod_regular(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
 		      StateComponent const& E,
 		      StateComponent const& B)
 {
-   DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis2(), A.base().LocalBasis());
-   DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis1(), B.LocalBasis());
+   PRECONDITION_EQUAL(M.base().LocalBasis2(), A.base().LocalBasis());
+   PRECONDITION_EQUAL(M.base().LocalBasis1(), B.LocalBasis());
    DEBUG_PRECONDITION_EQUAL(M.base().Basis1(), E.LocalBasis());
    DEBUG_PRECONDITION_EQUAL(A.base().Basis1(), E.Basis1());
    DEBUG_PRECONDITION_EQUAL(E.Basis2(), B.Basis1());

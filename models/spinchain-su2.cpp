@@ -31,22 +31,26 @@ int main(int argc, char** argv)
 		      run(), vm);
       prog_opt::notify(vm);    
       
+      OperatorDescriptions OpDescriptions;
+      OpDescriptions.add_operators()
+	 ("H_J1"  , "nearest neighbor spin exchange")
+	 ("H_J2"  , "next-nearest neighbor spin exchange")
+	 ("H_J3"  , "next-next-nearest neighbor spin exchange")
+	 ("H_B1"  , "nearest neighbor biquadratic spin exchange (S.S)^2")
+	 ("H_B2"  , "next-nearest neighbor biquadratic spin exchange (S.S)^2")
+	 ("H_B3"  , "next-next-nearest neighbor biquadratic spin exchange (S.S)^2")
+	 ("H_Q1"  , "nearest neighbor quadrupole exchange (Q.Q)")
+	 ("H_Q2"  , "next-nearest neighbor quadrupole exchange (Q.Q)")
+	 ("H_Q3"  , "next-next-nearest neighbor quadrupole exchange (Q.Q)")
+	 ;
+
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
-         std::cerr << "usage: spinchain-su2 [options]\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Operators:\n"
-		   << "H_J1    - nearest neighbor spin exchange\n"
-		   << "H_J2    - next-nearest neighbor spin exchange\n"
-		   << "H_J3    - next-next-nearest neighbor spin exchange\n"
-		   << "H_B1    - nearest neighbor biquadratic spin exchange (S.S)^2\n"
-		   << "H_B2    - next-nearest neighbor biquadratic spin exchange (S.S)^2\n"
-		   << "H_B3    - next-next-nearest neighbor biquadratic spin exchange (S.S)^2\n"
-		   << "H_Q1    - nearest neighbor quadrupole exchange (Q.Q)\n"
-		   << "H_Q2    - next-nearest neighbor quadrupole exchange (Q.Q)\n"
-		   << "H_Q3    - next-next-nearest neighbor quadrupole exchange (Q.Q)\n"
-	    ;
+	 std::cerr << "Operators:\n" << OpDescriptions;
+	 std::cerr << "only for spin-1: H_AKLT  - AKLT Hamiltonian H+J1 + (1/3)*H_B1\n";
          return 1;
       }
 
@@ -60,13 +64,25 @@ int main(int argc, char** argv)
       Lattice["H_J3"] = sum_unit(inner(S(0), S(3)));
 
       Lattice["H_B1"] = sum_unit(pow(inner(S(0), S(1)), 2));
-      Lattice["H_J2"] = sum_unit(pow(inner(S(0), S(2)), 2));
-      Lattice["H_J3"] = sum_unit(pow(inner(S(0), S(3)), 2));
+      Lattice["H_B2"] = sum_unit(pow(inner(S(0), S(2)), 2));
+      Lattice["H_B3"] = sum_unit(pow(inner(S(0), S(3)), 2));
 
       Lattice["H_Q1"] = sum_unit(inner(Q(0), Q(1)));
       Lattice["H_Q2"] = sum_unit(inner(Q(0), Q(2)));
       Lattice["H_Q3"] = sum_unit(inner(Q(0), Q(3)));
 
+      if (Spin == 1)
+      {
+	 Lattice["H_AKLT"] = Lattice["H_J1"] + (1.0/3.0)*Lattice["H_B1"];
+	 Lattice["H_AKLT"].set_description("AKLT Hamiltonian H_J1 + (1/3)*H_B1");
+      }
+
+      // Information about the lattice
+      Lattice.set_description("SU(2) Spin chain");
+      Lattice.set_command_line(argc, argv);
+      Lattice.set_operator_descriptions(OpDescriptions);
+
+      // save the lattice to disc
       pheap::ExportObject(FileName, Lattice);
    }
    catch (std::exception& e)

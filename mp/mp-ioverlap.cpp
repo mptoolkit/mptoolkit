@@ -172,7 +172,7 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("rhs") == 0)
       {
          print_copyright(std::cerr);
-         std::cerr << "usage: mp-ioverlap [options] <psi1> <psi2>\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi1> <psi2>\n";
          std::cerr << desc << '\n';
          return 1;
       }

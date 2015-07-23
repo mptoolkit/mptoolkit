@@ -22,6 +22,7 @@
 #include "tensor/tensor_eigen.h"
 #include "tensor/regularize.h"
 #include "mp-algorithms/stateslist.h"
+#include "mps/operator_actions.h"
 
 #include "interface/inittemp.h"
 #include "mp-algorithms/random_wavefunc.h"
@@ -869,7 +870,7 @@ int main(int argc, char** argv)
    try
    {
       // flush cout if we write to cerr
-      std::cerr.tie(&std::cout);
+      std::cout.tie(&std::cerr);
 
       int NumIter = 20;
       int MinIter = 4;
@@ -1162,6 +1163,9 @@ int main(int argc, char** argv)
       HamMPO = repeat(HamMPO, WavefuncUnitCellSize / HamMPO.size());
       CHECK_EQUAL(int(HamMPO.size()), WavefuncUnitCellSize);
 
+      // Check that the local basis for the wavefunction and hamiltonian are compatible
+      local_basis_compatible_or_abort(Psi.Psi, HamMPO);
+      
       // Get the initial Hamiltonian matrix elements
       LinearWavefunction Lin = Psi.Psi; // get_orthogonal_wavefunction(Psi);
       //      StateComponent BlockHamL = Initial_E(HamMPO.front() , Lin.Basis2());

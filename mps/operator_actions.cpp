@@ -170,3 +170,43 @@ local_basis_compatible_or_abort(LinearWavefunction const& Psi, GenericMPO const&
       ++iPsi; ++iM; ++SiteNumber;
    }
 }
+
+bool
+is_local_basis1_compatible(LinearWavefunction const& Psi, GenericMPO const& M)
+{
+   // If the MPO has a different support to Psi then we are not compatible
+   if (Psi.size() != M.size())
+      return false;
+
+   // Also check the individual local basis at each step
+   LinearWavefunction::const_iterator iPsi = Psi.begin();
+   GenericMPO::const_iterator iM = M.begin();
+   while (iPsi != Psi.end())
+   {
+      if (iPsi->LocalBasis() != iM->LocalBasis1())
+	 return false;
+
+      ++iPsi; ++iM;
+   }
+   return true;
+}
+
+bool
+is_local_basis2_compatible(LinearWavefunction const& Psi, GenericMPO const& M)
+{
+   // If the MPO has a different support to Psi then we are not compatible
+   if (Psi.size() != M.size())
+      return false;
+
+   // Also check the individual local basis at each step
+   LinearWavefunction::const_iterator iPsi = Psi.begin();
+   GenericMPO::const_iterator iM = M.begin();
+   while (iPsi != Psi.end())
+   {
+      if (iPsi->LocalBasis() != iM->LocalBasis2())
+         return false;
+
+      ++iPsi; ++iM;
+   }
+   return true;
+}

@@ -188,7 +188,7 @@ FormalArgumentList ParseFormalArguments(std::string const& Args)
 
 std::ostream& operator<<(std::ostream& out, OperatorFunction const& f)
 {
-   out << '(' << f.Args << ") = " << f.Def;
+   out << f.Args << " = " << f.Def;
    return out;
 }
 

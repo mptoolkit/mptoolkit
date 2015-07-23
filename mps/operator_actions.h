@@ -189,6 +189,11 @@ is_local_basis_compatible(LinearWavefunction const& Psi, GenericMPO const& M);
 void
 local_basis_compatible_or_abort(LinearWavefunction const& Psi, GenericMPO const& M);
 
+bool is_local_basis1_compatible(LinearWavefunction const& Psi,
+				GenericMPO const& Op);
+
+bool is_local_basis2_compatible(LinearWavefunction const& Psi,
+				GenericMPO const& Op);
 
 struct LeftMultiplyString
 {
@@ -250,7 +255,5 @@ struct LeftMultiplyOperator
    LinearWavefunction const& L2;
    QuantumNumber QShift;
 };
-
-
 
 #endif

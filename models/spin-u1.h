@@ -10,7 +10,7 @@ LatticeSite SpinU1(half_int Spin, std::string const& Sym = "Sz")
    QuantumNumbers::QNConstructor<QuantumNumbers::U1> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator Sp, Sm, Sz, mSz, R, P, I, Spp, Smm, Sz2;
-   LatticeSite Site("U(1)-Spin-"+to_string_fraction(Spin));
+   LatticeSite Site("U(1) Spin "+to_string_fraction(Spin));
 
    std::map<half_int, std::string> SpinBasis;
    for (half_int s = -Spin; s <= Spin; ++s)
@@ -19,28 +19,30 @@ LatticeSite SpinU1(half_int Spin, std::string const& Sym = "Sz")
       Basis.push_back(SpinBasis[s], QN(s));
    }
 
+   OperatorDescriptions OpDescriptions;
+   OpDescriptions.add_operators()
+      ("I"   , "identity")
+      ("R"   , "reflection")
+      ("P"   , "fermion parity")
+      ("Sp"  , "raising operator")
+      ("Sm"  , "lowering operator")
+      ("Sz"  , "z-component of spin")
+      ;
+
    Sp = SiteOperator(Basis, QN(1), LatticeCommute::Bosonic);
    Sm = SiteOperator(Basis, QN(-1), LatticeCommute::Bosonic);
    Sz = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   Sz2 = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   mSz = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   Spp = SiteOperator(Basis, QN(to_int(2*Spin)), LatticeCommute::Bosonic);
-   Smm = SiteOperator(Basis, QN(to_int(-2*Spin)), LatticeCommute::Bosonic);
 
    P = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
    R = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
    I = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
 
-   // for the mSz operator, we want (-1)^Sz, but for half-integer spin
-   // this is imaginary, so we want to multiply it by i in that case
-   half_int Fudge = Spin.is_integral() ? 0.0 : 0.5;
    for (half_int s = -Spin; s <= Spin; ++s)
    {
       I(SpinBasis[s], SpinBasis[s]) = 1.0;
       P(SpinBasis[s], SpinBasis[s]) = 1.0;
       R(SpinBasis[s], SpinBasis[s]) = 1.0;
       Sz(SpinBasis[s], SpinBasis[s]) = s.to_double();
-      mSz(SpinBasis[s], SpinBasis[s]) = minus1pow((s+Fudge).to_int());
    }
 
    // Sp and Sm operators
@@ -50,18 +52,11 @@ LatticeSite SpinU1(half_int Spin, std::string const& Sym = "Sz")
    }
    Sm = adjoint(Sp);
 
-   // Spp and Smm operators - maximal spin flips |-Spin><Spin| and |Spin><-Spin|
-   // with amplitude 1.0
-   Spp(SpinBasis[Spin], SpinBasis[-Spin]) = 1.0;
-   Smm(SpinBasis[-Spin], SpinBasis[Spin]) = 1.0;
-
-   Sz2 = Sz * Sz;
-
    // Example of defining a named constant (argument)
    Site.arg("Spin") = Spin.to_double();
 
    // Example of defining a function.  The first parameter has a default value
-   Site.func("U")(arg("theta") = math_const::pi) = "exp(theta*i*Sz)";
+   Site.func("Uz")(arg("theta") = math_const::pi) = "exp(theta*i*Sz)";
 
    Site["I"] = I;
    Site["P"] = P;
@@ -69,10 +64,8 @@ LatticeSite SpinU1(half_int Spin, std::string const& Sym = "Sz")
    Site["Sp"] = Sp;
    Site["Sm"] = Sm;
    Site["Sz"] = Sz;
-   Site["mSz"] = mSz;
-   Site["Sz2"] = prod(Sz, Sz, QN(0));
-   Site["Spp"] = Spp;
-   Site["Smm"] = Smm;
-   Site["Sz2"] = Sz2;
+
+   Site.set_operator_descriptions(OpDescriptions);
+
    return Site;
 }
