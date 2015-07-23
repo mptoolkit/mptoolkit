@@ -10,12 +10,31 @@ LatticeSite FermionU1SU2(std::string const& Sym1 = "N", std::string const& Sym2 
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":SU(2)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
-   SiteOperator C, CH, P, R, N, S, I, Hu, Pdouble, Ep, Em, Ns, Nh, Pg, CP, CHP, ES;
+   SiteOperator C, CH, P, R, N, S, I, Hu, Pdouble, Ep, Em, Ez, N_S, N_H, Pg, ES;
    LatticeSite Site;
 
    Basis.push_back("empty",  QN(0, 0));
    Basis.push_back("double", QN(2, 0));
    Basis.push_back("single", QN(1, 0.5));
+
+   OperatorDescriptions OpDescriptions;
+   OpDescriptions.add_operators()
+      ("I"       , "identity")
+      ("R"       , "reflection")
+      ("P"       , "fermion parity")
+      ("S"       , "spin vector operator")
+      ("C"       , "annihilation operator")
+      ("CH"      , "creation operator")
+      ("N"       , "number operator")
+      ("N_S"     , "number of spins")
+      ("N_H"     , "number of holons")
+      ("Ep"      , "eta raising operator (create double-occupied site)")
+      ("Em"      , "eta lowering operator (annihiliate double-occupied site)")
+      ("Ez"      , "eta z operator, equivalent to (N-1)/2")
+      ("ES"      , "exp(i*pi*s)")
+      ("Hu"      , "symmetrized Coulomb operator (n_up - 1/2) * (n_down - 1/2)")
+      ("Pdouble" , "projector onto the double-occupied site") 
+      ;
 
    C = SiteOperator(Basis, QN(-1,0.5), LatticeCommute::Fermionic);
    CH = SiteOperator(Basis, QN(1,0.5), LatticeCommute::Fermionic);
@@ -27,8 +46,8 @@ LatticeSite FermionU1SU2(std::string const& Sym1 = "N", std::string const& Sym2 
    Pg = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    S = SiteOperator(Basis, QN(0,1), LatticeCommute::Bosonic);
    I = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
-   Ns = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
-   Nh = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   N_S = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   N_H = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
 
    // annihilate fermion
    C("empty",  "single")    =  std::sqrt(2.0);
@@ -45,10 +64,6 @@ LatticeSite FermionU1SU2(std::string const& Sym1 = "N", std::string const& Sym2 
    P("empty",  "empty")     =  1;
    P("single", "single")    = -1;
    P("double", "double")    =  1;
-
-   // parity modified creation/annihilation
-   CP = prod(C, P, QN(-1,0.5));
-   CHP = prod(CH, P, QN(1,0.5));
 
    // spatial reflection   
    R("empty",  "empty")     =  1;
@@ -82,10 +97,10 @@ LatticeSite FermionU1SU2(std::string const& Sym1 = "N", std::string const& Sym2 
    ES("single", "single") = std::complex<double>(0.0, 1.0);
 
    // number of spins
-   Ns("single", "single") = 1;
+   N_S("single", "single") = 1;
 
    // number of holons
-   Nh = I - Ns;
+   N_H = I - N_S;
 
    Site["I"] = I;
    Site["P"] = P;
@@ -96,13 +111,15 @@ LatticeSite FermionU1SU2(std::string const& Sym1 = "N", std::string const& Sym2 
    Site[Sym2] = S;
    Site["C"] = C;
    Site["CH"] = CH;
-   Site["CP"] = CP;
-   Site["CHP"] = CHP;
    Site["Ep"] = Ep;
    Site["Em"] = Em;
-   Site["N_S"] = Ns;
-   Site["N_H"] = Nh;
+   Site["Ez"] = 0.5*(N-I);
+   Site["N_S"] = N_S;
+   Site["N_H"] = N_H;
    Site["ES"] = ES;
    Site["R"] = R;
+
+   Site.set_operator_descriptions(OpDescriptions);
+
    return Site;
 }

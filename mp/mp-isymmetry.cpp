@@ -82,7 +82,7 @@ int main(int argc, char** argv)
       desc.add_options()
          ("help", "show this help message")
          ("wavefunction,w", prog_opt::value(&PsiStr), "Wavefunction [required]")
-	 ("lattice,l", prog_opt::value(&LatticeFile), "use this lattice file for the operators [required]")
+	 ("lattice,l", prog_opt::value(&LatticeFile), "use this lattice file for the operators")
 	 ("commutator,c", prog_opt::value(&CommutatorStr), 
 	  "calculate the commutator phase angle, U X X^\\dagger = exp(i*theta) X")
 	 ("quiet,q", prog_opt::bool_switch(&Quiet), "suppress informational preamble about each operator")
@@ -107,8 +107,9 @@ int main(int argc, char** argv)
 
       if (vm.count("help") > 0 || vm.count("wavefunction") < 1)
       {
-         std::cerr << "usage: mp-isymmetry [options] Operator1 [Operator2] ...\n";
-         std::cerr << "-w (--wavefunction) and -l [--lattice] are required options.\n";
+         std::cerr << "usage: " << basename(argv[0]) << " -w <psi> [options] Operator1 [Operator2] ...\n";
+         std::cerr << "If -l [--lattice] is specified, then the operators must all come from the specified lattice file\n";
+         std::cerr << "Otherwise all operators must be of the form lattice:operator\n";
 	 std::cerr << "Calculates the commutator phase of operator pairs <X Y X\u2020 Y\u2020>\n";
 	 std::cerr << "For complex conjugation, prefix the operator expression with c&\n";
 	 std::cerr << "For spatial reflection, prefix with r& (cr& or rc& for conjugate-reflection)\n";
@@ -129,11 +130,11 @@ int main(int argc, char** argv)
       pvalue_ptr<InfiniteWavefunction> Psi 
          = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
 
-      // Load the unit cell
+      // Load the lattice, if it was specified
       pvalue_ptr<InfiniteLattice> Lattice = pheap::ImportHeap(LatticeFile);
+
       UnitCell Cell = Lattice->GetUnitCell();
       int UnitCellSize = Cell.size();
-
       int const NumUnitCells = Psi->size() / UnitCellSize;
 
       // orthogonalize the wavefunction
@@ -197,7 +198,7 @@ int main(int argc, char** argv)
 	    Psi2 = &PsiRC;
 	 }
 
-	 FiniteMPO StringOperator = ParseUnitCellOperator(Cell, 1, OpStr).MPO();
+	 FiniteMPO StringOperator = ParseUnitCellOperator(Cell, 0, OpStr).MPO();
 
 	 StringOperator = repeat(StringOperator, Psi1.size() / StringOperator.size());
 

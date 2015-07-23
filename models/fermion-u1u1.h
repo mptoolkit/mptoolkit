@@ -4,20 +4,47 @@
 #include "quantumnumbers/u1.h"
 
 inline
-LatticeSite CreateU1U1HubbardSite(std::string const& Sym1 = "N", 
-			      std::string const& Sym2 = "Sz",
-			      std::string const& ParityOp = "P")
+LatticeSite FermionU1U1(std::string const& Sym1 = "N", 
+			std::string const& Sym2 = "Sz",
+			std::string const& ParityOp = "P")
 {
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::U1> QN(Symmetry);
    SiteBasis Basis(Symmetry);
-   SiteOperator CHup, Cup, CHdown, Cdown, P, R, N, Sp, Sm, Sz, Qp, Qm, Qz, I, Hu, Pdouble, X, N_S, N_H, ES, EQ;
+   SiteOperator CHup, Cup, CHdown, Cdown, P, R, N, Sp, Sm, Sz, Ep, Em, Ez, I, Nup, Ndown,
+      Hu, Pdouble, ES, N_S, N_H;
    LatticeSite Site;
 
    Basis.push_back("empty",  QN(0, 0));
    Basis.push_back("double", QN(2, 0));
    Basis.push_back("down" ,  QN(1,-0.5));
    Basis.push_back("up" ,    QN(1, 0.5));
+
+   OperatorDescriptions OpDescriptions;
+   OpDescriptions.add_operators()
+      ("I"       , "identity")
+      ("R"       , "reflection")
+      ("P"       , "fermion parity")
+      ("Sp"      , "spin raising operator")
+      ("Sm"      , "spin lowering operator")
+      ("Sz"      , "z-component of spin")
+      ("Cup"     , "annihilation up spin fermion")
+      ("Cdown"   , "annihilation down spin fermion")
+      ("CHup"    , "creation up spin fermion")
+      ("CHdown"  , "creation down spin fermion")
+      ("Ep"      , "eta raising operator (create double-occupied site)")
+      ("Em"      , "eta lowering operator (annihiliate double-occupied site)")
+      ("Ez"      , "eta z-operator, equivalent to (N-1)/2")
+      ("N"       , "number operator")
+      ("Nup"     , "number of up spins")
+      ("Ndown"   , "number of down spins")
+      ("N_S"     , "number of spins")
+      ("N_H"     , "number of holons")
+      ("ES"      , "exp(i*pi*s)")
+      ("Hu"      , "symmetrized Coulomb operator (n_up - 1/2) * (n_down - 1/2)")
+      ("Pdouble" , "projector onto the double-occupied site") 
+      ;
+
 
    LatticeCommute Fermionic = ParityOp == "P" ? LatticeCommute::Fermionic : LatticeCommute(ParityOp);
 
@@ -28,16 +55,18 @@ LatticeSite CreateU1U1HubbardSite(std::string const& Sym1 = "N",
    P = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    R = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    N = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   Nup = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   Ndown = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    Pdouble = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    Hu = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    Sp = SiteOperator(Basis, QN(0,1), LatticeCommute::Bosonic);
    Sm = SiteOperator(Basis, QN(0,-1), LatticeCommute::Bosonic);
    Sz = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
-   Qp = SiteOperator(Basis, QN(2,0), LatticeCommute::Bosonic);
-   Qm = SiteOperator(Basis, QN(-2,0), LatticeCommute::Bosonic);
-   Qz = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   Ep = SiteOperator(Basis, QN(2,0), LatticeCommute::Bosonic);
+   Em = SiteOperator(Basis, QN(-2,0), LatticeCommute::Bosonic);
+   Ez = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    I = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
-   X = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+   ES = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    N_S = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    N_H = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
 
@@ -61,10 +90,10 @@ LatticeSite CreateU1U1HubbardSite(std::string const& Sym1 = "N",
    P("down",   "down")      = -1;
    P("double", "double")    =  1;
 
-   X("empty",  "empty")     = 1;
-   X("up",     "up")        = std::complex<double>(0,1);
-   X("down",   "down")      = std::complex<double>(0,1);
-   X("double", "double")    = 1;
+   ES("empty",  "empty")     = 1;
+   ES("up",     "up")        = std::complex<double>(0,1);
+   ES("down",   "down")      = std::complex<double>(0,1);
+   ES("double", "double")    = 1;
 
    N_H("empty",  "empty")     = 1;
    N_H("double", "double")    = 1;
@@ -82,6 +111,12 @@ LatticeSite CreateU1U1HubbardSite(std::string const& Sym1 = "N",
    N("up",     "up")        =  1;
    N("down",   "down")      =  1;
    N("double", "double")    =  2;
+
+   Nup("up",     "up")       =  1;
+   Nup("double", "double")   =  1;
+
+   Ndown("down",   "down")   =  1;
+   Ndown("double", "double") =  1;
 
    // symmetrized coulomb operator = (n_up - 1/2) * (n_down - 1/2)
    Hu("empty",  "empty")     =  0.25;
@@ -109,32 +144,21 @@ LatticeSite CreateU1U1HubbardSite(std::string const& Sym1 = "N",
    Sz("up",   "up")       =  0.5;
    Sz("down", "down")     = -0.5;
 
-   // Q^+
-   Qp("double", "empty") = 1;
+   // E^+
+   Ep("double", "empty") = 1;
 
-   // Q^-
-   Qm("empty", "double") = 1;
+   // E^-
+   Em("empty", "double") = 1;
 
-   // Q^z
-   Qz("double", "double") =  0.5;
-   Qz("empty",  "empty")  = -0.5;
+   // E^z
+   Ez("double", "double") =  0.5;
+   Ez("empty",  "empty")  = -0.5;
    
-   // exp(i * pi * Sz)
-   ES = I;
-   ES("up",   "up")   = std::complex<double>(0.0,  1.0);
-   ES("down", "down") = std::complex<double>(0.0, -1.0);
-
-   // exp(i * pi * Qz)
-   EQ = I;
-   EQ("double", "double") = std::complex<double>(0.0,  1.0);
-   EQ("empty",  "empty")  = std::complex<double>(0.0, -1.0);
-
-   // Same as ES above
-   Site["mSz"] = LinearAlgebra::exp(std::complex<double>(0.0,math_const::pi) * Sz);
-   Site["m2Sz"] = LinearAlgebra::exp(std::complex<double>(0.0,2.0*math_const::pi) * Sz);
    Site["I"] = I;
    Site[ParityOp] = P;
    Site["N"] = N;
+   Site["Nup"] = Nup;
+   Site["Ndown"] = Ndown;
    Site[Sym1] = N;
    Site["Hu"] = Hu;
    Site["Pdouble"] = Pdouble;
@@ -142,22 +166,19 @@ LatticeSite CreateU1U1HubbardSite(std::string const& Sym1 = "N",
    Site["Sm"] = Sm;
    Site["Sz"] = Sz;
    Site[Sym2] = Sz;
-   Site["Qp"] = Qp;
-   Site["Qm"] = Qm;
-   Site["Qz"] = Qz;
+   Site["Ep"] = Ep;
+   Site["Em"] = Em;
+   Site["Ez"] = Ez;
    Site["R"] = R;
    Site["CHup"] = CHup;
    Site["Cup"] = Cup;
    Site["CHdown"] = CHdown;
    Site["Cdown"] = Cdown;
-   Site["CHupP"] = CHup*P;
-   Site["CupP"] = Cup*P;
-   Site["CHdownP"] = CHdown*P;
-   Site["CdownP"] = Cdown*P;
-   Site["X"] = X;
+   Site["ES"] = ES;
    Site["N_S"] = N_S;
    Site["N_H"] = N_H;
-   Site["ES"] = ES;
-   Site["EQ"] = EQ;
+
+   Site.set_operator_descriptions(OpDescriptions);
+
    return Site;
 }

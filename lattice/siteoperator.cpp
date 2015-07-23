@@ -149,7 +149,7 @@ std::ostream& operator<<(std::ostream& out, SiteOperator const& Op)
 	    if (!first) out << " + ";
 	    out << '(' << x.real();
 	    if (x.imag() >= 0) out << '+';
-	    out << x.imag() << "I) ";
+	    out << x.imag() << "i) ";
 	 }
 	 else // x.imag() == 0
 	 {

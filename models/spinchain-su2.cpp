@@ -82,7 +82,7 @@ int main(int argc, char** argv)
       Lattice.set_command_line(argc, argv);
       Lattice.set_operator_descriptions(OpDescriptions);
 
-      // save the lattice to disc
+      // save the lattice
       pheap::ExportObject(FileName, Lattice);
    }
    catch (std::exception& e)

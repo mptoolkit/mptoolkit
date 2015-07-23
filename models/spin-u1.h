@@ -9,7 +9,7 @@ LatticeSite SpinU1(half_int Spin, std::string const& Sym = "Sz")
    SymmetryList Symmetry(Sym+":U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1> QN(Symmetry);
    SiteBasis Basis(Symmetry);
-   SiteOperator Sp, Sm, Sz, mSz, R, P, I, Spp, Smm, Sz2;
+   SiteOperator Sp, Sm, Sz, R, P, I;
    LatticeSite Site("U(1) Spin "+to_string_fraction(Spin));
 
    std::map<half_int, std::string> SpinBasis;
