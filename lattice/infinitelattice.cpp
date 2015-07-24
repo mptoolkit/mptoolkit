@@ -393,7 +393,8 @@ TriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op)
 
 TriangularMPO sum_kink(SiteListType const& SiteList, FiniteMPO const& Kink, FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize)
 {
-   return sum_unit(SiteList, Kink*string_mpo(SiteList, Com.SignOperator(), Op.qn1()), Op, UnitCellSize);
+   FiniteMPO Ident = repeat(string_mpo(SiteList, Com.SignOperator(), Op.qn1()), Kink.size() / SiteList.size());
+   return sum_unit(SiteList, Kink*Ident, Op, UnitCellSize);
 }
 
 TriangularMPO sum_k(SiteListType const& SiteList, std::complex<double> const& k,

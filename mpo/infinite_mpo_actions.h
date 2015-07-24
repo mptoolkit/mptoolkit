@@ -245,7 +245,7 @@ struct binary_division<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
    }
 
    template <typename T, typename U>
-   InfiniteMPOElement operator()(T& x, U const& y) const
+   InfiniteMPOElement operator()(T const& x, U const& y) const
    {
       PANIC("Cannot divide "+name_of(x)+" by "+name_of(y));
       return complex(0.0);
