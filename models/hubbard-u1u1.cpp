@@ -34,9 +34,12 @@ int main(int argc, char** argv)
 	 ("H_tup"    , "nearest neighbor hopping for up spins")
 	 ("H_tdown"  , "nearest neighbor hopping for down spins")
 	 ("H_t"      , "nearest neighbor hopping = H_tup + H_tdown")
-	 ("H_U"  , "on-site Coulomb interaction n_up*n_down")
-	 ("H_Us" , "on-site Coulomb interaction (n_up-1/2)(n_down-1/2)")
-	 ("H_V"  , "nearest-neighbor Coulomb interaction")
+	 ("H_U"      , "on-site Coulomb interaction n_up*n_down")
+	 ("H_Us"     , "on-site Coulomb interaction (n_up-1/2)(n_down-1/2)")
+	 ("H_V"      , "nearest-neighbor Coulomb interaction")
+	 ("H_Jup"    , "nearest-neighbor up-spin complex hopping i*(C^\\dagger_i C_{i+1} - H.c.)")
+	 ("H_Jdown"  , "nearest-neighbor down-spin complex hopping i*(C^\\dagger_i C_{i+1} - H.c.)")
+	 ("H_J"      , "nearest-neighbor complex hopping = H_Jup + H_Jdown")
 	 ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -55,13 +58,18 @@ int main(int argc, char** argv)
 	 Cdown(Cell, "Cdown"), Pdouble(Cell, "Pdouble"),
 	 Hu(Cell, "Hu"), N(Cell, "N");
 
-      Lattice["H_tup"]   = sum_unit(dot(CHup(0), Cup(1)) + dot(Cup(0), CHup(1)));
-      Lattice["H_tdown"] = sum_unit(dot(CHdown(0), Cdown(1)) + dot(Cdown(0), CHdown(1)));
+      Lattice["H_tup"]   = sum_unit(dot(CHup(0), Cup(1)) - dot(Cup(0), CHup(1)));
+      Lattice["H_tdown"] = sum_unit(dot(CHdown(0), Cdown(1)) - dot(Cdown(0), CHdown(1)));
       Lattice["H_t"]     = Lattice["H_tup"] + Lattice["H_tdown"];
       Lattice["H_U"]     = sum_unit(Pdouble(0));
       Lattice["H_Us"]    = sum_unit(Hu(0));
       Lattice["H_V"]     = sum_unit(dot(N(0), N(1)));
-
+      Lattice["H_Jup"]   = sum_unit(std::complex<double>(0,1)
+				    *(dot(CHup(0), Cup(1)) + dot(Cup(0), CHup(1))));
+      Lattice["H_Jdown"] = sum_unit(std::complex<double>(0,1)
+				    *(dot(CHdown(0), Cdown(1)) + dot(Cdown(0), CHdown(1))));
+      Lattice["H_J"] = Lattice["H_Jup"] + Lattice["H_Jdown"];
+      
       // Information about the lattice
       Lattice.set_description("U(1)xSU(2) Fermi Hubbard model");
       Lattice.set_command_line(argc, argv);

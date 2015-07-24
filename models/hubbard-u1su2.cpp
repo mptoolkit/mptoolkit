@@ -54,6 +54,7 @@ int main(int argc, char** argv)
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), Pdouble(Cell, "Pdouble"),
 	 Hu(Cell, "Hu"), N(Cell, "N");
 
+      // Note signs here, the + sign because SU(2): herm(CH) = -C
       Lattice["H_t"]  = sum_unit(dot(CH(0), C(1)) + dot(C(0), CH(1)));
       Lattice["H_t2"] = sum_unit(dot(CH(0), C(2)) + dot(C(0), CH(2)));
       Lattice["H_U"]  = sum_unit(Pdouble(0));

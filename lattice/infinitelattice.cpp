@@ -254,10 +254,13 @@ TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& Op, Lattic
    return sum_unit(SiteList, string_mpo(SiteList, Com.SignOperator(), Op.qn1()), Op, UnitCellSize);
 }
 
-TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& JW, FiniteMPO const& Op2, int UnitCellSize)
+TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& JW2, FiniteMPO const& Op2, int UnitCellSize)
 {
    FiniteMPO Op = Op2;
    optimize(Op);
+
+   FiniteMPO JW = JW2;
+   optimize(JW);
 
    if (Op.is_null())
       return TriangularMPO();
