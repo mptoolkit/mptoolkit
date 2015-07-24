@@ -323,8 +323,8 @@ TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& JW2, Finit
       BasisList Basis1(Op.GetSymmetryList());
       BasisList Basis2(Op.GetSymmetryList());
       if (i != 0)
-	 JoinBasis(Basis1, JW[i%SiteList.size()].Basis1());
-      JoinBasis(Basis2, JW[i%SiteList.size()].Basis2());
+	 JoinBasis(Basis1, JW[i%JW.size()].Basis1());
+      JoinBasis(Basis2, JW[i%JW.size()].Basis2());
 
       for (unsigned n = 0; n < SplitOp.size(); ++n)
       {
@@ -343,15 +343,15 @@ TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& JW2, Finit
       // The JW goes in the top left
       int r = 0;
       int c = 0;
-      SetComponents(C, JW[i%SiteList.size()], r, c);
+      SetComponents(C, JW[i%JW.size()], r, c);
       if (i != 0)
-	 r += JW[i%SiteList.size()].Basis1().size();
-      c += JW[i%SiteList.size()].Basis2().size();
+	 r += JW[i%JW.size()].Basis1().size();
+      c += JW[i%JW.size()].Basis2().size();
 
       // the finite MPO components go along the diagonal
       for (unsigned n = 0; n < SplitOp.size()-1; ++n)
       {
-	 SetComponents(C, SplitOp[n][i%SiteList.size()], r, c);
+	 SetComponents(C, SplitOp[n][i%SplitOp.size()], r, c);
 	 r += SplitOp[n][i].Basis1().size();
 	 c += SplitOp[n][i].Basis2().size();
       }
