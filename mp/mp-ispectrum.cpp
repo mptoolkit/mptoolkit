@@ -32,27 +32,27 @@ void PrintFormat(QuantumNumber const& q, std::complex<double> x, int n, bool Sho
    std::cout << std::setw(4) << n << ' ';
    if (ShowRealPart)
    {
-      std::cout << std::setw(20) << Value.real() << "    ";
+      std::cout << std::setw(20) << Value.real() << "  ";
    }
    if (ShowImagPart)
    {
-      std::cout << std::setw(20) << Value.imag() << "    ";
+      std::cout << std::setw(20) << Value.imag() << "  ";
    }
    if (ShowCorrLength)
    {
       std::cout << std::setw(20) << (-1.0/std::log(LinearAlgebra::norm_frob(Value)))
-		<< "    ";
+		<< "  ";
    }
    if (ShowMagnitude)
    {
-      std::cout << std::setw(20) << LinearAlgebra::norm_frob(Value) << "    ";
+      std::cout << std::setw(20) << LinearAlgebra::norm_frob(Value) << "  ";
    }
    if (ShowArgument)
    {
       double Arg =  std::atan2(Value.imag(), Value.real());
       if (!ShowRadians)
 	 Arg *= 180.0 / math_const::pi;
-      std::cout << std::setw(20) << Arg << "    ";
+      std::cout << std::setw(20) << Arg << "  ";
    }
 }
 
@@ -254,8 +254,8 @@ inject_left(MatrixOperator const& m,
             LinearWavefunction const& Psi2)
 {
    CHECK_EQUAL(Psi1.size(), Psi2.size());
-   DEBUG_CHECK_EQUAL(m.Basis1(), Psi1.Basis1());
-   DEBUG_CHECK_EQUAL(m.Basis2(), Psi2.Basis1());
+   DEBUG_CHECK_EQUAL(m.Basis1(), Psi1.Basis2());
+   DEBUG_CHECK_EQUAL(m.Basis2(), Psi2.Basis2());
    if (Op.is_null())
       return MatrixOperator();
 
@@ -263,9 +263,9 @@ inject_left(MatrixOperator const& m,
    CHECK_EQUAL(Op.Basis1().size(), 1);
    CHECK_EQUAL(Op.Basis2().size(), 1);
    CHECK_EQUAL(Op.Basis1()[0], m.TransformsAs());
-   MatrixOperator Result = m;
-   StateComponent E(Op.Basis1(), m.Basis1(), m.Basis2());
-   E[0] = m;
+   MatrixOperator mm = delta_shift(m, QShift);
+   StateComponent E(Op.Basis1(), mm.Basis1(), mm.Basis2());
+   E[0] = mm;
    E.debug_check_structure();
    LinearWavefunction::const_iterator I1 = Psi1.begin();
    LinearWavefunction::const_iterator I2 = Psi2.begin();
@@ -281,7 +281,7 @@ inject_left(MatrixOperator const& m,
       E = operator_prod(herm(*OpIter), herm(*I1), E, *I2);
       ++I1; ++I2; ++OpIter;
    }
-   return delta_shift(E[0], QShift);
+   return E[0]; //delta_shift(E[0], QShift);
 }
 
 MatrixOperator
@@ -707,15 +707,15 @@ int main(int argc, char** argv)
 		   << (UnitCellSize == 1 ? " site\n" : " sites\n");
          std::cout << "#sector     #n   ";
          if (ShowRealPart)
-            std::cout << "#real                   ";
+            std::cout << "#real                 ";
          if (ShowImagPart)
-            std::cout << "#imag                   ";
+            std::cout << "#imag                 ";
          if (ShowCorrLength)
-            std::cout << "#corr_length            ";
+            std::cout << "#corr_length          ";
          if (ShowMagnitude)
-            std::cout << "#magnitude              ";
+            std::cout << "#magnitude            ";
          if (ShowArgument)
-            std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
+            std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "        ";
 
 	 // titles for the overlaps
 	 for (unsigned i = 0; i < LeftOpStr.size(); ++i)
@@ -725,13 +725,13 @@ int main(int argc, char** argv)
 	       std::string Title = "#overlap_" + boost::lexical_cast<std::string>(i) + '_'
 		  + boost::lexical_cast<std::string>(j); 
 	       if (ShowRealPart)
-		  std::cout << std::setw(20) << Title << "_real      ";
+		  std::cout << std::setw(20) << std::left << (Title+"_real") << "  ";
 	       if (ShowImagPart)
-		  std::cout << std::setw(20) << Title << "_imag      ";
+		  std::cout << std::setw(20) << std::left << (Title+"_imag") << "  ";
 	       if (ShowMagnitude)
-		  std::cout << std::setw(20) << Title << "_mag      ";
+		  std::cout << std::setw(20) << std::left << (Title+"_mag") << "  ";
 	       if (ShowArgument)
-		  std::cout << std::setw(20) << Title << "_arg" << (ShowRadians ? "(rad)" : "(deg)") << "     ";
+		  std::cout << std::setw(20) << std::left << (Title+"_arg" + (ShowRadians ? "(rad)" : "(deg)")) << "  ";
 	    }
 	 }
          std::cout << '\n';
@@ -741,6 +741,8 @@ int main(int argc, char** argv)
       // initialize the finite operators for the observables
       std::vector<MatrixOperator> LeftOp;
       std::vector<MatrixOperator> RightOp;
+
+      //LeftIdent = delta_shift(LeftIdent, QShift);
 
       for (unsigned i = 0; i < LeftOpStr.size(); ++i)
       {
@@ -805,25 +807,29 @@ int main(int argc, char** argv)
 		  if (LeftOp[iL].TransformsAs() == LeftEigenvectors[i].TransformsAs()
 		      && RightOp[iR].TransformsAs() == RightEigenvectors[i].TransformsAs())
 		  {
-		     std::complex<double> Overlap = inner_prod(LeftOp[iL], LeftEigenvectors[i]) 
+#if 1
+		     std::complex<double> Overlap = inner_prod(LeftOp[iL], LeftEigenvectors[i])
 			* inner_prod(RightEigenvectors[i], RightOp[iR])
 			/ (inner_prod(RightEigenvectors[i], LeftEigenvectors[i]) * IdentNormalizationFactor);
-		     
-		     if (ShowRealPart)
-			std::cout << std::setw(21) << std::scientific << Overlap.real() << "  ";
-		     if (ShowImagPart)
-			std::cout << std::setw(21) << std::scientific << Overlap.imag() << "  ";
-#if 0
-		     else
-		     {
-			double Magnitude = norm_frob(Overlap);
-			double Arg = std::atan2(Overlap.imag(), Overlap.real());
-			if (!ShowRadians)
-			   Arg *= 180.0 / math_const::pi;
-			std::cout << std::setw(21) << std::scientific << Magnitude << "  "
-				  << std::setw(21) << std::fixed << Arg << "  ";
-		     }
+		     //TRACE(inner_prod(LeftOp[iL], LeftEigenvectors[i]))(inner_prod(RightEigenvectors[i], RightOp[iR]))
+		     //(inner_prod(RightEigenvectors[i], LeftEigenvectors[i]));
+#else
+		     std::complex<double> Overlap = inner_prod(LeftOp[iL], RightEigenvectors[i])
+			* inner_prod(LeftEigenvectors[i], RightOp[iR])
+			/ (inner_prod(LeftEigenvectors[i], RightEigenvectors[i]) * IdentNormalizationFactor);
 #endif
+		     if (ShowRealPart)
+			std::cout << std::setw(20) << Overlap.real() << "  ";
+		     if (ShowImagPart)
+			std::cout << std::setw(20) << Overlap.imag() << "  ";
+		     double Magnitude = norm_frob(Overlap);
+		     double Arg = std::atan2(Overlap.imag(), Overlap.real());
+		     if (!ShowRadians)
+			Arg *= 180.0 / math_const::pi;
+		     if (ShowMagnitude)
+			std::cout << std::setw(20) << Magnitude << "  ";
+		     if (ShowArgument)
+			std::cout << std::setw(20) << Arg << "  ";
 		  }
 	       }
 	    }
