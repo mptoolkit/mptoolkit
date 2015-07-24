@@ -719,7 +719,7 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
          // are rows i and j parallel?
          if ((imat*jmat - LinearAlgebra::norm_frob_sq(ijmat)) / (imat*imat + jmat*jmat) < TruncateOverlapEpsilon)
          {
-            NewRows[i] = std::make_pair(j, ijmat / jmat);
+            NewRows[i] = std::make_pair(j, conj(ijmat) / jmat);
             // corner case: i is parallel to j, but we might have previously determined that
             // j is parallel to some other row k.  Does this ever happen in practice?
             if (NewRows[j].first != j)
@@ -888,11 +888,11 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
 
    OperatorComponent tA = prod(A, Trunc); // the result
 
-#if !defined(NDEBUG)
+   //#if !defined(NDEBUG)
    // verify that prod(tA, Reg) is the same as A.  
    OperatorComponent ACheck = prod(tA, Reg);
    CHECK(norm_frob_sq(A - ACheck) <= (Scale*TruncateOverlapEpsilon))(norm_frob_sq(A - ACheck))(A)(ACheck)(A-ACheck)(Trunc)(Reg)(Overlaps);
-#endif
+   //#endif
 
    A = tA;
    return Reg;
