@@ -35,15 +35,118 @@
 namespace Parser
 {
 
-#if 0
-// conversion of an element_type to a c-number
-template <typename T>
-std::complex<double>
-as_number(T const& x)
+class ParserError : public std::exception
 {
-   return boost::get<std::complex<double> >(x);
+   public:
+      explicit ParserError(std::string const& Why);
+      
+      ~ParserError() throw() { }
+
+      ParserError(ParserError const& Prev, std::string const& Why);
+
+      virtual const char* what() const throw() { return Msg.c_str(); }
+
+   private:
+      void AssembleMessage();
+
+      std::list<std::string> CallStack;
+      std::string Msg;
+};
+
+inline
+ParserError::ParserError(std::string const& Why)
+   : CallStack(1, Why)
+{
+   this->AssembleMessage();
 }
-#endif
+
+inline
+ParserError::ParserError(ParserError const& Prev, std::string const& Why)
+   : CallStack(Prev.CallStack)
+{
+   CallStack.push_front(Why);
+   this->AssembleMessage();
+}
+
+inline
+void
+ParserError::AssembleMessage()
+{
+   Msg = "Parser error:\n";
+   for (std::list<std::string>::const_iterator I = CallStack.begin(); I != CallStack.end(); ++I)
+   {
+      Msg = Msg + (*I) + "\n";
+   }
+}
+
+// returns true if the parenthesis a b match, ie they form
+// ( ) or [ ] or { }
+inline
+bool ParenthesesMatch(char a, char b)
+{
+   return (a == '(' && b == ')')
+      || (a == '[' && b == ']')
+      || (a == '{' && b == '}');
+}
+
+inline
+std::string Spaces(int Size)
+{
+   return std::string(Size, ' ');
+}
+
+template <typename Iter>
+void CheckParentheses(Iter beg, Iter end)
+{
+   std::stack<Iter> IterStack;
+   Iter I = beg;
+   while (I != end)
+   {
+      if (*I == '(' || *I == '[' || *I == '{')
+      {
+	 IterStack.push(I);
+      }
+      else if (*I == ')' || *I == ']' || *I == '}')
+      {
+	 if (IterStack.empty())
+	 {
+	    std::string s;
+	    s = s + "Unbalanced parentheses, extra '" + (*I) + "'";
+	    s = s + "\nWhile parsing string:\n" + std::string(beg, end);
+	    s = s + "\n" + Spaces(std::distance(beg, I)) + "^";
+	    throw ParserError(s);
+	 }
+	 else
+	 {
+	    if (ParenthesesMatch(*IterStack.top(), *I))
+	    {
+	       // Found the matching parentheses
+	       IterStack.pop();
+	    }
+	    else
+	    {
+	       std::string s;
+	       s = s + "Parenthesis mismatch, opening '" + (*IterStack.top())
+		  + "' closes with '" + (*I) + "'";
+	       s = s + "\nWhile parsing string:\n" + std::string(beg, end);
+	       s = s + "\n" + Spaces(std::distance(beg, IterStack.top())) + "^";
+	       s = s + Spaces(std::distance(IterStack.top(), I)-1) + "^";
+	       throw ParserError(s);
+	    }
+	 }
+      }
+      ++I;
+   }
+   if (!IterStack.empty())
+   {
+      std::string s;
+      s = s + "Unbalanced parenthesis, '" + (*IterStack.top())
+	 + "' has no closing bracket";
+      s = s + "\nWhile parsing string:\n" + std::string(beg, end);
+      s = s + "\n" + Spaces(std::distance(beg, end)-1) + "^";
+      throw ParserError(s);
+   }
+}
 
 using namespace boost::spirit::classic;
 

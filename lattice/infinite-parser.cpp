@@ -476,6 +476,8 @@ ParseInfiniteOperator(InfiniteLattice const& Lattice, std::string const& Str,
    InfiniteLatticeParser::FunctionStackType   FunctionStack;
    InfiniteLatticeParser::ArgumentType        Arguments;
 
+   CheckParentheses(Str.begin(), Str.end());
+
    for (Function::ArgumentList::const_iterator I = Args.begin(); I != Args.end(); ++I)
    {
       Arguments.add(I->first.c_str(), I->second);

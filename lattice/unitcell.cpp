@@ -373,9 +373,142 @@ UnitCell::eval_local_function(std::string const& Func, int Cell, int Site,
 }
 
 UnitCellMPO
+UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
+{
+   // count the number of fermion swaps.  This is the number of fermions in
+   // site i + fermions in site j, multiplied by the number of fermions between them.
+   // And of course we need to swap site j with site i, so add N_i * N_j.
+   // So in summary, the number of fermion swaps is
+   // (N_i + N_j)*(sum_{k=i+1}^{j-1} N_k) + N_i*N_j
+
+   // Now we need to turn that into something that can use the local P operators only.
+   // Note that P_i = (-1)^N_i.  Therefore, the number of fermions on site i (mod 2) is
+   // 0.5*(1-P_i).  Call this F_i.  We can replace all of the N_i above with F_i.
+   // The F_i on each site commute, so we can expand out the exponential.  
+   // Hence we can write this as (-1)^{....} =
+   //   (-1)^{F_i F_{i+1}                    }
+   // * (-1)^{F_i         F_{i+2}            }
+   // * ......
+   // * (-1)^{F_i                 F_{j-1}    }
+
+   // * (-1)^{    F_{i+1}                 F_j}
+   // * ......
+   // * (-1)^{                    F_{j-1} F_j}
+
+   // * (-1)^{F_i                         F_j}
+
+   // Now F_k is diagonal and eigenvalues 0,1, so the product is also eigenvalues 0,1.
+
+   // maybe easier to do products of nearest-neighbor swaps?
+   // If the swap is nearest-neighbor then the number of fermions is F_i * F_j.
+   
+   // Need to write it as a function of the individual basis states in F_i and F_j,
+   // and write it as a modifier on the sign of the swap gate between those states.
+   // if they are both fermions or neither are fermions then there is no change.
+   // If there is one fermion, then insert the product of parity operators.
+   // This only works if F_i and F_j are diagonal.
+
+   CHECK(i >= 0 && i < this->size())("Site index is outside the unit cell!")(i)(this->size());
+   CHECK(j >= 0 && j < this->size())("Site index is outside the unit cell!")(j)(this->size());
+   // normal-order the sites
+   if (Cell_i > Cell_j || (Cell_i == Cell_j && i > j))
+   {
+      std::swap(Cell_i, Cell_j);
+      std::swap(i,j);
+   }
+
+   if (Cell_i == Cell_j && i == j)
+   {
+      return UnitCellMPO(Sites, identity_mpo(*Sites), LatticeCommute::Bosonic, Cell_i);
+   }
+
+   BasisList Basis_i = this->operator[](i).Basis1();
+   BasisList Basis_j = this->operator[](j).Basis1();
+
+   // Construct the parity operators
+   LinearAlgebra::Vector<double> Parity_i(Basis_i.size(), 1.0);
+   for (unsigned n = 0; n < Parity_i.size(); ++n)
+   {
+      Parity_i[n] = this->operator[](i)["P"](n,n).real();
+   }
+
+   LinearAlgebra::Vector<double> Parity_j(Basis_j.size(), 1.0);
+   for (unsigned n = 0; n < Parity_j.size(); ++n)
+   {
+      Parity_j[n] = this->operator[](j)["P"](n,n).real();
+   }
+
+   ProductBasis<BasisList, BasisList> Basis_ij(Basis_i, Basis_j);
+   ProductBasis<BasisList, BasisList> Basis_ji(Basis_j, Basis_i);
+
+   // The actual gate operator
+   SimpleOperator Op = ::swap_gate_fermion(Basis_i, Parity_i, 
+					   Basis_j, Parity_j,
+					   Basis_ji, Basis_ij);
+
+   // decompose it back into sites   
+   OperatorComponent R1, R2;
+   boost::tie(R1, R2) = decompose_local_tensor_prod(Op, Basis_ji, Basis_ij);
+
+   // now turn this into a FiniteMPO
+   FiniteMPO Result(this->size() * (Cell_j-Cell_i+1));
+
+   // components up to site i are identity
+   for (int n = 0; n <i; ++n)
+   {
+      Result[n] = OperatorComponent::make_identity(this->LocalBasis(n % this->size()));
+   }
+
+   // site i
+   Result[i] = R1;
+
+   // sites between i and j need to get the parity treatment
+   for (int n = i + 1; n < (Cell_j-Cell_i)*this->size() + j; ++n)
+   {
+      // Construct the operator component manually
+      // if Parity_i * Parity_j is +1, then the component is the identity
+      // if -1 then its the local P operator
+      Result[n] = OperatorComponent(this->LocalBasis(n % this->size()), R1.Basis2(), R1.Basis2());
+      for (unsigned p = 0; p < Basis_ji.size(); ++p)
+      {
+	 std::pair<int,int> x = Basis_ji.rmap(p);
+	 // cast to int to make sure we're comparing properly
+	 if (int(Parity_i[x.second]) == int(Parity_j[x.first]))
+	 {
+	    // identity
+	    Result[n](p,p) = this->operator[](n % this->size())["I"];
+	 }
+	 else
+	 {
+	    // parity
+	    Result[n](p,p) = this->operator[](n % this->size())["P"];
+	 }
+      }
+   }
+
+   // site j
+   Result[(Cell_j-Cell_i)*this->size() + j] = R2;
+
+   // remaining sites to the end of the unit cell are identity
+   for (int n = (Cell_j-Cell_i)*this->size() + j + 1; n < (Cell_j-Cell_i+1)*this->size(); ++n)
+   {
+      Result[n] = OperatorComponent::make_identity(this->LocalBasis(n % this->size()));
+   }
+
+   Result.debug_check_structure();
+   return UnitCellMPO(Sites, Result, LatticeCommute::Bosonic, Cell_i);
+}
+
+UnitCellMPO
+UnitCell::swap_gate(int i, int j) const
+{
+   return this->swap_gate(0, i, 0, j);
+}
+
+UnitCellMPO
 UnitCell::swap_gate_no_sign(int i, int j) const
 {
-   return this->swap_gate_no_sign(0,i,0,j);
+   return this->swap_gate_no_sign(0, i, 0, j);
 }
 
 UnitCellMPO

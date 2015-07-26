@@ -223,9 +223,17 @@ class UnitCell
       // special UnitCell operators
 
       // Returns an MPO that effects a swap gate between sites i and j
+      operator_type swap_gate(int i, int j) const;
+
+      // Returns an MPO that effects a swap gate between different unit cells
+      operator_type swap_gate(int iCell, int i, int jCell, int j) const;
+
+      // Returns an MPO that effects a swap gate between sites i and j,
+      // this version ignores fermions / JW strings
       operator_type swap_gate_no_sign(int i, int j) const;
 
       // Returns an MPO that effects a swap gate between different unit cells
+      // this version ignores fermions / JW strings
       operator_type swap_gate_no_sign(int iCell, int i, int jCell, int j) const;
 
       // returns the commutation attribute of the operator, equivalent
