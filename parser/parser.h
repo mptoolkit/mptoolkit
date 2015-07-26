@@ -35,37 +35,169 @@
 namespace Parser
 {
 
+inline
+std::string Spaces(int Size)
+{
+   return std::string(Size, ' ');
+}
+
 class ParserError : public std::exception
 {
    public:
       explicit ParserError(std::string const& Why);
-      
-      ~ParserError() throw() { }
 
       ParserError(ParserError const& Prev, std::string const& Why);
 
+      ParserError(std::exception const& Prev, std::string const& Why);
+
+      ~ParserError() throw() { }
+
       virtual const char* what() const throw() { return Msg.c_str(); }
 
+      // named constructors
+
+      // Add an iterator position at the point where the error occurs
+      static ParserError AtPosition(std::string const& Why, char const* Position);
+      static ParserError AtPosition(ParserError const& Prev, char const* Position);
+      static ParserError AtPosition(std::exception const& Prev, char const* Position);
+
+      static ParserError AtRange(std::string const& Why, char const* Start, char const* End);
+      static ParserError AtRange(ParserError const& Prev, char const* Start, char const* End);
+      static ParserError AtRange(std::exception const& Prev, char const* Start, char const* End);
+
+      // finalize once we have the complete string
+      static ParserError Finalize(ParserError const& Prev, std::string const& Why,
+				  char const* beg, char const* end);
+
+      static ParserError Finalize(std::exception const& Prev, std::string const& Why,
+				  char const* beg, char const* end);
+
    private:
+      ParserError(std::list<std::string> const& CallStack_, char const* Position);
+      ParserError(std::list<std::string> const& CallStack_, char const* Position, char const* End_);
+      ParserError(std::list<std::string> const& CallStack_, 
+		  std::string const& Why, char const* Position, char const* End_,
+		  char const* beg, char const* end);
+
       void AssembleMessage();
 
       std::list<std::string> CallStack;
       std::string Msg;
+
+      char const* Pos;
+      char const* End;
 };
 
 inline
 ParserError::ParserError(std::string const& Why)
-   : CallStack(1, Why)
+   : CallStack(1, Why), Pos(NULL), End(NULL)
 {
    this->AssembleMessage();
 }
 
 inline
 ParserError::ParserError(ParserError const& Prev, std::string const& Why)
-   : CallStack(Prev.CallStack)
+   : CallStack(Prev.CallStack), Pos(Prev.Pos), End(Prev.End)
 {
-   CallStack.push_front(Why);
+   CallStack.push_back(Why);
    this->AssembleMessage();
+}
+
+inline
+ParserError::ParserError(std::exception const& Prev, std::string const& Why)
+   : CallStack(1, Prev.what()), Pos(NULL), End(NULL)
+{
+   CallStack.push_back(Why);
+   this->AssembleMessage();
+}
+
+
+inline
+ParserError::ParserError(std::list<std::string> const& CallStack_, char const* Position)
+   : CallStack(CallStack_), Pos(Position), End(NULL)
+{
+   this->AssembleMessage();
+}
+
+inline
+ParserError::ParserError(std::list<std::string> const& CallStack_, char const* Position,
+			 char const* End_)
+   : CallStack(CallStack_), Pos(Position), End(End_)
+{
+   this->AssembleMessage();
+}
+
+inline
+ParserError::ParserError(std::list<std::string> const& CallStack_, 
+			 std::string const& Why, char const* Position, char const* End_,
+			 char const* beg, char const* end)
+   : CallStack(CallStack_), Pos(NULL), End(NULL)
+{
+   std::string Next = Why + "\n" + std::string(beg, end);
+   if (Position)
+   {
+      int Count = End_ ? std::distance(Position, End_) : 1;
+      Next = Next + "\n" + std::string(std::distance(beg, Position), ' ')
+	 + std::string(Count, '^');
+   }
+   CallStack.push_back(Next);
+   this->AssembleMessage();
+}
+
+inline
+ParserError 
+ParserError::AtPosition(std::string const& Why, char const* Position)
+{
+   return ParserError(std::list<std::string>(1, Why), Position);
+}
+
+inline
+ParserError 
+ParserError::AtPosition(ParserError const& Prev, char const* Position)
+{
+   return ParserError(Prev.CallStack, Position);
+}
+
+inline
+ParserError 
+ParserError::AtPosition(std::exception const& Prev, char const* Position)
+{
+   return ParserError(std::list<std::string>(1, Prev.what()), Position);
+}
+
+inline
+ParserError
+ParserError::AtRange(std::string const& Why, char const* Start, char const* End)
+{
+   return ParserError(std::list<std::string>(1, Why), Start, End);
+}
+
+inline
+ParserError
+ParserError::AtRange(ParserError const& Prev, char const* Start, char const* End)
+{
+   return ParserError(Prev.CallStack, Start, End);
+}
+
+inline
+ParserError
+ParserError::AtRange(std::exception const& Prev, char const* Start, char const* End)
+{
+   return ParserError(std::list<std::string>(1, Prev.what()), Start, End);
+}
+
+inline
+ParserError
+ParserError::Finalize(ParserError const& Prev, std::string const& Why, char const* beg, char const* end)
+{
+   return ParserError(Prev.CallStack, Why, Prev.Pos, Prev.End, beg, end);
+}
+
+inline
+ParserError
+ParserError::Finalize(std::exception const& Prev, std::string const& Why, char const* beg, char const* end)
+{
+   return ParserError(std::list<std::string>(1, Prev.what()), Why, NULL, NULL, beg, end);
 }
 
 inline
@@ -75,7 +207,9 @@ ParserError::AssembleMessage()
    Msg = "Parser error:\n";
    for (std::list<std::string>::const_iterator I = CallStack.begin(); I != CallStack.end(); ++I)
    {
-      Msg = Msg + (*I) + "\n";
+      if (I != CallStack.begin())
+	 Msg = Msg + '\n';
+      Msg = Msg + (*I);
    }
 }
 
@@ -87,12 +221,6 @@ bool ParenthesesMatch(char a, char b)
    return (a == '(' && b == ')')
       || (a == '[' && b == ']')
       || (a == '{' && b == '}');
-}
-
-inline
-std::string Spaces(int Size)
-{
-   return std::string(Size, ' ');
 }
 
 template <typename Iter>
@@ -143,7 +271,7 @@ void CheckParentheses(Iter beg, Iter end)
       s = s + "Unbalanced parenthesis, '" + (*IterStack.top())
 	 + "' has no closing bracket";
       s = s + "\nWhile parsing string:\n" + std::string(beg, end);
-      s = s + "\n" + Spaces(std::distance(beg, end)-1) + "^";
+      s = s + "\n" + Spaces(std::distance(beg, IterStack.top())) + "^";
       throw ParserError(s);
    }
 }
@@ -155,6 +283,51 @@ distinct_parser<> const keyword_p("0-9a-zA-Z_");
 distinct_directive<> const keyword_d("0-9a-zA-Z_");
 
 typedef std::complex<double> complex;
+
+// name_of function, for getting a friendly name of components of element_type's
+
+template <typename T>
+std::string name_of(T const&);
+
+struct NameOf : public boost::static_visitor<std::string>
+{
+   template <typename T>
+   std::string operator()(T const& x) const
+   {
+      return name_of(x);
+   }
+};
+
+template <BOOST_VARIANT_ENUM_PARAMS(typename T)>
+inline
+std::string
+name_of(boost::variant<BOOST_VARIANT_ENUM_PARAMS(T) > const& x)
+{
+   return boost::apply_visitor(NameOf(), x);
+}
+
+template <>
+inline 
+std::string name_of<complex>(std::complex<double> const&)
+{
+   return "complex";
+}
+
+template <typename ElementType>
+int pop_int(std::stack<ElementType>& eval)
+{
+   if (eval.empty())
+      throw ParserError("expected an integer, but the stack is empty!");
+   if (!boost::get<complex>(&eval.top()))
+      throw ParserError("expected an integer, got a " + name_of(eval.top()));
+   complex x = boost::get<complex>(eval.top());
+   eval.pop();
+   int j = boost::math::iround(x.real());
+   if (LinearAlgebra::norm_frob(x - double(j)) > 1E-7)
+       throw ParserError("expected an integer, got a real/complex number: " + format_complex(x));
+   return j;
+}
+
 
 // apply a unary math function to an element
 template <typename Func>
@@ -393,7 +566,7 @@ struct push_int
     {
         long n = strtol(str, 0, 10);
         eval.push(n);
-        std::cout << "push\t" << long(n) << std::endl;
+        //std::cout << "push\t" << long(n) << std::endl;
     }
 
     std::stack<element_type >& eval;
@@ -517,13 +690,28 @@ struct invoke_binary
    invoke_binary(std::stack<element_type >& eval_) : eval(eval_) {}
    invoke_binary(std::stack<element_type >& eval_, BinaryFunc f_) : eval(eval_), f(f_) {}
 
-   void operator()(char const*, char const*) const
+   void operator()(char const* a, char const* b) const
    {
-      element_type rhs = eval.top();
-      eval.pop();
-      element_type lhs = eval.top();
-      eval.pop();
-      eval.push(boost::apply_visitor(f, lhs, rhs));
+      try
+      {
+	 element_type rhs = eval.top();
+	 eval.pop();
+	 element_type lhs = eval.top();
+	 eval.pop();
+	 eval.push(boost::apply_visitor(f, lhs, rhs));
+      }
+      catch (ParserError const& p)
+      {
+	 throw ParserError::AtPosition(p, a);
+      }
+      catch (std::exception const& p)
+      {
+	 throw ParserError::AtPosition(p, a);
+      }
+      catch (...)
+      {
+	 throw;
+      }
    }
 
    std::stack<element_type>& eval;
@@ -533,17 +721,32 @@ struct invoke_binary
 template <typename element_type>
 struct do_negate
 {
-    do_negate(std::stack<element_type >& eval_)
-    : eval(eval_) {}
+   do_negate(std::stack<element_type >& eval_)
+       : eval(eval_) {}
 
-    void operator()(char const*, char const*) const
-    {
-        element_type lhs = eval.top();
-        eval.pop();
-        eval.push(boost::apply_visitor(negate_element<element_type>(), lhs));
-    }
+   void operator()(char const* a, char const*) const
+   {
+      try
+      {
+	 element_type lhs = eval.top();
+	 eval.pop();
+	 eval.push(boost::apply_visitor(negate_element<element_type>(), lhs));
+      }
+      catch (ParserError const& p)
+      {
+	 throw ParserError::AtPosition(p, a);
+      }
+      catch (std::exception const& p)
+      {
+	 throw ParserError::AtPosition(p, a);
+      }
+      catch (...)
+      {
+	 throw;
+      }
+   }
 
-    std::stack<element_type >& eval;
+   std::stack<element_type >& eval;
 };
 
 template <typename element_type>
@@ -551,17 +754,32 @@ struct push_prod
 {
    push_prod(std::stack<std::string>& identifier_stack_, std::stack<element_type >& eval_)
       : identifier_stack(identifier_stack_), eval(eval_) {}
-
-   void operator()(char const*, char const*) const
+   
+   void operator()(char const* a, char const*) const
    {
-      element_type op2 = eval.top();
-      eval.pop();
-      element_type op1 = eval.top();
-      eval.pop();
-      std::string q = identifier_stack.top();
-      identifier_stack.pop();
-
-      eval.push(boost::apply_visitor(ternary_product<element_type>(q), op1, op2));
+      try
+      {
+	 element_type op2 = eval.top();
+	 eval.pop();
+	 element_type op1 = eval.top();
+	 eval.pop();
+	 std::string q = identifier_stack.top();
+	 identifier_stack.pop();
+	 
+	 eval.push(boost::apply_visitor(ternary_product<element_type>(q), op1, op2));
+      }
+      catch (ParserError const& p)
+      {
+	 throw ParserError::AtPosition(p, a);
+      }
+      catch (std::exception const& p)
+      {
+	 throw ParserError::AtPosition(p, a);
+      }
+      catch (...)
+      {
+	 throw;
+      }
    }
 
    std::stack<std::string>& identifier_stack;

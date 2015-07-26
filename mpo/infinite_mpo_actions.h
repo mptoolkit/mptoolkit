@@ -5,6 +5,7 @@
 #if !defined(MPTOOLKIT_MPO_INFINITE_MPO_ACTIONS_H)
 #define MPTOOLKIT_MPO_INFINITE_MPO_ACTIONS_H
 
+#include "parser/parser.h"
 #include "mpo/infinite_mpo.h"
 #include "parser/visitor_actions.h"
 #include <cmath>
@@ -12,20 +13,16 @@
 namespace Parser
 {
 
+template <>
 inline
-std::string name_of(std::complex<double>)
-{
-   return "complex";
-}
-
-inline
-std::string name_of(TriangularMPO const&)
+std::string name_of<TriangularMPO>(TriangularMPO const&)
 {
    return "TriangularMPO";
 }
 
+template <>
 inline
-std::string name_of(ProductMPO const&)
+std::string name_of<ProductMPO>(ProductMPO const&)
 {
    return "ProductMPO";
 }
@@ -40,14 +37,12 @@ struct ElementExp<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement
 
    InfiniteMPOElement operator()(ProductMPO const&) const
    {
-      PANIC("exp() is not implemented for ProductMPO's!");
-      return ProductMPO();
+      throw ParserError("exp() is not implemented for ProductMPO's!");
    }
 
    InfiniteMPOElement operator()(TriangularMPO const&) const
    {
-      PANIC("exp() is not implemented for TriangularMPO's!");
-      return TriangularMPO();
+      throw ParserError("exp() is not implemented for TriangularMPO's!");
    }
 };
 
@@ -66,8 +61,7 @@ struct negate_element<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEle
 
    InfiniteMPOElement operator()(ProductMPO const&) const
    {
-      PANIC("Unary negation is not defined for ProductMPO");
-      return InfiniteMPOElement(0.0);
+      throw ParserError("Unary negation is not defined for ProductMPO");
    }
 
    InfiniteMPOElement operator()(TriangularMPO const& x) const
@@ -114,9 +108,12 @@ struct binary_power<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEleme
    {
 
       int i = int(round(y.real()));
-      CHECK(std::norm(complex(double(i)) - y) < 1E-7)
-	 ("cannot take fractional power of a TriangularMPO");
-      CHECK(i >= 0)("cannot take negative power of a TriangularMPO");
+      if (std::norm(complex(double(i)) - y) > 1E-7)
+	 throw ParserError("cannot take a fractional or complex power " + format_complex(y)
+			   + " of a TriangularMPO");
+      if (i < 0)
+	 throw ParserError("cannot take negative power " + boost::lexical_cast<std::string>(i)
+			   + " of a TriangularMPO");
       return i == 0 ? InfiniteMPOElement(complex(1.0,0.0)) : pow(x, i);
    }
 
@@ -124,17 +121,19 @@ struct binary_power<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEleme
    {
 
       int i = int(round(y.real()));
-      CHECK(std::norm(complex(double(i)) - y) < 1E-7)
-	 ("cannot take fractional power of a ProductMPO");
-      CHECK(i >= 0)("cannot take negative power of a ProductMPO");
+      if (std::norm(complex(double(i)) - y) > 1E-7)
+	 throw ParserError("cannot take a fractional or complex power " + format_complex(y)
+			   + " of a ProductMPO");
+      if (i < 0)
+	 throw ParserError("cannot take negative power " + boost::lexical_cast<std::string>(i)
+			   + " of a ProductMPO");
       return i == 0 ? InfiniteMPOElement(complex(1.0,0.0)) : pow(x, i);
    }
 
    template <typename T, typename U>
    InfiniteMPOElement operator()(T const& x, U const& y) const
    {
-      PANIC("Cannot evaluate exponent with an operator")(typeid(y).name());
-      return InfiniteMPOElement(complex(0));
+      throw ParserError("pow(x,y) is not defined for operator y");
    }
 };
 
@@ -154,8 +153,7 @@ struct binary_addition<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
    template <typename T, typename U>
    InfiniteMPOElement operator()(T const& x, U const& y) const
    {
-      PANIC("Addition is not defined for "+name_of(x)+" and "+name_of(y));
-      return complex(0.0);
+      throw ParserError("Addition is not defined for "+name_of(x)+" and "+name_of(y));
    }
 };
 
@@ -175,8 +173,7 @@ struct binary_subtraction<InfiniteMPOElement> : boost::static_visitor<InfiniteMP
    template <typename T, typename U>
    InfiniteMPOElement operator()(T const& x, U const& y) const
    {
-      PANIC("Subtraction is not defined for "+name_of(x)+" and "+name_of(y));
-      return complex(0.0);
+      throw ParserError("Subtraction is not defined for "+name_of(x)+" and "+name_of(y));
    }
 };
 
@@ -198,26 +195,22 @@ struct binary_multiplication<InfiniteMPOElement> : boost::static_visitor<Infinit
 
    InfiniteMPOElement operator()(complex const&, ProductMPO const&) const
    {
-      PANIC("Cannot multiply ProductMPO by a scalar");
-      return complex(0.0);
+      throw ParserError("Cannot multiply ProductMPO by a scalar");
    }
 
    InfiniteMPOElement operator()(ProductMPO const&, complex const&) const
    {
-      PANIC("Cannot multiply ProductMPO by a scalar");
-      return complex(0.0);
+      throw ParserError("Cannot multiply ProductMPO by a scalar");
    }
 
    InfiniteMPOElement operator()(TriangularMPO const&, ProductMPO const&) const
    {
-      PANIC("Cannot multiply ProductMPO and a TriangularMPO");
-      return complex(0.0);
+      throw ParserError("Cannot multiply ProductMPO and TriangularMPO");
    }
 
    InfiniteMPOElement operator()(ProductMPO const&, TriangularMPO const&) const
    {
-      PANIC("Cannot multiply TriangularMPO and a ProductMPO");
-      return complex(0.0);
+      throw ParserError("Cannot multiply ProductMPO and TriangularMPO");
    }
 
    template <typename T, typename U>
@@ -247,7 +240,7 @@ struct binary_division<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
    template <typename T, typename U>
    InfiniteMPOElement operator()(T const& x, U const& y) const
    {
-      PANIC("Cannot divide "+name_of(x)+" by "+name_of(y));
+      throw ParserError("Cannot divide "+name_of(x)+" by "+name_of(y));
       return complex(0.0);
    }
 };
@@ -290,8 +283,7 @@ struct binary_dot_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMP
    template <typename T, typename U>
    InfiniteMPOElement operator()(T const& x, U const& y) const
    {
-      PANIC("Cannot evaluate dot product between "+name_of(x)+" and "+name_of(y));
-      return complex(0.0);
+      throw ParserError("Cannot evaluate dot product between "+name_of(x)+" and "+name_of(y));
    }
 };
 
@@ -333,8 +325,7 @@ struct binary_inner_product<InfiniteMPOElement> : boost::static_visitor<Infinite
    template <typename T, typename U>
    InfiniteMPOElement operator()(T const& x, U const& y) const
    {
-      PANIC("Cannot evaluate inner product between "+name_of(x)+" and "+name_of(y));
-      return complex(0.0);
+      throw ParserError("Cannot evaluate inner product between "+name_of(x)+" and "+name_of(y));
    }
 };
 
@@ -376,8 +367,7 @@ struct binary_outer_product<InfiniteMPOElement> : boost::static_visitor<Infinite
    template <typename T, typename U>
    InfiniteMPOElement operator()(T const& x, U const& y) const
    {
-      PANIC("Cannot evaluate outer product between "+name_of(x)+" and "+name_of(y));
-      return complex(0.0);
+      throw ParserError("Cannot evaluate outer product between "+name_of(x)+" and "+name_of(y));
    }
 };
 
@@ -413,8 +403,7 @@ struct binary_cross_product<InfiniteMPOElement> : boost::static_visitor<Infinite
    template <typename T, typename U>
    InfiniteMPOElement operator()(T const& x, U const& y) const
    {
-      PANIC("Cannot evaluate cross product between "+name_of(x)+" and "+name_of(y));
-      return complex(0.0);
+      throw ParserError("Cannot evaluate cross product between "+name_of(x)+" and "+name_of(y));
    }
 };
 
@@ -450,8 +439,7 @@ struct binary_commutator<InfiniteMPOElement> : boost::static_visitor<InfiniteMPO
    template <typename T, typename U>
    InfiniteMPOElement operator()(T const& x, U const& y) const
    {
-      PANIC("Cannot evaluate commutator product between "+name_of(x)+" and "+name_of(y));
-      return complex(0.0);
+      throw ParserError("Cannot evaluate commutator product between "+name_of(x)+" and "+name_of(y));
    }
 };
 
@@ -481,14 +469,26 @@ struct ternary_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
    InfiniteMPOElement operator()(complex const& x, TriangularMPO const& y) const
    {
       QuantumNumbers::QuantumNumber q(y.GetSymmetryList(), qStr);
-      CHECK_EQUAL(q, y.TransformsAs());
+      if (q != y.TransformsAs())
+      {
+	 throw ParserError("In prod(x,y,q): quantum number is not possible."
+			   "\nq = " + q.ToString()
+			   + "\nthe only possible quantum number in this context is "
+			   + y.TransformsAs().ToString());
+      }
       return x*y;
    }
 
    InfiniteMPOElement operator()(TriangularMPO const& x, complex const& y) const
    {
       QuantumNumbers::QuantumNumber q(x.GetSymmetryList(), qStr);
-      CHECK_EQUAL(q, x.TransformsAs());
+      if (q != x.TransformsAs())
+      {
+	 throw ParserError("In prod(x,y,q): quantum number is not possible."
+			   "\nq = " + q.ToString()
+			   + "\nthe only possible quantum number in this context is "
+			   + x.TransformsAs().ToString());
+      }
       return x*y;
    }
 
@@ -501,15 +501,19 @@ struct ternary_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
    InfiniteMPOElement operator()(ProductMPO const& x, ProductMPO const& y) const
    {
       QuantumNumbers::QuantumNumber q(x.GetSymmetryList(), qStr);
-      CHECK(is_scalar(q))("Product of ProductMPO's must be scalar!")(q);
-      return prod(x,y);
+      if (!is_scalar(q))
+      {
+	 throw ParserError("In operator prod(x,y,q): the quantum number must be scalar."
+			   "\nq = " + q.ToString());
+      }
+      return x*y;
    }
 
    template <typename T, typename U>
    InfiniteMPOElement operator()(T const& x, U const& y) const
    {
-      PANIC("Cannot evaluate product between "+name_of(x)+" and "+name_of(y));
-      return complex(0.0);
+      throw ParserError("In operator prod(x,y,q): "
+			"cannot evaluate product between "+name_of(x)+" and "+name_of(y));
    }
 
    std::string qStr;
@@ -565,7 +569,7 @@ struct ternary_product_q<InfiniteMPOElement> : boost::static_visitor<InfiniteMPO
    template <typename T, typename U>
    InfiniteMPOElement operator()(T const& x, U const& y) const
    {
-      PANIC("Cannot evaluate product between "+name_of(x)+" and "+name_of(y));
+      throw ParserError("Cannot evaluate product between "+name_of(x)+" and "+name_of(y));
       return complex(0.0);
    }
 

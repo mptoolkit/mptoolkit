@@ -6,22 +6,22 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/math/special_functions/round.hpp>
 
+namespace Parser
+{
+template <>
+std::string name_of<UnitCellMPO>(UnitCellMPO const&)
+{
+   return "unit cell operator";
+}
+
+}
+
 namespace UP
 {
 
 using namespace Parser;
 
 typedef boost::variant<complex, UnitCellMPO> ElementType;
-
-// utility to pop an integer off the element stack
-int pop_int(std::stack<ElementType>& eval)
-{
-   complex x = boost::get<complex>(eval.top());
-   eval.pop();
-   int j = boost::math::iround(x.real());
-   CHECK(norm_frob(x - double(j)) < 1E-7)("index must be an integer")(x);
-   return j;
-}
 
 // Operator expressions:
 // Op(cell)[site] - a local operator at a given site of a given unit cell
@@ -74,16 +74,30 @@ struct push_cell_operator
 		      std::stack<ElementType>& eval_)
       : Cell(Cell_), NumCells(NumCells_), IdentStack(IdentStack_), eval(eval_) {}
 
-   void operator()(char const*, char const*) const
+   void operator()(char const* a, char const*) const
    {
       std::string OpName = IdentStack.top();
       IdentStack.pop();
 
-      int j = pop_int(eval);
-      CHECK(NumCells == 0 || (j >= 0 && j < NumCells))("Cell index out of bounds")(j)(NumCells);
-      CHECK(Cell.operator_exists(OpName))("Operator does not exist in the unit cell")(OpName);
-
-      eval.push(ElementType(Cell(OpName, j)));
+      try
+      {
+	 int j = pop_int(eval);
+	 if (!Cell.operator_exists(OpName))
+	    throw ParserError("Operator not found in the unit cell: " + OpName);
+	 eval.push(ElementType(Cell(OpName, j)));
+      }
+      catch (ParserError const& p)
+      {
+	 throw ParserError::AtPosition(p, a);
+      }
+      catch (std::exception const& p)
+      {
+	 throw ParserError::AtPosition(p, a);
+      }
+      catch (...)
+      {
+	 throw;
+      }
    }
 
    UnitCell const& Cell;
@@ -835,6 +849,8 @@ ParseUnitCellElement(UnitCell const& Cell, int NumCells, std::string const& Str,
    UnitCellParser::FunctionStackType   FunctionStack;
    UnitCellParser::ArgumentType        Arguments;
 
+   CheckParentheses(Str.begin(), Str.end());
+
    for (Function::ArgumentList::const_iterator I = Args.begin(); I != Args.end(); ++I)
    {
       Arguments.add(I->first.c_str(), I->second);
@@ -846,14 +862,30 @@ ParseUnitCellElement(UnitCell const& Cell, int NumCells, std::string const& Str,
       Arguments.add(I->first.c_str(), I->second);
    }
 
+   char const* beg = Str.c_str();
+   char const* end = beg + Str.size();
+
    UnitCellParser Parser(ElemStack, UnaryFuncStack, BinaryFuncStack, IdentStack, 
 			 FunctionStack, ParamStack, 
 			 Arguments, Cell, NumCells);
 
-   parse_info<> info = parse(Str.c_str(), Parser, space_p);
-   if (!info.full)
+   try
    {
-      PANIC("Operator parser failed, stopped at")(info.stop);
+      parse_info<> info = parse(beg, Parser, space_p);
+      if (!info.full)
+	 throw ParserError::AtRange("Failed to parse an expression", info.stop, end);
+   }
+   catch (ParserError const& p)
+   {
+      throw ParserError::Finalize(p, "While parsing a unit cell operator:", beg, end);
+   }
+   catch (std::exception const& p)
+   {
+      throw ParserError::Finalize(p, "While parsing a unit cell operator:", beg, end);
+   }
+   catch (...)
+   {
+      throw;
    }
 
    CHECK(UnaryFuncStack.empty());

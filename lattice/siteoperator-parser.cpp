@@ -8,6 +8,17 @@ using namespace Parser;
 
 typedef boost::variant<SiteOperator, std::complex<double> > element_type;
 
+namespace Parser
+{
+
+template <>
+std::string name_of<SiteOperator>(SiteOperator const&)
+{
+   return "local operator";
+}
+
+}
+
 struct push_site_operator
 {
    push_site_operator(std::stack<element_type>& eval_, LatticeSite const& Site_)
@@ -204,6 +215,8 @@ ParseSiteElement(LatticeSite const& Site,
    SiteOperatorParser::ParameterStackType  ParameterStack;
    SiteOperatorParser::ArgumentType        Arguments;
 
+   CheckParentheses(Str.begin(), Str.end());
+
    // put Args into Arguments
    for (Function::ArgumentList::const_iterator I = Args.begin(); I != Args.end(); ++I)
    {
@@ -216,13 +229,29 @@ ParseSiteElement(LatticeSite const& Site,
       Arguments.add(I->first.c_str(), I->second);
    }
 
+   char const* beg = Str.c_str();
+   char const* end = beg + Str.size();
+
    SiteOperatorParser Parser(ElementStack, UnaryFuncStack, BinaryFuncStack, 
 			     IdentifierStack, FunctionStack, ParameterStack, Arguments, Site);
 
-   parse_info<> info = parse(Str.c_str(), Parser, space_p);
-   if (!info.full)
+   try
    {
-      PANIC("Operator parser failed, stopped at")(info.stop);
+      parse_info<> info = parse(beg, Parser, space_p);
+      if (!info.full)
+	 throw ParserError::AtRange("Failed to parse an expression", info.stop, end);
+   }
+   catch (ParserError const& p)
+   {
+      throw ParserError::Finalize(p, "While parsing a local operator:", beg, end);
+   }
+   catch (std::exception const& p)
+   {
+      throw ParserError::Finalize(p, "While parsing a local operator:", beg, end);
+   }
+   catch (...)
+   {
+      throw;
    }
 
    CHECK(!ElementStack.empty());

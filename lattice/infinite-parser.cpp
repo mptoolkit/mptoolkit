@@ -16,15 +16,6 @@ namespace ILP // to avoid confusion of duplicate names
 
 typedef InfiniteMPOElement ElementType;
 
-int pop_int(std::stack<ElementType>& eval)
-{
-   complex x = boost::get<std::complex<double> >(eval.top());
-   eval.pop();
-   int j = boost::math::iround(x.real());
-   CHECK(norm_frob(x - double(j)) < 1E-7)("index must be an integer")(x);
-   return j;
-}
-
 struct push_operator
 {
    push_operator(InfiniteLattice const& Lattice_,
@@ -75,10 +66,25 @@ struct scale_cells_to_sites
 			std::stack<ElementType>& eval_)
       : Lattice(Lattice_), eval(eval_) {}
    
-   void operator()(char const*, char const*) const
+   void operator()(char const* a, char const*) const
    {
-      int Cells = pop_int(eval);
-      eval.push(std::complex<double>(double(Cells*Lattice.GetUnitCell().size())));
+      try
+      {
+	 int Cells = pop_int(eval);
+	 eval.push(std::complex<double>(double(Cells*Lattice.GetUnitCell().size())));
+      }
+      catch (ParserError const& p)
+      {
+	 throw ParserError::AtPosition(p, a);
+      }
+      catch (std::exception const& p)
+      {
+	 throw ParserError::AtPosition(p, a);
+      }
+      catch (...)
+      {
+	 throw;
+      }
    }
 
    InfiniteLattice const& Lattice;
@@ -165,12 +171,27 @@ struct push_sum_unit
    
    void operator()(char const* Start, char const* End) const
    {
-      int Sites = pop_int(eval);
-      int Cells = Sites / Lattice.GetUnitCell().size();
-      DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End))(Sites);
-      UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End));
-      Op.ExtendToCoverUnitCell(Sites);
-      eval.push(sum_unit(Op, Sites));
+      try
+      {
+	 int Sites = pop_int(eval);
+	 int Cells = Sites / Lattice.GetUnitCell().size();
+	 DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End))(Sites);
+	 UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End));
+	 Op.ExtendToCoverUnitCell(Sites);
+	 eval.push(sum_unit(Op, Sites));
+      }
+      catch (ParserError const& p)
+      {
+	 throw ParserError::AtPosition(p, Start);
+      }
+      catch (std::exception const& p)
+      {
+	 throw ParserError::AtPosition(p, Start);
+      }
+      catch (...)
+      {
+	 throw;
+      }
    }
 
    InfiniteLattice const& Lattice;
@@ -489,14 +510,29 @@ ParseInfiniteOperator(InfiniteLattice const& Lattice, std::string const& Str,
       Arguments.add(I->first.c_str(), I->second);
    }
 
-   InfiniteLatticeParser Parser(ElemStack, UnaryFuncStack, BinaryFuncStack, IdentStack, 
-			 FunctionStack, ParamStack, 
-			 Arguments, Lattice);
+   char const* beg = Str.c_str();
+   char const* end = beg + Str.size();
 
-   parse_info<> info = parse(Str.c_str(), Parser, space_p);
-   if (!info.full)
+   InfiniteLatticeParser Parser(ElemStack, UnaryFuncStack, BinaryFuncStack, IdentStack, 
+				FunctionStack, ParamStack, 
+				Arguments, Lattice);
+   try
    {
-      PANIC("Operator parser failed, stopped at")(info.stop);
+      parse_info<> info = parse(beg, Parser, space_p);
+      if (!info.full)
+	 throw ParserError::AtRange("Failed to parse an expression", info.stop, end);
+   }
+   catch (ParserError const& p)
+   {
+      throw ParserError::Finalize(p, "While parsing an infinite operator:", beg, end);
+   }
+   catch (std::exception const& p)
+   {
+      throw ParserError::Finalize(p, "While parsing an infinite operator:", beg, end);
+   }
+   catch (...)
+   {
+      throw;
    }
 
    CHECK(UnaryFuncStack.empty());
