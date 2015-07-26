@@ -9,11 +9,68 @@
 #include <boost/variant.hpp>
 #include <boost/variant/static_visitor.hpp>
 #include <complex>
+#include <boost/math/special_functions/round.hpp>
 
 namespace Parser
 {
 
 typedef std::complex<double> complex;
+
+class ParserError : public std::exception
+{
+   public:
+      explicit ParserError(std::string const& Why);
+
+      ParserError(ParserError const& Prev, std::string const& Why);
+
+      ParserError(std::exception const& Prev, std::string const& Why);
+
+      ~ParserError() throw() { }
+
+      virtual const char* what() const throw() { return Msg.c_str(); }
+
+      // named constructors
+
+      // Add an iterator position at the point where the error occurs
+      static ParserError AtPosition(std::string const& Why, char const* Position);
+      static ParserError AtPosition(ParserError const& Prev, char const* Position);
+      static ParserError AtPosition(std::exception const& Prev, char const* Position);
+
+      static ParserError AtRange(std::string const& Why, char const* Start, char const* End);
+      static ParserError AtRange(ParserError const& Prev, char const* Start, char const* End);
+      static ParserError AtRange(std::exception const& Prev, char const* Start, char const* End);
+
+      // finalize once we have the complete string
+      static ParserError Finalize(ParserError const& Prev, std::string const& Why,
+				  char const* beg, char const* end);
+
+      static ParserError Finalize(std::exception const& Prev, std::string const& Why,
+				  char const* beg, char const* end);
+
+   private:
+      ParserError(std::list<std::string> const& CallStack_, char const* Position);
+      ParserError(std::list<std::string> const& CallStack_, char const* Position, char const* End_);
+      ParserError(std::list<std::string> const& CallStack_, 
+		  std::string const& Why, char const* Position, char const* End_,
+		  char const* beg, char const* end);
+
+      void AssembleMessage();
+
+      std::list<std::string> CallStack;
+      std::string Msg;
+
+      char const* Pos;
+      char const* End;
+};
+
+inline
+int as_int(complex x)
+{
+   int j = boost::math::iround(x.real());
+   if (LinearAlgebra::norm_frob(x - double(j)) > 1E-7)
+       throw ParserError("expected an integer, got a real/complex number: " + format_complex(x));
+   return j;
+}
 
 //
 // unary functions
@@ -267,9 +324,9 @@ struct binary_power : boost::static_visitor<element_type>
    template <typename T>
    element_type operator()(T const& x, complex const& y) const
    {
-      int i = int(y.real()+0.5);
-      CHECK(std::norm(complex(double(i)) - y) < 1E-7)("cannot take fractional power of an operator");
-      CHECK(i >= 0)("cannot take negative power of an operator");
+      int i = as_int(y);
+      if (i < 0)
+	 throw ParserError("cannot take negative power of an operator");
       return i == 0 ? element_type(complex(1.0,0.0)) : pow(x, i);
    }
 

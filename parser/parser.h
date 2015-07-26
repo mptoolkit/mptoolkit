@@ -41,53 +41,6 @@ std::string Spaces(int Size)
    return std::string(Size, ' ');
 }
 
-class ParserError : public std::exception
-{
-   public:
-      explicit ParserError(std::string const& Why);
-
-      ParserError(ParserError const& Prev, std::string const& Why);
-
-      ParserError(std::exception const& Prev, std::string const& Why);
-
-      ~ParserError() throw() { }
-
-      virtual const char* what() const throw() { return Msg.c_str(); }
-
-      // named constructors
-
-      // Add an iterator position at the point where the error occurs
-      static ParserError AtPosition(std::string const& Why, char const* Position);
-      static ParserError AtPosition(ParserError const& Prev, char const* Position);
-      static ParserError AtPosition(std::exception const& Prev, char const* Position);
-
-      static ParserError AtRange(std::string const& Why, char const* Start, char const* End);
-      static ParserError AtRange(ParserError const& Prev, char const* Start, char const* End);
-      static ParserError AtRange(std::exception const& Prev, char const* Start, char const* End);
-
-      // finalize once we have the complete string
-      static ParserError Finalize(ParserError const& Prev, std::string const& Why,
-				  char const* beg, char const* end);
-
-      static ParserError Finalize(std::exception const& Prev, std::string const& Why,
-				  char const* beg, char const* end);
-
-   private:
-      ParserError(std::list<std::string> const& CallStack_, char const* Position);
-      ParserError(std::list<std::string> const& CallStack_, char const* Position, char const* End_);
-      ParserError(std::list<std::string> const& CallStack_, 
-		  std::string const& Why, char const* Position, char const* End_,
-		  char const* beg, char const* end);
-
-      void AssembleMessage();
-
-      std::list<std::string> CallStack;
-      std::string Msg;
-
-      char const* Pos;
-      char const* End;
-};
-
 inline
 ParserError::ParserError(std::string const& Why)
    : CallStack(1, Why), Pos(NULL), End(NULL)
@@ -322,12 +275,8 @@ int pop_int(std::stack<ElementType>& eval)
       throw ParserError("expected an integer, got a " + name_of(eval.top()));
    complex x = boost::get<complex>(eval.top());
    eval.pop();
-   int j = boost::math::iround(x.real());
-   if (LinearAlgebra::norm_frob(x - double(j)) > 1E-7)
-       throw ParserError("expected an integer, got a real/complex number: " + format_complex(x));
-   return j;
+   return as_int(x);
 }
-
 
 // apply a unary math function to an element
 template <typename Func>
