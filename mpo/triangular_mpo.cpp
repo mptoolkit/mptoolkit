@@ -707,7 +707,7 @@ TriangularMPO outer(TriangularMPO const& x, TriangularMPO const& y)
    }
    CHECK(Unique)("outer product is not defined for these operators")
       (x.TransformsAs())(y.TransformsAs());
-   return std::sqrt(double(degree(q))) * prod(x,y,q);
+   return std::sqrt(double(degree(x.TransformsAs()) + degree(y.TransformsAs())) / degree(q)) * prod(x,y,q);
 }
 
 TriangularMPO
