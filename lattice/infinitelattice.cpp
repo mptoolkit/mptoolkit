@@ -351,7 +351,7 @@ TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& JW2, Finit
       // the finite MPO components go along the diagonal
       for (unsigned n = 0; n < SplitOp.size()-1; ++n)
       {
-	 SetComponents(C, SplitOp[n][i%SplitOp.size()], r, c);
+	 SetComponents(C, SplitOp[n][i], r, c);
 	 r += SplitOp[n][i].Basis1().size();
 	 c += SplitOp[n][i].Basis2().size();
       }
