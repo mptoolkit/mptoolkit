@@ -13,7 +13,7 @@
 // This needs some deeper analysis - the problem is we get numerically near parallel
 // vectors although one of them is small and mostly noise, so we then end up with
 // some spurious large matrix elements.
-double const TruncateOverlapEpsilon = 1E-14;
+double const TruncateOverlapEpsilon = 1E-18;
 
 //using namespace LinearAlgebra;
 using LinearAlgebra::operator*;
@@ -719,7 +719,7 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
    {
       double imat = Overlaps(i,i).real();
       // if the row is numerically zero, we can eliminate it completely.
-      if (imat <= Scale * TruncateOverlapEpsilon)
+      if (imat <= Scale * TruncateOverlapEpsilon*TruncateOverlapEpsilon)
          continue;    // skip this row
 
       NewRows[i] = std::make_pair(i, 1.0);
@@ -834,7 +834,7 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
       NewCols.push_back(std::make_pair(i, 1.0));
       double imat = Overlaps(i,i).real();
       // if the row is zero, we can eliminate it completely
-      if (imat <= Scale * TruncateOverlapEpsilon)
+      if (imat <= Scale * TruncateOverlapEpsilon*TruncateOverlapEpsilon)
       {
          NewCols.back().first = -1;  // special value, indicates the row is not needed
          continue;
@@ -862,8 +862,9 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
 	    // parallel to k.
             if (NewCols[j].first != j)
             {
+	       int k = (NewCols[j].first);
                WARNING("parallel column vectors have a non-transitive equivalence")(i)(j)(NewCols[j].first)
-		  (Overlaps(j,i))(Overlaps(NewCols[j].first,i))(Overlaps(NewCols[j].first,j))(imat)(jmat);
+			(Overlaps(j,i))(Overlaps(k,i))(Overlaps(k,j))(Overlaps(k,k))(imat)(jmat);
                DEBUG_TRACE(A);
                while (NewCols[i].first != i && NewCols[NewCols[i].first].first != NewCols[i].first)
                {
