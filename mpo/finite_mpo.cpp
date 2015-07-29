@@ -106,6 +106,8 @@ void optimize(FiniteMPO& Op)
    if (Op.size() < 2)
       return;
 
+   SimpleRedOperator X = coarse_grain(Op);
+
    bool Reduced = true; // flag to indicate that we reduced a dimension
    // loop until we do a complete sweep with no reduction in dimensions
    while (Reduced)
@@ -138,6 +140,9 @@ void optimize(FiniteMPO& Op)
       }
       Op.front() = Op.front() * T;
    }
+
+   SimpleRedOperator Y = coarse_grain(Op);
+   CHECK(norm_frob(X-Y) < 1E-10)("failure in MPO optimize()!")(X)(Y);
 }
 
 FiniteMPO&
