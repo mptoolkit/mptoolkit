@@ -95,7 +95,7 @@ int main(int argc, char** argv)
 	  "display only the real part of the result")
 	 ("imag,i", prog_opt::bool_switch(&ShowImag),
 	  "display only the imaginary part of the result")
-         ("print,p", prog_opt::bool_switch(&Print), "Print the MPO to standard output")
+         ("print,p", prog_opt::bool_switch(&Print), "Print the MPO to standard output (use --verbose to see more detail)")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose),
           "Verbose output (use multiple times for more output)")
          ;
@@ -142,6 +142,15 @@ int main(int argc, char** argv)
       if (Print)
       {
 	 print_structure(Op.MPO(), std::cout);
+	 if (Verbose > 0)
+	 {
+	    std::cout << Op.MPO() << '\n';
+	 }
+	 if (Verbose > 1)
+	 {
+	    SimpleRedOperator x = coarse_grain(Op.MPO());
+	    std::cout << x << "\n";
+	 }
 	 //	 std::cout << Op << '\n';
 	 //std::cout << "\nTransfer matrix:" << construct_transfer_matrix(herm(GenericMPO(Op.MPO())),
 	 //							GenericMPO(Op.MPO())) << '\n';

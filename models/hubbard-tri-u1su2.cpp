@@ -29,19 +29,22 @@ int main(int argc, char** argv)
 		      run(), vm);
       prog_opt::notify(vm);    
       
+      OperatorDescriptions OpDescriptions;
+      OpDescriptions.add_operators()
+	 ("H_t"   , "nearest-neighbor hopping between the apex sites of clusters")
+	 ("H_t2"  , "next-nearest-neighbor hopping between the apex sites of clusters")
+	 ("H_tc"  , "hopping inside the cluster")
+	 ("H_tp"  , "nearest-neighbor hopping between non-apex sites of clusters")
+	 ("H_U"   , "on-site Coulomb interaction n_up*n_down")
+	 ("H_Us"  , "on-site Coulomb interaction (n_up-1/2)(n_down-1/2)")
+	 ;
+
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
          std::cerr << "usage: " << argv[0] << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Operators:\n"
-		   << "H_t     - nearest-neighbor hopping between the apex sites of clusters\n"
-		   << "H_t2    - next-nearest-neighbor hopping between the apex sites of clusters\n"
-		   << "H_tc    - hopping inside the cluster\n"
-		   << "H_tp    - nearest-neighbor hopping between non-apex sites of clusters\n"
-		   << "H_U     - on-site Coulomb interaction n_up*n_down\n"
-		   << "H_Us    - on-site Coulomb interaction (n_up-1/2)(n_down-1/2)\n"
-	    ;
+	 std::cerr << "Operators:\n" << OpDescriptions;
          return 1;
       }
 
@@ -54,6 +57,8 @@ int main(int argc, char** argv)
       // need to add this by hand
       Cell["Parity"] = Cell.swap_gate_no_sign(0,2) * exp(math_const::pi*std::complex<double>(0,1)
 							 *((N[0]+N[2])*N[1]+N[0]*N[2]));
+
+      Cell["Parity2"] = Cell.swap_gate(0,2);
       // Reflection operator.
       R = R[0]*R[1]*R[2];
 
@@ -73,6 +78,12 @@ int main(int argc, char** argv)
       Lattice["H_U"]  = sum_unit(Pdouble(0)[0] + Pdouble(0)[1] + Pdouble(0)[2]);
       Lattice["H_Us"] = sum_unit(Hu(0)[0] + Hu(0)[1] + Hu(0)[2]);
 
+      // Information about the lattice
+      Lattice.set_description("U(1)xSU(2) Triangular Hubbard model");
+      Lattice.set_command_line(argc, argv);
+      Lattice.set_operator_descriptions(OpDescriptions);
+
+      // save the lattice to disc
       pheap::ExportObject(FileName, Lattice);
    }
    catch (std::exception& e)

@@ -21,7 +21,7 @@ void Exponentiate(double t, int Size, std::complex<double> const* H, int ldH,
 {
    // 2015-06-26: Increased degree of Pade approximation from 6 to 10, to get
    // better precision for low-dimensional operators
-   int ideg = 10;
+   int ideg = 12;
    int lwork = 4*Size*Size + ideg + 1;
    std::complex<double>* work = StackAlloc::allocate_type<std::complex<double> >(lwork);
    int* ipiv = StackAlloc::allocate_type<int>(Size);
