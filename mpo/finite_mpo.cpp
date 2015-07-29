@@ -142,7 +142,7 @@ void optimize(FiniteMPO& Op)
    }
 
    SimpleRedOperator Y = coarse_grain(Op);
-   CHECK(norm_frob(X-Y) < 1E-10)("failure in MPO optimize()!")(X)(Y);
+   CHECK(norm_frob(X-Y) < 1E-10*Y.Basis1().total_degree())("failure in MPO optimize()!")(X)(Y);
 }
 
 FiniteMPO&
