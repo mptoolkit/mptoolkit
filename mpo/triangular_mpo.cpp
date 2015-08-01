@@ -81,6 +81,7 @@ operator<<(std::ostream& out, TriangularMPO const& op)
    return out << op.data();
 }
 
+#if 1
 void optimize(TriangularMPO& Op)
 {
    if (Op.size() < 2)
@@ -120,6 +121,67 @@ void optimize(TriangularMPO& Op)
    }
 }
 
+#else
+
+void optimize(TriangularMPO& Op)
+{
+   if (Op.size() < 2)
+      return;
+
+   double const Eps = 1E-13;
+
+   TRACE(Op);
+
+   bool Reduced = true; // flag to indicate that we reduced a dimension
+   // loop until we do a complete sweep with no reduction in dimensions
+   bool First = true;
+   bool Second = true;
+   while (Reduced || Second)
+   {
+      Reduced = false;
+
+      OperatorComponent Op2 = Op.front();
+      if (!First && Second)
+      {
+	 TRACE("XXXXX");
+      }
+      SimpleOperator T2 = TruncateBasis2MkII(Op2, First ? 0.0 : Eps);
+      TRACE(norm_frob(Op.front() - Op2*T2));
+
+      // Working left to right, optimize the Basis2
+      SimpleOperator T = TruncateBasis2MkII(Op.front(), First ? 0.0 : Eps);
+      if (T.size1() != T.size2())
+         Reduced = true;
+      for (int i = 1; i < Op.size()-1; ++i)
+      {
+         Op[i] = T * Op[i];
+         T = TruncateBasis2MkII(Op[i]);
+         if (T.size1() != T.size2())
+            Reduced = true;
+      }
+      Op.back() = T * Op.back();
+      
+      // Working right to left, optimize Basis1
+      T = TruncateBasis1MkII(Op.back(), Eps);
+      if (T.size1() != T.size2())
+         Reduced = true;
+      for (int i = Op.size()-2; i >= 1; --i)
+      {
+         Op[i] = Op[i] * T;
+	 T = TruncateBasis1MkII(Op[i], Eps);
+         if (T.size1() != T.size2())
+            Reduced = true;
+      }
+      Op.front() = Op.front() * T;
+      
+      if (!First) Second = false;
+      First = false;
+   }
+
+   TRACE(Op);
+
+}
+#endif
 
 void print_structure(TriangularMPO const& Op, std::ostream& out, double UnityEpsilon)
 {

@@ -88,6 +88,8 @@ class ReducibleTensor
       typedef boost::transform_iterator<GetSecond, map_iterator> iterator; 
       typedef boost::transform_iterator<GetSecondConst, const_map_iterator> const_iterator; 
 
+
+
       ReducibleTensor();
 
       ReducibleTensor(basis1_type const& Basis);
@@ -138,6 +140,22 @@ class ReducibleTensor
       value_type scalar() const;
       value_type& scalar();
 
+      void trim()
+      {
+	 map_iterator I = data_.begin();
+	 while (I != data_.end())
+	 {
+	    if (norm_frob_sq(I->second) == 0)
+	    {
+	       map_iterator Temp = I;
+	       ++I;
+	       data_.erase(Temp);
+	    }
+	    else
+	       ++I;
+	 }
+      }
+      
       // variant where we know in advance that the corresponding component
       // exists in the container
       value_type const& project_assert(QuantumNumber const& q) const;
@@ -244,6 +262,19 @@ struct interface<Tensor::ReducibleTensor<T, B1, B2, S> >
    typedef void type;
 };
 
+// assign
+
+template <typename T, typename B1, typename B2, typename S>
+struct Assign<Tensor::ReducibleTensor<T, B1, B2, S>&, Tensor::ReducibleTensor<T, B1, B2, S> >
+{
+   typedef Tensor::ReducibleTensor<T, B1, B2, S> result_type;
+result_type operator()(Tensor::ReducibleTensor<T, B1, B2, S>& LHS, 
+		       Tensor::ReducibleTensor<T, B1, B2, S> const& RHS) const 
+   { 
+      LHS = RHS;
+      return LHS;
+   }
+};
 
 // zero
 

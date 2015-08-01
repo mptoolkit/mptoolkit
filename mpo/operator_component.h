@@ -397,12 +397,18 @@ OperatorComponent exchange(OperatorComponent const& A);
 SimpleOperator
 TruncateBasis1(OperatorComponent& A);
 
+SimpleOperator
+TruncateBasis1MkII(OperatorComponent& A, double Epsilon = 0.0);
+
 // Basis truncation via removal of parallel components.
 // Returns the operator P such that A' * P = A
 // This function preserves the first column of the MPO intact
 // (which is required to preserve upper triangular MPO's)
 SimpleOperator
 TruncateBasis2(OperatorComponent& A);
+
+SimpleOperator
+TruncateBasis2MkII(OperatorComponent& A, double Epsilon = 0.0);
 
 OperatorComponent 
 operator+(OperatorComponent const& A, OperatorComponent const& Op);

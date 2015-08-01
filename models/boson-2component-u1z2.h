@@ -18,6 +18,7 @@ std::string Coord(int i, int j)
 
 int Parity(int m)
 {
+   // FIXME: this is the negative of what it should be
    return (m%2)*2-1;
 }
 
@@ -35,6 +36,7 @@ LatticeSite Boson2ComponentU1Z2(int MaxN, std::string const& Sym1 = "N", std::st
    SiteOperator& B_S = Site["B_S"];
    SiteOperator& N_A = Site["N_A"];
    SiteOperator& N_S = Site["N_S"];
+   SiteOperator& N = Site["N"];
    SiteOperator& N2_A = Site["N2_A"];
    SiteOperator& N2_S = Site["N2_S"];
    SiteOperator& I = Site["I"];
@@ -56,9 +58,9 @@ LatticeSite Boson2ComponentU1Z2(int MaxN, std::string const& Sym1 = "N", std::st
    BH_S = SiteOperator(Basis, QN(1, 1), LatticeCommute::Bosonic);
    // parity
    Z = SiteOperator(Basis, QN(0, 1), LatticeCommute::Bosonic);
-   for (int n = 0; n < MaxN; ++n)
+   for (int n = 0; n <= MaxN; ++n)
    {
-      for (int m = 0; m < MaxN; ++m)
+      for (int m = 0; m <= MaxN; ++m)
       {
 	 int l1 = Basis.LookupOrNeg(Coord(n, m+1));
 	 int l2 = Basis.LookupOrNeg(Coord(n, m));
@@ -73,7 +75,6 @@ LatticeSite Boson2ComponentU1Z2(int MaxN, std::string const& Sym1 = "N", std::st
 	 {
 	    BH_S(Coord(n+1, m), Coord(n, m)) = std::sqrt(double(n + 1));
 	 }
-
 	 Z(Basis.LookupOrNeg(Coord(n, m)), Basis.LookupOrNeg(Coord(n, m))) = Parity(m);
       }
    }
@@ -87,6 +88,8 @@ LatticeSite Boson2ComponentU1Z2(int MaxN, std::string const& Sym1 = "N", std::st
 
    N_A = BH_A*B_A;
    N_S = BH_S*B_S;
+
+   N = N_A + N_S;
    
    N2_A = N_A * (N_A-I);
    N2_S = N_S * (N_S-I);

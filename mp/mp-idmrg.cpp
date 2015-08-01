@@ -1019,6 +1019,8 @@ int main(int argc, char** argv)
       if (WavefuncUnitCellSize == 0)
 	 WavefuncUnitCellSize = UnitCellSize;
 
+      optimize(HamMPO);
+
       // load the wavefunction
       if (ExactDiag)
       {

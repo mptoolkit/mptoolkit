@@ -803,10 +803,10 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
 
 SimpleOperator TruncateBasis2(OperatorComponent& A)
 {
-   // We want to work from the first column to first, so that we preserve the first column exactly.
+   // We want to work from the first column to last, so that we preserve the first column exactly.
    // For a TriangularMPO the first column will contain the identity.
    // We don't have to worry about accidentally eliminating the last column of a triangular MPO,
-   // since if it is triangular then the last column cannot be parallel to anything else
+   // since if it is triangular then the last column cannot be parallel to anything else.
 
    // if the operator is trivially zero, then return early
    if (A.Basis2().size() == 0)
@@ -919,6 +919,249 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
 
    A = tA;
    return Reg;
+}
+
+SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
+{
+   // We want to work from the last row to the first, so that we preserve the last row exacrly.
+   // For a TriangularMPO the last row will contain the identity.
+   // We don't have to worry about accidentally eliminating the first row of a triangular MPO,
+   // since if it is triangular then the last column cannot be parallel to anything else.
+
+   // if the operator is trivially zero, then return early
+   if (A.Basis1().size() == 0)
+   {
+      return SimpleOperator(A.Basis1(), A.Basis1(), QuantumNumber(A.GetSymmetryList()));
+   }
+   else if (A.Basis2().size() == 0)
+   {
+      SimpleOperator Result(A.Basis1(), A.Basis2(), QuantumNumber(A.GetSymmetryList()));
+      A = OperatorComponent(A.LocalBasis1(), A.LocalBasis2(), A.Basis2(), A.Basis2());
+      return Result;
+   }
+
+   // A norm for the overlaps matrix
+   double Scale = norm_frob_sq(A) / (A.Basis1().total_degree() * A.Basis2().total_degree());
+
+   // make a dense matrix
+   LinearAlgebra::Matrix<SimpleRedOperator> M = A.data();
+
+   // these are stored in the reverse order
+   std::vector<LinearAlgebra::Vector<SimpleRedOperator> > Rows;
+   std::vector<LinearAlgebra::Vector<std::complex<double> > > T;
+
+   std::vector<double> RowNormSq;
+
+   std::vector<QuantumNumbers::QuantumNumber> NewBasis1Q;
+
+   double Normalization = A.LocalBasis2().total_degree();
+
+   int r = M.size1()-1;
+   while (r >= 0)
+   {
+      LinearAlgebra::Vector<SimpleRedOperator> NextRow = M(r, LinearAlgebra::all);
+      
+      // orthogonalize against the following rows
+      for (unsigned i = 0; i < Rows.size(); ++i)
+      {
+	 // check that the quantum numbers agree - for non-abelian quantum numbers it might
+	 // have non-zero overlap but be in a different symmetry sector
+	 if (NewBasis1Q[i] == A.Basis1()[r])
+	 {
+	    std::complex<double> x = inner_prod(Rows[i], NextRow) / RowNormSq[i];
+	    T[i][r] += x;
+	    if (norm_frob(x) > 0) // Epsilon*Epsilon)
+	       NextRow = NextRow - LinearAlgebra::Vector<SimpleRedOperator>(x * Rows[i]);
+	 }
+      }
+      
+      // DGKS step
+      for (unsigned i = 0; i < Rows.size(); ++i)
+      {
+	 // check that the quantum numbers agree - for non-abelian quantum numbers it might
+	 // have non-zero overlap but be in a different symmetry sector
+	 if (NewBasis1Q[i] == A.Basis1()[r])
+	 {
+	    std::complex<double> x = inner_prod(Rows[i], NextRow) / RowNormSq[i];
+	    T[i][r] += x;
+	    if (norm_frob(x) > 0) // Epsilon*Epsilon)
+	       NextRow = NextRow - LinearAlgebra::Vector<SimpleRedOperator>(x * Rows[i]);
+	 }
+      }
+
+      // check the norm of column c
+      double NextRowNormSq = norm_frob_sq(NextRow);
+      if (NextRowNormSq > Epsilon*Epsilon)
+      {
+	 // we have a column
+	 Rows.push_back((std::sqrt(Normalization / NextRowNormSq)) * NextRow);
+	 T.push_back(LinearAlgebra::Vector<std::complex<double> >(M.size1(), 0.0));
+	 T[Rows.size()-1][r] = std::sqrt(NextRowNormSq / Normalization);
+	 NewBasis1Q.push_back(A.Basis1()[r]);
+	 RowNormSq.push_back(Normalization);  // since we've already normalized it
+      }
+
+      --r;
+   }
+
+   BasisList NewBasis1(NewBasis1Q.rbegin(), NewBasis1Q.rend());
+
+   // Convert back to OperatorComponent and SimpleOperator
+   OperatorComponent ANew(A.LocalBasis1(), A.LocalBasis2(), NewBasis1, A.Basis2());
+   for (unsigned r = 0; r < NewBasis1.size(); ++r)
+   {
+      for (unsigned c = 0; c < A.Basis2().size(); ++c)
+      {
+	 if (norm_frob(Rows[r][c]) > 0)
+	 {
+	    ANew.data()(NewBasis1.size()-r-1,c) = Rows[r][c];
+	    ANew.data()(NewBasis1.size()-r-1,c).trim();
+	 }
+      }
+   }
+
+   SimpleOperator Trunc(A.Basis1(), NewBasis1);
+   for (unsigned r = 0; r < A.Basis1().size(); ++r)
+   {
+      for (unsigned d = 0; d < NewBasis1.size(); ++d)
+      {
+	 if (norm_frob(T[NewBasis1.size()-d-1][r]) > 0)
+	 {
+	    Trunc.data()(r,d) = T[NewBasis1.size()-d-1][r];
+	 }
+      }
+   }
+
+   OperatorComponent ACheck = prod(Trunc, ANew);
+   CHECK(norm_frob(A - ACheck) <= Scale*TruncateOverlapEpsilon);
+   
+   ANew.check_structure();
+   Trunc.check_structure();
+
+   A = ANew;
+   return Trunc;
+}
+
+SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
+{
+   // We want to work from the first column to last, so that we preserve the first column exactly.
+   // For a TriangularMPO the first column will contain the identity.
+   // We don't have to worry about accidentally eliminating the last column of a triangular MPO,
+   // since if it is triangular then the last column cannot be parallel to anything else.
+
+   // if the operator is trivially zero, then return early
+   if (A.Basis2().size() == 0)
+   {
+      return SimpleOperator(A.Basis2(), A.Basis2(), QuantumNumber(A.GetSymmetryList()));
+   }
+   else if (A.Basis1().size() == 0)
+   {
+      SimpleOperator Result(A.Basis1(), A.Basis2(), QuantumNumber(A.GetSymmetryList()));
+      A = OperatorComponent(A.LocalBasis1(), A.LocalBasis2(), A.Basis1(), A.Basis1());
+      return Result;
+   }
+
+   // A norm for the overlaps matrix
+   double Scale = norm_frob_sq(A) / (A.Basis1().total_degree() * A.Basis2().total_degree());
+
+   // make a dense matrix
+   LinearAlgebra::Matrix<SimpleRedOperator> M = A.data();
+
+   std::vector<LinearAlgebra::Vector<SimpleRedOperator> > Columns;
+   std::vector<LinearAlgebra::Vector<std::complex<double> > > T;
+
+   std::vector<double> ColNormSq;
+
+   BasisList NewBasis2(A.Basis2().GetSymmetryList());
+
+   double Normalization = A.LocalBasis1().total_degree();
+
+   int c = 0;
+   while (c < int(M.size2()))
+   {
+      //      LinearAlgebra::Vector<std::complex<double> > v(M.size2(), 0.0);
+      
+      LinearAlgebra::Vector<SimpleRedOperator> NextCol = M(LinearAlgebra::all, c);
+      
+      // orthogonalize against the previous rows
+      for (unsigned i = 0; i < Columns.size(); ++i)
+      {
+	 // check that the quantum numbers agree - for non-abelian quantum numbers it might
+	 // have non-zero overlap but be in a different symmetry sector
+	 if (NewBasis2[i] == A.Basis2()[c])
+	 {
+	    std::complex<double> x = inner_prod(Columns[i], NextCol) /  ColNormSq[i];
+	    T[i][c] += x;
+	    if (norm_frob(x) > 0)
+	       //Epsilon*Epsilon)
+	       NextCol = NextCol - LinearAlgebra::Vector<SimpleRedOperator>(x * Columns[i]);
+	 }
+      }
+      
+      // DGKS step
+      for (unsigned i = 0; i < Columns.size(); ++i)
+      {
+	 // check that the quantum numbers agree - for non-abelian quantum numbers it might
+	 // have non-zero overlap but be in a different symmetry sector
+	 if (NewBasis2[i] == A.Basis2()[c])
+	 {
+	    std::complex<double> x = inner_prod(Columns[i], NextCol) /  ColNormSq[i];
+	    T[i][c] += x;
+	    if (norm_frob(x) > 0)
+	       //Epsilon*Epsilon)
+	       NextCol = NextCol - LinearAlgebra::Vector<SimpleRedOperator>(x * Columns[i]);
+	 }
+      }
+
+      // check the norm of column c
+      double NextColNormSq = norm_frob_sq(NextCol);
+      if (NextColNormSq > Epsilon*Epsilon)
+      {
+	 // we have a column
+	 Columns.push_back((std::sqrt(Normalization / NextColNormSq)) * NextCol);
+	 T.push_back(LinearAlgebra::Vector<std::complex<double> >(M.size2(), 0.0));
+	 T[Columns.size()-1][c] = std::sqrt(NextColNormSq / Normalization);
+	 NewBasis2.push_back(A.Basis2()[c]);
+	 ColNormSq.push_back(Normalization);  // since we've already normalized it
+      }
+
+      ++c;
+   }
+
+   // Convert back to OperatorComponent and SimpleOperator
+   OperatorComponent ANew(A.LocalBasis1(), A.LocalBasis2(), A.Basis1(), NewBasis2);
+   for (unsigned r = 0; r < A.Basis1().size(); ++r)
+   {
+      for (unsigned c = 0; c < NewBasis2.size(); ++c)
+      {
+	 if (norm_frob(Columns[c][r]) > 0)
+	 {
+	    ANew.data()(r,c) = Columns[c][r];
+	    ANew.data()(r,c).trim();
+	 }
+      }
+   }
+
+   SimpleOperator Trunc(NewBasis2, A.Basis2());
+   for (unsigned c = 0; c < NewBasis2.size(); ++c)
+   {
+      for (unsigned d = 0; d < A.Basis2().size(); ++d)
+      {
+	 if (norm_frob(T[c][d]) > 0)
+	 {
+	    Trunc.data()(c,d) = T[c][d];
+	 }
+      }
+   }
+
+   OperatorComponent ACheck = prod(ANew, Trunc);
+   CHECK(norm_frob(A - ACheck) <= Scale*TruncateOverlapEpsilon);
+
+   ANew.check_structure();
+   Trunc.check_structure();
+
+   A = ANew;
+   return Trunc;
 }
 
 StateComponent

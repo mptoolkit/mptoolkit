@@ -40,6 +40,11 @@ template <typename T, typename B1, typename B2, typename S>
 ReducibleTensor<T, B1, B2, S>&
 ReducibleTensor<T, B1, B2, S>::operator+=(ReducibleTensor const& x)
 {
+   if (this->is_null())
+   {
+      (*this) = x;
+      return *this;
+   }
    for (typename ReducibleTensor<T,B1,B2,S>::const_iterator I = x.begin(); I != x.end(); ++I)
    {
       this->project(I->TransformsAs()) += *I;
@@ -51,6 +56,11 @@ template <typename T, typename B1, typename B2, typename S>
 ReducibleTensor<T, B1, B2, S>&
 ReducibleTensor<T, B1, B2, S>::operator-=(ReducibleTensor const& x)
 {
+   if (this->is_null())
+   {
+      (*this) = -x;
+      return *this;
+   }
    for (typename ReducibleTensor<T,B1,B2,S>::const_iterator I = x.begin(); I != x.end(); ++I)
    {
       this->project(I->TransformsAs()) -= *I;
@@ -62,7 +72,10 @@ template <typename T, typename B1, typename B2, typename S>
 ReducibleTensor<T, B1, B2, S>&
 ReducibleTensor<T, B1, B2, S>::operator+=(IrredTensorType const& x)
 {
-   this->project(x.TransformsAs()) += x;
+   if (this->is_null())
+      (*this) = x;
+   else 
+      this->project(x.TransformsAs()) += x;
    return *this;
 }
 
@@ -70,7 +83,10 @@ template <typename T, typename B1, typename B2, typename S>
 ReducibleTensor<T, B1, B2, S>&
 ReducibleTensor<T, B1, B2, S>::operator-=(IrredTensorType const& x)
 {
-   this->project(x.TransformsAs()) -= x;
+   if (this->is_null())
+      (*this) = -x;
+   else 
+      this->project(x.TransformsAs()) -= x;
    return *this;
 }
 
@@ -132,6 +148,7 @@ template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T,B1,B2,S>&
 ReducibleTensor<T, B1, B2, S>::project(QuantumNumber const& q)
 {
+
    DEBUG_CHECK_EQUAL(q.GetSymmetryList(), this->GetSymmetryList());
    map_iterator I = data_.find(q);
    if (I == data_.end())
