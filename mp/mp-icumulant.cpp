@@ -227,7 +227,7 @@ int main(int argc, char** argv)
    bool CalculateMoments = false;
    bool CalculateCumulants = false;
    double UnityEpsilon = DefaultEigenUnityEpsilon;
-   double Tol = 1E-14;
+   double Tol = 1E-15;
 
    std::cout.precision(getenv_or_default("MP_PRECISION", 14));
    std::cerr.precision(getenv_or_default("MP_PRECISION", 14));

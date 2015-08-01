@@ -17,7 +17,7 @@ double const InverseTol = getenv_or_default("MP_INVERSE_TOL", InverseTolDefault)
 // the tol used in the orthogonalization can apparently be a bit smaller
 double const OrthoTol = getenv_or_default("MP_ORTHO_TOL", 1E-9);
 
-double const ArnoldiTol = getenv_or_default("MP_ARNOLDI_TOL", 1E-12);
+double const ArnoldiTol = getenv_or_default("MP_ARNOLDI_TOL", 1E-15);
 
 InfiniteWavefunction rotate_left(InfiniteWavefunction const& Psi, int Count)
 {

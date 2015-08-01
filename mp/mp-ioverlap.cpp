@@ -94,7 +94,7 @@ int main(int argc, char** argv)
       int UnitCellSize = 0;
       std::string LhsStr, RhsStr;
       std::vector<std::string> Sector;
-      double Tol = 1E-10;
+      double Tol = 1E-15;
       int Iter = 30;
       bool Sort = false;
       bool Quiet = false;
