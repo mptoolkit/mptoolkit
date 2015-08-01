@@ -9,11 +9,15 @@
 #include "common/prog_opt_accum.h"
 #include <string>
 #include <boost/lexical_cast.hpp>
+#include <sstream>
 
 template <typename T>
 std::string FormatDefault(std::string const& Text, T const& Value)
 {
-   return Text + " [default " + boost::lexical_cast<std::string>(Value) + "]";
+   std::ostringstream s;
+   s.precision(6);
+   s << Value << std::flush;
+   return Text + " [default " + s.str() + ']';
 }
 
 #endif

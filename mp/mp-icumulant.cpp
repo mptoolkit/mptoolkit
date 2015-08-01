@@ -229,9 +229,6 @@ int main(int argc, char** argv)
    double UnityEpsilon = DefaultEigenUnityEpsilon;
    double Tol = 1E-15;
 
-   std::cout.precision(getenv_or_default("MP_PRECISION", 14));
-   std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
- 
    try
    {
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -297,6 +294,9 @@ int main(int argc, char** argv)
          return 1;
       }
 
+      std::cout.precision(getenv_or_default("MP_PRECISION", 14));
+      std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
+ 
       if (!Quiet)
 	 print_preamble(std::cout, argc, argv);
       

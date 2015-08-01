@@ -86,8 +86,6 @@ int main(int argc, char** argv)
       int Verbose = 0;
       bool Print = false;
 
-      std::cout.precision(14);
-
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
@@ -125,6 +123,9 @@ int main(int argc, char** argv)
          std::cerr << desc << '\n';
          return 1;
       }
+
+      std::cout.precision(getenv_or_default("MP_PRECISION", 14));
+      std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
       // If no real or imag specifiation is used, show both parts
       if (!ShowReal && !ShowImag)

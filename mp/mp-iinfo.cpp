@@ -15,7 +15,7 @@ namespace prog_opt = boost::program_options;
 
 int main(int argc, char** argv)
 {
-   try 
+   try
    {
       int MaxEigenvalues = 10000;
       bool Base2 = false;
@@ -64,6 +64,9 @@ int main(int argc, char** argv)
          return 1;
       }
       
+      std::cout.precision(getenv_or_default("MP_PRECISION", 14));
+      std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
+
       bool ShowEntropy = vm.count("entropy");
       bool ShowStates = vm.count("states");
       bool ShowLocalBasis = vm.count("localbasis");
@@ -73,8 +76,6 @@ int main(int argc, char** argv)
       bool ShowTrans = vm.count("trans");
 
       std::string Wavefunc = vm["input-wavefunction"].as<std::string>();
-
-      std::cout.precision(getenv_or_default("MP_PRECISION", 14));
 
       pvalue_ptr<InfiniteWavefunction> Psi = pheap::OpenPersistent(Wavefunc, mp_pheap::CacheSize(), true);
 

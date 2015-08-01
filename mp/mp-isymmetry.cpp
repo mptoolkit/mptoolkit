@@ -117,6 +117,9 @@ int main(int argc, char** argv)
          return 1;
       }
 
+      std::cout.precision(getenv_or_default("MP_PRECISION", 14));
+      std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
+
       // if the number of eigenvalues is specified but
       // the cutoff is not, then set the cutoff to zero
       //      if (vm.count("num-eigenvalues") == 1 && vm.count("eigen-cutoff") == 0)
@@ -126,7 +129,6 @@ int main(int argc, char** argv)
 
 
       // Load the wavefunction
-      std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       pvalue_ptr<InfiniteWavefunction> Psi 
          = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
 

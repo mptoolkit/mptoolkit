@@ -137,6 +137,9 @@ int main(int argc, char** argv)
          return 1;
       }
       
+      std::cout.precision(getenv_or_default("MP_PRECISION", 14));
+      std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
+
       pvalue_ptr<InfiniteLattice> Lattice 
 	 = pheap::OpenPersistent(LatticeName, 
 				 mp_pheap::CacheSize(), true);

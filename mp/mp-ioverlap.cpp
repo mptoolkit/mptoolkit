@@ -177,6 +177,9 @@ int main(int argc, char** argv)
          return 1;
       }
 
+      std::cout.precision(getenv_or_default("MP_PRECISION", 14));
+      std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
+
       // If no output switches are used, default to showing everything
       if (!ShowRealPart && !ShowImagPart && !ShowMagnitude
 	  && !ShowCartesian && !ShowPolar && !ShowArgument
@@ -199,8 +202,6 @@ int main(int argc, char** argv)
       }
       if (ShowRadians)
 	 ShowArgument = true;      
-
-      std::cout.precision(getenv_or_default("MP_PRECISION", 14));
 
       if (Verbose)
          std::cout << "Loading LHS wavefunction...\n";
