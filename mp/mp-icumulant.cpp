@@ -167,7 +167,7 @@ MomentsToCumulants(std::vector<Polynomial<std::complex<double> > > const& Moment
 	 Cumulants[3] = (Diff) / (4.0 * Cumulants[1]);
 	 Cumulants[4] = Moments[1][1];
 
-	 if (Moments.size() > 3)
+	 if (Moments.size() > 2)
 	 {
 	    // next two cumulants
 	    // mu_6 = kappa_6 L 
@@ -182,7 +182,7 @@ MomentsToCumulants(std::vector<Polynomial<std::complex<double> > > const& Moment
 			    - 10.0*Cumulants[3]*Cumulants[3]) / (6.0 * Cumulants[1]);
 	    Cumulants[6] = Moments[2][1];
 	    
-	    if (Moments.size() > 4)
+	    if (Moments.size() > 3)
 	    {
 	       (Quiet ? std::cerr : std::cout)
 		  << "#WARNING: Cumulants > 6 are not yet implemented!\n";
