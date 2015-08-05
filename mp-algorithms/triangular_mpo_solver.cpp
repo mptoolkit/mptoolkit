@@ -358,7 +358,7 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
 	    else
 	       std::cerr << "SolveMPO_Left: fatal: component has unknown classification.\n";
 	 }
-	 PANIC("Fatal")(CheckIdent);
+	 PANIC("Fatal")(CheckIdent)(Op(0,0));
       }
 
       // Initialize the first E matrix.  These are operators acting in the Basis1()

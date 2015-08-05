@@ -349,7 +349,8 @@ int main(int argc, char** argv)
       if (Print)
       {
 	 print_structure(Op, std::cout, UnityEpsilon);
-	 //	 std::cout << Op << '\n';
+	 if (Verbose > 2)
+	    std::cout << Op << '\n';
 	 //std::cout << "\nTransfer matrix:" << construct_transfer_matrix(herm(GenericMPO(Op)),
 	 //								GenericMPO(Op)) << '\n';
       };
