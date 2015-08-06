@@ -155,4 +155,7 @@ UnitCellMPO inv_adjoint(UnitCellMPO const& x);
 
 UnitCellMPO MakeIdentityFrom(UnitCellMPO const& x);
 
+// optimize the representation - in this case we simply forward to the FiniteMPO representation
+void optimize(UnitCellMPO& Op);
+
 #endif

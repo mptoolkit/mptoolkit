@@ -304,3 +304,8 @@ UnitCellMPO MakeIdentityFrom(UnitCellMPO const& x)
 {
    return UnitCellMPO(x.GetSiteList(), identity_mpo(*x.GetSiteList()), LatticeCommute::Bosonic, x.offset());
 }
+
+void optimize(UnitCellMPO& Op)
+{
+   optimize(Op.MPO());
+}

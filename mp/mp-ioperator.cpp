@@ -24,7 +24,8 @@ int main(int argc, char** argv)
       std::vector<std::string> TriangularOperators;
       double UnityEpsilon = DefaultClassifyUnityEpsilon;
       int Verbose = 0;
-      bool NoOptimize = false;
+      bool Optimize = false;
+      bool CoarseGrain = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -32,7 +33,9 @@ int main(int argc, char** argv)
 	 ("finite,f", prog_opt::value(&FiniteOperators), "parse a finite MPO")
 	 ("product,p", prog_opt::value(&ProductOperators), "parse a product MPO")
 	 ("triangular,t", prog_opt::value(&TriangularOperators), "parse a triangular MPO")
-	 ("noopt", prog_opt::bool_switch(&NoOptimize), "Don't optimize the operator expression")
+	 ("coarsegrain", prog_opt::bool_switch(&CoarseGrain), 
+	  "for a finite operator, go through a coarse-graining then fine-graining sequence")
+	 ("optimize", prog_opt::bool_switch(&Optimize), "Optimize the operator expression")
 	 ("unityepsilon", prog_opt::value(&UnityEpsilon),
 	  FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
 	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
@@ -66,7 +69,14 @@ int main(int argc, char** argv)
 	 std::cout << "Finite Operator " << FiniteOperators[i] << '\n';
 	 UnitCellMPO Op;
 	 InfiniteLattice Lattice;
-	 boost::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(FiniteOperators[i]);     
+	 boost::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(FiniteOperators[i]);
+	 if (CoarseGrain)
+	 {
+	    SimpleOperator S = coarse_grain(Op.MPO()).scalar();
+	    Op.MPO() = fine_grain(S, Op.MPO().LocalBasis1List(), Op.MPO().LocalBasis2List());
+	 }
+	 if (Optimize)
+	    optimize(Op);
 	 print_structure(Op.MPO(), std::cout);
 	 if (Verbose > 0)
 	 {
@@ -85,6 +95,8 @@ int main(int argc, char** argv)
 	 ProductMPO Op;
 	 InfiniteLattice Lattice;
 	 boost::tie(Op, Lattice) = ParseProductOperatorAndLattice(ProductOperators[i]);     
+	 //	 if (!NoOptimize)
+	 //	    optimize(Op);
 	 print_structure(Op, std::cout, UnityEpsilon);
 	 if (Verbose > 0)
 	 {
@@ -98,6 +110,8 @@ int main(int argc, char** argv)
 	 TriangularMPO Op;
 	 InfiniteLattice Lattice;
 	 boost::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(TriangularOperators[i]);     
+	 if (Optimize)
+	    optimize(Op);
 	 print_structure(Op, std::cout, UnityEpsilon);
 	 if (Verbose > 0)
 	 {

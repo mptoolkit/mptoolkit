@@ -449,23 +449,19 @@ FiniteMPO dot(FiniteMPO const& x, FiniteMPO const& y)
          }
       }
    }
+   optimize(Result);
    return Result;
 }
 
 FiniteMPO
 cross(FiniteMPO const& x, FiniteMPO const& y)
 {
-   // Legitimate uses of FiniteMPO::TransformsAs()
-#if !defined(DISABLE_FINITE_MPO_TRANSFORMS_AS)
    CHECK(cross_product_exists(x.TransformsAs(), y.TransformsAs()))
       ("Cross product does not exist for these operators")
       (x.TransformsAs())(y.TransformsAs());
 
    return cross_product_factor(x.TransformsAs(), y.TransformsAs())
       * prod(x, y, cross_product_transforms_as(x.TransformsAs(), y.TransformsAs()));
-#else
-   return x;
-#endif
 }
 
 FiniteMPO outer(FiniteMPO const& x, FiniteMPO const& y)
@@ -487,6 +483,14 @@ FiniteMPO outer(FiniteMPO const& x, FiniteMPO const& y)
    }
    CHECK(Unique)("outer product is not defined for these operators")
       (x.TransformsAs())(y.TransformsAs());
+
+   // The factor here is deduced for spin-1 to spin-2 operators,
+   // as the correct factor to get dot(outer(S,S), outer(S,S)) correct.  The test is that
+   // S^4, when evaluated on a scalar wavefunction, should produce the same result
+   // whether we use symmetries or not, and this is easy to test with no symmetries (S = Sx+Sy+Sz).
+   // The non-zero components with SU(2) are
+   // dot(S,S)*dot(S,S) and dot(outer(S,S), outer(S,S)).  The coupling constant below
+   // was determined by matching coefficients.
    return std::sqrt(double(degree(x.TransformsAs()) + degree(y.TransformsAs())) / degree(q)) * prod(x,y,q);
 }
 
@@ -580,6 +584,8 @@ FiniteMPO fine_grain(SimpleOperator const& x,
    CHECK(i == 0);
    CHECK(TensorProdBasis2.empty());
    Result[0] = R1;
+
+   optimize(Result);
    return Result;
 }
 

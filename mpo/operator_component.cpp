@@ -8,12 +8,16 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
+#include "common/environment.h"
+
 // Epsilon for truncation overlaps.
 // The scale of Epsilon here is the square of the machine precision
 // This needs some deeper analysis - the problem is we get numerically near parallel
 // vectors although one of them is small and mostly noise, so we then end up with
 // some spurious large matrix elements.
-double const TruncateOverlapEpsilon = 1E-14;
+double const TruncateOverlapEpsilon = getenv_or_default("MP_TOE", 1E-15);
+
+double const RemoveRowEpsilon = getenv_or_default("MP_RRE", 1E-15);
 
 //using namespace LinearAlgebra;
 using LinearAlgebra::operator*;
@@ -719,7 +723,7 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
    {
       double imat = Overlaps(i,i).real();
       // if the row is numerically zero, we can eliminate it completely.
-      if (imat <= Scale * TruncateOverlapEpsilon)
+      if (imat <= Scale * RemoveRowEpsilon)
          continue;    // skip this row
 
       NewRows[i] = std::make_pair(i, 1.0);
@@ -834,7 +838,7 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
       NewCols.push_back(std::make_pair(i, 1.0));
       double imat = Overlaps(i,i).real();
       // if the row is zero, we can eliminate it completely
-      if (imat <= Scale * TruncateOverlapEpsilon)
+      if (imat <= Scale * RemoveRowEpsilon)
       {
          NewCols.back().first = -1;  // special value, indicates the row is not needed
          continue;
@@ -994,11 +998,14 @@ SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
       if (NextRowNormSq > Epsilon*Epsilon)
       {
 	 // we have a column
-	 Rows.push_back((std::sqrt(Normalization / NextRowNormSq)) * NextRow);
+	 //	 Rows.push_back((std::sqrt(Normalization / NextRowNormSq)) * NextRow);
+	 Rows.push_back(NextRow);
 	 T.push_back(LinearAlgebra::Vector<std::complex<double> >(M.size1(), 0.0));
-	 T[Rows.size()-1][r] = std::sqrt(NextRowNormSq / Normalization);
+	 //T[Rows.size()-1][r] = std::sqrt(NextRowNormSq / Normalization);
+	 T[Rows.size()-1][r] = 1;
 	 NewBasis1Q.push_back(A.Basis1()[r]);
-	 RowNormSq.push_back(Normalization);  // since we've already normalized it
+	 RowNormSq.push_back(NextRowNormSq);
+	 //RowNormSq.push_back(Normalization);  // since we've already normalized it
       }
 
       --r;
@@ -1118,11 +1125,14 @@ SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
       if (NextColNormSq > Epsilon*Epsilon)
       {
 	 // we have a column
-	 Columns.push_back((std::sqrt(Normalization / NextColNormSq)) * NextCol);
+	 //Columns.push_back((std::sqrt(Normalization / NextColNormSq)) * NextCol);
+	 Columns.push_back(NextCol);
 	 T.push_back(LinearAlgebra::Vector<std::complex<double> >(M.size2(), 0.0));
-	 T[Columns.size()-1][c] = std::sqrt(NextColNormSq / Normalization);
+	 //T[Columns.size()-1][c] = std::sqrt(NextColNormSq / Normalization);
+	 T[Columns.size()-1][c] = 1;
 	 NewBasis2.push_back(A.Basis2()[c]);
-	 ColNormSq.push_back(Normalization);  // since we've already normalized it
+	 //ColNormSq.push_back(Normalization);  // since we've already normalized it
+	 ColNormSq.push_back(NextColNormSq);
       }
 
       ++c;
@@ -1155,7 +1165,7 @@ SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
    }
 
    OperatorComponent ACheck = prod(ANew, Trunc);
-   CHECK(norm_frob(A - ACheck) <= Scale*TruncateOverlapEpsilon);
+   CHECK(norm_frob(A - ACheck) <= Scale*TruncateOverlapEpsilon)(A)(ACheck)(A-ACheck);
 
    ANew.check_structure();
    Trunc.check_structure();
@@ -1668,6 +1678,8 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
       LinearAlgebra::Vector<double> D;
       SingularValueDecomposition(Mat, U, D, Vh);
 
+      TRACE(D);
+
       double m = LinearAlgebra::max(D);
       if (m > LargestSingular)
 	 LargestSingular = m;
@@ -1677,7 +1689,9 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 
    // This sets the scale of the singular values.  Any singular values smaller than
    // KeepThreshold are removed.
-   double KeepThreshold = std::numeric_limits<double>::epsilon() * LargestSingular * 100;
+   double KeepThreshold = std::numeric_limits<double>::epsilon() * LargestSingular * 10;
+
+   TRACE(KeepThreshold);
 
    // Second pass, collate the kept singular values
    for (DecomposedByQuantumType::const_iterator Q = DecomposedOperator.begin(); 
@@ -1701,8 +1715,8 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
       for (unsigned k = 0; k < size(D); ++k)
       {
 	 // Skip over vectors that don't reach the threshold
-	 //	 if (D[k] < KeepThreshold)
-	 //	    continue;
+	 if (D[k] < KeepThreshold)
+	    continue;
 
 	 double Coeff = std::sqrt(D[k]);  // distribute sqrt(D) to each operator
 
