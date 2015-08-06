@@ -14,6 +14,16 @@ operator<<(std::ostream& out, ProductMPO const& x)
    return out << x.data();
 }
 
+void print_structure(ProductMPO const& Op, std::ostream& out, double UnityEpsilon)
+{
+   out << "ProductMPO has " << Op.size() << " sites\n";
+   for (int i = 0; i < Op.size(); ++i)
+   {
+      out << "Site " << i << " dimension " << Op[i].size1() << " x " << Op[i].size2() << '\n';
+      print_structure(Op[i], out, UnityEpsilon);
+   }
+}
+
 bool
 ProductMPO::is_identity() const
 {

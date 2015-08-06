@@ -168,4 +168,14 @@ ProductMPO prod_unit_right_to_left(FiniteMPO const& Op, int UnitCellSize);
 // output to a stream
 std::ostream& operator<<(std::ostream& out, ProductMPO const& x);
 
+// prints the structure of the component, as an 'x' for a non-zero
+// component or blank for a zero component
+void print_structure(ProductMPO const& Op, std::ostream& out, double UnityEpsilon);
+
+inline
+void print_structure(ProductMPO const& Op, std::ostream& out)
+{
+   print_structure(Op, out, DefaultClassifyUnityEpsilon);
+}
+
 #endif

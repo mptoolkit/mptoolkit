@@ -218,7 +218,13 @@ std::ostream& operator<<(std::ostream& out, FiniteMPO const& x);
 
 // prints the structure of the component, as an 'x' for a non-zero
 // component or blank for a zero component
-void print_structure(FiniteMPO const& Op, std::ostream& out);
+void print_structure(FiniteMPO const& Op, std::ostream& out, double UnityEpsilon);
+
+inline
+void print_structure(FiniteMPO const& Op, std::ostream& out)
+{
+   print_structure(Op, out, DefaultClassifyUnityEpsilon);
+}
 
 // returns the FiniteMPO for the identity operator acting on the unit cell
 // with quantum number q in the auxiliary basis
