@@ -11,7 +11,7 @@ LatticeSite FermionU1SU2(std::string const& Sym1 = "N", std::string const& Sym2 
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator C, CH, P, R, N, S, I, Hu, Pdouble, Qp, Qm, Qz, N_S, N_H, Pg, ES;
-   LatticeSite Site;
+   LatticeSite Site("U(1)xSU(2) Fermion");
 
    Basis.push_back("empty",  QN(0, 0));
    Basis.push_back("double", QN(2, 0));

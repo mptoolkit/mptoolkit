@@ -5,12 +5,7 @@
 
 #include "lattice/latticesite.h"
 #include "quantumnumbers/su2.h"
-
 #include <cmath>
-
-
-
-using std::sqrt;
 
 inline
 LatticeSite FermionSO4_Common(std::string const& Sym1 = "Q", std::string const& Sym2 = "S")
@@ -19,7 +14,7 @@ LatticeSite FermionSO4_Common(std::string const& Sym1 = "Q", std::string const& 
    QuantumNumbers::QNConstructor<QuantumNumbers::SU2,QuantumNumbers::SU2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator C_A, C_B, CH_A, CH_B, P, R, N_S, N_H, S, Q, I, ES;
-   LatticeSite Site;
+   LatticeSite Site("SO(4) Fermion");
 
    Basis.push_back("holon",  QN(0.5, 0));
    Basis.push_back("spinon", QN(0, 0.5));
@@ -50,11 +45,11 @@ LatticeSite FermionSO4_Common(std::string const& Sym1 = "Q", std::string const& 
    I = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    ES = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
 
-   C_A("spinon", "holon")  = sqrt(2.0);
-   C_A("holon",  "spinon") = sqrt(2.0);
+   C_A("spinon", "holon")  = std::sqrt(2.0);
+   C_A("holon",  "spinon") = std::sqrt(2.0);
 
-   C_B("spinon", "holon")  =  sqrt(2.0);
-   C_B("holon",  "spinon") = -sqrt(2.0);
+   C_B("spinon", "holon")  =  std::sqrt(2.0);
+   C_B("holon",  "spinon") = -std::sqrt(2.0);
 
    CH_A = adjoint(C_A);
    CH_B = adjoint(C_B);
@@ -81,9 +76,9 @@ LatticeSite FermionSO4_Common(std::string const& Sym1 = "Q", std::string const& 
    // equal to the usual definition of Sz.  Note that the "hermitian conjugate" of
    // S is S^\dagger = -S.  This arises from the signs picked up in taking the
    // transpose of a spin 1 operator.
-   S("spinon", "spinon") = sqrt(0.75);
+   S("spinon", "spinon") = std::sqrt(0.75);
 
-   Q("holon", "holon")   = sqrt(0.75);
+   Q("holon", "holon")   = std::sqrt(0.75);
 
    // identity
    I("spinon", "spinon") =  1;

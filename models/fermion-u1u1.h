@@ -13,7 +13,7 @@ LatticeSite FermionU1U1(std::string const& Sym1 = "N",
    SiteBasis Basis(Symmetry);
    SiteOperator CHup, Cup, CHdown, Cdown, P, R, N, Sp, Sm, Sz, Qp, Qm, Qz, I, Nup, Ndown,
       Hu, Pdouble, ES, N_S, N_H;
-   LatticeSite Site;
+   LatticeSite Site("U(1)xU(1) Fermion");
 
    Basis.push_back("empty",  QN(0, 0));
    Basis.push_back("double", QN(2, 0));

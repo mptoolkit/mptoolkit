@@ -17,7 +17,7 @@
 // some spurious large matrix elements.
 double const TruncateOverlapEpsilon = getenv_or_default("MP_TOE", 1E-15);
 
-double const RemoveRowEpsilon = getenv_or_default("MP_RRE", 1E-15);
+double const RemoveRowEpsilon = getenv_or_default("MP_RRE", 1E-40);
 
 //using namespace LinearAlgebra;
 using LinearAlgebra::operator*;
@@ -1678,20 +1678,20 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
       LinearAlgebra::Vector<double> D;
       SingularValueDecomposition(Mat, U, D, Vh);
 
-      TRACE(D);
+      DEBUG_TRACE(D);
 
       double m = LinearAlgebra::max(D);
       if (m > LargestSingular)
 	 LargestSingular = m;
    }
 
-   //TRACE(LargestSingular);
-
    // This sets the scale of the singular values.  Any singular values smaller than
-   // KeepThreshold are removed.
-   double KeepThreshold = std::numeric_limits<double>::epsilon() * LargestSingular * 10;
+   // KeepThreshold are removed.  The coefficient here is determined as appropriate
+   // for culling unwanted matrix elements from exponentials.  Possibly it needs to scale
+   // with be basis size or the number of singular values in some way?
+   double KeepThreshold = std::numeric_limits<double>::epsilon() * LargestSingular * 20;
 
-   TRACE(KeepThreshold);
+   DEBUG_TRACE(KeepThreshold);
 
    // Second pass, collate the kept singular values
    for (DecomposedByQuantumType::const_iterator Q = DecomposedOperator.begin(); 
@@ -1718,7 +1718,11 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 	 if (D[k] < KeepThreshold)
 	    continue;
 
-	 double Coeff = std::sqrt(D[k]);  // distribute sqrt(D) to each operator
+	 // Distribute the singular value to the two sides.  It doesn't matter much how we do this;
+	 // sqrt(D) to each side would work fine.  But we get better balance by distributing according
+	 // to the dimenions of the left/right local Hilbert spaces
+	 double LeftCoeff = std::pow(D[k], log(B1.Left().total_degree()) / (log(B1.Left().total_degree()) + log(B1.Right().total_degree())));
+	 double RightCoeff = D[k] / LeftCoeff;
 
 	 SingularVectorType LeftVec;
 	 for (unsigned x = 0; x < size1(U); ++x)
@@ -1742,7 +1746,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 	    }
 	    else if (norm_frob(U(x,k)) > std::numeric_limits<double>::epsilon() * 10)
 	    {
-	       LeftVec[LeftRevMapping[Qpp][x]] = Coeff*U(x,k);
+	       LeftVec[LeftRevMapping[Qpp][x]] = LeftCoeff*U(x,k);
 	    }
 	 }
 
@@ -1751,7 +1755,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 	 {
 	    if (norm_frob(Vh(k,x)) > std::numeric_limits<double>::epsilon() * 10)
 	    {
-	       RightVec[RightRevMapping[Qpp][x]] = Coeff*Vh(k,x);
+	       RightVec[RightRevMapping[Qpp][x]] = RightCoeff*Vh(k,x);
 	    }
 	 }
 

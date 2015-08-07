@@ -58,7 +58,7 @@ void DescribeLattice(InfiniteLattice const& L, int Verbose)
 	 for (LatticeSite::const_function_iterator I = L.GetUnitCell()[i].begin_function();
 	      I != L.GetUnitCell()[i].end_function(); ++I)
 	 {
-	    std::cout << "         " << I->first << "=" << I->second << '\n';
+	    std::cout << "         " << I->first << I->second << '\n';
 	 }
       }
    }
@@ -97,7 +97,7 @@ void DescribeLattice(InfiniteLattice const& L, int Verbose)
    for (InfiniteLattice::const_function_iterator I = L.begin_function(); 
 	I != L.end_function(); ++I)
    {
-      std::cout << "   " << I->first << "=" << I->second << '\n';
+      std::cout << "   " << I->first << I->second << '\n';
    }
 }
 
