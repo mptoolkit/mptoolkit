@@ -9,7 +9,7 @@ LatticeSite SpinSite(half_int Spin)
    SymmetryList Symmetry("S:Null");
    SiteBasis Basis(Symmetry);
    SiteOperator Sp, Sm, Sz, Sx, Sy, R, P, I;
-   LatticeSite Site("Spin "+boost::lexical_cast<std::string>(Spin));
+   LatticeSite Site("Spin "+to_string_fraction(Spin));
 
    QuantumNumbers::QuantumNumber q(Symmetry); // no symmetries, only one quantum number
 
