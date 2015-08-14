@@ -98,7 +98,7 @@ AC_PROG_INSTALL
 dnl ACX_SUBVERSION_VERSION
 if test x"${PACKAGE_VERSION:0:8}" == x"SVN-HEAD" ; then
  if (svnversion . > /dev/null 2>&1) ; then
-  CXXFLAGS="$CXXFLAGS -DSVN_VERSION=\`svnversion \$(SRCDIR)\`"
+  CXXFLAGS="$CXXFLAGS -DSVN_VERSION=\"\`svnversion \$(SRCDIR)\`\""
  else
   CXXFLAGS="$CXXFLAGS -DSVN_VERSION=unknown"
  fi
