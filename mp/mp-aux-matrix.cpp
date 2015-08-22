@@ -1,0 +1,350 @@
+// -*- C++ -*- $Id$
+
+#include "mps/infinitewavefunction.h"
+#include "mps/packunpack.h"
+#include "lattice/latticesite.h"
+#include "mps/operator_actions.h"
+#include "common/environment.h"
+#include "common/terminal.h"
+#include "common/prog_options.h"
+#include "common/prog_opt_accum.h"
+#include "common/environment.h"
+#include "interface/inittemp.h"
+#include "tensor/tensor_eigen.h"
+#include "mp-algorithms/arnoldi.h"
+#include "lattice/unitcell.h"
+#include "lattice/unitcell-parser.h"
+#include "linearalgebra/arpack_wrapper.h"
+#include <boost/algorithm/string/predicate.hpp>
+#include <fstream>
+#include "common/formatting.h"
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+namespace prog_opt = boost::program_options;
+
+// returns true if Name exists and is a regular file
+bool FileExists(std::string const& Name)
+{
+   struct stat buf;
+   return stat(Name.c_str(), &buf) != -1 && S_ISREG(buf.st_mode);
+}
+
+// Write a matrix as sparse format.
+// Force option allows forcing the last element to appear, evn if it is zero, 
+// which is needed in the Matlab sparse format because it doesn't list separately the dimensions of the matrix.
+
+void
+WriteMatrixAsSparse(std::ostream& out, LinearAlgebra::Matrix<std::complex<double> > const& Op, 
+		    double Threshold = 0.0,
+		    int iOffset = 0, int jOffset = 0, bool ForceLast = false)
+{
+   for (unsigned i = 0; i < size1(Op); ++i)
+   {
+      for (unsigned j = 0; j < size2(Op); ++j)
+      {
+	 if (norm_frob(Op(i,j)) > Threshold || (ForceLast && i == size1(Op)-1 && j == size2(Op)-1))
+	    out << (i+iOffset) << ' ' << (j+jOffset) << ' ' << format_complex(Op(i,j)) << '\n';
+      }
+   }
+}
+
+void
+WriteMatrixOperatorAsSparse(std::ostream& out, MatrixOperator const& Op, double Threshold = 0.0)
+{
+   // We map the basis into a linear index.  So we need to get the offset of each subspace
+   std::vector<int> Basis1Offset, Basis2Offset;
+   Basis1Offset.push_back(0);
+   for (unsigned i = 0; i < Op.Basis1().size(); ++i)
+   {
+      Basis1Offset.push_back(Basis1Offset.back() + Op.Basis1().dim(i));
+   }
+   CHECK_EQUAL(Basis1Offset.back(), Op.Basis1().total_dimension());
+   Basis2Offset.push_back(0);
+   for (unsigned i = 0; i < Op.Basis2().size(); ++i)
+   {
+      Basis2Offset.push_back(Basis2Offset.back() + Op.Basis2().dim(i));
+   }
+   CHECK_EQUAL(Basis2Offset.back(), Op.Basis2().total_dimension());
+
+   for (LinearAlgebra::const_iterator<MatrixOperator>::type I = iterate(Op); I; ++I)
+   {
+      for (LinearAlgebra::const_inner_iterator<MatrixOperator>::type J = iterate(I); J; ++J)
+      {
+	 // Offset + 1 to use 1-based addressing
+	 WriteMatrixAsSparse(out, *J, Threshold, Basis1Offset[J.index1()]+1, Basis2Offset[J.index2()]+1,
+			     J.index1() == Op.Basis1().size()-1 && J.index2() == Op.Basis2().size()-1);
+      }
+   }
+
+   // make sure that the final element is included, if the bottom-right component of the matrix doesn't exist
+   if (!iterate_at(Op.data(), Op.Basis1().size()-1, Op.Basis2().size()-1))
+   {
+      out << Op.Basis1().total_dimension() << ' ' << Op.Basis2().total_dimension() << " 0.0\n";
+   }
+}
+
+template <typename Func>
+struct PackApplyFunc
+{
+   PackApplyFunc(PackMatrixOperator const& Pack_, Func f_) : Pack(Pack_), f(f_) {}
+
+   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
+   {
+      MatrixOperator x = Pack.unpack(In);
+      x = f(x);
+      Pack.pack(x, Out);
+   } 
+   PackMatrixOperator const& Pack;
+   Func f;
+};
+
+template <typename Func>
+PackApplyFunc<Func>
+MakePackApplyFunc(PackMatrixOperator const& Pack_, Func f_)
+{
+   return PackApplyFunc<Func>(Pack_, f_);
+}
+
+std::pair<std::complex<double>, MatrixOperator>
+get_left_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, 
+                     QuantumNumber const& QShift, 
+                     FiniteMPO const& StringOp,
+                     double tol = 1E-14, int Verbose = 0)
+{
+   int ncv = 0;
+   QuantumNumber Ident(Psi1.GetSymmetryList());
+   PackMatrixOperator Pack(Psi1.Basis2(), Psi2.Basis2(), Ident);
+   int n = Pack.size();
+   //   double tolsave = tol;
+   //   int ncvsave = ncv;
+   int NumEigen = 1;
+
+   std::vector<std::complex<double> > OutVec;
+      LinearAlgebra::Vector<std::complex<double> > LeftEigen = 
+         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
+							    LeftMultiplyString(Psi1, StringOp, Psi2, QShift)),
+					  n, NumEigen, tol, &OutVec, ncv, false, Verbose);
+
+   MatrixOperator LeftVector = Pack.unpack(&(OutVec[0]));
+      
+   return std::make_pair(LeftEigen[0], LeftVector);
+}
+
+int main(int argc, char** argv)
+{
+   try
+   {
+      std::string PsiStr;
+      std::string LatticeFile;
+      int Verbose = 0;
+      std::vector<std::string> ProductOperators;
+      std::string Partition;
+      std::string RhoFile;
+      bool Force = false;
+      double Threshold = 0.0;
+
+      prog_opt::options_description desc("Allowed options", terminal::columns());
+      desc.add_options()
+         ("help", "show this help message")
+         ("wavefunction,w", prog_opt::value(&PsiStr), "Wavefunction [required]")
+	 ("lattice,l", prog_opt::value(&LatticeFile), "Lattice file [required]")
+	 ("product,p", prog_opt::value(&ProductOperators)->multitoken(), 
+	  "Matrix elements of a product operator -p file=operator")
+	 ("rho", prog_opt::value(&RhoFile), "Density matrix --rho <filename>")
+	 ("partition", prog_opt::value(&Partition), "Partition of the wavefunction cell,site")
+	 ("force,f", prog_opt::bool_switch(&Force), "Overwrite files if they already exist")
+	 ("threshold,t", prog_opt::value(&Threshold), "ignore matrix elements smaller than this threshold")
+	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
+         ;
+
+      prog_opt::options_description hidden("Hidden options");
+
+      prog_opt::positional_options_description p;
+      p.add("operator", -1);
+
+      prog_opt::options_description opt;
+      opt.add(desc).add(hidden);
+
+      prog_opt::variables_map vm;        
+      prog_opt::store(prog_opt::command_line_parser(argc, argv).
+                      options(opt).positional(p).run(), vm);
+      prog_opt::notify(vm);    
+
+      if (vm.count("help") > 0 || vm.count("wavefunction") < 1 || vm.count("lattice") < 1)
+      {
+         std::cerr << "usage: " << basename(argv[0]) << " [options] -w <psi> -l <lattice> -p <operator> <filename> [...] \n";
+         std::cerr << "If -l [--lattice] is specified, then the operators must all come from the specified lattice file\n";
+         std::cerr << "Otherwise all operators must be of the form lattice:operator\n";
+	 std::cerr << "\nThis tool constructs the auxiliary space represenation of a unitary symmetry operator,\n";
+	 std::cerr << "and shows the eigenvalue of the unitary for each density matrix eigenvalue.\n";
+	 std::cerr << "The symmetry operator must be a global symmetry of the wavefunction, otherwise this operation\n";
+	 std::cerr << "is not well defined.\n";
+         std::cerr << desc << '\n';
+         return 1;
+      }
+
+      std::cout.precision(getenv_or_default("MP_PRECISION", 14));
+      std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
+
+      // Split the file/operator combinations into separate lists
+      std::vector<std::string> ProductOpFile;
+      std::vector<std::string> ProductOpStr;
+      for (unsigned i = 0; i < ProductOperators.size(); ++i)
+      {
+	 std::string::iterator I = std::find(ProductOperators[i].begin(), ProductOperators[i].end(), '=');
+	 if (I == ProductOperators[i].end())
+	 {
+	    std::cerr << "mp-aux-matrix: error: argument to --parameter is not of the form file=operator\n";
+	    exit(1);
+	 }
+	 ProductOpFile.push_back(boost::trim_copy(std::string(ProductOperators[i].begin(), I)));
+	 ProductOpStr.push_back(boost::trim_copy(std::string(I+1, ProductOperators[i].end())));
+      }
+
+      // If the -f option hasn't been supplied, make sure that the output files don't already exist
+      if (!Force)
+      {
+	 for (unsigned i = 0; i < ProductOpFile.size(); ++i)
+	 {
+	    if (FileExists(ProductOpFile[i]))
+	    {
+	       std::cerr << "mp-aux-matrix: fatal: output file " << ProductOpFile[i]
+			 << " already exists.  Use -f option to overwrite.\n";
+	       exit(1);
+	    }
+	 }
+	 if (!RhoFile.empty() && FileExists(RhoFile))
+	 {
+	    std::cerr << "mp-aux-matrix: fatal: output file " << RhoFile
+		      << " already exists.  Use -f option to overwrite.\n";
+	       exit(1);
+	 }
+      }
+
+      // Load the wavefunction
+      pvalue_ptr<InfiniteWavefunction> Psi 
+         = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
+
+      // Load the lattice, if it was specified
+      pvalue_ptr<InfiniteLattice> Lattice = pheap::ImportHeap(LatticeFile);
+
+      UnitCell Cell = Lattice->GetUnitCell();
+      int UnitCellSize = Cell.size();
+      int const NumUnitCells = Psi->size() / UnitCellSize;
+
+      // orthogonalize the wavefunction
+      LinearWavefunction Psi1 = get_orthogonal_wavefunction(*Psi);
+      MatrixOperator Rho = scalar_prod(Psi->C_right, herm(Psi->C_right));
+      MatrixOperator Identity = MatrixOperator::make_identity(Psi1.Basis1());
+      double Dim = Psi1.Basis1().total_degree();
+
+      // Now that we have Rho, save it if necessary
+      if (!RhoFile.empty())
+      {
+	 std::ofstream Out(RhoFile.c_str(), std::ios::out | std::ios::trunc);
+	 if (!Out.good())
+	 {
+	    std::cerr << "mp-aux-matrix: failed to open file " << RhoFile << " for density matrix.\n";
+	 }
+	 else
+	 {
+	    Out.precision(getenv_or_default("MP_PRECISION", 14));
+	    WriteMatrixOperatorAsSparse(Out, Rho);
+	 }
+      }
+
+      // reflected and conjugated versions of the wavefunction - we leave them as null
+      // until they are actually needed
+      LinearWavefunction PsiR, PsiC, PsiRC;
+
+      for (unsigned i = 0; i < ProductOpStr.size(); ++i)
+      {
+	 std::string OpStr = ProductOpStr[i];
+	 std::string FileName = ProductOpFile[i];
+
+	 bool Reflect = false;
+	 bool Conjugate = false;
+	 LinearWavefunction* Psi2 = &Psi1;
+	 // Do we have time reversal or reflection?
+	 if (boost::starts_with(OpStr, "r&"))
+	 {
+	    Reflect = true;
+	    OpStr = std::string(OpStr.begin()+2, OpStr.end());
+	    if (PsiR.empty())
+	    {
+	       InfiniteWavefunction PR = reflect(*Psi);
+	       orthogonalize(PR);
+	       PsiR = get_orthogonal_wavefunction(PR);
+	       //TRACE(PR.C_right)(Psi->C_right);
+	    }
+	    Psi2 = &PsiR;
+	 }
+	 else if (boost::starts_with(OpStr,"c&"))
+	 {
+	    Conjugate = true;
+	    OpStr = std::string(OpStr.begin()+2, OpStr.end());
+	    if (PsiC.empty())
+	    {
+	       PsiC = conj(Psi1);
+	    }
+	    Psi2 = &PsiC;
+	 }
+	 else if (boost::starts_with(OpStr,"rc&") || boost::starts_with(OpStr,"cr&"))
+	 {
+	    Reflect = true;
+	    Conjugate = true;
+	    OpStr = std::string(OpStr.begin()+3, OpStr.end());
+	    if (PsiR.empty())
+	    {
+	       InfiniteWavefunction PR = reflect(*Psi);
+	       orthogonalize(PR);
+	       PsiR = get_orthogonal_wavefunction(PR);
+	    }
+	    if (PsiRC.empty())
+	    {
+	       PsiRC = conj(PsiR);
+	    }
+	    Psi2 = &PsiRC;
+	 }
+
+	 FiniteMPO StringOperator = ParseUnitCellOperator(Cell, 0, OpStr).MPO();
+
+	 StringOperator = repeat(StringOperator, Psi1.size() / StringOperator.size());
+
+	 // Get the matrix
+         std::complex<double> e;
+         MatrixOperator v;
+         boost::tie(e, v) = get_left_eigenvector(Psi1, *Psi2, Psi->shift(), StringOperator);
+
+	 // normalization - this is designed for unitary operators
+         v *= std::sqrt(Dim);
+
+	 // write to file
+	 std::ofstream Out(FileName.c_str(), std::ios::out | std::ios::trunc);
+	 if (!Out.good())
+	 {
+	    std::cerr << "mp-aux-matrix: failed to open file " << FileName << " for operator " << OpStr << '\n';
+	 }
+	 else 
+	 {
+	    Out.precision(getenv_or_default("MP_PRECISION", 14));
+	    WriteMatrixOperatorAsSparse(Out, v, Threshold);
+	 }
+      }
+
+      pheap::Shutdown();
+   }
+   catch (std::exception& e)
+   {
+      std::cerr << "Exception: " << e.what() << '\n';
+      return 1;
+   }
+   catch (...)
+   {
+      std::cerr << "Unknown exception!\n";
+      return 1;
+   }
+}

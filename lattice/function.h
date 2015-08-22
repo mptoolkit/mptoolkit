@@ -22,22 +22,7 @@
 #include <vector>
 #include <ostream>
 #include <boost/optional.hpp>
-
-// utility function - this should be somewhere else
-inline
-std::string
-format_complex(std::complex<double> const& c)
-{
-   std::ostringstream Out;
-   Out.precision(16);
-   Out << c.real();
-   if (c.imag() > 0)
-      Out << '+' << c.imag() << 'i';
-   else if (c.imag() < 0)
-      Out << c.imag() << 'i';
-   Out.flush();
-   return Out.str();
-}
+#include "common/formatting.h"
 
 namespace Function
 {

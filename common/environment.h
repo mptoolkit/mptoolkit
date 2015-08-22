@@ -6,6 +6,7 @@
 #include <string>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
+#include <stdlib.h> // for getenv
 
 inline
 std::string quote_shell(std::string s)
