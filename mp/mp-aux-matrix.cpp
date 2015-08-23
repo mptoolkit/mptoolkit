@@ -141,6 +141,8 @@ int main(int argc, char** argv)
       std::string LatticeFile;
       int Verbose = 0;
       std::vector<std::string> ProductOperators;
+      std::vector<std::string> TriangularOperators;
+      std::vector<std::string> FiniteOperators;
       std::string Partition;
       std::string RhoFile;
       bool Force = false;
@@ -151,11 +153,15 @@ int main(int argc, char** argv)
          ("help", "show this help message")
          ("wavefunction,w", prog_opt::value(&PsiStr), "Wavefunction [required]")
 	 ("lattice,l", prog_opt::value(&LatticeFile), "Lattice file [required]")
-	 ("product,p", prog_opt::value(&ProductOperators)->multitoken(), 
-	  "Matrix elements of a product operator -p file=operator")
-	 ("rho", prog_opt::value(&RhoFile), "Density matrix --rho <filename>")
-	 ("partition", prog_opt::value(&Partition), "Partition of the wavefunction cell,site")
-	 ("force,f", prog_opt::bool_switch(&Force), "Overwrite files if they already exist")
+	 ("product,p", prog_opt::value(&ProductOperators), 
+	  "Construct matrix elements of a product operator -p file=operator")
+	 ("triangular,t", prog_opt::value(&TriangularOperators),
+	  "Construct atrix elements of a triangular operator -t file=operator (not yet implemented)")
+	 ("finite,f", prog_opt::value(&FiniteOperators),
+	  "Construct matrix elements of a finite operator -f file=operator (not yet implemented)")
+	 ("rho", prog_opt::value(&RhoFile), "Construct the density matrix --rho <filename>")
+	 ("partition", prog_opt::value(&Partition), "Partition of the wavefunction cell,site (not yet implemented)")
+	 ("overwrite,o", prog_opt::bool_switch(&Force), "Overwrite files if they already exist")
 	 ("threshold,t", prog_opt::value(&Threshold), "ignore matrix elements smaller than this threshold")
 	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
          ;
@@ -176,12 +182,8 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("wavefunction") < 1 || vm.count("lattice") < 1)
       {
          std::cerr << "usage: " << basename(argv[0]) << " [options] -w <psi> -l <lattice> -p <operator> <filename> [...] \n";
-         std::cerr << "If -l [--lattice] is specified, then the operators must all come from the specified lattice file\n";
-         std::cerr << "Otherwise all operators must be of the form lattice:operator\n";
-	 std::cerr << "\nThis tool constructs the auxiliary space represenation of a unitary symmetry operator,\n";
-	 std::cerr << "and shows the eigenvalue of the unitary for each density matrix eigenvalue.\n";
-	 std::cerr << "The symmetry operator must be a global symmetry of the wavefunction, otherwise this operation\n";
-	 std::cerr << "is not well defined.\n";
+	 std::cerr << "\nThis tool constructs the auxiliary space represenation of lattice operators,\n"
+		   << "which are written to a file in a sparse-matrix format suitable for use in eg MATLAB.\n";
          std::cerr << desc << '\n';
          return 1;
       }
@@ -197,14 +199,42 @@ int main(int argc, char** argv)
 	 std::string::iterator I = std::find(ProductOperators[i].begin(), ProductOperators[i].end(), '=');
 	 if (I == ProductOperators[i].end())
 	 {
-	    std::cerr << "mp-aux-matrix: error: argument to --parameter is not of the form file=operator\n";
+	    std::cerr << "mp-aux-matrix: error: argument to --product is not of the form file=operator\n";
 	    exit(1);
 	 }
 	 ProductOpFile.push_back(boost::trim_copy(std::string(ProductOperators[i].begin(), I)));
 	 ProductOpStr.push_back(boost::trim_copy(std::string(I+1, ProductOperators[i].end())));
       }
+      std::vector<std::string> TriangularOpFile;
+      std::vector<std::string> TriangularOpStr;
+      for (unsigned i = 0; i < TriangularOperators.size(); ++i)
+      {
+	 std::string::iterator I = std::find(TriangularOperators[i].begin(), TriangularOperators[i].end(), '=');
+	 if (I == TriangularOperators[i].end())
+	 {
+	    std::cerr << "mp-aux-matrix: error: argument to --triangular is not of the form file=operator\n";
+	    exit(1);
+	 }
+	 TriangularOpFile.push_back(boost::trim_copy(std::string(TriangularOperators[i].begin(), I)));
+	 TriangularOpStr.push_back(boost::trim_copy(std::string(I+1, TriangularOperators[i].end())));
+      }
+      std::vector<std::string> FiniteOpFile;
+      std::vector<std::string> FiniteOpStr;
+      for (unsigned i = 0; i < FiniteOperators.size(); ++i)
+      {
+	 std::string::iterator I = std::find(FiniteOperators[i].begin(), FiniteOperators[i].end(), '=');
+	 if (I == FiniteOperators[i].end())
+	 {
+	    std::cerr << "mp-aux-matrix: error: argument to --finite is not of the form file=operator\n";
+	    exit(1);
+	 }
+	 FiniteOpFile.push_back(boost::trim_copy(std::string(FiniteOperators[i].begin(), I)));
+	 FiniteOpStr.push_back(boost::trim_copy(std::string(I+1, FiniteOperators[i].end())));
+      }
 
       // If the -f option hasn't been supplied, make sure that the output files don't already exist
+      // If any files do exist, then exit immediately, so that we don't end up with a mixture of
+      // new files with possibly old files
       if (!Force)
       {
 	 for (unsigned i = 0; i < ProductOpFile.size(); ++i)
@@ -212,7 +242,25 @@ int main(int argc, char** argv)
 	    if (FileExists(ProductOpFile[i]))
 	    {
 	       std::cerr << "mp-aux-matrix: fatal: output file " << ProductOpFile[i]
-			 << " already exists.  Use -f option to overwrite.\n";
+			 << " already exists.  Use -o option to overwrite.\n";
+	       exit(1);
+	    }
+	 }
+	 for (unsigned i = 0; i < TriangularOpFile.size(); ++i)
+	 {
+	    if (FileExists(TriangularOpFile[i]))
+	    {
+	       std::cerr << "mp-aux-matrix: fatal: output file " << TriangularOpFile[i]
+			 << " already exists.  Use -o option to overwrite.\n";
+	       exit(1);
+	    }
+	 }
+	 for (unsigned i = 0; i < FiniteOpFile.size(); ++i)
+	 {
+	    if (FileExists(FiniteOpFile[i]))
+	    {
+	       std::cerr << "mp-aux-matrix: fatal: output file " << FiniteOpFile[i]
+			 << " already exists.  Use -o option to overwrite.\n";
 	       exit(1);
 	    }
 	 }
