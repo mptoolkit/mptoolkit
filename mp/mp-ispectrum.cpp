@@ -546,7 +546,7 @@ int main(int argc, char** argv)
           "calculate the overlap only in this quantum number sector, "
           "can be used multiple times [default is to calculate all sectors]")
          ("sort,s", prog_opt::bool_switch(&Sort),
-          "sort the eigenvalues by magnitude")
+          "sort the eigenvalues by magnitude (not yet implemented)")
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
          //("iter", prog_opt::value(&Iter),
