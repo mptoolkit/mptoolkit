@@ -4,6 +4,7 @@
 #include "mps/packunpack.h"
 #include "lattice/latticesite.h"
 #include "mps/operator_actions.h"
+#include "mp/copyright.h"
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "common/prog_options.h"
@@ -107,6 +108,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") > 0 || vm.count("wavefunction") < 1)
       {
+         print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " -w <psi> [options] Operator1 [Operator2] ...\n";
          std::cerr << "If -l [--lattice] is specified, then the operators must all come from the specified lattice file\n";
          std::cerr << "Otherwise all operators must be of the form lattice:operator\n";
@@ -285,6 +287,11 @@ int main(int argc, char** argv)
 #endif
 
       pheap::Shutdown();
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

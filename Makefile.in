@@ -215,7 +215,7 @@ infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-
 infinite-tools = mp-idmrg mp-ioverlap \
                  mp-iinfo mp-iprint mp-iproject \
                  mp-icumulant mp-iexpectation mp-iwigner-eckart mp-ireorder-symmetry \
-                 mp-ispectrum mp-lattice-info mp-isymmetry mp-ioperator mp-aux-matrix
+                 mp-ispectrum mp-lattice-info mp-ioperator mp-aux-matrix mp-aux-algebra
 
 mp-tools-not-functional = mp-add2 mp-exp mp-stringcorrelation-su2 mp-canonical mp-icorrelation mp-ispectrum  mp-isymmetry
 
@@ -512,7 +512,7 @@ mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunction.o rand
 mp-igradient : triangular_operator.o infinitewavefunction.o random_wavefunc.o
 mp-ispectral-expansion : triangular_operator.o infinitewavefunction.o random_wavefunc.o
 mp-ioverlap : infinitewavefunction.o
-mp-isymmetry : infinitewavefunction.o packunpack.o
+mp-aux-algebra : infinitewavefunction.o packunpack.o
 mp-aux-matrix : infinitewavefunction.o packunpack.o
 
 mp-ireorder-symmetry : infinitewavefunction.o 
@@ -542,7 +542,7 @@ LIBS_mp-ispectrum = $(LIBARPACK)
 
 LIBS_mp-ispectrum2 = $(LIBARPACK)
 
-LIBS_mp-isymmetry = $(LIBARPACK)
+LIBS_mp-aux-algebra = $(LIBARPACK)
 
 LIBS_mp-aux-matrix = $(LIBARPACK)
 

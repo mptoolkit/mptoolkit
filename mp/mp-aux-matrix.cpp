@@ -4,6 +4,7 @@
 #include "mps/packunpack.h"
 #include "lattice/latticesite.h"
 #include "mps/operator_actions.h"
+#include "mp/copyright.h"
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "common/prog_options.h"
@@ -38,21 +39,21 @@ bool FileExists(std::string const& Name)
 
 void
 WriteMatrixAsSparse(std::ostream& out, LinearAlgebra::Matrix<std::complex<double> > const& Op, 
-		    double Threshold = 0.0,
+		    double Epsilon = 0.0,
 		    int iOffset = 0, int jOffset = 0, bool ForceLast = false)
 {
    for (unsigned i = 0; i < size1(Op); ++i)
    {
       for (unsigned j = 0; j < size2(Op); ++j)
       {
-	 if (norm_frob(Op(i,j)) > Threshold || (ForceLast && i == size1(Op)-1 && j == size2(Op)-1))
+	 if (norm_frob(Op(i,j)) > Epsilon || (ForceLast && i == size1(Op)-1 && j == size2(Op)-1))
 	    out << (i+iOffset) << ' ' << (j+jOffset) << ' ' << format_complex(Op(i,j)) << '\n';
       }
    }
 }
 
 void
-WriteMatrixOperatorAsSparse(std::ostream& out, MatrixOperator const& Op, double Threshold = 0.0)
+WriteMatrixOperatorAsSparse(std::ostream& out, MatrixOperator const& Op, double Epsilon = 0.0)
 {
    // We map the basis into a linear index.  So we need to get the offset of each subspace
    std::vector<int> Basis1Offset, Basis2Offset;
@@ -74,7 +75,7 @@ WriteMatrixOperatorAsSparse(std::ostream& out, MatrixOperator const& Op, double 
       for (LinearAlgebra::const_inner_iterator<MatrixOperator>::type J = iterate(I); J; ++J)
       {
 	 // Offset + 1 to use 1-based addressing
-	 WriteMatrixAsSparse(out, *J, Threshold, Basis1Offset[J.index1()]+1, Basis2Offset[J.index2()]+1,
+	 WriteMatrixAsSparse(out, *J, Epsilon, Basis1Offset[J.index1()]+1, Basis2Offset[J.index2()]+1,
 			     J.index1() == Op.Basis1().size()-1 && J.index2() == Op.Basis2().size()-1);
       }
    }
@@ -146,7 +147,7 @@ int main(int argc, char** argv)
       std::string Partition;
       std::string RhoFile;
       bool Force = false;
-      double Threshold = 0.0;
+      double Epsilon = 0.0;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -157,12 +158,12 @@ int main(int argc, char** argv)
 	  "Construct matrix elements of a product operator -p file=operator")
 	 ("triangular,t", prog_opt::value(&TriangularOperators),
 	  "Construct atrix elements of a triangular operator -t file=operator (not yet implemented)")
-	 ("finite,f", prog_opt::value(&FiniteOperators),
+	 ("finite,i", prog_opt::value(&FiniteOperators),
 	  "Construct matrix elements of a finite operator -f file=operator (not yet implemented)")
 	 ("rho", prog_opt::value(&RhoFile), "Construct the density matrix --rho <filename>")
 	 ("partition", prog_opt::value(&Partition), "Partition of the wavefunction cell,site (not yet implemented)")
-	 ("overwrite,o", prog_opt::bool_switch(&Force), "Overwrite files if they already exist")
-	 ("threshold,t", prog_opt::value(&Threshold), "ignore matrix elements smaller than this threshold")
+	 ("force,f", prog_opt::bool_switch(&Force), "Overwrite files if they already exist")
+	 ("epsilon,e", prog_opt::value(&Epsilon), "ignore matrix elements smaller than this epsilon")
 	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
          ;
 
@@ -181,8 +182,9 @@ int main(int argc, char** argv)
 
       if (vm.count("help") > 0 || vm.count("wavefunction") < 1 || vm.count("lattice") < 1)
       {
+         print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options] -w <psi> -l <lattice> -p <operator> <filename> [...] \n";
-	 std::cerr << "\nThis tool constructs the auxiliary space represenation of lattice operators,\n"
+	 std::cerr << "This tool constructs the auxiliary space represenation of lattice operators,\n"
 		   << "which are written to a file in a sparse-matrix format suitable for use in eg MATLAB.\n";
          std::cerr << desc << '\n';
          return 1;
@@ -379,11 +381,16 @@ int main(int argc, char** argv)
 	 else 
 	 {
 	    Out.precision(getenv_or_default("MP_PRECISION", 14));
-	    WriteMatrixOperatorAsSparse(Out, v, Threshold);
+	    WriteMatrixOperatorAsSparse(Out, v, Epsilon);
 	 }
       }
 
       pheap::Shutdown();
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {
