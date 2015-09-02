@@ -362,6 +362,13 @@ int main(int argc, char** argv)
 
 	 FiniteMPO StringOperator = ParseUnitCellOperator(Cell, 0, OpStr).MPO();
 
+	 if (Psi1.size() % StringOperator.size() != 0)
+	 {
+	    std::cerr << "mp-aux-matrix: error: string operator size is incompatible with the wavefunction size for operator "
+		      << OpStr << ", ignoring this operator.\n";
+	    continue;
+	 }
+
 	 StringOperator = repeat(StringOperator, Psi1.size() / StringOperator.size());
 
 	 // Get the matrix
