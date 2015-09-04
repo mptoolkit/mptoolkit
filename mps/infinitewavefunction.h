@@ -115,6 +115,13 @@ double orthogonality_fidelity(InfiniteWavefunction const& x);
 // explicitly orthogonalizes the iMPS
 void orthogonalize(InfiniteWavefunction& x);
 
+// dodgy version that actually takes a LinearWavefunction and orthogonalizes it
+// into an InfiniteWavefunction
+void orthogonalize_linear(InfiniteWavefunction& x);
+
+// same as above where we can supply an initial guess for the identity operator
+void orthogonalize_linear(InfiniteWavefunction& x, MatrixOperator const& Guess);
+
 // calculates the overlap of two iMPS, per unit cell.
 // The eigenvector can be in any allowable symmetry sector.
 std::complex<double> overlap(InfiniteWavefunction const& x,  InfiniteWavefunction const& y,

@@ -83,8 +83,13 @@ int main(int argc, char** argv)
       Lattice.set_command_line(argc, argv);
       Lattice.set_operator_descriptions(OpDescriptions);
 
-      // save the lattice to disc
+      // save the lattice to disk
       pheap::ExportObject(FileName, Lattice);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

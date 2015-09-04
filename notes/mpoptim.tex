@@ -63,14 +63,14 @@ each of which has a cost of
 $(m/D)^3$, so the total cost is roughly $dM m^3/D$.
 It is tempting to sum over $j$ here, but we cannot because the coupling coefficient appears and
 this depends on the other quantum numbers. If the coupling coefficients factorize (eg for abelian quantum numbers)
-then we could sum over $j$.
+then we could sum over $j$. Note that not all combinations of $(s,a)$ are likely to be needed for a given MPO.
 
 Given these intermediate terms, we can form the sums
 \beq
 H^{(s'a'i')}_{ij'} = \sum_{s a k j}
 \qninejsq{j}{s}{j'}{a}{k}{a'}{i}{s'}{i'} \:
 M^{[k]s's}_{a'a}
-G^{s's,a}_{j'ij}
+G^{s,a}_{j'ij}
 \eeq
 and there will again be roughly $D^2 dM$ of these.
 Note that the only appearance of $s'$, $a'$, $i'$ here is in the coupling coefficient.
@@ -78,9 +78,22 @@ It may be possible to optimize the formation of these sums by finding common fac
 
 From the $H$ matrices, we can obtain the final result,
 \beq
-F^{a'}_{i'j'} = \sum_{j s'} A^{s'}_{i'i} H^{(s'a'i')}_{ij'}
+F^{a'}_{i'j'} = \sum_{i s'} A^{s'}_{i'i} H^{(s'a'i')}_{ij'}
 \eeq
 which again has $D^2 dM$ terms, for a total cost of $d M m^3 / D$.
+
+We can assume that $F$ and $B$ are dense -- that is, they contain all combinations matrix elements that are allowed
+by symmetry. We could assume that $H$ is dense too. Note however that all non-zero elements must correspond
+to a non-zero $9j$ coefficient.
+
+If two $H$ matrices with the same $s',i',i$ but different $a',j'$ turn out to be the same matrix (up to
+some constant) then we will end up repeating the same matrix multiplication in the final step.
+For this to occur, they need to be the same $G$ matrix, which is a function of $j'$, so in practice
+this can only happen if $a'$ is different.
+
+In addition, if the MPO is triangular, then $F^{[M]}$ (the last element) will be the identity. Best to treat this
+as a special case, since it is difficult to detect this using the $G$, $H$ formulation.
+
 
 \subsection{orthogonality optimizations}
 

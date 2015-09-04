@@ -3,7 +3,7 @@
 #include "siteoperator.h"
 #include <boost/lexical_cast.hpp>
 
-int LatticeVersion = 0;
+extern PStream::VersionTag LatticeVersion;
 
 // SiteBasis
 
@@ -123,7 +123,7 @@ PStream::opstream& operator<<(PStream::opstream& out, SiteOperator const& Op)
 PStream::ipstream& operator>>(PStream::ipstream& in, SiteOperator& Op)
 {
    in >> Op.base() >> Op.Basis_ >> Op.Com_;
-   if (LatticeVersion > 0)
+   if (in.version_of(LatticeVersion) > 0)
       in >> Op.Description_;
    else
       Op.Description_ = "";

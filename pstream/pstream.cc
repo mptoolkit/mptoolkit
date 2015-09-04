@@ -602,6 +602,49 @@ T ipstreambuf<Format>::read()
 }
 
 //
+// versioning
+//
+
+inline
+VersionSentry::VersionSentry(ipstream& In, VersionTag const& Tag_, int v_)
+   : Tag(Tag_), in(&In), out(NULL), v(v_)
+{
+   In.push_version(Tag, v);
+}
+
+template <int Format>
+inline
+VersionSentry::VersionSentry(ipstreambuf<Format>& In, VersionTag const& Tag_, int v_)
+   : Tag(Tag_), in(&In), out(NULL), v(v_)
+{
+   In.push_version(Tag, v);
+}
+
+inline
+VersionSentry::VersionSentry(opstream& Out, VersionTag const& Tag_, int v_)
+   : Tag(Tag_), in(NULL), out(&Out), v(v_)
+{
+   Out.push_version(Tag, v);
+}
+
+template <int Format>
+inline
+VersionSentry::VersionSentry(opstreambuf<Format>& Out, VersionTag const& Tag_, int v_)
+   : Tag(Tag_), in(NULL), out(&Out), v(v_)
+{
+   Out.push_version(Tag, v);
+}
+
+inline
+VersionSentry::~VersionSentry()
+{
+   if (in)
+      in->pop_version(Tag);
+   if (out)
+      out->pop_version(Tag);
+}
+
+//
 // Polymorphic streaming support
 //
 

@@ -97,6 +97,10 @@ void DescribeLattice(InfiniteLattice const& L, int Verbose)
    for (InfiniteLattice::const_function_iterator I = L.begin_function(); 
 	I != L.end_function(); ++I)
    {
+      if (!I->second.description().empty())
+	 std::cout << "   " << std::setw(10) << std::left << I->first << " - "
+		   << I->second.description() << '\n';
+
       std::cout << "   " << I->first << I->second << '\n';
    }
 }

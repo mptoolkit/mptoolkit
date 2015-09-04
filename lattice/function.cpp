@@ -4,6 +4,8 @@
 #include "parser/parser.h"
 #include <boost/spirit/include/classic_lists.hpp>
 
+extern PStream::VersionTag LatticeVersion;
+
 namespace Function
 {
 
@@ -33,7 +35,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, FormalArgument& Arg)
 
 std::ostream& operator<<(std::ostream& out, FormalArgumentList const& args)
 {
-   out << '(';
+   out << '{';
    if (!args.empty())
    {
       out << args[0];
@@ -42,7 +44,7 @@ std::ostream& operator<<(std::ostream& out, FormalArgumentList const& args)
 	 out << ", " << args[i];
       }
    }
-   out << ')';
+   out << '}';
    return out;
 }
 
@@ -68,7 +70,7 @@ std::ostream& operator<<(std::ostream& out, Parameter const& param)
 
 std::ostream& operator<<(std::ostream& out, ParameterList const& params)
 {
-   out << '(';
+   out << '{';
    if (!params.empty())
    {
       out << params[0];
@@ -77,7 +79,7 @@ std::ostream& operator<<(std::ostream& out, ParameterList const& params)
 	 out << ", " << params[i];
       }
    }
-   out << ')';
+   out << '}';
    return out;
 }
 
@@ -85,6 +87,8 @@ PStream::opstream& operator<<(PStream::opstream& out, OperatorFunction const& f)
 {
    out << f.Args;
    out << f.Def;
+   if (out.version_of(LatticeVersion) >= 2)
+      out << f.Desc;
    return out;
 }
 
@@ -92,6 +96,8 @@ PStream::ipstream& operator>>(PStream::ipstream& in, OperatorFunction& f)
 {
    in >> f.Args;
    in >> f.Def;
+   if (in.version_of(LatticeVersion) >= 2)
+      in >> f.Desc;
    return in;
 }
 

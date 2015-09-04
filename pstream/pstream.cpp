@@ -91,7 +91,27 @@ void opstream::put_id(id_type)
    PANIC("put_id() not overridden for this stream type - persistent objects not supported!");
 }
 
+void
+opstream::push_version(VersionTag const& Tag, int Version)
+{
+   VersionNumbers[&Tag].push(Version);
+}
 
+void
+opstream::pop_version(VersionTag const& Tag)
+{
+   DEBUG_CHECK(!VersionNumbers[&Tag].empty());
+   VersionNumbers[&Tag].pop();
+}
+
+int
+opstream::version_of(VersionTag const& Tag) const
+{
+   std::map<VersionTag const*, VersionStackType>::const_iterator I = VersionNumbers.find(&Tag);
+   if (I == VersionNumbers.end() || I->second.empty())
+      return Tag.default_version();
+   return I->second.top();
+}
 
 //
 // generic_opstreambuf
@@ -167,6 +187,28 @@ void ipstream::set_format(int OtherFormat)
    delete Buffer;
    Buffer = New;
    BaseFormat = OtherFormat;
+}
+
+void
+ipstream::push_version(VersionTag const& Tag, int Version)
+{
+   VersionNumbers[&Tag].push(Version);
+}
+
+void
+ipstream::pop_version(VersionTag const& Tag)
+{
+   DEBUG_CHECK(!VersionNumbers[&Tag].empty());
+   VersionNumbers[&Tag].pop();
+}
+
+int
+ipstream::version_of(VersionTag const& Tag) const
+{
+   std::map<VersionTag const*, VersionStackType>::const_iterator I = VersionNumbers.find(&Tag);
+   if (I == VersionNumbers.end() || I->second.empty())
+      return Tag.default_version();
+   return I->second.top();
 }
 
 //

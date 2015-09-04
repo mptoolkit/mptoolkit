@@ -639,6 +639,79 @@ OperatorComponent aux_tensor_prod(OperatorComponent const& ML, OperatorComponent
    return Result;
 }
 
+// Result[s'][i'a,j'b] = Op(s',s)(a,b) * S(s)(i,j)
+StateComponent aux_tensor_prod(OperatorComponent const& Op, StateComponent const& S)
+{
+   DEBUG_PRECONDITION_EQUAL(Op.LocalBasis2(), S.LocalBasis());
+   ProductBasis<BasisList, VectorBasis> PBasis1(Op.Basis1(), S.Basis1());
+   ProductBasis<BasisList, VectorBasis> PBasis2(Op.Basis2(), S.Basis2());
+
+   StateComponent Result(Op.LocalBasis1(), PBasis1.Basis(), PBasis2.Basis());
+
+   // iterate over the aux indices of the MPO
+   for (OperatorComponent::const_iterator iOp = iterate(Op); iOp; ++iOp)
+   {
+      for (OperatorComponent::const_inner_iterator jOp = iterate(iOp); jOp; ++jOp)
+      {
+	 // iterate over the reducible components at MPO(i,j)
+	 for (SimpleRedOperator::const_iterator RedOp = jOp->begin(); RedOp != jOp->end(); ++RedOp)
+	 {
+	    // iterate over the matrix elements, s' is jInner.index1(), s is jInner.index2()
+	    for (SimpleOperator::const_iterator iInner = iterate(*RedOp); iInner; ++iInner)
+	    {
+	       for (SimpleOperator::const_inner_iterator jInner = iterate(iInner); jInner; ++jInner)
+	       {
+		  // Now iterate over the vector basis of the MPS
+		  for (MatrixOperator::const_iterator iS = iterate(S[jInner.index2()]); iS; ++iS)
+		  {
+		     for (MatrixOperator::const_inner_iterator jS = iterate(iS); jS; ++jS)
+		     {
+			// now we have all the indices, map them onto the final index via the
+			// product basis
+
+			ProductBasis<BasisList, VectorBasis>::const_iterator TiIter, 
+			   TiEnd = PBasis1.end(jOp.index1(), jS.index1());
+			for (TiIter = PBasis1.begin(jOp.index1(), jS.index1()); TiIter != TiEnd; ++TiIter)
+			{
+			   ProductBasis<BasisList, VectorBasis>::const_iterator TjIter, 
+			      TjEnd = PBasis2.end(jOp.index2(), jS.index2());
+			   for (TjIter = PBasis2.begin(jOp.index2(), jS.index2()); TjIter != TjEnd; 
+				++TjIter)
+			   {
+			      if (!is_transform_target(PBasis2[*TjIter], Result.LocalBasis()[jInner.index1()],
+						      PBasis1[*TiIter]))
+				 continue;
+
+			      double Coeff = tensor_coefficient(PBasis1, PBasis2,
+								RedOp->TransformsAs(), 
+								S.LocalBasis()[jInner.index2()],
+								Result.LocalBasis()[jInner.index1()],
+								jOp.index1(), jS.index1(), *TiIter,
+								jOp.index2(), jS.index2(), *TjIter);
+			      if (LinearAlgebra::norm_2(Coeff) > 1E-14)
+			      {
+				 add_element(Result[jInner.index1()].data(), *TiIter, *TjIter,
+					     conj_phase(S.LocalBasis()[jInner.index2()],
+							RedOp->TransformsAs(),
+							Result.LocalBasis()[jInner.index1()])
+					     * Coeff * (*jInner) * (*jS)
+					     );
+ }
+			   }
+			}
+		     }
+		  }
+	       }
+	    }
+	 }
+      }
+   }
+   Result.debug_check_structure();
+   return Result;
+}
+
+
+
 #if 0
 //  *** This isn't correct for SU(2), the direct_product of the matrix doesn't
 // give the same thing as the ProductBasis. ***
@@ -1174,17 +1247,18 @@ SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
    return Trunc;
 }
 
+#if 1
 StateComponent
 operator_prod(OperatorComponent const& M,
               StateComponent const& A, 
-              StateComponent const& E,
+              StateComponent const& F,
               HermitianProxy<StateComponent> const& B)
 {
    PRECONDITION_EQUAL(M.LocalBasis1(), A.LocalBasis());
    PRECONDITION_EQUAL(M.LocalBasis2(), B.base().LocalBasis());
-   DEBUG_PRECONDITION_EQUAL(M.Basis2(), E.LocalBasis());
-   DEBUG_PRECONDITION_EQUAL(A.Basis2(), E.Basis1());
-   DEBUG_PRECONDITION_EQUAL(E.Basis2(), B.base().Basis2());
+   DEBUG_PRECONDITION_EQUAL(M.Basis2(), F.LocalBasis());
+   DEBUG_PRECONDITION_EQUAL(A.Basis2(), F.Basis1());
+   DEBUG_PRECONDITION_EQUAL(F.Basis2(), B.base().Basis2());
 
    StateComponent Result(M.Basis1(), A.Basis1(), B.base().Basis1());
    // Iterate over the components in M, first index
@@ -1204,7 +1278,7 @@ operator_prod(OperatorComponent const& M,
                {
                   add_triple_prod(Result[J.index1()], *S, 
                                   A[S.index1()], 
-                                  E[J.index2()], 
+                                  F[J.index2()], 
                                   herm(B.base()[S.index2()]),
                                   k->TransformsAs(),
                                   M.Basis1()[J.index1()]);
@@ -1215,6 +1289,7 @@ operator_prod(OperatorComponent const& M,
    }
    return Result;
 }
+#endif
 
 StateComponent
 operator_prod(HermitianProxy<OperatorComponent> const& M,

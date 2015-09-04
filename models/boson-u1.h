@@ -34,7 +34,21 @@ LatticeSite BosonU1(int MaxN, std::string const& Sym1 = "N")
       Basis.push_back(q, QN(n));
    }
 
-   LatticeSite Site;
+   LatticeSite Site("Boson, maximum number of particles per site = " + boost::lexical_cast<std::string>(MaxN));
+
+   OperatorDescriptions OpDescriptions;
+   OpDescriptions.add_operators()
+      ("I"   , "identity")
+      ("R"   , "reflection (trivial)")
+      ("P"   , "fermion parity (trivial)")
+      ("B"   , "annihilation")
+      ("BH"  , "creation")
+      ("N"   , "number")
+      ("N2"  , "N*(N-1)")
+      ("U"   , "(-1)^N")
+      ;
+
+   Site.arg("MaxN") = MaxN;
 
    // identity
    SiteOperator& I = Site["I"];
@@ -79,12 +93,16 @@ LatticeSite BosonU1(int MaxN, std::string const& Sym1 = "N")
    // projections onto each state
    for (int n = 0; n <= MaxN; ++n)
    {
+
       SiteOperator X(Basis, QN(0), LatticeCommute::Bosonic);
       SetMatElementU1(X, n, n, 1);
       std::string OpName = std::string("P_")
 	+ boost::lexical_cast<std::string>(n);
+      X.set_description("projector onto occupation number " + boost::lexical_cast<std::string>(n));
       Site[OpName] = X;
    }
+
+   Site.set_operator_descriptions(OpDescriptions);
 
    return Site;
 }

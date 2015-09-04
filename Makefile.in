@@ -169,7 +169,7 @@ infinite-models = spinchain-su2 spinchain-spin2-su2 spin-tri-yc-su2 spin-tri-yc-
                   hubbard-u1su2 hubbard-tri-u1su2 bosehubbard-flux-u1 bosehubbard-flux-3leg-u1 spinchain-u1 spincylinder-su2 \
                   spinchain bosehubbard-ladder-u1 bosehubbard-2component-u1z2 \
                   hubbard-so4 bosehubbard-u1 bosehubbard hubbard-u1u1 \
-                  hubbard-tri-u1u1
+                  hubbard-tri-u1u1 dual-aklt
 
 mp-models = hubbard-u1u1 hubbard-t-u1u1 hubbard-u1su2 hubbard-so4 hubbard-t-so4 \
             hubbard-trap-u1su2 bosehubbard-spinless-u1 bosehubbard-spinless hubbardladder-so4 \
@@ -215,7 +215,7 @@ infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-
 infinite-tools = mp-idmrg mp-ioverlap \
                  mp-iinfo mp-iprint mp-iproject \
                  mp-icumulant mp-iexpectation mp-iwigner-eckart mp-ireorder-symmetry \
-                 mp-ispectrum mp-lattice-info mp-ioperator mp-aux-matrix mp-aux-algebra
+                 mp-ispectrum mp-lattice-info mp-ioperator mp-aux-matrix mp-aux-algebra mp-iapply
 
 mp-tools-not-functional = mp-add2 mp-exp mp-stringcorrelation-su2 mp-canonical mp-icorrelation mp-ispectrum  mp-isymmetry
 

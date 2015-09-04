@@ -72,26 +72,29 @@ int main(int argc, char** argv)
 		      run(), vm);
       prog_opt::notify(vm);    
       
+      OperatorDescriptions OpDescriptions;
+      OpDescriptions.add_operators()
+	 ("H_J0",  "nearest neighbor leg 0 hopping")
+	 ("H_J1",  "nearest neighbor leg 1 hopping")
+	 ("H_J2",  "nearest neighbor leg 2 hopping")
+	 ("H_J",   "nearest neighbor leg hopping = H_J0 + H_J1 + H_J2")
+	 ("H_Jc0", "nearest neighbor leg 0 current")
+	 ("H_Jc1", "nearest neighbor leg 1 current")
+	 ("H_Jc2", "nearest neighbor leg 2 current")
+	 ("H_K",   "nearest neighbor rung hopping")
+	 ("H_Kc",  "nearest neighbor rung current")
+	 ("H_U",   "on-site Coulomb repulsion N*(N-1)/2")
+	 ;
+
+      OpDescriptions.add_functions()
+	 ("H", "Hamiltonian, parametized by K, alpha (flux), U, J");
+
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Operators:\n"
-		   << "H_J0   - nearest neighbor leg 0 hopping\n"
-		   << "H_J1   - nearest neighbor leg 1 hopping\n"
-		   << "H_J2   - nearest neighbor leg 2 hopping\n"
-		   << "H_J    - nearest neighbor leg hopping = H_J0 + H_J1 + H_J2\n"
-		   << "H_Jc0  - nearest neighbor leg 0 current\n"
-		   << "H_Jc1  - nearest neighbor leg 1 current\n"
-		   << "H_Jc2  - nearest neighbor leg 2 current\n"
-            //<< "H_Jc   - edge current H_Jc0 - H_Jc2\n"
-		   << "H_K    - nearest neighbor rung hopping\n"
-		   << "H_Kc   - nearest neighbor rung current\n"
-		   << "H_U    - on-site Coulomb repulsion N*(N-1)/2\n"
-	    //<< "\nOperator functions:\n"
-	    //<< "H_flux{theta} - rung flux hopping cos(theta)*H_K + sin(theta)*H_Kc\n"
-	    ;
+	 std::cerr << OpDescriptions;
          return 1;
       }
 
@@ -137,8 +140,18 @@ int main(int argc, char** argv)
 
       Lattice.func("H")("K", arg("alpha")=0.0, arg("U")=0.0, arg("J")=1.0)
 	 = "J*(H_J1 + cos(pi*alpha)*(H_J2 + H_J0) + sin(pi*alpha)*(H_Jc2 - H_Jc0)) + K*H_K + U*H_U";
-      
+
+      Lattice.set_description("Bosonic 3-leg ladder with flux");
+      Lattice.set_command_line(argc, argv);
+      Lattice.set_operator_descriptions(OpDescriptions);
+
+      // save the lattice to disk
       pheap::ExportObject(FileName, Lattice);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

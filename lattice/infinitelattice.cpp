@@ -4,6 +4,8 @@
 #include "lattice/infinite-parser.h"
 #include "mp/copyright.h" // for EscapeArgument
 
+PStream::VersionTag LatticeVersion(2);
+
 InfiniteLattice::InfiniteLattice()
 {
 }
@@ -49,7 +51,8 @@ InfiniteLattice::set_operator_descriptions(OperatorDescriptions const& Desc)
       }
       else
       {
-	 std::cerr << "warning: operator " << I->first << " has a description but is not defined in the lattice.\n";
+	 std::cerr << "warning: operator " << I->first 
+		   << " has a description but is not defined in the lattice.\n";
       }
    }
 
@@ -59,6 +62,30 @@ InfiniteLattice::set_operator_descriptions(OperatorDescriptions const& Desc)
       if (I->second.description().empty())
       {
 	 std::cerr << "warning: lattice operator " << I->first << " has no description.\n";
+      }
+   }
+
+   // Same for the functions
+   for (OperatorDescriptions::const_function_iterator I = Desc.begin_function();
+	I != Desc.end_function(); ++I)
+   {
+      if (this->function_exists(I->first))
+      {
+	 Functions_[I->first].set_description(I->second);
+      }
+      else
+      {
+	 std::cerr << "warning: function " << I->first
+		   << " has a descrption but is not defined in the lattice.\n";
+      }
+   }
+
+   // Check that all functions have a definition
+   for (const_function_iterator I = this->begin_function(); I != this->end_function(); ++I)
+   {
+      if (I->second.description().empty())
+      {
+	 std::cerr << "warning: lattice function " << I->first << " has no description.\n";
       }
    }
 }
@@ -168,8 +195,8 @@ InfiniteLattice::eval_function(std::string const& Func,
 PStream::opstream&
 operator<<(PStream::opstream& out, InfiniteLattice const& L)
 {
-   int Version = 1;
-   out << Version;
+   PStream::VersionSentry Sentry(out, LatticeVersion, LatticeVersion.default_version());
+   out << Sentry.version();
    out << L.Description_;
    out << L.CommandLine_;
    out << L.Timestamp_;
@@ -183,19 +210,18 @@ operator<<(PStream::opstream& out, InfiniteLattice const& L)
 PStream::ipstream&
 operator>>(PStream::ipstream& in, InfiniteLattice& L)
 {
-   int Version;
-   in >> Version;
-   LatticeVersion = Version;      // a bit of a hack
-   if (Version > 1)
+   PStream::VersionSentry Sentry(in, LatticeVersion, in.read<int>());
+
+   if (Sentry.version() > 2)
    {
       PANIC("This program is too old to read this lattice file format,"
-	    "  Expected Version = 1")(Version);
-   }
-   if (Version < 0)
+	    "  Maximum readable version number is 2")(Sentry.version());
+   } else if (Sentry.version() < 0)
    {
       PANIC("Lattice file is too old, please reconstruct the lattice."
-	    "  Expected Version >= 0")(Version);
+	    "  Expected Version >= 0")(Sentry.version());
    }
+
    in >> L.Description_;
    in >> L.CommandLine_;
    in >> L.Timestamp_;

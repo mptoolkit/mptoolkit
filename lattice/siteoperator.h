@@ -9,10 +9,6 @@
 
 using Tensor::IrredTensor;
 
-// version number for the lattice file format - the global variable is a bit of a hack,
-// will not work if we simultaneously read in two lattices in different threads!
-extern int LatticeVersion;
-
 struct LatticeCommute
 {
    enum Values { Fermionic = -1, None = 0, Bosonic = 1, Custom = 2 };

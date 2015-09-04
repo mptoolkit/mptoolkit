@@ -107,13 +107,13 @@ inject_right(MatrixOperator const& m,
              LinearWavefunction const& Psi);
 
 // Calculates the operator contraction, with a matrix
-// actong on the left hand side of the wavefunction.
+// acting on the left hand side of the wavefunction.
 // Op must have 1x1 boundaries
-// --Psi1--... Psi1--+
+// --Psi2--... Psi2--+
 //    |         |    |
 //    Op- ...  Op    m
 //    |         |    |
-// --Psi2*-... Psi2*-+
+// --Psi1*-... Psi1*-+
 
 MatrixOperator
 inject_right(MatrixOperator const& m, 

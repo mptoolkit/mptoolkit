@@ -363,6 +363,11 @@ OperatorComponent local_tensor_prod(OperatorComponent const& A, OperatorComponen
 // This used to be called mp_prod
 OperatorComponent aux_tensor_prod(OperatorComponent const& A, OperatorComponent const& B);
 
+// constructs the tensor product in the auxiliary basis, and ordinary product in the local basis.
+// This gives the action of an MPO on an MPS
+// This used to be called mp_prod
+StateComponent aux_tensor_prod(OperatorComponent const& A, StateComponent const& B);
+
 // construct the tensor product in both local and aux basis
 OperatorComponent global_tensor_prod(OperatorComponent const& A, OperatorComponent const& B);
 

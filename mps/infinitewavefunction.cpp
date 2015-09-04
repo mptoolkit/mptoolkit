@@ -359,11 +359,23 @@ void orthogonalize(InfiniteWavefunction& x)
    MatrixOperator Xu = x.C_right * delta_shift(C_old_inverse, adjoint(x.QShift));
    Last = prod(Last, Xu);
    PsiL.set_back(Last);
+   x.Psi = PsiL;
+   orthogonalize_linear(x, scalar_prod(herm(Xu), Xu));
+}
+
+void orthogonalize_linear(InfiniteWavefunction& x)
+{
+   orthogonalize_linear(x, MatrixOperator::make_identity(x.Basis2()));
+}
+
+void orthogonalize_linear(InfiniteWavefunction& x, MatrixOperator const& Guess)
+{
+   LinearWavefunction PsiL = x.Psi;
 
    // initialize LeftEigen to a guess eigenvector.  Since L satisfies the left orthogonality
    // constraint (except for the final matrix), we can do one iteration beyond the identity
    // and intialize it to herm(Xu) * Xu
-   MatrixOperator LeftEigen = scalar_prod(herm(Xu), Xu);
+   MatrixOperator LeftEigen = Guess;
 
    // get the eigenmatrix.  Do some dodgy explict restarts.
    int Iterations = 20;
@@ -416,7 +428,7 @@ void orthogonalize(InfiniteWavefunction& x)
    // same for the right eigenvector
 
    // initialize the guess eigenvector
-   MatrixOperator RightEigen = scalar_prod(herm(Xu), Xu); //delta_shift(scalar_prod(Xu, herm(Xu)), adjoint(x.QShift));
+   MatrixOperator RightEigen = Guess;
 
    // get the eigenmatrix
    Iterations = 20; Tol = ArnoldiTol;

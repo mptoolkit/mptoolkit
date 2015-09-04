@@ -134,6 +134,48 @@
   base classes must be done by explicitly calling base::ReadStream() or base::WriteStream().
   There is no special support for streaming virtual base classes.  
 
+  Versioning support:
+
+  This is designed to allow versioning of sub-objects, without
+  each sub-object needing to keep track of version numbers itself.
+  For example, suppose we have a class foo that has two versions,
+  version 1 and version 2.  Both versions contain a sub-object bar,
+  which has a different on-disk format between the two versions,
+  which doesn't allow for a separate version number.  Then
+  the serializer for foo will register with the pstream object
+  a version number that the bar serializer will be able to read.
+
+  Version numbers are tagged by a value of type VersionTag,
+  and are stored in a stack structure inside the pstream object.
+  For example, to indicate that sub-objects should expect version 2 for
+  the tag FunctionDatabaseVersion, a serializer will be defined as:
+
+  // global tag object, with default version number 1
+  PStream::VersionTag FunctionDatabaseV(1);
+
+  ipstream& operator>>(ipstream& in, foo& f)
+  {
+     PStream::VersionSentry Sentry(in, FunctionDatabaseVersion , 2);
+     in >> f.b;
+     return in;
+  }
+
+  If the version number is to be read from the stream, then 
+  use in.read<int>() as the version number.
+
+  While the VersionTag object is in scope, then the pstream will keep
+  track of the associated version number, which can be read from the pstream object:
+
+  int Version = in.version_of(FunctionDatabaseV);
+
+  The VersionSentry also tracks the version number, as Sentry.version()
+
+  Alternatively, the version number can be set manually, by
+  in.push_version(FunctionDatabaseV, 2);
+  and reset with in.pop_version(FunctionDatabaseV);
+  But this method is not recommended, except to set initial version numbers
+  on a new stream, if they differ from the default.
+
   Experimental features not yet merged: streaming of typemap's.
 */
 
@@ -151,6 +193,7 @@
 #include <set>
 #include <list>
 #include <deque>
+#include <stack>
 #include <complex>
 
 namespace PStream
@@ -178,6 +221,8 @@ struct pstream_type_traits
    static bool const is_fundamental = boost::is_fundamental<T>::value;
 };
 
+class VersionTag;
+
 //
 // opstream
 //
@@ -199,6 +244,10 @@ class opstream
 
       template <typename T>
       void write(T const& x);
+
+      void push_version(VersionTag const& Tag, int Version);
+      void pop_version(VersionTag const& Tag);
+      int version_of(VersionTag const& Tag) const;
 
    protected:
       opstream(int Format_, generic_opstreambuf* Buffer_);
@@ -231,6 +280,9 @@ class opstream
 
       int BaseFormat;
       generic_opstreambuf* Buffer;
+
+      typedef std::stack<int> VersionStackType;
+      std::map<VersionTag const*, VersionStackType> VersionNumbers;
 
    friend class generic_opstreambuf; // so that generic_opstream can call overflow()
 };
@@ -272,6 +324,10 @@ class generic_opstreambuf
       operator opstream&() { return *BackPointer; }
 
       void put_id(id_type Id) { BackPointer->put_id(Id); }
+
+      void push_version(VersionTag const& Tag, int Version);
+      void pop_version(VersionTag const& Tag);
+      int version_of(VersionTag const& Tag);
 
    protected:
       generic_opstreambuf(opstream* BackPointer_,
@@ -352,6 +408,10 @@ class ipstream
       template <typename T>
       T read();
 
+      void push_version(VersionTag const& Tag, int Version);
+      void pop_version(VersionTag const& Tag);
+      int version_of(VersionTag const& Tag) const;
+
    protected:
       ipstream(int Format_, generic_ipstreambuf* Buffer_);
 
@@ -382,6 +442,9 @@ class ipstream
 
       int BaseFormat;
       generic_ipstreambuf* Buffer;
+
+      typedef std::stack<int> VersionStackType;
+      std::map<VersionTag const*, VersionStackType> VersionNumbers;
 
    friend class generic_ipstreambuf;
 };
@@ -414,6 +477,10 @@ class generic_ipstreambuf
       operator ipstream&() { return *BackPointer; }
 
       id_type get_id() { return BackPointer->get_id(); }
+
+      void push_version(VersionTag const& Tag, int Version);
+      void pop_version(VersionTag const& Tag);
+      int version_of(VersionTag const& Tag);
 
    protected:
       generic_ipstreambuf(ipstream* BackPointer_,
@@ -564,6 +631,51 @@ class ipstreambuf_iterator : public std::iterator<std::input_iterator_tag, T, pt
  private:
       ipstreambuf<Format>* in;
       mutable T value;
+};
+
+// Versioning support
+
+class VersionTag
+{
+   public:
+      VersionTag(); // not implemented
+      VersionTag(VersionTag const&); // not implemented
+      VersionTag& operator=(VersionTag const&); // not implemented
+
+      VersionTag(int DefaultVersion_) : DefaultVersion(DefaultVersion_) {}
+
+      int default_version() const { return DefaultVersion; }
+
+   private:
+      int DefaultVersion;
+};
+
+class VersionSentry
+{
+   public:
+      VersionSentry(); // not implemented
+      VersionSentry(VersionSentry const&); // not implemented
+      VersionSentry& operator=(VersionSentry const&); // not implemented
+
+      VersionSentry(ipstream& In, VersionTag const& Tag_, int v_);
+
+      template <int Format>
+      VersionSentry(ipstreambuf<Format>& In, VersionTag const& Tag_, int v_);
+
+      VersionSentry(opstream& Out, VersionTag const& Tag_, int v_);
+
+      template <int Format>
+      VersionSentry(opstreambuf<Format>& Out, VersionTag const& Tag_, int v_);
+
+      ~VersionSentry();
+
+      int version() const { return v; }
+      
+   private:
+      VersionTag const& Tag;
+      ipstream* in;
+      opstream* out;
+      int v;
 };
 
 //

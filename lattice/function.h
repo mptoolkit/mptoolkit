@@ -162,6 +162,13 @@ class OperatorFunction
 
       std::string const& Definition() const { return Def; }
 
+      void set_description(std::string const& s)
+      {
+	 Desc = s;
+      }
+
+      std::string const& description() const { return Desc; }
+
       // operator() is a helper for defining a function - it allows notation
       // OperatorFunction f;
       // f("arg1", arg("arg2")=x) = y;
@@ -204,6 +211,7 @@ class OperatorFunction
 
       FormalArgumentList Args;
       std::string Def;
+      std::string Desc;
 };
 
 std::ostream& operator<<(std::ostream& out, OperatorFunction const& f);

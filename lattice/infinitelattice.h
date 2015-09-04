@@ -19,6 +19,9 @@
 #include "lattice/function.h"
 #include "lattice/operator_descriptions.h"
 
+// Lattice version number for streaming
+extern PStream::VersionTag LatticeVersion;
+
 class InfiniteLattice
 {
    public:

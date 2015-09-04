@@ -2,7 +2,7 @@
 
 // An optimized representation of an MPS for DMRG and evolution algorithms
 // This offers a limited range of operations - basically, designed for
-// high performance DMRG only.
+// high performance DMRG.
 //
 // Needed operations:
 // Construction via E matrices and F matrices
