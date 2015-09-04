@@ -1247,7 +1247,8 @@ SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
    return Trunc;
 }
 
-#if 1
+#if 0
+// See optimized version in f-optim.cpp
 StateComponent
 operator_prod(OperatorComponent const& M,
               StateComponent const& A, 
