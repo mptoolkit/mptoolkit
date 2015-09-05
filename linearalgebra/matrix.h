@@ -230,24 +230,6 @@ class Matrix : public MatrixRef<Scalar, Orientation, Matrix<Scalar, Orientation>
       typename boost::enable_if<is_matrix<U>, Matrix&>::type
       operator=(U const& x);
 
-#if 0
-      template <typename U>
-      typename boost::enable_if<is_matrix<U>, Matrix&>::type
-      operator+=(U const& x)
-      {
-	 add(*this, x);
-	 return *this;
-      }
-
-      template <typename U>
-      typename boost::enable_if<is_matrix<U>, Matrix&>::type
-      operator-=(U const& x)
-      {
-	 subtract(*this, x);
-	 return *this;
-      }
-#endif
-
       template <typename U>
       typename boost::enable_if<is_matrix<U>, Matrix&>::type
       operator=(NoAliasProxy<U> const& x);

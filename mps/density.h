@@ -11,7 +11,7 @@
 #include <list>
 
 // sometimes we need a number of states that stands for 'infinite'
-int const DefaultMaxStates = 50000;  
+int const DefaultMaxStates = 50000;
 
 // typedef for a diagonal, real operator
 typedef IrredTensor

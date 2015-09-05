@@ -89,7 +89,7 @@ linearalgebraobj = eigen.o
 #                   mpoperatorlist.o mpstate.o lattice.o linearwavefunction.o wavefunc-utils.o \
 
 mpoobj = operator_component.o generic_mpo.o finite_mpo.o triangular_mpo.o product_mpo.o infinite_mpo.o \
-         f-optim.o
+         f-optim.o e-optim.o
 
 mpsobj = state_component.o linearwavefunction.o infinitewavefunction.o density.o operator_actions.o
 

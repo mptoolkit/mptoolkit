@@ -1292,6 +1292,7 @@ operator_prod(OperatorComponent const& M,
 }
 #endif
 
+#if 0
 StateComponent
 operator_prod(HermitianProxy<OperatorComponent> const& M,
               HermitianProxy<StateComponent> const& A, 
@@ -1333,6 +1334,7 @@ operator_prod(HermitianProxy<OperatorComponent> const& M,
    }
    return Result;
 }
+#endif
 
 StateComponent
 operator_prod_regular(OperatorComponent const& M,

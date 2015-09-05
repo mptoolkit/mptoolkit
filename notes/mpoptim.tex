@@ -56,7 +56,7 @@ $d^2 M^2$ term is the number of non-zero matrix elements in the MPO, which is ty
 a prefactor of perhaps 2. But in principle, even if the MPO isn't sparse, the cost of the operation is bounded
 by $d M m^3 / D$, because we can construct the intermediate products,
 \beq
-G^{s,a}_{j'ij} = B^{*s}_{j'j} F^a_{ij}
+G^{s,a}_{j'ij} = F^a_{ij} B^{*s}_{j'j}
 \eeq
 and there will be roughly $D^2 dM$ such terms (depends on the combinations allowed by the fusion rules), 
 each of which has a cost of
@@ -94,6 +94,37 @@ this can only happen if $a'$ is different.
 In addition, if the MPO is triangular, then $F^{[M]}$ (the last element) will be the identity. Best to treat this
 as a special case, since it is difficult to detect this using the $G$, $H$ formulation.
 
+
+\section{E-matrix update}
+
+We can decompose the E-matrix update similarly. The contraction is
+\beq
+\itensor{E'}{a}_{ij} = \sum_{a',i',j',k,s',s}
+\frac{2i'+1}{2i+1}
+\qninejsq{j}{s}{j'}{a}{k}{a'}{i}{s'}{i'}
+\itensor{E}{a'}_{i'j'}
+\itensor{M}{k}^{*s's}_{a'a} \itensor{A}{s'}^*_{i'i} \itensor{B}{s}_{j'j}
+\eeq
+Again the conjugation differs slightly from nonabelianmp.tex, but the above is what is actually implemented,
+and this makes sense because the contraction from the left is analagous to a bra vector, and we finally
+want to perform an operation like $E^\dagger F$, so the conjugation of $M$ cancels out in the final operation.
+
+This is implemented in the toolkit as
+\begin{verbatim}Eprime = operator_prod(herm(M), herm(A), E, B)\end{verbatim}
+
+We again define a temporary matrix $J$,
+\beq
+J^{s'a'}_{i'ij'} = A^{*s'}_{i'i} E^{a'}_{i'j'}
+\eeq
+from which we form $K$-matrices,
+\beq
+K^{sa}_{j'ij} = \sum_{s'a'ki'} \frac{2i'+1}{2i+1} \qninejsq{j}{s}{j'}{a}{k}{a'}{i}{s'}{i'}
+M^{[k]s's}_{a'a} J^{s'a'}_{i'ij'}
+\eeq
+from which we obtain the final result,
+\beq
+E'^{a}_{ij} = \sum_{j's} K^{sa}_{j'ij} B^{s}_{j'j}
+\eeq
 
 \subsection{orthogonality optimizations}
 

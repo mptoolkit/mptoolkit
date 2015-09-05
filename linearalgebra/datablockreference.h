@@ -31,7 +31,7 @@
   The DataBlock reference count is a count of the number of value-semantic
   *groups* that are sharing the representation.
 
-  The BlockValue::RefCount reference count is a count of the number of
+  The BlockReference::RefCount reference count is a count of the number of
   reference-semantic members of a group.
 */
 

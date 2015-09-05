@@ -5,56 +5,40 @@
 
 #include "mpo/operator_component.h"
 
-struct GMatrixIndex
-{
-   int s, a, jP, i, j;
-
-   GMatrixIndex(int s_, int a_, int jP_, int i_, int j_)
-      : s(s_), a(a_), jP(jP_), i(i_), j(j_) {}
-};
-
 // note: we could parallelize the construction of the G and H indices over jP
-
-bool operator<(GMatrixIndex const& x, GMatrixIndex const& y)
-{
-   return x.s < y.s || 
-      (x.s == y.s && 
-       (x.a < y.a || 
-	(x.a == y.a && 
-	 (x.jP < y.jP || 
-	  (x.jP == y.jP &&
-	   (x.i < y.i ||
-	    (x.i == y.i && x.j < y.j)
-	    )
-	   )
-	  )
-	 )
-	)
-       );
-}
-
-bool operator==(GMatrixIndex const& x, GMatrixIndex const& y)
-{
-   return x.s == y.s && x.a == y.a && x.jP == y.jP && x.i == y.i && x.j == y.j;
-}
 
 typedef std::complex<double> NumberType;
 typedef LinearAlgebra::Matrix<NumberType> MatrixType;
 
-class GMatrices
+// This version uses a Matrix* directly
+struct GMatrixRef
+{
+   MatrixType const* F;
+   MatrixType const* BH;
+
+   GMatrixRef(MatrixType const& F_, MatrixType const& BH_) : F(&F_), BH(&BH_) {}
+};
+
+bool
+operator<(GMatrixRef const& x, GMatrixRef const& y)
+{
+   // FIXME: should use std::less here, but in practice it surely doesn't matter
+   return x.F < y.F || (x.F == y.F && x.BH < y.BH);
+}
+
+class GMatrixRefList
 {
    public:
-      GMatrices() {}
+      GMatrixRefList() {}
 
       // we can reserve a maximum size
       void reserve(int MaxSize);
 
       // returns the index of a G-matrix (which is inserted if it didn't exist previously)
-      int Lookup(int s, int a, int jP, int i, int j);
+      int Lookup(MatrixType const& F, MatrixType const& BH);
 
       // do the actual evaluations (in parallel)
-      void Evaluate(StateComponent const& F,
-		    HermitianProxy<StateComponent> const& B);
+      void Evaluate();
 
       // after the evaluation, return the n'th matrix
       MatrixType const& operator[](int n) const
@@ -63,20 +47,21 @@ class GMatrices
       }
 
    private:
-      typedef std::map<GMatrixIndex, int> IndexType;
+      typedef std::map<GMatrixRef, int> IndexType;
       IndexType Indices;
-      std::vector<std::pair<GMatrixIndex, MatrixType> > Data;
+      std::vector<std::pair<GMatrixRef, MatrixType> > Data;
 };
 
 void
-GMatrices::reserve(int MaxSize)
+GMatrixRefList::reserve(int MaxSize)
 {
    Data.reserve(MaxSize);
 }
 
-int GMatrices::Lookup(int s, int a, int jP, int i, int j)
+int
+GMatrixRefList::Lookup(MatrixType const& F, MatrixType const& BH)
 {
-   GMatrixIndex Index(s, a, jP, i, j);
+   GMatrixRef Index(F, BH);
    IndexType::const_iterator I = Indices.find(Index);
    if (I == Indices.end())
    {
@@ -89,25 +74,18 @@ int GMatrices::Lookup(int s, int a, int jP, int i, int j)
 }   
 
 void
-GMatrices::Evaluate(StateComponent const& F,
-		    HermitianProxy<StateComponent> const& B)
+GMatrixRefList::Evaluate()
 {
    for (unsigned n = 0; n < Data.size(); ++n)
    {
-      MatrixOperator::const_inner_iterator I = iterate_at(B.base()[Data[n].first.s].data(),
-							 Data[n].first.jP, Data[n].first.j);
-      DEBUG_CHECK(I);
-      MatrixOperator::const_inner_iterator J = iterate_at(F[Data[n].first.a].data(),
-							 Data[n].first.i, Data[n].first.j);
-      DEBUG_CHECK(J);
-      Data[n].second = (*J) * herm(*I);
+      Data[n].second = (*Data[n].first.F) * herm(*Data[n].first.BH);
    }
 }
 
 // array of coefficient * index into the GMatrices array
 typedef std::vector<std::pair<NumberType, int> > HMatrixDescriptor;
 
-MatrixType EvaluateH(HMatrixDescriptor const& H, GMatrices const& G)
+MatrixType EvaluateH(HMatrixDescriptor const& H, GMatrixRefList const& G)
 {
    CHECK(!H.empty())("H Matrix descriptor should not be empty!");
 
@@ -136,14 +114,14 @@ struct OuterIndex
    bool empty() const { return Components.empty(); }
 
    // do the final evaluation.  Precondition: !empty()
-   MatrixType Evaluate(StateComponent const& A, GMatrices const& G) const;
+   MatrixType Evaluate(StateComponent const& A, GMatrixRefList const& G) const;
 
    int iP, aP, jP;
    std::vector<ElementRec> Components;
 };
 
 MatrixType
-OuterIndex::Evaluate(StateComponent const& A, GMatrices const& G) const
+OuterIndex::Evaluate(StateComponent const& A, GMatrixRefList const& G) const
 {
    DEBUG_CHECK(!Components.empty());
    MatrixOperator::const_inner_iterator x = iterate_at(A[Components[0].sP].data(), iP, Components[0].i);
@@ -173,8 +151,8 @@ operator_prod(OperatorComponent const& M,
    DEBUG_PRECONDITION_EQUAL(F.Basis2(), B.base().Basis2());
 
    // firstly, assemble the required H matrix descriptors
-   GMatrices G;
-   
+   GMatrixRefList G;
+
    // this describes how to construct the final matrices
    std::vector<OuterIndex> C;
 
@@ -266,7 +244,7 @@ operator_prod(OperatorComponent const& M,
 			      
 			      if (LinearAlgebra::norm_frob(Coeff) > 1E-14)
 			      {
-				 int GIndex = G.Lookup(s, a, jP, i, j);
+				 int GIndex = G.Lookup(*Fj, *Bj);
 				 HMat.push_back(std::make_pair(Coeff * (*S), GIndex));
 			      }
 
@@ -285,7 +263,7 @@ operator_prod(OperatorComponent const& M,
    }
    
    // do the evaluations
-   G.Evaluate(F, B);
+   G.Evaluate();
 
    for (unsigned n = 0; n < C.size(); ++n)
    {
