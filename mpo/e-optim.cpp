@@ -240,7 +240,7 @@ operator_prod(HermitianProxy<OperatorComponent> const& M,
 			      if (LinearAlgebra::norm_frob(Coeff) > 1E-14)
 			      {
 				 int JIndex = JList.Lookup(*Ai, *Ei);
-				 KMat.push_back(std::make_pair(Coeff * (degree_iP / degree_i) * (*S), JIndex));
+				 KMat.push_back(std::make_pair(Coeff * (degree_iP / degree_i) * herm(*S), JIndex));
 			      }
 			   }
 			}
