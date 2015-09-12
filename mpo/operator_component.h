@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*- $Id: operator_component.h 1595 2015-09-04 13:15:02Z ianmcc $
 
 // New version for an MPO component.
 // This version looks like a matrix of reducible operators, which is a total reversal
@@ -459,19 +459,75 @@ operator*(std::complex<double> x, OperatorComponent const& Op)
 OperatorComponent
 conj(OperatorComponent const& x);
 
-// does Result'(a)(i',j') = M(s',s)(a,b) A(s')(i',i) E(b)(i',j) B(s)(j',j)^*
+// This grouping treats A as a bra, and herm(B) as a ket
+
+// Contraction from the right
+// does Result'[a'](i',j') = M(s',s)(a',a) A[s'](i',i) E[a](i,j) herm(B[s](j',j))
 // This is an `expectation value', the transfer operator applied to a state
+// ** this function is deprecated -- use contract_from_right instead
+#if defined(OLD_OPERATOR_PROD)
 StateComponent
 operator_prod(OperatorComponent const& M,
               StateComponent const& A, 
-              StateComponent const& F,
+              StateComponent const& E,
               LinearAlgebra::HermitianProxy<StateComponent> const& B);
+#endif
 
+// F-matrix contraction
+//
+// Contracting from the right hand side.
+// The MPO element is compex-conjugated because the F object will finally
+// be conjugated itself (making A bra and B ket).
+//
+//                 i'  i
+//                --A--+
+//                  |  |
+//F'[a'](i'i) = a'--M*-F
+//                  |  |
+//                --B*-+
+//                 j'  j
+//
+// Result'[a'](i',j') = herm(M(s',s)(a',a)) A[s'](i',i) E[a](i,j) herm(B[s](j',j))
+StateComponent
+contract_from_right(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
+		    StateComponent const& A, 
+		    StateComponent const& F,
+		    LinearAlgebra::HermitianProxy<StateComponent> const& B);
+
+// Contraction from the left
+// Result'[a](i,j) = herm(M(s',s)(a',a)) herm(A[s'](i',i)) E[a'](i',j') B[s](j',j)
+// ** this function is deprecated -- use contract_from_left instead
+#if defined(OLD_OPERATOR_PROD)
 StateComponent
 operator_prod(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
               LinearAlgebra::HermitianProxy<StateComponent> const& A, 
-              StateComponent const& E,
+              StateComponent const& F,
               StateComponent const& B);
+#endif
+
+// E-matrix contraction
+//
+// +--A*-- i
+// |  |
+// E--M--- a = E'[a](i,j)
+// |  |
+// +--B--- j
+//
+// Result'[a](i,j) = M(s',s)(a',a) herm(A[s'](i',i)) E[a'](i',j') B[s](j',j)
+StateComponent
+contract_from_left(OperatorComponent const& M,
+		   LinearAlgebra::HermitianProxy<StateComponent> const& A, 
+		   StateComponent const& E,
+		   StateComponent const& B);
+
+
+// Action of an operator on B
+// Result[s'](i',i) = M(s',s)[a',a] E[a'](i',j') B[s](j',j) herm(F[a](i,j))
+StateComponent
+operator_prod_inner(OperatorComponent const& M,
+                    StateComponent const& E, 
+                    StateComponent const& B,
+                    LinearAlgebra::HermitianProxy<StateComponent> const& F);
 
 // Variants for a regular triangular MPO
 
@@ -491,9 +547,9 @@ operator_prod_regular(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
 		      StateComponent const& E,
 		      StateComponent const& B);
 
-
-// does Result'(s')(i',j') = M(s',s)(a,b) E(a)(i',i) A(s)(i',j) F(b)(j',j)^*
-// This is the action of an operator on a state
+#if 0
+// does Result'[s'](i',j') = M(s',s)(a',a) E[a'](i',i)^* [s](i,j) F[a](j',j)^*
+// This is the action of an operator on a state E A herm(F)
 StateComponent
 operator_prod_inner(OperatorComponent const& M,
                     StateComponent const& E, 
@@ -505,6 +561,7 @@ operator_prod_inner(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
                     LinearAlgebra::HermitianProxy<StateComponent> const& E, 
                     StateComponent const& A,
                     StateComponent const& F);
+#endif
 
 double
 norm_frob_sq(OperatorComponent const& x);

@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*- $Id: operator_component.cpp 1597 2015-09-05 20:16:58Z ianmcc $
 
 #include "operator_component.h"
 #include "tensor/tensorproduct.h"
@@ -1336,6 +1336,7 @@ operator_prod(HermitianProxy<OperatorComponent> const& M,
 }
 #endif
 
+#if defined(OLD_OPERATOR_PROD)
 StateComponent
 operator_prod_regular(OperatorComponent const& M,
 		      StateComponent const& A, 
@@ -1386,7 +1387,9 @@ operator_prod_regular(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
    }
    return Result;
 }
+#endif
 
+#if 0
 StateComponent
 operator_prod_inner(OperatorComponent const& M,
                     StateComponent const& A, 
@@ -1420,6 +1423,54 @@ operator_prod_inner(OperatorComponent const& M,
                                                            herm(B.base()[J.index2()]),
                                                            k->TransformsAs(),
                                                            M.LocalBasis1()[S.index1()]);
+               }
+            }
+         }
+      }
+   }
+   return Result;
+}
+
+// Result[s'](i',i) = M(s',s)[a',a] herm(E[a'](i',j')) herm(B[s](j',j)) F[a](i,j)
+StateComponent
+operator_prod_inner(OperatorComponent const& M,
+                    HermitianProxy<StateComponent> const& E, 
+		    HermitianProxy<StateComponent> const& B,
+                    StateComponent const& F)
+{
+   DEBUG_PRECONDITION_EQUAL(M.Basis1(), E.base().LocalBasis());
+   DEBUG_PRECONDITION_EQUAL(M.Basis2(), F.LocalBasis());
+   DEBUG_PRECONDITION_EQUAL(M.LocalBasis2(), A.LocalBasis());
+
+   DEBUG_PRECONDITION_EQUAL(A.Basis2(), F.Basis1());
+   DEBUG_PRECONDITION_EQUAL(E.base().Basis1(), A.Basis1());
+
+   StateComponent Result(M.LocalBasis1(), E.base().Basis2(), F.Basis2());
+
+   // Iterate over the components in M, first index
+   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(M); I; ++I)
+   {
+      // second index in M
+      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
+      {
+         // Iterate over the irreducible components of M(I,J)
+         for (SimpleRedOperator::const_iterator k = J->begin(); k != J->end(); ++k)
+         {
+            // *k is an irreducible operator.  Iterate over the components of this operator
+            for (LinearAlgebra::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
+            {
+               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type 
+                       S = iterate(R); S; ++S)
+               {
+
+		  // iterate over
+
+
+                  Result[S.index1()] += (*S) * triple_prod(herm(E.base()[J.index1()]), 
+							   A[S.index2()], 
+							   F[J.index2()],
+							   k->TransformsAs(),
+							   M.LocalBasis1()[S.index1()]);
                }
             }
          }
@@ -1468,6 +1519,7 @@ operator_prod_inner(HermitianProxy<OperatorComponent> const& M,
    }
    return Result;
 }
+#endif
 
 OperatorComponent
 project_rows(OperatorComponent const& x, std::set<int> const& Rows)

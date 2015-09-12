@@ -1,4 +1,4 @@
- // -*- C++ -*- $Id$
+ // -*- C++ -*- $Id: triangular_mpo.cpp 1577 2015-08-01 06:57:11Z ianmcc $
 
 #include "triangular_mpo.h"
 
@@ -182,6 +182,10 @@ void optimize(TriangularMPO& Op)
 
 }
 #endif
+
+void balance(TriangularMPO& Op)
+{
+}
 
 void print_structure(TriangularMPO const& Op, std::ostream& out, double UnityEpsilon)
 {

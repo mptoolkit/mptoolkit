@@ -1,8 +1,9 @@
 % notes on coupling coefficients for SU(2)
-% $Id$
+% $Id: nonabelianmp.tex 1419 2015-04-08 07:30:37Z ianmcc $
 \documentclass{article}[10pt]
 \usepackage{fullpage}
 \usepackage{amsmath}
+\usepackage{graphicx}
 
 \input{macros}
 
@@ -336,6 +337,23 @@ a sum of products of Clebsch-Gordan coefficients,
 \eeq
 If we sum over all of the $m$'s, then we get an additional factor $2j+1$ on the right hand side.
 
+We will encounter this $[\cdots]$ symbol quite a lot, so it is worthwhile to examine a bit its symmetries.
+From the symmetries of the $9j$ coefficient, the $[\cdots]$ is symmetric under transpose of all indices.
+\beq
+\qninejsq{j_1}{j_2}{j_{12}}{j_3}{j_4}{j_{34}}{j_{13}}{j_{24}}{j}
+=
+\qninejsq{j_1}{j_3}{j_{13}}{j_2}{j_4}{j_{24}}{j_{12}}{j_{34}}{j}
+\eeq
+
+Under a swap of the first two rows or first two columns, it picks up a phase factor of $(-1)^{\sum j}$,
+being the sum of all 9 quantum numbers. Hence it is invariant under the combined swap of the first two
+rows and first two columns,
+\beq
+\qninejsq{j_1}{j_2}{j_{12}}{j_3}{j_4}{j_{34}}{j_{13}}{j_{24}}{j}
+=
+\qninejsq{j_4}{j_3}{j_{34}}{j_2}{j_1}{j_{12}}{j_{24}}{j_{13}}{j}
+\eeq
+Other symmetries are more complicated as they involve non-unitary prefactors.
 
 \section{Irreducible Tensors}
 
@@ -388,6 +406,8 @@ thus it is important to
 distinguish properties that explicitly depend on the normalization choice
 for the reduced matrix elements versus intrinsic properties.
 
+\subsection{Tensor multiplication}
+
 The coupling of two operators is just as for ordinary spins;
 \beq
 \left[ \itensor{S}{k_1} \times \itensor{T}{k_2} \right]^{[k]}
@@ -415,6 +435,8 @@ Applying the Wigner-Eckart gives, after a few lines of algebra,
 Note that multiplication of a tensor operator by a \textit{scalar} is a special
 case where $k_2 = 0$, and \refeq{eq:6jzero} implies the coupling coefficient is identically 1.
 
+\subsection{Direct product}
+
 A special case of the above product rule is when the tensors $\itensor{S}{k_1}$ and
 $\itensor{T}{k_2}$ live in different spaces, that is
 \beq
@@ -439,6 +461,7 @@ Repeated application of the Wigner-Eckart theorem gives
 \eeq
 
 \section{Conjugate Tensors}
+\label{sec:ConjugateTensors}
 
 It is sometimes useful to consider the \textit{tensor conjugate} of
 an irreducible operator,
@@ -465,11 +488,10 @@ The matrix elements of $\itensor{\bar{T}}{k}$ are
 \bigbraket{j'm'}{\itensorcomp{\bar{T}}{k}{M}}{jm}
 = (-1)^{k-M} \qcg{j}{k}{j'}{m}{-M}{m'} \rbigbraket{j'}{\itensor{T}{k}}{j}
 \vspace{2mm} \\  \displaystyle
-= (-1)^{j+k-j'} \sqrt{\frac{2j'+1}{2j+1}} 
+= (-1)^{j'+k-j} \sqrt{\frac{2j'+1}{2j+1}} 
 \qcg{j'}{k}{j}{m'}{M}{m} \rbigbraket{j'}{\itensor{T}{k}}{j}
 \end{array}
 \eeq
-%Note that we do not here define explicitly reduced matrix elements of conjugate tensors.
 We can regard the reduced matrix elements of $\itensor{\bar{T}}{k}$ as being the same
 as those of $\itensor{T}{k}$ itself, but with a different coupling coefficient used to
 obtain the full matrix elements.
@@ -482,6 +504,8 @@ be more convenient. However for fermionic operators where
 $k, M$ are half-integral this would imply the conjugate of a real tensor
 is purely imaginary. With the $(-1)^k$ factor inserted, the operator
 is real at the expense of having a sign ambiguity.
+
+\subsection{Hermitian conjugate}
 
 If we define the \textit{hermitian conjugate}
 $\itensor{T^\dagger}{k}$, with matrix
@@ -505,12 +529,14 @@ This gives the matrix elements as
 \eeq
 Compare \refeq{eq:ITensorDef}.
 
-If we also apply tensor conjugation,
+\subsection{Adjoint}
+
+If we apply both tensor conjugation and Hermitian conjugation,
 we get the tensor operator $\itensor{\bar{T}^\dagger}{k}$, which has
 matrix elements
 \beq
 \rbigbraket{j'}{\itensor{\bar{T}^\dagger}{k}}{j}
-= (-1)^{j'+k-j} \sqrt{\frac{2j+1}{2j'+1}}
+= (-1)^{j+k-j'} \sqrt{\frac{2j+1}{2j'+1}}
 \rbigbraket{j}{\itensor{T}{k}}{j'}^*
 \label{eq:AdjointDef}
 \eeq
@@ -530,11 +556,9 @@ Hence it is also useful to define the `inverse adjoint', which is
 denoted here by the rather cumbersome notation
 $\itensor{T^\invad}{k}$.
 
-Note: this sign convention used here is different to that used in my thesis,
-and different to that currently used in the MPToolkit, where the alternate convention
-with phase $(-1)^{j+k-j'}$ is used instead of $j'+k-j$ used in \refeq{eq:AdjointDef}. 
-This was accidental, but of no real consequence;
-the adjoint operation in MPToolkit is equivalent to the inverse adjoint in these notes.
+Note: In previous versions of these notes, the phase factor here was different,
+and written as $(-1)^{j+k-j'}$. The above convention agrees with my thesis,
+and also with what is currently implemented in the toolkit.
 
 We now determine the scalar product of $S \cdot T^\dagger$ and
 $S^\dagger \cdot T$ forms.
@@ -684,13 +708,12 @@ transpose of the indices. This interchanges
 \beq
 \bigbraket{j',m'}{\hat{T}^{[k]}_M}{j,m}
 =
-(-1)^{j+k-j'}
 \bigbraket{j',-m'}{T^{[k]}_{-M}}{j,-m}
 \eeq
+For a MPS, this corresponds to a spin reflection (or charge reflection) of the physical state.
 Note that this operator transforms as an ordinary tensor operator, not as
 a conjugate.
-Also, we have inserted a phase factor here. The reason for this becomes apparant
-when we write the reduced matrix elements,
+The reduced matrix elements are
 \beq
 \bigbraket{j',-m'}{T^{[k]}_{-M}}{j,-m}
 = \rbigbraket{j'}{\vektor{T}^{[k]}}{j} \; \qcg{j}{k}{j'}{-m}{-M}{-m'}
@@ -698,12 +721,14 @@ when we write the reduced matrix elements,
 From the symmetries of the CG coefficient, $\qcg{j}{k}{j'}{-m}{-M}{-m'} = 
 (-1)^{j+k-j'} \qcg{j}{k}{j'}{m}{M}{m'}$. Therefore,
 \beq
-\rbigbraket{j'}{\vektor{\hat{T}}^{[k]}}{j} = \rbigbraket{j'}{\vektor{T}^{[k]}}{j}
+\rbigbraket{j'}{\vektor{\hat{T}}^{[k]}}{j} = 
+(-1)^{j+k-j'}
+\rbigbraket{j'}{\vektor{T}^{[k]}}{j}
 \eeq
-so the \textit{flip conjugate} is an identity operation. The reason we include
-it here is that, technically the phase factor $(-1)^{j+k'j'}$ is a choice,
-and we still need to verify that this is the physically relevant operation.
-Also, for $U(1)$ (and indeed for general symmetries) it is no longer an identity operation.
+so the \textit{flip conjugate} introduces a phase factor. For an irreducible MPS, this is pure gauge;
+after coarse-graining, an MPS will have $j=0$, and $j'= k$, so the phase factor vanishes. 
+
+TODO: we probably should prove that all of these conjugation operations survive coarse-graining...
 
 \section{Norms}
 
@@ -833,19 +858,50 @@ In upstairs-downstairs notation, the matrix element
 $\rbigbraket{j'}{\itensor{A}{s}}{j}$ of an irreducible tensor operator 
 looks like
 \beq
-A^{[s]}_{j'} {}^{j}
+A^{[s]}_{i'} {}^{i}
 \eeq
 \ie, the rank index is upstairs. This is consistent with the
 analagous case for $U(1)$, where one would have the sum rule
-$j' = j+k$. We could of course define our operators differently,
+$i' = i+s$. We could of course define our operators differently,
 for example having all indices at the same level.  This would correspond
 to replacing the Clebsch-Gordan coefficient with the more symmetric
-$3j$ symbol, analagous to the $U(1)$ sum rule $j'+j+k=0$. 
+$3j$ symbol, analagous to the $U(1)$ sum rule $i'+i+s=0$. 
 Here I choose the conventional route of having mixed symmetry tensors.
 The reduced matrix elements are
 \beq
-\bigbraket{j'm'}{\itensorcomp{A}{s}{q}}{jm} = \rbigbraket{j'}{\itensor{A}{s}}{j} \;
-\qcg{j}{s}{j'}{m}{q}{m'}
+\bigbraket{i'\iota'}{\itensorcomp{A}{s}{sigma}}{i\iota} = \rbigbraket{i'}{\itensor{A}{s}}{i} \;
+\qcg{i}{s}{i'}{\iota}{\sigma}{\iota'}
+\eeq
+Here we follow the convention that $z$-axis projections are denoted by the corresponding Greek symbol.
+The associated tensor network diagram is
+
+\begin{centering}
+\includegraphics[width=32mm]{AMat.pdf}\par
+\end{centering}
+
+The directional arrows indicate the symmetry of the coupling coefficients.
+
+\subsection{Bra versus ket}
+
+An MPS constructed in this way actually looks like a bra vector, since the physical indices
+are pointing inwards, which, in the conventional picture indicates a bra. This is consistent with
+the quantum numbers in the auxiliary Hilbert space being 0 (vacuum) on the right-hand side
+and $q$ on the left. Since the overall tensor network is a rotational invariant (scalar), the
+physical quantum number is therefore the conjugate of $q$, which is correct for a bra state. The
+Hermitian conjugate would correspond to a ket state with physical quantum number $q$ and
+transforming as the conjugate of q in the auxiliary space.
+
+However, we raraly need to consider mixing the physical and auxiliary Hilbert spaces, so we are free
+to choose any convention we like for the physical index. Hence we are free to call it a ket.
+To construct a bra vector, we will construct explicitly the Hermitian conjugate:
+\beq
+\braket{A}{B} \sim A^\dagger B
+\eeq
+
+Note that later on, we will see that the contraction of an MPS via $E$ and $F$-matrices, naturally leads to
+$F$ being in the conjugate representation and $E$ being normal, leading to
+\beq
+\braket{A}{B} \sim E F^\dagger
 \eeq
 
 \subsection{Normalization}
@@ -958,7 +1014,7 @@ and
 C_{kj} = \itensor{A}{s}_{j'j} \sqrt{\frac{2i+1}{2k+1}}
 \eeq
 
-\subsection{Products}
+\subsection{MPS Contraction}
 \label{sec:MPSProducts}
 
 The contraction of MPS, given by
@@ -1058,6 +1114,13 @@ which transforms as the product of two operators of rank $[k]$, with matrix elem
 = \rbigbraket{s';j'}{\itensor{M}{k}}{s;j} \; \qcg{s}{k}{s'}{q}{r}{q'} \;
 \qcg{j}{k}{j'}{m}{r}{m'}
 \eeq
+
+This has the form
+
+\begin{centering}
+\includegraphics[width=32mm]{MPO.pdf}\par
+\end{centering}
+
 
 \subsection{Normalization}
 
@@ -1162,6 +1225,47 @@ modified by the phase $(-1)^{s+k-s'}$. Thus,
 \itensor{M}{k}^{s's} \otimes \itensor{A}{s}
 \eeq
 
+\begin{centering}
+\includegraphics[width=32mm]{ApplyMB.pdf}\par
+\end{centering}
+
+This corresponds to
+\beq
+B'^{s'}_{(j'a'),(ja)} = M^{s's}_{a'a} B^s_{j'j}
+\eeq
+
+The matrix elements are
+\beq
+\bigbraket{i'\iota';a'\alpha'}{\itensorcomp{B'}{s'}{\sigma'}}{i\iota;a\alpha}
+= \sum_{s\sigma k r}
+\bigbraket{s'a' ; \sigma'\alpha'}{\itensorcomp{\bar{M}}{k}{r}}{sa ; \sigma\alpha}
+\bigbraket{i'\iota'}{\itensorcomp{B}{s}{\sigma}}{i\iota}
+\eeq
+In terms of the reduced matrix elements, the right hand side is
+\beq
+(-1)^{s'+k-s}\sqrt{\frac{2s'+1}{2s+1}}
+\qcg{s'}{k}{s}{\sigma'}{r}{\sigma}
+\qcg{a}{k}{a'}{\alpha}{r}{\alpha'}
+\rbigbraket{s';a'}{\itensor{M}{k}}{s;a} \:
+\qcg{i}{s}{i'}{\iota}{\sigma}{\iota'} \rbigbraket{i'}{\itensor{B}{s}}{i}
+\eeq
+and we want to couple $(i'a') \rightarrow j'$ and $(ia) \rightarrow j$, which gives additional CG coefficients,
+\beq
+\qcg{i'}{a'}{j'}{\iota'}{\alpha'}{m'}
+\qcg{i}{a}{j}{\iota}{\alpha}{m}
+\eeq
+and we want to write the final result as
+\beq
+\rbigbraket{j'}{\itensor{B'}{s'}}{j} 
+=
+\sum_{m'\sigma' m} \frac{1}{2j'+1}
+\bigbraket{j'm'}{\itensorcomp{B'}{s'}{\sigma'}}{jm}
+\qcg{j}{s'}{j'}{m}{\sigma'}{m'}
+\eeq
+
+
+
+
 \subsection{Operator-Operator Product}
 
 The action of a matrix-product operator on another matrix product
@@ -1174,62 +1278,12 @@ basis and the tensor product in the auxiliary basis.
 
 \subsection{Operator Adjoint}
 
-A useful operation that we want is to construct some form of Hermitian conjugate of a
-matrix product operator. To do this, we want to form the hermitian conjugate of
-the local indices, but keep the matrix basis unchanged. That is, an adjoint of the
-local indices, and the flip conjugation of the matrix indices. The full matrix elements will
-be
-\beq
-\begin{array}{rcl}
-\bigbraket{s',q' ; j',m'}{\itensorcomp{\hat{M}}{k}{r}}{s,q ; j,m}
-&=&
-(-1)^{k-r} (-1)^{j+k-j'} \\
-& & \quad \times
-\bigbraket{s,q ; j', -m'}{\itensorcomp{M}{k}{-r}}{s',q' ; j,-m}
-\end{array}
-\label{eq:OpAdjointDef}
-\eeq
-How are the reduced matrix elements of $\hat{M}$ related to those of $M$ ?
-Assuming $\hat{M}$ transforms as an ordinary tensor (which we demonstsrate later), we have
-\beq
-\bigbraket{s',q' ; j',m'}{\itensorcomp{\hat{M}}{k}{r}}{s,q ; j,m}
-=
- \qcg{s}{k}{s'}{q}{r}{q'} \qcg{j}{k}{j'}{m}{r}{m'}
-\rbigbraket{s';j'}{\itensor{\hat{M}}{k}}{s;j} 
-\eeq
-Now starting from the right hand side of \refeq{eq:OpAdjointDef},
-\begin{align}
-\bigbraket{s',q' ; j',m'}{\itensorcomp{\hat{M}}{k}{r}}{s,q ; j,m}
-= &
-(-1)^{k-r}  (-1)^{j+k-j'} \qcg{s'}{k}{s}{q'}{-r}{q} \qcg{j}{k}{j'}{-m}{-r}{-m'}
-\notag \\ & \quad \times
-\rbigbraket{s;j'}{\itensor{M}{k}}{s';j} 
-\end{align}
-Utilizing symmetries of the CG coefficients,
-\beq
-(-1)^{k-r} (-1)^{j+k-j'} \qcg{s'}{k}{s}{q'}{-r}{q} \qcg{j}{k}{j'}{-m}{-r}{-m'}
-= 
-\sqrt{\frac{2s+1}{2s'+1}} (-1)^{s'+k-s} \qcg{s}{k}{s'}{q}{r}{q'} 
-\qcg{j}{k}{j'}{m}{r}{m'}
-\eeq
-The cancellation of the CG coefficients and projection-dependent factors
-shows that our operator $\hat{M}$ does indeed
-transform as a ordinary tensor. Thus we have
-\beq
-\rbigbraket{s';j'}{\itensor{\hat{M}}{k}}{s;j} 
-=
-\sqrt{\frac{2s+1}{2s'+1}} (-1)^{s'+k-s}
-\rbigbraket{s;j'}{\itensor{M}{k}}{s';j} 
-\label{eq:OperatorAdjointFlip}
-\eeq
-This appears to be what we want: the adjoint is independent of the choice of quantum
-numbers in the matrix basis. This is what we expect will happen, if we write the
-tensor product decomposition of the operator.
-
-Note that the MPToolkit defines (accidentally) the adjoint to have the opposite phase convention,
-which means that the MPToolkit operator adjoint must follow suit. This amounts to
-using the phase factor $(-1)^{s+k-s'}$ in \refeq{eq:OperatorAdjointFlip} instead of
-$(-1)^{s'+k-s}$.
+Previous versions of these notes included a section on the MPO adjoint; this is now superseded by
+the section on Hermitian conjugation above. But we note (1) the flip conjugation operation used
+to be defined without the phase factor - this is unphysical in some sense but is how the toolkit 
+defines it (as of 2015/09/08), and (2) there was an error in the phase factor in the old notes,
+with a footnote that the toolkit (and my thesis) implemented it differently. In fact the error
+was in these notes, which is now fixed.
 
 \subsection{Operator product}
 
@@ -1384,6 +1438,73 @@ $E$ matrix definition, and not in the $F$ matrix. This is consistent in the sens
 if we accumulate tensors coming from both the left and the right, the final expectation
 value is $\Tr \itensor{E^\dagger}{a} \itensor{F}{a}$. \textbf{should check this!}
 
+\section{Matrix-vector multiply}
+
+If we are not using the center-matrix formalism, then we need to apply the $E$ and $F$ matrices
+directly to an MPS. This operation is
+\beq
+A'^{s'}_{ij} = M^{s's}_{a'a} E^{*a'}_{i'i} A^s_{i'j'} F^{a}_{j'j}
+\eeq
+Since we are treating the local basis elements in $A$ as downstairs indices, we expect
+similar conjugate phase issues as for the operator-state product.
+
+
+% Result[s'](i',i) = M(s',s)[a',a] herm(E[a'](i',j')) herm(B[s](j',j)) F[a](i,j)
+
+A contraction that we want to perform is
+\beq
+A^{s'}_{i'i} =  M^{s',s}_{a'a}E^{a'\dagger}_{i'j'} F^a_{ij} B^{s\dagger}_{j'j}
+\eeq
+To construct the coupling coefficient, we write the matrix elements, which gives the
+quantum number triples
+\beq
+(j,s,j') (j,a,i) (j',a',i') (a,k,a') (s,k,s') \rightarrow (i,s',i')
+\eeq
+We can identify this with the $9j$ coefficient,
+\beq
+\rbigbraket{i'}{\itensor{A}{s'}}{i} =
+\qninejsq{j}{s}{j'}{a}{k}{a'}{i}{s'}{i'}
+\rbigbraket{s';a'}{\itensor{M}{k}}{s;a}
+\bigbraket{i'}{\itensor{E}{a'}}{j'}^*
+\bigbraket{i}{\itensor{F}{a}}{j}
+\bigbraket{j'}{\itensor{B}{s}}{j}^*
+\eeq
+
+
+
+\subsection{E-matrix}
+
+We can express the E-matrix contraction as
+
+\begin{centering}
+\includegraphics[width=32mm]{EMat.pdf}\par
+\end{centering}
+
+This has two incoming indices, and one out index, and therefore transforms as an ordinary tensor,
+\beq
+E'^{a}_{ij} = M^{s's}_{a'a} \bar{B}^s_{i'i} E^{a'}_{i'j'} A^{s'}_{j'j} 
+\eeq
+
+\subsection{F-matrix}
+
+The F-matrix is the contraction from the other side:
+
+\begin{centering}
+\includegraphics[width=32mm]{FMat.pdf}\par
+\end{centering}
+
+This has two outgoing indices and one in index, and therefore transforms as a conjugate tensor. Hence
+the tensor that we will actually obtain is $\bar{F}$, which is obtained as
+\beq
+\bar{F'}^{a'}_{i'j'} = M^{s's}_{a'a} \bar{B}^s_{i'i} A^{s'}_{j'j} \bar{F}^a_{ij}
+\eeq
+Or, conjugating all tensors,
+\beq
+F'^{a'}_{i'j'} = \bar{M}^{s's}_{a'a} B^s_{i'i} \bar{A}^{s'}_{j'j} F^a_{ij}
+\eeq
+
+
+
 \section{Delta Shifts}
 
 When inserting sites into a MPS we want to manipulate the quantum number of the target state.
@@ -1444,27 +1565,6 @@ the basis? Or do we need, as suggested above, to include all states? How can we 
 translationally invariant state if we need to include all states, as this would magnify the basis
 size for higher quantum numbers?
 
-\section{Optimizing the matrix-vector multiply}
-
-If we avoid using the center-matrix formulation, the matrix-vector multiply can be faster. The operation
-we need is
-\begin{equation}
-A^{s'} = E^\alpha A^s F^{\dagger,\beta} M^{s's}_{\alpha \beta}
-\end{equation}
-for which we start by calculating the intermediate term,
-\begin{equation}
-G^{\alpha,s} = E^\alpha A^s \quad \mbox{$O(m^3 d M)$ operations}
-\end{equation}
-then re-sum,
-\begin{equation}
-H^{\beta,s'} = \sum_{\alpha,s} M^{s's}_{\alpha\beta} \; G^{\alpha,s} \quad \mbox{$O(m^2 d^2 M^2)$}
-\end{equation}
-before calculating the final product,
-\begin{equation}
-A^{s'} = \sum_{\beta} H^{\beta,s'} \; F^{\dagger,\beta} \quad \mbox{$O(m^3 d M)$},
-\end{equation}
-remembering that not all of the $G^{\alpha,s}$ may be needed - the $M$ matrix might
-have some empty rows and/or columns.
 
 
 \section{Partial transpose}

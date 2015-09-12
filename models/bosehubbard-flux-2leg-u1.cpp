@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*- $Id: bosehubbard-flux-u1.cpp 1477 2015-05-12 12:56:57Z ianmcc $
 
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"
@@ -60,24 +60,32 @@ int main(int argc, char** argv)
 		      run(), vm);
       prog_opt::notify(vm);    
       
+      OperatorDescriptions OpDescriptions;
+      OpDescriptions.add_operators()
+	 ("H_J0",  "nearest neighbor leg 0 hopping")
+	 ("H_J1",  "nearest neighbor leg 1 hopping")
+	 ("H_J",   "nearest neighbor leg hopping = H_J0 + H_J1")
+	 ("H_Jc0", "nearest neighbor leg 0 current")
+	 ("H_Jc1", "nearest neighbor leg 1 current")
+	 ("H_Jc",  "edge current H_Jc0 - H_Jc1")
+	 ("H_K",   "nearest neighbor rung hopping")
+	 ("H_Kc",  "nearest neighbor rung current")
+	 ("H_U",   "on-site Coulomb repulsion N*(N-1)/2")
+	 ;
+
+      OpDescriptions.add_functions()
+	 ("H", "Hamiltonian, parametized by K, alpha (flux), U, J")
+	 ("jTotal", "Total current, function of alpha")
+	 ("jTotalU0", "Current at U=0 as a function of K, alpha (number, not an operator)")
+	 ;
+
+
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Operators:\n"
-		   << "H_J0   - nearest neighbor leg 0 hopping\n"
-		   << "H_J1   - nearest neighbor leg 1 hopping\n"
-		   << "H_J    - nearest neighbor leg hopping = H_J0 + H_J1\n"
-		   << "H_Jc0  - nearest neighbor leg 0 current\n"
-		   << "H_Jc1  - nearest neighbor leg 1 current\n"
-		   << "H_Jc   - edge current H_Jc0 - H_Jc1\n"
-		   << "H_K    - nearest neighbor rung hopping\n"
-		   << "H_Kc   - nearest neighbor rung current\n"
-		   << "H_U    - on-site Coulomb repulsion N*(N-1)/2\n"
-	    //<< "\nOperator functions:\n"
-	    //<< "H_flux{theta} - rung flux hopping cos(theta)*H_K + sin(theta)*H_Kc\n"
-	    ;
+	 std::cerr << OpDescriptions;
          return 1;
       }
 
@@ -88,6 +96,15 @@ int main(int argc, char** argv)
 
       j0 = std::complex<double>(0,1)*(BH(0)[0]*B(1)[0] - B(0)[0]*BH(1)[0]);
       j1 = std::complex<double>(0,1)*(BH(0)[1]*B(1)[1] - B(0)[1]*BH(1)[1]);
+
+      Cell.func("jk")("K", "alpha") = "K*(BH(0)[0]*B(0)[1] - B(0)[0]*BH(0)[1]";
+      Cell.func("Jp0")("K", "alpha") = "-cos(pi*alpha)*(BH(0)[0]*B(1)[0] + B(0)[0]*BH(1)[0])"
+	 " + i*sin(pi*alpha)*(BH(0)[0]*B(1)[0] - B(0)[0]*BH(1)[0])";
+      Cell.func("Jp1")("K", "alpha") = "-cos(pi*alpha)*(BH(0)[1]*B(1)[1] + B(0)[1]*BH(1)[1])"
+	 " + i*sin(pi*alpha)*(BH(0)[1]*B(1)[1] - B(0)[1]*BH(1)[1])";
+
+      Cell.func("jTotalU0")("K", "alpha", arg("J")=1.0) = "K^2 * sin(pi*alpha) / (8*J * "
+      	 "sin(pi*alpha/2)^4 * (1+(K/(2*J*sin(pi*alpha/2)))^2)^0.5)";
 
       InfiniteLattice Lattice(Cell);
       
@@ -111,7 +128,25 @@ int main(int argc, char** argv)
       Lattice["H_Kc"] = sum_unit(HKc);
       Lattice["H_U"] = sum_unit(HU);
       
+      // For parameters J, K = J_\perp, U, alpha, the Hamiltonian is:
+      // J*(H_J1 + cos(pi*alpha)*(H_J2 + H_J0) + sin(pi*alpha)*(H_Jc2 - H_Jc0)) + K*H_K + U*H_U
+
+      Lattice.func("H")("K", arg("alpha")=0.0, arg("U")=0.0, arg("J")=1.0)
+	 = "J*(H_J1 + cos(pi*alpha)*H_J0 + sin(pi*alpha)*H_Jc0) + K*H_K + U*H_U";
+
+      Lattice.func("jTotal")("alpha") = "-sin(pi*alpha)*H_J0 + cos(pi*alpha)*H_Jc0";
+
+      Lattice.set_description("Bosonic 2-leg ladder with flux");
+      Lattice.set_command_line(argc, argv);
+      Lattice.set_operator_descriptions(OpDescriptions);
+
+      // save the lattice to disk
       pheap::ExportObject(FileName, Lattice);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

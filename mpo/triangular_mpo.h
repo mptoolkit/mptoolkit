@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*- $Id: triangular_mpo.h 1519 2015-07-05 00:57:05Z ianmcc $
 //
 // TriangularMPO: a representation for lattice operators that are in upper triangular form.
 //
@@ -265,6 +265,10 @@ StateComponent Initial_E(TriangularMPO const& m, VectorBasis const& B);
 StateComponent Initial_F(TriangularMPO const& m, VectorBasis const& B);
 
 void optimize(TriangularMPO& Op);
+
+// balances a triangular MPO - gives terms the same operator norm from
+// the left and the right.
+void balance(TriangularMPO& Op);
 
 inline
 void

@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*- $Id: mp-lattice-info.cpp 1595 2015-09-04 13:15:02Z ianmcc $
 
 #include "lattice/infinitelattice.h"
 #include "common/environment.h"
@@ -73,6 +73,19 @@ void DescribeLattice(InfiniteLattice const& L, int Verbose)
 		<< I->second.Commute() << '\n';
    }
  
+   std::cout << "\nUnit Cell functions:\n";
+   if (L.GetUnitCell().function_empty())
+      std::cout << "   (none)\n";
+   for (UnitCell::const_function_iterator I = L.GetUnitCell().begin_function(); 
+	I != L.GetUnitCell().end_function(); ++I)
+   {
+      if (!I->second.description().empty())
+	 std::cout << "   " << std::setw(10) << std::left << I->first << " - "
+		   << I->second.description() << '\n';
+
+      std::cout << "   " << I->first << I->second << '\n';
+   }
+
    std::cout << "\nLattice constants:\n";
    if (L.arg_empty())
       std::cout << "   (none)\n";

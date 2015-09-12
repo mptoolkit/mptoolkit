@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*- $Id: spinchain-u1.cpp 1595 2015-09-04 13:15:02Z ianmcc $
 
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"
@@ -60,8 +60,9 @@ int main(int argc, char** argv)
       UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
 
       Lattice["H_J1z"] = sum_unit(Sz(0)*Sz(1));
-      Lattice["H_J1t"] = sum_unit(0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)));
-      Lattice["H_J1"] = sum_unit(Sz(0)*Sz(1) + 0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)));
+      Lattice["H_J1t"] = sum_unit((sqrt(0.5)*Sp(0))*(sqrt(0.5)*Sm(1)) + (sqrt(0.5)*Sm(0))*(sqrt(0.5)*Sp(1)));
+      Lattice["H_J1"]  = Lattice["H_J1z"] + Lattice["H_J1t"];
+      //sum_unit(Sz(0)*Sz(1) + 0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)));
 
       Lattice["H_J2z"] = sum_unit(Sz(0)*Sz(2));
       Lattice["H_J2t"] = sum_unit(0.5*(Sp(0)*Sm(2) + Sm(0)*Sp(2)));

@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*- $Id: statistics.h 1428 2015-04-11 11:36:32Z ianmcc $
 
 /*
   statistics.h
@@ -120,7 +120,9 @@ class moving_exponential
    public:
       typedef T value_type;
 
-      explicit moving_exponential(double RelaxationFactor) : Factor_(RelaxationFactor) {}
+      moving_exponential() : Factor_(0.0) {}
+
+      explicit moving_exponential(double RelaxationFactor) : Factor_(RelaxationFactor), Value(), Accum(0.0) {}
 
       void push(T const& x) 
       { Value = (Value*Factor_) + x; Accum = (Accum*Factor_) + 1.0; }
@@ -134,8 +136,6 @@ class moving_exponential
       { return this->value(); }
 
    private:
-      moving_exponential(); // not implemented
-
       double Factor_;
       value_type Value;
       double Accum;

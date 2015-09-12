@@ -1,4 +1,4 @@
-# $Id$
+# $Id: makefile 370 2006-12-04 03:54:51Z ianmcc $
 #
 # makefile for LaTeX.
 #
@@ -78,6 +78,10 @@ figures : $(TEXSRC:.tex=.figures)
 %.pdf : %.tex %.figures
 	if ( pdflatex $< ) ; then pdflatex $< ; \
 	else perl -e '($$rt,$$wt)=(stat"$*.tex")[8,9];utime($$rt,$$wt,"$*.pdf")' ; echo ; fi
+
+# convert inkscape to pdf
+%.pdf : %.svg
+	inkscape -f $< -D -A $@
 
 #%.pdf : %.dvi
 #	dvipdf $< -o $@

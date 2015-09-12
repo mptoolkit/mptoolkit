@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*- $Id: operator_actions.cpp 1559 2015-07-23 05:56:46Z ianmcc $
 
 #include "operator_actions.h"
 #include "mpo/operator_component.h"
@@ -59,7 +59,11 @@ inject_left(StateComponent const& In,
 
    while (OpIter != Op.end())
    {
+#if defined(OLD_OPERATOR_PROD)
       Result = operator_prod(herm(*OpIter), herm(*I1), Result, *I2);
+#else
+      Result = contract_from_left(*OpIter, herm(*I1), Result, *I2);
+#endif
       ++I1; ++I2; ++OpIter;
    }
    DEBUG_CHECK(I1 == Psi1.end());
@@ -88,7 +92,11 @@ inject_right(MatrixOperator const& m,
    while (I != Psi.begin())
    {
       --I; --OpIter;
+#if defined(OLD_OPERATOR_PROD)
       E = operator_prod(*OpIter, *I, E, herm(*I));
+#else
+      E = contract_from_right(herm(*OpIter), *I, E, herm(*I));
+#endif
    }
    return E[0];
 }
@@ -116,7 +124,11 @@ inject_right(MatrixOperator const& m,
    while (I1 != Psi1.begin())
    {
       --I1; --I2; --OpIter;
+#if defined(OLD_OPERATOR_PROD)
       E = operator_prod(*OpIter, *I1, E, herm(*I2));
+#else
+      E = contract_from_right(herm(*OpIter), *I1, E, herm(*I2));
+#endif
    }
    return E[0];
 }

@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$ 
+// -*- C++ -*- $Id: mp-idmrg.cpp 1593 2015-09-02 07:42:18Z ianmcc $ 
 
 // variant of iDMRG where we keep intact the unit cell.
 // This prohibits relfection symmetry.
@@ -989,6 +989,9 @@ int main(int argc, char** argv)
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
+
+      std::cout << "Starting DMRG.  Hamiltonian = " << HamStr << '\n';
+      std::cout << "Wavefunction = " << FName << std::endl;
 
       unsigned int RandSeed = vm.count("seed") ? (vm["seed"].as<unsigned long>() % RAND_MAX)
          : (ext::get_unique() % RAND_MAX);
