@@ -49,9 +49,9 @@ TARDIR=$(PACKAGE_TARNAME)
 LIB = $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LIBS_EXTRA)
 
 SRCDIRS = common common/private quantumnumbers pstream pheap \
-          tensor lattice models mp-algorithms \
+          tensor lattice mp-algorithms \
           tutorial mp linearalgebra misc conf scripts utils interface expokit mpo \
-          benchmark misc misc/oogl junk mpo mps parser
+          benchmark misc misc/oogl junk mpo mps parser models models/contrib
 
 TESTDIRS = tensor/test siteoperator/test linearalgebra/test matrixproduct/test pheap/test \
            common/test quantumnumbers/test mp-algorithms/test mpo/test
@@ -85,20 +85,12 @@ pstreamobj = pstream.o pfilestream.o
 
 linearalgebraobj = eigen.o
 
-#matrixproductobj = density.o mpexponential.o mpopcomponent.o mpopcompressed.o \
-#                   mpoperatorlist.o mpstate.o lattice.o linearwavefunction.o wavefunc-utils.o \
-
 mpoobj = operator_component.o generic_mpo.o finite_mpo.o triangular_mpo.o product_mpo.o infinite_mpo.o \
          f-optim.o e-optim.o
 
 mpsobj = state_component.o linearwavefunction.o infinitewavefunction.o density.o operator_actions.o
 
 mpobj = $(mpoobj) $(mpsobj) $(latticeobj) attributes.o
-
-#mpobj = mpopcomponent.o mpoperatorlist.o siteoperator.o eigen.o mpstate.o \
-#        attributes.o mpopcompressed.o lattice.o \
-#        vectorbasissum.o linearwavefunction.o wavefunc-utils.o \
-#        centerwavefunction.o linearoperator.o operator-parser.o inittemp.o
 
 commonobj = niftycounter.o poolallocator.o hash.o proccontrol.o \
 	    halfint.o stackallocator.o conflist.o terminal.o
@@ -166,95 +158,51 @@ allobj = $(quantumnumbersobj) \
 	 $(linearalgebraobj)  \
 	 $(commonobj)
 
-infinite-models = spinchain-su2 spinchain-spin2-su2 spin-tri-yc-su2 spin-tri-yc-su2-EfficientNumbering \
-                  hubbard-u1su2 hubbard-tri-u1su2 bosehubbard-flux-2leg-u1 \
-                  bosehubbard-flux-3leg-u1 spinchain-u1 spincylinder-su2 \
-                  spinchain bosehubbard-ladder-u1 bosehubbard-2component-u1z2 \
-                  hubbard-so4 bosehubbard-u1 bosehubbard hubbard-u1u1 \
-                  hubbard-tri-u1u1 dual-aklt
+# contributed models.  Add new models here
+contrib-models = spin-tri-yc-su2 spin-tri-yc-su2-EfficientNumbering dual-aklt \
+                 spin-tri-2SiteUnitCell-su2 spin-tri-1SiteUnitCell-su2
 
-mp-models = hubbard-u1u1 hubbard-t-u1u1 hubbard-u1su2 hubbard-so4 hubbard-t-so4 \
-            hubbard-trap-u1su2 bosehubbard-spinless-u1 bosehubbard-spinless hubbardladder-so4 \
-            klm-2channel-so4 bosehubbard-u1su2 bosehubbard-2bosons-u1u1 klm-u1u1 \
-            siam-u1u1 siam-u1su2 siam-factorized-u1u1 makeparams-siam makeparams-siam-linear \
-            spinchain-u1 spinchain-su2 spinchain-zigzag-su2 \
-            spinladder-su2 kondo-factorized-u1u1 \
-            siam-cluster2-factorized-u1u1 hubbard-canonical-u1u1 hubbard-canonical-so4 \
-            spinlessfermion-u1 klm-so4 hubbard-t-U-V-u1su2\
-            peierls-hubbard-ramp-u1su2 makeparams-2site hubbard-boundary-u1su2 \
-            bosehubbard-2bosons-split-u1u1 nuclear-shell-u1 spinchain-zigzag-u1 \
-            spinchain-canonical-u1 spinchain-zigzag-canonical-u1 \
-	    spinchain-zigzag-canonical-su2 rlm-u1 spinchain siam-u1 hubbard-tj-u1su2 \
-            spinchain-pbc-su2 spinchain-pbc-u1 hubbard-t1t2-u1su2 kondo-canonical-u1u1 \
-            kondo-u1u1 hubbard-periodic-u1su2 kondo-gc-u1u1 \
-            bichromatic-BH-spinless-u1 spinlessfermion-3fermions-u1u1 \
-            tj-zigzag-u1su2 tj-zigzag-u1u1 spinladder cf-ladder-u1 \
-            spin-tri-1SiteUnitCell-su2 TransverseIsing-tri-yc-z2
+# default / examplar models
+default-models = spinchain-su2 spinchain-spin2-su2 \
+                 hubbard-u1su2 hubbard-tri-u1su2 bosehubbard-flux-2leg-u1 \
+                 bosehubbard-flux-3leg-u1 spinchain-u1 spincylinder-su2 \
+                 spinchain bosehubbard-ladder-u1 bosehubbard-2component-u1z2 \
+                 hubbard-so4 bosehubbard-u1 bosehubbard hubbard-u1u1 \
+                 hubbard-tri-u1u1
 
-mp-tools = mp-construct mp-overlap mp-expectation \
-           mp-apply mp-norm mp-norm2 mp-info mp-debug mp-scale mp-random mp-add  \
-           mp-diff mp-diff2 mp-dmrg mp-apply-opt mp-dimensions mp-sub \
-           mp-stringcorrelation mp-normalize \
-           mp-conj mp-opprod mp-attr \
-           mp-dmrg-init mp-dmrg-resume mp-gmres-init mp-gmres-resume mp-gf mp-split \
-           mp-correlation mp-evolve-krylov \
-           mp-tridiag mp-trispectral mp-make-k mp-expectation2 mp-defrag \
-           mp-localcorrelation mp-evolve-krylov-simple \
-           mp-localexpectation mp-trunc mp-opinfo mp-local-fourpoint \
-           mp-chiral-correlator-su2 mp-canonical \
-           mp-apply-multiple mp-load-0.7.3 mp-wigner-eckart mp-residualnorm mp-theta2 \
-           mp-density-overlap mp-fastgmres mp-make-k-periodic \
-           mp-shift-basis mp-scale-basis mp-rename-symmetry mp-reorder-basis \
-           mp-reorder-symmetry mp-local-fourpoint-ex mp-evolve-bonds \
-           mp-overlap-conj mp-expectation-conj mp-make-positive
+tools = mp-idmrg mp-ioverlap \
+        mp-iinfo mp-iprint mp-iproject \
+        mp-imoments mp-iexpectation mp-iwigner-eckart mp-ireorder-symmetry \
+        mp-ispectrum mp-lattice-info mp-ioperator mp-aux-matrix mp-aux-algebra mp-iapply
 
-infinite-tools-exp = mp-idmrg2 mp-iortho mp-iorthogonalize mp-pwfrg mp-itebd mp-itebd2 \
-                 mp-ieigen mp-idmrg3 mp-icorrelation mp-idmrg4 mp-idmrg5 mp-iexcitation mp-iexcitation2 \
-                 mp-bdmrg mp-imake-transverse-lattice mp-imake-transverse-lattice-folded mp-iexpectation-sz \
-                 mp-iexpectation-sz2 mp-iparity mp-idump mp-itebd mp-idmrg5-spin2 mp-iexpectation3 mp-isymmetry \
-                 mp-ispectrum mp-idmrg-s3e
+experimental-tools = mp-idmrg-s3e
 
-infinite-tools = mp-idmrg mp-ioverlap \
-                 mp-iinfo mp-iprint mp-iproject \
-                 mp-imoments mp-iexpectation mp-iwigner-eckart mp-ireorder-symmetry \
-                 mp-ispectrum mp-lattice-info mp-ioperator mp-aux-matrix mp-aux-algebra mp-iapply
-
-mp-tools-not-functional = mp-add2 mp-exp mp-stringcorrelation-su2 mp-canonical mp-icorrelation mp-ispectrum  mp-isymmetry
-
-mp-tools-experimental = mp-cg mp-cg-sym mp-simplecg-sym mp-simplecg mp-ddmrg \
-                        mp-bicg mp-global-cg mp-gmres momentum-projector mp-evolve-magnus \
-                        mp-evolve-mixed mp-makesqueeze mp-generalizedstring \
-                        mp-dmrg-infinite-klm mp-evolve-krylov-simple \
-                        mp-dmrg-test mp-effective cgcalculator mp-idmrg  mp-trotter \
-                        mp-rme mp-overlap-bigmem kondo-exactdiag \
-                        $(infinite-tools) \
-			mp-ireorder-symmetry \
-                        mp-cv2 mp-simple-marshall-qmc spin2 spin1 mp-ispectrum2
 
 benchmarks = benchtripleprod
 
 misc-progs = untridiagonalize tridiag-kspace mp-min-resid seqgen2
 
 
-default : mp-tools
+tools : $(tools)
 
-all : mp-tools mp-models
+default-models : $(default-models)
 
-mp-tools : $(mp-tools)
+contrib-models : $(contrib-models)
 
-infinite-tools : $(infinite-tools)
 
-infinite-models : $(infinite-models)
+models : default-models
 
-tools : mp-tools
+all-models = $(default-models) $(contrib-models)
 
-mp-models : $(mp-models)
+all-models : $(all-models)
 
-models : mp-models
+all : tools models
 
-itools : infinite-tools
+all-contrib : tools all-models
 
-imodels : infinite-models
+default : tools
+
+
 
 dist_files = config.h.in configure configure.ac aclocal.m4 Makefile.in  generate-testreport.sh \
              depend.sh install-sh stamp-h.in README TODO mkinstalldirs \
@@ -276,9 +224,8 @@ dep : $(cxx_depend)
 
 .PHONY: clean mrproper dep test all install uninstall dist-clean \
         maintaner-clean install-dirs dist-dir tar-dir tar install-models install-tools \
-        tools models mp-tools default install_tools install_models models-install models_install \
-        tools-install tools_install install-itools install_itools itools-install itools_install imodels \
-        install-imodels
+        tools models default install_tools install_models models-install models_install \
+        tools-install tools_install
 
 # turn off some implicit rules that we don't want
 %.o : %.cpp
@@ -330,24 +277,14 @@ test_tensor : $(tensor_tests)
 testla : $(linearalgebra_tests)
 	$(SRCDIR)/generate-testreport.sh $(linearalgebra_tests:%=./%)
 
-$(mp-tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-              $(dmrgobj) $(mpobj)
+$(tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
+           $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj)
 
-$(infinite-tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
+$(experimental-tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
+                        $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj)
+
+$(all-models) :  $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
               $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj)
-
-
-$(infinite-models) :  $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-              $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj)
-
-$(infinite-tools-exp) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-              $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj)
-
-$(mp-tools-experimental) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-              $(dmrgobj) $(mpobj)
-
-$(mp-models) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-               $(dmrgobj) $(mpobj)
 
 $(mp-misc) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
                $(dmrgobj) $(mpobj)
@@ -638,21 +575,18 @@ make-pi-u1 : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
 install-dirs :
 	test -d $(BINDIR) || $(SRCDIR)/mkinstalldirs $(BINDIR)
 
-install-tools : $(mp-tools) install-dirs
-	for i in $(mp-tools) ; do \
+install-tools : $(tools) install-dirs
+	for i in $(tools) ; do \
 	$(INSTALL_PROGRAM) $$i $(BINDIR) ; done
 
-install-itools : $(infinite-tools) install-dirs
-	for i in $(infinite-tools) ; do \
+install-models : $(default-models) install-dirs
+	for i in $(default-models) ; do \
 	$(INSTALL_PROGRAM) $$i $(BINDIR) ; done
 
-install-imodels : $(infinite-models) install-dirs
-	for i in $(infinite-models) ; do \
+install-all-models : $(all-models) install-dirs
+	for i in $(all-models) ; do \
 	$(INSTALL_PROGRAM) $$i $(BINDIR) ; done
 
-install-models : $(mp-models) install-dirs
-	for i in $(mp-models) ; do \
-	$(INSTALL_PROGRAM) $$i $(BINDIR) ; done
 
 install_models : install-models
 
@@ -666,34 +600,24 @@ tools-install : install-tools
 
 tools_install : install-tools
 
-install_itools : install-itools
-
-itools-install : install-itools
-
-itools_install : install-itools
-
-imodels_install : install-imodels
-
-imodels-install : install-imodels
-
-install_imodels : install-imodels
-
-install-mv : $(mp-tools) install-dirs
-	for i in $(mp-tools) ; do \
-	mv $$i $(BINDIR) ; done
-
-install-mv-models : $(mp-models) install-dirs
-	for i in $(mp-models) ; do \
-	mv $$i $(BINDIR) ; done
-
 install : install-tools
 
-install-x : install-dirs
-	for i in $(mp-models) $(mp-tools) $(mp-tools-experimental) ; do \
+
+install-mv : $(tools) install-dirs
+	for i in $(tools) ; do \
+	mv $$i $(BINDIR) ; done
+
+install-mv-models : $(default-models) install-dirs
+	for i in $(default-models) ; do \
+	mv $$i $(BINDIR) ; done
+
+
+install-existing : install-dirs
+	for i in $(all-models) $(tools) $(tools-experimental) ; do \
 	if [ -f $$i ] ; then $(INSTALL_PROGRAM) $$i $(BINDIR) ; fi ; done
 
 uninstall :
-	for i in $(mp-tools) $(mp-models) ; do \
+	for i in $(tools) $(all-models) $(tools-experimental) ; do \
 	rm -f $(BINDIR)/$$i ; done
 
 dist-dir :
@@ -711,9 +635,6 @@ tar : tar-dir
 	for i in $(dist_files) ; do \
 	cp -a $(SRCDIR)/$$i $(TARDIR)/ ; done
 	tar cfz $(TARDIR).tar.gz $(TARDIR)
-
-svn-export :
-	svn export $(SRCDIR) mptoolkit
 
 distclean : clean
 	rm -f config.h stamp-h config.status config.cache config.log
