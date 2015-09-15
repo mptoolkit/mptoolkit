@@ -137,19 +137,19 @@ add_triple_prod(KMatrixPolyType& Result, std::complex<double> Factor,
 }
 
 std::vector<KMatrixPolyType>
-operator_prod(HermitianProxy<OperatorComponent> const& M,
-              HermitianProxy<StateComponent> const& A,
-              std::vector<KMatrixPolyType> const& E, 
-              StateComponent const& B)
+contract_from_left(OperatorComponent const& M,
+		   HermitianProxy<StateComponent> const& A,
+		   std::vector<KMatrixPolyType> const& E, 
+		   StateComponent const& B)
 {
    //   DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis2(), A.base().Basis1());
-   DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis1(), B.LocalBasis());
-   DEBUG_PRECONDITION_EQUAL(M.base().Basis1().size(), E.size());
+   DEBUG_PRECONDITION_EQUAL(M.LocalBasis1(), B.LocalBasis());
+   DEBUG_PRECONDITION_EQUAL(M.Basis1().size(), E.size());
    
-   std::vector<KMatrixPolyType> Result(M.base().Basis2().size());
+   std::vector<KMatrixPolyType> Result(M.Basis2().size());
 
    // Iterate over the components in M, first index
-   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(M.base()); I; ++I)
+   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(M); I; ++I)
    {
       // second index in M
       for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
@@ -163,12 +163,12 @@ operator_prod(HermitianProxy<OperatorComponent> const& M,
                for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type 
                        S = iterate(R); S; ++S)
                {
-                  add_triple_prod(Result[J.index2()], herm(*S), 
+                  add_triple_prod(Result[J.index2()], *S, 
                                   herm(A.base()[S.index1()]), 
                                   E[J.index1()], 
                                   B[S.index2()],
                                   k->TransformsAs(),
-                                  M.base().Basis2()[J.index2()]);
+                                  M.Basis2()[J.index2()]);
                }
             }
          }
@@ -178,17 +178,17 @@ operator_prod(HermitianProxy<OperatorComponent> const& M,
 }
 
 std::vector<KMatrixPolyType>
-operator_prod(HermitianProxy<OperatorComponent> const& M,
-              HermitianProxy<StateComponent> const& A,
-              std::vector<KMatrixPolyType> const& E, 
-              StateComponent const& B,
-              std::vector<int> const& OutMask,
-              std::vector<int> const& InMask)
+contract_from_left(OperatorComponent const& M,
+		   HermitianProxy<StateComponent> const& A,
+		   std::vector<KMatrixPolyType> const& E, 
+		   StateComponent const& B,
+		   std::vector<int> const& OutMask,
+		   std::vector<int> const& InMask)
 {
-   std::vector<KMatrixPolyType> Result(M.base().Basis2().size());
+   std::vector<KMatrixPolyType> Result(M.Basis2().size());
 
    // Iterate over the components in M, first index
-   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(M.base()); I; ++I)
+   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(M); I; ++I)
    {
       // skip over masked components
       if (!InMask[I.index()])
@@ -210,12 +210,12 @@ operator_prod(HermitianProxy<OperatorComponent> const& M,
                for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type 
                        S = iterate(R); S; ++S)
                {
-                  add_triple_prod(Result[J.index2()], herm(*S), 
+                  add_triple_prod(Result[J.index2()], *S, 
                                   herm(A.base()[S.index1()]), 
                                   E[J.index1()], 
                                   B[S.index2()],
                                   k->TransformsAs(),
-                                  M.base().Basis2()[J.index2()]);
+                                  M.Basis2()[J.index2()]);
                }
             }
          }
@@ -246,7 +246,7 @@ inject_left(std::vector<KMatrixPolyType> const& In,
       std::swap(E, Result);
       //      std::vector<KMatrixPolyType>(OpIter->Basis2().size()).swap(Result);
 
-      Result = operator_prod(herm(*OpIter), herm(*I1), E, *I2);
+      Result = contract_from_left(*OpIter, herm(*I1), E, *I2);
 
       ++I1; ++I2; ++OpIter;
    }
@@ -278,7 +278,7 @@ inject_left_mask(std::vector<KMatrixPolyType> const& In,
       std::swap(E, Result);
       //      std::vector<KMatrixPolyType>(OpIter->Basis2().size()).swap(Result);
 
-      Result = operator_prod(herm(*OpIter), herm(*I1), E, *I2, *(MaskIter+1), *MaskIter);
+      Result = contract_from_left(*OpIter, herm(*I1), E, *I2, *(MaskIter+1), *MaskIter);
 
       ++I1; ++I2; ++OpIter; ++MaskIter;
    }

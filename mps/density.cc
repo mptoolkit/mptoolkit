@@ -140,3 +140,23 @@ ConstructMatrices(FwdIter first, FwdIter last,
 
    this->ConstructOrthoMatrices(LinearMapping, A, C, B);
 }
+
+template <typename FwdIter>
+void
+SingularDecomposition<MatrixOperator, MatrixOperator>::
+ConstructMatrices(FwdIter first, FwdIter last, 
+		       MatrixOperator& A, 
+		       RealDiagonalOperator& C, 
+		       MatrixOperator& B)
+{
+   // make a pass over the eigenvalue list and get the linear indices of the
+   // states to keep for each quantum number
+   int NumQ = UsedQuantumNumbers.size();
+   std::vector<std::set<int> > LinearMapping(NumQ);
+   for (FwdIter Iter = first; Iter != last; ++Iter)
+   {
+      LinearMapping[Iter->Subspace].insert(Iter->Index);
+   }
+
+   this->ConstructOrthoMatrices(LinearMapping, A, C, B);
+}

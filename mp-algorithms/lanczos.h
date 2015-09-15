@@ -115,13 +115,14 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 
       double ResidNorm = norm_frob(r);
 
-      if (ResidNorm < fabs(Tol * Theta) && i > MinIter)
+      if (ResidNorm < fabs(Tol * Theta) && i+1 >= MinIter)
+      if (ResidNorm < Tol && i+1 >= MinIter)
       {
 	 if (Verbose)
 	    std::cerr << "lanczos: early return, residual norm below threshold, ResidNorm="
 		      << ResidNorm << ", iterations=" << (i+1) << '\n';
 	 Iterations = i+1;
-	 Tol = ResidNorm/fabs(Theta);
+	 Tol = ResidNorm;///fabs(Theta);
 	 Guess = y;
 	 return Theta;
       }
@@ -129,7 +130,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       if (i == Iterations-1) // finished?
       {
 	 Guess = y;
-	 Tol = -ResidNorm/fabs(Theta);
+	 Tol = -ResidNorm;///fabs(Theta);
 	 return Theta;
       }
    }

@@ -97,6 +97,13 @@ remainder are for reference),
 \end{array}
 \eeq
 
+A useful special case is
+\beq
+\qcg{j_1}{0}{j}{m_1}{0}{m} = \delta_{j_1 j} \delta_{m_1 m}
+\label{eq:CG_SpecialCase}
+\eeq
+
+
 Alternate notation (Edmonds 1957):
 \beq
 \qcg{j_1}{j_2}{j}{m_1}{m_2}{m} \equiv
@@ -905,6 +912,7 @@ $F$ being in the conjugate representation and $E$ being normal, leading to
 \eeq
 
 \subsection{Normalization}
+\label{sec:AMatNormalization}
 
 The normalization constraints for the right and left sides are
 \beq
@@ -1504,6 +1512,111 @@ F'^{a'}_{i'j'} = \bar{M}^{s's}_{a'a} B^s_{i'i} \bar{A}^{s'}_{j'j} F^a_{ij}
 \eeq
 
 
+\section{Direct SVD}
+
+We want to calculate the SVD directly of A-matrices, for the 1-site algorithm,
+and also for a pair of A-matrices for the 2-site algorithm,
+
+\subsection{Single matrix, truncating basis 2}
+
+Here we consider the decomposition of an A-matrix into 
+\beq
+A^s = X = U^s D V
+\eeq
+where we treat $X$ as a $dm\times m$ matrix.
+For the subspace expansion technique, $A^s$ is expanded on the right-hand side
+to be $m'$ states, so that $X$ is $dm \times m'$, then we have
+$U^s$ as $d\times m\times m'$, and $D. V$ are $m' \times m'$.
+
+This is essentially the same operation that we did in the center-matrix formulation.
+Phase factors appearing in X are irrelevant since they will cancel out again when
+we convert back into $U^s$. Hence section \refsec{sec:AMatNormalization} applies,
+and we can write $A^s = A^{'s} X$, where $A^{'s}$ is a $d \times m \times dm$ 
+MPS that satisfies the left orthogonality constraint, $A^{'\dagger}A'=I$. This gives
+\beq
+X^{ji} = A^{s}_{i'i} \sqrt{\frac{2i'+1}{2i+1}}
+\eeq
+where $j = (i'\bar{s})$. The reverse of this is
+\beq
+A^{s}_{i'i} = X_{ji} \sqrt{\frac{2i+1}{2i'+1}}
+\eeq
+
+% To construct the matrix $X$, we must write $A^s$ as a scalar operator, where the $s$ index
+% acts on the left. This will necessarily be the adjoint quantum number. The matrix elements
+% are
+% \beq
+% \bigbraket{(i'\bar{s})(\iota'\sigma')}{\itensorcomp{A}{0}{0}}{i\iota} 
+% = \qcg{i}{0}{i}{\iota}{0}{\iota} \qcg{i'}{\bar{s}}{i}{\iota'}{-\sigma}{i} 
+% \rbigbraket{(i'\bar{s})}{\itensor{A}{0}}{i}
+% \eeq
+% We want the left hand side to be equal to the matrix elements of $A^s$,
+% \beq
+% \bigbraket{(i'\bar{s})(\iota'\sigma')}{\itensorcomp{A}{0}{0}}{i\iota} 
+% = 
+% \bigbraket{i'\iota'}{\itensorcomp{A}{s}{-\sigma}}{i\iota} 
+% \eeq
+% Using the symmetry relations,
+% \beq
+%  \qcg{i'}{\bar{s}}{i}{\iota'}{-\sigma}{i} =
+% (-1)^{s+\sigma}\sqrt{\frac{2i+1}{2i'+1}} \qcg{i}{\bar{s}}{i'}{-\iota}{-\sigma}{-\iota'}
+% = (-1)^{i+s-i'} (-1)^{s+\sigma}\sqrt{\frac{2i+1}{2i'+1}} \qcg{i}{\bar{s}}{i'}{\iota}{\sigma}{\iota'}
+% \eeq
+
+
+
+\subsection{Single matrix, truncating basis 1}
+
+Here we consider the decomposition of an A-matrix into 
+\beq
+A^s = X = U D V^s
+\eeq
+where we treat $X$ as a $m\times dm$ matrix.
+For the subspace expansion technique, $A^s$ is expanded on the left-hand side
+to be $m'$ states, so that $X$ is $m' \times dm$, then we have
+$V^s$ as $d\times m'\times m$, and $U, D$ are $m' \times m'$.
+
+In writing $A^s$ as a scalar operator, we need to get the coupling coefficients correct
+because the same index on the right of $A^s$ can appear in more than one $s$ sector.
+The matrix elements of $A^s$ are
+\beq
+\bigbraket{i'\iota'}{\itensorcomp{A}{s}{\sigma}}{i\iota} 
+= \qcg{i}{s}{i'}{\iota}{\sigma}{\iota'}
+\rbigbraket{i'}{\itensor{A}{s}}{i}
+\eeq
+Converting this into a scalar by coupling spins $i,s$ to spin $i'$, gives 
+\beq
+\bigbraket{i'}{\itensorcomp{A}{0}{0}}{i'(is)} = 
+\qcg{i'}{0}{i'}{\iota'}{0}{\iota'} \qcg{i}{s}{i'}{\iota}{\sigma}{\iota'}
+\rbigbraket{i'}{\itensor{A}{0}}{i'(is)}
+\eeq
+The coupling coefficient for mapping $(i,s)$ into $i'$ coincides with that of the
+original reduced matrix element, which is convenient. The extra term is $\qcg{i'}{0}{i'}{\iota'}{0}{\iota'}$
+which is identically 1, from \refeq{eq:CG_SpecialCase}. Hence we have
+\beq
+\rbigbraket{i'}{\itensor{A}{0}}{i'(is)} = \rbigbraket{i'}{\itensor{A}{s}}{i}
+\eeq
+
+\subsection{Direct SVD of two MPS}
+
+For two-site algorithms that act on the A-matrices directly, we need to combine the two sites 
+into one (which is a simple multiplication of the A-matrices using \refeq{eq:TensorProduct}),
+and then decompose this back into two A-matrices with a singular value decomposition.
+To do this decomposition, we multiply both sites of \refeq{eq:TensorProduct} by
+\beq
+(-1)^{j+j'+k} \sqrt{(2r+1)(2k+1)} \qsixj{j'}{k_1}{r}{k_2}{j}{k}
+\eeq
+and sum over $k$. Using the orthogonality constraint \refeq{eq:6jortho} this gives
+\beq
+\begin{array}{l}
+\rbigbraket{j'}{\itensor{S}{k_1}}{r}
+\rbigbraket{r}{\itensor{T}{k_2}}{j} \\ \quad
+= (-1)^{j+j'+k} \sum_{k} \sqrt{(2r+1)(2k+1)} \qsixj{j'}{k_1}{r}{k_2}{j}{k}
+\\ \quad \quad \times
+\rbigbraket{j'}{\left[ \itensor{S}{k_1} \times \itensor{T}{k_2} \right]^{[k]}}{j}
+\end{array}
+\eeq
+which is pleasingly symmetric with \refeq{eq:TensorProduct}.
+
 
 \section{Delta Shifts}
 
@@ -1629,26 +1742,6 @@ Starting from \refeq{eq:TransposedRME}, we write the reduced matrix element as
 %
 %
 
-\section{Direct SVD of two MPS}
-
-For two-site algorithms that act on the A-matrices directly, we need to combine the two sites 
-into one (which is a simple multiplication of the A-matrices using \refeq{eq:TensorProduct}),
-and then decompose this back into two A-matrices with a singular value decomposition.
-To do this decomposition, we multiply both sites of \refeq{eq:TensorProduct} by
-\beq
-(-1)^{j+j'+k} \sqrt{(2r+1)(2k+1)} \qsixj{j'}{k_1}{r}{k_2}{j}{k}
-\eeq
-and sum over $k$. Using the orthogonality constraint \refeq{eq:6jortho} this gives
-\beq
-\begin{array}{l}
-\rbigbraket{j'}{\itensor{S}{k_1}}{r}
-\rbigbraket{r}{\itensor{T}{k_2}}{j} \\ \quad
-= (-1)^{j+j'+k} \sum_{k} \sqrt{(2r+1)(2k+1)} \qsixj{j'}{k_1}{r}{k_2}{j}{k}
-\\ \quad \quad \times
-\rbigbraket{j'}{\left[ \itensor{S}{k_1} \times \itensor{T}{k_2} \right]^{[k]}}{j}
-\end{array}
-\eeq
-which is pleasingly symmetric with \refeq{eq:TensorProduct}.
 
 \section{Swap gates}
 

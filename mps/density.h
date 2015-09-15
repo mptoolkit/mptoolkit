@@ -95,7 +95,21 @@ TruncateFixEigenDimensions(EigenDimensionsType const& EDim_, VectorBasis const& 
    }
    return Result;
 }
-   
+
+//
+// LinearBasis
+//
+// The LinearBasis class is used to map a discontiguous basis
+// into a contiguous one, where each quantum number occurs only once.
+// This is similar in principle to the regularize() operation on
+// irred tensors - indeed, regularize() could (and possibly should)
+// be implemented via a LinearBasis.  
+// For each index i into the original basis, Lookup(i) returns a pair,
+// being the new subspace number (that uniquely identifies a symmetry sector),
+// and the location within the subspace where state i belongs.  For a VectorBasis,
+// this is a LinearAlgebra::Range.  For a BasisList, this is a simple integer.
+//
+
 template <typename BasisT>
 class LinearBasis;
 
@@ -287,26 +301,6 @@ class SingularDecompositionBase
       double ESum;
 };
 
-template <>
-class SingularDecomposition<StateComponent, MatrixOperator> : public SingularDecompositionBase
-{
-   public:
-      typedef StateComponent left_type;
-      typedef MatrixOperator right_type;
-      typedef RealDiagonalOperator diagonal_type;
-
-      SingularDecomposition(StateComponent const& A);
-
-#if 0
-      // constructs the U, V^\dagger matrices
-      template <typename FwdIter>
-      boost::tuple<left_type, diagonal_type, right_type> ConstructTruncator(FwdIter First, FwdIter Last) const;
-#endif
-
-   private:
-      LinearBasis<VectorBasis> Basis1, Basis2;
-};
-
 struct ProductSubspaceInfo
 {
    int k;  // the local basis index
@@ -320,7 +314,35 @@ struct ProductSubspaceInfo
       : k(k_), s(s_), LinearIndex(LinearIndex_), LinearRange(LinearRange_) {}
 };
 
+template <>
+class SingularDecomposition<MatrixOperator, MatrixOperator> : public SingularDecompositionBase
+{
+   public:
+      typedef MatrixOperator left_type;
+      typedef MatrixOperator right_type;
+      typedef RealDiagonalOperator diagonal_type;
 
+      SingularDecomposition(MatrixOperator const& M);
+
+      template <typename FwdIter>
+      void ConstructMatrices(FwdIter first, FwdIter last, 
+			     MatrixOperator& A, 
+			     RealDiagonalOperator& C, 
+			     MatrixOperator& B);
+
+   private:
+      QuantumNumber Lookup(int Subspace) const;
+
+      LinearBasis<VectorBasis> B1, B2;
+      std::vector<int> q_iLinear, q_jLinear;
+      std::vector<int> IndexOfi;
+      std::vector<QuantumNumber> UsedQuantumNumbers;  // in order
+      
+      void ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
+				  MatrixOperator& A, RealDiagonalOperator& C, MatrixOperator& B);
+};
+
+typedef SingularDecomposition<MatrixOperator, MatrixOperator> CMatSVD;  // avoid typing...
 
 template <>
 class SingularDecomposition<StateComponent, StateComponent> : public SingularDecompositionBase

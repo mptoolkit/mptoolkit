@@ -278,7 +278,7 @@ inject_left(MatrixOperator const& m,
 	 I2 = Psi2.begin();
 	 E = delta_shift(E, QShift);
       }
-      E = operator_prod(herm(*OpIter), herm(*I1), E, *I2);
+      E = contract_from_left(*OpIter, herm(*I1), E, *I2);
       ++I1; ++I2; ++OpIter;
    }
    return E[0]; //delta_shift(E[0], QShift);
@@ -313,7 +313,7 @@ inject_right(MatrixOperator const& m,
          E = delta_shift(E, adjoint(QShift));
       }
       --I1; --I2; --OpIter;
-      E = operator_prod(*OpIter, *I1, E, herm(*I2));
+      E = contract_from_right(herm(*OpIter), *I1, E, herm(*I2));
    }
    return delta_shift(E[0], adjoint(QShift));
 }

@@ -82,6 +82,12 @@ class BasisList
 
       int total_degree() const;
 
+      // finds the first occurance of quantum number q in the basis, or -1 if no such q
+      int find_first(QuantumNumber const& q) const;
+
+      // Finds the next occurance of quantum number q in the basis beyond n, or -1 if no such q
+      int find_next(QuantumNumber const& q, int n) const;
+
       SymmetryList const& GetSymmetryList() const { return S_; }
 
    //void CoerceSymmetryList(SymmetryList const& sl);
@@ -194,6 +200,14 @@ class VectorBasis
       int total_degree() const;
 
       SymmetryList const& GetSymmetryList() const { return Basis_.GetSymmetryList(); }
+
+      // finds the first occurance of quantum number q in the basis, or -1 if no such q
+      int find_first(QuantumNumber const& q) const
+      { return Basis_.find_first(q); }
+
+      // Finds the next occurance of quantum number q in the basis beyond n, or -1 if no such q
+      int find_next(QuantumNumber const& q, int n) const
+      { return Basis_.find_next(q,n); }
 
       BasisList const& Basis() const { return Basis_; }
       BasisList& Basis() { return Basis_; }

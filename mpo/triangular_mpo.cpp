@@ -185,6 +185,7 @@ void optimize(TriangularMPO& Op)
 
 void balance(TriangularMPO& Op)
 {
+   // 
 }
 
 void print_structure(TriangularMPO const& Op, std::ostream& out, double UnityEpsilon)

@@ -35,6 +35,10 @@ class DiagonalMatrix : public MatrixBase<DiagonalMatrix<T> >
 
       DiagonalMatrix() {}
 
+      template <typename U>
+      DiagonalMatrix(DiagonalMatrix<U> const& Other)
+	 : data_(Other.diagonal()) {}
+
       DiagonalMatrix(size_type s) : data_(s) { }
 
       DiagonalMatrix(size_type s1, size_type s2, const_reference value = T())

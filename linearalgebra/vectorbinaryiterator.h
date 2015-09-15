@@ -65,7 +65,7 @@ class VectorBinaryIterator<Iter1, Iter2, Func, vector_iterator_dense, vector_ite
 
       pointer operator->() const { return pointer(&f_(*i1_, *i2_)); }
 
-      operator bool() const { return i1_; }
+      operator bool() const { DEBUG_CHECK_EQUAL(bool(i1_), bool(i2_)); return i1_; }
 
       iterator1_type const& iterator1() const { return i1_; }
       iterator2_type const& iterator2() const { return i2_; }

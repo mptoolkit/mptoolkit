@@ -40,6 +40,26 @@ int BasisList::total_degree() const
    return Deg;
 }
 
+int
+BasisList::find_first(QuantumNumber const& q) const
+{
+   unsigned n = 0;
+   while (n < Q_.size() && Q_[n] != q)
+      ++n;
+
+   return (n < Q_.size()) ? int(n) : -1;
+}
+
+int
+BasisList::find_next(QuantumNumber const& q, int n) const
+{
+   ++n;
+   while (n < int(Q_.size()) && Q_[n] != q)
+      ++n;
+
+   return (n < int(Q_.size())) ? n : -1;
+}
+
 std::ostream& operator<<(std::ostream& Out, BasisList const& B)
 {
    Out << "Basis has symmetry " << B.GetSymmetryList()

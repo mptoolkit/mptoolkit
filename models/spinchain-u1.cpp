@@ -60,7 +60,9 @@ int main(int argc, char** argv)
       UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
 
       Lattice["H_J1z"] = sum_unit(Sz(0)*Sz(1));
-      Lattice["H_J1t"] = sum_unit((sqrt(0.5)*Sp(0))*(sqrt(0.5)*Sm(1)) + (sqrt(0.5)*Sm(0))*(sqrt(0.5)*Sp(1)));
+      double x = 1000000;
+      Lattice["H_J1t"] = (0.5/x) * sum_unit((sqrt(x)*Sp(0))*(sqrt(x)*Sm(1)) + (sqrt(x)*Sm(0))*(sqrt(x)*Sp(1)));
+      //      Lattice["H_J1t"] = 0.5 * sum_unit(Sp(0)*Sm(1) + Sm(0)*Sp(1));
       Lattice["H_J1"]  = Lattice["H_J1z"] + Lattice["H_J1t"];
       //sum_unit(Sz(0)*Sz(1) + 0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)));
 

@@ -67,7 +67,7 @@ struct ProductLeft
       TriangularMPO::const_iterator HI = Op.begin();
       for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I, ++HI)
       {
-	 Guess = operator_prod(herm(*HI), herm(*I), Guess, *I);
+	 Guess = contract_from_left(*HI, herm(*I), Guess, *I);
       }
       DEBUG_CHECK(HI == Op.end());
       return Guess; //delta_shift(Guess, adjoint(QShift));
@@ -98,7 +98,7 @@ struct ProductRight
       {
 	 --I;
 	 --HI;
-	 Guess = operator_prod(*HI, *I, Guess, herm(*I));
+	 Guess = contract_from_right(herm(*HI), *I, Guess, herm(*I));
       }
       DEBUG_CHECK(HI == Op.begin());
       return delta_shift(Guess, adjoint(QShift));
@@ -127,7 +127,7 @@ struct FrontProductLeft
       TriangularMPO::const_iterator OpIter = Op.begin();
       for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I, ++OpIter)
       {
-	 Guess = operator_prod(herm(*OpIter), herm(*I), Guess, *I);
+	 Guess = contract_from_left(*OpIter, herm(*I), Guess, *I);
       }
       return Guess.back() - Energy * Guess.front();
    }
@@ -389,7 +389,7 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
    StateComponent R = prod(*I, C_r);
    MatrixOperator C = ExpandBasis1Used(R, *H);
    //MatrixOperator C = ExpandBasis1(R);
-   RightBlockHam.push_front(operator_prod(*H, R, RightBlockHam.front(), herm(R)));
+   RightBlockHam.push_front(contract_from_right(herm(*H), R, RightBlockHam.front(), herm(R)));
    LeftBlockHam.pop_back();
    while (I != Psi.begin())
    {
@@ -404,7 +404,7 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
 	 //C = ExpandBasis2(L);
 
 	 LeftBlockHam.pop_back();
-	 LeftBlockHam.push_back(operator_prod(herm(*H), herm(L), LeftBlockHam.back(), L));
+	 LeftBlockHam.push_back(contract_from_left(*H, herm(L), LeftBlockHam.back(), L));
       }
 
       // apply the solver
@@ -471,7 +471,7 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
       R = prod(L, C);
       C = ExpandBasis1Used(R, *H);
       //C = ExpandBasis1(R);
-      RightBlockHam.push_front(operator_prod(*H, R, RightBlockHam.front(), herm(R)));
+      RightBlockHam.push_front(contract_from_right(herm(*H), R, RightBlockHam.front(), herm(R)));
       LeftBlockHam.pop_back();
 
    }
@@ -501,7 +501,7 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
    StateComponent L = prod(C_l, *I);
    MatrixOperator C = ExpandBasis2Used(L, *H);
    //MatrixOperator C = ExpandBasis2(L);
-   LeftBlockHam.push_back(operator_prod(herm(*H), herm(L), LeftBlockHam.back(), L));
+   LeftBlockHam.push_back(contract_from_left(*H, herm(L), LeftBlockHam.back(), L));
    RightBlockHam.pop_front();
 
    ++I; ++H;
@@ -515,7 +515,7 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
          C = ExpandBasis1Used(R, *H);
 	 //C = ExpandBasis1(R);
 	 RightBlockHam.pop_front();
-	 RightBlockHam.push_front(operator_prod(*H, R, RightBlockHam.front(), herm(R)));
+	 RightBlockHam.push_front(contract_from_right(herm(*H), R, RightBlockHam.front(), herm(R)));
       }
 
       // apply the solver
@@ -582,7 +582,7 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
       L = prod(C, R);
       C = ExpandBasis2Used(L, *H);
       //C = ExpandBasis2(L);
-      LeftBlockHam.push_back(operator_prod(herm(*H), herm(L), LeftBlockHam.back(), L));
+      LeftBlockHam.push_back(contract_from_left(*H, herm(L), LeftBlockHam.back(), L));
       RightBlockHam.pop_front();
 
       ++I;
@@ -1238,7 +1238,7 @@ int main(int argc, char** argv)
       LeftBlock.back() = delta_shift(LeftBlock.back(), QShift);
       while (I != MyPsi.end())
       {
-	 LeftBlock.push_back(operator_prod(herm(*HI), herm(*I), LeftBlock.back(), *I));
+	 LeftBlock.push_back(contract_from_left(*HI, herm(*I), LeftBlock.back(), *I));
 	 ++HI;
 	 ++I;
       }

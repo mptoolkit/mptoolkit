@@ -70,7 +70,7 @@ inject_left(MatrixOperator const& m,
 	 I2 = Psi2.begin();
 	 E = delta_shift(E, QShift);
       }
-      E = operator_prod(herm(*OpIter), herm(*I1), E, *I2);
+      E = contract_from_left(*OpIter, herm(*I1), E, *I2);
       ++I1; ++I2; ++OpIter;
    }
    return delta_shift(E[0], QShift);
@@ -177,7 +177,7 @@ int main(int argc, char** argv)
       MatrixOperator X = Identity;
       X = inject_left(X, PsiOrtho, QShift, Op.MPO(), PsiOrtho);
 
-      std::complex<double> x = inner_prod(X, delta_shift(Rho, QShift));
+      std::complex<double> x = inner_prod(delta_shift(Rho, QShift), X);
 
       if (ShowReal)
 	 std::cout << x.real() << "   ";

@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 
 #include "mpo/triangular_mpo.h"
 #include "mps/infinitewavefunction.h"

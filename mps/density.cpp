@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 
 #include "density.h"
 #include "common/proccontrol.h"
@@ -439,6 +439,126 @@ void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType> const& M)
    }
 
    std::sort(EigenInfoList.begin(), EigenInfoList.end(), EigenCompare);
+}
+
+
+SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(MatrixOperator const& M)
+   : B1(M.Basis1()), B2(M.Basis2()), IndexOfi(B1.size(), -1)
+{
+   // Assemble the raw matrices
+
+   // Iterate through Basis1 and Basis2 and assemble the list of used quantum numbers, in order,
+   // and how they map onto the components in Basis1 and Basis2.
+   // We can make use of the fact that each quantum number only appears at most once in 
+   // the LinearBasis.
+   for (unsigned i = 0; i < B1.size(); ++i)
+   {
+      QuantumNumber q = B1[i];
+      int j = B2.find_first(q);
+      if (j == -1)
+	 continue;
+
+      IndexOfi[i] = UsedQuantumNumbers.size();
+      q_iLinear.push_back(i);
+      q_jLinear.push_back(j);
+      UsedQuantumNumbers.push_back(q);
+   }
+
+   // Now assemble the list of raw matrices, initialized to zero
+   std::vector<RawDMType> Matrices(q_iLinear.size());
+   for (unsigned n = 0; n < q_iLinear.size(); ++n)
+   {
+      Matrices[n] = RawDMType(B1.dim(q_iLinear[n]), B2.dim(q_jLinear[n]), 0.0);
+   }
+
+   // fill the raw matrices with the components in M
+   for (MatrixOperator::const_iterator I = iterate(M); I; ++I)
+   {
+      for (MatrixOperator::const_inner_iterator J = iterate(I); J; ++J)
+      {
+	 // determine where this (i,j) component fits within the matrices
+	 std::pair<int, LinearAlgebra::Range> iIndex = B1.Lookup(J.index1());
+	 std::pair<int, LinearAlgebra::Range> jIndex = B2.Lookup(J.index2());
+	 // map the index into the used subspaces
+	 int Subspace = IndexOfi[iIndex.first];
+	 CHECK(Subspace != -1);
+	 CHECK_EQUAL(q_jLinear[Subspace], jIndex.first);
+	 Matrices[Subspace](iIndex.second, jIndex.second) = *J;
+      }
+   }
+
+   // do the SVD
+   this->Diagonalize(Matrices);
+}
+
+QuantumNumber 
+SingularDecomposition<MatrixOperator, MatrixOperator>::Lookup(int Subspace) const
+{
+   return UsedQuantumNumbers[Subspace];
+}
+
+void
+SingularDecomposition<MatrixOperator, MatrixOperator>::
+ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
+		  MatrixOperator& A, RealDiagonalOperator& C, MatrixOperator& B)
+{
+   // Construct the truncated basis
+   int NumQ = UsedQuantumNumbers.size();
+   VectorBasis NewBasis(B1.GetSymmetryList());
+   std::vector<int> NewSubspace(NumQ, -1); // maps the q to the new label
+   for (int q = 0; q < NumQ; ++q)
+   {
+      if (LinearMapping[q].size() > 0)
+      {
+	 NewSubspace[q] = NewBasis.size();
+         NewBasis.push_back(UsedQuantumNumbers[q], LinearMapping[q].size());
+      }
+   }
+
+   // Now we construct the actual matrices
+   A = MatrixOperator(B1.MappedBasis(), NewBasis);
+   B = MatrixOperator(NewBasis, B2.MappedBasis());
+   for (int q = 0; q < NumQ; ++q)
+   {
+      int ss = NewSubspace[q];
+      if (ss == -1) // is this subspace used?
+	 continue;
+
+      QuantumNumber Q = UsedQuantumNumbers[q];
+
+      // The set of indices of states we need to keep
+      std::vector<int> lm(LinearMapping[q].begin(), LinearMapping[q].end());
+
+      // Now assemble this quantum number component for A
+      int i = B1.MappedBasis().find_first(Q);
+      while (i != -1)
+      {
+	 A(i,ss) = LeftVectors[q](B1.Lookup(i).second, lm);
+	 i = B1.MappedBasis().find_next(Q, i);
+      }
+
+      // and B
+      int j = B2.MappedBasis().find_first(Q);
+      while (j != -1)
+      {
+	 B(ss,j) = RightVectors[q](lm, B2.Lookup(j).second);
+	 j = B2.MappedBasis().find_next(Q, j);
+      }
+   }
+
+   // Finally the center matrix
+   C = RealDiagonalOperator(NewBasis, NewBasis);
+   for (int i = 0; i < NumQ; ++i)
+   {
+      if (!LinearMapping[i].empty())
+      {
+	 int b = NewSubspace[i];
+	 C(b,b) = LinearAlgebra::DiagonalMatrix<double>(SingularValues[i][std::vector<int>(LinearMapping[i].begin(), LinearMapping[i].end())]);
+      }
+   }
+
+   A.debug_check_structure();
+   B.debug_check_structure();
 }
 
 QuantumNumber 

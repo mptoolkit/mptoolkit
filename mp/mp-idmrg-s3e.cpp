@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id: mp-idmrg.cpp 1593 2015-09-02 07:42:18Z ianmcc $ 
+// -*- C++ -*-
 
 // iDMRG with single-site subspace expansion
 
@@ -38,14 +38,6 @@ namespace prog_opt = boost::program_options;
 
 using statistics::moving_average;
 using statistics::moving_exponential;
-
-// some global parameters
-
-// MaxTol is the maximum acceptable value for the Tol parameter in the eigensolver.
-// The actual tolerance is min(MaxTol, FidelityScale * sqrt(Fidelity))
-double MaxTol = 4E-4;
-double FidelityScale = 0.1;
-int Verbose = 0;
 
 bool EarlyTermination = false;  // we set this to true if we get a checkpoint
 
@@ -288,6 +280,7 @@ class LocalEigensolver
       // Eigensolver tolerance is min(sqrt(AverageFidelity()) * FidelityScale, MaxTol)
       double FidelityScale;
       double MaxTol;
+      double MinTol;
 
       int MinIter; // Minimum number of iterations to perform (unless the eigensolver breaks down)
       int MaxIter; // Stop at this number, even if the eigensolver hasn't converged
@@ -313,7 +306,7 @@ class LocalEigensolver
 };
 
 LocalEigensolver::LocalEigensolver()
-   : FidelityScale(0), MaxTol(0), MinIter(0), MaxIter(0), Verbose(0)
+   : FidelityScale(0), MaxTol(0), MinTol(0), MinIter(0), MaxIter(0), Verbose(0)
 {
 }
 
@@ -339,6 +332,8 @@ LocalEigensolver::Solve(StateComponent& C,
 
    StateComponent ROld = C;
    LastTol_ = std::min(std::sqrt(this->AverageFidelity()) * FidelityScale, MaxTol);
+   LastTol_ = std::max(LastTol_, MinTol);
+   //LastTol_ = std::min(this->AverageFidelity() * FidelityScale, MaxTol);
    LastIter_ = MaxIter;
    if (Verbose > 2)
    {
@@ -366,9 +361,10 @@ struct MixInfo
 // Postcondition: Lambda' C' = C (up to truncation!)
 MatrixOperator
 SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateComponent const& RightHam,
-		     MixInfo const& Mix, StatesInfo const& States, TruncationInfo& Info)
+		     MixInfo const& Mix, StatesInfo const& States, TruncationInfo& Info,
+		     StateComponent const& LeftHam)
 {
-      // truncate - FIXME: this is the s3e step
+   // truncate - FIXME: this is the s3e step
    MatrixOperator Lambda = ExpandBasis1(C);
 
    MatrixOperator Rho = scalar_prod(herm(Lambda), Lambda);
@@ -376,10 +372,15 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
    {
       StateComponent RH = contract_from_right(herm(H), C, RightHam, herm(C));
       MatrixOperator RhoMix;
+      MatrixOperator RhoL = scalar_prod(Lambda, herm(Lambda));
+
       // Skip the identity and the Hamiltonian
       for (unsigned i = 1; i < RH.size()-1; ++i)
       {
-	 RhoMix += triple_prod(herm(RH[i]), Rho, RH[i]);
+	 double Prefactor = trace(triple_prod(herm(LeftHam[i]), RhoL, LeftHam[i])).real();
+	 if (Prefactor == 0)
+	    Prefactor = 1;
+	 RhoMix += Prefactor * triple_prod(herm(RH[i]), Rho, RH[i]);
       }
       //      MatrixOperator RhoMix = operator_prod(herm(RH), Rho, RH);
       Rho += (Mix.MixFactor / trace(RhoMix)) * RhoMix;
@@ -408,7 +409,8 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 // Postcondition: C' Lambda' = C (up to truncation!)
 MatrixOperator
 SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateComponent const& LeftHam,
-		     MixInfo const& Mix, StatesInfo const& States, TruncationInfo& Info)
+		     MixInfo const& Mix, StatesInfo const& States, TruncationInfo& Info,
+		     StateComponent const& RightHam)
 {
    // truncate - FIXME: this is the s3e step
    MatrixOperator Lambda = ExpandBasis2(C);
@@ -418,9 +420,15 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
    {
       StateComponent LH = contract_from_left(H, herm(C), LeftHam, C);
       MatrixOperator RhoMix;
+
+      MatrixOperator RhoR = scalar_prod(herm(Lambda), Lambda);
+
       for (unsigned i = 1; i < LH.size()-1; ++i)
       {
-	 RhoMix += triple_prod(LH[i], Rho, herm(LH[i]));
+	 double Prefactor = trace(triple_prod(herm(RightHam[i]), RhoR, RightHam[i])).real();
+	 if (Prefactor == 0)
+	    Prefactor = 1;
+	 RhoMix += Prefactor * triple_prod(LH[i], Rho, herm(LH[i]));
       }
       Rho += (Mix.MixFactor / trace(RhoMix)) * RhoMix;
    }
@@ -452,7 +460,7 @@ class iDMRG
       iDMRG(LinearWavefunction const& Psi_, QuantumNumber const& QShift_, TriangularMPO const& Hamiltonian_,
 	    StateComponent const& LeftHam, StateComponent const& RightHam,
 	    MatrixOperator const& LambdaR,
-	    std::complex<double> InitialEnergy = 0.0);
+	    std::complex<double> InitialEnergy = 0.0, int Verbose = 0);
 
       void SetMixInfo(MixInfo const& m);
 
@@ -515,6 +523,8 @@ class iDMRG
       LinearWavefunction::iterator C;
       TriangularMPO::const_iterator H;
 
+      int Verbose;
+
       // iterators pointing to the edges of the unit cell.  
       // FirstSite = Psi.begin()
       // LastSite = Psi.end() - 1
@@ -535,9 +545,9 @@ class iDMRG
 iDMRG::iDMRG(LinearWavefunction const& Psi_, QuantumNumber const& QShift_, TriangularMPO const& Hamiltonian_,
 	     StateComponent const& LeftHam, StateComponent const& RightHam,
 	     MatrixOperator const& LambdaR,
-	     std::complex<double> InitialEnergy)
+	     std::complex<double> InitialEnergy, int Verbose_)
    : Hamiltonian(Hamiltonian_), Psi(Psi_), QShift(QShift_), 
-     LeftHamiltonian(1, LeftHam), RightHamiltonian(1, RightHam)
+     LeftHamiltonian(1, LeftHam), RightHamiltonian(1, RightHam), Verbose(Verbose_)
 {
    this->Initialize(LambdaR, InitialEnergy);
 }
@@ -557,6 +567,7 @@ iDMRG::Initialize(MatrixOperator const& LambdaR, std::complex<double> InitialEne
    // Generate the left Hamiltonian matrices at each site, up to (but not including) the last site.
    while (C != LastSite)
    {
+      TRACE(LeftHamiltonian.back().Basis2());
       LeftHamiltonian.push_back(contract_from_left(*H, herm(*C), LeftHamiltonian.back(), *C));
       ++C;
       ++H;
@@ -601,7 +612,7 @@ iDMRG::UpdateLeftBlock()
    }
 
    LeftHamiltonian = std::deque<StateComponent>(1, delta_shift(SaveLeftHamiltonian, QShift));
-   
+
    // Subtract off the energy
    LeftHamiltonian.back().back() -= Solver_.LastEnergy() * LeftHamiltonian.back().front();
 
@@ -609,7 +620,7 @@ iDMRG::UpdateLeftBlock()
    MatrixOperator U,D,Vh;
    SingularValueDecomposition(SaveLambda1, U, D, Vh);
 
-   (*C) = prod(SaveLambda2 * herm(Vh) * InvertDiagonal(D) * herm(U), *C);
+   (*C) = prod(delta_shift(SaveLambda2, QShift) * herm(Vh) * InvertDiagonal(D) * herm(U), *C);
 
    // normalize
    *C *= 1.0 / norm_frob(*C);
@@ -637,7 +648,7 @@ iDMRG::UpdateRightBlock()
    MatrixOperator U,D,Vh;
    SingularValueDecomposition(SaveLambda2, U, D, Vh);
 
-   (*C) = prod(*C, herm(Vh) * InvertDiagonal(D) * herm(U) * SaveLambda1);
+   (*C) = prod(*C, herm(Vh) * InvertDiagonal(D) * herm(U) * delta_shift(SaveLambda1, adjoint(QShift)));
 
    // normalize
    *C *= 1.0 / norm_frob(*C);
@@ -653,7 +664,7 @@ iDMRG::SaveLeftBlock(StatesInfo const& States)
    CHECK(C == LastSite);
    StateComponent L = *C;
    SaveLambda2 = SubspaceExpandBasis2(L, *H, LeftHamiltonian.back(),
-				      MixingInfo, States, Info);
+				      MixingInfo, States, Info, RightHamiltonian.front());
    if (Verbose > 1)
    {
       std::cerr << "Saving left block for idmrg, states=" << Info.KeptStates() 
@@ -669,7 +680,7 @@ iDMRG::SaveRightBlock(StatesInfo const& States)
    CHECK(C == FirstSite);
    StateComponent R = *C;
    SaveLambda1 = SubspaceExpandBasis1(R, *H, RightHamiltonian.front(),
-				      MixingInfo, States, Info);
+				      MixingInfo, States, Info, LeftHamiltonian.back());
    if (Verbose > 1)
    {
       std::cerr << "Saving right block for idmrg, states=" << Info.KeptStates() << '\n';
@@ -683,7 +694,8 @@ iDMRG::TruncateAndShiftLeft(StatesInfo const& States)
 {
    this->CheckConsistency();
    // Truncate right
-   MatrixOperator Lambda = SubspaceExpandBasis1(*C, *H, RightHamiltonian.front(), MixingInfo, States, Info);
+   MatrixOperator Lambda = SubspaceExpandBasis1(*C, *H, RightHamiltonian.front(), MixingInfo, States, Info,
+						LeftHamiltonian.back());
    if (Verbose > 1)
    {
       std::cerr << "Truncating left basis, states=" << Info.KeptStates() << '\n';
@@ -718,7 +730,8 @@ void
 iDMRG::TruncateAndShiftRight(StatesInfo const& States)
 {
    // Truncate right
-   MatrixOperator Lambda = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info);
+   MatrixOperator Lambda = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
+						RightHamiltonian.front());
    if (Verbose > 1)
    {
       std::cerr << "Truncating right basis, states=" << Info.KeptStates() << '\n';
@@ -779,7 +792,8 @@ iDMRG::Finish(StatesInfo const& States)
 
    // The final truncation.
    // This is actually quite important to get a translationally invariant wavefunction
-   MatrixOperator Lambda = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info);
+   MatrixOperator Lambda = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
+						RightHamiltonian.front());
    if (Verbose > 1)
    {
       std::cerr << "Truncating right basis, states=" << Info.KeptStates() << '\n';
@@ -827,13 +841,9 @@ int main(int argc, char** argv)
       int MinIter = 4;
       int MinStates = 1;
       std::string States = "100";
-      //double MixFactor = 0.01;
-      //bool TwoSite = false;
       int NumSteps = 10;
       double TruncCutoff = 0;
       double EigenCutoff = -1;
-      //bool NoVariance = false;
-      //bool UseDGKS = false;
       std::string FName;
       std::string HamStr;
       std::string CouplingFile;
@@ -846,15 +856,15 @@ int main(int argc, char** argv)
       bool NoOrthogonalize = false;
       bool Create = false;
       bool ExactDiag = false;
-#if defined(ENABLE_ONE_SITE_SCHEME)
-      bool UseOneSiteScheme = false;
-#endif
+      double FidelityScale = 1.0;
+      int Verbose = 0;
       bool DoRandom = false; // true if we want to start an iteration from a random centre matrix
       std::string TargetState;
       std::vector<std::string> BoundaryState;
       double EvolveDelta = 0.0;
       double InitialFidelity = 1E-7;
-      //      bool TwoSiteTurn = true;  // we can control whether we want two sites at the turning points separately
+      double MaxTol = 4E-4;  // never use an eigensolver tolerance larger than this
+      double MinTol = 1E-16; // lower bound for the eigensolver tolerance - seems we dont really need it
 
       pvalue_ptr<InfiniteWavefunction> PsiPtr;
 
@@ -1157,12 +1167,14 @@ int main(int argc, char** argv)
       Lin.set_back(prod(Lin.get_back(), Psi.C_right));
 
       // Construct the iDMRG object
-      iDMRG idmrg(Lin, Psi.QShift, HamMPO, BlockHamL, BlockHamR, Psi.C_right, InitialEnergy);
+      iDMRG idmrg(Lin, Psi.QShift, HamMPO, delta_shift(BlockHamL,Psi.QShift), 
+		  BlockHamR, Psi.C_right, InitialEnergy, Verbose);
       
       idmrg.MixingInfo.MixFactor = MixFactor;
       idmrg.MixingInfo.RandomMixFactor = RandomMixFactor;
       idmrg.SetInitialFidelity(InitialFidelity);
       idmrg.Solver().MaxTol = MaxTol;
+      idmrg.Solver().MinTol = MinTol;
       idmrg.Solver().MinIter = MinIter;
       idmrg.Solver().MaxIter = NumIter;
       idmrg.Solver().FidelityScale = FidelityScale;

@@ -85,18 +85,18 @@ add_triple_prod(KMatrixPolyType& Result, std::complex<double> Factor,
                 QuantumNumber const& qEp);
 
 std::vector<KMatrixPolyType>
-operator_prod(HermitianProxy<OperatorComponent> const& M,
-              HermitianProxy<StateComponent> const& A,
-              std::vector<KMatrixPolyType> const& E, 
-              StateComponent const& B);
+contract_from_left(OperatorComponent const& M,
+		   HermitianProxy<StateComponent> const& A,
+		   std::vector<KMatrixPolyType> const& E, 
+		   StateComponent const& B);
 
 std::vector<KMatrixPolyType>
-operator_prod(HermitianProxy<OperatorComponent> const& M,
-              HermitianProxy<StateComponent> const& A,
-              std::vector<KMatrixPolyType> const& E, 
-              StateComponent const& B,
-              std::vector<int> const& OutMask,
-              std::vector<int> const& InMask);
+contract_from_left(OperatorComponent const& M,
+		   HermitianProxy<StateComponent> const& A,
+		   std::vector<KMatrixPolyType> const& E, 
+		   StateComponent const& B,
+		   std::vector<int> const& OutMask,
+		   std::vector<int> const& InMask);
 
 std::vector<KMatrixPolyType>
 inject_left(std::vector<KMatrixPolyType> const& In, 
