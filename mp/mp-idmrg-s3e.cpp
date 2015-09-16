@@ -567,7 +567,6 @@ iDMRG::Initialize(MatrixOperator const& LambdaR, std::complex<double> InitialEne
    // Generate the left Hamiltonian matrices at each site, up to (but not including) the last site.
    while (C != LastSite)
    {
-      TRACE(LeftHamiltonian.back().Basis2());
       LeftHamiltonian.push_back(contract_from_left(*H, herm(*C), LeftHamiltonian.back(), *C));
       ++C;
       ++H;
@@ -587,6 +586,11 @@ iDMRG::Initialize(MatrixOperator const& LambdaR, std::complex<double> InitialEne
 
       StateComponent R = operator_prod_inner(*H, LeftHamiltonian.back(), *C, herm(RightHamiltonian.front()));
       std::complex<double> E = inner_prod(*C, R) / inner_prod(*C, *C);
+
+      StateComponent Resid = R - E*(*C);
+      TRACE(norm_frob(Resid));
+
+      TRACE(E);
       RightHamiltonian.front().front() += (InitialEnergy - E) * RightHamiltonian.front().back();
    }
 

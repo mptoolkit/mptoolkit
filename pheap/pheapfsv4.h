@@ -236,6 +236,8 @@ class FileSystem
 
       void persistent_shutdown(PageId UserPage);
 
+      int version() { return MetaVersion; }
+
       PageId open(std::string const& FileName, size_t PageCacheByteSize, bool ReadOnly = false);
 
       // indicates that an asynchronous checkpoint should be triggered if the size of allocated pages (in KB)
@@ -338,6 +340,8 @@ class FileSystem
       BufferAllocator* Alloc;
 
       bool IsReadOnly;
+
+      int MetaVersion;
 
    friend class Private::PageInfoType;
 

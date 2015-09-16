@@ -36,7 +36,7 @@ using inttype::uint32;
 using inttype::uint32_t;
 
 /*
-  Metadata format for FileSystem (XDR):
+  Metadata format for FileSystem (XDR): version 1
 
   Global for each page file:
     byte8 * 4     Magic ("PHFS")
@@ -56,9 +56,15 @@ using inttype::uint32_t;
 
   The Hook page number is a local page number in the first page file which is the start
   of a rawpagestream which is accessible as metadata_in() or metadata_out().
-  the quick brown fox jumps over the lazy dog <-- Wendy wrote this */
 
-uint32_t MetadataVersion = 1;
+  Version 2 metadata is identical.  But the changed version number (on 2015/09/16) is
+  a hack to allow versioning of objects that don't have their own version number.  The intent
+  is that if a file has FileSystem version 1, then it is an old file with a known version number.
+  Otherwise if the FileSystem is version 2, then it is a newer file, which is a good
+  opportunity to add versioning support to the object!
+  */
+
+uint32_t MetadataVersion = 2;
 
 namespace Private
 {
@@ -299,7 +305,8 @@ FileSystem::FileSystem()
      PageSize(0),
      HookPageNumber(uint32_t(-1)),
      Alloc(NULL),
-     IsReadOnly(false)
+     IsReadOnly(false),
+     MetaVersion(MetadataVersion)
 {
 }
 
@@ -378,7 +385,8 @@ int FileSystem::ReadPageFileMetadata(std::string const& Path, std::string const&
    }
 
    uint32_t CheckVersion = MetaIn.read<uint32>();
-   if (CheckVersion != MetadataVersion)
+   MetaVersion = CheckVersion;
+   if (CheckVersion < 1 || CheckVersion > 2)
    {
       WARNING("Page file version mismatch, file version is ") << CheckVersion
 							      << " expected version is " << MetadataVersion << "\nFilename: " << FileName;

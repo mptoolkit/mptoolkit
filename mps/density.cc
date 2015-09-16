@@ -43,6 +43,14 @@ MatrixOperator DensityMatrix<MatrixOperator>::ConstructTruncator(FwdIterX Start,
       if (sp == -1) continue;
 
       Transform(sp, s) = RawDMList[q](std::vector<int>(LinearMapping[q].begin(), LinearMapping[q].end()), LinRange);
+
+#if defined(RANDOMIZE_VECTORS)
+      for (unsigned i = 0; i < LinearMapping[q].size(); ++i)
+      {
+	 Transform(sp, s)(i, LinearAlgebra::all) *= std::pow(-1, i);
+      }
+#endif
+
    }
    return Transform;
 }

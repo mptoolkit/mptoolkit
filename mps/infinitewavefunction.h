@@ -75,6 +75,9 @@ class InfiniteWavefunction
 
       mutable AttributeList Attr;
 
+      // version tag.  Default version is 1.
+      static PStream::VersionTag VersionT;
+
    friend PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunction const& psi);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, InfiniteWavefunction& psi);
 };

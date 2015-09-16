@@ -52,6 +52,8 @@ class ipheapstream : public PStream::ipstream
 
       virtual id_type get_id();
 
+      int version() const { return MyFS->version(); }
+
    private:
       virtual void underflow();
 

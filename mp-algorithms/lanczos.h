@@ -1,4 +1,27 @@
 // -*- C++ -*- $Id$
+//
+// Simple Lanczos algorithm.
+// No restarts, designed for applications where the number of iterations is small.
+//
+// Note on stopping criteria:
+// Lanczos implementations are often fairly sloppy on how exactly to define the stopping criteria.
+// The length of the residual vector is r = ||Ax - theta x}}
+// This quantity is shift-invariant - ie, we can add a constant to A, and then theta
+// will shift by the same constant, leaving r the same.
+// However, using simply r < tol isn't a suitable criteria, because r isn't scale invariant.
+// If we multiply A by some contant, then r also scales by the same constant.
+//
+// Often people use the criteria r/theta < tol
+// which solves the scale-invariance problem but now the stopping criteria changes
+// if a constant is added to the operator.  Bennani and Braconniery 
+// (Stopping criteria for eigensolvers, Maria Bennani and Thierry Braconniery, 
+// CERFACS Technical Report TR/PA/94/22) recommend using
+// r/A_F < tol, where A_F is the Frobenius norm of A.
+// On a shift by a constant k, the Frobenius norm changes by <~ sqrt(k), which only
+// partially solves the problem.  Here we use the 'spectral diameter', being
+// the difference between largest and smallest Ritz values (as approximating the
+// true spectral diameter of the matrix).
+
 
 #if !defined(LANCZOS_H_H2348975894UFP389P0)
 #define LANCZOS_H_H2348975894UFP389P0
@@ -76,6 +99,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
                                                 LinearAlgebra::range(0,i+1));
          LinearAlgebra::Vector<double> EValues = DiagonalizeHermitian(M);
          double Theta = EValues[0];    // smallest eigenvalue
+	 double SpectralDiameter = EValues[i] - EValues[0];  // largest - smallest
          VectorType y = M(0,0) * v[0];
          for (int j = 1; j <= i; ++j)
             y += M(0,j) * v[j];
@@ -104,6 +128,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 
       LinearAlgebra::Vector<double> EValues = DiagonalizeHermitian(M);
       double Theta = EValues[0];    // smallest eigenvalue
+      double SpectralDiameter = EValues[i] - EValues[0];  // largest - smallest
       VectorType y = M(0,0) * v[0];
       for (int j = 1; j <= i; ++j)
 	 y += M(0,j) * v[j];
@@ -115,14 +140,15 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 
       double ResidNorm = norm_frob(r);
 
-      if (ResidNorm < fabs(Tol * Theta) && i+1 >= MinIter)
-      if (ResidNorm < Tol && i+1 >= MinIter)
+      if (ResidNorm < fabs(Tol * SpectralDiameter) && i+1 >= MinIter)
+	 //if (ResidNorm < Tol && i+1 >= MinIter)
       {
 	 if (Verbose)
 	    std::cerr << "lanczos: early return, residual norm below threshold, ResidNorm="
-		      << ResidNorm << ", iterations=" << (i+1) << '\n';
+		      << ResidNorm << ", SpectralDiameter=" << SpectralDiameter 
+		      << ", iterations=" << (i+1) << '\n';
 	 Iterations = i+1;
-	 Tol = ResidNorm;///fabs(Theta);
+	 Tol = ResidNorm / SpectralDiameter;
 	 Guess = y;
 	 return Theta;
       }
@@ -130,7 +156,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       if (i == Iterations-1) // finished?
       {
 	 Guess = y;
-	 Tol = -ResidNorm;///fabs(Theta);
+	 Tol = -ResidNorm / SpectralDiameter;
 	 return Theta;
       }
    }

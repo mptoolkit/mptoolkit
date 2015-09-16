@@ -66,6 +66,11 @@ std::string const& PageFile::name() const
    return Impl->name();
 }
 
+int PageFile::version() const
+{
+   return Impl->version();
+}
+
 size_t PageFile::get_page_size() const
 {
    return Impl->get_page_size();

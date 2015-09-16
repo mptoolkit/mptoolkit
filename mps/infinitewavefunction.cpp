@@ -12,12 +12,18 @@
 #include "mps/spectrum_arpack.h"
 #include "mps/operator_actions.h"
 
+#include "pheap/pheapstream.h"
+
 double const InverseTol = getenv_or_default("MP_INVERSE_TOL", InverseTolDefault);
 
 // the tol used in the orthogonalization can apparently be a bit smaller
 double const OrthoTol = getenv_or_default("MP_ORTHO_TOL", 1E-9);
 
 double const ArnoldiTol = getenv_or_default("MP_ARNOLDI_TOL", 1E-15);
+
+
+// version tag, default version is 1
+PStream::VersionTag InfiniteWavefunction::VersionT(1);
 
 InfiniteWavefunction rotate_left(InfiniteWavefunction const& Psi, int Count)
 {
@@ -111,6 +117,7 @@ InfiniteWavefunction repeat(InfiniteWavefunction const& Psi, int Count)
 
 PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunction const& psi)
 {
+   out << InfiniteWavefunction::VersionT.default_version();
    out << psi.C_old;
    out << psi.QShift;
    out << psi.Psi;
@@ -121,11 +128,31 @@ PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunction const
 
 PStream::ipstream& operator>>(PStream::ipstream& in, InfiniteWavefunction& psi)
 {
+   // We formerly didn't have a version number for InfiniteWavefunction, so we have a hack,
+   // and read the metadata version of the filesystem.  This is 1 if the file is old and
+   // doesn't contain an InfiniteWavefunction version number.
+   int Version = 1;
+
+   PHeapFileSystem::ipheapstream* S = dynamic_cast<PHeapFileSystem::ipheapstream*>(&in);
+   if (S && S->version() == 1)
+   {
+      // old file, need to set the version number manually
+      Version = 1;
+   }
+   else
+   {
+      // new file, read the version number
+      Version = in.read<int>();
+   }
+
+   PStream::VersionSentry Sentry(in, InfiniteWavefunction::VersionT, Version);
+
    in >> psi.C_old;
    in >> psi.QShift;
    in >> psi.Psi;
    in >> psi.C_right;
    in >> psi.Attr;
+
    return in;
 }
 

@@ -155,10 +155,12 @@
 
   ipstream& operator>>(ipstream& in, foo& f)
   {
-     PStream::VersionSentry Sentry(in, FunctionDatabaseVersion , 2);
+     PStream::VersionSentry Sentry(in, FunctionDatabaseV , 2);
      in >> f.b;
      return in;
   }
+
+  The global tag object can be a static member of the class.
 
   If the version number is to be read from the stream, then 
   use in.read<int>() as the version number.
@@ -174,7 +176,7 @@
   in.push_version(FunctionDatabaseV, 2);
   and reset with in.pop_version(FunctionDatabaseV);
   But this method is not recommended, except to set initial version numbers
-  on a new stream, if they differ from the default.
+  on a new stream, if they differ from the default, as it is error-prone and isn't exception safe.
 
   Experimental features not yet merged: streaming of typemap's.
 */

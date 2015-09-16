@@ -61,6 +61,9 @@ class PageFile
 
       std::string const& name() const;
 
+      // returns the version number of the page file.
+      int version() const;
+
       // writes a buffer that is not currently on disk.  At this time,
       // a LocalPage is allocated to the PageInfo, and PageInfo->PF is set to this.
       // Precondition: PageInfo->PF == NULL.
