@@ -1,9 +1,11 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 //
 // CanonicalWavefunction: class to represent an MPS that is in (left or right) canonical form.
 //
 // The canonical form as all matrices in left (right) canonical form, and we also store
 // the Lambda matrix (which is diagonal) at each partition.
+//
+// This is a base class for common functions between left and right canonical wavefunctions.
 //
 // a LeftCanonicalWavefunction has all MPS matrices in left-canonical form and the corresponding
 // lambda is on the right (Basis2) at each site.
@@ -15,14 +17,15 @@
 // iterators and access is defined, but generally we would want to convert to
 // a LinearWavefunction or a CenterWavefunction and use that instead.
 //
-// 
 
 #if !defined(MPTOOLKIT_MPS_CANONICALWAVEFUNCTION_H)
 #define MPTOOLKIT_MPS_CANONICALWAVEFUNCTION_H
 
-#include "infinitewavefunction.h"
-#include "linearwavefunction.h"
+#include "mps/state_component.h"
 #include "linearalgebra/diagonalmatrix.h"
+#include "pheap/pvalueiterator.h"
+
+class LinearWavefunction;
 
 // The lambda matrix is real-valued and diagonal
 typedef Tensor::IrredTensor<LinearAlgebra::DiagonalMatrix<double>,
@@ -50,86 +53,64 @@ class CanonicalWavefunctionBase
       typedef pvalue_handle_iterator<base_lambda_iterator>             lambda_iterator;
       typedef const_pvalue_handle_iterator<const_base_lambda_iterator> const_lambda_iterator;
 
-      int size() const { return MpsData.size(); }
+      // number of sites in the wavefunction
+      int size() const { return Data.size(); }
+
+      bool empty() const { return Data.empty(); }
 
       // Returns true if the state transforms irreducibly.  This is true
-      // iff the left basis contains only a single site.
-      bool is_irreducible() const;
-
-      // returns true if the state can be considered to be a pure state; which 
-      // implies that both the right hand basis is one-dimensional.
-      // We can interpret a reducible left-hand basis also as a pure state, by summing
-      // the states, so we do not require that the left-hand basis is one-dimensional.
-      bool is_pure() const;
+      // iff the left basis contains only a single site, and the right hand side must be size 1 and abelian
+      // (ie, it must have total dimension 1).
+      bool is_irreducible() const { return this->Basis1().size() == 1 && this->Basis2().total_dimension() == 1; }
 
       // precondition: is_irreducible
       QuantumNumbers::QuantumNumber TransformsAs() const;
 
       // returns the left-most basis.
-      VectorBasis Basis1() const;
+      VectorBasis Basis1() const { return Basis1_; }
       // returns the right-most basis.
-      VectorBasis Basis2() const;
-
-      mps_iterator begin() { return mps_iterator(Data.begin()); }
-      mps_iterator end() { return mps_iterator(Data.end()); }
+      VectorBasis Basis2() const { return Basis2_; }
 
       const_mps_iterator begin() const { return const_mps_iterator(Data.begin()); }
       const_mps_iterator end() const { return const_mps_iterator(Data.end()); }
 
-      lambda_iterator lambda_begin() { return lambda_iterator(Lambda.begin()); }
-      lambda_iterator lambda_end() { return lambda_iterator(Lambda.end()); }
+      const_base_mps_iterator begin_raw() const { return Data.begin(); }
+      const_base_mps_iterator end_raw() const { return Data.end(); }
 
       const_lambda_iterator lambda_begin() const { return const_lambda_iterator(Lambda.begin()); }
       const_lambda_iterator lambda_end() const { return const_lambda_iterator(Lambda.end()); }
 
       // return the i'th MPS matrix.  Because they are stored by handle, we can't
       // return a reference, but the tensors are reference counted anyway so a copy is cheap
-      mps_type operator[](int i) const;
+      mps_type operator[](int i) const { return *Data[i].lock(); }
 
       // returns the lambda matrix at site i (acting on [i].Basis2() for a LeftCanonicalWavefunction
       // or [i].Basis1() for a RightCanonicalWavefunction)
-      lambda_type lambda(int i) const; 
+      lambda_type lambda(int i) const { return *Lambda[i].lock(); }
+
+      static PStream::VersionTag VersionT;
 
    protected:
       // don't allow construction except via derived classes
-      CanonicalWavefunctionBase();
-      CanonicalWavefunctionBase(CanonicalWavefunctionBase const& Psi);
+      CanonicalWavefunctionBase() {}
+      CanonicalWavefunctionBase(CanonicalWavefunctionBase const& Psi) : Data(Psi.Data), Lambda(Psi.Lambda) {}
+      CanonicalWavefunctionBase& operator=(CanonicalWavefunctionBase const& Psi) { Data = Psi.Data; Lambda = Psi.Lambda; return *this; }
 
-   private:
-      void push_back(mps_type const& x);
-      void push_back_lambda(lambda_type const& x);
+      void push_back(mps_type const& x) { Data.push_back(new mps_type(x)); }
+      void push_back_lambda(lambda_type const& x) { Lambda.push_back(new lambda_type(x)); }
+
+      void set(int i, mps_type const& A) { Data[i] = new mps_type(A); }
+
+      void setBasis1(VectorBasis const& B) { Basis1_ = B; }
+      void setBasis2(VectorBasis const& B) { Basis2_ = B; }
+
+      void ReadStream(PStream::ipstream& in);
+      void WriteStream(PStream::opstream& out) const;
 
       mps_container_type Data;
       lambda_container_type Lambda;
-};
 
-class LeftCanonicalWavefunction : public CanonicalWavefunctionBase
-{
-   public:
-      // construction and orthogonalization from a LinearWavefunction
-      explicit LeftCanonicalWavefunction(LinearWavefunction const& Psi);
-
-      LeftCanonicalWavefunction(LeftCanonicalWavefunction const& Psi);
-
-      LeftCanonicalWavefunction& operator=(LeftCanonicalWavefunction const& Psi);
-
-      void check_structure() const;
-      void debug_check_structure() const;
-
-};
-
-class RightCanonicalWavefunction : public CanonicalWavefunctionBase
-{
-   public:
-      // construction and orthogonalization from a LinearWavefunction
-      explicit RightCanonicalWavefunction(LinearWavefunction const& Psi);
-
-      RightCanonicalWavefunction(RightCanonicalWavefunction const& Psi);
-
-      RightCanonicalWavefunction& operator=(RightCanonicalWavefunction const& Psi);
-
-      void check_structure() const;
-      void debug_check_structure() const;
+      VectorBasis Basis1_, Basis2_;
 };
 
 #endif

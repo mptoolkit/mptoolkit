@@ -78,6 +78,22 @@ struct SerializeOutInterface<PStream::opstreambuf<Format>&,
 template <int Format, typename Mat, typename MatV, typename MatI>
 struct SerializeOutInterface<PStream::opstreambuf<Format>&,
                              Mat,
+                             DIAGONAL_MATRIX(MatV, MatI)>
+{
+   typedef PStream::opstreambuf<Format>& result_type;
+   typedef PStream::opstreambuf<Format>& first_argument_type;
+   typedef Mat const& second_argument_type;
+
+   result_type operator()(first_argument_type out, second_argument_type M) const
+   {
+      out << M.diagonal();
+      return out;
+   }
+};
+
+template <int Format, typename Mat, typename MatV, typename MatI>
+struct SerializeOutInterface<PStream::opstreambuf<Format>&,
+                             Mat,
                              SPARSE_MATRIX(MatV, MatI)>
 {
    typedef PStream::opstreambuf<Format>& result_type;
@@ -160,7 +176,7 @@ void do_serialize_in_coordinate(PStream::ipstreambuf<Format>& in, Mat& M)
 template <int Format, typename Mat>
 void do_serialize_in_coordinate(PStream::ipstreambuf<Format>& in, Mat const& M)
 {
-   do__serialize_in_coordinate(in, const_cast<Mat&>(M));
+   do_serialize_in_coordinate(in, const_cast<Mat&>(M));
 }
 
 } // namespace Private
@@ -201,6 +217,22 @@ struct SerializeInInterface<PStream::ipstreambuf<Format>&,
       {
          PANIC("Unsupported matrix format.")(t)(int(t));
       }
+      return in;
+   }
+};
+
+template <int Format, typename Mat, typename MatV, typename MatI>
+struct SerializeInInterface<PStream::ipstreambuf<Format>&,
+                            Mat&,
+                            DIAGONAL_MATRIX(MatV, MatI)>
+{
+   typedef PStream::ipstreambuf<Format>& result_type;
+   typedef PStream::ipstreambuf<Format>& first_argument_type;
+   typedef Mat& second_argument_type;
+
+   result_type operator()(first_argument_type in, second_argument_type M) const
+   {
+      in >> M.diagonal();
       return in;
    }
 };

@@ -48,6 +48,18 @@ SingularValueDecomposition(IrredTensor<LinearAlgebra::Matrix<std::complex<double
 			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
 			               VectorBasis, VectorBasis>& Vh);
 
+// version to use explicitly a diagonal matrix
+void 
+SingularValueDecomposition(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis> const& m, 
+			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis>& U,
+			   IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
+			               VectorBasis, VectorBasis>& D,
+			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis>& Vh);
+
+
 // If the basis is already regular, we can avoid some book-keeping
 void 
 SingularValueDecompositionRegular(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 

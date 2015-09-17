@@ -1,86 +1,100 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 //
-// InfiniteWavefunction: class to represent a linear `infinite' matrix product wavefunction.
+// InfiniteWavefunction: class to represent a linear `infinite' matrix product wavefunction
+// in canonical form.
 //
-// here we mean `infinite' in the iterative sense; a sequence of matrices that can be used to
-// generate a translationally invariant state (possibly with a non-trivial unit cell)
-// but it is not necessarily at the fixed point.
-//
-// We store:
-// The Center matrix for some arbitrary size lattice, C_0
-// the wavefunction for the size plus one unit cell, consisting
-// of the right Center matrix C_R and the left-orthonormalized A-matrices B_L.
-// We also keep the quantum number that determines the density (ie, quantum number per
-// unit cell).  This logically fits in at the left hand of the unit cell.
-//
-// By convention, we take C_old to be always diagonal.  In practice, 
-// this means that C_0.Basis1() == C_0.Basis2().
-//
-// The right basis for C_0 is the same as the right basis of C_R.  The left basis
-// of C_0 is the same as the left basis of the left-most A-matrix, but shifted by
-// adjoint(Shift).  This means that (C_0)^{-1} can be applied to the left-most A matrix.
-//
-// If we rotate the wavefunction to the left and obtain right-orthonormalized matrices B_R
-// and the Center matrix C_L (which must be shifted in quantum number)
-// then the iDMRG wavefunction transformation for
-// the 2*N site lattice is C_R C_0^{-1} C_L.
-// At the fixed point, C_0 = C_R = C_L.  I'm not sure if care needs to be taken to get
-// the right signs of the density matrix eigenvectors to achieve this condition.
-//
-// The wavefunction part satisfies DeltaShift(Psi.C_right.Basis2(), QShift) == Psi.Basis1()
-// C_old is defined on Psi.Basis1()
-// C_right is defined on Psi.Basis2()
-// C_old must be diagonal and have C_old.Basis1() == C_old.Basis2()
-// C_right may have a different Basis1 to Basis2, and need not be diagonal.
 
 #if !defined(INFINITEWAVEFUNCTION_H_SDJKLCHUIORYH8945Y89Y98)
 #define INFINITEWAVEFUNCTION_H_SDJKLCHUIORYH8945Y89Y98
 
-#include "linearwavefunction.h"
+#include "canonicalwavefunction.h"
 #include "mpo/finite_mpo.h"
 #include "mpo/product_mpo.h"
 
-class InfiniteWavefunction
+// class to represent an infinite wavefunction in the left canonical basis
+class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
 {
    public:
-      typedef LinearWavefunction::iterator       iterator;
-      typedef LinearWavefunction::const_iterator const_iterator;
+      InfiniteWavefunctionLeft() {}
 
-      InfiniteWavefunction() {}
+      // construction from a LinearWavefunction (in left-canonical form with lambda matrix on the right)
+      InfiniteWavefunctionLeft(LinearWavefunction const& Psi, MatrixOperator const& Lambda, 
+			       QuantumNumbers::QuantumNumber const& QShift_);
 
-      QuantumNumbers::SymmetryList GetSymmetryList() const { return C_old.GetSymmetryList(); }
+      // constructs and canonicalizes the wavefunction
+      InfiniteWavefunctionLeft(LinearWavefunction const& Psi, QuantumNumbers::QuantumNumber const& QShift_);
 
-      // size of the unit cell
-      int size() const { return Psi.size(); }
+      InfiniteWavefunctionLeft(InfiniteWavefunctionLeft const& Psi) : CanonicalWavefunctionBase(Psi), QShift(Psi.QShift) {}
 
-      // the target quantum number, per unit cell
-      QuantumNumbers::QuantumNumber const& shift() const { return QShift; }
+      InfiniteWavefunctionLeft& operator=(InfiniteWavefunctionLeft const& Psi)
+      { CanonicalWavefunctionBase::operator=(Psi); QShift = Psi.QShift; return *this; }
 
-      // returns the left-most basis.
-      VectorBasis Basis1() const { return Psi.Basis1(); }
-      // returns the right-most basis.
-      VectorBasis Basis2() const { return Psi.Basis2(); }
+      RealDiagonalOperator lambda_r() const { return this->lambda(this->size()-1); }
 
-      iterator begin() { return Psi.begin(); }
-      iterator end() { return Psi.end(); }
+      QuantumNumber qshift() const { return QShift; }
 
-      const_iterator begin() const { return Psi.begin(); }
-      const_iterator end() const { return Psi.end(); }
+      // Rotates the wavefunction to the left, by taking the left-most site and moving it to the right
+      void rotate_left(int count);
 
-      MatrixOperator C_old;  // By convention, this is kept in a diagonal basis
+      // Rotates the wavefunction to the left, by taking the right-most site and moving it to the left
+      void rotate_right(int count);
 
-      QuantumNumbers::QuantumNumber QShift;
-      LinearWavefunction Psi;  // left-orthogonalized
-      MatrixOperator C_right;
+      // returns the orthogonality fidelity.  Normally this should be epsilon
+      double orthogonality_fidelity() const;
 
-      mutable AttributeList Attr;
+      void check_structure() const;
+      void debug_check_structure() const;
 
-      // version tag.  Default version is 1.
       static PStream::VersionTag VersionT;
 
-   friend PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunction const& psi);
-   friend PStream::ipstream& operator>>(PStream::ipstream& in, InfiniteWavefunction& psi);
+      friend PStream::ipstream& operator>>(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi);
+      friend PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunctionLeft const& Psi);
+
+   private:
+      void Initialize(LinearWavefunction const& Psi, MatrixOperator const& Lambda);
+
+      QuantumNumber QShift;
 };
+
+// Convert a, infinite wavefunction to left-canonical form, and returns the Lambda matrix on the right-hand-side
+RealDiagonalOperator
+left_canonicalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift);
+
+// Extend the unit cell of the wavefunction by repeating it Count number of times
+InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count);
+
+// returns a linear wavefunction that is in pure left-orthogonal form
+std::pair<LinearWavefunction, RealDiagonalOperator>
+get_left_canonical(InfiniteWavefunctionLeft const& Psi);
+
+// returns a linear wavefunction that is in pure right-orthogonal form.
+// The asymmetry in the return type between get_left_canonical and get_right_canonical
+// is because for a left-canonical wavefunction, the Lambda matrix is already in diagonal form,
+// whereas converting a left-canonical wavefunction into a right-canonical wavefunction give
+// an additional unitary matrix, that we cannot wrap around to the other end of the wavefunction
+// as it would change the basis there.
+std::pair<MatrixOperator, LinearWavefunction>
+get_right_canonical(InfiniteWavefunctionLeft const& Psi);
+
+#if 0
+class InfiniteRightWavefunctionRight : public CanonicalWavefunctionBase
+{
+   public:
+      // construction and orthogonalization from a LinearWavefunction
+      explicit InfiniteRightCanonicalWavefunction(LinearWavefunction const& Psi);
+
+      InfiniteRightCanonicalWavefunction(InfiniteRightCanonicalWavefunction const& Psi);
+
+      InfiniteRightCanonicalWavefunction& operator=(InfiniteRightCanonicalWavefunction const& Psi);
+
+      void check_structure() const;
+      void debug_check_structure() const;
+
+      friend PStream::ipstream& operator>>(PStream::ipstream& in, RightCanonicalWavefunction& Psi);
+      friend PStream::opstream& operator<<(PStream::opstream& out, RightCanonicalWavefunction const& Psi);
+};
+#endif
+
 
 // When taking the inverse of the singular values, we need a cutoff value beyond which we ignore the
 // small elements.  This is set to the environment variable MP_INVERSE_TOL, or if that variable
@@ -88,65 +102,28 @@ class InfiniteWavefunction
 double const InverseTolDefault = 1E-7;
 extern double const InverseTol;
 
-// rotate sites in the unit cell, by taking the left-most site and putting 
-// it on the right hand side, repeat Count times
-InfiniteWavefunction rotate_left(InfiniteWavefunction const& Psi, int Count);
-
-// Join two wavefunctions together.  Precondition: Psi1.Basis2() == Psi2.Basis1()
-InfiniteWavefunction join(InfiniteWavefunction const& Psi1, InfiniteWavefunction const& Psi2);
-
-// Join two wavefunctions together, with a delta shift of Psi1.  Equivalent to
-// join(delta_shift(Psi1, Psi2.shift()), Psi2)
-// Precondition: Psi1.Basis2() == Psi2.Basis2()
-InfiniteWavefunction join_shift(InfiniteWavefunction const& Psi1, InfiniteWavefunction const& Psi2);
-
-// Extend the unit cell of the wavefunction by repeating it Count number of times
-InfiniteWavefunction repeat(InfiniteWavefunction const& Psi, int Count);
-
-// returns a linear wavefunction that is in pure left-orthogonal form.
-// Note that this is the opposite of the 'normal form' used for finite-size MPS.
-// If Psi is not orthonormalized, then the result is unspecified.
-LinearWavefunction get_orthogonal_wavefunction(InfiniteWavefunction const& Psi);
-
-// returns a linear wavefunction that is right-orthogonalized
-LinearWavefunction get_right_orthogonal_wavefunction(InfiniteWavefunction const& Psi);
-
-// returns the fidelity of the density matrices of C_old and C_right.
-// If the fidelity is 1.0, the state is orthonormalized.
-double orthogonality_fidelity(InfiniteWavefunction const& x);
-
-// explicitly orthogonalizes the iMPS
-void orthogonalize(InfiniteWavefunction& x);
-
-// dodgy version that actually takes a LinearWavefunction and orthogonalizes it
-// into an InfiniteWavefunction
-void orthogonalize_linear(InfiniteWavefunction& x);
-
-// same as above where we can supply an initial guess for the identity operator
-void orthogonalize_linear(InfiniteWavefunction& x, MatrixOperator const& Guess);
-
 // calculates the overlap of two iMPS, per unit cell.
 // The eigenvector can be in any allowable symmetry sector.
-std::complex<double> overlap(InfiniteWavefunction const& x,  InfiniteWavefunction const& y,
+std::complex<double> overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefunctionLeft const& y,
                              QuantumNumbers::QuantumNumber const& Sector, 
 			     int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
 // This version allows a string operator also
-std::complex<double> overlap(InfiniteWavefunction const& x, FiniteMPO const& StringOp,
-                             InfiniteWavefunction const& y,
+std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const& StringOp,
+                             InfiniteWavefunctionLeft const& y,
                              QuantumNumbers::QuantumNumber const& Sector, 
 			     int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
-std::complex<double> overlap(InfiniteWavefunction const& x, ProductMPO const& StringOp,
-                             InfiniteWavefunction const& y,
+std::complex<double> overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
+                             InfiniteWavefunctionLeft const& y,
                              QuantumNumbers::QuantumNumber const& Sector, 
 			     int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
 // Spatial reflection of a wavefunction
-InfiniteWavefunction reflect(InfiniteWavefunction const& Psi);
+//InfiniteWavefunctionRight reflect(InfiniteWavefunction const& Psi);
 
 // version of reflect where we apply a local operator also
-InfiniteWavefunction reflect(InfiniteWavefunction const& Psi, std::vector<SimpleOperator> const& Op);
+//InfiniteWavefunctionRight reflect(InfiniteWavefunction const& Psi, std::vector<SimpleOperator> const& Op);
 
 
 #endif

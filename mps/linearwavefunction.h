@@ -2,16 +2,6 @@
 //
 // LinearWavefunction: main class to represent a linear matrix product wavefunction.
 // 
-// An MPWavefunction is currently a typedef for a LinearWavefunction, but MPWavefunction
-// has some additional properties.  Assumed to be always in 'normal' form; with all 
-// matrices satisfying the right-orthonormality constraint except possibly the left most A-matrix.
-//
-// Eventually an MPWavefunction will be a different beast, that allows Y-junctions
-// (and possibly loops).
-//
-// Some of the operations defined below on LinearWavefunction require properly normalized
-// states; these operations will be removed once the final MPWavefunction class is constructed.
-//
 
 #if !defined(LINEARWAVEFUNCTION_H_FUIYT49786Y709)
 #define LINEARWAVEFUNCTION_H_FUIYT49786Y709
@@ -41,7 +31,7 @@ class LinearWavefunction
       // construction from an array of handles
       template <typename FwdIter>
       LinearWavefunction(FwdIter first, FwdIter last)
-         : SList(first->GetSymmetryList()), Data(first, last) {}
+         : Data(first, last) { SList = this->Basis1().GetSymmetryList(); }
 
       SymmetryList GetSymmetryList() const { return this->begin()->GetSymmetryList(); }
 

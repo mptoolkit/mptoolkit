@@ -88,7 +88,7 @@ linearalgebraobj = eigen.o
 mpoobj = operator_component.o generic_mpo.o finite_mpo.o triangular_mpo.o product_mpo.o infinite_mpo.o \
          f-optim.o e-optim.o
 
-mpsobj = state_component.o linearwavefunction.o infinitewavefunction.o density.o operator_actions.o
+mpsobj = state_component.o linearwavefunction.o canonicalwavefunction.o infinitewavefunction.o density.o operator_actions.o
 
 mpobj = $(mpoobj) $(mpsobj) $(latticeobj) attributes.o
 
@@ -437,8 +437,8 @@ mp-simple-marshall-qmc : random_wavefunc.o
 # infinite tools
 
 mp-idmrg5 : $(mpoobj) infinitewavefunction.o random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o
-mp-idmrg : $(mpoobj) infinitewavefunction.o random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o
-mp-idmrg-s3e : $(mpoobj) infinitewavefunction.o random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o
+mp-idmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o
+mp-idmrg-s3e : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o
 mp-idmrg5-spin2 : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o packunpack.o
 mp-irename-symmetry : triangular_operator.o mpoperator.o infinitewavefunction.o
 mp-iparity : triangular_operator.o mpoperator.o infinitewavefunction.o random_wavefunc.o packunpack.o

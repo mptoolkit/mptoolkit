@@ -33,13 +33,12 @@ struct AssignProduct2<LHS, M1, M2, Nested,
       DEBUG_PRECONDITION_EQUAL(size2(m1), size1(m2));
       DEBUG_PRECONDITION_EQUAL(size1(lhs), size1(m1));
       DEBUG_PRECONDITION_EQUAL(size2(lhs), size2(m2));
-      typename IterateDiagonal<M1>::result_type I = iterate(m1.diagonal());
       typename const_iterator<M2>::type J = iterate(m2);
       typename iterator<LHS>::type K = iterate(lhs);
-      while (I)
+      while (J)
       {
-	 *K = transform(*I, *J, f);
-	 ++I; ++J; ++K;
+	 *K = transform(m1.diagonal(), *J, f);
+	 ++J; ++K;
       }
       //      SparseMatrix<typename interface<M1>::value_type, RowMajor> Temp1(m1);
       //      assign_product2(lhs, Temp1, swap_sort_order(m2), f);
@@ -251,12 +250,11 @@ struct AddProduct2<LHS, M1, M2, Nested,
       DEBUG_PRECONDITION_EQUAL(size1(lhs), size1(m1));
       DEBUG_PRECONDITION_EQUAL(size2(lhs), size2(m2));
       typename const_iterator<M1>::type I = iterate(m2);
-      typename IterateDiagonal<M2>::result_type J = iterate(m1.diagonal());
       typename iterator<LHS>::type K = iterate(lhs);
       while (I)
       {
-	 *K += transform(*I, *J, f);
-	 ++I; ++J; ++K;
+	 *K += transform(*I, m2.diagonal(), f);
+	 ++I; ++K;
       }
       //SparseMatrix<typename interface<M1>::value_type, RowMajor> Temp1(m1);
       //add_product2(lhs, Temp1, swap_sort_order(m2), f);
@@ -326,16 +324,13 @@ struct SubtractProduct2<LHS, M1, M2, Nested,
       DEBUG_PRECONDITION_EQUAL(size2(m1), size1(m2));
       DEBUG_PRECONDITION_EQUAL(size1(lhs), size1(m1));
       DEBUG_PRECONDITION_EQUAL(size2(lhs), size2(m2));
-      typename IterateDiagonal<M1>::result_type I = iterate(m1.diagonal());
       typename const_iterator<M2>::type J = iterate(m2);
       typename iterator<LHS>::type K = iterate(lhs);
-      while (I)
+      while (J)
       {
-	 *K -= transform(*I, *J, f);
-	 ++I; ++J; ++K;
+	 *K -= transform(m1.diagonal(), *J, f);
+	 ++J; ++K;
       }
-      //SparseMatrix<typename interface<M1>::value_type, RowMajor> Temp1(m1);
-      //subtract_product2(lhs, Temp1, swap_sort_order(m2), f);
    }
 };
 
@@ -398,13 +393,12 @@ struct SubtractProduct2<LHS, M1, M2, Nested,
       DEBUG_PRECONDITION_EQUAL(size2(m1), size1(m2));
       DEBUG_PRECONDITION_EQUAL(size1(lhs), size1(m1));
       DEBUG_PRECONDITION_EQUAL(size2(lhs), size2(m2));
-      typename const_iterator<M1>::type I = iterate(m2);
-      typename IterateDiagonal<M2>::result_type J = iterate(m1.diagonal());
+      typename const_iterator<M1>::type I = iterate(m1);
       typename iterator<LHS>::type K = iterate(lhs);
       while (I)
       {
-	 *K -= transform(*I, *J, f);
-	 ++I; ++J; ++K;
+	 *K -= transform(*I, m2.diagonal(), f);
+	 ++I; ++K;
       }
       //SparseMatrix<typename interface<M1>::value_type, RowMajor> Temp1(m1);
       //subtract_product2(lhs, Temp1, swap_sort_order(m2), f);

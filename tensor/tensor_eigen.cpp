@@ -132,13 +132,15 @@ SingularValueDecompositionRegular(IrredTensor<LinearAlgebra::Matrix<std::complex
 				  VectorBasis, VectorBasis> const& m, 
 				  IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
 				  VectorBasis, VectorBasis>& U,
-                                  IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+                                  IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
 					      VectorBasis, VectorBasis>& D,
 				     IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
 						 VectorBasis, VectorBasis>& Vh)
 {
    typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
       VectorBasis, VectorBasis> IrredT;
+   typedef IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
+      VectorBasis, VectorBasis> DiagonalT;
    DEBUG_CHECK(is_scalar(m.TransformsAs()));
    DEBUG_CHECK(is_regular_basis(m.Basis1()))(m.Basis1());
    DEBUG_CHECK(is_regular_basis(m.Basis2()))(m.Basis2());
@@ -158,7 +160,7 @@ SingularValueDecompositionRegular(IrredTensor<LinearAlgebra::Matrix<std::complex
    }
 
    U = IrredT(m.Basis1(), DBasis);
-   D = IrredT(DBasis, DBasis);
+   D = DiagonalT(DBasis, DBasis);
    Vh = IrredT(DBasis, m.Basis2());
 
    for (unsigned i = 0; i < m.Basis1().size(); ++i)
@@ -177,9 +179,24 @@ SingularValueDecompositionRegular(IrredTensor<LinearAlgebra::Matrix<std::complex
 						   U(i,BasisMap[i]),
 						   Dvec,
 						   Vh(BasisMap[i], j));
-	 set_element(D, BasisMap[i], BasisMap[i], diagonal_matrix(Dvec));
+	 set_element(D, BasisMap[i], BasisMap[i], LinearAlgebra::DiagonalMatrix<double>(Dvec));
       }
    }
+}
+
+void 
+SingularValueDecompositionRegular(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+				  VectorBasis, VectorBasis> const& m, 
+				  IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+				  VectorBasis, VectorBasis>& U,
+                                  IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+					      VectorBasis, VectorBasis>& D,
+				     IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+						 VectorBasis, VectorBasis>& Vh)
+{
+   IrredTensor<LinearAlgebra::DiagonalMatrix<double>, VectorBasis, VectorBasis> Temp;
+   SingularValueDecompositionRegular(m, U, Temp, Vh);
+   D = Temp;
 }
 
 void 
@@ -187,7 +204,7 @@ SingularValueDecomposition(IrredTensor<LinearAlgebra::Matrix<std::complex<double
 			               VectorBasis, VectorBasis> const& m, 
 			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
 			               VectorBasis, VectorBasis>& U,
-			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			   IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
 			               VectorBasis, VectorBasis>& D,
 			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
 			   VectorBasis, VectorBasis>& Vh)
@@ -209,6 +226,21 @@ SingularValueDecomposition(IrredTensor<LinearAlgebra::Matrix<std::complex<double
    SingularValueDecompositionRegular(triple_prod(U1, m, herm(U2)), U, D, Vh);
    U = herm(U1) * U;
    Vh = Vh * U2;
+}
+
+void 
+SingularValueDecomposition(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis> const& m, 
+			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis>& U,
+			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis>& D,
+			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			   VectorBasis, VectorBasis>& Vh)
+{
+   IrredTensor<LinearAlgebra::DiagonalMatrix<double>, VectorBasis, VectorBasis> Temp;
+   SingularValueDecomposition(m, U, Temp, Vh);
+   D = Temp;
 }
 
 LinearAlgebra::Vector<double>
