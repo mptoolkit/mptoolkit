@@ -894,7 +894,17 @@ int main(int argc, char** argv)
       CHECK_EQUAL(int(HamMPO.size()), WavefuncUnitCellSize);
 
       // Check that the local basis for the wavefunction and hamiltonian are compatible
-      local_basis_compatible_or_abort(MyPsi, HamMPO);
+      if (ExtractLocalBasis(MyPsi) != ExtractLocalBasis1(HamMPO))
+      {
+	 std::cerr << "fatal: Hamiltonian is defined on a different local basis to the wavefunction.\n";
+	 return 1;
+      }
+
+      if (ExtractLocalBasis1(HamMPO) != ExtractLocalBasis2(HamMPO))
+      {
+	 std::cerr << "fatal: Hamiltonian has different domain and co-domain.\n";
+	 return 1;
+      }
       
       // Get the initial Hamiltonian matrix elements
       //      StateComponent BlockHamL = Initial_E(HamMPO.front() , Lin.Basis2());

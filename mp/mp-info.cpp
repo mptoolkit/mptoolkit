@@ -1,93 +1,121 @@
 // -*- C++ -*- $Id$
 
-#include "matrixproduct/lattice.h"
-#include "matrixproduct/mpoperatorlist.h"
-#include "matrixproduct/mpwavefunction.h"
-#include "matrixproduct/centerwavefunction.h"
-#include "quantumnumbers/all_symmetries.h"
-#include "pheap/pheap.h"
+#include "wavefunction/mpwavefunction.h"
+#include "common/environment.h"
+#include "interface/inittemp.h"
 #include "mp/copyright.h"
-#include <iostream>
 #include "common/environment.h"
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 
 namespace prog_opt = boost::program_options;
 
-void ShowBasicInfo(MPWavefunction const& Psi, std::ostream& out)
+int MaxEigenvalues = 1000000;
+bool ShowBasic = false;
+bool Base2 = false;
+bool ShowEntropy = false;
+bool ShowStates = false;
+bool ShowLocalBasis = false;
+bool ShowBasis = false;
+bool ShowCasimir = false;
+bool ShowDensity = false;
+std::vector<int> Partition;
+
+void ShowBasicInfo(InfiniteWavefunctionLeft const& Psi, std::ostream& out)
 {
+   out << "Wavefunction is an InfiniteWavefunction in the left canonical basis.\n";
    out << "Symmetry list is " << Psi.GetSymmetryList() << '\n';
-   out << "State transforms as " << Psi.TransformsAs() << '\n';
-   out << "Number of sites = " << Psi.size() << '\n';
+   out << "Unit cell size = " << Psi.size() << '\n';
+   out << "Quantum number per unit cell is " << Psi.qshift() << '\n';
+   out << "Number of states = " << Psi.Basis1().total_dimension() << '\n';
+   out << std::endl;
 }
 
-void ShowStateInfo(LinearWavefunction const& Psi, std::ostream& out)
+void ShowStateInfo(InfiniteWavefunctionLeft const& Psi, std::ostream& out)
 {
-   LinearWavefunction::const_iterator I = Psi.begin();
-   int Bond = 0;
-   out << "#bond    #dimension  #degree\n";
-   out << std::setw(5) << Bond << "    "
-       << std::setw(10) << I->Basis1().total_dimension() << "  "
-       << std::setw(7) <<  I->Basis1().total_degree()
-       << '\n';
-   ++Bond;
-   while (I != Psi.end())
+   out << "#partition  #dimension  #degree\n";
+
+   for (std::vector<int>::const_iterator I = Partition.begin(); I != Partition.end(); ++I)
    {
-      out << std::setw(5) << Bond << "    "
-          << std::setw(10) << I->Basis2().total_dimension() << "  "
-          << std::setw(7) <<  I->Basis2().total_degree()
-          << '\n';
-      ++Bond; ++I;
+      VectorBasis B;
+      if (*I == 0)
+	 B = Psi.Basis1();
+      else
+	 B = Psi.lambda(*I-1).Basis1();
+
+      out << std::setw(10) << (*I) << "  "
+	  << std::setw(10) << B.total_dimension() << "  "
+	  << std::setw(7) <<  B.total_degree()
+	  << '\n';
    }
+   out << std::endl;
 }
 
-void ShowBasisInfo(LinearWavefunction const& Psi, std::ostream& out)
+void ShowBasisInfo(InfiniteWavefunctionLeft const& Psi, std::ostream& out)
 {
-   LinearWavefunction::const_iterator I = Psi.begin();
-   int Bond = 0;
-   out << "Basis at bond " << Bond << ":\n";
-   out << I->Basis1() << '\n';
-   ++Bond;
-   while (I != Psi.end())
+   for (std::vector<int>::const_iterator I = Partition.begin(); I != Partition.end(); ++I)
    {
-      out << "Basis at bond " << Bond << ":\n";
-      out << I->Basis1() << '\n';
-      ++Bond; ++I;
-   }
-}
-void ShowEntropyInfo(CenterWavefunction Psi, std::ostream& out, bool Base2)
-{
-   while (Psi.LeftSize() > 1) Psi.RotateLeft();
+      VectorBasis B;
+      if (*I == 0)
+	 B = Psi.Basis1();
+      else
+	 B = Psi.lambda(*I-1).Basis1();
 
+      out << "Basis at partition " << (*I) << ":\n" << B << '\n';
+   }
+   out << std::endl;
+}
+
+void ShowEntropyInfo(InfiniteWavefunctionLeft const& Psi, std::ostream& out)
+{
    out << "#left-size #right-size   #entropy" << (Base2 ? "(base-2)" : "(base-e)") << '\n';
-
-   DensityMatrix<MatrixOperator> DM(scalar_prod(Psi.Center(), herm(Psi.Center())));
-   out.precision(16);
-   double Entropy = DensityEntropy(DM.begin(), DM.end(), DM.EigenSum(), Base2);
-   out << std::setw(10) << Psi.LeftSize() << ' ' << std::setw(11) << Psi.RightSize() << ' ' 
-       << std::setw(18) << Entropy << '\n';
-
-   while (Psi.RightSize() > 1)
+   for (std::vector<int>::const_iterator I = Partition.begin(); I != Partition.end(); ++I)
    {
-      Psi.RotateRight();
-      DM = scalar_prod(Psi.Center(), herm(Psi.Center()));
-      Entropy = DensityEntropy(DM.begin(), DM.end(), DM.EigenSum(), Base2);
-      out << std::setw(10) << Psi.LeftSize() << ' ' << std::setw(11) << Psi.RightSize() << ' ' 
+      RealDiagonalOperator Lambda;
+      if (*I == 0)
+	 Lambda = Psi.lambda_r();
+      else
+	 Lambda = Psi.lambda(*I-1);
+
+      MatrixOperator Rho = Lambda;
+      Rho = scalar_prod(Rho, herm(Rho));
+
+      DensityMatrix<MatrixOperator> DM(Rho);
+
+      double Entropy = DensityEntropy(DM.begin(), DM.end(), DM.EigenSum(), Base2);
+      out << std::setw(10) << (*I) << ' ' << std::setw(11) << (Psi.size() - (*I)) << ' ' 
 	  << std::setw(18) << Entropy << '\n';
    }
-   out.flush();
+   out << std::endl;
 }
 
-void ShowCasimirInfo(CenterWavefunction Psi, std::ostream& out)
+void ShowDM(InfiniteWavefunctionLeft const& Psi, std::ostream& out)
 {
-   while (Psi.LeftSize() > 1) Psi.RotateLeft();
+   for (std::vector<int>::const_iterator I = Partition.begin(); I != Partition.end(); ++I)
+   {
+      RealDiagonalOperator Lambda;
+      if (*I == 0)
+	 Lambda = Psi.lambda_r();
+      else
+	 Lambda = Psi.lambda(*I-1);
 
-   SymmetryList const SList = Psi.GetSymmetryList();
-   int const NumCasimir = SList.NumCasimirOperators();
-   out.precision(16);
-   out.setf(std::ios::fixed);
+      MatrixOperator Rho = Lambda;
+      Rho = scalar_prod(Rho, herm(Rho));
 
+      DensityMatrix<MatrixOperator> DM(Rho);
+
+      out << "Reduced density matrix at partition (" 
+          << (*I) << "," << (Psi.size() - *I) << ") :\n";
+      DM.DensityMatrixReport(out, MaxEigenvalues, Base2);
+      out << std::endl;
+   }
+}
+
+void ShowCasimirInfo(InfiniteWavefunctionLeft const& Psi, std::ostream& out)
+{
    out << "#left-size #right-size   ";
+   QuantumNumbers::SymmetryList SList = Psi.GetSymmetryList();
+   int NumCasimir = SList.NumCasimirOperators();
    for (int i = 0; i < NumCasimir; ++i)
    {
       if (i != 0)
@@ -97,21 +125,20 @@ void ShowCasimirInfo(CenterWavefunction Psi, std::ostream& out)
    }
    out << '\n';
 
-   DensityMatrix<MatrixOperator> DM(scalar_prod(Psi.Center(), herm(Psi.Center())));
-   out << std::setw(10) << Psi.LeftSize() << ' ' << std::setw(11) << Psi.RightSize() << "   ";
-   for (int i = 0; i < NumCasimir; ++i)
+   for (std::vector<int>::const_iterator I = Partition.begin(); I != Partition.end(); ++I)
    {
-      if (i != 0) 
-	 out << ' ';
-      out << std::setw(20) << DM.EvaluateCasimir(i);
-   }
-   out << '\n';
+      RealDiagonalOperator Lambda;
+      if (*I == 0)
+	 Lambda = delta_shift(Psi.lambda_r(), Psi.qshift());
+      else
+	 Lambda = Psi.lambda(*I-1);
 
-   while (Psi.RightSize() > 1)
-   {
-      Psi.RotateRight();
-      DM = scalar_prod(Psi.Center(), herm(Psi.Center()));
-      out << std::setw(10) << Psi.LeftSize() << ' ' << std::setw(11) << Psi.RightSize() << "   ";
+      MatrixOperator Rho = Lambda;
+      Rho = scalar_prod(Rho, herm(Rho));
+
+      DensityMatrix<MatrixOperator> DM(Rho);
+
+      out << std::setw(10) << (*I) << ' ' << std::setw(11) << (Psi.size() - *I) << "   ";
       for (int i = 0; i < NumCasimir; ++i)
       {
 	 if (i != 0) 
@@ -120,115 +147,83 @@ void ShowCasimirInfo(CenterWavefunction Psi, std::ostream& out)
       }
       out << '\n';
    }
-   out.flush();
+   out << std::endl;
 }
 
-void ShowLocalBasis(CenterWavefunction Psi, std::ostream& out)
+void ShowLocalBasisInfo(InfiniteWavefunctionLeft const& Psi, std::ostream& out)
 {
    for (int i = 0; i < Psi.size(); ++i)
    {
       out << "Basis at site " << i << '\n';
-      out << Psi.Lookup(i).SiteBasis() << std::endl;
+      out << Psi[i].LocalBasis() << std::endl;
    }
+   out << std::endl;
 }
 
-void ShowDM(CenterWavefunction Psi, std::ostream& out, int Max, bool Base2)
+struct ShowWavefunction : public boost::static_visitor<void>
 {
-   DensityMatrix<MatrixOperator> DM(scalar_prod(Psi.Center(), herm(Psi.Center())));
+   void operator()(InfiniteWavefunctionLeft const& Psi) const;
 
-   if (Max > 0)
-   {
-      out << "\nReduced density matrix at partition (" 
-          << Psi.LeftSize() << "," << Psi.RightSize() << ") :\n";
-      DM.DensityMatrixReport(out, Max, Base2);
-   }
-   else
-   {
-      out << "Entropy at partition ("
-          << Psi.LeftSize() << "," << Psi.RightSize() << ") = "
-          << DensityEntropy(DM.begin(), DM.end(), DM.EigenSum()) << '\n';
-   }
-}
+};
 
-void ShowWavefunc(CenterWavefunction Psi, std::ostream& out, bool ShowEntropy, bool ShowStates, int Max,
-		  bool Base2)
+void
+ShowWavefunction::operator()(InfiniteWavefunctionLeft const& Psi) const
 {
-   out << "Symmetry list is " << Psi.GetSymmetryList() << '\n';
-   out << "State transforms as " << Psi.TransformsAs() << '\n';
-   out << "Number of sites = " << Psi.size() << '\n';
+   std::sort(Partition.begin(), Partition.end());
+   if (Partition.empty())
+   {
+      // all partitions
+      for (int i = 0; i <= Psi.size(); ++i)
+	 Partition.push_back(i);
+   }
 
-   if (Max == -1 && !ShowEntropy && !ShowStates) return;
-
-   if (Max == 0)
-      Max = 100000;
-
-   //   out << "Left-most basis:\n" << Psi.Left().Basis1();
-   while (Psi.LeftSize() > 1) Psi.RotateLeft();
+   if (ShowBasic)
+      ShowBasicInfo(Psi, std::cout);
 
    if (ShowStates)
-   {
-      std::cout << "Number of states at partition ("
-                << Psi.LeftSize() << "," << Psi.RightSize()
-                << ") = " << Psi.Center().Basis1().total_dimension() 
-                << " , degree = " << Psi.Center().Basis1().total_degree() << '\n';
-   }
-   else
-      ShowDM(Psi, out, Max, Base2);
-   while (Psi.RightSize() > 1)
-   {
-      Psi.RotateRight();
-      if (ShowStates)
-      {
-         std::cout << "Number of states at partition ("
-                   << Psi.LeftSize() << "," << Psi.RightSize()
-                   << ") = " << Psi.Center().Basis1().total_dimension() 
-                   << " , degree = " << Psi.Center().Basis1().total_degree() << '\n';
-      }
-      else
-         ShowDM(Psi, out, Max, Base2);
-   }
+      ShowStateInfo(Psi, std::cout);
 
-#if 0
-   DensityMatrix<MatrixOperator> DM(scalar_prod(Psi.Center(), herm(Psi.Center())));
-   out << "\nReduced density matrix at partition (" 
-       << Psi.LeftSize() << "," << Psi.RightSize() << ") :\n";
-   DM.DensityMatrixReport(out, Max, Base2);
+   if (ShowBasis)
+      ShowBasisInfo(Psi, std::cout);
 
-   while (Psi.LeftSize() > 1)
-   {
-      DensityMatrix<MatrixOperator> DM(scalar_prod(herm(Psi.Center()), Psi.Center()));
-      out << "\nReduced density matrix at partition (" 
-	  << Psi.LeftSize() << "," << Psi.RightSize() << ") :\n";
-      DM.DensityMatrixReport(out, Max, Base2);
-      Psi.RotateLeft();
-   }
-#endif
+   if (ShowEntropy)
+      ShowEntropyInfo(Psi, std::cout);
+
+   if (ShowDensity)
+      ShowDM(Psi, std::cout);
+
+   if (ShowCasimir)
+      ShowCasimirInfo(Psi, std::cout);
+
+   if (ShowLocalBasis)
+      ShowLocalBasisInfo(Psi, std::cout);
 }
 
 int main(int argc, char** argv)
 {
    try 
    {
-      int MaxEigenvalues = -1;
-      bool ShowLocal = false;
-      bool Base2 = false;
+      std::string WavefuncFile;
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("entropy,e", "show the entropy at each partition")
-         ("states,s", "show the number of states at each partition")
-	 ("basis,a", "show the complete basis at each partition")
-         ("density-matrix,d", "show the density matrix eigenvalues")
-	 ("casimir,c", "show the values of the casimir invariant operators at each partition")
+         ("entropy,e", prog_opt::bool_switch(&ShowEntropy), "show the entropy at each partition")
+         ("states,s", prog_opt::bool_switch(&ShowStates), "show the number of states at each partition")
+	 ("basis,a", prog_opt::bool_switch(&ShowBasis), "show the complete basis at each partition")
+         ("density-matrix,d", prog_opt::bool_switch(&ShowDensity), "show the density matrix eigenvalues")
+	 ("casimir,c", prog_opt::bool_switch(&ShowCasimir), 
+	  "show the values of the casimir invariant operators at each partition")
          ("limit,l", prog_opt::value<int>(&MaxEigenvalues), 
           "limit the density matrix display to N eigenvalues (implies --density-matrix)")
-         ("localbasis,b", prog_opt::bool_switch(&ShowLocal),
+         ("localbasis,b", prog_opt::bool_switch(&ShowLocalBasis),
           "Show the local basis at each site")
 	 ("base2,2", prog_opt::bool_switch(&Base2), "show the entropy using base 2 instead of base e")
+         ("partition,p", prog_opt::value(&Partition), 
+          "show quantities only for this parition (zero-based, can be used more than once; use --partition 0 to show only quantities at the edge of the unit cell")
          ;
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
-         ("input-wavefunction", prog_opt::value<std::string>(), "input wavefunction (required)")
+         ("input-wavefunction", prog_opt::value(&WavefuncFile), "input wavefunction (required)")
          ;
 
       prog_opt::positional_options_description p;
@@ -245,47 +240,29 @@ int main(int argc, char** argv)
       if (vm.count("help") || vm.count("input-wavefunction") == 0) 
       {
          print_copyright(std::cerr);
-         std::cerr << "usage: mp-info [options] input-wavefunction\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options] input-wavefunction\n";
          std::cerr << desc << "\n";
          return 1;
       }
       
-      bool ShowEntropy = false;
-      if (vm.count("entropy"))
-         ShowEntropy = true;
+      std::cout.precision(getenv_or_default("MP_PRECISION", 14));
+      std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-      if (vm.count("density-matrix"))
-         MaxEigenvalues = std::max(MaxEigenvalues, 0);
+      if (vm.count("limit"))
+	 ShowDensity = true;
 
-      bool ShowStates = vm.count("states");
-      bool ShowCasimir = vm.count("casimir");
-      bool ShowBasis = vm.count("basis");
+      if (!ShowEntropy && !ShowStates && !ShowLocalBasis && !ShowBasis && !ShowCasimir && !ShowDensity)
+	 ShowBasic = true;
 
-      std::string Wavefunc = vm["input-wavefunction"].as<std::string>();
+      pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(WavefuncFile, mp_pheap::CacheSize(), true);
 
-      long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
-      pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(Wavefunc, CacheSize, true);
+      boost::apply_visitor(ShowWavefunction(), Psi->Wavefunction());
 
-      if (ShowEntropy)
-      {
-	 ShowEntropyInfo(CenterWavefunction(*Psi), std::cout, Base2);
-      }
-      else if (ShowStates)
-      {
-         ShowStateInfo(*Psi, std::cout);
-      }
-      else if (ShowBasis)
-      {
-	 ShowBasisInfo(*Psi, std::cout);
-      }
-      else if (ShowCasimir)
-      {
-	 ShowCasimirInfo(CenterWavefunction(*Psi), std::cout);
-      }
-      else if (ShowLocal)
-         ShowLocalBasis(*Psi, std::cout);
-      else
-         ShowWavefunc(CenterWavefunction(*Psi), std::cout, ShowEntropy, ShowStates, MaxEigenvalues, Base2);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch(std::exception& e) 
    {

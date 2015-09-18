@@ -84,10 +84,10 @@ DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalu
    out.precision(12);
    out << std::scientific;
    if (MaxEigenvalues < 0) MaxEigenvalues = EigenInfoList.size();
-   out << "Eigenvalue sum = " << this->EigenSum() << '\n';
-   out << "von Neumann Entropy " << (Base2 ? "(base 2)" : "(base e)") << " = " << this->Entropy() << '\n';
+   out << "#Eigenvalue sum = " << this->EigenSum() << '\n';
+   out << "#von Neumann Entropy " << (Base2 ? "(base 2)" : "(base e)") << " = " << this->Entropy() << '\n';
    if (MaxEigenvalues > 0)
-      out << "Number            Eigenvalue  Degeneracy                 Sigma                Energy   Quantum Number\n";
+      out << "#Number           #Eigenvalue #Degeneracy                #Sigma               #Energy  #QuantumNumber\n";
    int n = 0;
    double Sigma = 1.0;
    int TotalDegree = 0;
@@ -113,8 +113,8 @@ DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalu
             Sigma -= EVal;
             TotalDegree += 1;
             ++n;
-            out << std::right << std::setw(6) << n << "  " 
-                << std::right << std::setw(20) << Iter->Eigenvalue 
+            out << std::right << std::setw(7) << n << "  " 
+                << std::right << std::setw(21) << Iter->Eigenvalue 
                 << "  " << std::setw(10) << 1
                 << "  " << std::setw(20) << Sigma
                 << "  " << std::setw(20) << Energy

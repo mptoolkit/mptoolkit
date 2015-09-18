@@ -17,6 +17,17 @@ CanonicalWavefunctionBase::TransformsAs() const
    return transform_targets(this->Basis1()[0], adjoint(this->Basis2()[0]))[0];
 }
 
+std::vector<BasisList>
+ExtractLocalBasis(CanonicalWavefunctionBase const& Psi)
+{
+   std::vector<BasisList> Result;
+   for (CanonicalWavefunctionBase::const_mps_iterator I = Psi.begin(); I != Psi.end(); ++I)
+   {
+      Result.push_back(I->LocalBasis());
+   }
+   return Result;
+}
+
 void
 CanonicalWavefunctionBase::ReadStream(PStream::ipstream& in)
 {
@@ -56,3 +67,4 @@ CanonicalWavefunctionBase::WriteStream(PStream::opstream& out) const
    out << Basis1_;
    out << Basis2_;
 }
+

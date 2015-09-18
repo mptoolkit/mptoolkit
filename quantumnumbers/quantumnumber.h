@@ -708,6 +708,16 @@ QuantumNumberList transform_targets(QuantumNumber const& q1, QuantumNumber const
    return Q;
 }
 
+// 'addition' of quantum numbers.  This is only possible if tghe quantum numbers
+// are abelian (possibly through being in the abelian sector of a non-abelian symmetry).
+inline
+QuantumNumber delta_shift(QuantumNumber const& q1, QuantumNumber const& q2)
+{
+   QuantumNumberList QL = transform_targets(q1, q2);
+   CHECK_EQUAL(QL.size(), 1);
+   return QL[0];
+}
+
 // returns the number of quantum numbers q2 such that q is in the C-G expansion of q1 * q2
 int num_inverse_transform_targets(QuantumNumber const& q1, QuantumNumber const& q);
 

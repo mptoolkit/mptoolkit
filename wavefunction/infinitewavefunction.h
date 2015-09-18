@@ -82,7 +82,9 @@ get_left_canonical(InfiniteWavefunctionLeft const& Psi);
 // whereas converting a left-canonical wavefunction into a right-canonical wavefunction give
 // an additional unitary matrix, that we cannot wrap around to the other end of the wavefunction
 // as it would change the basis there.
-// This function does an SVD on each MPS
+// This function does an SVD on each MPS.
+// Often the caller may want to construct
+// U*D*herm(U), and U*Psi, as being the right canonical wavefunction in the same basis as Psi.
 boost::tuple<MatrixOperator, RealDiagonalOperator, LinearWavefunction>
 get_right_canonical(InfiniteWavefunctionLeft const& Psi);
 

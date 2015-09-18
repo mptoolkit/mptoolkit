@@ -292,7 +292,7 @@ PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunctionLeft c
 std::pair<LinearWavefunction, RealDiagonalOperator>
 get_left_canonical(InfiniteWavefunctionLeft const& Psi)
 {
-   return std::make_pair(LinearWavefunction(Psi.begin_raw(), Psi.end_raw()), Psi.lambda(Psi.size()-1));
+   return std::make_pair(LinearWavefunction(Psi.base_begin(), Psi.base_end()), Psi.lambda(Psi.size()-1));
 }
 
 boost::tuple<MatrixOperator, RealDiagonalOperator, LinearWavefunction>
@@ -327,8 +327,8 @@ InfiniteWavefunctionLeft::rotate_left(int Count)
 
    Count = Count % this->size();
 
-   std::rotate(this->begin_raw_(), this->begin_raw_()+Count, this->end_raw_());
-   std::rotate(this->lambda_begin_raw_(), this->lambda_begin_raw_()+Count, this->lambda_end_raw_());
+   std::rotate(this->base_begin_(), this->base_begin_()+Count, this->base_end_());
+   std::rotate(this->lambda_base_begin_(), this->lambda_base_begin_()+Count, this->lambda_base_end_());
 }
 
 void
@@ -346,15 +346,96 @@ InfiniteWavefunctionLeft::rotate_right(int Count)
 
 void inplace_reflect(InfiniteWavefunctionLeft& Psi)
 {
+   // Although we construct the reflection into a new wavefunction,
+   // we do gain an advantage for the inplace operation because we remove
+   // elements from Psi as we go, so memory and disk use is ~ constant
+   InfiniteWavefunctionLeft Result;
+   Result.setBasis1(adjoint(Psi.Basis2()));
+   Result.setBasis2(adjoint(Psi.Basis1()));
+   Result.QShift = Psi.qshift();
+
+   RealDiagonalOperator D = Psi.lambda_r();
+   MatrixOperator U = MatrixOperator::make_identity(D.Basis1());
+
+   InfiniteWavefunctionLeft::const_base_mps_iterator I = Psi.base_end();
+   while (I != Psi.base_begin())
+   {
+      --I;
+
+      StateComponent A = prod(*I->lock(), U*D);
+      MatrixOperator M = ExpandBasis1(A);
+
+      MatrixOperator Vh;
+      SingularValueDecomposition(M, U, D, Vh);
+      A = prod(Vh, A);
+
+      Result.push_back(reflect(A));
+      Result.push_back_lambda(flip_conj(D));
+
+      Psi.pop_back();
+      Psi.pop_back_lambda();
+   }
+
+   Psi = Result;
 }
 
 // Conjugate a wavefunction in place
 void inplace_conj(InfiniteWavefunctionLeft& Psi)
 {
+   for (InfiniteWavefunctionLeft::mps_iterator I = Psi.begin_(); I != Psi.end_(); ++I)
+   {
+      *I = conj(*I);
+   }
 }
 
 InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
 {
+   CHECK(Count >= 0);
+
+   if (Count == 0 || Psi.empty())
+      return InfiniteWavefunctionLeft();
+
+   if (Count == 1)
+      return Psi;
+
+   // we need to handle the delta shift
+   InfiniteWavefunctionLeft Result;
+   bool First = true;
+   for ( ; Count > 1; --Count)
+   {
+      QuantumNumber q(Psi.GetSymmetryList());
+      for (int i = 1; i < Count; ++i)
+	 q = delta_shift(q, Psi.qshift());
+
+      for (InfiniteWavefunctionLeft::const_mps_iterator I = Psi.begin(); I != Psi.end(); ++I)
+      {
+	 // The very first time through the loop, set the Basis1.
+	 // We are guaranteed to go through this loop at least once, because
+	 // we return early if Count < 2
+	 if (First)
+	 {
+	    StateComponent A = delta_shift(*I, q);
+	    Result.setBasis1(A.Basis1());
+	    Result.push_back(A);
+	    Result.QShift = q;
+	    First = false;
+	 }
+	 else
+	 {
+	    Result.push_back(delta_shift(*I, q));
+	 }
+      }
+   }
+
+   // The last repetition can make a simple copy
+   for (InfiniteWavefunctionLeft::const_base_mps_iterator I = Psi.base_begin(); I != Psi.base_end(); ++I)
+   {
+      Result.push_back(*I);
+   }
+
+   Result.setBasis2(Psi.Basis2());
+
+   return Result;
 }
 
 std::complex<double> overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,

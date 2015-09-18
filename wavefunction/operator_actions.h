@@ -180,21 +180,6 @@ inject_right(LinearWavefunction const& Psi1,
 
 // miscellaneous functions
 
-// verify that the local basis of an MPO matches the local basis of a wavefunction
-// and that the size is correct
-bool
-is_local_basis_compatible(LinearWavefunction const& Psi, GenericMPO const& M);
- 
-// aborts with an error message if !is_local_basis_compatible(Psi,M)
-void
-local_basis_compatible_or_abort(LinearWavefunction const& Psi, GenericMPO const& M);
-
-bool is_local_basis1_compatible(LinearWavefunction const& Psi,
-				GenericMPO const& Op);
-
-bool is_local_basis2_compatible(LinearWavefunction const& Psi,
-				GenericMPO const& Op);
-
 struct LeftMultiplyString
 {
    typedef MatrixOperator argument_type;

@@ -173,11 +173,11 @@ default-models = spinchain-su2 spinchain-spin2-su2 \
                  hubbard-tri-u1u1
 
 tools = mp-idmrg mp-ioverlap \
-        mp-iinfo mp-iprint mp-iproject \
+        mp-info \
         mp-imoments mp-iexpectation mp-iwigner-eckart mp-ireorder-symmetry \
         mp-ispectrum mp-lattice-info mp-ioperator mp-aux-matrix mp-aux-algebra mp-iapply
 
-experimental-tools = mp-idmrg-s3e
+experimental-tools = mp-idmrg-s3e mp-iprint mp-iproject
 
 
 benchmarks = benchtripleprod

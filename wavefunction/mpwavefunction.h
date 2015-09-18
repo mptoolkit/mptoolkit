@@ -32,6 +32,8 @@ class MPWavefunction
 
       WavefunctionTypes& Wavefunction() { return Psi_; }
 
+      WavefunctionTypes const& Wavefunction() const { return Psi_; }
+
       // Get the wavefunction, assuming it is of the specified type (will fail otherwise)
       template <typename T>
       T& get() { return boost::get<T>(Psi_); }
