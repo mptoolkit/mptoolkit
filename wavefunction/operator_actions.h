@@ -16,7 +16,7 @@
 #if !defined(OPERATOR_ACTIONS_H_SDH47589FOIJHO9JEW)
 #define OPERATOR_ACTIONS_H_SDH47589FOIJHO9JEW
 
-#include "mps/linearwavefunction.h"
+#include "wavefunction/linearwavefunction.h"
 #include "mpo/generic_mpo.h"
 
 // Calculates the operator contraction, with a matrix

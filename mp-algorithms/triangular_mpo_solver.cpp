@@ -1,8 +1,7 @@
 // -*- C++ -*- $Id$
 
 #include "triangular_mpo_solver.h"
-#include "mps/momentum_operations.h"
-#include "mps/operator_actions.h"
+#include "wavefunction/operator_actions.h"
 #include "mp-algorithms/arnoldi.h"
 #include "mp-algorithms/gmres.h"
 

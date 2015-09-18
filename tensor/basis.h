@@ -272,11 +272,18 @@ VectorBasis DeltaShift(VectorBasis const& Orig, QuantumNumbers::Projection const
 // Apply a shift operation, where q is a degree 1 rep
 inline
 VectorBasis 
-DeltaShift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
+delta_shift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
 {
    QuantumNumbers::ProjectionList PL = enumerate_projections(q);
    DEBUG_PRECONDITION_EQUAL(PL.size(), 1);
    return DeltaShift(Orig, PL[0]);
+}
+
+inline
+VectorBasis 
+DeltaShift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
+{
+   return delta_shift(Orig, q);
 }
 
 //

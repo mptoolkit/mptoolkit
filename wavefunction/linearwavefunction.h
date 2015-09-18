@@ -6,11 +6,11 @@
 #if !defined(LINEARWAVEFUNCTION_H_FUIYT49786Y709)
 #define LINEARWAVEFUNCTION_H_FUIYT49786Y709
 
-#include "state_component.h"
+#include "mps/state_component.h"
 #include "pheap/pvalueptr.h"
 #include "pheap/pvalueiterator.h"
 #include "interface/attributes.h"
-#include "density.h"
+#include "mps/density.h"
 //#include "linearoperator.h"
 
 class LinearWavefunction

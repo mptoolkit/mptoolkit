@@ -1,14 +1,14 @@
-// -*- C++
+// -*- C++ -*-
 
 #include "canonicalwavefunction.h"
-#include "mps/linearwavefunction.h"
+#include "wavefunction/linearwavefunction.h"
 #include "tensor/tensor_eigen.h"
 #include "common/environment.h"
 #include "mp-algorithms/arnoldi.h"
 
 
 PStream::VersionTag
-CanonicalWavefunctionBase::VersionT(1);
+CanonicalWavefunctionBase::VersionT(2);
 
 QuantumNumbers::QuantumNumber
 CanonicalWavefunctionBase::TransformsAs() const
@@ -24,6 +24,25 @@ CanonicalWavefunctionBase::ReadStream(PStream::ipstream& in)
 
    in >> Data;
    in >> Lambda;
+
+   if (Sentry.version() == 1)
+   {
+      if (Data.empty())
+      {
+	 Basis1_ = VectorBasis();
+	 Basis2_ = VectorBasis();
+      }
+      else
+      {
+	 Basis1_ = Data.front().lock()->Basis1();
+	 Basis2_ = Data.back().lock()->Basis2();
+      }
+   }
+   else
+   {
+      in >> Basis1_;
+      in >> Basis2_;
+   }
 }
 
 void
@@ -33,5 +52,7 @@ CanonicalWavefunctionBase::WriteStream(PStream::opstream& out) const
 
    out << Data;
    out << Lambda;
-}
 
+   out << Basis1_;
+   out << Basis2_;
+}

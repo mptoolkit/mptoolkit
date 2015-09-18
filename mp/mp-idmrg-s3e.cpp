@@ -1,9 +1,45 @@
 // -*- C++ -*-
-
+//
 // iDMRG with single-site subspace expansion
+//
+// A note on initialization.
+// The wavefunction is stored in the left-canonical form, of A-matrices.
+// We also have the lambdaR matrix on the right hand side.
+// For determining the left Hamiltonian matrix elements, lambdaR isn't used
+// since the wavefunction is defined by the infinite string AAAAA....
+// Thus, lambdaR is only a short-cut for (1) determining the density matrix in the left canonical basis,
+// and (2) speeding up finding the right-canonical form.
+//
+// To find the right canonical form, we insert lambdaR and othogonalize matrices to right-orthogonalized,
+// ending up with AAAAA lambdaR = U lambdaL BBBBB
+// The U is the matrix left over from the SVD.  In principle, this commutes with lambdaL, but there is
+// no guarantee that U.Basis1() == U.Basis2() (they may be in a different order, for example),
+// and similarly in principle lambdaL == lambdaR, but there may be numerical differences, ordering of
+// singular values etc.
+//
+// So, to find the right Hamiltonian matrix elements, we shift the B matrix to the right hand side.
+// Now, we have the identity
+// U lambdaL BBBBB = AAAAA lambdaR
+// so upon shifting U to the other side, we are changing to the basis
+// lambdaL (U^\dagger U) BBBBB U = U^\dagger AAAAA (U U^\dagger) lambdaR U
+//
+// Hence we can also interpret U as the unitary that maps the basis of lambdaR into the basis of lambdaL.
+// Having obtained the matrix elements of the right Hamiltonian in this basis (BBBBB U), we could either shift
+// back to the original basis, or shift the left Hamiltonian to this basis.
+// To shift the right Hamiltonian back to the original basis, we need to convert back to the
+// BBBBB basis, which is effected by U BBBBB U^\dagger, so we need to act on the right Hamiltonian with
+// this operator, H -> U * H * U^\dagger
+// 
+// Alternatively, we could shift the left Hamiltonian to the new basis.  To do this, we write
+// U^\dagger AAAAA U U^\dagger lambdaR U = lambdaL BBBBB U
+// 
+// And we see that we transform AAAAA -> U^\dagger AAAAA U
+// lambdaR -> U^\dagger lambdaR U
+// and the Hamiltonian matrix elements will change by H -> U^\dagger H U
 
 #include "mpo/triangular_mpo.h"
-#include "mps/infinitewavefunction.h"
+#include "wavefunction/infinitewavefunction.h"
+#include "wavefunction/mpwavefunction.h"
 #include "quantumnumbers/all_symmetries.h"
 #include "mp-algorithms/lanczos.h"
 #include "pheap/pheap.h"
@@ -21,7 +57,7 @@
 #include "tensor/tensor_eigen.h"
 #include "tensor/regularize.h"
 #include "mp-algorithms/stateslist.h"
-#include "mps/operator_actions.h"
+#include "wavefunction/operator_actions.h"
 
 #include "interface/inittemp.h"
 #include "mp-algorithms/random_wavefunc.h"
@@ -38,6 +74,8 @@ namespace prog_opt = boost::program_options;
 
 using statistics::moving_average;
 using statistics::moving_exponential;
+
+MatrixOperator GlobalU;
 
 bool EarlyTermination = false;  // we set this to true if we get a checkpoint
 
@@ -222,6 +260,7 @@ MPO_EigenvaluesRight(StateComponent& Guess, LinearWavefunction const& Psi,
       Guess = Prod(Guess);
       Guess.back() = Ident;
    }
+
    // calculate the energy
    double Energy = inner_prod(Guess.front(), Rho).real();
 
@@ -282,6 +321,9 @@ class LocalEigensolver
       double MaxTol;
       double MinTol;
 
+      // if EvolveDelta != 0 then do imaginary time evolution with this timestep instead of Lanczos
+      double EvolveDelta;
+
       int MinIter; // Minimum number of iterations to perform (unless the eigensolver breaks down)
       int MaxIter; // Stop at this number, even if the eigensolver hasn't converged
 
@@ -306,7 +348,7 @@ class LocalEigensolver
 };
 
 LocalEigensolver::LocalEigensolver()
-   : FidelityScale(0), MaxTol(0), MinTol(0), MinIter(0), MaxIter(0), Verbose(0)
+   : FidelityScale(0.1), MaxTol(1e-4), MinTol(1-10), MinIter(2), MaxIter(20), Verbose(0)
 {
 }
 
@@ -330,23 +372,36 @@ LocalEigensolver::Solve(StateComponent& C,
    DEBUG_CHECK_EQUAL(C.LocalBasis(), H.LocalBasis2());
 
    StateComponent ROld = C;
-   LastTol_ = std::min(std::sqrt(this->AverageFidelity()) * FidelityScale, MaxTol);
-   LastTol_ = std::max(LastTol_, MinTol);
-   //LastTol_ = std::min(this->AverageFidelity() * FidelityScale, MaxTol);
-   LastIter_ = MaxIter;
-   if (Verbose > 2)
+
+   if (EvolveDelta == 0.0)
    {
-      std::cerr << "Starting eigensolver.  Initial guess vector has dimensions "
-		<< C.Basis1().total_dimension() << " x " << C.LocalBasis().size()
-		<< " x " << C.Basis2().total_dimension() << '\n';
+      LastTol_ = std::min(std::sqrt(this->AverageFidelity()) * FidelityScale, MaxTol);
+      LastTol_ = std::max(LastTol_, MinTol);
+      //LastTol_ = std::min(this->AverageFidelity() * FidelityScale, MaxTol);
+      LastIter_ = MaxIter;
+      if (Verbose > 2)
+      {
+	 std::cerr << "Starting eigensolver.  Initial guess vector has dimensions "
+		   << C.Basis1().total_dimension() << " x " << C.LocalBasis().size()
+		   << " x " << C.Basis2().total_dimension() << '\n';
+      }
+      LastEnergy_ = Lanczos(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
+			    LastIter_, LastTol_, MinIter, Verbose-1);
+      
    }
-   LastEnergy_ = Lanczos(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
-			 LastIter_, LastTol_, MinIter, Verbose-1);
+   else
+   {
+      C = operator_prod_inner(H, LeftBlockHam, ROld, herm(RightBlockHam));
+      LastEnergy_ = inner_prod(ROld, C).real();
+      C = ROld - EvolveDelta * C; // imaginary time evolution step
+      C *= 1.0 / norm_frob(C);    // normalize
+      LastIter_ = 1;
+      LastTol_ = 0.0;
+   }
 
    LastFidelity_ = std::max(1.0 - norm_frob(inner_prod(ROld, C)), 0.0);
    FidelityAv_.push(LastFidelity_);
    return LastEnergy_;
-   
 }
 
 struct MixInfo
@@ -565,6 +620,8 @@ iDMRG::Initialize(MatrixOperator const& LambdaR, std::complex<double> InitialEne
    LastSite = Psi.end();
    --LastSite;
 
+   CHECK_EQUAL(LeftHamiltonian.back().Basis2(), C->Basis1());
+
    // Generate the left Hamiltonian matrices at each site, up to (but not including) the last site.
    while (C != LastSite)
    {
@@ -585,14 +642,15 @@ iDMRG::Initialize(MatrixOperator const& LambdaR, std::complex<double> InitialEne
 
    if (InitialEnergy != 0.0)
    {
-      if (Verbose)
+      if (Verbose > 0)
 	 std::cerr << "Correcting initial energy to " << InitialEnergy << '\n';
 
       StateComponent R = operator_prod_inner(*H, LeftHamiltonian.back(), *C, herm(RightHamiltonian.front()));
       std::complex<double> E = inner_prod(*C, R) / inner_prod(*C, *C);
 
-      if (Verbose)
+      if (Verbose > 0)
       {
+	 std::cerr << "Raw initial energy was " << E << '\n';
 	 if (Verbose > 1)
 	    std::cerr << "Initial wavefunction norm is " << norm_frob(*C) << '\n';
 	 StateComponent Resid = R - E*(*C);
@@ -768,15 +826,15 @@ void
 iDMRG::SweepRight(StatesInfo const& States)
 {
    this->UpdateLeftBlock();
-   this->ShowInfo('P');
    this->Solve();
    this->SaveRightBlock(States);
+   this->ShowInfo('P');
 
    while (C != LastSite)
    {
       this->TruncateAndShiftRight(States);
-      this->ShowInfo('R');
       this->Solve();
+      this->ShowInfo('R');
    }
 }
 
@@ -785,15 +843,15 @@ iDMRG::SweepLeft(StatesInfo const& States, bool NoUpdate)
 {
    if (!NoUpdate)
       this->UpdateRightBlock();
-   this->ShowInfo('Q');
    this->Solve();
    this->SaveLeftBlock(States);
+   this->ShowInfo('Q');
 
    while (C != FirstSite)
    {
       this->TruncateAndShiftLeft(States);
-      this->ShowInfo('L');
       this->Solve();
+      this->ShowInfo('L');
    }
 }
 
@@ -975,12 +1033,18 @@ int main(int argc, char** argv)
 
       // Initialize the filesystem
 
-      pvalue_ptr<InfiniteWavefunctionLeft> PsiPtr;
+      pvalue_ptr<MPWavefunction> PsiPtr;
 
+      // The parameters for the iDMRG that we need to initialize
       LinearWavefunction Psi;
       QuantumNumber QShift;
       MatrixOperator R;
-      MatrixOperator L;
+
+      // The existing wavefunction, if it exists
+      InfiniteWavefunctionLeft StartingWavefunction;
+
+      // attributes
+      AttributeList Attr;
 
       if (ExactDiag || Create)
       {
@@ -989,17 +1053,33 @@ int main(int argc, char** argv)
       else
       {
 	 long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
-	 PsiPtr = pheap::OpenPersistent(FName, CacheSize);
+	 pvalue_ptr<MPWavefunction> PsiPtr = pheap::OpenPersistent(FName, CacheSize);
+
+	 StartingWavefunction = PsiPtr->get<InfiniteWavefunctionLeft>();
+	 Attr = PsiPtr->Attributes();
 	 
 	 RealDiagonalOperator RR;
-	 boost::tie(Psi, RR) = get_left_canonical(*PsiPtr);
+	 boost::tie(Psi, RR) = get_left_canonical(StartingWavefunction);
 	 R = RR;
-	 QShift = PsiPtr->qshift();
+	 QShift = StartingWavefunction.qshift();
       }
 
       // Hamiltonian
-      TriangularMPO HamMPO;
       InfiniteLattice Lattice;
+      TriangularMPO HamMPO;
+
+      // get the Hamiltonian from the attributes, if it wasn't supplied
+      if (HamStr.empty())
+      {
+	 if (Attr.count("Hamiltonian") == 0)
+	 {
+	    std::cerr << "fatal: no Hamiltonian specified.\n";
+	 }
+	 HamStr = Attr["Hamiltonian"].as<std::string>();
+      }
+      else 
+	 Attr["Hamiltonian"] = HamStr;
+
       boost::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
       int const UnitCellSize = Lattice.GetUnitCell().size();
       if (WavefuncUnitCellSize == 0)
@@ -1070,7 +1150,7 @@ int main(int argc, char** argv)
 	 StateComponent x = prod(Psi.get_back(), R);
 	 R = TruncateBasis2(x); // the Basis2 is already 1-dim.  This just orthogonalizes x
 	 Psi.set_back(x);
-	 L = delta_shift(R, QShift);
+	 //	 L = delta_shift(R, QShift);
       }
       else if (Create)
       {
@@ -1115,7 +1195,8 @@ int main(int argc, char** argv)
 	 }
 	 Psi = CreateRandomWavefunction(FullBL, LBoundary, 3, RBoundary);
          R = left_orthogonalize(MatrixOperator::make_identity(Psi.Basis1()), Psi);
-	 L = delta_shift(R, QShift);
+	 //	 L = delta_shift(R, QShift);
+
       }
 
       WavefuncUnitCellSize = Psi.size();
@@ -1157,35 +1238,58 @@ int main(int argc, char** argv)
       StateComponent BlockHamL = Initial_E(HamMPO , Psi.Basis1());
       if (StartFromFixedPoint)
       {
+	 std::cout << "Solving fixed-point Hamiltonian..." << std::endl;
          MatrixOperator Rho = scalar_prod(R, herm(R));
 	 InitialEnergy = MPO_EigenvaluesLeft(BlockHamL, Psi, QShift, HamMPO, Rho);
-	 std::cout << "Starting energy (left eigenvalue) = " << InitialEnergy << '\n';
+	 std::cout << "Starting energy (left eigenvalue) = " << InitialEnergy << std::endl;
+
+	 BlockHamL = delta_shift(BlockHamL, QShift);
       }
 
       StateComponent BlockHamR = Initial_F(HamMPO, Psi.Basis2());
       if (StartFromFixedPoint)
       {
 	 LinearWavefunction PsiR;
-	 boost::tie(L, PsiR) = get_right_canonical(*PsiPtr);
-	 PsiR.set_front(prod(InvertDiagonal(R, 1E-7) * L, PsiR.get_front()));
+	 MatrixOperator U;
+	 RealDiagonalOperator D;
+	 boost::tie(U, D, PsiR) = get_right_canonical(StartingWavefunction);
+	 
+	 MatrixOperator L = D;
+	 PsiR.set_back(prod(PsiR.get_back(), delta_shift(U, adjoint(QShift))));
+
+	 BlockHamR = Initial_F(HamMPO, PsiR.Basis2());
 
 	 // check that we are orthogonalized
 #if !defined(NDEBUG)
 	 MatrixOperator X = MatrixOperator::make_identity(PsiR.Basis2());
 	 X = inject_right(X, PsiR);
-	 CHECK(norm_frob(X - MatrixOperator::make_identity(PsiR.Basis1())) < 1E-10);
+	 CHECK(norm_frob(X - MatrixOperator::make_identity(PsiR.Basis1())) < 1E-12)(X);
 #endif
 
-         MatrixOperator Rho = scalar_prod(L, herm(L));
+         MatrixOperator Rho = D;	
+	 //         MatrixOperator Rho = R;
+	 Rho = scalar_prod(Rho, herm(Rho));
+#if !defined(NDEBUG)
+	 MatrixOperator XX = Rho;
+	 XX = inject_left(XX, PsiR);
+	 CHECK(norm_frob(delta_shift(XX,QShift) - Rho) < 1E-12)(norm_frob(delta_shift(XX,QShift) - Rho) )(XX)(Rho);
+#endif
 
+	 // We obtained Rho from the left side, so we need to delta shift to the right basis
+	 Rho = delta_shift(Rho, adjoint(QShift));
+	 
 	 std::complex<double> Energy = MPO_EigenvaluesRight(BlockHamR, PsiR, QShift, HamMPO, Rho);
-	 std::cout << "Starting energy (right eigenvalue) = " << Energy << '\n';
+	 std::cout << "Starting energy (right eigenvalue) = " << Energy << std::endl;
+
+	 U = delta_shift(U, adjoint(QShift));
+	 BlockHamR = prod(prod(U, BlockHamR), herm(U));
       }
 
-      // initialization complete
+      // initialization complete.  We can kill the StartingWavefunction, we don't need it anymore
+      StartingWavefunction = InfiniteWavefunctionLeft();
 
       // Construct the iDMRG object
-      iDMRG idmrg(Psi, R, QShift, HamMPO, delta_shift(BlockHamL, QShift), 
+      iDMRG idmrg(Psi, R, QShift, HamMPO, BlockHamL, 
 		  BlockHamR, InitialEnergy, Verbose);
       
       idmrg.MixingInfo.MixFactor = MixFactor;
@@ -1197,6 +1301,7 @@ int main(int argc, char** argv)
       idmrg.Solver().MaxIter = NumIter;
       idmrg.Solver().FidelityScale = FidelityScale;
       idmrg.Solver().Verbose = Verbose;
+      idmrg.Solver().EvolveDelta = EvolveDelta;
 
       int ReturnCode = 0;
 
@@ -1234,8 +1339,13 @@ int main(int argc, char** argv)
 
       // finished the iterations.
       std::cerr << "Orthogonalizing wavefunction...\n";
-      PsiPtr = new InfiniteWavefunctionLeft(idmrg.Wavefunction(), idmrg.QShift);
-      pheap::ShutdownPersistent(PsiPtr);
+      InfiniteWavefunctionLeft FinalWavefunction(idmrg.Wavefunction(), idmrg.QShift);
+
+      // set the attributes
+
+      // save wavefunction
+      pvalue_ptr<MPWavefunction> P(new MPWavefunction(FinalWavefunction, Attr));
+      pheap::ShutdownPersistent(P);
 
       ProcControl::Shutdown();
       return ReturnCode;

@@ -3,15 +3,12 @@
 #include "infinitewavefunction.h"
 #include "tensor/tensor_eigen.h"
 #include "mp-algorithms/arnoldi.h"
-//#include "wavefunc-utils.h"
 #include "common/environment.h"
 
 #include "mps/packunpack.h"
 #include <fstream>
 
-#include "mps/spectrum_arpack.h"
-#include "mps/operator_actions.h"
-
+#include "wavefunction/operator_actions.h"
 #include "pheap/pheapstream.h"
 
 
@@ -319,22 +316,137 @@ get_right_canonical(InfiniteWavefunctionLeft const& Psi)
    return boost::make_tuple(U, D, Result);
 }
 
-#if 0
-std::pair<MatrixOperator, LinearWavefunction>
-get_right_canonical(InfiniteWavefunctionLeft const& Psi)
+void
+InfiniteWavefunctionLeft::rotate_left(int Count)
 {
-   LinearWavefunction Result;
-   MatrixOperator M = Psi.lambda_r();
-   InfiniteWavefunctionLeft::const_mps_iterator I = Psi.end();
-   while (I != Psi.begin())
-   {
-      --I;
+   // Rotation is fairly straightforward, we just rotate the vectors around
+   if (Count == 0)
+      return;
+   else if (Count < 0)
+      this->rotate_right(-Count);
 
-      StateComponent A = prod(*I, M);
-      M = TruncateBasis1(A);
-      Result.push_front(A);
-   }
+   Count = Count % this->size();
 
-   return std::make_pair(M, Result);
+   std::rotate(this->begin_raw_(), this->begin_raw_()+Count, this->end_raw_());
+   std::rotate(this->lambda_begin_raw_(), this->lambda_begin_raw_()+Count, this->lambda_end_raw_());
 }
-#endif
+
+void
+InfiniteWavefunctionLeft::rotate_right(int Count)
+{
+   if (Count == 0)
+      return;
+   else if (Count < 0)
+      this->rotate_left(-Count);
+
+   Count = Count % this->size();
+
+   this->rotate_left(this->size() - Count);
+}
+
+void inplace_reflect(InfiniteWavefunctionLeft& Psi)
+{
+}
+
+// Conjugate a wavefunction in place
+void inplace_conj(InfiniteWavefunctionLeft& Psi)
+{
+}
+
+InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
+{
+}
+
+std::complex<double> overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
+                             InfiniteWavefunctionLeft const& y,
+                             QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
+{
+   CHECK_EQUAL(x.qshift(), y.qshift())("The wavefunctions must have the same quantum number per unit cell");
+   
+   LinearWavefunction xPsi = get_left_canonical(x).first;
+   LinearWavefunction yPsi = get_left_canonical(y).first;
+
+   ProductMPO Str = StringOp * ProductMPO::make_identity(StringOp.LocalBasis2List(), Sector);
+
+   StateComponent Init = MakeRandomStateComponent(Str.Basis1(), x.Basis1(), y.Basis1());
+
+   int Iterations = Iter;
+   int TotalIterations = 0;
+   double MyTol = Tol;
+   if (Verbose > 1)
+   {
+      std::cerr << "Starting Arnoldi, Tol=" << MyTol << ", Iterations=" << Iter << '\n';
+   }
+   std::complex<double> Eta = LinearSolvers::Arnoldi(Init, 
+						     LeftMultiplyOperator(xPsi, Str, yPsi, x.qshift()), 
+                                                     Iterations, 
+						     MyTol, 
+						     LinearSolvers::LargestMagnitude, false, Verbose);
+   TotalIterations += Iterations;
+   DEBUG_TRACE(Eta)(Iterations);
+
+   while (MyTol < 0)
+   {
+      if (Verbose > 0)
+         std::cerr << "Restarting Arnoldi, eta=" << Eta << ", Tol=" << -MyTol << '\n';
+      Iterations = Iter;
+      MyTol = Tol;
+      Eta = LinearSolvers::Arnoldi(Init, LeftMultiplyOperator(xPsi, Str, yPsi, x.qshift()), 
+				   Iterations, MyTol, LinearSolvers::LargestMagnitude, false, Verbose);
+      TotalIterations += Iterations;
+      DEBUG_TRACE(Eta)(Iterations);
+   }
+   if (Verbose > 0)
+      std::cerr << "Converged.  TotalIterations=" << TotalIterations
+                << ", Tol=" << MyTol << '\n';
+
+   return Eta;
+}
+
+std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const& StringOp,
+                             InfiniteWavefunctionLeft const& y,
+                             QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
+{
+   CHECK_EQUAL(x.qshift(), y.qshift())("The wavefunctions must have the same quantum number per unit cell");
+   
+   LinearWavefunction xPsi = get_left_canonical(x).first;
+   LinearWavefunction yPsi = get_left_canonical(y).first;
+
+   MatrixOperator Init = MakeRandomMatrixOperator(x.Basis1(), y.Basis1(), Sector);
+
+   int Iterations = Iter;
+   int TotalIterations = 0;
+   double MyTol = Tol;
+   std::complex<double> Eta = LinearSolvers::Arnoldi(Init, 
+                LeftMultiplyString(xPsi, StringOp * MakeIdentityFrom(StringOp, Sector),
+				   yPsi, x.qshift()), 
+                                                     Iterations, 
+						     MyTol, 
+						     LinearSolvers::LargestMagnitude, false, Verbose);
+   TotalIterations += Iterations;
+   DEBUG_TRACE(Eta)(Iterations);
+
+   while (MyTol < 0)
+   {
+      if (Verbose)
+         std::cerr << "Restarting Arnoldi, eta=" << Eta << ", Tol=" << -MyTol << '\n';
+      Iterations = Iter;
+      MyTol = Tol;
+      Eta = LinearSolvers::Arnoldi(Init, LeftMultiplyString(xPsi, StringOp * MakeIdentityFrom(StringOp, Sector), 
+							    yPsi, x.qshift()), 
+				   Iterations, MyTol, LinearSolvers::LargestMagnitude, false, Verbose);
+      TotalIterations += Iterations;
+      DEBUG_TRACE(Eta)(Iterations);
+   }
+   if (Verbose)
+      std::cerr << "Converged.  TotalIterations=" << TotalIterations
+                << ", Tol=" << MyTol << '\n';
+
+   return Eta;
+}
+
+std::complex<double> overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefunctionLeft const& y,
+                             QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
+{
+   return overlap(x, ProductMPO::make_identity(ExtractLocalBasis(y)), y, Sector, Iter, Tol, Verbose);
+}

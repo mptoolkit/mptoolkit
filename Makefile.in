@@ -49,7 +49,7 @@ TARDIR=$(PACKAGE_TARNAME)
 LIB = $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LIBS_EXTRA)
 
 SRCDIRS = common common/private quantumnumbers pstream pheap \
-          tensor lattice mp-algorithms \
+          tensor lattice mp-algorithms wavefunction \
           tutorial mp linearalgebra misc conf scripts utils interface expokit mpo \
           benchmark misc misc/oogl junk mpo mps parser models models/contrib
 
@@ -88,9 +88,11 @@ linearalgebraobj = eigen.o
 mpoobj = operator_component.o generic_mpo.o finite_mpo.o triangular_mpo.o product_mpo.o infinite_mpo.o \
          f-optim.o e-optim.o
 
-mpsobj = state_component.o linearwavefunction.o canonicalwavefunction.o infinitewavefunction.o density.o operator_actions.o
+mpsobj = state_component.o density.o
 
-mpobj = $(mpoobj) $(mpsobj) $(latticeobj) attributes.o
+wavefunctionobj = linearwavefunction.o canonicalwavefunction.o infinitewavefunction.o mpwavefunction.o operator_actions.o
+
+mpobj = $(mpoobj) $(mpsobj) $(latticeobj) $(wavefunctionobj) attributes.o
 
 commonobj = niftycounter.o poolallocator.o hash.o proccontrol.o \
 	    halfint.o stackallocator.o conflist.o terminal.o

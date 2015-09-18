@@ -36,7 +36,7 @@ double const LanczosBetaTol = 1E-14;
 
 template <typename VectorType, typename MultiplyFunctor>
 double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iterations,
-	       double& Tol, int MinIter = 2, bool Verbose = false)
+	       double& Tol, int MinIter = 2, int Verbose = 0)
 {
    std::vector<VectorType>     v;          // the Krylov vectors
    std::vector<VectorType>     Hv;         // the Krylov vectors
@@ -59,7 +59,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
    Beta = norm_frob(w);
    if (Beta < LanczosBetaTol)
    {
-      if (Verbose)
+      if (Verbose > 0)
 	 std::cerr << "lanczos: immediate return, invariant subspace found, Beta="
 		   << Beta << '\n';
       Guess = v[0];
@@ -91,7 +91,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       if (Beta < LanczosBetaTol)
       {
          // Early return, we can't improve over the previous energy and eigenvector
-	 if (Verbose)
+	 if (Verbose > 0)
 	    std::cerr << "lanczos: early return, invariant subspace found, Beta="
 		      << Beta << ", iterations=" << (i+1) << '\n';
 	 Iterations = i+1;
@@ -143,7 +143,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       if (ResidNorm < fabs(Tol * SpectralDiameter) && i+1 >= MinIter)
 	 //if (ResidNorm < Tol && i+1 >= MinIter)
       {
-	 if (Verbose)
+	 if (Verbose > 0)
 	    std::cerr << "lanczos: early return, residual norm below threshold, ResidNorm="
 		      << ResidNorm << ", SpectralDiameter=" << SpectralDiameter 
 		      << ", iterations=" << (i+1) << '\n';

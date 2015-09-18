@@ -4,12 +4,14 @@
 // in canonical form.
 //
 
-#if !defined(INFINITEWAVEFUNCTION_H_SDJKLCHUIORYH8945Y89Y98)
-#define INFINITEWAVEFUNCTION_H_SDJKLCHUIORYH8945Y89Y98
+#if !defined(MPTOOLKIT_WAVEFUNCTION_INFINITEWAVEFUNCTION_H)
+#define MPTOOLKIT_WAVEFUNCTION_INFINITEWAVEFUNCTION_H
 
-#include "canonicalwavefunction.h"
+#include "wavefunction/canonicalwavefunction.h"
+#include "wavefunction/linearwavefunction.h"
 #include "mpo/finite_mpo.h"
 #include "mpo/product_mpo.h"
+#include <boost/tuple/tuple.hpp>
 
 // class to represent an infinite wavefunction in the left canonical basis
 class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
@@ -34,10 +36,10 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       QuantumNumber qshift() const { return QShift; }
 
       // Rotates the wavefunction to the left, by taking the left-most site and moving it to the right
-      void rotate_left(int count);
+      void rotate_left(int Count);
 
       // Rotates the wavefunction to the left, by taking the right-most site and moving it to the left
-      void rotate_right(int count);
+      void rotate_right(int Count);
 
       // returns the orthogonality fidelity.  Normally this should be epsilon
       double orthogonality_fidelity() const;
@@ -49,21 +51,28 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
 
       friend PStream::ipstream& operator>>(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi);
       friend PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunctionLeft const& Psi);
+      friend void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Version);
 
    private:
       void Initialize(LinearWavefunction const& Psi, MatrixOperator const& Lambda);
 
       QuantumNumber QShift;
+
+      friend void inplace_reflect(InfiniteWavefunctionLeft& Psi);
+      friend void inplace_conj(InfiniteWavefunctionLeft& Psi);
+      friend InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count);
 };
 
-// Convert a, infinite wavefunction to left-canonical form, and returns the Lambda matrix on the right-hand-side
+// Convert a, infinite wavefunction to left-canonical form, 
+// and returns the Lambda matrix on the right-hand-side.
 RealDiagonalOperator
 left_canonicalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift);
 
 // Extend the unit cell of the wavefunction by repeating it Count number of times
 InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count);
 
-// returns a linear wavefunction that is in pure left-orthogonal form
+// returns a linear wavefunction that is in pure left-orthogonal form.
+// This is a very fast operation that only manipulates pvalue_handle objects.
 std::pair<LinearWavefunction, RealDiagonalOperator>
 get_left_canonical(InfiniteWavefunctionLeft const& Psi);
 
@@ -73,8 +82,18 @@ get_left_canonical(InfiniteWavefunctionLeft const& Psi);
 // whereas converting a left-canonical wavefunction into a right-canonical wavefunction give
 // an additional unitary matrix, that we cannot wrap around to the other end of the wavefunction
 // as it would change the basis there.
-std::pair<MatrixOperator, LinearWavefunction>
+// This function does an SVD on each MPS
+boost::tuple<MatrixOperator, RealDiagonalOperator, LinearWavefunction>
 get_right_canonical(InfiniteWavefunctionLeft const& Psi);
+
+// function to extract the local basis (as a vector of BasisList) from a wavefunction
+// TODO: this implementation isn't terrible, but isn't so elegant either!
+std::vector<BasisList>
+inline
+ExtractLocalBasis(InfiniteWavefunctionLeft const& Psi)
+{
+   return ExtractLocalBasis(get_left_canonical(Psi).first);
+}
 
 #if 0
 class InfiniteRightWavefunctionRight : public CanonicalWavefunctionBase
@@ -118,6 +137,12 @@ std::complex<double> overlap(InfiniteWavefunctionLeft const& x, ProductMPO const
                              InfiniteWavefunctionLeft const& y,
                              QuantumNumbers::QuantumNumber const& Sector, 
 			     int Iter = 20, double Tol = 1E-12, int Verbose = 0);
+
+// Reflect a wavefunction in place
+void inplace_reflect(InfiniteWavefunctionLeft& Psi);
+
+// Conjugate a wavefunction in place
+void inplace_conj(InfiniteWavefunctionLeft& Psi);
 
 // Spatial reflection of a wavefunction
 //InfiniteWavefunctionRight reflect(InfiniteWavefunction const& Psi);

@@ -398,7 +398,7 @@ int main(int argc, char** argv)
       // If we're not calculating the cumulants, then we can print the moments as we calculate them.
       // BUT, if we have Verbose > 0, then don't print anything until the end, so that it doesn't get
       // mixed up with the verbose output.
-      if (CalculateMoments && !Quiet && !Verbose)
+      if (CalculateMoments && !Quiet && Verbose <= 0)
 	 ShowMomentsHeading(ShowRealPart, ShowImagPart, 
 			    ShowMagnitude, ShowArgument, ShowRadians);
 
@@ -409,7 +409,7 @@ int main(int argc, char** argv)
       // Force the degree of the MPO
       if (Degree != 0)
 	 Moments.back()[Degree] += 0.0;
-      if (CalculateMoments && !Verbose)
+      if (CalculateMoments && Verbose <= 0)
 	 ShowMoments(Moments.back(), ShowRealPart, ShowImagPart, 
 		     ShowMagnitude, ShowArgument, ShowRadians,
 		     ScaleFactor);
@@ -432,14 +432,14 @@ int main(int argc, char** argv)
 	 // Force the degree of the MPO
 	 if (Degree != 0)
 	    Moments.back()[std::pow(Degree, p+1)] += 0.0;
-	 if (CalculateMoments && !Verbose)
+	 if (CalculateMoments && Verbose <= 0)
 	    ShowMoments(Moments.back(), ShowRealPart, ShowImagPart, 
 			ShowMagnitude, ShowArgument, ShowRadians,
 			ScaleFactor);
       }
 
       // if we had verbose output, then we delay printing the moments until now
-      if (CalculateMoments && Verbose)
+      if (CalculateMoments && Verbose > 0)
       {
 	 if (!Quiet)
 	    ShowMomentsHeading(ShowRealPart, ShowImagPart, 

@@ -63,6 +63,8 @@ class CanonicalWavefunctionBase
       // (ie, it must have total dimension 1).
       bool is_irreducible() const { return this->Basis1().size() == 1 && this->Basis2().total_dimension() == 1; }
 
+      SymmetryList GetSymmetryList() const { return Basis1_.GetSymmetryList(); }
+
       // precondition: is_irreducible
       QuantumNumbers::QuantumNumber TransformsAs() const;
 
@@ -80,6 +82,9 @@ class CanonicalWavefunctionBase
       const_lambda_iterator lambda_begin() const { return const_lambda_iterator(Lambda.begin()); }
       const_lambda_iterator lambda_end() const { return const_lambda_iterator(Lambda.end()); }
 
+      const_base_lambda_iterator lambda_begin_raw() const { return Lambda.begin(); }
+      const_base_lambda_iterator lambda_end_raw() const { return Lambda.end(); }
+
       // return the i'th MPS matrix.  Because they are stored by handle, we can't
       // return a reference, but the tensors are reference counted anyway so a copy is cheap
       mps_type operator[](int i) const { return *Data[i].lock(); }
@@ -93,8 +98,24 @@ class CanonicalWavefunctionBase
    protected:
       // don't allow construction except via derived classes
       CanonicalWavefunctionBase() {}
-      CanonicalWavefunctionBase(CanonicalWavefunctionBase const& Psi) : Data(Psi.Data), Lambda(Psi.Lambda) {}
-      CanonicalWavefunctionBase& operator=(CanonicalWavefunctionBase const& Psi) { Data = Psi.Data; Lambda = Psi.Lambda; return *this; }
+      CanonicalWavefunctionBase(CanonicalWavefunctionBase const& Psi) : Data(Psi.Data), Lambda(Psi.Lambda), 
+									Basis1_(Psi.Basis1_), Basis2_(Psi.Basis2_) {}
+      CanonicalWavefunctionBase& operator=(CanonicalWavefunctionBase const& Psi) 
+      { Data = Psi.Data; Lambda = Psi.Lambda; Basis1_ = Psi.Basis1_; Basis2_ = Psi.Basis2_; return *this; }
+
+      // non-const iterators.  Note the final underscore to prevent mismatches with the const versions
+
+      mps_iterator begin_() { return mps_iterator(Data.begin()); }
+      mps_iterator end_() { return mps_iterator(Data.end()); }
+
+      lambda_iterator lambda_begin_() { return lambda_iterator(Lambda.begin()); }
+      lambda_iterator lambda_end_() { return lambda_iterator(Lambda.end()); }
+
+      base_mps_iterator begin_raw_() { return Data.begin(); }
+      base_mps_iterator end_raw_(){ return Data.end(); }
+
+      base_lambda_iterator lambda_begin_raw_() { return Lambda.begin(); }
+      base_lambda_iterator lambda_end_raw_() { return Lambda.end(); }
 
       void push_back(mps_type const& x) { Data.push_back(new mps_type(x)); }
       void push_back_lambda(lambda_type const& x) { Lambda.push_back(new lambda_type(x)); }

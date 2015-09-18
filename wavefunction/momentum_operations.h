@@ -6,7 +6,7 @@
 #define MPTOOLKIT_MPS_MOMENTUM_OPERATIONS_H
 
 #include "common/polynomial.h"
-#include "mps/linearwavefunction.h"
+#include "wavefunction/linearwavefunction.h"
 #include "mpo/generic_mpo.h"
 #include "mpo/triangular_mpo.h"
 #include "common/angle_map.h"
