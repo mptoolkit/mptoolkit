@@ -85,13 +85,15 @@ void IrredTensor<T, B1, B2, S>::check_structure() const
 }
 
 template <typename T, typename B1, typename B2, typename S>
-void
-CoerceSymmetryList(IrredTensor<T, B1, B2, S>& t, SymmetryList const& sl)
+IrredTensor<T, B1, B2, S>
+CoerceSymmetryList(IrredTensor<T, B1, B2, S> const& t, SymmetryList const& sl)
 {
-   CoerceSymmetryList(t.Basis1_, sl);
-   CoerceSymmetryList(t.Basis2_, sl);
-   CoerceSymmetryList(t.Trans_, sl);
-   CoerceSymmetryList(t.Data_, sl);
+   IrredTensor<T, B1, B2, S> Result;
+   Result.Basis1_ = CoerceSymmetryList(t.Basis1_, sl);
+   Result.Basis2_ = CoerceSymmetryList(t.Basis2_, sl);
+   Result.Trans_ = CoerceSymmetryList(t.Trans_, sl);
+   Result.Data_ = CoerceSymmetryList(t.Data_, sl);
+   return Result;
 }
 
 template <typename T, typename B1, typename B2, typename S>
@@ -732,8 +734,8 @@ delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
       return x;
    }
 
-   DEBUG_CHECK_EQUAL(NewBasis1, DeltaShift(x.Basis1(), p));
-   DEBUG_CHECK_EQUAL(NewBasis2, DeltaShift(x.Basis2(), p));
+   DEBUG_CHECK_EQUAL(NewBasis1, delta_shift(x.Basis1(), p));
+   DEBUG_CHECK_EQUAL(NewBasis2, delta_shift(x.Basis2(), p));
 
    typedef typename IrredTensor<T, B1, B2, S>::const_iterator       const_iterator;
    typedef typename IrredTensor<T, B1, B2, S>::const_inner_iterator const_inner_iterator;
@@ -772,7 +774,7 @@ delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
 	    QuantumNumbers::QuantumNumber q, 
 	    QuantumNumbers::Projection p)
 {
-   return delta_shift(x, q, p, DeltaShift(x.Basis1(), p), DeltaShift(x.Basis2(), p));
+   return delta_shift(x, q, p, delta_shift(x.Basis1(), p), delta_shift(x.Basis2(), p));
 }
 
 template <typename T, typename B1, typename B2, typename S>
@@ -783,7 +785,7 @@ delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
    QuantumNumbers::ProjectionList PL = enumerate_projections(q);
    DEBUG_PRECONDITION_EQUAL(q.degree(), 1);
 
-   return delta_shift(x, q, PL[0], DeltaShift(x.Basis1(), PL[0]), DeltaShift(x.Basis2(), PL[0]));
+   return delta_shift(x, q, PL[0], delta_shift(x.Basis1(), PL[0]), delta_shift(x.Basis2(), PL[0]));
 }
 
 } // namespace Tensor

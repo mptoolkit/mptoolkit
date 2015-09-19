@@ -2,10 +2,11 @@
 
 #include "mpwavefunction.h"
 
-// default version is 3.
+// default version is 4.
 //
 // Versions 1 and 2 don't contain an AttributeList (although older versions of
-// InfiniteWavefunction do, but it isn't used anywhere so no need to keep it)
+// InfiniteWavefunction do, but it isn't used anywhere so no need to keep it).
+// Version 4 introduces the HistoryLog.
 //
 // Version 1:
 // No separate version number, this needs to be detected from the stream metadata version.
@@ -18,8 +19,13 @@
 // Version 3:
 // boost::variant<InfiniteWavefunctionLeft>
 // AttributeList
+//
+// Version 4:
+// boost::variant<InfiniteWavefunctionLeft>
+// AttributeList
+// HistoryLog
 
-PStream::VersionTag MPWavefunction::VersionT(3);
+PStream::VersionTag MPWavefunction::VersionT(4);
 
 PStream::ipstream&
 operator>>(PStream::ipstream& in, MPWavefunction& Psi)
@@ -53,19 +59,25 @@ void read_version(PStream::ipstream& in, MPWavefunction& Psi, int Version)
       InfiniteWavefunctionLeft x;
       read_version(in, x, 1);
       Psi = x;
+      return;
    }
-   else if (Version == 2)
+
+   if (Version == 2)
    {
       InfiniteWavefunctionLeft x;
       read_version(in, x, 2);
       Psi = x;
+      return;
    }
-   else if (Version == 3)
-   {
-      in >> Psi.Psi_;
-      in >> Psi.Attr_;
-   }
-   else
+
+   // Version >= 3
+   in >> Psi.Psi_;
+   in >> Psi.Attr_;
+
+   if (Version >= 4)
+      in >> Psi.History_;
+
+   if (Version > 4)
    {
       PANIC("Version of MPWavefunction is newer than this sofware!");
    }
@@ -77,5 +89,6 @@ operator<<(PStream::opstream& out, MPWavefunction const& Psi)
    out << MPWavefunction::VersionT.default_version();
    out << Psi.Psi_;
    out << Psi.Attr_;
+   out << Psi.History_;
    return out;
 }

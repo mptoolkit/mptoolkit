@@ -1,7 +1,6 @@
 // -*- C++ -*- $Id$
 
 #include "basis.h"
-#include "deltabasis.h"
 
 namespace Tensor
 {
@@ -107,7 +106,7 @@ std::string show_projections(BasisList const& B)
    return Out.str();
 }
 
-BasisList DeltaShift(BasisList const& Orig, QuantumNumbers::Projection const& p)
+BasisList delta_shift(BasisList const& Orig, QuantumNumbers::Projection const& p)
 {
    BasisList Result(Orig.GetSymmetryList());
    for (BasisList::const_iterator I = Orig.begin(); I != Orig.end(); ++I)
@@ -116,6 +115,7 @@ BasisList DeltaShift(BasisList const& Orig, QuantumNumbers::Projection const& p)
    return Result;
 }
 
+#if 0
 BasisList RenameSymmetry(BasisList const& BL, SymmetryList const& NewSL)
 {
    BasisList Result(NewSL);
@@ -123,6 +123,7 @@ BasisList RenameSymmetry(BasisList const& BL, SymmetryList const& NewSL)
       Result.push_back(RenameSymmetry(BL[i], NewSL));
    return Result;
 }
+#endif
 
 std::map<int, int>
 LinearizeQuantumNumberSubspace(BasisList const& b, QuantumNumbers::QuantumNumber const& q)
@@ -200,31 +201,27 @@ std::string show_projections(VectorBasis const& B)
    return Out.str();
 }
 
-VectorBasis DeltaShift(VectorBasis const& Orig, QuantumNumbers::Projection const& p)
+VectorBasis delta_shift(VectorBasis const& Orig, QuantumNumbers::Projection const& p)
 {
-   return VectorBasis(DeltaShift(Orig.Basis(), p), 
+   return VectorBasis(delta_shift(Orig.Basis(), p), 
 		      Orig.Dimension_.begin(),
 		      Orig.Dimension_.end());
 }
 
-//
-// DeltaBasis
-//
-
-void
-CoerceSymmetryList(DeltaBasis& b, SymmetryList const& sl)
+VectorBasis
+CoerceSymmetryList(VectorBasis& b, SymmetryList const& sl)
 {
-   b.S_ = sl;
-   for (DeltaBasis::iterator I = b.Q_.begin(); I != b.Q_.end(); ++I)
-   {
-      I->first.Coerce(sl);
-      I->second.Coerce(sl);
-   }
+   VectorBasis Result;
+   Result.Basis_ = CoerceSymmetryList(b.Basis_, sl);
+   Result.Dimension_ = b.Dimension_;
+   return Result;
 }
 
+#if 0
 VectorBasis RenameSymmetry(VectorBasis const& BL, SymmetryList const& NewSL)
 {
    return VectorBasis(RenameSymmetry(BL.Basis_, NewSL), BL.Dimension_);
 }
+#endif
 
 } // namespace Tensor

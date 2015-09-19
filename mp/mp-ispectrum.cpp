@@ -1,10 +1,10 @@
 // -*- C++ -*- $Id$
 
 #include "mp/copyright.h"
-#include "mps/infinitewavefunction.h"
-#include "mps/packunpack.h"
+#include "wavefunction/mpwavefunction.h"
 #include "lattice/latticesite.h"
-#include "mps/operator_actions.h"
+#include "wavefunction/operator_actions.h"
+#include "mps/packunpack.h"
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "common/prog_options.h"
@@ -618,21 +618,25 @@ int main(int argc, char** argv)
       if (Verbose)
          std::cout << "Loading wavefunction...\n";
 
-      pvalue_ptr<InfiniteWavefunction> Psi1 
+      pvalue_ptr<MPWavefunction> Psi1 
          = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
 
       // firstly, get the LinearWavefunction
-      QuantumNumber QShift = Psi1->QShift;
-      MatrixOperator x_unit =  Psi1->C_right * delta_shift(InvertDiagonal(Psi1->C_old, InverseTol), 
-                                                           adjoint(QShift));
-      LinearWavefunction Psi = Psi1->Psi;
-      Psi.set_back(prod(Psi.get_back(), x_unit));
+      InfiniteWavefunctionLeft InfPsi = Psi1->get<InfiniteWavefunctionLeft>();
+
+      LinearWavefunction Psi;
+      QuantumNumber QShift = InfPsi.qshift();
+
+      RealDiagonalOperator D;
+      boost::tie(Psi, D) = get_left_canonical(InfPsi);
+
       if (Symmetric)
       {
-         MatrixOperator LambdaSqrt = SqrtDiagonal(Psi1->C_old);
+         MatrixOperator LambdaSqrt = D;
+	 LambdaSqrt = SqrtDiagonal(LambdaSqrt);
          MatrixOperator LambdaInvSqrt = InvertDiagonal(LambdaSqrt, InverseTol);
-         Psi.set_back(prod(Psi.get_back(), delta_shift(LambdaSqrt, adjoint(QShift))));
-         Psi.set_front(prod(LambdaInvSqrt, Psi.get_front()));
+         Psi.set_back(prod(Psi.get_back(), LambdaSqrt));
+         Psi.set_front(prod(delta_shift(LambdaInvSqrt, QShift), Psi.get_front()));
       }
 
       if (Verbose)
@@ -668,7 +672,7 @@ int main(int argc, char** argv)
       {
 	 UnitCellSize = Psi.size();
       }
-      double ScaleFactor = double(UnitCellSize) / double(Psi1->Psi.size());
+      double ScaleFactor = double(UnitCellSize) / double(Psi.size());
 
       // get the set of quantum numbers to show
       typedef std::set<QuantumNumbers::QuantumNumber> QSetType;

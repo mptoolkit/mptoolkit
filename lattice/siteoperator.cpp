@@ -20,7 +20,7 @@ SiteBasis::SiteBasis(std::string const& S)
 void
 SiteBasis::push_back(std::string const& Label, QuantumNumber const& q)
 {
-   Basis_.push_back(Coerce(q, this->GetSymmetryList()));
+   Basis_.push_back(CoerceSymmetryList(q, this->GetSymmetryList()));
    Label_.mutate()->push_back(Label);
 }
 

@@ -69,6 +69,15 @@ EscapeArgument(std::string const& s)
       return s;
 }
 
+inline
+std::string EscapeCommandline(int argc, char** argv)
+{
+   std::string s = EscapeArgument(argv[0]);
+   for (int i = 1; i < argc; ++i)
+      s = s + ' ' + EscapeArgument(argv[i]);
+   return s;
+}
+
 // Print a useful preamble, consisting of the
 // program name and arguments, and the date.
 inline

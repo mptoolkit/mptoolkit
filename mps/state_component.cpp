@@ -890,6 +890,7 @@ StateComponent ScaleBasisU1(StateComponent const& Op,
    return Result;
 }
 
+#if 0
 MatrixOperator RenameSymmetry(MatrixOperator const& Op, SymmetryList const& NewSL)
 {
    MatrixOperator Result(RenameSymmetry(Op.Basis1(), NewSL), 
@@ -910,6 +911,7 @@ StateComponent RenameSymmetry(StateComponent const& Op, SymmetryList const& NewS
       Result[i].data() = Op[i].data();
    return Result;
 }   
+#endif
 
 StateComponent ReorderLocalBasis(StateComponent const& Op, std::list<int> const& NewOrder)
 {

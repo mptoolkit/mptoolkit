@@ -1,7 +1,7 @@
 // -*- C++ -*- $Id$
 
 #include "mp/copyright.h"
-#include "mps/infinitewavefunction.h"
+#include "wavefunction/mpwavefunction.h"
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "common/prog_options.h"
@@ -64,7 +64,7 @@ int main(int argc, char** argv)
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
 
-      pvalue_ptr<InfiniteWavefunction> PsiPtr;
+      pvalue_ptr<MPWavefunction> PsiPtr;
       long CacheSize = getenv_or_default("MP_CACHESIZE", DEFAULT_PAGE_CACHE_SIZE);
       if (InPsi == OutPsi)
 	 PsiPtr = pheap::OpenPersistent(InPsi.c_str(), CacheSize);
@@ -75,7 +75,8 @@ int main(int argc, char** argv)
 	 PsiPtr = pheap::ImportHeap(InPsi.c_str());
       }
 
-      InfiniteWavefunction Psi = *PsiPtr;
+      InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
+      LinearWavefunction PsiL = get_left_canonical(Psi).first;
 
       InfiniteLattice Lattice;
       ProductMPO StringOp;
@@ -88,15 +89,16 @@ int main(int argc, char** argv)
 
       // apply the string operator
       ProductMPO::const_iterator MI = StringOp.begin();
-      for (LinearWavefunction::iterator I = Psi.Psi.begin(); I != Psi.Psi.end(); ++I, ++MI)
+      for (LinearWavefunction::iterator I = PsiL.begin(); I != PsiL.end(); ++I, ++MI)
       {
 	 (*I) = aux_tensor_prod(*MI, *I);
       }
 
-      // orthogonalize
-      orthogonalize_linear(Psi);
+      MPWavefunction Result;
+      Result.Wavefunction() = InfiniteWavefunctionLeft(PsiL, Psi.qshift());
+      Result.AppendHistory(EscapeCommandline(argc, argv));
 
-      PsiPtr = new InfiniteWavefunction(Psi);
+      PsiPtr = new MPWavefunction(Result);
       pheap::ShutdownPersistent(PsiPtr);
    }
    catch (std::exception& e)

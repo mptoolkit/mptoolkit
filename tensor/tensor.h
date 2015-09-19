@@ -224,8 +224,9 @@ template <typename T, typename B1, typename B2, typename S>
 PStream::ipstream& operator>>(PStream::ipstream& in, IrredTensor<T, B1, B2, S>& x);
 
 template <typename T, typename B1, typename B2, typename S>
-void
-CoerceSymmetryList(IrredTensor<T, B1, B2, S>& t, SymmetryList const& sl);
+IrredTensor<T, B1, B2, S>
+CoerceSymmetryList(IrredTensor<T, B1, B2, S> const& t, SymmetryList const& sl);
+//   __attribute__((warn_unused_result));
 
 template <typename T, typename Basis1T, typename Basis2T, typename Structure>
 class IrredTensor
@@ -300,16 +301,24 @@ class IrredTensor
       static IrredTensor<T, Basis1T, Basis2T, Structure> 
       make_identity(basis1_type const& b);
 
+      // force change the symmetry list
+      void CoerceSymmetryList(SymmetryList const& sl);
+
    private:
       basis1_type Basis1_;
       basis2_type Basis2_;
       QuantumNumber Trans_;
       MatrixType Data_;
 
-   friend PStream::opstream& operator<< <>(PStream::opstream& out, IrredTensor const& x);
-   friend PStream::ipstream& operator>> <>(PStream::ipstream& in, IrredTensor& x);
+      friend PStream::opstream& operator<< <>(PStream::opstream& out, IrredTensor const& x);
+      friend PStream::ipstream& operator>> <>(PStream::ipstream& in, IrredTensor& x);
 
-   friend void CoerceSymmetryList<>(IrredTensor& t, SymmetryList const& sl);
+      template <typename T2, typename B12, typename B22, typename S2>
+      friend IrredTensor<T2, B12, B22, S2>
+      CoerceSymmetryList(IrredTensor<T2, B12, B22, S2> const& t, SymmetryList const& sl);
+
+
+      //      friend IrredTensor ::Tensor::CoerceSymmetryList<>(IrredTensor const& t, SymmetryList const& sl);
 };
 
 // text I/O

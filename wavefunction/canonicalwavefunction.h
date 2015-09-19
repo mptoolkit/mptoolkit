@@ -5,13 +5,12 @@
 // The canonical form as all matrices in left (right) canonical form, and we also store
 // the Lambda matrix (which is diagonal) at each partition.
 //
-// This is a base class for common functions between left and right canonical wavefunctions.
+// This is a base class for common functions between variants of canonical wavefunctions,
+// eg left, right, symmetric.
 //
-// a LeftCanonicalWavefunction has all MPS matrices in left-canonical form and the corresponding
-// lambda is on the right (Basis2) at each site.
-//
-// A RightCanonicalWavefunction has all MPS matrices in right-canonical form and the corresponding
-// lambda matrix is on the left (Basis1) at each site.
+// The Lambda matrix is stored at each parition, from 0 .. size().  Hence the number of partitions
+// is number of sites +1.  The Lambda matrix at partition 0 will be the same as the Lamda
+// matrix at partition size(), up to a quantum number shift.
 //
 // A CanonicalWavefunction is generally going to be read-only.  Non-const
 // iterators and access is defined as protected members, meant for construction
@@ -56,14 +55,20 @@ class CanonicalWavefunctionBase
       // number of sites in the wavefunction
       int size() const { return Data.size(); }
 
+      // returns true if the wavefunction doesn't contain any physical sites
       bool empty() const { return Data.empty(); }
 
       // Returns true if the state transforms irreducibly.  This is true
       // iff the left basis contains only a single site, and the right hand side must be size 1 and abelian
       // (ie, it must have total dimension 1).
-      bool is_irreducible() const { return this->Basis1().size() == 1 && this->Basis2().total_dimension() == 1; }
+      bool is_irreducible() const 
+      { return this->Basis1().size() == 1 && this->Basis2().total_dimension() == 1; }
 
       SymmetryList GetSymmetryList() const { return Basis1_.GetSymmetryList(); }
+
+      // shortcuts to the left and right lambda operators
+      RealDiagonalOperator lambda_l() const { return this->lambda(0); }
+      RealDiagonalOperator lambda_r() const { return this->lambda(this->size()); }
 
       // precondition: is_irreducible
       QuantumNumbers::QuantumNumber TransformsAs() const;
@@ -87,21 +92,24 @@ class CanonicalWavefunctionBase
 
       // return the i'th MPS matrix.  Because they are stored by handle, we can't
       // return a reference, but the tensors are reference counted anyway so a copy is cheap
-      mps_type operator[](int i) const { return *Data[i].lock(); }
+      mps_type operator[](int i) const 
+      { DEBUG_RANGE_CHECK_OPEN(i, 0, Data.size()); return *Data[i].lock(); }
 
-      // returns the lambda matrix at site i (acting on [i].Basis2() for a LeftCanonicalWavefunction
-      // or [i].Basis1() for a RightCanonicalWavefunction)
-      lambda_type lambda(int i) const { return *Lambda[i].lock(); }
+      // returns the lambda matrix at partition i
+      lambda_type lambda(int i) const 
+      { DEBUG_RANGE_CHECK(i, 0, Data.size()); return *Lambda[i].lock(); }
 
       static PStream::VersionTag VersionT;
+
+      void check_structure();
+      void debug_check_structure();
 
    protected:
       // don't allow construction except via derived classes
       CanonicalWavefunctionBase() {}
-      CanonicalWavefunctionBase(CanonicalWavefunctionBase const& Psi) : Data(Psi.Data), Lambda(Psi.Lambda), 
-									Basis1_(Psi.Basis1_), Basis2_(Psi.Basis2_) {}
-      CanonicalWavefunctionBase& operator=(CanonicalWavefunctionBase const& Psi) 
-      { Data = Psi.Data; Lambda = Psi.Lambda; Basis1_ = Psi.Basis1_; Basis2_ = Psi.Basis2_; return *this; }
+      CanonicalWavefunctionBase(CanonicalWavefunctionBase const& Psi);
+
+      CanonicalWavefunctionBase& operator=(CanonicalWavefunctionBase const& Psi);
 
       // non-const iterators.  Note the final underscore to prevent mismatches with the const versions
 
@@ -127,13 +135,17 @@ class CanonicalWavefunctionBase
       void pop_back_lambda() { Lambda.pop_back(); }
 
       void set(int i, mps_type const& A) { Data[i] = new mps_type(A); }
+      void set_lambda(int i, lambda_type const& L) { Lambda[i] = new lambda_type(L); }
 
       void setBasis1(VectorBasis const& B) { Basis1_ = B; }
       void setBasis2(VectorBasis const& B) { Basis2_ = B; }
 
-      void ReadStream(PStream::ipstream& in);
+      // Read from a stream, returns the version number.  NOTE: for versions < 3,
+      // lambda(0) is not initialized, and must be done by the base class.
+      int ReadStream(PStream::ipstream& in);
       void WriteStream(PStream::opstream& out) const;
 
+   private:
       mps_container_type Data;
       lambda_container_type Lambda;
 
@@ -143,5 +155,15 @@ class CanonicalWavefunctionBase
 // function to extract the local basis (as a vector of BasisList) from a wavefunction
 std::vector<BasisList>
 ExtractLocalBasis(CanonicalWavefunctionBase const& Psi);
+
+inline
+void
+CanonicalWavefunctionBase::debug_check_structure()
+{
+#if !defined(NDEBUG)
+   this->check_structure();
+#endif
+}
+
 
 #endif

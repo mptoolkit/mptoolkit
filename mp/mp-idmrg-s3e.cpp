@@ -1031,20 +1031,16 @@ int main(int argc, char** argv)
 
       bool StartFromFixedPoint = !NoFixedPoint; // we've reversed the option
 
-      // Initialize the filesystem
-
-      pvalue_ptr<MPWavefunction> PsiPtr;
+      // The main MPWavefunction object.  We use this for initialization (if we are starting from
+      // an existing wavefunction), and it will be the final wavefunction that we save to disk.
+      MPWavefunction Wavefunction;
 
       // The parameters for the iDMRG that we need to initialize
       LinearWavefunction Psi;
       QuantumNumber QShift;
       MatrixOperator R;
 
-      // The existing wavefunction, if it exists
-      InfiniteWavefunctionLeft StartingWavefunction;
-
-      // attributes
-      AttributeList Attr;
+      // Initialize the filesystem
 
       if (ExactDiag || Create)
       {
@@ -1054,9 +1050,9 @@ int main(int argc, char** argv)
       {
 	 long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
 	 pvalue_ptr<MPWavefunction> PsiPtr = pheap::OpenPersistent(FName, CacheSize);
+	 Wavefunction = *PsiPtr;
 
-	 StartingWavefunction = PsiPtr->get<InfiniteWavefunctionLeft>();
-	 Attr = PsiPtr->Attributes();
+	 InfiniteWavefunctionLeft StartingWavefunction = Wavefunction.get<InfiniteWavefunctionLeft>();
 	 
 	 RealDiagonalOperator RR;
 	 boost::tie(Psi, RR) = get_left_canonical(StartingWavefunction);
@@ -1071,14 +1067,15 @@ int main(int argc, char** argv)
       // get the Hamiltonian from the attributes, if it wasn't supplied
       if (HamStr.empty())
       {
-	 if (Attr.count("Hamiltonian") == 0)
+	 if (Wavefunction.Attributes().count("Hamiltonian") == 0)
 	 {
 	    std::cerr << "fatal: no Hamiltonian specified.\n";
+	    return 1;
 	 }
-	 HamStr = Attr["Hamiltonian"].as<std::string>();
+	 HamStr = Wavefunction.Attributes()["Hamiltonian"].as<std::string>();
       }
       else 
-	 Attr["Hamiltonian"] = HamStr;
+	 Wavefunction.Attributes()["Hamiltonian"] = HamStr;
 
       boost::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
       int const UnitCellSize = Lattice.GetUnitCell().size();
@@ -1119,13 +1116,17 @@ int main(int argc, char** argv)
 	    }
 	 }
 
-	 //         CHECK_EQUAL(num_transform_targets(q, BoundaryQ), 1)
-	 //            ("The boundary quantum number is incompatible with the target quantum number");
-
          QuantumNumbers::QuantumNumberList LeftBoundary;
 	 for (unsigned i = 0; i < BoundaryQ.size(); ++i)
 	 {
 	    LeftBoundary.push_back(transform_targets(QShift, BoundaryQ[i])[0]);
+	 }
+
+	 if (LeftBoundary.size() == 0)
+	 {
+	    std::cerr << "fatal: the target quntum number is incompatible with the boundary quantum number"
+	       " for this unit cell.\n";
+	    return 1;
 	 }
 
 	 VectorBasis B1(HamMPO.front().GetSymmetryList());
@@ -1139,6 +1140,8 @@ int main(int argc, char** argv)
 	    B2.push_back(BoundaryQ[i], 1);
 	 }
 
+	 TRACE(B2);
+
 	 Psi.push_back(ConstructFromLeftBasis(FullBL[0], B1));
 	 for (int i = 1; i < WavefuncUnitCellSize; ++i)
 	 {
@@ -1146,10 +1149,17 @@ int main(int argc, char** argv)
 	 }
 
 	 R = MakeRandomMatrixOperator(Psi.Basis2(), B2);
+
+	 TRACE(R.Basis1())(R.Basis2());
+
 	 // adjust for periodic basis
 	 StateComponent x = prod(Psi.get_back(), R);
 	 R = TruncateBasis2(x); // the Basis2 is already 1-dim.  This just orthogonalizes x
 	 Psi.set_back(x);
+
+	 TRACE(Psi.Basis2());
+
+
 	 //	 L = delta_shift(R, QShift);
       }
       else if (Create)
@@ -1231,7 +1241,18 @@ int main(int argc, char** argv)
       CHECK_EQUAL(int(HamMPO.size()), WavefuncUnitCellSize);
 
       // Check that the local basis for the wavefunction and hamiltonian are compatible
-      local_basis_compatible_or_abort(Psi, HamMPO);
+      // Check that the local basis for the wavefunction and hamiltonian are compatible
+      if (ExtractLocalBasis(Psi) != ExtractLocalBasis1(HamMPO))
+      {
+	 std::cerr << "fatal: Hamiltonian is defined on a different local basis to the wavefunction.\n";
+	 return 1;
+      }
+
+      if (ExtractLocalBasis1(HamMPO) != ExtractLocalBasis2(HamMPO))
+      {
+	 std::cerr << "fatal: Hamiltonian has different domain and co-domain.\n";
+	 return 1;
+      }
 
 
       // Get the initial Hamiltonian matrix elements
@@ -1252,7 +1273,7 @@ int main(int argc, char** argv)
 	 LinearWavefunction PsiR;
 	 MatrixOperator U;
 	 RealDiagonalOperator D;
-	 boost::tie(U, D, PsiR) = get_right_canonical(StartingWavefunction);
+	 boost::tie(U, D, PsiR) = get_right_canonical(Wavefunction.get<InfiniteWavefunctionLeft>());
 	 
 	 MatrixOperator L = D;
 	 PsiR.set_back(prod(PsiR.get_back(), delta_shift(U, adjoint(QShift))));
@@ -1285,8 +1306,7 @@ int main(int argc, char** argv)
 	 BlockHamR = prod(prod(U, BlockHamR), herm(U));
       }
 
-      // initialization complete.  We can kill the StartingWavefunction, we don't need it anymore
-      StartingWavefunction = InfiniteWavefunctionLeft();
+      // initialization complete.
 
       // Construct the iDMRG object
       iDMRG idmrg(Psi, R, QShift, HamMPO, BlockHamL, 
@@ -1339,12 +1359,16 @@ int main(int argc, char** argv)
 
       // finished the iterations.
       std::cerr << "Orthogonalizing wavefunction...\n";
-      InfiniteWavefunctionLeft FinalWavefunction(idmrg.Wavefunction(), idmrg.QShift);
+      Wavefunction.Wavefunction() = InfiniteWavefunctionLeft(idmrg.Wavefunction(), idmrg.QShift);
 
-      // set the attributes
+      // any other attributes?
+      Wavefunction.Attributes()["LastEnergy"] = idmrg.Solver().LastEnergy();
+
+      // History log
+      Wavefunction.AppendHistory(EscapeCommandline(argc, argv));
 
       // save wavefunction
-      pvalue_ptr<MPWavefunction> P(new MPWavefunction(FinalWavefunction, Attr));
+      pvalue_ptr<MPWavefunction> P(new MPWavefunction(Wavefunction));
       pheap::ShutdownPersistent(P);
 
       ProcControl::Shutdown();

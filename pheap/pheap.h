@@ -232,7 +232,7 @@ std::pair<T*, PHeapObject*> GetObject(id_type ID)
 // Initializes the persistent heap
 void Initialize(std::string const& FileName, int NumFiles, 
                 size_t PageSize, size_t PageCacheByteSize,
-                bool Unlink = false);
+                bool Unlink = false, bool AllowOverwrite = false);
 
 // sets the format to use for persistent writing.  Defaults to PStream::format::Host
 void SetPHeapFormat(int f);

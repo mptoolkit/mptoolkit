@@ -316,7 +316,7 @@ FileSystem::~FileSystem()
 
 void FileSystem::create(std::string const& FilePath, int NumFiles, 
                         size_t DesiredPageSize, size_t PageCacheByteSize,
-                        bool Unlink)
+                        bool Unlink, bool AllowOverwrite)
 {
    Alloc = BufferAllocator::GetAllocator(DesiredPageSize);
    PageSize = Alloc->get_page_size();
@@ -339,7 +339,7 @@ void FileSystem::create(std::string const& FilePath, int NumFiles,
    for (int i = 0; i < NumFiles; ++i)
    {
       PageFile* PF = new PageFile;
-      PF->create(PageSize, Path + '/' + GetFileName(NumFiles, i), Unlink);
+      PF->create(PageSize, Path + '/' + GetFileName(NumFiles, i), Unlink, AllowOverwrite);
       PageFileList.push_back(PF);
       PageFileNames.push_back(GetFileName(NumFiles, i));
       PageFileMetaPages.push_back(std::list<size_t>());

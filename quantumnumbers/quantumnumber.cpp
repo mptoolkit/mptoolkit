@@ -104,7 +104,7 @@ QuantumNumber::degree() const
    return Result;
 }
 
-QuantumNumber Coerce(QuantumNumber const& q, SymmetryList const& SList)
+QuantumNumber CoerceSymmetryList(QuantumNumber const& q, SymmetryList const& SList)
 {
    if (SList == q.GetSymmetryList()) return q;
 
@@ -153,11 +153,6 @@ QuantumNumber Coerce(QuantumNumber const& q, SymmetryList const& SList)
 #endif
 
    return Other;
-}
-
-void QuantumNumber::Coerce(SymmetryList const& SList)
-{
-   *this = QuantumNumbers::Coerce(*this, SList);
 }
 
 PStream::opstream& operator<<(PStream::opstream& out, QuantumNumber const& L)
@@ -269,7 +264,7 @@ std::string Projection::ToString() const
    return Result;
 }
 
-Projection Coerce(Projection const& q, SymmetryList const& SList)
+Projection CoerceSymmetryList(Projection const& q, SymmetryList const& SList)
 {
    if (SList == q.GetSymmetryList()) return q;
 
@@ -312,9 +307,9 @@ Projection Coerce(Projection const& q, SymmetryList const& SList)
    return Other;
 }
 
-void Projection::Coerce(SymmetryList const& SList)
+void Projection::CoerceSymmetryList(SymmetryList const& SList)
 {
-   *this = QuantumNumbers::Coerce(*this, SList);
+   *this = QuantumNumbers::CoerceSymmetryList(*this, SList);
 }
 
 std::ostream& operator<<(std::ostream& out, Projection const& P)

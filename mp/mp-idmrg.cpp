@@ -254,7 +254,7 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
 		    MatrixOperator const& Rho)
 {
    ProductLeft Prod(Psi, Op, QShift);
-   Guess = Initial_E(Op, DeltaShift(Psi.Basis1(), adjoint(QShift)));
+   Guess = Initial_E(Op, delta_shift(Psi.Basis1(), adjoint(QShift)));
    MatrixOperator Ident = Guess.front();
    for (int i = 0; i < int(Guess.size())-1; ++i)
    {
@@ -1295,7 +1295,7 @@ int main(int argc, char** argv)
       DEBUG_CHECK_EQUAL(Psi.C_old.Basis1(), Psi.C_old.Basis2());
       DEBUG_CHECK_EQUAL(Psi.C_old.Basis2(), Psi.Psi.Basis1());
       DEBUG_CHECK_EQUAL(Psi.Psi.Basis2(), Psi.C_right.Basis1());
-      DEBUG_CHECK_EQUAL(Psi.Psi.Basis1(), DeltaShift(Psi.C_right.Basis2(), Psi.QShift));
+      DEBUG_CHECK_EQUAL(Psi.Psi.Basis1(), delta_shift(Psi.C_right.Basis2(), Psi.QShift));
 
       // orthogonalize it
       if (EarlyTermination && !NoOrthogonalize)
@@ -1311,7 +1311,7 @@ int main(int argc, char** argv)
       DEBUG_CHECK_EQUAL(Psi.C_old.Basis1(), Psi.C_old.Basis2());
       DEBUG_CHECK_EQUAL(Psi.C_old.Basis2(), Psi.Psi.Basis1());
       DEBUG_CHECK_EQUAL(Psi.Psi.Basis2(), Psi.C_right.Basis1());
-      DEBUG_CHECK_EQUAL(Psi.Psi.Basis1(), DeltaShift(Psi.C_right.Basis2(), Psi.QShift));
+      DEBUG_CHECK_EQUAL(Psi.Psi.Basis1(), delta_shift(Psi.C_right.Basis2(), Psi.QShift));
 #endif
 
       Psi = InfiniteWavefunctionLeft(MyPsi, QShift);

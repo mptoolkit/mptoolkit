@@ -31,8 +31,6 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       InfiniteWavefunctionLeft& operator=(InfiniteWavefunctionLeft const& Psi)
       { CanonicalWavefunctionBase::operator=(Psi); QShift = Psi.QShift; return *this; }
 
-      RealDiagonalOperator lambda_r() const { return this->lambda(this->size()-1); }
-
       QuantumNumber qshift() const { return QShift; }
 
       // Rotates the wavefunction to the left, by taking the left-most site and moving it to the right
@@ -44,23 +42,32 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       // returns the orthogonality fidelity.  Normally this should be epsilon
       double orthogonality_fidelity() const;
 
-      void check_structure() const;
-      void debug_check_structure() const;
-
       static PStream::VersionTag VersionT;
 
       friend PStream::ipstream& operator>>(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi);
       friend PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunctionLeft const& Psi);
       friend void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Version);
 
+      void check_structure();
+      void debug_check_structure();
+
    private:
       void Initialize(LinearWavefunction const& Psi, MatrixOperator const& Lambda);
 
       QuantumNumber QShift;
 
+      // All functions that can modify the internal representation but preserve the canonical form
+      // are friend functions.  This is so that we have a central list of such functions,
+      // so can update them if the class changes.
       friend void inplace_reflect(InfiniteWavefunctionLeft& Psi);
       friend void inplace_conj(InfiniteWavefunctionLeft& Psi);
       friend InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count);
+
+      
+      friend InfiniteWavefunctionLeft wigner_project(InfiniteWavefunctionLeft const& Psi,
+						    SymmetryList const& FinalSL);
+      friend InfiniteWavefunctionLeft ReorderSymmetry(InfiniteWavefunctionLeft const& Psi, 
+						      SymmetryList const& NewSL);
 };
 
 // Convert a, infinite wavefunction to left-canonical form, 
@@ -152,5 +159,13 @@ void inplace_conj(InfiniteWavefunctionLeft& Psi);
 // version of reflect where we apply a local operator also
 //InfiniteWavefunctionRight reflect(InfiniteWavefunction const& Psi, std::vector<SimpleOperator> const& Op);
 
+inline
+void
+InfiniteWavefunctionLeft::debug_check_structure()
+{
+#if !defined(NDEBUG)
+   this->check_structure();
+#endif
+}
 
 #endif

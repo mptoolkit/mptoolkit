@@ -113,8 +113,8 @@ void BasicStateComponent<T>::delta_shift(QuantumNumbers::QuantumNumber const& q,
 					   QuantumNumbers::Projection const& Delta)
 {
    DEBUG_TRACE("before")(scalar_prod(*this, herm(*this)))(scalar_prod(herm(*this), *this));
-   VBasis1 = DeltaShift(VBasis1, Delta);
-   VBasis2 = DeltaShift(VBasis2, Delta);
+   VBasis1 = delta_shift(VBasis1, Delta);
+   VBasis2 = delta_shift(VBasis2, Delta);
    for (typename BasicStateComponent<T>::iterator I = this->begin(); I != this->end(); ++I)
    {
       DEBUG_TRACE(*I)(I->Basis1())(I->Basis2());

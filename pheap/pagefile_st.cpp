@@ -73,7 +73,7 @@ class PageFileImpl
    public:
       PageFileImpl();
 
-      void create(size_t PageSize_, std::string const& FileName_, bool Unlink = false);
+      void create(size_t PageSize_, std::string const& FileName_, bool Unlink = false, bool AllowOverwrite = true);
 
       uint64 open(std::string const& FileName_, bool ReadOnly);
 
@@ -141,7 +141,7 @@ PageFileImpl::PageFileImpl()
 {
 }
 
-void PageFileImpl::create(size_t PageSize_, std::string const& FileName_, bool Unlink)
+void PageFileImpl::create(size_t PageSize_, std::string const& FileName_, bool Unlink, bool AllowOverwrite)
 {
    CHECK(FD == -1);
    FileName = FileName_;
@@ -155,7 +155,10 @@ void PageFileImpl::create(size_t PageSize_, std::string const& FileName_, bool U
    MetaVersion = PageFileMetadataVersion;  // reset the version number to the default
 
    notify_log(20, pheap::PHeapLog) << "creating file " << FileName << '\n';
-   FD = ::open(FileName.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0600);
+   int Flags = O_RDWR | O_CREAT | O_TRUNC;
+   if (!AllowOverwrite)
+      Flags |= O_EXCL;
+   FD = ::open(FileName.c_str(), Flags, 0600);
    if (FD == -1)
    {
       PANIC("Error creating page file!")(FileName)(strerror(errno));

@@ -644,6 +644,23 @@ VersionSentry::~VersionSentry()
       out->pop_version(Tag);
 }
 
+inline
+void
+VersionSentry::change_version(int NewV)
+{
+   v = NewV;
+   if (in)
+   {
+      in->pop_version(Tag);
+      in->push_version(Tag, NewV);
+   }
+   if (out)
+   {
+      out->pop_version(Tag);
+      out->push_version(Tag, NewV);
+   }
+}
+
 //
 // Polymorphic streaming support
 //

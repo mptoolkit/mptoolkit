@@ -11,6 +11,21 @@
 #include "wavefunction/operator_actions.h"
 #include "pheap/pheapstream.h"
 
+// Streaming versions:
+// Note: the base class CanonicalWavefunctionBase has a separate version number.
+//
+// Version 1:
+// No verioning information, this version needs to be deduced from the stream metadata version.
+// Old style InfiniteWavefunction:
+//      MatrixOperator        C_old
+//      QuantumNumber         QShift
+//      LinearWavefunctionOld PsiLinear
+//      MatrixOperator        C_right
+//      AttributeList         Attr
+//
+// Version 2:
+//      CanonicalWavefunctionBase (base class)
+//      QuantumNumber              QShift
 
 double const ArnoldiTol = getenv_or_default("MP_ARNOLDI_TOL", 1E-15);
 
@@ -65,11 +80,6 @@ struct RightMultiply
    QuantumNumber QShift;
 };
 
-
-
-PStream::VersionTag
-InfiniteWavefunctionLeft::VersionT(2);
-
 InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi, MatrixOperator const& Lambda,
 						   QuantumNumbers::QuantumNumber const& QShift_)
    : QShift(QShift_)
@@ -82,9 +92,11 @@ InfiniteWavefunctionLeft::Initialize(LinearWavefunction const& Psi_, MatrixOpera
 {
    LinearWavefunction Psi = Psi_;
    MatrixOperator M = right_orthogonalize(Psi, Lambda);
-   this->setBasis1(M.Basis1());
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
+   // we can't initialize lambda_l yet, as we don't have it in the correct (diagonal) basis.
+   // We will only get this at the end, when we obtain lambda_r.  So just set it to a dummy
+   this->push_back_lambda(D);
    for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
    {
       StateComponent A = prod(M, *I);
@@ -95,9 +107,11 @@ InfiniteWavefunctionLeft::Initialize(LinearWavefunction const& Psi_, MatrixOpera
       M = D*Vh;
    }
 
-   this->set(0, prod(delta_shift(Vh, QShift), this->operator[](0)));
-
-   this->setBasis2(M.Basis1());
+   Vh = delta_shift(Vh, QShift);
+   this->set(0, prod(Vh, this->operator[](0)));
+   this->setBasis1(Vh.Basis1());
+   this->set_lambda(0, delta_shift(D, QShift));
+   this->setBasis2(D.Basis1());
 }
 
 InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi, QuantumNumbers::QuantumNumber const& QShift_)
@@ -223,6 +237,9 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi
    this->Initialize(PsiL, D);
 }
 
+PStream::VersionTag
+InfiniteWavefunctionLeft::VersionT(2);
+
 void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Version)
 {
    if (Version == 1)
@@ -243,13 +260,17 @@ void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Vers
    }
    else if (Version == 2)
    {
-      Psi.CanonicalWavefunctionBase::ReadStream(in);
+      int BaseVersion = Psi.CanonicalWavefunctionBase::ReadStream(in);
       in >> Psi.QShift;
+      if (BaseVersion < 3)
+	 Psi.set_lambda(0, delta_shift(Psi.lambda_r(), Psi.qshift()));
    }
    else
    {
-      PANIC("This program is too old to read this wavefunction");
+      PANIC("This program is too old to read this wavefunction, expected Version <= 2")(Version);
    }
+
+   Psi.debug_check_structure();
 }
 
 PStream::ipstream&
@@ -292,7 +313,7 @@ PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunctionLeft c
 std::pair<LinearWavefunction, RealDiagonalOperator>
 get_left_canonical(InfiniteWavefunctionLeft const& Psi)
 {
-   return std::make_pair(LinearWavefunction(Psi.base_begin(), Psi.base_end()), Psi.lambda(Psi.size()-1));
+   return std::make_pair(LinearWavefunction(Psi.base_begin(), Psi.base_end()), Psi.lambda(Psi.size()));
 }
 
 boost::tuple<MatrixOperator, RealDiagonalOperator, LinearWavefunction>
@@ -342,6 +363,14 @@ InfiniteWavefunctionLeft::rotate_right(int Count)
    Count = Count % this->size();
 
    this->rotate_left(this->size() - Count);
+}
+
+void
+InfiniteWavefunctionLeft::check_structure()
+{
+   this->CanonicalWavefunctionBase::check_structure();
+
+   CHECK_EQUAL(this->Basis1(), delta_shift(this->Basis2(), this->qshift()));
 }
 
 void inplace_reflect(InfiniteWavefunctionLeft& Psi)

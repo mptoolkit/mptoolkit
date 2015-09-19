@@ -230,7 +230,7 @@ class FileSystem
       virtual ~FileSystem();
 
       void create(std::string const& FileName, int NumFiles, 
-                  size_t PageSize, size_t PageCacheByteSize, bool Unlink = false);
+                  size_t PageSize, size_t PageCacheByteSize, bool Unlink = false, bool AllowOverwrite = true);
 
       void shutdown(bool Remove = false);
 

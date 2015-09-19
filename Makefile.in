@@ -90,9 +90,11 @@ mpoobj = operator_component.o generic_mpo.o finite_mpo.o triangular_mpo.o produc
 
 mpsobj = state_component.o density.o
 
-wavefunctionobj = linearwavefunction.o canonicalwavefunction.o infinitewavefunction.o mpwavefunction.o operator_actions.o
+wavefunctionobj = linearwavefunction.o canonicalwavefunction.o infinitewavefunction.o \
+                  mpwavefunction.o operator_actions.o \
+                  attributes.o history.o
 
-mpobj = $(mpoobj) $(mpsobj) $(latticeobj) $(wavefunctionobj) attributes.o
+mpobj = $(mpoobj) $(mpsobj) $(latticeobj) $(wavefunctionobj)
 
 commonobj = niftycounter.o poolallocator.o hash.o proccontrol.o \
 	    halfint.o stackallocator.o conflist.o terminal.o
@@ -174,7 +176,7 @@ default-models = spinchain-su2 spinchain-spin2-su2 \
 
 tools = mp-idmrg mp-ioverlap \
         mp-info \
-        mp-imoments mp-iexpectation mp-iwigner-eckart mp-ireorder-symmetry \
+        mp-imoments mp-iexpectation mp-wigner-eckart mp-reorder-symmetry \
         mp-ispectrum mp-lattice-info mp-ioperator mp-aux-matrix mp-aux-algebra mp-iapply
 
 experimental-tools = mp-idmrg-s3e mp-iprint mp-iproject
@@ -256,15 +258,15 @@ clean :
 	rm -f *.o
 	rm -f *.d
 	rm -f $(alltests)
-	rm -f $(mp-tools)
-	rm -f $(mp-models)
+	rm -f $(tools)
+	rm -f $(all-models)
 
 mrproper :
 	rm -f *.o
 	rm -f *.d
 	rm -f $(alltests)
-	rm -f $(mp-tools)
-	rm -f $(mp-models)
+	rm -f $(tools)
+	rm -f $(all-models)
 	rm -f -- $(patsubst %,%/*~, $(subst :, ,$(VPATH)))
 
 depclean :

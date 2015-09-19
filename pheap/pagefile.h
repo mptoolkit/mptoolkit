@@ -47,7 +47,7 @@ class PageFile
       PageFile();
 
       // pseudo-constructor, creates a new PageFile, overwrites the old filename if it exists.
-      void create(size_t PageSize, std::string const& FileName, bool Unlink = false);
+      void create(size_t PageSize, std::string const& FileName, bool Unlink = false, bool AllowOverwrite = true);
 
       // pseudo-constructor, reopens an existing page file, returns the saved 'UserData' 
       // parameter from persistent_shutdown(int UserData).

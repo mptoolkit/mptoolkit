@@ -692,6 +692,9 @@ class VersionSentry
       ~VersionSentry();
 
       int version() const { return v; }
+
+      // Force a change in an existing version.  Might be useful to workaround bugs!
+      void change_version(int NewV);
       
    private:
       VersionTag const& Tag;

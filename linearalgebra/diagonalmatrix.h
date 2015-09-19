@@ -67,6 +67,22 @@ class DiagonalMatrix : public MatrixBase<DiagonalMatrix<T> >
       diagonal_type data_;
 };
 
+template <typename T>
+DiagonalMatrix<T> operator*(DiagonalMatrix<T> const& Mat, T const& v)
+{
+   DiagonalMatrix<T> Result(size1(Mat));
+   Result.diagonal() = Mat.diagonal() * v;
+   return Result;
+}
+
+template <typename T>
+DiagonalMatrix<T> operator*(T const& v, DiagonalMatrix<T> const& Mat)
+{
+   DiagonalMatrix<T> Result(size1(Mat));
+   Result.diagonal() = v * Mat.diagonal();
+   return Result;
+}
+
 // interface
 
 template <typename T>
@@ -284,6 +300,18 @@ struct InnerProd<DiagonalMatrix<S>, DiagonalMatrix<T> >
       return inner_prod(x.diagonal(), y.diagonal());
    }
 };
+
+template <typename T, typename S, typename U>
+struct ZeroAll<T&, DIAGONAL_MATRIX(S, U) >
+{
+   typedef void result_type;
+   typedef T& argument_type;
+   void operator()(T& v) const
+   {
+      iter_zero(iterate(v.diagonal()));
+   }
+};
+
 
 } // namespace LinearAlgebra
 

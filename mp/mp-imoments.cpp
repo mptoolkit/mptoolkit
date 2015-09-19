@@ -357,7 +357,7 @@ int main(int argc, char** argv)
 
 
       // Make a LinearWavefunction in the symmetric orthogonality constraint
-      MatrixOperator Identity = MatrixOperator::make_identity(Psi.Basis1());
+      // TODO: actually this is left-orthogonal.  Which might be OK?
       RealDiagonalOperator D;
       LinearWavefunction Phi;
       boost::tie(Phi, D) = get_left_canonical(Psi);
@@ -366,7 +366,7 @@ int main(int argc, char** argv)
       Rho = scalar_prod(Rho, herm(Rho));
       Rho = delta_shift(Rho, Psi.qshift());
 
-      // Rho and Identity are the same matrix in this representation
+      MatrixOperator Identity = MatrixOperator::make_identity(Phi.Basis1());
 
       // make Op the same size as our unit cell
       if (WavefuncUnitCellSize % Op.size() != 0)
