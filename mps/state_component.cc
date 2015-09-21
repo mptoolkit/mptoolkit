@@ -39,6 +39,15 @@ BasicStateComponent<T>::ConstructFullBasis1(BasisList const& S, VectorBasis cons
 }
 
 template <typename T>
+void
+BasicStateComponent<T>::delta_shift(QuantumNumber const& q)
+{
+   CHECK_EQUAL(degree(q), 1);
+   VBasis1.delta_shift(q);
+   VBasis2.delta_shift(q);
+}
+
+template <typename T>
 BasicStateComponent<T> 
 BasicStateComponent<T>::ConstructFullBasis2(VectorBasis const& Basis1, BasisList const& S)
 {

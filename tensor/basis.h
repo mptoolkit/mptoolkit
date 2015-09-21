@@ -92,6 +92,8 @@ class BasisList
 
       void CoerceSymmetryList(SymmetryList const& sl);
 
+      void delta_shift(QuantumNumber const& q);
+
    private:
       QuantumNumbers::SymmetryList S_;
       QuantumNumbers::QuantumNumberList Q_;
@@ -229,6 +231,8 @@ class VectorBasis
       // implicit conversion to BasisList **OUCH** why is this here?
       operator BasisList const&() const { return Basis_; }
 
+      void delta_shift(QuantumNumber const& q);
+
  private:
       VectorBasis(BasisList const& b, LinearAlgebra::Vector<int> const& dim)
 	 : Basis_(b), Dimension_(dim) {}
@@ -295,7 +299,6 @@ delta_shift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
    DEBUG_PRECONDITION_EQUAL(PL.size(), 1);
    return delta_shift(Orig, PL[0]);
 }
-#endif
 
 inline
 VectorBasis 
@@ -303,6 +306,7 @@ delta_shift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
 {
    return delta_shift(Orig, q);
 }
+#endif
 
 //
 // make_zero

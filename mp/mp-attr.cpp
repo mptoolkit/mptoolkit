@@ -1,9 +1,7 @@
 // -*- C++ -*- $Id$
 
 #include "quantumnumbers/all_symmetries.h"
-#include "matrixproduct/lattice.h"
-#include "matrixproduct/mpwavefunction.h"
-#include "matrixproduct/mpoperatorlist.h"
+#include "wavefunction/mpwavefunction.h"
 #include "pheap/pheap.h"
 #include "mp/copyright.h"
 #include "common/environment.h"

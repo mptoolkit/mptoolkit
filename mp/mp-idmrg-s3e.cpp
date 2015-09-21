@@ -205,7 +205,7 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
 		    MatrixOperator const& Rho)
 {
    ProductLeft Prod(Psi, Op, QShift);
-   Guess = Initial_E(Op, DeltaShift(Psi.Basis1(), adjoint(QShift)));
+   Guess = Initial_E(Op, delta_shift(Psi.Basis1(), adjoint(QShift)));
    MatrixOperator Ident = Guess.front();
    for (int i = 0; i < int(Guess.size())-1; ++i)
    {
@@ -875,7 +875,7 @@ iDMRG::Finish(StatesInfo const& States)
    SingularValueDecomposition(SaveLambda2, U, D, Vh);
    (*C) = prod(*C, Lambda * herm(Vh) * InvertDiagonal(D) * herm(U));
 
-   CHECK_EQUAL(Psi.Basis1(), DeltaShift(Psi.Basis2(), QShift));
+   CHECK_EQUAL(Psi.Basis1(), delta_shift(Psi.Basis2(), QShift));
 }
 
 void
@@ -1364,6 +1364,7 @@ int main(int argc, char** argv)
       // any other attributes?
       Wavefunction.Attributes()["LastEnergy"] = idmrg.Solver().LastEnergy();
 
+      
       // History log
       Wavefunction.AppendHistory(EscapeCommandline(argc, argv));
 

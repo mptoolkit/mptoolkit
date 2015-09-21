@@ -722,6 +722,14 @@ IrredProd_Herm<HermitianProxy<IrredTensor<T1, B1, B2, S1> >,
 //
 
 template <typename T, typename B1, typename B2, typename S>
+void
+Tensor::IrredTensor<T, B1, B2, S>::delta_shift(QuantumNumbers::QuantumNumber const& q)
+{
+   Basis1_.delta_shift(q);
+   Basis2_.delta_shift(q);
+}
+
+template <typename T, typename B1, typename B2, typename S>
 Tensor::IrredTensor<T, B1, B2, S>
 delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x, 
 	    QuantumNumbers::QuantumNumber q,

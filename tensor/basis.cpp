@@ -106,6 +106,12 @@ std::string show_projections(BasisList const& B)
    return Out.str();
 }
 
+void
+BasisList::delta_shift(QuantumNumbers::QuantumNumber const& q)
+{
+   Q_.delta_shift(q);
+}
+
 BasisList delta_shift(BasisList const& Orig, QuantumNumbers::Projection const& p)
 {
    BasisList Result(Orig.GetSymmetryList());
@@ -114,6 +120,16 @@ BasisList delta_shift(BasisList const& Orig, QuantumNumbers::Projection const& p
 
    return Result;
 }
+
+BasisList delta_shift(BasisList const& Orig, QuantumNumbers::QuantumNumber const& q)
+{
+   BasisList Result(Orig.GetSymmetryList());
+   for (BasisList::const_iterator I = Orig.begin(); I != Orig.end(); ++I)
+      Result.push_back(delta_shift(*I, q));
+
+   return Result;
+}
+
 
 #if 0
 BasisList RenameSymmetry(BasisList const& BL, SymmetryList const& NewSL)
@@ -201,9 +217,22 @@ std::string show_projections(VectorBasis const& B)
    return Out.str();
 }
 
+void
+VectorBasis::delta_shift(QuantumNumbers::QuantumNumber const& q)
+{
+   Basis_.delta_shift(q);
+}
+
 VectorBasis delta_shift(VectorBasis const& Orig, QuantumNumbers::Projection const& p)
 {
    return VectorBasis(delta_shift(Orig.Basis(), p), 
+		      Orig.Dimension_.begin(),
+		      Orig.Dimension_.end());
+}
+
+VectorBasis delta_shift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
+{
+   return VectorBasis(delta_shift(Orig.Basis(), q), 
 		      Orig.Dimension_.begin(),
 		      Orig.Dimension_.end());
 }

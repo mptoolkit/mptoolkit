@@ -23,17 +23,18 @@ class MPWavefunction
 
       MPWavefunction(WavefunctionTypes const& Psi) : Psi_(Psi) {}
 
-      MPWavefunction(WavefunctionTypes const& Psi, AttributeList const& Attr) : Psi_(Psi), Attr_(Attr) {}
+      MPWavefunction(WavefunctionTypes const& Psi, AttributeList const& Attr) 
+	 : Psi_(Psi), Attr_(Attr) {}
 
       // construct an MPWavefunction with the given attributes and history
       MPWavefunction(AttributeList const& Attr, HistoryLog const& Hist)
 	 : Attr_(Attr), History_(Hist) {}
 
       MPWavefunction& operator=(MPWavefunction const& Psi2)
-      { Psi_ = Psi2.Psi_; Attr_ = Psi2.Attr_; return *this; }
+      { Psi_ = Psi2.Psi_; Attr_ = Psi2.Attr_; History_ = Psi2.History_; return *this; }
 
       MPWavefunction& operator=(WavefunctionTypes const& Psi2)
-      { Psi_ = Psi2; Attr_ = AttributeList(); return *this; }
+      { Psi_ = Psi2; return *this; }
 
       WavefunctionTypes& Wavefunction() { return Psi_; }
 

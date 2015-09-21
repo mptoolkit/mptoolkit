@@ -348,8 +348,32 @@ InfiniteWavefunctionLeft::rotate_left(int Count)
 
    Count = Count % this->size();
 
+   // the first Count elements are going to get shifted to the right hand side, so we need to
+   // delta_shift them
+   for (mps_iterator I = this->begin_(); I != this->begin_()+Count; ++I)
+   {
+      I->delta_shift(adjoint(this->qshift()));
+   }
+   // now do the actual rotation
    std::rotate(this->base_begin_(), this->base_begin_()+Count, this->base_end_());
+
+   // for the Lambda matrices, start by removing the double-counted boundary lambda
+   this->pop_back_lambda();
+   // and delta-shift
+   for (lambda_iterator I = this->lambda_begin_(); I != this->lambda_begin_()+Count; ++I)
+   {
+      I->delta_shift(adjoint(this->qshift()));
+   }
+   // and rotate
    std::rotate(this->lambda_base_begin_(), this->lambda_base_begin_()+Count, this->lambda_base_end_());
+   // and put back the boundary lambda
+   this->push_back_lambda(delta_shift(this->lambda_l(), adjoint(this->qshift())));
+
+   // set the left and right basis
+   this->setBasis1(lambda_l().Basis1());
+   this->setBasis2(lambda_r().Basis2());
+
+   this->debug_check_structure();
 }
 
 void

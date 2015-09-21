@@ -84,7 +84,7 @@ HistoryLog::print(std::ostream& out) const
 {
    for (const_iterator I = this->begin(); I != this->end(); ++I)
    {
-      out << (*I) << '\n';
+      out << (*I) << "\n\n";
    }
    out << std::flush;
 }
@@ -96,7 +96,7 @@ HistoryLog::print_newest_first(std::ostream& out) const
    {
       const_iterator J = I;
       --J;
-      out << (*J) << '\n';
+      out << (*J) << "\n\n";
    }
 }
 

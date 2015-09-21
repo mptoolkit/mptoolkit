@@ -370,5 +370,15 @@ PStream::ipstream& operator>>(PStream::ipstream& in, QuantumNumberList& q)
    return in;
 }
 
+// QuantumNumberList
+
+void
+QuantumNumberList::delta_shift(QuantumNumber const& q)
+{
+   for (iterator I = this->begin(); I != this->end(); ++I)
+   {
+      *I = ::QuantumNumbers::delta_shift(*I, q);
+   }
+}
 
 } // namespace QuantumNumber

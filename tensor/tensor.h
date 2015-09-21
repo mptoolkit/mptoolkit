@@ -291,6 +291,9 @@ class IrredTensor
       QuantumNumber const& qn1(size_type i) const { return Basis1_[i]; }
       QuantumNumber const& qn2(size_type j) const { return Basis2_[j]; }
 
+      // in-place delta_shfit
+      void delta_shift(QuantumNumber const& q);
+
       // checks to see if there are any non-zero (structural) matrix elements
       // that are not allowed by selection rules.  If so, an assertion is
       // triggered.

@@ -446,23 +446,29 @@ get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 // TODO: handle the degenerate case where there is more than one eigenvalue = 1
 std::pair<MatrixOperator, MatrixOperator>
 get_principal_eigenpair(LinearWavefunction const& Psi, QuantumNumber const& QShift, 
-                        double TolIn = 1E-14, int Verbose = 0)
+                        double TolIn = 1E-14, int Verbose = 0,
+			MatrixOperator LeftGuess = MatrixOperator(),
+			MatrixOperator RightGuess = MatrixOperator())
 {
    // get the left eigenvector
 
    LeftMultiply LeftMult(Psi, QShift);
-   MatrixOperator LeftEigen = MakeRandomMatrixOperator(Psi.Basis2(), Psi.Basis2());
+   MatrixOperator LeftEigen = LeftGuess;
+   if (LeftEigen.is_null())
+      LeftEigen = MakeRandomMatrixOperator(Psi.Basis2(), Psi.Basis2());
 
    int Iterations = 20;
    double Tol = TolIn;
    LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
    std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMult, 
-                                                      Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
+                                                      Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false,
+						      Verbose);
    while (Iterations == 20)
    {
       Iterations = 20; Tol = 1E-14;
       LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
-      EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMult, Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
+      EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMult, Iterations, Tol, LinearSolvers::LargestAlgebraicReal, 
+				    false, Verbose);
    }
 
    DEBUG_TRACE(EtaL);
@@ -470,18 +476,22 @@ get_principal_eigenpair(LinearWavefunction const& Psi, QuantumNumber const& QShi
    // get the right eigenvector
 
    RightMultiply RightMult(Psi, QShift);
-   MatrixOperator RightEigen = MakeRandomMatrixOperator(Psi.Basis2(), Psi.Basis2());
+   MatrixOperator RightEigen = RightGuess;
+   if (RightEigen.is_null())
+      RightEigen = MakeRandomMatrixOperator(Psi.Basis2(), Psi.Basis2());
 
    Iterations = 20; Tol = TolIn;
    RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
    std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMult, 
-                                                      Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
+                                                      Iterations, Tol, LinearSolvers::LargestAlgebraicReal, 
+						      false, Verbose);
    //   DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
    while (Iterations == 20)
    {
       Iterations = 20; Tol = 1E-14;
       RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
-      EtaR = LinearSolvers::Arnoldi(RightEigen, RightMult, Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
+      EtaR = LinearSolvers::Arnoldi(RightEigen, RightMult, Iterations, Tol, LinearSolvers::LargestAlgebraicReal, 
+				    false, Verbose);
    }
    DEBUG_TRACE(EtaR);
 
@@ -545,6 +555,8 @@ int main(int argc, char** argv)
          ("quantumnumber,q", prog_opt::value(&Sector),
           "calculate the overlap only in this quantum number sector, "
           "can be used multiple times [default is to calculate all sectors]")
+	 ("symmetric", prog_opt::bool_switch(&Symmetric),
+	  "transform into the symmetric canonical form")
          ("sort,s", prog_opt::bool_switch(&Sort),
           "sort the eigenvalues by magnitude (not yet implemented)")
          ("tol", prog_opt::value(&Tol),
@@ -639,12 +651,31 @@ int main(int argc, char** argv)
          Psi.set_front(prod(delta_shift(LambdaInvSqrt, QShift), Psi.get_front()));
       }
 
-      if (Verbose)
-         std::cout << "Solving principal eigenpair...\n";
 
       // now get the principal eigenpair
       MatrixOperator LeftIdent, RightIdent;
-      boost::tie(LeftIdent, RightIdent) = get_principal_eigenpair(Psi, QShift);
+      if (Symmetric)
+      {
+         MatrixOperator R = D;
+
+	 if (Verbose)
+	    std::cout << "Solving principal eigenpair...\n";
+	 boost::tie(LeftIdent, RightIdent) = get_principal_eigenpair(Psi, QShift, Tol, Verbose,
+								     R, R);
+      }
+      else
+      {
+	 // if we're in the left canonical basis, then we know what the eigenpair is.
+	 if (Verbose)
+	    std::cout << "In left-canonical basis: principal eigenpair is already known.\n";
+	 LeftIdent = MatrixOperator::make_identity(Psi.Basis2());
+	 RightIdent = D;
+	 RightIdent = scalar_prod(RightIdent, herm(RightIdent));
+
+	 boost::tie(LeftIdent, RightIdent) = get_principal_eigenpair(Psi, QShift, Tol, Verbose,
+								     LeftIdent, RightIdent);
+      }
+
       std::complex<double> IdentNormalizationFactor = inner_prod(LeftIdent, RightIdent);
 
       // Get the string operator

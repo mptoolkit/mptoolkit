@@ -359,6 +359,8 @@ class QuantumNumberList
       bool operator==(QuantumNumberList const& Other) const { return Impl == Other.Impl; }
       bool operator!=(QuantumNumberList const& Other) const { return Impl != Other.Impl; }
 
+      void delta_shift(QuantumNumber const& q);
+
       void CoerceSymmetryList(SymmetryList const& sl);
 
    private:

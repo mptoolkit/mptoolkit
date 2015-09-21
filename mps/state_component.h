@@ -87,7 +87,8 @@ struct BasicStateComponent
    value_type& back() { return Data[Data.size()-1]; }
    value_type const& back() const { return Data[Data.size()-1]; }
 
-   void delta_shift(QuantumNumber const& q, QuantumNumbers::Projection const& Delta);
+   void delta_shift(QuantumNumber const& q);
+   //, QuantumNumbers::Projection const& Delta);
 
    static BasicStateComponent<T> ConstructFullBasis1(BasisList const& LocalBasis, 
                                                        VectorBasis const& Basis2);
@@ -107,23 +108,6 @@ struct BasicStateComponent
    friend PStream::ipstream& operator>> <>(PStream::ipstream& in, BasicStateComponent& Op);
 
 };
-
-template <typename T>
-void BasicStateComponent<T>::delta_shift(QuantumNumbers::QuantumNumber const& q,
-					   QuantumNumbers::Projection const& Delta)
-{
-   DEBUG_TRACE("before")(scalar_prod(*this, herm(*this)))(scalar_prod(herm(*this), *this));
-   VBasis1 = delta_shift(VBasis1, Delta);
-   VBasis2 = delta_shift(VBasis2, Delta);
-   for (typename BasicStateComponent<T>::iterator I = this->begin(); I != this->end(); ++I)
-   {
-      DEBUG_TRACE(*I)(I->Basis1())(I->Basis2());
-      *I = Tensor::delta_shift(*I, q, Delta, VBasis1, VBasis2);
-      DEBUG_TRACE("after component")(scalar_prod(*I, herm(*I)))(scalar_prod(herm(*I), *I))(I->TransformsAs());
-      DEBUG_TRACE(*I)(I->Basis1())(I->Basis2());
-   }
-   DEBUG_TRACE("after")(scalar_prod(*this, herm(*this)))(scalar_prod(herm(*this), *this));
-}
 
 template <typename T>
 void

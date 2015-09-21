@@ -94,11 +94,9 @@ int main(int argc, char** argv)
 	 (*I) = aux_tensor_prod(*MI, *I);
       }
 
-      MPWavefunction Result;
-      Result.Wavefunction() = InfiniteWavefunctionLeft(PsiL, Psi.qshift());
-      Result.AppendHistory(EscapeCommandline(argc, argv));
+      PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft(PsiL, Psi.qshift());
+      PsiPtr.mutate()->AppendHistory(EscapeCommandline(argc, argv));
 
-      PsiPtr = new MPWavefunction(Result);
       pheap::ShutdownPersistent(PsiPtr);
    }
    catch (std::exception& e)
