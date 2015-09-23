@@ -201,7 +201,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
       for (int i = 0; i <= j; ++i)
 	 r += Right(EigenIndex,i) * Hv[i];
 
-      double ResidNorm = norm_frob(r);
+      double ResidNorm = norm_frob(r) / norm_frob(Theta);
       
       if (Verbose > 1)
 	 std::cerr << "arnoldi: iterations=" << (j+1) 

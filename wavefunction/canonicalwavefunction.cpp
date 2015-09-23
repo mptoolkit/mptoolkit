@@ -44,8 +44,8 @@ CanonicalWavefunctionBase::check_structure()
 
    for (int i = 0; i < this->size(); ++i)
    {
-      CHECK_EQUAL(this->lambda(i).Basis2(), this->operator[](i).Basis1());
-      CHECK_EQUAL(this->operator[](i).Basis2(), this->lambda(i+1).Basis1());
+      CHECK_EQUAL(this->lambda(i).Basis2(), this->operator[](i).Basis1())(i);
+      CHECK_EQUAL(this->operator[](i).Basis2(), this->lambda(i+1).Basis1())(i);
    }
 
    CHECK_EQUAL(Basis1_, this->lambda(0).Basis1());

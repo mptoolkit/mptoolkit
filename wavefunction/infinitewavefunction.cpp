@@ -410,6 +410,10 @@ void inplace_reflect(InfiniteWavefunctionLeft& Psi)
    RealDiagonalOperator D = Psi.lambda_r();
    MatrixOperator U = MatrixOperator::make_identity(D.Basis1());
 
+   // left-most lambda matrix
+   Result.push_back_lambda(flip_conj(D));
+   MatrixOperator DSave = D;
+
    InfiniteWavefunctionLeft::const_base_mps_iterator I = Psi.base_end();
    while (I != Psi.base_begin())
    {
@@ -429,7 +433,14 @@ void inplace_reflect(InfiniteWavefunctionLeft& Psi)
       Psi.pop_back_lambda();
    }
 
+   // In principle DSave is U*D*herm(U)
+
+   Result.set_lambda(0, delta_shift(flip_conj(D), Psi.qshift()));
+   Result.set(0, prod(herm(delta_shift(flip_conj(U), Psi.qshift())), Result[0]));
+
    Psi = Result;
+
+   Psi.debug_check_structure();
 }
 
 // Conjugate a wavefunction in place
