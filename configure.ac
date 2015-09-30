@@ -6,7 +6,8 @@ AC_INIT([Matrix Product Toolkit], [HEAD], [ianmcc@physics.uq.edu.au],
 
 AC_CONFIG_SRCDIR([common/trace.h])
 AC_CONFIG_HEADER(config.h)
-
+AC_CONFIG_MACRO_DIR([m4])
+m4_include([m4/macros.m4])
 AC_PREFIX_DEFAULT("$HOME")
 
 dnl Checks for programs.
@@ -61,8 +62,8 @@ ACX_GMP([], [AC_MSG_ERROR(["GnuMP library not found; see http://gmplib.org, or s
 AC_CHECK_LIB(gmp, __gmpz_init, [], [AC_MSG_ERROR([Problem with GnuMP install])])
 
 dnl BLAS/LAPACK
-ACX_BLAS([], [AC_MSG_ERROR([BLAS library not found, aborting.])])
-ACX_LAPACK([], [AC_MSG_ERROR([LAPACK library not found, aborting.])])
+AX_BLAS([], [AC_MSG_ERROR([BLAS library not found, aborting.])])
+AX_LAPACK([], [AC_MSG_ERROR([LAPACK library not found, aborting.])])
 
 ACX_HAVE_BOOST
 if test  x"$acx_boost_incdir" == x; then
