@@ -93,7 +93,6 @@ int main(int argc, char** argv)
 
       OpDescriptions.add_functions()
 	 ("H", "Hamiltonian, parametized by K, alpha (flux), U, J")
-	 ("Hp", "Hamiltonian with cylindrical BC and flux, parametized by K, alpha (flux), theta (loop flux), U, J");
 
       if (vm.count("help") || !vm.count("out"))
       {
@@ -151,11 +150,6 @@ int main(int argc, char** argv)
 
       Lattice.func("H")("K", arg("alpha")=0.0, arg("U")=0.0, arg("J")=1.0)
 	 = "J*(H_J1 + cos(pi*alpha)*(H_J2 + H_J0) + sin(pi*alpha)*(H_Jc2 - H_Jc0)) + K*H_K + U*H_U";
-
-      Lattice.func("Hp")("K", arg("alpha")=0.0, arg("theta")=0.0, arg("U")=0.0, arg("J")=1.0)
-	 = "J*(H_J1 + cos(pi*alpha)*(H_J2 + H_J0) + sin(pi*alpha)*(H_Jc2 - H_Jc0))"
-	 " + K*(H_K + cos(pi*theta)*H_Kp + sin(pi*theta)*H_Kcp)"
-	 " + U*H_U";
 
       Lattice.set_description("Bosonic 3-leg ladder with flux");
       Lattice.set_command_line(argc, argv);

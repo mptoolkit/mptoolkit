@@ -1,5 +1,8 @@
 // -*- C++ -*- $Id$
 
+// Ising exact energy 4/pi per site
+// finite size OBC: 1 / sin(pi / (4L+w))
+
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"

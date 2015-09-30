@@ -176,8 +176,8 @@ allobj = $(quantumnumbersobj) \
 	 $(commonobj)
 
 # contributed models.  Add new models here
-contrib-models = spin-tri-yc-su2 spin-tri-yc-su2-EfficientNumbering dual-aklt \
-                 spin-tri-2SiteUnitCell-su2 spin-tri-1SiteUnitCell-su2
+contrib-models = spin-tri-yc-su2 spin-tri-yc-su2-EfficientNumbering \
+                 spin-tri-2SiteUnitCell-su2 spin-tri-1SiteUnitCell-su2 spin-tri-yc-u1
 
 # default / examplar models
 default-models = spinchain-su2 spinchain-spin2-su2 \
@@ -190,7 +190,8 @@ default-models = spinchain-su2 spinchain-spin2-su2 \
 tools = mp-idmrg mp-idmrg-s3e mp-ioverlap \
         mp-info mp-history mp-reflect mp-conj \
         mp-imoments mp-iexpectation mp-wigner-eckart mp-reorder-symmetry \
-        mp-ispectrum mp-lattice-info mp-ioperator mp-aux-matrix mp-aux-algebra mp-iapply mp-attr
+        mp-ispectrum mp-lattice-info mp-ioperator mp-aux-matrix mp-aux-algebra mp-iapply mp-attr \
+        mp-iupdate
 
 experimental-tools = mp-iprint mp-iproject
 
@@ -535,6 +536,8 @@ untridiagonalize : eigen.o stackallocator.o poolallocator.o
 tridiag-kspace : eigen.o stackallocator.o poolallocator.o
 
 readsurf : oogl.o poolallocator.o
+
+get-k : $(commonobj) $(linearalgebraobj)
 
 seqgen : eigen.o stackallocator.o poolallocator.o
 seqgen2 : $(commonobj) $(pstreamobj) $(pheapobj) $(quantumnumbersobj) $(linearalgebraobj) $(mpobj) $(tensorobj)
