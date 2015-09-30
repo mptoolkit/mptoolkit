@@ -1,10 +1,4 @@
-// -*- C++ -*- $Id: mp-wigner-eckart.cpp 1149 2012-04-18 03:12:37Z ianmcc $
-
-//
-// Project a wavefunction using the Wigner-Eckart theorem
-//
-// The Regularize option is bugged - somehow the C_right and C_old
-// matrices end up with incompatible bases, perhaps due to sorting of quantum numbers?
+// -*- C++ -*-
 
 #include "wavefunction/mpwavefunction.h"
 #include "quantumnumbers/all_symmetries.h"
@@ -18,87 +12,15 @@
 #include "common/prog_options.h"
 #include "interface/inittemp.h"
 
-using QuantumNumbers::QuantumNumber;
-using QuantumNumbers::Projection;
-
 namespace prog_opt = boost::program_options;
 
-StateComponent wigner_eckart(StateComponent const& A,
-			     WignerEckartBasis<VectorBasis> const& W1,
-			     WignerEckartBasis<VectorBasis> const& W2)
-{
-   // Get the projected local basis
-   BasisList AbelianLocalBasis(W1.AbelianBasis().GetSymmetryList());
-   for (unsigned i = 0; i < A.LocalBasis().size(); ++i)
-   {
-      QuantumNumbers::ProjectionList pl = enumerate_projections(A.LocalBasis()[i]);
-      for (unsigned pi = 0; pi < pl.size(); ++pi)
-      {
-	 AbelianLocalBasis.push_back(map_projection_to_quantum(pl[pi], AbelianLocalBasis.GetSymmetryList()));
-      }
-   }
-
-   StateComponent Result(AbelianLocalBasis, W1.AbelianBasis(), W2.AbelianBasis());
-   int k = 0;
-   for (unsigned i = 0; i < A.LocalBasis().size(); ++i)
-   {
-      QuantumNumbers::ProjectionList pl = enumerate_projections(A.LocalBasis()[i]);
-      for (unsigned pi = 0; pi < pl.size(); ++pi)
-      {
-	 Result[k++] = wigner_eckart(A[i], pl[pi], W1, W2);
-      }
-   }
-   return Result;
-}
-
-InfiniteWavefunctionLeft
-wigner_project(InfiniteWavefunctionLeft const& Psi, SymmetryList const& FinalSL)
-{
-   InfiniteWavefunctionLeft Result;
-
-   VectorBasis b1 = Psi.Basis1();
-   WignerEckartBasis<VectorBasis> W2(b1, FinalSL);
-
-   Result.setBasis1(W2.AbelianBasis());
-
-   // get the identity projection
-   QuantumNumbers::ProjectionList PL = enumerate_projections(Psi.lambda_l().TransformsAs());
-   CHECK_EQUAL(PL.size(), 1U);
-   Projection IdentP = PL[0];
-
-   QuantumNumbers::ProjectionList QPL = enumerate_projections(Psi.qshift());
-   Result.QShift = map_projection_to_quantum(QPL[0], FinalSL);
-
-   for (int i = 0; i < Psi.size(); ++i)
-   {
-
-      StateComponent C = Psi[i];
-      WignerEckartBasis<VectorBasis> W1 = W2;
-      W2 = WignerEckartBasis<VectorBasis>(C.Basis2(), FinalSL);
-
-      Result.push_back_lambda(wigner_eckart(Psi.lambda(i), IdentP, W1, W1));
-      Result.push_back(wigner_eckart(C, W1, W2));
-   }
-
-   Result.push_back_lambda(wigner_eckart(Psi.lambda_r(), IdentP, W2, W2));
-
-   Result.setBasis2(W2.AbelianBasis());
-
-   Result.check_structure();
-			   
-   return Result;
-}
-
 // functor to use the visitor pattern with wavefunction types
-struct ApplyWignerEckart : public boost::static_visitor<WavefunctionTypes>
+struct ApplyReflect : public boost::static_visitor<void>
 {
-   ApplyWignerEckart(SymmetryList const& FinalSL_)
-      : FinalSL(FinalSL_) {}
-
    template <typename T>
-   T operator()(T const& Psi) const
+   void operator()(T& Psi) const
    {
-      return wigner_project(Psi, FinalSL);
+      inplace_reflect(Psi);
    }
 
    SymmetryList FinalSL;
@@ -123,8 +45,8 @@ int main(int argc, char** argv)
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
          ("symmetrylist", prog_opt::value(&SList), "slist")
-         ("inpsi", prog_opt::value(&InputFile), "inpsi")
-         ("outpsi", prog_opt::value(&OutputFile), "outpsi")
+         ("inpsi", prog_opt::value(&InputFile), "psi1")
+         ("outpsi", prog_opt::value(&OutputFile), "psi1")
          ;
 
       prog_opt::positional_options_description p;

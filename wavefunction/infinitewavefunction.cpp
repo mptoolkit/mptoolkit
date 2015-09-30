@@ -27,6 +27,9 @@
 //      CanonicalWavefunctionBase (base class)
 //      QuantumNumber              QShift
 
+PStream::VersionTag
+InfiniteWavefunctionLeft::VersionT(2);
+
 double const ArnoldiTol = getenv_or_default("MP_ARNOLDI_TOL", 1E-15);
 
 double const InverseTol = getenv_or_default("MP_INVERSE_TOL", 1E-7);
@@ -236,9 +239,6 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi
 
    this->Initialize(PsiL, D);
 }
-
-PStream::VersionTag
-InfiniteWavefunctionLeft::VersionT(2);
 
 void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Version)
 {

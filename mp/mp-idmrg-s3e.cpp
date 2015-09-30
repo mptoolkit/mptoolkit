@@ -75,9 +75,68 @@ namespace prog_opt = boost::program_options;
 using statistics::moving_average;
 using statistics::moving_exponential;
 
+double const iTol = 1E-8;
+
 MatrixOperator GlobalU;
 
 bool EarlyTermination = false;  // we set this to true if we get a checkpoint
+
+
+LinearAlgebra::DiagonalMatrix<double>
+InvertDiagonal(LinearAlgebra::DiagonalMatrix<double> const& D, double Tol = 1E-15)
+{
+   LinearAlgebra::DiagonalMatrix<double> Result(size1(D), size2(D));
+   for (unsigned i = 0; i < size1(D); ++i)
+   {
+      Result.diagonal()[i] = norm_frob(D.diagonal()[i]) < Tol ? 0.0 : 1.0 / D.diagonal()[i];
+   }
+   return Result;
+}
+
+// function to calculate
+// (D1 * U) * Inverse(D2)
+// where D1 and D2 are diagonal, and U is unitary.
+// U may be non-square, in which case it is only row or column unitary.
+// This depends on whether we are increasing or reducing the number of states.
+#if 0
+MatrixOperator
+Solve_DU_DInv(MatrixOperator const& DU, RealDiagonalOperator const& D)
+{
+   int Dim1 = DU.Basis1().total_dimension();
+   int Dim2 = DU.Basis2().total_dimension();
+   MatrixOperator Result = DU * InvertDiagonal(D,1E-8);
+   TRACE(norm_frob_sq(Result)/(Dim1*Dim2));
+   return Result;
+}
+#else
+MatrixOperator
+Solve_DU_DInv(MatrixOperator const& DU, RealDiagonalOperator const& D)
+{
+   MatrixOperator Result(DU.Basis1(), D.Basis1());
+   for (MatrixOperator::const_iterator I = iterate(DU); I; ++I)
+   {
+      for (MatrixOperator::const_inner_iterator J = iterate(I); J; ++J)
+      {
+	 //TRACE(*J)(D(J.index2(),J.index2()).diagonal());
+	 LinearAlgebra::Matrix<std::complex<double> > Component = (*J) * InvertDiagonal(D(J.index2(),J.index2()),iTol);
+	 Result(J.index1(), J.index2()) = Component;
+	 //TRACE(norm_frob_sq(Component) / (size1(Component)*size2(Component)));
+	 //TRACE(Component);
+      }
+   }
+   return Result;
+}
+#endif
+
+MatrixOperator
+Solve_DInv_UD(RealDiagonalOperator const& D, MatrixOperator const& UD)
+{
+   int Dim1 = UD.Basis1().total_dimension();
+   int Dim2 = UD.Basis2().total_dimension();
+   MatrixOperator Result = InvertDiagonal(D,iTol) * UD;
+   TRACE(norm_frob_sq(Result)/sqrt(Dim1*Dim2));
+   return Result;
+}
 
 struct ProductLeft
 {
@@ -687,10 +746,13 @@ iDMRG::UpdateLeftBlock()
    LeftHamiltonian.back().back() -= Solver_.LastEnergy() * LeftHamiltonian.back().front();
 
    // do an SVD of SaveLambda1 so that we can invert it
-   MatrixOperator U,D,Vh;
+   MatrixOperator U,Vh;
+   RealDiagonalOperator D;
    SingularValueDecomposition(SaveLambda1, U, D, Vh);
 
-   (*C) = prod(delta_shift(SaveLambda2, QShift) * herm(Vh) * InvertDiagonal(D) * herm(U), *C);
+   //   (*C) = prod(delta_shift(SaveLambda2, QShift) * herm(Vh) * InvertDiagonal(D) * herm(U), *C);
+   MatrixOperator X = Solve_DU_DInv(delta_shift(SaveLambda2, QShift) * adjoint(Vh), D);
+   (*C) = prod(X * herm(U), *C);
 
    // normalize
    *C *= 1.0 / norm_frob(*C);
@@ -715,10 +777,12 @@ iDMRG::UpdateRightBlock()
    RightHamiltonian.front().front() -= Solver_.LastEnergy() * RightHamiltonian.front().back();
 
    // do an SVD of SaveLambda2 so that we can invert it
-   MatrixOperator U,D,Vh;
+   MatrixOperator U,Vh;
+   RealDiagonalOperator D;
    SingularValueDecomposition(SaveLambda2, U, D, Vh);
 
-   (*C) = prod(*C, herm(Vh) * InvertDiagonal(D) * herm(U) * delta_shift(SaveLambda1, adjoint(QShift)));
+   (*C) = prod(*C, herm(Vh) * Solve_DInv_UD(D, herm(U) * delta_shift(SaveLambda1, adjoint(QShift))));
+   //(*C) = prod(*C, herm(Vh) * InvertDiagonal(D) * herm(U) * delta_shift(SaveLambda1, adjoint(QShift)));
 
    // normalize
    *C *= 1.0 / norm_frob(*C);
@@ -871,9 +935,11 @@ iDMRG::Finish(StatesInfo const& States)
 
    this->ShowInfo('F');
 
-   MatrixOperator U,D,Vh;
+   MatrixOperator U,Vh;
+   RealDiagonalOperator D;
    SingularValueDecomposition(SaveLambda2, U, D, Vh);
-   (*C) = prod(*C, Lambda * herm(Vh) * InvertDiagonal(D) * herm(U));
+   //   (*C) = prod(*C, Lambda * herm(Vh) * InvertDiagonal(D) * herm(U));
+   (*C) = prod(*C, Solve_DU_DInv(Lambda*adjoint(Vh), D) * herm(U));
 
    CHECK_EQUAL(Psi.Basis1(), delta_shift(Psi.Basis2(), QShift));
 }
@@ -965,7 +1031,7 @@ int main(int argc, char** argv)
 	 ("random,a", prog_opt::bool_switch(&Create),
 	  "Create a new wavefunction starting from a random state")
 	 ("unitcell,u", prog_opt::value(&WavefuncUnitCellSize),
-	  "Only if --create is specified, the size of the wavefunction unit cell")
+	  "Only if --bootstrap is specified, the size of the wavefunction unit cell")
 	 ("startrandom", prog_opt::bool_switch(&DoRandom),
 	  "Start the first iDMRG iteration from a random centre matrix")
 	 ("exactdiag,e", prog_opt::bool_switch(&ExactDiag),
@@ -1008,10 +1074,10 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("wavefunction") == 0 || HamStr.empty())
+      if (vm.count("help") || vm.count("wavefunction") == 0)
       {
          print_copyright(std::cerr);
-         std::cerr << "usage: mp-idmrg [options]\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
          return 1;
       }
@@ -1069,7 +1135,7 @@ int main(int argc, char** argv)
       {
 	 if (Wavefunction.Attributes().count("Hamiltonian") == 0)
 	 {
-	    std::cerr << "fatal: no Hamiltonian specified.\n";
+	    std::cerr << "fatal: no Hamiltonian specified, use -H option or set wavefunction attribute Hamiltonian.\n";
 	    return 1;
 	 }
 	 HamStr = Wavefunction.Attributes()["Hamiltonian"].as<std::string>();
