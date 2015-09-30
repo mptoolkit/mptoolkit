@@ -1,4 +1,4 @@
-dnl -*- Autoconf -*- $Id$
+dnl -*- Autoconf -*-
 
 AC_DEFUN([ACX_GMP],
  [
@@ -507,3 +507,4 @@ AC_DEFUN([ACX_ARPACK],
         AC_SUBST(LIBARPACK)
 
 ]) dnl ACX_ARPACK
+

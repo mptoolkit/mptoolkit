@@ -93,6 +93,7 @@ int main(int argc, char** argv)
 
       OpDescriptions.add_functions()
 	 ("H", "Hamiltonian, parametized by K, alpha (flux), U, J")
+	 ;
 
       if (vm.count("help") || !vm.count("out"))
       {

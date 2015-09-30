@@ -71,6 +71,10 @@ fi
 
 ACX_ARPACK
 
+if test "x$acx_arpack_ok" != "xyes"; then
+  AC_MSG_ERROR([ARPACK is required, but not configured or not found, aborting.])
+fi
+
 AX_BOOST_PROGRAM_OPTIONS
 
 if test x"$BOOST_PROGRAM_OPTIONS_LIB" == x; then
