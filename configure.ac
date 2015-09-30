@@ -1,7 +1,7 @@
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([Matrix Product Toolkit], [SVN-HEAD], [ianmcc@physics.uq.edu.au], 
+AC_INIT([Matrix Product Toolkit], [HEAD], [ianmcc@physics.uq.edu.au], 
         [mptoolkit], [http://physics.uq.edu.au/people/ianmcc/mptoolkit])
 
 AC_CONFIG_SRCDIR([common/trace.h])
@@ -98,15 +98,6 @@ AC_C_BIGENDIAN
 dnl Checks for programs
 
 AC_PROG_INSTALL
-
-dnl ACX_SUBVERSION_VERSION
-if test x"${PACKAGE_VERSION:0:8}" == x"SVN-HEAD" ; then
- if (svnversion . > /dev/null 2>&1) ; then
-  CXXFLAGS="$CXXFLAGS -DSVN_VERSION=\"\`svnversion \$(SRCDIR)\`\""
- else
-  CXXFLAGS="$CXXFLAGS -DSVN_VERSION=unknown"
- fi
-fi
 
 dnl shared library configuration
 # Check for enable shared library build option

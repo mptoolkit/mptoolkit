@@ -61,7 +61,13 @@ TARDIR=$(PACKAGE_TARNAME)
 
 LIB = $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LIBS_EXTRA)
 
-GIT_VERSION := $(shell git describe --dirty --always --tags $(SRCDIR))
+GIT_TAG_VERSION := $(shell cd $(SRCDIR) && git describe --dirty --always --tags)
+
+GIT_BRANCH := $(shell cd $(SRCDIR) && git rev-parse --symbolic-full-name --abbrev-ref HEAD)
+
+GIT_VERSION = $(GIT_BRANCH):$(GIT_TAG_VERSION)
+
+CXXFLAGS += -DGIT_VERSION="$(GIT_VERSION)"
 
 SRCDIRS = common common/private quantumnumbers pstream pheap \
           tensor lattice mp-algorithms wavefunction \
