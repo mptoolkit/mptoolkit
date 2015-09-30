@@ -1,4 +1,9 @@
-# $Id: Makefile.in 1597 2015-09-05 20:16:58Z ianmcc $
+#
+# Makefile.in for mptoolkit
+#
+# autodependency generation: see 
+# http://make.mad-scientist.net/papers/advanced-auto-dependency-generation/
+#
 
 SHELL = /bin/sh
 
@@ -15,7 +20,15 @@ CXXFLAGS = -I. -I$(SRCDIR) @CPPFLAGS@ @CXXFLAGS@ -DHAVE_CONFIG_H $(CXXFLAGS_EXTR
 # -DPHEAP_TRACE_DETAILED \
 # -DDATABLOCK_TRACE_DETAILED -DPOOL_ALLOCATOR_VERBOSE -DPOOLALLOC_TRACE_DETAILED \
 
-MAKEDEPENDFLAGS = -I. -I$(SRCDIR) $(MAKEDEPENDFLAGS_EXTRA)
+#MAKEDEPENDFLAGS = -I. -I$(SRCDIR) $(MAKEDEPENDFLAGS_EXTRA)
+
+MAKEDEPENDFLAGS = $(CXXFLAGS) $(MAKEDEPENDFLAGS_EXTRA)
+
+#MAKEDEPEND = makedepend -- $(MAKEDEPENDFLAGS) -- -f- -Y $< > $*.Td
+
+#MAKEDEPEND = $(SRCDIR)/depend.sh -- $(MAKEDEPENDFLAGS) -- $< > $*.Td
+
+MAKEDEPEND = gcc -MM $(CXXFLAGS) -o $*.Td $<
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
@@ -244,13 +257,18 @@ dep : $(cxx_depend)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ $(LIB) $(LIBS_$@) -o $@
 
 %.o : %.cpp %.d
+	@$(MAKEDEPEND); \
+	cp $*.Td $*.d; \
+          sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+              -e '/^$$/ d' -e 's/$$/ :/' < $*.Td >> $*.d; \
+          rm -f $*.Td
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 %.o : %.f
 	$(F77) $(FFLAGS) -c $< -o $@
 
-%.d : %.cpp
-	$(SRCDIR)/depend.sh -- $(MAKEDEPENDFLAGS) -- $< > $@
+%.d : 
+	
 
 .SECONDARY: $(cxx_depend)
 
