@@ -14,12 +14,6 @@ dnl debug flags -- needs to be called before any AC_PROG_* macros
 
 AX_CHECK_ENABLE_DEBUG(no, [CONFIG_DEBUG], [CONFIG_NODEBUG], no)
 
-dnl put DNDEBUG on the command line, rather than in config.h
-if test "x$enable_debug" != "xyes" ; then
-   CFLAGS="${CFLAGS} -DNDEBUG"
-   CXXFLAGS="${CXXFLAGS} -DNDEBUG"
-fi
-
 dnl Checks for compilers
 AC_PROG_CXX
 dnl AC_PROG_F77
@@ -32,7 +26,18 @@ if test "x$CXXFLAGS" = "x" ; then
    CXXFLAGS="-O2"
    AC_LANG_PUSH(C++)
    AX_CHECK_COMPILE_FLAG("-march=native", [CXXFLAGS="${CXXFLAGS} -march=native"])
+   AX_CHECK_COMPILE_FLAG("-flto", [CXXFLAGS="${CXXFLAGS} -flto"])
    AC_LANG_POP(C++)
+   AC_LANG_PUSH([Fortran 77])
+   AX_CHECK_COMPILE_FLAG("-flto", [FFLAGS="${FFLAGS} -flto"])
+   AC_LANG_POP([Fortran 77])
+   AC_MSG_NOTICE([CXXFLAGS are $CXXFLAGS])
+fi
+
+dnl put DNDEBUG on the command line, rather than in config.h
+if test "x$enable_debug" != "xyes" ; then
+   CFLAGS="${CFLAGS} -DNDEBUG"
+   CXXFLAGS="${CXXFLAGS} -DNDEBUG"
 fi
 
 dnl C++11 support
