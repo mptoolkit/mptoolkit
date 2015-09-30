@@ -3,8 +3,14 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
+/* Define if debugging is enabled */
+#undef CONFIG_DEBUG
+
 /* Define if we want to include functions from EXPOKIT */
 #undef CONFIG_EXPOKIT
+
+/* Define if debugging is disabled */
+#undef CONFIG_NODEBUG
 
 /* Define if we can determine the pstream binary format from autoconf */
 #undef CURRENTFORMAT_AUTOCONF
@@ -36,6 +42,15 @@
 
 /* Define if you have a BLAS library. */
 #undef HAVE_BLAS
+
+/* define if the Boost library is available */
+#undef HAVE_BOOST
+
+/* define if the Boost::PROGRAM_OPTIONS library is available */
+#undef HAVE_BOOST_PROGRAM_OPTIONS
+
+/* define if the compiler supports basic C++11 syntax */
+#undef HAVE_CXX11
 
 /* Defined if the compiler supports __attribute__((noreturn)). */
 #undef HAVE_CXX_NORETURN

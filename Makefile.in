@@ -1,9 +1,6 @@
 #
 # Makefile.in for mptoolkit
 #
-# autodependency generation: see 
-# http://make.mad-scientist.net/papers/advanced-auto-dependency-generation/
-#
 
 SHELL = /bin/sh
 
@@ -12,6 +9,14 @@ TOP_SRCDIR = @top_srcdir@
 
 LDFLAGS = @LDFLAGS@ $(LDFLAGS_EXTRA)
 CXX = @CXX@
+
+HAVE_OPENMP = @HAVE_OPENMP@
+OPENMP_CXXFLAGS = @OPENMP_CXXFLAGS@
+
+HAVE_MPI = @HAVE_MPI@
+MPICXX = @MPICXX@
+MPILIBS = @MPILIBS@
+
 CXXFLAGS = -I. -I$(SRCDIR) @CPPFLAGS@ @CXXFLAGS@ -DHAVE_CONFIG_H $(CXXFLAGS_EXTRA)
 # -DBLAS1_TRACE_DETAILED \
 # -DBLAS3_TRACE_DETAILED \
@@ -20,15 +25,12 @@ CXXFLAGS = -I. -I$(SRCDIR) @CPPFLAGS@ @CXXFLAGS@ -DHAVE_CONFIG_H $(CXXFLAGS_EXTR
 # -DPHEAP_TRACE_DETAILED \
 # -DDATABLOCK_TRACE_DETAILED -DPOOL_ALLOCATOR_VERBOSE -DPOOLALLOC_TRACE_DETAILED \
 
-#MAKEDEPENDFLAGS = -I. -I$(SRCDIR) $(MAKEDEPENDFLAGS_EXTRA)
+#either MAKEDEPEND line here will work (although the makedepend version hasn't been tested
+# since the last modifications).  We could possibly add a configure check for -MM and
+# makedepend, but -MM is fairly widely supported (probably more than makedepend anyway)
+#MAKEDEPEND = makedepend -- $(CXXFLAGS) -- -f- -Y $< > $*.Td
 
-MAKEDEPENDFLAGS = $(CXXFLAGS) $(MAKEDEPENDFLAGS_EXTRA)
-
-#MAKEDEPEND = makedepend -- $(MAKEDEPENDFLAGS) -- -f- -Y $< > $*.Td
-
-#MAKEDEPEND = $(SRCDIR)/depend.sh -- $(MAKEDEPENDFLAGS) -- $< > $*.Td
-
-MAKEDEPEND = gcc -MM $(CXXFLAGS) -o $*.Td $<
+MAKEDEPEND = $(CXX) -MM $(CXXFLAGS) -o $*.Td $<
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
@@ -43,6 +45,7 @@ FFLAGS = @FFLAGS@
 FLIBS = @FLIBS@
 LAPACK_LIBS = @LAPACK_LIBS@
 BLAS_LIBS = @BLAS_LIBS@
+BOOST_LIBS = @BOOST_PROGRAM_OPTIONS_LIB@
 LIBS = @LIBS@ $(LIBS_EXTRA)
 
 PACKAGE_NAME=@PACKAGE_NAME@
@@ -59,7 +62,7 @@ DISTDIR=$(PACKAGE_FULLNAME)
 
 TARDIR=$(PACKAGE_TARNAME)
 
-LIB = $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LIBS_EXTRA)
+LIB = $(BOOST_LIBS) $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LIBS_EXTRA)
 
 GIT_TAG_VERSION := $(shell cd $(SRCDIR) && git describe --dirty --always --tags)
 
@@ -241,10 +244,6 @@ cxx_source := $(notdir $(wildcard $(cxxsrcglob)))
 cxx_depend = $(cxx_source:%.cpp=%.d)
 
 nodep-targets = clean mrproper dep uninstall dist distclean maintainer-clean dist-dir tar-dir tar
-
-ifeq (,$(filter $(nodep-targets),$(MAKECMDGOALS)))
--include $(cxx_depend)
-endif
 
 dep : $(cxx_depend)
 
@@ -680,29 +679,28 @@ maintainer-clean : distclean
 # if we have aclocal.m4 then we would want it as a dependency along with
 # configure.in
 
-$(SRCDIR)/configure: $(SRCDIR)/configure.ac $(SRCDIR)/aclocal.m4
-	cd $(SRCDIR) && autoconf
+$(SRCDIR)/configure: configure.ac aclocal.m4
+	cd '$(SRCDIR)' && autoconf
+
+${SRCDIR}/aclocal.m4 : ${SRCDIR}/m4/*.m4
+	cd '$(SRCDIR)' && ./regen-aclocal.sh
 
 # autoheader might not change config.h.in, so touch a stamp file.
 #
 # stamp-h is touched when config.status constructs config.h
 # stamp-h.in is touched when autoheader constructs config.h.in
-
-
-${SRCDIR}/config.h.in : ${SRCDIR}/stamp-h.in
-
-#${SRCDIR}/stamp-h.in : configure.ac config.h.in
+# 
 
 ${SRCDIR}/stamp-h.in : configure.ac aclocal.m4
-	cd ${SRCDIR} && autoheader
-	echo timestamp > ${SRCDIR}/stamp-h.in
+	cd '${SRCDIR}' && autoheader
+	echo timestamp > '${SRCDIR}/stamp-h.in'
 
-#	rm -f ${srcdir}/stamp-h
+config.h : stamp-h
 
-config.h : config.h.in stamp-h
-
-stamp-h : config.status ${SRCDIR}/stamp-h.in
+stamp-h : config.status stamp-h.in
 	./config.status
+
+stamp-h : config.status stamp-h.in
 
 ifeq (,$(filter $(nodep-targets),$(MAKECMDGOALS)))
 Makefile : Makefile.in config.status
@@ -711,6 +709,9 @@ endif
 
 config.status : configure
 	./config.status --recheck
-#	rm -f config.cache
-#	$(SRCDIR)/configure ${CONFFLAGS}
+
+# this needs to go at the bottom
+ifeq (,$(filter $(nodep-targets),$(MAKECMDGOALS)))
+-include $(cxx_depend)
+endif
 
