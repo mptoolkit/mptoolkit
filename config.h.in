@@ -12,6 +12,9 @@
 /* Define if debugging is disabled */
 #undef CONFIG_NODEBUG
 
+/* Define if you want PBS walltime integration */
+#undef CONFIG_PBS_WALLTIME
+
 /* Define if we can determine the pstream binary format from autoconf */
 #undef CURRENTFORMAT_AUTOCONF
 

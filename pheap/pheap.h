@@ -243,6 +243,13 @@ int PHeapFormat();
 // initializes the persistent heap from a given filesystem
 PHeapObject* OpenPersistent(std::string const& FileName, size_t PageCacheByteSize, bool ReadOnly = false);
 
+// only allow reading persisent files that have the specified page file metadata version.  Set to -1
+// to enable all possible versions
+void SetExpectedPageFileVersion(int v);
+
+// returns the expected page file version.  -1 indicates no prefered version.
+int ExpectedPageFileVersion();
+
 // returns the page size of the current heap, or zero if there is no heap yet established.
 size_t CurrentPageSize();
 

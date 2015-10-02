@@ -483,14 +483,20 @@ T& make_lvalue(T const& x)
 #else
 
 inline 
-std::ostream& PrepareStream(std::ostream& out)
+std::ostream&& PrepareStream(std::ostream&& out)
 {
    out.precision(TracerDummyClass<>::Precision);
-   return out;
+   return static_cast<std::ostream&&>(out);
 }
 
+#if 1
 #define TRACER_CONVERT_TO_STRING(x)                                             \
-(static_cast<std::ostringstream&>(::tracer::PrepareStream(std::ostringstream().flush()) << (x)).str())
+(static_cast<std::ostringstream&>(::tracer::PrepareStream(std::ostringstream()) << (x)).str())
+#else
+
+#define TRACER_CONVERT_TO_STRING(x)                                             \
+(static_cast<std::ostringstream&&>(::tracer::PrepareStream(std::ostringstream().flush()) << (x)).str())
+#endif
 
 #endif
 

@@ -1,5 +1,7 @@
 // -*- C++ -*- $Id$
 
+#include "linearalgebra/matrix.h"
+
 namespace Tensor
 {
 
@@ -46,7 +48,8 @@ IrredTensor<T, B1, B2, S>::IrredTensor(basis1_type const& Basis1, basis2_type co
 
 template <typename T, typename B1, typename B2, typename S>
 inline
-typename IrredTensor<T, B1, B2, S>::value_type& 
+typename LinearAlgebra::MatrixBracket<typename IrredTensor<T, B1, B2, S>::MatrixType&, 
+				      size_type, size_type>::result_type
 IrredTensor<T, B1, B2, S>::operator()(size_type i, size_type j) 
 { 
    DEBUG_CHECK(i < this->Basis1().size())(i)(this->Basis1());
@@ -58,7 +61,8 @@ IrredTensor<T, B1, B2, S>::operator()(size_type i, size_type j)
 
 template <typename T, typename B1, typename B2, typename S>
 inline
-typename IrredTensor<T, B1, B2, S>::value_type const&
+typename LinearAlgebra::MatrixBracket<typename IrredTensor<T, B1, B2, S>::MatrixType, 
+				      size_type, size_type>::result_type
 IrredTensor<T, B1, B2, S>::operator()(size_type i, size_type j) const
 {
    DEBUG_CHECK(i < this->Basis1().size())(i)(this->Basis1());
@@ -68,20 +72,46 @@ IrredTensor<T, B1, B2, S>::operator()(size_type i, size_type j) const
    return Data_(i,j); 
 }
 
+
+
 template <typename T, typename B1, typename B2, typename S>
-void IrredTensor<T, B1, B2, S>::check_structure() const
+void implement_check_structure(IrredTensor<T, B1, B2, S> const& x)
 {
    for (typename LinearAlgebra::const_iterator<IrredTensor<T, B1, B2, S> >::type 
-           I = LinearAlgebra::iterate(*this); I; ++I)
+           I = LinearAlgebra::iterate(x); I; ++I)
    {
       for (typename LinearAlgebra::const_inner_iterator<IrredTensor<T, B1, B2, S> >::type 
               J = LinearAlgebra::iterate(I); J; ++J)
       {
-         CHECK(is_transform_target(this->Basis2()[J.index2()], this->TransformsAs(),
- this->Basis1()[J.index1()]))(this->Basis2()[J.index2()])
-            (this->Basis1()[J.index1()])(this->TransformsAs())(*J);
+         CHECK(is_transform_target(x.Basis2()[J.index2()], x.TransformsAs(),
+				   x.Basis1()[J.index1()]))(x.Basis2()[J.index2()])
+            (x.Basis1()[J.index1()])(x.TransformsAs())(*J);
       }
    }
+}
+
+template <typename T, typename B1, typename B2, typename S>
+void implement_check_structure(IrredTensor<LinearAlgebra::Matrix<T>, B1, B2, S> const& x)
+{
+   for (auto I = LinearAlgebra::iterate(x); I; ++I)
+   {
+      for (auto J = LinearAlgebra::iterate(I); J; ++J)
+      {
+         CHECK(is_transform_target(x.Basis2()[J.index2()], x.TransformsAs(),
+				   x.Basis1()[J.index1()]))(x.Basis2()[J.index2()])
+            (x.Basis1()[J.index1()])(x.TransformsAs())(*J);
+
+	 CHECK_EQUAL(size1(*J), x.Basis1().dim(J.index1()));
+	 CHECK_EQUAL(size2(*J), x.Basis2().dim(J.index2()));
+      }
+   }
+}
+
+
+template <typename T, typename B1, typename B2, typename S>
+void IrredTensor<T, B1, B2, S>::check_structure() const
+{
+   implement_check_structure(*this);
 }
 
 template <typename T, typename B1, typename B2, typename S>

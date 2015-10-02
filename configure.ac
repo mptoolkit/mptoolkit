@@ -78,6 +78,34 @@ test x"$with_pstream" != xno && AC_DEFINE([USE_PSTREAM], [], [Define if you want
 
 dnl AC_CHECK_LIB(pthread, pthread_create)
 
+dnl PBS integration (eg for PBS walltime)
+AC_ARG_WITH([pbs], AC_HELP_STRING([--with-pbs@<:@=ARG@:>@],[PBS queue integration for checkpointing, libpbs from standard location (ARG=yes), from the specified location (ARG=<path>) or disable it (ARG=no) @<:@ARG=yes@:>@]),
+           [], [with_pbs=check])
+
+if test "x$with_pbs" != xno; then
+   AC_MSG_CHECKING([for PBS library])
+   pbs_lib="$with_pbs"
+   if test "x$pbs_lib" == xcheck; then
+      pbs_lib="-lpbs";
+   fi
+   save_LIBS="$LIBS"; LIBS="$pbs_lib $LIBS"
+   AC_MSG_CHECKING([for pbs_connect in "$pbs_lib"])
+   AC_TRY_LINK_FUNC([pbs_connect], 
+      [acx_pbs_ok=yes
+       AC_SUBST([LIBPBS], "$pbs_lib")
+       AC_DEFINE([CONFIG_PBS_WALLTIME], [], [Define if you want PBS walltime integration])
+      ], 
+      [
+       if test "x$with_pbs" != xcheck; then
+         AC_MSG_FAILURE([--with-pbs was given, but test for libpbs failed])
+       fi
+       LIBPBS=""
+       acx_pbs_ok=no
+      ])
+   AC_MSG_RESULT($acx_pbs_ok)
+   LIBS="$save_LIBS"
+fi
+
 dnl Checks for header files.
 AC_CHECK_HEADERS(fcntl.h unistd.h)
 

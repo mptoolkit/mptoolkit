@@ -53,9 +53,16 @@ QPSetType UpdateAllowedProjections(QPSetType const& qp, std::set<QuantumNumber> 
 
 // given an irreducible tensor, project onto the given Projection p, using
 // the Wigner Eckart mappings b1 and b2, for the left basis and right basis respectively.
+template <typename T, typename B1T, typename B2T>
+IrredTensor<T, B1T, B2T, DefaultStructure>
+wigner_eckart(IrredTensor<T, B1T, B2T, DefaultStructure> const& x, 
+              Projection const& p, 
+              WignerEckartBasis<B1T> const& b1, 
+              WignerEckartBasis<B1T> const& b2);
+
 template <typename T, typename B1T, typename B2T, typename S>
-IrredTensor<T, B1T, B2T, S>
-wigner_eckart(IrredTensor<T, B1T, B2T, S> const& x, 
+IrredTensor<T, B1T, B2T, DefaultStructure>
+wigner_eckart(IrredTensor<T, B1T, B2T, DiagonalStructure> const& x, 
               Projection const& p, 
               WignerEckartBasis<B1T> const& b1, 
               WignerEckartBasis<B1T> const& b2);

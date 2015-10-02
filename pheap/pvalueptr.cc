@@ -140,6 +140,14 @@ pvalue_handle<T>::pvalue_handle(const pvalue_handle<T>& r) : Handle(r.Handle)
 }
 
 template <class T>
+inline
+pvalue_handle<T>::pvalue_handle(const pvalue_ptr<T>& r) : Handle(r.Handle)
+{
+   if (Handle) Handle->AddReference();
+}
+
+#if 0
+template <class T>
 template <class U>
 inline
 pvalue_handle<T>::pvalue_handle(const pvalue_handle<U>& r) : Handle(r.Handle)
@@ -154,7 +162,8 @@ pvalue_handle<T>::pvalue_handle(const pvalue_ptr<U>& r) : Handle(r.Handle)
 {
    if (Handle) Handle->AddReference();
 }
-
+#endif
+ 
 template <class T>
 inline
 pvalue_handle<T>::~pvalue_handle()
@@ -174,7 +183,7 @@ pvalue_handle<T>::operator=(const pvalue_handle<T>& r)
    Handle = r.Handle;
    return *this;
 }
-   
+#if 0
 template <class T>
 template <class U>
 inline
@@ -188,6 +197,7 @@ pvalue_handle<T>::operator=(const pvalue_handle<U>& r)
    Handle = r.Handle;
    return *this;
 }
+#endif
 
 template <class T>
 pvalue_ptr<T> pvalue_handle<T>::lock() const

@@ -41,6 +41,10 @@ namespace LinearAlgebra
 //
 // TODO: specify constraints on nested interfaces.
 
+//
+// 2015-10-03: The InjectiveMatrix isn't used - decided to make 
+// SparseMatrix injective.
+
 // tags for row/column major
 struct RowMajor { typedef RowMajor type; };
 struct ColMajor { typedef ColMajor type; };
@@ -67,34 +71,36 @@ struct MatrixExpression
 #define ANY_MATRIX(Value, T) LinearAlgebra::Concepts::MatrixExpression<Value, T > /**/
 #define MATRIX_EXPRESSION(Value, T) LinearAlgebra::Concepts::MatrixExpression<Value, T > /**/
 
+template <typename Value, typename T>
+using LocalMatrixI = MatrixExpression<Value, Local<T>>;
+
+#define LOCAL_MATRIX(Value, T) LinearAlgebra::Concepts::LocalMatrixI<Value, T>
+
+#if 0
 #define LOCAL_MATRIX(Value, T)				\
 LinearAlgebra::Concepts::MatrixExpression< Value ,	\
    LinearAlgebra::Concepts::Local< T > > /**/
+#endif
 
+#define INJECTIVE_MATRIX(Value, T)						\
+LinearAlgebra::Concepts::MatrixExpression< Value ,				\
+   LinearAlgebra::Concepts::Local<						\
+      LinearAlgebra::Concepts::Injective<T>>> /**/
 
 template <typename T>
-struct SparseMatrix {}; // : Local<T> {};
+struct SparseMatrix {};
 
 #define SPARSE_MATRIX(Value, T)					\
 LinearAlgebra::Concepts::MatrixExpression< Value ,		\
    LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::SparseMatrix< T > > > /**/
-
-template <typename T>
-struct Rectangular {}; // : SparseMatrix<Rectangular<T> > {};
-
-#define RECTANGULAR_MATRIX(Value, T)				\
-LinearAlgebra::Concepts::MatrixExpression< Value ,		\
-   LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::SparseMatrix<			\
-         LinearAlgebra::Concepts::Rectangular< T > > > /**/
-
+      LinearAlgebra::Concepts::Injective<			\
+         LinearAlgebra::Concepts::SparseMatrix< T > > > >/**/
 
 #define COMPRESSED_MATRIX(Value, T)				\
 LinearAlgebra::Concepts::MatrixExpression< Value ,		\
    LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::SparseMatrix<			\
-         LinearAlgebra::Concepts::Rectangular<			\
+      LinearAlgebra::Concepts::Injective<			\
+         LinearAlgebra::Concepts::SparseMatrix<			\
             LinearAlgebra::Concepts::Compressed< T > > > > > /**/
 
 
@@ -104,21 +110,10 @@ struct Coordinate {}; // : Rectangular<Coordinate<T> > {};
 #define COORDINATE_MATRIX(Value, T)				\
 LinearAlgebra::Concepts::MatrixExpression< Value ,		\
    LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::SparseMatrix<			\
-         LinearAlgebra::Concepts::Rectangular<			\
+      LinearAlgebra::Concepts::Injective<			\
+         LinearAlgebra::Concepts::SparseMatrix<			\
             LinearAlgebra::Concepts::Coordinate< T > > > > > /**/
 
-
-template <typename T>
-struct InjectiveCoordinate {}; // : Coordinate<InjectiveCoordinate<T> > {};
-
-#define INJECTIVE_MATRIX(Value, T)						\
-LinearAlgebra::Concepts::MatrixExpression< Value ,				\
-   LinearAlgebra::Concepts::Local<						\
-      LinearAlgebra::Concepts::SparseMatrix<					\
-         LinearAlgebra::Concepts::Rectangular<					\
-            LinearAlgebra::Concepts::Coordinate<				\
-               LinearAlgebra::Concepts::InjectiveCoordinate< T > > > > > > /**/
 
 
 template <typename T>
@@ -127,8 +122,9 @@ struct Banded {}; // : SparseMatrix<Banded<T> > {};
 #define BANDED_MATRIX(Value, T)					\
 LinearAlgebra::Concepts::MatrixExpression< Value ,		\
    LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::SparseMatrix<			\
-         LinearAlgebra::Concepts::Banded< T > > > > /**/
+      LinearAlgebra::Concepts::Injective<			\
+         LinearAlgebra::Concepts::SparseMatrix<			\
+            LinearAlgebra::Concepts::Banded< T > > > > > /**/
 
 
 template <typename T>
@@ -137,9 +133,10 @@ struct Diagonal {}; // : Banded<Diagonal<T> > {};
 #define DIAGONAL_MATRIX(Value, T)				\
 LinearAlgebra::Concepts::MatrixExpression< Value ,		\
    LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::SparseMatrix<			\
-         LinearAlgebra::Concepts::Banded<			\
-            LinearAlgebra::Concepts::Diagonal< T > > > > > /**/
+      LinearAlgebra::Concepts::Injective<			\
+         LinearAlgebra::Concepts::SparseMatrix<			\
+            LinearAlgebra::Concepts::Banded<			\
+               LinearAlgebra::Concepts::Diagonal< T > > > > > > /**/
 
 
 template <typename Orientation, typename T>
@@ -148,24 +145,24 @@ struct CompressedOuter {}; // : Rectangular<CompressedOuter<Orientation, T> > {}
 #define COMPRESSED_OUTER_MATRIX(Value, Orient, T)					\
 LinearAlgebra::Concepts::MatrixExpression< Value ,					\
    LinearAlgebra::Concepts::Local<							\
-      LinearAlgebra::Concepts::SparseMatrix<						\
-         LinearAlgebra::Concepts::Rectangular<						\
+      LinearAlgebra::Concepts::Injective<			\
+         LinearAlgebra::Concepts::SparseMatrix<						\
             LinearAlgebra::Concepts::Compressed<					\
                LinearAlgebra::Concepts::CompressedOuter< Orient, T > > > > > > /**/
 
 #define COMPRESSED_ROW_MATRIX(Value, T)							\
 LinearAlgebra::Concepts::MatrixExpression< Value ,					\
    LinearAlgebra::Concepts::Local<							\
-      LinearAlgebra::Concepts::SparseMatrix<						\
-         LinearAlgebra::Concepts::Rectangular<						\
+      LinearAlgebra::Concepts::Injective<			\
+         LinearAlgebra::Concepts::SparseMatrix<						\
             LinearAlgebra::Concepts::Compressed<					\
             LinearAlgebra::Concepts::CompressedOuter< RowMajor, T > > > > > > /**/
 
 #define COMPRESSED_COL_MATRIX(Value, T)							\
 LinearAlgebra::Concepts::MatrixExpression< Value ,					\
    LinearAlgebra::Concepts::Local<							\
-      LinearAlgebra::Concepts::SparseMatrix<						\
-         LinearAlgebra::Concepts::Rectangular<						\
+      LinearAlgebra::Concepts::Injective<			\
+         LinearAlgebra::Concepts::SparseMatrix<						\
             LinearAlgebra::Concepts::Compressed<					\
                LinearAlgebra::Concepts::CompressedOuter< ColMajor, T > > > > > > /**/
 
@@ -177,8 +174,8 @@ struct CompressedMatrix {};
 #define COMPRESSED_OUTER_MATRIX_V(Value, Orient, VecInterface, T)	\
 LinearAlgebra::Concepts::MatrixExpression< Value ,			\
    LinearAlgebra::Concepts::Local<					\
-      LinearAlgebra::Concepts::SparseMatrix<				\
-         LinearAlgebra::Concepts::Rectangular<				\
+      LinearAlgebra::Concepts::Injective<			\
+         LinearAlgebra::Concepts::SparseMatrix<				\
             LinearAlgebra::Concepts::Compressed<			\
                LinearAlgebra::Concepts::CompressedOuter< Orient,	\
                   LinearAlgebra::Concepts::CompressedMatrix< 		\
@@ -253,6 +250,12 @@ LinearAlgebra::Concepts::MatrixExpression< Value ,					\
 
 
 } // namespace Concepts
+
+template <typename Value, typename T>
+using MatrixExpressionI = MATRIX_EXPRESSION(Value, T);
+
+template <typename Value, typename T>
+using DiagonalMatrixI = DIAGONAL_MATRIX(Value, T);
 
 // RebindInterface
 

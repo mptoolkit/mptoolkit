@@ -41,10 +41,10 @@ class MatrixSection : public MatrixBase<MatrixSection<MatType, RowIndex, ColInde
          : m_(m), r_(r), c_(c) 
       {
          using LinearAlgebra::size1; using LinearAlgebra::size2;
-	 DEBUG_PRECONDITION(size(r) == 0 || min(r) >= 0)(r);
-	 DEBUG_PRECONDITION(size(r) == 0 || size_type(max(r)) < size1(m))(r)(size1(m));
-	 DEBUG_PRECONDITION(size(c) == 0 || min(c) >= 0)(c); 
-	 DEBUG_PRECONDITION(size(c) == 0 || size_type(max(c)) < size2(m))(c)(size2(m)); 
+	 DEBUG_PRECONDITION(size(r) == 0 || min(r) >= 0);
+	 DEBUG_PRECONDITION(size(r) == 0 || size_type(max(r)) < size1(m))(size1(m));
+	 DEBUG_PRECONDITION(size(c) == 0 || min(c) >= 0);
+	 DEBUG_PRECONDITION(size(c) == 0 || size_type(max(c)) < size2(m))(size2(m)); 
       }
 
       MatrixSection& operator=(MatrixSection const& x)

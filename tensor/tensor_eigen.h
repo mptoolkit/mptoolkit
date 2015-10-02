@@ -59,6 +59,15 @@ SingularValueDecomposition(IrredTensor<LinearAlgebra::Matrix<std::complex<double
 			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
 			               VectorBasis, VectorBasis>& Vh);
 
+void 
+SingularValueDecomposition(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis> const& m, 
+			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis>& U,
+			   IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
+			   VectorBasis, VectorBasis, DiagonalStructure>& D,
+			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis>& Vh);
 
 // If the basis is already regular, we can avoid some book-keeping
 void 

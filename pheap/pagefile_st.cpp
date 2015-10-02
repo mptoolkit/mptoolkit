@@ -200,7 +200,7 @@ uint64 PageFileImpl::open(std::string const& FileName_, bool ReadOnly_)
 
    MetaVersion = Version;
 
-   if (Version > 3)
+   if (Version > 2)
    {
       PANIC("PageFile version mismatch")(FileName_)(Version) << "expected version <= 2";
    }

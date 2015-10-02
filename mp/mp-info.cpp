@@ -62,9 +62,8 @@ void ShowEntropyInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
    out << "#left-size #right-size   #entropy" << (Base2 ? "(base-2)" : "(base-e)") << '\n';
    for (std::vector<int>::const_iterator I = Partition.begin(); I != Partition.end(); ++I)
    {
-      MatrixOperator Rho = Psi.lambda(*I);
+      RealDiagonalOperator Rho = Psi.lambda(*I);
       Rho = scalar_prod(Rho, herm(Rho));
-
       DensityMatrix<MatrixOperator> DM(Rho);
 
       double Entropy = DensityEntropy(DM.begin(), DM.end(), DM.EigenSum(), Base2);

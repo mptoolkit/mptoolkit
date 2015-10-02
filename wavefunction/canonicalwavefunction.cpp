@@ -8,14 +8,14 @@
 
 // Serialization versions:
 // Version 1:
-// std::vector<pvalue_handle<StateComponent> >       Data
-// std::vector<pvalue_handle<RealDiagonalOperator> > Lambda
+// std::vector<pvalue_handle<StateComponent> >           Data
+// std::vector<pvalue_handle<RealSemiDiagonalOperator> > Lambda
 //
 // Vesion 2:
-// std::vector<pvalue_handle<StateComponent> >       Data
-// std::vector<pvalue_handle<RealDiagonalOperator> > Lambda
-// VectorBasis                                       Basis1
-// VectorBasis                                       Basis2
+// std::vector<pvalue_handle<StateComponent> >           Data
+// std::vector<pvalue_handle<RealSemiDiagonalOperator> > Lambda
+// VectorBasis                                           Basis1
+// VectorBasis                                           Basis2
 //
 // Version 3:
 // Same as version 2, but the Lambda array has size()+1 components, with
@@ -24,9 +24,17 @@
 // Lambda(0) on its own, it sets Lambda(0) to be a dummy.  The derived class
 // serialization must handle this initialization itself, based on the returned
 // version number from CanonicalWavefunctionBase::ReadStream().
+//
+// Version 4:
+// Same as version 3, but with RealDiagonalOperator
+// std::vector<pvalue_handle<StateComponent> >       Data
+// std::vector<pvalue_handle<RealDiagonalOperator> > Lambda
+// VectorBasis                                       Basis1
+// VectorBasis                                       Basis2
+
 
 PStream::VersionTag
-CanonicalWavefunctionBase::VersionT(3);
+CanonicalWavefunctionBase::VersionT(4);
 
 CanonicalWavefunctionBase::CanonicalWavefunctionBase(CanonicalWavefunctionBase const& Psi) 
    : Data(Psi.Data), Lambda(Psi.Lambda), 
@@ -86,38 +94,56 @@ CanonicalWavefunctionBase::ReadStream(PStream::ipstream& in)
    PStream::VersionSentry Sentry(in, VersionT, in.read<int>());
 
    CHECK(Sentry.version() >= 1);
-   CHECK(Sentry.version() <= 3)
+   CHECK(Sentry.version() <= 4)
       ("Unrecognised version number in CanonicalWavefunctionBase - this software is too old to read this file!")
       (Sentry.version());
 
    in >> Data;
 
-   // if we're reading version 3, then Lambda0 isn't yet part of the serialization format.
-   // Add a dummy value for now.
-   if (Sentry.version() < 3)
+   if (Sentry.version() < 4)
    {
-      Lambda.clear();
-      lambda_container_type LambdaTemp;
-      in >> LambdaTemp;
+      using old_lambda_type           = RealSemiDiagonalOperator;
+      using old_lambda_handle_type    = pvalue_handle<old_lambda_type>;
+      using old_lambda_container_type = std::vector<old_lambda_handle_type>;
 
-      // argh - except for a bug where we forgot to increment the version number on saving.  So
-      // hack around it!
-      if (LambdaTemp.size() == Data.size()+1)
+      // if we're reading version 3, then Lambda0 isn't yet part of the serialization format.
+      // Add a dummy value for now.
+      if (Sentry.version() < 3)
       {
-	 // this means we forgot to increment the version number
-	 Sentry.change_version(3);
+	 Lambda.clear();
+	 old_lambda_container_type LambdaTemp;
+	 in >> LambdaTemp;
+
+	 // argh - except for a bug where we forgot to increment the version number on saving.  So
+	 // hack around it!
+	 if (LambdaTemp.size() == Data.size()+1)
+	 {
+	    // this means we forgot to increment the version number
+	    Sentry.change_version(3);
+	 }
+	 else
+	 {
+	    this->push_back_lambda(RealDiagonalOperator());
+	 }
+	 for (unsigned i = 0; i < LambdaTemp.size(); ++i)
+	 {
+	    Lambda.push_back(new RealDiagonalOperator(*LambdaTemp[i].lock()));
+	 }
       }
       else
       {
-	 this->push_back_lambda(RealDiagonalOperator());
-      }
-      for (unsigned i = 0; i < LambdaTemp.size(); ++i)
-      {
-	 Lambda.push_back(LambdaTemp[i]);
+	 Lambda.clear();
+	 old_lambda_container_type LambdaTemp;
+	 in >> LambdaTemp;
+	 for (unsigned i = 0; i < LambdaTemp.size(); ++i)
+	 {
+	    Lambda.push_back(new RealDiagonalOperator(*LambdaTemp[i].lock()));
+	 }
       }
    }
    else
    {
+      // version 4
       in >> Lambda;
    }
 

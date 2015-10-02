@@ -31,7 +31,6 @@ class ScalarMatrix : public MatrixBase<ScalarMatrix<T> >
       typedef T data_type;
 
       typedef is_mutable_proxy<data_type> proxy;
-   //typedef boost::mpl::not_<proxy> const_proxy;
       typedef is_const_proxy<data_type> const_proxy;
       typedef is_immediate<data_type> immediate; 
 

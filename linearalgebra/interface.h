@@ -28,6 +28,8 @@ typedef std::ptrdiff_t difference_type;
 // value_type, which is the (concrete) value_type that it contains.
 //
 
+// AnyScalar: catch-all for the interface of a type that is not
+// known to the LinearAlgebra library, so we regard it as a scalar
 template <typename T> struct AnyScalar;
 
 template <typename T, typename Enable = void>
@@ -102,6 +104,8 @@ struct IsZero;
 // For example, 
 // typename result_value<Negate<T> >::type x = negate(y);
 // We cannot use Negate<T>::result_type directly here, as it may be a proxy.
+// This is effectively a replacement for
+// decltype(negate(x)), since we cannot use decltype with expression templates.
 //
 
 template <typename T>

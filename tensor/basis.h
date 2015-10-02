@@ -66,6 +66,8 @@ class BasisList
 
       std::size_t size() const { return Q_.size(); }
 
+      int dim(int s) const { DEBUG_CHECK(s >= 0 && s < this->size()); return 1; }
+
       bool is_null() const { return S_.is_null(); }
 
       // returns true if this basis is empty

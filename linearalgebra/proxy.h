@@ -41,6 +41,9 @@ namespace LinearAlgebra
 // Thus, a mutable proxy can choose to specialize make_const_reference<T>
 // to return 'proxy<T const>', rather than the default 'proxy<T> const'.
 //
+// C++11: now that we have r-value references, proxy<T const> is not necessary,
+// we can just use proxy<T> const everywhere.
+//
 
 template <typename T>
 struct is_mutable_proxy;

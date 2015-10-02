@@ -1637,7 +1637,8 @@ struct NormInf<T, MATRIX_EXPRESSION(Sv, Si)>
 // MatrixTranspose
 //
 
-template <typename M, typename NestedFunc, typename MInterface = typename interface<M>::type>
+template <typename M, typename NestedFunc, typename MInterface = typename interface<M>::type, 
+	  typename Enable = void>
 struct MatrixTransposeInterface {};
 
 template <typename M, typename NestedFunc = Transpose<typename interface<M>::value_type>,
@@ -1657,6 +1658,15 @@ transpose(M const& m, NestedFunc n)
 {
    return MatrixTranspose<M, NestedFunc>()(m,n);
 }
+
+// specialization for diagonal_matrix, where transpose is the identity operation
+// (assuming that the nested operation is trivial)
+
+template <typename M, typename F, typename T, typename Ti>
+struct MatrixTransposeInterface<M, F, DIAGONAL_MATRIX(T, Ti), typename boost::enable_if<is_identity<F> >::type>
+   : Identity<M> {};
+
+// do we need a version with Identity<T&> ?  Probably not, do we really want to use trans() as an l-value?
 
 //
 // defaults
@@ -1769,7 +1779,7 @@ struct AssignInterface<LHS, RHS, MATRIX_EXPRESSION(S1, U1), MATRIX_EXPRESSION(S2
 template <typename LHS, typename RHS, 
           typename S1, typename U1, 
           typename S2, typename U2>
-struct AssignInterface<LHS&, RHS, LOCAL_MATRIX(S1, U1), SPARSE_MATRIX(S2, U2) >
+struct AssignInterface<LHS&, RHS, LOCAL_MATRIX(S1, U1), LOCAL_MATRIX(S2, U2) >
 {
    typedef void result_type;
    typedef LHS& first_argument_type;

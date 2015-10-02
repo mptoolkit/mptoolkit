@@ -112,12 +112,13 @@ Solve_DU_DInv(MatrixOperator const& DU, RealDiagonalOperator const& D)
 MatrixOperator
 Solve_DU_DInv(MatrixOperator const& DU, RealDiagonalOperator const& D)
 {
+   DU.check_structure();
+   
    MatrixOperator Result(DU.Basis1(), D.Basis1());
    for (MatrixOperator::const_iterator I = iterate(DU); I; ++I)
    {
       for (MatrixOperator::const_inner_iterator J = iterate(I); J; ++J)
       {
-	 //TRACE(*J)(D(J.index2(),J.index2()).diagonal());
 	 LinearAlgebra::Matrix<std::complex<double> > Component = (*J) * InvertDiagonal(D(J.index2(),J.index2()),iTol);
 	 Result(J.index1(), J.index2()) = Component;
 	 //TRACE(norm_frob_sq(Component) / (size1(Component)*size2(Component)));
@@ -1206,8 +1207,6 @@ int main(int argc, char** argv)
 	    B2.push_back(BoundaryQ[i], 1);
 	 }
 
-	 TRACE(B2);
-
 	 Psi.push_back(ConstructFromLeftBasis(FullBL[0], B1));
 	 for (int i = 1; i < WavefuncUnitCellSize; ++i)
 	 {
@@ -1216,14 +1215,10 @@ int main(int argc, char** argv)
 
 	 R = MakeRandomMatrixOperator(Psi.Basis2(), B2);
 
-	 TRACE(R.Basis1())(R.Basis2());
-
 	 // adjust for periodic basis
 	 StateComponent x = prod(Psi.get_back(), R);
 	 R = TruncateBasis2(x); // the Basis2 is already 1-dim.  This just orthogonalizes x
 	 Psi.set_back(x);
-
-	 TRACE(Psi.Basis2());
 
 
 	 //	 L = delta_shift(R, QShift);

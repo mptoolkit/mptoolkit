@@ -282,8 +282,8 @@ struct TransformInterface<T&, F, AnyScalar<S> >
    typedef T& first_argument_type;
    typedef F second_argument_type;
    typedef typename F::result_type result_type;
-   result_type operator()(T x, F const& f) const { return f(x); }
-   result_type operator()(T x) const { return F()(x); }
+   result_type operator()(T& x, F const& f) const { return f(x); }
+   result_type operator()(T& x) const { return F()(x); }
 };
 
 template <typename S, typename T>

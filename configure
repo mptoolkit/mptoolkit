@@ -637,6 +637,7 @@ BLAS_LIBS
 EGREP
 GREP
 CPP
+LIBPBS
 HAVE_MPI
 MPILIBS
 MPICXX
@@ -711,6 +712,7 @@ enable_largefile
 with_openmp
 with_mpi
 with_pstream
+with_pbs
 with_longlong
 with_gmp
 with_blas
@@ -1360,6 +1362,10 @@ Optional Packages:
   --with-openmp           enable OpenMP parallelization [default=check]
   --with-mpi              enable MPI [default=check]
   --without-pstream       disables persistent streams support
+  --with-pbs[=ARG]        PBS queue integration for checkpointing, libpbs from
+                          standard location (ARG=yes), from the specified
+                          location (ARG=<path>) or disable it (ARG=no)
+                          [ARG=yes]
   --without-longlong      disables 'long long' support in the streaming lib
   --with-gmp=DIR          top directory for GnuMP
   --with-blas=<lib>       use BLAS library <lib>
@@ -1702,6 +1708,52 @@ $as_echo "$ac_res" >&6; }
   eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
 
 } # ac_fn_cxx_check_func
+
+# ac_fn_c_try_link LINENO
+# -----------------------
+# Try to link conftest.$ac_ext, and return whether this succeeded.
+ac_fn_c_try_link ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  rm -f conftest.$ac_objext conftest$ac_exeext
+  if { { ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
+$as_echo "$ac_try_echo"; } >&5
+  (eval "$ac_link") 2>conftest.err
+  ac_status=$?
+  if test -s conftest.err; then
+    grep -v '^ *+' conftest.err >conftest.er1
+    cat conftest.er1 >&5
+    mv -f conftest.er1 conftest.err
+  fi
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext && {
+	 test "$cross_compiling" = yes ||
+	 test -x conftest$ac_exeext
+       }; then :
+  ac_retval=0
+else
+  $as_echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_retval=1
+fi
+  # Delete the IPA/IPO (Inter Procedural Analysis/Optimization) information
+  # created by the PGI compiler (conftest_ipa8_conftest.oo), as it would
+  # interfere with the next link command; also delete a directory that is
+  # left behind by Apple's compiler.  We do this before executing the actions.
+  rm -rf conftest.dSYM conftest_ipa8_conftest.oo
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+  as_fn_set_status $ac_retval
+
+} # ac_fn_c_try_link
 
 # ac_fn_c_try_cpp LINENO
 # ----------------------
@@ -2140,52 +2192,6 @@ rm -f conftest.val
   as_fn_set_status $ac_retval
 
 } # ac_fn_c_compute_int
-
-# ac_fn_c_try_link LINENO
-# -----------------------
-# Try to link conftest.$ac_ext, and return whether this succeeded.
-ac_fn_c_try_link ()
-{
-  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
-  rm -f conftest.$ac_objext conftest$ac_exeext
-  if { { ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
-$as_echo "$ac_try_echo"; } >&5
-  (eval "$ac_link") 2>conftest.err
-  ac_status=$?
-  if test -s conftest.err; then
-    grep -v '^ *+' conftest.err >conftest.er1
-    cat conftest.er1 >&5
-    mv -f conftest.er1 conftest.err
-  fi
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest$ac_exeext && {
-	 test "$cross_compiling" = yes ||
-	 test -x conftest$ac_exeext
-       }; then :
-  ac_retval=0
-else
-  $as_echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	ac_retval=1
-fi
-  # Delete the IPA/IPO (Inter Procedural Analysis/Optimization) information
-  # created by the PGI compiler (conftest_ipa8_conftest.oo), as it would
-  # interfere with the next link command; also delete a directory that is
-  # left behind by Apple's compiler.  We do this before executing the actions.
-  rm -rf conftest.dSYM conftest_ipa8_conftest.oo
-  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
-  as_fn_set_status $ac_retval
-
-} # ac_fn_c_try_link
 
 # ac_fn_c_check_func LINENO FUNC VAR
 # ----------------------------------
@@ -5343,6 +5349,70 @@ test x"$with_pstream" != xno &&
 $as_echo "#define USE_PSTREAM /**/" >>confdefs.h
 
 
+
+
+# Check whether --with-pbs was given.
+if test "${with_pbs+set}" = set; then :
+  withval=$with_pbs;
+else
+  with_pbs=check
+fi
+
+
+if test "x$with_pbs" != xno; then
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for PBS library" >&5
+$as_echo_n "checking for PBS library... " >&6; }
+   pbs_lib="$with_pbs"
+   if test "x$pbs_lib" == xcheck; then
+      pbs_lib="-lpbs";
+   fi
+   save_LIBS="$LIBS"; LIBS="$pbs_lib $LIBS"
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pbs_connect in \"$pbs_lib\"" >&5
+$as_echo_n "checking for pbs_connect in \"$pbs_lib\"... " >&6; }
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char pbs_connect ();
+int
+main ()
+{
+return pbs_connect ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  acx_pbs_ok=yes
+       LIBPBS="$pbs_lib"
+
+
+$as_echo "#define CONFIG_PBS_WALLTIME /**/" >>confdefs.h
+
+
+else
+
+       if test "x$with_pbs" != xcheck; then
+         { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "--with-pbs was given, but test for libpbs failed
+See \`config.log' for more details" "$LINENO" 5; }
+       fi
+       LIBPBS=""
+       acx_pbs_ok=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $acx_pbs_ok" >&5
+$as_echo "$acx_pbs_ok" >&6; }
+   LIBS="$save_LIBS"
+fi
 
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'

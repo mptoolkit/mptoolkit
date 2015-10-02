@@ -60,6 +60,9 @@ int main(int argc, char** argv)
          return 1;
       }
 
+      // load an old file format
+      pheap::SetExpectedPageFileVersion(1);
+
       pvalue_ptr<InfiniteWavefunctionOld> Psi;
 
       if (OutputFile.empty())

@@ -24,6 +24,23 @@
 #define TRACE_PHEAP_X(Msg) DUMMY_TRACE(Msg)
 #endif
 
+namespace pheap
+{
+// the default page file version is the current version, 2
+int RequiredPageFileVersion = 2;
+
+void SetExpectedPageFileVersion(int v)
+{
+   RequiredPageFileVersion = v;
+}
+
+int ExpectedPageFileVersion()
+{
+   return RequiredPageFileVersion;
+}
+
+} // namespace pheap
+
 namespace PHeapFileSystem
 {
 
@@ -386,6 +403,12 @@ int FileSystem::ReadPageFileMetadata(std::string const& Path, std::string const&
 
    uint32_t CheckVersion = MetaIn.read<uint32>();
    MetaVersion = CheckVersion;
+
+   if (pheap::ExpectedPageFileVersion() != -1 && pheap::ExpectedPageFileVersion() != CheckVersion)
+   {
+      PANIC("Page file version mismatch") << "Expected version " << pheap::ExpectedPageFileVersion() << " but version is " << CheckVersion;
+   }
+
    if (CheckVersion < 1 || CheckVersion > 2)
    {
       WARNING("Page file version mismatch, file version is ") << CheckVersion

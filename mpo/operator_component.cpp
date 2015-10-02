@@ -1673,8 +1673,7 @@ decompose_tensor_prod(SimpleOperator const& Op,
       // We really need an IrredProd for reducible tensors, it would be more efficient here
       OpTest += project(Result[i].first * Result[i].second, Op.TransformsAs());
    }
-   CHECK(norm_frob(OpTest - Op) < 1E-13 * norm_frob(OpTest))(Op)(OpTest)(norm_frob(OpTest-Op))
-      (MatLeft)(MatRight);
+   CHECK(norm_frob(OpTest - Op) < 1E-13 * norm_frob(OpTest))(Op)(OpTest)(norm_frob(OpTest-Op));
 #endif
 
    return Result;

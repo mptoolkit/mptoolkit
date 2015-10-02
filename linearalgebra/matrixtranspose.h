@@ -372,8 +372,8 @@ struct MatrixTranspose<MatrixTransposeProxy<M>&, F, typename boost::enable_if<is
 			  second_argument_type const&) { return x.base(); }
 };
 
-template <typename M, typename F, typename Mv, typename Mi>
-struct MatrixTransposeInterface<M, F, LOCAL_MATRIX(Mv, Mi)>
+template <typename M, typename F, typename Mv, typename Mi, typename Enable>
+struct MatrixTransposeInterface<M, F, LOCAL_MATRIX(Mv, Mi), Enable>
 {
    typedef boost::mpl::true_ involutary;
    typedef MatrixTransposeProxy<typename Transform<M, F>::result_type> result_type;

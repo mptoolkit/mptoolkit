@@ -125,8 +125,8 @@ class IndirectVector : public VectorBase<IndirectVector<VecType, IndexType> >
 	 : Vec_(Vec), IndexVec_(IndexVec) 
       {
          using LinearAlgebra::size;
-	 DEBUG_PRECONDITION(size(IndexVec) == 0U || min(IndexVec) >= 0)(IndexVec); 
-	 DEBUG_PRECONDITION(size(IndexVec) == 0U || size_type(max(IndexVec)) < size(Vec))(IndexVec); 
+	 DEBUG_PRECONDITION(size(IndexVec) == 0U || min(IndexVec) >= 0); 
+	 DEBUG_PRECONDITION(size(IndexVec) == 0U || size_type(max(IndexVec)) < size(Vec));
       }
 
       template <typename OtherVec, typename OtherIndex>

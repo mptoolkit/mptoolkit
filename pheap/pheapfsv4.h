@@ -48,6 +48,12 @@
 namespace pheap
 {
 extern MessageLogger::Logger PHeapLog;
+
+// if the ExpectedPageFileVersion is set, then
+// abort if the file has the wrong version.
+// The default expexted page file version is 2
+int ExpectedPageFileVersion();
+
 } // namespace pheap
 
 namespace PHeapFileSystem

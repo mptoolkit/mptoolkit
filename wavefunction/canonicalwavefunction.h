@@ -23,12 +23,9 @@
 #include "mps/state_component.h"
 #include "linearalgebra/diagonalmatrix.h"
 #include "pheap/pvalueiterator.h"
+#include "mps/density.h"  // for RealDiagonalOperator
 
 class LinearWavefunction;
-
-// The lambda matrix is real-valued and diagonal
-typedef Tensor::IrredTensor<LinearAlgebra::DiagonalMatrix<double>,
-			    VectorBasis, VectorBasis> RealDiagonalOperator;
 
 // Common functions for Left and Right-orthogonalized versions
 class CanonicalWavefunctionBase

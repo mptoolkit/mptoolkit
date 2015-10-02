@@ -158,9 +158,6 @@ struct IsZero<value_with_zero<T> >
    }
 };
 
-template <typename T>
-struct make_value<value_with_zero<T> > : make_value<T> {};
-
 template <typename T, typename Enable>
 struct make_value_with_zero
 {
@@ -172,6 +169,9 @@ struct make_value_with_zero<
    T
  , typename boost::enable_if<has_zero<typename make_value<T>::type> >::type>
 : make_value<T> {};
+
+template <typename T>
+struct make_value<value_with_zero<T> > : make_value_with_zero<T> {};
 
 } // namespace LinearAlgebra
 

@@ -2,6 +2,9 @@
 
    Created 2005-03-03 Ian McCulloch
 
+  TODO: only the RowMajor * ColMajor version is optimized.
+  A RowMajor * RowMajor would be useful.
+
 */
 
 #if !defined(COEFFICIENT_MULTIPLY_H_DJSHC84YT789YUFP89RHJT89PJHFP8943)
@@ -238,8 +241,6 @@ struct AssignCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, ColMajor, CF, Ne
 	    add_element_check_if_zero(lhs, I.index(), J.index(), 
                    coefficient_parallel_prod(*I, *J, 
                                              bindij(cf, I.index(), J.index()), f));
-            //            TRACE(is_zero(coefficient_parallel_prod(*I, *J, 
-            //                                                    bindij(cf, I.index(), J.index()), f)))(I.index())(J.index());
 	    ++J;
 	 }
 	 ++I;
@@ -405,6 +406,62 @@ struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
    {
       SparseMatrix<typename interface<M2>::value_type, ColMajor> Temp2(m2);
       assign_coefficient_product2(lhs, m1, Temp2, cf, f);
+   }
+};
+
+// assign mixed sparse/diagonal
+
+template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
+	  typename LHSv, typename LHSi,
+	  typename M1v, typename M1i,
+	  typename M2v, typename M2i>
+struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
+				  SPARSE_MATRIX(LHSv, LHSi),
+				  SPARSE_MATRIX(M1v, M1i),
+				  DIAGONAL_MATRIX(M2v, M2i)>
+{
+   static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
+   {
+      zero_all(lhs);
+      typename const_iterator<M1>::type I = iterate(m1);
+      while (I)
+      {
+	 typename const_inner_iterator<M1>::type J = iterate(I);
+	 while (J)
+	 {
+	    add_element(lhs, J.index1(), J.index2(), 
+			cf(J.index1(), J.index2(), J.index2()) * f(*J, m2.diagonal()[J.index2()]));
+	    ++J;
+	 }
+	 ++I;
+      }
+   }
+};
+
+template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
+	  typename LHSv, typename LHSi,
+	  typename M1v, typename M1i,
+	  typename M2v, typename M2i>
+struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
+				  SPARSE_MATRIX(LHSv, LHSi),
+				  DIAGONAL_MATRIX(M1v, M1i),
+				  SPARSE_MATRIX(M2v, M2i)>
+{
+   static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
+   {
+      zero_all(lhs);
+      typename const_iterator<M2>::type I = iterate(m2);
+      while (I)
+      {
+	 typename const_inner_iterator<M2>::type J = iterate(I);
+	 while (J)
+	 {
+	    add_element(lhs, J.index1(), J.index2(), 
+			cf(J.index1(), J.index1(), J.index2()) * f(m1.diagonal()[J.index1()], *J));
+	    ++J;
+	 }
+	 ++I;
+      }
    }
 };
 
@@ -747,6 +804,60 @@ struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
    }
 };
 
+// add mixed sparse/diagonal
+
+template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
+	  typename LHSv, typename LHSi,
+	  typename M1v, typename M1i,
+	  typename M2v, typename M2i>
+struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
+			       SPARSE_MATRIX(LHSv, LHSi),
+			       SPARSE_MATRIX(M1v, M1i),
+			       DIAGONAL_MATRIX(M2v, M2i)>
+{
+   static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
+   {
+      typename const_iterator<M1>::type I = iterate(m1);
+      while (I)
+      {
+	 typename const_inner_iterator<M1>::type J = iterate(I);
+	 while (J)
+	 {
+	    add_element(lhs, J.index1(), J.index2(), 
+			cf(J.index1(), J.index2(), J.index2()) * f(*J, m2.diagonal()[J.index2()]));
+	    ++J;
+	 }
+	 ++I;
+      }
+   }
+};
+
+template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
+	  typename LHSv, typename LHSi,
+	  typename M1v, typename M1i,
+	  typename M2v, typename M2i>
+struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
+			       SPARSE_MATRIX(LHSv, LHSi),
+			       DIAGONAL_MATRIX(M1v, M1i),
+			       SPARSE_MATRIX(M2v, M2i)>
+{
+   static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
+   {
+      typename const_iterator<M2>::type I = iterate(m2);
+      while (I)
+      {
+	 typename const_inner_iterator<M2>::type J = iterate(I);
+	 while (J)
+	 {
+	    add_element(lhs, J.index1(), J.index2(), 
+			cf(J.index1(), J.index1(), J.index2()) * f(m1.diagonal()[J.index1()], *J));
+	    ++J;
+	 }
+	 ++I;
+      }
+   }
+};
+
 //
 // subtract_coefficient_product2
 //
@@ -1083,6 +1194,60 @@ struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
    {
       SparseMatrix<typename interface<M2>::value_type, ColMajor> Temp2(m2);
       subtract_coefficient_product2(lhs, m1, Temp2, cf, f);
+   }
+};
+
+// subtract mixed sparse/diagonal
+
+template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
+	  typename LHSv, typename LHSi,
+	  typename M1v, typename M1i,
+	  typename M2v, typename M2i>
+struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
+			       SPARSE_MATRIX(LHSv, LHSi),
+			       SPARSE_MATRIX(M1v, M1i),
+			       DIAGONAL_MATRIX(M2v, M2i)>
+{
+   static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
+   {
+      typename const_iterator<M1>::type I = iterate(m1);
+      while (I)
+      {
+	 typename const_inner_iterator<M1>::type J = iterate(I);
+	 while (J)
+	 {
+	    subtract_element(lhs, J.index1(), J.index2(), 
+			     cf(J.index1(), J.index2(), J.index2()) * f(*J, m2.diagonal()[J.index2()]));
+	    ++J;
+	 }
+	 ++I;
+      }
+   }
+};
+
+template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
+	  typename LHSv, typename LHSi,
+	  typename M1v, typename M1i,
+	  typename M2v, typename M2i>
+struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
+			       SPARSE_MATRIX(LHSv, LHSi),
+			       DIAGONAL_MATRIX(M1v, M1i),
+			       SPARSE_MATRIX(M2v, M2i)>
+{
+   static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
+   {
+      typename const_iterator<M2>::type I = iterate(m2);
+      while (I)
+      {
+	 typename const_inner_iterator<M2>::type J = iterate(I);
+	 while (J)
+	 {
+	    subtract_element(lhs, J.index1(), J.index2(), 
+			     cf(J.index1(), J.index1(), J.index2()) * f(m1.diagonal()[J.index1()], *J));
+	    ++J;
+	 }
+	 ++I;
+      }
    }
 };
 
