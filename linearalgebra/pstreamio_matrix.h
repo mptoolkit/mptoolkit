@@ -30,7 +30,7 @@ struct MatrixFormats
 template <int Format, typename Mat, typename MatV, typename MatI>
 struct SerializeOutInterface<PStream::opstreambuf<Format>&,
                              Mat,
-                             DENSE_MATRIX(MatV, RowMajor, MatI)>
+                             Concepts::DenseMatrix<MatV, RowMajor, MatI>>
 {
    typedef PStream::opstreambuf<Format>& result_type;
    typedef PStream::opstreambuf<Format>& first_argument_type;
@@ -63,7 +63,7 @@ struct SerializeOutInterface<PStream::opstreambuf<Format>&,
 template <int Format, typename Mat, typename MatV, typename MatI>
 struct SerializeOutInterface<PStream::opstreambuf<Format>&,
                              Mat,
-                             DENSE_MATRIX(MatV, ColMajor, MatI)>
+                             Concepts::DenseMatrix<MatV, ColMajor, MatI>>
 {
    typedef PStream::opstreambuf<Format>& result_type;
    typedef PStream::opstreambuf<Format>& first_argument_type;
@@ -78,7 +78,7 @@ struct SerializeOutInterface<PStream::opstreambuf<Format>&,
 template <int Format, typename Mat, typename MatV, typename MatI>
 struct SerializeOutInterface<PStream::opstreambuf<Format>&,
                              Mat,
-                             DIAGONAL_MATRIX(MatV, MatI)>
+                             Concepts::DiagonalMatrix<MatV, MatI>>
 {
    typedef PStream::opstreambuf<Format>& result_type;
    typedef PStream::opstreambuf<Format>& first_argument_type;
@@ -94,7 +94,7 @@ struct SerializeOutInterface<PStream::opstreambuf<Format>&,
 template <int Format, typename Mat, typename MatV, typename MatI>
 struct SerializeOutInterface<PStream::opstreambuf<Format>&,
                              Mat,
-                             SPARSE_MATRIX(MatV, MatI)>
+                             Concepts::SparseMatrix<MatV, MatI>>
 {
    typedef PStream::opstreambuf<Format>& result_type;
    typedef PStream::opstreambuf<Format>& first_argument_type;
@@ -184,7 +184,7 @@ void do_serialize_in_coordinate(PStream::ipstreambuf<Format>& in, Mat const& M)
 template <int Format, typename Mat, typename MatV, typename MatI>
 struct SerializeInInterface<PStream::ipstreambuf<Format>&,
                             Mat&,
-                            DENSE_MATRIX(MatV, RowMajor, MatI)>
+                            Concepts::DenseMatrix<MatV, RowMajor, MatI>>
 {
    typedef PStream::ipstreambuf<Format>& result_type;
    typedef PStream::ipstreambuf<Format>& first_argument_type;
@@ -224,7 +224,7 @@ struct SerializeInInterface<PStream::ipstreambuf<Format>&,
 template <int Format, typename Mat, typename MatV, typename MatI>
 struct SerializeInInterface<PStream::ipstreambuf<Format>&,
                             Mat&,
-                            DIAGONAL_MATRIX(MatV, MatI)>
+                            Concepts::DiagonalMatrix<MatV, MatI>>
 {
    typedef PStream::ipstreambuf<Format>& result_type;
    typedef PStream::ipstreambuf<Format>& first_argument_type;
@@ -240,7 +240,7 @@ struct SerializeInInterface<PStream::ipstreambuf<Format>&,
 template <int Format, typename Mat, typename MatV, typename MatI>
 struct SerializeInInterface<PStream::ipstreambuf<Format>&,
                             Mat&,
-                            DENSE_MATRIX(MatV, ColMajor, MatI)>
+                            Concepts::DenseMatrix<MatV, ColMajor, MatI>>
 {
    typedef PStream::ipstreambuf<Format>& result_type;
    typedef PStream::ipstreambuf<Format>& first_argument_type;
@@ -280,7 +280,7 @@ struct SerializeInInterface<PStream::ipstreambuf<Format>&,
 template <int Format, typename Mat, typename MatV, typename MatI>
 struct SerializeInInterface<PStream::ipstreambuf<Format>&,
                             Mat&,
-                            SPARSE_MATRIX(MatV, MatI)>
+                            Concepts::SparseMatrix<MatV, MatI>>
 {
    typedef PStream::ipstreambuf<Format>& result_type;
    typedef PStream::ipstreambuf<Format>& first_argument_type;

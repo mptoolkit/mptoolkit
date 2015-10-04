@@ -23,9 +23,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct AssignProduct2<LHS, M1, M2, Multiplication<double, double>,
-		      STRIDE_MATRIX(double, LHSOrient, LHSi),
-		      STRIDE_MATRIX(double, M1Orient, M1i),
-		      STRIDE_MATRIX(double, M2Orient, M2i)>
+		      Concepts::StrideMatrix<double, LHSOrient, LHSi>,
+		      Concepts::StrideMatrix<double, M1Orient, M1i>,
+		      Concepts::StrideMatrix<double, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2,
                      Multiplication<double, double> f);
@@ -37,9 +37,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M2Orient, typename M2i>
 void
 AssignProduct2<LHS, M1, M2, Multiplication<double, double>,
-               STRIDE_MATRIX(double, LHSOrient, LHSi),
-               STRIDE_MATRIX(double, M1Orient, M1i),
-               STRIDE_MATRIX(double, M2Orient, M2i)>
+               Concepts::StrideMatrix<double, LHSOrient, LHSi>,
+               Concepts::StrideMatrix<double, M1Orient, M1i>,
+               Concepts::StrideMatrix<double, M2Orient, M2i>>
 ::apply(LHS& lhs, M1 const& m1, M2 const& m2,
         Multiplication<double, double> f)
 {
@@ -107,9 +107,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct AssignProduct2<LHS, M1, M2, Multiplication<double, double>,
-		      CONTIGUOUS_MATRIX(double, RowMajor, LHSi),
-		      STRIDE_MATRIX(double, M1Orient, M1i),
-		      STRIDE_MATRIX(double, M2Orient, M2i)>
+		      Concepts::ContiguousMatrix<double, RowMajor, LHSi>,
+		      Concepts::StrideMatrix<double, M1Orient, M1i>,
+		      Concepts::StrideMatrix<double, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2,
                      Multiplication<double, double> f)
@@ -152,9 +152,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct AssignProduct2<LHS, M1, M2, Multiplication<double, double>,
-		      CONTIGUOUS_MATRIX(double, ColMajor, LHSi),
-		      STRIDE_MATRIX(double, M1Orient, M1i),
-		      STRIDE_MATRIX(double, M2Orient, M2i)>
+		      Concepts::ContiguousMatrix<double, ColMajor, LHSi>,
+		      Concepts::StrideMatrix<double, M1Orient, M1i>,
+		      Concepts::StrideMatrix<double, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, 
                      Multiplication<double, double> f)
@@ -200,9 +200,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct AddProduct2<LHS, M1, M2, Multiplication<double, double>,
-		      STRIDE_MATRIX(double, LHSOrient, LHSi),
-		      STRIDE_MATRIX(double, M1Orient, M1i),
-		      STRIDE_MATRIX(double, M2Orient, M2i)>
+		      Concepts::StrideMatrix<double, LHSOrient, LHSi>,
+		      Concepts::StrideMatrix<double, M1Orient, M1i>,
+		      Concepts::StrideMatrix<double, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2,
                      Multiplication<double, double> f)
@@ -272,9 +272,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct AddProduct2<LHS, M1, M2, Multiplication<double, double>,
-		      CONTIGUOUS_MATRIX(double, RowMajor, LHSi),
-		      STRIDE_MATRIX(double, M1Orient, M1i),
-		      STRIDE_MATRIX(double, M2Orient, M2i)>
+		      Concepts::ContiguousMatrix<double, RowMajor, LHSi>,
+		      Concepts::StrideMatrix<double, M1Orient, M1i>,
+		      Concepts::StrideMatrix<double, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2,
                      Multiplication<double, double> f)
@@ -316,9 +316,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct AddProduct2<LHS, M1, M2, Multiplication<double, double>,
-		      CONTIGUOUS_MATRIX(double, ColMajor, LHSi),
-		      STRIDE_MATRIX(double, M1Orient, M1i),
-		      STRIDE_MATRIX(double, M2Orient, M2i)>
+		      Concepts::ContiguousMatrix<double, ColMajor, LHSi>,
+		      Concepts::StrideMatrix<double, M1Orient, M1i>,
+		      Concepts::StrideMatrix<double, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, 
                      Multiplication<double, double> f)
@@ -364,9 +364,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct SubtractProduct2<LHS, M1, M2, Multiplication<double, double>,
-		      STRIDE_MATRIX(double, LHSOrient, LHSi),
-		      STRIDE_MATRIX(double, M1Orient, M1i),
-		      STRIDE_MATRIX(double, M2Orient, M2i)>
+		      Concepts::StrideMatrix<double, LHSOrient, LHSi>,
+		      Concepts::StrideMatrix<double, M1Orient, M1i>,
+		      Concepts::StrideMatrix<double, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2,
                      Multiplication<double, double> f)
@@ -436,9 +436,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct SubtractProduct2<LHS, M1, M2, Multiplication<double, double>,
-		      CONTIGUOUS_MATRIX(double, RowMajor, LHSi),
-		      STRIDE_MATRIX(double, M1Orient, M1i),
-		      STRIDE_MATRIX(double, M2Orient, M2i)>
+		      Concepts::ContiguousMatrix<double, RowMajor, LHSi>,
+		      Concepts::StrideMatrix<double, M1Orient, M1i>,
+		      Concepts::StrideMatrix<double, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2,
                      Multiplication<double, double> f)
@@ -480,9 +480,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct SubtractProduct2<LHS, M1, M2, Multiplication<double, double>,
-		      CONTIGUOUS_MATRIX(double, ColMajor, LHSi),
-		      STRIDE_MATRIX(double, M1Orient, M1i),
-		      STRIDE_MATRIX(double, M2Orient, M2i)>
+		      Concepts::ContiguousMatrix<double, ColMajor, LHSi>,
+		      Concepts::StrideMatrix<double, M1Orient, M1i>,
+		      Concepts::StrideMatrix<double, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, 
                      Multiplication<double, double> f)
@@ -532,9 +532,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct AssignProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::complex<double> >,
-		      STRIDE_MATRIX(std::complex<double>, LHSOrient, LHSi),
-		      STRIDE_MATRIX(std::complex<double>, M1Orient, M1i),
-		      STRIDE_MATRIX(std::complex<double>, M2Orient, M2i)>
+		      Concepts::StrideMatrix<std::complex<double>, LHSOrient, LHSi>,
+		      Concepts::StrideMatrix<std::complex<double>, M1Orient, M1i>,
+		      Concepts::StrideMatrix<std::complex<double>, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2,
                      Multiplication<std::complex<double>, std::complex<double> > f)
@@ -604,9 +604,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct AssignProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::complex<double> >,
-		      CONTIGUOUS_MATRIX(std::complex<double>, RowMajor, LHSi),
-		      STRIDE_MATRIX(std::complex<double>, M1Orient, M1i),
-		      STRIDE_MATRIX(std::complex<double>, M2Orient, M2i)>
+		      Concepts::ContiguousMatrix<std::complex<double>, RowMajor, LHSi>,
+		      Concepts::StrideMatrix<std::complex<double>, M1Orient, M1i>,
+		      Concepts::StrideMatrix<std::complex<double>, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2,
                      Multiplication<std::complex<double>, std::complex<double>  > f)
@@ -649,9 +649,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct AssignProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::complex<double> >,
-		      CONTIGUOUS_MATRIX(std::complex<double>, ColMajor, LHSi),
-		      STRIDE_MATRIX(std::complex<double>, M1Orient, M1i),
-		      STRIDE_MATRIX(std::complex<double>, M2Orient, M2i)>
+		      Concepts::ContiguousMatrix<std::complex<double>, ColMajor, LHSi>,
+		      Concepts::StrideMatrix<std::complex<double>, M1Orient, M1i>,
+		      Concepts::StrideMatrix<std::complex<double>, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, 
                      Multiplication<std::complex<double>, std::complex<double> > f)
@@ -700,9 +700,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct AddProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::complex<double> >,
-		      STRIDE_MATRIX(std::complex<double>, LHSOrient, LHSi),
-		      STRIDE_MATRIX(std::complex<double>, M1Orient, M1i),
-		      STRIDE_MATRIX(std::complex<double>, M2Orient, M2i)>
+		      Concepts::StrideMatrix<std::complex<double>, LHSOrient, LHSi>,
+		      Concepts::StrideMatrix<std::complex<double>, M1Orient, M1i>,
+		      Concepts::StrideMatrix<std::complex<double>, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2,
                      Multiplication<std::complex<double>, std::complex<double> > f)
@@ -772,9 +772,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct AddProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::complex<double> >,
-		      CONTIGUOUS_MATRIX(std::complex<double>, RowMajor, LHSi),
-		      STRIDE_MATRIX(std::complex<double>, M1Orient, M1i),
-		      STRIDE_MATRIX(std::complex<double>, M2Orient, M2i)>
+		      Concepts::ContiguousMatrix<std::complex<double>, RowMajor, LHSi>,
+		      Concepts::StrideMatrix<std::complex<double>, M1Orient, M1i>,
+		      Concepts::StrideMatrix<std::complex<double>, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2,
                      Multiplication<std::complex<double>, std::complex<double> > f)
@@ -816,9 +816,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct AddProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::complex<double> >,
-		      CONTIGUOUS_MATRIX(std::complex<double>, ColMajor, LHSi),
-		      STRIDE_MATRIX(std::complex<double>, M1Orient, M1i),
-		      STRIDE_MATRIX(std::complex<double>, M2Orient, M2i)>
+		      Concepts::ContiguousMatrix<std::complex<double>, ColMajor, LHSi>,
+		      Concepts::StrideMatrix<std::complex<double>, M1Orient, M1i>,
+		      Concepts::StrideMatrix<std::complex<double>, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, 
                      Multiplication<std::complex<double>, std::complex<double> > f)
@@ -864,9 +864,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct SubtractProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::complex<double> >,
-		      STRIDE_MATRIX(std::complex<double>, LHSOrient, LHSi),
-		      STRIDE_MATRIX(std::complex<double>, M1Orient, M1i),
-		      STRIDE_MATRIX(std::complex<double>, M2Orient, M2i)>
+		      Concepts::StrideMatrix<std::complex<double>, LHSOrient, LHSi>,
+		      Concepts::StrideMatrix<std::complex<double>, M1Orient, M1i>,
+		      Concepts::StrideMatrix<std::complex<double>, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2,
                      Multiplication<std::complex<double>, std::complex<double> > f)
@@ -936,9 +936,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct SubtractProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::complex<double> >,
-		      CONTIGUOUS_MATRIX(std::complex<double>, RowMajor, LHSi),
-		      STRIDE_MATRIX(std::complex<double>, M1Orient, M1i),
-		      STRIDE_MATRIX(std::complex<double>, M2Orient, M2i)>
+		      Concepts::ContiguousMatrix<std::complex<double>, RowMajor, LHSi>,
+		      Concepts::StrideMatrix<std::complex<double>, M1Orient, M1i>,
+		      Concepts::StrideMatrix<std::complex<double>, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2,
                      Multiplication<std::complex<double>, std::complex<double> > f)
@@ -980,9 +980,9 @@ template <typename LHS, typename M1, typename M2,
 	  typename M1Orient, typename M1i,
 	  typename M2Orient, typename M2i>
 struct SubtractProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::complex<double> >,
-		      CONTIGUOUS_MATRIX(std::complex<double>, ColMajor, LHSi),
-		      STRIDE_MATRIX(std::complex<double>, M1Orient, M1i),
-		      STRIDE_MATRIX(std::complex<double>, M2Orient, M2i)>
+		      Concepts::ContiguousMatrix<std::complex<double>, ColMajor, LHSi>,
+		      Concepts::StrideMatrix<std::complex<double>, M1Orient, M1i>,
+		      Concepts::StrideMatrix<std::complex<double>, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, 
                      Multiplication<std::complex<double>, std::complex<double> > f)

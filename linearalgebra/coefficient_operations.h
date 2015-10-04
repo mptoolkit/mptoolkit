@@ -95,9 +95,8 @@ struct interface<CoefficientMatrixProductProxy<T1, T2, CoeffFunc, Nested> >
       >::type
    >::type value_type;
 
-   typedef MATRIX_EXPRESSION(value_type, 
-                             TEMPLATE4(CoefficientMatrixProductProxy<T1, T2, 
-				       CoeffFunc, Nested>)) type;
+   using type = Concepts::MatrixExpression<value_type, 
+					   CoefficientMatrixProductProxy<T1, T2, CoeffFunc, Nested>>;
 };
 
 // Assign
@@ -185,8 +184,8 @@ template <typename M1, typename M2,
           typename M1v, typename M1i, 
           typename M2v, typename M2i>
 struct CoefficientMatrixMatrixMultiplication<M1, M2, CF, Nested,
-				  MATRIX_EXPRESSION(M1v, M1i), 
-				  MATRIX_EXPRESSION(M2v, M2i)>
+					     Concepts::MatrixExpression<M1v, M1i>, 
+					     Concepts::MatrixExpression<M2v, M2i>>
 {
    typedef M1 const& first_argument_type;
    typedef M2 const& second_argument_type;

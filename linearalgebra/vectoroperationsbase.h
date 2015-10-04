@@ -1493,7 +1493,7 @@ struct ZeroElement<T&, DENSE_VECTOR(S, U) >
 };
 
 template <typename T, typename S, typename U>
-struct ZeroAll<T&, DENSE_VECTOR(S, U) >
+struct ZeroAllInterface<T&, DENSE_VECTOR(S, U) >
 {
    typedef void result_type;
    typedef T& argument_type;
@@ -1570,7 +1570,7 @@ struct ZeroElement<T&, INJECTIVE_VECTOR(S, U) >
 };
 
 template <typename T, typename S, typename U>
-struct ZeroAll<T&, INJECTIVE_VECTOR(S, U) >
+struct ZeroAllInterface<T&, VECTOR_EXPRESSION(S, U) >
 {
    typedef void result_type;
    typedef T& argument_type;

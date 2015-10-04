@@ -2,13 +2,13 @@
 
   matrixaddition.h
 
-  A proxy class & iterators for binary expressions of vectors
+  A proxy class & iterators for binary expressions of matrices
 
   Created 2005-03-15 Ian McCulloch
 */
 
-#if !defined(MATRIXADDITION_H_KDSHJCKYH48Y98)
-#define MATRIXADDITION_H_KDSHJCKYH48Y98
+#if !defined(MPTOOLKIT_LINEARALGEBRA_MATRIXADDITION_H)
+#define MPTOOLKIT_LINEARALGEBRA_MATRIXADDITION_H
 
 #include "interface.h"
 #include "matrixoperationsbase.h"
@@ -21,7 +21,10 @@ namespace LinearAlgebra
 template <typename T1, typename T2>
 class MatrixAdditionProxy;
 
-// interface
+// It isn't straightforward to determine the interface concept of
+// a MatrixAdditionProxy, so we do a bit of metaprogramming.
+// If the matrices are dense, then the interface is a DenseMatrix.
+// Otherwise we just take the interface to be a MatrixExpression
 
 template <typename T1, typename T2, 
 	  typename I1 = typename interface<T1>::type, 
@@ -34,10 +37,10 @@ template <typename T1, typename T2, typename Orient,
 	  typename I2v, typename I2i,
 	  typename Value>
 struct MatrixAdditionInterface<T1, T2,
-			     DENSE_MATRIX(I1v, Orient, I1i), 
-			     DENSE_MATRIX(I2v, Orient, I2i), Value>
+			     Concepts::DenseMatrix<I1v, Orient, I1i>, 
+			     Concepts::DenseMatrix<I2v, Orient, I2i>, Value>
 {
-   typedef DENSE_MATRIX(Value, Orient, TEMPLATE2(MatrixAdditionProxy<T1, T2>)) type;
+   typedef Concepts::DenseMatrix<Value, Orient, MatrixAdditionProxy<T1, T2>> type;
    typedef Value value_type;
 };
 
@@ -46,10 +49,10 @@ template <typename T1, typename T2,
 	  typename I2v, typename I2i,
 	  typename Value>
 struct MatrixAdditionInterface<T1, T2,
-			     MATRIX_EXPRESSION(I1v, I1i), 
-			     MATRIX_EXPRESSION(I2v, I2i), Value>
+			     Concepts::MatrixExpression<I1v, I1i>, 
+			     Concepts::MatrixExpression<I2v, I2i>, Value>
 {
-   typedef MATRIX_EXPRESSION(Value, TEMPLATE2(MatrixAdditionProxy<T1, T2>)) type;
+   typedef Concepts::MatrixExpression<Value, MatrixAdditionProxy<T1, T2>> type;
    typedef Value value_type;
 };
 
@@ -131,7 +134,7 @@ struct Iterate<MatrixAdditionProxy<T1, T2> >
    : MatrixAdditionIterate<T1, T2, typename interface<MatrixAdditionProxy<T1, T2> >::type> {};
 
 template <typename T1, typename T2, typename Tv, typename TOrient, typename Ti>
-struct MatrixAdditionIterate<T1, T2, DENSE_MATRIX(Tv, TOrient, Ti)>
+struct MatrixAdditionIterate<T1, T2, Concepts::DenseMatrix<Tv, TOrient, Ti>>
 {
    typedef typename const_iterator<typename basic_type<T1>::type>::type iter1_type;
    typedef typename const_iterator<typename basic_type<T2>::type>::type iter2_type;
@@ -180,10 +183,9 @@ template <typename S, typename T, typename F, typename Enable = void>
 struct BinaryTransformMatrixOverrideFunc : BinaryTransformMatrixDispatchFunc<S, T, F> {};
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
-struct BinaryTransform<S, T, F, ANY_MATRIX(Sv, Si), ANY_MATRIX(Tv, Ti) >
+struct BinaryTransform<S, T, F, Concepts::AnyMatrix<Sv, Si>, Concepts::AnyMatrix<Tv, Ti>>
    : BinaryTransformMatrixOverrideFunc<S, T, F> {};
 
-#if 1
 // TODO: we want to commute the arguments here, to get dense matrixs to the left of
 // sparse matrixs.
 template <typename S, typename T, typename Sv, typename Tv>
@@ -221,14 +223,13 @@ struct BinaryTransformMatrixOverrideFunc<S, T, Subtraction<Sv, Tv> >
    result_type operator()(S const& x, T const& y, Subtraction<Sv, Tv> const& f) const 
    { return result_type(x, -y); }
 };
-#endif
 
 // For dense matrices, we ensure that they have the same major index
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
 struct BinaryTransform<S, T, F, 
-                       DENSE_MATRIX(Sv, RowMajor, Si), 
-                       DENSE_MATRIX(Tv, ColMajor, Ti) >
+                       Concepts::DenseMatrix<Sv, RowMajor, Si>, 
+                       Concepts::DenseMatrix<Tv, ColMajor, Ti>>
 {
    typedef typename is_semiregular<F>::type semiregular;
    typedef typename is_regular<F>::type regular;
@@ -245,8 +246,8 @@ struct BinaryTransform<S, T, F,
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
 struct BinaryTransform<S, T, F, 
-                       DENSE_MATRIX(Sv, ColMajor, Si), 
-                       DENSE_MATRIX(Tv, RowMajor, Ti) >
+                       Concepts::DenseMatrix<Sv, ColMajor, Si>, 
+                       Concepts::DenseMatrix<Tv, RowMajor, Ti>>
 {
    typedef typename is_semiregular<F>::type semiregular;
    typedef typename is_regular<F>::type regular;

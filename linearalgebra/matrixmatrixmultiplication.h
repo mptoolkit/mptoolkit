@@ -84,10 +84,7 @@ struct interface<MatrixProductProxy<T1, T2, Nested> >
       >::type
    >::type value_type;
 
-   typedef MATRIX_EXPRESSION(value_type, void) type;
-
-   //   typedef MATRIX_EXPRESSION(value_type, 
-   //                             TEMPLATE3(MatrixProductProxy<T1, T2, Nested>)) type;
+   typedef Concepts::MatrixExpression<value_type, void> type;
 };
 
 // Assign
@@ -146,8 +143,8 @@ template <typename M1, typename M2,
           typename M1v, typename M1i, 
           typename M2v, typename M2i>
 struct MatrixMatrixMultiplication<M1, M2, Nested,
-				  MATRIX_EXPRESSION(M1v, M1i), 
-				  MATRIX_EXPRESSION(M2v, M2i)>
+				  Concepts::AnyMatrix<M1v, M1i>, 
+				  Concepts::AnyMatrix<M2v, M2i>>
 {
    typedef M1 const& first_argument_type;
    typedef M2 const& second_argument_type;

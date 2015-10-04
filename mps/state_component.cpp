@@ -94,6 +94,7 @@ StateComponent reflect(StateComponent const& S)
 namespace LinearAlgebra
 {
 
+#if 0
 MatrixOperator
 ScalarProd<StateComponent, HermitianProxy<StateComponent> >::
 operator()(StateComponent const& A, HermitianProxy<StateComponent> const& B) const
@@ -110,6 +111,7 @@ operator()(StateComponent const& A, HermitianProxy<StateComponent> const& B) con
    }
    return Result;
 }
+#endif
 
 MatrixOperator
 ScalarProd<HermitianProxy<StateComponent>, StateComponent>::
@@ -618,7 +620,7 @@ MatrixOperator extract_diagonal(StateComponent const& A,
    return Result;
 }
 
-MatrixOperator ExpandBasis1(StateComponent& A, Normalization n)
+MatrixOperator ExpandBasis1(StateComponent& A)
 {
    ProductBasis<BasisList, VectorBasis> FullBasis1(A.LocalBasis(), A.Basis2());
    QuantumNumber Ident(A.GetSymmetryList());
@@ -644,7 +646,7 @@ MatrixOperator ExpandBasis1(StateComponent& A, Normalization n)
    return Res;
 }
 
-MatrixOperator ExpandBasis2(StateComponent& A, Normalization n)
+MatrixOperator ExpandBasis2(StateComponent& A)
 {
    ProductBasis<VectorBasis, BasisList> FullBasis2(A.Basis1(), adjoint(A.LocalBasis()));
    StateComponent Result(A.LocalBasis(), A.Basis1(), FullBasis2.Basis());
@@ -748,6 +750,32 @@ MatrixOperator ExpandBasis2Used(StateComponent& A, std::vector<int> const& Used)
    MatrixOperator Res = scalar_prod(herm(Result), A);
    A = Result;
    return Res;
+}
+
+std::pair<MatrixOperator, SimpleStateComponent>
+ExpandBasis1_(StateComponent const& A)
+{
+   ProductBasis<BasisList, VectorBasis> FullBasis1(A.LocalBasis(), A.Basis2());
+   QuantumNumber Ident(A.GetSymmetryList());
+   SimpleStateComponent Result(A.LocalBasis(), FullBasis1.Basis(), A.Basis2());
+   for (std::size_t t = 0; t < FullBasis1.size(); ++t)
+   {
+      int s, b2;
+      boost::tie(s,b2) = FullBasis1.rmap(t);
+
+      int Dim = FullBasis1.dim(t);
+      DEBUG_CHECK_EQUAL(Dim, A.Basis2().dim(b2));
+
+      // Make an identity matrix of the correct size
+      Result[s](t, b2) = LinearAlgebra::ScalarMatrix<std::complex<double>>(Dim, Dim, 1.0);
+   }
+
+   // check the normalization
+   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(Result, herm(Result))), 
+                     FullBasis1.total_degree());
+
+   MatrixOperator Res = scalar_prod(A, herm(Result));
+   return std::make_pair(Res, Result);
 }
 
 StateComponent ConstructFromRightBasis(BasisList const& LocalBasis,

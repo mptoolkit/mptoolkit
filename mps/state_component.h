@@ -11,16 +11,25 @@
 #include "tensor/tensorsum.h"
 #include "tensor/basis.h"
 #include "tensor/tensorproduct.h"
+#include "linearalgebra/scalarmatrix.h"
 
 using namespace Tensor;
 
+// the standard operator type acting on a local space
 typedef IrredTensor<std::complex<double> > SimpleOperator;
 
+// a reducible operator acting on a local space
 typedef ReducibleTensor<std::complex<double>, BasisList, BasisList> SimpleRedOperator;
 
+// the standard operator type acting on the auxiliary space
 typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
                             VectorBasis, 
                             VectorBasis> MatrixOperator;
+
+// an operator that acts trivially in each subspace
+typedef IrredTensor<LinearAlgebra::ScalarMatrix<std::complex<double>>,
+		    VectorBasis,
+		    VectorBasis> SimpleVectorOperator;
 
 template <typename T>
 struct BasicStateComponent;
@@ -48,6 +57,12 @@ struct BasicStateComponent
 
    BasicStateComponent(BasisList const& SBasis_, VectorBasis const& V1, 
 		    VectorBasis const& V2);
+
+   BasicStateComponent(BasicStateComponent const& Other) = default;
+
+   template <typename U>
+   BasicStateComponent(BasicStateComponent<U> const& Other)
+      : SBasis(Other.SBasis), VBasis1(Other.VBasis1), VBasis2(Other.VBasis2), Data(Other.Data) {}
 
    QuantumNumbers::SymmetryList GetSymmetryList() const { return SBasis.GetSymmetryList(); }
 
@@ -107,6 +122,9 @@ struct BasicStateComponent
    friend PStream::opstream& operator<< <>(PStream::opstream& out, BasicStateComponent const& Op);
    friend PStream::ipstream& operator>> <>(PStream::ipstream& in, BasicStateComponent& Op);
 
+   //   template <typename U>
+   //   friend class BasicStateComponent<U>;
+
 };
 
 template <typename T>
@@ -128,23 +146,29 @@ void BasicStateComponent<T>::debug_check_structure() const
 #endif
 }
 
-typedef BasicStateComponent<MatrixOperator> StateComponent;
-
+template <typename T>
 inline
-StateComponent& operator*=(StateComponent& x, double y)
+BasicStateComponent<T>& operator*=(BasicStateComponent<T>& x, double y)
 {
    for (unsigned i = 0; i < x.size(); ++i)
       x[i] *= y;
    return x;
 }
 
+template <typename T>
 inline
-StateComponent& operator*=(StateComponent& x, std::complex<double> y)
+BasicStateComponent<T>& operator*=(BasicStateComponent<T>& x, std::complex<double> y)
 {
-   for (unsigned i = 0; i < x.size(); ++i)
-      x[i] *= y;
+   for (auto& I : x)
+   {
+      I *= y;
+   }
    return x;
 }
+
+using SimpleStateComponent = BasicStateComponent<SimpleVectorOperator>;
+
+using StateComponent = BasicStateComponent<MatrixOperator>;
 
 std::ostream& operator<<(std::ostream& out, StateComponent const& Psi);
 
@@ -191,11 +215,11 @@ struct interface<StateComponent>
 
 // hermitian conjugation
 
-template <>
-struct Herm<StateComponent>
+template <typename T>
+struct Herm<BasicStateComponent<T>>
 {
-   typedef HermitianProxy<StateComponent> result_type;
-   typedef StateComponent const& argument_type;
+   typedef HermitianProxy<BasicStateComponent<T>> result_type;
+   typedef BasicStateComponent<T> const& argument_type;
 
    result_type operator()(argument_type x) const
    {
@@ -205,13 +229,14 @@ struct Herm<StateComponent>
 
 // complex conjugation
 
+template <typename T>
 inline
-StateComponent conj(StateComponent const& x)
+BasicStateComponent<T> conj(BasicStateComponent<T> const& x)
 {
-   StateComponent Result(x);
-   for (StateComponent::iterator I = Result.begin(); I != Result.end(); ++I)
+   BasicStateComponent<T> Result(x);
+   for (auto& I : Result)
    {
-      *I = conj(*I);
+      I = conj(I);
    }
    return Result;
 }
@@ -222,12 +247,13 @@ StateComponent conj(StateComponent const& x)
 // generalized ScalarProd.  This means that,
 // for example, scalar_direct_prod works automatically.
 
-template <typename Func>
-struct ScalarProd<StateComponent, HermitianProxy<StateComponent>, Func>
+template <typename T, typename U, typename Func>
+struct ScalarProd<BasicStateComponent<T>, HermitianProxy<BasicStateComponent<U>>, Func>
 {
-   typedef typename Func::result_type result_type;
-   typedef StateComponent const& first_argument_type;
-   typedef HermitianProxy<StateComponent> const& second_argument_type;
+   //   typedef typename Func::result_type result_type;
+   using result_type = MatrixOperator;
+   typedef BasicStateComponent<T> const& first_argument_type;
+   typedef HermitianProxy<BasicStateComponent<U>> const& second_argument_type;
 
    result_type operator()(first_argument_type x, second_argument_type y) const;
    result_type operator()(first_argument_type x, second_argument_type y, Func f) const;
@@ -245,6 +271,7 @@ struct ScalarProd<HermitianProxy<StateComponent>, StateComponent, Func>
 };
 
 // the common case is explicitly specialized
+#if 0
 template <>
 struct ScalarProd<StateComponent, HermitianProxy<StateComponent> >
 {
@@ -254,6 +281,7 @@ struct ScalarProd<StateComponent, HermitianProxy<StateComponent> >
 
    result_type operator()(first_argument_type x, second_argument_type y) const;
 };
+#endif
 
 template <>
 struct ScalarProd<HermitianProxy<StateComponent>, StateComponent>
@@ -284,51 +312,57 @@ inner_prod(StateComponent const& x, StateComponent const& y)
    return r;
 }
 
+template <typename T>
 inline
 double
-norm_frob_sq(StateComponent const& x)
+norm_frob_sq(BasicStateComponent<T> const& x)
 {
    double r = 0;
-   for (StateComponent::const_iterator cmp = x.begin(); cmp != x.end(); ++cmp)
+   for (auto const& I : x)
    {
-      r += norm_frob_sq(*cmp);
+      r += norm_frob_sq(I);
    }
    return r;
 }
 
+template <typename T>
 inline
 double
-norm_frob(StateComponent const& x)
+norm_frob(BasicStateComponent<T> const& x)
 {
    return std::sqrt(norm_frob_sq(x));
 }
 
+template <typename T>
 inline
-StateComponent operator*(StateComponent const& x, double y)
+BasicStateComponent<T> operator*(BasicStateComponent<T> const& x, double y)
 {
    StateComponent Res(x);
    Res *= y;
    return Res;
 }
 
+template <typename T>
 inline
-StateComponent operator*(StateComponent const& x, std::complex<double> y)
+BasicStateComponent<T> operator*(BasicStateComponent<T> const& x, std::complex<double> y)
 {
-   StateComponent Res(x);
+   BasicStateComponent<T> Res(x);
    Res *= y;
    return Res;
 }
 
+template <typename T>
 inline
-StateComponent operator*(double y, StateComponent const& x)
+BasicStateComponent<T> operator*(double y, BasicStateComponent<T> const& x)
 {
-   StateComponent Res(x);
+   BasicStateComponent<T> Res(x);
    Res *= y;
    return Res;
 }
 
+template <typename T>
 inline
-StateComponent operator*(std::complex<double> y, StateComponent const& x)
+BasicStateComponent<T> operator*(std::complex<double> y, BasicStateComponent<T> const& x)
 {
    StateComponent Res(x);
    Res *= y;
@@ -434,6 +468,50 @@ StateComponent prod(MatrixOperator const& Op, StateComponent const& A);
 
 StateComponent prod(HermitianProxy<MatrixOperator> const& Op, StateComponent const& A);
 
+namespace LinearAlgebra
+{
+
+template <typename T, typename U, typename S>
+struct Multiplication<BasicStateComponent<T>, IrredTensor<U, VectorBasis, VectorBasis, S>>
+{
+   using first_argument_type = BasicStateComponent<T>;
+   using second_argument_type = IrredTensor<U, VectorBasis, VectorBasis, S>;
+   using ResultTensorType = typename Multiplication<T, second_argument_type>::result_type;
+   typedef BasicStateComponent<ResultTensorType> result_type;
+
+   result_type operator()(first_argument_type const& A, second_argument_type const& Op) const
+   {
+      result_type Result(A.LocalBasis(), A.Basis1(), Op.Basis2());
+      for (std::size_t s = 0; s < A.size(); ++s)
+      {
+	 Result[s] = A[s] * Op;
+      }
+      return Result;
+   }
+};
+
+template <typename T, typename U, typename S>
+struct Multiplication<IrredTensor<U, VectorBasis, VectorBasis, S>, BasicStateComponent<T>>
+{
+   using first_argument_type = IrredTensor<U, VectorBasis, VectorBasis, S>;
+   using second_argument_type = BasicStateComponent<T>;
+   using ResultTensorType = typename Multiplication<first_argument_type, T>::result_type;
+   typedef BasicStateComponent<ResultTensorType> result_type;
+
+   result_type operator()(first_argument_type const& Op, second_argument_type const& A) const
+   {
+      result_type Result(A.LocalBasis(), Op.Basis1(), A.Basis2());
+      for (std::size_t s = 0; s < A.size(); ++s)
+      {
+	 Result[s] = Op * A[s];
+      }
+      return Result;
+   }
+};
+
+
+} // namespace LinearAlgebra
+
 // returns the operator a'^s' = sum_s A^s * x(s,s').  x must transform as a scalar.
 StateComponent local_prod(StateComponent const& A, SimpleOperator const& x);
 
@@ -518,13 +596,17 @@ StateComponent CoerceSymmetryList(StateComponent const& Op, SymmetryList const& 
 
 enum Normalization { Intensive, Extensive };
 
-MatrixOperator ExpandBasis1(StateComponent& A, Normalization n = Intensive);
-MatrixOperator ExpandBasis2(StateComponent& A, Normalization n = Intensive);
+MatrixOperator ExpandBasis1(StateComponent& A);
+MatrixOperator ExpandBasis2(StateComponent& A);
 
 // Expand the basis, but incorporate only those matrix elements that are actually used in
 // the A-matrix.  Zero matrix elements are excluded.
 MatrixOperator ExpandBasis1Used(StateComponent& A, std::vector<int> const& Used);
 MatrixOperator ExpandBasis2Used(StateComponent& A, std::vector<int> const& Used);
+
+// experimental ExpandBasis1 variant that returns a SimpleStateComponent
+std::pair<MatrixOperator, SimpleStateComponent>
+ExpandBasis1_(StateComponent const& A);
 
 // Constructs an 'expanded' basis given the input right hand basis
 StateComponent ConstructFromRightBasis(BasisList const& LocalBasis,

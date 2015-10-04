@@ -226,7 +226,7 @@ template <typename T>
 struct ScalarRef<T, AnyScalar<T> > : IdentityRef<T> { };
 
 template <typename T, typename S>
-struct ZeroAll<T&, AnyScalar<S> >
+struct ZeroAllInterface<T&, AnyScalar<S> >
 {
    typedef void result_type;
    typedef T& argument_type;

@@ -470,6 +470,8 @@ struct MixInfo
    double RandomMixFactor;
 };
 
+#define SSC
+
 // Apply subspace expansion / truncation on the left (C.Basis1()).
 // Returns a matrix Lambda (not diagonal!)
 // Postcondition: Lambda' C' = C (up to truncation!)
@@ -479,12 +481,22 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 		     StateComponent const& LeftHam)
 {
    // truncate - FIXME: this is the s3e step
+#if defined(SSC)
+   MatrixOperator Lambda;
+   SimpleStateComponent CX;
+   boost::tie(Lambda, CX) = ExpandBasis1_(C);
+#else
    MatrixOperator Lambda = ExpandBasis1(C);
+#endif
 
    MatrixOperator Rho = scalar_prod(herm(Lambda), Lambda);
    if (Mix.MixFactor > 0)
    {
+#if defined(SSC)
+      StateComponent RH = contract_from_right(herm(H), CX, RightHam, herm(CX));
+#else
       StateComponent RH = contract_from_right(herm(H), C, RightHam, herm(C));
+#endif
       MatrixOperator RhoMix;
       MatrixOperator RhoL = scalar_prod(Lambda, herm(Lambda));
 
@@ -513,7 +525,11 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 					 Info);
    MatrixOperator U = DM.ConstructTruncator(DM.begin(), DMPivot);
    Lambda = Lambda * herm(U);
+#if defined(SSC)
+   C = U*CX; //prod(U, CX);
+#else
    C = prod(U, C);
+#endif
 
    return Lambda;
 }

@@ -89,7 +89,7 @@ template <typename Scalar, typename Orientation>
 struct interface<MatrixMemProxy<Scalar, Orientation> >
 {
    typedef typename boost::remove_const<Scalar>::type value_type;
-   typedef STRIDE_MATRIX(value_type, Orientation, void) type;
+   typedef Concepts::StrideMatrix<value_type, Orientation, void> type;
 };
 
 // iterators
@@ -123,7 +123,7 @@ struct Iterate<MatrixMemProxy<T, Orient, Size1, Stride1, Size2, Stride2> >
 // transpose
 
 template <typename T, typename Tv, typename Orient, typename Ti>
-struct TransposeInterface<MatrixMemProxy<T, Orient>, STRIDE_MATRIX(Tv, Orient, Ti)>
+struct TransposeInterface<MatrixMemProxy<T, Orient>, Concepts::StrideMatrix<Tv, Orient, Ti>>
 {
    typedef MatrixMemProxy<Tv const, typename SwapOrientation<Orient>::type> result_type;
    typedef MatrixMemProxy<T, Orient> argument_type;
@@ -136,7 +136,7 @@ struct TransposeInterface<MatrixMemProxy<T, Orient>, STRIDE_MATRIX(Tv, Orient, T
 // swap_sort_order
 
 template <typename T, typename Tv, typename Orient, typename Ti>
-struct SwapSortOrderInterface<T, STRIDE_MATRIX(Tv, Orient, Ti)>
+struct SwapSortOrderInterface<T, Concepts::StrideMatrix<Tv, Orient, Ti>>
 {
    typedef MatrixMemProxy<Tv const, typename SwapOrientation<Orient>::type> result_type;
    typedef T const& argument_type;
@@ -145,7 +145,7 @@ struct SwapSortOrderInterface<T, STRIDE_MATRIX(Tv, Orient, Ti)>
 };
 
 template <typename T, typename Tv, typename Orient, typename Ti>
-struct SwapSortOrderInterface<T&, STRIDE_MATRIX(Tv, Orient, Ti)>
+struct SwapSortOrderInterface<T&, Concepts::StrideMatrix<Tv, Orient, Ti>>
 {
    typedef MatrixMemProxy<Tv, typename SwapOrientation<Orient>::type> result_type;
    typedef T& argument_type;
@@ -156,7 +156,7 @@ struct SwapSortOrderInterface<T&, STRIDE_MATRIX(Tv, Orient, Ti)>
 // hack Real for STRIDE_MATRIX
 
 template <typename T, typename Tv, typename To, typename Ti>
-struct RealInterface<T, STRIDE_MATRIX(std::complex<Tv>, To, Ti)>
+struct RealInterface<T, Concepts::StrideMatrix<std::complex<Tv>, To, Ti>>
 {
    typedef MatrixMemProxy<Tv const, To> result_type;
    typedef T const& argument_type;
@@ -167,7 +167,7 @@ struct RealInterface<T, STRIDE_MATRIX(std::complex<Tv>, To, Ti)>
 };
 
 template <typename T, typename Tv, typename To, typename Ti>
-struct RealInterface<T&, STRIDE_MATRIX(std::complex<Tv>, To, Ti)>
+struct RealInterface<T&, Concepts::StrideMatrix<std::complex<Tv>, To, Ti>>
 {
    typedef MatrixMemProxy<Tv, To> result_type;
    typedef T& argument_type;
@@ -180,7 +180,7 @@ struct RealInterface<T&, STRIDE_MATRIX(std::complex<Tv>, To, Ti)>
 // hack Imag for STRIDE_MATRIX
 
 template <typename T, typename Tv, typename To, typename Ti>
-struct ImagInterface<T, STRIDE_MATRIX(std::complex<Tv>, To, Ti)>
+struct ImagInterface<T, Concepts::StrideMatrix<std::complex<Tv>, To, Ti>>
 {
    typedef MatrixMemProxy<Tv const, To> result_type;
    typedef T const& argument_type;
@@ -191,7 +191,7 @@ struct ImagInterface<T, STRIDE_MATRIX(std::complex<Tv>, To, Ti)>
 };
 
 template <typename T, typename Tv, typename To, typename Ti>
-struct ImagInterface<T&, STRIDE_MATRIX(std::complex<Tv>, To, Ti)>
+struct ImagInterface<T&, Concepts::StrideMatrix<std::complex<Tv>, To, Ti>>
 {
    typedef MatrixMemProxy<Tv, To> result_type;
    typedef T& argument_type;

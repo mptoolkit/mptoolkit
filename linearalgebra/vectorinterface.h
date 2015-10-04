@@ -416,25 +416,6 @@ struct make_vector_from_abstract<T, vector_abstract_sparse>
    typedef MapVector<T> type;
 };
 
-//
-// vector_abstract_of_expression
-//
-// For a type that is an expression, return the abstract type (sparse or dense).
-// The easiest way to define it is to declare nested typedef 
-// T::abstract_type.  Otherwise, specialize vector_abstract_of_expression itself.
-//
-
-template <typename T, typename TInterface = typename interface<T>::type>
-struct abstract_interface_interface
-{
-   typedef typename T::abstract_interface type;
-};
-
-template <typename T>
-struct abstract_interface : abstract_interface_interface<T, typename interface<T>::type>
-{
-};
-
 template <typename T, typename Sv, typename Si>
 struct abstract_interface_interface<T, DENSE_VECTOR(Sv, Si)>
    : vector_abstract_dense {};
