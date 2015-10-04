@@ -47,7 +47,7 @@ class MatrixTransformProxy
       typedef F functor_type;
 
       // declare the abstract interface; only used if BaseType is an expression
-      typedef typename abstract_interface<BaseProxyReference>::type abstract_interface;
+      //typedef typename abstract_interface<BaseProxyReference>::type abstract_interface;
 
       MatrixTransformProxy(BaseProxyReference Base, functor_type const& Func)
 	: Base_(Base), Func_(Func) {}
@@ -108,18 +108,22 @@ class MatrixTransformProxy
 template <typename T, typename OldInterface>
 struct MatrixTransformInterface;
 
+// generic version
 template <typename T, typename U, typename V>
-struct MatrixTransformInterface<T, MATRIX_EXPRESSION(U,V)>
+struct MatrixTransformInterface<T, Concepts::AnyMatrix<U,V>>
 {
-   typedef typename RebindInterface<T, MATRIX_EXPRESSION(U,V)>::type type;
+   // FIXME: this gets the Value type wrong, but we don't have RebindInterface anymore -
+   // can we resolve that?  Do we really need the Value type to be part of the concept?
+   typedef Concepts::AnyMatrix<U,V> type;
+   //typedef typename RebindInterface<T, Concepts::AnyMatrix<U,V>>::type type;
 };
 
 // cut-off the interface rebinding at DENSE_MATRIX - we cannot have
 // a MatrixTransform that is a stride or contiguous matrix.
 template <typename T, typename U, typename Orient, typename V>
-struct MatrixTransformInterface<T, DENSE_MATRIX(U,Orient,V)>
+struct MatrixTransformInterface<T, Concepts::DenseMatrix<U,Orient,V>>
 {
-   typedef DENSE_MATRIX(typename T::value_type, Orient, void) type;
+   typedef Concepts::DenseMatrix<typename T::value_type, Orient, void> type;
 };
 
 template <typename BaseType, typename F>
@@ -134,8 +138,7 @@ struct interface<MatrixTransformProxy<BaseType, F> >
 // supply EvalExpression
 template <typename Base, typename F, typename Value>
 struct EvalExpression<MatrixTransformProxy<Base, F>, 
-	    MATRIX_EXPRESSION(Value, 
-			     TEMPLATE2(MatrixTransformProxy<Base, F>))>
+		      Concepts::MatrixExpression<Value, MatrixTransformProxy<Base, F>>>
 {
    typedef typename EvalExpression<Base>::result_type BaseValueType;
    typedef Transform<BaseValueType, F> Transformer;
@@ -150,10 +153,10 @@ struct EvalExpression<MatrixTransformProxy<Base, F>,
    }
 };
 
+#if 0
 template <typename Base, typename F, typename Value>
 struct EvalExpression<MatrixTransformProxy<Base, F> const, 
-	    MATRIX_EXPRESSION(Value, 
-			      TEMPLATE2(MatrixTransformProxy<Base, F> const)) >
+		      Concepts::MatrixExpression<Value, MatrixTransformProxy<Base, F> const>>>
 {
    typedef typename EvalExpression<Base>::result_type BaseValueType;
    typedef Transform<BaseValueType, F> Transformer;
@@ -166,6 +169,7 @@ struct EvalExpression<MatrixTransformProxy<Base, F> const,
       return result_type(transform(eval_expression(x.base()), x.functor()));
    }
 };
+#endif
 
 // iterators
 
@@ -269,11 +273,11 @@ struct TransformMatrix<MatrixTransformProxy<Base, F>, G>
 };
 
 template <typename T, typename F, typename S, typename U>
-struct TransformInterface<T, F, MATRIX_EXPRESSION(S, U)>
+struct TransformInterface<T, F, Concepts::MatrixExpression<S, U>>
    : TransformMatrix<T, F> {};
 
 template <typename T, typename F, typename S, typename U>
-struct TransformRef<T, F, MATRIX_EXPRESSION(S, U)>
+struct TransformRef<T, F, Concepts::MatrixExpression<S, U>>
    : TransformMatrix<T&, F> {};
 
 // if we transform a MatrixTransposeProxy, then shift the transform inside.

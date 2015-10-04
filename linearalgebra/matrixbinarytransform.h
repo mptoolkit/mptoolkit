@@ -2,7 +2,7 @@
 
   matrixbinarytransform.h
 
-  A proxy class & iterators for binary expressions of vectors
+  A proxy class & iterators for binary expressions of matrices
 
   Created 2005-03-15 Ian McCulloch
 */
@@ -86,10 +86,10 @@ template <typename T1, typename T2, typename F, typename Orient,
 	  typename I2v, typename I2i,
 	  typename Value>
 struct MatrixBinaryTransformInterface<T1, T2, F,
-			     DENSE_MATRIX(I1v, Orient, I1i), 
-			     DENSE_MATRIX(I2v, Orient, I2i), Value>
+				      Concepts::DenseMatrix<I1v, Orient, I1i>,
+				      Concepts::DenseMatrix<I2v, Orient, I2i>, Value>
 {
-   typedef DENSE_MATRIX(Value, Orient, void) type;
+   typedef Concepts::DenseMatrix<Value, Orient, void> type;
    typedef Value value_type;
 };
 
@@ -110,7 +110,7 @@ struct Iterate<MatrixBinaryTransformProxy<T1, T2, F> >
                                   typename interface<MatrixBinaryTransformProxy<T1, T2, F> >::type> {};
 
 template <typename T1, typename T2, typename F, typename Tv, typename TOrient, typename Ti>
-struct MatrixBinaryTransformIterate<T1, T2, F, DENSE_MATRIX(Tv, TOrient, Ti)>
+struct MatrixBinaryTransformIterate<T1, T2, F, Concepts::DenseMatrix<Tv, TOrient, Ti>>
 {
    typedef typename const_iterator<typename basic_type<T1>::type>::type iter1_type;
    typedef typename const_iterator<typename basic_type<T2>::type>::type iter2_type;
@@ -129,7 +129,9 @@ struct MatrixBinaryTransformIterate<T1, T2, F, DENSE_MATRIX(Tv, TOrient, Ti)>
 // BinaryTransform specializations
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti, typename Orient>
-struct BinaryTransformMatrix<S, T, F, DENSE_MATRIX(Sv, Orient, Si), DENSE_MATRIX(Tv, Orient, Ti) >
+struct BinaryTransformMatrix<S, T, F, 
+			     Concepts::DenseMatrix<Sv, Orient, Si>,
+			     Concepts::DenseMatrix<Tv, Orient, Ti>>
 {
    typedef MatrixBinaryTransformProxy<typename make_const_reference<S>::type, 
                                typename make_const_reference<T>::type, F> result_type;
@@ -143,7 +145,9 @@ struct BinaryTransformMatrix<S, T, F, DENSE_MATRIX(Sv, Orient, Si), DENSE_MATRIX
 };
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti, typename Orient>
-struct BinaryTransformMatrixSemiregular<S, T, F, COMPRESSED_OUTER_MATRIX(Sv, Orient, Si), COMPRESSED_OUTER_MATRIX(Tv, Orient, Ti) >
+struct BinaryTransformMatrixSemiregular<S, T, F, 
+					Concepts::CompressedOuterMatrix<Sv, Orient, Si>, 
+					Concepts::CompressedOuterMatrix<Tv, Orient, Ti>>
 {
    typedef MatrixBinaryTransformProxy<typename make_const_reference<S>::type, 
                                typename make_const_reference<T>::type, F> result_type;
@@ -157,7 +161,9 @@ struct BinaryTransformMatrixSemiregular<S, T, F, COMPRESSED_OUTER_MATRIX(Sv, Ori
 };
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
-struct BinaryTransformMatrixSemiregular<S, T, F, DIAGONAL_MATRIX(Sv,Si), DIAGONAL_MATRIX(Tv,Ti) >
+struct BinaryTransformMatrixSemiregular<S, T, F, 
+					Concepts::DiagonalMatrix<Sv,Si>, 
+					Concepts::DiagonalMatrix<Tv,Ti>>
 {
    typedef MatrixBinaryTransformProxy<typename make_const_reference<S>::type, 
                                typename make_const_reference<T>::type, F> result_type;

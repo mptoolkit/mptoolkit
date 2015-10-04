@@ -494,6 +494,19 @@ contract_from_right(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
 		    StateComponent const& F,
 		    LinearAlgebra::HermitianProxy<StateComponent> const& B);
 
+inline
+StateComponent
+contract_from_right(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
+		    SimpleStateComponent const& A, 
+		    StateComponent const& F,
+		    LinearAlgebra::HermitianProxy<SimpleStateComponent> const& B)
+{
+   // TODO: optimize this implementation
+   StateComponent AX = A;
+   StateComponent BX = B.base();
+   return contract_from_right(M, AX, F, herm(BX));
+}
+
 // Contraction from the left
 // Result'[a](i,j) = herm(M(s',s)(a',a)) herm(A[s'](i',i)) E[a'](i',j') B[s](j',j)
 // ** this function is deprecated -- use contract_from_left instead

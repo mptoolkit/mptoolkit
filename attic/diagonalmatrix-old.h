@@ -23,7 +23,7 @@
 namespace LinearAlgebra
 {
 
-template <typename T, typename DiagonalType>
+template <typename T, typename DiagonalType = Vector<T> >
 class DiagonalMatrix : public MatrixBase<DiagonalMatrix<T> >
 {
    public:
@@ -106,7 +106,7 @@ template <typename T>
 struct interface<DiagonalMatrix<T> >
 {
    using value_type = typename make_value<T>::type;
-   using type = Concepts::DiagonalMatrix<value_type, DiagonalMatrix<T>>;
+   using type = DiagonalMatrixI<value_type, DiagonalMatrix<T>>;
 };
 
 // iterators
@@ -187,8 +187,6 @@ struct Resize<DiagonalMatrix<T>&>
 template <typename T, typename Enable = void>
 struct GetMatrixElement_DiagonalMatrix {};
 
-// if the element type has a valid zero, then allow GetMatrixElement for any
-// pair (i,j), and return zero for the off-diagonal.
 template <typename T>
 struct GetMatrixElement_DiagonalMatrix<
    T
@@ -209,10 +207,6 @@ struct GetMatrixElement_DiagonalMatrix<
    }
 };
 
-// if the element type doesn't have a valid zero, then enforce that
-// we can only get the diagonal elements.  This is a change in policy
-// from previously, when we returned value_with_zero<T> (which turned out
-// to be rather messy in practice)
 template <typename T>
 struct GetMatrixElement_DiagonalMatrix<
    T
@@ -222,14 +216,15 @@ struct GetMatrixElement_DiagonalMatrix<
    typedef DiagonalMatrix<T> const& first_argument_type;
    typedef size_type second_argument_type;
    typedef size_type third_argument_type;
-   typedef typename DiagonalMatrix<T>::const_reference result_type;
+   typedef typename make_value_with_zero<T>::type result_type;
 
    result_type operator()(first_argument_type x, size_type i, size_type j) const
    {
-      DEBUG_CHECK_EQUAL(i,j);
       DEBUG_PRECONDITION_COMPARE(i, <, x.size1());
       DEBUG_PRECONDITION_COMPARE(j, <, x.size2());
-      return x.diagonal()[i];
+      TRACE("here")(&x);
+      TRACE(typeid(result_type()).name());
+      return (i == j) ? result_type(x.diagonal()[i]) : zero<result_type>();
    }
 };
 
@@ -267,7 +262,8 @@ struct GetMatrixElement<DiagonalMatrix<T>&>
 // Multiply
 
 template <typename T, typename RHS, typename S1, typename U1, typename RHSi>
-struct MultiplyInterface<DiagonalMatrix<T>&, RHS, Concepts::DiagonalMatrix<S1, U1>, AnyScalar<RHSi> >
+//struct MultiplyInterface<DiagonalMatrix<T>&, RHS, DIAGONAL_MATRIX(S1, U1), AnyScalar<RHSi> >
+struct MultiplyInterface<DiagonalMatrix<T>&, RHS, DiagonalMatrixI<S1, U1>, AnyScalar<RHSi> >
 {
    typedef DiagonalMatrix<T>& result_type;
    typedef DiagonalMatrix<T>& first_argument_type;
@@ -284,7 +280,8 @@ struct MultiplyInterface<DiagonalMatrix<T>&, RHS, Concepts::DiagonalMatrix<S1, U
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
 struct MatrixMatrixMultiplication<DiagonalMatrix<S>, DiagonalMatrix<T>, F,
-                                  Concepts::DiagonalMatrix<Sv, Si>, Concepts::DiagonalMatrix<Tv, Ti>>
+                                  DiagonalMatrixI<Sv, Si>, DiagonalMatrixI<Tv, Ti>>
+//                                  DIAGONAL_MATRIX(Sv, Si), DIAGONAL_MATRIX(Tv, Ti)>
 {
    typedef typename is_commutative<F>::type commutative;
 
@@ -308,7 +305,8 @@ struct MatrixMatrixMultiplication<DiagonalMatrix<S>, DiagonalMatrix<T>, F,
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
 struct MatrixDirectProduct<DiagonalMatrix<S>, DiagonalMatrix<T>, F, 
-                           Concepts::DiagonalMatrix<Sv, Si>, Concepts::DiagonalMatrix<Tv, Ti>>
+                           DiagonalMatrixI<Sv, Si>, DiagonalMatrixI<Tv, Ti>>
+//                           DIAGONAL_MATRIX(Sv, Si), DIAGONAL_MATRIX(Tv, Ti)>
 {
    typedef typename F::result_type ValType;
    typedef typename make_value<ValType>::type result_value_type;
@@ -347,7 +345,7 @@ struct InnerProd<DiagonalMatrix<S>, DiagonalMatrix<T> >
 };
 
 template <typename T, typename S, typename U>
-struct ZeroAllInterface<T&, DiagonalMatrix<S, U>>
+struct ZeroAll<T&, DiagonalMatrixI<S, U>>
 {
    typedef void result_type;
    typedef T& argument_type;

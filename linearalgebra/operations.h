@@ -1834,11 +1834,17 @@ eval(T const& x)
    return EvalExpression<T>()(x);
 }
 
-// ZeroAll - zeros all elements
+// ZeroAll - zeros all elements.
 
 template <typename T, typename TInterface = typename interface<T>::type, 
 	  typename Enable = void>
-struct ZeroAll { };
+struct ZeroAllInterface {};
+
+template <typename T, typename Enable = void>
+struct ZeroAll {};
+
+template <typename T, typename Enable>
+struct ZeroAll<T&, Enable> : ZeroAllInterface<T&, typename interface<T>::type> {};
 
 template <typename T>
 inline
@@ -1850,7 +1856,7 @@ zero_all(T& v)
 
 template <typename T>
 inline
-typename boost::enable_if<is_mutable_proxy<T>, ZeroAll<T&> >::type::result_type
+typename boost::enable_if<is_mutable_proxy<T>, ZeroAll<T&>>::type::result_type
 zero_all(T const& v)
 {
    return ZeroAll<T&>()(const_cast<T&>(v));

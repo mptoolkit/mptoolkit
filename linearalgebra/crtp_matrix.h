@@ -68,23 +68,28 @@ class MatrixBase
       // operator +=
 
       template <typename RHS>
-      typename AddCopy<derived_type&, RHS>::result_type
+      derived_type&
+      //typename AddCopy<derived_type&, RHS>::result_type
       operator+=(RHS const& x)
       {
-         return add_copy(this->as_derived(), x);
+	 Add<derived_type&, RHS>().operator()(this->as_derived(), x);
+	 return this->as_derived();
+	 //         return add_copy(this->as_derived(), x);
       }
 
       template <typename RHS>
-      typename AddCopy<derived_type&, RHS>::result_type
+      typename AddCopy<derived_type&, value_with_zero<RHS>>::result_type
       operator+=(value_with_zero<RHS> const& x)
       {
-         return add_copy(this->as_derived(), x);
+	 if (!x.is_zero())
+	    add_copy(this->as_derived(), x.get());
+	 return *this;
       }
 
       // operator -=
 
       template <typename RHS>
-      typename SubtractCopy<derived_type&, value_with_zero<RHS> >::result_type
+      typename SubtractCopy<derived_type&, RHS>::result_type
       operator-=(RHS const& x)
       {
          return subtract_copy(this->as_derived(), x);

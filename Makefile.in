@@ -30,7 +30,11 @@ CXXFLAGS = -I. -I$(SRCDIR) @CPPFLAGS@ @CXXFLAGS@ -DHAVE_CONFIG_H $(CXXFLAGS_EXTR
 # makedepend, but -MM is fairly widely supported (probably more than makedepend anyway)
 #MAKEDEPEND = makedepend -- $(CXXFLAGS) -- -f- -Y $< > $*.Td
 
-MAKEDEPEND = $(CXX) -MM $(CXXFLAGS) -o $*.Td $<
+MAKEDEPEND = $(CXX) -MM -MT $@ $(CXXFLAGS) -o $*.Td $<
+
+#MAKEDEPEND = $(CXX) -MM $(CXXFLAGS) -o $*.Td $*.cpp
+
+#MAKEDEPEND = $(CXX) -MM $(CXXFLAGS) -o $*.Td $<
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
@@ -258,11 +262,17 @@ dep : $(cxx_depend)
 %.o : %.c
 %.o : %.f
 
-% : %.o
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ $(LIB) $(LIBS_$@) -o $@
+# we don't need this rule (it doesnt work with repsect to dependency generation anyway)
+#% : %.o
+#	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ $(LIB) $(LIBS_$@) -o $@
 
 % : %.cpp
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ $(LIB) $(LIBS_$@) -o $@
+	@$(MAKEDEPEND); \
+	cp $*.Td $*.d; \
+          sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+              -e '/^$$/ d' -e 's/$$/ :/' < $*.Td >> $*.d; \
+          rm -f $*.Td
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(filter %.o %.cpp, $^) $(LIB) $(LIBS_$@) -o $@
 
 %.o : %.cpp %.d
 	@$(MAKEDEPEND); \

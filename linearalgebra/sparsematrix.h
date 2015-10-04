@@ -205,8 +205,7 @@ template <typename T, typename InnerType, typename OuterType, typename Orient>
 struct interface<SparseMatrix<T, Orient, InnerType, OuterType> >
 {
    typedef T value_type;
-   typedef typename interface<OuterType>::type Outer_;
-   typedef COMPRESSED_OUTER_MATRIX_V(value_type, Orient, Outer_, void) type;
+   typedef Concepts::CompressedOuterMatrix<value_type, Orient, void> type;
 };
 
 // iterators

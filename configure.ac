@@ -41,7 +41,7 @@ if test "x$enable_debug" != "xyes" ; then
 fi
 
 dnl C++11 support
-AX_CXX_COMPILE_STDCXX_11(noext,optional)
+AX_CXX_COMPILE_STDCXX_11(noext,mandatory)
 
 dnl large file support
 AC_SYS_LARGEFILE

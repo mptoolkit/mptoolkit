@@ -209,8 +209,6 @@ struct IsZero<MapVector<T> >
    }
 };
 
-
-
 // operator+=, operator-=
 
 template <typename Scalar, typename U>

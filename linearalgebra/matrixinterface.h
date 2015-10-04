@@ -63,279 +63,111 @@ template <> struct SwapOrientation<ColMajor> : RowMajor {};
 namespace Concepts
 {
 
+// tags
+
+template <typename T>
+struct ExpressionTag {};
+
+template <typename T>
+struct LocalTag {};
+
+template <typename T>
+struct InjectiveTag {};
+
+template <typename T>
+struct SparseTag {};
+
+template <typename T>
+struct CoordinateTag {};
+
+template <typename T>
+struct DiagonalTag {};
+
+template <typename T>
+struct ScalarTag {};
+
+template <typename Orientation, typename T>
+struct CompressedOuterTag {};
+
+template <typename Orientation, typename T>
+struct DenseTag {};
+
+template <typename Orientation, typename T>
+struct StrideTag {};
+
+template <typename Orientation, typename T>
+struct ContiguousTag {};
+
+// concept heirachy
+
+// top level concept
 template <typename Value, typename T>
-struct MatrixExpression
-{
-};
-
-#define ANY_MATRIX(Value, T) LinearAlgebra::Concepts::MatrixExpression<Value, T > /**/
-#define MATRIX_EXPRESSION(Value, T) LinearAlgebra::Concepts::MatrixExpression<Value, T > /**/
+struct AnyMatrix {};
 
 template <typename Value, typename T>
-using LocalMatrixI = MatrixExpression<Value, Local<T>>;
+using MatrixExpression = AnyMatrix<Value, ExpressionTag<T>>;
 
-#define LOCAL_MATRIX(Value, T) LinearAlgebra::Concepts::LocalMatrixI<Value, T>
+template <typename Value, typename T>
+using LocalMatrix = MatrixExpression<Value, LocalTag<T>>;
 
-#if 0
-#define LOCAL_MATRIX(Value, T)				\
-LinearAlgebra::Concepts::MatrixExpression< Value ,	\
-   LinearAlgebra::Concepts::Local< T > > /**/
-#endif
+template <typename Value, typename T>
+using InjectiveMatrix = LocalMatrix<Value, InjectiveTag<T>>;
 
-#define INJECTIVE_MATRIX(Value, T)						\
-LinearAlgebra::Concepts::MatrixExpression< Value ,				\
-   LinearAlgebra::Concepts::Local<						\
-      LinearAlgebra::Concepts::Injective<T>>> /**/
+template <typename Value, typename T>
+using SparseMatrix = InjectiveMatrix<Value, SparseTag<T>>;
 
-template <typename T>
-struct SparseMatrix {};
+template <typename T, typename Value>
+using DiagonalMatrix = SparseMatrix<T, DiagonalTag<Value>>;
 
-#define SPARSE_MATRIX(Value, T)					\
-LinearAlgebra::Concepts::MatrixExpression< Value ,		\
-   LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::Injective<			\
-         LinearAlgebra::Concepts::SparseMatrix< T > > > >/**/
+template <typename T, typename Value>
+using ScalarMatrix = DiagonalMatrix<T, ScalarTag<Value>>;
 
-#define COMPRESSED_MATRIX(Value, T)				\
-LinearAlgebra::Concepts::MatrixExpression< Value ,		\
-   LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::Injective<			\
-         LinearAlgebra::Concepts::SparseMatrix<			\
-            LinearAlgebra::Concepts::Compressed< T > > > > > /**/
+template <typename Value, typename T>
+using CoordinateMatrix = SparseMatrix<Value, CoordinateTag<T>>;
 
+template <typename Value, typename Orientation, typename T>
+using CompressedOuterMatrix = SparseMatrix<Value, CompressedOuterTag<Orientation, T>>;
 
-template <typename T>
-struct Coordinate {}; // : Rectangular<Coordinate<T> > {};
+template <typename Value, typename T>
+using CompressedRowMajorMatrix = SparseMatrix<Value, CompressedOuterTag<RowMajor, T>>;
 
-#define COORDINATE_MATRIX(Value, T)				\
-LinearAlgebra::Concepts::MatrixExpression< Value ,		\
-   LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::Injective<			\
-         LinearAlgebra::Concepts::SparseMatrix<			\
-            LinearAlgebra::Concepts::Coordinate< T > > > > > /**/
+template <typename Value, typename T>
+using CompressedColMajorMatrix = SparseMatrix<Value, CompressedOuterTag<ColMajor, T>>;
 
+// DenseMatrix
 
+template <typename Value, typename Orientation, typename T>
+using DenseMatrix = SparseMatrix<Value, DenseTag<Orientation, T>>;
 
-template <typename T>
-struct Banded {}; // : SparseMatrix<Banded<T> > {};
+template <typename Value, typename T>
+using DenseRowMajorMatrix = DenseMatrix<Value, RowMajor, T>;
 
-#define BANDED_MATRIX(Value, T)					\
-LinearAlgebra::Concepts::MatrixExpression< Value ,		\
-   LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::Injective<			\
-         LinearAlgebra::Concepts::SparseMatrix<			\
-            LinearAlgebra::Concepts::Banded< T > > > > > /**/
+template <typename Value, typename T>
+using DenseColMajorMatrix = DenseMatrix<Value, ColMajor, T>;
 
+// StrideMatrix
 
-template <typename T>
-struct Diagonal {}; // : Banded<Diagonal<T> > {};
+template <typename Value, typename Orientation, typename T>
+using StrideMatrix = DenseMatrix<Value, Orientation, StrideTag<Orientation, T>>;
 
-#define DIAGONAL_MATRIX(Value, T)				\
-LinearAlgebra::Concepts::MatrixExpression< Value ,		\
-   LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::Injective<			\
-         LinearAlgebra::Concepts::SparseMatrix<			\
-            LinearAlgebra::Concepts::Banded<			\
-               LinearAlgebra::Concepts::Diagonal< T > > > > > > /**/
+template <typename Value, typename T>
+using StrideRowMajorMatrix = StrideMatrix<Value, RowMajor, T>;
 
+template <typename Value, typename T>
+using StrideColMajorMatrix = StrideMatrix<Value, ColMajor, T>;
 
-template <typename Orientation, typename T>
-struct CompressedOuter {}; // : Rectangular<CompressedOuter<Orientation, T> > {};
+// ContiguousMatrix
 
-#define COMPRESSED_OUTER_MATRIX(Value, Orient, T)					\
-LinearAlgebra::Concepts::MatrixExpression< Value ,					\
-   LinearAlgebra::Concepts::Local<							\
-      LinearAlgebra::Concepts::Injective<			\
-         LinearAlgebra::Concepts::SparseMatrix<						\
-            LinearAlgebra::Concepts::Compressed<					\
-               LinearAlgebra::Concepts::CompressedOuter< Orient, T > > > > > > /**/
+template <typename Value, typename Orientation, typename T>
+using ContiguousMatrix = StrideMatrix<Value, Orientation, ContiguousTag<Orientation, T>>;
 
-#define COMPRESSED_ROW_MATRIX(Value, T)							\
-LinearAlgebra::Concepts::MatrixExpression< Value ,					\
-   LinearAlgebra::Concepts::Local<							\
-      LinearAlgebra::Concepts::Injective<			\
-         LinearAlgebra::Concepts::SparseMatrix<						\
-            LinearAlgebra::Concepts::Compressed<					\
-            LinearAlgebra::Concepts::CompressedOuter< RowMajor, T > > > > > > /**/
+template <typename Value, typename T>
+using ContiguousRowMajorMatrix = ContiguousMatrix<Value, RowMajor, T>;
 
-#define COMPRESSED_COL_MATRIX(Value, T)							\
-LinearAlgebra::Concepts::MatrixExpression< Value ,					\
-   LinearAlgebra::Concepts::Local<							\
-      LinearAlgebra::Concepts::Injective<			\
-         LinearAlgebra::Concepts::SparseMatrix<						\
-            LinearAlgebra::Concepts::Compressed<					\
-               LinearAlgebra::Concepts::CompressedOuter< ColMajor, T > > > > > > /**/
-
-
-template <typename Orientation, typename OuterInterface, typename T>
-struct CompressedMatrix {};
-   //   : CompressedOuter<Orientation, CompressedMatrix<Orientation, OuterInterface, T> > {};
-
-#define COMPRESSED_OUTER_MATRIX_V(Value, Orient, VecInterface, T)	\
-LinearAlgebra::Concepts::MatrixExpression< Value ,			\
-   LinearAlgebra::Concepts::Local<					\
-      LinearAlgebra::Concepts::Injective<			\
-         LinearAlgebra::Concepts::SparseMatrix<				\
-            LinearAlgebra::Concepts::Compressed<			\
-               LinearAlgebra::Concepts::CompressedOuter< Orient,	\
-                  LinearAlgebra::Concepts::CompressedMatrix< 		\
-    Orient, VecInterface, T > > > > > > > /**/
-
-
-
-template <typename Orientation, typename T>
-struct DenseMatrix {}; // : Local<DenseMatrix<Orientation, T> > {};
-
-#define DENSE_MATRIX(Value, Orient, T)				\
-LinearAlgebra::Concepts::MatrixExpression< Value ,		\
-   LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::DenseMatrix<Orient, T > > > /**/
-
-#define DENSE_ROW_MAJOR_MATRIX(Value, T)				\
-LinearAlgebra::Concepts::MatrixExpression< Value ,			\
-   LinearAlgebra::Concepts::Local<					\
-      LinearAlgebra::Concepts::DenseMatrix<RowMajor, T > > > /**/
-
-#define DENSE_COL_MAJOR_MATRIX(Value, T)				\
-LinearAlgebra::Concepts::MatrixExpression< Value ,			\
-   LinearAlgebra::Concepts::Local<					\
-      LinearAlgebra::Concepts::DenseMatrix<ColMajor, T > > > /**/
-
-
-template <typename Orientation, typename T>
-struct StrideMatrix {}; // : DenseMatrix<Orientation, StrideMatrix<Orientation, T> > {};
-
-#define STRIDE_MATRIX(Value, Orient, T)						\
-LinearAlgebra::Concepts::MatrixExpression< Value ,				\
-   LinearAlgebra::Concepts::Local<						\
-      LinearAlgebra::Concepts::DenseMatrix<Orient,				\
-         LinearAlgebra::Concepts::StrideMatrix<Orient, T > > > > /**/
-
-#define STRIDE_ROW_MAJOR_MATRIX(Value, T)					\
-LinearAlgebra::Concepts::MatrixExpression< Value ,				\
-   LinearAlgebra::Concepts::Local<						\
-      LinearAlgebra::Concepts::DenseMatrix<RowMajor,				\
-         LinearAlgebra::Concepts::StrideMatrix<RowMajor, T > > > > /**/
-
-#define STRIDE_COL_MAJOR_MATRIX(Value, T)					\
-LinearAlgebra::Concepts::MatrixExpression< Value ,				\
-   LinearAlgebra::Concepts::Local<						\
-      LinearAlgebra::Concepts::DenseMatrix<ColMajor,				\
-         LinearAlgebra::Concepts::StrideMatrix<ColMajor, T > > > > /**/
-
-
-template <typename Orientation, typename T>
-struct ContiguousMatrix {}; // : StrideMatrix<Orientation, ContiguousMatrix<Orientation, T> > {};
-
-#define CONTIGUOUS_MATRIX(Value, Orient, T)						\
-LinearAlgebra::Concepts::MatrixExpression< Value ,					\
-   LinearAlgebra::Concepts::Local<							\
-      LinearAlgebra::Concepts::DenseMatrix<Orient,					\
-         LinearAlgebra::Concepts::StrideMatrix<Orient,				\
-            LinearAlgebra::Concepts::ContiguousMatrix<Orient, T > > > > > /**/
-
-#define CONTIGUOUS_ROW_MAJOR_MATRIX(Value, T)						\
-LinearAlgebra::Concepts::MatrixExpression< Value ,					\
-   LinearAlgebra::Concepts::Local<							\
-      LinearAlgebra::Concepts::DenseMatrix<RowMajor,					\
-         LinearAlgebra::Concepts::StrideMatrix<RowMajor,				\
-            LinearAlgebra::Concepts::ContiguousMatrix<RowMajor, T > > > > > /**/
-
-#define CONTIGUOUS_COL_MAJOR_MATRIX(Value, T)						\
-LinearAlgebra::Concepts::MatrixExpression< Value ,					\
-   LinearAlgebra::Concepts::Local<							\
-      LinearAlgebra::Concepts::DenseMatrix<ColMajor,					\
-         LinearAlgebra::Concepts::StrideMatrix<ColMajor,				\
-            LinearAlgebra::Concepts::ContiguousMatrix<ColMajor, T > > > > > /**/
-
+template <typename Value, typename T>
+using ContiguousColMajorMatrix = ContiguousMatrix<Value, ColMajor, T>;
 
 } // namespace Concepts
-
-template <typename Value, typename T>
-using MatrixExpressionI = MATRIX_EXPRESSION(Value, T);
-
-template <typename Value, typename T>
-using DiagonalMatrixI = DIAGONAL_MATRIX(Value, T);
-
-// RebindInterface
-
-template <typename T, typename Vv, typename Vi, typename Tv>
-struct RebindInterface<T, MATRIX_EXPRESSION(Vv, Vi), Tv>
-{
-   typedef Tv value_type;
-   typedef MATRIX_EXPRESSION(Tv, void) type;
-};
-template <typename T, typename Vv, typename Vi, typename Tv>
-struct RebindInterface<T, LOCAL_MATRIX(Vv, Vi), Tv>
-{
-   typedef Tv value_type;
-   typedef LOCAL_MATRIX(Tv, void) type;
-};
-template <typename T, typename Vv, typename Vi, typename Tv>
-struct RebindInterface<T, COMPRESSED_MATRIX(Vv, Vi), Tv>
-{
-   typedef Tv value_type;
-   typedef COMPRESSED_MATRIX(Tv, void) type;
-};
-template <typename T, typename Vv, typename Vi, typename Tv>
-struct RebindInterface<T, COORDINATE_MATRIX(Vv, Vi), Tv>
-{
-   typedef Tv value_type;
-   typedef COORDINATE_MATRIX(Tv, void) type;
-};
-template <typename T, typename Vv, typename Vi, typename Tv>
-struct RebindInterface<T, INJECTIVE_MATRIX(Vv, Vi), Tv>
-{
-   typedef Tv value_type;
-   typedef INJECTIVE_MATRIX(Tv, void) type;
-};
-template <typename T, typename Vv, typename Vi, typename Tv>
-struct RebindInterface<T, BANDED_MATRIX(Vv, Vi), Tv>
-{
-   typedef Tv value_type;
-   typedef BANDED_MATRIX(Tv, void) type;
-};
-template <typename T, typename Vv, typename Vi, typename Tv>
-struct RebindInterface<T, DIAGONAL_MATRIX(Vv, Vi), Tv>
-{
-   typedef Tv value_type;
-   typedef DIAGONAL_MATRIX(Tv, void) type;
-};
-template <typename T, typename Vv, typename Vo, typename Vi, typename Tv>
-struct RebindInterface<T, COMPRESSED_OUTER_MATRIX(Vv, Vo, Vi), Tv>
-{
-   typedef Tv value_type;
-   typedef COMPRESSED_OUTER_MATRIX(Tv, Vo, void) type;
-};
-
-#if 0
-template <typename T, typename Vv, typename Vo, typename Vi, typename Tv>
-struct RebindInterface<T, INJECTIVE_OUTER_MATRIX(Vv, Vo, Vi), Tv>
-{
-   typedef INJECTIVE_OUTER_MATRIX(Tv, Vo, void) type;
-};
-template <typename T, typename Vv, typename Vo, typename Vi, typename Tv>
-struct RebindInterface<T, DENSE_OUTER_MATRIX(Vv, Vo, Vi), Tv>
-{
-   typedef DENSE_OUTER_MATRIX(Tv, Vo, void) type;
-};
-#endif
-
-template <typename T, typename Vv, typename Vo, typename Vi, typename Tv>
-struct RebindInterface<T, DENSE_MATRIX(Vv, Vo, Vi), Tv>
-{
-   typedef DENSE_MATRIX(Tv, Vo, void) type;
-};
-template <typename T, typename Vv, typename Vo, typename Vi, typename Tv>
-struct RebindInterface<T, STRIDE_MATRIX(Vv, Vo, Vi), Tv>
-{
-   typedef STRIDE_MATRIX(Tv, Vo, void) type;
-};
-template <typename T, typename Vv, typename Vo, typename Vi, typename Tv>
-struct RebindInterface<T, CONTIGUOUS_MATRIX(Vv, Vo, Vi), Tv>
-{
-   typedef CONTIGUOUS_MATRIX(Tv, Vo, void) type;
-};
 
 // is_matrix, boolean function to determine if a type
 // has a matrix interface.
@@ -346,13 +178,13 @@ template <typename T>
 struct is_matrix_helper : boost::mpl::false_ {};
 
 template <typename S, typename T>
-struct is_matrix_helper<MATRIX_EXPRESSION(S,T)> : boost::mpl::true_ {};
+struct is_matrix_helper<Concepts::AnyMatrix<S,T>> : boost::mpl::true_ {};
 
 template <typename T>
 struct is_dense_matrix_helper : boost::mpl::false_ {};
 
 template <typename S, typename T, typename U>
-struct is_dense_matrix_helper<DENSE_MATRIX(S,T,U)> : boost::mpl::true_ {};
+struct is_dense_matrix_helper<Concepts::DenseMatrix<S,T,U>> : boost::mpl::true_ {};
 
 } // namespace Private
 
@@ -400,34 +232,17 @@ struct matrix_abstract_and
    : boost::mpl::if_<boost::is_same<typename T::type, typename U::type>, 
                      typename T::type, matrix_abstract_sparse> {};
 
-
-//
-// make_vector_from_abstract
-//
-// provides a 'default' choice of a concrete vector type based on
-// the abstract type (ie. either sparse or dense).
-//
-
-template <typename T, typename Abstract>
-struct make_matrix_from_abstract {};
-
-template <typename T, typename Sv, typename So, typename Si>
-struct abstract_interface_interface<T, DENSE_MATRIX(Sv, So, Si)>
+// The abstract interfaces for concrete types
+template <typename T, typename Tv, typename Orient, typename Ti>
+struct abstract_interface_interface<T, Concepts::DenseMatrix<Tv, Orient, Ti>>
    : matrix_abstract_dense {};
 
-template <typename T, typename Sv, typename Si>
-struct abstract_interface_interface<T, SPARSE_MATRIX(Sv, Si)>
+template <typename T, typename Tv, typename Ti>
+struct abstract_interface_interface<T, Concepts::SparseMatrix<Tv, Ti>>
    : matrix_abstract_sparse {};
 
-// make_value_from_interface for vectors
-
-template <typename T, typename Sv, typename Si>
-struct make_value_from_interface<T, ANY_MATRIX(Sv, Si)>
-   : make_matrix_from_abstract<Sv, typename abstract_interface<T>::type> {};
-
-
 //
-// iterator categories - unused?
+// iterator categories
 //
 
 // generic sparse unordered iterator
@@ -453,6 +268,7 @@ struct matrix_iterator_dense : matrix_iterator_injective
 {
    typedef matrix_iterator_dense type;
 };
+
 
 //
 // get_matrix_category
@@ -481,7 +297,7 @@ T* MakePtr();   // dummy function, not implemented
 
 IsSparse& TestCategory(...);
 
-IsInjective& TestCategory(vector_iterator_injective const*, 
+IsInjective& TestCategory(vector_iterator_injective const*,
 			  vector_iterator_injective const*);
 
 IsDense& TestCategory(vector_iterator_dense const*, 
@@ -552,7 +368,7 @@ template <typename T, typename Tinterface = typename interface<T>::type>
 struct matrix_orientation;
 
 template <typename T, typename Tv, typename Orient, typename Ti>
-struct matrix_orientation<T, DENSE_MATRIX(Tv, Orient, Ti)>
+struct matrix_orientation<T, Concepts::DenseMatrix<Tv, Orient, Ti>>
 {
    typedef Orient type;
 };
@@ -562,14 +378,14 @@ template <typename T, typename Tinterface = typename interface<T>::type>
 struct is_row_major : boost::mpl::false_ {};
 
 template <typename T, typename Tv, typename Ti>
-struct is_row_major<T, DENSE_MATRIX(Tv, RowMajor, Ti)> : boost::mpl::true_ 
+struct is_row_major<T, Concepts::DenseMatrix<Tv, RowMajor, Ti>> : boost::mpl::true_ 
 {};
 
 template <typename T, typename Tinterface = typename interface<T>::type>
 struct is_col_major : boost::mpl::false_ {};
 
 template <typename T, typename Tv, typename Ti>
-struct is_col_major<T, DENSE_MATRIX(Tv, ColMajor, Ti)> : boost::mpl::true_ 
+struct is_col_major<T, Concepts::DenseMatrix<Tv, ColMajor, Ti>> : boost::mpl::true_ 
 {};
 
 

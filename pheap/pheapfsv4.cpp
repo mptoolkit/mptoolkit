@@ -404,7 +404,7 @@ int FileSystem::ReadPageFileMetadata(std::string const& Path, std::string const&
    uint32_t CheckVersion = MetaIn.read<uint32>();
    MetaVersion = CheckVersion;
 
-   if (pheap::ExpectedPageFileVersion() != -1 && pheap::ExpectedPageFileVersion() != CheckVersion)
+   if (pheap::ExpectedPageFileVersion() != -1 && pheap::ExpectedPageFileVersion() != int(CheckVersion))
    {
       PANIC("Page file version mismatch") << "Expected version " << pheap::ExpectedPageFileVersion() << " but version is " << CheckVersion;
    }

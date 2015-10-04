@@ -302,6 +302,16 @@ class IrredTensor
          : Basis1_(r.Basis1()), Basis2_(r.Basis2()), Trans_(r.TransformsAs()),
            Data_(r.data()) {}
 
+      IrredTensor& operator=(IrredTensor const& Other) = default;
+
+      template <typename U, typename US>
+      IrredTensor& operator=(IrredTensor<U, Basis1T, Basis2T, US> const& r)
+      {
+	 Basis1_ = r.Basis1(); Basis2_ = r.Basis2(); Trans_ = r.TransformsAs();
+	 Data_ = r.data();
+	 return *this;
+      }
+
       bool is_null() const { return Trans_.is_null(); }
 
       IrredTensor& operator+=(IrredTensor const& Op);
@@ -421,6 +431,21 @@ struct Iterate<Tensor::IrredTensor<T, B1, B2, S> >
    result_type operator()(argument_type x) const
    {
       return iterate(x.data());
+   }
+};
+
+// Assign
+
+template <typename T1, typename B1, typename B2, typename S1, typename T2, typename S2>
+struct Assign<Tensor::IrredTensor<T1, B1, B2, S1>&, Tensor::IrredTensor<T2, B1, B2, S2>>
+{
+   using result_type = void;
+   using first_argument_type = Tensor::IrredTensor<T1, B1, B2, S1>&;
+   using second_argument_type = Tensor::IrredTensor<T2, B1, B2, S2>;
+   void operator()(Tensor::IrredTensor<T1, B1, B2, S1>& x, 
+		   Tensor::IrredTensor<T2, B1, B2, S2> const& y)
+   {
+      x = y;
    }
 };
 

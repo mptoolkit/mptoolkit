@@ -11,7 +11,7 @@ void Exponentiate(double t, int Size, std::complex<double> const* H, int ldH, st
 } // namespace Private
 
 template <typename M, typename Mi>
-struct ImplementExponentiate<M, CONTIGUOUS_MATRIX(std::complex<double>, RowMajor, Mi)>
+struct ImplementExponentiate<M, Concepts::ContiguousMatrix<std::complex<double>, RowMajor, Mi>>
 {
    typedef Matrix<std::complex<double> > result_type;
    result_type operator()(double t, M const& m) const
