@@ -1,7 +1,0 @@
-
-
-namespace LinearAlgebra
-{
-
-
-} // namespace LinearAlgebra
