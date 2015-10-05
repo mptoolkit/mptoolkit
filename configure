@@ -4515,6 +4515,11 @@ $as_echo "#define HAVE_CXX11 1" >>confdefs.h
   fi
 
 
+
+$as_echo "#define HAVE_CXX11 1" >>confdefs.h
+
+
+
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
