@@ -43,6 +43,14 @@ fi
 dnl C++11 support
 AX_CXX_COMPILE_STDCXX_11(noext,mandatory)
 
+dnl C++ compiler version and vendor information
+AC_LANG_PUSH(C++)
+AX_COMPILER_VENDOR
+AC_DEFINE_UNQUOTED([CONFIG_COMPILER_VENDOR], ["$ax_cv_cxx_compiler_vendor"], [C++ compiler vendor])
+AX_COMPILER_VERSION
+AC_DEFINE_UNQUOTED([CONFIG_COMPILER_VERSION], ["$ax_cv_cxx_compiler_version"], [C++ compiler version])
+AC_LANG_POP(C++)
+
 dnl large file support
 AC_SYS_LARGEFILE
 

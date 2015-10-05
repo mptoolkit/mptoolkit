@@ -32,9 +32,14 @@ CXXFLAGS = -I. -I$(SRCDIR) @CPPFLAGS@ @CXXFLAGS@ -DHAVE_CONFIG_H $(CXXFLAGS_EXTR
 
 MAKEDEPEND = $(CXX) -MM -MT $@ $(CXXFLAGS) -o $*.Td $<
 
-#MAKEDEPEND = $(CXX) -MM $(CXXFLAGS) -o $*.Td $*.cpp
+# Makedepend with post-processing to add dummy rules for each dependency
+MAKEDEPEND_INFO = $(MAKEDEPEND); \
+	if [ -f $*.Td ] ; then cp $*.Td $*.d; \
+          sed -e 's/\#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+              -e '/^$$/ d' -e 's/$$/ :/' < $*.Td >> $*.d; \
+          rm -f $*.Td ; else \
+          echo "warning: unable to obtain dependency information for $<"; fi
 
-#MAKEDEPEND = $(CXX) -MM $(CXXFLAGS) -o $*.Td $<
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
@@ -267,19 +272,11 @@ dep : $(cxx_depend)
 #	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ $(LIB) $(LIBS_$@) -o $@
 
 % : %.cpp
-	@$(MAKEDEPEND); \
-	cp $*.Td $*.d; \
-          sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
-              -e '/^$$/ d' -e 's/$$/ :/' < $*.Td >> $*.d; \
-          rm -f $*.Td
+	@$(MAKEDEPEND_INFO)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(filter %.o %.cpp, $^) $(LIB) $(LIBS_$@) -o $@
 
 %.o : %.cpp %.d
-	@$(MAKEDEPEND); \
-	cp $*.Td $*.d; \
-          sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
-              -e '/^$$/ d' -e 's/$$/ :/' < $*.Td >> $*.d; \
-          rm -f $*.Td
+	@$(MAKEDEPEND_INFO)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 %.o : %.f
