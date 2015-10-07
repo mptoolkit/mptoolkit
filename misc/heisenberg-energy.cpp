@@ -9,7 +9,7 @@
 // N \phi(z_i) = 2 pi I_i + \sum_{j \neq i} [(z_i - z_j)/2]
 // for i = 0, .... , r-1
 // and I_i are the 'bethe ansatz quantum numbers'.  For the groundstate,
-// these are simply I_i = -N/4 + 0.5*(i+1)
+// these are simply I_i = -N/4 + 0.5 + i
 // and phiz(z) = 2 arctan z is the 'bare momentum' of the magnon.
 // The energy of each magnon ie epsilon(z) = dk/dz = -2/(1 + z^2)
 // Note that generally the {z_r} are complex, but in this case
