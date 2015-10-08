@@ -3,6 +3,7 @@
 # aclocal-generated aclocal.m4 depends on locally-installed
 # '.m4' macro files, as well as on 'configure.ac'
 touch aclocal.m4
+touch stamp-h.in
 sleep 1
 # autoconf-generated configure depends on aclocal.m4 and on
 # configure.ac
