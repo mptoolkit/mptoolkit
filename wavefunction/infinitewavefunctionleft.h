@@ -4,8 +4,8 @@
 // in canonical form.
 //
 
-#if !defined(MPTOOLKIT_WAVEFUNCTION_INFINITEWAVEFUNCTION_H)
-#define MPTOOLKIT_WAVEFUNCTION_INFINITEWAVEFUNCTION_H
+#if !defined(MPTOOLKIT_WAVEFUNCTION_INFINITEWAVEFUNCTIONLEFT_H)
+#define MPTOOLKIT_WAVEFUNCTION_INFINITEWAVEFUNCTIONLEFT_H
 
 #include "wavefunction/canonicalwavefunction.h"
 #include "wavefunction/linearwavefunction.h"
@@ -19,24 +19,29 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
    public:
       InfiniteWavefunctionLeft() {}
 
-      // construction from a LinearWavefunction (in left-canonical form with lambda matrix on the right)
+      // construction from a LinearWavefunction (in left-canonical form with lambda 
+      // matrix on the right)
       InfiniteWavefunctionLeft(LinearWavefunction const& Psi, MatrixOperator const& Lambda, 
 			       QuantumNumbers::QuantumNumber const& QShift_);
 
       // constructs and canonicalizes the wavefunction
-      InfiniteWavefunctionLeft(LinearWavefunction const& Psi, QuantumNumbers::QuantumNumber const& QShift_);
+      InfiniteWavefunctionLeft(LinearWavefunction const& Psi, 
+			       QuantumNumbers::QuantumNumber const& QShift_);
 
-      InfiniteWavefunctionLeft(InfiniteWavefunctionLeft const& Psi) : CanonicalWavefunctionBase(Psi), QShift(Psi.QShift) {}
+      InfiniteWavefunctionLeft(InfiniteWavefunctionLeft const& Psi) 
+	 : CanonicalWavefunctionBase(Psi), QShift(Psi.QShift) {}
 
       InfiniteWavefunctionLeft& operator=(InfiniteWavefunctionLeft const& Psi)
       { CanonicalWavefunctionBase::operator=(Psi); QShift = Psi.QShift; return *this; }
 
       QuantumNumber qshift() const { return QShift; }
 
-      // Rotates the wavefunction to the left, by taking the left-most site and moving it to the right
+      // Rotates the wavefunction to the left, by taking the left-most site 
+      // and moving it to the right
       void rotate_left(int Count);
 
-      // Rotates the wavefunction to the left, by taking the right-most site and moving it to the left
+      // Rotates the wavefunction to the left, by taking the right-most site 
+      // and moving it to the left
       void rotate_right(int Count);
 
       // returns the orthogonality fidelity.  Normally this should be epsilon
@@ -45,7 +50,8 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       static PStream::VersionTag VersionT;
 
       friend PStream::ipstream& operator>>(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi);
-      friend PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunctionLeft const& Psi);
+      friend PStream::opstream& operator<<(PStream::opstream& out, 
+					   InfiniteWavefunctionLeft const& Psi);
       friend void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Version);
 
       void check_structure();
@@ -69,6 +75,8 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       friend InfiniteWavefunctionLeft ReorderSymmetry(InfiniteWavefunctionLeft const& Psi, 
 						      SymmetryList const& NewSL);
 };
+
+class InfiniteWavefunctionRight;
 
 // Convert a, infinite wavefunction to left-canonical form, 
 // and returns the Lambda matrix on the right-hand-side.
@@ -104,26 +112,6 @@ ExtractLocalBasis(InfiniteWavefunctionLeft const& Psi)
    return ExtractLocalBasis(get_left_canonical(Psi).first);
 }
 
-#if 0
-class InfiniteRightWavefunctionRight : public CanonicalWavefunctionBase
-{
-   public:
-      // construction and orthogonalization from a LinearWavefunction
-      explicit InfiniteRightCanonicalWavefunction(LinearWavefunction const& Psi);
-
-      InfiniteRightCanonicalWavefunction(InfiniteRightCanonicalWavefunction const& Psi);
-
-      InfiniteRightCanonicalWavefunction& operator=(InfiniteRightCanonicalWavefunction const& Psi);
-
-      void check_structure() const;
-      void debug_check_structure() const;
-
-      friend PStream::ipstream& operator>>(PStream::ipstream& in, RightCanonicalWavefunction& Psi);
-      friend PStream::opstream& operator<<(PStream::opstream& out, RightCanonicalWavefunction const& Psi);
-};
-#endif
-
-
 // When taking the inverse of the singular values, we need a cutoff value beyond which we ignore the
 // small elements.  This is set to the environment variable MP_INVERSE_TOL, or if that variable
 // is not defined, it is set to InverseTolDefault.
@@ -154,10 +142,11 @@ void inplace_reflect(InfiniteWavefunctionLeft& Psi);
 void inplace_conj(InfiniteWavefunctionLeft& Psi);
 
 // Spatial reflection of a wavefunction
-//InfiniteWavefunctionRight reflect(InfiniteWavefunction const& Psi);
+InfiniteWavefunctionRight reflect(InfiniteWavefunctionLeft const& Psi);
 
 // version of reflect where we apply a local operator also
-//InfiniteWavefunctionRight reflect(InfiniteWavefunction const& Psi, std::vector<SimpleOperator> const& Op);
+//InfiniteWavefunctionRight reflect(InfiniteWavefunction const& Psi, 
+// std::vector<SimpleOperator> const& Op);
 
 inline
 void

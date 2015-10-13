@@ -7,7 +7,7 @@
 #if !defined(MPTOOLKIT_WAVEFUNCTION_MPWAVEFUNCTION_H)
 #define MPTOOLKIT_WAVEFUNCTION_MPWAVEFUNCTION_H
 
-#include "infinitewavefunction.h"
+#include "infinitewavefunctionleft.h"
 #include <boost/variant.hpp>
 #include "pstream/pstream.h"
 #include "pstream/variant.h"

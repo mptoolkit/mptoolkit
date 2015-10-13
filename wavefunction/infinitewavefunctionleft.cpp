@@ -1,6 +1,6 @@
 // -*- C++ -*- $Id$
 
-#include "infinitewavefunction.h"
+#include "infinitewavefunctionleft.h"
 #include "tensor/tensor_eigen.h"
 #include "mp-algorithms/arnoldi.h"
 #include "common/environment.h"
@@ -30,12 +30,12 @@
 PStream::VersionTag
 InfiniteWavefunctionLeft::VersionT(2);
 
-double const ArnoldiTol = getenv_or_default("MP_ARNOLDI_TOL", 1E-15);
+extern double const ArnoldiTol = getenv_or_default("MP_ARNOLDI_TOL", 1E-15);
 
-double const InverseTol = getenv_or_default("MP_INVERSE_TOL", 1E-7);
+extern double const InverseTol = getenv_or_default("MP_INVERSE_TOL", 1E-7);
 
 // the tol used in the orthogonalization can apparently be a bit smaller
-double const OrthoTol = getenv_or_default("MP_ORTHO_TOL", 1E-9);
+extern double const OrthoTol = getenv_or_default("MP_ORTHO_TOL", 1E-9);
 
 struct LeftMultiply
 {
@@ -117,7 +117,8 @@ InfiniteWavefunctionLeft::Initialize(LinearWavefunction const& Psi_, MatrixOpera
    this->setBasis2(D.Basis1());
 }
 
-InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi, QuantumNumbers::QuantumNumber const& QShift_)
+InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi, 
+						   QuantumNumbers::QuantumNumber const& QShift_)
    : QShift(QShift_)
 {
    LinearWavefunction PsiL = Psi;
@@ -134,14 +135,16 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi
    double Tol = ArnoldiTol;
    LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
    std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, QShift), 
-                                                      Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
+                                                      Iterations, Tol, 
+						      LinearSolvers::LargestAlgebraicReal, false);
    while (Tol < 0)
    {
       std::cerr << "LeftEigen: Arnoldi not converged, restarting.  EValue=" 
                 << EtaL << ", Tol=" << Tol << "\n";
       Iterations = 20; Tol = ArnoldiTol;
       LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
-      EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, QShift), Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
+      EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, QShift), Iterations, 
+				    Tol, LinearSolvers::LargestAlgebraicReal, false);
    }
 
    CHECK(EtaL.real() > 0)("Eigenvalue must be positive");
@@ -186,7 +189,8 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi
    Iterations = 20; Tol = ArnoldiTol;
    RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
    std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, QShift), 
-                                                      Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
+                                                      Iterations, Tol, 
+						      LinearSolvers::LargestAlgebraicReal, false);
    //   DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
    while (Tol < 0)
    {
@@ -194,7 +198,8 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi
                 << EtaR << ", Tol=" << Tol << "\n";
       Iterations = 20; Tol = ArnoldiTol;
       RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
-      EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, QShift), Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
+      EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, QShift), 
+				    Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    }
    DEBUG_TRACE(EtaR);
 

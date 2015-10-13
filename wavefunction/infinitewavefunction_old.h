@@ -2,7 +2,7 @@
 
 #if !defined(MPTOOLKIT_WAVEFUNCTION_INFINITEWAVEFUNCTION_OLD_H)
 
-#include "infinitewavefunction.h"
+#include "infinitewavefunctionleft.h"
 #include "pstream/pstream.h"
 
 

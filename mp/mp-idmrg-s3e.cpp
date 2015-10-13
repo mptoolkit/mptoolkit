@@ -38,7 +38,7 @@
 // and the Hamiltonian matrix elements will change by H -> U^\dagger H U
 
 #include "mpo/triangular_mpo.h"
-#include "wavefunction/infinitewavefunction.h"
+#include "wavefunction/infinitewavefunctionleft.h"
 #include "wavefunction/mpwavefunction.h"
 #include "quantumnumbers/all_symmetries.h"
 #include "mp-algorithms/lanczos.h"
@@ -128,6 +128,13 @@ Solve_DU_DInv(MatrixOperator const& DU, RealDiagonalOperator const& D)
    return Result;
 }
 #endif
+
+// solves D*U*InvertDiagonal(E)
+MatrixOperator
+Solve_D_U_DInv(RealDiagonalOperator const& D, MatrixOperator const& U, RealDiagonalOperator const& E)
+{
+   return D*U*InvertDiagonal(E,iTol);
+}
 
 MatrixOperator
 Solve_DInv_UD(RealDiagonalOperator const& D, MatrixOperator const& UD)
