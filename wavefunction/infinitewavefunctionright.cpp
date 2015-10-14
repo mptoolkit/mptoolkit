@@ -25,12 +25,12 @@ extern double const OrthoTol;
 PStream::VersionTag
 InfiniteWavefunctionRight::VersionT(1);
 
-struct RightMultiply
+struct LeftMultiply
 {
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   RightMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_) 
+   LeftMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_) 
       : L(L_), QShift(QShift_) {}
 
    result_type operator()(argument_type const& x) const
@@ -47,12 +47,12 @@ struct RightMultiply
    QuantumNumber QShift;
 };
    
-struct LeftMultiply
+struct RightMultiply
 {
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   LeftMultiply(LinearWavefunction const& R_, QuantumNumber const& QShift_) 
+   RightMultiply(LinearWavefunction const& R_, QuantumNumber const& QShift_) 
       : R(R_), QShift(QShift_) {}
 
    result_type operator()(argument_type const& x) const
@@ -115,16 +115,13 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
 
    MatrixOperator Guess = MatrixOperator::make_identity(PsiR.Basis2());
    
-   // initialize RightEigen to a guess eigenvector.  Since L satisfies the right orthogonality
-   // constraint (except for the final matrix), we can do one iteration beyond the identity
-   // and intialize it to herm(Xu) * Xu
    MatrixOperator RightEigen = Guess;
 
-      // get the eigenmatrix.  Do some dodgy explict restarts.
+   // get the eigenmatrix.  Do some dodgy explict restarts.
    int Iterations = 20;
    double Tol = ArnoldiTol;
    RightEigen = 0.5 * (RightEigen + adjoint(RightEigen)); // make the eigenvector symmetric
-   std::complex<double> EtaL = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, QShift), 
+   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, QShift), 
                                                       Iterations, Tol, 
 						      LinearSolvers::LargestAlgebraicReal, false);
    while (Tol < 0)
@@ -133,27 +130,19 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
                 << EtaL << ", Tol=" << Tol << "\n";
       Iterations = 20; Tol = ArnoldiTol;
       RightEigen = 0.5 * (RightEigen + adjoint(RightEigen)); // make the eigenvector symmetric
-      EtaL = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, QShift), 
+      EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, QShift), 
 				    Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    }
 
-   CHECK(EtaL.real() > 0)("Eigenvalue must be positive");
+   CHECK(EtaR.real() > 0)("Eigenvalue must be positive");
 
-   DEBUG_TRACE(EtaL);
+   DEBUG_TRACE(EtaR);
 
    if (trace(RightEigen).real() < 0)
       RightEigen = -RightEigen;
 
    DEBUG_CHECK(norm_frob(RightEigen - adjoint(RightEigen)) < 1e-12)
       (norm_frob(RightEigen - adjoint(RightEigen)));
-
-   //   DEBUG_TRACE(EigenvaluesHermitian(RightEigen));
-   //   DEBUG_TRACE(EigenvaluesHermitian(RightEigen));
-
-   // Do the Cholesky factorization of the eigenmatrices.
-   // Actually a SVD is much more stable here
-   //   MatrixOperator A = CholeskyFactorizeUpper(RightEigen);
-   //   MatrixOperator B = CholeskyFactorizeUpper(RightEigen);
 
    MatrixOperator D = RightEigen;
    MatrixOperator U = DiagonalizeHermitian(D);
@@ -164,77 +153,18 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
    DEBUG_CHECK(norm_frob(RightEigen - triple_prod(herm(U), D*D, U)) < 1e-10)
       (norm_frob(RightEigen - triple_prod(herm(U), D*D, U)));
 
-   MatrixOperator A = delta_shift(D * U, QShift);
-   MatrixOperator AInv = adjoint(U) * DInv;
+   MatrixOperator R = adjoint(U)*D;
+   MatrixOperator RInv = delta_shift(DInv * U, QShift);
 
 #if 0
-   A = right_orthogonalize(A, PsiR);
-   PsiR.set_front(prod(PsiR.get_front(), A*AInv));
+   PsiR.set_front(prod(RInv, PsiR.get_front()));
+   PsiR.set_back(prod(PsiR.get_back(), R));
+   
+   RealDiagonalOperator Lambda;
+   boost::tie(U, Lambda) = right_orthogonalize(PsiR);
+   PsiR.set_back(prod(PsiR.get_back(), U));
 
-   // same for the right eigenvector
-
-   // initialize the guess eigenvector
-   MatrixOperator RightEigen = Guess;
-
-   // get the eigenmatrix
-   Iterations = 20; Tol = ArnoldiTol;
-   RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
-   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, QShift), 
-                                                      Iterations, Tol, 
-						      LinearSolvers::LargestAlgebraicReal, false);
-   //   DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
-   while (Tol < 0)
-   {
-      std::cerr << "RightEigen: Arnoldi not converged, restarting.  EValue=" 
-                << EtaR << ", Tol=" << Tol << "\n";
-      Iterations = 20; Tol = ArnoldiTol;
-      RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
-      EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, QShift), 
-				    Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
-   }
-   DEBUG_TRACE(EtaR);
-
-   if (trace(RightEigen).real() < 0)
-      RightEigen = -RightEigen;
-
-   DEBUG_CHECK(norm_frob(RightEigen - adjoint(RightEigen)) < 1e-12)
-      (norm_frob(RightEigen - adjoint(RightEigen)));
-
-   D = RightEigen;
-   U = DiagonalizeHermitian(D);
-   D = SqrtDiagonal(D, OrthoTol);
-
-   DEBUG_CHECK(norm_frob(RightEigen - triple_prod(herm(U), D*D, U)) < 1e-10)
-      (norm_frob(RightEigen - triple_prod(herm(U), D*D, U)));
-
-   // RightEigen = triple_prod(U, D*D, herm*U)
-
-   A = delta_shift(U, QShift);
-   AInv = adjoint(U);
-
-   //   PsiR = inject_right_old_interface(A, PsiR);
-   //   PsiR.set_back(prod(PsiR.get_back(), A * AInv));
-
-   AInv = right_orthogonalize(PsiR, AInv);
-   PsiR.set_front(prod(A*AInv, PsiR.get_front()));
-
-   //   PsiR.set_back(prod(PsiR.get_back(), adjoint(U)));
-   //   PsiR.set_front(prod(delta_shift(U, QShift), PsiR.get_front()));
-
-
-
-   // orthonormalize each component of PsiR
-   MatrixOperator I = MatrixOperator::make_identity(PsiR.Basis1());
-   I = right_orthogonalize(I, PsiR);
-   // now I should be unitary (or even an identity operator).  
-   // Normalize it and fold it back into the last component
-   I *= 1.0 / std::sqrt(EtaR.real());
-   PsiR.set_back(prod(PsiR.get_back(), I));
-
-   // normalize
-   D *= 1.0 / norm_frob(D);
-
-   this->Initialize(D, PsiR);
+   this->Initialize(Lambda, PsiR);
 #endif
 }
 
