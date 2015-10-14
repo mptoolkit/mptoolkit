@@ -1,0 +1,93 @@
+\documentclass{article}[10pt]
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+\input{macros}
+
+
+\title{Orthogonalizing an MPS}
+
+\author{I. P. McCulloch}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+Let the MPS be denoted by
+\beq
+\prod_{i=1}^{L} A^{s_i}_{i}
+\eeq
+where L is the size of the unit cell.
+
+To fix the conventions for directions, we note firstly that 
+in common nomenclature, the \emph{right} eigenvectors of a matrix $A$ are column vectors satisfying
+$Ax = \lambda x$, and the \emph{left} eigenvectors are row vectors satisfying $x A = \lambda x$.
+For a transfer matrix, we use the notation that the right eigenvector is obtained as Tx = x, contracting
+physically from right to left, which matches the \texttt{contract\_from\_right} function call naming.
+
+The orthogonalization process is two stages.  Firstly, obtain the right eigenvectors, obtained from the transfer
+matrix
+\beq
+T_R(x) = T_R^{(1)}(x)
+\eeq
+which has a recursive definition,
+\begin{eqnarray}
+T_R^{(n)} &=& \sum_{s_n}  A^{s_n}_n T_R^{(n+1)} A^{s_n\dagger}_n \\
+T_R^{(L)} &=&  A^{s_L}_L x A^{s_L\dagger}_L
+\end{eqnarray}
+Or diagramatically,
+
+\begin{centering}
+\includegraphics[width=6cm]{TransferRight.pdf}\par
+\end{centering}
+
+Now we decompose with an eigenvalue decomposition (note the use of $D^2$),
+and the slightly unconventional way our eigensolver returns the eigenvectors,
+\beq
+x = U^\dagger D^2 U
+\eeq
+and set
+\begin{eqnarray}
+R &=& U^\dagger D \\
+R^{-1} &=& D^{-1} U
+\end{eqnarray}
+
+We can now right-orthogonalize the MPS,
+\begin{eqnarray}
+A^{'s_L}_L &=& A^{s_L}_L \; R \\
+A^{'s_1}_1 &=& R^{-1} \; A^{s_1}_1
+\end{eqnarray}
+At this point, we have transformed the right eigenvector
+of the transfer operator to be the identity matrix. This isn't quite the right-canonical form yet, because
+even if we right-orthogonalize the matrices, we have the $R^{-1}$ term left over at the end. This term
+isn't unitary, so the singular values won't correspond to the Schmidt coefficients. 
+
+Is this true?   Surely we can apply $R^{-1}$ first, and then orthogonalize?
+
+
+This is only half-way though, since we also need to transform
+the left eigenvector (equivalently, the right eigenvector of the transposed transfer matrix $T_L = T_R^T$),
+\beq
+T_L(y) = T_L^{(L)}(y)
+\eeq
+which has a recursive definition,
+\begin{eqnarray}
+T_L^{(1)} &=&  A^{s_1\dagger}_L y A^{s_1}_1 \\
+T_L^{(n)} &=& \sum_{s_n}  A^{s_n\dagger}_n T_L^{(n-1)} A^{s_n}_n
+\end{eqnarray}
+Or, diagramatically,
+
+\begin{centering}
+\includegraphics[width=6cm]{TransferLeft.pdf}\par
+\end{centering}
+
+Again an eigenvalue decomposition,
+\beq
+y = V^\dagger C^2 V
+\eeq
+
+
+\end{document}
+
