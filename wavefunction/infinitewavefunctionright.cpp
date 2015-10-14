@@ -84,27 +84,41 @@ InfiniteWavefunctionRight::Initialize(MatrixOperator const& Lambda,
 				      LinearWavefunction const& Psi_)
 {
    LinearWavefunction Psi = Psi_;
-   MatrixOperator M = right_orthogonalize(Psi, Lambda);
+   MatrixOperator M = left_orthogonalize(Lambda, Psi);
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
-   // we can't initialize lambda_l yet, as we don't have it in the correct (diagonal) basis.
-   // We will only get this at the end, when we obtain lambda_r.  So just set it to a dummy
-   this->push_back_lambda(D);
-   for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
+
+   // we need to assemble the MPS in reverse order, so make a temporary container
+   std::list<StateComponent> AMat;
+   std::list<RealDiagonalOperator> Lam;
+
+   LinearWavefunction::const_iterator I = Psi.end();
+   while (I != Psi.begin())
    {
-      StateComponent A = prod(M, *I);
-      M = ExpandBasis2(A);
+      --I;
+      StateComponent A = prod(*I, M);
+      M = ExpandBasis1(A);
       SingularValueDecomposition(M, U, D, Vh);
-      this->push_back(prod(A, U));
-      this->push_back_lambda(D);
-      M = D*Vh;
+      AMat.push_front(prod(Vh, A));
+      Lam.push_front(D);
+      M = U*D;
+   }
+   U = delta_shift(U, adjoint(QShift));
+   AMat.back() = prod(AMat.back(), U);
+   Lam.push_back(delta_shift(D, adjoint(QShift)));
+
+   for (auto const& A : AMat)
+   {
+      this->push_back(A);
    }
 
-   Vh = delta_shift(Vh, QShift);
-   this->set(0, prod(Vh, this->operator[](0)));
-   this->setBasis1(Vh.Basis1());
-   this->set_lambda(0, delta_shift(D, QShift));
-   this->setBasis2(D.Basis1());
+   for (auto const& L : Lam)
+   {
+      this->push_back_lambda(L);
+   }
+
+   this->setBasis1(D.Basis1());
+   this->setBasis2(U.Basis2());
 }
 
 InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& Psi, 
@@ -127,7 +141,7 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
    while (Tol < 0)
    {
       std::cerr << "RightEigen: Arnoldi not converged, restarting.  EValue=" 
-                << EtaL << ", Tol=" << Tol << "\n";
+                << EtaR << ", Tol=" << Tol << "\n";
       Iterations = 20; Tol = ArnoldiTol;
       RightEigen = 0.5 * (RightEigen + adjoint(RightEigen)); // make the eigenvector symmetric
       EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, QShift), 
@@ -156,16 +170,45 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
    MatrixOperator R = adjoint(U)*D;
    MatrixOperator RInv = delta_shift(DInv * U, QShift);
 
-#if 0
-   PsiR.set_front(prod(RInv, PsiR.get_front()));
+   // Incorporate into the MPS: PsiR -> R^{-1} * PsiR * R
+   // We don't need to actually right-orthogonalize everything, that is done in Initialize() anyway
    PsiR.set_back(prod(PsiR.get_back(), R));
-   
-   RealDiagonalOperator Lambda;
-   boost::tie(U, Lambda) = right_orthogonalize(PsiR);
-   PsiR.set_back(prod(PsiR.get_back(), U));
+   PsiR.set_front(prod(RInv, PsiR.get_front()));
 
-   this->Initialize(Lambda, PsiR);
-#endif
+   // Get the left eigenvector, which is the density matrix
+   MatrixOperator LeftEigen = Guess;
+
+   // get the eigenmatrix
+   Iterations = 20; Tol = ArnoldiTol;
+   LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen));
+   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiR, QShift), 
+                                                      Iterations, Tol, 
+						      LinearSolvers::LargestAlgebraicReal, false);
+   //   DEBUG_TRACE(norm_frob(LeftEigen - adjoint(LeftEigen)));
+   while (Tol < 0)
+   {
+      std::cerr << "LeftEigen: Arnoldi not converged, restarting.  EValue=" 
+                << EtaL << ", Tol=" << Tol << "\n";
+      Iterations = 20; Tol = ArnoldiTol;
+      LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen));
+      EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiR, QShift), 
+				    Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
+   }
+
+   D = LeftEigen;
+   U = DiagonalizeHermitian(D);
+   D = SqrtDiagonal(D, OrthoTol);
+
+   DEBUG_CHECK(norm_frob(LeftEigen - triple_prod(herm(U), D*D, U)) < 1e-10)
+      (norm_frob(LeftEigen - triple_prod(herm(U), D*D, U)));
+
+   // incorporate U into the MPS
+
+   PsiR.set_front(prod(U, PsiR.get_front()));
+   PsiR.set_back(prod(PsiR.get_back(), adjoint(U)));
+
+   // And now we have the right-orthogonalized form and the left-most lambda matrix   
+   this->Initialize(D, PsiR);
 }
 
 void read_version(PStream::ipstream& in, InfiniteWavefunctionRight& Psi, int Version)

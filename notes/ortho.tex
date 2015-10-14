@@ -17,9 +17,9 @@
 
 Let the MPS be denoted by
 \beq
-\prod_{i=1}^{L} A^{s_i}_{i}
+\prod_{i=0}^{L-1} A^{s_i}_{i}
 \eeq
-where L is the size of the unit cell.
+where L is the size of the unit cell, and we number the sites as $0 \cdots L-1$.
 
 To fix the conventions for directions, we note firstly that 
 in common nomenclature, the \emph{right} eigenvectors of a matrix $A$ are column vectors satisfying
@@ -27,15 +27,16 @@ $Ax = \lambda x$, and the \emph{left} eigenvectors are row vectors satisfying $x
 For a transfer matrix, we use the notation that the right eigenvector is obtained as Tx = x, contracting
 physically from right to left, which matches the \texttt{contract\_from\_right} function call naming.
 
-The orthogonalization process is two stages.  Firstly, obtain the right eigenvectors, obtained from the transfer
+The orthogonalization process is two stages.  Firstly, obtain the right eigenvectors, 
+obtained from the transfer
 matrix
 \beq
-T_R(x) = T_R^{(1)}(x)
+T_R(x) = T_R^{(0)}(x)
 \eeq
 which has a recursive definition,
 \begin{eqnarray}
 T_R^{(n)} &=& \sum_{s_n}  A^{s_n}_n T_R^{(n+1)} A^{s_n\dagger}_n \\
-T_R^{(L)} &=&  A^{s_L}_L x A^{s_L\dagger}_L
+T_R^{(L-1)} &=&  A^{s_{L-1}}_{L-1} x A^{s_{L-1}\dagger}_{L-1}
 \end{eqnarray}
 Or diagramatically,
 
@@ -56,25 +57,24 @@ R^{-1} &=& D^{-1} U
 
 We can now right-orthogonalize the MPS,
 \begin{eqnarray}
-A^{'s_L}_L &=& A^{s_L}_L \; R \\
+A^{'s_L}_{L-1} &=& A^{s_{L-1}}_{L-1} \; R \\
 A^{'s_1}_1 &=& R^{-1} \; A^{s_1}_1
 \end{eqnarray}
 At this point, we have transformed the right eigenvector
-of the transfer operator to be the identity matrix. This isn't quite the right-canonical form yet, because
-even if we right-orthogonalize the matrices, we have the $R^{-1}$ term left over at the end. This term
-isn't unitary, so the singular values won't correspond to the Schmidt coefficients. 
+of the transfer operator to be the identity matrix. We can also right-orthogonalize all of the matrices
+straightforwardly -- this will give a unitary matrix left over which we can wrap around and apply
+to the right hand side of $A_{L-1}$. This isn't quite the right-canonical form yet, because
+we don't have the density matrix - that is, we can't calculate expectation values, and we are
+unable to form the left-orthogonalized state.
 
-Is this true?   Surely we can apply $R^{-1}$ first, and then orthogonalize?
-
-
-This is only half-way though, since we also need to transform
-the left eigenvector (equivalently, the right eigenvector of the transposed transfer matrix $T_L = T_R^T$),
+We can obtain the density matrix from the left eigenvector
+(equivalently, the right eigenvector of the transposed transfer matrix $T_L = T_R^T$),
 \beq
 T_L(y) = T_L^{(L)}(y)
 \eeq
 which has a recursive definition,
 \begin{eqnarray}
-T_L^{(1)} &=&  A^{s_1\dagger}_L y A^{s_1}_1 \\
+T_L^{(0)} &=&  A^{s_1\dagger}_L y A^{s_1}_1 \\
 T_L^{(n)} &=& \sum_{s_n}  A^{s_n\dagger}_n T_L^{(n-1)} A^{s_n}_n
 \end{eqnarray}
 Or, diagramatically,
@@ -83,11 +83,14 @@ Or, diagramatically,
 \includegraphics[width=6cm]{TransferLeft.pdf}\par
 \end{centering}
 
-Again an eigenvalue decomposition,
+Since we are in the right-orthogonal basis, $y$ is exactly the density matrix. We don't need to invert it,
+we simply need to find the equivalent $\lambda$ matrix. Again an eigenvalue decomposition,
 \beq
-y = V^\dagger C^2 V
+y = V^\dagger \lambda^2 V
 \eeq
+and 
 
+Hence we can incorporate $V$ into $A_0$, and we have obtained the wavefunction lambda matrix $\lambda_0$.
 
 \end{document}
 
