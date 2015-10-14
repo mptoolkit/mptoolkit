@@ -32,6 +32,28 @@ void ShowBasicInfo(InfiniteWavefunctionLeft const& Psi, std::ostream& out)
    out << std::endl;
 }
 
+void ShowBasicInfo(IBCWavefunction const& Psi, std::ostream& out)
+{
+   out << "Wavefunction is an Infinite Boundary Condition wavefunction in the left/left/right canonical basis.\n";
+   out << "Symmetry list = " << Psi.Window.GetSymmetryList() << '\n';
+   out << "Left semi-infinite strip unit cell size = " << Psi.Left.size() << '\n';
+   if (!Psi.Left.empty())
+   {
+      out << "Quantum number per unit cell (left) = " << Psi.Left.qshift() << '\n';
+   }
+   out << "Right semi-infinite strip unit cell size = " << Psi.Right.size() << '\n';
+   if (!Psi.Right.empty())
+   {
+      out << "Quantum number per unit cell (right) = " << Psi.Right.qshift() << '\n';
+   }
+
+   out << "Window size = " << Psi.Window.size() << '\n';
+   out << "Offset of first site of the window = " << Psi.window_offset() << '\n';
+
+   out << "Number of states (left edge of window) = " << Psi.Window.Basis1().total_dimension() << '\n';
+   out << std::endl;
+}
+
 void ShowStateInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
 {
    out << "#partition  #dimension  #degree\n";
@@ -134,7 +156,8 @@ void ShowLocalBasisInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
 
 struct ShowWavefunctionBasicInfo : public boost::static_visitor<void>
 {
-   void operator()(InfiniteWavefunctionLeft const& Psi) const
+   template <typename T>
+   void operator()(T const& Psi) const
    {
       ShowBasicInfo(Psi, std::cout);
    }
@@ -144,7 +167,7 @@ struct ShowWavefunctionBasicInfo : public boost::static_visitor<void>
 struct ShowWavefunction : public boost::static_visitor<void>
 {
    void operator()(InfiniteWavefunctionLeft const& Psi) const;
-
+   void operator()(IBCWavefunction const& Psi) const;
 };
 
 void
@@ -175,6 +198,36 @@ ShowWavefunction::operator()(InfiniteWavefunctionLeft const& Psi) const
 
    if (ShowLocalBasis)
       ShowLocalBasisInfo(Psi, std::cout);
+}
+
+void
+ShowWavefunction::operator()(IBCWavefunction const& Psi) const
+{
+   std::sort(Partition.begin(), Partition.end());
+   if (Partition.empty())
+   {
+      // all partitions in the window
+      for (int i = 0; i <= Psi.window_size(); ++i)
+	 Partition.push_back(i);
+   }
+
+   if (ShowStates)
+      ShowStateInfo(Psi.Window, std::cout);
+
+   if (ShowBasis)
+      ShowBasisInfo(Psi.Window, std::cout);
+
+   if (ShowEntropy)
+      ShowEntropyInfo(Psi.Window, std::cout);
+
+   if (ShowDensity)
+      ShowDM(Psi.Window, std::cout);
+
+   if (ShowCasimir)
+      ShowCasimirInfo(Psi.Window, std::cout);
+
+   if (ShowLocalBasis)
+      ShowLocalBasisInfo(Psi.Window, std::cout);
 }
 
 int main(int argc, char** argv)

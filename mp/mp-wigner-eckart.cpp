@@ -89,6 +89,61 @@ wigner_project(InfiniteWavefunctionLeft const& Psi, SymmetryList const& FinalSL)
    return Result;
 }
 
+InfiniteWavefunctionRight
+wigner_project(InfiniteWavefunctionRight const& Psi, SymmetryList const& FinalSL)
+{
+   InfiniteWavefunctionRight Result;
+
+   VectorBasis b1 = Psi.Basis1();
+   WignerEckartBasis<VectorBasis> W2(b1, FinalSL);
+
+   Result.setBasis1(W2.AbelianBasis());
+
+   // get the identity projection
+   QuantumNumbers::ProjectionList PL = enumerate_projections(Psi.lambda_l().TransformsAs());
+   CHECK_EQUAL(PL.size(), 1U);
+   Projection IdentP = PL[0];
+
+   QuantumNumbers::ProjectionList QPL = enumerate_projections(Psi.qshift());
+   Result.QShift = map_projection_to_quantum(QPL[0], FinalSL);
+
+   for (int i = 0; i < Psi.size(); ++i)
+   {
+
+      StateComponent C = Psi[i];
+      WignerEckartBasis<VectorBasis> W1 = W2;
+      W2 = WignerEckartBasis<VectorBasis>(C.Basis2(), FinalSL);
+
+      Result.push_back_lambda(wigner_eckart(Psi.lambda(i), IdentP, W1, W1));
+      Result.push_back(wigner_eckart(C, W1, W2));
+   }
+
+   Result.push_back_lambda(wigner_eckart(Psi.lambda_r(), IdentP, W2, W2));
+
+   Result.setBasis2(W2.AbelianBasis());
+
+   Result.check_structure();
+			   
+   return Result;
+}
+
+WavefunctionSectionLeft
+wigner_project(WavefunctionSectionLeft const& Psi, SymmetryList const& FinalSL)
+{
+   PANIC("not implemented.");
+}
+
+IBCWavefunction
+wigner_project(IBCWavefunction const& Psi, SymmetryList const& FinalSL)
+{
+   return IBCWavefunction(wigner_project(Psi.Left, FinalSL),
+			  wigner_project(Psi.Window, FinalSL),
+			  wigner_project(Psi.Right, FinalSL),
+			  Psi.window_offset(),
+			  Psi.WindowLeftSites,
+			  Psi.WindowRightSites);
+}
+
 // functor to use the visitor pattern with wavefunction types
 struct ApplyWignerEckart : public boost::static_visitor<WavefunctionTypes>
 {

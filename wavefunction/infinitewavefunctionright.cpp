@@ -335,3 +335,17 @@ InfiniteWavefunctionRight::check_structure()
 
    CHECK_EQUAL(this->Basis1(), delta_shift(this->Basis2(), this->qshift()));
 }
+
+void inplace_conj(InfiniteWavefunctionRight& Psi)
+{
+   for (InfiniteWavefunctionRight::mps_iterator I = Psi.begin_(); I != Psi.end_(); ++I)
+   {
+      *I = conj(*I);
+   }
+}
+
+InfiniteWavefunctionRight
+reflect(InfiniteWavefunctionLeft const& Psi)
+{
+   PANIC("not implemented");
+}

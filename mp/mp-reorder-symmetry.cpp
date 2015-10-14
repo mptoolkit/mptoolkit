@@ -45,6 +45,50 @@ InfiniteWavefunctionLeft ReorderSymmetry(InfiniteWavefunctionLeft const& Psi, Sy
    return Result;
 }
 
+InfiniteWavefunctionRight ReorderSymmetry(InfiniteWavefunctionRight const& Psi, SymmetryList const& NewSL)
+{
+   InfiniteWavefunctionRight Result;
+   for (int i = 0; i < Psi.size(); ++i)
+   {
+      Result.push_back(CoerceSymmetryList(Psi[i], NewSL));
+      Result.push_back_lambda(CoerceSymmetryList(Psi.lambda(i), NewSL));
+   }
+
+   Result.push_back_lambda(CoerceSymmetryList(Psi.lambda_r(), NewSL));
+
+   Result.QShift = CoerceSymmetryList(Psi.qshift(), NewSL);
+
+   Result.setBasis1(Result.lambda_l().Basis1());
+   Result.setBasis2(Result.lambda_r().Basis2());
+   return Result;
+}
+
+WavefunctionSectionLeft ReorderSymmetry(WavefunctionSectionLeft const& Psi, SymmetryList const& NewSL)
+{
+   WavefunctionSectionLeft Result;
+   for (int i = 0; i < Psi.size(); ++i)
+   {
+      Result.push_back(CoerceSymmetryList(Psi[i], NewSL));
+      Result.push_back_lambda(CoerceSymmetryList(Psi.lambda(i), NewSL));
+   }
+
+   Result.push_back_lambda(CoerceSymmetryList(Psi.lambda_r(), NewSL));
+
+   Result.setBasis1(Result.lambda_l().Basis1());
+   Result.setBasis2(Result.lambda_r().Basis2());
+   return Result;
+}
+
+IBCWavefunction ReorderSymmetry(IBCWavefunction const& Psi, SymmetryList const& NewSL)
+{
+   return IBCWavefunction(ReorderSymmetry(Psi.Left, NewSL),
+			  ReorderSymmetry(Psi.Window, NewSL),
+			  ReorderSymmetry(Psi.Right, NewSL),
+			  Psi.window_offset(),
+			  Psi.WindowLeftSites,
+			  Psi.WindowRightSites);
+}
+
 struct ApplyReorderSymmetry : public boost::static_visitor<WavefunctionTypes>
 {
    ApplyReorderSymmetry(SymmetryList const& FinalSL_)

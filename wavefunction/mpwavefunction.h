@@ -8,13 +8,14 @@
 #define MPTOOLKIT_WAVEFUNCTION_MPWAVEFUNCTION_H
 
 #include "infinitewavefunctionleft.h"
+#include "ibc.h"
 #include <boost/variant.hpp>
 #include "pstream/pstream.h"
 #include "pstream/variant.h"
 #include "interface/attributes.h"
 #include "interface/history.h"
 
-typedef boost::variant<InfiniteWavefunctionLeft> WavefunctionTypes;
+typedef boost::variant<InfiniteWavefunctionLeft, IBCWavefunction> WavefunctionTypes;
 
 class MPWavefunction
 {

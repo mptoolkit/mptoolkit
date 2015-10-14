@@ -124,7 +124,7 @@ mpoobj = operator_component.o generic_mpo.o finite_mpo.o triangular_mpo.o produc
 mpsobj = state_component.o density.o
 
 wavefunctionobj = linearwavefunction.o canonicalwavefunction.o infinitewavefunctionleft.o \
-                  infinitewavefunctionright.o \
+                  infinitewavefunctionright.o ibc.o \
                   mpwavefunction.o operator_actions.o \
                   attributes.o history.o
 

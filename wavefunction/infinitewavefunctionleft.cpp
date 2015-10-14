@@ -600,3 +600,10 @@ std::complex<double> overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefun
 {
    return overlap(x, ProductMPO::make_identity(ExtractLocalBasis(y)), y, Sector, Iter, Tol, Verbose);
 }
+
+InfiniteWavefunctionLeft
+reflect(InfiniteWavefunctionRight const& Psi)
+{
+   PANIC("not implemented");
+}
+

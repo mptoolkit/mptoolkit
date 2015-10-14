@@ -24,15 +24,62 @@
 
 class WavefunctionSectionLeft : public CanonicalWavefunctionBase
 {
+   public:
+      WavefunctionSectionLeft();
+
+      WavefunctionSectionLeft(WavefunctionSectionLeft const& Psi) = default;
+
+      explicit WavefunctionSectionLeft(InfiniteWavefunctionLeft const& Psi);
+
+      static PStream::VersionTag VersionT;
+
+      friend void inplace_reflect(WavefunctionSectionLeft& Psi);
+      friend void inplace_conj(WavefunctionSectionLeft& Psi);
+
+      friend WavefunctionSectionLeft wigner_project(WavefunctionSectionLeft const& Psi,
+						    SymmetryList const& FinalSL);
+      friend WavefunctionSectionLeft ReorderSymmetry(WavefunctionSectionLeft const& Psi, 
+						     SymmetryList const& NewSL);
+
+      friend PStream::opstream& operator<<(PStream::opstream& out, WavefunctionSectionLeft const& Psi);
+      friend PStream::ipstream& operator>>(PStream::ipstream& in, WavefunctionSectionLeft& Psi);
 };
+
+void inplace_reflect(WavefunctionSectionLeft& Psi);
+
+void inplace_conj(WavefunctionSectionLeft& Psi);
 
 class IBCWavefunction
 {
    public:
+      IBCWavefunction();
+
+      IBCWavefunction(IBCWavefunction const& Psi) = default;
+
       IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
 		      WavefunctionSectionLeft const& Window_,
 		      InfiniteWavefunctionRight const& Right_,
-		      int Offset);
+		      int Offset = 0);
+
+      IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
+		      WavefunctionSectionLeft const& Window_,
+		      InfiniteWavefunctionRight const& Right_,
+		      int Offset,
+		      int WindowLeft,
+		      int WindowRight);
+
+      SymmetryList GetSymmetryList() const { return Window.GetSymmetryList(); }
+
+      int window_size() const { return Window.size(); }
+
+      int window_offset() const { return WindowOffset; }
+
+      static PStream::VersionTag VersionT;
+
+      void check_structure();
+      void debug_check_structure();
+
+      // private:
 
       // Number of sites of the Left unit cell that have been incorporated into
       // the Window (from 0 .. Left.size()-1)
@@ -40,12 +87,36 @@ class IBCWavefunction
 
       // Number of sites of the Right unit cell that have been incorporated into
       // the Window (from 0 .. Right.size()-1)
-      int WindowSitesRight;
+      int WindowRightSites;
 
       int WindowOffset;  // site index of the first site of the Window
 
       InfiniteWavefunctionLeft Left;
       WavefunctionSectionLeft Window;
       InfiniteWavefunctionRight Right;
+
+      friend void inplace_reflect(IBCWavefunction& Psi);
+      friend void inplace_conj(IBCWavefunction& Psi);
+
+      friend IBCWavefunction wigner_project(IBCWavefunction const& Psi,
+					    SymmetryList const& FinalSL);
+      friend IBCWavefunction ReorderSymmetry(IBCWavefunction const& Psi, 
+					     SymmetryList const& NewSL);
+
+      friend PStream::opstream& operator<<(PStream::opstream& out, IBCWavefunction const& Psi);
+      friend PStream::ipstream& operator>>(PStream::ipstream& in, IBCWavefunction& Psi);
+
 };
 
+// Reflect a wavefunction in place
+void inplace_reflect(IBCWavefunction& Psi);
+
+// Conjugate a wavefunction in place
+void inplace_conj(IBCWavefunction& Psi);
+
+// Spatial reflection of a wavefunction
+IBCWavefunction reflect(IBCWavefunction const& Psi);
+
+
+
+#endif

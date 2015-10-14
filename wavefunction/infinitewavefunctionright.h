@@ -68,6 +68,10 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
       // so can update them if the class changes.
       friend void inplace_reflect(InfiniteWavefunctionRight& Psi);
       friend void inplace_conj(InfiniteWavefunctionRight& Psi);
+      friend InfiniteWavefunctionRight wigner_project(InfiniteWavefunctionRight const& Psi,
+						      SymmetryList const& FinalSL);
+      friend InfiniteWavefunctionRight ReorderSymmetry(InfiniteWavefunctionRight const& Psi, 
+						       SymmetryList const& NewSL);
       friend InfiniteWavefunctionRight repeat(InfiniteWavefunctionRight const& Psi, int Count);
 };
 
