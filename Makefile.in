@@ -695,15 +695,12 @@ from-sha = $(patsubst %.sha,%,$1)
 
 FORCE:
 
-${SRCDIR}/configure.timestamp : configure.ac
-
-
 # set the correct timestamps
 #DUMMY_RESULT:=$(shell touch -d '$(shell cat ${SRCDIR}/configure.timestamp)' '${SRCDIR}/configure.ac' && \
 #                      touch -d '$(shell cat ${SRCDIR}/aclocal.m4.timestamp)' '${SRCDIR}/aclocal.m4' && \
 #                      touch -d '$(shell cat ${SRCDIR}/stamp-h.in)' '${SRCDIR}/stamp-h.in')
 
-$(SRCDIR)/configure:${SRCDIR}/ configure.ac.sha ${SRCDIR}/aclocal.m4.sha
+$(SRCDIR)/configure:${SRCDIR}/configure.ac.sha ${SRCDIR}/aclocal.m4.sha
 	cd '$(SRCDIR)' && autoconf
 
 ${SRCDIR}/aclocal.m4 : ${SRCDIR}/m4/*.m4 ${SRCDIR}/aclocal.m4.sha
