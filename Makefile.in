@@ -687,18 +687,27 @@ maintainer-clean : distclean
 # if we have aclocal.m4 then we would want it as a dependency along with
 # configure.in
 
+to-sha = $(patsubst %,%.sha,$1)
+from-sha = $(patsubst %.sha,%,$1)
+
+%.sha : FORCE
+	@$(if $(filter-out $(shell cat $@ 2>/dev/null), $(shell sha1sum $*)),sha1sum $* > $@)
+
+FORCE:
+
+${SRCDIR}/configure.timestamp : configure.ac
+
+
 # set the correct timestamps
-DUMMY_RESULT:=$(shell touch -d '$(shell cat ${SRCDIR}/configure.timestamp)' '${SRCDIR}/configure.ac' && \
-                      touch -d '$(shell cat ${SRCDIR}/aclocal.m4.timestamp)' '${SRCDIR}/aclocal.m4' && \
-                      touch -d '$(shell cat ${SRCDIR}/stamp-h.in)' '${SRCDIR}/stamp-h.in')
+#DUMMY_RESULT:=$(shell touch -d '$(shell cat ${SRCDIR}/configure.timestamp)' '${SRCDIR}/configure.ac' && \
+#                      touch -d '$(shell cat ${SRCDIR}/aclocal.m4.timestamp)' '${SRCDIR}/aclocal.m4' && \
+#                      touch -d '$(shell cat ${SRCDIR}/stamp-h.in)' '${SRCDIR}/stamp-h.in')
 
-$(SRCDIR)/configure: configure.ac aclocal.m4
+$(SRCDIR)/configure:${SRCDIR}/ configure.ac.sha ${SRCDIR}/aclocal.m4.sha
 	cd '$(SRCDIR)' && autoconf
-	date > '$(SRCDIR)/configure.timestamp'
 
-${SRCDIR}/aclocal.m4 : ${SRCDIR}/m4/*.m4
+${SRCDIR}/aclocal.m4 : ${SRCDIR}/m4/*.m4 ${SRCDIR}/aclocal.m4.sha
 	cd '$(SRCDIR)' && ./regen-aclocal.sh
-	date > '$(SRCDIR)/aclocal.m4.timestamp'
 
 # autoheader might not change config.h.in, so touch a stamp file.
 #
@@ -707,7 +716,7 @@ ${SRCDIR}/aclocal.m4 : ${SRCDIR}/m4/*.m4
 # Note that git doesn't track the timestamps of files, so we need to
 # look at the contents of stamp-h.in rather than rely on its modification time.
 
-${SRCDIR}/stamp-h.in : configure.ac aclocal.m4
+${SRCDIR}/stamp-h.in : ${SRCDIR}/configure.ac.sha ${SRCDIR}/aclocal.m4.sha
 	cd '${SRCDIR}' && autoheader
 	date > '${SRCDIR}/stamp-h.in'
 
