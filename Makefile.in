@@ -687,28 +687,36 @@ maintainer-clean : distclean
 # if we have aclocal.m4 then we would want it as a dependency along with
 # configure.in
 
-$(SRCDIR)/configure: configure.ac aclocal.m4
-	cd '$(SRCDIR)' && autoconf
+# set the correct timestamps
+DUMMY_RESULT:=$(shell touch -d '$(shell cat ${SRCDIR}/configure.timestamp)' '${SRCDIR}/configure.ac' && \
+                      touch -d '$(shell cat ${SRCDIR}/aclocal.m4.timestamp)' '${SRCDIR}/aclocal.m4' && \
+                      touch -d '$(shell cat ${SRCDIR}/stamp-h.in)' '${SRCDIR}/stamp-h.in')
 
-${SRCDIR}/aclocal.m4 : ${SRCDIR}/m4/*.m4
+$(SRCDIR)/configure: configure.ac aclocal.m4 configure.timestamp
+	cd '$(SRCDIR)' && autoconf
+	date > '$(SRCDIR)/configure.timestamp'
+
+${SRCDIR}/aclocal.m4 : ${SRCDIR}/m4/*.m4 aclocal.m4.timestamp
 	cd '$(SRCDIR)' && ./regen-aclocal.sh
+	date > '$(SRCDIR)/aclocal.m4.timestamp'
 
 # autoheader might not change config.h.in, so touch a stamp file.
 #
 # stamp-h is touched when config.status constructs config.h
 # stamp-h.in is touched when autoheader constructs config.h.in
-# 
+# Note that git doesn't track the timestamps of files, so we need to
+# look at the contents of stamp-h.in rather than rely on its modification time.
 
 ${SRCDIR}/stamp-h.in : configure.ac aclocal.m4
 	cd '${SRCDIR}' && autoheader
-	echo timestamp > '${SRCDIR}/stamp-h.in'
+	date > '${SRCDIR}/stamp-h.in'
 
 config.h : stamp-h
 
 stamp-h : config.status stamp-h.in
 	./config.status
 
-stamp-h : config.status stamp-h.in
+#stamp-h : config.status stamp-h.in
 
 ifeq (,$(filter $(nodep-targets),$(MAKECMDGOALS)))
 Makefile : Makefile.in config.status
