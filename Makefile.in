@@ -691,7 +691,7 @@ to-sha = $(patsubst %,%.sha,$1)
 from-sha = $(patsubst %.sha,%,$1)
 
 %.sha : FORCE
-	@$(if $(filter-out $(shell cat $@ 2>/dev/null), $(shell cd $(shell dirname $*) && sha1sum $(shell basename $*))),sha1sum $* > $@)
+	@$(if $(filter-out $(shell cat $@ 2>/dev/null), $(shell cd $(shell dirname $*) && sha1sum $(shell basename $*))),cd $(dirname $*) && sha1sum $(shell basename $*) > $@)
 
 #        $(if $(filter-out $(shell cat $@ 2>/dev/null), $(shell cd $(shell dirname $*) && sha1sum $(shell basename $*))), cd $(shell dirname $*) && sha1sum $(shell basename $*) > $@)
 
