@@ -692,11 +692,11 @@ DUMMY_RESULT:=$(shell touch -d '$(shell cat ${SRCDIR}/configure.timestamp)' '${S
                       touch -d '$(shell cat ${SRCDIR}/aclocal.m4.timestamp)' '${SRCDIR}/aclocal.m4' && \
                       touch -d '$(shell cat ${SRCDIR}/stamp-h.in)' '${SRCDIR}/stamp-h.in')
 
-$(SRCDIR)/configure: configure.ac aclocal.m4 configure.timestamp
+$(SRCDIR)/configure: configure.ac aclocal.m4
 	cd '$(SRCDIR)' && autoconf
 	date > '$(SRCDIR)/configure.timestamp'
 
-${SRCDIR}/aclocal.m4 : ${SRCDIR}/m4/*.m4 aclocal.m4.timestamp
+${SRCDIR}/aclocal.m4 : ${SRCDIR}/m4/*.m4
 	cd '$(SRCDIR)' && ./regen-aclocal.sh
 	date > '$(SRCDIR)/aclocal.m4.timestamp'
 
