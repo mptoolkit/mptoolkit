@@ -54,8 +54,8 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
 					   InfiniteWavefunctionLeft const& Psi);
       friend void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Version);
 
-      void check_structure();
-      void debug_check_structure();
+      void check_structure() const;
+      void debug_check_structure() const;
 
    private:
       void Initialize(LinearWavefunction const& Psi, MatrixOperator const& Lambda);
@@ -150,7 +150,7 @@ InfiniteWavefunctionRight reflect(InfiniteWavefunctionLeft const& Psi);
 
 inline
 void
-InfiniteWavefunctionLeft::debug_check_structure()
+InfiniteWavefunctionLeft::debug_check_structure() const
 {
 #if !defined(NDEBUG)
    this->check_structure();

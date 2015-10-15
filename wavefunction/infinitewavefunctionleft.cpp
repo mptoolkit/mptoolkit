@@ -395,7 +395,7 @@ InfiniteWavefunctionLeft::rotate_right(int Count)
 }
 
 void
-InfiniteWavefunctionLeft::check_structure()
+InfiniteWavefunctionLeft::check_structure() const
 {
    this->CanonicalWavefunctionBase::check_structure();
 
@@ -467,6 +467,10 @@ InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
    if (Count == 1)
       return Psi;
 
+   // For the lambda matrices, we don't want to add the boundaries twice
+   InfiniteWavefunctionLeft::const_lambda_iterator LambdaE = Psi.lambda_end();
+   --LambdaE;
+
    // we need to handle the delta shift
    InfiniteWavefunctionLeft Result;
    bool First = true;
@@ -494,6 +498,12 @@ InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
 	    Result.push_back(delta_shift(*I, q));
 	 }
       }
+
+      for (InfiniteWavefunctionLeft::const_lambda_iterator I = Psi.lambda_begin(); I != LambdaE; ++I)
+      {
+	 Result.push_back_lambda(delta_shift(*I, q));
+      }
+
    }
 
    // The last repetition can make a simple copy
@@ -501,6 +511,14 @@ InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
    {
       Result.push_back(*I);
    }
+
+   // Here, we do want to go right to the end
+   for (InfiniteWavefunctionLeft::const_base_lambda_iterator I = Psi.lambda_base_begin(); 
+	I != Psi.lambda_base_end(); ++I)
+   {
+      Result.push_back_lambda(*I);
+   }
+
 
    Result.setBasis2(Psi.Basis2());
 

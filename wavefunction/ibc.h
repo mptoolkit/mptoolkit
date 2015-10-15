@@ -31,6 +31,10 @@ class WavefunctionSectionLeft : public CanonicalWavefunctionBase
 
       explicit WavefunctionSectionLeft(InfiniteWavefunctionLeft const& Psi);
 
+      // No need to override the base class versions
+      //      void check_structure();
+      //      void debug_check_structure();
+
       static PStream::VersionTag VersionT;
 
       friend void inplace_reflect(WavefunctionSectionLeft& Psi);
@@ -76,8 +80,8 @@ class IBCWavefunction
 
       static PStream::VersionTag VersionT;
 
-      void check_structure();
-      void debug_check_structure();
+      void check_structure() const;
+      void debug_check_structure() const;
 
       // private:
 

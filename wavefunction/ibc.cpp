@@ -11,6 +11,9 @@
 // Version 1:
 // Base class CanonicalWavefunctionBase
 
+PStream::VersionTag
+WavefunctionSectionLeft::VersionT(1);
+
 WavefunctionSectionLeft::WavefunctionSectionLeft()
 {
 }
@@ -18,18 +21,20 @@ WavefunctionSectionLeft::WavefunctionSectionLeft()
 WavefunctionSectionLeft::WavefunctionSectionLeft(InfiniteWavefunctionLeft const& Psi)
    : CanonicalWavefunctionBase(Psi)
 {
+   Psi.check_structure();
+   this->check_structure();
 }
 
 PStream::opstream& operator<<(PStream::opstream& out, WavefunctionSectionLeft const& Psi)
 {
-   out << InfiniteWavefunctionLeft::VersionT.default_version();
+   out << WavefunctionSectionLeft::VersionT.default_version();
    Psi.CanonicalWavefunctionBase::WriteStream(out);
    return out;
 }
 
 PStream::ipstream& operator>>(PStream::ipstream& in, WavefunctionSectionLeft& Psi)
 {
-   PStream::VersionSentry Sentry(in, InfiniteWavefunctionLeft::VersionT, in.read<int>());
+   PStream::VersionSentry Sentry(in, WavefunctionSectionLeft::VersionT, in.read<int>());
    if (Sentry.version() != 1)
    {
       PANIC("This program is too old to read this wavefunction, expected version = 1")(Sentry.version());
@@ -69,7 +74,7 @@ inplace_conj(WavefunctionSectionLeft& Psi)
 // InfiniteWavefunctionRight Right
 
 PStream::VersionTag
-IBCWavefunction::VersionT(2);
+IBCWavefunction::VersionT(1);
 
 IBCWavefunction::IBCWavefunction()
    : WindowLeftSites(0), WindowRightSites(0), WindowOffset(0)
@@ -94,6 +99,36 @@ IBCWavefunction::IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
    : WindowLeftSites(WindowLeft), WindowRightSites(WindowRight), WindowOffset(Offset),
      Left(Left_), Window(Window_), Right(Right_) 
 {
+}
+
+void IBCWavefunction::check_structure() const
+{
+   Left.check_structure();
+   Window.check_structure();
+   Right.check_structure();
+   if (!Left.empty())
+   {
+      CHECK_EQUAL(Left.Basis2(), Window.Basis1());
+   }
+   if (!Right.empty())
+   {
+      CHECK_EQUAL(Window.Basis2(), Right.Basis1());
+   }
+}
+
+void IBCWavefunction::debug_check_structure() const
+{
+   Left.debug_check_structure();
+   Window.debug_check_structure();
+   Right.debug_check_structure();
+   if (!Left.empty())
+   {
+      DEBUG_CHECK_EQUAL(Left.Basis2(), Window.Basis1());
+   }
+   if (!Right.empty())
+   {
+      DEBUG_CHECK_EQUAL(Window.Basis2(), Right.Basis1());
+   }
 }
 
 PStream::opstream& operator<<(PStream::opstream& out, IBCWavefunction const& Psi)
@@ -144,4 +179,3 @@ inplace_conj(IBCWavefunction& Psi)
    inplace_conj(Psi.Window);
    inplace_conj(Psi.Right);
 }
-

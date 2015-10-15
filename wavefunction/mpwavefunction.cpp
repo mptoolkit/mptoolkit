@@ -94,7 +94,7 @@ void read_version(PStream::ipstream& in, MPWavefunction& Psi, int Version)
    if (Version >= 4)
       in >> Psi.History_;
 
-   if (Version > 4)
+   if (Version > 5)
    {
       PANIC("Version of MPWavefunction is newer than this sofware!");
    }

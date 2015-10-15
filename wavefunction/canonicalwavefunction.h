@@ -98,8 +98,8 @@ class CanonicalWavefunctionBase
 
       static PStream::VersionTag VersionT;
 
-      void check_structure();
-      void debug_check_structure();
+      void check_structure() const;
+      void debug_check_structure() const;
 
    protected:
       // don't allow construction except via derived classes
@@ -155,7 +155,7 @@ ExtractLocalBasis(CanonicalWavefunctionBase const& Psi);
 
 inline
 void
-CanonicalWavefunctionBase::debug_check_structure()
+CanonicalWavefunctionBase::debug_check_structure() const
 {
 #if !defined(NDEBUG)
    this->check_structure();

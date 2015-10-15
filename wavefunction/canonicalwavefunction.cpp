@@ -43,7 +43,7 @@ CanonicalWavefunctionBase::CanonicalWavefunctionBase(CanonicalWavefunctionBase c
 }
 
 void
-CanonicalWavefunctionBase::check_structure()
+CanonicalWavefunctionBase::check_structure() const
 {
    if (this->empty())
       return;

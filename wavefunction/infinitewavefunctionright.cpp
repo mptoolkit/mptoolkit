@@ -1,6 +1,7 @@
 // -*- C++ -*- $Id$
 
 #include "infinitewavefunctionright.h"
+#include "infinitewavefunctionleft.h"
 #include "tensor/tensor_eigen.h"
 #include "mp-algorithms/arnoldi.h"
 #include "common/environment.h"
@@ -211,6 +212,11 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
    this->Initialize(D, PsiR);
 }
 
+InfiniteWavefunctionRight::InfiniteWavefunctionRight(InfiniteWavefunctionLeft const& Psi)
+   : InfiniteWavefunctionRight(LinearWavefunction(Psi.base_begin(), Psi.base_end()), Psi.qshift())
+{
+}
+
 void read_version(PStream::ipstream& in, InfiniteWavefunctionRight& Psi, int Version)
 {
    if (Version == 1)
@@ -329,7 +335,7 @@ InfiniteWavefunctionRight::rotate_right(int Count)
 }
 
 void
-InfiniteWavefunctionRight::check_structure()
+InfiniteWavefunctionRight::check_structure() const
 {
    this->CanonicalWavefunctionBase::check_structure();
 

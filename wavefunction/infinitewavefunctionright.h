@@ -13,6 +13,8 @@
 #include "mpo/product_mpo.h"
 #include <boost/tuple/tuple.hpp>
 
+class InfiniteWavefunctionLeft;
+
 // class to represent an infinite wavefunction in the left canonical basis
 class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
 {
@@ -30,6 +32,8 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
 
       InfiniteWavefunctionRight(InfiniteWavefunctionRight const& Psi) 
 	 : CanonicalWavefunctionBase(Psi), QShift(Psi.QShift) {}
+
+      InfiniteWavefunctionRight(InfiniteWavefunctionLeft const& Psi);
 
       InfiniteWavefunctionRight& operator=(InfiniteWavefunctionRight const& Psi)
       { CanonicalWavefunctionBase::operator=(Psi); QShift = Psi.QShift; return *this; }
@@ -55,8 +59,8 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
 					   InfiniteWavefunctionRight const& Psi);
       friend void read_version(PStream::ipstream& in, InfiniteWavefunctionRight& Psi, int Version);
 
-      void check_structure();
-      void debug_check_structure();
+      void check_structure() const;
+      void debug_check_structure() const;
 
    private:
       void Initialize(MatrixOperator const& Lambda, LinearWavefunction const& Psi);
@@ -127,7 +131,7 @@ InfiniteWavefunctionLeft reflect(InfiniteWavefunctionRight const& Psi);
 
 inline
 void
-InfiniteWavefunctionRight::debug_check_structure()
+InfiniteWavefunctionRight::debug_check_structure() const
 {
 #if !defined(NDEBUG)
    this->check_structure();
