@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 	 ("output,o", prog_opt::value(&OutputFile), "output IBC wavefuction [required]")
 	 ("force,f", prog_opt::bool_switch(&Force), "overwrite output files")
 	 ("size,s", prog_opt::value(&WindowSize), 
-	  "initial size (in sites) of the finite window [default one input wavefunction unit cell]")
+	  "initial size (in sites) of the finite window [default is the unit cell size of the input wavefunction]")
 	 ("offset", prog_opt::value(&Offset), "site index of the first site of the window [default 0]")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "extra debug output [can be used multiple times]")

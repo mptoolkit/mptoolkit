@@ -75,7 +75,7 @@ namespace prog_opt = boost::program_options;
 using statistics::moving_average;
 using statistics::moving_exponential;
 
-double const iTol = 1E-8;
+double const iTol = 1E-5;
 
 MatrixOperator GlobalU;
 
@@ -753,6 +753,8 @@ iDMRG::Initialize(MatrixOperator const& LambdaR, std::complex<double> InitialEne
    this->CheckConsistency();
 }
 
+double const HMix = 0.1;
+
 void
 iDMRG::UpdateLeftBlock()
 {
@@ -764,10 +766,8 @@ iDMRG::UpdateLeftBlock()
 		<< SaveLeftHamiltonian.Basis1().total_dimension() << "\n";
    }
 
+   StateComponent E = LeftHamiltonian.back();
    LeftHamiltonian = std::deque<StateComponent>(1, delta_shift(SaveLeftHamiltonian, QShift));
-
-   // Subtract off the energy
-   LeftHamiltonian.back().back() -= Solver_.LastEnergy() * LeftHamiltonian.back().front();
 
    // do an SVD of SaveLambda1 so that we can invert it
    MatrixOperator U,Vh;
@@ -780,6 +780,18 @@ iDMRG::UpdateLeftBlock()
 
    // normalize
    *C *= 1.0 / norm_frob(*C);
+
+   TRACE(E.Basis1())(LeftHamiltonian.back().back().Basis1())(C->Basis2())(U.Basis1())(Vh.Basis2());
+   TRACE(U.Basis2());
+
+   // Adjust basis of E
+   E = triple_prod(U*Vh, E, herm(U*Vh));
+
+   // Mixing
+   LeftHamiltonian.back() = HMix * E + (1.0 - HMix) * LeftHamiltonian.back();
+
+   // Subtract off the energy
+   LeftHamiltonian.back().back() -= Solver_.LastEnergy() * LeftHamiltonian.back().front();
 
    this->CheckConsistency();
 }
@@ -795,21 +807,30 @@ iDMRG::UpdateRightBlock()
 		<< SaveRightHamiltonian.Basis1().total_dimension() << "\n";
    }
 
+   StateComponent F = RightHamiltonian.front();
    RightHamiltonian = std::deque<StateComponent>(1, delta_shift(SaveRightHamiltonian, adjoint(QShift)));
-
-   // Subtract off the energy
-   RightHamiltonian.front().front() -= Solver_.LastEnergy() * RightHamiltonian.front().back();
 
    // do an SVD of SaveLambda2 so that we can invert it
    MatrixOperator U,Vh;
    RealDiagonalOperator D;
    SingularValueDecomposition(SaveLambda2, U, D, Vh);
 
-   (*C) = prod(*C, herm(Vh) * Solve_DInv_UD(D, herm(U) * delta_shift(SaveLambda1, adjoint(QShift))));
+   MatrixOperator T = herm(Vh) * Solve_DInv_UD(D, herm(U) * delta_shift(SaveLambda1, adjoint(QShift)));
+
+   (*C) = prod(*C, T);
    //(*C) = prod(*C, herm(Vh) * InvertDiagonal(D) * herm(U) * delta_shift(SaveLambda1, adjoint(QShift)));
 
    // normalize
    *C *= 1.0 / norm_frob(*C);
+
+   // Adjust basis of F
+   F = prod(herm(U*Vh), F);
+
+   // Mixing
+   RightHamiltonian.front() = HMix * F + (1.0 - HMix) * RightHamiltonian.front();
+
+   // Subtract off the energy
+   RightHamiltonian.front().front() -= Solver_.LastEnergy() * RightHamiltonian.front().back();
 
    this->CheckConsistency();
 }
