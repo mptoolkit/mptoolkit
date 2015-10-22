@@ -129,13 +129,6 @@ Solve_DU_DInv(MatrixOperator const& DU, RealDiagonalOperator const& D)
 }
 #endif
 
-// solves D*U*InvertDiagonal(E)
-MatrixOperator
-Solve_D_U_DInv(RealDiagonalOperator const& D, MatrixOperator const& U, RealDiagonalOperator const& E)
-{
-   return D*U*InvertDiagonal(E,iTol);
-}
-
 MatrixOperator
 Solve_DInv_UD(RealDiagonalOperator const& D, MatrixOperator const& UD)
 {
@@ -145,6 +138,23 @@ Solve_DInv_UD(RealDiagonalOperator const& D, MatrixOperator const& UD)
    TRACE(norm_frob_sq(Result)/sqrt(Dim1*Dim2));
    return Result;
 }
+
+
+// solves D*U*InvertDiagonal(E)
+MatrixOperator
+Solve_D_U_DInv(RealDiagonalOperator const& D, MatrixOperator const& U, RealDiagonalOperator const& E)
+{
+   return D*U*InvertDiagonal(E,iTol);
+}
+
+MatrixOperator
+Solve_DInv_U_D(RealDiagonalOperator const& D, MatrixOperator const& U, RealDiagonalOperator const& E)
+{
+   return InvertDiagonal(D,iTol)*U*E;
+}
+
+
+
 
 struct ProductLeft
 {
@@ -480,9 +490,9 @@ struct MixInfo
 #define SSC
 
 // Apply subspace expansion / truncation on the left (C.Basis1()).
-// Returns a matrix Lambda (not diagonal!)
-// Postcondition: Lambda' C' = C (up to truncation!)
-MatrixOperator
+// Returns a matrix Lambda (diagonal) and a unitary
+// Postcondition: U' Lambda' C' = C (up to truncation!)
+std::pair<MatrixOperator, RealDiagonalOperator>
 SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateComponent const& RightHam,
 		     MixInfo const& Mix, StatesInfo const& States, TruncationInfo& Info,
 		     StateComponent const& LeftHam)
@@ -538,13 +548,18 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
    C = prod(U, C);
 #endif
 
-   return Lambda;
+   MatrixOperator Vh;
+   RealDiagonalOperator D;
+   SingularValueDecomposition(Lambda, U, D, Vh);
+
+   C = prod(Vh, C);
+   return std::make_pair(U, D);
 }
 
 // Apply subspace expansion / truncation on the right (C.Basis2()).
-// Returns Lambda matrix (not diagonal!)
-// Postcondition: C' Lambda' = C (up to truncation!)
-MatrixOperator
+// Returns Lambda matrix (diagonal) and a unitary matrix
+// Postcondition: C' Lambda' U' = C (up to truncation!)
+std::pair<RealDiagonalOperator, MatrixOperator>
 SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateComponent const& LeftHam,
 		     MixInfo const& Mix, StatesInfo const& States, TruncationInfo& Info,
 		     StateComponent const& RightHam)
@@ -585,8 +600,13 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
    Lambda = U * Lambda;
    C = prod(C, herm(U));
 
-   return Lambda;
+   MatrixOperator Vh;
+   RealDiagonalOperator D;
+   SingularValueDecomposition(Lambda, U, D, Vh);
 
+   C = prod(C, U);
+
+   return std::make_pair(D, Vh);
 }
 
 
@@ -596,7 +616,8 @@ class iDMRG
    public:
       // Construct an iDMRG object.  It is assumed that Psi_ is in left-canonical form, with
       // LambdaR being the lambda matrix on the right edge.
-      iDMRG(LinearWavefunction const& Psi_, MatrixOperator const& LambdaR,
+      iDMRG(LinearWavefunction const& Psi_, RealDiagonalOperator const& LambdaR, 
+	    MatrixOperator const& UR,
 	    QuantumNumber const& QShift_, TriangularMPO const& Hamiltonian_,
 	    StateComponent const& LeftHam, StateComponent const& RightHam,
 	    std::complex<double> InitialEnergy = 0.0, int Verbose = 0);
@@ -623,7 +644,8 @@ class iDMRG
       // Above functions are implemented in terms of:
 
       // construct initial hamiltonian, called by the constructor
-      void Initialize(MatrixOperator const& LambdaR, std::complex<double> InitialEnergy);
+      void Initialize(RealDiagonalOperator const& LambdaR, MatrixOperator const& UR, 
+		      std::complex<double> InitialEnergy);
 
       void Solve();
       
@@ -672,27 +694,29 @@ class iDMRG
       LocalEigensolver Solver_;
 
       StateComponent SaveLeftHamiltonian;
-      MatrixOperator SaveLambda2;
+      RealDiagonalOperator SaveLambda2;
+      MatrixOperator SaveU2;
 
       StateComponent SaveRightHamiltonian;
-      MatrixOperator SaveLambda1;
+      MatrixOperator SaveU1;
+      RealDiagonalOperator SaveLambda1;
 
       MixInfo    MixingInfo;
       TruncationInfo Info;
 };
 
-iDMRG::iDMRG(LinearWavefunction const& Psi_, MatrixOperator const& LambdaR,
+iDMRG::iDMRG(LinearWavefunction const& Psi_, RealDiagonalOperator const& LambdaR, MatrixOperator const& UR,
 	     QuantumNumber const& QShift_, TriangularMPO const& Hamiltonian_,
 	     StateComponent const& LeftHam, StateComponent const& RightHam,
 	     std::complex<double> InitialEnergy, int Verbose_)
    : Hamiltonian(Hamiltonian_), Psi(Psi_), QShift(QShift_), 
      LeftHamiltonian(1, LeftHam), RightHamiltonian(1, RightHam), Verbose(Verbose_)
 {
-   this->Initialize(LambdaR, InitialEnergy);
+   this->Initialize(LambdaR, UR, InitialEnergy);
 }
 
 void
-iDMRG::Initialize(MatrixOperator const& LambdaR, std::complex<double> InitialEnergy)
+iDMRG::Initialize(RealDiagonalOperator const& LambdaR, MatrixOperator const& UR, std::complex<double> InitialEnergy)
 {
    // the starting point is at the right hand side, so fill out the LeftHamiltonian
    // fill out the LeftHamiltonian
@@ -748,12 +772,20 @@ iDMRG::Initialize(MatrixOperator const& LambdaR, std::complex<double> InitialEne
    SaveLeftHamiltonian = LeftHamiltonian.front();
    SaveRightHamiltonian = RightHamiltonian.front();
    SaveLambda2 = LambdaR; //MatrixOperator::make_identity(Psi.Basis1());
+   SaveU2 = UR;
+
+   SaveU1 = adjoint(UR);
    SaveLambda1 = delta_shift(LambdaR, QShift); // MatrixOperator::make_identity(Psi.Basis2());
 
    this->CheckConsistency();
 }
 
 double const HMix = 0.1;
+
+//
+// we need to store SaveLamda1 as a combination of a RealDiagonalOperator and
+// a unitary MatrixOperator.
+//
 
 void
 iDMRG::UpdateLeftBlock()
@@ -781,8 +813,10 @@ iDMRG::UpdateLeftBlock()
    // normalize
    *C *= 1.0 / norm_frob(*C);
 
-   TRACE(E.Basis1())(LeftHamiltonian.back().back().Basis1())(C->Basis2())(U.Basis1())(Vh.Basis2());
-   TRACE(U.Basis2());
+   TRACE(SaveLambda2);
+
+   TRACE(E.Basis1())(LeftHamiltonian.back().back().Basis1())(C->Basis1())(U.Basis1())(Vh.Basis2());
+   TRACE(U.Basis2())(Vh.Basis1());
 
    // Adjust basis of E
    E = triple_prod(U*Vh, E, herm(U*Vh));
@@ -810,21 +844,15 @@ iDMRG::UpdateRightBlock()
    StateComponent F = RightHamiltonian.front();
    RightHamiltonian = std::deque<StateComponent>(1, delta_shift(SaveRightHamiltonian, adjoint(QShift)));
 
-   // do an SVD of SaveLambda2 so that we can invert it
-   MatrixOperator U,Vh;
-   RealDiagonalOperator D;
-   SingularValueDecomposition(SaveLambda2, U, D, Vh);
-
-   MatrixOperator T = herm(Vh) * Solve_DInv_UD(D, herm(U) * delta_shift(SaveLambda1, adjoint(QShift)));
+   MatrixOperator T = Solve_DInv_U_D(SaveLambda2, adjoint(SaveU2), delta_shift(SaveLambda1, adjoint(QShift)));
 
    (*C) = prod(*C, T);
-   //(*C) = prod(*C, herm(Vh) * InvertDiagonal(D) * herm(U) * delta_shift(SaveLambda1, adjoint(QShift)));
 
    // normalize
    *C *= 1.0 / norm_frob(*C);
 
    // Adjust basis of F
-   F = prod(herm(U*Vh), F);
+   F = prod(herm(SaveU2), F);
 
    // Mixing
    RightHamiltonian.front() = HMix * F + (1.0 - HMix) * RightHamiltonian.front();
@@ -842,8 +870,8 @@ iDMRG::SaveLeftBlock(StatesInfo const& States)
    // C.Basis2() == SaveLeftHamiltonian.Basis()
    CHECK(C == LastSite);
    StateComponent L = *C;
-   SaveLambda2 = SubspaceExpandBasis2(L, *H, LeftHamiltonian.back(),
-				      MixingInfo, States, Info, RightHamiltonian.front());
+   boost::tie(SaveLambda2, SaveU2) = SubspaceExpandBasis2(L, *H, LeftHamiltonian.back(),
+							  MixingInfo, States, Info, RightHamiltonian.front());
    if (Verbose > 1)
    {
       std::cerr << "Saving left block for idmrg, states=" << Info.KeptStates() 
@@ -858,8 +886,8 @@ iDMRG::SaveRightBlock(StatesInfo const& States)
 {
    CHECK(C == FirstSite);
    StateComponent R = *C;
-   SaveLambda1 = SubspaceExpandBasis1(R, *H, RightHamiltonian.front(),
-				      MixingInfo, States, Info, LeftHamiltonian.back());
+   boost::tie(SaveU1, SaveLambda1) = SubspaceExpandBasis1(R, *H, RightHamiltonian.front(),
+							  MixingInfo, States, Info, LeftHamiltonian.back());
    if (Verbose > 1)
    {
       std::cerr << "Saving right block for idmrg, states=" << Info.KeptStates() << '\n';
@@ -873,8 +901,11 @@ iDMRG::TruncateAndShiftLeft(StatesInfo const& States)
 {
    this->CheckConsistency();
    // Truncate right
-   MatrixOperator Lambda = SubspaceExpandBasis1(*C, *H, RightHamiltonian.front(), MixingInfo, States, Info,
+   MatrixOperator U;
+   RealDiagonalOperator Lambda;
+   boost::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, RightHamiltonian.front(), MixingInfo, States, Info,
 						LeftHamiltonian.back());
+
    if (Verbose > 1)
    {
       std::cerr << "Truncating left basis, states=" << Info.KeptStates() << '\n';
@@ -887,7 +918,7 @@ iDMRG::TruncateAndShiftLeft(StatesInfo const& States)
    --H;
    --C;
 
-   *C = prod(*C, Lambda);
+   *C = prod(*C, U*Lambda);
 
    // normalize
    *C *= 1.0 / norm_frob(*C);
@@ -909,7 +940,9 @@ void
 iDMRG::TruncateAndShiftRight(StatesInfo const& States)
 {
    // Truncate right
-   MatrixOperator Lambda = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
+   RealDiagonalOperator Lambda;
+   MatrixOperator U;
+   boost::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
 						RightHamiltonian.front());
    if (Verbose > 1)
    {
@@ -923,7 +956,7 @@ iDMRG::TruncateAndShiftRight(StatesInfo const& States)
    ++H;
    ++C;
 
-   *C = prod(Lambda, *C);
+   *C = prod(Lambda*U, *C);
 
    // normalize
    *C *= 1.0 / norm_frob(*C);
@@ -971,7 +1004,9 @@ iDMRG::Finish(StatesInfo const& States)
 
    // The final truncation.
    // This is actually quite important to get a translationally invariant wavefunction
-   MatrixOperator Lambda = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
+   RealDiagonalOperator Lambda;
+   MatrixOperator U;
+   boost::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
 						RightHamiltonian.front());
    if (Verbose > 1)
    {
@@ -980,11 +1015,14 @@ iDMRG::Finish(StatesInfo const& States)
 
    this->ShowInfo('F');
 
+   (*C) = prod(*C, Solve_D_U_DInv(Lambda, U*herm(SaveU2), SaveLambda2));
+#if 0
    MatrixOperator U,Vh;
    RealDiagonalOperator D;
    SingularValueDecomposition(SaveLambda2, U, D, Vh);
    //   (*C) = prod(*C, Lambda * herm(Vh) * InvertDiagonal(D) * herm(U));
    (*C) = prod(*C, Solve_DU_DInv(Lambda*adjoint(Vh), D) * herm(U));
+#endif
 
    CHECK_EQUAL(Psi.Basis1(), delta_shift(Psi.Basis2(), QShift));
 }
@@ -1028,6 +1066,7 @@ int main(int argc, char** argv)
       std::string FName;
       std::string HamStr;
       std::string CouplingFile;
+      bool Force = false;
       bool TwoSite = true;
       bool OneSite = false;
       int WavefuncUnitCellSize = 0;
@@ -1054,6 +1093,7 @@ int main(int argc, char** argv)
           "model Hamiltonian, of the form lattice:operator")
          ("wavefunction,w", prog_opt::value(&FName),
           "wavefunction to apply DMRG (required)")
+	 ("force,f", prog_opt::bool_switch(&Force), "Allow overwriting output files")
 	 ("two-site,2", prog_opt::bool_switch(&TwoSite), "Modify two sites at once (default)")
 	 ("one-site,1", prog_opt::bool_switch(&OneSite), "Modify one site at a time")
 #if defined(ENABLE_ONE_SITE_SCHEME)
@@ -1067,7 +1107,7 @@ int main(int argc, char** argv)
           FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
-	 ("mix-factor,f", prog_opt::value(&MixFactor),
+	 ("mix-factor", prog_opt::value(&MixFactor),
 	  FormatDefault("Mixing coefficient for the density matrix", MixFactor).c_str())
 	 ("random-mix-factor", prog_opt::value(&RandomMixFactor),
 	  FormatDefault("Random mixing for the density matrix", RandomMixFactor).c_str())
@@ -1149,13 +1189,15 @@ int main(int argc, char** argv)
       // The parameters for the iDMRG that we need to initialize
       LinearWavefunction Psi;
       QuantumNumber QShift;
-      MatrixOperator R;
+
+      RealDiagonalOperator R;
+      MatrixOperator UR;
 
       // Initialize the filesystem
 
       if (ExactDiag || Create)
       {
-	 pheap::Initialize(FName, 1, mp_pheap::PageSize(), mp_pheap::CacheSize());
+	 pheap::Initialize(FName, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
       }
       else
       {
@@ -1165,9 +1207,8 @@ int main(int argc, char** argv)
 
 	 InfiniteWavefunctionLeft StartingWavefunction = Wavefunction.get<InfiniteWavefunctionLeft>();
 	 
-	 RealDiagonalOperator RR;
-	 boost::tie(Psi, RR) = get_left_canonical(StartingWavefunction);
-	 R = RR;
+	 boost::tie(Psi, R) = get_left_canonical(StartingWavefunction);
+	 UR = MatrixOperator::make_identity(R.Basis2());
 	 QShift = StartingWavefunction.qshift();
       }
 
@@ -1257,11 +1298,15 @@ int main(int argc, char** argv)
 	    Psi.push_back(ConstructFromLeftBasis(FullBL[i], Psi.get_back().Basis2()));
 	 }
 
-	 R = MakeRandomMatrixOperator(Psi.Basis2(), B2);
+	 UR = MakeRandomMatrixOperator(Psi.Basis2(), B2);
 
 	 // adjust for periodic basis
-	 StateComponent x = prod(Psi.get_back(), R);
-	 R = TruncateBasis2(x); // the Basis2 is already 1-dim.  This just orthogonalizes x
+	 StateComponent x = prod(Psi.get_back(), UR);
+	 boost::tie(R, UR);
+	 MatrixOperator X = TruncateBasis2(x); // the Basis2 is already 1-dim.  This just orthogonalizes x
+	 MatrixOperator U;
+	 SingularValueDecomposition(X, U, R, UR);
+	 x = prod(x, U);
 	 Psi.set_back(x);
 
 
@@ -1309,9 +1354,10 @@ int main(int argc, char** argv)
 	    std::cout << "Left boundary quantum number is " << LBoundary << '\n';
 	 }
 	 Psi = CreateRandomWavefunction(FullBL, LBoundary, 3, RBoundary);
-         R = left_orthogonalize(MatrixOperator::make_identity(Psi.Basis1()), Psi);
-	 //	 L = delta_shift(R, QShift);
-
+         MatrixOperator X = left_orthogonalize(MatrixOperator::make_identity(Psi.Basis1()), Psi);
+	 MatrixOperator U;
+	 SingularValueDecomposition(X, U, R, UR);
+	 Psi.set_back(prod(Psi.get_back(), U));
       }
 
       WavefuncUnitCellSize = Psi.size();
@@ -1414,7 +1460,7 @@ int main(int argc, char** argv)
       // initialization complete.
 
       // Construct the iDMRG object
-      iDMRG idmrg(Psi, R, QShift, HamMPO, BlockHamL, 
+      iDMRG idmrg(Psi, R, UR, QShift, HamMPO, BlockHamL, 
 		  BlockHamR, InitialEnergy, Verbose);
       
       idmrg.MixingInfo.MixFactor = MixFactor;
