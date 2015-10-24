@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+ // -*- C++ -*- $Id$
 
 #include "linearalgebra/matrix.h"
 
@@ -101,8 +101,8 @@ void implement_check_structure(IrredTensor<LinearAlgebra::Matrix<T>, B1, B2, S> 
 				   x.Basis1()[J.index1()]))(x.Basis2()[J.index2()])
             (x.Basis1()[J.index1()])(x.TransformsAs())(*J);
 
-	 CHECK_EQUAL(size1(*J), x.Basis1().dim(J.index1()));
-	 CHECK_EQUAL(size2(*J), x.Basis2().dim(J.index2()));
+	 CHECK_EQUAL(int(size1(*J)), x.Basis1().dim(J.index1()));
+	 CHECK_EQUAL(int(size2(*J)), x.Basis2().dim(J.index2()));
       }
    }
 }

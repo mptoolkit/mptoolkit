@@ -25,6 +25,13 @@ void SingularValueDecomposition(int Size1, int Size2,
 				std::complex<double>* A, std::complex<double>* U,
 				double* D, std::complex<double>* VH);
 
+void SingularValueDecompositionFull(int Size1, int Size2, double* A, double* U,
+				    double* D, double* VT);
+
+void SingularValueDecompositionFull(int Size1, int Size2, 
+				    std::complex<double>* A, std::complex<double>* U,
+				    double* D, std::complex<double>* VH);
+
 void EigenvaluesSymmetric(int Size, double* Data, int LeadingDim, double* Eigen);
 
 void EigenvaluesHermitian(int Size, std::complex<double>* Data, 
@@ -510,13 +517,14 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
 
 // version taking a diagonal matrix for D
 
+// Real is either double or complex<double>
 template <typename A, typename U, typename D, typename Vt,
-          typename Ai, typename Ui, typename Di, typename Vti>
+          typename Ai, typename Ui, typename Di, typename Vti, typename Real>
 struct ImplementSingularValueDecomposition<A, U, D, Vt,
-                                           Concepts::MatrixExpression<double, Ai>,
-                                           Concepts::MatrixExpression<double, Ui>,
+                                           Concepts::MatrixExpression<Real, Ai>,
+                                           Concepts::MatrixExpression<Real, Ui>,
                                            Concepts::DiagonalMatrix<double, Di>,
-                                           Concepts::MatrixExpression<double, Vti>>
+                                           Concepts::MatrixExpression<Real, Vti>>
 {
    typedef void result_type;
    void operator()(A const& a, U& u, D& d, Vt& vt) const
@@ -526,15 +534,15 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
       int min_mn = std::min(m,n);
 
       try_resize(u, n, min_mn);
-      try_resize(d, min_mn);
+      try_resize(d, min_mn, min_mn);
       try_resize(vt, min_mn, m);
 
       if (min_mn == 0) return;
 
-      Matrix<double> Acopy(a);
-      Matrix<double> Ures(n, min_mn);
+      Matrix<Real> Acopy(a);
+      Matrix<Real> Ures(n, min_mn);
       Vector<double> Dres(min_mn);
-      Matrix<double> Vtres(min_mn, m);
+      Matrix<Real> Vtres(min_mn, m);
 
       Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy),
                                           data(Ures), data(Dres), data(Vtres));
@@ -544,37 +552,78 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
    }
 };
 
+// Real is either double or complex<double>
 template <typename A, typename U, typename D, typename Vt,
-          typename Ai, typename Ui, typename Di, typename Vti>
-struct ImplementSingularValueDecomposition<A, U, D, Vt,
-                                           Concepts::MatrixExpression<std::complex<double>, Ai>,
-                                           Concepts::MatrixExpression<std::complex<double>, Ui>,
-                                           Concepts::DiagonalMatrix<double, Di>,
-                                           Concepts::MatrixExpression<std::complex<double>, Vti>>
+          typename Ai, typename Ui, typename Di, typename Vti, typename Real>
+struct ImplementSingularValueDecompositionFull<A, U, D, Vt,
+					       Concepts::MatrixExpression<Real, Ai>,
+					       Concepts::MatrixExpression<Real, Ui>,
+					       Concepts::DiagonalMatrix<double, Di>,
+					       Concepts::MatrixExpression<Real, Vti>>
 {
    typedef void result_type;
    void operator()(A const& a, U& u, D& d, Vt& vt) const
    {
-      int m = a.size2();
-      int n = a.size1();
+      int m = a.size1();
+      int n = a.size2();
       int min_mn = std::min(m,n);
+      int max_mn = std::max(m,n);
 
-      try_resize(u, n, min_mn);
-      try_resize(d, min_mn);
-      try_resize(vt, min_mn, m);
+      try_resize(u, m, max_mn);
+      try_resize(d, max_mn, max_mn);
+      try_resize(vt, max_mn, n);
 
       if (min_mn == 0) return;
 
-      Matrix<std::complex<double> > Acopy(a);
-      Matrix<std::complex<double> > Ures(n, min_mn);
+      Matrix<Real> Acopy(a);
+      Matrix<Real> Ures(m, m);
       Vector<double> Dres(min_mn);
-      Matrix<std::complex<double> > Vtres(min_mn, m);
+      Matrix<Real> Vtres(n, n);
 
-      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy),
-                                          data(Ures), data(Dres), data(Vtres));
-      assign(u, Ures);
-      assign(d.diagonal(), Dres);
-      assign(vt, Vtres);
+      Private::SingularValueDecompositionFull(size1(Acopy), size2(Acopy), data(Acopy),
+					      data(Ures), data(Dres), data(Vtres));
+      zero_all(u);
+      zero_all(d);
+      zero_all(vt);
+      assign(u(LinearAlgebra::all, LinearAlgebra::range(0, m)), Ures);
+      assign(d.diagonal()[LinearAlgebra::range(0, min_mn)], Dres);
+      assign(vt(LinearAlgebra::range(0, n), LinearAlgebra::all), Vtres);
+   }
+};
+
+template <typename A, typename U, typename D, typename Vt,
+          typename Ai, typename Ui, typename Di, typename Vti, typename Real>
+struct ImplementSingularValueDecompositionFullLeft<A, U, D, Vt,
+						   Concepts::MatrixExpression<Real, Ai>,
+						   Concepts::MatrixExpression<Real, Ui>,
+						   Concepts::DiagonalMatrix<double, Di>,
+						   Concepts::MatrixExpression<Real, Vti>>
+{
+   typedef void result_type;
+   void operator()(A const& a, U& u, D& d, Vt& vt) const
+   {
+      if (a.size1() <= a.size2())
+	 return SingularValueDecomposition(a, u, d, vt);
+      else
+	 return SingularValueDecompositionFull(a, u, d, vt);
+   }
+};
+
+template <typename A, typename U, typename D, typename Vt,
+          typename Ai, typename Ui, typename Di, typename Vti, typename Real>
+struct ImplementSingularValueDecompositionFullRight<A, U, D, Vt,
+						   Concepts::MatrixExpression<Real, Ai>,
+						   Concepts::MatrixExpression<Real, Ui>,
+						   Concepts::DiagonalMatrix<double, Di>,
+						   Concepts::MatrixExpression<Real, Vti>>
+{
+   typedef void result_type;
+   void operator()(A const& a, U& u, D& d, Vt& vt) const
+   {
+      if (a.size2() <= a.size1())
+	 return SingularValueDecomposition(a, u, d, vt);
+      else
+	 return SingularValueDecompositionFull(a, u, d, vt);
    }
 };
 

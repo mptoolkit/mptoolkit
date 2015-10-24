@@ -95,6 +95,8 @@ InfiniteWavefunctionLeft::Initialize(LinearWavefunction const& Psi_, MatrixOpera
 {
    LinearWavefunction Psi = Psi_;
    MatrixOperator M = right_orthogonalize(Psi, Lambda);
+   // normalize
+   M *= 1.0 / norm_frob(M);
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
    // we can't initialize lambda_l yet, as we don't have it in the correct (diagonal) basis.
@@ -177,10 +179,20 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi
    MatrixOperator A = delta_shift(D * U, QShift);
    MatrixOperator AInv = adjoint(U) * DInv;
 
-   A = left_orthogonalize(A, PsiL);
-   PsiL.set_back(prod(PsiL.get_back(), A*AInv));
+   //A = left_orthogonalize(A, PsiL);
+   //PsiL.set_back(prod(PsiL.get_back(), A*AInv));
 
-   // same for the right eigenvector
+   PsiL.set_front(prod(A, PsiL.get_front()));
+   PsiL.set_back(prod(PsiL.get_back(), AInv));
+
+   // At this point, the left eigenvector is the identity matrix. 
+#if !defined(NDEBUG)
+   MatrixOperator I = MatrixOperator::make_identity(PsiL.Basis1());
+   A = LeftMultiply(PsiL, QShift)(I);
+   CHECK(norm_frob(A-EtaL*I) < 10*A.Basis1().total_dimension() * ArnoldiTol);
+#endif 
+
+   // same for the right eigenvector, which will be the density matrix
 
    // initialize the guess eigenvector
    MatrixOperator RightEigen = Guess;
@@ -213,6 +225,26 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi
    U = DiagonalizeHermitian(D);
    D = SqrtDiagonal(D, OrthoTol);
 
+   // normalize
+   D *= 1.0 / norm_frob(D);
+
+#if 1
+   // incorporate U into the MPS
+
+   PsiL.set_back(prod(PsiL.get_back(), adjoint(U)));
+   PsiL.set_front(prod(delta_shift(U, QShift), PsiL.get_front()));
+
+   // D is now the Lambda matrix.  Check that
+#if !defined(NDEBUG)
+   MatrixOperator Rho = D*D;
+   A = RightMultiply(PsiL, QShift)(Rho);
+   CHECK(norm_frob(A-EtaR*Rho) < 10*A.Basis2().total_dimension() * ArnoldiTol);
+#endif 
+
+
+#else
+
+
    DEBUG_CHECK(norm_frob(RightEigen - triple_prod(herm(U), D*D, U)) < 1e-10)
       (norm_frob(RightEigen - triple_prod(herm(U), D*D, U)));
 
@@ -238,9 +270,7 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi
    // now I should be unitary (or even an identity operator).  Normalize it and fold it back into the last component
    I *= 1.0 / std::sqrt(EtaR.real());
    PsiL.set_back(prod(PsiL.get_back(), I));
-
-   // normalize
-   D *= 1.0 / norm_frob(D);
+#endif
 
    this->Initialize(PsiL, D);
 }

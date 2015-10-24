@@ -75,7 +75,7 @@ namespace prog_opt = boost::program_options;
 using statistics::moving_average;
 using statistics::moving_exponential;
 
-double const iTol = 1E-5;
+double const iTol = 1E-7;
 
 MatrixOperator GlobalU;
 
@@ -92,6 +92,8 @@ InvertDiagonal(LinearAlgebra::DiagonalMatrix<double> const& D, double Tol = 1E-1
    }
    return Result;
 }
+
+double const Alpha = 100;
 
 // function to calculate
 // (D1 * U) * Inverse(D2)
@@ -141,6 +143,7 @@ Solve_DInv_UD(RealDiagonalOperator const& D, MatrixOperator const& UD)
 
 
 // solves D*U*InvertDiagonal(E)
+#if 0
 MatrixOperator
 Solve_D_U_DInv(RealDiagonalOperator const& D, MatrixOperator const& U, RealDiagonalOperator const& E)
 {
@@ -152,6 +155,63 @@ Solve_DInv_U_D(RealDiagonalOperator const& D, MatrixOperator const& U, RealDiago
 {
    return InvertDiagonal(D,iTol)*U*E;
 }
+
+#else
+MatrixOperator
+Solve_D_U_DInv(RealDiagonalOperator const& D, MatrixOperator const& U, RealDiagonalOperator const& E)
+{
+   MatrixOperator Result(D.Basis1(), E.Basis1());
+   for (MatrixOperator::const_iterator I = iterate(U); I; ++I)
+   {
+      for (MatrixOperator::const_inner_iterator J = iterate(I); J; ++J)
+      {
+	 int Dim1 = D.Basis1().dim(J.index1());
+	 int Dim2 = E.Basis1().dim(J.index2());
+
+	 LinearAlgebra::DiagonalMatrix<double> 
+	    DD = D(J.index1(), J.index1()) + LinearAlgebra::DiagonalMatrix<double>(Dim1, Dim1, Alpha);
+	 LinearAlgebra::DiagonalMatrix<double>
+	    EE = E(J.index2(), J.index2()) + LinearAlgebra::DiagonalMatrix<double>(Dim2, Dim2, Alpha);
+
+	 LinearAlgebra::Matrix<std::complex<double>> Component = 
+	    DD * (*J) * InvertDiagonal(EE, iTol);
+	 Result(J.index1(), J.index2()) = Component;
+	 //TRACE(norm_frob_sq(Component) / (size1(Component)*size2(Component)));
+	 //TRACE(Component);
+      }
+   }
+   return Result;
+}
+
+MatrixOperator
+Solve_DInv_U_D(RealDiagonalOperator const& D, MatrixOperator const& U, RealDiagonalOperator const& E)
+{
+   MatrixOperator Result(D.Basis1(), E.Basis1());
+   for (MatrixOperator::const_iterator I = iterate(U); I; ++I)
+   {
+      for (MatrixOperator::const_inner_iterator J = iterate(I); J; ++J)
+      {
+	 int Dim1 = D.Basis1().dim(J.index1());
+	 int Dim2 = E.Basis1().dim(J.index2());
+
+	 LinearAlgebra::DiagonalMatrix<double> 
+	    DD = D(J.index1(), J.index1()) + LinearAlgebra::DiagonalMatrix<double>(Dim1, Dim1, Alpha);
+	 LinearAlgebra::DiagonalMatrix<double> 
+	    EE = E(J.index2(), J.index2()) + LinearAlgebra::DiagonalMatrix<double>(Dim2, Dim2, Alpha);
+
+	 LinearAlgebra::Matrix<std::complex<double>> Component = 
+	    InvertDiagonal(DD, iTol) * (*J) * EE;
+	 Result(J.index1(), J.index2()) = Component;
+	 //TRACE(norm_frob_sq(Component) / (size1(Component)*size2(Component)));
+	 //TRACE(Component);
+      }
+   }
+   return Result;
+}
+
+
+
+#endif
 
 
 
@@ -487,7 +547,7 @@ struct MixInfo
    double RandomMixFactor;
 };
 
-#define SSC
+//#define SSC
 
 // Apply subspace expansion / truncation on the left (C.Basis1()).
 // Returns a matrix Lambda (diagonal) and a unitary
@@ -535,6 +595,8 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
       Rho += (Mix.RandomMixFactor / trace(RhoMix)) * RhoMix;
    }
 
+   //TRACE(Rho);
+
    DensityMatrix<MatrixOperator> DM(Rho);
    DensityMatrix<MatrixOperator>::const_iterator DMPivot =
       TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
@@ -542,6 +604,9 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 					 Info);
    MatrixOperator U = DM.ConstructTruncator(DM.begin(), DMPivot);
    Lambda = Lambda * herm(U);
+
+   //TRACE(Lambda);
+
 #if defined(SSC)
    C = U*CX; //prod(U, CX);
 #else
@@ -550,7 +615,9 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 
    MatrixOperator Vh;
    RealDiagonalOperator D;
-   SingularValueDecomposition(Lambda, U, D, Vh);
+   SingularValueDecompositionKeepBasis2(Lambda, U, D, Vh);
+
+   //TRACE(U)(D)(Vh);
 
    C = prod(Vh, C);
    return std::make_pair(U, D);
@@ -592,7 +659,7 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
    }
    DensityMatrix<MatrixOperator> DM(Rho);
    DensityMatrix<MatrixOperator>::const_iterator DMPivot =
-      TruncateFixTruncationErrorAbsolute(DM.begin(), DM.end(),
+      TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
 					 States,
 					 Info);
    MatrixOperator U = DM.ConstructTruncator(DM.begin(), DMPivot);
@@ -602,14 +669,12 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
 
    MatrixOperator Vh;
    RealDiagonalOperator D;
-   SingularValueDecomposition(Lambda, U, D, Vh);
+   SingularValueDecompositionKeepBasis1(Lambda, U, D, Vh);
 
    C = prod(C, U);
 
    return std::make_pair(D, Vh);
 }
-
-
 
 class iDMRG
 {
@@ -631,8 +696,8 @@ class iDMRG
 
       LocalEigensolver& Solver() { return Solver_; }
 
-      void SweepRight(StatesInfo const& SInfo);
-      void SweepLeft(StatesInfo const& SInfo,  bool NoUpdate = false);
+      void SweepRight(StatesInfo const& SInfo, double HMix = 0);
+      void SweepLeft(StatesInfo const& SInfo, double HMix = 0, bool NoUpdate = false);
 
       // call after a SweepRight() to make Psi an infinite wavefunction
       void Finish(StatesInfo const& SInfo);
@@ -658,9 +723,9 @@ class iDMRG
       // at the left boundary of the unit cell, update the LeftHamiltonian and C to SaveLeftHamiltonian
       // At the end of this step, the wavefunction is in a 'regular' form with
       // C.Basis1() == Psi.Basis2()
-      void UpdateLeftBlock();
+      void UpdateLeftBlock(double HMix = 0);
 
-      void UpdateRightBlock();
+      void UpdateRightBlock(double HMix = 0);
 
       void TruncateAndShiftLeft(StatesInfo const& States);
       void TruncateAndShiftRight(StatesInfo const& States);
@@ -780,15 +845,13 @@ iDMRG::Initialize(RealDiagonalOperator const& LambdaR, MatrixOperator const& UR,
    this->CheckConsistency();
 }
 
-double const HMix = 0.1;
-
 //
 // we need to store SaveLamda1 as a combination of a RealDiagonalOperator and
 // a unitary MatrixOperator.
 //
 
 void
-iDMRG::UpdateLeftBlock()
+iDMRG::UpdateLeftBlock(double HMix)
 {
    if (Verbose > 2)
    {
@@ -801,28 +864,23 @@ iDMRG::UpdateLeftBlock()
    StateComponent E = LeftHamiltonian.back();
    LeftHamiltonian = std::deque<StateComponent>(1, delta_shift(SaveLeftHamiltonian, QShift));
 
-   // do an SVD of SaveLambda1 so that we can invert it
-   MatrixOperator U,Vh;
-   RealDiagonalOperator D;
-   SingularValueDecomposition(SaveLambda1, U, D, Vh);
+   MatrixOperator T = Solve_D_U_DInv(delta_shift(SaveLambda2, QShift), delta_shift(SaveU2, QShift), SaveLambda1);
 
-   //   (*C) = prod(delta_shift(SaveLambda2, QShift) * herm(Vh) * InvertDiagonal(D) * herm(U), *C);
-   MatrixOperator X = Solve_DU_DInv(delta_shift(SaveLambda2, QShift) * adjoint(Vh), D);
-   (*C) = prod(X * herm(U), *C);
+   T = T * herm(SaveU1);
+
+   (*C) = prod(T, *C);
 
    // normalize
    *C *= 1.0 / norm_frob(*C);
 
-   TRACE(SaveLambda2);
-
-   TRACE(E.Basis1())(LeftHamiltonian.back().back().Basis1())(C->Basis1())(U.Basis1())(Vh.Basis2());
-   TRACE(U.Basis2())(Vh.Basis1());
-
-   // Adjust basis of E
-   E = triple_prod(U*Vh, E, herm(U*Vh));
-
-   // Mixing
-   LeftHamiltonian.back() = HMix * E + (1.0 - HMix) * LeftHamiltonian.back();
+   //HMix = 0;
+   if (HMix != 0)
+   {
+      // Adjust basis of E
+      MatrixOperator V = delta_shift(SaveU2, QShift) * herm(SaveU1);
+      E = triple_prod(V, E, herm(V));
+      LeftHamiltonian.back() = HMix * E + (1.0 - HMix) * LeftHamiltonian.back();
+   }
 
    // Subtract off the energy
    LeftHamiltonian.back().back() -= Solver_.LastEnergy() * LeftHamiltonian.back().front();
@@ -831,7 +889,7 @@ iDMRG::UpdateLeftBlock()
 }
 
 void
-iDMRG::UpdateRightBlock()
+iDMRG::UpdateRightBlock(double HMix)
 {
    if (Verbose > 2)
    {
@@ -844,18 +902,33 @@ iDMRG::UpdateRightBlock()
    StateComponent F = RightHamiltonian.front();
    RightHamiltonian = std::deque<StateComponent>(1, delta_shift(SaveRightHamiltonian, adjoint(QShift)));
 
-   MatrixOperator T = Solve_DInv_U_D(SaveLambda2, adjoint(SaveU2), delta_shift(SaveLambda1, adjoint(QShift)));
+   //TRACE(SaveLambda2)(SaveU1)(SaveLambda1);
+   MatrixOperator T = Solve_DInv_U_D(SaveLambda2, delta_shift(SaveU1, adjoint(QShift)), 
+				     delta_shift(SaveLambda1, adjoint(QShift)));
+
+   T = herm(SaveU2) * T;
+   //TRACE(T);
 
    (*C) = prod(*C, T);
 
    // normalize
    *C *= 1.0 / norm_frob(*C);
 
-   // Adjust basis of F
-   F = prod(herm(SaveU2), F);
+   //HMix = 0;
+   if (HMix != 0)
+   {
+      // Adjust basis of F
+      MatrixOperator V = herm(SaveU2) * delta_shift(SaveU1, adjoint(QShift));
+      V = T;
+      F = triple_prod(herm(V), F, V);
 
-   // Mixing
-   RightHamiltonian.front() = HMix * F + (1.0 - HMix) * RightHamiltonian.front();
+      for (int n = 0; n < F.size(); ++n)
+      {
+	 TRACE(norm_frob(F[n] - RightHamiltonian.front()[n]));
+      }
+
+      RightHamiltonian.front() = HMix * F + (1.0 - HMix) * RightHamiltonian.front();
+   }
 
    // Subtract off the energy
    RightHamiltonian.front().front() -= Solver_.LastEnergy() * RightHamiltonian.front().back();
@@ -872,6 +945,7 @@ iDMRG::SaveLeftBlock(StatesInfo const& States)
    StateComponent L = *C;
    boost::tie(SaveLambda2, SaveU2) = SubspaceExpandBasis2(L, *H, LeftHamiltonian.back(),
 							  MixingInfo, States, Info, RightHamiltonian.front());
+
    if (Verbose > 1)
    {
       std::cerr << "Saving left block for idmrg, states=" << Info.KeptStates() 
@@ -888,6 +962,9 @@ iDMRG::SaveRightBlock(StatesInfo const& States)
    StateComponent R = *C;
    boost::tie(SaveU1, SaveLambda1) = SubspaceExpandBasis1(R, *H, RightHamiltonian.front(),
 							  MixingInfo, States, Info, LeftHamiltonian.back());
+
+   //   TRACE(SaveU1);
+
    if (Verbose > 1)
    {
       std::cerr << "Saving right block for idmrg, states=" << Info.KeptStates() << '\n';
@@ -965,9 +1042,9 @@ iDMRG::TruncateAndShiftRight(StatesInfo const& States)
 }
 
 void
-iDMRG::SweepRight(StatesInfo const& States)
+iDMRG::SweepRight(StatesInfo const& States, double HMix)
 {
-   this->UpdateLeftBlock();
+   this->UpdateLeftBlock(HMix);
    this->Solve();
    this->SaveRightBlock(States);
    this->ShowInfo('P');
@@ -981,10 +1058,10 @@ iDMRG::SweepRight(StatesInfo const& States)
 }
 
 void
-iDMRG::SweepLeft(StatesInfo const& States, bool NoUpdate)
+iDMRG::SweepLeft(StatesInfo const& States, double HMix, bool NoUpdate)
 {
    if (!NoUpdate)
-      this->UpdateRightBlock();
+      this->UpdateRightBlock(HMix);
    this->Solve();
    this->SaveLeftBlock(States);
    this->ShowInfo('Q');
@@ -1008,6 +1085,7 @@ iDMRG::Finish(StatesInfo const& States)
    MatrixOperator U;
    boost::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
 						RightHamiltonian.front());
+
    if (Verbose > 1)
    {
       std::cerr << "Truncating right basis, states=" << Info.KeptStates() << '\n';
@@ -1016,13 +1094,6 @@ iDMRG::Finish(StatesInfo const& States)
    this->ShowInfo('F');
 
    (*C) = prod(*C, Solve_D_U_DInv(Lambda, U*herm(SaveU2), SaveLambda2));
-#if 0
-   MatrixOperator U,Vh;
-   RealDiagonalOperator D;
-   SingularValueDecomposition(SaveLambda2, U, D, Vh);
-   //   (*C) = prod(*C, Lambda * herm(Vh) * InvertDiagonal(D) * herm(U));
-   (*C) = prod(*C, Solve_DU_DInv(Lambda*adjoint(Vh), D) * herm(U));
-#endif
 
    CHECK_EQUAL(Psi.Basis1(), delta_shift(Psi.Basis2(), QShift));
 }
@@ -1061,7 +1132,7 @@ int main(int argc, char** argv)
       int MinStates = 1;
       std::string States = "100";
       int NumSteps = 10;
-      double TruncCutoff = 0;
+      double TruncCutoff = -1;
       double EigenCutoff = -1;
       std::string FName;
       std::string HamStr;
@@ -1085,6 +1156,7 @@ int main(int argc, char** argv)
       double InitialFidelity = 1E-7;
       double MaxTol = 4E-4;  // never use an eigensolver tolerance larger than this
       double MinTol = 1E-16; // lower bound for the eigensolver tolerance - seems we dont really need it
+      double HMix = 0;  // Hamiltonian length-scale mixing factor
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -1111,6 +1183,8 @@ int main(int argc, char** argv)
 	  FormatDefault("Mixing coefficient for the density matrix", MixFactor).c_str())
 	 ("random-mix-factor", prog_opt::value(&RandomMixFactor),
 	  FormatDefault("Random mixing for the density matrix", RandomMixFactor).c_str())
+	 ("hmix", prog_opt::value(&HMix),
+	  FormatDefault("Hamiltonian mixing factor", HMix).c_str())
          ("evolve", prog_opt::value(&EvolveDelta),
           "Instead of Lanczos, do imaginary time evolution with this timestep")
 	 ("random,a", prog_opt::bool_switch(&Create),
@@ -1485,12 +1559,12 @@ int main(int argc, char** argv)
 
 	    if (i % 2 == 0)
 	    {
-	       idmrg.SweepLeft(SInfo, First);
+	       idmrg.SweepLeft(SInfo, HMix, First);
 	       First = false;
 	    }
 	    else
 	    {
-	       idmrg.SweepRight(SInfo);
+	       idmrg.SweepRight(SInfo, HMix);
 	    }
 	 }
 	 idmrg.Finish(SInfo);

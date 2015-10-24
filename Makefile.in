@@ -165,7 +165,8 @@ linearalgebra_extra_tests = testcprod testcomplexvector \
                             testmatrixsection testslicereal testsliceblas \
                             testhermproduct testmatrixparallel testrangerange \
                             testmatrixrangeslice testvectorrange testmatrixio \
-                            testinnerprod testparallelprod testmatrixvectorviewmem testdiagonalmatrix
+                            testinnerprod testparallelprod testmatrixvectorviewmem testdiagonalmatrix \
+	                    testsvd
 
 mp-algorithms_tests = test-arnoldi test-gmres
 

@@ -306,6 +306,405 @@ SingularValueDecomposition(IrredTensor<std::complex<double>, BasisList, BasisLis
    return;
 }
 
+void 
+SingularValueDecompositionFullRegular(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, 
+				      VectorBasis, VectorBasis> const& m, 
+				      IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, 
+				      VectorBasis, VectorBasis>& U,
+				      IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
+				      VectorBasis, VectorBasis, DiagonalStructure>& D,
+   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+	       VectorBasis, VectorBasis>& Vh)
+{
+   typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+      VectorBasis, VectorBasis> IrredT;
+   typedef IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
+      VectorBasis, VectorBasis, DiagonalStructure> DiagonalT;
+   DEBUG_CHECK(is_scalar(m.TransformsAs()));
+   DEBUG_CHECK(is_regular_basis(m.Basis1()))(m.Basis1());
+   DEBUG_CHECK(is_regular_basis(m.Basis2()))(m.Basis2());
+   // make the basis for the D matrix
+   // For states that exist in both bases, BasisMap tells us where the state from Basis1
+   // occurs in the DBasis
+   std::vector<int> BasisMap(m.Basis1().size(), 0);
+   VectorBasis DBasis(m.GetSymmetryList());
+
+   // Find the superset of the basis 1 and basis 2.  We need to handle separately the
+   // case where a quantum number exists in only one basis
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+   {
+      for (unsigned j = 0; j < m.Basis2().size(); ++j)
+      {
+	 if (m.Basis1()[i] != m.Basis2()[j])
+	    continue;
+
+	 BasisMap[i] = DBasis.size();
+	 DBasis.push_back(m.Basis1()[i], std::max(m.Basis1().dim(i), m.Basis2().dim(j)));
+      }
+   }
+
+   int const Mark = DBasis.size(); // all states in DBasis from here only exist in one basis
+   // Find states that exist only in Basis1
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+   {
+      unsigned j = 0;
+      while (j < m.Basis2().size() && m.Basis1()[i] != m.Basis2()[j])
+	 ++j;
+      if (j == m.Basis2().size())
+      {
+	 // state only exists in basis 1
+	 DBasis.push_back(m.Basis1()[i], m.Basis1().dim(i));
+      }
+   }
+   // Find states that only exist in Basis2
+   for (unsigned j = 0; j < m.Basis2().size(); ++j)
+   {
+      unsigned i = 0;
+      while (i < m.Basis1().size() && m.Basis1()[i] != m.Basis2()[j])
+	 ++i;
+      if (i == m.Basis1().size())
+      {
+	 // state only exists in basis 2
+	 DBasis.push_back(m.Basis2()[j], m.Basis2().dim(j));
+      }
+   }
+
+   U = IrredT(m.Basis1(), DBasis);
+   D = DiagonalT(DBasis, DBasis);
+   Vh = IrredT(DBasis, m.Basis2());
+
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+   {
+      for (unsigned j = 0; j < m.Basis2().size(); ++j)
+      {
+	 if (m.Basis1()[i] != m.Basis2()[j])
+	    continue;
+
+	 if (!iterate_at(m.data(), i, j))
+	    continue;
+	 set_element(U.data(), i,BasisMap[i], LinearAlgebra::Matrix<std::complex<double> >());
+	 set_element(Vh.data(), BasisMap[i], j, LinearAlgebra::Matrix<std::complex<double> >());
+	 LinearAlgebra::DiagonalMatrix<double> Dvec;
+	 LinearAlgebra::SingularValueDecompositionFull(m(i,j), 
+						       U(i,BasisMap[i]),
+						       Dvec,
+						       Vh(BasisMap[i], j));
+	 set_element(D, BasisMap[i], BasisMap[i], Dvec);
+      }
+   }
+
+   // Now for the states that only exist in Basis1, set the matrix elements
+   int n = Mark;
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+   {
+      unsigned j = 0;
+      while (j < m.Basis2().size() && m.Basis1()[i] != m.Basis2()[j])
+	 ++j;
+      if (j == m.Basis2().size())
+      {
+	 // state only exists in basis 1
+	 U(i,n) = LinearAlgebra::DiagonalMatrix<double>(m.Basis1().dim(i), m.Basis1().dim(i), 1.0);
+	 D(n,n) = LinearAlgebra::DiagonalMatrix<double>(m.Basis1().dim(i), m.Basis1().dim(i), 0.0);
+	 ++n;
+      }
+   }
+   // Now for states that only exist in Basis2
+   for (unsigned j = 0; j < m.Basis2().size(); ++j)
+   {
+      unsigned i = 0;
+      while (i < m.Basis1().size() && m.Basis1()[i] != m.Basis2()[j])
+	 ++i;
+      if (i == m.Basis1().size())
+      {
+	 // state only exists in basis 2
+	 Vh(n,j) = LinearAlgebra::DiagonalMatrix<double>(m.Basis2().dim(j), m.Basis2().dim(j), 1.0);
+	 D(n,n) = LinearAlgebra::DiagonalMatrix<double>(m.Basis2().dim(j), m.Basis2().dim(j), 0.0);
+	 ++n;
+      }
+   }
+   U.debug_check_structure();
+   D.debug_check_structure();
+   Vh.debug_check_structure();
+}
+
+void 
+SingularValueDecompositionKeepBasis1Regular(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, 
+				      VectorBasis, VectorBasis> const& m, 
+				      IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, 
+				      VectorBasis, VectorBasis>& U,
+				      IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
+				      VectorBasis, VectorBasis, DiagonalStructure>& D,
+   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+	       VectorBasis, VectorBasis>& Vh)
+{
+   typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+      VectorBasis, VectorBasis> IrredT;
+   typedef IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
+      VectorBasis, VectorBasis, DiagonalStructure> DiagonalT;
+   DEBUG_CHECK(is_scalar(m.TransformsAs()));
+   DEBUG_CHECK(is_regular_basis(m.Basis1()))(m.Basis1());
+   DEBUG_CHECK(is_regular_basis(m.Basis2()))(m.Basis2());
+   // make the basis for the D matrix
+   // For states that exist in both bases, BasisMap tells us where the state from Basis1
+   // occurs in the DBasis
+   std::vector<int> BasisMap(m.Basis1().size(), 0);
+   VectorBasis DBasis(m.GetSymmetryList());
+
+   // Find the superset of the basis 1 and basis 2.  We need to handle separately the
+   // case where a quantum number exists in only one basis
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+   {
+      for (unsigned j = 0; j < m.Basis2().size(); ++j)
+      {
+	 if (m.Basis1()[i] != m.Basis2()[j])
+	    continue;
+
+	 BasisMap[i] = DBasis.size();
+	 DBasis.push_back(m.Basis1()[i], m.Basis1().dim(i));
+      }
+   }
+
+   int const Mark = DBasis.size(); // all states in DBasis from here only exist in one basis
+   // Find states that exist only in Basis1
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+   {
+      unsigned j = 0;
+      while (j < m.Basis2().size() && m.Basis1()[i] != m.Basis2()[j])
+	 ++j;
+      if (j == m.Basis2().size())
+      {
+	 // state only exists in basis 1
+	 DBasis.push_back(m.Basis1()[i], m.Basis1().dim(i));
+      }
+   }
+
+   U = IrredT(m.Basis1(), DBasis);
+   D = DiagonalT(DBasis, DBasis);
+   Vh = IrredT(DBasis, m.Basis2());
+
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+   {
+      for (unsigned j = 0; j < m.Basis2().size(); ++j)
+      {
+	 if (m.Basis1()[i] != m.Basis2()[j])
+	    continue;
+
+	 if (!iterate_at(m.data(), i, j))
+	    continue;
+	 set_element(U.data(), i,BasisMap[i], LinearAlgebra::Matrix<std::complex<double> >());
+	 set_element(Vh.data(), BasisMap[i], j, LinearAlgebra::Matrix<std::complex<double> >());
+	 LinearAlgebra::DiagonalMatrix<double> Dvec;
+	 LinearAlgebra::SingularValueDecompositionFullLeft(m(i,j), 
+							   U(i,BasisMap[i]),
+							   Dvec,
+							   Vh(BasisMap[i], j));
+	 set_element(D, BasisMap[i], BasisMap[i], Dvec);
+      }
+   }
+
+   // Now for the quantum numbers that only exist in Basis1, set the matrix elements
+   int n = Mark;
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+   {
+      unsigned j = 0;
+      while (j < m.Basis2().size() && m.Basis1()[i] != m.Basis2()[j])
+	 ++j;
+      if (j == m.Basis2().size())
+      {
+	 // state only exists in basis 1
+	 U(i,n) = LinearAlgebra::DiagonalMatrix<double>(m.Basis1().dim(i), m.Basis1().dim(i), 1.0);
+	 D(n,n) = LinearAlgebra::DiagonalMatrix<double>(m.Basis1().dim(i), m.Basis1().dim(i), 0.0);
+	 ++n;
+      }
+   }
+
+   U.debug_check_structure();
+   D.debug_check_structure();
+   Vh.debug_check_structure();
+}
+
+void 
+SingularValueDecompositionKeepBasis2Regular(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, 
+				      VectorBasis, VectorBasis> const& m, 
+				      IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, 
+				      VectorBasis, VectorBasis>& U,
+				      IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
+				      VectorBasis, VectorBasis, DiagonalStructure>& D,
+   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+	       VectorBasis, VectorBasis>& Vh)
+{
+   typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+      VectorBasis, VectorBasis> IrredT;
+   typedef IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
+      VectorBasis, VectorBasis, DiagonalStructure> DiagonalT;
+   DEBUG_CHECK(is_scalar(m.TransformsAs()));
+   DEBUG_CHECK(is_regular_basis(m.Basis1()))(m.Basis1());
+   DEBUG_CHECK(is_regular_basis(m.Basis2()))(m.Basis2());
+   // make the basis for the D matrix
+   // For states that exist in both bases, BasisMap tells us where the state from Basis1
+   // occurs in the DBasis
+   std::vector<int> BasisMap(m.Basis1().size(), 0);
+   VectorBasis DBasis(m.GetSymmetryList());
+
+   // Find the superset of the basis 1 and basis 2.  We need to handle separately the
+   // case where a quantum number exists in only one basis
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+   {
+      for (unsigned j = 0; j < m.Basis2().size(); ++j)
+      {
+	 if (m.Basis1()[i] != m.Basis2()[j])
+	    continue;
+
+	 BasisMap[i] = DBasis.size();
+	 DBasis.push_back(m.Basis1()[i], m.Basis2().dim(j));
+      }
+   }
+
+   int const Mark = DBasis.size(); // all states in DBasis from here only exist in one basis
+   // Find states that only exist in Basis2
+   for (unsigned j = 0; j < m.Basis2().size(); ++j)
+   {
+      unsigned i = 0;
+      while (i < m.Basis1().size() && m.Basis1()[i] != m.Basis2()[j])
+	 ++i;
+      if (i == m.Basis1().size())
+      {
+	 // state only exists in basis 2
+	 DBasis.push_back(m.Basis2()[j], m.Basis2().dim(j));
+      }
+   }
+
+   U = IrredT(m.Basis1(), DBasis);
+   D = DiagonalT(DBasis, DBasis);
+   Vh = IrredT(DBasis, m.Basis2());
+
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+   {
+      for (unsigned j = 0; j < m.Basis2().size(); ++j)
+      {
+	 if (m.Basis1()[i] != m.Basis2()[j])
+	    continue;
+
+	 if (!iterate_at(m.data(), i, j))
+	    continue;
+	 set_element(U.data(), i,BasisMap[i], LinearAlgebra::Matrix<std::complex<double> >());
+	 set_element(Vh.data(), BasisMap[i], j, LinearAlgebra::Matrix<std::complex<double> >());
+	 LinearAlgebra::DiagonalMatrix<double> Dvec;
+	 LinearAlgebra::SingularValueDecompositionFullRight(m(i,j), 
+							    U(i,BasisMap[i]),
+							    Dvec,
+							    Vh(BasisMap[i], j));
+	 set_element(D, BasisMap[i], BasisMap[i], Dvec);
+      }
+   }
+
+   // Now for states that only exist in Basis2
+   int n = Mark;
+   for (unsigned j = 0; j < m.Basis2().size(); ++j)
+   {
+      unsigned i = 0;
+      while (i < m.Basis1().size() && m.Basis1()[i] != m.Basis2()[j])
+	 ++i;
+      if (i == m.Basis1().size())
+      {
+	 // state only exists in basis 2
+	 Vh(n,j) = LinearAlgebra::DiagonalMatrix<double>(m.Basis2().dim(j), m.Basis2().dim(j), 1.0);
+	 D(n,n) = LinearAlgebra::DiagonalMatrix<double>(m.Basis2().dim(j), m.Basis2().dim(j), 0.0);
+	 ++n;
+      }
+   }
+   U.debug_check_structure();
+   D.debug_check_structure();
+   Vh.debug_check_structure();
+}
+
+void 
+SingularValueDecompositionFull(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis> const& m, 
+			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis>& U,
+			   IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
+			   VectorBasis, VectorBasis, DiagonalStructure>& D,
+			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			   VectorBasis, VectorBasis>& Vh)
+{
+   typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis> MatrixOperator;
+
+   // If the basis is already regular, don't bother with the extra work
+   if (is_regular_basis(m.Basis1()) && is_regular_basis(m.Basis2()))
+   {
+      SingularValueDecompositionFullRegular(m, U, D, Vh);
+      return;
+   }
+   // else
+
+   MatrixOperator U1 = Regularize(m.Basis1());
+   MatrixOperator U2 = Regularize(m.Basis2());
+
+   SingularValueDecompositionFullRegular(triple_prod(U1, m, herm(U2)), U, D, Vh);
+   U = herm(U1) * U;
+   Vh = Vh * U2;
+}
+
+void 
+SingularValueDecompositionKeepBasis1(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis> const& m, 
+			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis>& U,
+			   IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
+			   VectorBasis, VectorBasis, DiagonalStructure>& D,
+			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			   VectorBasis, VectorBasis>& Vh)
+{
+   typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis> MatrixOperator;
+
+   // If the basis is already regular, don't bother with the extra work
+   if (is_regular_basis(m.Basis1()) && is_regular_basis(m.Basis2()))
+   {
+      SingularValueDecompositionKeepBasis1Regular(m, U, D, Vh);
+      return;
+   }
+   // else
+
+   MatrixOperator U1 = Regularize(m.Basis1());
+   MatrixOperator U2 = Regularize(m.Basis2());
+
+   SingularValueDecompositionKeepBasis1Regular(triple_prod(U1, m, herm(U2)), U, D, Vh);
+   U = herm(U1) * U;
+   Vh = Vh * U2;
+}
+
+void 
+SingularValueDecompositionKeepBasis2(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis> const& m, 
+			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis>& U,
+			   IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
+			   VectorBasis, VectorBasis, DiagonalStructure>& D,
+			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			   VectorBasis, VectorBasis>& Vh)
+{
+   typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis> MatrixOperator;
+
+   // If the basis is already regular, don't bother with the extra work
+   if (is_regular_basis(m.Basis1()) && is_regular_basis(m.Basis2()))
+   {
+      SingularValueDecompositionKeepBasis2Regular(m, U, D, Vh);
+      return;
+   }
+   // else
+
+   MatrixOperator U1 = Regularize(m.Basis1());
+   MatrixOperator U2 = Regularize(m.Basis2());
+
+   SingularValueDecompositionKeepBasis1Regular(triple_prod(U1, m, herm(U2)), U, D, Vh);
+   U = herm(U1) * U;
+   Vh = Vh * U2;
+}
+
 IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
 InvertDiagonal(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
 	       VectorBasis, VectorBasis> const& Op, double Cutoff)

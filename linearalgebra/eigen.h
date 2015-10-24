@@ -101,6 +101,60 @@ SingularValueDecomposition(A const& a, U& u, D& d, Vt& vt)
    return ImplementSingularValueDecomposition<A,U,D,Vt>()(a,u,d,vt);
 }
 
+template <typename A, typename U, typename D, typename Vt,
+          typename Ai = typename interface<A>::type,
+          typename Ui = typename interface<U>::type,
+          typename Di = typename interface<D>::type,
+          typename Vti = typename interface<Vt>::type>
+struct ImplementSingularValueDecompositionFull {};
+
+template <typename A, typename U, typename D, typename Vt>
+inline
+typename ImplementSingularValueDecompositionFull<A,U,D,Vt>::result_type
+SingularValueDecompositionFull(A const& a, U& u, D& d, Vt& vt)
+{
+   return ImplementSingularValueDecompositionFull<A,U,D,Vt>()(a,u,d,vt);
+}
+
+// Given MxN matrix,
+// U is MxM
+// D is MxM
+// Vt is MxN
+template <typename A, typename U, typename D, typename Vt,
+          typename Ai = typename interface<A>::type,
+          typename Ui = typename interface<U>::type,
+          typename Di = typename interface<D>::type,
+          typename Vti = typename interface<Vt>::type>
+struct ImplementSingularValueDecompositionFullLeft {};
+
+template <typename A, typename U, typename D, typename Vt>
+inline
+typename ImplementSingularValueDecompositionFullLeft<A,U,D,Vt>::result_type
+SingularValueDecompositionFullLeft(A const& a, U& u, D& d, Vt& vt)
+{
+   return ImplementSingularValueDecompositionFullLeft<A,U,D,Vt>()(a,u,d,vt);
+}
+
+
+// Given MxN matrix,
+// U is MxN
+// D is NxN
+// Vt is NxN
+template <typename A, typename U, typename D, typename Vt,
+          typename Ai = typename interface<A>::type,
+          typename Ui = typename interface<U>::type,
+          typename Di = typename interface<D>::type,
+          typename Vti = typename interface<Vt>::type>
+struct ImplementSingularValueDecompositionFullRight {};
+
+template <typename A, typename U, typename D, typename Vt>
+inline
+typename ImplementSingularValueDecompositionFullRight<A,U,D,Vt>::result_type
+SingularValueDecompositionFullRight(A const& a, U& u, D& d, Vt& vt)
+{
+   return ImplementSingularValueDecompositionFullRight<A,U,D,Vt>()(a,u,d,vt);
+}
+
 //
 // DiagonalizeSymmetric
 //

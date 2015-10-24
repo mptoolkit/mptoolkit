@@ -359,6 +359,106 @@ void SingularValueDecomposition(int Size1, int Size2,
    StackAlloc::deallocate_type<double>(rwork, lrwork);
 }
 
+// let MAX = max(M,N)
+// A is M x N
+// U is M x MAX
+// D is MAX x MAX
+// VT is MAX x N
+void SingularValueDecompositionFull(int Size1, int Size2, double* A, double* U,
+				    double* D, double* VT)
+{
+   // For FORTRAN, we have to regard everything as the transpose.  The SDV of A^T is
+   // VT^T * D * U^T, which means we have to swap all row/column numbers,
+   // and also interchange VT and U.
+   char jobu = 'A';
+   char jobvt = 'A';
+   int m = Size2;    // remembering that FORTRAN regards the matrices as the transpose, rows/cols are reversed.
+   int n = Size1;
+   int max_mn = std::max(m,n);
+   double* a = A;
+   int lda = m;
+   double* s = D;
+   double* u = VT;
+   int ldu = max_mn;
+   double* vt = U;
+   int ldvt = n;
+   double worksize;
+   double* work = &worksize;
+   int lwork = -1;
+   Fortran::integer info = 0;
+
+   // query for the optimial sizes of the workspace
+   LAPACK::dgesvd(jobu, jobvt, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, info);
+
+   lwork = int(work[0]);
+   work = static_cast<double*>(StackAlloc::allocate(lwork * sizeof(double)));
+
+   // do the actual call
+   LAPACK::dgesvd(jobu, jobvt, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, info);
+   CHECK(info == 0)("LAPACK::dgesvd")(info);
+
+   StackAlloc::deallocate(work, lwork * sizeof(double));
+}
+
+// A is MxN
+// U is MxM
+// D is min(M,N)
+// VH is NxN
+//
+// Recall Fortran uses column-major, so everything is transposed
+// This means A^T = VH^T D U^T
+// M -> n
+// N -> m
+// A'  = A^T is m x n
+// U'  = VH^T is m x m
+// D'  = D is min(m,n)
+// VH' = U^T is n x n
+
+void SingularValueDecompositionFull(int Size1, int Size2, 
+				    std::complex<double>* A, 
+				    std::complex<double>* U,
+				    double* D, 
+				    std::complex<double>* VH)
+{
+   // For FORTRAN, we have to regard everything as the transpose.  The SDV of A^T is
+   // VH^T * D * U^T, which means we have to swap all row/column numbers,
+   // and also interchange VH and U.
+   char jobu = 'A';
+   char jobvh = 'A';
+   int m = Size2;    // remembering that FORTRAN regards the matrices as the transpose, rows/cols are reversed.
+   int n = Size1;
+   int max_mn = std::max(m,n);
+   int min_mn = std::min(m,n);
+   std::complex<double>* a = A;
+   int lda = m;
+   double* s = D;
+   std::complex<double>* u = VH;
+   int ldu = m;
+   std::complex<double>* vh = U;
+   int ldvh = n;
+   DEBUG_CHECK(ldvh != 0); // This corner case is not allowed by LAPACK
+   std::complex<double> worksize;
+   std::complex<double>* work = &worksize;
+   int lwork = -1;
+   int lrwork = 5 * min_mn;
+   Fortran::integer info = 0;
+
+   double* rwork = StackAlloc::allocate_type<double>(lrwork);
+
+   // query for the optimial sizes of the workspace
+   LAPACK::zgesvd(jobu, jobvh, m, n, a, lda, s, u, ldu, vh, ldvh, work, lwork, rwork, info);
+
+   lwork = int(work[0].real());
+   work = StackAlloc::allocate_type<std::complex<double> >(lwork);
+
+   // do the actual call
+   LAPACK::zgesvd(jobu, jobvh, m, n, a, lda, s, u, ldu, vh, ldvh, work, lwork, rwork, info);
+   CHECK(info == 0)("LAPACK::zgesvd")(info);
+
+   StackAlloc::deallocate_type<std::complex<double> >(work, lwork);
+   StackAlloc::deallocate_type<double>(rwork, lrwork);
+}
+
 void TridiagonalizeHermitian(int Size, std::complex<double>* A, int ldA, 
                              double* Diag,
                              double* SubDiag)
