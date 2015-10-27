@@ -295,8 +295,9 @@ struct SubProductLeftProject
        {
 	  Result = operator_prod(herm(*I), Result, *I);
        }
+      Result = In - Result;
       Result -= inner_prod(Proj, Result) * Ident;
-      return In - Result;
+      return Result;
    }
 
    LinearWavefunction const& Psi;
@@ -326,8 +327,9 @@ struct SubProductRightProject
 	 Result = operator_prod(*I, Result, herm(*I));
       }
       Result = delta_shift(Result, adjoint(QShift));
+      Result = In - Result;
       Result -= inner_prod(Proj, Result) * Ident;
-      return In - Result;
+      return Result;
    }
 
    LinearWavefunction const& Psi;
@@ -353,6 +355,8 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
    // calculate the energy
    double Energy = inner_prod(Guess.back(), Rho).real();
 
+   Guess.front() = Ident;
+
    MatrixOperator H0 = Guess.back() - Energy*Guess.front();
    // Now we want the fixed point of H = U(H) + H_0
    // where U(H) is the shift one site.
@@ -371,12 +375,52 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
    DEBUG_TRACE("Spurious part")(inner_prod(Guess.back(), Rho));
    Guess.back() -= inner_prod(Rho, Guess.back()) * Guess.front();
 
+   // Make it Hermitian
+   Guess.back() = 0.5 * (Guess.back() + adjoint(Guess.back()));
+
+   // residual
+   MatrixOperator R = delta_shift(Guess.back(), QShift);
+   for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
+   {
+      R = operator_prod(herm(*I), R, *I);
+   }
+   R += H0;
+
+   TRACE(norm_frob(Guess.back() - R));
+
+#if 0
+   for (int k = 0; k < 2400; ++k)
+      //while (norm_frob(Guess.back()-R) > 1E-14)
+   {
+      Guess.back() = R;
+      // one more iteration
+      R = delta_shift(R, QShift);
+      for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
+      {
+	 R = operator_prod(herm(*I), R, *I);
+      }
+      R += H0;
+      // orthogonalize
+      R -= inner_prod(Rho, R) * Guess.front();
+      TRACE(norm_frob(Guess.back() - R));
+   }
+#endif
+
+   Guess.back() = R;
+
+   // Make it Hermitian
+   Guess.back() = 0.5 * (Guess.back() + adjoint(Guess.back()));
+
 #if 0
 #if !defined(NDEBUG)
-   KMatrixPolyType CheckEMat = SolveMPO_Left(Psi, QShift, Op, delta_shift(Ident, QShift), Rho, 1);
-   ComplexPolyType EValues = ExtractOverlap(CheckEMat[std::complex<double>(1.0,0.0)], delta_shift(Rho, QShift));
+   std::vector<KMatrixPolyType> CheckEMat;
+   SolveMPO_Left(CheckEMat, Psi, QShift, Op, delta_shift(Ident, QShift), Rho, true);
+   ComplexPolyType EValues = ExtractOverlap(CheckEMat.back()[1.0], delta_shift(Rho, QShift));
    TRACE(EValues);
-   TRACE(CheckEMat[std::complex<double>(1.0,0.0)]);
+   MatrixOperator HCheck = CheckEMat.back()[1.0][0];
+   TRACE(norm_frob(HCheck - Guess.back()));
+   TRACE(inner_prod(HCheck, Rho));
+   Guess.back() = HCheck;
 #endif
 #endif
 
@@ -401,6 +445,8 @@ MPO_EigenvaluesRight(StateComponent& Guess, LinearWavefunction const& Psi,
    // calculate the energy
    double Energy = inner_prod(Guess.front(), Rho).real();
 
+   Guess.back() = Ident;
+
    MatrixOperator H0 = Guess.front() - Energy*Guess.back();
 
    // Now we want the fixed point of H = U(H) + H_0
@@ -417,6 +463,45 @@ MPO_EigenvaluesRight(StateComponent& Guess, LinearWavefunction const& Psi,
 
    // remove the spurious constant term from the energy
    Guess.front() =  Guess.front() - inner_prod(Rho, Guess.front()) * Guess.back();
+
+   // Make it Hermitian
+   Guess.front() = 0.5 * (Guess.front() + adjoint(Guess.front()));
+
+   // residual
+   MatrixOperator R = delta_shift(Guess.front(), adjoint(QShift));
+   LinearWavefunction::const_iterator I = Psi.end();
+   while (I != Psi.begin())
+   {
+      --I;
+      R = operator_prod(*I, R, herm(*I));
+   }
+   R = delta_shift(R, adjoint(QShift));
+   R += H0;
+
+   TRACE(norm_frob(Guess.front() - R))(R)(Guess.front());
+
+#if 0
+   for (int k = 0; k < 2400; ++k)
+   //while (norm_frob(Guess.front()-R) > 1E-14)
+   {
+      Guess.front() = R;
+       I = Psi.end();
+       while (I != Psi.begin())
+       {
+	  --I;
+	  R = operator_prod(*I, R, herm(*I));
+       }
+       R = delta_shift(R, adjoint(QShift));
+       R += H0;
+       R = R - inner_prod(Rho, R) * Guess.back();
+       TRACE(norm_frob(Guess.front()-R));
+   }
+#endif
+
+   Guess.front() = R;
+
+   // Make it Hermitian
+   Guess.front() = 0.5 * (Guess.front() + adjoint(Guess.front()));
 
    return Energy;
 }
@@ -922,7 +1007,7 @@ iDMRG::UpdateRightBlock(double HMix)
       V = T;
       F = triple_prod(herm(V), F, V);
 
-      for (int n = 0; n < F.size(); ++n)
+      for (unsigned n = 0; n < F.size(); ++n)
       {
 	 TRACE(norm_frob(F[n] - RightHamiltonian.front()[n]));
       }
@@ -1132,8 +1217,8 @@ int main(int argc, char** argv)
       int MinStates = 1;
       std::string States = "100";
       int NumSteps = 10;
-      double TruncCutoff = -1;
-      double EigenCutoff = -1;
+      double TruncCutoff = 0;
+      double EigenCutoff = 1E-16;
       std::string FName;
       std::string HamStr;
       std::string CouplingFile;
@@ -1500,8 +1585,19 @@ int main(int argc, char** argv)
 	 RealDiagonalOperator D;
 	 boost::tie(U, D, PsiR) = get_right_canonical(Wavefunction.get<InfiniteWavefunctionLeft>());
 	 
+	 TRACE(norm_frob(R*U - U*D));
+	 TRACE(1.0-inner_prod(MatrixOperator(R),MatrixOperator(D)));
+	 TRACE(norm_frob(MatrixOperator(R)-MatrixOperator(D)));
+	 TRACE(R)(D);
+
 	 MatrixOperator L = D;
+
+#if 0
+	 L = triple_prod(U,L,herm(U));
+	 PsiR.set_front(prod(U, PsiR.get_front()));
+#else
 	 PsiR.set_back(prod(PsiR.get_back(), delta_shift(U, adjoint(QShift))));
+#endif
 
 	 BlockHamR = Initial_F(HamMPO, PsiR.Basis2());
 
@@ -1512,7 +1608,8 @@ int main(int argc, char** argv)
 	 CHECK(norm_frob(X - MatrixOperator::make_identity(PsiR.Basis1())) < 1E-12)(X);
 #endif
 
-         MatrixOperator Rho = D;	
+         MatrixOperator Rho = L;
+	 Rho = D;
 	 //         MatrixOperator Rho = R;
 	 Rho = scalar_prod(Rho, herm(Rho));
 #if !defined(NDEBUG)
@@ -1521,14 +1618,60 @@ int main(int argc, char** argv)
 	 CHECK(norm_frob(delta_shift(XX,QShift) - Rho) < 1E-12)(norm_frob(delta_shift(XX,QShift) - Rho) )(XX)(Rho);
 #endif
 
+	 //	 BlockHamL.back() = triple_prod(herm(U), BlockHamL.back(), U);
+
 	 // We obtained Rho from the left side, so we need to delta shift to the right basis
 	 Rho = delta_shift(Rho, adjoint(QShift));
 	 
 	 std::complex<double> Energy = MPO_EigenvaluesRight(BlockHamR, PsiR, QShift, HamMPO, Rho);
 	 std::cout << "Starting energy (right eigenvalue) = " << Energy << std::endl;
 
+	 TRACE(norm_frob(MatrixOperator(R) - triple_prod(U,L,herm(U))));
+	 //	 TRACE(MatrixOperator(R) - triple_prod(U,L,herm(U)));
+
+#if 1
 	 U = delta_shift(U, adjoint(QShift));
 	 BlockHamR = prod(prod(U, BlockHamR), herm(U));
+
+#if 0
+	 BlockHamL = triple_prod(herm(U), BlockHamL, U);
+	 Psi.set_back(prod(Psi.get_back(), U));
+	 Psi.set_front(prod(adjoint(U), Psi.get_front()));
+	 R = D;
+
+#if 1
+	 StateComponent BlockHamLCheck = BlockHamL;
+
+	 BlockHamL = Initial_E(HamMPO , Psi.Basis1());
+         Rho = scalar_prod(R, herm(R));
+	 InitialEnergy = MPO_EigenvaluesLeft(BlockHamL, Psi, QShift, HamMPO, Rho);
+	 std::cout << "Starting energy (left eigenvalue) = " << InitialEnergy << std::endl;
+
+	 BlockHamL = delta_shift(BlockHamL, QShift);
+
+	 TRACE(inner_prod(BlockHamLCheck - BlockHamL, Rho));
+#endif
+#endif
+#endif
+
+	 TRACE(norm_frob(BlockHamL.back() - BlockHamR.front()));
+	 TRACE(inner_prod(BlockHamL.back() - BlockHamR.front(), Rho));
+
+	 // Check the energy
+	 MatrixOperator Cn = D; // center matrix
+	 Cn = U*Cn*adjoint(U);
+	 TRACE(norm_frob(Cn));
+	 Cn *= 1.0 / norm_frob(Cn);
+	 MatrixOperator Cnp = operator_prod(BlockHamL, Cn, herm(BlockHamR));
+	 std::complex<double> e = inner_prod(Cn, Cnp);
+	 TRACE(e);
+	 TRACE(norm_frob(e*Cn - Cnp));
+	 TRACE(inner_prod(e*Cn - Cnp, Cn));
+	 TRACE(norm_frob(conj(e)*Cn - Cnp));
+
+
+	 
+
       }
 
       // initialization complete.

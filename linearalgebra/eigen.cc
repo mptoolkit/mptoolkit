@@ -3,6 +3,11 @@
 #include "matrix.h"
 #include "scalarmatrix.h"
 
+// randomize signs of vectors in debug mode
+#if !defined(NDEBUG) && !defined(RANDOMIZE_VECTORS)
+#define RANDOMIZE_VECTORS
+#endif
+
 namespace LinearAlgebra
 {
 
@@ -475,6 +480,14 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
 
       Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy),
                                           data(Ures), data(Dres), data(Vtres));
+#if defined(RANDOMIZE_VECTORS)
+      for (unsigned i = 0; i < min_mn; ++i)
+      {
+	 double Phase = (rand() % 2) * 2.0 - 1.0;
+	 Ures(LinearAlgebra::all,i) *= Phase;
+	 Vtres(i,LinearAlgebra::all) *= LinearAlgebra::conj(Phase);
+      }
+#endif
       assign(u, Ures);
       assign(d, Dres);
       assign(vt, Vtres);
@@ -509,6 +522,14 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
 
       Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy),
                                           data(Ures), data(Dres), data(Vtres));
+#if defined(RANDOMIZE_VECTORS)
+      for (unsigned i = 0; i < min_mn; ++i)
+      {
+	 double Phase = (rand() % 2) * 2.0 - 1.0;
+	 Ures(LinearAlgebra::all,i) *= Phase;
+	 Vtres(i,LinearAlgebra::all) *= LinearAlgebra::conj(Phase);
+      }
+#endif
       assign(u, Ures);
       assign(d, Dres);
       assign(vt, Vtres);
@@ -546,6 +567,14 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
 
       Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy),
                                           data(Ures), data(Dres), data(Vtres));
+#if defined(RANDOMIZE_VECTORS)
+      for (unsigned i = 0; i < min_mn; ++i)
+      {
+	 double Phase = (rand() % 2) * 2.0 - 1.0;
+	 Ures(LinearAlgebra::all,i) *= Phase;
+	 Vtres(i,LinearAlgebra::all) *= LinearAlgebra::conj(Phase);
+      }
+#endif
       assign(u, Ures);
       assign(d.diagonal(), Dres);
       assign(vt, Vtres);
@@ -582,6 +611,15 @@ struct ImplementSingularValueDecompositionFull<A, U, D, Vt,
 
       Private::SingularValueDecompositionFull(size1(Acopy), size2(Acopy), data(Acopy),
 					      data(Ures), data(Dres), data(Vtres));
+      // randomize signs
+#if defined(RANDOMIZE_VECTORS)
+      for (unsigned i = 0; i < min_mn; ++i)
+      {
+	 double Phase = (rand() % 2) * 2.0 - 1.0;
+	 Ures(LinearAlgebra::all,i) *= Phase;
+	 Vtres(i,LinearAlgebra::all) *= LinearAlgebra::conj(Phase);
+      }
+#endif
       zero_all(u);
       zero_all(d);
       zero_all(vt);

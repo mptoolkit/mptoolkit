@@ -172,6 +172,16 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi
    D = SqrtDiagonal(D, OrthoTol);
    MatrixOperator DInv = InvertDiagonal(D, OrthoTol);
 
+   // At this point, any matrix elements in D that are smaller than OrthoTol can be removed
+   // from the basis, because they have negligible weight in the wavefunction.
+   // However, we should be able to cope with states in the basis that have zero weight;
+   // we can still orthogonalize the basis, and the matrix elements of any unitary that
+   // act in the direction of small elements of D are arbitary, so we can set them to whatever is
+   // needed to canonicalize the state.
+   // If we are orthogonalizing the state as an intermediate step and expecting to continue calculations,
+   // then we should keep all states even if they have small weight.  But if this is the final calculation
+   // then we should remove small elements as they have no effect on the final wavefunction.
+
    // LeftEigen = triple_prod(U, D*D, herm(U))
    DEBUG_CHECK(norm_frob(LeftEigen - triple_prod(herm(U), D*D, U)) < 1e-10)
       (norm_frob(LeftEigen - triple_prod(herm(U), D*D, U)));
@@ -179,17 +189,21 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi
    MatrixOperator A = delta_shift(D * U, QShift);
    MatrixOperator AInv = adjoint(U) * DInv;
 
-   //A = left_orthogonalize(A, PsiL);
-   //PsiL.set_back(prod(PsiL.get_back(), A*AInv));
-
+#if 1
+   // Explicitly re-othogonalize.  In principle this is not necessary,
+   // but it gives some more robustness
+   A = left_orthogonalize(A, PsiL);
+   PsiL.set_back(prod(PsiL.get_back(), A*AInv));
+#else
    PsiL.set_front(prod(A, PsiL.get_front()));
    PsiL.set_back(prod(PsiL.get_back(), AInv));
+#endif
 
    // At this point, the left eigenvector is the identity matrix. 
 #if !defined(NDEBUG)
    MatrixOperator I = MatrixOperator::make_identity(PsiL.Basis1());
    A = LeftMultiply(PsiL, QShift)(I);
-   CHECK(norm_frob(A-EtaL*I) < 10*A.Basis1().total_dimension() * ArnoldiTol);
+   CHECK(norm_frob(A-EtaL*I) < 10*A.Basis1().total_dimension() * ArnoldiTol)(norm_frob(A-EtaL*I))(A)(I)(D);
 #endif 
 
    // same for the right eigenvector, which will be the density matrix
