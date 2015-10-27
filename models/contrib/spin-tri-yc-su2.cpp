@@ -129,6 +129,8 @@ int main(int argc, char** argv)
                    << "H_v     - potential term of quantum dimer model's Hamiltonian on the triangular lattice\n"
                    << "S       - total spin on a leg of the cylinder\n"
                    << "StagS   - staggered magnetization over a unit-cell\n\n"
+                   << "T       - translation by one site (rotation by 2\u0071/w) in lattice short direction\n"
+                   << "R       - reflection in lattice short direction (may need applying T-operators to become gneral reflection)\n"
 		   << "If the lattice could be potentially tripartite (width is a multiple of 3), then we\n"
 		   << "define sublattice spin operators on a \"width*3\" unit cells as,\n"
 		   << "S_A     - tripartite sublattice spin, including site S(0)[0]\n"
@@ -145,15 +147,30 @@ int main(int argc, char** argv)
       UnitCell Cell = repeat(Site, w);
       UnitCellOperator S(Cell, "S"), StagS(Cell, "StagS");
       UnitCellOperator I(Cell, "I"); // identity operator
+      UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
+      Trans = I(0);
+      Ref = I(0);
 
-      // Add some operators on the unit cell
+      // Add some operators on the unit-cell
    
       for (int i = 0; i < w; ++i)
       {
-	 S += S[i];     // total spin on a leg of cylinder
-         StagS += IntPow(-1,i) * S[i]; 
+	 S += S[i];                                         // total spin on a leg of cylinder
+         StagS += IntPow(-1,i) * S[i];            
       }
 
+      for (int i = 0; i < w-1; ++i)
+       {
+           //T *= 0.5*( 0.25*inner(S[i],S[i+1]) + 1 );
+	  Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
+       }
+
+      for (int i = 0; i < w/2; ++i)
+       {
+           //R *= 0.5*( 0.25*inner(S[i],S[w-i-1]) + 1 );    // old way of representing R-operator.
+	  Ref = Ref(0) * Cell.swap_gate_no_sign(i, w-i-1);
+       }
+          
       // if we could have tripartite symmetry, add operators for the sublattice magnetization
       UnitCellMPO S_A, S_B, S_C;
 
@@ -166,6 +183,7 @@ int main(int argc, char** argv)
 	    S_C += S(0)[i+2] + S(1)[(i+4)%w] + S(2)[(i+3)%w];
 	 }
       }
+
 
       // Now we construct the InfiniteLattice,
       InfiniteLattice Lattice(Cell);
