@@ -234,25 +234,8 @@ int main(int argc, char** argv)
 	 inplace_conj(Psi2);
       }
 
-      // If the wavefunctions don't match in size, then increase them to the lowest common multiple
-      if (Psi1.size() != Psi2.size())
-      {
-	 int Size = statistics::lcm(Psi1.size(), Psi2.size());
-	 if (Verbose)
-	 {
-	    std::cerr << "Wavefunction unit cells differ, extending wavefunctions to size " << Size << '\n';
-	 }
-	 
-	 Psi1 = repeat(Psi1, Size/Psi1.size());
-	 Psi2 = repeat(Psi2, Size/Psi2.size());
-	 DEBUG_CHECK_EQUAL(Psi1.size(), Psi2.size());
-      }
+      int Size = statistics::lcm(Psi1.size(), Psi2.size());
 
-      // The default UnitCellSize for output is the wavefunction size
-      if (UnitCellSize == 0)
-	 UnitCellSize = Psi1.size();
-      double ScaleFactor = double(UnitCellSize) / double(Psi1.size());
-	 
       ProductMPO StringOp;
       if (vm.count("string"))
       {
@@ -262,15 +245,27 @@ int main(int argc, char** argv)
 	 {
 	    std::cout << "String MPO is:\n" << StringOp << '\n';
 	 }
-	 CHECK(Psi1.size() % StringOp.size() == 0)
-	    ("Wavefunction size must be a multiple of the string operator size")
-	    (Psi1.size())(StringOp.size());
-	 StringOp = repeat(StringOp, Psi1.size() / StringOp.size());
       }
       else
       {
          StringOp = ProductMPO::make_identity(ExtractLocalBasis(Psi2));
       }
+
+      Size = statistics::lcm(Size, StringOp.size());
+      StringOp = repeat(StringOp, Size / StringOp.size());
+
+      if (Verbose > 0 && Psi1.size() != Psi2.size())
+      {
+	 std::cerr << "Wavefunction unit cells differ, extending wavefunctions to size " << Size << '\n';
+      }
+
+      Psi1 = repeat(Psi1, Size/Psi1.size());
+      Psi2 = repeat(Psi2, Size/Psi2.size());
+      
+      // The default UnitCellSize for output is the wavefunction size
+      if (UnitCellSize == 0)
+	 UnitCellSize = Size;
+      double ScaleFactor = double(UnitCellSize) / double(Psi1.size());
 
       // get the list of quantum number sectors
       std::set<QuantumNumber> Sectors;
@@ -302,6 +297,10 @@ int main(int argc, char** argv)
 	    std::cout << ' ' << argv[i];
 	 std::cout << "\n#quantities are calculated per unit cell size of " << UnitCellSize 
 		   << (UnitCellSize == 1 ? " site\n" : " sites\n");
+	 if (Size != UnitCellSize)
+	 {
+	    std::cout << "#actual size of wavefunction is " << Size << '\n';
+	 }
          std::cout << "#sector     ";
          if (ShowRealPart)
             std::cout << "#real                   ";

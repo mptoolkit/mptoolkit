@@ -179,7 +179,7 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi
    // act in the direction of small elements of D are arbitary, so we can set them to whatever is
    // needed to canonicalize the state.
    // If we are orthogonalizing the state as an intermediate step and expecting to continue calculations,
-   // then we should keep all states even if they have small weight.  But if this is the final calculation
+   // then we should keep all states even if they have small (or zero) weight.  But if this is the final calculation
    // then we should remove small elements as they have no effect on the final wavefunction.
 
    // LeftEigen = triple_prod(U, D*D, herm(U))
