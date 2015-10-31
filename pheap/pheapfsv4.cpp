@@ -6,6 +6,7 @@
 */
 
 #include "pheapfsv4.h"
+#include "pheaperror.h"
 #include "rawpagestream.h"
 #include "common/inttype.h"
 #include <algorithm>
@@ -398,7 +399,7 @@ int FileSystem::ReadPageFileMetadata(std::string const& Path, std::string const&
 
    if (std::string(Magic) != "PHFS")
    {
-      PANIC("Invalid page, probably caused by a corrupt file")(FileName);
+      throw PHeapError("Invalid file metadata, probably caused by a corrupt file.");
    }
 
    uint32_t CheckVersion = MetaIn.read<uint32>();
@@ -406,7 +407,10 @@ int FileSystem::ReadPageFileMetadata(std::string const& Path, std::string const&
 
    if (pheap::ExpectedPageFileVersion() != -1 && pheap::ExpectedPageFileVersion() != int(CheckVersion))
    {
-      PANIC("Page file version mismatch") << "Expected version " << pheap::ExpectedPageFileVersion() << " but version is " << CheckVersion;
+      std::ostringstream Out;
+      Out << "Page file version mismatch, expected version=" << pheap::ExpectedPageFileVersion() 
+	  << " but version is " << CheckVersion;
+      throw PHeapVersionMismatch(Out.str());
    }
 
    if (CheckVersion < 1 || CheckVersion > 2)

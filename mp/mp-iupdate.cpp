@@ -87,6 +87,10 @@ int main(int argc, char** argv)
       std::cerr << "Exception while processing command line options: " << e.what() << '\n';
       return 1;
    }
+   catch (PHeap::PHeapVersionMismatch&)
+   {
+      std::cerr << "mp-iupdate: no action taken, the wavefunction is already updated.\n";
+   }
    catch (std::exception& e)
    {
       std::cerr << "Exception: " << e.what() << '\n';

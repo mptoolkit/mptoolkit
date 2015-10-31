@@ -15,6 +15,7 @@
 #include "common/hash_map.h"
 #include "common/niftycounter.h"
 #include "pstream/pstream.h"
+#include "pheaperror.h"
 #include "pheapallocator.h"
 #include "pheapfsblock.h"
 #include "pheapstream.h"  // TODO: we shouldn't really need this, only for ::Write() function
