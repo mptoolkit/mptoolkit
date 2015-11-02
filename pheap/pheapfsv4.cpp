@@ -399,7 +399,7 @@ int FileSystem::ReadPageFileMetadata(std::string const& Path, std::string const&
 
    if (std::string(Magic) != "PHFS")
    {
-      throw PHeapError("Invalid file metadata, probably caused by a corrupt file.");
+      throw pheap::PHeapError("Invalid file metadata, probably caused by a corrupt file.");
    }
 
    uint32_t CheckVersion = MetaIn.read<uint32>();
@@ -410,7 +410,7 @@ int FileSystem::ReadPageFileMetadata(std::string const& Path, std::string const&
       std::ostringstream Out;
       Out << "Page file version mismatch, expected version=" << pheap::ExpectedPageFileVersion() 
 	  << " but version is " << CheckVersion;
-      throw PHeapVersionMismatch(Out.str());
+      throw pheap::PHeapVersionMismatch(Out.str());
    }
 
    if (CheckVersion < 1 || CheckVersion > 2)

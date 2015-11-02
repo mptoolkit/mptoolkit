@@ -4,6 +4,7 @@
 #include "wavefunction/infinitewavefunction_old.h"
 #include "quantumnumbers/all_symmetries.h"
 #include "pheap/pheap.h"
+#include "pheap/pheaperror.h"
 #include <iostream>
 #include "mp/copyright.h"
 #include "common/environment.h"
@@ -87,7 +88,7 @@ int main(int argc, char** argv)
       std::cerr << "Exception while processing command line options: " << e.what() << '\n';
       return 1;
    }
-   catch (PHeap::PHeapVersionMismatch&)
+   catch (pheap::PHeapVersionMismatch&)
    {
       std::cerr << "mp-iupdate: no action taken, the wavefunction is already updated.\n";
    }
