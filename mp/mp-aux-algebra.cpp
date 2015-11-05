@@ -17,6 +17,7 @@
 #include "lattice/unitcell-parser.h"
 #include "linearalgebra/arpack_wrapper.h"
 #include <boost/algorithm/string/predicate.hpp>
+#include "common/statistics.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -78,11 +79,13 @@ int main(int argc, char** argv)
       bool Quiet = false;
       std::vector<std::string> OperatorStr;
       std::vector<std::string> CommutatorStr;
+      int Length = 0;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
          ("wavefunction,w", prog_opt::value(&PsiStr), "Wavefunction [required]")
+	 ("length", prog_opt::value(&Length), "Length of the unit cell to use")
 	 ("lattice,l", prog_opt::value(&LatticeFile), "use this lattice file for the operators")
 	 ("commutator,c", prog_opt::value(&CommutatorStr), 
 	  "calculate the commutator phase angle, U X X^\\dagger = exp(i*theta) X")
@@ -137,6 +140,11 @@ int main(int argc, char** argv)
          = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
 
       InfiniteWavefunctionLeft InfPsi = Psi->get<InfiniteWavefunctionLeft>();
+
+      if (vm.count("length"))
+      {
+	 InfPsi = repeat(InfPsi, Length);
+      }
 
       // Load the lattice, if it was specified
       pvalue_ptr<InfiniteLattice> Lattice = pheap::ImportHeap(LatticeFile);
