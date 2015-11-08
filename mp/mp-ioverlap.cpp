@@ -9,7 +9,7 @@
 #include "common/environment.h"
 #include "common/prog_options.h"
 #include "lattice/unitcell.h"
-#include "lattice/product-parser.h"
+#include "lattice/infinite-parser.h"
 #include "common/statistics.h"
 
 namespace prog_opt = boost::program_options;
@@ -321,7 +321,7 @@ int main(int argc, char** argv)
       for (std::set<QuantumNumber>::const_iterator I = Sectors.begin(); I != Sectors.end(); ++I)
       {
 	 //FiniteMPO StringOp = FiniteMPO::make_identity(ExtractLocalBasis(Psi2.Psi));
-         TransEigenInfo Info(*I, overlap(Psi1, StringOp, Psi2, *I, Iter, Tol, Verbose));
+         TransEigenInfo Info(*I, overlap(Psi1, StringOp, Psi2, *I, Iter, Tol, Verbose).first);
          if (Sort)
             EigenList.push_back(Info);
          else

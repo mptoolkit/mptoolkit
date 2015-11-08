@@ -377,6 +377,30 @@ MatrixOperator operator_prod(StateComponent const& A,
    return Result;
 }
 
+StateComponent operator_prod(LinearAlgebra::HermitianProxy<StateComponent> const& A, 
+                             StateComponent const& E,
+                             StateComponent const& B)
+{
+   StateComponent Result(E.LocalBasis(), A.base().Basis2(), B.Basis2());
+   for (unsigned q = 0; q < E.size(); ++q)
+   {
+      Result[q] = operator_prod(A, E[q], B);
+   }
+   return Result;
+}
+
+StateComponent operator_prod(StateComponent const& A, 
+                             StateComponent const& E,
+                             LinearAlgebra::HermitianProxy<StateComponent> const& B)
+{
+   StateComponent Result(E.LocalBasis(), A.Basis1(), B.base().Basis1());
+   for (unsigned q = 0; q < E.size(); ++q)
+   {
+      Result[q] = operator_prod(A, E[q], B);
+   }
+   return Result;
+}
+
 MatrixOperator
 operator_prod_regular(StateComponent const& A, 
                       MatrixOperator const& E,

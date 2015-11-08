@@ -14,44 +14,46 @@
 #include "tensor/tensor_eigen.h"
 #include "mp-algorithms/arnoldi.h"
 #include "lattice/unitcell.h"
-#include "lattice/unitcell-parser.h"
+#include "lattice/infinite-parser.h"
 #include "linearalgebra/arpack_wrapper.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include "common/statistics.h"
+#include <tuple>
 
 namespace prog_opt = boost::program_options;
 
 template <typename Func>
 struct PackApplyFunc
 {
-   PackApplyFunc(PackMatrixOperator const& Pack_, Func f_) : Pack(Pack_), f(f_) {}
+   PackApplyFunc(PackStateComponent const& Pack_, Func f_) : Pack(Pack_), f(f_) {}
 
    void operator()(std::complex<double> const* In, std::complex<double>* Out) const
    {
-      MatrixOperator x = Pack.unpack(In);
+      StateComponent x = Pack.unpack(In);
       x = f(x);
       Pack.pack(x, Out);
    } 
-   PackMatrixOperator const& Pack;
+   PackStateComponent const& Pack;
    Func f;
 };
 
 template <typename Func>
 PackApplyFunc<Func>
-MakePackApplyFunc(PackMatrixOperator const& Pack_, Func f_)
+MakePackApplyFunc(PackStateComponent const& Pack_, Func f_)
 {
    return PackApplyFunc<Func>(Pack_, f_);
 }
 
-std::pair<std::complex<double>, MatrixOperator>
-get_left_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, 
-                     QuantumNumber const& QShift, 
-                     FiniteMPO const& StringOp,
+std::tuple<std::complex<double>, int, StateComponent>
+get_left_eigenvector(LinearWavefunction const& Psi1, QuantumNumber const& QShift1,
+		     LinearWavefunction const& Psi2, QuantumNumber const& QShift2, 
+                     ProductMPO const& StringOp,
                      double tol = 1E-14, int Verbose = 0)
 {
    int ncv = 0;
+   int Length = statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size());
    QuantumNumber Ident(Psi1.GetSymmetryList());
-   PackMatrixOperator Pack(Psi1.Basis2(), Psi2.Basis2(), Ident);
+   PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
    int n = Pack.size();
    //   double tolsave = tol;
    //   int ncvsave = ncv;
@@ -60,12 +62,14 @@ get_left_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& P
    std::vector<std::complex<double> > OutVec;
       LinearAlgebra::Vector<std::complex<double> > LeftEigen = 
          LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
-							    LeftMultiplyString(Psi1, StringOp, Psi2, QShift)),
+							    LeftMultiplyOperator(Psi1, QShift1,
+										 StringOp, 
+										 Psi2, QShift2, Length)),
 					  n, NumEigen, tol, &OutVec, ncv, false, Verbose);
 
-   MatrixOperator LeftVector = Pack.unpack(&(OutVec[0]));
+   StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
       
-   return std::make_pair(LeftEigen[0], LeftVector);
+   return std::make_tuple(LeftEigen[0], Length, LeftVector);
 }
 
 int main(int argc, char** argv)
@@ -79,13 +83,11 @@ int main(int argc, char** argv)
       bool Quiet = false;
       std::vector<std::string> OperatorStr;
       std::vector<std::string> CommutatorStr;
-      int Length = 0;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
          ("wavefunction,w", prog_opt::value(&PsiStr), "Wavefunction [required]")
-	 ("length", prog_opt::value(&Length), "Length of the unit cell to use")
 	 ("lattice,l", prog_opt::value(&LatticeFile), "use this lattice file for the operators")
 	 ("commutator,c", prog_opt::value(&CommutatorStr), 
 	  "calculate the commutator phase angle, U X X^\\dagger = exp(i*theta) X")
@@ -115,6 +117,7 @@ int main(int argc, char** argv)
          std::cerr << "usage: " << basename(argv[0]) << " -w <psi> [options] Operator1 [Operator2] ...\n";
          std::cerr << "If -l [--lattice] is specified, then the operators must all come from the specified lattice file\n";
          std::cerr << "Otherwise all operators must be of the form lattice:operator\n";
+	 std::cerr << "The operators must be of the ProductMPO form.\n";
 	 std::cerr << "Calculates the commutator phase of operator pairs <X Y X\u2020 Y\u2020>\n";
 	 std::cerr << "For complex conjugation, prefix the operator expression with c&\n";
 	 std::cerr << "For spatial reflection, prefix with r& (cr& or rc& for conjugate-reflection)\n";
@@ -141,11 +144,6 @@ int main(int argc, char** argv)
 
       InfiniteWavefunctionLeft InfPsi = Psi->get<InfiniteWavefunctionLeft>();
 
-      if (vm.count("length"))
-      {
-	 InfPsi = repeat(InfPsi, Length);
-      }
-
       // Load the lattice, if it was specified
       pvalue_ptr<InfiniteLattice> Lattice = pheap::ImportHeap(LatticeFile);
 
@@ -167,7 +165,7 @@ int main(int argc, char** argv)
       LinearWavefunction PsiR, PsiC, PsiRC;
 
       // The list of U matrices, for each operator
-      std::vector<MatrixOperator> U;
+      std::vector<StateComponent> U;
 
       for (unsigned i = 0; i < OperatorStr.size(); ++i)
       {
@@ -182,12 +180,9 @@ int main(int argc, char** argv)
 	    OpStr = std::string(OpStr.begin()+2, OpStr.end());
 	    if (PsiR.empty())
 	    {
-#if 0
-	       InfiniteWavefunction PR = reflect(*Psi);
-	       orthogonalize(PR);
-	       PsiR = get_orthogonal_wavefunction(PR);
-	       //TRACE(PR.C_right)(Psi->C_right);
-#endif
+	       InfiniteWavefunctionLeft PR = InfPsi;
+	       inplace_reflect(PR);
+	       PsiR = get_left_canonical(PR).first;
 	    }
 	    Psi2 = &PsiR;
 	 }
@@ -208,11 +203,9 @@ int main(int argc, char** argv)
 	    OpStr = std::string(OpStr.begin()+3, OpStr.end());
 	    if (PsiR.empty())
 	    {
-#if 0
-	       InfiniteWavefunction PR = reflect(*Psi);
-	       orthogonalize(PR);
-	       PsiR = get_orthogonal_wavefunction(PR);
-#endif
+	       InfiniteWavefunctionLeft PR = InfPsi;
+	       inplace_reflect(PR);
+	       PsiR = get_left_canonical(PR).first;
 	    }
 	    if (PsiRC.empty())
 	    {
@@ -221,21 +214,20 @@ int main(int argc, char** argv)
 	    Psi2 = &PsiRC;
 	 }
 
-	 FiniteMPO StringOperator = ParseUnitCellOperator(Cell, 0, OpStr).MPO();
-
-	 StringOperator = repeat(StringOperator, Psi1.size() / StringOperator.size());
+	 ProductMPO StringOperator = ParseProductOperator(*Lattice, OpStr);
 
          std::complex<double> e;
-         MatrixOperator v;
-         boost::tie(e, v) = get_left_eigenvector(Psi1, *Psi2, InfPsi.qshift(), StringOperator);
+         StateComponent v;
+	 int n;
+         std::tie(e, n, v) = get_left_eigenvector(Psi1, InfPsi.qshift(), *Psi2, InfPsi.qshift(), StringOperator);
 
          v *= std::sqrt(Dim); // make it properly unitary
          U.push_back(v);
 
 	 //	 TRACE(v); //(scalar_prod(herm(v),v));
-	 TRACE(SingularValues(v));
+	 // TRACE(SingularValues(v));
 
-	 TRACE(inner_prod(v, conj(v)));
+	 //TRACE(inner_prod(v, conj(v)));
 
 #if 0
 	 // Make v the closest approximation to a unitary
@@ -250,7 +242,7 @@ int main(int argc, char** argv)
 	 if (!Quiet)
 	    std::cout << "Operator: " << OperatorStr[i] 
 		      << " eigenvalue=" << e
-		      << " expectation=" << trace(v*Rho)
+	       //		      << " expectation=" << trace(v*Rho)
 		      << " unitary=" << u << std::endl;
 	 
 	 // The eigenvalue should be nearly 1, or it isn't a unitary operator
@@ -275,7 +267,9 @@ int main(int argc, char** argv)
          for (unsigned j = i+1; j < U.size(); ++j)
          {
 	    //            std::complex<double> x = inner_prod(U[i]*U[j], U[j]*U[i]) / Dim;
-            std::complex<double> x = inner_prod(scalar_prod(herm(U[i]*U[j]), U[j]*U[i]), Rho);
+            std::complex<double> x = inner_prod(scalar_prod(herm(U[j]), operator_prod(herm(U[i]), U[j], U[i])),
+						Rho);
+	    // scalar_prod(herm(U[i]*U[j]), U[j]*U[i]), Rho);
 	    //            std::complex<double> tr = trace(U[i]*U[j]*Rho);
 	    //	    TRACE(scalar_prod(herm(U[i]*U[j]), U[i]*U[j]));
             std::cout << std::setw(20) << std::left << OperatorStr[i] << " "

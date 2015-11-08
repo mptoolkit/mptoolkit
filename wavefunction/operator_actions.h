@@ -18,6 +18,8 @@
 
 #include "wavefunction/linearwavefunction.h"
 #include "mpo/generic_mpo.h"
+#include "mpo/product_mpo.h"
+#include "common/statistics.h"
 
 // Calculates the operator contraction, with a matrix
 // actong on the left hand side of the wavefunction.
@@ -216,29 +218,67 @@ struct LeftMultiplyOperator
    typedef StateComponent argument_type;
    typedef StateComponent result_type;
 
-   LeftMultiplyOperator(LinearWavefunction const& L1_, 
-			GenericMPO const& StringOp_,
-			LinearWavefunction const& L2_, 
-			QuantumNumber const& QShift_) 
-      : L1(L1_), StringOp(StringOp_) , L2(L2_), QShift(QShift_)
+   LeftMultiplyOperator(LinearWavefunction const& L1_, QuantumNumber const& QShift1_,
+			ProductMPO const& StringOp_,
+			LinearWavefunction const& L2_, QuantumNumber const& QShift2_,
+			int Length_ = 0)
+      : Psi1(L1_), QShift1(QShift1_), StringOp(StringOp_) , Psi2(L2_), QShift2(QShift2_), Length(Length_)
    {
-      CHECK_EQUAL(L1.size(), L2.size())
-         ("The two wavefunctions must be the same length");
-      CHECK_EQUAL(L1.size(), StringOp.size())
-         ("The string operator must be the same length as the unit cell");
+      if (Length == 0)
+      {
+	 Length = statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size());
+      }
+      else
+      {
+	 DEBUG_CHECK_EQUAL(Length, statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size()));
+      }
    }
 
    result_type operator()(argument_type const& x) const
    {
       DEBUG_CHECK_EQUAL(x.Basis1(), L1.Basis1());
       DEBUG_CHECK_EQUAL(x.Basis2(), L2.Basis1());
-      return delta_shift(inject_left(x, L1, StringOp, L2), QShift);
+      StateComponent R = x;
+      LinearWavefunction::const_iterator I1 = Psi1.begin();
+      LinearWavefunction::const_iterator I2 = Psi2.begin();
+      ProductMPO::const_iterator OpIter = StringOp.begin();
+      int n = 0;
+      QuantumNumber q1 = QuantumNumber(QShift1.GetSymmetryList());
+      QuantumNumber q2 = QuantumNumber(QShift2.GetSymmetryList());
+      while (I1 != Psi1.end() && I2 != Psi2.end() && OpIter != StringOp.end())
+      {
+	 if (I1 == Psi1.end())
+	 {
+	    I1 = Psi1.begin();
+	    q1 = delta_shift(q1, QShift1);
+	 }
+	 if (I2 == Psi2.end())
+	 {
+	    I2 = Psi2.begin();
+	    q2 = delta_shift(q2, QShift2);
+	 }
+	 if (OpIter == StringOp.end())
+	 {
+	    OpIter = StringOp.begin();
+	 }
+	 R = contract_from_left(*OpIter, herm(delta_shift(*I1, adjoint(q1))), R, 
+				delta_shift(*I2, adjoint(q2)));
+	 ++n;
+      }
+      q1 = delta_shift(q1, QShift1);
+      q2 = delta_shift(q2, QShift2);
+      CHECK_EQUAL(q1, q2);
+      CHECK_EQUAL(n, Length);
+      return delta_shift(R, q1);
    }
 
-   LinearWavefunction const& L1;
-   GenericMPO StringOp;
-   LinearWavefunction const& L2;
-   QuantumNumber QShift;
+   LinearWavefunction const& Psi1;
+   QuantumNumber QShift1;
+   ProductMPO StringOp;
+   LinearWavefunction const& Psi2;
+   QuantumNumber QShift2;
+   int Length;
 };
+
 
 #endif

@@ -11,7 +11,7 @@
 #include "tensor/tensor_eigen.h"
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcell-parser.h"
-#include "lattice/product-parser.h"
+#include "lattice/infinite-parser.h"
 
 namespace prog_opt = boost::program_options;
 

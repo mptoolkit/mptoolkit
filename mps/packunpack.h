@@ -1,12 +1,12 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 //
 // pack & unpack functions for MatrixOperator.  These convert to/from
 // an inner-product conserving vector representation.
 // Preserving the inner product means we need an SU(2) coefficient.
 //
 
-#if !defined(PACKUNPACK_H_ASCHUIY243Y478Y648E89)
-#define PACKUNPACK_H_ASCHUIY243Y478Y648E89
+#if !defined(MPTOOLKIT_MPS_PACKUNPACK_H)
+#define MPTOOLKIT_MPS_PACKUNPACK_H
 
 #include "state_component.h"  // for MatrixOperator definition
 #include "linearalgebra/vector.h"
@@ -53,6 +53,48 @@ class PackMatrixOperator
       int Size_;  // linear size
       std::vector<OffsetRecType> OffsetArray_;   // array of blocks
       LinearAlgebra::Matrix<int> OffsetMatrix_;  // offset of each valid block
+};
+
+class PackStateComponent
+{
+   public:
+      typedef std::complex<double> value_type;
+
+      PackStateComponent(BasisList const& LocalBasis, VectorBasis const& Basis1, 
+                         VectorBasis const& Basis2);
+
+      PackStateComponent(StateComponent const& m);
+
+      value_type* pack(StateComponent const& m, value_type* Iter) const;
+
+      StateComponent unpack(value_type const* Iter) const;
+   
+      std::size_t size() const { return Size_; }
+   
+   private:
+      void Initialize(BasisList const& LocalBasis, VectorBasis const& Basis1, 
+                      VectorBasis const& Basis2);
+
+      // OffsetRecType contains the information for an individual dense block
+      struct OffsetRecType
+      {
+	 int q;             // index into the StateComponent
+         int r, c;          // row and column of the StateComponent
+         int Offset;        // offset into the packed array of this section
+         unsigned Size;     // size of this block
+         OffsetRecType() {}
+         OffsetRecType(int q_, int r_, int c_, int Offset_, int Size_)
+            : q(q_), r(r_), c(c_), Offset(Offset_), Size(Size_) {}
+      };
+
+      typedef  std::vector<OffsetRecType> OffsetArrayType;
+
+      BasisList B_;
+      VectorBasis B1_, B2_;
+      int Size_;  // linear size
+      std::vector<OffsetRecType> OffsetArray_;   // array of blocks
+      typedef std::vector<LinearAlgebra::Matrix<int>> OffsetMatrixType;
+      OffsetMatrixType OffsetMatrix_;  // offset of each valid block
 };
 
 // construct the full matrix representation of some superoperator

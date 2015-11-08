@@ -4,6 +4,7 @@
 #include "tensor/tensor_eigen.h"
 #include "mp-algorithms/arnoldi.h"
 #include "common/environment.h"
+#include "common/statistics.h"
 
 #include "mps/packunpack.h"
 #include <fstream>
@@ -569,11 +570,12 @@ InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
    return Result;
 }
 
-std::complex<double> overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
-                             InfiniteWavefunctionLeft const& y,
-                             QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
+std::pair<std::complex<double>, int>
+overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
+	InfiniteWavefunctionLeft const& y,
+	QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
 {
-   CHECK_EQUAL(x.qshift(), y.qshift())("The wavefunctions must have the same quantum number per unit cell");
+   int Length = statistics::lcm(x.size(), y.size(), StringOp.size());
    
    LinearWavefunction xPsi = get_left_canonical(x).first;
    LinearWavefunction yPsi = get_left_canonical(y).first;
@@ -590,7 +592,8 @@ std::complex<double> overlap(InfiniteWavefunctionLeft const& x, ProductMPO const
       std::cerr << "Starting Arnoldi, Tol=" << MyTol << ", Iterations=" << Iter << '\n';
    }
    std::complex<double> Eta = LinearSolvers::Arnoldi(Init, 
-						     LeftMultiplyOperator(xPsi, Str, yPsi, x.qshift()), 
+						     LeftMultiplyOperator(xPsi, x.qshift(), Str, 
+									  yPsi, y.qshift(), Length), 
                                                      Iterations, 
 						     MyTol, 
 						     LinearSolvers::LargestMagnitude, false, Verbose);
@@ -603,7 +606,8 @@ std::complex<double> overlap(InfiniteWavefunctionLeft const& x, ProductMPO const
          std::cerr << "Restarting Arnoldi, eta=" << Eta << ", Tol=" << -MyTol << '\n';
       Iterations = Iter;
       MyTol = Tol;
-      Eta = LinearSolvers::Arnoldi(Init, LeftMultiplyOperator(xPsi, Str, yPsi, x.qshift()), 
+      Eta = LinearSolvers::Arnoldi(Init, LeftMultiplyOperator(xPsi, x.qshift(), Str, 
+							      yPsi, y.qshift(), Length), 
 				   Iterations, MyTol, LinearSolvers::LargestMagnitude, false, Verbose);
       TotalIterations += Iterations;
       DEBUG_TRACE(Eta)(Iterations);
@@ -612,7 +616,7 @@ std::complex<double> overlap(InfiniteWavefunctionLeft const& x, ProductMPO const
       std::cerr << "Converged.  TotalIterations=" << TotalIterations
                 << ", Tol=" << MyTol << '\n';
 
-   return Eta;
+   return std::make_pair(Eta, Length);
 }
 
 std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const& StringOp,
@@ -660,7 +664,7 @@ std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const&
 std::complex<double> overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefunctionLeft const& y,
                              QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
 {
-   return overlap(x, ProductMPO::make_identity(ExtractLocalBasis(y)), y, Sector, Iter, Tol, Verbose);
+   return overlap(x, ProductMPO::make_identity(ExtractLocalBasis(y)), y, Sector, Iter, Tol, Verbose).first;
 }
 
 InfiniteWavefunctionLeft
