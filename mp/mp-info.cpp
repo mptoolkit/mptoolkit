@@ -104,7 +104,7 @@ void ShowDM(CanonicalWavefunctionBase const& Psi, std::ostream& out)
 
       DensityMatrix<MatrixOperator> DM(Rho);
 
-      out << "Reduced density matrix at partition (" 
+      out << "#Reduced density matrix at partition ("
           << (*I) << "," << (Psi.size() - *I) << ") :\n";
       DM.DensityMatrixReport(out, MaxEigenvalues, Base2, ShowDegen);
       out << std::endl;
