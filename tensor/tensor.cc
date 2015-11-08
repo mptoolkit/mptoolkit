@@ -123,6 +123,7 @@ CoerceSymmetryList(IrredTensor<T, B1, B2, S> const& t, SymmetryList const& sl)
    Result.Basis2_ = CoerceSymmetryList(t.Basis2_, sl);
    Result.Trans_ = CoerceSymmetryList(t.Trans_, sl);
    Result.Data_ = CoerceSymmetryList(t.Data_, sl);
+   Result.debug_check_structure();
    return Result;
 }
 

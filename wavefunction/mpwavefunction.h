@@ -64,6 +64,10 @@ class MPWavefunction
 
       static PStream::VersionTag VersionT;
 
+      void check_structure() const;
+
+      void debug_check_structure() const;
+
    private:
       WavefunctionTypes Psi_;
       AttributeList Attr_;

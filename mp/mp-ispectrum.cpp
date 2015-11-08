@@ -874,6 +874,11 @@ int main(int argc, char** argv)
 
       pheap::Shutdown();
    }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
+   }
    catch (std::exception& e)
    {
       std::cerr << "Exception: " << e.what() << '\n';

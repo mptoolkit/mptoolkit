@@ -236,8 +236,8 @@ struct LeftMultiplyOperator
 
    result_type operator()(argument_type const& x) const
    {
-      DEBUG_CHECK_EQUAL(x.Basis1(), L1.Basis1());
-      DEBUG_CHECK_EQUAL(x.Basis2(), L2.Basis1());
+      DEBUG_CHECK_EQUAL(x.Basis1(), Psi1.Basis1());
+      DEBUG_CHECK_EQUAL(x.Basis2(), Psi2.Basis1());
       StateComponent R = x;
       LinearWavefunction::const_iterator I1 = Psi1.begin();
       LinearWavefunction::const_iterator I2 = Psi2.begin();
@@ -245,7 +245,7 @@ struct LeftMultiplyOperator
       int n = 0;
       QuantumNumber q1 = QuantumNumber(QShift1.GetSymmetryList());
       QuantumNumber q2 = QuantumNumber(QShift2.GetSymmetryList());
-      while (I1 != Psi1.end() && I2 != Psi2.end() && OpIter != StringOp.end())
+      while (I1 != Psi1.end() || I2 != Psi2.end() || OpIter != StringOp.end())
       {
 	 if (I1 == Psi1.end())
 	 {
@@ -264,6 +264,9 @@ struct LeftMultiplyOperator
 	 R = contract_from_left(*OpIter, herm(delta_shift(*I1, adjoint(q1))), R, 
 				delta_shift(*I2, adjoint(q2)));
 	 ++n;
+	 ++I1;
+	 ++I2;
+	 ++OpIter;
       }
       q1 = delta_shift(q1, QShift1);
       q2 = delta_shift(q2, QShift2);

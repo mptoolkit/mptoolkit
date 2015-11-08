@@ -250,7 +250,7 @@ class VectorBasis
    friend bool operator!=(VectorBasis const& x, VectorBasis const& y)
       { return !operator==(x,y); }
 
-   friend VectorBasis CoerceSymmetryList(VectorBasis& b, SymmetryList const& sl)
+   friend VectorBasis CoerceSymmetryList(VectorBasis const& b, SymmetryList const& sl)
    __attribute__((warn_unused_result));
 
 

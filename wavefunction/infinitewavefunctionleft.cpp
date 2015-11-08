@@ -453,14 +453,12 @@ void inplace_reflect(InfiniteWavefunctionLeft& Psi)
    // we do gain an advantage for the inplace operation because we remove
    // elements from Psi as we go, so memory and disk use is ~ constant
    InfiniteWavefunctionLeft Result;
-   Result.setBasis1(adjoint(Psi.Basis2()));
-   Result.setBasis2(adjoint(Psi.Basis1()));
    Result.QShift = Psi.qshift();
 
    RealDiagonalOperator D = Psi.lambda_r();
    MatrixOperator U = MatrixOperator::make_identity(D.Basis1());
 
-   // left-most lambda matrix
+   // left-most lambda matrix, this is a place-holder
    Result.push_back_lambda(flip_conj(D));
    MatrixOperator DSave = D;
 
@@ -487,6 +485,9 @@ void inplace_reflect(InfiniteWavefunctionLeft& Psi)
 
    Result.set_lambda(0, delta_shift(flip_conj(D), Psi.qshift()));
    Result.set(0, prod(herm(delta_shift(flip_conj(U), Psi.qshift())), Result[0]));
+   
+   Result.setBasis1(Result[0].Basis1());
+   Result.setBasis2(adjoint(D.Basis2()));
 
    Psi = Result;
 

@@ -78,7 +78,7 @@ int main(int argc, char** argv)
    {
       std::string PsiStr;
       std::string LatticeFile;
-      //      double Tol = 1e-10;
+      double Tol = 1e-14;
       int Verbose = 0;
       bool Quiet = false;
       std::vector<std::string> OperatorStr;
@@ -91,6 +91,8 @@ int main(int argc, char** argv)
 	 ("lattice,l", prog_opt::value(&LatticeFile), "use this lattice file for the operators")
 	 ("commutator,c", prog_opt::value(&CommutatorStr), 
 	  "calculate the commutator phase angle, U X X^\\dagger = exp(i*theta) X")
+         ("tol", prog_opt::value(&Tol),
+          FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
 	 ("quiet,q", prog_opt::bool_switch(&Quiet), "suppress informational preamble about each operator")
 	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
          ;
@@ -219,7 +221,8 @@ int main(int argc, char** argv)
          std::complex<double> e;
          StateComponent v;
 	 int n;
-         std::tie(e, n, v) = get_left_eigenvector(Psi1, InfPsi.qshift(), *Psi2, InfPsi.qshift(), StringOperator);
+         std::tie(e, n, v) = get_left_eigenvector(Psi1, InfPsi.qshift(), *Psi2, InfPsi.qshift(), StringOperator,
+						  Tol, Verbose);
 
          v *= std::sqrt(Dim); // make it properly unitary
          U.push_back(v);
@@ -237,13 +240,19 @@ int main(int argc, char** argv)
 #endif
 
 	 // check if v is unitary; this will be close to zero
-	 double u = norm_frob(scalar_prod(herm(v), v) - Identity);
+	 double u = norm_frob(inner_prod(Rho, scalar_prod(v, herm(v)) - Identity));
 
 	 if (!Quiet)
 	    std::cout << "Operator: " << OperatorStr[i] 
 		      << " eigenvalue=" << e
 	       //		      << " expectation=" << trace(v*Rho)
 		      << " unitary=" << u << std::endl;
+	 std::cout << "Commutator phase: " << inner_prod(Rho, scalar_prod(v,herm(v))) << "\n";
+
+	 if (v.size() == 1 && is_scalar(v.LocalBasis()[0]) && v.Basis2() == v.Basis1())
+	 {
+	    std::cout << "UU*: " << inner_prod(Rho, v[0]*conj(v[0])) << '\n';
+	 }
 	 
 	 // The eigenvalue should be nearly 1, or it isn't a unitary operator
 	 if (LinearAlgebra::norm_frob(LinearAlgebra::norm_frob(e)-1.0) > 1E-5)
@@ -264,7 +273,7 @@ int main(int argc, char** argv)
       std::cout << "#Op1                 #Op2                 #Commutator-Real  #Commutator-Imag\n";
       for (unsigned i = 0; i < U.size(); ++i)
       {
-         for (unsigned j = i+1; j < U.size(); ++j)
+         for (unsigned j = 0*(i+1); j < U.size(); ++j)
          {
 	    //            std::complex<double> x = inner_prod(U[i]*U[j], U[j]*U[i]) / Dim;
             std::complex<double> x = inner_prod(scalar_prod(herm(U[j]), operator_prod(herm(U[i]), U[j], U[i])),
@@ -281,10 +290,11 @@ int main(int argc, char** argv)
       }
 
 #if 0
-      // Now calculate the commutators
+      // Now calculate the commutator phase angles
       for (unsigned j = 0; j < CommutatorStr.size(); ++j)
       {
-	 FiniteMPO Op = ParseUnitCellOperator(Cell, NumUnitCells, CommutatorStr[j]).MPO();
+	 ProductMPO Op = ParseProductOperator(*Lattice, CommutatorStr[j]);
+
 	 Op = repeat(Op, Psi.size() / UnitCellSize);
 	 MatrixOperator O = MatrixOperator::make_identity(Psi.Basis2());
 	 O = inject_left_qshift(O, Op, Psi, Psi1->shift());
