@@ -2,6 +2,7 @@
 
 #include "wavefunction/mpwavefunction.h"
 #include "mps/packunpack.h"
+#include "interface/inittemp.h"
 #include "lattice/latticesite.h"
 #include "wavefunction/operator_actions.h"
 #include "mp/copyright.h"
@@ -83,14 +84,17 @@ int main(int argc, char** argv)
       bool Quiet = false;
       std::vector<std::string> OperatorStr;
       std::vector<std::string> CommutatorStr;
+      bool UseTempFile = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
          ("wavefunction,w", prog_opt::value(&PsiStr), "Wavefunction [required]")
 	 ("lattice,l", prog_opt::value(&LatticeFile), "use this lattice file for the operators")
-	 ("commutator,c", prog_opt::value(&CommutatorStr), 
-	  "calculate the commutator phase angle, U X X^\\dagger = exp(i*theta) X")
+	 //	 ("commutator,c", prog_opt::value(&CommutatorStr), 
+	 //	  "calculate the commutator phase angle, U X X^\\dagger = exp(i*theta) X")
+         ("tempfile", prog_opt::bool_switch(&UseTempFile),
+          "a temporary data file for workspace (path set by environment MP_BINPATH)")
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
 	 ("quiet,q", prog_opt::bool_switch(&Quiet), "suppress informational preamble about each operator")
@@ -141,9 +145,16 @@ int main(int argc, char** argv)
 
 
       // Load the wavefunction
-      pvalue_ptr<MPWavefunction> Psi 
-         = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
-
+      pvalue_ptr<MPWavefunction> Psi;
+      if (UseTempFile)
+      {
+	  mp_pheap::InitializeTempPHeap(Verbose);
+	  Psi = pheap::ImportHeap(PsiStr);
+      }
+      else
+      {
+         Psi = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
+      }
       InfiniteWavefunctionLeft InfPsi = Psi->get<InfiniteWavefunctionLeft>();
 
       // Load the lattice, if it was specified
@@ -224,53 +235,39 @@ int main(int argc, char** argv)
          std::tie(e, n, v) = get_left_eigenvector(Psi1, InfPsi.qshift(), *Psi2, InfPsi.qshift(), StringOperator,
 						  Tol, Verbose);
 
-         v *= std::sqrt(Dim); // make it properly unitary
+	 // Normalization
+	 // it might not be unitary, eg anti-unitary.  So we need to take the 4th power
+	 std::complex<double> x = inner_prod(scalar_prod(herm(v), operator_prod(herm(v), v, v)), Rho);
+
+	 v *= std::sqrt(std::sqrt(1.0 / x));
+
+         //v *= std::sqrt(Dim); // make it properly unitary
          U.push_back(v);
 
-	 //	 TRACE(v); //(scalar_prod(herm(v),v));
-	 // TRACE(SingularValues(v));
-
-	 //TRACE(inner_prod(v, conj(v)));
-
-#if 0
-	 // Make v the closest approximation to a unitary
-	 MatrixOperator U, D, Vh;
-	 SingularValueDecomposition(v, U, D, Vh);
-	 v = U*Vh;
-#endif
-
-	 // check if v is unitary; this will be close to zero
-	 double u = norm_frob(inner_prod(Rho, scalar_prod(v, herm(v)) - Identity));
-
 	 if (!Quiet)
-	    std::cout << "Operator: " << OperatorStr[i] 
-		      << " eigenvalue=" << e
-	       //		      << " expectation=" << trace(v*Rho)
-		      << " unitary=" << u << std::endl;
-	 std::cout << "Commutator phase: " << inner_prod(Rho, scalar_prod(v,herm(v))) << "\n";
-
-	 if (v.size() == 1 && is_scalar(v.LocalBasis()[0]) && v.Basis2() == v.Basis1())
 	 {
-	    std::cout << "UU*: " << inner_prod(Rho, v[0]*conj(v[0])) << '\n';
+	    std::cout << "#Operator " << i << " = " << OperatorStr[i] << 'n'
+		      << "#eigenvalue = " << e << 'n';
+	    std::cout << "#UU\u2020 = " << inner_prod(Rho, scalar_prod(v,herm(v))) << "\n";
+
+	    if (v.size() == 1 && is_scalar(v.LocalBasis()[0]) && v.Basis2() == v.Basis1())
+	    {
+	       std::cout << "#UU* = " << inner_prod(Rho, v[0]*conj(v[0])) << '\n';
+	    }
 	 }
 	 
 	 // The eigenvalue should be nearly 1, or it isn't a unitary operator
 	 if (LinearAlgebra::norm_frob(LinearAlgebra::norm_frob(e)-1.0) > 1E-5)
 	 {
-	    WARNING("Operator is not unitary - eigenvalue is not modulus 1!")(OperatorStr[i])(e);
-	 }
-
-	 // And the eigenvector should be a unitary matrix
-	 if (u > 1E-5)
-	 {
-	    WARNING("Operator is not unitary - U U\\dagger is not identity!")(OperatorStr[i])(u);
+	    WARNING("Operator is not (anti) unitary - eigenvalue is not modulus 1!")(OperatorStr[i])(e);
 	 }
       }
       if (!Quiet)
 	 std::cout << '\n';
 
       // Now go through each operator pair
-      std::cout << "#Op1                 #Op2                 #Commutator-Real  #Commutator-Imag\n";
+      if (!Quiet)
+	 std::cout << "#Op1 #Op2 #Commutator-Real  #Commutator-Imag\n";
       for (unsigned i = 0; i < U.size(); ++i)
       {
          for (unsigned j = 0*(i+1); j < U.size(); ++j)
@@ -281,8 +278,8 @@ int main(int argc, char** argv)
 	    // scalar_prod(herm(U[i]*U[j]), U[j]*U[i]), Rho);
 	    //            std::complex<double> tr = trace(U[i]*U[j]*Rho);
 	    //	    TRACE(scalar_prod(herm(U[i]*U[j]), U[i]*U[j]));
-            std::cout << std::setw(20) << std::left << OperatorStr[i] << " "
-                      << std::setw(20) << std::left << OperatorStr[j] << " "
+            std::cout << std::setw(5) << std::left << i << " "
+                      << std::setw(5) << std::left << j << " "
                       << std::setw(17) << std::right << std::fixed << x.real() << " "
                       << std::setw(17) << std::right << std::fixed << x.imag() << " "
 		      << std::endl;
