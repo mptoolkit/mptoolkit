@@ -221,8 +221,9 @@ struct LeftMultiplyOperator
    LeftMultiplyOperator(LinearWavefunction const& L1_, QuantumNumber const& QShift1_,
 			ProductMPO const& StringOp_,
 			LinearWavefunction const& L2_, QuantumNumber const& QShift2_,
-			int Length_ = 0)
-      : Psi1(L1_), QShift1(QShift1_), StringOp(StringOp_) , Psi2(L2_), QShift2(QShift2_), Length(Length_)
+			int Length_ = 0, int Verbose_ = 0)
+      : Psi1(L1_), QShift1(QShift1_), StringOp(StringOp_) , Psi2(L2_), QShift2(QShift2_), Length(Length_),
+	Verbose(Verbose_)
    {
       if (Length == 0)
       {
@@ -247,6 +248,14 @@ struct LeftMultiplyOperator
       QuantumNumber q2 = QuantumNumber(QShift2.GetSymmetryList());
       while (I1 != Psi1.end() || I2 != Psi2.end() || OpIter != StringOp.end())
       {
+	 if (Verbose > 0)
+	 {
+	    std::cerr << "Site " << n << " of " << Length 
+		      << " E-matrix dimension " << R.size() 
+		      << "x" << R.Basis1().total_dimension()
+		      << "x" << R.Basis2().total_dimension()
+		      << '\n';
+	 }
 	 if (I1 == Psi1.end())
 	 {
 	    I1 = Psi1.begin();
@@ -281,6 +290,7 @@ struct LeftMultiplyOperator
    LinearWavefunction const& Psi2;
    QuantumNumber QShift2;
    int Length;
+   int Verbose;
 };
 
 

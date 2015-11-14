@@ -18,7 +18,6 @@ UnitCellOperatorAtCell::operator[](int i) const
 inline
 UnitCellOperatorAtCell::operator UnitCellMPO() const
 {
-   TRACE("Conversion");
    return (*Cell)(Name, n);
 }
 

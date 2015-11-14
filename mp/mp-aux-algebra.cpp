@@ -65,7 +65,7 @@ get_left_eigenvector(LinearWavefunction const& Psi1, QuantumNumber const& QShift
          LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
 							    LeftMultiplyOperator(Psi1, QShift1,
 										 StringOp, 
-										 Psi2, QShift2, Length)),
+										 Psi2, QShift2, Length, Verbose-2)),
 					  n, NumEigen, tol, &OutVec, ncv, false, Verbose);
 
    StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
