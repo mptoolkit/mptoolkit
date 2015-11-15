@@ -430,12 +430,22 @@ MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const
                              MatrixOperator const& E,
                              StateComponent const& B);
 
+// Calculates E' = sum_s herm(A[s]) * E * B[s]
 MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<StateComponent> const& A, 
                              MatrixOperator const& E,
                              StateComponent const& B);
 
 MatrixOperator operator_prod(StateComponent const& A, 
                              MatrixOperator const& E,
+                             LinearAlgebra::HermitianProxy<StateComponent> const& B);
+
+// Calculates E'[q] = sum_s herm(A[s]) * E[q] * B[s]
+StateComponent operator_prod(LinearAlgebra::HermitianProxy<StateComponent> const& A, 
+                             StateComponent const& E,
+                             StateComponent const& B);
+
+StateComponent operator_prod(StateComponent const& A, 
+                             StateComponent const& E,
                              LinearAlgebra::HermitianProxy<StateComponent> const& B);
 
 // Variant for A,B matrices arising from a triangular MPO, where 

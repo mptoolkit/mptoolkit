@@ -238,7 +238,7 @@ VectorBasis delta_shift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber c
 }
 
 VectorBasis
-CoerceSymmetryList(VectorBasis& b, SymmetryList const& sl)
+CoerceSymmetryList(VectorBasis const& b, SymmetryList const& sl)
 {
    VectorBasis Result;
    Result.Basis_ = CoerceSymmetryList(b.Basis_, sl);

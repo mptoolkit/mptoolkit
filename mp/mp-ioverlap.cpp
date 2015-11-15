@@ -9,7 +9,7 @@
 #include "common/environment.h"
 #include "common/prog_options.h"
 #include "lattice/unitcell.h"
-#include "lattice/product-parser.h"
+#include "lattice/infinite-parser.h"
 #include "common/statistics.h"
 
 namespace prog_opt = boost::program_options;
@@ -69,7 +69,7 @@ int main(int argc, char** argv)
    try
    {
       int Verbose = 0;
-      bool NoTempFile = false;
+      bool UseTempFile = false;
       bool ShowRealPart = false, ShowImagPart = false, ShowMagnitude = false;
       bool ShowCartesian = false, ShowPolar = false, ShowArgument = false;
       bool ShowRadians = false, ShowCorrLength = false;
@@ -107,9 +107,8 @@ int main(int argc, char** argv)
 	  "display the equivalent correlation length")
 	 ("unitcell,u", prog_opt::value(&UnitCellSize),
 	  "scale the results to use this unit cell size [default wavefunction unit cell]")
-         ("notempfile", prog_opt::bool_switch(&NoTempFile),
-          "don't use a temporary data file, keep everything in RAM "
-          "(faster, but needs enough RAM)")
+         ("tempfile", prog_opt::bool_switch(&UseTempFile),
+          "a temporary data file for workspace (path set by environment MP_BINPATH)")
          ("rotate", prog_opt::value(&Rotate),
           "rotate the unit cell of psi2 this many sites to the left before calculating the overlap [default 0]")
          ("reflect", prog_opt::bool_switch(&Reflect),
@@ -190,12 +189,14 @@ int main(int argc, char** argv)
          std::cout << "Loading LHS wavefunction...\n";
 
       pvalue_ptr<MPWavefunction> Psi1Ptr;
-      if (NoTempFile)
-         Psi1Ptr = pheap::OpenPersistent(LhsStr, mp_pheap::CacheSize(), true);
-      else
+      if (UseTempFile)
       {
          mp_pheap::InitializeTempPHeap(Verbose);
          Psi1Ptr = pheap::ImportHeap(LhsStr);
+      }
+      else
+      {
+         Psi1Ptr = pheap::OpenPersistent(LhsStr, mp_pheap::CacheSize(), true);
       }
       InfiniteWavefunctionLeft Psi1 = Psi1Ptr->get<InfiniteWavefunctionLeft>();
 
@@ -321,7 +322,7 @@ int main(int argc, char** argv)
       for (std::set<QuantumNumber>::const_iterator I = Sectors.begin(); I != Sectors.end(); ++I)
       {
 	 //FiniteMPO StringOp = FiniteMPO::make_identity(ExtractLocalBasis(Psi2.Psi));
-         TransEigenInfo Info(*I, overlap(Psi1, StringOp, Psi2, *I, Iter, Tol, Verbose));
+         TransEigenInfo Info(*I, overlap(Psi1, StringOp, Psi2, *I, Iter, Tol, Verbose).first);
          if (Sort)
             EigenList.push_back(Info);
          else
@@ -342,6 +343,11 @@ int main(int argc, char** argv)
 
      pheap::Shutdown();
 
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

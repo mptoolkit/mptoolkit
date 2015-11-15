@@ -11,7 +11,7 @@
 #include "tensor/tensor_eigen.h"
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcell-parser.h"
-#include "lattice/product-parser.h"
+#include "lattice/infinite-parser.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -98,6 +98,11 @@ int main(int argc, char** argv)
       PsiPtr.mutate()->AppendHistory(EscapeCommandline(argc, argv));
 
       pheap::ShutdownPersistent(PsiPtr);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

@@ -109,3 +109,27 @@ operator<<(PStream::opstream& out, MPWavefunction const& Psi)
    out << Psi.History_;
    return out;
 }
+
+struct ApplyCheckStructure : boost::static_visitor<void>
+{
+   template <typename T>
+   void operator()(T const& x) const
+   {
+      x.check_structure();
+   }
+};
+
+void
+MPWavefunction::check_structure() const
+{
+   boost::apply_visitor(ApplyCheckStructure(), this->Wavefunction());
+}
+
+void
+MPWavefunction::debug_check_structure() const
+{
+#if !defined(NDEBUG)
+   boost::apply_visitor(ApplyCheckStructure(), this->Wavefunction());
+#endif
+}
+

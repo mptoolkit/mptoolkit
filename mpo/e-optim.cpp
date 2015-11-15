@@ -269,6 +269,25 @@ operator_prod(HermitianProxy<OperatorComponent> const& M,
    return Result;
 }
 
+#if 0
+// we probably want a _shift version to handle an implicit qshift
+StateComponent
+contract_from_left(OperatorComponent const& M,
+		   HermitianProxy<StateComponent> const& A, 
+		   StateComponent const& E,
+		   StateComponent const& B)
+{
+   QuantumNumbers::QuantumNumber I(M.GetSymmetryList());
+   return contract_from_left_shift(M, A, I, E, B, I);
+}
+
+StateComponent
+contract_from_left_shift(OperatorComponent const& M,
+			 HermitianProxy<StateComponent> const& A, QuantumNumber const& QShiftA,
+			 StateComponent const& E,
+			 StateComponent const& B, QuantumNumber const& QShiftB)
+#endif
+
 StateComponent
 contract_from_left(OperatorComponent const& M,
 		   HermitianProxy<StateComponent> const& A, 
@@ -278,6 +297,8 @@ contract_from_left(OperatorComponent const& M,
    PRECONDITION_EQUAL(M.LocalBasis2(), A.base().LocalBasis());
    PRECONDITION_EQUAL(M.LocalBasis1(), B.LocalBasis());
    DEBUG_PRECONDITION_EQUAL(M.Basis1(), E.LocalBasis());
+   //   DEBUG_PRECONDITION_EQUAL(qshift(A.base().Basis1(), QShiftA), E.Basis1());
+   //   DEBUG_PRECONDITION_EQUAL(E.Basis2(), delta_shift(B.Basis1(), QShiftB));
    DEBUG_PRECONDITION_EQUAL(A.base().Basis1(), E.Basis1());
    DEBUG_PRECONDITION_EQUAL(E.Basis2(), B.Basis1());
 

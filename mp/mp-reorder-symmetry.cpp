@@ -42,6 +42,7 @@ InfiniteWavefunctionLeft ReorderSymmetry(InfiniteWavefunctionLeft const& Psi, Sy
 
    Result.setBasis1(Result.lambda_l().Basis1());
    Result.setBasis2(Result.lambda_r().Basis2());
+
    return Result;
 }
 
@@ -180,6 +181,8 @@ int main(int argc, char** argv)
       Result.AppendHistory(EscapeCommandline(argc, argv));
 
       Result.Wavefunction() = boost::apply_visitor(ApplyReorderSymmetry(FinalSL), InputPsi->Wavefunction());
+
+      Result.check_structure();
 
       pvalue_ptr<MPWavefunction> OutputPsi = new MPWavefunction(Result);
 

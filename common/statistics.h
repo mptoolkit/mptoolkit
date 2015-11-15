@@ -47,6 +47,18 @@ int lcm(int a, int b)
    return std::abs(a*b) / gcd(a,b);
 }
 
+inline
+int lcm(int a, int b, int c)
+{
+   return lcm(lcm(a,b),c);
+}
+
+inline
+int lcm(int a, int b, int c, int d)
+{
+   return lcm(lcm(a,b),lcm(c,d));
+}
+
 // calculates the mean of a sequence.  Returns 0 if the sequence is empty
 template <class FwdIter>
 double mean(FwdIter start, FwdIter end);
