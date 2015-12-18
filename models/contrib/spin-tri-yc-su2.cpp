@@ -1,6 +1,11 @@
+<<<<<<< HEAD
 // -*- C++ -*- $Id: spin-tri-yc-SU2.cpp 1490 2015-05-19 09:15:06Z seyed $
 // Authors: Ian P. McCulloch and Seyed N. Saadatmand
 // Contact: s.saadatmand@uq.edu.au
+=======
+<<<<<<< master:models/contrib/spin-tri-yc-su2.cpp
+// -*- C++ -*- $Id$
+>>>>>>> Trying to merge to master branch
 
 // <obelix> @ /data5/uqssaada/git/mptoolkit/models/contrib/
 
@@ -15,6 +20,31 @@
 //  (11) |
 //(5) | 12
 // |  6< |
+<<<<<<< HEAD
+=======
+// 0< |(17)
+// |(11)
+//(5)
+//
+=======
+// -*- C++ -*- $Id: spin-tri-yc-u1.cpp 1490 2015-05-19 09:15:06Z ianmcc $
+// Authors: Ian P. McCulloch and Seyed N. Saadatmand
+// Contact: s.saadatmand@uq.edu.au
+
+// <OBELIX> @ /data5/uqssaada/git/mptoolkit/models/contrib/ 
+
+// YC configuration of a triangular lattice.
+// The default unit-cell size is the width value.
+//
+// Example for a width=6 lattice (site numbers in brackets are periodic repeats in the vertical
+// direction (i.e. top-left (5) is the same site as the bottom-left 5).
+// Sites 6,7,8,9,10,11 are the second unit cell, e.g. 6 is (1)[0].
+//
+//      (17)
+//  (11) |
+//(5) | 12
+// |  6< |
+>>>>>>> Trying to merge to master branch
 // 0< | 13
 // |  7< |
 // 1< | 14
@@ -29,6 +59,10 @@
 // | (6)
 //(0)
 
+<<<<<<< HEAD
+=======
+>>>>>>> local:models/contrib/spin-tri-yc-u1.cpp
+>>>>>>> Trying to merge to master branch
 
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"
@@ -120,9 +154,15 @@ int main(int argc, char** argv)
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
+<<<<<<< HEAD
 	 std::cerr << "Constructs a triangular lattice in the YC configuration with wrapping vector (0,1),\n"
 		   << "while spins sit on edges. This employs an efficient way of numbering in the 1D chain.\n\n"
                    << "Operators:\n"
+=======
+<<<<<<< master:models/contrib/spin-tri-yc-su2.cpp
+	 std::cerr << "Constructs a triangular lattice in the YC configuration with lattice vector (0,1)\n"
+		   << "Operators:\n"
+>>>>>>> Trying to merge to master branch
 		   << "H_J1    - nearest neighbor spin exchange\n"
 		   << "H_J2    - next-nearest neighbor spin exchange\n"
                    << "H_t     - kinetic term of quantum dimer model's Hamiltonian on the triangular lattice\n"
@@ -135,10 +175,33 @@ int main(int argc, char** argv)
 		   << "define sublattice spin operators on a \"width*3\" unit cells as,\n"
 		   << "S_A     - tripartite sublattice spin, including site S(0)[0]\n"
 		   << "S_B     - tripartite sublattice spin, including site S(0)[1]\n"
+<<<<<<< HEAD
 		   << "S_C     - tripartite sublattice spin, including site S(0)[2]\n\n"
                    << "Functions:\n"
                    << "H( J1 = NN coupling strength, J2 = NNN coupling strength, theta = atan(J2/J1)\n" 
                    << "  \"radians\", alpha = J2/J1 )\n\n"                         
+=======
+		   << "S_C     - tripartite sublattice spin, including site S(0)[2]\n"
+
+=======
+	 std::cerr << "Constructs a triangular lattice in the YC configuration with lattice vector (0,1) and\n"
+		   << "an efficient way of numbering 1D chain.\n" 
+                   << "Operators:\n"
+                   << "Hz_NN   - nearest neighbor Ising spin exchange of Sz operators\n"
+		   << "H_J1    - nearest neighbor Heisenberg spin exchange\n"
+		   << "H_J2    - next-nearest neighbor Heisenberg spin exchange\n"
+                   << "H_J1a   - nearest neighbor Heisenberg spin exchange with anti-periodic BC (not yet implemented)\n"
+                   << "H_J2a   - next-nearest neighbor Heisenberg spin exchange with anti periodic BC (not yet implemented)\n"
+                   << "Sz      - total z-component of spin on a leg of cylinder\n"
+                   << "Sp      - total spin rising operator on a leg of cylinder\n"
+                   << "Sm      - total spin lowering operator on a leg of cylinder\n"
+		   << "\nIf the lattice could potentially be tripartite (width is a multiple of 3), then we\n"
+		   << "define sublattice spin operators on (width*3) unit cells,\n"
+                   << "S_A     - tripartite sublattice spin, including site S(0)[0] (not yet implemented)\n"
+                   << "S_B     - tripartite sublattice spin, including site S(0)[1] (not yet implemented)\n"
+                   << "S_C     - tripartite sublattice spin, including site S(0)[2] (not yet implemented)\n\n"
+>>>>>>> local:models/contrib/spin-tri-yc-u1.cpp
+>>>>>>> Trying to merge to master branch
 	    ;
          return 1;
       }
@@ -155,8 +218,18 @@ int main(int argc, char** argv)
    
       for (int i = 0; i < w; ++i)
       {
+<<<<<<< HEAD
 	 S += S[i];                                         // total spin on a leg of cylinder
          StagS += IntPow(-1,i) * S[i];            
+=======
+<<<<<<< master:models/contrib/spin-tri-yc-su2.cpp
+	 S += S[i];     // total spin
+=======
+	 Sp += Sp[i];     // total S+ on a leg of cylinder
+	 Sm += Sm[i];     // total S- on a leg of cylinder
+	 Sz += Sz[i];     // total Sz on a leg of cylinder
+>>>>>>> local:models/contrib/spin-tri-yc-u1.cpp
+>>>>>>> Trying to merge to master branch
       }
 
       for (int i = 0; i < w-1; ++i)
@@ -184,6 +257,7 @@ int main(int argc, char** argv)
 	 }
       }
 
+<<<<<<< HEAD
 
       // Now we construct the InfiniteLattice,
       InfiniteLattice Lattice(Cell);
@@ -194,12 +268,27 @@ int main(int argc, char** argv)
       for (int i = 0; i < w; ++i)
       {
 	// nearest neighbor bonds
+=======
+<<<<<<< master:models/contrib/spin-tri-yc-su2.cpp
+      // Construct the Hamiltonian for a single unit cell
+      //      UnitCellMPO H1, H2;
+=======
+      // Construct the Hamiltonian for a single unit-cell,
+      UnitCellMPO Hz, H1, H2, H1a, H2a;
+>>>>>>> local:models/contrib/spin-tri-yc-u1.cpp
+      for (int i = 0; i < w; ++i)
+      {
+	 // Nearest neighbor bonds
+
+>>>>>>> Trying to merge to master branch
 	 // vertical bonds
+<<<<<<< master:models/contrib/spin-tri-yc-su2.cpp
 	 H1 += inner(S(0)[i], S(0)[(i+1)%w]);
 	 // 60 degree bonds
 	 H1 += inner(S(0)[i], S(1)[i]);
 	 H1 += inner(S(0)[i], S(1)[(i+1)%w]);
 
+<<<<<<< HEAD
 	// next-nearest neighbor bonds
 	 H2 += inner(S(0)[i], S(2)[(i+1)%w]);                  // horizontal
 	 H2 += inner(S(0)[i], S(1)[(i+w-1)%w]);                // up-right
@@ -209,6 +298,41 @@ int main(int argc, char** argv)
          Ht += DimerKinetic(Spin, w, 0, i, 1, i, 1, (i+1)%w, 2, (i+1)%w);               // horizontal rhombus terms
          Ht += DimerKinetic(Spin, w, 0, i, 0, (i+1)%w, 1, i, 1, (i+1)%w);               // upper-vertical rhombus terms
          Ht += DimerKinetic(Spin, w, 0, i, 1, (i+1)%w, 0, (i+1)%w, 1, (i+2)%w);         // lower-vertical rhombus terms
+=======
+	 // next-nearest neighbor bonds
+	 H2 += inner(S(0)[i], S(2)[(i+w-1)%w]);             // horizontal
+	 H2 += inner(S(0)[i], S(1)[(i+1)%w]);       // up-right
+	 H2 += inner(S(0)[i], S(1)[(i+w-2)%w]);     // down-right   
+=======
+	 H1 += Sz(0)[i]*Sz(0)[(i+1)%w] + 0.5 * (Sp(0)[i]*Sm(0)[(i+1)%w] + Sm(0)[i]*Sp(0)[(i+1)%w]);
+         Hz += Sz(0)[i]*Sz(0)[(i+1)%w]; 
+
+	 // 60 degree bonds
+
+	 H1 += Sz(0)[i]*Sz(1)[i] + 0.5 * (Sp(0)[i]*Sm(1)[i] + Sm(0)[i]*Sp(1)[i]);
+	 H1 += Sz(0)[i]*Sz(1)[(i+1)%w] + 0.5 * (Sp(0)[i]*Sm(1)[(i+1)%w] + Sm(0)[i]*Sp(1)[(i+1)%w]);         
+
+         Hz += Sz(0)[i]*Sz(1)[i];
+         Hz += Sz(0)[i]*Sz(1)[(i+1)%w]; 
+
+	 // next-nearest neighbor bonds
+	 H2 += Sz(0)[i]*Sz(2)[(i+1)%w] + 0.5 * (Sp(0)[i]*Sm(2)[(i+1)%w] + Sm(0)[i]*Sp(2)[(i+1)%w]);
+	 H2 += Sz(0)[i]*Sz(1)[(i+w-1)%w] + 0.5 * (Sp(0)[i]*Sm(2)[(i+1)%w] + Sm(0)[i]*Sp(2)[(i+1)%w]);
+	 H2 += Sz(0)[i]*Sz(1)[(i+2)%w] + 0.5 * (Sp(0)[i]*Sm(2)[(i+1)%w] + Sm(0)[i]*Sp(2)[(i+1)%w]);
+
+         /* if (i == 1 || i == L-1)
+         {
+            H1Edge += SS;
+            H2Edge += SS2;
+         }
+         else
+         {
+            H1Bulk += SS;
+            H2Bulk += SS2;
+         } */
+>>>>>>> local:models/contrib/spin-tri-yc-u1.cpp
+      }
+>>>>>>> Trying to merge to master branch
 
         // potential terms of the dimer model
          Hv += DimerPotential(Spin, w, 0, i, 1, i, 1, (i+1)%w, 2, (i+1)%w);             // horizontal rhombus terms
@@ -218,12 +342,17 @@ int main(int argc, char** argv)
 
       Lattice["H_J1"] = sum_unit(H1);
       Lattice["H_J2"] = sum_unit(H2);
+<<<<<<< HEAD
       Lattice["H_t"] = sum_unit(Ht);
       Lattice["H_v"] = sum_unit(Hv);
 
       Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
 	 = "J1*H_J1 + J2*H_J2";
+=======
+      Lattice["Hz_NN"] = sum_unit(Hz);
+>>>>>>> Trying to merge to master branch
 
+<<<<<<< master:models/contrib/spin-tri-yc-su2.cpp
       // Add the tripartite sublattice magnetization operators
       if (w%3 == 0)
       {
@@ -231,6 +360,11 @@ int main(int argc, char** argv)
 	 Lattice["S_B"] = sum_unit(S_B, w*3);
 	 Lattice["S_C"] = sum_unit(S_C, w*3);
       }
+=======
+      Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", 
+                        arg("alpha") = 0.0, arg("Jz") = 0.0)
+	 = "J1*H_J1 + J2*H_J2 + Jz*Hz_NN";
+>>>>>>> local:models/contrib/spin-tri-yc-u1.cpp
 
       // save the lattice
       pheap::ExportObject(FileName, Lattice);
