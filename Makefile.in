@@ -198,18 +198,9 @@ allobj = $(quantumnumbersobj) \
 	 $(commonobj)
 
 # contributed models.  Add new models here
-<<<<<<< HEAD
 contrib-models = spin-tri-yc-su2 spin-tri-yc-su2-EfficientNumbering \
-                 spin-tri-2SiteUnitCell-su2 spin-tri-1SiteUnitCell-su2 spin-tri-yc-u1
-=======
-<<<<<<< master
-contrib-models = spin-tri-yc-su2 spin-tri-yc-su2-EfficientNumbering dual-aklt \
-                 spin-tri-2SiteUnitCell-su2 spin-tri-1SiteUnitCell-su2
-=======
-contrib-models = spin-tri-2SiteUnitCell-su2 spin-tri-1SiteUnitCell-su2  spin-tri-yc-SU2 \
-                 spin-tri-yc-u1 spin-tri-yc
->>>>>>> local
->>>>>>> Trying to merge to master branch
+                 spin-tri-2SiteUnitCell-su2 spin-tri-1SiteUnitCell-su2 spin-tri-yc-u1 \
+                 dual-aklt spin-tri-yc-SU2 spin-tri-yc
 
 # default / examplar models
 default-models = spinchain-su2 spinchain-spin2-su2 \

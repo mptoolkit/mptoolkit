@@ -1,17 +1,7 @@
-// -*- C++ -*- $ID: spinchain.cpp 1490 2015-05-19 09:15:06Z ianmcc$
-
-<<<<<<< HEAD
-// Ising exact energy 4/pi per site
-// finite size OBC: 1 / sin(pi / (4L+w))
-
-=======
-<<<<<<< master
-=======
+// -*- C++ -*-
 // Ising exact energy 4/pi per site.
 // finite size OBC: 1 / sin(pi / (4L+w))
 
->>>>>>> local
->>>>>>> Trying to merge to master branch
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
