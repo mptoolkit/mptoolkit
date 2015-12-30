@@ -153,6 +153,7 @@ class InfiniteLattice
 // Constucts a TriangularMPO from the summation over unit cell translations of a finite MPO.
 // The Op must have a size() that is a multiple of SiteListTypeSize, which must itself be an
 // integer multiple of SiteListType.size().
+// The aux basis for JW is assumed to be compatible with Op -- that is, JW.qn2() == Op.qn1()
 TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& JW, FiniteMPO const& Op, int UnitCellSize);
 
 TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
@@ -180,6 +181,31 @@ TriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op, int Un
 
 TriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op);
 
+// sum_string
+// Constsructs a TriangularMPO of the form
+// A(0)*C(1) + A(0)*B(1)*C(2) + A(0)*B(1)*B(2)*C(3) + ....
+// plus translations.
+// PRECONDITION(JW.qn2() == Op1.qn1() && Op1.qn2() == String.qn1() && String.qn2() == Op1.qn1()
+// && is_scalar(Op2.qn2()))
+TriangularMPO sum_string(SiteListType const& SiteList, FiniteMPO const& JW, FiniteMPO const& Op1,
+			 FiniteMPO const& String, FiniteMPO const& Op2, int UnitCellSize,
+			 QuantumNumbers::QuantumNumber q);
+
+// This version of sum_string takes UnitCellMPO's for the operator arguments.  The String term
+// must be a scalar with bosonic commutation, and cannot be any longer than UnitCellSize.
+TriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_, 
+			 int UnitCellSize,
+			 QuantumNumbers::QuantumNumber q);
+
+TriangularMPO sum_string_dot(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_, 
+			     int UnitCellSize);
+
+TriangularMPO sum_string_dot(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_);
+
+TriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_, 
+			       int UnitCellSize);
+
+TriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_);
 
 // Constructs a zero triangular MPO
 TriangularMPO make_zero(SiteListType const& SiteList);

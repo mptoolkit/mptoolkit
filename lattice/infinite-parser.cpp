@@ -177,7 +177,7 @@ struct push_sum_unit
 	 int Cells = Sites / Lattice.GetUnitCell().size();
 	 DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End))(Sites);
 	 UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End));
-	 Op.ExtendToCoverUnitCell(Sites);
+	 //Op.ExtendToCoverUnitCell(Sites);
 	 eval.push(sum_unit(Op, Sites));
       }
       catch (ParserError const& p)
@@ -212,7 +212,7 @@ struct push_sum_k
       int Cells = Sites / Lattice.GetUnitCell().size();
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
       UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End));
-      Op.ExtendToCoverUnitCell(Sites);
+      //Op.ExtendToCoverUnitCell(Sites);
       eval.push(sum_k(k, Op, Sites));
    }
 
@@ -251,9 +251,63 @@ struct push_sum_kink
       UnitCellMPO Kink = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, Comma));
       ++Comma; // skip over the comma
       UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Comma, End));
-      Op.ExtendToCoverUnitCell(Sites);
-
+      //Op.ExtendToCoverUnitCell(Sites);
       eval.push(sum_kink(Kink, Op, Sites));
+   }
+
+   InfiniteLattice const& Lattice;
+   std::stack<ElementType>& eval;
+};
+
+struct push_sum_string_inner
+{
+   push_sum_string_inner(InfiniteLattice const& Lattice_,
+		 std::stack<ElementType>& eval_)
+      : Lattice(Lattice_), eval(eval_) {}
+   
+   void operator()(char const* Start, char const* End) const
+   {
+      int Sites = pop_int(eval);
+      int Cells = Sites / Lattice.GetUnitCell().size();
+
+      // here we expect 3 operators, separated by commas
+      // Find the comma separating the two operators
+      int nBracket = 0;
+      char const* Comma = Start;
+      while (Comma != End && (*Comma != ',' || nBracket > 0))
+      {
+	 if (*Comma == '(')
+	    ++nBracket;
+	 else if (*Comma == ')')
+	    --nBracket;
+	 ++Comma;
+      }
+      if (Comma == End)
+      {
+	 PANIC("Failed to parse three parameters in sum_string_inner");
+      }
+
+      DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
+      UnitCellMPO Op1 = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, Comma));
+      // find the next comma
+      ++Comma;
+      Start = Comma;
+      while (Comma != End && (*Comma != ',' || nBracket > 0))
+      {
+	 if (*Comma == '(')
+	    ++nBracket;
+	 else if (*Comma == ')')
+	    --nBracket;
+	 ++Comma;
+      }
+      if (Comma == End)
+      {
+	 PANIC("Failed to parse three parameters in sum_string_inner");
+      }
+      UnitCellMPO String = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, Comma));
+      ++Comma; // skip over the comma
+      UnitCellMPO Op2 = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Comma, End));
+      eval.push(sum_string_inner(Op1, String, Op2, Sites));
    }
 
    InfiniteLattice const& Lattice;
@@ -382,6 +436,20 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 	    >> expression_string[push_sum_k(self.Lattice, self.eval)]
 	    >> ')';
 
+	 sum_string_inner_expression = str_p("sum_string_inner")
+	    >> '('
+	    >> num_cells
+	    >> expression_string[push_sum_string_inner(self.Lattice, self.eval)]
+	    >> ')';
+
+#if 0
+	 sum_string_dot_expression = str_p("sum_string_dot")
+	    >> '('
+	    >> num_cells
+	    >> expression_string[push_sum_string_dot(self.Lattice, self.eval)]
+	    >> ')';
+#endif
+
 	 function_expression = eps_p(identifier >> '{')
 	    >> identifier[push_function(self.FunctionStack, self.ParameterStack)]
 	    >> parameter_list[eval_function(self.Lattice, 
@@ -422,6 +490,8 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 	    |   sum_unit_expression
 	    |   sum_kink_expression
 	    |   sum_k_expression
+	    |   sum_string_inner_expression
+	    |   sum_string_dot_expression
 	    |   commutator_bracket
 	    |   '(' >> expression >> ')'
 	    |   ('-' >> factor)[do_negate<ElementType>(self.eval)]
@@ -463,7 +533,8 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 	 parameter, named_parameter, parameter_list, expression_string, 
 	 sum_unit_expression, sum_kink_expression, sum_k_expression,
 	    identifier, pow_term, commutator_bracket, num_cells, function_expression,
-	 string_expression, prod_unit_expression, prod_unit_r_expression;
+	 string_expression, prod_unit_expression, prod_unit_r_expression,
+	 sum_string_inner_expression, sum_string_dot_expression;
 
       rule<ScannerT> const& start() const { return expression; }
    };

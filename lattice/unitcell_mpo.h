@@ -1,9 +1,13 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 
 // A UnitCellMPO is a FiniteMPO plus its associated UnitCell.
-// It is intended that the associated UnitCell will always live longer
-// than the UnitCellMPO, so we store the UnitCell by pointer with 
-// no special lifetime management.
+//
+// The UnitCellMPO always starts at a unit cell boundary, and has a size that is
+// an integer multiple of the unit cell size.
+//
+// The Offset parameter of the UnitCellMPO is the site number of the left-hand site of
+// the MPO (which is always a multiple of the lattice unit cell size).
+//
 
 #if !defined(MPTOOLKIT_LATTICE_UNITCELL_MPO_H)
 #define MPTOOLKIT_LATTICE_UNITCELL_MPO_H
@@ -155,7 +159,24 @@ UnitCellMPO inv_adjoint(UnitCellMPO const& x);
 
 UnitCellMPO MakeIdentityFrom(UnitCellMPO const& x);
 
-// optimize the representation - in this case we simply forward to the FiniteMPO representation
+// Free versions of ExtendToCover and ExtendToCoverUnitCell
+inline
+UnitCellMPO ExtendToCover(UnitCellMPO const& Op, int OtherSize, int OtherOffset)
+{
+   UnitCellMPO Result(Op);
+   Result.ExtendToCover(OtherSize, OtherOffset);
+   return Result;
+}
+
+inline
+UnitCellMPO ExtendToCoverUnitCell(UnitCellMPO const& Op, int OtherSize)
+{
+   UnitCellMPO Result(Op);
+   Result.ExtendToCoverUnitCell(OtherSize);
+   return Result;
+}
+
+// Optimize the representation - in this case we simply forward to the FiniteMPO representation
 void optimize(UnitCellMPO& Op);
 
 #endif
