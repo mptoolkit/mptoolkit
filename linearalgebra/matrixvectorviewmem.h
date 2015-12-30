@@ -21,7 +21,7 @@ namespace LinearAlgebra
 // const version
 
 template <typename Vec, typename T, typename Ti>
-struct VectorViewInterface<Vec,  STRIDE_ROW_MAJOR_MATRIX(T, Ti) >
+struct VectorViewInterface<Vec,  Concepts::StrideRowMajorMatrix<T, Ti>>
 {
    typedef Vec argument_type;
    typedef Vector<VectorMemProxy<T const, tagVariable> > result_type;
@@ -43,7 +43,7 @@ struct VectorViewInterface<Vec,  STRIDE_ROW_MAJOR_MATRIX(T, Ti) >
 };
 
 template <typename Vec, typename T, typename Ti>
-struct VectorViewInterface<Vec,  STRIDE_COL_MAJOR_MATRIX(T, Ti) >
+struct VectorViewInterface<Vec,  Concepts::StrideColMajorMatrix<T, Ti>>
 {
    typedef Vec argument_type;
    typedef Vector<VectorMemProxy<T const, tagVariable> > result_type;
@@ -67,7 +67,7 @@ struct VectorViewInterface<Vec,  STRIDE_COL_MAJOR_MATRIX(T, Ti) >
 // non-const version
 
 template <typename Vec, typename T, typename Ti>
-struct VectorViewInterface<Vec&,  STRIDE_ROW_MAJOR_MATRIX(T, Ti) >
+struct VectorViewInterface<Vec&, Concepts::StrideRowMajorMatrix<T, Ti>>
 {
    typedef Vec argument_type;
    typedef Vector<VectorMemProxy<T, tagVariable> > result_type;
@@ -89,7 +89,7 @@ struct VectorViewInterface<Vec&,  STRIDE_ROW_MAJOR_MATRIX(T, Ti) >
 };
 
 template <typename Vec, typename T, typename Ti>
-struct VectorViewInterface<Vec&,  STRIDE_COL_MAJOR_MATRIX(T, Ti) >
+struct VectorViewInterface<Vec&, Concepts::StrideColMajorMatrix<T, Ti>>
 {
    typedef Vec argument_type;
    typedef Vector<VectorMemProxy<T, tagVariable> > result_type;
@@ -112,7 +112,7 @@ struct VectorViewInterface<Vec&,  STRIDE_COL_MAJOR_MATRIX(T, Ti) >
 
 // for contiguous matrices, we can have a vector of stride 1 proxies
 template <typename Vec, typename T, typename Ti>
-struct VectorViewInterface<Vec,  CONTIGUOUS_ROW_MAJOR_MATRIX(T, Ti) >
+struct VectorViewInterface<Vec,  Concepts::ContiguousRowMajorMatrix<T, Ti>>
 {
    typedef Vec argument_type;
    typedef Vector<VectorMemProxy<T const> > result_type;
@@ -133,7 +133,7 @@ struct VectorViewInterface<Vec,  CONTIGUOUS_ROW_MAJOR_MATRIX(T, Ti) >
 };
 
 template <typename Vec, typename T, typename Ti>
-struct VectorViewInterface<Vec,  CONTIGUOUS_COL_MAJOR_MATRIX(T, Ti) >
+struct VectorViewInterface<Vec, Concepts::ContiguousColMajorMatrix<T, Ti>>
 {
    typedef Vec argument_type;
    typedef Vector<VectorMemProxy<T const> > result_type;
@@ -156,7 +156,7 @@ struct VectorViewInterface<Vec,  CONTIGUOUS_COL_MAJOR_MATRIX(T, Ti) >
 // non-const
 
 template <typename Vec, typename T, typename Ti>
-struct VectorViewInterface<Vec&,  CONTIGUOUS_ROW_MAJOR_MATRIX(T, Ti) >
+struct VectorViewInterface<Vec&,  Concepts::ContiguousRowMajorMatrix<T, Ti>>
 {
    typedef Vec argument_type;
    typedef Vector<VectorMemProxy<T> > result_type;
@@ -177,7 +177,7 @@ struct VectorViewInterface<Vec&,  CONTIGUOUS_ROW_MAJOR_MATRIX(T, Ti) >
 };
 
 template <typename Vec, typename T, typename Ti>
-struct VectorViewInterface<Vec&,  CONTIGUOUS_COL_MAJOR_MATRIX(T, Ti) >
+struct VectorViewInterface<Vec&, Concepts::ContiguousColMajorMatrix<T, Ti>>
 {
    typedef Vec argument_type;
    typedef Vector<VectorMemProxy<T> > result_type;

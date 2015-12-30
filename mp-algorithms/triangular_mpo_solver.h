@@ -16,7 +16,7 @@
 #if !defined(MPTOOLKIT_MP_ALGORITHMS_TRIANGULAR_MPO_SOLVER_H)
 #define MPTOOLKIT_MP_ALGORITHMS_TRIANGULAR_MPO_SOLVER_H
 
-#include "mps/momentum_operations.h"
+#include "wavefunction/momentum_operations.h"
 
 // For identifying an eigenvalue 1 of the transfer matrix, we need
 // an epsilon tolerance.  1E-12 proved to be a bit too small in some

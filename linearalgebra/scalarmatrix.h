@@ -31,7 +31,6 @@ class ScalarMatrix : public MatrixBase<ScalarMatrix<T> >
       typedef T data_type;
 
       typedef is_mutable_proxy<data_type> proxy;
-   //typedef boost::mpl::not_<proxy> const_proxy;
       typedef is_const_proxy<data_type> const_proxy;
       typedef is_immediate<data_type> immediate; 
 
@@ -39,7 +38,7 @@ class ScalarMatrix : public MatrixBase<ScalarMatrix<T> >
       typedef typename make_reference<T>::type       reference;
       typedef typename make_const_reference<T>::type const_reference;
 
-      ScalarMatrix();
+      ScalarMatrix() : size_(0) {}
 
       explicit ScalarMatrix(size_type s1, const_reference value = T())
          : size_(s1), value_(value) { }
@@ -77,8 +76,8 @@ class ScalarMatrix : public MatrixBase<ScalarMatrix<T> >
 template <typename T>
 struct interface<ScalarMatrix<T> >
 {
-   typedef typename make_value<T>::type value_type;
-   typedef DIAGONAL_MATRIX(value_type, ScalarMatrix<T>) type;
+   using value_type = typename make_value<T>::type;
+   using type = Concepts::ScalarMatrix<value_type, ScalarMatrix<T>>;
 };
 
 // iterators
@@ -178,14 +177,15 @@ struct Herm<ScalarMatrix<T> >
 
    result_type operator()(argument_type x) const
    {
-      return result_type(conj(x.value()));
+      return result_type(x.size1(), conj(x.value()));
    }
 };
 
 // Multiply
 
+#if 0
 template <typename T, typename U>
-struct Multiply<ScalarMatrix<T>&, U, typename boost::enable_if<is_defined<Multiply<T&, U> > >::type>
+struct Multiply<ScalarMatrix<T>&, U, typename boost::enable_if<is_defined<Multiply<T&, U>>>::type>
 {
    typedef ScalarMatrix<T>& result_type;
    typedef ScalarMatrix<T>& first_argument_type;
@@ -197,9 +197,10 @@ struct Multiply<ScalarMatrix<T>&, U, typename boost::enable_if<is_defined<Multip
       return x;
    }
 };
+#endif
 
 template <typename T, typename RHS, typename S1, typename U1, typename RHSi>
-struct MultiplyInterface<ScalarMatrix<T>&, RHS, DIAGONAL_MATRIX(S1, U1), AnyScalar<RHSi> >
+struct MultiplyInterface<ScalarMatrix<T>&, RHS, Concepts::ScalarMatrix<S1, U1>, AnyScalar<RHSi>>
 {
    typedef ScalarMatrix<T>& result_type;
    typedef ScalarMatrix<T>& first_argument_type;
@@ -207,8 +208,41 @@ struct MultiplyInterface<ScalarMatrix<T>&, RHS, DIAGONAL_MATRIX(S1, U1), AnyScal
 
    result_type operator()(first_argument_type x, second_argument_type y)
    {
+      DEBUG_CHECK_EQUAL(size2(x), size1(y));
       multiply(x.value(), y);
       return x;
+   }
+};
+
+// Addition
+
+template <typename LHS, typename RHS, 
+          typename S1, typename U1, 
+          typename S2, typename U2>
+struct AddInterface<LHS&, RHS, Concepts::ScalarMatrix<S1, U1>, Concepts::ScalarMatrix<S2, U2>>
+{
+   typedef void result_type;
+   typedef LHS& first_argument_type;
+   typedef RHS const& second_argument_type;
+   result_type operator()(first_argument_type x, second_argument_type y) const
+   {
+      DEBUG_CHECK_EQUAL(size2(x), size1(y));
+      x.value() += y.value();
+   }
+};
+
+template <typename LHS, typename RHS, 
+          typename S1, typename U1, 
+          typename S2, typename U2>
+struct SubtractInterface<LHS&, RHS, Concepts::ScalarMatrix<S1, U1>, Concepts::ScalarMatrix<S2, U2>>
+{
+   typedef void result_type;
+   typedef LHS& first_argument_type;
+   typedef RHS const& second_argument_type;
+   result_type operator()(first_argument_type x, second_argument_type y) const
+   {
+      DEBUG_CHECK_EQUAL(size1(x), size1(y));
+      x.value() -= y.value();
    }
 };
 
@@ -258,8 +292,8 @@ struct TransformMatrix<ScalarMatrix<T>&, F>
 
 template <typename S, typename T, typename F, typename Sv, typename Tv, typename Si, typename Ti>
 struct BinaryTransformMatrixSemiregular<ScalarMatrix<S>, ScalarMatrix<T>, F,
-                                        DIAGONAL_MATRIX(Sv, Si),
-                                        DIAGONAL_MATRIX(Tv, Ti)>
+                                        Concepts::ScalarMatrix<Sv, Si>,
+                                        Concepts::ScalarMatrix<Tv, Ti>>
 {
    typedef ScalarMatrix<S> const& first_argument_type;
    typedef ScalarMatrix<T> const& second_argument_type;
@@ -283,8 +317,8 @@ struct BinaryTransformMatrixSemiregular<ScalarMatrix<S>, ScalarMatrix<T>, F,
 
 template <typename S, typename T, typename Sv, typename Tv, typename Si, typename Ti>
 struct BinaryTransformMatrixSemiregular<ScalarMatrix<S>, ScalarMatrix<T>, Addition<Sv, Tv>,
-                                        DIAGONAL_MATRIX(Sv, Si),
-                                        DIAGONAL_MATRIX(Tv, Ti)>
+                                        Concepts::ScalarMatrix<Sv, Si>,
+                                        Concepts::ScalarMatrix<Tv, Ti>>
 {
    typedef Addition<Sv, Tv> F;
    typedef ScalarMatrix<S> const& first_argument_type;
@@ -309,8 +343,8 @@ struct BinaryTransformMatrixSemiregular<ScalarMatrix<S>, ScalarMatrix<T>, Additi
 
 template <typename S, typename T, typename Sv, typename Tv, typename Si, typename Ti>
 struct BinaryTransformMatrixSemiregular<ScalarMatrix<S>, ScalarMatrix<T>, Subtraction<Sv, Tv>,
-                                        DIAGONAL_MATRIX(Sv, Si),
-                                        DIAGONAL_MATRIX(Tv, Ti)>
+                                        Concepts::ScalarMatrix<Sv, Si>,
+                                        Concepts::ScalarMatrix<Tv, Ti>>
 {
    typedef Subtraction<Sv, Tv> F;
    typedef ScalarMatrix<S> const& first_argument_type;
@@ -336,8 +370,9 @@ struct BinaryTransformMatrixSemiregular<ScalarMatrix<S>, ScalarMatrix<T>, Subtra
 // multiplication
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
-struct MatrixMatrixMultiplication<ScalarMatrix<S>, ScalarMatrix<T>, F,
-                                  DIAGONAL_MATRIX(Sv, Si), DIAGONAL_MATRIX(Tv, Ti)>
+struct MatrixMatrixMultiplication<S, T, F,
+                                  Concepts::ScalarMatrix<Sv, Si>, 
+				  Concepts::ScalarMatrix<Tv, Ti>>
 {
    typedef typename is_commutative<F>::type commutative;
 
@@ -345,10 +380,10 @@ struct MatrixMatrixMultiplication<ScalarMatrix<S>, ScalarMatrix<T>, F,
    typedef typename make_value<FwdResult>::type result_value_type;
 
    typedef ScalarMatrix<result_value_type> result_type;
-   typedef ScalarMatrix<S> const& first_argument_type;
-   typedef ScalarMatrix<T> const& second_argument_type;
+   using first_argument_type = S;
+   using second_argument_type = T;
 
-   result_type operator()(first_argument_type x, second_argument_type y)
+   result_type operator()(S const& x, T const& y) const
    {
       DEBUG_PRECONDITION_EQUAL(x.size2(), y.size1());
       return result_type(x.size1(), F()(x.value(), y.value()), cdirect());
@@ -356,15 +391,18 @@ struct MatrixMatrixMultiplication<ScalarMatrix<S>, ScalarMatrix<T>, F,
 };
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
-struct MatrixMatrixMultiplication<ScalarMatrix<S>, T, F,
-                                  DIAGONAL_MATRIX(Sv, Si), ANY_MATRIX(Tv, Ti)>
+struct MatrixMatrixMultiplication<S, T, F, 
+				  Concepts::ScalarMatrix<Sv, Si>, 
+				  Concepts::AnyMatrix<Tv,Ti>>
 {
+   typedef typename is_commutative<F>::type commutative;
+
    typedef ScalarMatrixMultiplication<Sv, T, F> Fwd;
    typedef typename Fwd::result_type result_type;
    typedef ScalarMatrix<S> const& first_argument_type;
    typedef T const& second_argument_type;
 
-   result_type operator()(first_argument_type x, second_argument_type y)
+   result_type operator()(first_argument_type x, second_argument_type y) const
    {
       DEBUG_PRECONDITION_EQUAL(x.size2(), y.size1());
       return Fwd()(x.value(), y);
@@ -372,15 +410,16 @@ struct MatrixMatrixMultiplication<ScalarMatrix<S>, T, F,
 };
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
-struct MatrixMatrixMultiplication<S, ScalarMatrix<T>, F,
-                                  ANY_MATRIX(Sv, Si), DIAGONAL_MATRIX(Tv, Ti)>
+struct MatrixMatrixMultiplication<S, T, F,
+                                  Concepts::AnyMatrix<Sv, Si>, 
+				  Concepts::ScalarMatrix<Tv, Ti>>
 {
    typedef MatrixScalarMultiplication<S, Tv, F> Fwd;
    typedef typename Fwd::result_type result_type;
    typedef S const& first_argument_type;
-   typedef ScalarMatrix<T> const& second_argument_type;
+   typedef T const& second_argument_type;
 
-   result_type operator()(first_argument_type x, second_argument_type y)
+   result_type operator()(first_argument_type x, second_argument_type y) const
    {
       DEBUG_PRECONDITION_EQUAL(x.size2(), y.size1());
       return Fwd()(x, y.value());
@@ -393,7 +432,8 @@ struct MatrixMatrixMultiplication<S, ScalarMatrix<T>, F,
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
 struct MatrixDirectProduct<ScalarMatrix<S>, ScalarMatrix<T>, F, 
-                           DIAGONAL_MATRIX(Sv, Si), DIAGONAL_MATRIX(Tv, Ti)>
+                           Concepts::ScalarMatrix<Sv, Si>, 
+			   Concepts::ScalarMatrix<Tv, Ti>>
 {
    typedef typename F::result_type ValType;
    typedef typename make_value<ValType>::type result_value_type;
@@ -418,7 +458,7 @@ struct MatrixDirectProduct<ScalarMatrix<S>, ScalarMatrix<T>, F,
 // InnerProd
 
 template <typename S, typename T>
-struct InnerProd<ScalarMatrix<S>, ScalarMatrix<T> >
+struct InnerProd<ScalarMatrix<S>, ScalarMatrix<T>>
 {
    typedef ScalarMatrix<S> const& first_argument_type;
    typedef ScalarMatrix<T> const& second_argument_type;
@@ -433,8 +473,9 @@ struct InnerProd<ScalarMatrix<S>, ScalarMatrix<T> >
 
 template <typename S, typename T,
           typename Sv, typename Si, typename Tv, typename Ti>
-struct MatrixInnerProd<S, ScalarMatrix<T>, InnerProd<Sv, Tv>, ANY_MATRIX(Sv, Si), 
-                       DIAGONAL_MATRIX(Tv, Ti)>
+struct MatrixInnerProd<S, ScalarMatrix<T>, InnerProd<Sv, Tv>, 
+		       Concepts::AnyMatrix<Sv, Si>, 
+                       Concepts::ScalarMatrix<Tv, Ti>>
 {
    typedef S const& first_argument_type;
    typedef ScalarMatrix<T> const& second_argument_type;
@@ -448,8 +489,9 @@ struct MatrixInnerProd<S, ScalarMatrix<T>, InnerProd<Sv, Tv>, ANY_MATRIX(Sv, Si)
 
 template <typename S, typename T,
           typename Sv, typename Si, typename Tv, typename Ti>
-struct MatrixInnerProd<ScalarMatrix<S>, T, InnerProd<Sv, Tv>, DIAGONAL_MATRIX(Sv, Si), 
-                       ANY_MATRIX(Tv, Ti)>
+struct MatrixInnerProd<ScalarMatrix<S>, T, InnerProd<Sv, Tv>, 
+		       Concepts::ScalarMatrix<Sv, Si>, 
+                       Concepts::AnyMatrix<Tv, Ti>>
 {
    typedef ScalarMatrix<S> const& first_argument_type;
    typedef T const& second_argument_type;

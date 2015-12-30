@@ -3,6 +3,11 @@
   diagonalmatrix.h
 
   Created 2009-03-17 Ian McCulloch
+
+  The operator(i,j) works.  If the value_type doesn't have a zero element type,
+  then operator(i,j) returns a value_with_zero.  This can be inefficient,
+  beacause it copies the element.  It is more efficient to always use the
+  diagonal() component, as this never involves temporaries.
 */
 
 #if !defined(DIAGONALMATRIX_H_CJDHCJKHUIYT389Y987Y34897GYO8)
@@ -18,7 +23,7 @@
 namespace LinearAlgebra
 {
 
-template <typename T, typename DiagonalType = Vector<T> >
+template <typename T, typename DiagonalType>
 class DiagonalMatrix : public MatrixBase<DiagonalMatrix<T> >
 {
    public:
@@ -38,6 +43,12 @@ class DiagonalMatrix : public MatrixBase<DiagonalMatrix<T> >
       template <typename U>
       DiagonalMatrix(DiagonalMatrix<U> const& Other)
 	 : data_(Other.diagonal()) {}
+
+      template <typename U>
+      DiagonalMatrix(U const& Other, typename Assign<DiagonalMatrix<T>&, U>::result_type* dummy=0)
+      {
+	 assign(*this, Other);
+      }
 
       DiagonalMatrix(size_type s) : data_(s) { }
 
@@ -63,17 +74,39 @@ class DiagonalMatrix : public MatrixBase<DiagonalMatrix<T> >
       diagonal_type const& diagonal() const { return data_; }
       diagonal_type& diagonal() { return data_; }
 
+      void resize(size_type s1, size_type s2)
+      {
+	 DEBUG_CHECK_EQUAL(s1, s2);
+	 data_.resize(s1);
+      }
+
    private:
       diagonal_type data_;
 };
+
+template <typename T>
+DiagonalMatrix<T> operator*(DiagonalMatrix<T> const& Mat, T const& v)
+{
+   DiagonalMatrix<T> Result(size1(Mat));
+   Result.diagonal() = Mat.diagonal() * v;
+   return Result;
+}
+
+template <typename T>
+DiagonalMatrix<T> operator*(T const& v, DiagonalMatrix<T> const& Mat)
+{
+   DiagonalMatrix<T> Result(size1(Mat));
+   Result.diagonal() = v * Mat.diagonal();
+   return Result;
+}
 
 // interface
 
 template <typename T>
 struct interface<DiagonalMatrix<T> >
 {
-   typedef typename make_value<T>::type value_type;
-   typedef DIAGONAL_MATRIX(value_type, DiagonalMatrix<T>) type;
+   using value_type = typename make_value<T>::type;
+   using type = Concepts::DiagonalMatrix<value_type, DiagonalMatrix<T>>;
 };
 
 // iterators
@@ -131,6 +164,21 @@ struct IterateDiagonal<DiagonalMatrix<T>&>
    }
 };
 
+// resize
+
+template <typename T>
+struct Resize<DiagonalMatrix<T>&>
+{
+   typedef void result_type;
+   typedef DiagonalMatrix<T>& first_argument_type;
+   typedef size_type second_argument_type;
+   typedef size_type third_argument_type;
+   void operator()(DiagonalMatrix<T>& v, size_type r, size_type c) const
+   {
+      v.resize(r,c);
+   }
+};
+
 // GetMatrixElement
 
 // we go to some lengths here to get this to work with value_type's that
@@ -139,6 +187,8 @@ struct IterateDiagonal<DiagonalMatrix<T>&>
 template <typename T, typename Enable = void>
 struct GetMatrixElement_DiagonalMatrix {};
 
+// if the element type has a valid zero, then allow GetMatrixElement for any
+// pair (i,j), and return zero for the off-diagonal.
 template <typename T>
 struct GetMatrixElement_DiagonalMatrix<
    T
@@ -159,6 +209,10 @@ struct GetMatrixElement_DiagonalMatrix<
    }
 };
 
+// if the element type doesn't have a valid zero, then enforce that
+// we can only get the diagonal elements.  This is a change in policy
+// from previously, when we returned value_with_zero<T> (which turned out
+// to be rather messy in practice)
 template <typename T>
 struct GetMatrixElement_DiagonalMatrix<
    T
@@ -168,13 +222,14 @@ struct GetMatrixElement_DiagonalMatrix<
    typedef DiagonalMatrix<T> const& first_argument_type;
    typedef size_type second_argument_type;
    typedef size_type third_argument_type;
-   typedef typename make_value_with_zero<T>::type result_type;
+   typedef typename DiagonalMatrix<T>::const_reference result_type;
 
    result_type operator()(first_argument_type x, size_type i, size_type j) const
    {
+      DEBUG_CHECK_EQUAL(i,j);
       DEBUG_PRECONDITION_COMPARE(i, <, x.size1());
       DEBUG_PRECONDITION_COMPARE(j, <, x.size2());
-      return (i == j) ? x.diagonal()[i] : zero<result_type>();
+      return x.diagonal()[i];
    }
 };
 
@@ -200,19 +255,25 @@ struct GetMatrixElement<DiagonalMatrix<T>&>
 };
 
 //
-// expressions
+// unary expressions
+//
+
+
+
+//
+// binary expressions
 //
 
 // Multiply
 
 template <typename T, typename RHS, typename S1, typename U1, typename RHSi>
-struct MultiplyInterface<DiagonalMatrix<T>&, RHS, DIAGONAL_MATRIX(S1, U1), AnyScalar<RHSi> >
+struct MultiplyInterface<DiagonalMatrix<T>&, RHS, Concepts::DiagonalMatrix<S1, U1>, AnyScalar<RHSi> >
 {
    typedef DiagonalMatrix<T>& result_type;
    typedef DiagonalMatrix<T>& first_argument_type;
    typedef RHS const& second_argument_type;
 
-   result_type operator()(first_argument_type x, second_argument_type y)
+   result_type operator()(first_argument_type x, second_argument_type y) const
    {
       multiply(x.diagonal(), y);
       return x;
@@ -223,7 +284,7 @@ struct MultiplyInterface<DiagonalMatrix<T>&, RHS, DIAGONAL_MATRIX(S1, U1), AnySc
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
 struct MatrixMatrixMultiplication<DiagonalMatrix<S>, DiagonalMatrix<T>, F,
-                                  DIAGONAL_MATRIX(Sv, Si), DIAGONAL_MATRIX(Tv, Ti)>
+                                  Concepts::DiagonalMatrix<Sv, Si>, Concepts::DiagonalMatrix<Tv, Ti>>
 {
    typedef typename is_commutative<F>::type commutative;
 
@@ -234,7 +295,7 @@ struct MatrixMatrixMultiplication<DiagonalMatrix<S>, DiagonalMatrix<T>, F,
    typedef DiagonalMatrix<S> const& first_argument_type;
    typedef DiagonalMatrix<T> const& second_argument_type;
 
-   result_type operator()(first_argument_type x, second_argument_type y)
+   result_type operator()(first_argument_type x, second_argument_type y) const
    {
       DEBUG_PRECONDITION_EQUAL(x.size2(), y.size1());
       return result_type(transform(x.diagonal(), y.diagonal(), F()));
@@ -247,7 +308,7 @@ struct MatrixMatrixMultiplication<DiagonalMatrix<S>, DiagonalMatrix<T>, F,
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
 struct MatrixDirectProduct<DiagonalMatrix<S>, DiagonalMatrix<T>, F, 
-                           DIAGONAL_MATRIX(Sv, Si), DIAGONAL_MATRIX(Tv, Ti)>
+                           Concepts::DiagonalMatrix<Sv, Si>, Concepts::DiagonalMatrix<Tv, Ti>>
 {
    typedef typename F::result_type ValType;
    typedef typename make_value<ValType>::type result_value_type;
@@ -284,6 +345,18 @@ struct InnerProd<DiagonalMatrix<S>, DiagonalMatrix<T> >
       return inner_prod(x.diagonal(), y.diagonal());
    }
 };
+
+template <typename T, typename S, typename U>
+struct ZeroAllInterface<T&, DiagonalMatrix<S, U>>
+{
+   typedef void result_type;
+   typedef T& argument_type;
+   void operator()(T& v) const
+   {
+      iter_zero(iterate(v.diagonal()));
+   }
+};
+
 
 } // namespace LinearAlgebra
 

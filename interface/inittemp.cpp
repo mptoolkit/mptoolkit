@@ -21,7 +21,7 @@ long CacheSize()
 void InitializeTempPHeap(bool Verbose)
 {
    std::string TempFile = getenv_or_default("MP_BINPATH", std::string());
-   if (Verbose)
+   if (Verbose > 0)
    {
       if (TempFile.empty())
          std::cerr << "Using temporary file";

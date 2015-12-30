@@ -16,6 +16,9 @@
 //   + -J_\perp \sum_r \sum_{l=0}^{1} e^{-ir\phi} a^\dagger_{l,r} a_{l+1,r} + h.c.
 // + U/2 \sum_{l,r} n_{l,r} (n_{l,r}-1)
 //
+// Additional term to Hamiltonian: cylindrical boundaries with flux theta.
+// H_theta = e^{i\theta} a^\dagger_{2} a_{0} - e^{i\theta} a_{2} a^\dagger_{0}
+//
 // Change gauge to translationally invariant along the legs:
 //
 // b^\dagger_{0,r} = exp[-ir\phi] a^\dagger_{0,r}
@@ -83,11 +86,14 @@ int main(int argc, char** argv)
 	 ("H_Jc2", "nearest neighbor leg 2 current")
 	 ("H_K",   "nearest neighbor rung hopping")
 	 ("H_Kc",  "nearest neighbor rung current")
+	 ("H_Kp",  "periodic rung hopping")
+	 ("H_Kcp", "periodic rung current")
 	 ("H_U",   "on-site Coulomb repulsion N*(N-1)/2")
 	 ;
 
       OpDescriptions.add_functions()
-	 ("H", "Hamiltonian, parametized by K, alpha (flux), U, J");
+	 ("H", "Hamiltonian, parametized by K, alpha (flux), U, J")
+	 ;
 
       if (vm.count("help") || !vm.count("out"))
       {
@@ -112,7 +118,7 @@ int main(int argc, char** argv)
 
       InfiniteLattice Lattice(Cell);
       
-      UnitCellMPO HJ0, HJ1, HJ2, HJc0, HJc1, HJc2, HK, HKc, HU;
+      UnitCellMPO HJ0, HJ1, HJ2, HJc0, HJc1, HJc2, HK, HKc, HKp, HKcp, HU;
       HJ0 = BH(0)[0]*B(1)[0] + B(0)[0]*BH(1)[0];
       HJ1 = BH(0)[1]*B(1)[1] + B(0)[1]*BH(1)[1];
       HJ2 = BH(0)[2]*B(1)[2] + B(0)[2]*BH(1)[2];
@@ -124,6 +130,9 @@ int main(int argc, char** argv)
       HK = BH(0)[0]*B(0)[1] + B(0)[0]*BH(0)[1] + BH(0)[1]*B(0)[2] + B(0)[1]*BH(0)[2];
       HKc = std::complex<double>(0,1)*(BH(0)[0]*B(0)[1] - B(0)[0]*BH(0)[1] + BH(0)[1]*B(0)[2] - B(0)[1]*BH(0)[2]);
 
+      HKp = BH(0)[2]*B(0)[0] + B(0)[2]*BH(0)[0];
+      HKcp = std::complex<double>(0,1)*(BH(0)[2]*B(0)[0] - B(0)[2]*BH(0)[0]);
+      
       Lattice["H_J0"] = sum_unit(HJ0);
       Lattice["H_J1"] = sum_unit(HJ1);
       Lattice["H_J2"] = sum_unit(HJ2);
@@ -133,6 +142,8 @@ int main(int argc, char** argv)
       Lattice["H_Jc2"] = sum_unit(j2);
       Lattice["H_K"] = sum_unit(HK);
       Lattice["H_Kc"] = sum_unit(HKc);
+      Lattice["H_Kp"] = sum_unit(HKp);
+      Lattice["H_Kcp"] = sum_unit(HKcp);
       Lattice["H_U"] = sum_unit(HU);
 
       // For parameters J, K = J_\perp, U, alpha, the Hamiltonian is:

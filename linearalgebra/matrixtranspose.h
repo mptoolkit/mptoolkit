@@ -206,50 +206,34 @@ template <typename T, typename NewT, typename Ti = typename interface<T>::type>
 struct TransposeOrientationInterface : interface<T> {};
 
 template <typename T, typename NewT, typename Tv, typename Orient, typename Ti>
-struct TransposeOrientationInterface<T, NewT, COMPRESSED_OUTER_MATRIX(Tv, Orient, Ti)>
+struct TransposeOrientationInterface<T, NewT, Concepts::CompressedOuterMatrix<Tv, Orient, Ti>>
 {
    typedef typename SwapOrientation<Orient>::type NewOrient;
-   typedef COMPRESSED_OUTER_MATRIX(Tv, NewOrient, NewT) type;
-   typedef Tv value_type;
-};
-
-#if 0
-template <typename T, typename NewT, typename Tv, typename Orient, typename Ti>
-struct TransposeOrientationInterface<T, NewT, INJECTIVE_OUTER_MATRIX(Tv, Orient, Ti)>
-{
-   typedef typename SwapOrientation<Orient>::type NewOrient;
-   typedef INJECTIVE_OUTER_MATRIX(Tv, NewOrient, NewT) type;
-};
-
-template <typename T, typename NewT, typename Tv, typename Orient, typename Ti>
-struct TransposeOrientationInterface<T, NewT, DENSE_OUTER_MATRIX(Tv, Orient, Ti)>
-{
-   typedef typename SwapOrientation<Orient>::type NewOrient;
-   typedef DENSE_OUTER_MATRIX(Tv, NewOrient, NewT) type;
-};
-#endif
-
-template <typename T, typename NewT, typename Tv, typename Orient, typename Ti>
-struct TransposeOrientationInterface<T, NewT, DENSE_MATRIX(Tv, Orient, Ti)>
-{
-   typedef typename SwapOrientation<Orient>::type NewOrient;
-   typedef DENSE_MATRIX(Tv, NewOrient, NewT) type;
+   typedef Concepts::CompressedOuterMatrix<Tv, NewOrient, NewT> type;
    typedef Tv value_type;
 };
 
 template <typename T, typename NewT, typename Tv, typename Orient, typename Ti>
-struct TransposeOrientationInterface<T, NewT, STRIDE_MATRIX(Tv, Orient, Ti)>
+struct TransposeOrientationInterface<T, NewT, Concepts::DenseMatrix<Tv, Orient, Ti>>
 {
    typedef typename SwapOrientation<Orient>::type NewOrient;
-   typedef STRIDE_MATRIX(Tv, NewOrient, NewT) type;
+   typedef Concepts::DenseMatrix<Tv, NewOrient, NewT> type;
    typedef Tv value_type;
 };
 
 template <typename T, typename NewT, typename Tv, typename Orient, typename Ti>
-struct TransposeOrientationInterface<T, NewT, CONTIGUOUS_MATRIX(Tv, Orient, Ti)>
+struct TransposeOrientationInterface<T, NewT, Concepts::StrideMatrix<Tv, Orient, Ti>>
 {
    typedef typename SwapOrientation<Orient>::type NewOrient;
-   typedef CONTIGUOUS_MATRIX(Tv, NewOrient, NewT) type;
+   typedef Concepts::StrideMatrix<Tv, NewOrient, NewT> type;
+   typedef Tv value_type;
+};
+
+template <typename T, typename NewT, typename Tv, typename Orient, typename Ti>
+struct TransposeOrientationInterface<T, NewT, Concepts::ContiguousMatrix<Tv, Orient, Ti>>
+{
+   typedef typename SwapOrientation<Orient>::type NewOrient;
+   typedef Concepts::ContiguousMatrix<Tv, NewOrient, NewT> type;
    typedef Tv value_type;
 };
 
@@ -372,8 +356,8 @@ struct MatrixTranspose<MatrixTransposeProxy<M>&, F, typename boost::enable_if<is
 			  second_argument_type const&) { return x.base(); }
 };
 
-template <typename M, typename F, typename Mv, typename Mi>
-struct MatrixTransposeInterface<M, F, LOCAL_MATRIX(Mv, Mi)>
+template <typename M, typename F, typename Mv, typename Mi, typename Enable>
+struct MatrixTransposeInterface<M, F, Concepts::LocalMatrix<Mv, Mi>, Enable>
 {
    typedef boost::mpl::true_ involutary;
    typedef MatrixTransposeProxy<typename Transform<M, F>::result_type> result_type;
@@ -386,7 +370,7 @@ struct MatrixTransposeInterface<M, F, LOCAL_MATRIX(Mv, Mi)>
 };
 
 template <typename M, typename F, typename Mv, typename Mi>
-struct MatrixTransposeInterface<M&, F, LOCAL_MATRIX(Mv, Mi)>
+struct MatrixTransposeInterface<M&, F, Concepts::LocalMatrix<Mv, Mi>>
 {
    typedef boost::mpl::true_ involutary;
    typedef MatrixTransposeProxy<typename Transform<M&, F>::result_type> result_type;

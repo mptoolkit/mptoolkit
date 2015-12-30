@@ -188,6 +188,8 @@ class MatrixDummyOuterIterator
 
       typedef Iter iterator;
 
+      typedef void reference;
+
       MatrixDummyOuterIterator() {}
 
       MatrixDummyOuterIterator(iterator const& i) : i_(i), end_(false) {}

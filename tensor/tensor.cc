@@ -1,4 +1,6 @@
-// -*- C++ -*- $Id$
+ // -*- C++ -*- $Id$
+
+#include "linearalgebra/matrix.h"
 
 namespace Tensor
 {
@@ -46,7 +48,8 @@ IrredTensor<T, B1, B2, S>::IrredTensor(basis1_type const& Basis1, basis2_type co
 
 template <typename T, typename B1, typename B2, typename S>
 inline
-typename IrredTensor<T, B1, B2, S>::value_type& 
+typename LinearAlgebra::MatrixBracket<typename IrredTensor<T, B1, B2, S>::MatrixType&, 
+				      size_type, size_type>::result_type
 IrredTensor<T, B1, B2, S>::operator()(size_type i, size_type j) 
 { 
    DEBUG_CHECK(i < this->Basis1().size())(i)(this->Basis1());
@@ -58,7 +61,8 @@ IrredTensor<T, B1, B2, S>::operator()(size_type i, size_type j)
 
 template <typename T, typename B1, typename B2, typename S>
 inline
-typename IrredTensor<T, B1, B2, S>::value_type const&
+typename LinearAlgebra::MatrixBracket<typename IrredTensor<T, B1, B2, S>::MatrixType, 
+				      size_type, size_type>::result_type
 IrredTensor<T, B1, B2, S>::operator()(size_type i, size_type j) const
 {
    DEBUG_CHECK(i < this->Basis1().size())(i)(this->Basis1());
@@ -68,30 +72,59 @@ IrredTensor<T, B1, B2, S>::operator()(size_type i, size_type j) const
    return Data_(i,j); 
 }
 
+
+
 template <typename T, typename B1, typename B2, typename S>
-void IrredTensor<T, B1, B2, S>::check_structure() const
+void implement_check_structure(IrredTensor<T, B1, B2, S> const& x)
 {
    for (typename LinearAlgebra::const_iterator<IrredTensor<T, B1, B2, S> >::type 
-           I = LinearAlgebra::iterate(*this); I; ++I)
+           I = LinearAlgebra::iterate(x); I; ++I)
    {
       for (typename LinearAlgebra::const_inner_iterator<IrredTensor<T, B1, B2, S> >::type 
               J = LinearAlgebra::iterate(I); J; ++J)
       {
-         CHECK(is_transform_target(this->Basis2()[J.index2()], this->TransformsAs(),
- this->Basis1()[J.index1()]))(this->Basis2()[J.index2()])
-            (this->Basis1()[J.index1()])(this->TransformsAs())(*J);
+         CHECK(is_transform_target(x.Basis2()[J.index2()], x.TransformsAs(),
+				   x.Basis1()[J.index1()]))(x.Basis2()[J.index2()])
+            (x.Basis1()[J.index1()])(x.TransformsAs())(*J);
       }
    }
 }
 
 template <typename T, typename B1, typename B2, typename S>
-void
-CoerceSymmetryList(IrredTensor<T, B1, B2, S>& t, SymmetryList const& sl)
+void implement_check_structure(IrredTensor<LinearAlgebra::Matrix<T>, B1, B2, S> const& x)
 {
-   CoerceSymmetryList(t.Basis1_, sl);
-   CoerceSymmetryList(t.Basis2_, sl);
-   CoerceSymmetryList(t.Trans_, sl);
-   CoerceSymmetryList(t.Data_, sl);
+   for (auto I = LinearAlgebra::iterate(x); I; ++I)
+   {
+      for (auto J = LinearAlgebra::iterate(I); J; ++J)
+      {
+         CHECK(is_transform_target(x.Basis2()[J.index2()], x.TransformsAs(),
+				   x.Basis1()[J.index1()]))(x.Basis2()[J.index2()])
+            (x.Basis1()[J.index1()])(x.TransformsAs())(*J);
+
+	 CHECK_EQUAL(int(size1(*J)), x.Basis1().dim(J.index1()));
+	 CHECK_EQUAL(int(size2(*J)), x.Basis2().dim(J.index2()));
+      }
+   }
+}
+
+
+template <typename T, typename B1, typename B2, typename S>
+void IrredTensor<T, B1, B2, S>::check_structure() const
+{
+   implement_check_structure(*this);
+}
+
+template <typename T, typename B1, typename B2, typename S>
+IrredTensor<T, B1, B2, S>
+CoerceSymmetryList(IrredTensor<T, B1, B2, S> const& t, SymmetryList const& sl)
+{
+   IrredTensor<T, B1, B2, S> Result;
+   Result.Basis1_ = CoerceSymmetryList(t.Basis1_, sl);
+   Result.Basis2_ = CoerceSymmetryList(t.Basis2_, sl);
+   Result.Trans_ = CoerceSymmetryList(t.Trans_, sl);
+   Result.Data_ = CoerceSymmetryList(t.Data_, sl);
+   Result.debug_check_structure();
+   return Result;
 }
 
 template <typename T, typename B1, typename B2, typename S>
@@ -720,6 +753,14 @@ IrredProd_Herm<HermitianProxy<IrredTensor<T1, B1, B2, S1> >,
 //
 
 template <typename T, typename B1, typename B2, typename S>
+void
+Tensor::IrredTensor<T, B1, B2, S>::delta_shift(QuantumNumbers::QuantumNumber const& q)
+{
+   Basis1_.delta_shift(q);
+   Basis2_.delta_shift(q);
+}
+
+template <typename T, typename B1, typename B2, typename S>
 Tensor::IrredTensor<T, B1, B2, S>
 delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x, 
 	    QuantumNumbers::QuantumNumber q,
@@ -732,8 +773,8 @@ delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
       return x;
    }
 
-   DEBUG_CHECK_EQUAL(NewBasis1, DeltaShift(x.Basis1(), p));
-   DEBUG_CHECK_EQUAL(NewBasis2, DeltaShift(x.Basis2(), p));
+   DEBUG_CHECK_EQUAL(NewBasis1, delta_shift(x.Basis1(), p));
+   DEBUG_CHECK_EQUAL(NewBasis2, delta_shift(x.Basis2(), p));
 
    typedef typename IrredTensor<T, B1, B2, S>::const_iterator       const_iterator;
    typedef typename IrredTensor<T, B1, B2, S>::const_inner_iterator const_inner_iterator;
@@ -772,7 +813,7 @@ delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
 	    QuantumNumbers::QuantumNumber q, 
 	    QuantumNumbers::Projection p)
 {
-   return delta_shift(x, q, p, DeltaShift(x.Basis1(), p), DeltaShift(x.Basis2(), p));
+   return delta_shift(x, q, p, delta_shift(x.Basis1(), p), delta_shift(x.Basis2(), p));
 }
 
 template <typename T, typename B1, typename B2, typename S>
@@ -783,7 +824,7 @@ delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
    QuantumNumbers::ProjectionList PL = enumerate_projections(q);
    DEBUG_PRECONDITION_EQUAL(q.degree(), 1);
 
-   return delta_shift(x, q, PL[0], DeltaShift(x.Basis1(), PL[0]), DeltaShift(x.Basis2(), PL[0]));
+   return delta_shift(x, q, PL[0], delta_shift(x.Basis1(), PL[0]), delta_shift(x.Basis2(), PL[0]));
 }
 
 } // namespace Tensor

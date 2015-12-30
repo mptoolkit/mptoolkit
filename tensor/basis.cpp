@@ -1,7 +1,6 @@
 // -*- C++ -*- $Id$
 
 #include "basis.h"
-#include "deltabasis.h"
 
 namespace Tensor
 {
@@ -107,7 +106,13 @@ std::string show_projections(BasisList const& B)
    return Out.str();
 }
 
-BasisList DeltaShift(BasisList const& Orig, QuantumNumbers::Projection const& p)
+void
+BasisList::delta_shift(QuantumNumbers::QuantumNumber const& q)
+{
+   Q_.delta_shift(q);
+}
+
+BasisList delta_shift(BasisList const& Orig, QuantumNumbers::Projection const& p)
 {
    BasisList Result(Orig.GetSymmetryList());
    for (BasisList::const_iterator I = Orig.begin(); I != Orig.end(); ++I)
@@ -116,6 +121,17 @@ BasisList DeltaShift(BasisList const& Orig, QuantumNumbers::Projection const& p)
    return Result;
 }
 
+BasisList delta_shift(BasisList const& Orig, QuantumNumbers::QuantumNumber const& q)
+{
+   BasisList Result(Orig.GetSymmetryList());
+   for (BasisList::const_iterator I = Orig.begin(); I != Orig.end(); ++I)
+      Result.push_back(delta_shift(*I, q));
+
+   return Result;
+}
+
+
+#if 0
 BasisList RenameSymmetry(BasisList const& BL, SymmetryList const& NewSL)
 {
    BasisList Result(NewSL);
@@ -123,6 +139,7 @@ BasisList RenameSymmetry(BasisList const& BL, SymmetryList const& NewSL)
       Result.push_back(RenameSymmetry(BL[i], NewSL));
    return Result;
 }
+#endif
 
 std::map<int, int>
 LinearizeQuantumNumberSubspace(BasisList const& b, QuantumNumbers::QuantumNumber const& q)
@@ -200,31 +217,40 @@ std::string show_projections(VectorBasis const& B)
    return Out.str();
 }
 
-VectorBasis DeltaShift(VectorBasis const& Orig, QuantumNumbers::Projection const& p)
+void
+VectorBasis::delta_shift(QuantumNumbers::QuantumNumber const& q)
 {
-   return VectorBasis(DeltaShift(Orig.Basis(), p), 
+   Basis_.delta_shift(q);
+}
+
+VectorBasis delta_shift(VectorBasis const& Orig, QuantumNumbers::Projection const& p)
+{
+   return VectorBasis(delta_shift(Orig.Basis(), p), 
 		      Orig.Dimension_.begin(),
 		      Orig.Dimension_.end());
 }
 
-//
-// DeltaBasis
-//
-
-void
-CoerceSymmetryList(DeltaBasis& b, SymmetryList const& sl)
+VectorBasis delta_shift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
 {
-   b.S_ = sl;
-   for (DeltaBasis::iterator I = b.Q_.begin(); I != b.Q_.end(); ++I)
-   {
-      I->first.Coerce(sl);
-      I->second.Coerce(sl);
-   }
+   return VectorBasis(delta_shift(Orig.Basis(), q), 
+		      Orig.Dimension_.begin(),
+		      Orig.Dimension_.end());
 }
 
+VectorBasis
+CoerceSymmetryList(VectorBasis const& b, SymmetryList const& sl)
+{
+   VectorBasis Result;
+   Result.Basis_ = CoerceSymmetryList(b.Basis_, sl);
+   Result.Dimension_ = b.Dimension_;
+   return Result;
+}
+
+#if 0
 VectorBasis RenameSymmetry(VectorBasis const& BL, SymmetryList const& NewSL)
 {
    return VectorBasis(RenameSymmetry(BL.Basis_, NewSL), BL.Dimension_);
 }
+#endif
 
 } // namespace Tensor

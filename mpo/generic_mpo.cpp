@@ -597,6 +597,17 @@ ExtractLocalBasis1(GenericMPO const& Op)
    return Result;
 }
 
+std::vector<BasisList>
+ExtractLocalBasis2(GenericMPO const& Op)
+{
+   std::vector<BasisList> Result(Op.size());
+   for (unsigned i = 0; i < Op.size(); ++i)
+   {
+      Result[i] = Op[i].LocalBasis2();
+   }
+   return Result;
+}
+
 void optimize(GenericMPO& Op)
 {
    if (Op.size() < 2)

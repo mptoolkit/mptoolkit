@@ -48,6 +48,56 @@ SingularValueDecomposition(IrredTensor<LinearAlgebra::Matrix<std::complex<double
 			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
 			               VectorBasis, VectorBasis>& Vh);
 
+// version to use explicitly a diagonal matrix
+void 
+SingularValueDecomposition(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis> const& m, 
+			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis>& U,
+			   IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
+			   VectorBasis, VectorBasis, DiagonalStructure>& D,
+			   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+			               VectorBasis, VectorBasis>& Vh);
+
+// Version that keeps all of the zero singular values
+void 
+SingularValueDecompositionFull(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+				   VectorBasis, VectorBasis> const& m, 
+                               IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+					   VectorBasis, VectorBasis>& U,
+                               IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
+					   VectorBasis, VectorBasis, DiagonalStructure>& D,
+			       IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+					   VectorBasis, VectorBasis>& Vh);
+
+// Keep the Basis1 intact, that is, given input MxN matrix,
+// U is MxM
+// D is MxM
+// Vh is MxN
+void 
+SingularValueDecompositionKeepBasis1(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+				   VectorBasis, VectorBasis> const& m, 
+                               IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+					   VectorBasis, VectorBasis>& U,
+                               IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
+					   VectorBasis, VectorBasis, DiagonalStructure>& D,
+			       IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+					   VectorBasis, VectorBasis>& Vh);
+
+// Keep the Basis2 intact, that is, given input MxN matrix,
+// U is MxN
+// D is NxN
+// Vh is NxN
+void 
+SingularValueDecompositionKeepBasis2(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+				   VectorBasis, VectorBasis> const& m, 
+                               IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+					   VectorBasis, VectorBasis>& U,
+                               IrredTensor<LinearAlgebra::DiagonalMatrix<double>, 
+					   VectorBasis, VectorBasis, DiagonalStructure>& D,
+			       IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
+					   VectorBasis, VectorBasis>& Vh);
+
 // If the basis is already regular, we can avoid some book-keeping
 void 
 SingularValueDecompositionRegular(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 

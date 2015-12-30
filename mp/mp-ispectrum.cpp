@@ -1,10 +1,10 @@
 // -*- C++ -*- $Id$
 
 #include "mp/copyright.h"
-#include "mps/infinitewavefunction.h"
-#include "mps/packunpack.h"
+#include "wavefunction/mpwavefunction.h"
 #include "lattice/latticesite.h"
-#include "mps/operator_actions.h"
+#include "wavefunction/operator_actions.h"
+#include "mps/packunpack.h"
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "common/prog_options.h"
@@ -17,7 +17,7 @@
 #include "linearalgebra/arpack_wrapper.h"
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcell-parser.h"
-#include "lattice/product-parser.h"
+#include "lattice/infinite-parser.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -446,23 +446,29 @@ get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 // TODO: handle the degenerate case where there is more than one eigenvalue = 1
 std::pair<MatrixOperator, MatrixOperator>
 get_principal_eigenpair(LinearWavefunction const& Psi, QuantumNumber const& QShift, 
-                        double TolIn = 1E-14, int Verbose = 0)
+                        double TolIn = 1E-14, int Verbose = 0,
+			MatrixOperator LeftGuess = MatrixOperator(),
+			MatrixOperator RightGuess = MatrixOperator())
 {
    // get the left eigenvector
 
    LeftMultiply LeftMult(Psi, QShift);
-   MatrixOperator LeftEigen = MakeRandomMatrixOperator(Psi.Basis2(), Psi.Basis2());
+   MatrixOperator LeftEigen = LeftGuess;
+   if (LeftEigen.is_null())
+      LeftEigen = MakeRandomMatrixOperator(Psi.Basis2(), Psi.Basis2());
 
    int Iterations = 20;
    double Tol = TolIn;
    LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
    std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMult, 
-                                                      Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
+                                                      Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false,
+						      Verbose);
    while (Iterations == 20)
    {
       Iterations = 20; Tol = 1E-14;
       LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
-      EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMult, Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
+      EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMult, Iterations, Tol, LinearSolvers::LargestAlgebraicReal, 
+				    false, Verbose);
    }
 
    DEBUG_TRACE(EtaL);
@@ -470,18 +476,22 @@ get_principal_eigenpair(LinearWavefunction const& Psi, QuantumNumber const& QShi
    // get the right eigenvector
 
    RightMultiply RightMult(Psi, QShift);
-   MatrixOperator RightEigen = MakeRandomMatrixOperator(Psi.Basis2(), Psi.Basis2());
+   MatrixOperator RightEigen = RightGuess;
+   if (RightEigen.is_null())
+      RightEigen = MakeRandomMatrixOperator(Psi.Basis2(), Psi.Basis2());
 
    Iterations = 20; Tol = TolIn;
    RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
    std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMult, 
-                                                      Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
+                                                      Iterations, Tol, LinearSolvers::LargestAlgebraicReal, 
+						      false, Verbose);
    //   DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
    while (Iterations == 20)
    {
       Iterations = 20; Tol = 1E-14;
       RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
-      EtaR = LinearSolvers::Arnoldi(RightEigen, RightMult, Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
+      EtaR = LinearSolvers::Arnoldi(RightEigen, RightMult, Iterations, Tol, LinearSolvers::LargestAlgebraicReal, 
+				    false, Verbose);
    }
    DEBUG_TRACE(EtaR);
 
@@ -545,6 +555,8 @@ int main(int argc, char** argv)
          ("quantumnumber,q", prog_opt::value(&Sector),
           "calculate the overlap only in this quantum number sector, "
           "can be used multiple times [default is to calculate all sectors]")
+	 ("symmetric", prog_opt::bool_switch(&Symmetric),
+	  "transform into the symmetric canonical form")
          ("sort,s", prog_opt::bool_switch(&Sort),
           "sort the eigenvalues by magnitude (not yet implemented)")
          ("tol", prog_opt::value(&Tol),
@@ -618,29 +630,52 @@ int main(int argc, char** argv)
       if (Verbose)
          std::cout << "Loading wavefunction...\n";
 
-      pvalue_ptr<InfiniteWavefunction> Psi1 
+      pvalue_ptr<MPWavefunction> Psi1 
          = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
 
       // firstly, get the LinearWavefunction
-      QuantumNumber QShift = Psi1->QShift;
-      MatrixOperator x_unit =  Psi1->C_right * delta_shift(InvertDiagonal(Psi1->C_old, InverseTol), 
-                                                           adjoint(QShift));
-      LinearWavefunction Psi = Psi1->Psi;
-      Psi.set_back(prod(Psi.get_back(), x_unit));
+      InfiniteWavefunctionLeft InfPsi = Psi1->get<InfiniteWavefunctionLeft>();
+
+      LinearWavefunction Psi;
+      QuantumNumber QShift = InfPsi.qshift();
+
+      RealDiagonalOperator D;
+      boost::tie(Psi, D) = get_left_canonical(InfPsi);
+
       if (Symmetric)
       {
-         MatrixOperator LambdaSqrt = SqrtDiagonal(Psi1->C_old);
+         MatrixOperator LambdaSqrt = D;
+	 LambdaSqrt = SqrtDiagonal(LambdaSqrt);
          MatrixOperator LambdaInvSqrt = InvertDiagonal(LambdaSqrt, InverseTol);
-         Psi.set_back(prod(Psi.get_back(), delta_shift(LambdaSqrt, adjoint(QShift))));
-         Psi.set_front(prod(LambdaInvSqrt, Psi.get_front()));
+         Psi.set_back(prod(Psi.get_back(), LambdaSqrt));
+         Psi.set_front(prod(delta_shift(LambdaInvSqrt, QShift), Psi.get_front()));
       }
 
-      if (Verbose)
-         std::cout << "Solving principal eigenpair...\n";
 
       // now get the principal eigenpair
       MatrixOperator LeftIdent, RightIdent;
-      boost::tie(LeftIdent, RightIdent) = get_principal_eigenpair(Psi, QShift);
+      if (Symmetric)
+      {
+         MatrixOperator R = D;
+
+	 if (Verbose)
+	    std::cout << "Solving principal eigenpair...\n";
+	 boost::tie(LeftIdent, RightIdent) = get_principal_eigenpair(Psi, QShift, Tol, Verbose,
+								     R, R);
+      }
+      else
+      {
+	 // if we're in the left canonical basis, then we know what the eigenpair is.
+	 if (Verbose)
+	    std::cout << "In left-canonical basis: principal eigenpair is already known.\n";
+	 LeftIdent = MatrixOperator::make_identity(Psi.Basis2());
+	 RightIdent = D;
+	 RightIdent = scalar_prod(RightIdent, herm(RightIdent));
+
+	 boost::tie(LeftIdent, RightIdent) = get_principal_eigenpair(Psi, QShift, Tol, Verbose,
+								     LeftIdent, RightIdent);
+      }
+
       std::complex<double> IdentNormalizationFactor = inner_prod(LeftIdent, RightIdent);
 
       // Get the string operator
@@ -668,7 +703,7 @@ int main(int argc, char** argv)
       {
 	 UnitCellSize = Psi.size();
       }
-      double ScaleFactor = double(UnitCellSize) / double(Psi1->Psi.size());
+      double ScaleFactor = double(UnitCellSize) / double(Psi.size());
 
       // get the set of quantum numbers to show
       typedef std::set<QuantumNumbers::QuantumNumber> QSetType;
@@ -838,6 +873,11 @@ int main(int argc, char** argv)
       } // for qI
 
       pheap::Shutdown();
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

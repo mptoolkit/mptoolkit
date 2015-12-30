@@ -73,7 +73,7 @@ class PageFileImpl
    public:
       PageFileImpl();
 
-   void create(size_t PageSize_, std::string const& FileName_, bool Unlink = false);
+      void create(size_t PageSize_, std::string const& FileName_, bool Unlink = false, bool AllowOverwrite = true);
 
       uint64 open(std::string const& FileName_, bool ReadOnly);
 
@@ -92,6 +92,8 @@ class PageFileImpl
       BufferAllocator* get_allocator() const { return Alloc; }
 
       std::string const& name() const { return FileName; }
+
+      int version() const { return MetaVersion; }
 
       size_t get_page_size() const { return PageSize; }
       size_t num_allocated_pages() const { return NumAllocatedPages; }
@@ -116,6 +118,8 @@ class PageFileImpl
       size_t PageSize;
       size_t NumAllocatedPages;   // number of pages in the file, whether they are currently used or not
 
+      int MetaVersion;            // the version
+
       pthread::mutex FreeListMutex;
       std::set<size_t> FreeList;
 
@@ -131,13 +135,13 @@ class PageFileImpl
 };
 
 PageFileImpl::PageFileImpl()
-  : Alloc(NULL), FD(-1), PageSize(0), NumAllocatedPages(0), ReadOnly(false),
-     PagesRead(0), PagesWritten(0), 
-     PageCheckpointLimit(0)
+  : Alloc(NULL), FD(-1), PageSize(0), NumAllocatedPages(0), MetaVersion(PageFileMetadataVersion), ReadOnly(false),
+    PagesRead(0), PagesWritten(0), 
+    PageCheckpointLimit(0)
 {
 }
 
-void PageFileImpl::create(size_t PageSize_, std::string const& FileName_, bool Unlink)
+void PageFileImpl::create(size_t PageSize_, std::string const& FileName_, bool Unlink, bool AllowOverwrite)
 {
    CHECK(FD == -1);
    FileName = FileName_;
@@ -148,9 +152,13 @@ void PageFileImpl::create(size_t PageSize_, std::string const& FileName_, bool U
    NumAllocatedPages = 1;  // first page is reserved for implementation
    ReadOnly = false;
    FreeList.clear();
+   MetaVersion = PageFileMetadataVersion;  // reset the version number to the default
 
    notify_log(20, pheap::PHeapLog) << "creating file " << FileName << '\n';
-   FD = ::open(FileName.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0600);
+   int Flags = O_RDWR | O_CREAT | O_TRUNC;
+   if (!AllowOverwrite)
+      Flags |= O_EXCL;
+   FD = ::open(FileName.c_str(), Flags, 0600);
    if (FD == -1)
    {
       PANIC("Error creating page file!")(FileName)(strerror(errno));
@@ -189,6 +197,8 @@ uint64 PageFileImpl::open(std::string const& FileName_, bool ReadOnly_)
 
    uint32 Version = MetaIn.read<uint32>();
    notify_log(40, pheap::PHeapLog) << "PageFile " << FileName_ << " version number is " << Version << '\n';
+
+   MetaVersion = Version;
 
    if (Version > 2)
    {
@@ -289,7 +299,7 @@ void PageFileImpl::persistent_shutdown(uint64 UserData)
 
 
 #else
-   // Current version 2 format
+   // Current version 2/3 format
 
    // We can free the old free list pages
    while (!FreeListAdditionalPages.empty())

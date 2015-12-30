@@ -6,7 +6,7 @@
 // The Regularize option is bugged - somehow the C_right and C_old
 // matrices end up with incompatible bases, perhaps due to sorting of quantum numbers?
 
-#include "mps/infinitewavefunction.h"
+#include "wavefunction/mpwavefunction.h"
 #include "quantumnumbers/all_symmetries.h"
 #include "pheap/pheap.h"
 #include <iostream>
@@ -18,102 +18,108 @@
 using QuantumNumbers::QuantumNumber;
 using QuantumNumbers::Projection;
 
-InfiniteWavefunction WignerProjectWavefunction(InfiniteWavefunction const& Psi, 
-                                               SymmetryList const& FinalSL, bool RegularizeBasis = false)
+StateComponent wigner_eckart(StateComponent const& A, SymmetryList const& FinalSL)
 {
-   InfiniteWavefunction Result;
-   Result.Psi = LinearWavefunction(FinalSL);
-   VectorBasis b1 = Psi.Psi.Basis1();
-   WignerEckartBasis<VectorBasis> W1(b1, FinalSL);
-   MatrixOperator Reg1;
-   if (RegularizeBasis)
-      Reg1 = Regularize(W1.AbelianBasis());
+   // Get the projected local basis
+   BasisList AbelianLocalBasis(FinalSL);
+   for (unsigned i = 0; i < A.LocalBasis().size(); ++i)
+   {
+      QuantumNumbers::ProjectionList pl = enumerate_projections(A.LocalBasis()[i]);
+      for (unsigned pi = 0; pi < pl.size(); ++pi)
+      {
+	 AbelianLocalBasis.push_back(map_projection_to_quantum(pl[pi], FinalSL));
+      }
+   }
 
-   // The identity projection
-   QuantumNumbers::ProjectionList PL = enumerate_projections(Psi.C_old.TransformsAs());
+   StateComponent Result(AbelianLocalBasis, W1.AbelianBasis(), W2.AbelianBasis());
+   int k = 0;
+   for (unsigned i = 0; i < I->LocalBasis().size(); ++i)
+   {
+      QuantumNumbers::ProjectionList pl = enumerate_projections(I->LocalBasis()[i]);
+      for (unsigned pi = 0; pi < pl.size(); ++pi)
+      {
+	 Result[k++] = wigner_eckart((*I)[i], pl[pi], W1, W2);
+      }
+   }
+   return Result;
+}
+
+InfiniteWavefunctionLeft
+wigner_eckart(InfiniteWavefunctionLeft const& Psi, SymmetryList const& FinalSL)
+{
+   InfiniteWavefunctionLeft Result;
+
+   VectorBasis b1 = Psi.Basis1();
+   WignerEckartBasis<VectorBasis> W2(b1, FinalSL);
+
+   Result.setBasis1(W2);
+
+   // get the identity projection
+   QuantumNumbers::ProjectionList PL = enumerate_projections(Psi.lambda_l().TransformsAs());
    CHECK_EQUAL(PL.size(), 1U);
    Projection IdentP = PL[0];
 
    QuantumNumbers::ProjectionList QPL = enumerate_projections(Psi.shift());
    Result.QShift = change(QuantumNumber(FinalSL), QPL[0]);
-   
-   Result.C_old = wigner_eckart(Psi.C_old, IdentP, W1, W1);
-   if (RegularizeBasis)
-      Result.C_old = triple_prod(Reg1, Result.C_old, herm(Reg1));
 
-   LinearWavefunction::const_iterator I = Psi.Psi.begin();
-
-   while (I != Psi.Psi.end())
+   WignerEckartBasis<VectorBasis> W2;
+   for (int i = 0; i < Psi.size(); ++i)
    {
-      std::cerr << "Working...\n";
-      BasisList LocalBasis = adjoint(I->LocalBasis());
-      std::set<QuantumNumber> LocalQN(LocalBasis.begin(), LocalBasis.end());
-      WignerEckartBasis<VectorBasis> W2(I->Basis2(), FinalSL);
 
-      BasisList AbelianLocalBasis(FinalSL);
-      for (unsigned i = 0; i < I->LocalBasis().size(); ++i)
-      {
-         QuantumNumbers::ProjectionList pl = enumerate_projections(I->LocalBasis()[i]);
-         for (unsigned pi = 0; pi < pl.size(); ++pi)
-            {
-               AbelianLocalBasis.push_back(map_projection_to_quantum(pl[pi], FinalSL));
-            }
-      }
+      StateComponent C = Psi[i];
+      WignerEckartBasis<VectorBasis> W1 = W2;
+      W2 = WignerEckartBasis<VectorBasis>(C.Basis2(), FinalSL);
 
-      StateComponent Next(AbelianLocalBasis, W1.AbelianBasis(), W2.AbelianBasis());
-      int k = 0;
-      for (unsigned i = 0; i < I->LocalBasis().size(); ++i)
-      {
-         QuantumNumbers::ProjectionList pl = enumerate_projections(I->LocalBasis()[i]);
-         for (unsigned pi = 0; pi < pl.size(); ++pi)
-         {
-            Next[k++] = wigner_eckart((*I)[i], pl[pi], W1, W2);
-         }
-      }
-
-      if (RegularizeBasis)
-      {
-	 MatrixOperator Reg2 = Regularize(W2.AbelianBasis());
-	 Next = triple_prod(Reg1,  Next, herm(Reg2));
-	 Reg1 = Reg2;
-      }
-
-      Result.Psi.push_back(Next);
-      W1 = W2;
-
-      ++I;
+      Result.push_back_lambda(wigner_eckart(Psi.lambda(i), IdentP, W1, W1));
+      Result.push_back(wigner_eckart(C));
    }
 
-   Result.C_right = wigner_eckart(Psi.C_right, IdentP, W1, W1);
-   if (RegularizeBasis)
-      Result.C_right = triple_prod(Reg1, Result.C_right, herm(Reg1));
+   Result.push_back_lambda(wigner_eckart(Psi.lambda_r(), IdentP, W2, W2));
 
-   // normalize
-   //   Result *= double(degree(Psi.Psi.TransformsAs()));
+   Result.setBasis2(W2);
 
+   Result.check_structure();
+			   
    return Result;
 }
+
+// functor to use the visitor pattern with wavefunction types
+struct ApplyWignerEckart : public boost::static_visitor<WavefunctionTypes>
+{
+   ApplyWignerEckart(SymmetryList const& FinalSL_)
+      : FinalSL(FinalSL_) {}
+
+   template <typename T>
+   T operator()(T const& Psi) const
+   {
+      return wigner_eckart(T, FinalSL);
+   }
+
+   SymmetryList FinalSL;
+};
 
 int main(int argc, char** argv)
 {
    if (argc != 4)
    {
       print_copyright(std::cerr);
-      std::cerr << "usage: mp-iwigner-eckart <input-psi> <output-psi> <symmetry-list>\n";
+      std::cerr << "usage: mp-wigner-eckart <input-psi> <output-psi> <symmetry-list>\n";
       return 1;
    }
 
    int PageSize = getenv_or_default("MP_PAGESIZE", 65536);
    long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
    pheap::Initialize(argv[2], 1, PageSize, CacheSize);
-   pvalue_ptr<InfiniteWavefunction> PsiIn = pheap::ImportHeap(argv[1]);
+   pvalue_ptr<MPWavefunction> PsiIn = pheap::ImportHeap(argv[1]);
    std::string FinalSLStr = argv[3];
 
    SymmetryList FinalSL = SymmetryList(FinalSLStr);
 
-   pvalue_ptr<InfiniteWavefunction> PsiNew = new InfiniteWavefunction(WignerProjectWavefunction(*PsiIn,
-                                                                                                FinalSL, false));
+   MPWavefunction Result;
+   Result.AppendHistory(EscapeCommandline(argv, arc));
+   Result.Wavefunction() = boost::apply_visitor(ApplyWignerEckart(FinalSL), PsiIn->Wavefunction());
 
+   pvalue_ptr<MPWavefunction> PsiNew = new MPWavefunction(Result);
 
    pheap::ShutdownPersistent(PsiNew);
 }

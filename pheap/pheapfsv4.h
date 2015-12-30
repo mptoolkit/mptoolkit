@@ -48,6 +48,12 @@
 namespace pheap
 {
 extern MessageLogger::Logger PHeapLog;
+
+// if the ExpectedPageFileVersion is set, then
+// abort if the file has the wrong version.
+// The default expexted page file version is 2
+int ExpectedPageFileVersion();
+
 } // namespace pheap
 
 namespace PHeapFileSystem
@@ -230,11 +236,13 @@ class FileSystem
       virtual ~FileSystem();
 
       void create(std::string const& FileName, int NumFiles, 
-                  size_t PageSize, size_t PageCacheByteSize, bool Unlink = false);
+                  size_t PageSize, size_t PageCacheByteSize, bool Unlink = false, bool AllowOverwrite = true);
 
       void shutdown(bool Remove = false);
 
       void persistent_shutdown(PageId UserPage);
+
+      int version() { return MetaVersion; }
 
       PageId open(std::string const& FileName, size_t PageCacheByteSize, bool ReadOnly = false);
 
@@ -338,6 +346,8 @@ class FileSystem
       BufferAllocator* Alloc;
 
       bool IsReadOnly;
+
+      int MetaVersion;
 
    friend class Private::PageInfoType;
 

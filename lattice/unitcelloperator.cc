@@ -1,4 +1,6 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+
+// UnitCellOperatorAtCell
 
 inline
 UnitCellOperatorAtCell::UnitCellOperatorAtCell(UnitCell const& Cell_, std::string const& Name_, int n_)
@@ -19,6 +21,7 @@ UnitCellOperatorAtCell::operator UnitCellMPO() const
    return (*Cell)(Name, n);
 }
 
+// UnitCellOperator
 
 inline
 UnitCellOperator::UnitCellOperator(UnitCell& Cell_, std::string const& Name_)
@@ -28,7 +31,7 @@ UnitCellOperator::UnitCellOperator(UnitCell& Cell_, std::string const& Name_)
 
 inline
 UnitCellOperatorAtCell
-UnitCellOperator::operator()(int n)
+UnitCellOperator::operator()(int n) const
 {
    return UnitCellOperatorAtCell(*Cell, Name, n);
 }

@@ -849,33 +849,6 @@ struct RealInterface {};
 template <typename T>
 struct Real : RealInterface<T> {};
 
-struct RealF
-{
-   template <typename T>
-   struct result { typedef typename Real<T>::result_type type; };
-
-   template <typename T>
-   typename Real<T>::result_type operator()(T const& x) const
-   {
-      return Real<T>()(x);
-   }
-};
-
-template <typename T>
-struct RealRef : Real<T&> {};
-
-struct RealRefF
-{
-   template <typename T>
-   struct result { typedef typename RealRef<T>::result_type type; };
-
-   template <typename T>
-   typename RealRef<T>::result_type operator()(T& x) const
-   {
-      return RealRef<T>()(x);
-   }
-};
-
 template <typename T>
 inline
 typename Real<typename proxy_lvalue<T>::type>::result_type
@@ -901,18 +874,6 @@ struct ImagInterface {};
 template <typename T, typename Enable = void>
 struct Imag : ImagInterface<T> {};
 
-struct ImagF
-{
-   template <typename T>
-   struct result { typedef typename Imag<T>::result_type type; };
-
-   template <typename T>
-   typename Imag<T>::result_type operator()(T const& x) const
-   {
-      return Imag<T>()(x);
-   }
-};
-
 template <typename T>
 inline
 typename Imag<typename proxy_lvalue<T>::type>::result_type
@@ -922,37 +883,12 @@ imag(T const& x)
 }
 
 template <typename T>
-struct ImagRef : Imag<T&> {};
-
-struct ImagRefF
-{
-   template <typename T>
-   struct result { typedef typename ImagRef<T>::result_type type; };
-
-   template <typename T>
-   typename ImagRef<T>::result_type operator()(T& x) const
-   {
-      return ImagRef<T>()(x);
-   }
-};
-
-template <typename T>
 inline
 typename Imag<T&>::result_type
 imag(T& x)
 {
    return Imag<T&>()(x);
 }
-
-#if 0
-template <typename T>
-inline
-typename boost::enable_if<is_proxy_reference<T>, typename ImagRef<T>::result_type>::type
-imag(T x)
-{
-   return ImagRef<T>()(x);
-}
-#endif
 
 // Herm
 
@@ -962,18 +898,6 @@ struct HermInterface {};
 
 template <typename T, typename Enable = void>
 struct Herm : HermInterface<T> {};
-
-struct HermF
-{
-   template <typename T>
-   struct result { typedef typename Herm<T>::result_type type; };
-
-   template <typename T>
-   typename Herm<T>::result_type operator()(T const& x) const
-   {
-      return Herm<T>()(x);
-   }
-};
 
 template <typename T>
 inline
@@ -1910,11 +1834,17 @@ eval(T const& x)
    return EvalExpression<T>()(x);
 }
 
-// ZeroAll - zeros all elements
+// ZeroAll - zeros all elements.
 
 template <typename T, typename TInterface = typename interface<T>::type, 
 	  typename Enable = void>
-struct ZeroAll { };
+struct ZeroAllInterface {};
+
+template <typename T, typename Enable = void>
+struct ZeroAll {};
+
+template <typename T, typename Enable>
+struct ZeroAll<T&, Enable> : ZeroAllInterface<T&, typename interface<T>::type> {};
 
 template <typename T>
 inline
@@ -1926,7 +1856,7 @@ zero_all(T& v)
 
 template <typename T>
 inline
-typename boost::enable_if<is_mutable_proxy<T>, ZeroAll<T&> >::type::result_type
+typename boost::enable_if<is_mutable_proxy<T>, ZeroAll<T&>>::type::result_type
 zero_all(T const& v)
 {
    return ZeroAll<T&>()(const_cast<T&>(v));
@@ -1964,7 +1894,7 @@ is_zero(T const& x)
 template <typename LHS, typename RHS, 
 	  typename LHSInterface = typename interface<LHS>::type,
 	  typename RHInterface = typename interface<RHS>::type>
-struct AssignInterface;
+struct AssignInterface {};
 
 template <typename LHS, typename RHS>
 struct Assign : public AssignInterface<LHS, RHS> { };

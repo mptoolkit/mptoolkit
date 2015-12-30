@@ -1,4 +1,6 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+// Ising exact energy 4/pi per site.
+// finite size OBC: 1 / sin(pi / (4L+w))
 
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"
@@ -51,8 +53,9 @@ int main(int argc, char** argv)
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Operators:\n" << OpDescriptions;
-	 std::cerr << "only for spin-1: H_AKLT  - AKLT Hamiltonian H+J1 + (1/3)*H_B1\n";
+	 std::cerr << OpDescriptions << '\n';
+	 std::cerr << "only for spin-1: H_AKLT  - AKLT Hamiltonian H_J1 + (1/3)*H_B1\n";
+         std::cerr << "HaldShast{lambda}, Haldane-Shastry Hamiltonian, considering exponential decay with exponent 0<lambda<1\n";
          return 1;
       }
 
@@ -60,6 +63,7 @@ int main(int argc, char** argv)
       UnitCell Cell(Site);
       InfiniteLattice Lattice("Spin chain", Cell);
       UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz");
+      UnitCellOperator I(Cell, "I"); // identity operator
 
       UnitCellMPO SpinExchange = Sx(0)*Sx(1) + Sy(0)*Sy(1) + Sz(0)*Sz(1);
 
@@ -84,8 +88,14 @@ int main(int argc, char** argv)
 	 Lattice["H_AKLT"].set_description("AKLT Hamiltonian H_J1 + (1/3)*H_B1");
       }
 
+      Lattice.func("HaldShast")(arg("lambda") = 0.5)
+                  = "0.5*( sum_kink( (1/lambda)*I(0), Sz(0) ) * sum_kink( lambda*I(0), Sz(0) ) + sum_kink( (1/lambda)*I(0), Sy(0) ) * sum_kink( lambda*I(0), Sy(0) ) + sum_kink( (1/lambda)*I(0), Sx(0) ) * sum_kink( lambda*I(0), Sx(0) ) ) - sum_unit( 2*(3.0/4) )";
+
+      /* Lattice.func("Test")(arg("J") = 0.0)
+         = "J*sum_unit( I(0)*Sx(0)*Sx(1) )"; */
+
       // Information about the lattice
-      Lattice.set_description("SU(2) Spin chain");
+      Lattice.set_description("Spin chain");
       Lattice.set_command_line(argc, argv);
       Lattice.set_operator_descriptions(OpDescriptions);
 

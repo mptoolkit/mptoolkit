@@ -199,11 +199,9 @@ class QuantumNumber : public RepLabelBase<QuantumNumber>
       // returns the degree of the representation
       int degree() const;
 
-      // Expands *this to have symmetry list SList.  SList must be a superset of GetSymmetryList().
+      // Expands *this to have symmetry list SList.
       // Missing quantum numbers become the scalar quantum number.
-      // TODO: it would be possible to extend this so that SList does not have to be a superset of
-      // GetSymmetryList(), if the corresponding quantum numbers were scalar.
-      void Coerce(SymmetryList const& SList);
+      void CoerceSymmetryList(SymmetryList const& SList);
 
       void swap(QuantumNumber& Other) { this->DoSwap(Other); }
 
@@ -220,18 +218,23 @@ class QuantumNumber : public RepLabelBase<QuantumNumber>
       void set(std::string Name, T const& q);
 };
 
-QuantumNumber Coerce(QuantumNumber const& q, SymmetryList const& SList);
+QuantumNumber CoerceSymmetryList(QuantumNumber const& q, SymmetryList const& SList)
+   __attribute__((warn_unused_result));
 
-template <typename T>
 inline
-void CoerceSymmetryList(T& q, SymmetryList const& SList)
+void
+QuantumNumber::CoerceSymmetryList(SymmetryList const& SList)
 {
+   (*this) = ::QuantumNumbers::CoerceSymmetryList(*this, SList);
 }
 
+// so we can call CoerceSymmetryList on nested components that may or may not
+// contain quantum number components
+template <typename T>
 inline
-void CoerceSymmetryList(QuantumNumber& q, SymmetryList const& SList)
+T CoerceSymmetryList(T const& x, SymmetryList const&)
 {
-   q = Coerce(q, SList);
+   return x;
 }
 
 std::ostream& operator<<(std::ostream& out, QuantumNumber const& Q);
@@ -279,7 +282,7 @@ class Projection : public RepLabelBase<Projection>
       // returns a string representation of the quantum number
       std::string ToString() const;
 
-      void Coerce(SymmetryList const& SList);
+      void CoerceSymmetryList(SymmetryList const& SList);
 };
 
 std::ostream& operator<<(std::ostream& out, Projection const& Q);
@@ -287,7 +290,7 @@ std::ostream& operator<<(std::ostream& out, Projection const& Q);
 PStream::opstream& operator<<(PStream::opstream& out, Projection const& L);
 PStream::ipstream& operator>>(PStream::ipstream& in, Projection& L);
 
-Projection Coerce(Projection const& q, SymmetryList const& SList);
+Projection CoerceSymmetryList(Projection const& q, SymmetryList const& SList);
 
 typedef std::vector<Projection> ProjectionList;
 
@@ -356,6 +359,10 @@ class QuantumNumberList
       bool operator==(QuantumNumberList const& Other) const { return Impl == Other.Impl; }
       bool operator!=(QuantumNumberList const& Other) const { return Impl != Other.Impl; }
 
+      void delta_shift(QuantumNumber const& q);
+
+      void CoerceSymmetryList(SymmetryList const& sl);
+
    private:
       ImplType Impl;
 
@@ -372,14 +379,27 @@ std::ostream& operator<<(std::ostream& out, QuantumNumberList const& QL)
 
 inline
 void
-CoerceSymmetryList(QuantumNumberList& b, SymmetryList const& sl)
+QuantumNumberList::CoerceSymmetryList(SymmetryList const& sl)
 {
-   for (QuantumNumberList::iterator I = b.begin(); I != b.end(); ++I)
+   for (QuantumNumberList::iterator I = this->begin(); I != this->end(); ++I)
    {
-      CoerceSymmetryList(*I, sl);
+      I->CoerceSymmetryList(sl);
    }
 }
 
+inline
+QuantumNumberList
+CoerceSymmetryList(QuantumNumberList const& b, SymmetryList const& sl)
+{
+   QuantumNumberList Result;
+   for (QuantumNumberList::const_iterator I = b.begin(); I != b.end(); ++I)
+   {
+      Result.push_back(CoerceSymmetryList(*I, sl));
+   }
+   return Result;
+}
+
+#if 0
 // returns a quantum number with the name numbers, but a different symmetry list.
 // The only allowed differences in the symmetry list are different names,
 // the symmetry types and order must be identical.
@@ -389,6 +409,7 @@ QuantumNumber RenameSymmetry(QuantumNumber const& q, SymmetryList const& NewSL)
    // TODO: insert some assert here
    return QuantumNumber(NewSL, q.begin());
 }
+#endif
 
 //
 // MakeQN
@@ -706,6 +727,16 @@ QuantumNumberList transform_targets(QuantumNumber const& q1, QuantumNumber const
    QuantumNumberList Q;
    transform_targets(q1, q2, std::back_inserter(Q));
    return Q;
+}
+
+// 'addition' of quantum numbers.  This is only possible if tghe quantum numbers
+// are abelian (possibly through being in the abelian sector of a non-abelian symmetry).
+inline
+QuantumNumber delta_shift(QuantumNumber const& q1, QuantumNumber const& q2)
+{
+   QuantumNumberList QL = transform_targets(q1, q2);
+   CHECK_EQUAL(QL.size(), 1);
+   return QL[0];
 }
 
 // returns the number of quantum numbers q2 such that q is in the C-G expansion of q1 * q2

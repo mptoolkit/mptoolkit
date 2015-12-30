@@ -16,9 +16,9 @@ PageFile::PageFile()
 {
 }
 
-void PageFile::create(size_t PageSize, std::string const& FileName, bool Unlink)
+void PageFile::create(size_t PageSize, std::string const& FileName, bool Unlink, bool AllowOverwrite)
 {
-   Impl->create(PageSize, FileName, Unlink);
+   Impl->create(PageSize, FileName, Unlink, AllowOverwrite);
 }
 
 uint64 PageFile::open(std::string const& FileName, bool ReadOnly)
@@ -64,6 +64,11 @@ BufferAllocator* PageFile::get_allocator() const
 std::string const& PageFile::name() const
 {
    return Impl->name();
+}
+
+int PageFile::version() const
+{
+   return Impl->version();
 }
 
 size_t PageFile::get_page_size() const

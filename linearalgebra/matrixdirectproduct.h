@@ -26,8 +26,8 @@ template <typename T1, typename T2, typename Nested,
 	  typename T1v, typename T1o, typename T1i,
 	  typename T2v, typename T2o, typename T2i>
 struct MatrixDirectProduct<T1, T2, Nested, 
-			   DENSE_MATRIX(T1v, T1o, T1i), 
-			   STRIDE_MATRIX(T2v, T2o, T2i)>
+			   Concepts::DenseMatrix<T1v, T1o, T1i>, 
+			   Concepts::StrideMatrix<T2v, T2o, T2i>>
 {
    typedef T1 const& first_argument_type;
    typedef T2 const& second_argument_type;
@@ -66,8 +66,8 @@ template <typename T1, typename T2, typename Nested,
 	  typename T1v, typename T1o, typename T1i,
 	  typename T2v, typename T2i>
 struct MatrixDirectProduct<T1, T2, Nested, 
-			   DENSE_MATRIX(T1v, T1o, T1i), 
-			   SPARSE_MATRIX(T2v, T2i)>
+			   Concepts::DenseMatrix<T1v, T1o, T1i>, 
+			   Concepts::SparseMatrix<T2v, T2i>>
 {
    typedef T1 const& first_argument_type;
    typedef T2 const& second_argument_type;
@@ -106,8 +106,8 @@ template <typename T1, typename T2, typename Nested,
 	  typename T1v, typename T1i,
 	  typename T2v, typename T2o, typename T2i>
 struct MatrixDirectProduct<T1, T2, Nested, 
-			   SPARSE_MATRIX(T1v, T1i), 
-			   STRIDE_MATRIX(T2v, T2o, T2i)>
+			   Concepts::SparseMatrix<T1v, T1i>, 
+			   Concepts::DenseMatrix<T2v, T2o, T2i>>
 {
    typedef T1 const& first_argument_type;
    typedef T2 const& second_argument_type;
@@ -152,8 +152,8 @@ template <typename T1, typename T2, typename Nested,
 	  typename T1v, typename T1o, typename T1i,
 	  typename T2v, typename T2o, typename T2i>
 struct MatrixDirectProduct<T1, T2, Nested, 
-			   DENSE_MATRIX(T1v, T1o, T1i), 
-			   DENSE_MATRIX(T2v, T2o, T2i)>
+			   Concepts::DenseMatrix<T1v, T1o, T1i>, 
+			   Concepts::DenseMatrix<T2v, T2o, T2i>>
    : MatrixDirectProduct<T1, Matrix<T2v, T2o>, Nested> {};
 
 template <typename T1, typename T2, typename Nested,
@@ -161,14 +161,14 @@ template <typename T1, typename T2, typename Nested,
 	  typename T2v, typename T2i>
 struct MatrixDirectProduct<T1, T2, Nested,
 			   AnyScalar<T1i>,
-			   ANY_MATRIX(T2v, T2i)>
+			   Concepts::AnyMatrix<T2v, T2i>>
 : ScalarMatrixMultiplication<T1, T2, Nested> {};
 
 template <typename T1, typename T2, typename Nested,
 	  typename T1v, typename T1i,
 	  typename T2i>
 struct MatrixDirectProduct<T1, T2, Nested,
-			   ANY_MATRIX(T1v, T1i),
+			   Concepts::AnyMatrix<T1v, T1i>,
 			   AnyScalar<T2i> >
 : MatrixScalarMultiplication<T1, T2, Nested> {};
 

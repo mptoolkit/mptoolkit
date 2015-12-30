@@ -236,7 +236,7 @@ UnitCell::operator()(std::string const& Op, int n) const
    OperatorListType::const_iterator I = Operators.find(Op);
    if (I != Operators.end())
    {
-      return UnitCellMPO(Sites, I->second.MPO(), I->second.Commute(), I->second.offset()+n);
+      return UnitCellMPO(Sites, I->second.MPO(), I->second.Commute(), I->second.offset()+n*this->size());
    }
    // else
    if (Sites->size() != 1)
@@ -419,7 +419,7 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
 
    if (Cell_i == Cell_j && i == j)
    {
-      return UnitCellMPO(Sites, identity_mpo(*Sites), LatticeCommute::Bosonic, Cell_i);
+      return UnitCellMPO(Sites, identity_mpo(*Sites), LatticeCommute::Bosonic, Cell_i*this->size());
    }
 
    BasisList Basis_i = this->operator[](i).Basis1();
@@ -496,7 +496,7 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
    }
 
    Result.debug_check_structure();
-   return UnitCellMPO(Sites, Result, LatticeCommute::Bosonic, Cell_i);
+   return UnitCellMPO(Sites, Result, LatticeCommute::Bosonic, Cell_i*this->size());
 }
 
 UnitCellMPO
@@ -525,7 +525,7 @@ UnitCell::swap_gate_no_sign(int Cell_i, int i, int Cell_j, int j) const
 
    if (Cell_i == Cell_j && i == j)
    {
-      return UnitCellMPO(Sites, identity_mpo(*Sites), LatticeCommute::Bosonic, Cell_i);
+      return UnitCellMPO(Sites, identity_mpo(*Sites), LatticeCommute::Bosonic, Cell_i*this->size());
    }
 
    BasisList Basis_i = this->operator[](i).Basis1();
@@ -559,7 +559,7 @@ UnitCell::swap_gate_no_sign(int Cell_i, int i, int Cell_j, int j) const
    }
 
    Result.debug_check_structure();
-   return UnitCellMPO(Sites, Result, LatticeCommute::Bosonic, Cell_i);
+   return UnitCellMPO(Sites, Result, LatticeCommute::Bosonic, Cell_i*this->size());
 }
 
 void

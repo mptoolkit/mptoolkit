@@ -4,7 +4,7 @@
 // This prohibits relfection symmetry.
 
 #include "mpo/triangular_mpo.h"
-#include "mps/infinitewavefunction.h"
+#include "wavefunction/mpwavefunction.h"
 #include "quantumnumbers/all_symmetries.h"
 #include "mp-algorithms/lanczos.h"
 #include "pheap/pheap.h"
@@ -22,7 +22,7 @@
 #include "tensor/tensor_eigen.h"
 #include "tensor/regularize.h"
 #include "mp-algorithms/stateslist.h"
-#include "mps/operator_actions.h"
+#include "wavefunction/operator_actions.h"
 
 #include "interface/inittemp.h"
 #include "mp-algorithms/random_wavefunc.h"
@@ -254,7 +254,7 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
 		    MatrixOperator const& Rho)
 {
    ProductLeft Prod(Psi, Op, QShift);
-   Guess = Initial_E(Op, DeltaShift(Psi.Basis1(), adjoint(QShift)));
+   Guess = Initial_E(Op, delta_shift(Psi.Basis1(), adjoint(QShift)));
    MatrixOperator Ident = Guess.front();
    for (int i = 0; i < int(Guess.size())-1; ++i)
    {
@@ -596,274 +596,6 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
    return C;
 }
 
-#if defined(ENABLE_ONE_SITE_SCHEME)
-void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double& LastEnergy, MatrixOperator& C,
-                   TriangularMPO const& HamMPO,
-                   QuantumNumber const& QShift,
-                   std::deque<StateComponent>& LeftBlock,
-                   std::deque<StateComponent>& RightBlock,
-                   StatesInfo const& SInfo, int MinIter, int NumIter,
-                   double MixFactor, int NumSteps, bool Verbose)
-
-{
-   bool TwoSite = false;
-
-   // initialization of the blocks
-
-   StateComponent SaveLeftBlock = LeftBlock.back();
-   SaveLeftBlock = delta_shift(SaveLeftBlock, QShift);
-
-   MatrixOperator PsiL = Psi.C_old;                // ** overwriten before being used
-
-   MatrixOperator DiagonalL = Psi.C_old;                                              // **OK**
-   MatrixOperator ExpanderL = MatrixOperator::make_identity(DiagonalL.Basis2());      // **OK**
-
-   StateComponent SaveRightBlock = RightBlock.front();  // ** overwriten before being used
-
-   //      MatrixOperator PsiR = delta_shift(Psi.C_old, adjoint(QShift));                    // **OK**
-   MatrixOperator PsiR = Psi.C_right;                    // **OK**
-   MatrixOperator DiagonalR;
-   MatrixOperator ExpanderR;
-
-   MatrixOperator Vh;
-
-
-   SingularValueDecomposition(C, ExpanderR, DiagonalR, Vh);
-   C = ExpanderR * DiagonalR;
-   RightBlock.front() = triple_prod(Vh, RightBlock.front(), herm(Vh));
-
-   // now do the DMRG
-   int ReturnCode = 0; // return code becomes non-zero if we have a checkpoint
-   int NumIterationsCompleted = 0;
-   std::cout << "Starting iDMRG...\n";
-
-   // initial energy.  If we started from the fixed point, this should be
-   // the same as the energy eigenvalues
-   LastEnergy = inner_prod(C, operator_prod(LeftBlock.back(), C, herm(RightBlock.front()))).real();
-
-   DEBUG_TRACE(LastEnergy);
-
-   int UnitCellSize = Psi.size();
-   moving_average<double> FidelityAv(UnitCellSize);
-   FidelityAv.push(MaxTol); // initialization
-
-   try
-   {
-      for (int i = 0; i < NumSteps; ++i)
-      {
-         C = DoDMRGSweepLeft(MyPsi, C, HamMPO, LeftBlock, RightBlock, SInfo, NumIter,
-                             FidelityAv, TwoSite, MixFactor, RandomMixFactor);
-
-         // now comes the slightly tricky part, where we turn around
-
-         // retrieve the wrapped around left block from the last iteration
-         LeftBlock = std::deque<StateComponent>(1, SaveLeftBlock);
-
-         C = InvertDiagonal(DiagonalL, InverseTol) * C;
-         C = herm(ExpanderL) * C;
-         C = delta_shift(PsiR, QShift) * C;
-         // C is now dm x dm
-
-         DEBUG_CHECK_EQUAL(C.Basis1(), LeftBlock.back().Basis2());
-
-         LeftBlock.back().back() -= LastEnergy * LeftBlock.back().front();
-
-         // solve
-
-         double Energy;
-         double Fidelity;
-         int Iterations;
-         double Tol;
-         {
-            Iterations = NumIter;
-            Tol = std::min(std::sqrt(FidelityAv.value()) * FidelityScale, MaxTol);
-            C *= 1.0 / norm_frob(C);
-            MatrixOperator COld = C;
-
-            //	       TRACE(C.Basis1().total_degree())(C.Basis2().total_degree());
-
-            Energy = Lanczos(C, SuperblockMultiply(LeftBlock.back(), RightBlock.front()),
-                             Iterations,
-                             Tol, MinIter, Verbose);
-            Fidelity = std::max(1.0 - norm_frob(inner_prod(COld, C)), 0.0);
-            FidelityAv.push(Fidelity);
-         }
-
-         LastEnergy = Energy;
-
-         PsiL = C;
-
-         {
-            // truncate the left block
-            MatrixOperator RhoL = scalar_prod(C, herm(C));
-            if (MixFactor > 0)
-	    {
-               MatrixOperator RhoMix = operator_prod(LeftBlock.back(), RhoL, herm(LeftBlock.back()));
-               RhoL += (MixFactor / trace(RhoMix)) * RhoMix;
-            }
-               if (RandomMixFactor > 0)
-               {
-                  MatrixOperator RhoMix = MakeRandomMatrixOperator(RhoL.Basis1(), RhoL.Basis2());
-                  RhoMix = herm(RhoMix) * RhoMix;
-                  RhoL += (RandomMixFactor / trace(RhoMix)) * RhoMix;
-               }
-            DensityMatrix<MatrixOperator> DML(RhoL);
-            TruncationInfo Info;
-            MatrixOperator TruncL = DML.ConstructTruncator(DML.begin(),
-                                                           TruncateFixTruncationErrorAbsolute(DML.begin(),
-                                                                                              DML.end(),
-                                                                                              SInfo,
-                                                                                              Info));
-            std::cout << "A Energy=" << Energy
-                      << " States=" << Info.KeptStates()
-                      << " TruncError=" << Info.TruncationError()
-                      << " Entropy=" << Info.KeptEntropy()
-                      << " Fidelity=" << Fidelity
-                      << " Iter=" << Iterations
-                      << " Tol=" << Tol
-                      << '\n';
-
-            C = TruncL * C;
-            LeftBlock.back() = triple_prod(TruncL, LeftBlock.back(), herm(TruncL));
-
-         }
-
-         {
-            // DiagonalL becomes the matrix of singular values in the m-dimensional truncated basis
-            MatrixOperator U;
-            SingularValueDecomposition(C, U, DiagonalL, ExpanderL);
-            C = DiagonalL * ExpanderL;
-            LeftBlock.back() = triple_prod(herm(U), LeftBlock.back(), U);
-         }
-
-         DEBUG_CHECK_EQUAL(C.Basis2(), RightBlock.front().Basis1());
-
-         SaveRightBlock = RightBlock.front();  // the right block at the left-hand edge of the unit cell
-         SaveRightBlock = delta_shift(SaveRightBlock, adjoint(QShift));
-
-         // right-moving sweep
-
-         C = DoDMRGSweepRight(C, MyPsi, HamMPO, LeftBlock, RightBlock, SInfo, NumIter,
-                              FidelityAv, TwoSite, MixFactor, RandomMixFactor);
-
-         // turn around at the right-hand side
-         SaveLeftBlock = LeftBlock.back();
-         SaveLeftBlock = delta_shift(SaveLeftBlock, QShift);
-
-         // retrieve the wrapped-around block
-         RightBlock = std::deque<StateComponent>(1, SaveRightBlock);
-
-         C = C * InvertDiagonal(DiagonalR, InverseTol);
-         C = C * herm(ExpanderR);
-         C = C * delta_shift(PsiL, adjoint(QShift));
-
-         DEBUG_CHECK_EQUAL(C.Basis2(), RightBlock.front().Basis1());
-
-         // make the energy zero
-         RightBlock.front().front() -= LastEnergy * RightBlock.front().back();
-
-         // solve
-         {
-            Iterations = NumIter;
-            Tol = std::min(std::sqrt(FidelityAv.value()) * FidelityScale, MaxTol);
-            C *= 1.0 / norm_frob(C);
-            MatrixOperator COld = C;
-            Energy = Lanczos(C, SuperblockMultiply(LeftBlock.back(), RightBlock.front()),
-                             Iterations,
-                             Tol, MinIter, Verbose);
-            Fidelity = std::max(1.0 - norm_frob(inner_prod(COld, C)), 0.0);
-            FidelityAv.push(Fidelity);
-         }
-
-         LastEnergy = Energy;
-         PsiR = C;
-
-         // truncate the right block
-         {
-            MatrixOperator RhoR = scalar_prod(herm(C), C);
-            if (MixFactor > 0)
-	    {
-               MatrixOperator RhoMix = operator_prod(herm(RightBlock.front()), RhoR, RightBlock.front());
-               RhoR += (MixFactor / trace(RhoMix)) * RhoMix;
-            }
-               if (RandomMixFactor > 0)
-               {
-                  MatrixOperator RhoMix = MakeRandomMatrixOperator(Rho.Basis1(), Rho.Basis2());
-                  RhoMix = herm(RhoMix) * RhoMix;
-                  Rho += (RandomMixFactor / trace(RhoMix)) * RhoMix;
-               }
-            DensityMatrix<MatrixOperator> DMR(RhoR);
-            TruncationInfo Info;
-            MatrixOperator TruncR = DMR.ConstructTruncator(DMR.begin(),
-                                                           TruncateFixTruncationErrorAbsolute(DMR.begin(),
-                                                                                              DMR.end(),
-                                                                                              SInfo,
-                                                                                              Info));
-            std::cout << "B Energy=" << Energy
-                      << " States=" << Info.KeptStates()
-                      << " TruncError=" << Info.TruncationError()
-                      << " Entropy=" << Info.KeptEntropy()
-                      << " Fidelity=" << Fidelity
-               //			 << " FidelityAv=" << FidelityAv.value()
-                      << " Iter=" << Iterations
-                      << " Tol=" << Tol
-                      << '\n';
-
-            C = C * herm(TruncR);
-            //MyPsi.set_back(prod(TruncR, MyPsi.get_back()));
-            RightBlock.front() = triple_prod(TruncR, RightBlock.front(), herm(TruncR));
-         }
-         {
-            // DiagonalR becomes the matrix of singular values in the m-dimensional truncated basis
-            MatrixOperator U, Vt;
-            SingularValueDecomposition(C, ExpanderR, DiagonalR, Vt);
-            C = ExpanderR * DiagonalR;
-            //MyPsi.set_back(prod(MyPsi.get_back(), U));
-            RightBlock.front() = triple_prod(Vt, RightBlock.front(), herm(Vt));
-            //LeftBlock.back() = triple_prod(herm(U), LeftBlock.back(), U);
-         }
-
-         //PsiR = C;
-
-         ++NumIterationsCompleted;
-         ProcControl::TestAsyncCheckpoint();
-      }
-
-   }
-   catch (ProcControl::Checkpoint& c)
-   {
-      ReturnCode = c.ReturnCode();
-      std::cerr << "Early termination after " << NumIterationsCompleted << " iterations: "
-                << c.Reason() << '\n';
-      EarlyTermination = true;
-   }
-   catch (...)
-   {
-      throw;      // if we got some other exception, don't even try and recover
-   }
-
-      // finished the iterations.  apply the truncation to the left block so that DiagonalR
-      // can be the center matrix
-      MatrixOperator MapToOldBasis = delta_shift(ExpanderL, adjoint(QShift));
-      //      MyPsi.set_back(prod(MyPsi.get_back(), ExpanderR*herm(MapToOldBasis)));
-      //MyPsi.set_front(prod(ExpanderL, MyPsi.get_front()));
-
-      if (Verbose >= 1)
-	 std::cerr << "Saving wavefunction.\n";
-
-      // convert back to an InfiniteWavefunction
-      Psi.C_old = DiagonalL;
-      Psi.C_right = PsiR * herm(MapToOldBasis); //triple_prod(MapToOldBasis, DiagonalR, herm(MapToOldBasis));
-      Psi.Psi = LinearWavefunction();
-      for (LinearWavefunction::const_iterator I = MyPsi.begin(); I != MyPsi.end(); ++I)
-      {
-	 Psi.Psi.push_back(*I);
-      }
-
-      Psi.QShift = QShift;
-}
-#endif // ENABLE_ONE_SITE_SCHEME
-
 int main(int argc, char** argv)
 {
    ProcControl::Initialize(argv[0], 0, 0, true);
@@ -895,9 +627,6 @@ int main(int argc, char** argv)
       bool NoOrthogonalize = false;
       bool Create = false;
       bool ExactDiag = false;
-#if defined(ENABLE_ONE_SITE_SCHEME)
-      bool UseOneSiteScheme = false;
-#endif
       bool DoRandom = false; // true if we want to start an iteration from a random centre matrix
       std::string TargetState;
       std::vector<std::string> BoundaryState;
@@ -905,7 +634,7 @@ int main(int argc, char** argv)
       double InitialFidelity = 1E-7;
       //      bool TwoSiteTurn = true;  // we can control whether we want two sites at the turning points separately
 
-      pvalue_ptr<InfiniteWavefunction> PsiPtr;
+      pvalue_ptr<MPWavefunction> PsiPtr;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -916,9 +645,6 @@ int main(int argc, char** argv)
           "wavefunction to apply DMRG (required)")
 	 ("two-site,2", prog_opt::bool_switch(&TwoSite), "Modify two sites at once (default)")
 	 ("one-site,1", prog_opt::bool_switch(&OneSite), "Modify one site at a time")
-#if defined(ENABLE_ONE_SITE_SCHEME)
-         ("onesiteboundary", prog_opt::bool_switch(&UseOneSiteScheme), "Modify one site also at the boundary")
-#endif
 	 ("states,m", prog_opt::value(&States),
 	  FormatDefault("number of states, or a StatesList", States).c_str())
          ("min-states", prog_opt::value<int>(&MinStates),
@@ -1003,7 +729,7 @@ int main(int argc, char** argv)
       bool StartFromFixedPoint = !NoFixedPoint; // we've reversed the option
 
       // Initialize the filesystem
-      InfiniteWavefunction Psi;
+      InfiniteWavefunctionLeft Psi;
 
       if (ExactDiag || Create)
       {
@@ -1013,7 +739,7 @@ int main(int argc, char** argv)
       {
 	 long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
 	 PsiPtr = pheap::OpenPersistent(FName, CacheSize);
-	 Psi = *PsiPtr;
+	 Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
       }
 
       // Hamiltonian
@@ -1025,6 +751,11 @@ int main(int argc, char** argv)
 	 WavefuncUnitCellSize = UnitCellSize;
 
       optimize(HamMPO);
+
+      LinearWavefunction MyPsi;
+      QuantumNumber QShift;
+
+      MatrixOperator C;
 
       // load the wavefunction
       if (ExactDiag)
@@ -1067,7 +798,6 @@ int main(int argc, char** argv)
 	    LeftBoundary.push_back(transform_targets(q, BoundaryQ[i])[0]);
 	 }
 
-	 LinearWavefunction W;
 	 VectorBasis B1(HamMPO.front().GetSymmetryList());
 	 for (unsigned i = 0; i < LeftBoundary.size(); ++i)
 	 {
@@ -1078,20 +808,17 @@ int main(int argc, char** argv)
 	 {
 	    B2.push_back(BoundaryQ[i], 1);
 	 }
-	 W.push_back(ConstructFromLeftBasis(FullBL[0], B1));
+	 MyPsi.push_back(ConstructFromLeftBasis(FullBL[0], B1));
 	 for (int i = 1; i < WavefuncUnitCellSize; ++i)
 	 {
-	    W.push_back(ConstructFromLeftBasis(FullBL[i], W.get_back().Basis2()));
+	    MyPsi.push_back(ConstructFromLeftBasis(FullBL[i], MyPsi.get_back().Basis2()));
 	 }
 
-	 Psi.Psi = W;
-	 Psi.QShift = q;
-	 Psi.C_old = MatrixOperator::make_identity(B1);
-	 Psi.C_right = MakeRandomMatrixOperator(Psi.Psi.Basis2(), B2);
+	 QShift = q;
 	 // adjust for periodic basis
-	 StateComponent x = prod(Psi.Psi.get_back(), Psi.C_right);
-	 Psi.C_right = TruncateBasis2(x); // the Basis2 is already 1-dim.  This just orthogonalizes x
-	 Psi.Psi.set_back(x);
+	 StateComponent x = prod(MyPsi.get_back(), MakeRandomMatrixOperator(MyPsi.Basis2(), B2));
+	 C = TruncateBasis2(x); // the Basis2 is already 1-dim.  This just orthogonalizes x
+	 MyPsi.set_back(x);
       }
       else if (Create)
       {
@@ -1131,17 +858,13 @@ int main(int argc, char** argv)
 	    LBoundary = QL[0];
 	    std::cout << "Left boundary quantum number is " << LBoundary << '\n';
 	 }
-	 LinearWavefunction W = CreateRandomWavefunction(FullBL, LBoundary, 3, RBoundary);
-	 Psi.QShift = q;
-	 Psi.C_old = MatrixOperator::make_identity(W.Basis2());
-	 MatrixOperator C = MatrixOperator::make_identity(W.Basis1());
-         C = left_orthogonalize(C, W);
-         Psi.Psi = W;
-	 Psi.C_right = Psi.C_old;
-	 Psi.C_old = delta_shift(Psi.C_old, q);
+	 MyPsi = CreateRandomWavefunction(FullBL, LBoundary, 3, RBoundary);
+	 QShift = q;
+	 C = MatrixOperator::make_identity(MyPsi.Basis1());
+         C = left_orthogonalize(C, MyPsi);
       }
 
-      WavefuncUnitCellSize = Psi.Psi.size();
+      WavefuncUnitCellSize = MyPsi.size();
       std::cout << "Wavefunction unit cell size = " << WavefuncUnitCellSize << '\n';
       if (WavefuncUnitCellSize % HamMPO.size() != 0)
       {
@@ -1171,35 +894,55 @@ int main(int argc, char** argv)
       CHECK_EQUAL(int(HamMPO.size()), WavefuncUnitCellSize);
 
       // Check that the local basis for the wavefunction and hamiltonian are compatible
-      local_basis_compatible_or_abort(Psi.Psi, HamMPO);
-      
-      // Get the initial Hamiltonian matrix elements
-      LinearWavefunction Lin = Psi.Psi; // get_orthogonal_wavefunction(Psi);
-      //      StateComponent BlockHamL = Initial_E(HamMPO.front() , Lin.Basis2());
-      StateComponent BlockHamL = Initial_E(HamMPO , Psi.C_right.Basis2());
-      if (StartFromFixedPoint)
+      if (ExtractLocalBasis(MyPsi) != ExtractLocalBasis1(HamMPO))
       {
-         MatrixOperator Rho = scalar_prod(Psi.C_right, herm(Psi.C_right));
-	 //MatrixOperator Rho = scalar_prod(Psi.C_old, herm(Psi.C_old));
-
-         //TRACE(norm_frob_sq(SubProductLeft(Lin, Psi.QShift)(MatrixOperator::make_identity(Rho.Basis1()))));
-         //TRACE(norm_frob_sq(SubProductRight(Lin, Psi.QShift)(Rho)));
-
-	 std::complex<double> Energy = MPO_EigenvaluesLeft(BlockHamL, Lin, Psi.QShift, HamMPO, Rho);
-	 std::cout << "Starting energy (left eigenvalue) = " << Energy << '\n';
+	 std::cerr << "fatal: Hamiltonian is defined on a different local basis to the wavefunction.\n";
+	 return 1;
       }
 
-      LinearWavefunction LinR = get_right_orthogonal_wavefunction(Psi);
-      StateComponent BlockHamR = Initial_F(HamMPO, LinR.Basis2());
+      if (ExtractLocalBasis1(HamMPO) != ExtractLocalBasis2(HamMPO))
+      {
+	 std::cerr << "fatal: Hamiltonian has different domain and co-domain.\n";
+	 return 1;
+      }
+      
+      // Get the initial Hamiltonian matrix elements
+      //      StateComponent BlockHamL = Initial_E(HamMPO.front() , Lin.Basis2());
+      StateComponent BlockHamL = Initial_E(HamMPO , C.Basis2());
       if (StartFromFixedPoint)
       {
-         MatrixOperator Rho = scalar_prod(herm(Psi.C_right), Psi.C_right);
-	 //MatrixOperator Rho = scalar_prod(herm(Psi.C_old), Psi.C_old);
+	 std::cout << "Solving fixed-point Hamiltonian..." << std::endl;
+         MatrixOperator Rho = scalar_prod(C, herm(C));
+	 std::complex<double> InitialEnergy = MPO_EigenvaluesLeft(BlockHamL, MyPsi, QShift, HamMPO, Rho);
+	 std::cout << "Starting energy (left eigenvalue) = " << InitialEnergy << std::endl;
 
-         //TRACE(norm_frob_sq(SubProductLeft(LinR, Psi.QShift)(Rho)));
+	 BlockHamL = delta_shift(BlockHamL, QShift);
+      }
 
-	 std::complex<double> Energy = MPO_EigenvaluesRight(BlockHamR, LinR, Psi.QShift, HamMPO, Rho);
-	 std::cout << "Starting energy (right eigenvalue) = " << Energy << '\n';
+      StateComponent BlockHamR = Initial_F(HamMPO, C.Basis2());
+      if (StartFromFixedPoint)
+      {
+	 LinearWavefunction PsiR;
+	 MatrixOperator U;
+	 RealDiagonalOperator D;
+	 boost::tie(U, D, PsiR) = get_right_canonical(Psi);
+	 
+	 MatrixOperator L = D;
+	 PsiR.set_back(prod(PsiR.get_back(), delta_shift(U, adjoint(QShift))));
+
+	 BlockHamR = Initial_F(HamMPO, PsiR.Basis2());
+
+         MatrixOperator Rho = D;	
+	 Rho = scalar_prod(Rho, herm(Rho));
+
+	 // We obtained Rho from the left side, so we need to delta shift to the right basis
+	 Rho = delta_shift(Rho, adjoint(QShift));
+	 
+	 std::complex<double> Energy = MPO_EigenvaluesRight(BlockHamR, PsiR, QShift, HamMPO, Rho);
+	 std::cout << "Starting energy (right eigenvalue) = " << Energy << std::endl;
+
+	 U = delta_shift(U, adjoint(QShift));
+	 BlockHamR = prod(prod(U, BlockHamR), herm(U));
       }
 
       // The initial wavefunction is left-orthogonalized, so the initial center matrix
@@ -1208,12 +951,7 @@ int main(int argc, char** argv)
       LeftBlock.push_back(BlockHamL);
       RightBlock.push_back(BlockHamR);
 
-      //      LinearWavefunction MyPsi = Psi.Psi;
-      LinearWavefunction MyPsi = Lin;
-      MatrixOperator C = Psi.C_right;
-      QuantumNumber QShift = Psi.QShift;  // quantum number shift per unit cell
-
-      LinearWavefunction::const_iterator I = Psi.Psi.end();
+      LinearWavefunction::const_iterator I = MyPsi.end();
       TriangularMPO::const_iterator HI = HamMPO.begin();
 
       DEBUG_TRACE(inner_prod(C, operator_prod(LeftBlock.back(), C, herm(RightBlock.front()))));
@@ -1251,27 +989,18 @@ int main(int argc, char** argv)
 
       int ReturnCode = 0;
 
-#if defined(ENABLE_ONE_SITE_SCHEME)
-      if (UseOneSiteScheme)
-      {
-         OneSiteScheme(Psi, MyPsi, LastEnergy, C, HamMPO, QShift, LeftBlock, RightBlock, SInfo, NumIter, MixFactor, NumSteps, Verbose);
-      }
-      else
-      {
-#endif
-
       StateComponent SaveLeftBlock = LeftBlock.back();
       SaveLeftBlock = delta_shift(SaveLeftBlock, QShift);
 
-      MatrixOperator PsiL = Psi.C_old;                // ** overwriten before being used
+      MatrixOperator PsiL = delta_shift(C, QShift);                // ** overwriten before being used
 
-      MatrixOperator DiagonalL = Psi.C_old;                                              // **OK**
+      MatrixOperator DiagonalL = PsiL;                                              // **OK**
       MatrixOperator ExpanderL = MatrixOperator::make_identity(DiagonalL.Basis2());      // **OK**
 
       StateComponent SaveRightBlock = RightBlock.front();  // ** overwriten before being used
 
       //      MatrixOperator PsiR = delta_shift(Psi.C_old, adjoint(QShift));                    // **OK**
-      MatrixOperator PsiR = Psi.C_right;                    // **OK**
+      MatrixOperator PsiR = C;                    // **OK**
 
       MatrixOperator DiagonalR;
       MatrixOperator ExpanderR;
@@ -1545,6 +1274,14 @@ int main(int argc, char** argv)
 	 std::cerr << "Saving wavefunction.\n";
 
       // convert back to an InfiniteWavefunction
+
+      MatrixOperator C_old_inverse = InvertDiagonal(DiagonalL, InverseTol);
+      MatrixOperator Xu = PsiR * herm(MapToOldBasis) * delta_shift(C_old_inverse, adjoint(QShift));
+      MyPsi.set_back(prod(MyPsi.get_back(), Xu));
+
+      Psi = InfiniteWavefunctionLeft(MyPsi, QShift);
+
+#if 0
       Psi.C_old = DiagonalL;
       Psi.C_right = PsiR * herm(MapToOldBasis); //triple_prod(MapToOldBasis, DiagonalR, herm(MapToOldBasis));
       Psi.Psi = LinearWavefunction();
@@ -1555,15 +1292,10 @@ int main(int argc, char** argv)
 
       Psi.QShift = QShift;
 
-
-#if defined(ENABLE_ONE_SITE_SCHEME)
-      } // end test for one site scheme
-#endif
-
       DEBUG_CHECK_EQUAL(Psi.C_old.Basis1(), Psi.C_old.Basis2());
       DEBUG_CHECK_EQUAL(Psi.C_old.Basis2(), Psi.Psi.Basis1());
       DEBUG_CHECK_EQUAL(Psi.Psi.Basis2(), Psi.C_right.Basis1());
-      DEBUG_CHECK_EQUAL(Psi.Psi.Basis1(), DeltaShift(Psi.C_right.Basis2(), Psi.QShift));
+      DEBUG_CHECK_EQUAL(Psi.Psi.Basis1(), delta_shift(Psi.C_right.Basis2(), Psi.QShift));
 
       // orthogonalize it
       if (EarlyTermination && !NoOrthogonalize)
@@ -1579,10 +1311,13 @@ int main(int argc, char** argv)
       DEBUG_CHECK_EQUAL(Psi.C_old.Basis1(), Psi.C_old.Basis2());
       DEBUG_CHECK_EQUAL(Psi.C_old.Basis2(), Psi.Psi.Basis1());
       DEBUG_CHECK_EQUAL(Psi.Psi.Basis2(), Psi.C_right.Basis1());
-      DEBUG_CHECK_EQUAL(Psi.Psi.Basis1(), DeltaShift(Psi.C_right.Basis2(), Psi.QShift));
+      DEBUG_CHECK_EQUAL(Psi.Psi.Basis1(), delta_shift(Psi.C_right.Basis2(), Psi.QShift));
+#endif
 
-      PsiPtr = new InfiniteWavefunction(Psi);
-      pheap::ShutdownPersistent(PsiPtr);
+      Psi = InfiniteWavefunctionLeft(MyPsi, QShift);
+
+      pvalue_ptr<MPWavefunction> P(new MPWavefunction(Psi));
+      pheap::ShutdownPersistent(P);
 
       ProcControl::Shutdown();
       return ReturnCode;

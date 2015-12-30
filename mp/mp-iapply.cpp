@@ -1,7 +1,7 @@
 // -*- C++ -*- $Id$
 
 #include "mp/copyright.h"
-#include "mps/infinitewavefunction.h"
+#include "wavefunction/mpwavefunction.h"
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "common/prog_options.h"
@@ -11,7 +11,7 @@
 #include "tensor/tensor_eigen.h"
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcell-parser.h"
-#include "lattice/product-parser.h"
+#include "lattice/infinite-parser.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -64,7 +64,7 @@ int main(int argc, char** argv)
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
 
-      pvalue_ptr<InfiniteWavefunction> PsiPtr;
+      pvalue_ptr<MPWavefunction> PsiPtr;
       long CacheSize = getenv_or_default("MP_CACHESIZE", DEFAULT_PAGE_CACHE_SIZE);
       if (InPsi == OutPsi)
 	 PsiPtr = pheap::OpenPersistent(InPsi.c_str(), CacheSize);
@@ -75,7 +75,8 @@ int main(int argc, char** argv)
 	 PsiPtr = pheap::ImportHeap(InPsi.c_str());
       }
 
-      InfiniteWavefunction Psi = *PsiPtr;
+      InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
+      LinearWavefunction PsiL = get_left_canonical(Psi).first;
 
       InfiniteLattice Lattice;
       ProductMPO StringOp;
@@ -88,16 +89,20 @@ int main(int argc, char** argv)
 
       // apply the string operator
       ProductMPO::const_iterator MI = StringOp.begin();
-      for (LinearWavefunction::iterator I = Psi.Psi.begin(); I != Psi.Psi.end(); ++I, ++MI)
+      for (LinearWavefunction::iterator I = PsiL.begin(); I != PsiL.end(); ++I, ++MI)
       {
 	 (*I) = aux_tensor_prod(*MI, *I);
       }
 
-      // orthogonalize
-      orthogonalize_linear(Psi);
+      PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft(PsiL, Psi.qshift());
+      PsiPtr.mutate()->AppendHistory(EscapeCommandline(argc, argv));
 
-      PsiPtr = new InfiniteWavefunction(Psi);
       pheap::ShutdownPersistent(PsiPtr);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

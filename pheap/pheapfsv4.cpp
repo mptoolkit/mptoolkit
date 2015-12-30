@@ -6,6 +6,7 @@
 */
 
 #include "pheapfsv4.h"
+#include "pheaperror.h"
 #include "rawpagestream.h"
 #include "common/inttype.h"
 #include <algorithm>
@@ -24,6 +25,23 @@
 #define TRACE_PHEAP_X(Msg) DUMMY_TRACE(Msg)
 #endif
 
+namespace pheap
+{
+// the default page file version is the current version, 2
+int RequiredPageFileVersion = 2;
+
+void SetExpectedPageFileVersion(int v)
+{
+   RequiredPageFileVersion = v;
+}
+
+int ExpectedPageFileVersion()
+{
+   return RequiredPageFileVersion;
+}
+
+} // namespace pheap
+
 namespace PHeapFileSystem
 {
 
@@ -36,7 +54,7 @@ using inttype::uint32;
 using inttype::uint32_t;
 
 /*
-  Metadata format for FileSystem (XDR):
+  Metadata format for FileSystem (XDR): version 1
 
   Global for each page file:
     byte8 * 4     Magic ("PHFS")
@@ -56,9 +74,15 @@ using inttype::uint32_t;
 
   The Hook page number is a local page number in the first page file which is the start
   of a rawpagestream which is accessible as metadata_in() or metadata_out().
-  the quick brown fox jumps over the lazy dog <-- Wendy wrote this */
 
-uint32_t MetadataVersion = 1;
+  Version 2 metadata is identical.  But the changed version number (on 2015/09/16) is
+  a hack to allow versioning of objects that don't have their own version number.  The intent
+  is that if a file has FileSystem version 1, then it is an old file with a known version number.
+  Otherwise if the FileSystem is version 2, then it is a newer file, which is a good
+  opportunity to add versioning support to the object!
+  */
+
+uint32_t MetadataVersion = 2;
 
 namespace Private
 {
@@ -299,7 +323,8 @@ FileSystem::FileSystem()
      PageSize(0),
      HookPageNumber(uint32_t(-1)),
      Alloc(NULL),
-     IsReadOnly(false)
+     IsReadOnly(false),
+     MetaVersion(MetadataVersion)
 {
 }
 
@@ -309,7 +334,7 @@ FileSystem::~FileSystem()
 
 void FileSystem::create(std::string const& FilePath, int NumFiles, 
                         size_t DesiredPageSize, size_t PageCacheByteSize,
-                        bool Unlink)
+                        bool Unlink, bool AllowOverwrite)
 {
    Alloc = BufferAllocator::GetAllocator(DesiredPageSize);
    PageSize = Alloc->get_page_size();
@@ -332,7 +357,7 @@ void FileSystem::create(std::string const& FilePath, int NumFiles,
    for (int i = 0; i < NumFiles; ++i)
    {
       PageFile* PF = new PageFile;
-      PF->create(PageSize, Path + '/' + GetFileName(NumFiles, i), Unlink);
+      PF->create(PageSize, Path + '/' + GetFileName(NumFiles, i), Unlink, AllowOverwrite);
       PageFileList.push_back(PF);
       PageFileNames.push_back(GetFileName(NumFiles, i));
       PageFileMetaPages.push_back(std::list<size_t>());
@@ -374,11 +399,21 @@ int FileSystem::ReadPageFileMetadata(std::string const& Path, std::string const&
 
    if (std::string(Magic) != "PHFS")
    {
-      PANIC("Invalid page, probably caused by a corrupt file")(FileName);
+      throw pheap::PHeapError("Invalid file metadata, probably caused by a corrupt file.");
    }
 
    uint32_t CheckVersion = MetaIn.read<uint32>();
-   if (CheckVersion != MetadataVersion)
+   MetaVersion = CheckVersion;
+
+   if (pheap::ExpectedPageFileVersion() != -1 && pheap::ExpectedPageFileVersion() != int(CheckVersion))
+   {
+      std::ostringstream Out;
+      Out << "Page file version mismatch, expected version=" << pheap::ExpectedPageFileVersion() 
+	  << " but version is " << CheckVersion;
+      throw pheap::PHeapVersionMismatch(Out.str());
+   }
+
+   if (CheckVersion < 1 || CheckVersion > 2)
    {
       WARNING("Page file version mismatch, file version is ") << CheckVersion
 							      << " expected version is " << MetadataVersion << "\nFilename: " << FileName;

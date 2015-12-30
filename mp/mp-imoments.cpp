@@ -1,8 +1,8 @@
 // -*- C++ -*-
 
 #include "mpo/triangular_mpo.h"
-#include "mps/infinitewavefunction.h"
-#include "mps/operator_actions.h"
+#include "wavefunction/mpwavefunction.h"
+#include "wavefunction/operator_actions.h"
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "common/environment.h"
@@ -14,7 +14,7 @@
 #include "mp/copyright.h"
 #include "common/prog_options.h"
 #include "lattice/infinite-parser.h"
-#include "mps/momentum_operations.h"
+#include "wavefunction/momentum_operations.h"
 #include "mp-algorithms/triangular_mpo_solver.h"
 #include "common/prog_opt_accum.h"
 #include <boost/algorithm/string.hpp>
@@ -326,9 +326,9 @@ int main(int argc, char** argv)
 	 CalculateMoments = true;
 
       long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
-      pvalue_ptr<InfiniteWavefunction> PsiPtr = pheap::OpenPersistent(FName, CacheSize, true);
-      InfiniteWavefunction Psi = *PsiPtr;
-      int WavefuncUnitCellSize = Psi.Psi.size();
+      pvalue_ptr<MPWavefunction> PsiPtr = pheap::OpenPersistent(FName, CacheSize, true);
+      InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
+      int WavefuncUnitCellSize = Psi.size();
 
       // The default UnitCellSize for output is the wavefunction size
       if (UnitCellSize == 0)
@@ -357,26 +357,16 @@ int main(int argc, char** argv)
 
 
       // Make a LinearWavefunction in the symmetric orthogonality constraint
-      MatrixOperator Identity = MatrixOperator::make_identity(Psi.Psi.Basis1());
-      MatrixOperator Rho = scalar_prod(Psi.C_right, herm(Psi.C_right));
-      LinearWavefunction Phi = Psi.Psi; // no need to bugger around with C_old,C_right
- 
-      Rho = delta_shift(Rho, Psi.QShift);
+      // TODO: actually this is left-orthogonal.  Which might be OK?
+      RealDiagonalOperator D;
+      LinearWavefunction Phi;
+      boost::tie(Phi, D) = get_left_canonical(Psi);
 
-#if 0
-      MatrixOperator LambdaSqrt = SqrtDiagonal(Psi.C_old);
-      MatrixOperator LambdaInvSqrt = InvertDiagonal(LambdaSqrt, InverseTol);
+      MatrixOperator Rho = D;
+      Rho = scalar_prod(Rho, herm(Rho));
+      Rho = delta_shift(Rho, Psi.qshift());
 
-      Phi.set_front(prod(LambdaInvSqrt, Phi.get_front()));
-      Phi.set_back(prod(Phi.get_back(), delta_shift(LambdaSqrt, adjoint(Psi.QShift))));
-      Rho = Psi.C_old;
-      Identity = Rho;
-#endif
-
-      // Rho and Identity are the same matrix in this representation
-
-      //   TRACE(norm_frob(operator_prod(herm(Phi), Identity, Phi) - Identity));
-      //   TRACE(norm_frob(operator_prod(Phi, Rho, herm(Phi)) - Rho));
+      MatrixOperator Identity = MatrixOperator::make_identity(Phi.Basis1());
 
       // make Op the same size as our unit cell
       if (WavefuncUnitCellSize % Op.size() != 0)
@@ -389,7 +379,17 @@ int main(int argc, char** argv)
       Op = repeat(Op, WavefuncUnitCellSize / Op.size());
 
       // Check that the local basis for the wavefunction and hamiltonian are compatible
-      local_basis_compatible_or_abort(Psi.Psi, Op);
+      if (ExtractLocalBasis(Psi) != ExtractLocalBasis1(Op))
+      {
+	 std::cerr << "fatal: operator is defined on a different local basis to the wavefunction.\n";
+	 return 1;
+      }
+
+      if (ExtractLocalBasis1(Op) != ExtractLocalBasis2(Op))
+      {
+	 std::cerr << "fatal: operator has different domain and co-domain.\n";
+	 return 1;
+      }
       
       TriangularMPO OriginalOp = Op;  // keep a copy so we can do repeated powers
 
@@ -398,18 +398,18 @@ int main(int argc, char** argv)
       // If we're not calculating the cumulants, then we can print the moments as we calculate them.
       // BUT, if we have Verbose > 0, then don't print anything until the end, so that it doesn't get
       // mixed up with the verbose output.
-      if (CalculateMoments && !Quiet && !Verbose)
+      if (CalculateMoments && !Quiet && Verbose <= 0)
 	 ShowMomentsHeading(ShowRealPart, ShowImagPart, 
 			    ShowMagnitude, ShowArgument, ShowRadians);
 
       // first power
       std::vector<KMatrixPolyType> E;
-      SolveMPO_Left(E, Phi, Psi.QShift, Op, Identity, Rho, Power > 1, Tol, UnityEpsilon, Verbose);
+      SolveMPO_Left(E, Phi, Psi.qshift(), Op, Identity, Rho, Power > 1, Tol, UnityEpsilon, Verbose);
       Moments.push_back(ExtractOverlap(E.back()[1.0], Rho));
       // Force the degree of the MPO
       if (Degree != 0)
 	 Moments.back()[Degree] += 0.0;
-      if (CalculateMoments && !Verbose)
+      if (CalculateMoments && Verbose <= 0)
 	 ShowMoments(Moments.back(), ShowRealPart, ShowImagPart, 
 		     ShowMagnitude, ShowArgument, ShowRadians,
 		     ScaleFactor);
@@ -426,20 +426,20 @@ int main(int argc, char** argv)
 	 // to multiply the new operator on the left, where the identity in the top right corner (A_00)
 	 // will correspond to the already calculated terms.
 	 Op = OriginalOp * Op;
-	 SolveMPO_Left(E, Phi, Psi.QShift, Op, Identity, Rho, p < Power-1, 
+	 SolveMPO_Left(E, Phi, Psi.qshift(), Op, Identity, Rho, p < Power-1, 
 		       Tol, UnityEpsilon, Verbose);
 	 Moments.push_back(ExtractOverlap(E.back()[1.0], Rho));
 	 // Force the degree of the MPO
 	 if (Degree != 0)
 	    Moments.back()[std::pow(Degree, p+1)] += 0.0;
-	 if (CalculateMoments && !Verbose)
+	 if (CalculateMoments && Verbose <= 0)
 	    ShowMoments(Moments.back(), ShowRealPart, ShowImagPart, 
 			ShowMagnitude, ShowArgument, ShowRadians,
 			ScaleFactor);
       }
 
       // if we had verbose output, then we delay printing the moments until now
-      if (CalculateMoments && Verbose)
+      if (CalculateMoments && Verbose > 0)
       {
 	 if (!Quiet)
 	    ShowMomentsHeading(ShowRealPart, ShowImagPart, 

@@ -3,6 +3,11 @@
 #include "matrix.h"
 #include "scalarmatrix.h"
 
+// randomize signs of vectors in debug mode
+#if !defined(NDEBUG) && !defined(RANDOMIZE_VECTORS)
+#define RANDOMIZE_VECTORS
+#endif
+
 namespace LinearAlgebra
 {
 
@@ -24,6 +29,13 @@ void SingularValueDecomposition(int Size1, int Size2, double* A, double* U,
 void SingularValueDecomposition(int Size1, int Size2, 
 				std::complex<double>* A, std::complex<double>* U,
 				double* D, std::complex<double>* VH);
+
+void SingularValueDecompositionFull(int Size1, int Size2, double* A, double* U,
+				    double* D, double* VT);
+
+void SingularValueDecompositionFull(int Size1, int Size2, 
+				    std::complex<double>* A, std::complex<double>* U,
+				    double* D, std::complex<double>* VH);
 
 void EigenvaluesSymmetric(int Size, double* Data, int LeadingDim, double* Eigen);
 
@@ -75,8 +87,8 @@ void LQ_Factorize(int Size1, int Size2, std::complex<double>* A, int ldA, std::c
 
 template <typename M1, typename M2, typename M1i, typename M2i>
 struct ImplementLinearSolveSPD<M1, M2, 
-			       MATRIX_EXPRESSION(double, M1i), 
-			       MATRIX_EXPRESSION(double,M2i)>
+			       Concepts::MatrixExpression<double, M1i>, 
+			       Concepts::MatrixExpression<double,M2i>>
 {
    typedef Matrix<double, ColMajor> result_type;
    static result_type apply(M1 const& m, M2 const& rhs)
@@ -133,8 +145,8 @@ template <typename M1, typename M2, typename T1, typename T2>
 inline
 Matrix<double, ColMajor> 
 LinearSolveHPD(M1 const& m, M2 const& rhs, 
-		    MATRIX_EXPRESSION(double, T1), 
-		    MATRIX_EXPRESSION(double, T2))
+		    Concepts::MatrixExpression<double, T1>, 
+		    Concepts::MatrixExpression<double, T2>)
 {
    Matrix<double, ColMajor> TempM(m);
    Matrix<double, ColMajor> TempRhs(rhs);
@@ -145,8 +157,8 @@ template <typename M1, typename M2, typename T1, typename T2>
 inline
 Matrix<std::complex<double>, ColMajor> 
 LinearSolveHPD(M1 const& m, M2 const& rhs, 
-		    MATRIX_EXPRESSION(std::complex<double>, T1), 
-		    MATRIX_EXPRESSION(std::complex<double>, T2))
+		    Concepts::MatrixExpression<std::complex<double>, T1>, 
+		    Concepts::MatrixExpression<std::complex<double>, T2>)
 {
    Matrix<std::complex<double>, ColMajor> TempM(m);
    Matrix<std::complex<double>, ColMajor> TempRhs(rhs);
@@ -158,8 +170,8 @@ template <typename M1, typename M2, typename T1, typename T2>
 inline
 Matrix<std::complex<double>, ColMajor> 
 LinearSolveHPD(M1 const& m, M2 const& rhs, 
-		    MATRIX_EXPRESSION(double, T1), 
-		    MATRIX_EXPRESSION(std::complex<double>, T2))
+		    Concepts::MatrixExpression<double, T1>, 
+		    Concepts::MatrixExpression<std::complex<double>, T2>)
 {
    Matrix<std::complex<double>, ColMajor> TempM(m);
    Matrix<std::complex<double>, ColMajor> TempRhs(rhs);
@@ -171,8 +183,8 @@ template <typename M1, typename M2, typename T1, typename T2>
 inline
 Matrix<std::complex<double>, ColMajor> 
 LinearSolveHPD(M1 const& m, M2 const& rhs, 
-		    MATRIX_EXPRESSION(std::complex<double>, T1), 
-		    MATRIX_EXPRESSION(double, T2))
+		    Concepts::MatrixExpression<std::complex<double>, T1>, 
+		    Concepts::MatrixExpression<double, T2>)
 {
    Matrix<std::complex<double>, ColMajor> TempM(m);
    Matrix<std::complex<double>, ColMajor> TempRhs(rhs);
@@ -219,8 +231,8 @@ template <typename M1, typename M2, typename T1, typename T2>
 inline
 Matrix<double, ColMajor> 
 LinearSolve(M1 const& m, M2 const& rhs, 
-            MATRIX_EXPRESSION(double, T1), 
-            MATRIX_EXPRESSION(double, T2))
+            Concepts::MatrixExpression<double, T1>, 
+            Concepts::MatrixExpression<double, T2>)
 {
    Matrix<double, ColMajor> TempM(m);
    Matrix<double, ColMajor> TempRhs(rhs);
@@ -263,7 +275,7 @@ template <typename M, typename V, typename T1, typename T2>
 inline
 Vector<double> 
 LeastSquares(M const& m, V const& rhs, 
-            MATRIX_EXPRESSION(double, T1), 
+            Concepts::MatrixExpression<double, T1>, 
             VECTOR_EXPRESSION(double, T2))
 {
    Matrix<double, ColMajor> TempM(m);
@@ -289,7 +301,7 @@ LeastSquares(M const& m, V const& rhs,
 // DiagonalizeSymmetric
 
 template <typename M, typename Mi>
-struct ImplementDiagonalizeSymmetric<M, CONTIGUOUS_MATRIX(double, RowMajor, Mi)>
+struct ImplementDiagonalizeSymmetric<M, Concepts::ContiguousMatrix<double, RowMajor, Mi>>
 {
    typedef Vector<double> result_type;
    static result_type apply(M& m)
@@ -305,7 +317,7 @@ struct ImplementDiagonalizeSymmetric<M, CONTIGUOUS_MATRIX(double, RowMajor, Mi)>
 };
 
 template <typename M, typename Mi>
-struct ImplementDiagonalizeSymmetric<M, STRIDE_MATRIX(double, RowMajor, Mi)>
+struct ImplementDiagonalizeSymmetric<M, Concepts::StrideMatrix<double, RowMajor, Mi>>
 {
    typedef Vector<double> result_type;
    static result_type apply(M& m)
@@ -329,7 +341,7 @@ struct ImplementDiagonalizeSymmetric<M, STRIDE_MATRIX(double, RowMajor, Mi)>
 };
 
 template <typename M, typename Mi>
-struct ImplementDiagonalizeSymmetric<M, MATRIX_EXPRESSION(double, Mi)>
+struct ImplementDiagonalizeSymmetric<M, Concepts::MatrixExpression<double, Mi>>
 {
    typedef Vector<double> result_type;
    static result_type apply(M& m)
@@ -344,14 +356,14 @@ struct ImplementDiagonalizeSymmetric<M, MATRIX_EXPRESSION(double, Mi)>
 // DiagonalizeHermitian
 
 template <typename M, typename Mi>
-struct ImplementDiagonalizeHermitian<M, MATRIX_EXPRESSION(double, Mi)>
+struct ImplementDiagonalizeHermitian<M, Concepts::MatrixExpression<double, Mi>>
    : ImplementDiagonalizeSymmetric<M> {};
 
 
 template <typename M, typename Mi>
 struct ImplementDiagonalizeHermitian<
    M
- ,CONTIGUOUS_MATRIX(std::complex<double>, RowMajor, Mi)
+ ,Concepts::ContiguousMatrix<std::complex<double>, RowMajor, Mi>
 >
 {
    typedef Vector<double> result_type;
@@ -370,7 +382,7 @@ struct ImplementDiagonalizeHermitian<
 template <typename M, typename Mi>
 struct ImplementDiagonalizeHermitian<
    M
- , STRIDE_MATRIX(std::complex<double>, RowMajor, Mi)
+ , Concepts::StrideMatrix<std::complex<double>, RowMajor, Mi>
 >
 {
    typedef Vector<double> result_type;
@@ -395,7 +407,7 @@ struct ImplementDiagonalizeHermitian<
 };
 
 template <typename M, typename Mi>
-struct ImplementDiagonalizeHermitian<M, MATRIX_EXPRESSION(std::complex<double>, Mi)>
+struct ImplementDiagonalizeHermitian<M, Concepts::MatrixExpression<std::complex<double>, Mi>>
 {
    typedef Vector<double> result_type;
    static result_type apply(M& m)
@@ -411,9 +423,9 @@ struct ImplementDiagonalizeHermitian<M, MATRIX_EXPRESSION(std::complex<double>, 
 
 template <typename M, typename L, typename R, typename Mi, typename Li, typename Ri>
 struct ImplementDiagonalize<M, L&, R&,
-                            MATRIX_EXPRESSION(std::complex<double>, Mi),
-                            MATRIX_EXPRESSION(std::complex<double>, Li),
-                            MATRIX_EXPRESSION(std::complex<double>, Ri)>
+                            Concepts::MatrixExpression<std::complex<double>, Mi>,
+                            Concepts::MatrixExpression<std::complex<double>, Li>,
+                            Concepts::MatrixExpression<std::complex<double>, Ri>>
 {
    typedef Vector<std::complex<double> > result_type;
    static result_type apply(M const& m, L& l, R& r)
@@ -443,10 +455,10 @@ struct ImplementDiagonalize<M, L&, R&,
 template <typename A, typename U, typename D, typename Vt,
           typename Ai, typename Ui, typename Di, typename Vti>
 struct ImplementSingularValueDecomposition<A, U, D, Vt,
-                                           MATRIX_EXPRESSION(double, Ai),
-                                           MATRIX_EXPRESSION(double, Ui),
+                                           Concepts::MatrixExpression<double, Ai>,
+                                           Concepts::MatrixExpression<double, Ui>,
                                            VECTOR_EXPRESSION(double, Di),
-                                           MATRIX_EXPRESSION(double, Vti)>
+                                           Concepts::MatrixExpression<double, Vti>>
 {
    typedef void result_type;
    void operator()(A const& a, U& u, D& d, Vt& vt) const
@@ -468,6 +480,14 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
 
       Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy),
                                           data(Ures), data(Dres), data(Vtres));
+#if defined(RANDOMIZE_VECTORS)
+      for (unsigned i = 0; i < min_mn; ++i)
+      {
+	 double Phase = (rand() % 2) * 2.0 - 1.0;
+	 Ures(LinearAlgebra::all,i) *= Phase;
+	 Vtres(i,LinearAlgebra::all) *= LinearAlgebra::conj(Phase);
+      }
+#endif
       assign(u, Ures);
       assign(d, Dres);
       assign(vt, Vtres);
@@ -477,10 +497,10 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
 template <typename A, typename U, typename D, typename Vt,
           typename Ai, typename Ui, typename Di, typename Vti>
 struct ImplementSingularValueDecomposition<A, U, D, Vt,
-                                           MATRIX_EXPRESSION(std::complex<double>, Ai),
-                                           MATRIX_EXPRESSION(std::complex<double>, Ui),
+                                           Concepts::MatrixExpression<std::complex<double>, Ai>,
+                                           Concepts::MatrixExpression<std::complex<double>, Ui>,
                                            VECTOR_EXPRESSION(double, Di),
-                                           MATRIX_EXPRESSION(std::complex<double>, Vti)>
+                                           Concepts::MatrixExpression<std::complex<double>, Vti>>
 {
    typedef void result_type;
    void operator()(A const& a, U& u, D& d, Vt& vt) const
@@ -502,6 +522,14 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
 
       Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy),
                                           data(Ures), data(Dres), data(Vtres));
+#if defined(RANDOMIZE_VECTORS)
+      for (unsigned i = 0; i < min_mn; ++i)
+      {
+	 double Phase = (rand() % 2) * 2.0 - 1.0;
+	 Ures(LinearAlgebra::all,i) *= Phase;
+	 Vtres(i,LinearAlgebra::all) *= LinearAlgebra::conj(Phase);
+      }
+#endif
       assign(u, Ures);
       assign(d, Dres);
       assign(vt, Vtres);
@@ -510,13 +538,14 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
 
 // version taking a diagonal matrix for D
 
+// Real is either double or complex<double>
 template <typename A, typename U, typename D, typename Vt,
-          typename Ai, typename Ui, typename Di, typename Vti>
+          typename Ai, typename Ui, typename Di, typename Vti, typename Real>
 struct ImplementSingularValueDecomposition<A, U, D, Vt,
-                                           MATRIX_EXPRESSION(double, Ai),
-                                           MATRIX_EXPRESSION(double, Ui),
-                                           DIAGONAL_MATRIX(double, Di),
-                                           MATRIX_EXPRESSION(double, Vti)>
+                                           Concepts::MatrixExpression<Real, Ai>,
+                                           Concepts::MatrixExpression<Real, Ui>,
+                                           Concepts::DiagonalMatrix<double, Di>,
+                                           Concepts::MatrixExpression<Real, Vti>>
 {
    typedef void result_type;
    void operator()(A const& a, U& u, D& d, Vt& vt) const
@@ -526,55 +555,113 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
       int min_mn = std::min(m,n);
 
       try_resize(u, n, min_mn);
-      try_resize(d, min_mn);
+      try_resize(d, min_mn, min_mn);
       try_resize(vt, min_mn, m);
 
       if (min_mn == 0) return;
 
-      Matrix<double> Acopy(a);
-      Matrix<double> Ures(n, min_mn);
+      Matrix<Real> Acopy(a);
+      Matrix<Real> Ures(n, min_mn);
       Vector<double> Dres(min_mn);
-      Matrix<double> Vtres(min_mn, m);
+      Matrix<Real> Vtres(min_mn, m);
 
       Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy),
                                           data(Ures), data(Dres), data(Vtres));
+#if defined(RANDOMIZE_VECTORS)
+      for (unsigned i = 0; i < min_mn; ++i)
+      {
+	 double Phase = (rand() % 2) * 2.0 - 1.0;
+	 Ures(LinearAlgebra::all,i) *= Phase;
+	 Vtres(i,LinearAlgebra::all) *= LinearAlgebra::conj(Phase);
+      }
+#endif
       assign(u, Ures);
       assign(d.diagonal(), Dres);
       assign(vt, Vtres);
    }
 };
 
+// Real is either double or complex<double>
 template <typename A, typename U, typename D, typename Vt,
-          typename Ai, typename Ui, typename Di, typename Vti>
-struct ImplementSingularValueDecomposition<A, U, D, Vt,
-                                           MATRIX_EXPRESSION(std::complex<double>, Ai),
-                                           MATRIX_EXPRESSION(std::complex<double>, Ui),
-                                           DIAGONAL_MATRIX(double, Di),
-                                           MATRIX_EXPRESSION(std::complex<double>, Vti)>
+          typename Ai, typename Ui, typename Di, typename Vti, typename Real>
+struct ImplementSingularValueDecompositionFull<A, U, D, Vt,
+					       Concepts::MatrixExpression<Real, Ai>,
+					       Concepts::MatrixExpression<Real, Ui>,
+					       Concepts::DiagonalMatrix<double, Di>,
+					       Concepts::MatrixExpression<Real, Vti>>
 {
    typedef void result_type;
    void operator()(A const& a, U& u, D& d, Vt& vt) const
    {
-      int m = a.size2();
-      int n = a.size1();
+      int m = a.size1();
+      int n = a.size2();
       int min_mn = std::min(m,n);
+      int max_mn = std::max(m,n);
 
-      try_resize(u, n, min_mn);
-      try_resize(d, min_mn);
-      try_resize(vt, min_mn, m);
+      try_resize(u, m, max_mn);
+      try_resize(d, max_mn, max_mn);
+      try_resize(vt, max_mn, n);
 
       if (min_mn == 0) return;
 
-      Matrix<std::complex<double> > Acopy(a);
-      Matrix<std::complex<double> > Ures(n, min_mn);
+      Matrix<Real> Acopy(a);
+      Matrix<Real> Ures(m, m);
       Vector<double> Dres(min_mn);
-      Matrix<std::complex<double> > Vtres(min_mn, m);
+      Matrix<Real> Vtres(n, n);
 
-      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy),
-                                          data(Ures), data(Dres), data(Vtres));
-      assign(u, Ures);
-      assign(d.diagonal(), Dres);
-      assign(vt, Vtres);
+      Private::SingularValueDecompositionFull(size1(Acopy), size2(Acopy), data(Acopy),
+					      data(Ures), data(Dres), data(Vtres));
+      // randomize signs
+#if defined(RANDOMIZE_VECTORS)
+      for (unsigned i = 0; i < min_mn; ++i)
+      {
+	 double Phase = (rand() % 2) * 2.0 - 1.0;
+	 Ures(LinearAlgebra::all,i) *= Phase;
+	 Vtres(i,LinearAlgebra::all) *= LinearAlgebra::conj(Phase);
+      }
+#endif
+      zero_all(u);
+      zero_all(d);
+      zero_all(vt);
+      assign(u(LinearAlgebra::all, LinearAlgebra::range(0, m)), Ures);
+      assign(d.diagonal()[LinearAlgebra::range(0, min_mn)], Dres);
+      assign(vt(LinearAlgebra::range(0, n), LinearAlgebra::all), Vtres);
+   }
+};
+
+template <typename A, typename U, typename D, typename Vt,
+          typename Ai, typename Ui, typename Di, typename Vti, typename Real>
+struct ImplementSingularValueDecompositionFullLeft<A, U, D, Vt,
+						   Concepts::MatrixExpression<Real, Ai>,
+						   Concepts::MatrixExpression<Real, Ui>,
+						   Concepts::DiagonalMatrix<double, Di>,
+						   Concepts::MatrixExpression<Real, Vti>>
+{
+   typedef void result_type;
+   void operator()(A const& a, U& u, D& d, Vt& vt) const
+   {
+      if (a.size1() <= a.size2())
+	 return SingularValueDecomposition(a, u, d, vt);
+      else
+	 return SingularValueDecompositionFull(a, u, d, vt);
+   }
+};
+
+template <typename A, typename U, typename D, typename Vt,
+          typename Ai, typename Ui, typename Di, typename Vti, typename Real>
+struct ImplementSingularValueDecompositionFullRight<A, U, D, Vt,
+						   Concepts::MatrixExpression<Real, Ai>,
+						   Concepts::MatrixExpression<Real, Ui>,
+						   Concepts::DiagonalMatrix<double, Di>,
+						   Concepts::MatrixExpression<Real, Vti>>
+{
+   typedef void result_type;
+   void operator()(A const& a, U& u, D& d, Vt& vt) const
+   {
+      if (a.size2() <= a.size1())
+	 return SingularValueDecomposition(a, u, d, vt);
+      else
+	 return SingularValueDecompositionFull(a, u, d, vt);
    }
 };
 
@@ -583,11 +670,11 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
 template <typename A, typename B, typename Eigenval, typename Eigenvec,
           typename Ai, typename Bi, typename Eigenvali, typename Eigenveci>
 struct ImplementGeneralizedEigenSymmetric<A, B, Eigenval, Eigenvec,
-                                          MATRIX_EXPRESSION(double, Ai),
-                                          MATRIX_EXPRESSION(double, Bi),
-                                          VECTOR_EXPRESSION(double, Eigenvali),
-                                          MATRIX_EXPRESSION(double, Eigenveci)>
-{
+							     Concepts::MatrixExpression<double, Ai>,
+							     Concepts::MatrixExpression<double, Bi>,
+							     VECTOR_EXPRESSION(double, Eigenvali),
+							     Concepts::MatrixExpression<double, Eigenveci>>
+							     {
    typedef void result_type;
    void operator()(A const& a, B const& b, Eigenval& eigenval, Eigenvec& eigenvec,
                    Range const& Which, double abstol)
@@ -626,10 +713,10 @@ struct ImplementGeneralizedEigenSymmetric<A, B, Eigenval, Eigenvec,
 template <typename A, typename B, typename Eigenval, typename Eigenvec,
           typename Ai, typename Bi, typename Eigenvali, typename Eigenveci>
 struct ImplementGeneralizedEigenSymmetric<A, B, Eigenval, Eigenvec,
-                                          MATRIX_EXPRESSION(std::complex<double>, Ai),
-                                          MATRIX_EXPRESSION(std::complex<double>, Bi),
+                                          Concepts::MatrixExpression<std::complex<double>, Ai>,
+                                          Concepts::MatrixExpression<std::complex<double>, Bi>,
                                           VECTOR_EXPRESSION(double, Eigenvali),
-                                          MATRIX_EXPRESSION(std::complex<double>, Eigenveci)>
+                                          Concepts::MatrixExpression<std::complex<double>, Eigenveci>>
 {
    typedef void result_type;
    void operator()(A const& a, B const& b, Eigenval& eigenval, Eigenvec& eigenvec,
@@ -671,7 +758,7 @@ struct ImplementGeneralizedEigenSymmetric<A, B, Eigenval, Eigenvec,
 //
 
 template <typename M, typename Mi>
-struct ImplementTridiagonalizeHermitian<M&, CONTIGUOUS_MATRIX(std::complex<double>, RowMajor, Mi)>
+struct ImplementTridiagonalizeHermitian<M&, Concepts::ContiguousMatrix<std::complex<double>, RowMajor, Mi>>
 {
    typedef Matrix<double> result_type;
    result_type operator()(M& m) const
@@ -697,7 +784,7 @@ struct ImplementTridiagonalizeHermitian<M&, CONTIGUOUS_MATRIX(std::complex<doubl
 //
 
 template <typename M, typename Mi>
-struct ImplementCholeskyFactorizeUpper<M&, CONTIGUOUS_MATRIX(std::complex<double>, RowMajor, Mi)>
+struct ImplementCholeskyFactorizeUpper<M&, Concepts::ContiguousMatrix<std::complex<double>, RowMajor, Mi>>
 {
    typedef void result_type;
    void operator()(M& m) const
@@ -708,7 +795,7 @@ struct ImplementCholeskyFactorizeUpper<M&, CONTIGUOUS_MATRIX(std::complex<double
 };
 
 template <typename M, typename Mi>
-struct ImplementCholeskyFactorizeUpper<M&, CONTIGUOUS_MATRIX(std::complex<double>, ColMajor, Mi)>
+struct ImplementCholeskyFactorizeUpper<M&, Concepts::ContiguousMatrix<std::complex<double>, ColMajor, Mi>>
 {
    typedef void result_type;
    void operator()(M& m) const
@@ -719,7 +806,7 @@ struct ImplementCholeskyFactorizeUpper<M&, CONTIGUOUS_MATRIX(std::complex<double
 };
 
 template <typename M, typename Mi>
-struct ImplementCholeskyFactorizeLower<M&, CONTIGUOUS_MATRIX(std::complex<double>, RowMajor, Mi)>
+struct ImplementCholeskyFactorizeLower<M&, Concepts::ContiguousMatrix<std::complex<double>, RowMajor, Mi>>
 {
    typedef void result_type;
    void operator()(M& m) const
@@ -730,7 +817,7 @@ struct ImplementCholeskyFactorizeLower<M&, CONTIGUOUS_MATRIX(std::complex<double
 };
 
 template <typename M, typename Mi>
-struct ImplementCholeskyFactorizeLower<M&, CONTIGUOUS_MATRIX(std::complex<double>, ColMajor, Mi)>
+struct ImplementCholeskyFactorizeLower<M&, Concepts::ContiguousMatrix<std::complex<double>, ColMajor, Mi>>
 {
    typedef void result_type;
    void operator()(M& m) const
@@ -745,7 +832,7 @@ struct ImplementCholeskyFactorizeLower<M&, CONTIGUOUS_MATRIX(std::complex<double
 //
 
 template <typename M, typename Mi>
-struct ImplementSingularFactorize<M, MATRIX_EXPRESSION(std::complex<double>, Mi)>
+struct ImplementSingularFactorize<M, Concepts::MatrixExpression<std::complex<double>, Mi>>
 {
    typedef Matrix<std::complex<double> > result_type;
    result_type operator()(M const& m) const
@@ -763,7 +850,7 @@ struct ImplementSingularFactorize<M, MATRIX_EXPRESSION(std::complex<double>, Mi)
 };
 
 template <typename M, typename Mi>
-struct ImplementSingularFactorize<M, MATRIX_EXPRESSION(double, Mi)>
+struct ImplementSingularFactorize<M, Concepts::MatrixExpression<double, Mi>>
 {
    typedef Matrix<double> result_type;
    result_type operator()(M& m) const
@@ -785,7 +872,7 @@ struct ImplementSingularFactorize<M, MATRIX_EXPRESSION(double, Mi)>
 //
 
 template <typename M, typename Mi>
-struct ImplementQRFactorize<M&, MATRIX_EXPRESSION(std::complex<double>, Mi)>
+struct ImplementQRFactorize<M&, Concepts::MatrixExpression<std::complex<double>, Mi>>
 {
    typedef Matrix<std::complex<double> > result_type;
    result_type operator()(M const& m) const
@@ -796,7 +883,7 @@ struct ImplementQRFactorize<M&, MATRIX_EXPRESSION(std::complex<double>, Mi)>
 };
 
 template <typename M, typename Mi>
-struct ImplementQRFactorize<M&, CONTIGUOUS_MATRIX(std::complex<double>, RowMajor, Mi)>
+struct ImplementQRFactorize<M&, Concepts::ContiguousMatrix<std::complex<double>, RowMajor, Mi>>
 {
    typedef Matrix<std::complex<double> > result_type;
    result_type operator()(M& m) const
@@ -816,7 +903,7 @@ struct ImplementQRFactorize<M&, CONTIGUOUS_MATRIX(std::complex<double>, RowMajor
          {
             v(j,0) = m(j,i); m(j,i) = 0.0;  // zero out the lower part while forming the elementary reflector
          } 
-         U = Matrix<std::complex<double> >(ScalarMatrix<double>(size1(m), size1(m), 1.0) - conj(Tau[i])*v*herm(v)) * U;
+         U = Matrix<std::complex<double>>(ScalarMatrix<double>(size1(m), size1(m), 1.0) - conj(Tau[i])*v*herm(v)) * U;
       }
       return U;
    }
@@ -827,7 +914,7 @@ struct ImplementQRFactorize<M&, CONTIGUOUS_MATRIX(std::complex<double>, RowMajor
 //
 
 template <typename M, typename Orient, typename Mi>
-struct ImplementInvertHPD<M&, CONTIGUOUS_MATRIX(std::complex<double>, Orient, Mi)>
+struct ImplementInvertHPD<M&, Concepts::ContiguousMatrix<std::complex<double>, Orient, Mi>>
 {
    typedef void result_type;
    void operator()(M& m) const
@@ -840,7 +927,7 @@ struct ImplementInvertHPD<M&, CONTIGUOUS_MATRIX(std::complex<double>, Orient, Mi
 };
 
 template <typename M, typename Mi>
-struct ImplementInvertHPD<M&, MATRIX_EXPRESSION(std::complex<double>, Mi)>
+struct ImplementInvertHPD<M&, Concepts::MatrixExpression<std::complex<double>, Mi>>
 {
    typedef void result_type;
    void operator()(M& m) const
@@ -858,7 +945,7 @@ struct ImplementInvertHPD<M&, MATRIX_EXPRESSION(std::complex<double>, Mi)>
 //
 
 template <typename M, typename Orient, typename Mi>
-struct ImplementInvertGeneral<M&, CONTIGUOUS_MATRIX(std::complex<double>, Orient, Mi)>
+struct ImplementInvertGeneral<M&, Concepts::ContiguousMatrix<std::complex<double>, Orient, Mi>>
 {
    typedef void result_type;
    void operator()(M& m) const
@@ -871,7 +958,7 @@ struct ImplementInvertGeneral<M&, CONTIGUOUS_MATRIX(std::complex<double>, Orient
 };
 
 template <typename M, typename Mi>
-struct ImplementInvertGeneral<M&, MATRIX_EXPRESSION(std::complex<double>, Mi)>
+struct ImplementInvertGeneral<M&, Concepts::MatrixExpression<std::complex<double>, Mi>>
 {
    typedef void result_type;
    void operator()(M& m) const
@@ -903,7 +990,7 @@ EigenvaluesHermitian(M const& m)
 //
 
 template <typename M, typename Mi>
-struct ImplementInvertLowerTriangular<M&, CONTIGUOUS_MATRIX(std::complex<double>, RowMajor, Mi)>
+struct ImplementInvertLowerTriangular<M&, Concepts::ContiguousMatrix<std::complex<double>, RowMajor, Mi>>
 {
    typedef void result_type;
    void operator()(M& m) const
@@ -914,7 +1001,7 @@ struct ImplementInvertLowerTriangular<M&, CONTIGUOUS_MATRIX(std::complex<double>
 };
 
 template <typename M, typename Mi>
-struct ImplementInvertLowerTriangular<M&, CONTIGUOUS_MATRIX(std::complex<double>, ColMajor, Mi)>
+struct ImplementInvertLowerTriangular<M&, Concepts::ContiguousMatrix<std::complex<double>, ColMajor, Mi>>
 {
    typedef void result_type;
    void operator()(M& m) const
@@ -925,7 +1012,7 @@ struct ImplementInvertLowerTriangular<M&, CONTIGUOUS_MATRIX(std::complex<double>
 };
 
 template <typename M, typename Mi>
-struct ImplementInvertUpperTriangular<M&, CONTIGUOUS_MATRIX(std::complex<double>, RowMajor, Mi)>
+struct ImplementInvertUpperTriangular<M&, Concepts::ContiguousMatrix<std::complex<double>, RowMajor, Mi>>
 {
    typedef void result_type;
    void operator()(M& m) const
@@ -936,7 +1023,7 @@ struct ImplementInvertUpperTriangular<M&, CONTIGUOUS_MATRIX(std::complex<double>
 };
 
 template <typename M, typename Mi>
-struct ImplementInvertUpperTriangular<M&, CONTIGUOUS_MATRIX(std::complex<double>, ColMajor, Mi)>
+struct ImplementInvertUpperTriangular<M&, Concepts::ContiguousMatrix<std::complex<double>, ColMajor, Mi>>
 {
    typedef void result_type;
    void operator()(M& m) const

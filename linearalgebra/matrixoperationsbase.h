@@ -14,10 +14,10 @@ namespace LinearAlgebra
 // EvalExpression
 
 template <typename T, typename V, typename U>
-struct EvalExpression<T, LOCAL_MATRIX(V, U) > : Identity<T> {};
+struct EvalExpression<T, Concepts::LocalMatrix<V, U>> : Identity<T> {};
 
 template <typename T, typename V, typename U>
-struct EvalExpression<T, MATRIX_EXPRESSION(V, U) >
+struct EvalExpression<T, Concepts::MatrixExpression<V, U>>
 {
    typedef typename make_value<T>::type result_type;
    typedef T argument_type;
@@ -84,16 +84,6 @@ stride2(T const& x)
    return Stride2<T>()(x);
 }
 
-#if 0
-// Size (for definite major matrices)
-
-template <typename T, typename Tv, typename Ti>
-struct SizeInterface<T, STRIDE_MATRIX(Tv, RowMajor, Ti)> : Size1<T> {};
-
-template <typename T, typename Tv, typename Ti>
-struct SizeInterface<T, STRIDE_MATRIX(Tv, ColMajor, Ti)> : Size2<T> {};
-#endif
-
 // Resize
 
 template <typename T>
@@ -124,7 +114,7 @@ try_resize(T& v, size_type r, size_type c)
 // Fill default implementation
 
 template <typename T, typename V, typename Tv, typename Orient, typename Ti>
-struct Fill<T&, V, DENSE_MATRIX(Tv, Orient, Ti)>
+struct Fill<T&, V, Concepts::DenseMatrix<Tv, Orient, Ti>>
 {
    typedef void result_type;
    typedef T& first_argument_type;
@@ -170,32 +160,32 @@ swap_sort_order(T& x)
 // most unary operations should follow the same approach as for vectors:
 
 template <typename T, typename S, typename U>
-struct NegateInterface<T, MATRIX_EXPRESSION(S,U) > : TransformIfDefined<T, Negate<S> > {};
+struct NegateInterface<T, Concepts::MatrixExpression<S,U>> : TransformIfDefined<T, Negate<S> > {};
 
 template <typename T, typename S, typename U>
-struct RealInterface<T, MATRIX_EXPRESSION(S,U) > : TransformIfDefined<T, Real<S> > {};
+struct RealInterface<T, Concepts::MatrixExpression<S,U>> : TransformIfDefined<T, Real<S> > {};
 
 template <typename T, typename S, typename U>
-struct RealInterface<T&, MATRIX_EXPRESSION(S,U) > : TransformIfDefined<T&, Real<S&> > {};
+struct RealInterface<T&, Concepts::MatrixExpression<S,U>> : TransformIfDefined<T&, Real<S&> > {};
 
 template <typename T, typename S, typename U>
-struct ImagInterface<T, MATRIX_EXPRESSION(S,U) > : TransformIfDefined<T, Imag<S> > {};
+struct ImagInterface<T, Concepts::MatrixExpression<S,U>> : TransformIfDefined<T, Imag<S> > {};
 
 template <typename T, typename S, typename U>
-struct ImagInterface<T&, MATRIX_EXPRESSION(S,U) > : TransformIfDefined<T&, Imag<S&> > {};
+struct ImagInterface<T&, Concepts::MatrixExpression<S,U>> : TransformIfDefined<T&, Imag<S&> > {};
 
 template <typename T, typename S, typename U>
-struct ConjInterface<T, MATRIX_EXPRESSION(S,U) > : TransformIfDefined<T, Conj<S> > {};
+struct ConjInterface<T, Concepts::MatrixExpression<S,U>> : TransformIfDefined<T, Conj<S> > {};
 
 // Herm is conj(transpose)
 template <typename T, typename S, typename U>
-struct HermInterface<T, MATRIX_EXPRESSION(S,U) > 
+struct HermInterface<T, Concepts::MatrixExpression<S,U>> 
    : UnaryComposer<Conj<typename Transpose<T>::result_type>,
                    Transpose<T> > {};
 
 // Abs for matrices probably should NOT be defined.  Need to think about this.
 template <typename T, typename S, typename U>
-struct AbsInterface<T, MATRIX_EXPRESSION(S,U) > : TransformIfDefined<T, Abs<S> > {};
+struct AbsInterface<T, Concepts::MatrixExpression<S,U>> : TransformIfDefined<T, Abs<S> > {};
 
 // trace
 
@@ -203,13 +193,13 @@ template <typename T, typename Nested, typename Ti = typename interface<T>::type
 struct MatrixTrace {};
 
 template <typename T, typename Tv, typename Ti>
-struct TraceInterface<T, ANY_MATRIX(Tv, Ti)> : MatrixTrace<T, Trace<Tv> > {};
+struct TraceInterface<T, Concepts::AnyMatrix<Tv, Ti>> : MatrixTrace<T, Trace<Tv> > {};
 
 // default implementation
 
 // TODO: better implementation is possible in most cases
 template <typename T, typename Nested, typename Tv, typename Ti>
-struct MatrixTrace<T, Nested, LOCAL_MATRIX(Tv, Ti)>
+struct MatrixTrace<T, Nested, Concepts::LocalMatrix<Tv, Ti>>
 {
    typedef typename make_value<typename Nested::result_type>::type result_type;
    typedef T const& argument_type;
@@ -247,11 +237,11 @@ struct MatrixTrace<T, Nested, LOCAL_MATRIX(Tv, Ti)>
 
 #if 0
 template <typename T, typename Sv, typename Si>
-struct NormFrobSq<T, MATRIX_EXPRESSION(Sv, Si)> 
+struct NormFrobSq<T, Concepts::MatrixExpression<Sv, Si>> 
  : NormFrobSq<typename EvalExpression<T>::result_type> {};
 #else
 template <typename T, typename Sv, typename Si>
-struct NormFrobSq<T, MATRIX_EXPRESSION(Sv, Si)> 
+struct NormFrobSq<T, Concepts::MatrixExpression<Sv, Si>> 
 {
    typedef NormFrobSq<typename EvalExpression<T>::result_type> fwd;
    typedef typename fwd::result_type result_type;
@@ -264,7 +254,7 @@ struct NormFrobSq<T, MATRIX_EXPRESSION(Sv, Si)>
 #endif
 
 template <typename T, typename Sv, typename Si>
-struct NormFrobSq<T, LOCAL_MATRIX(Sv, Si)>
+					   struct NormFrobSq<T, Concepts::LocalMatrix<Sv, Si>>
 {
    typedef typename make_value<typename NormFrobSq<Sv>::result_type>::type result_type;
    typedef T const& argument_type;
@@ -306,7 +296,7 @@ struct NormFrobSq<T, LOCAL_MATRIX(Sv, Si)>
 // This is not the infinity norm!  It is also buggy, if the first row is empty...
 
 template <typename T, typename Sv, typename Si>
-struct NormInf<T, LOCAL_MATRIX(Sv, Si)>
+struct NormInf<T, Concepts::LocalMatrix<Sv, Si>>
 {
    typedef typename make_value<typename NormInf<Sv>::result_type>::type result_type;
    typedef T const& argument_type;
@@ -360,11 +350,12 @@ inner_prod(S const& x, T const& y, Func const& f)
 
 // forward InnerProd for matrix arguments to MatrixInnerProd
 template <typename T, typename U, typename Tv, typename Ti, typename Uv, typename Ui>
-struct InnerProdInterface<T, U, ANY_MATRIX(Tv, Ti), ANY_MATRIX(Uv, Ui)> : MatrixInnerProd<T, U> {};
+struct InnerProdInterface<T, U, Concepts::AnyMatrix<Tv, Ti>, 
+			  Concepts::AnyMatrix<Uv, Ui>> : MatrixInnerProd<T, U> {};
 
 template <typename S, typename T, typename Func, 
 	  typename Sv, typename Si, typename Tv, typename Ti>
-struct MatrixInnerProd<S, T, Func, MATRIX_EXPRESSION(Sv, Si), MATRIX_EXPRESSION(Tv, Ti)>
+struct MatrixInnerProd<S, T, Func, Concepts::MatrixExpression<Sv, Si>, Concepts::MatrixExpression<Tv, Ti>>
    : MatrixInnerProd<typename EvalExpression<S>::result_type,
 		     typename EvalExpression<T>::result_type,
 		     Func> {};
@@ -372,7 +363,8 @@ struct MatrixInnerProd<S, T, Func, MATRIX_EXPRESSION(Sv, Si), MATRIX_EXPRESSION(
 template <typename S, typename T, typename Func,
 	  typename Sv, typename Sorient, typename Si, 
           typename Tv, typename Torient, typename Ti>
-struct MatrixInnerProd<S, T, Func, DENSE_MATRIX(Sv, Sorient, Si), DENSE_MATRIX(Tv, Torient, Ti)>
+struct MatrixInnerProd<S, T, Func, Concepts::DenseMatrix<Sv, Sorient, Si>, 
+		       Concepts::DenseMatrix<Tv, Torient, Ti>>
 {
    typedef typename make_value_with_zero<typename Func::result_type>::type result_type;
    typedef S const& first_argument_type;
@@ -392,7 +384,8 @@ struct MatrixInnerProd<S, T, Func, DENSE_MATRIX(Sv, Sorient, Si), DENSE_MATRIX(T
 
 template <typename S, typename T, typename Func, typename Orient,
 	  typename Sv, typename Si, typename Tv, typename Ti>
-struct MatrixInnerProd<S, T, Func, DENSE_MATRIX(Sv, Orient, Si), DENSE_MATRIX(Tv, Orient, Ti)>
+struct MatrixInnerProd<S, T, Func, Concepts::DenseMatrix<Sv, Orient, Si>, 
+		       Concepts::DenseMatrix<Tv, Orient, Ti>>
 {
    typedef typename make_value_with_zero<typename Func::result_type>::type result_type;
    typedef S const& first_argument_type;
@@ -414,7 +407,8 @@ struct MatrixInnerProd<S, T, Func, DENSE_MATRIX(Sv, Orient, Si), DENSE_MATRIX(Tv
 // This function looks completely bogus.  When did it get added?
 template <typename S, typename T, typename Func, typename Orient,
 	  typename Sv, typename Si, typename Tv, typename Ti>
-struct MatrixInnerProd<S, T, Func, CONTIGUOUS_MATRIX(Sv, Orient, Si), CONTIGUOUS_MATRIX(Tv, Orient, Ti)>
+struct MatrixInnerProd<S, T, Func, Concepts::ContiguousMatrix<Sv, Orient, Si>, 
+		       Concepts::ContiguousMatrix<Tv, Orient, Ti>>
 {
    typedef typename make_value_with_zero<typename Func::result_type>::type result_type;
    typedef S const& first_argument_type;
@@ -435,8 +429,8 @@ struct MatrixInnerProd<S, T, Func, CONTIGUOUS_MATRIX(Sv, Orient, Si), CONTIGUOUS
 template <typename S, typename T, typename Func, typename Orient,
 	  typename Sv, typename Si, typename Tv, typename Ti>
 struct MatrixInnerProd<S, T, Func, 
-                       COMPRESSED_OUTER_MATRIX(Sv, Orient, Si), 
-                       COMPRESSED_OUTER_MATRIX(Tv, Orient, Ti)>
+                       Concepts::CompressedOuterMatrix<Sv, Orient, Si>, 
+                       Concepts::CompressedOuterMatrix<Tv, Orient, Ti>>
 {
    typedef typename make_value_with_zero<typename Func::result_type>::type result_type;
    typedef S const& first_argument_type;
@@ -462,7 +456,7 @@ struct MatrixInnerProd<S, T, Func,
 template <typename S, typename T, typename Nested,
           typename Sv, typename Si,
           typename Tv, typename Ti>
-struct ParallelProdInterface<S, T, Nested, ANY_MATRIX(Sv, Si), ANY_MATRIX(Tv, Ti)>
+struct ParallelProdInterface<S, T, Nested, Concepts::AnyMatrix<Sv, Si>, Concepts::AnyMatrix<Tv, Ti>>
    : MatrixInnerProd<S, T, Nested> { };
 
 // equal
@@ -470,7 +464,7 @@ struct ParallelProdInterface<S, T, Nested, ANY_MATRIX(Sv, Si), ANY_MATRIX(Tv, Ti
 template <typename T, typename U, typename TolType, 
 	  typename Tv, typename Ti,
 	  typename Uv, typename Ui>
-struct EqualInterface<T, U, TolType, ANY_MATRIX(Tv,Ti), ANY_MATRIX(Uv, Ui)>
+struct EqualInterface<T, U, TolType, Concepts::AnyMatrix<Tv,Ti>, Concepts::AnyMatrix<Uv, Ui>>
 {
    typedef bool result_type;
    typedef T const& first_argument_type;
@@ -496,7 +490,8 @@ struct EqualInterface<T, U, TolType, ANY_MATRIX(Tv,Ti), ANY_MATRIX(Uv, Ui)>
 template <typename S, typename T, typename Orient1, 
           typename V1, typename U1, 
           typename Orient2, typename V2, typename U2>
-struct EqualToInterface<S, T, DENSE_MATRIX(V1, Orient1, U1), DENSE_MATRIX(V2, Orient2, U2) >
+struct EqualToInterface<S, T, Concepts::DenseMatrix<V1, Orient1, U1>, 
+			Concepts::DenseMatrix<V2, Orient2, U2>>
 {
    typedef bool result_type;
    typedef S first_argument_type;
@@ -511,7 +506,8 @@ struct EqualToInterface<S, T, DENSE_MATRIX(V1, Orient1, U1), DENSE_MATRIX(V2, Or
 template <typename S, typename T, typename Orient, 
           typename V1, typename U1, 
           typename V2, typename U2>
-struct EqualToInterface<S, T, DENSE_MATRIX(V1, Orient, U1), DENSE_MATRIX(V2, Orient, U2) >
+struct EqualToInterface<S, T, Concepts::DenseMatrix<V1, Orient, U1>, 
+			Concepts::DenseMatrix<V2, Orient, U2>>
 {
    typedef bool result_type;
    typedef S first_argument_type;
@@ -555,14 +551,14 @@ struct MatrixScalarMultiplicationImpl<S, T, Mult,
 };
 
 template <typename S, typename T, typename SV, typename U, typename Mult>
-struct MatrixScalarMultiplication<S, T, Mult, ANY_MATRIX(SV, U) >
+struct MatrixScalarMultiplication<S, T, Mult, Concepts::AnyMatrix<SV, U>>
    : MatrixScalarMultiplicationImpl<S, T, Mult> {};
 
 // we forward to MatrixScalarMultiplication<S, typename interface<T>::value_type> 
 // rather than using T directly, to handle the case where T is a ScalarProxy.
 
 template <typename S, typename T, typename SV, typename SI>
-struct MultiplicationInterface<S, T, ANY_MATRIX(SV, SI), AnyScalar<T> >
+struct MultiplicationInterface<S, T, Concepts::AnyMatrix<SV, SI>, AnyScalar<T> >
    : MatrixScalarMultiplication<S, typename interface<T>::value_type> 
 {
 };
@@ -619,11 +615,11 @@ struct ScalarMatrixMultiplicationImpl<S, T, Mult,
 };
 
 template <typename S, typename T, typename TV, typename U, typename Mult>
-struct ScalarMatrixMultiplication<S, T, Mult, ANY_MATRIX(TV, U) >
+struct ScalarMatrixMultiplication<S, T, Mult, Concepts::AnyMatrix<TV, U>>
    : ScalarMatrixMultiplicationImpl<S, T, Mult> {};
 
 template <typename S, typename T, typename TV, typename TI>
-struct MultiplicationInterface<S, T, AnyScalar<S>, ANY_MATRIX(TV, TI)>
+struct MultiplicationInterface<S, T, AnyScalar<S>, Concepts::AnyMatrix<TV, TI>>
    : ScalarMatrixMultiplication<typename interface<S>::value_type, T> {};
 
 // matrix-matrix multiply - declared here but defined in matrixmultiplication.h
@@ -640,7 +636,7 @@ struct MatrixMatrixMultiplication
 template <typename S, typename T, 
 	  typename Sv, typename Si,
 	  typename Tv, typename Ti>
-struct MultiplicationInterface<S, T, ANY_MATRIX(Sv,Si), ANY_MATRIX(Tv,Ti)>
+struct MultiplicationInterface<S, T, Concepts::AnyMatrix<Sv,Si>, Concepts::AnyMatrix<Tv,Ti>>
    : MatrixMatrixMultiplication<S, T> {};
 
 // transpose is defined in matrixtranspose.h
@@ -671,7 +667,7 @@ template <typename S, typename T,
 struct MatrixDirectSum {};
 
 template <typename S, typename T, typename Sv, typename Si, typename Tv, typename Ti>
-struct DirectSumInterface<S, T, ANY_MATRIX(Sv, Si), ANY_MATRIX(Tv, Ti)>
+struct DirectSumInterface<S, T, Concepts::AnyMatrix<Sv, Si>, Concepts::AnyMatrix<Tv, Ti>>
    : MatrixDirectSum<S, T> {};
 
 // DirectProduct
@@ -684,19 +680,19 @@ template <typename S, typename T,
 struct MatrixDirectProduct {};
 
 template <typename S, typename T, typename Sv, typename Si, typename Tv, typename Ti>
-struct DirectProductInterface<S, T, ANY_MATRIX(Sv, Si), ANY_MATRIX(Tv, Ti)>
+struct DirectProductInterface<S, T, Concepts::AnyMatrix<Sv, Si>, Concepts::AnyMatrix<Tv, Ti>>
    : MatrixDirectProduct<S, T> {};
 
 template <typename T1, typename T2,
 	  typename T1i,
 	  typename T2v, typename T2i>
-struct DirectProductInterface<T1, T2, AnyScalar<T1i>, ANY_MATRIX(T2v, T2i)>
+struct DirectProductInterface<T1, T2, AnyScalar<T1i>, Concepts::AnyMatrix<T2v, T2i>>
    : ScalarMatrixMultiplication<T1, T2> {};
 
 template <typename T1, typename T2,
 	  typename T1v, typename T1i,
 	  typename T2i>
-struct DirectProductInterface<T1, T2, ANY_MATRIX(T1v, T1i), AnyScalar<T2i> >
+struct DirectProductInterface<T1, T2, Concepts::AnyMatrix<T1v, T1i>, AnyScalar<T2i>>
    : MatrixScalarMultiplication<T1, T2> {};
 
 template <typename S, typename T, typename Nested>
@@ -772,7 +768,7 @@ struct GetMatrixElementDefault<T&, typename boost::enable_if<exists<typename T::
 };
 
 template <typename T, typename Tv, typename Ti>
-struct GetMatrixElementInterface<T, ANY_MATRIX(Tv, Ti)> : GetMatrixElementDefault<T> {};
+struct GetMatrixElementInterface<T, Concepts::AnyMatrix<Tv, Ti>> : GetMatrixElementDefault<T> {};
 
 // set_element
 
@@ -870,7 +866,7 @@ struct SetMatrixElementDefault<
 };
 
 template <typename T, typename V, typename Tv, typename Ti>
-struct SetMatrixElementInterface<T, V, ANY_MATRIX(Tv, Ti)> : SetMatrixElementDefault<T, V> {};
+struct SetMatrixElementInterface<T, V, Concepts::AnyMatrix<Tv, Ti>> : SetMatrixElementDefault<T, V> {};
 
 // add_element
 
@@ -1025,7 +1021,7 @@ struct AddMatrixElementDefault<
 };
 
 template <typename T, typename V, typename Tv, typename Ti>
-struct AddMatrixElementInterface<T, V, ANY_MATRIX(Tv, Ti)> : AddMatrixElementDefault<T, V> {};
+struct AddMatrixElementInterface<T, V, Concepts::AnyMatrix<Tv, Ti>> : AddMatrixElementDefault<T, V> {};
 
 // default implementation
 
@@ -1051,7 +1047,7 @@ struct SubtractMatrixElementDefault<
 };
 
 template <typename T, typename V, typename Tv, typename Ti>
-struct SubtractMatrixElementInterface<T, V, ANY_MATRIX(Tv, Ti)> 
+struct SubtractMatrixElementInterface<T, V, Concepts::AnyMatrix<Tv, Ti>> 
    : SubtractMatrixElementDefault<T, V> {};
 
 // default implementation
@@ -1073,7 +1069,7 @@ struct ZeroMatrixElementDenseDefault<T, Tv, typename boost::enable_if<has_zero<T
 };
 
 template <typename T, typename Tv, typename TOrient, typename Ti>
-struct ZeroMatrixElementInterface<T, DENSE_MATRIX(Tv,TOrient,Ti)>
+struct ZeroMatrixElementInterface<T, Concepts::DenseMatrix<Tv,TOrient,Ti>>
    : ZeroMatrixElementDenseDefault<T, Tv> {};
 
 // vector_view - views a matrix as a vector of vectors.
@@ -1135,7 +1131,7 @@ flatten_cols(T const& x)
 // default implementations
 
 template <typename T, typename Tv, typename Ti>
-struct FlattenRowsInterface<T, CONTIGUOUS_MATRIX(Tv, RowMajor, Ti)>
+struct FlattenRowsInterface<T, Concepts::ContiguousMatrix<Tv, RowMajor, Ti>>
 {
    typedef VectorMemProxy<Tv const> result_type;
    result_type operator()(T const& m) const
@@ -1145,7 +1141,7 @@ struct FlattenRowsInterface<T, CONTIGUOUS_MATRIX(Tv, RowMajor, Ti)>
 };
 
 template <typename T, typename Tv, typename Ti>
-struct FlattenColsInterface<T, CONTIGUOUS_MATRIX(Tv, ColMajor, Ti)>
+struct FlattenColsInterface<T, Concepts::ContiguousMatrix<Tv, ColMajor, Ti>>
 {
    typedef VectorMemProxy<Tv const> result_type;
    result_type operator()(T const& m) const
@@ -1178,7 +1174,7 @@ iterate_at(T& m, size_type i, size_type j)
 
 // default implementation for dense
 template <typename T, typename Tv, typename Ti>
-struct MatrixIterateAt<T, DENSE_MATRIX(Tv, RowMajor, Ti)>
+struct MatrixIterateAt<T, Concepts::DenseMatrix<Tv, RowMajor, Ti>>
 {
    typedef typename const_inner_iterator<T>::type result_type;
    typedef T const& first_argument_type;
@@ -1198,7 +1194,7 @@ struct MatrixIterateAt<T, DENSE_MATRIX(Tv, RowMajor, Ti)>
 };
 
 template <typename T, typename Tv, typename Ti>
-struct MatrixIterateAt<T&, DENSE_MATRIX(Tv, RowMajor, Ti)>
+struct MatrixIterateAt<T&, Concepts::DenseMatrix<Tv, RowMajor, Ti>>
 {
    typedef typename inner_iterator<T>::type result_type;
    typedef T& first_argument_type;
@@ -1218,7 +1214,7 @@ struct MatrixIterateAt<T&, DENSE_MATRIX(Tv, RowMajor, Ti)>
 };
 
 template <typename T, typename Tv, typename Ti>
-struct MatrixIterateAt<T, DENSE_MATRIX(Tv, ColMajor, Ti)>
+struct MatrixIterateAt<T, Concepts::DenseMatrix<Tv, ColMajor, Ti>>
 {
    typedef typename const_inner_iterator<T>::type result_type;
    typedef T const& first_argument_type;
@@ -1238,7 +1234,7 @@ struct MatrixIterateAt<T, DENSE_MATRIX(Tv, ColMajor, Ti)>
 };
 
 template <typename T, typename Tv, typename Ti>
-struct MatrixIterateAt<T&, DENSE_MATRIX(Tv, ColMajor, Ti)>
+struct MatrixIterateAt<T&, Concepts::DenseMatrix<Tv, ColMajor, Ti>>
 {
    typedef typename inner_iterator<T>::type result_type;
    typedef T& first_argument_type;
@@ -1338,7 +1334,7 @@ struct Project1 : Project1Interface<T,U> {};
 template <typename T, typename U,
           typename Tv, typename Ti,
           typename Uv, typename Ui>
-struct Project1Interface<T, U, ANY_MATRIX(Tv, Ti), ANY_VECTOR(Uv, Ui)>
+struct Project1Interface<T, U, Concepts::AnyMatrix<Tv, Ti>, ANY_VECTOR(Uv, Ui)>
    : Index1<T,U> {};
 
 template <typename T, typename U>
@@ -1374,7 +1370,7 @@ struct Project2 : Project2Interface<T,U> {};
 template <typename T, typename U,
           typename Tv, typename Ti,
           typename Uv, typename Ui>
-struct Project2Interface<T, U, ANY_MATRIX(Tv, Ti), ANY_VECTOR(Uv, Ui)>
+struct Project2Interface<T, U, Concepts::AnyMatrix<Tv, Ti>, ANY_VECTOR(Uv, Ui)>
    : Index2<T,U> {};
 
 template <typename T, typename U>
@@ -1510,7 +1506,7 @@ struct ProjectMatrix<
 // defaults
 
 template <typename T, typename U, typename Tv, typename Ti, typename Uv, typename Ui>
-struct Index1Interface<T, U, ANY_MATRIX(Tv, Ti), ANY_VECTOR(Uv, Ui)>
+struct Index1Interface<T, U, Concepts::AnyMatrix<Tv, Ti>, ANY_VECTOR(Uv, Ui)>
 {
    typedef T const& first_argument_type;
    typedef U const& second_argument_type;
@@ -1522,7 +1518,7 @@ struct Index1Interface<T, U, ANY_MATRIX(Tv, Ti), ANY_VECTOR(Uv, Ui)>
 };
 
 template <typename T, typename U, typename Tv, typename Ti, typename Uv, typename Ui>
-struct Index1Interface<T&, U, ANY_MATRIX(Tv, Ti), ANY_VECTOR(Uv, Ui)>
+struct Index1Interface<T&, U, Concepts::AnyMatrix<Tv, Ti>, ANY_VECTOR(Uv, Ui)>
 {
    typedef T& first_argument_type;
    typedef U const& second_argument_type;
@@ -1534,7 +1530,7 @@ struct Index1Interface<T&, U, ANY_MATRIX(Tv, Ti), ANY_VECTOR(Uv, Ui)>
 };
 
 template <typename T, typename U, typename Tv, typename Ti, typename Uv, typename Ui>
-struct Index2Interface<T, U, ANY_MATRIX(Tv, Ti), ANY_VECTOR(Uv, Ui)>
+struct Index2Interface<T, U, Concepts::AnyMatrix<Tv, Ti>, ANY_VECTOR(Uv, Ui)>
 {
    typedef T const& first_argument_type;
    typedef U const& second_argument_type;
@@ -1546,7 +1542,7 @@ struct Index2Interface<T, U, ANY_MATRIX(Tv, Ti), ANY_VECTOR(Uv, Ui)>
 };
 
 template <typename T, typename U, typename Tv, typename Ti, typename Uv, typename Ui>
-struct Index2Interface<T&, U, ANY_MATRIX(Tv, Ti), ANY_VECTOR(Uv, Ui)>
+struct Index2Interface<T&, U, Concepts::AnyMatrix<Tv, Ti>, ANY_VECTOR(Uv, Ui)>
 {
    typedef T& first_argument_type;
    typedef U const& second_argument_type;
@@ -1572,7 +1568,7 @@ struct MatrixBracket<T, Arg1, Arg2> : ProjectMatrix<T, Arg1, Arg2> {};
 //
 
 template <typename T, typename S, typename Orient, typename U>
-struct ZeroAll<T&, DENSE_MATRIX(S, Orient, U) >
+struct ZeroAllInterface<T&, Concepts::DenseMatrix<S, Orient, U>>
 {
    typedef void result_type;
    typedef T& argument_type;
@@ -1583,7 +1579,7 @@ struct ZeroAll<T&, DENSE_MATRIX(S, Orient, U) >
 };
 
 template <typename T, typename S, typename Orient, typename U>
-struct ZeroAll<T&, COMPRESSED_OUTER_MATRIX(S, Orient, U) >
+struct ZeroAllInterface<T&, Concepts::CompressedOuterMatrix<S, Orient, U>>
 {
    typedef void result_type;
    typedef T& argument_type;
@@ -1593,10 +1589,32 @@ struct ZeroAll<T&, COMPRESSED_OUTER_MATRIX(S, Orient, U) >
    }
 };
 
+template <typename T, typename S, typename U>
+struct ZeroAllInterface<T&, Concepts::DiagonalMatrix<S, U>>
+{
+   typedef void result_type;
+   typedef T& argument_type;
+   void operator()(T& v) const
+   {
+      iter_zero(iterate(v.diagonal()));
+   }
+};
+
+template <typename T, typename S, typename U>
+struct ZeroAllInterface<T&, Concepts::ScalarMatrix<S, U>>
+{
+   typedef void result_type;
+   typedef T& argument_type;
+   void operator()(T& v) const
+   {
+      zero_all(v.value());
+   }
+};
+
 // Max
 
 template <typename T, typename Tv, typename Ti>
-struct Max<T, LOCAL_MATRIX(Tv, Ti)>
+struct Max<T, Concepts::LocalMatrix<Tv, Ti>>
 {
    typedef typename GetMatrixElement<T>::result_type result_type;
    typedef T const& argument_type;
@@ -1609,7 +1627,7 @@ struct Max<T, LOCAL_MATRIX(Tv, Ti)>
 // Min
 
 template <typename T, typename Tv, typename Ti>
-struct Min<T, LOCAL_MATRIX(Tv, Ti)>
+struct Min<T, Concepts::LocalMatrix<Tv, Ti>>
 {
    typedef typename GetMatrixElement<T>::result_type result_type;
    typedef T const& argument_type;
@@ -1622,7 +1640,7 @@ struct Min<T, LOCAL_MATRIX(Tv, Ti)>
 // NormInf
 
 template <typename T, typename Sv, typename Si>
-struct NormInf<T, MATRIX_EXPRESSION(Sv, Si)> 
+struct NormInf<T, Concepts::MatrixExpression<Sv, Si>> 
 {
    typedef NormInf<typename EvalExpression<T>::result_type> fwd;
    typedef typename fwd::result_type result_type;
@@ -1637,7 +1655,8 @@ struct NormInf<T, MATRIX_EXPRESSION(Sv, Si)>
 // MatrixTranspose
 //
 
-template <typename M, typename NestedFunc, typename MInterface = typename interface<M>::type>
+template <typename M, typename NestedFunc, typename MInterface = typename interface<M>::type, 
+	  typename Enable = void>
 struct MatrixTransposeInterface {};
 
 template <typename M, typename NestedFunc = Transpose<typename interface<M>::value_type>,
@@ -1645,10 +1664,10 @@ template <typename M, typename NestedFunc = Transpose<typename interface<M>::val
 struct MatrixTranspose : MatrixTransposeInterface<M, NestedFunc> {};
 
 template <typename M, typename Mv, typename Mi>
-struct TransposeInterface<M, ANY_MATRIX(Mv, Mi)> : MatrixTranspose<M> {};
+struct TransposeInterface<M, Concepts::AnyMatrix<Mv, Mi>> : MatrixTranspose<M> {};
 
 template <typename M, typename Mv, typename Mi>
-struct TransposeInterface<M&, ANY_MATRIX(Mv, Mi)> : MatrixTranspose<M&> {};
+struct TransposeInterface<M&, Concepts::AnyMatrix<Mv, Mi>> : MatrixTranspose<M&> {};
 
 template <typename M, typename NestedFunc>
 inline
@@ -1658,12 +1677,22 @@ transpose(M const& m, NestedFunc n)
    return MatrixTranspose<M, NestedFunc>()(m,n);
 }
 
+// specialization for diagonal_matrix, where transpose is the identity operation
+// (assuming that the nested operation is trivial)
+
+template <typename M, typename F, typename T, typename Ti>
+struct MatrixTransposeInterface<M, F, Concepts::DiagonalMatrix<T, Ti>, 
+				typename boost::enable_if<is_identity<F>>::type>
+   : Identity<M> {};
+
+// do we need a version with Identity<T&> ?  Probably not, do we really want to use trans() as an l-value?
+
 //
 // defaults
 //
 
 template <typename T, typename Tv, typename Ti>
-struct Size1Interface<T, ANY_MATRIX(Tv, Ti)>
+struct Size1Interface<T, Concepts::AnyMatrix<Tv, Ti>>
 {
    typedef size_type result_type;
    typedef T argument_type;
@@ -1671,7 +1700,7 @@ struct Size1Interface<T, ANY_MATRIX(Tv, Ti)>
 };
 
 template <typename T, typename Tv, typename Ti>
-struct Size2Interface<T, ANY_MATRIX(Tv, Ti)>
+struct Size2Interface<T, Concepts::AnyMatrix<Tv, Ti>>
 {
    typedef size_type result_type;
    typedef T argument_type;
@@ -1699,7 +1728,7 @@ struct Stride2<T, Ti>
 // data
 
 template <typename T, typename Tv, typename To, typename Ti>
-struct DataInterface<T, STRIDE_MATRIX(Tv, To, Ti)>
+struct DataInterface<T, Concepts::StrideMatrix<Tv, To, Ti>>
 {
    typedef Tv const* result_type;
    typedef T argument_type;
@@ -1707,7 +1736,7 @@ struct DataInterface<T, STRIDE_MATRIX(Tv, To, Ti)>
 };
 
 template <typename T, typename Tv, typename To, typename Ti>
-struct DataInterface<T&, STRIDE_MATRIX(Tv, To, Ti)>
+struct DataInterface<T&, Concepts::StrideMatrix<Tv, To, Ti>>
 {
    typedef Tv* result_type;
    typedef T& argument_type;
@@ -1717,19 +1746,19 @@ struct DataInterface<T&, STRIDE_MATRIX(Tv, To, Ti)>
 // addition
 
 template <typename S, typename T, typename Sv, typename Si, typename Tv, typename Ti>
-struct AdditionInterface<S, T, MATRIX_EXPRESSION(Sv, Si), MATRIX_EXPRESSION(Tv, Ti)>
+struct AdditionInterface<S, T, Concepts::MatrixExpression<Sv, Si>, Concepts::MatrixExpression<Tv, Ti>>
    : BinaryTransform<S, T, Addition<Sv, Tv> > { };
 
 // subtraction
 
 template <typename S, typename T, typename Sv, typename Si, typename Tv, typename Ti>
-struct SubtractionInterface<S, T, MATRIX_EXPRESSION(Sv, Si), MATRIX_EXPRESSION(Tv, Ti)>
+struct SubtractionInterface<S, T, Concepts::MatrixExpression<Sv, Si>, Concepts::MatrixExpression<Tv, Ti>>
    : BinaryTransform<S, T, Subtraction<Sv, Tv> > { };
 
 // Multiply
 
 template <typename S, typename T, typename Sv, typename Si, typename Tv, typename Ti>
-struct MultiplyInterface<S&, T, MATRIX_EXPRESSION(Sv, Si), MATRIX_EXPRESSION(Tv, Ti)>
+struct MultiplyInterface<S&, T, Concepts::MatrixExpression<Sv, Si>, Concepts::MatrixExpression<Tv, Ti>>
 {
    typedef S& result_type;
    typedef S& first_argument_type;
@@ -1759,7 +1788,7 @@ element_prod(S const& s, T const& t)
 //
 
 template <typename LHS, typename RHS, typename S1, typename U1, typename S2, typename U2>
-struct AssignInterface<LHS, RHS, MATRIX_EXPRESSION(S1, U1), MATRIX_EXPRESSION(S2, U2) >
+struct AssignInterface<LHS, RHS, Concepts::MatrixExpression<S1, U1>, Concepts::MatrixExpression<S2, U2>>
    : AssignExpression<LHS, RHS>
 {
 };
@@ -1769,7 +1798,7 @@ struct AssignInterface<LHS, RHS, MATRIX_EXPRESSION(S1, U1), MATRIX_EXPRESSION(S2
 template <typename LHS, typename RHS, 
           typename S1, typename U1, 
           typename S2, typename U2>
-struct AssignInterface<LHS&, RHS, LOCAL_MATRIX(S1, U1), SPARSE_MATRIX(S2, U2) >
+struct AssignInterface<LHS&, RHS, Concepts::LocalMatrix<S1, U1>, Concepts::LocalMatrix<S2, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -1797,7 +1826,7 @@ struct AssignInterface<LHS&, RHS, LOCAL_MATRIX(S1, U1), SPARSE_MATRIX(S2, U2) >
 template <typename LHS, typename RHS, 
           typename S1, typename U1, 
           typename S2, typename U2>
-struct AssignInterface<LHS&, RHS, LOCAL_MATRIX(S1, U1), INJECTIVE_MATRIX(S2, U2) >
+struct AssignInterface<LHS&, RHS, Concepts::LocalMatrix<S1, U1>, Concepts::InjectiveMatrix<S2, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -1822,14 +1851,22 @@ struct AssignInterface<LHS&, RHS, LOCAL_MATRIX(S1, U1), INJECTIVE_MATRIX(S2, U2)
    }
 };
 
+// Diagonal matrices are a tricky one, if the value_type doesn't have a zero element
+// but is zero-able (eg a DiagonalMatrix<Matrix<T>>,
+// and the right hand side is sparse.  The implementation above doesn't quite do the right thing,
+// because zero_all will zero all elements of the diagonal but leave them the same size.
+// But it isn't clear what one WOULD expect in this case - if the right hand side contains every element
+// then the result will be correct anyway, and if the right hand side has missing elements then it
+// isn't clear what the diagonal should contain anyway.  It is basically a runtime error I think.
+
 // base case covers mixed row/column major
 
 template <typename LHS, typename RHS, 
           typename S1, typename Orient1, typename U1, 
 	  typename S2, typename Orient2, typename U2>
 struct AssignInterface<LHS&, RHS, 
-		       DENSE_MATRIX(S1, Orient1, U1), 
-		       DENSE_MATRIX(S2, Orient2, U2) >
+		       Concepts::DenseMatrix<S1, Orient1, U1>, 
+		       Concepts::DenseMatrix<S2, Orient2, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -1843,8 +1880,8 @@ struct AssignInterface<LHS&, RHS,
 template <typename LHS, typename RHS, typename S1, typename Orient1, typename U1, 
 	  typename S2, typename Orient2, typename U2>
 struct AssignInterface<LHS&, RHS, 
-		       DENSE_MATRIX(S1, Orient1, U1), 
-		       COMPRESSED_OUTER_MATRIX(S2, Orient2, U2) >
+		       Concepts::DenseMatrix<S1, Orient1, U1>, 
+		       Concepts::CompressedOuterMatrix<S2, Orient2, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -1860,8 +1897,8 @@ struct AssignInterface<LHS&, RHS,
 template <typename LHS, typename RHS, typename Orient,
 	  typename S1, typename U1, typename S2, typename U2>
 struct AssignInterface<LHS&, RHS, 
-                       DENSE_MATRIX(S1, Orient, U1), 
-                       DENSE_MATRIX(S2, Orient, U2) >
+                       Concepts::DenseMatrix<S1, Orient, U1>, 
+                       Concepts::DenseMatrix<S2, Orient, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -1876,60 +1913,8 @@ struct AssignInterface<LHS&, RHS,
 template <typename LHS, typename RHS, typename Orient,
 	  typename S1, typename U1, typename S2, typename U2>
 struct AssignInterface<LHS&, RHS, 
-		       COMPRESSED_OUTER_MATRIX(S1, Orient, U1), 
-		       COMPRESSED_OUTER_MATRIX(S2, Orient, U2) >
-{
-   typedef void result_type;
-   typedef LHS& first_argument_type;
-   typedef RHS const& second_argument_type;
-   result_type operator()(first_argument_type x, second_argument_type y) const
-   {
-      try_resize(x, size1(y), size2(y));
-      zero_all(x);
-      typename Iterate<RHS>::result_type r = iterate(y);
-      while (r)
-      {
-	 add_element(vector_view(x), r.index(), *r);
-	 ++r;
-      }
-   }
-};
-
-template <typename LHS, typename RHS, typename Orient,
-	  typename S1, typename U1, typename S2, typename U2>
-struct AssignInterface<LHS&, RHS, 
-		       DENSE_MATRIX(S1, Orient, U1), 
-		       COMPRESSED_OUTER_MATRIX(S2, Orient, U2) >
-{
-   typedef void result_type;
-   typedef LHS& first_argument_type;
-   typedef RHS const& second_argument_type;
-   result_type operator()(first_argument_type x, second_argument_type y) const
-   {
-      try_resize(x, size1(y), size2(y));
-      typedef typename const_iterator<RHS>::type outer_iterator;
-      typedef typename const_iterator<outer_iterator>::type inner_iterator;
-      zero_all(x);
-      outer_iterator r = iterate(y);
-      while (r)
-      {
-	 inner_iterator s = iterate(r);
-	 while (s)
-	 {
-	    add_element(x, s.index1(), s.index2(), *s);
-	    ++s;
-	 }
-	 ++r;
-      }
-   }
-};
-
-template <typename LHS, typename RHS, typename Orient,
-	  typename S1, typename U1, typename V1, typename I1,
-	  typename S2, typename U2, typename V2, typename I2>
-struct AssignInterface<LHS&, RHS, 
-		       COMPRESSED_OUTER_MATRIX_V(S1, Orient, INJECTIVE_VECTOR(V1, I1), U1), 
-		       COMPRESSED_OUTER_MATRIX_V(S2, Orient, INJECTIVE_VECTOR(V2, I2), U2) >
+		       Concepts::CompressedOuterMatrix<S1, Orient, U1>, 
+		       Concepts::CompressedOuterMatrix<S2, Orient, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -1947,18 +1932,47 @@ struct AssignInterface<LHS&, RHS,
    }
 };
 
+template <typename LHS, typename RHS, typename Orient,
+	  typename S1, typename U1, typename S2, typename U2>
+struct AssignInterface<LHS&, RHS, 
+		       Concepts::DenseMatrix<S1, Orient, U1>, 
+		       Concepts::CompressedOuterMatrix<S2, Orient, U2>>
+{
+   typedef void result_type;
+   typedef LHS& first_argument_type;
+   typedef RHS const& second_argument_type;
+   result_type operator()(first_argument_type x, second_argument_type y) const
+   {
+      try_resize(x, size1(y), size2(y));
+      typedef typename const_iterator<RHS>::type outer_iterator;
+      typedef typename const_iterator<outer_iterator>::type inner_iterator;
+      zero_all(x);
+      outer_iterator r = iterate(y);
+      while (r)
+      {
+	 inner_iterator s = iterate(r);
+	 while (s)
+	 {
+	    add_element(x, s.index1(), s.index2(), *s);
+	    ++s;
+	 }
+	 ++r;
+      }
+   }
+};
+
 // addition
 
 template <typename LHS, typename RHS, typename S1, typename U1, typename S2, typename U2>
-struct AddInterface<LHS, RHS, MATRIX_EXPRESSION(S1, U1), MATRIX_EXPRESSION(S2, U2) >
-   : AddExpression<LHS, RHS>
+struct AddInterface<LHS&, RHS, Concepts::MatrixExpression<S1, U1>, Concepts::MatrixExpression<S2, U2>>
+   : AddExpression<LHS&, RHS>
 {
 };
 
 template <typename LHS, typename RHS, 
           typename S1, typename U1, 
           typename S2, typename U2>
-struct AddInterface<LHS&, RHS, LOCAL_MATRIX(S1, U1), LOCAL_MATRIX(S2, U2) >
+struct AddInterface<LHS&, RHS, Concepts::LocalMatrix<S1, U1>, Concepts::LocalMatrix<S2, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -1987,8 +2001,8 @@ template <typename LHS, typename RHS,
           typename S1, typename Orient1, typename U1, 
 	  typename S2, typename Orient2, typename U2>
 struct AddInterface<LHS&, RHS, 
-                    DENSE_MATRIX(S1, Orient1, U1), 
-                    DENSE_MATRIX(S2, Orient2, U2) >
+                    Concepts::DenseMatrix<S1, Orient1, U1>, 
+                    Concepts::DenseMatrix<S2, Orient2, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -2002,8 +2016,8 @@ struct AddInterface<LHS&, RHS,
 template <typename LHS, typename RHS, typename S1, typename Orient1, typename U1, 
 	  typename S2, typename Orient2, typename U2>
 struct AddInterface<LHS&, RHS, 
-                    DENSE_MATRIX(S1, Orient1, U1), 
-                    COMPRESSED_OUTER_MATRIX(S2, Orient2, U2) >
+                    Concepts::DenseMatrix<S1, Orient1, U1>, 
+                    Concepts::CompressedOuterMatrix<S2, Orient2, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -2019,8 +2033,8 @@ struct AddInterface<LHS&, RHS,
 template <typename LHS, typename RHS, typename Orient,
 	  typename S1, typename U1, typename S2, typename U2>
 struct AddInterface<LHS&, RHS, 
-                    DENSE_MATRIX(S1, Orient, U1), 
-                    DENSE_MATRIX(S2, Orient, U2) >
+                    Concepts::DenseMatrix<S1, Orient, U1>, 
+                    Concepts::DenseMatrix<S2, Orient, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -2036,8 +2050,8 @@ struct AddInterface<LHS&, RHS,
 template <typename LHS, typename RHS, typename Orient,
 	  typename S1, typename U1, typename S2, typename U2>
 struct AddInterface<LHS&, RHS, 
-                    COMPRESSED_OUTER_MATRIX(S1, Orient, U1), 
-                    COMPRESSED_OUTER_MATRIX(S2, Orient, U2) >
+                    Concepts::CompressedOuterMatrix<S1, Orient, U1>, 
+                    Concepts::CompressedOuterMatrix<S2, Orient, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -2058,8 +2072,8 @@ struct AddInterface<LHS&, RHS,
 template <typename LHS, typename RHS, typename Orient,
 	  typename S1, typename U1, typename S2, typename U2>
 struct AddInterface<LHS&, RHS, 
-                    DENSE_MATRIX(S1, Orient, U1), 
-                    COMPRESSED_OUTER_MATRIX(S2, Orient, U2) >
+                    Concepts::DenseMatrix<S1, Orient, U1>, 
+                    Concepts::CompressedOuterMatrix<S2, Orient, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -2087,7 +2101,7 @@ struct AddInterface<LHS&, RHS,
 // subtract
 
 template <typename LHS, typename RHS, typename S1, typename U1, typename S2, typename U2>
-struct SubtractInterface<LHS, RHS, MATRIX_EXPRESSION(S1, U1), MATRIX_EXPRESSION(S2, U2) >
+struct SubtractInterface<LHS, RHS, Concepts::MatrixExpression<S1, U1>, Concepts::MatrixExpression<S2, U2>>
    : SubtractExpression<LHS, RHS>
 {
 };
@@ -2095,7 +2109,7 @@ struct SubtractInterface<LHS, RHS, MATRIX_EXPRESSION(S1, U1), MATRIX_EXPRESSION(
 template <typename LHS, typename RHS, 
           typename S1, typename U1, 
           typename S2, typename U2>
-struct SubtractInterface<LHS&, RHS, LOCAL_MATRIX(S1, U1), LOCAL_MATRIX(S2, U2) >
+struct SubtractInterface<LHS&, RHS, Concepts::LocalMatrix<S1, U1>, Concepts::LocalMatrix<S2, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -2124,8 +2138,8 @@ template <typename LHS, typename RHS,
           typename S1, typename Orient1, typename U1, 
 	  typename S2, typename Orient2, typename U2>
 struct SubtractInterface<LHS&, RHS, 
-                    DENSE_MATRIX(S1, Orient1, U1), 
-                    DENSE_MATRIX(S2, Orient2, U2) >
+                    Concepts::DenseMatrix<S1, Orient1, U1>, 
+                    Concepts::DenseMatrix<S2, Orient2, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -2139,8 +2153,8 @@ struct SubtractInterface<LHS&, RHS,
 template <typename LHS, typename RHS, typename S1, typename Orient1, typename U1, 
 	  typename S2, typename Orient2, typename U2>
 struct SubtractInterface<LHS&, RHS, 
-                    DENSE_MATRIX(S1, Orient1, U1), 
-                    COMPRESSED_OUTER_MATRIX(S2, Orient2, U2) >
+                    Concepts::DenseMatrix<S1, Orient1, U1>, 
+                    Concepts::CompressedOuterMatrix<S2, Orient2, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -2156,8 +2170,8 @@ struct SubtractInterface<LHS&, RHS,
 template <typename LHS, typename RHS, typename Orient,
 	  typename S1, typename U1, typename S2, typename U2>
 struct SubtractInterface<LHS&, RHS, 
-                    DENSE_MATRIX(S1, Orient, U1), 
-                    DENSE_MATRIX(S2, Orient, U2) >
+                    Concepts::DenseMatrix<S1, Orient, U1>, 
+                    Concepts::DenseMatrix<S2, Orient, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -2173,8 +2187,8 @@ struct SubtractInterface<LHS&, RHS,
 template <typename LHS, typename RHS, typename Orient,
 	  typename S1, typename U1, typename S2, typename U2>
 struct SubtractInterface<LHS&, RHS, 
-                    COMPRESSED_OUTER_MATRIX(S1, Orient, U1), 
-                    COMPRESSED_OUTER_MATRIX(S2, Orient, U2) >
+                    Concepts::CompressedOuterMatrix<S1, Orient, U1>, 
+                    Concepts::CompressedOuterMatrix<S2, Orient, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -2195,8 +2209,8 @@ struct SubtractInterface<LHS&, RHS,
 template <typename LHS, typename RHS, typename Orient,
 	  typename S1, typename U1, typename S2, typename U2>
 struct SubtractInterface<LHS&, RHS, 
-                    DENSE_MATRIX(S1, Orient, U1), 
-                    COMPRESSED_OUTER_MATRIX(S2, Orient, U2) >
+                    Concepts::DenseMatrix<S1, Orient, U1>, 
+                    Concepts::CompressedOuterMatrix<S2, Orient, U2>>
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -2226,7 +2240,7 @@ struct SubtractInterface<LHS&, RHS,
 // multiply
 
 template <typename LHS, typename RHS, typename S1, typename U1, typename RHSi>
-struct MultiplyInterface<LHS&, RHS, LOCAL_MATRIX(S1, U1), AnyScalar<RHSi> >
+struct MultiplyInterface<LHS&, RHS, Concepts::LocalMatrix<S1, U1>, AnyScalar<RHSi> >
 {
    typedef void result_type;
    typedef LHS& first_argument_type;
@@ -2250,7 +2264,7 @@ struct MultiplyInterface<LHS&, RHS, LOCAL_MATRIX(S1, U1), AnyScalar<RHSi> >
 //
 
 template <typename T, typename S, typename U>
-struct StreamInsert<T, SPARSE_MATRIX(S, U) >
+struct StreamInsert<T, Concepts::SparseMatrix<S, U>>
 {
    typedef std::ostream& result_type;
    typedef std::ostream& first_argument_type;
@@ -2260,7 +2274,7 @@ struct StreamInsert<T, SPARSE_MATRIX(S, U) >
 
 template <typename T, typename S, typename U>
 std::ostream&
-StreamInsert<T, SPARSE_MATRIX(S, U) >::operator()(std::ostream& out, T const& x) const
+StreamInsert<T, Concepts::SparseMatrix<S, U>>::operator()(std::ostream& out, T const& x) const
 {
    typename const_iterator<T>::type I = iterate(x);
    if (!I)
@@ -2291,7 +2305,7 @@ StreamInsert<T, SPARSE_MATRIX(S, U) >::operator()(std::ostream& out, T const& x)
 }
 
 template <typename T, typename S, typename U>
-struct StreamInsert<T, DENSE_ROW_MAJOR_MATRIX(S, U) >
+struct StreamInsert<T, Concepts::DenseRowMajorMatrix<S, U>>
 {
    typedef std::ostream& result_type;
    typedef std::ostream& first_argument_type;
@@ -2301,7 +2315,7 @@ struct StreamInsert<T, DENSE_ROW_MAJOR_MATRIX(S, U) >
 
 template <typename T, typename S, typename U>
 std::ostream&
-StreamInsert<T, DENSE_ROW_MAJOR_MATRIX(S, U) >::operator()(std::ostream& out, T const& x) const
+StreamInsert<T, Concepts::DenseRowMajorMatrix<S, U>>::operator()(std::ostream& out, T const& x) const
 {
    typename const_iterator<T>::type I = iterate(x);
    if (!I)
@@ -2323,7 +2337,7 @@ StreamInsert<T, DENSE_ROW_MAJOR_MATRIX(S, U) >::operator()(std::ostream& out, T 
 }
 
 template <typename T, typename S, typename U>
-struct StreamInsert<T, COMPRESSED_ROW_MATRIX(S, U) >
+struct StreamInsert<T, Concepts::CompressedRowMajorMatrix<S, U>>
 {
    typedef std::ostream& result_type;
    typedef std::ostream& first_argument_type;
@@ -2333,7 +2347,7 @@ struct StreamInsert<T, COMPRESSED_ROW_MATRIX(S, U) >
 
 template <typename T, typename S, typename U>
 std::ostream&
-StreamInsert<T, COMPRESSED_ROW_MATRIX(S, U) >::operator()(std::ostream& out, T const& x) const
+StreamInsert<T, Concepts::CompressedRowMajorMatrix<S, U>>::operator()(std::ostream& out, T const& x) const
 {
    typename const_iterator<T>::type I = iterate(x);
    if (!I)
@@ -2356,7 +2370,7 @@ StreamInsert<T, COMPRESSED_ROW_MATRIX(S, U) >::operator()(std::ostream& out, T c
 
 
 template <typename T, typename S, typename U>
-struct StreamInsert<T, COMPRESSED_COL_MATRIX(S, U) >
+struct StreamInsert<T, Concepts::CompressedColMajorMatrix<S, U>>
 {
    typedef std::ostream& result_type;
    typedef std::ostream& first_argument_type;
@@ -2366,7 +2380,7 @@ struct StreamInsert<T, COMPRESSED_COL_MATRIX(S, U) >
 
 template <typename T, typename S, typename U>
 std::ostream&
-StreamInsert<T, COMPRESSED_COL_MATRIX(S, U) >::operator()(std::ostream& out, T const& x) const
+StreamInsert<T, Concepts::CompressedColMajorMatrix<S, U>>::operator()(std::ostream& out, T const& x) const
 {
    typename const_iterator<T>::type I = iterate(x);
    if (!I)
@@ -2387,55 +2401,20 @@ StreamInsert<T, COMPRESSED_COL_MATRIX(S, U) >::operator()(std::ostream& out, T c
    return out;
 }
 
-#if 0
 template <typename T, typename S, typename U>
-struct StreamInsert<T, DENSE_COL_MATRIX(S, U) >
-{
-   typedef std::ostream& result_type;
-   typedef std::ostream& first_argument_type;
-   typedef T second_argument_type;
-   result_type operator()(std::ostream& out, T const& x) const;
-};
-
-template <typename T, typename S, typename U>
-std::ostream&
-StreamInsert<T, DENSE_COL_MATRIX(S, U) >::operator()(std::ostream& out, T const& x) const
-{
-   typename const_iterator<T>::type I = iterate(x);
-   if (!I)
-   {
-      return out << "((empty))";
-   }
-   // else
-   out << '(';
-   bool first = true;
-   while (I)
-   {
-      if (!first) out << '\n';
-      else first = false;
-      out << "col=" << I.index() << ", value=" << *I;
-      ++I;
-   }
-   out << ')';
-   return out;
-}
-#endif
-
-template <typename T, typename S, typename U>
-struct StreamInsert<T, DENSE_COL_MAJOR_MATRIX(S, U) >
+struct StreamInsert<T, Concepts::DenseColMajorMatrix<S, U>>
 {
    typedef std::ostream& result_type;
    typedef std::ostream& first_argument_type;
    typedef T second_argument_type;
    result_type operator()(std::ostream& out, T const& x) const
    {
-      //typedef typename boost::mpl::print<typename SwapSortOrder<T>::result_type>::type type;
       return out << swap_sort_order(x);
    }
 };
 
 template <typename T, typename S, typename U>
-struct StreamInsert<T, MATRIX_EXPRESSION(S,U)>
+struct StreamInsert<T, Concepts::MatrixExpression<S,U>>
 {
    typedef std::ostream& result_type;
    typedef std::ostream& first_argument_type;

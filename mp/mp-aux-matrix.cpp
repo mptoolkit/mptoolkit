@@ -1,9 +1,9 @@
 // -*- C++ -*- $Id$
 
-#include "mps/infinitewavefunction.h"
+#include "wavefunction/mpwavefunction.h"
 #include "mps/packunpack.h"
 #include "lattice/latticesite.h"
-#include "mps/operator_actions.h"
+#include "wavefunction/operator_actions.h"
 #include "mp/copyright.h"
 #include "common/environment.h"
 #include "common/terminal.h"
@@ -275,21 +275,26 @@ int main(int argc, char** argv)
       }
 
       // Load the wavefunction
-      pvalue_ptr<InfiniteWavefunction> Psi 
+      pvalue_ptr<MPWavefunction> Psi
          = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
+
+      InfiniteWavefunctionLeft InfPsi = Psi->get<InfiniteWavefunctionLeft>();
 
       // Load the lattice, if it was specified
       pvalue_ptr<InfiniteLattice> Lattice = pheap::ImportHeap(LatticeFile);
 
-      UnitCell Cell = Lattice->GetUnitCell();
-      int UnitCellSize = Cell.size();
-      int const NumUnitCells = Psi->size() / UnitCellSize;
-
       // orthogonalize the wavefunction
-      LinearWavefunction Psi1 = get_orthogonal_wavefunction(*Psi);
-      MatrixOperator Rho = scalar_prod(Psi->C_right, herm(Psi->C_right));
+      LinearWavefunction Psi1;
+      RealDiagonalOperator D;
+      boost::tie(Psi1, D) = get_left_canonical(InfPsi);
+      MatrixOperator Rho = D;
+      Rho = scalar_prod(Rho, herm(Rho));
       MatrixOperator Identity = MatrixOperator::make_identity(Psi1.Basis1());
       double Dim = Psi1.Basis1().total_degree();
+
+      UnitCell Cell = Lattice->GetUnitCell();
+      int UnitCellSize = Cell.size();
+      int const NumUnitCells = Psi1.size() / UnitCellSize;
 
       // Now that we have Rho, save it if necessary
       if (!RhoFile.empty())
@@ -325,10 +330,12 @@ int main(int argc, char** argv)
 	    OpStr = std::string(OpStr.begin()+2, OpStr.end());
 	    if (PsiR.empty())
 	    {
-	       InfiniteWavefunction PR = reflect(*Psi);
+#if 0
+	       InfiniteWavefunction PR = reflect(Psi1);
 	       orthogonalize(PR);
 	       PsiR = get_orthogonal_wavefunction(PR);
 	       //TRACE(PR.C_right)(Psi->C_right);
+#endif
 	    }
 	    Psi2 = &PsiR;
 	 }
@@ -349,9 +356,11 @@ int main(int argc, char** argv)
 	    OpStr = std::string(OpStr.begin()+3, OpStr.end());
 	    if (PsiR.empty())
 	    {
+#if 0
 	       InfiniteWavefunction PR = reflect(*Psi);
 	       orthogonalize(PR);
 	       PsiR = get_orthogonal_wavefunction(PR);
+#endif
 	    }
 	    if (PsiRC.empty())
 	    {
@@ -374,7 +383,7 @@ int main(int argc, char** argv)
 	 // Get the matrix
          std::complex<double> e;
          MatrixOperator v;
-         boost::tie(e, v) = get_left_eigenvector(Psi1, *Psi2, Psi->shift(), StringOperator);
+         boost::tie(e, v) = get_left_eigenvector(Psi1, *Psi2, InfPsi.qshift(), StringOperator);
 
 	 // normalization - this is designed for unitary operators
          v *= std::sqrt(Dim);

@@ -105,6 +105,14 @@ class pvalue_handle_iterator
          return Temp;
       }
 
+      pvalue_handle_iterator operator+=(int n)
+      {
+         Ptr.release();
+         rPtr = NULL;
+         Iter += n;
+         return *this;
+      }
+
       pvalue_handle_iterator& operator--()
       {
          Ptr.release();
@@ -120,6 +128,14 @@ class pvalue_handle_iterator
          rPtr = NULL;
          --Iter;
          return Temp;
+      }
+
+      pvalue_handle_iterator operator-=(int n)
+      {
+         Ptr.release();
+         rPtr = NULL;
+         Iter -= n;
+         return *this;
       }
 
       base_iterator const& base() const { return Iter; }
@@ -144,6 +160,26 @@ bool operator!=(pvalue_handle_iterator<BaseIter> const& a,
                 pvalue_handle_iterator<BaseIter> const& b)
 {
    return a.base() != b.base();
+}
+
+template <typename BaseIter>
+inline
+pvalue_handle_iterator<BaseIter>
+operator+(pvalue_handle_iterator<BaseIter> const& a, int n)
+{
+   pvalue_handle_iterator<BaseIter> Result(a);
+   Result += n;
+   return Result;
+}
+
+template <typename BaseIter>
+inline
+pvalue_handle_iterator<BaseIter>
+operator-(pvalue_handle_iterator<BaseIter> const& a, int n)
+{
+   pvalue_handle_iterator<BaseIter> Result(a);
+   Result -= n;
+   return Result;
 }
 
 template <typename BaseIter>
@@ -198,6 +234,13 @@ class const_pvalue_handle_iterator
          return Temp;
       }
 
+      const_pvalue_handle_iterator operator+=(int n)
+      {
+         Ptr.release();
+         Iter += n;
+         return *this;
+      }
+
       const_pvalue_handle_iterator& operator--()
       {
          Ptr.release();
@@ -211,6 +254,13 @@ class const_pvalue_handle_iterator
          Ptr.release();
          --Iter;
          return Temp;
+      }
+
+      const_pvalue_handle_iterator operator-=(int n)
+      {
+         Ptr.release();
+         Iter -= n;
+         return *this;
       }
 
       base_iterator const& base() const { return Iter; }
@@ -270,5 +320,24 @@ bool operator!=(const_pvalue_handle_iterator<BaseIter1> const& a,
    return a.base() != b.base();
 }
 
+template <typename BaseIter>
+inline
+const_pvalue_handle_iterator<BaseIter>
+operator+(const_pvalue_handle_iterator<BaseIter> const& a, int n)
+{
+   const_pvalue_handle_iterator<BaseIter> Result(a);
+   Result += n;
+   return Result;
+}
+
+template <typename BaseIter>
+inline
+const_pvalue_handle_iterator<BaseIter>
+operator-(const_pvalue_handle_iterator<BaseIter> const& a, int n)
+{
+   const_pvalue_handle_iterator<BaseIter> Result(a);
+   Result -= n;
+   return Result;
+}
 
 #endif

@@ -1,8 +1,12 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*- $Id: mp-wigner-eckart.cpp 1149 2012-04-18 03:12:37Z ianmcc $
 
-#include "matrixproduct/lattice.h"
-#include "matrixproduct/mpoperatorlist.h"
-#include "matrixproduct/mpwavefunction.h"
+//
+// Project a wavefunction using the Wigner-Eckart theorem
+//
+// The Regularize option is bugged - somehow the C_right and C_old
+// matrices end up with incompatible bases, perhaps due to sorting of quantum numbers?
+
+#include "wavefunction/mpwavefunction.h"
 #include "quantumnumbers/all_symmetries.h"
 #include "pheap/pheap.h"
 #include <iostream>
@@ -10,95 +14,244 @@
 #include "common/environment.h"
 #include "tensor/wigner_eckart.h"
 #include "tensor/regularize.h"
+#include "common/terminal.h"
+#include "common/prog_options.h"
+#include "interface/inittemp.h"
 
 using QuantumNumbers::QuantumNumber;
 using QuantumNumbers::Projection;
 
-MPWavefunction WignerProjectWavefunction(MPWavefunction const& Psi, 
-                                         Projection const& p,
-                                         SymmetryList const& FinalSL, bool RegularizeBasis = false)
+namespace prog_opt = boost::program_options;
+
+StateComponent wigner_eckart(StateComponent const& A,
+			     WignerEckartBasis<VectorBasis> const& W1,
+			     WignerEckartBasis<VectorBasis> const& W2)
 {
-   MPWavefunction Result(FinalSL);
-   VectorBasis b1 = Psi.Basis1();
-   QPSetType AllowedProj;
-   CHECK_EQUAL(b1.size(), 1)("this currently supports only one-dimensional targets");
-   AllowedProj.insert(std::make_pair(b1[0], p));
-   WignerEckartBasis<VectorBasis> W1(b1, AllowedProj, FinalSL);
-   MatrixOperator Reg1;
-   if (RegularizeBasis)
-      Reg1 = Regularize(W1.AbelianBasis());
-
-   MPWavefunction::const_iterator I = Psi.begin();
-
-   while (I != Psi.end())
+   // Get the projected local basis
+   BasisList AbelianLocalBasis(W1.AbelianBasis().GetSymmetryList());
+   for (unsigned i = 0; i < A.LocalBasis().size(); ++i)
    {
-      std::cerr << "Working...\n";
-      BasisList LocalBasis = adjoint(I->SiteBasis());
-      std::set<QuantumNumber> LocalQN(LocalBasis.begin(), LocalBasis.end());
-      AllowedProj = UpdateAllowedProjections(AllowedProj, LocalQN);
-      WignerEckartBasis<VectorBasis> W2(I->Basis2(), AllowedProj, FinalSL);
-
-      BasisList AbelianLocalBasis(FinalSL);
-      for (unsigned i = 0; i < I->SiteBasis().size(); ++i)
+      QuantumNumbers::ProjectionList pl = enumerate_projections(A.LocalBasis()[i]);
+      for (unsigned pi = 0; pi < pl.size(); ++pi)
       {
-         ProjectionList pl = enumerate_projections(I->SiteBasis()[i]);
-         for (unsigned pi = 0; pi < pl.size(); ++pi)
-            {
-               AbelianLocalBasis.push_back(map_projection_to_quantum(pl[pi], FinalSL));
-            }
+	 AbelianLocalBasis.push_back(map_projection_to_quantum(pl[pi], AbelianLocalBasis.GetSymmetryList()));
       }
-
-      MPStateComponent Next(AbelianLocalBasis, W1.AbelianBasis(), W2.AbelianBasis());
-      int k = 0;
-      for (unsigned i = 0; i < I->SiteBasis().size(); ++i)
-      {
-         ProjectionList pl = enumerate_projections(I->SiteBasis()[i]);
-         for (unsigned pi = 0; pi < pl.size(); ++pi)
-         {
-            Next[k++] = wigner_eckart((*I)[i], pl[pi], W1, W2);
-         }
-      }
-
-      if (RegularizeBasis)
-      {
-	 MatrixOperator Reg2 = Regularize(W2.AbelianBasis());
-	 Next = triple_prod(Reg1,  Next, herm(Reg2));
-	 Reg1 = Reg2;
-      }
-
-      Result.push_back(Next);
-      W1 = W2;
-
-      ++I;
    }
 
-   // normalize
-   Result *= double(degree(Psi.TransformsAs()));
-
+   StateComponent Result(AbelianLocalBasis, W1.AbelianBasis(), W2.AbelianBasis());
+   int k = 0;
+   for (unsigned i = 0; i < A.LocalBasis().size(); ++i)
+   {
+      QuantumNumbers::ProjectionList pl = enumerate_projections(A.LocalBasis()[i]);
+      for (unsigned pi = 0; pi < pl.size(); ++pi)
+      {
+	 Result[k++] = wigner_eckart(A[i], pl[pi], W1, W2);
+      }
+   }
    return Result;
 }
 
-int main(int argc, char** argv)
+InfiniteWavefunctionLeft
+wigner_project(InfiniteWavefunctionLeft const& Psi, SymmetryList const& FinalSL)
 {
-   if (argc != 5)
+   InfiniteWavefunctionLeft Result;
+
+   VectorBasis b1 = Psi.Basis1();
+   WignerEckartBasis<VectorBasis> W2(b1, FinalSL);
+
+   Result.setBasis1(W2.AbelianBasis());
+
+   // get the identity projection
+   QuantumNumbers::ProjectionList PL = enumerate_projections(Psi.lambda_l().TransformsAs());
+   CHECK_EQUAL(PL.size(), 1U);
+   Projection IdentP = PL[0];
+
+   QuantumNumbers::ProjectionList QPL = enumerate_projections(Psi.qshift());
+   Result.QShift = map_projection_to_quantum(QPL[0], FinalSL);
+
+   for (int i = 0; i < Psi.size(); ++i)
    {
-      print_copyright(std::cerr);
-      std::cerr << "usage: mp-wigner-eckart <input-psi> <output-psi> <symmetry-list> <projection>\n";
-      return 1;
+
+      StateComponent C = Psi[i];
+      WignerEckartBasis<VectorBasis> W1 = W2;
+      W2 = WignerEckartBasis<VectorBasis>(C.Basis2(), FinalSL);
+
+      Result.push_back_lambda(wigner_eckart(Psi.lambda(i), IdentP, W1, W1));
+      Result.push_back(wigner_eckart(C, W1, W2));
    }
 
-   int PageSize = getenv_or_default("MP_PAGESIZE", 65536);
-   long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
-   pheap::Initialize(argv[2], 1, PageSize, CacheSize);
-   pvalue_ptr<MPWavefunction> PsiIn = pheap::ImportHeap(argv[1]);
-   std::string FinalSLStr = argv[3];
-   std::string Proj = argv[4];
+   Result.push_back_lambda(wigner_eckart(Psi.lambda_r(), IdentP, W2, W2));
 
-   SymmetryList FinalSL = SymmetryList(FinalSLStr);
-   Projection p(PsiIn->GetSymmetryList(), Proj);
+   Result.setBasis2(W2.AbelianBasis());
 
-   pvalue_ptr<MPWavefunction> OutPsi = new MPWavefunction(WignerProjectWavefunction(*PsiIn,
-                                                                                    p,
-                                                                                    FinalSL));
-   pheap::ShutdownPersistent(OutPsi);
+   Result.check_structure();
+			   
+   return Result;
+}
+
+InfiniteWavefunctionRight
+wigner_project(InfiniteWavefunctionRight const& Psi, SymmetryList const& FinalSL)
+{
+   InfiniteWavefunctionRight Result;
+
+   VectorBasis b1 = Psi.Basis1();
+   WignerEckartBasis<VectorBasis> W2(b1, FinalSL);
+
+   Result.setBasis1(W2.AbelianBasis());
+
+   // get the identity projection
+   QuantumNumbers::ProjectionList PL = enumerate_projections(Psi.lambda_l().TransformsAs());
+   CHECK_EQUAL(PL.size(), 1U);
+   Projection IdentP = PL[0];
+
+   QuantumNumbers::ProjectionList QPL = enumerate_projections(Psi.qshift());
+   Result.QShift = map_projection_to_quantum(QPL[0], FinalSL);
+
+   for (int i = 0; i < Psi.size(); ++i)
+   {
+
+      StateComponent C = Psi[i];
+      WignerEckartBasis<VectorBasis> W1 = W2;
+      W2 = WignerEckartBasis<VectorBasis>(C.Basis2(), FinalSL);
+
+      Result.push_back_lambda(wigner_eckart(Psi.lambda(i), IdentP, W1, W1));
+      Result.push_back(wigner_eckart(C, W1, W2));
+   }
+
+   Result.push_back_lambda(wigner_eckart(Psi.lambda_r(), IdentP, W2, W2));
+
+   Result.setBasis2(W2.AbelianBasis());
+
+   Result.check_structure();
+			   
+   return Result;
+}
+
+WavefunctionSectionLeft
+wigner_project(WavefunctionSectionLeft const& Psi, SymmetryList const& FinalSL)
+{
+   PANIC("not implemented.");
+}
+
+IBCWavefunction
+wigner_project(IBCWavefunction const& Psi, SymmetryList const& FinalSL)
+{
+   return IBCWavefunction(wigner_project(Psi.Left, FinalSL),
+			  wigner_project(Psi.Window, FinalSL),
+			  wigner_project(Psi.Right, FinalSL),
+			  Psi.window_offset(),
+			  Psi.WindowLeftSites,
+			  Psi.WindowRightSites);
+}
+
+// functor to use the visitor pattern with wavefunction types
+struct ApplyWignerEckart : public boost::static_visitor<WavefunctionTypes>
+{
+   ApplyWignerEckart(SymmetryList const& FinalSL_)
+      : FinalSL(FinalSL_) {}
+
+   template <typename T>
+   T operator()(T const& Psi) const
+   {
+      return wigner_project(Psi, FinalSL);
+   }
+
+   SymmetryList FinalSL;
+};
+
+int main(int argc, char** argv)
+{
+   try
+   {
+      bool Force = false;
+      std::string SList;
+      std::string InputFile;
+      std::string OutputFile;
+
+      prog_opt::options_description desc("Allowed options", terminal::columns());
+      desc.add_options()
+         ("help", "show this help message")
+	 ("force,f", prog_opt::bool_switch(&Force),
+	  "overwrite the output file, if it exists")
+	 ;
+
+      prog_opt::options_description hidden("Hidden options");
+      hidden.add_options()
+         ("symmetrylist", prog_opt::value(&SList), "slist")
+         ("inpsi", prog_opt::value(&InputFile), "inpsi")
+         ("outpsi", prog_opt::value(&OutputFile), "outpsi")
+         ;
+
+      prog_opt::positional_options_description p;
+      p.add("symmetrylist", 1);
+      p.add("inpsi", 1);
+      p.add("outpsi", 1);
+
+      prog_opt::options_description opt;
+      opt.add(desc).add(hidden);
+
+      prog_opt::variables_map vm;        
+      prog_opt::store(prog_opt::command_line_parser(argc, argv).
+                      options(opt).positional(p).run(), vm);
+      prog_opt::notify(vm);    
+
+      if (vm.count("help") > 0 || vm.count("inpsi") < 1)
+      {
+         print_copyright(std::cerr);
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <symmetry-list> <input-psi> [output-psi]\n";
+         std::cerr << desc << '\n';
+	 std::cerr << "This tool maps a non-abelian symmetry into a set of abelian projections.\n"
+	    "The only projection currently defined is from SU(2) to U(1), and partial projections are\n"
+	    "not allowed - that is, if there is more than one SU(2) symmetry, then ALL of them must be\n"
+	    "projected.  The final symmetry list must be idential to the original symmetry list, but\n"
+	    "with each SU(2) symmetry replaced by a U(1) symmetry, in the same order (the name doesn't matter).\n"
+	    ;
+         return 1;
+      }
+
+      pvalue_ptr<MPWavefunction> InputPsi;
+
+      if (OutputFile.empty())
+      {
+	 // re-use the input file as the output file
+	 InputPsi = pheap::OpenPersistent(InputFile, mp_pheap::CacheSize());
+      }
+      else
+      {
+	 // create a new file for output
+	 pheap::Initialize(OutputFile, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
+	 // and load the input wavefunction
+	 InputPsi = pheap::ImportHeap(InputFile);
+      }
+	 
+      SymmetryList FinalSL = SymmetryList(SList);
+
+      // If we are overwriting the old file, copy the old history and attributes
+      MPWavefunction Result;
+      if (OutputFile.empty())
+      {
+	 Result = MPWavefunction(InputPsi->Attributes(), InputPsi->History());
+      }
+      Result.AppendHistory(EscapeCommandline(argc, argv));
+      Result.Wavefunction() = boost::apply_visitor(ApplyWignerEckart(FinalSL), InputPsi->Wavefunction());
+
+      pvalue_ptr<MPWavefunction> OutputPsi = new MPWavefunction(Result);
+
+      pheap::ShutdownPersistent(OutputPsi);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
+   }
+   catch (std::exception& e)
+   {
+      std::cerr << "Exception: " << e.what() << '\n';
+      return 1;
+   }
+   catch (...)
+   {
+      std::cerr << "Unknown exception!\n";
+      return 1;
+   }
 }

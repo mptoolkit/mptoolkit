@@ -8,7 +8,7 @@ BasicStateComponent<T>::BasicStateComponent(BasisList const& SBasis_,
 {
    for (std::size_t i = 0; i < SBasis.size(); ++i)
    {
-      Data[i] = MatrixOperator(VBasis1, VBasis2, SBasis[i]);
+      Data[i] = value_type(VBasis1, VBasis2, SBasis[i]);
    }
 }
 
@@ -36,6 +36,15 @@ BasicStateComponent<T>::ConstructFullBasis1(BasisList const& S, VectorBasis cons
                      FullLeftBasis.total_degree());
 
    return Result;
+}
+
+template <typename T>
+void
+BasicStateComponent<T>::delta_shift(QuantumNumber const& q)
+{
+   CHECK_EQUAL(degree(q), 1);
+   VBasis1.delta_shift(q);
+   VBasis2.delta_shift(q);
 }
 
 template <typename T>
@@ -77,3 +86,27 @@ PStream::ipstream& operator>>(PStream::ipstream& in, BasicStateComponent<T>& Op)
    return in >> Op.SBasis >> Op.VBasis1 >> Op.VBasis2 >> Op.Data;
 }
 
+namespace LinearAlgebra
+{
+
+template <typename T, typename U, typename Func>
+MatrixOperator
+ScalarProd<BasicStateComponent<T>, HermitianProxy<BasicStateComponent<U>>, Func>::
+operator()(BasicStateComponent<T> const& A, HermitianProxy<BasicStateComponent<U>> const& B) const
+{
+   DEBUG_PRECONDITION_EQUAL(A.LocalBasis(), B.base().LocalBasis());
+   DEBUG_PRECONDITION_EQUAL(A.Basis2(), B.base().Basis2());
+
+   QuantumNumbers::QuantumNumber Ident(A.GetSymmetryList());
+   MatrixOperator Result(A.Basis1(), B.base().Basis1(), Ident);
+
+   for (std::size_t s = 0; s < A.LocalBasis().size(); ++s)
+   {
+      Result += scalar_prod(A[s], herm(B.base()[s]));
+   }
+   return Result;
+}
+
+
+
+} //namespace LinearAlgebra

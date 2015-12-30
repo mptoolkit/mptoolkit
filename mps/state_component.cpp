@@ -94,6 +94,7 @@ StateComponent reflect(StateComponent const& S)
 namespace LinearAlgebra
 {
 
+#if 0
 MatrixOperator
 ScalarProd<StateComponent, HermitianProxy<StateComponent> >::
 operator()(StateComponent const& A, HermitianProxy<StateComponent> const& B) const
@@ -110,6 +111,7 @@ operator()(StateComponent const& A, HermitianProxy<StateComponent> const& B) con
    }
    return Result;
 }
+#endif
 
 MatrixOperator
 ScalarProd<HermitianProxy<StateComponent>, StateComponent>::
@@ -375,6 +377,30 @@ MatrixOperator operator_prod(StateComponent const& A,
    return Result;
 }
 
+StateComponent operator_prod(LinearAlgebra::HermitianProxy<StateComponent> const& A, 
+                             StateComponent const& E,
+                             StateComponent const& B)
+{
+   StateComponent Result(E.LocalBasis(), A.base().Basis2(), B.Basis2());
+   for (unsigned q = 0; q < E.size(); ++q)
+   {
+      Result[q] = operator_prod(A, E[q], B);
+   }
+   return Result;
+}
+
+StateComponent operator_prod(StateComponent const& A, 
+                             StateComponent const& E,
+                             LinearAlgebra::HermitianProxy<StateComponent> const& B)
+{
+   StateComponent Result(E.LocalBasis(), A.Basis1(), B.base().Basis1());
+   for (unsigned q = 0; q < E.size(); ++q)
+   {
+      Result[q] = operator_prod(A, E[q], B);
+   }
+   return Result;
+}
+
 MatrixOperator
 operator_prod_regular(StateComponent const& A, 
                       MatrixOperator const& E,
@@ -618,7 +644,7 @@ MatrixOperator extract_diagonal(StateComponent const& A,
    return Result;
 }
 
-MatrixOperator ExpandBasis1(StateComponent& A, Normalization n)
+MatrixOperator ExpandBasis1(StateComponent& A)
 {
    ProductBasis<BasisList, VectorBasis> FullBasis1(A.LocalBasis(), A.Basis2());
    QuantumNumber Ident(A.GetSymmetryList());
@@ -644,7 +670,7 @@ MatrixOperator ExpandBasis1(StateComponent& A, Normalization n)
    return Res;
 }
 
-MatrixOperator ExpandBasis2(StateComponent& A, Normalization n)
+MatrixOperator ExpandBasis2(StateComponent& A)
 {
    ProductBasis<VectorBasis, BasisList> FullBasis2(A.Basis1(), adjoint(A.LocalBasis()));
    StateComponent Result(A.LocalBasis(), A.Basis1(), FullBasis2.Basis());
@@ -748,6 +774,32 @@ MatrixOperator ExpandBasis2Used(StateComponent& A, std::vector<int> const& Used)
    MatrixOperator Res = scalar_prod(herm(Result), A);
    A = Result;
    return Res;
+}
+
+std::pair<MatrixOperator, SimpleStateComponent>
+ExpandBasis1_(StateComponent const& A)
+{
+   ProductBasis<BasisList, VectorBasis> FullBasis1(A.LocalBasis(), A.Basis2());
+   QuantumNumber Ident(A.GetSymmetryList());
+   SimpleStateComponent Result(A.LocalBasis(), FullBasis1.Basis(), A.Basis2());
+   for (std::size_t t = 0; t < FullBasis1.size(); ++t)
+   {
+      int s, b2;
+      boost::tie(s,b2) = FullBasis1.rmap(t);
+
+      int Dim = FullBasis1.dim(t);
+      DEBUG_CHECK_EQUAL(Dim, A.Basis2().dim(b2));
+
+      // Make an identity matrix of the correct size
+      Result[s](t, b2) = LinearAlgebra::ScalarMatrix<std::complex<double>>(Dim, Dim, 1.0);
+   }
+
+   // check the normalization
+   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(Result, herm(Result))), 
+                     FullBasis1.total_degree());
+
+   MatrixOperator Res = scalar_prod(A, herm(Result));
+   return std::make_pair(Res, Result);
 }
 
 StateComponent ConstructFromRightBasis(BasisList const& LocalBasis,
@@ -890,6 +942,7 @@ StateComponent ScaleBasisU1(StateComponent const& Op,
    return Result;
 }
 
+#if 0
 MatrixOperator RenameSymmetry(MatrixOperator const& Op, SymmetryList const& NewSL)
 {
    MatrixOperator Result(RenameSymmetry(Op.Basis1(), NewSL), 
@@ -910,6 +963,7 @@ StateComponent RenameSymmetry(StateComponent const& Op, SymmetryList const& NewS
       Result[i].data() = Op[i].data();
    return Result;
 }   
+#endif
 
 StateComponent ReorderLocalBasis(StateComponent const& Op, std::list<int> const& NewOrder)
 {
@@ -939,14 +993,10 @@ StateComponent ReorderLocalBasis(StateComponent const& Op, std::list<int> const&
 
 StateComponent CoerceSymmetryList(StateComponent const& Op, SymmetryList const& NewSL)
 {
-   BasisList NewLocal = Op.LocalBasis();
-   VectorBasis NewBasis1 = Op.Basis1();
-   VectorBasis NewBasis2 = Op.Basis2();
+   BasisList NewLocal = CoerceSymmetryList(Op.LocalBasis(), NewSL);
+   VectorBasis NewBasis1 = CoerceSymmetryList(Op.Basis1(), NewSL);
+   VectorBasis NewBasis2 = CoerceSymmetryList(Op.Basis2(), NewSL);
    
-   CoerceSymmetryList(NewLocal, NewSL);
-   CoerceSymmetryList(NewBasis1, NewSL);
-   CoerceSymmetryList(NewBasis2, NewSL);
-
    StateComponent Result(NewLocal, NewBasis1, NewBasis2);
    for (unsigned i = 0; i < Result.size(); ++i)
       Result[i].data() = Op[i].data();

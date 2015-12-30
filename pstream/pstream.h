@@ -155,10 +155,12 @@
 
   ipstream& operator>>(ipstream& in, foo& f)
   {
-     PStream::VersionSentry Sentry(in, FunctionDatabaseVersion , 2);
+     PStream::VersionSentry Sentry(in, FunctionDatabaseV , 2);
      in >> f.b;
      return in;
   }
+
+  The global tag object can be a static member of the class.
 
   If the version number is to be read from the stream, then 
   use in.read<int>() as the version number.
@@ -174,7 +176,27 @@
   in.push_version(FunctionDatabaseV, 2);
   and reset with in.pop_version(FunctionDatabaseV);
   But this method is not recommended, except to set initial version numbers
-  on a new stream, if they differ from the default.
+  on a new stream, if they differ from the default, as it is error-prone and isn't exception safe.
+
+  Hints for adding versioning support to classes that currently have no versioning:
+  The stream object can be interrogated to find out the version of a particular tag.
+  This solves the problem where a sub-object needs to know what version the enclosing object is,
+  but it doesn't help the more generic case where the main object wants to read a sub-object of a
+  specific version, without adding knowledge of the main object into the sub-object itself.
+
+  To solve this case, a suggested example is to define a function for the sub-object T
+  void read_version(ipstream& in, T& Ojbect, int Version);
+
+  The operator>>(ipstream& in, T& Object) can then be defined in terms of this, ie
+
+  ipstream& operator>>(ipstream& in, T& Object)
+  {
+     PStream::VersionSentry Sentry(in, FunctionDatabaseV, in.read<int>());
+     read_version(in, Object, Sentry.version());
+  }
+
+  Thus the main object can either call operator>>, or if it knows what version to expect then
+  it can directly call read_version().
 
   Experimental features not yet merged: streaming of typemap's.
 */
@@ -670,6 +692,9 @@ class VersionSentry
       ~VersionSentry();
 
       int version() const { return v; }
+
+      // Force a change in an existing version.  Might be useful to workaround bugs!
+      void change_version(int NewV);
       
    private:
       VersionTag const& Tag;

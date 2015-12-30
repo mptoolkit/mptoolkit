@@ -41,10 +41,10 @@ class MatrixSection : public MatrixBase<MatrixSection<MatType, RowIndex, ColInde
          : m_(m), r_(r), c_(c) 
       {
          using LinearAlgebra::size1; using LinearAlgebra::size2;
-	 DEBUG_PRECONDITION(size(r) == 0 || min(r) >= 0)(r);
-	 DEBUG_PRECONDITION(size(r) == 0 || size_type(max(r)) < size1(m))(r)(size1(m));
-	 DEBUG_PRECONDITION(size(c) == 0 || min(c) >= 0)(c); 
-	 DEBUG_PRECONDITION(size(c) == 0 || size_type(max(c)) < size2(m))(c)(size2(m)); 
+	 DEBUG_PRECONDITION(size(r) == 0 || min(r) >= 0);
+	 DEBUG_PRECONDITION(size(r) == 0 || size_type(max(r)) < size1(m))(size1(m));
+	 DEBUG_PRECONDITION(size(c) == 0 || min(c) >= 0);
+	 DEBUG_PRECONDITION(size(c) == 0 || size_type(max(c)) < size2(m))(size2(m)); 
       }
 
       MatrixSection& operator=(MatrixSection const& x)
@@ -97,61 +97,61 @@ template <typename M, typename R, typename C,
           typename Rv, typename Ri,
           typename Cv, typename Ci>
 struct MatrixSectionInterface<M, R, C,
-                              DENSE_MATRIX(Mv, Orient, Mi),
+                              Concepts::DenseMatrix<Mv, Orient, Mi>,
                               DENSE_VECTOR(Rv, Ri),
                               DENSE_VECTOR(Cv, Ci)>
 {
    typedef Mv value_type;
    typedef Orient orientation;
-   typedef DENSE_MATRIX(Mv, Orient, void) type;
+   typedef Concepts::DenseMatrix<Mv, Orient, void> type;
 };
 
 template <typename M,
           typename Mv, typename Orient, typename Mi>
 struct MatrixSectionInterface<M, Range, Range,
-                              STRIDE_MATRIX(Mv, Orient, Mi),
+                              Concepts::StrideMatrix<Mv, Orient, Mi>,
                               DENSE_VECTOR(size_type, void),
                               DENSE_VECTOR(size_type, void)>
 {
    typedef Mv value_type;
    typedef Orient orientation;
-   typedef STRIDE_MATRIX(Mv, Orient, void) type;
+   typedef Concepts::StrideMatrix<Mv, Orient, void> type;
 };
 
 template <typename M,
           typename Mv, typename Orient, typename Mi>
 struct MatrixSectionInterface<M, Range, Slice,
-                              STRIDE_MATRIX(Mv, Orient, Mi),
+                              Concepts::StrideMatrix<Mv, Orient, Mi>,
                               DENSE_VECTOR(size_type, void),
                               DENSE_VECTOR(size_type, void)>
 {
    typedef Mv value_type;
    typedef Orient orientation;
-   typedef STRIDE_MATRIX(Mv, Orient, void) type;
+   typedef Concepts::StrideMatrix<Mv, Orient, void> type;
 };
 
 template <typename M,
           typename Mv, typename Orient, typename Mi>
 struct MatrixSectionInterface<M, Slice, Range,
-                              STRIDE_MATRIX(Mv, Orient, Mi),
+                              Concepts::StrideMatrix<Mv, Orient, Mi>,
                               DENSE_VECTOR(size_type, void),
                               DENSE_VECTOR(size_type, void)>
 {
    typedef Mv value_type;
    typedef Orient orientation;
-   typedef STRIDE_MATRIX(Mv, Orient, void) type;
+   typedef Concepts::StrideMatrix<Mv, Orient, void> type;
 };
 
 template <typename M,
           typename Mv, typename Orient, typename Mi>
 struct MatrixSectionInterface<M, Slice, Slice,
-                              STRIDE_MATRIX(Mv, Orient, Mi),
+                              Concepts::StrideMatrix<Mv, Orient, Mi>,
                               DENSE_VECTOR(size_type, void),
                               DENSE_VECTOR(size_type, void)>
 {
    typedef Mv value_type;
    typedef Orient orientation;
-   typedef STRIDE_MATRIX(Mv, Orient, void) type;
+   typedef Concepts::StrideMatrix<Mv, Orient, void> type;
 };
 
 // FIXME: finish the interfaces, especially for sparse
@@ -398,7 +398,7 @@ template <typename T, typename U, typename V,
           typename Uv, typename Ui,
           typename Vv, typename Vi>
 struct ProjectMatrixInterface<T, U, V,
-                              ANY_MATRIX(Tv, Ti),
+                              Concepts::AnyMatrix<Tv, Ti>,
                               LOCAL_VECTOR(Uv, Ui),
                               LOCAL_VECTOR(Vv, Vi)>
 {
@@ -423,7 +423,7 @@ template <typename T, typename U, typename V,
           typename Uv, typename Ui,
           typename Vv, typename Vi>
 struct ProjectMatrixInterface<T&, U, V,
-                              ANY_MATRIX(Tv, Ti),
+                              Concepts::AnyMatrix<Tv, Ti>,
                               LOCAL_VECTOR(Uv, Ui),
                               LOCAL_VECTOR(Vv, Vi)>
 {
@@ -446,7 +446,7 @@ struct ProjectMatrixInterface<T&, U, V,
 // MatrixRow,MatrixCol for stride matrices
 
 template <typename T, typename Tv, typename Orient, typename Ti>
-struct MatrixRowInterface<T, STRIDE_MATRIX(Tv, Orient, Ti)>
+struct MatrixRowInterface<T, Concepts::StrideMatrix<Tv, Orient, Ti>>
 {
    typedef VectorMemProxy<Tv const, tagVariable> result_type;
    typedef T const& first_argument_type;
@@ -460,7 +460,7 @@ struct MatrixRowInterface<T, STRIDE_MATRIX(Tv, Orient, Ti)>
 };
 
 template <typename T, typename Tv, typename Orient, typename Ti>
-struct MatrixRowInterface<T&, STRIDE_MATRIX(Tv, Orient, Ti)>
+struct MatrixRowInterface<T&, Concepts::StrideMatrix<Tv, Orient, Ti>>
 {
    typedef VectorMemProxy<Tv, tagVariable> result_type;
    typedef T& first_argument_type;
@@ -474,7 +474,7 @@ struct MatrixRowInterface<T&, STRIDE_MATRIX(Tv, Orient, Ti)>
 };
 
 template <typename T, typename Tv, typename Orient, typename Ti>
-struct MatrixColInterface<T, STRIDE_MATRIX(Tv, Orient, Ti)>
+struct MatrixColInterface<T, Concepts::StrideMatrix<Tv, Orient, Ti>>
 {
    typedef VectorMemProxy<Tv const, tagVariable> result_type;
    typedef T const& first_argument_type;
@@ -488,7 +488,7 @@ struct MatrixColInterface<T, STRIDE_MATRIX(Tv, Orient, Ti)>
 };
 
 template <typename T, typename Tv, typename Orient, typename Ti>
-struct MatrixColInterface<T&, STRIDE_MATRIX(Tv, Orient, Ti)>
+struct MatrixColInterface<T&, Concepts::StrideMatrix<Tv, Orient, Ti>>
 {
    typedef VectorMemProxy<Tv, tagVariable> result_type;
    typedef T& first_argument_type;

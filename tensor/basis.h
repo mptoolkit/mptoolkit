@@ -66,6 +66,8 @@ class BasisList
 
       std::size_t size() const { return Q_.size(); }
 
+      int dim(int s) const { DEBUG_CHECK(s >= 0 && s < this->size()); return 1; }
+
       bool is_null() const { return S_.is_null(); }
 
       // returns true if this basis is empty
@@ -90,7 +92,9 @@ class BasisList
 
       SymmetryList const& GetSymmetryList() const { return S_; }
 
-   //void CoerceSymmetryList(SymmetryList const& sl);
+      void CoerceSymmetryList(SymmetryList const& sl);
+
+      void delta_shift(QuantumNumber const& q);
 
    private:
       QuantumNumbers::SymmetryList S_;
@@ -104,7 +108,8 @@ class BasisList
 
    friend PStream::opstream& operator<<(PStream::opstream& out, BasisList const& B);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, BasisList& B);
-   friend void CoerceSymmetryList(BasisList& b, SymmetryList const& sl);
+   friend BasisList CoerceSymmetryList(BasisList const& b, SymmetryList const& sl)
+   __attribute__((warn_unused_result));
 };
 
 typedef BasisList SimpleBasis;  // for backwards compatibility
@@ -124,15 +129,26 @@ BasisList adjoint(BasisList const& b);
 
 std::string show_projections(BasisList const& B);
 
+
 inline
 void
-CoerceSymmetryList(BasisList& b, SymmetryList const& sl)
+BasisList::CoerceSymmetryList(SymmetryList const& sl)
 {
-   b.S_ = sl;
-   CoerceSymmetryList(b.Q_, sl);
+   S_ = sl;
+   Q_.CoerceSymmetryList(sl);
 }
 
-BasisList RenameSymmetry(BasisList const& BL, SymmetryList const& NewSL);
+inline
+BasisList
+CoerceSymmetryList(BasisList const& b, SymmetryList const& sl)
+{
+   BasisList Result;
+   Result.S_ = sl;
+   Result.Q_ = CoerceSymmetryList(b.Q_, sl);
+   return Result;
+}
+
+//BasisList RenameSymmetry(BasisList const& BL, SymmetryList const& NewSL);
 
 inline
 std::set<QuantumNumbers::QuantumNumber> 
@@ -148,7 +164,7 @@ LinearizeQuantumNumberSubspace(BasisList const& b, QuantumNumbers::QuantumNumber
 
 // Apply a shift operator to the basis.  This will fail if any of the shifts
 // are not possible (eg, if it shifts beyond the highest weight rep)
-BasisList DeltaShift(BasisList const& Orig, QuantumNumbers::Projection const& p);
+BasisList delta_shift(BasisList const& Orig, QuantumNumbers::Projection const& p);
 
 //
 // VectorBasis
@@ -212,8 +228,12 @@ class VectorBasis
       BasisList const& Basis() const { return Basis_; }
       BasisList& Basis() { return Basis_; }
 
+      void CoerceSymmetryList(SymmetryList const& SL);
+
       // implicit conversion to BasisList **OUCH** why is this here?
       operator BasisList const&() const { return Basis_; }
+
+      void delta_shift(QuantumNumber const& q);
 
  private:
       VectorBasis(BasisList const& b, LinearAlgebra::Vector<int> const& dim)
@@ -230,12 +250,14 @@ class VectorBasis
    friend bool operator!=(VectorBasis const& x, VectorBasis const& y)
       { return !operator==(x,y); }
 
-   friend void CoerceSymmetryList(VectorBasis& b, SymmetryList const& sl);
+   friend VectorBasis CoerceSymmetryList(VectorBasis const& b, SymmetryList const& sl)
+   __attribute__((warn_unused_result));
 
-   friend VectorBasis DeltaShift(VectorBasis const& Orig, 
+
+   friend VectorBasis delta_shift(VectorBasis const& Orig, 
 				 QuantumNumbers::Projection const& p);
 
-   friend VectorBasis DeltaShift(VectorBasis const& Orig, 
+   friend VectorBasis delta_shift(VectorBasis const& Orig, 
 				 QuantumNumbers::QuantumNumber const& q);
 
    friend VectorBasis RenameSymmetry(VectorBasis const& BL, SymmetryList const& NewSL);
@@ -245,9 +267,9 @@ class VectorBasis
 
 inline
 void
-CoerceSymmetryList(VectorBasis& b, SymmetryList const& sl)
+VectorBasis::CoerceSymmetryList(SymmetryList const& sl)
 {
-   CoerceSymmetryList(b.Basis_, sl);
+   Basis_.CoerceSymmetryList(sl);
 }
 
 std::ostream& operator<<(std::ostream& out, VectorBasis const& B);
@@ -267,17 +289,26 @@ VectorBasis RenameSymmetry(VectorBasis const& BL, SymmetryList const& NewSL);
 
 // Apply a shift operator to the basis.  This will fail if any of the shifts
 // are not possible (eg, if it shifts beyond the highest weight rep)
-VectorBasis DeltaShift(VectorBasis const& Orig, QuantumNumbers::Projection const& p);
+VectorBasis delta_shift(VectorBasis const& Orig, QuantumNumbers::Projection const& p);
 
+#if 0
 // Apply a shift operation, where q is a degree 1 rep
 inline
 VectorBasis 
-DeltaShift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
+delta_shift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
 {
    QuantumNumbers::ProjectionList PL = enumerate_projections(q);
    DEBUG_PRECONDITION_EQUAL(PL.size(), 1);
-   return DeltaShift(Orig, PL[0]);
+   return delta_shift(Orig, PL[0]);
 }
+
+inline
+VectorBasis 
+delta_shift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
+{
+   return delta_shift(Orig, q);
+}
+#endif
 
 //
 // make_zero

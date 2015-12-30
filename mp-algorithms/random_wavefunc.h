@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 //
 // This defines the class WavefunctionDesc, which is a bit mis-named:
 // it defines a configuration of local basis states.
@@ -7,16 +7,10 @@
 // a particular symmetry sector.  This is done with the
 // CreateRandomWavefunction() function.
 
-#if !defined(RANDOM_WAVEUNC_H_SJDHFUIWEY4829Y89Y)
-#define RANDOM_WAVEUNC_H_SJDHFUIWEY4829Y89Y
+#if !defined(MPTOOLKIT_MP_ALGORITHMS_RANDOM_WAVEUNC_H)
+#define MPTOOLKIT_MP_ALGORITHMS_RANDOM_WAVEUNC_H
 
-#if 0
-#include "matrixproduct/mpwavefunction.h"
-#include "matrixproduct/lattice.h"
-#include "matrixproduct/mpoperatorlist.h"
-#endif
-
-#include "mps/linearwavefunction.h"
+#include "wavefunction/linearwavefunction.h"
 #include "quantumnumbers/all_symmetries.h"
 
 struct WavefunctionDesc

@@ -1,6 +1,6 @@
 // -*- C++ -*- $Id$
 
-#include "mps/infinitewavefunction.h"
+#include "wavefunction/mpwavefunction.h"
 #include "lattice/latticesite.h"
 #include "common/environment.h"
 #include "common/terminal.h"
@@ -11,7 +11,7 @@
 #include "interface/inittemp.h"
 #include "tensor/tensor_eigen.h"
 #include "lattice/unitcell-parser.h"
-#include "mps/operator_actions.h"
+#include "wavefunction/operator_actions.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -40,12 +40,12 @@ Display(std::complex<double> x, int s1, int s2, bool ShowReal, bool ShowImag)
 // inject_left for a FiniteMPO.  This can have support on multiple wavefunction unit cells
 MatrixOperator
 inject_left(MatrixOperator const& m, 
-            LinearWavefunction const& Psi1,
-	    QuantumNumbers::QuantumNumber const& QShift,
+            InfiniteWavefunctionLeft const& Psi1,
             FiniteMPO const& Op, 
-            LinearWavefunction const& Psi2)
+            InfiniteWavefunctionLeft const& Psi2)
 {
    CHECK_EQUAL(Psi1.size(), Psi2.size());
+   CHECK_EQUAL(Psi1.qshift(), Psi2.qshift());
    DEBUG_CHECK_EQUAL(m.Basis1(), Psi1.Basis1());
    DEBUG_CHECK_EQUAL(m.Basis2(), Psi2.Basis1());
    if (Op.is_null())
@@ -59,8 +59,8 @@ inject_left(MatrixOperator const& m,
    StateComponent E(Op.Basis1(), m.Basis1(), m.Basis2());
    E[0] = m;
    E.debug_check_structure();
-   LinearWavefunction::const_iterator I1 = Psi1.begin();
-   LinearWavefunction::const_iterator I2 = Psi2.begin();
+   InfiniteWavefunctionLeft::const_mps_iterator I1 = Psi1.begin();
+   InfiniteWavefunctionLeft::const_mps_iterator I2 = Psi2.begin();
    FiniteMPO::const_iterator OpIter = Op.begin();
    while (OpIter != Op.end())
    {
@@ -68,12 +68,12 @@ inject_left(MatrixOperator const& m,
       {
 	 I1 = Psi1.begin();
 	 I2 = Psi2.begin();
-	 E = delta_shift(E, QShift);
+	 E = delta_shift(E, Psi1.qshift());
       }
       E = contract_from_left(*OpIter, herm(*I1), E, *I2);
       ++I1; ++I2; ++OpIter;
    }
-   return delta_shift(E[0], QShift);
+   return delta_shift(E[0], Psi1.qshift());
 }
 
 int main(int argc, char** argv)
@@ -132,7 +132,15 @@ int main(int argc, char** argv)
          ShowReal = ShowImag = true;
 
       mp_pheap::InitializeTempPHeap();
-      pvalue_ptr<InfiniteWavefunction> Psi = pheap::ImportHeap(PsiStr);
+      pvalue_ptr<MPWavefunction> PsiPtr = pheap::ImportHeap(PsiStr);
+
+      if (!PsiPtr->is<InfiniteWavefunctionLeft>())
+      {
+	 std::cerr << "fatal: wavefunction is not an iMPS!\n";
+	 exit(1);
+      }
+
+      InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
 
       UnitCellMPO Op;
       InfiniteLattice Lattice;
@@ -160,24 +168,17 @@ int main(int argc, char** argv)
       // Check that Op is bosonic, otherwise it is not defined
       CHECK(Op.Commute() == LatticeCommute::Bosonic)("Cannot evaluate non-bosonic operator")(Op.Commute());
 
-      LinearWavefunction PsiOrtho = get_orthogonal_wavefunction(*Psi);
-      MatrixOperator Rho = scalar_prod(Psi->C_right, herm(Psi->C_right));
-      MatrixOperator Identity = MatrixOperator::make_identity(PsiOrtho.Basis1());
-      QuantumNumber QShift = Psi->shift();
-
-      // paranoid check the orthogonalization of the wavefunction
-      //DEBUG_CHECK(norm_frob(delta_shift(inject_left(Identity, PsiOrtho, PsiOrtho), QShift) - Identity) < 1E-10)
-      //	 (delta_shift(inject_left(Identity, PsiOrtho, PsiOrtho), QShift))(Identity)(norm_frob(delta_shift(inject_left(Identity, PsiOrtho, PsiOrtho), QShift) - Identity));
-	 //DEBUG_CHECK(norm_frob(inject_right(Rho, PsiOrtho, PsiOrtho) - delta_shift(Rho, QShift)) < 1E-10);
-
       // extend Op1 to a multiple of the wavefunction size
-      Op.ExtendToCoverUnitCell(PsiOrtho.size());
+      Op.ExtendToCoverUnitCell(Psi.size());
 
       // now calculate the actual expectation value
-      MatrixOperator X = Identity;
-      X = inject_left(X, PsiOrtho, QShift, Op.MPO(), PsiOrtho);
+      MatrixOperator X = MatrixOperator::make_identity(Psi.Basis1());
+      X = inject_left(X, Psi, Op.MPO(), Psi);
 
-      std::complex<double> x = inner_prod(delta_shift(Rho, QShift), X);
+      MatrixOperator Rho = Psi.lambda_r();
+      Rho = Rho*Rho;
+      
+      std::complex<double> x = inner_prod(delta_shift(Rho, Psi.qshift()), X);
 
       if (ShowReal)
 	 std::cout << x.real() << "   ";
@@ -187,6 +188,11 @@ int main(int argc, char** argv)
 
       pheap::Shutdown();
 
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

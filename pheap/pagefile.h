@@ -47,7 +47,7 @@ class PageFile
       PageFile();
 
       // pseudo-constructor, creates a new PageFile, overwrites the old filename if it exists.
-      void create(size_t PageSize, std::string const& FileName, bool Unlink = false);
+      void create(size_t PageSize, std::string const& FileName, bool Unlink = false, bool AllowOverwrite = true);
 
       // pseudo-constructor, reopens an existing page file, returns the saved 'UserData' 
       // parameter from persistent_shutdown(int UserData).
@@ -60,6 +60,9 @@ class PageFile
       void persistent_shutdown(uint64 UserData);
 
       std::string const& name() const;
+
+      // returns the version number of the page file.
+      int version() const;
 
       // writes a buffer that is not currently on disk.  At this time,
       // a LocalPage is allocated to the PageInfo, and PageInfo->PF is set to this.

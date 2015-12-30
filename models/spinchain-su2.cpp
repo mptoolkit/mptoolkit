@@ -50,7 +50,7 @@ int main(int argc, char** argv)
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
 	 std::cerr << "Operators:\n" << OpDescriptions;
-	 std::cerr << "only for spin-1: H_AKLT  - AKLT Hamiltonian H+J1 + (1/3)*H_B1\n";
+	 std::cerr << "only for spin-1: H_AKLT  - AKLT Hamiltonian H_J1 + (1/3)*H_B1\n";
          return 1;
       }
 

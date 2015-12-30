@@ -28,6 +28,8 @@ typedef std::ptrdiff_t difference_type;
 // value_type, which is the (concrete) value_type that it contains.
 //
 
+// AnyScalar: catch-all for the interface of a type that is not
+// known to the LinearAlgebra library, so we regard it as a scalar
 template <typename T> struct AnyScalar;
 
 template <typename T, typename Enable = void>
@@ -57,8 +59,12 @@ struct interface<T&> : interface<T> {};
 //
 
 template <typename T, typename TInterface = typename interface<T>::type>
-struct make_value_from_interface
+struct make_value_from_interface {};
+
+template <typename T, typename U>
+struct make_value_from_interface<T, AnyScalar<U>>
 {
+   typedef T type;  // or U?
 };
 
 template <typename T>
@@ -102,6 +108,8 @@ struct IsZero;
 // For example, 
 // typename result_value<Negate<T> >::type x = negate(y);
 // We cannot use Negate<T>::result_type directly here, as it may be a proxy.
+// This is effectively a replacement for
+// decltype(negate(x)), since we cannot use decltype with expression templates.
 //
 
 template <typename T>
@@ -225,6 +233,33 @@ struct RebindInterface
 {
    typedef void type;
 };
+
+//
+// abstract_interface
+// This is used by matrix and vector expressions to get a type of the final
+// expression (eg for use as a temporary)
+//
+
+// abstract_interface_interface gets the abstract interface from the 'real'
+// interface.
+// The easiest way to define it is to declare nested typedef 
+// T::abstract_type.  Otherwise, specialize vector_abstract_of_expression itself.
+
+template <typename T, typename TInterface = typename interface<T>::type>
+struct abstract_interface_interface
+{
+   typedef typename T::abstract_interface type;
+};
+
+template <typename T>
+struct abstract_interface : abstract_interface_interface<T, typename interface<T>::type> {};
+
+// For convenience, strip const references (since this is often called on proxy types)
+template <typename T>
+struct abstract_interface<T&> : abstract_interface<T> {};
+
+template <typename T>
+struct abstract_interface<T const> : abstract_interface<T> {};
 
 //
 // implies

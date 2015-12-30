@@ -36,7 +36,7 @@ template <
     typename T, 
     typename Basis1T = BasisList, 
     typename Basis2T = Basis1T, 
-    typename Structure = LinearAlgebra::SparseMatrix<T> >
+    typename Structure = DefaultStructure>
 class ReducibleTensor;
 
 template <typename T, typename B1, typename B2, typename S>
@@ -358,15 +358,14 @@ struct Negate<Tensor::ReducibleTensor<T, B1, B2, S> >
    }
 };
 
-template <typename T1, typename T2, typename B1, typename B2, typename S1, typename S2>
-struct Addition<Tensor::ReducibleTensor<T1, B1, B2, S1>, 
-                Tensor::ReducibleTensor<T2, B1, B2, S2> >
+template <typename T1, typename T2, typename B1, typename B2, typename S>
+struct Addition<Tensor::ReducibleTensor<T1, B1, B2, S>, 
+                Tensor::ReducibleTensor<T2, B1, B2, S> >
 {
-   typedef Tensor::ReducibleTensor<T1, B1, B2, S1> const& first_argument_type;
-   typedef Tensor::ReducibleTensor<T2, B1, B2, S2> const& second_argument_type;
-   typedef typename result_value<Addition<S1, S2> >::type ResultS;
-   typedef Tensor::ReducibleTensor<typename value_type<ResultS>::type, 
-                               B1, B2, ResultS> result_type;
+   typedef Tensor::ReducibleTensor<T1, B1, B2, S> const& first_argument_type;
+   typedef Tensor::ReducibleTensor<T2, B1, B2, S> const& second_argument_type;
+   typedef typename result_value<Addition<T1, T2> >::type ResultValue;
+   typedef Tensor::ReducibleTensor<ResultValue, B1, B2, S> result_type;
 
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
@@ -389,15 +388,14 @@ struct Addition<Tensor::ReducibleTensor<T1, B1, B2, S1>,
    }
 };
 
-template <typename T1, typename T2, typename B1, typename B2, typename S1, typename S2>
-struct Subtraction<Tensor::ReducibleTensor<T1, B1, B2, S1>, 
-                   Tensor::ReducibleTensor<T2, B1, B2, S2> >
+template <typename T1, typename T2, typename B1, typename B2, typename S>
+struct Subtraction<Tensor::ReducibleTensor<T1, B1, B2, S>, 
+                   Tensor::ReducibleTensor<T2, B1, B2, S> >
 {
-   typedef Tensor::ReducibleTensor<T1, B1, B2, S1> const& first_argument_type;
-   typedef Tensor::ReducibleTensor<T2, B1, B2, S2> const& second_argument_type;
-   typedef typename result_value<Addition<S1, S2> >::type ResultS;
-   typedef Tensor::ReducibleTensor<typename value_type<ResultS>::type, 
-                               B1, B2, ResultS> result_type;
+   typedef Tensor::ReducibleTensor<T1, B1, B2, S> const& first_argument_type;
+   typedef Tensor::ReducibleTensor<T2, B1, B2, S> const& second_argument_type;
+   typedef typename result_value<Subtraction<T1, T2> >::type ResultValue;
+   typedef Tensor::ReducibleTensor<ResultValue, B1, B2, S> result_type;
 
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
@@ -427,9 +425,8 @@ struct Multiplication<U, Tensor::ReducibleTensor<T, B1, B2, S> >
 {
    typedef U first_argument_type;
    typedef Tensor::ReducibleTensor<T, B1, B2, S> const& second_argument_type;
-   typedef typename result_value<Multiplication<U, S> >::type ResultS;
-   typedef Tensor::ReducibleTensor<typename value_type<ResultS>::type, 
-                               B1, B2, ResultS> result_type;
+   typedef typename result_value<Multiplication<U, T> >::type ResultValue;
+   typedef Tensor::ReducibleTensor<ResultValue, B1, B2, S> result_type;
 
    result_type operator()(first_argument_type n, second_argument_type x) const
    {
@@ -447,9 +444,8 @@ struct Multiplication<Tensor::ReducibleTensor<T, B1, B2, S>, U>
 {
    typedef Tensor::ReducibleTensor<T, B1, B2, S> const& first_argument_type; 
   typedef U second_argument_type;
-   typedef typename result_value<Multiplication<S, U> >::type ResultS;
-   typedef Tensor::ReducibleTensor<typename value_type<ResultS>::type, 
-                               B1, B2, ResultS> result_type;
+   typedef typename result_value<Multiplication<T, U> >::type ResultValue;
+   typedef Tensor::ReducibleTensor<ResultValue, B1, B2, S> result_type;
 
    result_type operator()(first_argument_type x, second_argument_type n) const
    {
@@ -467,9 +463,8 @@ struct Transform<Tensor::ReducibleTensor<T, B1, B2, S>, Func>
 {
    typedef Tensor::ReducibleTensor<T, B1, B2, S> const& first_argument_type;
    typedef Func second_argument_type;
-   typedef typename result_value<Transform<S, Func> >::type ResultS;
-   typedef Tensor::ReducibleTensor<typename value_type<ResultS>::type, 
-                                   B1, B2, ResultS> result_type;
+   typedef typename result_value<Transform<T, Func> >::type ResultValue;
+   typedef Tensor::ReducibleTensor<ResultValue, B1, B2, S> result_type;
 
    result_type operator()(first_argument_type x, second_argument_type f) const
    {
@@ -506,12 +501,15 @@ struct Conj<Tensor::ReducibleTensor<T, B1, B2, S> >
 // hermitian conjugation
   
 template <typename T, typename B, typename B2, typename S>
-inline
-HermitianProxy<Tensor::ReducibleTensor<T, B, B2, S> >
-herm(Tensor::ReducibleTensor<T, B, B2, S> const& x)
+struct Herm<Tensor::ReducibleTensor<T, B, B2, S>>
 {
-   return HermitianProxy<Tensor::ReducibleTensor<T, B, B2, S> >(x);
-}
+   using argument_type = Tensor::ReducibleTensor<T, B, B2, S>;
+   using result_type = HermitianProxy<Tensor::ReducibleTensor<T, B, B2, S>>;
+   result_type operator()(Tensor::ReducibleTensor<T, B, B2, S> const& x)
+   {
+      return HermitianProxy<Tensor::ReducibleTensor<T, B, B2, S> >(x);
+   }
+};
 
 // flip conjugation
 
@@ -523,7 +521,7 @@ struct TensorFlipConjugate<Tensor::ReducibleTensor<T, B1, B2, S>, F>
 {
    TensorFlipConjugate(F f = F()) : f_(f) {}
 
-   typedef Tensor::ReducibleTensor<typename result_value<F>::type::value_type, B2, B1> result_type;
+   typedef Tensor::ReducibleTensor<T, B1, B2, S> result_type;
    typedef Tensor::ReducibleTensor<T, B1, B2, S> const& argument_type;
 
    result_type operator()(Tensor::ReducibleTensor<T, B1, B2, S> const& x) const

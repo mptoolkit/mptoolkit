@@ -1,11 +1,15 @@
 // -*- C++ -*- $Id$
 
-#if !defined(COPYRIGHT_H_HCKJEWHFIUEWHIUGFIL)
-#define COPYRIGHT_H_HCKJEWHFIUEWHIUGFIL
+#if !defined(MPTOOLKIT_MP_COPYRIGHT_H)
+#define MPTOOLKIT_MP_COPYRIGHT_H
 
+#if !defined(HAVE_CONFIG_H)
+#error "need config.h to proceed!"
+#endif
+
+#include "config.h"
 #include <iostream>
 #include <iomanip>
-#include "config.h"
 #include <boost/version.hpp>
 #include <boost/algorithm/string.hpp>
 #include <time.h>
@@ -18,6 +22,8 @@
 
 #if defined(SVN_VERSION)
 #define VERSION_ PACKAGE_VERSION " (subversion tree rev " AS_STRING(SVN_VERSION) ")"
+#elif defined(GIT_VERSION)
+#define VERSION_ PACKAGE_VERSION " (git version " AS_STRING(GIT_VERSION) ")"
 #else
 #define VERSION_ PACKAGE_VERSION
 #endif
@@ -32,6 +38,7 @@ inline void print_copyright(std::ostream& out)
 {
    out << "Matrix Product Toolkit version " VERSION "\n"
       "Compiled on " __DATE__ " at " __TIME__ "\n"
+      "Configured using compiler " CONFIG_COMPILER_VENDOR " " CONFIG_COMPILER_VERSION "\n"
       "Using Boost version " << (BOOST_VERSION / 100000) 
        << "." << (BOOST_VERSION / 100 % 1000)
        << "." << (BOOST_VERSION % 100) << "\n"
@@ -67,6 +74,15 @@ EscapeArgument(std::string const& s)
    }
    else
       return s;
+}
+
+inline
+std::string EscapeCommandline(int argc, char** argv)
+{
+   std::string s = EscapeArgument(argv[0]);
+   for (int i = 1; i < argc; ++i)
+      s = s + ' ' + EscapeArgument(argv[i]);
+   return s;
 }
 
 // Print a useful preamble, consisting of the

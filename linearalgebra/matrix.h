@@ -168,7 +168,7 @@ class MatrixRef : public MatrixBase<typename MatrixRefDerivedType<Scalar, Orient
 template <typename Scalar, typename Orientation>
 struct interface<MatrixRef<Scalar, Orientation> >
 {
-   typedef CONTIGUOUS_MATRIX(Scalar, Orientation, void) type;
+   typedef Concepts::ContiguousMatrix<Scalar, Orientation, void> type;
    typedef Scalar value_type;
 };
 
@@ -245,9 +245,8 @@ class Matrix : public MatrixRef<Scalar, Orientation, Matrix<Scalar, Orientation>
 template <typename Scalar, typename Orientation>
 struct interface<Matrix<Scalar, Orientation> >
 {
-   //   typedef CONTIGUOUS_MATRIX(Scalar, Orientation, TEMPLATE2(Matrix<Scalar, Orientation>)) type;
-   typedef CONTIGUOUS_MATRIX(Scalar, Orientation, void) type;
-   typedef Scalar value_type;
+   using type = Concepts::ContiguousMatrix<Scalar, Orientation, void>;
+   using value_type = Scalar;
 };
 
 // iterators

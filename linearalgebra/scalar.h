@@ -226,7 +226,7 @@ template <typename T>
 struct ScalarRef<T, AnyScalar<T> > : IdentityRef<T> { };
 
 template <typename T, typename S>
-struct ZeroAll<T&, AnyScalar<S> >
+struct ZeroAllInterface<T&, AnyScalar<S> >
 {
    typedef void result_type;
    typedef T& argument_type;
@@ -282,8 +282,8 @@ struct TransformInterface<T&, F, AnyScalar<S> >
    typedef T& first_argument_type;
    typedef F second_argument_type;
    typedef typename F::result_type result_type;
-   result_type operator()(T x, F const& f) const { return f(x); }
-   result_type operator()(T x) const { return F()(x); }
+   result_type operator()(T& x, F const& f) const { return f(x); }
+   result_type operator()(T& x) const { return F()(x); }
 };
 
 template <typename S, typename T>

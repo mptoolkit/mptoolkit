@@ -162,14 +162,24 @@ class pvalue_handle
 
       explicit pvalue_handle(pheap::id_type ID);
 
+      // removed the templated conversion constructors, because they don't work:
+      // to copy a handle from one type to another, we need to stream it in,
+      // make a deep copy and construct the handle from that.  eg,
+      // handle2 = new T(*handle1.lock())
+#if 0
       template <class U> pvalue_handle(const pvalue_handle<U>& r);
       template <class U> pvalue_handle(const pvalue_ptr<U>& r);
+#endif
+
+      pvalue_handle(pvalue_ptr<T> const& r);
 
       ~pvalue_handle();
 
       pvalue_handle<T>& operator=(const pvalue_handle<T>& r);
 
+#if 0
       template <class U> pvalue_handle<T>& operator=(const pvalue_handle<U>& r);
+#endif
 
       bool operator==(const pvalue_handle<T>& r) const { return Handle == r.Handle; }
       bool operator!=(const pvalue_handle<T>& r) const { return Handle != r.Handle; }

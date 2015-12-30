@@ -1,6 +1,6 @@
 // -*- C++ -*- $Id$
 
-#include "mps/infinitewavefunction.h"
+#include "wavefunction/mpwavefunction.h"
 #include "mp/copyright.h"
 #include <boost/program_options.hpp>
 #include "common/environment.h"
@@ -9,7 +9,7 @@
 #include "common/environment.h"
 #include "common/prog_options.h"
 #include "lattice/unitcell.h"
-#include "lattice/product-parser.h"
+#include "lattice/infinite-parser.h"
 #include "common/statistics.h"
 
 namespace prog_opt = boost::program_options;
@@ -64,29 +64,12 @@ void PrintFormat(TransEigenInfo const& x, bool ShowRealPart, bool ShowImagPart,
 }
 
 
-InfiniteWavefunction conj(InfiniteWavefunction const& Psi)
-{
-   InfiniteWavefunction Ret;
-   Ret.C_old = conj(Psi.C_old);
-   Ret.C_right = conj(Psi.C_right); 
-   Ret.Attr = Psi.Attr;
-   Ret.QShift = Psi.QShift;
-   Ret.Psi = LinearWavefunction(Psi.Psi.GetSymmetryList());
-   for (LinearWavefunction::const_iterator I = Psi.Psi.begin();
-        I != Psi.Psi.end(); ++I)
-   {
-      Ret.Psi.push_back(conj(*I));
-   }
-
-   return Ret;
-}
-
 int main(int argc, char** argv)
 {
    try
    {
       int Verbose = 0;
-      bool NoTempFile = false;
+      bool UseTempFile = false;
       bool ShowRealPart = false, ShowImagPart = false, ShowMagnitude = false;
       bool ShowCartesian = false, ShowPolar = false, ShowArgument = false;
       bool ShowRadians = false, ShowCorrLength = false;
@@ -124,9 +107,8 @@ int main(int argc, char** argv)
 	  "display the equivalent correlation length")
 	 ("unitcell,u", prog_opt::value(&UnitCellSize),
 	  "scale the results to use this unit cell size [default wavefunction unit cell]")
-         ("notempfile", prog_opt::bool_switch(&NoTempFile),
-          "don't use a temporary data file, keep everything in RAM "
-          "(faster, but needs enough RAM)")
+         ("tempfile", prog_opt::bool_switch(&UseTempFile),
+          "a temporary data file for workspace (path set by environment MP_BINPATH)")
          ("rotate", prog_opt::value(&Rotate),
           "rotate the unit cell of psi2 this many sites to the left before calculating the overlap [default 0]")
          ("reflect", prog_opt::bool_switch(&Reflect),
@@ -206,27 +188,35 @@ int main(int argc, char** argv)
       if (Verbose)
          std::cout << "Loading LHS wavefunction...\n";
 
-      pvalue_ptr<InfiniteWavefunction> Psi1;
-      if (NoTempFile)
-         Psi1 = pheap::OpenPersistent(LhsStr, mp_pheap::CacheSize(), true);
-      else
+      pvalue_ptr<MPWavefunction> Psi1Ptr;
+      if (UseTempFile)
       {
          mp_pheap::InitializeTempPHeap(Verbose);
-         Psi1 = pheap::ImportHeap(LhsStr);
+         Psi1Ptr = pheap::ImportHeap(LhsStr);
       }
+      else
+      {
+         Psi1Ptr = pheap::OpenPersistent(LhsStr, mp_pheap::CacheSize(), true);
+      }
+      InfiniteWavefunctionLeft Psi1 = Psi1Ptr->get<InfiniteWavefunctionLeft>();
 
       if (Verbose)
          std::cout << "Loading RHS wavefunction...\n";
 
-      pvalue_ptr<InfiniteWavefunction> Psi2 = RhsStr.empty() ? Psi1 :
-         pheap::ImportHeap(RhsStr);
+      InfiniteWavefunctionLeft Psi2;
+      if (RhsStr.empty())
+	 Psi2 = Psi1;
+      else
+      {
+	 pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::ImportHeap(RhsStr);
+	 Psi2 = Psi2Ptr->get<InfiniteWavefunctionLeft>();
+      }
 
       if (Verbose)
          std::cout << "Calculating overlap...\n";
 
       // Rotate as necessary.  Do this BEFORE determining the quantum number sectors!
-      if (Rotate > 0)
-         *Psi2.mutate() = rotate_left(*Psi2, Rotate);
+      Psi2.rotate_left(Rotate);
 
       UnitCell Cell;
       LatticeSite Site;
@@ -235,34 +225,18 @@ int main(int argc, char** argv)
       {
          if (Verbose)
             std::cout << "Reflecting psi2..." << std::endl;
-	 *Psi2.mutate() = reflect(*Psi2);
+	 inplace_reflect(Psi2);
       }
 
       if (Conj)
       {
          if (Verbose)
             std::cout << "Conjugating psi2..." << std::endl;
-         *Psi2.mutate() = conj(*Psi2);
+	 inplace_conj(Psi2);
       }
 
-      // If the wavefunctions don't match in size, then increase them to the lowest common multiple
-      if (Psi1->Psi.size() != Psi2->Psi.size())
-      {
-	 int Size = statistics::lcm(Psi1->Psi.size(), Psi2->Psi.size());
-	 if (Verbose)
-	 {
-	    std::cerr << "Wavefunction unit cells differ, extending wavefunctions to size " << Size << '\n';
-	 }
-	 *Psi1.mutate() = repeat(*Psi1, Size/Psi1->size());
-	 *Psi2.mutate() = repeat(*Psi2, Size/Psi2->size());
-	 DEBUG_CHECK_EQUAL(Psi1->size(), Psi2->size());
-      }
+      int Size = statistics::lcm(Psi1.size(), Psi2.size());
 
-      // The default UnitCellSize for output is the wavefunction size
-      if (UnitCellSize == 0)
-	 UnitCellSize = Psi1->Psi.size();
-      double ScaleFactor = double(UnitCellSize) / double(Psi1->Psi.size());
-	 
       ProductMPO StringOp;
       if (vm.count("string"))
       {
@@ -272,15 +246,27 @@ int main(int argc, char** argv)
 	 {
 	    std::cout << "String MPO is:\n" << StringOp << '\n';
 	 }
-	 CHECK(Psi1->size() % StringOp.size() == 0)
-	    ("Wavefunction size must be a multiple of the string operator size")
-	    (Psi1->size())(StringOp.size());
-	 StringOp = repeat(StringOp, Psi1->size() / StringOp.size());
       }
       else
       {
-         StringOp = ProductMPO::make_identity(ExtractLocalBasis(Psi2->Psi));
+         StringOp = ProductMPO::make_identity(ExtractLocalBasis(Psi2));
       }
+
+      Size = statistics::lcm(Size, StringOp.size());
+      StringOp = repeat(StringOp, Size / StringOp.size());
+
+      if (Verbose > 0 && Psi1.size() != Psi2.size())
+      {
+	 std::cerr << "Wavefunction unit cells differ, extending wavefunctions to size " << Size << '\n';
+      }
+
+      Psi1 = repeat(Psi1, Size/Psi1.size());
+      Psi2 = repeat(Psi2, Size/Psi2.size());
+      
+      // The default UnitCellSize for output is the wavefunction size
+      if (UnitCellSize == 0)
+	 UnitCellSize = Size;
+      double ScaleFactor = double(UnitCellSize) / double(Psi1.size());
 
       // get the list of quantum number sectors
       std::set<QuantumNumber> Sectors;
@@ -289,13 +275,13 @@ int main(int argc, char** argv)
       {
          for (std::vector<std::string>::const_iterator I = Sector.begin(); I != Sector.end(); ++I)
          {
-            Sectors.insert(QuantumNumber(Psi1->Psi.GetSymmetryList(),*I));
+            Sectors.insert(QuantumNumber(Psi1.GetSymmetryList(),*I));
          }
       }
       else
       {
-         BasisList B1 = Psi1->Psi.Basis1().Basis();
-         BasisList B2 = Psi2->Psi.Basis1().Basis();
+         BasisList B1 = Psi1.Basis1().Basis();
+         BasisList B2 = Psi2.Basis1().Basis();
          for (unsigned i = 0; i < B1.size(); ++i)
          {
             for (unsigned j = 0; j < B2.size(); ++j)
@@ -312,6 +298,10 @@ int main(int argc, char** argv)
 	    std::cout << ' ' << argv[i];
 	 std::cout << "\n#quantities are calculated per unit cell size of " << UnitCellSize 
 		   << (UnitCellSize == 1 ? " site\n" : " sites\n");
+	 if (Size != UnitCellSize)
+	 {
+	    std::cout << "#actual size of wavefunction is " << Size << '\n';
+	 }
          std::cout << "#sector     ";
          if (ShowRealPart)
             std::cout << "#real                   ";
@@ -331,8 +321,8 @@ int main(int argc, char** argv)
       std::vector<TransEigenInfo> EigenList;
       for (std::set<QuantumNumber>::const_iterator I = Sectors.begin(); I != Sectors.end(); ++I)
       {
-	 //FiniteMPO StringOp = FiniteMPO::make_identity(ExtractLocalBasis(Psi2->Psi));
-         TransEigenInfo Info(*I, overlap(*Psi1, StringOp, *Psi2, *I, Iter, Tol, Verbose));
+	 //FiniteMPO StringOp = FiniteMPO::make_identity(ExtractLocalBasis(Psi2.Psi));
+         TransEigenInfo Info(*I, overlap(Psi1, StringOp, Psi2, *I, Iter, Tol, Verbose).first);
          if (Sort)
             EigenList.push_back(Info);
          else
@@ -353,6 +343,11 @@ int main(int argc, char** argv)
 
      pheap::Shutdown();
 
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

@@ -167,9 +167,7 @@ template <typename VecOfVec, typename Orientation>
 struct interface<CompressedMatrix<VecOfVec, Orientation> >
 {
    typedef typename CompressedMatrix<VecOfVec, Orientation>::value_type value_type;
-   typedef typename CompressedMatrix<VecOfVec, Orientation>::outer_interface Outer_;
-
-   typedef COMPRESSED_OUTER_MATRIX_V(value_type, Orientation, Outer_, void) type;
+   typedef Concepts::CompressedOuterMatrix<value_type, Orientation, void> type;
 };
 
 // iterators
@@ -428,11 +426,11 @@ struct SetMatrixElement<CompressedMatrix<VecOfVec, ColMajor>, Value>
 // zero_all
 
 template <typename VecOfVec, typename Orient>
-struct ZeroAll<CompressedMatrix<VecOfVec, Orient> >
+struct ZeroAll<CompressedMatrix<VecOfVec, Orient>&>
 {
-   static void apply( CompressedMatrix<VecOfVec, Orient>& m)
+   void operator()(CompressedMatrix<VecOfVec, Orient>& m) const
    {
-      return zero_all(m.vec());
+      zero_all(m.vec());
    }
 };
 

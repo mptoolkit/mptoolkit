@@ -84,10 +84,10 @@ DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalu
    out.precision(12);
    out << std::scientific;
    if (MaxEigenvalues < 0) MaxEigenvalues = EigenInfoList.size();
-   out << "Eigenvalue sum = " << this->EigenSum() << '\n';
-   out << "von Neumann Entropy " << (Base2 ? "(base 2)" : "(base e)") << " = " << this->Entropy() << '\n';
+   out << "#Eigenvalue sum = " << this->EigenSum() << '\n';
+   out << "#von Neumann Entropy " << (Base2 ? "(base 2)" : "(base e)") << " = " << this->Entropy() << '\n';
    if (MaxEigenvalues > 0)
-      out << "Number            Eigenvalue  Degeneracy                 Sigma                Energy   Quantum Number\n";
+      out << "#Number    #Eigenvalue         #Degen    #Sigma                #Energy             #QuantumNumber\n";
    int n = 0;
    double Sigma = 1.0;
    int TotalDegree = 0;
@@ -106,37 +106,24 @@ DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalu
       double EVal = Iter->Eigenvalue / this->EigenSum();
       double Energy = EVal > 0 ? ((-log(EVal) - EShift) / EScale) : 0.0;
 
-      if (ShowDegen)
-      {
-         for (int i = 0; i < Iter->Degree; ++i)
-         {
-            Sigma -= EVal;
-            TotalDegree += 1;
-            ++n;
-            out << std::right << std::setw(6) << n << "  " 
-                << std::right << std::setw(20) << Iter->Eigenvalue 
-                << "  " << std::setw(10) << 1
-                << "  " << std::setw(20) << Sigma
-                << "  " << std::setw(20) << Energy
-                << "   " << std::left 
-                << this->Lookup(Iter->Subspace) << '\n';
-         }
-      }
-      else
+      int OuterDegen = ShowDegen ? Iter->Degree : 1;
+      int DisplayDegen = ShowDegen ? 1 : Iter->Degree;
+
+      for (int i = 0; i < OuterDegen; ++i)
       {
          Sigma -= EVal * Iter->Degree;
          TotalDegree += Iter->Degree;
          ++n;
-         out << std::right << std::setw(6) << n << "  " 
+         out << std::right << std::setw(7) << n << "  " 
              << std::right << std::setw(20) << Iter->Eigenvalue 
-             << "  " << std::setw(10) << Iter->Degree
+             << "  " << std::setw(6) << DisplayDegen
              << "  " << std::setw(20) << Sigma
              << "  " << std::setw(20) << Energy
-             << "   " << std::left 
+             << "  " << std::left 
              << this->Lookup(Iter->Subspace) << '\n';
       }
    }
-   out << n << " out of " << (ShowDegen ? TotalDegree : EigenInfoList.size()) << " eigenvalues shown.  ";
+   out << '#' << n << " out of " << (ShowDegen ? TotalDegree : EigenInfoList.size()) << " eigenvalues shown.  ";
    out << "Total degree = " << TotalDegree << '\n';
    outstream << out.str();
    return outstream;

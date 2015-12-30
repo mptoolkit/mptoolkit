@@ -105,7 +105,8 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
   LinearAlgebra::Matrix<value_type> H(m+1, m+1, 0.0);
 
   double normb = norm_frob(Precondition(b));
-  Vector r = Precondition(b - MatVecMultiply(x));
+  Vector w = Precondition(MatVecMultiply(x));
+  Vector r = Precondition(b) - w; // - MatVecMultiply(x));
   double beta = norm_frob(r);
 
   // Initial guess for x:
@@ -136,18 +137,25 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
   TRACE(norm_frob(r));
 #endif
 
+  DEBUG_TRACE(normb);
   if (normb == 0.0)
     normb = 1;
   double resid = norm_frob(r) / normb;
-  DEBUG_TRACE(norm_frob(b))(norm_frob(MatVecMultiply(x)));
+  DEBUG_TRACE(norm_frob(b))(norm_frob(MatVecMultiply(x)))(beta);
   DEBUG_TRACE(resid)(norm_frob(b - MatVecMultiply(x)) / norm_frob(b));
-  if ((resid = norm_frob(r) / normb) <= tol) {
-    tol = resid;
-    max_iter = 0;
-    return 0;
-  }
 
-  Vector w;
+  DEBUG_TRACE(r)(norm_frob(w))(norm_frob(x));
+
+  if ((resid = norm_frob(r) / normb) <= tol || norm_frob(w) / norm_frob(x) <= tol) 
+  {
+     if (norm_frob(w) / norm_frob(x) <= tol)
+     {
+	std::cerr << "GMRES: early exit at norm_frob(w)/norm_frob(b) < tol\n";
+     }
+     tol = resid;
+     max_iter = 0;
+     return 0;
+  }
 
   Vector* v = new Vector[m+1];
 
@@ -221,6 +229,8 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
      r = Precondition(b - MatVecMultiply(x));
      beta = norm_frob(r);
 
+     DEBUG_TRACE(r)(beta);
+
      // use the old value of resid here, to avoid cases 
      // where the recalculation no longer satisfies the convergence criteria
      if (resid < tol) 
@@ -229,6 +239,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
         tol = UpdatedResid;
         max_iter = j;
         delete [] v;
+	DEBUG_TRACE(beta)(normb);
 	if (Verbose)
 	   std::cerr << "GMRES: finished, iter=" << (j-1) << ", approx resid=" << resid 
 		     << ", actual resid=" << UpdatedResid << std::endl;

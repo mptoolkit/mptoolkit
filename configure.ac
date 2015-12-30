@@ -1,26 +1,122 @@
-
+dnl -$- Autoconf -$-
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([Matrix Product Toolkit], [SVN-HEAD], [ianmcc@physics.uq.edu.au], 
+AC_INIT([Matrix Product Toolkit], [HEAD], [ianmcc@physics.uq.edu.au], 
         [mptoolkit], [http://physics.uq.edu.au/people/ianmcc/mptoolkit])
 
 AC_CONFIG_SRCDIR([common/trace.h])
 AC_CONFIG_HEADER(config.h)
-
+AC_CONFIG_MACRO_DIR([m4])
+m4_include([m4/macros.m4])
 AC_PREFIX_DEFAULT("$HOME")
 
-dnl Checks for programs.
+dnl debug flags -- needs to be called before any AC_PROG_* macros
+
+AX_CHECK_ENABLE_DEBUG(no, [CONFIG_DEBUG], [CONFIG_NODEBUG], no)
+
+dnl Checks for compilers
 AC_PROG_CXX
 dnl AC_PROG_F77
 AC_F77_LIBRARY_LDFLAGS
 
-# large file support
+dnl backup cxx flags, if nothing has been specified
+
+if test "x$CXXFLAGS" = "x" ; then
+   AC_MSG_NOTICE([Setting default CXXFLAGS])
+   CXXFLAGS="-O2"
+   AC_LANG_PUSH(C++)
+   AX_CHECK_COMPILE_FLAG("-march=native", [CXXFLAGS="${CXXFLAGS} -march=native"])
+   AX_CHECK_COMPILE_FLAG("-flto", [CXXFLAGS="${CXXFLAGS} -flto"])
+   AC_LANG_POP(C++)
+   AC_LANG_PUSH([Fortran 77])
+   AX_CHECK_COMPILE_FLAG("-flto", [FFLAGS="${FFLAGS} -flto"])
+   AC_LANG_POP([Fortran 77])
+   AC_MSG_NOTICE([CXXFLAGS are $CXXFLAGS])
+fi
+
+dnl put DNDEBUG on the command line, rather than in config.h
+if test "x$enable_debug" != "xyes" ; then
+   CFLAGS="${CFLAGS} -DNDEBUG"
+   CXXFLAGS="${CXXFLAGS} -DNDEBUG"
+fi
+
+dnl C++11 support
+AX_CXX_COMPILE_STDCXX_11(noext,mandatory)
+
+dnl we have C++11 as mandatory, but set it in config.h too
+AC_DEFINE(HAVE_CXX11,1, [define if the compiler supports basic C++11 syntax])
+AC_SUBST(HAVE_CXX11)
+
+dnl C++ compiler version and vendor information
+AC_LANG_PUSH(C++)
+AX_COMPILER_VENDOR
+AC_DEFINE_UNQUOTED([CONFIG_COMPILER_VENDOR], ["$ax_cv_cxx_compiler_vendor"], [C++ compiler vendor])
+AX_COMPILER_VERSION
+AC_DEFINE_UNQUOTED([CONFIG_COMPILER_VERSION], ["$ax_cv_cxx_compiler_version"], [C++ compiler version])
+AC_LANG_POP(C++)
+
+dnl large file support
 AC_SYS_LARGEFILE
+
+dnl openmp support, defines variable OPENMP_CXXFLAGS and sets HAVE_OPENMP
+AC_ARG_WITH([openmp], [AC_HELP_STRING([--with-openmp], [enable OpenMP parallelization @<:@default=check@:>@])],
+	[],
+	[with_open=check])
+if test "x$with_openmp" != xno; then
+   AC_LANG_PUSH(C++)
+   AX_OPENMP([AC_SUBST([OPENMP_CXXFLAGS]) AC_SUBST([HAVE_OPENMP], [1])], [AC_SUBST([HAVE_OPENMP], []) 
+                                        if test "x$with_openmp" = yes; then
+                     AC_MSG_FAILURE([--with-openmp was given, but the test for OpenMP failed!])
+                  fi
+                 ])
+   AC_LANG_POP(C++)
+fi
+
+dnl MPI support, if found sets HAVE_MPI and defines MPICXX and MPILIBS
+AC_ARG_WITH([mpi], [AC_HELP_STRING([--with-mpi], [enable MPI @<:@default=check@:>@])],
+	[],
+	[with_mpi=check])
+if test "x$with_mpi" != xno; then
+   AC_LANG_PUSH(C++)
+   AX_MPI([AC_SUBST([HAVE_MPI], [1])], [AC_SUBST([HAVE_MPI], []) if test "x$with_mpi" = yes; then
+                  AC_MSG_FAILURE([--with-mpi was given, but the test for MPI failed!])
+               fi
+              ])
+   AC_LANG_POP(C++)
+fi
 
 AC_ARG_WITH([pstream], AC_HELP_STRING([--without-pstream],[disables persistent streams support]))
 test x"$with_pstream" != xno && AC_DEFINE([USE_PSTREAM], [], [Define if you want persistent streams])
 
 dnl AC_CHECK_LIB(pthread, pthread_create)
+
+dnl PBS integration (eg for PBS walltime)
+AC_ARG_WITH([pbs], AC_HELP_STRING([--with-pbs@<:@=ARG@:>@],[PBS queue integration for checkpointing, libpbs from standard location (ARG=yes), from the specified location (ARG=<path>) or disable it (ARG=no) @<:@ARG=yes@:>@]),
+           [], [with_pbs=check])
+
+if test "x$with_pbs" != xno; then
+   AC_MSG_CHECKING([for PBS library])
+   pbs_lib="$with_pbs"
+   if test "x$pbs_lib" == xcheck; then
+      pbs_lib="-lpbs";
+   fi
+   save_LIBS="$LIBS"; LIBS="$pbs_lib $LIBS"
+   AC_MSG_CHECKING([for pbs_connect in "$pbs_lib"])
+   AC_TRY_LINK_FUNC([pbs_connect], 
+      [acx_pbs_ok=yes
+       AC_SUBST([LIBPBS], "$pbs_lib")
+       AC_DEFINE([CONFIG_PBS_WALLTIME], [], [Define if you want PBS walltime integration])
+      ], 
+      [
+       if test "x$with_pbs" != xcheck; then
+         AC_MSG_FAILURE([--with-pbs was given, but test for libpbs failed])
+       fi
+       LIBPBS=""
+       acx_pbs_ok=no
+      ])
+   AC_MSG_RESULT($acx_pbs_ok)
+   LIBS="$save_LIBS"
+fi
 
 dnl Checks for header files.
 AC_CHECK_HEADERS(fcntl.h unistd.h)
@@ -61,17 +157,17 @@ ACX_GMP([], [AC_MSG_ERROR(["GnuMP library not found; see http://gmplib.org, or s
 AC_CHECK_LIB(gmp, __gmpz_init, [], [AC_MSG_ERROR([Problem with GnuMP install])])
 
 dnl BLAS/LAPACK
-ACX_BLAS([], [AC_MSG_ERROR([BLAS library not found, aborting.])])
-ACX_LAPACK([], [AC_MSG_ERROR([LAPACK library not found, aborting.])])
+AX_BLAS([], [AC_MSG_ERROR([BLAS library not found, aborting.])])
+AX_LAPACK([], [AC_MSG_ERROR([LAPACK library not found, aborting.])])
 
-ACX_HAVE_BOOST
-if test  x"$acx_boost_incdir" == x; then
-  AC_MSG_ERROR([boost libraries not found, aborting.])
-fi
+AX_BOOST_BASE([1.35], [], [AC_MSG_ERROR([boost libraries not found, aborting.])])
+AX_BOOST_PROGRAM_OPTIONS
 
 ACX_ARPACK
 
-AX_BOOST_PROGRAM_OPTIONS
+if test "x$acx_arpack_ok" != "xyes"; then
+  AC_MSG_ERROR([ARPACK is required, but not configured or not found, aborting.])
+fi
 
 if test x"$BOOST_PROGRAM_OPTIONS_LIB" == x; then
   AC_MSG_ERROR([boost program options library not found, aborting.])
@@ -94,15 +190,6 @@ AC_C_BIGENDIAN
 dnl Checks for programs
 
 AC_PROG_INSTALL
-
-dnl ACX_SUBVERSION_VERSION
-if test x"${PACKAGE_VERSION:0:8}" == x"SVN-HEAD" ; then
- if (svnversion . > /dev/null 2>&1) ; then
-  CXXFLAGS="$CXXFLAGS -DSVN_VERSION=\"\`svnversion \$(SRCDIR)\`\""
- else
-  CXXFLAGS="$CXXFLAGS -DSVN_VERSION=unknown"
- fi
-fi
 
 dnl shared library configuration
 # Check for enable shared library build option

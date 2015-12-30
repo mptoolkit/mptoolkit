@@ -110,21 +110,22 @@ struct push_number_of_sites
 struct push_prod_unit
 {
    push_prod_unit(InfiniteLattice const& Lattice_,
-		 std::stack<ElementType>& eval_)
-      : Lattice(Lattice_), eval(eval_) {}
+		  std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
+      : Lattice(Lattice_), eval(eval_), Args(Args_) {}
    
    void operator()(char const* Start, char const* End) const
    {
       int Sites = pop_int(eval);
       int Cells = Sites / Lattice.GetUnitCell().size();
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
-      UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End));
+      UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End), Args);
       Op.ExtendToCoverUnitCell(Sites);
       eval.push(prod_unit_left_to_right(Op.MPO(), Sites));
    }
 
    InfiniteLattice const& Lattice;
    std::stack<ElementType>& eval;
+   Function::ArgumentList const& Args;
 };
 
 struct push_prod_unit_r
@@ -223,8 +224,8 @@ struct push_sum_k
 struct push_sum_kink
 {
    push_sum_kink(InfiniteLattice const& Lattice_,
-		 std::stack<ElementType>& eval_)
-      : Lattice(Lattice_), eval(eval_) {}
+		 std::stack<ElementType>& eval_,  Function::ArgumentList const& Args_)
+      : Lattice(Lattice_), eval(eval_), Args(Args_) {}
    
    void operator()(char const* Start, char const* End) const
    {
@@ -248,15 +249,16 @@ struct push_sum_kink
       }
 
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
-      UnitCellMPO Kink = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, Comma));
+      UnitCellMPO Kink = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, Comma), Args);
       ++Comma; // skip over the comma
-      UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Comma, End));
-      //Op.ExtendToCoverUnitCell(Sites);
+      UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Comma, End), Args);
+      Op.ExtendToCoverUnitCell(Sites);
       eval.push(sum_kink(Kink, Op, Sites));
    }
 
    InfiniteLattice const& Lattice;
    std::stack<ElementType>& eval;
+   Function::ArgumentList const& Args;
 };
 
 struct push_sum_string_inner
@@ -318,6 +320,7 @@ struct push_sum_string_inner
 
 using namespace ILP;
 
+
 struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 {
    typedef InfiniteMPOElement ElementType;
@@ -331,6 +334,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
    typedef std::stack<std::string>             IdentifierStackType;
    typedef std::stack<Function::ParameterList> ParameterStackType;
    typedef symbols<complex>                    ArgumentType;
+   typedef Function::ArgumentList              RawArgumentType;
 
    static constants                  constants_p;
    static unary_funcs<ElementType>  unary_funcs_p;
@@ -343,11 +347,12 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 		  FunctionStackType& Functions_,
 		  ParameterStackType& Parameters_,
 		  ArgumentType& Arguments_,
-		  InfiniteLattice const& Lattice_)
+			 InfiniteLattice const& Lattice_,
+			 RawArgumentType const& Args_)
       : eval(eval_), func_stack(func_stack_), bin_func_stack(bin_func_stack_),
       IdentifierStack(IdentifierStack_), FunctionStack(Functions_),
       ParameterStack(Parameters_), Arguments(Arguments_),
-	Lattice(Lattice_)
+	Lattice(Lattice_), Args(Args_)
    {}
    
    template <typename ScannerT>
@@ -406,7 +411,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 	 prod_unit_expression = str_p("prod_unit")
 	    >> '(' 
 	    >> num_cells
-	    >> expression_string[push_prod_unit(self.Lattice, self.eval)]
+	    >> expression_string[push_prod_unit(self.Lattice, self.eval, self.Args)]
 	    >> ')';
 
 	 prod_unit_r_expression = str_p("prod_unit_r")
@@ -426,7 +431,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 	 sum_kink_expression = str_p("sum_kink")
 	    >> '(' 
 	    >> num_cells
-	    >> expression_string[push_sum_kink(self.Lattice, self.eval)]
+	    >> expression_string[push_sum_kink(self.Lattice, self.eval, self.Args)]
 	    >> ')';
 	 
 	 sum_k_expression = str_p("sum_k")
@@ -547,6 +552,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
    ParameterStackType& ParameterStack;
    ArgumentType& Arguments;
    InfiniteLattice const& Lattice;
+   RawArgumentType const& Args;
 };
 
 // global variables (static members of InfiniteLatticeParser)
@@ -586,7 +592,7 @@ ParseInfiniteOperator(InfiniteLattice const& Lattice, std::string const& Str,
 
    InfiniteLatticeParser Parser(ElemStack, UnaryFuncStack, BinaryFuncStack, IdentStack, 
 				FunctionStack, ParamStack, 
-				Arguments, Lattice);
+				Arguments, Lattice, Args);
    try
    {
       parse_info<> info = parse(beg, Parser, space_p);

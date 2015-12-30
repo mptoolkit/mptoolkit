@@ -15,6 +15,7 @@
 #include "common/hash_map.h"
 #include "common/niftycounter.h"
 #include "pstream/pstream.h"
+#include "pheaperror.h"
 #include "pheapallocator.h"
 #include "pheapfsblock.h"
 #include "pheapstream.h"  // TODO: we shouldn't really need this, only for ::Write() function
@@ -232,7 +233,7 @@ std::pair<T*, PHeapObject*> GetObject(id_type ID)
 // Initializes the persistent heap
 void Initialize(std::string const& FileName, int NumFiles, 
                 size_t PageSize, size_t PageCacheByteSize,
-                bool Unlink = false);
+                bool Unlink = false, bool AllowOverwrite = false);
 
 // sets the format to use for persistent writing.  Defaults to PStream::format::Host
 void SetPHeapFormat(int f);
@@ -242,6 +243,13 @@ int PHeapFormat();
 
 // initializes the persistent heap from a given filesystem
 PHeapObject* OpenPersistent(std::string const& FileName, size_t PageCacheByteSize, bool ReadOnly = false);
+
+// only allow reading persisent files that have the specified page file metadata version.  Set to -1
+// to enable all possible versions
+void SetExpectedPageFileVersion(int v);
+
+// returns the expected page file version.  -1 indicates no prefered version.
+int ExpectedPageFileVersion();
 
 // returns the page size of the current heap, or zero if there is no heap yet established.
 size_t CurrentPageSize();

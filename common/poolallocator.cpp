@@ -130,14 +130,14 @@ bool WalkHeap(size_t UnitSize, bool Verbose = false, bool AssumeLeaked = true)
    // calculate how many total blocks exist of size unitSize
    int CountUsed = 0;
    void* Ptr = BlockRecHead[UnitSize];
-   if (Ptr && Verbose)
+   if (Ptr && Verbose > 0)
    {
       std::cerr << "Memory regions in use for block size " << UnitSize * PoolAlloc::MinAlign << '\n';
    }
    while (Ptr)
    {
       int ThisSize = *reinterpret_cast<size_t*>(static_cast<char*>(Ptr) + PoolAlloc::MinAlign);
-      if (Verbose) std::cerr << "  Block starting " << Ptr << ", " << ThisSize << " records, " 
+      if (Verbose > 0) std::cerr << "  Block starting " << Ptr << ", " << ThisSize << " records, " 
 		<< (ThisSize * UnitSize * PoolAlloc::MinAlign + PoolAlloc::MinAlign*2) << " bytes\n";
        CountUsed += ThisSize;
       Ptr = *static_cast<void**>(Ptr);

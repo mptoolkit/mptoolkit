@@ -576,14 +576,14 @@ PHeapObject* AddReference(id_type ID)
 }
 
 void Initialize(std::string const& FileName, int NumFiles, size_t PageSize, 
-		size_t PageCacheByteSize, bool Unlink)
+		size_t PageCacheByteSize, bool Unlink, bool AllowOverwrite)
 {
    pthread::mutex::sentry Lock(GlobalHeapMutex());
 
    PRECONDITION(FileSystem() == NULL);
    notify_log(30, PHeapLog) << "Initializing persistent storage.\n";
    FileSystem() = new PHeapFileSystem::BlockFileSystem();
-   FileSystem()->create(FileName, NumFiles, PageSize, PageCacheByteSize, Unlink);
+   FileSystem()->create(FileName, NumFiles, PageSize, PageCacheByteSize, Unlink, AllowOverwrite);
    notify_log(40, PHeapLog) << "Initial sequence number is " 
 			 << GlobalHeapDataType::Data->InitialSequenceNumber << '\n';
    // walk the pending flush list.
