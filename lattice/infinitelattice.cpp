@@ -252,8 +252,8 @@ SetComponents(OperatorComponent& C, OperatorComponent const& Op, int xStart, int
    {
       for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
       {
-	 CHECK_EQUAL(C.Basis1()[J.index1()+xStart], Op.Basis1()[J.index1()]);
-	 CHECK_EQUAL(C.Basis2()[J.index2()+yStart], Op.Basis2()[J.index2()]);
+	 CHECK_EQUAL(C.Basis1()[J.index1()+xStart], Op.Basis1()[J.index1()])(J.index1())(xStart);
+	 CHECK_EQUAL(C.Basis2()[J.index2()+yStart], Op.Basis2()[J.index2()])(J.index2())(yStart);
 	 C.data()(J.index1()+xStart, J.index2()+yStart) = *J;
       }
    }
@@ -520,14 +520,13 @@ TriangularMPO sum_string(SiteListType const& SiteList, FiniteMPO const& JW, Fini
    // If A and C are more then one unit cell, then set A = A1 * A2 * A3
    // C = C1 * C2 * C3
    // and the MPO is
-   // ( X  A0 0  0  0  0  0  0  )
-   // ( 0  0  A1 0  0  0  0  0  )
-   // ( 0  0  0  A2 0  0  0  0  )
-   // ( 0  0  0  B  C0 0  0  0  )
-   // ( 0  0  0  0  0  C1 0  0  )
-   // ( 0  0  0  0  0  0  C2 0  )
-   // ( 0  0  0  0  0  0  0  C3 )
-   // ( 0  0  0  0  0  0  0  I  )
+   // ( X  A1 0  0  0  0  0  )
+   // ( 0  0  A2 0  0  0  0  )
+   // ( 0  0  0  A3 0  0  0  )
+   // ( 0  0  0  B  C0 0  0  )
+   // ( 0  0  0  0  0  C1 0  )
+   // ( 0  0  0  0  0  0  C2 )
+   // ( 0  0  0  0  0  0  I  )
 
    // Suppose now that we have 6-site operators A,C with a 3-site unit cell.  
    // Let A = A0 A1 A2 A3 A4 A5
@@ -550,6 +549,7 @@ TriangularMPO sum_string(SiteListType const& SiteList, FiniteMPO const& JW, Fini
    CHECK(UnitCellSize % SiteList.size() == 0)
       ("UnitCellSize for sum_string() must be a multiple of UnitCell.size()");
    CHECK(A.size() % UnitCellSize == 0)
+
       ("Operator for sum_string() must be a multiple of the unit cell")
       (A.size())(UnitCellSize);
    CHECK(C.size() % UnitCellSize == 0)
@@ -606,10 +606,11 @@ TriangularMPO sum_string(SiteListType const& SiteList, FiniteMPO const& JW, Fini
 	 JoinBasis(Basis2, Ident[i%SiteList.size()].Basis2());
 
       // Construct the OperatorComponent
-      OperatorComponent Comp(A[i].LocalBasis1(), A[i].LocalBasis2(), Basis2);
+      OperatorComponent Comp(A[i].LocalBasis1(), A[i].LocalBasis2(), Basis1, Basis2);
 
       // The JW goes in the top left
       int r = 0;
+
       int c = 0;
       SetComponents(Comp, X[i%X.size()], r, c);
       if (i != 0)
@@ -624,12 +625,15 @@ TriangularMPO sum_string(SiteListType const& SiteList, FiniteMPO const& JW, Fini
 	 c += SplitA[n][i].Basis2().size();
       }
 
+      if (i == int(UnitCellSize-1))
+	 --c;  // operator A is guaranteed to have only one column for the final entry
+
       // the B operator
       SetComponents(Comp, B[i%B.size()], r, c);
       if (i != 0)
 	 r += B[i%B.size()].Basis1().size();
-      if (i != int(UnitCellSize-1))
-	 c += B[i%B.size()].Basis2().size();
+      //      if (i != int(UnitCellSize-1))
+      c += B[i%B.size()].Basis2().size();
 
       // the C components continue on the diagonal
       for (unsigned n = 0; n < SplitC.size()-1; ++n)
@@ -694,7 +698,8 @@ TriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String_, Un
    Op1 = Op1 * repeat(JW2, Op1.size() / JW2.size());
 
    // compute the overall JW string
-   FiniteMPO JW = string_mpo(SiteList, Op1_.Commute().SignOperator(), Op1.qn1()) * JW2;
+   FiniteMPO JW = repeat(string_mpo(SiteList, Op1_.Commute().SignOperator(), Op1.qn1()),
+			 UnitCellSize / SiteList.size()) * JW2;
 
    return sum_string(SiteList, JW, Op1, String, Op2, UnitCellSize, q);
 }
