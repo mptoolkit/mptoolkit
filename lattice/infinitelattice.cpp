@@ -247,7 +247,6 @@ JoinBasis(BasisList& b, BasisList const& Other)
 void
 SetComponents(OperatorComponent& C, OperatorComponent const& Op, int xStart, int yStart)
 {
-   TRACE(C.Basis1())(C.Basis2());
    for (OperatorComponent::const_iterator I = iterate(Op); I; ++I)
    {
       for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
@@ -503,8 +502,6 @@ TriangularMPO sum_string(SiteListType const& SiteList, FiniteMPO const& JW, Fini
 			 FiniteMPO const& String, FiniteMPO const& Op2, int UnitCellSize,
 			 QuantumNumbers::QuantumNumber q)
 {
-   TRACE(JW)(Op1)(String)(Op2);
-
    FiniteMPO X = JW;
    FiniteMPO A = Op1;
    FiniteMPO B = String;
