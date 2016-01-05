@@ -478,7 +478,7 @@ MPO_EigenvaluesRight(StateComponent& Guess, LinearWavefunction const& Psi,
    R = delta_shift(R, adjoint(QShift));
    R += H0;
 
-   TRACE(norm_frob(Guess.front() - R))(R)(Guess.front());
+   //TRACE(norm_frob(Guess.front() - R))(R)(Guess.front());
 
 #if 0
    for (int k = 0; k < 2400; ++k)
@@ -1588,7 +1588,7 @@ int main(int argc, char** argv)
 	 TRACE(norm_frob(R*U - U*D));
 	 TRACE(1.0-inner_prod(MatrixOperator(R),MatrixOperator(D)));
 	 TRACE(norm_frob(MatrixOperator(R)-MatrixOperator(D)));
-	 TRACE(R)(D);
+	 //TRACE(R)(D);
 
 	 MatrixOperator L = D;
 
