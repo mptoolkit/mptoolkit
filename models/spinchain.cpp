@@ -55,7 +55,6 @@ int main(int argc, char** argv)
          std::cerr << desc << '\n';
 	 std::cerr << OpDescriptions << '\n';
 	 std::cerr << "only for spin-1: H_AKLT  - AKLT Hamiltonian H_J1 + (1/3)*H_B1\n";
-         std::cerr << "HaldShast{lambda}, Haldane-Shastry Hamiltonian, considering exponential decay with exponent 0<lambda<1\n";
          return 1;
       }
 
@@ -88,8 +87,8 @@ int main(int argc, char** argv)
 	 Lattice["H_AKLT"].set_description("AKLT Hamiltonian H_J1 + (1/3)*H_B1");
       }
 
-      Lattice.func("HaldShast")(arg("lambda") = 0.5)
-                  = "0.5*( sum_kink( (1/lambda)*I(0), Sz(0) ) * sum_kink( lambda*I(0), Sz(0) ) + sum_kink( (1/lambda)*I(0), Sy(0) ) * sum_kink( lambda*I(0), Sy(0) ) + sum_kink( (1/lambda)*I(0), Sx(0) ) * sum_kink( lambda*I(0), Sx(0) ) ) - sum_unit( 2*(3.0/4) )";
+      /* Lattice.func("HaldShast")(arg("lambda") = 0.5)
+                  = "sum_kink( (1/lambda)*I(0), Sz(0) ) * sum_kink( lambda*I(0), Sz(0) ) + sum_kink( (1/lambda)*I(0), Sy(0) ) * sum_kink( lambda*I(0), Sy(0) ) + sum_kink( (1/lambda)*I(0), Sx(0) ) * sum_kink( lambda*I(0), Sx(0) )"; */
 
       /* Lattice.func("Test")(arg("J") = 0.0)
          = "J*sum_unit( I(0)*Sx(0)*Sx(1) )"; */

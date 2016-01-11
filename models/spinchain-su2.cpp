@@ -44,12 +44,16 @@ int main(int argc, char** argv)
 	 ("H_Q3"  , "next-next-nearest neighbor quadrupole exchange (Q.Q)")
 	 ;
 
+      OpDescriptions.add_functions()
+         ("Haldane_Shastry", "Haldane-Shastry Hamiltonian, parametized by 'lambda' (considering exponential decay as exp(-lambda*r))")
+         ;
+
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Operators:\n" << OpDescriptions;
+	 std::cerr << OpDescriptions << '\n';
 	 std::cerr << "only for spin-1: H_AKLT  - AKLT Hamiltonian H_J1 + (1/3)*H_B1\n";
          return 1;
       }
@@ -57,7 +61,7 @@ int main(int argc, char** argv)
       LatticeSite Site = SpinSU2(Spin);
       UnitCell Cell(Site);
       InfiniteLattice Lattice(Cell);
-      UnitCellOperator S(Cell, "S"), Q(Cell, "Q");
+      UnitCellOperator S(Cell, "S"), Q(Cell, "Q"), I(Cell, "I");
 
       Lattice["H_J1"] = sum_unit(inner(S(0), S(1)));
       Lattice["H_J2"] = sum_unit(inner(S(0), S(2)));
@@ -77,6 +81,9 @@ int main(int argc, char** argv)
 	 Lattice["H_AKLT"].set_description("AKLT Hamiltonian H_J1 + (1/3)*H_B1");
       }
 
+      Lattice.func("Haldane_Shastry")(arg("lambda") = 0.5)
+                  = "sum_string_inner( S(0), exp(-lambda)*I(0), S(0) )";
+ 
       // Information about the lattice
       Lattice.set_description("SU(2) Spin chain");
       Lattice.set_command_line(argc, argv);

@@ -197,10 +197,10 @@ allobj = $(quantumnumbersobj) \
 	 $(linearalgebraobj)  \
 	 $(commonobj)
 
-# contributed models.  Add new models here
-contrib-models = spin-tri-yc-su2 spin-tri-yc-su2-EfficientNumbering \
+# contributed models. Add new models here:
+contrib-models = spin-tri-yc-su2  spin-kagome-yc-u1  spin-kagome-yc-su2 \
                  spin-tri-2SiteUnitCell-su2 spin-tri-1SiteUnitCell-su2 spin-tri-yc-u1 \
-                 dual-aklt spin-tri-yc-SU2 spin-tri-yc
+                 dual-aklt spin-tri-yc
 
 # default / examplar models
 default-models = spinchain-su2 spinchain-spin2-su2 \
