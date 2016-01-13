@@ -293,5 +293,78 @@ struct LeftMultiplyOperator
    int Verbose;
 };
 
+// version of inject_left operator contraction, but
+// with a mask (conceptually a vector<bool>, but implemented as a vector<int>).
+// Only calculates components of the MPO where the mask bit is set.
+// The length of the mask is Op.size()+1
+
+StateComponent
+inject_left_mask(StateComponent const& In, 
+                 LinearWavefunction const& Psi1, 
+                 QuantumNumber const& QShift,
+                 GenericMPO const& Op,
+                 LinearWavefunction const& Psi2,
+                 std::vector<std::vector<int> > const& Mask);
+
+
+// Functor to evaluate (1-T)(x) where T is the generalized transfer matrix.
+// x is defined in the Basis1.
+//      -Psi*-
+//        |
+//  T =  Op*
+//        |
+//      -Psi--
+struct OneMinusTransferLeft
+{
+   OneMinusTransferLeft(FiniteMPO const& Op, LinearWavefunction const& Psi, QuantumNumber const& QShift)
+      : Op_(Op), Psi_(Psi), QShift_(QShift) {}
+
+   MatrixOperator operator()(MatrixOperator const& x) const
+   {
+      return x-delta_shift(inject_left(x, Op_, Psi_), QShift_);
+   }
+
+   FiniteMPO const& Op_;
+   LinearWavefunction const& Psi_;
+   QuantumNumber const& QShift_;
+};
+
+// Functor to evaluate (1-T)(x) where T is the generalized transfer matrix.
+// x is defined in the Basis1.  Optionally, we also optionally orthogonalize against a
+// Unit matrix, which is an eigenvalue 1 of T
+//      -Psi*-
+//        |
+//  T =  Op*
+//        |
+//      -Psi--
+struct OneMinusTransferLeft_Ortho
+{
+   OneMinusTransferLeft_Ortho(FiniteMPO const& Op, LinearWavefunction const& Psi, QuantumNumber const& QShift, 
+			      MatrixOperator const& LeftUnit,
+			      MatrixOperator const& RightUnit, bool Orthogonalize)
+      : Op_(Op), Psi_(Psi), 
+	QShift_(QShift), LeftUnit_(LeftUnit), 
+	RightUnit_(RightUnit), Orthogonalize_(Orthogonalize) { }
+
+   MatrixOperator operator()(MatrixOperator const& x) const
+   {
+      MatrixOperator r = x-delta_shift(inject_left(x, Op_, Psi_), QShift_);
+      if (Orthogonalize_ && r.TransformsAs() == RightUnit_.TransformsAs())
+	 {
+	    DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be small");
+	    DEBUG_TRACE(inner_prod(LeftUnit_, r));
+	    r -= conj(inner_prod(r, RightUnit_)) * LeftUnit_; // orthogonalize to the identity
+	    DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be zero");
+	 }
+      return r;
+   }
+
+   FiniteMPO const& Op_;
+   LinearWavefunction const& Psi_;
+   QuantumNumber const& QShift_;
+   MatrixOperator const& LeftUnit_;
+   MatrixOperator const& RightUnit_;
+   bool Orthogonalize_;
+};
 
 #endif

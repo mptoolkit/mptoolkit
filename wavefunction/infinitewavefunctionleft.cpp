@@ -203,8 +203,9 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi
    // At this point, the left eigenvector is the identity matrix. 
 #if !defined(NDEBUG)
    MatrixOperator I = MatrixOperator::make_identity(PsiL.Basis1());
-   A = LeftMultiply(PsiL, QShift)(I);
-   CHECK(norm_frob(A-EtaL*I) < 10*A.Basis1().total_dimension() * ArnoldiTol)(norm_frob(A-EtaL*I))(A)(I)(D);
+   MatrixOperator R = delta_shift(D*D, QShift);
+   A = delta_shift(LeftMultiply(PsiL, QShift)(delta_shift(I, adjoint(QShift))), QShift);
+   CHECK(norm_frob(inner_prod(A-EtaL*I, R)) < 10*A.Basis1().total_dimension() * ArnoldiTol)(norm_frob(A-EtaL*I))(A)(I)(D);
 #endif 
 
    // same for the right eigenvector, which will be the density matrix

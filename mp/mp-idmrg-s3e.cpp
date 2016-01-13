@@ -290,12 +290,12 @@ struct SubProductLeftProject
 
    MatrixOperator operator()(MatrixOperator const& In) const
    {
-      MatrixOperator Result = delta_shift(In, QShift);
+      MatrixOperator Result = In; //delta_shift(In, QShift);
       for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
        {
 	  Result = operator_prod(herm(*I), Result, *I);
        }
-      Result = In - Result;
+      Result = In - delta_shift(Result, QShift);
       Result -= inner_prod(Proj, Result) * Ident;
       return Result;
    }
@@ -338,6 +338,154 @@ struct SubProductRightProject
    MatrixOperator const& Ident;
 };
 
+std::complex<double>
+SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
+		    QuantumNumber const& QShift, TriangularMPO const& Op,
+		    MatrixOperator const& Rho, double Tol = 1E-14, int Verbose = 0)
+{
+   if (E.is_null())
+      E = Initial_E(Op, Psi.Basis1());
+   CHECK_EQUAL(E.Basis1(), Psi.Basis1());
+   CHECK_EQUAL(E.Basis2(), Psi.Basis1());
+   CHECK_EQUAL(E.LocalBasis(), Op.Basis1());
+   CHECK_EQUAL(Rho.Basis1(), Psi.Basis1());
+   CHECK_EQUAL(Rho.Basis2(), Psi.Basis1());
+
+   MatrixOperator Ident = E[0];
+
+   // The UnityEpsilon is just a paranoid check here, as we don't support
+   // eigenvalue 1 on the diagonal
+   double UnityEpsilon = 1E-12;
+
+   if (!classify(Op(0,0), UnityEpsilon).is_identity())
+   {
+      std::cerr << "SolveSimpleMPO_Left: fatal: MPO(0,0) must be the identity operator.\n";
+      PANIC("Fatal");
+   }
+
+   int Dim = Op.Basis1().size();       // dimension of the MPO
+   if (Verbose)
+      std::cerr << "SolveSimpleMPO_Left: dimension is " << Dim << std::endl;
+
+   // Column 0 (E[0]) is the Identity, we don't need to solve for it
+   for (int Col = 1; Col < Dim-1; ++Col)
+   {
+      std::vector<std::vector<int> > Mask = mask_column(Op, Col);
+      MatrixOperator C = inject_left_mask(E, Psi, QShift, Op.data(), Psi, Mask)[Col];
+
+      // Now do the classification, based on the properties of the diagonal operator
+      FiniteMPO Diag = Op(Col, Col);
+      OperatorClassification Classification = classify(Diag, UnityEpsilon);
+
+      if (Classification.is_null())
+      {
+         DEBUG_TRACE("Zero diagonal element")(Col)(Diag);
+	 if (Verbose)
+	    std::cerr << "Zero diagonal matrix element at column " << Col << std::endl;
+         E[Col] = C;
+      }
+      else
+      {
+	 if (Verbose)
+	    std::cerr << "Non-zero diagonal matrix element at column " << Col << std::endl;
+
+	 // non-zero diagonal element.  The only case that we support here is
+	 // an operator with spectral radius strictly < 1
+	 if (Classification.is_unitary())
+	 {
+	    std::cerr << "SolveSimpleMPO_Left: Unitary operator on the diagonal is not supported!\n";
+	    PANIC("Fatal: unitary")(Col);
+	 }
+
+	 // Initial guess for linear solver
+	 E[Col] = C;
+
+	 int m = 30;
+	 int max_iter = 10000;
+	 double tol = Tol;
+	 int Ret = GmRes(E[Col], OneMinusTransferLeft(Diag, Psi, QShift), C, m, max_iter, tol, 
+			 LinearAlgebra::Identity<MatrixOperator>(), Verbose);
+	 if (Ret != 0)
+	 {
+	    // failed
+	    PANIC("Linear solver failed to converge after max_iter iterations")(max_iter);
+	 }
+      }
+   }
+   // Final column, must be identity
+   int const Col = Dim-1;
+   if (!classify(Op(Col,Col), UnityEpsilon).is_identity())
+   {
+      std::cerr << "SolveSimpleMPO_Left: fatal: MPO(d,d) must be the identity operator.\n";
+      PANIC("Fatal");
+   }
+
+   std::vector<std::vector<int> > Mask = mask_column(Op, Col);
+   MatrixOperator C = inject_left_mask(E, Psi, QShift, Op.data(), Psi, Mask)[Col];
+
+   // The component in the direction of the identity is proportional to the energy
+   std::complex<double> Energy = inner_prod(Rho, C);
+   // orthogonalize
+   C -= Energy * Ident;
+
+   // solve for the first component
+   SubProductLeftProject ProdL(Psi, QShift, Rho, Ident);
+   E[Col] = C;
+   int m = 30;
+   int max_iter = 10000;
+   double tol = Tol;
+   int Res = GmRes(E[Col], ProdL, C, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
+   CHECK_EQUAL(Res, 0);
+
+   // remove the spurious constant term from the energy
+   DEBUG_TRACE("Spurious part")(inner_prod(E.back(), Rho));
+   E.back() -= inner_prod(Rho, E.back()) * E.front();
+
+   // Make it Hermitian
+   E.back() = 0.5 * (E.back() + adjoint(E.back()));
+
+   // residual
+   MatrixOperator R = E.back();
+   for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
+   {
+      R = operator_prod(herm(*I), R, *I);
+   }
+   R = delta_shift(R, QShift);
+   R += C;
+
+   TRACE("Residual norm")(norm_frob(E.back() - R));
+
+   E.back() = R;
+
+   // Make it Hermitian
+   E.back() = 0.5 * (E.back() + adjoint(E.back()));
+
+
+#if !defined(NDEBUG)
+   {
+      std::vector<KMatrixPolyType> CheckEMat;
+      SolveMPO_Left(CheckEMat, Psi, QShift, Op, Ident, Rho, true);
+      ComplexPolyType EValues = ExtractOverlap(CheckEMat.back()[1.0], Rho);
+      TRACE(EValues);
+      MatrixOperator HCheck = CheckEMat.back()[1.0][0];
+      TRACE("H matrix elements check")(inner_prod(HCheck - E.back(), Rho));
+      TRACE(inner_prod(HCheck, Rho));
+   }
+#endif
+
+   return Energy;
+}
+
+#if 1
+std::complex<double>
+MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
+		    QuantumNumber const& QShift, TriangularMPO const& Op,
+		    MatrixOperator const& Rho)
+{
+   return SolveSimpleMPO_Left(Guess, Psi, QShift, Op, Rho, 1E-14, 10);
+}
+#else
+// NOTE: for this function, the Rho, Guess are in the basis of Psi.Basis2()
 std::complex<double>
 MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
 		    QuantumNumber const& QShift, TriangularMPO const& Op,
@@ -386,7 +534,7 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
    }
    R += H0;
 
-   TRACE(norm_frob(Guess.back() - R));
+   TRACE("Residual norm")(norm_frob(Guess.back() - R));
 
 #if 0
    for (int k = 0; k < 2400; ++k)
@@ -426,6 +574,7 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
 
    return Energy;
 }
+#endif
 
 std::complex<double>
 MPO_EigenvaluesRight(StateComponent& Guess, LinearWavefunction const& Psi,
@@ -440,6 +589,8 @@ MPO_EigenvaluesRight(StateComponent& Guess, LinearWavefunction const& Psi,
       Guess.front() *= 0.0;
       Guess = Prod(Guess);
       Guess.back() = Ident;
+
+      TRACE("Energy")(inner_prod(Guess.front(), Rho));
    }
 
    // calculate the energy
@@ -468,7 +619,7 @@ MPO_EigenvaluesRight(StateComponent& Guess, LinearWavefunction const& Psi,
    Guess.front() = 0.5 * (Guess.front() + adjoint(Guess.front()));
 
    // residual
-   MatrixOperator R = delta_shift(Guess.front(), adjoint(QShift));
+   MatrixOperator R = Guess.front(); //delta_shift(Guess.front(), adjoint(QShift));
    LinearWavefunction::const_iterator I = Psi.end();
    while (I != Psi.begin())
    {
@@ -1499,7 +1650,7 @@ int main(int argc, char** argv)
 	 else
 	 {
 	    RBoundary = QuantumNumber(HamMPO[0].GetSymmetryList(), BoundaryState[0]);
-	    std::cout << "Rignt boundary quantum number is " << RBoundary << '\n';
+	    std::cout << "Right boundary quantum number is " << RBoundary << '\n';
 	    if (BoundaryState.size() > 1)
 	    {
 	       std::cout << "WARNING: ignoring addititional boundary quantum numbers in random wavefunction\n";
@@ -1570,11 +1721,11 @@ int main(int argc, char** argv)
       if (StartFromFixedPoint)
       {
 	 std::cout << "Solving fixed-point Hamiltonian..." << std::endl;
-         MatrixOperator Rho = scalar_prod(R, herm(R));
+         MatrixOperator Rho = delta_shift(scalar_prod(R, herm(R)), QShift);
 	 InitialEnergy = MPO_EigenvaluesLeft(BlockHamL, Psi, QShift, HamMPO, Rho);
 	 std::cout << "Starting energy (left eigenvalue) = " << InitialEnergy << std::endl;
 
-	 BlockHamL = delta_shift(BlockHamL, QShift);
+	 //BlockHamL = delta_shift(BlockHamL, QShift);
       }
 
       StateComponent BlockHamR = Initial_F(HamMPO, Psi.Basis2());
@@ -1585,9 +1736,11 @@ int main(int argc, char** argv)
 	 RealDiagonalOperator D;
 	 boost::tie(U, D, PsiR) = get_right_canonical(Wavefunction.get<InfiniteWavefunctionLeft>());
 	 
-	 TRACE(norm_frob(R*U - U*D));
-	 TRACE(1.0-inner_prod(MatrixOperator(R),MatrixOperator(D)));
-	 TRACE(norm_frob(MatrixOperator(R)-MatrixOperator(D)));
+	 TRACE(norm_frob(delta_shift(R,QShift)*U - U*D));
+
+	 // D and R are the 'same' matrix, but the basis may be in a different order
+	 //	 TRACE(1.0-inner_prod(MatrixOperator(delta_shift(R,QShift)),MatrixOperator(D)));
+	 // TRACE(norm_frob(MatrixOperator(delta_shift(R,QShift))-MatrixOperator(D)));
 	 //TRACE(R)(D);
 
 	 MatrixOperator L = D;
@@ -1626,7 +1779,7 @@ int main(int argc, char** argv)
 	 std::complex<double> Energy = MPO_EigenvaluesRight(BlockHamR, PsiR, QShift, HamMPO, Rho);
 	 std::cout << "Starting energy (right eigenvalue) = " << Energy << std::endl;
 
-	 TRACE(norm_frob(MatrixOperator(R) - triple_prod(U,L,herm(U))));
+	 TRACE(norm_frob(delta_shift(MatrixOperator(R),QShift) - triple_prod(U,L,herm(U))));
 	 //	 TRACE(MatrixOperator(R) - triple_prod(U,L,herm(U)));
 
 #if 1
@@ -1654,11 +1807,12 @@ int main(int argc, char** argv)
 #endif
 #endif
 
-	 TRACE(norm_frob(BlockHamL.back() - BlockHamR.front()));
-	 TRACE(inner_prod(BlockHamL.back() - BlockHamR.front(), Rho));
+	 //	 TRACE(norm_frob(BlockHamL.back() - BlockHamR.front()));
+	 //TRACE(inner_prod(BlockHamL.back() - BlockHamR.front(), Rho));
 
 	 // Check the energy
-	 MatrixOperator Cn = D; // center matrix
+#if 0
+	 MatrixOperator Cn = delta_shift(D, adjoint(QShift)); // center matrix
 	 Cn = U*Cn*adjoint(U);
 	 TRACE(norm_frob(Cn));
 	 Cn *= 1.0 / norm_frob(Cn);
@@ -1668,13 +1822,15 @@ int main(int argc, char** argv)
 	 TRACE(norm_frob(e*Cn - Cnp));
 	 TRACE(inner_prod(e*Cn - Cnp, Cn));
 	 TRACE(norm_frob(conj(e)*Cn - Cnp));
-
+#endif
 
 	 
 
       }
 
       // initialization complete.
+
+      UR = delta_shift(UR, QShift);
 
       // Construct the iDMRG object
       iDMRG idmrg(Psi, R, UR, QShift, HamMPO, BlockHamL, 

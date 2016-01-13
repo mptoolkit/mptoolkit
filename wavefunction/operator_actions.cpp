@@ -141,3 +141,86 @@ inject_right_qshift(MatrixOperator const& m,
 {
    return delta_shift(inject_right(m, Op, Psi), adjoint(QShift));
 }
+
+
+
+
+
+StateComponent
+contract_from_left_mask(OperatorComponent const& M,
+			HermitianProxy<StateComponent> const& A,
+			StateComponent const& E, 
+			StateComponent const& B,
+			std::vector<int> const& OutMask,
+			std::vector<int> const& InMask)
+{
+   StateComponent Result(M.Basis2(), A.base().Basis2(), B.Basis2());
+
+   // Iterate over the components in M, first index
+   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(M); I; ++I)
+   {
+      // skip over masked components
+      if (!InMask[I.index()])
+         continue;
+
+      // second index in M
+      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
+      {
+         // skip over masked components
+         if (!OutMask[J.index2()])
+            continue;
+
+         // Iterate over the irreducible components of M(I,J)
+         for (SimpleRedOperator::const_iterator k = J->begin(); k != J->end(); ++k)
+         {
+            // *k is an irreducible operator.  Iterate over the components of this operator
+            for (LinearAlgebra::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
+            {
+               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type 
+                       S = iterate(R); S; ++S)
+               {
+                  add_triple_prod(Result[J.index2()], *S, 
+                                  herm(A.base()[S.index1()]), 
+                                  E[J.index1()], 
+                                  B[S.index2()],
+                                  k->TransformsAs(),
+                                  M.Basis2()[J.index2()]);
+               }
+            }
+         }
+      }
+   }
+   return Result;
+}
+
+StateComponent
+inject_left_mask(StateComponent const& In, 
+                 LinearWavefunction const& Psi1, 
+                 QuantumNumber const& QShift,
+                 GenericMPO const& Op,
+                 LinearWavefunction const& Psi2,
+                 std::vector<std::vector<int> > const& Mask)
+{
+   PRECONDITION_EQUAL(Psi1.size(), Op.size());
+   PRECONDITION_EQUAL(Psi1.size(), Psi2.size());
+   //   PRECONDITION_EQUAL(Op.Basis1().size(), In.size());
+
+   LinearWavefunction::const_iterator I1 = Psi1.begin();
+   LinearWavefunction::const_iterator I2 = Psi2.begin();
+   GenericMPO::const_iterator OpIter = Op.begin();
+   std::vector<std::vector<int> >::const_iterator MaskIter = Mask.begin();
+
+   StateComponent E;
+   StateComponent Result(In);
+
+   while (OpIter != Op.end())
+   {
+      std::swap(E, Result);
+
+      Result = contract_from_left_mask(*OpIter, herm(*I1), E, *I2, *(MaskIter+1), *MaskIter);
+
+      ++I1; ++I2; ++OpIter; ++MaskIter;
+   }
+   return delta_shift(Result, QShift);
+}
+
