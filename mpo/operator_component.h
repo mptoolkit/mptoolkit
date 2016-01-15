@@ -477,17 +477,17 @@ operator_prod(OperatorComponent const& M,
 //
 // Contracting from the right hand side.
 // The MPO element is compex-conjugated because the F object will finally
-// be conjugated itself (making A bra and B ket).
+// be conjugated itself (making A bra and herm(B) ket).
 //
-//                 i'  i
-//                --A--+
-//                  |  |
-//F'[a'](i'i) = a'--M*-F
-//                  |  |
-//                --B*-+
-//                 j'  j
+//                  i'  i
+//                 --A--+
+//                   |  |
+//F'[a'](i'j') = a'--M*-F
+//                   |  |
+//                 --B*-+
+//                  j'  j
 //
-// Result'[a'](i',j') = herm(M(s',s)(a',a)) A[s'](i',i) E[a](i,j) herm(B[s](j',j))
+// Result'[a'](i',j') = herm(M(s',s)(a',a)) A[s'](i',i) F[a](i,j) herm(B[s](j',j))
 StateComponent
 contract_from_right(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
 		    StateComponent const& A, 
@@ -506,6 +506,14 @@ contract_from_right(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
    StateComponent BX = B.base();
    return contract_from_right(M, AX, F, herm(BX));
 }
+
+StateComponent
+contract_from_right_mask(HermitianProxy<OperatorComponent> const& M,
+			 StateComponent const& A, 
+			 StateComponent const& F,
+			 HermitianProxy<StateComponent> const& B,
+			 std::vector<int> const& Mask1,
+			 std::vector<int> const& Mask2);
 
 // Contraction from the left
 // Result'[a](i,j) = herm(M(s',s)(a',a)) herm(A[s'](i',i)) E[a'](i',j') B[s](j',j)

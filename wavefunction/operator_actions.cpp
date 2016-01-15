@@ -59,11 +59,7 @@ inject_left(StateComponent const& In,
 
    while (OpIter != Op.end())
    {
-#if defined(OLD_OPERATOR_PROD)
-      Result = operator_prod(herm(*OpIter), herm(*I1), Result, *I2);
-#else
       Result = contract_from_left(*OpIter, herm(*I1), Result, *I2);
-#endif
       ++I1; ++I2; ++OpIter;
    }
    DEBUG_CHECK(I1 == Psi1.end());
@@ -92,11 +88,7 @@ inject_right(MatrixOperator const& m,
    while (I != Psi.begin())
    {
       --I; --OpIter;
-#if defined(OLD_OPERATOR_PROD)
-      E = operator_prod(*OpIter, *I, E, herm(*I));
-#else
       E = contract_from_right(herm(*OpIter), *I, E, herm(*I));
-#endif
    }
    return E[0];
 }
@@ -124,11 +116,7 @@ inject_right(MatrixOperator const& m,
    while (I1 != Psi1.begin())
    {
       --I1; --I2; --OpIter;
-#if defined(OLD_OPERATOR_PROD)
-      E = operator_prod(*OpIter, *I1, E, herm(*I2));
-#else
       E = contract_from_right(herm(*OpIter), *I1, E, herm(*I2));
-#endif
    }
    return E[0];
 }
@@ -151,8 +139,8 @@ contract_from_left_mask(OperatorComponent const& M,
 			HermitianProxy<StateComponent> const& A,
 			StateComponent const& E, 
 			StateComponent const& B,
-			std::vector<int> const& OutMask,
-			std::vector<int> const& InMask)
+			std::vector<int> const& Mask1,
+			std::vector<int> const& Mask2)
 {
    StateComponent Result(M.Basis2(), A.base().Basis2(), B.Basis2());
 
@@ -160,14 +148,14 @@ contract_from_left_mask(OperatorComponent const& M,
    for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(M); I; ++I)
    {
       // skip over masked components
-      if (!InMask[I.index()])
+      if (!Mask1[I.index()])
          continue;
 
       // second index in M
       for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
       {
          // skip over masked components
-         if (!OutMask[J.index2()])
+         if (!Mask2[J.index2()])
             continue;
 
          // Iterate over the irreducible components of M(I,J)
@@ -196,7 +184,6 @@ contract_from_left_mask(OperatorComponent const& M,
 StateComponent
 inject_left_mask(StateComponent const& In, 
                  LinearWavefunction const& Psi1, 
-                 QuantumNumber const& QShift,
                  GenericMPO const& Op,
                  LinearWavefunction const& Psi2,
                  std::vector<std::vector<int> > const& Mask)
@@ -217,10 +204,40 @@ inject_left_mask(StateComponent const& In,
    {
       std::swap(E, Result);
 
-      Result = contract_from_left_mask(*OpIter, herm(*I1), E, *I2, *(MaskIter+1), *MaskIter);
+      Result = contract_from_left_mask(*OpIter, herm(*I1), E, *I2, *MaskIter, *(MaskIter+1));
 
       ++I1; ++I2; ++OpIter; ++MaskIter;
    }
-   return delta_shift(Result, QShift);
+   return Result;
+}
+
+StateComponent
+inject_right_mask(StateComponent const& In, 
+                 LinearWavefunction const& Psi1, 
+                 GenericMPO const& Op,
+                 LinearWavefunction const& Psi2,
+                 std::vector<std::vector<int> > const& Mask)
+{
+   PRECONDITION_EQUAL(Psi1.size(), Op.size());
+   PRECONDITION_EQUAL(Psi1.size(), Psi2.size());
+
+   LinearWavefunction::const_iterator I1 = Psi1.end();
+   LinearWavefunction::const_iterator I2 = Psi2.end();
+   GenericMPO::const_iterator OpIter = Op.end();
+   std::vector<std::vector<int> >::const_iterator MaskIter = Mask.end();
+
+   StateComponent E;
+   StateComponent Result(In);
+
+   while (OpIter != Op.begin())
+   {
+      std::swap(E, Result);
+
+      --I1; --I2; --OpIter; --MaskIter;
+
+      Result = contract_from_right_mask(herm(*OpIter), *I1, E, herm(*I2), *(MaskIter-1), *MaskIter);
+
+   }
+   return Result;
 }
 
