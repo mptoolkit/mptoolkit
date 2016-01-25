@@ -24,11 +24,11 @@
 // Calculates the operator contraction, with a matrix
 // actong on the left hand side of the wavefunction.
 // Op must have 1x1 boundaries
-// +-Psi1*-... Psi1*-
+// +-Psi1*-...-Psi1*-
 // |  |         |
-// m  Op*- ...  Op*
+// m  Op---...--Op
 // |  |         |
-// +-Psi2--... Psi2--
+// +-Psi2--...-Psi2--
 MatrixOperator 
 inject_left(MatrixOperator const& m, 
             GenericMPO const& Op, 
@@ -89,7 +89,7 @@ struct InjectLeftQShift
 //
 // +-Psi1*-     Psi1*-
 // |  |          |
-// E--Op*-- ...  Op*--
+// E--Op--- ...  Op---
 // |  |          |
 // +-Psi2-- ... Psi2--
 
@@ -111,11 +111,11 @@ inject_right(MatrixOperator const& m,
 // Calculates the operator contraction, with a matrix
 // acting on the left hand side of the wavefunction.
 // Op must have 1x1 boundaries
-// --Psi2--... Psi2--+
+// --Psi1--... Psi1--+
 //    |         |    |
-//    Op- ...  Op    m
+//    Op*-...  Op*   m
 //    |         |    |
-// --Psi1*-... Psi1*-+
+// --Psi2*-... Psi2*-+
 
 MatrixOperator
 inject_right(MatrixOperator const& m, 
@@ -301,7 +301,13 @@ struct LeftMultiplyOperator
 StateComponent
 inject_left_mask(StateComponent const& In, 
                  LinearWavefunction const& Psi1, 
-                 QuantumNumber const& QShift,
+                 GenericMPO const& Op,
+                 LinearWavefunction const& Psi2,
+                 std::vector<std::vector<int> > const& Mask);
+
+StateComponent
+inject_right_mask(StateComponent const& In, 
+                 LinearWavefunction const& Psi1, 
                  GenericMPO const& Op,
                  LinearWavefunction const& Psi2,
                  std::vector<std::vector<int> > const& Mask);
@@ -311,7 +317,7 @@ inject_left_mask(StateComponent const& In,
 // x is defined in the Basis1.
 //      -Psi*-
 //        |
-//  T =  Op*
+//  T =  Op
 //        |
 //      -Psi--
 struct OneMinusTransferLeft
@@ -334,7 +340,7 @@ struct OneMinusTransferLeft
 // Unit matrix, which is an eigenvalue 1 of T
 //      -Psi*-
 //        |
-//  T =  Op*
+//  T =  Op
 //        |
 //      -Psi--
 struct OneMinusTransferLeft_Ortho
@@ -366,5 +372,28 @@ struct OneMinusTransferLeft_Ortho
    MatrixOperator const& RightUnit_;
    bool Orthogonalize_;
 };
+
+// Functor to evaluate (1-T)(x) where T is the generalized transfer matrix.
+// x is defined in the Basis2.
+//      -Psi-
+//        |
+//  T =  Op*
+//        |
+//      -Psi*--
+struct OneMinusTransferRight
+{
+   OneMinusTransferRight(FiniteMPO const& Op, LinearWavefunction const& Psi, QuantumNumber const& QShift)
+      : Op_(Op), Psi_(Psi), QShift_(QShift) {}
+
+   MatrixOperator operator()(MatrixOperator const& x) const
+   {
+      return x-delta_shift(inject_right(x, Op_, Psi_), adjoint(QShift_));
+   }
+
+   FiniteMPO const& Op_;
+   LinearWavefunction const& Psi_;
+   QuantumNumber const& QShift_;
+};
+
 
 #endif
