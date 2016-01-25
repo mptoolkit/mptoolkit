@@ -1430,6 +1430,8 @@ int main(int argc, char** argv)
       double EvolveDelta = 0.0;
       double InitialFidelity = 1E-7;
       double ArnoldiTol = 1E-14;
+      double GMRESTol = 2E-14;    // tolerance for GMRES for the initial H matrix elements.
+                                  // ** 2015-01-25: 1e-14 seems too small, failed to converge with final tol 1.5e-14
       double MaxTol = 4E-4;  // never use an eigensolver tolerance larger than this
       double MinTol = 1E-16; // lower bound for the eigensolver tolerance - seems we dont really need it
       double HMix = 0;  // Hamiltonian length-scale mixing factor
@@ -1763,7 +1765,7 @@ int main(int argc, char** argv)
 	 std::cout << "Solving fixed-point Hamiltonian..." << std::endl;
          MatrixOperator Rho = delta_shift(scalar_prod(R, herm(R)), QShift);
 	 InitialEnergy = SolveSimpleMPO_Left(BlockHamL, Psi, QShift, HamMPO, 
-					     Rho, ArnoldiTol, Verbose);
+					     Rho, GMRESTol, Verbose);
 	 std::cout << "Starting energy (left eigenvalue) = " << InitialEnergy << std::endl;
 
 	 //BlockHamL = delta_shift(BlockHamL, QShift);
@@ -1818,7 +1820,7 @@ int main(int argc, char** argv)
 	 Rho = delta_shift(Rho, adjoint(QShift));
 	 
 	 std::complex<double> Energy = SolveSimpleMPO_Right(BlockHamR, PsiR, QShift, HamMPO, 
-							    Rho, ArnoldiTol, Verbose);
+							    Rho, GMRESTol, Verbose);
 	 std::cout << "Starting energy (right eigenvalue) = " << Energy << std::endl;
 
 	 //TRACE(norm_frob(delta_shift(MatrixOperator(R),QShift) - triple_prod(U,L,herm(U))));
