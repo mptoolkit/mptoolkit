@@ -264,6 +264,30 @@ StateComponent Initial_F(TriangularMPO const& m);
 StateComponent Initial_E(TriangularMPO const& m, VectorBasis const& B);
 StateComponent Initial_F(TriangularMPO const& m, VectorBasis const& B);
 
+// *Not yet implemented
+// Analyze the dependencies of the MPO, for the E matrices.
+// This returns a vector listing the largest row number (for E matrices) or
+// smallest row number (for F matrices) that the given row/column depends on.
+// For example, given the MPO
+// (1 a)
+// (0 1)
+// the E-dependences are {-1,0}, 
+// because row 0 of the E matrix doesn't have any dependencies, and
+// calculating row 1 requires row 0.
+// Similarly the F-dependences are {1,2}, since column 1 doesn't have
+// any dependencies (column 2 is off the end), and column 0 depends on column 1.
+// For an MPO with non-trivial diagonals, it is more interesting, eg
+//
+// (1 x y z a)
+// (0 0 a b 0)
+// (0 0 1 0 c)
+// (0 0 0 1 d)
+// (0 0 0 0 1)
+// Here the E-dependencies are {-1, 0, 1, 1, 3}.  In particular, note that
+// the second diagonal element doesn't require that the first diagonal element is
+// already calculated, since it only uses E-elements [0,1].  
+std::vector<int> Dependencies_E(TriangularMPO const& m);
+
 void optimize(TriangularMPO& Op);
 
 // balances a triangular MPO - gives terms the same operator norm from
