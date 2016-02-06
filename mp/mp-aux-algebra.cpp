@@ -246,8 +246,8 @@ int main(int argc, char** argv)
 
 	 if (!Quiet)
 	 {
-	    std::cout << "#Operator " << i << " = " << OperatorStr[i] << 'n'
-		      << "#eigenvalue = " << e << 'n';
+	    std::cout << "#Operator " << i << " = " << OperatorStr[i] << '\n'
+		      << "#eigenvalue = " << e << '\n';
 	    std::cout << "#UU\u2020 = " << inner_prod(Rho, scalar_prod(v,herm(v))) << "\n";
 
 	    if (v.size() == 1 && is_scalar(v.LocalBasis()[0]) && v.Basis2() == v.Basis1())

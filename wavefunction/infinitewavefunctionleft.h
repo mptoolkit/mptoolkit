@@ -65,6 +65,8 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       // All functions that can modify the internal representation but preserve the canonical form
       // are friend functions.  This is so that we have a central list of such functions,
       // so can update them if the class changes.
+      // TODO: inplace_reflect should preserve Basis1/Basis2 as much as possible
+      // (ie, the basis will be the same if it is flip_conjugate invariant)
       friend void inplace_reflect(InfiniteWavefunctionLeft& Psi);
       friend void inplace_conj(InfiniteWavefunctionLeft& Psi);
       friend InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count);
