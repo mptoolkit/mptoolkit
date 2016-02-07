@@ -322,7 +322,7 @@ int main(int argc, char** argv)
       for (std::set<QuantumNumber>::const_iterator I = Sectors.begin(); I != Sectors.end(); ++I)
       {
 	 //FiniteMPO StringOp = FiniteMPO::make_identity(ExtractLocalBasis(Psi2.Psi));
-         TransEigenInfo Info(*I, overlap(Psi1, StringOp, Psi2, *I, Iter, Tol, Verbose).first);
+         TransEigenInfo Info(*I, std::get<0>(overlap(Psi1, StringOp, Psi2, *I, Iter, Tol, Verbose));
          if (Sort)
             EigenList.push_back(Info);
          else

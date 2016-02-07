@@ -11,7 +11,6 @@
 #include <complex>
 #include <sstream>
 
-// utility function - this should be somewhere else
 inline
 std::string
 format_complex(std::complex<double> const& c)
