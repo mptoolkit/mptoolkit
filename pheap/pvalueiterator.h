@@ -35,7 +35,7 @@ class pvalue_handle_iterator
    public:
       typedef BaseIter base_iterator;
       typedef typename std::iterator_traits<BaseIter>::value_type handle_type;
-      typedef typename pvalue_iter_category<BaseIter>::type iterator_category;
+      typedef typename pvalue_iter_category<typename std::iterator_traits<BaseIter>::iterator_category>::type iterator_category;
    //typedef typename std::iterator_traits<BaseIter>::size_type size_type;
       typedef typename std::iterator_traits<BaseIter>::difference_type difference_type;
       typedef typename handle_type::ptr_type ptr_type;
@@ -188,7 +188,7 @@ class const_pvalue_handle_iterator
    public:
       typedef BaseIter base_iterator;
       typedef typename std::iterator_traits<BaseIter>::value_type handle_type;
-      typedef typename pvalue_iter_category<BaseIter>::type iterator_category;
+      typedef typename pvalue_iter_category<typename std::iterator_traits<BaseIter>::iterator_category>::type iterator_category;
    //typedef typename std::iterator_traits<BaseIter>::size_type size_type;
       typedef typename std::iterator_traits<BaseIter>::difference_type difference_type;
       typedef typename handle_type::ptr_type ptr_type;

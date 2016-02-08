@@ -211,8 +211,10 @@ int main(int argc, char** argv)
       TRACE(diff);
 
       // actually it is much easier than the above - U should map the two lambda matrices
-      
-      LinearWavefunction PsiNew(Psi1.begin(), Psi1.begin()+NewUnitCellSize);
+
+      InfiniteWavefunctionLeft::const_mps_iterator finish = Psi1.begin();
+      std::advance(finish, NewUnitCellSize);
+      LinearWavefunction PsiNew(Psi1.begin(), finish);
       PsiNew.set_back(prod(PsiNew.get_back(), herm(X)));
 
       QuantumNumber QShift = Ident;
