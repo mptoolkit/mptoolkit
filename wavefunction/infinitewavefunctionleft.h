@@ -65,11 +65,12 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       // All functions that can modify the internal representation but preserve the canonical form
       // are friend functions.  This is so that we have a central list of such functions,
       // so can update them if the class changes.
+      // TODO: inplace_reflect should preserve Basis1/Basis2 as much as possible
+      // (ie, the basis will be the same if it is flip_conjugate invariant)
       friend void inplace_reflect(InfiniteWavefunctionLeft& Psi);
       friend void inplace_conj(InfiniteWavefunctionLeft& Psi);
       friend InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count);
 
-      
       friend InfiniteWavefunctionLeft wigner_project(InfiniteWavefunctionLeft const& Psi,
 						    SymmetryList const& FinalSL);
       friend InfiniteWavefunctionLeft ReorderSymmetry(InfiniteWavefunctionLeft const& Psi, 
@@ -120,11 +121,14 @@ extern double const InverseTol;
 
 // calculates the overlap of two iMPS, per unit cell.
 // The eigenvector can be in any allowable symmetry sector.
-std::complex<double> overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefunctionLeft const& y,
-                             QuantumNumbers::QuantumNumber const& Sector, 
-			     int Iter = 20, double Tol = 1E-12, int Verbose = 0);
+// x and y must have the same size
+std::pair<std::complex<double>, StateComponent>
+overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefunctionLeft const& y,
+	QuantumNumbers::QuantumNumber const& Sector, 
+	int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
-// This version allows a string operator also
+// This version allows a string operator also.
+// This version is deprecated.
 std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const& StringOp,
                              InfiniteWavefunctionLeft const& y,
                              QuantumNumbers::QuantumNumber const& Sector, 
@@ -133,7 +137,7 @@ std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const&
 // This version allows the wavefunctions and operator to have different sizes.
 // The overlap is returned as a quantity per length, which is the lowest
 // common multiple of x.size(), y.size(), StringOp.size()
-std::pair<std::complex<double>, int>
+std::tuple<std::complex<double>, int, StateComponent>
 overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
 	InfiniteWavefunctionLeft const& y,
 	QuantumNumbers::QuantumNumber const& Sector, 

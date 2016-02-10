@@ -572,7 +572,7 @@ InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
    return Result;
 }
 
-std::pair<std::complex<double>, int>
+std::tuple<std::complex<double>, int, StateComponent>
 overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
 	InfiniteWavefunctionLeft const& y,
 	QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
@@ -618,7 +618,7 @@ overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
       std::cerr << "Converged.  TotalIterations=" << TotalIterations
                 << ", Tol=" << MyTol << '\n';
 
-   return std::make_pair(Eta, Length);
+   return std::make_tuple(Eta, Length, Init);
 }
 
 std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const& StringOp,
@@ -663,10 +663,14 @@ std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const&
    return Eta;
 }
 
-std::complex<double> overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefunctionLeft const& y,
-                             QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
+std::pair<std::complex<double>, StateComponent>
+overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefunctionLeft const& y,
+	QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
 {
-   return overlap(x, ProductMPO::make_identity(ExtractLocalBasis(y)), y, Sector, Iter, Tol, Verbose).first;
+   CHECK_EQUAL(x.size(), y.size());
+   std::tuple<std::complex<double>, int, StateComponent> Result =
+      overlap(x, ProductMPO::make_identity(ExtractLocalBasis(y)), y, Sector, Iter, Tol, Verbose);
+   return std::make_pair(std::get<0>(Result), std::get<2>(Result));
 }
 
 InfiniteWavefunctionLeft

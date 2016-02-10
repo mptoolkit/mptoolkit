@@ -12,6 +12,7 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcell-parser.h"
 #include "lattice/infinite-parser.h"
+#include "common/statistics.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -76,16 +77,23 @@ int main(int argc, char** argv)
       }
 
       InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
-      LinearWavefunction PsiL = get_left_canonical(Psi).first;
 
       InfiniteLattice Lattice;
       ProductMPO StringOp;
       boost::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(OpStr);
       
-      CHECK(Psi.size() % StringOp.size() == 0)
-	 ("Wavefunction size must be a multiple of the string operator size")
-	 (Psi.size())(StringOp.size());
-      StringOp = repeat(StringOp, Psi.size() / StringOp.size());
+      if (Psi.size() != StringOp.size())
+      {
+	 int Size = statistics::lcm(Psi.size(), StringOp.size());
+	 if (Psi.size() < Size)
+	 {
+	    std::cout << "mp-iapply: warning: extending wavefunction size to lowest common multiple, which is " << Size << " sites.\n";
+	 }
+	 Psi = repeat(Psi, Size / Psi.size());
+	 StringOp = repeat(StringOp, Size / StringOp.size());
+      }
+
+      LinearWavefunction PsiL = get_left_canonical(Psi).first;
 
       // apply the string operator
       ProductMPO::const_iterator MI = StringOp.begin();
