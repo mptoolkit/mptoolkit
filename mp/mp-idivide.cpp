@@ -212,9 +212,9 @@ int main(int argc, char** argv)
 
       // actually it is much easier than the above - U should map the two lambda matrices
 
-      InfiniteWavefunctionLeft::const_mps_iterator finish = Psi1.begin();
+      InfiniteWavefunctionLeft::const_base_mps_iterator finish = Psi1.base_begin();
       std::advance(finish, NewUnitCellSize);
-      LinearWavefunction PsiNew(Psi1.begin(), finish);
+      LinearWavefunction PsiNew(Psi1.base_begin(), finish);
       PsiNew.set_back(prod(PsiNew.get_back(), herm(X)));
 
       QuantumNumber QShift = Ident;
