@@ -64,6 +64,8 @@ int main(int argc, char** argv)
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
+      if (Verbose > 0)
+	 std::cout << "Loading wavefunction..." << std::endl;
 
       pvalue_ptr<MPWavefunction> PsiPtr;
       long CacheSize = getenv_or_default("MP_CACHESIZE", DEFAULT_PAGE_CACHE_SIZE);
@@ -87,13 +89,16 @@ int main(int argc, char** argv)
 	 int Size = statistics::lcm(Psi.size(), StringOp.size());
 	 if (Psi.size() < Size)
 	 {
-	    std::cout << "mp-iapply: warning: extending wavefunction size to lowest common multiple, which is " << Size << " sites.\n";
+	    std::cerr << "mp-iapply: warning: extending wavefunction size to lowest common multiple, which is " << Size << " sites.\n";
 	 }
 	 Psi = repeat(Psi, Size / Psi.size());
 	 StringOp = repeat(StringOp, Size / StringOp.size());
       }
 
       LinearWavefunction PsiL = get_left_canonical(Psi).first;
+
+      if (Verbose > 0)
+	 std::cout << "Applying operator..." << std::endl;
 
       // apply the string operator
       ProductMPO::const_iterator MI = StringOp.begin();
@@ -102,8 +107,14 @@ int main(int argc, char** argv)
 	 (*I) = aux_tensor_prod(*MI, *I);
       }
 
-      PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft(PsiL, Psi.qshift());
+      if (Verbose > 0)
+	 std::cout << "Constructing canonical form wavefunction..." << std::endl;
+
+      PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft(PsiL, Psi.qshift(), Verbose);
       PsiPtr.mutate()->AppendHistory(EscapeCommandline(argc, argv));
+
+      if (Verbose > 0)
+	 std::cout << "Finished." << std::endl;
 
       pheap::ShutdownPersistent(PsiPtr);
    }
