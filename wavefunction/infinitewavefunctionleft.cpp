@@ -43,21 +43,26 @@ struct LeftMultiply
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   LeftMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_) 
-      : L(L_), QShift(QShift_) {}
+   LeftMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_, int Verbose_ = 0) 
+      : L(L_), QShift(QShift_), Verbose(Verbose_) {}
 
    result_type operator()(argument_type const& x) const
    {
       result_type r = delta_shift(x, QShift);
+      int s = 0;
       for (LinearWavefunction::const_iterator I = L.begin(); I != L.end(); ++I)
       {
+	 if (Verbose > 0)
+	    std::cout << "site " << s << std::endl;
 	 r = operator_prod(herm(*I), r, *I);
+	 ++s;
       }
       return r;
    }
 
    LinearWavefunction const& L;
    QuantumNumber QShift;
+   int Verbose;
 };
    
 struct RightMultiply
@@ -65,15 +70,19 @@ struct RightMultiply
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   RightMultiply(LinearWavefunction const& R_, QuantumNumber const& QShift_) 
-      : R(R_), QShift(QShift_) {}
+   RightMultiply(LinearWavefunction const& R_, QuantumNumber const& QShift_, int Verbose_ = 0) 
+      : R(R_), QShift(QShift_), Verbose(Verbose_) {}
 
    result_type operator()(argument_type const& x) const
    {
       result_type r = x;
+      int s = R.size();
       LinearWavefunction::const_iterator I = R.end();
       while (I != R.begin())
       {
+	 --s;
+	 if (Verbose > 0)
+	    std::cout << "site " << s << std::endl;
 	 --I;
 	 r = operator_prod(*I, r, herm(*I));
       }
@@ -82,6 +91,7 @@ struct RightMultiply
 
    LinearWavefunction const& R;
    QuantumNumber QShift;
+   int Verbose;
 };
 
 InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi, MatrixOperator const& Lambda,
@@ -121,7 +131,8 @@ InfiniteWavefunctionLeft::Initialize(LinearWavefunction const& Psi_, MatrixOpera
 }
 
 InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi, 
-						   QuantumNumbers::QuantumNumber const& QShift_)
+						   QuantumNumbers::QuantumNumber const& QShift_,
+						   int Verbose)
    : QShift(QShift_)
 {
    LinearWavefunction PsiL = Psi;
@@ -133,21 +144,24 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi
    // and intialize it to herm(Xu) * Xu
    MatrixOperator LeftEigen = Guess;
 
-      // get the eigenmatrix.  Do some dodgy explict restarts.
+   if (Verbose > 0)
+      std::cout << "Obtaining left orthogonality eigenvector..." << std::endl;
+   // get the eigenmatrix.  Do some dodgy explict restarts.
    int Iterations = 20;
    double Tol = ArnoldiTol;
    LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
-   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, QShift), 
+   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, QShift, Verbose-2), 
                                                       Iterations, Tol, 
-						      LinearSolvers::LargestAlgebraicReal, false);
+						      LinearSolvers::LargestAlgebraicReal, false, Verbose-1);
    while (Tol < 0)
    {
-      std::cerr << "LeftEigen: Arnoldi not converged, restarting.  EValue=" 
-                << EtaL << ", Tol=" << Tol << "\n";
+      if (Verbose > 0)
+	 std::cout << "LeftEigen: Arnoldi not converged, restarting.  EValue=" 
+		   << EtaL << ", Tol=" << Tol << "\n";
       Iterations = 20; Tol = ArnoldiTol;
       LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
-      EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, QShift), Iterations, 
-				    Tol, LinearSolvers::LargestAlgebraicReal, false);
+      EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, QShift, Verbose-2), Iterations, 
+				    Tol, LinearSolvers::LargestAlgebraicReal, false, Verbose-1);
    }
 
    CHECK(EtaL.real() > 0)("Eigenvalue must be positive");
@@ -213,21 +227,24 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi
    // initialize the guess eigenvector
    MatrixOperator RightEigen = Guess;
 
+   if (Verbose > 0)
+      std::cout << "Obtaining right orthogonality eigenvector..." << std::endl;
    // get the eigenmatrix
    Iterations = 20; Tol = ArnoldiTol;
    RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
-   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, QShift), 
+   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, QShift, Verbose-2), 
                                                       Iterations, Tol, 
-						      LinearSolvers::LargestAlgebraicReal, false);
+						      LinearSolvers::LargestAlgebraicReal, false, Verbose-1);
    //   DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
    while (Tol < 0)
    {
-      std::cerr << "RightEigen: Arnoldi not converged, restarting.  EValue=" 
-                << EtaR << ", Tol=" << Tol << "\n";
+      if (Verbose > 0)
+	 std::cout << "RightEigen: Arnoldi not converged, restarting.  EValue=" 
+		   << EtaR << ", Tol=" << Tol << "\n";
       Iterations = 20; Tol = ArnoldiTol;
       RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
-      EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, QShift), 
-				    Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
+      EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, QShift, Verbose-2), 
+				    Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false, Verbose-1);
    }
    DEBUG_TRACE(EtaR);
 

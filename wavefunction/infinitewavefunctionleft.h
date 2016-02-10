@@ -26,7 +26,7 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
 
       // constructs and canonicalizes the wavefunction
       InfiniteWavefunctionLeft(LinearWavefunction const& Psi, 
-			       QuantumNumbers::QuantumNumber const& QShift_);
+			       QuantumNumbers::QuantumNumber const& QShift, int Verbose = 0);
 
       InfiniteWavefunctionLeft(InfiniteWavefunctionLeft const& Psi) 
 	 : CanonicalWavefunctionBase(Psi), QShift(Psi.QShift) {}
