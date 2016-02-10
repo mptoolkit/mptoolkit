@@ -63,6 +63,16 @@ struct ArgHelper
       return FormalArgument(Name, format_complex(c));
    }
 
+   FormalArgument operator=(double c) const
+   {
+      return FormalArgument(Name, format_complex(c));
+   }
+
+   FormalArgument operator=(int c) const
+   {
+      return FormalArgument(Name, format_complex(double(c)));
+   }
+
    std::string Name;
 };
 
