@@ -847,6 +847,8 @@ StateComponent Initial_F(OperatorComponent const& m, VectorBasis const& Vac)
    return Result;
 }
 
+
+
 bool remove_redundant_by_row(OperatorComponent& Op)
 {
    int Size = Op.Basis1().size();

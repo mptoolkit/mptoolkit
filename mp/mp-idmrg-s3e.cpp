@@ -338,6 +338,20 @@ struct SubProductRightProject
    MatrixOperator const& Ident;
 };
 
+// Does Iter iterations of the MPO solver, without assuming that Psi
+// is perfectly orthogonal - that is, Rho and Identity are approximations.
+// The number of GMRES iterations is fixed by Iter, which is typically rather small.
+// On input, E is an approximation for the final solution, 
+
+std::complex<double>
+PartialSolveSimpleMPO_Left(StateComponent& E, StateComponent const& OldE,
+			   LinearWavefunction const& Psi,
+			   QuantumNumber const& QShift, TriangularMPO const& Op,
+			   MatrixOperator const& Rho, int Iter)
+{
+}
+
+
 std::complex<double>
 SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
 		    QuantumNumber const& QShift, TriangularMPO const& Op,
