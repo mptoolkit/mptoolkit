@@ -125,11 +125,10 @@ int main(int argc, char** argv)
          std::cerr << "If -l [--lattice] is specified, then the operators must all come from the specified lattice file\n";
          std::cerr << "Otherwise all operators must be of the form lattice:operator\n";
 	 std::cerr << "The operators must be of the ProductMPO form.\n";
-	 std::cerr << "\nThis tool calculates the commutator phase of operator pairs <X Y X\u2020 Y\u2020>\n";
+	 std::cerr << "\nThis tool calculates the commutator phase of operator pairs <X Y X\u2020 Y\u2020>,\n";
+	 std::cerr << "and <X X*> phase.\n";
 	 std::cerr << "For complex conjugation, prefix the operator expression with c&\n";
 	 std::cerr << "For spatial reflection, prefix with r& (cr& or rc& for conjugate-reflection)\n";
-	 std::cerr << "The operators must be *finite* operators - there is an implicit prod_unit to treat"
-	    " the finite operator as a product over unit cells.\n";
          return 1;
       }
 
