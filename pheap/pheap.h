@@ -266,6 +266,14 @@ void Shutdown();
 // shuts down the persistent heap, flushing all data and writing the metadata.
 void ShutdownPersistent(PHeapObject* MainObject);
 
+// This is used to clean up files on termination.  If the persistent heap has
+// already been deallocated then do nothing (so this is safe to call as the last function
+// before main() exits).  If the persistent heap still exists and was created new, then
+// delete the associated files (they won't be readable anyway if the heap hasn't been shutdown
+// persistently).  If the persistent heap still exists but was loaded from an existing file,
+// then do nothing - the file should still be readable after termination.
+void Cleanup();
+
 // exports an object to another filesystem, returning the PageId where the
 // metadata for the heap is stored.  This function is useful only to
 // implement higher level export functions.

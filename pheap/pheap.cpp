@@ -694,6 +694,15 @@ void Shutdown()
    FileSystem() = NULL;
 }
 
+void Cleanup()
+{
+   pthread::mutex::sentry Lock(GlobalHeapMutex());
+   if (GetFileSystem() == NULL)
+      return;
+
+   FileSystem()->cleanup();
+}
+
 PageId ExportHeap(BlockFileSystem* FS_, PHeapObject* MainObject)
 {
    PRECONDITION(FS_ != NULL);

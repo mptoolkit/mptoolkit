@@ -1279,7 +1279,7 @@ int main(int argc, char** argv)
       MatrixOperator Xu = PsiR * herm(MapToOldBasis) * delta_shift(C_old_inverse, adjoint(QShift));
       MyPsi.set_back(prod(MyPsi.get_back(), Xu));
 
-      Psi = InfiniteWavefunctionLeft(MyPsi, QShift);
+      Psi = InfiniteWavefunctionLeft::Construct(MyPsi, QShift);
 
 #if 0
       Psi.C_old = DiagonalL;
@@ -1314,7 +1314,7 @@ int main(int argc, char** argv)
       DEBUG_CHECK_EQUAL(Psi.Psi.Basis1(), delta_shift(Psi.C_right.Basis2(), Psi.QShift));
 #endif
 
-      Psi = InfiniteWavefunctionLeft(MyPsi, QShift);
+      Psi = InfiniteWavefunctionLeft::Construct(MyPsi, QShift);
 
       pvalue_ptr<MPWavefunction> P(new MPWavefunction(Psi));
       pheap::ShutdownPersistent(P);

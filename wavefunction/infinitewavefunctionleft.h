@@ -19,14 +19,29 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
    public:
       InfiniteWavefunctionLeft() {}
 
+      // named constructors
+
       // construction from a LinearWavefunction (in left-canonical form with lambda 
       // matrix on the right)
-      InfiniteWavefunctionLeft(LinearWavefunction const& Psi, MatrixOperator const& Lambda, 
-			       QuantumNumbers::QuantumNumber const& QShift_);
+      static
+      InfiniteWavefunctionLeft ConstructFromOrthogonal(LinearWavefunction const& Psi, 
+						       MatrixOperator const& Lambda, 
+						       QuantumNumbers::QuantumNumber const& QShift_,
+						       int Verbose = 0);
 
-      // constructs and canonicalizes the wavefunction
-      InfiniteWavefunctionLeft(LinearWavefunction const& Psi, 
-			       QuantumNumbers::QuantumNumber const& QShift, int Verbose = 0);
+      // construct and orthogonalize from a LinearWavefunction
+      static
+      InfiniteWavefunctionLeft Construct(LinearWavefunction const& Psi, 
+					 QuantumNumbers::QuantumNumber const& QShift, 
+					 int Verbose = 0);
+
+      // construct and orthogonalize from a LinearWavefunction, with an approximation
+      // for the right-most density matrix
+      static
+      InfiniteWavefunctionLeft Construct(LinearWavefunction const& Psi, 
+					 MatrixOperator const& GuessRho, 
+					 QuantumNumbers::QuantumNumber const& QShift, 
+					 int Verbose = 0);
 
       InfiniteWavefunctionLeft(InfiniteWavefunctionLeft const& Psi) 
 	 : CanonicalWavefunctionBase(Psi), QShift(Psi.QShift) {}
@@ -58,7 +73,9 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       void debug_check_structure() const;
 
    private:
-      void Initialize(LinearWavefunction const& Psi, MatrixOperator const& Lambda);
+      explicit InfiniteWavefunctionLeft(QuantumNumber const& QShift_);
+
+      void Initialize(LinearWavefunction const& Psi, MatrixOperator const& Lambda, int Verbose);
 
       QuantumNumber QShift;
 

@@ -23,21 +23,27 @@ int main(int argc, char** argv)
    {
       int Verbose = 0;
       std::string OpStr;
-      std::string InPsi;
-      std::string OutPsi;
+      std::string InputFile;
+      std::string OutputFile;
+      bool Force = false;
+      bool AssumeOrthogonal = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
+	 ("assume-orthogonal", prog_opt::bool_switch(&AssumeOrthogonal),
+	  "skip the orthogonalization step")
+	 ("force,f", prog_opt::bool_switch(&Force),
+	  "allow overwriting the output file, if it already exists")
+	 ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "extra debug output [can be used multiple times]")
 	 ;
 
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
          ("op", prog_opt::value(&OpStr), "op")
-         ("psi1", prog_opt::value(&InPsi), "psi1")
-         ("psi2", prog_opt::value(&OutPsi), "psi2")
+         ("psi1", prog_opt::value(&InputFile), "psi1")
+         ("psi2", prog_opt::value(&OutputFile), "psi2")
          ;
 
       prog_opt::positional_options_description p;
@@ -58,6 +64,14 @@ int main(int argc, char** argv)
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options] <operator> <input-psi> <output-psi>\n";
          std::cerr << desc << '\n';
+	 std::cerr << "This tool calculates the action of an operator on an iMPS.\n";
+	 std::cerr << "The operator must be of the ProductMPO form.\n";
+	 std::cerr << "If the operator is unitary and the boundary of the unit cell is invariant,"
+		   << "that is, the operator is a ProductMPO with 1-dimensional boundaries "
+		   << "(use mp-ioperator to check), then the final wavefunction will already be "
+		   << "orthogonal, and the orthonormalization step can be ommitted by using "
+		   << "the --assume-orthogonal option.\n";
+
          return 1;
       }
 
@@ -68,14 +82,12 @@ int main(int argc, char** argv)
 	 std::cout << "Loading wavefunction..." << std::endl;
 
       pvalue_ptr<MPWavefunction> PsiPtr;
-      long CacheSize = getenv_or_default("MP_CACHESIZE", DEFAULT_PAGE_CACHE_SIZE);
-      if (InPsi == OutPsi)
-	 PsiPtr = pheap::OpenPersistent(InPsi.c_str(), CacheSize);
+      if (InputFile == OutputFile)
+	 PsiPtr = pheap::OpenPersistent(InputFile.c_str(), mp_pheap::CacheSize());
       else
       {
-	 int PageSize = getenv_or_default("MP_PAGESIZE", DEFAULT_PAGE_SIZE);
-	 pheap::Initialize(OutPsi, 1, PageSize, CacheSize);
-	 PsiPtr = pheap::ImportHeap(InPsi.c_str());
+	 pheap::Initialize(OutputFile, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
+	 PsiPtr = pheap::ImportHeap(InputFile);
       }
 
       InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
@@ -89,7 +101,8 @@ int main(int argc, char** argv)
 	 int Size = statistics::lcm(Psi.size(), StringOp.size());
 	 if (Psi.size() < Size)
 	 {
-	    std::cerr << "mp-iapply: warning: extending wavefunction size to lowest common multiple, which is " << Size << " sites.\n";
+	    std::cerr << "mp-iapply: warning: extending wavefunction size to lowest common multiple, which is " 
+		      << Size << " sites.\n";
 	 }
 	 Psi = repeat(Psi, Size / Psi.size());
 	 StringOp = repeat(StringOp, Size / StringOp.size());
@@ -107,10 +120,17 @@ int main(int argc, char** argv)
 	 (*I) = aux_tensor_prod(*MI, *I);
       }
 
-      if (Verbose > 0)
-	 std::cout << "Constructing canonical form wavefunction..." << std::endl;
+      if (AssumeOrthogonal)
+      {
+	 MatrixOperator Rho = Psi.lambda_r();
+	 Rho = scalar_prod(herm(Rho), Rho);
+	 PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiL, Rho, Psi.qshift(), Verbose);
+      }
+      else
+      {
+	 PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::Construct(PsiL, Psi.qshift(), Verbose);
+      }
 
-      PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft(PsiL, Psi.qshift(), Verbose);
       PsiPtr.mutate()->AppendHistory(EscapeCommandline(argc, argv));
 
       if (Verbose > 0)
@@ -121,16 +141,19 @@ int main(int argc, char** argv)
    catch (prog_opt::error& e)
    {
       std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      pheap::Cleanup();
       return 1;
    }
    catch (std::exception& e)
    {
       std::cerr << "Exception: " << e.what() << '\n';
+      pheap::Cleanup();
       return 1;
    }
    catch (...)
    {
       std::cerr << "Unknown exception!\n";
+      pheap::Cleanup();
       return 1;
    }
 }

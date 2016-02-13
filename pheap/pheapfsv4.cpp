@@ -323,6 +323,7 @@ FileSystem::FileSystem()
      PageSize(0),
      HookPageNumber(uint32_t(-1)),
      Alloc(NULL),
+     CreatedNew(false),
      IsReadOnly(false),
      MetaVersion(MetadataVersion)
 {
@@ -352,6 +353,7 @@ void FileSystem::create(std::string const& FilePath, int NumFiles,
    FileName = std::string(PathSep, FilePath.end());
 
    IsReadOnly = false;
+   CreatedNew = true;
    MaxPageCacheSize = PageCacheByteSize / PageSize + 1;
 
    for (int i = 0; i < NumFiles; ++i)
@@ -538,6 +540,7 @@ PageId FileSystem::open(std::string const& FilePath, size_t PageCacheByteSize, b
    FileName = std::string(PathSep, FilePath.end());
 
    IsReadOnly = IsReadOnly_;
+   CreatedNew = false;
 
    int InitialPageFileNumber = ReadPageFileMetadata(Path, FileName);
 
@@ -655,6 +658,7 @@ void FileSystem::persistent_shutdown(PageId UserPage)
    }
    PageFileList.clear();
    PageFileNames.clear();
+   CreatedNew = false;
 
    notify_log(10, pheap::PHeapLog) << "file system shutdown completed.\n";
    notify_log(10, pheap::PHeapLog) << "Total pages allocated: " << num_allocated_pages() << '\n';
@@ -894,6 +898,7 @@ void FileSystem::shutdown(bool Remove)
    }
 
    PageCache.clear();
+   CreatedNew = false;
 
    // walk the page list and deallocate the pages.  We don't destroy the PageInfo*'s themselves,
    // since there may be pointers to them elsewhere (as PageId's, for example) that
@@ -919,6 +924,13 @@ void FileSystem::shutdown(bool Remove)
    notify_log(10, pheap::PHeapLog) << "Total pages free: " << num_free_pages() << '\n';
    notify_log(10, pheap::PHeapLog) << "Total pages read: " << num_pages_read() << '\n';
    notify_log(10, pheap::PHeapLog) << "Total pages written: " << num_pages_written() << '\n';
+}
+
+void FileSystem::cleanup()
+{
+   if (CreatedNew)
+      this->shutdown(true);
+   CreatedNew = false;
 }
 
 int FileSystem::GetPageFileNumber(PageFile* PF) const
