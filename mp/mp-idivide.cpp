@@ -68,7 +68,7 @@ int main(int argc, char** argv)
       desc.add_options()
          ("help", "show this help message")
 	 ("force,f", prog_opt::bool_switch(&Force),
-	  "overwrite the output file, if it exists")
+	  "allow overwriting the output file, if it already exists")
 	 ("divide,d", prog_opt::value(&Div), "divide the wavefunction into this many parts [default 2]")
 	 ("unitcell,u", prog_opt::value(&NewUnitCellSize), "new unit cell size (alternative to --divide)")
          ("tol", prog_opt::value(&Tol),
@@ -119,10 +119,14 @@ int main(int argc, char** argv)
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-      // create a new file for output
-      pheap::Initialize(OutputFile, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
-      // and load the input wavefunction
-      pvalue_ptr<MPWavefunction> InputPsi = pheap::ImportHeap(InputFile);
+      pvalue_ptr<MPWavefunction> InputPsi;
+      if (InputFile == OutputFile)
+	 InputPsi = pheap::OpenPersistent(InputFile.c_str(), mp_pheap::CacheSize());
+      else
+      {
+	 pheap::Initialize(OutputFile, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
+	 InputPsi = pheap::ImportHeap(InputFile);
+      }
 
       InfiniteWavefunctionLeft Psi1 = InputPsi->get<InfiniteWavefunctionLeft>();
 
@@ -219,7 +223,11 @@ int main(int argc, char** argv)
 
       QuantumNumber QShift = Ident;
 
-      InfiniteWavefunctionLeft PsiOut(PsiNew, QShift);
+      // TODO: this isn't quite right for non-zero qshift
+      MatrixOperator GuessRho = Psi1.lambda_l();
+      GuessRho = scalar_prod(herm(GuessRho), GuessRho);
+
+      InfiniteWavefunctionLeft PsiOut = InfiniteWavefunctionLeft::Construct(PsiNew, GuessRho, QShift, Verbose);
       Psi1 = InfiniteWavefunctionLeft();
       Psi2 = Psi1;
 
@@ -234,17 +242,20 @@ int main(int argc, char** argv)
    }
    catch (prog_opt::error& e)
    {
-      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n'; 
+      pheap::Cleanup();
       return 1;
    }
    catch (std::exception& e)
    {
       std::cerr << "Exception: " << e.what() << '\n';
+      pheap::Cleanup();
       return 1;
    }
    catch (...)
    {
       std::cerr << "Unknown exception!\n";
+      pheap::Cleanup();
       return 1;
    }
 }

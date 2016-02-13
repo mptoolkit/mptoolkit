@@ -145,11 +145,11 @@ class LinearWavefunction
 // Multiplies M on the left hand side of Psi, and iteratively left-orthogonalizes the wavefunction,
 // returning the remainder matrix.  If the input wavefunction isn't in right-orthogonal form
 // then the truncations will be unspecified.
-MatrixOperator left_orthogonalize(MatrixOperator const& M, LinearWavefunction& Psi);
+MatrixOperator left_orthogonalize(MatrixOperator const& M, LinearWavefunction& Psi, int Verbose = 0);
 
 // Multiplies M on the right hand side of Psi, and iteratively right-orthogonalizes the wavefunction,
 // returning the remainder matrix
-MatrixOperator right_orthogonalize(LinearWavefunction& Psi, MatrixOperator const& M);
+MatrixOperator right_orthogonalize(LinearWavefunction& Psi, MatrixOperator const& M, int Verbose = 0);
 
 LinearWavefunction operator*(double a, LinearWavefunction const& x);
 LinearWavefunction operator*(LinearWavefunction const& x, double a);

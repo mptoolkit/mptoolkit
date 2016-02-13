@@ -94,46 +94,33 @@ struct RightMultiply
    int Verbose;
 };
 
-InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi, MatrixOperator const& Lambda,
-						   QuantumNumbers::QuantumNumber const& QShift_)
+InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(QuantumNumbers::QuantumNumber const& QShift_)
    : QShift(QShift_)
 {
-   this->Initialize(Psi, Lambda);
 }
 
-void
-InfiniteWavefunctionLeft::Initialize(LinearWavefunction const& Psi_, MatrixOperator const& Lambda)
+InfiniteWavefunctionLeft
+InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction const& Psi, MatrixOperator const& Lambda,
+						  QuantumNumbers::QuantumNumber const& QShift_,
+						  int Verbose)
 {
-   LinearWavefunction Psi = Psi_;
-   MatrixOperator M = right_orthogonalize(Psi, Lambda);
-   // normalize
-   M *= 1.0 / norm_frob(M);
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-   // we can't initialize lambda_l yet, as we don't have it in the correct (diagonal) basis.
-   // We will only get this at the end, when we obtain lambda_r.  So just set it to a dummy
-   this->push_back_lambda(D);
-   for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
-   {
-      StateComponent A = prod(M, *I);
-      M = ExpandBasis2(A);
-      SingularValueDecomposition(M, U, D, Vh);
-      this->push_back(prod(A, U));
-      this->push_back_lambda(D);
-      M = D*Vh;
-   }
-
-   Vh = delta_shift(Vh, QShift);
-   this->set(0, prod(Vh, this->operator[](0)));
-   this->setBasis1(Vh.Basis1());
-   this->set_lambda(0, delta_shift(D, QShift));
-   this->setBasis2(D.Basis1());
+   InfiniteWavefunctionLeft Result(QShift_);
+   Result.Initialize(Psi, Lambda, Verbose-1);
+   return Result;
 }
 
-InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi, 
-						   QuantumNumbers::QuantumNumber const& QShift_,
-						   int Verbose)
-   : QShift(QShift_)
+InfiniteWavefunctionLeft
+InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi,
+				    QuantumNumbers::QuantumNumber const& QShift_,
+				    int Verbose)
+{
+   return InfiniteWavefunctionLeft::Construct(Psi, MatrixOperator::make_identity(Psi.Basis2()), QShift_, Verbose);
+}
+
+InfiniteWavefunctionLeft
+InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperator const& GuessRho,
+				    QuantumNumbers::QuantumNumber const& QShift,
+				    int Verbose)
 {
    LinearWavefunction PsiL = Psi;
 
@@ -225,7 +212,7 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi
    // same for the right eigenvector, which will be the density matrix
 
    // initialize the guess eigenvector
-   MatrixOperator RightEigen = Guess;
+   MatrixOperator RightEigen = GuessRho;
 
    if (Verbose > 0)
       std::cout << "Obtaining right orthogonality eigenvector..." << std::endl;
@@ -305,7 +292,52 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(LinearWavefunction const& Psi
    PsiL.set_back(prod(PsiL.get_back(), I));
 #endif
 
-   this->Initialize(PsiL, D);
+   return InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiL, D, QShift, Verbose-1);
+}
+
+void
+InfiniteWavefunctionLeft::Initialize(LinearWavefunction const& Psi_, MatrixOperator const& Lambda, int Verbose)
+{
+   if (Verbose > 0)
+   {
+      std::cout << "Constructing canonical wavefunction..." << std::endl;
+      std::cout << "Constructing right ortho matrices..." << std::endl;
+   }
+
+   LinearWavefunction Psi = Psi_;
+   MatrixOperator M = right_orthogonalize(Psi, Lambda, Verbose-1);
+   // normalize
+   M *= 1.0 / norm_frob(M);
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   // we can't initialize lambda_l yet, as we don't have it in the correct (diagonal) basis.
+   // We will only get this at the end, when we obtain lambda_r.  So just set it to a dummy
+   this->push_back_lambda(D);
+
+   if (Verbose > 0)
+      std::cout << "Constructing left ortho matrices..." << std::endl;
+
+   int n = 0;
+   for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I, ++n)
+   {
+      if (Verbose > 1)
+	 std::cout << "orthogonalizing site " << n << std::endl;
+      StateComponent A = prod(M, *I);
+      M = ExpandBasis2(A);
+      SingularValueDecomposition(M, U, D, Vh);
+      this->push_back(prod(A, U));
+      this->push_back_lambda(D);
+      M = D*Vh;
+   }
+
+   Vh = delta_shift(Vh, QShift);
+   this->set(0, prod(Vh, this->operator[](0)));
+   this->setBasis1(Vh.Basis1());
+   this->set_lambda(0, delta_shift(D, QShift));
+   this->setBasis2(D.Basis1());
+
+   if (Verbose > 0)
+      std::cout << "Finished constructing canonical wavefunction." << std::endl;
 }
 
 void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Version)
@@ -324,7 +356,7 @@ void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Vers
       in >> C_right;
       in >> Attr;
    
-      Psi = InfiniteWavefunctionLeft(PsiLinear, C_right, QShift);
+      Psi = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiLinear, C_right, QShift);
    }
    else if (Version == 2)
    {

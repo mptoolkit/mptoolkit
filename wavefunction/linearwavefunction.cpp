@@ -392,29 +392,35 @@ expectation_conj(LinearWavefunction const& Psi1,
 #endif
 
 MatrixOperator 
-left_orthogonalize(MatrixOperator const& Mat, LinearWavefunction& Psi)
+left_orthogonalize(MatrixOperator const& Mat, LinearWavefunction& Psi, int Verbose)
 {
    MatrixOperator M = Mat;
    LinearWavefunction::iterator Pi = Psi.begin();
+   int n = 0;
    while (Pi != Psi.end())
    {
+      if (Verbose)
+	 std::cout << "orthogonalizing site " << n << std::endl;
       StateComponent x = prod(M, *Pi);
       M = TruncateBasis2(x);
       *Pi = x;
-      ++Pi;
+      ++Pi; ++n;
    }
    return M;
 }
 
 MatrixOperator
-right_orthogonalize(LinearWavefunction& Psi, MatrixOperator const& Mat)
+right_orthogonalize(LinearWavefunction& Psi, MatrixOperator const& Mat, int Verbose)
 {
    MatrixOperator M = Mat;
    LinearWavefunction Result(Psi.GetSymmetryList());
    LinearWavefunction::iterator Pi = Psi.end();
+   int n = Psi.size()-1;
    while (Pi != Psi.begin())
    {
-      --Pi;
+      --Pi; --n;
+      if (Verbose)
+	 std::cout << "orthogonalizing site " << n << std::endl;
       StateComponent x = prod(*Pi, M);
       M = TruncateBasis1(x);
       *Pi = x;

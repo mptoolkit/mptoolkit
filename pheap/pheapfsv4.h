@@ -238,7 +238,12 @@ class FileSystem
       void create(std::string const& FileName, int NumFiles, 
                   size_t PageSize, size_t PageCacheByteSize, bool Unlink = false, bool AllowOverwrite = true);
 
+      // close the associated page files.  If Remove is true then delete the files.
       void shutdown(bool Remove = false);
+
+      // if the FileSystem was created (rather than opened from an existing file),
+      // then assume that the files are now unusable and delete them.
+      void cleanup();
 
       void persistent_shutdown(PageId UserPage);
 
@@ -345,6 +350,8 @@ class FileSystem
 
       BufferAllocator* Alloc;
 
+      bool CreatedNew;  // set to true if the files were created,
+                        // so that on an abnormal shutdown we can safely delete them
       bool IsReadOnly;
 
       int MetaVersion;

@@ -41,7 +41,7 @@ PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunctionOld co
 inline
 InfiniteWavefunctionLeft Make(InfiniteWavefunctionOld const& Psi)
 {
-   return InfiniteWavefunctionLeft(Psi.PsiLinear, Psi.C_right, Psi.QShift);
+   return InfiniteWavefunctionLeft::ConstructFromOrthogonal(Psi.PsiLinear, Psi.C_right, Psi.QShift);
 }
 
 #endif
