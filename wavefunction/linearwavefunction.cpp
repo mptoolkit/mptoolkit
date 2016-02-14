@@ -415,7 +415,7 @@ right_orthogonalize(LinearWavefunction& Psi, MatrixOperator const& Mat, int Verb
    MatrixOperator M = Mat;
    LinearWavefunction Result(Psi.GetSymmetryList());
    LinearWavefunction::iterator Pi = Psi.end();
-   int n = Psi.size()-1;
+   int n = Psi.size();
    while (Pi != Psi.begin())
    {
       --Pi; --n;

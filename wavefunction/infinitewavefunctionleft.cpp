@@ -505,12 +505,14 @@ void inplace_reflect(InfiniteWavefunctionLeft& Psi)
    InfiniteWavefunctionLeft Result;
    Result.QShift = Psi.qshift();
 
+   int Size = Psi.size();
+
    RealDiagonalOperator D = Psi.lambda_r();
    MatrixOperator U = MatrixOperator::make_identity(D.Basis1());
 
    // left-most lambda matrix, this is a place-holder
    Result.push_back_lambda(flip_conj(D));
-   MatrixOperator DSave = D;
+   RealDiagonalOperator DSave = D;
 
    InfiniteWavefunctionLeft::const_base_mps_iterator I = Psi.base_end();
    while (I != Psi.base_begin())
@@ -531,17 +533,34 @@ void inplace_reflect(InfiniteWavefunctionLeft& Psi)
       Psi.pop_back_lambda();
    }
 
-   // In principle DSave is U*D*herm(U)
+   // We have the final U matrix to deal with.  U.Basis1() is our original basis,
+   // U.Basis2() has some gauge transform.  We want to write the final wavefunction in the
+   // (flip conjugate) of the original basis.  If the wavefunction is perfectly orthogonal then
+   // we should satisfy DSave = U*D*herm(U) here.  We want to use the DSave basis, not the D basis.
+   // So we need to form
+   // U*D (from the final SVD) = U*D*herm(U)*U = DSave * U
+   // and merge the U into the final A-matrix.
 
+#if 1
+   Result.set_lambda(0, delta_shift(flip_conj(DSave), Psi.qshift()));
+   Result.set_lambda(Size, flip_conj(DSave));
+
+   Result.set(Size-1, prod(Result[Size-1], herm(flip_conj(U))));
+
+   Result.setBasis1(Result[0].Basis1());
+   Result.setBasis2(Result[Size-1].Basis2());
+#else
+   // old code that used the D basis (and hence introduces a gauge transformation)
    Result.set_lambda(0, delta_shift(flip_conj(D), Psi.qshift()));
    Result.set(0, prod(herm(delta_shift(flip_conj(U), Psi.qshift())), Result[0]));
    
    Result.setBasis1(Result[0].Basis1());
    Result.setBasis2(adjoint(D.Basis2()));
+#endif
 
    Psi = Result;
 
-   Psi.debug_check_structure();
+   Psi.check_structure();
 }
 
 // Conjugate a wavefunction in place

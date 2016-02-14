@@ -66,10 +66,10 @@ int main(int argc, char** argv)
          std::cerr << desc << '\n';
 	 std::cerr << "This tool calculates the action of an operator on an iMPS.\n";
 	 std::cerr << "The operator must be of the ProductMPO form.\n";
-	 std::cerr << "If the operator is unitary and the boundary of the unit cell is invariant,"
-		   << "that is, the operator is a ProductMPO with 1-dimensional boundaries "
-		   << "(use mp-ioperator to check), then the final wavefunction will already be "
-		   << "orthogonal, and the orthonormalization step can be ommitted by using "
+	 std::cerr << "If the operator is unitary and the boundary of the unit cell is invariant,\n"
+		   << "that is, the operator is a ProductMPO with 1-dimensional boundaries\n"
+		   << "(use mp-ioperator to check), then the final wavefunction will already be\n"
+		   << "orthogonal already, and the orthonormalization step can be ommitted by using\n"
 		   << "the --assume-orthogonal option.\n";
 
          return 1;
