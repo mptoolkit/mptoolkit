@@ -194,6 +194,13 @@ int main(int argc, char** argv)
 	    {
 	       InfiniteWavefunctionLeft PR = InfPsi;
 	       inplace_reflect(PR);
+	       // The wavefunction must be in a reflection-symmetric basis, or this isn't valid
+	       if (PR.Basis1() != InfPsi.Basis1())
+	       {
+		  std::cerr << "mp-aux-algebra: cannot reflect operator because the basis is not reflection symmetric.\n"
+			    << "mp-aux-algebra: ignoring operator " << OpStr << '\n';
+		  continue;
+	       }
 	       PsiR = get_left_canonical(PR).first;
 	    }
 	    Psi2 = &PsiR;
@@ -217,6 +224,14 @@ int main(int argc, char** argv)
 	    {
 	       InfiniteWavefunctionLeft PR = InfPsi;
 	       inplace_reflect(PR);
+
+	       // The wavefunction must be in a reflection-symmetric basis, or this isn't valid
+	       if (PR.Basis1() != InfPsi.Basis1())
+	       {
+		  std::cerr << "mp-aux-algebra: cannot reflect operator because the basis is not reflection symmetric.\n"
+			    << "mp-aux-algebra: ignoring operator " << OpStr << '\n';
+		  continue;
+	       }
 	       PsiR = get_left_canonical(PR).first;
 	    }
 	    if (PsiRC.empty())
