@@ -103,7 +103,7 @@ int main(int argc, char** argv)
       {
          Sx += Sx[i];                                         // total spin (x-component) on a leg of cylinder
          Sy += Sy[i];                                         // total spin (y-component) on a leg of cylinder
-         Sz += Sx[i];                                         // total spin (z-component) on a leg of cylinder
+         Sz += Sz[i];                                         // total spin (z-component) on a leg of cylinder
 
       }
 
