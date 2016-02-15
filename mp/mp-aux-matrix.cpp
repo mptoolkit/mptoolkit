@@ -14,11 +14,12 @@
 #include "tensor/tensor_eigen.h"
 #include "mp-algorithms/arnoldi.h"
 #include "lattice/unitcell.h"
-#include "lattice/unitcell-parser.h"
+#include "lattice/infinite-parser.h"
 #include "linearalgebra/arpack_wrapper.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <fstream>
 #include "common/formatting.h"
+#include <tuple>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -47,7 +48,7 @@ WriteMatrixAsSparse(std::ostream& out, LinearAlgebra::Matrix<std::complex<double
       for (unsigned j = 0; j < size2(Op); ++j)
       {
 	 if (norm_frob(Op(i,j)) > Epsilon || (ForceLast && i == size1(Op)-1 && j == size2(Op)-1))
-	    out << (i+iOffset) << ' ' << (j+jOffset) << ' ' << format_complex(Op(i,j)) << '\n';
+	    out << (i+iOffset) << ' ' << (j+jOffset) << ' ' << Op(i,j).real() << ' ' << Op(i,j).imag() << '\n';
       }
    }
 }
@@ -83,41 +84,43 @@ WriteMatrixOperatorAsSparse(std::ostream& out, MatrixOperator const& Op, double 
    // make sure that the final element is included, if the bottom-right component of the matrix doesn't exist
    if (!iterate_at(Op.data(), Op.Basis1().size()-1, Op.Basis2().size()-1))
    {
-      out << Op.Basis1().total_dimension() << ' ' << Op.Basis2().total_dimension() << " 0.0\n";
+      out << Op.Basis1().total_dimension() << ' ' << Op.Basis2().total_dimension() << " 0.0 0.0\n";
    }
 }
+
+
 
 template <typename Func>
 struct PackApplyFunc
 {
-   PackApplyFunc(PackMatrixOperator const& Pack_, Func f_) : Pack(Pack_), f(f_) {}
+   PackApplyFunc(PackStateComponent const& Pack_, Func f_) : Pack(Pack_), f(f_) {}
 
    void operator()(std::complex<double> const* In, std::complex<double>* Out) const
    {
-      MatrixOperator x = Pack.unpack(In);
+      StateComponent x = Pack.unpack(In);
       x = f(x);
       Pack.pack(x, Out);
    } 
-   PackMatrixOperator const& Pack;
+   PackStateComponent const& Pack;
    Func f;
 };
 
 template <typename Func>
 PackApplyFunc<Func>
-MakePackApplyFunc(PackMatrixOperator const& Pack_, Func f_)
+MakePackApplyFunc(PackStateComponent const& Pack_, Func f_)
 {
    return PackApplyFunc<Func>(Pack_, f_);
 }
 
-std::pair<std::complex<double>, MatrixOperator>
-get_left_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, 
-                     QuantumNumber const& QShift, 
-                     FiniteMPO const& StringOp,
+std::tuple<std::complex<double>, int, StateComponent>
+get_left_eigenvector(LinearWavefunction const& Psi1, QuantumNumber const& QShift1,
+		     LinearWavefunction const& Psi2, QuantumNumber const& QShift2, 
+                     ProductMPO const& StringOp,
                      double tol = 1E-14, int Verbose = 0)
 {
    int ncv = 0;
-   QuantumNumber Ident(Psi1.GetSymmetryList());
-   PackMatrixOperator Pack(Psi1.Basis2(), Psi2.Basis2(), Ident);
+   int Length = statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size());
+   PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
    int n = Pack.size();
    //   double tolsave = tol;
    //   int ncvsave = ncv;
@@ -126,13 +129,17 @@ get_left_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& P
    std::vector<std::complex<double> > OutVec;
       LinearAlgebra::Vector<std::complex<double> > LeftEigen = 
          LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
-							    LeftMultiplyString(Psi1, StringOp, Psi2, QShift)),
+							    LeftMultiplyOperator(Psi1, QShift1,
+										 StringOp, 
+										 Psi2, QShift2, Length, Verbose-2)),
 					  n, NumEigen, tol, &OutVec, ncv, false, Verbose);
 
-   MatrixOperator LeftVector = Pack.unpack(&(OutVec[0]));
+   StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
       
-   return std::make_pair(LeftEigen[0], LeftVector);
+   return std::make_tuple(LeftEigen[0], Length, LeftVector);
 }
+
+
 
 int main(int argc, char** argv)
 {
@@ -148,6 +155,7 @@ int main(int argc, char** argv)
       std::string RhoFile;
       bool Force = false;
       double Epsilon = 0.0;
+      std::string QSector;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -160,6 +168,7 @@ int main(int argc, char** argv)
 	  "Construct atrix elements of a triangular operator -t file=operator (not yet implemented)")
 	 ("finite,i", prog_opt::value(&FiniteOperators),
 	  "Construct matrix elements of a finite operator -f file=operator (not yet implemented)")
+	 ("sector,s", prog_opt::value(&QSector), "select a different quantum number sector [don't use this unless you know what you are doing]")
 	 ("rho", prog_opt::value(&RhoFile), "Construct the density matrix --rho <filename>")
 	 ("partition", prog_opt::value(&Partition), "Partition of the wavefunction cell,site (not yet implemented)")
 	 ("force,f", prog_opt::bool_switch(&Force), "Overwrite files if they already exist")
@@ -183,7 +192,7 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("wavefunction") < 1 || vm.count("lattice") < 1)
       {
          print_copyright(std::cerr);
-         std::cerr << "usage: " << basename(argv[0]) << " [options] -w <psi> -l <lattice> -p <operator> <filename> [...] \n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options] -w <psi> -l <lattice> -p <file>=<operator> [...] \n";
 	 std::cerr << "This tool constructs the auxiliary space represenation of lattice operators,\n"
 		   << "which are written to a file in a sparse-matrix format suitable for use in eg MATLAB.\n";
          std::cerr << desc << '\n';
@@ -244,7 +253,7 @@ int main(int argc, char** argv)
 	    if (FileExists(ProductOpFile[i]))
 	    {
 	       std::cerr << "mp-aux-matrix: fatal: output file " << ProductOpFile[i]
-			 << " already exists.  Use -o option to overwrite.\n";
+			 << " already exists.  Use -f option to overwrite.\n";
 	       exit(1);
 	    }
 	 }
@@ -253,7 +262,7 @@ int main(int argc, char** argv)
 	    if (FileExists(TriangularOpFile[i]))
 	    {
 	       std::cerr << "mp-aux-matrix: fatal: output file " << TriangularOpFile[i]
-			 << " already exists.  Use -o option to overwrite.\n";
+			 << " already exists.  Use -f option to overwrite.\n";
 	       exit(1);
 	    }
 	 }
@@ -262,7 +271,7 @@ int main(int argc, char** argv)
 	    if (FileExists(FiniteOpFile[i]))
 	    {
 	       std::cerr << "mp-aux-matrix: fatal: output file " << FiniteOpFile[i]
-			 << " already exists.  Use -o option to overwrite.\n";
+			 << " already exists.  Use -f option to overwrite.\n";
 	       exit(1);
 	    }
 	 }
@@ -286,7 +295,7 @@ int main(int argc, char** argv)
       // orthogonalize the wavefunction
       LinearWavefunction Psi1;
       RealDiagonalOperator D;
-      boost::tie(Psi1, D) = get_left_canonical(InfPsi);
+      std::tie(Psi1, D) = get_left_canonical(InfPsi);
       MatrixOperator Rho = D;
       Rho = scalar_prod(Rho, herm(Rho));
       MatrixOperator Identity = MatrixOperator::make_identity(Psi1.Basis1());
@@ -369,7 +378,7 @@ int main(int argc, char** argv)
 	    Psi2 = &PsiRC;
 	 }
 
-	 FiniteMPO StringOperator = ParseUnitCellOperator(Cell, 0, OpStr).MPO();
+	 ProductMPO StringOperator = ParseProductOperator(*Lattice, OpStr);
 
 	 if (Psi1.size() % StringOperator.size() != 0)
 	 {
@@ -380,13 +389,24 @@ int main(int argc, char** argv)
 
 	 StringOperator = repeat(StringOperator, Psi1.size() / StringOperator.size());
 
+	 if (!QSector.empty())
+	 {
+	    QuantumNumber q(Psi1.GetSymmetryList(), QSector);
+	    StringOperator = StringOperator * ProductMPO::make_identity(StringOperator.LocalBasis2List(), q);
+	 }
+
 	 // Get the matrix
          std::complex<double> e;
-         MatrixOperator v;
-         boost::tie(e, v) = get_left_eigenvector(Psi1, *Psi2, InfPsi.qshift(), StringOperator);
+	 int n;
+         StateComponent v;
+         std::tie(e, n, v) = get_left_eigenvector(Psi1, InfPsi.qshift(), *Psi2, InfPsi.qshift(), StringOperator);
 
-	 // normalization - this is designed for unitary operators
-         v *= std::sqrt(Dim);
+	 // Normalization
+	 // it might not be unitary, eg anti-unitary.  So we need to take the 4th power
+	 std::complex<double> x = inner_prod(scalar_prod(herm(v), operator_prod(herm(v), v, v)), Rho);
+	 v *= std::sqrt(std::sqrt(1.0 / x));
+
+	 MatrixOperator M = v[0];
 
 	 // write to file
 	 std::ofstream Out(FileName.c_str(), std::ios::out | std::ios::trunc);
@@ -397,7 +417,7 @@ int main(int argc, char** argv)
 	 else 
 	 {
 	    Out.precision(getenv_or_default("MP_PRECISION", 14));
-	    WriteMatrixOperatorAsSparse(Out, v, Epsilon);
+	    WriteMatrixOperatorAsSparse(Out, M, Epsilon);
 	 }
       }
 

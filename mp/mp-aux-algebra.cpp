@@ -53,7 +53,6 @@ get_left_eigenvector(LinearWavefunction const& Psi1, QuantumNumber const& QShift
 {
    int ncv = 0;
    int Length = statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size());
-   QuantumNumber Ident(Psi1.GetSymmetryList());
    PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
    int n = Pack.size();
    //   double tolsave = tol;
@@ -85,12 +84,14 @@ int main(int argc, char** argv)
       std::vector<std::string> OperatorStr;
       std::vector<std::string> CommutatorStr;
       bool UseTempFile = false;
+      std::string QSector;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
          ("wavefunction,w", prog_opt::value(&PsiStr), "Wavefunction [required]")
 	 ("lattice,l", prog_opt::value(&LatticeFile), "use this lattice file for the operators")
+	 ("sector,s", prog_opt::value(&QSector), "select a different quantum number sector [don't use this unless you know what you are doing]")
 	 //	 ("commutator,c", prog_opt::value(&CommutatorStr), 
 	 //	  "calculate the commutator phase angle, U X X^\\dagger = exp(i*theta) X")
          ("tempfile", prog_opt::bool_switch(&UseTempFile),
@@ -243,11 +244,29 @@ int main(int argc, char** argv)
 
 	 ProductMPO StringOperator = ParseProductOperator(*Lattice, OpStr);
 
+	 // Hack for non-identity symmetry sector
+	 if (!QSector.empty())
+	 {
+	    QuantumNumber q(Psi1.GetSymmetryList(), QSector);
+	    StringOperator = StringOperator * ProductMPO::make_identity(StringOperator.LocalBasis2List(), q);
+	 }
+
          std::complex<double> e;
          StateComponent v;
 	 int n;
          std::tie(e, n, v) = get_left_eigenvector(Psi1, InfPsi.qshift(), *Psi2, InfPsi.qshift(), StringOperator,
 						  Tol, Verbose);
+
+#if 0
+	 // and for a non-identity sector, square the operator to make a scalar
+	 if (!QSector.empty())
+	 {
+	    MatrixOperator M = scalar_prod(v, herm(v));
+	    BasisList b = make_vacuum_basis(M.GetSymmetryList());
+	    v = StateComponent(b, M.Basis1(), M.Basis2());
+	    v[0] = M;
+	 }
+#endif
 
 	 // Normalization
 	 // it might not be unitary, eg anti-unitary.  So we need to take the 4th power
@@ -263,6 +282,7 @@ int main(int argc, char** argv)
 	    std::cout << "#Operator " << i << " = " << OperatorStr[i] << '\n'
 		      << "#eigenvalue = " << e << '\n';
 	    std::cout << "#UU\u2020 = " << inner_prod(Rho, scalar_prod(v,herm(v))) << "\n";
+	    //std::cout << "#<U> = " << inner_prod(Rho, v) << "\n";
 
 	    if (v.size() == 1 && is_scalar(v.LocalBasis()[0]) && v.Basis2() == v.Basis1())
 	    {
