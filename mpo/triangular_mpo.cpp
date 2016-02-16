@@ -1,6 +1,7 @@
  // -*- C++ -*- $Id: triangular_mpo.cpp 1577 2015-08-01 06:57:11Z ianmcc $
 
 #include "triangular_mpo.h"
+#include "common/statistics.h"
 
 void
 TriangularMPO::check_structure() const
@@ -541,6 +542,12 @@ TriangularMPO operator+(TriangularMPO const& x, TriangularMPO const& y)
    if (y.size() == 0)
       return x;
 
+   if (x.size() != y.size())
+   {
+      int NewSize = statistics::lcm(x.size(), y.size());
+      return repeat(x, NewSize/x.size()) + repeat(y, NewSize/y.size());
+   }
+
    PRECONDITION_EQUAL(x.size(), y.size());
    PRECONDITION_EQUAL(x.GetSymmetryList(), y.GetSymmetryList());
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
@@ -632,6 +639,12 @@ TriangularMPO operator*(TriangularMPO const& x, TriangularMPO const& y)
 
 TriangularMPO prod(TriangularMPO const& x, TriangularMPO const& y, QuantumNumbers::QuantumNumber const& q)
 {
+   if (x.size() != y.size())
+   {
+      int NewSize = statistics::lcm(x.size(), y.size());
+      return prod(repeat(x, NewSize/x.size()), repeat(y, NewSize/y.size()), q);
+   }
+
    PRECONDITION(is_transform_target(y.TransformsAs(), x.TransformsAs(), q))(x.TransformsAs())(y.TransformsAs())(q)
       (x.Basis())(x.Basis().front());
    PRECONDITION_EQUAL(x.size(), y.size());
