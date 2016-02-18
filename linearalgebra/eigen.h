@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 //
 // Complex diagonalization wrapper by Thomas Barthel
 //

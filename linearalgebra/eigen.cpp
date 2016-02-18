@@ -86,7 +86,7 @@ void EigenvaluesComplex(int Size, std::complex<double>* Data,
    // First step: balance the matrix
    Fortran::integer ilo = 0, ihi = 0, info = 0;
    double* Scale = new double[Size];
-   LAPACK::zgebal('B', Size, Data, LeadingDim, &ilo, &ihi, Scale, info);
+   LAPACK::zgebal('B', Size, Data, LeadingDim, ilo, ihi, Scale, info);
    CHECK(info == 0)("LAPACK::zgebal")(info);
 
    // Second step: reduce matrix to upper Hessenberg form
@@ -98,16 +98,17 @@ void EigenvaluesComplex(int Size, std::complex<double>* Data,
    LWork = WorkSize.real();
    std::complex<double>* Work = new std::complex<double>[LWork];
    // do the actual call
-   LAPACK::zgehrd(Size, ilo, ihi, Data, LeadingDim, Tau, &WorkSize, LWork, info);
+   LAPACK::zgehrd(Size, ilo, ihi, Data, LeadingDim, Tau, Work, LWork, info);
    CHECK(info == 0)("LAPACK::zgehrd")(info);
    delete[] Work;
 
    // Third step: compute the eigenvalues of the Hessenberg matrix
    // workspace query
-   LAPACK::zhesqr('E', 'N', Size, ilo, ihi, Data, LeadingDim, Eigen, nullptr, 1, &WorkSize, -1, info);
+   std::complex<double> z;
+   LAPACK::zhseqr('E', 'N', Size, ilo, ihi, Data, LeadingDim, Eigen, &z, 1, &WorkSize, -1, info);
    LWork = WorkSize.real();
    Work =  new std::complex<double>[LWork];
-   LAPACK::zhesqr('E', 'N', Size, ilo, ihi, Data, LeadingDim, Eigen, nullptr, 1, Work, LWork, info);
+   LAPACK::zhseqr('E', 'N', Size, ilo, ihi, Data, LeadingDim, Eigen, &z, 1, Work, LWork, info);
    CHECK(info == 0)("LAPACK::zgesqr")(info);
    delete[] Work;
 

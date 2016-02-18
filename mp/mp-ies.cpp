@@ -111,7 +111,24 @@ get_left_eigenvector(LinearWavefunction const& Psi1, QuantumNumber const& QShift
    return std::make_tuple(LeftEigen[0], Length, LeftVector);
 }
 
+// The eigenvalues of the operator, quantum number sector, magnitude and
+// phase angle
+struct EValueRecord
+{
+   QuantumNumber q;
+   double Magnitude;
+   double Radians;
+};
 
+bool CompareMagnitude(EValueRecord const& x, EValueRecord const& y)
+{
+   return x.Magnitude > y.Magnitude;
+}
+
+bool CompareQMagnitude(EValueRecord const& x, EValueRecord const& y)
+{
+   return x.q < y.q || (x.q == y.q && x.Magnitude > y.Magnitude);
+}
 
 int main(int argc, char** argv)
 {
@@ -211,15 +228,44 @@ int main(int argc, char** argv)
          StateComponent v;
          std::tie(e, n, v) = get_right_eigenvector(Psi1, InfPsi.qshift(), Psi1, InfPsi.qshift(), StringOperator, Tol, Verbose);
 
+	 TRACE(e);
+
 	 // Now we want the eigenvalues of v
 	 // These will be of the form a * exp(i*theta) where a is the density matrix eigenvalue and
 	 // theta is the phase (up to an overall phase ambiguity, since it is a constant)
 
-	 
-	 //	 TRACE(SingularValues(v[0]));
-	 TRACE(v[0]);
+	 std::vector<EValueRecord> EValues;
 
-	 
+	 for (std::size_t i = 0; i < v.Basis1().size(); ++i)
+	 {
+	    if (iterate_at(v[0].data(), i, i))
+	    {
+	       LinearAlgebra::Vector<std::complex<double>> Eig = 
+		  LinearAlgebra::EigenvaluesComplex(v[0](i,i));
+
+	       for (unsigned j = 0; j < size(Eig); ++j)
+	       {
+		  EValues.push_back({v.Basis1()[i], std::abs(Eig[j]), std::arg(Eig[j])});
+	       }
+	    }
+	 }
+
+	 // get the sum for normalization
+	 double Sum = 0;
+	 for (auto const& e : EValues)
+	 {
+	    Sum += e.Magnitude * degree(e.q);
+	 }
+
+	 // sort
+	 std::sort(EValues.begin(), EValues.end(), &CompareMagnitude);
+
+	 // output
+	 for (auto const& e : EValues)
+	 {
+	    std::cout << (e.Magnitude/Sum) << ' ' << e.Radians << ' ' << e.q << '\n';
+	 }
+
       }
 
       pheap::Shutdown();

@@ -136,9 +136,10 @@ void zgelqf(integer m, integer n, std::complex<double>* restrict a, integer lda,
 // integer n2 = -1, integer n3 = -1, integer n4 = -1);
 
 void zgebal(char job, integer n, std::complex<double>* restrict a, integer lda, integer& ilo,
-		     integer& ihi, std::complex<double>* restrict scale, integer& info);
+		     integer& ihi, double* restrict scale, integer& info);
 
-void zgehrd(integer n, integer ilo, std::complex<double>* restrict a, integer lda, std::complex<double>* restrict tau,
+void zgehrd(integer n, integer ilo, integer ihi, std::complex<double>* restrict a, integer lda, 
+	    std::complex<double>* restrict tau,
 	    std::complex<double>* restrict work, integer lwork, integer& info);
 
 void zhseqr(char job, char compz, integer n, integer ilo, integer ihi, std::complex<double>* restrict h, integer ldh,
@@ -278,9 +279,9 @@ void F77NAME(zgelqf)(integer const* m, integer const* n, complex* restrict a, in
                      complex* restrict tau, complex* restrict work, integer const* lwork, integer* restrict info);
 
 void F77NAME(zgebal)(char const* job, integer const* n, complex* restrict a, integer const* lda, integer* restrict ilo,
-		     integer* restrict ihi, complex* restrict scale, integer* restrict info);
+		     integer* restrict ihi, double* restrict scale, integer* restrict info);
 
-void F77NAME(zgehrd)(integer const* n, integer const* ilo, complex* restrict a, integer const* lda, 
+void F77NAME(zgehrd)(integer const* n, integer const* ilo, integer const* ihi, complex* restrict a, integer const* lda, 
 		     complex* restrict tau, complex* restrict work, integer* restrict lwork, integer* restrict info);
 
 void F77NAME(zhseqr)(char const* job, char const* compz, integer const* n, integer const* ilo, integer const* ihi, 
@@ -537,19 +538,20 @@ void zgelqf(integer m, integer n, std::complex<double>* restrict a, integer lda,
 
 inline
 void zgebal(char job, integer n, std::complex<double>* restrict a, integer lda, integer& ilo,
-		     integer& ihi, std::complex<double>* restrict scale, integer& info)
+		     integer& ihi, double* restrict scale, integer& info)
 {
    TRACE_LAPACK("zgebal")(job)(n)(a)(lda)(ilo)(ihi)(scale)(info);
    raw::F77NAME(zgebal)(&job, &n, reinterpret_cast<complex*>(a), &lda, &ilo,
-			&ihi, reinterpret_cast<complex*>(scale), &info);
+			&ihi, scale, &info);
 }
 
 inline
-void zgehrd(integer n, integer ilo, std::complex<double>* restrict a, integer lda, std::complex<double>* restrict tau,
+void zgehrd(integer n, integer ilo, integer ihi, std::complex<double>* restrict a, integer lda, 
+	    std::complex<double>* restrict tau,
 	    std::complex<double>* restrict work, integer lwork, integer& info)
 {
-   TRACE_LAPACK("zgehrd")(m)(ilo)(a)(lda)(tau)(work)(lwork)(info);
-   raw::F77NAME(zgehrd)(&n, &ilo, reinterpret_cast<complex*>(a), &lda, reinterpret_cast<complex*>(tau), 
+   TRACE_LAPACK("zgehrd")(n)(ilo)(ihi)(a)(lda)(tau)(work)(lwork)(info);
+   raw::F77NAME(zgehrd)(&n, &ilo, &ihi, reinterpret_cast<complex*>(a), &lda, reinterpret_cast<complex*>(tau), 
 			reinterpret_cast<complex*>(work), &lwork, &info);
 }
 
