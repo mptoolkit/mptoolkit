@@ -232,6 +232,16 @@ Vector<double>
 EigenvaluesHermitian(M const& m);
 
 //
+// EigenvaluesComplex
+//
+// returns the eigenvalues of a general complex matrix
+//
+
+template <typename M>
+Vector<std::complex<double>>
+EigenvaluesComplex(M const& m);
+
+//
 // GeneralizedEigenSymmetric
 //
 // Solves the generalized eigenvalue problem A * x = lambda * B * x

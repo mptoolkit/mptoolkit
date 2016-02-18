@@ -42,6 +42,9 @@ void EigenvaluesSymmetric(int Size, double* Data, int LeadingDim, double* Eigen)
 void EigenvaluesHermitian(int Size, std::complex<double>* Data, 
 			  int LeadingDim, double* Eigen);
 
+void EigenvaluesComplex(int Size, std::complex<double>* Data, 
+			int LeadingDim, std::complex<double>* Eigen);
+
 void DiagonalizeSymmetric(int Size, double* Data, int LeadingDim, double* Eigen);
 
 void DiagonalizeHermitian(int Size, std::complex<double>* Data, 
