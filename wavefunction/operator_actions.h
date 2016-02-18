@@ -213,6 +213,12 @@ struct LeftMultiplyString
    QuantumNumber QShift;
 };
 
+//
+// LeftMultiplyOperator
+// Functor to contract from the left hand side two wavefunctions with a string operator,
+// allowing the wavefunctions and operator to have different unit cell sizes.
+//
+
 struct LeftMultiplyOperator
 {
    typedef StateComponent argument_type;
@@ -246,12 +252,15 @@ struct LeftMultiplyOperator
       int n = 0;
       QuantumNumber q1 = QuantumNumber(QShift1.GetSymmetryList());
       QuantumNumber q2 = QuantumNumber(QShift2.GetSymmetryList());
+      if (Verbose > 0)
+      {
+	 std::cerr << "contracting operator, total length is " << Length << " sites.\n";
+      }
       while (I1 != Psi1.end() || I2 != Psi2.end() || OpIter != StringOp.end())
       {
-	 if (Verbose > 0)
+	 if (Verbose > 1)
 	 {
-	    std::cerr << "Site " << n << " of " << Length 
-		      << " E-matrix dimension " << R.size() 
+	    std::cerr << "Site " << n << ", E-matrix dimension " << R.size() 
 		      << "x" << R.Basis1().total_dimension()
 		      << "x" << R.Basis2().total_dimension()
 		      << '\n';
@@ -292,6 +301,107 @@ struct LeftMultiplyOperator
    int Length;
    int Verbose;
 };
+
+
+struct RightMultiplyOperator
+{
+   typedef StateComponent argument_type;
+   typedef StateComponent result_type;
+
+   RightMultiplyOperator(LinearWavefunction const& L1_, QuantumNumber const& QShift1_,
+			 ProductMPO const& StringOp_,
+			 LinearWavefunction const& L2_, QuantumNumber const& QShift2_,
+			 int Length_ = 0, int Verbose_ = 0)
+      : Psi1(L1_), QShift1(QShift1_), StringOp(StringOp_) , Psi2(L2_), QShift2(QShift2_), Length(Length_),
+	Verbose(Verbose_)
+   {
+      if (Length == 0)
+      {
+	 Length = statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size());
+      }
+      else
+      {
+	 DEBUG_CHECK_EQUAL(Length, statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size()));
+      }
+   }
+
+   result_type operator()(argument_type const& x) const
+   {
+      DEBUG_CHECK_EQUAL(x.Basis1(), Psi1.Basis1());
+      DEBUG_CHECK_EQUAL(x.Basis2(), Psi2.Basis1());
+      StateComponent R = x;
+      LinearWavefunction::const_iterator I1 = Psi1.end();
+      LinearWavefunction::const_iterator I2 = Psi2.end();
+      ProductMPO::const_iterator OpIter = StringOp.end();
+      int n = Length;
+      QuantumNumber q1 = QuantumNumber(QShift1.GetSymmetryList());
+      QuantumNumber q2 = QuantumNumber(QShift2.GetSymmetryList());
+      if (Verbose > 0)
+      {
+	 std::cerr << "contracting operator, total length is " << Length << " sites.\n";
+      }
+      while (I1 != Psi1.begin() || I2 != Psi2.begin() || OpIter != StringOp.begin())
+      {
+	 --n;
+
+	 if (I1 == Psi1.begin())
+	 {
+	    I1 = Psi1.end();
+	    q1 = delta_shift(q1, adjoint(QShift1));
+	 }
+	 --I1;
+
+	 if (I2 == Psi2.begin())
+	 {
+	    I2 = Psi2.end();
+	    q2 = delta_shift(q2, adjoint(QShift2));
+	 }
+	 --I2;
+
+	 if (OpIter == StringOp.begin())
+	    OpIter = StringOp.end();
+	 --OpIter;
+
+	 if (Verbose > 1)
+	 {
+	    std::cerr << "Site " << n << ", E-matrix dimension " << R.size() 
+		      << "x" << R.Basis1().total_dimension()
+		      << "x" << R.Basis2().total_dimension()
+		      << '\n';
+	 }
+	 if (I1 == Psi1.end())
+	 {
+	    I1 = Psi1.begin();
+	    q1 = delta_shift(q1, QShift1);
+	 }
+	 if (I2 == Psi2.end())
+	 {
+	    I2 = Psi2.begin();
+	    q2 = delta_shift(q2, QShift2);
+	 }
+	 if (OpIter == StringOp.end())
+	 {
+	    OpIter = StringOp.begin();
+	 }
+	 R = contract_from_right(herm(*OpIter), delta_shift(*I1, adjoint(q1)), R, 
+				 herm(delta_shift(*I2, adjoint(q2))));
+      }
+      q1 = delta_shift(q1, adjoint(QShift1));
+      q2 = delta_shift(q2, adjoint(QShift2));
+      CHECK_EQUAL(q1, q2);
+      //      CHECK_EQUAL(n, 0);
+      return delta_shift(R, q1);
+   }
+
+   LinearWavefunction const& Psi1;
+   QuantumNumber QShift1;
+   ProductMPO StringOp;
+   LinearWavefunction const& Psi2;
+   QuantumNumber QShift2;
+   int Length;
+   int Verbose;
+};
+
 
 // version of inject_left operator contraction, but
 // with a mask (conceptually a vector<bool>, but implemented as a vector<int>).

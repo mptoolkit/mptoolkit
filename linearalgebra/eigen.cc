@@ -42,6 +42,9 @@ void EigenvaluesSymmetric(int Size, double* Data, int LeadingDim, double* Eigen)
 void EigenvaluesHermitian(int Size, std::complex<double>* Data, 
 			  int LeadingDim, double* Eigen);
 
+void EigenvaluesComplex(int Size, std::complex<double>* Data, 
+			int LeadingDim, std::complex<double>* Eigen);
+
 void DiagonalizeSymmetric(int Size, double* Data, int LeadingDim, double* Eigen);
 
 void DiagonalizeHermitian(int Size, std::complex<double>* Data, 
@@ -985,6 +988,17 @@ EigenvaluesHermitian(M const& m)
    return DiagonalizeHermitian(Temp);
 }
 
+template <typename M>
+Vector<std::complex<double>>
+EigenvaluesComplex(M const& m)
+{
+   DEBUG_CHECK_EQUAL(size1(m), size2(m));
+   Matrix<std::complex<double> > Temp(m);
+   Vector<std::complex<double>> Result(size1(Temp));
+   Private::EigenvaluesComplex(size1(Temp), data(Temp), size1(Temp), data(Result));
+   return Result;
+}
+   
 //
 // Invert[Lower|Upper]Triangular
 //

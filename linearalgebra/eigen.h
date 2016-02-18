@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 //
 // Complex diagonalization wrapper by Thomas Barthel
 //
@@ -230,6 +230,16 @@ EigenvaluesSymmetric(M const& m);
 template <typename M>
 Vector<double>
 EigenvaluesHermitian(M const& m);
+
+//
+// EigenvaluesComplex
+//
+// returns the eigenvalues of a general complex matrix
+//
+
+template <typename M>
+Vector<std::complex<double>>
+EigenvaluesComplex(M const& m);
 
 //
 // GeneralizedEigenSymmetric

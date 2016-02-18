@@ -80,6 +80,42 @@ void EigenvaluesHermitian(int Size, std::complex<double>* Data,
    DiagonalizeHermitian(Size, Data, LeadingDim, Eigen);
 }
 
+void EigenvaluesComplex(int Size, std::complex<double>* Data, 
+			int LeadingDim, std::complex<double>* Eigen)
+{
+   // First step: balance the matrix
+   Fortran::integer ilo = 0, ihi = 0, info = 0;
+   double* Scale = new double[Size];
+   LAPACK::zgebal('B', Size, Data, LeadingDim, ilo, ihi, Scale, info);
+   CHECK(info == 0)("LAPACK::zgebal")(info);
+
+   // Second step: reduce matrix to upper Hessenberg form
+   // firstly determine the optimal size of the workspace
+   std::complex<double>* Tau = new std::complex<double>[Size-1];
+   std::complex<double> WorkSize;
+   Fortran::integer LWork = -1;
+   LAPACK::zgehrd(Size, ilo, ihi, Data, LeadingDim, Tau, &WorkSize, -1, info);
+   LWork = WorkSize.real();
+   std::complex<double>* Work = new std::complex<double>[LWork];
+   // do the actual call
+   LAPACK::zgehrd(Size, ilo, ihi, Data, LeadingDim, Tau, Work, LWork, info);
+   CHECK(info == 0)("LAPACK::zgehrd")(info);
+   delete[] Work;
+
+   // Third step: compute the eigenvalues of the Hessenberg matrix
+   // workspace query
+   std::complex<double> z;
+   LAPACK::zhseqr('E', 'N', Size, ilo, ihi, Data, LeadingDim, Eigen, &z, 1, &WorkSize, -1, info);
+   LWork = WorkSize.real();
+   Work =  new std::complex<double>[LWork];
+   LAPACK::zhseqr('E', 'N', Size, ilo, ihi, Data, LeadingDim, Eigen, &z, 1, Work, LWork, info);
+   CHECK(info == 0)("LAPACK::zgesqr")(info);
+   delete[] Work;
+
+   delete[] Tau;
+   delete[] Scale;
+}
+
 // for debugging
 Matrix<double> makeMatrix(double const* Data, int Size, int LeadingDim)
 {

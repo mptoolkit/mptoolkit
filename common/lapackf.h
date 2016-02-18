@@ -135,6 +135,17 @@ void zgelqf(integer m, integer n, std::complex<double>* restrict a, integer lda,
 // integer ileanv(integer ispec, char const* name, char const* opts, integer n1, 
 // integer n2 = -1, integer n3 = -1, integer n4 = -1);
 
+void zgebal(char job, integer n, std::complex<double>* restrict a, integer lda, integer& ilo,
+		     integer& ihi, double* restrict scale, integer& info);
+
+void zgehrd(integer n, integer ilo, integer ihi, std::complex<double>* restrict a, integer lda, 
+	    std::complex<double>* restrict tau,
+	    std::complex<double>* restrict work, integer lwork, integer& info);
+
+void zhseqr(char job, char compz, integer n, integer ilo, integer ihi, std::complex<double>* restrict h, integer ldh,
+	    std::complex<double>* restrict w, std::complex<double>* restrict z, integer ldz,
+	    std::complex<double>* restrict work, integer lwork, integer& info);
+
 namespace raw
 {
 
@@ -266,6 +277,18 @@ void F77NAME(zgeqrf)(integer const* m, integer const* n, complex* restrict a, in
 
 void F77NAME(zgelqf)(integer const* m, integer const* n, complex* restrict a, integer const* lda, 
                      complex* restrict tau, complex* restrict work, integer const* lwork, integer* restrict info);
+
+void F77NAME(zgebal)(char const* job, integer const* n, complex* restrict a, integer const* lda, integer* restrict ilo,
+		     integer* restrict ihi, double* restrict scale, integer* restrict info);
+
+void F77NAME(zgehrd)(integer const* n, integer const* ilo, integer const* ihi, complex* restrict a, integer const* lda, 
+		     complex* restrict tau, complex* restrict work, integer* restrict lwork, integer* restrict info);
+
+void F77NAME(zhseqr)(char const* job, char const* compz, integer const* n, integer const* ilo, integer const* ihi, 
+		     complex* restrict h, integer const* ldh,
+		     complex* restrict w, complex* restrict z, integer const* ldz,
+		     complex* restrict work, integer const* lwork, integer* restrict info);
+
 
 } // extern "C"
 
@@ -511,6 +534,36 @@ void zgelqf(integer m, integer n, std::complex<double>* restrict a, integer lda,
    TRACE_LAPACK("zgelqf")(m)(n)(a)(lda)(tau)(work)(lwork)(info);
    raw::F77NAME(zgelqf)(&m, &n, reinterpret_cast<complex*>(a), &lda, reinterpret_cast<complex*>(tau),
                         reinterpret_cast<complex*>(work), &lwork, &info);
+}
+
+inline
+void zgebal(char job, integer n, std::complex<double>* restrict a, integer lda, integer& ilo,
+		     integer& ihi, double* restrict scale, integer& info)
+{
+   TRACE_LAPACK("zgebal")(job)(n)(a)(lda)(ilo)(ihi)(scale)(info);
+   raw::F77NAME(zgebal)(&job, &n, reinterpret_cast<complex*>(a), &lda, &ilo,
+			&ihi, scale, &info);
+}
+
+inline
+void zgehrd(integer n, integer ilo, integer ihi, std::complex<double>* restrict a, integer lda, 
+	    std::complex<double>* restrict tau,
+	    std::complex<double>* restrict work, integer lwork, integer& info)
+{
+   TRACE_LAPACK("zgehrd")(n)(ilo)(ihi)(a)(lda)(tau)(work)(lwork)(info);
+   raw::F77NAME(zgehrd)(&n, &ilo, &ihi, reinterpret_cast<complex*>(a), &lda, reinterpret_cast<complex*>(tau), 
+			reinterpret_cast<complex*>(work), &lwork, &info);
+}
+
+inline
+void zhseqr(char job, char compz, integer n, integer ilo, integer ihi, std::complex<double>* restrict h, integer ldh,
+	    std::complex<double>* restrict w, std::complex<double>* restrict z, integer ldz,
+	    std::complex<double>* restrict work, integer lwork, integer& info)
+{
+   TRACE_LAPACK("zhseqr")(job)(compz)(n)(ilo)(ihi)(h)(ldh)(w)(z)(ldz)(work)(lwork)(info);
+   raw::F77NAME(zhseqr)(&job, &compz, &n, &ilo, &ihi, reinterpret_cast<complex*>(h), &ldh, 
+			reinterpret_cast<complex*>(w), reinterpret_cast<complex*>(z), &ldz, 
+			reinterpret_cast<complex*>(work), &lwork, &info);
 }
 
 } // namespce LAPACK
