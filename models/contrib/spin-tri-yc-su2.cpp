@@ -189,7 +189,7 @@ int main(int argc, char** argv)
       InfiniteLattice Lattice(Cell);
 
       // Construct the Hamiltonian for a single unit-cell,
-      UnitCellMPO H1, H2, Ht, Hv;
+      UnitCellMPO H1, H2, Ht, Hv, Hy;
     
       for (int i = 0; i < w; ++i)
       {
@@ -199,6 +199,9 @@ int main(int argc, char** argv)
 	 // 60 degree bonds
 	 H1 += inner(S(0)[i], S(1)[i]);
 	 H1 += inner(S(0)[i], S(1)[(i+1)%w]);
+
+	 // vertical bonds only
+	 Hy += inner(S(0)[i], S(0)[(i+1)%w]);
 
 	// next-nearest neighbor bonds
 	 H2 += inner(S(0)[i], S(2)[(i+1)%w]);                  // horizontal
@@ -217,6 +220,7 @@ int main(int argc, char** argv)
       }
 
       Lattice["H_J1"] = sum_unit(H1);
+      Lattice["H_y"] = sum_unit(Hy);
       Lattice["H_J2"] = sum_unit(H2);
       Lattice["H_t"]  = sum_unit(Ht);
       Lattice["H_v"]  = sum_unit(Hv);

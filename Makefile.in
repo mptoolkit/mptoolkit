@@ -198,8 +198,14 @@ allobj = $(quantumnumbersobj) \
 	 $(commonobj)
 
 # contributed models.  Add new models here
+<<<<<<< HEAD
 contrib-models = spin-tri-yc-su2 spin-tri-yc-su2-NonEff \
                  spin-tri-2SiteUnitCell-su2 spin-tri-1SiteUnitCell-su2 spin-tri-yc-u1 spin-tri-yc
+=======
+contrib-models = spin-tri-yc-su2 \
+                 spin-tri-2SiteUnitCell-su2 spin-tri-1SiteUnitCell-su2 spin-tri-yc-u1 spin-tri-yc \
+                 spin-tri-yc-su2-NonEff
+>>>>>>> d40de8ccadd51bea46f19ef1de3b33bf1955ead1
 
 # default / examplar models
 default-models = spinchain-su2 spinchain-spin2-su2 \
