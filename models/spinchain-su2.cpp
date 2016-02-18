@@ -82,7 +82,7 @@ int main(int argc, char** argv)
       }
 
       Lattice.func("Haldane_Shastry")(arg("lambda") = 0.5)
-                  = "sum_string_inner( S(0), exp(-lambda)*I(0), S(0) )";
+                  = "exp(-lambda)*sum_string_inner( S(0), exp(-lambda)*I(0), S(0) )";
  
       // Information about the lattice
       Lattice.set_description("SU(2) Spin chain");

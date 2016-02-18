@@ -1,9 +1,8 @@
 // -*- C++ -*-
-// Description: spin systems on triangular lattices with YC structure and efficient way of numbering; SU(2)-symmetric. spin-tri-yc-su2.cpp   
+// Description: spin systems on triangular lattices with YC structure and efficient way of numbering; SU(2)-symmetric.
 // Authors: Ian P. McCulloch and Seyed N. Saadatmand
 // Contact: s.saadatmand@uq.edu.au
-
-// <obelix> @ /data5/uqssaada/git/mptoolkit/models/contrib/
+// <obelix> @ /data5/uqssaada/git/mptoolkit/models/contrib/spin-tri-yc-su2.cpp
 
 // YC configuration of a triangular lattice.
 // The default unit-cell size is the width value.
@@ -219,8 +218,8 @@ int main(int argc, char** argv)
 
       Lattice["H_J1"] = sum_unit(H1);
       Lattice["H_J2"] = sum_unit(H2);
-      Lattice["H_t"] = sum_unit(Ht);
-      Lattice["H_v"] = sum_unit(Hv);
+      Lattice["H_t"]  = sum_unit(Ht);
+      Lattice["H_v"]  = sum_unit(Hv);
 
       Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
 	 = "J1*H_J1 + J2*H_J2";
