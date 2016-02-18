@@ -258,8 +258,8 @@ int main(int argc, char** argv)
 	  "scale the results to use this unit cell size [default wavefunction unit cell]")
 	 ("degree,d", prog_opt::value(&Degree),
 	  "force setting the degree of the MPO")
-	 ("quiet,q", prog_opt::bool_switch(&Quiet), "Don't show column headings")
-         ("print,p", prog_opt::bool_switch(&Print), "Print the MPO to standard output")
+	 ("quiet,q", prog_opt::bool_switch(&Quiet), "don't show column headings")
+         ("print,p", prog_opt::bool_switch(&Print), "[rint the MPO to standard output")
 	 ("tol", prog_opt::value(&Tol),
 	  FormatDefault("Linear solver convergence tolerance", Tol).c_str())
 	 ("unityepsilon", prog_opt::value(&UnityEpsilon),

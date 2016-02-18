@@ -116,18 +116,38 @@ get_left_eigenvector(LinearWavefunction const& Psi1, QuantumNumber const& QShift
 struct EValueRecord
 {
    QuantumNumber q;
-   double Magnitude;
-   double Radians;
+   std::complex<double> Eigenvalue;
 };
 
 bool CompareMagnitude(EValueRecord const& x, EValueRecord const& y)
 {
-   return x.Magnitude > y.Magnitude;
+   return std::abs(x.Eigenvalue) > std::abs(y.Eigenvalue);
 }
 
 bool CompareQMagnitude(EValueRecord const& x, EValueRecord const& y)
 {
-   return x.q < y.q || (x.q == y.q && x.Magnitude > y.Magnitude);
+   return x.q < y.q || (x.q == y.q && std::abs(x.Eigenvalue) > std::abs(y.Eigenvalue));
+}
+
+void PrintHeading(std::ostream& out, bool ShowRadians)
+{
+   out << "#Number #Sector     #Degen  #Angle" << (ShowRadians ? "(rad)" : "(deg)")
+       <<  "          #Eigenvalue             #Energy\n";
+}
+
+void PrintFormat(std::ostream& out, int n, EValueRecord const& x, std::complex<double> Normalizer, bool ShowRadians)
+{
+   std::string SectorStr = boost::lexical_cast<std::string>(x.q);
+   out << std::left << std::setw(7) << n << ' ';
+   out << std::left << std::setw(11) << SectorStr << ' ';
+   out << std::left << std::setw(6) << degree(x.q) << ' ';
+   double Arg = std::arg(x.Eigenvalue/Normalizer);
+   if (!ShowRadians)
+      Arg *= 180.0 / math_const::pi;
+   out << std::setw(20) << std::right << std::fixed << Arg << "  ";
+   out << std::setw(20) << std::scientific << std::abs(x.Eigenvalue/Normalizer) << ' ';
+   out << std::setw(20) << std::fixed << (-log(std::abs(x.Eigenvalue/Normalizer)));
+   out << std::setfill(' ') << '\n';
 }
 
 int main(int argc, char** argv)
@@ -137,12 +157,29 @@ int main(int argc, char** argv)
       std::string PsiStr;
       std::string OpStr;
       int Verbose = 0;
-      std::string QSector;
       double Tol = 1E-14;
+      bool ShowRadians = false;
+      bool Quiet = false;
+      bool NoGaugeFix = false;
+      double GaugeAngle = 0.0;
+      bool SplitBySectors = false;
+      std::string SplitOutputPrefix;
+      
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
+	 ("quiet,q", prog_opt::bool_switch(&Quiet),
+	  "don't show column headings")
+	 ("radians", prog_opt::bool_switch(&ShowRadians),
+	  "display the angle in radians instead of degrees (also for the --gauge angle, if specified)")
+	 ("nogauge", prog_opt::bool_switch(&NoGaugeFix),
+	  "don't gauge fix the phase angles, leave it as random output from the eigensolver")
+	 ("gauge", prog_opt::value(&GaugeAngle), "gauge fix the largest eigenvalue "
+	  "to this phase angle")
+	 ("sectors", prog_opt::value(&SplitBySectors), "sort output by quantum number sector")
+	 ("sectors-prefix", prog_opt::value(&SplitOutputPrefix),
+	  "Write the output to a separate file for each quantum number sector prefix.sector.dat")
 	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
          ;
 
@@ -168,15 +205,48 @@ int main(int argc, char** argv)
       {
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> <operator>\n";
-	 std::cerr << "This tool constructs the entanglement spectrum, labelling states by the phase angle of"
-		   << "a unitary symmetry operator.\n";
          std::cerr << desc << '\n';
+	 std::cerr << "This tool constructs the entanglement spectrum of a wavefunction,\n"
+		   << "labelling states by the phase angle of a unitary symmetry operator.\n"
+		   << "The operator should be a global symmetry of the wavefunction.\n"
+		   << "The phase angles are only determined up to a global phase (which\n"
+		   << "arises from the global phase of the eigenmatrix of the symmetry\n"
+		   << "operator).  By default, the phase is 'gauge-fixed' by setting the\n"
+		   << "phase of the largest eigenvalue of the density matrix to be 0.\n"
+		   << "The absolute phase will generally need to be corrected in\n"
+		   << "post-processing, but the absolute phase of the largest eigenvalue\n"
+		   << "can also be set (if known in advance) using the\n"
+		   << "--gauge=<angle> parameter.\n"
+		   << "\nBy default the entanglement spectrum is printed to standard output,\n"
+		   << "ordered by eigenvalue.  Alternatively, the spectrum can be displayed\n"
+		   << "for each quantum number sector separately, with the --sectors option.\n"
+		   << "The --sectors-prefix=<fileprefix> option implies --sectors, and writes\n"
+		   << "each sector to a file of the form fileprefix-sector.dat\n";
          return 1;
       }
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
+      // if we have --gauge and --nogauge simultaneously then bug out before the dogfight starts
+      if (vm.count("gauge") && NoGaugeFix)
+      {
+	 std::cerr << basename(argv[0]) << ": fatal: --gauge option conflicts with --nogauge\n";
+	 exit(1);
+      }
+
+      // convert the gauge angle to radians if necessary
+      if (!ShowRadians)
+	 GaugeAngle *= math_const::pi / 180.0;
+
+      if (vm.count("sectors-prefix"))
+	 SplitBySectors = true;
+
+      if (SplitBySectors)
+      {
+	 std::cerr << "not yet implemented!\n";
+	 exit(1);
+      }
 
       // Load the wavefunction
       pvalue_ptr<MPWavefunction> Psi
@@ -216,19 +286,11 @@ int main(int argc, char** argv)
 
 	 StringOperator = repeat(StringOperator, Psi1.size() / StringOperator.size());
 
-	 if (!QSector.empty())
-	 {
-	    QuantumNumber q(Psi1.GetSymmetryList(), QSector);
-	    StringOperator = StringOperator * ProductMPO::make_identity(StringOperator.LocalBasis2List(), q);
-	 }
-
 	 // Get the matrix
          std::complex<double> e;
 	 int n;
          StateComponent v;
          std::tie(e, n, v) = get_right_eigenvector(Psi1, InfPsi.qshift(), Psi1, InfPsi.qshift(), StringOperator, Tol, Verbose);
-
-	 TRACE(e);
 
 	 // Now we want the eigenvalues of v
 	 // These will be of the form a * exp(i*theta) where a is the density matrix eigenvalue and
@@ -245,27 +307,45 @@ int main(int argc, char** argv)
 
 	       for (unsigned j = 0; j < size(Eig); ++j)
 	       {
-		  EValues.push_back({v.Basis1()[i], std::abs(Eig[j]), std::arg(Eig[j])});
+		  EValues.push_back({v.Basis1()[i], Eig[j]});
 	       }
 	    }
 	 }
 
-	 // get the sum for normalization
+	 // get the sum for normalization, and also the largest eigenvalue
 	 double Sum = 0;
+	 std::complex<double> LargestEValue = EValues[0].Eigenvalue;
 	 for (auto const& e : EValues)
 	 {
-	    Sum += e.Magnitude * degree(e.q);
+	    Sum += std::abs(e.Eigenvalue) * degree(e.q);
+	    if (std::abs(e.Eigenvalue) > std::abs(LargestEValue))
+	       LargestEValue = e.Eigenvalue;
 	 }
 
 	 // sort
-	 std::sort(EValues.begin(), EValues.end(), &CompareMagnitude);
+	 if (SplitBySectors)
+	    std::sort(EValues.begin(), EValues.end(), &CompareQMagnitude);
+	 else
+	    std::sort(EValues.begin(), EValues.end(), &CompareMagnitude);
+
+	 // normalizer, which is a combination of the magnitude and phase correction
+	 std::complex<double> Normalizer = Sum;
+	 if (!NoGaugeFix)
+	    Normalizer = Normalizer * (LargestEValue / 
+				       (std::exp(std::complex<double>(0.0,GaugeAngle)) * std::abs(LargestEValue)));
 
 	 // output
+	 if (!Quiet)
+	 {
+	    print_preamble(std::cout, argc, argv);
+	    std::cout << "#Eigenvalue of operator is " << format_complex(e) << '\n';
+	    PrintHeading(std::cout, ShowRadians);
+	 }
+	 int k = 0; // eigenvalue number
 	 for (auto const& e : EValues)
 	 {
-	    std::cout << (e.Magnitude/Sum) << ' ' << e.Radians << ' ' << e.q << '\n';
+	    PrintFormat(std::cout, k++, e, Normalizer, ShowRadians);
 	 }
-
       }
 
       pheap::Shutdown();
