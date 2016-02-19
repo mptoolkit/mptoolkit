@@ -177,7 +177,7 @@ int main(int argc, char** argv)
 	  "don't gauge fix the phase angles, leave it as random output from the eigensolver")
 	 ("gauge", prog_opt::value(&GaugeAngle), "gauge fix the largest eigenvalue "
 	  "to this phase angle")
-	 ("sectors", prog_opt::value(&SplitBySectors), "sort output by quantum number sector")
+	 ("sectors", prog_opt::bool_switch(&SplitBySectors), "sort output by quantum number sector")
 	 ("sectors-prefix", prog_opt::value(&SplitOutputPrefix),
 	  "Write the output to a separate file for each quantum number sector prefix.sector.dat")
 	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
