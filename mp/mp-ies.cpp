@@ -131,7 +131,7 @@ bool CompareQMagnitude(EValueRecord const& x, EValueRecord const& y)
 
 void PrintHeading(std::ostream& out, bool ShowRadians)
 {
-   out << "#Number #Sector     #Degen  #Angle" << (ShowRadians ? "(rad)" : "(deg)")
+   out << "#Number #Sector     #Degen  #Angle" << (ShowRadians ? "_rad " : "_deg ")
        <<  "          #Eigenvalue             #Energy\n";
 }
 
@@ -221,7 +221,7 @@ int main(int argc, char** argv)
 		   << "ordered by eigenvalue.  Alternatively, the spectrum can be displayed\n"
 		   << "for each quantum number sector separately, with the --sectors option.\n"
 		   << "The --sectors-prefix=<fileprefix> option implies --sectors, and writes\n"
-		   << "each sector to a file of the form fileprefix-sector.dat\n";
+		   << "each sector to a file of the form fileprefix-q<sector>.dat\n";
          return 1;
       }
 
@@ -241,12 +241,6 @@ int main(int argc, char** argv)
 
       if (vm.count("sectors-prefix"))
 	 SplitBySectors = true;
-
-      if (SplitBySectors)
-      {
-	 std::cerr << "not yet implemented!\n";
-	 exit(1);
-      }
 
       // Load the wavefunction
       pvalue_ptr<MPWavefunction> Psi
@@ -335,16 +329,66 @@ int main(int argc, char** argv)
 				       (std::exp(std::complex<double>(0.0,GaugeAngle)) * std::abs(LargestEValue)));
 
 	 // output
-	 if (!Quiet)
+
+	 if (SplitBySectors)
 	 {
-	    print_preamble(std::cout, argc, argv);
-	    std::cout << "#Eigenvalue of operator is " << format_complex(e) << '\n';
-	    PrintHeading(std::cout, ShowRadians);
+	    QuantumNumber Sector;
+	    int k = 0;
+	    int kOffset = 0;
+	    std::ofstream OutFile;
+	    std::ostream& Out = SplitOutputPrefix.empty() ? std::cout : OutFile;
+	    if (SplitOutputPrefix.empty() && !Quiet)
+	    {
+	       print_preamble(Out, argc, argv);
+	       Out << "#Eigenvalue of operator is " << format_complex(e) << '\n';
+	    }
+	       
+	    while (k < EValues.size())
+	    {
+	       if (Sector.is_null() || EValues[k].q != Sector)
+	       {
+		  kOffset = k;
+		  Sector = EValues[k].q;
+		  if (!SplitOutputPrefix.empty())
+		  {
+		     OutFile.close();
+		     OutFile.open(SplitOutputPrefix + "-q" + boost::lexical_cast<std::string>(EValues[k].q) + ".dat",
+				  std::ios::out | std::ios::trunc);
+		     OutFile.precision(getenv_or_default("MP_PRECISION", 14));
+		     if (!Quiet)
+		     {
+			print_preamble(Out, argc, argv);
+			Out << "#Eigenvalue of operator is " << format_complex(e) << '\n';
+			Out << "#Sector: " << Sector << '\n';
+			PrintHeading(Out, ShowRadians);
+		     }
+		  }
+		  else
+		  {
+		     if (!Quiet)
+		     {
+			Out << "\n#Sector: " << Sector << '\n';
+			PrintHeading(Out, ShowRadians);
+		     }
+		  }			
+	       }
+	       PrintFormat(Out, k-kOffset, EValues[k], Normalizer, ShowRadians);
+	       ++k;
+	    }
 	 }
-	 int k = 0; // eigenvalue number
-	 for (auto const& e : EValues)
+	 else
 	 {
-	    PrintFormat(std::cout, k++, e, Normalizer, ShowRadians);
+	    if (!Quiet)
+	    {
+	       print_preamble(std::cout, argc, argv);
+	       std::cout << "#Eigenvalue of operator is " << format_complex(e) << '\n';
+	       PrintHeading(std::cout, ShowRadians);
+	    }
+	    int k = 0; // eigenvalue number
+	    for (auto const& e : EValues)
+	    {
+	       PrintFormat(std::cout, k++, e, Normalizer, ShowRadians);
+	    }
 	 }
       }
 
