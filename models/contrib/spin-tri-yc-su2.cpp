@@ -248,8 +248,6 @@ int main(int argc, char** argv)
 	 int const p1 = c/2;
 	 int const p2 = (c+1)/2;
 
-	 TRACE("pivots")(p1)(p2);
-
 	 // if we're reflecting about a bond, do that first
 	 if (p1 != p2)
 	    ThisR = ThisR * Cell.swap_gate_no_sign(p1,p2);
@@ -259,7 +257,6 @@ int main(int argc, char** argv)
 	
 	 while (i1 != p1 + w/2)
 	 {
-	    TRACE(i1)(i2);
 	    ThisR = ThisR * Cell.swap_gate_no_sign(i1,i2);
 	    i1 = (i1+w-1)%w;
 	    i2 = (i2+1)%w;
