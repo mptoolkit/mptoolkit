@@ -268,6 +268,11 @@ int main(int argc, char** argv)
 
       Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w*w);
 
+      // 'identity' operator in the spin-1/2 auxiliary basis
+      Lattice["I_2"] = prod_unit_left_to_right(UnitCellMPO(I(0)).MPO(), w)
+	 * ProductMPO::make_identity(UnitCellMPO(I(0)).MPO().LocalBasis2List(), 
+				     QuantumNumber(Cell.GetSymmetryList(), "0.5"));
+
       // save the lattice
       pheap::ExportObject(FileName, Lattice);
    }
