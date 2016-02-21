@@ -691,7 +691,7 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
    // stability fix
    if (Verbose > 0)
       std::cerr << "Overall constant " << inner_prod(F.front(), F.back()) << '\n';
-   F.front() -= inner_prod(F.front(), F.front()) * F.back();
+   F.front() -= inner_prod(F.back(), F.front()) * F.back();
 
    // remove the spurious constant term from the energy
    if (Verbose > 0)
