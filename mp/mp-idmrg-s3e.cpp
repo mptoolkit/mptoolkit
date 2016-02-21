@@ -453,6 +453,10 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
    int Res = GmRes(E[Col], ProdL, C, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
    CHECK_EQUAL(Res, 0);
 
+   // Stability fix: remove overall constant
+      DEBUG_TRACE("Overall constant")(inner_prod(E.back(), E.front()));
+   E.back() -= inner_prod(E.front(), E.back()) * E.front();
+
    // remove the spurious constant term from the energy
    DEBUG_TRACE("Spurious part")(inner_prod(E.back(), Rho));
    E.back() -= inner_prod(Rho, E.back()) * E.front();
@@ -530,8 +534,12 @@ MPO_EigenvaluesRight(StateComponent& Guess, LinearWavefunction const& Psi,
    int Res = GmRes(Guess.front(), ProdR, H0, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(),1);
    CHECK_EQUAL(Res, 0);
 
+   // stability fix
+   Guess.front() -= inner_prod(Guess.back(), Guess.front()) * Guess.back();
+
+
    // remove the spurious constant term from the energy
-   Guess.front() =  Guess.front() - inner_prod(Rho, Guess.front()) * Guess.back();
+   Guess.front() -= inner_prod(Rho, Guess.front()) * Guess.back();
 
    // Make it Hermitian
    Guess.front() = 0.5 * (Guess.front() + adjoint(Guess.front()));
@@ -1960,16 +1968,19 @@ int main(int argc, char** argv)
    catch (prog_opt::error& e)
    {
       std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      pheap::Cleanup();
       return 1;
    }
    catch (std::exception& e)
    {
       std::cerr << "Exception: " << e.what() << '\n';
+      pheap::Cleanup();
       return 1;
    }
    catch (...)
    {
       std::cerr << "Unknown exception!\n";
+      pheap::Cleanup();
       return 1;
    }
 }
