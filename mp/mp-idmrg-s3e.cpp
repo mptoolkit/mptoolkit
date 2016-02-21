@@ -454,11 +454,13 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
    CHECK_EQUAL(Res, 0);
 
    // Stability fix: remove overall constant
-   TRACE("Overall constant")(inner_prod(E.back(), E.front()));
+   if (Verbose > 0)
+      std::cerr << "Overall constant: " << inner_prod(E.back(), E.front()) << '\n';
    E.back() -= inner_prod(E.front(), E.back()) * E.front();
 
    // remove the spurious constant term from the energy
-   DEBUG_TRACE("Spurious part")(inner_prod(E.back(), Rho));
+   if (Verbose > 0)
+      std::cerr << "Spurious constant: " << inner_prod(E.back(), Rho) << '\n';
    E.back() -= inner_prod(Rho, E.back()) * E.front();
 
    // Make it Hermitian
@@ -687,11 +689,13 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
    CHECK_EQUAL(Res, 0);
 
    // stability fix
-   TRACE(inner_prod(F.back(), F.front()));
+   if (Verbose > 0)
+      std::cerr << "Overall constant " << inner_prod(F.front(), F.back()) << '\n';
    F.front() -= inner_prod(F.front(), F.front()) * F.back();
 
    // remove the spurious constant term from the energy
-   DEBUG_TRACE("Spurious part")(inner_prod(F.front(), Rho));
+   if (Verbose > 0)
+      std::cerr << "Spurius constant " << inner_prod(F.front(), Rho) << '\n';
    F.front() -= inner_prod(Rho, F.front()) * F.back();
 
    // Make it Hermitian
