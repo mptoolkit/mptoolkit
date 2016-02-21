@@ -454,7 +454,7 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
    CHECK_EQUAL(Res, 0);
 
    // Stability fix: remove overall constant
-      DEBUG_TRACE("Overall constant")(inner_prod(E.back(), E.front()));
+   TRACE("Overall constant")(inner_prod(E.back(), E.front()));
    E.back() -= inner_prod(E.front(), E.back()) * E.front();
 
    // remove the spurious constant term from the energy
@@ -606,13 +606,13 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
 
    if (!classify(Op(0,0), UnityEpsilon).is_identity())
    {
-      std::cerr << "SolveSimpleMPO_Left: fatal: MPO(0,0) must be the identity operator.\n";
+      std::cerr << "SolveSimpleMPO_Right: fatal: MPO(0,0) must be the identity operator.\n";
       PANIC("Fatal");
    }
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
    if (Verbose)
-      std::cerr << "SolveSimpleMPO_Left: dimension is " << Dim << std::endl;
+      std::cerr << "SolveSimpleMPO_Right: dimension is " << Dim << std::endl;
 
    // Row Dim-1 (F[Dim-1]) is the Identity, we don't need to solve for it
    for (int Row = Dim-2; Row >= 1; --Row)
@@ -664,7 +664,7 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
    int const Row = 0;
    if (!classify(Op(Row,Row), UnityEpsilon).is_identity())
    {
-      std::cerr << "SolveSimpleMPO_Left: fatal: MPO(d,d) must be the identity operator.\n";
+      std::cerr << "SolveSimpleMPO_Right: fatal: MPO(d,d) must be the identity operator.\n";
       PANIC("Fatal");
    }
 
@@ -686,9 +686,13 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
    int Res = GmRes(F[Row], ProdR, C, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
    CHECK_EQUAL(Res, 0);
 
+   // stability fix
+   TRACE(inner_prod(F.back(), F.front()));
+   F.front() -= inner_prod(F.front(), F.front()) * F.back();
+
    // remove the spurious constant term from the energy
    DEBUG_TRACE("Spurious part")(inner_prod(F.front(), Rho));
-   F.front() -= inner_prod(Rho, F.front()) * F.front();
+   F.front() -= inner_prod(Rho, F.front()) * F.back();
 
    // Make it Hermitian
    F.front() = 0.5 * (F.front() + adjoint(F.front()));
