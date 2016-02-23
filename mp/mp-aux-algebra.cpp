@@ -257,16 +257,6 @@ int main(int argc, char** argv)
          std::tie(e, n, v) = get_left_eigenvector(Psi1, InfPsi.qshift(), *Psi2, InfPsi.qshift(), StringOperator,
 						  Tol, Verbose);
 
-#if 0
-	 // and for a non-identity sector, square the operator to make a scalar
-	 if (!QSector.empty())
-	 {
-	    MatrixOperator M = scalar_prod(v, herm(v));
-	    BasisList b = make_vacuum_basis(M.GetSymmetryList());
-	    v = StateComponent(b, M.Basis1(), M.Basis2());
-	    v[0] = M;
-	 }
-#endif
 
 	 // Normalization
 	 // it might not be unitary, eg anti-unitary.  So we need to take the 4th power
@@ -279,8 +269,23 @@ int main(int argc, char** argv)
 
 	 if (!Quiet)
 	 {
+	    if (i > 0)
+	       std::cout << '\n';
 	    std::cout << "#Operator " << i << " = " << OperatorStr[i] << '\n'
-		      << "#eigenvalue = " << e << '\n';
+		      << "#unit cell size " << n << '\n'
+		      << "#eigenvalue = " << e << '\n'
+		      << "#magnitude = " << std::abs(e) << '\n';
+	    if (n != Psi1.size())
+	    {
+	       std::cout << "#magnitude per wavefunction unit cell size (" << Psi1.size() << " sites) = " 
+			 << std::pow(std::abs(e), double(Psi1.size())/double(n)) << '\n';
+	    }
+	    if (n != 1)
+	    {
+	       std::cout << "#magnitude per site = " 
+			 << std::pow(std::abs(e), 1.0/double(n)) << '\n';
+	    }
+
 	    std::cout << "#UU\u2020 = " << inner_prod(Rho, scalar_prod(v,herm(v))) << "\n";
 	    //std::cout << "#<U> = " << inner_prod(Rho, v) << "\n";
 
@@ -291,9 +296,11 @@ int main(int argc, char** argv)
 	 }
 	 
 	 // The eigenvalue should be nearly 1, or it isn't a unitary operator
-	 if (LinearAlgebra::norm_frob(LinearAlgebra::norm_frob(e)-1.0) > 1E-5)
+	 if (LinearAlgebra::norm_frob(std::pow(LinearAlgebra::norm_frob(e),1.0/n)-1.0) > 1E-3)
 	 {
-	    WARNING("Operator is not (anti) unitary - eigenvalue is not modulus 1!")(OperatorStr[i])(e);
+	    std::cerr << basename(argv[0]) << ": warning: operator eigenvalue modulus per site "
+		      << std::pow(LinearAlgebra::norm_frob(e),1.0/n)
+		      << " differs from 1.0.  Results may be unreliable!\n";
 	 }
       }
       if (!Quiet)
@@ -301,10 +308,10 @@ int main(int argc, char** argv)
 
       // Now go through each operator pair
       if (!Quiet)
-	 std::cout << "#Op1 #Op2 #Commutator-Real  #Commutator-Imag\n";
+	 std::cout << "#Op1  #Op2  #Commutator-Real  #Commutator-Imag\n";
       for (unsigned i = 0; i < U.size(); ++i)
       {
-         for (unsigned j = 0*(i+1); j < U.size(); ++j)
+         for (unsigned j = i+1; j < U.size(); ++j)
          {
 	    //            std::complex<double> x = inner_prod(U[i]*U[j], U[j]*U[i]) / Dim;
             std::complex<double> x = inner_prod(scalar_prod(herm(U[j]), operator_prod(herm(U[i]), U[j], U[i])),
