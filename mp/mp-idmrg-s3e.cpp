@@ -296,6 +296,7 @@ struct SubProductLeftProject
 	  Result = operator_prod(herm(*I), Result, *I);
        }
       Result = In - delta_shift(Result, QShift);
+      //Result = 0.5 * (Result + adjoint(Result));
       Result -= inner_prod(Proj, Result) * Ident;
       return Result;
    }
@@ -328,6 +329,7 @@ struct SubProductRightProject
       }
       Result = delta_shift(Result, adjoint(QShift));
       Result = In - Result;
+      //Result = 0.5 * (Result + adjoint(Result));
       Result -= inner_prod(Proj, Result) * Ident;
       return Result;
    }
@@ -453,6 +455,9 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
    int Res = GmRes(E[Col], ProdL, C, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
    CHECK_EQUAL(Res, 0);
 
+   // Make it Hermitian
+   E.back() = 0.5 * (E.back() + adjoint(E.back()));
+
    // Stability fix: remove overall constant
    if (Verbose > 0)
       std::cerr << "Overall constant: " << inner_prod(E.back(), E.front()) << '\n';
@@ -463,8 +468,6 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
       std::cerr << "Spurious constant: " << inner_prod(E.back(), Rho) << '\n';
    E.back() -= inner_prod(Rho, E.back()) * E.front();
 
-   // Make it Hermitian
-   E.back() = 0.5 * (E.back() + adjoint(E.back()));
 
 #if 0
    // residual
@@ -688,6 +691,9 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
    int Res = GmRes(F[Row], ProdR, C, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
    CHECK_EQUAL(Res, 0);
 
+   // Make it Hermitian
+   F.front() = 0.5 * (F.front() + adjoint(F.front()));
+
    // stability fix
    if (Verbose > 0)
       std::cerr << "Overall constant " << inner_prod(F.front(), F.back()) << '\n';
@@ -698,8 +704,6 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
       std::cerr << "Spurius constant " << inner_prod(F.front(), Rho) << '\n';
    F.front() -= inner_prod(Rho, F.front()) * F.back();
 
-   // Make it Hermitian
-   F.front() = 0.5 * (F.front() + adjoint(F.front()));
 
 #if 0
    // this doesn't work anyway, copied from the Left version
@@ -1460,8 +1464,9 @@ int main(int argc, char** argv)
       double EvolveDelta = 0.0;
       double InitialFidelity = 1E-7;
       double ArnoldiTol = 1E-14;
-      double GMRESTol = 2E-14;    // tolerance for GMRES for the initial H matrix elements.
-                                  // ** 2015-01-25: 1e-14 seems too small, failed to converge with final tol 1.5e-14
+      double GMRESTol = 3E-14;    // tolerance for GMRES for the initial H matrix elements.
+                                  // ** 2016-01-25: 1e-14 seems too small, failed to converge with final tol 1.5e-14, increasing to 2e-14
+                                  // ** 2016-02-23: increasing again to 3e-14 on an example that fails to converge
       double MaxTol = 4E-4;  // never use an eigensolver tolerance larger than this
       double MinTol = 1E-16; // lower bound for the eigensolver tolerance - seems we dont really need it
       double HMix = 0;  // Hamiltonian length-scale mixing factor
@@ -1529,6 +1534,8 @@ int main(int argc, char** argv)
           FormatDefault("Initial value for the fidelity to set the eigensolver tolerance, for the first iteration",
                         InitialFidelity).c_str())
          ("seed", prog_opt::value<unsigned long>(), "random seed")
+	 ("gmrestol", prog_opt::value(&GMRESTol), 
+	  FormatDefault("tolerance for GMRES linear solver for the initial H matrix elements", GMRESTol).c_str())
 	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
 	  ;
 
