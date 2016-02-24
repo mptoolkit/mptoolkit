@@ -239,14 +239,43 @@ int main(int argc, char** argv)
       // Momentum operator in Y direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
 
-      // Reflection
-      UnitCellMPO Ry = I(0);
+      // Reflection.  This is in the 'wrong' 45 degree angle
+      UnitCellMPO R45 = I(0);
       for (int c = 0; c < w; ++c)
       {
 	 UnitCellMPO ThisR = I(0);
 	 // get the 'pivot' site/bond that we reflect about
 	 int const p1 = c/2;
 	 int const p2 = (c+1)/2;
+
+	 // if we're reflecting about a bond, do that first
+	 if (p1 != p2)
+	    ThisR = ThisR * Cell.swap_gate_no_sign(p1,p2);
+
+	 int i1 = (p1+w-1)%w;
+	 int i2 = (p2+1)%w;
+	
+	 while (i1 != p1 + w/2)
+	 {
+	    ThisR = ThisR * Cell.swap_gate_no_sign(i1,i2);
+	    i1 = (i1+w-1)%w;
+	    i2 = (i2+1)%w;
+	 }
+
+	 ThisR.translate(c*w);
+	 R45 = R45 * ThisR;
+      }
+
+      Lattice["R45"] = prod_unit_left_to_right(R45.MPO(), w*w);
+
+      // Reflection.  Fixed to reflect about a horizontal axis.  This is the reverse order of unit cells to the R45 operator.
+      UnitCellMPO Ry = I(0);
+      for (int c = 0; c < w; ++c)
+      {
+	 UnitCellMPO ThisR = I(0);
+	 // get the 'pivot' site/bond that we reflect about
+	 int const p1 = (w-c-1)/2;
+	 int const p2 = (w-c)/2;
 
 	 // if we're reflecting about a bond, do that first
 	 if (p1 != p2)
