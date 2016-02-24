@@ -240,7 +240,7 @@ int main(int argc, char** argv)
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
 
       // Reflection.  This is in the 'wrong' 45 degree angle
-      UnitCellMPO R45 = I(0);
+      UnitCellMPO Ry = I(0);
       for (int c = 0; c < w; ++c)
       {
 	 UnitCellMPO ThisR = I(0);
@@ -263,13 +263,13 @@ int main(int argc, char** argv)
 	 }
 
 	 ThisR.translate(c*w);
-	 R45 = R45 * ThisR;
+	 Ry = Ry * ThisR;
       }
 
-      Lattice["R45"] = prod_unit_left_to_right(R45.MPO(), w*w);
+      Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w*w);
 
       // Reflection.  Fixed to reflect about a horizontal axis.  This is the reverse order of unit cells to the R45 operator.
-      UnitCellMPO Ry = I(0);
+      UnitCellMPO RyOld = I(0);
       for (int c = 0; c < w; ++c)
       {
 	 UnitCellMPO ThisR = I(0);
@@ -292,10 +292,10 @@ int main(int argc, char** argv)
 	 }
 
 	 ThisR.translate(c*w);
-	 Ry = Ry * ThisR;
+	 RyOld = RyOld * ThisR;
       }
 
-      Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w*w);
+      Lattice["RyOld"] = prod_unit_left_to_right(RyOld.MPO(), w*w);
 
       // 'identity' operator in the spin-1/2 auxiliary basis
       Lattice["I_2"] = prod_unit_left_to_right(UnitCellMPO(I(0)).MPO(), w)
