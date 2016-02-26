@@ -8,9 +8,7 @@
 // x=1/y, y=1/x as two parameters, only one of which needs to be specified.
 //
 // Parameters may be named.  Unnamed parameters are taken in left-to-right
-// order.
-//
-// TODO: does it make more sense for default parameters to be parsed in right-to-left order?
+// order.  Default parameters are parsed in right-to-left order.
 //
 
 #if !defined(MPTOOLKIT_LATTICE_FUNCTION_H)
@@ -341,7 +339,23 @@ GetArguments(FormalArgumentList const& FormalArgs, ParameterList const& Params,
       }
       else
       {
-	 // named parameter
+	 // named parameter.
+	 // Check that it corresponds to an actual argument
+	 bool Found = false;
+	 for (auto const& x : FormalArgs)
+	 {
+	    if (x.Name == Params[i].Name)
+	    {
+	       Found = true;
+	       break;
+	    }
+	 }
+	 CHECK(Found)("Named parameter to function does not exist - check spelling!")(Params[i].Name);
+	 // and also check that it isn't duplicated
+	 if (Args.find(Params[i].Name) != Args.end())
+	 {
+	    PANIC("Value of named parameter has already been set!")(Params[i].Name);
+	 }
 	 Args[Params[i].Name] = Params[i].Value;
       }
    }
