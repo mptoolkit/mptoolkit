@@ -148,6 +148,7 @@ int main(int argc, char** argv)
       UnitCellOperator S(Cell, "S"), StagS(Cell, "StagS");
       UnitCellOperator I(Cell, "I"); // identity operator
       UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
+      UnitCellOperator RyUnit(Cell, "RyUnit");
 
       // Add some operators on the unit-cell
    
@@ -185,9 +186,6 @@ int main(int argc, char** argv)
       }
 
 
-      // Now we construct the InfiniteLattice,
-      InfiniteLattice Lattice(Cell);
-
       // Construct the Hamiltonian for a single unit-cell,
       UnitCellMPO H1, H2, Ht, Hv, Hy;
     
@@ -219,26 +217,6 @@ int main(int argc, char** argv)
          Hv += DimerPotential(Spin, w, 0, i, 1, (i+1)%w, 0, (i+1)%w, 1, (i+2)%w);       // lower-vertical rhombus terms
       }
 
-      Lattice["H_J1"] = sum_unit(H1);
-      Lattice["H_y"] = sum_unit(Hy);
-      Lattice["H_J2"] = sum_unit(H2);
-      Lattice["H_t"]  = sum_unit(Ht);
-      Lattice["H_v"]  = sum_unit(Hv);
-
-      Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
-	 = "J1*H_J1 + J2*H_J2";
-
-      // Add the tripartite sublattice magnetization operators
-      if (w%3 == 0)
-      {
-	 Lattice["S_A"] = sum_unit(S_A, w*3);
-	 Lattice["S_B"] = sum_unit(S_B, w*3);
-	 Lattice["S_C"] = sum_unit(S_C, w*3);
-      }
-
-      // Momentum operator in Y direction
-      Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
-
       // Reflection.  This is in the 'wrong' 45 degree angle
       UnitCellMPO Ry = I(0);
       for (int c = 0; c < w; ++c)
@@ -266,7 +244,33 @@ int main(int argc, char** argv)
 	 Ry = Ry * ThisR;
       }
 
+      RyUnit = Ry;
+
+      // Now we construct the InfiniteLattice,
+      InfiniteLattice Lattice(Cell);
+
+      Lattice["H_J1"] = sum_unit(H1);
+      Lattice["H_y"] = sum_unit(Hy);
+      Lattice["H_J2"] = sum_unit(H2);
+      Lattice["H_t"]  = sum_unit(Ht);
+      Lattice["H_v"]  = sum_unit(Hv);
+
+      Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
+	 = "J1*H_J1 + J2*H_J2";
+
+      // Add the tripartite sublattice magnetization operators
+      if (w%3 == 0)
+      {
+	 Lattice["S_A"] = sum_unit(S_A, w*3);
+	 Lattice["S_B"] = sum_unit(S_B, w*3);
+	 Lattice["S_C"] = sum_unit(S_C, w*3);
+      }
+
+      // Momentum operator in Y direction
+      Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
+
       Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w*w);
+
 
       // Reflection.  Fixed to reflect about a horizontal axis.  This is the reverse order of unit cells to the R45 operator.
       UnitCellMPO RyOld = I(0);

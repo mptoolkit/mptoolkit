@@ -275,7 +275,7 @@ int main(int argc, char** argv)
 		      << "#unit cell size " << n << '\n'
 		      << "#eigenvalue = " << e << '\n'
 		      << "#magnitude = " << std::abs(e) << '\n';
-	    if (n != Psi1.size())
+	    if (n != int(Psi1.size()))
 	    {
 	       std::cout << "#magnitude per wavefunction unit cell size (" << Psi1.size() << " sites) = " 
 			 << std::pow(std::abs(e), double(Psi1.size())/double(n)) << '\n';
