@@ -1986,6 +1986,12 @@ int main(int argc, char** argv)
       pheap::Cleanup();
       return 1;
    }
+   catch (pheap::PHeapCannotCreateFile& e)
+   {
+      std::cerr << "Exception: " << e.what() << '\n';
+      if (e.Why == "File exists")
+	 std::cerr << "Note: use --force (-f) option to overwrite.\n";
+   }
    catch (std::exception& e)
    {
       std::cerr << "Exception: " << e.what() << '\n';
