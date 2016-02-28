@@ -30,13 +30,13 @@ ConstructProjectorOntoPositiveDiagonal(MatrixOperator const& M)
 
    // Determine which states we should keep
    std::vector<std::vector<int>> KeptStates;
-   for (int i = 0; i < M.Basis1().size(); ++i)
+   for (unsigned i = 0; i < M.Basis1().size(); ++i)
    {
       KeptStates.push_back(std::vector<int>());
       MatrixOperator::const_inner_iterator I = iterate_at(M.data(), i,i);
       if (I)
       {
-	 for (int j = 0; j < size1(*I); ++j)
+	 for (unsigned j = 0; j < size1(*I); ++j)
 	 {
 	    if ((*I)(j,j).real() > 0)
 	       KeptStates[i].push_back(j);

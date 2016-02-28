@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 
 #include "mp/copyright.h"
 #include "wavefunction/mpwavefunction.h"

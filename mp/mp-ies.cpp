@@ -343,7 +343,7 @@ int main(int argc, char** argv)
 	       Out << "#Eigenvalue of operator is " << format_complex(e) << '\n';
 	    }
 	       
-	    while (k < EValues.size())
+	    while (k < int(EValues.size()))
 	    {
 	       if (Sector.is_null() || EValues[k].q != Sector)
 	       {

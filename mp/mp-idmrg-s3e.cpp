@@ -1077,6 +1077,8 @@ class iDMRG
 
       MixInfo    MixingInfo;
       TruncationInfo Info;
+
+      int SweepNumber;
 };
 
 iDMRG::iDMRG(LinearWavefunction const& Psi_, RealDiagonalOperator const& LambdaR, MatrixOperator const& UR,
@@ -1084,7 +1086,7 @@ iDMRG::iDMRG(LinearWavefunction const& Psi_, RealDiagonalOperator const& LambdaR
 	     StateComponent const& LeftHam, StateComponent const& RightHam,
 	     std::complex<double> InitialEnergy, int Verbose_)
    : Hamiltonian(Hamiltonian_), Psi(Psi_), QShift(QShift_), 
-     LeftHamiltonian(1, LeftHam), RightHamiltonian(1, RightHam), Verbose(Verbose_)
+     LeftHamiltonian(1, LeftHam), RightHamiltonian(1, RightHam), Verbose(Verbose_), SweepNumber(1)
 {
    this->Initialize(LambdaR, UR, InitialEnergy);
 }
@@ -1364,6 +1366,8 @@ iDMRG::SweepRight(StatesInfo const& States, double HMix)
       this->Solve();
       this->ShowInfo('R');
    }
+
+   SweepNumber++;
 }
 
 void
@@ -1381,6 +1385,8 @@ iDMRG::SweepLeft(StatesInfo const& States, double HMix, bool NoUpdate)
       this->Solve();
       this->ShowInfo('L');
    }
+
+   SweepNumber++;
 }
 
 void
@@ -1417,6 +1423,7 @@ void
 iDMRG::ShowInfo(char c)
 {
    std::cout << c
+	     << " Sweep=" << SweepNumber 
 	     << " Energy=" << Solver_.LastEnergy()
 	     << " States=" << Info.KeptStates()
 	     << " TruncError=" << Info.TruncationError()
@@ -1985,6 +1992,12 @@ int main(int argc, char** argv)
       std::cerr << "Exception while processing command line options: " << e.what() << '\n';
       pheap::Cleanup();
       return 1;
+   }
+   catch (pheap::PHeapCannotCreateFile& e)
+   {
+      std::cerr << "Exception: " << e.what() << '\n';
+      if (e.Why == "File exists")
+	 std::cerr << "Note: use --force (-f) option to overwrite.\n";
    }
    catch (std::exception& e)
    {

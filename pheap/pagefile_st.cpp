@@ -9,6 +9,7 @@
   Created in antiquity, Ian McCulloch
 */
 
+#include "pheap/pheaperror.h"
 #include "common/proccontrol.h"
 #include "pstream/pfilestream.h"
 #include "common/inttype.h"
@@ -158,10 +159,10 @@ void PageFileImpl::create(size_t PageSize_, std::string const& FileName_, bool U
    int Flags = O_RDWR | O_CREAT | O_TRUNC;
    if (!AllowOverwrite)
       Flags |= O_EXCL;
-   FD = ::open(FileName.c_str(), Flags, 0600);
+   FD = ::open(FileName.c_str(), Flags, 0666);
    if (FD == -1)
    {
-      PANIC("Error creating page file!")(FileName)(strerror(errno));
+      throw pheap::PHeapCannotCreateFile(FileName, strerror(errno));
    }
    if (Unlink)
       ::unlink(FileName.c_str());
@@ -177,10 +178,10 @@ uint64 PageFileImpl::open(std::string const& FileName_, bool ReadOnly_)
 
    int OpenFlags = (ReadOnly ? O_RDONLY : O_RDWR);
 
-   FD = ::open(FileName.c_str(), OpenFlags, 0666);
+   FD = ::open(FileName.c_str(), OpenFlags);
    if (FD == -1)
    {
-      PANIC("Error opening page file!")(FileName)(strerror(errno));
+      throw pheap::PHeapCannotOpenFile(FileName, strerror(errno));
    }
 
    // create a ipfilestream to read the metadata
@@ -190,9 +191,7 @@ uint64 PageFileImpl::open(std::string const& FileName_, bool ReadOnly_)
 
    if (Magic != PageFileMagic)
    {
-     PANIC(FileName_ + " does not appear to be a page file!")(Magic)(PageFileMagic);
-     // << " Magic = " 
-     //	   << std::hex << Magic << ", expected = " << std::hex << PageFileMagic;
+      throw pheap::PHeapFileError(FileName_, "file format incorrect, cannot find magic number.");
    }
 
    uint32 Version = MetaIn.read<uint32>();
@@ -202,7 +201,9 @@ uint64 PageFileImpl::open(std::string const& FileName_, bool ReadOnly_)
 
    if (Version > 2)
    {
-      PANIC("PageFile version mismatch")(FileName_)(Version) << "expected version <= 2";
+      throw pheap::PHeapFileError(FileName_, "file version mismatch, version is " +
+				  boost::lexical_cast<std::string>(Version) + " but expected version <= 2\n"
+				  "Probably this file was created with a newer version of the software.");
    }
 
    PageSize = MetaIn.read<uint32>();
