@@ -87,9 +87,8 @@ DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalu
    out << "#Eigenvalue sum = " << this->EigenSum() << '\n';
    out << "#von Neumann Entropy " << (Base2 ? "(base 2)" : "(base e)") << " = " << this->Entropy() << '\n';
    if (MaxEigenvalues > 0)
-      out << "#Number    #Eigenvalue         #Degen    #Sigma                #Energy             #QuantumNumber\n";
+      out << "#Number    #Eigenvalue         #Degen    #Weight               #Energy             #QuantumNumber\n";
    int n = 0;
-   double Sigma = 1.0;
    int TotalDegree = 0;
    double EShift = 0;
    double EScale = 1.0;
@@ -111,13 +110,13 @@ DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalu
 
       for (int i = 0; i < OuterDegen; ++i)
       {
-         Sigma -= EVal * Iter->Degree;
+         double Weight = EVal * Iter->Degree / OuterDegen;
          TotalDegree += Iter->Degree;
          ++n;
          out << std::right << std::setw(7) << n << "  " 
              << std::right << std::setw(20) << Iter->Eigenvalue 
              << "  " << std::setw(6) << DisplayDegen
-             << "  " << std::setw(20) << Sigma
+             << "  " << std::setw(20) << Weight
              << "  " << std::setw(20) << Energy
              << "  " << std::left 
              << this->Lookup(Iter->Subspace) << '\n';
