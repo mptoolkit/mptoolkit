@@ -327,7 +327,6 @@ int main(int argc, char** argv)
 	    MatrixOperator X = scalar_prod(herm(U[j]), operator_prod(herm(U[i]), U[j], U[i]));
 	    //            std::complex<double> x = inner_prod(U[i]*U[j], U[j]*U[i]) / Dim;
             std::complex<double> x = inner_prod(X, Rho);
-	    TRACE(trace(scalar_prod(herm(X),Rho)));
 	    // scalar_prod(herm(U[i]*U[j]), U[j]*U[i]), Rho);
 	    //            std::complex<double> tr = trace(U[i]*U[j]*Rho);
 	    //	    TRACE(scalar_prod(herm(U[i]*U[j]), U[i]*U[j]));
