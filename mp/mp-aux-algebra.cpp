@@ -341,10 +341,7 @@ int main(int argc, char** argv)
 		  if (I)
 		  {
 		     LinearAlgebra::Matrix<std::complex<double>> m = *I;
-		     for (unsigned w = 0; w < size1(m); ++w)
-		     {
-			std::cout << w << ' ' << m(w,w) << '\n';
-		     }
+		     TRACE(m);
 		  }
 	       }
 	    }
