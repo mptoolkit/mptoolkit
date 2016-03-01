@@ -23,11 +23,14 @@ struct push_operator
 		 std::stack<ElementType>& eval_)
       : Lattice(Lattice_), IdentStack(IdentStack_), eval(eval_) {}
    
-   void operator()(char const*, char const*) const
+   void operator()(char const* start, char const* end) const
    {
       std::string OpName = IdentStack.top();
       IdentStack.pop();
-      CHECK(Lattice.operator_exists(OpName))("Operator does not exist in the lattice")(OpName);
+      if (!Lattice.operator_exists(OpName))
+      {
+	 throw ParserError::AtPosition("Operator does not exist or wrong type: " + OpName, start);
+      }
       eval.push(Lattice[OpName].op());
    }
 
@@ -250,7 +253,7 @@ struct push_sum_kink
       }
       if (Comma == End)
       {
-	 PANIC("Failed to parse two parameters in sum_kink");
+	 throw ParserError::AtRange("sum_kink expects two parameters", Start, End);
       }
 
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
@@ -291,7 +294,7 @@ struct push_sum_string_inner
       }
       if (Comma == End)
       {
-	 PANIC("Failed to parse three parameters in sum_string_inner");
+	 throw ParserError::AtRange("sum_string_inner expects three parameters, only found one", Start, End);
       }
 
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
@@ -309,7 +312,7 @@ struct push_sum_string_inner
       }
       if (Comma == End)
       {
-	 PANIC("Failed to parse three parameters in sum_string_inner");
+	 throw ParserError::AtRange("sum_string_inner expects three parameters, only found two", Start, End);
       }
       UnitCellMPO String = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, Comma), Args);
       ++Comma; // skip over the comma
@@ -347,7 +350,7 @@ struct push_sum_string_dot
       }
       if (Comma == End)
       {
-	 PANIC("Failed to parse three parameters in sum_string_dot");
+	 throw ParserError::AtRange("sum_string_dot expects three parameters, only found one", Start, End);
       }
 
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
@@ -365,7 +368,7 @@ struct push_sum_string_dot
       }
       if (Comma == End)
       {
-	 PANIC("Failed to parse three parameters in sum_string_dot");
+	 throw ParserError::AtRange("sum_string_dot expects three parameters, only found two", Start, End);
       }
       UnitCellMPO String = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, Comma), Args);
       ++Comma; // skip over the comma
@@ -690,7 +693,7 @@ ParseInfiniteOperatorAndLattice(std::string const& Str)
    std::string::const_iterator Delim = std::find(Str.begin(), Str.end(), ':');
    if (Delim == Str.end())
    {
-      PANIC("fatal: expression of the form \"lattice:expression\" expected.")(Str);
+      throw ParserError("expression of the form \"lattice:expression\" expected");
    }
 
    std::string LatticeFile = std::string(Str.begin(), Delim);

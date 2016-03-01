@@ -85,6 +85,7 @@ int main(int argc, char** argv)
       std::vector<std::string> CommutatorStr;
       bool UseTempFile = false;
       std::string QSector;
+      bool Square = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -92,6 +93,7 @@ int main(int argc, char** argv)
          ("wavefunction,w", prog_opt::value(&PsiStr), "Wavefunction [required]")
 	 ("lattice,l", prog_opt::value(&LatticeFile), "use this lattice file for the operators")
 	 ("sector,s", prog_opt::value(&QSector), "select a different quantum number sector [don't use this unless you know what you are doing]")
+	 ("square", prog_opt::bool_switch(&Square), "calculate also the square of the commutator [for debugging/information]")
 	 //	 ("commutator,c", prog_opt::value(&CommutatorStr), 
 	 //	  "calculate the commutator phase angle, U X X^\\dagger = exp(i*theta) X")
          ("tempfile", prog_opt::bool_switch(&UseTempFile),
@@ -308,22 +310,43 @@ int main(int argc, char** argv)
 
       // Now go through each operator pair
       if (!Quiet)
-	 std::cout << "#Op1  #Op2  #Commutator-Real  #Commutator-Imag\n";
+      {
+	 if (Square)
+	 {
+	    std::cout << "#Op1  #Op2  #Commutator-Real  #Commutator-Imag      #Square-Real     #Square-Imag\n";
+	 }
+	 else
+	 {
+	    std::cout << "#Op1  #Op2  #Commutator-Real  #Commutator-Imag\n";
+	 }
+      }
       for (unsigned i = 0; i < U.size(); ++i)
       {
          for (unsigned j = i+1; j < U.size(); ++j)
          {
+	    MatrixOperator X = scalar_prod(herm(U[j]), operator_prod(herm(U[i]), U[j], U[i]));
 	    //            std::complex<double> x = inner_prod(U[i]*U[j], U[j]*U[i]) / Dim;
-            std::complex<double> x = inner_prod(scalar_prod(herm(U[j]), operator_prod(herm(U[i]), U[j], U[i])),
-						Rho);
+            std::complex<double> x = inner_prod(X, Rho);
+	    TRACE(trace(scalar_prod(herm(X),Rho)));
 	    // scalar_prod(herm(U[i]*U[j]), U[j]*U[i]), Rho);
 	    //            std::complex<double> tr = trace(U[i]*U[j]*Rho);
 	    //	    TRACE(scalar_prod(herm(U[i]*U[j]), U[i]*U[j]));
             std::cout << std::setw(5) << std::left << i << " "
                       << std::setw(5) << std::left << j << " "
                       << std::setw(17) << std::right << std::fixed << x.real() << " "
-                      << std::setw(17) << std::right << std::fixed << x.imag() << " "
-		      << std::endl;
+                      << std::setw(17) << std::right << std::fixed << x.imag() << " ";
+
+	    if (Square)
+	    {
+	       x = inner_prod(X*X, Rho);
+	       std::cout << std::setw(17) << std::right << std::fixed << x.real() << " "
+			 << std::setw(17) << std::right << std::fixed << x.imag() << " "
+			 << std::endl;
+	    }
+	    else
+	    {
+	       std::cout << std::endl;
+	    }
          }
       }
 
