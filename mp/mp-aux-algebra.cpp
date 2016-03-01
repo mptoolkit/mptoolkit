@@ -332,6 +332,20 @@ int main(int argc, char** argv)
 	       std::cout << std::setw(17) << std::right << std::fixed << x.real() << " "
 			 << std::setw(17) << std::right << std::fixed << x.imag() << " "
 			 << std::endl;
+
+	       MatrixOperator K = scalar_prod(herm(X), Rho);
+	       for (unsigned i = 0; i < K.Basis1().size(); ++i)
+	       {
+		  MatrixOperator::inner_iterator I = iterate_at(K.data(), i,i);
+		  if (I)
+		  {
+		     LinearAlgebra::Matrix<std::complex<double>> m = *I;
+		     for (unsigned w = 0; w < size1(m); ++w)
+		     {
+			std::cout << w << ' ' << m(w,w) << '\n';
+		     }
+		  }
+	       }
 	    }
 	    else
 	    {
