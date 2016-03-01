@@ -233,7 +233,7 @@ int main(int argc, char** argv)
       // Normalization
       // it might not be unitary, eg anti-unitary.  So we need to take the 4th power
 #if 1
-      std::complex<double> x1 = inner_prod(Rho, scalar_prod(v1,herm(v1));
+      std::complex<double> x1 = inner_prod(Rho, scalar_prod(v1,herm(v1)));
 
 #else
       std::complex<double> x1 = inner_prod(scalar_prod(herm(v1), operator_prod(herm(v1), v1, v1)), Rho);
@@ -256,7 +256,7 @@ int main(int argc, char** argv)
 
       // Normalization
 #if 1
-      std::complex<double> x2 = inner_prod(Rho, scalar_prod(v2,herm(v2));
+      std::complex<double> x2 = inner_prod(Rho, scalar_prod(v2,herm(v2)));
 
 #else
       std::complex<double> x2 = inner_prod(scalar_prod(herm(v2), operator_prod(herm(v2), v2, v2)), Rho);
