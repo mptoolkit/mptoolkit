@@ -380,6 +380,7 @@ int main(int argc, char** argv)
 
 	 ProductMPO StringOperator = ParseProductOperator(*Lattice, OpStr);
 
+#if 0
 	 if (Psi1.size() % StringOperator.size() != 0)
 	 {
 	    std::cerr << "mp-aux-matrix: error: string operator size is incompatible with the wavefunction size for operator "
@@ -388,6 +389,7 @@ int main(int argc, char** argv)
 	 }
 
 	 StringOperator = repeat(StringOperator, Psi1.size() / StringOperator.size());
+#endif
 
 	 if (!QSector.empty())
 	 {
