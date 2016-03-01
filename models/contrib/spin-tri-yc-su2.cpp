@@ -271,6 +271,16 @@ int main(int argc, char** argv)
 
       Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w*w);
 
+      // for even size unit cell, add rotation by pi
+      if (w%2 == 0)
+      {
+	 UnitCellMPO TyPi = I(0);
+	 for (int i = 0; i < w/2; ++i)
+	 {
+	    TyPi = TyPi * Cell.swap_gate_no_sign(i, i+w/2);
+	 }
+	 Lattice["TyPi"] = prod_unit_left_to_right(TyPi.MPO(), w);
+      }
 
       // Reflection.  Fixed to reflect about a horizontal axis.  This is the reverse order of unit cells to the R45 operator.
       UnitCellMPO RyOld = I(0);

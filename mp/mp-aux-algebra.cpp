@@ -310,7 +310,16 @@ int main(int argc, char** argv)
 
       // Now go through each operator pair
       if (!Quiet)
-	 std::cout << "#Op1  #Op2  #Commutator-Real  #Commutator-Imag\n";
+      {
+	 if (Square)
+	 {
+	    std::cout << "#Op1  #Op2  #Commutator-Real  #Commutator-Imag      #Square-Real     #Square-Imag\n";
+	 }
+	 else
+	 {
+	    std::cout << "#Op1  #Op2  #Commutator-Real  #Commutator-Imag\n";
+	 }
+      }
       for (unsigned i = 0; i < U.size(); ++i)
       {
          for (unsigned j = i+1; j < U.size(); ++j)
@@ -333,17 +342,6 @@ int main(int argc, char** argv)
 	       std::cout << std::setw(17) << std::right << std::fixed << x.real() << " "
 			 << std::setw(17) << std::right << std::fixed << x.imag() << " "
 			 << std::endl;
-
-	       MatrixOperator K = X; //scalar_prod(herm(X), Rho);
-	       for (unsigned i = 0; i < K.Basis1().size(); ++i)
-	       {
-		  MatrixOperator::inner_iterator I = iterate_at(K.data(), i,i);
-		  if (I)
-		  {
-		     LinearAlgebra::Matrix<std::complex<double>> m = *I;
-		     TRACE(m);
-		  }
-	       }
 	    }
 	    else
 	    {
