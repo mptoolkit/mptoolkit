@@ -63,7 +63,7 @@ inline
 std::string
 EscapeArgument(std::string const& s)
 {
-   if (s.find_first_of(" |#^&;<>\n\t(){}[]$\\`'") != std::string::npos)
+   if (s.find_first_of(" |*#^&;<>\n\t(){}[]$\\`'") != std::string::npos)
    {
       std::string Result = s;
       // escape some special characters explicitly

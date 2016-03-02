@@ -213,7 +213,7 @@ tools = mp-idmrg mp-idmrg-s3e mp-ioverlap \
         mp-info mp-history mp-reflect mp-conj \
         mp-imoments mp-iexpectation mp-wigner-eckart mp-reorder-symmetry \
         mp-ispectrum mp-lattice-info mp-ioperator mp-aux-matrix mp-aux-algebra mp-iapply mp-attr \
-        mp-iupdate mp-ibc-create mp-idivide mp-ies mp-aux-project
+        mp-iupdate mp-ibc-create mp-idivide mp-ies mp-aux-project mp-irepeat
 
 experimental-tools = mp-iprint mp-iproject
 
