@@ -232,7 +232,12 @@ int main(int argc, char** argv)
 
       // Normalization
       // it might not be unitary, eg anti-unitary.  So we need to take the 4th power
+#if 0
+      std::complex<double> x1 = inner_prod(Rho, scalar_prod(v1,herm(v1)));
+
+#else
       std::complex<double> x1 = inner_prod(scalar_prod(herm(v1), operator_prod(herm(v1), v1, v1)), Rho);
+#endif
       v1 *= std::sqrt(std::sqrt(1.0 / x1));
 
       if (!Quiet)
@@ -250,7 +255,12 @@ int main(int argc, char** argv)
       std::tie(e2, n2, v2) = get_left_eigenvector(Psi1, Psi.qshift(), Psi1, Psi.qshift(), Op2, Tol, Verbose);
 
       // Normalization
+#if 0
+      std::complex<double> x2 = inner_prod(Rho, scalar_prod(v2,herm(v2)));
+
+#else
       std::complex<double> x2 = inner_prod(scalar_prod(herm(v2), operator_prod(herm(v2), v2, v2)), Rho);
+#endif
       v2 *= std::sqrt(std::sqrt(1.0 / x2));
 
       if (!Quiet)
