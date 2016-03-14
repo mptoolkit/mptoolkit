@@ -96,6 +96,7 @@ int main(int argc, char** argv)
       UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz");
       UnitCellOperator I(Cell, "I"); // identity operator
       UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
+      UnitCellOperator RyUnit(Cell, "RyUnit");
 
       // Add some operators on the unit-cell
       
@@ -122,6 +123,36 @@ int main(int argc, char** argv)
       // if we could have tripartite symmetry, add operators for the sublattice magnetization
       //UnitCellMPO S_A, S_B, S_C;
 
+
+      UnitCellMPO Ry = I(0);
+      for (int c = 0; c < w; ++c)
+      {
+	 UnitCellMPO ThisR = I(0);
+	 // get the 'pivot' site/bond that we reflect about
+	 int const p1 = c/2;
+	 int const p2 = (c+1)/2;
+
+	 // if we're reflecting about a bond, do that first
+	 if (p1 != p2)
+	    ThisR = ThisR * Cell.swap_gate_no_sign(p1,p2);
+
+	 int i1 = (p1+w-1)%w;
+	 int i2 = (p2+1)%w;
+	
+	 while (i1 != p1 + w/2)
+	 {
+	    ThisR = ThisR * Cell.swap_gate_no_sign(i1,i2);
+	    i1 = (i1+w-1)%w;
+	    i2 = (i2+1)%w;
+	 }
+
+	 ThisR.translate(c*w);
+	 Ry = Ry * ThisR;
+      }
+
+      RyUnit = Ry;
+
+
       // Now we construct the InfiniteLattice,
       InfiniteLattice Lattice(Cell);
 
@@ -132,6 +163,25 @@ int main(int argc, char** argv)
 
       //Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0) 
       // = "J1*H_J1 + J2*H_J2";
+
+
+      // Momentum operator in Y direction
+      Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
+
+      Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w*w);
+
+      // for even size unit cell, add rotation by pi
+      if (w%2 == 0)
+      {
+	 UnitCellMPO TyPi = I(0);
+	 for (int i = 0; i < w/2; ++i)
+	 {
+	    TyPi = TyPi * Cell.swap_gate_no_sign(i, i+w/2);
+	 }
+	 Lattice["TyPi"] = prod_unit_left_to_right(TyPi.MPO(), w);
+      }
+
+
 
 
       // save the lattice
