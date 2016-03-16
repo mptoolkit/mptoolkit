@@ -187,7 +187,7 @@ int main(int argc, char** argv)
 
 
       // Construct the Hamiltonian for a single unit-cell,
-      UnitCellMPO H1, H2, Ht, Hv, Hy;
+      UnitCellMPO H1, H2, Ht, Hv, Hy, Hchi;
     
       for (int i = 0; i < w; ++i)
       {
@@ -215,6 +215,12 @@ int main(int argc, char** argv)
          Hv += DimerPotential(Spin, w, 0, i, 1, i, 1, (i+1)%w, 2, (i+1)%w);             // horizontal rhombus terms
          Hv += DimerPotential(Spin, w, 0, i, 0, (i+1)%w, 1, i, 1, (i+1)%w);             // upper-vertical rhombus terms
          Hv += DimerPotential(Spin, w, 0, i, 1, (i+1)%w, 0, (i+1)%w, 1, (i+2)%w);       // lower-vertical rhombus terms
+
+	 // right-facing triangle
+	 Hchi += inner(S(0)[i], cross(S(0)[(i+1)%w], S(1)[i]));
+
+	 // left-facing triangle
+	 Hchi += inner(S(0)[(i+1)%w], cross(S(1)[(i+1)%w], S(1)[i]));
       }
 
       // Reflection.  This is in the 'wrong' 45 degree angle
@@ -254,6 +260,7 @@ int main(int argc, char** argv)
       Lattice["H_J2"] = sum_unit(H2);
       Lattice["H_t"]  = sum_unit(Ht);
       Lattice["H_v"]  = sum_unit(Hv);
+      Lattice["H_chi"]  = sum_unit(Hchi);
 
       Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
 	 = "J1*H_J1 + J2*H_J2";
