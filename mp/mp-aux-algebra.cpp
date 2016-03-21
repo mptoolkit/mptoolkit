@@ -20,6 +20,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include "common/statistics.h"
 #include <tuple>
+#include "parser/matrix-parser.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -86,6 +87,7 @@ int main(int argc, char** argv)
       bool UseTempFile = false;
       std::string QSector;
       bool Square = false;
+      std::vector<std::string> Expressions;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -96,6 +98,8 @@ int main(int argc, char** argv)
 	 ("square", prog_opt::bool_switch(&Square), "calculate also the square of the commutator [for debugging/information]")
 	 //	 ("commutator,c", prog_opt::value(&CommutatorStr), 
 	 //	  "calculate the commutator phase angle, U X X^\\dagger = exp(i*theta) X")
+	 ("expression", prog_opt::value(&Expressions),
+	  "Evaliate this expression of the matrixes")
          ("tempfile", prog_opt::bool_switch(&UseTempFile),
           "a temporary data file for workspace (path set by environment MP_BINPATH)")
          ("tol", prog_opt::value(&Tol),
@@ -348,6 +352,25 @@ int main(int argc, char** argv)
 	    }
          }
       }
+
+      // Now evaluate expressions, if any
+      if (!Expressions.empty())
+      {
+	 std::map<std::string, MatrixOperator> Matrices;
+	 for (unsigned n = 0; n < U.size(); ++n)
+	 {
+	    Matrices[std::string(1, char('A'+n))] = U[n][0];
+	 }
+
+	 Function::ArgumentList Args;
+
+	 for (unsigned i = 0; i < Expressions.size(); ++i)
+	 {
+	    MatrixOperator X = ParseMatrixOperator(Expressions[i], Args, Matrices);
+	    std::cout << "Expression " << Expressions[i] << " = " << inner_prod(X, Rho) << '\n';
+	 }
+      }
+
 
 #if 0
       // Now calculate the commutator phase angles

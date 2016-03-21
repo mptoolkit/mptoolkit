@@ -538,13 +538,19 @@ struct push_value
       eval.push(n);
    }
 
-    void operator()(char const* str, char const* /*end*/) const
-    {
-       double n = strtod(str, 0);
-       eval.push(n);
-    }
+   template <typename T>
+   void operator()(T const& x) const
+   {
+      eval.push(x);
+   }
+
+   void operator()(char const* str, char const* /*end*/) const
+   {
+      double n = strtod(str, 0);
+      eval.push(n);
+   }
    
-    std::stack<element_type>& eval;
+   std::stack<element_type>& eval;
 };
 
 template <typename element_type>
