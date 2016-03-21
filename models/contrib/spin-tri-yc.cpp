@@ -165,6 +165,36 @@ int main(int argc, char** argv)
       // = "J1*H_J1 + J2*H_J2";
 
 
+      UnitCellMPO RyOld = I(0);
+      for (int c = 0; c < w; ++c)
+      {
+	 UnitCellMPO ThisR = I(0);
+	 // get the 'pivot' site/bond that we reflect about
+	 int const p1 = (w-c-1)/2;
+	 int const p2 = (w-c)/2;
+
+	 // if we're reflecting about a bond, do that first
+	 if (p1 != p2)
+	    ThisR = ThisR * Cell.swap_gate_no_sign(p1,p2);
+
+	 int i1 = (p1+w-1)%w;
+	 int i2 = (p2+1)%w;
+	
+	 while (i1 != p1 + w/2)
+	 {
+	    ThisR = ThisR * Cell.swap_gate_no_sign(i1,i2);
+	    i1 = (i1+w-1)%w;
+	    i2 = (i2+1)%w;
+	 }
+
+	 ThisR.translate(c*w);
+	 RyOld = RyOld * ThisR;
+      }
+
+      Lattice["RyOld"] = prod_unit_left_to_right(RyOld.MPO(), w*w);
+
+
+
       // Momentum operator in Y direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
 
