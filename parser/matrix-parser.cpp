@@ -185,6 +185,7 @@ struct MatrixParser : public grammar<MatrixParser>
 	    pow_term_t
 	    >> *(   ('*' >> pow_term_t)
                     |   ('/' >> pow_term_t)
+                    |   ('%' >> pow_term_t)
                     )
 	    ;
 	 term =
@@ -193,6 +194,8 @@ struct MatrixParser : public grammar<MatrixParser>
 				      binary_multiplication<ElementType> >(self.eval)]
                     |   ('/' >> pow_term)[invoke_binary<ElementType, 
 					  binary_division<ElementType> >(self.eval)]
+                    |   ('%' >> pow_term)[invoke_binary<ElementType, 
+					  binary_modulus<ElementType> >(self.eval)]
                     )
 	    ;
 	 

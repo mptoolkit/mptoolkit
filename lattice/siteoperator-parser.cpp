@@ -166,6 +166,8 @@ struct SiteOperatorParser : public grammar<SiteOperatorParser>
 				      binary_multiplication<element_type> >(self.eval)]
                     |   ('/' >> pow_term)[invoke_binary<element_type, 
 					  binary_division<element_type> >(self.eval)]
+		    |   ('%' >> pow_term)[invoke_binary<element_type, 
+					  binary_modulus<element_type> >(self.eval)]
                     )
 	    ;
 	 
