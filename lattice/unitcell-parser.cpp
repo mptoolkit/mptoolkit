@@ -759,6 +759,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	    pow_term_t
 	    >> *(   ('*' >> pow_term_t)
                     |   ('/' >> pow_term_t)
+		    |   ('%' >> pow_term_t)
                     )
 	    ;
 	 term =
@@ -767,6 +768,8 @@ struct UnitCellParser : public grammar<UnitCellParser>
 				      binary_multiplication<ElementType> >(self.eval)]
                     |   ('/' >> pow_term)[invoke_binary<ElementType, 
 					  binary_division<ElementType> >(self.eval)]
+		    |   ('%' >> pow_term)[invoke_binary<ElementType, 
+					  binary_modulus<ElementType> >(self.eval)]
                     )
 	    ;
 	 

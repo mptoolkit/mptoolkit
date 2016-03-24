@@ -14,9 +14,11 @@ int main(int argc, char** argv)
 {
    try
    {
+      // Parameters of the lattice (with defaults, if applicable)
       half_int Spin = 0.5;
       std::string FileName;
 
+      // Options
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
@@ -30,7 +32,8 @@ int main(int argc, char** argv)
 					  prog_opt::command_line_style::allow_guessing).
 		      run(), vm);
       prog_opt::notify(vm);    
-      
+
+      // Descriptions of each operator      
       OperatorDescriptions OpDescriptions;
       OpDescriptions.add_operators()
 	 ("H_J1"  , "nearest neighbor spin exchange")
@@ -44,6 +47,7 @@ int main(int argc, char** argv)
 	 ("H_Q3"  , "next-next-nearest neighbor quadrupole exchange (Q.Q)")
 	 ;
 
+      // Descriptions for the operators
       OpDescriptions.add_functions()
          ("Haldane_Shastry", "Haldane-Shastry Hamiltonian, parametized by 'lambda' (considering exponential decay as exp(-lambda*r))")
          ;
@@ -59,10 +63,17 @@ int main(int argc, char** argv)
       }
 
       LatticeSite Site = SpinSU2(Spin);
+
+      // The UnitCell consists of a single site
       UnitCell Cell(Site);
+
+      // Make an infinite lattice of our unit cell
       InfiniteLattice Lattice(Cell);
+
+      // A short-cut to refer to an operator defined within our unit cell
       UnitCellOperator S(Cell, "S"), Q(Cell, "Q"), I(Cell, "I");
 
+      // Define operators that have support over the infinite lattice
       Lattice["H_J1"] = sum_unit(inner(S(0), S(1)));
       Lattice["H_J2"] = sum_unit(inner(S(0), S(2)));
       Lattice["H_J3"] = sum_unit(inner(S(0), S(3)));
