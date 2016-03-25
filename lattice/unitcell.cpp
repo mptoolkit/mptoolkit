@@ -426,6 +426,8 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
    BasisList Basis_j = this->operator[](j).Basis1();
 
    // Construct the parity operators
+   // TODO: we should verify that the P operator is diagonal.  We are also
+   // assuming that the diagonal matrix elements are purely real.
    LinearAlgebra::Vector<double> Parity_i(Basis_i.size(), 1.0);
    for (unsigned n = 0; n < Parity_i.size(); ++n)
    {

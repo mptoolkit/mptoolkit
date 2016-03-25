@@ -1465,6 +1465,7 @@ int main(int argc, char** argv)
       bool ExactDiag = false;
       double FidelityScale = 1.0;
       int Verbose = 0;
+      bool Quiet = false;
       bool DoRandom = false; // true if we want to start an iteration from a random centre matrix
       std::string TargetState;
       std::vector<std::string> BoundaryState;
@@ -1565,6 +1566,9 @@ int main(int argc, char** argv)
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
+
+      if (!Quiet)
+	 print_preamble(std::cout, argc, argv);
 
       std::cout << "Starting iDMRG.  Hamiltonian = " << HamStr << '\n';
       std::cout << "Wavefunction = " << FName << std::endl;

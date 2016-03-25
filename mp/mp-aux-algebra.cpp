@@ -88,6 +88,7 @@ int main(int argc, char** argv)
       std::string QSector;
       bool Square = false;
       std::vector<std::string> Expressions;
+      bool NoRandomPhase = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -104,6 +105,7 @@ int main(int argc, char** argv)
           "a temporary data file for workspace (path set by environment MP_BINPATH)")
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
+	 ("norandomize", prog_opt::bool_switch(&NoRandomPhase), "don't randomize the phase of the eigenvectors")
 	 ("quiet,q", prog_opt::bool_switch(&Quiet), "suppress informational preamble about each operator")
 	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
          ;
@@ -141,6 +143,12 @@ int main(int argc, char** argv)
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
+
+      if (!Quiet)
+	 print_preamble(std::cout, argc, argv);
+
+      if (!NoRandomPhase)
+	 srand(ext::get_unique() % RAND_MAX);
 
       // if the number of eigenvalues is specified but
       // the cutoff is not, then set the cutoff to zero
@@ -269,6 +277,12 @@ int main(int argc, char** argv)
 	 std::complex<double> x = inner_prod(scalar_prod(herm(v), operator_prod(herm(v), v, v)), Rho);
 
 	 v *= std::sqrt(std::sqrt(1.0 / x));
+	 // randomize phase
+
+	 if (!NoRandomPhase)
+	 {
+	    v *= std::polar(1.0, LinearAlgebra::random<double>() * 2 * math_const::pi);
+	 }
 
          //v *= std::sqrt(Dim); // make it properly unitary
          U.push_back(v);
