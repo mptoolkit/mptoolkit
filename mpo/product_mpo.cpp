@@ -1,6 +1,7 @@
 // -*- C++ -*- $Id$
 
 #include "product_mpo.h"
+#include "common/statistics.h"
 
 ProductMPO::ProductMPO(GenericMPO const& Other)
    : Data(Other)
@@ -109,11 +110,13 @@ operator*(ProductMPO const& x, ProductMPO const& y)
       return x;
    if (y.empty())
       return y;
-   CHECK_EQUAL(x.size(), y.size());
-   ProductMPO Result(x.size());
-   for (int i = 0; i < x.size(); ++i)
+
+   // we handle also the case where x.size() != y.size()
+   int sz =  statistics::lcm(x.size(), y.size());
+   ProductMPO Result(sz);
+   for (int i = 0; i < sz; ++i)
    {
-      Result[i] = aux_tensor_prod(x[i], y[i]);
+      Result[i] = aux_tensor_prod(x[i%x.size()], y[i%y.size()]);
    }
    return Result;
 }
