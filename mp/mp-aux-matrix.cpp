@@ -41,20 +41,35 @@ bool FileExists(std::string const& Name)
 void
 WriteMatrixAsSparse(std::ostream& out, LinearAlgebra::Matrix<std::complex<double> > const& Op, 
 		    double Epsilon = 0.0,
-		    int iOffset = 0, int jOffset = 0, bool ForceLast = false)
+		    int iOffset = 0, int jOffset = 0, bool ForceLast = false,
+		    bool Polar = false, bool Radians = false)
 {
    for (unsigned i = 0; i < size1(Op); ++i)
    {
       for (unsigned j = 0; j < size2(Op); ++j)
       {
 	 if (norm_frob(Op(i,j)) > Epsilon || (ForceLast && i == size1(Op)-1 && j == size2(Op)-1))
-	    out << (i+iOffset) << ' ' << (j+jOffset) << ' ' << Op(i,j).real() << ' ' << Op(i,j).imag() << '\n';
+	 {
+	    out << (i+iOffset) << ' ' << (j+jOffset) << ' ';
+	    if (Polar)
+	    {
+	       double Arg = std::arg(Op(i,j));
+	       if (!Radians)
+		  Arg *= 180.0 / math_const::pi;
+	       out << std::abs(Op(i,j)) << ' ' << Arg << '\n';
+	    }
+	    else
+	    {
+	       out << Op(i,j).real() << ' ' << Op(i,j).imag() << '\n';
+	    }
+	 }
       }
    }
 }
 
 void
-WriteMatrixOperatorAsSparse(std::ostream& out, MatrixOperator const& Op, double Epsilon = 0.0)
+WriteMatrixOperatorAsSparse(std::ostream& out, MatrixOperator const& Op, double Epsilon = 0.0,
+			    bool Polar = false, bool Radians = false)
 {
    // We map the basis into a linear index.  So we need to get the offset of each subspace
    std::vector<int> Basis1Offset, Basis2Offset;
@@ -77,7 +92,8 @@ WriteMatrixOperatorAsSparse(std::ostream& out, MatrixOperator const& Op, double 
       {
 	 // Offset + 1 to use 1-based addressing
 	 WriteMatrixAsSparse(out, *J, Epsilon, Basis1Offset[J.index1()]+1, Basis2Offset[J.index2()]+1,
-			     J.index1() == Op.Basis1().size()-1 && J.index2() == Op.Basis2().size()-1);
+			     J.index1() == Op.Basis1().size()-1 && J.index2() == Op.Basis2().size()-1,
+			     Polar, Radians);
       }
    }
 
@@ -156,6 +172,8 @@ int main(int argc, char** argv)
       bool Force = false;
       double Epsilon = 0.0;
       std::string QSector;
+      bool Polar = false;
+      bool Radians = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -172,6 +190,10 @@ int main(int argc, char** argv)
 	 ("rho", prog_opt::value(&RhoFile), "Construct the density matrix --rho <filename>")
 	 ("partition", prog_opt::value(&Partition), "Partition of the wavefunction cell,site (not yet implemented)")
 	 ("force,f", prog_opt::bool_switch(&Force), "Overwrite files if they already exist")
+	 ("polar", prog_opt::bool_switch(&Polar), "Write the matrix elements in <magnitude> <argument> format")
+
+	 ("radians", prog_opt::bool_switch(&Radians),
+	  "print the argument in radians instead of degrees [implies --polar]")
 	 ("epsilon,e", prog_opt::value(&Epsilon), "ignore matrix elements smaller than this epsilon")
 	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
          ;
@@ -201,6 +223,9 @@ int main(int argc, char** argv)
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
+
+      if (vm.count("radians"))
+	 Polar = true;
 
       // Split the file/operator combinations into separate lists
       std::vector<std::string> ProductOpFile;
@@ -419,7 +444,7 @@ int main(int argc, char** argv)
 	 else 
 	 {
 	    Out.precision(getenv_or_default("MP_PRECISION", 14));
-	    WriteMatrixOperatorAsSparse(Out, M, Epsilon);
+	    WriteMatrixOperatorAsSparse(Out, M, Epsilon, Polar, Radians);
 	 }
       }
 

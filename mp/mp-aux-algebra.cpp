@@ -312,7 +312,9 @@ int main(int argc, char** argv)
 	    if (v.size() == 1 && is_scalar(v.LocalBasis()[0]) && v.Basis2() == v.Basis1())
 	    {
 	       std::cout << "#UU* = " << inner_prod(Rho, v[0]*conj(v[0])) << '\n';
-	       std::cout << "#U^2 = " << inner_prod(Rho, v[0]*v[0]) << '\n';
+	       std::complex<double> U2 =  inner_prod(Rho, v[0]*v[0]);
+	       std::cout << "#U^2 = " << U2 << '\n';
+	       std::cout << "#U^2 magnitude = " << std::abs(U2) << '\n';
 	    }
 	 }
 	 
