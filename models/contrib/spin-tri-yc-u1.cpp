@@ -65,8 +65,9 @@ int main(int argc, char** argv)
 
       OperatorDescriptions OpDescriptions;
       OpDescriptions.add_operators()
-         ("H_J1"                   , "nearest neighbor spin exchange")
-         ("H_J2"                   , "next-nearest neighbor spin exchange")
+         ("H_z1"                   , "nearest neighbor Ising spin exchange")
+         ("H_J1"                   , "nearest neighbor Heisenberg spin exchange")
+         ("H_J2"                   , "next-nearest neighbor Heisenberg spin exchange")
          ("H_LongRangeIsing_inter" , "inter-cell interactions of long-range Ising model")
          ;
 
@@ -111,9 +112,17 @@ int main(int argc, char** argv)
       InfiniteLattice Lattice(Cell);
 
       // Construct the Hamiltonian for a single unit-cell,
-      UnitCellMPO H1, H2, H_inter;
+      UnitCellMPO Hz1, H1, H2, H_inter;
       for (int i = 0; i < w; ++i)
       {
+         // TIM - nearest neighbor bonds
+         // --> vertical bonds
+         Hz1 += Sz(0)[i]*Sz(0)[(i+1)%w];
+         // --> 60 degree bonds
+         Hz1 += Sz(0)[i]*Sz(1)[i];
+         Hz1 += Sz(0)[i]*Sz(1)[(i+1)%w];
+         std::cout << ".. " << std::flush;  
+ 
 	 // THM - nearest neighbor bonds
 	 // --> vertical bonds
 	 H1 += Sz(0)[i]*Sz(0)[(i+1)%w]
@@ -138,6 +147,7 @@ int main(int argc, char** argv)
         }
       }
 
+      Lattice["H_z1"] = sum_unit(Hz1);
       Lattice["H_J1"] = sum_unit(H1);
       Lattice["H_J2"] = sum_unit(H2);
       Lattice["H_LongRangeIsing_inter"] = sum_unit(H_inter);
@@ -156,7 +166,7 @@ int main(int argc, char** argv)
                   = "HS{lambda00,0,0} + HS{lambda00,1,1} + HS{lambda00,2,2} + HS{lambda00,3,3} + HS{lambda01,0,1} + HS{lambda01,1,2} + HS{lambda01,2,3} + HS{lambda01,3,1} + HS{lambda02,0,2} + HS{lambda02,1,3} + H_LongRangeIsing_inter";
       std::cout << ". " << std::flush;
 
-      std::cout << ">>>finished.\n";
+      std::cout << ">>> finished.\n";
 
       // save the lattice
       pheap::ExportObject(FileName, Lattice);
