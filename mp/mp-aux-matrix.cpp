@@ -191,6 +191,8 @@ int main(int argc, char** argv)
 	 ("rho", prog_opt::value(&RhoFile), "Construct the density matrix --rho <filename>")
 	 ("partition", prog_opt::value(&Partition), "Partition of the wavefunction cell,site (not yet implemented)")
 	 ("force,f", prog_opt::bool_switch(&Force), "Overwrite files if they already exist")
+         ("tol", prog_opt::value(&Tol),
+          FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
 	 ("polar", prog_opt::bool_switch(&Polar), "Write the matrix elements in <magnitude> <argument> format")
 
 	 ("radians", prog_opt::bool_switch(&Radians),
