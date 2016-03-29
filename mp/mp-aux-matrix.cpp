@@ -148,6 +148,7 @@ int main(int argc, char** argv)
       std::string PsiStr;
       std::string LatticeFile;
       int Verbose = 0;
+      double Tol = 1e-14;
       std::vector<std::string> ProductOperators;
       std::vector<std::string> TriangularOperators;
       std::vector<std::string> FiniteOperators;
@@ -172,6 +173,8 @@ int main(int argc, char** argv)
 	 ("rho", prog_opt::value(&RhoFile), "Construct the density matrix --rho <filename>")
 	 ("partition", prog_opt::value(&Partition), "Partition of the wavefunction cell,site (not yet implemented)")
 	 ("force,f", prog_opt::bool_switch(&Force), "Overwrite files if they already exist")
+         ("tol", prog_opt::value(&Tol),
+          FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
 	 ("epsilon,e", prog_opt::value(&Epsilon), "ignore matrix elements smaller than this epsilon")
 	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
          ;
@@ -329,6 +332,11 @@ int main(int argc, char** argv)
 	 std::string OpStr = ProductOpStr[i];
 	 std::string FileName = ProductOpFile[i];
 
+	 if (Verbose > 0)
+	 {
+	    std::cout << "Constructing operator " << OpStr << '\n';
+	    std::cout << "Writing to file " << FileName << std::endl;
+
 	 bool Reflect = false;
 	 bool Conjugate = false;
 	 LinearWavefunction* Psi2 = &Psi1;
@@ -380,17 +388,6 @@ int main(int argc, char** argv)
 
 	 ProductMPO StringOperator = ParseProductOperator(*Lattice, OpStr);
 
-#if 0
-	 if (Psi1.size() % StringOperator.size() != 0)
-	 {
-	    std::cerr << "mp-aux-matrix: error: string operator size is incompatible with the wavefunction size for operator "
-		      << OpStr << ", ignoring this operator.\n";
-	    continue;
-	 }
-
-	 StringOperator = repeat(StringOperator, Psi1.size() / StringOperator.size());
-#endif
-
 	 if (!QSector.empty())
 	 {
 	    QuantumNumber q(Psi1.GetSymmetryList(), QSector);
@@ -401,7 +398,8 @@ int main(int argc, char** argv)
          std::complex<double> e;
 	 int n;
          StateComponent v;
-         std::tie(e, n, v) = get_left_eigenvector(Psi1, InfPsi.qshift(), *Psi2, InfPsi.qshift(), StringOperator);
+         std::tie(e, n, v) = get_left_eigenvector(Psi1, InfPsi.qshift(), *Psi2, InfPsi.qshift(), StringOperator,
+						  Tol, Verbose);
 
 	 // Normalization
 	 // it might not be unitary, eg anti-unitary.  So we need to take the 4th power
