@@ -480,6 +480,7 @@ struct binary_funcs : symbols<boost::function<element_type(element_type, element
    binary_funcs()
    {
       this->add.operator()
+         ("fmod", make_apply_binary_math<element_type>(binary_fmod<element_type>()))
          ("dot", make_apply_binary_math<element_type>(binary_dot_product<element_type>()))
          ("inner", make_apply_binary_math<element_type>(binary_inner_product<element_type>()))
          ("outer", make_apply_binary_math<element_type>(binary_outer_product<element_type>()))
@@ -538,13 +539,19 @@ struct push_value
       eval.push(n);
    }
 
-    void operator()(char const* str, char const* /*end*/) const
-    {
-       double n = strtod(str, 0);
-       eval.push(n);
-    }
+   template <typename T>
+   void operator()(T const& x) const
+   {
+      eval.push(x);
+   }
+
+   void operator()(char const* str, char const* /*end*/) const
+   {
+      double n = strtod(str, 0);
+      eval.push(n);
+   }
    
-    std::stack<element_type>& eval;
+   std::stack<element_type>& eval;
 };
 
 template <typename element_type>

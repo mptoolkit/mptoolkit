@@ -207,13 +207,13 @@ default-models = spinchain-su2 spinchain-spin2-su2 \
                  bosehubbard-flux-3leg-u1 spinchain-u1 spincylinder-su2 \
                  spinchain bosehubbard-ladder-u1 bosehubbard-2component-u1z2 \
                  hubbard-so4 bosehubbard-u1 bosehubbard hubbard-u1u1 \
-                 hubbard-tri-u1u1
+                 hubbard-tri-u1u1 hubbard-tri hubbard-su2
 
 tools = mp-idmrg mp-idmrg-s3e mp-ioverlap \
         mp-info mp-history mp-reflect mp-conj \
         mp-imoments mp-iexpectation mp-wigner-eckart mp-reorder-symmetry \
         mp-ispectrum mp-lattice-info mp-ioperator mp-aux-matrix mp-aux-algebra mp-iapply mp-attr \
-        mp-iupdate mp-ibc-create mp-idivide mp-ies mp-aux-project
+        mp-iupdate mp-ibc-create mp-idivide mp-ies mp-aux-project mp-irepeat
 
 experimental-tools = mp-iprint mp-iproject
 
@@ -491,7 +491,7 @@ mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunctionleft.o 
 mp-igradient : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-ispectral-expansion : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-ioverlap : infinitewavefunctionleft.o
-mp-aux-algebra : infinitewavefunctionleft.o packunpack.o
+mp-aux-algebra : infinitewavefunctionleft.o packunpack.o matrix-parser.o
 mp-aux-matrix : infinitewavefunctionleft.o packunpack.o
 mp-ies : infinitewavefunctionleft.o packunpack.o
 mp-aux-project : infinitewavefunctionleft.o packunpack.o

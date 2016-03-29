@@ -2,6 +2,7 @@
 
 #include "tensor_exponential.h"
 #include "linearalgebra/exponential.h"
+#include "tensor/regularize.h"
 
 namespace Tensor
 {
@@ -47,6 +48,40 @@ Exponentiate(IrredTensor<std::complex<double>, BasisList, BasisList> const& m)
 	    if (LinearAlgebra::norm_frob(x) > 1e-14)
 	       Result(I->first, J->first) = x;
 	 }
+      }
+   }
+
+   return Result;
+}
+
+IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>
+exp(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> const& m)
+{
+   PRECONDITION(is_scalar(m.TransformsAs()))("Can only exponentiate a scalar operator")(m.TransformsAs());
+   PRECONDITION_EQUAL(m.Basis1(), m.Basis2());
+
+   if (!is_regular_basis(m.Basis1()))
+   {
+      IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis> X
+	 = Regularize(m.Basis1());
+
+      return triple_prod(herm(X), exp(triple_prod(X, m, herm(X))), X);
+   }
+
+   IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>
+      Result = m;
+
+   for (unsigned i = 0; i < Result.Basis1().size(); ++i)
+   {
+      if (!iterate_at(Result.data(), i,i))
+      {
+	 int Dim = Result.Basis1().dim(i);
+	 // element is zero, so the exponential is the identity
+	 Result.data()(i,i) = LinearAlgebra::DiagonalMatrix<double>(Dim, Dim, 1.0);
+      }
+      else
+      {
+	 Result.data()(i,i) = LinearAlgebra::Exponentiate(1.0, Result.data()(i,i));
       }
    }
 

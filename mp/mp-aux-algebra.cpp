@@ -20,6 +20,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include "common/statistics.h"
 #include <tuple>
+#include "parser/matrix-parser.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -86,6 +87,8 @@ int main(int argc, char** argv)
       bool UseTempFile = false;
       std::string QSector;
       bool Square = false;
+      std::vector<std::string> Expressions;
+      bool NoRandomPhase = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -96,10 +99,13 @@ int main(int argc, char** argv)
 	 ("square", prog_opt::bool_switch(&Square), "calculate also the square of the commutator [for debugging/information]")
 	 //	 ("commutator,c", prog_opt::value(&CommutatorStr), 
 	 //	  "calculate the commutator phase angle, U X X^\\dagger = exp(i*theta) X")
+	 ("expression", prog_opt::value(&Expressions),
+	  "Evaliate this expression of the matrixes")
          ("tempfile", prog_opt::bool_switch(&UseTempFile),
           "a temporary data file for workspace (path set by environment MP_BINPATH)")
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
+	 ("norandomize", prog_opt::bool_switch(&NoRandomPhase), "don't randomize the phase of the eigenvectors")
 	 ("quiet,q", prog_opt::bool_switch(&Quiet), "suppress informational preamble about each operator")
 	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
          ;
@@ -137,6 +143,12 @@ int main(int argc, char** argv)
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
+
+      if (!Quiet)
+	 print_preamble(std::cout, argc, argv);
+
+      if (!NoRandomPhase)
+	 srand(ext::get_unique() % RAND_MAX);
 
       // if the number of eigenvalues is specified but
       // the cutoff is not, then set the cutoff to zero
@@ -265,6 +277,12 @@ int main(int argc, char** argv)
 	 std::complex<double> x = inner_prod(scalar_prod(herm(v), operator_prod(herm(v), v, v)), Rho);
 
 	 v *= std::sqrt(std::sqrt(1.0 / x));
+	 // randomize phase
+
+	 if (!NoRandomPhase)
+	 {
+	    v *= std::polar(1.0, LinearAlgebra::random<double>() * 2 * math_const::pi);
+	 }
 
          //v *= std::sqrt(Dim); // make it properly unitary
          U.push_back(v);
@@ -294,6 +312,9 @@ int main(int argc, char** argv)
 	    if (v.size() == 1 && is_scalar(v.LocalBasis()[0]) && v.Basis2() == v.Basis1())
 	    {
 	       std::cout << "#UU* = " << inner_prod(Rho, v[0]*conj(v[0])) << '\n';
+	       std::complex<double> U2 =  inner_prod(Rho, v[0]*v[0]);
+	       std::cout << "#U^2 = " << U2 << '\n';
+	       std::cout << "#U^2 magnitude = " << std::abs(U2) << '\n';
 	    }
 	 }
 	 
@@ -348,6 +369,25 @@ int main(int argc, char** argv)
 	    }
          }
       }
+
+      // Now evaluate expressions, if any
+      if (!Expressions.empty())
+      {
+	 std::map<std::string, MatrixOperator> Matrices;
+	 for (unsigned n = 0; n < U.size(); ++n)
+	 {
+	    Matrices[std::string(1, char('A'+n))] = U[n][0];
+	 }
+
+	 Function::ArgumentList Args;
+
+	 for (unsigned i = 0; i < Expressions.size(); ++i)
+	 {
+	    MatrixOperator X = ParseMatrixOperator(Expressions[i], Args, Matrices);
+	    std::cout << "Expression " << Expressions[i] << " = " << inner_prod(X, Rho) << '\n';
+	 }
+      }
+
 
 #if 0
       // Now calculate the commutator phase angles

@@ -10,6 +10,7 @@
 #include <boost/variant/static_visitor.hpp>
 #include <complex>
 #include <boost/math/special_functions/round.hpp>
+#include "common/numerics.h"
 
 namespace Parser
 {
@@ -310,6 +311,79 @@ struct binary_division : boost::static_visitor<element_type>
    {
       PANIC("Cannot divide these types")(typeid(x).name())(typeid(y).name());
       return element_type(complex());
+   }
+};
+
+template <typename element_type>
+struct binary_modulus : boost::static_visitor<element_type>
+{
+   element_type operator()(complex const& x, complex const& y) const
+   {
+      if (y.real() == 0)
+	 throw ParserError("Division by zero in modulus operator");
+
+      // make sure that the divisor is real
+      if (std::abs(y.imag() * y.real()) > 1000*std::numeric_limits<double>::epsilon())
+	 throw ParserError("Divisor must be real for modulus operator");
+
+      int xReal = std::rint(x.real());
+      int xImag = std::rint(x.imag());
+      int yReal = std::rint(y.real());
+      
+      return std::complex<double>(numerics::divd(xReal, yReal).rem,
+				  numerics::divd(xImag, yReal).rem);
+   }
+
+   template <typename T>
+   element_type operator()(complex const& x, T const& y) const
+   {
+      throw ParserError("Operands of % must be numeric types");
+   }
+
+   template <typename T>
+   element_type operator()(T const& x, complex const& y) const
+   {
+      throw ParserError("Operands of % must be numeric types");
+   }
+
+   template <typename T, typename U>
+   element_type operator()(T const& x, U const& y) const
+   {
+      throw ParserError("Operands of % must be numeric types");
+   }
+};
+
+template <typename element_type>
+struct binary_fmod : boost::static_visitor<element_type>
+{
+   element_type operator()(complex const& x, complex const& y) const
+   {
+      if (y.real() == 0)
+	 throw ParserError("Division by zero in modulus operator");
+
+      // make sure that the divisor is real
+      if (std::abs(y.imag() * y.real()) > 1000*std::numeric_limits<double>::epsilon())
+	 throw ParserError("Divisor must be real for modulus operator");
+
+      return std::complex<double>(std::fmod(x.real(), y.real()), std::fmod(x.imag(), y.real()));
+   }
+
+   template <typename T>
+   element_type operator()(complex const& x, T const& y) const
+   {
+      throw ParserError("Operands of fmod() must be numeric types");
+   }
+
+   template <typename T>
+   element_type operator()(T const& x, complex const& y) const
+   {
+      throw ParserError("Operands of fmod() must be numeric types");
+   }
+
+   template <typename T, typename U>
+   element_type operator()(T const& x, U const& y) const
+   {
+      throw ParserError("Operands of fmod() must be numeric types");
    }
 };
 

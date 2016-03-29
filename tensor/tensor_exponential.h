@@ -12,6 +12,16 @@ namespace Tensor
 IrredTensor<std::complex<double>, BasisList, BasisList>
 Exponentiate(IrredTensor<std::complex<double>, BasisList, BasisList> const& m);
 
+inline
+IrredTensor<std::complex<double>, BasisList, BasisList>
+exp(IrredTensor<std::complex<double>, BasisList, BasisList> const& m)
+{
+   return Exponentiate(m);
+}
+
+IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>
+exp(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> const& m);
+
 } // namespace Tensor
 
 #endif

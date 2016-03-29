@@ -173,12 +173,12 @@ double tensor_coefficient(U1 const& q1,  U1 const& q2,  U1 const& q,
 			  U1 const& k1,  U1 const& k2,  U1 const& k,
 			  U1 const& q1p, U1 const& q2p, U1 const& qp)
 {
-   PRECONDITION(k1.x + k2.x == k.x)(k1.x)(k2.x)(k.x);
-   PRECONDITION(q1p.x + q2p.x == qp.x)(q1p.x)(q2p.x)(qp.x);
-   PRECONDITION(q1.x + q2.x == q.x)(q1.x)(q2.x)(q.x);
-   PRECONDITION(q1p.x == k1.x + q1.x)(q1p.x)(k1.x)(q1.x);
-   PRECONDITION(q2p.x == k2.x + q2.x)(q2p.x)(k2.x)(q2.x);
-   PRECONDITION(qp.x == k.x + q.x)(qp.x)(k.x)(q.x);
+   DEBUG_PRECONDITION(k1.x + k2.x == k.x)(k1.x)(k2.x)(k.x);
+   DEBUG_PRECONDITION(q1p.x + q2p.x == qp.x)(q1p.x)(q2p.x)(qp.x);
+   DEBUG_PRECONDITION(q1.x + q2.x == q.x)(q1.x)(q2.x)(q.x);
+   DEBUG_PRECONDITION(q1p.x == k1.x + q1.x)(q1p.x)(k1.x)(q1.x);
+   DEBUG_PRECONDITION(q2p.x == k2.x + q2.x)(q2p.x)(k2.x)(q2.x);
+   DEBUG_PRECONDITION(qp.x == k.x + q.x)(qp.x)(k.x)(q.x);
    return 1;
 }
 
@@ -187,12 +187,12 @@ double inverse_tensor_coefficient(U1 const& q1,  U1 const& q2,  U1 const& q,
 				  U1 const& k1,  U1 const& k2,  U1 const& k,
 				  U1 const& q1p, U1 const& q2p, U1 const& qp)
 {
-   PRECONDITION(k1.x + k2.x == k.x)(k1.x)(k2.x)(k.x);
-   PRECONDITION(q1p.x + q2p.x == qp.x)(q1p.x)(q2p.x)(qp.x);
-   PRECONDITION(q1.x + q2.x == q.x)(q1.x)(q2.x)(q.x);
-   PRECONDITION(q1p.x == k1.x + q1.x)(q1p.x)(k1.x)(q1.x);
-   PRECONDITION(q2p.x == k2.x + q2.x)(q2p.x)(k2.x)(q2.x);
-   PRECONDITION(qp.x == k.x + q.x)(qp.x)(k.x)(q.x);
+   DEBUG_PRECONDITION(k1.x + k2.x == k.x)(k1.x)(k2.x)(k.x);
+   DEBUG_PRECONDITION(q1p.x + q2p.x == qp.x)(q1p.x)(q2p.x)(qp.x);
+   DEBUG_PRECONDITION(q1.x + q2.x == q.x)(q1.x)(q2.x)(q.x);
+   DEBUG_PRECONDITION(q1p.x == k1.x + q1.x)(q1p.x)(k1.x)(q1.x);
+   DEBUG_PRECONDITION(q2p.x == k2.x + q2.x)(q2p.x)(k2.x)(q2.x);
+   DEBUG_PRECONDITION(qp.x == k.x + q.x)(qp.x)(k.x)(q.x);
    return 1;
 }
 

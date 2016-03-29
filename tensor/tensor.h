@@ -174,6 +174,89 @@ prod(S const& x, T const& y, QuantumNumbers::QuantumNumber const& q, Nest n)
    return IrredProd<S, T, Nest>(q)(x,y,n);
 }
 
+// dot() is a shortcut for prod(x,y,ident)
+template <typename S, typename T>
+inline
+typename IrredProd<S, T>::result_type
+dot(S const& x, T const& y)
+{
+   return IrredProd<S, T>(QuantumNumbers::QuantumNumber(x.GetSymmetryList()))(x,y);
+}
+
+// outer_product: outer product of tensor operators.
+// We choose among the possible transform_targets the
+// quantum number with the largest degree.
+template <typename S, typename T>
+inline
+typename IrredProd<S, T>::result_type
+outer(S const& x, T const& y)
+{
+   QuantumNumbers::QuantumNumberList L = transform_targets(x.TransformsAs(), y.TransformsAs());
+   QuantumNumbers::QuantumNumber q = L[0];
+   bool Unique = true;
+   for (unsigned i = 1; i < L.size(); ++i)
+   {
+      if (degree(L[i]) > degree(q))
+      {
+	 q = L[i];
+	 Unique = true;
+      }
+      else if (degree(L[i]) == degree(q))
+      {
+	 Unique = false;
+      }
+   }
+   CHECK(Unique)("outer product is not defined for these operators")
+      (x.TransformsAs())(y.TransformsAs());
+
+   // The factor here is deduced for spin-1 to spin-2 operators,
+   // as the correct factor to get dot(outer(S,S), outer(S,S)) correct.  The test is that
+   // S^4, when evaluated on a scalar wavefunction, should produce the same result
+   // whether we use symmetries or not, and this is easy to test with no symmetries (S = Sx+Sy+Sz).
+   // The non-zero components with SU(2) are
+   // dot(S,S)*dot(S,S) and dot(outer(S,S), outer(S,S)).  The coupling constant below
+   // was determined by matching coefficients.
+   return std::sqrt(double(degree(x.TransformsAs()) + degree(y.TransformsAs())) / degree(q)) * prod(x,y,q);
+}
+
+template <typename S, typename T>
+inline
+typename IrredProd<S, T>::result_type
+cross(S const& x, T const& y)
+{
+   CHECK(cross_product_exists(x.TransformsAs(), y.TransformsAs()))
+      ("Cross product does not exist for these operators")
+      (x.TransformsAs())(y.TransformsAs());
+
+   return cross_product_factor(x.TransformsAs(), y.TransformsAs())
+      * prod(x, y, cross_product_transforms_as(x.TransformsAs(), y.TransformsAs()));
+}
+
+template <typename S>
+inline
+typename IrredProd<S, S>::result_type
+pow(S const& x, int n)
+{
+   if (n == 0)
+   {
+      CHECK_EQUAL(x.Basis1(), x.Basis2());
+      return IrredProd<S, S>::result_type::make_identity(x.Basis1());
+   }
+   else if (n%2 == 0)
+   {
+      return pow(x*x, n/2);
+   }
+   else if (n == 1)
+   {
+      return x;
+   }
+   else
+   {
+      return x*pow(x*x, (n-1)/2);
+   }
+   
+}
+
 } // namespace LinearAlgebra
 
 namespace Tensor
@@ -395,6 +478,15 @@ IrredTensor<T, B, B2, S>::make_identity(B const& b)
       Result(i,i) = ::Tensor::make_identity<T>(b, i);
    }
    return Result;
+}
+
+// MakeIdentityFrom : construct an identity tensor over the same basis as a given tensor
+template <typename T, typename Basis1T, typename Basis2T, typename Structure>
+IrredTensor<T, Basis1T, Basis2T, Structure>
+MakeIdentityFrom(IrredTensor<T, Basis1T, Basis2T, Structure> const& s)
+{
+   CHECK_EQUAL(s.Basis1(), s.Basis2());
+   return IrredTensor<T, Basis1T, Basis2T, Structure>::make_identity(s.Basis1());
 }
 
 } // namespace Tensor
