@@ -363,6 +363,7 @@ int main(int argc, char** argv)
 	 {
 	    std::cout << "Constructing operator " << OpStr << '\n';
 	    std::cout << "Writing to file " << FileName << std::endl;
+	 }
 
 	 bool Reflect = false;
 	 bool Conjugate = false;
@@ -374,12 +375,16 @@ int main(int argc, char** argv)
 	    OpStr = std::string(OpStr.begin()+2, OpStr.end());
 	    if (PsiR.empty())
 	    {
-#if 0
-	       InfiniteWavefunction PR = reflect(Psi1);
-	       orthogonalize(PR);
-	       PsiR = get_orthogonal_wavefunction(PR);
-	       //TRACE(PR.C_right)(Psi->C_right);
-#endif
+	       InfiniteWavefunctionLeft PR = InfPsi;
+	       inplace_reflect(PR);
+	       // The wavefunction must be in a reflection-symmetric basis, or this isn't valid
+	       if (PR.Basis1() != InfPsi.Basis1())
+	       {
+		  std::cerr << "mp-aux-matrix: cannot reflect operator because the basis is not reflection symmetric.\n"
+			    << "mp-aux-matrix: ignoring operator " << OpStr << '\n';
+		  continue;
+	       }
+	       PsiR = get_left_canonical(PR).first;
 	    }
 	    Psi2 = &PsiR;
 	 }
@@ -400,11 +405,17 @@ int main(int argc, char** argv)
 	    OpStr = std::string(OpStr.begin()+3, OpStr.end());
 	    if (PsiR.empty())
 	    {
-#if 0
-	       InfiniteWavefunction PR = reflect(*Psi);
-	       orthogonalize(PR);
-	       PsiR = get_orthogonal_wavefunction(PR);
-#endif
+	       InfiniteWavefunctionLeft PR = InfPsi;
+	       inplace_reflect(PR);
+	       
+	       // The wavefunction must be in a reflection-symmetric basis, or this isn't valid
+	       if (PR.Basis1() != InfPsi.Basis1())
+	       {
+		  std::cerr << "mp-aux-matrix: cannot reflect operator because the basis is not reflection symmetric.\n"
+			    << "mp-aux-matrix: ignoring operator " << OpStr << '\n';
+		  continue;
+	       }
+	       PsiR = get_left_canonical(PR).first;
 	    }
 	    if (PsiRC.empty())
 	    {

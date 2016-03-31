@@ -92,15 +92,17 @@ int main(int argc, char** argv)
       LatticeSite Site = BosonU1(MaxN);
       UnitCell Cell(repeat(Site, 2));
       UnitCellOperator BH(Cell, "BH"), B(Cell, "B"), N(Cell, "N"), N2(Cell, "N2"),
-	 j0(Cell, "j0"), j1(Cell, "j1");
+	 j0(Cell, "j0"), j1(Cell, "j1"), jk(Cell, "jk");
 
       j0 = std::complex<double>(0,1)*(BH(0)[0]*B(1)[0] - B(0)[0]*BH(1)[0]);
       j1 = std::complex<double>(0,1)*(BH(0)[1]*B(1)[1] - B(0)[1]*BH(1)[1]);
 
-      Cell.func("jk")("K", "alpha") = "K*(BH(0)[0]*B(0)[1] - B(0)[0]*BH(0)[1]";
-      Cell.func("Jp0")("K", "alpha") = "-cos(pi*alpha)*(BH(0)[0]*B(1)[0] + B(0)[0]*BH(1)[0])"
+      jk = std::complex<double>(0,1)*(BH(0)[0]*B(0)[1] - B(0)[0]*BH(0)[1]);
+
+      //      Cell.func("jk")("K", "alpha") = "K*(BH(0)[0]*B(0)[1] - B(0)[0]*BH(0)[1])";
+      Cell.func("Jp0")("alpha") = "-cos(pi*alpha)*(BH(0)[0]*B(1)[0] + B(0)[0]*BH(1)[0])"
 	 " + i*sin(pi*alpha)*(BH(0)[0]*B(1)[0] - B(0)[0]*BH(1)[0])";
-      Cell.func("Jp1")("K", "alpha") = "-cos(pi*alpha)*(BH(0)[1]*B(1)[1] + B(0)[1]*BH(1)[1])"
+      Cell.func("Jp1")("alpha") = "-cos(pi*alpha)*(BH(0)[1]*B(1)[1] + B(0)[1]*BH(1)[1])"
 	 " + i*sin(pi*alpha)*(BH(0)[1]*B(1)[1] - B(0)[1]*BH(1)[1])";
 
       Cell.func("jTotalU0")("K", "alpha", arg("J")=1.0) = "K^2 * sin(pi*alpha) / (8*J * "
