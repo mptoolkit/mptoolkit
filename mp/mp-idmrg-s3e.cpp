@@ -1472,9 +1472,10 @@ int main(int argc, char** argv)
       double EvolveDelta = 0.0;
       double InitialFidelity = 1E-7;
       double ArnoldiTol = 1E-14;
-      double GMRESTol = 3E-14;    // tolerance for GMRES for the initial H matrix elements.
+      double GMRESTol = 1E-13;    // tolerance for GMRES for the initial H matrix elements.
                                   // ** 2016-01-25: 1e-14 seems too small, failed to converge with final tol 1.5e-14, increasing to 2e-14
                                   // ** 2016-02-23: increasing again to 3e-14 on an example that fails to converge
+                                  // ** 2016-03-16: increased to 1e-13.  It perhaps needs to scale with the unit cell size?
       double MaxTol = 4E-4;  // never use an eigensolver tolerance larger than this
       double MinTol = 1E-16; // lower bound for the eigensolver tolerance - seems we dont really need it
       double HMix = 0;  // Hamiltonian length-scale mixing factor
