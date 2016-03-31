@@ -337,12 +337,20 @@ struct ParseUnitCellExpression
    UnitCell const& Cell;
 };
 
+
+
 boost::variant<UnitCell::operator_type, std::complex<double> >
 UnitCell::eval_function(Function::OperatorFunction const& Func, int Cell,
 			Function::ParameterList const& Params) const
 {
    Function::ArgumentList Args = GetArguments(Func.Args, Params, ParseUnitCellExpression(*this));
-   return ParseUnitCellElement(*this, 0, Func.Def, Args);
+   boost::variant<UnitCell::operator_type, std::complex<double> > Result
+      = ParseUnitCellElement(*this, 0, Func.Def, Args);
+   if (boost::get<UnitCell::operator_type>(&Result))
+   {
+      boost::get<UnitCell::operator_type>(&Result)->translate(Cell*this->size());
+   }
+   return Result;
 }
 
 boost::variant<UnitCell::operator_type, std::complex<double> >
