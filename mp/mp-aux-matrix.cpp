@@ -48,7 +48,7 @@ WriteMatrixAsSparse(std::ostream& out, LinearAlgebra::Matrix<std::complex<double
    {
       for (unsigned j = 0; j < size2(Op); ++j)
       {
-	 if (norm_frob(Op(i,j)) > Epsilon || (ForceLast && i == size1(Op)-1 && j == size2(Op)-1))
+	 if (LinearAlgebra::norm_frob(Op(i,j)) > Epsilon || (ForceLast && i == size1(Op)-1 && j == size2(Op)-1))
 	 {
 	    out << (i+iOffset) << ' ' << (j+jOffset) << ' ';
 	    if (Polar)
@@ -104,7 +104,41 @@ WriteMatrixOperatorAsSparse(std::ostream& out, MatrixOperator const& Op, double 
    }
 }
 
-
+void
+WriteMatrixOperatorAsSparseStates(std::ostream& out, MatrixOperator const& Op, 
+				  std::vector<std::pair<int,int>> const& WhichStates,
+				  double Epsilon = 0.0,
+				  bool Polar = false, bool Radians = false)
+{
+   for (unsigned i = 0; i < WhichStates.size(); ++i)
+   {
+      for (unsigned j = 0; j < WhichStates.size(); ++j)
+      {
+	 std::complex<double> x(0.0, 0.0);
+	 LinearAlgebra::const_inner_iterator<MatrixOperator>::type J 
+	    = iterate_at(Op.data(), WhichStates[i].first, WhichStates[j].first);
+	 if (J)
+	 {
+	    x = (*J)(WhichStates[i].second, WhichStates[j].second);
+	 }
+	 if (LinearAlgebra::norm_frob(x) > Epsilon || (i == WhichStates.size()-1 && j == WhichStates.size()-1))
+	 {
+	    out << (i+1) << ' ' << (j+1) << ' ';
+	    if (Polar)
+	    {
+	       double Arg = std::arg(x);
+	       if (!Radians)
+		  Arg *= 180.0 / math_const::pi;
+	       out << std::abs(x) << ' ' << Arg << '\n';
+	    }
+	    else
+	    {
+	       out << x.real() << ' ' << x.imag() << '\n';
+	    }
+	 }
+      }
+   }
+}
 
 template <typename Func>
 struct PackApplyFunc
@@ -171,10 +205,11 @@ int main(int argc, char** argv)
       std::string Partition;
       std::string RhoFile;
       bool Force = false;
-      double Epsilon = 0.0;
+      double Epsilon = 1E-10;
       std::string QSector;
       bool Polar = false;
       bool Radians = false;
+      std::string WhichEigenvalues;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -190,6 +225,7 @@ int main(int argc, char** argv)
 	 ("sector,s", prog_opt::value(&QSector), "select a different quantum number sector [don't use this unless you know what you are doing]")
 	 ("rho", prog_opt::value(&RhoFile), "Construct the density matrix --rho <filename>")
 	 ("partition", prog_opt::value(&Partition), "Partition of the wavefunction cell,site (not yet implemented)")
+	 ("restrict", prog_opt::value(&WhichEigenvalues), "Use only this set of eigenvalues of the density matrix [list of indices]")
 	 ("force,f", prog_opt::bool_switch(&Force), "Overwrite files if they already exist")
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
@@ -199,7 +235,7 @@ int main(int argc, char** argv)
 	  "print the argument in radians instead of degrees [implies --polar]")
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
-	 ("epsilon,e", prog_opt::value(&Epsilon), "ignore matrix elements smaller than this epsilon")
+	 ("epsilon,e", prog_opt::value(&Epsilon), FormatDefault("ignore matrix elements smaller than this epsilon", Epsilon).c_str())
 	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
          ;
 
@@ -229,7 +265,7 @@ int main(int argc, char** argv)
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-      if (vm.count("radians"))
+      if (Radians)
 	 Polar = true;
 
       // Split the file/operator combinations into separate lists
@@ -335,6 +371,51 @@ int main(int argc, char** argv)
       int UnitCellSize = Cell.size();
       int const NumUnitCells = Psi1.size() / UnitCellSize;
 
+      // Get the list of states in order.
+      // If we didn't specify a list with --restrict then take all of them
+      
+      std::vector<std::pair<int, int>> WhichStates;
+ 
+      // make a new scope since we have some temporary values
+      {
+	 // Sort the eigenvalues with an index sort
+	 std::vector<std::tuple<int,int,double>> EValues;
+	 for (int i = 0; i < int(Rho.Basis1().size()); ++i)
+	 {
+	    for (int j = 0; j < Rho.Basis1().dim(i); ++j)
+	    {
+	       EValues.push_back(std::make_tuple(i,j,Rho.Basis1()[i].degree()*LinearAlgebra::norm_frob(Rho(i,i)(j,j))));
+	    }
+	 }
+	 std::sort(EValues.begin(), EValues.end(), [](std::tuple<int,int,double> const& x, std::tuple<int,int,double> const& y)
+		   { return std::get<2>(x) < std::get<2>(y); });
+	 
+	 if (WhichEigenvalues.empty())
+	 {
+	    // take all of them
+	    for (unsigned i = 0; i < EValues.size(); ++i)
+	    {
+	       WhichStates.push_back({std::get<0>(EValues[i]), std::get<1>(EValues[i])});
+	    }
+	 }
+	 else
+	 {
+	    std::vector<std::string> Which;
+	    boost::split(Which, WhichEigenvalues, boost::is_any_of(", \n\t"), boost::token_compress_on);
+	    for (std::string s : Which)
+	    {
+	       int n = boost::lexical_cast<int>(s);
+	       if (n < 1 || n > int(EValues.size()))
+	       {
+		  std::cerr << "mp-aux-matrix: density matrix index must be in range 1.." 
+			    << EValues.size() << ", ignoring element " << n << '\n';
+		  continue;
+	       }
+	       WhichStates.push_back({std::get<0>(EValues[n-1]), std::get<1>(EValues[n-1])});
+	    }
+	 }
+      }
+
       // Now that we have Rho, save it if necessary
       if (!RhoFile.empty())
       {
@@ -346,7 +427,10 @@ int main(int argc, char** argv)
 	 else
 	 {
 	    Out.precision(getenv_or_default("MP_PRECISION", 14));
-	    WriteMatrixOperatorAsSparse(Out, Rho);
+	    if (WhichStates.empty())
+	       WriteMatrixOperatorAsSparse(Out, Rho, Epsilon, Polar, Radians);
+	    else
+	       WriteMatrixOperatorAsSparseStates(Out, Rho, WhichStates, Epsilon, Polar, Radians);
 	 }
       }
 
@@ -455,7 +539,10 @@ int main(int argc, char** argv)
 	 else 
 	 {
 	    Out.precision(getenv_or_default("MP_PRECISION", 14));
-	    WriteMatrixOperatorAsSparse(Out, M, Epsilon, Polar, Radians);
+	    if (WhichStates.empty())
+	       WriteMatrixOperatorAsSparse(Out, M, Epsilon, Polar, Radians);
+	    else
+	       WriteMatrixOperatorAsSparseStates(Out, M, WhichStates, Epsilon, Polar, Radians);
 	 }
       }
 
