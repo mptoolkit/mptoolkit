@@ -176,6 +176,8 @@ class DensityMatrixBase
       const_iterator begin() const { return EigenInfoList.begin(); }
       const_iterator end() const { return EigenInfoList.end(); }
 
+      int size() const { return EigenInfoList.size(); }
+
       // shows a report of the density matrix eigenvalues, showing at most MaxEigenvalues of
       // the eigenvalue, cumulative truncation error, 
       // TODO: fix the code rot
