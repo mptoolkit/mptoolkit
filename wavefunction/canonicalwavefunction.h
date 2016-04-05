@@ -90,11 +90,11 @@ class CanonicalWavefunctionBase
       // return the i'th MPS matrix.  Because they are stored by handle, we can't
       // return a reference, but the tensors are reference counted anyway so a copy is cheap
       mps_type operator[](int i) const 
-      { DEBUG_RANGE_CHECK_OPEN(i, 0, Data.size()); return *Data[i].lock(); }
+      { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return *Data[i].lock(); }
 
       // returns the lambda matrix at partition i
       lambda_type lambda(int i) const 
-      { DEBUG_RANGE_CHECK(i, 0, Data.size()); return *Lambda[i].lock(); }
+      { DEBUG_RANGE_CHECK(i, 0, int(Data.size())); return *Lambda[i].lock(); }
 
       static PStream::VersionTag VersionT;
 

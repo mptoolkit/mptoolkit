@@ -526,7 +526,7 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
       Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy),
                                           data(Ures), data(Dres), data(Vtres));
 #if defined(RANDOMIZE_VECTORS)
-      for (unsigned i = 0; i < min_mn; ++i)
+      for (int i = 0; i < min_mn; ++i)
       {
 	 double Phase = (rand() % 2) * 2.0 - 1.0;
 	 Ures(LinearAlgebra::all,i) *= Phase;
@@ -571,7 +571,7 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
       Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy),
                                           data(Ures), data(Dres), data(Vtres));
 #if defined(RANDOMIZE_VECTORS)
-      for (unsigned i = 0; i < min_mn; ++i)
+      for (int i = 0; i < min_mn; ++i)
       {
 	 double Phase = (rand() % 2) * 2.0 - 1.0;
 	 Ures(LinearAlgebra::all,i) *= Phase;
@@ -616,7 +616,7 @@ struct ImplementSingularValueDecompositionFull<A, U, D, Vt,
 					      data(Ures), data(Dres), data(Vtres));
       // randomize signs
 #if defined(RANDOMIZE_VECTORS)
-      for (unsigned i = 0; i < min_mn; ++i)
+      for (int i = 0; i < min_mn; ++i)
       {
 	 double Phase = (rand() % 2) * 2.0 - 1.0;
 	 Ures(LinearAlgebra::all,i) *= Phase;

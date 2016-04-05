@@ -875,6 +875,12 @@ StateComponent ShiftLocalBasis(StateComponent const& Op,
 
 StateComponent delta_shift(StateComponent const& Op, QuantumNumber const& q)
 {
+#if 0
+   // Alternative implementation; not as efficient
+   StateComponent Result(Op);
+   Result.delta_shift(q);
+   return Result;
+#else
    CHECK_EQUAL(degree(q), 1);
    
    // Update basis 2
@@ -893,6 +899,7 @@ StateComponent delta_shift(StateComponent const& Op, QuantumNumber const& q)
       Result[i].data() = Op[i].data();
 
    return Result;
+#endif
 }
 
 StateComponent ScaleBasisU1(StateComponent const& Op, 

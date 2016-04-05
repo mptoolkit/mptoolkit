@@ -54,8 +54,10 @@ CanonicalWavefunctionBase::check_structure() const
    {
       CHECK_EQUAL(this->lambda(i).Basis2(), this->operator[](i).Basis1())(i);
       CHECK_EQUAL(this->operator[](i).Basis2(), this->lambda(i+1).Basis1())(i);
+      this->lambda(i).check_structure();
+      this->operator[](i).check_structure();
    }
-
+   this->lambda(this->size()).check_structure();
    CHECK_EQUAL(Basis1_, this->lambda(0).Basis1());
    CHECK_EQUAL(Basis2_, this->lambda(this->size()).Basis2());
 }

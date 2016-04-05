@@ -45,6 +45,10 @@ BasicStateComponent<T>::delta_shift(QuantumNumber const& q)
    CHECK_EQUAL(degree(q), 1);
    VBasis1.delta_shift(q);
    VBasis2.delta_shift(q);
+   for (auto& c : Data)
+   {
+      c.delta_shift(q);
+   }
 }
 
 template <typename T>
