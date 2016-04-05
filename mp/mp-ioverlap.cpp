@@ -296,9 +296,6 @@ int main(int argc, char** argv)
 
       if (!Quiet)
       {
-	 std::cout << "#" << argv[0];
-	 for (int i = 1; i < argc; ++i)
-	    std::cout << ' ' << argv[i];
 	 std::cout << "\n#quantities are calculated per unit cell size of " << UnitCellSize 
 		   << (UnitCellSize == 1 ? " site\n" : " sites\n");
 	 if (Size != UnitCellSize)

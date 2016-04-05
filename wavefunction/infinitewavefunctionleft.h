@@ -83,9 +83,6 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       // are friend functions.  This is so that we have a central list of such functions,
       // so can update them if the class changes.
 
-      // TODO: inplace_reflect should preserve Basis1/Basis2 as much as possible
-      // (ie, the basis will be the same if it is flip_conjugate invariant)
-
       // spatial reflection of the wavefunction in-place.  The Basis1() / Basis2() of the reflected wavefunctions
       // are exactly the flip_conj() of the original Basis1/Basis2, with no change in gauge across the cell boundary
       // (that is, if the wavefunction is written in a reflection-symmetric basis then Psi' = Psi (up to 
