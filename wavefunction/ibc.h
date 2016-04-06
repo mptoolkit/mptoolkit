@@ -78,6 +78,8 @@ class IBCWavefunction
 
       int window_offset() const { return WindowOffset; }
 
+      void SetDefaultAttributes(AttributeList& A) const;
+
       static PStream::VersionTag VersionT;
 
       void check_structure() const;

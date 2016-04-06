@@ -1980,7 +1980,7 @@ int main(int argc, char** argv)
 
       // any other attributes?
       Wavefunction.Attributes()["LastEnergy"] = idmrg.Solver().LastEnergy();
-
+      Wavefunction.SetDefaultAttributes();
       
       // History log
       Wavefunction.AppendHistory(EscapeCommandline(argc, argv));

@@ -88,6 +88,7 @@ int main(int argc, char** argv)
 
       PsiPtr.mutate()->Wavefunction() = Psi;
       PsiPtr.mutate()->AppendHistory(EscapeCommandline(argc, argv));
+      PsiPtr.mutate()->SetDefaultAttributes();
 
       if (Verbose > 0)
 	 std::cout << "Finished." << std::endl;

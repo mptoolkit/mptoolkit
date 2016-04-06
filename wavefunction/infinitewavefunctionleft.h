@@ -13,6 +13,8 @@
 #include "mpo/product_mpo.h"
 #include <boost/tuple/tuple.hpp>
 
+class AttributeList;
+
 // class to represent an infinite wavefunction in the left canonical basis
 class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
 {
@@ -61,6 +63,8 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
 
       // returns the orthogonality fidelity.  Normally this should be epsilon
       double orthogonality_fidelity() const;
+
+      void SetDefaultAttributes(AttributeList& A) const;
 
       static PStream::VersionTag VersionT;
 

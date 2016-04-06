@@ -11,6 +11,7 @@
 
 #include "wavefunction/operator_actions.h"
 #include "pheap/pheapstream.h"
+#include "interface/attributes.h"
 
 // Streaming versions:
 // Note: the base class CanonicalWavefunctionBase has a separate version number.
@@ -747,3 +748,10 @@ reflect(InfiniteWavefunctionRight const& Psi)
    PANIC("not implemented");
 }
 
+void
+InfiniteWavefunctionLeft::SetDefaultAttributes(AttributeList& A) const
+{
+   A["WavefunctionType"] = "Infinite";
+   A["UnitCellSize"] = this->size();
+   A["TransformsAs"] = this->TransformsAs();
+}

@@ -55,6 +55,9 @@ class MPWavefunction
       AttributeList& Attributes() { return Attr_; }
       AttributeList const& Attributes() const { return Attr_; }
 
+      // Set the default attributes for the wavefunction type
+      void SetDefaultAttributes();
+
       // returns the history log
       HistoryLog const& History() const { return History_; }
 
