@@ -753,5 +753,5 @@ InfiniteWavefunctionLeft::SetDefaultAttributes(AttributeList& A) const
 {
    A["WavefunctionType"] = "Infinite";
    A["UnitCellSize"] = this->size();
-   A["TransformsAs"] = this->TransformsAs();
+   A["QShift"] = this->qshift();
 }
