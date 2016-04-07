@@ -234,6 +234,7 @@ int main(int argc, char** argv)
       MPWavefunction Result;
       Result.AppendHistory(EscapeCommandline(argc, argv));
       Result.Wavefunction() = PsiOut;
+      Result.SetDefaultAttributes();
 
       pvalue_ptr<MPWavefunction> OutputPsi = new MPWavefunction(Result);
 

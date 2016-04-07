@@ -80,7 +80,7 @@ int main(int argc, char** argv)
       MPWavefunction Result(ResultPsi);
 
       // Attributes
-      // TODO: add some
+      Result.SetDefaultAttributes();
 
       // History log
       Result.AppendHistory(EscapeCommandline(argc, argv));

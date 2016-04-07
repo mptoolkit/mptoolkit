@@ -133,3 +133,21 @@ MPWavefunction::debug_check_structure() const
 #endif
 }
 
+struct DoSetDefaultAttributes : public boost::static_visitor<void>
+{
+   DoSetDefaultAttributes(AttributeList& A_) : A(A_) {}
+
+   template <typename T>
+   void operator()(T const& Psi) const
+   {
+      Psi.SetDefaultAttributes(A);
+   }
+
+   AttributeList& A;
+};
+
+void
+MPWavefunction::SetDefaultAttributes()
+{
+   boost::apply_visitor(DoSetDefaultAttributes(Attr_), Psi_);
+}

@@ -179,3 +179,13 @@ inplace_conj(IBCWavefunction& Psi)
    inplace_conj(Psi.Window);
    inplace_conj(Psi.Right);
 }
+
+void
+IBCWavefunction::SetDefaultAttributes(AttributeList& A) const
+{
+   A["WavefunctionType"] = "IBC";
+   A["WindowSize"] = this->window_size();
+   A["WindowOffset"] = this->window_offset();
+   A["LeftUnitCellSize"] = Left.size();
+   A["RightUnitCellSize"] = Left.size();
+}

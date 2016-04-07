@@ -178,11 +178,12 @@ int main(int argc, char** argv)
       {
 	 Result = MPWavefunction(InputPsi->Attributes(), InputPsi->History());
       }
-      Result.AppendHistory(EscapeCommandline(argc, argv));
 
       Result.Wavefunction() = boost::apply_visitor(ApplyReorderSymmetry(FinalSL), InputPsi->Wavefunction());
-
       Result.check_structure();
+
+      Result.AppendHistory(EscapeCommandline(argc, argv));
+      Result.SetDefaultAttributes();
 
       pvalue_ptr<MPWavefunction> OutputPsi = new MPWavefunction(Result);
 

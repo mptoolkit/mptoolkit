@@ -61,7 +61,7 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);    
 
-      if (vm.count("help") > 0 || vm.count("psi2") < 1 || ((Left == 0) == (Right == 0)))
+      if (vm.count("help") > 0 || vm.count("psi2") < 1 || (vm.count("left") == 0 && vm.count("right") == 0))
       {
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options] <operator> <input-psi> <output-psi>\n";

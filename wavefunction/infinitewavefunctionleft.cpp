@@ -11,6 +11,7 @@
 
 #include "wavefunction/operator_actions.h"
 #include "pheap/pheapstream.h"
+#include "interface/attributes.h"
 
 // Streaming versions:
 // Note: the base class CanonicalWavefunctionBase has a separate version number.
@@ -582,6 +583,11 @@ InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
    if (Count == 1)
       return Psi;
 
+   // Claculate the final QShift, we need this for later
+   QuantumNumber FinalQShift(Psi.GetSymmetryList());
+   for (int i = 0; i < Count; ++i)
+      FinalQShift = delta_shift(FinalQShift, Psi.qshift());
+
    // For the lambda matrices, we don't want to add the boundaries twice
    InfiniteWavefunctionLeft::const_lambda_iterator LambdaE = Psi.lambda_end();
    --LambdaE;
@@ -636,6 +642,7 @@ InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
 
 
    Result.setBasis2(Psi.Basis2());
+   Result.QShift = FinalQShift;
 
    return Result;
 }
@@ -747,3 +754,10 @@ reflect(InfiniteWavefunctionRight const& Psi)
    PANIC("not implemented");
 }
 
+void
+InfiniteWavefunctionLeft::SetDefaultAttributes(AttributeList& A) const
+{
+   A["WavefunctionType"] = "Infinite";
+   A["UnitCellSize"] = this->size();
+   A["QShift"] = this->qshift();
+}
