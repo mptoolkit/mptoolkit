@@ -583,6 +583,11 @@ InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
    if (Count == 1)
       return Psi;
 
+   // Claculate the final QShift, we need this for later
+   QuantumNumber FinalQShift(Psi.GetSymmetryList());
+   for (int i = 0; i < Count; ++i)
+      FinalQShift = delta_shift(FinalQShift, Psi.qshift());
+
    // For the lambda matrices, we don't want to add the boundaries twice
    InfiniteWavefunctionLeft::const_lambda_iterator LambdaE = Psi.lambda_end();
    --LambdaE;
@@ -637,6 +642,7 @@ InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
 
 
    Result.setBasis2(Psi.Basis2());
+   Result.QShift = FinalQShift;
 
    return Result;
 }
