@@ -171,14 +171,7 @@ int main(int argc, char** argv)
       // extend Op1 to a multiple of the wavefunction size
       Op.ExtendToCoverUnitCell(Psi.size());
 
-      // now calculate the actual expectation value
-      MatrixOperator X = MatrixOperator::make_identity(Psi.Basis1());
-      X = inject_left(X, Psi, Op.MPO(), Psi);
-
-      MatrixOperator Rho = Psi.lambda_r();
-      Rho = Rho*Rho;
-      
-      std::complex<double> x = inner_prod(delta_shift(Rho, Psi.qshift()), X);
+      std::complex<double> x = expectation(Psi, Op.MPO());
 
       if (ShowReal)
 	 std::cout << x.real() << "   ";
