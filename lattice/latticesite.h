@@ -207,4 +207,8 @@ LatticeSite CoerceSL(SymmetryList const& sl, LatticeSite const& s)
 typedef std::vector<LatticeSite> SiteListType;
 typedef pvalue_ptr<SiteListType> SiteListPtrType;
 
+// utility to gt a vector of the local basis from a SiteListType
+std::vector<BasisList>
+Basis1FromSiteList(SiteListType const& s);
+
 #endif

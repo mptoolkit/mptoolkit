@@ -96,6 +96,12 @@ UnitCellMPO::ExtendToCoverUnitCell(int OtherSize)
    this->ExtendToCover(NewSize, NewOffset);
 }
 
+FiniteMPO
+UnitCellMPO::GetJWStringUnit()
+{
+   return string_mpo(*SiteList, Com.SignOperator(), Op.qn1());
+}
+
 // Many of these implementations are not the most efficient possible.
 // We simpy copy the argument and extend it so we can use the FiniteMPO operations.
 // In many cases we could avoid the copy.
@@ -308,4 +314,12 @@ UnitCellMPO MakeIdentityFrom(UnitCellMPO const& x)
 void optimize(UnitCellMPO& Op)
 {
    optimize(Op.MPO());
+}
+
+UnitCellMPO translate(UnitCellMPO const& x, int Sites)
+{
+   CHECK(Sites % x.unit_cell_size() == 0);
+   UnitCellMPO Result(x);
+   Result.translate(Sites);
+   return Result;
 }

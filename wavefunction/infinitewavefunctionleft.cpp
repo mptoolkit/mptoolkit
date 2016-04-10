@@ -761,3 +761,55 @@ InfiniteWavefunctionLeft::SetDefaultAttributes(AttributeList& A) const
    A["UnitCellSize"] = this->size();
    A["QShift"] = this->qshift();
 }
+
+// inject_left for a FiniteMPO.  This can have support on multiple wavefunction unit cells
+MatrixOperator
+inject_left(MatrixOperator const& m, 
+            InfiniteWavefunctionLeft const& Psi1,
+            FiniteMPO const& Op, 
+            InfiniteWavefunctionLeft const& Psi2)
+{
+   CHECK_EQUAL(Psi1.size(), Psi2.size());
+   CHECK_EQUAL(Psi1.qshift(), Psi2.qshift());
+   DEBUG_CHECK_EQUAL(m.Basis1(), Psi1.Basis1());
+   DEBUG_CHECK_EQUAL(m.Basis2(), Psi2.Basis1());
+   if (Op.is_null())
+      return MatrixOperator();
+
+   // we currently only support simple irreducible operators
+   CHECK_EQUAL(Op.Basis1().size(), 1);
+   CHECK_EQUAL(Op.Basis2().size(), 1);
+   CHECK_EQUAL(Op.Basis1()[0], m.TransformsAs());
+   MatrixOperator Result = m;
+   StateComponent E(Op.Basis1(), m.Basis1(), m.Basis2());
+   E[0] = m;
+   E.debug_check_structure();
+   InfiniteWavefunctionLeft::const_mps_iterator I1 = Psi1.begin();
+   InfiniteWavefunctionLeft::const_mps_iterator I2 = Psi2.begin();
+   FiniteMPO::const_iterator OpIter = Op.begin();
+   while (OpIter != Op.end())
+   {
+      if (I1 == Psi1.end())
+      {
+	 I1 = Psi1.begin();
+	 I2 = Psi2.begin();
+	 E = delta_shift(E, Psi1.qshift());
+      }
+      E = contract_from_left(*OpIter, herm(*I1), E, *I2);
+      ++I1; ++I2; ++OpIter;
+   }
+   return delta_shift(E[0], Psi1.qshift());
+}
+
+std::complex<double>
+expectation(InfiniteWavefunctionLeft const& Psi, FiniteMPO const& Op)
+{
+   MatrixOperator X = MatrixOperator::make_identity(Psi.Basis1());
+   X = inject_left(X, Psi, Op, Psi);
+   
+   MatrixOperator Rho = Psi.lambda_r();
+   Rho = Rho*Rho;
+   
+   return inner_prod(delta_shift(Rho, Psi.qshift()), X);
+}
+

@@ -92,10 +92,10 @@ class pvalue_ptr
 
       template <class U> pvalue_ptr<T>& operator=(const pvalue_ptr<U>& r);
 
-      const T& operator*() const { PRECONDITION(Ptr != NULL); return *Ptr; }
-      const T* operator->() const { PRECONDITION(Ptr != NULL); return Ptr; }
+      const T& operator*() const { PRECONDITION(Ptr != nullptr); return *Ptr; }
+      const T* operator->() const { PRECONDITION(Ptr != nullptr); return Ptr; }
 
-      T* mutate() { PRECONDITION(Ptr != NULL); cow(); return Ptr; }
+      T* mutate() { PRECONDITION(Ptr != nullptr); cow(); return Ptr; }
 
       lock_type lock() { return lock_type(*this); }
 
@@ -104,15 +104,17 @@ class pvalue_ptr
 
       pheap::id_type object_id() const { return Handle ? Handle->ID() : 0; }
 
-      bool is_null() const { return Ptr == NULL; }
+      bool is_null() const { return Ptr == nullptr; }
 
       const T* get() const { return Ptr; }
 
       void release(); // releases this.  same as doing *this = pvalue_ptr();
 
+      explicit operator bool() const { return Ptr != nullptr; }
+
       pheap::Private::PHeapObject* get_handle() const { return Handle; }
 
-      //      operator bool() const { return Ptr != NULL; }
+      //      operator bool() const { return Ptr != nullptr; }
 
    private:
       pvalue_ptr(T* Ptr_, pheap::Private::PHeapObject* Handle_) : Handle(Handle_), Ptr(Ptr_) {}
@@ -187,9 +189,9 @@ class pvalue_handle
       pvalue_ptr<T> lock() const;
       pvalue_ptr<T> load() const { return this->lock(); }
 
-      bool is_null() const { return Handle == NULL; }
+      bool is_null() const { return Handle == nullptr; }
 
-      //      operator bool() const { return Handle != NULL; }
+      //      operator bool() const { return Handle != nullptr; }
 
       void release(); // releases this.  same as doing *this = pvalue_handle();
 
@@ -241,7 +243,7 @@ inline pvalue_ptr<T> make_pvalue_ptr(T* Ptr)
 template <class T>
 inline void pvalue_ptr<T>::cow()
 {
-   PRECONDITION(Handle != NULL);
+   PRECONDITION(Handle != nullptr);
    Handle = Handle->CopyOnWrite(Ptr);
    Handle->SetDirty();
 }

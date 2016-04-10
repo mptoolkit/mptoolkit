@@ -100,7 +100,7 @@ int main(int argc, char** argv)
 	 //	 ("commutator,c", prog_opt::value(&CommutatorStr), 
 	 //	  "calculate the commutator phase angle, U X X^\\dagger = exp(i*theta) X")
 	 ("expression", prog_opt::value(&Expressions),
-	  "Evaliate this expression of the matrixes")
+	  "Evaluate this expression of the matrices")
          ("tempfile", prog_opt::bool_switch(&UseTempFile),
           "a temporary data file for workspace (path set by environment MP_BINPATH)")
          ("tol", prog_opt::value(&Tol),

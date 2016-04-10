@@ -183,6 +183,11 @@ InfiniteWavefunctionRight reflect(InfiniteWavefunctionLeft const& Psi);
 //InfiniteWavefunctionRight reflect(InfiniteWavefunction const& Psi, 
 // std::vector<SimpleOperator> const& Op);
 
+// Calculates an expectation value over the wavefunction.
+// Op.size() must be a multiple of Psi.size()
+std::complex<double>
+expectation(InfiniteWavefunctionLeft const& Psi, FiniteMPO const& Op);
+
 inline
 void
 InfiniteWavefunctionLeft::debug_check_structure() const
