@@ -566,7 +566,7 @@ int main(int argc, char** argv)
 	 ("krylov,k", prog_opt::value(&KrylovLength), 
 	  "Length of the Krylov sequence [default 2*num-eigenvalues]")
          ("quiet", prog_opt::bool_switch(&Quiet),
-          "don't show the column headings")
+          "don't show the preamble and column headings")
          ("print", prog_opt::bool_switch(&Print), "with --string, Print the MPO to standard output")
 	 //         ("overlaps", prog_opt::bool_switch(&ShowEigenvectorOverlaps),
 	 //"Write the matrix of overlaps of the left/right eigenvectors to cerr (for debugging)")
@@ -593,7 +593,7 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("psi") < 1)
       {
          print_copyright(std::cerr);
-         std::cerr << "usage: mp-ispectrum [options] <psi>\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi>\n";
          std::cerr << desc << '\n';
          return 1;
       }

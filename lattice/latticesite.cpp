@@ -200,3 +200,14 @@ std::ostream& operator<<(std::ostream& out, LatticeSite const& s)
    }
    return out;
 }
+
+std::vector<BasisList>
+Basis1FromSiteList(SiteListType const& s)
+{
+   std::vector<BasisList> Result;
+   for (LatticeSite const& x : s)
+   {
+      Result.push_back(x.Basis1());
+   }
+   return Result;
+}

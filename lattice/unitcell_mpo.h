@@ -30,6 +30,9 @@ class UnitCellMPO
       // returns the total number of sites this operator contains
       int size() const { return Op.size(); }
 
+      // returns the size of the unit cell
+      int unit_cell_size() const { return SiteList->size(); }
+
       // The offset - the site number of the first site of the MPO.
       // This must be a multiple of the unit cell size.
       int offset() const { return Offset; }
@@ -94,6 +97,10 @@ class UnitCellMPO
       // so that it covers complete multiples of OtherSize on both the left and right.
       void ExtendToCoverUnitCell(int OtherSize);
 
+      // returns a representation of the JW string operator as a FiniteMPO
+      // acting on a single unit cell
+      FiniteMPO GetJWStringUnit();
+
    private:
       SiteListPtrType SiteList;
       FiniteMPO Op;
@@ -157,6 +164,13 @@ UnitCellMPO adjoint(UnitCellMPO const& x);
 // Inverse Adjoint
 UnitCellMPO inv_adjoint(UnitCellMPO const& x);
 
+// translate - shift a UnitCellMPO by some number of sites.
+// This can be positive or negative but MUST be a multiple of 
+// the unit cell size.  TODO: relax this restriction as long as the
+// SiteList is invariant under the shift
+UnitCellMPO translate(UnitCellMPO const& x, int Sites);
+
+// Constructs an identity MPO from a given unit cell
 UnitCellMPO MakeIdentityFrom(UnitCellMPO const& x);
 
 // Free versions of ExtendToCover and ExtendToCoverUnitCell
