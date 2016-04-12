@@ -254,7 +254,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") > 0 || vm.count("wavefunction") < 1 || vm.count("lattice") < 1)
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] -w <psi> -l <lattice> -p <file>=<operator> [...] \n";
 	 std::cerr << "This tool constructs the auxiliary space represenation of lattice operators,\n"
 		   << "which are written to a file in a sparse-matrix format suitable for use in eg MATLAB.\n";

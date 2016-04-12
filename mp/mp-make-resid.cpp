@@ -50,7 +50,7 @@ int main(int argc, char** argv)
       if (vm.count("help") || !vm.count("wavefunction") || !vm.count("out")
           || !vm.count("lanczos")) 
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-make-resid [options]\n";
          std::cerr << desc << '\n';
          return 1;
@@ -65,7 +65,7 @@ int main(int argc, char** argv)
 
    if (argc < 5 || argc > 7)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-make-resid\n";
       return 1;
    }

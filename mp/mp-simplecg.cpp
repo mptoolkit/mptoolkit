@@ -204,7 +204,7 @@ int main(int argc, char** argv)
 {
    if (argc < 5 || argc > 8)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "Solver for complex Hermitian operators: A|x> = |y>\n";
       std::cerr << "usage: mp-simplecg <lattice> <operator> <psi> <rhs> "
                 << "[num-iter] [<maxstates>] [<correction>]\n";

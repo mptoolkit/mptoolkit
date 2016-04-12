@@ -44,7 +44,7 @@ int main(int argc, char** argv)
 {
    if (argc < 5 || argc > 7)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-global-cg <lattice> <operator> <psi> <rhs> [num-iter] [<maxstates>]\n";
       return 1;
    }

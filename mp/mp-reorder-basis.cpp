@@ -47,7 +47,7 @@ int main(int argc, char** argv)
    {
       if (argc != 3)
       {
-	 print_copyright(std::cerr);
+	 print_copyright(std::cerr, "tools", basename(argv[0]));
 	 std::cerr << "usage: mp-reorder-basis <new-ordering> <psi>\n"
 	    "the new-ordering is a comma-delimited permutation of numbers 0..(N-1).\n";
 	 return 1;

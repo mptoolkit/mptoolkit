@@ -13,7 +13,7 @@ int main(int argc, char** argv)
 {
    if (argc < 5 || argc > 6)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-expectation2 <lattice> <psi1> <operator1> <operator2> [<psi2>]\n";
       return 1;
    }

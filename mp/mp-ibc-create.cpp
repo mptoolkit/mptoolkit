@@ -50,7 +50,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") > 0 || InputFile.empty() || OutputFile.empty())
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] -w <input_psi> -o <output_psi>\n";
          std::cerr << desc << '\n';
          return 1;

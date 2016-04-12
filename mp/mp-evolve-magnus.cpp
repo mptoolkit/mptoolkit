@@ -128,7 +128,7 @@ int main(int argc, char** argv)
 	  || !vm.count("U") || !vm.count("delta") || !vm.count("period")
 	  || !vm.count("step") || !vm.count("lattice")) 
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-evolve-magnus [options]\n";
          std::cerr << desc << '\n';
          return 1;

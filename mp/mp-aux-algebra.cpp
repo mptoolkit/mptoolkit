@@ -128,7 +128,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") > 0 || vm.count("wavefunction") < 1)
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " -w <psi> [options] Operator1 [Operator2] ...\n";
          std::cerr << desc << '\n';
          std::cerr << "If -l [--lattice] is specified, then the operators must all come from the specified lattice file\n";

@@ -13,7 +13,7 @@ int main(int argc, char** argv)
 {
    if (argc != 3)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "calculates the norm of |psi1> - |psi2>\n";
       std::cerr << "usage: mp-diff <psi1> <psi2>\n";
       return 1;

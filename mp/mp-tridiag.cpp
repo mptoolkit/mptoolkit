@@ -354,7 +354,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") || (vm.count("wavefunction") == 0 && vm.count("right") == 0)) 
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-tridiag [options]\n";
          std::cerr << desc << '\n';
          return 1;

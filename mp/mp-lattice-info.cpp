@@ -148,7 +148,7 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
       if (vm.count("help") || !vm.count("lattice")) 
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] <lattice>\n";
          std::cerr << desc << "\n";
          return 1;

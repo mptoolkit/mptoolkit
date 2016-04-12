@@ -13,7 +13,7 @@ int main(int argc, char** argv)
 {
    if (argc != 3)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "calculates the angle theta^2 given by |<psi1|psi2>| = ||psi1|| ||psi2|| cos theta\n";
       std::cerr << "usage: mp-theta2 <psi1> <psi2>\n";
       return 1;

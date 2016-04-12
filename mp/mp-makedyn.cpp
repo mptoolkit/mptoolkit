@@ -11,7 +11,7 @@ int main(int argc, char** argv)
 {
    if (argc != 5)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-makedyn <lattice> <groundstate-energy> <frequency> <broadening>\n";
       return 1;
    }

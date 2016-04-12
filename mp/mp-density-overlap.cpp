@@ -39,7 +39,7 @@ int main(int argc, char** argv)
 {
    if (argc != 3)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-density-overlap <psi1> <psi2>\n";
       return 1;
    }

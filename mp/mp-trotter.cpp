@@ -14,7 +14,7 @@ int main(int argc, char** argv)
 {
    if (argc < 3 || argc > 3)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-trotter <lattice> <x>\n"
                 << "Calculates TrotterE(x) and TrotterO(x) for even and odd Trotter slices.\n";
       std::cerr << "Requires the lattice contains operators Bond(i)\n";

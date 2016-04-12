@@ -16,7 +16,7 @@ int main(int argc, char** argv)
 {
    if (argc < 7 || argc > 8)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-localcorrelation <lattice> <psi> <operator1> <first> "
 	 "<operator2> <last> [<psi2>]\n";
       std::cerr << "This uses directly local operators, not lattice operators!\n";

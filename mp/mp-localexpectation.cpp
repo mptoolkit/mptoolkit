@@ -18,7 +18,7 @@ int main(int argc, char** argv)
 {
    if (argc != 6)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-localexpectation <lattice> <psi> <operator> <first> <last>\n";
       std::cerr << "This uses directly local operators, not lattice operators!\n";
       return 1;

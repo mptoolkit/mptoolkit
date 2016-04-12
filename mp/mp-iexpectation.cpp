@@ -79,7 +79,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") > 0 || vm.count("op") == 0)
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> <operator>\n";
          std::cerr << desc << '\n';
          return 1;

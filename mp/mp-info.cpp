@@ -272,8 +272,8 @@ int main(int argc, char** argv)
       
       if (vm.count("help") || vm.count("input-wavefunction") == 0) 
       {
-         print_copyright(std::cerr);
-         std::cerr << "usage: " << basename(argv[0]) << " [options] input-wavefunction\n";
+         print_copyright(std::cerr, "tools", basename(argv[0]));
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <wavefunction>\n";
          std::cerr << desc << "\n";
          return 1;
       }

@@ -16,7 +16,7 @@ int main(int argc, char** argv)
 {
    if (argc < 7 || argc > 10)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "GMRES Solver\n";
       std::cerr << "usage: mp-simplegmres <lattice> <operator-prefix> <freq> <broad> <psi> <rhs> "
                 << "[num-iter] [<maxstates>] [<correction>]\n";

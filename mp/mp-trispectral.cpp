@@ -92,7 +92,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") || vm.count("min-freq") == 0 || vm.count("max-freq") == 0) 
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-trispectral [options] < tridiagonalform\n";
          std::cerr << desc << '\n';
          return 1;

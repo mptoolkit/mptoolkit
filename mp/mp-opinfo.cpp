@@ -14,7 +14,7 @@ int main(int argc, char** argv)
 {
    if (argc != 2)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-opinfo <operator>\n";
       return 1;
    }

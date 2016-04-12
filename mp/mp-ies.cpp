@@ -203,7 +203,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") > 0 || vm.count("wavefunction") < 1 || vm.count("operator") < 1)
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> <operator>\n";
          std::cerr << desc << '\n';
 	 std::cerr << "This tool constructs the entanglement spectrum of a wavefunction,\n"

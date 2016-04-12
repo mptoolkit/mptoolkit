@@ -41,7 +41,7 @@ int main(int argc, char** argv)
       
       if (vm.count("help") || vm.count("input-wavefunction") == 0) 
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-iprint [options] input-wavefunction\n";
          std::cerr << desc << "\n";
          return 1;

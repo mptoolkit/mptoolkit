@@ -33,7 +33,7 @@ int main(int argc, char** argv)
 {
    if (argc != 4)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-scale-basis <quantum-number-name> <factor> <psi>\n";
       std::cerr << "this is applicable only to U(1) quantum numbers.\n";
       return 1;

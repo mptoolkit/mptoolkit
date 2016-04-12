@@ -94,7 +94,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("Hamiltonian") == 0) 
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-evolve-bonds [options] timestep1 timestep2 .... \n";
          std::cerr << desc << '\n';
          return 1;

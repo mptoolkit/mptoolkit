@@ -44,12 +44,49 @@ inline void print_copyright(std::ostream& out)
        << "." << (BOOST_VERSION % 100) << "\n"
       "Copyright (c) Ian McCulloch 1999-2016 All Rights Reserved\n"
       "For license conditions email " PACKAGE_BUGREPORT "\n"
-      "Documentation see http://physics.uq.edu.au/people/ianmcc/mptoolkit/\n"
+      "Website: http://physics.uq.edu.au/people/ianmcc/mptoolkit/\n"
       ;
 }
 
 #undef AS_STRING
 #undef AS_STRING2
+
+inline
+std::string Wikify(std::string const& x)
+{
+   std::string Result;
+   bool Capital = true;
+   bool Hyphen = false;
+   for (char c : x)
+   {
+      if (c == '-')
+      {
+	 Hyphen = true;
+	 Capital = true;
+      }
+      else
+      {
+	 if (Capital)
+	 {
+	    Result += char(toupper(c));
+	    Hyphen = false;
+	    if (!Hyphen || c != 'i')
+	       Capital = false;
+	 }
+	 else
+	    Result += char(tolower(c));
+      }
+   }
+   return Result;
+}
+
+inline void print_copyright(std::ostream& out, std::string const& Category, std::string const& Name)
+{
+   print_copyright(out);
+   std::string URL = "index.php?n=" + Wikify(Category) + "." + Wikify(Name);
+   out << "Documentation: "
+       << "http://physics.uq.edu.au/people/ianmcc/mptoolkit/" << URL << "\n";
+}
 
 // The basename() function is useful in help messages for printing the program name
 inline

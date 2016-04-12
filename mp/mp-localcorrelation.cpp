@@ -92,7 +92,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") > 0 || vm.count("last") == 0)
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-localcorrelation [options] <lattice> <psi> <operator1> <first> <operator2> <last>\n";
          std::cerr << "This uses directly local operators, not lattice operators!\n";
          std::cerr << desc << '\n';
