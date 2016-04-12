@@ -22,7 +22,7 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("message,m", prog_opt::value(&Message), "add a new history entry");
+	 ("message,m", prog_opt::value(&Message), "add a new history entry")
 	 ("reverse,r", prog_opt::bool_switch(&Reverse), "reverse order, newest first")
 	 ;
 
