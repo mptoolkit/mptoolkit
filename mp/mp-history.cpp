@@ -17,10 +17,12 @@ int main(int argc, char** argv)
    {
       bool Reverse = false;
       std::string Filename;
+      std::string Message;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
+	 ("message,m", prog_opt::value(&Message), "add a new history entry");
 	 ("reverse,r", prog_opt::bool_switch(&Reverse), "reverse order, newest first")
 	 ;
 
@@ -47,16 +49,24 @@ int main(int argc, char** argv)
          std::cerr << desc << '\n';
          return 1;
       }
-      
-      pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(Filename, mp_pheap::CacheSize(), true);
 
-      if (Reverse)
+      if (vm.count("message"))
       {
-	 Psi->History().print_newest_first(std::cout);
+	 pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(Filename, mp_pheap::CacheSize());
+	 Psi.mutate()->AppendHistory(Message);
+	 pheap::ShutdownPersistent(Psi);
       }
       else
       {
-	 Psi->History().print(std::cout);
+	 pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(Filename, mp_pheap::CacheSize(), true);
+	 if (Reverse)
+	 {
+	    Psi->History().print_newest_first(std::cout);
+	 }
+	 else
+	 {
+	    Psi->History().print(std::cout);
+	 }
       }
    }
    catch (prog_opt::error& e)

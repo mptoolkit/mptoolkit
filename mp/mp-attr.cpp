@@ -5,6 +5,7 @@
 #include "pheap/pheap.h"
 #include "mp/copyright.h"
 #include "common/environment.h"
+#include "interface/inittemp.h"
 #include <boost/algorithm/string.hpp>
 
 int main(int argc, char** argv)
@@ -59,8 +60,7 @@ int main(int argc, char** argv)
    }
 
    bool Readonly = AttributesToSet.empty();
-   pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(argv[1], 
-                                                          getenv_or_default("MP_CACHESIZE", 8*1024*1024),
+   pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(argv[1], mp_pheap::CacheSize(),
                                                           Readonly);
 
    if (!AttributesToSet.empty())
