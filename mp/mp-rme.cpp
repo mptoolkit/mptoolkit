@@ -14,7 +14,7 @@ int main(int argc, char** argv)
 {
    if (argc < 3 || argc > 4)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-rme <psi1> <operator> [<psi2>]\n";
       return 1;
    }

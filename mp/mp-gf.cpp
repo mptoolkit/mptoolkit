@@ -17,7 +17,7 @@ int main(int argc, char** argv)
 {
    if (argc < 8 || argc > 9)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-gf <lattice> <operator> <energy> <frequency> <broadening> <cv> <lv> [resid]\n";
       return 1;
    }

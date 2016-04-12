@@ -18,7 +18,7 @@ int main(int argc, char** argv)
 {
    if (argc < 9 || argc > 10)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-local-fourpoint <lattice> <psi> <Op1> <Op2> <Op3> <Op4> "
          "<first> <last> [qn]\n";
       std::cerr << "Calculates the four point correlator Op1(i-1) Op2(i) Op3(j) Op3(j+1)\n";

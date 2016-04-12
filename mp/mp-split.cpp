@@ -15,7 +15,7 @@ int main(int argc, char** argv)
 {
    if (argc != 4)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-split <psi> <real-part> <imag-part>\n";
       return 1;
    }

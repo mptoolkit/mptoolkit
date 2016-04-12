@@ -1559,7 +1559,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") || vm.count("wavefunction") == 0)
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", "mp-idmrg-s3e");
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
          return 1;

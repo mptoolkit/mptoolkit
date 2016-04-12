@@ -44,7 +44,7 @@ int main(int argc, char** argv)
    
       if (vm.count("help") > 0 || vm.count("lattice") == 0 || vm.count("out") == 0)
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-random [options]\n";
          std::cerr << "alternative usage: mp-random <lattice> <quantumnumber> <count> <out>\n";
          std::cerr << desc << '\n';

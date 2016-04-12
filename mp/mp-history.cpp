@@ -22,8 +22,8 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("message,m", prog_opt::value(&Message), "add a new history entry");
 	 ("reverse,r", prog_opt::bool_switch(&Reverse), "reverse order, newest first")
+	 ("message,m", prog_opt::value(&Message), "add a new history entry")
 	 ;
 
       prog_opt::options_description hidden("Hidden options");
@@ -44,7 +44,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") || vm.count("psi") == 0)
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", "mp-history");
          std::cerr << "usage: " << basename(argv[0]) << " [options] <wavefunction>\n";
          std::cerr << desc << '\n';
          return 1;

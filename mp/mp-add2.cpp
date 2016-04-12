@@ -13,7 +13,7 @@ int main(int argc, char** argv)
 {
    if (argc != 5)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-add2 <psi1> <psi2> <outpsi> <nstates>\n";
       return 1;
    }

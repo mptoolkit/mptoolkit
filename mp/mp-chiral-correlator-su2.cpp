@@ -16,7 +16,7 @@ int main(int argc, char** argv)
 {
    if (argc != 5)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-chiral-correlator <lattice> <psi> <first> <last>\n";
       std::cerr << "Calculates the chiral correlator S(i-1)xS(i) . S(j)xS(j+1)!\n";
       return 1;

@@ -113,7 +113,7 @@ int main(int argc, char** argv)
 {
    if (argc < 7 || argc > 10)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "DDMRG Solver\n";
       std::cerr << "usage: mp-ddmrg <Hamiltonian> <freq> <energy> <broad> <psi> <rhs> "
                 << "[num-iter] [<maxstates>] [<correction>]\n";

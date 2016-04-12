@@ -12,7 +12,7 @@ int main(int argc, char** argv)
 {
    if (argc <= 1)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-attr wavefunction [attribute [= value]] ...\n";
       return 1;
    }

@@ -11,7 +11,7 @@ int main(int argc, char** argv)
 {
    if (argc != 3)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-load-0.7.3 <input-0.7.3-wavefunction> <output-0.7.4-wavefunction>\n";
       return 1;
    }

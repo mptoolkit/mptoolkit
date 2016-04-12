@@ -169,7 +169,7 @@ int main(int argc, char** argv)
           || vm.count("Broadening") == 0 || vm.count("GroundstateEnergy") == 0
           || vm.count("min-freq") == 0 || vm.count("max-freq") == 0)
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-min-resid [options]\n";
          std::cerr << desc << '\n';
          return 1;

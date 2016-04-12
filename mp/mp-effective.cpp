@@ -21,7 +21,7 @@ int main(int argc, char** argv)
 {
    if (argc < 4)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-effective <wavefunction> <lattice> <op1> <op2> <op3> ... \n";
       return 1;
    }

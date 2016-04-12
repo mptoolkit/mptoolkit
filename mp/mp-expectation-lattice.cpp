@@ -14,7 +14,7 @@ int main(int argc, char** argv)
 {
    if (argc < 5)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-expectation-lattice <lattice> <psi1> <size> <operator1> [<operator2>] ... \n";
       return 1;
    }

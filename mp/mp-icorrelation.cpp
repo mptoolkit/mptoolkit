@@ -269,7 +269,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") > 0 || vm.count("op2") == 0)
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> <operator1> <operator2>\n";
          std::cerr << desc << '\n';
          return 1;
@@ -387,6 +387,9 @@ int main(int argc, char** argv)
       }
 
       // the string operator
+      // Note that we don't need to shift the quantum numbers of the string operator,
+      // because it is always multiplied by some other operator (eg the Operator2 JW string)
+      // that handles properly the quantum numbers.
       ProductMPO StringOp;
       int StringSize = 0;
       int LatticeStringUnitCellSize = 0;
@@ -406,6 +409,7 @@ int main(int argc, char** argv)
       }
       else
       {
+	 // No specified string operator, use the identity operator.
 	 LatticeStringUnitCellSize = std::max(Lattice1UnitCellSize, Lattice2UnitCellSize);
 	 StringOp = ProductMPO::make_identity(Basis1FromSiteList(*Op1.GetSiteList()));
 	 StringSize = LatticeStringUnitCellSize;

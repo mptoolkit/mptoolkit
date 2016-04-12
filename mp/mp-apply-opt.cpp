@@ -77,7 +77,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") > 0 || vm.count("psi") == 0)
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-apply-opt [options] <operator> <input> <output>\n";
          std::cerr << "optimizes |output> = operator * |input>\n";
          std::cerr << "where |output> is an existing guess vector\n";

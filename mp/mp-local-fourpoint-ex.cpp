@@ -266,7 +266,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") > 0 || vm.count("op4") == 0)
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-local-fourpoint-ex [options] <lattice> <psi> <op1> <op2> <op3> <op4>\n";
 	 std::cerr << "evaluates the 4-point correlation function < op1(i) op2(j) op3(k) op4(l) >\n";
          std::cerr << desc << '\n';

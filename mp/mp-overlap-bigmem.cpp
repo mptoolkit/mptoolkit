@@ -21,7 +21,7 @@ int main(int argc, char** argv)
 {
    if (argc < 2 || (argc == 2 && argv[1] != std::string("-")))
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-overlap <psi1> <psi2> [<psi3> ...]\n";
       std::cerr << "or use '-' as the first filename to read files from standard input.\n";
       return 1;

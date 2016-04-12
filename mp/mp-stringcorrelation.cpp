@@ -15,7 +15,7 @@ int main(int argc, char** argv)
 {
    if (argc < 8 || argc > 10)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-stringcorrelation <lattice> <psi1> <operator1> <first> <join> <operator2> <last> [<psi2>] [joinfirst]\n";
       std::cerr << "if joinfirst exists, then the join operator will be applied to the first site.\n";
       return 1;

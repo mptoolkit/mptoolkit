@@ -11,7 +11,7 @@ int main(int argc, char** argv)
 {
    if (argc != 6)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-makedynamic <lattice> <groundstate> <frequency> <broadening> <output-operator-name>\n";
       return 1;
    }

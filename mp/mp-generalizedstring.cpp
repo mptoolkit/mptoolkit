@@ -16,7 +16,7 @@ int main(int argc, char** argv)
 {
    if (argc < 9 || argc > 10)
    {
-      print_copyright(std::cerr);
+      print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-stringcorrelation <lattice> <psi1> <operator1> <first> <kS> <kH> <operator2> <last> [<psi2>]\n";
       return 1;
    }

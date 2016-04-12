@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") > 0 || vm.count("psi2") < 1)
       {
-         print_copyright(std::cerr);
+         print_copyright(std::cerr, "tools", "mp-iapply");
          std::cerr << "usage: " << basename(argv[0]) << " [options] <operator> <input-psi> <output-psi>\n";
          std::cerr << desc << '\n';
 	 std::cerr << "This tool calculates the action of an operator on an iMPS.\n";
