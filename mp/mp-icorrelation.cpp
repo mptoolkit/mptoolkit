@@ -236,7 +236,7 @@ int main(int argc, char** argv)
 	 ("average", prog_opt::bool_switch(&Average),
 	  "average the correlation over shifts by the unitcell")
 	 ("connected", prog_opt::bool_switch(&Connected),
-	  "calculate the connected correlation <AB> - <A><B> [generally not compatible with --string] [not yet implemented]")
+	  "calculate the connected correlation <AB> - <A><B> [generally not compatible with --string]")
 	 ("separate", prog_opt::bool_switch(&Separate),
 	  "print the 'connected' part <A><B> as a separate column [not yet implemented]")
          ("tempfile", prog_opt::bool_switch(&UseTempFile),
@@ -273,6 +273,13 @@ int main(int argc, char** argv)
          std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> <operator1> <operator2>\n";
          std::cerr << desc << '\n';
          return 1;
+      }
+
+      // check consistency of some options
+      if (Connected && vm.count("string"))
+      {
+	 std::cerr << "mp-icorrelation: fatal: cannot construct a connected string correlation function!\n";
+	 return 1;
       }
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
@@ -353,6 +360,32 @@ int main(int argc, char** argv)
 	 }
       }
 
+      // consistency checks
+      if (Op1.Commute() * Op2.Commute() != LatticeCommute::Bosonic)
+      {
+	 std::cerr << "mp-icorrelation: fatal: cannot mix bosonic and fermionic operators!\n";
+	 return 1;
+      }
+      if (adjoint(Op1.TransformsAs()) != Op2.TransformsAs())
+      {
+	 std::cerr << "mp-icorrelation: fatal: product of Op1 and Op2 is not a scalar!\n";
+	 return 1;
+      }
+
+      if (Connected)
+      {
+	 if (Op1.Commute() != LatticeCommute::Bosonic)
+	 {
+	    std::cerr << "mp-icorrelation: fatal: cannot construct a connected correlator of a non-bosonic operator!\n";
+	    return 1;
+	 }
+	 if (is_scalar(Op1.TransformsAs()))
+	 {
+	    std::cerr << "mp-icorrelation: fatal: cannot construct a connected correlator of a non-scalar operator!\n";
+	    return 1;
+	 }
+      }
+
       // the string operator
       ProductMPO StringOp;
       int StringSize = 0;
@@ -387,17 +420,17 @@ int main(int argc, char** argv)
       // make sure that the other lattice sizes divide evenly the UnitCellSize
       if (UnitCellSize % Lattice1UnitCellSize != 0)
       {
-	 std::cerr << "fatal: operator1 lattice unit cell size must divide the prime unit cell size.\n";
+	 std::cerr << "mp-icorrelation: fatal: operator1 lattice unit cell size must divide the prime unit cell size.\n";
 	 return 1;
       }
       if (UnitCellSize % Lattice2UnitCellSize != 0)
       {
-	 std::cerr << "fatal: operator2 lattice unit cell size must divide the prime unit cell size.\n";
+	 std::cerr << "mp-icorrelation: fatal: operator2 lattice unit cell size must divide the prime unit cell size.\n";
 	 return 1;
       }
       if (UnitCellSize % StringSize != 0)
       {
-	 std::cerr << "fatal: string operator lattice unit cell size must divide the prime unit cell size.\n";
+	 std::cerr << "mp-icorrelation: fatal: string operator lattice unit cell size must divide the prime unit cell size.\n";
 	 return 1;
       }
 
@@ -451,6 +484,14 @@ int main(int argc, char** argv)
       FiniteMPO WavefunctionStringJW = StringOpPerUnitCell.MPO() * JW;
       WavefunctionStringJW = repeat(WavefunctionStringJW, Psi.size()/WavefunctionStringJW.size());
 
+      // the density matrix at the unit cell boundary
+      MatrixOperator Rho = Psi.lambda(Psi.size());
+      Rho = Rho*Rho;
+
+      // for connected correlators
+      std::map<int, std::complex<double>> ExpectOp1;
+      std::map<int, std::complex<double>> ExpectOp2;
+
       if (Verbose > 0)
 	 std::cerr << "Constructing matrices for Operator1\n";
       for (int x : LeftOffsets)
@@ -463,10 +504,13 @@ int main(int argc, char** argv)
 	    Op = Op * translate(StringOpPerUnitCell, i*UnitCellSize);
 	 }
 	 // incorporate Op2 JW string, which goes over the entire length of the operator
+
 	 LeftOperator[x] = contract_from_left(MatrixOperator::make_identity(Psi.Basis1()),
 					      Psi, Op.MPO() * repeat(JW, Op.size()/JW.size()));
 	 LeftOperatorOffsetUnits[x] = (Op.size()+Op.offset())/UnitCellSize - x;
 
+	 if (Connected)
+	    ExpectOp1[x] = inner_prod(LeftOperator[x], Rho);
       }
 
       // the Op2 matrices, indexed by the RightOffset
@@ -477,8 +521,7 @@ int main(int argc, char** argv)
 
       if (Verbose > 0)
 	 std::cerr << "Constructing matrices for Operator2\n";
-      MatrixOperator Rho = Psi.lambda(Psi.size());
-      Rho = Rho*Rho;
+
       for (int y : RightOffsets)
       {
 	 UnitCellMPO Op = translate(Op2, y*UnitCellSize);
@@ -492,6 +535,9 @@ int main(int argc, char** argv)
 	 RightOperator[y] = contract_from_right(Rho, Psi, Op.MPO());
 	 RightOperator[y].delta_shift(adjoint(Psi.qshift()));
 	 RightOperatorOffsetUnits[y] = y - Op.offset()/UnitCellSize;
+
+	 if (Connected)
+	    ExpectOp2[y] = trace(RightOperator[y]);
       }
 
       // show the heading
@@ -579,6 +625,8 @@ int main(int argc, char** argv)
 	       }
 
 	       // output the expectation value
+	       if (Connected)
+		  e -= ExpectOp1[x] * ExpectOp2[x];
 
 	       if (Average)
 	       {
@@ -590,6 +638,7 @@ int main(int argc, char** argv)
 			    << std::left << std::setw(5) << (x+n) << ' ';
 		  PrintFormat(e, ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
 		  std::cout << '\n';
+		  std::cout << std::flush;
 	       }
 	    }
 	 }
@@ -604,6 +653,7 @@ int main(int argc, char** argv)
 	    std::cout << std::setw(10) << Av.size() << ' ' 
 		      << std::setw(20) << std::sqrt(v) << '\n';
 	    Av.clear();
+	    std::cout << std::flush;
 	 }
       }
 
