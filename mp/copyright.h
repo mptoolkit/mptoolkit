@@ -69,9 +69,9 @@ std::string Wikify(std::string const& x)
 	 if (Capital)
 	 {
 	    Result += char(toupper(c));
-	    Hyphen = false;
 	    if (!Hyphen || c != 'i')
 	       Capital = false;
+	    Hyphen = false;
 	 }
 	 else
 	    Result += char(tolower(c));
