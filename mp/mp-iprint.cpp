@@ -1,6 +1,6 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 
-#include "mps/infinitewavefunction.h"
+#include "wavefunction/mpwavefunction.h"
 #include "tensor/tensor_eigen.h"
 #include "common/environment.h"
 #include "common/terminal.h"
@@ -51,7 +51,11 @@ int main(int argc, char** argv)
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
 
-      pvalue_ptr<InfiniteWavefunction> Psi = pheap::OpenPersistent(Wavefunc, mp_pheap::CacheSize(), true);
+      pvalue_ptr<MPWavefunction> PsiPtr = pheap::OpenPersistent(Wavefunc, mp_pheap::CacheSize(), true);
+
+      InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
+
+#if 0
 
       std::cout << "Symmetry list=" << Psi->C_right.GetSymmetryList() << '\n';
       std::cout << "Transforms as=" << Psi->shift() << '\n';
@@ -75,14 +79,13 @@ int main(int argc, char** argv)
          P.Psi.set_back(prod(P.Psi.get_back(), delta_shift(LambdaSqrt, adjoint(P.QShift))));
          P.Psi.set_front(prod(LambdaInvSqrt, P.Psi.get_front()));
       }
-
+#endif
 
       int Site = 0;
-      for (LinearWavefunction::const_iterator I = P.Psi.begin(); I != P.Psi.end(); ++I)
+      for (auto const& x : Psi)
       {
          std::cout << "\n***** Site " << (Site++) << " *****\n\n";
-
-         std::cout << (*I) << "\n";
+         std::cout << x << "\n";
       }
 
    }
