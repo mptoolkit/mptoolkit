@@ -118,10 +118,11 @@ template <typename T, typename B1, typename B2, typename S>
 void
 IrredTensor<T, B1, B2, S>::CoerceSymmetryList(SymmetryList const& sl)
 {
+   using Tensor::CoerceSymmetryList;
    Basis1_.CoerceSymmetryList(sl);
    Basis2_.CoerceSymmetryList(sl);
    Trans_.CoerceSymmetryList(sl);
-   Data_.CoerceSymmetryList(sl);
+   Data_ = CoerceSymmetryList(Data_, sl);
    this->debug_check_structure();
 }
 
