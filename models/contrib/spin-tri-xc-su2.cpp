@@ -80,6 +80,9 @@ int main(int argc, char** argv)
       OpDescriptions.add_operators()
 	 ("H_J1",     "nearest neighbor spin exchange")
 	 ("H_J2",     "next-nearest neighbor spin exchange")
+	 ("Ty"  ,     "Translation in Y direction")
+	 ("TyPi",     "Translation by pi in Y direction (only if w is divisible by 4)")
+
 	 ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -111,7 +114,7 @@ int main(int argc, char** argv)
    
       for (int i = 0; i < w; ++i)
       {
-	 S += S[i];   // total spin on a leg of cylinder
+	 S += S[i];   // total spin on a unit cell
       }
 
       Trans = I(0);
@@ -128,9 +131,9 @@ int main(int argc, char** argv)
       for (int i = 0; i < w2; ++i)
       {
 	 // nearest neighbor bonds, first column
-	 H1 += inner(S(0)[i], S(1)[i]);         // horizontal
-	 H1 += inner(S(0)[i], S(0)[i+w2]);      // up-right
-	 H1 += inner(S(0)[i], S(0)[(i+w2-1)]);  // down-right
+	 H1 += inner(S(0)[i], S(1)[i]);               // horizontal
+	 H1 += inner(S(0)[i], S(0)[i+w2]);            // up-right
+	 H1 += inner(S(0)[i], S(0)[(i+w2-1)%w2+w2]);  // down-right
 
 	 // nearest neighbor bonds, second column
 	 H1 += inner(S(0)[i+w2], S(1)[i+w2]);         // horizontal
@@ -139,7 +142,7 @@ int main(int argc, char** argv)
 
 	 // next-nearest neighbor bonds, first column
 	 // vertical
-	 H2 += inner(S(0)[i], S(0)[i+1]);
+	 H2 += inner(S(0)[i], S(0)[(i+1)%w2]);
 
 	 // 60 degree bonds
 	 H2 += inner(S(0)[i], S(1)[i+w2]);
@@ -147,11 +150,11 @@ int main(int argc, char** argv)
 
 	 // next-nearest neighbor bonds, second column
 	 // vertical
-	 H2 += inner(S(0)[i+w2], S(0)[i+w2+1]);
+	 H2 += inner(S(0)[i+w2], S(0)[(i+1)%w2+w2]);
 
 	 // 60 degree bonds
-	 H2 += inner(S(0)[i+w2], S(2)[(i+1)%w2+w2]);
-	 H2 += inner(S(0)[i+w2], S(2)[(i+w2-1)%w2+w2]);
+	 H2 += inner(S(0)[i+w2], S(2)[(i+1)%w2]);
+	 H2 += inner(S(0)[i+w2], S(2)[i]);
       }
 
 
