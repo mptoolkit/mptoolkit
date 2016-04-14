@@ -203,6 +203,8 @@ int main(int argc, char** argv)
       bool Separate = false;
       std::string LatticeFile;
       bool IncludeOverlap = true;
+      std::vector<int> LeftOffsets;
+      std::vector<int> RightOffsets;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -239,6 +241,7 @@ int main(int argc, char** argv)
 	  "calculate the connected correlation <AB> - <A><B> [generally not compatible with --string]")
 	 ("separate", prog_opt::bool_switch(&Separate),
 	  "print the 'connected' part <A><B> as a separate column [not yet implemented]")
+	 ("left", prog_opt::value(&LeftOffsets), "start the correlation from this offset [can be used more than once]")
          ("tempfile", prog_opt::bool_switch(&UseTempFile),
           "a temporary data file for workspace (path set by environment MP_BINPATH)")
          ("quiet", prog_opt::bool_switch(&Quiet),
@@ -467,13 +470,21 @@ int main(int argc, char** argv)
 
       // For generality we keep track of the offsets (with respect to the wavefunction unit cell)
       // that we want to use for the left and right operators separately.
-      std::vector<int> LeftOffsets;
-      std::vector<int> RightOffsets;
-      for (int i = 0; i < Psi.size()/UnitCellSize; ++i)
+      if (LeftOffsets.empty())
       {
-	 LeftOffsets.push_back(i);
-	 RightOffsets.push_back(i);
+	 for (int i = 0; i < Psi.size()/UnitCellSize; ++i)
+	 {
+	    LeftOffsets.push_back(i);
+	 }
       }
+      if (RightOffsets.empty())
+      {
+	 for (int i = 0; i < Psi.size()/UnitCellSize; ++i)
+	 {
+	    RightOffsets.push_back(i);
+	 }
+      }
+
 
       // the Op1 matrices, indexed by the LeftOffset
       // Also keep track of the offset, measured in UnitCellSize, from the
@@ -625,7 +636,8 @@ int main(int argc, char** argv)
 		  }
 		  CHECK_EQUAL(LeftOperatorOffsetUnits[x] + RightOperatorOffsetUnits[y], n);
 		  
-		  e = inner_prod(LeftOperator[x], RightOperator[y]);
+		  // other way around here because we conjugate RightOperator, not LeftOperator
+		  e = inner_prod(RightOperator[y], LeftOperator[x]);
 	       }
 
 	       // output the expectation value
