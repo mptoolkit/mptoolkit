@@ -85,6 +85,11 @@ class SiteBasis
       bool operator!=(SiteBasis const& S2) const
       { return Basis_ != S2.Basis_ || Label_ != S2.Label_; }
 
+      void CoerceSymmetryList(SymmetryList const& sl)
+      {
+	 Basis_.CoerceSymmetryList(sl);
+      }
+
    private:
       typedef std::vector<std::string> LabelType;
 
@@ -100,13 +105,6 @@ class SiteBasis
 std::ostream& operator<<(std::ostream& out, SiteBasis const& Basis);
 
 void show_projections(std::ostream& out, SiteBasis const& Basis);
-
-inline
-void
-CoerceSymmetryList(SiteBasis& b, SymmetryList const& sl)
-{
-   CoerceSymmetryList(b.Basis_, sl);
-}
 
 inline
 SiteBasis adjoint(SiteBasis const& s)

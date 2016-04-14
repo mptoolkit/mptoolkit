@@ -19,18 +19,18 @@ SiteOperator SiteOperator::Identity(SiteBasis const& Basis1, SiteBasis const& Ba
 }
 
 inline
+void SiteOperator::CoerceSymmetryList(SymmetryList const& sl)
+{
+   Basis_.CoerceSymmetryList(sl);
+   base_type::CoerceSymmetryList(sl);
+}
+
+inline
 SiteOperator
 MakeIdentityFrom(SiteOperator const& x)
 {
    CHECK_EQUAL(x.Basis1(), x.Basis2());
    return SiteOperator::Identity(x.Basis1());
-}
-
-inline
-void CoerceSymmetryList(SiteOperator& s, SymmetryList const& sl)
-{
-   CoerceSymmetryList(s.Basis_, sl);
-   CoerceSymmetryList(static_cast<IrredTensor<std::complex<double> >&>(s), sl);
 }
 
 inline
