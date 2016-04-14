@@ -185,6 +185,8 @@ class SiteOperator : public IrredTensor<std::complex<double> >
 
       void SetCommute(LatticeCommute x) { Com_ = x; }
 
+      void CoerceSymmetryList(SymmetryList const& sl);
+
       std::string const& description() const { return Description_; }
       std::string description_or_none() const 
       { return Description_.empty() ? "(no description)" : Description_; }
@@ -203,15 +205,12 @@ class SiteOperator : public IrredTensor<std::complex<double> >
 
    friend PStream::opstream& operator<<(PStream::opstream& out, SiteOperator const& Op);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, SiteOperator& Op);
-   friend void CoerceSymmetryList(SiteOperator& s, SymmetryList const& sl);
 };
 
 // Make an identity operator over the same basis as for operator x
 SiteOperator MakeIdentityFrom(SiteOperator const& x);
 
 std::ostream& operator<<(std::ostream& out, SiteOperator const& Op);
-
-void CoerceSymmetryList(SiteOperator& s, SymmetryList const& sl);
 
 SiteOperator flip_conj(SiteOperator const& s, SiteBasis const& ReflectedBasis);
 
