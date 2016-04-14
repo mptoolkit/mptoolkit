@@ -46,6 +46,7 @@ int main(int argc, char** argv)
    {
       half_int Spin = 0.5;
       int w = 3;
+      double theta = 0.0;
       std::string FileName;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -53,6 +54,7 @@ int main(int argc, char** argv)
          ("help", "show this help message")
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
 	 ("width,w", prog_opt::value(&w), "width of the cylinder [default 3]")
+         ("theta,t", prog_opt::value(&theta), "flux phase to twist boundary condition in Y-direction (in unit of PI) [default 0.0]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
       
@@ -68,10 +70,13 @@ int main(int argc, char** argv)
          ("H_z1"                   , "nearest neighbor Ising spin exchange")
          ("H_J1"                   , "nearest neighbor Heisenberg spin exchange")
          ("H_J2"                   , "next-nearest neighbor Heisenberg spin exchange")
+         ("H_J1_flux"              , "nearest neighbor Heisenberg spin exchange with flux")
+         ("H_J2_flux"              , "next-nearest neighbor Heisenberg spin exchange with flux")
          ("H_LongRangeIsing_inter" , "inter-cell interactions of long-range Ising model")
          ;
 
       OpDescriptions.add_functions()
+         ("THM_flux"           , "J1-J2 Heisenebrg Hamiltonian on a triangular lattice with twisted BC in Y-direction as exp(i*theta)")
          ("HS"                 , "Haldane-Shastry Hamiltonian with Sz*Sz interactions, parametized by 'lambda' (exponential decay as exp(-lambda*r))")
          ("LongRangeIsing_YC4" , "long-range Ising model on a 4-leg YC structure, parametized by 'lambda00', 'lambda01', and 'lambda02'")
          ;
@@ -90,6 +95,7 @@ int main(int argc, char** argv)
       }
 
       const double PI = 4.0*std::atan(1.0);
+      const std::complex<double> jj(0.0,theta*PI);
 
       LatticeSite Site = SpinU1(Spin);
       UnitCell Cell = repeat(Site, w);
@@ -112,31 +118,61 @@ int main(int argc, char** argv)
       InfiniteLattice Lattice(Cell);
 
       // Construct the Hamiltonian for a single unit-cell,
-      UnitCellMPO Hz1, H1, H2, H_inter;
+      UnitCellMPO Hz1, H1, H1_flux, H2, H2_flux, H_inter;
       for (int i = 0; i < w; ++i)
       {
          // TIM - nearest neighbor bonds
+
          // --> vertical bonds
          Hz1 += Sz(0)[i]*Sz(0)[(i+1)%w];
+
          // --> 60 degree bonds
          Hz1 += Sz(0)[i]*Sz(1)[i];
          Hz1 += Sz(0)[i]*Sz(1)[(i+1)%w];
          std::cout << ".. " << std::flush;  
  
 	 // THM - nearest neighbor bonds
+
 	 // --> vertical bonds
-	 H1 += Sz(0)[i]*Sz(0)[(i+1)%w]
-	    + 0.5 * (Sp(0)[i]*Sm(0)[(i+1)%w] + Sm(0)[i]*Sp(0)[(i+1)%w]);
+	 H1 += Sz(0)[i]*Sz(0)[(i+1)%w] + 0.5 * (Sp(0)[i]*Sm(0)[(i+1)%w] + Sm(0)[i]*Sp(0)[(i+1)%w]);
          std::cout << ". " << std::flush;
+
+         if ( (i+1)%w == 0 )
+           H1_flux += Sz(0)[i]*Sz(0)[(i+1)%w] + 0.5 * (std::exp(jj)*Sp(0)[i]*Sm(0)[(i+1)%w] + std::exp(-jj)*Sm(0)[i]*Sp(0)[(i+1)%w]);
+         else
+           H1_flux += Sz(0)[i]*Sz(0)[(i+1)%w] + 0.5 * (Sp(0)[i]*Sm(0)[(i+1)%w] + Sm(0)[i]*Sp(0)[(i+1)%w]);
+         std::cout << ". " << std::flush;
+
 	 // --> 60 degree bonds
 	 H1 += Sz(0)[i]*Sz(1)[i] + 0.5 * (Sp(0)[i]*Sm(1)[i] + Sm(0)[i]*Sp(1)[i]);
 	 H1 += Sz(0)[i]*Sz(1)[(i+1)%w] + 0.5 * (Sp(0)[i]*Sm(1)[(i+1)%w] + Sm(0)[i]*Sp(1)[(i+1)%w]);
          std::cout << ".. " << std::flush; 
 
+         H1_flux += Sz(0)[i]*Sz(1)[i] + 0.5 * (Sp(0)[i]*Sm(1)[i] + Sm(0)[i]*Sp(1)[i]);
+         if ( (i+1)%w == 0 )
+           H1_flux += Sz(0)[i]*Sz(1)[(i+1)%w] + 0.5 * (std::exp(jj)*Sp(0)[i]*Sm(1)[(i+1)%w] + std::exp(-jj)*Sm(0)[i]*Sp(1)[(i+1)%w]);
+         else
+           H1_flux += Sz(0)[i]*Sz(1)[(i+1)%w] + 0.5 * (Sp(0)[i]*Sm(1)[(i+1)%w] + Sm(0)[i]*Sp(1)[(i+1)%w]);
+         std::cout << ".. " << std::flush;       
+
 	 // THM - next-nearest neighbor bonds
 	 H2 += Sz(0)[i]*Sz(2)[(i+1)%w] + 0.5 * (Sp(0)[i]*Sm(2)[(i+1)%w] + Sm(0)[i]*Sp(2)[(i+1)%w]);
-	 H2 += Sz(0)[i]*Sz(1)[(i+w-1)%w] + 0.5 * (Sp(0)[i]*Sm(2)[(i+1)%w] + Sm(0)[i]*Sp(2)[(i+1)%w]);
-	 H2 += Sz(0)[i]*Sz(1)[(i+2)%w] + 0.5 * (Sp(0)[i]*Sm(2)[(i+1)%w] + Sm(0)[i]*Sp(2)[(i+1)%w]);
+	 H2 += Sz(0)[i]*Sz(1)[(i+w-1)%w] + 0.5 * (Sp(0)[i]*Sm(1)[(i+w-1)%w] + Sm(0)[i]*Sp(1)[(i+w-1)%w]);
+	 H2 += Sz(0)[i]*Sz(1)[(i+2)%w] + 0.5 * (Sp(0)[i]*Sm(1)[(i+2)%w] + Sm(0)[i]*Sp(1)[(i+2)%w]);
+         std::cout << "... " << std::flush;
+
+         if ( (i+1)%w == 0 )
+           H2_flux += Sz(0)[i]*Sz(2)[(i+1)%w] + 0.5 * (std::exp(jj)*Sp(0)[i]*Sm(2)[(i+1)%w] + std::exp(-jj)*Sm(0)[i]*Sp(2)[(i+1)%w]);
+         else
+           H2_flux += Sz(0)[i]*Sz(2)[(i+1)%w] + 0.5 * (Sp(0)[i]*Sm(2)[(i+1)%w] + Sm(0)[i]*Sp(2)[(i+1)%w]);
+         if ( i == 0 )
+           H2_flux += Sz(0)[i]*Sz(1)[(i+w-1)%w] + 0.5 * (std::exp(jj)*Sp(0)[i]*Sm(1)[(i+w-1)%w] + std::exp(-jj)*Sm(0)[i]*Sp(1)[(i+w-1)%w]);
+         else
+           H2_flux += Sz(0)[i]*Sz(1)[(i+w-1)%w] + 0.5 * (Sp(0)[i]*Sm(1)[(i+w-1)%w] + Sm(0)[i]*Sp(1)[(i+w-1)%w]);
+         if ( (i+1)%w == 0 )
+           H2_flux += Sz(0)[i]*Sz(1)[(i+2)%w] + 0.5 * (std::exp(jj)*Sp(0)[i]*Sm(1)[(i+2)%w] + std::exp(-jj)*Sm(0)[i]*Sp(1)[(i+2)%w]);
+         else
+           H2_flux += Sz(0)[i]*Sz(1)[(i+2)%w] + 0.5 * (Sp(0)[i]*Sm(1)[(i+2)%w] + Sm(0)[i]*Sp(1)[(i+2)%w]);
          std::cout << "... " << std::flush;     
 
         for (int j = i+1; j < w; ++j)
@@ -150,11 +186,17 @@ int main(int argc, char** argv)
       Lattice["H_z1"] = sum_unit(Hz1);
       Lattice["H_J1"] = sum_unit(H1);
       Lattice["H_J2"] = sum_unit(H2);
+      Lattice["H_J1_flux"] = sum_unit(H1_flux);
+      Lattice["H_J2_flux"] = sum_unit(H2_flux);
       Lattice["H_LongRangeIsing_inter"] = sum_unit(H_inter);
       std::cout << "... " << std::flush;
 
-      Lattice.func("THM")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
+      Lattice.func("THM")(arg("J1") = "cos(theta2)", arg("J2") = "sin(theta2)", arg("theta2") = "atan(alpha)", arg("alpha") = 0.0)
                   = "J1*H_J1 + J2*H_J2";
+      std::cout << ". " << std::flush;
+
+      Lattice.func("THM_flux")(arg("J1") = "cos(theta2)", arg("J2") = "sin(theta2)", arg("theta2") = "atan(alpha)", arg("alpha") = 0.0)
+                  = "J1*H_J1_flux + J2*H_J2_flux";
       std::cout << ". " << std::flush;
 
       // a basic function for Haldane-Shastry model with Sz*Sz interations
