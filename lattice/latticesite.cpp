@@ -27,7 +27,7 @@ LatticeSite::CoerceSymmetryList(QuantumNumbers::SymmetryList const& sl)
    ptr_type::lock_type Lock(pImpl.lock());
    for (operator_iterator I = Lock->Operators.begin(); I != Lock->Operators.end(); ++I)
    {
-      I->second.CoerceSymmetryList(sl);
+      CoerceSymmetryList(I->second, sl);
    }
 }
 
