@@ -203,7 +203,7 @@ class SiteOperator : public IrredTensor<std::complex<double> >
 
    friend PStream::opstream& operator<<(PStream::opstream& out, SiteOperator const& Op);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, SiteOperator& Op);
-   friend void CoerceSymmetryList(SiteOperator& s, SymmetryList const& sl);
+   friend void CoerceSymmetryListInPlace(SiteOperator& s, SymmetryList const& sl);
 };
 
 // Make an identity operator over the same basis as for operator x
@@ -211,7 +211,16 @@ SiteOperator MakeIdentityFrom(SiteOperator const& x);
 
 std::ostream& operator<<(std::ostream& out, SiteOperator const& Op);
 
-void CoerceSymmetryList(SiteOperator& s, SymmetryList const& sl);
+void CoerceSymmetryListInPlace(SiteOperator& s, SymmetryList const& sl);
+
+inline
+SiteOperator
+CoerceSymmetryList(SiteOperator const& s, SymmetryList const& sl)
+{
+   SiteOperator Result(s);
+   CoerceSymmetryListInPlace(Result, sl);
+   return Result;
+}
 
 SiteOperator flip_conj(SiteOperator const& s, SiteBasis const& ReflectedBasis);
 

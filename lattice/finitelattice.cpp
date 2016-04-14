@@ -54,40 +54,33 @@ UnitCell::UnitCell(LatticeSite const& s, LatticeSite const& t, LatticeSite const
    Lock->push_back(v);
 }
 
-LatticeSite CoerceSL(SymmetryList const& sl, LatticeSite const& s)
-{
-   LatticeSite r(s);
-   r.CoerceSymmetryList(sl);
-   return r;
-}
-
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s)
-   : Data_(new UnitCellType(CoerceSL(sl,s)))
+   : Data_(new UnitCellType(CoerceSymmetryList(s, sl)))
 {
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t)
-   : Data_(new UnitCellType(CoerceSL(sl, s)))
+   : Data_(new UnitCellType(CoerceSymmetryList(s, sl)))
 {
-   Data_.mutate()->push_back(CoerceSL(sl, t));
+   Data_.mutate()->push_back(CoerceSymmetryList(t, sl));
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t, LatticeSite const& u)
-   : Data_(new UnitCellType(CoerceSL(sl, s)))
+   : Data_(new UnitCellType(CoerceSymmetryList(s, sl)))
 {
    pvalue_lock<UnitCellType> Lock(Data_);
-   Lock->push_back(CoerceSL(sl, t));
-   Lock->push_back(CoerceSL(sl, u));
+   Lock->push_back(CoerceSymmetryList(t, sl));
+   Lock->push_back(CoerceSymmetryList(u, sl));
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t, 
                  LatticeSite const& u, LatticeSite const& v)
-   : Data_(new UnitCellType(CoerceSL(sl, s)))
+   : Data_(new UnitCellType(CoerceSymmetryList(s, sl)))
 {
    pvalue_lock<UnitCellType> Lock(Data_);
-   Lock->push_back(CoerceSL(sl, t));
-   Lock->push_back(CoerceSL(sl, u));
-   Lock->push_back(CoerceSL(sl, v));
+   Lock->push_back(CoerceSymmetryList(t, sl));
+   Lock->push_back(CoerceSymmetryList(u, sl));
+   Lock->push_back(CoerceSymmetryList(v, sl));
 }
 
 UnitCell::UnitCell(int RepeatCount, UnitCell const& l)

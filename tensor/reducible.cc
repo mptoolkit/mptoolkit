@@ -241,4 +241,26 @@ std::string show_projections(ReducibleTensor<T, B1, B2, S> const& Op)
    return Result;
 }
 
+template <typename T, typename B1, typename B2, typename S>
+ReducibleTensor<T, B1, B2, S>
+CoerceSymmetryList(ReducibleTensor<T, B1, B2, S> const& t, SymmetryList const& sl)
+{
+   ReducibleTensor<T, B1, B2, S> Result(t);
+   CoerceSymmetryListInPlace(Result, sl);
+   return Result;
+}
+
+template <typename T, typename B1, typename B2, typename S>
+void
+CoerceSymmetryListInPlace(ReducibleTensor<T, B1, B2, S>& t, SymmetryList const& sl)
+{
+   CoerceSymmetryListInplace(t.Basis1_, sl);
+   CoerceSymmetryListInplace(t.Basis2_, sl);
+   for (auto& x : t.data_)
+   {
+      CoerceSymmetryListInplace(x.first, sl);
+      CoerceSymmetryListInplace(x.second, sl);
+   }
+}
+
 } // namespace Tensor

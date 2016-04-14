@@ -46,8 +46,12 @@ template <typename T, typename B1, typename B2, typename S>
 PStream::ipstream& operator>>(PStream::ipstream& in, ReducibleTensor<T, B1, B2, S>& x);
 
 template <typename T, typename B1, typename B2, typename S>
+ReducibleTensor<T, B1, B2, S>
+CoerceSymmetryList(ReducibleTensor<T, B1, B2, S> const& t, SymmetryList const& sl);
+
+template <typename T, typename B1, typename B2, typename S>
 void
-CoerceSymmetryList(ReducibleTensor<T, B1, B2, S>& t, SymmetryList const& sl);
+CoerceSymmetryListInPlace(ReducibleTensor<T, B1, B2, S>& t, SymmetryList const& sl);
 
 template <typename T, typename Basis1T, typename Basis2T, typename Structure>
 class ReducibleTensor
@@ -184,7 +188,8 @@ class ReducibleTensor
    friend PStream::opstream& operator<< <>(PStream::opstream& out, ReducibleTensor const& x);
    friend PStream::ipstream& operator>> <>(PStream::ipstream& in, ReducibleTensor& x);
 
-   friend void CoerceSymmetryList<>(ReducibleTensor& t, SymmetryList const& sl);
+   friend void CoerceSymmetryListInPlace<>(ReducibleTensor& t, SymmetryList const& sl);
+   friend ReducibleTensor CoerceSymmetryList<>(ReducibleTensor const& t, SymmetryList const& sl);
 };
 
 // project an irred tensor onto some irreducible subspace.

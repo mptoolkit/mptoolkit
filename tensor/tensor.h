@@ -347,6 +347,10 @@ IrredTensor<T, B1, B2, S>
 CoerceSymmetryList(IrredTensor<T, B1, B2, S> const& t, SymmetryList const& sl);
 //   __attribute__((warn_unused_result));
 
+template <typename T, typename B1, typename B2, typename S>
+void
+CoerceSymmetryListInPlace(IrredTensor<T, B1, B2, S>& t, SymmetryList const& sl);
+
 template <typename T, typename Basis1T, typename Basis2T, typename Structure>
 class IrredTensor
 {

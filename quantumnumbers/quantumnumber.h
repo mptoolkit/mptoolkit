@@ -223,6 +223,13 @@ QuantumNumber CoerceSymmetryList(QuantumNumber const& q, SymmetryList const& SLi
 
 inline
 void
+CoerceSymmetryListInPlace(QuantumNumber& q, SymmetryList const& SList)
+{
+   q.CoerceSymmetryList(SList);
+}
+
+inline
+void
 QuantumNumber::CoerceSymmetryList(SymmetryList const& SList)
 {
    (*this) = ::QuantumNumbers::CoerceSymmetryList(*this, SList);
@@ -236,6 +243,13 @@ T CoerceSymmetryList(T const& x, SymmetryList const&)
 {
    return x;
 }
+
+template <typename T>
+inline
+void CoerceSymmetryListInPlace(T&, SymmetryList const&)
+{
+}
+
 
 std::ostream& operator<<(std::ostream& out, QuantumNumber const& Q);
 
@@ -291,6 +305,12 @@ PStream::opstream& operator<<(PStream::opstream& out, Projection const& L);
 PStream::ipstream& operator>>(PStream::ipstream& in, Projection& L);
 
 Projection CoerceSymmetryList(Projection const& q, SymmetryList const& SList);
+
+inline
+void CoerceSymmetryListInPlace(Projection& q, SymmetryList const& SList)
+{
+   q.CoerceSymmetryList(SList);
+}
 
 typedef std::vector<Projection> ProjectionList;
 

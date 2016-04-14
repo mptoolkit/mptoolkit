@@ -110,6 +110,8 @@ class BasisList
    friend PStream::ipstream& operator>>(PStream::ipstream& in, BasisList& B);
    friend BasisList CoerceSymmetryList(BasisList const& b, SymmetryList const& sl)
    __attribute__((warn_unused_result));
+
+   friend void CoerceSymmetryListInPlace(BasisList& b, SymmetryList const& sl);
 };
 
 typedef BasisList SimpleBasis;  // for backwards compatibility
@@ -146,6 +148,13 @@ CoerceSymmetryList(BasisList const& b, SymmetryList const& sl)
    Result.S_ = sl;
    Result.Q_ = CoerceSymmetryList(b.Q_, sl);
    return Result;
+}
+
+inline
+void
+CoerceSymmetryListInPlace(BasisList& b, SymmetryList const& sl)
+{
+   b.CoerceSymmetryList(sl);
 }
 
 //BasisList RenameSymmetry(BasisList const& BL, SymmetryList const& NewSL);
@@ -254,6 +263,8 @@ class VectorBasis
    __attribute__((warn_unused_result));
 
 
+   friend void CoerceSymmetryListInPlace(VectorBasis& b, SymmetryList const& sl);
+
    friend VectorBasis delta_shift(VectorBasis const& Orig, 
 				 QuantumNumbers::Projection const& p);
 
@@ -270,6 +281,13 @@ void
 VectorBasis::CoerceSymmetryList(SymmetryList const& sl)
 {
    Basis_.CoerceSymmetryList(sl);
+}
+
+inline
+void
+CoerceSymmetryListInPlace(VectorBasis& b, SymmetryList const& sl)
+{
+   b.CoerceSymmetryList(sl);
 }
 
 std::ostream& operator<<(std::ostream& out, VectorBasis const& B);

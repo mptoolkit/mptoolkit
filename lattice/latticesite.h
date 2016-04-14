@@ -65,8 +65,6 @@ class LatticeSite
       basis1_type const& Basis1() const;
       basis2_type const& Basis2() const;
 
-      void CoerceSymmetryList(QuantumNumbers::SymmetryList const& sl);
-
       // Sets the description of the operators according to Desc.  Prints a warning to cerr
       // if there are extra operators named in Desc that are not part of the lattice,
       // or if any operators don't have a name.
@@ -157,6 +155,9 @@ class LatticeSite
 
    friend PStream::opstream& operator<<(PStream::opstream& out, LatticeSite const& B);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, LatticeSite& B);
+
+   friend void CoerceSymmetryListInPlace(LatticeSite& s, QuantumNumbers::SymmetryList const& sl);
+   friend LatticeSite CoerceSymmetryList(LatticeSite const& s, QuantumNumbers::SymmetryList const& sl);
 };
 
 std::ostream& operator<<(std::ostream& out, LatticeSite const& s);
@@ -194,14 +195,6 @@ class SiteOperatorFunction
 			      Function::Parameter const& arg5,
 			      Function::Parameter const& arg6);
 };
-
-inline
-LatticeSite CoerceSL(SymmetryList const& sl, LatticeSite const& s)
-{
-   LatticeSite r(s);
-   r.CoerceSymmetryList(sl);
-   return r;
-}
 
 // This is used by UnitCell and UnitCellMPO
 typedef std::vector<LatticeSite> SiteListType;

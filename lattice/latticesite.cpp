@@ -5,12 +5,6 @@
 #include <boost/variant/get.hpp>
 #include "pstream/variant.h"
 
-void
-CoerceSymmetryList(LatticeSite& site, QuantumNumbers::SymmetryList const& sl)
-{
-   site.CoerceSymmetryList(sl);
-}
-
 std::complex<double>
 LatticeSite::arg(std::string const& a) const
 {
@@ -18,17 +12,6 @@ LatticeSite::arg(std::string const& a) const
    if (I != this->end_arg())
       return I->second;
    return 0.0;
-}
-
-void
-LatticeSite::CoerceSymmetryList(QuantumNumbers::SymmetryList const& sl)
-{
-   using ::CoerceSymmetryList;
-   ptr_type::lock_type Lock(pImpl.lock());
-   for (operator_iterator I = Lock->Operators.begin(); I != Lock->Operators.end(); ++I)
-   {
-      CoerceSymmetryList(I->second, sl);
-   }
 }
 
 LatticeSite::operator_type const&
@@ -177,6 +160,25 @@ PStream::ipstream& operator>>(PStream::ipstream& in, LatticeSite::ImplType& Impl
    in >> Impl.Arguments;
    in >> Impl.Functions;
    return in;
+}
+
+void
+CoerceSymmetryListInPlace(LatticeSite& s, QuantumNumbers::SymmetryList const& sl)
+{
+   using ::CoerceSymmetryListInPlace;
+   LatticeSite::ptr_type::lock_type Lock(s.pImpl.lock());
+   for (auto& x : Lock->Operators)
+   {
+      CoerceSymmetryListInPlace(x, sl);
+   }
+}
+
+LatticeSite
+CoerceSymmetryList(LatticeSite const& s, QuantumNumbers::SymmetryList const& sl)
+{
+   LatticeSite Result(s);
+   CoerceSymmetryListInPlace(Result, sl);
+   return Result;
 }
 
 std::ostream& operator<<(std::ostream& out, LatticeSite const& s)

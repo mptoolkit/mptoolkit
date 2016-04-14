@@ -27,10 +27,10 @@ MakeIdentityFrom(SiteOperator const& x)
 }
 
 inline
-void CoerceSymmetryList(SiteOperator& s, SymmetryList const& sl)
+void CoerceSymmetryListInPlace(SiteOperator& s, SymmetryList const& sl)
 {
-   CoerceSymmetryList(s.Basis_, sl);
-   CoerceSymmetryList(static_cast<IrredTensor<std::complex<double> >&>(s), sl);
+   CoerceSymmetryListInPlace(s.Basis_, sl);
+   CoerceSymmetryListInPlace(static_cast<IrredTensor<std::complex<double> >&>(s), sl);
 }
 
 inline

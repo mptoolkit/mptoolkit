@@ -66,41 +66,41 @@ UnitCell::UnitCell(LatticeSite const& s, LatticeSite const& t, LatticeSite const
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s)
-   : Sites(new SiteListType(1, CoerceSL(sl,s)))
+   : Sites(new SiteListType(1, CoerceSymmetryList(s,sl)))
 {
    this->SetDefaultOperators();
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t)
-   : Sites(new SiteListType(1, CoerceSL(sl, s)))
+   : Sites(new SiteListType(1, CoerceSymmetryList(s, sl)))
 {
    {
       pvalue_lock<SiteListType> Lock(Sites);
-      Lock->push_back(CoerceSL(sl, t));
+      Lock->push_back(CoerceSymmetryList(t, sl));
    }
    this->SetDefaultOperators();
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t, LatticeSite const& u)
-   : Sites(new SiteListType(1, CoerceSL(sl, s)))
+   : Sites(new SiteListType(1, CoerceSymmetryList(s, sl)))
 {
    {
       pvalue_lock<SiteListType> Lock(Sites);
-      Lock->push_back(CoerceSL(sl, t));
-      Lock->push_back(CoerceSL(sl, u));
+      Lock->push_back(CoerceSymmetryList(t, sl));
+      Lock->push_back(CoerceSymmetryList(u, sl));
    }
    this->SetDefaultOperators();
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t, 
 		   LatticeSite const& u, LatticeSite const& v)
-   : Sites(new SiteListType(1, CoerceSL(sl, s)))
+   : Sites(new SiteListType(1, CoerceSymmetryList(s, sl)))
 {
    {
       pvalue_lock<SiteListType> Lock(Sites);
-      Lock->push_back(CoerceSL(sl, t));
-      Lock->push_back(CoerceSL(sl, u));
-      Lock->push_back(CoerceSL(sl, v));
+      Lock->push_back(CoerceSymmetryList(t, sl));
+      Lock->push_back(CoerceSymmetryList(u, sl));
+      Lock->push_back(CoerceSymmetryList(v, sl));
    }
    this->SetDefaultOperators();
 }

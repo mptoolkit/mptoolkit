@@ -140,6 +140,13 @@ CoerceSymmetryList(IrredTensor<T, B1, B2, S> const& t, SymmetryList const& sl)
 }
 
 template <typename T, typename B1, typename B2, typename S>
+void
+CoerceSymmetryListInPlace(IrredTensor<T, B1, B2, S>& t, SymmetryList const& sl)
+{
+   t.CoerceSymmetryList(sl);
+}
+
+template <typename T, typename B1, typename B2, typename S>
 inline
 void IrredTensor<T, B1, B2, S>::debug_check_structure() const
 {

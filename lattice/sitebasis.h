@@ -93,7 +93,7 @@ class SiteBasis
 
    friend PStream::opstream& operator<<(PStream::opstream& out, SiteBasis const& B);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, SiteBasis& B);
-   friend void CoerceSymmetryList(SiteBasis& b, SymmetryList const& sl);
+   friend void CoerceSymmetryListInPlace(SiteBasis& b, SymmetryList const& sl);
    friend SiteBasis adjoint(SiteBasis const& s);
 };
 
@@ -103,9 +103,10 @@ void show_projections(std::ostream& out, SiteBasis const& Basis);
 
 inline
 void
-CoerceSymmetryList(SiteBasis& b, SymmetryList const& sl)
+CoerceSymmetryListInPlace(SiteBasis& b, SymmetryList const& sl)
 {
-   CoerceSymmetryList(b.Basis_, sl);
+   using Tensor::CoerceSymmetryListInPlace;
+   CoerceSymmetryListInPlace(b.Basis_, sl);
 }
 
 inline
