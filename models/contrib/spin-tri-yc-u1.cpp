@@ -90,7 +90,7 @@ int main(int argc, char** argv)
 	 std::cerr << OpDescriptions << '\n';
 	 std::cerr << "only if the lattice could be potentially tripartite (width is a multiple of 3):\n"
 		   << "define sublattice spin operators on 'width*3' unit-cells.\n";
-	    ;
+ 	    ;
          return 1;
       }
 
@@ -104,7 +104,7 @@ int main(int argc, char** argv)
 
       // Add some operators on the unit cell
       UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
-      UnitCellOperator I(Cell, "I");
+      UnitCellOperator I(Cell, "I"), Trans(Cell, "Trans");
 
       for (int i = 0; i < w; ++i)
       {
@@ -114,6 +114,12 @@ int main(int argc, char** argv)
          std::cout << "... " << std::flush;
       }
 
+      Trans = I(0);
+      for (int i = 0; i < w-1; ++i)
+      {
+         Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
+      }
+                              
       // Now we construct the InfiniteLattice,
       InfiniteLattice Lattice(Cell);
 
@@ -190,6 +196,10 @@ int main(int argc, char** argv)
       Lattice["H_J2_flux"] = sum_unit(H2_flux);
       Lattice["H_LongRangeIsing_inter"] = sum_unit(H_inter);
       std::cout << "... " << std::flush;
+
+      // Momentum operators in Y direction
+      Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
+      std::cout << ". " << std::flush;
 
       Lattice.func("THM")(arg("J1") = "cos(theta2)", arg("J2") = "sin(theta2)", arg("theta2") = "atan(alpha)", arg("alpha") = 0.0)
                   = "J1*H_J1 + J2*H_J2";

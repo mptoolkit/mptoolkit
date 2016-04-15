@@ -147,14 +147,14 @@ int main(int argc, char** argv)
       UnitCell Cell = repeat(Site, w);
       UnitCellOperator S(Cell, "S"), StagS(Cell, "StagS");
       UnitCellOperator I(Cell, "I"); // identity operator
-      UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
+      UnitCellOperator Trans(Cell, "Trans");
       UnitCellOperator RyUnit(Cell, "RyUnit");
 
       // Add some operators on the unit-cell
    
       for (int i = 0; i < w; ++i)
       {
-	 S += S[i];                                         // total spin on a leg of cylinder
+	 S += S[i];                    // total spin on a leg of cylinder
          StagS += IntPow(-1,i) * S[i];            
       }
 
@@ -165,12 +165,12 @@ int main(int argc, char** argv)
            Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
        }
 
-      Ref = I(0);
+      /* Ref = I(0);
       for (int i = 0; i < w/2; ++i)
        {
            //R *= 0.5*( 0.25*inner(S[i],S[w-i-1]) + 1 );    // old way of representing R-operator.
            Ref = Ref(0) * Cell.swap_gate_no_sign(i, w-i-1);
-       }
+       } */
           
       // if we could have tripartite symmetry, add operators for the sublattice magnetization
       UnitCellMPO S_A, S_B, S_C;
@@ -273,9 +273,8 @@ int main(int argc, char** argv)
 	 Lattice["S_C"] = sum_unit(S_C, w*3);
       }
 
-      // Momentum operator in Y direction
+      // Momentum operators in Y direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
-
       Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w*w);
 
       // for even size unit cell, add rotation by pi
