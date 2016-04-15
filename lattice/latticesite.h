@@ -132,6 +132,10 @@ class LatticeSite
       eval_function(std::string const& Func, 
 		    Function::ParameterList const& Params) const;
 
+      void check_structure() const;
+
+      void debug_check_structure() const;
+
       struct ImplType
       {
          std::string Description;

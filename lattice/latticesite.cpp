@@ -169,7 +169,7 @@ CoerceSymmetryListInPlace(LatticeSite& s, QuantumNumbers::SymmetryList const& sl
    LatticeSite::ptr_type::lock_type Lock(s.pImpl.lock());
    for (auto& x : Lock->Operators)
    {
-      CoerceSymmetryListInPlace(x, sl);
+      CoerceSymmetryListInPlace(x.second, sl);
    }
 }
 
@@ -212,4 +212,23 @@ Basis1FromSiteList(SiteListType const& s)
       Result.push_back(x.Basis1());
    }
    return Result;
+}
+
+void
+LatticeSite::check_structure() const
+{
+   basis1_type ThisBasis1 = this->operator[]("I").Basis1();
+   for (auto const& x : pImpl->Operators)
+   {
+      CHECK_EQUAL(x.second.Basis1(), ThisBasis1);
+      x.second.check_structure();
+   }
+}
+
+void
+LatticeSite::debug_check_structure() const
+{
+#if !defined(NDEBUG)
+   this->check_structure();
+#endif
 }

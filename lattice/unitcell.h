@@ -240,6 +240,9 @@ class UnitCell
       // to as_operator(OpName, n).Commute()
       LatticeCommute Commute(std::string const& OpName, int n) const;
 
+      void debug_check_structure() const;
+      void check_structure() const;
+
    private:
       // Set the default operators - currently the Identity operator I.
       // Called after Sites is initialized.

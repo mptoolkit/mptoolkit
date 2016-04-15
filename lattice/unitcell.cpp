@@ -40,6 +40,7 @@ UnitCell::UnitCell(LatticeSite const& s, LatticeSite const& t)
       Lock->push_back(t);
    }
    this->SetDefaultOperators();
+   this->check_structure();
 }
 
 UnitCell::UnitCell(LatticeSite const& s, LatticeSite const& t, LatticeSite const& u)
@@ -51,6 +52,7 @@ UnitCell::UnitCell(LatticeSite const& s, LatticeSite const& t, LatticeSite const
       Lock->push_back(u);
    }
    this->SetDefaultOperators();
+   this->check_structure();
 }
 
 UnitCell::UnitCell(LatticeSite const& s, LatticeSite const& t, LatticeSite const& u, LatticeSite const& v)
@@ -63,12 +65,14 @@ UnitCell::UnitCell(LatticeSite const& s, LatticeSite const& t, LatticeSite const
       Lock->push_back(v);
    }
    this->SetDefaultOperators();
+   this->check_structure();
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s)
    : Sites(new SiteListType(1, CoerceSymmetryList(s,sl)))
 {
    this->SetDefaultOperators();
+   this->check_structure();
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t)
@@ -79,6 +83,7 @@ UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite con
       Lock->push_back(CoerceSymmetryList(t, sl));
    }
    this->SetDefaultOperators();
+   this->check_structure();
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t, LatticeSite const& u)
@@ -90,6 +95,7 @@ UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite con
       Lock->push_back(CoerceSymmetryList(u, sl));
    }
    this->SetDefaultOperators();
+   this->check_structure();
 }
 
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t, 
@@ -103,6 +109,7 @@ UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite con
       Lock->push_back(CoerceSymmetryList(v, sl));
    }
    this->SetDefaultOperators();
+   this->check_structure();
 }
 
 UnitCell::UnitCell(int RepeatCount, UnitCell const& l)
@@ -126,6 +133,7 @@ UnitCell::UnitCell(int RepeatCount, UnitCell const& l)
    {
       this->SetDefaultOperators();
    }
+   this->check_structure();
 }
 
 UnitCell::UnitCell(UnitCell const& x1, UnitCell const& x2)
@@ -136,6 +144,7 @@ UnitCell::UnitCell(UnitCell const& x1, UnitCell const& x2)
       Lock->insert(Lock->end(), x2.Sites->begin(), x2.Sites->end());
    }
    this->SetDefaultOperators();
+   this->check_structure();
 }
 
 UnitCell::UnitCell(UnitCell const& x1, UnitCell const& x2, UnitCell const& x3)
@@ -147,6 +156,7 @@ UnitCell::UnitCell(UnitCell const& x1, UnitCell const& x2, UnitCell const& x3)
       Lock->insert(Lock->end(), x3.Sites->begin(), x3.Sites->end());
    }
    this->SetDefaultOperators();
+   this->check_structure();
 }
 
 UnitCell::UnitCell(UnitCell const& x1, UnitCell const& x2, UnitCell const& x3, UnitCell const& x4)
@@ -159,12 +169,14 @@ UnitCell::UnitCell(UnitCell const& x1, UnitCell const& x2, UnitCell const& x3, U
       Lock->insert(Lock->end(), x4.Sites->begin(), x4.Sites->end());
    }
    this->SetDefaultOperators();
+   this->check_structure();
 }
 
 UnitCell::UnitCell(int Size, LatticeSite const& s)
    : Sites(new SiteListType(Size, s))
 {
    this->SetDefaultOperators();
+   this->check_structure();
 }
 
 UnitCell&
@@ -641,6 +653,28 @@ UnitCell::arg(std::string const& a) const
    if (I != this->end_arg())
       return I->second;
    return 0.0;
+}
+
+void
+UnitCell::check_structure() const
+{
+   if (this->empty())
+      return;
+
+   SymmetryList SL = this->operator[](0).GetSymmetryList();
+   for (auto const& x : *Sites)
+   {
+      CHECK_EQUAL(x.GetSymmetryList(), SL)("Sites in the unit cell do not have the same SymmetryList!");
+      x.check_structure();
+   }
+}
+
+void
+UnitCell::debug_check_structure() const
+{
+#if !defined(NDEBUG)
+   this->check_structure();
+#endif
 }
 
 PStream::opstream& operator<<(PStream::opstream& out, UnitCell const& L)
