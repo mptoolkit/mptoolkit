@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 //
 // I prefer the naming 'local basis' over the original 'site basis'.  I intend to eventually
 // add functions with 'site' -> 'local' everywhere and eventually remove the 'site' variants.

@@ -1,5 +1,5 @@
 // -*- C++ -*-
-// Description: spin systems on triangular lattices with YC structure and efficient way of numbering; SU(2)-symmetric.
+// Description: spin systems on triangular lattices XC SU(2)-symmetric.
 // Authors: Ian P. McCulloch and Seyed N. Saadatmand
 // Contact: s.saadatmand@uq.edu.au
 // <obelix> @ /data5/uqssaada/git/mptoolkit/models/contrib/spin-tri-yc-su2.cpp
@@ -11,29 +11,30 @@
 //
 // Example for W=8:
 //
-//  (4)--(12)
-//  /  \ / 
-//(0)--(8)--
-//  \  / \ /
-//   7----15
-//  /  \ / 
-// 3----11--
-//  \  / \ /
-//   6----14
-//  /  \ / 
-// 2----10--
-//  \  / \ /
-//   5----13
-//  /  \ / 
-// 1----9---
-//  \  / \ /
-//   4----12
-//  /  \ / 
-// 0----8---
-//  \  / \ /
-//  (7)--(15)
-//  /  \ / 
+//  (4)-(12)
+//  / \ / 
+//(0)-(8)--
+//  \ / \ /
+//   7---15
+//  / \ / 
+// 3---11--
+//  \ / \ /
+//   6---14
+//  / \ / 
+// 2---10--
+//  \ / \ /
+//   5---13
+//  / \ / 
+// 1---9---
+//  \ / \ /
+//   4---12
+//  / \ / 
+// 0---8---
+//  \ / \ /
+//  (7)-(15)
+//  / \ / 
 //(3)-(11)--
+//
 
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"
@@ -43,15 +44,7 @@
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 
-
 namespace prog_opt = boost::program_options;
-
-
-int IntPow(int x, int p) {
-  if (p == 0) return 1;
-  if (p == 1) return x;
-  return x * IntPow(x, p-1);
-}
 
 int main(int argc, char** argv)
 {
@@ -82,6 +75,7 @@ int main(int argc, char** argv)
 	 ("H_J2",     "next-nearest neighbor spin exchange")
 	 ("Ty"  ,     "Translation in Y direction")
 	 ("TyPi",     "Translation by pi in Y direction (only if w is divisible by 4)")
+	 ("Ry"  ,     "Reflection about the X axis")
 
 	 ;
 
@@ -166,6 +160,18 @@ int main(int argc, char** argv)
 
       // Momentum operator in Y direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
+
+      // Reflection about X axis
+      UnitCellMPO Ry = I(0);
+      for (int i = 0; i < w2/2; ++i)
+      {
+	 Ry = Ry * Cell.swap_gate_no_sign(w2+i, w-i-1);
+	 if (w2-i-1 > i+1)
+	 {
+	    Ry = Ry * Cell.swap_gate_no_sign(i+1, w2-i-1);
+	 }
+      }
+      Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w);
 
       // for even size unit cell, add rotation by pi
       if (w2%2 == 0)
