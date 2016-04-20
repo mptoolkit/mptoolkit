@@ -408,6 +408,23 @@ mask_row(GenericMPO const& Op, int Row)
    return Mask;
 }
 
+GenericMPO coarse_grain_pairs(GenericMPO const& Op)
+{
+   int Size = 2;
+   CHECK(Op.size() % Size == 0);
+   std::vector<OperatorComponent> Result;
+   for (unsigned i = 0; i < Op.size(); i += Size)
+   {
+      OperatorComponent c = local_tensor_prod(Op[i], Op[i+1]);
+      for (int j = 2; j < Size; ++j)
+      {
+	 c = local_tensor_prod(c, Op[j]);
+      }
+      Result.push_back(c);
+   }
+   return GenericMPO(Result.begin(), Result.end());
+}
+
 SimpleOperator make_projector_onto(BasisList const& Basis, std::set<int> const& Onto)
 {
    BasisList ProjectedBasis(Basis.GetSymmetryList());

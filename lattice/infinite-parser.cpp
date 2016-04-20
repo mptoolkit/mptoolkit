@@ -381,6 +381,35 @@ struct push_sum_string_dot
    Function::ArgumentList const& Args;
 };
 
+struct push_coarse_grain
+{
+   push_coarse_grain(InfiniteLattice const& Lattice_,
+		 std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
+      : Lattice(Lattice_), eval(eval_), Args(Args_) {}
+   
+   void operator()(char const* Start, char const* End) const
+   {
+      ElementType Op = eval.top();
+      eval.pop();
+      
+      int Sites = pop_int(eval);
+      int Cells = Sites / Lattice.GetUnitCell().size();
+
+      if (Sites != 2)
+	 throw ParserError::AtRange("coarse_grain() only allows 2-into-1 coarse graining!", Start, End);
+
+      TriangularMPO TOp = boost::get<TriangularMPO>(Op);
+
+      TOp = coarse_grain(TOp);
+
+      eval.push(ElementType(TOp));
+   }
+
+   InfiniteLattice const& Lattice;
+   std::stack<ElementType>& eval;
+   Function::ArgumentList const& Args;
+};
+
 } // namespace ILP;
 
 using namespace ILP;
@@ -518,6 +547,11 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 	    >> expression_string[push_sum_string_dot(self.Lattice, self.eval, self.Args)]
 	    >> ')';
 
+	 coarse_grain_expression = str_p("coarse_grain") 
+	    >> '('
+	    >> (num_cells
+		>> expression >> ')')[push_coarse_grain(self.Lattice, self.eval, self.Args)];
+
 	 function_expression = eps_p(identifier >> '{')
 	    >> identifier[push_function(self.FunctionStack, self.ParameterStack)]
 	    >> parameter_list[eval_function(self.Lattice, 
@@ -558,6 +592,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 	    |   sum_unit_expression
 	    |   sum_kink_expression
 	    |   sum_k_expression
+            |   coarse_grain_expression
 	    |   sum_string_inner_expression
 	    |   sum_string_dot_expression
 	    |   commutator_bracket
@@ -604,7 +639,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 	 sum_unit_expression, sum_kink_expression, sum_k_expression,
 	    identifier, pow_term, commutator_bracket, num_cells, function_expression,
 	 string_expression, prod_unit_expression, prod_unit_r_expression,
-	 sum_string_inner_expression, sum_string_dot_expression;
+	 sum_string_inner_expression, sum_string_dot_expression, coarse_grain_expression;
 
       rule<ScannerT> const& start() const { return expression; }
    };

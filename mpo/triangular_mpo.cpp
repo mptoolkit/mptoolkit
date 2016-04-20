@@ -817,6 +817,12 @@ operator-(TriangularMPO const& x)
 {
    return x * -1.0;
 }
+
+TriangularMPO coarse_grain(TriangularMPO const& x)
+{
+   int RepeatCount = statistics::lcm(2, x.size());
+   return TriangularMPO(coarse_grain_pairs(repeat(x, RepeatCount)).data());
+}
 			 
 // initial operators
 

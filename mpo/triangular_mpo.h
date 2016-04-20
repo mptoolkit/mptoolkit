@@ -230,7 +230,7 @@ TriangularMPO operator-(TriangularMPO const& x, TriangularMPO const& y);
 // unary negation
 TriangularMPO operator-(TriangularMPO const& x);
 
-// does a 2-1 coarse-graining of the operator, which must have an even size
+// does a 2-1 coarse-graining of the operator
 TriangularMPO coarse_grain(TriangularMPO const& x);
 
 // Multiplication of triangular MPO's.  This doesn't depend on the
