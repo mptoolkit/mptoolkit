@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"
@@ -7,6 +7,8 @@
 #include "models/spin-su2.h"
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
+
+// spin-1/2 chain exact energy per site is 1/4 - ln(2)
 
 namespace prog_opt = boost::program_options;
 
