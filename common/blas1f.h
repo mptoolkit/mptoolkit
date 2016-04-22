@@ -1,4 +1,4 @@
-/* -*- C++ -*- $Id$
+/* -*- C++ -*-
   blas1f.h
 
   C++ interface to BLAS level 1
@@ -8,8 +8,8 @@
   Ideas from LAPACK++
 */
 
-#if !defined(BLAS1_h_HG7YRFHUI2RU8934F7Y47YWEHSAU32)
-#define BLAS1_h_HG7YRFHUI2RU8934F7Y47YWEHSAU32
+#if !defined(MPTOOLKIT_COMMON_BLAS1_H)
+#define MPTOOLKIT_COMMON_BLAS1_H
 
 #if defined(HAVE_CONFIG_H)
 #include "config.h"   // to get restrict working

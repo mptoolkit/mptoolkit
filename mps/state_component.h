@@ -31,6 +31,29 @@ typedef IrredTensor<LinearAlgebra::ScalarMatrix<std::complex<double>>,
 		    VectorBasis,
 		    VectorBasis> SimpleVectorOperator;
 
+// typedef for a diagonal, real operator
+typedef IrredTensor
+<
+   LinearAlgebra::DiagonalMatrix<double>
+   , VectorBasis
+   , VectorBasis
+   , Tensor::DiagonalStructure
+   >
+RealDiagonalOperator;
+
+// RealSemiDiagonalOperator is an IrredTensor that is not diagonal
+// in the outer index, but made up of a DiagonalMatrix.  This
+// exists mostly for compatibility with old file formats that
+// might have this type instead of a RealDiagonalOperator
+typedef IrredTensor
+<
+   LinearAlgebra::DiagonalMatrix<double>
+   , VectorBasis
+   , VectorBasis
+   , Tensor::DefaultStructure
+   >
+RealSemiDiagonalOperator;
+
 template <typename T>
 struct BasicStateComponent;
 
@@ -615,6 +638,15 @@ MatrixOperator ExpandBasis2(StateComponent& A);
 // the A-matrix.  Zero matrix elements are excluded.
 MatrixOperator ExpandBasis1Used(StateComponent& A, std::vector<int> const& Used);
 MatrixOperator ExpandBasis2Used(StateComponent& A, std::vector<int> const& Used);
+
+// left-orthogonalizes an MPS
+// basically equivalent to ExpandBasis2() followed by an SVD
+std::pair<RealDiagonalOperator, MatrixOperator>
+OrthogonalizeBasis2(StateComponent& A);
+
+// right-orthogonalizes an MPS
+std::pair<MatrixOperator, RealDiagonalOperator>
+OrthogonalizeBasis1(StateComponent& A);
 
 // experimental ExpandBasis1 variant that returns a SimpleStateComponent
 std::pair<MatrixOperator, SimpleStateComponent>

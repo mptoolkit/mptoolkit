@@ -14,6 +14,13 @@
 // the window), since the MPS doesn't have a canonical form.
 // We can use the Lambda matrices only to get fixed points in the semi-infinite
 // strip.
+//
+// The window is stored as a WavefunctionSectionLeft.  This is derived from CanonicalWavefunctionBase,
+// and therefore is in the form
+//         |                     |
+// -lambda-A-lambda- ... -lambda-A-lambda-
+// with diagonal Lambda matrices on both boundaries.  Beyond these boundaries, there is necessarily
+// a unitary matrix to connect this to the basis of the semi-infinite strips.
 
 #if !defined(MPTOOLKIT_WAVFUNCTION_IBC_H)
 #define MPTOOLKIT_WAVFUNCTION_IBC_H
@@ -22,6 +29,8 @@
 #include "infinitewavefunctionright.h"
 #include "canonicalwavefunction.h"
 
+// Note that Basis1(), Basis2() refer to the basis of the edge lambda matrices, NOT the LeftU.Basis1()
+// and RightU.Basis2() !
 class WavefunctionSectionLeft : public CanonicalWavefunctionBase
 {
    public:
@@ -31,11 +40,31 @@ class WavefunctionSectionLeft : public CanonicalWavefunctionBase
 
       explicit WavefunctionSectionLeft(InfiniteWavefunctionLeft const& Psi);
 
-      // No need to override the base class versions
-      //      void check_structure();
-      //      void debug_check_structure();
+      // Constructs a WavefunctionSectionLeft from a LinearWavefunction that is
+      // in left-orthogonal form, with the Lambda matrix at the right-hand edge
+      // (this isn't a proper WavefunctionSectionLeft form until the lambda matrix
+      // is re-incorporated into the MPS)
+      // We overload on rvalues here.
+      // We could also use a CentreWavefunction with no loss of efficiency if we wanted
+      static
+      WavefunctionSectionLeft ConstructFromLeftOrthogonal(LinearWavefunction&& Psi, 
+							  MatrixOperator const& Lambda,
+							  int Verbose = 0);
+
+      static
+      WavefunctionSectionLeft ConstructFromLeftOrthogonal(LinearWavefunction const& Psi, 
+							  MatrixOperator const& Lambda,
+							  int Verbose = 0);
+      void check_structure() const;
+      void debug_check_structure() const;
+
+      MatrixOperator const& LeftU() const { return LeftU_; }
+      MatrixOperator const& RightU() const { return RightU_; }
 
       static PStream::VersionTag VersionT;
+
+   private:
+      MatrixOperator LeftU_, RightU_;
 
       friend void inplace_reflect(WavefunctionSectionLeft& Psi);
       friend void inplace_conj(WavefunctionSectionLeft& Psi);
@@ -48,6 +77,9 @@ class WavefunctionSectionLeft : public CanonicalWavefunctionBase
       friend PStream::opstream& operator<<(PStream::opstream& out, WavefunctionSectionLeft const& Psi);
       friend PStream::ipstream& operator>>(PStream::ipstream& in, WavefunctionSectionLeft& Psi);
 };
+
+std::pair<LinearWavefunction, MatrixOperator>
+get_left_canonical(WavefunctionSectionLeft const& Psi);
 
 void inplace_reflect(WavefunctionSectionLeft& Psi);
 
@@ -123,6 +155,13 @@ void inplace_conj(IBCWavefunction& Psi);
 // Spatial reflection of a wavefunction
 IBCWavefunction reflect(IBCWavefunction const& Psi);
 
-
+inline
+void
+WavefunctionSectionLeft::debug_check_structure() const
+{
+#if !defined(DNDEBUG)
+   this->check_structure();
+#endif
+}
 
 #endif

@@ -1,10 +1,10 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 //
 // LinearWavefunction: main class to represent a linear matrix product wavefunction.
 // 
 
-#if !defined(LINEARWAVEFUNCTION_H_FUIYT49786Y709)
-#define LINEARWAVEFUNCTION_H_FUIYT49786Y709
+#if !defined(MPTOOLKIT_WAVEFUNCTION_LINEARWAVEFUNCTION_H)
+#define MPTOOLKIT_WAVEFUNCTION_LINEARWAVEFUNCTION_H
 
 #include "mps/state_component.h"
 #include "pheap/pvalueptr.h"
@@ -126,16 +126,19 @@ class LinearWavefunction
          return Data.insert(pos, h);
       }
 
-      AttributeList const& Attributes() const { return Attr; }
-      AttributeList& Attributes() { return Attr; }
+      void pop_front()
+      {
+	 Data.pop_front();
+      }
 
-      AttributeList& AttributesMutable() const { return Attr; }
+      void pop_back()
+      {
+	 Data.pop_back();
+      }
 
    private:
       SymmetryList SList;
       container_type Data;
-   //      QuantumNumbers::QuantumNumber LeftShift;
-      mutable AttributeList Attr;
 
    friend PStream::opstream& operator<<(PStream::opstream& out, LinearWavefunction const& psi);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, LinearWavefunction& psi);

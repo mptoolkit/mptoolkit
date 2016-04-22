@@ -59,12 +59,12 @@ void LinearWavefunction::set_back(value_type const& x)
 
 PStream::opstream& operator<<(PStream::opstream& out, LinearWavefunction const& psi)
 {
-   return out << psi.SList << psi.Data << psi.Attr;
+   return out << psi.SList << psi.Data;
 }
 
 PStream::ipstream& operator>>(PStream::ipstream& in, LinearWavefunction& psi)
 {
-   return in >> psi.SList >> psi.Data >> psi.Attr;
+   return in >> psi.SList >> psi.Data;
 }
 
 LinearWavefunction operator*(double a, LinearWavefunction const& x)

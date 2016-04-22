@@ -6,6 +6,7 @@
 #include "tensor/tensorproduct.h"
 #include <boost/tuple/tuple.hpp>
 #include "linearalgebra/matrix_utility.h"
+#include "tensor/tensor_eigen.h"
 
 StateComponent make_vacuum_state(QuantumNumbers::SymmetryList const& S)
 {
@@ -800,6 +801,31 @@ ExpandBasis1_(StateComponent const& A)
 
    MatrixOperator Res = scalar_prod(A, herm(Result));
    return std::make_pair(Res, Result);
+}
+
+std::pair<RealDiagonalOperator, MatrixOperator>
+OrthogonalizeBasis2(StateComponent& A)
+{
+   // TODO: optimize this implementation
+
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   MatrixOperator M = ExpandBasis2(A);
+   SingularValueDecomposition(M, U, D, Vh);
+   A = prod(A, U);
+   return std::make_pair(D, Vh);
+}   
+
+std::pair<MatrixOperator, RealDiagonalOperator>
+OrthogonalizeBasis1(StateComponent& A)
+{
+   // TODO: optimize this implementation
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   MatrixOperator M = ExpandBasis1(A);
+   SingularValueDecomposition(M, U, D, Vh);
+   A = prod(Vh, A);
+   return std::make_pair(U, D);
 }
 
 StateComponent ConstructFromRightBasis(BasisList const& LocalBasis,

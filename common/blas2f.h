@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 
 /*
   blas2f.h
@@ -10,8 +10,8 @@
   Ideas from LAPACK++
 */
 
-#if !defined(BLAS2F_H_FDSHJFDASHJ4378Y9Y7FRH37Y8FWHU43Y798FHUYF4Y78)
-#define BLAS2F_H_FDSHJFDASHJ4378Y9Y7FRH37Y8FWHU43Y798FHUYF4Y78
+#if !defined(MPTOOLKIT_COMMON_BLAS2F_H)
+#define MPTOOLKIT_COMMON_BLAS2F_H
 
 #include "fortran.h"
 #include "restrict.h"

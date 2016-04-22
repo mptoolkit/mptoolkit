@@ -414,7 +414,7 @@ PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunctionLeft c
 std::pair<LinearWavefunction, RealDiagonalOperator>
 get_left_canonical(InfiniteWavefunctionLeft const& Psi)
 {
-   return std::make_pair(LinearWavefunction(Psi.base_begin(), Psi.base_end()), Psi.lambda(Psi.size()));
+   return std::make_pair(LinearWavefunction(Psi.base_begin(), Psi.base_end()), Psi.lambda_r());
 }
 
 boost::tuple<MatrixOperator, RealDiagonalOperator, LinearWavefunction>
