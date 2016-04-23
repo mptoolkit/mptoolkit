@@ -73,6 +73,7 @@ int main(int argc, char** argv)
       OpDescriptions.add_operators()
 	 ("H_J1",     "nearest neighbor spin exchange")
 	 ("H_J2",     "next-nearest neighbor spin exchange")
+	 ("H_Jcell",  "zig-zag cylinder coupling")
 	 ("Ty"  ,     "Translation in Y direction")
 	 ("TyPi",     "Translation by pi in Y direction (only if w is divisible by 4)")
 	 ("Ry"  ,     "Reflection about the X axis")
@@ -149,6 +150,9 @@ int main(int argc, char** argv)
 	 // 60 degree bonds
 	 H2 += inner(S(0)[i+w2], S(2)[(i+1)%w2]);
 	 H2 += inner(S(0)[i+w2], S(2)[i]);
+
+	 H_Jcell += inner(S(0)[i], S(0)[i+w2]);
+	 H_Jcell += inner(S(0)[(i+1)%w2], S(0)[i+w2]);
       }
 
 
