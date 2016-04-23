@@ -121,7 +121,7 @@ int main(int argc, char** argv)
        }
 
       // Construct the Hamiltonian for a single unit-cell,
-      UnitCellMPO H1, H2;
+      UnitCellMPO H1, H2, H_Jcell;
     
       for (int i = 0; i < w2; ++i)
       {
