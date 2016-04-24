@@ -185,11 +185,11 @@ int main(int argc, char** argv)
    //   					  Site["S"], 
    //   					  Site["I"].TransformsAs());
    MPOpComponent H_A, H_B;
-   boost::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
+   std::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
 					     std::complex<double>(-DeltaTau, -DeltaT));
 
    MPOpComponent half_H_A, half_H_B;
-   boost::tie(half_H_A, half_H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
+   std::tie(half_H_A, half_H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
 						       std::complex<double>(-DeltaTau/2.0, -DeltaT/2.0));
 
    //TRACE(H_A)(H_B);
@@ -267,7 +267,7 @@ int main(int argc, char** argv)
       //      if (iter == 2000)
       {
 	 DeltaTau *= 1.0 - 1e-4;
-	 boost::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
+	 std::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
 						   std::complex<double>(-DeltaTau, -DeltaT));
       }
 
@@ -286,7 +286,7 @@ int main(int argc, char** argv)
       {
 	 // to a half-step, to simulate 2nd order S-T decomposition
 	 MPOpComponent H_Ax, H_Bx;
-	 boost::tie(H_Ax, H_Bx) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
+	 std::tie(H_Ax, H_Bx) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
 						   std::complex<double>(-DeltaTau*0.5/(1.0-1e-4), 0));
 	 SInfo.MaxStates = 100;
 	 MPStateComponent Ax = A, Bx = B;
@@ -311,14 +311,14 @@ int main(int argc, char** argv)
 #if 0
 	 if ()
 	 {
-	    boost::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
+	    std::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
 						      std::complex<double>(0.0, 0.0));
 	 }
 	 else
 	 {
 	    //	    DeltaTau *= 0.5;
 	    // TRACE("Reducing DeltaTau")(DeltaTau);
-	    boost::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
+	    std::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
 						      std::complex<double>(-DeltaTau, -DeltaT));
 	 }
 #endif

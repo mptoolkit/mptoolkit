@@ -3,7 +3,7 @@
 #include <stack>
 #include <list>
 #include "common/trace.h"
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 // run_length_compressed<T>::const_iterator
 
@@ -1091,7 +1091,7 @@ struct DoSplit
       --I;
       value_type ResultL(a.begin(), I);
       value_type Temp, ResultR;
-      boost::tie(Temp, ResultR) = split(*I, Loc - CurrentLoc + I->size());
+      std::tie(Temp, ResultR) = split(*I, Loc - CurrentLoc + I->size());
       ResultL.push_back(Temp);
       ResultR.append(++I, a.end());
       DEBUG_CHECK_EQUAL(ResultL.size(), Loc);
@@ -1117,13 +1117,13 @@ split(run_length_compressed<T> const& x, int Loc)
 }
 
 template <typename T>
-boost::tuple<run_length_compressed<T>, T, run_length_compressed<T> >
+std::tuple<run_length_compressed<T>, T, run_length_compressed<T> >
 split_lcr(run_length_compressed<T> const& x, int Loc)
 {
    CHECK(Loc >= 0 && Loc < x.size())(Loc);
    std::pair<run_length_compressed<T>, run_length_compressed<T> > l_cr = split(x, Loc);
    std::pair<run_length_compressed<T>, run_length_compressed<T> > cr = split(l_cr.second, 1);
-   return boost::make_tuple(l_cr.first, cr.first.front(), cr.second);
+   return std::make_tuple(l_cr.first, cr.first.front(), cr.second);
 }
 
 #if defined(USE_PSTREAM)

@@ -401,7 +401,7 @@ MPOpCompressed CreateMPOpCompressed(Lattice const& L, std::string const& Operato
 {
    Lattice::data_type Left, Right;
    SiteBlock s;
-   boost::tie(Left, s, Right) = split_lcr(L.data(), Site);
+   std::tie(Left, s, Right) = split_lcr(L.data(), Site);
    SiteOperator SiteOp = s[Operator];
    CHECK(SiteOp.Commute() != LatticeCommute::None);
 

@@ -344,7 +344,7 @@ int main(int argc, char** argv)
       TriangularMPO Op;
 
       InfiniteLattice Lattice;
-      boost::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(OpStr);
+      std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(OpStr);
 
       if (Print)
       {
@@ -360,7 +360,7 @@ int main(int argc, char** argv)
       // TODO: actually this is left-orthogonal.  Which might be OK?
       RealDiagonalOperator D;
       LinearWavefunction Phi;
-      boost::tie(Phi, D) = get_left_canonical(Psi);
+      std::tie(Phi, D) = get_left_canonical(Psi);
 
       MatrixOperator Rho = D;
       Rho = scalar_prod(Rho, herm(Rho));

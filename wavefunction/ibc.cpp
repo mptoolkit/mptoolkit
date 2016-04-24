@@ -120,6 +120,8 @@ WavefunctionSectionLeft::ConstructFromLeftOrthogonal(LinearWavefunction&& Psi,
 
    if (Verbose > 0)
       std::cout << "Finished constructing canonical wavefunction." << std::endl;
+
+   return Result;
 }
 
 std::pair<LinearWavefunction, MatrixOperator>

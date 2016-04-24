@@ -69,7 +69,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 #if defined(SSC)
    MatrixOperator Lambda;
    SimpleStateComponent CX;
-   boost::tie(Lambda, CX) = ExpandBasis1_(C);
+   std::tie(Lambda, CX) = ExpandBasis1_(C);
 #else
    MatrixOperator Lambda = ExpandBasis1(C);
 #endif
@@ -260,7 +260,8 @@ IBC_DMRG::IBC_DMRG(LinearWavefunction const& Psi_, MatrixOperator const& LambdaR
 		   int Verbose_)
    : Hamiltonian(Hamiltonian_), 
      Psi(Psi_), 
-     Verbose(Verbose_)
+     Verbose(Verbose_), 
+     SweepNumber(1)
 {
    FirstSite = Psi.begin();
    LastSite = Psi.end();
@@ -301,7 +302,7 @@ IBC_DMRG::TruncateAndShiftLeft(StatesInfo const& States)
    // Truncate right
    MatrixOperator U;
    RealDiagonalOperator Lambda;
-   boost::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, RightHamiltonian.front(), MixingInfo, States, Info,
+   std::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, RightHamiltonian.front(), MixingInfo, States, Info,
 						LeftHamiltonian.back());
 
    if (Verbose > 1)
@@ -340,7 +341,7 @@ IBC_DMRG::TruncateAndShiftRight(StatesInfo const& States)
    // Truncate right
    RealDiagonalOperator Lambda;
    MatrixOperator U;
-   boost::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
+   std::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
 						RightHamiltonian.front());
    if (Verbose > 1)
    {
@@ -565,7 +566,7 @@ int main(int argc, char** argv)
       else 
 	 Wavefunction.Attributes()["Hamiltonian"] = HamStr;
 
-      boost::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
+      std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
       int const UnitCellSize = Lattice.GetUnitCell().size();
       if (WavefuncUnitCellSize == 0)
 	 WavefuncUnitCellSize = UnitCellSize;
@@ -588,7 +589,8 @@ int main(int argc, char** argv)
       }
       std::cout << MyStates << '\n';
 
-      std::complex<double> InitialEnergy = 0.0;
+      TriangularMPO LeftHamMPO = HamMPO;
+      TriangularMPO RightHamMPO = HamMPO;
 
       // replicate the HamMPO until it has the same size as the unit cell
       HamMPO = repeat(HamMPO, Psi.window_size() / HamMPO.size());
@@ -611,12 +613,12 @@ int main(int argc, char** argv)
       // Get the fixed point Hamiltonian matrix elements
       std::cout << "Solving fixed-point Hamiltonian..." << std::endl;
       StateComponent BlockHamL = Initial_E(HamMPO, Psi.Left.Basis2());
-      std::complex<double> LeftEnergy = SolveSimpleMPO_Left(BlockHamL, Psi.Left, HamMPO, 
+      std::complex<double> LeftEnergy = SolveSimpleMPO_Left(BlockHamL, Psi.Left, LeftHamMPO, 
 							    GMRESTol, Verbose);
-      std::cout << "Starting energy (left eigenvalue) = " << InitialEnergy << std::endl;
+      std::cout << "Starting energy (left eigenvalue) = " << LeftEnergy << std::endl;
 
       StateComponent BlockHamR = Initial_F(HamMPO, Psi.Right.Basis1());
-      std::complex<double> RightEnergy = SolveSimpleMPO_Right(BlockHamR, Psi.Right, HamMPO, 
+      std::complex<double> RightEnergy = SolveSimpleMPO_Right(BlockHamR, Psi.Right, RightHamMPO, 
 							      GMRESTol, Verbose);
       std::cout << "Starting energy (right eigenvalue) = " << RightEnergy << std::endl;
 

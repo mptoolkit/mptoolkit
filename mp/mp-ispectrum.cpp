@@ -643,7 +643,7 @@ int main(int argc, char** argv)
       QuantumNumber QShift = InfPsi.qshift();
 
       RealDiagonalOperator D;
-      boost::tie(Psi, D) = get_left_canonical(InfPsi);
+      std::tie(Psi, D) = get_left_canonical(InfPsi);
 
       if (Symmetric)
       {
@@ -663,7 +663,7 @@ int main(int argc, char** argv)
 
 	 if (Verbose)
 	    std::cout << "Solving principal eigenpair...\n";
-	 boost::tie(LeftIdent, RightIdent) = get_principal_eigenpair(Psi, QShift, Tol, Verbose,
+	 std::tie(LeftIdent, RightIdent) = get_principal_eigenpair(Psi, QShift, Tol, Verbose,
 								     R, R);
       }
       else
@@ -675,7 +675,7 @@ int main(int argc, char** argv)
 	 RightIdent = D;
 	 RightIdent = scalar_prod(RightIdent, herm(RightIdent));
 
-	 boost::tie(LeftIdent, RightIdent) = get_principal_eigenpair(Psi, QShift, Tol, Verbose,
+	 std::tie(LeftIdent, RightIdent) = get_principal_eigenpair(Psi, QShift, Tol, Verbose,
 								     LeftIdent, RightIdent);
       }
 
@@ -686,7 +686,7 @@ int main(int argc, char** argv)
       if (vm.count("string"))
       {
 	 InfiniteLattice Lattice;
-	 boost::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(String);
+	 std::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(String);
 	 if (Print)
 	 {
 	    std::cout << "String MPO is:\n" << StringOp << '\n';

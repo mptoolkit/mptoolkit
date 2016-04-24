@@ -244,7 +244,7 @@ int main(int argc, char** argv)
       if (vm.count("string"))
       {
 	 InfiniteLattice Lattice;
-	 boost::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(String);
+	 std::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(String);
 	 if (Print)
 	 {
 	    std::cout << "String MPO is:\n" << StringOp << '\n';

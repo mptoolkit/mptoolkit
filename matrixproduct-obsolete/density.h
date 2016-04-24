@@ -5,7 +5,7 @@
 
 #include "mps/state_component.h"
 #include "linearalgebra/diagonalmatrix.h"
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 #include <set>
 #include <list>
 
@@ -293,7 +293,7 @@ class SingularDecomposition<MPStateComponent, MatrixOperator> : public SingularD
 #if 0
       // constructs the U, V^\dagger matrices
       template <typename FwdIter>
-      boost::tuple<left_type, diagonal_type, right_type> ConstructTruncator(FwdIter First, FwdIter Last) const;
+      std::tuple<left_type, diagonal_type, right_type> ConstructTruncator(FwdIter First, FwdIter Last) const;
 #endif
 
    private:

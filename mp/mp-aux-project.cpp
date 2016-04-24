@@ -213,7 +213,7 @@ int main(int argc, char** argv)
       // orthogonalize the wavefunction
       LinearWavefunction Psi1;
       RealDiagonalOperator D;
-      boost::tie(Psi1, D) = get_left_canonical(Psi);
+      std::tie(Psi1, D) = get_left_canonical(Psi);
       MatrixOperator Rho = D;
       Rho = scalar_prod(Rho, herm(Rho));
       MatrixOperator Identity = MatrixOperator::make_identity(Psi1.Basis1());

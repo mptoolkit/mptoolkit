@@ -217,14 +217,14 @@ int main(int argc, char** argv)
       Phi = prod(prod(LambdaInvSqrt, Phi), LambdaSqrt);
 
       OperatorComponent MARaw, MBRaw;
-      boost::tie(MARaw, MBRaw) = decompose_tensor_prod(Exponentiate(H * std::complex<double>(0.0, Timestep)), B1, B2);
+      std::tie(MARaw, MBRaw) = decompose_tensor_prod(Exponentiate(H * std::complex<double>(0.0, Timestep)), B1, B2);
       OperatorComponent MA = aux_tensor_prod(MARaw, MBRaw);
       OperatorComponent MB = aux_tensor_prod(MBRaw, MARaw);
       OperatorComponent MATransverse = exchange(MA);
       OperatorComponent MBTransverse = exchange(MB);
 
       OperatorComponent MAHermRaw, MBHermRaw;
-      boost::tie(MAHermRaw, MBHermRaw) = decompose_tensor_prod(Exponentiate(H * std::complex<double>(0.0, -Timestep)), B1, B2);
+      std::tie(MAHermRaw, MBHermRaw) = decompose_tensor_prod(Exponentiate(H * std::complex<double>(0.0, -Timestep)), B1, B2);
       OperatorComponent MAHerm = aux_tensor_prod(MAHermRaw, MBHermRaw);
       OperatorComponent MBHerm = aux_tensor_prod(MBHermRaw, MAHermRaw);
       OperatorComponent MAHermTransverse = exchange(MAHerm);
@@ -233,14 +233,14 @@ int main(int argc, char** argv)
 
 #if defined(SECOND_ORDER_ST)
       OperatorComponent MARawHalf, MBRawHalf;
-      boost::tie(MARawHalf, MBRawHalf) = decompose_tensor_prod(Exponentiate(H * std::complex<double>(0.0, 0.5*Timestep)), B1, B2);
+      std::tie(MARawHalf, MBRawHalf) = decompose_tensor_prod(Exponentiate(H * std::complex<double>(0.0, 0.5*Timestep)), B1, B2);
       OperatorComponent MAHalf = aux_tensor_prod(MARawHalf, MBRawHalf);
       OperatorComponent MBHalf = aux_tensor_prod(MBRawHalf, MARawHalf);
       OperatorComponent MATransverseHalf = exchange(MAHalf);
       OperatorComponent MBTransverseHalf = exchange(MBHalf);
 
       OperatorComponent MAHermRawHalf, MBHermRawHalf;
-      boost::tie(MAHermRawHalf, MBHermRawHalf) = decompose_tensor_prod(Exponentiate(H * std::complex<double>(0.0, -0.5*Timestep)), B1, B2);
+      std::tie(MAHermRawHalf, MBHermRawHalf) = decompose_tensor_prod(Exponentiate(H * std::complex<double>(0.0, -0.5*Timestep)), B1, B2);
       OperatorComponent MAHermHalf = aux_tensor_prod(MAHermRawHalf, MBHermRawHalf);
       OperatorComponent MBHermHalf = aux_tensor_prod(MBHermRawHalf, MAHermRawHalf);
       OperatorComponent MAHermTransverseHalf = exchange(MAHermHalf);

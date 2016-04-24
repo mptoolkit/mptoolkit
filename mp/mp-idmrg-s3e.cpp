@@ -329,7 +329,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 #if defined(SSC)
    MatrixOperator Lambda;
    SimpleStateComponent CX;
-   boost::tie(Lambda, CX) = ExpandBasis1_(C);
+   std::tie(Lambda, CX) = ExpandBasis1_(C);
 #else
    MatrixOperator Lambda = ExpandBasis1(C);
 #endif
@@ -713,7 +713,7 @@ iDMRG::SaveLeftBlock(StatesInfo const& States)
    // C.Basis2() == SaveLeftHamiltonian.Basis()
    CHECK(C == LastSite);
    StateComponent L = *C;
-   boost::tie(SaveLambda2, SaveU2) = SubspaceExpandBasis2(L, *H, LeftHamiltonian.back(),
+   std::tie(SaveLambda2, SaveU2) = SubspaceExpandBasis2(L, *H, LeftHamiltonian.back(),
 							  MixingInfo, States, Info, RightHamiltonian.front());
 
    if (Verbose > 1)
@@ -730,7 +730,7 @@ iDMRG::SaveRightBlock(StatesInfo const& States)
 {
    CHECK(C == FirstSite);
    StateComponent R = *C;
-   boost::tie(SaveU1, SaveLambda1) = SubspaceExpandBasis1(R, *H, RightHamiltonian.front(),
+   std::tie(SaveU1, SaveLambda1) = SubspaceExpandBasis1(R, *H, RightHamiltonian.front(),
 							  MixingInfo, States, Info, LeftHamiltonian.back());
 
    //   TRACE(SaveU1);
@@ -750,7 +750,7 @@ iDMRG::TruncateAndShiftLeft(StatesInfo const& States)
    // Truncate right
    MatrixOperator U;
    RealDiagonalOperator Lambda;
-   boost::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, RightHamiltonian.front(), MixingInfo, States, Info,
+   std::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, RightHamiltonian.front(), MixingInfo, States, Info,
 						LeftHamiltonian.back());
 
    if (Verbose > 1)
@@ -789,7 +789,7 @@ iDMRG::TruncateAndShiftRight(StatesInfo const& States)
    // Truncate right
    RealDiagonalOperator Lambda;
    MatrixOperator U;
-   boost::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
+   std::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
 						RightHamiltonian.front());
    if (Verbose > 1)
    {
@@ -857,7 +857,7 @@ iDMRG::Finish(StatesInfo const& States)
    // This is actually quite important to get a translationally invariant wavefunction
    RealDiagonalOperator Lambda;
    MatrixOperator U;
-   boost::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
+   std::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
 						RightHamiltonian.front());
 
    if (Verbose > 1)
@@ -1067,7 +1067,7 @@ int main(int argc, char** argv)
 
 	 InfiniteWavefunctionLeft StartingWavefunction = Wavefunction.get<InfiniteWavefunctionLeft>();
 	 
-	 boost::tie(Psi, R) = get_left_canonical(StartingWavefunction);
+	 std::tie(Psi, R) = get_left_canonical(StartingWavefunction);
 	 UR = MatrixOperator::make_identity(R.Basis2());
 	 QShift = StartingWavefunction.qshift();
       }
@@ -1089,7 +1089,7 @@ int main(int argc, char** argv)
       else 
 	 Wavefunction.Attributes()["Hamiltonian"] = HamStr;
 
-      boost::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
+      std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
       int const UnitCellSize = Lattice.GetUnitCell().size();
       if (WavefuncUnitCellSize == 0)
 	 WavefuncUnitCellSize = UnitCellSize;
@@ -1162,7 +1162,7 @@ int main(int argc, char** argv)
 
 	 // adjust for periodic basis
 	 StateComponent x = prod(Psi.get_back(), UR);
-	 boost::tie(R, UR);
+	 std::tie(R, UR);
 	 MatrixOperator X = TruncateBasis2(x); // the Basis2 is already 1-dim.  This just orthogonalizes x
 	 MatrixOperator U;
 	 SingularValueDecomposition(X, U, R, UR);
@@ -1285,7 +1285,7 @@ int main(int argc, char** argv)
 	 LinearWavefunction PsiR;
 	 MatrixOperator U;
 	 RealDiagonalOperator D;
-	 boost::tie(U, D, PsiR) = get_right_canonical(Wavefunction.get<InfiniteWavefunctionLeft>());
+	 std::tie(U, D, PsiR) = get_right_canonical(Wavefunction.get<InfiniteWavefunctionLeft>());
 	 
 	 //TRACE(norm_frob(delta_shift(R,QShift)*U - U*D));
 

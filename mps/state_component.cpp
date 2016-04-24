@@ -4,7 +4,7 @@
 #include "quantumnumbers/quantumnumber.h"
 #include "quantumnumbers/u1.h"
 #include "tensor/tensorproduct.h"
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 #include "linearalgebra/matrix_utility.h"
 #include "tensor/tensor_eigen.h"
 
@@ -653,7 +653,7 @@ MatrixOperator ExpandBasis1(StateComponent& A)
    for (std::size_t t = 0; t < FullBasis1.size(); ++t)
    {
       int s, b2;
-      boost::tie(s,b2) = FullBasis1.rmap(t);
+      std::tie(s,b2) = FullBasis1.rmap(t);
 
       int Dim = FullBasis1.dim(t);
       DEBUG_CHECK_EQUAL(Dim, A.Basis2().dim(b2));
@@ -678,7 +678,7 @@ MatrixOperator ExpandBasis2(StateComponent& A)
    for (std::size_t t = 0; t < FullBasis2.size(); ++t)
    {
       int s, b1;
-      boost::tie(b1,s) = FullBasis2.rmap(t);
+      std::tie(b1,s) = FullBasis2.rmap(t);
 
       int Dim = FullBasis2.dim(t);
       DEBUG_CHECK_EQUAL(Dim, A.Basis1().dim(b1));
@@ -717,7 +717,7 @@ MatrixOperator ExpandBasis1Used(StateComponent& A, std::vector<int> const& Used)
    for (std::size_t t = 0; t < FullBasis1.size(); ++t)
    {
       int s, b2;
-      boost::tie(s,b2) = FullBasis1.rmap(t);
+      std::tie(s,b2) = FullBasis1.rmap(t);
       s = UsedBasisElements[s]; // reverse map to the complete local basis
 
       int Dim = FullBasis1.dim(t);
@@ -756,7 +756,7 @@ MatrixOperator ExpandBasis2Used(StateComponent& A, std::vector<int> const& Used)
    for (std::size_t t = 0; t < FullBasis2.size(); ++t)
    {
       int s, b1;
-      boost::tie(b1,s) = FullBasis2.rmap(t);
+      std::tie(b1,s) = FullBasis2.rmap(t);
       s = UsedBasisElements[s];
 
       int Dim = FullBasis2.dim(t);
@@ -786,7 +786,7 @@ ExpandBasis1_(StateComponent const& A)
    for (std::size_t t = 0; t < FullBasis1.size(); ++t)
    {
       int s, b2;
-      boost::tie(s,b2) = FullBasis1.rmap(t);
+      std::tie(s,b2) = FullBasis1.rmap(t);
 
       int Dim = FullBasis1.dim(t);
       DEBUG_CHECK_EQUAL(Dim, A.Basis2().dim(b2));
@@ -836,7 +836,7 @@ StateComponent ConstructFromRightBasis(BasisList const& LocalBasis,
    for (std::size_t t = 0; t < FullBasis1.size(); ++t)
    {
       int s, b2;
-      boost::tie(s,b2) = FullBasis1.rmap(t);
+      std::tie(s,b2) = FullBasis1.rmap(t);
 
       int Dim = FullBasis1.dim(t);
       DEBUG_CHECK_EQUAL(Dim, RightBasis.dim(b2));
@@ -855,7 +855,7 @@ StateComponent ConstructFromLeftBasis(BasisList const& LocalBasis,
    for (std::size_t t = 0; t < FullBasis2.size(); ++t)
    {
       int s, b1;
-      boost::tie(b1,s) = FullBasis2.rmap(t);
+      std::tie(b1,s) = FullBasis2.rmap(t);
 
       int Dim = FullBasis2.dim(t);
       DEBUG_CHECK_EQUAL(Dim, LeftBasis.dim(b1));

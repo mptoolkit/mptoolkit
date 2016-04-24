@@ -6,7 +6,7 @@
 #include "mps/state_component.h"
 #include "truncation.h"
 #include "linearalgebra/diagonalmatrix.h"
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 #include <set>
 #include <list>
 

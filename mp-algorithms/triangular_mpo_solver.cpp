@@ -633,6 +633,7 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
 
    // The component in the direction of the identity is proportional to the energy
    std::complex<double> Energy = inner_prod(Rho, C);
+
    // orthogonalize
    C -= Energy * Ident;
 
@@ -737,9 +738,7 @@ SolveSimpleMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
    LinearWavefunction PsiLinear;
    RealDiagonalOperator Lambda;
    std::tie(PsiLinear, Lambda) = get_left_canonical(Psi);
-
-   MatrixOperator Rho = Lambda;
-   Rho = Rho*Rho;
+   MatrixOperator Rho = Lambda*Lambda;
 
    return SolveSimpleMPO_Left(E, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
 }
@@ -887,10 +886,7 @@ SolveSimpleMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi,
 {
    LinearWavefunction PsiLinear;
    RealDiagonalOperator Lambda;
-   std::tie(PsiLinear, Lambda) = get_right_canonical(Psi);
-
+   std::tie(Lambda, PsiLinear) = get_right_canonical(Psi);
    MatrixOperator Rho = Lambda*Lambda;
-   //   Rho = Rho*Rho;
-
-   return SolveSimpleMPO_Left(F, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
+   return SolveSimpleMPO_Right(F, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
 }

@@ -342,7 +342,7 @@ int main(int argc, char** argv)
 	 else
 	 {
 	    InfiniteLattice Lattice1;
-	    boost::tie(Op1, Lattice1) = ParseUnitCellOperatorAndLattice(Op1Str);
+	    std::tie(Op1, Lattice1) = ParseUnitCellOperatorAndLattice(Op1Str);
 	    Lattice1UnitCellSize = Lattice1.GetUnitCell().size();
 	 }
       }
@@ -358,7 +358,7 @@ int main(int argc, char** argv)
 	 else
 	 {
 	    InfiniteLattice Lattice2;
-	    boost::tie(Op2, Lattice2) = ParseUnitCellOperatorAndLattice(Op2Str);
+	    std::tie(Op2, Lattice2) = ParseUnitCellOperatorAndLattice(Op2Str);
 	    Lattice2UnitCellSize = Lattice2.GetUnitCell().size();
 	 }
       }
@@ -405,7 +405,7 @@ int main(int argc, char** argv)
 	 else
 	 {
 	    InfiniteLattice StringLattice;
-	    boost::tie(StringOp, StringLattice) = ParseProductOperatorAndLattice(StringOpStr);
+	    std::tie(StringOp, StringLattice) = ParseProductOperatorAndLattice(StringOpStr);
 	    LatticeStringUnitCellSize = StringLattice.GetUnitCell().size();
 	 }
 	 StringSize = StringOp.size();

@@ -1,12 +1,11 @@
-// -*- C++ -*- $Id: operator_component.cpp 1597 2015-09-05 20:16:58Z ianmcc $
+// -*- C++ -*-
 
 #include "operator_component.h"
 #include "tensor/tensorproduct.h"
 #include "linearalgebra/eigen.h"
 #include "tensor/regularize.h"
 #include "linearalgebra/matrix_utility.h"
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
+#include <tuple>
 
 #include "common/environment.h"
 
@@ -1593,7 +1592,7 @@ decompose_tensor_prod(SimpleOperator const& Op,
 
    // linearize the tuples (qLeft,Left1,Left2) and (qRight,Right1,Right2) into integers.
    // We also keep the inverse map, so we can quickly convert the integer back into a tuple
-   typedef boost::tuple<QuantumNumbers::QuantumNumber, int, int> PartialProdIndex;
+   typedef std::tuple<QuantumNumbers::QuantumNumber, int, int> PartialProdIndex;
    std::map<PartialProdIndex, int> LeftIndex, RightIndex;
    std::vector<PartialProdIndex> LeftReverse, RightReverse;
    for (PartialProdType::const_iterator I = PartialProd.begin(); I != PartialProd.end(); ++I)
@@ -1647,8 +1646,8 @@ decompose_tensor_prod(SimpleOperator const& Op,
 	 {
 	    if (norm_frob(U(x,k)) > std::numeric_limits<double>::epsilon() * 10)
 	    {
-	       L.project(LeftReverse[x].get<0>())
-		  (LeftReverse[x].get<1>(), LeftReverse[x].get<2>()) = U(x,k) * Coeff;
+	       L.project(std::get<0>(LeftReverse[x]))
+		  (std::get<1>(LeftReverse[x]), std::get<2>(LeftReverse[x])) = U(x,k) * Coeff;
 	    }
 	 }
 	 
@@ -1657,8 +1656,8 @@ decompose_tensor_prod(SimpleOperator const& Op,
 	 {
 	    if (norm_frob(Vh(k,x)) > std::numeric_limits<double>::epsilon() * 10)
 	    {
-	       R.project(RightReverse[x].get<0>())
-		  (RightReverse[x].get<1>(), RightReverse[x].get<2>()) = Vh(k,x) * Coeff;
+	       R.project(std::get<0>(RightReverse[x]))
+		  (std::get<1>(RightReverse[x]), std::get<2>(RightReverse[x])) = Vh(k,x) * Coeff;
 	    }
 	 }
 
@@ -1692,7 +1691,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
    // ComponentIndex is an index to a particular matrix element of the MPO transforming as q,
    // between local indices local1,local2 and auxiliary index aux
    // ComponentIndex(aux, local1, local2, q)
-   typedef boost::tuple<int, int, int, QuantumNumbers::QuantumNumber> ComponentIndex;
+   typedef std::tuple<int, int, int, QuantumNumbers::QuantumNumber> ComponentIndex;
 
    // The full index stores the ComponentIndex for the left and right operators
    typedef std::pair<ComponentIndex, ComponentIndex> FullIndex;
@@ -1751,7 +1750,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 		  if (LinearAlgebra::norm_2(Coeff) > 1E-14)
 		  {
 		     ComponentIndex LeftIndex 
-			= boost::make_tuple(LeftAux1, P->first.Left1, P->first.Left2,
+			= std::make_tuple(LeftAux1, P->first.Left1, P->first.Left2,
 					    P->first.qLeft);
 		     if (LeftMapping[*Qpp].find(LeftIndex) == LeftMapping[*Qpp].end())
 		     {
@@ -1760,7 +1759,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 		     }
 
 		     ComponentIndex RightIndex
-			= boost::make_tuple(RightAux2, P->first.Right1, P->first.Right2,
+			= std::make_tuple(RightAux2, P->first.Right1, P->first.Right2,
 					    P->first.qRight);
 		     if (RightMapping[*Qpp].find(RightIndex) == RightMapping[*Qpp].end())
 		     {
@@ -1864,14 +1863,17 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 	    // where
 	    // LeftRevMapping[Qpp][x] is a ComponentIndex(aux, local1, local2, q)
 
-	    if (!is_transform_target(Qpp, LeftRevMapping[Qpp][x].get<3>(), Op.Basis1()[LeftRevMapping[Qpp][x].get<0>()])
-		|| !is_transform_target(B2.Left()[LeftRevMapping[Qpp][x].get<2>()], 
-					LeftRevMapping[Qpp][x].get<3>(), 
-					B1.Left()[LeftRevMapping[Qpp][x].get<1>()]))
+	    if (!is_transform_target(Qpp, std::get<3>(LeftRevMapping[Qpp][x]), 
+				     Op.Basis1()[std::get<0>(LeftRevMapping[Qpp][x])])
+		|| !is_transform_target(B2.Left()[std::get<2>(LeftRevMapping[Qpp][x])], 
+					std::get<3>(LeftRevMapping[Qpp][x]), 
+					B1.Left()[std::get<1>(LeftRevMapping[Qpp][x])]))
 	    {
 	       TRACE("Ignoring forbidden off-diagonal matrix element")
-		  (U(x,k))(Qpp)(LeftRevMapping[Qpp][x].get<3>())(Op.Basis1()[LeftRevMapping[Qpp][x].get<0>()])
-		  (B2.Left()[LeftRevMapping[Qpp][x].get<2>()])(Qpp)(B1.Left()[LeftRevMapping[Qpp][x].get<1>()]);
+		  (U(x,k))(Qpp)(std::get<3>(LeftRevMapping[Qpp][x]))
+		  (Op.Basis1()[std::get<0>(LeftRevMapping[Qpp][x])])
+		  (B2.Left()[std::get<2>(LeftRevMapping[Qpp][x])])
+		  (Qpp)(B1.Left()[std::get<1>(LeftRevMapping[Qpp][x])]);
 	    }
 	    else if (norm_frob(U(x,k)) > std::numeric_limits<double>::epsilon() * 10)
 	    {
@@ -1910,16 +1912,16 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 	 SingularVectorType LeftVec = LeftSingularVectors[Qpp][i];
 	 for (SingularVectorType::const_iterator I = LeftVec.begin(); I != LeftVec.end(); ++I)
 	 {
-	    project(MA(I->first.get<0>(), b), I->first.get<3>())
-	       (I->first.get<1>(), I->first.get<2>())
+	    project(MA(std::get<0>(I->first), b), std::get<3>(I->first))
+	       (std::get<1>(I->first), std::get<2>(I->first))
 	       = I->second;
 	 }
 
 	 SingularVectorType RightVec = RightSingularVectors[Qpp][i];
 	 for (SingularVectorType::const_iterator I = RightVec.begin(); I != RightVec.end(); ++I)
 	 {
-	    project(MB(b, I->first.get<0>()), I->first.get<3>())
-	       (I->first.get<1>(), I->first.get<2>())
+	    project(MB(b, std::get<0>(I->first)), std::get<3>(I->first))
+	       (std::get<1>(I->first), std::get<2>(I->first))
 	       = I->second;
 	 }
 

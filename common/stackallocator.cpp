@@ -2,7 +2,6 @@
 
 #include "stackallocator.h"
 #include "trace.h"
-#include "bindpair.h"
 #include <utility>
 #include <memory>
 #include <stack>
@@ -95,7 +94,7 @@ void deallocate(void* ptr, size_t Size)
    if (Current == Block)
    {
       FreeBlocks->push(Block);
-      bind_pair(Block, Current) = UsedBlocks->top();
+      std::tie(Block, Current) = UsedBlocks->top();
       UsedBlocks->pop();
    }
 

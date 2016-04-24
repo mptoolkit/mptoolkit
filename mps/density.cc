@@ -36,7 +36,7 @@ MatrixOperator DensityMatrix<MatrixOperator>::ConstructTruncator(FwdIterX Start,
    {
       int q;
       LinearAlgebra::Range LinRange;
-      boost::tie(q, LinRange) = B.Lookup(s);
+      std::tie(q, LinRange) = B.Lookup(s);
 
       // sp is the subspace in NewBasis
       int sp = NewSubspace[q];
@@ -79,12 +79,12 @@ SimpleOperator DensityMatrix<SimpleOperator>::ConstructTruncator(FwdIter Start, 
    for (std::size_t s = 0; s < Transform.Basis2().size(); ++s)
    {
       int q, qi;
-      boost::tie(q, qi) = B.Lookup(s);
+      std::tie(q, qi) = B.Lookup(s);
 
       for (std::size_t sp = 0; sp < NewBasis.size(); ++sp)
       {
 	 int qp, qpi;
-	 boost::tie(qp, qpi) = KeptStates[sp];
+	 std::tie(qp, qpi) = KeptStates[sp];
 	 if (qp == q)
 	    Transform(sp, s) = RawDMList[q](qpi, qi);
       }
@@ -114,12 +114,12 @@ SimpleOperator DensityMatrix<SimpleOperator>::ConstructUnnormalizedTruncator(Fwd
    for (std::size_t s = 0; s < Transform.Basis2().size(); ++s)
    {
       int q, qi;
-      boost::tie(q, qi) = B.Lookup(s);
+      std::tie(q, qi) = B.Lookup(s);
 
       for (std::size_t sp = 0; sp < NewBasis.size(); ++sp)
       {
 	 int qp, qpi;
-	 boost::tie(qp, qpi) = KeptStates[sp];
+	 std::tie(qp, qpi) = KeptStates[sp];
 	 if (qp == q)
 	    Transform(sp, s) = RawDMList[q](qpi, qi) * KeptEigenvalue[sp];
       }

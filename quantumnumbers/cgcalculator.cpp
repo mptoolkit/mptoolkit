@@ -36,7 +36,7 @@ int main()
 	      if (m1+m2==m)
 	      {
 		 rational x, y;
-		 bind_pair(x,y) = ClebschGordanSquared(j1,m1,j2,m2,j,m);
+		 std::tie(x,y) = ClebschGordanSquared(j1,m1,j2,m2,j,m);
 		 rational a = x*x*y;
 		 cout << "\nCG{ " << setw(4) << j1 << " , " << setw(4) << j2 << " , " << setw(4) << j << " }\n"
 		      << "  { " << setw(4) << m1 << " , " << setw(4) << m2 << " , " << setw(4) << m << " } "

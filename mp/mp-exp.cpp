@@ -109,7 +109,7 @@ void TwoSiteScalarApply(MPOpComponent& A, MPOpComponent& B, std::complex<double>
          if (LinearAlgebra::norm_2(U(k,i)) > 1E-10)
          {
             int l,m;
-            boost::tie(l,m) = alpha.rmap(k);
+            std::tie(l,m) = alpha.rmap(k);
 
             A[alpha[k]].data()(l,m)(1,k) = U(k,i) * D[i];
          }
@@ -120,7 +120,7 @@ void TwoSiteScalarApply(MPOpComponent& A, MPOpComponent& B, std::complex<double>
          if (LinearAlgebra::norm_2(Vt(i,k)) > 1E-10)
          {
             int l,m;
-            boost::tie(l,m) = beta.rmap(k);
+            std::tie(l,m) = beta.rmap(k);
 
             B[beta[k]].data()(l,m)(k,1) = Vt(i,k) / std::sqrt(double(degree(B.SiteBasis()[l])));
          }

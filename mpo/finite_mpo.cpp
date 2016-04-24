@@ -575,7 +575,7 @@ FiniteMPO fine_grain(SimpleOperator const& x,
    // And now reverse the decomposition
    FiniteMPO Result(LocalBasis1.size());
    OperatorComponent R1, R2;
-   boost::tie(R1, R2) = decompose_local_tensor_prod(x, TensorProdBasis1.top(), TensorProdBasis2.top());
+   std::tie(R1, R2) = decompose_local_tensor_prod(x, TensorProdBasis1.top(), TensorProdBasis2.top());
    int i = LocalBasis1.size()-1;
    Result[i] = R2;
    --i;
@@ -583,7 +583,7 @@ FiniteMPO fine_grain(SimpleOperator const& x,
    TensorProdBasis2.pop();
    while (!TensorProdBasis1.empty())
    {
-      boost::tie(R1, R2) = decompose_local_tensor_prod(R1, TensorProdBasis1.top(), TensorProdBasis2.top());
+      std::tie(R1, R2) = decompose_local_tensor_prod(R1, TensorProdBasis1.top(), TensorProdBasis2.top());
       Result[i] = R2;
       --i;
       TensorProdBasis1.pop();

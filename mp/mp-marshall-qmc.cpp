@@ -9,7 +9,7 @@
 #include <iostream>
 #include "mp/copyright.h"
 #include "common/environment.h"
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 typedef std::complex<double> complex;
 

@@ -85,7 +85,7 @@ int main(int argc, char** argv)
       TriangularMPO Op;
 
       InfiniteLattice Lattice;
-      boost::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(OpStr);
+      std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(OpStr);
 
       // construct the operator to the given power
       TriangularMPO Temp = Op;

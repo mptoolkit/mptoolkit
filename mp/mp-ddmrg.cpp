@@ -125,7 +125,7 @@ int main(int argc, char** argv)
    pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(argv[5], 655360);
    OperatorList OpList;
    MPOperator H;
-   boost::tie(OpList, H) = ParseLatticeAndOperator(argv[1]);
+   std::tie(OpList, H) = ParseLatticeAndOperator(argv[1]);
    double Frequency = boost::lexical_cast<double>(argv[2]);
    double Energy =  boost::lexical_cast<double>(argv[3]);
    double Broadening = boost::lexical_cast<double>(argv[4]);

@@ -32,7 +32,7 @@
 #include <boost/variant.hpp>
 #include <boost/mpl/if.hpp>
 #include <boost/type_traits.hpp>
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 #include <deque>
 #include <algorithm>
 #include <functional>
@@ -149,7 +149,7 @@ split(run_length_compressed<T> const& x, int Loc);
 // This is currently implemented in terms of split(), but
 // it might be that this is the more useful primitive.
 template <typename T>
-boost::tuple<run_length_compressed<T>, T, run_length_compressed<T> >
+std::tuple<run_length_compressed<T>, T, run_length_compressed<T> >
 split_lcr(run_length_compressed<T> const& x, int Loc);
 
 // Forwards to boost::apply_visitor(v, x.data())

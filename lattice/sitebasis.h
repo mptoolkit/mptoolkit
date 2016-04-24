@@ -21,7 +21,7 @@
 #include <vector>
 #include <string>
 #include <math.h>
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 #include <pheap/pvalueptr.h>
 
 using QuantumNumbers::QuantumNumber;

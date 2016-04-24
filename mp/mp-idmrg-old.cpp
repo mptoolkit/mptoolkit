@@ -147,7 +147,7 @@ int main(int argc, char** argv)
 
       OperatorList OpList;
       MPOperator H;
-      boost::tie(OpList, H) = ParseLatticeAndOperator(HamiltonianStr);
+      std::tie(OpList, H) = ParseLatticeAndOperator(HamiltonianStr);
       Lattice const& Lat = OpList.GetLattice();
 
       // target quantum number

@@ -232,7 +232,7 @@ void TwoSiteExponential(MPOpComponent& A, MPOpComponent& B, std::complex<double>
       for (const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
       {
          int l,m;
-         boost::tie(l,m) = alpha.rmap(J.index1());
+         std::tie(l,m) = alpha.rmap(J.index1());
          QuantumNumber q = alpha[J.index1()];
          SimpleOperator M(A.Basis1(), A.Basis2(), q);
          M(0,J.index2()) = *J * D[J.index2()];
@@ -245,7 +245,7 @@ void TwoSiteExponential(MPOpComponent& A, MPOpComponent& B, std::complex<double>
       for (const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
       {
          int l,m;
-         boost::tie(l,m) = beta.rmap(J.index2());
+         std::tie(l,m) = beta.rmap(J.index2());
          QuantumNumber q = beta[J.index2()];
          SimpleOperator M(B.Basis1(), B.Basis2(), q);
          M(J.index1(),0) = *J / std::sqrt(double(degree(B.SiteBasis()[l])));

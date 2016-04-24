@@ -29,7 +29,7 @@ pref_ptr<T>::pref_ptr(T* Ptr_, pheap::PHeapObject* Obj)
 template <typename T>
 pref_ptr<T>::pref_ptr(pheap::id_type ID)
 {
-   bind_pair(Ptr, Handle) = pheap::GetObject<T>(ID);
+   std::tie(Ptr, Handle) = pheap::GetObject<T>(ID);
    if (Handle) Handle->SetDirty();
 }
 
