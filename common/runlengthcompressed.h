@@ -23,8 +23,8 @@
 // complete size of nested objects.
 //
 
-#if !defined(RUNLENGTHCOMPRESSED_H_HCIUYUIY43765784678FH7O8YHO78YO)
-#define RUNLENGTHCOMPRESSED_H_HCIUYUIY43765784678FH7O8YHO78YO
+#if !defined(MPTOOLKIT_COMMON_RUNLENGTHCOMPRESSED_H)
+#define MPTOOLKIT_COMMON_RUNLENGTHCOMPRESSED_H
 
 #if defined(HAVE_CONFIG_H)  // we should include config.h before boost headers
 #include "config.h"

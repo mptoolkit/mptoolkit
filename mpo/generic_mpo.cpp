@@ -408,19 +408,48 @@ mask_row(GenericMPO const& Op, int Row)
    return Mask;
 }
 
-GenericMPO coarse_grain_pairs(GenericMPO const& Op)
+GenericMPO coarse_grain(GenericMPO const& Op, int N)
 {
-   int Size = 2;
-   CHECK(Op.size() % Size == 0);
+   CHECK(Op.size() % N == 0);
    std::vector<OperatorComponent> Result;
-   for (unsigned i = 0; i < Op.size(); i += Size)
+   for (unsigned i = 0; i < Op.size(); i += N)
    {
       OperatorComponent c = local_tensor_prod(Op[i], Op[i+1]);
-      for (int j = 2; j < Size; ++j)
+      for (int j = 2; j < N; ++j)
       {
 	 c = local_tensor_prod(c, Op[j]);
       }
       Result.push_back(c);
+   }
+   return GenericMPO(Result.begin(), Result.end());
+}
+
+GenericMPO coarse_grain_range(GenericMPO const& Op, int beg, int end)
+{
+   CHECK(0 <= beg && beg <= end && end <= int(Op.size()));
+   // coarse-graining 0 or 1 sites is a no-op
+   if (end-beg < 2)
+      return Op;
+
+   // sites up to beg are unaffected
+   std::vector<OperatorComponent> Result;
+   for (int i = 0; i < beg; ++i)
+   {
+      Result.push_back(Op[i]);
+   }
+
+   // coarse-grain [beg,end)
+   OperatorComponent c = local_tensor_prod(Op[beg], Op[beg+1]);
+   for (int j = beg+2; j < end; ++j)
+   {
+      c = local_tensor_prod(c, Op[j]);
+   }
+   Result.push_back(c);
+
+   // sites [end, Op.size) are unaffected
+   for (int i = end; i < int(Op.size()); ++i)
+   {
+      Result.push_back(Op[i]);
    }
    return GenericMPO(Result.begin(), Result.end());
 }

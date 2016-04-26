@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 
 #include <stack>
 #include <list>
@@ -1050,26 +1050,23 @@ struct DoSplit
          return result_type(value_type(LocCount, x.nested()),
                             value_type( x.size()-LocCount, x.nested()));
       }
+      // else
+      // take the closest integral number of periods and make an array from that
+      // plus the remainder
+      array_type ResultL(repeat_type(LocCount, x.nested()));
+      std::pair<value_type, value_type> JoinPart = x.nested().apply_visitor(DoSplit(LocRem));
+      ResultL.push_back(JoinPart.first);
+      
+      int RemCount = x.size() - LocCount - 1;  // -1 for the part we just split
+      if (RemCount == 0) // if we split the right most part, we have finished
+	 return result_type(ResultL, JoinPart.second);
       else
       {
-         // take the closest integral number of periods and make an array from that
-         // plus the remainder
-         array_type ResultL(repeat_type(LocCount, x.nested()));
-         std::pair<value_type, value_type> JoinPart = x.nested().apply_visitor(DoSplit(LocRem));
-         ResultL.push_back(JoinPart.first);
-
-         int RemCount = x.size() - LocCount - 1;  // -1 for the part we just split
-         if (RemCount == 0) // if we split the right most part, we have finished
-            return result_type(ResultL, JoinPart.second);
-         else
-         {
-            // otherwise add the rest of the array
-            array_type ResultR(JoinPart.second);
-            ResultR.push_back(repeat_type(RemCount, x.nested()));
-            return result_type(ResultL, ResultR);
-         }
+	 // otherwise add the rest of the array
+	 array_type ResultR(JoinPart.second);
+	 ResultR.push_back(repeat_type(RemCount, x.nested()));
+	 return result_type(ResultL, ResultR);
       }
-      PANIC("should never get here");
    }
 
    result_type operator()(array_type const& a) const

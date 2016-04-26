@@ -395,12 +395,13 @@ struct push_coarse_grain
       int Sites = pop_int(eval);
       int Cells = Sites / Lattice.GetUnitCell().size();
 
-      if (Sites != 2)
-	 throw ParserError::AtRange("coarse_grain() only allows 2-into-1 coarse graining!", Start, End);
+      if (Sites <= 0)
+	 throw ParserError::AtRange("coarse_grain: canot coarse-grain to zero or negative size!", 
+				    Start, End);
 
       TriangularMPO TOp = boost::get<TriangularMPO>(Op);
 
-      TOp = coarse_grain(TOp);
+      TOp = coarse_grain(TOp, Sites);
 
       eval.push(ElementType(TOp));
    }

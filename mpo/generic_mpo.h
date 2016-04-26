@@ -112,8 +112,11 @@ MPOMaskType mask_column(GenericMPO const& Op, int Col);
 // Construct a mask that singles out a particular row of the MPO
 MPOMaskType mask_row(GenericMPO const& Op, int Row);
 
-// Does a 2-1 coarse graining of an operator.  The length must be a multiple of 2
-GenericMPO coarse_grain_pairs(GenericMPO const& Op);
+// Does a N-1 coarse graining of an operator.  The length must be a multiple of N
+GenericMPO coarse_grain(GenericMPO const& Op, int N);
+
+// Coarse-grains a section of an MPO into a single site.
+GenericMPO coarse_grain_range(GenericMPO const& Op, int beg, int end);
 
 // constructs the transfer operator as
 // prod_i local_inner_tensor_prod(herm(A.base()[i]), B[i])
