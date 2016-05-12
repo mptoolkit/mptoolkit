@@ -86,7 +86,7 @@ int main(int argc, char** argv)
       std::string BasePathFull = vm["out"].as<std::string>();
       std::cout << "Base filename: " << BasePathFull << '\n';
       std::string BasePath, FileName;
-      boost::tie(BasePath, FileName) = pheap::SplitPathFile(BasePathFull);
+      std::tie(BasePath, FileName) = pheap::SplitPathFile(BasePathFull);
       if (BasePath.empty()) BasePath = "./";
 
       long PageSize = Conf.GetBytes("PageSize", 64*1024);

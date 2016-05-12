@@ -120,6 +120,22 @@ InfiniteWavefunctionRight::Initialize(MatrixOperator const& Lambda,
 
    this->setBasis1(D.Basis1());
    this->setBasis2(U.Basis2());
+
+
+#if !defined(NDEBUG)
+   // check
+   LinearWavefunction PsiCheck(this->base_begin(), this->base_end());
+   MatrixOperator II = MatrixOperator::make_identity(this->Basis2());
+   MatrixOperator ICheck = delta_shift(inject_right(II, PsiCheck), adjoint(QShift));
+   TRACE(norm_frob(II-ICheck))("Identity - should be epsilon");
+
+   MatrixOperator Rho = this->lambda(0)*this->lambda(0);
+   MatrixOperator RhoCheck = inject_left(Rho, PsiCheck);
+   RhoCheck = delta_shift(RhoCheck, QShift);
+   TRACE(norm_frob(Rho-RhoCheck))("Rho - should be epsilon");
+#endif
+
+   this->debug_check_structure();
 }
 
 InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& Psi, 
@@ -200,6 +216,9 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
    U = DiagonalizeHermitian(D);
    D = SqrtDiagonal(D, OrthoTol);
 
+   // normalize
+   D *= 1.0 / norm_frob(D);
+
    DEBUG_CHECK(norm_frob(LeftEigen - triple_prod(herm(U), D*D, U)) < 1e-10)
       (norm_frob(LeftEigen - triple_prod(herm(U), D*D, U)));
 
@@ -253,32 +272,26 @@ PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunctionRight 
    return out;
 }
 
-std::pair<LinearWavefunction, RealDiagonalOperator>
+std::pair<RealDiagonalOperator, LinearWavefunction>
 get_right_canonical(InfiniteWavefunctionRight const& Psi)
 {
-   return std::make_pair(LinearWavefunction(Psi.base_begin(), Psi.base_end()), 
-			 Psi.lambda(Psi.size()));
+   return std::make_pair(Psi.lambda(0), LinearWavefunction(Psi.base_begin(), Psi.base_end()));
 }
 
-boost::tuple<MatrixOperator, RealDiagonalOperator, LinearWavefunction>
+std::tuple<LinearWavefunction, RealDiagonalOperator, MatrixOperator>
 get_left_canonical(InfiniteWavefunctionRight const& Psi)
 {
    LinearWavefunction Result;
-   RealDiagonalOperator D = Psi.lambda_r();
-   MatrixOperator U = MatrixOperator::make_identity(D.Basis1());
-   MatrixOperator Vh;
-   InfiniteWavefunctionRight::const_mps_iterator I = Psi.end();
-   while (I != Psi.begin())
+   RealDiagonalOperator D = Psi.lambda_l();
+   MatrixOperator Vh = MatrixOperator::make_identity(D.Basis2());
+   for (auto const& I : Psi)
    {
-      --I;
-
-      StateComponent A = prod(*I, U*D);
-      MatrixOperator M = ExpandBasis1(A);
-      SingularValueDecomposition(M, U, D, Vh);
-      Result.push_front(prod(Vh, A));
+      StateComponent A = prod(D*Vh, I);
+      std::tie(D,Vh) = OrthogonalizeBasis2(A);
+      Result.push_back(A);
    }
 
-   return boost::make_tuple(U, D, Result);
+   return std::make_tuple(Result, D, Vh);
 }
 
 void

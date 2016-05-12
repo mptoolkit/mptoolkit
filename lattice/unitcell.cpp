@@ -470,7 +470,7 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
 
    // decompose it back into sites   
    OperatorComponent R1, R2;
-   boost::tie(R1, R2) = decompose_local_tensor_prod(Op, Basis_ji, Basis_ij);
+   std::tie(R1, R2) = decompose_local_tensor_prod(Op, Basis_ji, Basis_ij);
 
    // now turn this into a FiniteMPO
    FiniteMPO Result(this->size() * (Cell_j-Cell_i+1));
@@ -561,7 +561,7 @@ UnitCell::swap_gate_no_sign(int Cell_i, int i, int Cell_j, int j) const
 
    // decompose it back into sites   
    OperatorComponent R1, R2;
-   boost::tie(R1, R2) = decompose_local_tensor_prod(Op, Basis_ji, Basis_ij);
+   std::tie(R1, R2) = decompose_local_tensor_prod(Op, Basis_ji, Basis_ij);
 
    // now turn this into a FiniteMPO
    FiniteMPO Result(this->size() * (Cell_j-Cell_i+1));

@@ -127,7 +127,7 @@ void DMRGLoop<SolverType>::Run(std::string const& BasePathFile, ConfList const& 
 
    ShowOutput_ = Conf.Get("ShowOutput", true);
 
-   boost::tie(BasePath_, FileName_) = pheap::SplitPathFile(BasePathFile);
+   std::tie(BasePath_, FileName_) = pheap::SplitPathFile(BasePathFile);
    if (BasePath_.empty()) BasePath_ = "./";
    BinPath_ = Conf.Get("BinPath", std::string("."));
    if (BinPath_[BinPath_.size()-1] != '/') BinPath_ += '/';

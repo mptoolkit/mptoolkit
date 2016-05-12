@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"
@@ -7,6 +7,8 @@
 #include "models/spin-su2.h"
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
+
+// spin-1/2 chain exact energy per site is 1/4 - ln(2)
 
 namespace prog_opt = boost::program_options;
 
@@ -96,7 +98,7 @@ int main(int argc, char** argv)
                   = "exp(-lambda)*sum_string_inner( S(0), exp(-lambda)*I(0), S(0) )";
  
       // Information about the lattice
-      Lattice.set_description("SU(2) Spin chain");
+      Lattice.set_description("SU(2) spin chain");
       Lattice.set_command_line(argc, argv);
       Lattice.set_operator_descriptions(OpDescriptions);
 

@@ -261,7 +261,7 @@ decompose_tensor_prod(SiteOperator const& S, SiteProductBasis const& SPBasis)
                CHECK_EQUAL(alpha[k], A.TransformsAs());
 
             int l,m;
-            boost::tie(l,m) = alpha.rmap(k);
+            std::tie(l,m) = alpha.rmap(k);
             A(l,m) = U(k,i) * D[i];
          }
       }
@@ -277,7 +277,7 @@ decompose_tensor_prod(SiteOperator const& S, SiteProductBasis const& SPBasis)
                CHECK_EQUAL(beta[k], B.TransformsAs());
 
             int l,m;
-            boost::tie(l,m) = beta.rmap(k);
+            std::tie(l,m) = beta.rmap(k);
             B(l,m) = Vt(i,k);
          }
       }

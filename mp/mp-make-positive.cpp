@@ -8,7 +8,7 @@
 #include <iostream>
 #include "mp/copyright.h"
 #include "common/environment.h"
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 #include "linearalgebra/matrixtransform.h"
 
 typedef std::complex<double> complex;
@@ -42,26 +42,26 @@ struct GetNegativePart
    }
 };
 
-boost::tuple<MatrixOperator, MatrixOperator>
+std::tuple<MatrixOperator, MatrixOperator>
 SplitPositiveNegative(MatrixOperator const& M)
 {
    MatrixOperator Pos, Neg;
    typedef MatrixOperator::value_type InnerMat;
    Pos = transform(M, LinearAlgebra::TransformMatrix<InnerMat, GetPositivePart>());
    Neg = transform(M, LinearAlgebra::TransformMatrix<InnerMat, GetNegativePart>());
-   return boost::tie(Pos, Neg);
+   return std::tie(Pos, Neg);
 }
 
-boost::tuple<MPStateComponent, MPStateComponent>
+std::tuple<MPStateComponent, MPStateComponent>
 SplitPositiveNegative(MPStateComponent const& M)
 {
    MPStateComponent Pos=M, Neg=M;
    typedef MatrixOperator::value_type InnerMat;
    for (unsigned i = 0; i < M.size(); ++i)
    {
-      boost::tie(Pos[i], Neg[i]) = SplitPositiveNegative(M[i]);
+      std::tie(Pos[i], Neg[i]) = SplitPositiveNegative(M[i]);
    }
-   return boost::tie(Pos, Neg);
+   return std::tie(Pos, Neg);
 }
 
 void Split(LinearWavefunction& Psi, MatrixOperator& CPos, MatrixOperator& CNeg)
@@ -76,7 +76,7 @@ void Split(LinearWavefunction& Psi, MatrixOperator& CPos, MatrixOperator& CNeg)
       MPStateComponent A = *I;
       SumBasis<VectorBasis> PNew(A.Basis1(), A.Basis1());
       MPStateComponent APos, ANeg;
-      boost::tie(APos, ANeg) = SplitPositiveNegative(A);
+      std::tie(APos, ANeg) = SplitPositiveNegative(A);
       ANeg *= -1.0;
       *I = tensor_col_sum(APos, ANeg, PNew);
       P = PNew;
@@ -87,7 +87,7 @@ void Split(LinearWavefunction& Psi, MatrixOperator& CPos, MatrixOperator& CNeg)
       MPStateComponent A = *I;
       TRACE(norm_frob_sq(A));
       MPStateComponent APos, ANeg;
-      boost::tie(APos, ANeg) = SplitPositiveNegative(A);
+      std::tie(APos, ANeg) = SplitPositiveNegative(A);
       ANeg *= -1.0;
       TRACE(inner_prod(APos, ANeg));
       TRACE(norm_frob_sq(APos))(norm_frob_sq(ANeg));

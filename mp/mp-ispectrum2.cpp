@@ -577,7 +577,7 @@ int main(int argc, char** argv)
 
       // now get the principal eigenpair
       MatrixOperator LeftIdent, RightIdent;
-      boost::tie(LeftIdent, RightIdent) = get_principal_eigenpair(Psi, QShift);
+      std::tie(LeftIdent, RightIdent) = get_principal_eigenpair(Psi, QShift);
       std::complex<double> IdentNormalizationFactor = inner_prod(LeftIdent, RightIdent);
 
       // Assemble the string operator (which may be the identity)

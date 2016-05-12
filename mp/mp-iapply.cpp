@@ -94,7 +94,7 @@ int main(int argc, char** argv)
 
       InfiniteLattice Lattice;
       ProductMPO StringOp;
-      boost::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(OpStr);
+      std::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(OpStr);
       
       if (Psi.size() != StringOp.size())
       {

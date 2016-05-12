@@ -121,7 +121,7 @@ void DMRG::DoIterationRight()
 
    // Truncate into kept and discarded states
    DiagonalProjection UKeep, UDiscard;
-   boost::tie(UKeep, UDiscard) = basis_truncation(U.Basis2(), DM.begin(),
+   std::tie(UKeep, UDiscard) = basis_truncation(U.Basis2(), DM.begin(),
 						  TruncateFixTruncationError(DM.begin(), 
 									     DM.end(),
 									     MinStates,
@@ -140,7 +140,7 @@ void DMRG::DoIterationRight()
    
    // Merge the discarded basis with the expanded environment basis
    DiagonalProjection UComDiscard, UComEnv;
-   boost::tie(UComDiscard, UComEnv) = basis_sum(PsiDiscard.Basis1(), CEnv.Basis1());
+   std::tie(UComDiscard, UComEnv) = basis_sum(PsiDiscard.Basis1(), CEnv.Basis1());
 
    // Merge the discarded wavefunction with the environment, to get the remainder.
    MatrixOperator Rem = herm(UComDiscard)*PsiDiscard*UPsi + herm(UComEnv)*CEnv;
@@ -165,7 +165,7 @@ void DMRG::DoIterationRight()
 
    // Merge the new environment with the kept states, to give the new full basis
    DiagonalProjection NewUKeep, NewUEnv;
-   boost::tie(NewUKeep, NewUEnv) = basis_sum(UKeep.Basis1(), RemTrunc.Basis1());
+   std::tie(NewUKeep, NewUEnv) = basis_sum(UKeep.Basis1(), RemTrunc.Basis1());
 
    // Get the full A matrix and make C and CEnv map from the full basis to the
    // kept and environment states
@@ -238,7 +238,7 @@ void DMRG::ShiftRight()
 
    // extend the right basis to the full basis
    DiagonalProjection UPsi, UEnv;
-   boost::tie(UPsi, UEnv) = basis_sum(Psi.Basis2(), Env.Basis2());
+   std::tie(UPsi, UEnv) = basis_sum(Psi.Basis2(), Env.Basis2());
 
    PsiMatrices.Right() = herm(UPsi)*PsiMatrices.Right();
    Psi = prod(Psi, UPsi);
@@ -269,7 +269,7 @@ void DMRG::ShiftLeft()
 
    // Extend the left basis to the full basis
    DiagonalProjection UPsi, UEnv;
-   boost::tie(UPsi, UEnv) = basis_sum(Psi.Basis2(), Env.Basis2());
+   std::tie(UPsi, UEnv) = basis_sum(Psi.Basis2(), Env.Basis2());
 
    PsiMatrices.Right() = herm(UPsi)*PsiMatrices.Right();
    Psi = prod(Psi, UPsi);
@@ -310,7 +310,7 @@ void DMRG::TruncateLeft(int MinStates, int MaxStates, double MinTrunc, double CF
 
    // Truncate into kept and discarded states
    DiagonalProjection UKeep, UDiscard;
-   boost::tie(UKeep, UDiscard) = basis_truncation(U.Basis2(), DM.begin(),
+   std::tie(UKeep, UDiscard) = basis_truncation(U.Basis2(), DM.begin(),
 						  TruncateFixTruncationError(DM.begin(), 
 									     DM.end(),
 									     MinStates,
@@ -324,7 +324,7 @@ void DMRG::TruncateLeft(int MinStates, int MaxStates, double MinTrunc, double CF
 
    // Merge the discarded basis with the expanded environment basis
    DiagonalProjection UComDiscard, UComEnv;
-   boost::tie(UComDiscard, UComEnv) = basis_sum(PsiDiscard.Basis1(), Env.Basis1());
+   std::tie(UComDiscard, UComEnv) = basis_sum(PsiDiscard.Basis1(), Env.Basis1());
 
    // Merge the discarded wavefunction with the environment, to get the remainder.
    // Transform the right basis to the full basis at the same time

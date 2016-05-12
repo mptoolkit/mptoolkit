@@ -69,7 +69,7 @@ int main(int argc, char** argv)
 	 std::cout << "Finite Operator " << FiniteOperators[i] << '\n';
 	 UnitCellMPO Op;
 	 InfiniteLattice Lattice;
-	 boost::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(FiniteOperators[i]);
+	 std::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(FiniteOperators[i]);
 	 if (CoarseGrain)
 	 {
 	    SimpleOperator S = coarse_grain(Op.MPO()).scalar();
@@ -94,7 +94,7 @@ int main(int argc, char** argv)
 	 std::cout << "Product Operator " << ProductOperators[i] << '\n';
 	 ProductMPO Op;
 	 InfiniteLattice Lattice;
-	 boost::tie(Op, Lattice) = ParseProductOperatorAndLattice(ProductOperators[i]);     
+	 std::tie(Op, Lattice) = ParseProductOperatorAndLattice(ProductOperators[i]);     
 	 //	 if (!NoOptimize)
 	 //	    optimize(Op);
 	 print_structure(Op, std::cout, UnityEpsilon);
@@ -109,7 +109,7 @@ int main(int argc, char** argv)
 	 std::cout << "Triangular Operator " << TriangularOperators[i] << '\n';
 	 TriangularMPO Op;
 	 InfiniteLattice Lattice;
-	 boost::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(TriangularOperators[i]);     
+	 std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(TriangularOperators[i]);     
 	 if (Optimize)
 	    optimize(Op);
 	 print_structure(Op, std::cout, UnityEpsilon);

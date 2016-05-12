@@ -6,7 +6,7 @@
 #include "tensor.h"
 #include "linearalgebra/matrix.h"
 #include "pstream/pstream.h"
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 namespace Tensor
 {
@@ -478,8 +478,8 @@ decompose_tensor_prod(IrredTensor<T, B1, B2, S> const& x,
          QuantumNumber q2 = Basis2[J.index2()];
 
          int Left1, Left2, Right1, Right2;
-         boost::tie(Left1,Right1) = Basis1.rmap(J.index1());
-         boost::tie(Left2,Right2) = Basis2.rmap(J.index2());
+         std::tie(Left1,Right1) = Basis1.rmap(J.index1());
+         std::tie(Left2,Right2) = Basis2.rmap(J.index2());
 
          QuantumNumber qLeft1 = Basis1.Left()[Left1];
          QuantumNumber qRight1 = Basis1.Right()[Right1];

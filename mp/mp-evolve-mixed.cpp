@@ -154,7 +154,7 @@ int main(int argc, char** argv)
       OperatorList Lattice;
       std::vector<MPOperator> Operators;
       Operators.push_back(MPOperator());
-      boost::tie(Lattice, Operators[0]) = ParseLatticeAndOperator(HamString);
+      std::tie(Lattice, Operators[0]) = ParseLatticeAndOperator(HamString);
 
       // Set up the location bond
       if (Location == -1)

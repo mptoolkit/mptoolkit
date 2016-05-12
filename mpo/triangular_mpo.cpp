@@ -817,6 +817,12 @@ operator-(TriangularMPO const& x)
 {
    return x * -1.0;
 }
+
+TriangularMPO coarse_grain(TriangularMPO const& x, int N)
+{
+   int MinSize = statistics::lcm(N, x.size());
+   return TriangularMPO(coarse_grain(repeat(x, MinSize/x.size()).data(), N).data());
+}
 			 
 // initial operators
 

@@ -6,36 +6,12 @@
 #include "mps/state_component.h"
 #include "truncation.h"
 #include "linearalgebra/diagonalmatrix.h"
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 #include <set>
 #include <list>
 
 // sometimes we need a number of states that stands for 'infinite'
 int const DefaultMaxStates = 50000;
-
-// typedef for a diagonal, real operator
-typedef IrredTensor
-<
-   LinearAlgebra::DiagonalMatrix<double>
-   , VectorBasis
-   , VectorBasis
-   , Tensor::DiagonalStructure
-   >
-RealDiagonalOperator;
-
-// RealSemiDiagonalOperator is an IrredTensor that is not diagonal
-// in the outer index, but made up of a DiagonalMatrix.  This
-// exists mostly for compatibility with old file formats that
-// might have this type instead of a RealDiagonalOperator
-typedef IrredTensor
-<
-   LinearAlgebra::DiagonalMatrix<double>
-   , VectorBasis
-   , VectorBasis
-   , Tensor::DefaultStructure
-   >
-RealSemiDiagonalOperator;
-
 
 typedef std::set<QuantumNumbers::QuantumNumber> KeepListType;
 

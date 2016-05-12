@@ -1,9 +1,9 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 
 #include <stack>
 #include <list>
 #include "common/trace.h"
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 // run_length_compressed<T>::const_iterator
 
@@ -1050,26 +1050,23 @@ struct DoSplit
          return result_type(value_type(LocCount, x.nested()),
                             value_type( x.size()-LocCount, x.nested()));
       }
+      // else
+      // take the closest integral number of periods and make an array from that
+      // plus the remainder
+      array_type ResultL(repeat_type(LocCount, x.nested()));
+      std::pair<value_type, value_type> JoinPart = x.nested().apply_visitor(DoSplit(LocRem));
+      ResultL.push_back(JoinPart.first);
+      
+      int RemCount = x.size() - LocCount - 1;  // -1 for the part we just split
+      if (RemCount == 0) // if we split the right most part, we have finished
+	 return result_type(ResultL, JoinPart.second);
       else
       {
-         // take the closest integral number of periods and make an array from that
-         // plus the remainder
-         array_type ResultL(repeat_type(LocCount, x.nested()));
-         std::pair<value_type, value_type> JoinPart = x.nested().apply_visitor(DoSplit(LocRem));
-         ResultL.push_back(JoinPart.first);
-
-         int RemCount = x.size() - LocCount - 1;  // -1 for the part we just split
-         if (RemCount == 0) // if we split the right most part, we have finished
-            return result_type(ResultL, JoinPart.second);
-         else
-         {
-            // otherwise add the rest of the array
-            array_type ResultR(JoinPart.second);
-            ResultR.push_back(repeat_type(RemCount, x.nested()));
-            return result_type(ResultL, ResultR);
-         }
+	 // otherwise add the rest of the array
+	 array_type ResultR(JoinPart.second);
+	 ResultR.push_back(repeat_type(RemCount, x.nested()));
+	 return result_type(ResultL, ResultR);
       }
-      PANIC("should never get here");
    }
 
    result_type operator()(array_type const& a) const
@@ -1091,7 +1088,7 @@ struct DoSplit
       --I;
       value_type ResultL(a.begin(), I);
       value_type Temp, ResultR;
-      boost::tie(Temp, ResultR) = split(*I, Loc - CurrentLoc + I->size());
+      std::tie(Temp, ResultR) = split(*I, Loc - CurrentLoc + I->size());
       ResultL.push_back(Temp);
       ResultR.append(++I, a.end());
       DEBUG_CHECK_EQUAL(ResultL.size(), Loc);
@@ -1117,13 +1114,13 @@ split(run_length_compressed<T> const& x, int Loc)
 }
 
 template <typename T>
-boost::tuple<run_length_compressed<T>, T, run_length_compressed<T> >
+std::tuple<run_length_compressed<T>, T, run_length_compressed<T> >
 split_lcr(run_length_compressed<T> const& x, int Loc)
 {
    CHECK(Loc >= 0 && Loc < x.size())(Loc);
    std::pair<run_length_compressed<T>, run_length_compressed<T> > l_cr = split(x, Loc);
    std::pair<run_length_compressed<T>, run_length_compressed<T> > cr = split(l_cr.second, 1);
-   return boost::make_tuple(l_cr.first, cr.first.front(), cr.second);
+   return std::make_tuple(l_cr.first, cr.first.front(), cr.second);
 }
 
 #if defined(USE_PSTREAM)

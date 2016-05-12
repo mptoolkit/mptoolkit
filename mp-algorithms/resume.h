@@ -23,7 +23,7 @@ int GenericResume(int argc, char** argv, std::string const& ProgName)
    {
       std::string BasePathFull = argv[1];
       std::string BasePath, FileName;
-      boost::tie(BasePath, FileName) = pheap::SplitPathFile(BasePathFull);
+      std::tie(BasePath, FileName) = pheap::SplitPathFile(BasePathFull);
       if (BasePath.empty()) BasePath = "./";
 
       ConfList Conf(BasePath+FileName+".conf");

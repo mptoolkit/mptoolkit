@@ -164,6 +164,22 @@ struct IterateDiagonal<DiagonalMatrix<T>&>
    }
 };
 
+template <typename T>
+typename IterateDiagonal<T>::result_type
+inline
+iterate_diagonal(T const& x)
+{
+   return IterateDiagonal<T>()(x);
+}
+
+template <typename T>
+typename IterateDiagonal<T&>::result_type
+inline
+iterate_diagonal(T& x)
+{
+   return IterateDiagonal<T&>()(x);
+}
+
 // resize
 
 template <typename T>

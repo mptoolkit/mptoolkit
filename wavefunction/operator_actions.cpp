@@ -197,15 +197,11 @@ inject_left_mask(StateComponent const& In,
    GenericMPO::const_iterator OpIter = Op.begin();
    std::vector<std::vector<int> >::const_iterator MaskIter = Mask.begin();
 
-   StateComponent E;
    StateComponent Result(In);
 
    while (OpIter != Op.end())
    {
-      std::swap(E, Result);
-
-      Result = contract_from_left_mask(*OpIter, herm(*I1), E, *I2, *MaskIter, *(MaskIter+1));
-
+      Result = contract_from_left_mask(*OpIter, herm(*I1), Result, *I2, *MaskIter, *(MaskIter+1));
       ++I1; ++I2; ++OpIter; ++MaskIter;
    }
    return Result;

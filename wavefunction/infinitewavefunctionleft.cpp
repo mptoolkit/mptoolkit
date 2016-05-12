@@ -414,10 +414,10 @@ PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunctionLeft c
 std::pair<LinearWavefunction, RealDiagonalOperator>
 get_left_canonical(InfiniteWavefunctionLeft const& Psi)
 {
-   return std::make_pair(LinearWavefunction(Psi.base_begin(), Psi.base_end()), Psi.lambda(Psi.size()));
+   return std::make_pair(LinearWavefunction(Psi.base_begin(), Psi.base_end()), Psi.lambda_r());
 }
 
-boost::tuple<MatrixOperator, RealDiagonalOperator, LinearWavefunction>
+std::tuple<MatrixOperator, RealDiagonalOperator, LinearWavefunction>
 get_right_canonical(InfiniteWavefunctionLeft const& Psi)
 {
    LinearWavefunction Result;
@@ -435,7 +435,7 @@ get_right_canonical(InfiniteWavefunctionLeft const& Psi)
       Result.push_front(prod(Vh, A));
    }
 
-   return boost::make_tuple(U, D, Result);
+   return std::make_tuple(U, D, Result);
 }
 
 void
@@ -571,6 +571,24 @@ void inplace_conj(InfiniteWavefunctionLeft& Psi)
    {
       *I = conj(*I);
    }
+}
+
+void inplace_qshift(InfiniteWavefunctionLeft& Psi, QuantumNumbers::QuantumNumber const& Shift)
+{
+   Psi.setBasis1(delta_shift(Psi.Basis1(), Shift));
+   Psi.setBasis2(delta_shift(Psi.Basis2(), Shift));
+
+   for (InfiniteWavefunctionLeft::mps_iterator I = Psi.begin_(); I != Psi.end_(); ++I)
+   {
+      *I = delta_shift(*I, Shift);
+   }
+
+   for (InfiniteWavefunctionLeft::lambda_iterator I = Psi.lambda_begin_(); I != Psi.lambda_end_(); ++I)
+   {
+      *I = delta_shift(*I, Shift);
+   }
+
+   Psi.check_structure();
 }
 
 InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)

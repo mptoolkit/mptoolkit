@@ -1,4 +1,4 @@
-/* -*- C++ -*- $Id$
+/* -*- C++ -*-
   niftycounter.h
 
   An implementation of the nifty counter used to ensure correct ordering of static data initialization.
@@ -11,8 +11,8 @@
                             You can supply the functors to the constructor, if you want.
 */
 
-#if !defined(NIFTYCOUNTER_H_HDFJKFHD8357YGUIR3746ERUYTY7HERUI)
-#define NIFTYCOUNTER_H_HDFJKFHD8357YGUIR3746ERUYTY7HERUI
+#if !defined(MPTOOLKIT_COMMON_NIFTYCOUNTER_H)
+#define MPTOOLKIT_COMMON_NIFTYCOUNTER_H
 
 namespace NiftyCounter
 {

@@ -1,7 +1,7 @@
 // -*- C++ -*- $Id$
 
 #include "mpopcomponent.h"
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 #include "density.h"
 #include "linearalgebra/eigen.h"
 #include "common/environment.h"
@@ -539,10 +539,10 @@ SimpleOperator ExpandBasis1(MPOpComponent& A, Normalization n)
    for (std::size_t t = 0; t < FullBasis1.size(); ++t)
    {
       int l, b2;
-      boost::tie(l,b2) = FullBasis1.rmap(t);
+      std::tie(l,b2) = FullBasis1.rmap(t);
 
       int sp, s;
-      boost::tie(sp, s) = LocalRMap[l];
+      std::tie(sp, s) = LocalRMap[l];
 
       if (Result[LocalBasis[l]](sp, s).is_null())
       {
@@ -599,10 +599,10 @@ SimpleOperator ExpandBasis2(MPOpComponent& A, Normalization n)
    for (std::size_t t = 0; t < FullBasis2.size(); ++t)
    {
       int l, b1;
-      boost::tie(b1,l) = FullBasis2.rmap(t);
+      std::tie(b1,l) = FullBasis2.rmap(t);
 
       int sp, s;
-      boost::tie(sp, s) = LocalRMap[l];
+      std::tie(sp, s) = LocalRMap[l];
 
       if (Result[LocalBasis[l]](sp, s).is_null())
       {

@@ -22,7 +22,7 @@ BasicMPStateComponent<T>::ConstructFullBasis1(BasisList const& S, VectorBasis co
    for (std::size_t t = 0; t < FullLeftBasis.size(); ++t)
    {
       int s, b2;
-      boost::tie(s,b2) = FullLeftBasis.rmap(t);
+      std::tie(s,b2) = FullLeftBasis.rmap(t);
 
       int Dim = FullLeftBasis.dim(t);
       CHECK_EQUAL(Dim, Basis2.dim(b2));
@@ -47,7 +47,7 @@ BasicMPStateComponent<T>::ConstructFullBasis2(VectorBasis const& Basis1, BasisLi
    for (std::size_t t = 0; t < FullRightBasis.size(); ++t)
    {
       int s, b1;
-      boost::tie(b1,s) = FullRightBasis.rmap(t);
+      std::tie(b1,s) = FullRightBasis.rmap(t);
 
       int Dim = FullRightBasis.dim(t);
       CHECK_EQUAL(Dim, Basis1.dim(b1));

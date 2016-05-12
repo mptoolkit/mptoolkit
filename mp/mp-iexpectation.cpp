@@ -105,7 +105,7 @@ int main(int argc, char** argv)
 
       UnitCellMPO Op;
       InfiniteLattice Lattice;
-      boost::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(OpStr);     
+      std::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(OpStr);     
 
       CHECK(Op.GetSiteList() == Lattice.GetUnitCell().GetSiteList());
 

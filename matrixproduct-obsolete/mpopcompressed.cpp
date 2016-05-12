@@ -212,7 +212,7 @@ DoProd::operator()(MPOpArray const& a, MPOpArray const& b) const
       while (Va.size() < Vb.size())
       {
          MPOpCompressed Temp;
-         boost::tie(Temp, Vb) = split_operator(Vb, Va.size());
+         std::tie(Temp, Vb) = split_operator(Vb, Va.size());
          //TRACE(Va.size())(Temp.size())(Vb.size());
          Result.push_back(do_prod(C, B, Va, Temp));
          ++Ia; Va = *Ia;  // Ia is never singular as the operators are the same overall size
@@ -221,7 +221,7 @@ DoProd::operator()(MPOpArray const& a, MPOpArray const& b) const
       while (Vb.size() < Va.size())
       {
          MPOpCompressed Temp;
-         boost::tie(Temp, Va) = split_operator(Va, Vb.size());
+         std::tie(Temp, Va) = split_operator(Va, Vb.size());
          //TRACE(Va.size())(Temp.size())(Vb.size());
          Result.push_back(do_prod(C, B, Temp, Vb));
          ++Ib; Vb = *Ib;  // Ib is never singular as the operators are the same overall size
@@ -442,7 +442,7 @@ DoSum::operator()(MPOpArray const& a, MPOpArray const& b) const
       while (Va.size() < Vb.size())
       {
          MPOpCompressed Temp;
-         boost::tie(Temp, Vb) = split_operator(Vb, Va.size());
+         std::tie(Temp, Vb) = split_operator(Vb, Va.size());
          Result.push_back(do_sum(C, B, Va, Temp));
          ++Ia; Va = *Ia;  // Ia is never singular as the operators are the same overall size
       }
@@ -450,7 +450,7 @@ DoSum::operator()(MPOpArray const& a, MPOpArray const& b) const
       while (Vb.size() < Va.size())
       {
          MPOpCompressed Temp;
-         boost::tie(Temp, Va) = split_operator(Va, Vb.size());
+         std::tie(Temp, Va) = split_operator(Va, Vb.size());
          Result.push_back(do_sum(C, B, Temp, Vb));
          ++Ib; Vb = *Ib;  // Ib is never singular as the operators are the same overall size
       }

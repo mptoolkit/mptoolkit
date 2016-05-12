@@ -73,6 +73,7 @@ int main(int argc, char** argv)
       OpDescriptions.add_operators()
 	 ("H_J1",     "nearest neighbor spin exchange")
 	 ("H_J2",     "next-nearest neighbor spin exchange")
+	 ("H_Jcell",  "zig-zag cylinder coupling")
 	 ("Ty"  ,     "Translation in Y direction")
 	 ("TyPi",     "Translation by pi in Y direction (only if w is divisible by 4)")
 	 ("Ry"  ,     "Reflection about the X axis")
@@ -120,7 +121,7 @@ int main(int argc, char** argv)
        }
 
       // Construct the Hamiltonian for a single unit-cell,
-      UnitCellMPO H1, H2;
+      UnitCellMPO H1, H2, H_Jcell;
     
       for (int i = 0; i < w2; ++i)
       {
@@ -149,6 +150,9 @@ int main(int argc, char** argv)
 	 // 60 degree bonds
 	 H2 += inner(S(0)[i+w2], S(2)[(i+1)%w2]);
 	 H2 += inner(S(0)[i+w2], S(2)[i]);
+
+	 H_Jcell += inner(S(0)[i], S(0)[i+w2]);
+	 H_Jcell += inner(S(0)[(i+1)%w2], S(0)[i+w2]);
       }
 
 
@@ -157,6 +161,7 @@ int main(int argc, char** argv)
 
       Lattice["H_J1"] = sum_unit(H1);
       Lattice["H_J2"] = sum_unit(H2);
+      Lattice["H_Jcell"] = sum_unit(H_Jcell);
 
       // Momentum operator in Y direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);

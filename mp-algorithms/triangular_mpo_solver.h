@@ -17,13 +17,15 @@
 #define MPTOOLKIT_MP_ALGORITHMS_TRIANGULAR_MPO_SOLVER_H
 
 #include "wavefunction/momentum_operations.h"
+#include "wavefunction/infinitewavefunctionleft.h"
+#include "wavefunction/infinitewavefunctionright.h"
 
 // For identifying an eigenvalue 1 of the transfer matrix, we need
 // an epsilon tolerance.  1E-12 proved to be a bit too small in some
 // cases.
 double const DefaultEigenUnityEpsilon = 1E-12;
 
-// default tolerance for eigensolver and linear solver
+// default tolerance for eigensolver and linear solver.  This is also a bit small in some cases.
 double const DefaultTol = 1E-14;
 
 // Solve an MPO in the left-handed sense, as x_L * Op = lambda * x_L
@@ -55,16 +57,28 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
 	      bool NeedFinalMatrix, double Tol = DefaultTol,
 	      double EigenUnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
 
+//
+// 'Simple' solvers, for first order operators (eg Hamiltonians).  Return value is
+// the eigenvalue per wavefunction unit cell.  The wavefunction must be in the appropriate
+// left or right canonical form.  Prefer the versions that take an InfiniteWavefunctionLeft/Right
+//
 
-// Solve an MPO in the right-handed sense, as Op * x_R = x_R * lambda
-// We currently assume there is only one eigenvalue 1 of the transfer operator.
-// The LeftIdentity and RightIdentity are the right and left eigenmatrices of the 
-// transfer operator in the Basis2 of Psi.
-// If Psi is left-orthogonal then LeftIdentity = I and RightIdentity = Rho
-// if Psi is right-orthogonal then LeftIdentity = rho and RightIdentity = I
-KMatrixPolyType
-SolveMPO_Right(LinearWavefunction const& Psi, QuantumNumber const& QShift,
-	       TriangularMPO const& Op, MatrixOperator const& LeftIdentity,
-	       MatrixOperator const& RightIdentity, int Verbose = 0);
+std::complex<double>
+SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
+		    QuantumNumber const& QShift, TriangularMPO const& Op,
+		    MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
+
+std::complex<double>
+SolveSimpleMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
+		    TriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
+
+std::complex<double>
+SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
+		     QuantumNumber const& QShift, TriangularMPO const& Op,
+		     MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
+
+std::complex<double>
+SolveSimpleMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi,
+		     TriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
 
 #endif

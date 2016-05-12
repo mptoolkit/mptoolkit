@@ -179,10 +179,10 @@ DensityMatrix<MatrixOperator>::DensityMatrix(MatrixOperator const& Op)
       {
          int tp;
          LinearAlgebra::Range rtp;
-         boost::tie(tp, rtp) = B.Lookup(J.index1());
+         std::tie(tp, rtp) = B.Lookup(J.index1());
 	 int t;
 	 LinearAlgebra::Range rt;
-	 boost::tie(t, rt) = B.Lookup(J.index2());
+	 std::tie(t, rt) = B.Lookup(J.index2());
 	 CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal")(B[tp])(B[t])(Op)(B);
 	 RawDMList[tp](rtp, rt) = *J;
       }
@@ -222,10 +222,10 @@ DensityMatrix<MatrixOperator>::DensityMatrix(MatrixOperator const& Op, MatrixOpe
       {
          int tp;
          LinearAlgebra::Range rtp;
-         boost::tie(tp, rtp) = B.Lookup(J.index1());
+         std::tie(tp, rtp) = B.Lookup(J.index1());
 	 int t;
 	 LinearAlgebra::Range rt;
-	 boost::tie(t, rt) = B.Lookup(J.index2());
+	 std::tie(t, rt) = B.Lookup(J.index2());
 	 CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal")(B[tp])(B[t])(Op)(B);
 	 RawDMList[tp](rtp, rt) = *J;
       }
@@ -238,10 +238,10 @@ DensityMatrix<MatrixOperator>::DensityMatrix(MatrixOperator const& Op, MatrixOpe
       {
          int tp;
          LinearAlgebra::Range rtp;
-         boost::tie(tp, rtp) = B.Lookup(J.index1());
+         std::tie(tp, rtp) = B.Lookup(J.index1());
 	 int t;
 	 LinearAlgebra::Range rt;
-	 boost::tie(t, rt) = B.Lookup(J.index2());
+	 std::tie(t, rt) = B.Lookup(J.index2());
 	 CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal")(B[tp])(B[t])(WavefunctionDM)(B);
 	 PsiDMList[tp](rtp, rt) = *J;
       }
@@ -290,9 +290,9 @@ DensityMatrix<SimpleOperator>::DensityMatrix(SimpleOperator const& Op)
       for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
       {
          int tp, rtp;
-         boost::tie(tp, rtp) = B.Lookup(J.index1());
+         std::tie(tp, rtp) = B.Lookup(J.index1());
 	 int t, rt;
-	 boost::tie(t, rt) = B.Lookup(J.index2());
+	 std::tie(t, rt) = B.Lookup(J.index2());
 	 CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal");
  	 RawDMList[tp](rtp, rt) = *J;
       }

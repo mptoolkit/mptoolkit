@@ -745,7 +745,7 @@ int main(int argc, char** argv)
       // Hamiltonian
       TriangularMPO HamMPO;
       InfiniteLattice Lattice;
-      boost::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
+      std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
       int const UnitCellSize = Lattice.GetUnitCell().size();
       if (WavefuncUnitCellSize == 0)
 	 WavefuncUnitCellSize = UnitCellSize;
@@ -925,7 +925,7 @@ int main(int argc, char** argv)
 	 LinearWavefunction PsiR;
 	 MatrixOperator U;
 	 RealDiagonalOperator D;
-	 boost::tie(U, D, PsiR) = get_right_canonical(Psi);
+	 std::tie(U, D, PsiR) = get_right_canonical(Psi);
 	 
 	 MatrixOperator L = D;
 	 PsiR.set_back(prod(PsiR.get_back(), delta_shift(U, adjoint(QShift))));

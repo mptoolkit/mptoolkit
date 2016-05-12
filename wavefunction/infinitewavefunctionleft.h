@@ -11,7 +11,7 @@
 #include "wavefunction/linearwavefunction.h"
 #include "mpo/finite_mpo.h"
 #include "mpo/product_mpo.h"
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 class AttributeList;
 
@@ -96,6 +96,8 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       // Conjugate the wavefunction in-place
       friend void inplace_conj(InfiniteWavefunctionLeft& Psi);
 
+      friend void inplace_qshift(InfiniteWavefunctionLeft& Psi, QuantumNumbers::QuantumNumber const& Shift);
+
       friend InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count);
 
       friend InfiniteWavefunctionLeft wigner_project(InfiniteWavefunctionLeft const& Psi,
@@ -128,7 +130,8 @@ get_left_canonical(InfiniteWavefunctionLeft const& Psi);
 // This function does an SVD on each MPS.
 // Often the caller may want to construct
 // U*D*herm(U), and U*Psi, as being the right canonical wavefunction in the same basis as Psi.
-boost::tuple<MatrixOperator, RealDiagonalOperator, LinearWavefunction>
+// Alternatively, construct Psi*U to keep the lambda matrix D as a diagonal operator.
+std::tuple<MatrixOperator, RealDiagonalOperator, LinearWavefunction>
 get_right_canonical(InfiniteWavefunctionLeft const& Psi);
 
 // function to extract the local basis (as a vector of BasisList) from a wavefunction

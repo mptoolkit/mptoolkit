@@ -162,7 +162,7 @@ int main(int argc, char** argv)
          std::cerr << "Hamiltonian: " << HamStr << std::endl;
       OperatorList OpList;
       MPOperator H;
-      boost::tie(OpList, H) = ParseLatticeAndOperator(HamStr);
+      std::tie(OpList, H) = ParseLatticeAndOperator(HamStr);
 
       LoadAttribute(vm, Psi, "GroundstateEnergy", GroundstateEnergy, Verbose >= 1);
       LoadAttribute(vm, Psi, "Frequency", Frequency, Verbose >= 1);

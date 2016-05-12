@@ -41,8 +41,8 @@ void SingularValueDecomposition(SimpleOperator const& M,
       for (const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
       {
          int si, ni, sj, nj;
-         boost::tie(si, ni) = b1.Lookup(J.index1());
-         boost::tie(sj, nj) = b2.Lookup(J.index2());
+         std::tie(si, ni) = b1.Lookup(J.index1());
+         std::tie(sj, nj) = b2.Lookup(J.index2());
          CHECK_EQUAL(si,sj);
          MatList[si](ni,nj) = *J;
       }

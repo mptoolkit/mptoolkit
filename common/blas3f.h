@@ -1,20 +1,13 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 
 /*
   blas3f.h
 
   C++ interface to BLAS level 3
-
-  Created 2000-09-22 Ian McCulloch
-
-  Not all of these are guaranteed to work, dgemm and zgemm are the only ones currently
-  used by the LinearAlgebra lib.
-
-  2004-06-17: Added zgemm
 */
 
-#if !defined(BLAS3F_H_HFHJ473865HJFRYD345YHFU3478HIU537YERHIU5GY7)
-#define BLAS3F_H_HFHJ473865HJFRYD345YHFU3478HIU537YERHIU5GY7
+#if !defined(MPTOOLKIT_COMMON_BLAS3F_H)
+#define MPTOOLKIT_COMMON_BLAS3F_H
 
 #include "fortran.h"
 #include "restrict.h"

@@ -13,7 +13,7 @@
 #include <common/prog_options.h>
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 namespace prog_opt = boost::program_options;
 
