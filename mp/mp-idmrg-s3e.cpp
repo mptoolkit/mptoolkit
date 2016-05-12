@@ -971,7 +971,7 @@ int main(int argc, char** argv)
 	 ("random,a", prog_opt::bool_switch(&Create),
 	  "Create a new wavefunction starting from a random state")
 	 ("unitcell,u", prog_opt::value(&WavefuncUnitCellSize),
-	  "Only if --bootstrap is specified, the size of the wavefunction unit cell")
+	  "Only if --create is specified, the size of the wavefunction unit cell")
 	 ("startrandom", prog_opt::bool_switch(&DoRandom),
 	  "Start the first iDMRG iteration from a random centre matrix")
 	 ("exactdiag,e", prog_opt::bool_switch(&ExactDiag),
@@ -981,10 +981,8 @@ int main(int argc, char** argv)
 	 ("boundary", prog_opt::value(&BoundaryState),
 	  "use this boundary quantum number for initializing the unit cell "
           "(useful for integer spin chains, can be used multiple times)")
-	 ("bootstrap,b", prog_opt::bool_switch(&NoFixedPoint),
-	  "boostrap iterations by starting from a single unit cell, "
-	  "instead of obtaining the fixed point Hamiltonian "
-	  "('bootstrap' is necessary if the wavefunction is not orthonormal)")
+	 ("create,b", prog_opt::bool_switch(&NoFixedPoint),
+	  "Construct a new wavefunction from a random state or single-cell diagonalization")
 	 ("steps,s", prog_opt::value<int>(&NumSteps),
 	  FormatDefault("Number of DMRG steps to perform", NumSteps).c_str())
 	 ("no-orthogonalize", prog_opt::bool_switch(&NoOrthogonalize),
@@ -1041,6 +1039,9 @@ int main(int argc, char** argv)
 	 TwoSite = !OneSite;
 
       bool StartFromFixedPoint = !NoFixedPoint; // we've reversed the option
+
+      if (!StartFromFixedPoint && !ExactDiag)
+	 Create = true;  // start from random state
 
       // The main MPWavefunction object.  We use this for initialization (if we are starting from
       // an existing wavefunction), and it will be the final wavefunction that we save to disk.

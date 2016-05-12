@@ -98,7 +98,7 @@ int main(int argc, char** argv)
                   = "exp(-lambda)*sum_string_inner( S(0), exp(-lambda)*I(0), S(0) )";
  
       // Information about the lattice
-      Lattice.set_description("SU(2) Spin chain");
+      Lattice.set_description("SU(2) spin chain");
       Lattice.set_command_line(argc, argv);
       Lattice.set_operator_descriptions(OpDescriptions);
 
