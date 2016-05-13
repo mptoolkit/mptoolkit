@@ -14,7 +14,7 @@ std::string StateName(half_int s, bool Symmetric)
 }
 
 inline
-LatticeSite CreateZ2SpinSite(half_int Spin)
+LatticeSite SpinZ2(half_int Spin)
 {
    SymmetryList Symmetry("Z:Z2");
    QuantumNumbers::QNConstructor<QuantumNumbers::Z2> QN(Symmetry);
