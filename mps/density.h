@@ -169,6 +169,8 @@ class DensityMatrixBase
 
       double EvaluateCasimir(int n) const;
 
+      double EvaluateCasimirMoment(int n) const;
+
    protected:
       DensityMatrixBase() {}
 

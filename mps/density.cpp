@@ -153,6 +153,20 @@ DensityMatrixBase::EvaluateCasimir(int n) const
    return x;
 }
 
+double
+DensityMatrixBase::EvaluateCasimirMoment(int n) const
+{
+   double x = 0;
+   double ESum = this->EigenSum();
+   double c = this->EvaluateCasimir(n);
+   for (const_iterator Iter = begin(); Iter != end(); ++Iter)
+   {
+      double xx = casimir(this->Lookup(Iter->Subspace), n);
+      x += (Iter->Eigenvalue / ESum) * Iter->Degree * (xx-c) * (xx-c);
+   }
+   return x;
+}
+
 void DensityMatrixBase::DiagonalizeDMHelper(bool Sort)
 {
    //   double Point1 = ProcControl::GetCPUTime();  // Point1 is between construction & diagonalization

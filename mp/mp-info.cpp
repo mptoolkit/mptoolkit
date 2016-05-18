@@ -121,7 +121,8 @@ void ShowCasimirInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
       if (i != 0)
 	 out << " ";
       std::string Name = "#" + SList.CasimirName(i);
-      out << std::setw(20) << Name;
+      out << std::setw(20) << Name << ' '
+	  << std::setw(20) << std::string(Name+"^2");
    }
    out << '\n';
 
@@ -138,6 +139,7 @@ void ShowCasimirInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
 	 if (i != 0) 
 	    out << ' ';
 	 out << std::setw(20) << DM.EvaluateCasimir(i);
+	 out << std::setw(20) << DM.EvaluateCasimirMoment(i);
       }
       out << '\n';
    }
@@ -247,7 +249,7 @@ int main(int argc, char** argv)
          ("limit,l", prog_opt::value<int>(&MaxEigenvalues), 
           "limit the density matrix display to N eigenvalues (implies -d)")
 	 ("casimir,c", prog_opt::bool_switch(&ShowCasimir), 
-	  "show the values of the casimir invariant operators at each partition")
+	  "show the values of the casimir invariant operators and 2nd moments at each partition")
          ("localbasis,b", prog_opt::bool_switch(&ShowLocalBasis),
           "Show the local basis at each site")
 	 ("base2,2", prog_opt::bool_switch(&Base2), "show the entropy using base 2 instead of base e")
