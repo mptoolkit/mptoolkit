@@ -215,7 +215,7 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-imoments mp-iexpectation mp-wigner-eckart mp-reorder-symmetry \
         mp-ispectrum mp-lattice-info mp-show-operator mp-aux-matrix mp-aux-algebra mp-iapply mp-attr \
         mp-idivide mp-ies mp-irepeat \
-        mp-irotate mp-icorrelation
+        mp-irotate mp-icorrelation mp-fluctuation
 
 experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg
 
@@ -487,6 +487,7 @@ mp-iparity : triangular_operator.o mpoperator.o infinitewavefunctionleft.o rando
 mp-bdmrg : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o packunpack.o
 mp-iexpectation : $(mpoobj) infinitewavefunctionleft.o random_wavefunc.o
 mp-imoments : $(mpoobj) triangular_mpo_solver.o momentum_operations.o infinitewavefunctionleft.o random_wavefunc.o triangular_mpo_solver.o
+mp-fluctuation : $(mpoobj) triangular_mpo_solver.o momentum_operations.o infinitewavefunctionleft.o random_wavefunc.o triangular_mpo_solver.o packunpack.o
 mp-iexpectation-sz : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-iexpectation-sz2 : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-iexcitation : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o
@@ -530,6 +531,8 @@ LIBS_mp-ispectrum2 = $(LIBARPACK)
 LIBS_mp-aux-algebra = $(LIBARPACK)
 
 LIBS_mp-aux-matrix = $(LIBARPACK)
+
+LIBS_mp-fluctuation = $(LIBARPACK)
 
 LIBS_mp-ies = $(LIBARPACK)
 

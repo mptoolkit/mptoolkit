@@ -1,4 +1,4 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
 
 // A simple polynomial class over a templated coefficient field.
 // The domain is not specified in this class, so we don't actually
@@ -9,8 +9,8 @@
 // Addition and subtraction are defined, as addition of the coefficients
 // of each degree.
 
-#if !defined(POLYNOMIAL_H_ASDHASJYH89UY58392U8F9PWEJ)
-#define POLYNOMIAL_H_ASDHASJYH89UY58392U8F9PWEJ
+#if !defined(MPTOOLKIT_COMMON_POLYNOMIAL_H)
+#define MPTOOLKIT_COMMON_POLYNOMIAL_H
 
 #include <map>
 #include <ostream>
