@@ -1,5 +1,5 @@
 // -*- C++ -*-
-//
+//----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
 // models/contrib/spin-kagome-yc-u1.cpp
@@ -11,9 +11,15 @@
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
 // ENDHEADER
 
-// Descriptin: spin systems on kagome lattices with YC structure and efficient way of numbering; U(1)-symmetric. <spin-kagome-yc-u1.cpp>
+// Description: spin systems on kagome lattices with YC structure and efficient way of numbering; 
+// U(1)-symmetric.
 
 // YC configuration of a kagome lattice.
 // The default unit-cell size is '(3/2)*width' value, so the width should be even.

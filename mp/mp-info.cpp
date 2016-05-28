@@ -1,5 +1,5 @@
 // -*- C++ -*-
-//
+//----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
 // mp/mp-info.cpp
@@ -10,6 +10,11 @@
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
 // ENDHEADER
 
 #include "wavefunction/mpwavefunction.h"
@@ -267,6 +272,9 @@ int main(int argc, char** argv)
 	 ("base2,2", prog_opt::bool_switch(&Base2), "show the entropy using base 2 instead of base e")
          ("partition,p", prog_opt::value(&Partition), 
           "show quantities only for this parition (zero-based, can be used more than once; use --partition 0 to show only quantities at the edge of the unit cell")
+	 ("warranty", "show the complete explanation as to why there is NO WARRANTY, to the extent permitted by law")
+	 ("copying", "This program is free software, show the conditions under which it may be copied or modified")
+	 ("citations", "show information about the citations that publications using this software should reference")
          ;
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
@@ -284,6 +292,18 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);    
       
+      if (vm.count("warranty"))
+	 print_warranty(std::cout);
+
+      if (vm.count("copying"))
+	 print_copying(std::cout);
+
+      if (vm.count("citations"))
+	 print_citations(std::cout);
+
+      if (vm.count("warranty") || vm.count("copying") || vm.count("citations"))
+	 return 0;
+
       if (vm.count("help") || vm.count("input-wavefunction") == 0) 
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));

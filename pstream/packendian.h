@@ -1,5 +1,5 @@
 // -*- C++ -*-
-//
+//----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
 // pstream/packendian.h
@@ -10,6 +10,11 @@
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
 // ENDHEADER
 
 #if !defined(PACKENDIAN_H_DSHFIUYT437Y7LIUHYIURH8743Y7H)
