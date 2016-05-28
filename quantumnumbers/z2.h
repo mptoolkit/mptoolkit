@@ -1,4 +1,16 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// quantumnumbers/z2.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 // Quantum numbers for Z_2 multiplicative group
 
 #if !defined(Z2_H_HSDJFH3485789UYHFUIY457UHFUU57YUIY)
@@ -312,4 +324,3 @@ namespace
 } // namespace QuantumNumbers
 
 #endif
-

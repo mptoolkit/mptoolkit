@@ -1,5 +1,18 @@
-/* -*- C++ -*- $Id$
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// pstream/platformconfig.h
+//
+// Copyright (C) 2002-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 
+/*
   Attempts to determine the native data format.
   This is done by preprocessor checks only, no attempt is made at automatic
   detection.
@@ -16,7 +29,7 @@
   1. Devise an identifier that describes the platform
   2. Edit this header file to add preprocessor checks to detect the current platform
      and #define NATIVE_DATA_FORMAT to be the identifier devised in step (1), together
-     with NATIVE_DATA_FORMAT_STR (string version of NATIVE_DATA_FORMAT), and 
+     with NATIVE_DATA_FORMAT_STR (string version of NATIVE_DATA_FORMAT), and
      a symbol IS_DATA_FORMAT_<name> defined to be 1.
   3. Construct platformformat_<name>.h and currentformat_<name>.h
      See platformformats.h and currentformat.h for what these files should contain.

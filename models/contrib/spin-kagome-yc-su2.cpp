@@ -1,4 +1,17 @@
-// -*- C++ -*- $Id: $
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// models/contrib/spin-kagome-yc-su2.cpp
+//
+// Copyright (C) 2015,2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015,2016 Seyed N. Saadatmand <s.saadatmand@uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 // Descriptin: spin systems on kagome lattices with YC structure and efficient way of numbering; SU(2)-symmetric. <spin-kagome-yc-su2.cpp>
 // Authors: Ian P. McCulloch and Seyed N. Saadatmand
 // Contact: s.saadatmand@uq.edu.au
@@ -6,7 +19,7 @@
 // YC configuration of a kagome lattice.
 // The default unit-cell size is '(3/2)*width' value, so the width should be even.
 //
-// Example for a 'width=6' lattice (site numbers in brackets are periodic repeats in 
+// Example for a 'width=6' lattice (site numbers in brackets are periodic repeats in
 // the vertical direction; i.e. top-left (8) is the same site as the bottom-left 5).
 // Sites 9-to-17 are the second unit cell, e.g. 9 is (1)[0].
 //

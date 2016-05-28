@@ -1,5 +1,17 @@
 // -*- C++ -*-
 //
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// wavefunction/finitewavefunction.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
+//
 // FiniteWavefunction: class to represent a finite-size matrix product wavefunction in canonical form.
 //
 // The canonical form chosen is Left canonical.  All A-matrices are stored in left-canonical form.

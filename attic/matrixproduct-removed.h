@@ -1,3 +1,16 @@
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// attic/matrixproduct-removed.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 #if 0
 // FIXME: I don't think these are ever called - prod() unwraps the multiply by scalar itself.
 // The only time we don't want to do that is when the multiply doesn't commute/associate properly.
@@ -154,4 +167,3 @@ assign_scaled_product2(MatrixExpression<Scalar, Derived>& lhs,
 }
 
 #endif
-

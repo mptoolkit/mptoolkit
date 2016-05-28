@@ -1,7 +1,17 @@
-// -*- C++ -*- $Id: spin-tri-yc-u1.cpp 1490 2015-05-19 09:15:06Z ianmcc $
-// Authors: Ian P. McCulloch and Seyed N. Saadatmand
-// Contact: s.saadatmand@uq.edu.au
-// <OBELIX> @ /data5/uqssaada/git/mptoolkit/models/contrib/spin-tri-yc-u1.cpp
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// models/contrib/spin-tri-yc-u1.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015,2016 Seyed N. Saadatmand <s.saadatmand@uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 
 //
 // YC configuration of a triangular lattice.
@@ -57,8 +67,8 @@ int main(int argc, char** argv)
          ("theta,t", prog_opt::value(&theta), "flux phase to twist boundary condition in Y-direction (in unit of PI) [default 0.0]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
-      
-      prog_opt::variables_map vm;        
+
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).style(prog_opt::command_line_style::default_style ^
 					  prog_opt::command_line_style::allow_guessing).
@@ -80,7 +90,7 @@ int main(int argc, char** argv)
          ("HS"                 , "Haldane-Shastry Hamiltonian with Sz*Sz interactions, parametized by 'lambda' (exponential decay as exp(-lambda*r))")
          ("LongRangeIsing_YC4" , "long-range Ising model on a 4-leg YC structure, parametized by 'lambda00', 'lambda01', and 'lambda02'")
          ;
-      
+
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
@@ -119,7 +129,7 @@ int main(int argc, char** argv)
       {
          Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
       }
-                              
+
       // Now we construct the InfiniteLattice,
       InfiniteLattice Lattice(Cell);
 
@@ -135,8 +145,8 @@ int main(int argc, char** argv)
          // --> 60 degree bonds
          Hz1 += Sz(0)[i]*Sz(1)[i];
          Hz1 += Sz(0)[i]*Sz(1)[(i+1)%w];
-         std::cout << ".. " << std::flush;  
- 
+         std::cout << ".. " << std::flush;
+
 	 // THM - nearest neighbor bonds
 
 	 // --> vertical bonds

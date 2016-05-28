@@ -1,5 +1,17 @@
 // -*- C++ -*-
 //
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mps/packunpack.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
+//
 // pack & unpack functions for MatrixOperator.  These convert to/from
 // an inner-product conserving vector representation.
 // Preserving the inner product means we need an SU(2) coefficient.

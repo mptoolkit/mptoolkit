@@ -1,4 +1,16 @@
 // -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// quantumnumbers/dihedral.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 
 // Dihedral 3j, CG and 6j symbols
 // From: P H Butler and M F Reid, J. Phys. A: Math. Gen., Vol. 12, No. 10, 1979. 
@@ -56,4 +68,3 @@ DihedralClebschGordan(int n,
 		      half_int j,  half_int m)
 {
 }
-

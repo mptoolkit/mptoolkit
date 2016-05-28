@@ -1,5 +1,18 @@
-/* -*- C++ -*- $Id$
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// linearalgebra/matrixproductoperations.h
+//
+// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 
+/*
    Created 2004-05-10 by Ian McCulloch
 
    The 'primitive' functions for matrix-matrix multiply.

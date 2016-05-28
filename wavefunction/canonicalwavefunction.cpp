@@ -1,4 +1,16 @@
 // -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// wavefunction/canonicalwavefunction.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 
 #include "canonicalwavefunction.h"
 #include "wavefunction/linearwavefunction.h"
@@ -184,4 +196,3 @@ CanonicalWavefunctionBase::WriteStream(PStream::opstream& out) const
    out << Basis1_;
    out << Basis2_;
 }
-

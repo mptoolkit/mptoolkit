@@ -1,4 +1,16 @@
- // -*- C++ -*- $Id: triangular_mpo.cpp 1577 2015-08-01 06:57:11Z ianmcc $
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mpo/triangular_mpo.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 
 #include "triangular_mpo.h"
 #include "common/statistics.h"

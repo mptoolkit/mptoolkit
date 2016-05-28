@@ -1,13 +1,23 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// pstream/pstream.cpp
+//
+// Copyright (C) 1999-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 
-/*
-  pstream.cpp
-
-  created 1999-07-13
-  Ian McCulloch
-
-  non-template implementations for the pstream classes.
-*/
+// pstream.cpp
+//
+// created 1999-07-13
+// Ian McCulloch
+//
+// non-template implementations for the pstream classes.
 
 #include "common/trace.h"
 #include "pstream.h"
@@ -345,17 +355,3 @@ StreamableBase* StreamExtract(ipstream& in)
 
 
 } // namespace PStream
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,3 +1,16 @@
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// attic/threadspecific_st.h
+//
+// Copyright (C) 2002-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 /*
   single-threaded (dummy) version of threadspecific.h
 
@@ -29,4 +42,3 @@ class thread_specific
 };
 
 } // namespace pthread
-

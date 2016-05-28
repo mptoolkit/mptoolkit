@@ -1,11 +1,24 @@
-/* -*- C++ -*- $Id$
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// linearalgebra/pstreamio_vector.h
+//
+// Copyright (C) 2005-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 
+/*
   pstreamio_vector.h
 
   I/O for vectors using the PStream framework.
 
   Created 2005-05-12 Ian McCulloch
-*/ 
+*/
 
 #if !defined(PSTREAMIO_VECTOR_H_DHJFKHURWEIRY4572893475489YRUI34897)
 #define PSTREAMIO_VECTOR_H_DHJFKHURWEIRY4572893475489YRUI34897

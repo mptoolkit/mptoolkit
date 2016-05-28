@@ -1,4 +1,16 @@
 // -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// parser/matrix-parser.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 
 #include "parser/matrix-parser.h"
 #include "parser/parser.h"
@@ -325,4 +337,3 @@ ParseMatrixOperator(std::string const& Str,
       return boost::get<std::complex<double>>(Result) * IPtr->second;
    }
 }
-

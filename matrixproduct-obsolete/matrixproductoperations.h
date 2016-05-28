@@ -1,4 +1,16 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// matrixproduct-obsolete/matrixproductoperations.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 
 SimpleOperator
 reduced_matrix_elements(MPWavefunction const& A, MPOperator const& M, MPWavefunction const& B)
@@ -43,4 +55,3 @@ expectation(MPWavefunction const& A, MPOperator const& M, MPWavefunction const& 
    CHECK_EQUAL(A.TransformsAs(), B.TransformsAs());
    reutrn reduced_matrix_elements(A,M,B)(0,0);
 }
-

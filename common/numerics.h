@@ -1,4 +1,18 @@
-/* -*- C++ -*- $Id$
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// common/numerics.h
+//
+// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
+
+/*
   numerics.h
 
   Some functions for reliable numerics.
@@ -45,7 +59,7 @@
 
   divn(T num, T denom) returns the quotient and remainder of num divided by denom, where the
   quotient is rounded towards zero, or equivalently, the sign of the remainder is the same
-  as the sign of num.  This is equivalent to std::div(num, denom).  
+  as the sign of num.  This is equivalent to std::div(num, denom).
 
   divd(T num, T denom) returns the quotient and remainder of num divided by denom, where the
   quotient is rounded towards negative infinity, or equivalently, the remainder has the same sign as denom.

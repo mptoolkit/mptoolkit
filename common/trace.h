@@ -1,25 +1,35 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// common/trace.h
+//
+// Copyright (C) 1997-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 
 /*
    trace.h
 
    trace/Precondition checking classes and macros.
 
-   Copyright (C) Ian McCulloch 1997-2005
+   Created: Ian McCulloch   1997
 
-   Created: Ian McCulloch   1997                                        
-
-   2004-04-19: Updated to use the preprocessor tricks described in Andrei Alexandrescu and 
-               John Torjo, C/C++ Users Journal Experts Forum August 2003, 
+   2004-04-19: Updated to use the preprocessor tricks described in Andrei Alexandrescu and
+               John Torjo, C/C++ Users Journal Experts Forum August 2003,
                http://www.cuj.com/documents/s=8464/cujcexp0308alexandr/
 
-               Also updated the logging mechanism so it is customizable via 
+               Also updated the logging mechanism so it is customizable via
 	       set_panic_handler() and set_trace_handler().
 
                added PANIC() macro.  This replaces THROW()
 
-               Eliminated dependency on trace.cpp by making the global variables static 
-	       members of inline functions.  This is standard C++, the compiler is 
+               Eliminated dependency on trace.cpp by making the global variables static
+	       members of inline functions.  This is standard C++, the compiler is
 	       required to just figure it out.
 	       All functions are either inlined or templates.
 
@@ -34,7 +44,7 @@
    2004-07-25: Added PRECONDITION_EQUAL, CHECK_EQUAL
 
    2005-02-11: Added typeid_name<T>() function, to demangle typeid(T).name() on gcc.
-               It really has nothing to do with the rest of the header, but there is no 
+               It really has nothing to do with the rest of the header, but there is no
                better place.
 
    2005-03-02: Modified the string conversion logic to call operator<< in the scope of the
@@ -45,6 +55,8 @@
                Default set to 16.
 
    2007-07-18: Added MULTITHREAD support
+
+   2016      : C++-11 support
 
   BUGS: String messages appear before all variables, rather than in the order they appear.
 	(This may be a feature.)
@@ -92,7 +104,7 @@
   emits
 
   TRACE in file tracetest.cpp at line 14: 1/3 to 16 figures is 0.3333333333333333
-        i = 5  
+        i = 5
 
   Unfortunately it is not possible to have a TRACE that consists only of
   a stream insertion operation: TRACE() [with nothing inside the brackets] is not allowed.
@@ -103,7 +115,7 @@
   PANIC(...)
      invokes panic() with the specified message
 
-  PRECONDITION(cond) ... 
+  PRECONDITION(cond) ...
      precondition check: if cond is false, then print a message and invoke panic()
 
   PRECONDITION_COMPARE(lhs, comp, rhs)
@@ -116,7 +128,7 @@
      shortcut for PRECONDITION(lhs == rhs)(lhs)(rhs)
      or PRECONDITION_COMPARE(lhs, ==, rhs)
 
-  CHECK(cond) ...        
+  CHECK(cond) ...
      assertion check: if cond is false, then print a message and invoke panic()
 
   CHECK_COMPARE(lhs, comp, rhs)
@@ -127,11 +139,11 @@
      assertion check: if (lhs == rhs) is false, then print a message and invoke panic()
      shortcut for CHECK(lhs == rhs)(lhs)(rhs)
 
-  RANGE_CHECK(variable, lower, upper) ...    
+  RANGE_CHECK(variable, lower, upper) ...
      checks that lower <= variable <= upper
 
   RANGE_CHECK_OPEN(variable, lower, upper) ...
-     checks that lower <= variable < upper 
+     checks that lower <= variable < upper
      (useful to avoid (upper-1) which has problems if upper is unsigned)
 
   WARNING(...)

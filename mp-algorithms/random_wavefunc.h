@@ -1,5 +1,17 @@
 // -*- C++ -*-
 //
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mp-algorithms/random_wavefunc.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
+//
 // This defines the class WavefunctionDesc, which is a bit mis-named:
 // it defines a configuration of local basis states.
 // These states can be used as a building block for Monte Carlo.

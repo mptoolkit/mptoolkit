@@ -1,4 +1,16 @@
-// -*- C++ -*- $Id: e-optim.cpp 1597 2015-09-05 20:16:58Z ianmcc $
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mpo/ef-optim.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 //
 // Optimized version of the E-matrix operator_prod
 //
@@ -280,8 +292,3 @@ operator_prod_inner(OperatorComponent const& M,
    Result.debug_check_structure();
    return Result;
 }
-
-
-
-
-

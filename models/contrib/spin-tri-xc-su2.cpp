@@ -1,8 +1,19 @@
 // -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// models/contrib/spin-tri-xc-su2.cpp
+//
+// Copyright (C) 2015,2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015,2016 Seyed N. Saadatmand <s.saadatmand@uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
+
 // Description: spin systems on triangular lattices XC SU(2)-symmetric.
-// Authors: Ian P. McCulloch and Seyed N. Saadatmand
-// Contact: s.saadatmand@uq.edu.au
-// <obelix> @ /data5/uqssaada/git/mptoolkit/models/contrib/spin-tri-yc-su2.cpp
 
 // XC configuration of a triangular lattice.
 // The width W measures the number of total rows, which is twice the number of sites

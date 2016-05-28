@@ -1,8 +1,21 @@
-/* -*- C++ -*- $Id$
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// linearalgebra/matrixtranspose.h
+//
+// Copyright (C) 2005-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 
+/*
   matrixtranspose.h
 
-  Created 205-01-23 Ian McCulloch
+  Created 2005-01-23 Ian McCulloch
 */
 
 #if !defined(MATRIXTRANSPOSE_H_JDSHCEUIRHF735YT734YO87)

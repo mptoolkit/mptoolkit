@@ -1,5 +1,17 @@
 // -*- C++ -*-
 //
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// linearalgebra/eigen.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
+//
 // Complex diagonalization wrapper by Thomas Barthel
 //
 // If a Range parameter is given, then only the eigenvalues/vectors from that range

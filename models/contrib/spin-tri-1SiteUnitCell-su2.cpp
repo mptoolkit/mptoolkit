@@ -1,6 +1,17 @@
-// -*- C++ -*- $Id: spin-tri-1SiteUnitCell-su2.cpp 1490 2015-05-19 09:15:06Z seyed $
-// Authors: Ian P. McCulloch and Seyed N. Saadatmand
-// Contact: s.saadatmand@uq.edu.au
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// models/contrib/spin-tri-1SiteUnitCell-su2.cpp
+//
+// Copyright (C) 2015,2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015,2016 Seyed N. Saadatmand <s.saadatmand@uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"

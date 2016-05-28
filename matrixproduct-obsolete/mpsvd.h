@@ -1,4 +1,16 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// matrixproduct-obsolete/mpsvd.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 
 #if !defined(MPSVD_H_DHCJKDSHTUY7893Y789YT578YGTE7R8OFDSHL)
 #define MPSVD_H_DHCJKDSHTUY7893Y789YT578YGTE7R8OFDSHL

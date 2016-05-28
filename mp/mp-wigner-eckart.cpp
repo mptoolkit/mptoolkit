@@ -1,4 +1,16 @@
-// -*- C++ -*- $Id: mp-wigner-eckart.cpp 1149 2012-04-18 03:12:37Z ianmcc $
+// -*- C++ -*-
+//
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mp/mp-wigner-eckart.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// ENDHEADER
 
 //
 // Project a wavefunction using the Wigner-Eckart theorem
