@@ -62,7 +62,7 @@ inline void print_copyright(std::ostream& out)
        << "." << (BOOST_VERSION / 100 % 1000)
        << "." << (BOOST_VERSION % 100) << "\n"
       "This program comes with ABSOLUTELY NO WARRANTY; for details run 'mp-info --warranty'.\n"
-      "This is free software, and you are welcome to redistribute it under certain conditions\n"
+      "This is free software, and you are welcome to redistribute it under certain conditions;\n"
       "run 'mp-info --copying' for details.\n"
       "Reseach publications making use of this software should include appropriate citations\n"
       "and/or acknowledgements; run 'mp-info --citations' for details.\n"
@@ -102,7 +102,7 @@ inline void print_citations(std::ostream& out)
 #undef AS_STRING2
 
 inline
-std::string Wikify(std::string const& x)
+std::string Wikify(std::string const& x, bool itool = true)
 {
    std::string Result;
    bool Capital = true;
@@ -119,7 +119,7 @@ std::string Wikify(std::string const& x)
 	 if (Capital)
 	 {
 	    Result += char(toupper(c));
-	    if (!Hyphen || c != 'i')
+	    if (!Hyphen || (!itool) || c != 'i')
 	       Capital = false;
 	    Hyphen = false;
 	 }
@@ -133,7 +133,7 @@ std::string Wikify(std::string const& x)
 inline void print_copyright(std::ostream& out, std::string const& Category, std::string const& Name)
 {
    print_copyright(out);
-   std::string URL = "index.php?n=" + Wikify(Category) + "." + Wikify(Name);
+   std::string URL = "index.php?n=" + Wikify(Category) + "." + Wikify(Name, Name != "mp-info");
    out << "Documentation: "
        << "http://physics.uq.edu.au/people/ianmcc/mptoolkit/" << URL << "\n";
 }
