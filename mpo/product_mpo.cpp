@@ -275,3 +275,14 @@ prod_unit_left_to_right(FiniteMPO const& Op, int UnitCellSize)
 
    return Result;
 }
+
+ProductMPO translate_right(std::vector<BasisList> const& LocalBasis)
+{
+   ProductMPO Result(LocalBasis.size());
+   Result[0] = translate_right(LocalBasis.back(), LocalBasis.front());
+   for (int i = 1; i < LocalBasis.size(); ++i)
+   {
+      Result[i] = translate_right(LocalBasis[i-1], LocalBasis[i]);
+   }
+   return Result;
+}

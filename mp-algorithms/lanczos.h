@@ -63,7 +63,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
    VectorType w = Guess;
 
    double Beta = norm_frob(w);
-   CHECK(!isnan(Beta));
+   CHECK(!std::isnan(Beta));
    // double OrigBeta = Beta;      // original norm, not used
    w *= 1.0 / Beta;
    v.push_back(w);
@@ -128,7 +128,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       // solution of the tridiagonal subproblem
       LinearAlgebra::Matrix<double> M = SubH(LinearAlgebra::range(0,i+1),
 					     LinearAlgebra::range(0,i+1));
-      if (isnan(M(0,0)))
+      if (std::isnan(M(0,0)))
       {
 	 std::ofstream Out("lanczos_debug.txt");
 	 Out << "NAN encountered in Lanczos\n"

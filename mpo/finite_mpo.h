@@ -184,6 +184,9 @@ FiniteMPO dot(FiniteMPO const& x, FiniteMPO const& y);
 // cross product (if it exists)
 FiniteMPO cross(FiniteMPO const& x, FiniteMPO const& y);
 
+// Helper function for the coupling coefficient for the outer() function
+double outer_coefficient(int degree_x, int degree_y, int degree_q);
+
 // outer product of tensors.  This is defined as the product to the maximum
 // degree quantum number q.  There is also a scaling factor sqrt(degree(q))
 FiniteMPO outer(FiniteMPO const& x, FiniteMPO const& y);

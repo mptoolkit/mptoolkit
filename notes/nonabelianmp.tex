@@ -1,5 +1,4 @@
 % notes on coupling coefficients for SU(2)
-% $Id: nonabelianmp.tex 1419 2015-04-08 07:30:37Z ianmcc $
 \documentclass{article}[10pt]
 \usepackage{fullpage}
 \usepackage{amsmath}
@@ -1121,6 +1120,7 @@ which transforms as the product of two operators of rank $[k]$, with matrix elem
 \bigbraket{s'q' ; j'm'}{\itensorcomp{M}{k}{r}}{sq ; jm}
 = \rbigbraket{s';j'}{\itensor{M}{k}}{s;j} \; \qcg{s}{k}{s'}{q}{r}{q'} \;
 \qcg{j}{k}{j'}{m}{r}{m'}
+\label{eq:MPODef}
 \eeq
 
 This has the form
@@ -1678,10 +1678,93 @@ the basis? Or do we need, as suggested above, to include all states? How can we 
 translationally invariant state if we need to include all states, as this would magnify the basis
 size for higher quantum numbers?
 
+\section{Translation MPO}
 
+In this section, we deduce the MPO representation for the translation operator
+that shifts sites to the left or right. 
+
+\subsection{Right translation}
+
+Here we define a
+right translation, that is an operator that acts on a wavefunction so that
+the site originally labelled site 0 becomes site 1 after the shift.
+In the notation of \refeq{eq:MPODef}, this has the form
+
+\beq
+\rbigbraket{s';j'}{\itensor{T_R}{k}}{s;j} = \delta_{s' j'} \delta_{s j} \epsilon_{sks'}
+\frac{2k+1}{2s+1} 
+\eeq
+where $k$ takes on all values that satisfy the triangle condition
+$\epsilon_{sks'}=1$.
+
+To prove this, we construct the full matrix elements,
+\beq
+\bigbraket{s'q' ; j'm'}{\itensorcomp{T_R}{k}{r}}{sq ; jm}
+= \delta_{s' j'} \delta_{s j} \epsilon_{sks'} \; \qcg{s}{k}{s'}{q}{r}{q'} \;
+\qcg{j}{k}{j'}{m}{r}{m'} \frac{2k+1}{2s+1}
+\eeq
+To obtain the physical matrix elements we sum over $k$, $r$, and make use of the
+orthogonality of columns of the Clebsch-Gordan coefficients,
+\beq
+\qcg{s}{k}{s'}{q}{r}{q'} \; \qcg{j}{k}{j'}{m}{r}{m'}
+=  (-1)^{s-q} \sqrt\frac{2s+1}{2k+1} \qcg{s}{s'}{k}{q}{-q'}{-r}
+(-1)^{j-m} \sqrt\frac{2j+1}{2k+1} \qcg{j}{j'}{k}{m}{-m'}{-r}
+\eeq
+Thus
+\beq
+\sum_{k,r}  \delta_{s' j'} \delta_{s j} \epsilon_{sks'}
+(-1)^{2s-q-m}  \qcg{s}{s'}{k}{q}{-q'}{-r} \qcg{j}{j'}{k}{m}{-m'}{-r}
+= (-1)^{2s-q-m} \delta_{s' j'} \delta_{s j} \delta_{q' m'} \delta_{q m}
+\eeq
+The phase factor out the front vanishes: $s$ and $q$ are either both
+integer or both odd-half-integer, so $s-q$ is always integer, and $2(s-q)$ is always
+even. And finally,
+\beq
+\bigbraket{s'q' ; j'm'}{\itensorcomp{T_R}{k}{r}}{sq ; jm}
+= \delta_{s' j'} \delta_{s j} \epsilon_{sks'} \; \delta_{q' m'} \delta_{q m}
+\eeq
+as expected.
+
+\subsection{Left translation}
+
+Here we define a
+left translation, that is an operator that acts on a wavefunction so that
+the site originally labelled site 1 becomes site 0 after the shift.
+In the notation of \refeq{eq:MPODef}, this has the form
+\beq
+\rbigbraket{s';j'}{\itensor{T_L}{k}}{s;j} = \delta_{s' j} \delta_{s j'} \epsilon_{sks'}
+\frac{2k+1}{2s+1}
+\eeq
+The full matrix elements are
+\beq
+\bigbraket{s'q' ; j' -m'}{\itensorcomp{T_R}{k}{r}}{sq ; j -m}
+= \delta_{s' j} \delta_{s j'} \epsilon_{sks'} \;
+\frac{2k+1}{2s+1}
+ \qcg{s}{k}{s'}{q}{r}{q'} \;
+\qcg{s'}{k}{s}{-m}{r}{-m'}
+\eeq
+Using the symmetries of the Clebsch-Gordan coefficients,
+\beq
+\bigbraket{s'q' ; j'm'}{\itensorcomp{T_R}{k}{r}}{sq ; jm}
+= \delta_{s' j} \delta_{s j'} \epsilon_{sks'} \; 
+\frac{2k+1}{2s+1}
+(-1)^{s-q} \sqrt\frac{2s+1}{2k+1} \qcg{s}{s'}{k}{q}{-q'}{-r} \;
+(-1)^{s'+m} \sqrt\frac{2s+1}{2k+1} (-1)^{s+s'-k} \qcg{s}{s'}{k}{m'}{-m}{-r}
+\eeq
+\beq
+= \delta_{s' j} \delta_{s j'} \epsilon_{sks'}  
+(-1)^{k-q+m} \qcg{s}{s'}{k}{q}{-q'}{-r} \qcg{s}{s'}{k}{m'}{-m}{-r}
+\eeq
+Summing over $k$, $r$, and using the orthogonality of columns,
+\beq
+= \delta_{s' j} \delta_{s j'} \epsilon_{sks'} \delta_{q,m'} 
+\delta_{q',m} (-1)^{k-m'+m}
+
+\eeq
 
 \section{Partial transpose}
 
+(incomplete)
 
 For the calculation of exponents of operators, we need the partial transpose operation. Writing
 the matrix elements of $M$ as
@@ -1744,6 +1827,8 @@ Starting from \refeq{eq:TransposedRME}, we write the reduced matrix element as
 
 
 \section{Swap gates}
+
+(incomplete)
 
 In this section we deduce the matrix elements of an MPO that effect the swap gate between two sites.
 The swap gate is a scalar operator that acts on two sites, and has the matrix elements

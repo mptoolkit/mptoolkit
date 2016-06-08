@@ -34,6 +34,7 @@
 #include "quantumnumbers/quantumnumber.h"
 #include "pstream/pstream.h"
 #include <boost/mpl/assert.hpp>
+#include <cmath>
 
 // first, we declare some new operations that extend the LinearAlgebra operations
 namespace LinearAlgebra
@@ -1050,7 +1051,7 @@ struct ScalarProd<HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S> >,
 	    }
          }
       }
-      CHECK(!isnan(norm_frob_sq(Result)));
+      CHECK(!std::isnan(norm_frob_sq(Result)));
       return Result;
    }
 
