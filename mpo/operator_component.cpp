@@ -131,6 +131,55 @@ swap_gate_fermion(BasisList const& B1, LinearAlgebra::Vector<double> const& Pari
    return Result;
 }
 
+#if 0
+OperatorComponent
+shift_left(BasisList const& ThisBasis, BasisList const& IncomingBasis)
+{
+   // Components Result(a,b)(c,d) = delta_{a,d} delta_{b,c}
+   // where a,d are from IncomingBasis, b,c are from ThisBasis
+   OperatorComponent Result(IncomingBasis, ThisBasis, ThisBasis, IncomingBasis);
+
+   ProductBasis<BasisList, BasisList> 
+
+   SimpleOperator t = SimpleOperator::make_identity(ThisBasis);
+   SimpleOperator in = SimpleOperator::make_identity(IncomingBasis);
+
+   QuantumNumber Ident(ThisBasis.GetSymmetryList());
+   for (int i = 0; i < IncomingBasis.size(); ++i)
+   {
+      for (int j = 0; j < ThisBasis.size(); ++j)
+      {
+	 SimpleOperator x(ThisBasis, IncomingBasis, Ident);
+	 x(j,i) = 1;
+}
+#endif
+
+OperatorComponent
+translate_right(BasisList const& LeftBasis, BasisList const& ThisBasis)
+{
+   // Components Result(a,b)(c,d)_k = delta_{a,c} delta_{b,d} (2k+1)(2c_1)
+   // where a,c are from LeftBasis, b,d are from ThisBasis
+   OperatorComponent Result(LeftBasis, ThisBasis, LeftBasis, ThisBasis);
+
+   QuantumNumber Ident(ThisBasis.GetSymmetryList());
+   for (int i = 0; i < LeftBasis.size(); ++i)
+   {
+      for (int j = 0; j < ThisBasis.size(); ++j)
+      {
+	 QuantumNumberList k = inverse_transform_targets(ThisBasis[j], LeftBasis[i]);
+	 SimpleRedOperator x(LeftBasis, ThisBasis);
+	 for (auto const& q : k)
+	 {
+	    SimpleOperator xComponent(LeftBasis, ThisBasis, q);
+	    xComponent(i,j) = double(degree(q)) / degree(ThisBasis[j]);
+	    x.project(q) = xComponent;
+	 }
+	 Result(i,j) = x;
+      }
+   }
+   return Result;
+}
+
 std::ostream&
 operator<<(std::ostream& out, OperatorComponent const& op)
 {

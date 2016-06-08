@@ -179,6 +179,10 @@ ProductMPO prod_unit_left_to_right(FiniteMPO const& Op, int UnitCellSize);
 // = A(0)B(0) A(1)B(1) A(2)B(2) ...
 ProductMPO prod_unit_right_to_left(FiniteMPO const& Op, int UnitCellSize);
 
+// Construct the operator to do a right translation by one site, given the
+// array of local basis states
+ProductMPO translate_right(std::vector<BasisList> const& LocalBasis);
+
 // optimize the representation - no idea how to do this!
 //void optimize(ProductMPO& Op);
 

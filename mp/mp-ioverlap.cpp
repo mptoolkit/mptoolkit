@@ -300,13 +300,27 @@ int main(int argc, char** argv)
       }
       else
       {
-         BasisList B1 = Psi1.Basis1().Basis();
-         BasisList B2 = Psi2.Basis1().Basis();
-         for (unsigned i = 0; i < B1.size(); ++i)
-         {
-            for (unsigned j = 0; j < B2.size(); ++j)
+	 // auto-detect the quantum number sectors
+	 std::set<QuantumNumber> B1 = QuantumNumbersInBasis(Psi1.Basis1().Basis());
+
+	 // Merge B2 with the operator basis
+	 std::set<QuantumNumber> B2 = QuantumNumbersInBasis(Psi2.Basis1().Basis());
+	 std::set<QuantumNumber> OpBasis = QuantumNumbersInBasis(StringOp.Basis1());
+	 std::set<QuantumNumber> OpB2;
+	 for (QuantumNumber const& q2 : B2)
+	 {
+	    for (QuantumNumber const& qOp : OpBasis)
             {
-               inverse_transform_targets(B2[j], B1[i], std::inserter(Sectors, Sectors.begin()));
+	       transform_targets(q2, qOp, std::inserter(OpB2, OpB2.begin()));
+	    }
+	 }
+
+	 // finally determine the target quantum numbers as B1 * target = B2
+	 for (QuantumNumber const& qi : B1)
+	 {
+	    for (QuantumNumber const& qj : OpB2)
+            {
+               inverse_transform_targets(qj, qi, std::inserter(Sectors, Sectors.begin()));
             }
          }
       }

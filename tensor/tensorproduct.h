@@ -428,6 +428,58 @@ partial_transpose(IrredTensor<T, B1, B2, S> const& x,
                   ProductBasis<B3, B4> const& alpha,
                   ProductBasis<B5, B6> const& beta);
 
+//
+// swap_product_basis
+// Constructs a unitary transformation that maps between a product
+// basis ProductBasis<B1,B2> and ProductBasis<B2,B1>
+//
+// ** 2016-07-08: untested **
+
+template <typename B1, typename B2>
+IrredTensor<double, 
+	    typename ProductBasis<B1,B2>::basis_type,
+	    typename ProductBasis<B2,B1>::basis_type>
+swap_product_basis(ProductBasis<B1,B2> const& a,
+		   ProductBasis<B2,B1> const& b);
+
+template <typename B1, typename B2>
+IrredTensor<double, 
+	    typename ProductBasis<B1,B2>::basis_type,
+	    typename ProductBasis<B2,B1>::basis_type>
+swap_product_basis(ProductBasis<B1,B2> const& a,
+		   ProductBasis<B2,B1> const& b)
+{
+   IrredTensor<double, 
+      typename ProductBasis<B1,B2>::basis_type,
+      typename ProductBasis<B2,B1>::basis_type>
+      Result(a, b, QuantumNumber(a.GetSymmetryList()));
+
+   CHECK_EQUAL(a.Left(), b.Right());
+   CHECK_EQUAL(a.Right(), b.Left());
+
+   for (int i = 0; i < a.size(); ++i)
+   {
+      std::pair<int,int> p = a.rmap(i);
+      // Find a mapping in b(p.second, p.first) that has the same quantum number as i
+      typename ProductBasis<B2,B1>::const_iterator J = b.begin(p.second, p.first);
+      typename ProductBasis<B2,B1>::const_iterator Jend = b.end(p.second, p.first);
+      while (J != Jend && b[*J] != a[i])
+	 ++J;
+      if (J != Jend)
+      {
+	 Result(i, *J) = conj_phase(a.Left()[p.first], a[i], a.Right()[p.second]);
+      }
+      else
+      {
+	 WARNING("swap_product_basis")("component is missing in the right-hand basis");
+      }
+   }
+   return Result;
+}
+
+//
+// decompose_tensor_prod
+//
 // Decompose a tensor product matrix element <(j_1' j_2') j' || M^k || (j_1 j_2) j>
 // into < j_1' || M^{k_1} || j_1 >  < j_2' || M^{k_2} || j_2 >
 
