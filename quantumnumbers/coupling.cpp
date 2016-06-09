@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// quantumnumbers/coupling.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "coupling.h"
 #include "common/gmprational.h"
@@ -492,4 +509,3 @@ ClebschGordanSquared(half_int j1, half_int m1,
 
    return std::make_pair(CGSummation(j1,m1,j2,m2,j), PreFactorSq(j1,m1,j2,m2,j,m));
 }
-

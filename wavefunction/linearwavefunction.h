@@ -1,10 +1,27 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// wavefunction/linearwavefunction.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 //
 // LinearWavefunction: main class to represent a linear matrix product wavefunction.
 // 
 
-#if !defined(LINEARWAVEFUNCTION_H_FUIYT49786Y709)
-#define LINEARWAVEFUNCTION_H_FUIYT49786Y709
+#if !defined(MPTOOLKIT_WAVEFUNCTION_LINEARWAVEFUNCTION_H)
+#define MPTOOLKIT_WAVEFUNCTION_LINEARWAVEFUNCTION_H
 
 #include "mps/state_component.h"
 #include "pheap/pvalueptr.h"
@@ -126,16 +143,19 @@ class LinearWavefunction
          return Data.insert(pos, h);
       }
 
-      AttributeList const& Attributes() const { return Attr; }
-      AttributeList& Attributes() { return Attr; }
+      void pop_front()
+      {
+	 Data.pop_front();
+      }
 
-      AttributeList& AttributesMutable() const { return Attr; }
+      void pop_back()
+      {
+	 Data.pop_back();
+      }
 
    private:
       SymmetryList SList;
       container_type Data;
-   //      QuantumNumbers::QuantumNumber LeftShift;
-      mutable AttributeList Attr;
 
    friend PStream::opstream& operator<<(PStream::opstream& out, LinearWavefunction const& psi);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, LinearWavefunction& psi);

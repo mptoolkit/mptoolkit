@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// common/runlengthcompressed.h
+//
+// Copyright (C) 2006-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 //
 // A run-length-encoded compressed vector.
 // Created 2006-11-22 Ian McCulloch
@@ -23,8 +40,8 @@
 // complete size of nested objects.
 //
 
-#if !defined(RUNLENGTHCOMPRESSED_H_HCIUYUIY43765784678FH7O8YHO78YO)
-#define RUNLENGTHCOMPRESSED_H_HCIUYUIY43765784678FH7O8YHO78YO
+#if !defined(MPTOOLKIT_COMMON_RUNLENGTHCOMPRESSED_H)
+#define MPTOOLKIT_COMMON_RUNLENGTHCOMPRESSED_H
 
 #if defined(HAVE_CONFIG_H)  // we should include config.h before boost headers
 #include "config.h"
@@ -32,7 +49,7 @@
 #include <boost/variant.hpp>
 #include <boost/mpl/if.hpp>
 #include <boost/type_traits.hpp>
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 #include <deque>
 #include <algorithm>
 #include <functional>
@@ -149,7 +166,7 @@ split(run_length_compressed<T> const& x, int Loc);
 // This is currently implemented in terms of split(), but
 // it might be that this is the more useful primitive.
 template <typename T>
-boost::tuple<run_length_compressed<T>, T, run_length_compressed<T> >
+std::tuple<run_length_compressed<T>, T, run_length_compressed<T> >
 split_lcr(run_length_compressed<T> const& x, int Loc);
 
 // Forwards to boost::apply_visitor(v, x.data())

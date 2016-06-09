@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mp/mp-ioverlap.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "wavefunction/mpwavefunction.h"
 #include "mp/copyright.h"
@@ -244,7 +261,7 @@ int main(int argc, char** argv)
       if (vm.count("string"))
       {
 	 InfiniteLattice Lattice;
-	 boost::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(String);
+	 std::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(String);
 	 if (Print)
 	 {
 	    std::cout << "String MPO is:\n" << StringOp << '\n';
@@ -283,13 +300,27 @@ int main(int argc, char** argv)
       }
       else
       {
-         BasisList B1 = Psi1.Basis1().Basis();
-         BasisList B2 = Psi2.Basis1().Basis();
-         for (unsigned i = 0; i < B1.size(); ++i)
-         {
-            for (unsigned j = 0; j < B2.size(); ++j)
+	 // auto-detect the quantum number sectors
+	 std::set<QuantumNumber> B1 = QuantumNumbersInBasis(Psi1.Basis1().Basis());
+
+	 // Merge B2 with the operator basis
+	 std::set<QuantumNumber> B2 = QuantumNumbersInBasis(Psi2.Basis1().Basis());
+	 std::set<QuantumNumber> OpBasis = QuantumNumbersInBasis(StringOp.Basis1());
+	 std::set<QuantumNumber> OpB2;
+	 for (QuantumNumber const& q2 : B2)
+	 {
+	    for (QuantumNumber const& qOp : OpBasis)
             {
-               inverse_transform_targets(B2[j], B1[i], std::inserter(Sectors, Sectors.begin()));
+	       transform_targets(q2, qOp, std::inserter(OpB2, OpB2.begin()));
+	    }
+	 }
+
+	 // finally determine the target quantum numbers as B1 * target = B2
+	 for (QuantumNumber const& qi : B1)
+	 {
+	    for (QuantumNumber const& qj : OpB2)
+            {
+               inverse_transform_targets(qj, qi, std::inserter(Sectors, Sectors.begin()));
             }
          }
       }

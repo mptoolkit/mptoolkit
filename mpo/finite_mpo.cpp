@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mpo/finite_mpo.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "finite_mpo.h"
 #include "pstream/variant.h"
@@ -472,6 +489,29 @@ cross(FiniteMPO const& x, FiniteMPO const& y)
       * prod(x, y, cross_product_transforms_as(x.TransformsAs(), y.TransformsAs()));
 }
 
+double outer_coefficient(int dx, int dy, int dq)
+{
+   // The coefficient here is set so that the outer product of spin operators
+   // matches the form required when calculating
+   // ABCD = inner(A,B)*inner(C,D) + inner(cross(A,B), cross(C,D)) + inner(outer(A,B), outer(C,D))
+   // for spin-1 operators A,B,C,D.
+   // For spin-1 the coefficient is outer(A,B) = sqrt(6/5) * prod(A,B,2)
+
+   // For spin-1/2 operators, we want outer(CH,C) to be the spin operator itself.
+   // sqrt(1/2)
+
+   double Factor = std::sqrt(double(dx+dy) / double(dq));
+   if (dx == 2 && dy == 2)
+   {
+      Factor = std::sqrt(0.5);
+   }
+   else if (dx == 3 && dy == 3)
+   {
+      Factor = std::sqrt(6.0 / 5.0);
+   }
+   return Factor;
+}
+
 FiniteMPO outer(FiniteMPO const& x, FiniteMPO const& y)
 {
    QuantumNumbers::QuantumNumberList L = transform_targets(x.TransformsAs(), y.TransformsAs());
@@ -492,14 +532,10 @@ FiniteMPO outer(FiniteMPO const& x, FiniteMPO const& y)
    CHECK(Unique)("outer product is not defined for these operators")
       (x.TransformsAs())(y.TransformsAs());
 
-   // The factor here is deduced for spin-1 to spin-2 operators,
-   // as the correct factor to get dot(outer(S,S), outer(S,S)) correct.  The test is that
-   // S^4, when evaluated on a scalar wavefunction, should produce the same result
-   // whether we use symmetries or not, and this is easy to test with no symmetries (S = Sx+Sy+Sz).
-   // The non-zero components with SU(2) are
-   // dot(S,S)*dot(S,S) and dot(outer(S,S), outer(S,S)).  The coupling constant below
-   // was determined by matching coefficients.
-   return std::sqrt(double(degree(x.TransformsAs()) + degree(y.TransformsAs())) / degree(q)) * prod(x,y,q);
+   int dx = degree(x.TransformsAs());
+   int dy = degree(y.TransformsAs());
+   int dq = degree(q);
+   return outer_coefficient(dx, dy, dq) * prod(x,y,q);
 }
 
 FiniteMPO conj(FiniteMPO const& x)
@@ -575,7 +611,7 @@ FiniteMPO fine_grain(SimpleOperator const& x,
    // And now reverse the decomposition
    FiniteMPO Result(LocalBasis1.size());
    OperatorComponent R1, R2;
-   boost::tie(R1, R2) = decompose_local_tensor_prod(x, TensorProdBasis1.top(), TensorProdBasis2.top());
+   std::tie(R1, R2) = decompose_local_tensor_prod(x, TensorProdBasis1.top(), TensorProdBasis2.top());
    int i = LocalBasis1.size()-1;
    Result[i] = R2;
    --i;
@@ -583,7 +619,7 @@ FiniteMPO fine_grain(SimpleOperator const& x,
    TensorProdBasis2.pop();
    while (!TensorProdBasis1.empty())
    {
-      boost::tie(R1, R2) = decompose_local_tensor_prod(R1, TensorProdBasis1.top(), TensorProdBasis2.top());
+      std::tie(R1, R2) = decompose_local_tensor_prod(R1, TensorProdBasis1.top(), TensorProdBasis2.top());
       Result[i] = R2;
       --i;
       TensorProdBasis1.pop();
@@ -784,4 +820,3 @@ ParseStringOperator(SiteListType const& SiteList, std::string const& Expr, int S
    
    return Result;
 }   
-

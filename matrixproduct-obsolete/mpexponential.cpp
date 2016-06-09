@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// matrixproduct-obsolete/mpexponential.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "mpexponential.h"
 #include "linearalgebra/eigen.h"
@@ -232,7 +249,7 @@ void TwoSiteExponential(MPOpComponent& A, MPOpComponent& B, std::complex<double>
       for (const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
       {
          int l,m;
-         boost::tie(l,m) = alpha.rmap(J.index1());
+         std::tie(l,m) = alpha.rmap(J.index1());
          QuantumNumber q = alpha[J.index1()];
          SimpleOperator M(A.Basis1(), A.Basis2(), q);
          M(0,J.index2()) = *J * D[J.index2()];
@@ -245,7 +262,7 @@ void TwoSiteExponential(MPOpComponent& A, MPOpComponent& B, std::complex<double>
       for (const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
       {
          int l,m;
-         boost::tie(l,m) = beta.rmap(J.index2());
+         std::tie(l,m) = beta.rmap(J.index2());
          QuantumNumber q = beta[J.index2()];
          SimpleOperator M(B.Basis1(), B.Basis2(), q);
          M(J.index1(),0) = *J / std::sqrt(double(degree(B.SiteBasis()[l])));

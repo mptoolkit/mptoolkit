@@ -1,10 +1,27 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// matrixproduct-obsolete/mpstate.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "mpstate.h"
 #include "quantumnumbers/quantumnumber.h"
 #include "quantumnumbers/u1.h"
 #include "tensor/tensorproduct.h"
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 #include "linearalgebra/matrix_utility.h"
 
 MPStateComponent make_vacuum_state(QuantumNumbers::SymmetryList const& S)
@@ -541,7 +558,7 @@ MatrixOperator ExpandBasis1(MPStateComponent& A, Normalization n)
    for (std::size_t t = 0; t < FullBasis1.size(); ++t)
    {
       int s, b2;
-      boost::tie(s,b2) = FullBasis1.rmap(t);
+      std::tie(s,b2) = FullBasis1.rmap(t);
 
       int Dim = FullBasis1.dim(t);
       DEBUG_CHECK_EQUAL(Dim, A.Basis2().dim(b2));
@@ -566,7 +583,7 @@ MatrixOperator ExpandBasis2(MPStateComponent& A, Normalization n)
    for (std::size_t t = 0; t < FullBasis2.size(); ++t)
    {
       int s, b1;
-      boost::tie(b1,s) = FullBasis2.rmap(t);
+      std::tie(b1,s) = FullBasis2.rmap(t);
 
       int Dim = FullBasis2.dim(t);
       DEBUG_CHECK_EQUAL(Dim, A.Basis1().dim(b1));
@@ -594,7 +611,7 @@ MPStateComponent ConstructFromRightBasis(BasisList const& LocalBasis,
    for (std::size_t t = 0; t < FullBasis1.size(); ++t)
    {
       int s, b2;
-      boost::tie(s,b2) = FullBasis1.rmap(t);
+      std::tie(s,b2) = FullBasis1.rmap(t);
 
       int Dim = FullBasis1.dim(t);
       DEBUG_CHECK_EQUAL(Dim, RightBasis.dim(b2));
@@ -613,7 +630,7 @@ MPStateComponent ConstructFromLeftBasis(BasisList const& LocalBasis,
    for (std::size_t t = 0; t < FullBasis2.size(); ++t)
    {
       int s, b1;
-      boost::tie(b1,s) = FullBasis2.rmap(t);
+      std::tie(b1,s) = FullBasis2.rmap(t);
 
       int Dim = FullBasis2.dim(t);
       DEBUG_CHECK_EQUAL(Dim, LeftBasis.dim(b1));

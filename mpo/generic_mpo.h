@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mpo/generic_mpo.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 // GenericMPO represents an MPO that is in no particular form
 // It contains a LatticeCommute, so that we can determine the
@@ -112,8 +129,11 @@ MPOMaskType mask_column(GenericMPO const& Op, int Col);
 // Construct a mask that singles out a particular row of the MPO
 MPOMaskType mask_row(GenericMPO const& Op, int Row);
 
-// Does a 2-1 coarse graining of an operator.  The length must be a multiple of 2
-GenericMPO coarse_grain_pairs(GenericMPO const& Op);
+// Does a N-1 coarse graining of an operator.  The length must be a multiple of N
+GenericMPO coarse_grain(GenericMPO const& Op, int N);
+
+// Coarse-grains a section of an MPO into a single site.
+GenericMPO coarse_grain_range(GenericMPO const& Op, int beg, int end);
 
 // constructs the transfer operator as
 // prod_i local_inner_tensor_prod(herm(A.base()[i]), B[i])

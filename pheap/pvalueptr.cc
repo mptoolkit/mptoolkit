@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// pheap/pvalueptr.cc
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "common/bindpair.h"
 
@@ -15,7 +32,7 @@ pvalue_ptr<T>::pvalue_ptr(pheap::Private::PHeapObject* Obj)
 template <typename T>
 pvalue_ptr<T>::pvalue_ptr(pheap::id_type ID)
 {
-   bind_pair(Ptr, Handle) = pheap::GetObject<T>(ID);
+   std::tie(Ptr, Handle) = pheap::GetObject<T>(ID);
 }
 
 template <class T>
@@ -239,4 +256,3 @@ PStream::ipstream& operator>>(PStream::ipstream& stream, pvalue_handle<T>& Objec
    Object = pvalue_handle<T>(stream.get_id());
    return stream;
 }
-

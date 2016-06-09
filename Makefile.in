@@ -208,16 +208,16 @@ default-models = spinchain-su2 spinchain-spin2-su2 \
                  bosehubbard-flux-3leg-u1 spinchain-u1 spincylinder-su2 \
                  spinchain bosehubbard-ladder-u1 bosehubbard-2component-u1z2 \
                  hubbard-so4 bosehubbard-u1 bosehubbard hubbard-u1u1 \
-                 hubbard-tri-u1u1 hubbard-tri hubbard-su2
+                 hubbard-tri-u1u1 hubbard-tri hubbard-su2 spinladder-su2 spinchain-z2
 
 tools = mp-idmrg-s3e mp-ioverlap \
         mp-info mp-history mp-reflect mp-conj \
         mp-imoments mp-iexpectation mp-wigner-eckart mp-reorder-symmetry \
         mp-ispectrum mp-lattice-info mp-show-operator mp-aux-matrix mp-aux-algebra mp-iapply mp-attr \
         mp-idivide mp-ies mp-irepeat \
-        mp-irotate mp-icorrelation
+        mp-irotate mp-icorrelation mp-fluctuation
 
-experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project
+experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg
 
 
 benchmarks = benchtripleprod
@@ -479,13 +479,15 @@ mp-simple-marshall-qmc : random_wavefunc.o
 
 mp-idmrg5 : $(mpoobj) infinitewavefunctionleft.o random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o
 mp-idmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o
-mp-idmrg-s3e : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o
+mp-idmrg-s3e : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o
+mp-ibc-dmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o
 mp-idmrg5-spin2 : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o packunpack.o
 mp-irename-symmetry : triangular_operator.o mpoperator.o infinitewavefunctionleft.o
 mp-iparity : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o packunpack.o
 mp-bdmrg : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o packunpack.o
 mp-iexpectation : $(mpoobj) infinitewavefunctionleft.o random_wavefunc.o
 mp-imoments : $(mpoobj) triangular_mpo_solver.o momentum_operations.o infinitewavefunctionleft.o random_wavefunc.o triangular_mpo_solver.o
+mp-fluctuation : $(mpoobj) triangular_mpo_solver.o momentum_operations.o infinitewavefunctionleft.o random_wavefunc.o triangular_mpo_solver.o packunpack.o
 mp-iexpectation-sz : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-iexpectation-sz2 : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-iexcitation : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o
@@ -529,6 +531,8 @@ LIBS_mp-ispectrum2 = $(LIBARPACK)
 LIBS_mp-aux-algebra = $(LIBARPACK)
 
 LIBS_mp-aux-matrix = $(LIBARPACK)
+
+LIBS_mp-fluctuation = $(LIBARPACK)
 
 LIBS_mp-ies = $(LIBARPACK)
 

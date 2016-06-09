@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// tensor/tensorproduct.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #if !defined(TENSORPRODUCT_H_JHCIUWHFIUH98743Y9843YP9)
 #define TENSORPRODUCT_H_JHCIUWHFIUH98743Y9843YP9
@@ -6,7 +23,7 @@
 #include "tensor.h"
 #include "linearalgebra/matrix.h"
 #include "pstream/pstream.h"
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 namespace Tensor
 {
@@ -411,6 +428,58 @@ partial_transpose(IrredTensor<T, B1, B2, S> const& x,
                   ProductBasis<B3, B4> const& alpha,
                   ProductBasis<B5, B6> const& beta);
 
+//
+// swap_product_basis
+// Constructs a unitary transformation that maps between a product
+// basis ProductBasis<B1,B2> and ProductBasis<B2,B1>
+//
+// ** 2016-07-08: untested **
+
+template <typename B1, typename B2>
+IrredTensor<double, 
+	    typename ProductBasis<B1,B2>::basis_type,
+	    typename ProductBasis<B2,B1>::basis_type>
+swap_product_basis(ProductBasis<B1,B2> const& a,
+		   ProductBasis<B2,B1> const& b);
+
+template <typename B1, typename B2>
+IrredTensor<double, 
+	    typename ProductBasis<B1,B2>::basis_type,
+	    typename ProductBasis<B2,B1>::basis_type>
+swap_product_basis(ProductBasis<B1,B2> const& a,
+		   ProductBasis<B2,B1> const& b)
+{
+   IrredTensor<double, 
+      typename ProductBasis<B1,B2>::basis_type,
+      typename ProductBasis<B2,B1>::basis_type>
+      Result(a, b, QuantumNumber(a.GetSymmetryList()));
+
+   CHECK_EQUAL(a.Left(), b.Right());
+   CHECK_EQUAL(a.Right(), b.Left());
+
+   for (int i = 0; i < a.size(); ++i)
+   {
+      std::pair<int,int> p = a.rmap(i);
+      // Find a mapping in b(p.second, p.first) that has the same quantum number as i
+      typename ProductBasis<B2,B1>::const_iterator J = b.begin(p.second, p.first);
+      typename ProductBasis<B2,B1>::const_iterator Jend = b.end(p.second, p.first);
+      while (J != Jend && b[*J] != a[i])
+	 ++J;
+      if (J != Jend)
+      {
+	 Result(i, *J) = conj_phase(a.Left()[p.first], a[i], a.Right()[p.second]);
+      }
+      else
+      {
+	 WARNING("swap_product_basis")("component is missing in the right-hand basis");
+      }
+   }
+   return Result;
+}
+
+//
+// decompose_tensor_prod
+//
 // Decompose a tensor product matrix element <(j_1' j_2') j' || M^k || (j_1 j_2) j>
 // into < j_1' || M^{k_1} || j_1 >  < j_2' || M^{k_2} || j_2 >
 
@@ -478,8 +547,8 @@ decompose_tensor_prod(IrredTensor<T, B1, B2, S> const& x,
          QuantumNumber q2 = Basis2[J.index2()];
 
          int Left1, Left2, Right1, Right2;
-         boost::tie(Left1,Right1) = Basis1.rmap(J.index1());
-         boost::tie(Left2,Right2) = Basis2.rmap(J.index2());
+         std::tie(Left1,Right1) = Basis1.rmap(J.index1());
+         std::tie(Left2,Right2) = Basis2.rmap(J.index2());
 
          QuantumNumber qLeft1 = Basis1.Left()[Left1];
          QuantumNumber qRight1 = Basis1.Right()[Right1];

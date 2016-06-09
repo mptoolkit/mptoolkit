@@ -1,8 +1,24 @@
 // -*- C++ -*-
-// Description: spin systems on triangular lattices with YC structure and efficient way of numbering; SU(2)-symmetric.
-// Authors: Ian P. McCulloch and Seyed N. Saadatmand
-// Contact: s.saadatmand@uq.edu.au
-// <obelix> @ /data5/uqssaada/git/mptoolkit/models/contrib/spin-tri-yc-su2.cpp
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// models/contrib/spin-tri-xc-su2.cpp
+//
+// Copyright (C) 2015,2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015,2016 Seyed N. Saadatmand <s.saadatmand@uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
+// Description: spin systems on triangular lattices XC SU(2)-symmetric.
 
 // XC configuration of a triangular lattice.
 // The width W measures the number of total rows, which is twice the number of sites
@@ -11,29 +27,30 @@
 //
 // Example for W=8:
 //
-//  (4)--(12)
-//  /  \ / 
-//(0)--(8)--
-//  \  / \ /
-//   7----15
-//  /  \ / 
-// 3----11--
-//  \  / \ /
-//   6----14
-//  /  \ / 
-// 2----10--
-//  \  / \ /
-//   5----13
-//  /  \ / 
-// 1----9---
-//  \  / \ /
-//   4----12
-//  /  \ / 
-// 0----8---
-//  \  / \ /
-//  (7)--(15)
-//  /  \ / 
+//  (4)-(12)
+//  / \ / 
+//(0)-(8)--
+//  \ / \ /
+//   7---15
+//  / \ / 
+// 3---11--
+//  \ / \ /
+//   6---14
+//  / \ / 
+// 2---10--
+//  \ / \ /
+//   5---13
+//  / \ / 
+// 1---9---
+//  \ / \ /
+//   4---12
+//  / \ / 
+// 0---8---
+//  \ / \ /
+//  (7)-(15)
+//  / \ / 
 //(3)-(11)--
+//
 
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"
@@ -43,15 +60,7 @@
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 
-
 namespace prog_opt = boost::program_options;
-
-
-int IntPow(int x, int p) {
-  if (p == 0) return 1;
-  if (p == 1) return x;
-  return x * IntPow(x, p-1);
-}
 
 int main(int argc, char** argv)
 {
@@ -80,8 +89,10 @@ int main(int argc, char** argv)
       OpDescriptions.add_operators()
 	 ("H_J1",     "nearest neighbor spin exchange")
 	 ("H_J2",     "next-nearest neighbor spin exchange")
+	 ("H_Jcell",  "zig-zag cylinder coupling")
 	 ("Ty"  ,     "Translation in Y direction")
 	 ("TyPi",     "Translation by pi in Y direction (only if w is divisible by 4)")
+	 ("Ry"  ,     "Reflection about the X axis")
 
 	 ;
 
@@ -126,7 +137,7 @@ int main(int argc, char** argv)
        }
 
       // Construct the Hamiltonian for a single unit-cell,
-      UnitCellMPO H1, H2;
+      UnitCellMPO H1, H2, H_Jcell;
     
       for (int i = 0; i < w2; ++i)
       {
@@ -155,6 +166,9 @@ int main(int argc, char** argv)
 	 // 60 degree bonds
 	 H2 += inner(S(0)[i+w2], S(2)[(i+1)%w2]);
 	 H2 += inner(S(0)[i+w2], S(2)[i]);
+
+	 H_Jcell += inner(S(0)[i], S(0)[i+w2]);
+	 H_Jcell += inner(S(0)[(i+1)%w2], S(0)[i+w2]);
       }
 
 
@@ -163,12 +177,25 @@ int main(int argc, char** argv)
 
       Lattice["H_J1"] = sum_unit(H1);
       Lattice["H_J2"] = sum_unit(H2);
+      Lattice["H_Jcell"] = sum_unit(H_Jcell);
 
       Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
          = "J1*H_J1 + J2*H_J2";
 
       // Momentum operator in Y direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
+
+      // Reflection about X axis
+      UnitCellMPO Ry = I(0);
+      for (int i = 0; i < w2/2; ++i)
+      {
+	 Ry = Ry * Cell.swap_gate_no_sign(w2+i, w-i-1);
+	 if (w2-i-1 > i+1)
+	 {
+	    Ry = Ry * Cell.swap_gate_no_sign(i+1, w2-i-1);
+	 }
+      }
+      Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w);
 
       // for even size unit cell, add rotation by pi
       if (w2%2 == 0)

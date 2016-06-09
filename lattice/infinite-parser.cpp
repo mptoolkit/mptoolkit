@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id: triangular-parser.cpp 1482 2015-05-13 05:47:05Z ianmcc $
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// lattice/infinite-parser.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "infinite-parser.h"
 #include "mpo/infinite_mpo_actions.h"
@@ -145,6 +162,28 @@ struct push_prod_unit_r
       UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End), Args);
       Op.ExtendToCoverUnitCell(Sites);
       eval.push(prod_unit_right_to_left(Op.MPO(), Sites));
+   }
+
+   InfiniteLattice const& Lattice;
+   std::stack<ElementType>& eval;
+   Function::ArgumentList const& Args;
+};
+
+struct push_trans_right
+{
+   push_trans_right(InfiniteLattice const& Lattice_,
+		    std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
+      : Lattice(Lattice_), eval(eval_), Args(Args_) {}
+
+   void operator()(char const* Start, char const* End) const
+   {
+      int Sites = pop_int(eval);
+      std::vector<BasisList> LocalBasisList;
+      for (int i = 0; i < Lattice.GetUnitCell().size(); ++i)
+      {
+	 LocalBasisList.push_back(Lattice.GetUnitCell().LocalBasis(i).Basis());
+      }
+      eval.push(pow(translate_right(LocalBasisList), Sites));
    }
 
    InfiniteLattice const& Lattice;
@@ -381,6 +420,36 @@ struct push_sum_string_dot
    Function::ArgumentList const& Args;
 };
 
+struct push_coarse_grain
+{
+   push_coarse_grain(InfiniteLattice const& Lattice_,
+		 std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
+      : Lattice(Lattice_), eval(eval_), Args(Args_) {}
+   
+   void operator()(char const* Start, char const* End) const
+   {
+      ElementType Op = eval.top();
+      eval.pop();
+      
+      int Sites = pop_int(eval);
+      int Cells = Sites / Lattice.GetUnitCell().size();
+
+      if (Sites <= 0)
+	 throw ParserError::AtRange("coarse_grain: canot coarse-grain to zero or negative size!", 
+				    Start, End);
+
+      TriangularMPO TOp = boost::get<TriangularMPO>(Op);
+
+      TOp = coarse_grain(TOp, Sites);
+
+      eval.push(ElementType(TOp));
+   }
+
+   InfiniteLattice const& Lattice;
+   std::stack<ElementType>& eval;
+   Function::ArgumentList const& Args;
+};
+
 } // namespace ILP;
 
 using namespace ILP;
@@ -465,6 +534,12 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 			  [scale_cells_to_sites(self.Lattice, self.eval)]
 			  | (str_p("sites") >> '=' >> expression >> ',')))
 	    | eps_p[push_number_of_sites(self.Lattice, self.eval)];
+
+	 num_cells_no_comma = (eps_p((str_p("cells") | str_p("sites")) >> '=')
+			       >> ((str_p("cells") >> '=' >> expression)
+				   [scale_cells_to_sites(self.Lattice, self.eval)]
+				   | (str_p("sites") >> '=' >> expression)))
+	    | eps_p[push_number_of_sites(self.Lattice, self.eval)];
       
 	 // ProductMPO expressions
 
@@ -483,6 +558,11 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 	    >> '(' 
 	    >> num_cells
 	    >> expression_string[push_prod_unit_r(self.Lattice, self.eval, self.Args)]
+	    >> ')';
+
+	 trans_right_expression = str_p("trans_right")
+	    >> '(' 
+	    >> num_cells_no_comma[push_trans_right(self.Lattice, self.eval, self.Args)]
 	    >> ')';
 
 	 // TriangularMPO expressions
@@ -518,6 +598,11 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 	    >> expression_string[push_sum_string_dot(self.Lattice, self.eval, self.Args)]
 	    >> ')';
 
+	 coarse_grain_expression = str_p("coarse_grain") 
+	    >> '('
+	    >> (num_cells
+		>> expression >> ')')[push_coarse_grain(self.Lattice, self.eval, self.Args)];
+
 	 function_expression = eps_p(identifier >> '{')
 	    >> identifier[push_function(self.FunctionStack, self.ParameterStack)]
 	    >> parameter_list[eval_function(self.Lattice, 
@@ -552,12 +637,14 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 	    |   keyword_d[constants_p[push_value<ElementType>(self.eval)]]
 	    |   keyword_d[self.Arguments[push_value<ElementType>(self.eval)]]
 	    |   prod_expression
+	    |   string_expression
 	    |   prod_unit_expression
 	    |   prod_unit_r_expression
-	    |   string_expression
+	    |   trans_right_expression
 	    |   sum_unit_expression
 	    |   sum_kink_expression
 	    |   sum_k_expression
+            |   coarse_grain_expression
 	    |   sum_string_inner_expression
 	    |   sum_string_dot_expression
 	    |   commutator_bracket
@@ -602,9 +689,9 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 	 operator_expression, operator_bracket_sq, operator_sq_bracket, operator_bracket, operator_sq,
 	 parameter, named_parameter, parameter_list, expression_string, 
 	 sum_unit_expression, sum_kink_expression, sum_k_expression,
-	    identifier, pow_term, commutator_bracket, num_cells, function_expression,
-	 string_expression, prod_unit_expression, prod_unit_r_expression,
-	 sum_string_inner_expression, sum_string_dot_expression;
+	 identifier, pow_term, commutator_bracket, num_cells, num_cells_no_comma, function_expression,
+	 string_expression, prod_unit_expression, prod_unit_r_expression, trans_right_expression,
+	 sum_string_inner_expression, sum_string_dot_expression, coarse_grain_expression;
 
       rule<ScannerT> const& start() const { return expression; }
    };

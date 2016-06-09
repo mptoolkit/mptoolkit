@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mpo/product_mpo.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 //
 // Matrix product operator for a translationally invariant (or k-dependent)
 // product, such as a unitary or non-unitary evolution operator.
@@ -161,6 +178,10 @@ ProductMPO prod_unit_left_to_right(FiniteMPO const& Op, int UnitCellSize);
 // AB then the product is .... * A(2)B(3) * A(1)B(2) * A(0)B(1) * ...
 // = A(0)B(0) A(1)B(1) A(2)B(2) ...
 ProductMPO prod_unit_right_to_left(FiniteMPO const& Op, int UnitCellSize);
+
+// Construct the operator to do a right translation by one site, given the
+// array of local basis states
+ProductMPO translate_right(std::vector<BasisList> const& LocalBasis);
 
 // optimize the representation - no idea how to do this!
 //void optimize(ProductMPO& Op);

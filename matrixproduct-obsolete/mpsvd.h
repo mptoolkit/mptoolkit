@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// matrixproduct-obsolete/mpsvd.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #if !defined(MPSVD_H_DHCJKDSHTUY7893Y789YT578YGTE7R8OFDSHL)
 #define MPSVD_H_DHCJKDSHTUY7893Y789YT578YGTE7R8OFDSHL
@@ -41,8 +58,8 @@ void SingularValueDecomposition(SimpleOperator const& M,
       for (const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
       {
          int si, ni, sj, nj;
-         boost::tie(si, ni) = b1.Lookup(J.index1());
-         boost::tie(sj, nj) = b2.Lookup(J.index2());
+         std::tie(si, ni) = b1.Lookup(J.index1());
+         std::tie(sj, nj) = b2.Lookup(J.index2());
          CHECK_EQUAL(si,sj);
          MatList[si](ni,nj) = *J;
       }

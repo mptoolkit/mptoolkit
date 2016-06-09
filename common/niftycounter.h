@@ -1,4 +1,22 @@
-/* -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// common/niftycounter.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+/* -*- C++ -*-
   niftycounter.h
 
   An implementation of the nifty counter used to ensure correct ordering of static data initialization.
@@ -11,8 +29,8 @@
                             You can supply the functors to the constructor, if you want.
 */
 
-#if !defined(NIFTYCOUNTER_H_HDFJKFHD8357YGUIR3746ERUYTY7HERUI)
-#define NIFTYCOUNTER_H_HDFJKFHD8357YGUIR3746ERUYTY7HERUI
+#if !defined(MPTOOLKIT_COMMON_NIFTYCOUNTER_H)
+#define MPTOOLKIT_COMMON_NIFTYCOUNTER_H
 
 namespace NiftyCounter
 {

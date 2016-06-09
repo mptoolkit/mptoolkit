@@ -1,5 +1,23 @@
-/* -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// tensor/tensor.h
+//
+// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
+/*
   Tensor product library main file
 
   Created 2004 Ian McCulloch
@@ -16,6 +34,7 @@
 #include "quantumnumbers/quantumnumber.h"
 #include "pstream/pstream.h"
 #include <boost/mpl/assert.hpp>
+#include <cmath>
 
 // first, we declare some new operations that extend the LinearAlgebra operations
 namespace LinearAlgebra
@@ -1032,7 +1051,7 @@ struct ScalarProd<HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S> >,
 	    }
          }
       }
-      CHECK(!isnan(norm_frob_sq(Result)));
+      CHECK(!std::isnan(norm_frob_sq(Result)));
       return Result;
    }
 

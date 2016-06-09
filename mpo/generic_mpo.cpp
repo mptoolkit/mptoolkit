@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mpo/generic_mpo.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "generic_mpo.h"
 
@@ -406,6 +423,52 @@ mask_row(GenericMPO const& Op, int Row)
    Mask.front()[Row] = true;
    mask_unused_elements(Op, Mask);
    return Mask;
+}
+
+GenericMPO coarse_grain(GenericMPO const& Op, int N)
+{
+   CHECK(Op.size() % N == 0);
+   std::vector<OperatorComponent> Result;
+   for (unsigned i = 0; i < Op.size(); i += N)
+   {
+      OperatorComponent c = local_tensor_prod(Op[i], Op[i+1]);
+      for (int j = 2; j < N; ++j)
+      {
+	 c = local_tensor_prod(c, Op[j]);
+      }
+      Result.push_back(c);
+   }
+   return GenericMPO(Result.begin(), Result.end());
+}
+
+GenericMPO coarse_grain_range(GenericMPO const& Op, int beg, int end)
+{
+   CHECK(0 <= beg && beg <= end && end <= int(Op.size()));
+   // coarse-graining 0 or 1 sites is a no-op
+   if (end-beg < 2)
+      return Op;
+
+   // sites up to beg are unaffected
+   std::vector<OperatorComponent> Result;
+   for (int i = 0; i < beg; ++i)
+   {
+      Result.push_back(Op[i]);
+   }
+
+   // coarse-grain [beg,end)
+   OperatorComponent c = local_tensor_prod(Op[beg], Op[beg+1]);
+   for (int j = beg+2; j < end; ++j)
+   {
+      c = local_tensor_prod(c, Op[j]);
+   }
+   Result.push_back(c);
+
+   // sites [end, Op.size) are unaffected
+   for (int i = end; i < int(Op.size()); ++i)
+   {
+      Result.push_back(Op[i]);
+   }
+   return GenericMPO(Result.begin(), Result.end());
 }
 
 SimpleOperator make_projector_onto(BasisList const& Basis, std::set<int> const& Onto)

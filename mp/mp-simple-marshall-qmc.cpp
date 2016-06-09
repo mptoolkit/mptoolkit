@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mp/mp-simple-marshall-qmc.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "matrixproduct/lattice.h"
 #include "matrixproduct/mpoperatorlist.h"
@@ -13,7 +30,7 @@
 #include <common/prog_options.h>
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 namespace prog_opt = boost::program_options;
 
@@ -227,6 +244,3 @@ int main(int argc, char** argv)
       return 1;
    }
 }
-
-
-

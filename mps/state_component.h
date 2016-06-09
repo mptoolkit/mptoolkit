@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mps/state_component.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 //
 // I prefer the naming 'local basis' over the original 'site basis'.  I intend to eventually
 // add functions with 'site' -> 'local' everywhere and eventually remove the 'site' variants.
@@ -30,6 +47,29 @@ typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
 typedef IrredTensor<LinearAlgebra::ScalarMatrix<std::complex<double>>,
 		    VectorBasis,
 		    VectorBasis> SimpleVectorOperator;
+
+// typedef for a diagonal, real operator
+typedef IrredTensor
+<
+   LinearAlgebra::DiagonalMatrix<double>
+   , VectorBasis
+   , VectorBasis
+   , Tensor::DiagonalStructure
+   >
+RealDiagonalOperator;
+
+// RealSemiDiagonalOperator is an IrredTensor that is not diagonal
+// in the outer index, but made up of a DiagonalMatrix.  This
+// exists mostly for compatibility with old file formats that
+// might have this type instead of a RealDiagonalOperator
+typedef IrredTensor
+<
+   LinearAlgebra::DiagonalMatrix<double>
+   , VectorBasis
+   , VectorBasis
+   , Tensor::DefaultStructure
+   >
+RealSemiDiagonalOperator;
 
 template <typename T>
 struct BasicStateComponent;
@@ -615,6 +655,15 @@ MatrixOperator ExpandBasis2(StateComponent& A);
 // the A-matrix.  Zero matrix elements are excluded.
 MatrixOperator ExpandBasis1Used(StateComponent& A, std::vector<int> const& Used);
 MatrixOperator ExpandBasis2Used(StateComponent& A, std::vector<int> const& Used);
+
+// left-orthogonalizes an MPS
+// basically equivalent to ExpandBasis2() followed by an SVD
+std::pair<RealDiagonalOperator, MatrixOperator>
+OrthogonalizeBasis2(StateComponent& A);
+
+// right-orthogonalizes an MPS
+std::pair<MatrixOperator, RealDiagonalOperator>
+OrthogonalizeBasis1(StateComponent& A);
 
 // experimental ExpandBasis1 variant that returns a SimpleStateComponent
 std::pair<MatrixOperator, SimpleStateComponent>

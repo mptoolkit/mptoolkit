@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// lattice/unitcell.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "unitcell.h"
 #include "unitcell-parser.h"
@@ -470,7 +487,7 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
 
    // decompose it back into sites   
    OperatorComponent R1, R2;
-   boost::tie(R1, R2) = decompose_local_tensor_prod(Op, Basis_ji, Basis_ij);
+   std::tie(R1, R2) = decompose_local_tensor_prod(Op, Basis_ji, Basis_ij);
 
    // now turn this into a FiniteMPO
    FiniteMPO Result(this->size() * (Cell_j-Cell_i+1));
@@ -561,7 +578,7 @@ UnitCell::swap_gate_no_sign(int Cell_i, int i, int Cell_j, int j) const
 
    // decompose it back into sites   
    OperatorComponent R1, R2;
-   boost::tie(R1, R2) = decompose_local_tensor_prod(Op, Basis_ji, Basis_ij);
+   std::tie(R1, R2) = decompose_local_tensor_prod(Op, Basis_ji, Basis_ij);
 
    // now turn this into a FiniteMPO
    FiniteMPO Result(this->size() * (Cell_j-Cell_i+1));

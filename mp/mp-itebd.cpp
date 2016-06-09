@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mp/mp-itebd.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "matrixproduct/lattice.h"
 #include "matrixproduct/mpoperatorlist.h"
@@ -185,11 +202,11 @@ int main(int argc, char** argv)
    //   					  Site["S"], 
    //   					  Site["I"].TransformsAs());
    MPOpComponent H_A, H_B;
-   boost::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
+   std::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
 					     std::complex<double>(-DeltaTau, -DeltaT));
 
    MPOpComponent half_H_A, half_H_B;
-   boost::tie(half_H_A, half_H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
+   std::tie(half_H_A, half_H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
 						       std::complex<double>(-DeltaTau/2.0, -DeltaT/2.0));
 
    //TRACE(H_A)(H_B);
@@ -267,7 +284,7 @@ int main(int argc, char** argv)
       //      if (iter == 2000)
       {
 	 DeltaTau *= 1.0 - 1e-4;
-	 boost::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
+	 std::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
 						   std::complex<double>(-DeltaTau, -DeltaT));
       }
 
@@ -286,7 +303,7 @@ int main(int argc, char** argv)
       {
 	 // to a half-step, to simulate 2nd order S-T decomposition
 	 MPOpComponent H_Ax, H_Bx;
-	 boost::tie(H_Ax, H_Bx) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
+	 std::tie(H_Ax, H_Bx) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
 						   std::complex<double>(-DeltaTau*0.5/(1.0-1e-4), 0));
 	 SInfo.MaxStates = 100;
 	 MPStateComponent Ax = A, Bx = B;
@@ -311,14 +328,14 @@ int main(int argc, char** argv)
 #if 0
 	 if ()
 	 {
-	    boost::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
+	    std::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
 						      std::complex<double>(0.0, 0.0));
 	 }
 	 else
 	 {
 	    //	    DeltaTau *= 0.5;
 	    // TRACE("Reducing DeltaTau")(DeltaTau);
-	    boost::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
+	    std::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
 						      std::complex<double>(-DeltaTau, -DeltaT));
 	 }
 #endif
@@ -377,6 +394,3 @@ int main(int argc, char** argv)
       A = prod(Lambda1, A);
    }
 }
-
-
-

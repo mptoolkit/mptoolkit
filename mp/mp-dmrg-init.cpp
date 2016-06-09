@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mp/mp-dmrg-init.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "pheap/pheap.h"
 #include "quantumnumbers/all_symmetries.h"
@@ -86,7 +103,7 @@ int main(int argc, char** argv)
       std::string BasePathFull = vm["out"].as<std::string>();
       std::cout << "Base filename: " << BasePathFull << '\n';
       std::string BasePath, FileName;
-      boost::tie(BasePath, FileName) = pheap::SplitPathFile(BasePathFull);
+      std::tie(BasePath, FileName) = pheap::SplitPathFile(BasePathFull);
       if (BasePath.empty()) BasePath = "./";
 
       long PageSize = Conf.GetBytes("PageSize", 64*1024);

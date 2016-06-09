@@ -1,7 +1,24 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// matrixproduct-obsolete/mpopcomponent.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "mpopcomponent.h"
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 #include "density.h"
 #include "linearalgebra/eigen.h"
 #include "common/environment.h"
@@ -539,10 +556,10 @@ SimpleOperator ExpandBasis1(MPOpComponent& A, Normalization n)
    for (std::size_t t = 0; t < FullBasis1.size(); ++t)
    {
       int l, b2;
-      boost::tie(l,b2) = FullBasis1.rmap(t);
+      std::tie(l,b2) = FullBasis1.rmap(t);
 
       int sp, s;
-      boost::tie(sp, s) = LocalRMap[l];
+      std::tie(sp, s) = LocalRMap[l];
 
       if (Result[LocalBasis[l]](sp, s).is_null())
       {
@@ -599,10 +616,10 @@ SimpleOperator ExpandBasis2(MPOpComponent& A, Normalization n)
    for (std::size_t t = 0; t < FullBasis2.size(); ++t)
    {
       int l, b1;
-      boost::tie(b1,l) = FullBasis2.rmap(t);
+      std::tie(b1,l) = FullBasis2.rmap(t);
 
       int sp, s;
-      boost::tie(sp, s) = LocalRMap[l];
+      std::tie(sp, s) = LocalRMap[l];
 
       if (Result[LocalBasis[l]](sp, s).is_null())
       {

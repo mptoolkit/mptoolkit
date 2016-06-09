@@ -1,4 +1,22 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// misc/oogl/oogl.h
+//
+// Copyright (C) 2002-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
 /*
   classes to write OOGL files for use with geomview.
 
@@ -6,7 +24,7 @@
 
   In OOGL, the usual CG convention is used;
   vertices are row-vectors, and transformations are applied by applying the
-  transform to the right, ie v' = v * A. 
+  transform to the right, ie v' = v * A.
   This allows the operation v *= A.
 
   This also means that transformations apply in the opposite order, ie
@@ -344,4 +362,3 @@ class DefinedSymbol : public OoglPrimitive
 
 
 #endif
-

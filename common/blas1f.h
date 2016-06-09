@@ -1,4 +1,22 @@
-/* -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// common/blas1f.h
+//
+// Copyright (C) 2000-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+/* -*- C++ -*-
   blas1f.h
 
   C++ interface to BLAS level 1
@@ -8,8 +26,8 @@
   Ideas from LAPACK++
 */
 
-#if !defined(BLAS1_h_HG7YRFHUI2RU8934F7Y47YWEHSAU32)
-#define BLAS1_h_HG7YRFHUI2RU8934F7Y47YWEHSAU32
+#if !defined(MPTOOLKIT_COMMON_BLAS1_H)
+#define MPTOOLKIT_COMMON_BLAS1_H
 
 #if defined(HAVE_CONFIG_H)
 #include "config.h"   // to get restrict working
@@ -1274,4 +1292,3 @@ Example
 */
 
 #endif
-

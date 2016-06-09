@@ -1,10 +1,28 @@
-/* -*- C++ -*-  $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// linearalgebra/scalarproxy.h
+//
+// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
-  Created 2204-06-22 Ian McCulloch
+/*
+  Created 2004-06-22 Ian McCulloch
 
   Defines function scalar(T) to create a proxy to treat T as a scalar.
 
-  Usage:  
+  Usage:
   Matrix<double> M;
   std::complex<double> x;
   scalar(x) * M;   // equivalent to left_scalar_prod(x, M)
@@ -47,4 +65,3 @@ scalar(T const& x)
 } // namespace LinearAlgebra
 
 #endif
-

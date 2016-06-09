@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// common/blas2f.h
+//
+// Copyright (C) 2001-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 /*
   blas2f.h
@@ -10,8 +27,8 @@
   Ideas from LAPACK++
 */
 
-#if !defined(BLAS2F_H_FDSHJFDASHJ4378Y9Y7FRH37Y8FWHU43Y798FHUYF4Y78)
-#define BLAS2F_H_FDSHJFDASHJ4378Y9Y7FRH37Y8FWHU43Y798FHUYF4Y78
+#if !defined(MPTOOLKIT_COMMON_BLAS2F_H)
+#define MPTOOLKIT_COMMON_BLAS2F_H
 
 #include "fortran.h"
 #include "restrict.h"
@@ -1505,4 +1522,3 @@ Example
 */
  
 #endif
-

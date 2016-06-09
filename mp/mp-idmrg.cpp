@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id: mp-idmrg.cpp 1593 2015-09-02 07:42:18Z ianmcc $ 
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mp/mp-idmrg.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 // variant of iDMRG where we keep intact the unit cell.
 // This prohibits relfection symmetry.
@@ -745,7 +762,7 @@ int main(int argc, char** argv)
       // Hamiltonian
       TriangularMPO HamMPO;
       InfiniteLattice Lattice;
-      boost::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
+      std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
       int const UnitCellSize = Lattice.GetUnitCell().size();
       if (WavefuncUnitCellSize == 0)
 	 WavefuncUnitCellSize = UnitCellSize;
@@ -925,7 +942,7 @@ int main(int argc, char** argv)
 	 LinearWavefunction PsiR;
 	 MatrixOperator U;
 	 RealDiagonalOperator D;
-	 boost::tie(U, D, PsiR) = get_right_canonical(Psi);
+	 std::tie(U, D, PsiR) = get_right_canonical(Psi);
 	 
 	 MatrixOperator L = D;
 	 PsiR.set_back(prod(PsiR.get_back(), delta_shift(U, adjoint(QShift))));

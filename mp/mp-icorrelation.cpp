@@ -1,4 +1,21 @@
 // -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mp/mp-icorrelation.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "wavefunction/mpwavefunction.h"
 #include "lattice/latticesite.h"
@@ -342,7 +359,7 @@ int main(int argc, char** argv)
 	 else
 	 {
 	    InfiniteLattice Lattice1;
-	    boost::tie(Op1, Lattice1) = ParseUnitCellOperatorAndLattice(Op1Str);
+	    std::tie(Op1, Lattice1) = ParseUnitCellOperatorAndLattice(Op1Str);
 	    Lattice1UnitCellSize = Lattice1.GetUnitCell().size();
 	 }
       }
@@ -358,7 +375,7 @@ int main(int argc, char** argv)
 	 else
 	 {
 	    InfiniteLattice Lattice2;
-	    boost::tie(Op2, Lattice2) = ParseUnitCellOperatorAndLattice(Op2Str);
+	    std::tie(Op2, Lattice2) = ParseUnitCellOperatorAndLattice(Op2Str);
 	    Lattice2UnitCellSize = Lattice2.GetUnitCell().size();
 	 }
       }
@@ -405,7 +422,7 @@ int main(int argc, char** argv)
 	 else
 	 {
 	    InfiniteLattice StringLattice;
-	    boost::tie(StringOp, StringLattice) = ParseProductOperatorAndLattice(StringOpStr);
+	    std::tie(StringOp, StringLattice) = ParseProductOperatorAndLattice(StringOpStr);
 	    LatticeStringUnitCellSize = StringLattice.GetUnitCell().size();
 	 }
 	 StringSize = StringOp.size();

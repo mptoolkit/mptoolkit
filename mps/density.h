@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mps/density.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #if !defined(DENSITY_H_FDSHYFUIH38348UER8J8U3)
 #define DENSITY_H_FDSHYFUIH38348UER8J8U3
@@ -6,36 +23,12 @@
 #include "mps/state_component.h"
 #include "truncation.h"
 #include "linearalgebra/diagonalmatrix.h"
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 #include <set>
 #include <list>
 
 // sometimes we need a number of states that stands for 'infinite'
 int const DefaultMaxStates = 50000;
-
-// typedef for a diagonal, real operator
-typedef IrredTensor
-<
-   LinearAlgebra::DiagonalMatrix<double>
-   , VectorBasis
-   , VectorBasis
-   , Tensor::DiagonalStructure
-   >
-RealDiagonalOperator;
-
-// RealSemiDiagonalOperator is an IrredTensor that is not diagonal
-// in the outer index, but made up of a DiagonalMatrix.  This
-// exists mostly for compatibility with old file formats that
-// might have this type instead of a RealDiagonalOperator
-typedef IrredTensor
-<
-   LinearAlgebra::DiagonalMatrix<double>
-   , VectorBasis
-   , VectorBasis
-   , Tensor::DefaultStructure
-   >
-RealSemiDiagonalOperator;
-
 
 typedef std::set<QuantumNumbers::QuantumNumber> KeepListType;
 
@@ -192,6 +185,8 @@ class DensityMatrixBase
       double Entropy(bool Base2 = false) const;
 
       double EvaluateCasimir(int n) const;
+
+      double EvaluateCasimirMoment(int n) const;
 
    protected:
       DensityMatrixBase() {}
@@ -396,4 +391,3 @@ typedef SingularDecomposition<StateComponent, StateComponent> AMatSVD;  // avoid
 #include "density.cc"
 
 #endif
-

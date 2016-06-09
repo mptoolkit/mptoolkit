@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mp/mp-exp.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "matrixproduct/lattice.h"
 #include "matrixproduct/mpoperatorlist.h"
@@ -109,7 +126,7 @@ void TwoSiteScalarApply(MPOpComponent& A, MPOpComponent& B, std::complex<double>
          if (LinearAlgebra::norm_2(U(k,i)) > 1E-10)
          {
             int l,m;
-            boost::tie(l,m) = alpha.rmap(k);
+            std::tie(l,m) = alpha.rmap(k);
 
             A[alpha[k]].data()(l,m)(1,k) = U(k,i) * D[i];
          }
@@ -120,7 +137,7 @@ void TwoSiteScalarApply(MPOpComponent& A, MPOpComponent& B, std::complex<double>
          if (LinearAlgebra::norm_2(Vt(i,k)) > 1E-10)
          {
             int l,m;
-            boost::tie(l,m) = beta.rmap(k);
+            std::tie(l,m) = beta.rmap(k);
 
             B[beta[k]].data()(l,m)(k,1) = Vt(i,k) / std::sqrt(double(degree(B.SiteBasis()[l])));
          }

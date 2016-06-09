@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// matrixproduct-obsolete/mpopcompressed.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "mpopcompressed.h"
 #include "common/trace.h"
@@ -212,7 +229,7 @@ DoProd::operator()(MPOpArray const& a, MPOpArray const& b) const
       while (Va.size() < Vb.size())
       {
          MPOpCompressed Temp;
-         boost::tie(Temp, Vb) = split_operator(Vb, Va.size());
+         std::tie(Temp, Vb) = split_operator(Vb, Va.size());
          //TRACE(Va.size())(Temp.size())(Vb.size());
          Result.push_back(do_prod(C, B, Va, Temp));
          ++Ia; Va = *Ia;  // Ia is never singular as the operators are the same overall size
@@ -221,7 +238,7 @@ DoProd::operator()(MPOpArray const& a, MPOpArray const& b) const
       while (Vb.size() < Va.size())
       {
          MPOpCompressed Temp;
-         boost::tie(Temp, Va) = split_operator(Va, Vb.size());
+         std::tie(Temp, Va) = split_operator(Va, Vb.size());
          //TRACE(Va.size())(Temp.size())(Vb.size());
          Result.push_back(do_prod(C, B, Temp, Vb));
          ++Ib; Vb = *Ib;  // Ib is never singular as the operators are the same overall size
@@ -442,7 +459,7 @@ DoSum::operator()(MPOpArray const& a, MPOpArray const& b) const
       while (Va.size() < Vb.size())
       {
          MPOpCompressed Temp;
-         boost::tie(Temp, Vb) = split_operator(Vb, Va.size());
+         std::tie(Temp, Vb) = split_operator(Vb, Va.size());
          Result.push_back(do_sum(C, B, Va, Temp));
          ++Ia; Va = *Ia;  // Ia is never singular as the operators are the same overall size
       }
@@ -450,7 +467,7 @@ DoSum::operator()(MPOpArray const& a, MPOpArray const& b) const
       while (Vb.size() < Va.size())
       {
          MPOpCompressed Temp;
-         boost::tie(Temp, Va) = split_operator(Va, Vb.size());
+         std::tie(Temp, Va) = split_operator(Va, Vb.size());
          Result.push_back(do_sum(C, B, Temp, Vb));
          ++Ib; Vb = *Ib;  // Ib is never singular as the operators are the same overall size
       }

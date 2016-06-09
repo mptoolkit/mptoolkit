@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// models/spin-z2.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "lattice/latticesite.h"
 #include "quantumnumbers/z2.h"
@@ -14,7 +31,7 @@ std::string StateName(half_int s, bool Symmetric)
 }
 
 inline
-LatticeSite CreateZ2SpinSite(half_int Spin)
+LatticeSite SpinZ2(half_int Spin)
 {
    SymmetryList Symmetry("Z:Z2");
    QuantumNumbers::QNConstructor<QuantumNumbers::Z2> QN(Symmetry);

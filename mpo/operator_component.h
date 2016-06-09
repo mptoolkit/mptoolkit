@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id: operator_component.h 1595 2015-09-04 13:15:02Z ianmcc $
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mpo/operator_component.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 // New version for an MPO component.
 // This version looks like a matrix of reducible operators, which is a total reversal
@@ -170,6 +187,8 @@ swap_gate(BasisList const& B1, BasisList const& B2,
 	  ProductBasis<BasisList, BasisList> const& Basis_21,
 	  ProductBasis<BasisList, BasisList> const& Basis_12);
 
+
+
 inline
 SimpleOperator
 swap_gate(BasisList const& B1, BasisList const& B2)
@@ -193,6 +212,31 @@ swap_gate(BasisList const& B1, LinearAlgebra::Vector<double> const& Parity1,
 {
    return swap_gate(B1, B2, ProductBasis<BasisList, BasisList>(B2,B1), ProductBasis<BasisList, BasisList>(B1,B2));
 }
+
+// Constructs an MPO that represents a shift operator
+//     |
+//      \
+// ---   --- IncomingBasis
+//    \
+//     |
+//    ThisBasis
+
+OperatorComponent
+translate_left(BasisList const& LeftBasis, BasisList const& ThisBasis);
+
+// Constructs an MPO that represents a translation to the left
+//               |
+//              /
+// LeftBasis ---   --- 
+//                /
+//               |
+//           ThisBasis
+//
+// The result is an MPO with local basis (LeftBasis, ThisBasis), and
+// auxiliary basis (LeftBasis, ThisBasis)
+
+OperatorComponent
+translate_right(BasisList const& LeftBasis, BasisList const& ThisBasis);
 
 namespace LinearAlgebra
 {

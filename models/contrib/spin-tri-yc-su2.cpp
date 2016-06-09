@@ -1,8 +1,24 @@
 // -*- C++ -*-
-// Description: spin systems on triangular lattices with YC structure and efficient way of numbering - SU(2)-symmetric.
-// Authors: Ian P. McCulloch and Seyed N. Saadatmand
-// Contact: s.saadatmand@uq.edu.au
-// <OBELIX> @ /data5/uqssaada/git/mptoolkit/models/contrib/spin-tri-yc-su2.cpp
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// models/contrib/spin-tri-yc-su2.cpp
+//
+// Copyright (C) 2015,2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015,2016 Seyed N. Saadatmand <s.saadatmand@uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
+// Description: spin systems on triangular lattices with YC structure and efficient way of numbering; SU(2)-symmetric.
 
 // YC configuration of a triangular lattice.
 // The default unit-cell size is the width value.

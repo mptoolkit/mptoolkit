@@ -1,4 +1,21 @@
 // -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mp/mp-imoments.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "mpo/triangular_mpo.h"
 #include "wavefunction/mpwavefunction.h"
@@ -259,7 +276,6 @@ int main(int argc, char** argv)
 	 ("degree,d", prog_opt::value(&Degree),
 	  "force setting the degree of the MPO")
 	 ("quiet,q", prog_opt::bool_switch(&Quiet), "don't show column headings")
-         ("print,p", prog_opt::bool_switch(&Print), "[rint the MPO to standard output")
 	 ("tol", prog_opt::value(&Tol),
 	  FormatDefault("Linear solver convergence tolerance", Tol).c_str())
 	 ("unityepsilon", prog_opt::value(&UnityEpsilon),
@@ -286,7 +302,7 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);    
 
-      if (vm.count("help") > 0 || vm.count("operator") == 0)
+      if (vm.count("help") > 0 || vm.count("psi") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " <psi1> <operator>\n";
@@ -296,10 +312,7 @@ int main(int argc, char** argv)
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
- 
-      if (!Quiet)
-	 print_preamble(std::cout, argc, argv);
-      
+
       // If no output switches are used, default to showing everything
       if (!ShowRealPart && !ShowImagPart && !ShowMagnitude
 	  && !ShowCartesian && !ShowPolar && !ShowArgument)
@@ -330,6 +343,17 @@ int main(int argc, char** argv)
       InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
       int WavefuncUnitCellSize = Psi.size();
 
+      if (!vm.count("operator"))
+      {
+	 OpStr = PsiPtr->Attributes()["Hamiltonian"].get_or_default(std::string());
+	 if (OpStr.empty())
+	 {
+	    std::cerr <<  basename(argv[0]) << ": fatal: no operator specified, and wavefunction "
+	       "attribute Hamiltonian does not exist or is empty.\n";
+	    return 1;
+	 }
+      }
+
       // The default UnitCellSize for output is the wavefunction size
       if (UnitCellSize == 0)
 	 UnitCellSize = WavefuncUnitCellSize;
@@ -337,6 +361,11 @@ int main(int argc, char** argv)
 
       if (!Quiet)
       {
+	 print_preamble(std::cout, argc, argv);
+	 if (!vm.count("operator"))
+	 {
+	    std::cout << "#operator " << EscapeArgument(OpStr) << '\n';
+	 }
 	 std::cout << "#quantities are calculated per unit cell size of " << UnitCellSize 
 		   << (UnitCellSize == 1 ? " site\n" : " sites\n");
       }
@@ -344,23 +373,13 @@ int main(int argc, char** argv)
       TriangularMPO Op;
 
       InfiniteLattice Lattice;
-      boost::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(OpStr);
-
-      if (Print)
-      {
-	 print_structure(Op, std::cout, UnityEpsilon);
-	 if (Verbose > 2)
-	    std::cout << Op << '\n';
-	 //std::cout << "\nTransfer matrix:" << construct_transfer_matrix(herm(GenericMPO(Op)),
-	 //								GenericMPO(Op)) << '\n';
-      };
-
+      std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(OpStr);
 
       // Make a LinearWavefunction in the symmetric orthogonality constraint
       // TODO: actually this is left-orthogonal.  Which might be OK?
       RealDiagonalOperator D;
       LinearWavefunction Phi;
-      boost::tie(Phi, D) = get_left_canonical(Psi);
+      std::tie(Phi, D) = get_left_canonical(Psi);
 
       MatrixOperator Rho = D;
       Rho = scalar_prod(Rho, herm(Rho));

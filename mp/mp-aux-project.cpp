@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mp/mp-aux-project.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "wavefunction/mpwavefunction.h"
 #include "mps/packunpack.h"
@@ -213,7 +230,7 @@ int main(int argc, char** argv)
       // orthogonalize the wavefunction
       LinearWavefunction Psi1;
       RealDiagonalOperator D;
-      boost::tie(Psi1, D) = get_left_canonical(Psi);
+      std::tie(Psi1, D) = get_left_canonical(Psi);
       MatrixOperator Rho = D;
       Rho = scalar_prod(Rho, herm(Rho));
       MatrixOperator Identity = MatrixOperator::make_identity(Psi1.Basis1());

@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mp-algorithms/dmrg2.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #if !defined(DMRG2_H_HHVERTHYEHYYOIUDLE89P)
 #define DMRG2_H_HHVERTHYEHYYOIUDLE89P
@@ -203,7 +220,7 @@ void DMRG::DoIterationMoveRight()
    }
    MatrixOperator UKeep, UDiscard;
    TruncationInfo Info;
-   boost::tie(UKeep, UDiscard) = 
+   std::tie(UKeep, UDiscard) = 
       this->ConstructSplitTruncator(Rho, 
 				    QuantumNumbersInBasis(adjoint(Psi.SiteBasis())), 
 				    Info);
@@ -218,7 +235,7 @@ void DMRG::DoIterationMoveRight()
    
    // Merge the discarded basis with the expanded environment basis
    DiagonalProjection UComDiscard, UComEnv;
-   boost::tie(UComDiscard, UComEnv) = basis_sum(PsiDiscard.Basis1(), CEnv.Basis1());
+   std::tie(UComDiscard, UComEnv) = basis_sum(PsiDiscard.Basis1(), CEnv.Basis1());
 
    // Merge the discarded wavefunction with the environment, to get the remainder.
    MatrixOperator Rem = herm(UComDiscard)*PsiDiscard + herm(UComEnv)*CEnv;
@@ -286,7 +303,7 @@ void DMRG::DoIterationMoveRight()
 
    // Merge the new environment with the kept states, to give the new full basis
    DiagonalProjection NewUKeep, NewUEnv;
-   boost::tie(NewUKeep, NewUEnv) = basis_sum(UKeep.Basis1(), RemTrunc.Basis1());
+   std::tie(NewUKeep, NewUEnv) = basis_sum(UKeep.Basis1(), RemTrunc.Basis1());
 
    // Get the full A matrix and make C and CEnv map from the full basis to the
    // kept and environment states
@@ -346,7 +363,7 @@ void DMRG::DoIterationMoveLeft()
    }
    MatrixOperator UKeep, UDiscard;
    TruncationInfo Info;
-   boost::tie(UKeep, UDiscard) = 
+   std::tie(UKeep, UDiscard) = 
       this->ConstructSplitTruncator(Rho, 
 				    QuantumNumbersInBasis(adjoint(Psi.SiteBasis())), 
 				    Info);
@@ -361,7 +378,7 @@ void DMRG::DoIterationMoveLeft()
    
    // Merge the discarded basis with the expanded environment basis
    DiagonalProjection UComDiscard, UComEnv;
-   boost::tie(UComDiscard, UComEnv) = basis_sum(PsiDiscard.Basis2(), CEnv.Basis2());
+   std::tie(UComDiscard, UComEnv) = basis_sum(PsiDiscard.Basis2(), CEnv.Basis2());
 
    // Merge the discarded wavefunction with the environment, to get the remainder.
    MatrixOperator Rem = PsiDiscard*UComDiscard + CEnv*UComEnv;
@@ -429,7 +446,7 @@ void DMRG::DoIterationMoveLeft()
 
    // Merge the new environment with the kept states, to give the new full basis
    DiagonalProjection NewUKeep, NewUEnv;
-   boost::tie(NewUKeep, NewUEnv) = basis_sum(UKeep.Basis1(), RemTrunc.Basis1());
+   std::tie(NewUKeep, NewUEnv) = basis_sum(UKeep.Basis1(), RemTrunc.Basis1());
 
    // Get the full A matrix and make C and CEnv map from the full basis to the
    // kept and environment states

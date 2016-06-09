@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// wavefunction/infinitewavefunctionleft.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "infinitewavefunctionleft.h"
 #include "tensor/tensor_eigen.h"
@@ -414,10 +431,10 @@ PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunctionLeft c
 std::pair<LinearWavefunction, RealDiagonalOperator>
 get_left_canonical(InfiniteWavefunctionLeft const& Psi)
 {
-   return std::make_pair(LinearWavefunction(Psi.base_begin(), Psi.base_end()), Psi.lambda(Psi.size()));
+   return std::make_pair(LinearWavefunction(Psi.base_begin(), Psi.base_end()), Psi.lambda_r());
 }
 
-boost::tuple<MatrixOperator, RealDiagonalOperator, LinearWavefunction>
+std::tuple<MatrixOperator, RealDiagonalOperator, LinearWavefunction>
 get_right_canonical(InfiniteWavefunctionLeft const& Psi)
 {
    LinearWavefunction Result;
@@ -435,7 +452,7 @@ get_right_canonical(InfiniteWavefunctionLeft const& Psi)
       Result.push_front(prod(Vh, A));
    }
 
-   return boost::make_tuple(U, D, Result);
+   return std::make_tuple(U, D, Result);
 }
 
 void
@@ -571,6 +588,24 @@ void inplace_conj(InfiniteWavefunctionLeft& Psi)
    {
       *I = conj(*I);
    }
+}
+
+void inplace_qshift(InfiniteWavefunctionLeft& Psi, QuantumNumbers::QuantumNumber const& Shift)
+{
+   Psi.setBasis1(delta_shift(Psi.Basis1(), Shift));
+   Psi.setBasis2(delta_shift(Psi.Basis2(), Shift));
+
+   for (InfiniteWavefunctionLeft::mps_iterator I = Psi.begin_(); I != Psi.end_(); ++I)
+   {
+      *I = delta_shift(*I, Shift);
+   }
+
+   for (InfiniteWavefunctionLeft::lambda_iterator I = Psi.lambda_begin_(); I != Psi.lambda_end_(); ++I)
+   {
+      *I = delta_shift(*I, Shift);
+   }
+
+   Psi.check_structure();
 }
 
 InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
@@ -812,4 +847,3 @@ expectation(InfiniteWavefunctionLeft const& Psi, FiniteMPO const& Op)
    
    return inner_prod(delta_shift(Rho, Psi.qshift()), X);
 }
-

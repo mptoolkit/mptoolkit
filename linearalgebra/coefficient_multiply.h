@@ -1,5 +1,23 @@
-/* -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// linearalgebra/coefficient_multiply.h
+//
+// Copyright (C) 2005-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
+/*
    Created 2005-03-03 Ian McCulloch
 
   TODO: only the RowMajor * ColMajor version is optimized.
@@ -195,29 +213,6 @@ struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
                                     CF, Nested> {};
 
 // assign sparse
-
-template <typename T>
-T const& sick_show(T const& x)
-{
-   TRACE(typeid(x).name());
-   return x;
-}
-
-template <typename T>
-T sick_show(value_with_zero<T> const& x)
-{
-   TRACE(typeid(x).name());
-   return x;
-}
-
-inline
-int sick_show(value_with_zero<Matrix<std::complex<double> > > const& x)
-{
-   TRACE(typeid(x).name());
-   TRACE(x.get().size1())(x.get().size2());
-   CHECK(x.get().size1() != 0);
-   return 1;
-}
 
 template <typename LHS,
 	  typename M1, typename M1Orient,
@@ -462,6 +457,31 @@ struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
 	 }
 	 ++I;
       }
+   }
+};
+
+template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
+	  typename LHSv, typename LHSi,
+	  typename M1v, typename M1i,
+	  typename M2v, typename M2i>
+struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
+				  Concepts::SparseMatrix<LHSv, LHSi>,
+				  Concepts::DiagonalMatrix<M1v, M1i>,
+				  Concepts::DiagonalMatrix<M2v, M2i>>
+{
+   static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
+   {
+      zero_all(lhs);
+      auto I = iterate_diagonal(m1);
+      auto J = iterate_diagonal(m2);
+      while (I)
+      {
+	 add_element(lhs, I.index(), I.index(),
+		     cf(I.index(), I.index(), I.index()) * f(*I, *J));
+	 ++I;
+	 ++J;
+      }
+      DEBUG_CHECK(!J);
    }
 };
 

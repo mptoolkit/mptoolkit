@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id: operator_actions.cpp 1559 2015-07-23 05:56:46Z ianmcc $
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// wavefunction/operator_actions.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "operator_actions.h"
 #include "mpo/operator_component.h"
@@ -197,15 +214,11 @@ inject_left_mask(StateComponent const& In,
    GenericMPO::const_iterator OpIter = Op.begin();
    std::vector<std::vector<int> >::const_iterator MaskIter = Mask.begin();
 
-   StateComponent E;
    StateComponent Result(In);
 
    while (OpIter != Op.end())
    {
-      std::swap(E, Result);
-
-      Result = contract_from_left_mask(*OpIter, herm(*I1), E, *I2, *MaskIter, *(MaskIter+1));
-
+      Result = contract_from_left_mask(*OpIter, herm(*I1), Result, *I2, *MaskIter, *(MaskIter+1));
       ++I1; ++I2; ++OpIter; ++MaskIter;
    }
    return Result;
@@ -240,4 +253,3 @@ inject_right_mask(StateComponent const& In,
    }
    return Result;
 }
-

@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mp/mp-idivide.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "mp/copyright.h"
 #include "wavefunction/mpwavefunction.h"
@@ -96,7 +113,7 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);    
 
-      if (vm.count("help") > 0 || vm.count("rhs") == 0)
+      if (vm.count("help") > 0 || vm.count("lhs") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] <input-psi> <output-psi>\n";
@@ -119,16 +136,16 @@ int main(int argc, char** argv)
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-      pvalue_ptr<MPWavefunction> InputPsi;
-      if (InputFile == OutputFile)
-	 InputPsi = pheap::OpenPersistent(InputFile.c_str(), mp_pheap::CacheSize());
+      pvalue_ptr<MPWavefunction> PsiPtr;
+      if (OutputFile.empty() || InputFile == OutputFile)
+	 PsiPtr = pheap::OpenPersistent(InputFile.c_str(), mp_pheap::CacheSize());
       else
       {
 	 pheap::Initialize(OutputFile, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
-	 InputPsi = pheap::ImportHeap(InputFile);
+	 PsiPtr = pheap::ImportHeap(InputFile);
       }
 
-      InfiniteWavefunctionLeft Psi1 = InputPsi->get<InfiniteWavefunctionLeft>();
+      InfiniteWavefunctionLeft Psi1 = PsiPtr->get<InfiniteWavefunctionLeft>();
 
       // determine the size of the unit cell, and the new unit cell
       int UnitCellSize = Psi1.size();
@@ -231,14 +248,11 @@ int main(int argc, char** argv)
       Psi1 = InfiniteWavefunctionLeft();
       Psi2 = Psi1;
 
-      MPWavefunction Result;
-      Result.AppendHistory(EscapeCommandline(argc, argv));
-      Result.Wavefunction() = PsiOut;
-      Result.SetDefaultAttributes();
+      PsiPtr.mutate()->Wavefunction() = PsiOut;
+      PsiPtr.mutate()->AppendHistory(EscapeCommandline(argc, argv));
+      PsiPtr.mutate()->SetDefaultAttributes();
 
-      pvalue_ptr<MPWavefunction> OutputPsi = new MPWavefunction(Result);
-
-      pheap::ShutdownPersistent(OutputPsi);
+      pheap::ShutdownPersistent(PsiPtr);
 
    }
    catch (prog_opt::error& e)

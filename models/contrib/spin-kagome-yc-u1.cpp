@@ -1,33 +1,51 @@
-// -*- C++ -*- $Id: $
-// Descriptin: spin systems on kagome lattices with YC structure and efficient way of numbering; U(1)-symmetric. <spin-kagome-yc-u1.cpp>
-// Authors: Ian P. McCulloch and Seyed N. Saadatmand
-// Contact: s.saadatmand@uq.edu.au
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// models/contrib/spin-kagome-yc-u1.cpp
+//
+// Copyright (C) 2015,2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015,2016 Seyed N. Saadatmand <s.saadatmand@uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
+// Description: spin systems on kagome lattices with YC structure and efficient way of numbering; 
+// U(1)-symmetric.
 
 // YC configuration of a kagome lattice.
 // The default unit-cell size is '(3/2)*width' value, so the width should be even.
 //
-// Example for a 'width=6' lattice (site numbers in brackets are periodic repeats in 
+// Example for a 'width=6' lattice (site numbers in brackets are periodic repeats in
 // the vertical direction; i.e. top-left (8) is the same site as the bottom-left 5).
 // Sites 9-to-17 are the second unit cell, e.g. 9 is (1)[0].
 //
 //                (26)
 //                 |
-//        (17)     18     
-//         |       | >19   
-//(8)      9       20       
-// |       | >10 < |    ...        
-// 0       11      21     
-// | > 1 < |       | >22   
-// 2       12      23  
-// |       | >13 < |    ...  
-// 3       14      24     
-// | > 4 < |       | >25    
-// 5       15      26  
-// |       | >16 < |        
-// 6       17     (18)   
-// | > 7 < |            
-// 8      (9)       
-// |             
+//        (17)     18
+//         |       | >19
+//(8)      9       20
+// |       | >10 < |    ...
+// 0       11      21
+// | > 1 < |       | >22
+// 2       12      23
+// |       | >13 < |    ...
+// 3       14      24
+// | > 4 < |       | >25
+// 5       15      26
+// |       | >16 < |
+// 6       17     (18)
+// | > 7 < |
+// 8      (9)
+// |
 //(0)
 
 
@@ -56,14 +74,14 @@ int main(int argc, char** argv)
 	 ("width,w", prog_opt::value(&w), "width of the cylinder, should be even [default 4]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
-      
-      prog_opt::variables_map vm;        
+
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).style(prog_opt::command_line_style::default_style ^
 					  prog_opt::command_line_style::allow_guessing).
 		      run(), vm);
-      prog_opt::notify(vm);    
-      
+      prog_opt::notify(vm);
+
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
@@ -77,7 +95,7 @@ int main(int argc, char** argv)
 		   << "H_J2    - next-nearest neighbor spin exchange\n"
                    << "Functions:\n"
                    << "H( J1 = NN coupling strength, J2 = NNN coupling strength, theta = atan(J2/J1)\n"
-                   << "  \"radians\", alpha = J2/J1 )\n"   
+                   << "  \"radians\", alpha = J2/J1 )\n"
 	    ;
          return 1;
       }
@@ -111,7 +129,7 @@ int main(int argc, char** argv)
 	 // Nearest neighbor bonds
 
 	 // vertical bonds:
-	 if ( i%3 != 1 ) 
+	 if ( i%3 != 1 )
          {
            if ( i%3 == 0 )
              H1 += Sz(0)[i]*Sz(0)[i+2] + 0.5 * (Sp(0)[i]*Sm(0)[i+2] + Sm(0)[i]*Sp(0)[i+2]);
@@ -119,7 +137,7 @@ int main(int argc, char** argv)
              H1 += Sz(0)[i]*Sz(0)[(i+1)%u] + 0.5 * (Sp(0)[i]*Sm(0)[(i+1)%u] + Sm(0)[i]*Sp(0)[(i+1)%u]);
            ++num_bonds_j1;
          }
-  
+
 	 // 60 degree bonds:
 	 if ( i%3 == 0 )
            {
@@ -128,7 +146,7 @@ int main(int argc, char** argv)
            }
          else if ( i%3 == 1 )
            {
-             H1 += Sz(0)[i]*Sz(1)[i+1] + 0.5 * (Sp(0)[i]*Sm(1)[i+1] + Sm(0)[i]*Sp(1)[i+1]);   
+             H1 += Sz(0)[i]*Sz(1)[i+1] + 0.5 * (Sp(0)[i]*Sm(1)[i+1] + Sm(0)[i]*Sp(1)[i+1]);
 	     H1 += Sz(0)[i]*Sz(1)[(i+2)%u] + 0.5 * (Sp(0)[i]*Sm(1)[(i+2)%u] + Sm(0)[i]*Sp(1)[(i+2)%u]);
              num_bonds_j1 += 2;
            }
@@ -137,15 +155,14 @@ int main(int argc, char** argv)
              H1 += Sz(0)[i]*Sz(0)[i-1] + 0.5 * (Sp(0)[i]*Sm(0)[i-1] + Sm(0)[i]*Sp(0)[i-1]);
              ++num_bonds_j1;
            }
- 
-	 // Next-nearest neighbor bonds
-	 
-	 // horizental bonds:
+
+	 // Next-nearest neighbor bonds:
+	 // horizontal bonds:
 	 if ( i%3 != 1 )
          {
            if ( i%3 == 0 )
              H2 += Sz(0)[i]*Sz(1)[i+2] + 0.5 * (Sp(0)[i]*Sm(1)[i+2] + Sm(0)[i]*Sp(1)[i+2]);
-           else   
+           else
              H2 += Sz(0)[i]*Sz(1)[(i+1)%u] + 0.5 * (Sp(0)[i]*Sm(1)[(i+1)%u] + Sm(0)[i]*Sp(1)[(i+1)%u]);
            ++num_bonds_j2;
          }
@@ -169,7 +186,7 @@ int main(int argc, char** argv)
            }
       }
 
-      std::cout << "UnitCell size is:" << " " << u << std::endl;  
+      std::cout << "UnitCell size is:" << " " << u << std::endl;
       std::cout << "The number of J1 bonds per unit-cell:" << " " << num_bonds_j1 << ", and the number of J2 bonds per unit-cell: " << num_bonds_j2 << std::endl;
 
       Lattice["H_J1"] = sum_unit(H1);

@@ -1,4 +1,21 @@
 // -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mp/mp-idmrg-s3e.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 //
 // iDMRG with single-site subspace expansion
 //
@@ -69,6 +86,8 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "lattice/infinite-parser.h"
+#include "mp-algorithms/triangular_mpo_solver.h"
+#include "mp-algorithms/eigensolver.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -276,70 +295,6 @@ struct ProductRight
    QuantumNumber QShift;
 };
 
-struct SubProductLeftProject
-{
-   typedef MatrixOperator result_type;
-   typedef MatrixOperator argument_type;
-
-   SubProductLeftProject(LinearWavefunction const& Psi_, QuantumNumber const& QShift_,
-			 MatrixOperator const& Proj_, MatrixOperator const& Ident_)
-      : Psi(Psi_), QShift(QShift_), Proj(Proj_),
-	Ident(Ident_)
-   {
-   }
-
-   MatrixOperator operator()(MatrixOperator const& In) const
-   {
-      MatrixOperator Result = In; //delta_shift(In, QShift);
-      for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
-       {
-	  Result = operator_prod(herm(*I), Result, *I);
-       }
-      Result = In - delta_shift(Result, QShift);
-      //Result = 0.5 * (Result + adjoint(Result));
-      Result -= inner_prod(Proj, Result) * Ident;
-      return Result;
-   }
-
-   LinearWavefunction const& Psi;
-   QuantumNumber QShift;
-   MatrixOperator Proj;
-   MatrixOperator Ident;
-};
-
-struct SubProductRightProject
-{
-   typedef MatrixOperator result_type;
-   typedef MatrixOperator argument_type;
-
-   SubProductRightProject(LinearWavefunction const& Psi_, QuantumNumber const& QShift_,
-			  MatrixOperator const& Proj_, MatrixOperator const& Ident_)
-      : Psi(Psi_), QShift(QShift_), Proj(Proj_), Ident(Ident_)
-   {
-   }
-
-   MatrixOperator operator()(MatrixOperator const& In) const
-   {
-      MatrixOperator Result = In;
-      LinearWavefunction::const_iterator I = Psi.end();
-      while (I != Psi.begin())
-      {
-	 --I;
-	 Result = operator_prod(*I, Result, herm(*I));
-      }
-      Result = delta_shift(Result, adjoint(QShift));
-      Result = In - Result;
-      //Result = 0.5 * (Result + adjoint(Result));
-      Result -= inner_prod(Proj, Result) * Ident;
-      return Result;
-   }
-
-   LinearWavefunction const& Psi;
-   QuantumNumber QShift;
-   MatrixOperator const& Proj;
-   MatrixOperator const& Ident;
-};
-
 // Does Iter iterations of the MPO solver, without assuming that Psi
 // is perfectly orthogonal - that is, Rho and Identity are approximations.
 // The number of GMRES iterations is fixed by Iter, which is typically rather small.
@@ -352,383 +307,6 @@ PartialSolveSimpleMPO_Left(StateComponent& E, StateComponent const& OldE,
 			   MatrixOperator const& Rho, int Iter)
 {
 }
-
-
-std::complex<double>
-SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
-		    QuantumNumber const& QShift, TriangularMPO const& Op,
-		    MatrixOperator const& Rho, double Tol = 1E-14, int Verbose = 0)
-{
-   if (E.is_null())
-      E = Initial_E(Op, Psi.Basis1());
-   CHECK_EQUAL(E.Basis1(), Psi.Basis1());
-   CHECK_EQUAL(E.Basis2(), Psi.Basis1());
-   CHECK_EQUAL(E.LocalBasis(), Op.Basis1());
-   CHECK_EQUAL(Rho.Basis1(), Psi.Basis1());
-   CHECK_EQUAL(Rho.Basis2(), Psi.Basis1());
-
-   MatrixOperator Ident = E[0];
-
-   // The UnityEpsilon is just a paranoid check here, as we don't support
-   // eigenvalue 1 on the diagonal
-   double UnityEpsilon = 1E-12;
-
-   if (!classify(Op(0,0), UnityEpsilon).is_identity())
-   {
-      std::cerr << "SolveSimpleMPO_Left: fatal: MPO(0,0) must be the identity operator.\n";
-      PANIC("Fatal");
-   }
-
-   int Dim = Op.Basis1().size();       // dimension of the MPO
-   if (Verbose)
-      std::cerr << "SolveSimpleMPO_Left: dimension is " << Dim << std::endl;
-
-   // Column 0 (E[0]) is the Identity, we don't need to solve for it
-   for (int Col = 1; Col < Dim-1; ++Col)
-   {
-      std::vector<std::vector<int> > Mask = mask_column(Op, Col);
-      MatrixOperator C = inject_left_mask(E, Psi, Op.data(), Psi, Mask)[Col];
-      C = delta_shift(C, QShift);
-
-      // Now do the classification, based on the properties of the diagonal operator
-      FiniteMPO Diag = Op(Col, Col);
-      OperatorClassification Classification = classify(Diag, UnityEpsilon);
-
-      if (Classification.is_null())
-      {
-         DEBUG_TRACE("Zero diagonal element")(Col)(Diag);
-	 if (Verbose)
-	    std::cerr << "Zero diagonal matrix element at column " << Col << std::endl;
-         E[Col] = C;
-      }
-      else
-      {
-	 if (Verbose)
-	    std::cerr << "Non-zero diagonal matrix element at column " << Col << std::endl;
-
-	 // non-zero diagonal element.  The only case that we support here is
-	 // an operator with spectral radius strictly < 1
-	 if (Classification.is_unitary())
-	 {
-	    std::cerr << "SolveSimpleMPO_Left: Unitary operator on the diagonal is not supported!\n";
-	    PANIC("Fatal: unitary")(Col);
-	 }
-
-	 // Initial guess for linear solver
-	 E[Col] = C;
-
-	 int m = 30;
-	 int max_iter = 10000;
-	 double tol = Tol;
-	 int Ret = GmRes(E[Col], OneMinusTransferLeft(Diag, Psi, QShift), C, m, max_iter, tol, 
-			 LinearAlgebra::Identity<MatrixOperator>(), Verbose);
-	 if (Ret != 0)
-	 {
-	    // failed
-	    PANIC("Linear solver failed to converge after max_iter iterations")(max_iter);
-	 }
-      }
-   }
-   // Final column, must be identity
-   int const Col = Dim-1;
-   if (!classify(Op(Col,Col), UnityEpsilon).is_identity())
-   {
-      std::cerr << "SolveSimpleMPO_Left: fatal: MPO(d,d) must be the identity operator.\n";
-      PANIC("Fatal");
-   }
-
-   std::vector<std::vector<int> > Mask = mask_column(Op, Col);
-   MatrixOperator C = inject_left_mask(E, Psi, Op.data(), Psi, Mask)[Col];
-   C = delta_shift(C, QShift);
-
-   // The component in the direction of the identity is proportional to the energy
-   std::complex<double> Energy = inner_prod(Rho, C);
-   // orthogonalize
-   C -= Energy * Ident;
-
-   // solve for the first component
-   SubProductLeftProject ProdL(Psi, QShift, Rho, Ident);
-   E[Col] = C;
-   int m = 30;
-   int max_iter = 10000;
-   double tol = Tol;
-   int Res = GmRes(E[Col], ProdL, C, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
-   CHECK_EQUAL(Res, 0);
-
-   // Make it Hermitian
-   E.back() = 0.5 * (E.back() + adjoint(E.back()));
-
-   // Stability fix: remove overall constant
-   if (Verbose > 0)
-      std::cerr << "Overall constant: " << inner_prod(E.back(), E.front()) << '\n';
-   E.back() -= inner_prod(E.front(), E.back()) * E.front();
-
-   // remove the spurious constant term from the energy
-   if (Verbose > 0)
-      std::cerr << "Spurious constant: " << inner_prod(E.back(), Rho) << '\n';
-   E.back() -= inner_prod(Rho, E.back()) * E.front();
-
-
-#if 0
-   // residual
-   MatrixOperator R = E.back();
-   for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
-   {
-      R = operator_prod(herm(*I), R, *I);
-   }
-   R = delta_shift(R, QShift);
-   R += C;
-
-   DEBUG_TRACE("Residual norm")(norm_frob(E.back() - R));
-
-   E.back() = R;
-
-   // Make it Hermitian
-   E.back() = 0.5 * (E.back() + adjoint(E.back()));
-#endif
-
-
-#if !defined(NDEBUG)
-   {
-      std::vector<KMatrixPolyType> CheckEMat;
-      SolveMPO_Left(CheckEMat, Psi, QShift, Op, Ident, Rho, true);
-      ComplexPolyType EValues = ExtractOverlap(CheckEMat.back()[1.0], Rho);
-      TRACE(EValues);
-      MatrixOperator HCheck = CheckEMat.back()[1.0][0];
-      TRACE("H matrix elements check")(inner_prod(HCheck - E.back(), Rho));
-      TRACE(inner_prod(HCheck, Rho));
-   }
-#endif
-
-   return Energy;
-}
-
-std::complex<double>
-MPO_EigenvaluesRight(StateComponent& Guess, LinearWavefunction const& Psi,
-		     QuantumNumber const& QShift, TriangularMPO const& Op,
-		     MatrixOperator const& Rho)
-{
-   ProductRight Prod(Psi, Op, QShift);
-   Guess = Initial_F(Op, Psi.Basis2());
-   MatrixOperator Ident = Guess.back();
-   for (int i = 0; i < int(Guess.size())-1; ++i)
-   {
-      Guess.front() *= 0.0;
-      Guess = Prod(Guess);
-      Guess.back() = Ident;
-
-      TRACE("Energy")(inner_prod(Guess.front(), Rho));
-   }
-
-   // calculate the energy
-   double Energy = inner_prod(Guess.front(), Rho).real();
-
-   Guess.back() = Ident;
-
-   MatrixOperator H0 = Guess.front() - Energy*Guess.back();
-
-   // Now we want the fixed point of H = U(H) + H_0
-   // where U(H) is the shift one site.
-   // Let F(H) = H - U(H).  Then we want the solution of F(H) = H_0
-
-   SubProductRightProject ProdR(Psi, QShift, Rho, Ident);
-
-   int m = 30;
-   int max_iter = 10000;
-   double tol = 1e-14;
-   int Res = GmRes(Guess.front(), ProdR, H0, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(),1);
-   CHECK_EQUAL(Res, 0);
-
-   // stability fix
-   Guess.front() -= inner_prod(Guess.back(), Guess.front()) * Guess.back();
-
-
-   // remove the spurious constant term from the energy
-   Guess.front() -= inner_prod(Rho, Guess.front()) * Guess.back();
-
-   // Make it Hermitian
-   Guess.front() = 0.5 * (Guess.front() + adjoint(Guess.front()));
-
-   // residual
-   MatrixOperator R = Guess.front(); //delta_shift(Guess.front(), adjoint(QShift));
-   LinearWavefunction::const_iterator I = Psi.end();
-   while (I != Psi.begin())
-   {
-      --I;
-      R = operator_prod(*I, R, herm(*I));
-   }
-   R = delta_shift(R, adjoint(QShift));
-   R += H0;
-
-   //TRACE(norm_frob(Guess.front() - R))(R)(Guess.front());
-
-#if 0
-   for (int k = 0; k < 2400; ++k)
-   //while (norm_frob(Guess.front()-R) > 1E-14)
-   {
-      Guess.front() = R;
-       I = Psi.end();
-       while (I != Psi.begin())
-       {
-	  --I;
-	  R = operator_prod(*I, R, herm(*I));
-       }
-       R = delta_shift(R, adjoint(QShift));
-       R += H0;
-       R = R - inner_prod(Rho, R) * Guess.back();
-       TRACE(norm_frob(Guess.front()-R));
-   }
-#endif
-
-   Guess.front() = R;
-
-   // Make it Hermitian
-   Guess.front() = 0.5 * (Guess.front() + adjoint(Guess.front()));
-
-   return Energy;
-}
-
-
-
-std::complex<double>
-SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
-		    QuantumNumber const& QShift, TriangularMPO const& Op,
-		    MatrixOperator const& Rho, double Tol = 1E-14, int Verbose = 0)
-{
-   if (F.is_null())
-      F = Initial_F(Op, Psi.Basis2());
-   CHECK_EQUAL(F.Basis1(), Psi.Basis2());
-   CHECK_EQUAL(F.Basis2(), Psi.Basis2());
-   CHECK_EQUAL(F.LocalBasis(), Op.Basis1());
-   CHECK_EQUAL(Rho.Basis1(), Psi.Basis2());
-   CHECK_EQUAL(Rho.Basis2(), Psi.Basis2());
-
-   MatrixOperator Ident = F.back();
-
-   // The UnityEpsilon is just a paranoid check here, as we don't support
-   // eigenvalue 1 on the diagonal
-   double UnityEpsilon = 1E-12;
-
-   if (!classify(Op(0,0), UnityEpsilon).is_identity())
-   {
-      std::cerr << "SolveSimpleMPO_Right: fatal: MPO(0,0) must be the identity operator.\n";
-      PANIC("Fatal");
-   }
-
-   int Dim = Op.Basis1().size();       // dimension of the MPO
-   if (Verbose)
-      std::cerr << "SolveSimpleMPO_Right: dimension is " << Dim << std::endl;
-
-   // Row Dim-1 (F[Dim-1]) is the Identity, we don't need to solve for it
-   for (int Row = Dim-2; Row >= 1; --Row)
-   {
-      std::vector<std::vector<int> > Mask = mask_row(Op, Row);
-      MatrixOperator C = inject_right_mask(F, Psi, Op.data(), Psi, Mask)[Row];
-      C.delta_shift(adjoint(QShift));
-
-      // Now do the classification, based on the properties of the diagonal operator
-      FiniteMPO Diag = Op(Row, Row);
-      OperatorClassification Classification = classify(Diag, UnityEpsilon);
-
-      if (Classification.is_null())
-      {
-         DEBUG_TRACE("Zero diagonal element")(Row)(Diag);
-	 if (Verbose)
-	    std::cerr << "Zero diagonal matrix element at row " << Row << std::endl;
-         F[Row] = C;
-      }
-      else
-      {
-	 if (Verbose)
-	    std::cerr << "Non-zero diagonal matrix element at row " << Row << std::endl;
-
-	 // non-zero diagonal element.  The only case that we support here is
-	 // an operator with spectral radius strictly < 1
-	 if (Classification.is_unitary())
-	 {
-	    std::cerr << "SolveSimpleMPO_Right: Unitary operator on the diagonal is not supported!\n";
-	    PANIC("Fatal: unitary")(Row);
-	 }
-
-	 // Initial guess for linear solver
-	 F[Row] = C;
-
-	 int m = 30;
-	 int max_iter = 10000;
-	 double tol = Tol;
-	 int Ret = GmRes(F[Row], OneMinusTransferRight(Diag, Psi, QShift), C, m, max_iter, tol, 
-			 LinearAlgebra::Identity<MatrixOperator>(), Verbose);
-	 if (Ret != 0)
-	 {
-	    // failed
-	    PANIC("Linear solver failed to converge after max_iter iterations")(max_iter);
-	 }
-      }
-   }
-   // Final row, must be identity
-   int const Row = 0;
-   if (!classify(Op(Row,Row), UnityEpsilon).is_identity())
-   {
-      std::cerr << "SolveSimpleMPO_Right: fatal: MPO(d,d) must be the identity operator.\n";
-      PANIC("Fatal");
-   }
-
-   std::vector<std::vector<int> > Mask = mask_row(Op, Row);
-   MatrixOperator C = inject_right_mask(F, Psi, Op.data(), Psi, Mask)[Row];
-   C.delta_shift(adjoint(QShift));
-
-   // The component in the direction of the identity is proportional to the energy
-   std::complex<double> Energy = inner_prod(Rho, C);
-   // orthogonalize
-   C -= Energy * Ident;
-
-   // solve for the first component
-   SubProductRightProject ProdR(Psi, QShift, Rho, Ident);
-   F[Row] = C;
-   int m = 30;
-   int max_iter = 10000;
-   double tol = Tol;
-   int Res = GmRes(F[Row], ProdR, C, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
-   CHECK_EQUAL(Res, 0);
-
-   // Make it Hermitian
-   F.front() = 0.5 * (F.front() + adjoint(F.front()));
-
-   // stability fix
-   if (Verbose > 0)
-      std::cerr << "Overall constant " << inner_prod(F.front(), F.back()) << '\n';
-   F.front() -= inner_prod(F.back(), F.front()) * F.back();
-
-   // remove the spurious constant term from the energy
-   if (Verbose > 0)
-      std::cerr << "Spurius constant " << inner_prod(F.front(), Rho) << '\n';
-   F.front() -= inner_prod(Rho, F.front()) * F.back();
-
-
-#if 0
-   // this doesn't work anyway, copied from the Left version
-   // residual
-   MatrixOperator R = F.front();
-   for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
-   {
-      R = operator_prod(herm(*I), R, *I);
-   }
-   R = delta_shift(R, QShift);
-   R += C;
-
-   TRACE("Residual norm")(norm_frob(F.front() - R));
-
-   F.front() = R;
-
-   // Make it Hermitian
-   F.front() = 0.5 * (F.front() + adjoint(F.front()));
-#endif
-
-   return Energy;
-}
-
-
-
 
 struct MPSMultiply
 {
@@ -747,108 +325,6 @@ struct MPSMultiply
    OperatorComponent const& H;
    StateComponent const& F;
 };
-
-class LocalEigensolver
-{
-   public:
-      LocalEigensolver();
-
-      void SetInitialFidelity(int UnitCellSize, double f);
-
-      // Apply the solver
-      double Solve(StateComponent& C,
-		   StateComponent const& LeftBlockHam,
-		   OperatorComponent const& H,
-		   StateComponent const& RightBlockHam);
-
-      // Eigensolver parameters
-      // Eigensolver tolerance is min(sqrt(AverageFidelity()) * FidelityScale, MaxTol)
-      double FidelityScale;
-      double MaxTol;
-      double MinTol;
-
-      // if EvolveDelta != 0 then do imaginary time evolution with this timestep instead of Lanczos
-      double EvolveDelta;
-
-      int MinIter; // Minimum number of iterations to perform (unless the eigensolver breaks down)
-      int MaxIter; // Stop at this number, even if the eigensolver hasn't converged
-
-      int Verbose;
-
-      // information on the state of the solver
-      double LastEnergy() const { return LastEnergy_; }
-      double LastFidelity() const { return LastFidelity_; }
-      double LastTol() const { return LastTol_; }
-      double LastIter() const { return LastIter_; }
-      double AverageFidelity() const { return FidelityAv_.value(); }
-
-   private:
-      // information on the last solver application
-      double LastFidelity_;
-      double LastEnergy_;
-      double LastTol_;
-      int LastIter_;
-
-      // state information
-      moving_exponential<double> FidelityAv_;
-};
-
-LocalEigensolver::LocalEigensolver()
-   : FidelityScale(0.1), MaxTol(1e-4), MinTol(1-10), MinIter(2), MaxIter(20), Verbose(0)
-{
-}
-
-void
-LocalEigensolver::SetInitialFidelity(int UnitCellSize, double f)
-{
-   FidelityAv_ = moving_exponential<double>(exp(log(0.25)/UnitCellSize));
-   FidelityAv_.push(f);
-}
-
-double
-LocalEigensolver::Solve(StateComponent& C,
-			StateComponent const& LeftBlockHam,
-			OperatorComponent const& H,
-			StateComponent const& RightBlockHam)
-{
-   DEBUG_CHECK_EQUAL(C.Basis1(), LeftBlockHam.Basis2());
-   DEBUG_CHECK_EQUAL(C.Basis2(), RightBlockHam.Basis1());
-   DEBUG_CHECK_EQUAL(LeftBlockHam.LocalBasis(), H.Basis1());
-   DEBUG_CHECK_EQUAL(RightBlockHam.LocalBasis(), H.Basis2());
-   DEBUG_CHECK_EQUAL(C.LocalBasis(), H.LocalBasis2());
-
-   StateComponent ROld = C;
-
-   if (EvolveDelta == 0.0)
-   {
-      LastTol_ = std::min(std::sqrt(this->AverageFidelity()) * FidelityScale, MaxTol);
-      LastTol_ = std::max(LastTol_, MinTol);
-      //LastTol_ = std::min(this->AverageFidelity() * FidelityScale, MaxTol);
-      LastIter_ = MaxIter;
-      if (Verbose > 2)
-      {
-	 std::cerr << "Starting eigensolver.  Initial guess vector has dimensions "
-		   << C.Basis1().total_dimension() << " x " << C.LocalBasis().size()
-		   << " x " << C.Basis2().total_dimension() << '\n';
-      }
-      LastEnergy_ = Lanczos(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
-			    LastIter_, LastTol_, MinIter, Verbose-1);
-      
-   }
-   else
-   {
-      C = operator_prod_inner(H, LeftBlockHam, ROld, herm(RightBlockHam));
-      LastEnergy_ = inner_prod(ROld, C).real();
-      C = ROld - EvolveDelta * C; // imaginary time evolution step
-      C *= 1.0 / norm_frob(C);    // normalize
-      LastIter_ = 1;
-      LastTol_ = 0.0;
-   }
-
-   LastFidelity_ = std::max(1.0 - norm_frob(inner_prod(ROld, C)), 0.0);
-   FidelityAv_.push(LastFidelity_);
-   return LastEnergy_;
-}
 
 struct MixInfo
 {
@@ -870,7 +346,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 #if defined(SSC)
    MatrixOperator Lambda;
    SimpleStateComponent CX;
-   boost::tie(Lambda, CX) = ExpandBasis1_(C);
+   std::tie(Lambda, CX) = ExpandBasis1_(C);
 #else
    MatrixOperator Lambda = ExpandBasis1(C);
 #endif
@@ -1254,7 +730,7 @@ iDMRG::SaveLeftBlock(StatesInfo const& States)
    // C.Basis2() == SaveLeftHamiltonian.Basis()
    CHECK(C == LastSite);
    StateComponent L = *C;
-   boost::tie(SaveLambda2, SaveU2) = SubspaceExpandBasis2(L, *H, LeftHamiltonian.back(),
+   std::tie(SaveLambda2, SaveU2) = SubspaceExpandBasis2(L, *H, LeftHamiltonian.back(),
 							  MixingInfo, States, Info, RightHamiltonian.front());
 
    if (Verbose > 1)
@@ -1271,7 +747,7 @@ iDMRG::SaveRightBlock(StatesInfo const& States)
 {
    CHECK(C == FirstSite);
    StateComponent R = *C;
-   boost::tie(SaveU1, SaveLambda1) = SubspaceExpandBasis1(R, *H, RightHamiltonian.front(),
+   std::tie(SaveU1, SaveLambda1) = SubspaceExpandBasis1(R, *H, RightHamiltonian.front(),
 							  MixingInfo, States, Info, LeftHamiltonian.back());
 
    //   TRACE(SaveU1);
@@ -1291,7 +767,7 @@ iDMRG::TruncateAndShiftLeft(StatesInfo const& States)
    // Truncate right
    MatrixOperator U;
    RealDiagonalOperator Lambda;
-   boost::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, RightHamiltonian.front(), MixingInfo, States, Info,
+   std::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, RightHamiltonian.front(), MixingInfo, States, Info,
 						LeftHamiltonian.back());
 
    if (Verbose > 1)
@@ -1330,7 +806,7 @@ iDMRG::TruncateAndShiftRight(StatesInfo const& States)
    // Truncate right
    RealDiagonalOperator Lambda;
    MatrixOperator U;
-   boost::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
+   std::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
 						RightHamiltonian.front());
    if (Verbose > 1)
    {
@@ -1398,7 +874,7 @@ iDMRG::Finish(StatesInfo const& States)
    // This is actually quite important to get a translationally invariant wavefunction
    RealDiagonalOperator Lambda;
    MatrixOperator U;
-   boost::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
+   std::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
 						RightHamiltonian.front());
 
    if (Verbose > 1)
@@ -1512,7 +988,7 @@ int main(int argc, char** argv)
 	 ("random,a", prog_opt::bool_switch(&Create),
 	  "Create a new wavefunction starting from a random state")
 	 ("unitcell,u", prog_opt::value(&WavefuncUnitCellSize),
-	  "Only if --bootstrap is specified, the size of the wavefunction unit cell")
+	  "Only if --create is specified, the size of the wavefunction unit cell")
 	 ("startrandom", prog_opt::bool_switch(&DoRandom),
 	  "Start the first iDMRG iteration from a random centre matrix")
 	 ("exactdiag,e", prog_opt::bool_switch(&ExactDiag),
@@ -1522,10 +998,8 @@ int main(int argc, char** argv)
 	 ("boundary", prog_opt::value(&BoundaryState),
 	  "use this boundary quantum number for initializing the unit cell "
           "(useful for integer spin chains, can be used multiple times)")
-	 ("bootstrap,b", prog_opt::bool_switch(&NoFixedPoint),
-	  "boostrap iterations by starting from a single unit cell, "
-	  "instead of obtaining the fixed point Hamiltonian "
-	  "('bootstrap' is necessary if the wavefunction is not orthonormal)")
+	 ("create,b", prog_opt::bool_switch(&NoFixedPoint),
+	  "Construct a new wavefunction from a random state or single-cell diagonalization")
 	 ("steps,s", prog_opt::value<int>(&NumSteps),
 	  FormatDefault("Number of DMRG steps to perform", NumSteps).c_str())
 	 ("no-orthogonalize", prog_opt::bool_switch(&NoOrthogonalize),
@@ -1559,7 +1033,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") || vm.count("wavefunction") == 0)
       {
-         print_copyright(std::cerr, "tools", "mp-idmrg-s3e");
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
          return 1;
@@ -1582,6 +1056,9 @@ int main(int argc, char** argv)
 	 TwoSite = !OneSite;
 
       bool StartFromFixedPoint = !NoFixedPoint; // we've reversed the option
+
+      if (!StartFromFixedPoint && !ExactDiag)
+	 Create = true;  // start from random state
 
       // The main MPWavefunction object.  We use this for initialization (if we are starting from
       // an existing wavefunction), and it will be the final wavefunction that we save to disk.
@@ -1608,7 +1085,7 @@ int main(int argc, char** argv)
 
 	 InfiniteWavefunctionLeft StartingWavefunction = Wavefunction.get<InfiniteWavefunctionLeft>();
 	 
-	 boost::tie(Psi, R) = get_left_canonical(StartingWavefunction);
+	 std::tie(Psi, R) = get_left_canonical(StartingWavefunction);
 	 UR = MatrixOperator::make_identity(R.Basis2());
 	 QShift = StartingWavefunction.qshift();
       }
@@ -1630,7 +1107,7 @@ int main(int argc, char** argv)
       else 
 	 Wavefunction.Attributes()["Hamiltonian"] = HamStr;
 
-      boost::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
+      std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
       int const UnitCellSize = Lattice.GetUnitCell().size();
       if (WavefuncUnitCellSize == 0)
 	 WavefuncUnitCellSize = UnitCellSize;
@@ -1703,7 +1180,7 @@ int main(int argc, char** argv)
 
 	 // adjust for periodic basis
 	 StateComponent x = prod(Psi.get_back(), UR);
-	 boost::tie(R, UR);
+	 std::tie(R, UR);
 	 MatrixOperator X = TruncateBasis2(x); // the Basis2 is already 1-dim.  This just orthogonalizes x
 	 MatrixOperator U;
 	 SingularValueDecomposition(X, U, R, UR);
@@ -1808,7 +1285,7 @@ int main(int argc, char** argv)
 
 
       // Get the initial Hamiltonian matrix elements
-      StateComponent BlockHamL = Initial_E(HamMPO , Psi.Basis1());
+      StateComponent BlockHamL = Initial_E(HamMPO, Psi.Basis1());
       if (StartFromFixedPoint)
       {
 	 std::cout << "Solving fixed-point Hamiltonian..." << std::endl;
@@ -1826,7 +1303,7 @@ int main(int argc, char** argv)
 	 LinearWavefunction PsiR;
 	 MatrixOperator U;
 	 RealDiagonalOperator D;
-	 boost::tie(U, D, PsiR) = get_right_canonical(Wavefunction.get<InfiniteWavefunctionLeft>());
+	 std::tie(U, D, PsiR) = get_right_canonical(Wavefunction.get<InfiniteWavefunctionLeft>());
 	 
 	 //TRACE(norm_frob(delta_shift(R,QShift)*U - U*D));
 

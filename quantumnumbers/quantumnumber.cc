@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// quantumnumbers/quantumnumber.cc
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "common/poolallocator.h"
 
@@ -38,7 +55,8 @@ template <typename InputIter>
 inline
 RepLabelBase<Tag>::RepLabelBase(SymmetryListImpl const* q, int Size, InputIter InitIter)
 {
-   assert_equal_types<typename std::iterator_traits<InputIter>::value_type, int>();
+   static_assert(std::is_same<typename std::iterator_traits<InputIter>::value_type, int>::value,
+		 "quantum number iterator value must be int");
    DEBUG_PRECONDITION(q != NULL);
    CHECK(Size <= QUANTUM_NUMBER_FIXED_SIZE)(Size)
       ("Increase the constant QUANTUM_NUMBER_FIXED_SIZE!");

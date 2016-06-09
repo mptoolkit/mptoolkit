@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// lattice/siteoperator.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "siteoperator.h"
 #include <boost/lexical_cast.hpp>
@@ -261,7 +278,7 @@ decompose_tensor_prod(SiteOperator const& S, SiteProductBasis const& SPBasis)
                CHECK_EQUAL(alpha[k], A.TransformsAs());
 
             int l,m;
-            boost::tie(l,m) = alpha.rmap(k);
+            std::tie(l,m) = alpha.rmap(k);
             A(l,m) = U(k,i) * D[i];
          }
       }
@@ -277,7 +294,7 @@ decompose_tensor_prod(SiteOperator const& S, SiteProductBasis const& SPBasis)
                CHECK_EQUAL(beta[k], B.TransformsAs());
 
             int l,m;
-            boost::tie(l,m) = beta.rmap(k);
+            std::tie(l,m) = beta.rmap(k);
             B(l,m) = Vt(i,k);
          }
       }

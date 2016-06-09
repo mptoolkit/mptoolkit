@@ -1,4 +1,22 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// common/poolallocator.h
+//
+// Copyright (C) 2000-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
 /*
   poolallocator.h
 
@@ -33,10 +51,9 @@
   more detailed information.
 */ 
 
-#if !defined(POOLALLOCATOR_H_SJKH7HUI3R47FR8H4389FF)
-#define POOLALLOCATOR_H_SJKH7HUI3R47FR8H4389FF
+#if !defined(MPTOOLKIT_COMMON_POOLALLOCATOR_H)
+#define MPTOOLKIT_COMMON_POOLALLOCATOR_H
 
-#include "ctassert.h"
 #include "niftycounter.h"
 #include "trace.h"
 #include <stddef.h>
@@ -50,7 +67,7 @@
 namespace PoolAlloc
 {
 
-typedef ct_assert<sizeof(void*) == sizeof(long)> PVoidMustHaveMaxAlignment;
+//typedef ct_assert<sizeof(void*) == sizeof(long)> PVoidMustHaveMaxAlignment;
 
 const size_t MinAlign = sizeof(void*);
 

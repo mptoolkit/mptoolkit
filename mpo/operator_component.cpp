@@ -1,12 +1,28 @@
-// -*- C++ -*- $Id: operator_component.cpp 1597 2015-09-05 20:16:58Z ianmcc $
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mpo/operator_component.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "operator_component.h"
 #include "tensor/tensorproduct.h"
 #include "linearalgebra/eigen.h"
 #include "tensor/regularize.h"
 #include "linearalgebra/matrix_utility.h"
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
+#include <tuple>
 
 #include "common/environment.h"
 
@@ -112,6 +128,55 @@ swap_gate_fermion(BasisList const& B1, LinearAlgebra::Vector<double> const& Pari
       }
    }
    //TRACE(Result)(Result.Basis1())(Result.Basis2());
+   return Result;
+}
+
+#if 0
+OperatorComponent
+shift_left(BasisList const& ThisBasis, BasisList const& IncomingBasis)
+{
+   // Components Result(a,b)(c,d) = delta_{a,d} delta_{b,c}
+   // where a,d are from IncomingBasis, b,c are from ThisBasis
+   OperatorComponent Result(IncomingBasis, ThisBasis, ThisBasis, IncomingBasis);
+
+   ProductBasis<BasisList, BasisList> 
+
+   SimpleOperator t = SimpleOperator::make_identity(ThisBasis);
+   SimpleOperator in = SimpleOperator::make_identity(IncomingBasis);
+
+   QuantumNumber Ident(ThisBasis.GetSymmetryList());
+   for (int i = 0; i < IncomingBasis.size(); ++i)
+   {
+      for (int j = 0; j < ThisBasis.size(); ++j)
+      {
+	 SimpleOperator x(ThisBasis, IncomingBasis, Ident);
+	 x(j,i) = 1;
+}
+#endif
+
+OperatorComponent
+translate_right(BasisList const& LeftBasis, BasisList const& ThisBasis)
+{
+   // Components Result(a,b)(c,d)_k = delta_{a,c} delta_{b,d} (2k+1)(2c_1)
+   // where a,c are from LeftBasis, b,d are from ThisBasis
+   OperatorComponent Result(LeftBasis, ThisBasis, LeftBasis, ThisBasis);
+
+   QuantumNumber Ident(ThisBasis.GetSymmetryList());
+   for (int i = 0; i < LeftBasis.size(); ++i)
+   {
+      for (int j = 0; j < ThisBasis.size(); ++j)
+      {
+	 QuantumNumberList k = inverse_transform_targets(ThisBasis[j], LeftBasis[i]);
+	 SimpleRedOperator x(LeftBasis, ThisBasis);
+	 for (auto const& q : k)
+	 {
+	    SimpleOperator xComponent(LeftBasis, ThisBasis, q);
+	    xComponent(i,j) = double(degree(q)) / degree(ThisBasis[j]);
+	    x.project(q) = xComponent;
+	 }
+	 Result(i,j) = x;
+      }
+   }
    return Result;
 }
 
@@ -1593,7 +1658,7 @@ decompose_tensor_prod(SimpleOperator const& Op,
 
    // linearize the tuples (qLeft,Left1,Left2) and (qRight,Right1,Right2) into integers.
    // We also keep the inverse map, so we can quickly convert the integer back into a tuple
-   typedef boost::tuple<QuantumNumbers::QuantumNumber, int, int> PartialProdIndex;
+   typedef std::tuple<QuantumNumbers::QuantumNumber, int, int> PartialProdIndex;
    std::map<PartialProdIndex, int> LeftIndex, RightIndex;
    std::vector<PartialProdIndex> LeftReverse, RightReverse;
    for (PartialProdType::const_iterator I = PartialProd.begin(); I != PartialProd.end(); ++I)
@@ -1647,8 +1712,8 @@ decompose_tensor_prod(SimpleOperator const& Op,
 	 {
 	    if (norm_frob(U(x,k)) > std::numeric_limits<double>::epsilon() * 10)
 	    {
-	       L.project(LeftReverse[x].get<0>())
-		  (LeftReverse[x].get<1>(), LeftReverse[x].get<2>()) = U(x,k) * Coeff;
+	       L.project(std::get<0>(LeftReverse[x]))
+		  (std::get<1>(LeftReverse[x]), std::get<2>(LeftReverse[x])) = U(x,k) * Coeff;
 	    }
 	 }
 	 
@@ -1657,8 +1722,8 @@ decompose_tensor_prod(SimpleOperator const& Op,
 	 {
 	    if (norm_frob(Vh(k,x)) > std::numeric_limits<double>::epsilon() * 10)
 	    {
-	       R.project(RightReverse[x].get<0>())
-		  (RightReverse[x].get<1>(), RightReverse[x].get<2>()) = Vh(k,x) * Coeff;
+	       R.project(std::get<0>(RightReverse[x]))
+		  (std::get<1>(RightReverse[x]), std::get<2>(RightReverse[x])) = Vh(k,x) * Coeff;
 	    }
 	 }
 
@@ -1692,7 +1757,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
    // ComponentIndex is an index to a particular matrix element of the MPO transforming as q,
    // between local indices local1,local2 and auxiliary index aux
    // ComponentIndex(aux, local1, local2, q)
-   typedef boost::tuple<int, int, int, QuantumNumbers::QuantumNumber> ComponentIndex;
+   typedef std::tuple<int, int, int, QuantumNumbers::QuantumNumber> ComponentIndex;
 
    // The full index stores the ComponentIndex for the left and right operators
    typedef std::pair<ComponentIndex, ComponentIndex> FullIndex;
@@ -1751,7 +1816,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 		  if (LinearAlgebra::norm_2(Coeff) > 1E-14)
 		  {
 		     ComponentIndex LeftIndex 
-			= boost::make_tuple(LeftAux1, P->first.Left1, P->first.Left2,
+			= std::make_tuple(LeftAux1, P->first.Left1, P->first.Left2,
 					    P->first.qLeft);
 		     if (LeftMapping[*Qpp].find(LeftIndex) == LeftMapping[*Qpp].end())
 		     {
@@ -1760,7 +1825,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 		     }
 
 		     ComponentIndex RightIndex
-			= boost::make_tuple(RightAux2, P->first.Right1, P->first.Right2,
+			= std::make_tuple(RightAux2, P->first.Right1, P->first.Right2,
 					    P->first.qRight);
 		     if (RightMapping[*Qpp].find(RightIndex) == RightMapping[*Qpp].end())
 		     {
@@ -1864,14 +1929,17 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 	    // where
 	    // LeftRevMapping[Qpp][x] is a ComponentIndex(aux, local1, local2, q)
 
-	    if (!is_transform_target(Qpp, LeftRevMapping[Qpp][x].get<3>(), Op.Basis1()[LeftRevMapping[Qpp][x].get<0>()])
-		|| !is_transform_target(B2.Left()[LeftRevMapping[Qpp][x].get<2>()], 
-					LeftRevMapping[Qpp][x].get<3>(), 
-					B1.Left()[LeftRevMapping[Qpp][x].get<1>()]))
+	    if (!is_transform_target(Qpp, std::get<3>(LeftRevMapping[Qpp][x]), 
+				     Op.Basis1()[std::get<0>(LeftRevMapping[Qpp][x])])
+		|| !is_transform_target(B2.Left()[std::get<2>(LeftRevMapping[Qpp][x])], 
+					std::get<3>(LeftRevMapping[Qpp][x]), 
+					B1.Left()[std::get<1>(LeftRevMapping[Qpp][x])]))
 	    {
 	       TRACE("Ignoring forbidden off-diagonal matrix element")
-		  (U(x,k))(Qpp)(LeftRevMapping[Qpp][x].get<3>())(Op.Basis1()[LeftRevMapping[Qpp][x].get<0>()])
-		  (B2.Left()[LeftRevMapping[Qpp][x].get<2>()])(Qpp)(B1.Left()[LeftRevMapping[Qpp][x].get<1>()]);
+		  (U(x,k))(Qpp)(std::get<3>(LeftRevMapping[Qpp][x]))
+		  (Op.Basis1()[std::get<0>(LeftRevMapping[Qpp][x])])
+		  (B2.Left()[std::get<2>(LeftRevMapping[Qpp][x])])
+		  (Qpp)(B1.Left()[std::get<1>(LeftRevMapping[Qpp][x])]);
 	    }
 	    else if (norm_frob(U(x,k)) > std::numeric_limits<double>::epsilon() * 10)
 	    {
@@ -1910,16 +1978,16 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 	 SingularVectorType LeftVec = LeftSingularVectors[Qpp][i];
 	 for (SingularVectorType::const_iterator I = LeftVec.begin(); I != LeftVec.end(); ++I)
 	 {
-	    project(MA(I->first.get<0>(), b), I->first.get<3>())
-	       (I->first.get<1>(), I->first.get<2>())
+	    project(MA(std::get<0>(I->first), b), std::get<3>(I->first))
+	       (std::get<1>(I->first), std::get<2>(I->first))
 	       = I->second;
 	 }
 
 	 SingularVectorType RightVec = RightSingularVectors[Qpp][i];
 	 for (SingularVectorType::const_iterator I = RightVec.begin(); I != RightVec.end(); ++I)
 	 {
-	    project(MB(b, I->first.get<0>()), I->first.get<3>())
-	       (I->first.get<1>(), I->first.get<2>())
+	    project(MB(b, std::get<0>(I->first)), std::get<3>(I->first))
+	       (std::get<1>(I->first), std::get<2>(I->first))
 	       = I->second;
 	 }
 
@@ -2170,4 +2238,3 @@ std::complex<double> PropIdent(SimpleOperator const& X, double UnityEpsilon)
       x = 0.0;
    return x;
 }
-

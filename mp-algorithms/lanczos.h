@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mp-algorithms/lanczos.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 //
 // Simple Lanczos algorithm.
 // No restarts, designed for applications where the number of iterations is small.
@@ -46,7 +63,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
    VectorType w = Guess;
 
    double Beta = norm_frob(w);
-   CHECK(!isnan(Beta));
+   CHECK(!std::isnan(Beta));
    // double OrigBeta = Beta;      // original norm, not used
    w *= 1.0 / Beta;
    v.push_back(w);
@@ -111,7 +128,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       // solution of the tridiagonal subproblem
       LinearAlgebra::Matrix<double> M = SubH(LinearAlgebra::range(0,i+1),
 					     LinearAlgebra::range(0,i+1));
-      if (isnan(M(0,0)))
+      if (std::isnan(M(0,0)))
       {
 	 std::ofstream Out("lanczos_debug.txt");
 	 Out << "NAN encountered in Lanczos\n"

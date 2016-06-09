@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mpo/product_mpo.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "product_mpo.h"
 #include "common/statistics.h"
@@ -259,3 +276,13 @@ prod_unit_left_to_right(FiniteMPO const& Op, int UnitCellSize)
    return Result;
 }
 
+ProductMPO translate_right(std::vector<BasisList> const& LocalBasis)
+{
+   ProductMPO Result(LocalBasis.size());
+   Result[0] = translate_right(LocalBasis.back(), LocalBasis.front());
+   for (int i = 1; i < LocalBasis.size(); ++i)
+   {
+      Result[i] = translate_right(LocalBasis[i-1], LocalBasis[i]);
+   }
+   return Result;
+}

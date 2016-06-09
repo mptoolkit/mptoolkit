@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// matrixproduct-obsolete/density.cpp
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 
 #include "density.h"
 #include "common/proccontrol.h"
@@ -179,10 +196,10 @@ DensityMatrix<MatrixOperator>::DensityMatrix(MatrixOperator const& Op)
       {
          int tp;
          LinearAlgebra::Range rtp;
-         boost::tie(tp, rtp) = B.Lookup(J.index1());
+         std::tie(tp, rtp) = B.Lookup(J.index1());
 	 int t;
 	 LinearAlgebra::Range rt;
-	 boost::tie(t, rt) = B.Lookup(J.index2());
+	 std::tie(t, rt) = B.Lookup(J.index2());
 	 CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal")(B[tp])(B[t])(Op)(B);
 	 RawDMList[tp](rtp, rt) = *J;
       }
@@ -222,10 +239,10 @@ DensityMatrix<MatrixOperator>::DensityMatrix(MatrixOperator const& Op, MatrixOpe
       {
          int tp;
          LinearAlgebra::Range rtp;
-         boost::tie(tp, rtp) = B.Lookup(J.index1());
+         std::tie(tp, rtp) = B.Lookup(J.index1());
 	 int t;
 	 LinearAlgebra::Range rt;
-	 boost::tie(t, rt) = B.Lookup(J.index2());
+	 std::tie(t, rt) = B.Lookup(J.index2());
 	 CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal")(B[tp])(B[t])(Op)(B);
 	 RawDMList[tp](rtp, rt) = *J;
       }
@@ -238,10 +255,10 @@ DensityMatrix<MatrixOperator>::DensityMatrix(MatrixOperator const& Op, MatrixOpe
       {
          int tp;
          LinearAlgebra::Range rtp;
-         boost::tie(tp, rtp) = B.Lookup(J.index1());
+         std::tie(tp, rtp) = B.Lookup(J.index1());
 	 int t;
 	 LinearAlgebra::Range rt;
-	 boost::tie(t, rt) = B.Lookup(J.index2());
+	 std::tie(t, rt) = B.Lookup(J.index2());
 	 CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal")(B[tp])(B[t])(WavefunctionDM)(B);
 	 PsiDMList[tp](rtp, rt) = *J;
       }
@@ -290,9 +307,9 @@ DensityMatrix<SimpleOperator>::DensityMatrix(SimpleOperator const& Op)
       for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
       {
          int tp, rtp;
-         boost::tie(tp, rtp) = B.Lookup(J.index1());
+         std::tie(tp, rtp) = B.Lookup(J.index1());
 	 int t, rt;
-	 boost::tie(t, rt) = B.Lookup(J.index2());
+	 std::tie(t, rt) = B.Lookup(J.index2());
 	 CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal");
  	 RawDMList[tp](rtp, rt) = *J;
       }

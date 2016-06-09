@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id: triangular_mpo.h 1519 2015-07-05 00:57:05Z ianmcc $
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mpo/triangular_mpo.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 //
 // TriangularMPO: a representation for lattice operators that are in upper triangular form.
 //
@@ -124,81 +141,6 @@ GenericMPO extract_column(TriangularMPO const& Op, int Col);
 GenericMPO extract_lower_column(TriangularMPO const& Op, int Col);
 #endif
 
-TriangularMPO TriangularOneSite(SimpleOperator const& x);
-
-// A one-site operator with the given momentum, in angular units
-TriangularMPO TriangularOneSite(SimpleOperator const& x, double Momentum);
-
-TriangularMPO TriangularTwoSite(SimpleOperator const& x, SimpleOperator const& y,
-                                     QuantumNumbers::QuantumNumber const& Trans);
-
-TriangularMPO TriangularTwoSite(SimpleOperator const& x, SimpleOperator const& y);
-
-TriangularMPO TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperator const& y, 
-                                                std::complex<double> Factor, QuantumNumber const& Trans);
-
-TriangularMPO TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperator const& y, 
-                                                std::complex<double> Factor);
-
-TriangularMPO TriangularThreeSite(SimpleOperator const& x, 
-                                       SimpleOperator const& y, 
-                                       SimpleOperator const& z);
-
-// a two point interaction between sites n1 and n2 of a lattice.
-// This probably should use SiteOperator's rather than SimpleOperator's, so that
-// we can handle fermions, especially for the case n2<n1.
-// this is assumed to be a bosonic operator; if n2 < n1 we swap the sites
-// (which is incorrect for fermions)
-TriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites, 
-                                    int n1, SimpleOperator const& x1,
-                                    int n2, SimpleOperator const& x2);
-
-// This is a restricted implementation; we must have
-// PRECONDITION: 0 <= n1 < Sites.size()
-// PRECONDITION: Sites.size() <= n2 < 2*Sites.size()
-// That is, the operator1 must be in the first unit cell, the operator2 must be
-// in the second unit cell.
-TriangularMPO TwoPointExponentialOperator(std::vector<BasisList> const& Sites, 
-                                          int n1, SimpleOperator const& x1,
-                                          int n2, SimpleOperator const& x2,
-                                          std::complex<double> Factor);
-
-
-// a two-point string operator where the String term is inserted
-// at sites n1+1, n1+2, ..., n2-1.
-// Because this function can be used to implement fermionic operators,
-// we demand normal ordering of sites; it is an error to call this function
-// with n2<n1.
-TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites, 
-                                     int n1, SimpleOperator const& x1,
-                                     SimpleOperator const& String,
-                                     int n2, SimpleOperator const& x2);
-
-TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites, 
-                                     int n1, SimpleOperator const& x1,
-                                     std::vector<SimpleOperator> const& String,
-                                     int n2, SimpleOperator const& x2);
-
-// A one-site operator on a lattice with a given momentum, in angular units per unit cell
-TriangularMPO OnePointOperator(std::vector<BasisList> const& Sites, 
-                                    int n, SimpleOperator const& x, double Momentum = 0);
-
-// A one-site operator on a lattice with a given momentum, in angular units per unit cell
-TriangularMPO OnePointStringOperator(std::vector<BasisList> const& Sites, 
-					  std::vector<SimpleOperator> const& String,
-					  int n, SimpleOperator const& x, double Momentum = 0);
-
-// A one-site operator on a lattice with a given momentum, in angular units per unit cell
-// Here we exclude the string term on the unit cell where the operator is defined
-TriangularMPO OnePointStringOperatorExclude(std::vector<BasisList> const& Sites, 
-					    std::vector<SimpleOperator> const& String,
-					    int n, SimpleOperator const& x, double Momentum = 0);
-
-TriangularMPO OneCellStringOperator(std::vector<BasisList> const& Sites, 
-				    std::vector<SimpleOperator> const& String,
-				    std::vector<SimpleOperator> const& CellOp,
-				    double Momentum = 0);
-
 // Helper function to make a list of identity operators over a unit cell
 std::vector<SimpleOperator>
 MakeIdentityUnitCell(std::vector<BasisList> const& Sites);
@@ -230,8 +172,8 @@ TriangularMPO operator-(TriangularMPO const& x, TriangularMPO const& y);
 // unary negation
 TriangularMPO operator-(TriangularMPO const& x);
 
-// does a 2-1 coarse-graining of the operator, which must have an even size
-TriangularMPO coarse_grain(TriangularMPO const& x);
+// does a N-1 coarse-graining of the operator
+TriangularMPO coarse_grain(TriangularMPO const& x, int N);
 
 // Multiplication of triangular MPO's.  This doesn't depend on the
 // compatibility of the operators.

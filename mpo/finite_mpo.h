@@ -1,4 +1,21 @@
-// -*- C++ -*- $Id$
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mpo/finite_mpo.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 //
 // Matrix product operator defined on finite support.
 // The boundary states are normally one dimensional
@@ -166,6 +183,9 @@ FiniteMPO dot(FiniteMPO const& x, FiniteMPO const& y);
 
 // cross product (if it exists)
 FiniteMPO cross(FiniteMPO const& x, FiniteMPO const& y);
+
+// Helper function for the coupling coefficient for the outer() function
+double outer_coefficient(int degree_x, int degree_y, int degree_q);
 
 // outer product of tensors.  This is defined as the product to the maximum
 // degree quantum number q.  There is also a scaling factor sqrt(degree(q))

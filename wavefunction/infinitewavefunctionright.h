@@ -1,4 +1,21 @@
 // -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// wavefunction/infinitewavefunctionright.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
 //
 // InfiniteWavefunctionRight: class to represent a linear `infinite' matrix product wavefunction
 // in right canonical form.
@@ -11,7 +28,7 @@
 #include "wavefunction/linearwavefunction.h"
 #include "mpo/finite_mpo.h"
 #include "mpo/product_mpo.h"
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 class InfiniteWavefunctionLeft;
 
@@ -91,7 +108,7 @@ InfiniteWavefunctionRight repeat(InfiniteWavefunctionRight const& Psi, int Count
 
 // returns a linear wavefunction that is in pure right-orthogonal form.
 // This is a very fast operation that only manipulates pvalue_handle objects.
-std::pair<LinearWavefunction, RealDiagonalOperator>
+std::pair<RealDiagonalOperator, LinearWavefunction>
 get_right_canonical(InfiniteWavefunctionRight const& Psi);
 
 // returns a linear wavefunction that is in pure left-orthogonal form.
@@ -100,10 +117,13 @@ get_right_canonical(InfiniteWavefunctionRight const& Psi);
 // whereas converting a right-canonical wavefunction into a left-canonical wavefunction gives
 // an additional unitary matrix, that we cannot wrap around to the other end of the wavefunction
 // as it would change the basis there.
-// This function does an SVD on each MPS.
-// Often the caller may want to construct
-// U*D*herm(U), and U*Psi, as being the right canonical wavefunction in the same basis as Psi.
-boost::tuple<MatrixOperator, RealDiagonalOperator, LinearWavefunction>
+// The wavefunction isn't quite useable as-is, the additional unitary needs to be incorporated.
+// There are two ways to do this:
+// Keeping the basis at the unit cell boundary fixed, transform the lambda matrix as
+// herm(U)*lambda*(U) and transform Psi as Psi*U.  This makes lambda no longer a diagonal operator.
+// The other alternative is to keep lambda as diagonal, but change the basis at the unit cell
+// boundary.  To do this, transform Psi as U*Psi.
+std::tuple<LinearWavefunction, RealDiagonalOperator, MatrixOperator>
 get_left_canonical(InfiniteWavefunctionRight const& Psi);
 
 // function to extract the local basis (as a vector of BasisList) from a wavefunction
@@ -112,7 +132,7 @@ std::vector<BasisList>
 inline
 ExtractLocalBasis(InfiniteWavefunctionRight const& Psi)
 {
-   return ExtractLocalBasis(get_right_canonical(Psi).first);
+   return ExtractLocalBasis(get_right_canonical(Psi).second);
 }
 
 
