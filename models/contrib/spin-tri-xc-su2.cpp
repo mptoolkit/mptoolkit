@@ -179,6 +179,9 @@ int main(int argc, char** argv)
       Lattice["H_J2"] = sum_unit(H2);
       Lattice["H_Jcell"] = sum_unit(H_Jcell);
 
+      Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
+         = "J1*H_J1 + J2*H_J2";
+
       // Momentum operator in Y direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
 
