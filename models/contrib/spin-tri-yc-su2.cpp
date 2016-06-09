@@ -1,8 +1,8 @@
 // -*- C++ -*-
-// Description: spin systems on triangular lattices with YC structure and efficient way of numbering; SU(2)-symmetric.
+// Description: spin systems on triangular lattices with YC structure and efficient way of numbering - SU(2)-symmetric.
 // Authors: Ian P. McCulloch and Seyed N. Saadatmand
 // Contact: s.saadatmand@uq.edu.au
-// <obelix> @ /data5/uqssaada/git/mptoolkit/models/contrib/spin-tri-yc-su2.cpp
+// <OBELIX> @ /data5/uqssaada/git/mptoolkit/models/contrib/spin-tri-yc-su2.cpp
 
 // YC configuration of a triangular lattice.
 // The default unit-cell size is the width value.
@@ -48,7 +48,7 @@ int IntPow(int x, int p) {
   return x * IntPow(x, p-1);
 }
 
-// Functions that produces dimer terms for the Hamiltonian (including their h.c. or rotated term): 
+// Functions that produces dimer terms for the Hamiltonian (including their h.c. (rotated) terms): 
 
 UnitCellMPO DimerKinetic(half_int spin, int width, int cell1, int site1, int cell2, int site2, int cell3, int site3, int cell4, int site4) {
 
@@ -120,25 +120,27 @@ int main(int argc, char** argv)
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Constructs a triangular lattice in the YC configuration with wrapping vector (0,1),\n"
-		   << "while spins sit on edges. This employs an efficient way of numbering in the 1D chain.\n\n"
+	 std::cerr << "Constructs a triangular lattice in the YC configuration with wrapping vector (0,1) (in unit of\n"
+		   << "+/-60 degree principal directions), while spins sit on edges. This creates an efficient way of\n" 
+                   << "numbering for the 1D chain.\n\n"
                    << "Operators:\n"
 		   << "H_J1    - nearest neighbor spin exchange\n"
 		   << "H_J2    - next-nearest neighbor spin exchange\n"
+                   << "H_chi   - explicit chiral term over NN triangular plaquettes\n" 
                    << "H_t     - kinetic term of quantum dimer model's Hamiltonian on the triangular lattice\n"
                    << "H_v     - potential term of quantum dimer model's Hamiltonian on the triangular lattice\n"
                    << "S       - total spin on a leg of the cylinder\n"
-                   << "StagS   - staggered magnetization over a unit-cell\n\n"
+                   << "StagS   - staggered magnetization over a unit-cell\n"
                    << "Trans   - translation by one site (rotation by 2\u0071/w) in lattice short direction\n"
-                   << "Ref     - reflection in lattice short direction (may need applying T-operators to become gneral reflection)\n"
-		   << "If the lattice could be potentially tripartite (width is a multiple of 3), then we\n"
-		   << "define sublattice spin operators on a \"width*3\" unit cells as,\n"
+                   << "Ref     - reflection in lattice short direction (may need applying T-operators to become 
+                   << "          general reflection)\n"
+		   //<< "*If the lattice could be potentially tripartite (width is a multiple of 3), then we\n"
+		   //<< "define sublattice spin operators on a \"width*3\" unit cells as,\n"
 		   << "S_A     - tripartite sublattice spin, including site S(0)[0]\n"
 		   << "S_B     - tripartite sublattice spin, including site S(0)[1]\n"
 		   << "S_C     - tripartite sublattice spin, including site S(0)[2]\n\n"
                    << "Functions:\n"
-                   << "H( J1 = NN coupling strength, J2 = NNN coupling strength, theta = atan(J2/J1)\n" 
-                   << "  \"radians\", alpha = J2/J1 )\n\n"                         
+                   << "H2(J2 = NNN coupling strength, J_chi = chiral term coupling strength)\n\n"                         
 	    ;
          return 1;
       }
@@ -165,25 +167,25 @@ int main(int argc, char** argv)
            Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
        }
 
-      /* Ref = I(0);
+      /* Ref = I(0);  // old way of representing R-operator.
       for (int i = 0; i < w/2; ++i)
        {
-           //R *= 0.5*( 0.25*inner(S[i],S[w-i-1]) + 1 );    // old way of representing R-operator.
+           //R *= 0.5*( 0.25*inner(S[i],S[w-i-1]) + 1 );
            Ref = Ref(0) * Cell.swap_gate_no_sign(i, w-i-1);
        } */
           
       // if we could have tripartite symmetry, add operators for the sublattice magnetization
       UnitCellMPO S_A, S_B, S_C;
 
-      if (w%3 == 0)
-      {
+      //if (w%3 == 0)
+      //{
 	 for (int i = 0; i < w; i += 3)
 	 {
 	    S_A += S(0)[i]   + S(1)[(i+2)%w] + S(2)[(i+1)%w];
 	    S_B += S(0)[i+1] + S(1)[(i+3)%w] + S(2)[(i+2)%w];
 	    S_C += S(0)[i+2] + S(1)[(i+4)%w] + S(2)[(i+3)%w];
 	 }
-      }
+      //}
 
 
       // Construct the Hamiltonian for a single unit-cell,
@@ -217,10 +219,10 @@ int main(int argc, char** argv)
          Hv += DimerPotential(Spin, w, 0, i, 1, (i+1)%w, 0, (i+1)%w, 1, (i+2)%w);       // lower-vertical rhombus terms
 
 	 // right-facing triangle
-	 Hchi += inner(S(0)[i], cross(S(0)[(i+1)%w], S(1)[i]));
+	 Hchi += inner(S(0)[i], cross(S(0)[(i+1)%w], S(1)[(i+1)%w]));
 
 	 // left-facing triangle
-	 Hchi += inner(S(0)[(i+1)%w], cross(S(1)[(i+1)%w], S(1)[i]));
+	 Hchi += inner(S(0)[i], cross(S(1)[(i+1)%w], S(1)[i]));
       }
 
       // Reflection.  This is in the 'wrong' 45 degree angle
@@ -255,22 +257,25 @@ int main(int argc, char** argv)
       // Now we construct the InfiniteLattice,
       InfiniteLattice Lattice(Cell);
 
-      Lattice["H_J1"] = sum_unit(H1);
-      Lattice["H_y"] = sum_unit(Hy);
-      Lattice["H_J2"] = sum_unit(H2);
-      Lattice["H_t"]  = sum_unit(Ht);
-      Lattice["H_v"]  = sum_unit(Hv);
-      Lattice["H_chi"]  = sum_unit(Hchi);
+      Lattice["H_J1"]  = sum_unit(H1);
+      Lattice["H_y"]   = sum_unit(Hy);
+      Lattice["H_J2"]  = sum_unit(H2);
+      Lattice["H_t"]   = sum_unit(Ht);
+      Lattice["H_v"]   = sum_unit(Hv);
+      Lattice["H_chi"] = sum_unit(Hchi);
 
       Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
-	 = "J1*H_J1 + J2*H_J2";
+             = "J1*H_J1 + J2*H_J2"; // old lattice function 
+
+      Lattice.func("H2")(arg("J2") = 0.0, arg("J_chi") = 0.0)
+              = "H_J1 + J2*H_J2 + J_chi*H_chi";
 
       // Add the tripartite sublattice magnetization operators
       if (w%3 == 0)
       {
-	 Lattice["S_A"] = sum_unit(S_A, w*3);
-	 Lattice["S_B"] = sum_unit(S_B, w*3);
-	 Lattice["S_C"] = sum_unit(S_C, w*3);
+	 Lattice["Sa"] = sum_unit(S_A, w*3);
+	 Lattice["Sb"] = sum_unit(S_B, w*3);
+	 Lattice["Sc"] = sum_unit(S_C, w*3);
       }
 
       // Momentum operators in Y direction
