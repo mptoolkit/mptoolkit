@@ -19,7 +19,6 @@
 // ENDHEADER
 
 // Description: spin systems on triangular lattices with YC structure and efficient way of numbering; SU(2)-symmetric.
-
 // YC configuration of a triangular lattice.
 // The default unit-cell size is the width value.
 //
@@ -140,21 +139,23 @@ int main(int argc, char** argv)
 		   << "+/-60 degree principal directions), while spins sit on edges. This creates an efficient way of\n" 
                    << "numbering for the 1D chain.\n\n"
                    << "Operators:\n"
-		   << "H_J1    - nearest neighbor spin exchange\n"
-		   << "H_J2    - next-nearest neighbor spin exchange\n"
-                   << "H_chi   - explicit chiral term over NN triangular plaquettes\n" 
-                   << "H_t     - kinetic term of quantum dimer model's Hamiltonian on the triangular lattice\n"
-                   << "H_v     - potential term of quantum dimer model's Hamiltonian on the triangular lattice\n"
-                   << "S       - total spin on a leg of the cylinder\n"
-                   << "StagS   - staggered magnetization over a unit-cell\n"
-                   << "Trans   - translation by one site (rotation by 2\u0071/w) in lattice short direction\n"
-                   << "Ref     - reflection in lattice short direction (may need applying T-operators to become 
-                   << "          general reflection)\n"
+		   << "H_J1     - nearest neighbor spin exchange\n"
+		   << "H_J2     - next-nearest neighbor spin exchange\n"
+                   << "H_chi    - explicit chiral term over NN triangular plaquettes\n" 
+                   << "H_t      - kinetic term of quantum dimer model's Hamiltonian on the triangular lattice\n"
+                   << "H_v      - potential term of quantum dimer model's Hamiltonian on the triangular lattice\n"
+                   << "S        - total spin on a leg of the cylinder\n"
+                   << "StagS    - staggered magnetization over a unit-cell\n"
+                   << "Trans    - translation by one site (rotation by 2\u0071/w) in lattice short direction\n"
+                   << "Ty       - momentum operator in lattice short direction\n"
+                   << "Ref      - reflection in lattice short direction (may need applying T-operators to become" 
+                   << "           general reflection)\n"
+                   << "SwapWrap - changing the wraaping vector of lattice between 'old' and 'new' way of numbering"
 		   //<< "*If the lattice could be potentially tripartite (width is a multiple of 3), then we\n"
 		   //<< "define sublattice spin operators on a \"width*3\" unit cells as,\n"
-		   << "S_A     - tripartite sublattice spin, including site S(0)[0]\n"
-		   << "S_B     - tripartite sublattice spin, including site S(0)[1]\n"
-		   << "S_C     - tripartite sublattice spin, including site S(0)[2]\n\n"
+		   << "S_A      - tripartite sublattice spin, including site S(0)[0]\n"
+		   << "S_B      - tripartite sublattice spin, including site S(0)[1]\n"
+		   << "S_C      - tripartite sublattice spin, including site S(0)[2]\n\n"
                    << "Functions:\n"
                    << "H2(J2 = NNN coupling strength, J_chi = chiral term coupling strength)\n\n"                         
 	    ;
@@ -294,7 +295,7 @@ int main(int argc, char** argv)
 	 Lattice["Sc"] = sum_unit(S_C, w*3);
       }
 
-      // Momentum operators in Y direction
+      // Momentum operators in Y-direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
       Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w*w);
 
@@ -309,7 +310,7 @@ int main(int argc, char** argv)
 	 Lattice["TyPi"] = prod_unit_left_to_right(TyPi.MPO(), w);
       }
 
-      // Reflection.  Fixed to reflect about a horizontal axis.  This is the reverse order of unit cells to the R45 operator.
+      // Reflection.  Fixed to reflect about a horizontal axis.  This is the reverse order of unit cells to the R-"45 degree" operator.
       UnitCellMPO RyOld = I(0);
       for (int c = 0; c < w; ++c)
       {
@@ -337,6 +338,27 @@ int main(int argc, char** argv)
       }
 
       Lattice["RyOld"] = prod_unit_left_to_right(RyOld.MPO(), w*w);
+
+      // SwapWrap. Change between wrapping vectors of 'old' and 'new' way of numbering of the lattice.
+      UnitCellMPO SwapWrap = I(0);
+      for (int c = 0; c < w; ++c)
+      {
+         UnitCellMPO ThisWrap = I(0);
+
+         if (c != 0)
+         { 
+           for (int i1 = 0; i1 < w-c; ++i1)
+           {
+              int i2 = (i1+w-c)%w;
+              ThisWrap = ThisWrap * Cell.swap_gate_no_sign(i1,i2);
+           }
+         }
+
+         ThisWrap.translate(c*w);
+         SwapWrap = SwapWrap * ThisWrap;          
+      } 
+        
+      Lattice["SwapWrap"] = prod_unit_left_to_right(SwapWrap.MPO(), w*w);  
 
       // 'identity' operator in the spin-1/2 auxiliary basis
       Lattice["I_2"] = prod_unit_left_to_right(UnitCellMPO(I(0)).MPO(), w)
