@@ -28,9 +28,30 @@
 #include <complex>
 #include <boost/math/special_functions/round.hpp>
 #include "common/numerics.h"
+#include "common/formatting.h"
 
 namespace Parser
 {
+
+enum ShowColors { ColorNever, ColorAuto, ColorAlways };
+
+// set the color for output, never, auto, always
+// auto: show color iff std::cout is a terminal
+void SetShowColors(ShowColors c);
+
+std::string ColorHighlight(std::string s);
+
+std::string ColorHighlight(char c);
+
+std::string ColorError(std::string s);
+
+std::string ColorWarning(std::string s);
+
+std::string ColorNote(std::string s);
+
+std::string ColorHint(std::string s);
+
+std::string ColorPrompt(std::string s);
 
 typedef std::complex<double> complex;
 
@@ -43,9 +64,14 @@ class ParserError : public std::exception
 
       ParserError(std::exception const& Prev, std::string const& Why);
 
-      ~ParserError() throw() { }
+      // Adds a 'hint' message to the error
+      void AddHint(std::string const& s) { Hint = s; }
 
-      virtual const char* what() const throw() { return Msg.c_str(); }
+      std::string const& hint() const { return Hint; }
+
+      ~ParserError() noexcept { }
+
+      virtual const char* what() const noexcept { return Msg.c_str(); }
 
       // named constructors
 
@@ -66,15 +92,20 @@ class ParserError : public std::exception
 				  char const* beg, char const* end);
 
    private:
-      ParserError(std::list<std::string> const& CallStack_, char const* Position);
-      ParserError(std::list<std::string> const& CallStack_, char const* Position, char const* End_);
+      ParserError(std::list<std::string> const& CallStack_, char const* Position,
+		  std::string const& Hint_ = "");
+
+      ParserError(std::list<std::string> const& CallStack_, char const* Position, char const* End_,
+		  std::string const& Hint_ = "");
       ParserError(std::list<std::string> const& CallStack_, 
 		  std::string const& Why, char const* Position, char const* End_,
-		  char const* beg, char const* end);
+		  char const* beg, char const* end,
+		  std::string const& Hint_ = "");
 
       void AssembleMessage();
 
       std::list<std::string> CallStack;
+      std::string Hint;
       std::string Msg;
 
       char const* Pos;
