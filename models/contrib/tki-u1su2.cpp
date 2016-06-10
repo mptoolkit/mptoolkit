@@ -2,9 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// models/contrib/tki-u1su2.cpp
+// models/spinchain-su2.cpp
 //
-// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2016 Jason Pillay <pillayjason@hotmail.com>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER
+
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
@@ -67,13 +68,13 @@ int main(int argc, char** argv)
 
     LatticeSite cSite = FermionU1SU2();
     LatticeSite fSite = SpinSU2(0.5);
-//    fSite.CoerceSymmetryList(cSite.GetSymmetryList());
-//    UnitCell Cell(cSite, fSite);
     UnitCell Cell(cSite.GetSymmetryList(), cSite, fSite);
-    InfiniteLattice Lattice(Cell);
-    UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), S(Cell, "S"), Ss(Cell, "Ss"), Pi(Cell, "Pi");
+    UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), S(Cell, "S"), Pi(Cell, "Pi");
 
-    Pi = outer(CH(2)[0] - CH(0)[0], C(2)[0] - C(0)[0]);
+    // note: need to define this *BEFORE* constructing the InfiniteLattice object
+    Pi = std::sqrt(0.125)*outer(CH(2)[0] - CH(0)[0], C(2)[0] - C(0)[0]);
+
+    InfiniteLattice Lattice(Cell);
 
     Lattice["H_t"]  = sum_unit(dot(CH(0)[0], C(1)[0]) + dot(C(0)[0], CH(1)[0]));
     Lattice["H_J1"] = sum_unit(inner(S(0)[1], S(1)[1]));
@@ -98,3 +99,5 @@ int main(int argc, char** argv)
     return 1;
   }
 }
+
+
