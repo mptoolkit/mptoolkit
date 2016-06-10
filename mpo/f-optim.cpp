@@ -24,6 +24,9 @@
 
 // note: we could parallelize the construction of the G and H indices over jP
 
+namespace
+{
+
 typedef std::complex<double> NumberType;
 typedef LinearAlgebra::Matrix<NumberType> MatrixType;
 
@@ -154,6 +157,8 @@ OuterIndex::Evaluate(StateComponent const& A, GMatrixRefList const& G) const
    }
    return Result;
 }
+
+} // namespace
 
 // *** obsolete
 #if 0

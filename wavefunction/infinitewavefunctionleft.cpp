@@ -56,6 +56,9 @@ extern double const InverseTol = getenv_or_default("MP_INVERSE_TOL", 1E-7);
 // the tol used in the orthogonalization can apparently be a bit smaller
 extern double const OrthoTol = getenv_or_default("MP_ORTHO_TOL", 1E-9);
 
+namespace
+{
+
 struct LeftMultiply
 {
    typedef MatrixOperator argument_type;
@@ -111,6 +114,8 @@ struct RightMultiply
    QuantumNumber QShift;
    int Verbose;
 };
+
+} // namespace
 
 InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(QuantumNumbers::QuantumNumber const& QShift_)
    : QShift(QShift_)

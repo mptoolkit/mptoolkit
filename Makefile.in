@@ -329,7 +329,7 @@ $(experimental-tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapo
                         $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj)
 
 $(all-models) :  $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-              $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj)
+              $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj) $(parserobj)
 
 $(mp-misc) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
                $(dmrgobj) $(mpobj)
