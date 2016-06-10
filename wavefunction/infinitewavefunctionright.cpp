@@ -43,6 +43,9 @@ extern double const OrthoTol;
 PStream::VersionTag
 InfiniteWavefunctionRight::VersionT(1);
 
+namespace
+{
+
 struct LeftMultiply
 {
    typedef MatrixOperator argument_type;
@@ -88,6 +91,8 @@ struct RightMultiply
    LinearWavefunction const& R;
    QuantumNumber QShift;
 };
+
+} // namespace
 
 InfiniteWavefunctionRight::InfiniteWavefunctionRight(MatrixOperator const& Lambda,
 						     LinearWavefunction const& Psi, 
