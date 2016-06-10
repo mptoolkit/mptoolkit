@@ -52,136 +52,8 @@
 namespace Parser
 {
 
-inline
-std::string Spaces(int Size)
-{
-   return std::string(Size, ' ');
-}
-
-inline
-ParserError::ParserError(std::string const& Why)
-   : CallStack(1, Why), Pos(NULL), End(NULL)
-{
-   this->AssembleMessage();
-}
-
-inline
-ParserError::ParserError(ParserError const& Prev, std::string const& Why)
-   : CallStack(Prev.CallStack), Pos(Prev.Pos), End(Prev.End)
-{
-   CallStack.push_back(Why);
-   this->AssembleMessage();
-}
-
-inline
-ParserError::ParserError(std::exception const& Prev, std::string const& Why)
-   : CallStack(1, Prev.what()), Pos(NULL), End(NULL)
-{
-   CallStack.push_back(Why);
-   this->AssembleMessage();
-}
-
-
-inline
-ParserError::ParserError(std::list<std::string> const& CallStack_, char const* Position)
-   : CallStack(CallStack_), Pos(Position), End(NULL)
-{
-   this->AssembleMessage();
-}
-
-inline
-ParserError::ParserError(std::list<std::string> const& CallStack_, char const* Position,
-			 char const* End_)
-   : CallStack(CallStack_), Pos(Position), End(End_)
-{
-   this->AssembleMessage();
-}
-
-inline
-ParserError::ParserError(std::list<std::string> const& CallStack_, 
-			 std::string const& Why, char const* Position, char const* End_,
-			 char const* beg, char const* end)
-   : CallStack(CallStack_), Pos(NULL), End(NULL)
-{
-   std::string Next = Why + "\n" + std::string(beg, end);
-   if (Position)
-   {
-      int Count = End_ ? std::distance(Position, End_) : 1;
-      Next = Next + "\n" + std::string(std::distance(beg, Position), ' ')
-	 + std::string(Count, '^');
-   }
-   CallStack.push_back(Next);
-   this->AssembleMessage();
-}
-
-inline
-ParserError 
-ParserError::AtPosition(std::string const& Why, char const* Position)
-{
-   return ParserError(std::list<std::string>(1, Why), Position);
-}
-
-inline
-ParserError 
-ParserError::AtPosition(ParserError const& Prev, char const* Position)
-{
-   return ParserError(Prev.CallStack, Position);
-}
-
-inline
-ParserError 
-ParserError::AtPosition(std::exception const& Prev, char const* Position)
-{
-   return ParserError(std::list<std::string>(1, Prev.what()), Position);
-}
-
-inline
-ParserError
-ParserError::AtRange(std::string const& Why, char const* Start, char const* End)
-{
-   return ParserError(std::list<std::string>(1, Why), Start, End);
-}
-
-inline
-ParserError
-ParserError::AtRange(ParserError const& Prev, char const* Start, char const* End)
-{
-   return ParserError(Prev.CallStack, Start, End);
-}
-
-inline
-ParserError
-ParserError::AtRange(std::exception const& Prev, char const* Start, char const* End)
-{
-   return ParserError(std::list<std::string>(1, Prev.what()), Start, End);
-}
-
-inline
-ParserError
-ParserError::Finalize(ParserError const& Prev, std::string const& Why, char const* beg, char const* end)
-{
-   return ParserError(Prev.CallStack, Why, Prev.Pos, Prev.End, beg, end);
-}
-
-inline
-ParserError
-ParserError::Finalize(std::exception const& Prev, std::string const& Why, char const* beg, char const* end)
-{
-   return ParserError(std::list<std::string>(1, Prev.what()), Why, NULL, NULL, beg, end);
-}
-
-inline
-void
-ParserError::AssembleMessage()
-{
-   Msg = "Parser error:\n";
-   for (std::list<std::string>::const_iterator I = CallStack.begin(); I != CallStack.end(); ++I)
-   {
-      if (I != CallStack.begin())
-	 Msg = Msg + '\n';
-      Msg = Msg + (*I);
-   }
-}
+// returns a string of Size space characters
+std::string Spaces(int Size);
 
 // returns true if the parenthesis a b match, ie they form
 // ( ) or [ ] or { }
@@ -211,7 +83,7 @@ void CheckParentheses(Iter beg, Iter end)
 	    std::string s;
 	    s = s + "Unbalanced parentheses, extra '" + (*I) + "'";
 	    s = s + "\nWhile parsing string:\n" + std::string(beg, end);
-	    s = s + "\n" + Spaces(std::distance(beg, I)) + "^";
+	    s = s + "\n" + Spaces(std::distance(beg, I)) + ColorPrompt("^");
 	    throw ParserError(s);
 	 }
 	 else
@@ -245,6 +117,53 @@ void CheckParentheses(Iter beg, Iter end)
       throw ParserError(s);
    }
 }
+
+inline
+void CheckParentheses(char const* beg, char const* end)
+{
+   std::stack<char const*> IterStack;
+   char const* I = beg;
+   while (I != end)
+   {
+      if (*I == '(' || *I == '[' || *I == '{')
+      {
+	 IterStack.push(I);
+      }
+      else if (*I == ')' || *I == ']' || *I == '}')
+      {
+	 if (IterStack.empty())
+	 {
+	    throw ParserError::AtPosition(std::string("Unbalanced parenthesis, extra '") 
+					  + ColorHighlight(*I) + "'",
+					  I);
+	 }
+	 else
+	 {
+	    if (ParenthesesMatch(*IterStack.top(), *I))
+	    {
+	       // Found the matching parentheses
+	       IterStack.pop();
+	    }
+	    else
+	    {
+	       throw ParserError::AtRange(std::string("Parenthesis mismatch, opening '")
+					  + ColorHighlight(*IterStack.top())
+					  + "' closes with '" + ColorHighlight(*I) + "'",
+					  IterStack.top(), I+1);
+	    }
+	 }
+      }
+      ++I;
+   }
+   if (!IterStack.empty())
+   {
+      throw ParserError::AtPosition(std::string("Unbalanced parenthesis, '")
+				    + ColorHighlight(*IterStack.top())
+				    + "' has no closing bracket",
+				    IterStack.top());
+   }
+}
+
 
 using namespace boost::spirit::classic;
 
