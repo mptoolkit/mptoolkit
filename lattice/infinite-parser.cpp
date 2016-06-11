@@ -46,7 +46,8 @@ struct push_operator
       IdentStack.pop();
       if (!Lattice.operator_exists(OpName))
       {
-	 throw ParserError::AtPosition("Operator does not exist or wrong type: " + OpName, start);
+	 throw ParserError::AtPosition("Operator does not exist or wrong type: " 
+				       + ColorQuote(OpName), start);
       }
       eval.push(Lattice[OpName].op());
    }
@@ -292,7 +293,7 @@ struct push_sum_kink
       }
       if (Comma == End)
       {
-	 throw ParserError::AtRange("sum_kink expects two parameters", Start, End);
+	 throw ParserError::AtRange(ColorQuote("sum_kink") + " expects two parameters", Start, End);
       }
 
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
@@ -333,7 +334,8 @@ struct push_sum_string_inner
       }
       if (Comma == End)
       {
-	 throw ParserError::AtRange("sum_string_inner expects three parameters, only found one", Start, End);
+	 throw ParserError::AtRange(ColorQuote("sum_string_inner")
+				    + " expects three parameters, only found one", Start, End);
       }
 
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
@@ -351,7 +353,8 @@ struct push_sum_string_inner
       }
       if (Comma == End)
       {
-	 throw ParserError::AtRange("sum_string_inner expects three parameters, only found two", Start, End);
+	 throw ParserError::AtRange(ColorQuote("sum_string_inner") 
+				    + " expects three parameters, only found two", Start, End);
       }
       UnitCellMPO String = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, Comma), Args);
       ++Comma; // skip over the comma
@@ -389,7 +392,8 @@ struct push_sum_string_dot
       }
       if (Comma == End)
       {
-	 throw ParserError::AtRange("sum_string_dot expects three parameters, only found one", Start, End);
+	 throw ParserError::AtRange(ColorQuote("sum_string_dot") 
+				    + " expects three parameters, only found one", Start, End);
       }
 
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
@@ -407,7 +411,8 @@ struct push_sum_string_dot
       }
       if (Comma == End)
       {
-	 throw ParserError::AtRange("sum_string_dot expects three parameters, only found two", Start, End);
+	 throw ParserError::AtRange(ColorQuote("sum_string_dot") 
+				    + " expects three parameters, only found two", Start, End);
       }
       UnitCellMPO String = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, Comma), Args);
       ++Comma; // skip over the comma
@@ -435,7 +440,8 @@ struct push_coarse_grain
       int Cells = Sites / Lattice.GetUnitCell().size();
 
       if (Sites <= 0)
-	 throw ParserError::AtRange("coarse_grain: canot coarse-grain to zero or negative size!", 
+	 throw ParserError::AtRange(ColorHighlight("coarse_grain:") 
+				    + " canot coarse-grain to zero or negative size!", 
 				    Start, End);
 
       TriangularMPO TOp = boost::get<TriangularMPO>(Op);
