@@ -193,7 +193,7 @@ int main(int argc, char** argv)
 
       UnitCell Cell = Lattice->GetUnitCell();
       int UnitCellSize = Cell.size();
-      int const NumUnitCells = InfPsi.size() / UnitCellSize;
+      //      int const NumUnitCells = InfPsi.size() / UnitCellSize;
 
       // orthogonalize the wavefunction
       LinearWavefunction Psi1;
@@ -202,7 +202,6 @@ int main(int argc, char** argv)
       MatrixOperator Rho = D;
       Rho = scalar_prod(Rho, herm(Rho));
       MatrixOperator Identity = MatrixOperator::make_identity(Psi1.Basis1());
-      double Dim = Psi1.Basis1().total_degree();
 
       // reflected and conjugated versions of the wavefunction - we leave them as null
       // until they are actually needed
@@ -214,13 +213,10 @@ int main(int argc, char** argv)
       for (unsigned i = 0; i < OperatorStr.size(); ++i)
       {
 	 std::string OpStr = OperatorStr[i];
-	 bool Reflect = false;
-	 bool Conjugate = false;
 	 LinearWavefunction* Psi2 = &Psi1;
 	 // Do we have time reversal or reflection?
 	 if (boost::starts_with(OpStr, "r&"))
 	 {
-	    Reflect = true;
 	    OpStr = std::string(OpStr.begin()+2, OpStr.end());
 	    if (PsiR.empty())
 	    {
@@ -239,7 +235,6 @@ int main(int argc, char** argv)
 	 }
 	 else if (boost::starts_with(OpStr,"c&"))
 	 {
-	    Conjugate = true;
 	    OpStr = std::string(OpStr.begin()+2, OpStr.end());
 	    if (PsiC.empty())
 	    {
@@ -249,8 +244,6 @@ int main(int argc, char** argv)
 	 }
 	 else if (boost::starts_with(OpStr,"rc&") || boost::starts_with(OpStr,"cr&"))
 	 {
-	    Reflect = true;
-	    Conjugate = true;
 	    OpStr = std::string(OpStr.begin()+3, OpStr.end());
 	    if (PsiR.empty())
 	    {

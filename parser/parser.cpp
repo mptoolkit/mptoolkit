@@ -90,7 +90,7 @@ ParserError::ParserError(std::string const& Why)
 }
 
 ParserError::ParserError(ParserError const& Prev, std::string const& Why)
-   : CallStack(Prev.CallStack), Pos(Prev.Pos), End(Prev.End), Hint(Prev.Hint)
+   : CallStack(Prev.CallStack), Hint(Prev.Hint), Pos(Prev.Pos), End(Prev.End)
 {
    CallStack.push_back(Why);
    this->AssembleMessage();
@@ -105,14 +105,14 @@ ParserError::ParserError(std::exception const& Prev, std::string const& Why)
 
 ParserError::ParserError(std::list<std::string> const& CallStack_, char const* Position,
 			 std::string const& Hint_)
-   : CallStack(CallStack_), Pos(Position), End(NULL), Hint(Hint_)
+   : CallStack(CallStack_), Hint(Hint_), Pos(Position), End(NULL)
 {
    this->AssembleMessage();
 }
 
 ParserError::ParserError(std::list<std::string> const& CallStack_, char const* Position,
 			 char const* End_, std::string const& Hint_)
-   : CallStack(CallStack_), Pos(Position), End(End_), Hint(Hint_)
+   : CallStack(CallStack_), Hint(Hint_), Pos(Position), End(End_)
 {
    this->AssembleMessage();
 }
@@ -121,7 +121,7 @@ ParserError::ParserError(std::list<std::string> const& CallStack_,
 			 std::string const& Why, char const* Position, char const* End_,
 			 char const* beg, char const* end,
 			 std::string const& Hint_)
-   : CallStack(CallStack_), Pos(NULL), End(NULL), Hint(Hint_)
+   : CallStack(CallStack_), Hint(Hint_), Pos(NULL), End(NULL)
 {
    std::string Next = Why + "\n" + std::string(beg, end);
    if (Position)

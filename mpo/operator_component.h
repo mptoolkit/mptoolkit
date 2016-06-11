@@ -215,9 +215,9 @@ swap_gate(BasisList const& B1, LinearAlgebra::Vector<double> const& Parity1,
 
 // Constructs an MPO that represents a shift operator
 //     |
-//      \
+//      \    o
 // ---   --- IncomingBasis
-//    \
+//    \      o
 //     |
 //    ThisBasis
 
@@ -226,9 +226,9 @@ translate_left(BasisList const& LeftBasis, BasisList const& ThisBasis);
 
 // Constructs an MPO that represents a translation to the left
 //               |
-//              /
-// LeftBasis ---   --- 
-//                /
+//              /       o
+// LeftBasis ---   ---  o
+//                /     o
 //               |
 //           ThisBasis
 //

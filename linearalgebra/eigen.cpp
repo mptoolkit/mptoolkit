@@ -112,7 +112,7 @@ void EigenvaluesComplex(int Size, std::complex<double>* Data,
    std::complex<double> WorkSize;
    Fortran::integer LWork = -1;
    LAPACK::zgehrd(Size, ilo, ihi, Data, LeadingDim, Tau, &WorkSize, -1, info);
-   LWork = WorkSize.real();
+   LWork = Fortran::integer(WorkSize.real());
    std::complex<double>* Work = new std::complex<double>[LWork];
    // do the actual call
    LAPACK::zgehrd(Size, ilo, ihi, Data, LeadingDim, Tau, Work, LWork, info);
@@ -123,7 +123,7 @@ void EigenvaluesComplex(int Size, std::complex<double>* Data,
    // workspace query
    std::complex<double> z;
    LAPACK::zhseqr('E', 'N', Size, ilo, ihi, Data, LeadingDim, Eigen, &z, 1, &WorkSize, -1, info);
-   LWork = WorkSize.real();
+   LWork = Fortran::integer(WorkSize.real());
    Work =  new std::complex<double>[LWork];
    LAPACK::zhseqr('E', 'N', Size, ilo, ihi, Data, LeadingDim, Eigen, &z, 1, Work, LWork, info);
    CHECK(info == 0)("LAPACK::zgesqr")(info);
@@ -480,7 +480,7 @@ void SingularValueDecompositionFull(int Size1, int Size2,
    char jobvh = 'A';
    int m = Size2;    // remembering that FORTRAN regards the matrices as the transpose, rows/cols are reversed.
    int n = Size1;
-   int max_mn = std::max(m,n);
+   //int max_mn = std::max(m,n);
    int min_mn = std::min(m,n);
    std::complex<double>* a = A;
    int lda = m;

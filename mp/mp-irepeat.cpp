@@ -43,7 +43,6 @@ int main(int argc, char** argv)
       std::string InputFile;
       std::string OutputFile;
       bool Force = false;
-      bool AssumeOrthogonal = false;
       int Times = 2;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());

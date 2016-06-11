@@ -25,7 +25,6 @@
 #include "config.h"         // for configuration options
 #endif
 #include "poolallocator.h"
-#include "mutex.h"
 #include <iostream>
 #include <iomanip>
 #include <set>
@@ -38,7 +37,7 @@ namespace
 void* FreeList[PoolAlloc::MaxBlockAllocatorUnits+1] = {NULL};
 void* BlockRecHead[PoolAlloc::MaxBlockAllocatorUnits+1] = {NULL};
 void* BlockRecTail[PoolAlloc::MaxBlockAllocatorUnits+1] = {NULL};
-pthread::mutex BlockMutex[PoolAlloc::MaxBlockAllocatorUnits+1];
+//pthread::mutex BlockMutex[PoolAlloc::MaxBlockAllocatorUnits+1];
 
 // returns the UnitSize of the corresponding actual size
 inline size_t GetUnitSize(size_t size)
@@ -71,25 +70,6 @@ void* AllocatePool(size_t UnitSize, size_t NAlloc = PoolAlloc::DefaultAllocation
    return Array +  PoolAlloc::MinAlign*2;
 }
 
-// returns true if p is a valid address of a block of data of size UnitSize.
-bool IsValidAddress(void* p, size_t UnitSize)
-{ 
-   void* Ptr = BlockRecHead[UnitSize];
-   while (Ptr)
-   {
-      char* First = static_cast<char*>(Ptr) +  PoolAlloc::MinAlign * 2;
-      int NAlloc = *reinterpret_cast<size_t*>(static_cast<char*>(Ptr) +  PoolAlloc::MinAlign);
-
-      if (First <= p && p < First + NAlloc * UnitSize * PoolAlloc::MinAlign)
-      {
-	 ptrdiff_t Offset = static_cast<char*>(p) - First;
-	 return Offset % (UnitSize * PoolAlloc::MinAlign) == 0;
-      }
-      Ptr = *static_cast<void**>(Ptr);
-   }
-   return false;
-}
-
 void CheckForAllocatedBlocks(size_t UnitSize, std::set<void*> const& Free)
 { 
    void* Ptr = BlockRecHead[UnitSize];
@@ -107,6 +87,26 @@ void CheckForAllocatedBlocks(size_t UnitSize, std::set<void*> const& Free)
       }
       Ptr = *static_cast<void**>(Ptr);
    }
+}
+
+#if defined(POOLALLOCATOR_DEBUG)
+// returns true if p is a valid address of a block of data of size UnitSize.
+bool IsValidAddress(void* p, size_t UnitSize)
+{ 
+   void* Ptr = BlockRecHead[UnitSize];
+   while (Ptr)
+   {
+      char* First = static_cast<char*>(Ptr) +  PoolAlloc::MinAlign * 2;
+      int NAlloc = *reinterpret_cast<size_t*>(static_cast<char*>(Ptr) +  PoolAlloc::MinAlign);
+
+      if (First <= p && p < First + NAlloc * UnitSize * PoolAlloc::MinAlign)
+      {
+	 ptrdiff_t Offset = static_cast<char*>(p) - First;
+	 return Offset % (UnitSize * PoolAlloc::MinAlign) == 0;
+      }
+      Ptr = *static_cast<void**>(Ptr);
+   }
+   return false;
 }
 
 // verifies that a pointer is valid in preparation for freeing it.  
@@ -137,6 +137,7 @@ void DebugCheck(void* p, size_t size)
      PANIC("PoolAlloc: double deallocation of a block")(size)(p);
    }
 }
+#endif
 
 // Walks the heap for the given UnitSize.  Returns false if 
 // there are allocated memory blocks, true if there are no allocated memory blocks.
@@ -204,7 +205,7 @@ void* allocate(size_t size)
 
    PRECONDITION(UnitSize < MaxBlockAllocatorUnits);
 
-   pthread::mutex::sentry MyLock(BlockMutex[UnitSize]);
+   //   pthread::mutex::sentry MyLock(BlockMutex[UnitSize]);
 
    if (!(FreeList[UnitSize])) FreeList[UnitSize] = AllocatePool(UnitSize, 
 								PoolAlloc::DefaultAllocationUnits/UnitSize+1);
