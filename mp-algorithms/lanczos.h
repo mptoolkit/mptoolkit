@@ -120,7 +120,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
          VectorType y = M(0,0) * v[0];
          for (int j = 1; j <= i; ++j)
             y += M(0,j) * v[j];
-    	 Tol = Beta;
+    	 Tol = Beta / SpectralDiameter;
 	 Guess = y;
 	 return Theta;
       }

@@ -805,7 +805,7 @@ DummyAssertType operator<<(DummyAssertType, T const&)
 //int const DUMMY_ASSERT_B = 0;
 
 #define INVOKE_DUMMY(junk)                      \
-   ::tracer:: DUMMY_ASSERT_A                    \
+   ::tracer:: DUMMY_ASSERT_A		\
    /* */
 
 #define DUMMY_ASSERT_A(x) DUMMY_ASSERT_OP(B)

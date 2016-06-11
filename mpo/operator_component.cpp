@@ -162,9 +162,9 @@ translate_right(BasisList const& LeftBasis, BasisList const& ThisBasis)
    OperatorComponent Result(LeftBasis, ThisBasis, LeftBasis, ThisBasis);
 
    QuantumNumber Ident(ThisBasis.GetSymmetryList());
-   for (int i = 0; i < LeftBasis.size(); ++i)
+   for (unsigned i = 0; i < LeftBasis.size(); ++i)
    {
-      for (int j = 0; j < ThisBasis.size(); ++j)
+      for (unsigned j = 0; j < ThisBasis.size(); ++j)
       {
 	 QuantumNumberList k = inverse_transform_targets(ThisBasis[j], LeftBasis[i]);
 	 SimpleRedOperator x(LeftBasis, ThisBasis);
@@ -1096,7 +1096,7 @@ SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
 
    std::vector<QuantumNumbers::QuantumNumber> NewBasis1Q;
 
-   double Normalization = A.LocalBasis2().total_degree();
+   //   double Normalization = A.LocalBasis2().total_degree();
 
    int r = M.size1()-1;
    while (r >= 0)
@@ -1219,7 +1219,7 @@ SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
 
    BasisList NewBasis2(A.Basis2().GetSymmetryList());
 
-   double Normalization = A.LocalBasis1().total_degree();
+   //double Normalization = A.LocalBasis1().total_degree();
 
    int c = 0;
    while (c < int(M.size2()))
@@ -1750,7 +1750,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 			    ProductBasis<BasisList, BasisList> const& B2)
 {
    // A scale factor for determining whether to keep numerically small values
-   double ScaleFactor = norm_frob_sq(Op) / std::sqrt(Op.Basis1().size() * Op.Basis2().size() * Op.LocalBasis1().size() * Op.LocalBasis2().size());
+   //double ScaleFactor = norm_frob_sq(Op) / std::sqrt(Op.Basis1().size() * Op.Basis2().size() * Op.LocalBasis1().size() * Op.LocalBasis2().size());
 
    typedef std::map<Tensor::PartialProdIndex, std::complex<double> > PartialProdType;
 
