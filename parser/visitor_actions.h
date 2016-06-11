@@ -53,6 +53,8 @@ std::string ColorHint(std::string s);
 
 std::string ColorPrompt(std::string s);
 
+std::string ColorQuote(std::string s);
+
 typedef std::complex<double> complex;
 
 class ParserError : public std::exception

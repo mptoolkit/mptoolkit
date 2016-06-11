@@ -69,6 +69,11 @@ std::string ColorPrompt(std::string s)
    return ConditionalColorText(s, TerminalColor::Green, TerminalColor::Bold);
 }
 
+std::string ColorQuote(std::string s)
+{
+   return "'" + ColorHighlight(s) + "'";
+}
+
 std::string Spaces(int Size)
 {
    return std::string(Size, ' ');
