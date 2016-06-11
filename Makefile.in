@@ -203,7 +203,7 @@ allobj = $(quantumnumbersobj) \
 # contributed models.  Add new models here
 contrib-models = spin-tri-yc-su2 spin-tri-xc-su2 spin-tri-yc-su2-NonEff \
                  spin-tri-2SiteUnitCell-su2 spin-tri-1SiteUnitCell-su2 spin-tri-yc-u1 spin-tri-yc \
-                 tki-u1su2
+                 tki-u1su2 tki-u1u1
 
 # default / examplar models
 default-models = spinchain-su2 spinchain-spin2-su2 \
