@@ -293,7 +293,7 @@ int main(int argc, char** argv)
       MatrixOperator Rho = D;
       Rho = scalar_prod(Rho, herm(Rho));
       MatrixOperator Identity = MatrixOperator::make_identity(Psi1.Basis1());
-      double Dim = Psi1.Basis1().total_degree();
+      //      double Dim = Psi1.Basis1().total_degree();
 
       bool First = true;
 

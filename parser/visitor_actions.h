@@ -376,9 +376,9 @@ struct binary_modulus : boost::static_visitor<element_type>
       if (std::abs(y.imag() * y.real()) > 1000*std::numeric_limits<double>::epsilon())
 	 throw ParserError("Divisor must be real for modulus operator");
 
-      int xReal = std::rint(x.real());
-      int xImag = std::rint(x.imag());
-      int yReal = std::rint(y.real());
+      int xReal = int(std::rint(x.real()));
+      int xImag = int(std::rint(x.imag()));
+      int yReal = int(std::rint(y.real()));
       
       return std::complex<double>(numerics::divd(xReal, yReal).rem,
 				  numerics::divd(xImag, yReal).rem);

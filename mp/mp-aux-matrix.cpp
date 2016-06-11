@@ -382,11 +382,10 @@ int main(int argc, char** argv)
       MatrixOperator Rho = D;
       Rho = scalar_prod(Rho, herm(Rho));
       MatrixOperator Identity = MatrixOperator::make_identity(Psi1.Basis1());
-      double Dim = Psi1.Basis1().total_degree();
 
       UnitCell Cell = Lattice->GetUnitCell();
       int UnitCellSize = Cell.size();
-      int const NumUnitCells = Psi1.size() / UnitCellSize;
+      //      int const NumUnitCells = Psi1.size() / UnitCellSize;
 
       // Get the list of states in order.
       // If we didn't specify a list with --restrict then take all of them
@@ -466,13 +465,10 @@ int main(int argc, char** argv)
 	    std::cout << "Writing to file " << FileName << std::endl;
 	 }
 
-	 bool Reflect = false;
-	 bool Conjugate = false;
 	 LinearWavefunction* Psi2 = &Psi1;
 	 // Do we have time reversal or reflection?
 	 if (boost::starts_with(OpStr, "r&"))
 	 {
-	    Reflect = true;
 	    OpStr = std::string(OpStr.begin()+2, OpStr.end());
 	    if (PsiR.empty())
 	    {
@@ -491,7 +487,6 @@ int main(int argc, char** argv)
 	 }
 	 else if (boost::starts_with(OpStr,"c&"))
 	 {
-	    Conjugate = true;
 	    OpStr = std::string(OpStr.begin()+2, OpStr.end());
 	    if (PsiC.empty())
 	    {
@@ -501,8 +496,6 @@ int main(int argc, char** argv)
 	 }
 	 else if (boost::starts_with(OpStr,"rc&") || boost::starts_with(OpStr,"cr&"))
 	 {
-	    Reflect = true;
-	    Conjugate = true;
 	    OpStr = std::string(OpStr.begin()+3, OpStr.end());
 	    if (PsiR.empty())
 	    {

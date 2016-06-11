@@ -200,7 +200,7 @@ void StatesList::AppendToken(char const* s)
    {
       if (FinalStates != 0)
       {
-	 I.NumStates = InitialStates + i*double((FinalStates-InitialStates)/double(NumSweeps-1));
+	 I.NumStates = InitialStates + int(i*double((FinalStates-InitialStates)/double(NumSweeps-1)));
       }
       else if (Increment != 0)
       {

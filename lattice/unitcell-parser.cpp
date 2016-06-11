@@ -404,7 +404,7 @@ struct push_swap_cell_site
       CHECK(NumCells == 0 || (Cell2 >= 0 && Cell2 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
 
       PANIC("Swap() is not yet implemented");
-      //eval.push(ElementType(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
+      eval.push(ElementType(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
    }
 
    UnitCell const& Cell;
@@ -428,7 +428,7 @@ struct push_swap_site
       int Site1 = pop_int(eval);
 
       PANIC("Swap() is not yet implemented");
-      //eval.push(ElementType(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
+      eval.push(ElementType(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
    }
 
    UnitCell const& Cell;
@@ -455,7 +455,7 @@ struct push_swap_cell
       CHECK(NumCells == 0 || (Cell2 >= 0 && Cell2 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
 
       PANIC("Swap() is not yet implemented");
-      //      eval.push(ElementType(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
+      eval.push(ElementType(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
    }
 
    UnitCell const& Cell;

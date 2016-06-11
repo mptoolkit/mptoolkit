@@ -558,7 +558,7 @@ int main(int argc, char** argv)
       {
 	 UnitCellMPO Op = translate(Op2, y*UnitCellSize);
 	 Op.ExtendToCoverUnitCell(Psi.size());
-	 int Offset = Op.offset() + y*UnitCellSize;
+	 //int Offset = Op.offset() + y*UnitCellSize;
 	 // incorporate the string operator, if necessary
 	 for (int i = y-1; i >= (Op.offset()/UnitCellSize); --i)
 	 {

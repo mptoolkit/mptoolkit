@@ -947,7 +947,7 @@ int main(int argc, char** argv)
       std::vector<std::string> BoundaryState;
       double EvolveDelta = 0.0;
       double InitialFidelity = 1E-7;
-      double ArnoldiTol = 1E-14;
+      //double ArnoldiTol = 1E-14;
       double GMRESTol = 1E-13;    // tolerance for GMRES for the initial H matrix elements.
                                   // ** 2016-01-25: 1e-14 seems too small, failed to converge with final tol 1.5e-14, increasing to 2e-14
                                   // ** 2016-02-23: increasing again to 3e-14 on an example that fails to converge

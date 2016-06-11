@@ -529,7 +529,6 @@ int main(int argc, char** argv)
       std::string PsiStr;
       std::vector<std::string> Sector;
       double Tol = 1E-15;
-      int Iter = 30;
       bool Sort = false;
       bool Quiet = false;
       bool Print = false;
