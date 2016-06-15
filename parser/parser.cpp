@@ -1,7 +1,7 @@
 // ENDHEADER
 
 #include "parser.h"
-#include "color-output.h"
+#include "common/terminal.h"
 
 namespace Parser
 {
@@ -10,63 +10,63 @@ namespace Parser
 // Color support
 //
 
-bool Color = is_cout_terminal();
+bool Color = terminal::is_cout_terminal();
 
 void SetShowColors(ShowColors c)
 {
    if (c == ColorNever)
       Color = false;
    else if (c == ColorAuto)
-      Color = is_cout_terminal();
+      Color = terminal::is_cout_terminal();
    else if (c == ColorAlways)
       Color = true;
    else
       Color = false;
 }
 
-std::string ConditionalColorText(std::string s, TerminalColor c)
+std::string ConditionalColorText(std::string s, terminal::color c)
 {
-   return Color ? ColorText(s, c) : s;
+   return Color ? terminal::color_text(s, c) : s;
 }
 
-std::string ConditionalColorText(std::string s, TerminalColor c1, TerminalColor c2)
+std::string ConditionalColorText(std::string s, terminal::color c1, terminal::color c2)
 {
-   return Color ? ColorText(s, c1, c2) : s;
+   return Color ? terminal::color_text(s, c1, c2) : s;
 }
 
 std::string ColorHighlight(std::string s)
 {
-   return ConditionalColorText(s, TerminalColor::Bold);
+   return ConditionalColorText(s, terminal::color::Bold);
 }
 
 std::string ColorHighlight(char c)
 {
-   return ConditionalColorText(std::string(1,c), TerminalColor::Bold);
+   return ConditionalColorText(std::string(1,c), terminal::color::Bold);
 }
 
 std::string ColorError(std::string s)
 {
-   return ConditionalColorText(s, TerminalColor::Red, TerminalColor::Bold);
+   return ConditionalColorText(s, terminal::color::Red, terminal::color::Bold);
 }
 
 std::string ColorWarning(std::string s)
 {
-   return ConditionalColorText(s, TerminalColor::Magenta, TerminalColor::Bold);
+   return ConditionalColorText(s, terminal::color::Magenta, terminal::color::Bold);
 }
 
 std::string ColorNote(std::string s)
 {
-   return ConditionalColorText(s, TerminalColor::Cyan, TerminalColor::Bold);
+   return ConditionalColorText(s, terminal::color::Cyan, terminal::color::Bold);
 }
 
 std::string ColorHint(std::string s)
 {
-   return ConditionalColorText(s, TerminalColor::Blue, TerminalColor::Bold);
+   return ConditionalColorText(s, terminal::color::Blue, terminal::color::Bold);
 }
 
 std::string ColorPrompt(std::string s)
 {
-   return ConditionalColorText(s, TerminalColor::Green, TerminalColor::Bold);
+   return ConditionalColorText(s, terminal::color::Green, terminal::color::Bold);
 }
 
 std::string ColorQuote(std::string s)

@@ -19,6 +19,8 @@
 
 #include "terminal.h"
 #include <stdlib.h>
+#include <unistd.h>
+#include <string>
 
 #if HAVE_CONFIG_H
 #include "config.h"
@@ -78,6 +80,26 @@ int columns()
 std::pair<int, int> tsize()
 {
    return std::make_pair(rows(), columns());
+}
+
+bool is_cout_terminal()
+{
+   return isatty(1);
+}
+
+std::string color_code(color c)
+{
+   return "\e[" + std::to_string(int(c)) + 'm';
+}
+
+std::string color_text(std::string s, color c)
+{
+   return color_code(c) + s + color_code(color::Reset);
+}
+
+std::string color_text(std::string s, color c1, color c2)
+{
+   return color_code(c1) + color_code(c2) + s + color_code(color::Reset);
 }
 
 } // namespace terminal
