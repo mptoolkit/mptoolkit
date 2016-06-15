@@ -227,4 +227,8 @@ TriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& Strin
 // Constructs a zero triangular MPO
 TriangularMPO make_zero(SiteListType const& SiteList);
 
+ProductMPO prod_unit(UnitCellMPO const& Op_);
+
+ProductMPO prod_unit(UnitCellMPO const& Op_, int UnitCellSize);
+
 #endif

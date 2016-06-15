@@ -661,7 +661,10 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
    int max_iter = 10000;
    double tol = Tol;
    int Res = GmRes(E[Col], ProdL, C, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
-   CHECK_EQUAL(Res, 0);
+   if (Res != 0)
+   {
+      throw std::runtime_error("SolveSimpleMPO_Left: GMRES exceeded maximum iterations.");
+   }
 
    // Make it Hermitian
    E.back() = 0.5 * (E.back() + adjoint(E.back()));
