@@ -66,7 +66,7 @@ enum class color
    LightBlue = 94,
    LightMagenta = 95,
    LightCyan = 96,
-   White = 97 
+   White = 97
 };
 
 // returns the ANSI escape sequence for the given color
@@ -74,6 +74,14 @@ std::string color_code(color c);
 
 // returns the ANSI escape sequence for the given color, expressed as an int
 std::string color_code(int c);
+
+// returns the string description of the given color code
+std::string to_string(color c);
+
+// parses a string of color codes, and returns the ANSI escape sequence.
+// The color codes are a comma-separated list of either numeric values,
+// or string values.
+std::string parse_color_codes(std::string const& s);
 
 // returns a string with s containing the given color (including a reset suffix)
 std::string color_text(std::string s, color c);

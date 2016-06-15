@@ -128,7 +128,7 @@ wavefunctionobj = linearwavefunction.o canonicalwavefunction.o infinitewavefunct
                   mpwavefunction.o operator_actions.o \
                   attributes.o history.o
 
-parserobj = color-output.o parser.o
+parserobj = parser.o
 
 mpobj = $(mpoobj) $(mpsobj) $(latticeobj) $(wavefunctionobj)
 
