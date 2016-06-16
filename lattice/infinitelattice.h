@@ -61,12 +61,15 @@ class InfiniteLattice
       typedef ArgumentListType::iterator        argument_iterator;
       typedef ArgumentListType::const_iterator  const_argument_iterator;
 
+      typedef std::vector<std::pair<std::string, std::string>> authors_type;
+
       InfiniteLattice();
 
       explicit InfiniteLattice(UnitCell const& uc);
 
       InfiniteLattice(std::string const& Description, UnitCell const& uc);
 
+      UnitCell& GetUnitCell() { return UnitCell_; }
       UnitCell const& GetUnitCell() const { return UnitCell_; }
 
       std::string description() const { return Description_; }
@@ -74,6 +77,10 @@ class InfiniteLattice
 
       // Set the command_line used to construct the lattice.  Also sets the timestamp.
       void set_command_line(int argc, char** argv);
+
+      // lattice file author information
+      authors_type& authors() { return Authors_; }
+      authors_type const& authors() const { return Authors_; }
 
       std::string command_line() const { return CommandLine_; }
       std::string timestamp() const { return Timestamp_; }
@@ -156,6 +163,7 @@ class InfiniteLattice
 
    private:
       std::string Description_;
+      authors_type Authors_;
       std::string CommandLine_;
       std::string Timestamp_;
       UnitCell UnitCell_;

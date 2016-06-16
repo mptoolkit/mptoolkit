@@ -38,11 +38,20 @@ class UnitCellMPO
       typedef FiniteMPO::basis1_type basis1_type;
       typedef FiniteMPO::basis2_type basis2_type;
 
-      UnitCellMPO();
+      UnitCellMPO() = default;
 
-      UnitCellMPO(SiteListPtrType const& SiteList_, FiniteMPO const& Op_, LatticeCommute Com_, int Offset_ = 0);
+      UnitCellMPO(SiteListPtrType const& SiteList_, FiniteMPO Op_, 
+		  LatticeCommute Com_, int Offset_ = 0, std::string Description = "");
 
-      // compiler-defined default ctor, copy and assignment will work OK
+      // When we assign a UnitCellMPO, we don't want to copy the description
+      // if it has already been set. Hence we need a custom assignment, and therefore
+      // other constructors/assignment too.
+
+      UnitCellMPO(UnitCellMPO const&) = default;
+      UnitCellMPO(UnitCellMPO&&) = default;
+
+      UnitCellMPO& operator=(UnitCellMPO const& c);
+      UnitCellMPO& operator=(UnitCellMPO&& c);
 
       // returns the total number of sites this operator contains
       int size() const { return Op.size(); }
@@ -53,6 +62,10 @@ class UnitCellMPO
       // The offset - the site number of the first site of the MPO.
       // This must be a multiple of the unit cell size.
       int offset() const { return Offset; }
+
+      // description of the operator
+      std::string description() const { return Description; }
+      void set_description(std::string s) { Description = std::move(s); }
 
       // Translates the operator by some number of lattice sites
       void translate(int Shift) { Offset += Shift; }
@@ -123,6 +136,7 @@ class UnitCellMPO
       FiniteMPO Op;
       LatticeCommute Com;
       int Offset;
+      std::string Description;
 
       friend PStream::opstream& operator<<(PStream::opstream& out, UnitCellMPO const& L);
       friend PStream::ipstream& operator>>(PStream::ipstream& in, UnitCellMPO& L);

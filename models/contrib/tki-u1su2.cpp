@@ -49,11 +49,18 @@ int main(int argc, char** argv)
     prog_opt::notify(vm);
 
     OperatorDescriptions OpDescriptions;
+    OpDescriptions.description("U(1)xSU(2) p-wave Kondo lattice model");
+    OpDescriptions.author("Jason Pillay", "pillayjason@hotmail.com");
     OpDescriptions.add_operators()
       ("H_t"  , "nearest neighbour fermion hopping")
       ("H_J1" , "nearest neighbour spin exchange")
       ("H_K"  , "Kondo coupling between fermion and spin")
       ;
+    OpDescriptions.add_cell_operators()
+       ("p"   , "p-wave annihilation")
+       ("pH"  , "p-wave creation")
+       ("Pi"  , "p-wave spin vector")
+       ;
 
     if (vm.count("help") || !vm.count("out"))
     {
@@ -83,7 +90,6 @@ int main(int argc, char** argv)
     Lattice["H_K"]  = sum_unit(inner(S(0)[1], Pi(0)));
 
     // Information about the lattice
-    Lattice.set_description("U(1)xSU(2) Kondo lattice model");
     Lattice.set_command_line(argc, argv);
     Lattice.set_operator_descriptions(OpDescriptions);
 
