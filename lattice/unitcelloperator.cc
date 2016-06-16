@@ -87,3 +87,10 @@ UnitCellOperator::operator=(UnitCellMPO const& Op)
    Cell->assign_operator(Name, Op);
    return *this;
 }
+
+inline
+void
+UnitCellOperator::set_description(std::string s) const
+{
+   (*Cell)[Name].set_description(std::move(s));
+}

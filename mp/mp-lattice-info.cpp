@@ -30,6 +30,10 @@ namespace prog_opt = boost::program_options;
 void DescribeLattice(InfiniteLattice const& L, int Verbose)
 {
    std::cout << "Description: " << L.description() << '\n';
+   for (auto const& x : L.authors())
+   {
+      std::cout << "Author: " << x.first << " <" << x.second << ">\n";
+   }
    std::cout << "Command line: " << L.command_line() << '\n';
    std::cout << "Date: " << L.timestamp() << '\n';
    std::cout << "SymmetryList: " << L.GetSymmetryList() << '\n';
@@ -85,9 +89,13 @@ void DescribeLattice(InfiniteLattice const& L, int Verbose)
 	I != L.GetUnitCell().end_operator(); ++I)
    {
       std::cout << "   " << std::setw(10) << std::left << I->first 
-		<< " - transforms: "
-		<< I->second.TransformsAs() << ", commutes: "
-		<< I->second.Commute() << '\n';
+		<< " - " << I->second.description() << '\n';
+      if (Verbose > 0)
+      {
+	 std::cout << "                -transforms: "
+		   << std::setw(10) << std::left << I->second.TransformsAs()
+		   << "  commutes: " << I->second.Commute() << '\n';
+      }
    }
  
    std::cout << "\nUnit Cell functions:\n";
