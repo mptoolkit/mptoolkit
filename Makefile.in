@@ -203,15 +203,15 @@ allobj = $(quantumnumbersobj) \
 # contributed models.  Add new models here
 contrib-models = spin-tri-yc-su2 spin-tri-xc-su2 spin-tri-yc-su2-NonEff \
                  spin-tri-2SiteUnitCell-su2 spin-tri-1SiteUnitCell-su2 spin-tri-yc-u1 spin-tri-yc \
-                 tki-u1su2 tki-u1u1
+                 tki-u1su2 tki-u1u1 hubbard-tri-u1su2 hubbard-tri-u1u1 hubbard-tri
 
 # default / examplar models
 default-models = spinchain-su2 spinchain-spin2-su2 \
-                 hubbard-u1su2 hubbard-tri-u1su2 bosehubbard-flux-2leg-u1 \
+                 hubbard-u1su2 bosehubbard-flux-2leg-u1 \
                  bosehubbard-flux-3leg-u1 spinchain-u1 spincylinder-su2 \
                  spinchain bosehubbard-ladder-u1 bosehubbard-2component-u1z2 \
                  hubbard-so4 bosehubbard-u1 bosehubbard hubbard-u1u1 \
-                 hubbard-tri-u1u1 hubbard-tri hubbard-su2 spinladder-su2 spinchain-z2
+                 hubbard-su2 spinladder-su2 spinchain-z2
 
 tools = mp-idmrg-s3e mp-ioverlap \
         mp-info mp-history mp-reflect mp-conj \
@@ -289,7 +289,7 @@ dep : $(cxx_depend)
 %.o : %.f
 	$(F77) $(FFLAGS) -c $< -o $@
 
-%.d : 
+%.d :
 	\
 
 
@@ -505,7 +505,7 @@ mp-ies : infinitewavefunctionleft.o packunpack.o
 mp-aux-project : infinitewavefunctionleft.o packunpack.o
 
 
-mp-ireorder-symmetry : infinitewavefunctionleft.o 
+mp-ireorder-symmetry : infinitewavefunctionleft.o
 
 
 mp-iproject : infinitewavefunctionleft.o
@@ -759,4 +759,3 @@ config.status : configure
 ifeq (,$(filter $(nodep-targets),$(MAKECMDGOALS)))
 -include $(cxx_depend)
 endif
-

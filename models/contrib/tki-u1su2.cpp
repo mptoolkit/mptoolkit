@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// models/spinchain-su2.cpp
+// models/contrib/tki-u1su2.cpp
 //
 // Copyright (C) 2016 Jason Pillay <pillayjason@hotmail.com>
 //
@@ -107,5 +107,3 @@ int main(int argc, char** argv)
     return 1;
   }
 }
-
-

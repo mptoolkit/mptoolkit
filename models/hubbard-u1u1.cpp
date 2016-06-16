@@ -47,6 +47,7 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);    
       
       OperatorDescriptions OpDescriptions;
+      OpDescriptions.set_description("U(1)xSU(2) Fermi Hubbard model");
       OpDescriptions.add_operators()
 	 ("H_tup"    , "nearest neighbor hopping for up spins")
 	 ("H_tdown"  , "nearest neighbor hopping for down spins")
@@ -88,12 +89,16 @@ int main(int argc, char** argv)
       Lattice["H_J"] = Lattice["H_Jup"] + Lattice["H_Jdown"];
       
       // Information about the lattice
-      Lattice.set_description("U(1)xSU(2) Fermi Hubbard model");
       Lattice.set_command_line(argc, argv);
       Lattice.set_operator_descriptions(OpDescriptions);
 
-      // save the lattice
+      // save the lattice to disk
       pheap::ExportObject(FileName, Lattice);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

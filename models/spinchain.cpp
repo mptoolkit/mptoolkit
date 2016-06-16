@@ -51,6 +51,7 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);    
       
       OperatorDescriptions OpDescriptions;
+      OpDescriptions.set_description("Spin chain");
       OpDescriptions.add_operators()
 	 ("H_xx", "nearest neighbor spin coupling Sx Sx")
 	 ("H_yy", "nearest neighbor spin exchange Sy Sy")
@@ -118,12 +119,16 @@ int main(int argc, char** argv)
          = "J*sum_unit( I(0)*Sx(0)*Sx(1) )"; */
 
       // Information about the lattice
-      Lattice.set_description("Spin chain");
       Lattice.set_command_line(argc, argv);
       Lattice.set_operator_descriptions(OpDescriptions);
 
-      // save the lattice to disc
+      // save the lattice to disk
       pheap::ExportObject(FileName, Lattice);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {
