@@ -44,16 +44,17 @@ int main(int argc, char** argv)
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
-      
-      prog_opt::variables_map vm;        
+
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).style(prog_opt::command_line_style::default_style ^
 					  prog_opt::command_line_style::allow_guessing).
 		      run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
-      // Descriptions of each operator      
+      // Descriptions of each operator
       OperatorDescriptions OpDescriptions;
+      OpDescriptions.set_description("SU(2) spin chain");
       OpDescriptions.add_operators()
 	 ("H_J1"  , "nearest neighbor spin exchange")
 	 ("H_J2"  , "next-nearest neighbor spin exchange")
@@ -113,14 +114,18 @@ int main(int argc, char** argv)
 
       Lattice.func("Haldane_Shastry")(arg("lambda") = 0.5)
                   = "exp(-lambda)*sum_string_inner( S(0), exp(-lambda)*I(0), S(0) )";
- 
+
       // Information about the lattice
-      Lattice.set_description("SU(2) spin chain");
       Lattice.set_command_line(argc, argv);
       Lattice.set_operator_descriptions(OpDescriptions);
 
-      // save the lattice
+      // save the lattice to disk
       pheap::ExportObject(FileName, Lattice);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

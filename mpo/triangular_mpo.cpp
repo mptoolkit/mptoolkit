@@ -900,4 +900,3 @@ MakeIdentityUnitCell(std::vector<BasisList> const& Sites)
    }
    return Result;
 }
-

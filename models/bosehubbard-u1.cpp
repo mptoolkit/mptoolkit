@@ -50,17 +50,19 @@ int main(int argc, char** argv)
 		      run(), vm);
       prog_opt::notify(vm);    
       
+      OperatorDescriptions OpDescriptions;
+      OpDescriptions.set_description("U(1) Bose-Hubbard model");
+      OpDescriptions.add_operators()
+         ("H_J"    , "nearest-neighbor hopping\n")
+         ("H_U"    , "on-site Coulomb repulsion N*(N-1)/2\n")
+         ;
+
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Operators:\n"
-		   << "H_J    - nearest neighbor hopping\n"
-		   << "H_U    - on-site Coulomb repulsion N*(N-1)/2\n"
-	    //<< "\nOperator functions:\n"
-	    //<< "H_flux{theta} - rung flux hopping cos(theta)*H_K + sin(theta)*H_Kc\n"
-	    ;
+         std::cerr << OpDescriptions << '\n';
          return 1;
       }
 
@@ -72,8 +74,18 @@ int main(int argc, char** argv)
       
       Lattice["H_J"] = sum_unit(BH(0)*B(1) + B(0)*BH(1));
       Lattice["H_U"] = sum_unit(0.5*N2(0));
-      
+
+      // Information about the lattice
+      Lattice.set_command_line(argc, argv);
+      Lattice.set_operator_descriptions(OpDescriptions);
+
+      // save the lattice to disk
       pheap::ExportObject(FileName, Lattice);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

@@ -61,16 +61,16 @@ fi
 for i in $files ; do
 
    filename=${i:2}
-   echo "Processing $filename"
+#   echo "Processing $filename"
 
    copyright="$(grep '^// Copyright' $i)"
 
    if [ -z "$copyright" ]; then
-      echo "Copyrights: default"
+#      echo "Copyrights: default"
       copyright="$default_copyright"
-   else
-      echo "Copyrights:"
-      echo "$copyright"
+#   else
+#      echo "Copyrights:"
+#      echo "$copyright"
    fi
 
    text=$(
@@ -94,6 +94,7 @@ for i in $files ; do
    if [ x"$mode" == x"--commit" ] ; then
       echo "$text" > $i
    elif [ x"$mode" == x"--diff" ] ; then
+      echo "file: $filename"
       echo "$text" | diff $i -
    else
       echo "$text"

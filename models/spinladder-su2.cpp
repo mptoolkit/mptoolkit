@@ -52,10 +52,13 @@ int main(int argc, char** argv)
       
       // Descriptions of each operator      
       OperatorDescriptions OpDescriptions;
+      OpDescriptions.description("SU(2) spin ladder");
       OpDescriptions.add_operators()
-	 ("H_J1x" , "nearest neighbor spin exchange in the x (infinite) direction")
-	 ("H_J1y" , "nearest neighbor spin exchange in the y (rung) direction")
-	 ("H_J1"  , "nearest neighbor spin exchange H_J1x + H_J2x")
+	 ("H_J1x"  , "nearest neighbor spin exchange in the x (infinite) direction")
+	 ("H_J1y"  , "nearest neighbor spin exchange in the y (rung) direction")
+	 ("H_J1yp" , "nearest neighbor spin exchange in the y (rung) direction, including periodic term")
+	 ("H_J1"   , "nearest neighbor spin exchange H_J1x + H_J2x")
+	 ("H_J1p"  , "nearest neighbor spin exchange H_J1xp + H_J2x (periodic in y direction)")
 	 ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -75,7 +78,7 @@ int main(int argc, char** argv)
       LatticeSite Site = SpinSU2(Spin);
       UnitCell Cell(repeat(Site, CellSize));
       InfiniteLattice Lattice(Cell);
-      UnitCellOperator S(Cell, "S"), Q(Cell, "Q");
+      UnitCellOperator S(Cell, "S");
 
       UnitCellMPO J1x, J1y;
       for (int i = 0; i < Legs-1; ++i)
@@ -87,14 +90,21 @@ int main(int argc, char** argv)
 
       Lattice["H_J1x"] = sum_unit(J1x);
       Lattice["H_J1y"] = sum_unit(J1y);
+      Lattice["H_J1yp"] = sum_unit(J1y + inner(S(0)[0], S(0)[Legs-1]));
       Lattice["H_J1"] = sum_unit(J1x+J1y);
+      Lattice["H_J1p"] = sum_unit(J1x+J1y + inner(S(0)[0], S(0)[Legs-1]));
 
       // Information about the lattice
-      Lattice.set_description("SU(2) spin ladder");
       Lattice.set_command_line(argc, argv);
       Lattice.set_operator_descriptions(OpDescriptions);
 
+      // save the lattice to disk
       pheap::ExportObject(FileName, Lattice);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

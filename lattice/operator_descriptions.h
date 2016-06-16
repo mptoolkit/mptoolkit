@@ -57,6 +57,7 @@ class OperatorDescriptions
       std::string description() const { return Description; }
 
       void description(std::string s) { Description = std::move(s); }
+      void set_description(std::string s) { Description = std::move(s); }
 
       void author(std::string Name, std::string Email) { Authors.push_back({Name, Email}); }
 
@@ -72,25 +73,25 @@ class OperatorDescriptions
 
       struct OperatorDescProxy
       {
-	 OperatorDescProxy(data_type& Desc_, index_type& Index_)
-	    : Descriptions(Desc_), Index(Index_) {}
+         OperatorDescProxy(data_type& Desc_, index_type& Index_)
+            : Descriptions(Desc_), Index(Index_) {}
 
-	 OperatorDescProxy const& operator()(std::string const& Name,
-					     std::string const& Desc) const
-	 {
-	    if (Index.find(Name) == Index.end())
-	    {
-	       Index[Name] = Descriptions.size();
-	       Descriptions.push_back(std::make_pair(Name, Desc));
-	    }
-	    else
-	    {
-	       Descriptions[Index[Name]] = std::make_pair(Name, Desc);
-	    }
-	    return *this;
-	 }
-	 data_type& Descriptions;
-	 index_type& Index;
+         OperatorDescProxy const& operator()(std::string const& Name,
+                                             std::string const& Desc) const
+         {
+            if (Index.find(Name) == Index.end())
+            {
+               Index[Name] = Descriptions.size();
+               Descriptions.push_back(std::make_pair(Name, Desc));
+            }
+            else
+            {
+               Descriptions[Index[Name]] = std::make_pair(Name, Desc);
+            }
+            return *this;
+         }
+         data_type& Descriptions;
+         index_type& Index;
       };
 
       OperatorDescProxy add_operators() { return OperatorDescProxy(Descriptions, Index); }
@@ -100,24 +101,24 @@ class OperatorDescriptions
       const_iterator cell_begin() const { return CellOperatorDescriptions.begin(); }
       const_iterator cell_end() const { return CellOperatorDescriptions.end(); }
 
-      OperatorDescProxy add_cell_operators() { return OperatorDescProxy(CellOperatorDescriptions, 
-									CellIndex); }
+      OperatorDescProxy add_cell_operators() { return OperatorDescProxy(CellOperatorDescriptions,
+                                                                        CellIndex); }
 
       // Functions
 
       struct FunctionDescProxy
       {
-	 FunctionDescProxy(function_list_type& F_)
-	    : F(&F_) {}
+         FunctionDescProxy(function_list_type& F_)
+            : F(&F_) {}
 
-	 FunctionDescProxy const& operator()(std::string const& Name,
-					     std::string const& Desc) const
-	 {
-	    (*F)[Name] = Desc;
-	    return *this;
-	 }
+         FunctionDescProxy const& operator()(std::string const& Name,
+                                             std::string const& Desc) const
+         {
+            (*F)[Name] = Desc;
+            return *this;
+         }
 
-	 function_list_type* F;
+         function_list_type* F;
       };
 
       FunctionDescProxy add_functions() { return FunctionDescProxy(Functions); }
@@ -126,6 +127,10 @@ class OperatorDescriptions
 
       const_function_iterator begin_function() const { return Functions.begin(); }
       const_function_iterator end_function() const { return Functions.end(); }
+
+      FunctionDescProxy add_cell_functions() { return FunctionDescProxy(CellFunctions); }
+
+      function_list_type const& cell_functions() const { return CellFunctions; }
 
    private:
       std::string Description;
@@ -138,6 +143,8 @@ class OperatorDescriptions
       std::map<std::string, int> CellIndex;
 
       function_list_type Functions;
+
+      function_list_type CellFunctions;
 };
 
 inline
@@ -159,8 +166,8 @@ std::ostream& operator<<(std::ostream& out, OperatorDescriptions const& d)
    out << "\nFunctions:\n";
    if (d.size_function() == 0)
       out << "(none)\n";
-   for (OperatorDescriptions::const_function_iterator I = d.begin_function(); 
-	I != d.end_function(); ++I)
+   for (OperatorDescriptions::const_function_iterator I = d.begin_function();
+        I != d.end_function(); ++I)
    {
       out << std::setw(10) << std::left << I->first << " - " << I->second << '\n';
    }

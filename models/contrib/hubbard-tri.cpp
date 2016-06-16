@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// models/hubbard-tri.cpp
+// models/contrib/hubbard-tri.cpp
 //
 // Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
@@ -47,6 +47,7 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);    
       
       OperatorDescriptions OpDescriptions;
+      OpDescriptions.set_description("Triangular Hubbard model");
       OpDescriptions.add_operators()
 	 ("H_tup"    , "nearest-neighbor hopping between the apex sites of clusters for up spins")
 	 ("H_tdown"  , "nearest-neighbor hopping between the apex sites of clusters for down spins")
@@ -63,6 +64,14 @@ int main(int argc, char** argv)
 	 ("H_U"      , "on-site Coulomb interaction n_up*n_down")
 	 ("H_Us"     , "on-site Coulomb interaction (n_up-1/2)(n_down-1/2)")
 	 ;
+      OpDescriptions.add_cell_operators()
+         ("Parity"   , "permionic swap operator for legs 0,2")
+         ("R"        , "spatial reflection")
+         ("N"        , "number operator")
+         ("Sp"       , "spin raising operator")
+         ("Sm"       , "spin lowering operator")
+         ("Sz"       , "z-component of spin")
+         ;
 
       if (vm.count("help") || !vm.count("out"))
       {
@@ -118,12 +127,16 @@ int main(int argc, char** argv)
       Lattice["H_Us"] = sum_unit(Hu(0)[0] + Hu(0)[1] + Hu(0)[2]);
 
       // Information about the lattice
-      Lattice.set_description("Triangular Hubbard model");
       Lattice.set_command_line(argc, argv);
       Lattice.set_operator_descriptions(OpDescriptions);
 
       // save the lattice to disc
       pheap::ExportObject(FileName, Lattice);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {
