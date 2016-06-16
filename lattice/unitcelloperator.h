@@ -87,6 +87,9 @@ class UnitCellOperator
 
       UnitCellOperator& operator=(UnitCellMPO const& Op);
 
+      // Set (or reset) the description of the operator
+      void set_description(std::string s) const;
+
       // we could define this - conversion from complex to an operator
       //      UnitCellOperator& operator=(std::complex<double> c);
 

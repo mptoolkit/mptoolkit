@@ -49,11 +49,22 @@ int main(int argc, char** argv)
     prog_opt::notify(vm);
 
     OperatorDescriptions OpDescriptions;
+    OpDescriptions.description("U(1)xU(1) p-wave Kondo lattice model");
+    OpDescriptions.author("Jason Pillay", "pillayjason@hotmail.com");
     OpDescriptions.add_operators()
       ("H_t"  , "nearest neighbour fermion hopping")
       ("H_J1" , "nearest neighbour spin exchange")
       ("H_K"  , "Kondo coupling between fermion and spin")
       ;
+    OpDescriptions.add_cell_operators()
+       ("pup"   , "annihilation up spin p-wave")
+       ("pdown" , "annihilation down spin p-wave")
+       ("pHup"  , "creation up spin p-wave")
+       ("pHdown", "creation down spin p-wave")
+       ("Pi_z"  , "p-wave z-component")
+       ("Pi_p" , "p-wave raising operator")
+       ("Pi_m" , "p-wave lowering operator")
+       ;
 
     if (vm.count("help") || !vm.count("out"))
     {
@@ -82,14 +93,6 @@ int main(int argc, char** argv)
     Pi_p(0) = pHup(0)*pdown(0);
     Pi_m(0) = pHdown(0)*pup(0);
 
-#if 0
-    // old definitions (corrected prefactors)
-    Pi_z(1) = 0.25*((CHup(2)[0] - CHup(0)[0])*(Cup(2)[0] - Cup(0)[0]) - 
-		  (CHdown(2)[0] - CHdown(0)[0])*(Cdown(2)[0] - Cdown(0)[0]));
-    Pi_p(1) = 0.5*(CHup(2)[0] - CHup(0)[0])*(Cdown(2)[0] - Cdown(0)[0]);
-    Pi_m(1) = 0.5*(CHdown(2)[0] - CHdown(0)[0])*(Cup(2)[0] - Cup(0)[0]);
-#endif
-
     InfiniteLattice Lattice(Cell);
 
     Lattice["H_t"] = sum_unit(CHup(0)[0]*Cup(1)[0] - Cup(0)[0]*CHup(1)[0]
@@ -99,7 +102,6 @@ int main(int argc, char** argv)
 		   + sum_unit(Sz(0)[1] * Pi_z(0));
 
     // Information about the lattice
-    Lattice.set_description("U(1)xU(1) Kondo lattice model");
     Lattice.set_command_line(argc, argv);
     Lattice.set_operator_descriptions(OpDescriptions);
 
