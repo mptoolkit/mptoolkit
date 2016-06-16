@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// models/TransverseIsing-tri-yc-z2.cpp
+// models/contrib/TransverseIsing-tri-yc-z2.cpp
 //
 // Copyright (C) 2015,2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 // Copyright (C) 2015,2016 Seyed N. Saadatmand <s.saadatmand@uq.edu.au>

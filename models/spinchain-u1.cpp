@@ -49,6 +49,7 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);    
       
       OperatorDescriptions OpDescriptions;
+      OpDescriptions.set_description("U(1) Spin chain");
       OpDescriptions.add_operators()
 	 ("H_J1z", "nearest neighbor spin coupling Sz Sz")
 	 ("H_J1t", "nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
@@ -77,11 +78,8 @@ int main(int argc, char** argv)
       UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
 
       Lattice["H_J1z"] = sum_unit(Sz(0)*Sz(1));
-      double x = 1000000;
-      Lattice["H_J1t"] = (0.5/x) * sum_unit((sqrt(x)*Sp(0))*(sqrt(x)*Sm(1)) + (sqrt(x)*Sm(0))*(sqrt(x)*Sp(1)));
-      //      Lattice["H_J1t"] = 0.5 * sum_unit(Sp(0)*Sm(1) + Sm(0)*Sp(1));
+      Lattice["H_J1t"] = 0.5 * sum_unit(Sp(0)*Sm(1) + Sm(0)*Sp(1));
       Lattice["H_J1"]  = Lattice["H_J1z"] + Lattice["H_J1t"];
-      //sum_unit(Sz(0)*Sz(1) + 0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)));
 
       Lattice["H_J2z"] = sum_unit(Sz(0)*Sz(2));
       Lattice["H_J2t"] = sum_unit(0.5*(Sp(0)*Sm(2) + Sm(0)*Sp(2)));
@@ -99,7 +97,6 @@ int main(int argc, char** argv)
       }
 
       // Information about the lattice
-      Lattice.set_description("U(1) Spin chain");
       Lattice.set_command_line(argc, argv);
       Lattice.set_operator_descriptions(OpDescriptions);
 
