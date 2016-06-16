@@ -34,12 +34,10 @@ int main(int argc, char** argv)
   try
   {
     std::string FileName;
-    half_int Spin = 0.5;
 
     prog_opt::options_description desc("Allowed options", terminal::columns());
     desc.add_options()
       ("help", "show this help message")
-      ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
       ("out,o", prog_opt::value(&FileName), "output filename [required]")
       ;
 
@@ -69,16 +67,20 @@ int main(int argc, char** argv)
     LatticeSite cSite = FermionU1SU2();
     LatticeSite fSite = SpinSU2(0.5);
     UnitCell Cell(cSite.GetSymmetryList(), cSite, fSite);
-    UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), S(Cell, "S"), Pi(Cell, "Pi");
+    UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), S(Cell, "S"), 
+       p(Cell, "p"), pH(Cell, "pH"), Pi(Cell, "Pi");
 
     // note: need to define this *BEFORE* constructing the InfiniteLattice object
-    Pi = (1.0 / 3.0) * outer(CH(2)[0] - CH(0)[0], C(2)[0] - C(0)[0]);
+    p(0) = std::sqrt(0.5) * (C(1)[0] - C(-1)[0]);
+    pH(0) = adjoint(p(0));
+
+    Pi(0) = outer(pH(0), p(0));
 
     InfiniteLattice Lattice(Cell);
 
     Lattice["H_t"]  = sum_unit(dot(CH(0)[0], C(1)[0]) + dot(C(0)[0], CH(1)[0]));
     Lattice["H_J1"] = sum_unit(inner(S(0)[1], S(1)[1]));
-    Lattice["H_K"]  = sum_unit(inner(S(1)[1], Pi(0)));
+    Lattice["H_K"]  = sum_unit(inner(S(0)[1], Pi(0)));
 
     // Information about the lattice
     Lattice.set_description("U(1)xSU(2) Kondo lattice model");

@@ -212,6 +212,12 @@ UnitCell::operator[](int n) const
    return (*Sites)[n];
 }
 
+void
+UnitCell::assign_operator(std::string const& Name, operator_type Op, int Offset)
+{
+   Operators[Name] = translate(std::move(Op), -Offset * int(this->size()));
+}
+
 bool
 UnitCell::operator_exists(std::string const& s) const
 {

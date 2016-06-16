@@ -185,7 +185,7 @@ UnitCellMPO inv_adjoint(UnitCellMPO const& x);
 // This can be positive or negative but MUST be a multiple of 
 // the unit cell size.  TODO: relax this restriction as long as the
 // SiteList is invariant under the shift
-UnitCellMPO translate(UnitCellMPO const& x, int Sites);
+UnitCellMPO translate(UnitCellMPO x, int Sites);
 
 // Constructs an identity MPO from a given unit cell
 UnitCellMPO MakeIdentityFrom(UnitCellMPO const& x);

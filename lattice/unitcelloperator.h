@@ -24,12 +24,13 @@
 
 #include "lattice/unitcell.h"
 
-// Local operators, using the notation Op(cell)(index),
+// Local operators, using the notation Op(cell)[index],
 // are always r-values, since we cannot redefine them.  We
 // must return a local operator as a UnitCellMPO by value, since it is constructed
 // as needed.
 //
-// Finite operators, using the notation Op(cell), are also r-values.
+// Finite operators, using the notation Op(cell), can be l-values or r-values.
+// The l-value form can be used to define the operator.
 //
 // We can use a UnitCellOperator as an L-value only in the form of Op = UnitCellMPO
 
@@ -41,7 +42,10 @@ class UnitCellOperatorAtCell
       UnitCellOperatorAtCell() = delete;
       UnitCellOperatorAtCell& operator=(UnitCellOperatorAtCell const&) = delete;
 
-      UnitCellOperatorAtCell(UnitCell const& Cell_, std::string const& Name_, int n_);
+      UnitCellOperatorAtCell(UnitCell& Cell_, std::string const& Name_, int n_);
+
+      // use to define the MPO
+      UnitCellOperatorAtCell& operator=(UnitCellMPO const& Op);
 
       // returns the local operator at the given site
       UnitCellMPO operator[](int i) const;
@@ -53,7 +57,7 @@ class UnitCellOperatorAtCell
       UnitCellOperatorAtCell(UnitCellOperatorAtCell const&) = default;
       UnitCellOperatorAtCell(UnitCellOperatorAtCell&&) = default;
 
-      UnitCell const* Cell;
+      UnitCell* Cell;
       std::string Name;
       int n;
 

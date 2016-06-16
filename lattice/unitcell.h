@@ -169,6 +169,9 @@ class UnitCell
 
       operator_type operator[](std::string const& Op) const;
 
+      // Assigns the operator, given an offset.  Eg, Name(0) = Op
+      void assign_operator(std::string const& Name, operator_type Op, int Offset = 0);
+
       // returns the operator, shifted to to the given cell number
       operator_type operator()(std::string const& Op, int Cell) const;
 
