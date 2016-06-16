@@ -333,10 +333,10 @@ void optimize(UnitCellMPO& Op)
    optimize(Op.MPO());
 }
 
-UnitCellMPO translate(UnitCellMPO const& x, int Sites)
+UnitCellMPO translate(UnitCellMPO x, int Sites)
 {
    CHECK(Sites % x.unit_cell_size() == 0);
-   UnitCellMPO Result(x);
+   UnitCellMPO Result(std::move(x));
    Result.translate(Sites);
    return Result;
 }
