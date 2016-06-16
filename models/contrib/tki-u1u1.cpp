@@ -34,12 +34,10 @@ int main(int argc, char** argv)
   try
   {
     std::string FileName;
-    half_int Spin = 0.5;
 
     prog_opt::options_description desc("Allowed options", terminal::columns());
     desc.add_options()
       ("help", "show this help message")
-      ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
       ("out,o", prog_opt::value(&FileName), "output filename [required]")
       ;
 
@@ -70,22 +68,35 @@ int main(int argc, char** argv)
     LatticeSite fSite = SpinU1(0.5);
     UnitCell Cell(cSite.GetSymmetryList(), cSite, fSite);
     UnitCellOperator CHup(Cell, "CHup"), CHdown(Cell, "CHdown"), Cup(Cell, "Cup"), 
-	Cdown(Cell, "Cdown"), Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz"),
-	Pi_z(Cell, "Pi_z"), Pi_p(Cell, "Pi_p"), Pi_m(Cell, "Pi_m");
+       Cdown(Cell, "Cdown"), Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz"),
+       pup(Cell, "pup"), pdown(Cell, "pdown"), pHup(Cell, "pHup"), pHdown(Cell, "pHdown"),
+       Pi_z(Cell, "Pi_z"), Pi_p(Cell, "Pi_p"), Pi_m(Cell, "Pi_m");
 
     // note: need to define this *BEFORE* constructing the InfiniteLattice object
-    Pi_z = 0.25*((CHup(2)[0] - CHup(0)[0])*(Cup(2)[0] - Cup(0)[0]) - 
-		 (CHdown(2)[0] - CHdown(0)[0])*(Cdown(2)[0] - Cdown(0)[0]));
-    Pi_p = 0.25*(CHup(2)[0] - CHup(0)[0])*(Cdown(2)[0] - Cdown(0)[0]);
-    Pi_m = 0.25*(CHdown(2)[0] - CHdown(0)[0])*(Cup(2)[0] - Cup(0)[0]);
+    pup(0) = std::sqrt(0.5) * (Cup(1)[0] - Cup(-1)[0]);
+    pdown(0) = std::sqrt(0.5) * (Cdown(1)[0] - Cdown(-1)[0]);
+    pHup(0) = adjoint(pup(0));
+    pHdown(0) = adjoint(pdown(0));
+
+    Pi_z(0) = 0.5 * (pHup(0)*pup(0) - pHdown(0)*pdown(0));
+    Pi_p(0) = pHup(0)*pdown(0);
+    Pi_m(0) = pHdown(0)*pup(0);
+
+#if 0
+    // old definitions (corrected prefactors)
+    Pi_z(1) = 0.25*((CHup(2)[0] - CHup(0)[0])*(Cup(2)[0] - Cup(0)[0]) - 
+		  (CHdown(2)[0] - CHdown(0)[0])*(Cdown(2)[0] - Cdown(0)[0]));
+    Pi_p(1) = 0.5*(CHup(2)[0] - CHup(0)[0])*(Cdown(2)[0] - Cdown(0)[0]);
+    Pi_m(1) = 0.5*(CHdown(2)[0] - CHdown(0)[0])*(Cup(2)[0] - Cup(0)[0]);
+#endif
 
     InfiniteLattice Lattice(Cell);
 
     Lattice["H_t"] = sum_unit(CHup(0)[0]*Cup(1)[0] - Cup(0)[0]*CHup(1)[0]
 		   + CHdown(0)[0]*Cdown(1)[0] - Cdown(0)[0]*CHdown(1)[0]);
     Lattice["H_J1"] = sum_unit(Sz(0)[1]*Sz(1)[1] + 0.5*(Sp(0)[1]*Sm(1)[1] + Sm(0)[1]*Sp(1)[1]));
-    Lattice["H_K"] = 0.5*(sum_unit(Sp(1)[1] * Pi_m(0)) + sum_unit(Sm(1)[1] * Pi_p(0)))
-		   + sum_unit(Sz(1)[1] * Pi_z(0));
+    Lattice["H_K"] = 0.5*(sum_unit(Sp(0)[1] * Pi_m(0)) + sum_unit(Sm(0)[1] * Pi_p(0)))
+		   + sum_unit(Sz(0)[1] * Pi_z(0));
 
     // Information about the lattice
     Lattice.set_description("U(1)xU(1) Kondo lattice model");
