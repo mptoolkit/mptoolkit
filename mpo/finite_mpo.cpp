@@ -118,8 +118,6 @@ repeat(FiniteMPO const& Op, int Count)
    return Result;
 }
 
-#if 1
-
 void optimize(FiniteMPO& Op)
 {
    if (Op.size() < 2)
@@ -172,9 +170,7 @@ void optimize(FiniteMPO& Op)
 #endif
 }
 
-#else
-
-void optimize(FiniteMPO& Op)
+void qr_optimize(FiniteMPO& Op)
 {
    if (Op.size() < 2)
       return;
@@ -244,8 +240,6 @@ void optimize(FiniteMPO& Op)
 #endif
 #endif
 }
-
-#endif
 
 FiniteMPO&
 operator+=(FiniteMPO& x, FiniteMPO const& y)

@@ -362,6 +362,11 @@ void optimize(UnitCellMPO& Op)
    optimize(Op.MPO());
 }
 
+void qr_optimize(UnitCellMPO& Op)
+{
+   qr_optimize(Op.MPO());
+}
+
 UnitCellMPO translate(UnitCellMPO x, int Sites)
 {
    CHECK(Sites % x.unit_cell_size() == 0);
