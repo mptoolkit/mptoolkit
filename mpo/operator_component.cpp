@@ -56,7 +56,9 @@ OperatorComponent::OperatorComponent(BasisList const& LocalB1, BasisList const& 
 double
 norm_frob_sq(OperatorComponent const& x)
 {
-   return norm_frob_sq(local_inner_prod(herm(x), x));
+   // TODO: this implementation is not very efficient
+   return trace(local_inner_prod(herm(x), x)).real();
+   //   return norm_frob_sq(local_inner_prod(herm(x), x));
 }
 
 void
@@ -1085,6 +1087,9 @@ SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
    // A norm for the overlaps matrix
    double Scale = norm_frob_sq(A) / (A.Basis1().total_degree() * A.Basis2().total_degree());
 
+   TRACE(Scale)(norm_frob_sq(A))(A.Basis1().total_degree())(A.Basis2().total_degree());
+   TRACE(A);
+
    // make a dense matrix
    LinearAlgebra::Matrix<SimpleRedOperator> M = A.data();
 
@@ -1178,7 +1183,7 @@ SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
    }
 
    OperatorComponent ACheck = prod(Trunc, ANew);
-   CHECK(norm_frob(A - ACheck) <= Scale*TruncateOverlapEpsilon);
+   CHECK(norm_frob(A - ACheck) <= Scale*TruncateOverlapEpsilon)(A-ACheck)(Scale)(TruncateOverlapEpsilon);
    
    ANew.check_structure();
    Trunc.check_structure();
