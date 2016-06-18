@@ -194,16 +194,15 @@ int main(int argc, char** argv)
       // if we could have tripartite symmetry, add operators for the sublattice magnetization
       UnitCellMPO S_A, S_B, S_C;
 
-      //if (w%3 == 0)
-      //{
+      if (w%3 == 0)
+      {
 	 for (int i = 0; i < w; i += 3)
 	 {
-	    S_A += S(0)[i]   + S(1)[(i+2)%w] + S(2)[(i+1)%w];
+	    S_A += S(0)[i] + S(1)[(i+2)%w] + S(2)[(i+1)%w];
 	    S_B += S(0)[i+1] + S(1)[(i+3)%w] + S(2)[(i+2)%w];
 	    S_C += S(0)[i+2] + S(1)[(i+4)%w] + S(2)[(i+3)%w];
 	 }
-      //}
-
+      }
 
       // Construct the Hamiltonian for a single unit-cell,
       UnitCellMPO H1, H2, Ht, Hv, Hy, Hchi;

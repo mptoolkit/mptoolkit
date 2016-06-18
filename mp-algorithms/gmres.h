@@ -165,8 +165,9 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
 
   if ((resid = norm_frob(r) / normb) <= tol || norm_frob(w) / norm_frob(x) <= tol) 
   {
-     if (norm_frob(w) / norm_frob(x) <= tol)
+     if (norm_frob(w) / norm_frob(x) <= tol && Verbose > 0)
      {
+	// This means that the matrix is effectively zero
 	std::cerr << "GMRES: early exit at norm_frob(w)/norm_frob(b) < tol\n";
      }
      tol = resid;
