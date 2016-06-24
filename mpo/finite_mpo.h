@@ -267,6 +267,9 @@ FiniteMPO string_mpo(SiteListType const& SiteList, std::string const& OpName);
 FiniteMPO
 ParseStringOperator(SiteListType const& SiteList, std::string const& Expr, int Size);
 
+// returns true if Op1 and Op2 are equal, to the specified tolerance
+bool equal(FiniteMPO const& Op1, FiniteMPO const& Op2, double Tol = 1E-15);
+
 #include "finite_mpo.cc"
 
 #endif

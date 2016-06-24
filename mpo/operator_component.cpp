@@ -33,6 +33,8 @@
 // some spurious large matrix elements.
 double const TruncateOverlapEpsilon = getenv_or_default("MP_TOE", 1E-15);
 
+double const QREpsilon = getenv_or_default("MP_QR_EPS", 1E-13);
+
 double const RemoveRowEpsilon = getenv_or_default("MP_RRE", 1E-40);
 
 //using namespace LinearAlgebra;
@@ -1085,7 +1087,7 @@ SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
    }
 
    // A norm for the overlaps matrix
-   double Scale = norm_frob_sq(A) / (A.Basis1().total_degree() * A.Basis2().total_degree());
+   double Scale = std::sqrt(norm_frob_sq(A) / (A.Basis1().total_degree() * A.Basis2().total_degree()));
 
    TRACE(Scale)(norm_frob_sq(A))(A.Basis1().total_degree())(A.Basis2().total_degree());
    TRACE(A);
@@ -1183,7 +1185,7 @@ SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
    }
 
    OperatorComponent ACheck = prod(Trunc, ANew);
-   CHECK(norm_frob(A - ACheck) <= Scale*TruncateOverlapEpsilon)(A-ACheck)(Scale)(TruncateOverlapEpsilon);
+   CHECK(norm_frob(A - ACheck) <= Scale*QREpsilon)(A-ACheck)(Scale)(TruncateOverlapEpsilon);
    
    ANew.check_structure();
    Trunc.check_structure();
@@ -1212,7 +1214,7 @@ SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
    }
 
    // A norm for the overlaps matrix
-   double Scale = norm_frob_sq(A) / (A.Basis1().total_degree() * A.Basis2().total_degree());
+   double Scale = std::sqrt(norm_frob_sq(A) / (A.Basis1().total_degree() * A.Basis2().total_degree()));
 
    // make a dense matrix
    LinearAlgebra::Matrix<SimpleRedOperator> M = A.data();
@@ -1308,7 +1310,7 @@ SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
    }
 
    OperatorComponent ACheck = prod(ANew, Trunc);
-   CHECK(norm_frob(A - ACheck) <= Scale*TruncateOverlapEpsilon)(A)(ACheck)(A-ACheck);
+   CHECK(norm_frob(A - ACheck) <= Scale*QREpsilon)(norm_frob(A - ACheck))(Scale);
 
    ANew.check_structure();
    Trunc.check_structure();
