@@ -128,7 +128,7 @@ int main(int argc, char** argv)
 	 InfiniteLattice Lattice;
 	 std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(TriangularOperators[i]);     
 	 if (Optimize)
-	    optimize(Op);
+	    qr_optimize(Op);
 	 print_structure(Op, std::cout, UnityEpsilon);
 	 if (Verbose > 0)
 	 {
