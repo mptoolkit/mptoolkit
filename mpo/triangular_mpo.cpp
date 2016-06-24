@@ -99,7 +99,6 @@ operator<<(std::ostream& out, TriangularMPO const& op)
    return out << op.data();
 }
 
-#if 1
 void optimize(TriangularMPO& Op)
 {
    if (Op.size() < 2)
@@ -139,12 +138,10 @@ void optimize(TriangularMPO& Op)
    }
 }
 
-#else
-
-void optimize(TriangularMPO& Op)
+void qr_optimize(TriangularMPO& Op)
 {
-   if (Op.size() < 2)
-      return;
+   //   if (Op.size() < 2)
+   //      return;
 
    double const Eps = 1E-13;
 
@@ -199,7 +196,182 @@ void optimize(TriangularMPO& Op)
    TRACE(Op);
 
 }
-#endif
+
+std::pair<std::complex<double>, double>
+log_inner_prod(TriangularMPO const& Op1, TriangularMPO const& Op2)
+{
+}
+
+bool
+equal(TriangularMPO const& Op1, TriangularMPO const& Op2, double Tol)
+{
+}
+
+
+bool
+equal(TriangularMPO const& Op1, TriangularMPO const& Op2, double Tol)
+{
+   // Do we want to scale Tol by the system size?  Bond dimension?
+
+   // firstly, check that the norms of Op1 and Op2 are sufficiently close
+   double n1 = log_norm_frob_sq(Op1);
+   double n2 = log_norm_frob_sq(Op2);
+   if (std::abs(n1-n2) > Tol)
+      return false;
+
+   // now test that the inner product |<Op1|Op2>| is sufficiently close to ||Op1||^2
+   std::complex<double> phase_part;
+   double log_part;
+   stsd::tie(phase_part, log_part) = log_inner_prod(Op1, Op2);
+   if (phase_part.real() < 0)
+      return false;   // the inner product must be at least positive
+
+   // evaluate x = log( |<Op1|Op2>| )
+   double x = std::log(phase_part.real()) + log_part;
+
+   if (std::abs(x - n1) > Tol)
+      return false;
+
+   return true;
+}
+
+//
+// tri_optimize
+//
+// Optimize a triangular MPO, including diagonal terms.
+//
+// Suppose that the unit cell is 1 site.  Then we orthogonalize the columns by
+// RQ decomposition, starting from the first column (which will be preserved).
+// But we treat the diagonal component separately.  Columns which match on the upper diagonals
+// and have the *same* component on the diagonal are parallel, since they represent the same terms.
+// For example, consider the string term I*I*I*....*A*I*I*...*A*I*I*....
+// This form may arise, for example, as the product sum_unit(A(0))^2.
+// But before compression, the term will occur twice, eg
+//
+// ( I A A 0 )
+// ( 0 I 0 A )
+// ( 0 0 I A )
+// ( 0 0 0 I )
+//
+// This can be reduced to 3x3, as
+// ( I 2A 0 )
+// ( 0 I  A )
+// ( 0 0  I )
+//
+// if we recognise that columns (or rows) 2,3 are parallel, because they are the same above the diagonal,
+// and also have the same diagonal term.
+//
+// Extending this to larger unit cells, suppose that A is 1x2x1 on 4 unit cells.  
+// ( A B ) ( C D ) ( K )
+//         ( E F ) ( L )
+//
+// Then we have
+//
+// ( I A B 0 A B 0 0 0 0 0 0 )  ( I 0 0 0 0 0 0 0 0 0 0 0 )  ( I 0 0 0 )
+// ( 0 0 0 I 0 0 A B 0 0 0 0 )  ( 0 C D 0 0 0 0 0 0 0 0 0 )  ( 0 K 0 0 )
+// ( 0 0 0 0 0 0 0 0 I A B 0 )  ( 0 E F 0 0 0 0 0 0 0 0 0 )  ( 0 L 0 0 )
+// ( 0 0 0 0 0 0 0 0 0 0 0 I )  ( 0 0 0 I 0 0 0 0 0 0 0 0 )  ( 0 I 0 0 )
+//                              ( 0 0 0 0 C D 0 0 0 0 0 0 )  ( 0 0 K 0 )
+//                              ( 0 0 0 0 E F 0 0 0 0 0 0 )  ( 0 0 L 0 )
+//                              ( 0 0 0 0 0 0 C D 0 0 0 0 )  ( 0 0 0 K )
+//                              ( 0 0 0 0 0 0 E F 0 0 0 0 )  ( 0 0 0 L )
+//                              ( 0 0 0 0 0 0 0 0 I 0 0 0 )  ( 0 0 I 0 )
+//                              ( 0 0 0 0 0 0 0 0 0 C D 0 )  ( 0 0 0 K )
+//                              ( 0 0 0 0 0 0 0 0 0 E F 0 )  ( 0 0 0 L )
+//                              ( 0 0 0 0 0 0 0 0 0 0 0 I )  ( 0 0 0 I )
+//
+// Ordinary compression can reduce this
+//
+// ( I A B 0 0 0 0 0 )  ( I 0 0 0 0 0 0 0 )  ( I 0 0 0 )
+// ( 0 0 0 I 0 A B 0 )  ( 0 C D 0 0 0 0 0 )  ( 0 K K 0 )
+// ( 0 0 0 0 I A B 0 )  ( 0 E F 0 0 0 0 0 )  ( 0 L L 0 )
+// ( 0 0 0 0 0 0 0 I )  ( 0 0 0 I 0 0 0 0 )  ( 0 I 0 0 )
+//                      ( 0 0 0 0 I 0 0 0 )  ( 0 0 I 0 )
+//                      ( 0 0 0 0 0 C D 0 )  ( 0 0 0 K )
+//                      ( 0 0 0 0 0 E F 0 )  ( 0 0 0 L )
+//                      ( 0 0 0 0 0 0 0 I )  ( 0 0 0 I )
+//
+// we could compress the internal dimensions by 1 row and 1 column, but this doesn't achieve
+// anything for our purposes.
+//
+// Now we want to do diagonal compression.  Can't see a simpler way than
+// doing an effective coarse-graining.
+
+// returns true if a compression was achieved
+bool tri_optimize_rows(TriangularOperator& Op)
+{
+   double Tol = 1E-14;
+
+   bool Result = false;
+   int Sz = Op.Basis().size();
+   int r1 = 0;
+   while (r1 < Sz)
+   {
+      FiniteMPO Diagonal1 = Op(r1, r1);
+
+      int r2 = r1+1;
+      while (r2 < Sz)
+      {
+	 // check rows r1 and r2
+	 FiniteMPO Diagonal2 = Op(r2, r2);
+
+	 // The diagonal operators must match, otherwise quit early
+	 if (!equal(Diagonal1, Diagonal2, Tol))
+	 {
+	    ++r2;
+	    continue;
+	 }
+
+	 // test the remaining components.
+	 // Firstly, the columns of row r1 from column r1+1 up to r2 (inclusive) must be zero
+	 int c = r1+1;
+	 while (c <= r2 && log_norm_frob_sq(Op(r1, c)) <= std::log(Tol))
+	    ++c;
+
+	 if (c <= r2)
+	 {
+	    ++r2;
+	    continue;
+	 }
+
+	 // the remaining columns up to Sz must have equal entries
+	 while (c < Sz && equal(Op(r1, c), Op(r2, c), Tol))
+	    ++c;
+
+	 if (c < Sz)
+	 {
+	    ++r2;
+	    continue;
+	 }
+
+	 // if we get here, then rows r1 and r2 can be compressed
+	 // compress r2 onto r1
+	 compress_row(Op, r1, r2);
+	 Result = true;
+
+	 // Don't increase r2 here, since we just did a compression
+      }
+      ++r1;
+   }
+
+   return Result;
+}
+
+bool tri_optimize_columns(TriangularOperator& Op)
+{
+   return false;
+}
+
+void tri_optimize(TriangularMPO& Op)
+{
+   // optimize rows first, then columns.  Iterate until we don't succeed in a compression step.
+   bool Compressed = true;  // set to true if we succeed at a compression
+   while (Compressed)
+   {
+      Compressed = tri_optimize_rows(Op);
+      Compressed |= tri_optimize_columns(Op);
+   }
+}
 
 void balance(TriangularMPO& Op)
 {
