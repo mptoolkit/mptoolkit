@@ -212,6 +212,12 @@ UnitCell::operator[](int n) const
    return (*Sites)[n];
 }
 
+void
+UnitCell::assign_operator(std::string const& Name, operator_type Op, int Offset)
+{
+   Operators[Name] = translate(std::move(Op), -Offset * int(this->size()));
+}
+
 bool
 UnitCell::operator_exists(std::string const& s) const
 {
@@ -333,7 +339,8 @@ UnitCell::map_local_operator(SiteOperator const& Operator, int Cell, int n) cons
       Result[i](0,0) = I;
    }
 
-   return UnitCellMPO(Sites, Result, Operator.Commute(), Cell*this->size());
+   return UnitCellMPO(Sites, Result, Operator.Commute(), Cell*this->size(), 
+		      Operator.description());
 }
 
 UnitCell::operator_type
@@ -608,7 +615,8 @@ UnitCell::SetDefaultOperators()
    if (this->empty())
       return;
 
-   Operators["I"] = UnitCellMPO(Sites, identity_mpo(*Sites), LatticeCommute::Bosonic, 0);
+   Operators["I"] = UnitCellMPO(Sites, identity_mpo(*Sites), LatticeCommute::Bosonic, 0,
+				"Identity");
 
    // we don't need the R operator if we have string() in the parser.
    //   Operators["R"] = UnitCellMPO(Sites, string_mpo(Sites, ), LatticeCommute::Bosonic, 0);

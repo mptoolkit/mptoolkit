@@ -575,7 +575,6 @@ OperatorClassification classify(GenericMPO const& Op, double UnityEpsilon)
 
    bool IsPropIdentity = true;  // true if the operator is proportional to identity
    bool IsPropUnitary = true;   // true if the operator is proportional to a unitary operator
-   bool IsUnitUnitary = true;   // true if the operator is unitary (ie. proportional, with factor 1.0)
    std::complex<double> Factor  = 1.0;
 
    for (unsigned i = 0; i < Op.size(); ++i)

@@ -38,44 +38,50 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("NumBosons,N", prog_opt::value(&MaxN), 
-	  FormatDefault("Maximum number of bosons per site", MaxN).c_str())
-	 ("out,o", prog_opt::value(&FileName), "output filename [required]")
-	 ;
-      
-      prog_opt::variables_map vm;        
+         ("NumBosons,N", prog_opt::value(&MaxN),
+          FormatDefault("Maximum number of bosons per site", MaxN).c_str())
+         ("out,o", prog_opt::value(&FileName), "output filename [required]")
+         ;
+
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).style(prog_opt::command_line_style::default_style ^
-					  prog_opt::command_line_style::allow_guessing).
-		      run(), vm);
-      prog_opt::notify(vm);    
-      
+                                          prog_opt::command_line_style::allow_guessing).
+                      run(), vm);
+      prog_opt::notify(vm);
+
+      OperatorDescriptions OpDescriptions;
+      OpDescriptions.set_description("Bosonic 2-leg ladder with flux");
+      OpDescriptions.add_operators()
+         ("H_J"   , "nearest-neighbor hopping")
+         ("H_K"   , "tunnelling  between components")
+         ("H_U"   , "intra-species Coulomb repulsion")
+         ("H_U12" , "inter-species Coulomb repulsion")
+         ("D"     , "difference in occupation number between components\n")
+         ("D2"    , "squared difference in occuptation number between components\n")
+         ;
+
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Operators:\n"
-		   << "H_J   - nearest neighbor hopping on the legs\n"
-		   << "H_K   - tunneling between components\n"
-		   << "H_U   - inter-species Coulomb repulsion\n"
-		   << "H_U12 - intra-species Coulomb repulsion\n"
-	    ;
+         std::cerr << OpDescriptions << 'n';
          return 1;
       }
 
       LatticeSite Site = Boson2ComponentU1Z2(MaxN);
       UnitCell Cell = Site;
       UnitCellOperator BH_A(Cell, "BH_A"), B_A(Cell, "B_A"), N_A(Cell, "N_A"), N2_A(Cell, "N2_A"),
-	 BH_S(Cell, "BH_S"), B_S(Cell, "B_S"), N_S(Cell, "N_S"), N2_S(Cell, "N2_S");
+         BH_S(Cell, "BH_S"), B_S(Cell, "B_S"), N_S(Cell, "N_S"), N2_S(Cell, "N2_S");
 
       InfiniteLattice Lattice(Cell);
-      
+
       UnitCellMPO HJ = -(BH_A(0)*B_A(1) + B_A(0)*BH_A(1) + BH_S(0)*B_S(1) + B_S(0)*BH_S(1));
       UnitCellMPO HK = -(N_S(0) - N_A(0));
-      
+
       UnitCellMPO PairHopping = pow(BH_S(0)*B_A(0),2) + pow(BH_A(0)*B_S(0),2);
-      
+
       UnitCellMPO HU = N_S(0)*N_A(0) + 0.25 * (N2_S(0) + N2_A(0) + PairHopping);
       UnitCellMPO HU12 = 0.25 * (N2_S(0) + N2_A(0) - PairHopping);
 
@@ -87,8 +93,18 @@ int main(int argc, char** argv)
       Lattice["H_U12"] = sum_unit(HU12);
       Lattice["D"]     = sum_unit(D);
       Lattice["D2"]    = sum_unit(D*D);
-      
+
+      // Information about the lattice
+      Lattice.set_command_line(argc, argv);
+      Lattice.set_operator_descriptions(OpDescriptions);
+
+      // save the lattice to disk
       pheap::ExportObject(FileName, Lattice);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

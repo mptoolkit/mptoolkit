@@ -47,6 +47,7 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);    
       
       OperatorDescriptions OpDescriptions;
+      OpDescriptions.set_description("SU(2) Fermi Hubbard model");
       OpDescriptions.add_operators()
 	 ("H_t"  , "nearest neighbor hopping")
 	 ("H_t2" , "next-nearest neighbor hopping")
@@ -81,12 +82,16 @@ int main(int argc, char** argv)
 				 *(dot(CH(0), C(1)) - dot(C(0), CH(1))));
 
       // Information about the lattice
-      Lattice.set_description("SU(2) Fermi Hubbard model");
       Lattice.set_command_line(argc, argv);
       Lattice.set_operator_descriptions(OpDescriptions);
 
-      // save the lattice
+      // save the lattice to disk
       pheap::ExportObject(FileName, Lattice);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

@@ -21,24 +21,53 @@
 #include "unitcell.h"
 #include "common/statistics.h"
 
-UnitCellMPO::UnitCellMPO()
+UnitCellMPO::UnitCellMPO(SiteListPtrType const& SiteList_, FiniteMPO Op_, LatticeCommute Com_, int Offset_,
+			 std::string Description_)
+   : SiteList(SiteList_), Op(std::move(Op_)), Com(Com_), Offset(Offset_), Description(std::move(Description_))
 {
 }
 
-UnitCellMPO::UnitCellMPO(SiteListPtrType const& SiteList_, FiniteMPO const& Op_, LatticeCommute Com_, int Offset_)
-   : SiteList(SiteList_), Op(Op_), Com(Com_), Offset(Offset_)
+UnitCellMPO&
+UnitCellMPO::operator=(UnitCellMPO const& c)
 {
+   SiteList = c.SiteList;
+   Op = c.Op;
+   Com = c.Com;
+   Offset = c.Offset;
+   if (Description.empty())
+      Description = c.Description;
 }
+
+UnitCellMPO&
+UnitCellMPO::operator=(UnitCellMPO&& c)
+{
+   SiteList = c.SiteList;
+   Op = std::move(c.Op);
+   Com = c.Com;
+   Offset = c.Offset;
+   if (Description.empty())
+      Description = std::move(c.Description);
+}
+
+extern PStream::VersionTag LatticeVersion;
 
 PStream::opstream& operator<<(PStream::opstream& out, UnitCellMPO const& L)
 {
-   out << L.SiteList << L.Op << L.Com << L.Offset;
+   out << L.SiteList << L.Op << L.Com << L.Offset << L.Description;
    return out;
 }
 
 PStream::ipstream& operator>>(PStream::ipstream& in, UnitCellMPO& L)
 {
    in >> L.SiteList >> L.Op >> L.Com >> L.Offset;
+   if (in.version_of(LatticeVersion) >= 3)
+   {
+      in >> L.Description;
+   }
+   else
+   {
+      L.Description = "";
+   }
    return in;
 }
 
@@ -333,10 +362,10 @@ void optimize(UnitCellMPO& Op)
    optimize(Op.MPO());
 }
 
-UnitCellMPO translate(UnitCellMPO const& x, int Sites)
+UnitCellMPO translate(UnitCellMPO x, int Sites)
 {
    CHECK(Sites % x.unit_cell_size() == 0);
-   UnitCellMPO Result(x);
+   UnitCellMPO Result(std::move(x));
    Result.translate(Sites);
    return Result;
 }

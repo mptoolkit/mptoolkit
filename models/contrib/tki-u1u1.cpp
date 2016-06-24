@@ -2,9 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// models/bosehubbard.cpp
+// models/contrib/tki-u1u1.cpp
 //
-// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2016 Jason Pillay <pillayjason@hotmail.com>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,8 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/boson.h"
+#include "models/fermion-u1u1.h"
+#include "models/spin-u1.h"
 #include "common/terminal.h"
 #include "common/prog_options.h"
 #include <boost/program_options.hpp>
@@ -33,13 +34,10 @@ int main(int argc, char** argv)
    try
    {
       std::string FileName;
-      int MaxN = DefaultMaxN;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("NumBosons,N", prog_opt::value(&MaxN),
-          FormatDefault("Maximum number of bosons per site", MaxN).c_str())
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -51,12 +49,21 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("Bosonic 2-leg ladder with flux");
+      OpDescriptions.description("U(1)xU(1) p-wave Kondo lattice model");
+      OpDescriptions.author("Jason Pillay", "pillayjason@hotmail.com");
       OpDescriptions.add_operators()
-         ("H_J"  , "nearest neighbor hopping")
-         ("H_U"  , "on-site Coulomb repulsion N*(N-1)/2\n")
-         ("H_mu" , "chemical potential = -sum_unit(N(0))")
-         ("N"    , "total particle number")
+         ("H_t"  , "nearest neighbour fermion hopping")
+         ("H_J1" , "nearest neighbour spin exchange")
+         ("H_K"  , "Kondo coupling between fermion and spin")
+         ;
+      OpDescriptions.add_cell_operators()
+         ("pup"   , "annihilation up spin p-wave")
+         ("pdown" , "annihilation down spin p-wave")
+         ("pHup"  , "creation up spin p-wave")
+         ("pHdown", "creation down spin p-wave")
+         ("Pi_z"  , "p-wave z-component")
+         ("Pi_p" , "p-wave raising operator")
+         ("Pi_m" , "p-wave lowering operator")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -64,32 +71,42 @@ int main(int argc, char** argv)
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-         std::cerr << OpDescriptions << '\n';
+         std::cerr << OpDescriptions;
          return 1;
       }
 
-      LatticeSite Site = Boson(MaxN);
-      UnitCell Cell(Site);
-      UnitCellOperator BH(Cell, "BH"), B(Cell, "B"), N(Cell, "N"), N2(Cell, "N2");
+      LatticeSite cSite = FermionU1U1();
+      LatticeSite fSite = SpinU1(0.5);
+      UnitCell Cell(cSite.GetSymmetryList(), cSite, fSite);
+      UnitCellOperator CHup(Cell, "CHup"), CHdown(Cell, "CHdown"), Cup(Cell, "Cup"),
+         Cdown(Cell, "Cdown"), Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz"),
+         pup(Cell, "pup"), pdown(Cell, "pdown"), pHup(Cell, "pHup"), pHdown(Cell, "pHdown"),
+         Pi_z(Cell, "Pi_z"), Pi_p(Cell, "Pi_p"), Pi_m(Cell, "Pi_m");
+
+      // note: need to define this *BEFORE* constructing the InfiniteLattice object
+      pup(0) = std::sqrt(0.5) * (Cup(1)[0] - Cup(-1)[0]);
+      pdown(0) = std::sqrt(0.5) * (Cdown(1)[0] - Cdown(-1)[0]);
+      pHup(0) = adjoint(pup(0));
+      pHdown(0) = adjoint(pdown(0));
+
+      Pi_z(0) = 0.5 * (pHup(0)*pup(0) - pHdown(0)*pdown(0));
+      Pi_p(0) = pHup(0)*pdown(0);
+      Pi_m(0) = pHdown(0)*pup(0);
 
       InfiniteLattice Lattice(Cell);
 
-      Lattice["H_J"] = sum_unit(BH(0)*B(1) + B(0)*BH(1));
-      Lattice["H_U"] = sum_unit(0.5*N2(0));
-      Lattice["H_mu"] = sum_unit(-N(0));
-      Lattice["N"] = sum_unit(N(0));
+      Lattice["H_t"] = sum_unit(CHup(0)[0]*Cup(1)[0] - Cup(0)[0]*CHup(1)[0]
+                                + CHdown(0)[0]*Cdown(1)[0] - Cdown(0)[0]*CHdown(1)[0]);
+      Lattice["H_J1"] = sum_unit(Sz(0)[1]*Sz(1)[1] + 0.5*(Sp(0)[1]*Sm(1)[1] + Sm(0)[1]*Sp(1)[1]));
+      Lattice["H_K"] = 0.5*(sum_unit(Sp(0)[1] * Pi_m(0)) + sum_unit(Sm(0)[1] * Pi_p(0)))
+         + sum_unit(Sz(0)[1] * Pi_z(0));
 
-      // information about the lattice
+      // Information about the lattice
       Lattice.set_command_line(argc, argv);
       Lattice.set_operator_descriptions(OpDescriptions);
 
       // save the lattice to disk
       pheap::ExportObject(FileName, Lattice);
-   }
-   catch (prog_opt::error& e)
-   {
-      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
-      return 1;
    }
    catch (std::exception& e)
    {

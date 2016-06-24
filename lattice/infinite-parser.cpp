@@ -46,7 +46,8 @@ struct push_operator
       IdentStack.pop();
       if (!Lattice.operator_exists(OpName))
       {
-	 throw ParserError::AtPosition("Operator does not exist or wrong type: " + OpName, start);
+	 throw ParserError::AtPosition("Operator does not exist or wrong type: " 
+				       + ColorQuote(OpName), start);
       }
       eval.push(Lattice[OpName].op());
    }
@@ -136,7 +137,11 @@ struct push_prod_unit
    void operator()(char const* Start, char const* End) const
    {
       int Sites = pop_int(eval);
-      int Cells = Sites / Lattice.GetUnitCell().size();
+      if (Sites % Lattice.GetUnitCell().size() != 0)
+      {
+	 throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+				    Start, End);
+      }
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
       UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End), Args);
       Op.ExtendToCoverUnitCell(Sites);
@@ -157,8 +162,11 @@ struct push_prod_unit_r
    void operator()(char const* Start, char const* End) const
    {
       int Sites = pop_int(eval);
-      int Cells = Sites / Lattice.GetUnitCell().size();
-      DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
+      if (Sites % Lattice.GetUnitCell().size() != 0)
+      {
+	 throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+				    Start, End);
+      }
       UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End), Args);
       Op.ExtendToCoverUnitCell(Sites);
       eval.push(prod_unit_right_to_left(Op.MPO(), Sites));
@@ -217,11 +225,15 @@ struct push_sum_unit
    
    void operator()(char const* Start, char const* End) const
    {
+      int Sites = pop_int(eval);
+      if (Sites % Lattice.GetUnitCell().size() != 0)
+      {
+	 throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+				    Start, End);
+      }
+      
       try
       {
-	 int Sites = pop_int(eval);
-	 int Cells = Sites / Lattice.GetUnitCell().size();
-	 DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End))(Sites);
 	 UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End), Args);
 	 //Op.ExtendToCoverUnitCell(Sites);
 	 eval.push(sum_unit(Op, Sites));
@@ -256,11 +268,30 @@ struct push_sum_k
       std::complex<double> k = boost::get<std::complex<double> >(eval.top());
       eval.pop();
       int Sites = pop_int(eval);
-      int Cells = Sites / Lattice.GetUnitCell().size();
-      DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
-      UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End), Args);
-      //Op.ExtendToCoverUnitCell(Sites);
-      eval.push(sum_k(k, Op, Sites));
+      if (Sites % Lattice.GetUnitCell().size() != 0)
+      {
+	 throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+				    Start, End);
+      }
+
+      try
+      {
+	 UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End), Args);
+	 //Op.ExtendToCoverUnitCell(Sites);
+	 eval.push(sum_k(k, Op, Sites));
+      }
+      catch (ParserError const& p)
+      {
+	 throw ParserError::AtPosition(p, Start);
+      }
+      catch (std::exception const& p)
+      {
+	 throw ParserError::AtPosition(p, Start);
+      }
+      catch (...)
+      {
+	 throw;
+      }
    }
 
    InfiniteLattice const& Lattice;
@@ -277,7 +308,11 @@ struct push_sum_kink
    void operator()(char const* Start, char const* End) const
    {
       int Sites = pop_int(eval);
-      int Cells = Sites / Lattice.GetUnitCell().size();
+      if (Sites % Lattice.GetUnitCell().size() != 0)
+      {
+	 throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+				    Start, End);
+      }
 
       // Find the comma separating the two operators
       int nBracket = 0;
@@ -292,7 +327,7 @@ struct push_sum_kink
       }
       if (Comma == End)
       {
-	 throw ParserError::AtRange("sum_kink expects two parameters", Start, End);
+	 throw ParserError::AtRange(ColorQuote("sum_kink") + " expects two parameters", Start, End);
       }
 
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
@@ -317,7 +352,11 @@ struct push_sum_string_inner
    void operator()(char const* Start, char const* End) const
    {
       int Sites = pop_int(eval);
-      int Cells = Sites / Lattice.GetUnitCell().size();
+      if (Sites % Lattice.GetUnitCell().size() != 0)
+      {
+	 throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+				    Start, End);
+      }
 
       // here we expect 3 operators, separated by commas
       // Find the comma separating the two operators
@@ -333,7 +372,8 @@ struct push_sum_string_inner
       }
       if (Comma == End)
       {
-	 throw ParserError::AtRange("sum_string_inner expects three parameters, only found one", Start, End);
+	 throw ParserError::AtRange(ColorQuote("sum_string_inner")
+				    + " expects three parameters, only found one", Start, End);
       }
 
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
@@ -351,7 +391,8 @@ struct push_sum_string_inner
       }
       if (Comma == End)
       {
-	 throw ParserError::AtRange("sum_string_inner expects three parameters, only found two", Start, End);
+	 throw ParserError::AtRange(ColorQuote("sum_string_inner") 
+				    + " expects three parameters, only found two", Start, End);
       }
       UnitCellMPO String = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, Comma), Args);
       ++Comma; // skip over the comma
@@ -373,8 +414,11 @@ struct push_sum_string_dot
    void operator()(char const* Start, char const* End) const
    {
       int Sites = pop_int(eval);
-      int Cells = Sites / Lattice.GetUnitCell().size();
-
+      if (Sites % Lattice.GetUnitCell().size() != 0)
+      {
+	 throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+				    Start, End);
+      }
       // here we expect 3 operators, separated by commas
       // Find the comma separating the two operators
       int nBracket = 0;
@@ -389,7 +433,8 @@ struct push_sum_string_dot
       }
       if (Comma == End)
       {
-	 throw ParserError::AtRange("sum_string_dot expects three parameters, only found one", Start, End);
+	 throw ParserError::AtRange(ColorQuote("sum_string_dot") 
+				    + " expects three parameters, only found one", Start, End);
       }
 
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
@@ -407,7 +452,8 @@ struct push_sum_string_dot
       }
       if (Comma == End)
       {
-	 throw ParserError::AtRange("sum_string_dot expects three parameters, only found two", Start, End);
+	 throw ParserError::AtRange(ColorQuote("sum_string_dot") 
+				    + " expects three parameters, only found two", Start, End);
       }
       UnitCellMPO String = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, Comma), Args);
       ++Comma; // skip over the comma
@@ -432,16 +478,13 @@ struct push_coarse_grain
       eval.pop();
       
       int Sites = pop_int(eval);
-      int Cells = Sites / Lattice.GetUnitCell().size();
-
       if (Sites <= 0)
-	 throw ParserError::AtRange("coarse_grain: canot coarse-grain to zero or negative size!", 
+	 throw ParserError::AtRange(ColorHighlight("coarse_grain:") 
+				    + " canot coarse-grain to zero or negative size!", 
 				    Start, End);
 
       TriangularMPO TOp = boost::get<TriangularMPO>(Op);
-
       TOp = coarse_grain(TOp, Sites);
-
       eval.push(ElementType(TOp));
    }
 

@@ -21,7 +21,7 @@
 #include "lattice/infinite-parser.h"
 #include "mp/copyright.h" // for EscapeArgument
 
-PStream::VersionTag LatticeVersion(2);
+PStream::VersionTag LatticeVersion(3);
 
 InfiniteLattice::InfiniteLattice()
 {
@@ -59,6 +59,13 @@ InfiniteLattice::set_command_line(int argc, char** argv)
 void
 InfiniteLattice::set_operator_descriptions(OperatorDescriptions const& Desc)
 {
+   // set the main description
+   if (!Desc.description().empty())
+      this->set_description(Desc.description());
+
+   // Author information
+   this->authors().insert(this->authors().end(), Desc.authors().begin(), Desc.authors().end());
+
    // iterate through the descriptions
    for (OperatorDescriptions::const_iterator I = Desc.begin(); I != Desc.end(); ++I)
    {
@@ -103,6 +110,36 @@ InfiniteLattice::set_operator_descriptions(OperatorDescriptions const& Desc)
       if (I->second.description().empty())
       {
 	 std::cerr << "warning: lattice function " << I->first << " has no description.\n";
+      }
+   }
+
+   // set the main description
+   if (!Desc.description().empty())
+   {
+      this->set_description(Desc.description());
+   }
+
+   // cell operator descriptions
+   for (OperatorDescriptions::const_iterator I = Desc.cell_begin(); I != Desc.cell_end(); ++I)
+   {
+      if (this->GetUnitCell().operator_exists(I->first))
+      {
+	 this->GetUnitCell()[I->first].set_description(I->second);
+      }
+      else
+      {
+	 std::cerr << "warning: cell operator " << I->first
+		   << " has a description but is not defined in the unit cell.\n";
+      }
+   }
+
+   // Now go through the unit cell operators and check for any that don't have a description
+   for (UnitCell::const_operator_iterator I = this->GetUnitCell().begin_operator();
+	I != this->GetUnitCell().end_operator(); ++I)
+   {
+      if (I->second.description().empty())
+      {
+	 std::cerr << "warning: cell operator " << I->first << " has no description.\n";
       }
    }
 }
@@ -215,6 +252,7 @@ operator<<(PStream::opstream& out, InfiniteLattice const& L)
    PStream::VersionSentry Sentry(out, LatticeVersion, LatticeVersion.default_version());
    out << Sentry.version();
    out << L.Description_;
+   out << L.Authors_;
    out << L.CommandLine_;
    out << L.Timestamp_;
    out << L.UnitCell_;
@@ -229,7 +267,7 @@ operator>>(PStream::ipstream& in, InfiniteLattice& L)
 {
    PStream::VersionSentry Sentry(in, LatticeVersion, in.read<int>());
 
-   if (Sentry.version() > 2)
+   if (Sentry.version() > 3)
    {
       PANIC("This program is too old to read this lattice file format,"
 	    "  Maximum readable version number is 2")(Sentry.version());
@@ -240,6 +278,14 @@ operator>>(PStream::ipstream& in, InfiniteLattice& L)
    }
 
    in >> L.Description_;
+   if (Sentry.version() >= 3)
+   {
+      in >> L.Authors_;
+   }
+   else
+   {
+      L.Authors_.clear();
+   }
    in >> L.CommandLine_;
    in >> L.Timestamp_;
    in >> L.UnitCell_;
@@ -741,4 +787,14 @@ TriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& Strin
 TriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_)
 {
    return sum_string_dot(adjoint(Op1_), String_, Op2_, Op1_.GetSiteList()->size());
+}
+
+ProductMPO prod_unit(UnitCellMPO const& Op_)
+{
+   return prod_unit_left_to_right(Op_.MPO(), Op_.GetSiteList()->size());
+}
+
+ProductMPO prod_unit(UnitCellMPO const& Op_, int UnitCellSize)
+{
+   return prod_unit_left_to_right(Op_.MPO(), UnitCellSize);
 }

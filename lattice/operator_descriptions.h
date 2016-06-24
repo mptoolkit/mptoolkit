@@ -21,7 +21,7 @@
 //
 // To use:
 // Similar to the program_options pattern,
-// OperatorDescrptions OpDescriptions;
+// OperatorDescriptions OpDescriptions;
 // OpDescriptions.add_operators()("First operator", "First operator description")
 //                               ("second operator", "description) ... ;
 //
@@ -48,42 +48,77 @@ class OperatorDescriptions
       typedef std::map<std::string, std::string> function_list_type;
       typedef function_list_type::const_iterator const_function_iterator;
 
+   private:
+      typedef std::map<std::string, int> index_type;
+
+   public:
+      typedef std::vector<std::pair<std::string, std::string>> authors_type;
+
+      std::string description() const { return Description; }
+
+      void description(std::string s) { Description = std::move(s); }
+      void set_description(std::string s) { Description = std::move(s); }
+
+      void author(std::string Name, std::string Email) { Authors.push_back({Name, Email}); }
+
+      authors_type const& authors() const { return Authors; }
+
+      unsigned author_size() const { return Authors.size(); }
+      std::pair<std::string, std::string> author(int n) const { return Authors[n]; }
+
       unsigned size() const { return Descriptions.size(); }
 
       const_iterator begin() const { return Descriptions.begin(); }
       const_iterator end() const { return Descriptions.end(); }
 
-      OperatorDescriptions& operator()(std::string const& Name,
-				       std::string const& Desc)
+      struct OperatorDescProxy
       {
-	 if (Index.find(Name) == Index.end())
-	 {
-	    Index[Name] = Descriptions.size();
-	    Descriptions.push_back(std::make_pair(Name, Desc));
-	 }
-	 else
-	 {
-	    Descriptions[Index[Name]] = std::make_pair(Name, Desc);
-	 }
-	 return *this;
-      }
-      OperatorDescriptions& add_operators() { return *this; }
+         OperatorDescProxy(data_type& Desc_, index_type& Index_)
+            : Descriptions(Desc_), Index(Index_) {}
+
+         OperatorDescProxy const& operator()(std::string const& Name,
+                                             std::string const& Desc) const
+         {
+            if (Index.find(Name) == Index.end())
+            {
+               Index[Name] = Descriptions.size();
+               Descriptions.push_back(std::make_pair(Name, Desc));
+            }
+            else
+            {
+               Descriptions[Index[Name]] = std::make_pair(Name, Desc);
+            }
+            return *this;
+         }
+         data_type& Descriptions;
+         index_type& Index;
+      };
+
+      OperatorDescProxy add_operators() { return OperatorDescProxy(Descriptions, Index); }
+
+      // unit cell operators
+
+      const_iterator cell_begin() const { return CellOperatorDescriptions.begin(); }
+      const_iterator cell_end() const { return CellOperatorDescriptions.end(); }
+
+      OperatorDescProxy add_cell_operators() { return OperatorDescProxy(CellOperatorDescriptions,
+                                                                        CellIndex); }
 
       // Functions
 
       struct FunctionDescProxy
       {
-	 FunctionDescProxy(function_list_type& F_)
-	    : F(&F_) {}
+         FunctionDescProxy(function_list_type& F_)
+            : F(&F_) {}
 
-	 FunctionDescProxy const& operator()(std::string const& Name,
-					     std::string const& Desc) const
-	 {
-	    (*F)[Name] = Desc;
-	    return *this;
-	 }
+         FunctionDescProxy const& operator()(std::string const& Name,
+                                             std::string const& Desc) const
+         {
+            (*F)[Name] = Desc;
+            return *this;
+         }
 
-	 function_list_type* F;
+         function_list_type* F;
       };
 
       FunctionDescProxy add_functions() { return FunctionDescProxy(Functions); }
@@ -93,15 +128,33 @@ class OperatorDescriptions
       const_function_iterator begin_function() const { return Functions.begin(); }
       const_function_iterator end_function() const { return Functions.end(); }
 
+      FunctionDescProxy add_cell_functions() { return FunctionDescProxy(CellFunctions); }
+
+      function_list_type const& cell_functions() const { return CellFunctions; }
+
    private:
+      std::string Description;
+      std::vector<std::pair<std::string, std::string>> Authors;
+
       data_type Descriptions;
       std::map<std::string, int> Index;
+
+      data_type CellOperatorDescriptions;
+      std::map<std::string, int> CellIndex;
+
       function_list_type Functions;
+
+      function_list_type CellFunctions;
 };
 
 inline
 std::ostream& operator<<(std::ostream& out, OperatorDescriptions const& d)
 {
+   out << "Description: " << d.description() << '\n';
+   for (auto const& x : d.authors())
+   {
+      out << "Author: " << x.first << " <" << x.second << ">\n";
+   }
    out << "Operators:\n";
    if (d.size() == 0)
       out << "(none)\n";
@@ -113,8 +166,8 @@ std::ostream& operator<<(std::ostream& out, OperatorDescriptions const& d)
    out << "\nFunctions:\n";
    if (d.size_function() == 0)
       out << "(none)\n";
-   for (OperatorDescriptions::const_function_iterator I = d.begin_function(); 
-	I != d.end_function(); ++I)
+   for (OperatorDescriptions::const_function_iterator I = d.begin_function();
+        I != d.end_function(); ++I)
    {
       out << std::setw(10) << std::left << I->first << " - " << I->second << '\n';
    }

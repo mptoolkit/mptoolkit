@@ -61,7 +61,7 @@ struct push_local_operator
 		       std::stack<ElementType>& eval_)
       : Cell(Cell_), NumCells(NumCells_), IdentStack(IdentStack_), eval(eval_) {}
 
-   void operator()(char const*, char const*) const
+   void operator()(char const* start, char const* end) const
    {
       std::string OpName = IdentStack.top();
       IdentStack.pop();
@@ -69,8 +69,18 @@ struct push_local_operator
       int n = pop_int(eval);
       int j = pop_int(eval);
       CHECK(NumCells == 0 || (j >= 0 && j < NumCells))("Site index out of bounds")(j)(NumCells);
-      CHECK(Cell.local_operator_exists(OpName, n))
-	 ("Local operator does not exist in the unit cell")(OpName)(n);
+      if (!Cell.local_operator_exists(OpName, n))
+      {
+	 ParserError w = ParserError::AtRange("Local operator does not exist: '" 
+					      + ColorHighlight(OpName) + "'", start, end);
+	 if (Cell.operator_exists(OpName))
+	 {
+	    w.AddHint("Did you intend the unit cell operator " 
+		      + ColorHighlight(OpName + "(" +
+				      boost::lexical_cast<std::string>(n) + ")") + " ?");
+	 }
+	 throw w;
+      }
 
       // Fetch the operator and JW string
       eval.push(ElementType(Cell.local_operator(OpName, j, n)));
@@ -100,7 +110,8 @@ struct push_cell_operator
       {
 	 int j = pop_int(eval);
 	 if (!Cell.operator_exists(OpName))
-	    throw ParserError("Operator not found in the unit cell: " + OpName);
+	    throw ParserError("Operator not found in the unit cell: '" + ColorHighlight(OpName)
+			      + "'");
 	 eval.push(ElementType(Cell(OpName, j)));
       }
       catch (ParserError const& p)
@@ -241,7 +252,7 @@ struct eval_cell_c_function
       : Cell(Cell_), FuncStack(FuncStack_),
 	ParamStack(ParamStack_), eval(eval_) {}
    
-   void operator()(char const*, char const*) const
+   void operator()(char const* beg, char const* end) const
    {
       // Construct the operator
       UnitCellElementType Result = Cell.eval_function(FuncStack.top(), 0, ParamStack.top());
@@ -249,7 +260,12 @@ struct eval_cell_c_function
       // the result must be a c-number
 
       std::complex<double>* c = boost::get<std::complex<double> >(&Result);
-      CHECK(c)("Function without cell index must return a c-number")(FuncStack.top());
+      if (!c)
+      {
+	 throw ParserError::AtRange("Function without cell index must return a c-number: "
+				    + ColorHighlight(FuncStack.top()),
+				    beg, end);
+      }
 
       FuncStack.pop();
       ParamStack.pop();
@@ -388,7 +404,7 @@ struct push_swap_cell_site
       CHECK(NumCells == 0 || (Cell2 >= 0 && Cell2 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
 
       PANIC("Swap() is not yet implemented");
-      //eval.push(ElementType(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
+      eval.push(ElementType(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
    }
 
    UnitCell const& Cell;
@@ -412,7 +428,7 @@ struct push_swap_site
       int Site1 = pop_int(eval);
 
       PANIC("Swap() is not yet implemented");
-      //eval.push(ElementType(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
+      eval.push(ElementType(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
    }
 
    UnitCell const& Cell;
@@ -439,7 +455,7 @@ struct push_swap_cell
       CHECK(NumCells == 0 || (Cell2 >= 0 && Cell2 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
 
       PANIC("Swap() is not yet implemented");
-      //      eval.push(ElementType(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
+      eval.push(ElementType(Cell.swap_gate(Cell1, Site1, Cell2, Site2)));
    }
 
    UnitCell const& Cell;
@@ -869,8 +885,6 @@ ParseUnitCellElement(UnitCell const& Cell, int NumCells, std::string const& Str,
    UnitCellParser::FunctionStackType   FunctionStack;
    UnitCellParser::ArgumentType        Arguments;
 
-   CheckParentheses(Str.begin(), Str.end());
-
    for (Function::ArgumentList::const_iterator I = Args.begin(); I != Args.end(); ++I)
    {
       Arguments.add(I->first.c_str(), I->second);
@@ -891,17 +905,19 @@ ParseUnitCellElement(UnitCell const& Cell, int NumCells, std::string const& Str,
 
    try
    {
+      CheckParentheses(beg, end);
+
       parse_info<> info = parse(beg, Parser, space_p);
       if (!info.full)
 	 throw ParserError::AtRange("Failed to parse an expression", info.stop, end);
    }
    catch (ParserError const& p)
    {
-      throw ParserError::Finalize(p, "While parsing a unit cell operator:", beg, end);
+      throw ParserError::Finalize(p, "while parsing a unit cell operator:", beg, end);
    }
    catch (std::exception const& p)
    {
-      throw ParserError::Finalize(p, "While parsing a unit cell operator:", beg, end);
+      throw ParserError::Finalize(p, "while parsing a unit cell operator:", beg, end);
    }
    catch (...)
    {

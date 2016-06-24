@@ -20,9 +20,17 @@
 // UnitCellOperatorAtCell
 
 inline
-UnitCellOperatorAtCell::UnitCellOperatorAtCell(UnitCell const& Cell_, std::string const& Name_, int n_)
+UnitCellOperatorAtCell::UnitCellOperatorAtCell(UnitCell& Cell_, std::string const& Name_, int n_)
    : Cell(&Cell_), Name(Name_), n(n_)
 {
+}
+
+inline
+UnitCellOperatorAtCell&
+UnitCellOperatorAtCell::operator=(UnitCellMPO const& Op)
+{
+   Cell->assign_operator(Name, Op, n);
+   return *this;
 }
 
 inline
@@ -76,6 +84,13 @@ inline
 UnitCellOperator&
 UnitCellOperator::operator=(UnitCellMPO const& Op)
 {
-   (*Cell)[Name] = Op;
+   Cell->assign_operator(Name, Op);
    return *this;
+}
+
+inline
+void
+UnitCellOperator::set_description(std::string s) const
+{
+   (*Cell)[Name].set_description(std::move(s));
 }

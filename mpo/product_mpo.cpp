@@ -280,7 +280,7 @@ ProductMPO translate_right(std::vector<BasisList> const& LocalBasis)
 {
    ProductMPO Result(LocalBasis.size());
    Result[0] = translate_right(LocalBasis.back(), LocalBasis.front());
-   for (int i = 1; i < LocalBasis.size(); ++i)
+   for (unsigned i = 1; i < LocalBasis.size(); ++i)
    {
       Result[i] = translate_right(LocalBasis[i-1], LocalBasis[i]);
    }

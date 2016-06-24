@@ -95,6 +95,20 @@ void ShowMoments(Polynomial<std::complex<double> > const& Moments,
    }
 }
 
+inline
+int ipow(int x, int p)
+{
+   DEBUG_CHECK(p >= 0);
+   if (p == 0)
+      return 1;
+   else if (p == 1)
+      return p;
+   else if (p % 2 == 0)
+      return ipow(x*x, p/2);
+   else
+      return x*ipow(x*x, (p-1)/2);
+}
+
 void ShowCumulants(std::vector<std::complex<double> > const& Cumulants,
 		   bool Quiet, bool ShowRealPart, bool ShowImagPart, 
 		   bool ShowMagnitude, bool ShowArgument, bool ShowRadians,
@@ -220,19 +234,10 @@ int main(int argc, char** argv)
    std::string FName;
    std::string OpStr;
 
-   double t = 0;
-   double t2 = 0;
-   double tc = 0;
-   double U = 0;
-   double Lambda = 0;
    int Power = 1;
    int Verbose = 0;
-   int NMax = 3;
-   int NLegs = 1;
    int UnitCellSize = 0;
    int Degree = 0;
-   double Spin = 0.5;
-   bool Print = false;
    bool ShowRealPart = false;
    bool ShowImagPart = false;
    bool ShowMagnitude = false;
@@ -450,7 +455,7 @@ int main(int argc, char** argv)
 	 Moments.push_back(ExtractOverlap(E.back()[1.0], Rho));
 	 // Force the degree of the MPO
 	 if (Degree != 0)
-	    Moments.back()[std::pow(Degree, p+1)] += 0.0;
+	    Moments.back()[ipow(Degree, p+1)] += 0.0;
 	 if (CalculateMoments && Verbose <= 0)
 	    ShowMoments(Moments.back(), ShowRealPart, ShowImagPart, 
 			ShowMagnitude, ShowArgument, ShowRadians,

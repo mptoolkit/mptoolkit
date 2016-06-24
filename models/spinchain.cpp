@@ -51,6 +51,7 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);    
       
       OperatorDescriptions OpDescriptions;
+      OpDescriptions.set_description("Spin chain");
       OpDescriptions.add_operators()
 	 ("H_xx", "nearest neighbor spin coupling Sx Sx")
 	 ("H_yy", "nearest neighbor spin exchange Sy Sy")
@@ -63,6 +64,9 @@ int main(int argc, char** argv)
 	 ("H_J1" , "nearest neighbor spin exchange = H_J1z + H_J1t")
 	 ("H_B1" , "nearest neighbor biquadratic spin exchange (S.S)^2")
 	 ("H_mu" , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
+	 ("X"    , "pi rotation about the X axis, equivalent to prod_unit(exp(i*pi*Sx(0)))")
+	 ("Y"    , "pi rotation about the Y axis, equivalent to prod_unit(exp(i*pi*Sy(0)))")
+	 ("Z"    , "pi rotation about the Z axis, equivalent to prod_unit(exp(i*pi*Sz(0)))")
 	 ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -104,6 +108,10 @@ int main(int argc, char** argv)
 	 Lattice["H_AKLT"].set_description("AKLT Hamiltonian H_J1 + (1/3)*H_B1");
       }
 
+      Lattice["X"] = prod_unit(exp(std::complex<double>(0.0, math_const::pi)*Sx(0)));
+      Lattice["Y"] = prod_unit(exp(std::complex<double>(0.0, math_const::pi)*Sy(0)));
+      Lattice["Z"] = prod_unit(exp(std::complex<double>(0.0, math_const::pi)*Sz(0)));
+
       /* Lattice.func("HaldShast")(arg("lambda") = 0.5)
                   = "sum_kink( (1/lambda)*I(0), Sz(0) ) * sum_kink( lambda*I(0), Sz(0) ) + sum_kink( (1/lambda)*I(0), Sy(0) ) * sum_kink( lambda*I(0), Sy(0) ) + sum_kink( (1/lambda)*I(0), Sx(0) ) * sum_kink( lambda*I(0), Sx(0) )"; */
 
@@ -111,12 +119,16 @@ int main(int argc, char** argv)
          = "J*sum_unit( I(0)*Sx(0)*Sx(1) )"; */
 
       // Information about the lattice
-      Lattice.set_description("Spin chain");
       Lattice.set_command_line(argc, argv);
       Lattice.set_operator_descriptions(OpDescriptions);
 
-      // save the lattice to disc
+      // save the lattice to disk
       pheap::ExportObject(FileName, Lattice);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

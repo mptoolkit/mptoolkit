@@ -46,24 +46,27 @@ int main(int argc, char** argv)
 					  prog_opt::command_line_style::allow_guessing).
 		      run(), vm);
       prog_opt::notify(vm);    
-      
+
+      OperatorDescriptions OpDescriptions;
+      OpDescriptions.set_description("Spin chain");
+      OpDescriptions.add_operators()
+         ("H_p0"     , "projector onto nearest-neighbor spin 0 bond")
+         ("H_p1"     , "projector onto nearest-neighbor spin 1 bond")
+         ("H_p2"     , "projector onto nearest-neighbor spin 2 bond")
+         ("H_p3"     , "projector onto nearest-neighbor spin 3 bond")
+         ("H_p4"     , "projector onto nearest-neighbor spin 4 bond")
+         ("H_dipole" , "nearest neighbor dipole spin exchange     (S.S)")
+         ("H_quad"   , "nearest neighbor quadrupole spin exchange (Q.Q)")
+         ("H_hex"    , "nearest neighbor hexapole spin exchange   (T.T)")
+         ("H_oct"    , "nearest neighbor octapole spin exchange   (F.F)")
+         ;
+ 
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
          std::cerr << "usage: spinchain-spin2-su2 [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Operators:\n"
-		   << "H_p0      - projector onto nearest-neighbor spin 0 bond\n"
-		   << "H_p1      - projector onto nearest-neighbor spin 1 bond\n"
-		   << "H_p2      - projector onto nearest-neighbor spin 2 bond\n"
-		   << "H_p3      - projector onto nearest-neighbor spin 3 bond\n"
-		   << "H_p4      - projector onto nearest-neighbor spin 4 bond\n"
-		   << "\n"
-		   << "H_dipole - next-nearest neighbor dipole spin exchange     (S.S)\n"
-		   << "H_quad   - next-nearest neighbor quadrupole spin exchange (Q.Q)\n"
-		   << "H_hex    - next-nearest neighbor hexapole spin exchange   (T.T)\n"
-		   << "H_oct    - next-nearest neighbor octapole spin exchange   (F.F)\n"
-	    ;
+         std::cerr << OpDescriptions << '\n';
          return 1;
       }
 
@@ -94,7 +97,17 @@ int main(int argc, char** argv)
       Lattice["H_p3"] = (0.0)    *H_dipole + (-4/105.0)*H_quad + (-1/72.0) *H_hex + (-1/360.0)*H_oct + (7/25.0)*c;
       Lattice["H_p4"] = (3/25.0) *H_dipole + (6/245.0) *H_quad + (1/280.0) *H_hex + (1/2520.0)*H_oct + (9/25.0)*c;
 
+      // Information about the lattice
+      Lattice.set_command_line(argc, argv);
+      Lattice.set_operator_descriptions(OpDescriptions);
+
+      // save the lattice to disk
       pheap::ExportObject(FileName, Lattice);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {

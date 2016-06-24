@@ -4,7 +4,7 @@
 //
 // models/contrib/tki-u1su2.cpp
 //
-// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2016 Jason Pillay <pillayjason@hotmail.com>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER
+
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
@@ -33,12 +34,10 @@ int main(int argc, char** argv)
   try
   {
     std::string FileName;
-    half_int Spin = 0.5;
 
     prog_opt::options_description desc("Allowed options", terminal::columns());
     desc.add_options()
       ("help", "show this help message")
-      ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
       ("out,o", prog_opt::value(&FileName), "output filename [required]")
       ;
 
@@ -50,11 +49,18 @@ int main(int argc, char** argv)
     prog_opt::notify(vm);
 
     OperatorDescriptions OpDescriptions;
+    OpDescriptions.description("U(1)xSU(2) p-wave Kondo lattice model");
+    OpDescriptions.author("Jason Pillay", "pillayjason@hotmail.com");
     OpDescriptions.add_operators()
       ("H_t"  , "nearest neighbour fermion hopping")
       ("H_J1" , "nearest neighbour spin exchange")
       ("H_K"  , "Kondo coupling between fermion and spin")
       ;
+    OpDescriptions.add_cell_operators()
+       ("p"   , "p-wave annihilation")
+       ("pH"  , "p-wave creation")
+       ("Pi"  , "p-wave spin vector")
+       ;
 
     if (vm.count("help") || !vm.count("out"))
     {
@@ -67,20 +73,23 @@ int main(int argc, char** argv)
 
     LatticeSite cSite = FermionU1SU2();
     LatticeSite fSite = SpinSU2(0.5);
-//    fSite.CoerceSymmetryList(cSite.GetSymmetryList());
-//    UnitCell Cell(cSite, fSite);
     UnitCell Cell(cSite.GetSymmetryList(), cSite, fSite);
-    InfiniteLattice Lattice(Cell);
-    UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), S(Cell, "S"), Ss(Cell, "Ss"), Pi(Cell, "Pi");
+    UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), S(Cell, "S"), 
+       p(Cell, "p"), pH(Cell, "pH"), Pi(Cell, "Pi");
 
-    Pi = outer(CH(2)[0] - CH(0)[0], C(2)[0] - C(0)[0]);
+    // note: need to define this *BEFORE* constructing the InfiniteLattice object
+    p(0) = std::sqrt(0.5) * (C(1)[0] - C(-1)[0]);
+    pH(0) = adjoint(p(0));
+
+    Pi(0) = outer(pH(0), p(0));
+
+    InfiniteLattice Lattice(Cell);
 
     Lattice["H_t"]  = sum_unit(dot(CH(0)[0], C(1)[0]) + dot(C(0)[0], CH(1)[0]));
     Lattice["H_J1"] = sum_unit(inner(S(0)[1], S(1)[1]));
-    Lattice["H_K"]  = sum_unit(dot(S(1)[1], Pi(0)));
+    Lattice["H_K"]  = sum_unit(inner(S(0)[1], Pi(0)));
 
     // Information about the lattice
-    Lattice.set_description("U(1)xSU(2) Kondo lattice model");
     Lattice.set_command_line(argc, argv);
     Lattice.set_operator_descriptions(OpDescriptions);
 

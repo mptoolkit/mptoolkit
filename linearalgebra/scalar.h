@@ -564,7 +564,7 @@ struct ArgInterface<float, AnyScalar<float> >
    typedef float argument_type;
    result_type operator()(argument_type x) const
    {
-      return x >= 0 ? 0 : math_const::pi;
+      return x >= 0 ? 0 : float(math_const::pi);
    }
 };
 
