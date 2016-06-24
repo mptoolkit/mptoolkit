@@ -16,7 +16,7 @@
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER
-//
+
 // YC configuration of a triangular lattice
 //
 // Example for a width-6 lattice (site numbers in brackets are periodic repeats in the vertical
@@ -125,11 +125,9 @@ int main(int argc, char** argv)
       for (int i = 0; i < w; ++i)
       {
 	 // Nearest neighbor bonds
-	 // vertical bonds
-	 H1 += inner(S(0)[i], S(0)[(i+1)%w]);
-	 // 60 degree bonds
-	 H1 += inner(S(0)[i], S(1)[i]);
-	 H1 += inner(S(0)[i], S(1)[(i+w-1)%w]);
+	 H1 += inner(S(0)[i], S(0)[(i+1)%w]);      // vertical bonds
+	 H1 += inner(S(0)[i], S(1)[i]);            // 60 degree bonds - up
+	 H1 += inner(S(0)[i], S(1)[(i+w-1)%w]);    // 60 degree bonds - down
 
 	 // next-nearest neighbor bonds
 	 H2 += inner(S(0)[i], S(2)[(i+w-1)%w]);     // horizontal
