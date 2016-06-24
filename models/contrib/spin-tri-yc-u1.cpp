@@ -91,9 +91,9 @@ int main(int argc, char** argv)
          ;
 
       OpDescriptions.add_functions()
-         ("THM_flux"           , "J1-J2 Heisenebrg Hamiltonian on a triangular lattice with twisted BC in Y-direction as exp(i*theta)")
-         ("HS"                 , "Haldane-Shastry Hamiltonian with Sz*Sz interactions, parametized by 'lambda' (exponential decay as exp(-lambda*r))")
-         ("LongRangeIsing_YC4" , "long-range Ising model on a 4-leg YC structure, parametized by 'lambda00', 'lambda01', and 'lambda02'")
+         ("THM_flux"                       , "J1-J2 Heisenebrg Hamiltonian on a triangular lattice with twisted BC in Y-direction as exp(i*theta)")
+         ("HS"                             , "Haldane-Shastry Hamiltonian with Sz*Sz interactions, parametized by 'lambda' (exponential decay as exp(-lambda*r))")
+         ("LongRangeIsing_NoInterCell_YC4" , "long-range Ising model on a 4-leg YC structure, parametized by 'alpha0j's and 'lambda0j's")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -209,7 +209,7 @@ int main(int argc, char** argv)
       Lattice["H_J2"] = sum_unit(H2);
       Lattice["H_J1_flux"] = sum_unit(H1_flux);
       Lattice["H_J2_flux"] = sum_unit(H2_flux);
-      Lattice["H_LongRangeIsing_inter"] = sum_unit(H_inter);
+      Lattice["H_LongRangeIsing_InterCell"] = sum_unit(H_inter);
       std::cout << "... " << std::flush;
 
       // Momentum operators in Y direction
@@ -226,11 +226,15 @@ int main(int argc, char** argv)
 
       // a basic function for Haldane-Shastry model with Sz*Sz interations
       Lattice.func("HS")(arg("lambda") = 0.5, arg("i") = "0", arg("j") = "0")
-                  = "exp(-lambda)*sum_string_inner( S(0)[i], exp(-lambda)*I(0), S(0)[j] )";
+                  = "exp(-lambda)*sum_string_inner( Sz(0)[i], exp(-lambda)*I(0), Sz(0)[j] )";
       std::cout << ". " << std::flush;
 
-      Lattice.func("LongRangeIsing_YC4")(arg("lambda00") = 0.5, arg("lambda01") = 0.5, arg("lambda02") = 0.5)
-                  = "HS{lambda00,0,0} + HS{lambda00,1,1} + HS{lambda00,2,2} + HS{lambda00,3,3} + HS{lambda01,0,1} + HS{lambda01,1,2} + HS{lambda01,2,3} + HS{lambda01,3,1} + HS{lambda02,0,2} + HS{lambda02,1,3} + H_LongRangeIsing_inter";
+      //Lattice.func("LongRangeIsing_NoInterCell_YC4")(arg("alpha00") = 1.0, arg("lambda00") = 0.5, arg("alpha01") = 1.0, arg("lambda01") = 0.5,  arg("alpha02") = 1.0, arg("lambda02") = 0.5)
+      //            = "alpha00*HS{lambda=lambda00,i=0,j=0} + alpha00*HS{lambda=lambda00,i=1,j=1} + alpha00*HS{lambda=lambda00,i=2,j=2} + alpha00*HS{lambda=lambda00,i=3,j=3} + alpha01*HS{lambda=lambda01,i=0,j=1} + alpha01*HS{lambda=lambda01,i=1,j=2} + alpha01*HS{lambda=lambda01,i=2,j=3} + alpha01*HS{lambda=lambda01,i=3,j=1} + alpha02*HS{lambda=lambda02,i=0,j=2} + alpha02*HS{lambda=lambda02,i=1,j=3}";
+
+      Lattice.func("LongRangeIsing_NoInterCell_YC4")(arg("alpha00") = 1.0, arg("lambda00") = 0.5, arg("alpha01") = 1.0, arg("lambda01") = 0.5,  arg("alpha02") = 1.0, arg("lambda02") = 0.5)
+                  = "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[0], exp(-lambda00)*I(0), Sz(0)[0] ) ) + alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[1], exp(-lambda00)*I(0), Sz(0)[1] ) ) + alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[2], exp(-lambda00)*I(0), Sz(0)[2] ) ) + alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[3], exp(-lambda00)*I(0), Sz(0)[3] ) ) + alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[0], exp(-lambda01)*I(0), Sz(0)[1] ) ) + alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[1], exp(-lambda00)*I(0), Sz(0)[2] ) ) + alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[2], exp(-lambda01)*I(0), Sz(0)[3] ) ) + alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[3], exp(-lambda01)*I(0), Sz(0)[1] ) ) + alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[0], exp(-lambda02)*I(0), Sz(0)[2] ) ) + alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[1], exp(-lambda02)*I(0), Sz(0)[3] ) )";
+
       std::cout << ". " << std::flush;
 
       std::cout << ">>> finished.\n";

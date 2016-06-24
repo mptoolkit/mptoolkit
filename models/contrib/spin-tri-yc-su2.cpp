@@ -148,7 +148,7 @@ int main(int argc, char** argv)
                    << "StagS    - staggered magnetization over a unit-cell\n"
                    << "Trans    - translation by one site (rotation by 2\u0071/w) in lattice short direction\n"
                    << "Ty       - momentum operator in lattice short direction\n"
-                   << "Ref      - reflection in lattice short direction (may need applying T-operators to become" 
+                   << "Ref      - pure reflection in lattice short direction (may need applying T-operators to become" 
                    << "           general reflection)\n"
                    << "SwapWrap - changing the wraaping vector of lattice between 'old' and 'new' way of numbering"
 		   //<< "*If the lattice could be potentially tripartite (width is a multiple of 3), then we\n"
@@ -174,7 +174,7 @@ int main(int argc, char** argv)
       for (int i = 0; i < w; ++i)
       {
 	 S += S[i];                    // total spin on a leg of cylinder
-         StagS += IntPow(-1,i) * S[i];            
+         StagS += IntPow(-1,i) * S[i]; // only one of three possible staggered magnetization formation.            
       }
 
       Trans = I(0);
@@ -184,12 +184,12 @@ int main(int argc, char** argv)
            Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
        }
 
-      /* Ref = I(0);  // old way of representing R-operator.
+      Ref = I(0);  // old way of representing an explicit R-operator.
       for (int i = 0; i < w/2; ++i)
        {
            //R *= 0.5*( 0.25*inner(S[i],S[w-i-1]) + 1 );
            Ref = Ref(0) * Cell.swap_gate_no_sign(i, w-i-1);
-       } */
+       }
           
       // if we could have tripartite symmetry, add operators for the sublattice magnetization
       UnitCellMPO S_A, S_B, S_C;
@@ -287,12 +287,12 @@ int main(int argc, char** argv)
               = "H_J1 + J2*H_J2 + J_chi*H_chi";
 
       // Add the tripartite sublattice magnetization operators
-      if (w%3 == 0)
-      {
+      //if (w%3 == 0)
+      //{
 	 Lattice["Sa"] = sum_unit(S_A, w*3);
 	 Lattice["Sb"] = sum_unit(S_B, w*3);
 	 Lattice["Sc"] = sum_unit(S_C, w*3);
-      }
+      //}
 
       // Momentum operators in Y-direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
@@ -339,8 +339,8 @@ int main(int argc, char** argv)
       Lattice["RyOld"] = prod_unit_left_to_right(RyOld.MPO(), w*w);
 
       // SwapWrap. Change between wrapping vectors of 'old' and 'new' way of numbering of the lattice.
-      UnitCellMPO SwapWrap = I(0);
-      for (int c = 0; c < w; ++c)
+      /* UnitCellMPO SwapWrap = I(0);
+       for (int c = 0; c < w; ++c)
       {
          UnitCellMPO ThisWrap = I(0);
 
@@ -355,9 +355,8 @@ int main(int argc, char** argv)
 
          ThisWrap.translate(c*w);
          SwapWrap = SwapWrap * ThisWrap;          
-      } 
-        
-      Lattice["SwapWrap"] = prod_unit_left_to_right(SwapWrap.MPO(), w*w);  
+      } */         
+      Lattice["SwapWrap"] = prod_unit_left_to_right(UnitCellMPO(Ref(0)).MPO(), w);  
 
       // 'identity' operator in the spin-1/2 auxiliary basis
       Lattice["I_2"] = prod_unit_left_to_right(UnitCellMPO(I(0)).MPO(), w)
