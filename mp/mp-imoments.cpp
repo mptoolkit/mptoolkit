@@ -149,7 +149,7 @@ MomentsToCumulants(std::vector<Polynomial<std::complex<double> > > const& Moment
    
    if (FirstMoment == 1)
    {
-      // This is the easy case, we can calculate the n'th cumulant from the n'th cumulant
+      // This is the easy case, we can calculate the n'th cumulant from the n'th moment
       // The complication that we handle is that possibly kappa_1 is zero but
       // kappa_1^2 is non-zero.
       CHECK_EQUAL(int(Moments.size()), Degree);
