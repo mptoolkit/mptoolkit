@@ -342,6 +342,8 @@ TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute
 
 TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize)
 {
+   CHECK_EQUAL(Op.Basis1().size(), 1)("Operator Basis1 is not one dimensional.  Basis must contain only one quantum number for sum_unit()");
+   CHECK_EQUAL(Op.Basis2().size(), 1)("Operator Basis2 is not one dimensional.  Basis must contain only one quantum number for sum_unit()");
    return sum_unit(SiteList, string_mpo(SiteList, Com.SignOperator(), Op.qn1()), Op, UnitCellSize);
 }
 

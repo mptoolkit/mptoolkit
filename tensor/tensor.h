@@ -816,6 +816,8 @@ struct Trace<Tensor::IrredTensor<T, B1, B2, S> >
 
    result_type operator()(argument_type M) const
    {
+      if (M.is_null())
+         return result_type();
       PRECONDITION_EQUAL(M.Basis1(), M.Basis2());
       PRECONDITION(QuantumNumbers::is_scalar(M.TransformsAs()))(M.TransformsAs());
       
