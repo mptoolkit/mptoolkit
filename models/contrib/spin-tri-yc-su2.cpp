@@ -166,7 +166,7 @@ int main(int argc, char** argv)
       UnitCell Cell = repeat(Site, w);
       UnitCellOperator S(Cell, "S"), StagS(Cell, "StagS");
       UnitCellOperator I(Cell, "I"); // identity operator
-      UnitCellOperator Trans(Cell, "Trans");
+      UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
       UnitCellOperator RyUnit(Cell, "RyUnit");
 
       // Add some operators on the unit-cell
