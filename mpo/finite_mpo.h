@@ -270,7 +270,6 @@ ParseStringOperator(SiteListType const& SiteList, std::string const& Expr, int S
 // returns true if Op1 and Op2 are equal, to the specified tolerance
 bool equal(FiniteMPO const& Op1, FiniteMPO const& Op2, double Tol = 1E-15);
 
-<<<<<<< e0215db8386ad27b52c4c7da771a87fd27bcbd03
 // calculates the logarithm of the squared Frobenius norm of the operator
 double
 log_norm_frob_sq(FiniteMPO const& Op);
@@ -281,8 +280,6 @@ log_norm_frob_sq(FiniteMPO const& Op);
 std::pair<std::complex<double>, double>
 log_inner_prod(FiniteMPO const& Op1, FiniteMPO const& Op2);
 
-=======
->>>>>>> Work in progress on the 'diagonal compression' of TriangularMPO
 #include "finite_mpo.cc"
 
 #endif

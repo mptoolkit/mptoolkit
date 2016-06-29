@@ -1088,15 +1088,9 @@ SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
 
    // A norm for the overlaps matrix
    double Scale = std::sqrt(norm_frob_sq(A) / (A.Basis1().total_degree() * A.Basis2().total_degree()));
-<<<<<<< e0215db8386ad27b52c4c7da771a87fd27bcbd03
 
    //   TRACE(Scale)(norm_frob_sq(A))(A.Basis1().total_degree())(A.Basis2().total_degree());
    //   TRACE(A);
-=======
->>>>>>> Work in progress on the 'diagonal compression' of TriangularMPO
-
-   TRACE(Scale)(norm_frob_sq(A))(A.Basis1().total_degree())(A.Basis2().total_degree());
-   TRACE(A);
 
    // make a dense matrix
    LinearAlgebra::Matrix<SimpleRedOperator> M = A.data();
