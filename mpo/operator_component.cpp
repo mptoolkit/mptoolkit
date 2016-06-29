@@ -1089,8 +1089,8 @@ SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
    // A norm for the overlaps matrix
    double Scale = std::sqrt(norm_frob_sq(A) / (A.Basis1().total_degree() * A.Basis2().total_degree()));
 
-   TRACE(Scale)(norm_frob_sq(A))(A.Basis1().total_degree())(A.Basis2().total_degree());
-   TRACE(A);
+   //   TRACE(Scale)(norm_frob_sq(A))(A.Basis1().total_degree())(A.Basis2().total_degree());
+   //   TRACE(A);
 
    TRACE(Scale)(norm_frob_sq(A))(A.Basis1().total_degree())(A.Basis2().total_degree());
    TRACE(A);
@@ -1154,6 +1154,10 @@ SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
 	 NewBasis1Q.push_back(A.Basis1()[r]);
 	 RowNormSq.push_back(NextRowNormSq);
 	 //RowNormSq.push_back(Normalization);  // since we've already normalized it
+      }
+      else
+      {
+	 TRACE(NextRowNormSq)(Epsilon);
       }
 
       --r;

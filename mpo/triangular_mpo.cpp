@@ -198,18 +198,12 @@ void qr_optimize(TriangularMPO& Op)
 }
 
 std::pair<std::complex<double>, double>
-log_inner_prod(TriangularMPO const& Op1, TriangularMPO const& Op2)
+log_inner_prod(FiniteMPO const& Op1, FiniteMPO const& Op2)
 {
 }
 
 bool
-equal(TriangularMPO const& Op1, TriangularMPO const& Op2, double Tol)
-{
-}
-
-
-bool
-equal(TriangularMPO const& Op1, TriangularMPO const& Op2, double Tol)
+equal(FiniteMPO const& Op1, FiniteMPO const& Op2, double Tol)
 {
    // Do we want to scale Tol by the system size?  Bond dimension?
 
@@ -222,7 +216,7 @@ equal(TriangularMPO const& Op1, TriangularMPO const& Op2, double Tol)
    // now test that the inner product |<Op1|Op2>| is sufficiently close to ||Op1||^2
    std::complex<double> phase_part;
    double log_part;
-   stsd::tie(phase_part, log_part) = log_inner_prod(Op1, Op2);
+   std::tie(phase_part, log_part) = log_inner_prod(Op1, Op2);
    if (phase_part.real() < 0)
       return false;   // the inner product must be at least positive
 
@@ -297,8 +291,14 @@ equal(TriangularMPO const& Op1, TriangularMPO const& Op2, double Tol)
 // Now we want to do diagonal compression.  Can't see a simpler way than
 // doing an effective coarse-graining.
 
+// remove row r2, by compressing it onto row r1 (likewise for the columns)
+void
+compress_row(TriangularMPO& Op, int r1, int r2)
+{
+}
+
 // returns true if a compression was achieved
-bool tri_optimize_rows(TriangularOperator& Op)
+bool tri_optimize_rows(TriangularMPO& Op)
 {
    double Tol = 1E-14;
 
@@ -357,7 +357,7 @@ bool tri_optimize_rows(TriangularOperator& Op)
    return Result;
 }
 
-bool tri_optimize_columns(TriangularOperator& Op)
+bool tri_optimize_columns(TriangularMPO& Op)
 {
    return false;
 }

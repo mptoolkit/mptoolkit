@@ -239,20 +239,6 @@ void qr_optimize(TriangularMPO& Op);
 // the left and the right.
 void balance(TriangularMPO& Op);
 
-// calculates the logarithm of the squared Frobenius norm of the operator
-double
-log_norm_frob_sq(TriangularMPO const& Op);
-
-// returns the logarithm of the inner product <Op1|Op2> as
-// <Op1|Op2> = Result.first * exp(Result.second)
-// Result.first is a complex number on the unit circle.
-std::pair<std::complex<double>, double>
-log_inner_prod(TriangularMPO const& Op1, TriangularMPO const& Op2);
-
-// returns true if Op1 and Op2 are equal to the specified tolerance
-bool
-equal(TriangularMPO const& Op1, TriangularMPO const& Op2, double Tol);
-
 inline
 void
 TriangularMPO::debug_check_structure() const

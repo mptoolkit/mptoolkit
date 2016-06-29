@@ -81,9 +81,20 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinSite(Spin);
       UnitCell Cell(Site);
-      InfiniteLattice Lattice("Spin chain", Cell);
       UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz");
       UnitCellOperator I(Cell, "I"); // identity operator
+      UnitCellOperator Test(Cell, "Test");
+
+      Test(0) = 0.0 * I(0);
+
+      for (int i = 0; i < 50; ++i)
+      {
+	 Test(0) = Test(0) + 0.5 * Sx(i)*Sx(i+1);
+	 Test(0) = Test(0) + (1.0/3.0) * Sy(i)*Sy(i+1);
+	 Test(0) = Test(0) + 0.2 * Sz(i)*Sz(i+1);
+      }
+
+      InfiniteLattice Lattice("Spin chain", Cell);
 
       UnitCellMPO SpinExchange = Sx(0)*Sx(1) + Sy(0)*Sy(1) + Sz(0)*Sz(1);
 

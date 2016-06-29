@@ -74,8 +74,8 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinU1(Spin);
       UnitCell Cell(Site);
-      InfiniteLattice Lattice(Cell);
       UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
+      InfiniteLattice Lattice(Cell);
 
       Lattice["H_J1z"] = sum_unit(Sz(0)*Sz(1));
       Lattice["H_J1t"] = 0.5 * sum_unit(Sp(0)*Sm(1) + Sm(0)*Sp(1));

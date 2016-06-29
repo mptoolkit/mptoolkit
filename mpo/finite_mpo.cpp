@@ -181,14 +181,16 @@ void qr_optimize(FiniteMPO& Op)
 #endif
 #endif
 
-   double const Eps = 1E-13;
+   double const Eps = 1E-8;
 
-   TRACE(Op);
+   //   TRACE(Op);
 
    bool Reduced = true; // flag to indicate that we reduced a dimension
    // loop until we do a complete sweep with no reduction in dimensions
    bool First = true;
    bool Second = true;
+
+   First = false;
    while (Reduced || Second)
    {
       Reduced = false;
@@ -199,7 +201,7 @@ void qr_optimize(FiniteMPO& Op)
 	 TRACE("XXXXX");
       }
       SimpleOperator T2 = TruncateBasis2MkII(Op2, First ? 0.0 : Eps);
-      TRACE(norm_frob(Op.front() - Op2*T2));
+      //TRACE(norm_frob(Op.front() - Op2*T2));
 
       // Working left to right, optimize the Basis2
       SimpleOperator T = TruncateBasis2MkII(Op.front(), First ? 0.0 : Eps);
@@ -231,7 +233,10 @@ void qr_optimize(FiniteMPO& Op)
       First = false;
    }
 
-   TRACE(Op);
+   SimpleOperator Overlaps = local_inner_prod(herm(Op[Op.size()/2]), Op[Op.size()/2]);
+   TRACE(Overlaps);
+
+   //TRACE(Op);
 
 #if 0
 #if !defined(NDEBUG)
