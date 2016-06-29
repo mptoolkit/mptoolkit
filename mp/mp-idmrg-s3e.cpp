@@ -370,8 +370,11 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 	    Prefactor = 1;
 	 RhoMix += Prefactor * triple_prod(herm(RH[i]), Rho, RH[i]);
       }
-      //      MatrixOperator RhoMix = operator_prod(herm(RH), Rho, RH);
-      Rho += (Mix.MixFactor / trace(RhoMix)) * RhoMix;
+      // check for a zero mixing term - can happen if there are no interactions that span
+      // the current bond
+      double RhoTrace = trace(RhoMix).real();
+      if (RhoTrace != 0)
+         Rho += (Mix.MixFactor / RhoTrace) * RhoMix;
    }
    if (Mix.RandomMixFactor > 0)
    {
@@ -434,7 +437,9 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
 	    Prefactor = 1;
 	 RhoMix += Prefactor * triple_prod(LH[i], Rho, herm(LH[i]));
       }
-      Rho += (Mix.MixFactor / trace(RhoMix)) * RhoMix;
+      double RhoTrace = trace(RhoMix).real();
+      if (RhoTrace != 0)
+         Rho += (Mix.MixFactor / RhoTrace) * RhoMix;
    }
    if (Mix.RandomMixFactor > 0)
    {
