@@ -205,7 +205,6 @@ log_inner_prod(FiniteMPO const& Op1, FiniteMPO const& Op2)
 bool
 equal(FiniteMPO const& Op1, FiniteMPO const& Op2, double Tol)
 {
-{
    // Do we want to scale Tol by the system size?  Bond dimension?
 
    // firstly, check that the norms of Op1 and Op2 are sufficiently close
