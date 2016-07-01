@@ -820,3 +820,9 @@ ParseStringOperator(SiteListType const& SiteList, std::string const& Expr, int S
    
    return Result;
 }   
+
+double
+log_norm_frob_sq(FiniteMPO const& Op)
+{
+   return 0;
+}
