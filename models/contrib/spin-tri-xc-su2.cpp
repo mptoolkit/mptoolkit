@@ -19,7 +19,6 @@
 // ENDHEADER
 
 // Description: spin systems on triangular lattices XC SU(2)-symmetric.
-
 // XC configuration of a triangular lattice.
 // The width W measures the number of total rows, which is twice the number of sites
 // in a Y column.
@@ -50,7 +49,6 @@
 //  (7)-(15)
 //  / \ / 
 //(3)-(11)--
-//
 
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"
@@ -61,6 +59,13 @@
 #include <boost/program_options.hpp>
 
 namespace prog_opt = boost::program_options;
+
+int IntPow(int x, int p) {
+  if (p == 0) return 1;
+  if (p == 1) return x;
+  return x * IntPow(x, p-1);
+}
+
 
 int main(int argc, char** argv)
 {
@@ -87,13 +92,13 @@ int main(int argc, char** argv)
       
       OperatorDescriptions OpDescriptions;
       OpDescriptions.add_operators()
+         ("StagS",    "total staggered magnetization over a unit-cell")
 	 ("H_J1",     "nearest neighbor spin exchange")
 	 ("H_J2",     "next-nearest neighbor spin exchange")
 	 ("H_Jcell",  "zig-zag cylinder coupling")
 	 ("Ty"  ,     "Translation in Y direction")
 	 ("TyPi",     "Translation by pi in Y direction (only if w is divisible by 4)")
 	 ("Ry"  ,     "Reflection about the X axis")
-
 	 ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -113,7 +118,7 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinSU2(Spin);
       UnitCell Cell = repeat(Site, w);
-      UnitCellOperator S(Cell, "S");
+      UnitCellOperator S(Cell, "S"), StagS(Cell, "StagS");
       UnitCellOperator I(Cell, "I"); // identity operator
       UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
       UnitCellOperator RyUnit(Cell, "RyUnit");
@@ -125,7 +130,8 @@ int main(int argc, char** argv)
    
       for (int i = 0; i < w; ++i)
       {
-	 S += S[i];   // total spin on a unit cell
+	 S += S[i];                       // total spin on a unit cell
+         StagS += IntPow(-1,i/w2) * S[i]; // note: only one of three possible staggered magnetization formation.
       }
 
       Trans = I(0);
@@ -136,6 +142,17 @@ int main(int argc, char** argv)
            Trans = Trans(0) * Cell.swap_gate_no_sign(i+w2, i+w2+1);
        }
 
+       // to test existence of tripartite symmetry, add operators for the sublattice magnetization:
+       // NOTE: XC structure does NOT need a 3*W unit-cell for these operators. 
+       UnitCellMPO S_A, S_B, S_C;
+
+       for (int i = 0; i < w; i += 3)
+         {
+            S_A += S(0)[i];
+            S_B += S(0)[i+1];
+            S_C += S(0)[i+2];
+         }
+              
       // Construct the Hamiltonian for a single unit-cell,
       UnitCellMPO H1, H2, H_Jcell;
     
@@ -175,9 +192,13 @@ int main(int argc, char** argv)
       // Now we construct the InfiniteLattice,
       InfiniteLattice Lattice(Cell);
 
-      Lattice["H_J1"] = sum_unit(H1);
-      Lattice["H_J2"] = sum_unit(H2);
+      Lattice["H_J1"]    = sum_unit(H1);
+      Lattice["H_J2"]    = sum_unit(H2);
       Lattice["H_Jcell"] = sum_unit(H_Jcell);
+
+      Lattice["Sa"] = sum_unit(S_A);
+      Lattice["Sb"] = sum_unit(S_B);
+      Lattice["Sc"] = sum_unit(S_C);
 
       Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
          = "J1*H_J1 + J2*H_J2";

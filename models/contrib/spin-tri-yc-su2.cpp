@@ -145,7 +145,7 @@ int main(int argc, char** argv)
                    << "H_t      - kinetic term of quantum dimer model's Hamiltonian on the triangular lattice\n"
                    << "H_v      - potential term of quantum dimer model's Hamiltonian on the triangular lattice\n"
                    << "S        - total spin on a leg of the cylinder\n"
-                   << "StagS    - staggered magnetization over a unit-cell\n"
+                   << "StagS    - total staggered magnetization over a unit-cell\n"
                    << "Trans    - translation by one site (rotation by 2\u0071/w) in lattice short direction\n"
                    << "Ty       - momentum operator in lattice short direction\n"
                    << "Ref      - pure reflection in lattice short direction (may need applying T-operators to become" 
@@ -174,7 +174,7 @@ int main(int argc, char** argv)
       for (int i = 0; i < w; ++i)
       {
 	 S += S[i];                    // total spin on a leg of cylinder
-         StagS += IntPow(-1,i) * S[i]; // only one of three possible staggered magnetization formation.            
+         StagS += IntPow(-1,i) * S[i]; // note: only one of three possible staggered magnetization formation.            
       }
 
       Trans = I(0);
@@ -184,14 +184,14 @@ int main(int argc, char** argv)
            Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
        }
 
-      Ref = I(0);  // old way of representing an explicit R-operator.
+      Ref = I(0); // old way of representing an explicit R-operator.
       for (int i = 0; i < w/2; ++i)
        {
            //R *= 0.5*( 0.25*inner(S[i],S[w-i-1]) + 1 );
            Ref = Ref(0) * Cell.swap_gate_no_sign(i, w-i-1);
        }
           
-      // if we could have tripartite symmetry, add operators for the sublattice magnetization
+      // to test existence of tripartite symmetry, add operators for the sublattice magnetization:
       UnitCellMPO S_A, S_B, S_C;
 
       //if (w%3 == 0)
@@ -199,8 +199,8 @@ int main(int argc, char** argv)
 	 for (int i = 0; i < w; i += 3)
 	 {
 	    S_A += S(0)[i]   + S(1)[(i+2)%w] + S(2)[(i+1)%w];
-	    S_B += S(0)[i+1] + S(1)[(i+3)%w] + S(2)[(i+2)%w];
-	    S_C += S(0)[i+2] + S(1)[(i+4)%w] + S(2)[(i+3)%w];
+	    if ( (i+1)<w ) { S_B += S(0)[i+1] + S(1)[(i+3)%w] + S(2)[(i+2)%w]; }
+	    if ( (i+2)<w ) { S_C += S(0)[i+2] + S(1)[(i+4)%w] + S(2)[(i+3)%w]; }
 	 }
       //}
 
