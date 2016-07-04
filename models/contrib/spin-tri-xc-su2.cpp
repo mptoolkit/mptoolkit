@@ -92,7 +92,6 @@ int main(int argc, char** argv)
       
       OperatorDescriptions OpDescriptions;
       OpDescriptions.add_operators()
-         ("StagS",    "total staggered magnetization over a unit-cell")
 	 ("H_J1",     "nearest neighbor spin exchange")
 	 ("H_J2",     "next-nearest neighbor spin exchange")
 	 ("H_Jcell",  "zig-zag cylinder coupling")
@@ -100,6 +99,10 @@ int main(int argc, char** argv)
 	 ("TyPi",     "Translation by pi in Y direction (only if w is divisible by 4)")
 	 ("Ry"  ,     "Reflection about the X axis")
 	 ;
+
+      OpDescriptions.add_functions()
+         ("H",        "J1-J2 Heisenebrg Hamiltonian on a triangular lattice | inputs: J1 = cos(theta), J2 = sin(theta), theta = atan(alpha), alpha = 0.0")
+         ;
 
       if (vm.count("help") || !vm.count("out"))
       {
@@ -149,8 +152,8 @@ int main(int argc, char** argv)
        for (int i = 0; i < w; i += 3)
          {
             S_A += S(0)[i];
-            S_B += S(0)[i+1];
-            S_C += S(0)[i+2];
+            if ( (i+1)<w ) S_B += S(0)[i+1];
+            if ( (i+2)<w ) S_C += S(0)[i+2];
          }
               
       // Construct the Hamiltonian for a single unit-cell,
