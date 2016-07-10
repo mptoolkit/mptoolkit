@@ -93,7 +93,7 @@ int main(int argc, char** argv)
 	    Op.MPO() = fine_grain(S, Op.MPO().LocalBasis1List(), Op.MPO().LocalBasis2List());
 	 }
 	 if (Optimize)
-	    optimize(Op);
+	    qr_optimize(Op);
 	 print_structure(Op.MPO(), std::cout);
 	 if (Verbose > 0)
 	 {
@@ -128,7 +128,7 @@ int main(int argc, char** argv)
 	 InfiniteLattice Lattice;
 	 std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(TriangularOperators[i]);     
 	 if (Optimize)
-	    optimize(Op);
+	    qr_optimize(Op);
 	 print_structure(Op, std::cout, UnityEpsilon);
 	 if (Verbose > 0)
 	 {
