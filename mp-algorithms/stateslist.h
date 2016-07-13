@@ -40,7 +40,7 @@
   v : calculate the variance at the end of this sweep
 */
 
-#if !defined(MPTOOLKIT_MP_ALGORITHMS_TATESLIST_H)
+#if !defined(MPTOOLKIT_MP_ALGORITHMS_STATESLIST_H)
 #define MPTOOLKIT_MP_ALGORITHMS_STATESLIST_H
 
 #include "common/trace.h"
