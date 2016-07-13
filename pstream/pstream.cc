@@ -123,7 +123,7 @@ struct WriteHelper<Format, Iter, true, true>
    typedef typename std::iterator_traits<Iter>::value_type value_type;
    static void write_n(opstreambuf<Format>& Buf, Iter x, size_t N)
    {
-      for ( ; --N; N > 0)
+      for ( ; N > 0; --N)
       {
          Buf.put_n(reinterpret_cast<byte_type const*>(&*x), sizeof(value_type));
 	 ++x;
@@ -149,7 +149,7 @@ struct WriteHelper<Format, Iter, true, false>
    typedef typename std::iterator_traits<Iter>::value_type value_type;
    static void write_n(opstreambuf<Format>& Buf, Iter x, size_t N)
    {
-      for ( ; --N; N > 0)
+      for (; N > 0; N--)
       {
 	 Buf.template put_n_bswap<sizeof(value_type)>(reinterpret_cast<byte_type const*>(x), 1);
 	 ++x;

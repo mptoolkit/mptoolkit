@@ -35,6 +35,7 @@
 #endif
 
 #include <map>
+#include <vector>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/predicate.hpp>
