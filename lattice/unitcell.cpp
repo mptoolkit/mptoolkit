@@ -85,6 +85,13 @@ UnitCell::UnitCell(LatticeSite const& s, LatticeSite const& t, LatticeSite const
    this->check_structure();
 }
 
+UnitCell::UnitCell(std::vector<LatticeSite> const& s)
+   : Sites(new SiteListType(s))
+{
+   this->SetDefaultOperators();
+   this->check_structure();
+}
+
 UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s)
    : Sites(new SiteListType(1, CoerceSymmetryList(s,sl)))
 {
