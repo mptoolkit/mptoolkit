@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// quantumnumbers/all_symmetries.h
+// quantumnumbers/z2.cpp
 //
 // Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
@@ -17,19 +17,11 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-/*
-  all_symmetries.h
-
-  Helper to include all known symmetries.
-*/
-
-#if !defined(ALL_SYMMETRIES_H_HY643787FR8Y4378YO)
-#define ALL_SYMMETRIES_H_HY643787FR8Y4378YO
-
-#include "u1.h"
-#include "su2.h"
-#include "null-quantumnumber.h"
-#include "z2.h"
 #include "zn.h"
+#include "symmetrybase.h"
 
-#endif
+namespace QuantumNumbers
+{
+
+
+} // namespace QuantumNumbers
