@@ -79,14 +79,22 @@ BasisList::find_next(QuantumNumber const& q, int n) const
 std::ostream& operator<<(std::ostream& Out, BasisList const& B)
 {
    Out << "Basis has symmetry " << B.GetSymmetryList()
-       << ", size = " << B.size() << '\n';
+       << ", size = " << B.size() << ", degree = " << B.total_degree() << '\n';
    Out << "   N  QuantumNumber\n";
    int N = 0;
-   for (BasisList::const_iterator I = B.begin(); I != B.end(); ++I)
+   std::map<QuantumNumbers::QuantumNumber, int> Dim;
+   for (auto I = B.begin(); I != B.end(); ++I)
    {
       Out << std::setw(4) << N << "  "
           << std::setw(13) << *I << '\n';
+      ++Dim[*I];
       ++N;
+   }
+   Out << "\nDimension of each quantum number:\n";
+   Out << "QuantumNumber    Dimension\n";
+   for (auto x : Dim)
+   {
+      Out << std::left << std::setw(16) << x.first << ' ' << x.second << '\n';
    }
    return Out;
 }

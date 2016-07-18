@@ -101,9 +101,6 @@ operator<<(std::ostream& out, TriangularMPO const& op)
 
 void optimize(TriangularMPO& Op)
 {
-   if (Op.size() < 2)
-      return;
-
    bool Reduced = true; // flag to indicate that we reduced a dimension
    // loop until we do a complete sweep with no reduction in dimensions
    while (Reduced)
@@ -378,11 +375,17 @@ void balance(TriangularMPO& Op)
    // 
 }
 
-void print_structure(TriangularMPO const& Op, std::ostream& out, double UnityEpsilon)
+void print_structure(TriangularMPO const& Op, std::ostream& out, double UnityEpsilon, int Verbose)
 {
    out << "TriangularMPO has " << Op.size() << " sites\n";
    for (int i = 0; i < Op.size(); ++i)
    {
+      if (Verbose > 0)
+      {
+         out << "Basis at bond " << i << ":\n";
+         out << Op[i].Basis1() << '\n';
+      }
+
       out << "Site " << i << " dimension " << Op[i].size1() << " x " << Op[i].size2() << '\n';
       print_structure(Op[i], out, UnityEpsilon);
    }
