@@ -230,7 +230,6 @@ int main(int argc, char** argv)
                   = "exp(-lambda)*sum_string_inner( S(0)[i], exp(-lambda)*I(0), S(0)[j] )";
       std::cout << ". " << std::flush;
 
-<<<<<<< HEAD
       /* Lattice.func("LongRangeIsing_NoInterCell_YC4")(arg("alpha00") = 1.0, arg("lambda00") = 0.5, arg("alpha01") = 1.0, arg("lambda01") = 0.5,  arg("alpha02") = 1.0, arg("lambda02") = 0.5)
                   = "alpha00*HS{lambda=lambda00,i=0,j=0} + alpha00*HS{lambda=lambda00,i=1,j=1} + alpha00*HS{lambda=lambda00,i=2,j=2} + alpha00*HS{lambda=lambda00,i=3,j=3} + alpha01*HS{lambda=lambda01,i=0,j=1} + alpha01*HS{lambda=lambda01,i=1,j=2} + alpha01*HS{lambda=lambda01,i=2,j=3} + alpha01*HS{lambda=lambda01,i=3,j=1} + alpha02*HS{lambda=lambda02,i=0,j=2} + alpha02*HS{lambda=lambda02,i=1,j=3}"; */
 
