@@ -153,9 +153,10 @@ int main(int argc, char** argv)
                    << "SwapWrap - changing the wraaping vector of lattice between 'old' and 'new' way of numbering"
 		   //<< "*If the lattice could be potentially tripartite (width is a multiple of 3), then we\n"
 		   //<< "define sublattice spin operators on a \"width*3\" unit cells as,\n"
-		   << "S_A      - tripartite sublattice spin, including site S(0)[0]\n"
-		   << "S_B      - tripartite sublattice spin, including site S(0)[1]\n"
-		   << "S_C      - tripartite sublattice spin, including site S(0)[2]\n\n"
+		   << "Sa       - tripartite sublattice spin, including site S(0)[0]\n"
+		   << "Sb       - tripartite sublattice spin, including site S(0)[1]\n"
+		   << "Sc       - tripartite sublattice spin, including site S(0)[2]\n"
+                   << "Stag_p60 - staggered magnetization order parameter with FM stripes in +60^degree direction\n\n"
                    << "Functions:\n"
                    << "H2(J2 = NNN coupling strength, J_chi = chiral term coupling strength)\n\n"                         
 	    ;
@@ -174,7 +175,7 @@ int main(int argc, char** argv)
       for (int i = 0; i < w; ++i)
       {
 	 S += S[i];                    // total spin on a leg of cylinder
-         StagS += IntPow(-1,i) * S[i]; // note: only one of three possible staggered magnetization formation.            
+         StagS += IntPow(-1,i) * S[i]; // staggered magnetization in Y-direction (note: only one of the three possible formations).
       }
 
       Trans = I(0);
@@ -193,6 +194,7 @@ int main(int argc, char** argv)
           
       // to test existence of tripartite symmetry, add operators for the sublattice magnetization:
       UnitCellMPO S_A, S_B, S_C;
+      UnitCellMPO S_stag_p60;
 
       //if (w%3 == 0)
       //{
@@ -201,6 +203,7 @@ int main(int argc, char** argv)
 	    S_A += S(0)[i]   + S(1)[(i+2)%w] + S(2)[(i+1)%w];
 	    if ( (i+1)<w ) { S_B += S(0)[i+1] + S(1)[(i+3)%w] + S(2)[(i+2)%w]; }
 	    if ( (i+2)<w ) { S_C += S(0)[i+2] + S(1)[(i+4)%w] + S(2)[(i+3)%w]; }
+            S_stag_p60 += IntPow(-1,i)*S(0)[i] + IntPow(-1,i+1)*S(1)[i];    // staggered magnetization order parameter with FM stripes in +60^degree direction.
 	 }
       //}
 
@@ -293,6 +296,7 @@ int main(int argc, char** argv)
 	 Lattice["Sa"] = sum_unit(S_A, w*3);
 	 Lattice["Sb"] = sum_unit(S_B, w*3);
 	 Lattice["Sc"] = sum_unit(S_C, w*3);
+         Lattice["Stag_p60"] = sum_unit(S_stag_p60, w*2);
       //}
 
       // Momentum operators in Y-direction

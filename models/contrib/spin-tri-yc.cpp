@@ -105,12 +105,19 @@ int main(int argc, char** argv)
          return 1;
       }
 
+      const double PI = 4.0*std::atan(1.0);
+      //const std::complex<double> jj(0.0,theta*PI);
+      int oo = 0;
+      int oo_max = 5*w+(w*w/2)+11;
+
       LatticeSite Site = SpinSite(Spin);
       UnitCell Cell = repeat(Site, w);
       UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz");
       UnitCellOperator I(Cell, "I"); // identity operator
       UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
       UnitCellOperator RyUnit(Cell, "RyUnit");
+
+      std::cout << "Building all Hamiltonian operators:\n";
 
       // Add some operators on the unit-cell
       
@@ -120,23 +127,34 @@ int main(int argc, char** argv)
          Sy += Sy[i];                                         // total spin (y-component) on a leg of cylinder
          Sz += Sz[i];                                         // total spin (z-component) on a leg of cylinder
 
+         oo+=3;
+         std::printf("\33[2K\r");
+         std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 3*w
       }
 
       Trans = I(0);
       for (int i = 0; i < w-1; ++i)
        {
            Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
+
+           oo++;
+           std::printf("\33[2K\r");
+           std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 4*w-1
        }
 
       Ref = I(0);
       for (int i = 0; i < w/2; ++i)
        {
            Ref = Ref(0) * Cell.swap_gate_no_sign(i, w-i-1);
+        
+           oo++;
+           std::printf("\33[2K\r");
+           std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 4*w+(w/2)-1
        }
           
       // if we could have tripartite symmetry, add operators for the sublattice magnetization
       //UnitCellMPO S_A, S_B, S_C;
-
+      //not yet implemented ...
 
       UnitCellMPO Ry = I(0);
       for (int c = 0; c < w; ++c)
@@ -166,17 +184,45 @@ int main(int argc, char** argv)
 
       RyUnit = Ry;
 
+      oo++;
+      std::printf("\33[2K\r");
+      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 4*w+(w/2)
+
 
       // Now we construct the InfiniteLattice,
       InfiniteLattice Lattice(Cell);
 
       // Construct the Hamiltonian for a single unit-cell,
-      //UnitCellMPO H1, H2, Ht, Hv;
+      UnitCellMPO Hx_f, H_intra;
+
+      for (int i = 0; i < w; ++i)
+      {
+
+        // TIM - x-field terms
+        Hx_f += Sx(0)[i];
+
+        oo++;
+        std::printf("\33[2K\r");
+        std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w/2)
+
+        for (int j = i+1; j < w; ++j)
+        {
+          // Long-range Ising - inter-cell interations
+          H_intra += std::pow( ( std::sin( PI/w ) / std::sin( (j-i)*PI/w ) ) , 2) * Sz(0)[i]*Sz(0)[j];
+
+          oo++;
+          std::printf("\33[2K\r");
+          std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)  
+        }
+      }
 
       //Lattice["H_J1"] = sum_unit(H1);
+      Lattice["Hx_field"] = sum_unit(Hx_f);
+      Lattice["H_LongRangeIsing_IntraCell"] = sum_unit(H_intra);
 
-      //Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0) 
-      // = "J1*H_J1 + J2*H_J2";
+      oo++;
+      std::printf("\33[2K\r");
+      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+2  
 
 
       UnitCellMPO RyOld = I(0);
@@ -207,12 +253,18 @@ int main(int argc, char** argv)
 
       Lattice["RyOld"] = prod_unit_left_to_right(RyOld.MPO(), w*w);
 
+      oo++;
+      std::printf("\33[2K\r");
+      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+3  
 
-
-      // Momentum operator in Y direction
+      // Momentum operators in Y direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
-
       Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w*w);
+
+      oo+=2;
+      std::printf("\33[2K\r");
+      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+5
+
 
       // for even size unit cell, add rotation by pi
       if (w%2 == 0)
@@ -225,8 +277,98 @@ int main(int argc, char** argv)
 	 Lattice["TyPi"] = prod_unit_left_to_right(TyPi.MPO(), w);
       }
 
+      oo++;
+      std::printf("\33[2K\r");
+      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+6  
 
+      //Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0) 
+      // = "J1*H_J1 + J2*H_J2";
+      
+      // a basic function for Haldane-Shastry model with Sz*Sz interations
+      Lattice.func("HS")(arg("lambda") = 0.5, arg("i") = "0", arg("j") = "0")
+                  = "exp(-lambda)*sum_string_inner( Sz(0)[i], exp(-lambda)*I(0), Sz(0)[j] )";
 
+      oo++;
+      std::printf("\33[2K\r");
+      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+7
+
+      Lattice.func("LongRangeIsing_InterCell_YC4_part1")(arg("alpha00")=0.0, arg("lambda00")=0.0, arg("alpha01")=0.0, arg("lambda01")=0.0)
+                  = "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[0], exp(-lambda00)*I(0), Sz(0)[0] ) ) + "
+                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[1], exp(-lambda00)*I(0), Sz(0)[1] ) ) + "
+                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[2], exp(-lambda00)*I(0), Sz(0)[2] ) ) + "
+                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[3], exp(-lambda00)*I(0), Sz(0)[3] ) ) + "
+                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[0], exp(-lambda01)*I(0), Sz(0)[1] ) ) + "
+                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[1], exp(-lambda01)*I(0), Sz(0)[2] ) ) + "
+                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[2], exp(-lambda01)*I(0), Sz(0)[3] ) ) + "
+                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[3], exp(-lambda01)*I(0), Sz(0)[0] ) )   ";
+
+      oo++;
+      std::printf("\33[2K\r");
+      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+8
+
+      Lattice.func("LongRangeIsing_InterCell_YC4_part2")(arg("alpha02")=0.0, arg("lambda02")=0.0, arg("alpha03")=0.0, arg("lambda03")=0.0)
+                  = "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[0], exp(-lambda02)*I(0), Sz(0)[2] ) ) + "
+                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[1], exp(-lambda02)*I(0), Sz(0)[3] ) ) + "
+                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[2], exp(-lambda02)*I(0), Sz(0)[0] ) ) + "
+                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[3], exp(-lambda02)*I(0), Sz(0)[1] ) ) + "
+                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[0], exp(-lambda03)*I(0), Sz(0)[3] ) ) + "
+                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[1], exp(-lambda03)*I(0), Sz(0)[0] ) ) + "
+                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[2], exp(-lambda03)*I(0), Sz(0)[1] ) ) + "
+                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[3], exp(-lambda03)*I(0), Sz(0)[2] ) )   ";
+
+      oo++;
+      std::printf("\33[2K\r");
+      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+9
+
+       Lattice.func("LongRangeIsing_InterCell_YC6_part1")(arg("alpha00")=0.0, arg("lambda00")=0.0, arg("alpha01")=0.0, arg("lambda01")=0.0, arg("alpha02")=0.0, arg("lambda02")=0.0)
+                  = "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[0], exp(-lambda00)*I(0), Sz(0)[0] ) ) + "
+                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[1], exp(-lambda00)*I(0), Sz(0)[1] ) ) + "
+                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[2], exp(-lambda00)*I(0), Sz(0)[2] ) ) + "
+                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[3], exp(-lambda00)*I(0), Sz(0)[3] ) ) + "
+                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[4], exp(-lambda00)*I(0), Sz(0)[4] ) ) + "
+                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[5], exp(-lambda00)*I(0), Sz(0)[5] ) ) + "
+                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[0], exp(-lambda01)*I(0), Sz(0)[1] ) ) + "
+                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[1], exp(-lambda01)*I(0), Sz(0)[2] ) ) + "
+                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[2], exp(-lambda01)*I(0), Sz(0)[3] ) ) + "
+                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[3], exp(-lambda01)*I(0), Sz(0)[4] ) ) + "
+                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[4], exp(-lambda01)*I(0), Sz(0)[5] ) ) + "
+                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[5], exp(-lambda01)*I(0), Sz(0)[0] ) ) + "
+                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[0], exp(-lambda02)*I(0), Sz(0)[2] ) ) + "
+                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[1], exp(-lambda02)*I(0), Sz(0)[3] ) ) + "
+                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[2], exp(-lambda02)*I(0), Sz(0)[4] ) ) + "
+                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[3], exp(-lambda02)*I(0), Sz(0)[5] ) ) + "
+                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[4], exp(-lambda02)*I(0), Sz(0)[0] ) ) + "
+                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[5], exp(-lambda02)*I(0), Sz(0)[1] ) )   ";
+
+      oo++;
+      std::printf("\33[2K\r");
+      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+10
+
+      Lattice.func("LongRangeIsing_InterCell_YC6_part2")(arg("alpha03")=0.0, arg("lambda03")=0.0, arg("alpha04")=0.0, arg("lambda04")=0.0, arg("alpha05")=0.0, arg("lambda05")=0.0)
+                  = "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[0], exp(-lambda03)*I(0), Sz(0)[3] ) ) +"
+                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[1], exp(-lambda03)*I(0), Sz(0)[4] ) ) +"
+                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[2], exp(-lambda03)*I(0), Sz(0)[5] ) ) +"
+                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[3], exp(-lambda03)*I(0), Sz(0)[0] ) ) +"
+                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[4], exp(-lambda03)*I(0), Sz(0)[1] ) ) +"
+                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[5], exp(-lambda03)*I(0), Sz(0)[2] ) ) +"
+                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[0], exp(-lambda04)*I(0), Sz(0)[4] ) ) +"
+                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[1], exp(-lambda04)*I(0), Sz(0)[5] ) ) +"
+                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[2], exp(-lambda04)*I(0), Sz(0)[0] ) ) +"
+                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[3], exp(-lambda04)*I(0), Sz(0)[1] ) ) +"
+                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[4], exp(-lambda04)*I(0), Sz(0)[2] ) ) +"
+                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[5], exp(-lambda04)*I(0), Sz(0)[3] ) ) +"
+                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[0], exp(-lambda05)*I(0), Sz(0)[5] ) ) +"
+                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[1], exp(-lambda05)*I(0), Sz(0)[0] ) ) +"
+                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[2], exp(-lambda05)*I(0), Sz(0)[1] ) ) +"
+                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[3], exp(-lambda05)*I(0), Sz(0)[2] ) ) +"
+                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[4], exp(-lambda05)*I(0), Sz(0)[3] ) ) +"
+                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[5], exp(-lambda05)*I(0), Sz(0)[4] ) )  ";
+
+      oo++;
+      std::printf("\33[2K\r");
+      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+11
+
+      std::cout << "--> finished.\n";
 
       // save the lattice
       pheap::ExportObject(FileName, Lattice);
