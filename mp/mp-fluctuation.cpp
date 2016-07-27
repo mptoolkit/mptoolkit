@@ -290,6 +290,7 @@ int main(int argc, char** argv)
       RealDiagonalOperator D;
       std::tie(Psi1, D) = get_left_canonical(InfPsi);
       RealDiagonalOperator RhoDiag = D*D;
+      //RhoDiag = delta_shift(RhoDiag, adjoint(InfPsi.qshift()));
       MatrixOperator Rho = D;
       Rho = scalar_prod(Rho, herm(Rho));
       MatrixOperator Identity = MatrixOperator::make_identity(Psi1.Basis1());
@@ -350,7 +351,7 @@ int main(int argc, char** argv)
 	 Op = repeat(Op, Psi1.size() / Op.size());
 
 	 std::vector<KMatrixPolyType> E;
-	 SolveMPO_Left(E, Psi1, InfPsi.qshift(), Op, Identity, Rho, true, Tol, UnityEpsilon, Verbose);
+	 SolveMPO_Left(E, Psi1, InfPsi.qshift(), Op, Identity, delta_shift(Rho, InfPsi.qshift()), true, Tol, UnityEpsilon, Verbose);
 	 
 	 Polynomial<MatrixOperator> v = E.back()[1.0];
 	 
@@ -359,7 +360,7 @@ int main(int argc, char** argv)
 	    if (v.has_term(d) && (ShowPolyDegree.empty() || (ShowPolyDegree.find(d) != ShowPolyDegree.end())))
 	    {
 	       std::cout << "#degree " << d << '\n';
-	       ShowValuesBySector(v[d], RhoDiag, Quiet, ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
+	       ShowValuesBySector(v[d], delta_shift(RhoDiag, InfPsi.qshift()), Quiet, ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
 	    }
 	 }
       }

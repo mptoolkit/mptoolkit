@@ -118,8 +118,6 @@ repeat(FiniteMPO const& Op, int Count)
    return Result;
 }
 
-#if 1
-
 void optimize(FiniteMPO& Op)
 {
    if (Op.size() < 2)
@@ -172,9 +170,7 @@ void optimize(FiniteMPO& Op)
 #endif
 }
 
-#else
-
-void optimize(FiniteMPO& Op)
+void qr_optimize(FiniteMPO& Op)
 {
    if (Op.size() < 2)
       return;
@@ -185,14 +181,16 @@ void optimize(FiniteMPO& Op)
 #endif
 #endif
 
-   double const Eps = 1E-13;
+   double const Eps = 1E-8;
 
-   TRACE(Op);
+   //   TRACE(Op);
 
    bool Reduced = true; // flag to indicate that we reduced a dimension
    // loop until we do a complete sweep with no reduction in dimensions
    bool First = true;
    bool Second = true;
+
+   First = false;
    while (Reduced || Second)
    {
       Reduced = false;
@@ -203,7 +201,7 @@ void optimize(FiniteMPO& Op)
 	 TRACE("XXXXX");
       }
       SimpleOperator T2 = TruncateBasis2MkII(Op2, First ? 0.0 : Eps);
-      TRACE(norm_frob(Op.front() - Op2*T2));
+      //TRACE(norm_frob(Op.front() - Op2*T2));
 
       // Working left to right, optimize the Basis2
       SimpleOperator T = TruncateBasis2MkII(Op.front(), First ? 0.0 : Eps);
@@ -235,7 +233,10 @@ void optimize(FiniteMPO& Op)
       First = false;
    }
 
-   TRACE(Op);
+   SimpleOperator Overlaps = local_inner_prod(herm(Op[Op.size()/2]), Op[Op.size()/2]);
+   TRACE(Overlaps);
+
+   //TRACE(Op);
 
 #if 0
 #if !defined(NDEBUG)
@@ -244,8 +245,6 @@ void optimize(FiniteMPO& Op)
 #endif
 #endif
 }
-
-#endif
 
 FiniteMPO&
 operator+=(FiniteMPO& x, FiniteMPO const& y)
@@ -820,3 +819,9 @@ ParseStringOperator(SiteListType const& SiteList, std::string const& Expr, int S
    
    return Result;
 }   
+
+double
+log_norm_frob_sq(FiniteMPO const& Op)
+{
+   return 0;
+}

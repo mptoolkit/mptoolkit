@@ -68,7 +68,7 @@ int main(int argc, char** argv)
          print_copyright(std::cerr);
          std::cerr << "usage: " << argv[0] << " [options]\n";
          std::cerr << desc << '\n';
-         std::cerr << "Operators:\n" << OpDescriptions;
+         std::cerr << OpDescriptions << '\n';
          return 1;
       }
 

@@ -148,7 +148,7 @@ int main(int argc, char** argv)
                    << "StagS    - total staggered magnetization over a unit-cell\n"
                    << "Trans    - translation by one site (rotation by 2\u0071/w) in lattice short direction\n"
                    << "Ty       - momentum operator in lattice short direction\n"
-                   << "Ref      - pure reflection in lattice short direction (may need applying T-operators to become" 
+                   << "Ref      - reflection in lattice short direction (may need applying T-operators to become" 
                    << "           general reflection)\n"
                    << "SwapWrap - changing the wraaping vector of lattice between 'old' and 'new' way of numbering"
 		   //<< "*If the lattice could be potentially tripartite (width is a multiple of 3), then we\n"
@@ -191,7 +191,7 @@ int main(int argc, char** argv)
            //R *= 0.5*( 0.25*inner(S[i],S[w-i-1]) + 1 );
            Ref = Ref(0) * Cell.swap_gate_no_sign(i, w-i-1);
        }
-          
+
       // to test existence of tripartite symmetry, add operators for the sublattice magnetization:
       UnitCellMPO S_A, S_B, S_C;
       UnitCellMPO S_stag_p60;
@@ -344,8 +344,8 @@ int main(int argc, char** argv)
       Lattice["RyOld"] = prod_unit_left_to_right(RyOld.MPO(), w*w);
 
       // SwapWrap. Change between wrapping vectors of 'old' and 'new' way of numbering of the lattice.
-      /* UnitCellMPO SwapWrap = I(0);
-       for (int c = 0; c < w; ++c)
+      UnitCellMPO SwapWrap = I(0);
+      for (int c = 0; c < w; ++c)
       {
          UnitCellMPO ThisWrap = I(0);
 
@@ -360,8 +360,9 @@ int main(int argc, char** argv)
 
          ThisWrap.translate(c*w);
          SwapWrap = SwapWrap * ThisWrap;          
-      } */         
-      Lattice["SwapWrap"] = prod_unit_left_to_right(UnitCellMPO(Ref(0)).MPO(), w);  
+      } 
+        
+      Lattice["SwapWrap"] = prod_unit_left_to_right(SwapWrap.MPO(), w*w);  
 
       // 'identity' operator in the spin-1/2 auxiliary basis
       Lattice["I_2"] = prod_unit_left_to_right(UnitCellMPO(I(0)).MPO(), w)

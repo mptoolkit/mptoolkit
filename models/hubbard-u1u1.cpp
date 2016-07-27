@@ -76,8 +76,8 @@ int main(int argc, char** argv)
 	 Cdown(Cell, "Cdown"), Pdouble(Cell, "Pdouble"),
 	 Hu(Cell, "Hu"), N(Cell, "N");
 
-      Lattice["H_tup"]   = sum_unit(dot(CHup(0), Cup(1)) - dot(Cup(0), CHup(1)));
-      Lattice["H_tdown"] = sum_unit(dot(CHdown(0), Cdown(1)) - dot(Cdown(0), CHdown(1)));
+      Lattice["H_tup"]   = -sum_unit(dot(CHup(0), Cup(1)) - dot(Cup(0), CHup(1)));
+      Lattice["H_tdown"] = -sum_unit(dot(CHdown(0), Cdown(1)) - dot(Cdown(0), CHdown(1)));
       Lattice["H_t"]     = Lattice["H_tup"] + Lattice["H_tdown"];
       Lattice["H_U"]     = sum_unit(Pdouble(0));
       Lattice["H_Us"]    = sum_unit(Hu(0));

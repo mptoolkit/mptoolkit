@@ -38,6 +38,8 @@
 #include "lattice/unitcell_mpo.h"
 #include "lattice/infinitelattice.h"
 
+extern InfiniteLattice const* ILattice;
+
 typedef boost::variant<UnitCellMPO, std::complex<double> >
 UnitCellElementType;
 
