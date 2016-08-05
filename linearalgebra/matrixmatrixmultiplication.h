@@ -63,6 +63,11 @@ class MatrixProductProxy
 
       typedef NestedMult functor_type;
 
+      typedef typename std::result_of<functor_type(typename matrix1_type::value_type,
+						   typename matrix2_type::value_type)>::type reference;
+
+      typedef typename std::decay<reference>::type value_type;
+
       size_type size1() const { return Size1<matrix1_type>()(x_); }
       size_type size2() const { return Size2<matrix2_type>()(y_); }
 

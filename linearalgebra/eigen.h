@@ -97,6 +97,27 @@ LeastSquares(M const& m, V const& v,
             typename boost::enable_if<is_vector<V> >::type* = 0);
 
 //
+// LeastSquaresRegularized
+//
+// Least squares fit to a system of equations, with Tikhonov regularization.
+// Returns the residual norm and the solution vector.
+//
+// Tikhonov regularization finds the solution x that minimizes ||Ax-b|| + alpha||x||
+// where ||.|| is the vector 2-norm, and alpha is positive.  
+// This is implemented via SVD of A.
+// Let A = UDV^\dagger, with D diagonal with entries d_i.
+// Then the regularized solution is x = V X U^\dagger b,
+// where X is diagonal with elements x_i = d_i / (d_i^2 + alpha).
+//
+// The residual is ||Ax-b|| + alpha||x|| = ||U DX U^\dagger x - b||
+// The alpha||x|| term isn't included in the returned residual.
+//
+
+std::pair<double, Vector<std::complex<double>>>
+LeastSquaresRegularized(Matrix<std::complex<double>> const& A, Vector<std::complex<double>> const& b,
+			double alpha = 1E-15);
+
+//
 // SingularValueDecomposition
 //
 // Singular value decomposition of a real matrix.  For input matrix A,

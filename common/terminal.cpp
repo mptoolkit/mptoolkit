@@ -119,7 +119,7 @@ bool is_cout_terminal()
 
 std::string color_code(color c)
 {
-   return "\e[" + std::to_string(int(c)) + 'm';
+   return "\033[" + std::to_string(int(c)) + 'm';
 }
 
 std::string to_string(color c)
