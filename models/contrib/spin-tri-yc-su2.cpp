@@ -158,7 +158,7 @@ int main(int argc, char** argv)
 		   << "Sc       - tripartite sublattice spin, including site S(0)[2]\n"
                    << "Stag_p60 - staggered magnetization order parameter with FM stripes in +60^degree direction\n\n"
                    << "Functions:\n"
-                   << "H2(J2 = NNN coupling strength, J_chi = chiral term coupling strength)\n\n"                         
+                   << "THM2{J2 = NNN coupling strength, J_chi = chiral term coupling strength}\n\n"                         
 	    ;
          return 1;
       }
@@ -284,10 +284,10 @@ int main(int argc, char** argv)
       Lattice["H_v"]   = sum_unit(Hv);
       Lattice["H_chi"] = sum_unit(Hchi);
 
-      Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
-             = "J1*H_J1 + J2*H_J2"; // old lattice function 
+      Lattice.func("H_SinScaled")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
+             = "J1*H_J1 + J2*H_J2"; // an old lattice function, used in few projects in 2014-15. 
 
-      Lattice.func("H2")(arg("J2") = 0.0, arg("J_chi") = 0.0)
+      Lattice.func("THM2")(arg("J2") = 0.0, arg("J_chi") = 0.0)
               = "H_J1 + J2*H_J2 + J_chi*H_chi";
 
       // Add the tripartite sublattice magnetization operators

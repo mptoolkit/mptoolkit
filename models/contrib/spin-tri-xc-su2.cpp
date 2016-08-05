@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 	 ;
 
       OpDescriptions.add_functions()
-         ("H",        "J1-J2 Heisenebrg Hamiltonian on a triangular lattice | inputs: J1 = cos(theta), J2 = sin(theta), theta = atan(alpha), alpha = 0.0")
+         ("THM",        "J1-J2 Heisenebrg Hamiltonian on a triangular lattice | inputs: J1 = cos(theta), J2 = sin(theta), theta = atan(alpha), alpha = 0.0")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -206,8 +206,11 @@ int main(int argc, char** argv)
       Lattice["Sc"] = sum_unit(S_C);
       Lattice["Stag_n60"] = sum_unit(S_stag_n60, w*2);
 
-      Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
-         = "J1*H_J1 + J2*H_J2";
+      Lattice.func("THM")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
+         = "J1*H_J1 + J2*H_J2"; // an old lattice function, used in few projects in 2014-15.
+
+      Lattice.func("THM2")(arg("J2") = 0.0)
+              = "H_J1 + J2*H_J2";
 
       // Momentum operator in Y direction
       //Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
