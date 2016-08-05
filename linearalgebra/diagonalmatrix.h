@@ -151,7 +151,7 @@ struct Iterate<DiagonalMatrix<T>&>
    typedef DiagonalMatrix<T>& argument_type;
    result_type operator()(argument_type x) const
    {
-      return result_type(imiter(iviter(iterate(x.diagonal()))));
+      return result_type(imiter(iterate(x.diagonal())));
    }
 };
 

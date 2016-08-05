@@ -23,6 +23,7 @@
 //
 
 #include "eigen.h"
+#include "diagonalmatrix.h"
 #include "common/lapackf.h"
 #include "common/stackallocator.h"
 #include <algorithm>
@@ -634,5 +635,54 @@ void LQ_Factorize(int Size1, int Size2, std::complex<double>* A, int ldA, std::c
 }
 
 } // namespace Private
+
+Vector<std::complex<double>>
+operator*(Matrix<std::complex<double>> const& M, Vector<std::complex<double>> const& v)
+{
+   Vector<std::complex<double>> Result(size1(M));
+   for (unsigned i = 0; i < size1(M); ++i)
+   {
+      std::complex<double> x = 0.0;
+      for (unsigned j = 0; j < size2(M); ++j)
+      {
+	 x += M(i,j) * v[j];
+      }
+      Result[i] = x;
+   }
+   return Result;
+}
+
+Vector<std::complex<double>>
+operator*(LinearAlgebra::MatrixTransposeProxy<LinearAlgebra::MatrixTransformProxy<const LinearAlgebra::Matrix<std::complex<double>, LinearAlgebra::RowMajor>&, LinearAlgebra::Conj<std::complex<double>>>> const& MM,
+Vector<std::complex<double>> const& v)
+{
+   LinearAlgebra::Matrix<std::complex<double>> const& M = MM.base().base();
+   Vector<std::complex<double>> Result(size2(M));
+   for (unsigned i = 0; i < size2(M); ++i)
+   {
+      std::complex<double> x = 0.0;
+      for (unsigned j = 0; j < size1(M); ++j)
+      {
+	 x += conj(M(j,i)) * v[j];
+      }
+      Result[i] = x;
+   }
+   return Result;
+}
+	  
+
+
+std::pair<double, Vector<std::complex<double>>>
+LeastSquaresRegularized(Matrix<std::complex<double>> const& A, Vector<std::complex<double>> const& b,
+			double alpha)
+{
+   Matrix<std::complex<double>> U, Vh;
+   DiagonalMatrix<double> D;
+   SingularValueDecompositionFullLeft(A, U, D, Vh);
+   DiagonalMatrix<double> X = transform(D, [alpha](double x){ return x / (x*x + alpha);} );
+   Vector<std::complex<double>> Result = herm(Vh) * (X * (herm(U) * b));
+   double Residual = norm_2(U * ((D*X) * (herm(U) * Result)) - b);
+   return std::make_pair(Residual, Result);
+}
 
 } // namespace LinearAlgebra

@@ -206,7 +206,10 @@ class MatrixDummyOuterIterator
 
       typedef Iter iterator;
 
-      typedef void reference;
+      typedef typename Iter::reference reference;
+
+      typedef typename Iter::value_type value_type;
+      typedef typename Iter::category category;
 
       MatrixDummyOuterIterator() {}
 

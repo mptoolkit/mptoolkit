@@ -633,7 +633,20 @@ local_inner_tensor_prod(HermitianProxy<OperatorComponent> const& A, OperatorComp
    Result.debug_check_structure();
    return Result;
 }
-   
+
+RealSimpleOperator
+local_norm_frob_sq(OperatorComponent const& A)
+{
+   RealSimpleOperator Result(A.Basis1(), A.Basis2());
+   for (OperatorComponent::const_iterator i = iterate(A); i; ++i)
+   {
+      for (OperatorComponent::const_inner_iterator j = iterate(i); j; ++j)
+      {
+	 Result(i,j) = norm_frob_sq(*j);
+      }
+   }
+   return Result;
+}
 
 OperatorComponent
 local_adjoint(OperatorComponent const& A)
@@ -1321,6 +1334,176 @@ SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
 
    A = ANew;
    return Trunc;
+}
+
+// compress the bond dimension of basis 2 using the stabilized 
+// 'generalized deparallelization' algorithm
+
+SimpleOperator CompressBasis2_LinDep(OperatorComponent& A)
+{
+   // if the operator is trivially zero, then return early
+   if (A.Basis2().size() == 0)
+   {
+      return SimpleOperator(A.Basis2(), A.Basis2(), QuantumNumber(A.GetSymmetryList()));
+   }
+   else if (A.Basis1().size() == 0)
+   {
+      SimpleOperator Result(A.Basis1(), A.Basis2(), QuantumNumber(A.GetSymmetryList()));
+      A = OperatorComponent(A.LocalBasis1(), A.LocalBasis2(), A.Basis1(), A.Basis1());
+      return Result;
+   }
+
+   // Get the squared norm of each component of the operator
+   RealSimpleOperator const LocalNorms = local_norm_frob_sq(A);
+
+   // The transform matrix.  Trans[c] is the transform matrix for column c.
+   // If Trans[c] is empty, then the corresponding column is linearly dependent and will be removed.
+   // Effecively, Trans[i][j] is the entry (i,j) of the transform matrix of A = A' * Trans
+   std::vector<LinearAlgebra::MapVector<std::complex<double>>> Trans(A.Basis2().size());
+
+   for (int i = 0; i < int(A.Basis2().size()); ++i)
+   {
+      // Is the column empty?
+      bool Empty = true;
+      for (int r = 0; r < int(A.Basis1().size()); ++r)
+      {
+	 if (LocalNorms(r,i) != 0.0)
+	 {
+	    Empty = false;
+	    break;
+	 }
+      }
+      if (Empty)
+      {
+	 // We don't need to do anything here, since Trans[i] is empty that signals that the
+	 // column is deleted.
+         continue;
+      }
+
+      bool Dependent = false;  // is vector i linearly dependent on some other set?
+      // assemble the list of candidate columns that could give a linear dependence
+      std::vector<int> Candidates;
+      int j = 0;
+      for (int j = 0; j < i; ++j)
+      {
+	 // to be a candidate, every row of column j that is non-zero
+	 // must also be non-zero in column i.  It must also have the same quantum number.
+	 if (Trans[j].is_zero())
+	    continue;
+
+	 if (A.Basis2()[j] != A.Basis2()[i])
+	    continue;
+
+	 bool Candidate = true;
+	 for (int r = 0; i < int(A.Basis1().size()); ++r)
+	 {
+	    if (LocalNorms(r,j) > 0 && LocalNorms(r,i) == 0)
+	    {
+	       Candidate = false;
+	       break;
+	    }
+	 }
+	 if (Candidate)
+	    Candidates.push_back(j);
+      }
+
+      // Do we have a possible linear dependency?
+      if (!Candidates.empty())
+      {
+	 // Form the matrix of overlaps
+	 // Need to linearize the local operators into vectors, effectively 'reshaping' the matrix
+	 std::vector<int> UsedRows;
+	 std::vector<int> OffsetOfRow;
+	 int TotalRows = 0;
+	 for (int r = 0; r < int(A.Basis1().size()); ++r)
+	 {
+	    if (LocalNorms(r,i) != 0.0)
+	    {
+	       UsedRows.push_back(r);
+	       OffsetOfRow.push_back(TotalRows);
+	       int Rows = linear_dimension(A(r,i));
+	       TotalRows += Rows;
+	    }
+	 }
+	 OffsetOfRow.push_back(TotalRows);
+
+	 LinearAlgebra::Matrix<std::complex<double>> X(TotalRows, Candidates.size(), 0.0);
+	 LinearAlgebra::Vector<std::complex<double>> RHS(TotalRows, 0.0);
+	 for (int r = 0; r < int(UsedRows.size()); ++r)
+	 {
+	    double Scale = LocalNorms(r,i);
+	    for (int c = 0; c < int(Candidates.size()); ++c)
+	    {
+	       X(LinearAlgebra::range(OffsetOfRow[r], OffsetOfRow[r+1]),LinearAlgebra::all)(LinearAlgebra::all, c)
+		  = (1.0/Scale) * linearize(A(UsedRows[r],Candidates[c]));
+	    }
+	    RHS[LinearAlgebra::range(OffsetOfRow[r], OffsetOfRow[r+1])]
+	       = (1.0/Scale) * linearize(A(UsedRows[r],i));
+	 }
+
+	 LinearAlgebra::Vector<std::complex<double>> x;
+	 double Resid;
+	 std::tie(Resid, x) = LeastSquaresRegularized(X, RHS);
+
+	 if (Resid < 1E-14)
+	 {
+	    // linear dependency
+	    for (int c = 0; c < int(size(x)); ++c)
+	    {
+	       Trans[Candidates[c]][i] = x[c];
+	    }
+	    // next row
+	    continue;
+	 }
+      }
+      else
+      {
+	 // the column is linearly independent
+	 Trans[i] = LinearAlgebra::MapVector<std::complex<double>>(A.Basis2().size());
+	 Trans[i][i] = 1.0;
+      }
+   }
+
+
+#if 0
+   // construct the reduced basis
+   BasisList NewBasis(A.GetSymmetryList());
+   std::map<unsigned, unsigned> BasisMapping;  // maps the kept states into the new basis
+   for (std::set<int>::const_iterator I = KeepStates.begin(); I != KeepStates.end(); ++I)
+   {
+     BasisMapping[*I] = NewBasis.size();
+     NewBasis.push_back(A.Basis2()[*I]);
+   }
+
+   // construct the projector from the old onto the new basis
+   SimpleOperator Trunc(A.Basis2(), NewBasis, QuantumNumber(A.GetSymmetryList()));
+   for (std::set<int>::const_iterator I = KeepStates.begin(); I != KeepStates.end(); ++I)
+   {
+      Trunc(*I, BasisMapping[*I]) = 1.0;
+   }
+
+   // construct the regularizer to give the full basis from the reduced basis
+   SimpleOperator Reg(NewBasis, A.Basis2(), QuantumNumber(A.GetSymmetryList()));
+   for (unsigned i = 0; i < NewCols.size(); ++i)
+   {
+      if (NewCols[i].first != -1)
+         Reg(BasisMapping[NewCols[i].first], i) = NewCols[i].second;
+   }
+
+   // adjust for the normalizer
+   //   Reg = Reg * InverseNormalizer;
+
+   OperatorComponent tA = prod(A, Trunc); // the result
+
+   //#if !defined(NDEBUG)
+   // verify that prod(tA, Reg) is the same as A.  
+   OperatorComponent ACheck = prod(tA, Reg);
+   CHECK(norm_frob_sq(A - ACheck) <= (Scale*TruncateOverlapEpsilon))(norm_frob_sq(A - ACheck))(A)(ACheck)(A-ACheck)(Trunc)(Reg)(Overlaps);
+   //#endif
+
+   A = tA;
+   return Reg;
+#endif
 }
 
 #if 0

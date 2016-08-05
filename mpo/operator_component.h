@@ -46,7 +46,17 @@ double const DefaultClassifyUnityEpsilon = 1E-14;
 // a simple reducible operator typedef
 typedef ReducibleTensor<std::complex<double>, BasisList, BasisList> SimpleRedOperator;
 
+// Linearize a SimpleRed operator into a vector, of full dimensions (ie, every degree of freedom is
+// represented).
+LinearAlgebra::Vector<std::complex<double>>
+linearize(SimpleRedOperator const& c);
+
+int
+linear_dimension(SimpleRedOperator const& c);
+
 typedef IrredTensor<std::complex<double> > SimpleOperator;
+
+typedef IrredTensor<double> RealSimpleOperator;
 
 typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
                             VectorBasis, 
@@ -421,6 +431,12 @@ local_inner_prod(HermitianProxy<OperatorComponent> const& A, OperatorComponent c
 
 SimpleOperator
 local_inner_prod(OperatorComponent const& A, HermitianProxy<OperatorComponent> const& B);
+
+// constructs the matrix of the squared norm of the local operators.  This is NOT the same
+// operation as local_inner_prod(herm(A), A), but is rather
+// Result'(i,j) = norm_frob_sq(A(i,j))
+RealSimpleOperator
+local_norm_frob_sq(OperatorComponent const& A);
 
 // constructs the tensor product matrix Result((i',j'), (i,j)) = inner(A(i',i), B(j',j))
 // This is the matrix representation of the MPO transfer matrix

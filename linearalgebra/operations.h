@@ -1033,13 +1033,38 @@ sqrt(T const& x)
 template <typename T1, typename T2, typename Enable = void>
 struct UnaryComposer
 {
-   //   typedef typename T1::value_type        value_type;
-   typedef typename T1::result_type       result_type;
-   typedef typename T2::argument_type     argument_type;
-
    UnaryComposer(T1 const& f1_ = T1(), T2 const& f2_ = T2()) : first(f1_), second(f2_) {}
 
-   result_type operator()(argument_type x) const 
+   typedef typename T2::argument_type argument_type;
+   typedef typename T2::result_type T2Result;
+
+   typedef typename std::result_of<T1(T2Result)>::type result_type;
+
+   result_type operator()(typename T2::argument_type const& x) const
+   { return first(second(x)); }
+
+   template <typename T>
+   auto operator()(T& x) const -> decltype(first(second(x)))
+   { return first(second(x)); }
+
+   T1 first;
+   T2 second;
+};
+
+// this is a 'new' version.  It won't work because it doesn't have a result_type.
+// We need to remove all references to result_type and use std::result_of instead,
+// but we also need a method to remove proxies.
+template <typename T1, typename T2, typename Enable = void>
+struct UnaryComposerX
+{
+   UnaryComposerX(T1 const& f1_ = T1(), T2 const& f2_ = T2()) : first(f1_), second(f2_) {}
+
+   template <typename T>
+   auto operator()(T const& x) const -> decltype(first(second(x))) const
+   { return first(second(x)); }
+
+   template <typename T>
+   auto operator()(T& x) const -> decltype(first(second(x))) const
    { return first(second(x)); }
 
    T1 first;
