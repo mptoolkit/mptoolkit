@@ -4,10 +4,10 @@
 //
 // models/contrib/spin-tri-yc-z2.cpp
 //
-// Copyright (C) 2015,2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2015,2016 Seyed N. Saadatmand <s.saadatmand@uq.edu.au>
+// Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2016 Seyed N. Saadatmand <s.saadatmand@uq.edu.au>
 //
-// This program is free software: you can redistribute it and/or modify
+// This program is a free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
@@ -63,6 +63,14 @@ int IntPow(int x, int p) {
 }
 
 
+std::ostream &OpProgress(int *n, int step, int max)
+{
+    (*n) = (*n) + step;
+    std::cout << "\33[2K\r" << "working... %" << (100*(*n))/max << std::flush; 
+    return std::cout;
+}
+
+
 int main(int argc, char** argv)
 {
    try
@@ -100,7 +108,7 @@ int main(int argc, char** argv)
                    << "Trans   - translation by one site (rotation by 2\u0071/w) in lattice short direction\n"
                    << "Ref     - reflection in lattice short direction (may need applying T-operators to become gneral reflection)\n"
                    << "Functions:\n"
-                   << "H2{J2 = NNN coupling strength, J_chi = chiral term coupling strength}\n\n"                          
+                   << "TIM{J = NN coupling strength, Gamma = strength of magnetic field term in X-direcion}\n\n"                          
 	    ;
          return 1;
       }
@@ -108,7 +116,7 @@ int main(int argc, char** argv)
       const double PI = 4.0*std::atan(1.0);
       //const std::complex<double> jj(0.0,theta*PI);
       int oo = 0;
-      int oo_max = 5*w+(w*w/2)+13;
+      int oo_max = 8*w+(w*w/2)+15;
 
       LatticeSite Site = SpinZ2(Spin);
       UnitCell Cell = repeat(Site, w);
@@ -127,29 +135,24 @@ int main(int argc, char** argv)
          Sy += Sy[i];                                         // total spin (y-component) on a leg of cylinder
          Sz += Sz[i];                                         // total spin (z-component) on a leg of cylinder
 
-         oo+=3;
-         std::printf("\33[2K\r");
-         std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 3*w
+         //oo+=3;
+         //std::printf("\33[2K\r");
+         //std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 3*w
+         OpProgress(&oo,3,oo_max); // operator series count: 3*w        
       }
 
       Trans = I(0);
       for (int i = 0; i < w-1; ++i)
        {
            Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
-
-           oo++;
-           std::printf("\33[2K\r");
-           std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 4*w-1
+            OpProgress(&oo,1,oo_max); // operator series count: 4*w-1
        }
 
       Ref = I(0);
       for (int i = 0; i < w/2; ++i)
        {
            Ref = Ref(0) * Cell.swap_gate_no_sign(i, w-i-1);
-        
-           oo++;
-           std::printf("\33[2K\r");
-           std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 4*w+(w/2)-1
+           OpProgress(&oo,1,oo_max); // operator series count: 4*w+(w/2)-1
        }
           
       // if we could have tripartite symmetry, add operators for the sublattice magnetization
@@ -183,46 +186,43 @@ int main(int argc, char** argv)
       }
 
       RyUnit = Ry;
-
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 4*w+(w/2)
+      OpProgress(&oo,1,oo_max); // operator series count: 4*w+(w/2)
 
 
       // Now we construct the InfiniteLattice,
       InfiniteLattice Lattice(Cell);
 
       // Construct the Hamiltonian for a single unit-cell,
-      UnitCellMPO Hx_f, H_intra2;
+      UnitCellMPO Hj, Hx_f, H_intra2;
 
       for (int i = 0; i < w; ++i)
       {
+        // TIM - NN bonds
+        Hj += Sz(0)[i] * Sz(0)[(i+1)%w]; // vertical bonds
+        Hj += Sz(0)[i] * Sz(1)[i];       // -60 degree bonds
+        Hj += Sz(0)[i] * Sz(1)[(i+1)%w]; // +60 degree bonds
+
+        OpProgress(&oo,3,oo_max); // operator series count: 7*w+(w/2)
 
         // TIM - x-field terms
         Hx_f += Sx(0)[i];
 
-        oo++;
-        std::printf("\33[2K\r");
-        std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w/2)
+        OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w/2)
 
         for (int j = i+1; j < w; ++j)
         {
           // Long-range Ising -- inter-cell interations only for alpha=2.0
           H_intra2 += std::pow( ( std::sin( PI/w ) / std::sin( (j-i)*PI/w ) ) , 2) * Sz(0)[i]*Sz(0)[j];
-
-          oo++;
-          std::printf("\33[2K\r");
-          std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)  
+          OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)  
         }
       }
 
       //Lattice["H_J1"] = sum_unit(H1);
+      Lattice["H_J"] = sum_unit(Hj);
       Lattice["Hx_field"] = sum_unit(Hx_f);
       Lattice["H_LongRangeIsing_IntraCell2"] = sum_unit(H_intra2);
 
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+2  
+      OpProgress(&oo,3,oo_max); // operator series count: 8*w+(w*w/2)+3  
 
 
       UnitCellMPO RyOld = I(0);
@@ -253,18 +253,13 @@ int main(int argc, char** argv)
 
       Lattice["RyOld"] = prod_unit_left_to_right(RyOld.MPO(), w*w);
 
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+3  
+      OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+4  
 
       // Momentum operators in Y direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
       Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w*w);
 
-      oo+=2;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+5
-
+      OpProgress(&oo,2,oo_max); // operator series count: 8*w+(w*w/2)+6
 
       // for even size unit cell, add rotation by pi
       if (w%2 == 0)
@@ -277,20 +272,18 @@ int main(int argc, char** argv)
 	 Lattice["TyPi"] = prod_unit_left_to_right(TyPi.MPO(), w);
       }
 
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+6  
+      OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+7  
 
-      //Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0) 
-      // = "J1*H_J1 + J2*H_J2";
+      Lattice.func("TIM")(arg("J") = 0.0, arg("Gamma") = 0.0) 
+        = "J*H_J + Gamma*Hx_field";
+
+      OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+8  
       
       // a basic function for Haldane-Shastry model with Sz*Sz interations
       Lattice.func("HS")(arg("lambda") = 0.5, arg("i") = "0", arg("j") = "0")
                   = "exp(-lambda)*sum_string_inner( Sz(0)[i], exp(-lambda)*I(0), Sz(0)[j] )";
 
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+7
+      OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+9
 
       Lattice.func("LongRangeIsing_IntraCell_YC4")(arg("alpha") = 2.0)
                   = "sum_unit( ( ( sin( pi/4 ) / sin( (1-0)*pi/4 ) )^alpha * Sz(0)[0]*Sz(0)[1] ) + "
@@ -300,10 +293,7 @@ int main(int argc, char** argv)
                     "( ( sin( pi/4 ) / sin( (3-1)*pi/4 ) )^alpha * Sz(0)[1]*Sz(0)[3] ) + "
                     "( ( sin( pi/4 ) / sin( (3-2)*pi/4 ) )^alpha * Sz(0)[2]*Sz(0)[3] ) )";
 
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+8
-
+      OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+10
 
       Lattice.func("LongRangeIsing_IntraCell_YC6")(arg("alpha") = 2.0)
                   = "sum_unit( ( ( sin( pi/6 ) / sin( (1-0)*pi/6 ) )^alpha * Sz(0)[0]*Sz(0)[1] ) + "
@@ -322,10 +312,7 @@ int main(int argc, char** argv)
                     "( ( sin( pi/6 ) / sin( (5-3)*pi/6 ) )^alpha * Sz(0)[3]*Sz(0)[5] ) + "
                     "( ( sin( pi/6 ) / sin( (5-4)*pi/6 ) )^alpha * Sz(0)[4]*Sz(0)[5] ) )";
 
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+9
-
+      OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+11
 
       Lattice.func("LongRangeIsing_InterCell_YC4_part1")(arg("alpha00")=0.0, arg("lambda00")=0.0, arg("alpha01")=0.0, arg("lambda01")=0.0)
                   = "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[0], exp(-lambda00)*I(0), Sz(0)[0] ) ) + "
@@ -337,9 +324,7 @@ int main(int argc, char** argv)
                     "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[2], exp(-lambda01)*I(0), Sz(0)[3] ) ) + "
                     "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[3], exp(-lambda01)*I(0), Sz(0)[0] ) )   ";
 
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+10
+      OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+12
 
       Lattice.func("LongRangeIsing_InterCell_YC4_part2")(arg("alpha02")=0.0, arg("lambda02")=0.0, arg("alpha03")=0.0, arg("lambda03")=0.0)
                   = "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[0], exp(-lambda02)*I(0), Sz(0)[2] ) ) + "
@@ -351,11 +336,9 @@ int main(int argc, char** argv)
                     "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[2], exp(-lambda03)*I(0), Sz(0)[1] ) ) + "
                     "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[3], exp(-lambda03)*I(0), Sz(0)[2] ) )   ";
 
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+11
+      OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+13
 
-       Lattice.func("LongRangeIsing_InterCell_YC6_part1")(arg("alpha00")=0.0, arg("lambda00")=0.0, arg("alpha01")=0.0, arg("lambda01")=0.0, arg("alpha02")=0.0, arg("lambda02")=0.0)
+      Lattice.func("LongRangeIsing_InterCell_YC6_part1")(arg("alpha00")=0.0, arg("lambda00")=0.0, arg("alpha01")=0.0, arg("lambda01")=0.0, arg("alpha02")=0.0, arg("lambda02")=0.0)
                   = "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[0], exp(-lambda00)*I(0), Sz(0)[0] ) ) + "
                     "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[1], exp(-lambda00)*I(0), Sz(0)[1] ) ) + "
                     "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[2], exp(-lambda00)*I(0), Sz(0)[2] ) ) + "
@@ -375,9 +358,7 @@ int main(int argc, char** argv)
                     "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[4], exp(-lambda02)*I(0), Sz(0)[0] ) ) + "
                     "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[5], exp(-lambda02)*I(0), Sz(0)[1] ) )   ";
 
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+12
+      OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+14
 
       Lattice.func("LongRangeIsing_InterCell_YC6_part2")(arg("alpha03")=0.0, arg("lambda03")=0.0, arg("alpha04")=0.0, arg("lambda04")=0.0, arg("alpha05")=0.0, arg("lambda05")=0.0)
                   = "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[0], exp(-lambda03)*I(0), Sz(0)[3] ) ) +"
@@ -399,9 +380,7 @@ int main(int argc, char** argv)
                     "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[4], exp(-lambda05)*I(0), Sz(0)[3] ) ) +"
                     "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[5], exp(-lambda05)*I(0), Sz(0)[4] ) )  ";
 
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w*w/2)+13
+      OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+15
 
       std::cout << "--> finished.\n";
 
