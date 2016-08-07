@@ -107,7 +107,7 @@ tensorobj = tensorproduct.o tensorsum.o basis.o regularize.o tensor_eigen.o
 
 latticeobj = siteoperator.o latticesite.o unitcell.o unitcell-parser.o unitcell_mpo.o \
              infinitelattice.o siteoperator-parser.o infinite-parser.o \
-             function.o
+             function.o operator_utilities.o
 
 dmrgobj = $(tensorobj) density.o
 

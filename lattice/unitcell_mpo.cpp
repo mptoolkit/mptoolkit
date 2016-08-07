@@ -41,12 +41,13 @@ UnitCellMPO::operator=(UnitCellMPO const& c)
 UnitCellMPO&
 UnitCellMPO::operator=(UnitCellMPO&& c)
 {
-   SiteList = c.SiteList;
+   SiteList = std::move(c.SiteList);
    Op = std::move(c.Op);
    Com = c.Com;
    Offset = c.Offset;
    if (Description.empty())
       Description = std::move(c.Description);
+   return *this;
 }
 
 extern PStream::VersionTag LatticeVersion;

@@ -123,7 +123,7 @@ template <int n>
 inline
 int multiplicity(Zn<n> const& q1, Zn<n> const& q2, Zn<n> const& q)
 {
-   DEBUG_PRECONDITION((q1+q2) % n == q);
+   DEBUG_PRECONDITION_EQUAL(q1+q2,q);
    return 1;
 }
 
@@ -224,7 +224,7 @@ inline
 double recoupling_12_3__13_2(Zn<n> const& q1, Zn<n> const& q2, Zn<n> const& q12,
                              Zn<n> const& q3, Zn<n> const& q, Zn<n> const& q13)
 {
-   DEBUG_PRECONDITION_EQUAL(q12, q1_+q2);
+   DEBUG_PRECONDITION_EQUAL(q12, q1+q2);
    DEBUG_PRECONDITION_EQUAL(q13, q1+q3);
    DEBUG_PRECONDITION_EQUAL(q, q12+q3);
    return 1;
