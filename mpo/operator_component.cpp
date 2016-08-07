@@ -4,7 +4,7 @@
 //
 // mpo/operator_component.cpp
 //
-// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -75,62 +75,6 @@ OperatorComponent::check_structure() const
    }
 }
 
-SimpleOperator
-swap_gate(BasisList const& B1, BasisList const& B2, 
-	  ProductBasis<BasisList, BasisList> const& Basis_21,
-	  ProductBasis<BasisList, BasisList> const& Basis_12)
-{
-   QuantumNumbers::QuantumNumber Ident(B1.GetSymmetryList());
-
-   SimpleOperator Result(Basis_21.Basis(), Basis_12.Basis(), Ident);
-   for (unsigned i = 0; i < Basis_12.size(); ++i)
-   {
-      std::pair<int,int> x = Basis_12.rmap(i);
-
-      // Find the corresponding element in Basis1 with swapped indices
-      for (ProductBasis<BasisList>::const_iterator I = Basis_21.begin(x.second, x.first); I != Basis_21.end(x.second, x.first); ++I)
-      {
-	 if (Basis_21[*I] == Basis_12[i])
-	 {
-	    // This phase factor works for the xxx spin chain
-	    Result(*I, i) = conj_phase(Basis_12[i], adjoint(Basis_12.Left()[x.first]), Basis_12.Right()[x.second]);
-	 }
-      }
-   }
-   //TRACE(Result)(Result.Basis1())(Result.Basis2());
-   return Result;
-}
-
-SimpleOperator
-swap_gate_fermion(BasisList const& B1, LinearAlgebra::Vector<double> const& Parity1, 
-		  BasisList const& B2, LinearAlgebra::Vector<double> const& Parity2,
-		  ProductBasis<BasisList, BasisList> const& Basis_21,
-		  ProductBasis<BasisList, BasisList> const& Basis_12)
-{
-   DEBUG_CHECK_EQUAL(Parity1.size(), B1.size());
-   DEBUG_CHECK_EQUAL(Parity2.size(), B2.size());
-   QuantumNumbers::QuantumNumber Ident(B1.GetSymmetryList());
-
-   SimpleOperator Result(Basis_21.Basis(), Basis_12.Basis(), Ident);
-   for (unsigned i = 0; i < Basis_12.size(); ++i)
-   {
-      std::pair<int,int> x = Basis_12.rmap(i);
-
-      // Find the corresponding element in Basis1 with swapped indices
-      for (ProductBasis<BasisList>::const_iterator I = Basis_21.begin(x.second, x.first); I != Basis_21.end(x.second, x.first); ++I)
-      {
-	 if (Basis_21[*I] == Basis_12[i])
-	 {
-	    // This phase factor works for the xxx spin chain
-	    Result(*I, i) = conj_phase(Basis_12[i], adjoint(Basis_12.Left()[x.first]), Basis_12.Right()[x.second])
-	       * Parity1[x.first] * Parity2[x.second];
-	 }
-      }
-   }
-   //TRACE(Result)(Result.Basis1())(Result.Basis2());
-   return Result;
-}
-
 #if 0
 OperatorComponent
 shift_left(BasisList const& ThisBasis, BasisList const& IncomingBasis)
@@ -151,6 +95,8 @@ shift_left(BasisList const& ThisBasis, BasisList const& IncomingBasis)
       {
 	 SimpleOperator x(ThisBasis, IncomingBasis, Ident);
 	 x(j,i) = 1;
+      }
+   }
 }
 #endif
 
@@ -386,9 +332,9 @@ tensor_col_sum(OperatorComponent const& A,
    Result.debug_check_structure();
    return Result;
 }
-
-OperatorComponent 
-tensor_col_sum(OperatorComponent const& A, 
+ 
+ OperatorComponent 
+   tensor_col_sum(OperatorComponent const& A, 
 	       OperatorComponent const& B)
 {
    if (A.is_null())
@@ -398,7 +344,7 @@ tensor_col_sum(OperatorComponent const& A,
    return tensor_col_sum(A, B, SumBasis<BasisList>(A.Basis1(), B.Basis1()));
 }
 
-OperatorComponent prod(OperatorComponent const& A, SimpleOperator const& Op)
+OperatorComponent prod(OperatorComponent const& A, SimpleOperator const& Op, double Tol)
 {
    PRECONDITION(is_scalar(Op.TransformsAs()))(Op.TransformsAs());
    DEBUG_PRECONDITION_EQUAL(A.Basis2(), Op.Basis1());
@@ -410,7 +356,7 @@ OperatorComponent prod(OperatorComponent const& A, SimpleOperator const& Op)
    return Result;
 }
 
-OperatorComponent prod(SimpleOperator const& Op, OperatorComponent const& A)
+OperatorComponent prod(SimpleOperator const& Op, OperatorComponent const& A, double Tol)
 {
    PRECONDITION(is_scalar(Op.TransformsAs()))(Op.TransformsAs());
    DEBUG_PRECONDITION_EQUAL(Op.Basis2(), A.Basis1());
@@ -420,7 +366,7 @@ OperatorComponent prod(SimpleOperator const& Op, OperatorComponent const& A)
    return Result;
 }
 
-OperatorComponent prod(OperatorComponent const& A, HermitianProxy<SimpleOperator> const& Op)
+OperatorComponent prod(OperatorComponent const& A, HermitianProxy<SimpleOperator> const& Op, double Tol)
 {
    PRECONDITION(is_scalar(Op.base().TransformsAs()))(Op.base().TransformsAs());
    DEBUG_PRECONDITION_EQUAL(A.Basis2(), Op.base().Basis2());
@@ -432,7 +378,7 @@ OperatorComponent prod(OperatorComponent const& A, HermitianProxy<SimpleOperator
    return Result;
 }
 
-OperatorComponent prod(HermitianProxy<SimpleOperator> const& Op, OperatorComponent const& A)
+OperatorComponent prod(HermitianProxy<SimpleOperator> const& Op, OperatorComponent const& A, double Tol)
 {
    PRECONDITION(is_scalar(Op.base().TransformsAs()))(Op.base().TransformsAs());
    DEBUG_PRECONDITION_EQUAL(Op.base().Basis1(), A.Basis1());
@@ -1378,7 +1324,6 @@ SimpleOperator CompressBasis2_LinDep(OperatorComponent& A)
       bool Dependent = false;  // is vector i linearly dependent on some other set?
       // assemble the list of candidate columns that could give a linear dependence
       std::vector<int> Candidates;
-      int j = 0;
       for (int j = 0; j < i; ++j)
       {
 	 // to be a candidate, every row of column j that is non-zero
@@ -1416,7 +1361,9 @@ SimpleOperator CompressBasis2_LinDep(OperatorComponent& A)
 	    {
 	       UsedRows.push_back(r);
 	       OffsetOfRow.push_back(TotalRows);
-	       int Rows = linear_dimension(A(r,i));
+	       int Rows = linear_dimension(A(r,i), 
+                                           transform_targets(A.Basis2()[i],
+                                                            adjoint(A.Basis1()[r])));
 	       TotalRows += Rows;
 	    }
 	 }
@@ -1430,10 +1377,13 @@ SimpleOperator CompressBasis2_LinDep(OperatorComponent& A)
 	    for (int c = 0; c < int(Candidates.size()); ++c)
 	    {
 	       X(LinearAlgebra::range(OffsetOfRow[r], OffsetOfRow[r+1]),LinearAlgebra::all)(LinearAlgebra::all, c)
-		  = (1.0/Scale) * linearize(A(UsedRows[r],Candidates[c]));
+		  = (1.0/Scale) * linearize(A(UsedRows[r],Candidates[c]),
+                                            transform_targets(A.Basis2()[Candidates[c]],
+                                                              adjoint(A.Basis1()[UsedRows[r]])));
 	    }
 	    RHS[LinearAlgebra::range(OffsetOfRow[r], OffsetOfRow[r+1])]
-	       = (1.0/Scale) * linearize(A(UsedRows[r],i));
+	       = (1.0/Scale) * linearize(A(UsedRows[r],i), 
+                                         transform_targets(A.Basis2()[i], adjoint(A.Basis1()[r])));
 	 }
 
 	 LinearAlgebra::Vector<std::complex<double>> x;
@@ -2293,6 +2243,38 @@ flip_conj(OperatorComponent const& x)
    return Result;
 }
 
+MatrixOperator ExpandBasis1Used(StateComponent& A, OperatorComponent const& Op)
+{
+   DEBUG_CHECK_EQUAL(A.LocalBasis(), Op.LocalBasis1());
+   DEBUG_CHECK_EQUAL(A.LocalBasis(), Op.LocalBasis2());
+   std::vector<int> Mask(A.size(), 0);
+   for (unsigned i = 0; i < A.size(); ++i)
+   {
+      Mask[i] = (norm_frob(A[i]) > std::numeric_limits<double>::epsilon());
+   }
+
+   std::vector<int> Mask1 = Mask;
+   update_mask_basis1(Mask1, Op, Mask);
+
+   return ExpandBasis1Used(A, Mask1);
+}
+
+MatrixOperator ExpandBasis2Used(StateComponent& A, OperatorComponent const& Op)
+{
+   DEBUG_CHECK_EQUAL(A.LocalBasis(), Op.LocalBasis1());
+   DEBUG_CHECK_EQUAL(A.LocalBasis(), Op.LocalBasis2());
+   std::vector<int> Mask(A.size(), 0);
+   for (unsigned i = 0; i < A.size(); ++i)
+   {
+      Mask[i] = (norm_frob(A[i]) > std::numeric_limits<double>::epsilon());
+   }
+
+   std::vector<int> Mask2 = Mask;
+   update_mask_basis2(Mask, Op, Mask2);
+
+   return ExpandBasis2Used(A, Mask2);
+}
+
 void
 update_mask_basis1(std::vector<int>& Mask1, SimpleOperator const& Op, std::vector<int> const& Mask2)
 {
@@ -2361,69 +2343,4 @@ update_mask_basis2(std::vector<int> const& Mask1, OperatorComponent const& Op, s
    }
 }
 
-MatrixOperator ExpandBasis1Used(StateComponent& A, OperatorComponent const& Op)
-{
-   DEBUG_CHECK_EQUAL(A.LocalBasis(), Op.LocalBasis1());
-   DEBUG_CHECK_EQUAL(A.LocalBasis(), Op.LocalBasis2());
-   std::vector<int> Mask(A.size(), 0);
-   for (unsigned i = 0; i < A.size(); ++i)
-   {
-      Mask[i] = (norm_frob(A[i]) > std::numeric_limits<double>::epsilon());
-   }
 
-   std::vector<int> Mask1 = Mask;
-   update_mask_basis1(Mask1, Op, Mask);
-
-   return ExpandBasis1Used(A, Mask1);
-}
-
-MatrixOperator ExpandBasis2Used(StateComponent& A, OperatorComponent const& Op)
-{
-   DEBUG_CHECK_EQUAL(A.LocalBasis(), Op.LocalBasis1());
-   DEBUG_CHECK_EQUAL(A.LocalBasis(), Op.LocalBasis2());
-   std::vector<int> Mask(A.size(), 0);
-   for (unsigned i = 0; i < A.size(); ++i)
-   {
-      Mask[i] = (norm_frob(A[i]) > std::numeric_limits<double>::epsilon());
-   }
-
-   std::vector<int> Mask2 = Mask;
-   update_mask_basis2(Mask, Op, Mask2);
-
-   return ExpandBasis2Used(A, Mask2);
-}
-
-SimpleOperator CollapseBasis(BasisList const& b)
-{
-   std::set<QuantumNumber> QN(b.begin(), b.end());
-   BasisList NewB(b.GetSymmetryList(), QN.begin(), QN.end());
-   SimpleOperator C(NewB, b);
-   for (unsigned j = 0; j < b.size(); ++j)
-   {
-      unsigned i = std::find(NewB.begin(), NewB.end(), b[j]) - NewB.begin();
-      C(i,j) = 1.0;
-   }
-   return C;
-}
-
-SimpleOperator ProjectBasis(BasisList const& b, QuantumNumbers::QuantumNumber const& q)
-{
-   BasisList NewB(q);
-   SimpleOperator Result(NewB, b);
-   for (unsigned j = 0; j < b.size(); ++j)
-   {
-      if (b[j] == q)
-         Result(0, j) = 1.0;
-   }
-   return Result;
-}
-
-std::complex<double> PropIdent(SimpleOperator const& X, double UnityEpsilon)
-{
-   DEBUG_PRECONDITION_EQUAL(X.Basis1(), X.Basis2());
-   SimpleOperator Ident = SimpleOperator::make_identity(X.Basis1());
-   std::complex<double> x = inner_prod(Ident, X) / double(X.Basis1().total_degree());
-   if (norm_frob_sq(X-x*Ident) > UnityEpsilon*UnityEpsilon)
-      x = 0.0;
-   return x;
-}

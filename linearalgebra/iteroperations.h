@@ -886,7 +886,7 @@ template <typename I1, typename I2, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
 iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iterator_ordered)
 {
-   typedef typename Func::result_type result_type;
+   typedef typename make_value<typename Func::result_type>::type result_type;
    typedef typename make_value_with_zero<result_type>::type value_type;
    if (!i1 || !i2) return zero_or_die<value_type>();
 
@@ -905,29 +905,39 @@ iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iterator_o
    }
 
    DEBUG_CHECK_EQUAL(i1.index(), i2.index());
-   value_type Result(f(*i1, *i2));
+   result_type Result(f(*i1, *i2));
+   auto NormSq = norm_frob_sq(Result);
+   int Count = 1;
    ++i1; ++i2;
 
    while (i1 && i2)
    {
-      while (i1.index() != i2.index())
+      if (i1.index() < i2.index())
       {
-         if (i1.index() < i2.index())
-         {
+         ++i1;
+         while (i1 && i1.index() < i2.index())
             ++i1;
-            if (!i1) return Result;
-         }
-         else
-         {
+      }
+      else
+      {
+         ++i2;
+         while (i2 && i2.index() < i1.index())
             ++i2;
-            if (!i2) return Result;
-         }
       }
 
-      DEBUG_CHECK_EQUAL(i1.index(), i2.index());
-      Result += f(*i1, *i2);
-      ++i1; ++i2;
+      if (i1 && i2)
+      {
+         DEBUG_CHECK_EQUAL(i1.index(), i2.index());
+         result_type Temp = f(*i1, *i2);
+         NormSq += norm_frob_sq(Temp);
+         ++Count;
+         Result += Temp;
+         ++i1; ++i2;
+      }
    }
+   auto Tol = std::numeric_limits<decltype(NormSq)>::epsilon()*10;
+   if (norm_frob_sq(Result) < NormSq * Tol * Tol)
+      return zero_or_die<value_type>();
    return Result;
 }
 
