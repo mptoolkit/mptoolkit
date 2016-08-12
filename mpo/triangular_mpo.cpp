@@ -193,7 +193,6 @@ void qr_optimize(TriangularMPO& Op)
    TRACE(Op);
 
 }
-#endif
 
 std::pair<std::complex<double>, double>
 log_inner_prod(TriangularMPO const& Op1, TriangularMPO const& Op2)
