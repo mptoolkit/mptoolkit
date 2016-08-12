@@ -23,8 +23,8 @@
 
 */
 
-#if !defined(BASIS_H_567FG65K342JH7FG687GH768)
-#define BASIS_H_567FG65K342JH7FG687GH768
+#if !defined(MPTOOLKIT_TENSOR_BASIS_H)
+#define MPTOOLKIT_TENSOR_BASIS_H
 
 #include "quantumnumbers/symmetrylist.h"
 #include "quantumnumbers/quantumnumber.h"

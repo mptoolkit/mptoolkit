@@ -43,6 +43,7 @@ int main(int argc, char** argv)
       int Verbose = 0;
       bool Optimize = false;
       bool CoarseGrain = false;
+      bool QR = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -53,6 +54,7 @@ int main(int argc, char** argv)
 	 ("coarsegrain", prog_opt::bool_switch(&CoarseGrain), 
 	  "for a finite operator, go through a coarse-graining then fine-graining sequence")
 	 ("optimize", prog_opt::bool_switch(&Optimize), "Optimize the operator expression")
+	 ("qr", prog_opt::bool_switch(&QR), "Optimize the operator expression with the QR algorithm")
 	 ("unityepsilon", prog_opt::value(&UnityEpsilon),
 	  FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
 	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
@@ -129,13 +131,14 @@ int main(int argc, char** argv)
 	 std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(TriangularOperators[i]);     
 	 if (Optimize)
 	    optimize(Op);
-	 print_structure(Op, std::cout, UnityEpsilon);
-	 if (Verbose > 0)
+         if (QR)
+	    qr_optimize(Op);
+	 print_structure(Op, std::cout, UnityEpsilon, Verbose);
+	 if (Verbose > 1)
 	 {
 	    std::cout << Op << '\n';
 	 }
       }
-      
    }
    catch(std::exception& e) 
    {

@@ -125,7 +125,7 @@ operator<<(std::ostream& out, TriangularMPO const& op);
 
 // prints the structure of the component, as an 'x' for a non-zero
 // component or blank for a zero component
-void print_structure(TriangularMPO const& Op, std::ostream& out, double UnityEpsilon);
+void print_structure(TriangularMPO const& Op, std::ostream& out, double UnityEpsilon, int Verbose = 0);
 
 inline
 void print_structure(TriangularMPO const& Op, std::ostream& out)

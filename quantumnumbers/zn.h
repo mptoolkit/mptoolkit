@@ -29,6 +29,8 @@
 namespace QuantumNumbers
 {
 
+extern char const* TypeStr[];
+
 template <int n>
 class Zn
 {
@@ -48,7 +50,7 @@ class Zn
       int* Convert(int* OutIter) const
       { *OutIter = x.twice(); return OutIter+1; }
 
-      static char const* Type() { return ("Z_" + boost::lexical_cast<std::string>(n)).c_str(); }
+      static char const* Type() { return TypeStr[n]; }
 
       static int Size() { return 1; }
 
