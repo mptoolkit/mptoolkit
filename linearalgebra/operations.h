@@ -787,6 +787,25 @@ norm_frob(T const& x)
    return NormFrob<T>()(x);
 }
 
+// norm_err
+// This is the 'error norm', used to detect cancellation in sparse operations.  It defaults
+// to the Frobenius norm.
+
+template <typename T>
+decltype(norm_frob_sq(std::declval<T>()))
+norm_err_sq(T const& x)
+{
+   return norm_frob_sq(x);
+}
+
+template <typename T>
+decltype(norm_err_sq(std::declval<T>()))
+norm_err(T const& x)
+{
+   using std::sqrt;
+   return sqrt(norm_err_sq(x));
+}
+
 // Transpose
 
 template <typename T, typename TInterface = typename interface<T>::type>

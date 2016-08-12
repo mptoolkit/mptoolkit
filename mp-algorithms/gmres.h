@@ -247,7 +247,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
      r = Precondition(b - MatVecMultiply(x));
      beta = norm_frob(r);
 
-     DEBUG_TRACE(r)(beta);
+     //DEBUG_TRACE(r)(beta);
 
      // use the old value of resid here, to avoid cases 
      // where the recalculation no longer satisfies the convergence criteria
