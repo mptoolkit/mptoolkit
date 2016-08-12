@@ -404,6 +404,11 @@ double Coupling9j(half_int j11, half_int j12, half_int j13,
       }
    }
 
+   double Result = sum_pos + sum_neg;
+   //TRACE_IF(std::abs(Result / (sum_pos-sum_neg)) < std::numeric_limits<double>::epsilon()*10)("numerical zero 9j")(Result);
+   if (std::abs(Result / (sum_pos-sum_neg)) < std::numeric_limits<double>::epsilon()*10)
+      return 0.0;
+   // else
    return phase * (sum_pos + sum_neg);
 }
 
