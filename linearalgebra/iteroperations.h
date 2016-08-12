@@ -4,7 +4,7 @@
 //
 // linearalgebra/iteroperations.h
 //
-// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2005-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,8 +16,7 @@
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER
-/* -*- C++ -*- $Id$
-
+/*
   iteroperations.h
 
   various algorithms that act on the vector iterator interface.
@@ -34,14 +33,18 @@
   iter_norm_frob_sq
   iter_norm_inf
   iter_inner_prod
+  iter_inner_prod_dense
   iter_coefficient_inner_prod
+  iter_coefficient_inner_prod_dense
   iter_min
   iter_max
   iter_sum
+
+  iter_inner_prod_sparse is defined in another header
 */
 
-#if !defined(ITEROPERATIONS_H_SKDJHCSOIUGHYUIHVOPHPRO)
-#define ITEROPERATIONS_H_SKDJHCSOIUGHYUIHVOPHPRO
+#if !defined(MPTOOLKIT_LINEARALGEBRA_ITEROPERATIONS_H)
+#define MPTOOLKIT_LINEARALGEBRA_ITEROPERATIONS_H
 
 #include "scalar.h"
 #include "vectorinterface.h"
@@ -906,8 +909,6 @@ iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iterator_o
 
    DEBUG_CHECK_EQUAL(i1.index(), i2.index());
    result_type Result(f(*i1, *i2));
-   auto NormSq = norm_frob_sq(Result);
-   int Count = 1;
    ++i1; ++i2;
 
    while (i1 && i2)
@@ -928,16 +929,10 @@ iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iterator_o
       if (i1 && i2)
       {
          DEBUG_CHECK_EQUAL(i1.index(), i2.index());
-         result_type Temp = f(*i1, *i2);
-         NormSq += norm_frob_sq(Temp);
-         ++Count;
-         Result += Temp;
+         Result += f(*i1, *i2);
          ++i1; ++i2;
       }
    }
-   auto Tol = std::numeric_limits<decltype(NormSq)>::epsilon()*10;
-   if (norm_frob_sq(Result) < NormSq * Tol * Tol)
-      return zero_or_die<value_type>();
    return Result;
 }
 
