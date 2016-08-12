@@ -224,4 +224,6 @@ UnitCellMPO ExtendToCoverUnitCell(UnitCellMPO const& Op, int OtherSize)
 // Optimize the representation - in this case we simply forward to the FiniteMPO representation
 void optimize(UnitCellMPO& Op);
 
+void qr_optimize(UnitCellMPO& Op);
+
 #endif

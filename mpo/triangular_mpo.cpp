@@ -99,7 +99,6 @@ operator<<(std::ostream& out, TriangularMPO const& op)
    return out << op.data();
 }
 
-#if 1
 void optimize(TriangularMPO& Op)
 {
    bool Reduced = true; // flag to indicate that we reduced a dimension
@@ -136,12 +135,10 @@ void optimize(TriangularMPO& Op)
    }
 }
 
-#else
-
-void optimize(TriangularMPO& Op)
+void qr_optimize(TriangularMPO& Op)
 {
-   if (Op.size() < 2)
-      return;
+   //   if (Op.size() < 2)
+   //      return;
 
    double const Eps = 1E-13;
 
@@ -292,7 +289,6 @@ equal(TriangularMPO const& Op1, TriangularMPO const& Op2, double Tol)
 // Now we want to do diagonal compression.  Can't see a simpler way than
 // doing an effective coarse-graining.
 
-<<<<<<< e0215db8386ad27b52c4c7da771a87fd27bcbd03
 // remove row r2, by compressing it onto row r1 (likewise for the columns)
 void
 compress_row(TriangularMPO& Op, int r1, int r2)

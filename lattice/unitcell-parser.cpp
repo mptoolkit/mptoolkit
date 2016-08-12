@@ -19,9 +19,12 @@
 
 #include "unitcell-parser.h"
 #include "siteoperator-parser.h"
+#include "infinite-parser.h"
 #include "parser/parser.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/math/special_functions/round.hpp>
+
+InfiniteLattice const* ILattice = NULL;
 
 namespace Parser
 {
@@ -486,6 +489,78 @@ struct push_string
    std::stack<ElementType >& eval;
 };
 
+FiniteMPO
+fsup(int Offset1, int Offset2, TriangularMPO const& Op)
+{
+   int const Size = Offset2 - Offset1;
+   Offset1 = Offset1 % Op.size();
+   GenericMPO Result(Size);
+   for (int i = 0; i < Size; ++i)
+   {
+      Result[i] = Op[(i+Offset1)%Op.size()];
+   }
+   // patch up the first and last sites
+   Result.front() = project_rows(Result.front(), std::set<int>({0}));
+   Result.back() = project_columns(Result.back(), std::set<int>({int(Result.back().Basis2().size())-1}));
+   return FiniteMPO(Result);
+}
+
+FiniteMPO
+fsup(int Offset1, int Offset2, ProductMPO const& Op)
+{
+   PANIC("not yet implemented");
+}
+
+FiniteMPO
+fsup(int Offset1, int Offset2, InfiniteMPOElement const& Op)
+{
+   if (boost::get<TriangularMPO>(&Op))
+   {
+      return fsup(Offset1, Offset2, boost::get<TriangularMPO>(Op));
+   }
+   else if (boost::get<ProductMPO>(&Op))
+   {
+      return fsup(Offset1, Offset2, boost::get<ProductMPO>(Op));
+   }
+   else
+   {
+      PANIC("Unknown operator type");
+   }
+}
+
+struct push_fsup
+{
+   push_fsup(UnitCell const& Cell_, int NumCells_,
+	     std::stack<ElementType>& eval_)
+      : Cell(Cell_), NumCells(NumCells_), eval(eval_) 
+   {
+      // If the number of unit cells is unspecified, use 1
+      if (NumCells == 0)
+	 NumCells = 1;
+   }
+   
+   void operator()(char const* Start, char const* End) const
+   {
+      if (!ILattice)
+      {
+	 PANIC("Lattice not defined.");
+      }
+      int Cell2 = pop_int(eval);
+      int Cell1 = pop_int(eval);
+      std::string Str(Start, End);
+      //      TRACE(Str);
+      InfiniteMPOElement Op = ParseInfiniteOperator(*ILattice, Str);
+
+      FiniteMPO NewOp = fsup(Cell1*Cell.size(), Cell2*Cell.size(), Op);
+      eval.push(UnitCellMPO(Cell.GetSiteList(), NewOp, LatticeCommute::Bosonic, Cell1*Cell.size()));
+   }
+
+   UnitCell const& Cell;
+   int NumCells;
+   std::stack<ElementType >& eval;
+};
+
+
 } // namespace UP
 
 using namespace UP;
@@ -574,6 +649,15 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	 sq_bracket_expr_t = '[' >> expression_t >> ']';
 
 	 sq_bracket_expr = '[' >> expression >> ']';
+
+	 expression_string = lexeme_d[+((anychar_p - chset<>("()"))
+					| (ch_p('(') >> expression_string >> ch_p(')')))];
+
+	 fsup_t = str_p("fsup") >> '(' >> expression >> ',' >> expression >> ',' >> expression_string >> ')';
+
+	 fsup = str_p("fsup") >> '(' >> expression >> ',' >> expression >> ','
+			      >> expression_string[push_fsup(self.Cell, self.NumCells, self.eval)]
+			      >> ')';
 
 	 swapb_cell_expr_t = (str_p("swapb") >> '(' >> expression_t >> ',' >> expression_t >> ')')
 	    >> !('[' >> expression_t >> ',' >> expression_t >> ']');
@@ -746,6 +830,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	    |   keyword_d[self.Arguments]
 	    |   prod_expression_t
 	    |   commutator_bracket_t
+            |   fsup_t
 	    |   swapb_cell_expr_t
 	    |   swapb_site_expr_t
 	    |   swap_cell_expr_t
@@ -766,6 +851,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	    |   keyword_d[self.Arguments[push_value<ElementType>(self.eval)]]
 	    |   prod_expression
 	    |   commutator_bracket
+	    |   fsup
 	    |   swapb_cell_expr
 	    |   swapb_site_expr
 	    |   swap_cell_expr
@@ -830,7 +916,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	 swap_cell_expr, swap_site_expr, swapb_cell_expr, swapb_site_expr,
 	 local_function, local_c_function, local_operator, cell_function, cell_operator,
 	 local_arg, cell_c_function, 
-	 operator_expression,
+	 operator_expression, fsup,
 	 expression_string,
 	 string_expression,
 	 unary_function, binary_function,
@@ -844,7 +930,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
 	 swap_cell_expr_t, swap_site_expr_t, swapb_cell_expr_t, swapb_site_expr_t,
 	 local_function_t, local_c_function_t, local_operator_t, cell_function_t, cell_operator_t,
 	 local_arg_t, cell_c_function_t, 
-	 operator_expression_t,
+	 operator_expression_t, fsup_t,
 	 expression_string_t,
 	 string_expression_t,
 	 unary_function_t, binary_function_t,
@@ -975,9 +1061,14 @@ ParseUnitCellOperatorAndLattice(std::string const& Str)
    boost::trim(LatticeFile);
    pvalue_ptr<InfiniteLattice> Lattice = pheap::ImportHeap(LatticeFile);
 
+   ILattice = &(*Lattice);
+
    ++Delim;
    std::string Expr(Delim, Str.end());
 
    UnitCellMPO Op = ParseUnitCellOperator(Lattice->GetUnitCell(), 0, Expr);
+
+   ILattice = NULL;
+
    return std::make_pair(Op, *Lattice);
 }

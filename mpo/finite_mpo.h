@@ -212,6 +212,9 @@ FiniteMPO inv_adjoint(FiniteMPO const& x);
 // optimize the representation
 void optimize(FiniteMPO& Op);
 
+// optimize the representation using QR decomposition
+void qr_optimize(FiniteMPO& Op);
+
 // completely coarse-grain the MPO into a simple operator.
 // The dimensions of this operator are exponentially big in the number of sites
 // in x, so be careful!

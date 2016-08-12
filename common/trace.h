@@ -259,34 +259,29 @@ void show_backtrace_handler(char const* Msg)
 
 */
 
-#if !defined(TRACE_H_DFHJ567213TYUHJB76834JKH80964675BDFHJ34NBGKJND87923456GH4)
-#define TRACE_H_DFHJ567213TYUHJB76834JKH80964675BDFHJ34NBGKJND87923456GH4
-
-#if defined(__GNUC__) && __GNUC__ < 3
-#define USE_OLD_IOSTREAMS
-#endif
+#if !defined(MPTOOLKIT_COMMON_TRACE_H)
+#define MPTOOLKIT_COMMON_TRACE_H
 
 #if defined(HAVE_CONFIG_H)
 #include "config.h"
 #if !defined(FUNC_NORETURN)
 #error "config.h does not define FUNC_NORETURN"
 #endif
+#if !defined(__PRETTYFUNC__)
+#error "config.h does not define __PRETTYFUNC__"
+#endif
 #else
 #if !defined(FUNC_NORETURN)
 #define FUNC_NORETURN
 #endif
+#if !defined(__PRETTYFUNC__)
+#define __PRETTYFUNC__ __func__
+#endif
 #endif
 
-#if defined(USE_OLD_IOSTREAMS)
-#include <iostream.h>
-#include <strstream.h>
-#include <stdlib.h>
-#else
 #include <iostream>
 #include <sstream>
 #include <cstdlib>
-#endif
-
 #include <vector>
 #include <string>
 #include <boost/type_traits.hpp>
@@ -299,10 +294,6 @@ void show_backtrace_handler(char const* Msg)
 
 #if defined(MULTITHREAD)
 #include <pthread.h>
-#endif
-
-#if defined(USE_OLD_IOSTREAMS)
-#define std
 #endif
 
 namespace tracer
@@ -407,18 +398,10 @@ void set_precision(int p)
 template <typename T>
 std::string ToString(T const& x)
 {
-#if defined(USE_OLD_IOSTREAMS)
-  ostrstream Buf;
-  Buf << x << ends;
-  std::string Temp(Buf.str());
-  Buf.freeze(0);
-  return Temp;
-#else
   std::ostringstream Buf;
   Buf.precision(TracerDummyClass<>::Precision);
   Buf << x;
   return Buf.str();
-#endif
 }
 
 // weird problem with gcc 3.3.4 and std::boolalpha, we only need it with
@@ -466,7 +449,6 @@ char const* fudge_value(bool x)
    return x ? "true" : "false";
 }
 
-#if !defined(USE_OLD_IOSTREAMS)
 inline
 std::string fudge_value(float x)
 {
@@ -485,19 +467,12 @@ std::string fudge_value(double x)
 
   return Buf.str();
 }  
-#endif
 
 template <typename T>
 T& make_lvalue(T const& x)
 {
    return const_cast<T&>(x);
 }
-
-#if defined(USE_OLD_IOSTREAMS)
-#define TRACER_CONVERT_TO_STRING(x)		\
-::tracer::ToString(x)
-
-#else
 
 inline 
 std::ostream&& PrepareStream(std::ostream&& out)
@@ -513,8 +488,6 @@ std::ostream&& PrepareStream(std::ostream&& out)
 
 #define TRACER_CONVERT_TO_STRING(x)                                             \
 (static_cast<std::ostringstream&&>(::tracer::PrepareStream(std::ostringstream().flush()) << (x)).str())
-#endif
-
 #endif
 
 template <int Dummy = 0>
@@ -545,13 +518,15 @@ class Assert
       Assert& operator<<(T const& x);
 
       static Assert MakeAssert(char const* Preamble_, char const* File_, 
-			       int Line_, char const* Message_, assert_handler Handler);
+			       int Line_, char const* Func_, 
+			       char const* Message_, assert_handler Handler);
 
   private:
-      Assert(char const* Preamble_, char const* File_, int Line_, 
+      Assert(char const* Preamble_, char const* File_, int Line_, char const* Func_,
 	     char const* Message_, assert_handler Handler_) 
 	: SMART_ASSERT_A(*this), SMART_ASSERT_B(*this),
-	  ShouldHandle(true), Preamble(Preamble_), File(File_), Line(Line_), Message(Message_),
+	  ShouldHandle(true), Preamble(Preamble_), File(File_), Line(Line_), Func(Func_), 
+	  Message(Message_),
 	Handler(Handler_) {}
 
       Assert& operator=(Assert const&); // not implemented
@@ -562,14 +537,11 @@ class Assert
       mutable bool ShouldHandle;
       std::string Preamble, File;
       int Line;
+      std::string Func;
       std::string Message;
       assert_handler Handler;
       VariableListType VariableList;
-#if defined(USE_OLD_IOSTREAMS)
-      ostrstream ExtraBuf;
-#else
       std::ostringstream ExtraBuf;
-#endif
 };
 
 template <int Dummy>
@@ -583,14 +555,15 @@ Assert<Dummy>& Assert<Dummy>::operator<<(T const& x)
 template <int Dummy>
 inline
 Assert<Dummy> Assert<Dummy>::MakeAssert(char const* Preamble_, char const* File_, 
-			  int Line_, char const* Message_, assert_handler Handler)
+					int Line_, char const* Func_, char const* Message_, 
+					assert_handler Handler)
 {
 #if defined(MULTITHREAD)
    std::ostringstream obuf;
    obuf << pthread_self();
    return Assert(("THREAD " + obuf.str() + ": " + Preamble_).c_str(), File_, Line_, Message_, Handler);
 #else
-   return Assert(Preamble_, File_, Line_, Message_, Handler);
+   return Assert(Preamble_, File_, Line_, Func_, Message_, Handler);
 #endif
 }
 
@@ -640,14 +613,8 @@ Assert<Dummy>::~Assert()
 {
    if (!this->ShouldHandle) return;
 
-#if defined(USE_OLD_IOSTREAMS)
-   ExtraBuf << ends;
    this->msg(ExtraBuf.str());
-   ExtraBuf.freeze(0);
-#else
-   this->msg(ExtraBuf.str());
-#endif
-   std::string FullMessage = Preamble + " in file " + File 
+   std::string FullMessage = Preamble + " in file " + File + " in function " + Func
      + " at line " + ToString(Line) + ": " + Message + '\n';
    if (!VariableList.empty())
    {
@@ -761,24 +728,24 @@ template <typename T>
 DummyAssert DummyAssertHandler<T>::value;
 
 #define INVOKE_ASSERT(Preamble, Message)                                        \
-   ::tracer::Assert<>::MakeAssert((Preamble), __FILE__, __LINE__, (Message),    \
+   ::tracer::Assert<>::MakeAssert((Preamble), __FILE__, __LINE__, __PRETTYFUNC__, (Message), \
 				::tracer::GetPanicHandler()).SMART_ASSERT_A     \
    /**/
 
 #define INVOKE_PANIC(Preamble, Name, Value)                                     \
-   ::tracer::Assert<>::MakeAssert((Preamble), __FILE__, __LINE__, "",           \
+   ::tracer::Assert<>::MakeAssert((Preamble), __FILE__, __LINE__, __PRETTYFUNC__, "",           \
 				::tracer::GetPanicHandler()).                   \
        print_value(Name, TRACER_CONVERT_TO_STRING((Value))).SMART_ASSERT_A      \
    /**/
 
 #define INVOKE_TRACE(Preamble, Name, Value)                                     \
-   ::tracer::Assert<>::MakeAssert((Preamble), __FILE__, __LINE__, "",           \
+   ::tracer::Assert<>::MakeAssert((Preamble), __FILE__, __LINE__,  __PRETTYFUNC__, "",           \
 				::tracer::GettraceHandler()).                   \
       print_value(Name, TRACER_CONVERT_TO_STRING((Value))).SMART_ASSERT_A       \
    /**/
 
 #define INVOKE_TRACE_IF(Preamble, Message)                                      \
-   ::tracer::Assert<>::MakeAssert((Preamble), __FILE__, __LINE__, (Message),    \
+   ::tracer::Assert<>::MakeAssert((Preamble), __FILE__, __LINE__,  __PRETTYFUNC__, (Message),    \
 				::tracer::GettraceHandler()).SMART_ASSERT_A     \
    /**/
 
@@ -1066,10 +1033,5 @@ if (false) ;					\
 else INVOKE_PANIC("PANIC", #Msg, (Msg))
 
 } // namespace tracer
-
-
-#if defined(USE_OLD_IOSTREAMS)
-#undef std
-#endif
 
 #endif

@@ -232,6 +232,9 @@ std::vector<int> Dependencies_E(TriangularMPO const& m);
 
 void optimize(TriangularMPO& Op);
 
+// optimize the representation using qr_decomposition
+void qr_optimize(TriangularMPO& Op);
+
 // balances a triangular MPO - gives terms the same operator norm from
 // the left and the right.
 void balance(TriangularMPO& Op);

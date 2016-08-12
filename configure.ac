@@ -4,6 +4,9 @@ dnl Process this file with autoconf to produce a configure script.
 AC_INIT([Matrix Product Toolkit], [HEAD], [ianmcc@physics.uq.edu.au], 
         [mptoolkit], [http://physics.uq.edu.au/people/ianmcc/mptoolkit])
 
+dnl use C++ mode by default
+AC_LANG(C++)
+
 AC_CONFIG_SRCDIR([common/trace.h])
 AC_CONFIG_HEADER(config.h)
 AC_CONFIG_MACRO_DIR([m4])
@@ -46,6 +49,8 @@ AX_CXX_COMPILE_STDCXX_11(noext,mandatory)
 dnl we have C++11 as mandatory, but set it in config.h too
 AC_DEFINE(HAVE_CXX11,1, [define if the compiler supports basic C++11 syntax])
 AC_SUBST(HAVE_CXX11)
+
+AX_CXX_VAR_PRETTYFUNC
 
 dnl C++ compiler version and vendor information
 AC_LANG_PUSH(C++)

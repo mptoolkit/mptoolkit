@@ -98,6 +98,9 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
+/* Whether __PRETTY_FUNCTION__ has a useful value. */
+#undef HAVE_PRETTYFUNC
+
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 
@@ -198,6 +201,9 @@
 
 /* Define for large files, on AIX-style hosts. */
 #undef _LARGE_FILES
+
+/* contains the function wherein the macro is called */
+#undef __PRETTYFUNC__
 
 /* Define to `long int' if <sys/types.h> does not define. */
 #undef off_t
