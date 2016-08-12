@@ -1083,7 +1083,13 @@ SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
    }
 
    // A norm for the overlaps matrix
-   double Scale = norm_frob_sq(A) / (A.Basis1().total_degree() * A.Basis2().total_degree());
+   double Scale = std::sqrt(norm_frob_sq(A) / (A.Basis1().total_degree() * A.Basis2().total_degree()));
+
+   //   TRACE(Scale)(norm_frob_sq(A))(A.Basis1().total_degree())(A.Basis2().total_degree());
+   //   TRACE(A);
+
+   TRACE(Scale)(norm_frob_sq(A))(A.Basis1().total_degree())(A.Basis2().total_degree());
+   TRACE(A);
 
    // make a dense matrix
    LinearAlgebra::Matrix<SimpleRedOperator> M = A.data();
@@ -1178,7 +1184,7 @@ SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
    }
 
    OperatorComponent ACheck = prod(Trunc, ANew);
-   CHECK(norm_frob(A - ACheck) <= Scale*TruncateOverlapEpsilon);
+   CHECK(norm_frob(A - ACheck) <= Scale*QREpsilon)(A-ACheck)(Scale)(TruncateOverlapEpsilon);
    
    ANew.check_structure();
    Trunc.check_structure();
