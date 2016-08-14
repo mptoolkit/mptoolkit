@@ -103,8 +103,14 @@ class MapVector : public VectorBase<MapVector<T> >
       template <typename U>
       void add_element(size_type n, U const& x);
 
+      template <typename U, typename Float>
+      void add_element_cull(size_type n, U const& x, Float const& Tol);
+
       template <typename U>
       void subtract_element(size_type n, U const& x);
+
+      template <typename U, typename Float>
+      void subtract_element_cull(size_type n, U const& x, Float const& Tol);
 
       void zero_element(size_type n);
 
@@ -218,7 +224,7 @@ template <typename T>
 struct IsZero<MapVector<T> >
 {
    typedef MapVector<T> const& argument_type;
-   typedef size_type result_type;
+   typedef bool result_type;
 
    result_type operator()(argument_type x) const
    {

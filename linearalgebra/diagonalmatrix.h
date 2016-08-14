@@ -391,6 +391,17 @@ struct ZeroAllInterface<T&, DiagonalMatrix<S, U>>
    }
 };
 
+template <typename T, typename U>
+struct IsZero<DiagonalMatrix<T, U>>
+{
+   typedef DiagonalMatrix<T, U> argument_type;
+   typedef bool result_type;
+   bool operator()(DiagonalMatrix<T, U> const& m)
+   {
+      return m.size1() == 0 || m.size2() == 0;
+   }
+};
+
 
 } // namespace LinearAlgebra
 

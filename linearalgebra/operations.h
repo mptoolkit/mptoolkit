@@ -1927,7 +1927,14 @@ zero_all(T const& v)
 // is_zero - function returns true if argument is equal to zero
 
 template <typename T, typename TInterface = typename interface<T>::type>
-struct IsZeroInterface {};
+struct IsZeroInterface
+{
+   typedef bool result_type;
+   bool operator()(T const& x) const
+   {
+      return false;
+   }
+};
 
 template <typename T, typename Enable> // primary is in interface.h
 struct IsZero : IsZeroInterface<T> {};

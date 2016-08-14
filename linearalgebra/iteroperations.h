@@ -33,11 +33,9 @@
   iter_norm_frob_sq
   iter_norm_inf
   iter_inner_prod
-  iter_inner_prod_sparse
-  iter_inner_prod_dense
+  iter_inner_prod_cull
   iter_coefficient_inner_prod
-  iter_coefficient_inner_prod_sparse
-  iter_coefficient_inner_prod_dense
+  iter_coefficient_inner_prod_cull
   iter_min
   iter_max
   iter_sum
@@ -586,7 +584,7 @@ iter_norm_inf(I const& i)
 
 template <typename I1, typename I2, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_dense, vector_iterator_dense)
+iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_dense, vector_iterator_dense)
 {
    typedef typename Func::result_type result_type;
    typedef typename make_value_with_zero<result_type>::type value_type;
@@ -610,7 +608,7 @@ iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_dense, vector_iterat
 
 template <typename I1, typename I2, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_dense, vector_iterator_sparse)
+iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_dense, vector_iterator_sparse)
 {
    typedef typename Func::result_type result_type;
    typedef typename make_value_with_zero<result_type>::type value_type;
@@ -631,7 +629,7 @@ iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_dense, vector_iterat
 
 template <typename I1, typename I2, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_sparse, vector_iterator_dense)
+iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_sparse, vector_iterator_dense)
 {
    typedef typename Func::result_type result_type;
    typedef typename make_value_with_zero<result_type>::type value_type;
@@ -652,7 +650,7 @@ iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_sparse, vector_itera
 
 template <typename I1, typename I2, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_dense, vector_iterator_hashed)
+iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_dense, vector_iterator_hashed)
 {
    typedef typename Func::result_type result_type;
    typedef typename make_value_with_zero<result_type>::type value_type;
@@ -673,7 +671,7 @@ iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_dense, vector_iterat
 
 template <typename I1, typename I2, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_hashed, vector_iterator_dense)
+iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_hashed, vector_iterator_dense)
 {
    typedef typename Func::result_type result_type;
    typedef typename make_value_with_zero<result_type>::type value_type;
@@ -694,7 +692,7 @@ iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_hashed, vector_itera
 
 template <typename I1, typename I2, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_dense, vector_iterator_ordered)
+iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_dense, vector_iterator_ordered)
 {
    typedef typename Func::result_type result_type;
    typedef typename make_value_with_zero<result_type>::type value_type;
@@ -715,7 +713,7 @@ iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_dense, vector_iterat
 
 template <typename I1, typename I2, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iterator_dense)
+iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iterator_dense)
 {
    typedef typename Func::result_type result_type;
    typedef typename make_value_with_zero<result_type>::type value_type;
@@ -736,7 +734,7 @@ iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iter
 
 template <typename I1, typename I2, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iterator_sparse)
+iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iterator_sparse)
 {
    typedef typename Func::result_type result_type;
    typedef typename make_value<result_type>::type value_type;
@@ -757,7 +755,7 @@ iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iter
 
 template <typename I1, typename I2, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_sparse, vector_iterator_ordered)
+iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_sparse, vector_iterator_ordered)
 {
    typedef typename Func::result_type result_type;
    typedef typename make_value_with_zero<result_type>::type value_type;
@@ -778,7 +776,7 @@ iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_sparse, vector_itera
 
 template <typename I1, typename I2, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_hashed, vector_iterator_sparse)
+iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_hashed, vector_iterator_sparse)
 {
    typedef typename Func::result_type result_type;
    typedef typename make_value<result_type>::type value_type;
@@ -799,7 +797,7 @@ iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_hashed, vector_itera
 
 template <typename I1, typename I2, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_sparse, vector_iterator_hashed)
+iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_sparse, vector_iterator_hashed)
 {
    typedef typename Func::result_type result_type;
    typedef typename make_value_with_zero<result_type>::type value_type;
@@ -820,7 +818,7 @@ iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_sparse, vector_itera
 
 template <typename I1, typename I2, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_hashed, vector_iterator_ordered)
+iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_hashed, vector_iterator_ordered)
 {
    typedef typename Func::result_type result_type;
    typedef typename make_value_with_zero<result_type>::type value_type;
@@ -841,7 +839,7 @@ iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_hashed, vector_itera
 
 template <typename I1, typename I2, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iterator_hashed)
+iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iterator_hashed)
 {
    typedef typename Func::result_type result_type;
    typedef typename make_value_with_zero<result_type>::type value_type;
@@ -862,7 +860,7 @@ iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iter
 
 template <typename I1, typename I2, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_hashed, vector_iterator_hashed)
+iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_hashed, vector_iterator_hashed)
 {
    // TODO: this could be made more efficient for some cases
    // by choosing which iterator to increment vs lookup; ie
@@ -887,7 +885,7 @@ iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_hashed, vector_itera
 
 template <typename I1, typename I2, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iterator_ordered)
+iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iterator_ordered)
 {
    typedef typename make_value<typename Func::result_type>::type result_type;
    typedef typename make_value_with_zero<result_type>::type value_type;
@@ -919,14 +917,14 @@ iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iter
          while (i1 && i1.index() < i2.index())
             ++i1;
       }
-      else
+      else if (i2.index() < i1.index())
       {
          ++i2;
          while (i2 && i2.index() < i1.index())
             ++i2;
       }
 
-      if (i1 && i2)
+      while (i1 && i2 && i1.index() == i2.index())
       {
          DEBUG_CHECK_EQUAL(i1.index(), i2.index());
          Result += f(*i1, *i2);
@@ -939,18 +937,18 @@ iter_inner_prod_dense(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iter
 template <typename I1, typename I2, typename Func>
 inline
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_dense(I1 const& i1, I2 const& i2, Func const& f)
+iter_inner_prod(I1 const& i1, I2 const& i2, Func const& f)
 {
-   return iter_inner_prod_dense(i1, i2, f, typename I1::category(), typename I2::category());
+   return iter_inner_prod(i1, i2, f, typename I1::category(), typename I2::category());
 }
 
 //
-// iter_inner_prod_sparse
+// iter_inner_prod_cull
 //
 
-template <typename I1, typename I2, typename Func>
+template <typename I1, typename I2, typename Func, typename Float>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_sparse(I1 i1, I2 i2, Func f, 
+iter_inner_prod_cull(I1 i1, I2 i2, Func f, Float Tol,
                        vector_iterator_ordered, vector_iterator_ordered)
 {
    typedef typename make_value<typename Func::result_type>::type result_type;
@@ -985,14 +983,14 @@ iter_inner_prod_sparse(I1 i1, I2 i2, Func f,
          while (i1 && i1.index() < i2.index())
             ++i1;
       }
-      else
+      else if (i2.index() < i1.index())
       {
          ++i2;
          while (i2 && i2.index() < i1.index())
             ++i2;
       }
 
-      if (i1 && i2 && i1.index() == i2.index())
+      if (i1 && i2 && (i1.index() == i2.index()))
       {
          DEBUG_CHECK_EQUAL(i1.index(), i2.index());
          result_type Temp = f(*i1, *i2);
@@ -1002,72 +1000,27 @@ iter_inner_prod_sparse(I1 i1, I2 i2, Func f,
          ++i1; ++i2;
       }
    }
-   auto Tol = std::numeric_limits<decltype(NormSq)>::epsilon()*10;
    TRACE_IF(norm_err_sq(Result) < NormSq * Tol * Tol)(Result);
    if (norm_err_sq(Result) < NormSq * Tol * Tol)
       return zero_or_die<value_type>();
    return Result;
 }
 
-template <typename I1, typename I2, typename Func>
+template <typename I1, typename I2, typename Func, typename Float>
 inline
 typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod_sparse(I1 const& i1, I2 const& i2, Func const& f)
+iter_inner_prod_cull(I1 const& i1, I2 const& i2, Func const& f, Float Tol)
 {
-   return iter_inner_prod_sparse(i1, i2, f, typename I1::category(), typename I2::category());
+   return iter_inner_prod_cull(i1, i2, f, Tol, typename I1::category(), typename I2::category());
 }
 
 //
-// iter_inner_prod
-//
-// delegates to iter_inner_prod_dense or iter_inner_prod_sparse,
-// depending on the sparsity of the arguments
-
-template <typename I1, typename I2, typename Func>
-typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_dense, vector_iterator_dense)
-{
-   return iter_inner_prod_dense(i1, i2, f);
-}
-
-template <typename I1, typename I2, typename Func>
-typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_dense, vector_iterator_ordered)
-{
-   return iter_inner_prod_dense(i1, i2, f);
-}
-
-template <typename I1, typename I2, typename Func>
-inline
-typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iterator_dense)
-{
-   return iter_inner_prod_dense(i1, i2, f);
-}
-
-template <typename I1, typename I2, typename Func>
-typename make_value_with_zero<typename Func::result_type>::type
-inline
-iter_inner_prod(I1 i1, I2 i2, Func f, vector_iterator_ordered, vector_iterator_ordered)
-{
-   return iter_inner_prod_sparse(i1, i2, f);
-}
-
-template <typename I1, typename I2, typename Func>
-inline
-typename make_value_with_zero<typename Func::result_type>::type
-iter_inner_prod(I1 const& i1, I2 const& i2, Func const& f)
-{
-   return iter_inner_prod(i1, i2, f, typename I1::category(), typename I2::category());
-}
-
-//
-// iter_coefficient_inner_prod_dense
+// iter_coefficient_inner_prod
 //
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func const& f,
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func const& f,
                             vector_iterator_dense, vector_iterator_dense)
 {
    typedef typename CF::result_type cf_result;
@@ -1099,7 +1052,7 @@ iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func const& f,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func f, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f, 
                             vector_iterator_dense, vector_iterator_sparse)
 {
    typedef typename CF::result_type cf_result;
@@ -1124,7 +1077,7 @@ iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func f,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf,
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf,
                             Func f, vector_iterator_sparse, vector_iterator_dense)
 {
    typedef typename CF::result_type cf_result;
@@ -1148,7 +1101,7 @@ iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func f, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f, 
                             vector_iterator_dense, vector_iterator_hashed)
 {
    typedef typename CF::result_type cf_result;
@@ -1172,7 +1125,7 @@ iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func f,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf,
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf,
                             Func f, vector_iterator_hashed, vector_iterator_dense)
 {
    typedef typename CF::result_type cf_result;
@@ -1196,7 +1149,7 @@ iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func f, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f, 
                             vector_iterator_dense, vector_iterator_ordered)
 {
    typedef typename CF::result_type cf_result;
@@ -1220,7 +1173,7 @@ iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func f,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf,
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf,
                             Func f, vector_iterator_ordered, vector_iterator_dense)
 {
    typedef typename CF::result_type cf_result;
@@ -1246,7 +1199,7 @@ iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func f, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f, 
                             vector_iterator_ordered, vector_iterator_sparse)
 {
    typedef typename CF::result_type cf_result;
@@ -1271,7 +1224,7 @@ iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func f,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf,
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf,
                             Func f, vector_iterator_sparse, vector_iterator_ordered)
 {
    typedef typename CF::result_type cf_result;
@@ -1296,7 +1249,7 @@ iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func f, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f, 
                             vector_iterator_hashed, vector_iterator_sparse)
 {
    typedef typename CF::result_type cf_result;
@@ -1321,7 +1274,7 @@ iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func f,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func f, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f, 
                             vector_iterator_sparse, vector_iterator_hashed)
 {
    typedef typename CF::result_type cf_result;
@@ -1346,7 +1299,7 @@ iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func f,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func f, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f, 
                             vector_iterator_hashed, vector_iterator_ordered)
 {
    typedef typename CF::result_type cf_result;
@@ -1371,7 +1324,7 @@ iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func f,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func f, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f, 
                             vector_iterator_ordered, vector_iterator_hashed)
 {
    typedef typename CF::result_type cf_result;
@@ -1396,7 +1349,7 @@ iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, Func f,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, 
                             Func f, vector_iterator_hashed, vector_iterator_hashed)
 {
    // TODO: this could be made more efficient for some cases
@@ -1425,7 +1378,7 @@ iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, 
                             Func const& f, vector_iterator_ordered, vector_iterator_ordered)
 {
    typedef typename result_value<Func>::type result_type;
@@ -1490,11 +1443,9 @@ iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf,
          }
       }
 
-      DEBUG_CHECK_EQUAL(i1.index(), i2.index());
       cf_result x(cf(i2.index()));
       if (!is_zero(x))
-         Result += x * f(*i1, *i2);
-
+	 Result += x * f(*i1, *i2);
       ++i1; ++i2;
    }
    return Result;
@@ -1503,20 +1454,20 @@ iter_coefficient_inner_prod_dense(I1 i1, I2 i2, CF const& cf,
 template <typename I1, typename I2, typename CF, typename Func>
 inline
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_dense(I1 const& i1, I2 const& i2, CF const& cf, Func const& f)
+iter_coefficient_inner_prod(I1 const& i1, I2 const& i2, CF const& cf, Func const& f)
 {
-   return iter_coefficient_inner_prod_dense(i1, i2, cf, f, 
+   return iter_coefficient_inner_prod(i1, i2, cf, f, 
 					    typename I1::category(), typename I2::category());
 }
 
 //
-// iter_coefficient_inner_prod_sparse
+// iter_coefficient_inner_prod_cull
 //
 
-template <typename I1, typename I2, typename CF, typename Func>
+template <typename I1, typename I2, typename CF, typename Func, typename Float>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_sparse(I1 i1, I2 i2, CF const& cf, 
-                            Func const& f, vector_iterator_ordered, vector_iterator_ordered)
+iter_coefficient_inner_prod_cull(I1 i1, I2 i2, CF const& cf, 
+				 Func const& f, Float Tol, vector_iterator_ordered, vector_iterator_ordered)
 {
    typedef typename result_value<Func>::type result_type;
    typedef typename CF::result_type cf_result;
@@ -1575,14 +1526,14 @@ iter_coefficient_inner_prod_sparse(I1 i1, I2 i2, CF const& cf,
          while (i1 && i1.index() < i2.index())
             ++i1;
       }
-      else
+      else if (i2.index() < i1.index())
       {
          ++i2;
          while (i2 && i2.index() < i1.index())
             ++i2;
       }
 
-      if (i1 && i2 && i1.index() == i2.index())
+      while (i1 && i2 && (i1.index() == i2.index()))
       {
 	 DEBUG_CHECK_EQUAL(i1.index(), i2.index());
 	 cf_result x(cf(i2.index()));
@@ -1596,73 +1547,19 @@ iter_coefficient_inner_prod_sparse(I1 i1, I2 i2, CF const& cf,
 	 ++i1; ++i2;
       }
    }
-   auto Tol = std::numeric_limits<decltype(NormSq)>::epsilon()*10;
    TRACE_IF(norm_err_sq(Result) < NormSq * Tol * Tol)(Result);
    if (norm_err_sq(Result) < NormSq * Tol * Tol)
       return zero_or_die<value_type>();
    return Result;
 }
 
-template <typename I1, typename I2, typename CF, typename Func>
+template <typename I1, typename I2, typename CF, typename Func, typename Float>
 inline
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_sparse(I1 const& i1, I2 const& i2, CF const& cf, Func const& f)
+iter_coefficient_inner_prod_cull(I1 const& i1, I2 const& i2, CF const& cf, Func const& f, Float Tol)
 {
-   return iter_coefficient_inner_prod_sparse(i1, i2, cf, f, 
+   return iter_coefficient_inner_prod_cull(i1, i2, cf, f, Tol,
 					     typename I1::category(), typename I2::category());
-}
-
-//
-// iter_coefficient_inner_prod
-//
-// Forwards to iter_coefficient_inner_prod_dense or iter_coefficient_inner_prod_sparse
-// depending on the sparsity of the arguments
-//
-
-template <typename I1, typename I2, typename CF, typename Func>
-inline
-typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func const& f,
-                            vector_iterator_dense, vector_iterator_dense)
-{
-   return iter_coefficient_inner_prod_dense(i1, i2, cf, f);
-}
-
-template <typename I1, typename I2, typename CF, typename Func>
-inline
-typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f, 
-			    vector_iterator_dense, vector_iterator_ordered)
-{
-   return iter_coefficient_inner_prod_dense(i1, i2, cf, f);
-}
-
-template <typename I1, typename I2, typename CF, typename Func>
-inline
-typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf,
-                            Func f, vector_iterator_ordered, vector_iterator_dense)
-{
-   return iter_coefficient_inner_prod_dense(i1, i2, cf, f);
-}
-
-
-template <typename I1, typename I2, typename CF, typename Func>
-inline
-typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, 
-                            Func const& f, vector_iterator_ordered, vector_iterator_ordered)
-{
-   return iter_coefficient_inner_prod_sparse(i1, i2, cf, f);
-}
-
-template <typename I1, typename I2, typename CF, typename Func>
-inline
-typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod(I1 const& i1, I2 const& i2, CF const& cf, Func const& f)
-{
-   return iter_coefficient_inner_prod(i1, i2, cf, f, 
-				      typename I1::category(), typename I2::category());
 }
 
 //

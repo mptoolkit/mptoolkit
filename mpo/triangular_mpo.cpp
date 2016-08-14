@@ -199,6 +199,16 @@ log_inner_prod(TriangularMPO const& Op1, TriangularMPO const& Op2)
 {
 }
 
+double
+log_norm_frob_sq(TriangularMPO const& Op)
+{
+}
+
+bool
+equal(FiniteMPO const& Op1, FiniteMPO const& Op2, double Tol)
+{
+}
+
 bool
 equal(TriangularMPO const& Op1, TriangularMPO const& Op2, double Tol)
 {

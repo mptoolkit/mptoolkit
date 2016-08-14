@@ -305,6 +305,17 @@ struct Resize<Matrix<T, Orient>&>
    }
 };
 
+template <typename T, typename Orient>
+struct IsZero<Matrix<T, Orient>>
+{
+   typedef Matrix<T, Orient> argument_type;
+   typedef bool result_type;
+   bool operator()(Matrix<T, Orient> const& m)
+   {
+      return m.size1() == 0 || m.size2() == 0;
+   }
+};
+
 } // namespace LinearAlgebra
 
 #include "matrix.cc"
