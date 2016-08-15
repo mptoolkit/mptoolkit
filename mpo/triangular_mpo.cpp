@@ -99,7 +99,7 @@ operator<<(std::ostream& out, TriangularMPO const& op)
    return out << op.data();
 }
 
-void optimize(TriangularMPO& Op)
+void deparallelize(TriangularMPO& Op)
 {
    bool Reduced = true; // flag to indicate that we reduced a dimension
    // loop until we do a complete sweep with no reduction in dimensions
@@ -133,6 +133,11 @@ void optimize(TriangularMPO& Op)
       }
       Op.back() = Op.back() * T;
    }
+}
+
+void optimize(TriangularMPO& Op)
+{
+   deparallelize(Op);
 }
 
 void qr_optimize(TriangularMPO& Op)
@@ -534,7 +539,7 @@ TriangularMPO operator+(TriangularMPO const& x, TriangularMPO const& y)
 
    //   TRACE(x)(y)(Result);
 
-   //optimize(Result);
+   optimize(Result);
 
    return Result;
 }
@@ -648,7 +653,7 @@ TriangularMPO prod(TriangularMPO const& x, TriangularMPO const& y, QuantumNumber
 
       Result[Here] = Op;
    }
-   //   optimize(Result);
+   optimize(Result);
    return Result;
 }
 

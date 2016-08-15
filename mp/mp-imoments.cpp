@@ -449,6 +449,10 @@ int main(int argc, char** argv)
 	 // That is, in order to re-use the E matrices for a higher power, we need
 	 // to multiply the new operator on the left, where the identity in the top right corner (A_00)
 	 // will correspond to the already calculated terms.
+
+         // 2016-08-15: Due to a misunderstanding/bug this reuse doesnt work.
+         E = std::vector<KMatrixPolyType>();
+
 	 Op = OriginalOp * Op;
 	 SolveMPO_Left(E, Phi, Psi.qshift(), Op, Identity, Rho, p < Power-1, 
 		       Tol, UnityEpsilon, Verbose);
