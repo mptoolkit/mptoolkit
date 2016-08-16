@@ -101,13 +101,13 @@ GSRCSUBDIRS = $(patsubst %,$(SRCDIR)/%, $(GSRCDIRS))
 # GPATH = $(GSRCSUBDIRS)
 
 quantumnumbersobj = quantumnumber.o symmetrybase.o symmetrylist.o \
-		    coupling.o u1.o su2.o null-quantumnumber.o z2.o
+		    coupling.o u1.o su2.o null-quantumnumber.o z2.o zn.o
 
 tensorobj = tensorproduct.o tensorsum.o basis.o regularize.o tensor_eigen.o
 
 latticeobj = siteoperator.o latticesite.o unitcell.o unitcell-parser.o unitcell_mpo.o \
              infinitelattice.o siteoperator-parser.o infinite-parser.o \
-             function.o
+             function.o operator_utilities.o
 
 dmrgobj = $(tensorobj) density.o
 
@@ -212,7 +212,8 @@ default-models = spinchain-su2 spinchain-spin2-su2 \
                  bosehubbard-flux-3leg-u1 spinchain-u1 spincylinder-su2 spincylinder-u1 \
                  spinchain bosehubbard-ladder-u1 bosehubbard-2component-u1z2 \
                  hubbard-so4 bosehubbard-u1 bosehubbard hubbard-u1u1 \
-                 hubbard-su2 spinladder-su2 spinchain-z2
+                 hubbard-su2 spinladder-su2 spinchain-z2 hubbardcylinder-u1su2 \
+                 hubbardcylinder-u1su2-k hubbardcylinder-u1su2-k2
 
 tools = mp-idmrg-s3e mp-ioverlap \
         mp-info mp-history mp-reflect mp-conj \

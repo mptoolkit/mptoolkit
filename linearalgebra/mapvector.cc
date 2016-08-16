@@ -107,6 +107,32 @@ MapVector<T>::add_element(size_type n, U const& x)
 }
 
 template <typename T>
+template <typename U, typename Float>
+inline
+void
+MapVector<T>::add_element_cull(size_type n, U const& x, Float const& Tol)
+{
+   // Early return if the element is zero, eg it might be a value_with_zero<T>
+   if (LinearAlgebra::is_zero(x))
+      return;
+
+   T Temp(x);
+   base_iterator I = Data_.find(n);
+   if (I != Data_.end())
+   {
+      auto NormSq = norm_err_sq(Temp) + norm_err_sq(I->second);
+      I->second += Temp;
+      if (norm_err_sq(I->second) < Tol*Tol * NormSq)
+      {
+	 Data_.erase(I);
+      }
+   }
+   else
+      Data_.insert(std::pair<size_type, T>(n, Temp));
+}
+
+
+template <typename T>
 template <typename U>
 inline
 void
@@ -117,6 +143,30 @@ MapVector<T>::subtract_element(size_type n, U const& x)
       I->second -= x;
    else
       Data_.insert(std::pair<size_type, T>(n, -x));
+}
+
+template <typename T>
+template <typename U, typename Float>
+inline
+void
+MapVector<T>::subtract_element_cull(size_type n, U const& x, Float const& Tol)
+{
+   if (LinearAlgebra::is_zero(x))
+      return;
+
+   T Temp(x);
+   base_iterator I = Data_.find(n);
+   if (I != Data_.end())
+   {
+      auto NormSq = norm_err_sq(Temp) + norm_err_sq(I->second);
+      I->second -= Temp;
+      if (norm_err_sq(I->second) < Tol*Tol * NormSq)
+      {
+	 Data_.erase(I);
+      }
+   }
+   else
+      Data_.insert(std::pair<size_type, T>(n, -Temp));
 }
 
 template <typename T>

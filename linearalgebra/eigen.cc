@@ -902,6 +902,7 @@ struct ImplementQRFactorize<M&, Concepts::MatrixExpression<std::complex<double>,
    }
 };
 
+#if 0
 template <typename M, typename Mi>
 struct ImplementQRFactorize<M&, Concepts::ContiguousMatrix<std::complex<double>, RowMajor, Mi>>
 {
@@ -928,6 +929,7 @@ struct ImplementQRFactorize<M&, Concepts::ContiguousMatrix<std::complex<double>,
       return U;
    }
 };
+#endif
 
 //
 // InvertHPD

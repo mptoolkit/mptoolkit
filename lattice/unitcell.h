@@ -94,6 +94,8 @@ class UnitCell
       UnitCell(LatticeSite const& s, LatticeSite const& t);
       UnitCell(LatticeSite const& s, LatticeSite const& t, LatticeSite const& u);
       UnitCell(LatticeSite const& s, LatticeSite const& t, LatticeSite const& u, LatticeSite const& v);
+
+      UnitCell(std::vector<LatticeSite> const& s);
    
       UnitCell(SymmetryList const& sl, LatticeSite const& s);
       UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t);

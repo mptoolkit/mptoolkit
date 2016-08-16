@@ -112,6 +112,8 @@ half_int abs(half_int h);
 
 half_int operator-(half_int h);
 
+half_int operator%(half_int h, int n);
+
 bool is_integral(half_int h);
 
 int to_int(half_int h);             // throws if h is not integral
@@ -222,6 +224,12 @@ inline
 half_int operator-(half_int h1, half_int h2)
 {
    return half_int(h1.twice() - h2.twice(), half_int::twice_tag());
+}
+
+inline
+half_int operator%(half_int h, int n)
+{
+   return half_int(h.twice() % (2*n), half_int::twice_tag());
 }
 
 inline

@@ -23,8 +23,8 @@
   Created 2005-01-24 Ian McCulloch
 */
 
-#if !defined(MATRIXRANSFORMITERATOR_H_CHHUIYTH879YO)
-#define MATRIXTRANSFORMITERATOR_H_CHHUIYTH879YO
+#if !defined(MPTOOLKIT_LINEARALGEBRA_MATRIXTRANSFORMITERATOR_H)
+#define MPTOOLKIT_LINEARALGEBRA_MATRIXTRANSFORMITERATOR_H
 
 #include "vectortransformiterator.h"
 #include "matrixiterators.h"
@@ -38,7 +38,7 @@ template <typename Base, typename Func>
 class MatrixTransformInnerIterator
 {
    public:
-      typedef typename Func::result_type reference;
+      typedef typename std::result_of<Func(typename Base::value_type&)>::type reference;
       typedef typename make_value<reference>::type value_type;
       typedef typename boost::mpl::if_<
 	 boost::is_reference<reference>,
@@ -99,15 +99,7 @@ template <typename Base, typename Func>
 class MatrixTransformOuterIterator
 {
    public:
-      // if F allows a mutable parameter, then we want to use the
-      // mutable version of Transform (ie. Transform<T&, Func>).
-      typedef typename boost::mpl::if_<
-	 is_mutable_proxy_reference<typename Func::argument_type>,
-	 typename boost::add_reference<typename Base::reference>::type,
-	 typename basic_type<typename Base::reference>::type
-      >::type base_arg_type;
-
-      typedef typename Transform<base_arg_type, Func>::result_type reference;
+      typedef typename Transform<typename Base::reference, Func>::result_type reference;
 
    //   typedef typename boost::mpl::print<base_arg_type>::type d;
    //   typedef typename boost::mpl::print<reference>::type d2;

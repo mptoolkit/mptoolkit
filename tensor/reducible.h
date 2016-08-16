@@ -25,8 +25,8 @@
 
 */
 
-#if !defined(REDUCIBLE_H_SDHCEWUYUIGHUIHYO89337489FD)
-#define REDUCIBLE_H_SDHCEWUYUIGHUIHYO89337489FD
+#if !defined(MPTOOLKIT_TENSOR_REDUCIBLE_H)
+#define MPTOOLKIT_TENSOR_REDUCIBLE_H
   
 #include "tensor.h"
 #include "tensorproduct.h"

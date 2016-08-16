@@ -99,11 +99,8 @@ operator<<(std::ostream& out, TriangularMPO const& op)
    return out << op.data();
 }
 
-void optimize(TriangularMPO& Op)
+void deparallelize(TriangularMPO& Op)
 {
-   if (Op.size() < 2)
-      return;
-
    bool Reduced = true; // flag to indicate that we reduced a dimension
    // loop until we do a complete sweep with no reduction in dimensions
    while (Reduced)
@@ -136,6 +133,11 @@ void optimize(TriangularMPO& Op)
       }
       Op.back() = Op.back() * T;
    }
+}
+
+void optimize(TriangularMPO& Op)
+{
+   deparallelize(Op);
 }
 
 void qr_optimize(TriangularMPO& Op)
@@ -198,12 +200,22 @@ void qr_optimize(TriangularMPO& Op)
 }
 
 std::pair<std::complex<double>, double>
-log_inner_prod(FiniteMPO const& Op1, FiniteMPO const& Op2)
+log_inner_prod(TriangularMPO const& Op1, TriangularMPO const& Op2)
+{
+}
+
+double
+log_norm_frob_sq(TriangularMPO const& Op)
 {
 }
 
 bool
 equal(FiniteMPO const& Op1, FiniteMPO const& Op2, double Tol)
+{
+}
+
+bool
+equal(TriangularMPO const& Op1, TriangularMPO const& Op2, double Tol)
 {
    // Do we want to scale Tol by the system size?  Bond dimension?
 
@@ -378,11 +390,17 @@ void balance(TriangularMPO& Op)
    // 
 }
 
-void print_structure(TriangularMPO const& Op, std::ostream& out, double UnityEpsilon)
+void print_structure(TriangularMPO const& Op, std::ostream& out, double UnityEpsilon, int Verbose)
 {
    out << "TriangularMPO has " << Op.size() << " sites\n";
    for (int i = 0; i < Op.size(); ++i)
    {
+      if (Verbose > 0)
+      {
+         out << "Basis at bond " << i << ":\n";
+         out << Op[i].Basis1() << '\n';
+      }
+
       out << "Site " << i << " dimension " << Op[i].size1() << " x " << Op[i].size2() << '\n';
       print_structure(Op[i], out, UnityEpsilon);
    }
@@ -521,7 +539,7 @@ TriangularMPO operator+(TriangularMPO const& x, TriangularMPO const& y)
 
    //   TRACE(x)(y)(Result);
 
-   //optimize(Result);
+   optimize(Result);
 
    return Result;
 }
@@ -635,7 +653,7 @@ TriangularMPO prod(TriangularMPO const& x, TriangularMPO const& y, QuantumNumber
 
       Result[Here] = Op;
    }
-   //   optimize(Result);
+   optimize(Result);
    return Result;
 }
 

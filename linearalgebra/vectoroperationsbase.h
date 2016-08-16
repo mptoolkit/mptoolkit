@@ -330,6 +330,18 @@ add_element(T& v, size_type n, Value const& x)
    AddElement<T&, Value>()(v, n, x);
 }
 
+template <typename T, typename Value, typename Float,
+	  typename TInterface = typename interface<T>::type, typename Enable = void>
+struct AddElementCull { };
+
+template <typename T, typename Value, typename Float>
+inline
+typename AddElementCull<T&, Value, Float>::result_type
+add_element_cull(T& v, size_type n, Value const& x, Float const& Tol)
+{
+   AddElementCull<T&, Value, Float>()(v, n, x, Tol);
+}
+
 // SubtractElement
 
 template <typename T, typename Value,
@@ -342,6 +354,18 @@ typename SubtractElement<T&, Value>::result_type
 subtract_element(T& v, size_type n, Value const& x)
 {
    SubtractElement<T&, Value>()(v, n, x);
+}
+
+template <typename T, typename Value, typename Float,
+	  typename TInterface = typename interface<T>::type, typename Enable = void>
+struct SubtractElementCull { };
+
+template <typename T, typename Value, typename Float>
+inline
+typename SubtractElementCull<T&, Value, Float>::result_type
+subtract_element_cull(T& v, size_type n, Value const& x, Float const& Tol)
+{
+   SubtractElementCull<T&, Value, Float>()(v, n, x, Tol);
 }
 
 // ZeroElement
@@ -1562,6 +1586,19 @@ struct AddElement<T&, Value, COMPRESSED_VECTOR(S, U) >
    }
 };
 
+template <typename T, typename Value, typename S, typename U, typename Float>
+struct AddElementCull<T&, Value, Float, COMPRESSED_VECTOR(S, U) >
+{
+   typedef void result_type;
+   typedef T& first_argument_type;
+   typedef size_type second_argument_type;
+   typedef Value const& third_argument_type;
+   result_type operator()(T& v, size_type n, Value const& x, Float const& Tol) const
+   {
+      v.add_element_cull(n, x, Tol);
+   }
+};
+
 template <typename T, typename Value, typename S, typename U>
 struct SubtractElement<T&, Value, COMPRESSED_VECTOR(S, U) >
 {
@@ -1572,6 +1609,19 @@ struct SubtractElement<T&, Value, COMPRESSED_VECTOR(S, U) >
    result_type operator()(T& v, size_type n, Value const& x) const
    {
       v.subtract_element(n, x);
+   }
+};
+
+template <typename T, typename Value, typename S, typename U, typename Float>
+struct SubtractElementCull<T&, Value, Float, COMPRESSED_VECTOR(S, U)>
+{
+   typedef void result_type;
+   typedef T& first_argument_type;
+   typedef size_type second_argument_type;
+   typedef Value const& third_argument_type;
+   result_type operator()(T& v, size_type n, Value const& x, Float const& Tol) const
+   {
+      v.subtract_element_cull(n, x, Tol);
    }
 };
 

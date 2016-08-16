@@ -1260,7 +1260,9 @@ struct IrredProd<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2, B2
          ProdHelper(x.Basis1(), x.Basis2(), y.Basis2(),
                     x.TransformsAs(), y.TransformsAs(), Trans);
 
-      Result.data() = coefficient_multiply(x.data(), y.data(), ProdHelper, F);
+      double Tol = std::numeric_limits<double>::epsilon() * 10;
+
+      Result.data() = coefficient_multiply_cull(x.data(), y.data(), ProdHelper, Tol, F);
 
       Result.debug_check_structure();
       return Result;

@@ -151,7 +151,7 @@ struct Iterate<DiagonalMatrix<T>&>
    typedef DiagonalMatrix<T>& argument_type;
    result_type operator()(argument_type x) const
    {
-      return result_type(imiter(iviter(iterate(x.diagonal()))));
+      return result_type(imiter(iterate(x.diagonal())));
    }
 };
 
@@ -388,6 +388,17 @@ struct ZeroAllInterface<T&, DiagonalMatrix<S, U>>
    void operator()(T& v) const
    {
       iter_zero(iterate(v.diagonal()));
+   }
+};
+
+template <typename T, typename U>
+struct IsZero<DiagonalMatrix<T, U>>
+{
+   typedef DiagonalMatrix<T, U> argument_type;
+   typedef bool result_type;
+   bool operator()(DiagonalMatrix<T, U> const& m)
+   {
+      return m.size1() == 0 || m.size2() == 0;
    }
 };
 

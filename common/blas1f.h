@@ -173,11 +173,11 @@ void F77NAME(zdotc)(std::complex<double>* result, const integer *n,
                     const std::complex<double> *dx, const integer *incx, 
                     const std::complex<double> *dy, const integer *incy);
 #elif defined(FORTRAN_COMPLEX_RETURN_IN_REGISTER)
-std::complex<double>  
+Fortran::complex
 F77NAME(zdotu)(const integer *n, 
 	       const std::complex<double> *dx, const integer *incx, 
 	       const std::complex<double> *dy, const integer *incy);
-std::complex<double>  
+Fortran::complex
 F77NAME(zdotc)(const integer *n, 
 	       const std::complex<double> *dx, const integer *incx, 
 	       const std::complex<double> *dy, const integer *incy);
@@ -312,8 +312,9 @@ void zcopy(integer n, std::complex<double> const* dx, integer incx,
 
 #if defined(FORTRAN_COMPLEX_RETURN_FIRST_ARG)
 inline
-std::complex<double> zdotu(integer n, std::complex<double> const* dx, integer incx, 
-		       std::complex<double> const* dy, integer incy)
+std::complex<double>
+zdotu(integer n, std::complex<double> const* dx, integer incx, 
+      std::complex<double> const* dy, integer incy)
 {
    std::complex<double> result;
    TRACE_BLAS1("BLAS1: zdotu")(&result)(n)(dx)(incx)(dy)(incy);
@@ -322,8 +323,9 @@ std::complex<double> zdotu(integer n, std::complex<double> const* dx, integer in
 }
 
 inline
-std::complex<double> zdotc(integer n, std::complex<double> const* dx, integer incx, 
-			   std::complex<double> const* dy, integer incy)
+std::complex<double>
+zdotc(integer n, std::complex<double> const* dx, integer incx, 
+      std::complex<double> const* dy, integer incy)
 {
    std::complex<double> result;
    TRACE_BLAS1("BLAS1: zdotc")(&result)(n)(dx)(incx)(dy)(incy);
@@ -332,16 +334,18 @@ std::complex<double> zdotc(integer n, std::complex<double> const* dx, integer in
 }
 #elif defined(FORTRAN_COMPLEX_RETURN_IN_REGISTER)
 inline
-std::complex<double> zdotu(integer n, std::complex<double> const* dx, integer incx, 
-		       std::complex<double> const* dy, integer incy)
+std::complex<double>
+zdotu(integer n, std::complex<double> const* dx, integer incx, 
+      std::complex<double> const* dy, integer incy)
 {
    TRACE_BLAS1("BLAS1: zdotu")(n)(dx)(incx)(dy)(incy);
    return raw::F77NAME(zdotu)(&n, dx, &incx, dy, &incy);
 }
 
 inline
-std::complex<double> zdotc(integer n, std::complex<double> const* dx, integer incx, 
-			   std::complex<double> const* dy, integer incy)
+std::complex<double>
+zdotc(integer n, std::complex<double> const* dx, integer incx, 
+      std::complex<double> const* dy, integer incy)
 {
    TRACE_BLAS1("BLAS1: zdotc")(&result)(n)(dx)(incx)(dy)(incy);
    return raw::F77NAME(zdotc)(&n, dx, &incx, dy, &incy);

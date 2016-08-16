@@ -619,6 +619,14 @@ struct AddMatrixElement<SparseMatrix<T, ColMajor, InnerType, OuterType>&, Value>
    }
 };
 
+template <typename T, typename InnerType, typename OuterType, typename Value, typename Float>
+void add_element_cull(SparseMatrix<T, RowMajor, InnerType, OuterType>& m,
+		      size_type i, size_type j, Value const& x,
+		      Float const& Tol)
+{
+   add_element_cull(get_element(m.vec(),i), j, x, Tol);
+}
+
 // subtract_element
 
 template <typename T, typename InnerType, typename OuterType, typename Value>
@@ -644,6 +652,14 @@ struct SubtractMatrixElement<SparseMatrix<T, ColMajor, InnerType, OuterType>&, V
       subtract_element(get_element(m.vec(),j), i, x);
    }
 };
+
+template <typename T, typename InnerType, typename OuterType, typename Value, typename Float>
+void subtract_element_cull(SparseMatrix<T, RowMajor, InnerType, OuterType>& m,
+			   size_type i, size_type j, Value const& x,
+			   Float const& Tol)
+{
+   subtract_element_cull(get_element(m.vec(),j), i, x, Tol);
+}
 
 // zero_element
 

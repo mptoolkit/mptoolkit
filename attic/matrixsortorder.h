@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// quantumnumbers/all_symmetries.h
+// attic/matrixsortorder.h
 //
 // Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
@@ -16,20 +16,26 @@
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER
+/* -*- C++ -*- $Id$
 
-/*
-  all_symmetries.h
+  matrixsortorder.h
 
-  Helper to include all known symmetries.
+  proxies for matrices with swapped index sort order.
+
+  Created 2005-01-23 Ian MmCulloch
 */
 
-#if !defined(ALL_SYMMETRIES_H_HY643787FR8Y4378YO)
-#define ALL_SYMMETRIES_H_HY643787FR8Y4378YO
+#if !defined(MATRIXSORTORDER_H_HJKHDVJKRHETUIERHYUIHGO98)
+#define MATRIXSORTORDER_H_HJKHDVJKRHETUIERHYUIHGO98
 
-#include "u1.h"
-#include "su2.h"
-#include "null-quantumnumber.h"
-#include "z2.h"
-#include "zn.h"
+namespace LinearAlgebra
+{
+
+
+
+
+
+
+} // namespace LinearAlgebra
 
 #endif
