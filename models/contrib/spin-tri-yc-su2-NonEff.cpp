@@ -4,7 +4,8 @@
 //
 // models/contrib/spin-tri-yc-su2-NonEff.cpp
 //
-// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2014-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2014-2016 S. N. Saadatmand <s.saadatmand@uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -145,9 +146,9 @@ int main(int argc, char** argv)
       // Add the tripartite sublattice magnetization operators
       if (w%3 == 0)
       {
-	 Lattice["S_A"] = sum_unit(S_A, w*3);
-	 Lattice["S_B"] = sum_unit(S_B, w*3);
-	 Lattice["S_C"] = sum_unit(S_C, w*3);
+	 Lattice["Sa"] = sum_unit(S_A, w*3);
+	 Lattice["Sb"] = sum_unit(S_B, w*3);
+	 Lattice["Sc"] = sum_unit(S_C, w*3);
       }
 
       Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
