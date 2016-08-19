@@ -55,6 +55,7 @@ int main(int argc, char** argv)
       // Descriptions of each operator
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("SU(2) spin chain");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
 	 ("H_J1"  , "nearest neighbor spin exchange")
 	 ("H_J2"  , "next-nearest neighbor spin exchange")

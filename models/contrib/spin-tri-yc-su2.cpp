@@ -114,6 +114,7 @@ int main(int argc, char** argv)
       half_int Spin = 0.5;
       int w = 3;
       std::string FileName;
+      bool NoReflect = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -121,6 +122,7 @@ int main(int argc, char** argv)
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
 	 ("width,w", prog_opt::value(&w), "width of the cylinder [default 3]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
+	 ("noreflect", prog_opt::bool_switch(&NoReflect), "don't include the spatial reflection operator (expensive for large width lattices)")
          ;
       
       prog_opt::variables_map vm;        
@@ -130,36 +132,52 @@ int main(int argc, char** argv)
 		      run(), vm);
       prog_opt::notify(vm);    
       
+      // Descriptions of each operator
+      OperatorDescriptions OpDescriptions;
+      OpDescriptions.set_description("SU(2) triangular lattice YC configuration");
+      OpDescriptions.author("S N Saadatmand", "s.saadatmand@uq.edu.au");
+      OpDescriptions.author("IP McCullocch", "ianmcc@physics.uq.edu.au");
+      OpDescriptions.add_cell_operators()
+	 ("S"          , "total spin on a leg of the cylinder")
+	 ("StagS"      , "staggered magnetization", "width even", [&w]()->bool {return w%2 == 0;})
+	 ("Trans"      , "translation by one site (rotation by 2\u0071/w) in lattice short direction")
+	 ("Ref"        , "reflection in lattice short direction (may need applying T-operators to become")
+	 ("RyUnit"     , "Reflection of a single unit cell",
+	  "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
+	 ;
+      OpDescriptions.add_operators()
+	 ("H_J1"       , "nearest neighbor spin exchange")
+	 ("H_J2"       , "next-nearest neighbor spin exchange")
+	 ("H_chi"      , "explicit chiral term over NN triangular plaquettes")
+	 ("H_y"        , "nearest neighbor spin exchange in the Y direction")
+	 ("H_t"        , "kinetic term of quantum dimer model's Hamiltonian on the triangular lattice")
+	 ("H_v"        , "potential term of quantum dimer model's Hamiltonian on the triangular lattice")
+	 ("Ty"         , "momentum operator in lattice short direction")
+	 ("TyPi"       , "translation by w/2 sites in the Y direction",
+	  "width even, not present with --noreflect", [&NoReflect,&w]()->bool{return !NoReflect && w%2 == 0;})
+	 ("Ry"         , "Reflection in the Y direction",
+	  "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
+	 ("RyOld"      , "Reflection in the Y direction, old ordering",
+	  "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
+	 ("SwapWrap"   , "changing the wraaping vector of lattice between 'old' and 'new' way of numbering", 
+	  "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
+	 ("Sa"         , "tripartite sublattice spin, including site S(0)[0]", "width multiple of 3", [&w]()->bool {return w%3 == 0;})
+	 ("Sb"         , "tripartite sublattice spin, including site S(0)[1]", "width multiple of 3", [&w]()->bool {return w%3 == 0;})
+	 ("Sc"         , "tripartite sublattice spin, including site S(0)[2]", "width multiple of 3", [&w]()->bool {return w%3 == 0;})
+	 ("Stag_p60"   , "staggered magnetization order parameter with FM stripes in +60^degree direction",
+	  "width even",  [&w]()->bool {return w%2 == 0;})
+	 ;
+      OpDescriptions.add_functions()
+	 ("THM2", "Hamiltonian, {J2 = NNN coupling strength, J_chi = chiral term coupling strength}")
+	 ("H_SinScaled", "old, don't use")
+	 ;
+
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Constructs a triangular lattice in the YC configuration with wrapping vector (0,1) (in unit of\n"
-		   << "+/-60 degree principal directions), while spins sit on edges. This creates an efficient way of\n" 
-                   << "numbering for the 1D chain.\n\n"
-                   << "Operators:\n"
-		   << "H_J1     - nearest neighbor spin exchange\n"
-		   << "H_J2     - next-nearest neighbor spin exchange\n"
-                   << "H_chi    - explicit chiral term over NN triangular plaquettes\n" 
-                   << "H_t      - kinetic term of quantum dimer model's Hamiltonian on the triangular lattice\n"
-                   << "H_v      - potential term of quantum dimer model's Hamiltonian on the triangular lattice\n"
-                   << "S        - total spin on a leg of the cylinder\n"
-                   << "StagS    - total staggered magnetization over a unit-cell\n"
-                   << "Trans    - translation by one site (rotation by 2\u0071/w) in lattice short direction\n"
-                   << "Ty       - momentum operator in lattice short direction\n"
-                   << "Ref      - reflection in lattice short direction (may need applying T-operators to become" 
-                   << "           general reflection)\n"
-                   << "SwapWrap - changing the wraaping vector of lattice between 'old' and 'new' way of numbering"
-		   //<< "*If the lattice could be potentially tripartite (width is a multiple of 3), then we\n"
-		   //<< "define sublattice spin operators on a \"width*3\" unit cells as,\n"
-		   << "Sa       - tripartite sublattice spin, including site S(0)[0]\n"
-		   << "Sb       - tripartite sublattice spin, including site S(0)[1]\n"
-		   << "Sc       - tripartite sublattice spin, including site S(0)[2]\n"
-                   << "Stag_p60 - staggered magnetization order parameter with FM stripes in +60^degree direction\n\n"
-                   << "Functions:\n"
-                   << "THM2{J2 = NNN coupling strength, J_chi = chiral term coupling strength}\n\n"                         
-	    ;
+	 std::cerr << OpDescriptions << '\n';
          return 1;
       }
 
@@ -170,12 +188,28 @@ int main(int argc, char** argv)
       UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
       UnitCellOperator RyUnit(Cell, "RyUnit");
 
+      // Construct the lattice object (we can modify Cell after this if we want)
+      InfiniteLattice Lattice(&Cell);
+
       // Add some operators on the unit-cell
    
       for (int i = 0; i < w; ++i)
       {
 	 S += S[i];                    // total spin on a leg of cylinder
-         StagS += IntPow(-1,i) * S[i]; // staggered magnetization in Y-direction (note: only one of the three possible formations).
+      }
+      
+      // Staggered magnetization requires width to be even
+      if (w%2 == 0)
+      {
+	 UnitCellMPO S_stag_p60;
+	 for (int i = 0; i < w; ++i)
+	 {
+	    StagS += IntPow(-1,i) * S[i]; // staggered magnetization in Y-direction (note: only one of the three possible formations).
+
+	    // staggered magnetization order parameter with FM stripes in -60^degree direction.
+	    S_stag_p60 += IntPow(-1,i)*S(0)[i] + IntPow(-1,i+1)*S(1)[i];
+	 }
+         Lattice["Stag_p60"] = sum_unit(S_stag_p60, w*2);
       }
 
       Trans = I(0);
@@ -192,21 +226,20 @@ int main(int argc, char** argv)
            Ref = Ref(0) * Cell.swap_gate_no_sign(i, w-i-1);
        }
 
-      // to test existence of tripartite symmetry, add operators for the sublattice magnetization:
-      UnitCellMPO S_A, S_B, S_C;
-      UnitCellMPO S_stag_p60;
-
-      //if (w%3 == 0)
-      //{
+      // 3-sublattice order parameter
+      if (w%3 == 0)
+      {
+	 UnitCellMPO S_A, S_B, S_C;
 	 for (int i = 0; i < w; i += 3)
 	 {
-	    S_A += S(0)[i]   + S(1)[(i+2)%w] + S(2)[(i+1)%w];
-	    if ( (i+1)<w ) { S_B += S(0)[i+1] + S(1)[(i+3)%w] + S(2)[(i+2)%w]; }
-	    if ( (i+2)<w ) { S_C += S(0)[i+2] + S(1)[(i+4)%w] + S(2)[(i+3)%w]; }
-            S_stag_p60 += IntPow(-1,i)*S(0)[i] + IntPow(-1,i+1)*S(1)[i];    // staggered magnetization order parameter with FM stripes in +60^degree direction.
+	    S_A += S(0)[i+0] + S(1)[(i+2)%w] + S(2)[(i+1)%w];
+	    S_B += S(0)[i+1] + S(1)[(i+3)%w] + S(2)[(i+2)%w];
+	    S_C += S(0)[i+2] + S(1)[(i+4)%w] + S(2)[(i+3)%w];
 	 }
-      //}
-
+	 Lattice["Sa"] = sum_unit(S_A, w*3);
+	 Lattice["Sb"] = sum_unit(S_B, w*3);
+	 Lattice["Sc"] = sum_unit(S_C, w*3);
+      }
 
       // Construct the Hamiltonian for a single unit-cell,
       UnitCellMPO H1, H2, Ht, Hv, Hy, Hchi;
@@ -247,35 +280,36 @@ int main(int argc, char** argv)
 
       // Reflection.  This is in the 'wrong' 45 degree angle
       UnitCellMPO Ry = I(0);
-      for (int c = 0; c < w; ++c)
+      if (!NoReflect)
       {
-	 UnitCellMPO ThisR = I(0);
-	 // get the 'pivot' site/bond that we reflect about
-	 int const p1 = c/2;
-	 int const p2 = (c+1)/2;
-
-	 // if we're reflecting about a bond, do that first
-	 if (p1 != p2)
-	    ThisR = ThisR * Cell.swap_gate_no_sign(p1,p2);
-
-	 int i1 = (p1+w-1)%w;
-	 int i2 = (p2+1)%w;
-	
-	 while (i1 != p1 + w/2)
+	 for (int c = 0; c < w; ++c)
 	 {
-	    ThisR = ThisR * Cell.swap_gate_no_sign(i1,i2);
-	    i1 = (i1+w-1)%w;
-	    i2 = (i2+1)%w;
+	    UnitCellMPO ThisR = I(0);
+	    // get the 'pivot' site/bond that we reflect about
+	    int const p1 = c/2;
+	    int const p2 = (c+1)/2;
+	    
+	    // if we're reflecting about a bond, do that first
+	    if (p1 != p2)
+	       ThisR = ThisR * Cell.swap_gate_no_sign(p1,p2);
+	    
+	    int i1 = (p1+w-1)%w;
+	    int i2 = (p2+1)%w;
+	    
+	    while (i1 != p1 + w/2)
+	    {
+	       ThisR = ThisR * Cell.swap_gate_no_sign(i1,i2);
+	       i1 = (i1+w-1)%w;
+	       i2 = (i2+1)%w;
+	    }
+	    
+	    ThisR.translate(c*w);
+	    Ry = Ry * ThisR;
 	 }
-
-	 ThisR.translate(c*w);
-	 Ry = Ry * ThisR;
+	 RyUnit = Ry;
       }
 
-      RyUnit = Ry;
-
       // Now we construct the InfiniteLattice,
-      InfiniteLattice Lattice(Cell);
 
       Lattice["H_J1"]  = sum_unit(H1);
       Lattice["H_y"]   = sum_unit(Hy);
@@ -290,21 +324,21 @@ int main(int argc, char** argv)
       Lattice.func("THM2")(arg("J2") = 0.0, arg("J_chi") = 0.0)
               = "H_J1 + J2*H_J2 + J_chi*H_chi";
 
+      Lattice.func("Test")(arg("J2")) = "THM2{J2}";
+
       // Add the tripartite sublattice magnetization operators
-      //if (w%3 == 0)
-      //{
-	 Lattice["Sa"] = sum_unit(S_A, w*3);
-	 Lattice["Sb"] = sum_unit(S_B, w*3);
-	 Lattice["Sc"] = sum_unit(S_C, w*3);
-         Lattice["Stag_p60"] = sum_unit(S_stag_p60, w*2);
-      //}
+      if (w%3 == 4)
+      {
+      }
 
       // Momentum operators in Y-direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
-      Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w*w);
+
+      if (!NoReflect)
+	 Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w*w);
 
       // for even size unit cell, add rotation by pi
-      if (w%2 == 0)
+      if (w%2 == 0 && !NoReflect)
       {
 	 UnitCellMPO TyPi = I(0);
 	 for (int i = 0; i < w/2; ++i)
@@ -315,61 +349,70 @@ int main(int argc, char** argv)
       }
 
       // Reflection.  Fixed to reflect about a horizontal axis.  This is the reverse order of unit cells to the R-"45 degree" operator.
-      UnitCellMPO RyOld = I(0);
-      for (int c = 0; c < w; ++c)
+      if (!NoReflect)
       {
-	 UnitCellMPO ThisR = I(0);
-	 // get the 'pivot' site/bond that we reflect about
-	 int const p1 = (w-c-1)/2;
-	 int const p2 = (w-c)/2;
-
-	 // if we're reflecting about a bond, do that first
-	 if (p1 != p2)
-	    ThisR = ThisR * Cell.swap_gate_no_sign(p1,p2);
-
-	 int i1 = (p1+w-1)%w;
-	 int i2 = (p2+1)%w;
-	
-	 while (i1 != p1 + w/2)
+	 UnitCellMPO RyOld = I(0);
+	 for (int c = 0; c < w; ++c)
 	 {
-	    ThisR = ThisR * Cell.swap_gate_no_sign(i1,i2);
-	    i1 = (i1+w-1)%w;
-	    i2 = (i2+1)%w;
+	    UnitCellMPO ThisR = I(0);
+	    // get the 'pivot' site/bond that we reflect about
+	    int const p1 = (w-c-1)/2;
+	    int const p2 = (w-c)/2;
+	    
+	    // if we're reflecting about a bond, do that first
+	    if (p1 != p2)
+	       ThisR = ThisR * Cell.swap_gate_no_sign(p1,p2);
+	    
+	    int i1 = (p1+w-1)%w;
+	    int i2 = (p2+1)%w;
+	    
+	    while (i1 != p1 + w/2)
+	    {
+	       ThisR = ThisR * Cell.swap_gate_no_sign(i1,i2);
+	       i1 = (i1+w-1)%w;
+	       i2 = (i2+1)%w;
+	    }
+	    
+	    ThisR.translate(c*w);
+	    RyOld = RyOld * ThisR;
 	 }
-
-	 ThisR.translate(c*w);
-	 RyOld = RyOld * ThisR;
+	 
+	 Lattice["RyOld"] = prod_unit_left_to_right(RyOld.MPO(), w*w);
       }
 
-      Lattice["RyOld"] = prod_unit_left_to_right(RyOld.MPO(), w*w);
-
       // SwapWrap. Change between wrapping vectors of 'old' and 'new' way of numbering of the lattice.
-      UnitCellMPO SwapWrap = I(0);
-      for (int c = 0; c < w; ++c)
+      if (!NoReflect)
       {
-         UnitCellMPO ThisWrap = I(0);
+	 UnitCellMPO SwapWrap = I(0);
+	 for (int c = 0; c < w; ++c)
+	 {
+	    UnitCellMPO ThisWrap = I(0);
+	    
+	    if (c != 0)
+	    { 
+	       for (int i1 = 0; i1 < w-c; ++i1)
+	       {
+		  int i2 = (i1+w-c)%w;
+		  ThisWrap = ThisWrap * Cell.swap_gate_no_sign(i1,i2);
+	       }
+	    }
 
-         if (c != 0)
-         { 
-           for (int i1 = 0; i1 < w-c; ++i1)
-           {
-              int i2 = (i1+w-c)%w;
-              ThisWrap = ThisWrap * Cell.swap_gate_no_sign(i1,i2);
-           }
-         }
-
-         ThisWrap.translate(c*w);
-         SwapWrap = SwapWrap * ThisWrap;          
-      } 
-        
-      Lattice["SwapWrap"] = prod_unit_left_to_right(SwapWrap.MPO(), w*w);  
+	    ThisWrap.translate(c*w);
+	    SwapWrap = SwapWrap * ThisWrap;          
+	 }
+	 Lattice["SwapWrap"] = prod_unit_left_to_right(SwapWrap.MPO(), w*w);  
+      }
 
       // 'identity' operator in the spin-1/2 auxiliary basis
-      Lattice["I_2"] = prod_unit_left_to_right(UnitCellMPO(I(0)).MPO(), w)
-	 * ProductMPO::make_identity(UnitCellMPO(I(0)).MPO().LocalBasis2List(), 
-				     QuantumNumber(Cell.GetSymmetryList(), "0.5"));
+      //      Lattice["I_2"] = prod_unit_left_to_right(UnitCellMPO(I(0)).MPO(), w)
+      //	 * ProductMPO::make_identity(UnitCellMPO(I(0)).MPO().LocalBasis2List(), 
+      //				     QuantumNumber(Cell.GetSymmetryList(), "0.5"));
 
-      // save the lattice
+      // Information about the lattice
+      Lattice.set_command_line(argc, argv);
+      Lattice.set_operator_descriptions(OpDescriptions);
+
+      // save the lattice to disk
       pheap::ExportObject(FileName, Lattice);
    }
    catch (std::exception& e)

@@ -23,20 +23,95 @@
 
 PStream::VersionTag LatticeVersion(3);
 
-InfiniteLattice::InfiniteLattice()
+InfiniteLattice::InfiniteLattice() : UnitCell_(new UnitCell()), OwnUnitCell_(true)
 {
 }
 
-InfiniteLattice::InfiniteLattice(UnitCell const& uc)
-   : UnitCell_(uc)
+InfiniteLattice::InfiniteLattice(UnitCell* uc)
+   : UnitCell_(uc), OwnUnitCell_(false)
 {
 }
 
-InfiniteLattice::InfiniteLattice(std::string const& Description, UnitCell const& uc)
-   : Description_(Description), UnitCell_(uc)
+InfiniteLattice::InfiniteLattice(UnitCell&& uc)
+   : UnitCell_(new UnitCell(std::move(uc))), OwnUnitCell_(true)
 {
 }
 
+InfiniteLattice::InfiniteLattice(std::string const& Description, UnitCell& uc)
+   : Description_(Description), UnitCell_(&uc), OwnUnitCell_(false)
+{
+}
+
+
+InfiniteLattice::InfiniteLattice(std::string const& Description, UnitCell&& uc)
+   : Description_(Description), UnitCell_(new UnitCell(std::move(uc))), OwnUnitCell_(true)
+{
+}
+
+InfiniteLattice::InfiniteLattice(InfiniteLattice const& Other)
+   : Description_(Other.Description_),
+     Authors_(Other.Authors_),
+     CommandLine_(Other.CommandLine_),
+     Timestamp_(Other.Timestamp_),
+     UnitCell_(Other.OwnUnitCell_ ? Other.UnitCell_ : new UnitCell(*Other.UnitCell_)),
+     OwnUnitCell_(Other.OwnUnitCell_),
+     Operators_(Other.Operators_),
+     Arguments_(Other.Arguments_),
+     Functions_(Other.Functions_)
+{
+}
+ 
+InfiniteLattice::InfiniteLattice(InfiniteLattice&& Other)
+   : Description_(std::move(Other.Description_)),
+     Authors_(std::move(Other.Authors_)),
+     CommandLine_(std::move(Other.CommandLine_)),
+     Timestamp_(std::move(Other.Timestamp_)),
+     UnitCell_(std::move(UnitCell_)),
+     OwnUnitCell_(std::move(Other.OwnUnitCell_)),
+     Operators_(std::move(Other.Operators_)),
+     Arguments_(std::move(Other.Arguments_)),
+     Functions_(std::move(Other.Functions_))
+{
+   Other.UnitCell_ = nullptr;
+   Other.OwnUnitCell_ = false;
+}
+
+InfiniteLattice&
+InfiniteLattice::operator=(InfiniteLattice const& Other)
+{
+   Description_ = Other.Description_;
+   Authors_ = Other.Authors_;
+   CommandLine_ = Other.CommandLine_;
+   Timestamp_ = Other.Timestamp_;
+   UnitCell_ = Other.OwnUnitCell_ ? Other.UnitCell_ : new UnitCell(*Other.UnitCell_);
+   OwnUnitCell_ = Other.OwnUnitCell_;
+   Operators_ = Other.Operators_;
+   Arguments_ = Other.Arguments_;
+   Functions_ = Other.Functions_;
+}
+
+InfiniteLattice&
+InfiniteLattice::operator=(InfiniteLattice&& Other)
+{
+   Description_ = std::move(Other.Description_);
+   Authors_ = std::move(Other.Authors_);
+   CommandLine_ = std::move(Other.CommandLine_);
+   Timestamp_ = std::move(Other.Timestamp_);
+   UnitCell_ = std::move(Other.UnitCell_);
+   OwnUnitCell_ = std::move(Other.OwnUnitCell_);
+   Operators_ = std::move(Other.Operators_);
+   Arguments_ = std::move(Other.Arguments_);
+   Functions_ = std::move(Other.Functions_);
+   Other.UnitCell_ = nullptr;
+   Other.OwnUnitCell_ = false;
+}
+
+InfiniteLattice::~InfiniteLattice()
+{
+   if (OwnUnitCell_)
+      delete UnitCell_;
+}
+   
 void
 InfiniteLattice::set_command_line(int argc, char** argv)
 {
@@ -69,18 +144,42 @@ InfiniteLattice::set_operator_descriptions(OperatorDescriptions const& Desc)
    // iterate through the descriptions
    for (OperatorDescriptions::const_iterator I = Desc.begin(); I != Desc.end(); ++I)
    {
-      if (this->operator_exists(I->first))
+      if (this->operator_exists(std::get<0>(*I)))
       {
-	 Operators_[I->first].set_description(I->second);
+	 // see if the operator is conditional
+	 if (std::get<3>(*I) && (!(*std::get<3>(*I))()))
+	 {
+	    std::cerr << "warning: conditional lattice operator " << std::get<0>(*I) 
+		      << " (conditional on: " << std::get<2>(*I) << ") should not be defined, but is!\n";
+	 }
+	 Operators_[std::get<0>(*I)].set_description(std::get<1>(*I));
       }
       else
       {
-	 std::cerr << "warning: operator " << I->first 
-		   << " has a description but is not defined in the lattice.\n";
+	 // is the operator optional?
+	 if (!std::get<2>(*I).empty() || std::get<3>(*I))
+	 {
+	    // yes, check and see that we satisfy the condition
+	    if (std::get<3>(*I))
+	    {
+	       // invoke the function
+	       if (((*std::get<3>(*I))()))
+	       {
+		  std::cerr << "warning: conditional lattice operator "  << std::get<0>(*I) 
+			    << " should be defined but is not.\n";
+	       }
+	    }
+	 }
+	 else
+	 {
+	    std::cerr << "warning: operator " << std::get<0>(*I)
+		      << " has a description but is not defined in the lattice.\n";
+	 }
       }
    }
 
-   // Now go through the operators and check for any that don't have a description
+   // Now go through the operators and check for any that don't have a description, or are optional but
+   // should not have been defined
    for (const_operator_iterator I = this->begin_operator(); I != this->end_operator(); ++I)
    {
       if (I->second.description().empty())
@@ -122,14 +221,37 @@ InfiniteLattice::set_operator_descriptions(OperatorDescriptions const& Desc)
    // cell operator descriptions
    for (OperatorDescriptions::const_iterator I = Desc.cell_begin(); I != Desc.cell_end(); ++I)
    {
-      if (this->GetUnitCell().operator_exists(I->first))
+      if (this->GetUnitCell().operator_exists(std::get<0>(*I)))
       {
-	 this->GetUnitCell()[I->first].set_description(I->second);
+	 // see if the operator is conditional
+	 if (std::get<3>(*I) && (!(*std::get<3>(*I))()))
+	 {
+	    std::cerr << "warning: conditional unit cell operator " << std::get<0>(*I) 
+		      << " (conditional on: " << std::get<2>(*I) << ") should not be defined, but is!\n";
+	 }
+	 this->GetUnitCell()[std::get<0>(*I)].set_description(std::get<1>(*I));
       }
       else
       {
-	 std::cerr << "warning: cell operator " << I->first
-		   << " has a description but is not defined in the unit cell.\n";
+	 // is the operator optional?
+	 if (!std::get<2>(*I).empty() || std::get<3>(*I))
+	 {
+	    // yes, check and see that we satisfy the condition
+	    if (std::get<3>(*I))
+	    {
+	       // invoke the function
+	       if (((*std::get<3>(*I))()))
+	       {
+		  std::cerr << "warning: conditional unit cell operator "  << std::get<0>(*I) 
+			    << "should be defined but is not.\n";
+	       }
+	    }
+	 }
+	 else
+	 {
+	    std::cerr << "warning: cell operator " << std::get<0>(*I)
+		      << " has a description but is not defined in the unit cell.\n";
+	 }
       }
    }
 
@@ -137,7 +259,7 @@ InfiniteLattice::set_operator_descriptions(OperatorDescriptions const& Desc)
    for (UnitCell::const_operator_iterator I = this->GetUnitCell().begin_operator();
 	I != this->GetUnitCell().end_operator(); ++I)
    {
-      if (I->second.description().empty())
+      if (std::get<1>(*I).description().empty())
       {
 	 std::cerr << "warning: cell operator " << I->first << " has no description.\n";
       }
@@ -255,7 +377,7 @@ operator<<(PStream::opstream& out, InfiniteLattice const& L)
    out << L.Authors_;
    out << L.CommandLine_;
    out << L.Timestamp_;
-   out << L.UnitCell_;
+   out << *L.UnitCell_;
    out << L.Operators_;
    out << L.Arguments_;
    out << L.Functions_;
@@ -288,7 +410,13 @@ operator>>(PStream::ipstream& in, InfiniteLattice& L)
    }
    in >> L.CommandLine_;
    in >> L.Timestamp_;
-   in >> L.UnitCell_;
+   if (L.OwnUnitCell_)
+   {
+      delete L.UnitCell_;
+   }
+   L.OwnUnitCell_ = true;
+   L.UnitCell_ = new UnitCell();
+   in >> (*L.UnitCell_);
    in >> L.Operators_;
    in >> L.Arguments_;
    in >> L.Functions_;
