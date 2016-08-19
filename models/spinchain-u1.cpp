@@ -50,6 +50,7 @@ int main(int argc, char** argv)
       
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("U(1) Spin chain");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
 	 ("H_J1z", "nearest neighbor spin coupling Sz Sz")
 	 ("H_J1t", "nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
@@ -75,7 +76,7 @@ int main(int argc, char** argv)
       LatticeSite Site = SpinU1(Spin);
       UnitCell Cell(Site);
       UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
-      InfiniteLattice Lattice(Cell);
+      InfiniteLattice Lattice(&Cell);
 
       Lattice["H_J1z"] = sum_unit(Sz(0)*Sz(1));
       Lattice["H_J1t"] = 0.5 * sum_unit(Sp(0)*Sm(1) + Sm(0)*Sp(1));

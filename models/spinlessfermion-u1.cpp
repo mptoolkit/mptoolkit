@@ -28,6 +28,9 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);    
       
       OperatorDescriptions OpDescriptions;
+      OpDescriptions.description("Spinless fermion U(1) symmetry");
+      OpDescriptions.author("J Pillay", "pillayjason@hotmail.com");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
 	 ("H_t"   , "nearest neighbor hopping")
 	 ("H_tc"  , "complex nearest neighbor hopping")
@@ -50,7 +53,7 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinlessFermionU1();
       UnitCell Cell(Site);
-      InfiniteLattice Lattice(Cell);
+      InfiniteLattice Lattice(&Cell);
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), N(Cell, "N");
 
       Lattice["H_t"]  = sum_unit(dot(CH(0), C(1)) - dot(C(0), CH(1)));

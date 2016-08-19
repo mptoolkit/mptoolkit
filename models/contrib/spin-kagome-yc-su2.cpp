@@ -106,6 +106,7 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinSU2(Spin);
       UnitCell Cell = repeat(Site, u);
+      InfiniteLattice Lattice(&Cell);
 
       // Add some operators on the unit cell
       UnitCellOperator S(Cell, "S");
@@ -113,9 +114,6 @@ int main(int argc, char** argv)
       {
 	 S += S[i];     // total spin on a leg of cylinder
       }
-
-      // Now we construct the InfiniteLattice,
-      InfiniteLattice Lattice(Cell);
 
       unsigned num_bonds_j1 = 0;
       unsigned num_bonds_j2 = 0;

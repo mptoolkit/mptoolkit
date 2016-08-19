@@ -52,6 +52,7 @@ int main(int argc, char** argv)
       
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("Spin chain");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
 	 ("H_xx", "nearest neighbor spin coupling Sx Sx")
 	 ("H_yy", "nearest neighbor spin exchange Sy Sy")
@@ -84,6 +85,7 @@ int main(int argc, char** argv)
       UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz");
       UnitCellOperator I(Cell, "I"); // identity operator
       UnitCellOperator Test(Cell, "Test");
+      InfiniteLattice Lattice(&Cell);
 
       Test(0) = 0.0 * I(0);
 
@@ -93,8 +95,6 @@ int main(int argc, char** argv)
 	 Test(0) = Test(0) + (1.0/3.0) * Sy(i)*Sy(i+1);
 	 Test(0) = Test(0) + 0.2 * Sz(i)*Sz(i+1);
       }
-
-      InfiniteLattice Lattice("Spin chain", Cell);
 
       UnitCellMPO SpinExchange = Sx(0)*Sx(1) + Sy(0)*Sy(1) + Sz(0)*Sz(1);
 

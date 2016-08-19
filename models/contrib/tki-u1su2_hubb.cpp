@@ -68,6 +68,8 @@ int main(int argc, char** argv)
     LatticeSite cSite = FermionU1SU2();
     LatticeSite fSite = SpinSU2(0.5);
     UnitCell Cell(cSite.GetSymmetryList(), cSite, fSite);
+    InfiniteLattice Lattice(&Cell);
+
     UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), S(Cell, "S"), 
        p(Cell, "p"), pH(Cell, "pH"), Pi(Cell, "Pi"), Pdouble(Cell, "Pdouble");
 
@@ -76,8 +78,6 @@ int main(int argc, char** argv)
     pH(0) = adjoint(p(0));
 
     Pi(0) = outer(pH(0), p(0));
-
-    InfiniteLattice Lattice(Cell);
 
     Lattice["H_t"]  = sum_unit(dot(CH(0)[0], C(1)[0]) + dot(C(0)[0], CH(1)[0]));
     Lattice["H_U"]  = sum_unit(Pdouble(0)[0]);

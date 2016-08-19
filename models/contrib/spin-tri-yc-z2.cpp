@@ -120,6 +120,8 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinZ2(Spin);
       UnitCell Cell = repeat(Site, w);
+      InfiniteLattice Lattice(&Cell);
+
       UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz");
       UnitCellOperator I(Cell, "I"); // identity operator
       UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
@@ -188,9 +190,6 @@ int main(int argc, char** argv)
       RyUnit = Ry;
       OpProgress(&oo,1,oo_max); // operator series count: 4*w+(w/2)
 
-
-      // Now we construct the InfiniteLattice,
-      InfiniteLattice Lattice(Cell);
 
       // Construct the Hamiltonian for a single unit-cell,
       UnitCellMPO Hj, Hx_f, H_intra2;

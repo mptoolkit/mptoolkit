@@ -99,6 +99,8 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinSU2(Spin);
       UnitCell Cell = repeat(Site, w);
+      InfiniteLattice Lattice(&Cell);
+
       UnitCellOperator S(Cell, "S");
       UnitCellOperator H1(Cell, "H1");
       UnitCellOperator H2(Cell, "H2");
@@ -135,10 +137,6 @@ int main(int argc, char** argv)
 	 H2 += inner(S(0)[i], S(1)[(i+1)%w]);       // up-right
 	 H2 += inner(S(0)[i], S(1)[(i+w-2)%w]);     // down-right   
       }
-
-      // Now we construct the InfiniteLattice.  Note that it is important that
-      // we construct all UnitCellOperator's *before* constructing the Lattice object
-      InfiniteLattice Lattice(Cell);
 
       Lattice["H_J1"] = sum_unit(H1);
       Lattice["H_J2"] = sum_unit(H2);

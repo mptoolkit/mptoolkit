@@ -52,6 +52,7 @@ int main(int argc, char** argv)
       
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("U(1) Bose-Hubbard model");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_J"    , "nearest-neighbor hopping\n")
          ("H_U"    , "on-site Coulomb repulsion N*(N-1)/2\n")
@@ -70,7 +71,7 @@ int main(int argc, char** argv)
       UnitCell Cell(Site);
       UnitCellOperator BH(Cell, "BH"), B(Cell, "B"), N(Cell, "N"), N2(Cell, "N2");
 
-      InfiniteLattice Lattice(Cell);
+      InfiniteLattice Lattice(&Cell);
       
       Lattice["H_J"] = sum_unit(BH(0)*B(1) + B(0)*BH(1));
       Lattice["H_U"] = sum_unit(0.5*N2(0));

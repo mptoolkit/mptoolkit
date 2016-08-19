@@ -54,6 +54,7 @@ int main(int argc, char** argv)
 
       OperatorDescriptions OpDescriptions;
       OpDescriptions.description("U(1) spin cylinder");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_J1xz"  , "nearest neighbor spin exchange z-component in the x direction")
          ("H_J1xt"  , "nearest neighbor spin exchange transverse component in the x direction")
@@ -80,7 +81,7 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinU1(Spin);
       UnitCell Cell(repeat(Site, CellSize));
-      InfiniteLattice Lattice(Cell);
+      InfiniteLattice Lattice(&Cell);
       UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
 
       UnitCellMPO J1xz, J1xt, J1yz, J1yt;

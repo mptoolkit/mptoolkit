@@ -97,7 +97,7 @@ int main(int argc, char** argv)
          ;
 
       OpDescriptions.add_functions()
-         ("THM_flux"                             , "J1-J2 Heisenebrg Hamiltonian on a triangular lattice with twisted BC in Y-direction as exp(i*theta)")
+         ("THM_flux"                             , "J1-J2 Heiseneberg Hamiltonian on a triangular lattice with twisted BC in Y-direction as exp(i*theta)")
          ("HS"                                   , "Haldane-Shastry Hamiltonian with Sz*Sz interactions, parametized by 'lambda' (exponential decay as exp(-lambda*r))")
          ("LongRangeIsing_InterCell_YC4_part1"   , "long-range Ising model Hamiltonian on a 4-leg YC structure, parametized by 'alpha0j's and 'lambda0j's | PART 1")
          ("LongRangeIsing_InterCell_YC4_part2"   , "long-range Ising model Hamiltonian on a 4-leg YC structure, parametized by 'alpha0j's and 'lambda0j's | PART 2")
@@ -123,6 +123,7 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinU1(Spin);
       UnitCell Cell = repeat(Site, w);
+      InfiniteLattice Lattice(&Cell);
 
       std::cout << "Building all Hamiltonian operators:\n";
 
@@ -150,9 +151,6 @@ int main(int argc, char** argv)
          std::printf("\33[2K\r");
          std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 4*w 
       }
-
-      // Now we construct the InfiniteLattice,
-      InfiniteLattice Lattice(Cell);
 
       // Construct the Hamiltonian for a single unit-cell,
       UnitCellMPO Hz_v, Hz1, H1, H1_flux, H2, H2_flux, H_intra2;

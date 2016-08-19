@@ -48,6 +48,7 @@ int main(int argc, char** argv)
       
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("SO(4) Fermi Hubbard model");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
 	 ("H_t"  , "nearest neighbor hopping")
 	 ("H_Us" , "on-site Coulomb interaction (n_up-1/2)(n_down-1/2)")
@@ -67,7 +68,7 @@ int main(int argc, char** argv)
       LatticeSite SiteA = FermionSO4_A();
       LatticeSite SiteB = FermionSO4_B();
       UnitCell Cell(SiteA, SiteB);
-      InfiniteLattice Lattice(Cell);
+      InfiniteLattice Lattice(&Cell);
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), P(Cell, "P");
 
       // Note signs here, the + sign because SU(2): herm(CH) = -C

@@ -112,6 +112,8 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinSite(Spin);
       UnitCell Cell = repeat(Site, w);
+      InfiniteLattice Lattice(&Cell);
+
       UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz");
       UnitCellOperator I(Cell, "I"); // identity operator
       UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
@@ -187,10 +189,6 @@ int main(int argc, char** argv)
       oo++;
       std::printf("\33[2K\r");
       std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 4*w+(w/2)
-
-
-      // Now we construct the InfiniteLattice,
-      InfiniteLattice Lattice(Cell);
 
       // Construct the Hamiltonian for a single unit-cell,
       UnitCellMPO Hx_f, H_intra, H1, H2;

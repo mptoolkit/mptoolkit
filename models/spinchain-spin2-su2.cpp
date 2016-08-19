@@ -49,6 +49,7 @@ int main(int argc, char** argv)
 
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("Spin chain");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_p0"     , "projector onto nearest-neighbor spin 0 bond")
          ("H_p1"     , "projector onto nearest-neighbor spin 1 bond")
@@ -72,7 +73,7 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinSU2(Spin);
       UnitCell Cell(Site);
-      InfiniteLattice Lattice(Cell);
+      InfiniteLattice Lattice(&Cell);
       UnitCellOperator S(Cell, "S"), Q(Cell, "Q"), T(Cell, "T"), F(Cell, "F"), I(Cell, "I");
 
       // (Q.Q) = -1/3 (S^2 . S^2) + (S.S)^2 + 1/2 S.S
