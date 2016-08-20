@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// models/contrib/tki-u1su2.cpp
+// models/spinchain-su2.cpp
 //
 // Copyright (C) 2016 Jason Pillay <pillayjason@hotmail.com>
 //
@@ -49,18 +49,12 @@ int main(int argc, char** argv)
     prog_opt::notify(vm);
 
     OperatorDescriptions OpDescriptions;
-    OpDescriptions.description("U(1)xSU(2) p-wave Kondo lattice model");
-    OpDescriptions.author("Jason Pillay", "pillayjason@hotmail.com");
     OpDescriptions.add_operators()
       ("H_t"  , "nearest neighbour fermion hopping")
       ("H_J1" , "nearest neighbour spin exchange")
-      ("H_K"  , "Kondo coupling between fermion and spin")
+      ("H_K"  , "Diagonal Kondo coupling between fermion and spin")
+      ("H_K1" , "Perpendicular Kondo coupling between fermion and spin")
       ;
-    OpDescriptions.add_cell_operators()
-       ("p"   , "p-wave annihilation")
-       ("pH"  , "p-wave creation")
-       ("Pi"  , "p-wave spin vector")
-       ;
 
     if (vm.count("help") || !vm.count("out"))
     {
@@ -88,8 +82,10 @@ int main(int argc, char** argv)
     Lattice["H_t"]  = sum_unit(dot(CH(0)[0], C(1)[0]) + dot(C(0)[0], CH(1)[0]));
     Lattice["H_J1"] = sum_unit(inner(S(0)[1], S(1)[1]));
     Lattice["H_K"]  = sum_unit(inner(S(0)[1], Pi(0)));
+    Lattice["H_K1"] = sum_unit(inner(S(0)[0], S(0)[1]));
 
     // Information about the lattice
+    Lattice.set_description("U(1)xSU(2) Kondo lattice model");
     Lattice.set_command_line(argc, argv);
     Lattice.set_operator_descriptions(OpDescriptions);
 
@@ -107,3 +103,5 @@ int main(int argc, char** argv)
     return 1;
   }
 }
+
+

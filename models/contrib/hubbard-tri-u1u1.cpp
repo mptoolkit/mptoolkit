@@ -84,6 +84,8 @@ int main(int argc, char** argv)
 
       LatticeSite Site = FermionU1U1();
       UnitCell Cell(repeat(Site, 3));
+      InfiniteLattice Lattice(&Cell);
+
       UnitCellOperator CHup(Cell, "CHup"), CHdown(Cell, "CHdown"), Cup(Cell, "Cup"), 
          Cdown(Cell, "Cdown"), Pdouble(Cell, "Pdouble"),
          Hu(Cell, "Hu"), N(Cell, "N"), Sz(Cell, "Sz"), Sp(Cell, "Sp"), Sm(Cell, "Sm"),
@@ -102,8 +104,6 @@ int main(int argc, char** argv)
       Sz = Sz[0] + Sz[1] + Sz[2];
       Sp = Sp[0] + Sp[1] + Sp[2];
       Sm = Sm[0] + Sm[1] + Sm[2];
-
-      InfiniteLattice Lattice(Cell);
 
       Lattice["H_tup"]   = sum_unit(-(dot(CHup(0)[1], Cup(1)[1]) - dot(Cup(0)[1], CHup(1)[1])));
       Lattice["H_tdown"] = sum_unit(-(dot(CHdown(0)[1], Cdown(1)[1]) - dot(Cdown(0)[1], CHdown(1)[1])));

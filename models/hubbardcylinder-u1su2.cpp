@@ -51,7 +51,8 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("U(1)xSU(2) Fermi Hubbard model");
+      OpDescriptions.set_description("U(1)xSU(2) Fermi Hubbard 2D cylinder square lattice");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_tx" , "nearest neighbor hopping in y-direction")
          ("H_ty" , "nearest neighbor hopping in x-direction")
@@ -73,7 +74,7 @@ int main(int argc, char** argv)
 
       LatticeSite Site = FermionU1SU2();
       UnitCell Cell(repeat(Site, CellSize));
-      InfiniteLattice Lattice(Cell);
+      InfiniteLattice Lattice(&Cell);
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), Pdouble(Cell, "Pdouble"),
          Hu(Cell, "Hu"), N(Cell, "N");
 

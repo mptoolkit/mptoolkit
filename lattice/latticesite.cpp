@@ -97,23 +97,46 @@ LatticeSite::set_operator_descriptions(OperatorDescriptions const& Desc)
    // iterate through the descriptions
    for (OperatorDescriptions::const_iterator I = Desc.begin(); I != Desc.end(); ++I)
    {
-      if (this->operator_exists(I->first))
+      if (this->operator_exists(std::get<0>(*I)))
       {
-	 this->operator[](I->first).set_description(I->second);
+	 // check if it was a conditional operator that should not be defined
+	 if (std::get<3>(*I) && (!(*std::get<3>(*I))()))
+	 {
+	    std::cerr << "warning: conditional local operator " << std::get<0>(*I) 
+		      << " (conditional on: " << std::get<2>(*I) << ") should not be defined, but is!\n";
+	 }
+	 this->operator[](std::get<0>(*I)).set_description(std::get<1>(*I));
       }
       else
       {
-	 std::cerr << "warning: operator " << I->first 
-		   << " has a description but is not defined in the lattice site.\n";
+	 // is the operator optional?
+	 if (!std::get<2>(*I).empty() || std::get<3>(*I))
+	 {
+	    // yes, check and see that we satisfy the condition
+	    if (std::get<3>(*I))
+	    {
+	       // invoke the function
+	       if (((*std::get<3>(*I))()))
+	       {
+		  std::cerr << "warning: conditional local operator "  << std::get<0>(*I) 
+			    << "should be defined but is not.\n";
+	       }
+	    }
+	 }
+	 else
+	 {
+	    std::cerr << "warning: operator " << std::get<0>(*I)
+		      << " has a description but is not defined in the lattice site.\n";
+	 }
       }
    }
 
    // Now go through the operators and check for any that don't have a description
    for (const_operator_iterator I = this->begin_operator(); I != this->end_operator(); ++I)
    {
-      if (I->second.description().empty())
+      if (std::get<1>(*I).description().empty())
       {
-	 std::cerr << "warning: local operator " << I->first << " has no description.\n";
+	 std::cerr << "warning: local operator " << std::get<0>(*I) << " has no description.\n";
       }
    }
 }

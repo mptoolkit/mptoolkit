@@ -24,7 +24,8 @@
 // infinite product of operators defined on the unit cell, and also have a QShift, with
 // the requirement that Basis1() == delta_shift(Basis2(), QShift).
 //
-// The unit cell of the operators is allowed to a a multiple of the lattice UnitCell.
+// The unit cell of the operators is allowed to a multiple of the lattice UnitCell.
+// We do some fancy tracking to keep the UnitCell by pointer where possible
 
 #if !defined(MPTOOLKIT_LATTICE_INFINITELATTICE_H)
 #define MPTOOLKIT_LATTICE_INFINITELATTICE_H
@@ -65,12 +66,23 @@ class InfiniteLattice
 
       InfiniteLattice();
 
-      explicit InfiniteLattice(UnitCell const& uc);
+      explicit InfiniteLattice(UnitCell* uc);
+      explicit InfiniteLattice(UnitCell&& uc);
+   //      explicit InfiniteLattice(UnitCell const& uc);  // maybe confusing to have this?
 
-      InfiniteLattice(std::string const& Description, UnitCell const& uc);
+      InfiniteLattice(std::string const& Description, UnitCell& uc);
+      InfiniteLattice(std::string const& Description, UnitCell&& uc);
 
-      UnitCell& GetUnitCell() { return UnitCell_; }
-      UnitCell const& GetUnitCell() const { return UnitCell_; }
+      InfiniteLattice(InfiniteLattice const& Other);
+      InfiniteLattice(InfiniteLattice&& Other);
+
+      InfiniteLattice& operator=(InfiniteLattice const& Other);
+      InfiniteLattice& operator=(InfiniteLattice&& Other);
+
+      ~InfiniteLattice();
+
+      UnitCell& GetUnitCell() { return *UnitCell_; }
+      UnitCell const& GetUnitCell() const { return *UnitCell_; }
 
       std::string description() const { return Description_; }
       void set_description(std::string s) { Description_ = s; }
@@ -166,7 +178,8 @@ class InfiniteLattice
       authors_type Authors_;
       std::string CommandLine_;
       std::string Timestamp_;
-      UnitCell UnitCell_;
+      UnitCell* UnitCell_;
+      bool OwnUnitCell_;               // true if UnitCell_ is owned by us on the heap
       OperatorListType Operators_;
       ArgumentListType Arguments_;
       FunctionListType Functions_;

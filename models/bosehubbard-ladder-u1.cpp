@@ -55,6 +55,7 @@ int main(int argc, char** argv)
 
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("U(1) Bose-Hubbard ladder");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_J"    , "nearest-neighbor hopping on the legs\n")
          ("H_K"    , "nearest-neighbor hopping on the rungs\n")
@@ -75,13 +76,14 @@ int main(int argc, char** argv)
 
       LatticeSite Site = BosonU1(MaxN);
       UnitCell Cell(repeat(Site, Width));
+      InfiniteLattice Lattice(&Cell);
+
       UnitCellOperator BH(Cell, "BH"), B(Cell, "B"), N(Cell, "N"), N2(Cell, "N2"),
          Delta(Cell, "D");
 
       // difference of boson occupation numbers between edges of the ladder
       Delta(0) = N(0)[Width-1] - N(0)[0];
 
-      InfiniteLattice Lattice(Cell);
 
       UnitCellMPO HJ, HK, HU, HU12;
       for (int i = 0; i < Width; ++i)

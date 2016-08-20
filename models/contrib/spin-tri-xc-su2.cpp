@@ -96,12 +96,12 @@ int main(int argc, char** argv)
 	 ("H_J2",     "next-nearest neighbor spin exchange")
 	 ("H_Jcell",  "zig-zag cylinder coupling")
 	 ("Ty"  ,     "Translation in Y direction")
-	 ("TyPi",     "Translation by pi in Y direction (only if w is divisible by 4)")
-	 ("Ry"  ,     "Reflection about the X axis")
+	 ("TyPi",     "Translation by pi in Y-direction (only if w is divisible by 4)")
+	 ("Ry"  ,     "Reflection about the X-axis")
 	 ;
 
       OpDescriptions.add_functions()
-         ("H",        "J1-J2 Heisenebrg Hamiltonian on a triangular lattice | inputs: J1 = cos(theta), J2 = sin(theta), theta = atan(alpha), alpha = 0.0")
+         ("THM",        "J1-J2 Heisenebrg Hamiltonian on a triangular lattice | inputs: J1 = cos(theta), J2 = sin(theta), theta = atan(alpha), alpha = 0.0")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -121,6 +121,7 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinSU2(Spin);
       UnitCell Cell = repeat(Site, w);
+      InfiniteLattice Lattice(&Cell);
       UnitCellOperator S(Cell, "S"), StagS(Cell, "StagS");
       UnitCellOperator I(Cell, "I"); // identity operator
       UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
@@ -130,11 +131,13 @@ int main(int argc, char** argv)
       int const w2 = w/2;
 
       // Add some operators on the unit-cell
+      UnitCellMPO S_stag_n60;
    
       for (int i = 0; i < w; ++i)
       {
-	 S += S[i];                       // total spin on a unit cell
-         StagS += IntPow(-1,i/w2) * S[i]; // note: only one of three possible staggered magnetization formation.
+	 S += S[i];                                                                  // total spin on a unit cell
+         StagS += IntPow(-1,i/w2) * S[i];                                            // staggered magnetization in Y-direction (note: only one of the three possible formations).
+         S_stag_n60 += IntPow(-1,i+(i/w2))*S(0)[i] + IntPow(-1,i+(i/w2)+1)*S(1)[i];  // staggered magnetization order parameter with FM stripes in -60^degree direction.
       }
 
       Trans = I(0);
@@ -145,9 +148,10 @@ int main(int argc, char** argv)
            Trans = Trans(0) * Cell.swap_gate_no_sign(i+w2, i+w2+1);
        }
 
-       // to test existence of tripartite symmetry, add operators for the sublattice magnetization:
-       // NOTE: XC structure does NOT need a 3*W unit-cell for these operators. 
+       // to test existence of bipartite/tripartite symmetry, add operators for the staggered/sublattice magnetization:
+       // NOTE: XC structure does NOT need a 3*W unit-cell for sublattice magnetization operators. 
        UnitCellMPO S_A, S_B, S_C;
+       UnitCellMPO S_stag_n60;             
 
        for (int i = 0; i < w; i += 3)
          {
@@ -191,10 +195,6 @@ int main(int argc, char** argv)
 	 H_Jcell += inner(S(0)[(i+1)%w2], S(0)[i+w2]);
       }
 
-
-      // Now we construct the InfiniteLattice,
-      InfiniteLattice Lattice(Cell);
-
       Lattice["H_J1"]    = sum_unit(H1);
       Lattice["H_J2"]    = sum_unit(H2);
       Lattice["H_Jcell"] = sum_unit(H_Jcell);
@@ -202,12 +202,23 @@ int main(int argc, char** argv)
       Lattice["Sa"] = sum_unit(S_A);
       Lattice["Sb"] = sum_unit(S_B);
       Lattice["Sc"] = sum_unit(S_C);
+      Lattice["Stag_n60"] = sum_unit(S_stag_n60, w*2);
 
-      Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
-         = "J1*H_J1 + J2*H_J2";
+
+      Lattice.func("THM")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
+         = "J1*H_J1 + J2*H_J2"; // an old lattice function, used in few projects in 2014-15.
+
+      Lattice.func("THM2")(arg("J2") = 0.0)
+              = "H_J1 + J2*H_J2";
 
       // Momentum operator in Y direction
-      Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
+      //Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
+      UnitCellMPO Ty = I(0);
+      for (int i = 0; i < w-1; ++i)
+      {
+         Ty = Ty * Cell.swap_gate_no_sign((i/2)+(i%2)*w2, ((i+1)/2)+((i+1)%2)*w2);
+      }
+      Lattice["Ty"] = prod_unit_left_to_right(Ty.MPO(), w);
 
       // Reflection about X axis
       UnitCellMPO Ry = I(0);

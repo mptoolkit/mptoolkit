@@ -67,6 +67,8 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinSU2(Spin);
       UnitCell Cell = repeat(Site,2);
+      InfiniteLattice Lattice(&Cell);
+
       UnitCellOperator S(Cell, "S");
 
       // Add some operators on the unit-cell
@@ -75,9 +77,6 @@ int main(int argc, char** argv)
       {
 	 S_w += S(i)[0];     // total spin on a leg of cylinder
       }
-
-      // Now we construct the InfiniteLattice,
-      InfiniteLattice Lattice(Cell);
 
       // Construct the Hamiltonian for a single unit-cell,
       UnitCellMPO H1, H2;

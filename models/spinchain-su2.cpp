@@ -55,6 +55,7 @@ int main(int argc, char** argv)
       // Descriptions of each operator
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("SU(2) spin chain");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
 	 ("H_J1"  , "nearest neighbor spin exchange")
 	 ("H_J2"  , "next-nearest neighbor spin exchange")
@@ -65,11 +66,12 @@ int main(int argc, char** argv)
 	 ("H_Q1"  , "nearest neighbor quadrupole exchange (Q.Q)")
 	 ("H_Q2"  , "next-nearest neighbor quadrupole exchange (Q.Q)")
 	 ("H_Q3"  , "next-next-nearest neighbor quadrupole exchange (Q.Q)")
+	 ("H_AKLT", "AKLT Hamiltonian H_J1 + (1/3)*H_J2", "spin 1", [&Spin]()->bool {return Spin==1;})
 	 ;
 
       // Descriptions for the operators
       OpDescriptions.add_functions()
-         ("Haldane_Shastry", "Haldane-Shastry Hamiltonian, parametized by 'lambda' (considering exponential decay as exp(-lambda*r))")
+         ("H_exp", "Exponential decay spin exchange parameterized by lambda as exp(-lambda*r)")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -78,7 +80,6 @@ int main(int argc, char** argv)
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
 	 std::cerr << OpDescriptions << '\n';
-	 std::cerr << "only for spin-1: H_AKLT  - AKLT Hamiltonian H_J1 + (1/3)*H_B1\n";
          return 1;
       }
 
@@ -88,7 +89,7 @@ int main(int argc, char** argv)
       UnitCell Cell(Site);
 
       // Make an infinite lattice of our unit cell
-      InfiniteLattice Lattice(Cell);
+      InfiniteLattice Lattice(&Cell);
 
       // A short-cut to refer to an operator defined within our unit cell
       UnitCellOperator S(Cell, "S"), Q(Cell, "Q"), I(Cell, "I");
@@ -109,10 +110,9 @@ int main(int argc, char** argv)
       if (Spin == 1)
       {
 	 Lattice["H_AKLT"] = Lattice["H_J1"] + (1.0/3.0)*Lattice["H_B1"];
-	 Lattice["H_AKLT"].set_description("AKLT Hamiltonian H_J1 + (1/3)*H_B1");
       }
 
-      Lattice.func("Haldane_Shastry")(arg("lambda") = 0.5)
+      Lattice.func("H_exp")(arg("lambda") = 0.5)
                   = "exp(-lambda)*sum_string_inner( S(0), exp(-lambda)*I(0), S(0) )";
 
       // Information about the lattice

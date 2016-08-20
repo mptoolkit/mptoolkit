@@ -48,6 +48,7 @@ int main(int argc, char** argv)
       
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("U(1)xSU(2) Fermi Hubbard model");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
 	 ("H_tup"    , "nearest neighbor hopping for up spins")
 	 ("H_tdown"  , "nearest neighbor hopping for down spins")
@@ -71,13 +72,13 @@ int main(int argc, char** argv)
 
       LatticeSite Site = FermionU1U1();
       UnitCell Cell(Site);
-      InfiniteLattice Lattice(Cell);
+      InfiniteLattice Lattice(&Cell);
       UnitCellOperator CHup(Cell, "CHup"), CHdown(Cell, "CHdown"), Cup(Cell, "Cup"), 
 	 Cdown(Cell, "Cdown"), Pdouble(Cell, "Pdouble"),
 	 Hu(Cell, "Hu"), N(Cell, "N");
 
-      Lattice["H_tup"]   = sum_unit(dot(CHup(0), Cup(1)) - dot(Cup(0), CHup(1)));
-      Lattice["H_tdown"] = sum_unit(dot(CHdown(0), Cdown(1)) - dot(Cdown(0), CHdown(1)));
+      Lattice["H_tup"]   = -sum_unit(dot(CHup(0), Cup(1)) - dot(Cup(0), CHup(1)));
+      Lattice["H_tdown"] = -sum_unit(dot(CHdown(0), Cdown(1)) - dot(Cdown(0), CHdown(1)));
       Lattice["H_t"]     = Lattice["H_tup"] + Lattice["H_tdown"];
       Lattice["H_U"]     = sum_unit(Pdouble(0));
       Lattice["H_Us"]    = sum_unit(Hu(0));

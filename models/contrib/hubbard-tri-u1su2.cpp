@@ -74,6 +74,8 @@ int main(int argc, char** argv)
 
       LatticeSite Site = FermionU1SU2();
       UnitCell Cell(repeat(Site, 3));
+      InfiniteLattice Lattice(&Cell);
+
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), Pdouble(Cell, "Pdouble"),
          Hu(Cell, "Hu"), N(Cell, "N"), R(Cell, "R"), S(Cell, "S");
       // parity operators
@@ -89,8 +91,6 @@ int main(int argc, char** argv)
       // some operators per unit cell
       N = N[0] + N[1] + N[2];
       S = S[0] + S[1] + S[2];
-
-      InfiniteLattice Lattice(Cell);
 
       Lattice["H_t"]  = sum_unit(-(dot(CH(0)[1], C(1)[1]) + dot(C(0)[1], CH(1)[1])));
       Lattice["H_t2"] = sum_unit(-(dot(CH(0)[1], C(2)[1]) + dot(C(0)[1], CH(2)[1])));
