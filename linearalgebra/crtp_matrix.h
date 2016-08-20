@@ -66,7 +66,7 @@ class MatrixBase
             boost::is_convertible<Int1, size_type>
           , boost::is_convertible<Int2, size_type>
          >
-       , Resize<derived_type&> 
+       , Resize<derived_type&>
       >::type::result_type
       resize(Int1 r, Int2 c)
       {
@@ -89,18 +89,18 @@ class MatrixBase
       //typename AddCopy<derived_type&, RHS>::result_type
       operator+=(RHS const& x)
       {
-	 Add<derived_type&, RHS>().operator()(this->as_derived(), x);
-	 return this->as_derived();
-	 //         return add_copy(this->as_derived(), x);
+         Add<derived_type&, RHS>().operator()(this->as_derived(), x);
+         return this->as_derived();
+         //         return add_copy(this->as_derived(), x);
       }
 
       template <typename RHS>
       typename AddCopy<derived_type&, value_with_zero<RHS>>::result_type
       operator+=(value_with_zero<RHS> const& x)
       {
-	 if (!x.is_zero())
-	    add_copy(this->as_derived(), x.get());
-	 return *this;
+         if (!x.is_zero())
+            add_copy(this->as_derived(), x.get());
+         return *this;
       }
 
       // operator -=

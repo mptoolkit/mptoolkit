@@ -57,17 +57,17 @@ LatticeSite CreateU1tJSite(std::string const& Sym1 = "N")
 
    // create up spin
    CHup("up",     "empty")     =  1;
-   
+
    // annihilate up spin
    Cup = adjoint(CHup);
 
-   // create down spin   
+   // create down spin
    CHdown("down",   "empty")   =  1;
-   
+
    // annihilate down spin
    Cdown = adjoint(CHdown);
 
-   // parity = (-1)^N   
+   // parity = (-1)^N
    P("empty",  "empty")     =  1;
    P("up",     "up")        = -1;
    P("down",   "down")      = -1;
@@ -81,12 +81,12 @@ LatticeSite CreateU1tJSite(std::string const& Sym1 = "N")
    N_S("up",     "up")        = 1;
    N_S("down",   "down")      = 1;
 
-   // spatial reflection   
+   // spatial reflection
    R("empty",  "empty")     =  1;
    R("up",     "up")        =  1;
    R("down",   "down")      =  1;
- 
-   // particle number  
+
+   // particle number
    N("up",     "up")        =  1;
    N("down",   "down")      =  1;
 
@@ -99,13 +99,13 @@ LatticeSite CreateU1tJSite(std::string const& Sym1 = "N")
    I("empty",  "empty")     =  1;
    I("up",     "up")        =  1;
    I("down",   "down")      =  1;
-   
+
    // S^+
    Sp("up",   "down")      = 1;
 
    // S^-
    Sm("down", "up")        = 1;
-   
+
    // z-component of spin
    Sz("up",   "up")       =  0.5;
    Sz("down", "down")     = -0.5;

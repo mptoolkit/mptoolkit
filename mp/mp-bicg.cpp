@@ -29,7 +29,7 @@
 class SolverBiconj : public Solver
 {
    public:
-      SolverBiconj(MPWavefunction const& Psi_, MPOperator const& Op_, 
+      SolverBiconj(MPWavefunction const& Psi_, MPOperator const& Op_,
                    MPWavefunction const& Rhs_)
          : Solver(Psi_, Op_, Rhs_) {}
 
@@ -44,8 +44,8 @@ struct SuperblockMultiply
    typedef MatrixOperator const& argument_type;
 
    SuperblockMultiply(SimpleOperator const& Op_,
-		      MPStateComponent const& Left_,
-		      MPStateComponent const& Right_);
+                      MPStateComponent const& Left_,
+                      MPStateComponent const& Right_);
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
    {
@@ -59,8 +59,8 @@ struct SuperblockMultiply
 
 inline
 SuperblockMultiply::SuperblockMultiply(SimpleOperator const& Op_,
-				       MPStateComponent const& Left_,
-				       MPStateComponent const& Right_)
+                                       MPStateComponent const& Left_,
+                                       MPStateComponent const& Right_)
    : Op(Op_), Left(Left_), Right(Right_)
 {
 }
@@ -121,10 +121,10 @@ struct MapLhsToRhs
 
 std::complex<double> SolverBiconj::Overlap() const
 {
-   return inner_prod(operator_prod(conj(A.Center()), 
-                                   yprime_A_x.Left(), 
-                                   x.Center(), 
-                                   herm(yprime_A_x.Right())), 
+   return inner_prod(operator_prod(conj(A.Center()),
+                                   yprime_A_x.Left(),
+                                   x.Center(),
+                                   herm(yprime_A_x.Right())),
                      yprime.Center());
 }
 
@@ -136,12 +136,12 @@ double SolverBiconj::Solve(int MaxIterations)
    int Iter = MaxIterations;
    double Tol = 1E-10;
 
-   BiConjugateGradient(x.Center(), 
+   BiConjugateGradient(x.Center(),
                        SuperblockMultiply(conj(A.Center()),
-                                          yprime_A_x.Left(), 
+                                          yprime_A_x.Left(),
                                           yprime_A_x.Right()),
                        SuperblockMultiplyHerm(conj(A.Center()),
-                                              yprime_A_x.Left(), 
+                                              yprime_A_x.Left(),
                                               yprime_A_x.Right()),
                        yprime.Center(),
                        Iter, Tol,
@@ -189,7 +189,7 @@ int main(int argc, char** argv)
 
       TruncationInfo States = solver.TruncateLeft(MaxStates, Correction);
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m << '\n';
+                << ") " << E << ' ' << States.m << '\n';
    }
 
    // sweep right
@@ -202,7 +202,7 @@ int main(int argc, char** argv)
       TruncationInfo States = solver.TruncateLeft(MaxStates, Correction);
 
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m << '\n';
+                << ") " << E << ' ' << States.m << '\n';
    }
    First = false;
 
@@ -211,7 +211,7 @@ int main(int argc, char** argv)
       double E = solver.Solve(NumIter);
       TruncationInfo States = solver.TruncateRight(MaxStates, Correction);
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m << '\n';
+                << ") " << E << ' ' << States.m << '\n';
    }
 
    // sweep left
@@ -223,7 +223,7 @@ int main(int argc, char** argv)
       TruncationInfo States = solver.TruncateRight(MaxStates, Correction);
 
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m << '\n';
+                << ") " << E << ' ' << States.m << '\n';
    }
 
    }

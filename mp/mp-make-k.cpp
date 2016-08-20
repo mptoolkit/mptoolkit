@@ -54,7 +54,7 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("lattice,l", prog_opt::value(&LatticeFile), 
+         ("lattice,l", prog_opt::value(&LatticeFile),
           "lattice file [required]")
          ("input-operator,i", prog_opt::value(&OperatorName),
           "name of the input operator [required]")
@@ -68,11 +68,11 @@ int main(int argc, char** argv)
           "increase verbosity")
          ;
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).run(), vm);
-      prog_opt::notify(vm);    
-      
+      prog_opt::notify(vm);
+
       if (vm.count("help") || !vm.count("lattice") || !vm.count("input-operator"))
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));

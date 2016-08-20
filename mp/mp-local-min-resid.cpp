@@ -43,7 +43,7 @@ bool ShowStoppingReason = false;
 
 // helper function to load an attribute from the command line or wavefunction
 template <typename T>
-void LoadAttribute(prog_opt::variables_map& Options, MPWavefunction& Psi, 
+void LoadAttribute(prog_opt::variables_map& Options, MPWavefunction& Psi,
                    std::string const& Name, T& Value, bool Show = false)
 {
    if (Options.count(Name) == 1)
@@ -51,7 +51,7 @@ void LoadAttribute(prog_opt::variables_map& Options, MPWavefunction& Psi,
          Value = Options[Name]. template as<T>();
          Psi.Attributes()[Name] = Value;
       }
-      else
+   else
       {
          if (Psi.Attributes().count(Name) == 0)
          {
@@ -115,17 +115,17 @@ class Aggregator
       typedef MPStateComponent Component;
       typedef Component::OperatorType OperatorType;
 
-      Aggregator(std::vector<CenterWavefunction> const& Psi_, int NumCV_, 
+      Aggregator(std::vector<CenterWavefunction> const& Psi_, int NumCV_,
                  SplitOperator const& H_, SplitOperator const& H2_,  int Location_,
                  StatesInfo const& SInfo);
 
       MatrixOperator RightLV() const { return Center[RightLanczos]; }
 
       MatrixOperator Wavefunction(int i) const { return Center[i]; }
-   
+
       CenterWavefunction const& FullWavefunction() const { return Result; }
 
-      complex ConstructCV(MatrixOperator& Guess, double FreqPlusEnergy, double Broadening, 
+      complex ConstructCV(MatrixOperator& Guess, double FreqPlusEnergy, double Broadening,
                           int MaxSubspaceSize, int MaxIter,
                           double& Resid, double StopDelta, bool Precondition = true);
 
@@ -163,7 +163,7 @@ void Aggregator::ConstructLeft(StatesInfo const& SInfo)
    {
       LeftMap[i] = operator_prod(herm(Result.Left()), LeftMap[i], Psi[i].Left());
    }
-                      
+
    // Construct the density matrix, taking only the correction vectors, not the Lanczos vectors
    OperatorType Rho;
    for (int i = 0; i < NumCV; ++i)
@@ -181,7 +181,7 @@ void Aggregator::ConstructLeft(StatesInfo const& SInfo)
                                                                                            SInfo,
                                                                                            Info));
    if (ShowStates)
-      std::cerr << "left density matrix at partition (" << Psi[0].LeftSize() << "," << Psi[0].RightSize() 
+      std::cerr << "left density matrix at partition (" << Psi[0].LeftSize() << "," << Psi[0].RightSize()
                 << "), states=" << Info.KeptStates() << ", trunc=" << Info.TruncationError() << '\n';
 
    // Truncate
@@ -224,7 +224,7 @@ void Aggregator::ConstructRight(StatesInfo const& SInfo)
                                                                                            SInfo,
                                                                                            Info));
    if (ShowStates)
-      std::cerr << "right density matrix at partition (" << Psi[0].LeftSize() << "," << Psi[0].RightSize() 
+      std::cerr << "right density matrix at partition (" << Psi[0].LeftSize() << "," << Psi[0].RightSize()
                 << "), states=" << Info.KeptStates() << ", trunc=" << Info.TruncationError() << '\n';
 
    // Truncate
@@ -266,8 +266,8 @@ void Aggregator::RotateRight()
                                                   Psi[0].Left().SiteBasis()));
 }
 
-Aggregator::Aggregator(std::vector<CenterWavefunction> const& Psi_,  int NumCV_, 
-                       SplitOperator const& H_, SplitOperator const& H2_, 
+Aggregator::Aggregator(std::vector<CenterWavefunction> const& Psi_,  int NumCV_,
+                       SplitOperator const& H_, SplitOperator const& H2_,
                        int Location_, StatesInfo const& SInfo)
    : Psi(Psi_), NumCV(NumCV_), RightLanczos(NumCV_),
      H(H_), H2(H2_), Weights(Psi_.size(), 1.0), Ident(Psi_[0].GetSymmetryList())
@@ -318,7 +318,7 @@ Aggregator::Aggregator(std::vector<CenterWavefunction> const& Psi_,  int NumCV_,
    H_right = make_vacuum_state(Psi[0].GetSymmetryList());
    H2_right = make_vacuum_state(Psi[0].GetSymmetryList());
    HL_right = make_vacuum_state(Psi[0].GetSymmetryList());
-   Result.PushRight(Component::ConstructFullBasis1(Psi[0].Right().SiteBasis(), 
+   Result.PushRight(Component::ConstructFullBasis1(Psi[0].Right().SiteBasis(),
                                                     Psi[0].Right().Basis2()));
 
    this->ConstructRight();
@@ -336,7 +336,7 @@ Aggregator::Aggregator(std::vector<CenterWavefunction> const& Psi_,  int NumCV_,
    }
 }
 
-complex Aggregator::ConstructCV(MatrixOperator& Guess, double FreqPlusEnergy, double Broadening, 
+complex Aggregator::ConstructCV(MatrixOperator& Guess, double FreqPlusEnergy, double Broadening,
                                 int MaxSubspaceSize,
                                 int MaxIter,
                                 double& Resid, double StopDelta, bool Precondition)
@@ -386,7 +386,7 @@ complex Aggregator::ConstructCV(MatrixOperator& Guess, double FreqPlusEnergy, do
       if (Iter >= MaxIter)
          std::cerr << "iteration count has hit limit.\n";
       else if (fabs(Resid-OldResid) > StopDelta)
-         std::cerr << "change in residual at last iteration " << fabs(Resid-OldResid) 
+         std::cerr << "change in residual at last iteration " << fabs(Resid-OldResid)
                    << " is smaller than threshold.\n";
       else
          std::cerr << "the moon is in the wrong cycle.\n";
@@ -424,7 +424,7 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Hamiltonian,H", prog_opt::value<std::string>(), 
+         ("Hamiltonian,H", prog_opt::value<std::string>(),
           "operator to use for the Hamiltonian (rLanczos vector attribute \"Hamiltonian\")")
          ("wavefunction,w", prog_opt::value(&InputWavefunctions),
           "input wavefunction to generate the effective basis (one or more)")
@@ -435,16 +435,16 @@ int main(int argc, char** argv)
          ("GroundstateEnergy,G", prog_opt::value(&GroundstateEnergy),
           "groundstate energy of the Hamiltonian (Lanczos vector attribute"
           " \"GroundstateEnergy\"")
-         ("min-states,m", prog_opt::value<int>(&MinStates), 
-          ("Minimum number of states to keep [default " 
+         ("min-states,m", prog_opt::value<int>(&MinStates),
+          ("Minimum number of states to keep [default "
            +boost::lexical_cast<std::string>(MinStates)+"]").c_str())
-	 ("max-states,x", prog_opt::value<int>(&MaxStates), 
+         ("max-states,x", prog_opt::value<int>(&MaxStates),
           ("Maximum number of states to keep [default "
            +boost::lexical_cast<std::string>(MaxStates)+"]").c_str())
-         ("trunc,r", prog_opt::value(&TruncCutoff), 
+         ("trunc,r", prog_opt::value(&TruncCutoff),
           ("Cutoff truncation error per site [default "
            +boost::lexical_cast<std::string>(TruncCutoff)+"]").c_str())
-         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff), 
+         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           ("Cutoff threshold for density matrix eigenvalues [default "
            +boost::lexical_cast<std::string>(EigenCutoff)+"]").c_str())
          ("out,o", prog_opt::value(&OutputPrefix),
@@ -479,17 +479,17 @@ int main(int argc, char** argv)
           " (implies possibly big loss of accuracy)")
          ("verbose,v", prog_opt_ext::accum_value(&Verbosity),
           "increase verbosity (can be used more than once)")
-	  ;
+          ;
 
       prog_opt::options_description opt;
       opt.add(desc);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("lanczos") == 0) 
+      if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("lanczos") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-local-min-resid [options]\n";
@@ -560,9 +560,9 @@ int main(int argc, char** argv)
       for (unsigned i = 0; i < Frequencies.size(); ++i)
       {
          double Resid = 0;
-         complex x = Ag.ConstructCV(Guess, Frequencies[i]+GroundstateEnergy, Broadening, KrylovSize, 
+         complex x = Ag.ConstructCV(Guess, Frequencies[i]+GroundstateEnergy, Broadening, KrylovSize,
                                     MaxIter, Resid, StopDelta, Precondition);
-         std::cout << std::setw(20) << Frequencies[i] << "  "  
+         std::cout << std::setw(20) << Frequencies[i] << "  "
                    << std::setw(20) << x.real() << "  "
                    << std::setw(20) << x.imag() << "  "
                    << std::setw(20) << Resid << std::endl;

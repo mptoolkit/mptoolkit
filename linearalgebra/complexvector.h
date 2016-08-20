@@ -23,7 +23,7 @@
   An 'unwrapped' vector of a complex type, that stores the real and compex parts
   separately.
 
-  The requirements on the types of the real and imag parts is that the 
+  The requirements on the types of the real and imag parts is that the
   corresponding Real and Imag functions are identity functions.
 
   Created 2005-01-13 Ian McCulloch
@@ -46,7 +46,7 @@ namespace LinearAlgebra
 // a metafunction to produce the equivalent complex type
 // given the real & imag types.  Wouldn't it be nice if std::complex
 // was more generic?
-template <typename RealPart, typename ImagPart, 
+template <typename RealPart, typename ImagPart,
    typename RealInterface = typename interface<RealPart>::type,
    typename ImagInterface = typename interface<ImagPart>::type>
 struct ComplexType
@@ -75,9 +75,9 @@ class ComplexVector
       typedef typename interface<real_type>::value_type real_value_type;
       typedef typename interface<imag_type>::value_type imag_value_type;
 
-      BOOST_MPL_ASSERT_MSG(is_identity<Real<real_value_type> >::value, 
-			   ComplexVector_must_have_non_complex_real_part, 
-			   (RealPart));
+      BOOST_MPL_ASSERT_MSG(is_identity<Real<real_value_type> >::value,
+                           ComplexVector_must_have_non_complex_real_part,
+                           (RealPart));
 
       typedef typename make_reference<RealPart>::type real_reference;
       typedef typename make_reference<ImagPart>::type imag_reference;
@@ -87,8 +87,8 @@ class ComplexVector
 
       typedef typename ComplexType<real_value_type, imag_value_type>::type value_type;
 
-      ComplexVector(real_reference Real, 
-		    imag_reference Imag) : Real_(Real), Imag_(Imag) {}
+      ComplexVector(real_reference Real,
+                    imag_reference Imag) : Real_(Real), Imag_(Imag) {}
 
       const_real_reference real() const { return Real_; }
       real_reference real() { return Real_; }
@@ -97,35 +97,35 @@ class ComplexVector
       imag_reference imag() { return Imag_; }
 
       template <typename U>
-      typename boost::enable_if<is_vector<U>, ComplexVector& >::type 
+      typename boost::enable_if<is_vector<U>, ComplexVector& >::type
       operator=(U const& x)
       {
-	 // TODO: the vector type should be something better here!
-	 std::vector<value_type> Temp(x.size());
+         // TODO: the vector type should be something better here!
+         std::vector<value_type> Temp(x.size());
          assign(Temp, x);
-	 assign(*this, Temp);
-	 return *this;
+         assign(*this, Temp);
+         return *this;
       }
 
       template <typename U>
-      typename boost::enable_if<is_vector<U>, ComplexVector& >::type 
+      typename boost::enable_if<is_vector<U>, ComplexVector& >::type
       operator=(NoAliasProxy<U> const& x)
       {
-	 assign(*this, x.value());
-	 return *this;
+         assign(*this, x.value());
+         return *this;
       }
 
-      size_type size() const 
-   { //PRECONDITION_EQUAL(Size<real_type>()(Real_), Size<imag_type>()(Imag_)); 
-	return Size<real_type>()(Real_); }
-			    
+      size_type size() const
+   { //PRECONDITION_EQUAL(Size<real_type>()(Real_), Size<imag_type>()(Imag_));
+        return Size<real_type>()(Real_); }
+
    private:
       real_type Real_;
       real_type Imag_;
 };
 
 // TODO: we need to do something better with make_value for complex types; currently
-// it would give a Vector<complex<T> >.  
+// it would give a Vector<complex<T> >.
 // Perhaps make_value is OK as it is, but we want to do something better for
 // the temporary type used in (alias) assignment.
 
@@ -140,7 +140,7 @@ struct make_value<ComplexVector<R, I> >
 template <typename R, typename I>
 typename boost::enable_if<
    boost::mpl::and_<is_vector<R>, is_vector<I> >,
-   ComplexVector<typename make_const_reference<R>::type, typename make_const_reference<I>::type> 
+   ComplexVector<typename make_const_reference<R>::type, typename make_const_reference<I>::type>
 >::type
 make_complex(R const& r, I const& i)
 {
@@ -150,7 +150,7 @@ make_complex(R const& r, I const& i)
 template <typename R, typename I>
 typename boost::enable_if<
    boost::mpl::and_<is_vector<R>, is_vector<I> >,
-   ComplexVector<typename make_reference<R>::type, typename make_reference<I>::type> 
+   ComplexVector<typename make_reference<R>::type, typename make_reference<I>::type>
 >::type
 make_complex(R& r, I& i)
 {
@@ -173,7 +173,7 @@ struct interface<ComplexVector<RealPart, ImagPart> >
 template <typename RealPart, typename ImagPart>
 struct abstract_interface<ComplexVector<RealPart, ImagPart> >
    : vector_abstract_or<typename abstract_interface<RealPart>::type,
-			typename abstract_interface<ImagPart>::type>
+                        typename abstract_interface<ImagPart>::type>
 {
 };
 
@@ -238,7 +238,7 @@ struct StreamInsert<ComplexVector<R, I>, VECTOR_EXPRESSION(V, Vi)>
    result_type operator()(std::ostream& out, second_argument_type const& x) const
       { return out << "{real=" << x.real() << ", imag=" << x.imag() << '}'; }
 };
-   
+
 // assignment
 
 template <typename LHS, typename R, typename I>

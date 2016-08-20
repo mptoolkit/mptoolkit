@@ -100,10 +100,10 @@ mpwavefunction_sum(std::vector<CenterWavefunction> X, StatesInfo const& SInfo, b
       }
    }
    LeftInternal.push(Top);
-   
+
    CenterWavefunction Result;
-   Result.PushRight(Component::ConstructFullBasis1(X[0].Right().SiteBasis(), 
-						   X[0].RightVacuumBasis()));
+   Result.PushRight(Component::ConstructFullBasis1(X[0].Right().SiteBasis(),
+                                                   X[0].RightVacuumBasis()));
 
    LinearAlgebra::Vector<OperatorType> RightMap(n);        // mapping of state i to the result
 
@@ -125,22 +125,22 @@ mpwavefunction_sum(std::vector<CenterWavefunction> X, StatesInfo const& SInfo, b
 
       for (int i = 1; i < n; ++i)
       {
-	 // (j,i)
-	 for (int j = 0; j < i; ++j)
-	 {
-	    Rho += triple_prod(RightMap[i], 
-			       triple_prod(herm(X[i].Center()), LeftInternal.top()(i,j), X[j].Center()), 
-			       herm(RightMap[j]));
-	 }
+         // (j,i)
+         for (int j = 0; j < i; ++j)
+         {
+            Rho += triple_prod(RightMap[i],
+                               triple_prod(herm(X[i].Center()), LeftInternal.top()(i,j), X[j].Center()),
+                               herm(RightMap[j]));
+         }
       }
       Rho += adjoint(Rho);
 
       // diagonal parts
       for (int i = 0; i < n; ++i)
       {
-	 Rho += triple_prod(RightMap[i], 
-			    scalar_prod(herm(X[i].Center()), X[i].Center()), 
-			    herm(RightMap[i]));
+         Rho += triple_prod(RightMap[i],
+                            scalar_prod(herm(X[i].Center()), X[i].Center()),
+                            herm(RightMap[i]));
       }
 
       // Construct the truncator for the result
@@ -158,8 +158,8 @@ mpwavefunction_sum(std::vector<CenterWavefunction> X, StatesInfo const& SInfo, b
       // truncate the transformers, and rotate the original states
       for (int i = 0; i < n; ++i)
       {
-	 RightMap[i] = prod(U, RightMap[i], Ident);
-	 X[i].RotateLeft();
+         RightMap[i] = prod(U, RightMap[i], Ident);
+         X[i].RotateLeft();
       }
       LeftInternal.pop();
 
@@ -168,7 +168,7 @@ mpwavefunction_sum(std::vector<CenterWavefunction> X, StatesInfo const& SInfo, b
 
       for (int i = 0; i < n; ++i)
       {
-	 RightMap[i] = operator_prod(Result.Right(), RightMap[i], herm(X[i].Right()));
+         RightMap[i] = operator_prod(Result.Right(), RightMap[i], herm(X[i].Right()));
       }
    }
 
@@ -176,7 +176,7 @@ mpwavefunction_sum(std::vector<CenterWavefunction> X, StatesInfo const& SInfo, b
    LinearAlgebra::Vector<OperatorType> LeftMap(n);        // mapping of state i to the result
 
    Result.PushLeft(Component::ConstructFullBasis2(X[0].LeftVacuumBasis(),
-						  X[0].Left().SiteBasis()));
+                                                  X[0].Left().SiteBasis()));
 
    //   OperatorType LeftVac = OperatorType::make_identity(X[0].LeftVacuumBasis());
    for (int i = 0; i < n; ++i)

@@ -27,7 +27,7 @@ struct IsDotOrSlash
 };
 
 template <class FwdIter>
-half_int 
+half_int
 convert_string_partial<half_int, FwdIter>::apply(FwdIter start, FwdIter end)
 {
    // get the integral part of the string.  This is delimited by either the end of the string, or '.' or '/'

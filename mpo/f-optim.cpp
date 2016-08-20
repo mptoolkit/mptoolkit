@@ -63,7 +63,7 @@ class GMatrixRefList
       // after the evaluation, return the n'th matrix
       MatrixType const& operator[](int n) const
       {
-	 return Data[n].second;
+         return Data[n].second;
       }
 
    private:
@@ -91,7 +91,7 @@ GMatrixRefList::Lookup(MatrixType const& F, MatrixType const& BH)
       return r;
    }
    return I->second;
-}   
+}
 
 void
 GMatrixRefList::Evaluate()
@@ -165,7 +165,7 @@ OuterIndex::Evaluate(StateComponent const& A, GMatrixRefList const& G) const
 // Result[a'](i',j') = M[s',s](a',a) A[s'](i',i) F[a](i,j) herm(B[s](j',j))
 StateComponent
 operator_prod(OperatorComponent const& M,
-              StateComponent const& A, 
+              StateComponent const& A,
               StateComponent const& F,
               HermitianProxy<StateComponent> const& B)
 {
@@ -191,102 +191,102 @@ operator_prod(OperatorComponent const& M,
    {
       for (unsigned iP = 0; iP < A.Basis1().size(); ++iP)
       {
-	 for (unsigned jP = 0; jP < B.base().Basis1().size(); ++jP)
-	 {
-	    if (!is_transform_target(B.base().Basis1()[jP], M.Basis1()[aP], A.Basis1()[iP]))
-	       continue;
+         for (unsigned jP = 0; jP < B.base().Basis1().size(); ++jP)
+         {
+            if (!is_transform_target(B.base().Basis1()[jP], M.Basis1()[aP], A.Basis1()[iP]))
+               continue;
 
-	    // Now we have enough to construct the output descriptor
-	    C.push_back(OuterIndex(iP, aP, jP));
+            // Now we have enough to construct the output descriptor
+            C.push_back(OuterIndex(iP, aP, jP));
 
 
-	    // Iterate over A[sP](iP,i) (we don't care about the actual values, just the used elements)
-	    for (unsigned sP = 0; sP < A.LocalBasis().size(); ++sP)
-	    {
-	       // We already know iP, so iterate over the row
-	       for (MatrixOperator::MatrixType::data_type::value_type::const_iterator 
-		       I = iterate(A[sP].data().vec()[iP]); I; ++I)
-	       {
-		  int i = I.index();
+            // Iterate over A[sP](iP,i) (we don't care about the actual values, just the used elements)
+            for (unsigned sP = 0; sP < A.LocalBasis().size(); ++sP)
+            {
+               // We already know iP, so iterate over the row
+               for (MatrixOperator::MatrixType::data_type::value_type::const_iterator
+                       I = iterate(A[sP].data().vec()[iP]); I; ++I)
+               {
+                  int i = I.index();
 
-		  HMatrixDescriptor HMat;
+                  HMatrixDescriptor HMat;
 
-		  // TODO: we already know AP
-		  // Iterate over the components in M.  We already know aP, so we can iterate over
-		  // the row of the matrix
-		  for (OperatorComponent::data_type::data_type::value_type::const_iterator 
-			  AA = iterate(M.data().vec()[aP]);
-		       AA; ++AA)
-		  {
-		     int a = AA.index();
-			
-		     // Iterate over the irreducible components of M(aP,a)
-		     for (SimpleRedOperator::const_iterator k = AA->begin(); k != AA->end(); ++k)
-		     {
-			// *k is an irreducible operator.  Iterate over the components of this operator.
-			// We already know the index sP, so iterate over that row
-			for (SimpleOperator::MatrixType::data_type::value_type::const_iterator
-				S = iterate(k->data().vec()[sP]); S; ++S)
-			{
-			   int s = S.index();
-			      
-			   // The final index is j - we only need this if the
-			   // element exists in both B.base()[s][jP, j] and
-			   // F[a](i,j)
+                  // TODO: we already know AP
+                  // Iterate over the components in M.  We already know aP, so we can iterate over
+                  // the row of the matrix
+                  for (OperatorComponent::data_type::data_type::value_type::const_iterator
+                          AA = iterate(M.data().vec()[aP]);
+                       AA; ++AA)
+                  {
+                     int a = AA.index();
 
-			   MatrixOperator::MatrixType::data_type::value_type::const_iterator
-			      Bj = iterate(B.base()[s].data().vec()[jP]),
-			      Fj = iterate(F[a].data().vec()[i]);
+                     // Iterate over the irreducible components of M(aP,a)
+                     for (SimpleRedOperator::const_iterator k = AA->begin(); k != AA->end(); ++k)
+                     {
+                        // *k is an irreducible operator.  Iterate over the components of this operator.
+                        // We already know the index sP, so iterate over that row
+                        for (SimpleOperator::MatrixType::data_type::value_type::const_iterator
+                                S = iterate(k->data().vec()[sP]); S; ++S)
+                        {
+                           int s = S.index();
 
-			   while (Bj && Fj)
-			   {
-			      if (Bj.index() < Fj.index())
-			      {
-				 ++Bj;
-				 continue;
-			      }
-			      else if (Fj.index() < Bj.index())
-			      {
-				 ++Fj;
-				 continue;
-			      }
-			      
-			      int j = Bj.index();
-			      DEBUG_CHECK_EQUAL(j, int(Fj.index()));
+                           // The final index is j - we only need this if the
+                           // element exists in both B.base()[s][jP, j] and
+                           // F[a](i,j)
 
-			      // now assemble the component
-			      double Coeff = tensor_coefficient(B.base().Basis2()[j],
-								B.base().LocalBasis()[s],
-								B.base().Basis1()[jP],
-								
-								M.Basis2()[a],
-								k->TransformsAs(),
-								M.Basis1()[aP],
-								
-								A.Basis2()[i],
-								A.LocalBasis()[sP],
-								A.Basis1()[iP]);
-			      
-			      if (LinearAlgebra::norm_frob(Coeff) > 1E-14)
-			      {
-				 int GIndex = G.Lookup(*Fj, *Bj);
-				 HMat.push_back(std::make_pair(Coeff * (*S), GIndex));
-			      }
+                           MatrixOperator::MatrixType::data_type::value_type::const_iterator
+                              Bj = iterate(B.base()[s].data().vec()[jP]),
+                              Fj = iterate(F[a].data().vec()[i]);
 
-			      ++Bj;
-			      ++Fj;
-			   }
-			}
-		     }
-		  }
-		  if (!HMat.empty())
-		     C.back().Components.push_back(ElementRec(sP, i, HMat));
-	       }
-	    }
-	 }
+                           while (Bj && Fj)
+                           {
+                              if (Bj.index() < Fj.index())
+                              {
+                                 ++Bj;
+                                 continue;
+                              }
+                              else if (Fj.index() < Bj.index())
+                              {
+                                 ++Fj;
+                                 continue;
+                              }
+
+                              int j = Bj.index();
+                              DEBUG_CHECK_EQUAL(j, int(Fj.index()));
+
+                              // now assemble the component
+                              double Coeff = tensor_coefficient(B.base().Basis2()[j],
+                                                                B.base().LocalBasis()[s],
+                                                                B.base().Basis1()[jP],
+
+                                                                M.Basis2()[a],
+                                                                k->TransformsAs(),
+                                                                M.Basis1()[aP],
+
+                                                                A.Basis2()[i],
+                                                                A.LocalBasis()[sP],
+                                                                A.Basis1()[iP]);
+
+                              if (LinearAlgebra::norm_frob(Coeff) > 1E-14)
+                              {
+                                 int GIndex = G.Lookup(*Fj, *Bj);
+                                 HMat.push_back(std::make_pair(Coeff * (*S), GIndex));
+                              }
+
+                              ++Bj;
+                              ++Fj;
+                           }
+                        }
+                     }
+                  }
+                  if (!HMat.empty())
+                     C.back().Components.push_back(ElementRec(sP, i, HMat));
+               }
+            }
+         }
       }
    }
-   
+
    // do the evaluations
    G.Evaluate();
 
@@ -294,7 +294,7 @@ operator_prod(OperatorComponent const& M,
    {
       if (!C[n].empty())
       {
-	 set_element(Result[C[n].aP].data(), C[n].iP, C[n].jP, C[n].Evaluate(A,G));
+         set_element(Result[C[n].aP].data(), C[n].iP, C[n].jP, C[n].Evaluate(A,G));
       }
    }
 
@@ -305,9 +305,9 @@ operator_prod(OperatorComponent const& M,
 
 StateComponent
 contract_from_right(HermitianProxy<OperatorComponent> const& M,
-		    StateComponent const& A, 
-		    StateComponent const& F,
-		    HermitianProxy<StateComponent> const& B)
+                    StateComponent const& A,
+                    StateComponent const& F,
+                    HermitianProxy<StateComponent> const& B)
 {
    PRECONDITION_EQUAL(M.base().LocalBasis1(), A.LocalBasis());
    PRECONDITION_EQUAL(M.base().LocalBasis2(), B.base().LocalBasis());
@@ -331,102 +331,102 @@ contract_from_right(HermitianProxy<OperatorComponent> const& M,
    {
       for (unsigned iP = 0; iP < A.Basis1().size(); ++iP)
       {
-	 for (unsigned jP = 0; jP < B.base().Basis1().size(); ++jP)
-	 {
-	    if (!is_transform_target(B.base().Basis1()[jP], M.base().Basis1()[aP], A.Basis1()[iP]))
-	       continue;
+         for (unsigned jP = 0; jP < B.base().Basis1().size(); ++jP)
+         {
+            if (!is_transform_target(B.base().Basis1()[jP], M.base().Basis1()[aP], A.Basis1()[iP]))
+               continue;
 
-	    // Now we have enough to construct the output descriptor
-	    C.push_back(OuterIndex(iP, aP, jP));
+            // Now we have enough to construct the output descriptor
+            C.push_back(OuterIndex(iP, aP, jP));
 
 
-	    // Iterate over A[sP](iP,i) (we don't care about the actual values, just the used elements)
-	    for (unsigned sP = 0; sP < A.LocalBasis().size(); ++sP)
-	    {
-	       // We already know iP, so iterate over the row
-	       for (MatrixOperator::MatrixType::data_type::value_type::const_iterator 
-		       I = iterate(A[sP].data().vec()[iP]); I; ++I)
-	       {
-		  int i = I.index();
+            // Iterate over A[sP](iP,i) (we don't care about the actual values, just the used elements)
+            for (unsigned sP = 0; sP < A.LocalBasis().size(); ++sP)
+            {
+               // We already know iP, so iterate over the row
+               for (MatrixOperator::MatrixType::data_type::value_type::const_iterator
+                       I = iterate(A[sP].data().vec()[iP]); I; ++I)
+               {
+                  int i = I.index();
 
-		  HMatrixDescriptor HMat;
+                  HMatrixDescriptor HMat;
 
-		  // TODO: we already know AP
-		  // Iterate over the components in M.  We already know aP, so we can iterate over
-		  // the row of the matrix
-		  for (OperatorComponent::data_type::data_type::value_type::const_iterator 
-			  AA = iterate(M.base().data().vec()[aP]);
-		       AA; ++AA)
-		  {
-		     int a = AA.index();
-			
-		     // Iterate over the irreducible components of M(aP,a)
-		     for (SimpleRedOperator::const_iterator k = AA->begin(); k != AA->end(); ++k)
-		     {
-			// *k is an irreducible operator.  Iterate over the components of this operator.
-			// We already know the index sP, so iterate over that row
-			for (SimpleOperator::MatrixType::data_type::value_type::const_iterator
-				S = iterate(k->data().vec()[sP]); S; ++S)
-			{
-			   int s = S.index();
-			      
-			   // The final index is j - we only need this if the
-			   // element exists in both B.base()[s][jP, j] and
-			   // F[a](i,j)
+                  // TODO: we already know AP
+                  // Iterate over the components in M.  We already know aP, so we can iterate over
+                  // the row of the matrix
+                  for (OperatorComponent::data_type::data_type::value_type::const_iterator
+                          AA = iterate(M.base().data().vec()[aP]);
+                       AA; ++AA)
+                  {
+                     int a = AA.index();
 
-			   MatrixOperator::MatrixType::data_type::value_type::const_iterator
-			      Bj = iterate(B.base()[s].data().vec()[jP]),
-			      Fj = iterate(F[a].data().vec()[i]);
+                     // Iterate over the irreducible components of M(aP,a)
+                     for (SimpleRedOperator::const_iterator k = AA->begin(); k != AA->end(); ++k)
+                     {
+                        // *k is an irreducible operator.  Iterate over the components of this operator.
+                        // We already know the index sP, so iterate over that row
+                        for (SimpleOperator::MatrixType::data_type::value_type::const_iterator
+                                S = iterate(k->data().vec()[sP]); S; ++S)
+                        {
+                           int s = S.index();
 
-			   while (Bj && Fj)
-			   {
-			      if (Bj.index() < Fj.index())
-			      {
-				 ++Bj;
-				 continue;
-			      }
-			      else if (Fj.index() < Bj.index())
-			      {
-				 ++Fj;
-				 continue;
-			      }
-			      
-			      int j = Bj.index();
-			      DEBUG_CHECK_EQUAL(j, int(Fj.index()));
+                           // The final index is j - we only need this if the
+                           // element exists in both B.base()[s][jP, j] and
+                           // F[a](i,j)
 
-			      // now assemble the component
-			      double Coeff = tensor_coefficient(B.base().Basis2()[j],
-								B.base().LocalBasis()[s],
-								B.base().Basis1()[jP],
-								
-								M.base().Basis2()[a],
-								k->TransformsAs(),
-								M.base().Basis1()[aP],
-								
-								A.Basis2()[i],
-								A.LocalBasis()[sP],
-								A.Basis1()[iP]);
-			      
-			      if (LinearAlgebra::norm_frob(Coeff) > 1E-14)
-			      {
-				 int GIndex = G.Lookup(*Fj, *Bj);
-				 HMat.push_back(std::make_pair(Coeff * herm(*S), GIndex));
-			      }
+                           MatrixOperator::MatrixType::data_type::value_type::const_iterator
+                              Bj = iterate(B.base()[s].data().vec()[jP]),
+                              Fj = iterate(F[a].data().vec()[i]);
 
-			      ++Bj;
-			      ++Fj;
-			   }
-			}
-		     }
-		  }
-		  if (!HMat.empty())
-		     C.back().Components.push_back(ElementRec(sP, i, HMat));
-	       }
-	    }
-	 }
+                           while (Bj && Fj)
+                           {
+                              if (Bj.index() < Fj.index())
+                              {
+                                 ++Bj;
+                                 continue;
+                              }
+                              else if (Fj.index() < Bj.index())
+                              {
+                                 ++Fj;
+                                 continue;
+                              }
+
+                              int j = Bj.index();
+                              DEBUG_CHECK_EQUAL(j, int(Fj.index()));
+
+                              // now assemble the component
+                              double Coeff = tensor_coefficient(B.base().Basis2()[j],
+                                                                B.base().LocalBasis()[s],
+                                                                B.base().Basis1()[jP],
+
+                                                                M.base().Basis2()[a],
+                                                                k->TransformsAs(),
+                                                                M.base().Basis1()[aP],
+
+                                                                A.Basis2()[i],
+                                                                A.LocalBasis()[sP],
+                                                                A.Basis1()[iP]);
+
+                              if (LinearAlgebra::norm_frob(Coeff) > 1E-14)
+                              {
+                                 int GIndex = G.Lookup(*Fj, *Bj);
+                                 HMat.push_back(std::make_pair(Coeff * herm(*S), GIndex));
+                              }
+
+                              ++Bj;
+                              ++Fj;
+                           }
+                        }
+                     }
+                  }
+                  if (!HMat.empty())
+                     C.back().Components.push_back(ElementRec(sP, i, HMat));
+               }
+            }
+         }
       }
    }
-   
+
    // do the evaluations
    G.Evaluate();
 
@@ -434,7 +434,7 @@ contract_from_right(HermitianProxy<OperatorComponent> const& M,
    {
       if (!C[n].empty())
       {
-	 set_element(Result[C[n].aP].data(), C[n].iP, C[n].jP, C[n].Evaluate(A,G));
+         set_element(Result[C[n].aP].data(), C[n].iP, C[n].jP, C[n].Evaluate(A,G));
       }
    }
 
@@ -444,11 +444,11 @@ contract_from_right(HermitianProxy<OperatorComponent> const& M,
 
 StateComponent
 contract_from_right_mask(HermitianProxy<OperatorComponent> const& M,
-			 StateComponent const& A, 
-			 StateComponent const& F,
-			 HermitianProxy<StateComponent> const& B,
-			 std::vector<int> const& Mask1,
-			 std::vector<int> const& Mask2)
+                         StateComponent const& A,
+                         StateComponent const& F,
+                         HermitianProxy<StateComponent> const& B,
+                         std::vector<int> const& Mask1,
+                         std::vector<int> const& Mask2)
 {
    PRECONDITION_EQUAL(M.base().LocalBasis1(), A.LocalBasis());
    PRECONDITION_EQUAL(M.base().LocalBasis2(), B.base().LocalBasis());
@@ -474,110 +474,110 @@ contract_from_right_mask(HermitianProxy<OperatorComponent> const& M,
    {
       // skip over masked components
       if (!Mask1[aP])
-	 continue;
+         continue;
 
       for (unsigned iP = 0; iP < A.Basis1().size(); ++iP)
       {
-	 for (unsigned jP = 0; jP < B.base().Basis1().size(); ++jP)
-	 {
-	    if (!is_transform_target(B.base().Basis1()[jP], M.base().Basis1()[aP], A.Basis1()[iP]))
-	       continue;
+         for (unsigned jP = 0; jP < B.base().Basis1().size(); ++jP)
+         {
+            if (!is_transform_target(B.base().Basis1()[jP], M.base().Basis1()[aP], A.Basis1()[iP]))
+               continue;
 
-	    // Now we have enough to construct the output descriptor
-	    C.push_back(OuterIndex(iP, aP, jP));
+            // Now we have enough to construct the output descriptor
+            C.push_back(OuterIndex(iP, aP, jP));
 
 
-	    // Iterate over A[sP](iP,i) (we don't care about the actual values, just the used elements)
-	    for (unsigned sP = 0; sP < A.LocalBasis().size(); ++sP)
-	    {
-	       // We already know iP, so iterate over the row
-	       for (MatrixOperator::MatrixType::data_type::value_type::const_iterator 
-		       I = iterate(A[sP].data().vec()[iP]); I; ++I)
-	       {
-		  int i = I.index();
+            // Iterate over A[sP](iP,i) (we don't care about the actual values, just the used elements)
+            for (unsigned sP = 0; sP < A.LocalBasis().size(); ++sP)
+            {
+               // We already know iP, so iterate over the row
+               for (MatrixOperator::MatrixType::data_type::value_type::const_iterator
+                       I = iterate(A[sP].data().vec()[iP]); I; ++I)
+               {
+                  int i = I.index();
 
-		  HMatrixDescriptor HMat;
+                  HMatrixDescriptor HMat;
 
-		  // TODO: we already know AP
-		  // Iterate over the components in M.  We already know aP, so we can iterate over
-		  // the row of the matrix
-		  for (OperatorComponent::data_type::data_type::value_type::const_iterator 
-			  AA = iterate(M.base().data().vec()[aP]);
-		       AA; ++AA)
-		  {
-		     int a = AA.index();
+                  // TODO: we already know AP
+                  // Iterate over the components in M.  We already know aP, so we can iterate over
+                  // the row of the matrix
+                  for (OperatorComponent::data_type::data_type::value_type::const_iterator
+                          AA = iterate(M.base().data().vec()[aP]);
+                       AA; ++AA)
+                  {
+                     int a = AA.index();
 
-		     // skip over masked components
-		     if (!Mask2[a])
-			continue;
-			
-		     // Iterate over the irreducible components of M(aP,a)
-		     for (SimpleRedOperator::const_iterator k = AA->begin(); k != AA->end(); ++k)
-		     {
-			// *k is an irreducible operator.  Iterate over the components of this operator.
-			// We already know the index sP, so iterate over that row
-			for (SimpleOperator::MatrixType::data_type::value_type::const_iterator
-				S = iterate(k->data().vec()[sP]); S; ++S)
-			{
-			   int s = S.index();
-			      
-			   // The final index is j - we only need this if the
-			   // element exists in both B.base()[s][jP, j] and
-			   // F[a](i,j)
+                     // skip over masked components
+                     if (!Mask2[a])
+                        continue;
 
-			   MatrixOperator::MatrixType::data_type::value_type::const_iterator
-			      Bj = iterate(B.base()[s].data().vec()[jP]),
-			      Fj = iterate(F[a].data().vec()[i]);
+                     // Iterate over the irreducible components of M(aP,a)
+                     for (SimpleRedOperator::const_iterator k = AA->begin(); k != AA->end(); ++k)
+                     {
+                        // *k is an irreducible operator.  Iterate over the components of this operator.
+                        // We already know the index sP, so iterate over that row
+                        for (SimpleOperator::MatrixType::data_type::value_type::const_iterator
+                                S = iterate(k->data().vec()[sP]); S; ++S)
+                        {
+                           int s = S.index();
 
-			   while (Bj && Fj)
-			   {
-			      if (Bj.index() < Fj.index())
-			      {
-				 ++Bj;
-				 continue;
-			      }
-			      else if (Fj.index() < Bj.index())
-			      {
-				 ++Fj;
-				 continue;
-			      }
-			      
-			      int j = Bj.index();
-			      DEBUG_CHECK_EQUAL(j, int(Fj.index()));
+                           // The final index is j - we only need this if the
+                           // element exists in both B.base()[s][jP, j] and
+                           // F[a](i,j)
 
-			      // now assemble the component
-			      double Coeff = tensor_coefficient(B.base().Basis2()[j],
-								B.base().LocalBasis()[s],
-								B.base().Basis1()[jP],
-								
-								M.base().Basis2()[a],
-								k->TransformsAs(),
-								M.base().Basis1()[aP],
-								
-								A.Basis2()[i],
-								A.LocalBasis()[sP],
-								A.Basis1()[iP]);
-			      
-			      if (LinearAlgebra::norm_frob(Coeff) > 1E-14)
-			      {
-				 int GIndex = G.Lookup(*Fj, *Bj);
-				 HMat.push_back(std::make_pair(Coeff * herm(*S), GIndex));
-			      }
+                           MatrixOperator::MatrixType::data_type::value_type::const_iterator
+                              Bj = iterate(B.base()[s].data().vec()[jP]),
+                              Fj = iterate(F[a].data().vec()[i]);
 
-			      ++Bj;
-			      ++Fj;
-			   }
-			}
-		     }
-		  }
-		  if (!HMat.empty())
-		     C.back().Components.push_back(ElementRec(sP, i, HMat));
-	       }
-	    }
-	 }
+                           while (Bj && Fj)
+                           {
+                              if (Bj.index() < Fj.index())
+                              {
+                                 ++Bj;
+                                 continue;
+                              }
+                              else if (Fj.index() < Bj.index())
+                              {
+                                 ++Fj;
+                                 continue;
+                              }
+
+                              int j = Bj.index();
+                              DEBUG_CHECK_EQUAL(j, int(Fj.index()));
+
+                              // now assemble the component
+                              double Coeff = tensor_coefficient(B.base().Basis2()[j],
+                                                                B.base().LocalBasis()[s],
+                                                                B.base().Basis1()[jP],
+
+                                                                M.base().Basis2()[a],
+                                                                k->TransformsAs(),
+                                                                M.base().Basis1()[aP],
+
+                                                                A.Basis2()[i],
+                                                                A.LocalBasis()[sP],
+                                                                A.Basis1()[iP]);
+
+                              if (LinearAlgebra::norm_frob(Coeff) > 1E-14)
+                              {
+                                 int GIndex = G.Lookup(*Fj, *Bj);
+                                 HMat.push_back(std::make_pair(Coeff * herm(*S), GIndex));
+                              }
+
+                              ++Bj;
+                              ++Fj;
+                           }
+                        }
+                     }
+                  }
+                  if (!HMat.empty())
+                     C.back().Components.push_back(ElementRec(sP, i, HMat));
+               }
+            }
+         }
       }
    }
-   
+
    // do the evaluations
    G.Evaluate();
 
@@ -585,7 +585,7 @@ contract_from_right_mask(HermitianProxy<OperatorComponent> const& M,
    {
       if (!C[n].empty())
       {
-	 set_element(Result[C[n].aP].data(), C[n].iP, C[n].jP, C[n].Evaluate(A,G));
+         set_element(Result[C[n].aP].data(), C[n].iP, C[n].jP, C[n].Evaluate(A,G));
       }
    }
 

@@ -125,7 +125,7 @@ void Split(LinearWavefunction& Psi, MatrixOperator& CPos, MatrixOperator& CNeg)
    CNeg = CNeg * C;
 
    LinearWavefunction PsiPos = inject_left_old_interface(CPos, Psi);
-   TRACE(norm_frob_sq(CPos))(CPos); 
+   TRACE(norm_frob_sq(CPos))(CPos);
    PsiPos = inject_right_old_interface(PsiPos, CPos);
    PsiPos.set_front(prod(CPos, PsiPos.get_front()));
 

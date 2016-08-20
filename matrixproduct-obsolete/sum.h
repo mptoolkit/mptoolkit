@@ -33,4 +33,3 @@ fancy_sum(MatrixProduct<Component> A, MatrixProduct<Component> B, int NumStates)
    // We start from the right hand side here...
    while (A.RightSize() > 1) A.RotateRight();
    while (B.RightSize() > 1) B.RotateRight();
-   

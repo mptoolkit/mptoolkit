@@ -54,8 +54,8 @@ class MapVector : public VectorBase<MapVector<T> >
    public:
       typedef T value_type;
       typedef VectorIteratorFromPair<base_iterator, vector_iterator_ordered> iterator;
-      typedef VectorConstIteratorFromPair<base_const_iterator, 
-					  vector_iterator_ordered> const_iterator;
+      typedef VectorConstIteratorFromPair<base_const_iterator,
+                                          vector_iterator_ordered> const_iterator;
       typedef T& reference;
       typedef T const& const_reference;
 
@@ -67,8 +67,8 @@ class MapVector : public VectorBase<MapVector<T> >
       MapVector(U const& x, typename boost::enable_if<is_vector<U> >::type* dummy = 0);
 
       template <typename U>
-      MapVector(NoAliasProxy<U> const& x, 
-		typename boost::enable_if<is_vector<U> >::type* dummy = 0);
+      MapVector(NoAliasProxy<U> const& x,
+                typename boost::enable_if<is_vector<U> >::type* dummy = 0);
 
       template <typename U>
       typename boost::enable_if<is_vector<U>, MapVector<T>&>::type
@@ -87,10 +87,10 @@ class MapVector : public VectorBase<MapVector<T> >
       const_iterator c_iterate() const { return const_iterator(Data_.begin(), Data_.end()); }
       iterator iterate() { return iterator(Data_.begin(), Data_.end()); }
 
-      iterator iterate_at(size_type n) 
+      iterator iterate_at(size_type n)
       { return iterator(Data_.find(n), Data_.end()); }
 
-      const_iterator iterate_at(size_type n) const 
+      const_iterator iterate_at(size_type n) const
       { return const_iterator(Data_.find(n), Data_.end()); }
 
       size_type nnz() const { return Data_.size(); }

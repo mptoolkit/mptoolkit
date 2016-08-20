@@ -50,7 +50,7 @@ struct UID_Factory
    UID_Factory() : Factory(NULL) {}
    UID_Factory(const string& UID_, StreamableFactory* Factory_) : UID(UID_), Factory(Factory_) {}
    UID_Factory(const UID_Factory& f) : UID(f.UID), Factory(f.Factory) {}
- 
+
    string UID;
    StreamableFactory* Factory;
 };
@@ -71,7 +71,7 @@ StreamableFactory* FindFactory(const string& UID)
 
 } // namespace
 
-namespace PStream 
+namespace PStream
 {
 
 //
@@ -143,7 +143,7 @@ generic_opstreambuf::generic_opstreambuf(generic_opstreambuf const& Buffer)
 }
 
 generic_opstreambuf::generic_opstreambuf(opstream* BackPointer_,
-					 byte_type* Beg, byte_type* End, byte_type* Ptr)
+                                         byte_type* Beg, byte_type* End, byte_type* Ptr)
   : BackPointer(BackPointer_), BufBegin(Beg), BufEnd(End), BufPtr(Ptr)
 {
 }
@@ -158,14 +158,14 @@ generic_opstreambuf::CopyOpstreambuf(int Format, generic_opstreambuf const& Buff
       case 1 : return new opstreambuf<1>(Buffer);
       case 2 : return new opstreambuf<2>(Buffer);
       case 3 : return new opstreambuf<3>(Buffer);
-	//      case 4 : return new opstreambuf<4>(Buffer);
+        //      case 4 : return new opstreambuf<4>(Buffer);
    }
    return NULL;  // this can never be executed
 }
 
 generic_opstreambuf*
 generic_opstreambuf::MakeOpstreambuf(int Format, opstream* BackPointer,
-				     byte_type* Bufbegin, byte_type* BufEnd, byte_type* BufPtr)
+                                     byte_type* Bufbegin, byte_type* BufEnd, byte_type* BufPtr)
 {
    RANGE_CHECK(Format, 0, NumConcreteStreamClasses-1);
    switch (Format)
@@ -174,7 +174,7 @@ generic_opstreambuf::MakeOpstreambuf(int Format, opstream* BackPointer,
       case 1 : return new opstreambuf<1>(BackPointer, Bufbegin, BufEnd, BufPtr);
       case 2 : return new opstreambuf<2>(BackPointer, Bufbegin, BufEnd, BufPtr);
       case 3 : return new opstreambuf<3>(BackPointer, Bufbegin, BufEnd, BufPtr);
-	//      case 4 : return new opstreambuf<4>(BackPointer, Bufbegin, BufEnd, BufPtr);
+        //      case 4 : return new opstreambuf<4>(BackPointer, Bufbegin, BufEnd, BufPtr);
    }
    return NULL;  // this can never be executed
 }
@@ -241,9 +241,9 @@ generic_ipstreambuf::generic_ipstreambuf(generic_ipstreambuf const& Buffer)
 }
 
 generic_ipstreambuf::generic_ipstreambuf(ipstream* BackPointer_,
-					 byte_type const* Beg,
-					 byte_type const* End,
-					 byte_type const* Ptr)
+                                         byte_type const* Beg,
+                                         byte_type const* End,
+                                         byte_type const* Ptr)
   : BackPointer(BackPointer_), BufBegin(Beg), BufEnd(End), BufPtr(Ptr)
 {
 }
@@ -258,16 +258,16 @@ generic_ipstreambuf::CopyIpstreambuf(int Format, generic_ipstreambuf const& Buff
       case 1 : return new ipstreambuf<1>(Buffer);
       case 2 : return new ipstreambuf<2>(Buffer);
       case 3 : return new ipstreambuf<3>(Buffer);
-	//      case 4 : return new opstreambuf<4>(Buffer);
+        //      case 4 : return new opstreambuf<4>(Buffer);
    }
    return NULL;  // this can never be executed
 }
 
 generic_ipstreambuf*
 generic_ipstreambuf::MakeIpstreambuf(int Format, ipstream* BackPointer,
-				     byte_type const* Bufbegin, 
-				     byte_type const* BufEnd,
-				     byte_type const* BufPtr)
+                                     byte_type const* Bufbegin,
+                                     byte_type const* BufEnd,
+                                     byte_type const* BufPtr)
 {
    RANGE_CHECK(Format, 0, NumConcreteStreamClasses-1);
    switch (Format)
@@ -276,7 +276,7 @@ generic_ipstreambuf::MakeIpstreambuf(int Format, ipstream* BackPointer,
       case 1 : return new ipstreambuf<1>(BackPointer, Bufbegin, BufEnd, BufPtr);
       case 2 : return new ipstreambuf<2>(BackPointer, Bufbegin, BufEnd, BufPtr);
       case 3 : return new ipstreambuf<3>(BackPointer, Bufbegin, BufEnd, BufPtr);
-	//      case 4 : return new opstreambuf<4>(BackPointer, Bufbegin, BufEnd, BufPtr);
+        //      case 4 : return new opstreambuf<4>(BackPointer, Bufbegin, BufEnd, BufPtr);
    }
    return NULL;  // this can never be executed
 }
@@ -305,10 +305,10 @@ void RegisterClass(const std::type_info& t, const string& UID, StreamableFactory
    string dUID = GetUID(t);
    if (!dUID.empty())
    {
-      if (dUID != UID) 
+      if (dUID != UID)
       {
          delete Factory;
-	 PANIC("") << "Duplicate UID for type " << t.name() << ": " << dUID << " and " << UID;
+         PANIC("") << "Duplicate UID for type " << t.name() << ": " << dUID << " and " << UID;
       }
       // else dUID == UID.  replace the existing factory with the new one
       delete UIDFactoryList[UID];
@@ -316,7 +316,7 @@ void RegisterClass(const std::type_info& t, const string& UID, StreamableFactory
    }
 
    // also make sure that there are no duplicated UID strings
-   if (UIDFactoryList.find(UID) != UIDFactoryList.end()) 
+   if (UIDFactoryList.find(UID) != UIDFactoryList.end())
    {
       PANIC("") << "Duplicate UID for type " << t.name() << ": " << dUID << " is already used." << UID;
    }

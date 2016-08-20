@@ -27,7 +27,7 @@ struct LeftMultiply
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   LeftMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_) 
+   LeftMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_)
       : L(L_), QShift(QShift_) {}
 
    result_type operator()(argument_type const& x) const
@@ -35,7 +35,7 @@ struct LeftMultiply
       result_type r = delta_shift(x, QShift);
       for (LinearWavefunction::const_iterator I = L.begin(); I != L.end(); ++I)
       {
-	 r = operator_prod(herm(*I), r, *I);
+         r = operator_prod(herm(*I), r, *I);
       }
       return r;
    }
@@ -88,8 +88,8 @@ get_spectrum(LinearWavefunction const& Psi, QuantumNumber const& QShift, int Num
    ARPACK::znaupd(&ido, bmat, n, which, nev, tol, &resid[0], ncv,
                   &v[0], ldv, &iparam, &ipntr, &workd[0],
                   &workl[0], lworkl, &rwork[0], &info);
-   CHECK(info >= 0)(info); 
-   
+   CHECK(info >= 0)(info);
+
    while (ido != 99)
    {
       if (ido == -1 || ido == 1)
@@ -109,7 +109,7 @@ get_spectrum(LinearWavefunction const& Psi, QuantumNumber const& QShift, int Num
       ARPACK::znaupd(&ido, bmat, n, which, nev, tol, &resid[0], ncv,
                      &v[0], ldv, &iparam, &ipntr, &workd[0],
                      &workl[0], lworkl, &rwork[0], &info);
-      CHECK(info >= 0)(info); 
+      CHECK(info >= 0)(info);
    }
 
    if (Verbose >= 1)
@@ -127,10 +127,10 @@ get_spectrum(LinearWavefunction const& Psi, QuantumNumber const& QShift, int Num
    std::complex<double> sigma;   // not referenced
    std::vector<std::complex<double> > workev(2*ncv);
    ARPACK::zneupd(rvec, howmny, &select[0], &d[0], &z[0], ldz, sigma, &workev[0],
-                  bmat, n, which, nev, tol, &resid[0], ncv, &v[0], ldv, 
+                  bmat, n, which, nev, tol, &resid[0], ncv, &v[0], ldv,
                   &iparam, &ipntr, &workd[0],
                   &workl[0], lworkl, &rwork[0], &info);
-   CHECK(info >= 0)(info); 
+   CHECK(info >= 0)(info);
 
    LinearAlgebra::Vector<std::complex<double> > Result(nev);
    for (int i = 0; i < nev; ++i)

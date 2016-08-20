@@ -186,7 +186,7 @@ SimpleOperator trace_prod(MPStateComponent const& A,
 // TODO: generalize this beyond identity op
 // FIXME: This probably depends on the matrix elements of M having the correct norm convention
 MatrixOperator operator_prod(SimpleOperator const& M,
-                             MPStateComponent const& A, 
+                             MPStateComponent const& A,
                              LinearAlgebra::HermitianProxy<MPStateComponent> const& B)
 {
    DEBUG_PRECONDITION_EQUAL(M.Basis1(), A.SiteBasis());
@@ -201,11 +201,11 @@ MatrixOperator operator_prod(SimpleOperator const& M,
    {
       for (const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
       {
-	 Result += (*J) * triple_prod(A[J.index1()], 
-				      MatrixOperator::make_identity(A.Basis2()),
-				      herm(B.base()[J.index2()]),
-				      Result.TransformsAs(),
-				      Result.TransformsAs());
+         Result += (*J) * triple_prod(A[J.index1()],
+                                      MatrixOperator::make_identity(A.Basis2()),
+                                      herm(B.base()[J.index2()]),
+                                      Result.TransformsAs(),
+                                      Result.TransformsAs());
          //Result += (*J) * scalar_prod(A[J.index1()], herm(B.base()[J.index2()]));
       }
    }
@@ -213,7 +213,7 @@ MatrixOperator operator_prod(SimpleOperator const& M,
 }
 
 MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const& M,
-                             LinearAlgebra::HermitianProxy<MPStateComponent> const& A, 
+                             LinearAlgebra::HermitianProxy<MPStateComponent> const& A,
                              MPStateComponent const& B)
 {
    DEBUG_PRECONDITION_EQUAL(M.base().Basis1(), A.base().SiteBasis());
@@ -228,11 +228,11 @@ MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const
    {
       for (const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
       {
-	 Result += herm(*J) * triple_prod(herm(A.base()[J.index1()]), 
-					  MatrixOperator::make_identity(B.Basis1()),
-					  B[J.index2()], 
-					  Result.TransformsAs(),
-					  Result.TransformsAs());
+         Result += herm(*J) * triple_prod(herm(A.base()[J.index1()]),
+                                          MatrixOperator::make_identity(B.Basis1()),
+                                          B[J.index2()],
+                                          Result.TransformsAs(),
+                                          Result.TransformsAs());
          //Result += (*J) * scalar_prod(herm(A.base()[J.index1()]), B[J.index2()]);
       }
    }
@@ -241,13 +241,13 @@ MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const
 
 std::ostream& operator<<(std::ostream& out, MPStateComponent const& Psi)
 {
-  out << "Site basis:\n" << Psi.SiteBasis() << "Basis1:\n" << Psi.Basis1() 
+  out << "Site basis:\n" << Psi.SiteBasis() << "Basis1:\n" << Psi.Basis1()
       << "Basis2:\n" << Psi.Basis2() << '\n' << Psi.Data;
   return out;
 }
 
-MatrixOperator operator_prod(SimpleOperator const& M, 
-                             MPStateComponent const& A, 
+MatrixOperator operator_prod(SimpleOperator const& M,
+                             MPStateComponent const& A,
                              MatrixOperator const& E,
                              LinearAlgebra::HermitianProxy<MPStateComponent> const& B,
                              QuantumNumbers::QuantumNumber const& q)
@@ -263,7 +263,7 @@ MatrixOperator operator_prod(SimpleOperator const& M,
    {
       for (const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
       {
-         Result += (*J) * triple_prod(A[J.index1()], E, herm(B.base()[J.index2()]), 
+         Result += (*J) * triple_prod(A[J.index1()], E, herm(B.base()[J.index2()]),
                                       M.TransformsAs(), q);
       }
    }
@@ -271,7 +271,7 @@ MatrixOperator operator_prod(SimpleOperator const& M,
 }
 
 MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const& M,
-                             LinearAlgebra::HermitianProxy<MPStateComponent> const& A, 
+                             LinearAlgebra::HermitianProxy<MPStateComponent> const& A,
                              MatrixOperator const& E,
                              MPStateComponent const& B,
                              QuantumNumbers::QuantumNumber const& q)
@@ -287,14 +287,14 @@ MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const
    {
       for (const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
       {
-         Result += (*J) * triple_prod(herm(A.base()[J.index1()]), E, B[J.index2()], 
-				      M.base().TransformsAs(), q);
+         Result += (*J) * triple_prod(herm(A.base()[J.index1()]), E, B[J.index2()],
+                                      M.base().TransformsAs(), q);
       }
    }
    return Result;
 }
 
-MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<MPStateComponent> const& A, 
+MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<MPStateComponent> const& A,
                              MatrixOperator const& E,
                              MPStateComponent const& B)
 {
@@ -312,7 +312,7 @@ MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<MPStateComponent> con
    return Result;
 }
 
-MatrixOperator operator_prod(MPStateComponent const& A, 
+MatrixOperator operator_prod(MPStateComponent const& A,
                              MatrixOperator const& E,
                              LinearAlgebra::HermitianProxy<MPStateComponent> const& B)
 {
@@ -331,19 +331,19 @@ MatrixOperator operator_prod(MPStateComponent const& A,
 }
 
 MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const& M,
-                             LinearAlgebra::HermitianProxy<MPStateComponent> const& A, 
+                             LinearAlgebra::HermitianProxy<MPStateComponent> const& A,
                              MatrixOperator const& E,
                              MPStateComponent const& B)
 {
-   QuantumNumbers::QuantumNumberList ql = transform_targets(adjoint(M.base().TransformsAs()), 
-							    E.TransformsAs());
+   QuantumNumbers::QuantumNumberList ql = transform_targets(adjoint(M.base().TransformsAs()),
+                                                            E.TransformsAs());
    PRECONDITION_EQUAL(ql.size(), 1)("Quantum number is ambiguous, must be specified.");
 
    return operator_prod(M, A, E, B, ql[0]);
 }
 
 MatrixOperator operator_prod(SimpleOperator const& M,
-                             MPStateComponent const& A, 
+                             MPStateComponent const& A,
                              MatrixOperator const& E,
                              LinearAlgebra::HermitianProxy<MPStateComponent> const& B)
 {
@@ -355,7 +355,7 @@ MatrixOperator operator_prod(SimpleOperator const& M,
 
 // tensor_sum
 
-MPStateComponent tensor_sum(MPStateComponent const& A, MPStateComponent const& B, 
+MPStateComponent tensor_sum(MPStateComponent const& A, MPStateComponent const& B,
                             SumBasis<VectorBasis> const& B1, SumBasis<VectorBasis> const& B2)
 {
    PRECONDITION_EQUAL(A.SiteBasis(), B.SiteBasis());
@@ -368,8 +368,8 @@ MPStateComponent tensor_sum(MPStateComponent const& A, MPStateComponent const& B
    return Result;
 }
 
-MPStateComponent tensor_row_sum(MPStateComponent const& A, 
-                                MPStateComponent const& B, 
+MPStateComponent tensor_row_sum(MPStateComponent const& A,
+                                MPStateComponent const& B,
                                 SumBasis<VectorBasis> const& B2)
 {
    DEBUG_PRECONDITION_EQUAL(A.SiteBasis(), B.SiteBasis());
@@ -383,8 +383,8 @@ MPStateComponent tensor_row_sum(MPStateComponent const& A,
    return Result;
 }
 
-MPStateComponent tensor_col_sum(MPStateComponent const& A, 
-                                MPStateComponent const& B, 
+MPStateComponent tensor_col_sum(MPStateComponent const& A,
+                                MPStateComponent const& B,
                                 SumBasis<VectorBasis> const& B1)
 {
    DEBUG_PRECONDITION_EQUAL(A.SiteBasis(), B.SiteBasis());
@@ -490,8 +490,8 @@ MPStateComponent local_prod(SimpleOperator const& x, MPStateComponent const& A)
 
 // triple_prod
 
-MPStateComponent triple_prod(MatrixOperator const& Op1, 
-                             MPStateComponent const& A, 
+MPStateComponent triple_prod(MatrixOperator const& Op1,
+                             MPStateComponent const& A,
                              LinearAlgebra::HermitianProxy<MatrixOperator> const&Op2)
 {
    MPStateComponent Result(A.SiteBasis(), Op1.Basis1(), Op2.base().Basis1());
@@ -502,8 +502,8 @@ MPStateComponent triple_prod(MatrixOperator const& Op1,
    return Result;
 }
 
-MPStateComponent triple_prod(LinearAlgebra::HermitianProxy<MatrixOperator> const& Op1, 
-                             MPStateComponent const& A, 
+MPStateComponent triple_prod(LinearAlgebra::HermitianProxy<MatrixOperator> const& Op1,
+                             MPStateComponent const& A,
                              MatrixOperator const&Op2)
 {
    MPStateComponent Result(A.SiteBasis(), Op1.base().Basis2(), Op2.Basis2());
@@ -514,7 +514,7 @@ MPStateComponent triple_prod(LinearAlgebra::HermitianProxy<MatrixOperator> const
    return Result;
 }
 
-MatrixOperator extract_diagonal(MPStateComponent const& A, 
+MatrixOperator extract_diagonal(MPStateComponent const& A,
                                 LinearAlgebra::HermitianProxy<MPStateComponent> const& B)
 {
    MatrixOperator Result(A.Basis2(), B.base().Basis2());
@@ -568,7 +568,7 @@ MatrixOperator ExpandBasis1(MPStateComponent& A, Normalization n)
    }
 
    // check the normalization
-   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(Result, herm(Result))), 
+   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(Result, herm(Result))),
                      FullBasis1.total_degree());
 
    MatrixOperator Res = scalar_prod(A, herm(Result));
@@ -589,13 +589,13 @@ MatrixOperator ExpandBasis2(MPStateComponent& A, Normalization n)
       DEBUG_CHECK_EQUAL(Dim, A.Basis1().dim(b1));
 
       // Make an identity matrix of the correct size
-      set_element(Result[s], b1, t, 
+      set_element(Result[s], b1, t,
                                  std::sqrt(double(degree(FullBasis2[t])) / degree(A.Basis1()[b1]))
                                  * LinearAlgebra::identity_matrix<double>(Dim));
    }
 
    // check the normalization
-   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(herm(Result), Result)), 
+   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(herm(Result), Result)),
                      FullBasis2.total_degree());
 
    MatrixOperator Res = scalar_prod(herm(Result), A);
@@ -604,7 +604,7 @@ MatrixOperator ExpandBasis2(MPStateComponent& A, Normalization n)
 }
 
 MPStateComponent ConstructFromRightBasis(BasisList const& LocalBasis,
-					 VectorBasis const& RightBasis)
+                                         VectorBasis const& RightBasis)
 {
    ProductBasis<BasisList, VectorBasis> FullBasis1(LocalBasis, RightBasis);
    MPStateComponent Result(LocalBasis, FullBasis1.Basis(), RightBasis);
@@ -623,7 +623,7 @@ MPStateComponent ConstructFromRightBasis(BasisList const& LocalBasis,
 }
 
 MPStateComponent ConstructFromLeftBasis(BasisList const& LocalBasis,
-					VectorBasis const& LeftBasis)
+                                        VectorBasis const& LeftBasis)
 {
    ProductBasis<VectorBasis, BasisList> FullBasis2(LeftBasis, adjoint(LocalBasis));
    MPStateComponent Result(LocalBasis, LeftBasis, FullBasis2.Basis());
@@ -636,16 +636,16 @@ MPStateComponent ConstructFromLeftBasis(BasisList const& LocalBasis,
       DEBUG_CHECK_EQUAL(Dim, LeftBasis.dim(b1));
 
       // Make an identity matrix of the correct size
-      set_element(Result[s], b1, t, 
+      set_element(Result[s], b1, t,
                                  std::sqrt(double(degree(FullBasis2[t])) / degree(LeftBasis[b1]))
                                  * LinearAlgebra::identity_matrix<double>(Dim));
    }
    return Result;
 }
 
-MPStateComponent ShiftLocalBasis(MPStateComponent const& Op, 
-				 QuantumNumber QL, 
-				 QuantumNumber QM)
+MPStateComponent ShiftLocalBasis(MPStateComponent const& Op,
+                                 QuantumNumber QL,
+                                 QuantumNumber QM)
 {
    CHECK_EQUAL(degree(QL), 1);
    CHECK_EQUAL(degree(QM), 1);
@@ -677,7 +677,7 @@ MPStateComponent ShiftLocalBasis(MPStateComponent const& Op,
 MPStateComponent delta_shift(MPStateComponent const& Op, QuantumNumber const& q)
 {
    CHECK_EQUAL(degree(q), 1);
-   
+
    // Update basis 2
    VectorBasis NewBasis2(Op.GetSymmetryList());
    for (unsigned i = 0; i < Op.Basis2().size(); ++i)
@@ -696,15 +696,15 @@ MPStateComponent delta_shift(MPStateComponent const& Op, QuantumNumber const& q)
    return Result;
 }
 
-MPStateComponent ScaleBasisU1(MPStateComponent const& Op, 
-			      std::string const& Name, 
-			      double Factor)
+MPStateComponent ScaleBasisU1(MPStateComponent const& Op,
+                              std::string const& Name,
+                              double Factor)
 {
    using QuantumNumbers::U1;
 
    int const s = Op.GetSymmetryList().WhichSymmetry(Name);
    if (s < 0)      // early return if Name does not name a quantum number
-      return Op; 
+      return Op;
 
    CHECK_EQUAL(Op.GetSymmetryList().SymmetryType(s), "U(1)");
 
@@ -746,14 +746,14 @@ MPStateComponent ScaleBasisU1(MPStateComponent const& Op,
 MPStateComponent RenameSymmetry(MPStateComponent const& Op, SymmetryList const& NewSL)
 {
    MPStateComponent Result(RenameSymmetry(Op.LocalBasis(), NewSL),
-			   RenameSymmetry(Op.Basis1(), NewSL),
-			   RenameSymmetry(Op.Basis2(), NewSL));
+                           RenameSymmetry(Op.Basis1(), NewSL),
+                           RenameSymmetry(Op.Basis2(), NewSL));
 
    // we assume here that the reduced matrix elements are identical
    for (unsigned i = 0; i < Result.LocalBasis().size(); ++i)
       Result[i].data() = Op[i].data();
    return Result;
-}   
+}
 
 MPStateComponent ReorderLocalBasis(MPStateComponent const& Op, std::list<int> const& NewOrder)
 {
@@ -786,7 +786,7 @@ MPStateComponent CoerceSymmetryList(MPStateComponent const& Op, SymmetryList con
    BasisList NewLocal = Op.LocalBasis();
    VectorBasis NewBasis1 = Op.Basis1();
    VectorBasis NewBasis2 = Op.Basis2();
-   
+
    CoerceSymmetryList(NewLocal, NewSL);
    CoerceSymmetryList(NewBasis1, NewSL);
    CoerceSymmetryList(NewBasis2, NewSL);
@@ -806,20 +806,20 @@ MPStateComponent local_tensor_prod(MPStateComponent const& A, MPStateComponent c
    {
       for (unsigned j = 0; j < B.LocalBasis().size(); ++j)
       {
-	 ProductBasis<BasisList, BasisList>::const_iterator IEnd = PB.end(i,j);
-	 ProductBasis<BasisList, BasisList>::const_iterator I = PB.begin(i,j);
-	 for ( ; I != IEnd; ++I)
-	 {
-	    Result[*I] = prod(A[i], B[j], PB.Basis()[*I]);
-	 }
+         ProductBasis<BasisList, BasisList>::const_iterator IEnd = PB.end(i,j);
+         ProductBasis<BasisList, BasisList>::const_iterator I = PB.begin(i,j);
+         for ( ; I != IEnd; ++I)
+         {
+            Result[*I] = prod(A[i], B[j], PB.Basis()[*I]);
+         }
       }
    }
 
    return Result;
 }
 
-MatrixOperator MakeRandomMatrixOperator(VectorBasis const& B1, 
-                                        VectorBasis const& B2, 
+MatrixOperator MakeRandomMatrixOperator(VectorBasis const& B1,
+                                        VectorBasis const& B2,
                                         QuantumNumber q)
 {
    MatrixOperator Result(B1, B2, q);

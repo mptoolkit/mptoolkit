@@ -75,7 +75,7 @@ class StatesList
 {
    public:
       explicit StatesList(char const* str);
-      
+
       explicit StatesList(std::string const& str);
 
       StatesList(int NumSweeps, int NumStates);

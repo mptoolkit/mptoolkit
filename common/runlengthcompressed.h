@@ -28,13 +28,13 @@
 // objects, then it is up to the user to canonicalize the representation.
 //
 // The const_iterator is a standard-conforming bidirectional iterator.
-// To modify a run_length_compressed object, use the visitor pattern 
+// To modify a run_length_compressed object, use the visitor pattern
 // with a function object that implements operator() for T itself,
 // run_length_repeat<T> and run_length_array<T>.  The latter two types
 // act as containers of run_length_compressed<T> objects.
 // Note that for run_length_array and run_length_repeat, the
 // size() function returns the physical size of the container,
-// which is NOT the same as the logical size returned by 
+// which is NOT the same as the logical size returned by
 // run_length_compressed::size().  The repeat and array objects have
 // instead a logical_size() function that takes into account the
 // complete size of nested objects.
@@ -134,7 +134,7 @@ class run_length_compressed
       const_iterator begin() const;
       const_iterator end() const;
 
-      typedef boost::variant<T, 
+      typedef boost::variant<T,
          boost::recursive_wrapper<run_length_repeat<T> >,
          boost::recursive_wrapper<run_length_array<T> > > data_type;
 
@@ -180,8 +180,8 @@ apply_visitor(Visitor const& v, run_length_compressed<T>& x);
 
 template <typename T, typename Visitor>
 typename Visitor::result_type
-apply_visitor(Visitor const& v, 
-              run_length_compressed<T> const& x, 
+apply_visitor(Visitor const& v,
+              run_length_compressed<T> const& x,
               run_length_compressed<T> const& y);
 
 //
@@ -246,7 +246,7 @@ class run_length_repeat
          {
             return const_iterator(Value, Loc--);
          }
-         
+
          run_length_compressed<T> const* Value;
          int Loc;
       };
@@ -256,7 +256,7 @@ class run_length_repeat
 
       const_iterator begin() const { return const_iterator(&Value, 0); }
       const_iterator end() const { return const_iterator(&Value, Count); }
-         
+
 
       int size() const { return Count; }
 

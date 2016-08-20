@@ -21,9 +21,9 @@
 #include "linearalgebra/matrix_utility.h"
 
 bool
-WavefunctionDesc::Flip(std::vector<BasisList> const& Basis, int Site, int NewState, 
+WavefunctionDesc::Flip(std::vector<BasisList> const& Basis, int Site, int NewState,
                        QuantumNumber const& NewQuantumNumber)
-{ 
+{
    Projection Delta = difference(NewQuantumNumber, Height[Site]);
    //   TRACE(Delta);
    State[Site] = NewState;
@@ -37,7 +37,7 @@ WavefunctionDesc::Flip(std::vector<BasisList> const& Basis, int Site, int NewSta
 
       Height[i] = change(Height[i], Delta);
 
-      if (!is_transform_target(Height[i+1], Basis[i][State[i]], Height[i])) 
+      if (!is_transform_target(Height[i+1], Basis[i][State[i]], Height[i]))
       {
          //DEBUG_TRACE(Height[i+1])(Basis[i][State[i]])(Height[i]);
          return false;
@@ -46,7 +46,7 @@ WavefunctionDesc::Flip(std::vector<BasisList> const& Basis, int Site, int NewSta
    return true;
 }
 
-WavefunctionDesc::WavefunctionDesc(std::vector<BasisList> const& L) 
+WavefunctionDesc::WavefunctionDesc(std::vector<BasisList> const& L)
    : State(L.size()), Height(L.size()+1)
 {
    QuantumNumber Q(L[0].GetSymmetryList());
@@ -63,7 +63,7 @@ WavefunctionDesc::WavefunctionDesc(std::vector<BasisList> const& L)
 }
 
 WavefunctionDesc::WavefunctionDesc(std::vector<BasisList> const& L,
-                                   QuantumNumber Q) 
+                                   QuantumNumber Q)
    : State(L.size()), Height(L.size()+1)
 {
    Height[L.size()] = Q;
@@ -100,7 +100,7 @@ void WavefunctionDesc::CheckValid(std::vector<BasisList> const& Basis) const
 }
 
 WavefunctionDesc
-CreateRandomConfiguration(std::vector<BasisList> const& Basis, 
+CreateRandomConfiguration(std::vector<BasisList> const& Basis,
                           QuantumNumber const& q, double Beta,
                           QuantumNumber RightBoundary)
 {
@@ -118,33 +118,33 @@ CreateRandomConfiguration(std::vector<BasisList> const& Basis,
       {
          std::size_t Qi = std::size_t(LinearAlgebra::random<double>() * QList.size());
 
-	 QuantumNumber NewQ(QList[Qi]);
-	 WavefunctionDesc New = Psi;
-	 //	 TRACE(Site)(c)(NewState)(Psi.Height[Site+1])(Psi.Height[Site])(Psi.State[Site])(NewQ)(Basis[Site].qn(Psi.State[Site]))(Basis[Site].qn(NewState))(QList);
-	 if (New.Flip(Basis, Site, NewState, NewQ))
-	 {
-	    //	    TRACE(Psi.TransformsAs())(New.TransformsAs());
-	    if (clock() / CLOCKS_PER_SEC > now+10)
-	    {
-	       now = clock() / CLOCKS_PER_SEC;
-	       TRACE("slow convergence!")(Site)(q)(NewQ)(New.TransformsAs())(Psi.TransformsAs());
-	    }
-	    double Newc = weight(difference(q, New.TransformsAs()));
+         QuantumNumber NewQ(QList[Qi]);
+         WavefunctionDesc New = Psi;
+         //      TRACE(Site)(c)(NewState)(Psi.Height[Site+1])(Psi.Height[Site])(Psi.State[Site])(NewQ)(Basis[Site].qn(Psi.State[Site]))(Basis[Site].qn(NewState))(QList);
+         if (New.Flip(Basis, Site, NewState, NewQ))
+         {
+            //      TRACE(Psi.TransformsAs())(New.TransformsAs());
+            if (clock() / CLOCKS_PER_SEC > now+10)
+            {
+               now = clock() / CLOCKS_PER_SEC;
+               TRACE("slow convergence!")(Site)(q)(NewQ)(New.TransformsAs())(Psi.TransformsAs());
+            }
+            double Newc = weight(difference(q, New.TransformsAs()));
             //TRACE(Newc);
-	    if (LinearAlgebra::random<double>() < exp(Beta * (c-Newc))) 
-	    {
+            if (LinearAlgebra::random<double>() < exp(Beta * (c-Newc)))
+            {
                //TRACE("Accepted");
-	       Psi = New;
-               //	       continue;
-	    }
-	 }
+               Psi = New;
+               //              continue;
+            }
+         }
       }
    }
    return Psi;
 }
 
-LinearWavefunction CreateRandomWavefunction(std::vector<BasisList> const& Basis, 
-					QuantumNumber const& q, double Beta,
+LinearWavefunction CreateRandomWavefunction(std::vector<BasisList> const& Basis,
+                                        QuantumNumber const& q, double Beta,
                                         QuantumNumber const& RightBoundary)
 {
    WavefunctionDesc Psi = CreateRandomConfiguration(Basis, q, Beta, RightBoundary);
@@ -176,8 +176,8 @@ LinearWavefunction CreateRandomWavefunction(std::vector<BasisList> const& Basis,
    return Result;
 }
 
-LinearWavefunction CreateRandomWavefunction(std::vector<BasisList> const& Basis, 
-					QuantumNumber const& q, double Beta)
+LinearWavefunction CreateRandomWavefunction(std::vector<BasisList> const& Basis,
+                                        QuantumNumber const& q, double Beta)
 {
    return CreateRandomWavefunction(Basis, q, Beta, QuantumNumber(Basis[0].GetSymmetryList()));
 }
@@ -204,7 +204,7 @@ LinearWavefunction CreateRandomWavefunction(Lattice const& L, QuantumNumber cons
    return CreateRandomWavefunction(L, q, Beta, QuantumNumber(L.GetSymmetryList()));
 }
 
-LinearWavefunction CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q, 
+LinearWavefunction CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q,
                                         double Beta,
                                         QuantumNumber const& RightBoundary,
                                         int Count)
@@ -222,7 +222,7 @@ LinearWavefunction CreateRandomWavefunction(Lattice const& L, QuantumNumber cons
    return Psi;
 }
 
-LinearWavefunction CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q, 
+LinearWavefunction CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q,
                                         double Beta,
                                         int Count)
 {

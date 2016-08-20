@@ -81,7 +81,7 @@ tensor_row_sum(S const& x, T const& y, B2 const& b2)
    return TensorRowSum<S, T>(f)(x,y,b2);
 }
 
-template <typename T1, typename B1, typename B2, typename S1, 
+template <typename T1, typename B1, typename B2, typename S1,
           typename T2, typename S2, typename Nest>
 struct TensorSum<IrredTensor<T1, B1, B2, S1>, IrredTensor<T2, B1, B2, S2> >
 {

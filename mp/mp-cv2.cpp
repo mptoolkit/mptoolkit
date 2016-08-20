@@ -40,7 +40,7 @@ namespace prog_opt = boost::program_options;
 
 // helper function to load an attribute from the command line or wavefunction
 template <typename T>
-void LoadAttribute(prog_opt::variables_map& Options, MPWavefunction& Psi, 
+void LoadAttribute(prog_opt::variables_map& Options, MPWavefunction& Psi,
                    std::string const& Name, T& Value, bool Show = false)
 {
    if (Options.count(Name) == 1)
@@ -48,7 +48,7 @@ void LoadAttribute(prog_opt::variables_map& Options, MPWavefunction& Psi,
          Value = Options[Name]. template as<T>();
          Psi.Attributes()[Name] = Value;
       }
-      else
+   else
       {
          if (Psi.Attributes().count(Name) == 0)
          {
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Hamiltonian,H", prog_opt::value<std::string>(), 
+         ("Hamiltonian,H", prog_opt::value<std::string>(),
           "operator to use for the Hamiltonian (wavefunction attribute \"Hamiltonian\")")
          ("lanczos,l", prog_opt::value(&LanczosStr),
           "input Lanczos vector (required)")
@@ -104,27 +104,27 @@ int main(int argc, char** argv)
          ("GroundstateEnergy,G", prog_opt::value(&GroundstateEnergy),
           "groundstate energy of the Hamiltonian (wavefunction attribute"
           " \"GroundstateEnergy\"")
-	 ("two-site,2", prog_opt::bool_switch(&TwoSite), 
+         ("two-site,2", prog_opt::bool_switch(&TwoSite),
           "modify 2 neighboring sites at once")
-	 ("iter,i", prog_opt::value(&NumIter), 
+         ("iter,i", prog_opt::value(&NumIter),
           ("Maximum size of the Krylov subspace [default "
            + boost::lexical_cast<std::string>(NumIter)+"]").c_str())
-	 ("min-iter", prog_opt::value(&MinIterations), 
+         ("min-iter", prog_opt::value(&MinIterations),
           ("Minimum size of the Krylov subspace [default "
            + boost::lexical_cast<std::string>(MinIterations)+"]").c_str())
-         ("min-states", prog_opt::value<int>(&MinStates), 
-          ("Minimum number of states to keep [default " 
+         ("min-states", prog_opt::value<int>(&MinStates),
+          ("Minimum number of states to keep [default "
            +boost::lexical_cast<std::string>(MinStates)+"]").c_str())
-	 ("max-states,m", prog_opt::value<int>(&MaxStates), 
+         ("max-states,m", prog_opt::value<int>(&MaxStates),
           ("Maximum number of states to keep [default "
            +boost::lexical_cast<std::string>(MaxStates)+"]").c_str())
-         ("trunc,r", prog_opt::value(&TruncCutoff), 
+         ("trunc,r", prog_opt::value(&TruncCutoff),
           ("Cutoff truncation error per site [default "
            +boost::lexical_cast<std::string>(TruncCutoff)+"]").c_str())
-         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff), 
+         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           ("Cutoff threshold for density matrix eigenvalues [default "
            +boost::lexical_cast<std::string>(EigenCutoff)+"]").c_str())
-	 ("mix-factor,f", prog_opt::value(&MixFactor), 
+         ("mix-factor,f", prog_opt::value(&MixFactor),
           ("Mixing coefficient for the density matrix [default "
            + boost::lexical_cast<std::string>(MixFactor)+"]").c_str())
          ("precision,p", prog_opt::value(&Precision),
@@ -144,22 +144,22 @@ int main(int argc, char** argv)
           "Construct the Krylov basis of the functional minimiziation using the best approximate residual vector")
          ("square", prog_opt::bool_switch(&SquareMeHarder),
           "Don't use the exact matrix elements of H^2 in the functional minimization, instead calculate H twice")
-	 ("sweeps,s", prog_opt::value(&NumSweeps), 
+         ("sweeps,s", prog_opt::value(&NumSweeps),
           ("Number of half-sweeps to perform [default "
            + boost::lexical_cast<std::string>(NumSweeps)+"]").c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose),
           "increase verbosity (can be used more than once)")
-	  ;
+          ;
 
       prog_opt::options_description opt;
       opt.add(desc);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("lanczos") == 0) 
+      if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("lanczos") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-cv2 [options]\n";
@@ -195,7 +195,7 @@ int main(int argc, char** argv)
       SInfo.EigenvalueCutoff = EigenCutoff;
       if (Verbose >= 1)
          std::cout << SInfo << '\n';
-      
+
       pvalue_ptr<MPWavefunction> Rhs = pheap::ImportHeap(LanczosStr);
 
       MPOperator Part = (Frequency+GroundstateEnergy) * OpList["I"] - H;
@@ -228,8 +228,8 @@ int main(int argc, char** argv)
             TruncationInfo States = solver.TruncateLeft(SInfo, MixFactor);
 
             std::cout << "Partition=(" << solver.LeftSize() << ',' << solver.RightSize()
-                      << ") r2=" << E 
-                      << " States=" << States.KeptStates() 
+                      << ") r2=" << E
+                      << " States=" << States.KeptStates()
                       << " Trunc=" << States.TruncationError()
                       << " NIter=" << solver.IterationNumMultiplies
                       << '\n';
@@ -245,8 +245,8 @@ int main(int argc, char** argv)
             TruncationInfo States = solver.TruncateLeft(SInfo, MixFactor);
 
             std::cout << "Partition=(" << solver.LeftSize() << ',' << solver.RightSize()
-                      << ") r2=" << E 
-                      << " States=" << States.KeptStates() 
+                      << ") r2=" << E
+                      << " States=" << States.KeptStates()
                       << " Trunc=" << States.TruncationError()
                       << " NIter=" << solver.IterationNumMultiplies
                       << '\n';
@@ -267,8 +267,8 @@ int main(int argc, char** argv)
             TruncationInfo States = solver.TruncateRight(SInfo, MixFactor);
 
             std::cout << "Partition=(" << solver.LeftSize() << ',' << solver.RightSize()
-                      << ") r2=" << E 
-                      << " States=" << States.KeptStates() 
+                      << ") r2=" << E
+                      << " States=" << States.KeptStates()
                       << " Trunc=" << States.TruncationError()
                       << " NIter=" << solver.IterationNumMultiplies
                       << '\n';
@@ -284,8 +284,8 @@ int main(int argc, char** argv)
             TruncationInfo States = solver.TruncateRight(SInfo, MixFactor);
 
             std::cout << "Partition=(" << solver.LeftSize() << ',' << solver.RightSize()
-                      << ") r2=" << E 
-                      << " States=" << States.KeptStates() 
+                      << ") r2=" << E
+                      << " States=" << States.KeptStates()
                       << " Trunc=" << States.TruncationError()
                       << " NIter=" << solver.IterationNumMultiplies
                       << '\n';

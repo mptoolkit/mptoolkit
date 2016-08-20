@@ -50,9 +50,9 @@ void opagestream::overflow()
 
    WriteBuffer NewBuffer = MyFS->allocate();
    BufferList.push_back(NewBuffer);
-   this->set_buffer(NewBuffer.buffer(), 
-		    NewBuffer.buffer()+MyFS->get_page_size(), 
-		    NewBuffer.buffer()+4); // +4 reserved for linked list page_id
+   this->set_buffer(NewBuffer.buffer(),
+                    NewBuffer.buffer()+MyFS->get_page_size(),
+                    NewBuffer.buffer()+4); // +4 reserved for linked list page_id
 }
 
 PageId opagestream::commit()
@@ -64,9 +64,9 @@ PageId opagestream::commit()
    PageId Page;
    while (!BufferList.empty())
    {
-      this->set_buffer(BufferList.back().buffer(), 
-		       BufferList.back().buffer()+4, 
-		       BufferList.back().buffer());
+      this->set_buffer(BufferList.back().buffer(),
+                       BufferList.back().buffer()+4,
+                       BufferList.back().buffer());
       MyFS->write_page_id(*this, Page);
       Page = BufferList.back().get_page();
       BufferList.pop_back();

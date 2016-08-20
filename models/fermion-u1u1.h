@@ -21,9 +21,9 @@
 #include "quantumnumbers/u1.h"
 
 inline
-LatticeSite FermionU1U1(std::string const& Sym1 = "N", 
-			std::string const& Sym2 = "Sz",
-			std::string const& ParityOp = "P")
+LatticeSite FermionU1U1(std::string const& Sym1 = "N",
+                        std::string const& Sym2 = "Sz",
+                        std::string const& ParityOp = "P")
 {
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::U1> QN(Symmetry);
@@ -59,7 +59,7 @@ LatticeSite FermionU1U1(std::string const& Sym1 = "N",
       ("N_H"     , "number of holons")
       ("ES"      , "exp(i*pi*s)")
       ("Hu"      , "symmetrized Coulomb operator (n_up - 1/2) * (n_down - 1/2)")
-      ("Pdouble" , "projector onto the double-occupied site") 
+      ("Pdouble" , "projector onto the double-occupied site")
       ("Pg"      , "Gutswiller projector = 1-Pdouble")
       ;
 
@@ -91,18 +91,18 @@ LatticeSite FermionU1U1(std::string const& Sym1 = "N",
    // create up spin
    CHup("up",     "empty")     =  1;
    CHup("double", "down")      =  1;
-   
+
    // annihilate up spin
    Cup = adjoint(CHup);
 
-   // create down spin   
+   // create down spin
    CHdown("down",   "empty")   =  1;
    CHdown("double", "up")      = -1;
-   
+
    // annihilate down spin
    Cdown = adjoint(CHdown);
 
-   // parity = (-1)^N   
+   // parity = (-1)^N
    P("empty",  "empty")     =  1;
    P("up",     "up")        = -1;
    P("down",   "down")      = -1;
@@ -119,13 +119,13 @@ LatticeSite FermionU1U1(std::string const& Sym1 = "N",
    N_S("up",     "up")        = 1;
    N_S("down",   "down")      = 1;
 
-   // spatial reflection   
+   // spatial reflection
    R("empty",  "empty")     =  1;
    R("up",     "up")        =  1;
    R("down",   "down")      =  1;
    R("double", "double")    = -1;
- 
-   // particle number  
+
+   // particle number
    N("up",     "up")        =  1;
    N("down",   "down")      =  1;
    N("double", "double")    =  2;
@@ -142,7 +142,7 @@ LatticeSite FermionU1U1(std::string const& Sym1 = "N",
    Hu("down",   "down")      = -0.25;
    Hu("double", "double")    =  0.25;
 
-   // projection onto double occupied state 
+   // projection onto double occupied state
    // == asymmetric coulomb operator == n_up * n_down
    Pdouble("double", "double") = 1.0;
 
@@ -151,13 +151,13 @@ LatticeSite FermionU1U1(std::string const& Sym1 = "N",
    I("up",     "up")        =  1;
    I("down",   "down")      =  1;
    I("double", "double")    =  1;
-   
+
    // S^+
    Sp("up",   "down")      = 1;
 
    // S^-
    Sm("down", "up")        = 1;
-   
+
    // z-component of spin
    Sz("up",   "up")       =  0.5;
    Sz("down", "down")     = -0.5;
@@ -171,7 +171,7 @@ LatticeSite FermionU1U1(std::string const& Sym1 = "N",
    // Q^z
    Qz("double", "double") =  0.5;
    Qz("empty",  "empty")  = -0.5;
-   
+
    Site["I"] = I;
    Site[ParityOp] = P;
    Site["N"] = N;

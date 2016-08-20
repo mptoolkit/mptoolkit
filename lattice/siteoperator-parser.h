@@ -35,23 +35,23 @@ SiteElementType;
 
 // Parse a string, resulting in either an operator or a c-number
 SiteElementType
-ParseSiteElement(LatticeSite const& Site, 
-		 std::string const& Str,
-		 Function::ArgumentList const& Args = Function::ArgumentList());
+ParseSiteElement(LatticeSite const& Site,
+                 std::string const& Str,
+                 Function::ArgumentList const& Args = Function::ArgumentList());
 
 // Parse a string, where we expect the result to be a
 // SiteOperator
 SiteOperator
-ParseSiteOperator(LatticeSite const& Site, 
-		  std::string const& Str,
-		  Function::ArgumentList const& Args = Function::ArgumentList());
+ParseSiteOperator(LatticeSite const& Site,
+                  std::string const& Str,
+                  Function::ArgumentList const& Args = Function::ArgumentList());
 
 // Parse a string, where we expect the result to be a
 // c-number
 std::complex<double>
-ParseSiteNumber(LatticeSite const& Site, 
-		std::string const& Str,
-		Function::ArgumentList const& Args = Function::ArgumentList());
+ParseSiteNumber(LatticeSite const& Site,
+                std::string const& Str,
+                Function::ArgumentList const& Args = Function::ArgumentList());
 
 namespace Parser
 {

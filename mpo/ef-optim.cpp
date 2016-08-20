@@ -62,7 +62,7 @@ class JMatrixRefList
       // after the evaluation, return the n'th matrix
       MatrixType const& operator[](int n) const
       {
-	 return Data[n].second;
+         return Data[n].second;
       }
 
    private:
@@ -90,7 +90,7 @@ JMatrixRefList::Lookup(MatrixType const& AH, MatrixType const& E)
       return r;
    }
    return I->second;
-}   
+}
 
 void
 JMatrixRefList::Evaluate()
@@ -162,7 +162,7 @@ OuterIndex::Evaluate(StateComponent const& B, JMatrixRefList const& J) const
 // Result[s'](i',i) = M(s',s)[a',a] E[a'](i',j') B[s](j',j) herm(F[a](i,j))
 StateComponent
 operator_prod_inner(OperatorComponent const& M,
-                    StateComponent const& E, 
+                    StateComponent const& E,
                     StateComponent const& B,
                     LinearAlgebra::HermitianProxy<StateComponent> const& F)
 {
@@ -189,98 +189,98 @@ operator_prod_inner(OperatorComponent const& M,
    {
       for (unsigned iP = 0; iP < E.Basis1().size(); ++iP)
       {
-	 //double degree_i = degree(E.base().Basis1()[i]);
+         //double degree_i = degree(E.base().Basis1()[i]);
 
-	 for (unsigned i = 0; i < F.base().Basis1().size(); ++i)
-	 {
-	    if (!is_transform_target(F.base().Basis1()[i], M.LocalBasis1()[sP], E.Basis1()[iP]))
-	       continue;
+         for (unsigned i = 0; i < F.base().Basis1().size(); ++i)
+         {
+            if (!is_transform_target(F.base().Basis1()[i], M.LocalBasis1()[sP], E.Basis1()[iP]))
+               continue;
 
-	    // Now we have enough to construct the output descriptor
-	    //	    C.push_back(OuterIndex(iP, sP, i));
+            // Now we have enough to construct the output descriptor
+            //      C.push_back(OuterIndex(iP, sP, i));
 
-	    // Iterate over F[a](i,j)
-	    for (unsigned a = 0; a < F.base().LocalBasis().size(); ++a)
-	    {
-	       // We already know i, we don't need to iterate
-	       for (MatrixOperator::MatrixType::data_type::value_type::const_iterator 
-		       J = iterate(F.base()[a].data().vec()[i]); J; ++J)
-	       {
-		  int j = J.index();
+            // Iterate over F[a](i,j)
+            for (unsigned a = 0; a < F.base().LocalBasis().size(); ++a)
+            {
+               // We already know i, we don't need to iterate
+               for (MatrixOperator::MatrixType::data_type::value_type::const_iterator
+                       J = iterate(F.base()[a].data().vec()[i]); J; ++J)
+               {
+                  int j = J.index();
 
-		  //KMatrixDescriptor KMat;
+                  //KMatrixDescriptor KMat;
 
-		  // Iterate over the components in M[a'a]
-		  // Unlike the F-matrix case, we don't know the leading index so we need to iterate
-		  // over both indices
-		  for (unsigned aP = 0; aP < M.Basis1().size(); ++aP)
-		  {
-		     OperatorComponent::const_inner_iterator AA = iterate_at(M.data(), aP, a);
-		     if (!AA)
-			continue;
-						
-		     // Iterate over the irreducible components of M(aP,a)
-		     for (SimpleRedOperator::const_iterator k = AA->begin(); k != AA->end(); ++k)
-		     {
-			// *k is an irreducible operator.  Iterate over the components of this operator.
-			// We already know sP
-			// We already know the index sP, so iterate over that row
-			for (SimpleOperator::MatrixType::data_type::value_type::const_iterator
-				S = iterate(k->data().vec()[sP]); S; ++S)
-			{
-			   int s = S.index();
+                  // Iterate over the components in M[a'a]
+                  // Unlike the F-matrix case, we don't know the leading index so we need to iterate
+                  // over both indices
+                  for (unsigned aP = 0; aP < M.Basis1().size(); ++aP)
+                  {
+                     OperatorComponent::const_inner_iterator AA = iterate_at(M.data(), aP, a);
+                     if (!AA)
+                        continue;
 
-			   // The final index is j' - we only need this if the
-			   // element exists in both E.base()[a'](i',j')
-			   //and B.base()[s](j',j)
+                     // Iterate over the irreducible components of M(aP,a)
+                     for (SimpleRedOperator::const_iterator k = AA->begin(); k != AA->end(); ++k)
+                     {
+                        // *k is an irreducible operator.  Iterate over the components of this operator.
+                        // We already know sP
+                        // We already know the index sP, so iterate over that row
+                        for (SimpleOperator::MatrixType::data_type::value_type::const_iterator
+                                S = iterate(k->data().vec()[sP]); S; ++S)
+                        {
+                           int s = S.index();
 
-			   for (unsigned jP = 0; jP < E.Basis2().size(); ++jP)
-			   {
-			      MatrixOperator::const_inner_iterator EjP = iterate_at(E[aP].data(), iP, jP);
-			      if (!EjP)
-				 continue;
-			      MatrixOperator::const_inner_iterator BjP = iterate_at(B[s].data(), jP, j);
-			      if (!BjP)
-				 continue;
+                           // The final index is j' - we only need this if the
+                           // element exists in both E.base()[a'](i',j')
+                           //and B.base()[s](j',j)
 
-			      //double degree_iP = degree(A.base().Basis1()[iP]);
-	 
-			      // now assemble the component
-			      double Coeff = tensor_coefficient(B.Basis2()[j],
-								B.LocalBasis()[s],
-								B.Basis1()[jP],
-								
-								M.Basis2()[a],
-								k->TransformsAs(),
-								M.Basis1()[aP],
-								
-								F.base().Basis1()[i],
-								M.LocalBasis1()[sP],
-								E.Basis1()[iP]);
-			      
-			      if (LinearAlgebra::norm_frob(Coeff) > 1E-14)
-			      {
-				 if (!iterate_at(Result[sP].data(), iP, i))
-				 {
-				    set_element(Result[sP].data(), iP, i, Coeff * (*S) * (*EjP) * (*BjP) * herm(*J));
-				 }
-				 else
-				 {
-				    Result[sP](iP, i) += Coeff * (*S) * (*EjP) * (*BjP) * herm(*J);
-				 }
-			      }
-			   }
-			}
-		     }
-		  }
-		  //		  if (!KMat.empty())
-		  //		     C.back().Components.push_back(ElementRec(s, jP, KMat));
-	       }
-	    }
-	 }
+                           for (unsigned jP = 0; jP < E.Basis2().size(); ++jP)
+                           {
+                              MatrixOperator::const_inner_iterator EjP = iterate_at(E[aP].data(), iP, jP);
+                              if (!EjP)
+                                 continue;
+                              MatrixOperator::const_inner_iterator BjP = iterate_at(B[s].data(), jP, j);
+                              if (!BjP)
+                                 continue;
+
+                              //double degree_iP = degree(A.base().Basis1()[iP]);
+
+                              // now assemble the component
+                              double Coeff = tensor_coefficient(B.Basis2()[j],
+                                                                B.LocalBasis()[s],
+                                                                B.Basis1()[jP],
+
+                                                                M.Basis2()[a],
+                                                                k->TransformsAs(),
+                                                                M.Basis1()[aP],
+
+                                                                F.base().Basis1()[i],
+                                                                M.LocalBasis1()[sP],
+                                                                E.Basis1()[iP]);
+
+                              if (LinearAlgebra::norm_frob(Coeff) > 1E-14)
+                              {
+                                 if (!iterate_at(Result[sP].data(), iP, i))
+                                 {
+                                    set_element(Result[sP].data(), iP, i, Coeff * (*S) * (*EjP) * (*BjP) * herm(*J));
+                                 }
+                                 else
+                                 {
+                                    Result[sP](iP, i) += Coeff * (*S) * (*EjP) * (*BjP) * herm(*J);
+                                 }
+                              }
+                           }
+                        }
+                     }
+                  }
+                  //              if (!KMat.empty())
+                  //                 C.back().Components.push_back(ElementRec(s, jP, KMat));
+               }
+            }
+         }
       }
    }
-   
+
 #if 0
    // do the evaluations
    JList.Evaluate();
@@ -289,7 +289,7 @@ operator_prod_inner(OperatorComponent const& M,
    {
       if (!C[n].empty())
       {
-	 set_element(Result[C[n].a].data(), C[n].i, C[n].j, C[n].Evaluate(B,JList));
+         set_element(Result[C[n].a].data(), C[n].i, C[n].j, C[n].Evaluate(B,JList));
       }
    }
 #endif

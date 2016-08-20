@@ -53,9 +53,9 @@
 PStream::VersionTag
 CanonicalWavefunctionBase::VersionT(4);
 
-CanonicalWavefunctionBase::CanonicalWavefunctionBase(CanonicalWavefunctionBase const& Psi) 
-   : Data(Psi.Data), Lambda(Psi.Lambda), 
-     Basis1_(Psi.Basis1_), Basis2_(Psi.Basis2_) 
+CanonicalWavefunctionBase::CanonicalWavefunctionBase(CanonicalWavefunctionBase const& Psi)
+   : Data(Psi.Data), Lambda(Psi.Lambda),
+     Basis1_(Psi.Basis1_), Basis2_(Psi.Basis2_)
 {
 }
 
@@ -81,12 +81,12 @@ CanonicalWavefunctionBase::check_structure() const
 
 CanonicalWavefunctionBase&
 CanonicalWavefunctionBase::operator=(CanonicalWavefunctionBase const& Psi)
-{ 
+{
    Data = Psi.Data;
    Lambda = Psi.Lambda;
    Basis1_ = Psi.Basis1_;
    Basis2_ = Psi.Basis2_;
-   return *this; 
+   return *this;
 }
 
 QuantumNumbers::QuantumNumber
@@ -129,35 +129,35 @@ CanonicalWavefunctionBase::ReadStream(PStream::ipstream& in)
       // Add a dummy value for now.
       if (Sentry.version() < 3)
       {
-	 Lambda.clear();
-	 old_lambda_container_type LambdaTemp;
-	 in >> LambdaTemp;
+         Lambda.clear();
+         old_lambda_container_type LambdaTemp;
+         in >> LambdaTemp;
 
-	 // argh - except for a bug where we forgot to increment the version number on saving.  So
-	 // hack around it!
-	 if (LambdaTemp.size() == Data.size()+1)
-	 {
-	    // this means we forgot to increment the version number
-	    Sentry.change_version(3);
-	 }
-	 else
-	 {
-	    this->push_back_lambda(RealDiagonalOperator());
-	 }
-	 for (unsigned i = 0; i < LambdaTemp.size(); ++i)
-	 {
-	    Lambda.push_back(new RealDiagonalOperator(*LambdaTemp[i].lock()));
-	 }
+         // argh - except for a bug where we forgot to increment the version number on saving.  So
+         // hack around it!
+         if (LambdaTemp.size() == Data.size()+1)
+         {
+            // this means we forgot to increment the version number
+            Sentry.change_version(3);
+         }
+         else
+         {
+            this->push_back_lambda(RealDiagonalOperator());
+         }
+         for (unsigned i = 0; i < LambdaTemp.size(); ++i)
+         {
+            Lambda.push_back(new RealDiagonalOperator(*LambdaTemp[i].lock()));
+         }
       }
       else
       {
-	 Lambda.clear();
-	 old_lambda_container_type LambdaTemp;
-	 in >> LambdaTemp;
-	 for (unsigned i = 0; i < LambdaTemp.size(); ++i)
-	 {
-	    Lambda.push_back(new RealDiagonalOperator(*LambdaTemp[i].lock()));
-	 }
+         Lambda.clear();
+         old_lambda_container_type LambdaTemp;
+         in >> LambdaTemp;
+         for (unsigned i = 0; i < LambdaTemp.size(); ++i)
+         {
+            Lambda.push_back(new RealDiagonalOperator(*LambdaTemp[i].lock()));
+         }
       }
    }
    else
@@ -170,13 +170,13 @@ CanonicalWavefunctionBase::ReadStream(PStream::ipstream& in)
    {
       if (Data.empty())
       {
-	 Basis1_ = VectorBasis();
-	 Basis2_ = VectorBasis();
+         Basis1_ = VectorBasis();
+         Basis2_ = VectorBasis();
       }
       else
       {
-	 Basis1_ = Data.front().lock()->Basis1();
-	 Basis2_ = Data.back().lock()->Basis2();
+         Basis1_ = Data.front().lock()->Basis1();
+         Basis2_ = Data.back().lock()->Basis2();
       }
    }
    else

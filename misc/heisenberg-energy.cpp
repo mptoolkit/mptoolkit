@@ -21,7 +21,7 @@
 
 // From arxiv:cond-mat/9809163
 
-// The solution is specified by a set of numbers {z_r}, which 
+// The solution is specified by a set of numbers {z_r}, which
 // are solutions of the equation
 // N \phi(z_i) = 2 pi I_i + \sum_{j \neq i} [(z_i - z_j)/2]
 // for i = 0, .... , r-1
@@ -64,10 +64,10 @@ void Iterate(int N, std::vector<double>& New_z, std::vector<double> const& z)
       double Sum = 0.0;
       for (int j = 0; j < rMax; ++j)
       {
-	 if (j != i)
-	 {
-	    Sum += phi((z[i] - z[j])/2);
-	 }
+         if (j != i)
+         {
+            Sum += phi((z[i] - z[j])/2);
+         }
       }
       New_z[i] = tan((math_const::pi * Ir(N,i) + 0.5*Sum) / N);
    }
@@ -96,7 +96,7 @@ int main(int argc, char** argv)
 
    std::vector<double> z(r, 0.0);
    std::vector<double> zn(r, 0.0);
-   
+
    for (int i = 0; i < Niter; ++i)
    {
       Iterate(N, zn, z);

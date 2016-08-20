@@ -91,7 +91,7 @@ double const SolverTol = 1E-12;
 // The Psi is passed by reference so that we can normalize it to 1
 double
 SolveFirstOrderMPO_Symmetric(StateComponent& Psi,
-                             MpOpTriangular const& Op, 
+                             MpOpTriangular const& Op,
                              StateComponent& Eigenvector,
                              int Verbose = 0)
 {
@@ -113,7 +113,7 @@ SolveFirstOrderMPO_Symmetric(StateComponent& Psi,
    int Iterations = 30;
    double Tol = SolverTol;
    // use Arnoldi, since we can't yet specify the SolverMode for Lanczos
-   std::complex<double> Val = LinearSolvers::Arnoldi(Eigenvector[Row], 
+   std::complex<double> Val = LinearSolvers::Arnoldi(Eigenvector[Row],
                                                      OperatorProd_MAxBH(Op(Row, Row).scalar(), Psi, Psi),
                                                      Iterations,
                                                      Tol,
@@ -126,7 +126,7 @@ SolveFirstOrderMPO_Symmetric(StateComponent& Psi,
       TRACE("Restarting Arnoldi")(-Tol);
       Tol = SolverTol;
       Iterations = 30;
-      Val =  LinearSolvers::Arnoldi(Eigenvector[Row], 
+      Val =  LinearSolvers::Arnoldi(Eigenvector[Row],
                                     OperatorProd_MAxBH(Op(Row, Row).scalar(), Psi, Psi),
                                     Iterations,
                                     Tol,
@@ -141,7 +141,7 @@ SolveFirstOrderMPO_Symmetric(StateComponent& Psi,
 
    // rotate to a basis that diagonalizes Eigenvector[0]
    // if E = herm(U) D U
-   // then D is the eigenvector of U Psi herm(U) 
+   // then D is the eigenvector of U Psi herm(U)
 
    MatrixOperator D = Eigenvector[0];
    MatrixOperator U = DiagonalizeHermitian(D);
@@ -249,49 +249,49 @@ int main(int argc, char** argv)
           "tj-zigzag-u1, sf-zigzag-u1, klm-u1su2, klm-u1, bh, bh2, bh-u1, bh2-u1")
          ("wavefunction,w", prog_opt::value(&FName),
           "wavefunction to apply DMRG (required)")
-	 ("max-states,m", prog_opt::value<int>(&MaxStates),
-	  FormatDefault("Maximum number of states to keep", MaxStates).c_str())
+         ("max-states,m", prog_opt::value<int>(&MaxStates),
+          FormatDefault("Maximum number of states to keep", MaxStates).c_str())
          ("min-states", prog_opt::value<int>(&MinStates),
-	  FormatDefault("Minimum number of states to keep", MinStates).c_str())
+          FormatDefault("Minimum number of states to keep", MinStates).c_str())
          ("trunc,r", prog_opt::value<double>(&TruncCutoff),
           FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
-	 ("mix-factor,f", prog_opt::value(&MixFactor),
-	  FormatDefault("Mixing coefficient for the density matrix", MixFactor).c_str())
-	 ("steps,s", prog_opt::value<int>(&NumSteps),
-	  FormatDefault("Number of DMRG steps to perform", NumSteps).c_str())
-	 ("no-orthogonalize", prog_opt::bool_switch(&NoOrthogonalize),
-	  "Don't orthogonalize the wavefunction before saving")
-	 ("maxiter", prog_opt::value<int>(&NumIter),
-	  FormatDefault("Maximum number of Lanczos iterations per step (Krylov subspace size)", NumIter).c_str())
-	 ("spin", prog_opt::value(&Spin),
-	  FormatDefault("spin (for xxx,xxz,xyz hamiltonians)", Spin).c_str())
-	 ("J", prog_opt::value(&J),
-	  FormatDefault("nearest-neighbor exchange J (for xxx,itf, etc)", J).c_str())
-	 ("J2", prog_opt::value(&J2),
-	  FormatDefault("next-nearest-neighbor exchange J2 (for xxx)", J2).c_str())
-	 ("D", prog_opt::value(&D),
-	  FormatDefault("single-ion anisotropy (for xxx-u1 and xxx)", D).c_str())
-	 ("U", prog_opt::value(&U),
-	  FormatDefault("coulomb repulsion", U).c_str())
-	 ("B", prog_opt::value(&B),
-	  FormatDefault("magnetic field (for xxx)", B).c_str())
-	 ("Jz", prog_opt::value(&Jz),
-	  FormatDefault("Jz coupling (for Kondo)", Jz).c_str())
-	 ("nlegs", prog_opt::value(&NLegs),
-	  FormatDefault("Number of legs (for triangular ladder)", NLegs).c_str())
-	 ("tprime", prog_opt::value(&tprime),
-	  FormatDefault("next-nearest-neighbor hopping t' (for tj-zigzag, sf-zigzag)", tprime).c_str())
-	 ("delta", prog_opt::value(&delta),
-	  FormatDefault("Zigzag ladder potential imbalance (for tj-zigzag, sf-zigzag)", delta).c_str())
-	 ("theta", prog_opt::value(&Theta),
-	  FormatDefault("theta (for biquadratic xxx)", Theta).c_str())
-	 ("Beta", prog_opt::value(&Beta),
-	  FormatDefault("Beta (for biquadratic xxx)", Beta).c_str())
-	 ("lambda", prog_opt::value(&Lambda),
-	  FormatDefault("transverse field strength (for itf hamiltonian)", Lambda).c_str())
-	  ;
+         ("mix-factor,f", prog_opt::value(&MixFactor),
+          FormatDefault("Mixing coefficient for the density matrix", MixFactor).c_str())
+         ("steps,s", prog_opt::value<int>(&NumSteps),
+          FormatDefault("Number of DMRG steps to perform", NumSteps).c_str())
+         ("no-orthogonalize", prog_opt::bool_switch(&NoOrthogonalize),
+          "Don't orthogonalize the wavefunction before saving")
+         ("maxiter", prog_opt::value<int>(&NumIter),
+          FormatDefault("Maximum number of Lanczos iterations per step (Krylov subspace size)", NumIter).c_str())
+         ("spin", prog_opt::value(&Spin),
+          FormatDefault("spin (for xxx,xxz,xyz hamiltonians)", Spin).c_str())
+         ("J", prog_opt::value(&J),
+          FormatDefault("nearest-neighbor exchange J (for xxx,itf, etc)", J).c_str())
+         ("J2", prog_opt::value(&J2),
+          FormatDefault("next-nearest-neighbor exchange J2 (for xxx)", J2).c_str())
+         ("D", prog_opt::value(&D),
+          FormatDefault("single-ion anisotropy (for xxx-u1 and xxx)", D).c_str())
+         ("U", prog_opt::value(&U),
+          FormatDefault("coulomb repulsion", U).c_str())
+         ("B", prog_opt::value(&B),
+          FormatDefault("magnetic field (for xxx)", B).c_str())
+         ("Jz", prog_opt::value(&Jz),
+          FormatDefault("Jz coupling (for Kondo)", Jz).c_str())
+         ("nlegs", prog_opt::value(&NLegs),
+          FormatDefault("Number of legs (for triangular ladder)", NLegs).c_str())
+         ("tprime", prog_opt::value(&tprime),
+          FormatDefault("next-nearest-neighbor hopping t' (for tj-zigzag, sf-zigzag)", tprime).c_str())
+         ("delta", prog_opt::value(&delta),
+          FormatDefault("Zigzag ladder potential imbalance (for tj-zigzag, sf-zigzag)", delta).c_str())
+         ("theta", prog_opt::value(&Theta),
+          FormatDefault("theta (for biquadratic xxx)", Theta).c_str())
+         ("Beta", prog_opt::value(&Beta),
+          FormatDefault("Beta (for biquadratic xxx)", Beta).c_str())
+         ("lambda", prog_opt::value(&Lambda),
+          FormatDefault("transverse field strength (for itf hamiltonian)", Lambda).c_str())
+          ;
 
       prog_opt::options_description opt;
       opt.add(desc);
@@ -310,33 +310,33 @@ int main(int argc, char** argv)
       }
 
       if (vm.count("one-site"))
-	 TwoSite = !OneSite;
+         TwoSite = !OneSite;
 
       SimpleMPOperator HamMPO;
       if (HamStr == "itf")
       {
-	 std::cout << "Hamiltonian is transverse-field Ising, J=" << J << ", Lambda=" << Lambda << "\n";
-	 SiteBlock Site = CreateSpinSite(0.5);
-	 MpOpTriangular Ham;
-	 Ham = J * 4.0 * TriangularTwoSite(Site["Sz"], Site["Sz"])
-	    + Lambda * 2.0 * TriangularOneSite(Site["Sx"]);
-	 HamMPO.push_back(Ham.data());
+         std::cout << "Hamiltonian is transverse-field Ising, J=" << J << ", Lambda=" << Lambda << "\n";
+         SiteBlock Site = CreateSpinSite(0.5);
+         MpOpTriangular Ham;
+         Ham = J * 4.0 * TriangularTwoSite(Site["Sz"], Site["Sz"])
+            + Lambda * 2.0 * TriangularOneSite(Site["Sx"]);
+         HamMPO.push_back(Ham.data());
       }
       else if (HamStr == "itf-z2")
       {
-	 std::cout << "Hamiltonian is transverse-field Ising with Z2, J=" << J << ", Lambda=" << Lambda << "\n";
-	 SiteBlock Site = CreateZ2SpinSite(0.5);
-	 MpOpTriangular Ham;
-	 Ham = J * 4.0 * TriangularTwoSite(Site["Sz"], Site["Sz"])
-	    + Lambda * 2.0 * TriangularOneSite(Site["Sx"]);
-	 HamMPO.push_back(Ham.data());
+         std::cout << "Hamiltonian is transverse-field Ising with Z2, J=" << J << ", Lambda=" << Lambda << "\n";
+         SiteBlock Site = CreateZ2SpinSite(0.5);
+         MpOpTriangular Ham;
+         Ham = J * 4.0 * TriangularTwoSite(Site["Sz"], Site["Sz"])
+            + Lambda * 2.0 * TriangularOneSite(Site["Sx"]);
+         HamMPO.push_back(Ham.data());
       }
 
       InfiniteWavefunction Psi;
       long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
       pvalue_ptr<InfiniteWavefunction> PsiPtr = pheap::OpenPersistent(FName, CacheSize, true);
       Psi = *PsiPtr;
-      
+
       StateComponent Phi = Psi.Psi.get_front();
       MatrixOperator LambdaSqrt = SqrtDiagonal(Psi.C_old);
       MatrixOperator LambdaInvSqrt = InvertDiagonal(LambdaSqrt, InverseTol);
@@ -392,27 +392,27 @@ int main(int argc, char** argv)
             StateComponent Next = operator_prod_inner(Op, RightVector, Phi, herm(Eigenvector));
             std::complex<double> CalcEnergy = inner_prod(Phi, Next);
             TRACE(CalcEnergy);
-	    E = CalcEnergy.real();
-	    TRACE(E);
+            E = CalcEnergy.real();
+            TRACE(E);
          }
 
 
 #if 0
-	 for (int k = 0; k < 1; ++k)
-	    Phi = Phi - Timestep * triple_prod(Normalizer, operator_prod_inner(Op, RightVector, Phi, herm(Eigenvector)), herm(Normalizer));
+         for (int k = 0; k < 1; ++k)
+            Phi = Phi - Timestep * triple_prod(Normalizer, operator_prod_inner(Op, RightVector, Phi, herm(Eigenvector)), herm(Normalizer));
 
 #else
          {
-	    TRACE(NormFrobNonOrtho<StateComponent>(Eigenvector[0])(Phi));
+            TRACE(NormFrobNonOrtho<StateComponent>(Eigenvector[0])(Phi));
 
 
             int Iterations = 10;
             double Tol = 1E-14;
             StateComponent PhiSave = Phi;
-            double Energy = Lanczos(Phi, OperatorProdInner_AxBH_Normal(Op, RightVector, Eigenvector, Normalizer), 
-				    InnerProdNonOrtho<StateComponent>(Eigenvector[0]),
-				    NormFrobNonOrtho<StateComponent>(Eigenvector[0]),
-				    Iterations, Tol);
+            double Energy = Lanczos(Phi, OperatorProdInner_AxBH_Normal(Op, RightVector, Eigenvector, Normalizer),
+                                    InnerProdNonOrtho<StateComponent>(Eigenvector[0]),
+                                    NormFrobNonOrtho<StateComponent>(Eigenvector[0]),
+                                    Iterations, Tol);
             //            double Energy = Lanczos(Phi, OperatorProdInner_AxBH_Gen(Op, RightVector, Eigenvector, Eigenvector[0]), Iterations, Tol);
             TRACE(Energy)(Iterations)(Tol);
 
@@ -434,7 +434,7 @@ int main(int argc, char** argv)
 
             double E1 =  SolveFirstOrderMPO_Symmetric(G1, Op, Eigen1, Verbose);
             double E2 =  SolveFirstOrderMPO_Symmetric(G2, Op, Eigen2, Verbose);
-            
+
             // polynomial fit for (E1, PhiEnergy, E2)
             // E(x) = E0 + ax + bx^2
             // where a = (E1 - E2) / (2*epsilon)
@@ -488,7 +488,7 @@ int main(int argc, char** argv)
                x = Epsilon - 0.5 * a / b;
 
                TRACE(a)(b)(x)(PredictedE)(PredictedE-E2);
-            }               
+            }
 
             Phi = PhiSave + x*Phi;
 
@@ -497,8 +497,8 @@ int main(int argc, char** argv)
             double const w = 0.0003;
             Phi = w*Phi + (1.0-w)*PhiSave;
 
-	    E = Energy;
-	    TRACE(E);
+            E = Energy;
+            TRACE(E);
 #endif
 
 

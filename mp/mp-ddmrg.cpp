@@ -34,7 +34,7 @@
 class SolverDdmrg : public Solver
 {
    public:
-      SolverDdmrg(CenterWavefunction const& Psi_, SplitOperator const& Op_, 
+      SolverDdmrg(CenterWavefunction const& Psi_, SplitOperator const& Op_,
                   CenterWavefunction const& Rhs_, double Freq, double Broad)
          : Solver(Psi_, Op_, Rhs_, Freq, Broad), Freq_(Freq), Broad_(Broad) {}
 
@@ -53,8 +53,8 @@ struct SuperblockMultiply
    typedef MatrixOperator const& argument_type;
 
    SuperblockMultiply(SimpleOperator const& Op_,
-		      MPStateComponent const& Left_,
-		      MPStateComponent const& Right_)
+                      MPStateComponent const& Left_,
+                      MPStateComponent const& Right_)
       : Op(Op_), Left(Left_), Right(Right_) {}
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
@@ -72,7 +72,7 @@ struct InnerProd
    typedef MatrixOperator const& first_argument_type;
    typedef MatrixOperator const& second_argument_type;
 
-   InnerProd(MatrixOperator const& Left, MatrixOperator const& Right) 
+   InnerProd(MatrixOperator const& Left, MatrixOperator const& Right)
       : Left_(Left), Right_(Right) {}
 
    result_type operator()(MatrixOperator const& kx, MatrixOperator const& ky) const
@@ -85,13 +85,13 @@ struct InnerProd
 
 double SolverDdmrg::Functional() const
 {
-   double Res = inner_prod(x.Center(), 
-                           operator_prod(conj(A.Center()), 
-                                         x_A_x.Left(), 
-                                         x.Center(), 
+   double Res = inner_prod(x.Center(),
+                           operator_prod(conj(A.Center()),
+                                         x_A_x.Left(),
+                                         x.Center(),
                                          herm(x_A_x.Right()))).real();
 
-   Res += 2.0 * Broad_ * 
+   Res += 2.0 * Broad_ *
       inner_prod(x.Center(), triple_prod(x_y.Left(), y.Center(), herm(x_y.Right()))).real();
 
    return Res;
@@ -105,9 +105,9 @@ double SolverDdmrg::Solve(int MaxIterations)
    //   double Tol = 1E-10;
    //   int m = 20;
 
-   double f = FunctionalMinimize(x.Center(), 
+   double f = FunctionalMinimize(x.Center(),
                                  SuperblockMultiply(conj(A.Center()),
-                                                    x_A_x.Left(), 
+                                                    x_A_x.Left(),
                                                     x_A_x.Right()),
                                  Broad_ * triple_prod(x_y.Left(), y.Center(), herm(x_y.Right())),
                                  MaxIterations,
@@ -119,10 +119,10 @@ double SolverDdmrg::Solve(int MaxIterations)
 
 std::complex<double> SolverDdmrg::Overlap() const
 {
-   return inner_prod(operator_prod(A.Center(), 
-                                   x_A_x.Left(), 
-                                   x.Center(), 
-                                   herm(x_A_x.Right())), 
+   return inner_prod(operator_prod(A.Center(),
+                                   x_A_x.Left(),
+                                   x.Center(),
+                                   herm(x_A_x.Right())),
                      Broad_ * triple_prod(x_y.Left(), y.Center(), herm(x_y.Right())));
 }
 
@@ -161,7 +161,7 @@ int main(int argc, char** argv)
    MPOperator Part = (Frequency+Energy) * OpList["I"] - H;
    MPOperator A = Part*Part + Broadening*Broadening*OpList["I"];
 
-   SolverDdmrg solver(CenterWavefunction(*Psi), A, 
+   SolverDdmrg solver(CenterWavefunction(*Psi), A,
                       CenterWavefunction(*Rhs), Frequency, Broadening);
 
    std::cout.precision(14);
@@ -178,7 +178,7 @@ int main(int argc, char** argv)
       double E = First ? 0.0 : solver.Solve(NumIter);
       TruncationInfo States = solver.TruncateLeft(MinStates, MaxStates, Trunc, CFactor);
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.KeptStates() << '\n';
+                << ") " << E << ' ' << States.KeptStates() << '\n';
    }
 
    // sweep right
@@ -189,7 +189,7 @@ int main(int argc, char** argv)
       double E = First ? 0.0 : solver.Solve(NumIter);
       TruncationInfo States = solver.TruncateLeft(MinStates, MaxStates, Trunc, CFactor);
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.KeptStates() << '\n';
+                << ") " << E << ' ' << States.KeptStates() << '\n';
    }
    First = false;
 
@@ -206,7 +206,7 @@ int main(int argc, char** argv)
       double E = solver.Solve(NumIter);
       TruncationInfo States = solver.TruncateRight(MinStates, MaxStates, Trunc, CFactor);
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.KeptStates() << '\n';
+                << ") " << E << ' ' << States.KeptStates() << '\n';
 
       TRACE(solver.Functional());
    }
@@ -220,7 +220,7 @@ int main(int argc, char** argv)
       TruncationInfo States = solver.TruncateRight(MinStates, MaxStates, Trunc, CFactor);
 
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.KeptStates() << '\n';
+                << ") " << E << ' ' << States.KeptStates() << '\n';
    }
 
    //   std::cout << solver.ResidualNorm() << ' ' << solver.ExactResidualNorm() << '\n';

@@ -52,7 +52,7 @@ struct PackList
 // is defined only for opstreambuf<Format>, a missing inserter will
 // result in a compile-time error.
 //
-// If you see an error "no matching call to 
+// If you see an error "no matching call to
 //    templated_opstreambuf_inserter_does_not_exist_for_this_type(opstream)"
 // then the stream inserter for the given type is missing.
 //
@@ -90,11 +90,11 @@ void DoUnpack(ipstream& Buf, T& Obj)
 }
 
 template <typename T>
-typename PackList<T>::PackFunc PackList<T>::PackFuncList[NumConcreteStreamClasses] = 
+typename PackList<T>::PackFunc PackList<T>::PackFuncList[NumConcreteStreamClasses] =
   { DoPack<0>, DoPack<1>, DoPack<2>, DoPack<3> };
 
 template <typename T>
-typename PackList<T>::UnpackFunc PackList<T>::UnpackFuncList[NumConcreteStreamClasses] = 
+typename PackList<T>::UnpackFunc PackList<T>::UnpackFuncList[NumConcreteStreamClasses] =
   { DoUnpack<0>, DoUnpack<1>, DoUnpack<2>, DoUnpack<3> };
 
 } // namespace Private
@@ -126,7 +126,7 @@ struct WriteHelper<Format, Iter, true, true>
       for ( ; N > 0; --N)
       {
          Buf.put_n(reinterpret_cast<byte_type const*>(&*x), sizeof(value_type));
-	 ++x;
+         ++x;
       }
    }
 };
@@ -151,8 +151,8 @@ struct WriteHelper<Format, Iter, true, false>
    {
       for (; N > 0; N--)
       {
-	 Buf.template put_n_bswap<sizeof(value_type)>(reinterpret_cast<byte_type const*>(x), 1);
-	 ++x;
+         Buf.template put_n_bswap<sizeof(value_type)>(reinterpret_cast<byte_type const*>(x), 1);
+         ++x;
       }
    }
 };
@@ -216,14 +216,14 @@ ipstream& operator>>(ipstream& Buf, T& Obj)
 //
 
 inline
-opstream::opstream(int Format_, generic_opstreambuf* Buffer_) 
-  : BaseFormat(Format_), Buffer(Buffer_) 
+opstream::opstream(int Format_, generic_opstreambuf* Buffer_)
+  : BaseFormat(Format_), Buffer(Buffer_)
 {
 }
 
 inline
 opstream::opstream(int Format_, byte_type* BufBegin, byte_type* BufEnd, byte_type* BufPtr)
-  : BaseFormat(Format_), 
+  : BaseFormat(Format_),
     Buffer(generic_opstreambuf::MakeOpstreambuf(Format_, this, BufBegin, BufEnd, BufPtr))
 {
 }
@@ -236,27 +236,27 @@ void opstream::write(T const& x)
 }
 
 inline
-byte_type* opstream::buf_begin() const 
-{ 
-   return Buffer->buf_begin(); 
+byte_type* opstream::buf_begin() const
+{
+   return Buffer->buf_begin();
 }
 
 inline
-byte_type* opstream::buf_end() const 
-{ 
-   return Buffer->buf_end(); 
+byte_type* opstream::buf_end() const
+{
+   return Buffer->buf_end();
 }
 
 inline
-byte_type* opstream::buf_ptr() const 
-{ 
-   return Buffer->buf_ptr(); 
+byte_type* opstream::buf_ptr() const
+{
+   return Buffer->buf_ptr();
 }
 
 inline
-void opstream::set_buf_ptr(byte_type* Ptr) 
-{ 
-   Buffer->set_buf_ptr(Ptr); 
+void opstream::set_buf_ptr(byte_type* Ptr)
+{
+   Buffer->set_buf_ptr(Ptr);
 }
 
 inline
@@ -283,14 +283,14 @@ void opstream::put_format(int NewFormat)
 //
 
 inline
-ipstream::ipstream(int Format_, generic_ipstreambuf* Buffer_) 
-  : BaseFormat(Format_), Buffer(Buffer_) 
+ipstream::ipstream(int Format_, generic_ipstreambuf* Buffer_)
+  : BaseFormat(Format_), Buffer(Buffer_)
 {
 }
 
 inline
-ipstream::ipstream(int Format_, byte_type const* BufBegin, 
-		   byte_type const* BufEnd, byte_type const* BufPtr)
+ipstream::ipstream(int Format_, byte_type const* BufBegin,
+                   byte_type const* BufEnd, byte_type const* BufPtr)
   : BaseFormat(Format_), Buffer(generic_ipstreambuf::MakeIpstreambuf(Format_, this, BufBegin, BufEnd, BufPtr))
 {
 }
@@ -305,39 +305,39 @@ T ipstream::read()
 }
 
 inline
-byte_type const* ipstream::buf_begin() const 
-{ 
-   return Buffer->buf_begin(); 
+byte_type const* ipstream::buf_begin() const
+{
+   return Buffer->buf_begin();
 }
 
 inline
-byte_type const* ipstream::buf_end() const 
-{ 
-   return Buffer->buf_end(); 
+byte_type const* ipstream::buf_end() const
+{
+   return Buffer->buf_end();
 }
 
 inline
-byte_type const* ipstream::buf_ptr() const 
-{ 
-   return Buffer->buf_ptr(); 
+byte_type const* ipstream::buf_ptr() const
+{
+   return Buffer->buf_ptr();
 }
 
 inline
-void ipstream::set_buf_ptr(byte_type const* Ptr) 
-{ 
-   Buffer->set_buf_ptr(Ptr); 
+void ipstream::set_buf_ptr(byte_type const* Ptr)
+{
+   Buffer->set_buf_ptr(Ptr);
 }
 
 inline
-void ipstream::set_buf_end(byte_type const* End) 
-{ 
-   Buffer->set_buf_end(End); 
+void ipstream::set_buf_end(byte_type const* End)
+{
+   Buffer->set_buf_end(End);
 }
 
 inline
-void ipstream::set_buffer(byte_type const* BufBegin, 
-			  byte_type const* BufEnd, 
-			  byte_type const* BufPtr)
+void ipstream::set_buffer(byte_type const* BufBegin,
+                          byte_type const* BufEnd,
+                          byte_type const* BufPtr)
 {
    Buffer->set_buffer(BufBegin, BufEnd, BufPtr);
 }
@@ -446,27 +446,27 @@ void generic_opstreambuf::put_n_bswap(byte_type const* Src, size_t Count)
 
       if (Avail == 0)
       {
-	 this->overflow();
-	 Avail = this->buf_avail();
+         this->overflow();
+         Avail = this->buf_avail();
       }
 
       if (Avail > Count * Atom) Avail = Count * Atom;
       while (Avail >= Atom)
       {
-	 this->put_bswap_unchecked<Atom>(Src);
-	 Src += Atom;
-	 Avail -= Atom;
-	 --Count;
+         this->put_bswap_unchecked<Atom>(Src);
+         Src += Atom;
+         Avail -= Atom;
+         --Count;
       }
 
       DEBUG_CHECK(Avail < Atom);
       DEBUG_CHECK(Avail == 0 || Count > 0);
 
-      if (Avail > 0) 
+      if (Avail > 0)
       {
-	 this->put_bswap<Atom>(Src);
-	 Src += Atom;
-	 --Count;
+         this->put_bswap<Atom>(Src);
+         Src += Atom;
+         --Count;
       }
    }
 }
@@ -484,7 +484,7 @@ void generic_opstreambuf::bump(size_t Count)
 
 template <int Format>
 opstreambuf<Format>::opstreambuf(opstream* BackPointer_,
-				byte_type* Beg, byte_type* End, byte_type* Ptr)
+                                byte_type* Beg, byte_type* End, byte_type* Ptr)
   : generic_opstreambuf(BackPointer_, Beg, End, Ptr)
 {
 }
@@ -513,7 +513,7 @@ struct ConversionTraitsHelper<Format, T, true>
 {
    typedef typename format_traits<Format>::Format format;
    typedef typename format::template TypeTraits<T> Traits;
-   static bool const trivial_conversion = 
+   static bool const trivial_conversion =
       CurrentFormat::IsTrivialConversion<T, typename Traits::type>::value;
 };
 
@@ -524,8 +524,8 @@ inline
 void opstreambuf<Format>::write_n(T const* x, size_t N)
 {
    typedef typename format_traits<Format>::Format format;
-   Private::WriteHelper<Format, T const*, 
-     ConversionTraitsHelper<Format, T>::trivial_conversion, 
+   Private::WriteHelper<Format, T const*,
+     ConversionTraitsHelper<Format, T>::trivial_conversion,
      CurrentFormat::Endianness == format::Endianness>::write_n(*this, x, N);
 }
 
@@ -597,7 +597,7 @@ void generic_ipstreambuf::underflow()
 
 template <int Format>
 ipstreambuf<Format>::ipstreambuf(ipstream* BackPointer,
-			 byte_type const* Beg, byte_type const* End, byte_type const* Ptr)
+                         byte_type const* Beg, byte_type const* End, byte_type const* Ptr)
   : generic_ipstreambuf(BackPointer, Beg, End, Ptr)
 {
 }
@@ -691,7 +691,7 @@ class ClassStreamableFactory : public StreamableFactory
 };
 
 template <typename T>
-StreamableBase* ClassStreamableFactory<T>::construct(ipstream& stream) 
+StreamableBase* ClassStreamableFactory<T>::construct(ipstream& stream)
 {
    StreamableBase* Ret = new T;
    Ret->ReadStream(stream);
@@ -710,7 +710,7 @@ class ClassStreamableViaCtorFactory : public StreamableFactory
 };
 
 template <typename T>
-StreamableBase* ClassStreamableViaCtorFactory<T>::construct(ipstream& stream) 
+StreamableBase* ClassStreamableViaCtorFactory<T>::construct(ipstream& stream)
 {
    return new T(stream);
 }
@@ -933,7 +933,7 @@ opstreambuf<Format>& operator<<(opstreambuf<Format>& stream, std::complex<T> con
 template <int Format, typename T>
 inline
 ipstreambuf<Format>& operator>>(ipstreambuf<Format>& stream, std::complex<T>& Obj)
-{ 
+{
    //  T r,i;
   stream >> reinterpret_cast<T&>(Obj);
   stream >> *(reinterpret_cast<T*>(&Obj)+1);

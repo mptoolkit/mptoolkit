@@ -63,7 +63,7 @@ MapVector<T>::operator=(NoAliasProxy<U> const& x)
 
 template <typename T>
 inline
-T const& 
+T const&
 MapVector<T>::operator[](size_type n) const
 {
    base_const_iterator I = Data_.find(n);
@@ -72,7 +72,7 @@ MapVector<T>::operator[](size_type n) const
 
 template <typename T>
 inline
-T& 
+T&
 MapVector<T>::operator[](size_type n)
 {
    base_iterator I = Data_.find(n);
@@ -124,7 +124,7 @@ MapVector<T>::add_element_cull(size_type n, U const& x, Float const& Tol)
       I->second += Temp;
       if (norm_err_sq(I->second) < Tol*Tol * NormSq)
       {
-	 Data_.erase(I);
+         Data_.erase(I);
       }
    }
    else
@@ -162,7 +162,7 @@ MapVector<T>::subtract_element_cull(size_type n, U const& x, Float const& Tol)
       I->second -= Temp;
       if (norm_err_sq(I->second) < Tol*Tol * NormSq)
       {
-	 Data_.erase(I);
+         Data_.erase(I);
       }
    }
    else

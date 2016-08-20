@@ -85,25 +85,25 @@ int main(int argc, char** args)
       stack<char*> JobStack;
       while (*QueuedJobs && strncmp(*QueuedJobs, JobID, JobIDLen) != 0)
       {
-	 JobStack.push(*QueuedJobs++);
+         JobStack.push(*QueuedJobs++);
       }
       // *QueuedJobs now contains the full name of jobID, or NULL if it wasn't in the list
 
       if (*QueuedJobs == NULL)
       {
-	 cerr << "qshifttop: Job " << JobID << " is not in QUEUED state.\n";
+         cerr << "qshifttop: Job " << JobID << " is not in QUEUED state.\n";
       }
       else
       {
-	 // Walk the stack of queued jobs and bubble JobID (*QueuedJobs) to the top.
-	 // This might fail at some point if one or more jobs have started running since
-	 // we called pbs_selectjob().  This is no problem, so we don't print an error message if this fails.
-	 while (!JobStack.empty())
-	 {
-	    pbs_orderjob(Conn, *QueuedJobs, JobStack.top(), NULL);
-	    if (pbs_errno) break;
-	    JobStack.pop();
-	 }
+         // Walk the stack of queued jobs and bubble JobID (*QueuedJobs) to the top.
+         // This might fail at some point if one or more jobs have started running since
+         // we called pbs_selectjob().  This is no problem, so we don't print an error message if this fails.
+         while (!JobStack.empty())
+         {
+            pbs_orderjob(Conn, *QueuedJobs, JobStack.top(), NULL);
+            if (pbs_errno) break;
+            JobStack.pop();
+         }
       }
    }
 

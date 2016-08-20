@@ -50,16 +50,16 @@ typedef IrredTensor<std::complex<double> > SimpleOperator;
 
 typedef IrredTensor<double> RealSimpleOperator;
 
-typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, 
-                            VectorBasis, 
+typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
+                            VectorBasis,
                             VectorBasis> MatrixOperator;
 
 // Constructs the swap gate, that maps from the tensor product basis of B1 * B2 into
 // the basis B2 * B1, such that state |i,j> maps into |j,i>
 SimpleOperator
-swap_gate(BasisList const& B1, BasisList const& B2, 
-	  ProductBasis<BasisList, BasisList> const& Basis_21,
-	  ProductBasis<BasisList, BasisList> const& Basis_12);
+swap_gate(BasisList const& B1, BasisList const& B2,
+          ProductBasis<BasisList, BasisList> const& Basis_21,
+          ProductBasis<BasisList, BasisList> const& Basis_12);
 
 
 
@@ -74,21 +74,21 @@ swap_gate(BasisList const& B1, BasisList const& B2)
 // Parity1 and Parity2 are the diagonal components of the P operator, ie Parity[i] == 1
 // iff B1(i) is bosonic, and Parity1[i] == -1 iff B1(i) is fermionic.
 SimpleOperator
-swap_gate_fermion(BasisList const& B1, LinearAlgebra::Vector<double> const& Parity1, 
-		  BasisList const& B2, LinearAlgebra::Vector<double> const& Parity2,
-		  ProductBasis<BasisList, BasisList> const& Basis_21,
-		  ProductBasis<BasisList, BasisList> const& Basis_12);
+swap_gate_fermion(BasisList const& B1, LinearAlgebra::Vector<double> const& Parity1,
+                  BasisList const& B2, LinearAlgebra::Vector<double> const& Parity2,
+                  ProductBasis<BasisList, BasisList> const& Basis_21,
+                  ProductBasis<BasisList, BasisList> const& Basis_12);
 
 inline
 SimpleOperator
-swap_gate(BasisList const& B1, LinearAlgebra::Vector<double> const& Parity1, 
-	  BasisList const& B2, LinearAlgebra::Vector<double> const& Parity2)
+swap_gate(BasisList const& B1, LinearAlgebra::Vector<double> const& Parity1,
+          BasisList const& B2, LinearAlgebra::Vector<double> const& Parity2)
 {
    return swap_gate(B1, B2, ProductBasis<BasisList, BasisList>(B2,B1), ProductBasis<BasisList, BasisList>(B1,B2));
 }
 
 // helper function to construct an operator that merges repeated
-// quantum numbers in the basis.  
+// quantum numbers in the basis.
 SimpleOperator CollapseBasis(BasisList const& b);
 
 // helper function to construct an operator that projects onto a single quantum number component

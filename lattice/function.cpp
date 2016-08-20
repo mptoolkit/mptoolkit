@@ -58,7 +58,7 @@ std::ostream& operator<<(std::ostream& out, FormalArgumentList const& args)
       out << args[0];
       for (unsigned i = 1; i < args.size(); ++i)
       {
-	 out << ", " << args[i];
+         out << ", " << args[i];
       }
    }
    out << '}';
@@ -93,7 +93,7 @@ std::ostream& operator<<(std::ostream& out, ParameterList const& params)
       out << params[0];
       for (unsigned i = 1; i < params.size(); ++i)
       {
-	 out << ", " << params[i];
+         out << ", " << params[i];
       }
    }
    out << '}';
@@ -157,36 +157,36 @@ struct ArgumentListParser : public grammar<ArgumentListParser>
    typedef std::stack<std::string>    IdentStackType;
 
    ArgumentListParser(IdentStackType& identifier_stack_,
-		      FormalArgumentList& arg_list_)
+                      FormalArgumentList& arg_list_)
       : identifier_stack(identifier_stack_), arg_list(arg_list_)
    {}
-   
+
    template <typename ScannerT>
    struct definition
    {
       definition(ArgumentListParser const& self)
       {
-	 identifier = lexeme_d[alpha_p >> *(alnum_p | '_')]
-	    [Parser::push_identifier(self.identifier_stack)];
+         identifier = lexeme_d[alpha_p >> *(alnum_p | '_')]
+            [Parser::push_identifier(self.identifier_stack)];
 
-	 expression_string = lexeme_d[+((anychar_p - chset<>("(){}[]"))
-					| (ch_p('(') >> expression_string >> ch_p(')'))
-					| (ch_p('[') >> expression_string >> ch_p(']'))
-					| (ch_p('{') >> expression_string >> ch_p('}'))
-					)];
+         expression_string = lexeme_d[+((anychar_p - chset<>("(){}[]"))
+                                        | (ch_p('(') >> expression_string >> ch_p(')'))
+                                        | (ch_p('[') >> expression_string >> ch_p(']'))
+                                        | (ch_p('{') >> expression_string >> ch_p('}'))
+                                        )];
 
-	 argument = identifier >> 
-	    (('=' >> expression_string[add_arg_default(self.identifier_stack, self.arg_list)])
-	     | eps_p[add_arg(self.identifier_stack, self.arg_list)]);
+         argument = identifier >>
+            (('=' >> expression_string[add_arg_default(self.identifier_stack, self.arg_list)])
+             | eps_p[add_arg(self.identifier_stack, self.arg_list)]);
 
-	 argument_list = !list_p(argument, ',') >> !end_p;
+         argument_list = !list_p(argument, ',') >> !end_p;
       }
-      
+
       rule<ScannerT> identifier, expression_string, argument, argument_list;
       rule<ScannerT> const&
       start() const { return argument_list; }
    };
-   
+
    IdentStackType& identifier_stack;
    FormalArgumentList& arg_list;
 };

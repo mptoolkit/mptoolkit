@@ -31,7 +31,7 @@ NullQN::NullQN(std::string const& s)
 {
 }
 
-std::string 
+std::string
 NullQN::ToString() const
 {
    return "0";

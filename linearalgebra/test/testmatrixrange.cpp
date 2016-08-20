@@ -58,7 +58,7 @@ int main()
    TRACE(N(range(1,2), range(1,2)));
    TRACE(inner_prod(N, N));
    TRACE( inner_prod( N(all,range(1,2)), M(all,range(1,2)) ) );
-   
+
    TRACE( N(range(1,2),range(1,2)) )( N(range(1,2),all) )( M(all,range(1,2)) );
    N(range(1,2),range(1,2)) = N(range(1,2),all) * M(all,range(1,2));
    TRACE( N(range(1,2),range(1,2)) )( N(range(1,2),all) )( M(all,range(1,2)) );

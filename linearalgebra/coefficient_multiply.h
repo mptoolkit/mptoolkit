@@ -61,9 +61,9 @@ BinderIJ<CF> bindij(CF const& cf, size_type i, size_type j)
 //
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSInterface = typename interface<LHS>::type,
-	  typename M1Interface = typename interface<M1>::type,
-	  typename M2Interface = typename interface<M2>::type>
+          typename LHSInterface = typename interface<LHS>::type,
+          typename M1Interface = typename interface<M1>::type,
+          typename M2Interface = typename interface<M2>::type>
 struct AssignCoefficient_Product2 {};
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested>
@@ -75,13 +75,13 @@ void assign_coefficient_product2(LHS& lhs, M1 const& m1, M2 const& m2, CF const&
 
 template <typename LHS, typename M1, typename M2,
           typename CF, typename Nested,
-	  typename LHSv, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::MatrixExpression<LHSv, LHSi>,
-		      Concepts::MatrixExpression<M1v, M1i>,
-		      Concepts::MatrixExpression<M2v, M2i>>
+                      Concepts::MatrixExpression<LHSv, LHSi>,
+                      Concepts::MatrixExpression<M1v, M1i>,
+                      Concepts::MatrixExpression<M2v, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -93,13 +93,13 @@ struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
 
 template <typename LHS, typename M1, typename M2,
           typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1Orient, typename M1i,
-	  typename M2v, typename M2Orient, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1Orient, typename M1i,
+          typename M2v, typename M2Orient, typename M2i>
 struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::DenseMatrix<M1v, M1Orient, M1i>,
-		      Concepts::DenseMatrix<M2v, M2Orient, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::DenseMatrix<M1v, M1Orient, M1i>,
+                      Concepts::DenseMatrix<M2v, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -113,13 +113,13 @@ struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
 
 template <typename LHS, typename M1, typename M2,
           typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1Orient, typename M1i,
-	  typename M2v, typename M2Orient, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1Orient, typename M1i,
+          typename M2v, typename M2Orient, typename M2i>
 struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::StrideMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::DenseMatrix<M1v, M1Orient, M1i>,
-		      Concepts::DenseMatrix<M2v, M2Orient, M2i>>
+                      Concepts::StrideMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::DenseMatrix<M1v, M1Orient, M1i>,
+                      Concepts::DenseMatrix<M2v, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -135,15 +135,15 @@ struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
 // Instead, we forward to AssignCoefficient_Product2_StrideStrideStride
 // and specialize further there.
 
-template <typename LHS, typename LHSOrient, 
-	  typename M1, typename M1Orient,
-	  typename M2, typename M2Orient,
+template <typename LHS, typename LHSOrient,
+          typename M1, typename M1Orient,
+          typename M2, typename M2Orient,
           typename CF,
           typename Nested>
 struct AssignCoefficient_Product2_StrideStrideStride;
 
 template <typename LHS, typename LHSOrient,
-	  typename M1, typename M2,
+          typename M1, typename M2,
           typename CF,
           typename Nested>
 struct AssignCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, RowMajor, M2, ColMajor,
@@ -154,20 +154,20 @@ struct AssignCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, RowMajo
       typename const_iterator<M1>::type I = iterate(m1);
       while (I)
       {
-	 typename const_iterator<M2>::type J = iterate(m2);
-	 while (J)
-	 {
-	    set_element(lhs, I.index(), J.index(), 
+         typename const_iterator<M2>::type J = iterate(m2);
+         while (J)
+         {
+            set_element(lhs, I.index(), J.index(),
                         coefficient_parallel_prod(*I, *J, bindij(cf, I.index(), J.index()), f));
-	    ++J;
-	 }
-	 ++I;
+            ++J;
+         }
+         ++I;
       }
    }
 };
 
 template <typename LHS, typename LHSOrient,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct AssignCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, ColMajor, M2, ColMajor,
                                          CF, Nested>
 {
@@ -178,7 +178,7 @@ struct AssignCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, ColMajo
 };
 
 template <typename LHS, typename LHSOrient,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct AssignCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, RowMajor, M2, RowMajor,
                                          CF, Nested>
 {
@@ -189,7 +189,7 @@ struct AssignCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, RowMajo
 };
 
 template <typename LHS, typename LHSOrient,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct AssignCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, ColMajor, M2, RowMajor,
                                          CF, Nested>
 {
@@ -200,28 +200,28 @@ struct AssignCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, ColMajo
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1Orient, typename M1i,
-	  typename M2v, typename M2Orient, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1Orient, typename M1i,
+          typename M2v, typename M2Orient, typename M2i>
 struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::StrideMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::StrideMatrix<M1v, M1Orient, M1i>,
-		      Concepts::StrideMatrix<M2v, M2Orient, M2i>>
-: AssignCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, 
-                                    M1, M1Orient, 
+                      Concepts::StrideMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::StrideMatrix<M1v, M1Orient, M1i>,
+                      Concepts::StrideMatrix<M2v, M2Orient, M2i>>
+: AssignCoefficient_Product2_StrideStrideStride<LHS, LHSOrient,
+                                    M1, M1Orient,
                                     M2, M2Orient,
                                     CF, Nested> {};
 
 // assign sparse
 
 template <typename LHS,
-	  typename M1, typename M1Orient,
-	  typename M2, typename M2Orient,
+          typename M1, typename M1Orient,
+          typename M2, typename M2Orient,
           typename CF, typename Nested>
 struct AssignCoefficient_Product2_Sparse;
 
 template <typename LHS,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct AssignCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, ColMajor, CF, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
@@ -230,21 +230,21 @@ struct AssignCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, ColMajor, CF, Ne
       typename const_iterator<M1>::type I = iterate(m1);
       while (I)
       {
-	 typename const_iterator<M2>::type J = iterate(m2);
-	 while (J)
-	 {
-	    add_element_check_if_zero(lhs, I.index(), J.index(), 
-                   coefficient_parallel_prod(*I, *J, 
+         typename const_iterator<M2>::type J = iterate(m2);
+         while (J)
+         {
+            add_element_check_if_zero(lhs, I.index(), J.index(),
+                   coefficient_parallel_prod(*I, *J,
                                              bindij(cf, I.index(), J.index()), f));
-	    ++J;
-	 }
-	 ++I;
+            ++J;
+         }
+         ++I;
       }
    }
 };
 
 template <typename LHS,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct AssignCoefficient_Product2_Sparse<LHS, M1, ColMajor, M2, ColMajor, CF, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
@@ -255,7 +255,7 @@ struct AssignCoefficient_Product2_Sparse<LHS, M1, ColMajor, M2, ColMajor, CF, Ne
 };
 
 template <typename LHS,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct AssignCoefficient_Product2_Sparse<LHS, M1, ColMajor, M2, RowMajor, CF, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
@@ -267,7 +267,7 @@ struct AssignCoefficient_Product2_Sparse<LHS, M1, ColMajor, M2, RowMajor, CF, Ne
 };
 
 template <typename LHS,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct AssignCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, RowMajor, CF, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
@@ -278,35 +278,35 @@ struct AssignCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, RowMajor, CF, Ne
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSi,
-	  typename M1v, typename M1Orient, typename M1i,
-	  typename M2v, typename M2Orient, typename M2i>
+          typename LHSv, typename LHSi,
+          typename M1v, typename M1Orient, typename M1i,
+          typename M2v, typename M2Orient, typename M2i>
 struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::LocalMatrix<LHSv, LHSi>,
-		      Concepts::CompressedOuterMatrix<M1v, M1Orient, M1i>,
-		      Concepts::CompressedOuterMatrix<M2v, M2Orient, M2i>>
+                      Concepts::LocalMatrix<LHSv, LHSi>,
+                      Concepts::CompressedOuterMatrix<M1v, M1Orient, M1i>,
+                      Concepts::CompressedOuterMatrix<M2v, M2Orient, M2i>>
 : AssignCoefficient_Product2_Sparse<LHS, M1, M1Orient, M2, M2Orient, CF, Nested> {};
 
 // assign mixed sparse/dense
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::CompressedOuterMatrix<M1v, RowMajor, M1i>,
-		      Concepts::DenseMatrix<M2v, ColMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::CompressedOuterMatrix<M1v, RowMajor, M1i>,
+                      Concepts::DenseMatrix<M2v, ColMajor, M2i>>
 : AssignCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, ColMajor, CF, Nested> {};
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::CompressedOuterMatrix<M1v, ColMajor, M1i>,
-		      Concepts::DenseMatrix<M2v, ColMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::CompressedOuterMatrix<M1v, ColMajor, M1i>,
+                      Concepts::DenseMatrix<M2v, ColMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -316,13 +316,13 @@ struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::CompressedOuterMatrix<M1v, ColMajor, M1i>,
-		      Concepts::DenseMatrix<M2v, RowMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::CompressedOuterMatrix<M1v, ColMajor, M1i>,
+                      Concepts::DenseMatrix<M2v, RowMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -332,13 +332,13 @@ struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::CompressedOuterMatrix<M1v, RowMajor, M1i>,
-		      Concepts::DenseMatrix<M2v, RowMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::CompressedOuterMatrix<M1v, RowMajor, M1i>,
+                      Concepts::DenseMatrix<M2v, RowMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -348,23 +348,23 @@ struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
 
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::DenseMatrix<M1v, RowMajor, M1i>,
-		      Concepts::CompressedOuterMatrix<M2v, ColMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::DenseMatrix<M1v, RowMajor, M1i>,
+                      Concepts::CompressedOuterMatrix<M2v, ColMajor, M2i>>
 : AssignCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, ColMajor, CF, Nested> {};
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::DenseMatrix<M1v, ColMajor, M1i>,
-		      Concepts::CompressedOuterMatrix<M2v, ColMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::DenseMatrix<M1v, ColMajor, M1i>,
+                      Concepts::CompressedOuterMatrix<M2v, ColMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -373,13 +373,13 @@ struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::DenseMatrix<M1v, ColMajor, M1i>,
-		      Concepts::CompressedOuterMatrix<M2v, RowMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::DenseMatrix<M1v, ColMajor, M1i>,
+                      Concepts::CompressedOuterMatrix<M2v, RowMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -389,13 +389,13 @@ struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::DenseMatrix<M1v, RowMajor, M1i>,
-		      Concepts::CompressedOuterMatrix<M2v, RowMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::DenseMatrix<M1v, RowMajor, M1i>,
+                      Concepts::CompressedOuterMatrix<M2v, RowMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -407,13 +407,13 @@ struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
 // assign mixed sparse/diagonal
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
-				  Concepts::SparseMatrix<LHSv, LHSi>,
-				  Concepts::SparseMatrix<M1v, M1i>,
-				  Concepts::DiagonalMatrix<M2v, M2i>>
+                                  Concepts::SparseMatrix<LHSv, LHSi>,
+                                  Concepts::SparseMatrix<M1v, M1i>,
+                                  Concepts::DiagonalMatrix<M2v, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -421,26 +421,26 @@ struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
       typename const_iterator<M1>::type I = iterate(m1);
       while (I)
       {
-	 typename const_inner_iterator<M1>::type J = iterate(I);
-	 while (J)
-	 {
-	    add_element(lhs, J.index1(), J.index2(), 
-			cf(J.index1(), J.index2(), J.index2()) * f(*J, m2.diagonal()[J.index2()]));
-	    ++J;
-	 }
-	 ++I;
+         typename const_inner_iterator<M1>::type J = iterate(I);
+         while (J)
+         {
+            add_element(lhs, J.index1(), J.index2(),
+                        cf(J.index1(), J.index2(), J.index2()) * f(*J, m2.diagonal()[J.index2()]));
+            ++J;
+         }
+         ++I;
       }
    }
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
-				  Concepts::SparseMatrix<LHSv, LHSi>,
-				  Concepts::DiagonalMatrix<M1v, M1i>,
-				  Concepts::SparseMatrix<M2v, M2i>>
+                                  Concepts::SparseMatrix<LHSv, LHSi>,
+                                  Concepts::DiagonalMatrix<M1v, M1i>,
+                                  Concepts::SparseMatrix<M2v, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -448,26 +448,26 @@ struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
       typename const_iterator<M2>::type I = iterate(m2);
       while (I)
       {
-	 typename const_inner_iterator<M2>::type J = iterate(I);
-	 while (J)
-	 {
-	    add_element(lhs, J.index1(), J.index2(), 
-			cf(J.index1(), J.index1(), J.index2()) * f(m1.diagonal()[J.index1()], *J));
-	    ++J;
-	 }
-	 ++I;
+         typename const_inner_iterator<M2>::type J = iterate(I);
+         while (J)
+         {
+            add_element(lhs, J.index1(), J.index2(),
+                        cf(J.index1(), J.index1(), J.index2()) * f(m1.diagonal()[J.index1()], *J));
+            ++J;
+         }
+         ++I;
       }
    }
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
-				  Concepts::SparseMatrix<LHSv, LHSi>,
-				  Concepts::DiagonalMatrix<M1v, M1i>,
-				  Concepts::DiagonalMatrix<M2v, M2i>>
+                                  Concepts::SparseMatrix<LHSv, LHSi>,
+                                  Concepts::DiagonalMatrix<M1v, M1i>,
+                                  Concepts::DiagonalMatrix<M2v, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -476,10 +476,10 @@ struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
       auto J = iterate_diagonal(m2);
       while (I)
       {
-	 add_element(lhs, I.index(), I.index(),
-		     cf(I.index(), I.index(), I.index()) * f(*I, *J));
-	 ++I;
-	 ++J;
+         add_element(lhs, I.index(), I.index(),
+                     cf(I.index(), I.index(), I.index()) * f(*I, *J));
+         ++I;
+         ++J;
       }
       DEBUG_CHECK(!J);
    }
@@ -490,9 +490,9 @@ struct AssignCoefficient_Product2<LHS, M1, M2, CF, Nested,
 //
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSInterface = typename interface<LHS>::type,
-	  typename M1Interface = typename interface<M1>::type,
-	  typename M2Interface = typename interface<M2>::type>
+          typename LHSInterface = typename interface<LHS>::type,
+          typename M1Interface = typename interface<M1>::type,
+          typename M2Interface = typename interface<M2>::type>
 struct AddCoefficient_Product2 {};
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested>
@@ -503,13 +503,13 @@ void add_coefficient_product2(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf
 }
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::MatrixExpression<LHSv, LHSi>,
-		      Concepts::MatrixExpression<M1v, M1i>,
-		      Concepts::MatrixExpression<M2v, M2i>>
+                      Concepts::MatrixExpression<LHSv, LHSi>,
+                      Concepts::MatrixExpression<M1v, M1i>,
+                      Concepts::MatrixExpression<M2v, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -520,13 +520,13 @@ struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
 // add dense
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1Orient, typename M1i,
-	  typename M2v, typename M2Orient, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1Orient, typename M1i,
+          typename M2v, typename M2Orient, typename M2i>
 struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::DenseMatrix<M1v, M1Orient, M1i>,
-		      Concepts::DenseMatrix<M2v, M2Orient, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::DenseMatrix<M1v, M1Orient, M1i>,
+                      Concepts::DenseMatrix<M2v, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -539,13 +539,13 @@ struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1Orient, typename M1i,
-	  typename M2v, typename M2Orient, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1Orient, typename M1i,
+          typename M2v, typename M2Orient, typename M2i>
 struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::StrideMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::DenseMatrix<M1v, M1Orient, M1i>,
-		      Concepts::DenseMatrix<M2v, M2Orient, M2i>>
+                      Concepts::StrideMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::DenseMatrix<M1v, M1Orient, M1i>,
+                      Concepts::DenseMatrix<M2v, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -561,14 +561,14 @@ struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
 // Instead, we forward to AddCoefficient_Product2_StrideStrideStride
 // and specialize further there.
 
-template <typename LHS, typename LHSOrient, 
-	  typename M1, typename M1Orient,
-	  typename M2, typename M2Orient,
+template <typename LHS, typename LHSOrient,
+          typename M1, typename M1Orient,
+          typename M2, typename M2Orient,
           typename CF, typename Nested>
 struct AddCoefficient_Product2_StrideStrideStride;
 
 template <typename LHS, typename LHSOrient,
-	  typename M1, typename M2,
+          typename M1, typename M2,
           typename CF, typename Nested>
 struct AddCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, RowMajor, M2, ColMajor,
                                       CF, Nested>
@@ -578,20 +578,20 @@ struct AddCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, RowMajor, 
       typename const_iterator<M1>::type I = iterate(m1);
       while (I)
       {
-	 typename const_iterator<M2>::type J = iterate(m2);
-	 while (J)
-	 {
-	    add_element(lhs, I.index(), J.index(), 
+         typename const_iterator<M2>::type J = iterate(m2);
+         while (J)
+         {
+            add_element(lhs, I.index(), J.index(),
                         coefficient_parallel_prod(*I, *J, bindij(cf, I.index(), J.index()), f));
-	    ++J;
-	 }
-	 ++I;
+            ++J;
+         }
+         ++I;
       }
    }
 };
 
 template <typename LHS, typename LHSOrient,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct AddCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, ColMajor, M2, ColMajor,
                                       CF, Nested>
 {
@@ -602,7 +602,7 @@ struct AddCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, ColMajor, 
 };
 
 template <typename LHS, typename LHSOrient,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct AddCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, RowMajor, M2, RowMajor,
                                       CF, Nested>
 {
@@ -613,7 +613,7 @@ struct AddCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, RowMajor, 
 };
 
 template <typename LHS, typename LHSOrient,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct AddCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, ColMajor, M2, RowMajor,
                                       CF, Nested>
 {
@@ -624,13 +624,13 @@ struct AddCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, ColMajor, 
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1Orient, typename M1i,
-	  typename M2v, typename M2Orient, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1Orient, typename M1i,
+          typename M2v, typename M2Orient, typename M2i>
 struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::StrideMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::StrideMatrix<M1v, M1Orient, M1i>,
-		      Concepts::StrideMatrix<M2v, M2Orient, M2i>>
+                      Concepts::StrideMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::StrideMatrix<M1v, M1Orient, M1i>,
+                      Concepts::StrideMatrix<M2v, M2Orient, M2i>>
 : AddCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, M1Orient, M2, M2Orient,
                                              CF, Nested> {};
 
@@ -638,12 +638,12 @@ struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
 // add sparse
 
 template <typename LHS,
-	  typename M1, typename M1Orient,
-	  typename M2, typename M2Orient, typename CF, typename Nested>
+          typename M1, typename M1Orient,
+          typename M2, typename M2Orient, typename CF, typename Nested>
 struct AddCoefficient_Product2_Sparse;
 
 template <typename LHS,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct AddCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, ColMajor, CF, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
@@ -651,20 +651,20 @@ struct AddCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, ColMajor, CF, Neste
       typename const_iterator<M1>::type I = iterate(m1);
       while (I)
       {
-	 typename const_iterator<M2>::type J = iterate(m2);
-	 while (J)
-	 {
-	    add_element_check_if_zero(lhs, I.index(), J.index(), 
+         typename const_iterator<M2>::type J = iterate(m2);
+         while (J)
+         {
+            add_element_check_if_zero(lhs, I.index(), J.index(),
                  coefficient_parallel_prod(*I, *J, bindij(cf, I.index(), J.index()), f));
-	    ++J;
-	 }
-	 ++I;
+            ++J;
+         }
+         ++I;
       }
    }
 };
 
 template <typename LHS,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct AddCoefficient_Product2_Sparse<LHS, M1, ColMajor, M2, ColMajor, CF, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
@@ -675,7 +675,7 @@ struct AddCoefficient_Product2_Sparse<LHS, M1, ColMajor, M2, ColMajor, CF, Neste
 };
 
 template <typename LHS,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct AddCoefficient_Product2_Sparse<LHS, M1, ColMajor, M2, RowMajor, CF, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
@@ -687,7 +687,7 @@ struct AddCoefficient_Product2_Sparse<LHS, M1, ColMajor, M2, RowMajor, CF, Neste
 };
 
 template <typename LHS,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct AddCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, RowMajor, CF, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
@@ -698,35 +698,35 @@ struct AddCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, RowMajor, CF, Neste
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSi,
-	  typename M1v, typename M1Orient, typename M1i,
-	  typename M2v, typename M2Orient, typename M2i>
+          typename LHSv, typename LHSi,
+          typename M1v, typename M1Orient, typename M1i,
+          typename M2v, typename M2Orient, typename M2i>
 struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::LocalMatrix<LHSv, LHSi>,
-		      Concepts::CompressedOuterMatrix<M1v, M1Orient, M1i>,
-		      Concepts::CompressedOuterMatrix<M2v, M2Orient, M2i>>
+                      Concepts::LocalMatrix<LHSv, LHSi>,
+                      Concepts::CompressedOuterMatrix<M1v, M1Orient, M1i>,
+                      Concepts::CompressedOuterMatrix<M2v, M2Orient, M2i>>
 : AddCoefficient_Product2_Sparse<LHS, M1, M1Orient, M2, M2Orient, CF, Nested> {};
 
 // add mixed sparse/dense
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::CompressedOuterMatrix<M1v, RowMajor, M1i>,
-		      Concepts::DenseMatrix<M2v, ColMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::CompressedOuterMatrix<M1v, RowMajor, M1i>,
+                      Concepts::DenseMatrix<M2v, ColMajor, M2i>>
 : AddCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, ColMajor, CF, Nested> {};
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::CompressedOuterMatrix<M1v, ColMajor, M1i>,
-		      Concepts::DenseMatrix<M2v, ColMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::CompressedOuterMatrix<M1v, ColMajor, M1i>,
+                      Concepts::DenseMatrix<M2v, ColMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -736,13 +736,13 @@ struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::CompressedOuterMatrix<M1v, ColMajor, M1i>,
-		      Concepts::DenseMatrix<M2v, RowMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::CompressedOuterMatrix<M1v, ColMajor, M1i>,
+                      Concepts::DenseMatrix<M2v, RowMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -752,13 +752,13 @@ struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::CompressedOuterMatrix<M1v, RowMajor, M1i>,
-		      Concepts::DenseMatrix<M2v, RowMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::CompressedOuterMatrix<M1v, RowMajor, M1i>,
+                      Concepts::DenseMatrix<M2v, RowMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -768,23 +768,23 @@ struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
 
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::DenseMatrix<M1v, RowMajor, M1i>,
-		      Concepts::CompressedOuterMatrix<M2v, ColMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::DenseMatrix<M1v, RowMajor, M1i>,
+                      Concepts::CompressedOuterMatrix<M2v, ColMajor, M2i>>
 : AddCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, ColMajor, CF, Nested> {};
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::DenseMatrix<M1v, ColMajor, M1i>,
-		      Concepts::CompressedOuterMatrix<M2v, ColMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::DenseMatrix<M1v, ColMajor, M1i>,
+                      Concepts::CompressedOuterMatrix<M2v, ColMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -793,13 +793,13 @@ struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::DenseMatrix<M1v, ColMajor, M1i>,
-		      Concepts::CompressedOuterMatrix<M2v, RowMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::DenseMatrix<M1v, ColMajor, M1i>,
+                      Concepts::CompressedOuterMatrix<M2v, RowMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -809,13 +809,13 @@ struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::DenseMatrix<M1v, RowMajor, M1i>,
-		      Concepts::CompressedOuterMatrix<M2v, RowMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::DenseMatrix<M1v, RowMajor, M1i>,
+                      Concepts::CompressedOuterMatrix<M2v, RowMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -827,53 +827,53 @@ struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
 // add mixed sparse/diagonal
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
-			       Concepts::SparseMatrix<LHSv, LHSi>,
-			       Concepts::SparseMatrix<M1v, M1i>,
-			       Concepts::DiagonalMatrix<M2v, M2i>>
+                               Concepts::SparseMatrix<LHSv, LHSi>,
+                               Concepts::SparseMatrix<M1v, M1i>,
+                               Concepts::DiagonalMatrix<M2v, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
       typename const_iterator<M1>::type I = iterate(m1);
       while (I)
       {
-	 typename const_inner_iterator<M1>::type J = iterate(I);
-	 while (J)
-	 {
-	    add_element(lhs, J.index1(), J.index2(), 
-			cf(J.index1(), J.index2(), J.index2()) * f(*J, m2.diagonal()[J.index2()]));
-	    ++J;
-	 }
-	 ++I;
+         typename const_inner_iterator<M1>::type J = iterate(I);
+         while (J)
+         {
+            add_element(lhs, J.index1(), J.index2(),
+                        cf(J.index1(), J.index2(), J.index2()) * f(*J, m2.diagonal()[J.index2()]));
+            ++J;
+         }
+         ++I;
       }
    }
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
-			       Concepts::SparseMatrix<LHSv, LHSi>,
-			       Concepts::DiagonalMatrix<M1v, M1i>,
-			       Concepts::SparseMatrix<M2v, M2i>>
+                               Concepts::SparseMatrix<LHSv, LHSi>,
+                               Concepts::DiagonalMatrix<M1v, M1i>,
+                               Concepts::SparseMatrix<M2v, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
       typename const_iterator<M2>::type I = iterate(m2);
       while (I)
       {
-	 typename const_inner_iterator<M2>::type J = iterate(I);
-	 while (J)
-	 {
-	    add_element(lhs, J.index1(), J.index2(), 
-			cf(J.index1(), J.index1(), J.index2()) * f(m1.diagonal()[J.index1()], *J));
-	    ++J;
-	 }
-	 ++I;
+         typename const_inner_iterator<M2>::type J = iterate(I);
+         while (J)
+         {
+            add_element(lhs, J.index1(), J.index2(),
+                        cf(J.index1(), J.index1(), J.index2()) * f(m1.diagonal()[J.index1()], *J));
+            ++J;
+         }
+         ++I;
       }
    }
 };
@@ -883,9 +883,9 @@ struct AddCoefficient_Product2<LHS, M1, M2, CF, Nested,
 //
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSInterface = typename interface<LHS>::type,
-	  typename M1Interface = typename interface<M1>::type,
-	  typename M2Interface = typename interface<M2>::type>
+          typename LHSInterface = typename interface<LHS>::type,
+          typename M1Interface = typename interface<M1>::type,
+          typename M2Interface = typename interface<M2>::type>
 struct SubtractCoefficient_Product2 {};
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested>
@@ -896,13 +896,13 @@ void subtract_coefficient_product2(LHS& lhs, M1 const& m1, M2 const& m2, CF cons
 }
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::MatrixExpression<LHSv, LHSi>,
-		      Concepts::MatrixExpression<M1v, M1i>,
-		      Concepts::MatrixExpression<M2v, M2i>>
+                      Concepts::MatrixExpression<LHSv, LHSi>,
+                      Concepts::MatrixExpression<M1v, M1i>,
+                      Concepts::MatrixExpression<M2v, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -913,13 +913,13 @@ struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
 // subtract dense
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1Orient, typename M1i,
-	  typename M2v, typename M2Orient, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1Orient, typename M1i,
+          typename M2v, typename M2Orient, typename M2i>
 struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::DenseMatrix<M1v, M1Orient, M1i>,
-		      Concepts::DenseMatrix<M2v, M2Orient, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::DenseMatrix<M1v, M1Orient, M1i>,
+                      Concepts::DenseMatrix<M2v, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -932,13 +932,13 @@ struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1Orient, typename M1i,
-	  typename M2v, typename M2Orient, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1Orient, typename M1i,
+          typename M2v, typename M2Orient, typename M2i>
 struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::StrideMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::DenseMatrix<M1v, M1Orient, M1i>,
-		      Concepts::DenseMatrix<M2v, M2Orient, M2i>>
+                      Concepts::StrideMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::DenseMatrix<M1v, M1Orient, M1i>,
+                      Concepts::DenseMatrix<M2v, M2Orient, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -954,14 +954,14 @@ struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
 // Instead, we forward to SubtractCoefficient_Product2_StrideStrideStride
 // and specialize further there.
 
-template <typename LHS, typename LHSOrient, 
-	  typename M1, typename M1Orient,
-	  typename M2, typename M2Orient,
+template <typename LHS, typename LHSOrient,
+          typename M1, typename M1Orient,
+          typename M2, typename M2Orient,
           typename CF, typename Nested>
 struct SubtractCoefficient_Product2_StrideStrideStride;
 
 template <typename LHS, typename LHSOrient,
-	  typename M1, typename M2,
+          typename M1, typename M2,
           typename CF, typename Nested>
 struct SubtractCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, RowMajor, M2, ColMajor,
                                       CF, Nested>
@@ -971,20 +971,20 @@ struct SubtractCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, RowMa
       typename const_iterator<M1>::type I = iterate(m1);
       while (I)
       {
-	 typename const_iterator<M2>::type J = iterate(m2);
-	 while (J)
-	 {
-	    subtract_element(lhs, I.index(), J.index(), 
+         typename const_iterator<M2>::type J = iterate(m2);
+         while (J)
+         {
+            subtract_element(lhs, I.index(), J.index(),
                         coefficient_parallel_prod(*I, *J, bindij(cf, I.index(), J.index()), f));
-	    ++J;
-	 }
-	 ++I;
+            ++J;
+         }
+         ++I;
       }
    }
 };
 
 template <typename LHS, typename LHSOrient,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct SubtractCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, ColMajor, M2, ColMajor,
                                       CF, Nested>
 {
@@ -995,7 +995,7 @@ struct SubtractCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, ColMa
 };
 
 template <typename LHS, typename LHSOrient,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct SubtractCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, RowMajor, M2, RowMajor,
                                       CF, Nested>
 {
@@ -1006,7 +1006,7 @@ struct SubtractCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, RowMa
 };
 
 template <typename LHS, typename LHSOrient,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct SubtractCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, ColMajor, M2, RowMajor,
                                       CF, Nested>
 {
@@ -1017,25 +1017,25 @@ struct SubtractCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, ColMa
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1Orient, typename M1i,
-	  typename M2v, typename M2Orient, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1Orient, typename M1i,
+          typename M2v, typename M2Orient, typename M2i>
 struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::StrideMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::StrideMatrix<M1v, M1Orient, M1i>,
-		      Concepts::StrideMatrix<M2v, M2Orient, M2i>>
+                      Concepts::StrideMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::StrideMatrix<M1v, M1Orient, M1i>,
+                      Concepts::StrideMatrix<M2v, M2Orient, M2i>>
 : SubtractCoefficient_Product2_StrideStrideStride<LHS, LHSOrient, M1, M1Orient, M2, M2Orient,
                                              CF, Nested> {};
 
 // subtract sparse
 
 template <typename LHS,
-	  typename M1, typename M1Orient,
-	  typename M2, typename M2Orient, typename CF, typename Nested>
+          typename M1, typename M1Orient,
+          typename M2, typename M2Orient, typename CF, typename Nested>
 struct SubtractCoefficient_Product2_Sparse;
 
 template <typename LHS,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct SubtractCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, ColMajor, CF, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
@@ -1043,20 +1043,20 @@ struct SubtractCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, ColMajor, CF, 
       typename const_iterator<M1>::type I = iterate(m1);
       while (I)
       {
-	 typename const_iterator<M2>::type J = iterate(m2);
-	 while (J)
-	 {
-	    subtract_element_check_if_zero(lhs, I.index(), J.index(), 
+         typename const_iterator<M2>::type J = iterate(m2);
+         while (J)
+         {
+            subtract_element_check_if_zero(lhs, I.index(), J.index(),
                  coefficient_parallel_prod(*I, *J, bindij(cf, I.index(), J.index()), f));
-	    ++J;
-	 }
-	 ++I;
+            ++J;
+         }
+         ++I;
       }
    }
 };
 
 template <typename LHS,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct SubtractCoefficient_Product2_Sparse<LHS, M1, ColMajor, M2, ColMajor, CF, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
@@ -1067,7 +1067,7 @@ struct SubtractCoefficient_Product2_Sparse<LHS, M1, ColMajor, M2, ColMajor, CF, 
 };
 
 template <typename LHS,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct SubtractCoefficient_Product2_Sparse<LHS, M1, ColMajor, M2, RowMajor, CF, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
@@ -1079,7 +1079,7 @@ struct SubtractCoefficient_Product2_Sparse<LHS, M1, ColMajor, M2, RowMajor, CF, 
 };
 
 template <typename LHS,
-	  typename M1, typename M2, typename CF, typename Nested>
+          typename M1, typename M2, typename CF, typename Nested>
 struct SubtractCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, RowMajor, CF, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
@@ -1090,36 +1090,36 @@ struct SubtractCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, RowMajor, CF, 
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSi,
-	  typename M1v, typename M1Orient, typename M1i,
-	  typename M2v, typename M2Orient, typename M2i>
+          typename LHSv, typename LHSi,
+          typename M1v, typename M1Orient, typename M1i,
+          typename M2v, typename M2Orient, typename M2i>
 struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::LocalMatrix<LHSv, LHSi>,
-		      Concepts::CompressedOuterMatrix<M1v, M1Orient, M1i>,
-		      Concepts::CompressedOuterMatrix<M2v, M2Orient, M2i>>
+                      Concepts::LocalMatrix<LHSv, LHSi>,
+                      Concepts::CompressedOuterMatrix<M1v, M1Orient, M1i>,
+                      Concepts::CompressedOuterMatrix<M2v, M2Orient, M2i>>
 : SubtractCoefficient_Product2_Sparse<LHS, M1, M1Orient, M2, M2Orient, CF, Nested> {};
 
 
 // subtract mixed sparse/dense
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::CompressedOuterMatrix<M1v, RowMajor, M1i>,
-		      Concepts::DenseMatrix<M2v, ColMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::CompressedOuterMatrix<M1v, RowMajor, M1i>,
+                      Concepts::DenseMatrix<M2v, ColMajor, M2i>>
 : SubtractCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, ColMajor, CF, Nested> {};
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::CompressedOuterMatrix<M1v, ColMajor, M1i>,
-		      Concepts::DenseMatrix<M2v, ColMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::CompressedOuterMatrix<M1v, ColMajor, M1i>,
+                      Concepts::DenseMatrix<M2v, ColMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -1129,13 +1129,13 @@ struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::CompressedOuterMatrix<M1v, ColMajor, M1i>,
-		      Concepts::DenseMatrix<M2v, RowMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::CompressedOuterMatrix<M1v, ColMajor, M1i>,
+                      Concepts::DenseMatrix<M2v, RowMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -1145,13 +1145,13 @@ struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
-				    Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-				    Concepts::CompressedOuterMatrix<M1v, RowMajor, M1i>,
-				    Concepts::DenseMatrix<M2v, RowMajor, M2i>>
+                                    Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                                    Concepts::CompressedOuterMatrix<M1v, RowMajor, M1i>,
+                                    Concepts::DenseMatrix<M2v, RowMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -1161,23 +1161,23 @@ struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
 
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
-				    Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-				    Concepts::DenseMatrix<M1v, RowMajor, M1i>,
-				    Concepts::CompressedOuterMatrix<M2v, ColMajor, M2i>>
+                                    Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                                    Concepts::DenseMatrix<M1v, RowMajor, M1i>,
+                                    Concepts::CompressedOuterMatrix<M2v, ColMajor, M2i>>
 : SubtractCoefficient_Product2_Sparse<LHS, M1, RowMajor, M2, ColMajor, CF, Nested> {};
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::DenseMatrix<M1v, ColMajor, M1i>,
-		      Concepts::CompressedOuterMatrix<M2v, ColMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::DenseMatrix<M1v, ColMajor, M1i>,
+                      Concepts::CompressedOuterMatrix<M2v, ColMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -1186,13 +1186,13 @@ struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::DenseMatrix<M1v, ColMajor, M1i>,
-		      Concepts::CompressedOuterMatrix<M2v, RowMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::DenseMatrix<M1v, ColMajor, M1i>,
+                      Concepts::CompressedOuterMatrix<M2v, RowMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -1202,13 +1202,13 @@ struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSOrient, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSOrient, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
-		      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
-		      Concepts::DenseMatrix<M1v, RowMajor, M1i>,
-		      Concepts::CompressedOuterMatrix<M2v, RowMajor, M2i>>
+                      Concepts::DenseMatrix<LHSv, LHSOrient, LHSi>,
+                      Concepts::DenseMatrix<M1v, RowMajor, M1i>,
+                      Concepts::CompressedOuterMatrix<M2v, RowMajor, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
@@ -1220,53 +1220,53 @@ struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
 // subtract mixed sparse/diagonal
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
-			       Concepts::SparseMatrix<LHSv, LHSi>,
-			       Concepts::SparseMatrix<M1v, M1i>,
-			       Concepts::DiagonalMatrix<M2v, M2i>>
+                               Concepts::SparseMatrix<LHSv, LHSi>,
+                               Concepts::SparseMatrix<M1v, M1i>,
+                               Concepts::DiagonalMatrix<M2v, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
       typename const_iterator<M1>::type I = iterate(m1);
       while (I)
       {
-	 typename const_inner_iterator<M1>::type J = iterate(I);
-	 while (J)
-	 {
-	    subtract_element(lhs, J.index1(), J.index2(), 
-			     cf(J.index1(), J.index2(), J.index2()) * f(*J, m2.diagonal()[J.index2()]));
-	    ++J;
-	 }
-	 ++I;
+         typename const_inner_iterator<M1>::type J = iterate(I);
+         while (J)
+         {
+            subtract_element(lhs, J.index1(), J.index2(),
+                             cf(J.index1(), J.index2(), J.index2()) * f(*J, m2.diagonal()[J.index2()]));
+            ++J;
+         }
+         ++I;
       }
    }
 };
 
 template <typename LHS, typename M1, typename M2, typename CF, typename Nested,
-	  typename LHSv, typename LHSi,
-	  typename M1v, typename M1i,
-	  typename M2v, typename M2i>
+          typename LHSv, typename LHSi,
+          typename M1v, typename M1i,
+          typename M2v, typename M2i>
 struct SubtractCoefficient_Product2<LHS, M1, M2, CF, Nested,
-			       Concepts::SparseMatrix<LHSv, LHSi>,
-			       Concepts::DiagonalMatrix<M1v, M1i>,
-			       Concepts::SparseMatrix<M2v, M2i>>
+                               Concepts::SparseMatrix<LHSv, LHSi>,
+                               Concepts::DiagonalMatrix<M1v, M1i>,
+                               Concepts::SparseMatrix<M2v, M2i>>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, CF const& cf, Nested const& f)
    {
       typename const_iterator<M2>::type I = iterate(m2);
       while (I)
       {
-	 typename const_inner_iterator<M2>::type J = iterate(I);
-	 while (J)
-	 {
-	    subtract_element(lhs, J.index1(), J.index2(), 
-			     cf(J.index1(), J.index1(), J.index2()) * f(m1.diagonal()[J.index1()], *J));
-	    ++J;
-	 }
-	 ++I;
+         typename const_inner_iterator<M2>::type J = iterate(I);
+         while (J)
+         {
+            subtract_element(lhs, J.index1(), J.index2(),
+                             cf(J.index1(), J.index1(), J.index2()) * f(m1.diagonal()[J.index1()], *J));
+            ++J;
+         }
+         ++I;
       }
    }
 };

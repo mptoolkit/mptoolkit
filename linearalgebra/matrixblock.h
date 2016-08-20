@@ -55,7 +55,7 @@ struct MatrixBlockRefDerivedType<Scalar, Orient, HeaderType, void>
 };
 
 template <typename Scalar, typename Orientation, typename HeaderType, typename Derived>
-class MatrixBlockRef 
+class MatrixBlockRef
    : public MatrixBase<typename MatrixBlockRefDerivedType<Scalar, Orientation, HeaderType, Derived>::type>
 {
    private:
@@ -68,7 +68,7 @@ class MatrixBlockRef
                   , HeaderType
                   , Derived
                  >::type
-              > 
+              >
           base_type;
 
    public:
@@ -88,13 +88,13 @@ class MatrixBlockRef
       MatrixBlockRef(Scalar* B, MatrixOffsetDimensions const* Dims)
          : Block(B), Dims_(Dims) {}
 
-      MatrixBlockRef(MatrixBlockRef const& V) 
-	: Block(V.Block_), Dims_(V.Dims_) {}
+      MatrixBlockRef(MatrixBlockRef const& V)
+        : Block(V.Block_), Dims_(V.Dims_) {}
 
       MatrixBlockRef& operator=(MatrixBlockRef const& V)
       {
-	 this->assign(V);
-	 return *this;
+         this->assign(V);
+         return *this;
       }
 
       template <typename U>
@@ -115,17 +115,17 @@ class MatrixBlockRef
       difference_type stride1() const { return stride1(*Dims_); }
       difference_type stride2() const { return stride2(*Dims_); }
 
-      Scalar const& operator()(size_type i, size_type j) const 
-      { DEBUG_RANGE_CHECK_OPEN(i, 0U, this->size1()); 
+      Scalar const& operator()(size_type i, size_type j) const
+      { DEBUG_RANGE_CHECK_OPEN(i, 0U, this->size1());
         DEBUG_RANGE_CHECK_OPEN(j, 0U, this->size2());
-	return *(this->data() + this->stride1() * i + this->stride2() * j); }
+        return *(this->data() + this->stride1() * i + this->stride2() * j); }
 
       Scalar& operator()(size_type i, size_type j)
-      { DEBUG_RANGE_CHECK_OPEN(i, 0U, this->size1()); 
+      { DEBUG_RANGE_CHECK_OPEN(i, 0U, this->size1());
         DEBUG_RANGE_CHECK_OPEN(j, 0U, this->size2());
         this->cow(); return *(this->data() + this->stride1() * i + this->stride2() * j); }
 
-      difference_type leading_dimension() const 
+      difference_type leading_dimension() const
          { return std::max(this->stride1(), this->stride2()); }
 
    private:

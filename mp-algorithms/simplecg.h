@@ -43,8 +43,8 @@ struct Solver
 
    virtual ~Solver();
 
-   void StartSweep(bool IncrementSweepNumber = true, 
-		   double Broad = 0);  // prepare statistics for start of sweep
+   void StartSweep(bool IncrementSweepNumber = true,
+                   double Broad = 0);  // prepare statistics for start of sweep
 
    void EndSweep();    // statistics for end of sweep
 
@@ -87,7 +87,7 @@ struct Solver
 
    CenterWavefunction& Wavefunction();
    CenterWavefunction const& Wavefunction() const;
- 
+
    CenterWavefunction WavefunctionAx() const;
 
    double ResidualNorm() const; // returns the residual norm (calculated, not stored)
@@ -96,10 +96,10 @@ struct Solver
    virtual double ExpectationA2() const = 0;
 
    // returns the exact residual norm, given the supplied <x|A^2|x>
-   virtual double ExactResidualNorm(double ExpectAt) const = 0;  
+   virtual double ExactResidualNorm(double ExpectAt) const = 0;
 
    // returns the greens function via the DDMRG functional, given the supplied <x|A^2|x>
-   virtual double Functional(double ExpectA2) const = 0; 
+   virtual double Functional(double ExpectA2) const = 0;
 
    // returns the overlap < x | A | y >
    virtual std::complex<double> Overlap() const = 0;

@@ -54,30 +54,30 @@ class Complex
       Complex(real_type const& R, imag_type const& I) : Real_(R), Imag_(I) {}
 
       template <typename U>
-      typename boost::enable_if<is_convertible<U>, real_type>::type 
+      typename boost::enable_if<is_convertible<U>, real_type>::type
       explicit Complex(U const& r) : Real_(r) {}
 
       template <typename U, typename V>
       typename boost::enable_if<boost::mpl::and_<boost::is_convertible<U, real_type>,
-						 boost::is_convertible<V, imag_type> > >::type 
+                                                 boost::is_convertible<V, imag_type> > >::type
 
       template <typename U>
-      typename boost::enable_if<is_convertible<U, real_type> >::type 
+      typename boost::enable_if<is_convertible<U, real_type> >::type
       operator=(U const& x)
       {
-	 real_type Temp(x);
-	 assign(Real_, Temp);
-	 zero(Imag_);
-	 return *this;
+         real_type Temp(x);
+         assign(Real_, Temp);
+         zero(Imag_);
+         return *this;
       }
 
       template <typename U>
-      typename boost::enable_if<is_convertible<U, real_type> >::type 
+      typename boost::enable_if<is_convertible<U, real_type> >::type
       operator=(NoAliasProxy<U> const& x)
       {
-	 assign(Real_, x.value());
-	 zero(Imag_);
-	 return *this;
+         assign(Real_, x.value());
+         zero(Imag_);
+         return *this;
       }
 
       real_type& real() { return Real_; }
@@ -142,7 +142,7 @@ struct StreamInsert<Complex<R, I> >
    result_type operator()(std::ostream& out, second_argument_type const& x) const
       { return out << "{real=" << x.real() << ", imag=" << x.imag() << '}'; }
 };
-   
+
 // assignment
 
 template <typename LHS, typename R, typename I>

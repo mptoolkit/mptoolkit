@@ -44,7 +44,7 @@ int main(int argc, char** argv)
          ("count,c", prog_opt::value(&Count), "Count of m=1 states to make a superposition [default 10]")
          ("out,o", prog_opt::value(&OutFile), "Output file (required)")
          ("beta,b", prog_opt::value(&Beta), "Inverse temperature for monte-carlo sampling [default 3]")
-         ("seed,s", prog_opt::value<unsigned int>(), 
+         ("seed,s", prog_opt::value<unsigned int>(),
           ("Random seed [range 0.."+boost::lexical_cast<std::string>(RAND_MAX)+"]").c_str())
          ;
 
@@ -54,11 +54,11 @@ int main(int argc, char** argv)
       p.add("count", 1);
       p.add("out", 1);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).positional(p).run(), vm);
-      prog_opt::notify(vm); 
-   
+      prog_opt::notify(vm);
+
       if (vm.count("help") > 0 || vm.count("lattice") == 0 || vm.count("out") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));

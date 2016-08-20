@@ -43,7 +43,7 @@ struct SuperblockMultiply
    typedef MatrixOperator argument_type;
 
    SuperblockMultiply(MPStateComponent const& Left_,
-		      MPStateComponent const& Right_);
+                      MPStateComponent const& Right_);
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
    {
@@ -55,7 +55,7 @@ struct SuperblockMultiply
 
 inline
 SuperblockMultiply::SuperblockMultiply(MPStateComponent const& Left_,
-				       MPStateComponent const& Right_)
+                                       MPStateComponent const& Right_)
    : Left(Left_), Right(Right_)
 {
 }
@@ -117,37 +117,37 @@ int main(int argc, char** argv)
       std::string TargetQStr;
       std::string HamiltonianStr;
       std::string OutPsiStr;
-      
+
       std::cout.precision(14);
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Hamiltonian,H", prog_opt::value(&HamiltonianStr), 
+         ("Hamiltonian,H", prog_opt::value(&HamiltonianStr),
           "Hamiltonian operator")
-	 ("out,o", prog_opt::value(&OutPsiStr),
-	  "output wavefunction filename")
-	 ("right-sites", prog_opt::value(&NumRightSites),
+         ("out,o", prog_opt::value(&OutPsiStr),
+          "output wavefunction filename")
+         ("right-sites", prog_opt::value(&NumRightSites),
           "number of sites in the right block")
-	 ("iter,i", prog_opt::value<int>(&NumIter), ("Number of Lanczos iterations per step [default "
+         ("iter,i", prog_opt::value<int>(&NumIter), ("Number of Lanczos iterations per step [default "
           +boost::lexical_cast<std::string>(NumIter)+"]").c_str())
-	 ("target,q", prog_opt::value(&TargetQStr), "target quantum number")
-	 ("max-states,m", prog_opt::value<int>(&MaxStates), "Maximum number of states to keep [default 100000]")
+         ("target,q", prog_opt::value(&TargetQStr), "target quantum number")
+         ("max-states,m", prog_opt::value<int>(&MaxStates), "Maximum number of states to keep [default 100000]")
          ("min-states", prog_opt::value<int>(&MinStates), "Minimum number of states to keep [default 50]")
-         ("min-trunc,t", prog_opt::value<double>(&MinTrunc), 
+         ("min-trunc,t", prog_opt::value<double>(&MinTrunc),
           "Minimum desired truncation error (overriden by max-states) [default 0]")
-	 ("mix-factor,f", prog_opt::value<double>(&MixFactor), "Mixing coefficient for the density matrix [default 0.01]")
-	  ;
+         ("mix-factor,f", prog_opt::value<double>(&MixFactor), "Mixing coefficient for the density matrix [default 0.01]")
+          ;
 
       prog_opt::options_description opt;
       opt.add(desc);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("out") == 0 || vm.count("Hamiltonian") == 0) 
+      if (vm.count("help") || vm.count("out") == 0 || vm.count("Hamiltonian") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-idmrg [options]\n";
@@ -157,7 +157,7 @@ int main(int argc, char** argv)
       }
 
       std::cout << "Creating wavefunction from infinite DMRG...\n";
-   
+
       int PageSize = getenv_or_default("MP_PAGESIZE", DEFAULT_PAGE_SIZE);
       long CacheSize = getenv_or_default("MP_CACHESIZE", DEFAULT_PAGE_CACHE_SIZE);
       pheap::Initialize(OutPsiStr, 1, PageSize, CacheSize);
@@ -188,7 +188,7 @@ int main(int argc, char** argv)
 
       // Hamiltonian E matrices
       MPStateComponent Elem = MPStateComponent(Vacuum, LeftVacuumBasis, LeftVacuumBasis);
-      
+
       Elem[0](0,0) = LinearAlgebra::Matrix<double>(1,1,1);
       SuperblockOperator HamMatrices;
       HamMatrices.PushLeft(Elem); // add the vacuum operator, for convenience
@@ -197,7 +197,7 @@ int main(int argc, char** argv)
       Psi.PushLeft(ConstructFromLeftBasis(LeftLatIter->Basis1().Basis(), LeftVacuumBasis));
       Elem = operator_prod(herm(*HamIter),
                            herm(Psi.Left()),
-                           Elem, 
+                           Elem,
                            Psi.Left());
       HamMatrices.PushLeft(Elem);
 
@@ -206,7 +206,7 @@ int main(int argc, char** argv)
       Psi.PushLeft(ConstructFromLeftBasis(LeftLatIter->Basis1().Basis(), Psi.Left().Basis2()));
       Elem = operator_prod(herm(*HamIter),
                            herm(Psi.Left()),
-                           Elem, 
+                           Elem,
                            Psi.Left());
       HamMatrices.PushLeft(Elem);
 
@@ -236,14 +236,14 @@ int main(int argc, char** argv)
          --RHI;
          --RLI;
       }
- 
+
       Psi.PushRight(ConstructFromRightBasis(RightLatIter->Basis1().Basis(), RightVacuumBasis));
       RElem = operator_prod(*RightHamIter,
                             Psi.Right(),
-                            RElem, 
+                            RElem,
                             herm(Psi.Right()));
       HamMatrices.PushRight(RElem);
- 
+
       --RightLatIter;
       --RightHamIter;
 
@@ -253,7 +253,7 @@ int main(int argc, char** argv)
          Psi.PushRight(ConstructFromRightBasis(RightLatIter->Basis1().Basis(), Psi.Right().Basis1()));
          RElem = operator_prod(*RightHamIter,
                                Psi.Right(),
-                               RElem, 
+                               RElem,
                                herm(Psi.Right()));
          HamMatrices.PushRight(RElem);
 
@@ -262,10 +262,10 @@ int main(int argc, char** argv)
       }
 
       TRACE(Psi.Left().Basis2())(Psi.Right().Basis1());
-      
+
       double ThisWeight = (1.0 - 4.0 / Lat.size()) * TargetWeight;
       TRACE(ThisWeight);
-      std::map<QuantumNumbers::QuantumNumber, double> Targets = FindTargetStates(Psi.Left().Basis2(), 
+      std::map<QuantumNumbers::QuantumNumber, double> Targets = FindTargetStates(Psi.Left().Basis2(),
                                                                                  Psi.Right().Basis1(),
                                                                                  ThisWeight);
       for (std::map<QuantumNumbers::QuantumNumber, double>::const_iterator I = Targets.begin(); I != Targets.end(); ++I)
@@ -274,10 +274,10 @@ int main(int argc, char** argv)
       }
 
       Psi.Center() = MakeRandomMatrixOperator(Psi.Left().Basis2(), Psi.Right().Basis1(), Targets.begin()->first);
-      
+
       int Iterations = NumIter;
-      double Energy = Lanczos(Psi.Center(), 
-                              SuperblockMultiply(HamMatrices.Left(), 
+      double Energy = Lanczos(Psi.Center(),
+                              SuperblockMultiply(HamMatrices.Left(),
                                                  HamMatrices.Right()),
                               Iterations);
 
@@ -285,7 +285,7 @@ int main(int argc, char** argv)
 
       // do the next iteration
 
-      
+
       for (int n = 0; n < 4; ++n)
       {
          // extend the left block by one site
@@ -294,7 +294,7 @@ int main(int argc, char** argv)
          Psi.PushLeft(ConstructFromLeftBasis(LeftLatIter->Basis1().Basis(), Psi.Left().Basis2()));
          Elem = operator_prod(herm(*HamIter),
                               herm(Psi.Left()),
-                              Elem, 
+                              Elem,
                               Psi.Left());
          HamMatrices.PushLeft(Elem);
          HamMatrices.PopRight();
@@ -316,19 +316,19 @@ int main(int argc, char** argv)
          RElem = HamMatrices.Right();
          RElem = operator_prod(*RightHamIter,
                                Psi.Right(),
-                               RElem, 
+                               RElem,
                                herm(Psi.Right()));
          HamMatrices.PushRight(RElem);
          --RightLatIter;
          --RightHamIter;
-         
+
          RElem = HamMatrices.Right();
          while (RightLatIter != LeftLatIter)
          {
             Psi.PushRight(ConstructFromRightBasis(RightLatIter->Basis1().Basis(), Psi.Right().Basis1()));
             RElem = operator_prod(*RightHamIter,
                                   Psi.Right(),
-                                  RElem, 
+                                  RElem,
                                   herm(Psi.Right()));
             HamMatrices.PushRight(RElem);
             --RightLatIter;
@@ -348,8 +348,8 @@ int main(int argc, char** argv)
 
       Psi.Center() = MakeRandomMatrixOperator(Psi.Left().Basis2(), Psi.Right().Basis1(), Targets.begin()->first);
       Iterations = NumIter;
-      Energy = Lanczos(Psi.Center(), 
-                       SuperblockMultiply(HamMatrices.Left(), 
+      Energy = Lanczos(Psi.Center(),
+                       SuperblockMultiply(HamMatrices.Left(),
                                           HamMatrices.Right()),
                        Iterations);
       TRACE(Energy);

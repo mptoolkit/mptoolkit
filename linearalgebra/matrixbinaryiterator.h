@@ -32,13 +32,13 @@ namespace LinearAlgebra
 
 
 template <typename Iter1, typename Iter2, typename Func,
-	  typename Cat1 = typename Iter1::category,
-	  typename Cat2 = typename Iter2::category>
+          typename Cat1 = typename Iter1::category,
+          typename Cat2 = typename Iter2::category>
 class MatrixBinaryInnerIterator;
 
 template <typename Iter1, typename Iter2, typename Func,
-	  typename Cat1 = typename Iter1::category,
-	  typename Cat2 = typename Iter2::category>
+          typename Cat1 = typename Iter1::category,
+          typename Cat2 = typename Iter2::category>
 class MatrixBinaryOuterIterator;
 
 template <typename Iter1, typename Iter2, typename Func>
@@ -57,45 +57,45 @@ class MatrixBinaryInnerIterator<Iter1, Iter2, Func, vector_iterator_dense, vecto
       MatrixBinaryInnerIterator() {}
 
       explicit MatrixBinaryInnerIterator(iterator1_type const& i1, iterator2_type const& i2,
-				    functor_type f = functor_type())
-	 : i1_(i1), i2_(i2), f_(f) {}
+                                    functor_type f = functor_type())
+         : i1_(i1), i2_(i2), f_(f) {}
 
-      MatrixBinaryInnerIterator& operator++() 
-	 { ++i1_; ++i2_; return *this; }
+      MatrixBinaryInnerIterator& operator++()
+         { ++i1_; ++i2_; return *this; }
 
-      MatrixBinaryInnerIterator& operator++(int) 
-	 { return MatrixBinaryInnerIterator(i1_++, i2_++, f_); }
+      MatrixBinaryInnerIterator& operator++(int)
+         { return MatrixBinaryInnerIterator(i1_++, i2_++, f_); }
 
-      MatrixBinaryInnerIterator& operator--() 
-	 { --i1_; --i2_; return *this; }
+      MatrixBinaryInnerIterator& operator--()
+         { --i1_; --i2_; return *this; }
 
-      MatrixBinaryInnerIterator& operator--(int) 
-	 { return MatrixBinaryInnerIterator(i1_--, i2_--, f_); }
+      MatrixBinaryInnerIterator& operator--(int)
+         { return MatrixBinaryInnerIterator(i1_--, i2_--, f_); }
 
       MatrixBinaryInnerIterator& operator+=(difference_type n)
-	 { i1_ += n; i2_ += n; return *this; }
+         { i1_ += n; i2_ += n; return *this; }
 
       MatrixBinaryInnerIterator& operator-=(difference_type n)
-	 { i1_ -= n; i2_ -= n; return *this; }
+         { i1_ -= n; i2_ -= n; return *this; }
 
-      size_type index1() const 
+      size_type index1() const
       { DEBUG_CHECK_EQUAL(i1_.index1(), i2_.index1()); return i1_.index1(); }
 
-      size_type index2() const 
+      size_type index2() const
       { DEBUG_CHECK_EQUAL(i1_.index2(), i2_.index2()); return i1_.index2(); }
 
-      reference operator*() const 
-      { 
+      reference operator*() const
+      {
          DEBUG_CHECK_EQUAL(i1_.index1(), i2_.index1());
          DEBUG_CHECK_EQUAL(i1_.index2(), i2_.index2());
-         return f_(*i1_, *i2_); 
+         return f_(*i1_, *i2_);
       }
 
-      pointer operator->() const 
-      { 
-         DEBUG_CHECK_EQUAL(i1_.index1(), i2_.index1()); 
+      pointer operator->() const
+      {
+         DEBUG_CHECK_EQUAL(i1_.index1(), i2_.index1());
          DEBUG_CHECK_EQUAL(i1_.index2(), i2_.index2());
-         return pointer(&f_(*i1_, *i2_)); 
+         return pointer(&f_(*i1_, *i2_));
       }
 
       operator bool() const { return i1_; }
@@ -114,7 +114,7 @@ class MatrixBinaryInnerIterator<Iter1, Iter2, Func, vector_iterator_dense, vecto
       iterator2_type i2_;
       functor_type f_;
 };
-   
+
 template <typename Iter1, typename Iter2, typename Func>
 class MatrixBinaryOuterIterator<Iter1, Iter2, Func, vector_iterator_dense, vector_iterator_dense>
 {
@@ -153,30 +153,30 @@ class MatrixBinaryOuterIterator<Iter1, Iter2, Func, vector_iterator_dense, vecto
       MatrixBinaryOuterIterator() {}
 
       explicit MatrixBinaryOuterIterator(iterator1_type const& i1, iterator2_type const& i2,
-				    functor_type f = functor_type())
-	 : i1_(i1), i2_(i2), f_(f) { }
+                                    functor_type f = functor_type())
+         : i1_(i1), i2_(i2), f_(f) { }
 
-      MatrixBinaryOuterIterator& operator++() 
-	 { ++i1_; ++i2_; return *this; }
+      MatrixBinaryOuterIterator& operator++()
+         { ++i1_; ++i2_; return *this; }
 
-      MatrixBinaryOuterIterator& operator++(int) 
-	 { return MatrixBinaryOuterIterator(i1_++, i2_++, f_); }
+      MatrixBinaryOuterIterator& operator++(int)
+         { return MatrixBinaryOuterIterator(i1_++, i2_++, f_); }
 
-      MatrixBinaryOuterIterator& operator--() 
-	 { --i1_; --i2_; return *this; }
+      MatrixBinaryOuterIterator& operator--()
+         { --i1_; --i2_; return *this; }
 
-      MatrixBinaryOuterIterator& operator--(int) 
-	 { return MatrixBinaryOuterIterator(i1_--, i2_--, f_); }
+      MatrixBinaryOuterIterator& operator--(int)
+         { return MatrixBinaryOuterIterator(i1_--, i2_--, f_); }
 
       MatrixBinaryOuterIterator& operator+=(difference_type n)
-	 { i1_ += n; i2_ += n; return *this; }
+         { i1_ += n; i2_ += n; return *this; }
 
       MatrixBinaryOuterIterator& operator-=(difference_type n)
-	 { i1_ -= n; i2_ -= n; return *this; }
+         { i1_ -= n; i2_ -= n; return *this; }
 
-      size_type index() const 
+      size_type index() const
       { DEBUG_PRECONDITION(bool(i1_));
-        DEBUG_CHECK_EQUAL(i1_.index(), i2_.index()); 
+        DEBUG_CHECK_EQUAL(i1_.index(), i2_.index());
         return i1_.index(); }
 
       reference operator*() const { return transform(*i1_, *i2_, f_); }
@@ -190,7 +190,7 @@ class MatrixBinaryOuterIterator<Iter1, Iter2, Func, vector_iterator_dense, vecto
 
       functor_type const& functor() const { return f_; }
 
-      iterator iterate() const 
+      iterator iterate() const
       { using LinearAlgebra::iterate; return iterator(iterate(i1_), iterate(i2_), f_); }
 
       // derived concepts
@@ -210,7 +210,7 @@ struct Iterate<MatrixBinaryOuterIterator<Iter1, Iter2, Func> >
 {
    typedef typename MatrixBinaryOuterIterator<Iter1, Iter2, Func>::iterator result_type;
    typedef MatrixBinaryOuterIterator<Iter1, Iter2, Func> const& argument_type;
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    { return x.iterate(); }
 };
 

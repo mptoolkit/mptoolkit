@@ -36,7 +36,7 @@
 namespace LinearAlgebra
 {
 
-template <typename Derived> 
+template <typename Derived>
 struct MatrixTraits;
 
 // interface tag for generic matrices
@@ -52,7 +52,7 @@ class GenericMatrix
       typedef typename traits_type::expression_type           expression_type;
 
       typedef GenericMatrixInterface                          interface;
-  
+
       derived_type const& as_derived() const { return static_cast<derived_type const&>(*this); }
 
       size_type size() const { return this->as_derived().size(); }
@@ -79,7 +79,7 @@ std::ostream& operator<<(std::ostream& out, GenericMatrix<Scalar, Derived> const
 
 //
 // is_matrix
-// 
+//
 // traits class to determine if an arbitrary type T is a matrix.
 //
 
@@ -105,7 +105,7 @@ template <typename T>
 struct is_matrix_helper<T, 1> : public boost::mpl::true_
 { };
 
-} // namespace Private   
+} // namespace Private
 
 template <typename T>
 struct is_matrix : public Private::is_matrix_helper<T, sizeof(Private::TestIsMatrix(Private::MakePtr<T>()))>

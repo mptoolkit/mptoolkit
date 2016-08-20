@@ -33,7 +33,7 @@ namespace ops
 // sorts of functions and patch them all together into an ET heirachy?
 template <class Scalar, class D1, class D2>
 DenseMatrix<Scalar> product(RandomAccessMatrix<Scalar const, D1> const& M1, RandomAccessMatrix<Scalar const, D2> const& M2)
-{ 
+{
    PRECONDITION(M1.cols() == M2.rows());
    int Rows = M1.rows();
    int Cols = M2.cols();
@@ -43,9 +43,9 @@ DenseMatrix<Scalar> product(RandomAccessMatrix<Scalar const, D1> const& M1, Rand
    {
       for (int j = 0; j < Cols; ++j)
       {
-	 Scalar Acc = 0;
-	 for (int k = 0; k < Inner; ++k) 
-	    Acc += M1(i,k) * M2(k,j);
+         Scalar Acc = 0;
+         for (int k = 0; k < Inner; ++k)
+            Acc += M1(i,k) * M2(k,j);
          Result(i,j) = Acc;
       }
    }
@@ -57,7 +57,7 @@ DenseMatrix<Scalar> product(RandomAccessMatrix<Scalar const, D1> const& M1, Rand
 // product A * transpose(B)
 template <class Scalar>
 DenseMatrix<Scalar> product_ABt(DenseMatrix<Scalar> const& M1, DenseMatrix<Scalar> const& M2)
-{ 
+{
    PRECONDITION(M1.cols() == M2.cols());
    int Rows = M1.rows();
    int Cols = M2.rows();
@@ -67,9 +67,9 @@ DenseMatrix<Scalar> product_ABt(DenseMatrix<Scalar> const& M1, DenseMatrix<Scala
    {
       for (int j = 0; j < Cols; ++j)
       {
-	 Scalar Acc = 0;
-	 for (int k = 0; k < Inner; ++k) 
-	    Acc += M1(i,k) * M2(j,k);
+         Scalar Acc = 0;
+         for (int k = 0; k < Inner; ++k)
+            Acc += M1(i,k) * M2(j,k);
          Result(i,j) = Acc;
       }
    }
@@ -78,7 +78,7 @@ DenseMatrix<Scalar> product_ABt(DenseMatrix<Scalar> const& M1, DenseMatrix<Scala
 
 template <class Scalar>
 DenseMatrix<Scalar> product_AtB(DenseMatrix<Scalar> const& M1, DenseMatrix<Scalar> const& M2)
-{ 
+{
    PRECONDITION(M1.rows() == M2.rows());
    int Rows = M1.cols();
    int Cols = M2.cols();
@@ -88,9 +88,9 @@ DenseMatrix<Scalar> product_AtB(DenseMatrix<Scalar> const& M1, DenseMatrix<Scala
    {
       for (int j = 0; j < Cols; ++j)
       {
-	 Scalar Acc = 0;
-	 for (int k = 0; k < Inner; ++k) 
-	    Acc += M1(k,i) * M2(k,j);
+         Scalar Acc = 0;
+         for (int k = 0; k < Inner; ++k)
+            Acc += M1(k,i) * M2(k,j);
          Result(i,j) = Acc;
       }
    }
@@ -101,10 +101,10 @@ DenseMatrix<Scalar> product_AtB(DenseMatrix<Scalar> const& M1, DenseMatrix<Scala
 
 // add product A * B
 template <class Scalar, class D2, class D3>
-void add_product_AB(DenseMatrix<Scalar>& Result, 
-		    RandomAccessMatrix<Scalar const, D2> const& M1, 
-		    RandomAccessMatrix<Scalar const, D3> const& M2)
-{ 
+void add_product_AB(DenseMatrix<Scalar>& Result,
+                    RandomAccessMatrix<Scalar const, D2> const& M1,
+                    RandomAccessMatrix<Scalar const, D3> const& M2)
+{
    PRECONDITION(M1.cols() == M2.rows());
    PRECONDITION(Result.rows() == M1.rows());
    PRECONDITION(Result.cols() == M2.cols());
@@ -115,20 +115,20 @@ void add_product_AB(DenseMatrix<Scalar>& Result,
    {
       for (int j = 0; j < Cols; ++j)
       {
-	 Scalar Acc = 0;
-	 for (int k = 0; k < Inner; ++k) 
-	    Acc += M1(i,k) * M2(k,j);
+         Scalar Acc = 0;
+         for (int k = 0; k < Inner; ++k)
+            Acc += M1(i,k) * M2(k,j);
          Result(i,j) += Acc;
       }
    }
 }
 
 template <class Scalar, class D2, class D3>
-void add_product_sAB(DenseMatrix<Scalar>& Result, 
-		     Scalar s, 
-		     RandomAccessMatrix<Scalar const, D2> const& M1, 
-		     RandomAccessMatrix<Scalar const, D3> const& M2)
-{ 
+void add_product_sAB(DenseMatrix<Scalar>& Result,
+                     Scalar s,
+                     RandomAccessMatrix<Scalar const, D2> const& M1,
+                     RandomAccessMatrix<Scalar const, D3> const& M2)
+{
    PRECONDITION(M1.cols() == M2.rows());
    PRECONDITION(Result.rows() == M1.rows());
    PRECONDITION(Result.cols() == M2.cols());
@@ -139,9 +139,9 @@ void add_product_sAB(DenseMatrix<Scalar>& Result,
    {
       for (int j = 0; j < Cols; ++j)
       {
-	 Scalar Acc = 0;
-	 for (int k = 0; k < Inner; ++k) 
-	    Acc += M1(i,k) * M2(k,j);
+         Scalar Acc = 0;
+         for (int k = 0; k < Inner; ++k)
+            Acc += M1(i,k) * M2(k,j);
          Result(i,j) += s * Acc;
       }
    }
@@ -149,9 +149,9 @@ void add_product_sAB(DenseMatrix<Scalar>& Result,
 
 template <class Scalar, class D2, class D3>
 void add_product_ABt(DenseMatrix<Scalar>& Result,
-		     RandomAccessMatrix<Scalar const, D2> const& M1, 
-		     RandomAccessMatrix<Scalar const, D3> const& M2)
-{ 
+                     RandomAccessMatrix<Scalar const, D2> const& M1,
+                     RandomAccessMatrix<Scalar const, D3> const& M2)
+{
    PRECONDITION(M1.cols() == M2.cols());
    PRECONDITION(Result.rows() == M1.rows());
    PRECONDITION(Result.cols() == M2.rows());
@@ -162,9 +162,9 @@ void add_product_ABt(DenseMatrix<Scalar>& Result,
    {
       for (int j = 0; j < Cols; ++j)
       {
-	 Scalar Acc = 0;
-	 for (int k = 0; k < Inner; ++k) 
-	    Acc += M1(i,k) * M2(j,k);
+         Scalar Acc = 0;
+         for (int k = 0; k < Inner; ++k)
+            Acc += M1(i,k) * M2(j,k);
          Result(i,j) += Acc;
       }
    }
@@ -172,11 +172,11 @@ void add_product_ABt(DenseMatrix<Scalar>& Result,
 
 // add product s * A * transpose(B)
 template <class Scalar, class D2, class D3>
-void add_product_sABt(DenseMatrix<Scalar>& Result, 
-		      Scalar s, 
-		      RandomAccessMatrix<Scalar const, D2> const& M1, 
-		      RandomAccessMatrix<Scalar const, D3> const& M2)
-{ 
+void add_product_sABt(DenseMatrix<Scalar>& Result,
+                      Scalar s,
+                      RandomAccessMatrix<Scalar const, D2> const& M1,
+                      RandomAccessMatrix<Scalar const, D3> const& M2)
+{
    PRECONDITION(M1.cols() == M2.cols());
    PRECONDITION(Result.rows() == M1.rows());
    PRECONDITION(Result.cols() == M2.rows());
@@ -187,9 +187,9 @@ void add_product_sABt(DenseMatrix<Scalar>& Result,
    {
       for (int j = 0; j < Cols; ++j)
       {
-	 Scalar Acc = 0;
-	 for (int k = 0; k < Inner; ++k) 
-	    Acc += M1(i,k) * M2(j,k);
+         Scalar Acc = 0;
+         for (int k = 0; k < Inner; ++k)
+            Acc += M1(i,k) * M2(j,k);
          Result(i,j) += s * Acc;
       }
    }
@@ -199,11 +199,11 @@ void add_product_sABt(DenseMatrix<Scalar>& Result,
 
 // add product of s * A * B * transpose(C) to Result
 template <class Scalar, class D2, class D3, class D4>
-void add_product_sABCt(DenseMatrix<Scalar>& Result, 
-		       Scalar s,
-		       RandomAccessMatrix<Scalar const, D2> const& A, 
-		       RandomAccessMatrix<Scalar const, D3> const& B, 
-		       RandomAccessMatrix<Scalar const, D4> const& C)
+void add_product_sABCt(DenseMatrix<Scalar>& Result,
+                       Scalar s,
+                       RandomAccessMatrix<Scalar const, D2> const& A,
+                       RandomAccessMatrix<Scalar const, D3> const& B,
+                       RandomAccessMatrix<Scalar const, D4> const& C)
 {
    // implements R(i,l) = A(i,j) * B(j,k) * C(l,k)
    PRECONDITION(Result.rows() == A.rows());
@@ -220,21 +220,21 @@ void add_product_sABCt(DenseMatrix<Scalar>& Result,
    {
       for (int j = 0; j < jsz; ++j)
       {
-	 Scalar Acc = 0;
-	 for (int k = 0; k < ksz; ++k)
-	 {
-	    Acc += B(j,k) * C(l,k);
-	 }
-	 TempBC[j] = Acc;
+         Scalar Acc = 0;
+         for (int k = 0; k < ksz; ++k)
+         {
+            Acc += B(j,k) * C(l,k);
+         }
+         TempBC[j] = Acc;
       }
       for (int i = 0; i < isz; ++i)
       {
-	 Scalar Acc = 0;
-	 for (int j = 0; j < jsz; ++j)
-	 {
-	    Acc += A(i,j) * TempBC[j];
-	 }
-	 Result(i,l) += s * Acc;
+         Scalar Acc = 0;
+         for (int j = 0; j < jsz; ++j)
+         {
+            Acc += A(i,j) * TempBC[j];
+         }
+         Result(i,l) += s * Acc;
       }
    }
 }
@@ -245,11 +245,11 @@ void add_product_sABCt(DenseMatrix<Scalar>& Result,
 
 // add product of s * A * B * transpose(C) to Result
 template <class Scalar, class D2, class D3, class D4>
-void add_product_sABCt(DenseMatrix<Scalar>& Result, 
-		       Scalar s,
-		       Stride1Matrix<Scalar const, D2> const& A, 
-		       Stride1Matrix<Scalar const, D3> const& B, 
-		       Stride1Matrix<Scalar const, D4> const& C)
+void add_product_sABCt(DenseMatrix<Scalar>& Result,
+                       Scalar s,
+                       Stride1Matrix<Scalar const, D2> const& A,
+                       Stride1Matrix<Scalar const, D3> const& B,
+                       Stride1Matrix<Scalar const, D4> const& C)
 {
    // implements R(i,l) = A(i,j) * B(j,k) * C(l,k)
    PRECONDITION(Result.rows() == A.rows());
@@ -274,31 +274,31 @@ void add_product_sABCt(DenseMatrix<Scalar>& Result,
       Scalar const* BPtr = B.data();
       for (int j = 0; j < jsz; ++j)
       {
-	 Scalar const* BP = BPtr;
-	 Scalar Acc = 0;
-	 Scalar const* CP = CPtr;
-	 for (int k = 0; k < ksz; ++k)
-	 {
-      	    Acc += (*BP++) * (*CP++);  // Acc += B(j,k) * C(l,k)
-	 }
-   	 (*TP++) = Acc;      // TempBC[j] = Acc
-	 BPtr += ldB;        // next column of B
+         Scalar const* BP = BPtr;
+         Scalar Acc = 0;
+         Scalar const* CP = CPtr;
+         for (int k = 0; k < ksz; ++k)
+         {
+            Acc += (*BP++) * (*CP++);  // Acc += B(j,k) * C(l,k)
+         }
+         (*TP++) = Acc;      // TempBC[j] = Acc
+         BPtr += ldB;        // next column of B
       }
 
       Scalar* RP = ResultPtr;
       Scalar const* APtr = A.data();
       for (int i = 0; i < isz; ++i)
       {
-	 Scalar const* AP = APtr;
+         Scalar const* AP = APtr;
          Scalar const* TP = &TempBC[0];
-	 Scalar Acc = 0;
-	 for (int j = 0; j < jsz; ++j)
-	 {
-     	    Acc += (*AP++) * (*TP++);   // Acc += A(i,j) * TempBC[j]
-	 }
-    	 *RP += s * Acc;   // Result(i,l) += s * Acc
-	 RP += ldR;        // next row of R
-	 APtr += ldA;
+         Scalar Acc = 0;
+         for (int j = 0; j < jsz; ++j)
+         {
+            Acc += (*AP++) * (*TP++);   // Acc += A(i,j) * TempBC[j]
+         }
+         *RP += s * Acc;   // Result(i,l) += s * Acc
+         RP += ldR;        // next row of R
+         APtr += ldA;
       }
       CPtr += ldC;
       ++ResultPtr; // next column of R
@@ -374,11 +374,11 @@ void add_product_sAtB_blas(int A_cols, int B_rows, int B_cols, double* restrict 
 }
 
 template <class D2, class D3, class D4>
-void product_sABCt(DenseMatrix<double>& Result, 
-		       double s,
-		       Stride1Matrix<double const, D2> const& A, 
-		       Stride1Matrix<double const, D3> const& B, 
-		       Stride1Matrix<double const, D4> const& C)
+void product_sABCt(DenseMatrix<double>& Result,
+                       double s,
+                       Stride1Matrix<double const, D2> const& A,
+                       Stride1Matrix<double const, D3> const& B,
+                       Stride1Matrix<double const, D4> const& C)
 {
   // does R(i,l) = s * A(i,j) * B(j,k) * C(l,k)
    PRECONDITION(Result.rows() == A.rows());
@@ -410,11 +410,11 @@ void product_sABCt(DenseMatrix<double>& Result,
 }
 
 template <class D2, class D3, class D4>
-void add_product_sABCt(DenseMatrix<double>& Result, 
-		       double s,
-		       Stride1Matrix<double const, D2> const& A, 
-		       Stride1Matrix<double const, D3> const& B, 
-		       Stride1Matrix<double const, D4> const& C)
+void add_product_sABCt(DenseMatrix<double>& Result,
+                       double s,
+                       Stride1Matrix<double const, D2> const& A,
+                       Stride1Matrix<double const, D3> const& B,
+                       Stride1Matrix<double const, D4> const& C)
 {
   // does R(i,l) = s * A(i,j) * B(j,k) * C(l,k)
    PRECONDITION(Result.rows() == A.rows());
@@ -448,12 +448,12 @@ void add_product_sABCt(DenseMatrix<double>& Result,
 // This version uses a caller supplied buffer to store the tempoary results.
 // The buffer size must be at least min(B.rows() * C.rows(), A.rows() * B.cols())
 template <class D2, class D3, class D4>
-void add_product_sABCt(DenseMatrix<double>& Result, 
-		       double s,
-		       Stride1Matrix<double const, D2> const& A, 
-		       Stride1Matrix<double const, D3> const& B, 
-		       Stride1Matrix<double const, D4> const& C,
-		       double* TempBC)
+void add_product_sABCt(DenseMatrix<double>& Result,
+                       double s,
+                       Stride1Matrix<double const, D2> const& A,
+                       Stride1Matrix<double const, D3> const& B,
+                       Stride1Matrix<double const, D4> const& C,
+                       double* TempBC)
 {
   // does R(i,l) = s * A(i,j) * B(j,k) * C(l,k)
    PRECONDITION(Result.rows() == A.rows());
@@ -481,31 +481,31 @@ void add_product_sABCt(DenseMatrix<double>& Result,
       Scalar const* BPtr = B.data();
       for (int j = 0; j < jsz; ++j)
       {
-	 Scalar const* BP = BPtr;
-	 Scalar Acc = 0;
-	 Scalar const* CP = CPtr;
-	 for (int k = 0; k < ksz; ++k)
-	 {
-      	    Acc += (*BP++) * (*CP++);  // Acc += B(j,k) * C(l,k)
-	 }
-   	 (*TP++) = Acc;      // TempBC[j] = Acc
-	 BPtr += ldB;        // next column of B
+         Scalar const* BP = BPtr;
+         Scalar Acc = 0;
+         Scalar const* CP = CPtr;
+         for (int k = 0; k < ksz; ++k)
+         {
+            Acc += (*BP++) * (*CP++);  // Acc += B(j,k) * C(l,k)
+         }
+         (*TP++) = Acc;      // TempBC[j] = Acc
+         BPtr += ldB;        // next column of B
       }
 
       Scalar* RP = ResultPtr;
       Scalar const* APtr = A.data();
       for (int i = 0; i < isz; ++i)
       {
-	 Scalar const* AP = APtr;
+         Scalar const* AP = APtr;
          Scalar const* TP = &TempBC[0];
-	 Scalar Acc = 0;
-	 for (int j = 0; j < jsz; ++j)
-	 {
-     	    Acc += (*AP++) * (*TP++);   // Acc += A(i,j) * TempBC[j]
-	 }
-    	 *RP += s * Acc;   // Result(i,l) += s * Acc
-	 RP += ldR;        // next row of R
-	 APtr += ldA;
+         Scalar Acc = 0;
+         for (int j = 0; j < jsz; ++j)
+         {
+            Acc += (*AP++) * (*TP++);   // Acc += A(i,j) * TempBC[j]
+         }
+         *RP += s * Acc;   // Result(i,l) += s * Acc
+         RP += ldR;        // next row of R
+         APtr += ldA;
       }
       CPtr += ldC;
       ++ResultPtr; // next column of R
@@ -529,10 +529,10 @@ void add_product_sABCt(DenseMatrix<double>& Result,
 }
 
 template <class D2, class D3>
-void add_product_AB(DenseMatrix<double>& Result, 
-		    Stride1Matrix<double const, D2> const& M1, 
-		    Stride1Matrix<double const, D3> const& M2)
-{ 
+void add_product_AB(DenseMatrix<double>& Result,
+                    Stride1Matrix<double const, D2> const& M1,
+                    Stride1Matrix<double const, D3> const& M2)
+{
    PRECONDITION(M1.cols() == M2.rows());
    PRECONDITION(Result.rows() == M1.rows());
    PRECONDITION(Result.cols() == M2.cols());
@@ -540,11 +540,11 @@ void add_product_AB(DenseMatrix<double>& Result,
 }
 
 template <class D2, class D3>
-void add_product_sAB(DenseMatrix<double>& Result, 
-		     double s,
-		     Stride1Matrix<double const, D2> const& M1, 
-		     Stride1Matrix<double const, D3> const& M2)
-{ 
+void add_product_sAB(DenseMatrix<double>& Result,
+                     double s,
+                     Stride1Matrix<double const, D2> const& M1,
+                     Stride1Matrix<double const, D3> const& M2)
+{
    PRECONDITION(M1.cols() == M2.rows());
    PRECONDITION(Result.rows() == M1.rows());
    PRECONDITION(Result.cols() == M2.cols());
@@ -552,10 +552,10 @@ void add_product_sAB(DenseMatrix<double>& Result,
 }
 
 template <class D2, class D3>
-void add_product_ABt(DenseMatrix<double>& Result, 
-		     Stride1Matrix<double const, D2> const& M1, 
-		     Stride1Matrix<double const, D3> const& M2)
-{ 
+void add_product_ABt(DenseMatrix<double>& Result,
+                     Stride1Matrix<double const, D2> const& M1,
+                     Stride1Matrix<double const, D3> const& M2)
+{
    PRECONDITION(M1.cols() == M2.cols());
    PRECONDITION(Result.rows() == M1.rows());
    PRECONDITION(Result.cols() == M2.rows());
@@ -563,11 +563,11 @@ void add_product_ABt(DenseMatrix<double>& Result,
 }
 
 template <class D2, class D3>
-void add_product_sABt(DenseMatrix<double>& Result, 
-		      double s,
-		      Stride1Matrix<double const, D2> const& M1, 
-		      Stride1Matrix<double const, D3> const& M2)
-{ 
+void add_product_sABt(DenseMatrix<double>& Result,
+                      double s,
+                      Stride1Matrix<double const, D2> const& M1,
+                      Stride1Matrix<double const, D3> const& M2)
+{
    PRECONDITION(M1.cols() == M2.cols());
    PRECONDITION(Result.rows() == M1.rows());
    PRECONDITION(Result.cols() == M2.rows());
@@ -575,11 +575,11 @@ void add_product_sABt(DenseMatrix<double>& Result,
 }
 
 template <class D2, class D3>
-void add_product_sAtB(DenseMatrix<double>& Result, 
-		      double s,
-		      Stride1Matrix<double const, D2> const& M1, 
-		      Stride1Matrix<double const, D3> const& M2)
-{ 
+void add_product_sAtB(DenseMatrix<double>& Result,
+                      double s,
+                      Stride1Matrix<double const, D2> const& M1,
+                      Stride1Matrix<double const, D3> const& M2)
+{
    PRECONDITION(M1.rows() == M2.rows());
    PRECONDITION(Result.rows() == M1.cols());
    PRECONDITION(Result.cols() == M2.cols());
@@ -587,10 +587,10 @@ void add_product_sAtB(DenseMatrix<double>& Result,
 }
 
 template <class D2, class D3>
-void product_sABt(DenseMatrix<double>& Result, 
-		  double s,
-		  Stride1Matrix<double const, D2> const& M1, 
-		  Stride1Matrix<double const, D3> const& M2)
+void product_sABt(DenseMatrix<double>& Result,
+                  double s,
+                  Stride1Matrix<double const, D2> const& M1,
+                  Stride1Matrix<double const, D3> const& M2)
 {
    PRECONDITION(M1.cols() == M2.cols());
    PRECONDITION(Result.rows() == M1.rows());
@@ -599,11 +599,11 @@ void product_sABt(DenseMatrix<double>& Result,
 }
 
 template <class D2, class D3>
-void product_sAtB(DenseMatrix<double>& Result, 
-		      double s,
-		      Stride1Matrix<double const, D2> const& M1, 
-		      Stride1Matrix<double const, D3> const& M2)
-{ 
+void product_sAtB(DenseMatrix<double>& Result,
+                      double s,
+                      Stride1Matrix<double const, D2> const& M1,
+                      Stride1Matrix<double const, D3> const& M2)
+{
    PRECONDITION(M1.rows() == M2.rows());
    PRECONDITION(Result.rows() == M1.cols());
    PRECONDITION(Result.cols() == M2.cols());

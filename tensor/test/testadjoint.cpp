@@ -40,7 +40,7 @@ int main()
    C(0,1)    = sqrt(2.0);
    C(1,2)    = 1.0;
 
-   // and the creation operator   
+   // and the creation operator
    IrredTensor<double> CH(HubbardBasis, QN(1, 0.5));
    CH(1,0)    = 1.0;
    CH(2,1)    = -sqrt(2.0);

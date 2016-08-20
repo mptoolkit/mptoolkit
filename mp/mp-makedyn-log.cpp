@@ -50,7 +50,7 @@ int main(int argc, char** argv)
    (*System.mutate())[OutName] = Real + std::complex<double>(0.0, 1.0) * Imag;
 
    OutName = std::string("GL2_H(") + argv[3] + "," + argv[4] + ")";
-   (*System.mutate())[OutName] = prod(Real, Real, Real.TransformsAs()) + 
+   (*System.mutate())[OutName] = prod(Real, Real, Real.TransformsAs()) +
       prod(Imag, Imag, Imag.TransformsAs());
 
    pheap::ShutdownPersistent(System);

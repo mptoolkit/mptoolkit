@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include <iostream> 
+#include <iostream>
 #include <vector>
 #include <boost/timer.hpp>
 #include "linearalgebra/sparsematrix.h"
@@ -45,20 +45,20 @@ int main(int argc, char** argv)
   Matrix<float> m3(nrows, ncols, 0);
   Matrix<float> r3(1, nrows);
   Matrix<float> v3(ncols, 1, 0.0);
-  
+
   for (float pctNZ = .1; pctNZ < 1.0; pctNZ += .1) {
 
     // Initialize matrices
     // Values don't matter except for % NZ
-    for (size_t i = 0; i < nrows; ++i) 
-      for (size_t j = 0; j < ncols; ++j) 
+    for (size_t i = 0; i < nrows; ++i)
+      for (size_t j = 0; j < ncols; ++j)
          if (float(rand()%10)/10.0 < (pctNZ * 0.01)) m(i,j) = 1.0;
-    
+
     // Initialize RHS std::vectors
     // Values don't matter
-    for (size_t i = 0; i < ncols; ++i) 
+    for (size_t i = 0; i < ncols; ++i)
       v[i] = vv[i] = i;
-  
+
     cout << pctNZ << " ";
 
     // library multiplication
@@ -75,13 +75,13 @@ int main(int argc, char** argv)
        }
     }
     cout << 1000 * (t.elapsed() / ntrials);
-    
+
     // Straight naive multiplication
     t.restart();
     for (size_t n = 0; n < ntrials; ++n)
       for (size_t i = 0; i < nrows; ++i)
-	for (size_t j = 0; j < ncols; ++j)
-	  r2[i] += vm[i][j] * vv[j];
+        for (size_t j = 0; j < ncols; ++j)
+          r2[i] += vm[i][j] * vv[j];
     cout << " " << 1000 * (t.elapsed() / ntrials);
 
   // dense

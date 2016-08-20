@@ -49,7 +49,7 @@ class DiagonalMatrix : public MatrixBase<DiagonalMatrix<T> >
 
       typedef is_mutable_proxy<data_type> proxy;
       typedef is_const_proxy<data_type> const_proxy;
-      typedef is_immediate<data_type> immediate; 
+      typedef is_immediate<data_type> immediate;
 
       typedef typename make_value<T>::type           value_type;
       typedef typename make_reference<T>::type       reference;
@@ -60,12 +60,12 @@ class DiagonalMatrix : public MatrixBase<DiagonalMatrix<T> >
 
       template <typename U>
       DiagonalMatrix(DiagonalMatrix<U> const& Other)
-	 : data_(Other.diagonal()) {}
+         : data_(Other.diagonal()) {}
 
       template <typename U>
       DiagonalMatrix(U const& Other, typename Assign<DiagonalMatrix<T>&, U>::result_type* dummy=0)
       {
-	 assign(*this, Other);
+         assign(*this, Other);
       }
 
       DiagonalMatrix(size_type s) : data_(s) { }
@@ -78,15 +78,15 @@ class DiagonalMatrix : public MatrixBase<DiagonalMatrix<T> >
 
       // initialization from the diagonal vector
       explicit DiagonalMatrix(diagonal_type const& diag)
-	 : data_(diag) {}
-      
+         : data_(diag) {}
+
       size_type size1() const { return size(data_); }
       size_type size2() const { return size(data_); }
 
       DiagonalMatrix& operator=(DiagonalMatrix const& x)
       {
-	 data_ = x.data_;
-	 return *this;
+         data_ = x.data_;
+         return *this;
       }
 
       diagonal_type const& diagonal() const { return data_; }
@@ -94,8 +94,8 @@ class DiagonalMatrix : public MatrixBase<DiagonalMatrix<T> >
 
       void resize(size_type s1, size_type s2)
       {
-	 DEBUG_CHECK_EQUAL(s1, s2);
-	 data_.resize(s1);
+         DEBUG_CHECK_EQUAL(s1, s2);
+         data_.resize(s1);
       }
 
    private:
@@ -341,7 +341,7 @@ struct MatrixMatrixMultiplication<DiagonalMatrix<S>, DiagonalMatrix<T>, F,
 //
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
-struct MatrixDirectProduct<DiagonalMatrix<S>, DiagonalMatrix<T>, F, 
+struct MatrixDirectProduct<DiagonalMatrix<S>, DiagonalMatrix<T>, F,
                            Concepts::DiagonalMatrix<Sv, Si>, Concepts::DiagonalMatrix<Tv, Ti>>
 {
    typedef typename F::result_type ValType;

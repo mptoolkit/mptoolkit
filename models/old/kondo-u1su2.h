@@ -32,7 +32,7 @@ LatticeSite CreateU1SU2KondoSite(std::string const& Sym1 = "N", std::string cons
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":SU(2)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
-   SiteOperator C, CH, P, R, N, S, Sf, Sc, ScSf, I, Hu, Pdouble, 
+   SiteOperator C, CH, P, R, N, S, Sf, Sc, ScSf, I, Hu, Pdouble,
       Ep, Em, Ns, Nh, Pg, CP, CHP;
    LatticeSite Site;
 
@@ -62,7 +62,7 @@ LatticeSite CreateU1SU2KondoSite(std::string const& Sym1 = "N", std::string cons
    C("empty",  "triplet")    =  sqrt(1.5);
    C("singlet", "double")    = -1.0;
    C("triplet", "double")    =  1.0;
-   
+
    // create fermion
    CH = adjoint(C);
 
@@ -85,7 +85,7 @@ LatticeSite CreateU1SU2KondoSite(std::string const& Sym1 = "N", std::string cons
    R("singlet", "singlet")    =  1;
    R("triplet", "triplet")    =  1;
    R("double", "double")      = -1;
- 
+
    // particle number
    N("singlet", "singlet")    =  1;
    N("triplet", "triplet")    =  1;
@@ -107,7 +107,7 @@ LatticeSite CreateU1SU2KondoSite(std::string const& Sym1 = "N", std::string cons
    I("double", "double")      =  1;
 
    Pg = I - Pdouble; // Gutzwiller projector
-   
+
    // S
    S("empty",   "empty")     = std::sqrt(0.75);
    S("double",  "double")    = std::sqrt(0.75);

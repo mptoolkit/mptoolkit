@@ -49,7 +49,7 @@ struct SuperblockMultiply
    MPMatrix const& F;
 };
 
-// When sweeping to the right, HFull is the Hamiltonian for AFull.Basis1(), 
+// When sweeping to the right, HFull is the Hamiltonian for AFull.Basis1(),
 // UKeep, UEnv are the the kept and environment projectors for AFull.Basis2().
 //
 // When sweeping to the left, HFull is the Hamiltonian for AFull.Basis2(),
@@ -119,9 +119,9 @@ struct DMRG
    // A nice improvement here would be to promote KeepList states from the
    // environment, if possible.  But this is messy.
    std::pair<MatrixOperator, MatrixOperator>
-   ConstructSplitTruncator(MatrixOperator const& Rho, 
-			   std::set<QuantumNumbers::QuantumNumber> const& AddedQN,
-			   TruncationInfo& Info);
+   ConstructSplitTruncator(MatrixOperator const& Rho,
+                           std::set<QuantumNumbers::QuantumNumber> const& AddedQN,
+                           TruncationInfo& Info);
 
    void debug_check_structure() const;
 
@@ -161,32 +161,32 @@ double DMRG::Solve(MPMatrix const& HLeft, MatrixOperator& C, MPMatrix const& HRi
    // sign of the eigenvector
    if (inner_prod(CSave, C).real() < 0)
       C *= -1.0;
-   
+
    return Energy;
 }
 
 std::pair<MatrixOperator, MatrixOperator>
-DMRG::ConstructSplitTruncator(MatrixOperator const& Rho, 
-			      std::set<QuantumNumbers::QuantumNumber> const& AddedQN,
-			      TruncationInfo& Info)
+DMRG::ConstructSplitTruncator(MatrixOperator const& Rho,
+                              std::set<QuantumNumbers::QuantumNumber> const& AddedQN,
+                              TruncationInfo& Info)
 {
    DensityMatrix<MatrixOperator> DM(Rho);
    DensityMatrix<MatrixOperator>::const_iterator DMPivot =
-      TruncateFixTruncationErrorAbsolute(DM.begin(), 
-					 DM.end(),
-					 MinStates,
-					 MaxStates,
-					 MinTrunc, 
-					 Info);
+      TruncateFixTruncationErrorAbsolute(DM.begin(),
+                                         DM.end(),
+                                         MinStates,
+                                         MaxStates,
+                                         MinTrunc,
+                                         Info);
    std::list<EigenInfo> KeepStates(DM.begin(), DMPivot);
    std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
-   UpdateKeepList(State.KeepList, 
-		  AddedQN,
-		  DM.Basis(),
-		  KeepStates,
-		  DiscardStates,
-		  Info);
-   
+   UpdateKeepList(State.KeepList,
+                  AddedQN,
+                  DM.Basis(),
+                  KeepStates,
+                  DiscardStates,
+                  Info);
+
    MatrixOperator UKeep = DM.ConstructTruncator(KeepStates.begin(), KeepStates.end());
    MatrixOperator UDiscard = DM.ConstructTruncator(DiscardStates.begin(), DiscardStates.end());
    return std::pair<MatrixOperator, MatrixOperator>(UKeep, UDiscard);
@@ -220,10 +220,10 @@ void DMRG::DoIterationMoveRight()
    }
    MatrixOperator UKeep, UDiscard;
    TruncationInfo Info;
-   std::tie(UKeep, UDiscard) = 
-      this->ConstructSplitTruncator(Rho, 
-				    QuantumNumbersInBasis(adjoint(Psi.SiteBasis())), 
-				    Info);
+   std::tie(UKeep, UDiscard) =
+      this->ConstructSplitTruncator(Rho,
+                                    QuantumNumbersInBasis(adjoint(Psi.SiteBasis())),
+                                    Info);
 
    TRACE(Info.TruncationError());
 
@@ -232,7 +232,7 @@ void DMRG::DoIterationMoveRight()
 
    // prepare for truncation of the environment
    MatrixOperator CEnv = ExpandBasis2(Env);
-   
+
    // Merge the discarded basis with the expanded environment basis
    DiagonalProjection UComDiscard, UComEnv;
    std::tie(UComDiscard, UComEnv) = basis_sum(PsiDiscard.Basis1(), CEnv.Basis1());
@@ -271,13 +271,13 @@ void DMRG::DoIterationMoveRight()
    // Truncate the remainder, this becomes the new environment
    DensityMatrix<MatrixOperator> RemDM(RhoRem);
    TruncationInfo RemInfo;
-   MatrixOperator RemTrunc = RemDM.ConstructTruncator(RemDM.begin(), 
-	     TruncateFixKeptWeight(RemDM.begin(),
-				   RemDM.end(),
-				   EnvMinStates,
-				   EnvMaxStates,
-				   EnvKeptWeight,
-				   RemInfo));
+   MatrixOperator RemTrunc = RemDM.ConstructTruncator(RemDM.begin(),
+             TruncateFixKeptWeight(RemDM.begin(),
+                                   RemDM.end(),
+                                   EnvMinStates,
+                                   EnvMaxStates,
+                                   EnvKeptWeight,
+                                   RemInfo));
 
    // Truncate the environment
    Rem = RemTrunc*Rem;
@@ -363,10 +363,10 @@ void DMRG::DoIterationMoveLeft()
    }
    MatrixOperator UKeep, UDiscard;
    TruncationInfo Info;
-   std::tie(UKeep, UDiscard) = 
-      this->ConstructSplitTruncator(Rho, 
-				    QuantumNumbersInBasis(adjoint(Psi.SiteBasis())), 
-				    Info);
+   std::tie(UKeep, UDiscard) =
+      this->ConstructSplitTruncator(Rho,
+                                    QuantumNumbersInBasis(adjoint(Psi.SiteBasis())),
+                                    Info);
 
    TRACE(Info.TruncationError());
 
@@ -375,7 +375,7 @@ void DMRG::DoIterationMoveLeft()
 
    // prepare for truncation of the environment
    MatrixOperator CEnv = ExpandBasis1(Env);
-   
+
    // Merge the discarded basis with the expanded environment basis
    DiagonalProjection UComDiscard, UComEnv;
    std::tie(UComDiscard, UComEnv) = basis_sum(PsiDiscard.Basis2(), CEnv.Basis2());
@@ -414,13 +414,13 @@ void DMRG::DoIterationMoveLeft()
    // Truncate the remainder, this becomes the new environment
    DensityMatrix<MatrixOperator> RemDM(RhoRem);
    TruncationInfo RemInfo;
-   MatrixOperator RemTrunc = RemDM.ConstructTruncator(RemDM.begin(), 
-	     TruncateFixKeptWeight(RemDM.begin(),
-				   RemDM.end(),
-				   EnvMinStates,
-				   EnvMaxStates,
-				   EnvKeptWeight,
-				   RemInfo));
+   MatrixOperator RemTrunc = RemDM.ConstructTruncator(RemDM.begin(),
+             TruncateFixKeptWeight(RemDM.begin(),
+                                   RemDM.end(),
+                                   EnvMinStates,
+                                   EnvMaxStates,
+                                   EnvKeptWeight,
+                                   RemInfo));
 
    // Truncate the environment
    Rem = Rem*herm(RemTrunc);

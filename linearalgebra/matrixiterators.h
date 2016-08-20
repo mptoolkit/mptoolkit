@@ -63,17 +63,17 @@ class IterAdaptorBase
       IterAdaptorBase operator--(int);
 
       IterAdaptorBase& operator+=(difference_type n)
-	 { I_ += n; return this->self(); }
+         { I_ += n; return this->self(); }
 
       IterAdaptorBase& operator-=(difference_type n)
-	 { I_ -= n; return this->self(); }
+         { I_ -= n; return this->self(); }
 
       reference operator*() const { return *I_; }
 
       pointer operator->() const { return I_.operator->(); }
 
       reference operator[](difference_type n) const
-	 { return I_[n]; }
+         { return I_[n]; }
 
       operator bool() const { return I_; }
 
@@ -217,10 +217,10 @@ class MatrixDummyOuterIterator
 
       MatrixDummyOuterIterator(iterator const& i, bool end) : i_(i), end_(end) {}
 
-      MatrixDummyOuterIterator& operator++() 
+      MatrixDummyOuterIterator& operator++()
       { DEBUG_CHECK(!end_); end_ = true; return *this; }
 
-      MatrixDummyOuterIterator operator++(int) 
+      MatrixDummyOuterIterator operator++(int)
       { DEBUG_CHECK(!end_); return MatrixDummyOuterIterator(i_, true); }
 
       operator bool() const { return !end_; }
@@ -247,7 +247,7 @@ class MatrixOuterIterator<Iter, RowMajor> : public Iter
 
       typedef typename Iter::reference reference;
       typedef typename Iter::category category;
-      typedef typename Iterate<typename reference_to_arg<reference>::type>::result_type 
+      typedef typename Iterate<typename reference_to_arg<reference>::type>::result_type
       inner_vector_iterator;
       typedef MatrixInnerIterator<inner_vector_iterator, RowMajor, category> iterator;
 
@@ -260,8 +260,8 @@ class MatrixOuterIterator<Iter, RowMajor> : public Iter
 
       size_type index1() const { return this->index(); }
 
-      iterator iterate() const 
-      { using LinearAlgebra::iterate; 
+      iterator iterate() const
+      { using LinearAlgebra::iterate;
       return iterator(iterate(this->operator*()), this->index()); }
 };
 
@@ -273,7 +273,7 @@ class MatrixOuterIterator<Iter, ColMajor> : public Iter
 
       typedef typename Iter::reference reference;
       typedef typename Iter::category category;
-      typedef typename Iterate<typename reference_to_arg<reference>::type>::result_type 
+      typedef typename Iterate<typename reference_to_arg<reference>::type>::result_type
       inner_vector_iterator;
       typedef MatrixInnerIterator<inner_vector_iterator, ColMajor, category> iterator;
 
@@ -286,8 +286,8 @@ class MatrixOuterIterator<Iter, ColMajor> : public Iter
 
       size_type index2() const { return this->index(); }
 
-      iterator iterate() const 
-      { using LinearAlgebra::iterate; 
+      iterator iterate() const
+      { using LinearAlgebra::iterate;
         return iterator(iterate(this->operator*()), this->index()); }
 };
 
@@ -296,53 +296,53 @@ class MatrixOuterIterator<Iter, ColMajor> : public Iter
 //
 
 template <typename Iter, typename OuterCategory>
-class MatrixInnerIterator<Iter, RowMajor, OuterCategory> 
+class MatrixInnerIterator<Iter, RowMajor, OuterCategory>
    : public IterAdaptorBase<Iter,  MatrixInnerIterator<Iter, RowMajor, OuterCategory> >
 {
    public:
-      typedef IterAdaptorBase<Iter, 
-			      MatrixInnerIterator<Iter, RowMajor, OuterCategory> > base_type;
+      typedef IterAdaptorBase<Iter,
+                              MatrixInnerIterator<Iter, RowMajor, OuterCategory> > base_type;
       typedef typename get_matrix_category<OuterCategory, typename Iter::category>::type
           category;
 
       MatrixInnerIterator() {}
 
-      MatrixInnerIterator(Iter const& i, size_type Index1) 
-	 : base_type(i), Index1_(Index1) {}
+      MatrixInnerIterator(Iter const& i, size_type Index1)
+         : base_type(i), Index1_(Index1) {}
 
       template <typename U>
       MatrixInnerIterator(U const& i, size_type Index1) : base_type(i), Index1_(Index1) {}
 
       size_type index1() const { return Index1_; }
       size_type index2() const { return this->index(); }
-   
+
    private:
       size_type Index1_;
 };
 
 template <typename Iter, typename OuterCategory>
-class MatrixInnerIterator<Iter, ColMajor, OuterCategory> 
+class MatrixInnerIterator<Iter, ColMajor, OuterCategory>
    : public IterAdaptorBase<Iter, MatrixInnerIterator<Iter, ColMajor, OuterCategory> >
 {
    public:
       BOOST_MPL_ASSERT_NOT((is_proxy_reference<Iter>));
 
-      typedef IterAdaptorBase<Iter, 
-			      MatrixInnerIterator<Iter, ColMajor, OuterCategory> > base_type;
+      typedef IterAdaptorBase<Iter,
+                              MatrixInnerIterator<Iter, ColMajor, OuterCategory> > base_type;
       typedef typename get_matrix_category<OuterCategory, typename Iter::category>::type
           category;
 
       MatrixInnerIterator() {}
 
-      MatrixInnerIterator(Iter const& i, size_type Index2) 
-	 : base_type(i), Index2_(Index2) {}
+      MatrixInnerIterator(Iter const& i, size_type Index2)
+         : base_type(i), Index2_(Index2) {}
 
       template <typename U>
       MatrixInnerIterator(U const& i, size_type Index2) : base_type(i), Index2_(Index2) {}
 
       size_type index1() const { return this->index(); }
       size_type index2() const { return Index2_; }
-   
+
    private:
       size_type Index2_;
 };

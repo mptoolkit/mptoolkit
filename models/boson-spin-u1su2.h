@@ -26,11 +26,11 @@
 
 void SetMatElement(SiteOperator& s, int n1, int s1, int n2, int s2, double x)
 {
-   std::string q1 = boost::lexical_cast<std::string>(n1) 
+   std::string q1 = boost::lexical_cast<std::string>(n1)
       + "," + boost::lexical_cast<std::string>(s1);
-   std::string q2 = boost::lexical_cast<std::string>(n2) 
+   std::string q2 = boost::lexical_cast<std::string>(n2)
       + "," + boost::lexical_cast<std::string>(s2);
-   
+
    int l1 = s.Basis1().LookupOrNeg(q1);
    int l2 = s.Basis2().LookupOrNeg(q2);
 
@@ -39,13 +39,13 @@ void SetMatElement(SiteOperator& s, int n1, int s1, int n2, int s2, double x)
 }
 
 inline
-LatticeSite CreateU1SU2BoseHubbardSite(int MaxN, int MaxS, 
-				     std::string const& Sym1 = "N", 
-				     std::string const& Sym2 = "S")
+LatticeSite CreateU1SU2BoseHubbardSite(int MaxN, int MaxS,
+                                     std::string const& Sym1 = "N",
+                                     std::string const& Sym2 = "S")
 {
    // The matrix elements for BH are only defined up to N=5
-   CHECK(MaxN <= 5 && MaxS <= 5); 
-   
+   CHECK(MaxN <= 5 && MaxS <= 5);
+
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":SU(2)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
@@ -57,8 +57,8 @@ LatticeSite CreateU1SU2BoseHubbardSite(int MaxN, int MaxS,
    {
       for (int s = n%2; s <= std::min(n, MaxS); s += 2)
       {
-	 std::string q = boost::lexical_cast<std::string>(n) 
-	    + "," + boost::lexical_cast<std::string>(s);
+         std::string q = boost::lexical_cast<std::string>(n)
+            + "," + boost::lexical_cast<std::string>(s);
          Basis.push_back(q, QN(n,s));
       }
    }
@@ -112,10 +112,10 @@ LatticeSite CreateU1SU2BoseHubbardSite(int MaxN, int MaxS,
       {
          SiteOperator X(Basis, QN(0,0), LatticeCommute::Bosonic);
          SetMatElement(X, n, s, n, s, 1);
-	 std::string OpName = std::string("P(")
-	    + boost::lexical_cast<std::string>(n) + "," 
-	    + boost::lexical_cast<std::string>(s) + ")";
-	 Site[OpName] = X;
+         std::string OpName = std::string("P(")
+            + boost::lexical_cast<std::string>(n) + ","
+            + boost::lexical_cast<std::string>(s) + ")";
+         Site[OpName] = X;
       }
    }
 

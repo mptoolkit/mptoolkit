@@ -97,8 +97,8 @@ class OperatorDescriptions
 
          OperatorDescProxy const& operator()(std::string const& Name,
                                              std::string const& Desc,
-					     std::string const& Condition) const
-	 {
+                                             std::string const& Condition) const
+         {
             if (Index.find(Name) == Index.end())
             {
                Index[Name] = Descriptions.size();
@@ -113,9 +113,9 @@ class OperatorDescriptions
 
          OperatorDescProxy const& operator()(std::string const& Name,
                                              std::string const& Desc,
-					     std::string const& Condition,
-					     std::function<bool()> Test) const
-	 {
+                                             std::string const& Condition,
+                                             std::function<bool()> Test) const
+         {
             if (Index.find(Name) == Index.end())
             {
                Index[Name] = Descriptions.size();
@@ -202,10 +202,10 @@ std::ostream& operator<<(std::ostream& out, OperatorDescriptions const& d)
    {
       if (!std::get<2>(*I).empty() || std::get<3>(*I))
       {
-	 Conditions.insert(std::get<2>(*I));
+         Conditions.insert(std::get<2>(*I));
       }
       else
-	 out << std::setw(10) << std::left << std::get<0>(*I) << " - " << std::get<1>(*I) << '\n';
+         out << std::setw(10) << std::left << std::get<0>(*I) << " - " << std::get<1>(*I) << '\n';
    }
    // iterate over the possible conditions
    for (std::string const& m : Conditions)
@@ -213,10 +213,10 @@ std::ostream& operator<<(std::ostream& out, OperatorDescriptions const& d)
       out << "\nOperators conditional on: " << m << "\n";
       for (OperatorDescriptions::const_iterator I = d.begin(); I != d.end(); ++I)
       {
-	 if (std::get<2>(*I) == m && (!m.empty() || std::get<3>(*I)))
-	 {
-	    out << std::setw(10) << std::left << std::get<0>(*I) << " - " << std::get<1>(*I) << '\n';
-	 }
+         if (std::get<2>(*I) == m && (!m.empty() || std::get<3>(*I)))
+         {
+            out << std::setw(10) << std::left << std::get<0>(*I) << " - " << std::get<1>(*I) << '\n';
+         }
       }
    }
 

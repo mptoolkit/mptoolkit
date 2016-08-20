@@ -59,9 +59,9 @@ class Polynomial
 
       // initialize as a constant polynomial
       explicit Polynomial(coefficient_type const& c);
-      
+
       coefficient_type& operator[](int n) { return data_[n]; }
- 
+
       // returns the coefficient of the term x^n, or a default constructed coefficient
       // if the term is zero
       coefficient_type coefficient(int n) const;
@@ -144,7 +144,7 @@ struct OneMinusTransfer
    MatrixOperator operator()(MatrixOperator const& x) const
    {
       MatrixOperator r = x-Scale_*operator_prod(herm(Psi_), x, Psi_);
-      //      MatrixOperator r = x-Scale_*0.5*(operator_prod(herm(Psi_), x, Psi_) 
+      //      MatrixOperator r = x-Scale_*0.5*(operator_prod(herm(Psi_), x, Psi_)
       // + operator_prod(Psi_, x, herm(Psi_)));
       r -= inner_prod(r, Rho_) * Identity_; // orthogonalize to the identity
       return r;
@@ -199,13 +199,13 @@ SolveMPO_Left(StateComponent const& Psi,
          {
             for (PolyType::const_iterator I = EMat[j].begin(); I != EMat[j].end(); ++I)
             {
-               for (SimpleRedOperator::const_iterator MIter = M.begin(); 
+               for (SimpleRedOperator::const_iterator MIter = M.begin();
                     MIter != M.end(); ++MIter)
                {
                   // TODO: add a variant for a SimpleRedOperator to state_component.h
-		  if (!I->second.is_null())
-		     C[I->first] += operator_prod(herm(*MIter), herm(Psi), I->second, Psi,
-						  Op.Basis1()[Col]);
+                  if (!I->second.is_null())
+                     C[I->first] += operator_prod(herm(*MIter), herm(Psi), I->second, Psi,
+                                                  Op.Basis1()[Col]);
                }
             }
          }
@@ -243,7 +243,7 @@ SolveMPO_Left(StateComponent const& Psi,
          {
             // diagonal element is the identity
             DEBUG_TRACE("Unit diagonal element")(Col)(Diag);
-         
+
             // decompose C into components parallel and perpendicular to the identity
             ComplexPolyType CParallel;
             for (PolyType::iterator I = C.begin(); I != C.end(); ++I)
@@ -268,7 +268,7 @@ SolveMPO_Left(StateComponent const& Psi,
 
          // if we get here, then Fac <= 1
          // do the components perpendicular to the identity
-      
+
          // Components perpendicular to the identity satisfy equation (24)
          PolyType E;
          for (int m = C.degree(); m >= 0; --m)
@@ -380,7 +380,7 @@ int main(int argc, char** argv)
    MatrixOperator Identity = MatrixOperator::make_identity(Psi.Psi.Basis1());
    MatrixOperator Rho = scalar_prod(Psi.C_right, herm(Psi.C_right));
    StateComponent Phi = Psi.Psi.get_front(); // no need to bugger around with C_old,C_right
- 
+
    MatrixOperator LambdaSqrt = SqrtDiagonal(Psi.C_old);
    MatrixOperator LambdaInvSqrt = InvertDiagonal(LambdaSqrt, InverseTol);
 
@@ -434,8 +434,8 @@ int main(int argc, char** argv)
       E = SolveMPO_Left(Phi, Op, Rho, Identity, Verbose);
       a = ExtractOverlap(E, Rho);
       TRACE(a);
-      Inner.push_back(a[1].real());  
-      Delta.push_back(Inner[k] / Inner[k-1]); 
+      Inner.push_back(a[1].real());
+      Delta.push_back(Inner[k] / Inner[k-1]);
       TRACE(k)(Delta[k]);
    }
 

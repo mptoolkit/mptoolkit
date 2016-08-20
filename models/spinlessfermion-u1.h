@@ -3,7 +3,7 @@
 
 inline
 LatticeSite SpinlessFermionU1(std::string const& Sym1 = "N",
-			      std::string const& ParityOp = "P")
+                              std::string const& ParityOp = "P")
 {
    SymmetryList Symmetry(Sym1+":U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1> QN(Symmetry);
@@ -25,7 +25,7 @@ LatticeSite SpinlessFermionU1(std::string const& Sym1 = "N",
       ;
 
    LatticeCommute Fermionic = ParityOp == "P" ? LatticeCommute::Fermionic : LatticeCommute(ParityOp);
-   
+
    CH = SiteOperator(Basis, QN(1), Fermionic);
    C = SiteOperator(Basis, QN(-1), Fermionic);
    P = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
@@ -35,19 +35,19 @@ LatticeSite SpinlessFermionU1(std::string const& Sym1 = "N",
 
    // annihilate fermion
    C("empty", "single") = 1;
-   
+
    // create fermion
    CH = adjoint(C);
 
-   // parity = (-1)^N   
+   // parity = (-1)^N
    P("empty",  "empty")  =  1;
    P("single", "single") = -1;
 
-   // spatial reflection   
+   // spatial reflection
    R("empty",  "empty")  = 1;
    R("single", "single") = 1;
- 
-   // particle number  
+
+   // particle number
    N("single", "single") = 1;
 
    // identity

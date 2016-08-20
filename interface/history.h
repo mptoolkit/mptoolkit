@@ -93,7 +93,7 @@ class HistoryLog
       // prints the history log to the specified stream, oldest entry first
       void print(std::ostream& out) const;
 
-      // prints the history log to the specified stream, newest entry first 
+      // prints the history log to the specified stream, newest entry first
       void print_newest_first(std::ostream& out) const;
 
    private:
@@ -103,7 +103,7 @@ class HistoryLog
       friend PStream::opstream& operator<<(PStream::opstream& out, HistoryLog const& Log);
       friend PStream::ipstream& operator>>(PStream::ipstream& in, HistoryLog& Log);
 #endif
-      
+
 };
 
 #endif

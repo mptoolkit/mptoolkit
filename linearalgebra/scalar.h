@@ -79,7 +79,7 @@ struct is_complex<std::complex<T> > : boost::mpl::true_ { };
 
 //
 // For simple cases where the standard arithmetic conventions on commutativity etc hold
-// and the value_type is determined through promotion rules, the easiest way to 
+// and the value_type is determined through promotion rules, the easiest way to
 // enable arithmetic on a given type is to define PromoteTraits for it.
 // PromoteTraits is defined for builtin types, but it is explicitly disabled for
 // mixed signed arithmetic (a probably misguided attempt to protect the user from
@@ -103,8 +103,8 @@ struct is_signed<T, typename boost::enable_if<boost::mpl::not_<boost::is_array<T
 
 template <typename T1, typename T2>
 struct PromoteTraits<T1, T2, typename boost::enable_if<boost::mpl::and_<
-  boost::is_integral<T1>, 
-  boost::is_integral<T2>, 
+  boost::is_integral<T1>,
+  boost::is_integral<T2>,
   boost::mpl::equal_to<is_signed<T1>, is_signed<T2> >
   > >::type>
 {
@@ -116,7 +116,7 @@ struct PromoteTraits<T1, T2, typename boost::enable_if<boost::mpl::and_<
 
 template <typename T1, typename T2>
 struct PromoteTraits<T1, T2, typename boost::enable_if<boost::mpl::and_<
-  boost::is_integral<T1>, 
+  boost::is_integral<T1>,
   boost::is_float<T2>
   > >::type>
 {
@@ -128,7 +128,7 @@ struct PromoteTraits<T1, T2, typename boost::enable_if<boost::mpl::and_<
 
 template <typename T1, typename T2>
 struct PromoteTraits<T1, T2, typename boost::enable_if<boost::mpl::and_<
-  boost::is_float<T1>, 
+  boost::is_float<T1>,
   boost::is_arithmetic<T2>
   > >::type>
 {
@@ -171,7 +171,7 @@ struct PromoteTraits<std::complex<T>, std::complex<T> >
 
 template <typename T>
 struct interface<T,
-		 typename boost::enable_if<
+                 typename boost::enable_if<
    exists<typename PromoteTraits<T, T>::value_type> >::type>
 {
    typedef AnyScalar<T> type;
@@ -306,8 +306,8 @@ struct TransformInterface<T&, F, AnyScalar<S> >
 };
 
 template <typename S, typename T>
-struct AdditionInterface<S, T, AnyScalar<S>, AnyScalar<T>, 
-		typename boost::enable_if<
+struct AdditionInterface<S, T, AnyScalar<S>, AnyScalar<T>,
+                typename boost::enable_if<
    exists<typename PromoteTraits<S, T>::value_type> >::type>
 {
    typedef boost::mpl::true_ builtin;
@@ -324,7 +324,7 @@ struct AdditionInterface<S, T, AnyScalar<S>, AnyScalar<T>,
 
 template <typename S, typename T>
 struct SubtractionInterface<S, T, AnyScalar<S>, AnyScalar<T>,
-		   typename boost::enable_if<
+                   typename boost::enable_if<
    exists<typename PromoteTraits<S, T>::value_type> >::type>
 {
    typedef boost::mpl::true_ builtin;
@@ -340,7 +340,7 @@ struct SubtractionInterface<S, T, AnyScalar<S>, AnyScalar<T>,
 
 template <typename S, typename T>
 struct MultiplicationInterface<S, T, AnyScalar<S>, AnyScalar<T>,
-		      typename boost::enable_if<
+                      typename boost::enable_if<
    exists<typename PromoteTraits<S, T>::value_type> >::type>
 {
    typedef boost::mpl::true_ builtin;
@@ -360,7 +360,7 @@ struct DirectProductInterface<S, T, AnyScalar<Si>, AnyScalar<Ti> >
 
 template <typename S, typename T>
 struct InnerProdInterface<S, T, AnyScalar<S>, AnyScalar<T>,
-		 typename boost::enable_if<
+                 typename boost::enable_if<
    exists<typename PromoteTraits<S, T>::value_type> >::type>
 {
    typedef typename PromoteTraits<S, T>::value_type result_type;
@@ -373,7 +373,7 @@ struct InnerProdInterface<S, T, AnyScalar<S>, AnyScalar<T>,
 
 template <typename S, typename T>
 struct EqualToInterface<S, T, AnyScalar<S>, AnyScalar<T>,
-	       typename boost::enable_if<
+               typename boost::enable_if<
    exists<typename PromoteTraits<S, T>::value_type> >::type>
 {
    typedef boost::mpl::true_ builtin;
@@ -616,7 +616,7 @@ struct Cos<double>
       return std::cos(x);
    }
 };
-   
+
 template <>
 struct Cos<std::complex<double> >
 {
@@ -732,8 +732,8 @@ struct EqualInterface<T, U, TolType, AnyScalar<T>, AnyScalar<U> >
 
    bool operator()(T const& x, U const& y) const
    {
-      return norm_inf(x-y) 
-	 <= Tol_ + 2 * std::numeric_limits<TolType>::epsilon() * (norm_inf(x) + norm_inf(y));
+      return norm_inf(x-y)
+         <= Tol_ + 2 * std::numeric_limits<TolType>::epsilon() * (norm_inf(x) + norm_inf(y));
    }
 
    private:

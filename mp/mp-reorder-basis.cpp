@@ -33,8 +33,8 @@
 
 namespace prog_opt = boost::program_options;
 
-LinearWavefunction ReorderLocalBasis(LinearWavefunction const& Psi, 
-				     std::list<int> const& NewOrder)
+LinearWavefunction ReorderLocalBasis(LinearWavefunction const& Psi,
+                                     std::list<int> const& NewOrder)
 {
    LinearWavefunction Result(Psi.GetSymmetryList());
    LinearWavefunction::const_iterator I = Psi.end();
@@ -64,10 +64,10 @@ int main(int argc, char** argv)
    {
       if (argc != 3)
       {
-	 print_copyright(std::cerr, "tools", basename(argv[0]));
-	 std::cerr << "usage: mp-reorder-basis <new-ordering> <psi>\n"
-	    "the new-ordering is a comma-delimited permutation of numbers 0..(N-1).\n";
-	 return 1;
+         print_copyright(std::cerr, "tools", basename(argv[0]));
+         std::cerr << "usage: mp-reorder-basis <new-ordering> <psi>\n"
+            "the new-ordering is a comma-delimited permutation of numbers 0..(N-1).\n";
+         return 1;
       }
 
       std::string Ordering = argv[1];
@@ -76,7 +76,7 @@ int main(int argc, char** argv)
       Split(Ordering, ',', std::back_inserter(Strings));
       std::list<int> NewOrder;
       std::transform(Strings.begin(), Strings.end(),
-		     std::back_inserter(NewOrder), DoLexicalCast<int>());
+                     std::back_inserter(NewOrder), DoLexicalCast<int>());
       pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(FName, mp_pheap::CacheSize());
 
       Psi = pvalue_ptr<MPWavefunction>(new MPWavefunction(ReorderLocalBasis(*Psi, NewOrder)));

@@ -36,7 +36,7 @@ void ShowWavefunc(CenterWavefunction Psi, std::ostream& out, int Max = -1)
       out << "\nMatrices at partition (" << Psi.LeftSize() << ", " << Psi.RightSize() << ")\n";
       out << "=========================================\n";
 
-      out << "Left basis: " << Psi.Left().Basis2() 
+      out << "Left basis: " << Psi.Left().Basis2()
           << "Right basis: " << Psi.Right().Basis1() << '\n';
       out << "Center matrix:\n" << Psi.Center() << '\n';
       out << "|Center| = " << norm_frob(Psi.Center()) << '\n';
@@ -57,7 +57,7 @@ void ShowWavefunc(CenterWavefunction Psi, std::ostream& out, int Max = -1)
    }
 
    DensityMatrix<MatrixOperator> DM(scalar_prod(Psi.Center(), herm(Psi.Center())));
-   out << "\nReduced density matrix at partition (" 
+   out << "\nReduced density matrix at partition ("
        << Psi.LeftSize() << "," << Psi.RightSize() << ") :\n";
    DM.DensityMatrixReport(out, Max);
 }

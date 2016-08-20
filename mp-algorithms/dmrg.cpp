@@ -41,7 +41,7 @@ struct SuperblockMultiply
    typedef MatrixOperator argument_type;
 
    SuperblockMultiply(MPStateComponent const& Left_,
-		      MPStateComponent const& Right_);
+                      MPStateComponent const& Right_);
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
    {
@@ -53,7 +53,7 @@ struct SuperblockMultiply
 
 inline
 SuperblockMultiply::SuperblockMultiply(MPStateComponent const& Left_,
-				       MPStateComponent const& Right_)
+                                       MPStateComponent const& Right_)
    : Left(Left_), Right(Right_)
 {
 }
@@ -158,7 +158,7 @@ DMRG::DMRG(CenterWavefunction const& Psi_, SplitOperator const& Ham_, bool Verbo
      IsPsiConverged(false), IsConvergedValid(false),
      MixUseEnvironment(false), UseDGKS(false), Solver("lanczos"),
      TwoStageTruncation(false), ExtraFrac(0)
-     
+
 {
    // construct the HamMatrix elements for the right hand side
 
@@ -179,9 +179,9 @@ DMRG::DMRG(CenterWavefunction const& Psi_, SplitOperator const& Ham_, bool Verbo
       if (Verbose)
          std::cout << "site " << (Psi.RightSize()-Loc) << std::endl;
       Elem = operator_prod(Ham.LookupRight(Loc),
-                              Psi.LookupRight(Loc), 
+                              Psi.LookupRight(Loc),
                               Elem,
-			      herm(Psi.LookupRight(Loc)));
+                              herm(Psi.LookupRight(Loc)));
       HamMatrices.PushRight(Elem);
    }
 
@@ -198,7 +198,7 @@ DMRG::DMRG(CenterWavefunction const& Psi_, SplitOperator const& Ham_, bool Verbo
    {
       Elem = operator_prod(herm(Ham.LookupLeft(Loc)),
                            herm(Psi.LookupLeft(Loc)),
-                           Elem, 
+                           Elem,
                            Psi.LookupLeft(Loc));
       HamMatrices.PushLeft(Elem);
    }
@@ -253,7 +253,7 @@ DMRG::AddOrthogonalState(CenterWavefunction x)
    for (int Loc = 0; Loc < x.LeftSize(); ++Loc)
    {
       Proj.PushLeft(operator_prod(herm(Psi.LookupLeft(Loc)),
-                                  Proj.Left(), 
+                                  Proj.Left(),
                                   x.LookupLeft(Loc)));
    }
 
@@ -263,18 +263,18 @@ DMRG::AddOrthogonalState(CenterWavefunction x)
    this->DebugCheckBasis();
 }
 
-CenterWavefunction& 
+CenterWavefunction&
 DMRG::Wavefunction()
-{ 
+{
    Psi.AttributesMutable()["Energy"] = boost::lexical_cast<std::string>(this->Energy());
-   return Psi; 
+   return Psi;
 }
 
-CenterWavefunction const& 
-DMRG::Wavefunction() const 
-{ 
+CenterWavefunction const&
+DMRG::Wavefunction() const
+{
    Psi.AttributesMutable()["Energy"] = boost::lexical_cast<std::string>(this->Energy());
-   return Psi; 
+   return Psi;
 }
 
 char ToLower(char c)
@@ -401,7 +401,7 @@ void DMRG::RestoreLogFiles(std::string const& BasePath, ConfList const& Conf)
 
    // debugging; set the precision for cerr
    std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
-   
+
    std::cout << "Convergence::OverlapTruncationRatio = " << ConvergenceOverlapTruncationScale << '\n';
    std::cout << "Convergence::OverlapDerivativeRatio = " << ConvergenceOverlapDifferenceOverlapScale << '\n';
    std::cout << "Convergence::TruncationCutoff = " << ConvergenceSweepTruncMin << '\n';
@@ -484,8 +484,8 @@ void DMRG::StartSweep(bool IncrementSweepNumber, double /* Broad_ */)
 
 double DMRG::FidelityLoss() const
 {
-   return 2.0 * (1.0 - norm_frob(inner_prod(Psi.Center(), PsiPrevC)) 
-		 / norm_frob(Psi.Center()));
+   return 2.0 * (1.0 - norm_frob(inner_prod(Psi.Center(), PsiPrevC))
+                 / norm_frob(Psi.Center()));
 }
 
 void DMRG::EndSweep()
@@ -493,13 +493,13 @@ void DMRG::EndSweep()
    TotalNumIterations += SweepNumIterations;
    TotalNumMultiplies += SweepNumMultiplies;
 
-   SweepEnergyError = std::sqrt(statistics::variance(IterationEnergyVec.begin(), 
-                                                     IterationEnergyVec.end())  
+   SweepEnergyError = std::sqrt(statistics::variance(IterationEnergyVec.begin(),
+                                                     IterationEnergyVec.end())
                                 / SweepNumIterations);
 
    double HE2 = -1;
 
-   double Overlap = 2.0 * (1.0 - norm_frob(inner_prod(Psi.Center(), PsiPrevC)) 
+   double Overlap = 2.0 * (1.0 - norm_frob(inner_prod(Psi.Center(), PsiPrevC))
                            / norm_frob(Psi.Center()));
    double OverlapDifference = 2;
    if (LastOverlap)
@@ -545,7 +545,7 @@ void DMRG::EndSweep()
                           << OverlapDifference << ' '
                           << SweepEnergy << ' '
                           << SweepLastMixFactor << ' '
-                          << Converged 
+                          << Converged
                           << std::endl;
    msg_log(1, "EnergyLog") << std::flush;
 }
@@ -555,9 +555,9 @@ double DMRG::Energy() const
    //   DEBUG_TRACE(HamMatrices.Left())(HamMatrices.Right());
    //   DEBUG_TRACE(scalar_prod(Psi.Center(), Psi.Center()));
    //   DEBUG_TRACE(scalar_prod(PsiP, PsiP));
-   return inner_prod(operator_prod(HamMatrices.Left(), 
-                                   Psi.Center(), 
-                                   herm(HamMatrices.Right())), 
+   return inner_prod(operator_prod(HamMatrices.Left(),
+                                   Psi.Center(),
+                                   herm(HamMatrices.Right())),
                      Psi.Center()).real();
 }
 
@@ -568,8 +568,8 @@ int OperatorMaxDimension(MatrixOperator const& x)
    {
       for (unsigned j = 0; j < x.Basis2().size(); ++j)
       {
-	 if (is_transform_target(x.Basis2()[j], x.TransformsAs(), x.Basis1()[i]))
-	    Dim += x.Basis1().dim(i) * x.Basis2().dim(j);
+         if (is_transform_target(x.Basis2()[j], x.TransformsAs(), x.Basis1()[i]))
+            Dim += x.Basis1().dim(i) * x.Basis2().dim(j);
       }
    }
    return Dim;
@@ -587,7 +587,7 @@ struct Preconditioner
    {
       return x / (y - Theta);
    }
-   
+
    double Theta;
 };
 
@@ -597,7 +597,7 @@ void Precondition(MatrixOperator& r, MatrixOperator const& Diag, double Theta)
    {
       for (LinearAlgebra::inner_iterator<MatrixOperator>::type J = iterate(I); J; ++J)
       {
-         LinearAlgebra::const_inner_iterator<MatrixOperator>::type DiagJ = 
+         LinearAlgebra::const_inner_iterator<MatrixOperator>::type DiagJ =
             iterate_at(Diag.data(), J.index1(), J.index2());
          *J = LinearAlgebra::transform(*J, *DiagJ, Preconditioner(Theta));
       }
@@ -621,42 +621,42 @@ double DMRG::Solve(int MaxIterations)
 
    //   TRACE(Psi.Center())(norm_frob(Psi.Center()));
    //   DEBUG_TRACE(Psi.Center().Basis1())(Psi.Center().Basis2());
-   int Iterations = std::max(1, std::min(MaxIterations, 
+   int Iterations = std::max(1, std::min(MaxIterations,
                                          OperatorMaxDimension(Psi.Center()) - int(Ortho.size())));
 
    std::vector<MatrixOperator> OrthoSet(Ortho.size());
    for (std::size_t j = 0; j < OrthoSet.size(); ++j)
    {
-      OrthoSet[j] = triple_prod(PsiOrthoProjector[j].Left(), 
-                                Ortho[j].Center(), 
+      OrthoSet[j] = triple_prod(PsiOrthoProjector[j].Left(),
+                                Ortho[j].Center(),
                                 herm(PsiOrthoProjector[j].Right()));
    }
 
    double Energy=0;
    if (Solver == "lanczos")
    {
-      Energy = Lanczos(Psi.Center(), 
-                       SuperblockMultiply(HamMatrices.Left(), 
+      Energy = Lanczos(Psi.Center(),
+                       SuperblockMultiply(HamMatrices.Left(),
                                           HamMatrices.Right()),
                        Iterations,
                        OrthoSet,
-		       UseDGKS);
+                       UseDGKS);
    }
    else if (Solver == "davidson")
    {
       CHECK(OrthoSet.empty())("Davidson solver does not support orthogonal states yet.");
       MatrixOperator Diag = extract_diagonal(HamMatrices.Left(), herm(HamMatrices.Right()));
-      Energy =  LinearSolvers::Davidson(Psi.Center(), 
+      Energy =  LinearSolvers::Davidson(Psi.Center(),
                                         Diag,
-                                        SuperblockMultiply(HamMatrices.Left(), 
+                                        SuperblockMultiply(HamMatrices.Left(),
                                                            HamMatrices.Right()),
                                         Iterations);
    }
    else if (Solver == "arnoldi")
    {
       CHECK(OrthoSet.empty())("Arnoldi solver does not support orthogonal states yet.");
-      std::complex<double> Eigen = LinearSolvers::Arnoldi(Psi.Center(), 
-                                                          SuperblockMultiply(HamMatrices.Left(), 
+      std::complex<double> Eigen = LinearSolvers::Arnoldi(Psi.Center(),
+                                                          SuperblockMultiply(HamMatrices.Left(),
                                                                              HamMatrices.Right()),
                                                           Iterations);
       Energy = Eigen.real();
@@ -684,7 +684,7 @@ void DMRG::PrepareConvergenceTest()
    TestConverged = true;
 }
 
-bool DMRG::IsConverged() const 
+bool DMRG::IsConverged() const
 {
    return IsConvergedValid && IsPsiConverged;
 }
@@ -702,7 +702,7 @@ void DMRG::ExpandLeft()
    HamMatrices.PopLeft();
    MPStateComponent New = operator_prod(herm(Ham.Left()),
                                         herm(Psi.Left()),
-                                        HamMatrices.Left(), 
+                                        HamMatrices.Left(),
                                         (Psi.Left()));
    HamMatrices.PushLeft(New);
 
@@ -710,8 +710,8 @@ void DMRG::ExpandLeft()
    for (std::size_t j = 0; j < Ortho.size(); ++j)
    {
       PsiOrthoProjector[j].PopLeft();
-      PsiOrthoProjector[j].PushLeft(operator_prod(herm(Psi.Left()), 
-                                               PsiOrthoProjector[j].Left(), 
+      PsiOrthoProjector[j].PushLeft(operator_prod(herm(Psi.Left()),
+                                               PsiOrthoProjector[j].Left(),
                                                Ortho[j].Left()));
    }
   this->DebugCheckBasis();
@@ -738,8 +738,8 @@ void DMRG::ExpandRight()
    for (std::size_t j = 0; j < Ortho.size(); ++j)
    {
       PsiOrthoProjector[j].PopRight();
-      PsiOrthoProjector[j].PushRight(operator_prod(Psi.Right(), 
-                                                PsiOrthoProjector[j].Right(), 
+      PsiOrthoProjector[j].PushRight(operator_prod(Psi.Right(),
+                                                PsiOrthoProjector[j].Right(),
                                                 herm(Ortho[j].Right())));
    }
   this->DebugCheckBasis();
@@ -755,7 +755,7 @@ void DMRG::ShiftRightAndExpand()
    // Expand the new left basis, this is the 'old DMRG' equivalent
    // of inverting the truncation operator at the end of
    // the wavefunction transformation
-   Psi.Center() = ExpandBasis2(Psi.Left()); 
+   Psi.Center() = ExpandBasis2(Psi.Left());
 
    // rotate the Ham operator
 
@@ -770,7 +770,7 @@ void DMRG::ShiftRightAndExpand()
    // calculate the new Ham matrix and rotate
    MPStateComponent New = operator_prod(herm(Ham.Left()),
                                         herm(Psi.Left()),
-                                        HamMatrices.Left(), 
+                                        HamMatrices.Left(),
                                         Psi.Left());
    HamMatrices.PushLeft(New);
    HamMatrices.PopRight();
@@ -779,8 +779,8 @@ void DMRG::ShiftRightAndExpand()
    for (std::size_t j = 0; j < Ortho.size(); ++j)
    {
       Ortho[j].RotateRight();
-      PsiOrthoProjector[j].PushLeft(operator_prod(herm(Psi.Left()), 
-                                                  PsiOrthoProjector[j].Left(), 
+      PsiOrthoProjector[j].PushLeft(operator_prod(herm(Psi.Left()),
+                                                  PsiOrthoProjector[j].Left(),
                                                   Ortho[j].Left()));
       PsiOrthoProjector[j].PopRight();
    }
@@ -810,8 +810,8 @@ void DMRG::ShiftLeftAndExpand()
 
    // calculate the new matrices
    MPStateComponent New = operator_prod(Ham.Right(),
-					   Psi.Right(),
-					   HamMatrices.Right(),
+                                           Psi.Right(),
+                                           HamMatrices.Right(),
                                            herm(Psi.Right()));
    HamMatrices.PushRight(New);
    HamMatrices.PopLeft();
@@ -820,8 +820,8 @@ void DMRG::ShiftLeftAndExpand()
    for (std::size_t j = 0; j < Ortho.size(); ++j)
    {
       Ortho[j].RotateLeft();
-      PsiOrthoProjector[j].PushRight(operator_prod(Psi.Right(), 
-                                                PsiOrthoProjector[j].Right(), 
+      PsiOrthoProjector[j].PushRight(operator_prod(Psi.Right(),
+                                                PsiOrthoProjector[j].Right(),
                                                 herm(Ortho[j].Right())));
       PsiOrthoProjector[j].PopLeft();
    }
@@ -837,15 +837,15 @@ MatrixOperator TruncateTwoStage(MatrixOperator const& Rho, MatrixOperator const&
                                 StatesInfo const& SInfo,
                                 double MixFactor,
                                 double ExtraFrac,
-                                KeepListType& KeepList, 
+                                KeepListType& KeepList,
                                 std::set<QuantumNumbers::QuantumNumber> const& AddedQN,
                                 TruncationInfo& Info)
 {
    // First round: construct the density matrix
    DensityMatrix<MatrixOperator> DM(Rho);
    DensityMatrix<MatrixOperator>::const_iterator DMPivot =
-      TruncateFixTruncationErrorAbsolute(DM.begin(), 
-					 DM.end(),
+      TruncateFixTruncationErrorAbsolute(DM.begin(),
+                                         DM.end(),
                                          SInfo,
                                          Info);
    // Split into kept and discarded states
@@ -853,12 +853,12 @@ MatrixOperator TruncateTwoStage(MatrixOperator const& Rho, MatrixOperator const&
    std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
    // Update the keep list.  It would perhaps be better to do this with respect
    // to the stage 2 density matrix, but easier to do it here
-   UpdateKeepList(KeepList, 
-		  AddedQN,
-		  DM.Basis(),
-		  KeptStates,
-		  DiscardStates,
-		  Info);
+   UpdateKeepList(KeepList,
+                  AddedQN,
+                  DM.Basis(),
+                  KeptStates,
+                  DiscardStates,
+                  Info);
 
    // Dimensions of each quantum number subspace
    EigenDimensionsType EDim = EigenDimensions(Rho.Basis1(), KeptStates.begin(), KeptStates.end());
@@ -871,7 +871,7 @@ MatrixOperator TruncateTwoStage(MatrixOperator const& Rho, MatrixOperator const&
    // Second round
    // Project Rho2 onto the discarded states
    MatrixOperator Rho2Trunc = triple_prod(UDiscard, Rho2, herm(UDiscard));
-   
+
    DensityMatrix<MatrixOperator> DM2(Rho2Trunc);
 
    //TRACE("DM");
@@ -880,7 +880,7 @@ MatrixOperator TruncateTwoStage(MatrixOperator const& Rho, MatrixOperator const&
    //DM2.DensityMatrixReport(std::cout);
 
    TruncationInfo Info2;
-   std::list<EigenInfo> SecondStage = TruncateFixEigenDimensions(EDim, Rho2Trunc.Basis1(), 
+   std::list<EigenInfo> SecondStage = TruncateFixEigenDimensions(EDim, Rho2Trunc.Basis1(),
                                                                  int(SInfo.MinStates * ExtraFrac+0.5),
                                                                  DM2.begin(), DM2.end(),
                                                                  Info2);
@@ -915,20 +915,20 @@ TruncationInfo DMRG::TruncateLeft(StatesInfo const& SInfo, double CFactor)
       {
          for (unsigned i = 0; i < HamMatrices.Left().size(); ++i)
          {
-            MatrixOperator Correction = triple_prod(HamMatrices.Left()[i], 
-                                                    Rho, 
+            MatrixOperator Correction = triple_prod(HamMatrices.Left()[i],
+                                                    Rho,
                                                     herm(HamMatrices.Left()[i]));
-	    std::complex<double> Tr = trace(Correction);
-	    if (norm_2(Tr) > std::numeric_limits<double>::epsilon() * 100)
-	    {
-	       Correction *= CFactor / (Tr * double(HamMatrices.Left().size()));
-	       Rho2 += Correction;
-	    }
+            std::complex<double> Tr = trace(Correction);
+            if (norm_2(Tr) > std::numeric_limits<double>::epsilon() * 100)
+            {
+               Correction *= CFactor / (Tr * double(HamMatrices.Left().size()));
+               Rho2 += Correction;
+            }
          }
       }
-      
+
       // Truncation specification, get ExtraFrac from *this
-      U = TruncateTwoStage(Rho, Rho2, SInfo, CFactor, ExtraFrac, KeepList, 
+      U = TruncateTwoStage(Rho, Rho2, SInfo, CFactor, ExtraFrac, KeepList,
                            QuantumNumbersInBasis(adjoint(Psi.Left().SiteBasis())),
                            Info);
    }
@@ -940,52 +940,52 @@ TruncationInfo DMRG::TruncateLeft(StatesInfo const& SInfo, double CFactor)
          if (MixUseEnvironment)
          {
             MatrixOperator RhoR = scalar_prod(herm(Psi.Center()), Psi.Center());
-            Correction = 
-               operator_prod(trace_prod(herm(HamMatrices.Right()), 
+            Correction =
+               operator_prod(trace_prod(herm(HamMatrices.Right()),
                                         prod(RhoR, HamMatrices.Right())),
-                             HamMatrices.Left(), 
-                             Rho, 
+                             HamMatrices.Left(),
+                             Rho,
                              herm(HamMatrices.Left()));
          }
          else
          {
             for (unsigned i = 0; i < HamMatrices.Left().size(); ++i)
             {
-               MatrixOperator Correction = triple_prod(HamMatrices.Left()[i], 
-                                                       Rho, 
+               MatrixOperator Correction = triple_prod(HamMatrices.Left()[i],
+                                                       Rho,
                                                        herm(HamMatrices.Left()[i]));
-	       std::complex<double> Tr = trace(Correction);
-	       if (norm_2(Tr) > std::numeric_limits<double>::epsilon() * 100)
-	       {
-		  Correction *= (CFactor / trace(Correction) * double(HamMatrices.Left().size()));
-		  Rho += Correction;
-	       }
+               std::complex<double> Tr = trace(Correction);
+               if (norm_2(Tr) > std::numeric_limits<double>::epsilon() * 100)
+               {
+                  Correction *= (CFactor / trace(Correction) * double(HamMatrices.Left().size()));
+                  Rho += Correction;
+               }
             }
          }
       }
 
       DensityMatrix<MatrixOperator> DM(Rho);
-      DensityMatrix<MatrixOperator>::const_iterator DMPivot = 
+      DensityMatrix<MatrixOperator>::const_iterator DMPivot =
          TruncateFixTruncationErrorAbsolute(DM.begin(), DM.end(),
                                             SInfo,
                                             Info);
-   
+
       std::list<EigenInfo> KeptStates(DM.begin(), DMPivot);
       std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
-      UpdateKeepList(KeepList, 
+      UpdateKeepList(KeepList,
                      QuantumNumbersInBasis(adjoint(Psi.Left().SiteBasis())),
                      DM.Basis(),
                      KeptStates,
                      DiscardStates,
                      Info);
-      
+
       U = DM.ConstructTruncator(KeptStates.begin(), KeptStates.end());
    }
 
    IterationNumStates = Info.KeptStates();
    IterationTruncation += Info.TruncationError();
    IterationEntropy = std::max(IterationEntropy, Info.KeptEntropy());
-      
+
    // truncate the wavefunction
    Psi.Center() = U * Psi.Center();
    Psi.Left() = prod(Psi.Left(), herm(U));
@@ -1025,17 +1025,17 @@ TruncationInfo DMRG::TruncateRight(StatesInfo const& SInfo, double CFactor)
             MatrixOperator Correction = triple_prod(HamMatrices.Right()[i],
                                                     Rho,
                                                     herm(HamMatrices.Right()[i]));
-	    std::complex<double> Tr = trace(Correction);
-	    if (norm_2(Tr) > std::numeric_limits<double>::epsilon() * 100)
-	    {
-	       Correction *= CFactor / trace(Correction) * double(HamMatrices.Right().size());
-	       Rho2 += Correction;
-	    }
+            std::complex<double> Tr = trace(Correction);
+            if (norm_2(Tr) > std::numeric_limits<double>::epsilon() * 100)
+            {
+               Correction *= CFactor / trace(Correction) * double(HamMatrices.Right().size());
+               Rho2 += Correction;
+            }
          }
       }
 
       // Truncation specification, get ExtraFrac from *this
-      U = TruncateTwoStage(Rho, Rho2, SInfo, CFactor, ExtraFrac, KeepList, 
+      U = TruncateTwoStage(Rho, Rho2, SInfo, CFactor, ExtraFrac, KeepList,
                            QuantumNumbersInBasis(Psi.Right().SiteBasis()),
                            Info);
    }
@@ -1061,34 +1061,34 @@ TruncationInfo DMRG::TruncateRight(StatesInfo const& SInfo, double CFactor)
          {
             for (unsigned i = 0; i < HamMatrices.Right().size(); ++i)
             {
-               MatrixOperator Correction = triple_prod(HamMatrices.Right()[i], 
-                                                       Rho, 
+               MatrixOperator Correction = triple_prod(HamMatrices.Right()[i],
+                                                       Rho,
                                                        herm(HamMatrices.Right()[i]));
-	       std::complex<double> Tr = trace(Correction);
-	       if (norm_2(Tr) > std::numeric_limits<double>::epsilon() * 100)
-	       {
-		  Correction *= CFactor / trace(Correction) * double(HamMatrices.Right().size());
-		  Rho += Correction;
-	       }
+               std::complex<double> Tr = trace(Correction);
+               if (norm_2(Tr) > std::numeric_limits<double>::epsilon() * 100)
+               {
+                  Correction *= CFactor / trace(Correction) * double(HamMatrices.Right().size());
+                  Rho += Correction;
+               }
             }
          }
       }
 
       DensityMatrix<MatrixOperator> DM(Rho);
-      DensityMatrix<MatrixOperator>::const_iterator DMPivot = 
+      DensityMatrix<MatrixOperator>::const_iterator DMPivot =
          TruncateFixTruncationErrorAbsolute(DM.begin(), DM.end(),
                                             SInfo,
                                             Info);
-   
+
       std::list<EigenInfo> KeptStates(DM.begin(), DMPivot);
       std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
-      UpdateKeepList(KeepList, 
+      UpdateKeepList(KeepList,
                      QuantumNumbersInBasis(Psi.Right().SiteBasis()),
                      DM.Basis(),
                      KeptStates,
                      DiscardStates,
                      Info);
-      
+
       U = DM.ConstructTruncator(KeptStates.begin(), KeptStates.end());
    }
 
@@ -1096,7 +1096,7 @@ TruncationInfo DMRG::TruncateRight(StatesInfo const& SInfo, double CFactor)
    IterationTruncation += Info.TruncationError();
    IterationEntropy = std::max(IterationEntropy, Info.KeptEntropy());
 
-#if 0      
+#if 0
    // Discarded wavefunction
    if (SaveDiscardedWavefunction)
    {
@@ -1105,9 +1105,9 @@ TruncationInfo DMRG::TruncateRight(StatesInfo const& SInfo, double CFactor)
       Discard.Center() = prod(Discard.Center(), adjoint(UDiscard), Ident);
       Discard.Right() = prod(UDiscard, Discard.Right());
       Discard.RotateToNormalForm();
-      std::string Filename = "discard-wavefunction." 
-	 + boost::lexical_cast<std::string>(TotalSweepNumber) + "."
-	 + boost::lexical_cast<std::string>(Psi.LeftSize());
+      std::string Filename = "discard-wavefunction."
+         + boost::lexical_cast<std::string>(TotalSweepNumber) + "."
+         + boost::lexical_cast<std::string>(Psi.LeftSize());
       pvalue_ptr<CenterWavefunction> OutPsi(new CenterWavefunction(Discard));
       pheap::ExportHeap(Filename, OutPsi);
    }
@@ -1161,15 +1161,15 @@ void DMRG::InsertSitesDeltaShift(std::vector<SiteBasis> const& LeftSites,
    // Add the left sites
    for (unsigned i = 0; i < LeftSites.size(); ++i)
    {
-      Psi.PushLeft(MPStateComponent::ConstructFullBasis2(Psi.Left().Basis2(), 
-							 LeftSites[i].Basis()));
+      Psi.PushLeft(MPStateComponent::ConstructFullBasis2(Psi.Left().Basis2(),
+                                                         LeftSites[i].Basis()));
    }
 
    // Add the right sites
    for (int i = int(RightSites.size())-1; i >= 0; --i)
    {
-      Psi.PushRight(MPStateComponent::ConstructFullBasis1(RightSites[i].Basis(), 
-							  Psi.Right().Basis1()));
+      Psi.PushRight(MPStateComponent::ConstructFullBasis1(RightSites[i].Basis(),
+                                                          Psi.Right().Basis1()));
    }
 
    // Replace the Center matrix with some random state, since we don't have a better
@@ -1185,9 +1185,9 @@ void DMRG::InsertSitesDeltaShift(std::vector<SiteBasis> const& LeftSites,
 #endif
 
 void DMRG::InsertSites(std::vector<SiteBasis> const& LeftSites,
-		       std::vector<SiteBasis> const& RightSites,
-		       QuantumNumber NewTarget,
-		       SplitOperator const& NewHam)
+                       std::vector<SiteBasis> const& RightSites,
+                       QuantumNumber NewTarget,
+                       SplitOperator const& NewHam)
 {
    // We can't handle orthogonal states here
    CHECK(Ortho.empty());
@@ -1207,15 +1207,15 @@ void DMRG::InsertSites(std::vector<SiteBasis> const& LeftSites,
    // Add the left sites
    for (unsigned i = 0; i < LeftSites.size(); ++i)
    {
-      Psi.PushLeft(MPStateComponent::ConstructFullBasis2(Psi.Left().Basis2(), 
-							 LeftSites[i].Basis()));
+      Psi.PushLeft(MPStateComponent::ConstructFullBasis2(Psi.Left().Basis2(),
+                                                         LeftSites[i].Basis()));
    }
 
    // Add the right sites
    for (int i = int(RightSites.size())-1; i >= 0; --i)
    {
-      Psi.PushRight(MPStateComponent::ConstructFullBasis1(RightSites[i].Basis(), 
-							  Psi.Right().Basis1()));
+      Psi.PushRight(MPStateComponent::ConstructFullBasis1(RightSites[i].Basis(),
+                                                          Psi.Right().Basis1()));
    }
 
    // Replace the Center matrix with some random state, since we don't have a better

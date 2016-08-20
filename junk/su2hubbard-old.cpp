@@ -61,13 +61,13 @@ int main(int argc, char** argv)
    // hopping matrix elements
    for (int i = 1; i < L; ++i)
    {
-      MPOperator Hopping 
+      MPOperator Hopping
          = (std::sqrt(2.0) * t) * prod(OpList["CH("+boost::lexical_cast<std::string>(i)+")"],
                 OpList["C("+boost::lexical_cast<std::string>(i%L+1)+")"],
                 Ident)
-      	 + (std::sqrt(2.0) * conj(t)) * prod(OpList["C("+boost::lexical_cast<std::string>(i)+")"],
-      		OpList["CH("+boost::lexical_cast<std::string>(i%L+1)+")"],
-		Ident);
+         + (std::sqrt(2.0) * conj(t)) * prod(OpList["C("+boost::lexical_cast<std::string>(i)+")"],
+                OpList["CH("+boost::lexical_cast<std::string>(i%L+1)+")"],
+                Ident);
       Hamiltonian = Hamiltonian + Hopping;
 
       if (i%2 == 1)

@@ -46,7 +46,7 @@
 #include "finite_mpo.h"
 
 // returns the triangular MPO that corresponds to summing the operator
-// over every unit cell.  
+// over every unit cell.
 // PRECONDITION: Operator.size() is a multiple of UnitCellSize
 TriangularMPO
 sum_over_unit_cell(FiniteMPO const& Operator, int UnitCellSize);
@@ -55,7 +55,7 @@ sum_over_unit_cell(FiniteMPO const& Operator, int UnitCellSize);
 // exp(i*MomentumPerUnitCell) per unit cell.
 TriangularMPO
 sum_over_unit_cell(FiniteMPO const& Operator, int UnitCellSize,
-		   double MomentumPerUnitCell);
+                   double MomentumPerUnitCell);
 
 // Convert a triangular MPO into a FiniteMPO by restricting the summation
 // to a finite size.
@@ -78,11 +78,11 @@ restrict(TriangularMPO const& Operator, int Size);
 // PRECONDITION: UnitCellSize is a multiple of String.size()
 TriangularMPO
 string_product(FiniteMPO const& Op1, FiniteMPO const& String, FiniteMPO const& Op2,
-	       int UnitCellSize);
+               int UnitCellSize);
 
 // version of string_product where the string operator is Factor*identity_{UnitCellSize}
 TriangularMPO
 string_product(FiniteMPO const& Op1, std::complex<double> Factor, FiniteMPO const& Op2,
-	       int UnitCellSize);
+               int UnitCellSize);
 
 #endif

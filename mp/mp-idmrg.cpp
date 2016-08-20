@@ -73,7 +73,7 @@ struct ProductLeft
    typedef StateComponent argument_type;
 
    ProductLeft(LinearWavefunction const& Psi_, TriangularMPO const& Op_,
-	       QuantumNumber const& QShift_)
+               QuantumNumber const& QShift_)
       : Psi(Psi_), Op(Op_), QShift(QShift_)
    {
    }
@@ -84,7 +84,7 @@ struct ProductLeft
       TriangularMPO::const_iterator HI = Op.begin();
       for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I, ++HI)
       {
-	 Guess = contract_from_left(*HI, herm(*I), Guess, *I);
+         Guess = contract_from_left(*HI, herm(*I), Guess, *I);
       }
       DEBUG_CHECK(HI == Op.end());
       return Guess; //delta_shift(Guess, adjoint(QShift));
@@ -101,7 +101,7 @@ struct ProductRight
    typedef StateComponent argument_type;
 
    ProductRight(LinearWavefunction const& Psi_, TriangularMPO const& Op_,
-		QuantumNumber const& QShift_)
+                QuantumNumber const& QShift_)
       : Psi(Psi_), Op(Op_), QShift(QShift_)
    {
    }
@@ -113,9 +113,9 @@ struct ProductRight
       TriangularMPO::const_iterator HI = Op.end();
       while (I != Psi.begin())
       {
-	 --I;
-	 --HI;
-	 Guess = contract_from_right(herm(*HI), *I, Guess, herm(*I));
+         --I;
+         --HI;
+         Guess = contract_from_right(herm(*HI), *I, Guess, herm(*I));
       }
       DEBUG_CHECK(HI == Op.begin());
       return delta_shift(Guess, adjoint(QShift));
@@ -132,7 +132,7 @@ struct FrontProductLeft
    typedef MatrixOperator argument_type;
 
    FrontProductLeft(LinearWavefunction const& Psi_, TriangularMPO const& Op_,
-		    StateComponent const& E_, double Energy_)
+                    StateComponent const& E_, double Energy_)
       : Psi(Psi_), Op(Op_), E(E_)
    {
    }
@@ -144,7 +144,7 @@ struct FrontProductLeft
       TriangularMPO::const_iterator OpIter = Op.begin();
       for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I, ++OpIter)
       {
-	 Guess = contract_from_left(*OpIter, herm(*I), Guess, *I);
+         Guess = contract_from_left(*OpIter, herm(*I), Guess, *I);
       }
       return Guess.back() - Energy * Guess.front();
    }
@@ -170,7 +170,7 @@ struct SubProductLeft
       MatrixOperator Result = delta_shift(In, QShift);
       for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
        {
-	  Result = operator_prod(herm(*I), Result, *I);
+          Result = operator_prod(herm(*I), Result, *I);
        }
       return In - Result;
    }
@@ -185,9 +185,9 @@ struct SubProductLeftProject
    typedef MatrixOperator argument_type;
 
    SubProductLeftProject(LinearWavefunction const& Psi_, QuantumNumber const& QShift_,
-			 MatrixOperator const& Proj_, MatrixOperator const& Ident_)
+                         MatrixOperator const& Proj_, MatrixOperator const& Ident_)
       : Psi(Psi_), QShift(QShift_), Proj(Proj_),
-	Ident(Ident_)
+        Ident(Ident_)
    {
    }
 
@@ -196,7 +196,7 @@ struct SubProductLeftProject
       MatrixOperator Result = delta_shift(In, QShift);
       for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
        {
-	  Result = operator_prod(herm(*I), Result, *I);
+          Result = operator_prod(herm(*I), Result, *I);
        }
       Result -= inner_prod(Proj, Result) * Ident;
       return In - Result;
@@ -224,8 +224,8 @@ struct SubProductRight
       LinearWavefunction::const_iterator I = Psi.end();
       while (I != Psi.begin())
       {
-	 --I;
-	 Result = operator_prod(*I, Result, herm(*I));
+         --I;
+         Result = operator_prod(*I, Result, herm(*I));
       }
       return In - delta_shift(Result, adjoint(QShift));
    }
@@ -240,7 +240,7 @@ struct SubProductRightProject
    typedef MatrixOperator argument_type;
 
    SubProductRightProject(LinearWavefunction const& Psi_, QuantumNumber const& QShift_,
-			  MatrixOperator const& Proj_, MatrixOperator const& Ident_)
+                          MatrixOperator const& Proj_, MatrixOperator const& Ident_)
       : Psi(Psi_), QShift(QShift_), Proj(Proj_), Ident(Ident_)
    {
    }
@@ -251,8 +251,8 @@ struct SubProductRightProject
       LinearWavefunction::const_iterator I = Psi.end();
       while (I != Psi.begin())
       {
-	 --I;
-	 Result = operator_prod(*I, Result, herm(*I));
+         --I;
+         Result = operator_prod(*I, Result, herm(*I));
       }
       Result = delta_shift(Result, adjoint(QShift));
       Result -= inner_prod(Proj, Result) * Ident;
@@ -267,8 +267,8 @@ struct SubProductRightProject
 
 std::complex<double>
 MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
-		    QuantumNumber const& QShift, TriangularMPO const& Op,
-		    MatrixOperator const& Rho)
+                    QuantumNumber const& QShift, TriangularMPO const& Op,
+                    MatrixOperator const& Rho)
 {
    ProductLeft Prod(Psi, Op, QShift);
    Guess = Initial_E(Op, delta_shift(Psi.Basis1(), adjoint(QShift)));
@@ -314,8 +314,8 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
 
 std::complex<double>
 MPO_EigenvaluesRight(StateComponent& Guess, LinearWavefunction const& Psi,
-		     QuantumNumber const& QShift, TriangularMPO const& Op,
-		     MatrixOperator const& Rho)
+                     QuantumNumber const& QShift, TriangularMPO const& Op,
+                     MatrixOperator const& Rho)
 {
    ProductRight Prod(Psi, Op, QShift);
    Guess = Initial_F(Op, Psi.Basis2());
@@ -356,7 +356,7 @@ struct SuperblockMultiply
    typedef MatrixOperator argument_type;
 
    SuperblockMultiply(StateComponent const& Left_,
-		      StateComponent const& Right_);
+                      StateComponent const& Right_);
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
    {
@@ -371,7 +371,7 @@ struct SuperblockMultiply
 
 inline
 SuperblockMultiply::SuperblockMultiply(StateComponent const& Left_,
-				       StateComponent const& Right_)
+                                       StateComponent const& Right_)
    : Left(Left_), Right(Right_)
 {
 }
@@ -389,12 +389,12 @@ bool ExpandL = true, ExpandR = true;
 // Returns the new center matrix for the left hand position, which has the basis expanded.
 MatrixOperator
 DoDMRGSweepLeft(LinearWavefunction& Psi,
-		MatrixOperator const& C_r,
-		TriangularMPO const& Ham,
-		std::deque<StateComponent>& LeftBlockHam,
-		std::deque<StateComponent>& RightBlockHam,
-		StatesInfo const& SInfo, int MinIter, int NumIter,
-		moving_exponential<double>& FidelityAv, bool TwoSite, double MixFactor,
+                MatrixOperator const& C_r,
+                TriangularMPO const& Ham,
+                std::deque<StateComponent>& LeftBlockHam,
+                std::deque<StateComponent>& RightBlockHam,
+                StatesInfo const& SInfo, int MinIter, int NumIter,
+                moving_exponential<double>& FidelityAv, bool TwoSite, double MixFactor,
                 double RandomMixFactor,
                 double EvolveDelta)
 {
@@ -416,12 +416,12 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
       StateComponent L = *I;
       if (TwoSite)
       {
-	 L = prod(L, C);
+         L = prod(L, C);
          C = ExpandBasis2Used(L, *H);
-	 //C = ExpandBasis2(L);
+         //C = ExpandBasis2(L);
 
-	 LeftBlockHam.pop_back();
-	 LeftBlockHam.push_back(contract_from_left(*H, herm(L), LeftBlockHam.back(), L));
+         LeftBlockHam.pop_back();
+         LeftBlockHam.push_back(contract_from_left(*H, herm(L), LeftBlockHam.back(), L));
       }
 
       // apply the solver
@@ -452,14 +452,14 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
       MatrixOperator Rho = scalar_prod(herm(C), C);
       if (MixFactor > 0)
       {
-	 MatrixOperator RhoMix = operator_prod(herm(RightBlockHam.front()), Rho, RightBlockHam.front());
-	 Rho += (MixFactor / trace(RhoMix)) * RhoMix;
+         MatrixOperator RhoMix = operator_prod(herm(RightBlockHam.front()), Rho, RightBlockHam.front());
+         Rho += (MixFactor / trace(RhoMix)) * RhoMix;
       }
       if (RandomMixFactor > 0)
       {
-	 MatrixOperator RhoMix = MakeRandomMatrixOperator(Rho.Basis1(), Rho.Basis2());
+         MatrixOperator RhoMix = MakeRandomMatrixOperator(Rho.Basis1(), Rho.Basis2());
          RhoMix = herm(RhoMix) * RhoMix;
-	 Rho += (RandomMixFactor / trace(RhoMix)) * RhoMix;
+         Rho += (RandomMixFactor / trace(RhoMix)) * RhoMix;
       }
       DensityMatrix<MatrixOperator> DM(Rho);
       TruncationInfo Info;
@@ -470,13 +470,13 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
       MatrixOperator U = DM.ConstructTruncator(DM.begin(), DMPivot);
 
       std::cout << "L Energy=" << Energy
-		<< " States=" << Info.KeptStates()
-		<< " TruncError=" << Info.TruncationError()
-		<< " Entropy=" << Info.KeptEntropy()
+                << " States=" << Info.KeptStates()
+                << " TruncError=" << Info.TruncationError()
+                << " Entropy=" << Info.KeptEntropy()
                 << " Fidelity=" << Fidelity
-         //			 << " FidelityAv=" << FidelityAv.value()
-		<< " Iter=" << Iterations
-		<< " Tol=" << Tol
+         //                      << " FidelityAv=" << FidelityAv.value()
+                << " Iter=" << Iterations
+                << " Tol=" << Tol
                 << '\n';
 
       C = C * herm(U);
@@ -501,12 +501,12 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
 
 MatrixOperator
 DoDMRGSweepRight(MatrixOperator const& C_l,
-		 LinearWavefunction& Psi,
-		 TriangularMPO const& Ham,
-		 std::deque<StateComponent>& LeftBlockHam,
-		 std::deque<StateComponent>& RightBlockHam,
-		 StatesInfo const& SInfo, int MinIter, int NumIter,
-		 moving_exponential<double>& FidelityAv, bool TwoSite, double MixFactor,
+                 LinearWavefunction& Psi,
+                 TriangularMPO const& Ham,
+                 std::deque<StateComponent>& LeftBlockHam,
+                 std::deque<StateComponent>& RightBlockHam,
+                 StatesInfo const& SInfo, int MinIter, int NumIter,
+                 moving_exponential<double>& FidelityAv, bool TwoSite, double MixFactor,
                  double RandomMixFactor,
                  double EvolveDelta)
 {
@@ -528,11 +528,11 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
       StateComponent R = *I;
       if (TwoSite)
       {
-	 R = prod(C, R);
+         R = prod(C, R);
          C = ExpandBasis1Used(R, *H);
-	 //C = ExpandBasis1(R);
-	 RightBlockHam.pop_front();
-	 RightBlockHam.push_front(contract_from_right(herm(*H), R, RightBlockHam.front(), herm(R)));
+         //C = ExpandBasis1(R);
+         RightBlockHam.pop_front();
+         RightBlockHam.push_front(contract_from_right(herm(*H), R, RightBlockHam.front(), herm(R)));
       }
 
       // apply the solver
@@ -563,14 +563,14 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
       MatrixOperator Rho = scalar_prod(C, herm(C));
       if (MixFactor > 0)
       {
-	 MatrixOperator RhoMix = operator_prod(LeftBlockHam.back(), Rho, herm(LeftBlockHam.back()));
-	 Rho += (MixFactor / trace(RhoMix)) * RhoMix;
+         MatrixOperator RhoMix = operator_prod(LeftBlockHam.back(), Rho, herm(LeftBlockHam.back()));
+         Rho += (MixFactor / trace(RhoMix)) * RhoMix;
       }
       if (RandomMixFactor > 0)
       {
-	 MatrixOperator RhoMix = MakeRandomMatrixOperator(Rho.Basis1(), Rho.Basis2());
+         MatrixOperator RhoMix = MakeRandomMatrixOperator(Rho.Basis1(), Rho.Basis2());
          RhoMix = herm(RhoMix) * RhoMix;
-	 Rho += (RandomMixFactor / trace(RhoMix)) * RhoMix;
+         Rho += (RandomMixFactor / trace(RhoMix)) * RhoMix;
       }
       DensityMatrix<MatrixOperator> DM(Rho);
       TruncationInfo Info;
@@ -581,13 +581,13 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
       MatrixOperator U = DM.ConstructTruncator(DM.begin(), DMPivot);
 
       std::cout << "R Energy=" << Energy
-		<< " States=" << Info.KeptStates()
-		<< " TruncError=" << Info.TruncationError()
-		<< " Entropy=" << Info.KeptEntropy()
+                << " States=" << Info.KeptStates()
+                << " TruncError=" << Info.TruncationError()
+                << " Entropy=" << Info.KeptEntropy()
                 << " Fidelity=" << Fidelity
-         //			 << " FidelityAv=" << FidelityAv.value()
-		<< " Iter=" << Iterations
-		<< " Tol=" << Tol
+         //                      << " FidelityAv=" << FidelityAv.value()
+                << " Iter=" << Iterations
+                << " Tol=" << Tol
                 << '\n';
 
       C = U * C;
@@ -660,62 +660,62 @@ int main(int argc, char** argv)
           "model Hamiltonian, of the form lattice:operator")
          ("wavefunction,w", prog_opt::value(&FName),
           "wavefunction to apply DMRG (required)")
-	 ("two-site,2", prog_opt::bool_switch(&TwoSite), "Modify two sites at once (default)")
-	 ("one-site,1", prog_opt::bool_switch(&OneSite), "Modify one site at a time")
-	 ("states,m", prog_opt::value(&States),
-	  FormatDefault("number of states, or a StatesList", States).c_str())
+         ("two-site,2", prog_opt::bool_switch(&TwoSite), "Modify two sites at once (default)")
+         ("one-site,1", prog_opt::bool_switch(&OneSite), "Modify one site at a time")
+         ("states,m", prog_opt::value(&States),
+          FormatDefault("number of states, or a StatesList", States).c_str())
          ("min-states", prog_opt::value<int>(&MinStates),
-	  FormatDefault("Minimum number of states to keep", MinStates).c_str())
+          FormatDefault("Minimum number of states to keep", MinStates).c_str())
          ("trunc,r", prog_opt::value<double>(&TruncCutoff),
           FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
-	 ("mix-factor,f", prog_opt::value(&MixFactor),
-	  FormatDefault("Mixing coefficient for the density matrix", MixFactor).c_str())
-	 ("random-mix-factor", prog_opt::value(&RandomMixFactor),
-	  FormatDefault("Random mixing for the density matrix", RandomMixFactor).c_str())
+         ("mix-factor,f", prog_opt::value(&MixFactor),
+          FormatDefault("Mixing coefficient for the density matrix", MixFactor).c_str())
+         ("random-mix-factor", prog_opt::value(&RandomMixFactor),
+          FormatDefault("Random mixing for the density matrix", RandomMixFactor).c_str())
          ("evolve", prog_opt::value(&EvolveDelta),
           "Instead of Lanczos, do imaginary time evolution with this timestep")
-	 ("random,a", prog_opt::bool_switch(&Create),
-	  "Create a new wavefunction starting from a random state")
-	 ("unitcell,u", prog_opt::value(&WavefuncUnitCellSize),
-	  "Only if --create is specified, the size of the wavefunction unit cell")
-	 ("startrandom", prog_opt::bool_switch(&DoRandom),
-	  "Start the first iDMRG iteration from a random centre matrix")
-	 ("exactdiag,e", prog_opt::bool_switch(&ExactDiag),
-	  "Start from an effective exact diagonalization of the unit cell")
-	 ("target,q", prog_opt::value(&TargetState),
-	  "the target quantum number per unit cell")
-	 ("boundary", prog_opt::value(&BoundaryState),
-	  "use this boundary quantum number for initializing the unit cell "
+         ("random,a", prog_opt::bool_switch(&Create),
+          "Create a new wavefunction starting from a random state")
+         ("unitcell,u", prog_opt::value(&WavefuncUnitCellSize),
+          "Only if --create is specified, the size of the wavefunction unit cell")
+         ("startrandom", prog_opt::bool_switch(&DoRandom),
+          "Start the first iDMRG iteration from a random centre matrix")
+         ("exactdiag,e", prog_opt::bool_switch(&ExactDiag),
+          "Start from an effective exact diagonalization of the unit cell")
+         ("target,q", prog_opt::value(&TargetState),
+          "the target quantum number per unit cell")
+         ("boundary", prog_opt::value(&BoundaryState),
+          "use this boundary quantum number for initializing the unit cell "
           "(useful for integer spin chains, can be used multiple times)")
-	 ("bootstrap,b", prog_opt::bool_switch(&NoFixedPoint),
-	  "boostrap iterations by starting from a single unit cell, "
-	  "instead of obtaining the fixed point Hamiltonian "
-	  "('bootstrap' is necessary if the wavefunction is not orthonormal)")
-	 ("steps,s", prog_opt::value<int>(&NumSteps),
-	  FormatDefault("Number of DMRG steps to perform", NumSteps).c_str())
-	 ("no-orthogonalize", prog_opt::bool_switch(&NoOrthogonalize),
-	  "Don't orthogonalize the wavefunction before saving")
-	 ("maxiter", prog_opt::value<int>(&NumIter),
-	  FormatDefault("Maximum number of Lanczos iterations per step (Krylov subspace size)", NumIter).c_str())
-	 ("miniter", prog_opt::value<int>(&MinIter),
-	  FormatDefault("Minimum number of Lanczos iterations per step", MinIter).c_str())
-	 ("maxtol", prog_opt::value(&MaxTol),
-	  FormatDefault("Maximum tolerance of the eigensolver", MaxTol).c_str())
-	 ("fidelityscale", prog_opt::value(&FidelityScale),
-	  FormatDefault("The tolerance of the eigensolver is min(maxtol, fidelityscale * sqrt(fidelity))",
-			FidelityScale).c_str())
+         ("bootstrap,b", prog_opt::bool_switch(&NoFixedPoint),
+          "boostrap iterations by starting from a single unit cell, "
+          "instead of obtaining the fixed point Hamiltonian "
+          "('bootstrap' is necessary if the wavefunction is not orthonormal)")
+         ("steps,s", prog_opt::value<int>(&NumSteps),
+          FormatDefault("Number of DMRG steps to perform", NumSteps).c_str())
+         ("no-orthogonalize", prog_opt::bool_switch(&NoOrthogonalize),
+          "Don't orthogonalize the wavefunction before saving")
+         ("maxiter", prog_opt::value<int>(&NumIter),
+          FormatDefault("Maximum number of Lanczos iterations per step (Krylov subspace size)", NumIter).c_str())
+         ("miniter", prog_opt::value<int>(&MinIter),
+          FormatDefault("Minimum number of Lanczos iterations per step", MinIter).c_str())
+         ("maxtol", prog_opt::value(&MaxTol),
+          FormatDefault("Maximum tolerance of the eigensolver", MaxTol).c_str())
+         ("fidelityscale", prog_opt::value(&FidelityScale),
+          FormatDefault("The tolerance of the eigensolver is min(maxtol, fidelityscale * sqrt(fidelity))",
+                        FidelityScale).c_str())
          ("initialfidelity", prog_opt::value(&InitialFidelity),
           FormatDefault("Initial value for the fidelity to set the eigensolver tolerance, for the first iteration",
                         InitialFidelity).c_str())
          ("seed", prog_opt::value<unsigned long>(), "random seed")
-	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
-	  ;
+         ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
+          ;
 
       prog_opt::options_description opt;
       opt.add(desc);
-      
+
       prog_opt::variables_map vm;
       prog_opt::positional_options_description p;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
@@ -741,7 +741,7 @@ int main(int argc, char** argv)
       srand(RandSeed);
 
       if (vm.count("one-site"))
-	 TwoSite = !OneSite;
+         TwoSite = !OneSite;
 
       bool StartFromFixedPoint = !NoFixedPoint; // we've reversed the option
 
@@ -750,13 +750,13 @@ int main(int argc, char** argv)
 
       if (ExactDiag || Create)
       {
-	 pheap::Initialize(FName, 1, mp_pheap::PageSize(), mp_pheap::CacheSize());
+         pheap::Initialize(FName, 1, mp_pheap::PageSize(), mp_pheap::CacheSize());
       }
       else
       {
-	 long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
-	 PsiPtr = pheap::OpenPersistent(FName, CacheSize);
-	 Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
+         long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
+         PsiPtr = pheap::OpenPersistent(FName, CacheSize);
+         Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
       }
 
       // Hamiltonian
@@ -765,7 +765,7 @@ int main(int argc, char** argv)
       std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
       int const UnitCellSize = Lattice.GetUnitCell().size();
       if (WavefuncUnitCellSize == 0)
-	 WavefuncUnitCellSize = UnitCellSize;
+         WavefuncUnitCellSize = UnitCellSize;
 
       optimize(HamMPO);
 
@@ -777,107 +777,107 @@ int main(int argc, char** argv)
       // load the wavefunction
       if (ExactDiag)
       {
-	 std::vector<BasisList> BL = ExtractLocalBasis1(HamMPO.data());
-	 std::vector<BasisList> FullBL = BL;
-	 while (int(FullBL.size()) < WavefuncUnitCellSize)
-	    std::copy(BL.begin(), BL.end(), std::back_inserter(FullBL));
-	 if (WavefuncUnitCellSize != int(FullBL.size()))
-	 {
-	    std::cout << "mp-idmrg: fatal: the wavefunction unit cell must be a multiple of the Hamiltonian unit cell.\n";
-	    return 1;
-	 }
-	 std::cout << "Creating exact diagonalization basis.  Wvaefunction unit cell size = " 
-		   << WavefuncUnitCellSize << '\n';
+         std::vector<BasisList> BL = ExtractLocalBasis1(HamMPO.data());
+         std::vector<BasisList> FullBL = BL;
+         while (int(FullBL.size()) < WavefuncUnitCellSize)
+            std::copy(BL.begin(), BL.end(), std::back_inserter(FullBL));
+         if (WavefuncUnitCellSize != int(FullBL.size()))
+         {
+            std::cout << "mp-idmrg: fatal: the wavefunction unit cell must be a multiple of the Hamiltonian unit cell.\n";
+            return 1;
+         }
+         std::cout << "Creating exact diagonalization basis.  Wvaefunction unit cell size = "
+                   << WavefuncUnitCellSize << '\n';
 
-	 QuantumNumbers::QuantumNumber q(HamMPO[0].GetSymmetryList(), TargetState);
-	 std::cout << "Target quantum number = " << q << '\n';
+         QuantumNumbers::QuantumNumber q(HamMPO[0].GetSymmetryList(), TargetState);
+         std::cout << "Target quantum number = " << q << '\n';
 
          QuantumNumbers::QuantumNumberList BoundaryQ;
          if (BoundaryState.empty())
-	 {
-	    BoundaryQ.push_back(QuantumNumbers::QuantumNumber(HamMPO[0].GetSymmetryList()));
-	 }
-	 else
-	 {
-	    for (unsigned i = 0; i < BoundaryState.size(); ++i)
-	    {
-	       std::cout << "Adding boundary quantum number " << BoundaryState[i] << '\n';
-	       BoundaryQ.push_back(QuantumNumbers::QuantumNumber(HamMPO[0].GetSymmetryList(), BoundaryState[i]));
-	    }
-	 }
+         {
+            BoundaryQ.push_back(QuantumNumbers::QuantumNumber(HamMPO[0].GetSymmetryList()));
+         }
+         else
+         {
+            for (unsigned i = 0; i < BoundaryState.size(); ++i)
+            {
+               std::cout << "Adding boundary quantum number " << BoundaryState[i] << '\n';
+               BoundaryQ.push_back(QuantumNumbers::QuantumNumber(HamMPO[0].GetSymmetryList(), BoundaryState[i]));
+            }
+         }
 
-	 //         CHECK_EQUAL(num_transform_targets(q, BoundaryQ), 1)
-	 //            ("The boundary quantum number is incompatible with the target quantum number");
+         //         CHECK_EQUAL(num_transform_targets(q, BoundaryQ), 1)
+         //            ("The boundary quantum number is incompatible with the target quantum number");
 
          QuantumNumbers::QuantumNumberList LeftBoundary;
-	 for (unsigned i = 0; i < BoundaryQ.size(); ++i)
-	 {
-	    LeftBoundary.push_back(transform_targets(q, BoundaryQ[i])[0]);
-	 }
+         for (unsigned i = 0; i < BoundaryQ.size(); ++i)
+         {
+            LeftBoundary.push_back(transform_targets(q, BoundaryQ[i])[0]);
+         }
 
-	 VectorBasis B1(HamMPO.front().GetSymmetryList());
-	 for (unsigned i = 0; i < LeftBoundary.size(); ++i)
-	 {
-	    B1.push_back(LeftBoundary[i], 1);
-	 }
-	 VectorBasis B2(HamMPO.front().GetSymmetryList());
-	 for (unsigned i = 0; i < BoundaryQ.size(); ++i)
-	 {
-	    B2.push_back(BoundaryQ[i], 1);
-	 }
-	 MyPsi.push_back(ConstructFromLeftBasis(FullBL[0], B1));
-	 for (int i = 1; i < WavefuncUnitCellSize; ++i)
-	 {
-	    MyPsi.push_back(ConstructFromLeftBasis(FullBL[i], MyPsi.get_back().Basis2()));
-	 }
+         VectorBasis B1(HamMPO.front().GetSymmetryList());
+         for (unsigned i = 0; i < LeftBoundary.size(); ++i)
+         {
+            B1.push_back(LeftBoundary[i], 1);
+         }
+         VectorBasis B2(HamMPO.front().GetSymmetryList());
+         for (unsigned i = 0; i < BoundaryQ.size(); ++i)
+         {
+            B2.push_back(BoundaryQ[i], 1);
+         }
+         MyPsi.push_back(ConstructFromLeftBasis(FullBL[0], B1));
+         for (int i = 1; i < WavefuncUnitCellSize; ++i)
+         {
+            MyPsi.push_back(ConstructFromLeftBasis(FullBL[i], MyPsi.get_back().Basis2()));
+         }
 
-	 QShift = q;
-	 // adjust for periodic basis
-	 StateComponent x = prod(MyPsi.get_back(), MakeRandomMatrixOperator(MyPsi.Basis2(), B2));
-	 C = TruncateBasis2(x); // the Basis2 is already 1-dim.  This just orthogonalizes x
-	 MyPsi.set_back(x);
+         QShift = q;
+         // adjust for periodic basis
+         StateComponent x = prod(MyPsi.get_back(), MakeRandomMatrixOperator(MyPsi.Basis2(), B2));
+         C = TruncateBasis2(x); // the Basis2 is already 1-dim.  This just orthogonalizes x
+         MyPsi.set_back(x);
       }
       else if (Create)
       {
-	 std::cout << "Creating wavefunction.  Wavefunction unit cell size = " << WavefuncUnitCellSize << '\n';
-	 if (WavefuncUnitCellSize % UnitCellSize != 0)
-	 {
-	    std::cout << "mp-idmrg: fatal: the wavefunction unit cell must be a multiple of the Hamiltonian unit cell.\n";
-	    return 1;
-	 }
-	 std::vector<BasisList> BL = ExtractLocalBasis1(HamMPO.data());
-	 std::vector<BasisList> FullBL = BL;
-	 while (int(FullBL.size()) < WavefuncUnitCellSize)
-	    std::copy(BL.begin(), BL.end(), std::back_inserter(FullBL));
+         std::cout << "Creating wavefunction.  Wavefunction unit cell size = " << WavefuncUnitCellSize << '\n';
+         if (WavefuncUnitCellSize % UnitCellSize != 0)
+         {
+            std::cout << "mp-idmrg: fatal: the wavefunction unit cell must be a multiple of the Hamiltonian unit cell.\n";
+            return 1;
+         }
+         std::vector<BasisList> BL = ExtractLocalBasis1(HamMPO.data());
+         std::vector<BasisList> FullBL = BL;
+         while (int(FullBL.size()) < WavefuncUnitCellSize)
+            std::copy(BL.begin(), BL.end(), std::back_inserter(FullBL));
 
-	 QuantumNumbers::QuantumNumber q(HamMPO[0].GetSymmetryList(), TargetState);
-	 std::cout << "Target quantum number = " << q << '\n';
+         QuantumNumbers::QuantumNumber q(HamMPO[0].GetSymmetryList(), TargetState);
+         std::cout << "Target quantum number = " << q << '\n';
 
-	 QuantumNumber LBoundary, RBoundary;
-	 if (BoundaryState.empty())
-	 {
-	    RBoundary = QuantumNumber(HamMPO[0].GetSymmetryList());
-	    LBoundary = q;
-	 }
-	 else
-	 {
-	    RBoundary = QuantumNumber(HamMPO[0].GetSymmetryList(), BoundaryState[0]);
-	    std::cout << "Rignt boundary quantum number is " << RBoundary << '\n';
-	    if (BoundaryState.size() > 1)
-	    {
-	       std::cout << "WARNING: ignoring addititional boundary quantum numbers in random wavefunction\n";
-	    }
-	    QuantumNumbers::QuantumNumberList QL = transform_targets(q, RBoundary);
-	    if (QL.size() > 1)
-	    {
-	       PANIC("Don't know how to handle non-scalar non-abelian target state")(RBoundary)(q);
-	    }
-	    LBoundary = QL[0];
-	    std::cout << "Left boundary quantum number is " << LBoundary << '\n';
-	 }
-	 MyPsi = CreateRandomWavefunction(FullBL, LBoundary, 3, RBoundary);
-	 QShift = q;
-	 C = MatrixOperator::make_identity(MyPsi.Basis1());
+         QuantumNumber LBoundary, RBoundary;
+         if (BoundaryState.empty())
+         {
+            RBoundary = QuantumNumber(HamMPO[0].GetSymmetryList());
+            LBoundary = q;
+         }
+         else
+         {
+            RBoundary = QuantumNumber(HamMPO[0].GetSymmetryList(), BoundaryState[0]);
+            std::cout << "Rignt boundary quantum number is " << RBoundary << '\n';
+            if (BoundaryState.size() > 1)
+            {
+               std::cout << "WARNING: ignoring addititional boundary quantum numbers in random wavefunction\n";
+            }
+            QuantumNumbers::QuantumNumberList QL = transform_targets(q, RBoundary);
+            if (QL.size() > 1)
+            {
+               PANIC("Don't know how to handle non-scalar non-abelian target state")(RBoundary)(q);
+            }
+            LBoundary = QL[0];
+            std::cout << "Left boundary quantum number is " << LBoundary << '\n';
+         }
+         MyPsi = CreateRandomWavefunction(FullBL, LBoundary, 3, RBoundary);
+         QShift = q;
+         C = MatrixOperator::make_identity(MyPsi.Basis1());
          C = left_orthogonalize(C, MyPsi);
       }
 
@@ -902,7 +902,7 @@ int main(int argc, char** argv)
       StatesList MyStates(States);
       if (vm.count("steps") && MyStates.size() == 1)
       {
-	 MyStates.Repeat(NumSteps);
+         MyStates.Repeat(NumSteps);
       }
       std::cout << MyStates << '\n';
 
@@ -913,53 +913,53 @@ int main(int argc, char** argv)
       // Check that the local basis for the wavefunction and hamiltonian are compatible
       if (ExtractLocalBasis(MyPsi) != ExtractLocalBasis1(HamMPO))
       {
-	 std::cerr << "fatal: Hamiltonian is defined on a different local basis to the wavefunction.\n";
-	 return 1;
+         std::cerr << "fatal: Hamiltonian is defined on a different local basis to the wavefunction.\n";
+         return 1;
       }
 
       if (ExtractLocalBasis1(HamMPO) != ExtractLocalBasis2(HamMPO))
       {
-	 std::cerr << "fatal: Hamiltonian has different domain and co-domain.\n";
-	 return 1;
+         std::cerr << "fatal: Hamiltonian has different domain and co-domain.\n";
+         return 1;
       }
-      
+
       // Get the initial Hamiltonian matrix elements
       //      StateComponent BlockHamL = Initial_E(HamMPO.front() , Lin.Basis2());
       StateComponent BlockHamL = Initial_E(HamMPO , C.Basis2());
       if (StartFromFixedPoint)
       {
-	 std::cout << "Solving fixed-point Hamiltonian..." << std::endl;
+         std::cout << "Solving fixed-point Hamiltonian..." << std::endl;
          MatrixOperator Rho = scalar_prod(C, herm(C));
-	 std::complex<double> InitialEnergy = MPO_EigenvaluesLeft(BlockHamL, MyPsi, QShift, HamMPO, Rho);
-	 std::cout << "Starting energy (left eigenvalue) = " << InitialEnergy << std::endl;
+         std::complex<double> InitialEnergy = MPO_EigenvaluesLeft(BlockHamL, MyPsi, QShift, HamMPO, Rho);
+         std::cout << "Starting energy (left eigenvalue) = " << InitialEnergy << std::endl;
 
-	 BlockHamL = delta_shift(BlockHamL, QShift);
+         BlockHamL = delta_shift(BlockHamL, QShift);
       }
 
       StateComponent BlockHamR = Initial_F(HamMPO, C.Basis2());
       if (StartFromFixedPoint)
       {
-	 LinearWavefunction PsiR;
-	 MatrixOperator U;
-	 RealDiagonalOperator D;
-	 std::tie(U, D, PsiR) = get_right_canonical(Psi);
-	 
-	 MatrixOperator L = D;
-	 PsiR.set_back(prod(PsiR.get_back(), delta_shift(U, adjoint(QShift))));
+         LinearWavefunction PsiR;
+         MatrixOperator U;
+         RealDiagonalOperator D;
+         std::tie(U, D, PsiR) = get_right_canonical(Psi);
 
-	 BlockHamR = Initial_F(HamMPO, PsiR.Basis2());
+         MatrixOperator L = D;
+         PsiR.set_back(prod(PsiR.get_back(), delta_shift(U, adjoint(QShift))));
 
-         MatrixOperator Rho = D;	
-	 Rho = scalar_prod(Rho, herm(Rho));
+         BlockHamR = Initial_F(HamMPO, PsiR.Basis2());
 
-	 // We obtained Rho from the left side, so we need to delta shift to the right basis
-	 Rho = delta_shift(Rho, adjoint(QShift));
-	 
-	 std::complex<double> Energy = MPO_EigenvaluesRight(BlockHamR, PsiR, QShift, HamMPO, Rho);
-	 std::cout << "Starting energy (right eigenvalue) = " << Energy << std::endl;
+         MatrixOperator Rho = D;
+         Rho = scalar_prod(Rho, herm(Rho));
 
-	 U = delta_shift(U, adjoint(QShift));
-	 BlockHamR = prod(prod(U, BlockHamR), herm(U));
+         // We obtained Rho from the left side, so we need to delta shift to the right basis
+         Rho = delta_shift(Rho, adjoint(QShift));
+
+         std::complex<double> Energy = MPO_EigenvaluesRight(BlockHamR, PsiR, QShift, HamMPO, Rho);
+         std::cout << "Starting energy (right eigenvalue) = " << Energy << std::endl;
+
+         U = delta_shift(U, adjoint(QShift));
+         BlockHamR = prod(prod(U, BlockHamR), herm(U));
       }
 
       // The initial wavefunction is left-orthogonalized, so the initial center matrix
@@ -993,9 +993,9 @@ int main(int argc, char** argv)
       LeftBlock.back() = delta_shift(LeftBlock.back(), QShift);
       while (I != MyPsi.end())
       {
-	 LeftBlock.push_back(contract_from_left(*HI, herm(*I), LeftBlock.back(), *I));
-	 ++HI;
-	 ++I;
+         LeftBlock.push_back(contract_from_left(*HI, herm(*I), LeftBlock.back(), *I));
+         ++HI;
+         ++I;
       }
 
       DEBUG_TRACE(inner_prod(C, operator_prod(LeftBlock.back(), C, herm(RightBlock.front()))));
@@ -1048,44 +1048,44 @@ int main(int argc, char** argv)
 
       try
       {
-	 for (int i = 0; i < MyStates.size(); ++i)
-	 {
-	    SInfo.MaxStates = MyStates[i].NumStates;
+         for (int i = 0; i < MyStates.size(); ++i)
+         {
+            SInfo.MaxStates = MyStates[i].NumStates;
 
-	    C = DoDMRGSweepLeft(MyPsi, C, HamMPO, LeftBlock, RightBlock, SInfo, MinIter, NumIter,
-				FidelityAv, TwoSite, MixFactor, RandomMixFactor, EvolveDelta);
+            C = DoDMRGSweepLeft(MyPsi, C, HamMPO, LeftBlock, RightBlock, SInfo, MinIter, NumIter,
+                                FidelityAv, TwoSite, MixFactor, RandomMixFactor, EvolveDelta);
 
-	    // now comes the slightly tricky part, where we turn around
+            // now comes the slightly tricky part, where we turn around
 
-	    // retrieve the wrapped around left block from the last iteration
-	    LeftBlock = std::deque<StateComponent>(1, SaveLeftBlock);
+            // retrieve the wrapped around left block from the last iteration
+            LeftBlock = std::deque<StateComponent>(1, SaveLeftBlock);
 
-	    C = InvertDiagonal(DiagonalL, InverseTol) * C;
-	    C = herm(ExpanderL) * C;
-	    C = delta_shift(PsiR, QShift) * C;
-	    // C is now dm x dm
+            C = InvertDiagonal(DiagonalL, InverseTol) * C;
+            C = herm(ExpanderL) * C;
+            C = delta_shift(PsiR, QShift) * C;
+            // C is now dm x dm
 
             DEBUG_TRACE(trace(scalar_prod(C,herm(C))));
 
-	    DEBUG_CHECK_EQUAL(C.Basis1(), LeftBlock.back().Basis2());
+            DEBUG_CHECK_EQUAL(C.Basis1(), LeftBlock.back().Basis2());
 
             // Subtract off the energy
-	    LeftBlock.back().back() -= LastEnergy * LeftBlock.back().front();
-	    //std::cout << "EShift=" << LastEnergy << '\n';
+            LeftBlock.back().back() -= LastEnergy * LeftBlock.back().front();
+            //std::cout << "EShift=" << LastEnergy << '\n';
 
-	    // solve
+            // solve
 
-	    double Energy;
-	    double Fidelity;
-	    int Iterations;
-	    double Tol;
-	    {
-	       Iterations = NumIter;
-	       Tol = std::min(std::sqrt(FidelityAv.value()) * FidelityScale, MaxTol);
-	       C *= 1.0 / norm_frob(C);
-	       MatrixOperator COld = C;
+            double Energy;
+            double Fidelity;
+            int Iterations;
+            double Tol;
+            {
+               Iterations = NumIter;
+               Tol = std::min(std::sqrt(FidelityAv.value()) * FidelityScale, MaxTol);
+               C *= 1.0 / norm_frob(C);
+               MatrixOperator COld = C;
 
-	       //	       TRACE(C.Basis1().total_degree())(C.Basis2().total_degree());
+               //              TRACE(C.Basis1().total_degree())(C.Basis2().total_degree());
 
                if (EvolveDelta == 0.0)
                {
@@ -1109,95 +1109,95 @@ int main(int argc, char** argv)
                   Iterations = 1;
                }
 
-	       Fidelity = std::max(1.0 - norm_frob(inner_prod(COld, C)), 0.0);
-	       FidelityAv.push(Fidelity);
-	    }
+               Fidelity = std::max(1.0 - norm_frob(inner_prod(COld, C)), 0.0);
+               FidelityAv.push(Fidelity);
+            }
 
-	    LastEnergy = Energy;
+            LastEnergy = Energy;
 
-	    PsiL = C;
+            PsiL = C;
 
-	    {
-	       // truncate the left block
-	       MatrixOperator RhoL = scalar_prod(C, herm(C));
-	       if (MixFactor > 0)
-	       {
-		  MatrixOperator RhoMix = operator_prod(LeftBlock.back(), RhoL, herm(LeftBlock.back()));
-		  RhoL += (MixFactor / trace(RhoMix)) * RhoMix;
-	       }
+            {
+               // truncate the left block
+               MatrixOperator RhoL = scalar_prod(C, herm(C));
+               if (MixFactor > 0)
+               {
+                  MatrixOperator RhoMix = operator_prod(LeftBlock.back(), RhoL, herm(LeftBlock.back()));
+                  RhoL += (MixFactor / trace(RhoMix)) * RhoMix;
+               }
                if (RandomMixFactor > 0)
                {
                   MatrixOperator RhoMix = MakeRandomMatrixOperator(RhoL.Basis1(), RhoL.Basis2());
                   RhoMix = herm(RhoMix) * RhoMix;
                   RhoL += (RandomMixFactor / trace(RhoMix)) * RhoMix;
                }
-	       DensityMatrix<MatrixOperator> DML(RhoL);
-	       TruncationInfo Info;
-	       MatrixOperator TruncL = DML.ConstructTruncator(DML.begin(),
-							      TruncateFixTruncationErrorAbsolute(DML.begin(),
-												 DML.end(),
-												 SInfo,
-												 Info));
-	       std::cout << "A Energy=" << Energy
-			 << " States=" << Info.KeptStates()
-			 << " TruncError=" << Info.TruncationError()
-			 << " Entropy=" << Info.KeptEntropy()
-			 << " Fidelity=" << Fidelity
-                  //			 << " FidelityAv=" << FidelityAv.value()
-			 << " Iter=" << Iterations
-			 << " Tol=" << Tol
-			 << '\n';
+               DensityMatrix<MatrixOperator> DML(RhoL);
+               TruncationInfo Info;
+               MatrixOperator TruncL = DML.ConstructTruncator(DML.begin(),
+                                                              TruncateFixTruncationErrorAbsolute(DML.begin(),
+                                                                                                 DML.end(),
+                                                                                                 SInfo,
+                                                                                                 Info));
+               std::cout << "A Energy=" << Energy
+                         << " States=" << Info.KeptStates()
+                         << " TruncError=" << Info.TruncationError()
+                         << " Entropy=" << Info.KeptEntropy()
+                         << " Fidelity=" << Fidelity
+                  //                     << " FidelityAv=" << FidelityAv.value()
+                         << " Iter=" << Iterations
+                         << " Tol=" << Tol
+                         << '\n';
 
-	       C = TruncL * C;
-	       LeftBlock.back() = triple_prod(TruncL, LeftBlock.back(), herm(TruncL));
+               C = TruncL * C;
+               LeftBlock.back() = triple_prod(TruncL, LeftBlock.back(), herm(TruncL));
 
-	    }
+            }
 
-	    {
-	       // DiagonalL becomes the matrix of singular values in the m-dimensional truncated basis
-	       MatrixOperator U;
-	       SingularValueDecomposition(C, U, DiagonalL, ExpanderL);
-	       C = DiagonalL * ExpanderL;
-	       LeftBlock.back() = triple_prod(herm(U), LeftBlock.back(), U);
-	    }
+            {
+               // DiagonalL becomes the matrix of singular values in the m-dimensional truncated basis
+               MatrixOperator U;
+               SingularValueDecomposition(C, U, DiagonalL, ExpanderL);
+               C = DiagonalL * ExpanderL;
+               LeftBlock.back() = triple_prod(herm(U), LeftBlock.back(), U);
+            }
 
-	    DEBUG_CHECK_EQUAL(C.Basis2(), RightBlock.front().Basis1());
+            DEBUG_CHECK_EQUAL(C.Basis2(), RightBlock.front().Basis1());
 
-	    SaveRightBlock = RightBlock.front();  // the right block at the left-hand edge of the unit cell
-	    SaveRightBlock = delta_shift(SaveRightBlock, adjoint(QShift));
+            SaveRightBlock = RightBlock.front();  // the right block at the left-hand edge of the unit cell
+            SaveRightBlock = delta_shift(SaveRightBlock, adjoint(QShift));
 
-	    // right-moving sweep
+            // right-moving sweep
 
-	    C = DoDMRGSweepRight(C, MyPsi, HamMPO, LeftBlock, RightBlock, SInfo, MinIter, NumIter,
-				 FidelityAv, TwoSite, MixFactor, RandomMixFactor, EvolveDelta);
+            C = DoDMRGSweepRight(C, MyPsi, HamMPO, LeftBlock, RightBlock, SInfo, MinIter, NumIter,
+                                 FidelityAv, TwoSite, MixFactor, RandomMixFactor, EvolveDelta);
 
-	    // turn around at the right-hand side
-	    SaveLeftBlock = LeftBlock.back();
-	    SaveLeftBlock = delta_shift(SaveLeftBlock, QShift);
+            // turn around at the right-hand side
+            SaveLeftBlock = LeftBlock.back();
+            SaveLeftBlock = delta_shift(SaveLeftBlock, QShift);
 
-	    // retrieve the wrapped-around block
-	    RightBlock = std::deque<StateComponent>(1, SaveRightBlock);
+            // retrieve the wrapped-around block
+            RightBlock = std::deque<StateComponent>(1, SaveRightBlock);
 
-	    C = C * InvertDiagonal(DiagonalR, InverseTol);
-	    C = C * herm(ExpanderR);
-	    C = C * delta_shift(PsiL, adjoint(QShift));
+            C = C * InvertDiagonal(DiagonalR, InverseTol);
+            C = C * herm(ExpanderR);
+            C = C * delta_shift(PsiL, adjoint(QShift));
 
             DEBUG_TRACE(trace(scalar_prod(C,herm(C))));
 
-	    DEBUG_CHECK_EQUAL(C.Basis2(), RightBlock.front().Basis1());
+            DEBUG_CHECK_EQUAL(C.Basis2(), RightBlock.front().Basis1());
 
-	    // make the energy zero
-	    RightBlock.front().front() -= LastEnergy * RightBlock.front().back();
+            // make the energy zero
+            RightBlock.front().front() -= LastEnergy * RightBlock.front().back();
 
-	    // solve
-	    {
-	       Iterations = NumIter;
-	       Tol = std::min(std::sqrt(FidelityAv.value()) * FidelityScale, MaxTol);
-	       C *= 1.0 / norm_frob(C);
-	       MatrixOperator COld = C;
+            // solve
+            {
+               Iterations = NumIter;
+               Tol = std::min(std::sqrt(FidelityAv.value()) * FidelityScale, MaxTol);
+               C *= 1.0 / norm_frob(C);
+               MatrixOperator COld = C;
                if (EvolveDelta == 0.0)
                {
-		  Energy = Lanczos(C, SuperblockMultiply(LeftBlock.back(), RightBlock.front()),
+                  Energy = Lanczos(C, SuperblockMultiply(LeftBlock.back(), RightBlock.front()),
                                    Iterations,
                                    Tol, MinIter, Verbose);
                }
@@ -1210,75 +1210,75 @@ int main(int argc, char** argv)
                   Iterations = 1;
                }
 
-	       Fidelity = std::max(1.0 - norm_frob(inner_prod(COld, C)), 0.0);
-	       FidelityAv.push(Fidelity);
-	    }
+               Fidelity = std::max(1.0 - norm_frob(inner_prod(COld, C)), 0.0);
+               FidelityAv.push(Fidelity);
+            }
 
-	    LastEnergy = Energy;
-	    PsiR = C;
+            LastEnergy = Energy;
+            PsiR = C;
 
-	    // truncate the right block
-	    {
-	       MatrixOperator RhoR = scalar_prod(herm(C), C);
-	       if (MixFactor > 0)
-	       {
-		  MatrixOperator RhoMix = operator_prod(herm(RightBlock.front()), RhoR, RightBlock.front());
-		  RhoR += (MixFactor / trace(RhoMix)) * RhoMix;
-	       }
+            // truncate the right block
+            {
+               MatrixOperator RhoR = scalar_prod(herm(C), C);
+               if (MixFactor > 0)
+               {
+                  MatrixOperator RhoMix = operator_prod(herm(RightBlock.front()), RhoR, RightBlock.front());
+                  RhoR += (MixFactor / trace(RhoMix)) * RhoMix;
+               }
                if (RandomMixFactor > 0)
                {
                   MatrixOperator RhoMix = MakeRandomMatrixOperator(RhoR.Basis1(), RhoR.Basis2());
                   RhoMix = herm(RhoMix) * RhoMix;
                   RhoR += (RandomMixFactor / trace(RhoMix)) * RhoMix;
                }
-	       DensityMatrix<MatrixOperator> DMR(RhoR);
-	       TruncationInfo Info;
-	       MatrixOperator TruncR = DMR.ConstructTruncator(DMR.begin(),
-							      TruncateFixTruncationErrorAbsolute(DMR.begin(),
-												 DMR.end(),
-												 SInfo,
-												 Info));
-	       std::cout << "B Energy=" << Energy
-			 << " States=" << Info.KeptStates()
-			 << " TruncError=" << Info.TruncationError()
-			 << " Entropy=" << Info.KeptEntropy()
-			 << " Fidelity=" << Fidelity
-                  //			 << " FidelityAv=" << FidelityAv.value()
-			 << " Iter=" << Iterations
-			 << " Tol=" << Tol
-			 << '\n';
+               DensityMatrix<MatrixOperator> DMR(RhoR);
+               TruncationInfo Info;
+               MatrixOperator TruncR = DMR.ConstructTruncator(DMR.begin(),
+                                                              TruncateFixTruncationErrorAbsolute(DMR.begin(),
+                                                                                                 DMR.end(),
+                                                                                                 SInfo,
+                                                                                                 Info));
+               std::cout << "B Energy=" << Energy
+                         << " States=" << Info.KeptStates()
+                         << " TruncError=" << Info.TruncationError()
+                         << " Entropy=" << Info.KeptEntropy()
+                         << " Fidelity=" << Fidelity
+                  //                     << " FidelityAv=" << FidelityAv.value()
+                         << " Iter=" << Iterations
+                         << " Tol=" << Tol
+                         << '\n';
 
-	       C = C * herm(TruncR);
-	       //MyPsi.set_back(prod(TruncR, MyPsi.get_back()));
-	       RightBlock.front() = triple_prod(TruncR, RightBlock.front(), herm(TruncR));
-	    }
-	    {
-	       // DiagonalR becomes the matrix of singular values in the m-dimensional truncated basis
-	       MatrixOperator U, Vt;
-	       SingularValueDecomposition(C, ExpanderR, DiagonalR, Vt);
-	       C = ExpanderR * DiagonalR;
-	       //MyPsi.set_back(prod(MyPsi.get_back(), U));
-	       RightBlock.front() = triple_prod(Vt, RightBlock.front(), herm(Vt));
-	       //LeftBlock.back() = triple_prod(herm(U), LeftBlock.back(), U);
-	    }
+               C = C * herm(TruncR);
+               //MyPsi.set_back(prod(TruncR, MyPsi.get_back()));
+               RightBlock.front() = triple_prod(TruncR, RightBlock.front(), herm(TruncR));
+            }
+            {
+               // DiagonalR becomes the matrix of singular values in the m-dimensional truncated basis
+               MatrixOperator U, Vt;
+               SingularValueDecomposition(C, ExpanderR, DiagonalR, Vt);
+               C = ExpanderR * DiagonalR;
+               //MyPsi.set_back(prod(MyPsi.get_back(), U));
+               RightBlock.front() = triple_prod(Vt, RightBlock.front(), herm(Vt));
+               //LeftBlock.back() = triple_prod(herm(U), LeftBlock.back(), U);
+            }
 
-	    //PsiR = C;
+            //PsiR = C;
 
-	    ++NumIterationsCompleted;
-	    ProcControl::TestAsyncCheckpoint();
-	 }
+            ++NumIterationsCompleted;
+            ProcControl::TestAsyncCheckpoint();
+         }
 
       }
       catch (ProcControl::Checkpoint& c)
       {
-	 ReturnCode = c.ReturnCode();
-	 std::cerr << "Early termination after " << NumIterationsCompleted << " iterations: "
-		   << c.Reason() << '\n';
-	 EarlyTermination = true;
+         ReturnCode = c.ReturnCode();
+         std::cerr << "Early termination after " << NumIterationsCompleted << " iterations: "
+                   << c.Reason() << '\n';
+         EarlyTermination = true;
       }
       catch (...)
       {
-	 throw;      // if we got some other exception, don't even try and recover
+         throw;      // if we got some other exception, don't even try and recover
       }
 
       // finished the iterations.  apply the truncation to the left block so that DiagonalR
@@ -1288,7 +1288,7 @@ int main(int argc, char** argv)
       //MyPsi.set_front(prod(ExpanderL, MyPsi.get_front()));
 
       if (Verbose >= 1)
-	 std::cerr << "Saving wavefunction.\n";
+         std::cerr << "Saving wavefunction.\n";
 
       // convert back to an InfiniteWavefunction
 
@@ -1304,7 +1304,7 @@ int main(int argc, char** argv)
       Psi.Psi = LinearWavefunction();
       for (LinearWavefunction::const_iterator I = MyPsi.begin(); I != MyPsi.end(); ++I)
       {
-	 Psi.Psi.push_back(*I);
+         Psi.Psi.push_back(*I);
       }
 
       Psi.QShift = QShift;
@@ -1317,12 +1317,12 @@ int main(int argc, char** argv)
       // orthogonalize it
       if (EarlyTermination && !NoOrthogonalize)
       {
-	 std::cerr << "mp-idmrg: warning: early termination, not orthogonalizing the wavefunction!\n";
+         std::cerr << "mp-idmrg: warning: early termination, not orthogonalizing the wavefunction!\n";
       }
       else if (!NoOrthogonalize)
       {
-	 std::cerr << "Orthogonalizing wavefunction...\n";
-	 orthogonalize(Psi);
+         std::cerr << "Orthogonalizing wavefunction...\n";
+         orthogonalize(Psi);
       }
 
       DEBUG_CHECK_EQUAL(Psi.C_old.Basis1(), Psi.C_old.Basis2());

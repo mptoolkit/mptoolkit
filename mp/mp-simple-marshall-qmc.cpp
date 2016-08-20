@@ -37,7 +37,7 @@ namespace prog_opt = boost::program_options;
 typedef std::complex<double> complex;
 
 // attempt to flip basis states at two sites of the configuration such that
-// it stays in the same symmetry sector.  
+// it stays in the same symmetry sector.
 bool TryFlipPair(WavefunctionDesc& Config, std::vector<BasisList> const& Basis, int s1, int s2)
 {
    // firstly, find a new configuration for site s1
@@ -124,7 +124,7 @@ CalculateMarshallSign(LinearWavefunction const& Psi, WavefunctionDesc& State, in
    {
       if (Verbose && ((i+1) % (NumFlips / 10) == 0))
          std::cerr << (i+1) << '\n';
-      
+
       for (unsigned n = 0; n < Psi.size(); ++n)
       {
          WavefunctionDesc Trial = State;
@@ -151,12 +151,12 @@ CalculateMarshallSign(LinearWavefunction const& Psi, WavefunctionDesc& State, in
 
    return double(x) / NumFlips;
 }
-   
+
 double CalculateMarshallSign(LinearWavefunction const& Psi, int BurnIn, int NumFlips, bool Verbose)
 {
    std::vector<BasisList> LocalBasis = ExtractLocalBasis(Psi);
    QuantumNumber Target = Psi.TransformsAs();
-   if (Verbose) 
+   if (Verbose)
       std::cerr << "Constructing initial configuration...\n";
    WavefunctionDesc Config = CreateRandomConfiguration(LocalBasis, Target, 3.0);
    if (Verbose)
@@ -182,11 +182,11 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("burnin,b", prog_opt::value(&BurnIn), 
+         ("burnin,b", prog_opt::value(&BurnIn),
           FormatDefault("Burn in iterations", BurnIn).c_str())
          ("iter,i", prog_opt::value(&Sweeps),
           FormatDefault("Number of iterations for the statistics", Sweeps).c_str())
-         ("seed,s", prog_opt::value<unsigned int>(), 
+         ("seed,s", prog_opt::value<unsigned int>(),
           ("Random seed [range 0.."+boost::lexical_cast<std::string>(RAND_MAX)+"]").c_str())
          ("verbose,v", prog_opt::bool_switch(&Verbose),
           "extra debug output")
@@ -203,10 +203,10 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || vm.count("psi") == 0)
       {

@@ -130,7 +130,7 @@ Color Color::HSV(double H, double S, double V, double A)
    double p = V * (1 - S);
    double q = V * (1 - S * f);
    double t = V * (1 - S * (1 - f));
-   switch (i) 
+   switch (i)
    {
       case 0  : return Color(V,t,p,A);
       case 1  : return Color(q,V,p,A);
@@ -139,12 +139,12 @@ Color Color::HSV(double H, double S, double V, double A)
       case 4  : return Color(t,p,V,A);
       default : return Color(V,p,q,A);
    }
-}   
+}
 
 std::ostream& operator<<(std::ostream& out, Color const& c)
 {
    // force printing the decimal place, to avoid confusion with the
-   // integer (0..255) format 
+   // integer (0..255) format
    std::ostringstream Str;
    Str.setf(std::ios_base::fixed, std::ios_base::floatfield);
    Str.precision(6);
@@ -164,7 +164,7 @@ Transform::Transform(ident_tag)
    {
       for (int j = 0; j < 4; ++j)
       {
-	 TransformMat[i][j] = 0;
+         TransformMat[i][j] = 0;
       }
       TransformMat[i][i] = 1.0;
    }
@@ -270,7 +270,7 @@ Transform operator*(Transform const& t1, Transform const& t2)
    {
       for (int j = 0; j < 4; ++j)
       {
-	 Ret(i,j) = t1(i,0) * t2(0,j) + t1(i,1) * t2(1,j) + t1(i,2) * t2(2,j) + t1(i,3) * t2(3,j);
+         Ret(i,j) = t1(i,0) * t2(0,j) + t1(i,1) * t2(1,j) + t1(i,2) * t2(2,j) + t1(i,3) * t2(3,j);
       }
    }
    return Ret;
@@ -279,8 +279,8 @@ Transform operator*(Transform const& t1, Transform const& t2)
 Vertex operator*(Vertex const& v, Transform const& t)
 {
    return Vertex(v.x * t(0,0) + v.y * t(1,0) + v.z * t(2,0) + t(3,0),
-		 v.x * t(0,1) + v.y * t(1,1) + v.z * t(2,1) + t(3,1),
-		 v.x * t(0,2) + v.y * t(1,2) + v.z * t(2,2) + t(3,2));
+                 v.x * t(0,1) + v.y * t(1,1) + v.z * t(2,1) + t(3,1),
+                 v.x * t(0,2) + v.y * t(1,2) + v.z * t(2,2) + t(3,2));
 }
 
 std::ostream& operator<<(std::ostream& out, Transform const& t)
@@ -289,7 +289,7 @@ std::ostream& operator<<(std::ostream& out, Transform const& t)
    {
       for (int j = 0; j < 4; ++j)
       {
-	 out << t(i,j) << ' ';
+         out << t(i,j) << ' ';
       }
       out << '\n';
    }
@@ -450,16 +450,16 @@ PolyhedraBase::num_edges() const
       for (unsigned i = 0; i < I->size() - 1; ++i)
       {
          int v1 = (*I)[i];
-	 int v2 = (*I)[i+1];
-	 sort2(v1,v2);
-	 EdgeList.insert(std::make_pair(v1,v2));
+         int v2 = (*I)[i+1];
+         sort2(v1,v2);
+         EdgeList.insert(std::make_pair(v1,v2));
       }
       if (I->size() > 2)
       {
-	 int v1 = (*I)[0];
-	 int v2 = (*I)[I->size()-1];
-	 sort2(v1,v2);
-	 EdgeList.insert(std::make_pair(v1,v2));
+         int v1 = (*I)[0];
+         int v2 = (*I)[I->size()-1];
+         sort2(v1,v2);
+         EdgeList.insert(std::make_pair(v1,v2));
       }
    }
    return EdgeList.size();
@@ -476,7 +476,7 @@ VectorList::VectorList()
 OoglPrimitive* VectorList::clone() const
 {
   return new VectorList(*this);
-}  
+}
 
 void VectorList::write(std::ostream& out) const
 {
@@ -607,7 +607,7 @@ void OoglObject::set_primitive(OoglPrimitive const& Data_)
 std::ostream& operator<<(std::ostream& out, OoglObject const& Obj)
 {
    out << "{ ";
-   if (!Obj.symbol_name().empty()) 
+   if (!Obj.symbol_name().empty())
      out << "define " << Obj.symbol_name() << ' ';
 
    if (!Obj.appearance().empty())
@@ -639,7 +639,7 @@ List& List::operator=(List const& L)
    {
       Data.push_back((*I));
    }
-   
+
    return *this;
 }
 
@@ -651,7 +651,7 @@ OoglPrimitive* List::clone() const
 void List::write(std::ostream& out) const
 {
    out << "LIST\n";
-   
+
    for (const_iterator I = begin(); I != end(); ++I)
    {
       out << *I << '\n';
@@ -710,7 +710,7 @@ ObjectTransform::ObjectTransform()
 }
 
 ObjectTransform::ObjectTransform(location_type Locat, location_type Orig, Vertex const& OrigP,
-		OoglObject const& G, TransformList const& TL)
+                OoglObject const& G, TransformList const& TL)
   : Location(Locat), Origin(Orig), OriginPoint(OrigP),
   Geom(G), TList(TL)
 {
@@ -723,7 +723,7 @@ ObjectTransform::ObjectTransform(location_type Locat, OoglObject const& G, Trans
 }
 
 ObjectTransform::ObjectTransform(location_type Orig, Vertex const& OrigP,
-		OoglObject const& G, TransformList const& TL)
+                OoglObject const& G, TransformList const& TL)
   : Location(local), Origin(Orig), OriginPoint(OrigP),
   Geom(G), TList(TL)
 {
@@ -744,7 +744,7 @@ void ObjectTransform::write(std::ostream& out) const
 {
    out << "INST\n";
 
-   if (Location != local) 
+   if (Location != local)
      out << "location " << location_string[Location] << '\n';
 
    if (Origin != local && OriginPoint != Vertex(0,0,0))

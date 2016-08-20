@@ -35,7 +35,7 @@ int main()
    std::vector<std::complex<double> >::const_iterator vI = v.begin();
    for (iterator<Matrix<std::complex<double> > >::type I = iterate(M); I; ++I)
       for (inner_iterator<Matrix<std::complex<double> > >::type J = iterate(I); J; ++J)
-	 *J = *vI++;
+         *J = *vI++;
 
    std::cout.precision(12);
    std::cout << "Size: " << v.size() << '\n';

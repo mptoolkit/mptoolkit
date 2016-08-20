@@ -134,25 +134,25 @@ QuantumNumber CoerceSymmetryList(QuantumNumber const& q, SymmetryList const& SLi
       SymmetryBase const* S = SList.GetSymmetryBase(i);
       size_t Size = S->QuantumNumberSize();
       // see if S is located in this symmetry list
-      int ThisWhere = q.GetSymmetryList().WhichSymmetry(SList.SymmetryName(i)); 
+      int ThisWhere = q.GetSymmetryList().WhichSymmetry(SList.SymmetryName(i));
 
       QN_TRACE(ThisWhere)(S)(Size);
 
       if (ThisWhere == -1)
       {
-	 // this symmetry is new, initialize it with the identity quantum number
-	 S->scalar_transforms_as(Iter);
+         // this symmetry is new, initialize it with the identity quantum number
+         S->scalar_transforms_as(Iter);
       }
       else
       {
-	 // copy the quantum number from *this into Other
- 	 CHECK_EQUAL(q.GetSymmetryList().GetSymmetryBase(ThisWhere), S);
-	 size_t ThisOffset = q.GetSymmetryList().QuantumNumberOffset(ThisWhere);
+         // copy the quantum number from *this into Other
+         CHECK_EQUAL(q.GetSymmetryList().GetSymmetryBase(ThisWhere), S);
+         size_t ThisOffset = q.GetSymmetryList().QuantumNumberOffset(ThisWhere);
 
-	 QN_TRACE(ThisOffset);
+         QN_TRACE(ThisOffset);
 
-	 memcpy(Iter, q.begin()+ThisOffset, Size * sizeof(*Iter));
-	 ++ThisCountCheck;
+         memcpy(Iter, q.begin()+ThisOffset, Size * sizeof(*Iter));
+         ++ThisCountCheck;
       }
       Iter += Size;
    }
@@ -204,7 +204,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, QuantumNumber& L)
 // Projection
 //
 
-Projection::Projection() 
+Projection::Projection()
 {
 }
 
@@ -294,25 +294,25 @@ Projection CoerceSymmetryList(Projection const& q, SymmetryList const& SList)
       SymmetryBase const* S = SList.GetSymmetryBase(i);
       size_t Size = S->ProjectionSize();
       // see if S is located in this symmetry list
-      int ThisWhere = q.GetSymmetryList().WhichSymmetry(SList.SymmetryName(i)); 
+      int ThisWhere = q.GetSymmetryList().WhichSymmetry(SList.SymmetryName(i));
 
       QN_TRACE(ThisWhere)(S)(Size);
 
       if (ThisWhere == -1)
       {
-	 // this symmetry is new, initialize it with the identity quantum number
-	 S->scalar_transforms_as(Iter);
+         // this symmetry is new, initialize it with the identity quantum number
+         S->scalar_transforms_as(Iter);
       }
       else
       {
-	 // copy the quantum number from *this into Other
- 	 CHECK(q.GetSymmetryList().GetSymmetryBase(ThisWhere) == S);
-	 size_t ThisOffset = q.GetSymmetryList().ProjectionOffset(ThisWhere);
+         // copy the quantum number from *this into Other
+         CHECK(q.GetSymmetryList().GetSymmetryBase(ThisWhere) == S);
+         size_t ThisOffset = q.GetSymmetryList().ProjectionOffset(ThisWhere);
 
-	 QN_TRACE(ThisOffset);
+         QN_TRACE(ThisOffset);
 
-	 memcpy(Iter, q.begin()+ThisOffset, Size * sizeof(*Iter));
-	 ++ThisCountCheck;
+         memcpy(Iter, q.begin()+ThisOffset, Size * sizeof(*Iter));
+         ++ThisCountCheck;
       }
       Iter += Size;
    }
@@ -362,12 +362,12 @@ PStream::opstream& operator<<(PStream::opstream& out, QuantumNumberList const& q
       out << q[0].GetSymmetryList();
       for (int i = 0; i < Size; ++i)
       {
-	 q[i].WriteRaw(out);
+         q[i].WriteRaw(out);
       }
    }
    return out;
 }
-   
+
 PStream::ipstream& operator>>(PStream::ipstream& in, QuantumNumberList& q)
 {
    q.clear();
@@ -380,8 +380,8 @@ PStream::ipstream& operator>>(PStream::ipstream& in, QuantumNumberList& q)
       QuantumNumber QN(SList, QuantumNumber::NoInitialization());
       for (int i = 0; i < Size; ++i)
       {
-	 QN.ReadRaw(in);
-	 q.push_back(QN);
+         QN.ReadRaw(in);
+         q.push_back(QN);
       }
    }
    return in;

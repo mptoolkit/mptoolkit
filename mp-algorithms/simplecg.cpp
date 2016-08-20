@@ -85,11 +85,11 @@ Solver::Solver(CenterWavefunction const& Psi_, SplitOperator const& Op_, CenterW
    {
       x_A_x.PushLeft(operator_prod(herm(A.LookupLeft(Loc)),
                                    herm(x.LookupLeft(Loc)),
-                                   x_A_x.Left(), 
+                                   x_A_x.Left(),
                                    x.LookupLeft(Loc)));
 
       x_y.PushLeft(operator_prod(herm(x.LookupLeft(Loc)),
-                                 x_y.Left(), 
+                                 x_y.Left(),
                                  y.LookupLeft(Loc)));
    }
 
@@ -104,16 +104,16 @@ Solver::~Solver()
 {
 }
 
-CenterWavefunction& Solver::Wavefunction() 
-{ 
+CenterWavefunction& Solver::Wavefunction()
+{
    x.AttributesMutable()["GreensFunction"] = boost::lexical_cast<std::string>(this->GreensFunction());
-   return x; 
+   return x;
 }
 
 CenterWavefunction const& Solver::Wavefunction() const
-{ 
+{
    x.AttributesMutable()["GreensFunction"] = boost::lexical_cast<std::string>(this->GreensFunction());
-   return x; 
+   return x;
 }
 
 void Solver::CreateLogFiles(std::string const& BasePath, ConfList const& Conf)
@@ -313,30 +313,30 @@ void Solver::EndSweep()
                           << SweepEntropy << ' '
                           << GlobalResid << ' '
                           << Converged << ' '
-      //                          << ExpectA2 
+      //                          << ExpectA2
                           << std::endl;
    msg_log(1, "EnergyLog") << std::flush;
 }
 
 double Solver::ResidualNorm() const
 {
-   MatrixOperator Ax = operator_prod(conj(A.Center()), 
-                                     x_A_x.Left(), 
-                                     x.Center(), 
+   MatrixOperator Ax = operator_prod(conj(A.Center()),
+                                     x_A_x.Left(),
+                                     x.Center(),
                                      herm(x_A_x.Right())) + complex(0.0, Broadening) * x.Center();
 
    //   MatrixOperator AxNorm = Ax * (1.0 / norm_frob(Ax));
    //   MatrixOperator yNorm = yprime * (1.0 / norm_frob(yprime));
    //   TRACE(norm_frob(AxNorm - yNorm));
    return norm_frob(yprime-Ax) / norm_frob(yprime);
-   
+
 }
 
 CenterWavefunction Solver::WavefunctionAx() const
 {
-   MatrixOperator Ax = operator_prod(conj(A.Center()), 
-                                     x_A_x.Left(), 
-                                     x.Center(), 
+   MatrixOperator Ax = operator_prod(conj(A.Center()),
+                                     x_A_x.Left(),
+                                     x.Center(),
                                      herm(x_A_x.Right())) + complex(0.0, Broadening) * x.Center();
 
    CenterWavefunction Res(x); Res.Center() = Ax;
@@ -360,7 +360,7 @@ void Solver::ExpandLeft()
    x_A_x.PopLeft();
    x_A_x.PushLeft(operator_prod(herm(A.Left()),
                                      herm(x.Left()),
-                                     x_A_x.Left(), 
+                                     x_A_x.Left(),
                                      x.Left()));
 
    x_y.PopLeft();
@@ -383,9 +383,9 @@ void Solver::ExpandRight()
 
    // matrix elements
    x_A_x.PopRight();
-   x_A_x.PushRight(operator_prod(A.Right(), 
-                                 x.Right(), 
-                                 x_A_x.Right(), 
+   x_A_x.PushRight(operator_prod(A.Right(),
+                                 x.Right(),
+                                 x_A_x.Right(),
                                  herm(x.Right())));
 
    x_y.PopRight();
@@ -423,15 +423,15 @@ void Solver::ShiftRight()
 {
    DEBUG_TRACE("ShiftRight")(this->ResidualNorm());
 
-   MatrixOperator Ay = operator_prod(conj(A.Center()), 
-                                     x_A_x.Left(), 
-                                     yprime, 
+   MatrixOperator Ay = operator_prod(conj(A.Center()),
+                                     x_A_x.Left(),
+                                     yprime,
                                      herm(x_A_x.Right()));
    TRACE(inner_prod(Ay, yprime));
 
-   MatrixOperator Ax = operator_prod(conj(A.Center()), 
-                                     x_A_x.Left(), 
-                                     x.Center(), 
+   MatrixOperator Ax = operator_prod(conj(A.Center()),
+                                     x_A_x.Left(),
+                                     x.Center(),
                                      herm(x_A_x.Right()));
 
    MPStateComponent ypp = prod(yprime, x.Right());
@@ -441,9 +441,9 @@ void Solver::ShiftRight()
    y.RotateRight();
    x.RotateRight();
 
-   x_A_x.PushLeft(operator_prod(herm(A.Left()), 
-                                herm(x.Left()), 
-                                x_A_x.Left(), 
+   x_A_x.PushLeft(operator_prod(herm(A.Left()),
+                                herm(x.Left()),
+                                x_A_x.Left(),
                                 x.Left()));
    x_A_x.PopRight();
 
@@ -455,17 +455,17 @@ void Solver::ShiftRight()
    MatrixOperator yp = scalar_prod(herm(x.Left()), ypp);
    DEBUG_TRACE(norm_frob(yp))(norm_frob(yprime-yp))(inner_prod(yprime,yp));
 
-   MatrixOperator Axx = operator_prod(conj(A.Center()), 
-                                      x_A_x.Left(), 
-                                      x.Center(), 
+   MatrixOperator Axx = operator_prod(conj(A.Center()),
+                                      x_A_x.Left(),
+                                      x.Center(),
                                       herm(x_A_x.Right()));
    MatrixOperator Ap = scalar_prod(herm(x.Left()), Axp);
    DEBUG_TRACE(norm_frob(Ap))(norm_frob(Axx - Ap))(inner_prod(Axx,Ap));
    DEBUG_TRACE(norm_frob(Axx - yprime) / norm_frob(yprime))(norm_frob(Ap - yprime) / norm_frob(yprime));
 
-   Ay = operator_prod(conj(A.Center()), 
-                      x_A_x.Left(), 
-                      yprime, 
+   Ay = operator_prod(conj(A.Center()),
+                      x_A_x.Left(),
+                      yprime,
                       herm(x_A_x.Right()));
    TRACE(inner_prod(Ay, yprime));
 
@@ -490,13 +490,13 @@ void Solver::ShiftRightAndExpand()
 
    x.PushLeft(prod(x.Center(), x.Right()));
    x.PopRight();
-   x.Center() = ExpandBasis2(x.Left()); 
+   x.Center() = ExpandBasis2(x.Left());
 
    // new matrix elements
-   x_A_x.PushLeft(operator_prod(herm(A.Left()), 
-				herm(x.Left()), 
-				x_A_x.Left(), 
-				x.Left()));
+   x_A_x.PushLeft(operator_prod(herm(A.Left()),
+                                herm(x.Left()),
+                                x_A_x.Left(),
+                                x.Left()));
    x_A_x.PopRight();
 
    x_y.PushLeft(operator_prod(herm(x.Left()), x_y.Left(), y.Left()));
@@ -588,9 +588,9 @@ TruncationInfo Solver::TruncateLeft(StatesInfo const& SInfo, double CFactor)
    if (AxMixFactor != 0)
    {
       // calculate Ax - TODO: this was already done by the solver, should be saved somewhere
-      MatrixOperator Ax = operator_prod(conj(A.Center()), 
-                                        x_A_x.Left(), 
-                                        x.Center(), 
+      MatrixOperator Ax = operator_prod(conj(A.Center()),
+                                        x_A_x.Left(),
+                                        x.Center(),
                                         herm(x_A_x.Right()));
       MatrixOperator Rho_Ax = scalar_prod(Ax, herm(Ax));
       DensityMat += (AxMixFactor / trace(Rho_Ax)) * Rho_Ax;
@@ -607,7 +607,7 @@ TruncationInfo Solver::TruncateLeft(StatesInfo const& SInfo, double CFactor)
 
    DensityMatrix<MatrixOperator> DM(DensityMat);
    TruncationInfo Info;
-   MatrixOperator U = DM.ConstructTruncator(DM.begin(), TruncateFixTruncationErrorRelative(DM.begin(), 
+   MatrixOperator U = DM.ConstructTruncator(DM.begin(), TruncateFixTruncationErrorRelative(DM.begin(),
                                                                                            DM.end(),
                                                                                            SInfo,
                                                                                            Info));
@@ -636,9 +636,9 @@ TruncationInfo Solver::TruncateLeft(StatesInfo const& SInfo, double CFactor)
    TRACE(inner_prod(Ax, yprime));
    TRACE(norm_frob(yprime-Ax) / norm_frob(yprime));  // this is our residual norm
 
-   MatrixOperator Axx = operator_prod(conj(A.Center()), 
-                                      x_A_x.Left(), 
-                                      x.Center(), 
+   MatrixOperator Axx = operator_prod(conj(A.Center()),
+                                      x_A_x.Left(),
+                                      x.Center(),
                                       herm(x_A_x.Right()));
    TRACE(norm_frob(Ax - Axx))(norm_frob(Ax))(norm_frob(Axx));
 
@@ -646,7 +646,7 @@ TruncationInfo Solver::TruncateLeft(StatesInfo const& SInfo, double CFactor)
   x_A_x.PopLeft();
    x_A_x.PushLeft(operator_prod(herm(A.Left()),
                                      herm(x.Left()),
-                                     x_A_x.Left(), 
+                                     x_A_x.Left(),
                                      x.Left()));
 
    x_y.PopLeft();
@@ -698,9 +698,9 @@ TruncationInfo Solver::TruncateRight(StatesInfo const& SInfo, double CFactor)
    if (AxMixFactor != 0)
    {
       // calculate Ax - TODO: this was already done by the solver, should be saved somewhere
-      MatrixOperator Ax = operator_prod(conj(A.Center()), 
-                                        x_A_x.Left(), 
-                                        x.Center(), 
+      MatrixOperator Ax = operator_prod(conj(A.Center()),
+                                        x_A_x.Left(),
+                                        x.Center(),
                                         herm(x_A_x.Right()));
       MatrixOperator Rho_Ax = scalar_prod(herm(Ax), Ax);
       DensityMat += (AxMixFactor / trace(Rho_Ax)) * Rho_Ax;
@@ -724,7 +724,7 @@ TruncationInfo Solver::TruncateRight(StatesInfo const& SInfo, double CFactor)
 
    DensityMatrix<MatrixOperator> DM(DensityMat);
    TruncationInfo Info;
-   MatrixOperator U = DM.ConstructTruncator(DM.begin(), TruncateFixTruncationErrorRelative(DM.begin(), 
+   MatrixOperator U = DM.ConstructTruncator(DM.begin(), TruncateFixTruncationErrorRelative(DM.begin(),
                                                                                            DM.end(),
                                                                                            SInfo,
                                                                                            Info));
@@ -833,7 +833,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, Solver& d)
              >> d.TotalSweepRecNumber
              >> d.TotalNumIterations
              >> d.TotalNumMultiplies
-      
+
              >> d.SweepNumIterations
              >> d.SweepSumStates
              >> d.SweepMaxStates
@@ -843,7 +843,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, Solver& d)
              >> d.SweepGF_norm
              >> d.SweepGF_overlap
              >> d.SweepGF_real
-      
+
              >> d.IterationNumMultiplies
              >> d.IterationNumStates
              >> d.IterationTruncation

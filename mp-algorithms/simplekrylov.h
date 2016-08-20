@@ -37,16 +37,16 @@ struct SimpleKrylov
    SimpleKrylov() {}
 
    // Constructor that takes a guess wavefunction
-   SimpleKrylov(CenterWavefunction const& Psi_, 
-                SplitOperator const& Op_, 
-                std::complex<double> Timestep_, 
+   SimpleKrylov(CenterWavefunction const& Psi_,
+                SplitOperator const& Op_,
+                std::complex<double> Timestep_,
                 CenterWavefunction const& Guess_,
                 bool UsePsi1HPsi0_ = false);
 
    // Constructor where we use Psi0_ itself as the guess, and we already have the
    // superblock matrix elements
-   SimpleKrylov(CenterWavefunction const& Psi0_, 
-                SplitOperator const& Op_, 
+   SimpleKrylov(CenterWavefunction const& Psi0_,
+                SplitOperator const& Op_,
                 std::complex<double> Timestep_,
                 SuperblockOperator const& Psi0_H_Psi0,
                 bool UsePsi1HPsi0_ = false);
@@ -92,7 +92,7 @@ struct SimpleKrylov
 
    CenterWavefunction& Wavefunction();
    CenterWavefunction const& Wavefunction() const;
- 
+
    TruncationInfo TruncateLeft(StatesInfo const& States, double MixFactor);
    TruncationInfo TruncateRight(StatesInfo const& States, double MixFactor);
 
@@ -149,7 +149,7 @@ struct SimpleKrylov
    int IterationNumStates;
    double IterationTruncation;
    double IterationEntropy;
-   double IterationSolverVariance; // the change in wavefunction this iteration: ||Psi_orig - Psi_new||^2 
+   double IterationSolverVariance; // the change in wavefunction this iteration: ||Psi_orig - Psi_new||^2
    double IterationSolverTolerance; // residual error estimate from the Lanczos exponential
    double IterationRealTruncation; // the actual truncation error of wavefunction (not incorporating mixing)
    double IterationOverallVariance; // change in wavefunction, including truncation

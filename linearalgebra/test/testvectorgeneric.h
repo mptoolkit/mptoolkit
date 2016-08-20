@@ -76,7 +76,7 @@ template <typename T>
 void test_double_negate()
 {
    T x;
-   CHECK(typeid(transform(transform(x, LinearAlgebra::Negate<double>()), 
+   CHECK(typeid(transform(transform(x, LinearAlgebra::Negate<double>()),
                                 LinearAlgebra::Negate<double>())) ==
          typeid(x));
 }
@@ -102,7 +102,7 @@ void test_real_scalar_vector_nop(T const& v)
 template <typename VecType>
 void test_real_dense_vector()
 {
-   VecType v1;   
+   VecType v1;
    CHECK_EQUAL(size(v1), 0);
 
    VecType v2(3);
@@ -199,7 +199,7 @@ void test_real_abs(T const& x)
 {
    typedef typename LinearAlgebra::make_value<typename
       LinearAlgebra::Abs<T>::result_type>::type AbsType;
-  
+
    using LinearAlgebra::equal;
    using LinearAlgebra::abs;
 

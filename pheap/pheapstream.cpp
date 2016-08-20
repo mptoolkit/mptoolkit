@@ -26,7 +26,7 @@ namespace PHeapFileSystem
 
 // opheapstream
 
-opheapstream::opheapstream(BlockFileSystem* FS_, Descriptor* Descriptor_) 
+opheapstream::opheapstream(BlockFileSystem* FS_, Descriptor* Descriptor_)
   : opstream(0, NULL, NULL, NULL), MyDescriptor(Descriptor_), MyFS(FS_)
 {
    CHECK(MyFS != NULL);

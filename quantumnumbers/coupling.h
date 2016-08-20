@@ -26,7 +26,7 @@
 
 //
 // Coupling6j
-// 
+//
 // returns the 6j coefficient { j1 j2 j3 }
 //                            { j4 j5 j6 }
 //
@@ -39,19 +39,19 @@ double Racah(half_int ja, half_int jb, half_int jc, half_int jd, half_int je, ha
 double Racah_NoCache(half_int ja, half_int jb, half_int jc, half_int jd, half_int je, half_int jf);
 
 
-double Coupling9j(half_int j11, half_int j12, half_int j13, 
-                  half_int j21, half_int j22, half_int j23, 
+double Coupling9j(half_int j11, half_int j12, half_int j13,
+                  half_int j21, half_int j22, half_int j23,
                   half_int j31, half_int j32, half_int j33);
 
-double ClebschGordan(half_int j1, half_int m1, 
-		     half_int j2, half_int m2,
-		     half_int j,  half_int m);
+double ClebschGordan(half_int j1, half_int m1,
+                     half_int j2, half_int m2,
+                     half_int j,  half_int m);
 
 // returns the clebsch-Gordan coefficent in exact form,
 // as first * sqrt(second)
 std::pair<gmp::rational, gmp::rational>
- ClebschGordanSquared(half_int j1, half_int m1, 
-		      half_int j2, half_int m2,
-		      half_int j,  half_int m);
+ ClebschGordanSquared(half_int j1, half_int m1,
+                      half_int j2, half_int m2,
+                      half_int j,  half_int m);
 
 #endif

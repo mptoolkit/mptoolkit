@@ -24,7 +24,7 @@ void test_real_sparse_vector()
 {
    test_ctor<VecType>();
 
-   VecType v1;   
+   VecType v1;
    CHECK_EQUAL(size(v1), 0);
    CHECK_EQUAL(nnz(v1), 0);
 
@@ -71,10 +71,10 @@ void test_real_sparse_vector()
 
    // sanity check
    CHECK(v4 != v3)(v4)(v3);
- 
+
    test_double_negate<VecType>();
    test_real_scalar_vector_nop(v4);
-   
+
    // check assignment
    v3 = v4;
    CHECK_EQUAL(size(v3), 4);

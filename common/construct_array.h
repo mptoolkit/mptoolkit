@@ -45,8 +45,8 @@ namespace ext
 //
 // construct_array
 //
-// default-constructs an array of type T, with Size elements.  
-// buf is assumed to be uninitialized memory of length at least sizeof(T) * Size.  
+// default-constructs an array of type T, with Size elements.
+// buf is assumed to be uninitialized memory of length at least sizeof(T) * Size.
 // If any of the constructors throws an exception, destructors are called
 // for all fully constructed elements.
 //
@@ -194,7 +194,7 @@ void ConstructHelper<T, Enable>::apply(T* buf, size_t Size)
    {
       for ( ; i < Size; ++i)
       {
-	 new (buf+i) T;
+         new (buf+i) T;
       }
    }
    catch (...)
@@ -202,7 +202,7 @@ void ConstructHelper<T, Enable>::apply(T* buf, size_t Size)
       // if buf[i]'s constructor threw, then destuct all of the previous objects
       for ( ; i != 0; --i)
       {
-	 buf[i-1].~T();
+         buf[i-1].~T();
       }
       throw;
    }
@@ -223,7 +223,7 @@ void ConstructHelper<T, Enable>::apply(T* buf, size_t Size, T const& x)
    {
       for ( ; i < Size; ++i)
       {
-	 new (buf+i) T(x);
+         new (buf+i) T(x);
       }
    }
    catch (...)
@@ -231,7 +231,7 @@ void ConstructHelper<T, Enable>::apply(T* buf, size_t Size, T const& x)
       // if buf[i]'s constructor threw, then destuct all of the previous objects
       for ( ; i != 0; --i)
       {
-	 buf[i-1].~T();
+         buf[i-1].~T();
       }
       throw;
    }

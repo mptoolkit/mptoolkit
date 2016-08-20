@@ -55,20 +55,20 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("two-site,2", "modify 2 neighboring sites at once")
-	 ("min-states", prog_opt::value<int>(&MinStates), "Minimum number of states to keep [default 1]")
-	 ("max-states,m", prog_opt::value<int>(&MaxStates), "Maximum number of states to keep [default 10000]")
-         ("trunc,r", prog_opt::value<double>(&MinTrunc), 
+         ("two-site,2", "modify 2 neighboring sites at once")
+         ("min-states", prog_opt::value<int>(&MinStates), "Minimum number of states to keep [default 1]")
+         ("max-states,m", prog_opt::value<int>(&MaxStates), "Maximum number of states to keep [default 10000]")
+         ("trunc,r", prog_opt::value<double>(&MinTrunc),
           "Cutoff truncation error per site [default 0]")
-         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff), 
+         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           ("Cutoff threshold for density matrix eigenvalues [default "
            +boost::lexical_cast<std::string>(EigenCutoff)+"]").c_str())
-	 ("mix-factor,f", prog_opt::value<double>(&MixFactor), 
+         ("mix-factor,f", prog_opt::value<double>(&MixFactor),
           "Mixing coefficient for the density matrix [default 0.01]")
-	 ("sweeps,s", prog_opt::value<int>(&NumSweeps), "Number of half-sweeps to perform [default 2]")
+         ("sweeps,s", prog_opt::value<int>(&NumSweeps), "Number of half-sweeps to perform [default 2]")
          ("a2", prog_opt::value(&ExpectationA2),
           "Use this pre-computed value of <rhs|adjoint(A)*A|rhs> to speed up the residual calculation")
-         ("no-resid", prog_opt::bool_switch(&NoCalculateVariance), 
+         ("no-resid", prog_opt::bool_switch(&NoCalculateVariance),
           "Don't calculate the final residual norm");
          ;
 
@@ -87,10 +87,10 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || vm.count("psi") == 0)
       {
@@ -179,15 +179,15 @@ int main(int argc, char** argv)
 
       if (ShouldCalculateVariance)
       {
-         // calculate the residual norm 
+         // calculate the residual norm
          // double PR_CosTheta = expectation(*Psi, Op, *Rhs).real();
          double PR_CosTheta = Optimizer.Energy();  // this is faster than expectation()
          double PsiNorm2 = norm_2_sq(*Psi);
          if (ExpectationA2 == -1)
          {
-            ExpectationA2 = expectation(*Rhs, prod(adjoint(Op), 
-                                                   Op, 
-                                                   QuantumNumber(Op.GetSymmetryList())), 
+            ExpectationA2 = expectation(*Rhs, prod(adjoint(Op),
+                                                   Op,
+                                                   QuantumNumber(Op.GetSymmetryList())),
                                         *Rhs).real();
             std::cout << "<rhs|adjoint(A)*A|rhs> = " << ExpectationA2 << '\n';
          }
@@ -197,7 +197,7 @@ int main(int argc, char** argv)
          std::cout << "|Residual|^2 = " << Residual << '\n';
          std::cout << "Theta^2 = " << Theta2 << '\n';
       }
-      
+
       Rhs = pvalue_ptr<MPWavefunction>();  // this might end up in the saved file if we don't do this
       pheap::ShutdownPersistent(Psi);
 

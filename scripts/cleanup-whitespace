@@ -1,0 +1,2 @@
+for i in $(find . -name \*.cpp) ; do xemacs $i -batch -l ~/.xemacs/custom.el  -eval '(untabify-buffer)' -eval '(strip-trailing-whitespace)' -f save-buffer ; done
+

@@ -53,7 +53,7 @@ namespace pthread
 // verifies that the mutex is locked by the calling thread.
 // This facility is only available for debug_mutex's.
 //
-// DEBUG_CHECK_OWNER works the same way, but 
+// DEBUG_CHECK_OWNER works the same way, but
 // expands to a no-operation if NDEBUG is defined.
 //
 
@@ -77,10 +77,10 @@ class debug_mutex
       class sentry
       {
          public:
-	    sentry(debug_mutex& m) : M(m) { M.lock(); }
-	    ~sentry() { M.unlock(); }
+            sentry(debug_mutex& m) : M(m) { M.lock(); }
+            ~sentry() { M.unlock(); }
          private:
-	    debug_mutex& M;
+            debug_mutex& M;
       };
 
       ::pthread_mutex_t const* get_mutex() const { return &M; }
@@ -120,10 +120,10 @@ class fast_mutex
       class sentry
       {
          public:
-	    sentry(fast_mutex& m) : M(m) { M.lock(); }
-	    ~sentry() { M.unlock(); }
+            sentry(fast_mutex& m) : M(m) { M.lock(); }
+            ~sentry() { M.unlock(); }
          private:
-	    fast_mutex& M;
+            fast_mutex& M;
       };
 
       ::pthread_mutex_t* get_mutex() { return &M; }
@@ -154,10 +154,10 @@ class rec_mutex
       class sentry
       {
          public:
-	    sentry(rec_mutex& m) : M(m) { M.lock(); }
-	    ~sentry() { M.unlock(); }
+            sentry(rec_mutex& m) : M(m) { M.lock(); }
+            ~sentry() { M.unlock(); }
          private:
-	    rec_mutex& M;
+            rec_mutex& M;
       };
 
       ::pthread_mutex_t* get_mutex() { return &M; }
@@ -246,23 +246,23 @@ class readers_writers
       class write_sentry
       {
          public:
- 	    write_sentry(readers_writers& rw_) : rw(rw_) { rw.write_lock(); }
-	    ~write_sentry() { rw.write_unlock(); }
+            write_sentry(readers_writers& rw_) : rw(rw_) { rw.write_lock(); }
+            ~write_sentry() { rw.write_unlock(); }
          private:
-	    write_sentry(write_sentry const&);            // not implemented
-	    write_sentry& operator=(write_sentry const&); // not implemented
-	    readers_writers& rw;
+            write_sentry(write_sentry const&);            // not implemented
+            write_sentry& operator=(write_sentry const&); // not implemented
+            readers_writers& rw;
       };
 
       class read_sentry
       {
          public:
- 	    read_sentry(readers_writers& rw_) : rw(rw_) { rw.read_lock(); }
-	    ~read_sentry() { rw.read_unlock(); }
+            read_sentry(readers_writers& rw_) : rw(rw_) { rw.read_lock(); }
+            ~read_sentry() { rw.read_unlock(); }
          private:
-	    read_sentry(read_sentry const&);            // not implemented
-	    read_sentry& operator=(read_sentry const&); // not implemented
-	    readers_writers& rw;
+            read_sentry(read_sentry const&);            // not implemented
+            read_sentry& operator=(read_sentry const&); // not implemented
+            readers_writers& rw;
       };
 
    private:
@@ -284,7 +284,7 @@ class readers_writers
 inline
 void
 fast_mutex::lock()
-{ 
+{
    if (int Err = ::pthread_mutex_lock(&M) != 0) throw_pthread_error("fast_mutex::lock(): ", Err);
 }
 
@@ -300,7 +300,7 @@ fast_mutex::unlock()
 inline
 void
 rec_mutex::lock()
-{ 
+{
    if (int Err = ::pthread_mutex_lock(&M) != 0) throw_pthread_error("rec_mutex::lock(): ", Err);
 }
 
@@ -332,7 +332,7 @@ void signal(condition& c)
    if (int Err = pthread_cond_signal(c.get_cond()) != 0) throw_pthread_error("condition ", Err);
 }
 
-inline 
+inline
 void broadcast(condition& c)
 {
    //   DEBUGMSG("broadcast of condition " << (void*) &c << " by thread_id " << pthread_self());

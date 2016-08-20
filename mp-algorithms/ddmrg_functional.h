@@ -27,7 +27,7 @@
 //
 // If we choose A = (w+E-H)^2 + \eta^2,
 // |b> = -(w+E-H - i\eta) |lv>  (it is safe to project this onto the local Hilbert space!)
-// then this corresponds to the residual norm shifted by a constant, 
+// then this corresponds to the residual norm shifted by a constant,
 // ||r||^2 = F + <b|b>
 // where |r> = |lv> - (w+E-H+i\eta)|x>
 // and |x> is the correction vector.
@@ -40,8 +40,8 @@
 
 double const OrthoThreshold = 1E-14;  // threshold for happy breakdown
 
-template <typename Vector, typename MultiplyFunc, 
-          //          typename InnerProdFunc, 
+template <typename Vector, typename MultiplyFunc,
+          //          typename InnerProdFunc,
           typename PrecFunc>
 double
 FunctionalMinimize(Vector& x, MultiplyFunc MatVecMultiply, Vector const& b, int& m,
@@ -57,7 +57,7 @@ FunctionalMinimize(Vector& x, MultiplyFunc MatVecMultiply, Vector const& b, int&
   LinearAlgebra::Matrix<value_type> bR(m+1, 1);
 
   LinearAlgebra::Vector<Vector> Krylov(m+1);
-  
+
   double normx = norm_frob(x);
   // Generate our Krylov subspace
   Krylov[0] = x;
@@ -144,8 +144,8 @@ FunctionalMinimize(Vector& x, MultiplyFunc MatVecMultiply, Vector const& b, int&
 // In this version, it is fully preconditioned.  We ignore H*|k_{n-1}> and instead
 // use the Precondition( k_{n-1} ).  This is not normal preconditioning, which would
 // instead act as Precondition( H*|k_{n-1}> ).
-template <typename Vector, typename MultiplyFunc, 
-          //          typename InnerProdFunc, 
+template <typename Vector, typename MultiplyFunc,
+          //          typename InnerProdFunc,
           typename PrecFunc>
 double
 FunctionalMinimizeWithPre(Vector& x, MultiplyFunc MatVecMultiply, Vector const& b, int& m,
@@ -163,7 +163,7 @@ FunctionalMinimizeWithPre(Vector& x, MultiplyFunc MatVecMultiply, Vector const& 
   LinearAlgebra::Matrix<value_type> bR(m+1, 1);
 
   LinearAlgebra::Vector<Vector> Krylov(m+1);
-  
+
   // residual
   //double normR = norm_frob_sq(DebugR);
   //double r = norm_frob_sq(Precondition(x) - DebugR) / normR;
@@ -310,8 +310,8 @@ FunctionalMinimizeWithPre(Vector& x, MultiplyFunc MatVecMultiply, Vector const& 
 // In this version, it is fully preconditioned.  We ignore H*|k_{n-1}> and instead
 // use the Precondition( k_{n-1} ).  This is not normal preconditioning, which would
 // instead act as Precondition( H*|k_{n-1}> ).
-template <typename Vector, typename MultiplyFunc, 
-          //          typename InnerProdFunc, 
+template <typename Vector, typename MultiplyFunc,
+          //          typename InnerProdFunc,
           typename PrecFunc>
 double
 FunctionalMinimizeWithResidVector(Vector& x, MultiplyFunc MatVecMultiply, Vector const& b, int& m,
@@ -328,7 +328,7 @@ FunctionalMinimizeWithResidVector(Vector& x, MultiplyFunc MatVecMultiply, Vector
   LinearAlgebra::Matrix<value_type> bR(m+1, 1);
 
   LinearAlgebra::Vector<Vector> Krylov(m+1);
-  
+
   // residual
   double normR = norm_frob_sq(RightSide);
   double r = norm_frob_sq(Precondition(x) - RightSide) / normR;

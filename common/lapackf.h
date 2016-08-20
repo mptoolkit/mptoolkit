@@ -49,39 +49,39 @@ using namespace Fortran;
 
 // real
 
-void dgesv(integer n, integer nrhs, double* a, integer lda, integer* restrict ipiv, 
+void dgesv(integer n, integer nrhs, double* a, integer lda, integer* restrict ipiv,
            double* b, integer ldb, integer& restrict info);
 
-void dgels(char trans, integer m, integer n, integer nrhs, 
-	   double* a, integer lda, double* b, integer ldb, 
-	   double* work, integer lwork, integer& restrict info);
+void dgels(char trans, integer m, integer n, integer nrhs,
+           double* a, integer lda, double* b, integer ldb,
+           double* work, integer lwork, integer& restrict info);
 
 void dposv(char uplo, integer n, integer nrhs, double *a, integer lda,
-	   double *b, integer ldb, integer& restrict info);
+           double *b, integer ldb, integer& restrict info);
 
 void dsyev(char jobz, char uplo, integer n, double* restrict a, integer lda,
-	   double* restrict w, double* restrict work, integer lwork, integer& restrict info);
+           double* restrict w, double* restrict work, integer lwork, integer& restrict info);
 
 void dsyevx(char jobz, char range, char uplo, integer n, double* restrict a, integer lda,
-	    double vl, double vu, integer il, integer iu, double abstol, int& m,
+            double vl, double vu, integer il, integer iu, double abstol, int& m,
             double* restrict w, double* restrict z, integer ldz,
-            double* restrict work, integer lwork, integer* restrict iwork, 
+            double* restrict work, integer lwork, integer* restrict iwork,
             integer* restrict ifail, integer& restrict info);
 
 void dsyevr(char jobz, char range, char uplo, integer n, double* restrict a, integer lda,
-	    double vl, double vu, integer il, integer iu, double abstol, int& m,
-	    double* restrict w, double* restrict z, integer ldz, integer* isuppz, 
+            double vl, double vu, integer il, integer iu, double abstol, int& m,
+            double* restrict w, double* restrict z, integer ldz, integer* isuppz,
             double* restrict work,
-	    integer lwork, integer* restrict iwork, int liwork, integer& restrict info);
+            integer lwork, integer* restrict iwork, int liwork, integer& restrict info);
 
 void dgesvd(char jobu, char jobvt, integer m, integer n, double* restrict a, integer lda,
-	    double* restrict s, double* restrict u, integer ldu, double* restrict vt, integer ldvt,
-	    double* restrict work, integer lwork, integer& restrict info);
+            double* restrict s, double* restrict u, integer ldu, double* restrict vt, integer ldvt,
+            double* restrict work, integer lwork, integer& restrict info);
 
-void dsygvx(integer itype, char jobz, char range, char uplo, integer n, double* restrict a, 
-            integer lda, double* restrict b, integer ldb, double vl, double vu, integer il, 
-            integer iu, double abstol, integer& restrict m, double* restrict w, 
-            double* restrict z, integer ldz, double* restrict work, integer lwork, 
+void dsygvx(integer itype, char jobz, char range, char uplo, integer n, double* restrict a,
+            integer lda, double* restrict b, integer ldb, double vl, double vu, integer il,
+            integer iu, double abstol, integer& restrict m, double* restrict w,
+            double* restrict z, integer ldz, double* restrict work, integer lwork,
             integer* restrict iwork, integer* restrict ifail, integer& restrict info);
 
 void dpotrf(char uplo, integer n, double* restrict a, integer lda, integer info);
@@ -91,52 +91,52 @@ double dlamch(char mach);
 // complex
 
 void zposv(char uplo, integer n, integer nrhs, std::complex<double> *a, integer lda,
-	   std::complex<double> *b, integer ldb, integer& restrict info);
+           std::complex<double> *b, integer ldb, integer& restrict info);
 
 void zheev(char jobz, char uplo, integer n, std::complex<double>* restrict a, integer lda,
-	   double* restrict w, std::complex<double>* restrict work, integer lwork,
-	   double* restrict rwork, integer& restrict info);
+           double* restrict w, std::complex<double>* restrict work, integer lwork,
+           double* restrict rwork, integer& restrict info);
 
 void zgeev(char jobl, char jobr, integer n, std::complex<double>* restrict a, integer lda,
-	   std::complex<double>* restrict w, std::complex<double>* restrict vl, integer ldvl,
+           std::complex<double>* restrict w, std::complex<double>* restrict vl, integer ldvl,
            std::complex<double>* restrict vr, integer ldvr,
            std::complex<double>* restrict work, integer lwork,
-	   double* restrict rwork, integer& restrict info);
+           double* restrict rwork, integer& restrict info);
 
-void zgesvd(char jobu, char jobvh, integer m, integer n, std::complex<double>* restrict a, 
+void zgesvd(char jobu, char jobvh, integer m, integer n, std::complex<double>* restrict a,
             integer lda,
-	    double* restrict s, std::complex<double>* restrict u, integer ldu, 
+            double* restrict s, std::complex<double>* restrict u, integer ldu,
             std::complex<double>* restrict vh, integer ldvh,
-	    std::complex<double>* restrict work, integer lwork, double* restrict rwork, 
+            std::complex<double>* restrict work, integer lwork, double* restrict rwork,
             integer& restrict info);
 
-void zhegvx(integer itype, char jobz, char range, char uplo, integer n, 
+void zhegvx(integer itype, char jobz, char range, char uplo, integer n,
             std::complex<double>* restrict a, integer lda,
-	    std::complex<double>* restrict b, integer ldb, double vl, double vu, integer il, 
+            std::complex<double>* restrict b, integer ldb, double vl, double vu, integer il,
             integer iu,
-	    double abstol, integer& restrict m, double* restrict w, 
+            double abstol, integer& restrict m, double* restrict w,
             std::complex<double>* restrict z, integer ldz,
-	    std::complex<double>* restrict work, integer lwork, double* restrict rwork, 
+            std::complex<double>* restrict work, integer lwork, double* restrict rwork,
             integer* restrict iwork,
-	    integer* restrict ifail, integer& restrict info);
+            integer* restrict ifail, integer& restrict info);
 
-void zpotrf(char uplo, integer n, std::complex<double>* restrict a, integer lda, 
+void zpotrf(char uplo, integer n, std::complex<double>* restrict a, integer lda,
             integer& restrict info);
 
-void zgetrf(integer m, integer n, std::complex<double>* restrict a, 
+void zgetrf(integer m, integer n, std::complex<double>* restrict a,
             integer lda, integer* restrict ipiv, integer& restrict info);
 
-void zpotri(char uplo, integer n, std::complex<double>* restrict a, integer lda, 
+void zpotri(char uplo, integer n, std::complex<double>* restrict a, integer lda,
             integer& restrict info);
 
-void zgetri(integer n, std::complex<double>* restrict a, integer lda, 
-            integer* restrict ipiv, std::complex<double>* restrict work, 
+void zgetri(integer n, std::complex<double>* restrict a, integer lda,
+            integer* restrict ipiv, std::complex<double>* restrict work,
             integer lwork, integer& restrict info);
 
-void ztrtri(char uplo, char diag, integer n, std::complex<double>* restrict a, 
+void ztrtri(char uplo, char diag, integer n, std::complex<double>* restrict a,
             integer lda, integer& restrict info);
 
-void zhetrd(char uplo, integer n, std::complex<double>* restrict a, integer lda, 
+void zhetrd(char uplo, integer n, std::complex<double>* restrict a, integer lda,
             double* restrict d, double* restrict e, std::complex<double>* restrict tau,
             std::complex<double>* restrict work, integer lwork, integer& restrict info);
 
@@ -150,19 +150,19 @@ void zgeqrf(integer m, integer n, std::complex<double>* restrict a, integer lda,
 void zgelqf(integer m, integer n, std::complex<double>* restrict a, integer lda, std::complex<double>* restrict tau,
             std::complex<double>* restrict work, integer lwork, integer& info);
 
-// integer ileanv(integer ispec, char const* name, char const* opts, integer n1, 
+// integer ileanv(integer ispec, char const* name, char const* opts, integer n1,
 // integer n2 = -1, integer n3 = -1, integer n4 = -1);
 
 void zgebal(char job, integer n, std::complex<double>* restrict a, integer lda, integer& ilo,
-		     integer& ihi, double* restrict scale, integer& info);
+                     integer& ihi, double* restrict scale, integer& info);
 
-void zgehrd(integer n, integer ilo, integer ihi, std::complex<double>* restrict a, integer lda, 
-	    std::complex<double>* restrict tau,
-	    std::complex<double>* restrict work, integer lwork, integer& info);
+void zgehrd(integer n, integer ilo, integer ihi, std::complex<double>* restrict a, integer lda,
+            std::complex<double>* restrict tau,
+            std::complex<double>* restrict work, integer lwork, integer& info);
 
 void zhseqr(char job, char compz, integer n, integer ilo, integer ihi, std::complex<double>* restrict h, integer ldh,
-	    std::complex<double>* restrict w, std::complex<double>* restrict z, integer ldz,
-	    std::complex<double>* restrict work, integer lwork, integer& info);
+            std::complex<double>* restrict w, std::complex<double>* restrict z, integer ldz,
+            std::complex<double>* restrict work, integer lwork, integer& info);
 
 namespace raw
 {
@@ -170,75 +170,75 @@ namespace raw
 extern "C"
 {
 
-void F77NAME(dgesv)(integer const* n, integer const* nrhs, 
-		    double* restrict a, integer const* lda, 
-                    integer* restrict ipiv, 
+void F77NAME(dgesv)(integer const* n, integer const* nrhs,
+                    double* restrict a, integer const* lda,
+                    integer* restrict ipiv,
                     double* restrict b, integer const* ldb, integer* restrict info);
 
-void F77NAME(dgels)(char const* trans, integer const* m, integer const* n, 
-		    integer const* nrhs, double* restrict a, integer const* lda, 
-		    double* restrict b, integer const* ldb, double* restrict work, 
-		    integer const* lwork, 
-		    integer* restrict info);
+void F77NAME(dgels)(char const* trans, integer const* m, integer const* n,
+                    integer const* nrhs, double* restrict a, integer const* lda,
+                    double* restrict b, integer const* ldb, double* restrict work,
+                    integer const* lwork,
+                    integer* restrict info);
 
-void F77NAME(dposv)(char const* uplo, integer const* n, integer const* nrhs, 
+void F77NAME(dposv)(char const* uplo, integer const* n, integer const* nrhs,
                     double* restrict a, integer const* lda,
                     double* restrict b, integer const* ldb, integer* restrict info);
 
-void F77NAME(dsyev)(char const* jobz, char const* uplo, integer const* n, double* restrict a, 
+void F77NAME(dsyev)(char const* jobz, char const* uplo, integer const* n, double* restrict a,
                     integer const* lda,
-		    double* restrict w, double* restrict work, integer const* lwork, 
+                    double* restrict w, double* restrict work, integer const* lwork,
                     integer* restrict info);
 
-void F77NAME(dsyevx)(char const* jobz, char const* range, char const* uplo, integer const* n, 
+void F77NAME(dsyevx)(char const* jobz, char const* range, char const* uplo, integer const* n,
                      double* restrict a, integer const* lda,
                      double const* vl, double const* vu, integer const* il, integer const* iu,
-		     double const* abstol, integer* restrict m,
-                     double* restrict w, double* restrict z, integer const* ldz, 
+                     double const* abstol, integer* restrict m,
+                     double* restrict w, double* restrict z, integer const* ldz,
                      double* restrict work, integer const* lwork, integer* restrict iwork,
                      integer* restrict ifail, integer* restrict info);
 
-void F77NAME(dsyevr)(char const* jobz, char const* range, char const* uplo, integer const* n, 
+void F77NAME(dsyevr)(char const* jobz, char const* range, char const* uplo, integer const* n,
                      double* restrict a,
-		     integer const* lda, double const* vl, double const* vu, integer const* il, 
+                     integer const* lda, double const* vl, double const* vu, integer const* il,
                      integer const* iu,
-		     double const* abstol, integer* restrict m, double* restrict w,
-		     double* restrict z, integer const* ldz, integer* isuppz,
-		     double* restrict work, integer const* lwork, integer* restrict iwork, 
+                     double const* abstol, integer* restrict m, double* restrict w,
+                     double* restrict z, integer const* ldz, integer* isuppz,
+                     double* restrict work, integer const* lwork, integer* restrict iwork,
                      integer const* liwork,
-		     integer* info);
+                     integer* info);
 
-void F77NAME(dgesvd)(char const* jobu, char const* jobvt, integer const* m, integer const* n, 
+void F77NAME(dgesvd)(char const* jobu, char const* jobvt, integer const* m, integer const* n,
                      double* restrict a,
-		     integer const* lda, double* restrict s, double* restrict u, integer const* ldu,
-		     double* restrict vt, integer const* ldvt, double* restrict work, 
+                     integer const* lda, double* restrict s, double* restrict u, integer const* ldu,
+                     double* restrict vt, integer const* ldvt, double* restrict work,
                      integer const* lwork,
-		     integer* restrict info);
+                     integer* restrict info);
 
-void F77NAME(dsygvx)(integer const* itype, char const* jobz, char const* range, char const* uplo, 
+void F77NAME(dsygvx)(integer const* itype, char const* jobz, char const* range, char const* uplo,
                      integer const* n,
-		     double* restrict a, integer const* lda, double* restrict b, integer const* ldb,
-		     double const* vl, double const* vu, integer const* il, integer const* iu,
-		     double const* abstol, integer* restrict m, double* restrict w, 
+                     double* restrict a, integer const* lda, double* restrict b, integer const* ldb,
+                     double const* vl, double const* vu, integer const* il, integer const* iu,
+                     double const* abstol, integer* restrict m, double* restrict w,
                      double* restrict z, integer const* ldz,
-		     double* restrict work, integer const* lwork, integer* restrict iwork,
-		     integer* restrict ifail, integer* restrict info);
+                     double* restrict work, integer const* lwork, integer* restrict iwork,
+                     integer* restrict ifail, integer* restrict info);
 
-void F77NAME(dpotrf)(char const* uplo, integer const* n, 
+void F77NAME(dpotrf)(char const* uplo, integer const* n,
                      double* restrict a, integer const* lda, integer* restrict info);
 
 double F77NAME(dlamch)(char const* mach);
 
-void F77NAME(zposv)(char const* uplo, integer const* n, integer const* nrhs, complex* restrict a, 
+void F77NAME(zposv)(char const* uplo, integer const* n, integer const* nrhs, complex* restrict a,
                     integer const* lda,
                     complex* restrict b, integer const* ldb, integer* restrict info);
 
-void F77NAME(zheev)(char const* jobz, char const* uplo, integer const* n, complex* restrict a, 
+void F77NAME(zheev)(char const* jobz, char const* uplo, integer const* n, complex* restrict a,
                     integer const* lda,
-		    double* restrict w, complex* restrict work, integer const* lwork,
-		    double* restrict rwork, integer* restrict info);
+                    double* restrict w, complex* restrict work, integer const* lwork,
+                    double* restrict rwork, integer* restrict info);
 
-void F77NAME(zgeev)(char const* jobl, char const* jobr, integer const* n, complex* restrict a, 
+void F77NAME(zgeev)(char const* jobl, char const* jobr, integer const* n, complex* restrict a,
                     integer const* lda,
                     complex* restrict w, complex* restrict vl, integer const* ldvl,
                     complex* restrict vr, integer const* ldvr,
@@ -247,65 +247,65 @@ void F77NAME(zgeev)(char const* jobl, char const* jobr, integer const* n, comple
 
 void F77NAME(zgesvd)(char const* jobu, char const* jobvh, integer const* m, integer const* n,
                      std::complex<double>* restrict a,
-		     integer const* lda, double* restrict s, std::complex<double>* restrict u,
+                     integer const* lda, double* restrict s, std::complex<double>* restrict u,
                      integer const* ldu,
-		     std::complex<double>* restrict vh, integer const* ldvh, 
+                     std::complex<double>* restrict vh, integer const* ldvh,
                      std::complex<double>* restrict work, integer const* lwork,
-		     double* restrict rwork, integer* restrict info);
+                     double* restrict rwork, integer* restrict info);
 
-void F77NAME(zhegvx)(integer const* itype, char const* jobz, char const* range, char const* uplo, 
+void F77NAME(zhegvx)(integer const* itype, char const* jobz, char const* range, char const* uplo,
                      integer const* n,
-		     std::complex<double>* restrict a, integer const* lda, 
+                     std::complex<double>* restrict a, integer const* lda,
                      std::complex<double>* restrict b, integer const* ldb,
-		     double const* vl, double const* vu, integer const* il, integer const* iu,
-		     double const* abstol, integer* restrict m, double* restrict w, 
+                     double const* vl, double const* vu, integer const* il, integer const* iu,
+                     double const* abstol, integer* restrict m, double* restrict w,
                      std::complex<double>* restrict z,
-		     integer const* ldz, std::complex<double>* restrict work, integer const* lwork,
-		     double* restrict rwork, integer* restrict iwork, integer* restrict ifail, 
+                     integer const* ldz, std::complex<double>* restrict work, integer const* lwork,
+                     double* restrict rwork, integer* restrict iwork, integer* restrict ifail,
                      integer* restrict info);
 
-void F77NAME(zpotrf)(char const* uplo, integer const* n, 
+void F77NAME(zpotrf)(char const* uplo, integer const* n,
                      complex* restrict a, integer const* lda, integer* restrict info);
 
-void F77NAME(zgetrf)(integer const* m, integer const* n, complex* restrict a, 
+void F77NAME(zgetrf)(integer const* m, integer const* n, complex* restrict a,
             integer const* lda, integer* restrict ipiv, integer* restrict info);
 
-void F77NAME(zpotri)(char const* uplo, integer const* n, 
+void F77NAME(zpotri)(char const* uplo, integer const* n,
                      complex* restrict a, integer const* lda, integer* restrict info);
 
-void F77NAME(zgetri)(integer const* n, complex* restrict a, integer const* lda, 
-            integer* restrict ipiv, complex* restrict work, integer const* lwork, 
+void F77NAME(zgetri)(integer const* n, complex* restrict a, integer const* lda,
+            integer* restrict ipiv, complex* restrict work, integer const* lwork,
             integer* restrict info);
 
-void F77NAME(ztrtri)(char const* uplo, char const* diag, integer const* n, 
-		     complex* restrict a, integer const* lda, integer* restrict info);
+void F77NAME(ztrtri)(char const* uplo, char const* diag, integer const* n,
+                     complex* restrict a, integer const* lda, integer* restrict info);
 
-void F77NAME(zhetrd)(char const* uplo, integer const* n, 
-                     complex* restrict a, integer const* lda, 
+void F77NAME(zhetrd)(char const* uplo, integer const* n,
+                     complex* restrict a, integer const* lda,
                      double* restrict d, double* restrict e, complex* restrict tau,
                      complex* restrict work, integer const* lwork, integer* restrict info);
 
-void F77NAME(zgels)(char const* trans, integer const* m, integer const* n, integer const* nrhs, 
+void F77NAME(zgels)(char const* trans, integer const* m, integer const* n, integer const* nrhs,
                     complex* restrict a, integer const* lda,
                     complex* restrict b, integer const* ldb, complex* restrict work,
                     integer* restrict lwork, integer* restrict info);
 
-void F77NAME(zgeqrf)(integer const* m, integer const* n, complex* restrict a, integer const* lda, 
+void F77NAME(zgeqrf)(integer const* m, integer const* n, complex* restrict a, integer const* lda,
                      complex* restrict tau, complex* restrict work, integer const* lwork, integer* restrict info);
 
-void F77NAME(zgelqf)(integer const* m, integer const* n, complex* restrict a, integer const* lda, 
+void F77NAME(zgelqf)(integer const* m, integer const* n, complex* restrict a, integer const* lda,
                      complex* restrict tau, complex* restrict work, integer const* lwork, integer* restrict info);
 
 void F77NAME(zgebal)(char const* job, integer const* n, complex* restrict a, integer const* lda, integer* restrict ilo,
-		     integer* restrict ihi, double* restrict scale, integer* restrict info);
+                     integer* restrict ihi, double* restrict scale, integer* restrict info);
 
-void F77NAME(zgehrd)(integer const* n, integer const* ilo, integer const* ihi, complex* restrict a, integer const* lda, 
-		     complex* restrict tau, complex* restrict work, integer* restrict lwork, integer* restrict info);
+void F77NAME(zgehrd)(integer const* n, integer const* ilo, integer const* ihi, complex* restrict a, integer const* lda,
+                     complex* restrict tau, complex* restrict work, integer* restrict lwork, integer* restrict info);
 
-void F77NAME(zhseqr)(char const* job, char const* compz, integer const* n, integer const* ilo, integer const* ihi, 
-		     complex* restrict h, integer const* ldh,
-		     complex* restrict w, complex* restrict z, integer const* ldz,
-		     complex* restrict work, integer const* lwork, integer* restrict info);
+void F77NAME(zhseqr)(char const* job, char const* compz, integer const* n, integer const* ilo, integer const* ihi,
+                     complex* restrict h, integer const* ldh,
+                     complex* restrict w, complex* restrict z, integer const* ldz,
+                     complex* restrict work, integer const* lwork, integer* restrict info);
 
 
 } // extern "C"
@@ -316,16 +316,16 @@ void F77NAME(zhseqr)(char const* job, char const* compz, integer const* n, integ
 
 inline
 void dgesv(integer n, integer nrhs, double* restrict a, integer lda, integer* restrict ipiv,
-	   double* restrict b, integer ldb, integer& restrict info)
+           double* restrict b, integer ldb, integer& restrict info)
 {
    TRACE_LAPACK("dgesv")(n)(nrhs)(a)(lda)(ipiv)(b)(ldb)(info);
    raw::F77NAME(dgesv)(&n, &nrhs, a, &lda, ipiv, b, &ldb, &info);
 }
 
 inline
-void dgels(char trans, integer m, integer n, integer nrhs, 
-	   double* a, integer lda, double* b, integer ldb, 
-	   double* work, integer lwork, integer& restrict info)
+void dgels(char trans, integer m, integer n, integer nrhs,
+           double* a, integer lda, double* b, integer ldb,
+           double* work, integer lwork, integer& restrict info)
 {
    TRACE_LAPACK("dgels")(trans)(m)(n)(nrhs)(a)(lda)(b)(ldb)(work)(lwork)(info);
    raw::F77NAME(dgels)(&trans, &m, &n, &nrhs, a, &lda, b, &ldb, work, &lwork, &info);
@@ -333,7 +333,7 @@ void dgels(char trans, integer m, integer n, integer nrhs,
 
 inline
 void dposv(char uplo, integer n, integer nrhs, double* restrict a, integer lda,
-	   double* restrict b, integer ldb, integer& restrict info)
+           double* restrict b, integer ldb, integer& restrict info)
 {
    TRACE_LAPACK("dposv")(uplo)(n)(nrhs)(a)(lda)(b)(ldb)(info);
    raw::F77NAME(dposv)(&uplo, &n, &nrhs, a, &lda, b, &ldb, &info);
@@ -341,7 +341,7 @@ void dposv(char uplo, integer n, integer nrhs, double* restrict a, integer lda,
 
 inline
 void dsyev(char jobz, char uplo, integer n, double* restrict a, integer lda,
-	   double* restrict w, double* restrict work, integer lwork, integer& restrict info)
+           double* restrict w, double* restrict work, integer lwork, integer& restrict info)
 {
    TRACE_LAPACK("dsyev")(jobz)(uplo)(n)(a)(lda)(w)(work)(lwork)(info);
    raw::F77NAME(dsyev)(&jobz, &uplo, &n, a, &lda, w, work, &lwork, &info);
@@ -349,9 +349,9 @@ void dsyev(char jobz, char uplo, integer n, double* restrict a, integer lda,
 
 inline
 void dsyevx(char jobz, char range, char uplo, integer n, double* restrict a, integer lda,
-	    double vl, double vu, integer il, integer iu, double abstol, int& m,
+            double vl, double vu, integer il, integer iu, double abstol, int& m,
             double* restrict w, double* restrict z, integer ldz,
-            double* restrict work, integer lwork, integer* restrict iwork, 
+            double* restrict work, integer lwork, integer* restrict iwork,
             integer* restrict ifail, integer& restrict info)
 {
    TRACE_LAPACK("dsyevx")(jobz)(range)(uplo)(n)(a)(lda)(vl)(vu)(il)(iu)(abstol)(m)(w)(z)(ldz)(work)(lwork)(iwork)(ifail)(info);
@@ -361,39 +361,39 @@ void dsyevx(char jobz, char range, char uplo, integer n, double* restrict a, int
 
 inline
 void dsyevr(char jobz, char range, char uplo, integer n, double* restrict a, integer lda,
-	    double vl, double vu, integer il, integer iu, double abstol, int& m,
-	    double* restrict v, double* restrict z, integer ldz, integer* isuppz, 
+            double vl, double vu, integer il, integer iu, double abstol, int& m,
+            double* restrict v, double* restrict z, integer ldz, integer* isuppz,
             double* restrict work,
-	    integer lwork, integer* restrict iwork, int liwork, integer& restrict info)
+            integer lwork, integer* restrict iwork, int liwork, integer& restrict info)
 {
    TRACE_LAPACK("dsyevr")(jobz)(range)(uplo)(n)(a)(lda)(vl)(vu)(il)(iu)
                (abstol)(m)(v)(z)(ldz)(isuppz)(work)(lwork)(iwork)(liwork)(info);
    raw::F77NAME(dsyevr)(&jobz, &range, &uplo, &n, a, &lda,
-			&vl, &vu, &il, &iu, &abstol, &m,
-			v, z, &ldz, isuppz, work, &lwork, iwork, &liwork, &info);
+                        &vl, &vu, &il, &iu, &abstol, &m,
+                        v, z, &ldz, isuppz, work, &lwork, iwork, &liwork, &info);
 }
 
 inline
 void dgesvd(char jobu, char jobvt, integer m, integer n, double* restrict a, integer lda,
-	    double* restrict s, double* restrict u, integer ldu, double* restrict vt, integer ldvt,
-	    double* restrict work, integer lwork, integer& restrict info)
+            double* restrict s, double* restrict u, integer ldu, double* restrict vt, integer ldvt,
+            double* restrict work, integer lwork, integer& restrict info)
 {
    TRACE_LAPACK("dgesvd")(jobu)(jobvt)(m)(n)(a)(lda)(s)(u)(ldu)(vt)(ldvt)(work)(lwork)(info);
    raw:: F77NAME(dgesvd)(&jobu, &jobvt, &m, &n, a, &lda, s, u, &ldu, vt, &ldvt, work, &lwork, &info);
 }
 
 inline
-void dsygvx(integer itype, char jobz, char range, char uplo, integer n, double* restrict a, 
+void dsygvx(integer itype, char jobz, char range, char uplo, integer n, double* restrict a,
             integer lda,
-	    double* restrict b, integer ldb, double vl, double vu, integer il, integer iu,
-	    double abstol, integer& restrict m, double* restrict w, double* restrict z, integer ldz,
-	    double* restrict work, integer lwork, integer* restrict iwork,
-	    integer* restrict ifail, integer& restrict info)
+            double* restrict b, integer ldb, double vl, double vu, integer il, integer iu,
+            double abstol, integer& restrict m, double* restrict w, double* restrict z, integer ldz,
+            double* restrict work, integer lwork, integer* restrict iwork,
+            integer* restrict ifail, integer& restrict info)
 {
    TRACE_LAPACK("dsygvx")(itype)(jobz)(range)(uplo)(n)(a)(lda)(b)(ldb)(vl)(vu)(il)(iu)(abstol)
                (m)(w)(z)(ldz)(work)(lwork)(iwork)(ifail)(info);
    raw::F77NAME(dsygvx)(&itype, &jobz, &range, &uplo, &n, a, &lda, b, &ldb, &vl, &vu, &il, &iu,
-			&abstol, &m, w, z, &ldz, work, &lwork, iwork, ifail, &info);
+                        &abstol, &m, w, z, &ldz, work, &lwork, iwork, ifail, &info);
 }
 
 inline
@@ -411,7 +411,7 @@ double dlamch(char mach)
 
 inline
 void zposv(char uplo, integer n, integer nrhs, std::complex<double>* restrict a, integer lda,
-	   std::complex<double>* restrict b, integer ldb, integer& restrict info)//HERE
+           std::complex<double>* restrict b, integer ldb, integer& restrict info)//HERE
 {
    TRACE_LAPACK("zposv")(uplo)(n)(nrhs)(a)(lda)(b)(ldb)(info);
    raw::F77NAME(zposv)(&uplo, &n, &nrhs, reinterpret_cast<complex*>(a), &lda,
@@ -420,58 +420,58 @@ void zposv(char uplo, integer n, integer nrhs, std::complex<double>* restrict a,
 
 inline
 void zheev(char jobz, char uplo, integer n, std::complex<double>* restrict a, integer lda,
-	   double* restrict w, std::complex<double>* restrict work, integer lwork,
-	   double* restrict rwork, integer& restrict info)
+           double* restrict w, std::complex<double>* restrict work, integer lwork,
+           double* restrict rwork, integer& restrict info)
 {
    TRACE_LAPACK("zheev")(jobz)(uplo)(n)(a)(lda)(w)(work)(lwork)(rwork)(info);
    raw::F77NAME(zheev)(&jobz, &uplo, &n, reinterpret_cast<complex*>(a), &lda,
-		       w, reinterpret_cast<complex*>(work), &lwork, rwork, &info);
+                       w, reinterpret_cast<complex*>(work), &lwork, rwork, &info);
 }
 
 inline
 void zgeev(char jobl, char jobr, integer n, std::complex<double>* restrict a, integer lda,
-	   std::complex<double>* restrict w, std::complex<double>* restrict vl, integer ldvl,
+           std::complex<double>* restrict w, std::complex<double>* restrict vl, integer ldvl,
            std::complex<double>* restrict vr, integer ldvr,
            std::complex<double>* restrict work, integer lwork,
-	   double* restrict rwork, integer& restrict info)
+           double* restrict rwork, integer& restrict info)
 {
    TRACE_LAPACK("zgeev")(jobl)(jobr)(n)(a)(lda)(w)(vl)(ldvl)(vr)(ldvr)(work)(lwork)(rwork)(info);
    raw::F77NAME(zgeev)(&jobl, &jobr, &n, reinterpret_cast<complex*>(a), &lda,
                        reinterpret_cast<complex*>(w),
                        reinterpret_cast<complex*>(vl), &ldvl,
                        reinterpret_cast<complex*>(vr), &ldvr,
-		       reinterpret_cast<complex*>(work), &lwork, rwork, &info);
+                       reinterpret_cast<complex*>(work), &lwork, rwork, &info);
 }
 
 inline
-void zgesvd(char jobu, char jobvh, integer m, integer n, std::complex<double>* restrict a, 
+void zgesvd(char jobu, char jobvh, integer m, integer n, std::complex<double>* restrict a,
             integer lda,
-	    double* restrict s, std::complex<double>* restrict u, integer ldu, 
+            double* restrict s, std::complex<double>* restrict u, integer ldu,
             std::complex<double>* restrict vh, integer ldvh,
-	    std::complex<double>* restrict work, integer lwork, double* restrict rwork, 
+            std::complex<double>* restrict work, integer lwork, double* restrict rwork,
             integer& restrict info)
 {
    TRACE_LAPACK("zgesvd")(jobu)(jobvh)(m)(n)(a)(lda)(s)(u)(ldu)(vh)(ldvh)(work)(lwork)(rwork)(info);
-   raw:: F77NAME(zgesvd)(&jobu, &jobvh, &m, &n, a, &lda, s, u, &ldu, 
+   raw:: F77NAME(zgesvd)(&jobu, &jobvh, &m, &n, a, &lda, s, u, &ldu,
                          vh, &ldvh, work, &lwork, rwork, &info);
 }
 
 
 inline
-void zhegvx(integer itype, char jobz, char range, char uplo, integer n, 
+void zhegvx(integer itype, char jobz, char range, char uplo, integer n,
             std::complex<double>* restrict a, integer lda,
-	    std::complex<double>* restrict b, integer ldb, double vl, double vu, integer il, 
+            std::complex<double>* restrict b, integer ldb, double vl, double vu, integer il,
             integer iu,
-	    double abstol, integer& restrict m, double* restrict w, 
+            double abstol, integer& restrict m, double* restrict w,
             std::complex<double>* restrict z, integer ldz,
-	    std::complex<double>* restrict work, integer lwork, double* restrict rwork, 
+            std::complex<double>* restrict work, integer lwork, double* restrict rwork,
             integer* restrict iwork,
-	    integer* restrict ifail, integer& restrict info)
+            integer* restrict ifail, integer& restrict info)
 {
    TRACE_LAPACK("zhegvx")(itype)(jobz)(range)(uplo)(n)(a)(lda)(b)(ldb)(vl)(vu)(il)(iu)(abstol)
          (m)(w)(z)(ldz)(work)(lwork)(rwork)(iwork)(ifail)(info);
    raw::F77NAME(zhegvx)(&itype, &jobz, &range, &uplo, &n, a, &lda, b, &ldb, &vl, &vu, &il, &iu,
-			&abstol, &m, w, z, &ldz, work, &lwork, rwork, iwork, ifail, &info);
+                        &abstol, &m, w, z, &ldz, work, &lwork, rwork, iwork, ifail, &info);
 }
 
 inline
@@ -482,7 +482,7 @@ void zpotrf(char uplo, integer n, std::complex<double>* restrict a, integer lda,
 }
 
 inline
-void zgetrf(integer m, integer n, std::complex<double>* restrict a, 
+void zgetrf(integer m, integer n, std::complex<double>* restrict a,
             integer lda, integer* restrict ipiv, integer& restrict info)
 {
    TRACE_LAPACK("zgetrf")(m)(n)(a)(lda)(ipiv)(info);
@@ -490,7 +490,7 @@ void zgetrf(integer m, integer n, std::complex<double>* restrict a,
 }
 
 inline
-void zpotri(char uplo, integer n, std::complex<double>* restrict a, integer lda, 
+void zpotri(char uplo, integer n, std::complex<double>* restrict a, integer lda,
             integer& restrict info)
 {
    TRACE_LAPACK("zpotri")(uplo)(n)(a)(lda)(info);
@@ -498,17 +498,17 @@ void zpotri(char uplo, integer n, std::complex<double>* restrict a, integer lda,
 }
 
 inline
-void zgetri(integer n, std::complex<double>* restrict a, integer lda, 
-            integer* restrict ipiv, std::complex<double>* restrict work, 
+void zgetri(integer n, std::complex<double>* restrict a, integer lda,
+            integer* restrict ipiv, std::complex<double>* restrict work,
             integer lwork, integer& restrict info)
 {
    TRACE_LAPACK("zpgeri")(n)(a)(lda)(ipiv)(work)(lwork)(info);
-   raw::F77NAME(zgetri)(&n, reinterpret_cast<complex*>(a), &lda, ipiv, 
+   raw::F77NAME(zgetri)(&n, reinterpret_cast<complex*>(a), &lda, ipiv,
                         reinterpret_cast<complex*>(work), &lwork, &info);
-}   
+}
 
 inline
-void ztrtri(char uplo, char diag, integer n, std::complex<double>* restrict a, integer lda, 
+void ztrtri(char uplo, char diag, integer n, std::complex<double>* restrict a, integer lda,
             integer& restrict info)
 {
    TRACE_LAPACK("ztrtri")(uplo)(diag)(n)(a)(lda)(info);
@@ -516,12 +516,12 @@ void ztrtri(char uplo, char diag, integer n, std::complex<double>* restrict a, i
 }
 
 inline
-void zhetrd(char uplo, integer n, std::complex<double>* restrict a, integer lda, 
+void zhetrd(char uplo, integer n, std::complex<double>* restrict a, integer lda,
             double* restrict d, double* restrict e, std::complex<double>* restrict tau,
             std::complex<double>* restrict work, integer lwork, integer& restrict info)
 {
    TRACE_LAPACK("zhetrd")(uplo)(n)(a)(lda)(d)(e)(tau)(work)(lwork)(info);
-   raw::F77NAME(zhetrd)(&uplo, &n, reinterpret_cast<complex*>(a), &lda, 
+   raw::F77NAME(zhetrd)(&uplo, &n, reinterpret_cast<complex*>(a), &lda,
                         d, e, reinterpret_cast<complex*>(tau),
                         reinterpret_cast<complex*>(work), &lwork, &info);
 }
@@ -556,32 +556,32 @@ void zgelqf(integer m, integer n, std::complex<double>* restrict a, integer lda,
 
 inline
 void zgebal(char job, integer n, std::complex<double>* restrict a, integer lda, integer& ilo,
-		     integer& ihi, double* restrict scale, integer& info)
+                     integer& ihi, double* restrict scale, integer& info)
 {
    TRACE_LAPACK("zgebal")(job)(n)(a)(lda)(ilo)(ihi)(scale)(info);
    raw::F77NAME(zgebal)(&job, &n, reinterpret_cast<complex*>(a), &lda, &ilo,
-			&ihi, scale, &info);
+                        &ihi, scale, &info);
 }
 
 inline
-void zgehrd(integer n, integer ilo, integer ihi, std::complex<double>* restrict a, integer lda, 
-	    std::complex<double>* restrict tau,
-	    std::complex<double>* restrict work, integer lwork, integer& info)
+void zgehrd(integer n, integer ilo, integer ihi, std::complex<double>* restrict a, integer lda,
+            std::complex<double>* restrict tau,
+            std::complex<double>* restrict work, integer lwork, integer& info)
 {
    TRACE_LAPACK("zgehrd")(n)(ilo)(ihi)(a)(lda)(tau)(work)(lwork)(info);
-   raw::F77NAME(zgehrd)(&n, &ilo, &ihi, reinterpret_cast<complex*>(a), &lda, reinterpret_cast<complex*>(tau), 
-			reinterpret_cast<complex*>(work), &lwork, &info);
+   raw::F77NAME(zgehrd)(&n, &ilo, &ihi, reinterpret_cast<complex*>(a), &lda, reinterpret_cast<complex*>(tau),
+                        reinterpret_cast<complex*>(work), &lwork, &info);
 }
 
 inline
 void zhseqr(char job, char compz, integer n, integer ilo, integer ihi, std::complex<double>* restrict h, integer ldh,
-	    std::complex<double>* restrict w, std::complex<double>* restrict z, integer ldz,
-	    std::complex<double>* restrict work, integer lwork, integer& info)
+            std::complex<double>* restrict w, std::complex<double>* restrict z, integer ldz,
+            std::complex<double>* restrict work, integer lwork, integer& info)
 {
    TRACE_LAPACK("zhseqr")(job)(compz)(n)(ilo)(ihi)(h)(ldh)(w)(z)(ldz)(work)(lwork)(info);
-   raw::F77NAME(zhseqr)(&job, &compz, &n, &ilo, &ihi, reinterpret_cast<complex*>(h), &ldh, 
-			reinterpret_cast<complex*>(w), reinterpret_cast<complex*>(z), &ldz, 
-			reinterpret_cast<complex*>(work), &lwork, &info);
+   raw::F77NAME(zhseqr)(&job, &compz, &n, &ilo, &ihi, reinterpret_cast<complex*>(h), &ldh,
+                        reinterpret_cast<complex*>(w), reinterpret_cast<complex*>(z), &ldz,
+                        reinterpret_cast<complex*>(work), &lwork, &info);
 }
 
 } // namespce LAPACK

@@ -33,7 +33,7 @@
   2001-03-29: Its not fast enough.  changed to only do overflow checking if NDEBUG is defined.
   2003-10-20: Reinserted overflow checks, unless CONVERTSTRING_NOERRORCHECK is defined.
               Should work correctly for converting the most negative possible number of signed types.
-	      Added overloads for long long.
+              Added overloads for long long.
 */
 
 #if !defined(CONVERTSTRING_H_FHJK348U834UFHJIU45Y789YRUIY34EWI)
@@ -47,7 +47,7 @@
 //
 // partial specializations of convert_string are handled by a static class function.
 // By default, the convert_string<T, FwdIter>() function calls convert_string_partial<T, FwdIter>::apply().
-// Conversions that encounter invalid chars, too many chars, not enough chars, overflow etc 
+// Conversions that encounter invalid chars, too many chars, not enough chars, overflow etc
 // should throw something derived from invalid_string_conversion().
 //
 

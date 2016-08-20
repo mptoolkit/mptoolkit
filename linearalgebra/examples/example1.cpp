@@ -45,40 +45,40 @@ int main()
 
    TRACE(U);       // here, U = (1,1,1,1,1,1,1,1,1,1)
 
-   Vector<int> FirstHalf  = Range(0, 5);	// range [0, 5), ie. elements 0,1,2,3,4
-   Vector<int> SecondHalf = Range(5, 10);	// range [5, 10), ie. elements 5,6,7,8,9
+   Vector<int> FirstHalf  = Range(0, 5);        // range [0, 5), ie. elements 0,1,2,3,4
+   Vector<int> SecondHalf = Range(5, 10);       // range [5, 10), ie. elements 5,6,7,8,9
 
-   Vector<int> EvenElements = Slice(0,5,2);	// slice starting at element 0, length 5, stride 2
-   Vector<int> OddElements = Slice(1,5,2);	// slice starting at element 1, length 5, stride 2
+   Vector<int> EvenElements = Slice(0,5,2);     // slice starting at element 0, length 5, stride 2
+   Vector<int> OddElements = Slice(1,5,2);      // slice starting at element 1, length 5, stride 2
 
    TRACE(EvenElements)(U[EvenElements]);
 
-   //U[EvenElements] = Vector<double>(5,10.);	//
-   //U[EvenElements]*= 10;			// alternative
-   U[EvenElements] = U[EvenElements]*10;	// alternative
+   //U[EvenElements] = Vector<double>(5,10.);   //
+   //U[EvenElements]*= 10;                      // alternative
+   U[EvenElements] = U[EvenElements]*10;        // alternative
 
-   TRACE(U);					// here, U = (10,1,10,1,10,1,10,1,10,1)
+   TRACE(U);                                    // here, U = (10,1,10,1,10,1,10,1,10,1)
 
    // A Range, Slice or Index is itself a model of VectorExpression<int>, therefore can be used like this:
 
    U[ OddElements] = FirstHalf;
 
-   TRACE(U);				       // here, U = (10,0,10,1,10,2,10,3,10,4)
+   TRACE(U);                                   // here, U = (10,0,10,1,10,2,10,3,10,4)
 
-   VectorRef<double> VRef(V);			// a reference to V
-   VectorRef<double> URef(U);			// a reference to U
+   VectorRef<double> VRef(V);                   // a reference to V
+   VectorRef<double> URef(U);                   // a reference to U
 
    Vector<double> W(U);        // an ordinary vector, initially equal to U (but shares the representation!)
 
-   fill( URef[SecondHalf], -1);			// sets the elements 5,6,7,8,9 of U (and URef) to -1
-                                       		// but leaves W unaffected.  (This implies a copy is made).
+   fill( URef[SecondHalf], -1);                 // sets the elements 5,6,7,8,9 of U (and URef) to -1
+                                                // but leaves W unaffected.  (This implies a copy is made).
 
-   TRACE(U)(URef);				// here, U = (10,0,10,1,10,-1,-1,-1,-1,-1)
-						 // URef is always equal to U
+   TRACE(U)(URef);                              // here, U = (10,0,10,1,10,-1,-1,-1,-1,-1)
+                                                 // URef is always equal to U
 
-   TRACE(W);					// here, W = (10,0,10,1,10,2,10,3,10,4)
+   TRACE(W);                                    // here, W = (10,0,10,1,10,2,10,3,10,4)
 
-   VRef = U;					// equivalent to V = U    (or V = URef, or even VRef = URef)
+   VRef = U;                                    // equivalent to V = U    (or V = URef, or even VRef = URef)
 
 
    cout<<"\n\n############## VECTOR PRODUCTS #################################################\n";
@@ -112,7 +112,7 @@ int main()
 
    W[Indices] += 2.5 * U[Indices];
 
-   TRACE(W);					// here, W = (10, 0, 35, 1, 10, -0.5, 10, 3, 10, 4)
+   TRACE(W);                                    // here, W = (10, 0, 35, 1, 10, -0.5, 10, 3, 10, 4)
 
 
    cout<<"\n\n############## max, min, abs, arg, real #####################################\n";
@@ -139,7 +139,7 @@ int main()
 
    /*// of course, we can combine operations in arbitrary ways
    cout << "scalar_prod(U.slice(EvenElements), W.slice(OddElements)) = "
-	<< scalar_prod(U.slice(EvenElements), W.slice(OddElements)) << endl;
+        << scalar_prod(U.slice(EvenElements), W.slice(OddElements)) << endl;
    // the previous line maps onto a single BLAS call
    */
 }

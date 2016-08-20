@@ -16,7 +16,7 @@
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER
-// $Id 
+// $Id
 #include "common/trace.h"
 
 #include <iostream>
@@ -66,38 +66,38 @@ class BasicSymmetry : public SymmetryBase
       virtual std::complex<double> cross_product_factor(int const* q1, int const* q2) const;
 
       virtual double recoupling(int const* q1, int const* q3, int const* q13,
-				int const* q2, int const* q,  int const* q23) const;
+                                int const* q2, int const* q,  int const* q23) const;
 
       virtual double recoupling_12_3__13_2(int const* q1, int const* q3, int const* q13,
                                           int const* q2, int const* q,  int const* q23) const;
 
-      virtual double product_coefficient(int const* k1, int const* k2, int const* k, 
-					int const* qp, int const* q,  int const* qpp) const;
-        
-      virtual double inverse_product_coefficient(int const* k1, int const* k2, int const* k, 
-						 int const* qp, int const* q,  int const* qpp) const;
-        
+      virtual double product_coefficient(int const* k1, int const* k2, int const* k,
+                                        int const* qp, int const* q,  int const* qpp) const;
+
+      virtual double inverse_product_coefficient(int const* k1, int const* k2, int const* k,
+                                                 int const* qp, int const* q,  int const* qpp) const;
+
       virtual double tensor_coefficient(int const* k1,  int const* k2,  int const* k,
-					   int const* q1p, int const* q2p, int const* qp, 
-					   int const* q1,  int const* q2,  int const* qd) const;
+                                           int const* q1p, int const* q2p, int const* qp,
+                                           int const* q1,  int const* q2,  int const* qd) const;
 
       virtual double inverse_tensor_coefficient(int const* k1,  int const* k2,  int const* k,
-						int const* q1p, int const* q2p, int const* qp, 
-						int const* q1,  int const* q2,  int const* qd) const;
+                                                int const* q1p, int const* q2p, int const* qp,
+                                                int const* q1,  int const* q2,  int const* qd) const;
 
       virtual int num_transform_targets(int const* q1, int const* q2) const;
 
-      virtual void transform_targets(int const* q1,  
-				    int const* q2, 
-				    int* Targets) const;
+      virtual void transform_targets(int const* q1,
+                                    int const* q2,
+                                    int* Targets) const;
 
       virtual int num_inverse_transform_targets(int const* q1, int const* q) const;
 
       virtual bool is_transform_target(int const* q1, int const* q2, int const* q) const;
 
-      virtual void inverse_transform_targets(int const* q1, 
-					     int const* q, 
-					     int* InverseTargets) const;
+      virtual void inverse_transform_targets(int const* q1,
+                                             int const* q,
+                                             int* InverseTargets) const;
 
       virtual void adjoint(int const* q, int* adjointq) const;
 
@@ -105,13 +105,13 @@ class BasicSymmetry : public SymmetryBase
 
       virtual double conj_phase(int const* qp, int const* k, int const* q) const;
 
-      virtual void enumerate_projections(int const* q, 
-					int* Projections) const;
+      virtual void enumerate_projections(int const* q,
+                                        int* Projections) const;
 
       virtual bool is_delta(int const* q1, int const* Q, int const* P, int const* q2) const;
 
-      virtual double clebsch_gordan(int const* qp,  int const* k,  int const* q, 
-				    int const* qpm, int const* km, int const* qm) const;
+      virtual double clebsch_gordan(int const* qp,  int const* k,  int const* q,
+                                    int const* qpm, int const* km, int const* qm) const;
 
       virtual int degree(int const* q) const;
 
@@ -135,7 +135,7 @@ class BasicSymmetry : public SymmetryBase
 
       virtual double weight(int const* p) const;
 
-      virtual double delta_shift_coefficient(int const* qp, int const* k, 
+      virtual double delta_shift_coefficient(int const* qp, int const* k,
                                              int const* q, int const* Delta) const;
 
       virtual int num_casimir() const;
@@ -177,7 +177,7 @@ BasicSymmetry<T>::BasicSymmetry(FactoryType Factory_)
 }
 
 template <typename T>
-std::string 
+std::string
 BasicSymmetry<T>::Type() const
 {
    return Factory.Type();
@@ -191,7 +191,7 @@ BasicSymmetry<T>::ProjectionSuffix() const
 }
 
 template <typename T>
-std::string 
+std::string
 BasicSymmetry<T>::ToString(int const* q) const
 {
    return this->MakeQN(q).ToString();
@@ -206,7 +206,7 @@ BasicSymmetry<T>::FromString(std::string const& s, int* q) const
 }
 
 template <typename T>
-std::string 
+std::string
 BasicSymmetry<T>::ProjectionToString(int const* p) const
 {
    return this->MakeP(p).ToString();
@@ -265,10 +265,10 @@ ADL_cross_product_factor(T const* S, int const* q1, int const* q2)
 template <typename T>
 inline
 double ADL_recoupling(T const* S, int const* q1, int const* q3, int const* q13,
-		      int const* q2, int const* q,  int const* q23)
+                      int const* q2, int const* q,  int const* q23)
 {
    return recoupling(S->MakeQN(q1), S->MakeQN(q3), S->MakeQN(q13),
-		     S->MakeQN(q2), S->MakeQN(q),  S->MakeQN(q23));
+                     S->MakeQN(q2), S->MakeQN(q),  S->MakeQN(q23));
 }
 
 template <typename T>
@@ -282,42 +282,42 @@ double ADL_recoupling_12_3__13_2(T const* S, int const* q1, int const* q3, int c
 
 template <typename T>
 inline
-double ADL_product_coefficient(T const* S, int const* k1, int const* k2, int const* k, 
-			      int const* qp, int const* q,  int const* qpp)
+double ADL_product_coefficient(T const* S, int const* k1, int const* k2, int const* k,
+                              int const* qp, int const* q,  int const* qpp)
 {
    return product_coefficient(S->MakeQN(k1), S->MakeQN(k2), S->MakeQN(k),
-			     S->MakeQN(qp), S->MakeQN(q),  S->MakeQN(qpp));
+                             S->MakeQN(qp), S->MakeQN(q),  S->MakeQN(qpp));
 }
 
 template <typename T>
 inline
-double ADL_inverse_product_coefficient(T const* S, int const* k1, int const* k2, int const* k, 
-				       int const* qp, int const* q,  int const* qpp)
+double ADL_inverse_product_coefficient(T const* S, int const* k1, int const* k2, int const* k,
+                                       int const* qp, int const* q,  int const* qpp)
 {
    return inverse_product_coefficient(S->MakeQN(k1), S->MakeQN(k2), S->MakeQN(k),
-				      S->MakeQN(qp), S->MakeQN(q),  S->MakeQN(qpp));
+                                      S->MakeQN(qp), S->MakeQN(q),  S->MakeQN(qpp));
 }
 
 template <typename T>
 inline
 double ADL_tensor_coefficient(T const* S, int const* k1,  int const* k2,  int const* k,
-			     int const* q1p, int const* q2p, int const* qp, 
-			     int const* q1,  int const* q2,  int const* q)
+                             int const* q1p, int const* q2p, int const* qp,
+                             int const* q1,  int const* q2,  int const* q)
 {
    return tensor_coefficient(S->MakeQN(k1),  S->MakeQN(k2),  S->MakeQN(k),
-			    S->MakeQN(q1p), S->MakeQN(q2p), S->MakeQN(qp),
-			    S->MakeQN(q1),  S->MakeQN(q2),  S->MakeQN(q));
+                            S->MakeQN(q1p), S->MakeQN(q2p), S->MakeQN(qp),
+                            S->MakeQN(q1),  S->MakeQN(q2),  S->MakeQN(q));
 }
 
 template <typename T>
 inline
 double ADL_inverse_tensor_coefficient(T const* S, int const* k1,  int const* k2,  int const* k,
-				      int const* q1p, int const* q2p, int const* qp, 
-				      int const* q1,  int const* q2,  int const* q)
+                                      int const* q1p, int const* q2p, int const* qp,
+                                      int const* q1,  int const* q2,  int const* q)
 {
    return inverse_tensor_coefficient(S->MakeQN(k1),  S->MakeQN(k2),  S->MakeQN(k),
-				     S->MakeQN(q1p), S->MakeQN(q2p), S->MakeQN(qp),
-				     S->MakeQN(q1),  S->MakeQN(q2),  S->MakeQN(q));
+                                     S->MakeQN(q1p), S->MakeQN(q2p), S->MakeQN(qp),
+                                     S->MakeQN(q1),  S->MakeQN(q2),  S->MakeQN(q));
 }
 
 template <typename T>
@@ -329,12 +329,12 @@ int ADL_num_transform_targets(T const* S, int const* q1, int const* q2)
 
 template <typename T>
 inline
-void ADL_transform_targets(T const* S, int const* q1,  
-					int const* q2, 
-					int* Targets)
+void ADL_transform_targets(T const* S, int const* q1,
+                                        int const* q2,
+                                        int* Targets)
 {
-   transform_targets(S->MakeQN(q1), S->MakeQN(q2), 
-		    QuantumNumberConvertIter<typename T::QuantumNumberType>(Targets));
+   transform_targets(S->MakeQN(q1), S->MakeQN(q2),
+                    QuantumNumberConvertIter<typename T::QuantumNumberType>(Targets));
 }
 
 template <typename T>
@@ -346,12 +346,12 @@ int ADL_num_inverse_transform_targets(T const* S, int const* q1, int const* q)
 
 template <typename T>
 inline
-void ADL_inverse_transform_targets(T const* S, int const* q1, 
-				 int const* q, 
-				 int* InverseTargets)
+void ADL_inverse_transform_targets(T const* S, int const* q1,
+                                 int const* q,
+                                 int* InverseTargets)
 {
-   inverse_transform_targets(S->MakeQN(q1), S->MakeQN(q), 
-			     QuantumNumberConvertIter<typename T::QuantumNumberType>(InverseTargets));
+   inverse_transform_targets(S->MakeQN(q1), S->MakeQN(q),
+                             QuantumNumberConvertIter<typename T::QuantumNumberType>(InverseTargets));
 }
 template <typename T>
 inline
@@ -383,8 +383,8 @@ double ADL_conj_phase(T const* S, int const* qp, int const* k, int const* q)
 
 template <typename T>
 inline
-void ADL_enumerate_projections(T const* S, int const* q, 
-			      int* Projections)
+void ADL_enumerate_projections(T const* S, int const* q,
+                              int* Projections)
 {
    enumerate_projections(S->MakeQN(q), QuantumNumberConvertIter<typename T::ProjectionType>(Projections));
 }
@@ -398,11 +398,11 @@ bool ADL_is_delta(T const* S, int const* q1, int const* Q, int const* P, int con
 
 template <typename T>
 inline
-double ADL_clebsch_gordan(T const* S, int const* qp,  int const* k,  int const* q, 
-				 int const* qpm, int const* km, int const* qm)
+double ADL_clebsch_gordan(T const* S, int const* qp,  int const* k,  int const* q,
+                                 int const* qpm, int const* km, int const* qm)
 {
    return clebsch_gordan(S->MakeQN(qp), S->MakeQN(k), S->MakeQN(q),
-			 S->MakeP(qpm), S->MakeP(km), S->MakeP(qm));
+                         S->MakeP(qpm), S->MakeP(km), S->MakeP(qm));
 }
 
 template <typename T>
@@ -523,7 +523,7 @@ BasicSymmetry<T>::cross_product_factor(int const* q1, int const* q2) const
 
 template <typename T>
 double BasicSymmetry<T>::recoupling(int const* q1, int const* q3, int const* q13,
-				    int const* q2, int const* q,  int const* q23) const
+                                    int const* q2, int const* q,  int const* q23) const
 {
    return QuantumNumbers::ADL_recoupling(this, q1, q3, q13, q2, q,  q23);
 }
@@ -536,31 +536,31 @@ double BasicSymmetry<T>::recoupling_12_3__13_2(int const* q1, int const* q3, int
 }
 
 template <typename T>
-double BasicSymmetry<T>::product_coefficient(int const* k1, int const* k2, int const* k, 
-					    int const* qp, int const* q,  int const* qpp) const
+double BasicSymmetry<T>::product_coefficient(int const* k1, int const* k2, int const* k,
+                                            int const* qp, int const* q,  int const* qpp) const
 {
    return QuantumNumbers::ADL_product_coefficient(this, k1, k2, k, qp, q, qpp);
 }
 
 template <typename T>
-double BasicSymmetry<T>::inverse_product_coefficient(int const* k1, int const* k2, int const* k, 
-						     int const* qp, int const* q,  int const* qpp) const
+double BasicSymmetry<T>::inverse_product_coefficient(int const* k1, int const* k2, int const* k,
+                                                     int const* qp, int const* q,  int const* qpp) const
 {
    return QuantumNumbers::ADL_inverse_product_coefficient(this, k1, k2, k, qp, q, qpp);
 }
 
 template <typename T>
 double BasicSymmetry<T>::tensor_coefficient(int const* j1,  int const* j2,  int const* j12,
-					   int const* j3, int const* j4, int const* j34, 
-					   int const* j13,  int const* j24,  int const* j) const
+                                           int const* j3, int const* j4, int const* j34,
+                                           int const* j13,  int const* j24,  int const* j) const
 {
    return QuantumNumbers::ADL_tensor_coefficient(this, j1, j2, j12, j3, j4, j34, j13, j24, j);
 }
 
 template <typename T>
 double BasicSymmetry<T>::inverse_tensor_coefficient(int const* j1,  int const* j2,  int const* j12,
-						    int const* j3, int const* j4, int const* j34, 
-						    int const* j13,  int const* j24,  int const* j) const
+                                                    int const* j3, int const* j4, int const* j34,
+                                                    int const* j13,  int const* j24,  int const* j) const
 {
    return QuantumNumbers::ADL_inverse_tensor_coefficient(this, j1, j2, j12, j3, j4, j34, j13, j24, j);
 }
@@ -572,9 +572,9 @@ int BasicSymmetry<T>::num_transform_targets(int const* q1, int const* q2) const
 }
 
 template <typename T>
-void BasicSymmetry<T>::transform_targets(int const* q1,  
-					int const* q2, 
-					int* Targets) const
+void BasicSymmetry<T>::transform_targets(int const* q1,
+                                        int const* q2,
+                                        int* Targets) const
 {
    return QuantumNumbers::ADL_transform_targets(this, q1, q2, Targets);
 }
@@ -586,9 +586,9 @@ int BasicSymmetry<T>::num_inverse_transform_targets(int const* q1, int const* q)
 }
 
 template <typename T>
-void BasicSymmetry<T>::inverse_transform_targets(int const* q1, 
-					       int const* q, 
-					       int* InverseTargets) const
+void BasicSymmetry<T>::inverse_transform_targets(int const* q1,
+                                               int const* q,
+                                               int* InverseTargets) const
 {
    return QuantumNumbers::ADL_inverse_transform_targets(this, q1, q, InverseTargets);
 }
@@ -617,8 +617,8 @@ double BasicSymmetry<T>::conj_phase(int const* qp, int const* k, int const* q) c
 }
 
 template <typename T>
-void BasicSymmetry<T>::enumerate_projections(int const* q, 
-					    int* Projections) const
+void BasicSymmetry<T>::enumerate_projections(int const* q,
+                                            int* Projections) const
 {
    QuantumNumbers::ADL_enumerate_projections(this, q, Projections);
 }
@@ -630,8 +630,8 @@ bool BasicSymmetry<T>::is_delta(int const* q1, int const* Q, int const* P, int c
 }
 
 template <typename T>
-double BasicSymmetry<T>::clebsch_gordan(int const* qp,  int const* k,  int const* q, 
-					int const* qpm, int const* km, int const* qm) const
+double BasicSymmetry<T>::clebsch_gordan(int const* qp,  int const* k,  int const* q,
+                                        int const* qpm, int const* km, int const* qm) const
 {
    return QuantumNumbers::ADL_clebsch_gordan(this, qp, k, q, qpm, km, qm);
 }
@@ -659,19 +659,19 @@ template <typename T>
 void BasicSymmetry<T>::difference(int const* q1, int const* q2, int* p) const
 {
    return QuantumNumbers::ADL_difference(this, q1, q2, p);
-} 
+}
 
 template <typename T>
 void BasicSymmetry<T>::negate(int* p) const
 {
    return QuantumNumbers::ADL_negate(this, p);
-} 
+}
 
 template <typename T>
 void BasicSymmetry<T>::sum(int const* p1, int const* p2, int* r) const
 {
    return QuantumNumbers::ADL_sum(this, p1, p2, r);
-} 
+}
 
 template <typename T>
 bool BasicSymmetry<T>::is_projection(int const* q, int const* p) const
@@ -704,7 +704,7 @@ double BasicSymmetry<T>::weight(int const* p) const
 }
 
 template <typename T>
-double BasicSymmetry<T>::delta_shift_coefficient(int const* qp, int const* k, 
+double BasicSymmetry<T>::delta_shift_coefficient(int const* qp, int const* k,
                                                  int const* q, int const* Delta) const
 {
    return QuantumNumbers::ADL_delta_shift_coefficient(this, qp, k, q, Delta);
@@ -738,7 +738,7 @@ class StaticSymmetryFactory : public SymmetryFactory
    public:
       virtual SymmetryBase* AttemptCreate(std::string const& N)
       {
-	 return (N == T::Type()) ? new BasicSymmetry<T>() : NULL;
+         return (N == T::Type()) ? new BasicSymmetry<T>() : NULL;
       }
 };
 

@@ -33,15 +33,15 @@ LatticeSite::arg(std::string const& a) const
 
 LatticeSite::operator_type const&
 LatticeSite::operator[](std::string const& s) const
-{ 
-   OperatorListType::const_iterator I = pImpl->Operators.find(s); 
+{
+   OperatorListType::const_iterator I = pImpl->Operators.find(s);
    CHECK(I != pImpl->Operators.end()) << "The site does not contain any operator named " << s;
-   return I->second; 
+   return I->second;
 }
 
 SiteOperator LatticeSite::identity() const
 {
-   OperatorListType::const_iterator I = pImpl->Operators.find("I"); 
+   OperatorListType::const_iterator I = pImpl->Operators.find("I");
    CHECK(I != pImpl->Operators.end()) << "The site does not contain the identity operator!";
    return I->second;
 }
@@ -99,35 +99,35 @@ LatticeSite::set_operator_descriptions(OperatorDescriptions const& Desc)
    {
       if (this->operator_exists(std::get<0>(*I)))
       {
-	 // check if it was a conditional operator that should not be defined
-	 if (std::get<3>(*I) && (!(*std::get<3>(*I))()))
-	 {
-	    std::cerr << "warning: conditional local operator " << std::get<0>(*I) 
-		      << " (conditional on: " << std::get<2>(*I) << ") should not be defined, but is!\n";
-	 }
-	 this->operator[](std::get<0>(*I)).set_description(std::get<1>(*I));
+         // check if it was a conditional operator that should not be defined
+         if (std::get<3>(*I) && (!(*std::get<3>(*I))()))
+         {
+            std::cerr << "warning: conditional local operator " << std::get<0>(*I)
+                      << " (conditional on: " << std::get<2>(*I) << ") should not be defined, but is!\n";
+         }
+         this->operator[](std::get<0>(*I)).set_description(std::get<1>(*I));
       }
       else
       {
-	 // is the operator optional?
-	 if (!std::get<2>(*I).empty() || std::get<3>(*I))
-	 {
-	    // yes, check and see that we satisfy the condition
-	    if (std::get<3>(*I))
-	    {
-	       // invoke the function
-	       if (((*std::get<3>(*I))()))
-	       {
-		  std::cerr << "warning: conditional local operator "  << std::get<0>(*I) 
-			    << "should be defined but is not.\n";
-	       }
-	    }
-	 }
-	 else
-	 {
-	    std::cerr << "warning: operator " << std::get<0>(*I)
-		      << " has a description but is not defined in the lattice site.\n";
-	 }
+         // is the operator optional?
+         if (!std::get<2>(*I).empty() || std::get<3>(*I))
+         {
+            // yes, check and see that we satisfy the condition
+            if (std::get<3>(*I))
+            {
+               // invoke the function
+               if (((*std::get<3>(*I))()))
+               {
+                  std::cerr << "warning: conditional local operator "  << std::get<0>(*I)
+                            << "should be defined but is not.\n";
+               }
+            }
+         }
+         else
+         {
+            std::cerr << "warning: operator " << std::get<0>(*I)
+                      << " has a description but is not defined in the lattice site.\n";
+         }
       }
    }
 
@@ -136,7 +136,7 @@ LatticeSite::set_operator_descriptions(OperatorDescriptions const& Desc)
    {
       if (std::get<1>(*I).description().empty())
       {
-	 std::cerr << "warning: local operator " << std::get<0>(*I) << " has no description.\n";
+         std::cerr << "warning: local operator " << std::get<0>(*I) << " has no description.\n";
       }
    }
 }
@@ -148,7 +148,7 @@ struct ParseSiteExpression
    ParseSiteExpression(LatticeSite const& Site_) : Site(Site_) {}
 
    std::complex<double> operator()(Function::ArgumentList const& Args,
-				   std::string const& Str) const
+                                   std::string const& Str) const
    {
       return ParseSiteNumber(Site, Str, Args);
    }
@@ -157,16 +157,16 @@ struct ParseSiteExpression
 };
 
 boost::variant<SiteOperator, std::complex<double> >
-LatticeSite::eval_function(Function::OperatorFunction const& Func, 
-			   Function::ParameterList const& Params) const
+LatticeSite::eval_function(Function::OperatorFunction const& Func,
+                           Function::ParameterList const& Params) const
 {
    Function::ArgumentList Args = GetArguments(Func.Args, Params, ParseSiteExpression(*this));
    return ParseSiteElement(*this, Func.Def, Args);
 }
 
 boost::variant<SiteOperator, std::complex<double> >
-LatticeSite::eval_function(std::string const& Func, 
-			   Function::ParameterList const& Params) const
+LatticeSite::eval_function(std::string const& Func,
+                           Function::ParameterList const& Params) const
 {
    const_function_iterator I = this->find_function(Func);
    CHECK(I != this->end_function())("Function is not defined!")(Func);

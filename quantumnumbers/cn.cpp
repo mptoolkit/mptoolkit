@@ -62,7 +62,7 @@ Cn::Cn(int N_, std::string const& s)
 {
 }
 
-std::string 
+std::string
 Cn::ToString() const
 {
    return ConvertToString(x);
@@ -73,7 +73,7 @@ void Cn::Register()
    RegisterSymmetry(new CnSymmetryFactory());
 }
 
-std::string 
+std::string
 CnProjection::ToString() const
 {
    return std::string();

@@ -19,7 +19,7 @@
 /* -*- C++ -*- $Id$
   A fast reference counted block of memory.
 
-  2002-07-01: Fixed a bug in DataBlock::DataBlock(size_t) where allocating size zero would fail.  
+  2002-07-01: Fixed a bug in DataBlock::DataBlock(size_t) where allocating size zero would fail.
   It no longer fails, although maybe it should instead be a precondition violation?
 
   2004-04-24: Optimized to use a single memory allocation; the array and the reference count are
@@ -46,7 +46,7 @@
 #define TRACE_DATABLOCK(Msg) DUMMY_TRACE(Msg)
 #endif
 
-size_t const CacheLineSize = 0;  // This is a hook to make the data block 
+size_t const CacheLineSize = 0;  // This is a hook to make the data block
                                  // aligned on a cache-line.  not yet implemented.
 
 struct NoHeader {};  // dummy struct for the case where we have no extra header
@@ -77,7 +77,7 @@ struct NoHeaderDummy
 };
 
 template <typename Dummy>
-NoHeader NoHeaderDummy<Dummy>::Head; 
+NoHeader NoHeaderDummy<Dummy>::Head;
 
 template <>
 struct Overhead<NoHeader>
@@ -186,7 +186,7 @@ template <typename T, typename Header>
 T* DataBlockAllocator<T, Header>::copy(T const* Data)
 {
    size_t Size = DataBlockAllocator<T, Header>::GetSize(Data);
-   
+
    unsigned char* NewBase = static_cast<unsigned char*>
      (::operator new(ArrayOffset + sizeof(T) * Size));
    T* NewData = reinterpret_cast<T*>(NewBase + ArrayOffset);
@@ -205,7 +205,7 @@ T* DataBlockAllocator<T, Header>::copy(T const* Data)
 }
 
 template <typename T, typename Header>
-inline 
+inline
 AtomicRefCount& DataBlockAllocator<T, Header>::GetRefCount(T const* Data)
 {
    unsigned char* Base = reinterpret_cast<unsigned char*>(const_cast<T*>(Data)) - ArrayOffset;
@@ -213,7 +213,7 @@ AtomicRefCount& DataBlockAllocator<T, Header>::GetRefCount(T const* Data)
 }
 
 template <typename T, typename Header>
-inline 
+inline
 size_t DataBlockAllocator<T, Header>::GetSize(T const* Data)
 {
    unsigned char const* Base = reinterpret_cast<unsigned char const*>(const_cast<T*>(Data)) - ArrayOffset;
@@ -221,7 +221,7 @@ size_t DataBlockAllocator<T, Header>::GetSize(T const* Data)
 }
 
 template <typename T, typename Header>
-inline 
+inline
 Header& DataBlockAllocator<T, Header>::GetHeader(T const* Data)
 {
    unsigned char* Base = reinterpret_cast<unsigned char*>(const_cast<T*>(Data)) - ArrayOffset;
@@ -241,23 +241,23 @@ class DataBlock
       DataBlock() : Data(Allocator::create_empty()) { TRACE_DATABLOCK("DataBlock: default constructing"); }
 
       explicit DataBlock(size_t Size, Header const& Head = Header())
-	: Data(Allocator::allocate(Size, Head)) 
+        : Data(Allocator::allocate(Size, Head))
       { TRACE_DATABLOCK("DataBlock: constructing")(Size) << "Data = " << (void*) Data; }
 
       explicit DataBlock(Header const& Head)
-	: Data(Allocator::create_empty(Head)) 
+        : Data(Allocator::create_empty(Head))
       { TRACE_DATABLOCK("DataBlock: constructing"); }
 
       DataBlock(size_t Size, T const& Fill, Header const& Head = Header())
-	: Data(Allocator::allocate_fill(Size, Fill, Head)) 
+        : Data(Allocator::allocate_fill(Size, Fill, Head))
       { TRACE_DATABLOCK("DataBlock: constructing")(Size) << "Data = " << (void*) Data; }
 
       DataBlock(DataBlock const& Other) : Data(Other.Data)
-      { ++this->ref_count(); 
-        TRACE_DATABLOCK("DataBlock: copy constructing")(this->ref_count().value()) 
+      { ++this->ref_count();
+        TRACE_DATABLOCK("DataBlock: copy constructing")(this->ref_count().value())
         << "Other.Data = " << (void*) Other.Data; }
 
-      DataBlock& operator=(DataBlock const& Other) 
+      DataBlock& operator=(DataBlock const& Other)
       { TRACE_DATABLOCK("DataBlock: assignment") << "Other.Data = " << (void*) Other.Data;
       ++Other.ref_count(); this->do_sub_reference();
       Data = Other.Data;
@@ -293,16 +293,16 @@ class DataBlock
 
 template <typename T, typename Header>
 inline
-void DataBlock<T, Header>::cow() 
-{ 
-   TRACE_DATABLOCK("DataBlock::cow()")(this->is_shared()) << "Data = " << (void*) Data; 
-   if (this->is_shared()) 
+void DataBlock<T, Header>::cow()
+{
+   TRACE_DATABLOCK("DataBlock::cow()")(this->is_shared()) << "Data = " << (void*) Data;
+   if (this->is_shared())
    {
       T* NewData = Allocator::copy(Data);
       this->do_sub_reference();
       Data = NewData;
       TRACE_DATABLOCK("DataBlock::cow()") << "New Data = " << (void*) Data;
-   } 
+   }
 }
 
 
@@ -310,10 +310,10 @@ template <typename T, typename Header>
 inline
 void DataBlock<T, Header>::do_sub_reference()
 {
-   if (--this->ref_count() == 0) 
-   { 
-      TRACE_DATABLOCK("DataBlock::do_sub_reference: deallocating") << "Data = " << (void*) Data; 
-      Allocator::deallocate(Data); 
+   if (--this->ref_count() == 0)
+   {
+      TRACE_DATABLOCK("DataBlock::do_sub_reference: deallocating") << "Data = " << (void*) Data;
+      Allocator::deallocate(Data);
    }
    else
    {
@@ -335,18 +335,18 @@ class DataBlock<T const, Header>
 
       explicit DataBlock(size_t Size) : Data(Allocator::allocate(Size)) {}
 
-      DataBlock(DataBlock<T, Header> const& Other) : Data(Other.Data) 
+      DataBlock(DataBlock<T, Header> const& Other) : Data(Other.Data)
       { ++this->ref_count(); }
 
       DataBlock(DataBlock<T const, Header> const& Other) : Data(Other.Data)
       { ++this->ref_count(); }
 
-      DataBlock& operator=(DataBlock<T, Header> const& Other) 
+      DataBlock& operator=(DataBlock<T, Header> const& Other)
       { ++Other->ref_count(); if (--this->ref_count() == 0) { Allocator::deallocate(Data); }
       Data = Other.Data;
       return *this; }
 
-      DataBlock& operator=(DataBlock<T const, Header> const& Other) 
+      DataBlock& operator=(DataBlock<T const, Header> const& Other)
       { ++Other->ref_count(); if (--this->ref_count() == 0) { Allocator::deallocate(Data); }
       Data = Other.Data;
       return *this; }

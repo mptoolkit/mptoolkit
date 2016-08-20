@@ -109,7 +109,7 @@ struct linear_fit_result
 };
 
 template <class FwdIter1, class FwdIter2, class FwdIter3>
-linear_fit_result linear_fit(FwdIter1 x_start, FwdIter1 x_end, 
+linear_fit_result linear_fit(FwdIter1 x_start, FwdIter1 x_end,
                              FwdIter2 y_start,
                              FwdIter3 variance_start);
 
@@ -121,12 +121,12 @@ class moving_average
 
       explicit moving_average(int Count) : Count_(Count) {}
 
-      void push(T const& x) 
+      void push(T const& x)
       { Data.push_back(x); if (int(Data.size()) > Count_) Data.pop_front(); }
 
       void clear() { Data.clear(); }
 
-      value_type value() const 
+      value_type value() const
       { return std::accumulate(Data.begin(), Data.end(), T()) / Data.size(); }
 
       value_type operator()() const
@@ -153,12 +153,12 @@ class moving_exponential
 
       explicit moving_exponential(double RelaxationFactor) : Factor_(RelaxationFactor), Value(), Accum(0.0) {}
 
-      void push(T const& x) 
+      void push(T const& x)
       { Value = (Value*Factor_) + x; Accum = (Accum*Factor_) + 1.0; }
 
       void clear() { Value = 0; Accum = 0; }
 
-      value_type value() const 
+      value_type value() const
       { return (1.0 / Accum) * Value; }
 
       value_type operator()() const

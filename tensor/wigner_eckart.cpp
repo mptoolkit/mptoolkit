@@ -97,4 +97,3 @@ QPSetType UpdateAllowedProjections(QPSetType const& qp, std::set<QuantumNumber> 
 }
 
 } // namespace Tensor
- 

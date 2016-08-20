@@ -92,7 +92,7 @@ struct ApplyTensorSumBind1st
    SimpleOperator Op_;
 };
 
-MPOpComponent tensor_sum(MPOpComponent const& A, MPOpComponent const& B, 
+MPOpComponent tensor_sum(MPOpComponent const& A, MPOpComponent const& B,
                          SumBasis<BasisList> const& B1, SumBasis<BasisList> const& B2)
 {
    PRECONDITION_EQUAL(A.SiteBasis(), B.SiteBasis());
@@ -156,8 +156,8 @@ struct ApplyTensorRowSumBind1st
    SimpleOperator Op_;
 };
 
-MPOpComponent tensor_row_sum(MPOpComponent const& A, 
-                             MPOpComponent const& B, 
+MPOpComponent tensor_row_sum(MPOpComponent const& A,
+                             MPOpComponent const& B,
                              SumBasis<BasisList> const& B2)
 {
    DEBUG_PRECONDITION_EQUAL(A.SiteBasis(), B.SiteBasis());
@@ -222,8 +222,8 @@ struct ApplyTensorColSumBind1st
    SimpleOperator Op_;
 };
 
-MPOpComponent tensor_col_sum(MPOpComponent const& A, 
-                             MPOpComponent const& B, 
+MPOpComponent tensor_col_sum(MPOpComponent const& A,
+                             MPOpComponent const& B,
                              SumBasis<BasisList> const& B1)
 {
    DEBUG_PRECONDITION_EQUAL(A.SiteBasis(), B.SiteBasis());
@@ -255,7 +255,7 @@ MPOpComponent tensor_col_sum(MPOpComponent const& A,
 }
 
 MPMatrix operator_prod(MPOpComponent const& M,
-                       MPStateComponent const& A, 
+                       MPStateComponent const& A,
                        MPMatrix const& E,
                        HermitianProxy<MPStateComponent> const& B)
 {
@@ -277,8 +277,8 @@ MPMatrix operator_prod(MPOpComponent const& M,
             {
                for (SimpleOperator::const_inner_iterator Aa = iterate(Aap); Aa; ++Aa)
                {
-                  Result[Aa.index1()] += (*Aa) * triple_prod(A[Aj.index1()], 
-                                                             E[Aa.index2()], 
+                  Result[Aa.index1()] += (*Aa) * triple_prod(A[Aj.index1()],
+                                                             E[Aa.index2()],
                                                              herm(B.base()[Aj.index2()]),
                                                              I->first,
                                                              M.Basis1()[Aa.index1()]);
@@ -291,7 +291,7 @@ MPMatrix operator_prod(MPOpComponent const& M,
 }
 
 MPMatrix operator_prod(HermitianProxy<MPOpComponent> const& M,
-                       HermitianProxy<MPStateComponent> const& A, 
+                       HermitianProxy<MPStateComponent> const& A,
                        MPMatrix const& E,
                        MPStateComponent const& B)
 {
@@ -313,9 +313,9 @@ MPMatrix operator_prod(HermitianProxy<MPOpComponent> const& M,
             {
                for (SimpleOperator::const_inner_iterator Aa = iterate(Aap); Aa; ++Aa)
                {
-                  Result[Aa.index2()] += herm(*Aa) 
-                     * triple_prod(herm(A.base()[Aj.index1()]), 
-                                   E[Aa.index1()], 
+                  Result[Aa.index2()] += herm(*Aa)
+                     * triple_prod(herm(A.base()[Aj.index1()]),
+                                   E[Aa.index1()],
                                    B[Aj.index2()],
                                    I->first,
                                    M.base().Basis2()[Aa.index2()]);
@@ -328,7 +328,7 @@ MPMatrix operator_prod(HermitianProxy<MPOpComponent> const& M,
 }
 
 MPMatrix local_operator_prod(MPOpComponent const& M,
-                             MPStateComponent const& E, 
+                             MPStateComponent const& E,
                              MPMatrix const& A,
                              HermitianProxy<MPStateComponent> const& F)
 {
@@ -350,8 +350,8 @@ MPMatrix local_operator_prod(MPOpComponent const& M,
             {
                for (SimpleOperator::const_inner_iterator Aa = iterate(Aap); Aa; ++Aa)
                {
-                  Result[Aj.index1()] += (*Aa) * triple_prod(E[Aa.index1()], 
-                                                             A[Aj.index2()], 
+                  Result[Aj.index1()] += (*Aa) * triple_prod(E[Aa.index1()],
+                                                             A[Aj.index2()],
                                                              herm(F.base()[Aa.index2()]),
                                                              I->first,
                                                              M.LocalBasis()[Aj.index1()]);
@@ -365,7 +365,7 @@ MPMatrix local_operator_prod(MPOpComponent const& M,
 
 #if 0
 MPMatrix local_operator_prod(HermitianProxy<MPOpComponent> const& M,
-                             HermitianProxy<MPStateComponent> const& E, 
+                             HermitianProxy<MPStateComponent> const& E,
                              MPMatrix const& A,
                              MPStateComponent const& F)
 {
@@ -387,9 +387,9 @@ MPMatrix local_operator_prod(HermitianProxy<MPOpComponent> const& M,
             {
                for (SimpleOperator::const_inner_iterator Aa = iterate(Aap); Aa; ++Aa)
                {
-                  Result[Aa.index2()] += herm(*Aa) 
-                     * triple_prod(herm(A.base()[Aj.index1()]), 
-                                   E[Aa.index1()], 
+                  Result[Aa.index2()] += herm(*Aa)
+                     * triple_prod(herm(A.base()[Aj.index1()]),
+                                   E[Aa.index1()],
                                    B[Aj.index2()],
                                    I->first,
                                    M.base().Basis2()[Aa.index2()]);
@@ -410,7 +410,7 @@ MPOpComponent prod(MPOpComponent const& A, SimpleOperator const& Op)
    MPOpComponent Result(A.SiteBasis(), A.Basis1(), Op.Basis2());
    for (MPOpComponent::const_iterator AI = A.begin(); AI != A.end(); ++AI)
    {
-      Result[AI->first] = transform(AI->second, 
+      Result[AI->first] = transform(AI->second,
          bind_second(LinearAlgebra::IrredProd<SimpleOperator, SimpleOperator>(AI->first), Op));
 
       //prod(AI->second, Op, AI->first);
@@ -430,7 +430,7 @@ MPOpComponent prod(SimpleOperator const& Op, MPOpComponent const& A)
    MPOpComponent Result(A.SiteBasis(), Op.Basis1(), A.Basis2());
    for (MPOpComponent::const_iterator AI = A.begin(); AI != A.end(); ++AI)
    {
-      Result[AI->first] = transform(AI->second, 
+      Result[AI->first] = transform(AI->second,
          bind_first(LinearAlgebra::IrredProd<SimpleOperator, SimpleOperator>(AI->first), Op));
    }
 
@@ -446,7 +446,7 @@ MPOpComponent prod(MPOpComponent const& A, HermitianProxy<SimpleOperator> const&
    MPOpComponent Result(A.SiteBasis(), A.Basis1(), Op.base().Basis1());
    for (MPOpComponent::const_iterator AI = A.begin(); AI != A.end(); ++AI)
    {
-      Result[AI->first] = transform(AI->second, 
+      Result[AI->first] = transform(AI->second,
          bind_second(IrredProd_Herm<SimpleOperator, HermitianProxy<SimpleOperator> >(), Op));
 
       //prod(AI->second, Op, AI->first);
@@ -466,7 +466,7 @@ MPOpComponent prod(HermitianProxy<SimpleOperator> const& Op, MPOpComponent const
    MPOpComponent Result(A.SiteBasis(), Op.base().Basis2(), A.Basis2());
    for (MPOpComponent::const_iterator AI = A.begin(); AI != A.end(); ++AI)
    {
-      Result[AI->first] = transform(AI->second, 
+      Result[AI->first] = transform(AI->second,
          bind_first(IrredProd_Herm<HermitianProxy<SimpleOperator>, SimpleOperator>(), Op));
    }
 
@@ -487,7 +487,7 @@ MPOpComponent local_tensor_prod(MPOpComponent const& A, MPOpComponent const& B)
          QuantumNumberList ql = transform_targets(AI->first, BI->first);
          for (QuantumNumberList::const_iterator qI = ql.begin(); qI != ql.end(); ++qI)
          {
-            Result[*qI] += tensor_prod(AI->second, BI->second, PB, PB, *qI, 
+            Result[*qI] += tensor_prod(AI->second, BI->second, PB, PB, *qI,
                                        IrredProdSimpleOperator(*qI));
          }
       }
@@ -519,7 +519,7 @@ bool IsProportionalIdentity(MPOpComponent const& Op)
 
    //TRACE(Factor)(Fac2)(Scale)(Fac)(Fac/Scale);
 
-   return (std::abs(Factor - Fac2) 
+   return (std::abs(Factor - Fac2)
            < 100 * std::numeric_limits<double>::epsilon() * (1 + std::abs(Factor+Fac2)));
 }
 
@@ -570,7 +570,7 @@ SimpleOperator ExpandBasis1(MPOpComponent& A, Normalization n)
    }
 
    // check the normalization
-   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(Result, herm(Result))), 
+   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(Result, herm(Result))),
                      VectorBasis(FullBasis1.Basis()).total_degree());
 
    //   TRACE(A);
@@ -623,12 +623,12 @@ SimpleOperator ExpandBasis2(MPOpComponent& A, Normalization n)
 
       if (Result[LocalBasis[l]](sp, s).is_null())
       {
-         Result[LocalBasis[l]](sp, s) 
+         Result[LocalBasis[l]](sp, s)
             = SimpleOperator(A.Basis1(), FullBasis2.Basis(), LocalBasis[l]);
       }
 
       Result[LocalBasis[l]](sp, s)(b1, t) =
-         std::sqrt(double(degree(FullBasis2[t])) 
+         std::sqrt(double(degree(FullBasis2[t]))
                    / (degree(A.Basis1()[b1]) * degree(A.SiteBasis()[sp])));
    }
 
@@ -636,7 +636,7 @@ SimpleOperator ExpandBasis2(MPOpComponent& A, Normalization n)
    //   TRACE(scalar_prod(herm(Result), Result));
 
    // check the normalization
-   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(herm(Result), Result)), 
+   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(herm(Result), Result)),
                      VectorBasis(FullBasis2.Basis()).total_degree());
 
    SimpleOperator Res = scalar_prod(herm(Result), A);
@@ -675,7 +675,7 @@ double const OverlapEpsilon = 1E-14;       // relative epsilon for parallel entr
 double const SmallEpsilon = 1E-14;  // absolute epsilon for zero entries
 
 MPOpComponent
-SumFix1(MPOpComponent const& A, MPOpComponent const& B, 
+SumFix1(MPOpComponent const& A, MPOpComponent const& B,
         SimpleOperator& AMap, SimpleOperator& BMap)
 {
    DEBUG_CHECK_EQUAL(A.Basis1(), B.Basis1());
@@ -717,7 +717,7 @@ SimpleOperator TruncateBasis1(MPOpComponent& A)
    {
       return SimpleOperator(A.Basis1(), A.Basis1(), QuantumNumber(A.GetSymmetryList()));
    }
-   else if (A.Basis2().size() == 0) 
+   else if (A.Basis2().size() == 0)
    {
       SimpleOperator Result(A.Basis1(), A.Basis2(), QuantumNumber(A.GetSymmetryList()));
       A = MPOpComponent(A.SiteBasis(), A.Basis2(), A.Basis2());
@@ -1009,25 +1009,25 @@ SimpleOperator TruncateBasis2(MPOpComponent& A)
 }
 
 
-MPStateComponent 
+MPStateComponent
 MProd<MPOpComponent, MPStateComponent>::operator()(MPOpComponent const& M,
-						   MPStateComponent const& A,
-						   ProductBasis<BasisList, VectorBasis> const& B1,
-						   ProductBasis<BasisList, VectorBasis> const& B2)
+                                                   MPStateComponent const& A,
+                                                   ProductBasis<BasisList, VectorBasis> const& B1,
+                                                   ProductBasis<BasisList, VectorBasis> const& B2)
 {
    MPStateComponent Result(M.SiteBasis(), B1.Basis(), B2.Basis());
-   
+
    for (MPOpComponent::const_iterator MI = M.begin(); MI != M.end(); ++MI)
    {
       for (const_iterator<CompoundOperator>::type I = iterate(MI->second); I; ++I)
       {
-	 for (const_inner_iterator<CompoundOperator>::type J = iterate(I); J; ++J)
+         for (const_inner_iterator<CompoundOperator>::type J = iterate(I); J; ++J)
          {
-	    Result[J.index1()] += QuantumNumbers::conj_phase(M.SiteBasis()[J.index2()],
-							     MI->first,
-							     M.SiteBasis()[J.index1()])
-	       * Tensor::tensor_prod(*J, A[J.index2()], B1, B2, M.SiteBasis()[J.index1()]);
-	 }
+            Result[J.index1()] += QuantumNumbers::conj_phase(M.SiteBasis()[J.index2()],
+                                                             MI->first,
+                                                             M.SiteBasis()[J.index1()])
+               * Tensor::tensor_prod(*J, A[J.index2()], B1, B2, M.SiteBasis()[J.index1()]);
+         }
       }
    }
    return Result;
@@ -1035,9 +1035,9 @@ MProd<MPOpComponent, MPStateComponent>::operator()(MPOpComponent const& M,
 
 MPOpComponent
 MProd<MPOpComponent, MPOpComponent>::operator()(MPOpComponent const& M,
-						MPOpComponent const& N,
-						ProductBasis<BasisList, BasisList> const& B1,
-						ProductBasis<BasisList, BasisList> const& B2)
+                                                MPOpComponent const& N,
+                                                ProductBasis<BasisList, BasisList> const& B1,
+                                                ProductBasis<BasisList, BasisList> const& B2)
 {
    MPOpComponent Result(M.SiteBasis(), B1.Basis(), B2.Basis());
 
@@ -1045,12 +1045,12 @@ MProd<MPOpComponent, MPOpComponent>::operator()(MPOpComponent const& M,
    {
       for (MPOpComponent::const_iterator NI = N.begin(); NI != N.end(); ++NI)
       {
-	 QuantumNumbers::QuantumNumberList QL(transform_targets(MI->first, NI->first));
-	 for (std::size_t i = 0; i < QL.size(); ++i)
+         QuantumNumbers::QuantumNumberList QL(transform_targets(MI->first, NI->first));
+         for (std::size_t i = 0; i < QL.size(); ++i)
          {
-	    Result[QL[i]] += prod(MI->second, NI->second, QL[i],
-				  Tensor::TensorProd<SimpleOperator, SimpleOperator>(B1, B2, QL[i]));
-	 }
+            Result[QL[i]] += prod(MI->second, NI->second, QL[i],
+                                  Tensor::TensorProd<SimpleOperator, SimpleOperator>(B1, B2, QL[i]));
+         }
       }
    }
    return Result;
@@ -1084,7 +1084,7 @@ project_row(MPOpComponent const& x, int r)
    {
       for (const_iterator<CompoundOperator>::type I = iterate(MI->second); I; ++I)
       {
-	 for (const_inner_iterator<CompoundOperator>::type J = iterate(I); J; ++J)
+         for (const_inner_iterator<CompoundOperator>::type J = iterate(I); J; ++J)
          {
             for (const_iterator<SimpleOperator>::type K = iterate(*J); K; ++K)
             {
@@ -1119,7 +1119,7 @@ project_column(MPOpComponent const& x, int c)
    {
       for (const_iterator<CompoundOperator>::type I = iterate(MI->second); I; ++I)
       {
-	 for (const_inner_iterator<CompoundOperator>::type J = iterate(I); J; ++J)
+         for (const_inner_iterator<CompoundOperator>::type J = iterate(I); J; ++J)
          {
             for (const_iterator<SimpleOperator>::type K = iterate(*J); K; ++K)
             {

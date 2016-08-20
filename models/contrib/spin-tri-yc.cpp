@@ -75,24 +75,24 @@ int main(int argc, char** argv)
       desc.add_options()
          ("help", "show this help message")
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
-	 ("width,w", prog_opt::value(&w), "width of the cylinder [default 3]")
+         ("width,w", prog_opt::value(&w), "width of the cylinder [default 3]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
-      
-      prog_opt::variables_map vm;        
+
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).style(prog_opt::command_line_style::default_style ^
-					  prog_opt::command_line_style::allow_guessing).
-		      run(), vm);
-      prog_opt::notify(vm);    
-      
+                                          prog_opt::command_line_style::allow_guessing).
+                      run(), vm);
+      prog_opt::notify(vm);
+
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Constructs a triangular lattice in the YC configuration with wrapping vector (0,1),\n"
-		   << "while spins sit on edges. This employs an efficient way of numbering in the 1D chain.\n\n"
+         std::cerr << "Constructs a triangular lattice in the YC configuration with wrapping vector (0,1),\n"
+                   << "while spins sit on edges. This employs an efficient way of numbering in the 1D chain.\n\n"
                    << "Operators:\n"
                    << "Sx      - total spin on a leg of the cylinder\n"
                    << "Sy      - total spin on a leg of the cylinder\n"
@@ -100,8 +100,8 @@ int main(int argc, char** argv)
                    << "Trans   - translation by one site (rotation by 2\u0071/w) in lattice short direction\n"
                    << "Ref     - reflection in lattice short direction (may need applying T-operators to become gneral reflection)\n"
                    << "Functions:\n"
-                   << "not yet implemented ...\n\n"                          
-	    ;
+                   << "not yet implemented ...\n\n"
+            ;
          return 1;
       }
 
@@ -122,7 +122,7 @@ int main(int argc, char** argv)
       std::cout << "Building all Hamiltonian operators:\n";
 
       // Add some operators on the unit-cell
-      
+
       for (int i = 0; i < w; ++i)
       {
          Sx += Sx[i];                                         // total spin (x-component) on a leg of cylinder
@@ -148,12 +148,12 @@ int main(int argc, char** argv)
       for (int i = 0; i < w/2; ++i)
        {
            Ref = Ref(0) * Cell.swap_gate_no_sign(i, w-i-1);
-        
+
            oo++;
            std::printf("\33[2K\r");
            std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 4*w+(w/2)-1
        }
-          
+
       // if we could have tripartite symmetry, add operators for the sublattice magnetization
       //UnitCellMPO S_A, S_B, S_C;
       //not yet implemented ...
@@ -161,27 +161,27 @@ int main(int argc, char** argv)
       UnitCellMPO Ry = I(0);
       for (int c = 0; c < w; ++c)
       {
-	 UnitCellMPO ThisR = I(0);
-	 // get the 'pivot' site/bond that we reflect about
-	 int const p1 = c/2;
-	 int const p2 = (c+1)/2;
+         UnitCellMPO ThisR = I(0);
+         // get the 'pivot' site/bond that we reflect about
+         int const p1 = c/2;
+         int const p2 = (c+1)/2;
 
-	 // if we're reflecting about a bond, do that first
-	 if (p1 != p2)
-	    ThisR = ThisR * Cell.swap_gate_no_sign(p1,p2);
+         // if we're reflecting about a bond, do that first
+         if (p1 != p2)
+            ThisR = ThisR * Cell.swap_gate_no_sign(p1,p2);
 
-	 int i1 = (p1+w-1)%w;
-	 int i2 = (p2+1)%w;
-	
-	 while (i1 != p1 + w/2)
-	 {
-	    ThisR = ThisR * Cell.swap_gate_no_sign(i1,i2);
-	    i1 = (i1+w-1)%w;
-	    i2 = (i2+1)%w;
-	 }
+         int i1 = (p1+w-1)%w;
+         int i2 = (p2+1)%w;
 
-	 ThisR.translate(c*w);
-	 Ry = Ry * ThisR;
+         while (i1 != p1 + w/2)
+         {
+            ThisR = ThisR * Cell.swap_gate_no_sign(i1,i2);
+            i1 = (i1+w-1)%w;
+            i2 = (i2+1)%w;
+         }
+
+         ThisR.translate(c*w);
+         Ry = Ry * ThisR;
       }
 
       RyUnit = Ry;
@@ -198,13 +198,13 @@ int main(int argc, char** argv)
 
         // TIM - x-field terms
         Hx_f += Sx(0)[i];
- 
+
         oo++;
         std::printf("\33[2K\r");
         std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w+(w/2)
 
-        // THM - nearest neighbor bonds 
-        
+        // THM - nearest neighbor bonds
+
         // --> vertical bonds
         H1 += Sx(0)[i]*Sx(0)[(i+1)%w] + Sy(0)[i]*Sy(0)[(i+1)%w] + Sz(0)[i]*Sz(0)[(i+1)%w];
 
@@ -232,7 +232,7 @@ int main(int argc, char** argv)
 
           oo++;
           std::printf("\33[2K\r");
-          std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 11*w+(w*w/2)  
+          std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 11*w+(w*w/2)
         }
       }
 
@@ -243,40 +243,40 @@ int main(int argc, char** argv)
 
       oo++;
       std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 11*w+(w*w/2)+4 
+      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 11*w+(w*w/2)+4
 
 
       UnitCellMPO RyOld = I(0);
       for (int c = 0; c < w; ++c)
       {
-	 UnitCellMPO ThisR = I(0);
-	 // get the 'pivot' site/bond that we reflect about
-	 int const p1 = (w-c-1)/2;
-	 int const p2 = (w-c)/2;
+         UnitCellMPO ThisR = I(0);
+         // get the 'pivot' site/bond that we reflect about
+         int const p1 = (w-c-1)/2;
+         int const p2 = (w-c)/2;
 
-	 // if we're reflecting about a bond, do that first
-	 if (p1 != p2)
-	    ThisR = ThisR * Cell.swap_gate_no_sign(p1,p2);
+         // if we're reflecting about a bond, do that first
+         if (p1 != p2)
+            ThisR = ThisR * Cell.swap_gate_no_sign(p1,p2);
 
-	 int i1 = (p1+w-1)%w;
-	 int i2 = (p2+1)%w;
-	
-	 while (i1 != p1 + w/2)
-	 {
-	    ThisR = ThisR * Cell.swap_gate_no_sign(i1,i2);
-	    i1 = (i1+w-1)%w;
-	    i2 = (i2+1)%w;
-	 }
+         int i1 = (p1+w-1)%w;
+         int i2 = (p2+1)%w;
 
-	 ThisR.translate(c*w);
-	 RyOld = RyOld * ThisR;
+         while (i1 != p1 + w/2)
+         {
+            ThisR = ThisR * Cell.swap_gate_no_sign(i1,i2);
+            i1 = (i1+w-1)%w;
+            i2 = (i2+1)%w;
+         }
+
+         ThisR.translate(c*w);
+         RyOld = RyOld * ThisR;
       }
 
       Lattice["RyOld"] = prod_unit_left_to_right(RyOld.MPO(), w*w);
 
       oo++;
       std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 11*w+(w*w/2)+5  
+      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 11*w+(w*w/2)+5
 
       // Momentum operators in Y direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
@@ -290,25 +290,25 @@ int main(int argc, char** argv)
       // for even size unit cell, add rotation by pi
       if (w%2 == 0)
       {
-	 UnitCellMPO TyPi = I(0);
-	 for (int i = 0; i < w/2; ++i)
-	 {
-	    TyPi = TyPi * Cell.swap_gate_no_sign(i, i+w/2);
-	 }
-	 Lattice["TyPi"] = prod_unit_left_to_right(TyPi.MPO(), w);
+         UnitCellMPO TyPi = I(0);
+         for (int i = 0; i < w/2; ++i)
+         {
+            TyPi = TyPi * Cell.swap_gate_no_sign(i, i+w/2);
+         }
+         Lattice["TyPi"] = prod_unit_left_to_right(TyPi.MPO(), w);
       }
 
       oo++;
       std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 11*w+(w*w/2)+8  
+      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 11*w+(w*w/2)+8
 
       Lattice.func("THM2")(arg("J2") = 0.0)
               = "H_J1 + J2*H_J2";
 
       oo++;
       std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 11*w+(w*w/2)+9 
-      
+      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 11*w+(w*w/2)+9
+
       // a basic function for Haldane-Shastry model with Sz*Sz interations
       Lattice.func("HS")(arg("lambda") = 0.5, arg("i") = "0", arg("j") = "0")
                   = "exp(-lambda)*sum_string_inner( Sz(0)[i], exp(-lambda)*I(0), Sz(0)[j] )";

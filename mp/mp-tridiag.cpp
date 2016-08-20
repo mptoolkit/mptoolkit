@@ -49,7 +49,7 @@ class Aggregator
       typedef MPStateComponent Component;
       typedef Component::OperatorType OperatorType;
 
-      Aggregator(std::vector<CenterWavefunction> const& Psi_, int RightLanczos_, 
+      Aggregator(std::vector<CenterWavefunction> const& Psi_, int RightLanczos_,
                  int LeftLanczos_, SplitOperator const& H_, int Location_);
 
       void Tridiagonalize(int NumIter, double Threshold);
@@ -82,7 +82,7 @@ void Aggregator::ConstructLeft()
    {
       LeftMap[i] = operator_prod(herm(Result.Left()), LeftMap[i], Psi[i].Left());
    }
-                      
+
    // Construct the density matrix
    OperatorType Rho;
    for (unsigned i = 0; i < Psi.size(); ++i)
@@ -102,7 +102,7 @@ void Aggregator::ConstructLeft()
                                                                                            MinTrunc,
                                                                                            Info));
    if (ShowStates)
-      std::cerr << "left density matrix at partition (" << Psi[0].LeftSize() << "," << Psi[0].RightSize() 
+      std::cerr << "left density matrix at partition (" << Psi[0].LeftSize() << "," << Psi[0].RightSize()
                 << "), states=" << Info.KeptStates() << ", trunc=" << Info.TruncationError() << '\n';
 
    // Truncate
@@ -143,7 +143,7 @@ void Aggregator::ConstructRight()
                                                                                            MinTrunc,
                                                                                            Info));
    if (ShowStates)
-      std::cerr << "right density matrix at partition (" << Psi[0].LeftSize() << "," << Psi[0].RightSize() 
+      std::cerr << "right density matrix at partition (" << Psi[0].LeftSize() << "," << Psi[0].RightSize()
                 << "), states=" << Info.KeptStates() << ", trunc=" << Info.TruncationError() << '\n';
 
    // Truncate
@@ -179,7 +179,7 @@ void Aggregator::RotateRight()
                                                   Psi[0].Left().SiteBasis()));
 }
 
-Aggregator::Aggregator(std::vector<CenterWavefunction> const& Psi_,  int RightLanczos_, 
+Aggregator::Aggregator(std::vector<CenterWavefunction> const& Psi_,  int RightLanczos_,
                        int LeftLanczos_, SplitOperator const& H_, int Location_)
    : Psi(Psi_), RightLanczos(RightLanczos_), LeftLanczos(LeftLanczos_),
      H(H_), Weights(Psi_.size(), 1.0), Ident(Psi_[0].GetSymmetryList())
@@ -222,7 +222,7 @@ Aggregator::Aggregator(std::vector<CenterWavefunction> const& Psi_,  int RightLa
    RightMap = std::vector<OperatorType>(Psi.size(), RightVac);
 
    H_right = make_vacuum_state(Psi[0].GetSymmetryList());
-   Result.PushRight(Component::ConstructFullBasis1(Psi[0].Right().SiteBasis(), 
+   Result.PushRight(Component::ConstructFullBasis1(Psi[0].Right().SiteBasis(),
                                                     Psi[0].Right().Basis2()));
 
    this->ConstructRight();
@@ -323,13 +323,13 @@ int main(int argc, char** argv)
       double Threshold = 1e-2;
       double GroundstateEnergy = 0;
       int Verbosity = 0;
-      
+
       std::cout.precision(14);
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Hamiltonian,H", prog_opt::value<std::string>(), 
+         ("Hamiltonian,H", prog_opt::value<std::string>(),
           "operator to use for the Hamiltonian (right Lanczos vector attribute \"Hamiltonian\")")
          ("wavefunction,w", prog_opt::value<std::vector<std::string> >(),
           "input wavefunction to generate the effective basis (zero or more)")
@@ -340,10 +340,10 @@ int main(int argc, char** argv)
          ("GroundstateEnergy,G", prog_opt::value(&GroundstateEnergy),
           "groundstate energy of the Hamiltonian (wavefunction attribute"
           " \"GroundstateEnergy\", not needed if --no-preamble)")
-	 ("max-states,m", prog_opt::value<int>(&MaxStates), 
+         ("max-states,m", prog_opt::value<int>(&MaxStates),
           ("Maximum number of states to keep in the effective basis [default "
            + boost::lexical_cast<std::string>(MaxStates)+"]").c_str())
-         ("min-trunc,t", prog_opt::value<double>(&MinTrunc), 
+         ("min-trunc,t", prog_opt::value<double>(&MinTrunc),
           ("Minimum desired truncation error per site of the effective basis [default "
            + boost::lexical_cast<std::string>(MinTrunc) + "]").c_str())
          ("bond,b", prog_opt::value<int>(&Location),
@@ -359,17 +359,17 @@ int main(int argc, char** argv)
          ("no-preamble", prog_opt::bool_switch(),
           "only show the tridiagonal coefficients, don't show the groundstate energy")
          ("verbose,v", prog_opt_ext::accum_value(&Verbosity), "increase verbosity (can be used more than once)")
-	  ;
+          ;
 
       prog_opt::options_description opt;
       opt.add(desc);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
-      if (vm.count("help") || (vm.count("wavefunction") == 0 && vm.count("right") == 0)) 
+      if (vm.count("help") || (vm.count("wavefunction") == 0 && vm.count("right") == 0))
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-tridiag [options]\n";
@@ -391,7 +391,7 @@ int main(int argc, char** argv)
       long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
       if (Verbosity >= 2)
       {
-         std::cerr << "Using page size " << PageSize 
+         std::cerr << "Using page size " << PageSize
                    << ", cache size " << CacheSize << '\n';
       }
       int TempFileDesc = ProcControl::CreateUniqueFile(TempFile);
@@ -481,7 +481,7 @@ int main(int argc, char** argv)
             else
                GroundstateEnergy = Psi[0].Attributes()["GroundstateEnergy"].as<double>();
          }
-            
+
          if (ShowTitles)
             std::cerr << "Groundstate energy\n";
          std::cout << GroundstateEnergy << '\n';

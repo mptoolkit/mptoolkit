@@ -44,10 +44,10 @@ struct KrylovSolver
 
    KrylovSolver() {}
 
-   KrylovSolver(MPWavefunction const& Psi_, 
-		MPOperator const& H_,
-                std::complex<double> Timestep_, 
-		int NumKrylovVectors_);
+   KrylovSolver(MPWavefunction const& Psi_,
+                MPOperator const& H_,
+                std::complex<double> Timestep_,
+                int NumKrylovVectors_);
 
    void ShiftLeftAndExpand();
    void ShiftRightAndExpand();
@@ -62,14 +62,14 @@ struct KrylovSolver
    // of the Solve() function of other algorithms.
    void UpdateKrylovBasis();
 
-   void MaximizeKrylovVectors() { Krylov.MaximizeKrylovVectors(); } 
-   void OrthogonalizeKrylovVectors() { Krylov.OrthogonalizeKrylovVectors(); } 
+   void MaximizeKrylovVectors() { Krylov.MaximizeKrylovVectors(); }
+   void OrthogonalizeKrylovVectors() { Krylov.OrthogonalizeKrylovVectors(); }
 
    MPWavefunction& Wavefunction() { return Psi; }
    MPWavefunction const& Wavefunction() const { return Psi; }
 
    MPWavefunction const& LastKrylov() const { return Krylov.Krylov.back(); }
- 
+
    void TruncateLeft(int MaxStates = DefaultMaxStates, double CFactor = 0);
 
    void TruncateRight(int MaxStates = DefaultMaxStates, double CFactor = 0);

@@ -39,8 +39,8 @@ struct SuperblockMultiply
    typedef MatrixOperator const& argument_type;
 
    SuperblockMultiply(SimpleOperator const& Op_,
-		      MPStateComponent const& Left_,
-		      MPStateComponent const& Right_, double Broadening_)
+                      MPStateComponent const& Left_,
+                      MPStateComponent const& Right_, double Broadening_)
       : Op(Op_), Left(Left_), Right(Right_), Broadening(Broadening_) {}
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
@@ -58,7 +58,7 @@ struct CompoundInversePrecondition
    typedef MatrixOperator result_type;
    typedef MatrixOperator const& argument_type;
 
-   CompoundInversePrecondition(MPStateComponent const& Left_, MPStateComponent const& Right_, 
+   CompoundInversePrecondition(MPStateComponent const& Left_, MPStateComponent const& Right_,
                                MatrixOperator const& Ei, MatrixOperator const& Fi)
       : y_A_x_Left(Left_), y_A_x_Right(Right_), EInv(Ei), FInv(Fi) {}
 
@@ -145,9 +145,9 @@ double SolverGmres::Solve(int MaxIterations)
       InvertHPD(F);
       F = triple_prod(herm(UF), F, UF);
 
-      GmRes(x.Center(), 
+      GmRes(x.Center(),
             SuperblockMultiply(conj(A.Center()),
-                               x_A_x.Left(), 
+                               x_A_x.Left(),
                                x_A_x.Right(), Broadening),
             yprime,
             m, Iter, Tol,
@@ -155,9 +155,9 @@ double SolverGmres::Solve(int MaxIterations)
    }
    else if (Preconditioner == "None")
    {
-      GmRes(x.Center(), 
+      GmRes(x.Center(),
             SuperblockMultiply(conj(A.Center()),
-                               x_A_x.Left(), 
+                               x_A_x.Left(),
                                x_A_x.Right(), Broadening),
             yprime,
             m, Iter, Resid,
@@ -198,9 +198,9 @@ double SolverGmres::Solve(int MaxIterations)
          }
       }
 
-      GmRes(x.Center(), 
+      GmRes(x.Center(),
             SuperblockMultiply(conj(A.Center()),
-                               x_A_x.Left(), 
+                               x_A_x.Left(),
                                x_A_x.Right(), Broadening),
             yprime,
             m, Iter, Tol,
@@ -241,9 +241,9 @@ double SolverGmres::Solve(int MaxIterations)
       F = triple_prod(herm(MF), F, MF);
       F = triple_prod(herm(UF), F, UF);
 
-      GmRes(x.Center(), 
+      GmRes(x.Center(),
             SuperblockMultiply(conj(A.Center()),
-                               x_A_x.Left(), 
+                               x_A_x.Left(),
                                x_A_x.Right(), Broadening),
             yprime,
             m, Iter, Tol,
@@ -270,10 +270,10 @@ std::complex<double> SolverGmres::Overlap() const
 {
    return expectation(x, A, y);
 #if 0
-   return inner_prod(operator_prod(A.Center(), 
-                                   x_A_x.Left(), 
-                                   x.Center(), 
-                                   herm(x_A_x.Right())) + complex(0.0, Broadening) * x.Center(), 
+   return inner_prod(operator_prod(A.Center(),
+                                   x_A_x.Left(),
+                                   x.Center(),
+                                   herm(x_A_x.Right())) + complex(0.0, Broadening) * x.Center(),
                      yprime);
 #endif
 }
@@ -290,7 +290,7 @@ double SolverGmres::Functional(double ExpectA2) const
 #else
 #error "This code needs updating now that the broadening is not included in A"
    CenterWavefunction xBar = CenterWavefunction(conj(x.AsLinearWavefunction()));
-   CenterWavefunction xImag = 
+   CenterWavefunction xImag =
       CenterWavefunction(0.5 * (x.AsLinearWavefunction() - xBar.AsLinearWavefunction()));
    //   std::complex<double> ExpectA2Bar = expectation(x, ASquared, xBar);
    //   double SquarePart = 0.5 * (ExpectA2 - ExpectA2Bar.real());
@@ -300,9 +300,9 @@ double SolverGmres::Functional(double ExpectA2) const
    TRACE(ExpectA2)(SquarePart)(inner_prod(x.Center(), yprime))(Frequency)(Broadening);
    //   TRACE(expectation(xBar, ASquared, xBar));
 
-   MatrixOperator Ax = operator_prod(conj(A.Center()), 
-                                     x_A_x.Left(), 
-                                     x.Center(), 
+   MatrixOperator Ax = operator_prod(conj(A.Center()),
+                                     x_A_x.Left(),
+                                     x.Center(),
                                      herm(x_A_x.Right()));
    TRACE(norm_frob_sq(Ax));
 
@@ -318,9 +318,9 @@ double SolverGmres::ExpectationA2() const
 double SolverGmres::ExactResidualNorm(double ExpectA2) const
 {
 #if 0
-   MatrixOperator Ax = operator_prod(conj(A.Center()), 
-                                     x_A_x.Left(), 
-                                     x.Center(), 
+   MatrixOperator Ax = operator_prod(conj(A.Center()),
+                                     x_A_x.Left(),
+                                     x.Center(),
                                      herm(x_A_x.Right())) + Broadening*Broadening*x.Center();
    CenterWavefunction AxP(x);
    AxP.Center() = Ax;
@@ -331,11 +331,11 @@ double SolverGmres::ExactResidualNorm(double ExpectA2) const
    double xNorm = norm_frob_sq(x.Center());
    std::complex<double> xyOverlap = inner_prod(x.Center(), yprime);
    std::complex<double> yAx = this->Overlap();
-   std::complex<double> xAx = inner_prod(operator_prod(conj(A.Center()), 
-                                                       x_A_x.Left(), 
-                                                       x.Center(), 
+   std::complex<double> xAx = inner_prod(operator_prod(conj(A.Center()),
+                                                       x_A_x.Left(),
+                                                       x.Center(),
                                                        herm(x_A_x.Right())), x.Center());
-   
+
    double Resid2 = yNorm + ExpectA2 + Broadening * Broadening * xNorm
       - 2 * yAx.real() - 2 * Broadening * xyOverlap.imag();
    double Norm = yNorm * (ExpectA2 + Broadening * Broadening * xNorm);

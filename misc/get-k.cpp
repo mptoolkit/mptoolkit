@@ -34,7 +34,7 @@ std::complex<double> ComplexFromString(std::string const& s)
 {
    char* End;
    double RealPart = strtod(s.c_str(), &End);
-   double ImagPart = (End == &s[s.size()-1]) ? 0.0 
+   double ImagPart = (End == &s[s.size()-1]) ? 0.0
       : strtod(End, &End);
    return std::complex<double>(RealPart,ImagPart);
 }
@@ -42,7 +42,7 @@ std::complex<double> ComplexFromString(std::string const& s)
 typedef LinearAlgebra::Matrix<complex<double> > CMatrix;
 
 
-LinearAlgebra::Vector<complex<double> > 
+LinearAlgebra::Vector<complex<double> >
 Eigenvalues(CMatrix const& M)
 {
    CMatrix L, R;
@@ -83,8 +83,8 @@ int main(int argc, char** argv)
    {
       if (i != j)
       {
-	 cerr << "error: density matrix should be diagonal.\n";
-	 return 1;
+         cerr << "error: density matrix should be diagonal.\n";
+         return 1;
       }
 
       Density[i] = x;
@@ -98,28 +98,28 @@ int main(int argc, char** argv)
    std::map<double, std::set<int> > DMGroup;
 
    for (map<int, double>::const_iterator I = Density.begin();
-	I != Density.end(); ++I)
+        I != Density.end(); ++I)
    {
       bool Found = false;
       // are we sufficently close in magnitude to an existing eigenvalue?
       for (DMGroupType::iterator J = DMGroup.begin(); J != DMGroup.end(); ++J)
       {
-	 if (I->second > (J->first * (1-Closeness)) && (I->second < (J->first * (1+Closeness))))
-	 {
-	    std::cout << "Eigenvalue " << I->second << " at row " << I->first 
-		      << " matches existing eigenvalue " << J->first << " represented at " <<
-	       (*J->second.begin()) << '\n';
-	    J->second.insert(I->first);
-	    Found = true;
-	    break;
-	 }
+         if (I->second > (J->first * (1-Closeness)) && (I->second < (J->first * (1+Closeness))))
+         {
+            std::cout << "Eigenvalue " << I->second << " at row " << I->first
+                      << " matches existing eigenvalue " << J->first << " represented at " <<
+               (*J->second.begin()) << '\n';
+            J->second.insert(I->first);
+            Found = true;
+            break;
+         }
       }
       // otherwise, make a new group
       if (!Found)
       {
-	 std::cout << "New eigenvalue group " << I->second << " at row " << I->first << '\n';
-	 DMGroup[I->second] = std::set<int>();
-	 DMGroup[I->second].insert(I->first);
+         std::cout << "New eigenvalue group " << I->second << " at row " << I->first << '\n';
+         DMGroup[I->second] = std::set<int>();
+         DMGroup[I->second].insert(I->first);
       }
    }
 
@@ -146,27 +146,27 @@ int main(int argc, char** argv)
       bool Set = false;
       for (DMGroupType::const_iterator I = DMGroup.begin(); I != DMGroup.end(); ++I)
       {
-	 int c1=-1, c2=-1;
-	 int Index = 0;
-	 for (std::set<int>::const_iterator J = I->second.begin(); J != I->second.end(); ++J)
-	 {
-	    if (*J == i)
-	       c1 = Index;
-	    if (*J == j)
-	       c2 = Index;
-	    ++Index;
-	 }
-	 if (c1 != -1 && c2 != -1)
-	 {
-	    Set = true;
-	    cout << "Matrix element in block " << n << " at index " << c1 << "," << c2 
-		 << " is " << x << '\n';
-	    TM[n](c1,c2) = x;
-	    break;
-	 }
-	 ++n;
-	 if (Set)
-	    break;
+         int c1=-1, c2=-1;
+         int Index = 0;
+         for (std::set<int>::const_iterator J = I->second.begin(); J != I->second.end(); ++J)
+         {
+            if (*J == i)
+               c1 = Index;
+            if (*J == j)
+               c2 = Index;
+            ++Index;
+         }
+         if (c1 != -1 && c2 != -1)
+         {
+            Set = true;
+            cout << "Matrix element in block " << n << " at index " << c1 << "," << c2
+                 << " is " << x << '\n';
+            TM[n](c1,c2) = x;
+            break;
+         }
+         ++n;
+         if (Set)
+            break;
       }
    }
 
@@ -180,14 +180,14 @@ int main(int argc, char** argv)
       LinearAlgebra::Vector<complex<double> > e = Eigenvalues(TM[k]);
       if (size(e) != 0)
       {
-	 cout << "momenta: ";
-	 for (unsigned n = 0; n < size(e); ++n)
-	 {
-	    if (n > 0) 
-	       cout << ", ";
-	    cout << atan2(e[n].imag(), e[n].real())/pi;
-	 }
-	 cout << "\n";
+         cout << "momenta: ";
+         for (unsigned n = 0; n < size(e); ++n)
+         {
+            if (n > 0)
+               cout << ", ";
+            cout << atan2(e[n].imag(), e[n].real())/pi;
+         }
+         cout << "\n";
       }
       cout << "\n";
    }

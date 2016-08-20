@@ -38,18 +38,18 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("NumBosons,N", prog_opt::value(&MaxN), 
-	  FormatDefault("Maximum number of bosons per site", MaxN).c_str())
-	 ("out,o", prog_opt::value(&FileName), "output filename [required]")
-	 ;
-      
-      prog_opt::variables_map vm;        
+         ("NumBosons,N", prog_opt::value(&MaxN),
+          FormatDefault("Maximum number of bosons per site", MaxN).c_str())
+         ("out,o", prog_opt::value(&FileName), "output filename [required]")
+         ;
+
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).style(prog_opt::command_line_style::default_style ^
-					  prog_opt::command_line_style::allow_guessing).
-		      run(), vm);
-      prog_opt::notify(vm);    
-      
+                                          prog_opt::command_line_style::allow_guessing).
+                      run(), vm);
+      prog_opt::notify(vm);
+
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("U(1) Bose-Hubbard model");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
@@ -72,7 +72,7 @@ int main(int argc, char** argv)
       UnitCellOperator BH(Cell, "BH"), B(Cell, "B"), N(Cell, "N"), N2(Cell, "N2");
 
       InfiniteLattice Lattice(&Cell);
-      
+
       Lattice["H_J"] = sum_unit(BH(0)*B(1) + B(0)*BH(1));
       Lattice["H_U"] = sum_unit(0.5*N2(0));
 

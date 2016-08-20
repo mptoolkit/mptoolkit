@@ -103,8 +103,8 @@ struct DMRG
 };
 
 double Solve(MPStateComponent& Psi, MPStateComponent const& HLeft,
-	     MPOpComponent const& H, MPStateComponent const& HRight,
-	     int NumIter)
+             MPOpComponent const& H, MPStateComponent const& HRight,
+             int NumIter)
 {
    std::vector<MPStateComponent> OrthoSet;
    double Energy = Lanczos(PsiCurrent, SuperblockMultiply(H, HLeft, HRight),
@@ -122,7 +122,7 @@ void DMRG::DoIterationRight()
    MPStateComponent HLeft = triple_prod(State.UKeep, State.HFull, herm(State.UKeep));
    MPStateComponent HRight = Save.Right().HFull;
 
-   // solve 
+   // solve
    Solve(Psi, HLeft, *Hi, HRight, NumIterations);
 
    // Prepare for truncation
@@ -139,11 +139,11 @@ void DMRG::DoIterationRight()
    // Truncate into kept and discarded states
    DiagonalProjection UKeep, UDiscard;
    std::tie(UKeep, UDiscard) = basis_truncation(U.Basis2(), DM.begin(),
-						  TruncateFixTruncationError(DM.begin(), 
-									     DM.end(),
-									     MinStates,
-									     MaxStates,
-									     MinTrunc));
+                                                  TruncateFixTruncationError(DM.begin(),
+                                                                             DM.end(),
+                                                                             MinStates,
+                                                                             MaxStates,
+                                                                             MinTrunc));
 
    // Discarded states
    MatrixOperator PsiDiscard = prod(UDiscard, C);
@@ -154,7 +154,7 @@ void DMRG::DoIterationRight()
 
    // prepare for truncation of the environment
    MatrixOperator CEnv = ExpandBasis2(Env);
-   
+
    // Merge the discarded basis with the expanded environment basis
    DiagonalProjection UComDiscard, UComEnv;
    std::tie(UComDiscard, UComEnv) = basis_sum(PsiDiscard.Basis1(), CEnv.Basis1());
@@ -168,13 +168,13 @@ void DMRG::DoIterationRight()
    // Truncate the remainder, this becomes the new environment
    DensityMatrix<MatrixOperator> RemDM(RhoRem);
    TruncationInfo RemInfo;
-   MatrixOperator RemTrunc = RemDM.ConstructTruncator(RemDM.begin(), 
-						      TruncateFixTruncationError(RemDM.begin(),
-										 RemDM.end(),
-										 MinStates,
-										 MaxStates,
-										 MinTrunc),
-						      RemInfo);
+   MatrixOperator RemTrunc = RemDM.ConstructTruncator(RemDM.begin(),
+                                                      TruncateFixTruncationError(RemDM.begin(),
+                                                                                 RemDM.end(),
+                                                                                 MinStates,
+                                                                                 MaxStates,
+                                                                                 MinTrunc),
+                                                      RemInfo);
 
    // Truncate the environment
    Env = prod(Env, herm(RemTrunc));
@@ -328,11 +328,11 @@ void DMRG::TruncateLeft(int MinStates, int MaxStates, double MinTrunc, double CF
    // Truncate into kept and discarded states
    DiagonalProjection UKeep, UDiscard;
    std::tie(UKeep, UDiscard) = basis_truncation(U.Basis2(), DM.begin(),
-						  TruncateFixTruncationError(DM.begin(), 
-									     DM.end(),
-									     MinStates,
-									     MaxStates,
-									     MinTrunc));
+                                                  TruncateFixTruncationError(DM.begin(),
+                                                                             DM.end(),
+                                                                             MinStates,
+                                                                             MaxStates,
+                                                                             MinTrunc));
 
    // Discarded states
    MatrixOperator PsiDiscard = prod(UDiscard, Psi);
@@ -357,7 +357,7 @@ void DMRG::TruncateLeft(int MinStates, int MaxStates, double MinTrunc, double CF
       // environment density matrix in the new basis
       // Add some diagonal component, just in case the single site DM is singular
       SingleSiteDM += std::numeric_limits<double>::epsilon()
-	 * SimpleOperator::make_identity(SingleSiteDM.Basis1());
+         * SimpleOperator::make_identity(SingleSiteDM.Basis1());
       SingleSiteDM *= 1.0 / trace(SingleSiteDM);
       RhoRem *= (1.0 - CFactor);
       RhoRem += CFactor * RemWeight * triple_prod(SingleSiteDM, herm(PsiEnv), RhoRem, PsiEnv);
@@ -367,13 +367,13 @@ void DMRG::TruncateLeft(int MinStates, int MaxStates, double MinTrunc, double CF
    // Truncate the remainder
    DensityMatrix<MatrixOperator> RemDM(RhoRem);
    TruncationInfo RemInfo;
-   MatrixOperator RemTrunc = RemDM.ConstructTruncator(RemDM.begin(), 
-						      TruncateFixTruncationError(RemDM.begin(),
-										 RemDM.end(),
-										 MinStates,
-										 MaxStates,
-										 MinTrunc),
-						      RemInfo);
+   MatrixOperator RemTrunc = RemDM.ConstructTruncator(RemDM.begin(),
+                                                      TruncateFixTruncationError(RemDM.begin(),
+                                                                                 RemDM.end(),
+                                                                                 MinStates,
+                                                                                 MaxStates,
+                                                                                 MinTrunc),
+                                                      RemInfo);
 
    // The 'discarded' component of the remainder, forms the off-diagonal part
    MatrixOperator UDiscardEnv = RemTrunc * herm(UComDiscard);

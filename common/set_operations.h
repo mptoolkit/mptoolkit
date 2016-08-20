@@ -83,32 +83,32 @@ struct intersection_iterator
    {
       if (x == xEnd)
       {
-	 y = yEnd;
-	 return;
+         y = yEnd;
+         return;
       }
       else if (y == yEnd)
       {
-	 x = xEnd;
-	 return;
+         x = xEnd;
+         return;
       }
       // else
       // neither x nor y is at the end
       while (*x < *y)
       {
-	 if (++x == xEnd)
-	 {
-	    y = yEnd;
-	    return;
-	 }
+         if (++x == xEnd)
+         {
+            y = yEnd;
+            return;
+         }
       }
 
       while (*y < *x)
       {
-	 if (++y == yEnd)
-	 {
-	    x = xEnd;
-	    return;
-	 }
+         if (++y == yEnd)
+         {
+            x = xEnd;
+            return;
+         }
       }
    }
 
@@ -120,7 +120,7 @@ template <typename T, typename Compare>
 inline
 intersection_iterator<std::set<T, Compare> >
 set_intersection_begin(std::set<T, Compare> const& x,
-		       std::set<T, Compare> const& y)
+                       std::set<T, Compare> const& y)
 {
    return intersection_iterator<std::set<T, Compare> >(x.begin(), y.begin(), x.end(), y.end());
 }
@@ -129,10 +129,9 @@ template <typename T, typename Compare>
 inline
 intersection_iterator<std::set<T, Compare> >
 set_intersection_end(std::set<T, Compare> const& x,
-		     std::set<T, Compare> const& y)
+                     std::set<T, Compare> const& y)
 {
    return intersection_iterator<std::set<T, Compare> >(x.end(), y.end(), x.end(), y.end());
 }
 
 #endif
- 

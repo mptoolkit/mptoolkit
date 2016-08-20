@@ -31,25 +31,25 @@ int main()
    {
       for (half_int j2 = 0; j2 <= Max; j2 += 0.5)
       {
-	 for (half_int j3 = 0; j3 <= Max; j3 += 0.5)
-	 {
-	    for (half_int j4 = 0; j4 <= Max; j4 += 0.5)
-	    {
-	       for (half_int j5 = 0; j5 <= Max; j5 += 0.5)
-	       {
-		  if (!is_triangle(j1,j2,j5) || !is_triangle(j3,j4,j5))
-		     continue;
+         for (half_int j3 = 0; j3 <= Max; j3 += 0.5)
+         {
+            for (half_int j4 = 0; j4 <= Max; j4 += 0.5)
+            {
+               for (half_int j5 = 0; j5 <= Max; j5 += 0.5)
+               {
+                  if (!is_triangle(j1,j2,j5) || !is_triangle(j3,j4,j5))
+                     continue;
 
-		  for (half_int j6 = 0; j6 <= Max; j6 += 0.5)
-		  {
-		     if (!is_triangle(j1,j3,j6) || !is_triangle(j2,j4,j6))
-			continue;
+                  for (half_int j6 = 0; j6 <= Max; j6 += 0.5)
+                  {
+                     if (!is_triangle(j1,j3,j6) || !is_triangle(j2,j4,j6))
+                        continue;
 
-		     CHECK_EQUAL(Racah(j1,j2,j3,j4,j5,j6), Racah_NoCache(j1,j2,j3,j4,j5,j6));
-		  }
-	       }
-	    }
-	 }
+                     CHECK_EQUAL(Racah(j1,j2,j3,j4,j5,j6), Racah_NoCache(j1,j2,j3,j4,j5,j6));
+                  }
+               }
+            }
+         }
       }
    }
 }

@@ -28,13 +28,13 @@ using namespace LinearAlgebra;
 typedef std::complex<double> complex;
 
 template <typename VectorType>
-bool GramSchmidtAppend(std::vector<VectorType>& Basis, 
-		       VectorType NewVec, 
-		       double Ortho = 2.0, double ParallelThreshold = 0.0)
+bool GramSchmidtAppend(std::vector<VectorType>& Basis,
+                       VectorType NewVec,
+                       double Ortho = 2.0, double ParallelThreshold = 0.0)
 {
    int BasisSize = Basis.size();
    Basis.push_back(NewVec);
-   
+
    double OriginalNorm = norm_frob_sq(NewVec);
    double Norm2 = OriginalNorm;
    bool Converged = false;
@@ -43,16 +43,16 @@ bool GramSchmidtAppend(std::vector<VectorType>& Basis,
       double MaxOverlap = 0.0;
       for (int i = 0; i < BasisSize; ++i)
       {
-	 complex Overlap = inner_prod(Basis[i], Basis.back());
-	 MaxOverlap = std::max(norm_frob_sq(Overlap), MaxOverlap);
+         complex Overlap = inner_prod(Basis[i], Basis.back());
+         MaxOverlap = std::max(norm_frob_sq(Overlap), MaxOverlap);
          Basis.back() -= Overlap * Basis[i];
       }
       double NewNorm2 = norm_frob_sq(Basis.back());
 
       if (NewNorm2 / OriginalNorm <= ParallelThreshold)  // parallel - cannot add the vector.
       {
-	 Basis.pop_back();
-	 return false;
+         Basis.pop_back();
+         return false;
       }
 
       Converged = (MaxOverlap <= Ortho * sqrt(Norm2));

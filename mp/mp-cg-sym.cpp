@@ -43,8 +43,8 @@ struct SuperblockMultiply
    typedef MatrixOperator const& argument_type;
 
    SuperblockMultiply(SimpleOperator const& Op_,
-		      MPStateComponent const& Left_,
-		      MPStateComponent const& Right_)
+                      MPStateComponent const& Left_,
+                      MPStateComponent const& Right_)
       : Op(Op_), Left(Left_), Right(Right_) {}
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
@@ -117,9 +117,9 @@ double SolverSymmetric::Solve(int MaxIterations)
    int Iter = MaxIterations;
    double Tol = 1E-10;
 
-   ConjugateGradient(x.Center(), 
+   ConjugateGradient(x.Center(),
                      SuperblockMultiply(conj(A.Center()),
-                                        yprime_A_x.Left(), 
+                                        yprime_A_x.Left(),
                                         yprime_A_x.Right()),
                      yprime.Center(),
                      Iter, Tol,
@@ -132,10 +132,10 @@ double SolverSymmetric::Solve(int MaxIterations)
 
 std::complex<double> SolverSymmetric::Overlap() const
 {
-   return inner_prod(operator_prod(conj(A.Center()), 
-                                   yprime_A_x.Left(), 
-                                   x.Center(), 
-                                   herm(yprime_A_x.Right())), 
+   return inner_prod(operator_prod(conj(A.Center()),
+                                   yprime_A_x.Left(),
+                                   x.Center(),
+                                   herm(yprime_A_x.Right())),
                      yprime.Center());
 }
 
@@ -177,7 +177,7 @@ int main(int argc, char** argv)
       double E = First ? 0.0 : solver.Solve(NumIter);
       TruncationInfo States = solver.TruncateLeft(MaxStates, CFactor);
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m << '\n';
+                << ") " << E << ' ' << States.m << '\n';
    }
 
    // sweep right
@@ -194,7 +194,7 @@ int main(int argc, char** argv)
       //      TRACE(solver.Overlap());
 
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m << '\n';
+                << ") " << E << ' ' << States.m << '\n';
    }
    First = false;
 
@@ -203,7 +203,7 @@ int main(int argc, char** argv)
       double E = solver.Solve(NumIter);
       TruncationInfo States = solver.TruncateRight(MaxStates, CFactor);
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m << '\n';
+                << ") " << E << ' ' << States.m << '\n';
    }
 
    // sweep left
@@ -215,7 +215,7 @@ int main(int argc, char** argv)
       TruncationInfo States = solver.TruncateRight(MaxStates, CFactor);
 
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m << '\n';
+                << ") " << E << ' ' << States.m << '\n';
    }
 
    }

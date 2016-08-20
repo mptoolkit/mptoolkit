@@ -33,9 +33,9 @@
 PStream::VersionTag
 WavefunctionSection::VersionT(1);
 
-WavefunctionSection::WavefunctionSection(WavefunctionSection const& Psi) 
-   : Data(Psi.Data), Lambda(Psi.Lambda), 
-     Basis1_(Psi.Basis1_), Basis2_(Psi.Basis2_) 
+WavefunctionSection::WavefunctionSection(WavefunctionSection const& Psi)
+   : Data(Psi.Data), Lambda(Psi.Lambda),
+     Basis1_(Psi.Basis1_), Basis2_(Psi.Basis2_)
 {
 }
 
@@ -77,12 +77,12 @@ WavefunctionSection::check_structure() const
 
 WavefunctionSection&
 WavefunctionSection::operator=(WavefunctionSection const& Psi)
-{ 
+{
    Data = Psi.Data;
    Lambda = Psi.Lambda;
    Basis1_ = Psi.Basis1_;
    Basis2_ = Psi.Basis2_;
-   return *this; 
+   return *this;
 }
 
 std::vector<BasisList>

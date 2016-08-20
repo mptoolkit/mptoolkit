@@ -50,7 +50,7 @@ template <typename Format, typename Buffer, typename T>
 inline
 void pack_format(Buffer& B, T x)
 {
-   Private::PackFormatHelper<typename Format::template TypeTraits<T>::type, 
+   Private::PackFormatHelper<typename Format::template TypeTraits<T>::type,
       Format::Endianness>::pack(B, x);
 }
 
@@ -58,6 +58,6 @@ template <typename Format, typename Buffer, typename T>
 inline
 void unpack_format(Buffer& B, T& x)
 {
-   Private::PackFormatHelper<typename Format::template TypeTraits<T>::type, 
+   Private::PackFormatHelper<typename Format::template TypeTraits<T>::type,
       Format::Endianness>::unpack(B, x);
 }

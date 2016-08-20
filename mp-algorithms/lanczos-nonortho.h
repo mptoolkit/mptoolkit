@@ -30,11 +30,11 @@
 #define LANCZOS_NONORTHO_H_FDJIH834957UY89JP89
 
 template <typename VectorType, typename MultiplyFunctor,
-	  typename InnerProdType, typename NormFrobType>
-double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
-	       InnerProdType InnerProd,
-	       NormFrobType NormFrob, int& Iterations,
-	       double& Tol, bool Verbose = false)
+          typename InnerProdType, typename NormFrobType>
+double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply,
+               InnerProdType InnerProd,
+               NormFrobType NormFrob, int& Iterations,
+               double& Tol, bool Verbose = false)
 {
    std::vector<VectorType>     v;          // the Krylov vectors
    std::vector<VectorType>     Hv;         // the Krylov vectors
@@ -57,8 +57,8 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply,
    if (Beta < LanczosBetaTol)
    {
       if (Verbose)
-	 std::cerr << "lanczos: immediate return, invariant subspace found, Beta="
-		   << Beta << '\n';
+         std::cerr << "lanczos: immediate return, invariant subspace found, Beta="
+                   << Beta << '\n';
       Guess = v[0];
       Iterations = 1;
       Tol = Beta;
@@ -86,47 +86,47 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply,
 
       // solution of the tridiagonal subproblem
       LinearAlgebra::Matrix<double> M = SubH(LinearAlgebra::range(0,i+1),
-					     LinearAlgebra::range(0,i+1));
+                                             LinearAlgebra::range(0,i+1));
       LinearAlgebra::Vector<double> EValues = DiagonalizeHermitian(M);
       double Theta = EValues[0];    // smallest eigenvalue
       VectorType y = M(0,0) * v[0];
       for (int j = 1; j <= i; ++j)
-	 y += M(0,j) * v[j];
+         y += M(0,j) * v[j];
 
       // residual = H*y - Theta*y
       VectorType r = (-Theta) * y;
       for (int j = 0; j < i; ++j)
-	 r += M(0,j) * Hv[j];
+         r += M(0,j) * Hv[j];
 
       double ResidNorm = NormFrob(r);
 
       if (ResidNorm < fabs(Tol * Theta))
       {
-	 if (Verbose)
-	    std::cerr << "lanczos: early return, residual norm below threshold, ResidNorm="
-		      << ResidNorm << ", iterations=" << (i+1) << '\n';
-	 Iterations = i+1;
-	 Tol = ResidNorm/fabs(Theta);
-	 Guess = y;
-	 return Theta;
+         if (Verbose)
+            std::cerr << "lanczos: early return, residual norm below threshold, ResidNorm="
+                      << ResidNorm << ", iterations=" << (i+1) << '\n';
+         Iterations = i+1;
+         Tol = ResidNorm/fabs(Theta);
+         Guess = y;
+         return Theta;
       }
 
       if (Beta < LanczosBetaTol)
       {
-	 if (Verbose)
-	    std::cerr << "lanczos: early return, invariant subspace found, Beta="
-		      << Beta << ", iterations=" << (i+1) << '\n';
-	 Iterations = i+1;
-    	 Tol = Beta;
-	 Guess = y;
-	 return Theta;
+         if (Verbose)
+            std::cerr << "lanczos: early return, invariant subspace found, Beta="
+                      << Beta << ", iterations=" << (i+1) << '\n';
+         Iterations = i+1;
+         Tol = Beta;
+         Guess = y;
+         return Theta;
       }
 
       if (i == Iterations-1) // finished?
       {
-	 Guess = y;
-	 Tol = -ResidNorm/fabs(Theta);
-	 return Theta;
+         Guess = y;
+         Tol = -ResidNorm/fabs(Theta);
+         return Theta;
       }
    }
 

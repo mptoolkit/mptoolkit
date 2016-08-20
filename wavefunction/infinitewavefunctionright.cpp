@@ -51,7 +51,7 @@ struct LeftMultiply
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   LeftMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_) 
+   LeftMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_)
       : L(L_), QShift(QShift_) {}
 
    result_type operator()(argument_type const& x) const
@@ -59,7 +59,7 @@ struct LeftMultiply
       result_type r = delta_shift(x, QShift);
       for (LinearWavefunction::const_iterator I = L.begin(); I != L.end(); ++I)
       {
-	 r = operator_prod(herm(*I), r, *I);
+         r = operator_prod(herm(*I), r, *I);
       }
       return r;
    }
@@ -67,13 +67,13 @@ struct LeftMultiply
    LinearWavefunction const& L;
    QuantumNumber QShift;
 };
-   
+
 struct RightMultiply
 {
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   RightMultiply(LinearWavefunction const& R_, QuantumNumber const& QShift_) 
+   RightMultiply(LinearWavefunction const& R_, QuantumNumber const& QShift_)
       : R(R_), QShift(QShift_) {}
 
    result_type operator()(argument_type const& x) const
@@ -82,8 +82,8 @@ struct RightMultiply
       LinearWavefunction::const_iterator I = R.end();
       while (I != R.begin())
       {
-	 --I;
-	 r = operator_prod(*I, r, herm(*I));
+         --I;
+         r = operator_prod(*I, r, herm(*I));
       }
       return delta_shift(r, adjoint(QShift));
    }
@@ -95,16 +95,16 @@ struct RightMultiply
 } // namespace
 
 InfiniteWavefunctionRight::InfiniteWavefunctionRight(MatrixOperator const& Lambda,
-						     LinearWavefunction const& Psi, 
-						     QuantumNumbers::QuantumNumber const& QShift_)
+                                                     LinearWavefunction const& Psi,
+                                                     QuantumNumbers::QuantumNumber const& QShift_)
    : QShift(QShift_)
 {
    this->Initialize(Lambda, Psi);
 }
 
 void
-InfiniteWavefunctionRight::Initialize(MatrixOperator const& Lambda, 
-				      LinearWavefunction const& Psi_)
+InfiniteWavefunctionRight::Initialize(MatrixOperator const& Lambda,
+                                      LinearWavefunction const& Psi_)
 {
    LinearWavefunction Psi = Psi_;
    MatrixOperator M = left_orthogonalize(Lambda, Psi);
@@ -160,31 +160,31 @@ InfiniteWavefunctionRight::Initialize(MatrixOperator const& Lambda,
    this->debug_check_structure();
 }
 
-InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& Psi, 
-						     QuantumNumbers::QuantumNumber const& QShift_)
+InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& Psi,
+                                                     QuantumNumbers::QuantumNumber const& QShift_)
    : QShift(QShift_)
 {
    LinearWavefunction PsiR = Psi;
 
    MatrixOperator Guess = MatrixOperator::make_identity(PsiR.Basis2());
-   
+
    MatrixOperator RightEigen = Guess;
 
    // get the eigenmatrix.  Do some dodgy explict restarts.
    int Iterations = 20;
    double Tol = ArnoldiTol;
    RightEigen = 0.5 * (RightEigen + adjoint(RightEigen)); // make the eigenvector symmetric
-   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, QShift), 
-                                                      Iterations, Tol, 
-						      LinearSolvers::LargestAlgebraicReal, false);
+   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, QShift),
+                                                      Iterations, Tol,
+                                                      LinearSolvers::LargestAlgebraicReal, false);
    while (Tol < 0)
    {
-      std::cerr << "RightEigen: Arnoldi not converged, restarting.  EValue=" 
+      std::cerr << "RightEigen: Arnoldi not converged, restarting.  EValue="
                 << EtaR << ", Tol=" << Tol << "\n";
       Iterations = 20; Tol = ArnoldiTol;
       RightEigen = 0.5 * (RightEigen + adjoint(RightEigen)); // make the eigenvector symmetric
-      EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, QShift), 
-				    Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
+      EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, QShift),
+                                    Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    }
 
    CHECK(EtaR.real() > 0)("Eigenvalue must be positive");
@@ -220,18 +220,18 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
    // get the eigenmatrix
    Iterations = 20; Tol = ArnoldiTol;
    LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen));
-   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiR, QShift), 
-                                                      Iterations, Tol, 
-						      LinearSolvers::LargestAlgebraicReal, false);
+   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiR, QShift),
+                                                      Iterations, Tol,
+                                                      LinearSolvers::LargestAlgebraicReal, false);
    //   DEBUG_TRACE(norm_frob(LeftEigen - adjoint(LeftEigen)));
    while (Tol < 0)
    {
-      std::cerr << "LeftEigen: Arnoldi not converged, restarting.  EValue=" 
+      std::cerr << "LeftEigen: Arnoldi not converged, restarting.  EValue="
                 << EtaL << ", Tol=" << Tol << "\n";
       Iterations = 20; Tol = ArnoldiTol;
       LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen));
-      EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiR, QShift), 
-				    Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
+      EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiR, QShift),
+                                    Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    }
 
    D = LeftEigen;
@@ -249,7 +249,7 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
    PsiR.set_front(prod(U, PsiR.get_front()));
    PsiR.set_back(prod(PsiR.get_back(), adjoint(U)));
 
-   // And now we have the right-orthogonalized form and the left-most lambda matrix   
+   // And now we have the right-orthogonalized form and the left-most lambda matrix
    this->Initialize(D, PsiR);
 }
 
@@ -344,8 +344,8 @@ InfiniteWavefunctionRight::rotate_left(int Count)
       I->delta_shift(adjoint(this->qshift()));
    }
    // and rotate
-   std::rotate(this->lambda_base_begin_(), this->lambda_base_begin_()+Count, 
-	       this->lambda_base_end_());
+   std::rotate(this->lambda_base_begin_(), this->lambda_base_begin_()+Count,
+               this->lambda_base_end_());
    // and put back the boundary lambda
    this->push_back_lambda(delta_shift(this->lambda_l(), adjoint(this->qshift())));
 

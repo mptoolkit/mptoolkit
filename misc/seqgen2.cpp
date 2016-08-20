@@ -99,10 +99,10 @@ int main(int argc, char** argv)
       desc.add_options()
          ("help,h", "show this help message")
          ("out,o", prog_opt::value(&FName), "Output file (required)")
-         ("seed,s", prog_opt::value<unsigned int>(), 
+         ("seed,s", prog_opt::value<unsigned int>(),
           ("Random seed [range 0.."+boost::lexical_cast<std::string>(RAND_MAX)+"]").c_str())
-	 ("max-states,m", prog_opt::value(&m), FormatDefault("Number of states", m).c_str())
-	 ("localdimension,d", prog_opt::value(&d), FormatDefault("Local dimension", d).c_str())
+         ("max-states,m", prog_opt::value(&m), FormatDefault("Number of states", m).c_str())
+         ("localdimension,d", prog_opt::value(&d), FormatDefault("Local dimension", d).c_str())
          ;
 
       prog_opt::options_description opt;
@@ -125,7 +125,7 @@ int main(int argc, char** argv)
       srand(RandSeed);
 
       pheap::Initialize(FName, 1, mp_pheap::PageSize(), mp_pheap::CacheSize());
-   
+
 
       StateComponent A = RandomState(d,m);
 

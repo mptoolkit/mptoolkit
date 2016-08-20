@@ -44,8 +44,8 @@ SiteBasis::push_back(std::string const& Label, QuantumNumber const& q)
 int
 SiteBasis::Lookup(std::string const& Label) const
 {
-   int Pos = std::find(Label_->begin(), 
-		       Label_->end(), Label) - Label_->begin();
+   int Pos = std::find(Label_->begin(),
+                       Label_->end(), Label) - Label_->begin();
    if (Pos == int(Label_->size())) { PANIC("Invalid site basis element")(Label); }
    return Pos;
 }
@@ -53,8 +53,8 @@ SiteBasis::Lookup(std::string const& Label) const
 int
 SiteBasis::LookupOrNeg(std::string const& Label) const
 {
-   int Pos = std::find(Label_->begin(), 
-		       Label_->end(), Label) - Label_->begin();
+   int Pos = std::find(Label_->begin(),
+                       Label_->end(), Label) - Label_->begin();
    if (Pos == int(Label_->size())) return -1;
    return Pos;
 }
@@ -64,7 +64,7 @@ std::ostream& operator<<(std::ostream& out, SiteBasis const& Basis)
    for (std::size_t i = 0; i < Basis.size(); ++i)
    {
       if (i != 0) out << ", ";
-      out << "{ " << i << ", |" << Basis.Label(i) << ">, " 
+      out << "{ " << i << ", |" << Basis.Label(i) << ">, "
           << Basis.qn(i) << " }";
    }
    return out;
@@ -82,9 +82,9 @@ void show_projections(std::ostream& out, SiteBasis const& Basis)
       for (size_type j = 0; j < Projections.size(); ++j)
       {
         if (j != 0) out << ", ";
-	out << '|' << Basis.Label(i) << ' ' << Basis.qn(i)
-	    << ", " << Projections[j]
-	    << ">";
+        out << '|' << Basis.Label(i) << ' ' << Basis.qn(i)
+            << ", " << Projections[j]
+            << ">";
       }
       out << " }";
    }
@@ -103,15 +103,15 @@ PStream::ipstream& operator>>(PStream::ipstream& in, SiteBasis& B)
 // SiteProductBasis
 
 SiteProductBasis::SiteProductBasis(SiteBasis const& B1, SiteBasis const& B2)
-  : Basis_(B1.GetSymmetryList()), 
+  : Basis_(B1.GetSymmetryList()),
     Basis1_(B1), Basis2_(B2), ProductBasis_(B1, B2)
 {
    for (std::size_t i = 0; i < ProductBasis_.size(); ++i)
    {
       ProductBasis<BasisList, BasisList>::source_type s = ProductBasis_.rmap(i);
-      std::string Label = B1.Label(s.first) + " x " 
-	 + B2.Label(s.second) + " [" 
-	 + boost::lexical_cast<std::string>(ProductBasis_[i]) + ']';
+      std::string Label = B1.Label(s.first) + " x "
+         + B2.Label(s.second) + " ["
+         + boost::lexical_cast<std::string>(ProductBasis_[i]) + ']';
       Basis_.push_back(Label, ProductBasis_[i]);
    }
 }
@@ -122,7 +122,7 @@ std::ostream& operator<<(std::ostream& out, SiteProductBasis const& Basis)
    {
       if (i != 0) out << ", ";
       out << "{ " << i << " = (" << Basis.PBasis().rmap(i).first
-	  << "x" << Basis.PBasis().rmap(i).second << "), |" << Basis.Basis().Label(i) << ">, " 
+          << "x" << Basis.PBasis().rmap(i).second << "), |" << Basis.Basis().Label(i) << ">, "
           << Basis.PBasis()[i] << " }";
    }
    return out;
@@ -155,32 +155,32 @@ std::ostream& operator<<(std::ostream& out, SiteOperator const& Op)
    {
       for (std::size_t j = 0; j < Op.size2(); ++j)
       {
-         if (!is_transform_target(Op.Basis()[j].second, Op.TransformsAs(), Op.Basis()[i].second)) 
+         if (!is_transform_target(Op.Basis()[j].second, Op.TransformsAs(), Op.Basis()[i].second))
             continue;
 
-	 std::complex<double> x = Op(i,j);
-	 if (x == std::complex<double>()) continue;
+         std::complex<double> x = Op(i,j);
+         if (x == std::complex<double>()) continue;
 
-	 if (x.imag() != 0)
-	 {
-	    if (!first) out << " + ";
-	    out << '(' << x.real();
-	    if (x.imag() >= 0) out << '+';
-	    out << x.imag() << "i) ";
-	 }
-	 else // x.imag() == 0
-	 {
-	    if (!first)
-	    {
-	       if (x.real() >= 0) out << " + ";
-	       else out << " - ";
-	    }
-	    else if (x.real() < 0) out << '-';
-	    if (std::abs(x.real()) != 1) out << std::abs(x.real()) << ' ';
-	 }
-	 first = false;
+         if (x.imag() != 0)
+         {
+            if (!first) out << " + ";
+            out << '(' << x.real();
+            if (x.imag() >= 0) out << '+';
+            out << x.imag() << "i) ";
+         }
+         else // x.imag() == 0
+         {
+            if (!first)
+            {
+               if (x.real() >= 0) out << " + ";
+               else out << " - ";
+            }
+            else if (x.real() < 0) out << '-';
+            if (std::abs(x.real()) != 1) out << std::abs(x.real()) << ' ';
+         }
+         first = false;
 
-	 out << "|" << Op.Basis().Label(i) << "><" << Op.Basis().Label(j) << "|";
+         out << "|" << Op.Basis().Label(i) << "><" << Op.Basis().Label(j) << "|";
       }
    }
    if (first)
@@ -202,44 +202,44 @@ void show_projections(std::ostream& out, SiteOperator const& Op)
 
       for (std::size_t i = 0; i < Basis.size(); ++i)
       {
-	 QuantumNumber qi = Basis.qn(i);
-	 for (std::size_t j = 0; j < Basis.size(); ++j)
-	 {
-            if (!is_transform_target(Op.Basis()[j].second, Op.TransformsAs(), Op.Basis()[i].second)) 
+         QuantumNumber qi = Basis.qn(i);
+         for (std::size_t j = 0; j < Basis.size(); ++j)
+         {
+            if (!is_transform_target(Op.Basis()[j].second, Op.TransformsAs(), Op.Basis()[i].second))
                continue;
 
-	    std::complex<double> x(Op(i,j));
-	    if (x == 0.0) continue;
+            std::complex<double> x(Op(i,j));
+            if (x == 0.0) continue;
 
-	    //	    out << x << std::endl;
+            //      out << x << std::endl;
 
-	    QuantumNumber qj = Basis.qn(j);
+            QuantumNumber qj = Basis.qn(j);
 
-	    std::vector<QuantumNumbers::Projection> mi, mj;
-	    enumerate_projections(qi, std::back_inserter(mi));
-	    enumerate_projections(qj, std::back_inserter(mj));
+            std::vector<QuantumNumbers::Projection> mi, mj;
+            enumerate_projections(qi, std::back_inserter(mi));
+            enumerate_projections(qj, std::back_inserter(mj));
 
-	    for (std::size_t ii = 0; ii < mi.size(); ++ii)
-	    {
-	       for (std::size_t jj = 0; jj < mj.size(); ++jj)
-	       {
-		  std::complex<double> y = x * clebsch_gordan(qj,    Op.TransformsAs(),  qi,
-							      mj[jj], Projections[km], mi[ii]);
+            for (std::size_t ii = 0; ii < mi.size(); ++ii)
+            {
+               for (std::size_t jj = 0; jj < mj.size(); ++jj)
+               {
+                  std::complex<double> y = x * clebsch_gordan(qj,    Op.TransformsAs(),  qi,
+                                                              mj[jj], Projections[km], mi[ii]);
 
-		  if (numerics::norm_2(y) > 1E-10)
-		  {
-		     out << "   " << y
-			 << " |" << Basis.Label(i) << ' ' << qi
-			 << ", " << mi[ii]
-			 << "> <"
-			 << Basis.Label(j) << ' '
-			 << qj
-			 << ", " << mj[jj]
-			 << "|\n";
-		  }
-	       }
-	    }
-	 }
+                  if (numerics::norm_2(y) > 1E-10)
+                  {
+                     out << "   " << y
+                         << " |" << Basis.Label(i) << ' ' << qi
+                         << ", " << mi[ii]
+                         << "> <"
+                         << Basis.Label(j) << ' '
+                         << qj
+                         << ", " << mj[jj]
+                         << "|\n";
+                  }
+               }
+            }
+         }
       }
       //      out << '\n';
    }
@@ -337,7 +337,7 @@ SiteOperator
 dot(SiteOperator const& Op1, SiteOperator const& Op2)
 {
    CHECK_EQUAL(Op1.TransformsAs(), adjoint(Op2.TransformsAs()))("dot product must produce e scalar");
-   return std::sqrt(double(degree(Op1.TransformsAs()))) 
+   return std::sqrt(double(degree(Op1.TransformsAs())))
       * prod(Op1, Op2, QuantumNumber(Op1.GetSymmetryList()));
 }
 
@@ -351,12 +351,12 @@ outer(SiteOperator const& x, SiteOperator const& y)
    {
       if (degree(L[i]) > degree(q))
       {
-	 q = L[i];
-	 Unique = true;
+         q = L[i];
+         Unique = true;
       }
       else if (degree(L[i]) == degree(q))
       {
-	 Unique = false;
+         Unique = false;
       }
    }
    CHECK(Unique)("outer product is not defined for these operators")

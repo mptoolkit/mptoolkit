@@ -95,7 +95,7 @@ std::type_info const& PointerToValue<T>::GetTypeid() const
 template <typename T>
 void* PointerToValue<T>::operator new(size_t size);
 {
-   DEBUG_PRECONDITION(size == sizeof(PointerToValue<T>)); 
+   DEBUG_PRECONDITION(size == sizeof(PointerToValue<T>));
    return PoolAlloc::allocate(size);
 }
 
@@ -163,7 +163,7 @@ std::type_info const& PointerToPolymorphic<BaseClass>::GetTypeid() const
 template <class BaseClass>
 void* PointerToPolymorphic<BaseClass>::operator new(size_t size)
 {
-   DEBUG_PRECONDITION(size == sizeof(PointerToPolymorphic<BaseClass>)); 
+   DEBUG_PRECONDITION(size == sizeof(PointerToPolymorphic<BaseClass>));
    return PoolAlloc::allocate(size);
 }
 
@@ -214,7 +214,7 @@ template <class T>
 T* ObjectHelper<T, true>::TryCastPointer(PointerToObject const* Obj)
 {
    typedef typename T::heirachy_base BaseClass;
-   PointerToPolymorphic<BaseClass> const* AsPoly = 
+   PointerToPolymorphic<BaseClass> const* AsPoly =
       dynamic_cast<PointerToPolymorphic<BaseClass> const*>(Obj);
    T* Ptr = dynamic_cast<T*>(AsPoly->Get());
    CHECK(Ptr != NULL);
@@ -290,11 +290,11 @@ T* PHeapObject::Lock()
       ++ReferenceCount;
       if (Object == NULL)
       {
-	 // load the object into memory.
+         // load the object into memory.
          TRACE_PHEAP("Loading object")(this);
-	 PHeapFileSystem::ipheapstream In(Private::GetFileSystem(), MyDescriptor);
-	 T* Ptr = PStream::ConstructFromStream<T>(In);
-	 Object = Private::PointerToObject::Create(Ptr);
+         PHeapFileSystem::ipheapstream In(Private::GetFileSystem(), MyDescriptor);
+         T* Ptr = PStream::ConstructFromStream<T>(In);
+         Object = Private::PointerToObject::Create(Ptr);
 
          // If the filesystem is not writable, then we might as well delete the disk image
          if (Private::GetFileSystem()->is_read_only())
@@ -302,22 +302,22 @@ T* PHeapObject::Lock()
             //SubNestedReferences(MyDescriptor);
             //TRACE_PHEAP(MyDescriptor);
             //delete MyDescriptor;
-         }            
+         }
 
-	 // we cannot increment the lock count until the object is loaded.
-	 // we also need a memory barrier here so that the object's memory
-	 // is coherent before the lock count becomes non-zero.
-	 write_memory_barrier();
-	 ++LockCount;
+         // we cannot increment the lock count until the object is loaded.
+         // we also need a memory barrier here so that the object's memory
+         // is coherent before the lock count becomes non-zero.
+         write_memory_barrier();
+         ++LockCount;
 
-	 return Ptr;
+         return Ptr;
       }
 
       // if we get here, then the lock count is zero but the object is in memory.  The most likely
       // reason is a pending flush.
       if (PendingFlush && !Private::GetFileSystem()->is_read_only())
       {
- 	 Private::ClearPendingFlush(this);
+         Private::ClearPendingFlush(this);
          PendingFlush = false;
       }
    }
@@ -338,7 +338,7 @@ inline
 bool PHeapObject::SubReference()
 {
    TRACE_PHEAP_X("PHeapObject::SubRference()")(*this);
-   if (--ReferenceCount == 0) 
+   if (--ReferenceCount == 0)
    {
       delete this;
       return true;
@@ -358,7 +358,7 @@ bool PHeapObject::SubLock()
 {
    TRACE_PHEAP_X("PHeapObject::SubLock()")(*this);
    bool Result = false;
-   ObjectMutex.lock(); // we have to grab the lock here because it isn't safe for two threads to 
+   ObjectMutex.lock(); // we have to grab the lock here because it isn't safe for two threads to
    // enter DoLockCountZero()
    if (--LockCount == 0)
       Result = DoLockCountZero();
@@ -384,7 +384,7 @@ PHeapObject* PHeapObject::CopyOnWrite(T*& Value)
       return Other;
    }
 }
-      
+
 //
 // namespace-level free functions
 //

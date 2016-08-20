@@ -36,7 +36,7 @@ class SolverGmres : public Solver
    public:
       SolverGmres() {}
 
-      SolverGmres(CenterWavefunction const& Psi_, SplitOperator const& Op_, 
+      SolverGmres(CenterWavefunction const& Psi_, SplitOperator const& Op_,
                   SplitOperator const& Op2_, CenterWavefunction const& Rhs_,
                   double Freq_, double Broad_)
          : Solver(Psi_, Op_, Rhs_, Freq_, Broad_), ASquared(Op2_), Tol(0.0) {}

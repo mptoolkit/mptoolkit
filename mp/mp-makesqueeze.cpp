@@ -86,11 +86,11 @@ int main(int argc, char** argv)
       int FirstSite;
       int Length;
       int MaxLag;
-      
+
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("lattice,l", prog_opt::value(&LatticeFile), 
+         ("lattice,l", prog_opt::value(&LatticeFile),
           "lattice file [required]")
          ("operator1,1", prog_opt::value(&Operator1),
           "name of the left operator [required]")
@@ -110,11 +110,11 @@ int main(int argc, char** argv)
           "extra length permissible for the squeezed space")
          ;
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).run(), vm);
-      prog_opt::notify(vm);    
-      
+      prog_opt::notify(vm);
+
       if (vm.count("help") || !vm.count("lattice"))
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
@@ -137,7 +137,7 @@ int main(int argc, char** argv)
 
       MPOperator Base = Op1(FirstSite);
 
-      std::vector<MPOperator> Operators = ConstructSqueezedCorrelator(Op1(FirstSite), 
+      std::vector<MPOperator> Operators = ConstructSqueezedCorrelator(Op1(FirstSite),
                                                                       FirstSite, Length, MaxLag,
                                                                       OpProjFilled, OpProjEmpty, Op2);
 

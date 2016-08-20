@@ -22,40 +22,40 @@
 
   Created 2000-08 Ian McCulloch
 
-  This library uses a non-virtual heirachy, based around the curiously recursive template 
+  This library uses a non-virtual heirachy, based around the curiously recursive template
   pattern.
   That is, the derived class itself is a template parameter of the base class.
-  The classes that have an explicit template parameter Derived should never be constructed 
+  The classes that have an explicit template parameter Derived should never be constructed
   directly.  These classes should have no public constructors if possible.
   The heirachy rooted at VectorExpression<Scalar const, Derived>.  This is
   a generic R-value, functions that accept a minimal interface non-mutable vector
   should use a parameter of this form.
 
-  L-value objects have the root VectorExpression<Scalar, Derived>, which inherits from 
+  L-value objects have the root VectorExpression<Scalar, Derived>, which inherits from
   VectorExpression<Scalar const, Derived>.  This is a generic L-value object, with assignment,
   multiply by scalar etc etc.
 
-  VectorExpression does not declare any constructors, dtor, or data members.  This is left 
+  VectorExpression does not declare any constructors, dtor, or data members.  This is left
   totally up to
-  the derived classes.  VectorExpression L-value assumes reference semantic copy and 
+  the derived classes.  VectorExpression L-value assumes reference semantic copy and
   copy-assignment.
-  For example, 
+  For example,
   Vector<double> MyVector(20, 0);
   MyVector.sub_vector(5, 15) = Vector<double>(10, 1);
 
-  Here, sub_vector() returns a VectorSlice object which is derived from 
+  Here, sub_vector() returns a VectorSlice object which is derived from
   VectorExpression<double>,
   which encapsulates a reference to a sub-vector of MyVector.
-  The assignment operator implements reference counted assignment, and assigns 1.0 to the 
+  The assignment operator implements reference counted assignment, and assigns 1.0 to the
   relevant portions
   of MyVector.
 
-  Vector<Scalar const> objects themselves cannot appear on the left hand side of an 
-  expression, thus 
+  Vector<Scalar const> objects themselves cannot appear on the left hand side of an
+  expression, thus
   it is purely up to the derived classes how to implement assignment (if it is implemented at
   all).
 
-  Vector<Scalar> inherits from VectorExpression<Scalar const> and provides deep copy 
+  Vector<Scalar> inherits from VectorExpression<Scalar const> and provides deep copy
   assignment semantics.
 
   Derived classes:
@@ -73,9 +73,9 @@
 
   MyVector[0] = 1;                    // changes the first element of MyVector and MyRef
   MyRef[1] = 2;                       // changes the second element of MyVector and MyRef
-  
+
   MyRef = Vector<double>(10, 3);      // sets every element of MyVector and MyRef to 3
-  // MyRef =  Vector<double>(11, 3); **ILLEGAL** trying to assign a length 11 vector to a 
+  // MyRef =  Vector<double>(11, 3); **ILLEGAL** trying to assign a length 11 vector to a
   //                                 length 10 vector
 
   MyVector = Vector<double>(11, 4);   // OK, MyVector is now length 11, MyRef is *unchanged*
@@ -83,14 +83,14 @@
 
   The reference counted semantics of VectorRef and Vector might seem unusual, but they're not
   really.
-  Essentially, VectorRef is equivalent to a reference counted iterator to begin() of an 
+  Essentially, VectorRef is equivalent to a reference counted iterator to begin() of an
   std::vector.
-  Iterator invalidation corresponds to the reference becoming detached from the original 
+  Iterator invalidation corresponds to the reference becoming detached from the original
   object,
   but here, because of the reference counting, the original data does not become invalid.
 
-  TODO: add a lot more classes, VectorAddExpression, VectorScaleExpression, 
-  VectorGeneralSlice, 
+  TODO: add a lot more classes, VectorAddExpression, VectorScaleExpression,
+  VectorGeneralSlice,
   and some sequence vectors - ConstSequence, ArithmeticSequence, GeometricSequence etc etc.
 
   Finish off the VectorExpression<Scalar> members, should have fill(), clear() etc etc.
@@ -101,21 +101,21 @@
 
         Document the VectorTraits class.
 
-        copy and assignment of the base classes is a problem - really we want the minimum to 
-	be defined
-        and the rest to be private and not defined.  What can we get away with?  We need to 
-        have public copy for VectorExpression<Scalar> at minimum.  Not really needed for 
-	VectorExpression<Scalar const>
+        copy and assignment of the base classes is a problem - really we want the minimum to
+        be defined
+        and the rest to be private and not defined.  What can we get away with?  We need to
+        have public copy for VectorExpression<Scalar> at minimum.  Not really needed for
+        VectorExpression<Scalar const>
         we can pass it by const reference.  Or do we need it for something?
-        If we do make the copy and copy-assignment private, the base classes need to 
-	explicitly define
+        If we do make the copy and copy-assignment private, the base classes need to
+        explicitly define
         them so we don't try to call the base class versions.
 
-	Vector and VectorRef should interit from VectorSlice.
+        Vector and VectorRef should interit from VectorSlice.
 
-	Vector doesn't need to inherit from VectorExpression<Scalar const>, it is ok for it to
-	inherit from VectorExpression<Scalar>.
-*/ 
+        Vector doesn't need to inherit from VectorExpression<Scalar const>, it is ok for it to
+        inherit from VectorExpression<Scalar>.
+*/
 
 #if !defined(VECTORTYPES_H_DHJFKHURWEIRY4572893475489YRUI34897)
 #define VECTORTYPES_H_DHJFKHURWEIRY4572893475489YRUI34897
@@ -164,37 +164,37 @@ struct VectorTraits<VectorConstRef<Scalar, ConcreteClass> >
 };
 
 template <typename Scalar>
-class VectorConstRef<Scalar, ConcreteClass> 
+class VectorConstRef<Scalar, ConcreteClass>
   : public VectorSlice<Scalar, VectorRef<Scalar, ConcreteClass>, VectorRef<Scalar, ConcreteClass> >
 {
    public:
-      typedef VectorSlice<Scalar, VectorRef<Scalar, ConcreteClass>, 
-			  VectorRef<Scalar, ConcreteClass> > base_class;
+      typedef VectorSlice<Scalar, VectorRef<Scalar, ConcreteClass>,
+                          VectorRef<Scalar, ConcreteClass> > base_class;
       typedef Scalar*       iterator;
       typedef Scalar const* const_iterator;
 
       using base_class::operator[];
 
   //      VectorConstRef(DataBlock<Scalar const> const& Data_, size_type Start, size_type Size)
-  //	: base_class(), Data(Data_) {}
+  //    : base_class(), Data(Data_) {}
 
       VectorConstRef(VectorConstRef const& V)
-	: base_class(), Block(V.Block) {}
+        : base_class(), Block(V.Block) {}
 
       template <typename S>
-      VectorConstRef(VectorConstRef<S> const& V) 
-	: base_class(), Block(V.Block) {}
+      VectorConstRef(VectorConstRef<S> const& V)
+        : base_class(), Block(V.Block) {}
 
       template <typename S>
-      VectorConstRef(VectorRef<S> const& V) 
-	: base_class(), Block(V.Block) {}
+      VectorConstRef(VectorRef<S> const& V)
+        : base_class(), Block(V.Block) {}
 
       size_type size() const { return Block.size(); }
 
       const_iterator begin() const { return Block.get(); }
       const_iterator end() const { return Block.get() + this->size(); }
 
-      Scalar const& operator[](size_type n) const 
+      Scalar const& operator[](size_type n) const
          { DEBUG_RANGE_CHECK_OPEN(n,0,this->size()); return *(Block.get() + n); }
 
       Scalar const* data() const { return Block.get(); }
@@ -233,27 +233,27 @@ class VectorRef<Scalar, ConcreteClass>
   : public VectorSlice<Scalar, VectorRef<Scalar, ConcreteClass>, VectorRef<Scalar, ConcreteClass> >
 {
    public:
-      typedef VectorSlice<Scalar, VectorRef<Scalar, ConcreteClass>, 
-			  VectorRef<Scalar, ConcreteClass> >          base_class;
+      typedef VectorSlice<Scalar, VectorRef<Scalar, ConcreteClass>,
+                          VectorRef<Scalar, ConcreteClass> >          base_class;
       typedef Scalar*       iterator;
       typedef Scalar const* const_iterator;
 
       using base_class::operator[];
 
-      VectorRef(VectorRef const& V) 
-	: base_class(), Block(V.Block) {}
+      VectorRef(VectorRef const& V)
+        : base_class(), Block(V.Block) {}
 
       template <class S2, class D2>
       VectorRef& operator=(VectorConstExpression<S2, D2> const& V)
       {
-	 this->assign(V);   // safe because assign() calls begin(), which calls cow()
-	 return *this;
+         this->assign(V);   // safe because assign() calls begin(), which calls cow()
+         return *this;
       }
 
       VectorRef& operator=(VectorRef const& V)
       {
-	 this->assign(V);   // safe because assign() calls begin(), which calls cow()
-	 return *this;
+         this->assign(V);   // safe because assign() calls begin(), which calls cow()
+         return *this;
       }
 
       size_type size() const { return Block.size(); }
@@ -268,8 +268,8 @@ class VectorRef<Scalar, ConcreteClass>
          { DEBUG_RANGE_CHECK_OPEN(n,0,this->size()); return *(Block.get() + n); }
 
       Scalar& operator[](size_type n)
-         { DEBUG_RANGE_CHECK_OPEN(n,0,this->size()); 
-	 this->cow(); return *(Block.get() + n); }
+         { DEBUG_RANGE_CHECK_OPEN(n,0,this->size());
+         this->cow(); return *(Block.get() + n); }
 
       Scalar* data() { this->cow(); return Block.get(); }
       Scalar const* data() const { return Block.get(); }
@@ -279,16 +279,16 @@ class VectorRef<Scalar, ConcreteClass>
       size_type start() const { return 0; }
 
    protected:
-      BlockReference<Scalar> const& block() const { return Block; } 
+      BlockReference<Scalar> const& block() const { return Block; }
       BlockReference<Scalar>& block() { return Block; }  // danger: this does not call cow()
 
       VectorRef() {}
 
       explicit VectorRef(size_type Size_)
-	: Block(Size_) {}
+        : Block(Size_) {}
 
       VectorRef(size_type Size_, Scalar const& Fill)
-	: Block(Size_, Fill) {}
+        : Block(Size_, Fill) {}
 
      explicit VectorRef(BlockReference<Scalar> const& Block_) : Block(Block_) {}
 
@@ -348,16 +348,16 @@ class Vector : public VectorRef<Scalar>
 
       template <typename Iter>
       Vector(Iter first, Iter last,
-	     typename boost::enable_if<boost::mpl::not_<boost::is_arithmetic<Iter> > >::type* dummy = 0);
+             typename boost::enable_if<boost::mpl::not_<boost::is_arithmetic<Iter> > >::type* dummy = 0);
 
       Vector(Vector<Scalar> const& V)
-	: VectorRef<Scalar>(V.block().copy()) {}
+        : VectorRef<Scalar>(V.block().copy()) {}
 
       Vector(VectorRef<Scalar> const& V)
-	: VectorRef<Scalar>(V.block().copy()) {}
+        : VectorRef<Scalar>(V.block().copy()) {}
 
    //      Vector(VectorConstRef<Scalar> const& V)
-   //	: VectorRef<Scalar>(V.block().copy()) {}
+   //   : VectorRef<Scalar>(V.block().copy()) {}
 
       template <class S2, class D2>
       Vector(VectorConstExpression<S2, D2> const& V);
@@ -365,10 +365,10 @@ class Vector : public VectorRef<Scalar>
       Vector<Scalar>& operator=(Vector<Scalar> const& V);
 
       template <class S2, class D2>
-      Vector<Scalar>& operator=(VectorConstExpression<S2 const, D2> const& V); 
+      Vector<Scalar>& operator=(VectorConstExpression<S2 const, D2> const& V);
 
       void resize(size_type NewSize, bool PreserveValues = false)
-	{ this->VectorRef<Scalar, ConcreteClass>::resize(NewSize, PreserveValues); }
+        { this->VectorRef<Scalar, ConcreteClass>::resize(NewSize, PreserveValues); }
 
       void swap(Vector& Other) { this->cow(); Other.cow(); this->VectorRef<Scalar>::swap(Other); }
 };

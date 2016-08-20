@@ -73,7 +73,7 @@ id_type GetInitialSequenceNumber()
    inttype::uint32 Unique = ext::get_unique_no_mutex();
    id_type isn = Unique;
    isn <<= 32;
-   isn += ext::get_unique_no_mutex() & 0xFFF00000;  
+   isn += ext::get_unique_no_mutex() & 0xFFF00000;
    // lower 20 bits are zero - does this reduce probability of collision?
    return isn;
 }
@@ -93,11 +93,11 @@ void InitializeGlobalData()
 // returns true if the file system is initialized and not read-only.
 bool IsFileSystemWritable()
 {
-   return !(GlobalHeapDataType::Data->FileSystem == NULL || 
-	    GlobalHeapDataType::Data->FileSystem->is_read_only());
+   return !(GlobalHeapDataType::Data->FileSystem == NULL ||
+            GlobalHeapDataType::Data->FileSystem->is_read_only());
 }
 
-BlockFileSystem*& FileSystem() 
+BlockFileSystem*& FileSystem()
 {
    return GlobalHeapDataType::Data->FileSystem;
 }
@@ -131,7 +131,7 @@ GlobalMetadataPages()
 PHeapObject* PendingFlushListTop()
 {
    pthread::mutex::sentry(GlobalHeapDataType::Data->PendingFlushMutex);
-   return GlobalHeapDataType::Data->PendingFlushList.empty() ? NULL : 
+   return GlobalHeapDataType::Data->PendingFlushList.empty() ? NULL :
     *GlobalHeapDataType::Data->PendingFlushList.begin() ;
 }
 
@@ -264,9 +264,9 @@ void AddNestedReferences(Descriptor* Desc)
    {
       if (*I != 0)
       {
-	 PHeapObject* Obj = GlobalHeap()[*I];
-	 CHECK(Obj != NULL);
-	 Obj->AddReference();
+         PHeapObject* Obj = GlobalHeap()[*I];
+         CHECK(Obj != NULL);
+         Obj->AddReference();
       }
    }
 }
@@ -283,12 +283,12 @@ void SubNestedReferences(Descriptor* Desc)
    {
       if (*I != 0)
       {
-	 {
-	    pthread::mutex::sentry Lock(GlobalHeapMutex());
-	    Obj = GlobalHeap()[*I];
-	 }
-	 CHECK(Obj != NULL);
-	 Obj->SubReference();
+         {
+            pthread::mutex::sentry Lock(GlobalHeapMutex());
+            Obj = GlobalHeap()[*I];
+         }
+         CHECK(Obj != NULL);
+         Obj->SubReference();
       }
    }
 }
@@ -367,41 +367,41 @@ bool PHeapObject::DoLockCountZero()
 {
    TRACE_PHEAP("PHeapObject::DoLockCountZero()")(*this);
    //ObjectMutex.lock(); // ** moved to SubLock function
- 
+
    if (LockCount.is_zero())
    {
       // we are going to destroy the memory object for sure,
       // so we decrement the reference count too.
       if (--ReferenceCount == 0)
       {
-	 //ObjectMutex.unlock();
-	 delete this;
-	 return true;
+         //ObjectMutex.unlock();
+         delete this;
+         return true;
       }
       else
       {
-	 // If we don't have a descriptor then the object is not currently on disk
-	 if (!MyDescriptor)
-	 {
-	    TRACE_PHEAP("PHeapObject::DoLockCountZero(): no descriptor - writing to disk");
-	    //	    DEBUG_TRACE("MyDescriptor is NULL");
-	    // if we can't write to the file system, then add this to the set of pending writes.
-	    if (!IsFileSystemWritable())
-	    {
-	       TRACE_PHEAP("PHeapObject::DoLockCountZero(): Filesystem is not writable")(*this);
-	       PendingFlush = true;
-	       SetPendingFlush(this);
-	       //ObjectMutex.unlock();
-	       return false; // NOTE: we don't delete the Object here
-	    }
-	    MyDescriptor = new Descriptor();
-	    {
-	       opheapstream Out(FileSystem(), MyDescriptor); Out.put_format(PHeapFormat());
-	       Object->WriteToStream(Out);
-	    }
-	    AddNestedReferences(MyDescriptor);
-	 }
-	 delete Object; Object = NULL;
+         // If we don't have a descriptor then the object is not currently on disk
+         if (!MyDescriptor)
+         {
+            TRACE_PHEAP("PHeapObject::DoLockCountZero(): no descriptor - writing to disk");
+            //      DEBUG_TRACE("MyDescriptor is NULL");
+            // if we can't write to the file system, then add this to the set of pending writes.
+            if (!IsFileSystemWritable())
+            {
+               TRACE_PHEAP("PHeapObject::DoLockCountZero(): Filesystem is not writable")(*this);
+               PendingFlush = true;
+               SetPendingFlush(this);
+               //ObjectMutex.unlock();
+               return false; // NOTE: we don't delete the Object here
+            }
+            MyDescriptor = new Descriptor();
+            {
+               opheapstream Out(FileSystem(), MyDescriptor); Out.put_format(PHeapFormat());
+               Object->WriteToStream(Out);
+            }
+            AddNestedReferences(MyDescriptor);
+         }
+         delete Object; Object = NULL;
       }
    }
    //ObjectMutex.unlock();
@@ -438,30 +438,30 @@ PHeapObject* PHeapObject::CopyOnWriteLockCountZero()
       // we need to move Object to a new PHeapObject, and leave a disk-copy.
       if (!MyDescriptor)
       {
-	 // if the FileSystem is not writable, then we cannot reuse the memory object, but instead
-	 // we make a deep copy of it and leave the old version intact, and add it to the list of
-	 // pending objects.
-	 if (!IsFileSystemWritable())
-	 {
-	    PendingFlush = true;
-	    SetPendingFlush(this);
-	    PHeapObject* Other = Create(Object->clone(), Private::AllocateID());
+         // if the FileSystem is not writable, then we cannot reuse the memory object, but instead
+         // we make a deep copy of it and leave the old version intact, and add it to the list of
+         // pending objects.
+         if (!IsFileSystemWritable())
+         {
+            PendingFlush = true;
+            SetPendingFlush(this);
+            PHeapObject* Other = Create(Object->clone(), Private::AllocateID());
 
             // The swap here is needed because whoever called CopyOnWrite might have a copy of
-            // our Object pointer somewhere, so we shouldn't change it under them.  So, 
+            // our Object pointer somewhere, so we shouldn't change it under them.  So,
             // return a new PHeapObject that contains the old Object pointer.
-            // The swap should also be safe, because the only other things pointing to this 
+            // The swap should also be safe, because the only other things pointing to this
             // PHeapObject are references, not locks, and therefore should not have a copy of the Object pointer.
-            std::swap(Object, Other->Object); 
+            std::swap(Object, Other->Object);
 
-	    return Other;
-	 }
-	 MyDescriptor = new Descriptor();
-	 {
-	    opheapstream Out(FileSystem(), MyDescriptor); Out.put_format(PHeapFormat());
-	    Object->WriteToStream(Out);
-	 }
-	 AddNestedReferences(MyDescriptor);
+            return Other;
+         }
+         MyDescriptor = new Descriptor();
+         {
+            opheapstream Out(FileSystem(), MyDescriptor); Out.put_format(PHeapFormat());
+            Object->WriteToStream(Out);
+         }
+         AddNestedReferences(MyDescriptor);
       }
       PHeapObject* Other = Create(Object, Private::AllocateID());
       Object = NULL;
@@ -514,16 +514,16 @@ Descriptor PHeapObject::Persist()
       pthread::mutex::sentry Lock(ObjectMutex);
       if (!MyDescriptor)
       {
-	 CHECK(Object != NULL);
-	 //	 std::cerr << "WARNING: Object " << ObjectID << " type " << Object->GetTypeid().name()
-	 //		   << " has memory references that are now invalid.\n";
-	 ++LockCount;  // prohibit deleting the object, trying to write it to disk would be very bad
-	 Descriptor Desc;
-	 {
-	    opheapstream Out(FileSystem(), &Desc); Out.put_format(PHeapFormat());
-	    Object->WriteToStream(Out);
-	 }
-	 return Desc;
+         CHECK(Object != NULL);
+         //      std::cerr << "WARNING: Object " << ObjectID << " type " << Object->GetTypeid().name()
+         //                << " has memory references that are now invalid.\n";
+         ++LockCount;  // prohibit deleting the object, trying to write it to disk would be very bad
+         Descriptor Desc;
+         {
+            opheapstream Out(FileSystem(), &Desc); Out.put_format(PHeapFormat());
+            Object->WriteToStream(Out);
+         }
+         return Desc;
       }
       ++ReferenceCount;   // stop the object being deallocated
       if (!LockCount.is_zero()) ++LockCount;
@@ -565,7 +565,7 @@ void PHeapObject::EmergencyDelete()
 {
    pthread::mutex::sentry Lock(ObjectMutex);
    //   std::cerr << "WARNING: Object " << ObjectID
-   //	     << " has memory references but no persistent references; the memory references are now invalid.\n";
+   //        << " has memory references but no persistent references; the memory references are now invalid.\n";
    if (MyDescriptor)
    {
       delete MyDescriptor; MyDescriptor = NULL;
@@ -574,7 +574,7 @@ void PHeapObject::EmergencyDelete()
    ++ReferenceCount;
 }
 
-//   
+//
 // globals
 //
 
@@ -584,16 +584,16 @@ PHeapObject* AddReference(id_type ID)
       pthread::mutex::sentry Lock(GlobalHeapMutex());
       if (GlobalHeap().count(ID) != 0)
       {
-	 PHeapObject* Obj = GlobalHeap()[ID];
-	 Obj->AddReference();
-	 return Obj;
+         PHeapObject* Obj = GlobalHeap()[ID];
+         Obj->AddReference();
+         return Obj;
       }
    }
    return NULL;
 }
 
-void Initialize(std::string const& FileName, int NumFiles, size_t PageSize, 
-		size_t PageCacheByteSize, bool Unlink, bool AllowOverwrite)
+void Initialize(std::string const& FileName, int NumFiles, size_t PageSize,
+                size_t PageCacheByteSize, bool Unlink, bool AllowOverwrite)
 {
    pthread::mutex::sentry Lock(GlobalHeapMutex());
 
@@ -601,8 +601,8 @@ void Initialize(std::string const& FileName, int NumFiles, size_t PageSize,
    notify_log(30, PHeapLog) << "Initializing persistent storage.\n";
    FileSystem() = new PHeapFileSystem::BlockFileSystem();
    FileSystem()->create(FileName, NumFiles, PageSize, PageCacheByteSize, Unlink, AllowOverwrite);
-   notify_log(40, PHeapLog) << "Initial sequence number is " 
-			 << GlobalHeapDataType::Data->InitialSequenceNumber << '\n';
+   notify_log(40, PHeapLog) << "Initial sequence number is "
+                         << GlobalHeapDataType::Data->InitialSequenceNumber << '\n';
    // walk the pending flush list.
    // This would mean that the object is already created and the lock count is zero,
    // so we can write it to disk now.
@@ -652,7 +652,7 @@ void ShutdownPersistent(PHeapObject* MainObject)
 
    HeapType HeapRecords;
    std::list<id_type> MissingIds;
-   
+
    id_type MainObjectID = MainObject->ID();
 
    // set the main object as a missing object, with a reference count of 1
@@ -667,13 +667,13 @@ void ShutdownPersistent(PHeapObject* MainObject)
       MissingIds.pop_front();
 
       Descriptor Desc = HeapRecords[ID].Desc = GlobalHeap()[ID]->Persist();
-      
+
       // increment the reference count for the nested objects, and
       // if any were previously not present (ref count of zero), add
       // the ID to the MissingIds list.
       for (IDIter I = Desc.id_begin(); I != Desc.id_end(); ++I)
       {
-	 if (*I != 0 && HeapRecords[*I].RefCount++ == 0) MissingIds.push_back(*I);
+         if (*I != 0 && HeapRecords[*I].RefCount++ == 0) MissingIds.push_back(*I);
       }
    }
 
@@ -682,7 +682,7 @@ void ShutdownPersistent(PHeapObject* MainObject)
    {
       if (HeapRecords.count(I->first) == 0)
       {
-	 I->second->EmergencyDelete();
+         I->second->EmergencyDelete();
       }
    }
 
@@ -723,7 +723,7 @@ void Cleanup()
 PageId ExportHeap(BlockFileSystem* FS_, PHeapObject* MainObject)
 {
    PRECONDITION(FS_ != NULL);
-   
+
    HeapType HeapRecords;
 
    // Keep a list of Id's that we need to add to the exported heap
@@ -749,13 +749,13 @@ PageId ExportHeap(BlockFileSystem* FS_, PHeapObject* MainObject)
       opheapstream Out(FS_, Desc); //Out.put_format(PHeapFormat());
       Obj->Write(Out);
       Obj->SubReference();  // since we had to add a reference to get the PHeapObject*
-      
+
       // increment the reference count for the nested objects, and
       // if any were previously not present (ref count of zero), add
       // the ID to the MissingIds list.
       for (IDIter I = Desc->id_begin(); I != Desc->id_end(); ++I)
       {
-	 if (*I != 0 && HeapRecords[*I].RefCount++ == 0) MissingIds.push_back(*I);
+         if (*I != 0 && HeapRecords[*I].RefCount++ == 0) MissingIds.push_back(*I);
       }
    }
 
@@ -767,11 +767,11 @@ PageId ExportHeap(BlockFileSystem* FS_, PHeapObject* MainObject)
    return MetaId;
 }
 
-void ExportHeap(std::string const& FileName, PHeapObject* MainObject, 
-		int NumFiles, size_t PageSize)
+void ExportHeap(std::string const& FileName, PHeapObject* MainObject,
+                int NumFiles, size_t PageSize)
 {
    BlockFileSystem* FS_ = new BlockFileSystem;
-   if (PageSize == 0) 
+   if (PageSize == 0)
    {
       PageSize = pheap::CurrentPageSize();
       if (PageSize == 0) PageSize = pheap::DefaultPageSize();
@@ -794,7 +794,7 @@ PHeapObject* ImportHeap(BlockFileSystem* FS_, PageId MetaPage)
    ReadHeap(FS_, MetaIn, HeapRecords);
 
    CHECK(MainObjectID != 0);
-   
+
    GlobalHeapMutex().lock();
 
    for (HeapType::const_iterator I = HeapRecords.begin(); I != HeapRecords.end(); ++I)
@@ -802,23 +802,23 @@ PHeapObject* ImportHeap(BlockFileSystem* FS_, PageId MetaPage)
       // if the object is not present, allocate it.
       if (GlobalHeap().count(I->first) == 0)
       {
-	 // copy the Descriptor into MyFileSystem.  Do it as a two-stage
-	 // CreateLocked() / FinalizeCreate() so that we can drop the GlobalHeapMutex
-	 // while copying the Descriptor to the new filesystem.  This should
-	 // allow multiple concurrent calls to ImportHeap() to be efficient.
-	 PHeapObject* Obj = PHeapObject::CreateLocked(I->first);
-	 GlobalHeapMutex().unlock();
-	 Descriptor* Desc = new Descriptor(CopyDescriptorToFileSystem(I->second.Desc, FileSystem()));
-	 Obj->FinalizeCreate(Desc, I->second.RefCount);
-	 GlobalHeapMutex().lock();
+         // copy the Descriptor into MyFileSystem.  Do it as a two-stage
+         // CreateLocked() / FinalizeCreate() so that we can drop the GlobalHeapMutex
+         // while copying the Descriptor to the new filesystem.  This should
+         // allow multiple concurrent calls to ImportHeap() to be efficient.
+         PHeapObject* Obj = PHeapObject::CreateLocked(I->first);
+         GlobalHeapMutex().unlock();
+         Descriptor* Desc = new Descriptor(CopyDescriptorToFileSystem(I->second.Desc, FileSystem()));
+         Obj->FinalizeCreate(Desc, I->second.RefCount);
+         GlobalHeapMutex().lock();
       }
       else
       {
-	 // otherwise, just bump the reference count.  
-	 // It might be desirable to overwrite the previous version, but
-	 // We can't really do anything else as the object may be locked.
-	 CHECK(GlobalHeap()[I->first] != NULL);
-	 GlobalHeap()[I->first]->AddReference(I->second.RefCount);
+         // otherwise, just bump the reference count.
+         // It might be desirable to overwrite the previous version, but
+         // We can't really do anything else as the object may be locked.
+         CHECK(GlobalHeap()[I->first] != NULL);
+         GlobalHeap()[I->first]->AddReference(I->second.RefCount);
       }
    }
    GlobalHeapMutex().unlock();
@@ -838,7 +838,7 @@ PHeapObject* ImportHeap(std::string const& File)
    delete NewFS;
    return Obj;
 }
-   
+
 PHeapObject* Inject(id_type ID, Loader* L)
 {
    PRECONDITION(FileSystem() != NULL);
@@ -847,7 +847,7 @@ PHeapObject* Inject(id_type ID, Loader* L)
    // environment though, as another thread that called, say, AddReference(ID) for an unrelated
    // object would block.  Instead, we create the PHeapObject such that it initially has its
    // mutex locked.  This means that we don't need to hold the GlobalHeapMutex, and the only
-   // operations what will block for a length of time are operations that require the loaded 
+   // operations what will block for a length of time are operations that require the loaded
    // object itself.
 
    // See if the object is already present.  If it is, just add a reference.
@@ -859,8 +859,8 @@ PHeapObject* Inject(id_type ID, Loader* L)
       Obj = GlobalHeap()[ID];
       if (Obj)
       {
-	 Obj->AddReference();
-	 return Obj;
+         Obj->AddReference();
+         return Obj;
       }
       // else
       Obj = PHeapObject::CreateLocked(ID);
@@ -881,9 +881,9 @@ void DebugHeap()
        << "Number of objects: " << GlobalHeap().size() << "\n";
    for (GlobalHeapType::const_iterator I = GlobalHeap().begin(); I != GlobalHeap().end(); ++I)
    {
-     std::cerr << " identifier: " << std::setw(20) << I->first << "  hashkey: " 
-	 << std::setw(5) << GlobalHeap().hash_funct()(I->first)
-	 << "  pointer: " << (void*) I->second;
+     std::cerr << " identifier: " << std::setw(20) << I->first << "  hashkey: "
+         << std::setw(5) << GlobalHeap().hash_funct()(I->first)
+         << "  pointer: " << (void*) I->second;
       I->second->DebugPrint(std::cerr);
       std::cerr << '\n';
    }

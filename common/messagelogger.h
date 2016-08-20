@@ -18,12 +18,12 @@
 // ENDHEADER
 
 /*
-  Message logging mechanism. 
+  Message logging mechanism.
 
   Created 12/2/99
   Ian McCulloch
 
-  Modified 24/3/99: Added the StreamType template parameter, which defaults to 
+  Modified 24/3/99: Added the StreamType template parameter, which defaults to
   basic_ostream<char>.
 
   Modified 2000-05-05: changed msg_log and notify_log to use explicit template function
@@ -35,18 +35,18 @@
 
   The Stream of the log objects should always point to something valid, fallback to std::cerr.
 
-  Rewritten 2000-08-09.  Removed the Logger classes.  The interface is now via integers.  If 
+  Rewritten 2000-08-09.  Removed the Logger classes.  The interface is now via integers.  If
   the integer is a compile time constant then the compiler will (hopefully) optimize out
   the I/O, but this infrastructure is now mainly targetted at runtime logging.
 
-  Note that the multiple log functions will get very confused if multiple logs write to the 
+  Note that the multiple log functions will get very confused if multiple logs write to the
   same stream,
-  the output will be overlapped.  This could be fixed by separate buffering, but do we care 
+  the output will be overlapped.  This could be fixed by separate buffering, but do we care
   that much?
   A better idea would be to detect duplicate streams and write the thing once only.
 
   Wish list:
-  It would be really cool to have an option to flush the buffer after every output 
+  It would be really cool to have an option to flush the buffer after every output
   (like the cerr behaviour) for debugging purposes.
 
 */
@@ -69,7 +69,7 @@ bool ShouldFlush();
 void ShouldFlush(bool Flush);
 
 // the logger class
- 
+
 class LogImpl;
 
 class Logger
@@ -84,8 +84,8 @@ class Logger
       Logger(std::string const& s);
       Logger(char const* s);
 
-      Logger(const std::string& LogName_, ostream_t& stream_, 
-	     int Threshold_ = DefaultRunTimeThreshold);
+      Logger(const std::string& LogName_, ostream_t& stream_,
+             int Threshold_ = DefaultRunTimeThreshold);
 
       std::string const& Name() const;
 
@@ -116,10 +116,10 @@ class OStreamWrapper
       OStreamWrapper(int N_, Logger const& L) : Threshold(N_) { this->push_back(L); }
       OStreamWrapper(int N_, Logger const& L1, Logger const& L2);
       OStreamWrapper(int N_, Logger const& L1, Logger const& L2, Logger const& L3);
-      OStreamWrapper(int N_, Logger const& L1, Logger const& L2, Logger const& L3, 
-		     Logger const& L4);
-      OStreamWrapper(int N_, Logger const& L1, Logger const& L2, Logger const& L3, 
-		     Logger const& L4, Logger const& L5);
+      OStreamWrapper(int N_, Logger const& L1, Logger const& L2, Logger const& L3,
+                     Logger const& L4);
+      OStreamWrapper(int N_, Logger const& L1, Logger const& L2, Logger const& L3,
+                     Logger const& L4, Logger const& L5);
 
       void push_back(Logger const& L);
 
@@ -140,11 +140,11 @@ class OStreamWrapper
 };
 
 template <class T>
-const OStreamWrapper& 
+const OStreamWrapper&
 operator<<(const OStreamWrapper& stream, const T& Thing);
 
 //
-// msg_log function is the basic log function.  The template version is for 
+// msg_log function is the basic log function.  The template version is for
 // backward compatability,
 // it doesn't offer any speed advantages over the non-template.
 //
@@ -153,39 +153,39 @@ template <int N>
 inline
 OStreamWrapper msg_log(const Logger& L)
 {
-   return OStreamWrapper(N, L); 
+   return OStreamWrapper(N, L);
 }
 
 inline
 OStreamWrapper msg_log(int N, const Logger& L)
 {
-   return OStreamWrapper(N, L); 
+   return OStreamWrapper(N, L);
 }
 
 inline
 OStreamWrapper msg_log(int N, Logger const& L1, Logger const& L2)
 {
-   return OStreamWrapper(N, L1, L2); 
+   return OStreamWrapper(N, L1, L2);
 }
 
 inline
 OStreamWrapper msg_log(int N, Logger const& L1, Logger const& L2, Logger const& L3)
 {
-   return OStreamWrapper(N, L1, L2, L3); 
+   return OStreamWrapper(N, L1, L2, L3);
 }
 
 inline
-OStreamWrapper msg_log(int N, Logger const& L1, Logger const& L2, Logger const& L3, 
-		       Logger const& L4)
+OStreamWrapper msg_log(int N, Logger const& L1, Logger const& L2, Logger const& L3,
+                       Logger const& L4)
 {
-   return OStreamWrapper(N, L1, L2, L3, L4); 
+   return OStreamWrapper(N, L1, L2, L3, L4);
 }
 
 inline
-OStreamWrapper msg_log(int N, Logger const& L1, Logger const& L2, Logger const& L3, 
-		       Logger const& L4, Logger const& L5)
+OStreamWrapper msg_log(int N, Logger const& L1, Logger const& L2, Logger const& L3,
+                       Logger const& L4, Logger const& L5)
 {
-   return OStreamWrapper(N, L1, L2, L3, L4, L5); 
+   return OStreamWrapper(N, L1, L2, L3, L4, L5);
 }
 
 //
@@ -224,8 +224,8 @@ OStreamWrapper notify_log(int N, Logger const& L1, Logger const& L2, Logger cons
 }
 
 inline
-OStreamWrapper notify_log(int N, Logger const& L1, Logger const& L2, Logger const& L3, 
-			  Logger const& L4)
+OStreamWrapper notify_log(int N, Logger const& L1, Logger const& L2, Logger const& L3,
+                          Logger const& L4)
 {
    if (L1.Accept(N)) L1.GetStream() << L1.Name() << ": ";
    if (L2.Accept(N)) L2.GetStream() << L2.Name() << ": ";
@@ -235,8 +235,8 @@ OStreamWrapper notify_log(int N, Logger const& L1, Logger const& L2, Logger cons
 }
 
 inline
-OStreamWrapper notify_log(int N, Logger const& L1, Logger const& L2, Logger const& L3, 
-			  Logger const& L4, Logger const& L5)
+OStreamWrapper notify_log(int N, Logger const& L1, Logger const& L2, Logger const& L3,
+                          Logger const& L4, Logger const& L5)
 {
    if (L1.Accept(N)) L1.GetStream() << L1.Name() << ": ";
    if (L2.Accept(N)) L2.GetStream() << L2.Name() << ": ";
@@ -246,14 +246,14 @@ OStreamWrapper notify_log(int N, Logger const& L1, Logger const& L2, Logger cons
    return OStreamWrapper(N, L1, L2, L3, L4, L5);
 }
 
-// 
+//
 // panic log doesn't check the threshold
 //
 
 inline
 std::ostream& panic_log(Logger const& L)
 {
-   return L.GetStream() << L.Name() << " PANIC! "; 
+   return L.GetStream() << L.Name() << " PANIC! ";
 }
 
 // other inlines
@@ -266,7 +266,7 @@ void OStreamWrapper::push_back(Logger const& L)
 
 } // namespace MessageLogger
 
-// export the log functions to the global namespace, since DEC doesn't seem to have 
+// export the log functions to the global namespace, since DEC doesn't seem to have
 // Koenig lookup ???
 
 using MessageLogger::notify_log;

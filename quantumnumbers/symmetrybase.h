@@ -51,8 +51,8 @@ namespace QuantumNumbers
 class SymmetryBase
 {
    public:
-      SymmetryBase(int Count_, int ProjectionCount_) 
-	 : count(Count_), projectionCount(ProjectionCount_) {}
+      SymmetryBase(int Count_, int ProjectionCount_)
+         : count(Count_), projectionCount(ProjectionCount_) {}
 
       // returns the number of integers required to store a quantum number label
       size_t QuantumNumberSize() const { return count; }
@@ -60,7 +60,7 @@ class SymmetryBase
       // returns the number of integers required to store a projection label
       size_t ProjectionSize() const { return projectionCount; }
 
-      // returns the type of this quantum number.  
+      // returns the type of this quantum number.
       virtual std::string Type() const = 0;
 
       // returns the suffix used to denote the projection quantum numbers.
@@ -72,7 +72,7 @@ class SymmetryBase
       // given a string, and an output buffer, converts the string to the raw reprentation.
       virtual void FromString(std::string const& s, int* q) const = 0;
 
-      // given a buffer of PojectionCount() integers, returns a string 
+      // given a buffer of PojectionCount() integers, returns a string
       // representation of the projection
       virtual std::string ProjectionToString(int const* q) const = 0;
 
@@ -95,51 +95,51 @@ class SymmetryBase
 
       // the coupling coefficient between < q1, q2q3(q23) q | q1q3(q13) q2 q >
       virtual double recoupling(int const* q1, int const* q3, int const* q13,
-				int const* q2, int const* q,  int const* q23) const = 0;
+                                int const* q2, int const* q,  int const* q23) const = 0;
 
       // the coupling coefficient between < q1, q2q3(q23) q | q1q3(q13) q2 q >
       virtual double recoupling_12_3__13_2(int const* q1, int const* q3, int const* q13,
                                            int const* q2, int const* q,  int const* q23) const = 0;
 
-      // coupling coefficent <q' | AB(k) | q > = 
+      // coupling coefficent <q' | AB(k) | q > =
       // sum_{q''} c * < q' | A(k1) | q'' > < q'' | B(k2) | q >
-      virtual double product_coefficient(int const* k1, int const* k2, int const* k, 
-					int const* qp, int const* q,  int const* qpp) const = 0;
+      virtual double product_coefficient(int const* k1, int const* k2, int const* k,
+                                        int const* qp, int const* q,  int const* qpp) const = 0;
 
       // coupling coefficent c such that a product can be decomposed as
       // < q' | A(k1) | q'' > < q'' | B(k2) | q > = sum_k c * <q' | AB(k) | q >
-      virtual double inverse_product_coefficient(int const* k1, int const* k2, int const* k, 
-						 int const* qp, int const* q,  int const* qpp) const = 0;
+      virtual double inverse_product_coefficient(int const* k1, int const* k2, int const* k,
+                                                 int const* qp, int const* q,  int const* qpp) const = 0;
 
       // coupling coefficient <q' | (A \otimes B)(k) | q> = c * <q1' | A(k1) | q1> <q2' | B(k2) | q2>
       // precondition: (k1,k2,k), (q1p, q2p, qp), (q1, q2, q) are all valid transform triplets.
       virtual double tensor_coefficient(int const* k1,  int const* k2,  int const* k,
-				       int const* q1p, int const* q2p, int const* qp, 
-				       int const* q1,  int const* q2,  int const* qd) const = 0;
+                                       int const* q1p, int const* q2p, int const* qp,
+                                       int const* q1,  int const* q2,  int const* qd) const = 0;
 
       // precondition: (k1,k2,k), (q1p, q2p, qp), (q1, q2, q) are all valid transform triplets.
       virtual double inverse_tensor_coefficient(int const* k1,  int const* k2,  int const* k,
-						int const* q1p, int const* q2p, int const* qp, 
-						int const* q1,  int const* q2,  int const* qd) const = 0;
+                                                int const* q1p, int const* q2p, int const* qp,
+                                                int const* q1,  int const* q2,  int const* qd) const = 0;
 
       // returns the number of quantum numbers in the Clebsch-Gordan expansion of q1 * q2
       virtual int num_transform_targets(int const* q1, int const* q2) const = 0;
 
-      // returns true if q is a member of the product basis q1 * q2 
+      // returns true if q is a member of the product basis q1 * q2
       virtual bool is_transform_target(int const* q1, int const* q2, int const* q) const = 0;
 
       // appends the quantum numbers in the product basis q1 * q2 to the vector Targets.
-      virtual void transform_targets(int const* q1,  
-				    int const* q2, 
-				    int* Targets) const = 0;
+      virtual void transform_targets(int const* q1,
+                                    int const* q2,
+                                    int* Targets) const = 0;
 
       virtual int num_inverse_transform_targets(int const* q1, int const* q2) const = 0;
 
-      // appends to InverseTargets the possible quantum numbers q2 such that (q1,q2) -> q 
+      // appends to InverseTargets the possible quantum numbers q2 such that (q1,q2) -> q
       // is a valid transform target
-      virtual void inverse_transform_targets(int const* q1, 
-					     int const* q, 
-					     int* InverseTargets) const = 0;
+      virtual void inverse_transform_targets(int const* q1,
+                                             int const* q,
+                                             int* InverseTargets) const = 0;
 
       // returns the quantum number of the Hermitian adjoint.  The projections of the hermitian
       // adjoint should be the same as the projections of the original quantum number.
@@ -151,16 +151,16 @@ class SymmetryBase
 
       virtual double conj_phase(int const* qp, int const* k, int const* q) const = 0;
 
-      // enumerates all the possible projections of this quantum number and 
+      // enumerates all the possible projections of this quantum number and
       // appends them to Projections
-      virtual void enumerate_projections(int const* q, 
-					int* Projections) const = 0;
+      virtual void enumerate_projections(int const* q,
+                                        int* Projections) const = 0;
 
       virtual bool is_delta(int const* q1, int const* Q, int const* P, int const* q2) const = 0;
 
       // gives the matrix element of the projection < q';q'_m | k;k_m | q;q_m >
-      virtual double clebsch_gordan(int const* qp,  int const* k,  int const* q, 
-				    int const* qpm, int const* km, int const* qm) const = 0;
+      virtual double clebsch_gordan(int const* qp,  int const* k,  int const* q,
+                                    int const* qpm, int const* km, int const* qm) const = 0;
 
       //  returns the degree of the irreducible rep
       virtual int degree(int const* q) const = 0;

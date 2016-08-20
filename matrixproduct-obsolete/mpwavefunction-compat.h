@@ -35,7 +35,7 @@ LinearWavefunction LoadWavefunction_0_7_3(PStream::ipstream& in)
    ComponentType LeftTop, RightTop;
    OperatorType CenterOp;
    AttributeList Attr;
-   
+
    in >> LeftStack >> RightStack >> LeftTop >> RightTop >> CenterOp >> Attr;
 
    LinearWavefunction Psi(CenterOp.GetSymmetryList());
@@ -74,7 +74,7 @@ PStream::opstream& operator<<(PStream::opstream& out, WavefunctionCompat const& 
    return out;
 }
 
-inline 
+inline
 PStream::ipstream& operator>>(PStream::ipstream& in, WavefunctionCompat& x)
 {
    x.Psi = LoadWavefunction_0_7_3(in);

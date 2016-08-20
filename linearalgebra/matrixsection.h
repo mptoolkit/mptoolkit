@@ -56,13 +56,13 @@ class MatrixSection : public MatrixBase<MatrixSection<MatType, RowIndex, ColInde
       typedef typename make_const_reference<MatType>::type const_matrix_reference;
 
       MatrixSection(matrix_reference m, row_type r, col_type c)
-         : m_(m), r_(r), c_(c) 
+         : m_(m), r_(r), c_(c)
       {
          using LinearAlgebra::size1; using LinearAlgebra::size2;
-	 DEBUG_PRECONDITION(size(r) == 0 || min(r) >= 0);
-	 DEBUG_PRECONDITION(size(r) == 0 || size_type(max(r)) < size1(m))(size1(m));
-	 DEBUG_PRECONDITION(size(c) == 0 || min(c) >= 0);
-	 DEBUG_PRECONDITION(size(c) == 0 || size_type(max(c)) < size2(m))(size2(m)); 
+         DEBUG_PRECONDITION(size(r) == 0 || min(r) >= 0);
+         DEBUG_PRECONDITION(size(r) == 0 || size_type(max(r)) < size1(m))(size1(m));
+         DEBUG_PRECONDITION(size(c) == 0 || min(c) >= 0);
+         DEBUG_PRECONDITION(size(c) == 0 || size_type(max(c)) < size2(m))(size2(m));
       }
 
       MatrixSection& operator=(MatrixSection const& x)
@@ -76,15 +76,15 @@ class MatrixSection : public MatrixBase<MatrixSection<MatType, RowIndex, ColInde
       operator=(U const& x)
       {
          assign_copy(*this, x);
-	 return *this;
+         return *this;
       }
 
       template <typename U>
       typename boost::enable_if<is_matrix<U>, MatrixSection&>::type
       operator=(NoAliasProxy<U> const& x)
       {
-	 assign(*this, x.value());
-	 return *this;
+         assign(*this, x.value());
+         return *this;
       }
 
       size_type size1() const { return size(r_); }
@@ -234,7 +234,7 @@ struct Data<MatrixSection<M, RowIndex, ColIndex>&>
 
 // iterators
 
-template <typename M, typename R, typename C, 
+template <typename M, typename R, typename C,
           typename Orient = typename interface<MatrixSection<M,R,C> >::orientation>
 struct MatrixSectionIterConst;
 
@@ -272,7 +272,7 @@ struct MatrixSectionIterConst<M, R, C, ColMajor>
    }
 };
 
-template <typename M, typename R, typename C, 
+template <typename M, typename R, typename C,
           typename Orient = typename interface<MatrixSection<M,R,C> >::orientation>
 struct MatrixSectionIterMutable;
 
@@ -334,7 +334,7 @@ struct GetMatrixElement<MatrixSection<M, R, C>&,
   >
 >::type>
 {
-   typedef typename GetMatrixElement<typename 
+   typedef typename GetMatrixElement<typename
    reference_to_arg<M>::type>::result_type result_type;
 
    typedef MatrixSection<M, R, C>& first_argument_type;
@@ -343,7 +343,7 @@ struct GetMatrixElement<MatrixSection<M, R, C>&,
 
    result_type operator()(first_argument_type m, size_type i, size_type j) const
    {
-      return get_element(m.base(), 
+      return get_element(m.base(),
                          get_element(m.row_index(), i),
                          get_element(m.col_index(), j));
    }
@@ -366,7 +366,7 @@ struct GetMatrixElement<MatrixSection<M, R, C>,
 
    result_type operator()(first_argument_type m, size_type i, size_type j) const
    {
-      return get_element(m.base(), 
+      return get_element(m.base(),
                          get_element(m.row_index(), i),
                          get_element(m.col_index(), j));
    }
@@ -387,7 +387,7 @@ struct SwapSortOrder<MatrixSection<M, R, C> >
    typedef MatrixSection<SwappedC, R, C> result_type;
    typedef MatrixSection<M, R, C> const& argument_type;
 
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    { return result_type(swap_sort_order(x.base()),x.row_index(), x.col_index()); }
 };
 
@@ -403,7 +403,7 @@ struct SwapSortOrder<MatrixSection<M, R, C>&>
    typedef MatrixSection<SwappedBase, R, C> result_type;
    typedef MatrixSection<M, R, C>& argument_type;
 
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    { return result_type(swap_sort_order(x.base()),x.row_index(), x.col_index()); }
 };
 

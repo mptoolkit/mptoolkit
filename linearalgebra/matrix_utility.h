@@ -179,7 +179,7 @@ void zero_upper_triangular(Mat& M)
    {
       for (unsigned j = i+1; j < M.size2(); ++j)
       {
-	 M(i,j) = zero<typename interface<Mat>::value_type>();
+         M(i,j) = zero<typename interface<Mat>::value_type>();
       }
    }
 }
@@ -191,7 +191,7 @@ void zero_lower_triangular(Mat& M)
    {
       for (unsigned i = j+1; i < M.size1(); ++i)
       {
-	 M(i,j) = zero<typename interface<Mat>::value_type>();
+         M(i,j) = zero<typename interface<Mat>::value_type>();
       }
    }
 }

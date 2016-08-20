@@ -76,8 +76,8 @@ int main(int argc, char** argv)
       double E = First ? 0.0 : solver.Solve(NumIter);
       TruncationInfo States = solver.TruncateLeft(MaxStates, CFactor);
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m 
-		<< ' ' << (-Eta*solver.NormSq()) << '\n';
+                << ") " << E << ' ' << States.m
+                << ' ' << (-Eta*solver.NormSq()) << '\n';
    }
 
    // sweep right
@@ -89,18 +89,18 @@ int main(int argc, char** argv)
       TruncationInfo States = solver.TruncateLeft(MaxStates, CFactor);
 
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m
-		<< ' ' << (-Eta*solver.NormSq()) << '\n';
+                << ") " << E << ' ' << States.m
+                << ' ' << (-Eta*solver.NormSq()) << '\n';
    }
    First = false;
 
 #if 0
    std::cout << "Residual norm at last iteration: "<< solver.ResidualNorm() <<
-	     "\nExact residual norm: " << solver.ExactResidualNorm() << '\n';
-   std::cout << "difference x: " 
-	     << (difference(solver.Wavefunction(), xOld) / norm_2(xOld))
-             << "\ndifference Ax: " 
-	     << (difference(solver.WavefunctionAx(), AxOld) / norm_2(AxOld))
+             "\nExact residual norm: " << solver.ExactResidualNorm() << '\n';
+   std::cout << "difference x: "
+             << (difference(solver.Wavefunction(), xOld) / norm_2(xOld))
+             << "\ndifference Ax: "
+             << (difference(solver.WavefunctionAx(), AxOld) / norm_2(AxOld))
              << '\n';
    xOld = solver.Wavefunction();
    AxOld = solver.WavefunctionAx();
@@ -111,8 +111,8 @@ int main(int argc, char** argv)
       double E = solver.Solve(NumIter);
       TruncationInfo States = solver.TruncateRight(MaxStates, CFactor);
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m
-		<< ' ' << (-Eta*solver.NormSq()) << '\n';
+                << ") " << E << ' ' << States.m
+                << ' ' << (-Eta*solver.NormSq()) << '\n';
    }
 
    // sweep left
@@ -124,16 +124,16 @@ int main(int argc, char** argv)
       TruncationInfo States = solver.TruncateRight(MaxStates, CFactor);
 
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m
-		<< ' ' << (-Eta*solver.NormSq()) << '\n';
+                << ") " << E << ' ' << States.m
+                << ' ' << (-Eta*solver.NormSq()) << '\n';
    }
    double A2 = solver.ExpectationA2();
    std::cout << "Residual norm at last iteration: "<< solver.ResidualNorm() <<
-	     "\nExact residual norm: " << solver.ExactResidualNorm(A2) << '\n';
-   std::cout << "difference x: " 
-	     << (difference(solver.Wavefunction(), xOld) / norm_2(xOld))
-             << "\ndifference Ax: " 
-	     << (difference(solver.WavefunctionAx(), AxOld) / norm_2(AxOld))
+             "\nExact residual norm: " << solver.ExactResidualNorm(A2) << '\n';
+   std::cout << "difference x: "
+             << (difference(solver.Wavefunction(), xOld) / norm_2(xOld))
+             << "\ndifference Ax: "
+             << (difference(solver.WavefunctionAx(), AxOld) / norm_2(AxOld))
              << '\n';
    xOld = solver.Wavefunction();
    AxOld = solver.WavefunctionAx();

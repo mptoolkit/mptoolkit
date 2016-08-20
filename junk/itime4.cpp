@@ -52,7 +52,7 @@ int main(int argc, char** argv)
    MPOperator H4 = prod(H, H3, H.TransformsAs());
 
    MPOperator Taylor = (*System)["I"]
-      + Delta * H 
+      + Delta * H
       + std::pow(Delta, 2) * H2
       + std::pow(Delta, 3) * H3
       + std::pow(Delta, 4) * H4;
@@ -66,8 +66,8 @@ int main(int argc, char** argv)
       P = prod(Taylor, P, P.TransformsAs());
       P.normalize();
       std::cout << std::setw(9) << i+1 << "   "
-		<< std::setw(20) << expectation(P, H, P)
-		<< "   " << std::setw(20) << overlap(*Psi, P) << '\n';
+                << std::setw(20) << expectation(P, H, P)
+                << "   " << std::setw(20) << overlap(*Psi, P) << '\n';
    }
 
    *Psi.mutate() = P;

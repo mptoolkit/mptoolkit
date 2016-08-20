@@ -86,7 +86,7 @@ int main()
    TRACE(typeid_name(C+C*10.0 + transpose(0.5*transpose(C*4.0))));
 
    TRACE(C*13.0);
-   
+
    TRACE(typeid_name(eval_expression(C+C*10.0 + transpose(0.5*transpose(C*4.0)))));
    TRACE(norm_frob(eval_expression(C+C*10.0 + imag(transpose(0.5*transpose(C*4.0))))));
    TRACE(norm_frob(C+C*10.0 + imag(transpose(0.5*transpose(C*4.0)))));

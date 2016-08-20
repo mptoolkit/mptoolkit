@@ -41,7 +41,7 @@ struct OperatorProd_AxBH
    {
       return operator_prod(Left, Psi, herm(Right));
    }
-   
+
    StateComponent Left, Right;
 };
 
@@ -51,7 +51,7 @@ struct OperatorProd_MAxBH
    typedef MatrixOperator value_type;
    typedef MatrixOperator argument_type;
 
-   OperatorProd_MAxBH(SimpleOperator const& M_, 
+   OperatorProd_MAxBH(SimpleOperator const& M_,
                       StateComponent const& Left_,
                       StateComponent const& Right_)
       : M(M_), Left(Left_), Right(Right_) {}
@@ -71,7 +71,7 @@ struct OperatorProd_MAHxB
    typedef MatrixOperator value_type;
    typedef MatrixOperator argument_type;
 
-   OperatorProd_MAHxB(SimpleOperator const& M_, 
+   OperatorProd_MAHxB(SimpleOperator const& M_,
                       StateComponent const& Left_,
                       StateComponent const& Right_)
       : M(M_), Left(Left_), Right(Right_) {}
@@ -100,7 +100,7 @@ struct OperatorProdInner_AxBH
    {
       return operator_prod_inner(Op, Left, Psi, herm(Right));
    }
-   
+
    OperatorComponent Op;
    StateComponent Left, Right;
 };
@@ -120,7 +120,7 @@ struct OperatorProdInner_AxBH_Normal
    {
       return triple_prod(Normalizer, operator_prod_inner(Op, Left, Psi, herm(Right)), herm(Normalizer));
    }
-   
+
    OperatorComponent Op;
    StateComponent Left, Right;
    MatrixOperator Normalizer;
@@ -166,7 +166,7 @@ struct OperatorProdInner_AxBH_Gen
       GmRes(Result, TripleProd_State_AHxB(Normalizer, Normalizer), R, m, max_iter, tol,  LinearAlgebra::Identity<StateComponent>());
       return Result;
    }
-   
+
    OperatorComponent Op;
    StateComponent Left, Right;
    MatrixOperator Normalizer;
@@ -181,7 +181,7 @@ struct InnerProdNonOrtho
 
    InnerProdNonOrtho(MatrixOperator const& Ident_) : Ident(Ident_) {}
 
-   std::complex<double> 
+   std::complex<double>
    operator()(T const& x, T const& y) const
    {
       return inner_prod(x, triple_prod(Ident, y, herm(Ident)));

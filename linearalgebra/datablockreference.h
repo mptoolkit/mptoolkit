@@ -67,31 +67,31 @@ class BlockIndirection : private LocalHeader
 {
    public:
       // compiler-generated copy ctor, copy assignment and dtor are OK
- 
+
       BlockIndirection() : RefCount(1) {}
 
       template <typename U>
       BlockIndirection(int RefCount_, DataBlock<U, BlockHeader> const& Data_) : RefCount(RefCount_), Data(Data_) {}
 
       template <typename U>
-      BlockIndirection(int RefCount_, DataBlock<U, BlockHeader> const& Data_, LocalHeader const& HLocal) 
-	: LocalHeader(HLocal), RefCount(RefCount_), Data(Data_) {}
+      BlockIndirection(int RefCount_, DataBlock<U, BlockHeader> const& Data_, LocalHeader const& HLocal)
+        : LocalHeader(HLocal), RefCount(RefCount_), Data(Data_) {}
 
       BlockIndirection(int RefCount_, size_t Size) : RefCount(RefCount_), Data(Size) {}
 
       BlockIndirection(int RefCount_, size_t Size, T const& Fill) : RefCount(RefCount_), Data(Size, Fill) {}
 
-      BlockIndirection(int RefCount_, size_t Size, BlockHeader const& H, 
-		       LocalHeader const& HLocal = LocalHeader()) 
-	: LocalHeader(HLocal), RefCount(RefCount_), Data(Size, H) {}
+      BlockIndirection(int RefCount_, size_t Size, BlockHeader const& H,
+                       LocalHeader const& HLocal = LocalHeader())
+        : LocalHeader(HLocal), RefCount(RefCount_), Data(Size, H) {}
 
-      BlockIndirection(int RefCount_, BlockHeader const& H, 
-		       LocalHeader const& HLocal = LocalHeader()) 
-	: LocalHeader(HLocal), RefCount(RefCount_), Data(H) {}
+      BlockIndirection(int RefCount_, BlockHeader const& H,
+                       LocalHeader const& HLocal = LocalHeader())
+        : LocalHeader(HLocal), RefCount(RefCount_), Data(H) {}
 
-      BlockIndirection(int RefCount_, size_t Size, T const& Fill, BlockHeader const& H, 
-		       LocalHeader const& HLocal = LocalHeader()) 
-	: LocalHeader(HLocal), RefCount(RefCount_), Data(Size, Fill, H) {}
+      BlockIndirection(int RefCount_, size_t Size, T const& Fill, BlockHeader const& H,
+                       LocalHeader const& HLocal = LocalHeader())
+        : LocalHeader(HLocal), RefCount(RefCount_), Data(Size, Fill, H) {}
 
       DataBlock<T, BlockHeader> const& data() const { return Data; }
       DataBlock<T, BlockHeader>& data() { return Data; }
@@ -133,44 +133,44 @@ class BlockReference
 
       BlockReference() : Block(new Indirector) {}
 
-      explicit BlockReference(size_t Size) 
-	: Block(new Indirector(1, Size)) {}
+      explicit BlockReference(size_t Size)
+        : Block(new Indirector(1, Size)) {}
 
-      explicit BlockReference(size_t Size, T const& Fill) 
-	: Block(new Indirector(1, Size, Fill)) {}
+      explicit BlockReference(size_t Size, T const& Fill)
+        : Block(new Indirector(1, Size, Fill)) {}
 
-      explicit BlockReference(size_t Size, Header const& H, LocalHeader const& HL = LocalHeader()) 
-	: Block(new Indirector(1, Size, H, HL)) {}
+      explicit BlockReference(size_t Size, Header const& H, LocalHeader const& HL = LocalHeader())
+        : Block(new Indirector(1, Size, H, HL)) {}
 
-      explicit BlockReference(Header const& H, LocalHeader const& HL = LocalHeader()) 
-	: Block(new Indirector(1, H, HL)) {}
+      explicit BlockReference(Header const& H, LocalHeader const& HL = LocalHeader())
+        : Block(new Indirector(1, H, HL)) {}
 
-      explicit BlockReference(size_t Size, T const& Fill, Header const& H, LocalHeader const& HL = LocalHeader()) 
-	: Block(new Indirector(1, Size, Fill, H, HL)) {}
+      explicit BlockReference(size_t Size, T const& Fill, Header const& H, LocalHeader const& HL = LocalHeader())
+        : Block(new Indirector(1, Size, Fill, H, HL)) {}
 
       BlockReference(BlockReference const& v) : Block(v.Block)
       {
-	 Block->add_reference();
+         Block->add_reference();
       }
 
       ~BlockReference()
       {
-         // 	 TRACE_DATABLOCK("~BlockReference()")(Block);
-	 Block->sub_reference();
+         //      TRACE_DATABLOCK("~BlockReference()")(Block);
+         Block->sub_reference();
       }
 
       BlockReference& operator=(BlockReference const& v)
       {
-	 v.Block->add_reference();
-	 Block->sub_reference();
-	 Block = v.Block;
-	 return *this;
+         v.Block->add_reference();
+         Block->sub_reference();
+         Block = v.Block;
+         return *this;
       }
 
       // returns value-semantic copies
-      BlockReference copy() const 
+      BlockReference copy() const
         { TRACE_DATABLOCK("BlockReference::copy()")(Block); return BlockReference(1, Block->data(), this->local_header()); }
-  //      BlockReference<T const, Header, LocalHeader> const_copy() const 
+  //      BlockReference<T const, Header, LocalHeader> const_copy() const
   //        { return BlockReference<T const, Header, LocalHeader>(1, Block->data(), this->local_header()); }
 
       T* get() const { return Block->get(); }
@@ -191,8 +191,8 @@ class BlockReference
       void cow() { Block->cow(); }
 
    private:
-      BlockReference(int RefCount, DataBlock<T, Header> const& Data, LocalHeader const& LocalH) 
-	: Block(new Indirector(RefCount, Data, LocalH)) {}
+      BlockReference(int RefCount, DataBlock<T, Header> const& Data, LocalHeader const& LocalH)
+        : Block(new Indirector(RefCount, Data, LocalH)) {}
 
       Indirector* Block;
 
@@ -209,40 +209,40 @@ class BlockReference<T const, Header, LocalHeader>
 
       BlockReference(BlockReference<T const, Header, LocalHeader> const& v) : Block(v.Block)
       {
-	 Block->add_reference();
+         Block->add_reference();
       }
 
       BlockReference(BlockReference<T, Header, LocalHeader> const& v) : Block(v.Block)
       {
-	 Block->add_reference();
+         Block->add_reference();
       }
 
       ~BlockReference()
       {
-	 Block->sub_reference();
+         Block->sub_reference();
       }
 
       BlockReference& operator=(BlockReference<T const, Header> const& v)
       {
-	 v.Block->add_reference();
-	 Block->sub_reference();
-	 Block = v.Block;
-	 return *this;
+         v.Block->add_reference();
+         Block->sub_reference();
+         Block = v.Block;
+         return *this;
       }
 
       BlockReference& operator=(BlockReference<T, Header> const& v)
       {
-	 v.Block->add_reference();
-	 Block->sub_reference();
-	 Block = v.Block;
-	 return *this;
+         v.Block->add_reference();
+         Block->sub_reference();
+         Block = v.Block;
+         return *this;
       }
 
       T const* get() const { return Block->get(); }
 
-      BlockReference<T const, Header> copy() const 
+      BlockReference<T const, Header> copy() const
       { return BlockReference<T const, Header, LocalHeader>(1, Block->data(), this->local_header()); }
-      BlockReference<T const, Header> const_copy() const 
+      BlockReference<T const, Header> const_copy() const
       { return BlockReference<T const, Header>(1, Block->data(), this->local_header()); }
 
       size_t size() const { return Block->size(); }
@@ -256,8 +256,8 @@ class BlockReference<T const, Header, LocalHeader>
       DataBlock<T, Header> const& data() const { return Block->data(); }
 
    private:
-      BlockReference(int RefCount, DataBlock<T, Header> const& Data) 
-	: Block(new Private::BlockIndirection<T, Header>(RefCount, Data)) {}
+      BlockReference(int RefCount, DataBlock<T, Header> const& Data)
+        : Block(new Private::BlockIndirection<T, Header>(RefCount, Data)) {}
 
       Private::BlockIndirection<T, Header, LocalHeader>* Block;
 

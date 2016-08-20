@@ -94,7 +94,7 @@ Lattice::Lattice(SymmetryList const& sl, SiteBlock const& s, SiteBlock const& t,
    Data_.push_back(CoerceSL(sl, u));
 }
 
-Lattice::Lattice(SymmetryList const& sl, SiteBlock const& s, SiteBlock const& t, 
+Lattice::Lattice(SymmetryList const& sl, SiteBlock const& s, SiteBlock const& t,
                  SiteBlock const& u, SiteBlock const& v)
    : Data_(CoerceSL(sl, s)), Coordinates_(4), CoordinatesFixed_(false)
 {
@@ -104,7 +104,7 @@ Lattice::Lattice(SymmetryList const& sl, SiteBlock const& s, SiteBlock const& t,
 }
 
 Lattice::Lattice(int RepeatCount, Lattice const& l)
-   : Data_(RepeatCount, l.data()), 
+   : Data_(RepeatCount, l.data()),
      CoordinatesFixed_(false)
 {
    Coordinates_.reserve(l.Coordinates_.size() * RepeatCount);
@@ -114,7 +114,7 @@ Lattice::Lattice(int RepeatCount, Lattice const& l)
 
 Lattice::Lattice(Lattice const& x1, Lattice const& x2)
    : Data_(x1.Data_),
-     Coordinates_(x1.Coordinates_), 
+     Coordinates_(x1.Coordinates_),
      CoordinatesFixed_(false)
 {
    Data_.push_back(x2.Data_);
@@ -159,14 +159,14 @@ Lattice::Lattice(SiteBlock const& s, std::string const& Coord)
 {
 }
 
-std::string const& 
+std::string const&
 Lattice::coordinate_at_site(int Site) const
 {
    CHECK(CoordinatesFixed_);
    return Coordinates_[Site-1];
 }
 
-SiteBlock const& 
+SiteBlock const&
 Lattice::operator[](int n) const
 {
    const_iterator I = this->begin();
@@ -174,7 +174,7 @@ Lattice::operator[](int n) const
    return *I;
 }
 
-int 
+int
 Lattice::site_at_coordinate(std::string const& s) const
 {
    CHECK_EQUAL(CoordinatesFixed_, true)("The lattice coordinates are not fixed!");
@@ -184,7 +184,7 @@ Lattice::site_at_coordinate(std::string const& s) const
    return I->second;
 }
 
-void 
+void
 Lattice::fix_coordinates()
 {
    //   CHECK(!CoordinatesFixed_);
@@ -200,7 +200,7 @@ Lattice::fix_coordinates()
    this->Fixate();
 }
 
-void 
+void
 Lattice::fix_coordinates_starting_from(int n)
 {
    //   CHECK(!CoordinatesFixed_);
@@ -216,7 +216,7 @@ Lattice::fix_coordinates_starting_from(int n)
    this->Fixate();
 }
 
-void 
+void
 Lattice::fix_coordinates_reverse()
 {
    //   CHECK(!CoordinatesFixed_);
@@ -234,7 +234,7 @@ Lattice::fix_coordinates_reverse()
    this->Fixate();
 }
 
-void 
+void
 Lattice::fix_coordinates_prepend()
 {
    //   CHECK(!CoordinatesFixed_);
@@ -251,7 +251,7 @@ Lattice::fix_coordinates_prepend()
    this->Fixate();
 }
 
-void 
+void
 Lattice::fix_coordinates_prepend_starting_from(int n)
 {
    //   CHECK(!CoordinatesFixed_);
@@ -358,7 +358,7 @@ Lattice join(Lattice const& x, Lattice const& y, Lattice const& z, Lattice const
 }
 
 Lattice join(Lattice const& x, Lattice const& y, Lattice const& z, Lattice const& w,
-	     Lattice const& v)
+             Lattice const& v)
 {
    return join(Lattice(x,y,z,w), v);
 }
@@ -402,9 +402,9 @@ struct DoCreateTensorProductOperator : boost::static_visitor<MPOpCompressed>
    BasisList b;
 };
 
-MPOpCompressed 
-CreateTensorProductOpCompressed(Lattice::data_type const& L, 
-                                std::string const& Operator, 
+MPOpCompressed
+CreateTensorProductOpCompressed(Lattice::data_type const& L,
+                                std::string const& Operator,
                                 BasisList const& b)
 {
    return L.apply_visitor(DoCreateTensorProductOperator(Operator, b));

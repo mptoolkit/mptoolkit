@@ -121,19 +121,19 @@ void StatesList::AppendToken(char const* s)
       FinalStates =  std::strtol(s, &p, 10);
       if (p == s)
       {
-	 PANIC("Did not find a final number in N..MxS notation in the StatesList")(s);
+         PANIC("Did not find a final number in N..MxS notation in the StatesList")(s);
       }
       // and now we must get the "x"S part
       s = p;
       if (s[0] != 'x')
       {
-	 PANIC("N..M must be followed by x<number> in StatesList");
+         PANIC("N..M must be followed by x<number> in StatesList");
       }
       ++s;
       NumSweeps = std::strtol(s, &p, 10);
       if (p == s)
       {
-	 PANIC("N..M must be followed by x<number> in StatesList");
+         PANIC("N..M must be followed by x<number> in StatesList");
       }
       s = p;
    }
@@ -145,19 +145,19 @@ void StatesList::AppendToken(char const* s)
       Increment = std::strtol(s, &p, 10);
       if (p == s)
       {
-	 PANIC("Did not find an increment in N+M notation in the StatesList")(s);
+         PANIC("Did not find an increment in N+M notation in the StatesList")(s);
       }
       // and now we must get the "x"S part
       s = p;
       if (s[0] != 'x')
       {
-	 PANIC("N+M must be followed by x<number> in StatesList");
+         PANIC("N+M must be followed by x<number> in StatesList");
       }
       ++s;
       NumSweeps = std::strtol(s, &p, 10);
       if (p == s)
       {
-	 PANIC("N+M must be followed by x<number> in StatesList");
+         PANIC("N+M must be followed by x<number> in StatesList");
       }
       s = p;
    }
@@ -168,7 +168,7 @@ void StatesList::AppendToken(char const* s)
       NumSweeps = std::strtol(s, &p, 10);
       if (p == s)
       {
-	 PANIC("'x' must be followed by <number> in StatesList");
+         PANIC("'x' must be followed by <number> in StatesList");
       }
       s = p;
    }
@@ -177,15 +177,15 @@ void StatesList::AppendToken(char const* s)
       // Parse any flags - these are only allowed if we have a single sweep
       while (s[0] != '\0')
       {
-	 switch (s[0])
-	 {
-	 case 'w' : I.Wait = true; I.Test = true; break;
-	 case 't' : I.Test = true;                break;
-	 case 'v' : I.Variance = true;            break;
-	 case 's' : I.Save = true;                break;
-	 default  : PANIC("Unknown flag in StatesList")(s);
-	 }
-	 ++s;
+         switch (s[0])
+         {
+         case 'w' : I.Wait = true; I.Test = true; break;
+         case 't' : I.Test = true;                break;
+         case 'v' : I.Variance = true;            break;
+         case 's' : I.Save = true;                break;
+         default  : PANIC("Unknown flag in StatesList")(s);
+         }
+         ++s;
       }
    }
 
@@ -200,11 +200,11 @@ void StatesList::AppendToken(char const* s)
    {
       if (FinalStates != 0)
       {
-	 I.NumStates = InitialStates + int(i*double((FinalStates-InitialStates)/double(NumSweeps-1)));
+         I.NumStates = InitialStates + int(i*double((FinalStates-InitialStates)/double(NumSweeps-1)));
       }
       else if (Increment != 0)
       {
-	 I.NumStates = InitialStates + i*Increment;
+         I.NumStates = InitialStates + i*Increment;
       }
       Info.push_back(I);
    }
@@ -216,15 +216,15 @@ void StatesList::Append(char const* s)
    while (End[0] != '\0')
    {
       while (End[0] != '\0' && !isspace(*End) && End[0] != ',')
-	 ++End;
+         ++End;
 
       // did we find a token?
       if (End != s)
-	 this->AppendToken(std::string(s,End).c_str());
+         this->AppendToken(std::string(s,End).c_str());
 
       // skip the trailing whitespace
       while (isspace(*End) || End[0] == ',')
-	 ++End;
+         ++End;
 
       // next token
       s = End;

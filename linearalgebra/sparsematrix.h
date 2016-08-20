@@ -37,7 +37,7 @@ class SparseMatrix<T, RowMajor, InnerType, OuterType>
    : public CompressedMatrixBase<OuterType, SparseMatrix<T, RowMajor, InnerType, OuterType> >
 {
    public:
-      typedef CompressedMatrixBase<OuterType, 
+      typedef CompressedMatrixBase<OuterType,
                                    SparseMatrix<T, RowMajor, InnerType, OuterType> > base_type;
 
       typedef typename base_type::value_type value_type;
@@ -51,10 +51,10 @@ class SparseMatrix<T, RowMajor, InnerType, OuterType>
       SparseMatrix() : InnerSize_(0), Data_() {}
 
       SparseMatrix(size_type Rows, size_type Cols)
-	 : InnerSize_(Cols), Data_(Rows, outer_value_type(Cols)) {}
+         : InnerSize_(Cols), Data_(Rows, outer_value_type(Cols)) {}
 
-      SparseMatrix(SparseMatrix const& x) 
-	 : InnerSize_(x.inner_size()), Data_(x.Data_) {}
+      SparseMatrix(SparseMatrix const& x)
+         : InnerSize_(x.inner_size()), Data_(x.Data_) {}
 
       template <typename U>
       SparseMatrix(U const& x, typename boost::enable_if<is_matrix<U> >::type* dummy = 0);
@@ -71,14 +71,14 @@ class SparseMatrix<T, RowMajor, InnerType, OuterType>
       typename MatrixBracket<SparseMatrix, Arg1, Arg2>::result_type
       operator()(Arg1 const& x, Arg2 const& y) const
       {
-	 return MatrixBracket<SparseMatrix, Arg1, Arg2>()(*this, x,y);
+         return MatrixBracket<SparseMatrix, Arg1, Arg2>()(*this, x,y);
       }
 
       template <typename Arg1, typename Arg2>
       typename MatrixBracket<SparseMatrix&, Arg1, Arg2>::result_type
       operator()(Arg1 const& x, Arg2 const& y)
       {
-	 return MatrixBracket<SparseMatrix&, Arg1, Arg2>()(*this, x,y);
+         return MatrixBracket<SparseMatrix&, Arg1, Arg2>()(*this, x,y);
       }
 #endif
 
@@ -111,7 +111,7 @@ class SparseMatrix<T, ColMajor, InnerType, OuterType>
    : public CompressedMatrixBase<OuterType, SparseMatrix<T, ColMajor, InnerType, OuterType> >
 {
    public:
-      typedef CompressedMatrixBase<OuterType, 
+      typedef CompressedMatrixBase<OuterType,
                                    SparseMatrix<T, ColMajor, InnerType, OuterType> > base_type;
 
       typedef typename base_type::value_type value_type;
@@ -125,10 +125,10 @@ class SparseMatrix<T, ColMajor, InnerType, OuterType>
       SparseMatrix() : InnerSize_(0), Data_() {}
 
       SparseMatrix(size_type Rows, size_type Cols)
-	 : InnerSize_(Rows), Data_(Cols, outer_value_type(Rows)) {}
+         : InnerSize_(Rows), Data_(Cols, outer_value_type(Rows)) {}
 
-      SparseMatrix(SparseMatrix const& x) 
-	 : InnerSize_(x.inner_size()), Data_(x.Data_) {}
+      SparseMatrix(SparseMatrix const& x)
+         : InnerSize_(x.inner_size()), Data_(x.Data_) {}
 
       template <typename U>
       SparseMatrix(U const& x, typename boost::enable_if<is_matrix<U> >::type* dummy = 0);
@@ -145,14 +145,14 @@ class SparseMatrix<T, ColMajor, InnerType, OuterType>
       typename MatrixBracket<SparseMatrix, Arg1, Arg2>::result_type
       operator()(Arg1 const& x, Arg2 const& y) const
       {
-	 return MatrixBracket<SparseMatrix, Arg1, Arg2>()(*this, x,y);
+         return MatrixBracket<SparseMatrix, Arg1, Arg2>()(*this, x,y);
       }
 
       template <typename Arg1, typename Arg2>
       typename MatrixBracket<SparseMatrix&, Arg1, Arg2>::result_type
       operator()(Arg1 const& x, Arg2 const& y)
       {
-	 return MatrixBracket<SparseMatrix&, Arg1, Arg2>()(*this, x,y);
+         return MatrixBracket<SparseMatrix&, Arg1, Arg2>()(*this, x,y);
       }
 #endif
 
@@ -262,11 +262,11 @@ struct MatrixIterateAt<SparseMatrix<T, RowMajor, InnerType, OuterType> >
    typedef size_type second_argument_type;
    typedef size_type third_argument_type;
 
-   result_type operator()(first_argument_type m, 
-                          second_argument_type i, 
+   result_type operator()(first_argument_type m,
+                          second_argument_type i,
                           third_argument_type j) const
    {
-      typename const_iterator<SparseMatrix<T, RowMajor, InnerType, OuterType> >::type 
+      typename const_iterator<SparseMatrix<T, RowMajor, InnerType, OuterType> >::type
          I = iterate(m);
       I += i;
       return result_type(iterate_at(*I, j), i);
@@ -282,11 +282,11 @@ struct MatrixIterateAt<SparseMatrix<T, RowMajor, InnerType, OuterType>&>
    typedef size_type second_argument_type;
    typedef size_type third_argument_type;
 
-   result_type operator()(first_argument_type m, 
-                          second_argument_type i, 
+   result_type operator()(first_argument_type m,
+                          second_argument_type i,
                           third_argument_type j) const
    {
-      typename iterator<SparseMatrix<T, RowMajor, InnerType, OuterType> >::type 
+      typename iterator<SparseMatrix<T, RowMajor, InnerType, OuterType> >::type
          I = iterate(m);
       I += i;
       return result_type(iterate_at(*I, j), i);
@@ -302,11 +302,11 @@ struct MatrixIterateAt<SparseMatrix<T, ColMajor, InnerType, OuterType> >
    typedef size_type second_argument_type;
    typedef size_type third_argument_type;
 
-   result_type operator()(first_argument_type m, 
-                          second_argument_type i, 
+   result_type operator()(first_argument_type m,
+                          second_argument_type i,
                           third_argument_type j) const
    {
-      typename const_iterator<SparseMatrix<T, ColMajor, InnerType, OuterType> >::type 
+      typename const_iterator<SparseMatrix<T, ColMajor, InnerType, OuterType> >::type
          I = iterate(m);
       I += j;
       return result_type(iterate_at(*I, i), j);
@@ -322,11 +322,11 @@ struct MatrixIterateAt<SparseMatrix<T, ColMajor, InnerType, OuterType>&>
    typedef size_type second_argument_type;
    typedef size_type third_argument_type;
 
-   result_type operator()(first_argument_type m, 
-                          second_argument_type i, 
+   result_type operator()(first_argument_type m,
+                          second_argument_type i,
                           third_argument_type j) const
    {
-      typename iterator<SparseMatrix<T, ColMajor, InnerType, OuterType> >::type 
+      typename iterator<SparseMatrix<T, ColMajor, InnerType, OuterType> >::type
          I = iterate(m);
       I += j;
       return result_type(iterate_at(*I, i), j);
@@ -348,8 +348,8 @@ struct Size2<SparseMatrix<T, RowMajor, InnerType, OuterType> >
 {
    typedef size_type result_type;
    typedef SparseMatrix<T, RowMajor, InnerType, OuterType> const& argument_type;
-   result_type operator()(argument_type x) const 
-   { 
+   result_type operator()(argument_type x) const
+   {
       return x.inner_size();
    }
 };
@@ -359,8 +359,8 @@ struct Size1<SparseMatrix<T, ColMajor, InnerType, OuterType> >
 {
    typedef size_type result_type;
    typedef SparseMatrix<T, ColMajor, InnerType, OuterType> const& argument_type;
-   result_type operator()(argument_type x) const 
-   { 
+   result_type operator()(argument_type x) const
+   {
       return x.inner_size();
    }
 };
@@ -384,7 +384,7 @@ struct NNZ<SparseMatrix<T, Orient, InnerType, OuterType> >
    result_type operator()(argument_type m) const
    {
       size_type n = 0;
-      typename const_iterator<SparseMatrix<T, Orient, InnerType, OuterType> >::type 
+      typename const_iterator<SparseMatrix<T, Orient, InnerType, OuterType> >::type
          I = iterate(m);
       while (I)
       {
@@ -405,7 +405,7 @@ struct IsZero<SparseMatrix<T, Orient, InnerType, OuterType> >
 
    result_type operator()(argument_type m) const
    {
-      typename const_iterator<SparseMatrix<T, Orient, InnerType, OuterType> >::type 
+      typename const_iterator<SparseMatrix<T, Orient, InnerType, OuterType> >::type
          I = iterate(m);
       while (I)
       {
@@ -453,24 +453,24 @@ struct VectorView<SparseMatrix<T, Orient, InnerType, OuterType>&>
 // set_element
 
 template <typename T, typename InnerType, typename OuterType, typename Value>
-struct SetMatrixElement<SparseMatrix<T, RowMajor, InnerType, OuterType>&, Value> 
+struct SetMatrixElement<SparseMatrix<T, RowMajor, InnerType, OuterType>&, Value>
 {
    typedef void result_type;
    typedef SparseMatrix<T, RowMajor, InnerType, OuterType>& first_argument_type;
-   void operator()(SparseMatrix<T, RowMajor, InnerType, OuterType>& m, 
-		   size_type i, size_type j, Value const& x)
+   void operator()(SparseMatrix<T, RowMajor, InnerType, OuterType>& m,
+                   size_type i, size_type j, Value const& x)
    {
       set_element(get_element(m.vec(),i), j, x);
    }
 };
 
 template <typename T, typename InnerType, typename OuterType, typename Value>
-struct SetMatrixElement<SparseMatrix<T, ColMajor, InnerType, OuterType>&, Value> 
+struct SetMatrixElement<SparseMatrix<T, ColMajor, InnerType, OuterType>&, Value>
 {
    typedef void result_type;
    typedef SparseMatrix<T, RowMajor, InnerType, OuterType>& first_argument_type;
-   void operator()(SparseMatrix<T, ColMajor, InnerType, OuterType>& m, 
-		   size_type i, size_type j, Value const& x)
+   void operator()(SparseMatrix<T, ColMajor, InnerType, OuterType>& m,
+                   size_type i, size_type j, Value const& x)
    {
       set_element(get_element(m.vec(),j), i, x);
    }
@@ -520,7 +520,7 @@ struct GetMatrixElement_Sparse<
    >::type
 >
 {
-   typedef typename GetVectorElement<typename boost::add_reference<OuterType>::type>::result_type 
+   typedef typename GetVectorElement<typename boost::add_reference<OuterType>::type>::result_type
    outer_result_type;
    typedef typename GetVectorElement<outer_result_type>::result_type result_type;
    typedef SparseMatrix<T, RowMajor, InnerType, OuterType>& first_argument_type;
@@ -572,7 +572,7 @@ struct GetMatrixElement_Sparse<
    >::type
 >
 {
-   typedef typename GetVectorElement<typename boost::add_reference<OuterType>::type>::result_type 
+   typedef typename GetVectorElement<typename boost::add_reference<OuterType>::type>::result_type
    outer_result_type;
    typedef typename GetVectorElement<outer_result_type>::result_type result_type;
    typedef SparseMatrix<T, ColMajor, InnerType, OuterType>& first_argument_type;
@@ -586,34 +586,34 @@ struct GetMatrixElement_Sparse<
 };
 
 template <typename T, typename InnerType, typename OuterType, typename Orient>
-struct GetMatrixElement<SparseMatrix<T, Orient, InnerType, OuterType> > 
+struct GetMatrixElement<SparseMatrix<T, Orient, InnerType, OuterType> >
    : GetMatrixElement_Sparse<SparseMatrix<T, Orient, InnerType, OuterType> > {};
 
 template <typename T, typename InnerType, typename OuterType, typename Orient>
-struct GetMatrixElement<SparseMatrix<T, Orient, InnerType, OuterType>&> 
+struct GetMatrixElement<SparseMatrix<T, Orient, InnerType, OuterType>&>
    : GetMatrixElement_Sparse<SparseMatrix<T, Orient, InnerType, OuterType>&> {};
 
 // add_element
 
 template <typename T, typename InnerType, typename OuterType, typename Value>
-struct AddMatrixElement<SparseMatrix<T, RowMajor, InnerType, OuterType>&, Value> 
+struct AddMatrixElement<SparseMatrix<T, RowMajor, InnerType, OuterType>&, Value>
 {
    typedef void result_type;
    typedef SparseMatrix<T, RowMajor, InnerType, OuterType>& first_argument_type;
-   void operator()(SparseMatrix<T, RowMajor, InnerType, OuterType>& m, 
-		   size_type i, size_type j, Value const& x) const
+   void operator()(SparseMatrix<T, RowMajor, InnerType, OuterType>& m,
+                   size_type i, size_type j, Value const& x) const
    {
       add_element(get_element(m.vec(),i), j, x);
    }
 };
 
 template <typename T, typename InnerType, typename OuterType, typename Value>
-struct AddMatrixElement<SparseMatrix<T, ColMajor, InnerType, OuterType>&, Value> 
+struct AddMatrixElement<SparseMatrix<T, ColMajor, InnerType, OuterType>&, Value>
 {
    typedef void result_type;
    typedef SparseMatrix<T, RowMajor, InnerType, OuterType>& first_argument_type;
-   void operator()(SparseMatrix<T, ColMajor, InnerType, OuterType>& m, 
-		   size_type i, size_type j, Value const& x) const
+   void operator()(SparseMatrix<T, ColMajor, InnerType, OuterType>& m,
+                   size_type i, size_type j, Value const& x) const
    {
       add_element(get_element(m.vec(),j), i, x);
    }
@@ -621,8 +621,8 @@ struct AddMatrixElement<SparseMatrix<T, ColMajor, InnerType, OuterType>&, Value>
 
 template <typename T, typename InnerType, typename OuterType, typename Value, typename Float>
 void add_element_cull(SparseMatrix<T, RowMajor, InnerType, OuterType>& m,
-		      size_type i, size_type j, Value const& x,
-		      Float const& Tol)
+                      size_type i, size_type j, Value const& x,
+                      Float const& Tol)
 {
    add_element_cull(get_element(m.vec(),i), j, x, Tol);
 }
@@ -630,24 +630,24 @@ void add_element_cull(SparseMatrix<T, RowMajor, InnerType, OuterType>& m,
 // subtract_element
 
 template <typename T, typename InnerType, typename OuterType, typename Value>
-struct SubtractMatrixElement<SparseMatrix<T, RowMajor, InnerType, OuterType>&, Value> 
+struct SubtractMatrixElement<SparseMatrix<T, RowMajor, InnerType, OuterType>&, Value>
 {
    typedef void result_type;
    typedef SparseMatrix<T, RowMajor, InnerType, OuterType>& first_argument_type;
-   void operator()(SparseMatrix<T, ColMajor, InnerType, OuterType>& m, 
-		   size_type i, size_type j, Value const& x) const
+   void operator()(SparseMatrix<T, ColMajor, InnerType, OuterType>& m,
+                   size_type i, size_type j, Value const& x) const
    {
       subtract_element(get_element(m.vec(),i), j, x);
    }
 };
 
 template <typename T, typename InnerType, typename OuterType, typename Value>
-struct SubtractMatrixElement<SparseMatrix<T, ColMajor, InnerType, OuterType>&, Value> 
+struct SubtractMatrixElement<SparseMatrix<T, ColMajor, InnerType, OuterType>&, Value>
 {
    typedef void result_type;
    typedef SparseMatrix<T, RowMajor, InnerType, OuterType>& first_argument_type;
-   void operator()(SparseMatrix<T, ColMajor, InnerType, OuterType>& m, 
-		   size_type i, size_type j, Value const& x) const
+   void operator()(SparseMatrix<T, ColMajor, InnerType, OuterType>& m,
+                   size_type i, size_type j, Value const& x) const
    {
       subtract_element(get_element(m.vec(),j), i, x);
    }
@@ -655,8 +655,8 @@ struct SubtractMatrixElement<SparseMatrix<T, ColMajor, InnerType, OuterType>&, V
 
 template <typename T, typename InnerType, typename OuterType, typename Value, typename Float>
 void subtract_element_cull(SparseMatrix<T, RowMajor, InnerType, OuterType>& m,
-			   size_type i, size_type j, Value const& x,
-			   Float const& Tol)
+                           size_type i, size_type j, Value const& x,
+                           Float const& Tol)
 {
    subtract_element_cull(get_element(m.vec(),j), i, x, Tol);
 }
@@ -664,24 +664,24 @@ void subtract_element_cull(SparseMatrix<T, RowMajor, InnerType, OuterType>& m,
 // zero_element
 
 template <typename T, typename InnerType, typename OuterType>
-struct ZeroMatrixElement<SparseMatrix<T, RowMajor, InnerType, OuterType>&> 
+struct ZeroMatrixElement<SparseMatrix<T, RowMajor, InnerType, OuterType>&>
 {
    typedef void result_type;
    typedef SparseMatrix<T, RowMajor, InnerType, OuterType>& first_argument_type;
-   void operator()(SparseMatrix<T, RowMajor, InnerType, OuterType>& m, 
-		   size_type i, size_type j) const
+   void operator()(SparseMatrix<T, RowMajor, InnerType, OuterType>& m,
+                   size_type i, size_type j) const
    {
       zero_element(get_element(m.vec(),i), j);
    }
 };
 
 template <typename T, typename InnerType, typename OuterType>
-struct ZeroMatrixElement<SparseMatrix<T, ColMajor, InnerType, OuterType>&> 
+struct ZeroMatrixElement<SparseMatrix<T, ColMajor, InnerType, OuterType>&>
 {
    typedef void result_type;
    typedef SparseMatrix<T, ColMajor, InnerType, OuterType>& first_argument_type;
-   void operator()(SparseMatrix<T, ColMajor, InnerType, OuterType>& m, 
-		   size_type i, size_type j) const
+   void operator()(SparseMatrix<T, ColMajor, InnerType, OuterType>& m,
+                   size_type i, size_type j) const
    {
       zero_element(get_element(m.vec(),j), i);
    }
@@ -711,13 +711,13 @@ struct MatrixDirectProduct<SparseMatrix<T, Orient>, SparseMatrix<U, Orient>, Nes
       {
          for (x_inner_iterator J = iterate(I); J; ++J)
          {
-            
+
             for (x_iterator K = iterate(y); K; ++K)
             {
                for (x_inner_iterator L = iterate(K); L; ++L)
                {
 
-                  set_element(Result, 
+                  set_element(Result,
                               J.index1() * ys1 + L.index1(),
                               J.index2() * ys2 + L.index2(),
                               f(*J, *L));

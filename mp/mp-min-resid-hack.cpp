@@ -106,7 +106,7 @@ int main(int argc, char** argv)
    Matrix<complex> H2 = ReadHermitianMatrixArgh(H2FileStr);
 
    // The lanczos vector is (1,0,0,...) in this basis.
-   // Actually, better make it a matrix 
+   // Actually, better make it a matrix
    Matrix<complex> Lv(size1(H), 1, 0.0); Lv(0,0) = 1.0;
 
    // when we calculate the residual, use the proper matrix for H^2,
@@ -166,7 +166,7 @@ int main(int argc, char** argv)
       Matrix<complex> Cv = LinearSolveHPD(LHS, RHS_vec);
 
       // residual norm
-      double r2 = inner_prod(Cv, Matrix<complex>((LHS-H2+RealH2)*Cv)).real() 
+      double r2 = inner_prod(Cv, Matrix<complex>((LHS-H2+RealH2)*Cv)).real()
          + inner_prod(Lv, Matrix<complex>(Ident*Lv)).real()
          - 2.0*inner_prod(Cv, Matrix<complex>(RHS*Lv)).real();
 
@@ -174,8 +174,8 @@ int main(int argc, char** argv)
       complex G = conj(inner_prod(Cv, Matrix<complex>(Ident*Lv)));
 
       std::cout << std::setw(20) << w
-                << "    " << std::setw(20) << G.real() 
-                << "    " << std::setw(20) << G.imag() 
+                << "    " << std::setw(20) << G.real()
+                << "    " << std::setw(20) << G.imag()
                 << "    " << std::setw(20) << r2
                 << std::endl;
    }

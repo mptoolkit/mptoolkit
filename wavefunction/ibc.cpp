@@ -82,18 +82,18 @@ inplace_conj(WavefunctionSectionLeft& Psi)
 }
 
 WavefunctionSectionLeft
-WavefunctionSectionLeft::ConstructFromLeftOrthogonal(LinearWavefunction const& Psi, 
-						     MatrixOperator const& Lambda,
-						     int Verbose)
+WavefunctionSectionLeft::ConstructFromLeftOrthogonal(LinearWavefunction const& Psi,
+                                                     MatrixOperator const& Lambda,
+                                                     int Verbose)
 {
    return ConstructFromLeftOrthogonal(std::move(LinearWavefunction(Psi)), Lambda, Verbose);
 }
 
 // version of ConstructFromLeftOrthogonal with move semantics on Psi
 WavefunctionSectionLeft
-WavefunctionSectionLeft::ConstructFromLeftOrthogonal(LinearWavefunction&& Psi, 
-						     MatrixOperator const& Lambda,
-						     int Verbose)
+WavefunctionSectionLeft::ConstructFromLeftOrthogonal(LinearWavefunction&& Psi,
+                                                     MatrixOperator const& Lambda,
+                                                     int Verbose)
 {
    WavefunctionSectionLeft Result;
    if (Verbose > 0)
@@ -123,7 +123,7 @@ WavefunctionSectionLeft::ConstructFromLeftOrthogonal(LinearWavefunction&& Psi,
    while (!Psi.empty())
    {
       if (Verbose > 1)
-	 std::cout << "orthogonalizing site " << n << std::endl;
+         std::cout << "orthogonalizing site " << n << std::endl;
       StateComponent A = prod(M, Psi.get_front());
       Psi.pop_front();
       std::tie(D, Vh) = OrthogonalizeBasis2(A);
@@ -183,22 +183,22 @@ IBCWavefunction::IBCWavefunction()
 }
 
 IBCWavefunction::IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
-				 WavefunctionSectionLeft const& Window_,
-				 InfiniteWavefunctionRight const& Right_,
-				 int Offset)
+                                 WavefunctionSectionLeft const& Window_,
+                                 InfiniteWavefunctionRight const& Right_,
+                                 int Offset)
    : WindowLeftSites(0), WindowRightSites(0), WindowOffset(Offset),
-     Left(Left_), Window(Window_), Right(Right_) 
+     Left(Left_), Window(Window_), Right(Right_)
 {
 }
 
 IBCWavefunction::IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
-				 WavefunctionSectionLeft const& Window_,
-				 InfiniteWavefunctionRight const& Right_,
-				 int Offset,
-				 int WindowLeft,
-				 int WindowRight)
+                                 WavefunctionSectionLeft const& Window_,
+                                 InfiniteWavefunctionRight const& Right_,
+                                 int Offset,
+                                 int WindowLeft,
+                                 int WindowRight)
    : WindowLeftSites(WindowLeft), WindowRightSites(WindowRight), WindowOffset(Offset),
-     Left(Left_), Window(Window_), Right(Right_) 
+     Left(Left_), Window(Window_), Right(Right_)
 {
 }
 

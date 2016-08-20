@@ -136,34 +136,34 @@ int main(int argc, char** argv)
           "Timestep for 2nd order S-T evolution")
          ("numsteps,n", prog_opt::value(&NumTimesteps),
           "Number of timesteps to perform")
-	 ("spin", prog_opt::value(&Spin),
-	  FormatDefault("spin (for xxx,xxz,xyz hamiltonians)", Spin).c_str())
-	 ("J", prog_opt::value(&J),
-	  FormatDefault("nearest-neighbor exchange J (for xxx,itf, etc)", J).c_str())
-	 ("J2", prog_opt::value(&J2),
-	  FormatDefault("next-nearest-neighbor exchange J2 (for xxx)", J2).c_str())
-	 ("D", prog_opt::value(&D),
-	  FormatDefault("single-ion anisotropy (for xxx-u1 and xxx)", D).c_str())
-	 ("U", prog_opt::value(&U),
-	  FormatDefault("coulomb repulsion", U).c_str())
-	 ("B", prog_opt::value(&B),
-	  FormatDefault("magnetic field (for xxx)", B).c_str())
-	 ("Jz", prog_opt::value(&Jz),
-	  FormatDefault("Jz coupling (for Kondo)", Jz).c_str())
-	 ("nlegs", prog_opt::value(&NLegs),
-	  FormatDefault("Number of legs (for triangular ladder)", NLegs).c_str())
-	 ("tprime", prog_opt::value(&tprime),
-	  FormatDefault("next-nearest-neighbor hopping t' (for tj-zigzag, sf-zigzag)", tprime).c_str())
-	 ("delta", prog_opt::value(&delta),
-	  FormatDefault("Zigzag ladder potential imbalance (for tj-zigzag, sf-zigzag)", delta).c_str())
-	 ("theta", prog_opt::value(&Theta),
-	  FormatDefault("theta (for biquadratic xxx)", Theta).c_str())
-	 ("Beta", prog_opt::value(&Beta),
-	  FormatDefault("Beta (for biquadratic xxx)", Beta).c_str())
-	 ("lambda", prog_opt::value(&Lambda),
-	  FormatDefault("transverse field strength (for itf hamiltonian)", Lambda).c_str())
-	  ;
-      
+         ("spin", prog_opt::value(&Spin),
+          FormatDefault("spin (for xxx,xxz,xyz hamiltonians)", Spin).c_str())
+         ("J", prog_opt::value(&J),
+          FormatDefault("nearest-neighbor exchange J (for xxx,itf, etc)", J).c_str())
+         ("J2", prog_opt::value(&J2),
+          FormatDefault("next-nearest-neighbor exchange J2 (for xxx)", J2).c_str())
+         ("D", prog_opt::value(&D),
+          FormatDefault("single-ion anisotropy (for xxx-u1 and xxx)", D).c_str())
+         ("U", prog_opt::value(&U),
+          FormatDefault("coulomb repulsion", U).c_str())
+         ("B", prog_opt::value(&B),
+          FormatDefault("magnetic field (for xxx)", B).c_str())
+         ("Jz", prog_opt::value(&Jz),
+          FormatDefault("Jz coupling (for Kondo)", Jz).c_str())
+         ("nlegs", prog_opt::value(&NLegs),
+          FormatDefault("Number of legs (for triangular ladder)", NLegs).c_str())
+         ("tprime", prog_opt::value(&tprime),
+          FormatDefault("next-nearest-neighbor hopping t' (for tj-zigzag, sf-zigzag)", tprime).c_str())
+         ("delta", prog_opt::value(&delta),
+          FormatDefault("Zigzag ladder potential imbalance (for tj-zigzag, sf-zigzag)", delta).c_str())
+         ("theta", prog_opt::value(&Theta),
+          FormatDefault("theta (for biquadratic xxx)", Theta).c_str())
+         ("Beta", prog_opt::value(&Beta),
+          FormatDefault("Beta (for biquadratic xxx)", Beta).c_str())
+         ("lambda", prog_opt::value(&Lambda),
+          FormatDefault("transverse field strength (for itf hamiltonian)", Lambda).c_str())
+          ;
+
 
       prog_opt::options_description opt;
       opt.add(desc);
@@ -190,8 +190,8 @@ int main(int argc, char** argv)
       BasisList B1, B2;
       if (HamStr == "itf")
       {
-	 std::cout << "Hamiltonian is transverse-field Ising, J=" << J << ", Lambda=" << Lambda << "\n";
-	 SiteBlock Site = CreateSpinSite(0.5);
+         std::cout << "Hamiltonian is transverse-field Ising, J=" << J << ", Lambda=" << Lambda << "\n";
+         SiteBlock Site = CreateSpinSite(0.5);
          H = J * 4.0 * tensor_prod(Site["Sz"], Site["Sz"]) + Lambda * (tensor_prod(Site["I"], Site["Sx"]) + tensor_prod(Site["Sx"], Site["I"]));
          B1 = Site.Basis1().Basis();
          B2 = Site.Basis1().Basis();
@@ -199,8 +199,8 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "itf-z2")
       {
-	 std::cout << "Hamiltonian is transverse-field Ising with Z2, J=" << J << ", Lambda=" << Lambda << "\n";
-	 SiteBlock Site = CreateZ2SpinSite(0.5);
+         std::cout << "Hamiltonian is transverse-field Ising with Z2, J=" << J << ", Lambda=" << Lambda << "\n";
+         SiteBlock Site = CreateZ2SpinSite(0.5);
          H = J * 4.0 * tensor_prod(Site["Sz"], Site["Sz"]) + Lambda * (tensor_prod(Site["I"], Site["Sx"]) + tensor_prod(Site["Sx"], Site["I"]));
          B1 = Site.Basis1().Basis();
          B2 = Site.Basis1().Basis();
@@ -211,7 +211,7 @@ int main(int argc, char** argv)
       pvalue_ptr<InfiniteWavefunction> PsiPtr = pheap::ImportHeap(FName);
       //      pvalue_ptr<InfiniteWavefunction> PsiPtr = pheap::OpenPersistent(FName, CacheSize, true);
       Psi = *PsiPtr;
-      
+
       StateComponent Phi = Psi.Psi.get_front();
       MatrixOperator LambdaSqrt = SqrtDiagonal(Psi.C_old);
       MatrixOperator LambdaInvSqrt = InvertDiagonal(LambdaSqrt, InverseTol);
@@ -267,7 +267,7 @@ int main(int argc, char** argv)
       {
          TransOp1.push_back(MAHermTransverse);
          TransOp2.push_back(MBHermTransverse);
-         
+
          TransOp1.push_back(MBHermTransverse);
          TransOp2.push_back(MAHermTransverse);
       }
@@ -283,7 +283,7 @@ int main(int argc, char** argv)
       // the observable
       std::vector<OperatorComponent> TransOp1Obs = TransOp1;
       TransOp1Obs.back() = prod(TransOp1Obs.back(), Obs);
-      
+
 #if defined(SECOND_ORDER_ST)
       TransOp1.push_back(MBTransverseHalf);
       TransOp1Obs.push_back(MBTransverseHalf);
@@ -297,14 +297,14 @@ int main(int argc, char** argv)
       TransOp1.push_back(MATransverse);
       TransOp1Obs.push_back(MATransverse);
       TransOp2.push_back(MBTransverse);
-      
+
       // now the forwards time evolution section
       for (int i = 0; i < NumTimesteps-1; ++i)
       {
          TransOp1.push_back(MBTransverse);
          TransOp1Obs.push_back(MBTransverse);
          TransOp2.push_back(MATransverse);
-         
+
          TransOp1.push_back(MATransverse);
          TransOp1Obs.push_back(MATransverse);
          TransOp2.push_back(MBTransverse);
@@ -328,7 +328,7 @@ int main(int argc, char** argv)
       MPOperator TransOperator2 = MPOperator(TransOp2.begin(), TransOp2.end());
 
       // make a lattice file to represent this lattice
-      
+
       SiteBlock SBlock = MakeSiteBlockFromBasis(TransOperator1[0].LocalBasis1());
       Lattice MyLattice(SBlock);
       for (unsigned i = 1; i < TransOperator1.size(); ++i)

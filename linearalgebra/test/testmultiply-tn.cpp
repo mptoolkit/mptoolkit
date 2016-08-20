@@ -63,7 +63,7 @@ void CheckMult()
    MMCFCheck(1,2) = 32;
    MMCFCheck(2,0) = 43;
    MMCFCheck(2,1) = 32;
-   MMCFCheck(2,2) = 69; 
+   MMCFCheck(2,2) = 69;
 
    Ctype MMCF = transpose(M) * N;
    CHECK_CLOSE(MMCF, MMCFCheck);

@@ -119,9 +119,9 @@ std::complex<double> PropIdent(SimpleOperator const& X, double UnityEpsilon)
 }
 
 SimpleOperator
-swap_gate(BasisList const& B1, BasisList const& B2, 
-	  ProductBasis<BasisList, BasisList> const& Basis_21,
-	  ProductBasis<BasisList, BasisList> const& Basis_12)
+swap_gate(BasisList const& B1, BasisList const& B2,
+          ProductBasis<BasisList, BasisList> const& Basis_21,
+          ProductBasis<BasisList, BasisList> const& Basis_12)
 {
    QuantumNumbers::QuantumNumber Ident(B1.GetSymmetryList());
 
@@ -133,11 +133,11 @@ swap_gate(BasisList const& B1, BasisList const& B2,
       // Find the corresponding element in Basis1 with swapped indices
       for (ProductBasis<BasisList>::const_iterator I = Basis_21.begin(x.second, x.first); I != Basis_21.end(x.second, x.first); ++I)
       {
-	 if (Basis_21[*I] == Basis_12[i])
-	 {
-	    // This phase factor works for the xxx spin chain
-	    Result(*I, i) = conj_phase(Basis_12[i], adjoint(Basis_12.Left()[x.first]), Basis_12.Right()[x.second]);
-	 }
+         if (Basis_21[*I] == Basis_12[i])
+         {
+            // This phase factor works for the xxx spin chain
+            Result(*I, i) = conj_phase(Basis_12[i], adjoint(Basis_12.Left()[x.first]), Basis_12.Right()[x.second]);
+         }
       }
    }
    //TRACE(Result)(Result.Basis1())(Result.Basis2());
@@ -145,10 +145,10 @@ swap_gate(BasisList const& B1, BasisList const& B2,
 }
 
 SimpleOperator
-swap_gate_fermion(BasisList const& B1, LinearAlgebra::Vector<double> const& Parity1, 
-		  BasisList const& B2, LinearAlgebra::Vector<double> const& Parity2,
-		  ProductBasis<BasisList, BasisList> const& Basis_21,
-		  ProductBasis<BasisList, BasisList> const& Basis_12)
+swap_gate_fermion(BasisList const& B1, LinearAlgebra::Vector<double> const& Parity1,
+                  BasisList const& B2, LinearAlgebra::Vector<double> const& Parity2,
+                  ProductBasis<BasisList, BasisList> const& Basis_21,
+                  ProductBasis<BasisList, BasisList> const& Basis_12)
 {
    DEBUG_CHECK_EQUAL(Parity1.size(), B1.size());
    DEBUG_CHECK_EQUAL(Parity2.size(), B2.size());
@@ -162,15 +162,14 @@ swap_gate_fermion(BasisList const& B1, LinearAlgebra::Vector<double> const& Pari
       // Find the corresponding element in Basis1 with swapped indices
       for (ProductBasis<BasisList>::const_iterator I = Basis_21.begin(x.second, x.first); I != Basis_21.end(x.second, x.first); ++I)
       {
-	 if (Basis_21[*I] == Basis_12[i])
-	 {
-	    // This phase factor works for the xxx spin chain
-	    Result(*I, i) = conj_phase(Basis_12[i], adjoint(Basis_12.Left()[x.first]), Basis_12.Right()[x.second])
-	       * Parity1[x.first] * Parity2[x.second];
-	 }
+         if (Basis_21[*I] == Basis_12[i])
+         {
+            // This phase factor works for the xxx spin chain
+            Result(*I, i) = conj_phase(Basis_12[i], adjoint(Basis_12.Left()[x.first]), Basis_12.Right()[x.second])
+               * Parity1[x.first] * Parity2[x.second];
+         }
       }
    }
    //TRACE(Result)(Result.Basis1())(Result.Basis2());
    return Result;
 }
-

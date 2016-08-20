@@ -44,7 +44,7 @@
 namespace LinearAlgebra
 {
 
-// 
+//
 // is_mutable_proxy
 // metafunction returns true if T is a mutable proxy type
 //
@@ -66,7 +66,7 @@ namespace LinearAlgebra
 template <typename T>
 struct is_mutable_proxy;
 
-// 
+//
 // is_const_proxy
 // metafunction returns true if T is a constant proxy type
 //
@@ -77,7 +77,7 @@ struct is_mutable_proxy;
 template <typename T>
 struct is_const_proxy;
 
-// 
+//
 // is_proxy
 // metafunction returns true if T is a proxy type.
 // This is simply is_mutable_proxy<T> || is_const_proxy<T>
@@ -239,9 +239,9 @@ template <typename T>
 struct is_const_proxy : Private::is_declared_const_proxy<T> {};
 
 template <typename T>
-struct is_const_proxy<T const> 
-   : boost::mpl::or_<Private::is_declared_proxy<T>, 
-		     Private::is_declared_const_proxy<T> > {};
+struct is_const_proxy<T const>
+   : boost::mpl::or_<Private::is_declared_proxy<T>,
+                     Private::is_declared_const_proxy<T> > {};
 
 template <typename T>
 struct is_proxy : boost::mpl::or_<is_mutable_proxy<T>, is_const_proxy<T> > {};
@@ -251,7 +251,7 @@ template <typename T>
 struct is_mutable_proxy_reference : is_mutable_proxy<T> {};
 
 template <typename T>
-struct is_mutable_proxy_reference<T&> 
+struct is_mutable_proxy_reference<T&>
    : boost::mpl::not_<boost::mpl::or_<is_proxy<T>, boost::is_const<T> > > {};
 
 
@@ -259,7 +259,7 @@ template <typename T>
 struct is_const_proxy_reference : is_const_proxy<T> {};
 
 template <typename T>
-struct is_const_proxy_reference<T&> 
+struct is_const_proxy_reference<T&>
    : boost::mpl::and_<boost::mpl::not_<is_proxy<T> >, boost::is_const<T> > {};
 
 

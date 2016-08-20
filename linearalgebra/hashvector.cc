@@ -63,7 +63,7 @@ HashVector<T>::operator=(NoAliasProxy<U> const& x)
 
 template <typename T>
 inline
-T const& 
+T const&
 HashVector<T>::operator[](size_type n) const
 {
    base_const_iterator I = Data_.find(n);
@@ -72,7 +72,7 @@ HashVector<T>::operator[](size_type n) const
 
 template <typename T>
 inline
-T& 
+T&
 HashVector<T>::operator[](size_type n)
 {
    base_iterator I = Data_.find(n);

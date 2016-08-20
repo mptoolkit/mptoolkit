@@ -45,26 +45,26 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Hamiltonian,H", prog_opt::value<std::string>(), 
+         ("Hamiltonian,H", prog_opt::value<std::string>(),
           "operator to use for the Hamiltonian (wavefunction attribute \"Hamiltonian\")")
          ("wavefunction,w", prog_opt::value<std::string>(),
           "initial wavefunction (required)")
          ("config,c", prog_opt::value<std::string>(), "configuration file (required)")
-         ("orthogonal", prog_opt::value<std::vector<std::string> >(), 
+         ("orthogonal", prog_opt::value<std::vector<std::string> >(),
           "force the wavefunction to be orthogonal to this state")
-         ("out,o", prog_opt::value<std::string>(), 
+         ("out,o", prog_opt::value<std::string>(),
           "initial part of filename to use for output files (required)")
          ("verbose,v", prog_opt::bool_switch(&Verbose),
           "show extra information during the running of mp-dmrg-init")
          ;
       prog_opt::options_description hidden("Hidden options");
       //      hidden.add_options()
-      //         ("input-wavefunction", prog_opt::value<std::string>(), 
+      //         ("input-wavefunction", prog_opt::value<std::string>(),
       //          "input wavefunction (required)")
-      //         ("base-filename", prog_opt::value<std::string>(), 
+      //         ("base-filename", prog_opt::value<std::string>(),
       //          "base-filename (required)")
       //         ;
-      
+
       prog_opt::positional_options_description p;
       //      p.add("input-wavefunction", -1);
       //      p.add("base-filename", -1);
@@ -72,13 +72,13 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
-      
+      prog_opt::notify(vm);
+
       if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("out") == 0
-          || vm.count("config") == 0) 
+          || vm.count("config") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-dmrg-init [options]\n";
@@ -163,13 +163,13 @@ int main(int argc, char** argv)
       CHECK_EQUAL(Psi.size(), Hamiltonian.size());
       for (int i = 0; i < Psi.size(); ++i)
       {
-	 CHECK_EQUAL(Psi.LookupLinear(i).SiteBasis(), Hamiltonian.LookupLinear(i).SiteBasis());
+         CHECK_EQUAL(Psi.LookupLinear(i).SiteBasis(), Hamiltonian.LookupLinear(i).SiteBasis());
       }
 #endif
 
       // Make the actual DMRG object
       DMRG dmrg((CenterWavefunction(Psi)), SplitOperator(Hamiltonian), Verbose);
-      
+
       // Add the orthogonal states
       if (vm.count("orthogonal") != 0)
       {
@@ -183,7 +183,7 @@ int main(int argc, char** argv)
             dmrg.AddOrthogonalState(CenterWavefunction(*Ortho));
             if (!dmrg.Wavefunction().Attributes()["OrthogonalSet"].empty())
                dmrg.Wavefunction().Attributes()["OrthogonalSet"] += " ";
-            dmrg.Wavefunction().Attributes()["OrthogonalSet"] += "--orthogonal " 
+            dmrg.Wavefunction().Attributes()["OrthogonalSet"] += "--orthogonal "
                + quote_shell(OrthoSet[j]);
          }
       }
@@ -195,7 +195,7 @@ int main(int argc, char** argv)
 
       if (Verbose)
          std::cout << "Creating DMRGLoop object..." << std::endl;
-   
+
       dmrg.CreateLogFiles(BasePathFull, Conf);
       pvalue_ptr<DMRGLoop<DMRG> > Solver(new DMRGLoop<DMRG>(dmrg, States));
 

@@ -43,16 +43,16 @@
 namespace QuantumNumbers
 {
 
-// 
+//
 // SymmetryList
 //
-// This class maintains a list of SymmetryBase objects with the associated name.  
+// This class maintains a list of SymmetryBase objects with the associated name.
 // The SymmetryBase objects are owned by the SymmetryListImpl object
 // and are destroyed by the SymmetryListImpl destructor.
 // There is no attempt made to clean up the SymmetryListImpl objects
 // before program termination.
 //
-// The name of a quantum number can by anything, 
+// The name of a quantum number can by anything,
 // EXCEPT it cannot include comma ',' or colon ':' characters.
 //
 
@@ -80,31 +80,31 @@ class SymmetryListImpl
       int NumSymmetries() const { return Data.size(); }
 
       // reuturns the size in ints of the i'th symmetry
-      int QuantumNumberSize(int i) const 
-	{ DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return Data[i]->QuantumNumberSize(); }
+      int QuantumNumberSize(int i) const
+        { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return Data[i]->QuantumNumberSize(); }
 
       // returns the offset of the quantum numbers associated with the i'th symmetry
-      int QuantumNumberOffset(int i) const 
-	{ DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return Offsets[i]; }
+      int QuantumNumberOffset(int i) const
+        { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return Offsets[i]; }
 
       // returns size in ints of the projection for the i'th symmetry
-      int ProjectionSize(int i) const 
-	{ DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return Data[i]->ProjectionSize(); }
+      int ProjectionSize(int i) const
+        { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return Data[i]->ProjectionSize(); }
 
       // returns the offset of the projection numbers associated with the i'th symmetry
-      int ProjectionOffset(int i) const 
-	{ DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return ProjectionOffsets[i]; }
+      int ProjectionOffset(int i) const
+        { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return ProjectionOffsets[i]; }
 
       // returns the complete name of the quantum number list
       std::string FullName() const { return FName; }
 
       // returns the type of the i'th quantum number
-      std::string SymmetryType(int i) const 
-	{ DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return Data[i]->Type(); }
+      std::string SymmetryType(int i) const
+        { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return Data[i]->Type(); }
 
       // returns the name of the i'th quantum number
-      std::string SymmetryName(int i) const 
-	{ DEBUG_RANGE_CHECK_OPEN(i, 0, int(Names.size())); return Names[i]; }
+      std::string SymmetryName(int i) const
+        { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Names.size())); return Names[i]; }
 
       // returns the number of Casimir invariants of the symmetry group
       int NumCasimirOperators() const;
@@ -113,20 +113,20 @@ class SymmetryListImpl
       std::string CasimirName(int n) const;
 
       // returns the i'th SymmetryBase object
-      SymmetryBase const* GetSymmetryBase(int i) const 
-	{ DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return Data[i]; }
+      SymmetryBase const* GetSymmetryBase(int i) const
+        { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return Data[i]; }
 
       // returns the index of the symmetry with the given name, or -1 if there is no symmetry with that name.
       int WhichSymmetry(std::string const& Name) const
-	{ std::vector<std::string>::const_iterator Where = std::find(Names.begin(), Names.end(), Name); 
-	return Where == Names.end() ? -1 : Where-Names.begin(); }
+        { std::vector<std::string>::const_iterator Where = std::find(Names.begin(), Names.end(), Name);
+        return Where == Names.end() ? -1 : Where-Names.begin(); }
 
       // deletes the owned SymmetryBase objects and detaches itself from the instance list
       ~SymmetryListImpl();
 
       // searches the static instance list for an already created list of the same name.
       static SymmetryListImpl* SearchForCreated(std::string const& Name);
- 
+
       // Initialize the Instances list -- called at startup via a NiftyCounter
       static void InitializeInstances();
 
@@ -173,45 +173,45 @@ class SymmetryList
       bool is_null() const { return pImpl == NULL; }
 
       // returns the size in ints required to store a quantum number
-      int QuantumNumberSize() const 
-	 { DEBUG_CHECK(pImpl); return pImpl->QuantumNumberSize(); }
+      int QuantumNumberSize() const
+         { DEBUG_CHECK(pImpl); return pImpl->QuantumNumberSize(); }
 
       // returns the size in ints required to store a projection
-      int ProjectionSize() const 
-	 { DEBUG_CHECK(pImpl); return pImpl->ProjectionSize(); }
+      int ProjectionSize() const
+         { DEBUG_CHECK(pImpl); return pImpl->ProjectionSize(); }
 
       // returns the size in ints required to store a multiplicity label.
-      int MultiplicitySize() const 
-	 { DEBUG_CHECK(pImpl); return pImpl->MultiplicitySize(); }
+      int MultiplicitySize() const
+         { DEBUG_CHECK(pImpl); return pImpl->MultiplicitySize(); }
 
       // returns the number of symmery groups in the list (ie, for tensor-products of symmetries)
-      int NumSymmetries() const 
-	 { DEBUG_CHECK(pImpl); return pImpl->NumSymmetries(); }
+      int NumSymmetries() const
+         { DEBUG_CHECK(pImpl); return pImpl->NumSymmetries(); }
 
       // returns the i'th SymmetryBase object
-      SymmetryBase const* GetSymmetryBase(int i) const 
-	 { DEBUG_CHECK(pImpl); return pImpl->GetSymmetryBase(i); }
+      SymmetryBase const* GetSymmetryBase(int i) const
+         { DEBUG_CHECK(pImpl); return pImpl->GetSymmetryBase(i); }
 
-      // returns the index of the symmetry with the given name, 
+      // returns the index of the symmetry with the given name,
       // or -1 if there is no symmetry with that name.
-      int WhichSymmetry(std::string const& Name) const 
-	 { DEBUG_CHECK(pImpl); return pImpl->WhichSymmetry(Name); }
+      int WhichSymmetry(std::string const& Name) const
+         { DEBUG_CHECK(pImpl); return pImpl->WhichSymmetry(Name); }
 
       // reuturns the size in ints of the i'th quantum number
-      int QuantumNumberSize(int i) const 
-	 { DEBUG_CHECK(pImpl); return pImpl->QuantumNumberSize(i); }
+      int QuantumNumberSize(int i) const
+         { DEBUG_CHECK(pImpl); return pImpl->QuantumNumberSize(i); }
 
       // returns the offset of the given quantum number
-      int QuantumNumberOffset(int i) const 
-	 { DEBUG_CHECK(pImpl); return pImpl->QuantumNumberOffset(i); }
+      int QuantumNumberOffset(int i) const
+         { DEBUG_CHECK(pImpl); return pImpl->QuantumNumberOffset(i); }
 
       // reuturns the size in ints of the i'th projection
-      int ProjectionSize(int i) const 
-	 { DEBUG_CHECK(pImpl); return pImpl->ProjectionSize(i); }
+      int ProjectionSize(int i) const
+         { DEBUG_CHECK(pImpl); return pImpl->ProjectionSize(i); }
 
       // returns the offset of the i'th projection
-      int ProjectionOffset(int i) const 
-	 { DEBUG_CHECK(pImpl); return pImpl->ProjectionOffset(i); }
+      int ProjectionOffset(int i) const
+         { DEBUG_CHECK(pImpl); return pImpl->ProjectionOffset(i); }
 
       int NumCasimirOperators() const
          { DEBUG_CHECK(pImpl); return pImpl->NumCasimirOperators(); }
@@ -243,29 +243,29 @@ class SymmetryList
       std::complex<double> cross_product_factor(sc_iter q1, sc_iter q2) const;
 
       double recoupling(sc_iter q1, sc_iter q3, sc_iter q13,
-			sc_iter q2, sc_iter q, sc_iter q23) const;
+                        sc_iter q2, sc_iter q, sc_iter q23) const;
 
       double recoupling_12_3__13_2(sc_iter q1, sc_iter q3, sc_iter q13,
                                    sc_iter q2, sc_iter q, sc_iter q23) const;
 
       double product_coefficient(sc_iter k1, sc_iter k2, sc_iter k,
-				sc_iter qp, sc_iter q, sc_iter qpp) const;
+                                sc_iter qp, sc_iter q, sc_iter qpp) const;
 
       double inverse_product_coefficient(sc_iter k1, sc_iter k2, sc_iter k,
-					 sc_iter qp, sc_iter q, sc_iter qpp) const;
+                                         sc_iter qp, sc_iter q, sc_iter qpp) const;
 
       double tensor_coefficient(sc_iter k1,  sc_iter k2,  sc_iter k3,
-				sc_iter q1p, sc_iter q2p, sc_iter qp,
-				sc_iter q1,  sc_iter q2,  sc_iter q) const;
+                                sc_iter q1p, sc_iter q2p, sc_iter qp,
+                                sc_iter q1,  sc_iter q2,  sc_iter q) const;
 
       double inverse_tensor_coefficient(sc_iter k1,  sc_iter k2,  sc_iter k3,
-					sc_iter q1p, sc_iter q2p, sc_iter qp,
-					sc_iter q1,  sc_iter q2,  sc_iter q) const;
+                                        sc_iter q1p, sc_iter q2p, sc_iter qp,
+                                        sc_iter q1,  sc_iter q2,  sc_iter q) const;
 
       double reflection_coefficient(sc_iter q1, sc_iter q2, sc_iter q) const;
 
       int num_transform_targets(sc_iter q1, sc_iter q2) const;
-      
+
       void transform_targets(sc_iter q1, sc_iter q2, std::vector<int>& RetList) const;
 
       int num_inverse_transform_targets(sc_iter q1, sc_iter q) const;
@@ -281,7 +281,7 @@ class SymmetryList
       void enumerate_projections(sc_iter q, std::vector<int>& RetList) const;
 
       double clebsch_gordan(sc_iter qp,  sc_iter k,  sc_iter q,
-			    sc_iter qpm, sc_iter km, sc_iter qm) const;
+                            sc_iter qpm, sc_iter km, sc_iter qm) const;
 
       std::string QuantumNumberToString(sc_iter q) const;
 
@@ -326,34 +326,34 @@ std::ostream& operator<<(std::ostream& out, SymmetryList const& s);
 // Given two symmetry lists, finds a superset symmetry list that contains
 // both L1 and L2.  This fails if L1 and L2 have a symmetry of the same name
 // but a different type.
-SymmetryList FindSymmetrySuperset(SymmetryList const& L1, 
-				  SymmetryList const& L2);
+SymmetryList FindSymmetrySuperset(SymmetryList const& L1,
+                                  SymmetryList const& L2);
 
-SymmetryList FindSymmetrySuperset(SymmetryList const& L1, 
-				  SymmetryList const& L2, 
-				  SymmetryList const& L3);
+SymmetryList FindSymmetrySuperset(SymmetryList const& L1,
+                                  SymmetryList const& L2,
+                                  SymmetryList const& L3);
 
-SymmetryList FindSymmetrySuperset(SymmetryList const& L1, 
-				  SymmetryList const& L2, 
-				  SymmetryList const& L3,
-				  SymmetryList const& L4);
+SymmetryList FindSymmetrySuperset(SymmetryList const& L1,
+                                  SymmetryList const& L2,
+                                  SymmetryList const& L3,
+                                  SymmetryList const& L4);
 
 // return a SymmetryList that is the same as the input list, but with
 // the name of a symmetry changed.
 SymmetryList ChangeSymmetryName(SymmetryList const& L,
-				std::string const& OldName,
-				std::string const& NewName);
+                                std::string const& OldName,
+                                std::string const& NewName);
 
 inline
-bool operator==(SymmetryList const& L1, SymmetryList const& L2) 
+bool operator==(SymmetryList const& L1, SymmetryList const& L2)
 {
-   return L1.GetSymmetryListImpl() == L2.GetSymmetryListImpl(); 
+   return L1.GetSymmetryListImpl() == L2.GetSymmetryListImpl();
 }
 
 inline
-bool operator!=(SymmetryList const& L1, SymmetryList const& L2) 
-{ 
-   return L1.GetSymmetryListImpl() != L2.GetSymmetryListImpl(); 
+bool operator!=(SymmetryList const& L1, SymmetryList const& L2)
+{
+   return L1.GetSymmetryListImpl() != L2.GetSymmetryListImpl();
 }
 
 PStream::opstream& operator<<(PStream::opstream& out, SymmetryList const& L);
@@ -381,7 +381,7 @@ SymmetryList::SymmetryList(SymmetryListImpl const* Impl)
 }
 
 inline
-SymmetryList& 
+SymmetryList&
 SymmetryList::operator=(SymmetryList const& QList)
 {
    pImpl = QList.pImpl;

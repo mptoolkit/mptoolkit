@@ -38,14 +38,14 @@ int main(int argc, char** argv)
          ("help", "show this help message")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
-      
-      prog_opt::variables_map vm;        
+
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).style(prog_opt::command_line_style::default_style ^
                                           prog_opt::command_line_style::allow_guessing).
                       run(), vm);
-      prog_opt::notify(vm);    
-      
+      prog_opt::notify(vm);
+
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("U(1)xU(1) Triangular Hubbard model");
       OpDescriptions.add_operators()
@@ -86,7 +86,7 @@ int main(int argc, char** argv)
       UnitCell Cell(repeat(Site, 3));
       InfiniteLattice Lattice(&Cell);
 
-      UnitCellOperator CHup(Cell, "CHup"), CHdown(Cell, "CHdown"), Cup(Cell, "Cup"), 
+      UnitCellOperator CHup(Cell, "CHup"), CHdown(Cell, "CHdown"), Cup(Cell, "Cup"),
          Cdown(Cell, "Cdown"), Pdouble(Cell, "Pdouble"),
          Hu(Cell, "Hu"), N(Cell, "N"), Sz(Cell, "Sz"), Sp(Cell, "Sp"), Sm(Cell, "Sm"),
          R(Cell, "R");

@@ -35,7 +35,7 @@ SumBasis<BasisList>::SumBasis(BasisList const& B)
    this->AddBasis(B);
 }
 
-inline   
+inline
 SumBasis<BasisList>::SumBasis(BasisList const& B1, BasisList const& B2)
    : BasisList(B1.GetSymmetryList())
 {
@@ -77,7 +77,7 @@ SumBasis<VectorBasis>::SumBasis(VectorBasis const& B)
    this->AddBasis(B);
 }
 
-inline   
+inline
 SumBasis<VectorBasis>::SumBasis(VectorBasis const& B1, VectorBasis const& B2)
    : This_(B1.GetSymmetryList())
 {
@@ -111,8 +111,8 @@ inline
 IrredTensor<T, B1, B2, S>
 tensor_sum(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& y)
 {
-   return tensor_sum(x, y, 
-                     SumBasis<B1>(x.Basis1(), y.Basis1()), 
+   return tensor_sum(x, y,
+                     SumBasis<B1>(x.Basis1(), y.Basis1()),
                      SumBasis<B2>(x.Basis2(), y.Basis2()));
 }
 
@@ -135,7 +135,7 @@ tensor_col_sum(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> con
 
 template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>
-tensor_sum(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& y, 
+tensor_sum(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& y,
            SumBasis<B1> const& b1, SumBasis<B2> const& b2)
 {
    DEBUG_PRECONDITION(x.TransformsAs() == y.TransformsAs());
@@ -153,14 +153,14 @@ tensor_sum(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& 
    {
       for (inner_iterator J = iterate(I); J; ++J)
       {
-	 Result(b1(0,J.index1()), b2(0,J.index2())) = *J;
+         Result(b1(0,J.index1()), b2(0,J.index2())) = *J;
       }
    }
    for (iterator I = iterate(y); I; ++I)
    {
       for (inner_iterator J = iterate(I); J; ++J)
       {
-	 Result(b1(1,J.index1()), b2(1,J.index2())) = *J;
+         Result(b1(1,J.index1()), b2(1,J.index2())) = *J;
       }
    }
    return Result;
@@ -168,7 +168,7 @@ tensor_sum(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& 
 
 template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>
-tensor_row_sum(IrredTensor<T, B1, B2, S> const& x, 
+tensor_row_sum(IrredTensor<T, B1, B2, S> const& x,
                IrredTensor<T, B1, B2, S> const& y, SumBasis<B2> const& b2)
 {
    DEBUG_PRECONDITION_EQUAL(x.TransformsAs(), y.TransformsAs());
@@ -184,14 +184,14 @@ tensor_row_sum(IrredTensor<T, B1, B2, S> const& x,
    {
       for (inner_iterator J = iterate(I); J; ++J)
       {
-	 Result(J.index1(), b2(0,J.index2())) = *J;
+         Result(J.index1(), b2(0,J.index2())) = *J;
       }
    }
    for (iterator I = iterate(y); I; ++I)
    {
       for (inner_iterator J = iterate(I); J; ++J)
       {
-	 Result(J.index1(), b2(1,J.index2())) = *J;
+         Result(J.index1(), b2(1,J.index2())) = *J;
       }
    }
    return Result;
@@ -199,8 +199,8 @@ tensor_row_sum(IrredTensor<T, B1, B2, S> const& x,
 
 template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>
-tensor_col_sum(IrredTensor<T, B1, B2, S> const& x, 
-               IrredTensor<T, B1, B2, S> const& y, 
+tensor_col_sum(IrredTensor<T, B1, B2, S> const& x,
+               IrredTensor<T, B1, B2, S> const& y,
                SumBasis<B1> const& b1)
 {
    DEBUG_PRECONDITION_EQUAL(x.TransformsAs(), y.TransformsAs());
@@ -216,14 +216,14 @@ tensor_col_sum(IrredTensor<T, B1, B2, S> const& x,
    {
       for (inner_iterator J = iterate(I); J; ++J)
       {
-	 Result(b1(0,J.index1()), J.index2()) = *J;
+         Result(b1(0,J.index1()), J.index2()) = *J;
       }
    }
    for (iterator I = iterate(y); I; ++I)
    {
       for (inner_iterator J = iterate(I); J; ++J)
       {
-	 Result(b1(1,J.index1()), J.index2()) = *J;
+         Result(b1(1,J.index1()), J.index2()) = *J;
       }
    }
    return Result;
@@ -232,7 +232,7 @@ tensor_col_sum(IrredTensor<T, B1, B2, S> const& x,
 template <typename FwdIter, typename B1, typename B2>
 typename std::iterator_traits<FwdIter>::value_type
 tensor_accumulate(FwdIter first, FwdIter last,
-                  SumBasis<B1> const& b1, 
+                  SumBasis<B1> const& b1,
                   SumBasis<B2> const& b2)
 {
    typedef typename std::iterator_traits<FwdIter>::value_type ResultType;

@@ -47,25 +47,25 @@ void RandomizeRowSigns(MatrixOperator& TruncL)
    {
       for (int k = 0; k < TruncL.Basis1().dim(j); ++k)
       {
-	 int sign = ((rand() / 1000) % 2) * 2 - 1;
-	 for (unsigned l = 0; l < TruncL.Basis2().size(); ++l)
-	 {
-	    if (iterate_at(TruncL.data(), j,l))
-	    {
-	       for (int m = 0; m < TruncL.Basis2().dim(l); ++m)
-	       {
-		  TruncL(j,l)(k,m) *= sign;
-	       }
-	    }
-	 }
+         int sign = ((rand() / 1000) % 2) * 2 - 1;
+         for (unsigned l = 0; l < TruncL.Basis2().size(); ++l)
+         {
+            if (iterate_at(TruncL.data(), j,l))
+            {
+               for (int m = 0; m < TruncL.Basis2().dim(l); ++m)
+               {
+                  TruncL(j,l)(k,m) *= sign;
+               }
+            }
+         }
       }
    }
-}   
+}
 
 TruncationInfo
 DoIteration(StateComponent& A, RealDiagonalOperator& Center, StateComponent& B,
-	    SimpleOperator const& EvolOperator,
-	    StatesInfo const& SInfo, SimpleOperator const& EnergyOperator, double& Energy)
+            SimpleOperator const& EvolOperator,
+            StatesInfo const& SInfo, SimpleOperator const& EnergyOperator, double& Energy)
 {
    // if the wavefunction has ~zero weight, things might get screwy
    if (norm_frob(Center) < 1e-10)
@@ -89,18 +89,18 @@ DoIteration(StateComponent& A, RealDiagonalOperator& Center, StateComponent& B,
    double Energy2 = inner_prod(Pair, local_prod(EnergyOperator, Pair)).real() / norm_frob(Pair);
 
    Energy = (Energy1 + Energy2) / 2;  // this is rather hueristic, but a better guess then Energy2
-   
+
    // truncate
-   SingularDecomposition<StateComponent, StateComponent> 
+   SingularDecomposition<StateComponent, StateComponent>
       SL(Pair, Tensor::make_product_basis(A.LocalBasis(), B.LocalBasis()));
 
    TruncationInfo Info;
    RealDiagonalOperator C;
    SL.ConstructMatrices(SL.begin(), TruncateFixTruncationErrorRelative(SL.begin(),
-								       SL.end(),
-								       SInfo,
-								       Info),
-			A, C, B);
+                                                                       SL.end(),
+                                                                       SInfo,
+                                                                       Info),
+                        A, C, B);
 
    // normalize
    C *= 1.0 / norm_frob(C);
@@ -117,21 +117,21 @@ RealDiagonalOperator ProjectRealDiagonal(MatrixOperator const& M)
    {
       if (iterate_at(M.data(), i, i))
       {
-	 Result(i,i) = LinearAlgebra::DiagonalMatrix<double>(M.Basis2().dim(i), M.Basis1().dim(i), 0.0);
-	 for (int j = 0; j < std::min(M.Basis1().dim(i), M.Basis2().dim(i)); ++j)
-	 {
+         Result(i,i) = LinearAlgebra::DiagonalMatrix<double>(M.Basis2().dim(i), M.Basis1().dim(i), 0.0);
+         for (int j = 0; j < std::min(M.Basis1().dim(i), M.Basis2().dim(i)); ++j)
+         {
             Result(i,i)(j,j) = M(i,i)(j,j).real();
-	 }
+         }
       }
    }
    return Result;
 }
 
 InfiniteWavefunction MakeWavefunction(StateComponent const& A, MatrixOperator const& Lambda2,
-				      StateComponent const& B, MatrixOperator const& Lambda1,
+                                      StateComponent const& B, MatrixOperator const& Lambda1,
                                       QuantumNumber const& QShift)
 {
-   // Convert to an InfiniteWavefunction 
+   // Convert to an InfiniteWavefunction
    InfiniteWavefunction Psi;
    Psi.C_old = Lambda1;
    Psi.Psi.push_back(A);
@@ -190,10 +190,10 @@ int main(int argc, char** argv)
           "model Hamiltonian.  Valid choices: itf, xxx-su2, bh-u1")
          ("wavefunction,w", prog_opt::value(&FName),
           "wavefunction file to evolve (required)")
-	 ("max-states,m", prog_opt::value<int>(&MaxStates),
-	  FormatDefault("Maximum number of states to keep", MaxStates).c_str())
+         ("max-states,m", prog_opt::value<int>(&MaxStates),
+          FormatDefault("Maximum number of states to keep", MaxStates).c_str())
          ("min-states", prog_opt::value<int>(&MinStates),
-	  FormatDefault("Minimum number of states to keep", MinStates).c_str())
+          FormatDefault("Minimum number of states to keep", MinStates).c_str())
          ("trunc,r", prog_opt::value<double>(&TruncCutoff),
           FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
@@ -208,12 +208,12 @@ int main(int argc, char** argv)
           FormatDefault("imaginary part of the timestep per iteration", DeltaTau).c_str())
          ("epsilon", prog_opt::value(&Epsilon),
           FormatDefault("Cutoff singular value for inversion", Epsilon).c_str())
-	 ("lambda", prog_opt::value(&Lambda),
-	  FormatDefault("transverse field strength (for itf hamiltonian)", Lambda).c_str())
-	 ("J", prog_opt::value(&J),
-	  FormatDefault("Hopping (for bh hamiltonian)", Lambda).c_str())
-	 ("U", prog_opt::value(&U),
-	  FormatDefault("Coulomb repulsion (for bh hamiltonian)", Lambda).c_str())
+         ("lambda", prog_opt::value(&Lambda),
+          FormatDefault("transverse field strength (for itf hamiltonian)", Lambda).c_str())
+         ("J", prog_opt::value(&J),
+          FormatDefault("Hopping (for bh hamiltonian)", Lambda).c_str())
+         ("U", prog_opt::value(&U),
+          FormatDefault("Coulomb repulsion (for bh hamiltonian)", Lambda).c_str())
          ("nmax", prog_opt::value(&NMax),
           FormatDefault("Maximum number of particles (for bose-hubbard model)", NMax).c_str())
          ;
@@ -246,7 +246,7 @@ int main(int argc, char** argv)
       SimpleOperator BondHamiltonian;
       if (HamStr == "itf")
       {
-	 std::cout << "Hamiltonian is transverse-field Ising, J=" << J << ", Lambda=" << Lambda << "\n";
+         std::cout << "Hamiltonian is transverse-field Ising, J=" << J << ", Lambda=" << Lambda << "\n";
          Site = CreateSpinSite(0.5);
          BondHamiltonian = J * 4.0 * tensor_prod(Site["Sz"], Site["Sz"])
             + Lambda * (tensor_prod(Site["Sx"], Site["I"]) + tensor_prod(Site["I"], Site["Sx"]));
@@ -259,7 +259,7 @@ int main(int argc, char** argv)
       }
       else if (HamStr == "bh-u1")
       {
-	 std::cout << "Hamiltonian is Bose-Hubbard, J=" << J << ", U=" << U << "\n";
+         std::cout << "Hamiltonian is Bose-Hubbard, J=" << J << ", U=" << U << "\n";
          Site = CreateBoseHubbardSpinlessU1Site(NMax);
          QuantumNumbers::QuantumNumber Ident(Site.GetSymmetryList());
          BondHamiltonian = -J * (tensor_prod(Site["BH"], Site["B"]) + tensor_prod(Site["B"], Site["BH"]))
@@ -277,8 +277,8 @@ int main(int argc, char** argv)
 
       if (CreateWavefunction)
       {
-	 std::cout << "Creating wavefunction.\n";
-	 pheap::Initialize(FName, 1, mp_pheap::PageSize(), mp_pheap::CacheSize());
+         std::cout << "Creating wavefunction.\n";
+         pheap::Initialize(FName, 1, mp_pheap::PageSize(), mp_pheap::CacheSize());
 
          VectorBasis B1 = VectorBasis(make_vacuum_basis(Site.GetSymmetryList()));
 
@@ -292,8 +292,8 @@ int main(int argc, char** argv)
       }
       else
       {
-	 long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
-	 pvalue_ptr<InfiniteWavefunction> PsiPtr = pheap::OpenPersistent(FName, CacheSize);
+         long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
+         pvalue_ptr<InfiniteWavefunction> PsiPtr = pheap::OpenPersistent(FName, CacheSize);
          LoadFromWavefunction(*PsiPtr, A, Lambda2, B, Lambda1, QShift);
       }
 
@@ -301,7 +301,7 @@ int main(int argc, char** argv)
       double Eps = Epsilon;
       Lambda1Inv = InvertDiagonal(Lambda1, Eps);
       Lambda2Inv = InvertDiagonal(Lambda2, Eps);
-      
+
       StatesInfo SInfo;
       SInfo.MinStates = MinStates;
       SInfo.MaxStates = MaxStates;
@@ -322,7 +322,7 @@ int main(int argc, char** argv)
 
       A = prod(A, Lambda2);
       B = delta_shift(prod(Lambda2, B), QShift);
-      
+
       // main iterations
       EvolOperator = Exponentiate(std::complex<double>(-DeltaTau, -DeltaT) * BondHamiltonian);
 
@@ -337,7 +337,7 @@ int main(int argc, char** argv)
 
       std::cout << " BE=" << Energy
                 << " Ent=" << Info.TotalEntropy()
-                << " NS=" << Info.KeptStates() 
+                << " NS=" << Info.KeptStates()
                 << " TError=" << Info.TruncationError()
                 << " KEigen=" << Info.SmallestKeptEigenvalue()
                 << " DeltaT=" << DeltaTau
@@ -347,8 +347,8 @@ int main(int argc, char** argv)
       {
          // do we want to play around with the timestep?
 #if 0
-	 DeltaTau *= 1.0 - 2e-5;
-	 EvolOperator = Exponentiate(std::complex<double>(-DeltaTau, -DeltaT) * BondHamiltonian);
+         DeltaTau *= 1.0 - 2e-5;
+         EvolOperator = Exponentiate(std::complex<double>(-DeltaTau, -DeltaT) * BondHamiltonian);
 #endif
 
          Lambda2 = Lambda2Inv;
@@ -357,17 +357,17 @@ int main(int argc, char** argv)
          Eps = std::max(Epsilon, Info.LargestDiscardedEigenvalue());
          Lambda2Inv = InvertDiagonal(Lambda2, Eps);
 
-	 std::cout << " BE=" << Energy
-		   << " Ent=" << Info.TotalEntropy()
-		   << " NS=" << Info.KeptStates() 
-		   << " TError=" << Info.TruncationError()
-		   << " KEigen=" << Info.SmallestKeptEigenvalue()
-		   << " DeltaT=" << DeltaTau
-		   << std::endl;
+         std::cout << " BE=" << Energy
+                   << " Ent=" << Info.TotalEntropy()
+                   << " NS=" << Info.KeptStates()
+                   << " TError=" << Info.TruncationError()
+                   << " KEigen=" << Info.SmallestKeptEigenvalue()
+                   << " DeltaT=" << DeltaTau
+                   << std::endl;
 
          A = prod(A, Lambda2);
          B = delta_shift(prod(Lambda2, B), QShift);
-         
+
          //         Lambda1 = delta_shift(Lambda1Inv, adjoint(QShift));
          Lambda1 = Lambda1Inv;
          Info = DoIteration(B, Lambda1, A, EvolOperator, SInfo, BondHamiltonian, Energy);
@@ -375,13 +375,13 @@ int main(int argc, char** argv)
          Lambda1Inv = InvertDiagonal(Lambda1, Eps);
 
 
-	 std::cout << " BE=" << Energy
-		   << " Ent=" << Info.TotalEntropy()
-		   << " NS=" << Info.KeptStates() 
-		   << " TError=" << Info.TruncationError()
-		   << " KEigen=" << Info.SmallestKeptEigenvalue()
-		   << " DeltaT=" << DeltaTau
-		   << std::endl;
+         std::cout << " BE=" << Energy
+                   << " Ent=" << Info.TotalEntropy()
+                   << " NS=" << Info.KeptStates()
+                   << " TError=" << Info.TruncationError()
+                   << " KEigen=" << Info.SmallestKeptEigenvalue()
+                   << " DeltaT=" << DeltaTau
+                   << std::endl;
 
          B = delta_shift(prod(B, Lambda1), adjoint(QShift));
          A = prod(Lambda1, A);

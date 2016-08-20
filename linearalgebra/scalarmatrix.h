@@ -50,7 +50,7 @@ class ScalarMatrix : public MatrixBase<ScalarMatrix<T> >
 
       typedef is_mutable_proxy<data_type> proxy;
       typedef is_const_proxy<data_type> const_proxy;
-      typedef is_immediate<data_type> immediate; 
+      typedef is_immediate<data_type> immediate;
 
       typedef typename make_value<T>::type           value_type;
       typedef typename make_reference<T>::type       reference;
@@ -73,7 +73,7 @@ class ScalarMatrix : public MatrixBase<ScalarMatrix<T> >
       template <typename U>
       ScalarMatrix(size_type size, U const& value, cdirect)
          : size_(size), value_(value) {}
-      
+
       template <typename U>
       ScalarMatrix(size_type size, U& value, cdirect)
          : size_(size), value_(value) {}
@@ -234,8 +234,8 @@ struct MultiplyInterface<ScalarMatrix<T>&, RHS, Concepts::ScalarMatrix<S1, U1>, 
 
 // Addition
 
-template <typename LHS, typename RHS, 
-          typename S1, typename U1, 
+template <typename LHS, typename RHS,
+          typename S1, typename U1,
           typename S2, typename U2>
 struct AddInterface<LHS&, RHS, Concepts::ScalarMatrix<S1, U1>, Concepts::ScalarMatrix<S2, U2>>
 {
@@ -249,8 +249,8 @@ struct AddInterface<LHS&, RHS, Concepts::ScalarMatrix<S1, U1>, Concepts::ScalarM
    }
 };
 
-template <typename LHS, typename RHS, 
-          typename S1, typename U1, 
+template <typename LHS, typename RHS,
+          typename S1, typename U1,
           typename S2, typename U2>
 struct SubtractInterface<LHS&, RHS, Concepts::ScalarMatrix<S1, U1>, Concepts::ScalarMatrix<S2, U2>>
 {
@@ -389,8 +389,8 @@ struct BinaryTransformMatrixSemiregular<ScalarMatrix<S>, ScalarMatrix<T>, Subtra
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
 struct MatrixMatrixMultiplication<S, T, F,
-                                  Concepts::ScalarMatrix<Sv, Si>, 
-				  Concepts::ScalarMatrix<Tv, Ti>>
+                                  Concepts::ScalarMatrix<Sv, Si>,
+                                  Concepts::ScalarMatrix<Tv, Ti>>
 {
    typedef typename is_commutative<F>::type commutative;
 
@@ -409,9 +409,9 @@ struct MatrixMatrixMultiplication<S, T, F,
 };
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
-struct MatrixMatrixMultiplication<S, T, F, 
-				  Concepts::ScalarMatrix<Sv, Si>, 
-				  Concepts::AnyMatrix<Tv,Ti>>
+struct MatrixMatrixMultiplication<S, T, F,
+                                  Concepts::ScalarMatrix<Sv, Si>,
+                                  Concepts::AnyMatrix<Tv,Ti>>
 {
    typedef typename is_commutative<F>::type commutative;
 
@@ -429,8 +429,8 @@ struct MatrixMatrixMultiplication<S, T, F,
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
 struct MatrixMatrixMultiplication<S, T, F,
-                                  Concepts::AnyMatrix<Sv, Si>, 
-				  Concepts::ScalarMatrix<Tv, Ti>>
+                                  Concepts::AnyMatrix<Sv, Si>,
+                                  Concepts::ScalarMatrix<Tv, Ti>>
 {
    typedef MatrixScalarMultiplication<S, Tv, F> Fwd;
    typedef typename Fwd::result_type result_type;
@@ -449,9 +449,9 @@ struct MatrixMatrixMultiplication<S, T, F,
 //
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
-struct MatrixDirectProduct<ScalarMatrix<S>, ScalarMatrix<T>, F, 
-                           Concepts::ScalarMatrix<Sv, Si>, 
-			   Concepts::ScalarMatrix<Tv, Ti>>
+struct MatrixDirectProduct<ScalarMatrix<S>, ScalarMatrix<T>, F,
+                           Concepts::ScalarMatrix<Sv, Si>,
+                           Concepts::ScalarMatrix<Tv, Ti>>
 {
    typedef typename F::result_type ValType;
    typedef typename make_value<ValType>::type result_value_type;
@@ -491,8 +491,8 @@ struct InnerProd<ScalarMatrix<S>, ScalarMatrix<T>>
 
 template <typename S, typename T,
           typename Sv, typename Si, typename Tv, typename Ti>
-struct MatrixInnerProd<S, ScalarMatrix<T>, InnerProd<Sv, Tv>, 
-		       Concepts::AnyMatrix<Sv, Si>, 
+struct MatrixInnerProd<S, ScalarMatrix<T>, InnerProd<Sv, Tv>,
+                       Concepts::AnyMatrix<Sv, Si>,
                        Concepts::ScalarMatrix<Tv, Ti>>
 {
    typedef S const& first_argument_type;
@@ -507,8 +507,8 @@ struct MatrixInnerProd<S, ScalarMatrix<T>, InnerProd<Sv, Tv>,
 
 template <typename S, typename T,
           typename Sv, typename Si, typename Tv, typename Ti>
-struct MatrixInnerProd<ScalarMatrix<S>, T, InnerProd<Sv, Tv>, 
-		       Concepts::ScalarMatrix<Sv, Si>, 
+struct MatrixInnerProd<ScalarMatrix<S>, T, InnerProd<Sv, Tv>,
+                       Concepts::ScalarMatrix<Sv, Si>,
                        Concepts::AnyMatrix<Tv, Ti>>
 {
    typedef ScalarMatrix<S> const& first_argument_type;

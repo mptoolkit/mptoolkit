@@ -44,7 +44,7 @@ typedef std::complex<double> complex;
 class KrylovLoop
 {
    public:
-      KrylovLoop(CenterWavefunction const& Psi, 
+      KrylovLoop(CenterWavefunction const& Psi,
                  SplitOperator const& Hamiltonian,
                  complex Timestep, bool UseK1 = false);
 
@@ -57,14 +57,14 @@ class KrylovLoop
       void SetMinSweeps(int s) { MinSweeps = s; }
       void SetMaxSweeps(int s) { MaxSweeps = s; }
       void SetMixFactor(double x) { MixFactor = x; }
-      void SetMaxEigen(double e) { States.EigenvalueCutoff = e; } 
+      void SetMaxEigen(double e) { States.EigenvalueCutoff = e; }
       void SetSolverTol(double x) { ErrBound = x; }
       void SetUseFinalSweep(bool x) { UseFinal = x; }
       void SetupLogFiles(std::string const& Prefix) { dmrg.SetupLogFiles(Prefix); }
 
       bool IsConverged() const;
 
-      // Advance the timestep 
+      // Advance the timestep
       void NextTimestep();
 
       CenterWavefunction const& Wavefunction() const { return dmrg.Wavefunction(); }
@@ -101,7 +101,7 @@ class KrylovLoop
       double ErrBound;
 };
 
-KrylovLoop::KrylovLoop(CenterWavefunction const& Psi, 
+KrylovLoop::KrylovLoop(CenterWavefunction const& Psi,
                        SplitOperator const& Hamiltonian,
                        complex Timestep, bool UseK1)
    : dmrg(Psi, Hamiltonian, Timestep, Psi, UseK1),
@@ -128,9 +128,9 @@ void KrylovLoop::SweepRight()
    TruncationInfo TInfo = dmrg.TruncateLeft(States, MixFactor);
    dmrg.EndIteration();
    std::cout << "Partition:(" << dmrg.LeftSize() << ',' << dmrg.RightSize() << ')'
-	     << " States:" << TInfo.KeptStates() 
+             << " States:" << TInfo.KeptStates()
              << " Variance:" << dmrg.IterationOverallVariance
-      //<< " Truncation-error:" << TInfo.TruncationError() 
+      //<< " Truncation-error:" << TInfo.TruncationError()
              << " Truncation:" << dmrg.IterationRealTruncation
              << " Iterations:" << Iter << '\n';
    // sweep right
@@ -143,9 +143,9 @@ void KrylovLoop::SweepRight()
       TInfo = dmrg.TruncateLeft(States, MixFactor);
       dmrg.EndIteration();
       std::cout << "Partition:(" << dmrg.LeftSize() << ',' << dmrg.RightSize() << ')'
-		<< " States:" << TInfo.KeptStates() 
+                << " States:" << TInfo.KeptStates()
                 << " Variance:" << dmrg.IterationOverallVariance
-         //<< " Truncation-error:" << TInfo.TruncationError() 
+         //<< " Truncation-error:" << TInfo.TruncationError()
                 << " Truncation:" << dmrg.IterationRealTruncation
                 << " Iterations:" << Iter << '\n';
    }
@@ -163,9 +163,9 @@ void KrylovLoop::SweepLeft()
    TruncationInfo TInfo = dmrg.TruncateRight(States, MixFactor);
    dmrg.EndIteration();
    std::cout << "Partition:(" << dmrg.LeftSize() << ',' << dmrg.RightSize() << ')'
-	     << " States:" << TInfo.KeptStates() 
+             << " States:" << TInfo.KeptStates()
              << " Variance:" << dmrg.IterationOverallVariance
-      //<< " Truncation-error:" << TInfo.TruncationError() 
+      //<< " Truncation-error:" << TInfo.TruncationError()
              << " Truncation:" << dmrg.IterationRealTruncation
              << " Iterations:" << Iter << '\n';
    // sweep left
@@ -178,9 +178,9 @@ void KrylovLoop::SweepLeft()
       TInfo = dmrg.TruncateRight(States, MixFactor);
       dmrg.EndIteration();
       std::cout << "Partition:(" << dmrg.LeftSize() << ',' << dmrg.RightSize() << ')'
-		<< " States:" << TInfo.KeptStates() 
+                << " States:" << TInfo.KeptStates()
                 << " Variance:" << dmrg.IterationOverallVariance
-         //<< " Truncation-error:" << TInfo.TruncationError() 
+         //<< " Truncation-error:" << TInfo.TruncationError()
                 << " Truncation:" << dmrg.IterationRealTruncation
                 << " Iterations:" << Iter << '\n';
    }
@@ -205,7 +205,7 @@ double KrylovLoop::Difference() const
    {
       CenterWavefunction w = dmrg.Wavefunction();
       w.normalize();
-      Diff = scalar_difference_sq(w.AsLinearWavefunction(), 
+      Diff = scalar_difference_sq(w.AsLinearWavefunction(),
                                   PsiPrev.AsLinearWavefunction());
    }
    return Diff.get();
@@ -296,20 +296,20 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Hamiltonian,H", prog_opt::value<std::string>(), 
+         ("Hamiltonian,H", prog_opt::value<std::string>(),
           "operator to use for the Hamiltonian (wavefunction attribute \"Hamiltonian\")")
          ("wavefunction,w", prog_opt::value<std::string>(), "initial wavefunction (required)")
-	 ("two-site,2", "modify 2 neighboring sites at once")
-	 ("min-states,", prog_opt::value<int>(&MinStates), 
-          ("Minimum number of states to keep [default " 
+         ("two-site,2", "modify 2 neighboring sites at once")
+         ("min-states,", prog_opt::value<int>(&MinStates),
+          ("Minimum number of states to keep [default "
            +boost::lexical_cast<std::string>(MinStates)+"]").c_str())
-	 ("max-states,m", prog_opt::value<int>(&MaxStates), 
+         ("max-states,m", prog_opt::value<int>(&MaxStates),
           ("Maximum number of states to keep [default "
            +boost::lexical_cast<std::string>(MaxStates)+"]").c_str())
-         ("trunc,r", prog_opt::value(&Trunc), 
+         ("trunc,r", prog_opt::value(&Trunc),
           ("Desired truncation error [default "
            +boost::lexical_cast<std::string>(Trunc)+"]").c_str())
-         ("eigen-cutoff,d", prog_opt::value(&MaxEigen), 
+         ("eigen-cutoff,d", prog_opt::value(&MaxEigen),
           ("Cutoff threshold for density matrix eigenvalues (alternative to truncation error) [default "
            +boost::lexical_cast<std::string>(MaxEigen)+"]").c_str())
          ("solver-tol", prog_opt::value(&SolverTol),
@@ -326,36 +326,36 @@ int main(int argc, char** argv)
          ("max-iter,i", prog_opt::value(&MaxIter),
           ("Minimum number of Lanczos iterations in the time evolution [default "
            +boost::lexical_cast<std::string>(MaxIter)+"]").c_str())
-         ("mix-factor,f", prog_opt::value(&MixFactor), 
+         ("mix-factor,f", prog_opt::value(&MixFactor),
           ("Mixing coefficient for the density matrix [default "
            +boost::lexical_cast<std::string>(MixFactor)+"]").c_str())
-	 ("timestep,t", prog_opt::value<std::complex<double> >(&Timestep), 
+         ("timestep,t", prog_opt::value<std::complex<double> >(&Timestep),
           "Timestep (can be complex) [default 1]")
-         ("num-timesteps,n", prog_opt::value<int>(&NumTimesteps), 
+         ("num-timesteps,n", prog_opt::value<int>(&NumTimesteps),
           "Total number of timesteps to calculate [default 1]")
-         ("save-timesteps,s", prog_opt::value<int>(&SaveTimesteps), 
+         ("save-timesteps,s", prog_opt::value<int>(&SaveTimesteps),
           "Save the wavefunction after every s timesteps [default 0]")
-         ("Time,T", prog_opt::value<double>(&RealTime), 
+         ("Time,T", prog_opt::value<double>(&RealTime),
           "Absolute real time of the input wavefunction (wavefunction attribute \"Time\")")
-	 ("Beta,B", prog_opt::value<double>(&Beta),
-	  "Absolute imaginary time (inverse temperature) of the input wavefunction "
-	  "(wavefunction attribute \"Beta\")")
+         ("Beta,B", prog_opt::value<double>(&Beta),
+          "Absolute imaginary time (inverse temperature) of the input wavefunction "
+          "(wavefunction attribute \"Beta\")")
          ("use-k1", "Construct the matrix elements <psi(t+Delta t)|H|psi(t)>")
          ("out,o", prog_opt::value<std::string>(&OutputPrefix),
           "Filename prefix for saved wavefunctions [defaults to the initial wavefunction name]")
-         ("stripe-files", prog_opt::value(&NumPageFiles), 
+         ("stripe-files", prog_opt::value(&NumPageFiles),
           "Stripe the temporary disk space over this many files [default 1]")
-	  ;
+          ;
 
       prog_opt::options_description opt;
       opt.add(desc);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("wavefunction") == 0) 
+      if (vm.count("help") || vm.count("wavefunction") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-evolve-krylov-simple [options]\n";
@@ -414,19 +414,19 @@ int main(int argc, char** argv)
       // Make sure the center matrix is at one edge
       if (Psi.LeftSize() != 1 && Psi.RightSize() != 1)
       {
-	 TRACE(Psi.LeftSize())(Psi.RightSize());
-	 std::cout << "The center matrix is not located at an edge.  Rotating..." << std::flush;
-	 if (Psi.LeftSize() > Psi.RightSize())
-	 {
-	    while (Psi.RightSize() > 1)
-	       Psi.RotateRight();
-	 }
-	 else
-	 {
-	    while (Psi.LeftSize() > 1)
-	       Psi.RotateLeft();
-	 }
-	 std::cout << "done" << std::endl;
+         TRACE(Psi.LeftSize())(Psi.RightSize());
+         std::cout << "The center matrix is not located at an edge.  Rotating..." << std::flush;
+         if (Psi.LeftSize() > Psi.RightSize())
+         {
+            while (Psi.RightSize() > 1)
+               Psi.RotateRight();
+         }
+         else
+         {
+            while (Psi.LeftSize() > 1)
+               Psi.RotateLeft();
+         }
+         std::cout << "done" << std::endl;
       }
 
       // Set up the Hamiltonian
@@ -479,7 +479,7 @@ int main(int argc, char** argv)
 
       TwoSite = vm.count("two-site");
       if (TwoSite)
-	 std::cout << "Optimizing two sites at a time\n";
+         std::cout << "Optimizing two sites at a time\n";
       dmrg.SetTwoSite(TwoSite);
       std::cout << "minimum states kept: " << MinStates << '\n';
       dmrg.SetMinStates(MinStates);

@@ -53,9 +53,9 @@ extern MessageLogger::Logger ProcControlLog;
 // or, if CatchTERM is set and either SIGINT, SIGTERM,SIGUSR1 or SIGUSR2 signal is caught.
 // Passing a time of zero means infinite (no limit).  The SIGINT handler is one-shot;
 // a second SIGINT signal reverts to the default behaviour and terminates the process.
-void Initialize(std::string const& ProgName, 
+void Initialize(std::string const& ProgName,
                 double CumulativeCPUTime_ = 0, double CumulativeWallTime_ = 0,
-		bool CatchTERM = false, bool CatchSEGV = true);
+                bool CatchTERM = false, bool CatchSEGV = true);
 
 // set the maximum CPU time, at which point an async checkpoint is signalled.
 void SetCPUTimeLimit(double n);
@@ -112,7 +112,7 @@ void GenerateBacktrace();
 // Name is the initial component of the path name for the file.  Returns the file descriptor
 // of the newly opened file, and sets Name' = actual name (= initial + 6 random characters).
 // Note that the XXXXXX markers used by mkstemp(3) do not need to be added by the caller,
-// but if only a directory is specified as the initial path name, the trailing slash is 
+// but if only a directory is specified as the initial path name, the trailing slash is
 // necessary!  If Unlink is true, the file is unlinked before returning.
 int CreateUniqueFile(std::string& Name, bool Unlink = true);
 

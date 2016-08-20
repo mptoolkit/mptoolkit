@@ -153,7 +153,7 @@ cross_product_factor(Zn<n> const&, Zn<n> const&)
 template <int n>
 inline
 double clebsch_gordan(Zn<n> const& q1, Zn<n> const& q2, Zn<n> const& q,
-		      Zn<n> const& m1, Zn<n> const& m2, Zn<n> const& m)
+                      Zn<n> const& m1, Zn<n> const& m2, Zn<n> const& m)
 {
    DEBUG_CHECK_EQUAL(q1,m1);
    DEBUG_CHECK_EQUAL(q2,m2);
@@ -164,7 +164,7 @@ double clebsch_gordan(Zn<n> const& q1, Zn<n> const& q2, Zn<n> const& q,
 template <int n>
 inline
 double product_coefficient(Zn<n> const& k1, Zn<n> const& k2, Zn<n> const& k,
-			   Zn<n> const& qp, Zn<n> const& q, Zn<n> const& qpp)
+                           Zn<n> const& qp, Zn<n> const& q, Zn<n> const& qpp)
 {
    return ((k1 + k2 == k) && (qp == k1 + qpp) && (qpp == k2 + q)) ? 1 : 0;
 }
@@ -181,8 +181,8 @@ double inverse_product_coefficient(Zn<n> const& k1, Zn<n> const& k2, Zn<n> const
 template <int n>
 inline
 double tensor_coefficient(Zn<n> const& k1,  Zn<n> const& k2,  Zn<n> const& k,
-			 Zn<n> const& q1p, Zn<n> const& q2p, Zn<n> const& qp,
-			 Zn<n> const& q1,  Zn<n> const& q2,  Zn<n> const& q)
+                         Zn<n> const& q1p, Zn<n> const& q2p, Zn<n> const& qp,
+                         Zn<n> const& q1,  Zn<n> const& q2,  Zn<n> const& q)
 {
    PRECONDITION(k1 + k2 == k)(k1)(k2)(k);
    PRECONDITION(q1p + q2p == qp)(q1p)(q2p)(qp);
@@ -211,7 +211,7 @@ double inverse_tensor_coefficient(Zn<n> const& k1,  Zn<n> const& k2,  Zn<n> cons
 template <int n>
 inline
 double recoupling(Zn<n> const& q1, Zn<n> const& q3, Zn<n> const& q13,
-		  Zn<n> const& q2, Zn<n> const& q, Zn<n> const& q23)
+                  Zn<n> const& q2, Zn<n> const& q, Zn<n> const& q23)
 {
    DEBUG_PRECONDITION_EQUAL(q13, q1+q3);
    DEBUG_PRECONDITION_EQUAL(q23, q2+q3);
@@ -383,7 +383,7 @@ Zn<n>::Zn(std::string const& s)
 }
 
 template <int n>
-std::string 
+std::string
 Zn<n>::ToString() const
 {
    return ConvertToString(x);

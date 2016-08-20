@@ -26,5 +26,3 @@ std::ostream& operator<<(std::ostream& out, DenseOperator const& x)
        << "data() =\n" << x.data();
    return out;
 }
-
-   

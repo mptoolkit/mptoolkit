@@ -42,36 +42,36 @@ int main(int argc, char** argv)
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
-      
-      prog_opt::variables_map vm;        
+
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).style(prog_opt::command_line_style::default_style ^
-					  prog_opt::command_line_style::allow_guessing).
-		      run(), vm);
-      prog_opt::notify(vm);    
-      
+                                          prog_opt::command_line_style::allow_guessing).
+                      run(), vm);
+      prog_opt::notify(vm);
+
       OperatorDescriptions OpDescriptions;
       OpDescriptions.add_operators()
-	 ("H_xx", "nearest neighbor spin coupling Sx Sx")
-	 ("H_yy", "nearest neighbor spin exchange Sy Sy")
-	 ("H_zz", "nearest neighbor spin exchange Sz Sz")
-	 ("H_x" , "magnetic field in the x direction")
-	 ("H_y" , "magnetic field in the y direction")
-	 ("H_z" , "magnetic field in the z direction")
-	 ("H_J1z", "same as H_zz")
-	 ("H_J1t", "transverse spin exchange, H_xx + H_yy")
-	 ("H_J1" , "nearest neighbor spin exchange = H_J1z + H_J1t")
-	 ("H_B1" , "nearest neighbor biquadratic spin exchange (S.S)^2")
-	 ("H_mu" , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
-	 ;
+         ("H_xx", "nearest neighbor spin coupling Sx Sx")
+         ("H_yy", "nearest neighbor spin exchange Sy Sy")
+         ("H_zz", "nearest neighbor spin exchange Sz Sz")
+         ("H_x" , "magnetic field in the x direction")
+         ("H_y" , "magnetic field in the y direction")
+         ("H_z" , "magnetic field in the z direction")
+         ("H_J1z", "same as H_zz")
+         ("H_J1t", "transverse spin exchange, H_xx + H_yy")
+         ("H_J1" , "nearest neighbor spin exchange = H_J1z + H_J1t")
+         ("H_B1" , "nearest neighbor biquadratic spin exchange (S.S)^2")
+         ("H_mu" , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
+         ;
 
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << OpDescriptions << '\n';
-	 std::cerr << "only for spin-1: H_AKLT  - AKLT Hamiltonian H_J1 + (1/3)*H_B1\n";
+         std::cerr << OpDescriptions << '\n';
+         std::cerr << "only for spin-1: H_AKLT  - AKLT Hamiltonian H_J1 + (1/3)*H_B1\n";
          std::cerr << "HaldShast{lambda}, Haldane-Shastry Hamiltonian, considering exponential decay with exponent 0<lambda<1\n";
          return 1;
       }
@@ -101,8 +101,8 @@ int main(int argc, char** argv)
 
       if (Spin == 1)
       {
-	 Lattice["H_AKLT"] = Lattice["H_J1"] + (1.0/3.0)*Lattice["H_B1"];
-	 Lattice["H_AKLT"].set_description("AKLT Hamiltonian H_J1 + (1/3)*H_B1");
+         Lattice["H_AKLT"] = Lattice["H_J1"] + (1.0/3.0)*Lattice["H_B1"];
+         Lattice["H_AKLT"].set_description("AKLT Hamiltonian H_J1 + (1/3)*H_B1");
       }
 
       Lattice.func("HaldShast")(arg("lambda") = 0.5)

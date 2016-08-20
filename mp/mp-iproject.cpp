@@ -53,7 +53,7 @@ ProjectOnto(VectorBasis const& b, QuantumNumbers::QuantumNumber const& q)
 
    VectorBasis New(b.GetSymmetryList());
    New.push_back(q, Dim);
-   
+
    MatrixOperator Result(New, b);
    Result(0, s) = LinearAlgebra::identity_matrix<double>(Dim);
    return Result;
@@ -61,7 +61,7 @@ ProjectOnto(VectorBasis const& b, QuantumNumbers::QuantumNumber const& q)
 
 int main(int argc, char** argv)
 {
-   try 
+   try
    {
       std::string q;
 
@@ -83,19 +83,19 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
-      
-      if (vm.count("help") || vm.count("quantum-number") == 0) 
+      prog_opt::notify(vm);
+
+      if (vm.count("help") || vm.count("quantum-number") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-project input-wavefunction quantum-number\n";
          std::cerr << desc << "\n";
          return 1;
       }
-      
+
       std::string Wavefunc = vm["input-wavefunction"].as<std::string>();
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
@@ -114,7 +114,7 @@ int main(int argc, char** argv)
 
       Psi.C_right = Projector * Psi.C_right * herm(Projector);
       Psi.Psi.set_back(prod(Psi.Psi.get_back(), herm(Projector)));
- 
+
       MatrixOperator ShiftedProjector = delta_shift(Projector, Psi.QShift);
 
       Psi.C_old = ShiftedProjector * Psi.C_old * herm(ShiftedProjector);
@@ -126,12 +126,12 @@ int main(int argc, char** argv)
 
       pheap::ShutdownPersistent(PsiPtr);
    }
-   catch(std::exception& e) 
+   catch(std::exception& e)
    {
       std::cerr << "error: " << e.what() << "\n";
       return 1;
    }
-   catch(...) 
+   catch(...)
    {
       std::cerr << "Exception of unknown type!\n";
    }

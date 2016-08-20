@@ -18,7 +18,7 @@
 // ENDHEADER
 
 /*
-  2005-10-12: NOTE: this header is now obsolete. 
+  2005-10-12: NOTE: this header is now obsolete.
 */
 
 #warning Obsolete

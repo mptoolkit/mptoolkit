@@ -30,7 +30,7 @@ bool ShowSmallestKept = true;
 // the actual application of the evolution term is O(d^2 m^2), versus the O(d^3 m^3)
 // singular value decomposition.
 void SweepRightEvolve(LinearWavefunction& Psi, std::list<SimpleOperator> const& BondOperators,
-		      StatesInfo const& SInfo, bool ShowInfo)
+                      StatesInfo const& SInfo, bool ShowInfo)
 {
    LinearWavefunction::iterator I = Psi.begin();
    LinearWavefunction::iterator J = I; ++J;
@@ -44,16 +44,16 @@ void SweepRightEvolve(LinearWavefunction& Psi, std::list<SimpleOperator> const& 
       MPStateComponent A = local_prod(*BondIter, local_tensor_prod(R, *J));
       AMatSVD SL(A, Tensor::ProductBasis<BasisList, BasisList>(R.LocalBasis(), J->LocalBasis()));
       TruncationInfo Info;
-      AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), 
+      AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(),
                                                                   SInfo, Info);
       if (ShowInfo)
       {
-	 std::cout << "Bond=(" << (CurrentBond+1) << ',' << (CurrentBond+2) << ")";
-	 if (ShowStates) std::cout << " states=" << Info.KeptStates();
-	 if (ShowEntropy) std::cout << " entropy=" << Info.KeptEntropy();
-	 if (ShowTruncation) std::cout << " trunc=" << Info.TruncationError();
-	 if (ShowSmallestKept) std::cout << " skeep=" << Info.SmallestKeptEigenvalue();
-	 std::cout << '\n';
+         std::cout << "Bond=(" << (CurrentBond+1) << ',' << (CurrentBond+2) << ")";
+         if (ShowStates) std::cout << " states=" << Info.KeptStates();
+         if (ShowEntropy) std::cout << " entropy=" << Info.KeptEntropy();
+         if (ShowTruncation) std::cout << " trunc=" << Info.TruncationError();
+         if (ShowSmallestKept) std::cout << " skeep=" << Info.SmallestKeptEigenvalue();
+         std::cout << '\n';
       }
 
       MatrixOperator C;
@@ -71,7 +71,7 @@ void SweepRightEvolve(LinearWavefunction& Psi, std::list<SimpleOperator> const& 
 }
 
 void SweepLeftEvolve(LinearWavefunction& Psi, std::list<SimpleOperator> const& BondOperators,
-		     StatesInfo const& SInfo, bool ShowInfo)
+                     StatesInfo const& SInfo, bool ShowInfo)
 {
    LinearWavefunction::iterator J = Psi.end();
    LinearWavefunction::iterator I = J; --I;
@@ -91,16 +91,16 @@ void SweepLeftEvolve(LinearWavefunction& Psi, std::list<SimpleOperator> const& B
       MPStateComponent A = local_prod(*BondIter, local_tensor_prod(*I, R));
       AMatSVD SL(A, Tensor::ProductBasis<BasisList, BasisList>(I->LocalBasis(), R.LocalBasis()));
       TruncationInfo Info;
-      AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), 
+      AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(),
                                                                   SInfo, Info);
       if (ShowInfo)
       {
-	 std::cout << "Bond=(" << (CurrentBond+1) << ',' << (CurrentBond+2) << ")";
-	 if (ShowStates) std::cout << " states=" << Info.KeptStates();
-	 if (ShowEntropy) std::cout << " entropy=" << Info.KeptEntropy();
-	 if (ShowTruncation) std::cout << " trunc=" << Info.TruncationError();
-	 if (ShowSmallestKept) std::cout << " skeep=" << Info.SmallestKeptEigenvalue();
-	 std::cout << '\n';
+         std::cout << "Bond=(" << (CurrentBond+1) << ',' << (CurrentBond+2) << ")";
+         if (ShowStates) std::cout << " states=" << Info.KeptStates();
+         if (ShowEntropy) std::cout << " entropy=" << Info.KeptEntropy();
+         if (ShowTruncation) std::cout << " trunc=" << Info.TruncationError();
+         if (ShowSmallestKept) std::cout << " skeep=" << Info.SmallestKeptEigenvalue();
+         std::cout << '\n';
       }
 
       MatrixOperator C;

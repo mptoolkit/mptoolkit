@@ -37,7 +37,7 @@
 
   Initially all pairs point to NodeList.end()
 
-  If we add an item to a bucket which is empty, then the bucket moves to the 
+  If we add an item to a bucket which is empty, then the bucket moves to the
   front of NodeList:
     last = NodeList.begin();
     NodeList.push_front(NewValue);
@@ -49,14 +49,14 @@
   The preceeding two rules guarantee that elements in the same bucket stay adjacent.
 
   Erasing elements works fine, except we need to ensure that if the bucket becomes empty
-  we reset the begin/end pair to be NodeList.end().  Otherwise our iterator might become 
+  we reset the begin/end pair to be NodeList.end().  Otherwise our iterator might become
   invalidated.
 
   PROBLEM: what happens if we erase the beginning of a bucket() ???
 
   Solution:
     Instead of keeping a begin/end pair for each bucket, we keep only the begin, and a count.
-    that way there is no end iterator to be invalidated, and it is safe to insert before 
+    that way there is no end iterator to be invalidated, and it is safe to insert before
     the previous begin.
     In fact, in this scheme it is safe to make new buckets at the end of the NodeList.
 
@@ -64,7 +64,7 @@
 
     Solution: Keep the buckets ordered.  Cannot do this without scanning?
 
-    Alternate solution: keep a pair (first, last-1) for each bucket.  Empty buckets are 
+    Alternate solution: keep a pair (first, last-1) for each bucket.  Empty buckets are
     treated specially.
 
   The proposed standard suggests that it is possible to call erase() with a const_iterator.
@@ -96,7 +96,7 @@ namespace Private
 // ExtractKey is a functor that returns an object of type KeyT
 // from an object of type ValueT.
 // ConstructValue is a functor that constructs a ValueT given
-// a KeyT.  This needs to set a policy for any components 
+// a KeyT.  This needs to set a policy for any components
 // of ValueT that cannot be determined from the KeyT.  The only
 // purpose of this parameter is to make operator[] of hash_map
 // slightly more efficient (otherwise find_or_insert() would
@@ -104,7 +104,7 @@ namespace Private
 // meaning that every call to operator[] would require constructing
 // a ValueT even if it is subsequently not used).
 
-template <typename KeyT, typename ValueT, class HashFun, 
+template <typename KeyT, typename ValueT, class HashFun,
           class KeyCmp, class ExtractKey, class ConstructValue>
 class hash_table
 {
@@ -132,16 +132,16 @@ class hash_table
 
       hash_table();
 
-      hash_table(size_type n, hasher hf_ = hasher(), key_equal KEq = key_equal(), 
-		 ExtractKey KExtractor = ExtractKey(), ConstructValue VCtor = ConstructValue());
+      hash_table(size_type n, hasher hf_ = hasher(), key_equal KEq = key_equal(),
+                 ExtractKey KExtractor = ExtractKey(), ConstructValue VCtor = ConstructValue());
 
       template <class Iter>
       hash_table(Iter first, Iter last);
 
       template <class Iter>
-      hash_table(Iter first, Iter last, size_type n, hasher hf_ = hasher(), 
-		 key_equal KEq = key_equal(), ExtractKey KExtractor = ExtractKey(), 
-		 ConstructValue VCtor = ConstructValue());
+      hash_table(Iter first, Iter last, size_type n, hasher hf_ = hasher(),
+                 key_equal KEq = key_equal(), ExtractKey KExtractor = ExtractKey(),
+                 ConstructValue VCtor = ConstructValue());
 
       iterator begin() { return NodeList.begin(); };
       iterator end() { return NodeList.end(); }
@@ -150,7 +150,7 @@ class hash_table
       const_iterator end() const { return NodeList.end(); }
 
       local_iterator begin(size_type n) { return BucketVector[n].first; }
-      local_iterator end(size_type n) 
+      local_iterator end(size_type n)
       { local_iterator Temp = BucketVector[n].first; advance(Temp, BucketVector[n].second); return Temp; }
 
       const_local_iterator begin(size_type n) const { return BucketVector[n].first; }
@@ -184,7 +184,7 @@ class hash_table
       void clear();
 
       std::pair<iterator, bool> insert(value_type const& v);
-      
+
       template <class Iter>
       void insert(Iter first, Iter last);
 
@@ -202,7 +202,7 @@ class hash_table
       // rehashes with a new bucket count of at least n
       void rehash(size_type n);
 
-      // adds buckets such that there is room for at least n elements 
+      // adds buckets such that there is room for at least n elements
       // in the container before another rehash.
       // Does not ever reduce the bucket count.
       void reserve(size_type n);

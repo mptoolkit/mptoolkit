@@ -28,7 +28,7 @@ Result join_helper(pthread_t const& Thread)
    void* Ret;
    if (int ErrCode = ::pthread_join(Thread, &Ret) != 0)
    {
-      throw std::runtime_error("cannot join thread."); 
+      throw std::runtime_error("cannot join thread.");
    }
    Result RetVal = *static_cast<Result*>(Ret);
    delete static_cast<Result*>(Ret);
@@ -78,9 +78,9 @@ template <class Arg, class Result>
 void thread<Arg, Result>::run(Arg const& arg)
 {
    Argument = new Arg(arg);
-   if (int ECode = ::pthread_create(&Thread, NULL, 
-				    StartPThread, 
-				    static_cast<void*>(static_cast<ThreadBase*>(this))) != 0)
+   if (int ECode = ::pthread_create(&Thread, NULL,
+                                    StartPThread,
+                                    static_cast<void*>(static_cast<ThreadBase*>(this))) != 0)
    {
       throw std::runtime_error("not enough resources to create thread.");
    }
@@ -90,9 +90,9 @@ template <class Arg, class Result>
 void thread<Arg, Result>::run_detached(Arg const& arg)
 {
    Argument = new Arg(arg);
-   if (int ECode = ::pthread_create(&Thread, NULL, 
-				    StartPThread, 
-				    static_cast<void*>(static_cast<ThreadBase*>(this))) != 0)
+   if (int ECode = ::pthread_create(&Thread, NULL,
+                                    StartPThread,
+                                    static_cast<void*>(static_cast<ThreadBase*>(this))) != 0)
    {
       throw std::runtime_error("not enough resources to create thread.");
    }
@@ -112,8 +112,8 @@ thread<Arg, Result>::join()
 template <class Result>
 void thread<void, Result>::run()
 {
-   if (int ECode = ::pthread_create(&Thread, NULL, StartPThread, 
-				    static_cast<void*>(static_cast<ThreadBase*>(this))) != 0)
+   if (int ECode = ::pthread_create(&Thread, NULL, StartPThread,
+                                    static_cast<void*>(static_cast<ThreadBase*>(this))) != 0)
    {
       throw std::runtime_error("not enough resources to create thread.");
    }
@@ -122,8 +122,8 @@ void thread<void, Result>::run()
 inline
 void thread<void, void>::run()
 {
-   if (int ECode = ::pthread_create(&Thread, NULL, StartPThread, 
-				    static_cast<void*>(static_cast<ThreadBase*>(this))) != 0)
+   if (int ECode = ::pthread_create(&Thread, NULL, StartPThread,
+                                    static_cast<void*>(static_cast<ThreadBase*>(this))) != 0)
    {
       throw std::runtime_error("not enough resources to create thread.");
    }
@@ -132,8 +132,8 @@ void thread<void, void>::run()
 template <class Result>
 void thread<void, Result>::run_detached()
 {
-   if (int ECode = ::pthread_create(&Thread, NULL, StartPThread, 
-				    static_cast<void*>(static_cast<ThreadBase*>(this))) != 0)
+   if (int ECode = ::pthread_create(&Thread, NULL, StartPThread,
+                                    static_cast<void*>(static_cast<ThreadBase*>(this))) != 0)
    {
       throw std::runtime_error("not enough resources to create thread.");
    }
@@ -143,8 +143,8 @@ void thread<void, Result>::run_detached()
 inline
 void thread<void, void>::run_detached()
 {
-   if (int ECode = ::pthread_create(&Thread, NULL, StartPThread, 
-				    static_cast<void*>(static_cast<ThreadBase*>(this))) != 0)
+   if (int ECode = ::pthread_create(&Thread, NULL, StartPThread,
+                                    static_cast<void*>(static_cast<ThreadBase*>(this))) != 0)
    {
       throw std::runtime_error("not enough resources to create thread.");
    }

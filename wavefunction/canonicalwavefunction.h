@@ -75,7 +75,7 @@ class CanonicalWavefunctionBase
       // Returns true if the state transforms irreducibly.  This is true
       // iff the left basis contains only a single site, and the right hand side must be size 1 and abelian
       // (ie, it must have total dimension 1).
-      bool is_irreducible() const 
+      bool is_irreducible() const
       { return this->Basis1().size() == 1 && this->Basis2().total_dimension() == 1; }
 
       SymmetryList GetSymmetryList() const { return Basis1_.GetSymmetryList(); }
@@ -106,11 +106,11 @@ class CanonicalWavefunctionBase
 
       // return the i'th MPS matrix.  Because they are stored by handle, we can't
       // return a reference, but the tensors are reference counted anyway so a copy is cheap
-      mps_type operator[](int i) const 
+      mps_type operator[](int i) const
       { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return *Data[i].lock(); }
 
       // returns the lambda matrix at partition i
-      lambda_type lambda(int i) const 
+      lambda_type lambda(int i) const
       { DEBUG_RANGE_CHECK(i, 0, int(Data.size())); return *Lambda[i].lock(); }
 
       static PStream::VersionTag VersionT;

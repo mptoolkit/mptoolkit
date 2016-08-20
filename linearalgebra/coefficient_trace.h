@@ -33,8 +33,8 @@
 namespace LinearAlgebra
 {
 
-template <typename T, typename CF, 
-          typename Nested = Trace<typename interface<T>::value_type>, 
+template <typename T, typename CF,
+          typename Nested = Trace<typename interface<T>::value_type>,
           typename Ti = typename interface<T>::type>
 struct CoefficientMatrixTrace {};
 
@@ -100,11 +100,11 @@ struct CoefficientMatrixTrace<T, CF, Nested, Concepts::CompressedOuterMatrix<Tv,
 
       for (auto I = iterate(x); I; ++I)
       {
-	 auto J = iterate_at(*I, I.index());
-	 if (J)
-	 {
-	    add(Result, f(*J) * cf(J.index()));
-	 }
+         auto J = iterate_at(*I, I.index());
+         if (J)
+         {
+            add(Result, f(*J) * cf(J.index()));
+         }
       }
       return Result;
    }
@@ -131,11 +131,11 @@ struct CoefficientMatrixTrace<T, CF, Nested, Concepts::DenseMatrix<Tv, Orient, T
 
       for (auto I = iterate(x); I; ++I)
       {
-	 auto J = iterate_at(*I, I.index());
-	 if (J)
-	 {
-	    add(Result, f(*J) * cf(J.index1()));
-	 }
+         auto J = iterate_at(*I, I.index());
+         if (J)
+         {
+            add(Result, f(*J) * cf(J.index1()));
+         }
       }
       return Result;
    }
@@ -162,7 +162,7 @@ struct CoefficientMatrixTrace<T, CF, Nested, Concepts::DiagonalMatrix<Tv, Ti>>
 
       for (auto I = iterate(x.diagonal()); I; ++I)
       {
-	 add(Result, f(*I) * cf(I.index()));
+         add(Result, f(*I) * cf(I.index()));
       }
       return Result;
    }

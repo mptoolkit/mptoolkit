@@ -23,7 +23,7 @@
   A reference-counted vector class, with VectorRef (reference assignment semantics) and
   Vector (value assignment semantics).  A Vector and a VectorRef can share representations.
 
-*/ 
+*/
 
 #if !defined(VECTOR_H_DHJFKHURWEIRY4572893475489YRUI34897)
 #define VECTOR_H_DHJFKHURWEIRY4572893475489YRUI34897
@@ -71,13 +71,13 @@ class VectorRef : public VectorBase<VectorRef<Scalar> >
 
       using VectorBase<VectorRef<Scalar> >::operator[];
 
-      VectorRef(VectorRef const& V) 
-	: Block(V.Block) {}
+      VectorRef(VectorRef const& V)
+        : Block(V.Block) {}
 
       VectorRef& operator=(VectorRef const& V)
       {
-	 assign(*this, V);
-	 return *this;
+         assign(*this, V);
+         return *this;
       }
 
       template <typename U>
@@ -100,8 +100,8 @@ class VectorRef : public VectorBase<VectorRef<Scalar> >
          { DEBUG_RANGE_CHECK_OPEN(n,0U,this->size()); return *(Block.get() + n); }
 
       Scalar& operator[](size_type n)
-         { DEBUG_RANGE_CHECK_OPEN(n,0U,this->size()); 
-	 this->cow(); return *(Block.get() + n); }
+         { DEBUG_RANGE_CHECK_OPEN(n,0U,this->size());
+         this->cow(); return *(Block.get() + n); }
 
       // members defined in StrideVector
       Scalar* data() { this->cow(); return Block.get(); }
@@ -111,13 +111,13 @@ class VectorRef : public VectorBase<VectorRef<Scalar> >
       size_type start() const { return 0; }
 
    protected:
-      BlockReference<Scalar> const& block() const { return Block; } 
+      BlockReference<Scalar> const& block() const { return Block; }
       BlockReference<Scalar>& block() { return Block; }  // danger: this does not call cow()
 
       VectorRef() {}
 
       explicit VectorRef(size_type Size_)
-	: Block(Size_) {}
+        : Block(Size_) {}
 
       VectorRef(size_type Size_, Scalar const& Fill)
          : Block(Size_, Fill) {}
@@ -230,14 +230,14 @@ class Vector : public VectorRef<Scalar>
 
       template <typename Iter>
       Vector(Iter first, Iter last,
-	     typename boost::enable_if<
-	     boost::mpl::not_<boost::is_arithmetic<Iter> > >::type* dummy = 0);
+             typename boost::enable_if<
+             boost::mpl::not_<boost::is_arithmetic<Iter> > >::type* dummy = 0);
 
       Vector(Vector<Scalar> const& V)
-	: VectorRef<Scalar>(V.block().copy()) {}
+        : VectorRef<Scalar>(V.block().copy()) {}
 
       Vector(VectorRef<Scalar> const& V)
-	: VectorRef<Scalar>(V.block().copy()) {}
+        : VectorRef<Scalar>(V.block().copy()) {}
 
       template <typename U>
       Vector(U const& x, typename boost::enable_if<is_vector<U> >::type* dummy = 0);
@@ -253,9 +253,9 @@ class Vector : public VectorRef<Scalar>
       operator=(NoAliasProxy<U> const& x);
 
       void resize(size_type NewSize)
-	{ this->VectorRef<Scalar>::resize(NewSize); }
+        { this->VectorRef<Scalar>::resize(NewSize); }
 
-      void swap(Vector& Other) 
+      void swap(Vector& Other)
          { this->cow(); Other.cow(); this->VectorRef<Scalar>::swap(Other); }
 };
 

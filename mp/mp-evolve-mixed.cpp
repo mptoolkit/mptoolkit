@@ -44,8 +44,8 @@ struct SuperblockMultiply
    typedef MatrixOperator argument_type;
 
    SuperblockMultiply(SimpleOperator const& Ham_,
-		      MPStateComponent const& Left_,
-		      MPStateComponent const& Right_);
+                      MPStateComponent const& Left_,
+                      MPStateComponent const& Right_);
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
    {
@@ -58,8 +58,8 @@ struct SuperblockMultiply
 
 inline
 SuperblockMultiply::SuperblockMultiply(SimpleOperator const& Ham_,
-				       MPStateComponent const& Left_,
-				       MPStateComponent const& Right_)
+                                       MPStateComponent const& Left_,
+                                       MPStateComponent const& Right_)
    : Ham(Ham_), Left(Left_), Right(Right_)
 {
 }
@@ -79,21 +79,21 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Hamiltonian,H", prog_opt::value<std::string>(), 
+         ("Hamiltonian,H", prog_opt::value<std::string>(),
           "operator to use for the Hamiltonian (right Lanczos vector attribute \"Hamiltonian\")")
          ("wavefunction,w", prog_opt::value<std::vector<std::string> >(),
           "input wavefunction to generate the effective basis (one or more)")
-	 ("max-states,m", prog_opt::value<int>(&MaxStates), 
+         ("max-states,m", prog_opt::value<int>(&MaxStates),
           ("Maximum number of states to keep in the effective basis [default "
            + boost::lexical_cast<std::string>(MaxStates)+"]").c_str())
-         ("min-trunc", prog_opt::value<double>(&MinTrunc), 
+         ("min-trunc", prog_opt::value<double>(&MinTrunc),
           ("Minimum desired truncation error per site of the effective basis [default "
            + boost::lexical_cast<std::string>(MinTrunc) + "]").c_str())
          ("bond,b", prog_opt::value<int>(&Location),
           "Generate the basis at this bond, valid is 1 .. L-1 [default L/2]")
-	 ("timestep,t", prog_opt::value<std::complex<double> >(&Timestep), 
+         ("timestep,t", prog_opt::value<std::complex<double> >(&Timestep),
           "Timestep (can be complex) [default 1]")
-         ("num-timesteps,n", prog_opt::value<int>(&NumTimesteps), 
+         ("num-timesteps,n", prog_opt::value<int>(&NumTimesteps),
           "Total number of timesteps to calculate [default 1]")
          ("expect,e", prog_opt::value<std::vector<std::string> >(&Expectations),
           "Expectation values to calculate at each timestep (zero or more)")
@@ -101,15 +101,15 @@ int main(int argc, char** argv)
           "Dimension of the Krylov subspace")
          ("verbose,v", prog_opt::value<int>()->default_value(0),
           "increase verbosity")
-	  ;
+          ;
 
       prog_opt::options_description opt;
       opt.add(desc);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") || vm.count("wavefunction") == 0)
       {
@@ -132,7 +132,7 @@ int main(int argc, char** argv)
       long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
       if (Verbosity >= 2)
       {
-         std::cerr << "Using page size " << PageSize 
+         std::cerr << "Using page size " << PageSize
                    << ", cache size " << CacheSize << '\n';
       }
       int TempFileDesc = ProcControl::CreateUniqueFile(TempFile);
@@ -180,7 +180,7 @@ int main(int argc, char** argv)
       }
 
       // Load the remaining operators
-      std::vector<std::string> OperatorNames = vm.count("expect") ? 
+      std::vector<std::string> OperatorNames = vm.count("expect") ?
          vm["expect"].as<std::vector<std::string> >() : std::vector<std::string>();
       for (unsigned i = 0; i < OperatorNames.size(); ++i)
       {
@@ -206,11 +206,11 @@ int main(int argc, char** argv)
       std::cout << std::endl;
       for (int i = 0; i < NumTimesteps; ++i)
       {
-         State = LanczosExponential(State, 
+         State = LanczosExponential(State,
                                     SuperblockMultiply(conj(Ag.OpCenter(0)),
                                                        Ag.OpLeft(0),
-                                                       Ag.OpRight(0)), 
-                                    NumIterations, 
+                                                       Ag.OpRight(0)),
+                                    NumIterations,
                                     Theta);
 
          std::cout << (Timestep.real() * i) << "  ";

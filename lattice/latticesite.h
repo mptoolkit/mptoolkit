@@ -67,11 +67,11 @@ class LatticeSite
 
       LatticeSite() : pImpl(new ImplType()) {}
 
-      explicit LatticeSite(std::string const& Description) 
-	 : pImpl(new ImplType(Description)) {}
+      explicit LatticeSite(std::string const& Description)
+         : pImpl(new ImplType(Description)) {}
 
-      LatticeSite(std::string const& Description, ArgumentListType const& Args) 
-	 : pImpl(new ImplType(Description, Args)) {}
+      LatticeSite(std::string const& Description, ArgumentListType const& Args)
+         : pImpl(new ImplType(Description, Args)) {}
 
       std::string const& Description() const { return pImpl->Description; }
       void SetDescription(std::string const& s) { pImpl.mutate()->Description = s; }
@@ -97,10 +97,10 @@ class LatticeSite
       const_operator_iterator begin_operator() const { return pImpl->Operators.begin(); }
       const_operator_iterator end_operator() const { return pImpl->Operators.end(); }
 
-      const_operator_iterator find_operator(std::string const& s) const 
+      const_operator_iterator find_operator(std::string const& s) const
       { return pImpl->Operators.find(s); }
 
-      bool operator_exists(std::string const& s) const 
+      bool operator_exists(std::string const& s) const
       { return pImpl->Operators.find(s) != pImpl->Operators.end(); }
 
       operator_type& operator[](std::string const& s) { return pImpl.mutate()->Operators[s]; }
@@ -109,7 +109,7 @@ class LatticeSite
       // arguments
 
       bool arg_empty() const { return pImpl->Arguments.empty(); }
-      
+
       const_argument_iterator begin_arg() const { return pImpl->Arguments.begin(); }
       const_argument_iterator end_arg() const { return pImpl->Arguments.end(); }
 
@@ -121,7 +121,7 @@ class LatticeSite
 
       std::complex<double> arg(std::string const& a) const;
 
-      std::complex<double>& arg(std::string const& a) 
+      std::complex<double>& arg(std::string const& a)
       { return pImpl.mutate()->Arguments[a]; }
 
       // functions
@@ -131,10 +131,10 @@ class LatticeSite
       const_function_iterator begin_function() const { return pImpl->Functions.begin(); }
       const_function_iterator end_function() const { return pImpl->Functions.end(); }
 
-      const_function_iterator find_function(std::string const& s) const 
+      const_function_iterator find_function(std::string const& s) const
       { return pImpl->Functions.find(s); }
 
-      bool function_exists(std::string const& s) const 
+      bool function_exists(std::string const& s) const
       { return pImpl->Functions.find(s) != pImpl->Functions.end(); }
 
       function_type& func(std::string const& s) { return pImpl.mutate()->Functions[s]; }
@@ -143,12 +143,12 @@ class LatticeSite
 
       // evaluate a function
       boost::variant<operator_type, std::complex<double> >
-      eval_function(Function::OperatorFunction const& Func, 
-		    Function::ParameterList const& Params) const;
+      eval_function(Function::OperatorFunction const& Func,
+                    Function::ParameterList const& Params) const;
 
       boost::variant<operator_type, std::complex<double> >
-      eval_function(std::string const& Func, 
-		    Function::ParameterList const& Params) const;
+      eval_function(std::string const& Func,
+                    Function::ParameterList const& Params) const;
 
       void check_structure() const;
 
@@ -158,14 +158,14 @@ class LatticeSite
       {
          std::string Description;
          OperatorListType Operators;
-	 ArgumentListType Arguments;
-	 FunctionListType Functions;
+         ArgumentListType Arguments;
+         FunctionListType Functions;
 
-	 ImplType() {}
-	 ImplType(std::string const& Desc_) : Description(Desc_) {}
-	 ImplType(std::string const& Desc_,
-		  Function::ArgumentList const& Args)
-	    : Description(Desc_), Arguments(Args) {}
+         ImplType() {}
+         ImplType(std::string const& Desc_) : Description(Desc_) {}
+         ImplType(std::string const& Desc_,
+                  Function::ArgumentList const& Args)
+            : Description(Desc_), Arguments(Args) {}
 
          friend PStream::opstream& operator<<(PStream::opstream& out, ImplType const& Impl);
          friend PStream::ipstream& operator>>(PStream::ipstream& in, ImplType& Impl);
@@ -193,29 +193,29 @@ class SiteOperatorFunction
       typedef std::complex<double> complex;
 
       SiteOperatorFunction(LatticeSite const* Site, std::string const& Name,
-			   Function::OperatorFunction const& Func);
+                           Function::OperatorFunction const& Func);
 
       SiteOperator operator()(Function::Parameter const& arg1);
-      SiteOperator operator()(Function::Parameter const& arg1, 
-			      Function::Parameter const& arg2);
-      SiteOperator operator()(Function::Parameter const& arg1, 
-			      Function::Parameter const& arg2,
-			      Function::Parameter const& arg3);
-      SiteOperator operator()(Function::Parameter const& arg1, 
-			      Function::Parameter const& arg2,
-			      Function::Parameter const& arg3,
-			      Function::Parameter const& arg4);
-      SiteOperator operator()(Function::Parameter const& arg1, 
-			      Function::Parameter const& arg2,
-			      Function::Parameter const& arg3,
-			      Function::Parameter const& arg4,
-			      Function::Parameter const& arg5);
-      SiteOperator operator()(Function::Parameter const& arg1, 
-			      Function::Parameter const& arg2,
-			      Function::Parameter const& arg3,
-			      Function::Parameter const& arg4,
-			      Function::Parameter const& arg5,
-			      Function::Parameter const& arg6);
+      SiteOperator operator()(Function::Parameter const& arg1,
+                              Function::Parameter const& arg2);
+      SiteOperator operator()(Function::Parameter const& arg1,
+                              Function::Parameter const& arg2,
+                              Function::Parameter const& arg3);
+      SiteOperator operator()(Function::Parameter const& arg1,
+                              Function::Parameter const& arg2,
+                              Function::Parameter const& arg3,
+                              Function::Parameter const& arg4);
+      SiteOperator operator()(Function::Parameter const& arg1,
+                              Function::Parameter const& arg2,
+                              Function::Parameter const& arg3,
+                              Function::Parameter const& arg4,
+                              Function::Parameter const& arg5);
+      SiteOperator operator()(Function::Parameter const& arg1,
+                              Function::Parameter const& arg2,
+                              Function::Parameter const& arg3,
+                              Function::Parameter const& arg4,
+                              Function::Parameter const& arg5,
+                              Function::Parameter const& arg6);
 };
 
 // This is used by UnitCell and UnitCellMPO

@@ -49,11 +49,11 @@ LatticeSite CreateU1SU2tJSite(std::string const& Sym1 = "N", std::string const& 
 
    // annihilate fermion
    C("empty",  "single")    =  std::sqrt(2.0);
-   
+
    // create fermion
    CH = adjoint(C);
 
-   // parity = (-1)^N   
+   // parity = (-1)^N
    P("empty",  "empty")     =  1;
    P("single", "single")    = -1;
 
@@ -61,11 +61,11 @@ LatticeSite CreateU1SU2tJSite(std::string const& Sym1 = "N", std::string const& 
    CP = prod(C, P, QN(-1,0.5));
    CHP = prod(CH, P, QN(1,0.5));
 
-   // spatial reflection   
+   // spatial reflection
    R("empty",  "empty")     =  1;
    R("single", "single")    =  1;
- 
-   // particle number  
+
+   // particle number
    N("single", "single")    =  1;
 
    // symmetrized coulomb operator = (n_up - 1/2) * (n_down - 1/2)

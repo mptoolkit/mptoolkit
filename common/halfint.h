@@ -57,12 +57,12 @@ class half_int
 
       double to_double() const { return N2 / 2.0; }
 
-      int to_int() const 
-	{ if (!is_integral()) throw_cannot_convert(); return N2 >> 1; }
+      int to_int() const
+        { if (!is_integral()) throw_cannot_convert(); return N2 >> 1; }
 
       // fast version of to_int, where is_integral() is a precondition
-      int to_int_assert() const 
-	{ DEBUG_PRECONDITION(is_integral()); return N2 >> 1; }
+      int to_int_assert() const
+        { DEBUG_PRECONDITION(is_integral()); return N2 >> 1; }
 
       bool is_integral() const { return !(N2 & 1); }
 
@@ -244,19 +244,19 @@ half_int operator-(half_int h)
    return half_int(-h.twice(), half_int::twice_tag());
 }
 
-inline 
+inline
 bool is_integral(half_int h)
 {
    return h.is_integral();
 }
 
-inline 
+inline
 int to_int(half_int h)
 {
    return h.to_int();
 }
 
-inline 
+inline
 int to_int_assert(half_int h)
 {
    return h.to_int_assert();
@@ -276,7 +276,7 @@ int minus1pow(int x)
 }
 
 //
-// returns true if (a,b,c) satisfies the triangle condition 
+// returns true if (a,b,c) satisfies the triangle condition
 // |a-c| <= b <= a+c and a+b+c is integral.
 // a,b,c are assumed positive.
 inline

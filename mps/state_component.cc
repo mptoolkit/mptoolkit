@@ -18,8 +18,8 @@
 // ENDHEADER
 
 template <typename T>
-BasicStateComponent<T>::BasicStateComponent(BasisList const& SBasis_, 
-                                      VectorBasis const& V1, 
+BasicStateComponent<T>::BasicStateComponent(BasisList const& SBasis_,
+                                      VectorBasis const& V1,
                                       VectorBasis const& V2)
    : SBasis(SBasis_), VBasis1(V1), VBasis2(V2), Data(SBasis_.size())
 {
@@ -30,7 +30,7 @@ BasicStateComponent<T>::BasicStateComponent(BasisList const& SBasis_,
 }
 
 template <typename T>
-BasicStateComponent<T> 
+BasicStateComponent<T>
 BasicStateComponent<T>::ConstructFullBasis1(BasisList const& S, VectorBasis const& Basis2)
 {
    ProductBasis<BasisList, VectorBasis> FullLeftBasis(S, Basis2);
@@ -49,7 +49,7 @@ BasicStateComponent<T>::ConstructFullBasis1(BasisList const& S, VectorBasis cons
    }
 
    // check the normalization
-   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(Result, herm(Result))), 
+   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(Result, herm(Result))),
                      FullLeftBasis.total_degree());
 
    return Result;
@@ -69,7 +69,7 @@ BasicStateComponent<T>::delta_shift(QuantumNumber const& q)
 }
 
 template <typename T>
-BasicStateComponent<T> 
+BasicStateComponent<T>
 BasicStateComponent<T>::ConstructFullBasis2(VectorBasis const& Basis1, BasisList const& S)
 {
    ProductBasis<VectorBasis, BasisList> FullRightBasis(Basis1, adjoint(S));
@@ -83,13 +83,13 @@ BasicStateComponent<T>::ConstructFullBasis2(VectorBasis const& Basis1, BasisList
       CHECK_EQUAL(Dim, Basis1.dim(b1));
 
       // Make an identity matrix of the correct size
-      set_element(Result[s], b1, t, 
-                                 std::sqrt(double(degree(FullRightBasis[t])) / degree(Basis1[b1])) 
+      set_element(Result[s], b1, t,
+                                 std::sqrt(double(degree(FullRightBasis[t])) / degree(Basis1[b1]))
                                  * LinearAlgebra::identity_matrix<double>(Dim));
    }
 
    // check the normalization
-   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(herm(Result), Result)), 
+   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(herm(Result), Result)),
                      FullRightBasis.total_degree());
 
    return Result;

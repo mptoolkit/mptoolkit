@@ -71,12 +71,12 @@ int main(int argc, char** argv)
    std::cout << "   n                    a                  b^2               Energy     Norm^2    Overlap\n";
 
       std::cout << std::setw(4) << n << " "
-		<< std::setprecision(14)
-		<< std::setw(20) << a[n] << " " << std::setw(20) << b[n]
-		<< " " << std::setw(20) << Energy
-		<< std::setprecision(4)
-		<< " " << std::setw(10) << std::sqrt(NormSq[n]) << " " << std::setw(10)
-		<< Overlap << std::endl;
+                << std::setprecision(14)
+                << std::setw(20) << a[n] << " " << std::setw(20) << b[n]
+                << " " << std::setw(20) << Energy
+                << std::setprecision(4)
+                << " " << std::setw(10) << std::sqrt(NormSq[n]) << " " << std::setw(10)
+                << Overlap << std::endl;
 
    ++n; // n=1 iteration
    f[n] = sum(Hfn, -a[n-1] * f[n-1], FMaxStates);
@@ -97,12 +97,12 @@ int main(int argc, char** argv)
    Energy = LinearAlgebra::EigenvaluesSymmetric(M)[0];
 
       std::cout << std::setw(4) << n << " "
-		<< std::setprecision(14)
-		<< std::setw(20) << a[n] << " " << std::setw(20) << b[n]
-		<< " " << std::setw(20) << Energy
-		<< std::setprecision(4)
-		<< " " << std::setw(10) << std::sqrt(NormSq[n]) << " " << std::setw(10)
-		<< Overlap << std::endl;
+                << std::setprecision(14)
+                << std::setw(20) << a[n] << " " << std::setw(20) << b[n]
+                << " " << std::setw(20) << Energy
+                << std::setprecision(4)
+                << " " << std::setw(10) << std::sqrt(NormSq[n]) << " " << std::setw(10)
+                << Overlap << std::endl;
 
    ++n;
    double Now = ProcControl::GetCPUTime();
@@ -134,12 +134,12 @@ int main(int argc, char** argv)
       Energy = LinearAlgebra::EigenvaluesSymmetric(M)[0];
 
       std::cout << std::setw(4) << n << " "
-		<< std::setprecision(14)
-		<< std::setw(20) << a[n] << " " << std::setw(20) << b[n]
-		<< " " << std::setw(20) << Energy
-		<< std::setprecision(4)
-		<< " " << std::setw(10) << std::sqrt(NormSq[n]) << " " << std::setw(10)
-		<< Overlap << std::endl;
+                << std::setprecision(14)
+                << std::setw(20) << a[n] << " " << std::setw(20) << b[n]
+                << " " << std::setw(20) << Energy
+                << std::setprecision(4)
+                << " " << std::setw(10) << std::sqrt(NormSq[n]) << " " << std::setw(10)
+                << Overlap << std::endl;
       double Next = ProcControl::GetCPUTime();
       std::cout << "CPU time for sweep = " << Next-Now << std::endl;
       Now = Next;

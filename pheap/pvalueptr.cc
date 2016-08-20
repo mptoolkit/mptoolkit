@@ -118,7 +118,7 @@ PStream::ipstream& operator>>(PStream::ipstream& stream, pvalue_ptr<T>& Object)
    if (!(uid == "$vp")) { PANIC("bad pstream, expecting a uid of $vp")(uid); }
    Object = pvalue_ptr<T>(stream.get_id());
    return stream;
-} 
+}
 
 // pvalue_handle
 
@@ -180,7 +180,7 @@ pvalue_handle<T>::pvalue_handle(const pvalue_ptr<U>& r) : Handle(r.Handle)
    if (Handle) Handle->AddReference();
 }
 #endif
- 
+
 template <class T>
 inline
 pvalue_handle<T>::~pvalue_handle()
@@ -190,7 +190,7 @@ pvalue_handle<T>::~pvalue_handle()
 
 template <class T>
 inline
-pvalue_handle<T>& 
+pvalue_handle<T>&
 pvalue_handle<T>::operator=(const pvalue_handle<T>& r)
 {
    // it is essential that we increment r's reference count before we do any delete
@@ -204,7 +204,7 @@ pvalue_handle<T>::operator=(const pvalue_handle<T>& r)
 template <class T>
 template <class U>
 inline
-pvalue_handle<T>& 
+pvalue_handle<T>&
 pvalue_handle<T>::operator=(const pvalue_handle<U>& r)
 {
    // it is essential that we increment r's reference count before we do any delete

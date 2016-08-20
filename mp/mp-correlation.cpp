@@ -46,7 +46,7 @@ int main(int argc, char** argv)
    pvalue_ptr<MPWavefunction> Psi2 = argc == 8 ? pheap::ImportHeap(argv[7]) : Psi1;
 
    // we would like to multiply the left-hand wavefunction by op1 and then calculate
-   // the expectation value (Ps1Op1, Op2, Psi2), but we cannot, because 
+   // the expectation value (Ps1Op1, Op2, Psi2), but we cannot, because
    // Op1 might not be hermitian, and we don't know how to take the adjoint of
    // an MPOperator yet...
    std::cout.precision(12);
@@ -54,11 +54,11 @@ int main(int argc, char** argv)
    for (int Pos = FirstSite; Pos <= LastSite; ++Pos)
    {
       MPOperator Op = prod(System->Lookup(Op1, boost::lexical_cast<std::string>(FirstSite)),
-			   System->Lookup(Op2, boost::lexical_cast<std::string>(Pos)),
-			   QuantumNumber(System->GetSymmetryList()));
+                           System->Lookup(Op2, boost::lexical_cast<std::string>(Pos)),
+                           QuantumNumber(System->GetSymmetryList()));
       std::complex<double> x = expectation(*Psi1, Op, *Psi2);
-      std::cout << std::setw(4) << FirstSite << ' ' << std::setw(4) << Pos 
-		<< ' ' << std::setw(18) << x.real() << ' ' << std::setw(18) << x.imag() << '\n';
+      std::cout << std::setw(4) << FirstSite << ' ' << std::setw(4) << Pos
+                << ' ' << std::setw(18) << x.real() << ' ' << std::setw(18) << x.imag() << '\n';
    }
 
    pheap::Shutdown();

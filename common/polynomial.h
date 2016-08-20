@@ -161,5 +161,5 @@ operator-(Polynomial<CF> const& x, Polynomial<CF> const& y)
    Result -= y;
    return Result;
 }
-  
+
 #endif

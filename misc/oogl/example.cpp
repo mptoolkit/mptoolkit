@@ -45,20 +45,20 @@ int main()
 
       // Create an arrow
       ColorPolyhedra MyArrow = CreateColorArrow(0.9, 0.9, 0.2, 0.4, 8, c1, c2, c3);
-      
+
       // Choose a location
       Vertex Location(frand() * 100, frand() * 100, 0);
-      
+
       // Rotate the arrow, shift and translate
       double Phi = frand() * Pi;
       double Theta =  frand() * Pi * 2;
 
-      MyArrow *= Transform::rot_y(Phi) * 
-	 Transform::rot_z(Theta) * Transform::scale(0.8) * Transform::translate(Location);
+      MyArrow *= Transform::rot_y(Phi) *
+         Transform::rot_z(Theta) * Transform::scale(0.8) * Transform::translate(Location);
 
       // Add the arrow to the list
       MyList.push_back(MyArrow);
-      
+
    }
 
    // Write the OOGL data to standard output

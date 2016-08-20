@@ -83,10 +83,10 @@ class HashVector : public VectorBase<HashVector<T> >
       const_iterator c_iterate() const { return const_iterator(Data_); }
       iterator iterate() { return iterator(Data_); }
 
-      iterator iterate_at(size_type n) 
+      iterator iterate_at(size_type n)
       { return iterator(Data_, Data_.find(n)); }
 
-      const_iterator iterate_at(size_type n) const 
+      const_iterator iterate_at(size_type n) const
       { return const_iterator(Data_, Data_.find(n)); }
 
       size_type nnz() const { return Data_.size(); }

@@ -43,7 +43,7 @@ int main(int argc, char** argv)
    long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
    if (Verbosity >= 2)
    {
-      std::cerr << "Using page size " << PageSize 
+      std::cerr << "Using page size " << PageSize
                 << ", cache size " << CacheSize << '\n';
    }
    int TempFileDesc = ProcControl::CreateUniqueFile(TempFile);

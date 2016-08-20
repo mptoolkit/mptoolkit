@@ -26,7 +26,7 @@
 
   After getting burned with compliers not defining abs(double) causing implicit conversion to abs(int),
   we define here the euclidean norm norm_2(T), for types T = float (does anyone use float anymore?),
-  T = double and T = std::complex<double>, and integer types.  
+  T = double and T = std::complex<double>, and integer types.
   norm_2 always returns a floating point type.  norm_2_sq(T) gives the square of the 2-norm.
 
   Also defined are conj(x), which gives sensible results for real types as well as complex,
@@ -94,7 +94,7 @@ double pythag(double x, double y)
 {
    double Absx = fabs(x);
    double Absy = fabs(y);
-   if (Absx > Absy) 
+   if (Absx > Absy)
    {
       double Ratio = Absy / Absx;
       return Absx * sqrt(1.0 + Ratio * Ratio);
@@ -350,7 +350,7 @@ class complex_ref
 
       complex_ref operator=(complex_ref const& x)
       { re = x.re; im = x.im; }
-      
+
       operator std::complex<T>() const { return std::complex<T>(re, im); }
 
       T const& real() const { return re; }
@@ -423,16 +423,16 @@ struct div_helper
       div_result<T> Res(n/d, n%d);
       if (Res.rem < 0)
       {
-	 if (d < 0)
-	 {
-	    ++Res.quot;
-	    Res.rem -= d;
-	 }
-	 else
-	 {
-	    --Res.quot;
-	    Res.rem += d;
-	 }
+         if (d < 0)
+         {
+            ++Res.quot;
+            Res.rem -= d;
+         }
+         else
+         {
+            --Res.quot;
+            Res.rem += d;
+         }
       }
       return Res;
    }
@@ -444,18 +444,18 @@ struct div_helper
       if (n < 0)
       {
          if ((Res.rem > 0 && d > 0) || (Res.rem < 0 && d <= 0))
-	 {
-	    ++Res.quot;
-	    Res.rem -= d;
-	 }
+         {
+            ++Res.quot;
+            Res.rem -= d;
+         }
       }
-      else 
+      else
       {
-	 if ((Res.rem > 0 && d < 0) || (Res.rem < 0 && d >= 0))
-	 {
-	    --Res.quot;
-	    Res.rem += d;
-	 }
+         if ((Res.rem > 0 && d < 0) || (Res.rem < 0 && d >= 0))
+         {
+            --Res.quot;
+            Res.rem += d;
+         }
       }
       return Res;
    }
@@ -466,8 +466,8 @@ struct div_helper
       div_result<T> Res(n/d, n%d);
       if ((Res.rem < 0 && d >= 0) || (Res.rem > 0 && d < 0))
       {
-	 --Res.quot;
-	 Res.rem += d;
+         --Res.quot;
+         Res.rem += d;
       }
       return Res;
    }
@@ -491,16 +491,16 @@ struct div_helper<1,-1,-1>
       div_result<T> Res(n/d, n%d);
       if (Res.rem < 0)
       {
-	 if (d < 0)
-	 {
-	    ++Res.quot;
-	    Res.rem -= d;
-	 }
-	 else
-	 {
-	    --Res.quot;
-	    Res.rem += d;
-	 }
+         if (d < 0)
+         {
+            ++Res.quot;
+            Res.rem -= d;
+         }
+         else
+         {
+            --Res.quot;
+            Res.rem += d;
+         }
       }
       return Res;
    }
@@ -511,21 +511,21 @@ struct div_helper<1,-1,-1>
       div_result<T> Res(n/d, n%d);
       if (n < 0)
       {
-	 // for this case, we know that Rem <= 0
+         // for this case, we know that Rem <= 0
          if (Res.rem != 0 && d < 0)
-	 {
-	    ++Res.quot;
-	    Res.rem -= d;
-	 }
+         {
+            ++Res.quot;
+            Res.rem -= d;
+         }
       }
-      else 
+      else
       {
-	 // we know here that Rem >= 0
-	 if (Res.rem != 0 && d < 0)
-	 {
-	    --Res.quot;
-	    Res.rem += d;
-	 }
+         // we know here that Rem >= 0
+         if (Res.rem != 0 && d < 0)
+         {
+            --Res.quot;
+            Res.rem += d;
+         }
       }
       return Res;
    }
@@ -536,8 +536,8 @@ struct div_helper<1,-1,-1>
       div_result<T> Res(n/d, n%d);
       if ((Res.rem < 0 && d >= 0) || (Res.rem > 0 && d < 0))
       {
-	 --Res.quot;
-	 Res.rem += d;
+         --Res.quot;
+         Res.rem += d;
       }
       return Res;
    }
@@ -678,7 +678,7 @@ struct FloatIsInt
    typedef T source_type;
    typedef T argument_type;
 
-   static source_type nearbyint(T x) 
+   static source_type nearbyint(T x)
    { using std::trunc; PRECONDITION_EQUAL(trunc(x), x); return x; }
 };
 #endif

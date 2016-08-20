@@ -52,7 +52,7 @@ int main()
    NP(3,4) = 7;
    NP(4,3) = 3;
    NP(5,4) = 5;
-   
+
    std::vector<IrredTensor<double> > NPacc(2);
    NPacc[0] = N;
    NPacc[1] = P;

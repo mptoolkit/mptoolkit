@@ -55,36 +55,36 @@ class VectorTransformIterator
       typedef typename Func::result_type reference;
       typedef typename make_value<reference>::type value_type;
       typedef typename boost::mpl::if_<
-	 boost::is_reference<reference>,
-	 typename boost::remove_reference<reference>::type*,
-	 operator_arrow_proxy<value_type> >::type pointer;
+         boost::is_reference<reference>,
+         typename boost::remove_reference<reference>::type*,
+         operator_arrow_proxy<value_type> >::type pointer;
       typedef typename Base::category category;
 
       VectorTransformIterator() {}
 
       explicit VectorTransformIterator(Base const& base)
-	 : base_(base), f_() {}
+         : base_(base), f_() {}
 
       VectorTransformIterator(Base const& base, Func const& f)
-	 : base_(base), f_(f) {}
+         : base_(base), f_(f) {}
 
-      VectorTransformIterator& operator++() 
-	 { ++base_; return *this; }
+      VectorTransformIterator& operator++()
+         { ++base_; return *this; }
 
-      VectorTransformIterator& operator++(int) 
-	 { return VectorTransformIterator(base_++, f_); }
+      VectorTransformIterator& operator++(int)
+         { return VectorTransformIterator(base_++, f_); }
 
-      VectorTransformIterator& operator--() 
-	 { --base_; return *this; }
+      VectorTransformIterator& operator--()
+         { --base_; return *this; }
 
-      VectorTransformIterator& operator--(int) 
-	 { return VectorTransformIterator(base_--, f_); }
+      VectorTransformIterator& operator--(int)
+         { return VectorTransformIterator(base_--, f_); }
 
       VectorTransformIterator& operator+=(difference_type n)
-	 { base_ += n; return *this; }
+         { base_ += n; return *this; }
 
       VectorTransformIterator& operator-=(difference_type n)
-	 { base_ -= n; return *this; }
+         { base_ -= n; return *this; }
 
       size_type index() const { return base_.index(); }
 

@@ -26,7 +26,7 @@ namespace LinearAlgebra
 {
 
 template <typename MultFunc>
-Vector<std::complex<double> > 
+Vector<std::complex<double> >
 DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
                   std::vector<std::complex<double> >* OutputVectors,
                   int ncv, bool Sort, int Verbose)
@@ -95,7 +95,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
    std::vector<std::complex<double> > workl(lworkl);
    std::vector<double> rwork(ncv);
    int info = 0;  // no initial residual
- 
+
    if (Verbose >= 1)
    {
       std::cerr << "Starting ARPACK";
@@ -107,7 +107,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
                   &v[0], ldv, &iparam, &ipntr, &workd[0],
                   &workl[0], lworkl, &rwork[0], &info);
    CHECK(info >= 0)(info)(n)(nev)(ncv);
-   
+
    while (ido != 99)
    {
       if (ido == -1 || ido == 1)
@@ -125,7 +125,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
       ARPACK::znaupd(&ido, bmat, n, which, nev, tol, &resid[0], ncv,
                      &v[0], ldv, &iparam, &ipntr, &workd[0],
                      &workl[0], lworkl, &rwork[0], &info);
-      CHECK(info >= 0)(info); 
+      CHECK(info >= 0)(info);
    }
 
    if (Verbose >= 1)
@@ -143,10 +143,10 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
    std::complex<double> sigma;   // not referenced
    std::vector<std::complex<double> > workev(2*ncv);
    ARPACK::zneupd(rvec, howmny, &select[0], &d[0], &z[0], ldz, sigma, &workev[0],
-                  bmat, n, which, nev, tol, &resid[0], ncv, &v[0], ldv, 
+                  bmat, n, which, nev, tol, &resid[0], ncv, &v[0], ldv,
                   &iparam, &ipntr, &workd[0],
                   &workl[0], lworkl, &rwork[0], &info);
-   CHECK(info >= 0)("arpack::zneupd")(info)(nev)(ncv); 
+   CHECK(info >= 0)("arpack::zneupd")(info)(nev)(ncv);
 
    Result = LinearAlgebra::Vector<std::complex<double> >(nev);
    for (int i = 0; i < nev; ++i)
@@ -168,12 +168,12 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
       // a simple exchange sort
       for (unsigned i = 0; i < Result.size()-1; ++i)
       {
-	 for (unsigned j = i+1; j < Result.size(); ++j)
-	 {
-	    if (norm_frob(Result[j]) > norm_frob(Result[i]))
-	    {
-	       std::swap(Result[i], Result[j]);
-	       if (OutputVectors)
+         for (unsigned j = i+1; j < Result.size(); ++j)
+         {
+            if (norm_frob(Result[j]) > norm_frob(Result[i]))
+            {
+               std::swap(Result[i], Result[j]);
+               if (OutputVectors)
                {
                   std::vector<std::complex<double> > Temp(&(*OutputVectors)[n*i],
                                                           &(*OutputVectors)[n*i]+n);
@@ -183,7 +183,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
                   LinearAlgebra::fast_copy(&Temp[0], &Temp[0]+n, &(*OutputVectors)[n*j]);
                }
             }
-	 }
+         }
       }
    }
 

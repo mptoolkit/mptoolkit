@@ -80,7 +80,7 @@ class pvalue_handle_iterator
          }
          return *this;
       }
-   
+
       reference operator*() const
       {
          if (Ptr.is_null() && !Iter->is_null())
@@ -220,7 +220,7 @@ class const_pvalue_handle_iterator
 
       template <typename Other>
       const_pvalue_handle_iterator(pvalue_handle_iterator<Other> const& I)
-	 : Iter(I.base()) {}
+         : Iter(I.base()) {}
 
       reference operator*() const
       {

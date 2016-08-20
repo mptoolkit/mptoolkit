@@ -37,7 +37,7 @@ Regularize(VectorBasis const& b)
 
    for (std::size_t i = 0; i < b.size(); ++i)
    {
-      int Sz = SizeMap[b[i]];     
+      int Sz = SizeMap[b[i]];
       RangeOfSubspace.push_back(LinearAlgebra::range(Sz, Sz+b.dim(i)));
       SizeMap[b[i]] += b.dim(i);
    }
@@ -60,7 +60,7 @@ Regularize(VectorBasis const& b)
                                                          b.dim(i),
                                                          0.0);
 
-      Result(Dest,i)(RangeOfSubspace[i], LinearAlgebra::all) 
+      Result(Dest,i)(RangeOfSubspace[i], LinearAlgebra::all)
          = LinearAlgebra::identity_matrix<double>(b.dim(i));
    }
 

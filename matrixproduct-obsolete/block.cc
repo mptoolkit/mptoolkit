@@ -40,10 +40,10 @@ Block<T>::CoerceSymmetryList(QuantumNumbers::SymmetryList const& sl)
 template <typename OperatorT>
 OperatorT const&
 Block<OperatorT>::operator[](std::string const& s) const
-{ 
-   typename DataType::const_iterator I = Data->find(s); 
+{
+   typename DataType::const_iterator I = Data->find(s);
    CHECK(I != Data->end()) << "The block does not contain any operator named " << s;
-   return I->second; 
+   return I->second;
 }
 
 template <typename OperatorT>

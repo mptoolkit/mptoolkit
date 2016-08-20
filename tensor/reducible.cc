@@ -32,7 +32,7 @@ ReducibleTensor<T, B1, B2, S>::ReducibleTensor(basis1_type const& Basis)
 }
 
 template <typename T, typename B1, typename B2, typename S>
-ReducibleTensor<T, B1, B2, S>::ReducibleTensor(basis1_type const& Basis1, 
+ReducibleTensor<T, B1, B2, S>::ReducibleTensor(basis1_type const& Basis1,
                                                basis2_type const& Basis2)
    : Basis1_(Basis1), Basis2_(Basis2)
 {
@@ -91,7 +91,7 @@ ReducibleTensor<T, B1, B2, S>::operator+=(IrredTensorType const& x)
 {
    if (this->is_null())
       (*this) = x;
-   else 
+   else
       this->project(x.TransformsAs()) += x;
    return *this;
 }
@@ -102,7 +102,7 @@ ReducibleTensor<T, B1, B2, S>::operator-=(IrredTensorType const& x)
 {
    if (this->is_null())
       (*this) = -x;
-   else 
+   else
       this->project(x.TransformsAs()) -= x;
    return *this;
 }
@@ -139,7 +139,7 @@ template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T,B1,B2,S>
 ReducibleTensor<T, B1, B2, S>::project(QuantumNumber const& q) const
 {
-   const_iterator I = std::find_if(this->begin(), this->end(), 
+   const_iterator I = std::find_if(this->begin(), this->end(),
                                    TransformsAsEqualTo<IrredTensor<T,B1,B2,S> >(q));
    if (I == this->end())
    {
@@ -235,7 +235,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, ReducibleTensor<T, B1, B2, 
 template <typename T, typename B1, typename B2, typename S>
 std::ostream& operator<<(std::ostream& out, ReducibleTensor<T, B1, B2, S> const& Op)
 {
-   for (typename ReducibleTensor<T, B1, B2, S>::const_iterator I = Op.begin(); 
+   for (typename ReducibleTensor<T, B1, B2, S>::const_iterator I = Op.begin();
         I != Op.end(); ++I)
    {
       out << (*I) << '\n';
@@ -247,12 +247,12 @@ template <typename T, typename B1, typename B2, typename S>
 std::string show_projections(ReducibleTensor<T, B1, B2, S> const& Op)
 {
    std::string Result;
-   for (typename ReducibleTensor<T, B1, B2, S>::const_iterator I = Op.begin(); 
+   for (typename ReducibleTensor<T, B1, B2, S>::const_iterator I = Op.begin();
         I != Op.end(); ++I)
    {
-      Result += "Components that transform as " 
+      Result += "Components that transform as "
          + boost::lexical_cast<std::string>(I->first)
-	 + ":\n";
+         + ":\n";
       Result += show_projections(I->second);
    }
    return Result;

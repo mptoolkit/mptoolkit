@@ -40,8 +40,8 @@ class UnitCellMPO
 
       UnitCellMPO() = default;
 
-      UnitCellMPO(SiteListPtrType const& SiteList_, FiniteMPO Op_, 
-		  LatticeCommute Com_, int Offset_ = 0, std::string Description = "");
+      UnitCellMPO(SiteListPtrType const& SiteList_, FiniteMPO Op_,
+                  LatticeCommute Com_, int Offset_ = 0, std::string Description = "");
 
       // When we assign a UnitCellMPO, we don't want to copy the description
       // if it has already been set. Hence we need a custom assignment, and therefore
@@ -196,7 +196,7 @@ UnitCellMPO adjoint(UnitCellMPO const& x);
 UnitCellMPO inv_adjoint(UnitCellMPO const& x);
 
 // translate - shift a UnitCellMPO by some number of sites.
-// This can be positive or negative but MUST be a multiple of 
+// This can be positive or negative but MUST be a multiple of
 // the unit cell size.  TODO: relax this restriction as long as the
 // SiteList is invariant under the shift
 UnitCellMPO translate(UnitCellMPO x, int Sites);

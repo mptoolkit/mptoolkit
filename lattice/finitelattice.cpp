@@ -90,7 +90,7 @@ UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite con
    Lock->push_back(CoerceSymmetryList(u, sl));
 }
 
-UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t, 
+UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t,
                  LatticeSite const& u, LatticeSite const& v)
    : Data_(new UnitCellType(CoerceSymmetryList(s, sl)))
 {
@@ -138,7 +138,7 @@ UnitCell::UnitCell(LatticeSite const& s, std::string const& Coord)
 {
 }
 
-LatticeSite const& 
+LatticeSite const&
 UnitCell::operator[](int n) const
 {
    CHECK(n >= 1 && n <= this->size())(n)(this->size());
@@ -179,7 +179,7 @@ UnitCell join(UnitCell const& x, UnitCell const& y, UnitCell const& z, UnitCell 
 }
 
 UnitCell join(UnitCell const& x, UnitCell const& y, UnitCell const& z, UnitCell const& w,
-	     UnitCell const& v)
+             UnitCell const& v)
 {
    return join(UnitCell(x,y,z,w), v);
 }
@@ -203,7 +203,7 @@ operator==(UnitCell const& u1, UnitCell const& u2)
    for (int i = 0; i < Sz; ++i)
    {
       if (u1[i].Basis1() != u2[i].Basis1() || u1[i].Basis2() != u2[i].Basis2())
-	 return false;
+         return false;
    }
    return true;
 }

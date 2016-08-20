@@ -114,7 +114,7 @@ std::string show_projections(BasisList const& B)
       ProjectionList Pr = enumerate_projections(*I);
       for (ProjectionList::const_iterator PrI = Pr.begin(); PrI != Pr.end(); ++PrI)
       {
-         if (First) 
+         if (First)
          {
             Out << std::setw(4) << N << "  "
                 << std::setw(13) << *I << "  "
@@ -174,7 +174,7 @@ LinearizeQuantumNumberSubspace(BasisList const& b, QuantumNumbers::QuantumNumber
    for (unsigned i = 0; i < b.size(); ++i)
    {
       if (b[i] == q)
-	 Result[i] = n++;
+         Result[i] = n++;
    }
    return Result;
 }
@@ -196,14 +196,14 @@ int VectorBasis::total_degree() const
 std::ostream& operator<<(std::ostream& Out, VectorBasis const& B)
 {
    Out << "Basis has symmetry " << B.GetSymmetryList()
-       << ", subspace size = " << B.size() 
+       << ", subspace size = " << B.size()
        << ", dimension = " << B.total_dimension()
        << ", degree = " << B.total_degree() << '\n';
    Out << "   N  QuantumNumber  Dimension\n";
    for (std::size_t N = 0; N < B.size(); ++N)
    {
       Out << std::setw(4) << N << "  "
-          << std::setw(13) << B[N] << "  " 
+          << std::setw(13) << B[N] << "  "
           << std::setw(9) << B.dim(N) << '\n';
    }
    return Out;
@@ -215,7 +215,7 @@ std::string show_projections(VectorBasis const& B)
 
    std::ostringstream Out;
    Out << "Basis has symmetry " << B.GetSymmetryList()
-       << ", subspace size = " << B.size() 
+       << ", subspace size = " << B.size()
        << ", dimension = " << B.total_dimension()
        << ", degree = " << B.total_degree() << '\n';
    Out << "   N  QuantumNumber  Dimension  Degree  Projection\n";
@@ -225,10 +225,10 @@ std::string show_projections(VectorBasis const& B)
       ProjectionList Pr = enumerate_projections(B[N]);
       for (ProjectionList::const_iterator PrI = Pr.begin(); PrI != Pr.end(); ++PrI)
       {
-         if (First) 
+         if (First)
          {
             Out << std::setw(4) << N << "  "
-                << std::setw(13) << B[N] << "  " 
+                << std::setw(13) << B[N] << "  "
                 << std::setw(9) << B.dim(N) << "  "
                 << std::setw(6) << degree(B[N]) << "  ";
             First = false;
@@ -250,16 +250,16 @@ VectorBasis::delta_shift(QuantumNumbers::QuantumNumber const& q)
 
 VectorBasis delta_shift(VectorBasis const& Orig, QuantumNumbers::Projection const& p)
 {
-   return VectorBasis(delta_shift(Orig.Basis(), p), 
-		      Orig.Dimension_.begin(),
-		      Orig.Dimension_.end());
+   return VectorBasis(delta_shift(Orig.Basis(), p),
+                      Orig.Dimension_.begin(),
+                      Orig.Dimension_.end());
 }
 
 VectorBasis delta_shift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
 {
-   return VectorBasis(delta_shift(Orig.Basis(), q), 
-		      Orig.Dimension_.begin(),
-		      Orig.Dimension_.end());
+   return VectorBasis(delta_shift(Orig.Basis(), q),
+                      Orig.Dimension_.begin(),
+                      Orig.Dimension_.end());
 }
 
 VectorBasis

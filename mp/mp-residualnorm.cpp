@@ -61,10 +61,10 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || vm.count("psi") == 0)
       {
@@ -84,9 +84,9 @@ int main(int argc, char** argv)
       double PsiNorm2 = norm_2_sq(*Psi);
       if (ExpectationA2 == -1)
       {
-         ExpectationA2 = expectation(*Rhs, prod(adjoint(Op), 
-                                                Op, 
-                                                QuantumNumber(Op.GetSymmetryList())), 
+         ExpectationA2 = expectation(*Rhs, prod(adjoint(Op),
+                                                Op,
+                                                QuantumNumber(Op.GetSymmetryList())),
                                      *Rhs).real();
          std::cout << "<rhs|adjoint(A)*A|rhs> = " << ExpectationA2 << '\n';
       }

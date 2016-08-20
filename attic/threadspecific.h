@@ -28,7 +28,7 @@
   To make thread-specific data of type T, create a single
   object of type thread_specific<T> which is visible to all threads.
   Then each thread that calls thread_specific<T>::value() will
-  get a distinct object of type T.  The thread-specific 
+  get a distinct object of type T.  The thread-specific
   object is default constructed on the first call to thread_specific<T>::value()
   by each thread.  The object is properly destructed then a thread is destroyed.
   Note the pthread limits on the number of thread-specific data entries.

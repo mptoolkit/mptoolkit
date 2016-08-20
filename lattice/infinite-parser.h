@@ -25,7 +25,7 @@
 
 InfiniteMPOElement
 ParseInfiniteOperator(InfiniteLattice const& Lattice, std::string const& Str,
-		      Function::ArgumentList const& Args = Function::ArgumentList());
+                      Function::ArgumentList const& Args = Function::ArgumentList());
 
 std::pair<InfiniteMPOElement, InfiniteLattice>
 ParseInfiniteOperatorAndLattice(std::string const& Str);
@@ -34,7 +34,7 @@ ParseInfiniteOperatorAndLattice(std::string const& Str);
 
 ProductMPO
 ParseProductOperator(InfiniteLattice const& Lattice, std::string const& Str,
-		      Function::ArgumentList const& Args = Function::ArgumentList());
+                      Function::ArgumentList const& Args = Function::ArgumentList());
 
 
 std::pair<ProductMPO, InfiniteLattice>
@@ -44,7 +44,7 @@ ParseProductOperatorAndLattice(std::string const& Str);
 
 TriangularMPO
 ParseTriangularOperator(InfiniteLattice const& Lattice, std::string const& Str,
-			Function::ArgumentList const& Args = Function::ArgumentList());
+                        Function::ArgumentList const& Args = Function::ArgumentList());
 
 
 std::pair<TriangularMPO, InfiniteLattice>
@@ -54,7 +54,7 @@ ParseTriangularOperatorAndLattice(std::string const& Str);
 
 std::complex<double>
 ParseInfiniteNumber(InfiniteLattice const& Lattice, std::string const& Str,
-		    Function::ArgumentList const& Args = Function::ArgumentList());
+                    Function::ArgumentList const& Args = Function::ArgumentList());
 
 namespace Parser
 {

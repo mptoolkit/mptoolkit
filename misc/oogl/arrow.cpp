@@ -23,13 +23,13 @@
 
 using namespace oogl;
 
-ColorPolyhedra CreateColorArrow(double BackLength, double FrontLength, 
+ColorPolyhedra CreateColorArrow(double BackLength, double FrontLength,
                                 double InnerRadius, double OuterRadius, int NumFaces,
                                 Color BackColor, Color MidColor, Color PointColor)
 {
    // make the vertex list
    ColorVertexList Vertices;
-   
+
    double const BackPlane = -BackLength;
    double const BasePoint = 0;
    double const Point = FrontLength;
@@ -44,7 +44,7 @@ ColorPolyhedra CreateColorArrow(double BackLength, double FrontLength,
       x = cos(i * math_const::pi * 2 / NumFaces);
       y = sin(i * math_const::pi * 2 / NumFaces);
       Vertices.push_back(Vertex(x*r, y * r, BackPlane), BackColor);
-      
+
    }
 
    // top of the body of the arrow
@@ -54,7 +54,7 @@ ColorPolyhedra CreateColorArrow(double BackLength, double FrontLength,
       y = sin(i * math_const::pi * 2 / NumFaces);
       Vertices.push_back(Vertex(x * r, y * r, BasePoint), MidColor);
    }
- 
+
    // base of the point of the arrow
    for (int i = 0; i < NumFaces; ++i)
    {
@@ -92,7 +92,7 @@ ColorPolyhedra CreateColorArrow(double BackLength, double FrontLength,
       BaseFace.push_back(NumFaces*2 + i);
    }
    MyArrow.append_face(BaseFace.begin(), BaseFace.end());
-  
+
    // faces of the point
    for (int i = 0; i < NumFaces; ++i)
    {
@@ -102,13 +102,13 @@ ColorPolyhedra CreateColorArrow(double BackLength, double FrontLength,
    return MyArrow;
 }
 
-ColorPolyhedra Create2DArrow(double BackLength, double FrontLength, 
+ColorPolyhedra Create2DArrow(double BackLength, double FrontLength,
                              double MinWidth, double MaxWidth,
                              Color BackColor, Color MidColor, Color PointColor)
 {
    // make the vertex list
    ColorVertexList Vertices;
-   
+
    // bottom of arrow
    Vertices.push_back(Vertex(-MinWidth/2, -BackLength, 0), BackColor);
    Vertices.push_back(Vertex(MinWidth/2, -BackLength, 0), BackColor);

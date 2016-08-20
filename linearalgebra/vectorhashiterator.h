@@ -40,7 +40,7 @@ namespace LinearAlgebra
 
 // Container should be a hash_map-like container with a value_type of
 // std::pair<size_type, value_type>.  ValueType should be
-// either value_type or value_type const.  If it is value_type const, 
+// either value_type or value_type const.  If it is value_type const,
 // this behaves as a const-iterator, otherwise it is a non-const iterator.
 template <typename Container, typename ValueType = typename Container::value_type::second_type>
 class VectorHashIterator
@@ -48,13 +48,13 @@ class VectorHashIterator
    public:
       typedef Container container_type;
       typedef typename boost::mpl::if_<
-	 boost::is_const<ValueType>, 
-	 typename container_type::const_iterator,
-	 typename container_type::iterator>::type container_iterator;
+         boost::is_const<ValueType>,
+         typename container_type::const_iterator,
+         typename container_type::iterator>::type container_iterator;
       typedef typename boost::mpl::if_<
-	 boost::is_const<ValueType>, 
-	 Container const,
-	 Container>::type ContainerType;
+         boost::is_const<ValueType>,
+         Container const,
+         Container>::type ContainerType;
       typedef ContainerType& container_reference;
       typedef ContainerType* container_pointer;
 
@@ -66,15 +66,15 @@ class VectorHashIterator
       VectorHashIterator() {}
 
       explicit VectorHashIterator(container_reference Data)
-	 : Data_(&Data), Here_(Data.begin()) {}
+         : Data_(&Data), Here_(Data.begin()) {}
 
       VectorHashIterator(container_reference Data, container_iterator const& Here)
-	 : Data_(&Data), Here_(Here) {}
+         : Data_(&Data), Here_(Here) {}
 
       // this ctor handles conversion from non-const to const.
       template <typename OtherVal>
       VectorHashIterator(VectorHashIterator<Container, OtherVal> const& x)
-	 : Data_(&x.data()), Here_(x.base_iterator()) {}
+         : Data_(&x.data()), Here_(x.base_iterator()) {}
 
       VectorHashIterator& operator++()
       { DEBUG_CHECK(Here_ != this->end()); ++Here_; return *this; }
@@ -116,7 +116,7 @@ struct VectorHashIteratorHelper
 {
    typedef typename VectorHashIterator<Container, ValueType>::container_pointer container_pointer;
    typedef typename VectorHashIterator<Container, ValueType>::reference reference;
-   
+
    static reference lookup(container_pointer p, size_type n)
    {
       return (*p)[n];
@@ -130,13 +130,13 @@ struct VectorHashIteratorHelper<Container, ValueType const>
    typedef typename VectorHashIterator<Container, ValueType const>::container_pointer container_pointer;
    typedef typename VectorHashIterator<Container, ValueType const>::container_iterator container_iterator;
    typedef typename VectorHashIterator<Container, ValueType const>::reference reference;
-   
+
    static reference lookup(container_pointer p, size_type n)
    {
       container_iterator I = p->find(n);
       if (I == p->end())
       {
-	 return static_zero_or_die<value_type>();
+         return static_zero_or_die<value_type>();
       }
       else return I->second;
    }

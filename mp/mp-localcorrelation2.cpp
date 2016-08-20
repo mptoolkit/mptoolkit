@@ -35,7 +35,7 @@ int main(int argc, char** argv)
    {
       print_copyright(std::cerr, "tools", basename(argv[0]));
       std::cerr << "usage: mp-localcorrelation <lattice> <psi> <operator1> <first> "
-	 "<operator2> <last> [<psi2>]\n";
+         "<operator2> <last> [<psi2>]\n";
       std::cerr << "This uses directly local operators, not lattice operators!\n";
       return 1;
    }
@@ -57,7 +57,7 @@ int main(int argc, char** argv)
    CenterWavefunction Psi2 = *Psi2Ptr;
    Psi1Ptr = pvalue_ptr<MPWavefunction>();
    Psi1Ptr = pvalue_ptr<MPWavefunction>();
-   
+
    for (int i = 1; i < FirstSite; ++i)
       Psi.RotateRight();
 
@@ -71,8 +71,8 @@ int main(int argc, char** argv)
       // Update all the existing E matrices
       for (OpMapType::iterator mI = OpMap.begin(); mI != OpMap.end(); ++mI)
       {
-         mI->second = new MatrixOperator(operator_prod(herm(Psi.Left()), 
-                                                       *mI->second.load(), 
+         mI->second = new MatrixOperator(operator_prod(herm(Psi.Left()),
+                                                       *mI->second.load(),
                                                        Psi.Left()));
       }
 
@@ -82,9 +82,9 @@ int main(int argc, char** argv)
       {
          SimpleOperator MyOp = I->second;
          MatrixOperator LeftIdentity = MatrixOperator::make_identity(Psi.Left().Basis1());
-         OpMap[i] = new MatrixOperator(operator_prod(herm(MyOp), 
-                                                     herm(Psi.Left()), 
-                                                     LeftIdentity, 
+         OpMap[i] = new MatrixOperator(operator_prod(herm(MyOp),
+                                                     herm(Psi.Left()),
+                                                     LeftIdentity,
                                                      Psi.Left()));
       }
 
@@ -97,13 +97,13 @@ int main(int argc, char** argv)
          MatrixOperator F = operator_prod(MyOp, Psi.Right(), Ident, herm(Psi.Right()));
          for (OpMapType::iterator mI = OpMap.begin(); mI != OpMap.end(); ++mI)
          {
-            std::complex<double> Res = inner_prod(Psi.Center(), 
-                                                  triple_prod(*mI->second.load(), 
-                                                              Psi.Center(), 
+            std::complex<double> Res = inner_prod(Psi.Center(),
+                                                  triple_prod(*mI->second.load(),
+                                                              Psi.Center(),
                                                               herm(F)));
-            std::cout << std::setw(5) << Lat.coordinate_at_site(mI->first) << "   " 
+            std::cout << std::setw(5) << Lat.coordinate_at_site(mI->first) << "   "
                       << std::setw(5) << Lat.coordinate_at_site(i+1) << "   "
-                      << std::setw(18) << Res.real() << "   " 
+                      << std::setw(18) << Res.real() << "   "
                       << std::setw(18) << Res.imag() << '\n';
          }
       }

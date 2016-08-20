@@ -27,7 +27,7 @@
   To use:
 
   Obtain an OutputBuffer* by calling BlockFileSystem::allocate_output_buffer().
-  This gives you a memory buffer that you can directly access.  Remember to use bump(N) 
+  This gives you a memory buffer that you can directly access.  Remember to use bump(N)
   to increment the buf_ptr by N bytes.  The size of the buffer is unpsecified, it may
   be smaller than the page size.
 
@@ -37,7 +37,7 @@
   (But the remaining OutputBuffer might have zero size).
 
   Once you have finished with a (committed) OutputBuffer, return it to the system with
-  BlockFileSystem::return_output_buffer().  
+  BlockFileSystem::return_output_buffer().
 
   An additional function, BlockFileSystem::cycle_output_buffer() is provided for the
   case that you want to return an exhausted OutputBuffer and immediately allocate another.
@@ -65,7 +65,7 @@ class BlockFileSystem : public FileSystem
       OutputBuffer* allocate_output_buffer();
 
       // returns an output buffer that has been obtained previously from
-      // allocate_output_buffer() to the system.  It is invalid to call this 
+      // allocate_output_buffer() to the system.  It is invalid to call this
       // function with a buffer that has uncommited data (a buffer is uncommited
       // when the buf_ptr() is larger than the begin_ptr()).
       void return_output_buffer(OutputBuffer* Buf);
@@ -75,8 +75,8 @@ class BlockFileSystem : public FileSystem
       OutputBuffer* cycle_output_buffer(OutputBuffer* Buf);
 
       // a shortcut for Temp = new BlockFileSystem(); Temp->initialize(...); return Temp;
-      //      static BlockFileSystem* Create(std::string const& FileName, int NumFiles, 
-      //				     size_t PageSize, size_t PageCacheByteSize);
+      //      static BlockFileSystem* Create(std::string const& FileName, int NumFiles,
+      //                                     size_t PageSize, size_t PageCacheByteSize);
 
       // a shortcut for Temp = new BlockFileSystem(); Temp->restart(...); return Temp;
 //      static BlockFileSystem* Open(std::string const& FileName, size_t PageCacheByteSize, bool ReadOnly = false);
@@ -92,8 +92,8 @@ class BlockFileSystem : public FileSystem
 
 #if 0
 inline
-BlockFileSystem* BlockFileSystem::Create(std::string const& FileName, int NumFiles, 
-					 size_t PageSize, size_t PageCacheByteSize,
+BlockFileSystem* BlockFileSystem::Create(std::string const& FileName, int NumFiles,
+                                         size_t PageSize, size_t PageCacheByteSize,
                                          bool Unlink)
 {
    BlockFileSystem* FS = new BlockFileSystem();
@@ -102,9 +102,9 @@ BlockFileSystem* BlockFileSystem::Create(std::string const& FileName, int NumFil
 }
 
 inline
-BlockFileSystem* BlockFileSystem::Open(std::string const& FileName, 
-				       size_t PageCacheByteSize, 
-				       bool ReadOnly)
+BlockFileSystem* BlockFileSystem::Open(std::string const& FileName,
+                                       size_t PageCacheByteSize,
+                                       bool ReadOnly)
 {
    BlockFileSystem* FS = new BlockFileSystem();
    FS->open(FileName, PageCacheByteSize, ReadOnly);
@@ -140,7 +140,7 @@ inline
 std::ostream& operator<<(std::ostream& out, BlockRecord const& r)
 {
    return out << "BlockRecord(Page=" << r.Page << ", Offset=" << r.Offset
-	      << ", Length=" << r.Length << ")";
+              << ", Length=" << r.Length << ")";
 }
 
 // these control the page lock count
@@ -167,7 +167,7 @@ class OutputBuffer
       void bump(size_t Count);
 
       // Forces the current pointer to Ptr.  Ptr must be in the range buf_begin() <= Ptr <= buf_end()
-      void set_buf_ptr(unsigned char* Ptr) 
+      void set_buf_ptr(unsigned char* Ptr)
       { DEBUG_RANGE_CHECK(Ptr, buf_begin(), buf_end()); CurrentPtr = Ptr; }
 
       // Commits a buffer and returns the associated block record.
@@ -212,7 +212,7 @@ class InputBuffer
       void bump(size_t Count) { CurrentPtr += Count; }
 
       // Forces the current pointer to Ptr.  Ptr must be in the range buf_begin() <= Ptr <= buf_end()
-      void set_buf_ptr(unsigned char const* Ptr) 
+      void set_buf_ptr(unsigned char const* Ptr)
       { DEBUG_RANGE_CHECK(Ptr, buf_begin(), buf_end()); CurrentPtr = Ptr; }
 
    private:
@@ -228,8 +228,8 @@ class InputBuffer
 
 inline
 void OutputBuffer::bump(size_t Count)
-{ 
-   CurrentPtr += Count; 
+{
+   CurrentPtr += Count;
 }
 
 } // namespace PHeapFileSystem

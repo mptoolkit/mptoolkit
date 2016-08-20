@@ -49,7 +49,7 @@ class GenericPageFile
 {
    public:
       GenericPageFile(size_t PageSize_, std::string const& Name_)
-	: PageSize(PageSize_), Name(Name_) { Alloc = BufferAllocator::GetAllocator(PageSize_); }
+        : PageSize(PageSize_), Name(Name_) { Alloc = BufferAllocator::GetAllocator(PageSize_); }
 
       virtual ~GenericPageFile() = 0 {}
 
@@ -73,7 +73,7 @@ class GenericPageFile
       // Postcondition: Returns a buffer containing the page.  The buffer should be deallocated with
       // deallocate_buffer().
       virtual unsigned char* read(size_t Page) = 0;
-      
+
       // deallocates a previously written page.
       virtual void deallocate(size_t Page) = 0;
 

@@ -22,7 +22,7 @@
 #include "common/statistics.h"
 
 UnitCellMPO::UnitCellMPO(SiteListPtrType const& SiteList_, FiniteMPO Op_, LatticeCommute Com_, int Offset_,
-			 std::string Description_)
+                         std::string Description_)
    : SiteList(SiteList_), Op(std::move(Op_)), Com(Com_), Offset(Offset_), Description(std::move(Description_))
 {
 }
@@ -99,16 +99,16 @@ UnitCellMPO::ExtendToCover(int OtherSize, int OtherOffset)
    if (Offset > OtherOffset)
    {
       // need to extend this operator at the front with JW strings
-      Op = join(repeat(string_mpo(*SiteList, Com.SignOperator(), Op.qn1()), 
-		       (Offset-OtherOffset) / SiteList->size()), Op);
+      Op = join(repeat(string_mpo(*SiteList, Com.SignOperator(), Op.qn1()),
+                       (Offset-OtherOffset) / SiteList->size()), Op);
       Offset = OtherOffset;
    }
 
    // do we need to extend the operator on the right?
    if (Offset+Op.size() < OtherOffset+OtherSize)
    {
-      Op = join(Op, repeat(identity_mpo(*SiteList, Op.qn2()), 
-			   (OtherOffset+OtherSize-Offset-Op.size())/SiteList->size()));
+      Op = join(Op, repeat(identity_mpo(*SiteList, Op.qn2()),
+                           (OtherOffset+OtherSize-Offset-Op.size())/SiteList->size()));
    }
 }
 
@@ -172,7 +172,7 @@ UnitCellMPO& operator+=(UnitCellMPO& x, UnitCellMPO const& y)
    x.MPO() += yCopy.MPO();
    return x;
 }
-   
+
 UnitCellMPO& operator-=(UnitCellMPO& x, UnitCellMPO const& y)
 {
    if (x.is_null())
@@ -257,8 +257,8 @@ UnitCellMPO prod(UnitCellMPO const& x, UnitCellMPO const& y, QuantumNumbers::Qua
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(xCopy.GetSiteList(), prod(xCopy.MPO(), yCopy.MPO(), q), 
-		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
+   return UnitCellMPO(xCopy.GetSiteList(), prod(xCopy.MPO(), yCopy.MPO(), q),
+                      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
 UnitCellMPO prod(UnitCellMPO const& x, UnitCellMPO const& y)
@@ -267,8 +267,8 @@ UnitCellMPO prod(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(xCopy.GetSiteList(), prod(xCopy.MPO(), yCopy.MPO()), 
-		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
+   return UnitCellMPO(xCopy.GetSiteList(), prod(xCopy.MPO(), yCopy.MPO()),
+                      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
 UnitCellMPO operator*(UnitCellMPO const& x, UnitCellMPO const& y)
@@ -278,8 +278,8 @@ UnitCellMPO operator*(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(xCopy.GetSiteList(), prod(xCopy.MPO(), yCopy.MPO()), 
-		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
+   return UnitCellMPO(xCopy.GetSiteList(), prod(xCopy.MPO(), yCopy.MPO()),
+                      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
 UnitCellMPO dot(UnitCellMPO const& x, UnitCellMPO const& y)
@@ -288,8 +288,8 @@ UnitCellMPO dot(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(xCopy.GetSiteList(), dot(xCopy.MPO(), yCopy.MPO()), 
-		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
+   return UnitCellMPO(xCopy.GetSiteList(), dot(xCopy.MPO(), yCopy.MPO()),
+                      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
 UnitCellMPO inner(UnitCellMPO const& x, UnitCellMPO const& y)
@@ -303,8 +303,8 @@ UnitCellMPO cross(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(xCopy.GetSiteList(), cross(xCopy.MPO(), yCopy.MPO()), 
-		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
+   return UnitCellMPO(xCopy.GetSiteList(), cross(xCopy.MPO(), yCopy.MPO()),
+                      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
 UnitCellMPO outer(UnitCellMPO const& x, UnitCellMPO const& y)
@@ -313,8 +313,8 @@ UnitCellMPO outer(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(xCopy.GetSiteList(), outer(xCopy.MPO(), yCopy.MPO()), 
-		      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
+   return UnitCellMPO(xCopy.GetSiteList(), outer(xCopy.MPO(), yCopy.MPO()),
+                      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
 // project a (reducible) operator onto an irreducible component

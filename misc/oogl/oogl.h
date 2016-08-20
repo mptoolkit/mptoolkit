@@ -128,7 +128,7 @@ class TransformList : public OoglPrimitive
       virtual OoglPrimitive* clone() const;
 
       virtual void write(std::ostream& out) const;
-      
+
       iterator begin() { return Data.begin(); }
       iterator end() { return Data.end(); }
 
@@ -162,7 +162,7 @@ class PolyhedraBase : public OoglPrimitive
       void append_face(int c1, int c2, int c3, int c4, int c5, int c6);
       void append_face(int c1, int c2, int c3, int c4, int c5, int c6, int c7);
       void append_face(int c1, int c2, int c3, int c4, int c5, int c6, int c7, int c8);
-      
+
       template <class Iter>
       void append_face(Iter first, Iter last);
 
@@ -191,7 +191,7 @@ PolyhedraBase::append_face(Iter first, Iter last)
 }
 
 
-// BasicPolyhedra implements a polyhedra for an arbitary type of vertex list 
+// BasicPolyhedra implements a polyhedra for an arbitary type of vertex list
 
 template <class VertexListType>
 class BasicPolyhedra : public PolyhedraBase
@@ -251,7 +251,7 @@ class VectorList : public OoglPrimitive
       std::list<Color> Colors;
 };
 
-// this encapsulates the INST format, for applying a transformation 
+// this encapsulates the INST format, for applying a transformation
 // list to an object.
 class ObjectTransform : public OoglPrimitive
 {
@@ -270,12 +270,12 @@ class ObjectTransform : public OoglPrimitive
       ObjectTransform();
 
       ObjectTransform(location_type Locat, location_type Orig, Vertex const& OrigP,
-		      OoglObject const& G, TransformList const& TL);
+                      OoglObject const& G, TransformList const& TL);
 
       ObjectTransform(location_type Locat, OoglObject const& G, TransformList const& TL);
 
       ObjectTransform(location_type Orig, Vertex const& OrigP,
-		      OoglObject const& G, TransformList const& TL);
+                      OoglObject const& G, TransformList const& TL);
 
       ObjectTransform(OoglObject const& G, TransformList const& TL);
 
@@ -307,7 +307,7 @@ class List : public OoglPrimitive
       typedef value_type*                             pointer;
       typedef std::list<value_type>::iterator         iterator;
       typedef std::list<value_type>::const_iterator   const_iterator;
-   
+
       List() {}
       ~List() {}
       List(List const& L);

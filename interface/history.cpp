@@ -82,18 +82,18 @@ HistoryLog::append(std::string const& Entry)
 
 HistoryEntry
 HistoryLog::front() const
-{ 
+{
    if (History_.empty())
       return HistoryEntry("(empty history log)");
-   return History_.front(); 
+   return History_.front();
 }
 
 HistoryEntry
 HistoryLog::back() const
-{ 
+{
    if (History_.empty())
       return HistoryEntry("(empty history log)");
-   return History_.back(); 
+   return History_.back();
 }
 
 void

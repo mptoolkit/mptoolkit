@@ -74,20 +74,20 @@ LatticeSite SpinZ2(half_int Spin)
       Z(StateName(s, true), StateName(s, true)) = 1;
 
       Z(StateName(s, false), StateName(s, false)) = -1;
-      
+
       Sz(StateName(s, true), StateName(s, false)) = s.to_double();
       Sz(StateName(s, false), StateName(s, true)) = s.to_double();
-           
+
       if (s < Spin)
       {
-         Sx(StateName(s, false), StateName(s+1, false)) 
+         Sx(StateName(s, false), StateName(s+1, false))
             = 0.5 * sqrt((Spin-s)*(Spin+s+1));
-         Sx(StateName(s, true), StateName(s+1, true)) 
+         Sx(StateName(s, true), StateName(s+1, true))
             = 0.5 * sqrt((Spin-s)*(Spin+s+1));
 
-         Sy(StateName(s, false), StateName(s+1, true)) 
+         Sy(StateName(s, false), StateName(s+1, true))
             = std::complex<double>(0.0, -0.5 * sqrt((Spin-s)*(Spin+s+1)));
-         Sy(StateName(s, true), StateName(s+1, false)) 
+         Sy(StateName(s, true), StateName(s+1, false))
             = std::complex<double>(0.0, -0.5 * sqrt((Spin-s)*(Spin+s+1)));
       }
    }
@@ -98,10 +98,10 @@ LatticeSite SpinZ2(half_int Spin)
       Z("0s", "0s") = 1;
       if (Spin > 0)
       {
-         Sx("0s", "1s") 
+         Sx("0s", "1s")
             = sqrt(Spin*(Spin+1)/2);
 
-         Sy("0s", "1a") 
+         Sy("0s", "1a")
             = std::complex<double>(0.0, -sqrt(Spin*(Spin+1)/2));
       }
    }
@@ -112,14 +112,14 @@ LatticeSite SpinZ2(half_int Spin)
    if (!Spin.is_integral())
    {
       // Some of the matrix elements of Sx,Sy for s=0.5 are diagonal in m
-      Sx(StateName(0.5, true), StateName(0.5, true)) 
+      Sx(StateName(0.5, true), StateName(0.5, true))
          = 0.5 * (Spin+0.5);
-      Sx(StateName(0.5, false), StateName(0.5, false)) 
+      Sx(StateName(0.5, false), StateName(0.5, false))
          = -0.5 * (Spin+0.5);
 
-      Sy(StateName(0.5, true), StateName(0.5, false)) 
+      Sy(StateName(0.5, true), StateName(0.5, false))
          = std::complex<double>(0.0, -0.5 * (Spin+0.5));
-      Sy(StateName(0.5, false), StateName(0.5, true)) 
+      Sy(StateName(0.5, false), StateName(0.5, true))
          = std::complex<double>(0.0, 0.5 * (Spin+0.5));
    }
 

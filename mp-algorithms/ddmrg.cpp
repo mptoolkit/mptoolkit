@@ -29,7 +29,7 @@ double Entropy(FwdIter first, FwdIter last)
    {
       double x = first->Eigenvalue;
       if (x > 0)
-	 E -= x * log(x);
+         E -= x * log(x);
 
       ++first;
    }
@@ -44,7 +44,7 @@ double TruncError(FwdIter first, FwdIter last)
    {
       double x = first->Eigenvalue;
       if (x > 0)
-	 E += x;
+         E += x;
 
       ++first;
    }
@@ -104,11 +104,11 @@ Solver::Solver(CenterWavefunction const& Psi_, SplitOperator const& A_, CenterWa
    {
       x_A_x.PushLeft(operator_prod(herm(A.LookupLeft(Loc)),
                                    herm(x.LookupLeft(Loc)),
-                                   x_A_x.Left(), 
+                                   x_A_x.Left(),
                                    x.LookupLeft(Loc)));
 
       x_y.PushLeft(operator_prod(herm(x.LookupLeft(Loc)),
-                                 x_y.Left(), 
+                                 x_y.Left(),
                                  y.LookupLeft(Loc)));
    }
 
@@ -129,7 +129,7 @@ void Solver::ExpandLeft()
    x_A_x.PopLeft();
    x_A_x.PushLeft(operator_prod(herm(A.Left()),
                                 herm(x.Left()),
-                                x_A_x.Left(), 
+                                x_A_x.Left(),
                                 x.Left()));
 
    x_y.PopLeft();
@@ -146,9 +146,9 @@ void Solver::ExpandRight()
 
    // matrix elements
    x_A_x.PopRight();
-   x_A_x.PushRight(operator_prod(A.Right(), 
-                                 x.Right(), 
-                                 x_A_x.Right(), 
+   x_A_x.PushRight(operator_prod(A.Right(),
+                                 x.Right(),
+                                 x_A_x.Right(),
                                  herm(x.Right())));
 
    x_y.PopRight();
@@ -168,13 +168,13 @@ void Solver::ShiftRightAndExpand()
    //TRACE(norm_frob_sq(x.Center()));
    x.PushLeft(prod(x.Center(), x.Right()));
    x.PopRight();
-   x.Center() = ExpandBasis2(x.Left()); 
+   x.Center() = ExpandBasis2(x.Left());
    //TRACE(norm_frob_sq(x.Center()));
 
    // new matrix elements
-   x_A_x.PushLeft(operator_prod(herm(A.Left()), 
-                                herm(x.Left()), 
-                                x_A_x.Left(), 
+   x_A_x.PushLeft(operator_prod(herm(A.Left()),
+                                herm(x.Left()),
+                                x_A_x.Left(),
                                 x.Left()));
    x_A_x.PopRight();
 
@@ -221,8 +221,8 @@ TruncationInfo Solver::TruncateLeft(int MinStates, int MaxStates, double MinTrun
    {
       for (unsigned i = 0; i < x_A_x.Left().size(); ++i)
       {
-         MatrixOperator Correction = triple_prod(x_A_x.Left()[i], 
-                                                 Rho, 
+         MatrixOperator Correction = triple_prod(x_A_x.Left()[i],
+                                                 Rho,
                                                  herm(x_A_x.Left()[i]));
          Correction *= (CFactor / trace(Correction) * double(x_A_x.Left().size()));
          Rho += Correction;
@@ -241,7 +241,7 @@ TruncationInfo Solver::TruncateLeft(int MinStates, int MaxStates, double MinTrun
    DensityMatrix<MatrixOperator> DM(Rho);
    //   DM.DensityMatrixReport(std::cerr);
    TruncationInfo Info;
-   DensityMatrix<MatrixOperator>::const_iterator E 
+   DensityMatrix<MatrixOperator>::const_iterator E
       = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
                                            MinStates,
                                            MaxStates,
@@ -271,8 +271,8 @@ TruncationInfo Solver::TruncateRight(int MinStates, int MaxStates, double MinTru
    {
       for (unsigned i = 0; i < x_A_x.Right().size(); ++i)
       {
-         MatrixOperator Correction = triple_prod(x_A_x.Right()[i], 
-                                                 Rho, 
+         MatrixOperator Correction = triple_prod(x_A_x.Right()[i],
+                                                 Rho,
                                                  herm(x_A_x.Right()[i]));
          Correction *= CFactor / trace(Correction) * double(x_A_x.Right().size());
          Rho += Correction;
@@ -291,7 +291,7 @@ TruncationInfo Solver::TruncateRight(int MinStates, int MaxStates, double MinTru
    DensityMatrix<MatrixOperator> DM(Rho);
    //   DM.DensityMatrixReport(std::cerr);
    TruncationInfo Info;
-   DensityMatrix<MatrixOperator>::const_iterator E 
+   DensityMatrix<MatrixOperator>::const_iterator E
       = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
                                            MinStates,
                                            MaxStates,

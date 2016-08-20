@@ -79,14 +79,14 @@ int main()
    Ind[0] = 1;
    Ind[1] = 0;
    Ind[2] = 2;
-   
+
 
    TRACE(v3);
    TRACE(index(v3,Ind));
 
    index(v3,Ind) = Ind;
    TRACE(v3);
-   
+
    TRACE(LinearAlgebra::equal(v3,index(v3,Ind)));
    TRACE(LinearAlgebra::equal(index(v3,Ind), index(v3,Ind)));
 

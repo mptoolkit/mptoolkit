@@ -74,7 +74,7 @@ struct TensorConjugateProxy
 
 // ScalarProd
 // Calculates the dot product of two irreducible tensors.
-template <typename S, typename T, typename Functor = Multiplication<typename S::value_type, 
+template <typename S, typename T, typename Functor = Multiplication<typename S::value_type,
                                                                     typename T::value_type> >
 struct ScalarProd {};
 
@@ -99,7 +99,7 @@ template <typename T>
 struct Adjoint : public LinearAlgebra::Herm<T> { };
 
 // Adjoint applied to a tensor adds a function to apply to the value_type
-template <typename T, typename F = Adjoint<typename T::value_type> > 
+template <typename T, typename F = Adjoint<typename T::value_type> >
 struct TensorAdjoint;
 
 template <typename T>
@@ -132,7 +132,7 @@ inv_adjoint(T const& x)
    return InvAdjoint<T>()(x);
 }
 
-template <typename T, typename F = InvAdjoint<typename T::value_type> > 
+template <typename T, typename F = InvAdjoint<typename T::value_type> >
 struct TensorInvAdjoint;
 
 template <typename T, typename Func>
@@ -151,7 +151,7 @@ inv_adjoint(T const& x, Func const& f)
 template <typename T>
 struct FlipConjugate : public LinearAlgebra::Conj<T> { };
 
-template <typename T, typename F = FlipConjugate<typename T::value_type> > 
+template <typename T, typename F = FlipConjugate<typename T::value_type> >
 struct TensorFlipConjugate;
 
 template <typename T>
@@ -172,8 +172,8 @@ flip_conj(T const& x, Func const& f)
 
 // IrredProd
 // Extends Multiplication to irreducible tensors.
-template <typename Op1Type, typename Op2Type, 
-          typename Nest = Multiplication<typename Op1Type::value_type, 
+template <typename Op1Type, typename Op2Type,
+          typename Nest = Multiplication<typename Op1Type::value_type,
                                          typename Op2Type::value_type> >
 struct IrredProd {};
 
@@ -217,12 +217,12 @@ outer(S const& x, T const& y)
    {
       if (degree(L[i]) > degree(q))
       {
-	 q = L[i];
-	 Unique = true;
+         q = L[i];
+         Unique = true;
       }
       else if (degree(L[i]) == degree(q))
       {
-	 Unique = false;
+         Unique = false;
       }
    }
    CHECK(Unique)("outer product is not defined for these operators")
@@ -273,7 +273,7 @@ pow(S const& x, int n)
    {
       return x*pow(x*x, (n-1)/2);
    }
-   
+
 }
 
 } // namespace LinearAlgebra
@@ -348,11 +348,11 @@ struct StructureOf<LinearAlgebra::DiagonalMatrix<T>>
    using type = DiagonalStructure;
 };
 
-template <typename T, 
-          typename Basis1T = BasisList, 
-          typename Basis2T = Basis1T, 
+template <typename T,
+          typename Basis1T = BasisList,
+          typename Basis2T = Basis1T,
           typename Structure = DefaultStructure >
-	  //          typename Structure = LinearAlgebra::SparseMatrix<T> >
+          //          typename Structure = LinearAlgebra::SparseMatrix<T> >
 class IrredTensor;
 
 template <typename T, typename B1, typename B2, typename S>
@@ -379,7 +379,7 @@ class IrredTensor
 
       using MatrixType = typename Structure::template value<T>;
 
-      BOOST_MPL_ASSERT((boost::is_same<value_type, 
+      BOOST_MPL_ASSERT((boost::is_same<value_type,
                         typename LinearAlgebra::interface<MatrixType>::value_type>));
 
       typedef typename iterator<MatrixType>::type iterator;
@@ -394,11 +394,11 @@ class IrredTensor
 
       IrredTensor(basis1_type const& Basis, QuantumNumber const& Trans);
 
-      IrredTensor(basis1_type const& Basis1, basis2_type const& Basis2, 
-		  QuantumNumber const& Trans);
+      IrredTensor(basis1_type const& Basis1, basis2_type const& Basis2,
+                  QuantumNumber const& Trans);
 
-      IrredTensor(basis1_type const& Basis1, basis2_type const& Basis2, 
-		  QuantumNumber const& Trans, MatrixType const& Data);
+      IrredTensor(basis1_type const& Basis1, basis2_type const& Basis2,
+                  QuantumNumber const& Trans, MatrixType const& Data);
 
       // In this variant, the quantum number defaults to the identity
       IrredTensor(basis1_type const& Basis1, basis2_type const& Basis2);
@@ -413,9 +413,9 @@ class IrredTensor
       template <typename U, typename US>
       IrredTensor& operator=(IrredTensor<U, Basis1T, Basis2T, US> const& r)
       {
-	 Basis1_ = r.Basis1(); Basis2_ = r.Basis2(); Trans_ = r.TransformsAs();
-	 Data_ = r.data();
-	 return *this;
+         Basis1_ = r.Basis1(); Basis2_ = r.Basis2(); Trans_ = r.TransformsAs();
+         Data_ = r.data();
+         return *this;
       }
 
       bool is_null() const { return Trans_.is_null(); }
@@ -458,7 +458,7 @@ class IrredTensor
 
       void debug_check_structure() const;
 
-      static IrredTensor<T, Basis1T, Basis2T, Structure> 
+      static IrredTensor<T, Basis1T, Basis2T, Structure>
       make_identity(basis1_type const& b);
 
       // force change the symmetry list
@@ -557,8 +557,8 @@ struct Assign<Tensor::IrredTensor<T1, B1, B2, S1>&, Tensor::IrredTensor<T2, B1, 
    using result_type = void;
    using first_argument_type = Tensor::IrredTensor<T1, B1, B2, S1>&;
    using second_argument_type = Tensor::IrredTensor<T2, B1, B2, S2>;
-   void operator()(Tensor::IrredTensor<T1, B1, B2, S1>& x, 
-		   Tensor::IrredTensor<T2, B1, B2, S2> const& y)
+   void operator()(Tensor::IrredTensor<T1, B1, B2, S1>& x,
+                   Tensor::IrredTensor<T2, B1, B2, S2> const& y)
    {
       x = y;
    }
@@ -622,7 +622,7 @@ struct Equal<Tensor::IrredTensor<T, B1, B2, S1>,  Tensor::IrredTensor<T, B1, B2,
 
       DEBUG_PRECONDITION_EQUAL(x.Basis1(), y.Basis1());
       DEBUG_PRECONDITION_EQUAL(x.Basis2(), y.Basis2());
-      return x.TransformsAs() == y.TransformsAs() 
+      return x.TransformsAs() == y.TransformsAs()
          && LinearAlgebra::equal(x.data(), y.data(), tol_);
    }
 
@@ -749,7 +749,7 @@ struct Conj<Tensor::IrredTensor<T, B1, B2, S> >
 {
    typedef Tensor::IrredTensor<T, B1, B2, S> const& argument_type;
    typedef Tensor::IrredTensor<T, B1, B2, S> result_type;
-   
+
    result_type operator()(argument_type x) const
    {
       return result_type(x.Basis1(), x.Basis2(), x.TransformsAs(), conj(x.data()));
@@ -763,7 +763,7 @@ struct Herm<Tensor::IrredTensor<T, B1, B2, S> >
 {
    typedef Tensor::IrredTensor<T, B1, B2, S> const& argument_type;
    typedef HermitianProxy<Tensor::IrredTensor<T, B1, B2, S> > result_type;
-   
+
    result_type operator()(argument_type x) const
    {
       return result_type(x);
@@ -779,7 +779,7 @@ struct TensorConj<Tensor::IrredTensor<T, B1, B2, S> >
 {
    typedef Tensor::IrredTensor<T, B1, B2, S> const& argument_type;
    typedef TensorConjugateProxy<Tensor::IrredTensor<T, B1, B2, S> > result_type;
-   
+
    result_type operator()(argument_type x) const
    {
       return result_type(x);
@@ -820,7 +820,7 @@ struct Trace<Tensor::IrredTensor<T, B1, B2, S> >
          return result_type();
       PRECONDITION_EQUAL(M.Basis1(), M.Basis2());
       PRECONDITION(QuantumNumbers::is_scalar(M.TransformsAs()))(M.TransformsAs());
-      
+
       return LinearAlgebra::coefficient_trace(M.data(), traceCoefficient(M.Basis1()));
    }
 };
@@ -840,13 +840,13 @@ struct NormFrobSq<Tensor::IrredTensor<T, B1, B2, S> >
       while (I)
       {
          // this version is faster, but assumes S is a row-major matrix
-	 //         Result += QuantumNumbers::degree(M.qn1(I.index())) * norm_frob_sq(*I);
+         //         Result += QuantumNumbers::degree(M.qn1(I.index())) * norm_frob_sq(*I);
 
-         // this version is more general         
+         // this version is more general
          typename Tensor::IrredTensor<T, B1, B2, S>::const_inner_iterator J = iterate(I);
-	 while (J)
-	 {
-	    Result += QuantumNumbers::degree(M.qn1(J.index1())) * norm_frob_sq(*J);
+         while (J)
+         {
+            Result += QuantumNumbers::degree(M.qn1(J.index1())) * norm_frob_sq(*J);
             ++J;
          }
 
@@ -869,7 +869,7 @@ struct InnerProd<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2, B1
    {
       result_type Result = 0;
       if (M1.is_null() || M2.is_null())
-	 return Result;
+         return Result;
 
       PRECONDITION_EQUAL(M1.TransformsAs(), M2.TransformsAs());
       PRECONDITION_EQUAL(M1.Basis1(), M2.Basis1());
@@ -916,7 +916,7 @@ struct ParallelProd<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2,
 
       if (!I1) return result_type();
       DEBUG_CHECK(I2);
-      result_type Result = double(QuantumNumbers::degree(M1.qn1(I1.index()))) * 
+      result_type Result = double(QuantumNumbers::degree(M1.qn1(I1.index()))) *
          (parallel_prod(*I1, *I2, f_));
       ++I1;
       ++I2;
@@ -924,7 +924,7 @@ struct ParallelProd<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2,
       while (I1)
       {
          DEBUG_CHECK(I2);
-         Result += double(QuantumNumbers::degree(M1.qn1(I1.index()))) * 
+         Result += double(QuantumNumbers::degree(M1.qn1(I1.index()))) *
             (parallel_prod(*I1, *I2, f_));
          ++I1;
          ++I2;
@@ -938,10 +938,10 @@ struct ParallelProd<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2,
 
 // scalar_prod - this is a new function
 
-template <typename T1, typename B1, typename B2, 
+template <typename T1, typename B1, typename B2,
           typename T2, typename B3, typename Functor>
-struct ScalarProd<Tensor::IrredTensor<T1, B1, B2, Tensor::DefaultStructure>, 
-		  HermitianProxy<Tensor::IrredTensor<T2, B3, B2, Tensor::DefaultStructure> >, 
+struct ScalarProd<Tensor::IrredTensor<T1, B1, B2, Tensor::DefaultStructure>,
+                  HermitianProxy<Tensor::IrredTensor<T2, B3, B2, Tensor::DefaultStructure> >,
                   Functor>
 {
    typedef Tensor::IrredTensor<T1, B1, B2, Tensor::DefaultStructure> const& first_argument_type;
@@ -976,15 +976,15 @@ struct ScalarProd<Tensor::IrredTensor<T1, B1, B2, Tensor::DefaultStructure>,
    Functor f_;
 };
 
-template <typename T1, typename B1, typename B2, 
+template <typename T1, typename B1, typename B2,
           typename T2, typename B3, typename Functor>
-struct ScalarProd<Tensor::IrredTensor<T1, B1, B2, Tensor::DiagonalStructure>, 
-		  HermitianProxy<Tensor::IrredTensor<T2, B3, B2, Tensor::DiagonalStructure> >, 
+struct ScalarProd<Tensor::IrredTensor<T1, B1, B2, Tensor::DiagonalStructure>,
+                  HermitianProxy<Tensor::IrredTensor<T2, B3, B2, Tensor::DiagonalStructure> >,
                   Functor>
 {
    typedef Tensor::IrredTensor<T1, B1, B2, Tensor::DiagonalStructure> const& first_argument_type;
    typedef HermitianProxy<Tensor::IrredTensor<T2, B3, B2, Tensor::DiagonalStructure> > const& second_argument_type;
-   typedef Tensor::IrredTensor<typename result_value<Functor>::type, B1, B3, Tensor::DiagonalStructure> 
+   typedef Tensor::IrredTensor<typename result_value<Functor>::type, B1, B3, Tensor::DiagonalStructure>
    result_type;
 
    ScalarProd(Functor f = Functor()) : f_(f) {}
@@ -1010,10 +1010,10 @@ struct ScalarProd<Tensor::IrredTensor<T1, B1, B2, Tensor::DiagonalStructure>,
    Functor f_;
 };
 
-template <typename T1, typename B1, typename B2, typename S, 
+template <typename T1, typename B1, typename B2, typename S,
           typename T2, typename B3, typename Functor>
-struct ScalarProd<HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S> >, 
-                  Tensor::IrredTensor<T2, B1, B3, S>, 
+struct ScalarProd<HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S> >,
+                  Tensor::IrredTensor<T2, B1, B3, S>,
                   Functor>
 {
    typedef HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S> > const& first_argument_type;
@@ -1048,9 +1048,9 @@ struct ScalarProd<HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S> >,
             {
                // accept only scalar elements (diagonal in the quantum number)
                if (Result.Basis1()[xJ.index2()] == Result.Basis2()[yJ.index2()])
-                  add_element(Result.data(), xJ.index2(), yJ.index2(), 
+                  add_element(Result.data(), xJ.index2(), yJ.index2(),
                               (InnerDegree / degree(Result.Basis1()[xJ.index2()])) * f_(herm(*xJ), *yJ));
-	    }
+            }
          }
       }
       CHECK(!std::isnan(norm_frob_sq(Result)));
@@ -1075,8 +1075,8 @@ struct AdjointCoeffFunctor
 {
    typedef double value_type;
 
-   AdjointCoeffFunctor(Tensor::BasisList const& Basis1, Tensor::BasisList const& Basis2, 
-                       QuantumNumbers::QuantumNumber const& q) 
+   AdjointCoeffFunctor(Tensor::BasisList const& Basis1, Tensor::BasisList const& Basis2,
+                       QuantumNumbers::QuantumNumber const& q)
      : Basis1_(Basis1), Basis2_(Basis2), q_(q) {}
 
    double operator()(size_type i, size_type j) const
@@ -1094,8 +1094,8 @@ struct InvAdjointCoeffFunctor
 {
    typedef double value_type;
 
-   InvAdjointCoeffFunctor(Tensor::BasisList const& Basis1, Tensor::BasisList const& Basis2, 
-                          QuantumNumbers::QuantumNumber const& q) 
+   InvAdjointCoeffFunctor(Tensor::BasisList const& Basis1, Tensor::BasisList const& Basis2,
+                          QuantumNumbers::QuantumNumber const& q)
      : Basis1_(Basis1), Basis2_(Basis2), q_(q) {}
 
    double operator()(size_type i, size_type j) const
@@ -1123,9 +1123,9 @@ struct TensorAdjoint<Tensor::IrredTensor<T, B1, B2, S>, F>
       if (x.is_null()) return x;
       QuantumNumbers::QuantumNumber q = x.TransformsAs();
       result_type Result(x.Basis2(), x.Basis1(), adjoint(q));
-      Result.data() = coefficient_transpose(x.data(), 
-					    AdjointCoeffFunctor(x.Basis1(), x.Basis2(), q),
-					    f_);
+      Result.data() = coefficient_transpose(x.data(),
+                                            AdjointCoeffFunctor(x.Basis1(), x.Basis2(), q),
+                                            f_);
       return Result;
    }
 
@@ -1144,9 +1144,9 @@ struct TensorInvAdjoint<Tensor::IrredTensor<T, B1, B2, S>, F>
    {
       QuantumNumbers::QuantumNumber q = x.TransformsAs();
       result_type Result(x.Basis2(), x.Basis1(), adjoint(q));
-      Result.data() = coefficient_transpose(x.data(), 
-					    InvAdjointCoeffFunctor(x.Basis1(), x.Basis2(), q),
-					    f_);
+      Result.data() = coefficient_transpose(x.data(),
+                                            InvAdjointCoeffFunctor(x.Basis1(), x.Basis2(), q),
+                                            f_);
       return Result;
    }
 
@@ -1185,11 +1185,11 @@ struct ProductCoeffFunctor
 {
    typedef double result_type;
 
-   ProductCoeffFunctor(Tensor::BasisList const& Basis1, 
-                       Tensor::BasisList const& Basis2, 
+   ProductCoeffFunctor(Tensor::BasisList const& Basis1,
+                       Tensor::BasisList const& Basis2,
                        Tensor::BasisList const& Basis3,
-		       QuantumNumbers::QuantumNumber const& q1, 
-                       QuantumNumbers::QuantumNumber const& q2, 
+                       QuantumNumbers::QuantumNumber const& q1,
+                       QuantumNumbers::QuantumNumber const& q2,
                        QuantumNumbers::QuantumNumber const& q);
 
    double operator()(size_type i, size_type k, size_type j) const
@@ -1199,7 +1199,7 @@ struct ProductCoeffFunctor
       DEBUG_RANGE_CHECK_OPEN(j, 0U, Basis3_.size());
       return is_transform_target(Basis3_[j], q_, Basis1_[i]) ?
          product_coefficient(q1_, q2_, q_, Basis1_[i], Basis3_[j], Basis2_[k])
-         : 
+         :
          0;
    }
 
@@ -1210,17 +1210,17 @@ struct ProductCoeffFunctor
 };
 
 inline
-ProductCoeffFunctor::ProductCoeffFunctor(Tensor::BasisList const& Basis1, 
-					 Tensor::BasisList const& Basis2, 
-					 Tensor::BasisList const& Basis3,
-					 QuantumNumbers::QuantumNumber const& q1, 
-					 QuantumNumbers::QuantumNumber const& q2, 
-					 QuantumNumbers::QuantumNumber const& q)
+ProductCoeffFunctor::ProductCoeffFunctor(Tensor::BasisList const& Basis1,
+                                         Tensor::BasisList const& Basis2,
+                                         Tensor::BasisList const& Basis3,
+                                         QuantumNumbers::QuantumNumber const& q1,
+                                         QuantumNumbers::QuantumNumber const& q2,
+                                         QuantumNumbers::QuantumNumber const& q)
    : Basis1_(Basis1), Basis2_(Basis2), Basis3_(Basis3), q1_(q1), q2_(q2), q_(q)
 {
 }
 
-template <typename T1, typename B1, typename B2, typename S1, 
+template <typename T1, typename B1, typename B2, typename S1,
           typename T2, typename B3, typename S2, typename Nest>
 struct IrredProd<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2, B2, B3, S2>, Nest>
 {
@@ -1243,7 +1243,7 @@ struct IrredProd<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2, B2
 
       if (Trans.is_null())
       {
-         QuantumNumbers::QuantumNumberList QL = 
+         QuantumNumbers::QuantumNumberList QL =
             transform_targets(x.TransformsAs(), y.TransformsAs());
          CHECK(QL.size() == 1)("Transform product is not specified and not unique")
             (x.TransformsAs())(y.TransformsAs())(QL);
@@ -1256,7 +1256,7 @@ struct IrredProd<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2, B2
       if (!is_transform_target(x.TransformsAs(), y.TransformsAs(), Trans))
          return Result;
 
-      ProductCoeffFunctor 
+      ProductCoeffFunctor
          ProdHelper(x.Basis1(), x.Basis2(), y.Basis2(),
                     x.TransformsAs(), y.TransformsAs(), Trans);
 
@@ -1276,7 +1276,7 @@ struct IrredProd<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2, B2
    QuantumNumbers::QuantumNumber Trans_;
 };
 
-template <typename T1, typename B1, typename B2, typename S1, 
+template <typename T1, typename B1, typename B2, typename S1,
           typename T2, typename B3, typename S2>
 struct Multiplication<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2, B2, B3, S2> >
    : IrredProd<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2, B2, B3, S2> > {};
@@ -1299,85 +1299,85 @@ struct Prod3Type
    typedef typename LinearAlgebra::result_value<LinearAlgebra::Multiplication<v1, T3> >::type type;
 };
 
-template <typename T1, typename B1, typename B2, typename S1, 
-          typename T2, typename B3, typename S2, 
+template <typename T1, typename B1, typename B2, typename S1,
+          typename T2, typename B3, typename S2,
           typename T3, typename B4, typename S3>
 Tensor::IrredTensor<typename Prod3Type<T1, T2, T3>::type, B2, B4>
-triple_prod(HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> > const& x, 
-	    Tensor::IrredTensor<T2, B1, B3, S2> const& E,
-	    Tensor::IrredTensor<T3, B3, B4, S3> const& y,
-	    QuantumNumber qxy,
-	    QuantumNumber qEp);
+triple_prod(HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> > const& x,
+            Tensor::IrredTensor<T2, B1, B3, S2> const& E,
+            Tensor::IrredTensor<T3, B3, B4, S3> const& y,
+            QuantumNumber qxy,
+            QuantumNumber qEp);
 
-template <typename T1, typename B1, typename B2, typename S1, 
-          typename T2, typename B3, typename S2, 
+template <typename T1, typename B1, typename B2, typename S1,
+          typename T2, typename B3, typename S2,
           typename T3, typename B4, typename S3>
 Tensor::IrredTensor<typename Prod3Type<T1, T2, T3>::type, B2, B4>
-triple_prod(HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> > const& x, 
-	    Tensor::IrredTensor<T2, B1, B3, S2> const& E,
-	    Tensor::IrredTensor<T3, B3, B4, S3> const& y);
+triple_prod(HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> > const& x,
+            Tensor::IrredTensor<T2, B1, B3, S2> const& E,
+            Tensor::IrredTensor<T3, B3, B4, S3> const& y);
 
-template <typename T1, typename B1, typename B2, typename S1, 
-          typename T2, typename B3, typename S2, 
+template <typename T1, typename B1, typename B2, typename S1,
+          typename T2, typename B3, typename S2,
           typename T3, typename B4, typename S3>
 Tensor::IrredTensor<typename Prod3Type<T1, T2, T3>::type, B1, B4>
-triple_prod(Tensor::IrredTensor<T1, B1, B2, S1> const& x, 
-	    Tensor::IrredTensor<T2, B2, B3, S2> const& E,
-	    HermitianProxy<Tensor::IrredTensor<T3, B4, B3, S3> > const& y,
-	    QuantumNumber qxy,
-	    QuantumNumber qEp);
+triple_prod(Tensor::IrredTensor<T1, B1, B2, S1> const& x,
+            Tensor::IrredTensor<T2, B2, B3, S2> const& E,
+            HermitianProxy<Tensor::IrredTensor<T3, B4, B3, S3> > const& y,
+            QuantumNumber qxy,
+            QuantumNumber qEp);
 
-template <typename T1, typename B1, typename B2, typename S1, 
-          typename T2, typename B3, typename S2, 
+template <typename T1, typename B1, typename B2, typename S1,
+          typename T2, typename B3, typename S2,
           typename T3, typename B4, typename S3>
 Tensor::IrredTensor<typename Prod3Type<T1, T2, T3>::type, B1, B4>
-triple_prod(Tensor::IrredTensor<T1, B1, B2, S1> const& x, 
-	    Tensor::IrredTensor<T2, B2, B3, S2> const& E,
-	    HermitianProxy<Tensor::IrredTensor<T3, B4, B3, S3> > const& y);
+triple_prod(Tensor::IrredTensor<T1, B1, B2, S1> const& x,
+            Tensor::IrredTensor<T2, B2, B3, S2> const& E,
+            HermitianProxy<Tensor::IrredTensor<T3, B4, B3, S3> > const& y);
 
 // add_triple_prod
 
-template <typename T1, typename B1, typename B2, typename S1, 
-          typename T2, typename B3, typename S2, 
+template <typename T1, typename B1, typename B2, typename S1,
+          typename T2, typename B3, typename S2,
           typename T3, typename B4, typename S3, typename T4, typename S4>
 void
 add_triple_prod(Tensor::IrredTensor<T4, B1, B4, S4>& Result,
                 std::complex<double> Factor,
-                HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> > const& x, 
+                HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> > const& x,
                 Tensor::IrredTensor<T2, B1, B3, S2> const& E,
                 Tensor::IrredTensor<T3, B3, B4, S3> const& y,
                 QuantumNumber qxy,
                 QuantumNumber qEp);
 
-template <typename T1, typename B1, typename B2, typename S1, 
-          typename T2, typename B3, typename S2, 
+template <typename T1, typename B1, typename B2, typename S1,
+          typename T2, typename B3, typename S2,
           typename T3, typename B4, typename S3, typename T4, typename S4>
 void
 add_triple_prod(Tensor::IrredTensor<T4, B1, B4, S4>& Result,
                 std::complex<double> Factor,
-                HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> > const& x, 
+                HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> > const& x,
                 Tensor::IrredTensor<T2, B1, B3, S2> const& E,
                 Tensor::IrredTensor<T3, B3, B4, S3> const& y);
 
-template <typename T1, typename B1, typename B2, typename S1, 
-          typename T2, typename B3, typename S2, 
+template <typename T1, typename B1, typename B2, typename S1,
+          typename T2, typename B3, typename S2,
           typename T3, typename B4, typename S3, typename T4, typename S4>
 void
 add_triple_prod(Tensor::IrredTensor<T4, B1, B4, S4>& Result,
                 std::complex<double> Factor,
-                Tensor::IrredTensor<T1, B1, B2, S1> const& x, 
+                Tensor::IrredTensor<T1, B1, B2, S1> const& x,
                 Tensor::IrredTensor<T2, B2, B3, S2> const& E,
                 HermitianProxy<Tensor::IrredTensor<T3, B4, B3, S3> > const& y,
                 QuantumNumber qxy,
                 QuantumNumber qEp);
 
-template <typename T1, typename B1, typename B2, typename S1, 
-          typename T2, typename B3, typename S2, 
+template <typename T1, typename B1, typename B2, typename S1,
+          typename T2, typename B3, typename S2,
           typename T3, typename B4, typename S3, typename T4, typename S4>
 void
 add_triple_prod(Tensor::IrredTensor<T4, B1, B4, S4>& Result,
                 std::complex<double> Factor,
-                Tensor::IrredTensor<T1, B1, B2, S1> const& x, 
+                Tensor::IrredTensor<T1, B1, B2, S1> const& x,
                 Tensor::IrredTensor<T2, B2, B3, S2> const& E,
                 HermitianProxy<Tensor::IrredTensor<T3, B4, B3, S3> > const& y);
 
@@ -1388,26 +1388,26 @@ add_triple_prod(Tensor::IrredTensor<T4, B1, B4, S4>& Result,
 
 template <typename T, typename B1, typename B2, typename S>
 Tensor::IrredTensor<T, B1, B2, S>
-delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x, 
-	    QuantumNumbers::QuantumNumber q,
-	    QuantumNumbers::Projection p);
+delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
+            QuantumNumbers::QuantumNumber q,
+            QuantumNumbers::Projection p);
 
 // Shift the basis by a strictly Abelian shift.
 // Precondition: degree(q) == 1
 template <typename T, typename B1, typename B2, typename S>
 Tensor::IrredTensor<T, B1, B2, S>
-delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x, 
-	    QuantumNumbers::QuantumNumber q);
+delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
+            QuantumNumbers::QuantumNumber q);
 
 // The basis here must have been obtained with the DeltaShift() function for the
 // basis.  For use when the shifted basis is already constructed.
 template <typename T, typename B1, typename B2, typename S>
 Tensor::IrredTensor<T, B1, B2, S>
-delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x, 
-	    QuantumNumbers::QuantumNumber q,
-	    QuantumNumbers::Projection p,
-	    B1 const& NewBasis1, 
-	    B2 const& NewBasis2);
+delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
+            QuantumNumbers::QuantumNumber q,
+            QuantumNumbers::Projection p,
+            B1 const& NewBasis1,
+            B2 const& NewBasis2);
 
 //
 // prod variants for HermitianProxy.  The hermitian argument is
@@ -1419,7 +1419,7 @@ struct IrredProd_Herm {};
 
 template <typename T1, typename B1, typename B2, typename S1,
            typename T2, typename B3, typename S2>
-struct IrredProd_Herm<HermitianProxy<IrredTensor<T1, B1, B2, S1> >, 
+struct IrredProd_Herm<HermitianProxy<IrredTensor<T1, B1, B2, S1> >,
                       IrredTensor<T2, B1, B3, S2> >
 {
    typedef typename LinearAlgebra::result_value<
@@ -1434,7 +1434,7 @@ struct IrredProd_Herm<HermitianProxy<IrredTensor<T1, B1, B2, S1> >,
 
 template <typename T1, typename B1, typename B2, typename S1,
            typename T2, typename B3, typename S2>
-struct IrredProd_Herm<IrredTensor<T2, B1, B2, S2>, 
+struct IrredProd_Herm<IrredTensor<T2, B1, B2, S2>,
                       HermitianProxy<IrredTensor<T1, B3, B2, S1> > >
 {
    typedef typename LinearAlgebra::result_value<
@@ -1454,18 +1454,18 @@ struct IrredProd_Herm<IrredTensor<T2, B1, B2, S2>,
 namespace LinearAlgebra
 {
 
-template <typename T1, typename B1, typename B2, typename S1, 
+template <typename T1, typename B1, typename B2, typename S1,
           typename T2, typename B3, typename S2>
-struct Multiplication<Tensor::IrredTensor<T1, B1, B2, S1>, 
+struct Multiplication<Tensor::IrredTensor<T1, B1, B2, S1>,
                       HermitianProxy<Tensor::IrredTensor<T2, B3, B2, S2> > >
-   : Tensor::IrredProd_Herm<Tensor::IrredTensor<T1, B1, B2, S1>, 
+   : Tensor::IrredProd_Herm<Tensor::IrredTensor<T1, B1, B2, S1>,
                   HermitianProxy<Tensor::IrredTensor<T2, B3, B2, S2> > > {};
 
-template <typename T1, typename B1, typename B2, typename S1, 
+template <typename T1, typename B1, typename B2, typename S1,
           typename T2, typename B3, typename S2>
-struct Multiplication<HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> >, 
+struct Multiplication<HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> >,
                       Tensor::IrredTensor<T2, B1, B3, S2> >
-   : Tensor::IrredProd_Herm<HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> >, 
+   : Tensor::IrredProd_Herm<HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> >,
                   Tensor::IrredTensor<T2, B1, B3, S2> > {};
 
 } // namespace LinearAlgebra
@@ -1476,7 +1476,7 @@ namespace Tensor
 //
 // outer_diagonal
 // I've forgotten what this does.  It looks like an attempt to construct the diagonal components
-// of the operator x \otimes herm(y), but it cannot work as written, the result should always 
+// of the operator x \otimes herm(y), but it cannot work as written, the result should always
 // be scalar, for a start.
 //
 

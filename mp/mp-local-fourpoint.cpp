@@ -78,8 +78,8 @@ int main(int argc, char** argv)
       // Update all the existing E matrices
       for (OpMapType::iterator mI = OpMap.begin(); mI != OpMap.end(); ++mI)
       {
-         mI->second = operator_prod(herm(Psi.Left()), 
-                                    mI->second, 
+         mI->second = operator_prod(herm(Psi.Left()),
+                                    mI->second,
                                     Psi.Left());
       }
 
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
       {
          SimpleOperator MyOp2 = I2->second;
          if (MiddleProjection)
-            OpMap[i] = operator_prod(herm(MyOp2), herm(Psi.Left()), SLast, Psi.Left(), 
+            OpMap[i] = operator_prod(herm(MyOp2), herm(Psi.Left()), SLast, Psi.Left(),
                                      adjoint(*MiddleProjection));
          else
             OpMap[i] = operator_prod(herm(MyOp2), herm(Psi.Left()), SLast, Psi.Left());
@@ -124,13 +124,13 @@ int main(int argc, char** argv)
 
          for (OpMapType::iterator mI = OpMap.begin(); mI != OpMap.end(); ++mI)
          {
-            std::complex<double> Res = inner_prod(Psi.Center(), 
-                                                  triple_prod(mI->second, 
-                                                              Psi.Center(), 
+            std::complex<double> Res = inner_prod(Psi.Center(),
+                                                  triple_prod(mI->second,
+                                                              Psi.Center(),
                                                               herm(F)));
-            std::cout << std::setw(5) << Lat.coordinate_at_site(mI->first) << "   " 
+            std::cout << std::setw(5) << Lat.coordinate_at_site(mI->first) << "   "
                       << std::setw(5) << Lat.coordinate_at_site(i+1) << "   "
-                      << std::setw(18) << Res.real() << "   " 
+                      << std::setw(18) << Res.real() << "   "
                       << std::setw(18) << Res.imag() << '\n';
          }
       }

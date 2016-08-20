@@ -74,7 +74,7 @@ class ColorZMesh : public ZMesh
       ColorZMesh(unsigned usz, unsigned vsz, bool wrapU = false, bool wrapV = false)
          : ZMesh(usz, vsz, wrapU, wrapV) {}
 
-      ColorZMesh(LinearAlgebra::Matrix<double> const& M, 
+      ColorZMesh(LinearAlgebra::Matrix<double> const& M,
                  LinearAlgebra::Matrix<Color> const& C,
                  bool wrapU = false, bool wrapV = false)
          : ZMesh(M, wrapU, wrapV), Colors(C) {}

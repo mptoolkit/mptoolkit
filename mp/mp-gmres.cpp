@@ -45,8 +45,8 @@ struct SuperblockMultiply
    typedef MatrixOperator const& argument_type;
 
    SuperblockMultiply(SimpleOperator const& Op_,
-		      MPStateComponent const& Left_,
-		      MPStateComponent const& Right_)
+                      MPStateComponent const& Left_,
+                      MPStateComponent const& Right_)
       : Op(Op_), Left(Left_), Right(Right_) {}
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
@@ -63,7 +63,7 @@ struct Precondition
    typedef MatrixOperator result_type;
    typedef MatrixOperator const& argument_type;
 
-   Precondition(MPStateComponent const& Left_, MPStateComponent const& Right_, 
+   Precondition(MPStateComponent const& Left_, MPStateComponent const& Right_,
                 MatrixOperator const& Ei, MatrixOperator const& Fi)
       : yprime_A_x_Left(Left_), yprime_A_x_Right(Right_), EInv(Ei), FInv(Fi) {}
 
@@ -139,9 +139,9 @@ double SolverGmres::Solve(int MaxIterations)
    InvertHPD(F);
    F = triple_prod(herm(UF), F, UF);
 
-   GmRes(x.Center(), 
+   GmRes(x.Center(),
          SuperblockMultiply(conj(A.Center()),
-                            yprime_A_x.Left(), 
+                            yprime_A_x.Left(),
                             yprime_A_x.Right()),
          yprime.Center(),
          m, Iter, Tol,
@@ -153,10 +153,10 @@ double SolverGmres::Solve(int MaxIterations)
 
 std::complex<double> SolverGmres::Overlap() const
 {
-   return inner_prod(operator_prod(conj(A.Center()), 
-                                   yprime_A_x.Left(), 
-                                   x.Center(), 
-                                   herm(yprime_A_x.Right())), 
+   return inner_prod(operator_prod(conj(A.Center()),
+                                   yprime_A_x.Left(),
+                                   x.Center(),
+                                   herm(yprime_A_x.Right())),
                      yprime.Center());
 }
 
@@ -198,7 +198,7 @@ int main(int argc, char** argv)
 
       TruncationInfo States = solver.TruncateLeft(MaxStates, Correction);
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m << '\n';
+                << ") " << E << ' ' << States.m << '\n';
    }
 
    // sweep right
@@ -210,7 +210,7 @@ int main(int argc, char** argv)
       TruncationInfo States = solver.TruncateLeft(MaxStates, Correction);
 
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m << '\n';
+                << ") " << E << ' ' << States.m << '\n';
    }
    First = false;
 
@@ -219,7 +219,7 @@ int main(int argc, char** argv)
       double E = solver.Solve(NumIter);
       TruncationInfo States = solver.TruncateRight(MaxStates, Correction);
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m << '\n';
+                << ") " << E << ' ' << States.m << '\n';
    }
 
    // sweep left
@@ -231,7 +231,7 @@ int main(int argc, char** argv)
       TruncationInfo States = solver.TruncateRight(MaxStates, Correction);
 
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m << '\n';
+                << ") " << E << ' ' << States.m << '\n';
    }
 
    }

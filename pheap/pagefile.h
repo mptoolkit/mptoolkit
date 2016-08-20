@@ -66,7 +66,7 @@ class PageFile
       // pseudo-constructor, creates a new PageFile, overwrites the old filename if it exists.
       void create(size_t PageSize, std::string const& FileName, bool Unlink = false, bool AllowOverwrite = true);
 
-      // pseudo-constructor, reopens an existing page file, returns the saved 'UserData' 
+      // pseudo-constructor, reopens an existing page file, returns the saved 'UserData'
       // parameter from persistent_shutdown(int UserData).
       uint64 open(std::string const& FileName, bool ReadOnly = false);
 
@@ -92,7 +92,7 @@ class PageFile
       // Precondition: PageFile->PF == this, the page has previously been written
       // Postcondition: Returns a buffer allocated with get_allocator().
       unsigned char const* read(size_t Page);
-      
+
       // deallocates a previously written page.
       void deallocate(size_t Page);
 

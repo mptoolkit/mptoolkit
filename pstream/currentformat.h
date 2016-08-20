@@ -39,11 +39,11 @@
      typedef <implementation defined> uint32;
      typedef <implementation defined> int64;
      typedef <implementation defined> uint64;
- 
+
      typedef <implementation defined> ieee32;
      typedef <implementation defined> ieee64;
 
-     template <typename Builtin, typename FormatType> 
+     template <typename Builtin, typename FormatType>
      struct IsTrivialConversion
      {
         static bool const value = <implementation defined>;
@@ -53,7 +53,7 @@
   Requirements:
 
   The namespace CurrentFormat defines typedef's mapping
-  the chosen binary types onto builtin (or possibly user-defined) types.  
+  the chosen binary types onto builtin (or possibly user-defined) types.
   Currently, we assume that the representation and size of the builtin type
   exactly corresponds with the external representation of the given endianness.
   On some platforms that we almost certainly don't care about
@@ -82,17 +82,17 @@
   The platform must have a definite endianness (ie, big endian or little endian),
   which is defined in CurrentFormat::Endianness.
 
-  The platform must also define a traits type 
+  The platform must also define a traits type
   CurrentFormat::IsTrivialConversion<typename Builtin, typename FormatType>,
   where Intrinsic is a builtin type, FormatType is one of the above typedefs.
   This traits type must contain a boolean constant 'value' which is set to
-  true if a given builtin type has a trivial conversion to the FormatType 
-  (meaning a memcpy() or reinterpret_cast will work, with no possibility 
+  true if a given builtin type has a trivial conversion to the FormatType
+  (meaning a memcpy() or reinterpret_cast will work, with no possibility
   of overflow or underflow).
 
   IsTrivialConversion doesn't test endianness; it is used to determine only if
   the given builtin type can be converted trivially to the representation of
-  a given format type using the host endianness.  
+  a given format type using the host endianness.
 
   If IsTrivialConversion is true, and additionally
   the endianness of the target format is the same as the host endianness, then

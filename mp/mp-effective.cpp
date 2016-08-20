@@ -73,9 +73,9 @@ int main(int argc, char** argv)
          std::cout << "Calculating row " << i << " of " << Operators.size() << std::endl;
       for (unsigned j = i; j < Operators.size(); ++j)
       {
-	 MPOperator Op = (*System)[Operators[i]] * (*System)[Operators[j]];
-	 Hmat(i,j) = expectation(Psi, Op, Psi).real();
-	 Hmat(j,i) = Hmat(i,j);
+         MPOperator Op = (*System)[Operators[i]] * (*System)[Operators[j]];
+         Hmat(i,j) = expectation(Psi, Op, Psi).real();
+         Hmat(j,i) = Hmat(i,j);
       }
    }
 
@@ -87,13 +87,13 @@ int main(int argc, char** argv)
    //TRACE(U);
 
    //TRACE(Eigen);
-   
+
    Vector<double> HdiagInDiagBasis(Operators.size(), 0.0);
    for (unsigned i = 0; i < Operators.size(); ++i)
    {
       for (unsigned j = 0; j < Operators.size(); ++j)
       {
-	 HdiagInDiagBasis[i] += U(i,j) * Hdiag[j];
+         HdiagInDiagBasis[i] += U(i,j) * Hdiag[j];
       }
    }
 
@@ -113,7 +113,7 @@ int main(int argc, char** argv)
    {
       for (unsigned j = 0; j < Operators.size(); ++j)
       {
-	 AlphaOrig[i] += U(j,i) * Alpha[j];
+         AlphaOrig[i] += U(j,i) * Alpha[j];
       }
    }
 

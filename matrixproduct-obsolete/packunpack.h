@@ -34,8 +34,8 @@ class PackMatrixOperator
    public:
       typedef std::complex<double> value_type;
 
-      PackMatrixOperator(VectorBasis const& Basis1, 
-                         VectorBasis const& Basis2, 
+      PackMatrixOperator(VectorBasis const& Basis1,
+                         VectorBasis const& Basis2,
                          QuantumNumbers::QuantumNumber const& q);
 
       PackMatrixOperator(MatrixOperator const& m);
@@ -43,12 +43,12 @@ class PackMatrixOperator
       value_type* pack(MatrixOperator const& m, value_type* Iter) const;
 
       MatrixOperator unpack(value_type const* Iter) const;
-   
+
       std::size_t size() const { return Size_; }
-   
+
    private:
-      void Initialize(VectorBasis const& Basis1, 
-                      VectorBasis const& Basis2, 
+      void Initialize(VectorBasis const& Basis1,
+                      VectorBasis const& Basis2,
                       QuantumNumbers::QuantumNumber const& q_);
 
       // OffsetRecType contains the information for an individual dense block

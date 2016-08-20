@@ -58,12 +58,12 @@ long Binomial(int n, int k)
 // Functor to evaluate (1-T)(Psi) where T is the generalized transfer matrix
 struct OneMinusTransfer
 {
-   OneMinusTransfer(MPOperator const& T, LinearWavefunction const& Psi, QuantumNumber const& QShift, 
+   OneMinusTransfer(MPOperator const& T, LinearWavefunction const& Psi, QuantumNumber const& QShift,
                     MatrixOperator const& Rho,
                     MatrixOperator const& Identity, bool Orthogonalize)
-      : T_(T), Psi_(Psi), 
-	QShift_(QShift), Rho_(Rho), 
-	Identity_(Identity), Orthogonalize_(Orthogonalize) {}
+      : T_(T), Psi_(Psi),
+        QShift_(QShift), Rho_(Rho),
+        Identity_(Identity), Orthogonalize_(Orthogonalize) {}
 
    MatrixOperator operator()(MatrixOperator const& x) const
    {
@@ -146,8 +146,8 @@ delta_shift(MatrixPolyType const& In, QuantumNumber const& QShift)
 // Or better as vector<Polynomial<MatrixOperator> > ?
 // Probably even better, to do finite momentum at the same time.
 std::vector<MatrixPolyType>
-apply_right(std::vector<MatrixPolyType> const& In, 
-            LinearWavefunction const& Psi1, 
+apply_right(std::vector<MatrixPolyType> const& In,
+            LinearWavefunction const& Psi1,
             MPOperator const& Op,
             LinearWavefunction const& Psi2)
 {
@@ -179,8 +179,8 @@ apply_right(std::vector<MatrixPolyType> const& In,
 }
 
 MatrixPolyType
-apply_right(MatrixPolyType const& In, 
-            LinearWavefunction const& Psi1, 
+apply_right(MatrixPolyType const& In,
+            LinearWavefunction const& Psi1,
             MPOperator const& Op,
             LinearWavefunction const& Psi2)
 {
@@ -193,9 +193,9 @@ apply_right(MatrixPolyType const& In,
 // Calculates result' = C[column] = sum_{j > Column} E[j] * T_Op(j, Column)
 // Assumes that E[j] is defined, for j > Column
 MatrixPolyType
-MultiplyLeft(std::vector<MatrixPolyType> const& E, 
-             TriangularOperator const& Op, 
-             LinearWavefunction const& Psi, 
+MultiplyLeft(std::vector<MatrixPolyType> const& E,
+             TriangularOperator const& Op,
+             LinearWavefunction const& Psi,
              QuantumNumber const& QShift, int Column)
 {
    CHECK_EQUAL(Op.size(), Psi.size());
@@ -254,13 +254,13 @@ add_triple_prod(KMatrixPolyType& Result, std::complex<double> Factor,
 std::vector<KMatrixPolyType>
 operator_prod(HermitianProxy<OperatorComponent> const& M,
               HermitianProxy<StateComponent> const& A,
-              std::vector<KMatrixPolyType> const& E, 
+              std::vector<KMatrixPolyType> const& E,
               StateComponent const& B)
 {
    //   DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis2(), A.base().Basis1());
    DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis1(), B.LocalBasis());
    DEBUG_PRECONDITION_EQUAL(M.base().Basis1().size(), E.size());
-   
+
    std::vector<KMatrixPolyType> Result(M.base().Basis2().size());
 
    // Iterate over the components in M, first index
@@ -275,12 +275,12 @@ operator_prod(HermitianProxy<OperatorComponent> const& M,
             // *k is an irreducible operator.  Iterate over the components of this operator
             for (LinearAlgebra::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
             {
-               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type 
+               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type
                        S = iterate(R); S; ++S)
                {
-                  add_triple_prod(Result[J.index2()], herm(*S), 
-                                  herm(A.base()[S.index1()]), 
-                                  E[J.index1()], 
+                  add_triple_prod(Result[J.index2()], herm(*S),
+                                  herm(A.base()[S.index1()]),
+                                  E[J.index1()],
                                   B[S.index2()],
                                   k->TransformsAs(),
                                   M.base().Basis2()[J.index2()]);
@@ -295,7 +295,7 @@ operator_prod(HermitianProxy<OperatorComponent> const& M,
 std::vector<KMatrixPolyType>
 operator_prod(HermitianProxy<OperatorComponent> const& M,
               HermitianProxy<StateComponent> const& A,
-              std::vector<KMatrixPolyType> const& E, 
+              std::vector<KMatrixPolyType> const& E,
               StateComponent const& B,
               std::vector<int> const& OutMask,
               std::vector<int> const& InMask)
@@ -303,7 +303,7 @@ operator_prod(HermitianProxy<OperatorComponent> const& M,
    //   DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis2(), A.base().Basis2());
    DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis1(), B.LocalBasis());
    DEBUG_PRECONDITION_EQUAL(M.base().Basis1().size(), E.size());
-   
+
    std::vector<KMatrixPolyType> Result(M.base().Basis2().size());
 
    // Iterate over the components in M, first index
@@ -326,12 +326,12 @@ operator_prod(HermitianProxy<OperatorComponent> const& M,
             // *k is an irreducible operator.  Iterate over the components of this operator
             for (LinearAlgebra::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
             {
-               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type 
+               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type
                        S = iterate(R); S; ++S)
                {
-                  add_triple_prod(Result[J.index2()], herm(*S), 
-                                  herm(A.base()[S.index1()]), 
-                                  E[J.index1()], 
+                  add_triple_prod(Result[J.index2()], herm(*S),
+                                  herm(A.base()[S.index1()]),
+                                  E[J.index1()],
                                   B[S.index2()],
                                   k->TransformsAs(),
                                   M.base().Basis2()[J.index2()]);
@@ -344,8 +344,8 @@ operator_prod(HermitianProxy<OperatorComponent> const& M,
 }
 
 std::vector<KMatrixPolyType>
-apply_right(std::vector<KMatrixPolyType> const& In, 
-            LinearWavefunction const& Psi1, 
+apply_right(std::vector<KMatrixPolyType> const& In,
+            LinearWavefunction const& Psi1,
             MPOperator const& Op,
             LinearWavefunction const& Psi2)
 {
@@ -373,8 +373,8 @@ apply_right(std::vector<KMatrixPolyType> const& In,
 }
 
 std::vector<KMatrixPolyType>
-apply_right_mask(std::vector<KMatrixPolyType> const& In, 
-                 LinearWavefunction const& Psi1, 
+apply_right_mask(std::vector<KMatrixPolyType> const& In,
+                 LinearWavefunction const& Psi1,
                  QuantumNumber const& QShift,
                  MPOperator const& Op,
                  LinearWavefunction const& Psi2,
@@ -421,14 +421,14 @@ FindLargestEigenvalue(MatrixOperator& M, T Func, bool Verbose)
 }
 
 KComplexPolyType
-DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor, 
-		       MatrixOperator const& UnitMatrixLeft, 
-		       MatrixOperator const& UnitMatrixRight)
+DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
+                       MatrixOperator const& UnitMatrixLeft,
+                       MatrixOperator const& UnitMatrixRight)
 {
    KComplexPolyType EParallel;
    // diagonal element is the identity, up to a unitary factor
    DEBUG_TRACE("Unit diagonal element")(Factor);
-   
+
    // decompose C into components parallel and perpendicular to the identity
    // The only part we have to care about is a component with the same momentum as our unit operator
    for (KMatrixPolyType::iterator Ck = C.begin(); Ck != C.end(); ++Ck) // sum over momenta
@@ -437,49 +437,49 @@ DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
       std::complex<double> K = Ck->first;  // the momentum (complex phase)
       for (MatrixPolyType::iterator I = Ck->second.begin(); I != Ck->second.end(); ++I)
       {
-	 if (!is_scalar(I->second.TransformsAs()))
-	    continue;
+         if (!is_scalar(I->second.TransformsAs()))
+            continue;
 
-	 std::complex<double> Overlap = inner_prod(I->second, UnitMatrixRight);
-	 I->second -= Overlap*UnitMatrixLeft;
-	 if (norm_frob(Overlap) > 1E-16)
-	    CParallel[I->first] = Overlap;
+         std::complex<double> Overlap = inner_prod(I->second, UnitMatrixRight);
+         I->second -= Overlap*UnitMatrixLeft;
+         if (norm_frob(Overlap) > 1E-16)
+            CParallel[I->first] = Overlap;
       }
 
       // Is this the same momentum as our unit operator?
       if (norm_frob(K - Factor) < 1E-12)
       {
-	 DEBUG_TRACE("Component at equal momenta")(K);
-	 // same momenta, these components diverge		  
-	 for (int m = CParallel.degree(); m >= 0; --m)
-	 {
-	    if (CParallel.has_term(m))
-	    {
-	       EParallel[Factor][m+1] = conj(Factor) * CParallel[m]; // include momentum
-	       for (int k = m+2; k <= CParallel.degree()+1; ++k)
-	       {
-		  if (EParallel[Factor].has_term(k))
-		  {
-		     EParallel[Factor][m+1] -= double(Binomial(k,m)) 
-			* EParallel[Factor][k];
-		  }
-	       }
-	       EParallel[Factor][m+1] *= 1.0 / (1.0 + m);
-	    }
-	 }
+         DEBUG_TRACE("Component at equal momenta")(K);
+         // same momenta, these components diverge
+         for (int m = CParallel.degree(); m >= 0; --m)
+         {
+            if (CParallel.has_term(m))
+            {
+               EParallel[Factor][m+1] = conj(Factor) * CParallel[m]; // include momentum
+               for (int k = m+2; k <= CParallel.degree()+1; ++k)
+               {
+                  if (EParallel[Factor].has_term(k))
+                  {
+                     EParallel[Factor][m+1] -= double(Binomial(k,m))
+                        * EParallel[Factor][k];
+                  }
+               }
+               EParallel[Factor][m+1] *= 1.0 / (1.0 + m);
+            }
+         }
       }
       else
       {
-	 for (int m = CParallel.degree(); m >= 0; --m)
-	 {
-	    // different momenta, we get a contribution both at K and Factor
-	    if (CParallel.has_term(m))
-	    {
-	       std::complex<double> Term = CParallel[m] / (K - Factor);
-	       EParallel[K][m] += Term;
-	       EParallel[Factor][m] -= Term;
-	    }
-	 }
+         for (int m = CParallel.degree(); m >= 0; --m)
+         {
+            // different momenta, we get a contribution both at K and Factor
+            if (CParallel.has_term(m))
+            {
+               std::complex<double> Term = CParallel[m] / (K - Factor);
+               EParallel[K][m] += Term;
+               EParallel[Factor][m] -= Term;
+            }
+         }
       }
    }
    return EParallel;
@@ -487,12 +487,12 @@ DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
 
 KMatrixPolyType
 DecomposePerpendicularParts(KMatrixPolyType& C,
-			    MPOperator const& Diag, 
-			    MatrixOperator const& UnitMatrixLeft, 
-			    MatrixOperator const& UnitMatrixRight, 
-			    LinearWavefunction const& Psi,
-			    QuantumNumber const& QShift,
-			    bool Magnitude1)
+                            MPOperator const& Diag,
+                            MatrixOperator const& UnitMatrixLeft,
+                            MatrixOperator const& UnitMatrixRight,
+                            LinearWavefunction const& Psi,
+                            QuantumNumber const& QShift,
+                            bool Magnitude1)
 {
    // Components perpendicular to the identity satisfy equation (24)
    KMatrixPolyType E;
@@ -502,36 +502,36 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
       DEBUG_TRACE("Momentum")(K);
       for (int m = I->second.degree(); m >= 0; --m)
       {
-	 DEBUG_TRACE("degree")(m);
-	 MatrixOperator Rhs = conj(K) * I->second[m];
-	 for (int k = m+1; k <= I->second.degree(); ++k)
-	 {
-	    Rhs -= double(Binomial(k,m)) * E[K][k];
-	 }
-            
-	 // orthogonalize Rhs against the identity again, which is a kind of
-	 // DGKS correction
-	 if (is_scalar(Rhs.TransformsAs()))
-	    Rhs -= inner_prod(UnitMatrixRight, Rhs) * UnitMatrixLeft;
+         DEBUG_TRACE("degree")(m);
+         MatrixOperator Rhs = conj(K) * I->second[m];
+         for (int k = m+1; k <= I->second.degree(); ++k)
+         {
+            Rhs -= double(Binomial(k,m)) * E[K][k];
+         }
 
-	 double RhsNorm2 = norm_frob_sq(Rhs);
-	 RhsNorm2 = RhsNorm2 / (Rhs.Basis1().total_degree()*Rhs.Basis2().total_degree());
-	 //TRACE(RhsNorm2);
-	 if (RhsNorm2 > 1E-22)
-	 {
-	    E[K][m] = LinearSolve(OneMinusTransfer(K*Diag, Psi, QShift, UnitMatrixRight, UnitMatrixLeft, Magnitude1), 
-				  Rhs);
-	    // do another orthogonalization
-	    if (Magnitude1 && is_scalar(E[K][m].TransformsAs()))
-	       E[K][m] -= inner_prod(UnitMatrixRight, E[K][m]) * UnitMatrixLeft;
-	 }
+         // orthogonalize Rhs against the identity again, which is a kind of
+         // DGKS correction
+         if (is_scalar(Rhs.TransformsAs()))
+            Rhs -= inner_prod(UnitMatrixRight, Rhs) * UnitMatrixLeft;
+
+         double RhsNorm2 = norm_frob_sq(Rhs);
+         RhsNorm2 = RhsNorm2 / (Rhs.Basis1().total_degree()*Rhs.Basis2().total_degree());
+         //TRACE(RhsNorm2);
+         if (RhsNorm2 > 1E-22)
+         {
+            E[K][m] = LinearSolve(OneMinusTransfer(K*Diag, Psi, QShift, UnitMatrixRight, UnitMatrixLeft, Magnitude1),
+                                  Rhs);
+            // do another orthogonalization
+            if (Magnitude1 && is_scalar(E[K][m].TransformsAs()))
+               E[K][m] -= inner_prod(UnitMatrixRight, E[K][m]) * UnitMatrixLeft;
+         }
       }
    }
    return E;
 }
 
 // Solve the components for the case where the diagonal operator is zero
-KMatrixPolyType 
+KMatrixPolyType
 SolveZeroDiagonal(KMatrixPolyType const& C)
 {
    // See equation (20)
@@ -545,12 +545,12 @@ SolveZeroDiagonal(KMatrixPolyType const& C)
       int MaxDegree = I->second.degree();
       for (int i = MaxDegree; i >= 0; --i)
       {
-	 if (I->second.has_term(i))
-	    E[K][i] = conj(K) * I->second[i];
-	 for (int j = i+1; j <= MaxDegree; ++j)
-	 {
-	    E[K][i] -= double(Binomial(j,i)) * E[K][j];
-	 }
+         if (I->second.has_term(i))
+            E[K][i] = conj(K) * I->second[i];
+         for (int j = i+1; j <= MaxDegree; ++j)
+         {
+            E[K][i] -= double(Binomial(j,i)) * E[K][j];
+         }
       }
    }
    return E;
@@ -596,79 +596,79 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
       if (Classification.is_null())
       {
          DEBUG_TRACE("Zero diagonal element")(Col)(Diag);
-	 if (Verbose)
-	    std::cerr << "Zero diagonal matrix element at column " << Col << std::endl;
+         if (Verbose)
+            std::cerr << "Zero diagonal matrix element at column " << Col << std::endl;
          EMatK[Col] = SolveZeroDiagonal(C);
       }
       else
       {
-	 if (Verbose)
-	    std::cerr << "Non-zero diagonal matrix element at column " << Col << std::endl;
+         if (Verbose)
+            std::cerr << "Non-zero diagonal matrix element at column " << Col << std::endl;
 
-	 // Non-zero diagonal element.
-	 // In this case we have to consider a possible component with eigenvalue magnitude 1.
-	 // We call this component (if it exists) the unit matrix.
+         // Non-zero diagonal element.
+         // In this case we have to consider a possible component with eigenvalue magnitude 1.
+         // We call this component (if it exists) the unit matrix.
 
          KComplexPolyType EParallel;  // components parallel to the identity at some momentum, may be zero
 
-	 // Multiplication factor and the left and right eigenvalues.
-	 std::complex<double> Factor = Classification.factor();
-	 MatrixOperator UnitMatrixLeft = Identity;
-	 MatrixOperator UnitMatrixRight = Rho;
+         // Multiplication factor and the left and right eigenvalues.
+         std::complex<double> Factor = Classification.factor();
+         MatrixOperator UnitMatrixLeft = Identity;
+         MatrixOperator UnitMatrixRight = Rho;
 
-	 // If the diagonal operator is unitary, it might have an eigenvalue of magnitude 1
-	 if (Classification.is_unitary() && !Classification.is_complex_identity())
-	 {
-	    if (Verbose)
-	       std::cerr << "Non-trivial unitary at column " << Col << std::endl;
-	    
-	    // Find the largest eigenvalue
-	    // We need initial guess vectors in the correct symmetry sector
-	    UnitMatrixLeft = MakeRandomMatrixOperator(Identity.Basis1(), Identity.Basis2(), Diag.Basis2()[0]);
+         // If the diagonal operator is unitary, it might have an eigenvalue of magnitude 1
+         if (Classification.is_unitary() && !Classification.is_complex_identity())
+         {
+            if (Verbose)
+               std::cerr << "Non-trivial unitary at column " << Col << std::endl;
 
-	    std::complex<double> EtaL = FindLargestEigenvalue(UnitMatrixLeft, 
-							      ApplyLeftQShift(Diag, Psi, QShift), Verbose);
+            // Find the largest eigenvalue
+            // We need initial guess vectors in the correct symmetry sector
+            UnitMatrixLeft = MakeRandomMatrixOperator(Identity.Basis1(), Identity.Basis2(), Diag.Basis2()[0]);
 
-	    if (Verbose)
-	       std::cerr << "Eigenvalue of unitary operator is " << EtaL << std::endl;
+            std::complex<double> EtaL = FindLargestEigenvalue(UnitMatrixLeft,
+                                                              ApplyLeftQShift(Diag, Psi, QShift), Verbose);
 
-	    if (std::abs(norm_frob(EtaL) - 1.0) < 1E-12)
-	    {
+            if (Verbose)
+               std::cerr << "Eigenvalue of unitary operator is " << EtaL << std::endl;
 
-	       UnitMatrixRight = UnitMatrixLeft;
-	       // we have an eigenvalue of magnitude 1.  Find the right eigenvalue too
-	       std::complex<double> EtaR = FindLargestEigenvalue(UnitMatrixRight, 
-								 ApplyRightQShift(Diag, Psi, QShift), Verbose);
-	       CHECK(norm_frob(EtaL-EtaR) < 1E-12)("Left and right eigenvalues do not agree!")(EtaL)(EtaR);
-	       Factor = EtaL / norm_frob(EtaL);
-	    }
-	 }
+            if (std::abs(norm_frob(EtaL) - 1.0) < 1E-12)
+            {
 
-	 // If we have an eigenvalue with magnitude 1, then decompose C into parallel and perpendicular parts
-	 bool Magnitude1 = false;
+               UnitMatrixRight = UnitMatrixLeft;
+               // we have an eigenvalue of magnitude 1.  Find the right eigenvalue too
+               std::complex<double> EtaR = FindLargestEigenvalue(UnitMatrixRight,
+                                                                 ApplyRightQShift(Diag, Psi, QShift), Verbose);
+               CHECK(norm_frob(EtaL-EtaR) < 1E-12)("Left and right eigenvalues do not agree!")(EtaL)(EtaR);
+               Factor = EtaL / norm_frob(EtaL);
+            }
+         }
+
+         // If we have an eigenvalue with magnitude 1, then decompose C into parallel and perpendicular parts
+         bool Magnitude1 = false;
          if (std::abs(norm_frob(Factor) - 1.0) < 1E-12)
          {
-	    Magnitude1 = true;
-	    EParallel = DecomposeParallelParts(C, Factor, UnitMatrixLeft, UnitMatrixRight);
-	 }
+            Magnitude1 = true;
+            EParallel = DecomposeParallelParts(C, Factor, UnitMatrixLeft, UnitMatrixRight);
+         }
 
          // Now the remaining components, which is anything that is not proportional
-	 // to an eigenvector of magnitude 1
-      
-         KMatrixPolyType E = DecomposePerpendicularParts(C, Diag, UnitMatrixLeft, UnitMatrixRight, 
-							 Psi, QShift, Magnitude1);
+         // to an eigenvector of magnitude 1
+
+         KMatrixPolyType E = DecomposePerpendicularParts(C, Diag, UnitMatrixLeft, UnitMatrixRight,
+                                                         Psi, QShift, Magnitude1);
 
          // Reinsert the components parallel to the unit matrix (if any)
          for (KComplexPolyType::const_iterator I = EParallel.begin(); I != EParallel.end(); ++I)
          {
-	    for (ComplexPolyType::const_iterator J = I->second.begin(); J != I->second.end(); ++J)
-	    {
-	       E[I->first][J->first] += J->second * Identity;
-	    }
+            for (ComplexPolyType::const_iterator J = I->second.begin(); J != I->second.end(); ++J)
+            {
+               E[I->first][J->first] += J->second * Identity;
+            }
          }
 
-	 // Finally, set the E matrix element at this column
-	 DEBUG_TRACE(E[1.0]);
+         // Finally, set the E matrix element at this column
+         DEBUG_TRACE(E[1.0]);
          EMatK[Col] = E;
       }
 
@@ -713,13 +713,13 @@ int main(int argc, char** argv)
    SiteBlock Site = CreateU1U1HubbardSite();
    std::vector<BasisList> Sites(UnitCellSize, Site["I"].Basis().Basis());
    std::vector<SimpleOperator> FermionString(UnitCellSize, SimpleOperator(Site["P"]));
-   
+
 
    // Shift Psi to the symmetric orthogonalization
    MatrixOperator Identity = MatrixOperator::make_identity(Psi.Psi.Basis1());
    MatrixOperator Rho = scalar_prod(Psi.C_right, herm(Psi.C_right));
    LinearWavefunction Phi = Psi.Psi; // no need to bugger around with C_old,C_right
- 
+
    MatrixOperator LambdaSqrt = SqrtDiagonal(Psi.C_old);
    MatrixOperator LambdaInvSqrt = InvertDiagonal(LambdaSqrt, InverseTol);
 
@@ -741,8 +741,8 @@ int main(int argc, char** argv)
    {
       for (int j = 0; j < UnitCellSize; ++j)
       {
-	 std::cout << "#" << i << "," << j << "-real ";
-	 std::cout << "#" << i << "," << j << "-imag ";
+         std::cout << "#" << i << "," << j << "-real ";
+         std::cout << "#" << i << "," << j << "-imag ";
       }
    }
    std::cout << std::endl;
@@ -754,27 +754,27 @@ int main(int argc, char** argv)
       std::cout << k << ' ';
       for (int i = 0; i < UnitCellSize; ++i)
       {
-	 for (int j = 0; j < UnitCellSize; ++j)
-	 {
-	    TriangularOperator Op1 = OnePointStringOperator(Sites, FermionString, i, Site["CHup"], k*math_const::pi);
-	    TriangularOperator Op2 = OnePointStringOperator(Sites, FermionString, j, Site["Cup"], -k*math_const::pi);
+         for (int j = 0; j < UnitCellSize; ++j)
+         {
+            TriangularOperator Op1 = OnePointStringOperator(Sites, FermionString, i, Site["CHup"], k*math_const::pi);
+            TriangularOperator Op2 = OnePointStringOperator(Sites, FermionString, j, Site["Cup"], -k*math_const::pi);
 
-	    TriangularOperator Op = Op1 * Op2;
+            TriangularOperator Op = Op1 * Op2;
 
-	    std::map<std::complex<double>, Polynomial<MatrixOperator>, CompareComplex> 
-	       E = SolveMPO_Left(Phi, Psi.QShift, Op, Rho, Identity, Verbose);
-	    Polynomial<std::complex<double> > aNorm = ExtractOverlap(E[1.0], Rho);
+            std::map<std::complex<double>, Polynomial<MatrixOperator>, CompareComplex>
+               E = SolveMPO_Left(Phi, Psi.QShift, Op, Rho, Identity, Verbose);
+            Polynomial<std::complex<double> > aNorm = ExtractOverlap(E[1.0], Rho);
 
-	    if (Verbose)
-	    {
-	       for (int i = 0; i <= aNorm.degree(); ++i)
-	       {
-		  std::cout << i << ' ' << aNorm[i].real() << ' ' << aNorm[i].imag() << '\n';
-	       }
-	    }
-	    else
-	       std::cout << aNorm[1].real() << ' ' << aNorm[1].imag() << ' ';
-	 }
+            if (Verbose)
+            {
+               for (int i = 0; i <= aNorm.degree(); ++i)
+               {
+                  std::cout << i << ' ' << aNorm[i].real() << ' ' << aNorm[i].imag() << '\n';
+               }
+            }
+            else
+               std::cout << aNorm[1].real() << ' ' << aNorm[1].imag() << ' ';
+         }
       }
       std::cout << std::endl;
    }

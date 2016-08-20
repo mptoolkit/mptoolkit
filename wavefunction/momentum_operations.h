@@ -51,23 +51,23 @@ MatrixPolyType
 delta_shift(MatrixPolyType const& In, QuantumNumber const& QShift);
 
 MatrixPolyType
-inject_left(MatrixPolyType const& In, 
-            LinearWavefunction const& Psi1, 
+inject_left(MatrixPolyType const& In,
+            LinearWavefunction const& Psi1,
             GenericMPO const& Op,
             LinearWavefunction const& Psi2);
 
 std::vector<MatrixPolyType>
-inject_left(std::vector<MatrixPolyType> const& In, 
-            LinearWavefunction const& Psi1, 
+inject_left(std::vector<MatrixPolyType> const& In,
+            LinearWavefunction const& Psi1,
             GenericMPO const& Op,
             LinearWavefunction const& Psi2);
 
 // Calculates result' = C[column] = sum_{j > Column} E[j] * T_Op(j, Column)
 // Assumes that E[j] is defined, for j > Column
 MatrixPolyType
-MultiplyLeft(std::vector<MatrixPolyType> const& E, 
-             TriangularMPO const& Op, 
-             LinearWavefunction const& Psi, 
+MultiplyLeft(std::vector<MatrixPolyType> const& E,
+             TriangularMPO const& Op,
+             LinearWavefunction const& Psi,
              QuantumNumber const& QShift, int Column);
 
 // Calculate the polynomial of overlaps of the E matrix with some operator (typically the density matrix)
@@ -103,27 +103,27 @@ add_triple_prod(KMatrixPolyType& Result, std::complex<double> Factor,
 
 std::vector<KMatrixPolyType>
 contract_from_left(OperatorComponent const& M,
-		   HermitianProxy<StateComponent> const& A,
-		   std::vector<KMatrixPolyType> const& E, 
-		   StateComponent const& B);
+                   HermitianProxy<StateComponent> const& A,
+                   std::vector<KMatrixPolyType> const& E,
+                   StateComponent const& B);
 
 std::vector<KMatrixPolyType>
 contract_from_left(OperatorComponent const& M,
-		   HermitianProxy<StateComponent> const& A,
-		   std::vector<KMatrixPolyType> const& E, 
-		   StateComponent const& B,
-		   std::vector<int> const& OutMask,
-		   std::vector<int> const& InMask);
+                   HermitianProxy<StateComponent> const& A,
+                   std::vector<KMatrixPolyType> const& E,
+                   StateComponent const& B,
+                   std::vector<int> const& OutMask,
+                   std::vector<int> const& InMask);
 
 std::vector<KMatrixPolyType>
-inject_left(std::vector<KMatrixPolyType> const& In, 
-            LinearWavefunction const& Psi1, 
+inject_left(std::vector<KMatrixPolyType> const& In,
+            LinearWavefunction const& Psi1,
             GenericMPO const& Op,
             LinearWavefunction const& Psi2);
 
 std::vector<KMatrixPolyType>
-inject_left_mask(std::vector<KMatrixPolyType> const& In, 
-                 LinearWavefunction const& Psi1, 
+inject_left_mask(std::vector<KMatrixPolyType> const& In,
+                 LinearWavefunction const& Psi1,
                  QuantumNumber const& QShift,
                  GenericMPO const& Op,
                  LinearWavefunction const& Psi2,

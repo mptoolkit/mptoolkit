@@ -51,7 +51,7 @@ InfiniteWavefunction rotate_left(InfiniteWavefunction const& Psi, int Count)
    }
 
    Result.set_back(prod(Result.get_back(), (delta_shift(C, adjoint(Psi.QShift)))));
-   
+
    InfiniteWavefunction Ret;
    Ret.C_old = MatrixOperator::make_identity(Result.Basis1());
    Ret.QShift = Psi.QShift;
@@ -95,7 +95,7 @@ LinearWavefunction get_orthogonal_wavefunction(InfiniteWavefunction const& Psi)
 #if 0
    MatrixOperator x_unit =  Psi.C_right * delta_shift(InvertDiagonal(Psi.C_old, InverseTol), adjoint(Psi.QShift));
    LinearWavefunction xPsi = Psi.Psi;
-   //xPsi.set_back(prod(xPsi.get_back(), x_unit));   
+   //xPsi.set_back(prod(xPsi.get_back(), x_unit));
    xPsi.set_front(prod(delta_shift(x_unit, Psi.QShift), xPsi.get_front()));
    MatrixOperator I = MatrixOperator::make_identity(xPsi.Basis1());
    xPsi = inject_left_old_interface(I, xPsi);
@@ -121,7 +121,7 @@ double orthogonality_fidelity(InfiniteWavefunction const& x)
    // We don't assume that the state is normalized, although in practice it probably
    // always is.
    MatrixOperator U, D, Vh;
-   SingularValueDecomposition(scalar_prod(x.C_right, 
+   SingularValueDecomposition(scalar_prod(x.C_right,
                                           herm(delta_shift(x.C_old, adjoint(x.QShift)))),
                               U, D, Vh);
    return trace(D).real() / (norm_frob(x.C_right) * norm_frob(x.C_old));
@@ -132,7 +132,7 @@ struct LeftMultiply
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   LeftMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_) 
+   LeftMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_)
       : L(L_), QShift(QShift_) {}
 
    result_type operator()(argument_type const& x) const
@@ -140,7 +140,7 @@ struct LeftMultiply
       result_type r = delta_shift(x, QShift);
       for (LinearWavefunction::const_iterator I = L.begin(); I != L.end(); ++I)
       {
-	 r = operator_prod(herm(*I), r, *I);
+         r = operator_prod(herm(*I), r, *I);
       }
       return r;
    }
@@ -148,13 +148,13 @@ struct LeftMultiply
    LinearWavefunction const& L;
    QuantumNumber QShift;
 };
-   
+
 struct RightMultiply
 {
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   RightMultiply(LinearWavefunction const& R_, QuantumNumber const& QShift_) 
+   RightMultiply(LinearWavefunction const& R_, QuantumNumber const& QShift_)
       : R(R_), QShift(QShift_) {}
 
    result_type operator()(argument_type const& x) const
@@ -163,8 +163,8 @@ struct RightMultiply
       LinearWavefunction::const_iterator I = R.end();
       while (I != R.begin())
       {
-	 --I;
-	 r = operator_prod(*I, r, herm(*I));
+         --I;
+         r = operator_prod(*I, r, herm(*I));
       }
       return delta_shift(r, adjoint(QShift));
    }
@@ -172,15 +172,15 @@ struct RightMultiply
    LinearWavefunction const& R;
    QuantumNumber QShift;
 };
-   
+
 struct GeneralizedLeftMultiply
 {
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   GeneralizedLeftMultiply(LinearWavefunction const& L1_, 
+   GeneralizedLeftMultiply(LinearWavefunction const& L1_,
                            LinearWavefunction const& L2_,
-                           QuantumNumber const& QShift_) 
+                           QuantumNumber const& QShift_)
       : L1(L1_), L2(L2_), QShift(QShift_) {}
 
    result_type operator()(argument_type const& x) const
@@ -190,7 +190,7 @@ struct GeneralizedLeftMultiply
       LinearWavefunction::const_iterator I2 = L2.begin();
       for ( ; I1 != L1.end(); ++I1, ++I2)
       {
-	 r = operator_prod(herm(*I1), r, *I2);
+         r = operator_prod(herm(*I1), r, *I2);
       }
       return delta_shift(r, QShift);
    }
@@ -221,7 +221,7 @@ void orthogonalize(InfiniteWavefunction& x)
    // get the eigenmatrix.  Do some dodgy explict restarts.
    int Iterations = 20;
    double Tol = 1E-12;
-   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, x.QShift), 
+   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, x.QShift),
                                                       Iterations, Tol, false);
    while (Iterations == 20)
    {
@@ -249,7 +249,7 @@ void orthogonalize(InfiniteWavefunction& x)
 
    // get the eigenmatrix
    Iterations = 20; Tol = 1E-12;
-   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, x.QShift), 
+   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, x.QShift),
                                                       Iterations, Tol, false);
    //   DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
    while (Iterations == 20)
@@ -299,14 +299,14 @@ void orthogonalize(InfiniteWavefunction& x)
    x.C_old *= 1.0 / norm_frob(x.C_old);
    //   DEBUG_TRACE(EigenvaluesHermitian(x.C_old));
 
-   // apply A to L   
+   // apply A to L
    //x.C_right = x.C_right * herm(B);
    x.Psi = inject_right_old_interface(x.Psi, x.C_right);
    x.C_right = delta_shift(A, x.QShift) * x.C_right;
    x.Psi = inject_left_old_interface(x.C_right, x.Psi);
    x.C_right = x.C_right * herm(B);
 
-   // shift C_right to the diagonal basis.  This is a bit of a hack. 
+   // shift C_right to the diagonal basis.  This is a bit of a hack.
    //TRACE(SingularValues(x.C_old));
    //Vh = x.C_right * InvertDiagonal(x.C_old, 1e-9);
    //x.Psi.set_back(prod(x.Psi.get_back(), Vh));
@@ -317,7 +317,7 @@ void orthogonalize(InfiniteWavefunction& x)
    //TRACE(Vh);
    //x.Psi.set_back(prod(x.Psi.get_back(), U));
    //x.C_right = x.C_right*Vh;
-   
+
    // normalize
    x.C_right *= 1.0 / norm_frob(x.C_right);
 
@@ -353,7 +353,7 @@ void orthogonalize(InfiniteWavefunction& x)
    int Iterations = 20;
    double Tol = 1E-14;
    LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
-   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, x.QShift), 
+   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, x.QShift),
                                                       Iterations, Tol, false);
    while (Iterations == 20)
    {
@@ -401,7 +401,7 @@ void orthogonalize(InfiniteWavefunction& x)
    // get the eigenmatrix
    Iterations = 20; Tol = 1E-14;
    RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
-   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, x.QShift), 
+   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, x.QShift),
                                                       Iterations, Tol, false);
    //   DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
    while (Iterations == 20)
@@ -477,7 +477,7 @@ void orthogonalize(InfiniteWavefunction& x)
    // get the eigenmatrix.  Do some dodgy explict restarts.
    int Iterations = 20;
    double Tol = 1E-14;
-   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, x.QShift), 
+   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, x.QShift),
                                                       Iterations, Tol, false);
    while (Iterations == 20)
    {
@@ -505,7 +505,7 @@ void orthogonalize(InfiniteWavefunction& x)
 
    // get the eigenmatrix
    Iterations = 20; Tol = 1E-15;
-   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, x.QShift), 
+   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, x.QShift),
                                                       Iterations, Tol, false);
    //   DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
    while (Iterations == 20)
@@ -559,7 +559,7 @@ void orthogonalize(InfiniteWavefunction& x)
    // and do the singular value decomposition, updating x.C_old to be diagonal
    MatrixOperator Vh;
    SingularValueDecomposition(new_C_old, U, x.C_old, Vh);
-   
+
    // normalize
    x.C_old *= 1.0 / norm_frob(x.C_old);
 
@@ -593,7 +593,7 @@ std::complex<double> overlap(InfiniteWavefunction const& x, InfiniteWavefunction
    CHECK_EQUAL(x.QShift, y.QShift)("The wavefunctions must have the same quantum number per unit cell");
    MatrixOperator x_unit =  x.C_right * delta_shift(InvertDiagonal(x.C_old, InverseTol), adjoint(x.QShift));
    MatrixOperator y_unit =  y.C_right * delta_shift(InvertDiagonal(y.C_old, InverseTol), adjoint(y.QShift));
-   
+
    LinearWavefunction xPsi = x.Psi;
    xPsi.set_back(prod(xPsi.get_back(), x_unit));
 
@@ -605,8 +605,8 @@ std::complex<double> overlap(InfiniteWavefunction const& x, InfiniteWavefunction
    int Iterations = Iter;
    int TotalIterations = 0;
    double MyTol = Tol;
-   std::complex<double> Eta = LinearSolvers::Arnoldi(Init, 
-                                                     GeneralizedLeftMultiply(xPsi, yPsi, x.QShift), 
+   std::complex<double> Eta = LinearSolvers::Arnoldi(Init,
+                                                     GeneralizedLeftMultiply(xPsi, yPsi, x.QShift),
                                                      Iterations, MyTol, false, Verbose);
    TotalIterations += Iterations;
    DEBUG_TRACE(Eta)(Iterations);
@@ -617,8 +617,8 @@ std::complex<double> overlap(InfiniteWavefunction const& x, InfiniteWavefunction
          std::cerr << "Restarting Arnoldi, eta=" << Eta << ", Tol=" << -MyTol << '\n';
       Iterations = Iter;
       MyTol = Tol;
-      Eta = LinearSolvers::Arnoldi(Init, GeneralizedLeftMultiply(xPsi, yPsi, x.QShift), 
-				   Iterations, MyTol, false, Verbose);
+      Eta = LinearSolvers::Arnoldi(Init, GeneralizedLeftMultiply(xPsi, yPsi, x.QShift),
+                                   Iterations, MyTol, false, Verbose);
       TotalIterations += Iterations;
       DEBUG_TRACE(Eta)(Iterations);
    }

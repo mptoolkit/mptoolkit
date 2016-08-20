@@ -29,7 +29,7 @@ bool LinearOperator::is_irreducible() const
    return (this->is_null() || this->Basis1().size() == 1);
 }
 
-QuantumNumbers::QuantumNumber 
+QuantumNumbers::QuantumNumber
 LinearOperator::TransformsAs() const
 {
    if (this->is_null())
@@ -182,7 +182,7 @@ LinearOperator project(LinearOperator const& x, QuantumNumbers::QuantumNumber co
    unsigned i = std::distance(x.Basis1().begin(), std::find(x.Basis1().begin(), x.Basis1().end(), q));
    if (i == x.Basis1().size())  // in this case, q does not exist in the basis anyway
       return LinearOperator();
-   
+
    BasisList NewBasis(x.GetSymmetryList());
    NewBasis.push_back(x.Basis1()[i]);
    SimpleOperator C(NewBasis, x.Basis1());

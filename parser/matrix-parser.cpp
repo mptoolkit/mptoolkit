@@ -68,192 +68,192 @@ struct MatrixParser : public grammar<MatrixParser>
    static unary_funcs<ElementType>  unary_funcs_p;
    static binary_funcs<ElementType> binary_funcs_p;
 
-   MatrixParser(ElemStackType& eval_, 
-		UnaryFuncStackType& func_stack_,
-		BinaryFuncStackType& bin_func_stack_,
-		IdentifierStackType& IdentifierStack_,
-		FunctionStackType& Functions_,
-		ParameterStackType& Parameters_,
-		ArgumentType& Arguments_,
-		MatrixArgumentType& MatrixArguments_)
+   MatrixParser(ElemStackType& eval_,
+                UnaryFuncStackType& func_stack_,
+                BinaryFuncStackType& bin_func_stack_,
+                IdentifierStackType& IdentifierStack_,
+                FunctionStackType& Functions_,
+                ParameterStackType& Parameters_,
+                ArgumentType& Arguments_,
+                MatrixArgumentType& MatrixArguments_)
       : eval(eval_), func_stack(func_stack_), bin_func_stack(bin_func_stack_),
-	IdentifierStack(IdentifierStack_), FunctionStack(Functions_),
-	ParameterStack(Parameters_), Arguments(Arguments_), MatrixArguments(MatrixArguments_)
+        IdentifierStack(IdentifierStack_), FunctionStack(Functions_),
+        ParameterStack(Parameters_), Arguments(Arguments_), MatrixArguments(MatrixArguments_)
    {}
-   
+
    template <typename ScannerT>
    struct definition
    {
       definition(MatrixParser const& self)
       {
-	 real_t = ureal_p;
-	 real = real_t[push_value<ElementType>(self.eval)];
+         real_t = ureal_p;
+         real = real_t[push_value<ElementType>(self.eval)];
 
-	 imag_t = lexeme_d[ureal_p >> chset<>("iIjJ")];
-	 imag = imag_t[push_imag<ElementType>(self.eval)];
-	 
-	 identifier_t = lexeme_d[alpha_p >> *(alnum_p | '_')];
-	 identifier = identifier_t;
-	 //[push_identifier(self.identifier_stack)];
+         imag_t = lexeme_d[ureal_p >> chset<>("iIjJ")];
+         imag = imag_t[push_imag<ElementType>(self.eval)];
 
-	 // We re-use the identifier_stack for quantum numbers, and rely on the grammar rules to
-	 // avoid chaos!
-	 quantumnumber_t = lexeme_d[*(anychar_p - chset<>("()"))];
+         identifier_t = lexeme_d[alpha_p >> *(alnum_p | '_')];
+         identifier = identifier_t;
+         //[push_identifier(self.identifier_stack)];
 
-	 quantumnumber = quantumnumber_t[push_identifier(self.IdentifierStack)];
+         // We re-use the identifier_stack for quantum numbers, and rely on the grammar rules to
+         // avoid chaos!
+         quantumnumber_t = lexeme_d[*(anychar_p - chset<>("()"))];
 
-	 named_parameter_t = identifier_t >> '=' >> expression_t;
+         quantumnumber = quantumnumber_t[push_identifier(self.IdentifierStack)];
 
-	 named_parameter = eps_p(identifier >> '=')
-	    >> identifier[push_identifier(self.IdentifierStack)]
-	    >> '='
-	    >> expression[push_named_parameter<ElementType>(self.eval, 
-							     self.IdentifierStack, 
-							     self.ParameterStack)];
+         named_parameter_t = identifier_t >> '=' >> expression_t;
 
-	 parameter_t = expression_t;
-	 parameter = expression[push_parameter<ElementType>(self.eval, self.ParameterStack)];
+         named_parameter = eps_p(identifier >> '=')
+            >> identifier[push_identifier(self.IdentifierStack)]
+            >> '='
+            >> expression[push_named_parameter<ElementType>(self.eval,
+                                                             self.IdentifierStack,
+                                                             self.ParameterStack)];
 
-	 // parameter_list is a comma-separated list of parameters, may be empty
-	 // at least one parameter
-	 parameter_list_t = '{' >> (!((named_parameter_t | parameter_t) % ',')) >> '}';
-	 parameter_list = '{' >> (!((named_parameter | parameter) % ',')) >> '}';
+         parameter_t = expression_t;
+         parameter = expression[push_parameter<ElementType>(self.eval, self.ParameterStack)];
 
-	 prod_expression_t = (str_p("prod") >> '(' >> expression_t >> ',' 
-			      >> expression_t >> ',' >> quantumnumber_t >> ')');
+         // parameter_list is a comma-separated list of parameters, may be empty
+         // at least one parameter
+         parameter_list_t = '{' >> (!((named_parameter_t | parameter_t) % ',')) >> '}';
+         parameter_list = '{' >> (!((named_parameter | parameter) % ',')) >> '}';
 
-	 prod_expression = (str_p("prod") >> '(' >> expression >> ',' 
-			    >> expression >> ',' >> quantumnumber >> ')')
-	    [push_prod<ElementType>(self.IdentifierStack, self.eval)];
- 
-	 bracket_expr_t = '(' >> expression_t >> ')';
+         prod_expression_t = (str_p("prod") >> '(' >> expression_t >> ','
+                              >> expression_t >> ',' >> quantumnumber_t >> ')');
 
-	 bracket_expr = '(' >> expression >> ')';
+         prod_expression = (str_p("prod") >> '(' >> expression >> ','
+                            >> expression >> ',' >> quantumnumber >> ')')
+            [push_prod<ElementType>(self.IdentifierStack, self.eval)];
 
-	 sq_bracket_expr_t = '[' >> expression_t >> ']';
+         bracket_expr_t = '(' >> expression_t >> ')';
 
-	 sq_bracket_expr = '[' >> expression >> ']';
+         bracket_expr = '(' >> expression >> ')';
 
-	 unary_function_t = unary_funcs_p >> '(' >> expression_t >> ')';
-	 unary_function_t = unary_funcs_p >> '(' >> expression_t >> ')';
+         sq_bracket_expr_t = '[' >> expression_t >> ']';
 
-	 unary_function = 
-	    eps_p(unary_funcs_p >> '(') 
-	    >>  unary_funcs_p[push_unary<ElementType>(self.func_stack)]
-	    >>  ('(' >> expression >> ')')[eval_unary<ElementType>(self.func_stack, self.eval)];
-	 
-	 binary_function_t = binary_funcs_p >> '(' >> expression_t >> ',' >> expression_t >> ')';
+         sq_bracket_expr = '[' >> expression >> ']';
 
-	 binary_function = 
-	    eps_p(self.binary_funcs_p >> '(') 
-	    >>  self.binary_funcs_p[push_binary<ElementType>(self.bin_func_stack)]
-	    >>  ('(' >> expression >> ','  >> expression >> ')')
-	    [eval_binary<ElementType>(self.bin_func_stack, self.eval)];
-      
-	 commutator_bracket_t = ch_p('[') >> expression_t >> ']';
-	 
-	 commutator_bracket = 
-	    ('[' >> expression >> ',' >> expression >> ']')[invoke_binary<ElementType, 
-							    binary_commutator<ElementType> >(self.eval)];
+         unary_function_t = unary_funcs_p >> '(' >> expression_t >> ')';
+         unary_function_t = unary_funcs_p >> '(' >> expression_t >> ')';
 
-	 
-	 factor_t =
-	    imag_t
-	    |   real_t
-	    |   unary_function_t
-	    |   binary_function_t
-	    |   keyword_d[constants_p[eps_p]]
-	    |   keyword_d[self.Arguments]
-	    |   keyword_d[self.MatrixArguments]
-	    |   prod_expression_t
-	    |   commutator_bracket_t
-	    |   '(' >> expression_t >> ')'
-	    |   ('-' >> factor_t)
-	    |   ('+' >> factor_t)
-	    ;
+         unary_function =
+            eps_p(unary_funcs_p >> '(')
+            >>  unary_funcs_p[push_unary<ElementType>(self.func_stack)]
+            >>  ('(' >> expression >> ')')[eval_unary<ElementType>(self.func_stack, self.eval)];
 
-	 factor =
-	    imag
-	    |   real
-	    |   unary_function
-	    |   binary_function
-	    |   keyword_d[constants_p[push_value<ElementType>(self.eval)]]
-	    |   keyword_d[self.Arguments[push_value<ElementType>(self.eval)]]
-	    |   keyword_d[self.MatrixArguments[push_value<ElementType>(self.eval)]]
-	    |   prod_expression
-	    |   commutator_bracket
-	    |   '(' >> expression >> ')'
-	    |   ('-' >> factor)[do_negate<ElementType>(self.eval)]
-	    |   ('+' >> factor)
-	    ;
-	 
-	 // power operator, next precedence, operates to the right
-	 pow_term_t =
-	    factor_t
-	    >> *(('^' >> pow_term_t));
+         binary_function_t = binary_funcs_p >> '(' >> expression_t >> ',' >> expression_t >> ')';
 
-	 pow_term =
-	    factor
-	    >> *(  ('^' >> pow_term)[invoke_binary<ElementType, binary_power<ElementType> >(self.eval)]
-		   )
-	    ;
-	 
-	 term_t =
-	    pow_term_t
-	    >> *(   ('*' >> pow_term_t)
+         binary_function =
+            eps_p(self.binary_funcs_p >> '(')
+            >>  self.binary_funcs_p[push_binary<ElementType>(self.bin_func_stack)]
+            >>  ('(' >> expression >> ','  >> expression >> ')')
+            [eval_binary<ElementType>(self.bin_func_stack, self.eval)];
+
+         commutator_bracket_t = ch_p('[') >> expression_t >> ']';
+
+         commutator_bracket =
+            ('[' >> expression >> ',' >> expression >> ']')[invoke_binary<ElementType,
+                                                            binary_commutator<ElementType> >(self.eval)];
+
+
+         factor_t =
+            imag_t
+            |   real_t
+            |   unary_function_t
+            |   binary_function_t
+            |   keyword_d[constants_p[eps_p]]
+            |   keyword_d[self.Arguments]
+            |   keyword_d[self.MatrixArguments]
+            |   prod_expression_t
+            |   commutator_bracket_t
+            |   '(' >> expression_t >> ')'
+            |   ('-' >> factor_t)
+            |   ('+' >> factor_t)
+            ;
+
+         factor =
+            imag
+            |   real
+            |   unary_function
+            |   binary_function
+            |   keyword_d[constants_p[push_value<ElementType>(self.eval)]]
+            |   keyword_d[self.Arguments[push_value<ElementType>(self.eval)]]
+            |   keyword_d[self.MatrixArguments[push_value<ElementType>(self.eval)]]
+            |   prod_expression
+            |   commutator_bracket
+            |   '(' >> expression >> ')'
+            |   ('-' >> factor)[do_negate<ElementType>(self.eval)]
+            |   ('+' >> factor)
+            ;
+
+         // power operator, next precedence, operates to the right
+         pow_term_t =
+            factor_t
+            >> *(('^' >> pow_term_t));
+
+         pow_term =
+            factor
+            >> *(  ('^' >> pow_term)[invoke_binary<ElementType, binary_power<ElementType> >(self.eval)]
+                   )
+            ;
+
+         term_t =
+            pow_term_t
+            >> *(   ('*' >> pow_term_t)
                     |   ('/' >> pow_term_t)
                     |   ('%' >> pow_term_t)
                     )
-	    ;
-	 term =
-	    pow_term
-	    >> *(   ('*' >> pow_term)[invoke_binary<ElementType, 
-				      binary_multiplication<ElementType> >(self.eval)]
-                    |   ('/' >> pow_term)[invoke_binary<ElementType, 
-					  binary_division<ElementType> >(self.eval)]
-                    |   ('%' >> pow_term)[invoke_binary<ElementType, 
-					  binary_modulus<ElementType> >(self.eval)]
+            ;
+         term =
+            pow_term
+            >> *(   ('*' >> pow_term)[invoke_binary<ElementType,
+                                      binary_multiplication<ElementType> >(self.eval)]
+                    |   ('/' >> pow_term)[invoke_binary<ElementType,
+                                          binary_division<ElementType> >(self.eval)]
+                    |   ('%' >> pow_term)[invoke_binary<ElementType,
+                                          binary_modulus<ElementType> >(self.eval)]
                     )
-	    ;
-	 
-	 expression_t =
-	    term_t
-	    >> *(  ('+' >> term_t)
-		   |   ('-' >> term_t)
-		   )
-	    ;
-	 expression =
-	    term
-	    >> *(  ('+' >> term)[invoke_binary<ElementType, 
-				 binary_addition<ElementType> >(self.eval)]
-		   |   ('-' >> term)[invoke_binary<ElementType, 
-				     binary_subtraction<ElementType> >(self.eval)]
-		   )
-	    >> !end_p     // skip trailing whitespace
-	    ;
+            ;
+
+         expression_t =
+            term_t
+            >> *(  ('+' >> term_t)
+                   |   ('-' >> term_t)
+                   )
+            ;
+         expression =
+            term
+            >> *(  ('+' >> term)[invoke_binary<ElementType,
+                                 binary_addition<ElementType> >(self.eval)]
+                   |   ('-' >> term)[invoke_binary<ElementType,
+                                     binary_subtraction<ElementType> >(self.eval)]
+                   )
+            >> !end_p     // skip trailing whitespace
+            ;
       }
-      
+
       rule<ScannerT> real, imag, identifier, quantumnumber,
-	 parameter, named_parameter, parameter_list, 
-	 prod_expression,
-	 bracket_expr, sq_bracket_expr,
-	 string_expression,
-	 unary_function, binary_function,
-	 commutator_bracket,
-	 factor, pow_term, term, expression;
+         parameter, named_parameter, parameter_list,
+         prod_expression,
+         bracket_expr, sq_bracket_expr,
+         string_expression,
+         unary_function, binary_function,
+         commutator_bracket,
+         factor, pow_term, term, expression;
 
       rule<ScannerT> real_t, imag_t, identifier_t, quantumnumber_t,
-	 parameter_t, named_parameter_t, parameter_list_t, 
-	 prod_expression_t,
-	 bracket_expr_t, sq_bracket_expr_t,
-	 string_expression_t,
-	 unary_function_t, binary_function_t,
-	 commutator_bracket_t,
-	 factor_t, pow_term_t, term_t, expression_t;
+         parameter_t, named_parameter_t, parameter_list_t,
+         prod_expression_t,
+         bracket_expr_t, sq_bracket_expr_t,
+         string_expression_t,
+         unary_function_t, binary_function_t,
+         commutator_bracket_t,
+         factor_t, pow_term_t, term_t, expression_t;
 
       rule<ScannerT> const& start() const { return expression; }
    };
-   
+
    std::stack<ElementType>& eval;
    std::stack<unary_func_type>& func_stack;
    std::stack<binary_func_type>& bin_func_stack;
@@ -272,8 +272,8 @@ binary_funcs<MatrixParser::ElementType> MatrixParser::binary_funcs_p;
 
 MatrixOperator
 ParseMatrixOperator(std::string const& Str,
-		    Function::ArgumentList const& Args,
-		    std::map<std::string, MatrixOperator> const& Matrices)
+                    Function::ArgumentList const& Args,
+                    std::map<std::string, MatrixOperator> const& Matrices)
 {
    typedef MatrixParser::ElementType ElementType;
 
@@ -300,16 +300,16 @@ ParseMatrixOperator(std::string const& Str,
 
    char const* beg = Str.c_str();
    char const* end = beg + Str.size();
-   
-   MatrixParser Parser(ElemStack, UnaryFuncStack, BinaryFuncStack, IdentStack, 
-		       FunctionStack, ParamStack, 
-		       Arguments, MatrixArguments);
+
+   MatrixParser Parser(ElemStack, UnaryFuncStack, BinaryFuncStack, IdentStack,
+                       FunctionStack, ParamStack,
+                       Arguments, MatrixArguments);
 
    try
    {
       parse_info<> info = parse(beg, Parser, space_p);
       if (!info.full)
-	 throw ParserError::AtRange("Failed to parse an expression", info.stop, end);
+         throw ParserError::AtRange("Failed to parse an expression", info.stop, end);
    }
    catch (ParserError const& p)
    {

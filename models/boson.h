@@ -27,7 +27,7 @@ void SetMatElement(SiteOperator& s, int n1, int n2, double x)
 {
    std::string q1 = boost::lexical_cast<std::string>(n1);
    std::string q2 = boost::lexical_cast<std::string>(n2);
-   
+
    int l1 = s.Basis1().LookupOrNeg(q1);
    int l2 = s.Basis2().LookupOrNeg(q2);
 
@@ -83,7 +83,7 @@ LatticeSite Boson(int MaxN)
       SiteOperator X(Basis, QNum, LatticeCommute::Bosonic);
       SetMatElement(X, n, n, 1);
       std::string OpName = std::string("P_")
-	+ boost::lexical_cast<std::string>(n);
+        + boost::lexical_cast<std::string>(n);
       Site[OpName] = X;
    }
 

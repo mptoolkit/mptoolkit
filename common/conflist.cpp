@@ -38,19 +38,19 @@ std::string ExpandEnvironment(std::string const& s)
       // see if we have a valid environment string
       if (++I != s.end() && *I == '{')
       {
-	 ++I;
-	 std::string::const_iterator EndEnv = std::find(I, s.end(), '}');
-	 if (EndEnv != s.end())
-	 {
-	    std::string EnvString(I, EndEnv);
-	    char* Replacement = getenv(EnvString.c_str());
-	    if (Replacement) 
-	    {
-	       ++EndEnv;
-	       marker = I = EndEnv;
-	       result += std::string(Replacement);
-	    }
-	 }
+         ++I;
+         std::string::const_iterator EndEnv = std::find(I, s.end(), '}');
+         if (EndEnv != s.end())
+         {
+            std::string EnvString(I, EndEnv);
+            char* Replacement = getenv(EnvString.c_str());
+            if (Replacement)
+            {
+               ++EndEnv;
+               marker = I = EndEnv;
+               result += std::string(Replacement);
+            }
+         }
       }
 
       I = std::find(I, s.end(), '$');
@@ -67,12 +67,12 @@ ConfList::ConfList(std::string const& file)
    std::getline(InFile, Str);
    while (InFile)
    {
-      if (!Str.empty()) 
+      if (!Str.empty())
       {
          // remove the comment, if any
- 	 Str = Str.substr(0, Str.find('!')); 
+         Str = Str.substr(0, Str.find('!'));
          Str = Str.substr(0, Str.find('#'));
-      
+
          std::size_t Pos = Str.find('=');
          if (Pos != std::string::npos && Pos > 0)
          {
@@ -81,8 +81,8 @@ ConfList::ConfList(std::string const& file)
 
             RemoveWhiteSpace(Name);
             RemoveWhiteSpace(Value);
-	    Value = ExpandEnvironment(Value);
-            if (Name.length() > 0) 
+            Value = ExpandEnvironment(Value);
+            if (Name.length() > 0)
             {
                if (Data.find(Name) != Data.end())
                {
@@ -92,7 +92,7 @@ ConfList::ConfList(std::string const& file)
                }
                Data[Name] = Value;
             }
-	 }
+         }
       }
 
       std::getline(InFile, Str);
@@ -130,7 +130,7 @@ bool ConfList::Get(const std::string& s, bool Default) const
    return Default;
 }
 
-unsigned long 
+unsigned long
 ConfList::GetBytes(std::string const& s, unsigned long Default) const
 {
    std::map<std::string, std::string>::const_iterator I = Data.find(s);

@@ -45,7 +45,7 @@ int main()
    CHECK_CLOSE(w[2], -1);
    CHECK_CLOSE(w[3], 0);
    CHECK_CLOSE(norm_1(w), 5);
-   
+
    w = exp(w);
    CHECK_CLOSE(w[0], std::exp(1.0));
    CHECK_CLOSE(w[1], 1);

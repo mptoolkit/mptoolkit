@@ -77,21 +77,21 @@ void fast_copy(double const* first, double const* last, StrideIterator<double*> 
 }
 
 inline
-void fast_copy(StrideIterator<double const*> first, 
-	       StrideIterator<double const*> last, 
-	       double* dest)
+void fast_copy(StrideIterator<double const*> first,
+               StrideIterator<double const*> last,
+               double* dest)
 {
    BLAS::dcopy(last-first, array_base(first, last), first.stride(), dest, 1);
 }
 
 inline
-void fast_copy(StrideIterator<double const*> first, 
-	       StrideIterator<double const*> last, 
-	       StrideIterator<double*> dest)
+void fast_copy(StrideIterator<double const*> first,
+               StrideIterator<double const*> last,
+               StrideIterator<double*> dest)
 {
    difference_type n = last-first;
-   BLAS::dcopy(n, array_base(first, last), first.stride(), 
-	       array_base(dest, n), dest.stride());
+   BLAS::dcopy(n, array_base(first, last), first.stride(),
+               array_base(dest, n), dest.stride());
 }
 
 // there is no scaled dcopy in BLAS - we could implement fast_copy_scaled with
@@ -108,8 +108,8 @@ void fast_add(double const* first, double const* last, double* dest)
 }
 
 inline
-void fast_add(StrideIterator<double const*> first, 
-	      StrideIterator<double const*> last, double* dest)
+void fast_add(StrideIterator<double const*> first,
+              StrideIterator<double const*> last, double* dest)
 {
    BLAS::daxpy(last-first, 1.0, array_base(first, last), first.stride(), dest, 1);
 }
@@ -121,12 +121,12 @@ void fast_add(double const* first, double const* last, StrideIterator<double*> d
 }
 
 inline
-void fast_add(StrideIterator<double const*> first, StrideIterator<double const*> last, 
-	      StrideIterator<double*> dest)
+void fast_add(StrideIterator<double const*> first, StrideIterator<double const*> last,
+              StrideIterator<double*> dest)
 {
    difference_type n = last-first;
-   BLAS::daxpy(n, 1.0, array_base(first, last), first.stride(), 
-	       array_base(dest, n), dest.stride());
+   BLAS::daxpy(n, 1.0, array_base(first, last), first.stride(),
+               array_base(dest, n), dest.stride());
 }
 
 //
@@ -140,30 +140,30 @@ void fast_add_scaled(double x, double const* first, double const* last, double* 
 }
 
 inline
-void fast_add_scaled(double x, 
-		     StrideIterator<double const*> first, 
-		     StrideIterator<double const*> last, 
-		     double* dest)
+void fast_add_scaled(double x,
+                     StrideIterator<double const*> first,
+                     StrideIterator<double const*> last,
+                     double* dest)
 {
    BLAS::daxpy(last-first, x, array_base(first, last), first.stride(), dest, 1);
 }
 
 inline
-void fast_add_scaled(double x, double const* first, double const* last, 
-		     StrideIterator<double*> dest)
+void fast_add_scaled(double x, double const* first, double const* last,
+                     StrideIterator<double*> dest)
 {
    BLAS::daxpy(last-first, x, first, 1, array_base(dest, last-first), dest.stride());
 }
 
 inline
-void fast_add_scaled(double x, 
-		     StrideIterator<double const*> first, 
-		     StrideIterator<double const*> last, 
-		     StrideIterator<double*> dest)
+void fast_add_scaled(double x,
+                     StrideIterator<double const*> first,
+                     StrideIterator<double const*> last,
+                     StrideIterator<double*> dest)
 {
    difference_type n = last-first;
-   BLAS::daxpy(n, x, array_base(first, last), first.stride(), 
-	       array_base(dest, n), dest.stride());
+   BLAS::daxpy(n, x, array_base(first, last), first.stride(),
+               array_base(dest, n), dest.stride());
 }
 
 //
@@ -186,13 +186,13 @@ void fast_subtract_scaled(double x, double const* first, double const* last, dou
 // fast_multiply
 //
 
-inline 
+inline
 void fast_multiply(double* first, double* last, double x)
 {
    BLAS::dscal(last-first, x, first, 1);
 }
 
-inline 
+inline
 void fast_multiply(StrideIterator<double*> first, StrideIterator<double*> last, double x)
 {
    BLAS::dscal(last-first, x, array_base(first, last), first.stride());
@@ -216,8 +216,8 @@ double fast_norm_2_sq(double const* first, double const* last)
 }
 
 inline
-double fast_norm_2_sq(StrideIterator<double const*> first, 
-		      StrideIterator<double const*> last)
+double fast_norm_2_sq(StrideIterator<double const*> first,
+                      StrideIterator<double const*> last)
 {
    double x = BLAS::dnrm2(last-first, array_base(first, last), first.stride());
    return x*x;
@@ -250,25 +250,25 @@ void fast_inner_prod(double& x, double const* first1, double const* last1, doubl
 }
 
 inline
-void fast_inner_prod(double& x, double const* first1, double const* last1, 
-		     StrideIterator<double const*> first2)
+void fast_inner_prod(double& x, double const* first1, double const* last1,
+                     StrideIterator<double const*> first2)
 {
    difference_type n = last1-first1;
    x += BLAS::ddot(n, first1, 1, array_base(first2, n), first2.stride());
 }
 
 inline
-void fast_inner_prod(double& x, StrideIterator<double const*> first1, 
-		     StrideIterator<double const*> last1, 
-		     double const* first2)
+void fast_inner_prod(double& x, StrideIterator<double const*> first1,
+                     StrideIterator<double const*> last1,
+                     double const* first2)
 {
    x += BLAS::ddot(last1-first1, array_base(first1, last1), first1.stride(), first2, 1);
 }
 
 inline
-void fast_inner_prod(double& x, StrideIterator<double const*> first1, 
-		     StrideIterator<double const*> last1, 
-		     StrideIterator<double const*> first2)
+void fast_inner_prod(double& x, StrideIterator<double const*> first1,
+                     StrideIterator<double const*> last1,
+                     StrideIterator<double const*> first2)
 {
    difference_type n = last1-first1;
    x += BLAS::ddot(n, array_base(first1, n), first1.stride(), array_base(first2, n), first2.stride());
@@ -285,25 +285,25 @@ void fast_scalar_prod(double& x, double const* first1, double const* last1, doub
 }
 
 inline
-void fast_scalar_prod(double& x, double const* first1, double const* last1, 
-		     StrideIterator<double const*> first2)
+void fast_scalar_prod(double& x, double const* first1, double const* last1,
+                     StrideIterator<double const*> first2)
 {
    difference_type n = last1-first1;
    x += BLAS::ddot(n, first1, 1, array_base(first2, n), first2.stride());
 }
 
 inline
-void fast_scalar_prod(double& x, StrideIterator<double const*> first1, 
-		     StrideIterator<double const*> last1, 
-		     double const* first2)
+void fast_scalar_prod(double& x, StrideIterator<double const*> first1,
+                     StrideIterator<double const*> last1,
+                     double const* first2)
 {
    x += BLAS::ddot(last1-first1, array_base(first1, last1), first1.stride(), first2, 1);
 }
 
 inline
-void fast_scalar_prod(double& x, StrideIterator<double const*> first1, 
-		     StrideIterator<double const*> last1, 
-		     StrideIterator<double const*> first2)
+void fast_scalar_prod(double& x, StrideIterator<double const*> first1,
+                     StrideIterator<double const*> last1,
+                     StrideIterator<double const*> first2)
 {
    difference_type n = last1-first1;
    x += BLAS::ddot(n, array_base(first1, n), first1.stride(), array_base(first2, n), first2.stride());

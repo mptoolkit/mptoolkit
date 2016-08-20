@@ -64,14 +64,14 @@ class WavefunctionSectionLeft : public CanonicalWavefunctionBase
       // We overload on rvalues here.
       // We could also use a CentreWavefunction with no loss of efficiency if we wanted
       static
-      WavefunctionSectionLeft ConstructFromLeftOrthogonal(LinearWavefunction&& Psi, 
-							  MatrixOperator const& Lambda,
-							  int Verbose = 0);
+      WavefunctionSectionLeft ConstructFromLeftOrthogonal(LinearWavefunction&& Psi,
+                                                          MatrixOperator const& Lambda,
+                                                          int Verbose = 0);
 
       static
-      WavefunctionSectionLeft ConstructFromLeftOrthogonal(LinearWavefunction const& Psi, 
-							  MatrixOperator const& Lambda,
-							  int Verbose = 0);
+      WavefunctionSectionLeft ConstructFromLeftOrthogonal(LinearWavefunction const& Psi,
+                                                          MatrixOperator const& Lambda,
+                                                          int Verbose = 0);
       void check_structure() const;
       void debug_check_structure() const;
 
@@ -87,9 +87,9 @@ class WavefunctionSectionLeft : public CanonicalWavefunctionBase
       friend void inplace_conj(WavefunctionSectionLeft& Psi);
 
       friend WavefunctionSectionLeft wigner_project(WavefunctionSectionLeft const& Psi,
-						    SymmetryList const& FinalSL);
-      friend WavefunctionSectionLeft ReorderSymmetry(WavefunctionSectionLeft const& Psi, 
-						     SymmetryList const& NewSL);
+                                                    SymmetryList const& FinalSL);
+      friend WavefunctionSectionLeft ReorderSymmetry(WavefunctionSectionLeft const& Psi,
+                                                     SymmetryList const& NewSL);
 
       friend PStream::opstream& operator<<(PStream::opstream& out, WavefunctionSectionLeft const& Psi);
       friend PStream::ipstream& operator>>(PStream::ipstream& in, WavefunctionSectionLeft& Psi);
@@ -110,16 +110,16 @@ class IBCWavefunction
       IBCWavefunction(IBCWavefunction const& Psi) = default;
 
       IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
-		      WavefunctionSectionLeft const& Window_,
-		      InfiniteWavefunctionRight const& Right_,
-		      int Offset = 0);
+                      WavefunctionSectionLeft const& Window_,
+                      InfiniteWavefunctionRight const& Right_,
+                      int Offset = 0);
 
       IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
-		      WavefunctionSectionLeft const& Window_,
-		      InfiniteWavefunctionRight const& Right_,
-		      int Offset,
-		      int WindowLeft,
-		      int WindowRight);
+                      WavefunctionSectionLeft const& Window_,
+                      InfiniteWavefunctionRight const& Right_,
+                      int Offset,
+                      int WindowLeft,
+                      int WindowRight);
 
       SymmetryList GetSymmetryList() const { return Window.GetSymmetryList(); }
 
@@ -154,9 +154,9 @@ class IBCWavefunction
       friend void inplace_conj(IBCWavefunction& Psi);
 
       friend IBCWavefunction wigner_project(IBCWavefunction const& Psi,
-					    SymmetryList const& FinalSL);
-      friend IBCWavefunction ReorderSymmetry(IBCWavefunction const& Psi, 
-					     SymmetryList const& NewSL);
+                                            SymmetryList const& FinalSL);
+      friend IBCWavefunction ReorderSymmetry(IBCWavefunction const& Psi,
+                                             SymmetryList const& NewSL);
 
       friend PStream::opstream& operator<<(PStream::opstream& out, IBCWavefunction const& Psi);
       friend PStream::ipstream& operator>>(PStream::ipstream& in, IBCWavefunction& Psi);

@@ -33,12 +33,12 @@ bool FiniteMPO::is_irreducible() const
 
 bool FiniteMPO::is_scalar() const
 {
-   return this->is_null() || (this->Basis1().size() == 1 && QuantumNumbers::is_scalar(this->qn1()) 
-			      && QuantumNumbers::is_scalar(this->qn2()));
+   return this->is_null() || (this->Basis1().size() == 1 && QuantumNumbers::is_scalar(this->qn1())
+                              && QuantumNumbers::is_scalar(this->qn2()));
 }
 
 #if !defined(DISABLE_FINITE_MPO_TRANSFORMS_AS)
-QuantumNumbers::QuantumNumber 
+QuantumNumbers::QuantumNumber
 FiniteMPO::TransformsAs() const
 {
    if (this->is_null())
@@ -48,7 +48,7 @@ FiniteMPO::TransformsAs() const
 }
 #endif
 
-QuantumNumbers::QuantumNumber 
+QuantumNumbers::QuantumNumber
 FiniteMPO::qn1() const
 {
    if (this->is_null())
@@ -57,7 +57,7 @@ FiniteMPO::qn1() const
    return this->Basis1()[0];
 }
 
-QuantumNumbers::QuantumNumber 
+QuantumNumbers::QuantumNumber
 FiniteMPO::qn2() const
 {
    if (this->is_null())
@@ -147,7 +147,7 @@ void optimize(FiniteMPO& Op)
             Reduced = true;
       }
       Op.back() = T * Op.back();
-      
+
       // Working right to left, optimize Basis1
       T = TruncateBasis1(Op.back());
       if (T.size1() != T.size2())
@@ -155,7 +155,7 @@ void optimize(FiniteMPO& Op)
       for (int i = Op.size()-2; i >= 1; --i)
       {
          Op[i] = Op[i] * T;
-	 T = TruncateBasis1(Op[i]);
+         T = TruncateBasis1(Op[i]);
          if (T.size1() != T.size2())
             Reduced = true;
       }
@@ -198,7 +198,7 @@ void qr_optimize(FiniteMPO& Op)
       OperatorComponent Op2 = Op.front();
       if (!First && Second)
       {
-	 TRACE("XXXXX");
+         TRACE("XXXXX");
       }
       SimpleOperator T2 = TruncateBasis2MkII(Op2, First ? 0.0 : Eps);
       //TRACE(norm_frob(Op.front() - Op2*T2));
@@ -215,7 +215,7 @@ void qr_optimize(FiniteMPO& Op)
             Reduced = true;
       }
       Op.back() = T * Op.back();
-      
+
       // Working right to left, optimize Basis1
       T = TruncateBasis1MkII(Op.back(), Eps);
       if (T.size1() != T.size2())
@@ -223,12 +223,12 @@ void qr_optimize(FiniteMPO& Op)
       for (int i = Op.size()-2; i >= 1; --i)
       {
          Op[i] = Op[i] * T;
-	 T = TruncateBasis1MkII(Op[i], Eps);
+         T = TruncateBasis1MkII(Op[i], Eps);
          if (T.size1() != T.size2())
             Reduced = true;
       }
       Op.front() = Op.front() * T;
-      
+
       if (!First) Second = false;
       First = false;
    }
@@ -520,12 +520,12 @@ FiniteMPO outer(FiniteMPO const& x, FiniteMPO const& y)
    {
       if (degree(L[i]) > degree(q))
       {
-	 q = L[i];
-	 Unique = true;
+         q = L[i];
+         Unique = true;
       }
       else if (degree(L[i]) == degree(q))
       {
-	 Unique = false;
+         Unique = false;
       }
    }
    CHECK(Unique)("outer product is not defined for these operators")
@@ -572,8 +572,8 @@ SimpleRedOperator coarse_grain(FiniteMPO const& x)
 }
 
 FiniteMPO fine_grain(SimpleOperator const& x,
-		     std::vector<BasisList> const& LocalBasis1,
-		     std::vector<BasisList> const& LocalBasis2)
+                     std::vector<BasisList> const& LocalBasis1,
+                     std::vector<BasisList> const& LocalBasis2)
 {
    CHECK_EQUAL(LocalBasis1.size(), LocalBasis2.size());
    // quick return if we're already fine enough
@@ -770,7 +770,7 @@ FiniteMPO identity_mpo(SiteListType const& SiteList)
 }
 
 FiniteMPO string_mpo(SiteListType const& SiteList,
-		     std::string const& OpName, QuantumNumbers::QuantumNumber const& Trans)
+                     std::string const& OpName, QuantumNumbers::QuantumNumber const& Trans)
 {
    FiniteMPO Result(SiteList.size());
 
@@ -781,15 +781,15 @@ FiniteMPO string_mpo(SiteListType const& SiteList,
    {
       if (!SiteList[i].operator_exists(OpName))
       {
-	 WARNING("JW-string operator doesn't exist at a lattice site, using the identity")(i)(OpName);
+         WARNING("JW-string operator doesn't exist at a lattice site, using the identity")(i)(OpName);
       }
       SimpleOperator Op = SiteList[i].operator_exists(OpName) ? SiteList[i][OpName]
-	 : SiteList[i].identity();
+         : SiteList[i].identity();
       Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Vacuum, Vacuum);
       Result[i](0,0) = Op;
    }
    return Result;
-}   
+}
 
 FiniteMPO string_mpo(SiteListType const& SiteList, std::string const& OpName)
 {
@@ -805,7 +805,7 @@ ParseStringOperator(SiteListType const& SiteList, std::string const& Expr, int S
       ("The size of the string operator must be a multiple of the unit cell");
 
    FiniteMPO Result(SiteList.size());
-   
+
    BasisList Vacuum = make_vacuum_basis(SiteList[0].GetSymmetryList());
 
    for (unsigned i = 0; i < SiteList.size(); ++i)
@@ -816,9 +816,9 @@ ParseStringOperator(SiteListType const& SiteList, std::string const& Expr, int S
       Result[i](0,0) = Op;
    }
    Result = repeat(Result, Size / SiteList.size());
-   
+
    return Result;
-}   
+}
 
 double
 log_norm_frob_sq(FiniteMPO const& Op)

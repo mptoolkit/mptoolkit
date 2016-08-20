@@ -21,7 +21,7 @@
   Created 2000-09-07 Ian McCulloch
 
   The U(1) quantum number registers an object that allows the name "U(1)"
-  in the SymmetryList. 
+  in the SymmetryList.
 
   This header simply has a nifty counter that ensures that the static object is initialized.
 
@@ -164,7 +164,7 @@ std::complex<double> cross_product_factor(U1 const&, U1 const&)
 
 inline
 double clebsch_gordan(U1 const& q1, U1 const& q2, U1 const& q,
-		      U1Projection const& m1,  U1Projection const& m2,  U1Projection const& m)
+                      U1Projection const& m1,  U1Projection const& m2,  U1Projection const& m)
 {
    DEBUG_CHECK_EQUAL(q1,m1);
    DEBUG_CHECK_EQUAL(q2,m2);
@@ -174,22 +174,22 @@ double clebsch_gordan(U1 const& q1, U1 const& q2, U1 const& q,
 
 inline
 double product_coefficient(U1 const& k1, U1 const& k2, U1 const& k,
-			  U1 const& qp, U1 const& q, U1 const& qpp)
+                          U1 const& qp, U1 const& q, U1 const& qpp)
 {
    return ((k1.x + k2.x == k.x) && (qp.x == k1.x + qpp.x) && (qpp.x == k2.x + q.x)) ? 1 : 0;
 }
 
 inline
 double inverse_product_coefficient(U1 const& k1, U1 const& k2, U1 const& k,
-			  U1 const& qp, U1 const& q, U1 const& qpp)
+                          U1 const& qp, U1 const& q, U1 const& qpp)
 {
    return ((k1.x + k2.x == k.x) && (qp.x == k1.x + qpp.x) && (qpp.x == k2.x + q.x)) ? 1 : 0;
 }
 
 inline
 double tensor_coefficient(U1 const& q1,  U1 const& q2,  U1 const& q,
-			  U1 const& k1,  U1 const& k2,  U1 const& k,
-			  U1 const& q1p, U1 const& q2p, U1 const& qp)
+                          U1 const& k1,  U1 const& k2,  U1 const& k,
+                          U1 const& q1p, U1 const& q2p, U1 const& qp)
 {
    DEBUG_PRECONDITION(k1.x + k2.x == k.x)(k1.x)(k2.x)(k.x);
    DEBUG_PRECONDITION(q1p.x + q2p.x == qp.x)(q1p.x)(q2p.x)(qp.x);
@@ -202,8 +202,8 @@ double tensor_coefficient(U1 const& q1,  U1 const& q2,  U1 const& q,
 
 inline
 double inverse_tensor_coefficient(U1 const& q1,  U1 const& q2,  U1 const& q,
-				  U1 const& k1,  U1 const& k2,  U1 const& k,
-				  U1 const& q1p, U1 const& q2p, U1 const& qp)
+                                  U1 const& k1,  U1 const& k2,  U1 const& k,
+                                  U1 const& q1p, U1 const& q2p, U1 const& qp)
 {
    DEBUG_PRECONDITION(k1.x + k2.x == k.x)(k1.x)(k2.x)(k.x);
    DEBUG_PRECONDITION(q1p.x + q2p.x == qp.x)(q1p.x)(q2p.x)(qp.x);
@@ -216,7 +216,7 @@ double inverse_tensor_coefficient(U1 const& q1,  U1 const& q2,  U1 const& q,
 
 inline
 double recoupling(U1 const& q1, U1 const& q2, U1 const& q12,
-		  U1 const& q3, U1 const& q, U1 const& q23)
+                  U1 const& q3, U1 const& q, U1 const& q23)
 {
    DEBUG_CHECK(q12.x == q1.x + q2.x)(q12.x)(q1.x)(q2.x);
    DEBUG_CHECK(q23.x == q2.x + q3.x)(q23.x)(q2.x)(q3.x)(q1.x)(q12.x)(q.x);
@@ -228,7 +228,7 @@ inline
 double recoupling_12_3__13_2(U1 const& q1, U1 const& q2, U1 const& q12,
                              U1 const& q3, U1 const& q, U1 const& q13)
 {
-   double x = (q13.x == q1.x + q3.x) && (q12.x == q1.x + q2.x) && (q.x == q1.x+q2.x+q3.x) && (q12.x + q3.x == q.x) && 
+   double x = (q13.x == q1.x + q3.x) && (q12.x == q1.x + q2.x) && (q.x == q1.x+q2.x+q3.x) && (q12.x + q3.x == q.x) &&
      (q13.x + q2.x == q.x) ? 1 : 0;
    DEBUG_CHECK(x==1);
    return x;

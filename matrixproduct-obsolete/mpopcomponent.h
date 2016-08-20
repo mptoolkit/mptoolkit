@@ -87,7 +87,7 @@ struct MPOperatorComponent
 
    iterator begin() { return Data_.begin(); }
    iterator end() { return Data_.end(); }
- 
+
    const_iterator begin() const { return Data_.begin(); }
    const_iterator end() const { return Data_.end(); }
 
@@ -103,10 +103,10 @@ struct MPOperatorComponent
 
    MPOperatorComponent& operator*=(std::complex<double> x);
 
-   static MPOperatorComponent ConstructFullBasis1(BasisList const& SiteBasis, 
+   static MPOperatorComponent ConstructFullBasis1(BasisList const& SiteBasis,
                                                   basis2_type const& Basis2);
 
-   static MPOperatorComponent ConstructFullBasis2(basis1_type const& Basis1, 
+   static MPOperatorComponent ConstructFullBasis2(basis1_type const& Basis1,
                                                   BasisList const& SiteBasis);
 
    DataType& data() { return Data_; }
@@ -165,8 +165,8 @@ std::ostream& operator<<(std::ostream& out, MPOperatorComponent<T> const& Op);
 
 template <typename T>
 inline
-MPOperatorComponent<T>::MPOperatorComponent(BasisList const& SBasis, 
-                                            basis1_type const& V1, 
+MPOperatorComponent<T>::MPOperatorComponent(BasisList const& SBasis,
+                                            basis1_type const& V1,
                                             basis2_type const& V2)
   : SBasis_(SBasis), Basis1_(V1), Basis2_(V2)
 {
@@ -249,15 +249,15 @@ struct ScalarProd<HermitianProxy<MPOperatorComponent<T> >, MPOperatorComponent<T
 // Constructs a MPOpComponent that represents the sum of A and B.
 // The resulting state has Result'[s] = A[s] \oplus B[s]
 MPOpComponent
-tensor_sum(MPOpComponent const& A, MPOpComponent const& B, 
+tensor_sum(MPOpComponent const& A, MPOpComponent const& B,
            SumBasis<BasisList> const& B1, SumBasis<BasisList> const& B2);
 
 // Constructs a MPOpComponent that represents the sum of A and B,
 // at the left boundary of the matrix product state.
 // Precondition: A.Basis1() == B.Basis1()
 // The resulting state has Result'[s] = (A[s], B[s])  (row-wise concatenation)
-MPOpComponent tensor_row_sum(MPOpComponent const& A, 
-                             MPOpComponent const& B, 
+MPOpComponent tensor_row_sum(MPOpComponent const& A,
+                             MPOpComponent const& B,
                              SumBasis<BasisList> const& B2);
 
 // Constructs a MPOpComponent that represents the sum of A and B,
@@ -265,8 +265,8 @@ MPOpComponent tensor_row_sum(MPOpComponent const& A,
 // Precondition: A.Basis2() == B.Basis2()
 // The resulting state has Result'[s] = ( A[s] )
 //                                      ( B[s] )  (column-wise concatenation)
-MPOpComponent tensor_col_sum(MPOpComponent const& A, 
-                             MPOpComponent const& B, 
+MPOpComponent tensor_col_sum(MPOpComponent const& A,
+                             MPOpComponent const& B,
                              SumBasis<BasisList> const& B1);
 
 MPOpComponent prod(MPOpComponent const& A, SimpleOperator const& Op);
@@ -307,25 +307,25 @@ MPOpComponent operator*(HermitianProxy<SimpleOperator> const& Op, MPOpComponent 
 typedef MPStateComponent MPMatrix;
 
 MPMatrix operator_prod(MPOpComponent const& M,
-                       MPStateComponent const& A, 
+                       MPStateComponent const& A,
                        MPMatrix const& E,
                        HermitianProxy<MPStateComponent> const& B);
 
 
 MPMatrix operator_prod(HermitianProxy<MPOpComponent> const& M,
-                       HermitianProxy<MPStateComponent> const& A, 
+                       HermitianProxy<MPStateComponent> const& A,
                        MPMatrix const& E,
                        MPStateComponent const& B);
 
 MPMatrix local_operator_prod(MPOpComponent const& M,
-                             MPStateComponent const& E, 
+                             MPStateComponent const& E,
                              MPMatrix const& A,
                              HermitianProxy<MPStateComponent> const& F);
 
 #if 0
 // not implemented yet
 MPMatrix local_operator_prod(HermitianProxy<MPOpComponent> const& M,
-                             HermitianProxy<MPStateComponent> const& E, 
+                             HermitianProxy<MPStateComponent> const& E,
                              MPMatrix const& A,
                              MPStateComponent const& F);
 #endif
@@ -335,7 +335,7 @@ struct MProd;
 
 template <typename C1, typename C2>
 typename MProd<C1, C2>::result_type
-mp_prod(C1 const& x, C2 const& y, 
+mp_prod(C1 const& x, C2 const& y,
         ProductBasis<typename C1::BasisType, typename C2::BasisType> const& b1,
         ProductBasis<typename C1::BasisType, typename C2::BasisType> const& b2)
 {
@@ -344,7 +344,7 @@ mp_prod(C1 const& x, C2 const& y,
 
 // product of a matrix product operator and a matrix product wavefunction.
 // This is about the only place that the coupling coefficients enter at such a high
-// level: the reason is the local basis label of a matrix product state 
+// level: the reason is the local basis label of a matrix product state
 // transforms covariantly, but in a matrix*vector multiply the vector
 // must transform contravariantly.  The conj_phase() fixes this.
 template <>
@@ -384,10 +384,10 @@ local_trace(MPOpComponent const& A);
 SimpleOperator TruncateBasis1(MPOpComponent& A);
 SimpleOperator TruncateBasis2(MPOpComponent& A);
 
-MPMatrixOpComponent 
+MPMatrixOpComponent
 outer_prod(MPStateComponent const& a, HermitianProxy<MPStateComponent> const& b);
 
-MatrixOperator 
+MatrixOperator
 element_prod(MPMatrixOpComponent const& a, HermitianProxy<MPMatrixOpComponent> const& b);
 
 template <typename Component>
@@ -404,7 +404,7 @@ operator+(MPOperatorComponent<Component> const& a, MPOperatorComponent<Component
 }
 
 MPOpComponent
-SumFix1(MPOpComponent const& A, MPOpComponent const& B, 
+SumFix1(MPOpComponent const& A, MPOpComponent const& B,
         SimpleOperator& AMap, SimpleOperator& BMap);
 
 // conjugate of the components

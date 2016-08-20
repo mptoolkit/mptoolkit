@@ -74,36 +74,36 @@ void CheckParentheses(Iter beg, Iter end)
    {
       if (*I == '(' || *I == '[' || *I == '{')
       {
-	 IterStack.push(I);
+         IterStack.push(I);
       }
       else if (*I == ')' || *I == ']' || *I == '}')
       {
-	 if (IterStack.empty())
-	 {
-	    std::string s;
-	    s = s + "Unbalanced parentheses, extra '" + (*I) + "'";
-	    s = s + "\nWhile parsing string:\n" + std::string(beg, end);
-	    s = s + "\n" + Spaces(std::distance(beg, I)) + ColorPrompt("^");
-	    throw ParserError(s);
-	 }
-	 else
-	 {
-	    if (ParenthesesMatch(*IterStack.top(), *I))
-	    {
-	       // Found the matching parentheses
-	       IterStack.pop();
-	    }
-	    else
-	    {
-	       std::string s;
-	       s = s + "Parenthesis mismatch, opening '" + (*IterStack.top())
-		  + "' closes with '" + (*I) + "'";
-	       s = s + "\nWhile parsing string:\n" + std::string(beg, end);
-	       s = s + "\n" + Spaces(std::distance(beg, IterStack.top())) + "^";
-	       s = s + Spaces(std::distance(IterStack.top(), I)-1) + "^";
-	       throw ParserError(s);
-	    }
-	 }
+         if (IterStack.empty())
+         {
+            std::string s;
+            s = s + "Unbalanced parentheses, extra '" + (*I) + "'";
+            s = s + "\nWhile parsing string:\n" + std::string(beg, end);
+            s = s + "\n" + Spaces(std::distance(beg, I)) + ColorPrompt("^");
+            throw ParserError(s);
+         }
+         else
+         {
+            if (ParenthesesMatch(*IterStack.top(), *I))
+            {
+               // Found the matching parentheses
+               IterStack.pop();
+            }
+            else
+            {
+               std::string s;
+               s = s + "Parenthesis mismatch, opening '" + (*IterStack.top())
+                  + "' closes with '" + (*I) + "'";
+               s = s + "\nWhile parsing string:\n" + std::string(beg, end);
+               s = s + "\n" + Spaces(std::distance(beg, IterStack.top())) + "^";
+               s = s + Spaces(std::distance(IterStack.top(), I)-1) + "^";
+               throw ParserError(s);
+            }
+         }
       }
       ++I;
    }
@@ -111,7 +111,7 @@ void CheckParentheses(Iter beg, Iter end)
    {
       std::string s;
       s = s + "Unbalanced parenthesis, '" + (*IterStack.top())
-	 + "' has no closing bracket";
+         + "' has no closing bracket";
       s = s + "\nWhile parsing string:\n" + std::string(beg, end);
       s = s + "\n" + Spaces(std::distance(beg, IterStack.top())) + "^";
       throw ParserError(s);
@@ -127,40 +127,40 @@ void CheckParentheses(char const* beg, char const* end)
    {
       if (*I == '(' || *I == '[' || *I == '{')
       {
-	 IterStack.push(I);
+         IterStack.push(I);
       }
       else if (*I == ')' || *I == ']' || *I == '}')
       {
-	 if (IterStack.empty())
-	 {
-	    throw ParserError::AtPosition(std::string("Unbalanced parenthesis, extra '") 
-					  + ColorHighlight(*I) + "'",
-					  I);
-	 }
-	 else
-	 {
-	    if (ParenthesesMatch(*IterStack.top(), *I))
-	    {
-	       // Found the matching parentheses
-	       IterStack.pop();
-	    }
-	    else
-	    {
-	       throw ParserError::AtRange(std::string("Parenthesis mismatch, opening '")
-					  + ColorHighlight(*IterStack.top())
-					  + "' closes with '" + ColorHighlight(*I) + "'",
-					  IterStack.top(), I+1);
-	    }
-	 }
+         if (IterStack.empty())
+         {
+            throw ParserError::AtPosition(std::string("Unbalanced parenthesis, extra '")
+                                          + ColorHighlight(*I) + "'",
+                                          I);
+         }
+         else
+         {
+            if (ParenthesesMatch(*IterStack.top(), *I))
+            {
+               // Found the matching parentheses
+               IterStack.pop();
+            }
+            else
+            {
+               throw ParserError::AtRange(std::string("Parenthesis mismatch, opening '")
+                                          + ColorHighlight(*IterStack.top())
+                                          + "' closes with '" + ColorHighlight(*I) + "'",
+                                          IterStack.top(), I+1);
+            }
+         }
       }
       ++I;
    }
    if (!IterStack.empty())
    {
       throw ParserError::AtPosition(std::string("Unbalanced parenthesis, '")
-				    + ColorHighlight(*IterStack.top())
-				    + "' has no closing bracket",
-				    IterStack.top());
+                                    + ColorHighlight(*IterStack.top())
+                                    + "' has no closing bracket",
+                                    IterStack.top());
    }
 }
 
@@ -196,7 +196,7 @@ name_of(boost::variant<BOOST_VARIANT_ENUM_PARAMS(T) > const& x)
 }
 
 template <>
-inline 
+inline
 std::string name_of<complex>(std::complex<double> const&)
 {
    return "complex";
@@ -356,13 +356,13 @@ struct unary_funcs : symbols<boost::function<element_type(element_type)> >
    unary_funcs()
    {
       this->add.operator()
-         ("sin", make_unary_math<element_type>(&csin)) 
+         ("sin", make_unary_math<element_type>(&csin))
          ("cos", make_unary_math<element_type>(&ccos))
          ("tan", make_unary_math<element_type>(&ctan))
          ("asin", make_unary_math<element_type>(&casin))
          ("acos", make_unary_math<element_type>(&cacos))
          ("atan", make_unary_math<element_type>(&catan))
-	 ("exp", make_apply_unary_math<element_type>(ElementExp<element_type>()))
+         ("exp", make_apply_unary_math<element_type>(ElementExp<element_type>()))
          ("ln", make_unary_math<element_type>(&cln))
          ("log", make_unary_math<element_type>(&cln))
          ("log10", make_unary_math<element_type>(&clog10))
@@ -420,7 +420,7 @@ struct binary_funcs : symbols<boost::function<element_type(element_type, element
          ("dot", make_apply_binary_math<element_type>(binary_dot_product<element_type>()))
          ("inner", make_apply_binary_math<element_type>(binary_inner_product<element_type>()))
          ("outer", make_apply_binary_math<element_type>(binary_outer_product<element_type>()))
-	 ("cross", make_apply_binary_math<element_type>(binary_cross_product<element_type>()))
+         ("cross", make_apply_binary_math<element_type>(binary_cross_product<element_type>()))
          ;
    }
 };
@@ -463,13 +463,13 @@ struct push_value
 {
    push_value(std::stack<element_type >& eval_)
     : eval(eval_) {}
-   
+
    void operator()(double n) const
    {
       element_type c(n);
       eval.push(element_type(n));
    }
-   
+
    void operator()(std::complex<double> n) const
    {
       eval.push(n);
@@ -486,7 +486,7 @@ struct push_value
       double n = strtod(str, 0);
       eval.push(n);
    }
-   
+
    std::stack<element_type>& eval;
 };
 
@@ -532,7 +532,7 @@ struct eval_unary
 
    void operator()(char const* beg, char const* end) const
    {
-      element_type n = s.top()(eval.top()); 
+      element_type n = s.top()(eval.top());
       eval.pop();
       s.pop();
       eval.push(n);
@@ -566,7 +566,7 @@ struct eval_binary
    {
       element_type second = eval.top();
       eval.pop();
-      element_type n = s.top()(eval.top(), second); 
+      element_type n = s.top()(eval.top(), second);
       eval.pop();
       s.pop();
       eval.push(n);
@@ -586,23 +586,23 @@ struct invoke_binary
    {
       try
       {
-	 element_type rhs = eval.top();
-	 eval.pop();
-	 element_type lhs = eval.top();
-	 eval.pop();
-	 eval.push(boost::apply_visitor(f, lhs, rhs));
+         element_type rhs = eval.top();
+         eval.pop();
+         element_type lhs = eval.top();
+         eval.pop();
+         eval.push(boost::apply_visitor(f, lhs, rhs));
       }
       catch (ParserError const& p)
       {
-	 throw ParserError::AtPosition(p, a);
+         throw ParserError::AtPosition(p, a);
       }
       catch (std::exception const& p)
       {
-	 throw ParserError::AtPosition(p, a);
+         throw ParserError::AtPosition(p, a);
       }
       catch (...)
       {
-	 throw;
+         throw;
       }
    }
 
@@ -620,21 +620,21 @@ struct do_negate
    {
       try
       {
-	 element_type lhs = eval.top();
-	 eval.pop();
-	 eval.push(boost::apply_visitor(negate_element<element_type>(), lhs));
+         element_type lhs = eval.top();
+         eval.pop();
+         eval.push(boost::apply_visitor(negate_element<element_type>(), lhs));
       }
       catch (ParserError const& p)
       {
-	 throw ParserError::AtPosition(p, a);
+         throw ParserError::AtPosition(p, a);
       }
       catch (std::exception const& p)
       {
-	 throw ParserError::AtPosition(p, a);
+         throw ParserError::AtPosition(p, a);
       }
       catch (...)
       {
-	 throw;
+         throw;
       }
    }
 
@@ -646,31 +646,31 @@ struct push_prod
 {
    push_prod(std::stack<std::string>& identifier_stack_, std::stack<element_type >& eval_)
       : identifier_stack(identifier_stack_), eval(eval_) {}
-   
+
    void operator()(char const* a, char const*) const
    {
       try
       {
-	 element_type op2 = eval.top();
-	 eval.pop();
-	 element_type op1 = eval.top();
-	 eval.pop();
-	 std::string q = identifier_stack.top();
-	 identifier_stack.pop();
-	 
-	 eval.push(boost::apply_visitor(ternary_product<element_type>(q), op1, op2));
+         element_type op2 = eval.top();
+         eval.pop();
+         element_type op1 = eval.top();
+         eval.pop();
+         std::string q = identifier_stack.top();
+         identifier_stack.pop();
+
+         eval.push(boost::apply_visitor(ternary_product<element_type>(q), op1, op2));
       }
       catch (ParserError const& p)
       {
-	 throw ParserError::AtPosition(p, a);
+         throw ParserError::AtPosition(p, a);
       }
       catch (std::exception const& p)
       {
-	 throw ParserError::AtPosition(p, a);
+         throw ParserError::AtPosition(p, a);
       }
       catch (...)
       {
-	 throw;
+         throw;
       }
    }
 
@@ -700,7 +700,7 @@ template <typename element_type>
 struct push_parameter
 {
    push_parameter(std::stack<element_type>& eval_,
-		  std::stack<Function::ParameterList>& ParamStack_)
+                  std::stack<Function::ParameterList>& ParamStack_)
       : eval(eval_), ParamStack(ParamStack_) {}
 
    void operator()(char const*, char const*) const
@@ -717,14 +717,14 @@ template <typename element_type>
 struct push_named_parameter
 {
    push_named_parameter(std::stack<element_type>& eval_,
-			std::stack<std::string>& IdentifierStack_,
-			std::stack<Function::ParameterList>& ParamStack_)
+                        std::stack<std::string>& IdentifierStack_,
+                        std::stack<Function::ParameterList>& ParamStack_)
       : eval(eval_), IdentifierStack(IdentifierStack_), ParamStack(ParamStack_) {}
 
    void operator()(char const*, char const*) const
    {
-      ParamStack.top().push_back(Function::Parameter(IdentifierStack.top(), 
-						     boost::get<complex>(eval.top())));
+      ParamStack.top().push_back(Function::Parameter(IdentifierStack.top(),
+                                                     boost::get<complex>(eval.top())));
       IdentifierStack.pop();
       eval.pop();
    }

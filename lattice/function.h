@@ -167,13 +167,13 @@ typedef std::map<std::string, std::complex<double> > ArgumentList;
 
 // function to convert a ParameterList into actual arguments.
 // A function must be supplied that parses default arguments,
-// which must have the signature 
+// which must have the signature
 // complex ParseDefault(ArgumentList, std::string Def)
 // which will be called for each parameter that uses the default value.
 template <typename Func>
 ArgumentList
 GetArguments(FormalArgumentList const& Args, ParameterList const& Params,
-	     Func ParseDefaultArgument);
+             Func ParseDefaultArgument);
 
 class OperatorFunction
 {
@@ -181,7 +181,7 @@ class OperatorFunction
       OperatorFunction() {}
 
       OperatorFunction(FormalArgumentList const& Arguments, std::string const& Definition)
-	 : Args(Arguments), Def(Definition) {}
+         : Args(Arguments), Def(Definition) {}
 
       FormalArgumentList const& Arguments() const { return Args; }
 
@@ -189,7 +189,7 @@ class OperatorFunction
 
       void set_description(std::string const& s)
       {
-	 Desc = s;
+         Desc = s;
       }
 
       std::string const& description() const { return Desc; }
@@ -200,38 +200,38 @@ class OperatorFunction
       OperatorFunction& operator()(FormalArgument const& arg1);
 
       OperatorFunction& operator()(FormalArgument const& arg1,
-				   FormalArgument const& arg2);
+                                   FormalArgument const& arg2);
 
       OperatorFunction& operator()(FormalArgument const& arg1,
-				   FormalArgument const& arg2,
-				   FormalArgument const& arg3);
+                                   FormalArgument const& arg2,
+                                   FormalArgument const& arg3);
 
       OperatorFunction& operator()(FormalArgument const& arg1,
-				   FormalArgument const& arg2,
-				   FormalArgument const& arg3,
-				   FormalArgument const& arg4);
+                                   FormalArgument const& arg2,
+                                   FormalArgument const& arg3,
+                                   FormalArgument const& arg4);
 
       OperatorFunction& operator()(FormalArgument const& arg1,
-				   FormalArgument const& arg2,
-				   FormalArgument const& arg3,
-				   FormalArgument const& arg4,
-				   FormalArgument const& arg5);
+                                   FormalArgument const& arg2,
+                                   FormalArgument const& arg3,
+                                   FormalArgument const& arg4,
+                                   FormalArgument const& arg5);
 
       OperatorFunction& operator()(FormalArgument const& arg1,
-				   FormalArgument const& arg2,
-				   FormalArgument const& arg3,
-				   FormalArgument const& arg4,
-				   FormalArgument const& arg5,
-				   FormalArgument const& arg6);
+                                   FormalArgument const& arg2,
+                                   FormalArgument const& arg3,
+                                   FormalArgument const& arg4,
+                                   FormalArgument const& arg5,
+                                   FormalArgument const& arg6);
 
       // not the assignment operator, but sets the function definition.
       void operator=(std::string const& Def_) { Def = Def_; }
 
       OperatorFunction& operator=(OperatorFunction const& f)
       {
-	 Args = f.Args;
-	 Def = f.Def;
-	 return *this;
+         Args = f.Args;
+         Def = f.Def;
+         return *this;
       }
 
       FormalArgumentList Args;
@@ -253,7 +253,7 @@ OperatorFunction::operator()(FormalArgument const& arg1)
 inline
 OperatorFunction&
 OperatorFunction::operator()(FormalArgument const& arg1,
-			     FormalArgument const& arg2)
+                             FormalArgument const& arg2)
 {
    Args.clear();
    Args.push_back(arg1);
@@ -264,8 +264,8 @@ OperatorFunction::operator()(FormalArgument const& arg1,
 inline
 OperatorFunction&
 OperatorFunction::operator()(FormalArgument const& arg1,
-			     FormalArgument const& arg2,
-			     FormalArgument const& arg3)
+                             FormalArgument const& arg2,
+                             FormalArgument const& arg3)
 {
    Args.clear();
    Args.push_back(arg1);
@@ -277,9 +277,9 @@ OperatorFunction::operator()(FormalArgument const& arg1,
 inline
 OperatorFunction&
 OperatorFunction::operator()(FormalArgument const& arg1,
-			     FormalArgument const& arg2,
-			     FormalArgument const& arg3,
-			     FormalArgument const& arg4)
+                             FormalArgument const& arg2,
+                             FormalArgument const& arg3,
+                             FormalArgument const& arg4)
 {
    Args.clear();
    Args.push_back(arg1);
@@ -292,10 +292,10 @@ OperatorFunction::operator()(FormalArgument const& arg1,
 inline
 OperatorFunction&
 OperatorFunction::operator()(FormalArgument const& arg1,
-			     FormalArgument const& arg2,
-			     FormalArgument const& arg3,
-			     FormalArgument const& arg4,
-			     FormalArgument const& arg5)
+                             FormalArgument const& arg2,
+                             FormalArgument const& arg3,
+                             FormalArgument const& arg4,
+                             FormalArgument const& arg5)
 {
    Args.clear();
    Args.push_back(arg1);
@@ -309,11 +309,11 @@ OperatorFunction::operator()(FormalArgument const& arg1,
 inline
 OperatorFunction&
 OperatorFunction::operator()(FormalArgument const& arg1,
-			     FormalArgument const& arg2,
-			     FormalArgument const& arg3,
-			     FormalArgument const& arg4,
-			     FormalArgument const& arg5,
-			     FormalArgument const& arg6)
+                             FormalArgument const& arg2,
+                             FormalArgument const& arg3,
+                             FormalArgument const& arg4,
+                             FormalArgument const& arg5,
+                             FormalArgument const& arg6)
 {
    Args.clear();
    Args.push_back(arg1);
@@ -331,7 +331,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, OperatorFunction& f);
 template <typename Func>
 ArgumentList
 GetArguments(FormalArgumentList const& FormalArgs, ParameterList const& Params,
-	     Func ParseDefaultArgument)
+             Func ParseDefaultArgument)
 {
    Function::ArgumentList Args;
 
@@ -342,38 +342,38 @@ GetArguments(FormalArgumentList const& FormalArgs, ParameterList const& Params,
    {
       if (Params[i].Name.empty())
       {
-	 // we have an anonymous parameter, determine which 
-	 // argument it corresponds to
-	 while (CurrentAnonArg < FormalArgs.size() 
-		&& Args.find(FormalArgs[CurrentAnonArg].Name) != Args.end())
-	 {
-	    ++CurrentAnonArg;
-	 }
-	 CHECK(CurrentAnonArg < FormalArgs.size())
-	    ("Too many parameters supplied to function")
-	    (Params);
-	 Args[FormalArgs[CurrentAnonArg++].Name] = Params[i].Value;
+         // we have an anonymous parameter, determine which
+         // argument it corresponds to
+         while (CurrentAnonArg < FormalArgs.size()
+                && Args.find(FormalArgs[CurrentAnonArg].Name) != Args.end())
+         {
+            ++CurrentAnonArg;
+         }
+         CHECK(CurrentAnonArg < FormalArgs.size())
+            ("Too many parameters supplied to function")
+            (Params);
+         Args[FormalArgs[CurrentAnonArg++].Name] = Params[i].Value;
       }
       else
       {
-	 // named parameter.
-	 // Check that it corresponds to an actual argument
-	 bool Found = false;
-	 for (auto const& x : FormalArgs)
-	 {
-	    if (x.Name == Params[i].Name)
-	    {
-	       Found = true;
-	       break;
-	    }
-	 }
-	 CHECK(Found)("Named parameter to function does not exist - check spelling!")(Params[i].Name);
-	 // and also check that it isn't duplicated
-	 if (Args.find(Params[i].Name) != Args.end())
-	 {
-	    PANIC("Value of named parameter has already been set!")(Params[i].Name);
-	 }
-	 Args[Params[i].Name] = Params[i].Value;
+         // named parameter.
+         // Check that it corresponds to an actual argument
+         bool Found = false;
+         for (auto const& x : FormalArgs)
+         {
+            if (x.Name == Params[i].Name)
+            {
+               Found = true;
+               break;
+            }
+         }
+         CHECK(Found)("Named parameter to function does not exist - check spelling!")(Params[i].Name);
+         // and also check that it isn't duplicated
+         if (Args.find(Params[i].Name) != Args.end())
+         {
+            PANIC("Value of named parameter has already been set!")(Params[i].Name);
+         }
+         Args[Params[i].Name] = Params[i].Value;
       }
    }
 
@@ -387,15 +387,15 @@ GetArguments(FormalArgumentList const& FormalArgs, ParameterList const& Params,
       // is the argument not set yet?
       if (Args.find(FormalArgs[i].Name) == Args.end())
       {
-	 // make sure that it has a default
-	 CHECK(!FormalArgs[i].Default.empty())
-	    ("Function argument has no default value")
-	    (FormalArgs[i].Name);
-	 // Make sure that we don't add the argument until 
-	 // we've finished parsing it, so make a temporary before calling Args[...]
-	 std::complex<double> c = ParseDefaultArgument(Args, 
-						       FormalArgs[i].Default);
-	 Args[FormalArgs[i].Name] = c;
+         // make sure that it has a default
+         CHECK(!FormalArgs[i].Default.empty())
+            ("Function argument has no default value")
+            (FormalArgs[i].Name);
+         // Make sure that we don't add the argument until
+         // we've finished parsing it, so make a temporary before calling Args[...]
+         std::complex<double> c = ParseDefaultArgument(Args,
+                                                       FormalArgs[i].Default);
+         Args[FormalArgs[i].Name] = c;
       }
       DEBUG_TRACE("value for argument")(FormalArgs[i].Name)(Args[FormalArgs[i].Name]);
    }

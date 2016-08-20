@@ -33,8 +33,8 @@ delta_shift(MatrixPolyType const& In, QuantumNumber const& QShift)
 
 // do finite momentum at the same time?
 std::vector<MatrixPolyType>
-inject_left(std::vector<MatrixPolyType> const& In, 
-            LinearWavefunction const& Psi1, 
+inject_left(std::vector<MatrixPolyType> const& In,
+            LinearWavefunction const& Psi1,
             GenericMPO const& Op,
             LinearWavefunction const& Psi2)
 {
@@ -66,8 +66,8 @@ inject_left(std::vector<MatrixPolyType> const& In,
 }
 
 MatrixPolyType
-inject_left(MatrixPolyType const& In, 
-            LinearWavefunction const& Psi1, 
+inject_left(MatrixPolyType const& In,
+            LinearWavefunction const& Psi1,
             GenericMPO const& Op,
             LinearWavefunction const& Psi2)
 {
@@ -81,9 +81,9 @@ inject_left(MatrixPolyType const& In,
 // Calculates result' = C[column] = sum_{j > Column} E[j] * T_Op(j, Column)
 // Assumes that E[j] is defined, for j > Column
 MatrixPolyType
-MultiplyLeft(std::vector<MatrixPolyType> const& E, 
-             TriangularMPO const& Op, 
-             LinearWavefunction const& Psi, 
+MultiplyLeft(std::vector<MatrixPolyType> const& E,
+             TriangularMPO const& Op,
+             LinearWavefunction const& Psi,
              QuantumNumber const& QShift, int Column)
 {
    CHECK_EQUAL(Op.size(), Psi.size());
@@ -155,14 +155,14 @@ add_triple_prod(KMatrixPolyType& Result, std::complex<double> Factor,
 
 std::vector<KMatrixPolyType>
 contract_from_left(OperatorComponent const& M,
-		   HermitianProxy<StateComponent> const& A,
-		   std::vector<KMatrixPolyType> const& E, 
-		   StateComponent const& B)
+                   HermitianProxy<StateComponent> const& A,
+                   std::vector<KMatrixPolyType> const& E,
+                   StateComponent const& B)
 {
    //   DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis2(), A.base().Basis1());
    DEBUG_PRECONDITION_EQUAL(M.LocalBasis1(), B.LocalBasis());
    DEBUG_PRECONDITION_EQUAL(M.Basis1().size(), E.size());
-   
+
    std::vector<KMatrixPolyType> Result(M.Basis2().size());
 
    // Iterate over the components in M, first index
@@ -177,12 +177,12 @@ contract_from_left(OperatorComponent const& M,
             // *k is an irreducible operator.  Iterate over the components of this operator
             for (LinearAlgebra::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
             {
-               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type 
+               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type
                        S = iterate(R); S; ++S)
                {
-                  add_triple_prod(Result[J.index2()], *S, 
-                                  herm(A.base()[S.index1()]), 
-                                  E[J.index1()], 
+                  add_triple_prod(Result[J.index2()], *S,
+                                  herm(A.base()[S.index1()]),
+                                  E[J.index1()],
                                   B[S.index2()],
                                   k->TransformsAs(),
                                   M.Basis2()[J.index2()]);
@@ -196,11 +196,11 @@ contract_from_left(OperatorComponent const& M,
 
 std::vector<KMatrixPolyType>
 contract_from_left(OperatorComponent const& M,
-		   HermitianProxy<StateComponent> const& A,
-		   std::vector<KMatrixPolyType> const& E, 
-		   StateComponent const& B,
-		   std::vector<int> const& OutMask,
-		   std::vector<int> const& InMask)
+                   HermitianProxy<StateComponent> const& A,
+                   std::vector<KMatrixPolyType> const& E,
+                   StateComponent const& B,
+                   std::vector<int> const& OutMask,
+                   std::vector<int> const& InMask)
 {
    std::vector<KMatrixPolyType> Result(M.Basis2().size());
 
@@ -224,12 +224,12 @@ contract_from_left(OperatorComponent const& M,
             // *k is an irreducible operator.  Iterate over the components of this operator
             for (LinearAlgebra::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
             {
-               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type 
+               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type
                        S = iterate(R); S; ++S)
                {
-                  add_triple_prod(Result[J.index2()], *S, 
-                                  herm(A.base()[S.index1()]), 
-                                  E[J.index1()], 
+                  add_triple_prod(Result[J.index2()], *S,
+                                  herm(A.base()[S.index1()]),
+                                  E[J.index1()],
                                   B[S.index2()],
                                   k->TransformsAs(),
                                   M.Basis2()[J.index2()]);
@@ -242,8 +242,8 @@ contract_from_left(OperatorComponent const& M,
 }
 
 std::vector<KMatrixPolyType>
-inject_left(std::vector<KMatrixPolyType> const& In, 
-            LinearWavefunction const& Psi1, 
+inject_left(std::vector<KMatrixPolyType> const& In,
+            LinearWavefunction const& Psi1,
             GenericMPO const& Op,
             LinearWavefunction const& Psi2)
 {
@@ -271,8 +271,8 @@ inject_left(std::vector<KMatrixPolyType> const& In,
 }
 
 std::vector<KMatrixPolyType>
-inject_left_mask(std::vector<KMatrixPolyType> const& In, 
-                 LinearWavefunction const& Psi1, 
+inject_left_mask(std::vector<KMatrixPolyType> const& In,
+                 LinearWavefunction const& Psi1,
                  QuantumNumber const& QShift,
                  GenericMPO const& Op,
                  LinearWavefunction const& Psi2,

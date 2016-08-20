@@ -89,7 +89,7 @@ LatticeSite FermionSO4_Common(std::string const& Sym1 = "Q", std::string const& 
 
    N_H("holon", "holon") = 1;
 
-   // this choice of signs makes the 0-component from the Wigner Eckart theorem 
+   // this choice of signs makes the 0-component from the Wigner Eckart theorem
    // equal to the usual definition of Sz.  Note that the "hermitian conjugate" of
    // S is S^\dagger = -S.  This arises from the signs picked up in taking the
    // transpose of a spin 1 operator.
@@ -100,7 +100,7 @@ LatticeSite FermionSO4_Common(std::string const& Sym1 = "Q", std::string const& 
    // identity
    I("spinon", "spinon") =  1;
    I("holon",  "holon")  =  1;
-   
+
    Site["I"] = I;
    Site["P"] = P;
    Site["N_S"] = N_S;

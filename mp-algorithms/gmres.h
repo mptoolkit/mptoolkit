@@ -20,22 +20,22 @@
 //*****************************************************************
 // Iterative template routine -- GMRES
 //
-// GMRES solves the unsymmetric linear system Ax = b using the 
+// GMRES solves the unsymmetric linear system Ax = b using the
 // Generalized Minimum Residual method
 //
-// GMRES follows the algorithm described on p. 20 of the 
+// GMRES follows the algorithm described on p. 20 of the
 // SIAM Templates book.
 //
 // The return value indicates convergence within max_iter (input)
 // iterations (0), or no onvergence within max_iter iterations (1).
 //
 // Upon successful return, output arguments have the following values:
-//  
+//
 //        x  --  approximate solution to Ax = b
 // max_iter  --  the number of iterations performed before the
 //               tolerance was reached
 //      tol  --  the residual after the final iteration
-//  
+//
 //*****************************************************************
 
 #if !defined(GMRES_H_DHFJDKH48Y78932Y78YHFO7H7O8W)
@@ -53,12 +53,12 @@ using LinearAlgebra::norm_2;
 double const DGKS_Threshold = 1.0 / std::sqrt(2.0); // 1.0; // between 0 and 1.
 
 template <typename Matrix, typename Vector1, typename Vector2>
-void 
+void
 Update(Vector1& x, int k, Matrix const& h, Vector2 const& s, Vector1 v[])
 {
   Vector2 y(s);
 
-  // Backsolve:  
+  // Backsolve:
   for (int i = k; i >= 0; i--) {
     y[i] /= h(i,i);
     for (int j = i - 1; j >= 0; j--)
@@ -69,21 +69,21 @@ Update(Vector1& x, int k, Matrix const& h, Vector2 const& s, Vector1 v[])
     x += v[j] * y[j];
 }
 
-template<typename Real> 
+template<typename Real>
 void GeneratePlaneRotation(Real &dx, Real &dy, Real &cs, Real &sn)
 {
-   if (dy == 0.0) 
+   if (dy == 0.0)
    {
       cs = 1.0;
       sn = 0.0;
-   } 
-   else if (norm_2_sq(dy) > norm_2_sq(dx)) 
+   }
+   else if (norm_2_sq(dy) > norm_2_sq(dx))
    {
       Real temp = dx / dy;
       sn = 1.0 / std::sqrt( 1.0 + norm_2_sq(temp) );
       cs = temp * sn;
-   } 
-   else 
+   }
+   else
    {
       Real temp = dy / dx;
       cs = 1.0 / std::sqrt( 1.0 + norm_2_sq(temp) );
@@ -102,7 +102,7 @@ void GeneratePlaneRotation(Real &dx, Real &dy, Real &cs, Real &sn)
 #endif
 }
 
-template<typename Real> 
+template<typename Real>
 void ApplyPlaneRotation(Real &dx, Real &dy, Real cs, Real sn)
 {
    Real temp  =  conj(cs) * dx + conj(sn) * dy;
@@ -111,7 +111,7 @@ void ApplyPlaneRotation(Real &dx, Real &dy, Real cs, Real sn)
 }
 
 template <typename Vector, typename MultiplyFunc, typename PrecFunc>
-int 
+int
 GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
       int& m, int& max_iter, double& tol, PrecFunc Precondition, int Verbose = 0)
 {
@@ -129,7 +129,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
   // Initial guess for x:
   // let r = MatVecMultiply(x);
   // minimize choose prefactor to minimize norm_frob_sq(b - a*r)
-  // This means 
+  // This means
   // norm_frob_sq(b) + |a|^2 norm_frob_sq(r) - <b|ar> - <ar|b>
   // let <b|r> = c
   // then norm_frob_sq(b) + |a|^2 norm_frob_sq(r) - 2*real(ac)
@@ -145,7 +145,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
   // In practice, this seems to have negligble effect versus simply scaling
   // the guess vector by the norm of b, so it is currently disabled.
   // Also I don't understand the complex conjugation here.
-  
+
 #if 0
   TRACE(norm_frob(r));
   r = MatVecMultiply(x);
@@ -163,12 +163,12 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
 
   DEBUG_TRACE(r)(norm_frob(w))(norm_frob(x));
 
-  if ((resid = norm_frob(r) / normb) <= tol || norm_frob(w) / norm_frob(x) <= tol) 
+  if ((resid = norm_frob(r) / normb) <= tol || norm_frob(w) / norm_frob(x) <= tol)
   {
      if (norm_frob(w) / norm_frob(x) <= tol && Verbose > 0)
      {
-	// This means that the matrix is effectively zero
-	std::cerr << "GMRES: early exit at norm_frob(w)/norm_frob(b) < tol\n";
+        // This means that the matrix is effectively zero
+        std::cerr << "GMRES: early exit at norm_frob(w)/norm_frob(b) < tol\n";
      }
      tol = resid;
      max_iter = 0;
@@ -187,59 +187,59 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
      int i = 0;
      while (i < m && j <= max_iter && resid >= tol)
      {
-	if (Verbose > 2)
-	   std::cerr << "GMRES: iteration " << i << std::endl;
+        if (Verbose > 2)
+           std::cerr << "GMRES: iteration " << i << std::endl;
 
-	double NormFrobSqH = 0; // for DGKS correction
+        double NormFrobSqH = 0; // for DGKS correction
 
         w = Precondition(MatVecMultiply(v[i]));
-        for (int k = 0; k <= i; k++) 
+        for (int k = 0; k <= i; k++)
         {
            H(k, i) = inner_prod(v[k], w);
            w -= H(k, i) * v[k];
-	   NormFrobSqH += LinearAlgebra::norm_frob_sq(H(k,i));
+           NormFrobSqH += LinearAlgebra::norm_frob_sq(H(k,i));
         }
 
-	// Apply DGKS correction, if necessary
-	double NormFrobSqF = norm_frob_sq(w);
-	if (NormFrobSqF < DGKS_Threshold * DGKS_Threshold * NormFrobSqH)
-	{
-	   DEBUG_TRACE("DGKS correction in GMRES")(NormFrobSqF / (DGKS_Threshold * DGKS_Threshold * NormFrobSqH));
-	   for (int k = 0; k <= i; k++) 
-	   {
-	      value_type z = inner_prod(v[k], w);
-	      H(k, i) += z;
-	      w -= z * v[k];
-	   }
-	}
+        // Apply DGKS correction, if necessary
+        double NormFrobSqF = norm_frob_sq(w);
+        if (NormFrobSqF < DGKS_Threshold * DGKS_Threshold * NormFrobSqH)
+        {
+           DEBUG_TRACE("DGKS correction in GMRES")(NormFrobSqF / (DGKS_Threshold * DGKS_Threshold * NormFrobSqH));
+           for (int k = 0; k <= i; k++)
+           {
+              value_type z = inner_prod(v[k], w);
+              H(k, i) += z;
+              w -= z * v[k];
+           }
+        }
 
-	// Continue with our normal schedule...
+        // Continue with our normal schedule...
         H(i+1, i) = norm_frob(w);
         v[i+1] = w * (1.0 / H(i+1, i));
 
         for (int k = 0; k < i; k++)
            ApplyPlaneRotation(H(k,i), H(k+1,i), cs[k], sn[k]);
-      
+
         GeneratePlaneRotation(H(i,i), H(i+1,i), cs[i], sn[i]);
         ApplyPlaneRotation(H(i,i), H(i+1,i), cs[i], sn[i]);
         ApplyPlaneRotation(s[i], s[i+1], cs[i], sn[i]);
-      
-	resid = norm_2(s[i+1]) / normb;
 
-	if (Verbose > 2)
-	   std::cerr << "GMRES: resid=" << resid << '\n';
+        resid = norm_2(s[i+1]) / normb;
 
-	++i;
-	++j;
+        if (Verbose > 2)
+           std::cerr << "GMRES: resid=" << resid << '\n';
+
+        ++i;
+        ++j;
 
 #if 0
-	// debugging check
-	{
-	   Vector X2 = x;
-	   Update(X2, i-1, H, s, v);
-	   Vector R = Precondition(b - MatVecMultiply(X2));
-	   TRACE(i)(norm_2(s[i]))(norm_frob(R));
-	}
+        // debugging check
+        {
+           Vector X2 = x;
+           Update(X2, i-1, H, s, v);
+           Vector R = Precondition(b - MatVecMultiply(X2));
+           TRACE(i)(norm_2(s[i]))(norm_frob(R));
+        }
 #endif
 
      }
@@ -249,30 +249,30 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
 
      //DEBUG_TRACE(r)(beta);
 
-     // use the old value of resid here, to avoid cases 
+     // use the old value of resid here, to avoid cases
      // where the recalculation no longer satisfies the convergence criteria
-     if (resid < tol) 
+     if (resid < tol)
      {
-	double UpdatedResid = beta / normb;
+        double UpdatedResid = beta / normb;
         tol = UpdatedResid;
         max_iter = j;
         delete [] v;
-	DEBUG_TRACE(beta)(normb);
-	if (Verbose)
-	   std::cerr << "GMRES: finished, iter=" << (j-1) << ", approx resid=" << resid 
-		     << ", actual resid=" << UpdatedResid << std::endl;
+        DEBUG_TRACE(beta)(normb);
+        if (Verbose)
+           std::cerr << "GMRES: finished, iter=" << (j-1) << ", approx resid=" << resid
+                     << ", actual resid=" << UpdatedResid << std::endl;
         return 0;
      }
      else
      {
-	if (Verbose > 1)
-	   std::cerr << "GMRES: restarting, iter=" << (j-1) << ", resid=" << resid << '\n';
+        if (Verbose > 1)
+           std::cerr << "GMRES: restarting, iter=" << (j-1) << ", resid=" << resid << '\n';
      }
      resid = beta / normb;
      DEBUG_TRACE(resid)(norm_frob(Precondition(b - MatVecMultiply(x))) / normb)
         (norm_frob(b - MatVecMultiply(x)) / norm_frob(b));
   }
-  
+
   tol = resid;
   delete [] v;
   return 1;

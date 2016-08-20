@@ -32,9 +32,9 @@
 
 namespace prog_opt = boost::program_options;
 
-LinearWavefunction ScaleBasisU1(LinearWavefunction const& Psi, 
-				     std::string const& Name,
-				     double Factor)
+LinearWavefunction ScaleBasisU1(LinearWavefunction const& Psi,
+                                     std::string const& Name,
+                                     double Factor)
 {
    LinearWavefunction Result(Psi.GetSymmetryList());
    LinearWavefunction::const_iterator I = Psi.end();
@@ -60,13 +60,13 @@ int main(int argc, char** argv)
    double Factor = boost::lexical_cast<double>(argv[2]);
    std::string FName = argv[3];
    pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(FName, mp_pheap::CacheSize());
-   
+
    // verify that QName is actually a symmetry
    int const s = Psi->GetSymmetryList().WhichSymmetry(QName);
    if (s == -1)
    {
-      std::cerr << "mp-scale-basis: warning: \"" + QName 
-	 + "\" does not name a quantum number.\n";
+      std::cerr << "mp-scale-basis: warning: \"" + QName
+         + "\" does not name a quantum number.\n";
       pheap::ShutdownPersistent(Psi);
       return 0; // this isn't really an error
    }
@@ -74,7 +74,7 @@ int main(int argc, char** argv)
    if (Psi->GetSymmetryList().SymmetryType(s) != "U(1)")
    {
       std::cerr << "mp-scale-basis: error: \"" + QName +
-	 "\" is not a U(1) symmetry, no action taken.\n";
+         "\" is not a U(1) symmetry, no action taken.\n";
       pheap::ShutdownPersistent(Psi);
       return 2;
    }

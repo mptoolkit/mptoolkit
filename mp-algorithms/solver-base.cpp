@@ -54,14 +54,14 @@ PStream::opstream& operator>>(PStream::ipstream& in, SolverBase& d)
              >> d.TotalSweepRecNumber
              >> d.TotalNumIterations
              >> d.TotalNumMultiplies
-      
+
              >> d.SweepNumIterations
              >> d.SweepSumStates
              >> d.SweepMaxStates
              >> d.SweepNumMultiplies
              >> d.SweepTruncation
              >> d.SweepEntropy
-      
+
              >> d.IterationNumMultiplies
              >> d.IterationNumStates
              >> d.IterationTruncation

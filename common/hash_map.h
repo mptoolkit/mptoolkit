@@ -53,20 +53,20 @@ struct make1st : public std::unary_function<typename T::first_type, T>
    T operator()(typename T::first_type const& x) { return T(x, typename T::second_type()); }
 };
 
-template <typename Key, 
-	  typename T, 
-	  class HashFun = hash<Key>, 
-	  class Cmp = std::equal_to<Key> >
-class hash_map : public Private::hash_table<Key, 
-					    std::pair<Key, T>, 
-					    HashFun, 
-					    Cmp, 
-					    select1st<std::pair<Key, T> >,
+template <typename Key,
+          typename T,
+          class HashFun = hash<Key>,
+          class Cmp = std::equal_to<Key> >
+class hash_map : public Private::hash_table<Key,
+                                            std::pair<Key, T>,
+                                            HashFun,
+                                            Cmp,
+                                            select1st<std::pair<Key, T> >,
                                             make1st<std::pair<Key, T> > >
 {
    private:
-      typedef Private::hash_table<Key, std::pair<Key, T>, HashFun, Cmp, 
-                                  select1st<std::pair<Key, T> >, 
+      typedef Private::hash_table<Key, std::pair<Key, T>, HashFun, Cmp,
+                                  select1st<std::pair<Key, T> >,
                                   make1st<std::pair<Key, T> >  >       TBase;
    public:
       typedef typename TBase::key_type        key_type;
@@ -93,20 +93,20 @@ class hash_map : public Private::hash_table<Key,
       hash_map(Iter first, Iter last);
 
       template <class Iter>
-      hash_map(Iter first, Iter last, size_type n, 
-	       hasher hf_ = hasher(), key_equal KEq = key_equal());
+      hash_map(Iter first, Iter last, size_type n,
+               hasher hf_ = hasher(), key_equal KEq = key_equal());
 
       mapped_type& operator[](key_type const& k);
 };
 
 #if defined(USE_PSTREAM)
 template <int Format, typename Key, typename T, class HashFun, class Cmp>
-PStream::opstreambuf<Format>& operator<<(PStream::opstreambuf<Format>&, 
-					 hash_map<Key, T, HashFun, Cmp> const&);
+PStream::opstreambuf<Format>& operator<<(PStream::opstreambuf<Format>&,
+                                         hash_map<Key, T, HashFun, Cmp> const&);
 
 template <int Format, typename Key, typename T, class HashFun, class Cmp>
-PStream::ipstreambuf<Format>& operator>>(PStream::ipstreambuf<Format>&, 
-					 hash_map<Key, T, HashFun, Cmp>&);
+PStream::ipstreambuf<Format>& operator>>(PStream::ipstreambuf<Format>&,
+                                         hash_map<Key, T, HashFun, Cmp>&);
 #endif
 
 } // namespace ext

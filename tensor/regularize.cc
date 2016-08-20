@@ -43,7 +43,7 @@ template <typename T>
 IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
 ToMatrixOperator(IrredTensor<T, BasisList, BasisList> const& Op)
 {
-   IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> 
+   IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
       Result(VectorBasis(Op.Basis1()), VectorBasis(Op.Basis2()), Op.TransformsAs());
    Result.data() = LinearAlgebra::scalar(LinearAlgebra::Matrix<T>(1,1,1.0)) * Op.data();
    return Result;

@@ -45,7 +45,7 @@ struct DMRG
    void AddOrthogonalState(CenterWavefunction x);
 
    void StartSweep(bool IncrementSweepNumber = true, double Broad = 0);
-   
+
    void EndSweep();    // statistics for end of sweep
 
    void StartIteration();  // prepare statistics for start of iteration
@@ -95,9 +95,9 @@ struct DMRG
 
    // This version inserts sites and makes the Center matrix a non-scalar tensor
    void InsertSites(std::vector<SiteBasis> const& LeftSites,
-		    std::vector<SiteBasis> const& RightSites,
-		    QuantumNumber NewTarget,
-		    SplitOperator const& NewHam);
+                    std::vector<SiteBasis> const& RightSites,
+                    QuantumNumber NewTarget,
+                    SplitOperator const& NewHam);
 
    CenterWavefunction& Wavefunction();
    CenterWavefunction const& Wavefunction() const;
@@ -125,7 +125,7 @@ struct DMRG
    bool SaveDiscardedWavefunction; // if true, save the discarded wavefunctions on a right-moving sweep
    bool NormalizeWavefunction; // should we normalize the wavefunction after each truncation?
    boost::optional<double> LastOverlap;
-   bool IsPsiConverged; 
+   bool IsPsiConverged;
    bool IsConvergedValid;
    bool TestConverged;            // true if we should calculate (H-E)^2 at end of sweep
    KeepListType KeepList;

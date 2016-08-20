@@ -51,7 +51,7 @@ struct WavefunctionDesc
    // Bratelli diagram to be invalid.  (SU(2) example: if
    // a flip decreases the height at one point, this might cause a
    // height somewhere to the left to become negative, which is not possible.)
-   bool Flip(std::vector<BasisList> const& Basis, int Site, int NewState, 
+   bool Flip(std::vector<BasisList> const& Basis, int Site, int NewState,
              QuantumNumber const& NewQuantumNumber);
 
    QuantumNumber const& TransformsAs() const { return Height.front(); }
@@ -64,32 +64,32 @@ struct WavefunctionDesc
 std::ostream& operator<<(std::ostream& out, WavefunctionDesc const& Config);
 
 WavefunctionDesc
-CreateRandomConfiguration(std::vector<BasisList> const& Basis, 
+CreateRandomConfiguration(std::vector<BasisList> const& Basis,
                           QuantumNumber const& q, double Beta);
 
-LinearWavefunction 
-CreateRandomWavefunction(std::vector<BasisList> const& Basis, 
+LinearWavefunction
+CreateRandomWavefunction(std::vector<BasisList> const& Basis,
                          QuantumNumber const& q, double Beta);
 
-LinearWavefunction 
-CreateRandomWavefunction(std::vector<BasisList> const& Basis, 
+LinearWavefunction
+CreateRandomWavefunction(std::vector<BasisList> const& Basis,
                          QuantumNumber const& q, double Beta,
-			 QuantumNumber const& RightBoundary);
+                         QuantumNumber const& RightBoundary);
 
 
 #if 0
-LinearWavefunction 
+LinearWavefunction
 CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q, double Beta);
 
-LinearWavefunction 
+LinearWavefunction
 CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q, double Beta,
                          QuantumNumber const& RightBoundary);
 
-LinearWavefunction 
+LinearWavefunction
 CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q, double Beta, int Count);
 
-LinearWavefunction 
-CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q, double Beta, 
+LinearWavefunction
+CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q, double Beta,
                          QuantumNumber const& RightBoundary, int Count);
 
 // calculate the amplitude of the given configuration in the wavefunction

@@ -32,7 +32,7 @@ class KrylovLoop
 
       KrylovLoop() {}
 
-      KrylovLoop(SplitOperator const& H_, SplitOperator const& H2_, WavefunctionType const& Psi) 
+      KrylovLoop(SplitOperator const& H_, SplitOperator const& H2_, WavefunctionType const& Psi)
          : Solver_(H_, H2_, (1.0 / norm_frob(Psi.Center())) * Psi), PsiNorm_(norm_frob(Psi.Center())) {}
 
       KrylovLoop(SolverType const& Solver);
@@ -96,7 +96,7 @@ class KrylovLoop
       bool DoReductionSweep_;
       double KrylovCutoffFactor_;
       int MaxSweeps_;
-      
+
       Vector<std::complex<double> > OldCoeffVec_;
 };
 

@@ -51,12 +51,12 @@ class OperatorList
       OperatorType operator[](std::string const& s) const;
 
       OperatorType Lookup(std::string const& Operator, std::string const& Site) const
-	 { return this->operator[](Operator + '(' + Site +')'); }
+         { return this->operator[](Operator + '(' + Site +')'); }
 
       bool HasOperator(std::string const& Operator) const;
 
       bool HasOperator(std::string const& Operator, std::string const& Site) const
-	 { return this->HasOperator(Operator + '(' + Site + ')'); }
+         { return this->HasOperator(Operator + '(' + Site + ')'); }
 
       Lattice const& GetLattice() const { return L; }
 

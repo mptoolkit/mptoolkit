@@ -46,20 +46,20 @@ class OperatorAtSite<OListType, void>
 
       template <typename T>
       std::string FullName(T const& x) const
-      { 
+      {
          return OName_ + '(' + boost::lexical_cast<std::string>(x) + ')';
       }
 
       template <typename T1, typename T2>
       std::string FullName(T1 const& x1, T2 const& x2) const
-      { 
+      {
          return OName_ + '(' + boost::lexical_cast<std::string>(x1) + ','
             + boost::lexical_cast<std::string>(x2) + ')';
       }
-   
+
       template <typename T1, typename T2, typename T3>
       std::string FullName(T1 const& x1, T2 const& x2, T3 const& x3) const
-      { 
+      {
          return OName_ + '(' + boost::lexical_cast<std::string>(x1) + ','
             + boost::lexical_cast<std::string>(x2) + ','
             + boost::lexical_cast<std::string>(x3) + ')';
@@ -157,7 +157,7 @@ class OperatorAtSite<OListType, T, void>
          : OList_(OList), OName_(OName) {}
 
       std::string FullName(T const& x) const
-      { 
+      {
          return OName_ + '(' + boost::lexical_cast<std::string>(x) + ')';
       }
 
@@ -208,7 +208,7 @@ class OperatorAtSite<OListType, T1, T2>
          : OList_(OList), OName_(OName) {}
 
       std::string FullName(T1 const& x1, T2 const& x2) const
-      { 
+      {
          return OName_ + '(' + boost::lexical_cast<std::string>(x1) + ','
             + boost::lexical_cast<std::string>(x2) + ')';
       }
@@ -250,7 +250,7 @@ class OperatorAtSite //<OListType, T1, T2, T3>
          : OList_(OList), OName_(OName) {}
 
    std::string FullName(T1 const& x1, T2 const& x2, T3 const& x3) const
-      { 
+      {
          return OName_ + '(' + boost::lexical_cast<std::string>(x1) + ','
             + boost::lexical_cast<std::string>(x2) + ','
             + boost::lexical_cast<std::string>(x3) + ')';

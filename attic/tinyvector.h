@@ -32,7 +32,7 @@
   a (small) compile-time constant.  TinyVecImp is used as a base class, that defines
   various functions.  The derived class TinyVec<class T, int N> is specialized
   for small values of N, to provide a constructor to initialize all elements
-  separately.  For larger values of N (currently > 4), the default TinyVec class applies, 
+  separately.  For larger values of N (currently > 4), the default TinyVec class applies,
   and there is no such constructor.  TinyVecImp should not be used outside this header.
 
   TinyVec<T,0> is a legitimate class.  It contains no members.
@@ -55,7 +55,7 @@ namespace TinyAlgebra
 
 template <class T, int N> class TinyVector;
 
-template <class T, int N> 
+template <class T, int N>
 class TinyVector
 {
    public:
@@ -91,14 +91,14 @@ class TinyVector
       // 1 arg initial value ctor is explicit.  TinyVector<T, 1> is partially specialized
       explicit TinyVector(T InitValue);
 
-      TinyVector(T x0, T x1) 
+      TinyVector(T x0, T x1)
       {
          typedef ct_assert<size == 2> size_check;
          Data[0] = x0;
          Data[1] = x1;
       }
 
-      TinyVector(T x0, T x1, T x2) 
+      TinyVector(T x0, T x1, T x2)
       {
          typedef ct_assert<size == 3> size_check;
          Data[0] = x0;
@@ -106,7 +106,7 @@ class TinyVector
          Data[2] = x2;
       }
 
-      TinyVector(T x0, T x1, T x2, T x3) 
+      TinyVector(T x0, T x1, T x2, T x3)
       {
          typedef ct_assert<size == 4> size_check;
          Data[0] = x0;
@@ -119,43 +119,43 @@ class TinyVector
       TinyVector<T, N>& operator*=(T t)
       {
          for (int i = 0; i < N; ++i)
-	 {
+         {
             Data[i] *= t;
-	 }
+         }
          return *this;
       }
 
       TinyVector<T, N>& operator/=(T t)
       {
          for (int i = 0; i < N; ++i)
-	 {
+         {
             Data[i] /= t;
-	 }
+         }
          return *this;
       }
 
       TinyVector<T, N>& operator+=(TinyVector<T, N> const& v)
       {
          for (int i = 0; i < N; ++i)
-	 {
+         {
             Data[i] += v.Data[i];
-	 }
+         }
          return *this;
       }
 
       TinyVector<T, N>& operator-=(TinyVector<T, N> const& v)
       {
          for (int i = 0; i < N; ++i)
-	 {
+         {
             Data[i] -= v.Data[i];
-	 }
+         }
          return *this;
       }
 
    private:
       bool in_range(int i) const { return i >= 0 && i < size; }
 
-      value_type Data[size];      
+      value_type Data[size];
 };
 
 template <class T>
@@ -192,32 +192,32 @@ class TinyVector<T, 1>
 
       TinyVector<T, 1>& operator*=(T t)
       {
-	 Data *= t;
-	 return *this;
+         Data *= t;
+         return *this;
       }
 
       TinyVector<T, 1>& operator/=(T t)
       {
-	 Data /= t;
+         Data /= t;
          return *this;
       }
 
       TinyVector<T, 1>& operator+=(TinyVector<T, 1> const& v)
       {
-	 Data += v.Data;
-	 return *this;
+         Data += v.Data;
+         return *this;
       }
 
       TinyVector<T, 1>& operator-=(TinyVector<T, 1> const& v)
       {
-	 Data -= v.Data;
-	 return *this;
+         Data -= v.Data;
+         return *this;
       }
 
    private:
       bool in_range(int i) const { return i == 0; }
 
-      value_type Data;      
+      value_type Data;
 };
 
 // For completeness, we have TinyVector<T, 0>
@@ -282,7 +282,7 @@ std::ostream& operator<<(std::ostream& out, TinyVector<T, N> const& Vec)
    }
    out << ')';
    return out;
-}      
+}
 
 template <class T, int N>
 std::istream& operator>>(std::istream& in, TinyVector<T, N>& Vec)
@@ -301,7 +301,7 @@ std::istream& operator>>(std::istream& in, TinyVector<T, N>& Vec)
    in >> junk;
    CHECK(junk == ')');
    return in;
-}      
+}
 
 template <class T, int N>
 T dot(TinyVector<T, N> const& x, TinyVector<T, N> const& y)
@@ -337,7 +337,7 @@ TinyVector<T, N>::TinyVector(const TinyVector<T, N>& Vec)
 
 template <class T, int N>
 inline
-TinyVector<T,N>& 
+TinyVector<T,N>&
 TinyVector<T, N>::operator=(const TinyVector<T,N>& Vec)
 {
    for (int i = 0; i < size; ++i)
@@ -356,7 +356,7 @@ TinyVector<T, N>::TinyVector(T InitValue)
 
 template <class T, int N>
 inline
-TinyVector<T, N>::reference 
+TinyVector<T, N>::reference
 TinyVector<T, N>::operator[](int i)
 {
    PRECONDITION(in_range(i));
@@ -374,7 +374,7 @@ TinyVector<T, N>::operator[](int i) const
 
 template <class T>
 inline
-TinyVector<T, 1>::reference 
+TinyVector<T, 1>::reference
 TinyVector<T, 1>::operator[](int i)
 {
    PRECONDITION(in_range(i));

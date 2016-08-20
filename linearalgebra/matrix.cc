@@ -27,7 +27,7 @@ namespace LinearAlgebra
 #if defined(USE_PSTREAM)
 template <int Format>
 inline
-PStream::opstreambuf<Format>& 
+PStream::opstreambuf<Format>&
 operator<<(PStream::opstreambuf<Format>& out, MatrixDimensions const& d)
 {
    typename PStream::opstreambuf<Format>::size_type sz1 = d.size1, sz2 = d.size2;
@@ -37,7 +37,7 @@ operator<<(PStream::opstreambuf<Format>& out, MatrixDimensions const& d)
 
 template <int Format>
 inline
-PStream::ipstreambuf<Format>& 
+PStream::ipstreambuf<Format>&
 operator>>(PStream::ipstreambuf<Format>& in, MatrixDimensions& d)
 {
    typename PStream::opstreambuf<Format>::size_type sz1, sz2;
@@ -56,17 +56,17 @@ operator>>(PStream::ipstreambuf<Format>& in, MatrixDimensions& d)
 //
 
 template <class Scalar, typename Orientation, typename Derived>
-void 
+void
 MatrixRef<Scalar, Orientation, Derived>::resize(size_type NewRows, size_type NewCols)
 {
    // Early return in the case that the data block is not shared and we don't need a resize.
-   if (NewRows == this->size1() && NewCols == this->size2() 
+   if (NewRows == this->size1() && NewCols == this->size2()
        && this->stride2() == 1 && !Block.is_shared()) return;
 
    // this->cow(); // FIXME: pretty sure this is not needed???
 
-   block_type NewData(NewRows*NewCols, NoHeader(), 
-		      MatrixDimensions(NewRows, NewCols, Orientation()));
+   block_type NewData(NewRows*NewCols, NoHeader(),
+                      MatrixDimensions(NewRows, NewCols, Orientation()));
    Block = NewData;
 }
 
@@ -113,8 +113,8 @@ Matrix<Scalar, Orientation>::Matrix(size_type Rows, size_type Cols, Scalar const
 template <class Scalar, typename Orientation>
 template <typename U>
 inline
-Matrix<Scalar, Orientation>::Matrix(U const& x, 
-		       typename boost::enable_if<is_matrix<U> >::type*)
+Matrix<Scalar, Orientation>::Matrix(U const& x,
+                       typename boost::enable_if<is_matrix<U> >::type*)
   : MatrixRef<Scalar, Orientation, Matrix<Scalar, Orientation> >(Size1<U>()(x), Size2<U>()(x))
 {
    assign(*this, x);

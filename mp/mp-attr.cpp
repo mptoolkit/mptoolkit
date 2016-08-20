@@ -86,7 +86,7 @@ int main(int argc, char** argv)
       for (AttribSetIter I = AttributesToSet.begin(); I != AttributesToSet.end(); ++I)
          PsiLock->Attributes()[I->first] = I->second;
    }
-   
+
    if (AttributesToPrint.size() == 0)
    {
       std::cout << Psi->Attributes();

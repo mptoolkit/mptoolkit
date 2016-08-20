@@ -28,14 +28,14 @@ namespace LinearAlgebra
 
 template <typename Mat, typename Scalar = typename Mat::value_type>
 class ScaledMatrix : public GenericMatrix<typename BinaryOperator<Multiplication,
-								  Scalar, 
-								  typename Mat::value_type>::value_type,
-					  ScaledMatrix<Mat, Scalar> >
+                                                                  Scalar,
+                                                                  typename Mat::value_type>::value_type,
+                                          ScaledMatrix<Mat, Scalar> >
 {
    public:
       typedef Mat base_type;
       typedef typename BinaryOperator<Multiplication,
-                                      Scalar, 
+                                      Scalar,
                                       typename Mat::value_type>::value_type value_type;
 
       typedef Scalar scalar_type;
@@ -61,8 +61,8 @@ struct MatrixTraits<ScaledMatrix<Mat, Scalar> >
 
 
 template <typename B, typename S, typename T>
-struct MatrixMatrixProduct<ScaledMatrix<IdentityMatrix<B>, S>, 
-			ScaledMatrix<IdentityMatrix<B>, T> >
+struct MatrixMatrixProduct<ScaledMatrix<IdentityMatrix<B>, S>,
+                        ScaledMatrix<IdentityMatrix<B>, T> >
 {
    typedef typename BinaryOperator<Multiplication, S, T>::value_type ValType;
    typedef ScaledMatrix<IdentityMatrix<B>, ValType> result_type;
@@ -131,8 +131,8 @@ struct DirectProduct<ScaledMatrix<IdentityMatrix<B>, S>, ScaledMatrix<IdentityMa
 };
 
 template <typename B, typename S, typename T>
-struct DirectProduct<S, ScaledMatrix<IdentityMatrix<B>, T>, 
-		     typename boost::enable_if<is_matrix<S> >::type>
+struct DirectProduct<S, ScaledMatrix<IdentityMatrix<B>, T>,
+                     typename boost::enable_if<is_matrix<S> >::type>
 {
    typedef S first_argument_type;
    typedef typename S::value_type SValType;
@@ -149,11 +149,11 @@ struct DirectProduct<S, ScaledMatrix<IdentityMatrix<B>, T>,
       value_type Res(x.size1() * y.size1(), x.size2() * y.size2(), 0);
       for (int i = 0; i < x.size1(); ++i)
       {
-	 for (int j = 0; j < x.size2(); ++j)
-	 {
-	    Res.range1(i * m2s1, (i+1) * m2s1).range2(j * m2s2, (j+1) * m2s2) 
-	       = x(i,j) * y;
-	 }
+         for (int j = 0; j < x.size2(); ++j)
+         {
+            Res.range1(i * m2s1, (i+1) * m2s1).range2(j * m2s2, (j+1) * m2s2)
+               = x(i,j) * y;
+         }
       }
       return Res;
    }
@@ -178,7 +178,7 @@ struct Conj<ScaledMatrix<B, S> >
 
 template <typename B, typename S, typename T>
 struct DirectProduct<ScaledMatrix<IdentityMatrix<B>, S>, T,
-		     typename boost::enable_if<is_matrix<T> >::type>
+                     typename boost::enable_if<is_matrix<T> >::type>
 {
    typedef ScaledMatrix<IdentityMatrix<B>, S> first_argument_type;
    typedef T second_argument_type;
@@ -195,8 +195,8 @@ struct DirectProduct<ScaledMatrix<IdentityMatrix<B>, S>, T,
       value_type Res(x.size1() * m2s1, x.size2() * m2s2, 0);
       for (int i = 0; i < x.size1(); ++i)
       {
-	 Res.range1(i * m2s1, (i+1) * m2s1).range2(i * m2s2, (i+1) * m2s2) 
-	    = x.scalar() * y;
+         Res.range1(i * m2s1, (i+1) * m2s1).range2(i * m2s2, (i+1) * m2s2)
+            = x.scalar() * y;
       }
       return Res;
    }

@@ -43,7 +43,7 @@ typedef std::complex<double> complex;
   at +/- infinity.  Let F(x) be the real space correlation function.  F(x) for x >= 0
   is given by the program input, and we take F(x) for x < 0 to be F(-x) = F(x).
   Thus the discrete fourier transform is f(k) = sum_x F(x) * exp(i * pi * k * x / N).
-  Here x,k ranges from -N+1 to +N.  The fourier transform of a real,even function 
+  Here x,k ranges from -N+1 to +N.  The fourier transform of a real,even function
   is itself real and even, so we only ever need to deal with x,k >= 0.  Thus the
   k space transform is f(0) = sum_x F(x), and f(x) = 2 sum_x cos(pi * k * x / N) for 0 < x < N.
 */
@@ -118,5 +118,3 @@ int main(int argc, char** argv)
 
    return 0;
 }
-
-   

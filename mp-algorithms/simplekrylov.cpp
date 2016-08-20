@@ -35,8 +35,8 @@ struct SuperblockMultiply
    typedef MatrixOperator argument_type;
 
    SuperblockMultiply(SimpleOperator const& Ham_,
-		      MPStateComponent const& Left_,
-		      MPStateComponent const& Right_);
+                      MPStateComponent const& Left_,
+                      MPStateComponent const& Right_);
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
    {
@@ -49,14 +49,14 @@ struct SuperblockMultiply
 
 inline
 SuperblockMultiply::SuperblockMultiply(SimpleOperator const& Ham_,
-				       MPStateComponent const& Left_,
-				       MPStateComponent const& Right_)
+                                       MPStateComponent const& Left_,
+                                       MPStateComponent const& Right_)
    : Ham(Ham_), Left(Left_), Right(Right_)
 {
 }
 
-SimpleKrylov::SimpleKrylov(CenterWavefunction const& Psi0_, 
-                           SplitOperator const& Op_, 
+SimpleKrylov::SimpleKrylov(CenterWavefunction const& Psi0_,
+                           SplitOperator const& Op_,
                            std::complex<double> Timestep_,
                            CenterWavefunction const& Psi1_,
                            bool UsePsi1HPsi0_)
@@ -82,14 +82,14 @@ SimpleKrylov::SimpleKrylov(CenterWavefunction const& Psi0_,
    InitializeTransformStack(Psi1_Psi0, Psi1, Psi0);
 }
 
-SimpleKrylov::SimpleKrylov(CenterWavefunction const& Psi0_, 
-                           SplitOperator const& Op_, 
+SimpleKrylov::SimpleKrylov(CenterWavefunction const& Psi0_,
+                           SplitOperator const& Op_,
                            std::complex<double> Timestep_,
                            SuperblockOperator const& Psi0_H_Psi0,
                            bool UsePsi1HPsi0_)
    : Psi0(Psi0_), Ham(Op_), Psi1(Psi0_), UsePsi1HPsi0(UsePsi1HPsi0_),
      Psi1_H_Psi0(Psi0_H_Psi0),
-     Psi1_H_Psi1(Psi0_H_Psi0), 
+     Psi1_H_Psi1(Psi0_H_Psi0),
      Ident(Psi0_.GetSymmetryList()),
      Timestep(Timestep_)
 {
@@ -101,7 +101,7 @@ SimpleKrylov::~SimpleKrylov()
 {
 }
 
-void 
+void
 SimpleKrylov::SetupLogFiles(std::string const& Prefix, bool Truncate)
 {
    std::ios_base::openmode Mode = Truncate ? (std::ios_base::out | std::ios_base::trunc)
@@ -144,14 +144,14 @@ void SimpleKrylov::SetWavefunctionAttributes() const
       Psi1.AttributesMutable()["Beta"] = Beta;
 }
 
-CenterWavefunction& SimpleKrylov::Wavefunction() 
+CenterWavefunction& SimpleKrylov::Wavefunction()
 {
    this->SetWavefunctionAttributes();
    return Psi1;
 }
 
 CenterWavefunction const& SimpleKrylov::Wavefunction() const
-{ 
+{
    this->SetWavefunctionAttributes();
    return Psi1;
 }
@@ -179,7 +179,7 @@ double SimpleKrylov::Solve(int NumIterations, double ErrBound)
    // Krylov vector k1 in the Psi1 basis
    if (UsePsi1HPsi0)
    {
-      MatrixOperator k1 = operator_prod(conj(Ham.Center()), 
+      MatrixOperator k1 = operator_prod(conj(Ham.Center()),
                                         Psi1_H_Psi0.Left(), Psi0.Center(), herm(Psi1_H_Psi0.Right()));
       Psi1.Center() = LanczosExponential(k0_, k1, SuperblockMultiply(conj(Ham.Center()),
                                                                      Psi1_H_Psi1.Left(),
@@ -193,7 +193,7 @@ double SimpleKrylov::Solve(int NumIterations, double ErrBound)
                                                                  Psi1_H_Psi1.Left(),
                                                                  Psi1_H_Psi1.Right()),
                                          NumIterations,
-                                         Timestep, 
+                                         Timestep,
                                          ErrBound);
       IterationSolverVariance = norm_frob_sq(OldPsi1Center - Psi1.Center()) / (norm_frob(OldPsi1Center) * norm_frob(Psi1.Center()));
       IterationSolverTolerance = ErrBound;
@@ -352,7 +352,7 @@ void SimpleKrylov::ShiftRightAndExpand()
    Psi0.RotateRight();
    Psi1.PushLeft(prod(Psi1.Center(), Psi1.Right()));
    Psi1.PopRight();
-   Psi1.Center() = ExpandBasis2(Psi1.Left()); 
+   Psi1.Center() = ExpandBasis2(Psi1.Left());
 
    if (UsePsi1HPsi0)
       SuperblockStackRotateRight(Psi1_H_Psi0, Psi1, Ham, Psi0);
@@ -384,8 +384,8 @@ void SimpleKrylov::ShiftLeftAndExpand()
 TruncationInfo SimpleKrylov::TruncateLeft(StatesInfo const& States, double MixFactor)
 {
    MatrixOperator Rho1 = scalar_prod(Psi1.Center(), herm(Psi1.Center()));
-   MatrixOperator Rho0 =  triple_prod(Psi1_Psi0.Left(), 
-                                      scalar_prod(Psi0.Center(), herm(Psi0.Center())), 
+   MatrixOperator Rho0 =  triple_prod(Psi1_Psi0.Left(),
+                                      scalar_prod(Psi0.Center(), herm(Psi0.Center())),
                                       herm(Psi1_Psi0.Left()));
    //   MatrixOperator Rho0 = scalar_prod(this->k0(), herm(this->k0()));
    MatrixOperator Rho = 0.5 * (Rho1 + Rho0);
@@ -395,7 +395,7 @@ TruncationInfo SimpleKrylov::TruncateLeft(StatesInfo const& States, double MixFa
       MatrixOperator Mix;
       for (unsigned i = 0; i < Psi1_H_Psi1.Left().size(); ++i)
       {
-         //         if (i != 0 && i !=  Psi1_H_Psi1.Left().size()-1) 
+         //         if (i != 0 && i !=  Psi1_H_Psi1.Left().size()-1)
          {
             double Normalizer = norm_frob_sq(Psi1_H_Psi1.Left()[i]) / Rho.Basis1().total_degree();
             MatrixOperator Correction = triple_prod(Psi1_H_Psi1.Left()[i],
@@ -410,7 +410,7 @@ TruncationInfo SimpleKrylov::TruncateLeft(StatesInfo const& States, double MixFa
 
    DensityMatrix<MatrixOperator> DM(Rho);
    TruncationInfo Info;
-   MatrixOperator U = DM.ConstructTruncator(DM.begin(), 
+   MatrixOperator U = DM.ConstructTruncator(DM.begin(),
                                             TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info));
    IterationNumStates = Info.KeptStates();
    IterationTruncation += Info.TruncationError();
@@ -448,8 +448,8 @@ TruncationInfo SimpleKrylov::TruncateLeft(StatesInfo const& States, double MixFa
 TruncationInfo SimpleKrylov::TruncateRight(StatesInfo const& States, double MixFactor)
 {
    MatrixOperator Rho1 = scalar_prod(herm(Psi1.Center()), Psi1.Center());
-   MatrixOperator Rho0 =  triple_prod(Psi1_Psi0.Right(), 
-                                      scalar_prod(herm(Psi0.Center()), Psi0.Center()), 
+   MatrixOperator Rho0 =  triple_prod(Psi1_Psi0.Right(),
+                                      scalar_prod(herm(Psi0.Center()), Psi0.Center()),
                                       herm(Psi1_Psi0.Right()));
       //scalar_prod(herm(this->k0()), this->k0());
    MatrixOperator Rho = 0.5 * (Rho1 + Rho0);
@@ -459,7 +459,7 @@ TruncationInfo SimpleKrylov::TruncateRight(StatesInfo const& States, double MixF
       MatrixOperator Mix;
       for (unsigned i = 0; i < Psi1_H_Psi1.Right().size(); ++i)
       {
-         //         if (i != 0 && i !=  Psi1_H_Psi1.Right().size()-1) 
+         //         if (i != 0 && i !=  Psi1_H_Psi1.Right().size()-1)
          {
             double Normalizer = norm_frob_sq(Psi1_H_Psi1.Right()[i]) / Rho.Basis1().total_degree();
             MatrixOperator Correction = triple_prod(Psi1_H_Psi1.Right()[i],
@@ -475,7 +475,7 @@ TruncationInfo SimpleKrylov::TruncateRight(StatesInfo const& States, double MixF
 
    DensityMatrix<MatrixOperator> DM(Rho);
    TruncationInfo Info;
-   MatrixOperator U = DM.ConstructTruncator(DM.begin(), 
+   MatrixOperator U = DM.ConstructTruncator(DM.begin(),
                                             TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info));
 
    IterationNumStates = Info.KeptStates();
@@ -565,7 +565,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, SimpleKrylov& d)
              >> d.Timestep
 
              >> d.TotalSweepNumber
-      
+
              >> d.SweepNumIterations
              >> d.SweepSumStates
              >> d.SweepMaxStates

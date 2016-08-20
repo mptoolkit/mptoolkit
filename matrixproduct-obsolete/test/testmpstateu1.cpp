@@ -46,8 +46,8 @@ int main()
    MatrixOperator FullIdent1(FB1.Basis1(), FB1.Basis1(), QN(0));
    for (std::size_t i = 0; i < FB1.Basis1().size(); ++i)
    {
-      set_element(FullIdent1.data(), i, i, 
-		  LinearAlgebra::identity_matrix<double>(1));
+      set_element(FullIdent1.data(), i, i,
+                  LinearAlgebra::identity_matrix<double>(1));
    }
 
    CHECK_CLOSE(scalar_prod(FB1, herm(FB1)), FullIdent1);
@@ -62,8 +62,8 @@ int main()
    MatrixOperator FullIdent2(FB2.Basis2(), FB2.Basis2(), QN(0));
    for (std::size_t i = 0; i < FB2.Basis2().size(); ++i)
    {
-      set_element(FullIdent2.data(), i, i, 
-		  LinearAlgebra::identity_matrix<double>(1));
+      set_element(FullIdent2.data(), i, i,
+                  LinearAlgebra::identity_matrix<double>(1));
    }
 
    CHECK_CLOSE(scalar_prod(herm(FB2), FB2), FullIdent2);

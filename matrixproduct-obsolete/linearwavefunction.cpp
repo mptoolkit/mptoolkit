@@ -31,14 +31,14 @@ LinearWavefunction::Basis2() const
    return Data.back().lock()->Basis2();
 }
 
-QuantumNumbers::QuantumNumber 
+QuantumNumbers::QuantumNumber
 LinearWavefunction::TransformsAs() const
 {
    CHECK(this->is_irreducible());
    return this->Basis1()[0];
 }
 
-bool 
+bool
 LinearWavefunction::is_irreducible() const
 {
    return this->Basis1().size() == 1;
@@ -50,13 +50,13 @@ void LinearWavefunction::normalize()
    Data.front() = new MPStateComponent((1.0 / norm_frob(*p)) * (*p));
 }
 
-LinearWavefunction::value_type 
+LinearWavefunction::value_type
 LinearWavefunction::get_front() const
 {
    return *Data.front().lock();
 }
 
-LinearWavefunction::value_type 
+LinearWavefunction::value_type
 LinearWavefunction::get_back() const
 {
    return *Data.back().lock();
@@ -157,7 +157,7 @@ LinearWavefunction operator+(LinearWavefunction const& x, LinearWavefunction con
       ++xi;
       ++yi;
    }
-   
+
    MatrixOperator M = CollapseBasis(Result.Basis1());
    Result = inject_left_old_interface(M, Result);
    M = M * herm(CollapseBasis(M.Basis2()));
@@ -222,8 +222,8 @@ MatrixOperator transfer_from_right(MatrixOperator const& m, LinearWavefunction c
 }
 
 MatrixOperator
-operator_prod(HermitianProxy<LinearWavefunction> const& A, 
-              MatrixOperator const& m, 
+operator_prod(HermitianProxy<LinearWavefunction> const& A,
+              MatrixOperator const& m,
               LinearWavefunction const& B)
 {
    PRECONDITION_EQUAL(A.base().size(), B.size());
@@ -241,7 +241,7 @@ operator_prod(HermitianProxy<LinearWavefunction> const& A,
 
 MatrixOperator
 operator_prod(LinearWavefunction const& A,
-              MatrixOperator const& m, 
+              MatrixOperator const& m,
               HermitianProxy<LinearWavefunction> const& B)
 {
    PRECONDITION_EQUAL(A.size(), B.base().size());
@@ -290,8 +290,8 @@ overlap_conj(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2)
 }
 
 MPMatrix
-reduced_matrix_element(LinearWavefunction const& Psi1, 
-                       LinearOperator const& M, 
+reduced_matrix_element(LinearWavefunction const& Psi1,
+                       LinearOperator const& M,
                        LinearWavefunction const& Psi2)
 {
    CHECK_EQUAL(Psi1.GetSymmetryList(), Psi2.GetSymmetryList());
@@ -310,8 +310,8 @@ reduced_matrix_element(LinearWavefunction const& Psi1,
 }
 
 MPMatrix
-reduced_matrix_element_conj(LinearWavefunction const& Psi1, 
-                            LinearOperator const& M, 
+reduced_matrix_element_conj(LinearWavefunction const& Psi1,
+                            LinearOperator const& M,
                             LinearWavefunction const& Psi2)
 {
    CHECK_EQUAL(Psi1.GetSymmetryList(), Psi2.GetSymmetryList());
@@ -330,8 +330,8 @@ reduced_matrix_element_conj(LinearWavefunction const& Psi1,
 }
 
 std::complex<double>
-expectation(LinearWavefunction const& Psi1, 
-            LinearOperator const& M, 
+expectation(LinearWavefunction const& Psi1,
+            LinearOperator const& M,
             LinearWavefunction const& Psi2)
 {
    MPMatrix E = reduced_matrix_element(Psi1, M, Psi2);
@@ -348,8 +348,8 @@ expectation(LinearWavefunction const& Psi1,
 }
 
 std::complex<double>
-expectation_conj(LinearWavefunction const& Psi1, 
-                 LinearOperator const& M, 
+expectation_conj(LinearWavefunction const& Psi1,
+                 LinearOperator const& M,
                  LinearWavefunction const& Psi2)
 {
    MPMatrix E = reduced_matrix_element_conj(Psi1, M, Psi2);
@@ -365,7 +365,7 @@ expectation_conj(LinearWavefunction const& Psi1,
    return Result;
 }
 
-LinearWavefunction inject_left_old_interface(MatrixOperator& M, 
+LinearWavefunction inject_left_old_interface(MatrixOperator& M,
                                              LinearWavefunction const& Psi)
 {
    LinearWavefunction Result(Psi.GetSymmetryList());
@@ -380,7 +380,7 @@ LinearWavefunction inject_left_old_interface(MatrixOperator& M,
    return Result;
 }
 
-LinearWavefunction inject_right_old_interface( LinearWavefunction const& Psi, 
+LinearWavefunction inject_right_old_interface( LinearWavefunction const& Psi,
                                                MatrixOperator& M)
 {
    LinearWavefunction Result(Psi.GetSymmetryList());
@@ -395,7 +395,7 @@ LinearWavefunction inject_right_old_interface( LinearWavefunction const& Psi,
    return Result;
 }
 
-LinearWavefunction prod_helper(MPOperator::const_iterator Mi, 
+LinearWavefunction prod_helper(MPOperator::const_iterator Mi,
                                LinearWavefunction::const_iterator Pi,
                                MPOperator::const_iterator Mend,
                                LinearWavefunction::const_iterator Pend,
@@ -404,7 +404,7 @@ LinearWavefunction prod_helper(MPOperator::const_iterator Mi,
    LinearWavefunction Result(Pi->GetSymmetryList());
    while (Pi != Pend)
    {
-      ProductBasis<BasisList, VectorBasis> B2 = 
+      ProductBasis<BasisList, VectorBasis> B2 =
          make_product_basis(Mi->Basis2(), Pi->Basis2());
       Result.push_back(mp_prod(*Mi, *Pi, B1, B2));
       B1 = B2;
@@ -419,7 +419,7 @@ LinearWavefunction prod(LinearOperator const& Op, LinearWavefunction const& Psi)
 {
    MPOperator::const_iterator Mi = Op.begin();
    LinearWavefunction::const_iterator Pi = Psi.begin();
-   ProductBasis<BasisList, VectorBasis> B1 = 
+   ProductBasis<BasisList, VectorBasis> B1 =
       make_product_basis(Mi->Basis1(), Pi->Basis1());
    LinearWavefunction Result = prod_helper(Mi, Pi, Op.end(), Psi.end(), B1);
 
@@ -438,7 +438,7 @@ LinearWavefunction prod(LinearOperator const& Op, LinearWavefunction const& Psi,
 {
    MPOperator::const_iterator Mi = Op.begin();
    LinearWavefunction::const_iterator Pi = Psi.begin();
-   ProductBasis<BasisList, VectorBasis> B1 = 
+   ProductBasis<BasisList, VectorBasis> B1 =
       make_product_basis(Mi->Basis1(), Pi->Basis1(), q);
    LinearWavefunction Result = prod_helper(Mi, Pi, Op.end(), Psi.end(), B1);
 
@@ -468,16 +468,16 @@ void truncate(LinearWavefunction& Psi, StatesInfo const& SInfo, bool ShowStates)
       M = ExpandBasis2(*I);
       DensityMatrix<MatrixOperator> DM(scalar_prod(M, herm(M)));
       TruncationInfo Info;
-      MatrixOperator U = 
-         DM.ConstructTruncator(DM.begin(), 
-                               TruncateFixTruncationErrorAbsolute(DM.begin(), 
+      MatrixOperator U =
+         DM.ConstructTruncator(DM.begin(),
+                               TruncateFixTruncationErrorAbsolute(DM.begin(),
                                                                   DM.end(),
                                                                   SInfo,
                                                                   Info));
       if (ShowStates)
          std::cerr << "bond=" << BondNr
-                   << ", states=" << Info.KeptStates() 
-                   << ", trunc=" << Info.TruncationError() 
+                   << ", states=" << Info.KeptStates()
+                   << ", trunc=" << Info.TruncationError()
                    << ", largest_discarded_evalue=" << Info.LargestDiscardedEigenvalue()
                    << '\n';
       *I = prod(*I, herm(U));
@@ -500,8 +500,8 @@ void truncate(LinearWavefunction& Psi, StatesInfo const& SInfo, bool ShowStates)
 void project(LinearWavefunction& x, QuantumNumbers::QuantumNumber const& q)
 {
    MatrixOperator U = CollapseBasis(x.Basis1());
-   unsigned i = std::distance(U.Basis1().Basis().begin(), 
-                              std::find(U.Basis1().Basis().begin(), 
+   unsigned i = std::distance(U.Basis1().Basis().begin(),
+                              std::find(U.Basis1().Basis().begin(),
                                         U.Basis1().Basis().end(), q));
 
    if (i == U.Basis1().size())  // if q does not exist in the basis the result is zero

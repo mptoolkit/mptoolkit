@@ -43,8 +43,8 @@ namespace LinearAlgebra
 // Postcondition:
 // Satisfies m * result' = rhs
 
-template <typename M1, typename M2, 
-	  typename M1i = typename interface<M1>::type, 
+template <typename M1, typename M2,
+          typename M1i = typename interface<M1>::type,
           typename M2i = typename interface<M2>::type>
 struct ImplementLinearSolveSPD {};
 
@@ -63,10 +63,10 @@ LinearSolveSPD(M1 const& m, M2 const& rhs);
 // and RHS the different solutions as rows.
 
 template <typename M1, typename M2>
-Matrix<std::complex<double>, ColMajor> 
+Matrix<std::complex<double>, ColMajor>
 LinearSolveHPD(M1 const& m, M2 const& rhs,
-	       typename boost::enable_if<is_matrix<M1> >::type* = 0,
-	       typename boost::enable_if<is_matrix<M2> >::type* = 0);
+               typename boost::enable_if<is_matrix<M1> >::type* = 0,
+               typename boost::enable_if<is_matrix<M2> >::type* = 0);
 
 //
 // LinearSolve
@@ -80,7 +80,7 @@ LinearSolveHPD(M1 const& m, M2 const& rhs,
 // Satisfies m * result' = rhs
 
 template <typename M1, typename M2>
-Matrix<double, ColMajor> 
+Matrix<double, ColMajor>
 LinearSolve(M1 const& m, M2 const& rhs,
             typename boost::enable_if<is_matrix<M1> >::type* = 0,
             typename boost::enable_if<is_matrix<M2> >::type* = 0);
@@ -91,7 +91,7 @@ LinearSolve(M1 const& m, M2 const& rhs,
 // Least squares fit to a system of equations
 
 template <typename M, typename V>
-Vector<double> 
+Vector<double>
 LeastSquares(M const& m, V const& v,
             typename boost::enable_if<is_matrix<M> >::type* = 0,
             typename boost::enable_if<is_vector<V> >::type* = 0);
@@ -103,7 +103,7 @@ LeastSquares(M const& m, V const& v,
 // Returns the residual norm and the solution vector.
 //
 // Tikhonov regularization finds the solution x that minimizes ||Ax-b|| + alpha||x||
-// where ||.|| is the vector 2-norm, and alpha is positive.  
+// where ||.|| is the vector 2-norm, and alpha is positive.
 // This is implemented via SVD of A.
 // Let A = UDV^\dagger, with D diagonal with entries d_i.
 // Then the regularized solution is x = V X U^\dagger b,
@@ -115,7 +115,7 @@ LeastSquares(M const& m, V const& v,
 
 std::pair<double, Vector<std::complex<double>>>
 LeastSquaresRegularized(Matrix<std::complex<double>> const& A, Vector<std::complex<double>> const& b,
-			double alpha = 1E-15);
+                        double alpha = 1E-15);
 
 //
 // SingularValueDecomposition
@@ -297,7 +297,7 @@ struct ImplementGeneralizedEigenSymmetric {};
 template <typename A, typename B, typename Eigenval, typename Eigenvec>
 inline
 typename ImplementGeneralizedEigenSymmetric<A,B,Eigenval, Eigenvec>::result_type
-GeneralizedEigenSymmetric(A const& a, B const& b, 
+GeneralizedEigenSymmetric(A const& a, B const& b,
                           Eigenval& eigenval, Eigenvec& eigenvec,
                           Range const& Which, double abstol = 2 * std::numeric_limits<double>::min())
 {
@@ -307,7 +307,7 @@ GeneralizedEigenSymmetric(A const& a, B const& b,
 template <typename A, typename B, typename Eigenval, typename Eigenvec>
 inline
 typename ImplementGeneralizedEigenSymmetric<A,B,Eigenval, Eigenvec>::result_type
-GeneralizedEigenHermitian(A const& a, B const& b, 
+GeneralizedEigenHermitian(A const& a, B const& b,
                           Eigenval& eigenval, Eigenvec& eigenvec,
                           Range const& Which, double abstol = 2 * std::numeric_limits<double>::min())
 {

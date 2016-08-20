@@ -18,7 +18,7 @@
 // ENDHEADER
 //
 // CenterWavefunction: Wrapper around a LinearWavefunction,
-// that adds a center matrix. 
+// that adds a center matrix.
 //
 
 #if !defined(MPWAVEFUNCTION_H_FUIYT49786Y709)
@@ -76,55 +76,55 @@ class CenterWavefunction
 
       // returns the component at n sites from the left-hand edge.
       // LookupLeft(LeftSize()-1) returns Left()
-      ComponentType LookupLeft(int n) const 
-      { RANGE_CHECK(n, 0, int(LeftStack.size())); 
+      ComponentType LookupLeft(int n) const
+      { RANGE_CHECK(n, 0, int(LeftStack.size()));
       return std::size_t(n) == LeftStack.size() ? LeftTop : *LeftStack[n].load(); }
 
       void SetLeft(int n, ComponentType const& c)
-      { 
-         RANGE_CHECK(n, 0, int(LeftStack.size())); 
+      {
+         RANGE_CHECK(n, 0, int(LeftStack.size()));
          if (std::size_t(n) == LeftStack.size())
             LeftTop = c;
-         else LeftStack[n] = pvalue_ptr<ComponentType>(new ComponentType(c)); 
+         else LeftStack[n] = pvalue_ptr<ComponentType>(new ComponentType(c));
       }
 
 #if 0
-      ComponentType& LookupLeft(int n) 
-      { RANGE_CHECK(n, 0, int(LeftStack.size())); 
+      ComponentType& LookupLeft(int n)
+      { RANGE_CHECK(n, 0, int(LeftStack.size()));
       return std::size_t(n) == LeftStack.size() ? LeftTop : LeftStack[n]; }
 #endif
 
       // returns the component at n sites from the right-hand edge.
       // LookupRight(RightSize()-1) returns Right()
-      ComponentType LookupRight(int n) const 
-      { RANGE_CHECK(n, 0, int(RightStack.size())); 
+      ComponentType LookupRight(int n) const
+      { RANGE_CHECK(n, 0, int(RightStack.size()));
       return std::size_t(n) == RightStack.size() ? RightTop : *RightStack[n].load(); }
 
       void SetRight(int n, ComponentType const& c)
-      { 
-         RANGE_CHECK(n, 0, int(RightStack.size())); 
+      {
+         RANGE_CHECK(n, 0, int(RightStack.size()));
          if (std::size_t(n) == RightStack.size())
             RightTop = c;
-         else RightStack[n] = pvalue_ptr<ComponentType>(new ComponentType(c)); 
+         else RightStack[n] = pvalue_ptr<ComponentType>(new ComponentType(c));
       }
 
 #if 0
       ComponentType& LookupRight(int n)
-      { RANGE_CHECK(n, 0, int(RightStack.size())); 
+      { RANGE_CHECK(n, 0, int(RightStack.size()));
       return std::size_t(n) == RightStack.size() ? RightTop : RightStack[n]; }
 #endif
 
       ComponentType Lookup(int n) const
       {
-	 if (n < this->LeftSize()) return LookupLeft(n);
-	 else return LookupRight(this->size()-n-1);
+         if (n < this->LeftSize()) return LookupLeft(n);
+         else return LookupRight(this->size()-n-1);
       }
 
       ComponentType LookupLinear(int n) const
       {
-	 if (n < this->LeftSize()-1) return this->LookupLeft(n);
+         if (n < this->LeftSize()-1) return this->LookupLeft(n);
          else if (n == this->LeftSize()-1) return prod(this->Left(), this->Center());
-	 else return this->LookupRight(this->size()-n-1);
+         else return this->LookupRight(this->size()-n-1);
       }
 
       // Rotates the Center matrix to the left,
@@ -287,8 +287,8 @@ std::complex<double> overlap(CenterWavefunction const& A, CenterWavefunction con
 
 inline
 std::complex<double>
-expectation(CenterWavefunction const& Psi1, 
-            MPOperator const& M, 
+expectation(CenterWavefunction const& Psi1,
+            MPOperator const& M,
             CenterWavefunction const& Psi2)
 {
    return expectation(Psi1.AsLinearWavefunction(), M, Psi2.AsLinearWavefunction());
@@ -296,8 +296,8 @@ expectation(CenterWavefunction const& Psi1,
 
 inline
 std::complex<double>
-expectation(CenterWavefunction const& Psi1, 
-            SplitOperator const& M, 
+expectation(CenterWavefunction const& Psi1,
+            SplitOperator const& M,
             CenterWavefunction const& Psi2)
 {
    return expectation(Psi1.AsLinearWavefunction(), M.AsMPOperator(), Psi2.AsLinearWavefunction());

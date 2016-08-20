@@ -57,17 +57,17 @@ int main(int argc, char** argv)
    std::string CouplingFile;
 
    std::cout.precision(getenv_or_default("MP_PRECISION", 14));
- 
+
    try
    {
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("power", prog_opt::value(&Power),
-	  FormatDefault("Calculate expectation value of operator to this power", Power).c_str())
+         ("power", prog_opt::value(&Power),
+          FormatDefault("Calculate expectation value of operator to this power", Power).c_str())
          ("verbose,v", prog_opt::bool_switch(&Verbose),
           "extra debug output")
-	 ;
+         ;
 
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
@@ -82,10 +82,10 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || vm.count("operator") == 0)
       {
@@ -94,7 +94,7 @@ int main(int argc, char** argv)
          std::cerr << desc << '\n';
          return 1;
       }
-      
+
       long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
       pvalue_ptr<InfiniteWavefunction> PsiPtr = pheap::OpenPersistent(FName, CacheSize, true);
       InfiniteWavefunction Psi = *PsiPtr;
@@ -109,15 +109,15 @@ int main(int argc, char** argv)
       TriangularMPO Temp = Op;
       while (Power > 1)
       {
-	 Op = Op * Temp;
-	 --Power;
+         Op = Op * Temp;
+         --Power;
       }
 
       // Make a LinearWavefunction in the symmetric orthogonality constraint
       MatrixOperator Identity = MatrixOperator::make_identity(Psi.Psi.Basis1());
       MatrixOperator Rho = scalar_prod(Psi.C_right, herm(Psi.C_right));
       LinearWavefunction Phi = Psi.Psi; // no need to bugger around with C_old,C_right
- 
+
       Rho = delta_shift(Rho, Psi.QShift);
 
 #if 0
@@ -150,9 +150,9 @@ int main(int argc, char** argv)
 
       std::cout << "#degree #real #imag\n";
       for (int i = 0; i <= aNorm.degree(); ++i)
-	 {
-	    std::cout << i << ' ' << aNorm[i].real() << ' ' << aNorm[i].imag() << '\n';
-	 }
+         {
+            std::cout << i << ' ' << aNorm[i].real() << ' ' << aNorm[i].imag() << '\n';
+         }
       std::cout << std::endl;
 
       pheap::Shutdown();

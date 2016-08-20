@@ -52,7 +52,7 @@ class InfiniteMPO
       InfiniteMPO& operator=(double x) { Operator=std::complex<double>(x); return *this; }
       InfiniteMPO& operator=(TriangularMPO const& Op) { Operator=Op; return *this; }
       InfiniteMPO& operator=(ProductMPO const& Op) { Operator=Op; return *this; }
- 
+
       // returns a friendly name for this object, either 'complex', 'TriangularMPO',
       // 'ProductMPO'
       std::string name() const;
@@ -87,14 +87,14 @@ class InfiniteMPO
       typename Visitor::result_type
       apply_visitor(Visitor const& v) const
       {
-	 return Operator.apply_visitor(v);
+         return Operator.apply_visitor(v);
       }
 
       template <typename Visitor>
       typename Visitor::result_type
       apply_visitor(Visitor const& v)
       {
-	 return Operator.apply_visitor(v);
+         return Operator.apply_visitor(v);
       }
 #endif
 

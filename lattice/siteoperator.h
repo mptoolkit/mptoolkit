@@ -29,7 +29,7 @@ using Tensor::IrredTensor;
 struct LatticeCommute
 {
    enum Values { Fermionic = -1, None = 0, Bosonic = 1, Custom = 2 };
-   
+
    LatticeCommute() : Value_(None) {}
 
    LatticeCommute(Values v) : Value_(v) {}
@@ -42,18 +42,18 @@ struct LatticeCommute
       return *this;
    }
 
-   std::string SignOperator() const 
+   std::string SignOperator() const
    {
       if (Value_ == Fermionic)
-	 return "P";
+         return "P";
       else if (Value_ == Bosonic)
-	 return "I";
+         return "I";
       else if (Value_ == Custom)
-	 return SignOperator_;
+         return SignOperator_;
       PANIC("Undefined commutation operation");
       return "";
    }
-   
+
    Values Value_;
    std::string SignOperator_;
 };
@@ -64,11 +64,11 @@ LatticeCommute operator*(LatticeCommute x, LatticeCommute y)
    if (x.Value_ == LatticeCommute::Custom || y.Value_ == LatticeCommute::Custom)
    {
       if (x.SignOperator() == y.SignOperator())
-	 return LatticeCommute(LatticeCommute::Bosonic);
+         return LatticeCommute(LatticeCommute::Bosonic);
       else
-	 PANIC("unsupported custom commutation string")(x.SignOperator())(y.SignOperator());
+         PANIC("unsupported custom commutation string")(x.SignOperator())(y.SignOperator());
    }
-      
+
    return LatticeCommute(LatticeCommute::Values(int(x.Value_) * (int(y.Value_))));
 }
 
@@ -153,9 +153,9 @@ class SiteOperator : public IrredTensor<std::complex<double> >
       // To construct an operator that acts on a single site but is defined on
       // the whole lattice, it is necessary to know what the commutation relations are
       // for two operators acting on different sites.  In general this could be
-      // arbitrary, however we distinguish two common cases: 
+      // arbitrary, however we distinguish two common cases:
       //
-      // Bosonic operators commute and the lattice representation of a site operator S 
+      // Bosonic operators commute and the lattice representation of a site operator S
       // acting on site n is
       // I_1 \otimes ... \otimes I_{n-1} \otimes S_n \times I_{n+1} \otimes ...
       // where I_j is the identity operator acting on site j.
@@ -175,13 +175,13 @@ class SiteOperator : public IrredTensor<std::complex<double> >
       SiteOperator() {}
 
       SiteOperator(SiteBasis const& B, QuantumNumber const& q, LatticeCommute Com = LatticeCommute::None,
-		   std::string Description = "")
-	 : base_type(B, q), Basis_(B), Com_(Com), Description_(Description) {}
+                   std::string Description = "")
+         : base_type(B, q), Basis_(B), Com_(Com), Description_(Description) {}
 
       SiteOperator(SiteBasis const& B, base_type const& b, LatticeCommute Com = LatticeCommute::None,
-		   std::string Description = "")
-	 : base_type(b), Basis_(B), Com_(Com), Description_(Description)
-	 { CHECK_EQUAL(b.Basis1(), b.Basis2()); CHECK_EQUAL(B, b.Basis1()); }
+                   std::string Description = "")
+         : base_type(b), Basis_(B), Com_(Com), Description_(Description)
+         { CHECK_EQUAL(b.Basis1(), b.Basis2()); CHECK_EQUAL(B, b.Basis1()); }
 
       SiteBasis const& Basis() const { return Basis_; }
       SiteBasis const& Basis1() const { return Basis_; }
@@ -189,7 +189,7 @@ class SiteOperator : public IrredTensor<std::complex<double> >
 
       int Lookup(std::string const& Ident) const { return Basis_.Lookup(Ident); }
 
-      value_type operator()(std::string const& si, std::string const& sj) const 
+      value_type operator()(std::string const& si, std::string const& sj) const
       { return this->operator()(Basis_.Lookup(si), Basis_.Lookup(sj)); }
 
       value_type& operator()(std::string const& si, std::string const& sj)
@@ -203,7 +203,7 @@ class SiteOperator : public IrredTensor<std::complex<double> >
       void SetCommute(LatticeCommute x) { Com_ = x; }
 
       std::string const& description() const { return Description_; }
-      std::string description_or_none() const 
+      std::string description_or_none() const
       { return Description_.empty() ? "(no description)" : Description_; }
       void set_description(std::string const& s) { Description_ = s; }
 
@@ -280,8 +280,8 @@ struct NormFrobSq<SiteOperator>
    typedef SiteOperator const& argument_type;
    typedef double result_type;
 
-   result_type operator()(argument_type x) const 
-   { 
+   result_type operator()(argument_type x) const
+   {
       return norm_frob_sq(x.base());
    }
 };
@@ -292,7 +292,7 @@ struct Herm<SiteOperator>
    typedef SiteOperator const& argument_type;
    typedef HermitianProxy<SiteOperator> result_type;
 
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    { return result_type(x); }
 };
 
@@ -302,7 +302,7 @@ struct Conj<SiteOperator>
    typedef SiteOperator const& argument_type;
    typedef SiteOperator result_type;
 
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    { return SiteOperator(x.Basis(), conj(x.base()), x.Commute()); }
 };
 
@@ -312,7 +312,7 @@ struct Adjoint<SiteOperator>
    typedef SiteOperator const& argument_type;
    typedef SiteOperator result_type;
 
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    { return SiteOperator(x.Basis(), adjoint(x.base()), x.Commute()); }
 };
 
@@ -322,7 +322,7 @@ struct InvAdjoint<SiteOperator>
    typedef SiteOperator const& argument_type;
    typedef SiteOperator result_type;
 
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    { return SiteOperator(x.Basis(), inv_adjoint(x.base()), x.Commute()); }
 };
 
@@ -332,7 +332,7 @@ struct Negate<SiteOperator>
    typedef SiteOperator const& argument_type;
    typedef SiteOperator result_type;
 
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    { return SiteOperator(x.Basis(), -x.base(), x.Commute()); }
 };
 
@@ -342,8 +342,8 @@ struct Exp<SiteOperator>
    typedef SiteOperator const& argument_type;
    typedef SiteOperator result_type;
 
-   result_type operator()(argument_type x) const 
-   { 
+   result_type operator()(argument_type x) const
+   {
       SiteOperator Result(x);
       Result.base() = Tensor::Exponentiate(x.base());
       return Result;
@@ -354,7 +354,7 @@ struct Exp<SiteOperator>
 // binary operators
 
 template <>
-struct Equal<SiteOperator, SiteOperator> : Equal<IrredTensor<std::complex<double> >, 
+struct Equal<SiteOperator, SiteOperator> : Equal<IrredTensor<std::complex<double> >,
                                                  IrredTensor<std::complex<double> > > {};
 
 template <>
@@ -364,10 +364,10 @@ struct Addition<SiteOperator, SiteOperator>
    typedef SiteOperator const& second_argument_type;
    typedef SiteOperator result_type;
 
-   result_type operator()(first_argument_type x, second_argument_type y) const 
-   { 
+   result_type operator()(first_argument_type x, second_argument_type y) const
+   {
       PRECONDITION_EQUAL(x.Commute(), y.Commute());
-      return SiteOperator(x.Basis(), x.base() + y.base(), x.Commute()); 
+      return SiteOperator(x.Basis(), x.base() + y.base(), x.Commute());
    }
 };
 
@@ -378,10 +378,10 @@ struct Subtraction<SiteOperator, SiteOperator>
    typedef SiteOperator const& second_argument_type;
    typedef SiteOperator result_type;
 
-   result_type operator()(first_argument_type x, second_argument_type y) const 
-   { 
+   result_type operator()(first_argument_type x, second_argument_type y) const
+   {
       PRECONDITION_EQUAL(x.Commute(), y.Commute());
-      return SiteOperator(x.Basis(), x.base() - y.base(), x.Commute()); 
+      return SiteOperator(x.Basis(), x.base() - y.base(), x.Commute());
    }
 };
 
@@ -392,9 +392,9 @@ struct Multiplication<SiteOperator, int>
    typedef int second_argument_type;
    typedef SiteOperator result_type;
 
-   result_type operator()(first_argument_type x, second_argument_type y) const 
-   { 
-      return SiteOperator(x.Basis(), x.base() * double(y), x.Commute()); 
+   result_type operator()(first_argument_type x, second_argument_type y) const
+   {
+      return SiteOperator(x.Basis(), x.base() * double(y), x.Commute());
    }
 };
 
@@ -405,9 +405,9 @@ struct Multiplication<int, SiteOperator>
    typedef SiteOperator const& second_argument_type;
    typedef SiteOperator result_type;
 
-   result_type operator()(first_argument_type x, second_argument_type y) const 
-   { 
-      return SiteOperator(y.Basis(), double(x) * y.base(), y.Commute()); 
+   result_type operator()(first_argument_type x, second_argument_type y) const
+   {
+      return SiteOperator(y.Basis(), double(x) * y.base(), y.Commute());
    }
 };
 
@@ -418,9 +418,9 @@ struct Multiplication<SiteOperator, double>
    typedef double second_argument_type;
    typedef SiteOperator result_type;
 
-   result_type operator()(first_argument_type x, second_argument_type y) const 
-   { 
-      return SiteOperator(x.Basis(), x.base() * y, x.Commute()); 
+   result_type operator()(first_argument_type x, second_argument_type y) const
+   {
+      return SiteOperator(x.Basis(), x.base() * y, x.Commute());
    }
 };
 
@@ -431,9 +431,9 @@ struct Multiplication<double, SiteOperator>
    typedef SiteOperator const& second_argument_type;
    typedef SiteOperator result_type;
 
-   result_type operator()(first_argument_type x, second_argument_type y) const 
-   { 
-      return SiteOperator(y.Basis(), x * y.base(), y.Commute()); 
+   result_type operator()(first_argument_type x, second_argument_type y) const
+   {
+      return SiteOperator(y.Basis(), x * y.base(), y.Commute());
    }
 };
 
@@ -444,9 +444,9 @@ struct Multiplication<SiteOperator, std::complex<double> >
    typedef std::complex<double> second_argument_type;
    typedef SiteOperator result_type;
 
-   result_type operator()(first_argument_type x, second_argument_type y) const 
-   { 
-      return SiteOperator(x.Basis(), x.base() * y, x.Commute()); 
+   result_type operator()(first_argument_type x, second_argument_type y) const
+   {
+      return SiteOperator(x.Basis(), x.base() * y, x.Commute());
    }
 };
 
@@ -457,9 +457,9 @@ struct Multiplication<std::complex<double>, SiteOperator>
    typedef SiteOperator const& second_argument_type;
    typedef SiteOperator result_type;
 
-   result_type operator()(first_argument_type x, second_argument_type y) const 
-   { 
-      return SiteOperator(y.Basis(), x * y.base(), y.Commute()); 
+   result_type operator()(first_argument_type x, second_argument_type y) const
+   {
+      return SiteOperator(y.Basis(), x * y.base(), y.Commute());
    }
 };
 
@@ -470,8 +470,8 @@ struct InnerProd<SiteOperator, SiteOperator>
    typedef SiteOperator const& second_argument_type;
    typedef std::complex<double> result_type;
 
-   result_type operator()(first_argument_type x, second_argument_type y) const 
-   { 
+   result_type operator()(first_argument_type x, second_argument_type y) const
+   {
       return inner_prod(x.base(), y.base());
    }
 };
@@ -483,10 +483,10 @@ struct ScalarProd<SiteOperator, HermitianProxy<SiteOperator> >
    typedef HermitianProxy<SiteOperator> const& second_argument_type;
    typedef SiteOperator result_type;
 
-   result_type operator()(first_argument_type x, second_argument_type y) const 
-   { 
-      return SiteOperator(x.Basis(), scalar_prod(x.base(), herm(y.base().base())), 
-                          x.Commute()*y.base().Commute()); 
+   result_type operator()(first_argument_type x, second_argument_type y) const
+   {
+      return SiteOperator(x.Basis(), scalar_prod(x.base(), herm(y.base().base())),
+                          x.Commute()*y.base().Commute());
    }
 };
 
@@ -497,10 +497,10 @@ struct ScalarProd<HermitianProxy<SiteOperator>, SiteOperator>
    typedef SiteOperator const& second_argument_type;
    typedef SiteOperator result_type;
 
-   result_type operator()(first_argument_type x, second_argument_type y) const 
-   { 
-      return SiteOperator(y.Basis(), scalar_prod(herm(x.base().base()), y.base()), 
-                          x.base().Commute()*y.Commute()); 
+   result_type operator()(first_argument_type x, second_argument_type y) const
+   {
+      return SiteOperator(y.Basis(), scalar_prod(herm(x.base().base()), y.base()),
+                          x.base().Commute()*y.Commute());
    }
 };
 
@@ -514,7 +514,7 @@ struct IrredProd<SiteOperator, SiteOperator, Nest>
    IrredProd() {}
    IrredProd(QuantumNumbers::QuantumNumber const& Trans) : Trans_(Trans) {}
 
-   result_type operator()(first_argument_type x, second_argument_type y) const 
+   result_type operator()(first_argument_type x, second_argument_type y) const
    {
       return SiteOperator(x.Basis(), prod(x.base(), y.base(), Trans_), x.Commute()*y.Commute());
    }
@@ -529,14 +529,14 @@ struct Multiplication<SiteOperator, SiteOperator> : IrredProd<SiteOperator, Site
 
 } // namespace LinearAlgebra
 
-SiteOperator 
+SiteOperator
 tensor_prod(SiteOperator const& S1, SiteOperator const& S2,
-	    SiteProductBasis const& SPBasis, QuantumNumber const& q);
+            SiteProductBasis const& SPBasis, QuantumNumber const& q);
 
-SiteOperator 
+SiteOperator
 tensor_prod(SiteOperator const& S1, SiteOperator const& S2, QuantumNumber const& q);
 
-SiteOperator 
+SiteOperator
 tensor_prod(SiteOperator const& S1, SiteOperator const& S2);
 
 std::ostream& operator<<(std::ostream& out, SiteOperator const& Op);

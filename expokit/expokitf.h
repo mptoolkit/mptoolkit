@@ -63,7 +63,7 @@ void F77NAME(zgpadm)(integer const* ideg, integer const* m, double const* t,
                      complex* restrict work, integer const* lwork,
                      integer* restrict ipiv, integer* restrict iexph,
                      integer* restrict ns, integer* restrict iflag);
-                    
+
 } // extern "C"
 
 } // namespace raw
@@ -75,8 +75,8 @@ void zgpadm(integer ideg, integer m, double t, std::complex<double> const* H, in
             integer& restrict iexph, integer& restrict ns, integer& restrict iflag)
 {
    TRACE_EXPOKIT("zgpadm")(ideg)(m)(t)(H)(ldh)(work)(lwork)(ipiv)(iexph)(ns)(iflag);
-   raw::F77NAME(zgpadm)(&ideg, &m, &t, reinterpret_cast<complex const*>(H), 
-                        &ldh, reinterpret_cast<complex*>(work), &lwork, 
+   raw::F77NAME(zgpadm)(&ideg, &m, &t, reinterpret_cast<complex const*>(H),
+                        &ldh, reinterpret_cast<complex*>(work), &lwork,
                         ipiv, &iexph, &ns, &iflag);
 }
 
@@ -92,7 +92,7 @@ void zgpadm(integer ideg, integer m, double t, std::complex<double> const* H, in
 
 *-----Purpose----------------------------------------------------------|
 *
-*     Computes exp(t*H), the matrix exponential of a general complex 
+*     Computes exp(t*H), the matrix exponential of a general complex
 *     matrix in full, using the irreducible rational Pade approximation
 *     to the exponential exp(z) = r(z) = (+/-)( I + 2*(q(z)/p(z)) ),
 *     combined with scaling-and-squaring.
@@ -107,7 +107,7 @@ void zgpadm(integer ideg, integer m, double t, std::complex<double> const* H, in
 *     H(ldh,m)  : (input) argument matrix.
 *
 *     t         : (input) time-scale (can be < 0).
-*                  
+*
 *     wsp(lwsp) : (workspace/output) lwsp .ge. 4*m*m+ideg+1.
 *
 *     ipiv(m)   : (workspace)
@@ -115,7 +115,7 @@ void zgpadm(integer ideg, integer m, double t, std::complex<double> const* H, in
 *>>>> iexph     : (output) number such that wsp(iexph) points to exp(tH)
 *                 i.e., exp(tH) is located at wsp(iexph ... iexph+m*m-1)
 *                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-*                 NOTE: if the routine was called with wsp(iptr), 
+*                 NOTE: if the routine was called with wsp(iptr),
 *                       then exp(tH) will start at wsp(iptr+iexph-1).
 *
 *     ns        : (output) number of scaling-squaring used.

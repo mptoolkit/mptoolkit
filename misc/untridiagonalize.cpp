@@ -59,7 +59,7 @@ int main(int argc, char** argv)
    Matrix<double> Mtail = M(range(1,d), range(1,d));
    Matrix<double> U = Mtail;
    Vector<double> Eigen = DiagonalizeHermitian(U);
-   
+
    Matrix<double> Ufull(d,d,0.0);
    Ufull(0,0) = 1;
    Ufull(range(1,d), range(1,d)) = U;

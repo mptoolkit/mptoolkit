@@ -44,8 +44,8 @@ int main(int argc, char** argv)
     prog_opt::variables_map vm;
     prog_opt::store(prog_opt::command_line_parser(argc, argv).
                     options(desc).style(prog_opt::command_line_style::default_style ^
-					prog_opt::command_line_style::allow_guessing).
-		    run(), vm);
+                                        prog_opt::command_line_style::allow_guessing).
+                    run(), vm);
     prog_opt::notify(vm);
 
     OperatorDescriptions OpDescriptions;
@@ -76,7 +76,7 @@ int main(int argc, char** argv)
     UnitCell Cell(cSite.GetSymmetryList(), cSite, fSite);
     InfiniteLattice Lattice(&Cell);
 
-    UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), S(Cell, "S"), 
+    UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), S(Cell, "S"),
        p(Cell, "p"), pH(Cell, "pH"), Pi(Cell, "Pi");
 
     // note: need to define this *BEFORE* constructing the InfiniteLattice object

@@ -23,22 +23,22 @@
 PStream::opstream& operator<<(PStream::opstream& out, SplitKrylov const& s)
 {
    return out << s.Krylov
-	      << s.H
-	      << s.kn1_H_kn
-	      << s.ki_kj
-	      << s.sub_H
-	      << s.Ident
+              << s.H
+              << s.kn1_H_kn
+              << s.ki_kj
+              << s.sub_H
+              << s.Ident
       ;
 }
 
 PStream::ipstream& operator>>(PStream::ipstream& in, SplitKrylov& s)
 {
    return in >> s.Krylov
-	     >> s.H
-	     >> s.kn1_H_kn
-	     >> s.ki_kj
-	     >> s.sub_H
-	     >> s.Ident
+             >> s.H
+             >> s.kn1_H_kn
+             >> s.ki_kj
+             >> s.sub_H
+             >> s.Ident
       ;
 }
 
@@ -67,7 +67,7 @@ void SplitKrylov::ResetK0(MPWavefunction const& Psi)
 
       for (std::size_t j = i+1; j < Krylov.size(); ++j)
       {
-	 InitializeTransformStack(ki_kj(i,j), Krylov[i], Krylov[j]);
+         InitializeTransformStack(ki_kj(i,j), Krylov[i], Krylov[j]);
       }
    }
 }
@@ -90,7 +90,7 @@ void SplitKrylov::ShiftRightAndExpand()
    {
       for (std::size_t j = i+1; j < Krylov.size(); ++j)
       {
-	 TransformStackRotateRight(ki_kj(i,j), Krylov[i], Krylov[j]);
+         TransformStackRotateRight(ki_kj(i,j), Krylov[i], Krylov[j]);
       }
    }
    this->DebugCheckBasis();
@@ -115,7 +115,7 @@ void SplitKrylov::ShiftLeftAndExpand()
    {
       for (std::size_t j = i+1; j < Krylov.size(); ++j)
       {
-	 TransformStackRotateLeft(ki_kj(i,j), Krylov[i], Krylov[j]);
+         TransformStackRotateLeft(ki_kj(i,j), Krylov[i], Krylov[j]);
       }
    }
    this->DebugCheckBasis();
@@ -138,7 +138,7 @@ void SplitKrylov::ExpandLeft()
    {
       for (std::size_t j = i+1; j < Krylov.size(); ++j)
       {
-	 TransformStackUpdateLeft(ki_kj(i,j), Krylov[i], Krylov[j]);
+         TransformStackUpdateLeft(ki_kj(i,j), Krylov[i], Krylov[j]);
       }
    }
    this->DebugCheckBasis();
@@ -161,7 +161,7 @@ void SplitKrylov::ExpandRight()
    {
       for (std::size_t j = i+1; j < Krylov.size(); ++j)
       {
-	 TransformStackUpdateRight(ki_kj(i,j), Krylov[i], Krylov[j]);
+         TransformStackUpdateRight(ki_kj(i,j), Krylov[i], Krylov[j]);
       }
    }
    this->DebugCheckBasis();
@@ -175,14 +175,14 @@ SplitKrylov::ConstuctWavefunctionFromRitz(Vector<std::complex<double> > const& x
 
    for (std::size_t i = 1; i < x.size(); +i)
    {
-      Result += x[i] * triple_prod(ki_kj(0,i).Left(), 
-				   Krylov[i].Center(), 
-				   herm(ki_kj(0,i).Right()));
+      Result += x[i] * triple_prod(ki_kj(0,i).Left(),
+                                   Krylov[i].Center(),
+                                   herm(ki_kj(0,i).Right()));
    }
    return Result;
 }
 
-MatrixOperator 
+MatrixOperator
 SplitKrylov::ConstructLeftDensityMatrixFromRitz(Vector<std::complex<double> > const& x)
 {
    using LinearAlgebra::norm_2_sq;
@@ -191,46 +191,46 @@ SplitKrylov::ConstructLeftDensityMatrixFromRitz(Vector<std::complex<double> > co
    // now the (0,j) and (j,0) entries
    for (std::size_t j = 1; j < x.size(); ++j)
    {
-      MatrixOperator Next = x[0] * conj(x[j]) * scalar_prod(triple_prod(Krylov[0].Center(), 
-									ki_kj(0,j).Left(),
-									herm(Krylov[j].Center())),
-							    herm(ki_kj(0,j).Left()));
+      MatrixOperator Next = x[0] * conj(x[j]) * scalar_prod(triple_prod(Krylov[0].Center(),
+                                                                        ki_kj(0,j).Left(),
+                                                                        herm(Krylov[j].Center())),
+                                                            herm(ki_kj(0,j).Left()));
       Rho += Next + adjoint(Next);
    }
    // Now the entries (i,j) and (j,i), for j >= i > 1
    for (std::size_t i = 1; i < x.size(); ++i)
    {
       // the (i,i) entry
-      Rho += x[i] * conj(x[i]) * triple_prod(ki_kj(0,i).Left(), 
-					     scalar_prod(Krylov[i].Center(), 
-							 herm(Krylov[i].Center())),
-					     herm(ki_kj(0,i).Left()));
+      Rho += x[i] * conj(x[i]) * triple_prod(ki_kj(0,i).Left(),
+                                             scalar_prod(Krylov[i].Center(),
+                                                         herm(Krylov[i].Center())),
+                                             herm(ki_kj(0,i).Left()));
       // (i,j) for j > i
       for (std::size_t j = i+1; j < x.size(); ++j)
       {
-	 MatrixOperator Next = x[i] * conj(x[0]) * triple_prod(ki_kj(0,i).Left(),
-								triple_prod(Krylov[i].Center(),
-									    ki_kj(i,j).Left(),
-									    herm(Krylov[j].Center())),
-								herm(ki_kj(0,j).Left()));
-	 Rho += Next + adjoint(Next);
+         MatrixOperator Next = x[i] * conj(x[0]) * triple_prod(ki_kj(0,i).Left(),
+                                                                triple_prod(Krylov[i].Center(),
+                                                                            ki_kj(i,j).Left(),
+                                                                            herm(Krylov[j].Center())),
+                                                                herm(ki_kj(0,j).Left()));
+         Rho += Next + adjoint(Next);
       }
    }
 
    return Rho;
 }
 
-MatrixOperator 
+MatrixOperator
 SplitKrylov::ConstructRightDensityMatrixFromRitz(Vector<std::complex<double> > const& x)
 {
    MatrixOperator Rho;
    // now the (0,j) and (j,0) entries
    for (std::size_t j = 1; j < x.size(); ++j)
    {
-      Rho += x[0] * conj(x[j]) * scalar_prod(triple_prod(herm(Krylov[0].Center()), 
-							 ki_kj(0,j).Right(),
-							 Krylov[j].Center()),
-					     herm(ki_kj(0,j).Right()));
+      Rho += x[0] * conj(x[j]) * scalar_prod(triple_prod(herm(Krylov[0].Center()),
+                                                         ki_kj(0,j).Right(),
+                                                         Krylov[j].Center()),
+                                             herm(ki_kj(0,j).Right()));
    }
    // Now the entries (i,j) and (j,i), for j >= i > 1
    for (std::size_t i = 1; i < x.size(); ++i)
@@ -238,14 +238,14 @@ SplitKrylov::ConstructRightDensityMatrixFromRitz(Vector<std::complex<double> > c
       // (i,j) for j > i
       for (std::size_t j = i+1; j < x.size(); ++j)
       {
-	 Rho += x[i] * conj(x[0]) * triple_prod(herm(ki_kj(0,i).Right()),
-						triple_prod(herm(Krylov[i].Center()),
-							    ki_kj(i,j).Right(),
-							    Krylov[j].Center()),
-						ki_kj(0,j).Right());
+         Rho += x[i] * conj(x[0]) * triple_prod(herm(ki_kj(0,i).Right()),
+                                                triple_prod(herm(Krylov[i].Center()),
+                                                            ki_kj(i,j).Right(),
+                                                            Krylov[j].Center()),
+                                                ki_kj(0,j).Right());
       }
    }
-   
+
    // The (j,i) components are now the hermitian conjugate
    Rho += adjoint(Rho);
 
@@ -254,10 +254,10 @@ SplitKrylov::ConstructRightDensityMatrixFromRitz(Vector<std::complex<double> > c
    // the (i,i) entries
    for (std::size_t i = 1; i < x.size(); ++i)
    {
-      Rho += x[i] * conj(x[i]) * triple_prod(herm(ki_kj(0,i).Right()), 
-					     scalar_prod(herm(Krylov[i].Center()), 
-							 Krylov[i].Center()),
-					     ki_kj(0,i).Right());
+      Rho += x[i] * conj(x[i]) * triple_prod(herm(ki_kj(0,i).Right()),
+                                             scalar_prod(herm(Krylov[i].Center()),
+                                                         Krylov[i].Center()),
+                                             ki_kj(0,i).Right());
    }
 
    return Rho;
@@ -272,27 +272,27 @@ void SplitKrylov::ConstructKrylovBasis()
 
    for (std::size_t i = 0; i < Krylov.size()-1; ++i)
    {
-      Krylov[i+1].Center() = operator_prod(conj(H.Center()), 
-					   kn1_H_kn[i].Left(),
-					   Krylov[i].Center(),
-					   herm(kn1_H_kn[i].Right()));
+      Krylov[i+1].Center() = operator_prod(conj(H.Center()),
+                                           kn1_H_kn[i].Left(),
+                                           Krylov[i].Center(),
+                                           herm(kn1_H_kn[i].Right()));
 #if 0
       Vector<MatrixOperator> kj_in_basis_i(i+1);
       Matrix<std::complex<double> > P(i+1, i+1);
       for (std::size_t j = 0; j <= i; ++j)
       {
-	 kj_in_basis_i[j] = triple_prod(herm(ki_kj(j,i+1).Left()), 
-					Krylov[j].Center(), 
-					ki_kj(j,i+1).Right());
+         kj_in_basis_i[j] = triple_prod(herm(ki_kj(j,i+1).Left()),
+                                        Krylov[j].Center(),
+                                        ki_kj(j,i+1).Right());
 
-	 for (int p = 0; p <= j; ++p)
-	 {
-	    P(p,j) = 
+         for (int p = 0; p <= j; ++p)
+         {
+            P(p,j) =
 
-	 sub_H(i,j) = inner_prod(kj_in_this_basis, Krylov[i+1].Center());
-	 sub_H(j,i) = conj(sub_H(i,j));
-	 Krylov[i+1].Center() -= (sub_H(i,j) / norm_frob_sq(kj_in_this_basis)) * kj_in_this_basis;
-	 //TRACE(sub_H(i,j))(inner_prod(kj_in_this_basis, Krylov[i+1].Center()))(i)(j);
+         sub_H(i,j) = inner_prod(kj_in_this_basis, Krylov[i+1].Center());
+         sub_H(j,i) = conj(sub_H(i,j));
+         Krylov[i+1].Center() -= (sub_H(i,j) / norm_frob_sq(kj_in_this_basis)) * kj_in_this_basis;
+         //TRACE(sub_H(i,j))(inner_prod(kj_in_this_basis, Krylov[i+1].Center()))(i)(j);
       }
 #endif
       // normalize the Krylov vector
@@ -301,22 +301,22 @@ void SplitKrylov::ConstructKrylovBasis()
 }
 
 void
-SplitKrylov::TruncateLeft(double MixFactor, MatrixOperator Rho_k0L, 
-			  MatrixOperator Rho_k0R, int MaxStates)
+SplitKrylov::TruncateLeft(double MixFactor, MatrixOperator Rho_k0L,
+                          MatrixOperator Rho_k0R, int MaxStates)
 {
    this->TruncateCommon(MixFactor, Rho_k0L, Rho_k0R, MaxStates, -1);
 }
 
 void
-SplitKrylov::TruncateRight(double MixFactor, MatrixOperator Rho_k0L, 
-			  MatrixOperator Rho_k0R, int MaxStates)
+SplitKrylov::TruncateRight(double MixFactor, MatrixOperator Rho_k0L,
+                          MatrixOperator Rho_k0R, int MaxStates)
 {
    this->TruncateCommon(MixFactor, Rho_k0L, Rho_k0R, MaxStates, 1);
 }
 
 void
-SplitKrylov::TruncateCommon(double MixFactor, MatrixOperator Rho_k0L, 
-			    MatrixOperator Rho_k0R, int MaxStates, int Direction)
+SplitKrylov::TruncateCommon(double MixFactor, MatrixOperator Rho_k0L,
+                            MatrixOperator Rho_k0R, int MaxStates, int Direction)
 {
    // Firstly, we construct the density operators
    std::vector<MatrixOperator> RhoL(Krylov.size());
@@ -335,32 +335,32 @@ SplitKrylov::TruncateCommon(double MixFactor, MatrixOperator Rho_k0L,
    {
       if (MixFactor > 0)
       {
-	 RhoL[i] = MixFactor * 
-	    operator_prod(trace_prod(prod(kn1_H_kn[i-1].Right(), RhoR[i-1]),
-				     herm(kn1_H_kn[i-1].Right())),
-			  kn1_H_kn[i-1].Left(),
-			  RhoL[i-1],
-			  herm(kn1_H_kn[i-1].Left()));
-	 RhoR[i] = MixFactor *
-	    operator_prod(trace_prod(prod(kn1_H_kn[i-1].Left(), RhoL[i-1]),
-				     herm(kn1_H_kn[i-1].Left())),
-			  kn1_H_kn[i-1].Right(),
-			  RhoR[i-1],
-			  herm(kn1_H_kn[i-1].Right()));
-	 
-	 if (MixFactor < 1)
-	 {
-	    RhoL[i] += (1.0-MixFactor) * scalar_prod(Krylov[i].Center(), herm(Krylov[i].Center()));
-	    RhoR[i] += (1.0-MixFactor) * scalar_prod(herm(Krylov[i].Center()), Krylov[i].Center());
-	 }
+         RhoL[i] = MixFactor *
+            operator_prod(trace_prod(prod(kn1_H_kn[i-1].Right(), RhoR[i-1]),
+                                     herm(kn1_H_kn[i-1].Right())),
+                          kn1_H_kn[i-1].Left(),
+                          RhoL[i-1],
+                          herm(kn1_H_kn[i-1].Left()));
+         RhoR[i] = MixFactor *
+            operator_prod(trace_prod(prod(kn1_H_kn[i-1].Left(), RhoL[i-1]),
+                                     herm(kn1_H_kn[i-1].Left())),
+                          kn1_H_kn[i-1].Right(),
+                          RhoR[i-1],
+                          herm(kn1_H_kn[i-1].Right()));
+
+         if (MixFactor < 1)
+         {
+            RhoL[i] += (1.0-MixFactor) * scalar_prod(Krylov[i].Center(), herm(Krylov[i].Center()));
+            RhoR[i] += (1.0-MixFactor) * scalar_prod(herm(Krylov[i].Center()), Krylov[i].Center());
+         }
       }
       else
       {
-	 // MixFactor == 0, no need for the other rho
-	 if (Direction == -1)
-	    RhoL[i] = scalar_prod(Krylov[i].Center(), herm(Krylov[i].Center()));
-	 else
-	    RhoR[i] = scalar_prod(herm(Krylov[i].Center()), Krylov[i].Center());
+         // MixFactor == 0, no need for the other rho
+         if (Direction == -1)
+            RhoL[i] = scalar_prod(Krylov[i].Center(), herm(Krylov[i].Center()));
+         else
+            RhoR[i] = scalar_prod(herm(Krylov[i].Center()), Krylov[i].Center());
       }
    }
 
@@ -369,14 +369,14 @@ SplitKrylov::TruncateCommon(double MixFactor, MatrixOperator Rho_k0L,
    {
       if (Direction == 1)
       {
-	 MatrixOperator U = this->ConstructRightTruncator(i, RhoR[i], MaxStates);
-	 this->TruncateKrylovRight(i, U);
+         MatrixOperator U = this->ConstructRightTruncator(i, RhoR[i], MaxStates);
+         this->TruncateKrylovRight(i, U);
       }
       else
       {
-	 CHECK_EQUAL(Direction, -1);
-	 MatrixOperator U = this->ConstructLeftTruncator(i, RhoL[i], MaxStates);
-	 this->TruncateKrylovLeft(i, U);
+         CHECK_EQUAL(Direction, -1);
+         MatrixOperator U = this->ConstructLeftTruncator(i, RhoL[i], MaxStates);
+         this->TruncateKrylovLeft(i, U);
       }
    }
    this->DebugCheckBasis();
@@ -452,22 +452,21 @@ void SplitKrylov::DebugCheckBasis() const
    {
       if (i != Krylov.size()-1)
       {
-	 DEBUG_CHECK_EQUAL(kn1_H_kn[i].Left().Basis2(), Krylov[i].Center().Basis1());
-	 DEBUG_CHECK_EQUAL(kn1_H_kn[i].Right().Basis2(), Krylov[i].Center().Basis2());
+         DEBUG_CHECK_EQUAL(kn1_H_kn[i].Left().Basis2(), Krylov[i].Center().Basis1());
+         DEBUG_CHECK_EQUAL(kn1_H_kn[i].Right().Basis2(), Krylov[i].Center().Basis2());
       }
       if (i != Krylov.size()-1)
       {
-	 DEBUG_CHECK_EQUAL(kn1_H_kn[i].Left().Basis1(), Krylov[i+1].Center().Basis1());
-	 DEBUG_CHECK_EQUAL(kn1_H_kn[i].Right().Basis1(), Krylov[i+1].Center().Basis2());
+         DEBUG_CHECK_EQUAL(kn1_H_kn[i].Left().Basis1(), Krylov[i+1].Center().Basis1());
+         DEBUG_CHECK_EQUAL(kn1_H_kn[i].Right().Basis1(), Krylov[i+1].Center().Basis2());
       }
 
       for (std::size_t j = i+1; j < Krylov.size(); ++j)
       {
-	 DEBUG_CHECK_EQUAL(ki_kj(i,j).Left().Basis2(), Krylov[j].Center().Basis1());
-	 DEBUG_CHECK_EQUAL(ki_kj(i,j).Left().Basis1(), Krylov[i].Center().Basis1());
-	 DEBUG_CHECK_EQUAL(ki_kj(i,j).Right().Basis2(), Krylov[j].Center().Basis2());
-	 DEBUG_CHECK_EQUAL(ki_kj(i,j).Right().Basis1(), Krylov[i].Center().Basis2());
+         DEBUG_CHECK_EQUAL(ki_kj(i,j).Left().Basis2(), Krylov[j].Center().Basis1());
+         DEBUG_CHECK_EQUAL(ki_kj(i,j).Left().Basis1(), Krylov[i].Center().Basis1());
+         DEBUG_CHECK_EQUAL(ki_kj(i,j).Right().Basis2(), Krylov[j].Center().Basis2());
+         DEBUG_CHECK_EQUAL(ki_kj(i,j).Right().Basis1(), Krylov[i].Center().Basis2());
       }
    }
 }
- 

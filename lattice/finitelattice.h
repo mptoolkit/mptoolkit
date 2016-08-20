@@ -46,9 +46,9 @@ class FiniteLattice
 
       FiniteLattice(SymmetryList const& sl, LatticeSite const& s);
       FiniteLattice(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t);
-      FiniteLattice(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t, 
+      FiniteLattice(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t,
               LatticeSite const& u);
-      FiniteLattice(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t, 
+      FiniteLattice(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t,
               LatticeSite const& u, LatticeSite const& v);
 
       FiniteLattice(int RepeatCount, FiniteLattice const& l);
@@ -67,7 +67,7 @@ class FiniteLattice
       run_length_compressed<LatticeSite> const& data() const { return *Data_; }
 
       SymmetryList GetSymmetryList() const { return Data_->front().GetSymmetryList(); }
-   
+
       // fowards to run_length_compressed
       bool empty() const { return Data_->empty(); }
       int size() const { return Data_->size(); }
@@ -112,7 +112,7 @@ FiniteLattice join(FiniteLattice const& x, FiniteLattice const& y);
 FiniteLattice join(FiniteLattice const& x, FiniteLattice const& y, FiniteLattice const& z);
 FiniteLattice join(FiniteLattice const& x, FiniteLattice const& y, FiniteLattice const& z, FiniteLattice const& w);
 FiniteLattice join(FiniteLattice const& x, FiniteLattice const& y, FiniteLattice const& z, FiniteLattice const& w,
-	     FiniteLattice const& v);
+             FiniteLattice const& v);
 
 bool
 operator==(FiniteLattice const& u1, FiniteLattice const& u2);

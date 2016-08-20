@@ -23,7 +23,7 @@ namespace Tensor
 {
 
 inline
-int 
+int
 WignerEckartBasis<VectorBasis>::Map(int NonAbelianSubspace, int Projection) const
 {
    std::map<int, int>::const_iterator I = Mapping[NonAbelianSubspace].find(Projection);
@@ -35,9 +35,9 @@ WignerEckartBasis<VectorBasis>::Map(int NonAbelianSubspace, int Projection) cons
 
 template <typename T, typename B1T, typename B2T>
 IrredTensor<T, B1T, B2T, DefaultStructure>
-wigner_eckart(IrredTensor<T, B1T, B2T, DefaultStructure> const& x, 
-              Projection const& p, 
-              WignerEckartBasis<B1T> const& b1, 
+wigner_eckart(IrredTensor<T, B1T, B2T, DefaultStructure> const& x,
+              Projection const& p,
+              WignerEckartBasis<B1T> const& b1,
               WignerEckartBasis<B1T> const& b2)
 {
    DEBUG_CHECK_EQUAL(b1.AbelianBasis().GetSymmetryList(),
@@ -98,9 +98,9 @@ wigner_eckart(IrredTensor<T, B1T, B2T, DefaultStructure> const& x,
 // structure here, unless the projection is scalar
 template <typename T, typename B1T, typename B2T>
 IrredTensor<T, B1T, B2T, DefaultStructure>
-wigner_eckart(IrredTensor<T, B1T, B2T, DiagonalStructure> const& x, 
-              Projection const& p, 
-              WignerEckartBasis<B1T> const& b1, 
+wigner_eckart(IrredTensor<T, B1T, B2T, DiagonalStructure> const& x,
+              Projection const& p,
+              WignerEckartBasis<B1T> const& b1,
               WignerEckartBasis<B1T> const& b2)
 {
    DEBUG_CHECK_EQUAL(b1.AbelianBasis().GetSymmetryList(),
@@ -126,15 +126,15 @@ wigner_eckart(IrredTensor<T, B1T, B2T, DiagonalStructure> const& x,
       for (inner_iter_type J = iterate(I); J; ++J)
       {
 
-	 QuantumNumber q1 = x.Basis1()[J.index1()];
-	 QuantumNumbers::ProjectionList p1 = enumerate_projections(q1);
-	 for (unsigned p1i = 0; p1i < p1.size(); ++p1i)
-	 {
-	    int a1 = b1.Map(J.index1(), p1i);
-	    if (a1 == -1)  // stop now if this projection is not needed
-	       continue;
+         QuantumNumber q1 = x.Basis1()[J.index1()];
+         QuantumNumbers::ProjectionList p1 = enumerate_projections(q1);
+         for (unsigned p1i = 0; p1i < p1.size(); ++p1i)
+         {
+            int a1 = b1.Map(J.index1(), p1i);
+            if (a1 == -1)  // stop now if this projection is not needed
+               continue;
 
-	    QuantumNumber q1Abelian = map_projection_to_quantum(p1[p1i], AbelianSList);
+            QuantumNumber q1Abelian = map_projection_to_quantum(p1[p1i], AbelianSList);
 
             QuantumNumber q2 = x.Basis2()[J.index2()];
             QuantumNumbers::ProjectionList p2 = enumerate_projections(q2);

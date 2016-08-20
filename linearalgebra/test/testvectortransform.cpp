@@ -24,7 +24,7 @@
 
 int main()
 {
-   LinearAlgebra::Vector<double> v1;   
+   LinearAlgebra::Vector<double> v1;
    CHECK_EQUAL(v1.size(), 0);
    CHECK_EQUAL(size(v1), 0);
 
@@ -48,20 +48,20 @@ int main()
 
    // check that negating twice gets us back to the same type,
    // so the double negation is absorbed.
-   CHECK(typeid(transform(transform(v3, LinearAlgebra::Negate<double>()), 
-			  LinearAlgebra::Negate<double>())) 
-	 == typeid(v3));
+   CHECK(typeid(transform(transform(v3, LinearAlgebra::Negate<double>()),
+                          LinearAlgebra::Negate<double>()))
+         == typeid(v3));
 
    // operator== for rhs proxy
    CHECK_EQUAL(v4, -v3);
 
    // sanity check
    CHECK(v4 != v3)(v4)(v3);
-   
+
    // real, imag, conj, transpose, herm should all be identity transformations
    // for real vectors
    CHECK_EQUAL(real(v3), -v4);
-   
+
    CHECK(typeid(real(v3)) == typeid(v3));
    CHECK(typeid(imag(v3)) == typeid(v3));
    CHECK(typeid(conj(v3)) == typeid(v3));
@@ -77,21 +77,21 @@ int main()
 
    std::cout << v3 << std::endl;
 
-   std::cout << transform(v3, 
+   std::cout << transform(v3,
       LinearAlgebra::bind_second(LinearAlgebra::Multiplication<double, double>(), 3.0))
-	     << std::endl;
+             << std::endl;
 
    //   Vector<double> v4(v3);
 
-   LinearAlgebra::Vector<double> v6(transform(v3, 
-			       LinearAlgebra::bind_second(LinearAlgebra::
-							  Multiplication<double, double>(), 3.0)));
+   LinearAlgebra::Vector<double> v6(transform(v3,
+                               LinearAlgebra::bind_second(LinearAlgebra::
+                                                          Multiplication<double, double>(), 3.0)));
 
    std::cout << v6 << std::endl;
 
    LinearAlgebra::Vector<double> v5;
 
-   v5 = transform(v3, 
+   v5 = transform(v3,
       LinearAlgebra::bind_second(LinearAlgebra::Multiplication<double, double>(), 3.0));
 
    std::cout << v5 << std::endl;

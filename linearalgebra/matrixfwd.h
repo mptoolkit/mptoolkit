@@ -34,7 +34,7 @@ namespace LinearAlgebra
 template <typename Scalar, typename Orientation = RowMajor>
 class Matrix;
 
-template <typename T, typename Orientation = RowMajor, 
+template <typename T, typename Orientation = RowMajor,
           typename InnerType = MapVector<T>, typename OuterType = Vector<InnerType> >
 class SparseMatrix;
 

@@ -56,8 +56,8 @@ hash_map<Key, T, HashFun, Cmp>::operator[](key_type const& k)
 #if defined(USE_PSTREAM)
 
 template <int Format, typename Key, typename T, class HashFun, class Cmp>
-PStream::opstreambuf<Format>& operator<<(PStream::opstreambuf<Format>& out, 
-			      hash_map<Key, T, HashFun, Cmp> const& hmap)
+PStream::opstreambuf<Format>& operator<<(PStream::opstreambuf<Format>& out,
+                              hash_map<Key, T, HashFun, Cmp> const& hmap)
 {
    typename PStream::opstreambuf<Format>::size_type len = hmap.size();
    out << len;
@@ -69,8 +69,8 @@ PStream::opstreambuf<Format>& operator<<(PStream::opstreambuf<Format>& out,
 }
 
 template <int Format, typename Key, typename T, class HashFun, class Cmp>
-PStream::ipstreambuf<Format>& operator>>(PStream::ipstreambuf<Format>& in, 
-					 hash_map<Key, T, HashFun, Cmp>& hmap)
+PStream::ipstreambuf<Format>& operator>>(PStream::ipstreambuf<Format>& in,
+                                         hash_map<Key, T, HashFun, Cmp>& hmap)
 {
    typename hash_map<Key, T, HashFun, Cmp>::value_type v;
    hmap.clear();

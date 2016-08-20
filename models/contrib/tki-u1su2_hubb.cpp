@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// models/spinchain-su2.cpp
+// models/contrib/tki-u1su2_hubb.cpp
 //
 // Copyright (C) 2016 Jason Pillay <pillayjason@hotmail.com>
 //
@@ -44,8 +44,8 @@ int main(int argc, char** argv)
     prog_opt::variables_map vm;
     prog_opt::store(prog_opt::command_line_parser(argc, argv).
                     options(desc).style(prog_opt::command_line_style::default_style ^
-					prog_opt::command_line_style::allow_guessing).
-		    run(), vm);
+                                        prog_opt::command_line_style::allow_guessing).
+                    run(), vm);
     prog_opt::notify(vm);
 
     OperatorDescriptions OpDescriptions;
@@ -70,7 +70,7 @@ int main(int argc, char** argv)
     UnitCell Cell(cSite.GetSymmetryList(), cSite, fSite);
     InfiniteLattice Lattice(&Cell);
 
-    UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), S(Cell, "S"), 
+    UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), S(Cell, "S"),
        p(Cell, "p"), pH(Cell, "pH"), Pi(Cell, "Pi"), Pdouble(Cell, "Pdouble");
 
     // note: need to define this *BEFORE* constructing the InfiniteLattice object
@@ -103,5 +103,3 @@ int main(int argc, char** argv)
     return 1;
   }
 }
-
-

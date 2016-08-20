@@ -43,7 +43,7 @@ MatrixOperator DensityMatrix<MatrixOperator>::ConstructTruncator(FwdIterX Start,
    {
       if (LinearMapping[q].size() > 0)
       {
-	 NewSubspace[q] = NewBasis.size();
+         NewSubspace[q] = NewBasis.size();
          NewBasis.push_back(B[q], LinearMapping[q].size());
       }
    }
@@ -92,18 +92,18 @@ SimpleOperator DensityMatrix<SimpleOperator>::ConstructTruncator(FwdIter Start, 
 
       for (std::size_t sp = 0; sp < NewBasis.size(); ++sp)
       {
-	 int qp, qpi;
-	 std::tie(qp, qpi) = KeptStates[sp];
-	 if (qp == q)
-	    Transform(sp, s) = RawDMList[q](qpi, qi);
+         int qp, qpi;
+         std::tie(qp, qpi) = KeptStates[sp];
+         if (qp == q)
+            Transform(sp, s) = RawDMList[q](qpi, qi);
       }
    }
    return Transform;
 }
 
 template <class FwdIter>
-SimpleOperator DensityMatrix<SimpleOperator>::ConstructUnnormalizedTruncator(FwdIter Start, 
-									     FwdIter End) const
+SimpleOperator DensityMatrix<SimpleOperator>::ConstructUnnormalizedTruncator(FwdIter Start,
+                                                                             FwdIter End) const
 {
    BasisList NewBasis(B.GetSymmetryList());
    // make a pass over the eigenvalue list and get the linear indices of the
@@ -127,10 +127,10 @@ SimpleOperator DensityMatrix<SimpleOperator>::ConstructUnnormalizedTruncator(Fwd
 
       for (std::size_t sp = 0; sp < NewBasis.size(); ++sp)
       {
-	 int qp, qpi;
-	 std::tie(qp, qpi) = KeptStates[sp];
-	 if (qp == q)
-	    Transform(sp, s) = RawDMList[q](qpi, qi) * KeptEigenvalue[sp];
+         int qp, qpi;
+         std::tie(qp, qpi) = KeptStates[sp];
+         if (qp == q)
+            Transform(sp, s) = RawDMList[q](qpi, qi) * KeptEigenvalue[sp];
       }
    }
    return Transform;
@@ -143,8 +143,8 @@ SimpleOperator DensityMatrix<SimpleOperator>::ConstructUnnormalizedTruncator(Fwd
 template <typename FwdIter>
 void
 SingularDecomposition<MPStateComponent, MPStateComponent>::
-ConstructMatrices(FwdIter first, FwdIter last, 
-		  MPStateComponent& A, MatrixOperator& C, MPStateComponent& B)
+ConstructMatrices(FwdIter first, FwdIter last,
+                  MPStateComponent& A, MatrixOperator& C, MPStateComponent& B)
 {
    // make a pass over the eigenvalue list and get the linear indices of the
    // states to keep for each quantum number

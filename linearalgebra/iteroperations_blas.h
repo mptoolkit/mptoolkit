@@ -49,8 +49,8 @@ void iter_assign(VecPtrIterator<double, S1> i1, VecPtrIterator<double const, S2>
 
 template <typename S1, typename S2>
 inline
-void iter_assign(VecPtrIterator<std::complex<double>, S1> i1, 
-		 VecPtrIterator<std::complex<double> const, S2> i2)
+void iter_assign(VecPtrIterator<std::complex<double>, S1> i1,
+                 VecPtrIterator<std::complex<double> const, S2> i2)
 {
    DEBUG_PRECONDITION_EQUAL(i1.size(), i2.size());
    BLAS::zcopy(i2.size(), i2.blas_base(), i2.stride(), i1.blas_base(), i1.stride());
@@ -62,9 +62,9 @@ void iter_assign(VecPtrIterator<std::complex<double>, S1> i1,
 
 template <typename S1, typename S2>
 inline
-double iter_inner_prod(VecPtrIterator<double const, S1> i1, 
-		       VecPtrIterator<double const, S2> i2,
-		       InnerProd<double, double>)
+double iter_inner_prod(VecPtrIterator<double const, S1> i1,
+                       VecPtrIterator<double const, S2> i2,
+                       InnerProd<double, double>)
 {
    DEBUG_PRECONDITION_EQUAL(i1.size(), i2.size());
    return BLAS::ddot(i1.size(), i1.blas_base(), i1.stride(), i2.blas_base(), i2.stride());
@@ -72,9 +72,9 @@ double iter_inner_prod(VecPtrIterator<double const, S1> i1,
 
 template <typename S1, typename S2>
 inline
-double iter_inner_prod(VecPtrIterator<double const, S1> i1, 
-		       VecPtrIterator<double const, S2> i2,
-		       Multiplication<double, double>)
+double iter_inner_prod(VecPtrIterator<double const, S1> i1,
+                       VecPtrIterator<double const, S2> i2,
+                       Multiplication<double, double>)
 {
    DEBUG_PRECONDITION_EQUAL(i1.size(), i2.size());
    return BLAS::ddot(i1.size(), i1.blas_base(), i1.stride(), i2.blas_base(), i2.stride());
@@ -87,56 +87,56 @@ double iter_inner_prod(VecPtrIterator<double const, S1> i1,
 // no conjugation, inner product
 template <typename S1, typename S2>
 inline
-std::complex<double> iter_inner_prod(VecPtrIterator<std::complex<double> const, S1> i1, 
-		       VecPtrIterator<std::complex<double> const, S2> i2,
-		       InnerProd<std::complex<double>, std::complex<double> >)
+std::complex<double> iter_inner_prod(VecPtrIterator<std::complex<double> const, S1> i1,
+                       VecPtrIterator<std::complex<double> const, S2> i2,
+                       InnerProd<std::complex<double>, std::complex<double> >)
 {
    DEBUG_PRECONDITION_EQUAL(i1.size(), i2.size());
-   return BLAS::zdotc(i1.size(), i1.blas_base(), i1.stride(), 
-		      i2.blas_base(), i2.stride());
+   return BLAS::zdotc(i1.size(), i1.blas_base(), i1.stride(),
+                      i2.blas_base(), i2.stride());
 }
 
 // first vector conjugated, ordinary multiplication
 template <typename S1, typename S2>
 inline
-std::complex<double> 
+std::complex<double>
 iter_inner_prod(VectorTransformIterator<VecPtrIterator<
-		std::complex<double> const, S1>, Conj<std::complex<double> > > i1, 
-		VecPtrIterator<std::complex<double> const, S2> i2,
-		Multiplication<std::complex<double>, std::complex<double> >)
+                std::complex<double> const, S1>, Conj<std::complex<double> > > i1,
+                VecPtrIterator<std::complex<double> const, S2> i2,
+                Multiplication<std::complex<double>, std::complex<double> >)
 {
    DEBUG_PRECONDITION_EQUAL(i1.base().size(), i2.size());
-   return BLAS::zdotc(i1.base().size(), i1.base().blas_base(), i1.base().stride(), 
-		      i2.blas_base(), i2.stride());
+   return BLAS::zdotc(i1.base().size(), i1.base().blas_base(), i1.base().stride(),
+                      i2.blas_base(), i2.stride());
 }
 
 // second vector conjugated, ordinary multiplication
 template <typename S1, typename S2>
 inline
-std::complex<double> 
+std::complex<double>
 iter_inner_prod(VecPtrIterator<std::complex<double> const, S1> i1,
-		VectorTransformIterator<VecPtrIterator<
-		std::complex<double> const, S2>, Conj<std::complex<double> > > i2, 
-		Multiplication<std::complex<double>, std::complex<double> >)
+                VectorTransformIterator<VecPtrIterator<
+                std::complex<double> const, S2>, Conj<std::complex<double> > > i2,
+                Multiplication<std::complex<double>, std::complex<double> >)
 {
    DEBUG_PRECONDITION_EQUAL(i1.size(), i2.base().size());
-   return std::conj(BLAS::zdotc(i1.size(), i1.blas_base(), i1.stride(), 
-				i2.base().blas_base(), i2.base().stride()));
+   return std::conj(BLAS::zdotc(i1.size(), i1.blas_base(), i1.stride(),
+                                i2.base().blas_base(), i2.base().stride()));
 }
 
 // both vectors conjugated, inner product
 template <typename S1, typename S2>
 inline
-std::complex<double> 
+std::complex<double>
 iter_inner_prod(VectorTransformIterator<VecPtrIterator<
-		std::complex<double> const, S1>, Conj<std::complex<double> > > i1,
-		VectorTransformIterator<VecPtrIterator<
-		std::complex<double> const, S2>, Conj<std::complex<double> > > i2, 
-		InnerProd<std::complex<double>, std::complex<double> >)
+                std::complex<double> const, S1>, Conj<std::complex<double> > > i1,
+                VectorTransformIterator<VecPtrIterator<
+                std::complex<double> const, S2>, Conj<std::complex<double> > > i2,
+                InnerProd<std::complex<double>, std::complex<double> >)
 {
    DEBUG_PRECONDITION_EQUAL(i1.base().size(), i2.base().size());
    return std::conj(BLAS::zdotc(i1.base().size(), i1.base().blas_base(), i1.base().stride(),
-				i2.base().blas_base(), i2.base().stride()));
+                                i2.base().blas_base(), i2.base().stride()));
 }
 #endif // defined(HAVE_ZDOTC)
 
@@ -145,58 +145,58 @@ iter_inner_prod(VectorTransformIterator<VecPtrIterator<
 // no conjugation, ordinary multiplication
 template <typename S1, typename S2>
 inline
-std::complex<double> 
-iter_inner_prod(VecPtrIterator<std::complex<double> const, S1> i1, 
-		VecPtrIterator<std::complex<double> const, S2> i2,
-		Multiplication<std::complex<double>, std::complex<double> >)
+std::complex<double>
+iter_inner_prod(VecPtrIterator<std::complex<double> const, S1> i1,
+                VecPtrIterator<std::complex<double> const, S2> i2,
+                Multiplication<std::complex<double>, std::complex<double> >)
 {
    DEBUG_PRECONDITION_EQUAL(i1.size(), i2.size());
-   return BLAS::zdotu(i1.size(), i1.blas_base(), i1.stride(), 
-		      i2.blas_base(), i2.stride());
+   return BLAS::zdotu(i1.size(), i1.blas_base(), i1.stride(),
+                      i2.blas_base(), i2.stride());
 }
 
 // first vector conjugated, inner product
 template <typename S1, typename S2>
 inline
-std::complex<double> 
+std::complex<double>
 iter_inner_prod(VectorTransformIterator<VecPtrIterator<
-		std::complex<double> const, S1>, Conj<std::complex<double> > > i1, 
-		VecPtrIterator<std::complex<double> const, S2> i2,
-		InnerProd<std::complex<double>, std::complex<double> >)
+                std::complex<double> const, S1>, Conj<std::complex<double> > > i1,
+                VecPtrIterator<std::complex<double> const, S2> i2,
+                InnerProd<std::complex<double>, std::complex<double> >)
 {
    DEBUG_PRECONDITION_EQUAL(i1.base().size(), i2.size());
-   return BLAS::zdotu(i1.base().size(), i1.base().blas_base(), i1.base().stride(), 
-		      i2.blas_base(), i2.stride());
+   return BLAS::zdotu(i1.base().size(), i1.base().blas_base(), i1.base().stride(),
+                      i2.blas_base(), i2.stride());
 }
 
 // second vector conjugated, inner product
 template <typename S1, typename S2>
 inline
-std::complex<double> 
+std::complex<double>
 iter_inner_prod(VecPtrIterator<std::complex<double> const, S1> i1,
-		VectorTransformIterator<VecPtrIterator<
-		std::complex<double> const, S2>, Conj<std::complex<double> > > i2, 
-		InnerProd<std::complex<double>, std::complex<double> >)
+                VectorTransformIterator<VecPtrIterator<
+                std::complex<double> const, S2>, Conj<std::complex<double> > > i2,
+                InnerProd<std::complex<double>, std::complex<double> >)
 {
    DEBUG_PRECONDITION_EQUAL(i1.size(), i2.base().size());
-   return std::conj(BLAS::zdotu(i1.size(), i1.blas_base(), i1.stride(), 
-				i2.base().blas_base(), i2.base().stride()));
+   return std::conj(BLAS::zdotu(i1.size(), i1.blas_base(), i1.stride(),
+                                i2.base().blas_base(), i2.base().stride()));
 }
 
 // both vectors conjugated, ordinary multiplication
 template <typename S1, typename S2>
 inline
-std::complex<double> 
+std::complex<double>
 iter_inner_prod(VectorTransformIterator<VecPtrIterator<
-		std::complex<double> const, S1>, Conj<std::complex<double> > > i1,
-		VectorTransformIterator<VecPtrIterator<
-		std::complex<double> const, S2>, Conj<std::complex<double> > > i2, 
-		Multiplication<std::complex<double>, 
-		std::complex<double> >)
+                std::complex<double> const, S1>, Conj<std::complex<double> > > i1,
+                VectorTransformIterator<VecPtrIterator<
+                std::complex<double> const, S2>, Conj<std::complex<double> > > i2,
+                Multiplication<std::complex<double>,
+                std::complex<double> >)
 {
    DEBUG_PRECONDITION_EQUAL(i1.base().size(), i2.base().size());
-   return std::conj(BLAS::zdotu(i1.base().size(), i1.base().blas_base(), i1.base().stride(), 
-				i2.base().blas_base(), i2.base().stride()));
+   return std::conj(BLAS::zdotu(i1.base().size(), i1.base().blas_base(), i1.base().stride(),
+                                i2.base().blas_base(), i2.base().stride()));
 }
 #endif // defined(HAVE_ZDOTU)
 

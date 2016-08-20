@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 //
-// PeriodicWavefunction: main class to represent a 
+// PeriodicWavefunction: main class to represent a
 // translationally invariant periodic matrix product wavefunction on a finite lattice.
 // Currently, the unit cell is a single site.
 //
@@ -48,7 +48,7 @@ class PeriodicWavefunction
       PeriodicWavefunction(int Size, BasisList const& LocalBasis, VectorBasis const& Basis);
 
       PeriodicWavefunction(int Size, BasisList const& LocalBasis, VectorBasis const& Basis,
-			   QuantumNumber const& Trans);
+                           QuantumNumber const& Trans);
 
       QuantumNumber TransformsAs() const { return adjoint(Q_.TransformsAs()); }
 
@@ -59,7 +59,7 @@ class PeriodicWavefunction
 
       BasisList SiteBasis() const { return Data_.SiteBasis(); }
       VectorBasis Basis() const { return Data_.Basis1(); }
- 
+
       MatrixOperator const& Q() const { return Q_; }
       MatrixOperator & Q() { return Q_; }
 

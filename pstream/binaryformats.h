@@ -45,7 +45,7 @@
   is say, alpha/tru64, and we are doing I/O to a x86/linux
   formatted stream, then a long is 32-bits in the stream but
   64-bits natively.  Thus extracting a long from the stream
-  widens it from 32 bits to 64 bits, and inserting a long to the 
+  widens it from 32 bits to 64 bits, and inserting a long to the
   stream narrows it from 64 bits to 32.
 */
 

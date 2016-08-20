@@ -49,8 +49,8 @@ hash_set<Key, HashFun, Cmp>::hash_set(Iter first, Iter last, size_type n, hasher
 #if defined(USE_PSTREAM)
 
 template <int Format, typename Key, class HashFun, class Cmp>
-PStream::opstreambuf<Format>& operator<<(PStream::opstreambuf<Format>& out, 
-					 hash_set<Key, HashFun, Cmp> const& hset)
+PStream::opstreambuf<Format>& operator<<(PStream::opstreambuf<Format>& out,
+                                         hash_set<Key, HashFun, Cmp> const& hset)
 {
    typename PStream::opstreambuf<Format>::size_type len = hset.size();
    out << len;
@@ -62,8 +62,8 @@ PStream::opstreambuf<Format>& operator<<(PStream::opstreambuf<Format>& out,
 }
 
 template <int Format, typename Key, class HashFun, class Cmp>
-PStream::ipstreambuf<Format>& operator>>(PStream::ipstreambuf<Format>& in, 
-					 hash_set<Key, HashFun, Cmp>& hset)
+PStream::ipstreambuf<Format>& operator>>(PStream::ipstreambuf<Format>& in,
+                                         hash_set<Key, HashFun, Cmp>& hset)
 {
    typename hash_set<Key, HashFun, Cmp>::value_type v;
    hset.clear();

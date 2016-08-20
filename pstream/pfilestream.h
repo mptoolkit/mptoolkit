@@ -104,7 +104,7 @@ class opfilestream : public opstream
       off_t tell() const;
 
       // truncates the file at the current location
-      void truncate(); 
+      void truncate();
 
       // truncates the file to the given size
       void truncate(off_t Loc);

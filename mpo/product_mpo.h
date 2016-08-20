@@ -21,7 +21,7 @@
 // product, such as a unitary or non-unitary evolution operator.
 //
 // Addition isn't defined for ProductMPO.
-// These operators necessarily transform as scalars. 
+// These operators necessarily transform as scalars.
 // (?maybe? in principle we could have an infinite cross product of vector operators?)
 
 #if !defined(MPTOOLKIT_MPO_PRODUCT_MPO_H)
@@ -36,7 +36,7 @@ class ProductMPO
       typedef GenericMPO data_type;
 
    public:
-      typedef OperatorComponent         value_type; 
+      typedef OperatorComponent         value_type;
       typedef data_type::const_iterator const_iterator;
       typedef data_type::iterator       iterator;
       typedef OperatorComponent::basis1_type basis1_type;
@@ -113,8 +113,8 @@ class ProductMPO
       static ProductMPO make_identity(std::vector<BasisList> const& Basis);
 
       // identity operator acting in the given quantum number sector
-      static ProductMPO make_identity(std::vector<BasisList> const& Basis, 
-				      QuantumNumber const& q);
+      static ProductMPO make_identity(std::vector<BasisList> const& Basis,
+                                      QuantumNumber const& q);
 
    private:
       data_type Data;

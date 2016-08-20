@@ -47,7 +47,7 @@ int main(int argc, char** argv)
       pvalue_ptr<MPWavefunction> PsiReal = new MPWavefunction(0.5 * (Psi + PsiBar));
       //   }
       //   {
-      pvalue_ptr<MPWavefunction> PsiImag = 
+      pvalue_ptr<MPWavefunction> PsiImag =
          new MPWavefunction(complex(0.0,-0.5) * (Psi - PsiBar));
       pheap::ExportHeap(argv[3], PsiImag);
       pheap::ExportHeap(argv[2], PsiReal);

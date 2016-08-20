@@ -107,7 +107,7 @@ class SumBasis<VectorBasis>
 
       value_type const& operator[](int s) const { return This_[s]; }
       int dim(int s) const { return This_.dim(s); }
-   
+
       int total_dimension() const { return This_.total_dimension(); }
 
       int total_degree() const { return This_.total_degree(); }
@@ -134,13 +134,13 @@ class SumBasis<VectorBasis>
 
 template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>
-tensor_sum(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& y, 
+tensor_sum(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& y,
            SumBasis<B1> const& b1, SumBasis<B2> const& b2);
 
 template <typename T, typename B, typename S>
 inline
 IrredTensor<T, B, B, S>
-tensor_sum(IrredTensor<T, B, B, S> const& x, IrredTensor<T, B, B, S> const& y, 
+tensor_sum(IrredTensor<T, B, B, S> const& x, IrredTensor<T, B, B, S> const& y,
            SumBasis<B> const& b)
 {
    return tensor_sum(x,y,b,b);
@@ -154,8 +154,8 @@ tensor_sum(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& 
 // ie. a row-vector (x,y)
 template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>
-tensor_row_sum(IrredTensor<T, B1, B2, S> const& x, 
-               IrredTensor<T, B1, B2, S> const& y, 
+tensor_row_sum(IrredTensor<T, B1, B2, S> const& x,
+               IrredTensor<T, B1, B2, S> const& y,
                SumBasis<B2> const& b2);
 
 template <typename T, typename B1, typename B2, typename S>
@@ -168,7 +168,7 @@ tensor_row_sum(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> con
 //                     (y)
 template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>
-tensor_col_sum(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& y, 
+tensor_col_sum(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& y,
                SumBasis<B1> const& b1);
 
 template <typename T, typename B1, typename B2, typename S>
@@ -178,7 +178,7 @@ tensor_col_sum(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> con
 template <typename FwdIter, typename B1, typename B2>
 typename std::iterator_traits<FwdIter>::value_type
 tensor_accumulate(FwdIter first, FwdIter last,
-           SumBasis<B1> const& b1, 
+           SumBasis<B1> const& b1,
            SumBasis<B2> const& b2);
 
 template <typename FwdIter, typename B2>

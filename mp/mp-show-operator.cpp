@@ -48,16 +48,16 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("finite,f", prog_opt::value(&FiniteOperators), "parse a finite MPO")
-	 ("product,p", prog_opt::value(&ProductOperators), "parse a product MPO")
-	 ("triangular,t", prog_opt::value(&TriangularOperators), "parse a triangular MPO")
-	 ("coarsegrain", prog_opt::bool_switch(&CoarseGrain), 
-	  "for a finite operator, go through a coarse-graining then fine-graining sequence")
-	 ("optimize", prog_opt::bool_switch(&Optimize), "Optimize the operator expression")
-	 ("qr", prog_opt::bool_switch(&QR), "Optimize the operator expression with the QR algorithm")
-	 ("unityepsilon", prog_opt::value(&UnityEpsilon),
-	  FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
-	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
+         ("finite,f", prog_opt::value(&FiniteOperators), "parse a finite MPO")
+         ("product,p", prog_opt::value(&ProductOperators), "parse a product MPO")
+         ("triangular,t", prog_opt::value(&TriangularOperators), "parse a triangular MPO")
+         ("coarsegrain", prog_opt::bool_switch(&CoarseGrain),
+          "for a finite operator, go through a coarse-graining then fine-graining sequence")
+         ("optimize", prog_opt::bool_switch(&Optimize), "Optimize the operator expression")
+         ("qr", prog_opt::bool_switch(&QR), "Optimize the operator expression with the QR algorithm")
+         ("unityepsilon", prog_opt::value(&UnityEpsilon),
+          FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
+         ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
          ;
 
       prog_opt::options_description opt;
@@ -65,12 +65,12 @@ int main(int argc, char** argv)
 
       prog_opt::positional_options_description p;
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
-      
-      if (vm.count("help") || (FiniteOperators.empty() && ProductOperators.empty() && TriangularOperators.empty())) 
+      prog_opt::notify(vm);
+
+      if (vm.count("help") || (FiniteOperators.empty() && ProductOperators.empty() && TriangularOperators.empty()))
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " -f|-p|-t Operator\n";
@@ -85,67 +85,67 @@ int main(int argc, char** argv)
 
       for (unsigned i = 0; i < FiniteOperators.size(); ++i)
       {
-	 std::cout << "Finite Operator " << FiniteOperators[i] << '\n';
-	 UnitCellMPO Op;
-	 InfiniteLattice Lattice;
-	 std::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(FiniteOperators[i]);
-	 if (CoarseGrain)
-	 {
-	    SimpleOperator S = coarse_grain(Op.MPO()).scalar();
-	    Op.MPO() = fine_grain(S, Op.MPO().LocalBasis1List(), Op.MPO().LocalBasis2List());
-	 }
-	 if (Optimize)
-	    qr_optimize(Op);
-	 print_structure(Op.MPO(), std::cout);
-	 if (Verbose > 0)
-	 {
-	    std::cout << Op.MPO() << '\n';
-	 }
-	 if (Verbose > 1)
-	 {
-	    SimpleRedOperator x = coarse_grain(Op.MPO());
-	    std::cout << x << "\n";
-	 }
+         std::cout << "Finite Operator " << FiniteOperators[i] << '\n';
+         UnitCellMPO Op;
+         InfiniteLattice Lattice;
+         std::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(FiniteOperators[i]);
+         if (CoarseGrain)
+         {
+            SimpleOperator S = coarse_grain(Op.MPO()).scalar();
+            Op.MPO() = fine_grain(S, Op.MPO().LocalBasis1List(), Op.MPO().LocalBasis2List());
+         }
+         if (Optimize)
+            qr_optimize(Op);
+         print_structure(Op.MPO(), std::cout);
+         if (Verbose > 0)
+         {
+            std::cout << Op.MPO() << '\n';
+         }
+         if (Verbose > 1)
+         {
+            SimpleRedOperator x = coarse_grain(Op.MPO());
+            std::cout << x << "\n";
+         }
       }
 
       for (unsigned i = 0; i < ProductOperators.size(); ++i)
       {
-	 std::cout << "Product Operator " << ProductOperators[i] << '\n';
-	 ProductMPO Op;
-	 InfiniteLattice Lattice;
-	 std::tie(Op, Lattice) = ParseProductOperatorAndLattice(ProductOperators[i]);     
-	 //	 if (!NoOptimize)
-	 //	    optimize(Op);
-	 print_structure(Op, std::cout, UnityEpsilon);
-	 if (Verbose > 0)
-	 {
-	    std::cout << Op << '\n';
-	 }
+         std::cout << "Product Operator " << ProductOperators[i] << '\n';
+         ProductMPO Op;
+         InfiniteLattice Lattice;
+         std::tie(Op, Lattice) = ParseProductOperatorAndLattice(ProductOperators[i]);
+         //      if (!NoOptimize)
+         //         optimize(Op);
+         print_structure(Op, std::cout, UnityEpsilon);
+         if (Verbose > 0)
+         {
+            std::cout << Op << '\n';
+         }
       }
-      
+
       for (unsigned i = 0; i < TriangularOperators.size(); ++i)
       {
-	 std::cout << "Triangular Operator " << TriangularOperators[i] << '\n';
-	 TriangularMPO Op;
-	 InfiniteLattice Lattice;
-	 std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(TriangularOperators[i]);     
-	 if (Optimize)
-	    optimize(Op);
+         std::cout << "Triangular Operator " << TriangularOperators[i] << '\n';
+         TriangularMPO Op;
+         InfiniteLattice Lattice;
+         std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(TriangularOperators[i]);
+         if (Optimize)
+            optimize(Op);
          if (QR)
-	    qr_optimize(Op);
-	 print_structure(Op, std::cout, UnityEpsilon, Verbose);
-	 if (Verbose > 1)
-	 {
-	    std::cout << Op << '\n';
-	 }
+            qr_optimize(Op);
+         print_structure(Op, std::cout, UnityEpsilon, Verbose);
+         if (Verbose > 1)
+         {
+            std::cout << Op << '\n';
+         }
       }
    }
-   catch(std::exception& e) 
+   catch(std::exception& e)
    {
       std::cerr << "error: " << e.what() << "\n";
       return 1;
    }
-   catch(...) 
+   catch(...)
    {
       std::cerr << "Exception of unknown type!\n";
    }

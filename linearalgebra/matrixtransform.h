@@ -70,13 +70,13 @@ class MatrixTransformProxy
       //typedef typename abstract_interface<BaseProxyReference>::type abstract_interface;
 
       MatrixTransformProxy(BaseProxyReference Base, functor_type const& Func)
-	: Base_(Base), Func_(Func) {}
+        : Base_(Base), Func_(Func) {}
 
       explicit MatrixTransformProxy(BaseProxyReference Base)
-	: Base_(Base), Func_() {}
+        : Base_(Base), Func_() {}
 
       MatrixTransformProxy(MatrixTransformProxy const& m)
-	 : Base_(m.Base_), Func_(m.Func_) {}
+         : Base_(m.Base_), Func_(m.Func_) {}
 
       // this conversion ctor handles non-const to const conversions.
       template <typename OtherBase>
@@ -87,28 +87,28 @@ class MatrixTransformProxy
       size_type size2() const { using LinearAlgebra::size2; return size2(Base_); }
 
       const_reference operator()(size_type i, size_type j) const
-	 { return Func_(Base_(i,j)); }
+         { return Func_(Base_(i,j)); }
 
       reference operator()(size_type i, size_type j)
-	 { return Func_(Base_(i,j)); }
+         { return Func_(Base_(i,j)); }
 
       template <typename U>
       typename boost::enable_if<is_matrix<U>, MatrixTransformProxy&>::type
       operator=(U const& x)
       {
-	 // TODO: better temp type
-	 Matrix<value_type> Temp(x);
+         // TODO: better temp type
+         Matrix<value_type> Temp(x);
 
-	 assign(*this, Temp);
-	 return *this;
+         assign(*this, Temp);
+         return *this;
       }
 
       template <typename U>
       typename boost::enable_if<is_matrix<U>, MatrixTransformProxy&>::type
       operator=(NoAliasProxy<U> const& x)
       {
-	 assign(*this, x.value());
-	 return *this;
+         assign(*this, x.value());
+         return *this;
       }
 
       base_reference base() { return Base_; }
@@ -157,8 +157,8 @@ struct interface<MatrixTransformProxy<BaseType, F> >
 // for a MatrixTransformProxy of a MATRIX_EXPRESSION, we need to
 // supply EvalExpression
 template <typename Base, typename F, typename Value>
-struct EvalExpression<MatrixTransformProxy<Base, F>, 
-		      Concepts::MatrixExpression<Value, MatrixTransformProxy<Base, F>>>
+struct EvalExpression<MatrixTransformProxy<Base, F>,
+                      Concepts::MatrixExpression<Value, MatrixTransformProxy<Base, F>>>
 {
    typedef typename EvalExpression<Base>::result_type BaseValueType;
    typedef Transform<BaseValueType, F> Transformer;
@@ -175,8 +175,8 @@ struct EvalExpression<MatrixTransformProxy<Base, F>,
 
 #if 0
 template <typename Base, typename F, typename Value>
-struct EvalExpression<MatrixTransformProxy<Base, F> const, 
-		      Concepts::MatrixExpression<Value, MatrixTransformProxy<Base, F> const>>>
+struct EvalExpression<MatrixTransformProxy<Base, F> const,
+                      Concepts::MatrixExpression<Value, MatrixTransformProxy<Base, F> const>>>
 {
    typedef typename EvalExpression<Base>::result_type BaseValueType;
    typedef Transform<BaseValueType, F> Transformer;
@@ -231,10 +231,10 @@ struct TransformMatrix
 
    typedef MatrixTransformProxy<typename make_const_reference<T>::type, F> result_type;
 
-   result_type operator()(argument_type E) const 
+   result_type operator()(argument_type E) const
       { return result_type(E, F()); }
 
-   result_type operator()(first_argument_type E, second_argument_type const& f) const 
+   result_type operator()(first_argument_type E, second_argument_type const& f) const
       { return result_type(E, f); }
 };
 
@@ -247,10 +247,10 @@ struct TransformMatrix<T&, F>
 
    typedef MatrixTransformProxy<typename make_reference<T>::type, F> result_type;
 
-   result_type operator()(argument_type E) const 
+   result_type operator()(argument_type E) const
       { return result_type(E, F()); }
 
-   result_type operator()(first_argument_type E, second_argument_type f) const 
+   result_type operator()(first_argument_type E, second_argument_type f) const
       { return result_type(E, f); }
 };
 
@@ -262,14 +262,14 @@ struct TransformMatrix<MatrixTransformProxy<Base, F>&, G>
    typedef G second_argument_type;
    typedef Compose<G, F> Composer;
    typedef typename Composer::result_type Func;
-   
+
    typedef Transform<typename reference_to_arg<Base>::type, Func> Transformer;
    typedef typename Transformer::result_type result_type;
 
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    { return transform(x.base(), compose(G(), x.functor())); }
 
-   result_type operator()(argument_type x, G const& g) const 
+   result_type operator()(argument_type x, G const& g) const
    { return transform(x.base(), compose(g, x.functor())); }
 };
 
@@ -281,14 +281,14 @@ struct TransformMatrix<MatrixTransformProxy<Base, F>, G>
    typedef G second_argument_type;
    typedef Compose<G, F> Composer;
    typedef typename Composer::result_type Func;
-   
+
    typedef Transform<typename reference_to_arg<Base>::type, Func> Transformer;
    typedef typename Transformer::result_type result_type;
 
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    { return transform(x.mutable_base(), compose(G(), x.functor())); }
 
-   result_type operator()(argument_type x, G const& g) const 
+   result_type operator()(argument_type x, G const& g) const
    { return transform(x.mutable_base(), compose(g, x.functor())); }
 };
 
@@ -320,10 +320,10 @@ struct TransformMatrix<MatrixTransposeProxy<Base>, G>
    typedef argument_type first_argument_type;
    typedef G second_argument_type;
 
-   result_type operator()(argument_type m) const 
+   result_type operator()(argument_type m) const
    { return Transposer()(transform(m.mutable_base(), G())); }
 
-   result_type operator()(argument_type m, G const& g) const 
+   result_type operator()(argument_type m, G const& g) const
    { return Transposer()(transform(m.mutable_base(), g)); }
 };
 
@@ -386,9 +386,9 @@ struct SwapSortOrder<MatrixTransformProxy<Base, F> >
       typename make_const_reference<SwappedBase>::type
     , F
    >::result_type result_type;
- 
+
   typedef MatrixTransformProxy<Base, F> const& argument_type;
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    { return transform(swap_sort_order(x.base()),x.functor()); }
 };
 
@@ -407,7 +407,7 @@ struct SwapSortOrder<MatrixTransformProxy<Base, F>&>
    >::result_type result_type;
 
    typedef MatrixTransformProxy<Base, F>& argument_type;
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    { return transform(swap_sort_order(x.base()),x.functor()); }
 };
 

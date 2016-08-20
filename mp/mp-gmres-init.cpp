@@ -39,7 +39,7 @@ typedef std::complex<double> complex;
 
 // helper function to load an attribute from the command line or wavefunction
 template <typename T>
-void LoadAttribute(prog_opt::variables_map& Options, MPWavefunction& Psi, 
+void LoadAttribute(prog_opt::variables_map& Options, MPWavefunction& Psi,
                    std::string const& Name, T& Value)
 {
    if (Options.count(Name) == 1)
@@ -47,7 +47,7 @@ void LoadAttribute(prog_opt::variables_map& Options, MPWavefunction& Psi,
          Value = Options[Name]. template as<T>();
          Psi.Attributes()[Name] = Value;
       }
-      else
+   else
       {
          if (Psi.Attributes().count(Name) == 0)
          {
@@ -71,7 +71,7 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Hamiltonian,H", prog_opt::value<std::string>(), 
+         ("Hamiltonian,H", prog_opt::value<std::string>(),
           "operator to use for the Hamiltonian"
           " (wavefunction attribute \"Hamiltonian\")")
          ("wavefunction,w", prog_opt::value<std::string>(),
@@ -79,7 +79,7 @@ int main(int argc, char** argv)
          ("lanczos,l", prog_opt::value<std::string>(),
           "fixed Lanczos vector for the right hand side (required)")
          ("config,c", prog_opt::value<std::string>(), "configuration file (required)")
-         ("out,o", prog_opt::value<std::string>(), 
+         ("out,o", prog_opt::value<std::string>(),
           "initial part of filename to use for output files (required)")
          ("GroundstateEnergy,G", prog_opt::value(&GroundstateEnergy),
           "groundstate energy of the Hamiltonian"
@@ -92,13 +92,13 @@ int main(int argc, char** argv)
           "use eta*(H-E) as the broadening term")
          ;
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).run(), vm);
-      prog_opt::notify(vm);    
-      
+      prog_opt::notify(vm);
+
       if (vm.count("help") || !vm.count("wavefunction") || !vm.count("out")
-          || !vm.count("config") || !vm.count("lanczos")) 
+          || !vm.count("config") || !vm.count("lanczos"))
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-gmres-init [options]\n";
@@ -153,7 +153,7 @@ int main(int argc, char** argv)
          P = pheap::ImportHeap(LanczosVector);
          Lanczos = *P;
       }
-      
+
       // load the Hamiltonian
       std::string HamString;
       LoadAttribute(vm, Psi, "Hamiltonian", HamString);
@@ -165,7 +165,7 @@ int main(int argc, char** argv)
       LoadAttribute(vm, Psi, "GroundstateEnergy", GroundstateEnergy);
       LoadAttribute(vm, Psi, "Frequency", Frequency);
       LoadAttribute(vm, Psi, "Broadening", Broadening);
- 
+
       std::string NumStatesStr = Conf.Get("NumStates", "");
       StatesList States(NumStatesStr);
       States.ShowOptions(std::cout);
@@ -175,7 +175,7 @@ int main(int argc, char** argv)
       if (vm["broadening-propto-energy"].as<bool>())
       {
          std::cout << "Using broadening proportional to the energy.\n";
-	 PANIC("This option no longer works, as the broadening is now handled differently.");
+         PANIC("This option no longer works, as the broadening is now handled differently.");
          // For the case of broadening proportional to energy, we have
          // A = E+w-H + i*eta*(H-E)
          // *** To compensate for the bug in GMRES, we take the conjugate here
@@ -193,18 +193,18 @@ int main(int argc, char** argv)
          // For this case, we use the usual formula
          // A = E+w-H + i*eta
          // *** To compensate for the bug in GMRES, we take the conjugate here
-	 //         complex ScalarPart(GroundstateEnergy+Frequency, -Broadening);
+         //         complex ScalarPart(GroundstateEnergy+Frequency, -Broadening);
          A = (GroundstateEnergy+Frequency)*Identity - Hamiltonian;
          //MPOperator Part = (GroundstateEnergy + Frequency)*Identity - Hamiltonian;
-         //A2 = prod(Part, Part, Part.TransformsAs()) 
-	 //+ (Broadening*Broadening)*Identity;
-	 A2 = A*A;
+         //A2 = prod(Part, Part, Part.TransformsAs())
+         //+ (Broadening*Broadening)*Identity;
+         A2 = A*A;
       }
 
-      SolverGmres solver((CenterWavefunction(Psi)), SplitOperator(A), SplitOperator(A2), 
+      SolverGmres solver((CenterWavefunction(Psi)), SplitOperator(A), SplitOperator(A2),
                          CenterWavefunction(Lanczos), Frequency, Broadening);
-      solver.CreateLogFiles(BasePathFull, Conf);   
-      pvalue_ptr<DMRGLoop<SolverGmres> > 
+      solver.CreateLogFiles(BasePathFull, Conf);
+      pvalue_ptr<DMRGLoop<SolverGmres> >
          Solver(new DMRGLoop<SolverGmres>(solver, States));
 
       pheap::ShutdownPersistent(Solver);

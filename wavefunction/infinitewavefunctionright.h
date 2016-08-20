@@ -38,17 +38,17 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
    public:
       InfiniteWavefunctionRight() {}
 
-      // construction from a LinearWavefunction (in right-canonical form with 
+      // construction from a LinearWavefunction (in right-canonical form with
       // lambda matrix on the left)
-      InfiniteWavefunctionRight(MatrixOperator const& Lambda, LinearWavefunction const& Psi, 
-				QuantumNumbers::QuantumNumber const& QShift_);
+      InfiniteWavefunctionRight(MatrixOperator const& Lambda, LinearWavefunction const& Psi,
+                                QuantumNumbers::QuantumNumber const& QShift_);
 
       // constructs and canonicalizes the wavefunction
-      InfiniteWavefunctionRight(LinearWavefunction const& Psi, 
-				QuantumNumbers::QuantumNumber const& QShift_);
+      InfiniteWavefunctionRight(LinearWavefunction const& Psi,
+                                QuantumNumbers::QuantumNumber const& QShift_);
 
-      InfiniteWavefunctionRight(InfiniteWavefunctionRight const& Psi) 
-	 : CanonicalWavefunctionBase(Psi), QShift(Psi.QShift) {}
+      InfiniteWavefunctionRight(InfiniteWavefunctionRight const& Psi)
+         : CanonicalWavefunctionBase(Psi), QShift(Psi.QShift) {}
 
       InfiniteWavefunctionRight(InfiniteWavefunctionLeft const& Psi);
 
@@ -57,11 +57,11 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
 
       QuantumNumber qshift() const { return QShift; }
 
-      // Rotates the wavefunction to the left, by taking the left-most site and moving 
+      // Rotates the wavefunction to the left, by taking the left-most site and moving
       // it to the right
       void rotate_left(int Count);
 
-      // Rotates the wavefunction to the left, by taking the right-most site and moving 
+      // Rotates the wavefunction to the left, by taking the right-most site and moving
       // it to the left
       void rotate_right(int Count);
 
@@ -70,10 +70,10 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
 
       static PStream::VersionTag VersionT;
 
-      friend PStream::ipstream& operator>>(PStream::ipstream& in, 
-					   InfiniteWavefunctionRight& Psi);
-      friend PStream::opstream& operator<<(PStream::opstream& out, 
-					   InfiniteWavefunctionRight const& Psi);
+      friend PStream::ipstream& operator>>(PStream::ipstream& in,
+                                           InfiniteWavefunctionRight& Psi);
+      friend PStream::opstream& operator<<(PStream::opstream& out,
+                                           InfiniteWavefunctionRight const& Psi);
       friend void read_version(PStream::ipstream& in, InfiniteWavefunctionRight& Psi, int Version);
 
       void check_structure() const;
@@ -90,15 +90,15 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
       friend void inplace_reflect(InfiniteWavefunctionRight& Psi);
       friend void inplace_conj(InfiniteWavefunctionRight& Psi);
       friend InfiniteWavefunctionRight wigner_project(InfiniteWavefunctionRight const& Psi,
-						      SymmetryList const& FinalSL);
-      friend InfiniteWavefunctionRight ReorderSymmetry(InfiniteWavefunctionRight const& Psi, 
-						       SymmetryList const& NewSL);
+                                                      SymmetryList const& FinalSL);
+      friend InfiniteWavefunctionRight ReorderSymmetry(InfiniteWavefunctionRight const& Psi,
+                                                       SymmetryList const& NewSL);
       friend InfiniteWavefunctionRight repeat(InfiniteWavefunctionRight const& Psi, int Count);
 };
 
 class InfiniteWavefunctionLeft;
 
-// Convert a, infinite wavefunction to right-canonical form, 
+// Convert a, infinite wavefunction to right-canonical form,
 // and returns the Lambda matrix on the right-hand-side.
 RealDiagonalOperator
 right_canonicalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift);
@@ -146,7 +146,7 @@ void inplace_conj(InfiniteWavefunctionRight& Psi);
 InfiniteWavefunctionLeft reflect(InfiniteWavefunctionRight const& Psi);
 
 // version of reflect where we apply a local operator also
-//InfiniteWavefunctionRight reflect(InfiniteWavefunctionLeft const& Psi, 
+//InfiniteWavefunctionRight reflect(InfiniteWavefunctionLeft const& Psi,
 // std::vector<SimpleOperator> const& Op);
 
 inline

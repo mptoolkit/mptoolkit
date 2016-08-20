@@ -45,21 +45,21 @@
 // debugging/precondition macro, extension of common/trace.h
 
 #if defined(NDEBUG) || defined(TRACER_DISABLE_ALL_CHECKS)
-#define DEBUG_CHECK_CLOSE(x,y)			\
-if (true) ;					\
+#define DEBUG_CHECK_CLOSE(x,y)                  \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 #else
-#define DEBUG_CHECK_CLOSE(x, y)							\
-if (equal((x), (y))) ;								\
+#define DEBUG_CHECK_CLOSE(x, y)                                                 \
+if (equal((x), (y))) ;                                                          \
 else INVOKE_ASSERT("CHECK_CLOSE", "equal(" #x ", " #y ") is false")(x)(y)
 #endif
 #if defined(TRACER_DISABLE_ALL_CHECKS)
-#define CHECK_CLOSE(x,y)			\
-if (true) ;					\
+#define CHECK_CLOSE(x,y)                        \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 #else
-#define CHECK_CLOSE(x, y)							\
-if (equal((x), (y))) ;								\
+#define CHECK_CLOSE(x, y)                                                       \
+if (equal((x), (y))) ;                                                          \
 else INVOKE_ASSERT("CHECK_CLOSE", "equal(" #x ", " #y ") is false")(x)(y)
 #endif
 
@@ -69,7 +69,7 @@ namespace LinearAlgebra
 // operator characteristics
 
 // is_builtin.  Used to mark an operator as builtin, so
-// don't define it again (eg, for builtin arithmetic operators).  To use, add a nested 
+// don't define it again (eg, for builtin arithmetic operators).  To use, add a nested
 // typedef boost::mpl::true_ builtin; to the functor class, or specialize is_builtin.
 
 template <typename T, typename Enable = void>
@@ -112,7 +112,7 @@ struct is_stateless<
    T
  , typename boost::enable_if<
       boost::mpl::or_<
-         is_identity<T> 
+         is_identity<T>
        , is_builtin<T>
       >
    >::type
@@ -173,7 +173,7 @@ struct is_idempotent<T, typename boost::enable_if<typename T::idempotent>::type>
 // traits for binary functions
 //
 
-// is_commutative.  
+// is_commutative.
 // To mark a binary functor as commutative, add
 // typedef boost::mpl::true_ commutative; to the functor class.
 // This requires that first_argument_type and second_argument_type are identical.
@@ -243,7 +243,7 @@ struct is_defined<T, typename boost::enable_if<exists<typename T::result_type> >
 
 // is_noalias.  This marks a *container* has assumed to never be aliased.
 // This is true for some trivial containers (eg, Range & Slice),
-// and also for NoAliasProxy.  
+// and also for NoAliasProxy.
 
 template <typename T>
 struct is_noalias;
@@ -302,8 +302,8 @@ template <typename T, typename Enable = void>
 struct ZeroOrDie
 {
    typedef T result_type;
-   result_type const& operator()() const 
-   { PANIC("No zero value exists for type")(typeid(T).name()); 
+   result_type const& operator()() const
+   { PANIC("No zero value exists for type")(typeid(T).name());
      return *static_cast<result_type*>(0); }
 };
 
@@ -347,11 +347,11 @@ template <typename T, typename Enable = void>
 struct StaticZeroOrDie
 {
    typedef T const& result_type;
-   result_type operator()() const 
-   { 
+   result_type operator()() const
+   {
       PANIC("No zero value exists for type")(typeid(T).name());
       abort();
-      //return *static_cast<T const*>(0); 
+      //return *static_cast<T const*>(0);
    }
 };
 
@@ -423,7 +423,7 @@ struct Identity
 {
    typedef boost::mpl::true_ identity;
 
-   //typedef typename boost::mpl::print<T>::type dummy; 
+   //typedef typename boost::mpl::print<T>::type dummy;
 
    typedef T const& result_type;
    typedef T const& argument_type;
@@ -485,7 +485,7 @@ struct IdentityRefF
 // Inverse
 
 template <typename T, typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+          typename Enable = void>
 struct Inverse { };
 
 struct InverseF
@@ -551,7 +551,7 @@ operator-(T const& x)
 // Trace
 
 template <typename T, typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+          typename Enable = void>
 struct TraceInterface
 {
 };
@@ -582,7 +582,7 @@ trace(T const& x)
 // Norm2Sq
 
 template <typename T, typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+          typename Enable = void>
 struct Norm2Sq
 {
 };
@@ -610,7 +610,7 @@ norm_2_sq(T const& x)
 // Sum
 
 template <typename T, typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+          typename Enable = void>
 struct Sum
 {
 };
@@ -638,7 +638,7 @@ sum(T const& x)
 // Norm1 - the 1-norm
 
 template <typename T, typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+          typename Enable = void>
 struct Norm1
 {
 };
@@ -667,7 +667,7 @@ norm_1(T const& x)
 
 // Norm2 has a default implementation, as sqrt(norm_2_sq(x)).
 template <typename T, typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+          typename Enable = void>
 struct Norm2
 {
    typedef typename Norm2Sq<T, TInterface>::result_type result_type;
@@ -698,7 +698,7 @@ norm_2(T const& x)
 // NormInf - the infinity-norm
 
 template <typename T, typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+          typename Enable = void>
 struct NormInf
 {
 };
@@ -845,7 +845,7 @@ trans(T const& x)
 // Conj
 
 template <typename T, typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+          typename Enable = void>
 struct ConjInterface {};
 
 template <typename T, typename Enable = void>
@@ -905,7 +905,7 @@ real(T& x)
 // Imag
 
 template <typename T, typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+          typename Enable = void>
 struct ImagInterface {};
 
 template <typename T, typename Enable = void>
@@ -930,7 +930,7 @@ imag(T& x)
 // Herm
 
 template <typename T, typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+          typename Enable = void>
 struct HermInterface {};
 
 template <typename T, typename Enable = void>
@@ -1092,7 +1092,7 @@ struct UnaryComposerX
 
 // Swap
 
-template <typename T, typename U, 
+template <typename T, typename U,
           typename TInterface = typename interface<T>::type,
           typename UInterface = typename interface<U>::type>
 struct SwapInterface {};
@@ -1122,7 +1122,7 @@ swap(T& t, U const& u)
 }
 
 template <typename T, typename U>
-typename boost::enable_if<boost::mpl::and_<is_mutable_proxy<T>, is_mutable_proxy<U> >, 
+typename boost::enable_if<boost::mpl::and_<is_mutable_proxy<T>, is_mutable_proxy<U> >,
                           Swap<T&, U&> >::type::result_type
 swap(T const& t, U const& u)
 {
@@ -1134,7 +1134,7 @@ template <typename T, typename F, typename Enable = void>
 struct Transform;  // primary version defined later, to handle identity functors
 
 template <typename T, typename F, typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+          typename Enable = void>
 struct TransformInterface {};
 
 #if 0
@@ -1148,7 +1148,7 @@ transform(T const& x, F const& f)
 #endif
 
 template <typename T, typename F, typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+          typename Enable = void>
 struct TransformRef;  // primary version defined later, to handle identity functors
 
 template <typename T, typename F>
@@ -1174,7 +1174,7 @@ struct ForwardIfDefined
 };
 
 template <typename F, typename T>
-struct ForwardIfDefined<F, T, typename boost::enable_if<is_defined<F> >::type> 
+struct ForwardIfDefined<F, T, typename boost::enable_if<is_defined<F> >::type>
    : T {};
 
 // TransformIfDefined - forwards to Transform<T, F> only if F is defined.
@@ -1188,7 +1188,7 @@ struct TransformRefIfDefined : ForwardIfDefined<F, TransformRef<T, F> > {};
 // Transform by an identity operator is a NOP
 
 template <typename T, typename F, typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+          typename Enable = void>
 struct TransformIfIdentity : TransformInterface<T,F> {};
 
 template <typename T, typename F, typename Ti>
@@ -1226,7 +1226,7 @@ struct Transform : TransformIfIdentity<T, F> {};
 // unary_compose
 
 template <typename T1, typename T2, typename Enable = void>
-struct Compose 
+struct Compose
 {
    typedef T1 first_argument_type;
    typedef T2 second_argument_type;
@@ -1266,18 +1266,18 @@ template <typename T1, typename T2>
 struct Inverse<UnaryComposer<T1, T2>,
   typename boost::enable_if<
    boost::mpl::and_<exists<typename Inverse<T1>::result_type>,
-		    exists<typename Inverse<T2>::result_type> > >::type>
+                    exists<typename Inverse<T2>::result_type> > >::type>
   : public Compose<typename Inverse<T2>::result_type,
-		    typename Inverse<T1>::result_type>
+                    typename Inverse<T1>::result_type>
 {
    typedef Compose<typename Inverse<T2>::result_type,
-		   typename Inverse<T1>::result_type> base;
+                   typename Inverse<T1>::result_type> base;
 
    Inverse(UnaryComposer<T1, T2> const& x) : base(inverse(x.second), inverse(x.first)) {}
 
 };
 
-// transform compose<f1, compose<f2, f3> > into compose<compose<f1, f2>, f3>.  We can 
+// transform compose<f1, compose<f2, f3> > into compose<compose<f1, f2>, f3>.  We can
 // always do this, as there is no associative rule here, both are exactly equivalent.
 
 template <typename T1, typename T2, typename T3>
@@ -1372,9 +1372,9 @@ struct Compose<Imag<T>, Conj<T> >
 // a default ctor.
 
 template <typename S, typename T, typename Func,
-	  typename SInterface = typename interface<S>::type, 
-	  typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+          typename SInterface = typename interface<S>::type,
+          typename TInterface = typename interface<T>::type,
+          typename Enable = void>
 struct BinaryTransform
 {
 };
@@ -1388,9 +1388,9 @@ transform(S const& x, T const& y, Func const& f)
 
 // EqualTo
 
-template <typename S, typename T, typename SInterface = typename interface<S>::type, 
-	  typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+template <typename S, typename T, typename SInterface = typename interface<S>::type,
+          typename TInterface = typename interface<T>::type,
+          typename Enable = void>
 struct EqualToInterface
 {
 };
@@ -1424,7 +1424,7 @@ equal_to(S const& x, T const& y)
 template <typename S, typename T>
 inline
 typename boost::disable_if<is_builtin<EqualTo<S, T> >,
-			   typename EqualTo<S, T>::result_type>::type
+                           typename EqualTo<S, T>::result_type>::type
 operator==(S const& x, T const& y)
 {
    return EqualTo<S, T>()(x,y);
@@ -1433,7 +1433,7 @@ operator==(S const& x, T const& y)
 template <typename S, typename T>
 inline
 typename boost::disable_if<is_builtin<EqualTo<S, T> >,
-			   typename EqualTo<S, T>::result_type>::type
+                           typename EqualTo<S, T>::result_type>::type
 operator!=(S const& x, T const& y)
 {
    return !EqualTo<S, T>()(x,y);
@@ -1441,9 +1441,9 @@ operator!=(S const& x, T const& y)
 
 // Addition
 
-template <typename S, typename T, typename SInterface = typename interface<S>::type, 
-	  typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+template <typename S, typename T, typename SInterface = typename interface<S>::type,
+          typename TInterface = typename interface<T>::type,
+          typename Enable = void>
 struct AdditionInterface
 {
 };
@@ -1469,7 +1469,7 @@ struct AdditionF
 template <typename S, typename T>
 inline
 typename boost::disable_if<is_builtin<Addition<S, T> >,
-			   typename Addition<S, T>::result_type>::type
+                           typename Addition<S, T>::result_type>::type
 operator+(S const& x, T const& y)
 {
    return Addition<S, T>()(x,y);
@@ -1477,9 +1477,9 @@ operator+(S const& x, T const& y)
 
 // Subtraction
 
-template <typename S, typename T, typename SInterface = typename interface<S>::type, 
-	  typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+template <typename S, typename T, typename SInterface = typename interface<S>::type,
+          typename TInterface = typename interface<T>::type,
+          typename Enable = void>
 struct SubtractionInterface {};
 
 template <typename S, typename T, typename Enable = void>
@@ -1503,7 +1503,7 @@ struct SubtractionF
 template <typename S, typename T>
 inline
 typename boost::disable_if<is_builtin<Subtraction<S, T> >,
-			   typename Subtraction<S, T>::result_type>::type
+                           typename Subtraction<S, T>::result_type>::type
 operator-(S const& x, T const& y)
 {
    return Subtraction<S, T>()(x,y);
@@ -1511,8 +1511,8 @@ operator-(S const& x, T const& y)
 
 // Multiplication
 
-template <typename S, typename T, typename SInterface = typename interface<S>::type, 
-	  typename TInterface = typename interface<T>::type, typename Enable = void>
+template <typename S, typename T, typename SInterface = typename interface<S>::type,
+          typename TInterface = typename interface<T>::type, typename Enable = void>
 struct MultiplicationInterface
 {
 };
@@ -1538,7 +1538,7 @@ struct MultiplicationF
 template <typename S, typename T>
 inline
 typename boost::disable_if<is_builtin<Multiplication<S, T> >,
-			   Multiplication<S, T> >::type::result_type
+                           Multiplication<S, T> >::type::result_type
 operator*(S const& x, T const& y)
 {
    return Multiplication<S, T>()(x,y);
@@ -1549,9 +1549,9 @@ operator*(S const& x, T const& y)
 //
 
 template <typename S, typename T,
-	  typename SInterface = typename interface<S>::type,
-	  typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+          typename SInterface = typename interface<S>::type,
+          typename TInterface = typename interface<T>::type,
+          typename Enable = void>
 struct DirectSumInterface {};
 
 template <typename S, typename T, typename Enable = void>
@@ -1567,7 +1567,7 @@ direct_sum(S const& x, T const& y)
 
 template <typename S, typename T, typename U>
 inline
-typename DirectSum<typename DirectSum<S, T>::result_type, 
+typename DirectSum<typename DirectSum<S, T>::result_type,
                    U>::result_type
 direct_sum(S const& x, T const& y, U const& z)
 {
@@ -1579,9 +1579,9 @@ direct_sum(S const& x, T const& y, U const& z)
 //
 
 template <typename S, typename T,
-	  typename SInterface = typename interface<S>::type,
-	  typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+          typename SInterface = typename interface<S>::type,
+          typename TInterface = typename interface<T>::type,
+          typename Enable = void>
 struct DirectProductInterface {};
 
 template <typename S, typename T, typename Enable = void>
@@ -1599,9 +1599,9 @@ direct_product(S const& x, T const& y)
 // inner_prod
 //
 
-template <typename S, typename T, typename SInterface = typename interface<S>::type, 
-	  typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+template <typename S, typename T, typename SInterface = typename interface<S>::type,
+          typename TInterface = typename interface<T>::type,
+          typename Enable = void>
 struct InnerProdInterface
 {
 };
@@ -1627,7 +1627,7 @@ struct InnerProdF
 template <typename S, typename T>
 inline
 typename boost::disable_if<is_builtin<InnerProd<S, T> >,
-			   typename InnerProd<S, T>::result_type>::type
+                           typename InnerProd<S, T>::result_type>::type
 inner_prod(S const& x, T const& y)
 {
    return InnerProd<S, T>()(x,y);
@@ -1657,7 +1657,7 @@ struct BinderFirst
    typedef typename boost::add_reference<typename boost::add_const<arg_type>::type>::type
    argument_type;
 
-   BinderFirst(bound_arg_type b_, binary_functor_type const& f_ = binary_functor_type()) 
+   BinderFirst(bound_arg_type b_, binary_functor_type const& f_ = binary_functor_type())
      : b(b_), f(f_) {}
 
    result_type operator()(argument_type x) const { return f(b, x); }
@@ -1681,7 +1681,7 @@ struct BinderSecond
    typedef typename boost::add_reference<typename boost::add_const<arg_type>::type>::type
    argument_type;
 
-   BinderSecond(bound_arg_type b_, binary_functor_type const& f_ = binary_functor_type()) 
+   BinderSecond(bound_arg_type b_, binary_functor_type const& f_ = binary_functor_type())
      : b(b_), f(f_) {}
 
    BinderSecond(BinderSecond const& x) : b(x.b), f(x.f) {}
@@ -1826,13 +1826,13 @@ bind_second(T const& f, U const& x)
 
 // equal
 
-template <typename T, typename U, typename Tol = double, 
-	  typename TInterface = typename interface<T>::type,
-	  typename UInterface = typename interface<U>::type>
+template <typename T, typename U, typename Tol = double,
+          typename TInterface = typename interface<T>::type,
+          typename UInterface = typename interface<U>::type>
 struct EqualInterface {};
 
 template <typename T, typename U, typename Tol = double>
-struct Equal : EqualInterface<T, U, Tol> 
+struct Equal : EqualInterface<T, U, Tol>
 {
    Equal() : EqualInterface<T, U, Tol>() {};
    Equal(Tol x) : EqualInterface<T, U, Tol>(x) {};
@@ -1867,7 +1867,7 @@ struct StreamInsert
 
 template <typename T>
 inline
-typename StreamInsert<T>::result_type 
+typename StreamInsert<T>::result_type
 operator<<(std::ostream& out, T const& x)
 {
    return StreamInsert<T>()(out, x);
@@ -1898,8 +1898,8 @@ eval(T const& x)
 
 // ZeroAll - zeros all elements.
 
-template <typename T, typename TInterface = typename interface<T>::type, 
-	  typename Enable = void>
+template <typename T, typename TInterface = typename interface<T>::type,
+          typename Enable = void>
 struct ZeroAllInterface {};
 
 template <typename T, typename Enable = void>
@@ -1949,7 +1949,7 @@ is_zero(T const& x)
 
 //
 // assign.
-// 
+//
 // By default, Assign forwards to AssignInterface; this gives us two
 // bites at the cherry to specialize on expression types; firstly
 // Assign itself can be specialized on specific LHS and RHS types.
@@ -1960,9 +1960,9 @@ is_zero(T const& x)
 // partial ordering complications.
 //
 
-template <typename LHS, typename RHS, 
-	  typename LHSInterface = typename interface<LHS>::type,
-	  typename RHInterface = typename interface<RHS>::type>
+template <typename LHS, typename RHS,
+          typename LHSInterface = typename interface<LHS>::type,
+          typename RHInterface = typename interface<RHS>::type>
 struct AssignInterface {};
 
 template <typename LHS, typename RHS>
@@ -1979,7 +1979,7 @@ assign(LHS& x, RHS const& y)
 // yet another experiment in how to handle proxies
 template <typename LHS, typename RHS>
 inline
-typename boost::enable_if<is_mutable_proxy<LHS>, 
+typename boost::enable_if<is_mutable_proxy<LHS>,
                           Assign<LHS&, RHS> >::type::result_type
 assign(LHS const& x, RHS const& y)
 {
@@ -2043,8 +2043,8 @@ struct AssignCopy {};
 
 template <typename LHS, typename RHS>
 struct AssignCopy<
-   LHS&, 
-   RHS, 
+   LHS&,
+   RHS,
    typename boost::enable_if<
       boost::mpl::and_<
          boost::mpl::not_<is_noalias<RHS> >
@@ -2067,8 +2067,8 @@ struct AssignCopy<
 
 template <typename LHS, typename RHS>
 struct AssignCopy<
-   LHS&, 
-   RHS, 
+   LHS&,
+   RHS,
    typename boost::enable_if<
       boost::mpl::and_<
          boost::mpl::or_<is_noalias<RHS>, is_noalias<LHS> >
@@ -2088,7 +2088,7 @@ assign_copy(LHS& x, RHS const& y)
 // yet another experiment in how to handle proxies
 template <typename LHS, typename RHS>
 inline
-typename boost::enable_if<is_mutable_proxy<LHS>, 
+typename boost::enable_if<is_mutable_proxy<LHS>,
                           AssignCopy<LHS&, RHS> >::type::result_type
 assign_copy(LHS const& x, RHS const& y)
 {
@@ -2097,9 +2097,9 @@ assign_copy(LHS const& x, RHS const& y)
 
 // add.
 
-template <typename LHS, typename RHS, 
-	  typename LHSInterface = typename interface<LHS>::type,
-	  typename RHInterface = typename interface<RHS>::type>
+template <typename LHS, typename RHS,
+          typename LHSInterface = typename interface<LHS>::type,
+          typename RHInterface = typename interface<RHS>::type>
 struct AddInterface
 {
 };
@@ -2117,7 +2117,7 @@ add(LHS& x, RHS const& y)
 
 template <typename LHS, typename RHS>
 inline
-typename boost::enable_if<is_mutable_proxy<LHS>, 
+typename boost::enable_if<is_mutable_proxy<LHS>,
                           Add<LHS&, RHS> >::type::result_type
 add(LHS const& x, RHS const& y)
 {
@@ -2189,8 +2189,8 @@ struct AddCopy : AddCopyBase2<LHS, RHS> {};
 
 template <typename LHS, typename RHS>
 struct AddCopyBase1<
-   LHS&, 
-   RHS, 
+   LHS&,
+   RHS,
    typename boost::enable_if<
       boost::mpl::and_<
          boost::mpl::not_<is_noalias<RHS> >
@@ -2244,8 +2244,8 @@ struct AddCopyBase2<LHS&, value_with_zero<RHS> >
 
 template <typename LHS, typename RHS>
 struct AddCopyBase1<
-   LHS&, 
-   RHS, 
+   LHS&,
+   RHS,
    typename boost::enable_if<
       boost::mpl::and_<
          boost::mpl::or_<is_noalias<RHS>, is_noalias<LHS> >
@@ -2265,7 +2265,7 @@ add_copy(LHS& x, RHS const& y)
 // yet another experiment in how to handle proxies
 template <typename LHS, typename RHS>
 inline
-typename boost::enable_if<is_mutable_proxy<LHS>, 
+typename boost::enable_if<is_mutable_proxy<LHS>,
                           AddCopy<LHS&, RHS> >::type::result_type
 add_copy(LHS const& x, RHS const& y)
 {
@@ -2275,9 +2275,9 @@ add_copy(LHS const& x, RHS const& y)
 // subtract.
 //
 
-template <typename LHS, typename RHS, 
-	  typename LHSInterface = typename interface<LHS>::type,
-	  typename RHInterface = typename interface<RHS>::type>
+template <typename LHS, typename RHS,
+          typename LHSInterface = typename interface<LHS>::type,
+          typename RHInterface = typename interface<RHS>::type>
 struct SubtractInterface
 {
 };
@@ -2294,7 +2294,7 @@ subtract(LHS& x, RHS const& y)
 }
 
 template <typename LHS, typename RHS>
-typename boost::enable_if<is_mutable_proxy<LHS>, 
+typename boost::enable_if<is_mutable_proxy<LHS>,
                           Subtract<LHS&, RHS> >::type::result_type
 subtract(LHS const& x, RHS const& y)
 {
@@ -2314,8 +2314,8 @@ struct SubtractCopy : SubtractCopyBase2<LHS, RHS> {};
 
 template <typename LHS, typename RHS>
 struct SubtractCopyBase1<
-   LHS&, 
-   RHS, 
+   LHS&,
+   RHS,
    typename boost::enable_if<
       boost::mpl::and_<
          boost::mpl::not_<is_noalias<RHS> >
@@ -2352,8 +2352,8 @@ struct SubtractCopyBase2<LHS&, value_with_zero<RHS> >
 
 template <typename LHS, typename RHS>
 struct SubtractCopyBase1<
-   LHS&, 
-   RHS, 
+   LHS&,
+   RHS,
    typename boost::enable_if<
       boost::mpl::and_<
          boost::mpl::or_<is_noalias<RHS>, is_noalias<LHS> >
@@ -2373,7 +2373,7 @@ subtract_copy(LHS& x, RHS const& y)
 // yet another experiment in how to handle proxies
 template <typename LHS, typename RHS>
 inline
-typename boost::enable_if<is_mutable_proxy<LHS>, 
+typename boost::enable_if<is_mutable_proxy<LHS>,
                           SubtractCopy<LHS&, RHS> >::type::result_type
 subtract_copy(LHS const& x, RHS const& y)
 {
@@ -2398,9 +2398,9 @@ struct MultiplyDefault<LHS&, RHS>
    }
 };
 
-template <typename LHS, typename RHS, 
-	  typename LHSInterface = typename interface<LHS>::type,
-	  typename RHInterface = typename interface<RHS>::type,
+template <typename LHS, typename RHS,
+          typename LHSInterface = typename interface<LHS>::type,
+          typename RHInterface = typename interface<RHS>::type,
           typename Enable = void>
 struct MultiplyInterface : MultiplyDefault<LHS, RHS> {};
 

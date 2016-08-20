@@ -45,7 +45,7 @@
   This would allow some cool things, like shadow file-systems etc.
   Some of the PageInfoType & PageId & ReadBuffer & WriteBuffer functions should be inlined.
   There is no locking in the init/shutdown functions.  It might be hard to do this correctly.
-  eg, we probably should get the mutex on every _page_, as well as the PageCacheMutex.  
+  eg, we probably should get the mutex on every _page_, as well as the PageCacheMutex.
   But that itself isn't really possible (ie, we need the PageCacheMutex to
   access PageList, but we cannot get a lock on a PageMutex with PageList alreeady locked without
   a possible deadlock).  Ultimately, without serializing everything with a single lock,
@@ -87,13 +87,13 @@ namespace Private   // Stuff for internal use
 class PageInfoType
 {
    public:
-      PageInfoType(int InitialLockCount, int InitialReferenceCount, 
-		   size_t Page_, unsigned char* Ptr_, FileSystem* FS_, PageFile* PF_, size_t LocalPage_);
+      PageInfoType(int InitialLockCount, int InitialReferenceCount,
+                   size_t Page_, unsigned char* Ptr_, FileSystem* FS_, PageFile* PF_, size_t LocalPage_);
 
       void ResetBuffer(unsigned char* Buf); // when reference & lock counts are zero, this resets the page
       // info to a new page, with lock count = 1, reference count = 0, Ptr = Buf.
 
-      unsigned char* LoadAddLock();  // same as AddLock(), but allows for the possibility 
+      unsigned char* LoadAddLock();  // same as AddLock(), but allows for the possibility
                             // that the lock count was previously zero.  Returns a pointer to the buffer.
       void AddLock();
       void SubLock();
@@ -109,7 +109,7 @@ class PageInfoType
       // Any modificiations to the underlying page or FileSystem will render the information
       // written by this function incorrect.
       // The opstream cannot be just any opstream, it must be a metadata stream.
-      // The corresponding extractor does not have the same threading issues, and is 
+      // The corresponding extractor does not have the same threading issues, and is
       // part of PageId instead.
       void WriteStream(PStream::opstream& out);
 
@@ -219,7 +219,7 @@ class WriteBuffer
 
    private:
       WriteBuffer(Private::PageInfoType* pInfo_, unsigned char* Buf_);
-      
+
       Private::PageInfoType* pInfo;
       unsigned char* Buf;
 
@@ -253,7 +253,7 @@ class FileSystem
       FileSystem();
       virtual ~FileSystem();
 
-      void create(std::string const& FileName, int NumFiles, 
+      void create(std::string const& FileName, int NumFiles,
                   size_t PageSize, size_t PageCacheByteSize, bool Unlink = false, bool AllowOverwrite = true);
 
       // close the associated page files.  If Remove is true then delete the files.
@@ -277,7 +277,7 @@ class FileSystem
       unsigned long get_checkpoint_limit_kb();
 
       bool is_read_only() const { return IsReadOnly; }
-   
+
       WriteBuffer allocate();
 
       size_t get_page_size() const { return PageSize; }
@@ -333,7 +333,7 @@ class FileSystem
       // Flushes all in-memory pages to disk.  This is not a public function as it
       // is a race condition to write a page to disk if the lock count is > 0.
       // It is only 'safe' to do this immediately before shutting down, when we 'know'
-      // that no pages currently in memory will be written to.  
+      // that no pages currently in memory will be written to.
       void flush();
 
       // utility function to convert a PageFile* into an integer index into the

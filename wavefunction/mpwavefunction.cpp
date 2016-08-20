@@ -54,7 +54,7 @@ PStream::ipstream&
 operator>>(PStream::ipstream& in, MPWavefunction& Psi)
 {
    // old streams didn't have a version number, so hack around it with the metadata version
-   
+
    int Version;
 
    PHeapFileSystem::ipheapstream* S = dynamic_cast<PHeapFileSystem::ipheapstream*>(&in);

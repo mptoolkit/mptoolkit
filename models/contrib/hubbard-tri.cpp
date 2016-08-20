@@ -38,32 +38,32 @@ int main(int argc, char** argv)
          ("help", "show this help message")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
-      
-      prog_opt::variables_map vm;        
+
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).style(prog_opt::command_line_style::default_style ^
-					  prog_opt::command_line_style::allow_guessing).
-		      run(), vm);
-      prog_opt::notify(vm);    
-      
+                                          prog_opt::command_line_style::allow_guessing).
+                      run(), vm);
+      prog_opt::notify(vm);
+
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("Triangular Hubbard model");
       OpDescriptions.add_operators()
-	 ("H_tup"    , "nearest-neighbor hopping between the apex sites of clusters for up spins")
-	 ("H_tdown"  , "nearest-neighbor hopping between the apex sites of clusters for down spins")
-	 ("H_t"      , "nearest-neighbor hopping between the apex sites of clusters")
-	 ("H_t2up"   , "next-nearest-neighbor hopping between the apex sites of clusters for up spins")
-	 ("H_t2down" , "next-nearest-neighbor hopping between the apex sites of clusters for down spins")
-	 ("H_t2"     , "next-nearest-neighbor hopping between the apex sites of clusters")
-	 ("H_tcup"   , "hopping inside the cluster for up spins")
-	 ("H_tcdown" , "hopping inside the cluster for down spins")
-	 ("H_tc"     , "hopping inside the cluster")
-	 ("H_tpup"   , "nearest-neighbor hopping between non-apex sites of clusters for up spins")
-	 ("H_tpdown" , "nearest-neighbor hopping between non-apex sites of clusters for down spins")
-	 ("H_tp"     , "nearest-neighbor hopping between non-apex sites of clusters")
-	 ("H_U"      , "on-site Coulomb interaction n_up*n_down")
-	 ("H_Us"     , "on-site Coulomb interaction (n_up-1/2)(n_down-1/2)")
-	 ;
+         ("H_tup"    , "nearest-neighbor hopping between the apex sites of clusters for up spins")
+         ("H_tdown"  , "nearest-neighbor hopping between the apex sites of clusters for down spins")
+         ("H_t"      , "nearest-neighbor hopping between the apex sites of clusters")
+         ("H_t2up"   , "next-nearest-neighbor hopping between the apex sites of clusters for up spins")
+         ("H_t2down" , "next-nearest-neighbor hopping between the apex sites of clusters for down spins")
+         ("H_t2"     , "next-nearest-neighbor hopping between the apex sites of clusters")
+         ("H_tcup"   , "hopping inside the cluster for up spins")
+         ("H_tcdown" , "hopping inside the cluster for down spins")
+         ("H_tc"     , "hopping inside the cluster")
+         ("H_tpup"   , "nearest-neighbor hopping between non-apex sites of clusters for up spins")
+         ("H_tpdown" , "nearest-neighbor hopping between non-apex sites of clusters for down spins")
+         ("H_tp"     , "nearest-neighbor hopping between non-apex sites of clusters")
+         ("H_U"      , "on-site Coulomb interaction n_up*n_down")
+         ("H_Us"     , "on-site Coulomb interaction (n_up-1/2)(n_down-1/2)")
+         ;
       OpDescriptions.add_cell_operators()
          ("Parity"   , "permionic swap operator for legs 0,2")
          ("R"        , "spatial reflection")
@@ -78,7 +78,7 @@ int main(int argc, char** argv)
          print_copyright(std::cerr);
          std::cerr << "usage: " << argv[0] << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << OpDescriptions << '\n';
+         std::cerr << OpDescriptions << '\n';
          return 1;
       }
 
@@ -86,16 +86,16 @@ int main(int argc, char** argv)
       UnitCell Cell(repeat(Site, 3));
       InfiniteLattice Lattice(&Cell);
 
-      UnitCellOperator CHup(Cell, "CHup"), CHdown(Cell, "CHdown"), Cup(Cell, "Cup"), 
-	 Cdown(Cell, "Cdown"), Pdouble(Cell, "Pdouble"),
-	 Hu(Cell, "Hu"), N(Cell, "N"), Sz(Cell, "Sz"), Sp(Cell, "Sp"), Sm(Cell, "Sm"),
-	 R(Cell, "R");
+      UnitCellOperator CHup(Cell, "CHup"), CHdown(Cell, "CHdown"), Cup(Cell, "Cup"),
+         Cdown(Cell, "Cdown"), Pdouble(Cell, "Pdouble"),
+         Hu(Cell, "Hu"), N(Cell, "N"), Sz(Cell, "Sz"), Sp(Cell, "Sp"), Sm(Cell, "Sm"),
+         R(Cell, "R");
 
       // parity operators
       // **NOTE** Currently the swap_gate doesn't do fermion signs, so we
       // need to add this by hand
       Cell["Parity"] = Cell.swap_gate_no_sign(0,2) * exp(math_const::pi*std::complex<double>(0,1)
-							 *((N[0]+N[2])*N[1]+N[0]*N[2]));
+                                                         *((N[0]+N[2])*N[1]+N[0]*N[2]));
       // Reflection operator.
       R = R[0]*R[1]*R[2];
 
@@ -112,16 +112,16 @@ int main(int argc, char** argv)
       Lattice["H_t2"] = sum_unit(-(dot(CHdown(0)[1], Cdown(2)[1]) - dot(Cdown(0)[1], CHdown(2)[1])));
       Lattice["H_t2"] =  Lattice["H_t2up"] + Lattice["H_t2down"];
       Lattice["H_tc"] = sum_unit(-(dot(CHup(0)[0], Cup(0)[1]) - dot(Cup(0)[0], CHup(0)[1])
-				   + dot(CHup(0)[1], Cup(0)[2]) - dot(Cup(0)[1], CHup(0)[2])
-				   + dot(CHup(0)[0], Cup(0)[2]) - dot(Cup(0)[0], CHup(0)[2])));
+                                   + dot(CHup(0)[1], Cup(0)[2]) - dot(Cup(0)[1], CHup(0)[2])
+                                   + dot(CHup(0)[0], Cup(0)[2]) - dot(Cup(0)[0], CHup(0)[2])));
       Lattice["H_tc"] = sum_unit(-(dot(CHdown(0)[0], Cdown(0)[1]) - dot(Cdown(0)[0], CHdown(0)[1])
-				   + dot(CHdown(0)[1], Cdown(0)[2]) - dot(Cdown(0)[1], CHdown(0)[2])
-				   + dot(CHdown(0)[0], Cdown(0)[2]) - dot(Cdown(0)[0], CHdown(0)[2])));
+                                   + dot(CHdown(0)[1], Cdown(0)[2]) - dot(Cdown(0)[1], CHdown(0)[2])
+                                   + dot(CHdown(0)[0], Cdown(0)[2]) - dot(Cdown(0)[0], CHdown(0)[2])));
       Lattice["H_tc"] =  Lattice["H_tcup"] + Lattice["H_tcdown"];
       Lattice["H_tpup"] = sum_unit(-(dot(CHup(0)[0], Cup(1)[0]) - dot(Cup(0)[0], CHup(1)[0])
-				   + dot(CHup(0)[2], Cup(1)[2]) - dot(Cup(0)[2], CHup(1)[2])));
+                                   + dot(CHup(0)[2], Cup(1)[2]) - dot(Cup(0)[2], CHup(1)[2])));
       Lattice["H_tpdown"] = sum_unit(-(dot(CHdown(0)[0], Cdown(1)[0]) - dot(Cdown(0)[0], CHdown(1)[0])
-			      + dot(CHdown(0)[2], Cdown(1)[2]) - dot(Cdown(0)[2], CHdown(1)[2])));
+                              + dot(CHdown(0)[2], Cdown(1)[2]) - dot(Cdown(0)[2], CHdown(1)[2])));
       Lattice["H_tp"] =  Lattice["H_tpup"] + Lattice["H_tpdown"];
       Lattice["H_U"]  = sum_unit(Pdouble(0)[0] + Pdouble(0)[1] + Pdouble(0)[2]);
       Lattice["H_Us"] = sum_unit(Hu(0)[0] + Hu(0)[1] + Hu(0)[2]);

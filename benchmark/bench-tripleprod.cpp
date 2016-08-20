@@ -28,8 +28,8 @@ typedef std::complex<double> complex;
 
 typedef double mytype;
 
-typedef IrredTensor<LinearAlgebra::Matrix<mytype>, 
-                    VectorBasis, 
+typedef IrredTensor<LinearAlgebra::Matrix<mytype>,
+                    VectorBasis,
                     VectorBasis> MatrixOperator;
 
 double MakeTest(MatrixOperator const& L, MatrixOperator const& M, MatrixOperator const& N, int Repeat)
@@ -92,7 +92,7 @@ int main(int argc, char** argv)
    int NQuantum = boost::lexical_cast<int>(argv[2]);
    double Time = Test(MSize, NQuantum);
    double Flops = 2.0 * NQuantum * MSize*MSize*MSize;
-   std::cout << "Time per iteration: " << Time 
+   std::cout << "Time per iteration: " << Time
              << "\nNumber of operations: " << Flops
              << "\nMFlop/s: " << (Flops / (Time * 1e6)) << '\n';
 }

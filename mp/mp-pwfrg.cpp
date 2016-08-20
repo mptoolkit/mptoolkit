@@ -49,7 +49,7 @@ struct SuperblockMultiply
    typedef MatrixOperator argument_type;
 
    SuperblockMultiply(MPStateComponent const& Left_,
-		      MPStateComponent const& Right_);
+                      MPStateComponent const& Right_);
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
    {
@@ -61,7 +61,7 @@ struct SuperblockMultiply
 
 inline
 SuperblockMultiply::SuperblockMultiply(MPStateComponent const& Left_,
-				       MPStateComponent const& Right_)
+                                       MPStateComponent const& Right_)
    : Left(Left_), Right(Right_)
 {
 }
@@ -76,17 +76,17 @@ ExtractDiagonal(MatrixOperator const& m)
    {
       if (iterate_at(m.data(), i, i))
       {
-	 for (int j = 0; j < m.Basis1().dim(i); ++j)
-	 {
-	    x.push_back(m(i,i)(j,j).real());
-	 }
+         for (int j = 0; j < m.Basis1().dim(i); ++j)
+         {
+            x.push_back(m(i,i)(j,j).real());
+         }
       }
       else
       {
-	 for (int j = 0; j < m.Basis1().dim(i); ++j)
-	 {
-	    x.push_back(0.0);
-	 }
+         for (int j = 0; j < m.Basis1().dim(i); ++j)
+         {
+            x.push_back(0.0);
+         }
       }
    }
    return LinearAlgebra::Vector<double>(x.begin(), x.end());
@@ -115,14 +115,14 @@ int main(int argc, char** argv)
    SInfo.TruncationCutoff = TruncCutoff;
    SInfo.EigenvalueCutoff = EigenCutoff;
    std::cout << SInfo << '\n';
-   
+
    MpOpTriangular Ham = ZigZagChain(-sqrt(3.0)*Site["S"], Site["S"], J1, J2);
 
    MpOpTriangular BoundaryHam = ZigZagChain(-sqrt(3.0)*Boundary["S"], Boundary["S"], J1, J2);
 
-   //   MpOpTriangular Ham = TriangularTwoSite(-sqrt(3.0)*Site["S"], 
-   //					  Site["S"], 
-   //					  Site["I"].TransformsAs());
+   //   MpOpTriangular Ham = TriangularTwoSite(-sqrt(3.0)*Site["S"],
+   //                                     Site["S"],
+   //                                     Site["I"].TransformsAs());
 
    MPStateComponent E = Initial_E(BoundaryHam);
    MPStateComponent F = Initial_F(BoundaryHam);
@@ -176,9 +176,9 @@ int main(int argc, char** argv)
 
    int Iterations = NumIter;
    //Center = 0.5 * (Center + adjoint(Center));
-   double Energy = Lanczos(Center, 
-			   SuperblockMultiply(E, F),
-			   Iterations);
+   double Energy = Lanczos(Center,
+                           SuperblockMultiply(E, F),
+                           Iterations);
    //Center = 0.5 * (Center + adjoint(Center));
    TRACE(Energy);
 
@@ -189,63 +189,63 @@ int main(int argc, char** argv)
       MatrixOperator RhoL = scalar_prod(Center, herm(Center));
       DensityMatrix<MatrixOperator> DML(RhoL);
       TruncationInfo Info;
-      MatrixOperator TruncL = DML.ConstructTruncator(DML.begin(), 
-						     TruncateFixTruncationErrorAbsolute(DML.begin(),
-											DML.end(),
-											SInfo,
-											Info));
+      MatrixOperator TruncL = DML.ConstructTruncator(DML.begin(),
+                                                     TruncateFixTruncationErrorAbsolute(DML.begin(),
+                                                                                        DML.end(),
+                                                                                        SInfo,
+                                                                                        Info));
 
       // randomize the signs of TruncL
       for (unsigned j = 0; j < TruncL.Basis1().size(); ++j)
       {
-	 for (int k = 0; k < TruncL.Basis1().dim(j); ++k)
-	 {
-	    int sign = ((rand() / 1000) % 2) * 2 - 1;
-	    for (unsigned l = 0; l < TruncL.Basis2().size(); ++l)
-	    {
-	       if (iterate_at(TruncL.data(), j,l))
-	       {
-		  for (int m = 0; m < TruncL.Basis2().dim(l); ++m)
-		  {
-		     TruncL(j,l)(k,m) *= sign;
-		  }
-	       }
-	    }
-	 }
+         for (int k = 0; k < TruncL.Basis1().dim(j); ++k)
+         {
+            int sign = ((rand() / 1000) % 2) * 2 - 1;
+            for (unsigned l = 0; l < TruncL.Basis2().size(); ++l)
+            {
+               if (iterate_at(TruncL.data(), j,l))
+               {
+                  for (int m = 0; m < TruncL.Basis2().dim(l); ++m)
+                  {
+                     TruncL(j,l)(k,m) *= sign;
+                  }
+               }
+            }
+         }
       }
 
       Center = TruncL * Center;
       A.back() = prod(A.back(), herm(TruncL));
       E = triple_prod(TruncL, E, herm(TruncL));
 
-#if 0      
+#if 0
       MatrixOperator RhoR = scalar_prod(herm(Center), Center);
       DensityMatrix<MatrixOperator> DMR(RhoR);
       TruncationInfo InfoR;
-      MatrixOperator TruncR = DMR.ConstructTruncator(DMR.begin(), 
-						     TruncateFixTruncationErrorAbsolute(DMR.begin(),
-											DMR.end(),
-											SInfo,
-											InfoR));
+      MatrixOperator TruncR = DMR.ConstructTruncator(DMR.begin(),
+                                                     TruncateFixTruncationErrorAbsolute(DMR.begin(),
+                                                                                        DMR.end(),
+                                                                                        SInfo,
+                                                                                        InfoR));
 #else
 #if 0
       // randomize the signs of TruncL
       for (unsigned j = 0; j < TruncL.Basis1().size(); ++j)
       {
-	 for (int k = 0; k < TruncL.Basis1().dim(j); ++k)
-	 {
-	    int sign = ((rand() / 1000) % 2) * 2 - 1;
-	    for (unsigned l = 0; l < TruncL.Basis2().size(); ++l)
-	    {
-	       if (iterate_at(TruncL.data(), j,l))
-	       {
-		  for (int m = 0; m < TruncL.Basis2().dim(l); ++m)
-		  {
-		     TruncL(j,l)(k,m) *= sign;
-		  }
-	       }
-	    }
-	 }
+         for (int k = 0; k < TruncL.Basis1().dim(j); ++k)
+         {
+            int sign = ((rand() / 1000) % 2) * 2 - 1;
+            for (unsigned l = 0; l < TruncL.Basis2().size(); ++l)
+            {
+               if (iterate_at(TruncL.data(), j,l))
+               {
+                  for (int m = 0; m < TruncL.Basis2().dim(l); ++m)
+                  {
+                     TruncL(j,l)(k,m) *= sign;
+                  }
+               }
+            }
+         }
       }
 #endif
       MatrixOperator TruncR = TruncL;
@@ -275,14 +275,14 @@ int main(int argc, char** argv)
       TRACE(BondE);
 
       //      if (i%2)
-      //	 TRACE(ExtractDiagonal(Center));
+      //         TRACE(ExtractDiagonal(Center));
 
       CenterQ.back() = Center;
 
       if (i%1000 == 0)
       {
-	 R = A.back();
-	 S = B.front();
+         R = A.back();
+         S = B.front();
       }
 
       // The PWFRG transformation
@@ -313,12 +313,12 @@ int main(int argc, char** argv)
       CHECK_EQUAL(Center.Basis2(), B.front().Basis1());
       CHECK_EQUAL(A.back().Basis2(), B.front().Basis1());
       {
-	 MatrixOperator U = ExpandBasis2(A.back());
-	 Center = U * Center;
+         MatrixOperator U = ExpandBasis2(A.back());
+         Center = U * Center;
       }
       {
-      	 MatrixOperator U = ExpandBasis1(B.front());
-      	 Center = Center * U;
+         MatrixOperator U = ExpandBasis1(B.front());
+         Center = Center * U;
       }
 
       TRACE(norm_frob(Center));
@@ -336,7 +336,7 @@ int main(int argc, char** argv)
 
       //for (int i = 0; i < UnitCellSize; ++i)
       //{
-      //	 TRACE(i)(A2[i].Basis2())(CenterQ[i].Basis1());
+      //         TRACE(i)(A2[i].Basis2())(CenterQ[i].Basis1());
       //}
 
       //CHECK_EQUAL(A2.front().Basis2(), CenterQ.front().Basis1());
@@ -346,23 +346,23 @@ int main(int argc, char** argv)
 
       if (norm_frob(Center) < 1E-10)
       {
-	 TRACE(norm_frob(Center));
-	 Center = MakeRandomMatrixOperator(Center.Basis1(), Center.Basis2());
+         TRACE(norm_frob(Center));
+         Center = MakeRandomMatrixOperator(Center.Basis1(), Center.Basis2());
       }
 
       //Center = 0.5 * (Center + adjoint(Center));
       MatrixOperator CenterSave = Center;
       Iterations = NumIter;
-      Energy = Lanczos(Center, 
-		       SuperblockMultiply(E, F),
-		       Iterations);
+      Energy = Lanczos(Center,
+                       SuperblockMultiply(E, F),
+                       Iterations);
       //Center = 0.5 * (Center + adjoint(Center));
       TRACE(Energy)(inner_prod(Center, CenterSave));
 
       //      TRACE(norm_frob(Center))(norm_frob(CenterSave));
       //      TRACE(Center)(CenterSave);
       //      TRACE(EigenvaluesHermitian(scalar_prod(Center, herm(Center))))
-      //	 (EigenvaluesHermitian(scalar_prod(CenterSave, herm(CenterSave))));
+      //         (EigenvaluesHermitian(scalar_prod(CenterSave, herm(CenterSave))));
       //      TRACE(Center.Basis1());
       //      TRACE(CenterSave.Basis1());
 
@@ -372,7 +372,7 @@ int main(int argc, char** argv)
 
       // bond energy
       double BondEnergy = inner_prod(Center, triple_prod(E[1], Center, herm(F[1]))).real()
-	 + inner_prod(Center, triple_prod(E[2], Center, herm(F[2]))).real();
+         + inner_prod(Center, triple_prod(E[2], Center, herm(F[2]))).real();
       TRACE(BondEnergy);
 
       // over-relaxation step (not effective)

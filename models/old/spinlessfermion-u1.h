@@ -54,7 +54,7 @@ LatticeSite CreateU1SpinlessFermion(std::string const& Sym = "N")
 
    P("empty", "empty") = 1.0;
    P("fermion", "fermion") = -1.0;
-   
+
    Site["I"] = I;
    Site["P"] = P;
    Site["R"] = R;

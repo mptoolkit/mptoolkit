@@ -36,18 +36,18 @@ void ShowWavefunc(MPWavefunction Psi, std::ostream& out, int Max = -1)
       //      out << Psi.Left().Basis2() << '\n' << Psi.Right().Basis1() << '\n';
       //      out << mp_prod_left(Psi.Left(), Psi.Left()) << '\n';
       //      out << "trace of norm matrix at " << Psi.LeftSize() << " is "
-      //	 out << trace(mp_prod_left(Psi.Left(), Psi.Left())) << '\n';
-      DensityMatrix<BlockOperator> DM(prod(Psi.Center(), adjoint(Psi.Center()), 
-					   Psi.Center().TransformsAs()));
-      out << "\nReduced density matrix at partition (" 
-	  << Psi.LeftSize() << "," << Psi.RightSize() << ") :\n";
+      //         out << trace(mp_prod_left(Psi.Left(), Psi.Left())) << '\n';
+      DensityMatrix<BlockOperator> DM(prod(Psi.Center(), adjoint(Psi.Center()),
+                                           Psi.Center().TransformsAs()));
+      out << "\nReduced density matrix at partition ("
+          << Psi.LeftSize() << "," << Psi.RightSize() << ") :\n";
       DM.DensityMatrixReport(out, Max);
       Psi.RotateRight();
    }
 
-   DensityMatrix<BlockOperator> DM(prod(Psi.Center(), adjoint(Psi.Center()), 
-					Psi.Center().TransformsAs()));
-   out << "\nReduced density matrix at partition (" 
+   DensityMatrix<BlockOperator> DM(prod(Psi.Center(), adjoint(Psi.Center()),
+                                        Psi.Center().TransformsAs()));
+   out << "\nReduced density matrix at partition ("
        << Psi.LeftSize() << "," << Psi.RightSize() << ") :\n";
    DM.DensityMatrixReport(out, Max);
 }

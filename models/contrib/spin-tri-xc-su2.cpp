@@ -27,27 +27,27 @@
 // Example for W=8:
 //
 //  (4)-(12)
-//  / \ / 
+//  / \ /
 //(0)-(8)--
 //  \ / \ /
 //   7---15
-//  / \ / 
+//  / \ /
 // 3---11--
 //  \ / \ /
 //   6---14
-//  / \ / 
+//  / \ /
 // 2---10--
 //  \ / \ /
 //   5---13
-//  / \ / 
+//  / \ /
 // 1---9---
 //  \ / \ /
 //   4---12
-//  / \ / 
+//  / \ /
 // 0---8---
 //  \ / \ /
 //  (7)-(15)
-//  / \ / 
+//  / \ /
 //(3)-(11)--
 
 #include "pheap/pheap.h"
@@ -79,26 +79,26 @@ int main(int argc, char** argv)
       desc.add_options()
          ("help", "show this help message")
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
-	 ("width,w", prog_opt::value(&w), "width of the cylinder [default 3]")
+         ("width,w", prog_opt::value(&w), "width of the cylinder [default 3]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
-      
-      prog_opt::variables_map vm;        
+
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).style(prog_opt::command_line_style::default_style ^
-					  prog_opt::command_line_style::allow_guessing).
-		      run(), vm);
-      prog_opt::notify(vm);    
-      
+                                          prog_opt::command_line_style::allow_guessing).
+                      run(), vm);
+      prog_opt::notify(vm);
+
       OperatorDescriptions OpDescriptions;
       OpDescriptions.add_operators()
-	 ("H_J1",     "nearest neighbor spin exchange")
-	 ("H_J2",     "next-nearest neighbor spin exchange")
-	 ("H_Jcell",  "zig-zag cylinder coupling")
-	 ("Ty"  ,     "Translation in Y direction")
-	 ("TyPi",     "Translation by pi in Y-direction (only if w is divisible by 4)")
-	 ("Ry"  ,     "Reflection about the X-axis")
-	 ;
+         ("H_J1",     "nearest neighbor spin exchange")
+         ("H_J2",     "next-nearest neighbor spin exchange")
+         ("H_Jcell",  "zig-zag cylinder coupling")
+         ("Ty"  ,     "Translation in Y direction")
+         ("TyPi",     "Translation by pi in Y-direction (only if w is divisible by 4)")
+         ("Ry"  ,     "Reflection about the X-axis")
+         ;
 
       OpDescriptions.add_functions()
          ("THM",        "J1-J2 Heisenebrg Hamiltonian on a triangular lattice | inputs: J1 = cos(theta), J2 = sin(theta), theta = atan(alpha), alpha = 0.0")
@@ -109,14 +109,14 @@ int main(int argc, char** argv)
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << OpDescriptions << '\n';
+         std::cerr << OpDescriptions << '\n';
          return 1;
       }
 
       if (w%2 != 0)
       {
-	 std::cerr << "fatal: width must be even.\n";
-	 return 1;
+         std::cerr << "fatal: width must be even.\n";
+         return 1;
       }
 
       LatticeSite Site = SpinSU2(Spin);
@@ -130,10 +130,10 @@ int main(int argc, char** argv)
       // w/2, for convenience
       int const w2 = w/2;
 
-      UnitCellMPO S_stag_n60;             
+      UnitCellMPO S_stag_n60;
       for (int i = 0; i < w; ++i)
       {
-	 S += S[i];                                                                  // total spin on a unit cell
+         S += S[i];                                                                  // total spin on a unit cell
          StagS += IntPow(-1,i/w2) * S[i];                                            // staggered magnetization in Y-direction (note: only one of the three possible formations).
          S_stag_n60 += IntPow(-1,i+(i/w2))*S(0)[i] + IntPow(-1,i+(i/w2)+1)*S(1)[i];  // staggered magnetization order parameter with FM stripes in -60^degree direction.
       }
@@ -147,49 +147,49 @@ int main(int argc, char** argv)
        }
 
        // to test existence of bipartite/tripartite symmetry, add operators for the staggered/sublattice magnetization:
-       // NOTE: XC structure does NOT need a 3*W unit-cell for sublattice magnetization operators. 
+       // NOTE: XC structure does NOT need a 3*W unit-cell for sublattice magnetization operators.
        UnitCellMPO S_A, S_B, S_C;
 
        for (int i = 0; i < w; i += 3)
        {
-	  S_A += S(0)[i];
-	  if ( (i+1)<w ) S_B += S(0)[i+1];
-	  if ( (i+2)<w ) S_C += S(0)[i+2];
+          S_A += S(0)[i];
+          if ( (i+1)<w ) S_B += S(0)[i+1];
+          if ( (i+2)<w ) S_C += S(0)[i+2];
        }
-     
+
       // Construct the Hamiltonian for a single unit-cell,
       UnitCellMPO H1, H2, H_Jcell;
-    
+
       for (int i = 0; i < w2; ++i)
       {
-	 // nearest neighbor bonds, first column
-	 H1 += inner(S(0)[i], S(1)[i]);               // horizontal
-	 H1 += inner(S(0)[i], S(0)[i+w2]);            // up-right
-	 H1 += inner(S(0)[i], S(0)[(i+w2-1)%w2+w2]);  // down-right
+         // nearest neighbor bonds, first column
+         H1 += inner(S(0)[i], S(1)[i]);               // horizontal
+         H1 += inner(S(0)[i], S(0)[i+w2]);            // up-right
+         H1 += inner(S(0)[i], S(0)[(i+w2-1)%w2+w2]);  // down-right
 
-	 // nearest neighbor bonds, second column
-	 H1 += inner(S(0)[i+w2], S(1)[i+w2]);         // horizontal
-	 H1 += inner(S(0)[i+w2], S(1)[(i+1)%w2]);     // up-right
-	 H1 += inner(S(0)[i+w2], S(1)[i]);            // down-right
+         // nearest neighbor bonds, second column
+         H1 += inner(S(0)[i+w2], S(1)[i+w2]);         // horizontal
+         H1 += inner(S(0)[i+w2], S(1)[(i+1)%w2]);     // up-right
+         H1 += inner(S(0)[i+w2], S(1)[i]);            // down-right
 
-	 // next-nearest neighbor bonds, first column
-	 // vertical
-	 H2 += inner(S(0)[i], S(0)[(i+1)%w2]);
+         // next-nearest neighbor bonds, first column
+         // vertical
+         H2 += inner(S(0)[i], S(0)[(i+1)%w2]);
 
-	 // 60 degree bonds
-	 H2 += inner(S(0)[i], S(1)[i+w2]);
-	 H2 += inner(S(0)[i], S(1)[(i+w2-1)%w2+w2]);
+         // 60 degree bonds
+         H2 += inner(S(0)[i], S(1)[i+w2]);
+         H2 += inner(S(0)[i], S(1)[(i+w2-1)%w2+w2]);
 
-	 // next-nearest neighbor bonds, second column
-	 // vertical
-	 H2 += inner(S(0)[i+w2], S(0)[(i+1)%w2+w2]);
+         // next-nearest neighbor bonds, second column
+         // vertical
+         H2 += inner(S(0)[i+w2], S(0)[(i+1)%w2+w2]);
 
-	 // 60 degree bonds
-	 H2 += inner(S(0)[i+w2], S(2)[(i+1)%w2]);
-	 H2 += inner(S(0)[i+w2], S(2)[i]);
+         // 60 degree bonds
+         H2 += inner(S(0)[i+w2], S(2)[(i+1)%w2]);
+         H2 += inner(S(0)[i+w2], S(2)[i]);
 
-	 H_Jcell += inner(S(0)[i], S(0)[i+w2]);
-	 H_Jcell += inner(S(0)[(i+1)%w2], S(0)[i+w2]);
+         H_Jcell += inner(S(0)[i], S(0)[i+w2]);
+         H_Jcell += inner(S(0)[(i+1)%w2], S(0)[i+w2]);
       }
 
       Lattice["H_J1"]    = sum_unit(H1);
@@ -221,24 +221,24 @@ int main(int argc, char** argv)
       UnitCellMPO Ry = I(0);
       for (int i = 0; i < w2/2; ++i)
       {
-	 Ry = Ry * Cell.swap_gate_no_sign(w2+i, w-i-1);
-	 if (w2-i-1 > i+1)
-	 {
-	    Ry = Ry * Cell.swap_gate_no_sign(i+1, w2-i-1);
-	 }
+         Ry = Ry * Cell.swap_gate_no_sign(w2+i, w-i-1);
+         if (w2-i-1 > i+1)
+         {
+            Ry = Ry * Cell.swap_gate_no_sign(i+1, w2-i-1);
+         }
       }
       Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w);
 
       // for even size unit cell, add rotation by pi
       if (w2%2 == 0)
       {
-	 UnitCellMPO TyPi = I(0);
-	 for (int i = 0; i < w2/2; ++i)
-	 {
-	    TyPi = TyPi * Cell.swap_gate_no_sign(i, i+w2/2);
-	    TyPi = TyPi * Cell.swap_gate_no_sign(i+w2, i+w2+w2/2);
-	 }
-	 Lattice["TyPi"] = prod_unit_left_to_right(TyPi.MPO(), w);
+         UnitCellMPO TyPi = I(0);
+         for (int i = 0; i < w2/2; ++i)
+         {
+            TyPi = TyPi * Cell.swap_gate_no_sign(i, i+w2/2);
+            TyPi = TyPi * Cell.swap_gate_no_sign(i+w2, i+w2+w2/2);
+         }
+         Lattice["TyPi"] = prod_unit_left_to_right(TyPi.MPO(), w);
       }
 
       // Information about the lattice

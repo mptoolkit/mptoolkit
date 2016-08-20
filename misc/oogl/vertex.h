@@ -66,14 +66,14 @@ bool operator!=(Vertex const& v1, Vertex const& v2);
 
 std::ostream& operator<<(std::ostream& out, Vertex const& v);
 
-// Color is a representation of an RGBA color.  
+// Color is a representation of an RGBA color.
 // There is a named constructor to convert from HSV.
 struct Color
 {
    double R, G, B, A;
 
    Color() {}
-  
+
    Color(double R_, double G_, double B_, double A_ = 1.0)
      : R(R_), G(G_), B(B_), A(A_) {}
 
@@ -88,7 +88,7 @@ struct Color
    { return Color(R,G,B,A); }
 };
 
-// The predefined colors are in 
+// The predefined colors are in
 namespace Colors
 {
 
@@ -162,7 +162,7 @@ class VertexList
       VertexList() {}
 
       VertexList(Vertex const& v) { VList.push_back(v); }
-      VertexList(Vertex const& v1, Vertex const& v2) 
+      VertexList(Vertex const& v1, Vertex const& v2)
          { VList.push_back(v1); VList.push_back(v2); }
 
       int size() const { return VList.size(); }
@@ -180,11 +180,11 @@ class VertexList
 
       VertexList& operator*=(Transform const& t)
       {
-	 for (unsigned i = 0; i < VList.size(); ++i)
-	 {
-	    VList[i] *= t;
-	 }
-	 return *this;
+         for (unsigned i = 0; i < VList.size(); ++i)
+         {
+            VList[i] *= t;
+         }
+         return *this;
       }
 
    private:
@@ -219,11 +219,11 @@ class ColorVertexList
 
       ColorVertexList& operator*=(Transform const& t)
       {
-	 for (unsigned i = 0; i < VList.size(); ++i)
-	 {
-	    VList[i].first *= t;
-	 }
-	 return *this;
+         for (unsigned i = 0; i < VList.size(); ++i)
+         {
+            VList[i].first *= t;
+         }
+         return *this;
       }
 
    private:
@@ -240,7 +240,7 @@ class Face : public std::vector<int>
       Face() {}
       Face(size_t Size) : std::vector<int>(Size) {}
       template <class Iter>
-	 Face(Iter first, Iter last) : std::vector<int>(first, last) {}
+         Face(Iter first, Iter last) : std::vector<int>(first, last) {}
 };
 
 std::ostream& operator<<(std::ostream& out, Face const& f);

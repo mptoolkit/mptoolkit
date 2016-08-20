@@ -55,7 +55,7 @@ class Descriptor
 
       typedef BlockListType::const_iterator block_iterator;
       typedef IdListType::const_iterator id_iterator;
-      
+
       size_t data_size() const { return DataSize; }
 
       // returns the number of data blocks
@@ -101,7 +101,7 @@ inline
 std::ostream& operator<<(std::ostream& out, Descriptor const& d)
 {
    out << "Descriptor size=" << d.DataSize
-       << "\nBlocks: " << d.BlockList 
+       << "\nBlocks: " << d.BlockList
        << "\nNested identifiers: " << d.IdList << '\n';
    return out;
 }

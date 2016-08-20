@@ -40,7 +40,7 @@ namespace mp_pheap
 // returns the page size to use, either MP_PAGE_SIZE environment or DEFAULT_PAGE_SIZE
 int PageSize();
 
-// returns the page cache size to use, either MP_PAGE_CACHE_SIZE environment 
+// returns the page cache size to use, either MP_PAGE_CACHE_SIZE environment
 // or DEFAULT_PAGE_CACHE_SIZE
 long CacheSize();
 

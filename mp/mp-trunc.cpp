@@ -45,21 +45,21 @@ void truncate_global(LinearWavefunction& Psi, StatesInfo const& SInfo, bool Show
       M = ExpandBasis2(*I);
       DensityMatrix<MatrixOperator> DM(scalar_prod(M, herm(M)));
       TruncationInfo Info;
-      MatrixOperator U = DM.ConstructTruncator(DM.begin(), TruncateFixTruncationErrorAbsolute(DM.begin(), 
+      MatrixOperator U = DM.ConstructTruncator(DM.begin(), TruncateFixTruncationErrorAbsolute(DM.begin(),
                                                                                               DM.end(),
                                                                                               SInfo,
                                                                                               Info));
       if (ShowStates)
          std::cerr << "bond=" << BondNr
-                   << ", states=" << Info.KeptStates() 
-                   << ", trunc=" << Info.TruncationError() 
+                   << ", states=" << Info.KeptStates()
+                   << ", trunc=" << Info.TruncationError()
                    << ", largest_discarded_evalue=" << Info.LargestDiscardedEigenvalue()
                    << '\n';
 
       // Now we want to save the truncator that keeps all the states
       MatrixOperator UFull = DM.ConstructTruncator(DM.begin(),
                                                    DM.begin() + M.Basis2().total_dimension());
-      
+
       *I = prod(*I, herm(UFull));
       M = UFull*M;
 
@@ -86,7 +86,7 @@ void truncate_global(LinearWavefunction& Psi, StatesInfo const& SInfo, bool Show
       ++I;
    }
    M = (*TI)*M;
-   
+
    DEBUG_CHECK(++TI == Truncators.end());
 
    if (ShowStates)
@@ -117,18 +117,18 @@ int main(int argc, char** argv)
          ("help", "show this help message")
          ("wavefunction,w", prog_opt::value(&WavefunctionFile),
           "input wavefunction (required)")
-         ("out,o", prog_opt::value<std::string>(), 
+         ("out,o", prog_opt::value<std::string>(),
           "output wavefunction (overwrites the input if this is not specified)")
-         ("min-states", prog_opt::value<int>(&MinStates), 
-          ("Minimum number of states to keep [default " 
+         ("min-states", prog_opt::value<int>(&MinStates),
+          ("Minimum number of states to keep [default "
            +boost::lexical_cast<std::string>(MinStates)+"]").c_str())
-	 ("max-states,m", prog_opt::value<int>(&MaxStates), 
+         ("max-states,m", prog_opt::value<int>(&MaxStates),
           ("Maximum number of states to keep [default "
            +boost::lexical_cast<std::string>(MaxStates)+"]").c_str())
-         ("trunc,r", prog_opt::value(&TruncCutoff), 
+         ("trunc,r", prog_opt::value(&TruncCutoff),
           ("Cutoff truncation error per site [default "
            +boost::lexical_cast<std::string>(TruncCutoff)+"]").c_str())
-         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff), 
+         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           ("Cutoff threshold for density matrix eigenvalues [default "
            +boost::lexical_cast<std::string>(EigenCutoff)+"]").c_str())
          ("global", prog_opt::bool_switch(&Global),
@@ -139,11 +139,11 @@ int main(int argc, char** argv)
           "show additional information")
          ;
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).run(), vm);
-      prog_opt::notify(vm);    
-      
+      prog_opt::notify(vm);
+
       if (vm.count("help") || vm.count("wavefunction") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));

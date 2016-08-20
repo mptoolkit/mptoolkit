@@ -26,7 +26,7 @@ namespace PHeapFileSystem
 {
 
 // MinimumUsefulBufferSize is a cutoff for deciding whether to re-use a buffer.
-// Buffers smaller than this value are not re-used as it is assumed that 
+// Buffers smaller than this value are not re-used as it is assumed that
 // the overhead per buffer is larger than the useful storage space.
 size_t const MinimumUsefulBufferSize = 64;
 
@@ -55,7 +55,7 @@ OutputBuffer::OutputBuffer(WriteBuffer const& Buf)
    : WB(Buf), BeginPtr(Buf.buffer()),
      CurrentPtr(Buf.buffer()), EndPtr(Buf.buffer() + Buf.get_fs()->get_page_size())
 {
-} 
+}
 
 BlockRecord OutputBuffer::commit()
 {
@@ -68,7 +68,7 @@ BlockRecord OutputBuffer::commit()
 // InputBuffer
 //
 
-InputBuffer::InputBuffer() 
+InputBuffer::InputBuffer()
    : BeginPtr(NULL), CurrentPtr(NULL), EndPtr(NULL)
 {
 }
@@ -78,7 +78,7 @@ InputBuffer::InputBuffer(BlockRecord const& R)
 {
    CurrentPtr = BeginPtr = RB.buffer() + R.Offset;
    EndPtr = BeginPtr + R.Length;
-}   
+}
 
 //
 // BlockFileSystem
@@ -115,7 +115,7 @@ void BlockFileSystem::return_output_buffer(OutputBuffer* Buf)
    DEBUG_PRECONDITION(Buf->buf_ptr() == Buf->buf_begin());
 
    //   std::cout << "returning buffer to system, used = " << (Buf->buf_ptr() - Buf->buf_begin())
-      //	     << " remain = " << Buf->remain() << std::endl;
+      //             << " remain = " << Buf->remain() << std::endl;
 
    size_t Remain = Buf->buf_end() - Buf->buf_begin();
    if (Remain < MinimumUsefulBufferSize)
@@ -135,7 +135,7 @@ OutputBuffer* BlockFileSystem::cycle_output_buffer(OutputBuffer* Buf)
    DEBUG_PRECONDITION(Buf->buf_ptr() == Buf->buf_begin());
 
    //   std::cout << "cycling buffer, used = " << (Buf->buf_ptr() - Buf->buf_begin())
-   //	     << " remain = " << Buf->remain() << std::endl;
+   //        << " remain = " << Buf->remain() << std::endl;
 
    size_t Remain = Buf->buf_end() - Buf->buf_begin();
    if (Remain < MinimumUsefulBufferSize)

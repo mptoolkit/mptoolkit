@@ -56,7 +56,7 @@ inline
 RepLabelBase<Tag>::RepLabelBase(SymmetryListImpl const* q, int Size, InputIter InitIter)
 {
    static_assert(std::is_same<typename std::iterator_traits<InputIter>::value_type, int>::value,
-		 "quantum number iterator value must be int");
+                 "quantum number iterator value must be int");
    DEBUG_PRECONDITION(q != NULL);
    CHECK(Size <= QUANTUM_NUMBER_FIXED_SIZE)(Size)
       ("Increase the constant QUANTUM_NUMBER_FIXED_SIZE!");
@@ -76,7 +76,7 @@ RepLabelBase<Tag>::~RepLabelBase()
 }
 
 template <typename Tag>
-RepLabelBase<Tag>& 
+RepLabelBase<Tag>&
 RepLabelBase<Tag>::operator=(RepLabelBase<Tag> const& q)
 {
    Storage = q.Storage;
@@ -85,22 +85,22 @@ RepLabelBase<Tag>::operator=(RepLabelBase<Tag> const& q)
 
 template <typename Tag>
 inline
-bool 
+bool
 RepLabelBase<Tag>::is_equal_to(RepLabelBase<Tag> const& Q) const
-{ 
+{
    DEBUG_PRECONDITION(GetSymmetryListImpl() == Q.GetSymmetryListImpl());
-   return memcmp(&Storage.NumberArray[0], &Q.Storage.NumberArray[0],  
-                 this->size()*sizeof(int)) == 0; 
+   return memcmp(&Storage.NumberArray[0], &Q.Storage.NumberArray[0],
+                 this->size()*sizeof(int)) == 0;
 }
 
 template <typename Tag>
 inline
-bool 
+bool
 RepLabelBase<Tag>::is_less_than(RepLabelBase<Tag> const& Q) const
-{ 
+{
    DEBUG_PRECONDITION(GetSymmetryListImpl() == Q.GetSymmetryListImpl());
-   return memcmp(&Storage.NumberArray[0], &Q.Storage.NumberArray[0],  
-                 this->size()*sizeof(int)) < 0; 
+   return memcmp(&Storage.NumberArray[0], &Q.Storage.NumberArray[0],
+                 this->size()*sizeof(int)) < 0;
 }
 
 template <typename Tag>
@@ -129,14 +129,14 @@ QuantumNumber::QuantumNumber()
 }
 
 inline
-bool 
+bool
 QuantumNumber::operator==(QuantumNumber const& Q) const
 {
    return is_equal_to(Q);
 }
 
 inline
-bool 
+bool
 QuantumNumber::operator!=(QuantumNumber const& Q) const
 {
    return !is_equal_to(Q);
@@ -168,7 +168,7 @@ QuantumNumber::QuantumNumber(SymmetryList const& qList, NoInitialization)
 }
 
 template <typename T>
-T 
+T
 QuantumNumber::get(std::string Name) const
 {
    int SymmetryNumber = this->GetSymmetryList().WhichSymmetry(Name);
@@ -182,11 +182,11 @@ QuantumNumber::get(std::string Name) const
    if (!SbT)
    {
       PANIC("Quantum number is not convertible to the given type")
-	 (Name)(typeid(T).name());
+         (Name)(typeid(T).name());
    }
 
    return SbT->MakeQN(this->begin()
-		      + this->GetSymmetryList().QuantumNumberOffset(SymmetryNumber));
+                      + this->GetSymmetryList().QuantumNumberOffset(SymmetryNumber));
 }
 
 template <typename T>
@@ -204,7 +204,7 @@ QuantumNumber::set(std::string Name, T const& q)
    if (!SbT)
    {
       PANIC("Quantum number is not convertible to the given type")
-	 (Name)(typeid(T).name());
+         (Name)(typeid(T).name());
    }
 
    q.Convert(this->begin() + this->GetSymmetryList().QuantumNumberOffset(SymmetryNumber));
@@ -228,14 +228,14 @@ Projection::Projection(SymmetryList const& qList, NoInitialization)
 }
 
 inline
-bool 
+bool
 Projection::operator==(Projection const& Q) const
 {
    return is_equal_to(Q);
 }
 
 inline
-bool 
+bool
 Projection::operator!=(Projection const& Q) const
 {
    return !is_equal_to(Q);
@@ -294,7 +294,7 @@ std::complex<double> cross_product_factor(QuantumNumber const& q1, QuantumNumber
 
 inline
 double clebsch_gordan(QuantumNumber const& q1, QuantumNumber const& q2, QuantumNumber const& q,
-		      Projection const&    m1, Projection const&    m2, Projection const&    m)
+                      Projection const&    m1, Projection const&    m2, Projection const&    m)
 {
    DEBUG_PRECONDITION(q.GetSymmetryList() == q1.GetSymmetryList());
    DEBUG_PRECONDITION(q.GetSymmetryList() == q2.GetSymmetryList());
@@ -307,10 +307,10 @@ double clebsch_gordan(QuantumNumber const& q1, QuantumNumber const& q2, QuantumN
 }
 
 inline
-double product_coefficient(QuantumNumber const& k1, QuantumNumber const& k2, 
-			   QuantumNumber const& k,
-			  QuantumNumber const& qp, QuantumNumber const& q, 
-			   QuantumNumber const& qpp)
+double product_coefficient(QuantumNumber const& k1, QuantumNumber const& k2,
+                           QuantumNumber const& k,
+                          QuantumNumber const& qp, QuantumNumber const& q,
+                           QuantumNumber const& qpp)
 {
    DEBUG_PRECONDITION(q.GetSymmetryList() == qp.GetSymmetryList());
    DEBUG_PRECONDITION(q.GetSymmetryList() == qpp.GetSymmetryList());
@@ -322,10 +322,10 @@ double product_coefficient(QuantumNumber const& k1, QuantumNumber const& k2,
 }
 
 inline
-double inverse_product_coefficient(QuantumNumber const& k1, QuantumNumber const& k2, 
-				   QuantumNumber const& k,
-				   QuantumNumber const& qp, QuantumNumber const& q, 
-				   QuantumNumber const& qpp)
+double inverse_product_coefficient(QuantumNumber const& k1, QuantumNumber const& k2,
+                                   QuantumNumber const& k,
+                                   QuantumNumber const& qp, QuantumNumber const& q,
+                                   QuantumNumber const& qpp)
 {
    DEBUG_PRECONDITION(q.GetSymmetryList() == qp.GetSymmetryList());
    DEBUG_PRECONDITION(q.GetSymmetryList() == qpp.GetSymmetryList());
@@ -337,12 +337,12 @@ double inverse_product_coefficient(QuantumNumber const& k1, QuantumNumber const&
 }
 
 inline
-double tensor_coefficient(QuantumNumber const& k1,  QuantumNumber const& k2,  
-			  QuantumNumber const& k,
-			 QuantumNumber const& q1p, QuantumNumber const& q2p, 
-			  QuantumNumber const& qp,
-			 QuantumNumber const& q1,  QuantumNumber const& q2,  
-			  QuantumNumber const& q)
+double tensor_coefficient(QuantumNumber const& k1,  QuantumNumber const& k2,
+                          QuantumNumber const& k,
+                         QuantumNumber const& q1p, QuantumNumber const& q2p,
+                          QuantumNumber const& qp,
+                         QuantumNumber const& q1,  QuantumNumber const& q2,
+                          QuantumNumber const& q)
 {
    DEBUG_PRECONDITION(q.GetSymmetryList() == k1.GetSymmetryList());
    DEBUG_PRECONDITION(q.GetSymmetryList() == k2.GetSymmetryList());
@@ -353,17 +353,17 @@ double tensor_coefficient(QuantumNumber const& k1,  QuantumNumber const& k2,
    DEBUG_PRECONDITION(q.GetSymmetryList() == q1.GetSymmetryList());
    DEBUG_PRECONDITION(q.GetSymmetryList() == q2.GetSymmetryList());
    return q.GetSymmetryList().tensor_coefficient(k1.begin()  , k2.begin() , k.begin(),
-						q1p.begin(), q2p.begin(), qp.begin(),
-						q1.begin() , q2.begin() , q.begin());
+                                                q1p.begin(), q2p.begin(), qp.begin(),
+                                                q1.begin() , q2.begin() , q.begin());
 }
 
 inline
-double inverse_tensor_coefficient(QuantumNumber const& k1,  QuantumNumber const& k2,  
-			  QuantumNumber const& k,
-			 QuantumNumber const& q1p, QuantumNumber const& q2p, 
-			  QuantumNumber const& qp,
-			 QuantumNumber const& q1,  QuantumNumber const& q2,  
-			  QuantumNumber const& q)
+double inverse_tensor_coefficient(QuantumNumber const& k1,  QuantumNumber const& k2,
+                          QuantumNumber const& k,
+                         QuantumNumber const& q1p, QuantumNumber const& q2p,
+                          QuantumNumber const& qp,
+                         QuantumNumber const& q1,  QuantumNumber const& q2,
+                          QuantumNumber const& q)
 {
    DEBUG_PRECONDITION(q.GetSymmetryList() == k1.GetSymmetryList());
    DEBUG_PRECONDITION(q.GetSymmetryList() == k2.GetSymmetryList());
@@ -374,13 +374,13 @@ double inverse_tensor_coefficient(QuantumNumber const& k1,  QuantumNumber const&
    DEBUG_PRECONDITION(q.GetSymmetryList() == q1.GetSymmetryList());
    DEBUG_PRECONDITION(q.GetSymmetryList() == q2.GetSymmetryList());
    return q.GetSymmetryList().inverse_tensor_coefficient(k1.begin()  , k2.begin() , k.begin(),
-							 q1p.begin(), q2p.begin(), qp.begin(),
-							 q1.begin() , q2.begin() , q.begin());
+                                                         q1p.begin(), q2p.begin(), qp.begin(),
+                                                         q1.begin() , q2.begin() , q.begin());
 }
 
 inline
 double recoupling(QuantumNumber const& q1, QuantumNumber const& q3, QuantumNumber const& q13,
-		  QuantumNumber const& q2, QuantumNumber const& q,  QuantumNumber const& q23)
+                  QuantumNumber const& q2, QuantumNumber const& q,  QuantumNumber const& q23)
 {
    DEBUG_PRECONDITION(q.GetSymmetryList() == q1.GetSymmetryList());
    DEBUG_PRECONDITION(q.GetSymmetryList() == q2.GetSymmetryList());
@@ -392,10 +392,10 @@ double recoupling(QuantumNumber const& q1, QuantumNumber const& q3, QuantumNumbe
 }
 
 inline
-double recoupling_12_3__13_2(QuantumNumber const& q1, QuantumNumber const& q2, 
-			     QuantumNumber const& q12,
-			     QuantumNumber const& q3, QuantumNumber const& q, 
-			     QuantumNumber const& q13)
+double recoupling_12_3__13_2(QuantumNumber const& q1, QuantumNumber const& q2,
+                             QuantumNumber const& q12,
+                             QuantumNumber const& q3, QuantumNumber const& q,
+                             QuantumNumber const& q13)
 {
    return q.GetSymmetryList().recoupling_12_3__13_2(q1.begin(), q2.begin(), q12.begin(),
                                                     q3.begin(), q.begin(), q13.begin());
@@ -428,7 +428,7 @@ double conj_phase(QuantumNumber const& qp, QuantumNumber const& k, QuantumNumber
 }
 
 inline
-bool 
+bool
 is_transform_target(QuantumNumber const& q1, QuantumNumber const& q2, QuantumNumber const& q)
 {
    DEBUG_PRECONDITION_EQUAL(q.GetSymmetryList(), q1.GetSymmetryList());
@@ -437,7 +437,7 @@ is_transform_target(QuantumNumber const& q1, QuantumNumber const& q2, QuantumNum
 }
 
 inline
-int 
+int
 num_transform_targets(QuantumNumber const& q1, QuantumNumber const& q2)
 {
    DEBUG_PRECONDITION_EQUAL(q1.GetSymmetryList(), q2.GetSymmetryList());
@@ -446,7 +446,7 @@ num_transform_targets(QuantumNumber const& q1, QuantumNumber const& q2)
 
 template <typename OutIter>
 inline
-void 
+void
 transform_targets(QuantumNumber const& q1, QuantumNumber const& q2, OutIter Out)
 {
    DEBUG_PRECONDITION_EQUAL(q1.GetSymmetryList(), q2.GetSymmetryList());
@@ -460,7 +460,7 @@ transform_targets(QuantumNumber const& q1, QuantumNumber const& q2, OutIter Out)
 }
 
 inline
-int 
+int
 num_inverse_transform_targets(QuantumNumber const& q1, QuantumNumber const& q2)
 {
    DEBUG_PRECONDITION(q1.GetSymmetryList() == q2.GetSymmetryList());
@@ -469,7 +469,7 @@ num_inverse_transform_targets(QuantumNumber const& q1, QuantumNumber const& q2)
 
 template <typename OutIter>
 inline
-void 
+void
 inverse_transform_targets(QuantumNumber const& q1, QuantumNumber const& q, OutIter Out)
 {
    DEBUG_PRECONDITION(q.GetSymmetryList() == q1.GetSymmetryList());
@@ -484,7 +484,7 @@ inverse_transform_targets(QuantumNumber const& q1, QuantumNumber const& q, OutIt
 
 template <typename OutIter>
 inline
-void 
+void
 enumerate_projections(QuantumNumber const& q, OutIter Out)
 {
   //  std::cout << "quantumnumber.cc: enumerating projections of " << q << std::endl;
@@ -507,8 +507,8 @@ bool is_projection(QuantumNumber const& q, Projection const& p)
 }
 
 inline
-bool is_delta(QuantumNumber const& q1, QuantumNumber const& Q, 
-	      Projection const& P, QuantumNumber const& q2)
+bool is_delta(QuantumNumber const& q1, QuantumNumber const& Q,
+              Projection const& P, QuantumNumber const& q2)
 {
    DEBUG_PRECONDITION(q1.GetSymmetryList() == Q.GetSymmetryList());
    DEBUG_PRECONDITION(q2.GetSymmetryList() == Q.GetSymmetryList());
@@ -572,7 +572,7 @@ double weight(Projection const& p)
 }
 
 inline
-double delta_shift_coefficient(QuantumNumber const& qp, QuantumNumber const& k, 
+double delta_shift_coefficient(QuantumNumber const& qp, QuantumNumber const& k,
                                QuantumNumber const& q,
                                QuantumNumber const& Delta)
 {

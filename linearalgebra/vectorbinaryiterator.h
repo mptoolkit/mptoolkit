@@ -33,8 +33,8 @@ namespace LinearAlgebra
 
 
 template <typename Iter1, typename Iter2, typename Func,
-	  typename Cat1 = typename Iter1::category,
-	  typename Cat2 = typename Iter2::category>
+          typename Cat1 = typename Iter1::category,
+          typename Cat2 = typename Iter2::category>
 class VectorBinaryIterator;
 
 template <typename Iter1, typename Iter2, typename Func>
@@ -53,30 +53,30 @@ class VectorBinaryIterator<Iter1, Iter2, Func, vector_iterator_dense, vector_ite
       VectorBinaryIterator() {}
 
       explicit VectorBinaryIterator(iterator1_type const& i1, iterator2_type const& i2,
-				    functor_type f = functor_type())
-	 : i1_(i1), i2_(i2), f_(f) {}
+                                    functor_type f = functor_type())
+         : i1_(i1), i2_(i2), f_(f) {}
 
-      VectorBinaryIterator& operator++() 
-	 { ++i1_; ++i2_; return *this; }
+      VectorBinaryIterator& operator++()
+         { ++i1_; ++i2_; return *this; }
 
-      VectorBinaryIterator& operator++(int) 
-	 { return VectorBinaryIterator(i1_++, i2_++, f_); }
+      VectorBinaryIterator& operator++(int)
+         { return VectorBinaryIterator(i1_++, i2_++, f_); }
 
-      VectorBinaryIterator& operator--() 
-	 { --i1_; --i2_; return *this; }
+      VectorBinaryIterator& operator--()
+         { --i1_; --i2_; return *this; }
 
-      VectorBinaryIterator& operator--(int) 
-	 { return VectorBinaryIterator(i1_--, i2_--, f_); }
+      VectorBinaryIterator& operator--(int)
+         { return VectorBinaryIterator(i1_--, i2_--, f_); }
 
       VectorBinaryIterator& operator+=(difference_type n)
-	 { i1_ += n; i2_ += n; return *this; }
+         { i1_ += n; i2_ += n; return *this; }
 
       VectorBinaryIterator& operator-=(difference_type n)
-	 { i1_ -= n; i2_ -= n; return *this; }
+         { i1_ -= n; i2_ -= n; return *this; }
 
-      size_type index() const 
+      size_type index() const
       { DEBUG_PRECONDITION(bool(i1_));
-        DEBUG_CHECK_EQUAL(i1_.index(), i2_.index()); 
+        DEBUG_CHECK_EQUAL(i1_.index(), i2_.index());
         return i1_.index(); }
 
       reference operator*() const { return f_(*i1_, *i2_); }
@@ -99,7 +99,7 @@ class VectorBinaryIterator<Iter1, Iter2, Func, vector_iterator_dense, vector_ite
       iterator2_type i2_;
       functor_type f_;
 };
-   
+
 } // namespace LinearAlgebra
 
 #endif

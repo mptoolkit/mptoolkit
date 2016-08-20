@@ -68,10 +68,10 @@ struct interface<T&> : interface<T> {};
 // make_value - a function for getting the value type of a const-reference
 // or proxy reference.  Conceptually, it returns the basic type of
 // an expression.  Generally, it shouldn't need to be specialized itself,
-// it defaults to stripping of (const) references, and then 
+// it defaults to stripping of (const) references, and then
 // for proxies, returning make_value_from_interface<T>, or
 // for non-proxies, T itself.
-// 
+//
 // make_value_from_interface - generally T will be a proxy type here.
 // This function generates a value_type from an interface type.
 //
@@ -86,7 +86,7 @@ struct make_value_from_interface<T, AnyScalar<U>>
 };
 
 template <typename T>
-struct make_value 
+struct make_value
    : boost::mpl::if_<is_proxy<T>, make_value_from_interface<T>, boost::mpl::identity<T> >::type {};
 
 template <typename T>
@@ -98,7 +98,7 @@ struct make_value<T const> : make_value<T> {};
 //
 // make_value_with_zero
 // make a value_type that also has a zero_value.  If type T already has a zero
-// representation (specified by has_zero<T> - which is equivalent to 
+// representation (specified by has_zero<T> - which is equivalent to
 // Zero<T>::result_type being defined, then make_value_with_zero<T> is equivalent
 // to make_value<T>.  Otherwise, it has a nested type which is
 // value_with_zero<make_value<T>::type>.
@@ -123,7 +123,7 @@ struct IsZero;
 //
 // metafunction to return the value_type corresponding to the result of a metafunction.
 // A short-cut for make_value<T::result_type>.
-// For example, 
+// For example,
 // typename result_value<Negate<T> >::type x = negate(y);
 // We cannot use Negate<T>::result_type directly here, as it may be a proxy.
 // This is effectively a replacement for
@@ -173,7 +173,7 @@ struct arg_type<T const&>
 // reference_to_arg - convert a reference to an argument type suitable as a template
 // argument.  Undefined if T is not a reference.
 //
-// T (mutable proxy) -> T& 
+// T (mutable proxy) -> T&
 // T (const proxy) -> T
 // T& -> T&
 // T const& -> T
@@ -247,7 +247,7 @@ struct value_type<T, typename boost::enable_if<exists<typename interface<T>::val
 // RebindInterface - FIXME : is this used?
 
 template <typename T, typename OldInterface, typename Tv = typename T::value_type>
-struct RebindInterface 
+struct RebindInterface
 {
    typedef void type;
 };
@@ -260,7 +260,7 @@ struct RebindInterface
 
 // abstract_interface_interface gets the abstract interface from the 'real'
 // interface.
-// The easiest way to define it is to declare nested typedef 
+// The easiest way to define it is to declare nested typedef
 // T::abstract_type.  Otherwise, specialize vector_abstract_of_expression itself.
 
 template <typename T, typename TInterface = typename interface<T>::type>

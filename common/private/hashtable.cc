@@ -28,7 +28,7 @@ namespace Private
 template <typename Key, typename T, class HashFun, class Cmp, class EKey, class CValue>
 hash_table<Key, T, HashFun, Cmp, EKey, CValue>::hash_table()
   : hf(hasher()), KeyCompare(key_equal()), KeyExtractor(EKey()), ValueCtor(CValue()),
-    Size(0), RehashSize(size_t(Private::DefaultMaxLoadFactor * Private::MinBuckets)), 
+    Size(0), RehashSize(size_t(Private::DefaultMaxLoadFactor * Private::MinBuckets)),
     NumBuckets(Private::MinBuckets), MaxLoadFactor(Private::DefaultMaxLoadFactor)
 #if defined(HASHTABLE_POWER2)
     , Mask(Private::MinMask)
@@ -38,27 +38,27 @@ hash_table<Key, T, HashFun, Cmp, EKey, CValue>::hash_table()
 }
 
 template <typename Key, typename T, class HashFun, class Cmp, class EKey, class CValue>
-hash_table<Key, T, HashFun, Cmp, EKey, CValue>::hash_table(size_type n, 
-							   hasher hf_, 
-							   key_equal KEq, 
-							   EKey KExtract,
-							   CValue VCtor)
+hash_table<Key, T, HashFun, Cmp, EKey, CValue>::hash_table(size_type n,
+                                                           hasher hf_,
+                                                           key_equal KEq,
+                                                           EKey KExtract,
+                                                           CValue VCtor)
   : hf(hf_), KeyCompare(KEq), KeyExtractor(KExtract), ValueCtor(VCtor), Size(0),
-    NumBuckets(Private::FindNextPrime(n)), 
+    NumBuckets(Private::FindNextPrime(n)),
     MaxLoadFactor(Private::DefaultMaxLoadFactor)
 #if defined(HASHTABLE_POWER2)
     , Mask(Private::MinMask)
 #endif
 {
    RehashSize = Private::DefaultMaxLoadFactor * NumBuckets;
-   BucketVector.assign(n, BucketType(NodeList.end(), 0)); 
-} 
+   BucketVector.assign(n, BucketType(NodeList.end(), 0));
+}
 
 template <typename Key, typename T, class HashFun, class Cmp, class EKey, class CValue>
 template <class Iter>
 hash_table<Key, T, HashFun, Cmp, EKey, CValue>::hash_table(Iter first, Iter last)
   : hf(hasher()), KeyCompare(key_equal()), KeyExtractor(EKey()), ValueCtor(CValue()),
-    Size(0), RehashSize(Private::DefaultMaxLoadFactor * Private::MinBuckets), 
+    Size(0), RehashSize(Private::DefaultMaxLoadFactor * Private::MinBuckets),
   NumBuckets(Private::MinBuckets), MaxLoadFactor(Private::DefaultMaxLoadFactor)
 #if defined(HASHTABLE_POWER2)
     , Mask(Private::MinMask)
@@ -73,15 +73,15 @@ hash_table<Key, T, HashFun, Cmp, EKey, CValue>::hash_table(Iter first, Iter last
 
 template <typename Key, typename T, class HashFun, class Cmp, class EKey, class CValue>
 template <class Iter>
-hash_table<Key, T, HashFun, Cmp, EKey, CValue>::hash_table(Iter first, 
-							   Iter last, 
-							   size_type n, 
-							   hasher hf_, 
-							   key_equal KEq, 
-							   EKey KExtract,
-							   CValue VCtor)
+hash_table<Key, T, HashFun, Cmp, EKey, CValue>::hash_table(Iter first,
+                                                           Iter last,
+                                                           size_type n,
+                                                           hasher hf_,
+                                                           key_equal KEq,
+                                                           EKey KExtract,
+                                                           CValue VCtor)
   : hf(hf_), KeyCompare(KEq), KeyExtractor(KExtract), ValueCtor(VCtor), Size(0),
-    NumBuckets(Private::FindNextPrime(n)), 
+    NumBuckets(Private::FindNextPrime(n)),
     MaxLoadFactor(Private::DefaultMaxLoadFactor)
 #if defined(HASHTABLE_POWER2)
     , Mask(Private::MinMask)
@@ -104,7 +104,7 @@ void hash_table<Key, T, HashFun, Cmp, EKey, CValue>::clear()
 }
 
 template <typename Key, typename T, class HashFun, class Cmp, class EKey, class CValue>
-std::pair<typename hash_table<Key, T, HashFun, Cmp, EKey, CValue>::iterator, bool> 
+std::pair<typename hash_table<Key, T, HashFun, Cmp, EKey, CValue>::iterator, bool>
 hash_table<Key, T, HashFun, Cmp, EKey, CValue>::insert(value_type const& v)
 {
    BucketType* Bucket = &BucketVector[bucket(KeyExtractor(v))];
@@ -113,8 +113,8 @@ hash_table<Key, T, HashFun, Cmp, EKey, CValue>::insert(value_type const& v)
    {
       if (Size >= RehashSize)
       {
-	 this->Grow();
-	 Bucket = &BucketVector[bucket(KeyExtractor(v))];
+         this->Grow();
+         Bucket = &BucketVector[bucket(KeyExtractor(v))];
       }
 
       Where = Bucket->first = NodeList.insert(Bucket->first, v);
@@ -159,7 +159,7 @@ hash_table<Key, T, HashFun, Cmp, EKey, CValue>::find(key_type const& k)
 
 template <typename Key, typename T, class HashFun, class Cmp, class EKey, class CValue>
 inline
-typename hash_table<Key, T, HashFun, Cmp, EKey, CValue>::const_iterator 
+typename hash_table<Key, T, HashFun, Cmp, EKey, CValue>::const_iterator
 hash_table<Key, T, HashFun, Cmp, EKey, CValue>::find(key_type const& k) const
 {
    return this->FindInBucket(&BucketVector[this->bucket(k)], k);
@@ -176,8 +176,8 @@ hash_table<Key, T, HashFun, Cmp, EKey, CValue>::find_or_insert(key_type const& k
    {
       if (Size >= RehashSize)
       {
-	 this->Grow();
-	 Bucket = &BucketVector[bucket(k)];
+         this->Grow();
+         Bucket = &BucketVector[bucket(k)];
       }
 
       Where = Bucket->first = NodeList.insert(Bucket->first, ValueCtor(k));

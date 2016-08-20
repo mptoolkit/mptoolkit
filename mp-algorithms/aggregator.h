@@ -30,8 +30,8 @@ class Aggregator
       typedef MPStateComponent Component;
       typedef Component::OperatorType OperatorType;
 
-      Aggregator(std::vector<MPWavefunction> Psi, 
-                 std::vector<MPOperator> Op, 
+      Aggregator(std::vector<MPWavefunction> Psi,
+                 std::vector<MPOperator> Op,
                  bool ShowStates_,
                  int MaxStates,
                  double MinTrunc,
@@ -56,15 +56,15 @@ class Aggregator
 
    private:
       void ConstructLeft(std::vector<MPWavefunction> const& Psi,
-                         std::vector<MPOperator> const& Op, 
-                         std::vector<OperatorType>& LeftMap, 
+                         std::vector<MPOperator> const& Op,
+                         std::vector<OperatorType>& LeftMap,
                          std::vector<double> const& Weights,
                          int MaxStates,
                          double MinTrunc);
 
       void ConstructRight(std::vector<MPWavefunction> const& Psi,
-                          std::vector<MPOperator> const& Op, 
-                          std::vector<OperatorType>& RightMap, 
+                          std::vector<MPOperator> const& Op,
+                          std::vector<OperatorType>& RightMap,
                           std::vector<double> const& Weights,
                           int MaxStates,
                           double MinTrunc);
