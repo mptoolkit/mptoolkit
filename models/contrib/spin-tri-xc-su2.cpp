@@ -130,9 +130,7 @@ int main(int argc, char** argv)
       // w/2, for convenience
       int const w2 = w/2;
 
-      // Add some operators on the unit-cell
-      UnitCellMPO S_stag_n60;
-   
+      UnitCellMPO S_stag_n60;             
       for (int i = 0; i < w; ++i)
       {
 	 S += S[i];                                                                  // total spin on a unit cell
@@ -151,15 +149,14 @@ int main(int argc, char** argv)
        // to test existence of bipartite/tripartite symmetry, add operators for the staggered/sublattice magnetization:
        // NOTE: XC structure does NOT need a 3*W unit-cell for sublattice magnetization operators. 
        UnitCellMPO S_A, S_B, S_C;
-       UnitCellMPO S_stag_n60;             
 
        for (int i = 0; i < w; i += 3)
-         {
-            S_A += S(0)[i];
-            if ( (i+1)<w ) S_B += S(0)[i+1];
-            if ( (i+2)<w ) S_C += S(0)[i+2];
-         }
-              
+       {
+	  S_A += S(0)[i];
+	  if ( (i+1)<w ) S_B += S(0)[i+1];
+	  if ( (i+2)<w ) S_C += S(0)[i+2];
+       }
+     
       // Construct the Hamiltonian for a single unit-cell,
       UnitCellMPO H1, H2, H_Jcell;
     
