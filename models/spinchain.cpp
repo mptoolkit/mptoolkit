@@ -68,6 +68,7 @@ int main(int argc, char** argv)
 	 ("X"    , "pi rotation about the X axis, equivalent to prod_unit(exp(i*pi*Sx(0)))")
 	 ("Y"    , "pi rotation about the Y axis, equivalent to prod_unit(exp(i*pi*Sy(0)))")
 	 ("Z"    , "pi rotation about the Z axis, equivalent to prod_unit(exp(i*pi*Sz(0)))")
+	 ("H_AKLT", "AKLT Hamiltonian H_J1 + (1/3)*H_J2", "spin 1", [&Spin]()->bool {return Spin==1;})
 	 ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -116,7 +117,6 @@ int main(int argc, char** argv)
       if (Spin == 1)
       {
 	 Lattice["H_AKLT"] = Lattice["H_J1"] + (1.0/3.0)*Lattice["H_B1"];
-	 Lattice["H_AKLT"].set_description("AKLT Hamiltonian H_J1 + (1/3)*H_B1");
       }
 
       Lattice["X"] = prod_unit(exp(std::complex<double>(0.0, math_const::pi)*Sx(0)));

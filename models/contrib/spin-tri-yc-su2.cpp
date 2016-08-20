@@ -18,11 +18,13 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-// Description: spin systems on triangular lattices with YC structure and efficient way of numbering; SU(2)-symmetric.
+// Description: spin systems on triangular lattices with YC structure and 
+// efficient way of numbering; SU(2)-symmetric.
 // YC configuration of a triangular lattice.
 // The default unit-cell size is the width value.
 //
-// Example for a width-6 lattice (site numbers in brackets are periodic repeats in the vertical
+// Example for a width-6 lattice (site numbers in brackets are periodic repeats 
+// in the vertical
 // direction (i.e. top-left (5) is the same site as the bottom-left 5).
 // Sites 6,7,8,9,10,11 are the second unit cell, e.g. 6 is (1)[0].
 //
@@ -122,7 +124,8 @@ int main(int argc, char** argv)
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
 	 ("width,w", prog_opt::value(&w), "width of the cylinder [default 3]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
-	 ("noreflect", prog_opt::bool_switch(&NoReflect), "don't include the spatial reflection operator (expensive for large width lattices)")
+	 ("noreflect", prog_opt::bool_switch(&NoReflect), 
+	  "don't include the spatial reflection operator (expensive for large width lattices)")
          ;
       
       prog_opt::variables_map vm;        
@@ -141,7 +144,8 @@ int main(int argc, char** argv)
 	 ("S"          , "total spin on a leg of the cylinder")
 	 ("StagS"      , "staggered magnetization", "width even", [&w]()->bool {return w%2 == 0;})
 	 ("Trans"      , "translation by one site (rotation by 2\u0071/w) in lattice short direction")
-	 ("Ref"        , "reflection in lattice short direction (may need applying T-operators to become")
+	 ("Ref"        , "reflection in lattice short direction",
+	  "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
 	 ("RyUnit"     , "Reflection of a single unit cell",
 	  "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
 	 ;
@@ -154,16 +158,20 @@ int main(int argc, char** argv)
 	 ("H_v"        , "potential term of quantum dimer model's Hamiltonian on the triangular lattice")
 	 ("Ty"         , "momentum operator in lattice short direction")
 	 ("TyPi"       , "translation by w/2 sites in the Y direction",
-	  "width even, not present with --noreflect", [&NoReflect,&w]()->bool{return !NoReflect && w%2 == 0;})
+	  "width even, not present with --noreflect", 
+	  [&NoReflect,&w]()->bool{return !NoReflect && w%2 == 0;})
 	 ("Ry"         , "Reflection in the Y direction",
 	  "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
 	 ("RyOld"      , "Reflection in the Y direction, old ordering",
 	  "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
 	 ("SwapWrap"   , "changing the wraaping vector of lattice between 'old' and 'new' way of numbering", 
 	  "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
-	 ("Sa"         , "tripartite sublattice spin, including site S(0)[0]", "width multiple of 3", [&w]()->bool {return w%3 == 0;})
-	 ("Sb"         , "tripartite sublattice spin, including site S(0)[1]", "width multiple of 3", [&w]()->bool {return w%3 == 0;})
-	 ("Sc"         , "tripartite sublattice spin, including site S(0)[2]", "width multiple of 3", [&w]()->bool {return w%3 == 0;})
+	 ("Sa"         , "tripartite sublattice spin, including site S(0)[0]", "width multiple of 3", 
+	  [&w]()->bool {return w%3 == 0;})
+	 ("Sb"         , "tripartite sublattice spin, including site S(0)[1]", "width multiple of 3", 
+	  [&w]()->bool {return w%3 == 0;})
+	 ("Sc"         , "tripartite sublattice spin, including site S(0)[2]", "width multiple of 3", 
+	  [&w]()->bool {return w%3 == 0;})
 	 ("Stag_p60"   , "staggered magnetization order parameter with FM stripes in +60^degree direction",
 	  "width even",  [&w]()->bool {return w%2 == 0;})
 	 ;
@@ -217,12 +225,15 @@ int main(int argc, char** argv)
            Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
        }
 
-      Ref = I(0); // old way of representing an explicit R-operator.
-      for (int i = 0; i < w/2; ++i)
-       {
-           //R *= 0.5*( 0.25*inner(S[i],S[w-i-1]) + 1 );
-           Ref = Ref(0) * Cell.swap_gate_no_sign(i, w-i-1);
-       }
+      if (!NoReflect)
+      {
+	 Ref = I(0); // old way of representing an explicit R-operator.
+	 for (int i = 0; i < w/2; ++i)
+	 {
+	    //R *= 0.5*( 0.25*inner(S[i],S[w-i-1]) + 1 );
+	    Ref = Ref(0) * Cell.swap_gate_no_sign(i, w-i-1);
+	 }
+      }
 
 
       // to test existence of tripartite symmetry, add operators for the sublattice magnetization:
