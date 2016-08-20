@@ -126,44 +126,44 @@ std::complex<double> cross_product_factor(NullQN const&, NullQN const&)
 
 inline
 double clebsch_gordan(NullQN const& q1, NullQN const& q2, NullQN const& q,
-		      NullQNProjection const& m1,  NullQNProjection const& m2,  NullQNProjection const& m)
+                      NullQNProjection const& m1,  NullQNProjection const& m2,  NullQNProjection const& m)
 {
    return 1;
 }
 
 inline
 double product_coefficient(NullQN const& k1, NullQN const& k2, NullQN const& k,
-			   NullQN const& qp, NullQN const& q, NullQN const& qpp)
+                           NullQN const& qp, NullQN const& q, NullQN const& qpp)
 {
    return 1;
 }
 
 inline
 double inverse_product_coefficient(NullQN const& k1, NullQN const& k2, NullQN const& k,
-				   NullQN const& qp, NullQN const& q, NullQN const& qpp)
+                                   NullQN const& qp, NullQN const& q, NullQN const& qpp)
 {
    return 1;
 }
 
 inline
 double tensor_coefficient(NullQN const& q1,  NullQN const& q2,  NullQN const& q,
-			  NullQN const& k1,  NullQN const& k2,  NullQN const& k,
-			  NullQN const& q1p, NullQN const& q2p, NullQN const& qp)
+                          NullQN const& k1,  NullQN const& k2,  NullQN const& k,
+                          NullQN const& q1p, NullQN const& q2p, NullQN const& qp)
 {
    return 1;
 }
 
 inline
 double inverse_tensor_coefficient(NullQN const& q1,  NullQN const& q2,  NullQN const& q,
-				  NullQN const& k1,  NullQN const& k2,  NullQN const& k,
-				  NullQN const& q1p, NullQN const& q2p, NullQN const& qp)
+                                  NullQN const& k1,  NullQN const& k2,  NullQN const& k,
+                                  NullQN const& q1p, NullQN const& q2p, NullQN const& qp)
 {
    return 1;
 }
 
 inline
 double recoupling(NullQN const& q1, NullQN const& q2, NullQN const& q12,
-		  NullQN const& q3, NullQN const& q, NullQN const& q23)
+                  NullQN const& q3, NullQN const& q, NullQN const& q23)
 {
    return 1;
 }

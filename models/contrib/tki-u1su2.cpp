@@ -44,8 +44,8 @@ int main(int argc, char** argv)
     prog_opt::variables_map vm;
     prog_opt::store(prog_opt::command_line_parser(argc, argv).
                     options(desc).style(prog_opt::command_line_style::default_style ^
-					prog_opt::command_line_style::allow_guessing).
-		    run(), vm);
+                                        prog_opt::command_line_style::allow_guessing).
+                    run(), vm);
     prog_opt::notify(vm);
 
     OperatorDescriptions OpDescriptions;
@@ -74,7 +74,9 @@ int main(int argc, char** argv)
     LatticeSite cSite = FermionU1SU2();
     LatticeSite fSite = SpinSU2(0.5);
     UnitCell Cell(cSite.GetSymmetryList(), cSite, fSite);
-    UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), S(Cell, "S"), 
+    InfiniteLattice Lattice(&Cell);
+
+    UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), S(Cell, "S"),
        p(Cell, "p"), pH(Cell, "pH"), Pi(Cell, "Pi");
 
     // note: need to define this *BEFORE* constructing the InfiniteLattice object
@@ -82,8 +84,6 @@ int main(int argc, char** argv)
     pH(0) = adjoint(p(0));
 
     Pi(0) = outer(pH(0), p(0));
-
-    InfiniteLattice Lattice(Cell);
 
     Lattice["H_t"]  = sum_unit(dot(CH(0)[0], C(1)[0]) + dot(C(0)[0], CH(1)[0]));
     Lattice["H_J1"] = sum_unit(inner(S(0)[1], S(1)[1]));

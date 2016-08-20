@@ -29,7 +29,7 @@ inline
 LatticeSite CreateU1U1SpinSite()
 {
    SymmetryList Symmetry("Sz:U(1),Qz:U(1)");
-   QuantumNumbers::QNConstructor<QuantumNumbers::U1, QuantumNumbers::U1> 
+   QuantumNumbers::QNConstructor<QuantumNumbers::U1, QuantumNumbers::U1>
       QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator L3, L8;
@@ -79,7 +79,7 @@ LatticeSite CreateU1U1SpinSite()
 
    Sz("1", "1")   =  0.5;
    Sz("-1", "-1") = -0.5;
-   
+
    Qz("1", "1")   =  0.5;
    Qz("-1", "-1") =  0.5;
    Qz("0", "0")   = -1.0;
@@ -103,7 +103,7 @@ LatticeSite CreateU1U1SpinSite()
    U("1", "1")    = -1.0;
    U("-1", "-1")  = -1.0;
    U("0", "0")    =  1.0;
-   
+
    Site["I"] = I;
    Site["P"] = P;
    Site["R"] = R;

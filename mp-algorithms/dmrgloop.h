@@ -71,7 +71,7 @@ class DMRGLoop
       double PreviousCPUTime_;
       double PreviousElapsedTime_;
 
-      // The following data is not persistent, but loaded from the configuration 
+      // The following data is not persistent, but loaded from the configuration
       std::string BinPath_;
       std::string BasePath_;
       std::string FileName_;
@@ -90,8 +90,8 @@ class DMRGLoop
 template <typename SolverType>
 PStream::opstream& operator<<(PStream::opstream& out, DMRGLoop<SolverType> const& s)
 {
-   return out << s.States_ 
-              << s.Solver_ 
+   return out << s.States_
+              << s.Solver_
               << s.SweepRecNum_
               << s.SweepNum_
               << s.Direction_
@@ -103,8 +103,8 @@ PStream::opstream& operator<<(PStream::opstream& out, DMRGLoop<SolverType> const
 template <typename SolverType>
 PStream::ipstream& operator>>(PStream::ipstream& in, DMRGLoop<SolverType>& s)
 {
-   return in >> s.States_ 
-             >> s.Solver_ 
+   return in >> s.States_
+             >> s.Solver_
              >> s.SweepRecNum_
              >> s.SweepNum_
              >> s.Direction_
@@ -115,8 +115,8 @@ PStream::ipstream& operator>>(PStream::ipstream& in, DMRGLoop<SolverType>& s)
 
 template <typename SolverType>
 DMRGLoop<SolverType>::DMRGLoop(SolverType const& Solver, StatesList const& States)
-   : States_(States), 
-     Solver_(Solver), 
+   : States_(States),
+     Solver_(Solver),
      SweepRecNum_(0),
      SweepNum_(0),
      Direction_(1),
@@ -127,7 +127,7 @@ DMRGLoop<SolverType>::DMRGLoop(SolverType const& Solver, StatesList const& State
    if (Solver_.LeftSize() > Solver_.RightSize()) Direction_ = -1;
 
    // start the first sweep
-   if (!this->Finished()) 
+   if (!this->Finished())
    {
       double NewMix = States_.MixFactor(SweepRecNum_);
       if (NewMix != -1)
@@ -216,18 +216,18 @@ void DMRGLoop<SolverType>::DoIteration()
       }
 
       // Are we at the end of the sweep?
-      if (Solver_.RightSize() == 1) 
+      if (Solver_.RightSize() == 1)
       {
          Solver_.EndSweep();
 
-         if (States_.SaveState(SweepRecNum_) 
+         if (States_.SaveState(SweepRecNum_)
              && (!States_.WaitConverge(SweepRecNum_) || Solver_.IsConverged()))
          {
             this->SaveWavefunction();
          }
-         
-	 bool DoneSweep = !States_.WaitConverge(SweepRecNum_) || Solver_.IsConverged();
-	 if (DoneSweep) ++SweepRecNum_;
+
+         bool DoneSweep = !States_.WaitConverge(SweepRecNum_) || Solver_.IsConverged();
+         if (DoneSweep) ++SweepRecNum_;
 
          if (!this->Finished())
          {
@@ -272,16 +272,16 @@ void DMRGLoop<SolverType>::DoIteration()
       }
 
       // Are we at the end of the sweep?
-      if (Solver_.LeftSize() == 1) 
+      if (Solver_.LeftSize() == 1)
       {
          Solver_.EndSweep();
 
-         if (States_.SaveState(SweepRecNum_) 
+         if (States_.SaveState(SweepRecNum_)
              && (!States_.WaitConverge(SweepRecNum_) || Solver_.IsConverged()))
          {
             this->SaveWavefunction();
          }
-         
+
          if (!States_.WaitConverge(SweepRecNum_) || Solver_.IsConverged())
             ++SweepRecNum_;
 
@@ -291,7 +291,7 @@ void DMRGLoop<SolverType>::DoIteration()
             if (NewMix != -1)
                CFactor_ = NewMix;
             Solver_.StartSweep(!States_.WaitConverge(SweepRecNum_) || Solver_.IsConverged(),
-			       States_.Broadening(SweepRecNum_));
+                               States_.Broadening(SweepRecNum_));
          }
 
          Direction_ = 1;

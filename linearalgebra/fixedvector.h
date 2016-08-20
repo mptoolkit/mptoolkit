@@ -48,8 +48,8 @@ class ConstantIterator
 
       ConstantIterator() {}
 
-      ConstantIterator(size_type sz, value_type const& x, size_type loc = 0) 
-	 : size_(sz), loc_(loc), value_(x) {}
+      ConstantIterator(size_type sz, value_type const& x, size_type loc = 0)
+         : size_(sz), loc_(loc), value_(x) {}
 
       size_type index() const { return loc_; }
 
@@ -87,24 +87,24 @@ class FixedVector
 
       FixedVector(size_type sz, call_type val = data_type())
          : size_(sz), value_(val) { }
-      
+
       template <typename U>
       FixedVector(FixedVector<U> const& x)
-	 : size_(x.size()), value_(x.value()) {}
+         : size_(x.size()), value_(x.value()) {}
 
       template <typename U>
       FixedVector& operator=(FixedVector<U> const& x)
       {
-	 if (proxy::value)
-	 {
-	    PRECONDITION_EQUAL(size_, x.size());
-	 }
-	 else
-	 {
-	    size_ = x.size();
-	 }
-	 value_ = x.value();
-	 return *this;
+         if (proxy::value)
+         {
+            PRECONDITION_EQUAL(size_, x.size());
+         }
+         else
+         {
+            size_ = x.size();
+         }
+         value_ = x.value();
+         return *this;
       }
 
       size_type size() const { return size_; }
@@ -226,7 +226,7 @@ struct TransformVector<FixedVector<T>&, F>
 // BinaryTransform
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
-struct BinaryTransform<FixedVector<S>, FixedVector<T>, F, 
+struct BinaryTransform<FixedVector<S>, FixedVector<T>, F,
                        DENSE_VECTOR(Sv, Si), DENSE_VECTOR(Tv, Ti)>
 {
    typedef FixedVector<typename make_value<typename F::result_type>::type> result_type;

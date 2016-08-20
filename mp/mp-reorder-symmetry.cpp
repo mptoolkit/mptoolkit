@@ -100,11 +100,11 @@ WavefunctionSectionLeft ReorderSymmetry(WavefunctionSectionLeft const& Psi, Symm
 IBCWavefunction ReorderSymmetry(IBCWavefunction const& Psi, SymmetryList const& NewSL)
 {
    return IBCWavefunction(ReorderSymmetry(Psi.Left, NewSL),
-			  ReorderSymmetry(Psi.Window, NewSL),
-			  ReorderSymmetry(Psi.Right, NewSL),
-			  Psi.window_offset(),
-			  Psi.WindowLeftSites,
-			  Psi.WindowRightSites);
+                          ReorderSymmetry(Psi.Window, NewSL),
+                          ReorderSymmetry(Psi.Right, NewSL),
+                          Psi.window_offset(),
+                          Psi.WindowLeftSites,
+                          Psi.WindowRightSites);
 }
 
 struct ApplyReorderSymmetry : public boost::static_visitor<WavefunctionTypes>
@@ -134,9 +134,9 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("force,f", prog_opt::bool_switch(&Force),
-	  "overwrite the output file, if it exists")
-	 ;
+         ("force,f", prog_opt::bool_switch(&Force),
+          "overwrite the output file, if it exists")
+         ;
 
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
@@ -153,21 +153,21 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || vm.count("inpsi") < 1)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] <symmetry-list> <input-psi> [output-psi]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "This program reorders the quantum numbers in a symmetry list.  New quantum numbers can\n"
-	    "be added, and they are set to the scalar quantum number.  Quantum numbers can also be removed, as long\n"
-	    "as they have degree 1 (ie, they are abelian, or in the abelian subset of a non-abelian symmetry).\n"
-	    "The symmetry-list is not allowed to be empty, so if removing all symmetries, use a symmetry-list of\n"
-	    "Null:Null\n";
+         std::cerr << "This program reorders the quantum numbers in a symmetry list.  New quantum numbers can\n"
+            "be added, and they are set to the scalar quantum number.  Quantum numbers can also be removed, as long\n"
+            "as they have degree 1 (ie, they are abelian, or in the abelian subset of a non-abelian symmetry).\n"
+            "The symmetry-list is not allowed to be empty, so if removing all symmetries, use a symmetry-list of\n"
+            "Null:Null\n";
 
          return 1;
       }
@@ -176,15 +176,15 @@ int main(int argc, char** argv)
 
       if (OutputFile.empty())
       {
-	 // re-use the input file as the output file
-	 InputPsi = pheap::OpenPersistent(InputFile, mp_pheap::CacheSize());
+         // re-use the input file as the output file
+         InputPsi = pheap::OpenPersistent(InputFile, mp_pheap::CacheSize());
       }
       else
       {
-	 // create a new file for output
-	 pheap::Initialize(OutputFile, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
-	 // and load the input wavefunction
-	 InputPsi = pheap::ImportHeap(InputFile);
+         // create a new file for output
+         pheap::Initialize(OutputFile, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
+         // and load the input wavefunction
+         InputPsi = pheap::ImportHeap(InputFile);
       }
 
       SymmetryList FinalSL = SymmetryList(SList);
@@ -193,7 +193,7 @@ int main(int argc, char** argv)
       MPWavefunction Result;
       if (OutputFile.empty())
       {
-	 Result = MPWavefunction(InputPsi->Attributes(), InputPsi->History());
+         Result = MPWavefunction(InputPsi->Attributes(), InputPsi->History());
       }
 
       Result.Wavefunction() = boost::apply_visitor(ApplyReorderSymmetry(FinalSL), InputPsi->Wavefunction());

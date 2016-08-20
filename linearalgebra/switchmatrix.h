@@ -26,7 +26,7 @@
   Matrix<complex<double> >
 
   The usual operations are defined, that attempt as much as possible
-  to keep the most efficient representation, ScalarMatrix first, 
+  to keep the most efficient representation, ScalarMatrix first,
   then Matrix<double>, and lastly Matrix<complex<double> >
 
   Created 2014-04-17 Ian McCulloch
@@ -226,7 +226,7 @@ struct SwitchVariantTypeMultiply<double> : public boost::static_visitor<SwitchVa
    }
 }
 
-struct SwitchVariantTypeMultiply<std::complex<double> > 
+struct SwitchVariantTypeMultiply<std::complex<double> >
    : public boost::static_visitor<SwitchVariantType>
 {
    ScalarMatrix& operator()(ScalarMatrix& x, std::complex<double> y)
@@ -323,7 +323,7 @@ struct SwitchVariantTypeMultiplySelf : public boost::static_visitor<SwitchVarian
       x *= y;
       return x;
    }
-      
+
    ComplexMatrix& operator()(ComplexMatrix& x, DoubleMatrix const& y)
    {
       x *= y;
@@ -464,7 +464,7 @@ struct MatrixMatrixMultiplication<S, SwitchMatrix, F,
 //
 
 template <typename F, typename Sv, typename Si, typename Tv, typename Ti>
-struct MatrixDirectProduct<SwitchMatrix, SwitchMatrix, F, 
+struct MatrixDirectProduct<SwitchMatrix, SwitchMatrix, F,
                            DIAGONAL_MATRIX(Sv, Si), DIAGONAL_MATRIX(Tv, Ti)>
 {
    typedef typename F::result_type ValType;
@@ -505,7 +505,7 @@ struct InnerProd<SwitchMatrix, SwitchMatrix>
 
 template <typename S,
           typename Sv, typename Si, typename Tv, typename Ti>
-struct MatrixInnerProd<S, SwitchMatrix, InnerProd<Sv, Tv>, ANY_MATRIX(Sv, Si), 
+struct MatrixInnerProd<S, SwitchMatrix, InnerProd<Sv, Tv>, ANY_MATRIX(Sv, Si),
                        DIAGONAL_MATRIX(Tv, Ti)>
 {
    typedef S const& first_argument_type;
@@ -520,7 +520,7 @@ struct MatrixInnerProd<S, SwitchMatrix, InnerProd<Sv, Tv>, ANY_MATRIX(Sv, Si),
 
 template <typename T,
           typename Sv, typename Si, typename Tv, typename Ti>
-struct MatrixInnerProd<SwitchMatrix, T, InnerProd<Sv, Tv>, DIAGONAL_MATRIX(Sv, Si), 
+struct MatrixInnerProd<SwitchMatrix, T, InnerProd<Sv, Tv>, DIAGONAL_MATRIX(Sv, Si),
                        ANY_MATRIX(Tv, Ti)>
 {
    typedef SwitchMatrix const& first_argument_type;

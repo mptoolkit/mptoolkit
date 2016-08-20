@@ -51,7 +51,7 @@ int main()
    M(0,0) = 1;
    M(1,1) = 2;
    M(2,2) = 3;
-   
+
    TRACE(M)(norm_2(M));
 
    IrredTensor<double> N(B, QN(1));

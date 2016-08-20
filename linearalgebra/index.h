@@ -65,11 +65,11 @@ class IndirectIterator
 
       template <typename B>
       IndirectIterator(B const& Base, index_iterator const& IndexIter)
-	: Base_(Base), IndexIter_(IndexIter) {}
+        : Base_(Base), IndexIter_(IndexIter) {}
 
       template <typename Other, typename OtherIndex>
       IndirectIterator(IndirectIterator<Other, OtherIndex> const& Other_)
-	 : Base_(Other_.base()), IndexIter_(Other_.index_iter()) {}
+         : Base_(Other_.base()), IndexIter_(Other_.index_iter()) {}
 
       template <typename Other, typename OtherIndex>
       IndirectIterator& operator=(IndirectIterator<Other, OtherIndex> const& Other_)
@@ -84,8 +84,8 @@ class IndirectIterator
 
       reference operator[](difference_type n) const { return Base_[IndexIter_[n]]; }
 
-      pointer operator->() const 
-	 //         { base_iterator b(Base_); b += *IndexIter_; return b.operator->(); }
+      pointer operator->() const
+         //         { base_iterator b(Base_); b += *IndexIter_; return b.operator->(); }
          { return &Base_[*IndexIter_]; }
 
       reference operator()(difference_type n) const { return Base_[IndexIter_(n)]; }
@@ -140,51 +140,51 @@ class IndirectVector : public VectorBase<IndirectVector<VecType, IndexType> >
       typedef typename make_const_reference<vector_reference>::type  const_vector_reference;
 
       IndirectVector(vector_reference Vec, const_index_reference IndexVec)
-	 : Vec_(Vec), IndexVec_(IndexVec) 
+         : Vec_(Vec), IndexVec_(IndexVec)
       {
          using LinearAlgebra::size;
-	 DEBUG_PRECONDITION(size(IndexVec) == 0U || min(IndexVec) >= 0); 
-	 DEBUG_PRECONDITION(size(IndexVec) == 0U || size_type(max(IndexVec)) < size(Vec));
+         DEBUG_PRECONDITION(size(IndexVec) == 0U || min(IndexVec) >= 0);
+         DEBUG_PRECONDITION(size(IndexVec) == 0U || size_type(max(IndexVec)) < size(Vec));
       }
 
       template <typename OtherVec, typename OtherIndex>
       IndirectVector(IndirectVector<OtherVec, OtherIndex> const& Other)
-	 : Vec_(Other.base()), IndexVec_(Other.index_vector())
+         : Vec_(Other.base()), IndexVec_(Other.index_vector())
       {
       }
 
       IndirectVector& operator=(IndirectVector const& x)
       {
          using LinearAlgebra::size;
-	 typedef typename interface<VecType>::value_type value_type;
-	 //std::vector<value_type> Temp(size(x));
+         typedef typename interface<VecType>::value_type value_type;
+         //std::vector<value_type> Temp(size(x));
          // noalias(Temp) = x;
-	 assign(*this, x);
-	 return *this;
+         assign(*this, x);
+         return *this;
       }
 
       template <typename U>
-      typename boost::enable_if<is_vector<U>, IndirectVector&>::type 
+      typename boost::enable_if<is_vector<U>, IndirectVector&>::type
       operator=(U const& x)
       {
          using LinearAlgebra::size;
-	 typedef typename interface<VecType>::value_type value_type;
-	 // TODO: the vector type should be something better here!
-	 std::vector<value_type> Temp(size(x));
-	 noalias(Temp) = x;
+         typedef typename interface<VecType>::value_type value_type;
+         // TODO: the vector type should be something better here!
+         std::vector<value_type> Temp(size(x));
+         noalias(Temp) = x;
 
-	 assign(*this, Temp);
-	 return *this;
+         assign(*this, Temp);
+         return *this;
       }
 
       template <typename U>
-      typename boost::enable_if<is_vector<U>, IndirectVector&>::type 
+      typename boost::enable_if<is_vector<U>, IndirectVector&>::type
       operator=(NoAliasProxy<U> const& x)
       {
-	 assign(*this, x.value());
-	 return *this;
+         assign(*this, x.value());
+         return *this;
       }
-   
+
       vector_reference base() { return Vec_; }
       const_vector_reference base() const { return Vec_; }
       const_index_reference index_vector() const { return IndexVec_; }
@@ -260,18 +260,18 @@ struct IndirectVectorInterface<T, DENSE_VECTOR(Vv, Vi), Tv>
 // with an arbitary indirect index.
 
 template <typename VecType, typename IndexType>
-struct interface<IndirectVector<VecType, IndexType> > 
-   : IndirectVectorInterface<IndirectVector<VecType, IndexType>, 
-			     typename interface<IndexType>::type,
-			     typename interface<VecType>::value_type> {};
+struct interface<IndirectVector<VecType, IndexType> >
+   : IndirectVectorInterface<IndirectVector<VecType, IndexType>,
+                             typename interface<IndexType>::type,
+                             typename interface<VecType>::value_type> {};
 
 // iterators
 
 template <typename VecType, typename IndexType>
 struct Iterate<IndirectVector<VecType, IndexType>&>
 {
-   typedef IndirectIterator<typename iterator<VecType>::type, 
-			    typename const_iterator<IndexType>::type> result_type;
+   typedef IndirectIterator<typename iterator<VecType>::type,
+                            typename const_iterator<IndexType>::type> result_type;
    typedef IndirectVector<VecType, IndexType>& argument_type;
    result_type operator()(argument_type x) const
    {
@@ -282,8 +282,8 @@ struct Iterate<IndirectVector<VecType, IndexType>&>
 template <typename VecType, typename IndexType>
 struct Iterate<IndirectVector<VecType, IndexType> >
 {
-   typedef IndirectIterator<typename const_iterator<VecType>::type, 
-			    typename const_iterator<IndexType>::type> result_type;
+   typedef IndirectIterator<typename const_iterator<VecType>::type,
+                            typename const_iterator<IndexType>::type> result_type;
    typedef IndirectVector<VecType, IndexType> const& argument_type;
    typedef typename basic_type<IndexType>::type BasicIndexType;
    result_type operator()(argument_type x) const
@@ -310,7 +310,7 @@ struct GetVectorElement<
  , typename boost::enable_if<
       is_defined<
          GetVectorElement<typename basic_type<IndexType>::type>
-      > 
+      >
    >::type
 >
 {
@@ -328,7 +328,7 @@ struct GetVectorElement<
       boost::mpl::and_<
          is_defined<GetVectorElement<typename basic_type<IndexType>::type> >
        , is_defined<GetVectorElement<typename basic_type<VecType>::type&> >
-      > 
+      >
    >::type
 >
 {
@@ -341,16 +341,16 @@ struct GetVectorElement<
 
 // TODO: set_element, add_element, subtract_element, multiply_element
 
-template <typename T, typename U, 
-	  typename TInterface = typename interface<T>::type,
-	  typename UInterface = typename interface<U>::type>
+template <typename T, typename U,
+          typename TInterface = typename interface<T>::type,
+          typename UInterface = typename interface<U>::type>
 struct Index {};
 
 template <typename T, typename U>
 inline
 typename boost::enable_if<typename boost::mpl::and_<is_mutable_proxy_reference<T>,
-						    is_defined<Index<T&, U> > >,
-			  Index<T&, U> >::type::result_type
+                                                    is_defined<Index<T&, U> > >,
+                          Index<T&, U> >::type::result_type
 index(T const& x, U const& y)
 {
    return Index<T&, U>()(const_cast<T&>(x),y);
@@ -359,8 +359,8 @@ index(T const& x, U const& y)
 template <typename T, typename U>
 inline
 typename boost::disable_if<typename boost::mpl::and_<is_mutable_proxy_reference<T>,
-						     is_defined<Index<T&, U> > >,
-			  Index<T, U> >::type::result_type
+                                                     is_defined<Index<T&, U> > >,
+                          Index<T, U> >::type::result_type
 index(T const& x, U const& y)
 {
    return Index<T, U>()(x,y);
@@ -389,20 +389,20 @@ struct ImplementIndex<T, U, IntType, typename boost::enable_if<boost::is_integra
 
 template <typename T, typename U, typename Tv, typename Ti, typename Uv, typename Ui>
 struct Index<T, U, DENSE_VECTOR(Tv, Ti), LOCAL_VECTOR(Uv, Ui)>
-   : ImplementIndex<typename make_const_reference<T>::type, 
-		    typename make_const_reference<U>::type, Uv> {};
+   : ImplementIndex<typename make_const_reference<T>::type,
+                    typename make_const_reference<U>::type, Uv> {};
 
 template <typename T, typename U, typename Tv, typename Ti, typename Uv, typename Ui>
 struct Index<T&, U, DENSE_VECTOR(Tv, Ti), LOCAL_VECTOR(Uv, Ui)>
-   : ImplementIndex<typename make_reference<T>::type, 
-		    typename make_const_reference<U>::type, Uv> {};
+   : ImplementIndex<typename make_reference<T>::type,
+                    typename make_const_reference<U>::type, Uv> {};
 
 
 
 // VectorBracket overload
 
-template <typename T, typename Arg, 
-          typename Tv, typename Ti, 
+template <typename T, typename Arg,
+          typename Tv, typename Ti,
           typename Uv, typename Ui>
 struct VectorBracketInterface<T, Arg, DENSE_VECTOR(Tv, Ti), LOCAL_VECTOR(Uv, Ui)>
    : Index<T, Arg> {};

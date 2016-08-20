@@ -70,13 +70,13 @@ class VectorTransformProxy : public VectorBase<VectorTransformProxy<BaseProxyRef
       BOOST_MPL_ASSERT((is_proxy_reference<BaseProxyReference>));
 
       BOOST_MPL_ASSERT((implies<
-			is_mutable_proxy_reference<typename F::argument_type>,
-			is_mutable_proxy_reference<BaseProxyReference> >));
+                        is_mutable_proxy_reference<typename F::argument_type>,
+                        is_mutable_proxy_reference<BaseProxyReference> >));
 
       typedef typename F::result_type reference;
-      typedef typename boost::mpl::if_<is_proxy_reference<reference>,  
-				       make_const_reference<reference>,
-				       make_value<reference> >::type::type const_reference;
+      typedef typename boost::mpl::if_<is_proxy_reference<reference>,
+                                       make_const_reference<reference>,
+                                       make_value<reference> >::type::type const_reference;
    //      typedef typename make_const_reference<reference>::type const_reference;
       typedef typename make_value<const_reference>::type value_type;
 
@@ -106,10 +106,10 @@ class VectorTransformProxy : public VectorBase<VectorTransformProxy<BaseProxyRef
       using VectorBase<VectorTransformProxy>::operator[];
 
       VectorTransformProxy(base_reference Base, functor_type const& Func)
-	: Base_(Base), Func_(Func) { }
+        : Base_(Base), Func_(Func) { }
 
       explicit VectorTransformProxy(base_reference Base)
-	: Base_(Base), Func_() { }
+        : Base_(Base), Func_() { }
 
       // this conversion ctor handles non-const to const conversions.
       template <typename OtherBase>
@@ -117,32 +117,32 @@ class VectorTransformProxy : public VectorBase<VectorTransformProxy<BaseProxyRef
          : Base_(e.base()), Func_(e.functor()) { }
 
       const_reference operator[](size_type n) const
-	 { return Func_(Base_[n]); }
+         { return Func_(Base_[n]); }
 
       reference operator[](size_type n)
-	 { return Func_(Base_[n]); }
+         { return Func_(Base_[n]); }
 
       template <typename U>
       typename boost::enable_if<is_vector<U>, VectorTransformProxy&>::type
       operator=(U const& x)
       {
-	 CHECK_EQUAL(this->size(), x.size());
-	 // TODO: better temp vector type
+         CHECK_EQUAL(this->size(), x.size());
+         // TODO: better temp vector type
 
-	 std::vector<value_type> Temp(x.size());
-	 make_vec(Temp) = x;
+         std::vector<value_type> Temp(x.size());
+         make_vec(Temp) = x;
 
-	 assign(*this, Temp);
-	 return *this;
+         assign(*this, Temp);
+         return *this;
       }
 
       template <typename U>
       typename boost::enable_if<is_vector<U>, VectorTransformProxy&>::type
       operator=(NoAliasProxy<U> const& x)
       {
-	 CHECK_EQUAL(this->size(), x.size());
-	 assign(*this, x.value());
-	 return *this;
+         CHECK_EQUAL(this->size(), x.size());
+         assign(*this, x.value());
+         return *this;
       }
 
       base_const_reference base() const { return Base_; }
@@ -221,7 +221,7 @@ template <typename Base, typename F>
 struct interface<VectorTransformProxy<Base, F> >
 {
    typedef typename Private::VectorTransformInterface<VectorTransformProxy<Base, F>,
-					     typename interface<Base>::type>::type type;
+                                             typename interface<Base>::type>::type type;
    typedef typename VectorTransformProxy<Base, F>::value_type value_type;
 };
 
@@ -242,9 +242,9 @@ struct Size<VectorTransformProxy<Base, F> >
 // supply EvalExpression
 
 template <typename Base, typename F, typename Value>
-struct EvalExpression<VectorTransformProxy<Base, F>, 
-	    VECTOR_EXPRESSION(Value, 
-			     TEMPLATE2(VectorTransformProxy<Base, F>))>
+struct EvalExpression<VectorTransformProxy<Base, F>,
+            VECTOR_EXPRESSION(Value,
+                             TEMPLATE2(VectorTransformProxy<Base, F>))>
 {
    typedef typename EvalExpression<Base>::result_type BaseValueType;
    typedef Transform<BaseValueType, F> Transformer;
@@ -260,9 +260,9 @@ struct EvalExpression<VectorTransformProxy<Base, F>,
 };
 
 template <typename Base, typename F, typename Value>
-struct EvalExpression<VectorTransformProxy<Base, F> const, 
-	    VECTOR_EXPRESSION(Value, 
-			      TEMPLATE2(VectorTransformProxy<Base, F> const)) >
+struct EvalExpression<VectorTransformProxy<Base, F> const,
+            VECTOR_EXPRESSION(Value,
+                              TEMPLATE2(VectorTransformProxy<Base, F> const)) >
 {
    typedef typename EvalExpression<Base>::result_type BaseValueType;
    typedef Transform<BaseValueType, F> Transformer;
@@ -327,10 +327,10 @@ struct TransformVector
    //   typedef typename boost::mpl::print<T>::type dummy;
 
 
-   result_type operator()(argument_type E) const 
+   result_type operator()(argument_type E) const
       { return result_type(E, F()); }
 
-   result_type operator()(first_argument_type E, second_argument_type const& f) const 
+   result_type operator()(first_argument_type E, second_argument_type const& f) const
       { return result_type(E, f); }
 };
 
@@ -346,10 +346,10 @@ struct TransformVector<T&, F>
    //   typedef typename boost::mpl::print<T>::type dummy;
 
 
-   result_type operator()(argument_type E) const 
+   result_type operator()(argument_type E) const
       { return result_type(E, F()); }
 
-   result_type operator()(first_argument_type E, second_argument_type const& f) const 
+   result_type operator()(first_argument_type E, second_argument_type const& f) const
       { return result_type(E, f); }
 };
 
@@ -361,16 +361,16 @@ struct TransformVector<VectorTransformProxy<Base, F>&, G>
    typedef G second_argument_type;
    typedef Compose<G, F> Composer;
    typedef typename Composer::result_type Func;
-   
+
    typedef Transform<typename reference_to_arg<Base>::type, Func> Transformer;
    typedef typename Transformer::result_type result_type;
 
    //   typedef typename boost::mpl::print<result_type>::type dummy;
 
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    { return Transformer()(x.base(), compose(G(), x.functor())); }
 
-   result_type operator()(argument_type x, G const& g) const 
+   result_type operator()(argument_type x, G const& g) const
    { return Transformer()(x.base(), compose(g, x.functor())); }
 };
 
@@ -382,16 +382,16 @@ struct TransformVector<VectorTransformProxy<Base, F>, G>
    typedef G second_argument_type;
    typedef Compose<G, F> Composer;
    typedef typename Composer::result_type Func;
-   
+
    typedef Transform<typename basic_type<Base>::type, Func> Transformer;
    typedef typename Transformer::result_type result_type;
 
    //   typedef typename boost::mpl::print<result_type>::type dummy;
 
-   result_type operator()(argument_type const& x) const 
+   result_type operator()(argument_type const& x) const
    { return Transformer()(x.base(), compose(G(), x.functor())); }
 
-   result_type operator()(argument_type const& x, G const& g) const 
+   result_type operator()(argument_type const& x, G const& g) const
    { return Transformer()(x.base(), compose(g, x.functor())); }
 };
 

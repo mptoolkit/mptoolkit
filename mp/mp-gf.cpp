@@ -43,7 +43,7 @@ int main(int argc, char** argv)
    pvalue_ptr<OperatorList> System = pheap::OpenPersistent(argv[1], CacheSize, true);
    MPOperator Ham = (*System)[argv[2]];
    MPOperator Ident = (*System)["I"];
- 
+
    pvalue_ptr<MPWavefunction> CvPtr = pheap::ImportHeap(argv[6]);
    pvalue_ptr<MPWavefunction> RhsPtr = pheap::ImportHeap(argv[7]);
 
@@ -54,17 +54,17 @@ int main(int argc, char** argv)
    MPOperator A =  std::complex<double>(Energy + Freq, -Broad) * Ident - Ham;  // argh, we have a conjugation bug somewhere.  Actually, probably everywhere!  But at least we are consistent...
    MPOperator Part = (Energy + Freq) * Ident - Ham;
    MPOperator A2 = prod(Part, Part, Part.TransformsAs()) + (Broad*Broad) * Ident;
-   
+
    MPWavefunction Cv = *CvPtr;
    MPWavefunction Rhs = *RhsPtr;
-   MPWavefunction CvBar = conj(Cv); 
+   MPWavefunction CvBar = conj(Cv);
    TRACE(overlap(Cv, CvBar));
    MPWavefunction CvImag = complex(0.0,0.5) * (Cv - CvBar);
 
    //complex Overlap = overlap(CvImag, Rhs);
    double ImagExpectationA2 = expectation(CvImag, A2, CvImag).real();
    double ExpectationA2 = expectation(Cv, A2, Cv).real();
-   
+
    complex Ovr = overlap(Rhs, Cv);
 
    double OvrPart = expectation(Rhs, A, Cv).real();

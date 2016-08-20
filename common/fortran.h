@@ -31,7 +31,7 @@
   Input arrays that are not modified by fortran should be passed by const pointer (double const* Ptr),
   (should these also be restrict'ed?)
   Output arrays that are modified by fortran should be passed by restrict pointer (double* restrict Ptr).
-  
+
   Handling of complex types is a bit tricky, for a number of reasons.  C++98 contains no builtin
   complex type, but on any platform where we have a hope of interfacing C++ with fortran directly,
   it is likely that the C++ complex<double> type will be layout compatible with
@@ -40,8 +40,8 @@
 
   Fortran functions that return a value of type complex are tricky to handle as the
   calling convention for this is not fixed.  On linux/x86, a pointer to the return value
-  is passed as the first parameter to the function.  On amd64, the platform ABI specifies 
-  that complex return values are passed in registers, so no special handling is needed.  
+  is passed as the first parameter to the function.  On amd64, the platform ABI specifies
+  that complex return values are passed in registers, so no special handling is needed.
   To handle these two cases, define one (and only one) of the symbols
   FORTRAN_COMPLEX_RETURN_FIRST_ARG or FORTRAN_COMPLEX_RETURN_IN_REGISTER.
   If any of these symbols are defined, then this header also defines

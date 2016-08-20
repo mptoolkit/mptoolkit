@@ -91,7 +91,7 @@ class BasisList
       // returns true if this basis is empty
       bool is_empty() const { return this->size() == 0; }
 
-      void push_back(QuantumNumber const& q) 
+      void push_back(QuantumNumber const& q)
          { DEBUG_PRECONDITION_EQUAL(q.GetSymmetryList(), S_); Q_.push_back(q); }
 
       // returns true if this BasisList contains only one element, which transforms as the scalar quantum number
@@ -178,7 +178,7 @@ CoerceSymmetryListInPlace(BasisList& b, SymmetryList const& sl)
 //BasisList RenameSymmetry(BasisList const& BL, SymmetryList const& NewSL);
 
 inline
-std::set<QuantumNumbers::QuantumNumber> 
+std::set<QuantumNumbers::QuantumNumber>
 QuantumNumbersInBasis(BasisList const& b)
 {
    return std::set<QuantumNumbers::QuantumNumber>(b.begin(), b.end());
@@ -264,7 +264,7 @@ class VectorBasis
 
  private:
       VectorBasis(BasisList const& b, LinearAlgebra::Vector<int> const& dim)
-	 : Basis_(b), Dimension_(dim) {}
+         : Basis_(b), Dimension_(dim) {}
 
       BasisList Basis_;
       LinearAlgebra::Vector<int> Dimension_;
@@ -283,11 +283,11 @@ class VectorBasis
 
    friend void CoerceSymmetryListInPlace(VectorBasis& b, SymmetryList const& sl);
 
-   friend VectorBasis delta_shift(VectorBasis const& Orig, 
-				 QuantumNumbers::Projection const& p);
+   friend VectorBasis delta_shift(VectorBasis const& Orig,
+                                 QuantumNumbers::Projection const& p);
 
-   friend VectorBasis delta_shift(VectorBasis const& Orig, 
-				 QuantumNumbers::QuantumNumber const& q);
+   friend VectorBasis delta_shift(VectorBasis const& Orig,
+                                 QuantumNumbers::QuantumNumber const& q);
 
    friend VectorBasis RenameSymmetry(VectorBasis const& BL, SymmetryList const& NewSL);
 
@@ -315,7 +315,7 @@ VectorBasis adjoint(VectorBasis const& b);
 std::string show_projections(VectorBasis const& B);
 
 inline
-std::set<QuantumNumbers::QuantumNumber> 
+std::set<QuantumNumbers::QuantumNumber>
 QuantumNumbersInBasis(VectorBasis const& b)
 {
    return std::set<QuantumNumbers::QuantumNumber>(b.Basis().begin(), b.Basis().end());
@@ -330,7 +330,7 @@ VectorBasis delta_shift(VectorBasis const& Orig, QuantumNumbers::Projection cons
 #if 0
 // Apply a shift operation, where q is a degree 1 rep
 inline
-VectorBasis 
+VectorBasis
 delta_shift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
 {
    QuantumNumbers::ProjectionList PL = enumerate_projections(q);
@@ -339,7 +339,7 @@ delta_shift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
 }
 
 inline
-VectorBasis 
+VectorBasis
 delta_shift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
 {
    return delta_shift(Orig, q);
@@ -355,7 +355,7 @@ struct MakeZeroImpl {};
 
 // NOTE: T is not deduced here
 template <typename T, typename B1, typename B2>
-typename MakeZeroImpl<T, B1, B2>::result_type 
+typename MakeZeroImpl<T, B1, B2>::result_type
 make_zero(B1 const& b1, B2 const& b2, int i, int j)
 {
    return MakeZeroImpl<T, B1, B2>(b1, b2, i, j);
@@ -380,7 +380,7 @@ struct MakeIdentityImpl {};
 
 // NOTE: T is not deduced here
 template <typename T, typename B>
-typename MakeIdentityImpl<T, B>::result_type 
+typename MakeIdentityImpl<T, B>::result_type
 make_identity(B const& b, std::size_t i)
 {
    return MakeIdentityImpl<T, B>()(b, i);

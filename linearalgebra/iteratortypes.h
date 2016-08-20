@@ -90,14 +90,14 @@ class StrideIterator
 
       StrideIterator() {}
       StrideIterator(BaseIterType I_, difference_type Stride_)
-	: I(I_), Stride(Stride_) {}
-   
+        : I(I_), Stride(Stride_) {}
+
       StrideIterator(BaseIterType I_, difference_type Offset, difference_type Stride_)
-	: I(I_), Stride(Stride_) { I += Offset; }
+        : I(I_), Stride(Stride_) { I += Offset; }
 
       template <typename Other>
       StrideIterator(StrideIterator<Other> const& Iter)
-	: I(Iter.base()), Stride(Iter.stride()) {}
+        : I(Iter.base()), Stride(Iter.stride()) {}
 
       StrideIterator& operator++() { I += Stride; return *this; }
       StrideIterator& operator--() { I -= Stride; return *this; }
@@ -123,8 +123,8 @@ class StrideIterator
 
 template <typename B1, typename B2>
 inline
-bool operator==(StrideIterator<B1> const& i1, 
-		StrideIterator<B2> const& i2)
+bool operator==(StrideIterator<B1> const& i1,
+                StrideIterator<B2> const& i2)
 {
    DEBUG_PRECONDITION(i1.stride() == i2.stride())(i1.stride())(i2.stride());
    return i1.base() == i2.base();
@@ -132,8 +132,8 @@ bool operator==(StrideIterator<B1> const& i1,
 
 template <typename B1, typename B2>
 inline
-bool operator!=(StrideIterator<B1> const& i1, 
-		StrideIterator<B2> const& i2)
+bool operator!=(StrideIterator<B1> const& i1,
+                StrideIterator<B2> const& i2)
 {
    DEBUG_PRECONDITION(i1.stride() == i2.stride())(i1.stride())(i2.stride());
    return i1.base() != i2.base();
@@ -142,7 +142,7 @@ bool operator!=(StrideIterator<B1> const& i1,
 template <typename B1, typename B2>
 inline
 difference_type operator-(StrideIterator<B1> const& i1,
-			  StrideIterator<B2> const& i2)
+                          StrideIterator<B2> const& i2)
 {
    DEBUG_PRECONDITION(i1.stride() == i2.stride())(i1.stride())(i2.stride());
    DEBUG_CHECK((i1.base() - i2.base()) % i1.stride() == 0);
@@ -190,8 +190,8 @@ class TransformIterator
 
       TransformIterator() {}
 
-      TransformIterator(base_type const& I_, functor_type const& f_ = functor_type()) 
-	: I(I_), f(f_) {}
+      TransformIterator(base_type const& I_, functor_type const& f_ = functor_type())
+        : I(I_), f(f_) {}
 
       TransformIterator& operator++() { ++I; return *this; }
       TransformIterator& operator--() { --I; return *this; }
@@ -255,8 +255,8 @@ class BinaryIterator
       BinaryIterator() {}
 
       BinaryIterator(base_type1 const& i1_, base_type2 const& i2_,
-		     functor_type f_ = functor_type()) 
-	: i1(i1_), i2(i2_), f(f_) {}
+                     functor_type f_ = functor_type())
+        : i1(i1_), i2(i2_), f(f_) {}
 
       BinaryIterator& operator++() { ++i1; ++i2; return *this; }
       BinaryIterator& operator--() { --i1; --i2; return *this; }
@@ -268,10 +268,10 @@ class BinaryIterator
 
       const_result_type operator[](difference_type n) const { return f(i1[n], i2[n]); }
 
-      bool operator==(BinaryIterator const& Other) const 
+      bool operator==(BinaryIterator const& Other) const
          { return i1 == Other.i1 && i2 == Other.i2; }
 
-      bool operator!=(BinaryIterator const& Other) const 
+      bool operator!=(BinaryIterator const& Other) const
          { return i1 != Other.i1 || i2 != Other.i2; }
 
       BinaryIterator operator+(difference_type n) const { return BinaryIterator(i1+n, i2+n, f); }

@@ -23,7 +23,7 @@ template <typename DestType, typename SrcType>
 inline
 DestType format_cast(SrcType f)
 {
-   return Private::FormatCastHelper<DestType, 
+   return Private::FormatCastHelper<DestType,
      CurrentFormat::IsTrivialConversion<SrcType, DestType::value>::apply(f);
 }
 

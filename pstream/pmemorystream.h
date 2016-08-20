@@ -36,7 +36,7 @@ class opmemorystream : public opstream
       opmemorystream(int Format = format::XDR, size_t BufferSize = DefaultBufferSize);
 
       ~opmemorystream();
-      
+
       void set_format(int Format) { opstream::set_format(Format); }
 
    protected:

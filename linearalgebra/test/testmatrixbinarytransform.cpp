@@ -25,7 +25,7 @@ int main()
 {
    LinearAlgebra::Matrix<double> M(3,3, 2.0);
    LinearAlgebra::Matrix<double> N(3,3, 3.0);
-   
+
    LinearAlgebra::Matrix<double> R;
 
    R = transform(M, N, LinearAlgebra::Multiplication<double, double>());

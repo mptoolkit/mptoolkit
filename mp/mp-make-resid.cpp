@@ -37,14 +37,14 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Hamiltonian,H", prog_opt::value<std::string>(), 
+         ("Hamiltonian,H", prog_opt::value<std::string>(),
           "operator to use for the Hamiltonian"
           " (wavefunction attribute \"Hamiltonian\")")
          ("wavefunction,w", prog_opt::value<std::string>(),
           "initial correction vector wavefunction (required)")
          ("lanczos,l", prog_opt::value<std::string>(),
           "Lanczos vector for the right hand side (required)")
-         ("out,o", prog_opt::value<std::string>(), 
+         ("out,o", prog_opt::value<std::string>(),
           "output filename for the residual (required)")
          ("GroundstateEnergy,G", prog_opt::value(&GroundstateEnergy),
           "groundstate energy of the Hamiltonian"
@@ -56,16 +56,16 @@ int main(int argc, char** argv)
          ("broadening-propto-energy", prog_opt::bool_switch(),
           "use eta*(H-E) as the broadening term")
          ("verbose", prog_opt::bool_switch(&Verbose),
-          
+
          ;
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).run(), vm);
-      prog_opt::notify(vm);    
-      
+      prog_opt::notify(vm);
+
       if (vm.count("help") || !vm.count("wavefunction") || !vm.count("out")
-          || !vm.count("lanczos")) 
+          || !vm.count("lanczos"))
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-make-resid [options]\n";
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
    std::string OutPsi = argv[4];
 
    pvalue_ptr<MPWavefunction> Psi;
-   
+
    long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
    if (InPsi == OutPsi)
       Psi = pheap::OpenPersistent(InPsi.c_str(), CacheSize);
@@ -122,7 +122,7 @@ int main(int argc, char** argv)
       if (QList.size() != 1)
       {
          std::cerr << "quantum number of operator-wavefunction product is ambiguous,\n"
-                   << "  choices are "; 
+                   << "  choices are ";
          std::copy(QList.begin(), QList.end(), std::ostream_iterator<QuantumNumber>(std::cerr, " "));
          std::cerr << '\n';
          exit(1);

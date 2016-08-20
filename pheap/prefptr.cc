@@ -24,7 +24,7 @@
 #include <typeinfo>  // for debugging
 
 template <class T>
-pref_ptr<T>::pref_ptr() : Handle(NULL), Ptr(NULL) 
+pref_ptr<T>::pref_ptr() : Handle(NULL), Ptr(NULL)
 {
 }
 
@@ -87,7 +87,7 @@ template <class U>
 pref_ptr<T>& pref_ptr<T>::operator=(U* P)
 {
    release();
-   
+
    Handle = P ? PHeapFileSystem::Allocate(P) : NULL;
    Ptr = P;
    return *this;
@@ -220,7 +220,7 @@ pref_handle<T>::~pref_handle()
 
 template <class T>
 inline
-pref_handle<T>& 
+pref_handle<T>&
 pref_handle<T>::operator=(const pref_handle<T>& r)
 {
    // it is essential that we increment r's reference count before we do any delete
@@ -230,11 +230,11 @@ pref_handle<T>::operator=(const pref_handle<T>& r)
    Handle = r.Handle;
    return *this;
 }
-   
+
 template <class T>
 template <class U>
 inline
-pref_handle<T>& 
+pref_handle<T>&
 pref_handle<T>::operator=(const pref_handle<U>& r)
 {
    // it is essential that we increment r's reference count before we do any delete

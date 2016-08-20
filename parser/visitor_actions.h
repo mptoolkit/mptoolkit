@@ -88,21 +88,21 @@ class ParserError : public std::exception
 
       // finalize once we have the complete string
       static ParserError Finalize(ParserError const& Prev, std::string const& Why,
-				  char const* beg, char const* end);
+                                  char const* beg, char const* end);
 
       static ParserError Finalize(std::exception const& Prev, std::string const& Why,
-				  char const* beg, char const* end);
+                                  char const* beg, char const* end);
 
    private:
       ParserError(std::list<std::string> const& CallStack_, char const* Position,
-		  std::string const& Hint_ = "");
+                  std::string const& Hint_ = "");
 
       ParserError(std::list<std::string> const& CallStack_, char const* Position, char const* End_,
-		  std::string const& Hint_ = "");
-      ParserError(std::list<std::string> const& CallStack_, 
-		  std::string const& Why, char const* Position, char const* End_,
-		  char const* beg, char const* end,
-		  std::string const& Hint_ = "");
+                  std::string const& Hint_ = "");
+      ParserError(std::list<std::string> const& CallStack_,
+                  std::string const& Why, char const* Position, char const* End_,
+                  char const* beg, char const* end,
+                  std::string const& Hint_ = "");
 
       void AssembleMessage();
 
@@ -275,7 +275,7 @@ template <typename element_type>
 struct binary_addition : boost::static_visitor<element_type>
 {
    element_type operator()(complex const& x, complex const& y) const
-   { 
+   {
       return element_type(x+y);
    }
 
@@ -370,18 +370,18 @@ struct binary_modulus : boost::static_visitor<element_type>
    element_type operator()(complex const& x, complex const& y) const
    {
       if (y.real() == 0)
-	 throw ParserError("Division by zero in modulus operator");
+         throw ParserError("Division by zero in modulus operator");
 
       // make sure that the divisor is real
       if (std::abs(y.imag() * y.real()) > 1000*std::numeric_limits<double>::epsilon())
-	 throw ParserError("Divisor must be real for modulus operator");
+         throw ParserError("Divisor must be real for modulus operator");
 
       int xReal = int(std::rint(x.real()));
       int xImag = int(std::rint(x.imag()));
       int yReal = int(std::rint(y.real()));
-      
+
       return std::complex<double>(numerics::divd(xReal, yReal).rem,
-				  numerics::divd(xImag, yReal).rem);
+                                  numerics::divd(xImag, yReal).rem);
    }
 
    template <typename T>
@@ -409,11 +409,11 @@ struct binary_fmod : boost::static_visitor<element_type>
    element_type operator()(complex const& x, complex const& y) const
    {
       if (y.real() == 0)
-	 throw ParserError("Division by zero in modulus operator");
+         throw ParserError("Division by zero in modulus operator");
 
       // make sure that the divisor is real
       if (std::abs(y.imag() * y.real()) > 1000*std::numeric_limits<double>::epsilon())
-	 throw ParserError("Divisor must be real for modulus operator");
+         throw ParserError("Divisor must be real for modulus operator");
 
       return std::complex<double>(std::fmod(x.real(), y.real()), std::fmod(x.imag(), y.real()));
    }
@@ -450,7 +450,7 @@ struct binary_power : boost::static_visitor<element_type>
    {
       int i = as_int(y);
       if (i < 0)
-	 throw ParserError("cannot take negative power of an operator");
+         throw ParserError("cannot take negative power of an operator");
       return i == 0 ? element_type(complex(1.0,0.0)) : pow(x, i);
    }
 

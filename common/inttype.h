@@ -40,7 +40,7 @@ namespace inttype
 // The _t versions are typedef's for builtin types.
 // The versions without _t are strong types (ie, new types),
 // basically for use in pstreams,
-// so that they get the correct size irrespective of what the target 
+// so that they get the correct size irrespective of what the target
 // format indicates.
 //
 
@@ -80,17 +80,17 @@ typedef StrongType<uint32_t> uint32;
 typedef StrongType<int64_t>  int64;
 typedef StrongType<uint64_t> uint64;
 
-#define DECLARE_INTTYPE_STREAM_OPERATOR(type)			\
-inline std::ostream& operator<<(std::ostream& out, type x)	\
-{								\
-   return out << type##_t(x);					\
-}								\
-inline std::istream& operator>>(std::istream& in, type& x)	\
-{								\
-   type##_t temp;						\
-   in >> temp;							\
-   x = temp;							\
-   return in;							\
+#define DECLARE_INTTYPE_STREAM_OPERATOR(type)                   \
+inline std::ostream& operator<<(std::ostream& out, type x)      \
+{                                                               \
+   return out << type##_t(x);                                   \
+}                                                               \
+inline std::istream& operator>>(std::istream& in, type& x)      \
+{                                                               \
+   type##_t temp;                                               \
+   in >> temp;                                                  \
+   x = temp;                                                    \
+   return in;                                                   \
 }
 
 DECLARE_INTTYPE_STREAM_OPERATOR(int8)
@@ -110,7 +110,7 @@ DECLARE_INTTYPE_STREAM_OPERATOR(uint64)
 namespace std
 {
 
-#define DEFINE_INTTYPE_LIMIT(type)								\
+#define DEFINE_INTTYPE_LIMIT(type)                                                              \
 template <> struct numeric_limits<inttype::type> : public numeric_limits<inttype::type##_t> {};
 
 DEFINE_INTTYPE_LIMIT(int8)

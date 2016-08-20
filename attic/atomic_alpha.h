@@ -27,7 +27,7 @@
 #include <sys/machine/builtins.h>
 
 // specializations of atomic for int and long.
-// 
+//
 
 template <>
 class atomic<int>

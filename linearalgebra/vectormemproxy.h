@@ -44,7 +44,7 @@ template <typename T, typename Stride = boost::mpl::int_<1> >
 class VectorMemProxy;
 
 template <typename T>
-class VectorMemProxy<T, boost::mpl::int_<1> > 
+class VectorMemProxy<T, boost::mpl::int_<1> >
    : public VectorBase<VectorMemProxy<T, boost::mpl::int_<1> > >
 {
    public:
@@ -55,7 +55,7 @@ class VectorMemProxy<T, boost::mpl::int_<1> >
       typedef T const& const_reference;
 
       // an easy way to declare this class as being a proxy reference type
-      // is to define proxy to mpl::true_, and specify what the 
+      // is to define proxy to mpl::true_, and specify what the
       // corresponding const reference type is.
       typedef boost::is_const<T>                    const_proxy;
       typedef boost::mpl::not_<boost::is_const<T> > proxy;
@@ -69,28 +69,28 @@ class VectorMemProxy<T, boost::mpl::int_<1> >
       // copy-assignment
       VectorMemProxy& operator=(VectorMemProxy const& Other)
       {
-	 assign(*this, Other);
-	 return *this;
+         assign(*this, Other);
+         return *this;
       }
 
       // Assignment has reference semantics
       template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy<T>& >::type 
+      typename boost::enable_if<is_vector<U>, VectorMemProxy<T>& >::type
       operator=(U const& x)
       {
-	 // TODO: the vector type should be something better here!
-         //	 std::vector<value_type> Temp(x.size());
-         //	 noalias(Temp) = x;
-	 assign(*this, x);
-	 return *this;
+         // TODO: the vector type should be something better here!
+         //      std::vector<value_type> Temp(x.size());
+         //      noalias(Temp) = x;
+         assign(*this, x);
+         return *this;
       }
 
       template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy<T>& >::type 
+      typename boost::enable_if<is_vector<U>, VectorMemProxy<T>& >::type
       operator=(NoAliasProxy<U> const& x)
       {
-	 assign(*this, x.value());
-	 return *this;
+         assign(*this, x.value());
+         return *this;
       }
 
       size_type size() const { return Size_; }
@@ -114,41 +114,41 @@ class VectorMemProxy<T, boost::mpl::int_<1> >
       // computed assignment must be members here, so we can use them on temporaries
 
       template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy<T>& >::type 
+      typename boost::enable_if<is_vector<U>, VectorMemProxy<T>& >::type
       operator+=(U const& x)
       {
-	 // TODO: the vector type should be something better here!
-         //	 std::vector<value_type> Temp(x.size());
-         //	 noalias(Temp) = x;
-	 add(*this, x);
-	 return *this;
+         // TODO: the vector type should be something better here!
+         //      std::vector<value_type> Temp(x.size());
+         //      noalias(Temp) = x;
+         add(*this, x);
+         return *this;
       }
 
       template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy<T>& >::type 
+      typename boost::enable_if<is_vector<U>, VectorMemProxy<T>& >::type
       operator+=(NoAliasProxy<U> const& x)
       {
-	 add(*this, x.value());
-	 return *this;
-      }
-      
-      template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy<T>& >::type 
-      operator-=(NoAliasProxy<U> const& x)
-      {
-	 subtract(*this, x.value());
-	 return *this;
+         add(*this, x.value());
+         return *this;
       }
 
       template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy<T>& >::type 
+      typename boost::enable_if<is_vector<U>, VectorMemProxy<T>& >::type
+      operator-=(NoAliasProxy<U> const& x)
+      {
+         subtract(*this, x.value());
+         return *this;
+      }
+
+      template <typename U>
+      typename boost::enable_if<is_vector<U>, VectorMemProxy<T>& >::type
       operator-=(U const& x)
       {
-	 // TODO: the vector type should be something better here!
-         //	 std::vector<value_type> Temp(x.size());
-         //	 noalias(Temp) = x;
-	 subtract(*this, x);
-	 return *this;
+         // TODO: the vector type should be something better here!
+         //      std::vector<value_type> Temp(x.size());
+         //      noalias(Temp) = x;
+         subtract(*this, x);
+         return *this;
       }
 
    private:
@@ -167,7 +167,7 @@ class VectorMemProxy<T, tagVariable>
       typedef typename make_const_reference<T>::type const_reference;
 
       // an easy way to declare this class as being a proxy reference type
-      // is to define proxy to mpl::true_, and specify what the 
+      // is to define proxy to mpl::true_, and specify what the
       // corresponding const reference type is.
       typedef boost::is_const<T>                    const_proxy;
       typedef boost::mpl::not_<boost::is_const<T> > proxy;
@@ -176,31 +176,31 @@ class VectorMemProxy<T, tagVariable>
 
       VectorMemProxy() : Data_(NULL), Size_(0) {}
 
-      VectorMemProxy(T* Data, size_type Size, difference_type Stride) 
-	 : Data_(Data), Size_(Size), Stride_(Stride) {}
+      VectorMemProxy(T* Data, size_type Size, difference_type Stride)
+         : Data_(Data), Size_(Size), Stride_(Stride) {}
 
       // copy-assignment
       VectorMemProxy& operator=(VectorMemProxy const& Other)
       {
-	 assign(*this, Other);
-	 return *this;
+         assign(*this, Other);
+         return *this;
       }
 
       // Assignment has reference semantics
       template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy&>::type 
+      typename boost::enable_if<is_vector<U>, VectorMemProxy&>::type
       operator=(U const& x)
       {
-	 assign_copy(*this, x);
-	 return *this;
+         assign_copy(*this, x);
+         return *this;
       }
 
       template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy& >::type 
+      typename boost::enable_if<is_vector<U>, VectorMemProxy& >::type
       operator=(NoAliasProxy<U> const& x)
       {
-	 assign(*this, x.value());
-	 return *this;
+         assign(*this, x.value());
+         return *this;
       }
 
       size_type size() const { return Size_; }
@@ -214,48 +214,48 @@ class VectorMemProxy<T, tagVariable>
 
 #if 0
    // does this do anything?  icc warns that it is never used
-      operator VectorMemProxy<T const, tagVariable>() const 
+      operator VectorMemProxy<T const, tagVariable>() const
    { return VectorMemProxy<T const, tagVariable>(Data_, Size_, Stride_); }
 #endif
 
       // computed assignment must be members here, so we can use them on temporaries
 
       template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy&>::type 
+      typename boost::enable_if<is_vector<U>, VectorMemProxy&>::type
       operator+=(U const& x)
       {
-	 // TODO: the vector type should be something better here!
-         //	 std::vector<value_type> Temp(x.size());
-         //	 noalias(Temp) = x;
-	 add(*this, x);
-	 return *this;
+         // TODO: the vector type should be something better here!
+         //      std::vector<value_type> Temp(x.size());
+         //      noalias(Temp) = x;
+         add(*this, x);
+         return *this;
       }
 
       template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy& >::type 
+      typename boost::enable_if<is_vector<U>, VectorMemProxy& >::type
       operator+=(NoAliasProxy<U> const& x)
       {
-	 add(*this, x.value());
-	 return *this;
-      }
-      
-      template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy& >::type 
-      operator-=(NoAliasProxy<U> const& x)
-      {
-	 subtract(*this, x.value());
-	 return *this;
+         add(*this, x.value());
+         return *this;
       }
 
       template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy& >::type 
+      typename boost::enable_if<is_vector<U>, VectorMemProxy& >::type
+      operator-=(NoAliasProxy<U> const& x)
+      {
+         subtract(*this, x.value());
+         return *this;
+      }
+
+      template <typename U>
+      typename boost::enable_if<is_vector<U>, VectorMemProxy& >::type
       operator-=(U const& x)
       {
-	 // TODO: the vector type should be something better here!
-         //	 std::vector<value_type> Temp(x.size());
-         //	 noalias(Temp) = x;
-	 subtract(*this, x);
-	 return *this;
+         // TODO: the vector type should be something better here!
+         //      std::vector<value_type> Temp(x.size());
+         //      noalias(Temp) = x;
+         subtract(*this, x);
+         return *this;
       }
 
       // operator *=
@@ -283,7 +283,7 @@ class VectorMemProxy<T, boost::mpl::int_<Stride_> >
       typedef T const& const_reference;
 
       // an easy way to declare this class as being a proxy reference type
-      // is to define proxy to mpl::true_, and specify what the 
+      // is to define proxy to mpl::true_, and specify what the
       // corresponding const reference type is.
       typedef boost::is_const<T>                    const_proxy;
       typedef boost::mpl::not_<boost::is_const<T> > proxy;
@@ -292,34 +292,34 @@ class VectorMemProxy<T, boost::mpl::int_<Stride_> >
 
       VectorMemProxy() : Data_(NULL), Size_(0) {}
 
-      VectorMemProxy(T* Data, size_type Size, difference_type Stride = Stride_) 
-	 : Data_(Data), Size_(Size) { PRECONDITION_EQUAL(Stride, Stride_); }
+      VectorMemProxy(T* Data, size_type Size, difference_type Stride = Stride_)
+         : Data_(Data), Size_(Size) { PRECONDITION_EQUAL(Stride, Stride_); }
 
       // copy-assignment
       VectorMemProxy& operator=(VectorMemProxy const& Other)
       {
-	 assign(*this, Other);
-	 return *this;
+         assign(*this, Other);
+         return *this;
       }
 
       // Assignment has reference semantics
       template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy&>::type 
+      typename boost::enable_if<is_vector<U>, VectorMemProxy&>::type
       operator=(U const& x)
       {
-	 // TODO: the vector type should be something better here!
-         //	 std::vector<value_type> Temp(x.size());
-         //	 noalias(Temp) = x;
-	 assign(*this, x);
-	 return *this;
+         // TODO: the vector type should be something better here!
+         //      std::vector<value_type> Temp(x.size());
+         //      noalias(Temp) = x;
+         assign(*this, x);
+         return *this;
       }
 
       template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy&>::type 
+      typename boost::enable_if<is_vector<U>, VectorMemProxy&>::type
       operator=(NoAliasProxy<U> const& x)
       {
-	 assign(*this, x.value());
-	 return *this;
+         assign(*this, x.value());
+         return *this;
       }
 
       size_type size() const { return Size_; }
@@ -330,49 +330,49 @@ class VectorMemProxy<T, boost::mpl::int_<Stride_> >
       T* data() { return Data_; }
       T const* data() const { return Data_; }
       difference_type stride() const { return Stride_; }
-      static difference_type const static_stride = Stride_; 
+      static difference_type const static_stride = Stride_;
 
-      operator VectorMemProxy<T const,  boost::mpl::int_<Stride_> >() const 
+      operator VectorMemProxy<T const,  boost::mpl::int_<Stride_> >() const
    { return VectorMemProxy<T const,  boost::mpl::int_<Stride_> >(Data_, Size_, Stride_); }
 
       // computed assignment must be members here, so we can use them on temporaries
 
       template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy&>::type 
+      typename boost::enable_if<is_vector<U>, VectorMemProxy&>::type
       operator+=(U const& x)
       {
-	 // TODO: the vector type should be something better here!
-         //	 std::vector<value_type> Temp(x.size());
-         //	 noalias(Temp) = x;
-	 add(*this, x);
-	 return *this;
+         // TODO: the vector type should be something better here!
+         //      std::vector<value_type> Temp(x.size());
+         //      noalias(Temp) = x;
+         add(*this, x);
+         return *this;
       }
 
       template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy&>::type 
+      typename boost::enable_if<is_vector<U>, VectorMemProxy&>::type
       operator+=(NoAliasProxy<U> const& x)
       {
-	 add(*this, x.value());
-	 return *this;
-      }
-      
-      template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy&>::type 
-      operator-=(NoAliasProxy<U> const& x)
-      {
-	 subtract(*this, x.value());
-	 return *this;
+         add(*this, x.value());
+         return *this;
       }
 
       template <typename U>
-      typename boost::enable_if<is_vector<U>, VectorMemProxy&>::type 
+      typename boost::enable_if<is_vector<U>, VectorMemProxy&>::type
+      operator-=(NoAliasProxy<U> const& x)
+      {
+         subtract(*this, x.value());
+         return *this;
+      }
+
+      template <typename U>
+      typename boost::enable_if<is_vector<U>, VectorMemProxy&>::type
       operator-=(U const& x)
       {
-	 // TODO: the vector type should be something better here!
-         //	 std::vector<value_type> Temp(x.size());
-         //	 noalias(Temp) = x;
-	 subtract(*this, x);
-	 return *this;
+         // TODO: the vector type should be something better here!
+         //      std::vector<value_type> Temp(x.size());
+         //      noalias(Temp) = x;
+         subtract(*this, x);
+         return *this;
       }
 
       // operator *=
@@ -383,7 +383,7 @@ class VectorMemProxy<T, boost::mpl::int_<Stride_> >
          multiply(*this, y);
          return *this;
       }
-   
+
    private:
       T* Data_;
       difference_type Size_;
@@ -532,8 +532,8 @@ struct VectorBracketInterface<T, Slice, STRIDE_VECTOR(Tv, Ti)>
 
    result_type operator()(first_argument_type const& v, Slice const& s) const
    {
-      return result_type(data(v) + stride(v) * s.start(), s.size(), 
-			 stride(v) * s.stride());
+      return result_type(data(v) + stride(v) * s.start(), s.size(),
+                         stride(v) * s.stride());
    }
 };
 
@@ -546,8 +546,8 @@ struct VectorBracketInterface<T&, Slice, STRIDE_VECTOR(Tv, Ti)>
 
    result_type operator()(first_argument_type v, Slice const& s) const
    {
-      return result_type(data(v) +  stride(v) * s.start(), s.size(), 
-			 stride(v) * s.stride());
+      return result_type(data(v) +  stride(v) * s.start(), s.size(),
+                         stride(v) * s.stride());
    }
 };
 
@@ -617,7 +617,7 @@ struct RealInterface<T, CONTIGUOUS_VECTOR(std::complex<Tv>, Ti)>
 {
    typedef VectorMemProxy<Tv const, boost::mpl::int_<2> > result_type;
    typedef T argument_type;
-   result_type operator()(T const& x) const 
+   result_type operator()(T const& x) const
       { return result_type(reinterpret_cast<Tv const*>(data(x)), size(x)); }
 };
 
@@ -626,7 +626,7 @@ struct RealInterface<T&, CONTIGUOUS_VECTOR(std::complex<Tv>, Ti)>
 {
    typedef VectorMemProxy<Tv, boost::mpl::int_<2> > result_type;
    typedef T& argument_type;
-   result_type operator()(T& x) const 
+   result_type operator()(T& x) const
       { return result_type(reinterpret_cast<Tv*>(data(x)), size(x)); }
 };
 
@@ -637,7 +637,7 @@ struct RealInterface<T, STRIDE_VECTOR(std::complex<Tv>, Ti)>
 {
    typedef VectorMemProxy<Tv const, tagVariable> result_type;
    typedef T const& argument_type;
-   result_type operator()(T const& x) const 
+   result_type operator()(T const& x) const
       { return result_type(reinterpret_cast<Tv const*>(data(x)), size(x), 2 * stride(x)); }
 };
 
@@ -646,7 +646,7 @@ struct RealInterface<T&, STRIDE_VECTOR(std::complex<Tv>, Ti)>
 {
    typedef VectorMemProxy<Tv, tagVariable> result_type;
    typedef T& argument_type;
-   result_type operator()(T& x) const 
+   result_type operator()(T& x) const
       { return result_type(reinterpret_cast<Tv*>(data(x)), size(x), 2 * stride(x)); }
 };
 
@@ -657,7 +657,7 @@ struct ImagInterface<T, CONTIGUOUS_VECTOR(std::complex<Tv>, Ti)>
 {
    typedef VectorMemProxy<Tv const, boost::mpl::int_<2> > result_type;
    typedef T argument_type;
-   result_type operator()(T const& x) const 
+   result_type operator()(T const& x) const
       { return result_type(reinterpret_cast<Tv const*>(data(x))+1, size(x)); }
 };
 
@@ -666,7 +666,7 @@ struct ImagInterface<T&, CONTIGUOUS_VECTOR(std::complex<Tv>, Ti)>
 {
    typedef VectorMemProxy<Tv, boost::mpl::int_<2> > result_type;
    typedef T& argument_type;
-   result_type operator()(T& x) const 
+   result_type operator()(T& x) const
       { return result_type(reinterpret_cast<Tv*>(data(x))+1, size(x)); }
 };
 
@@ -677,7 +677,7 @@ struct ImagInterface<T, STRIDE_VECTOR(std::complex<Tv>, Ti)>
 {
    typedef VectorMemProxy<Tv const, tagVariable> result_type;
    typedef T argument_type;
-   result_type operator()(T const& x) const 
+   result_type operator()(T const& x) const
       { return result_type(reinterpret_cast<Tv const*>(data(x))+1, size(x), 2 * stride(x)); }
 };
 
@@ -686,7 +686,7 @@ struct ImagInterface<T&, STRIDE_VECTOR(std::complex<Tv>, Ti)>
 {
    typedef VectorMemProxy<Tv, tagVariable> result_type;
    typedef T& argument_type;
-   result_type operator()(T& x) const 
+   result_type operator()(T& x) const
       { return result_type(reinterpret_cast<Tv*>(data(x))+1, size(x), 2 * stride(x)); }
 };
 

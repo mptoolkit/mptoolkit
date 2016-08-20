@@ -21,7 +21,7 @@ struct _pthread_descr_struct {
   pthread_descr p_nextlive, p_prevlive;
                                 /* Double chaining of active threads */
   pthread_descr p_nextwaiting;  /* Next element in the queue holding the thr */
-  pthread_descr p_nextlock;	/* can be on a queue and waiting on a lock */
+  pthread_descr p_nextlock;     /* can be on a queue and waiting on a lock */
   pthread_t p_tid;              /* Thread identifier */
   int p_pid;                    /* PID of Unix process */
   int p_priority;               /* Thread priority (== 0 if not realtime) */
@@ -48,19 +48,19 @@ struct _pthread_descr_struct {
   struct pthread_start_args p_start_args; /* arguments for thread creation */
   void ** p_specific[PTHREAD_KEY_1STLEVEL_SIZE]; /* thread-specific data */
   void * p_libc_specific[_LIBC_TSD_KEY_N]; /* thread-specific data for libc */
-  int p_userstack;		/* nonzero if the user provided the stack */
-  void *p_guardaddr;		/* address of guard area or NULL */
-  size_t p_guardsize;		/* size of guard area */
-  pthread_descr p_self;		/* Pointer to this structure */
+  int p_userstack;              /* nonzero if the user provided the stack */
+  void *p_guardaddr;            /* address of guard area or NULL */
+  size_t p_guardsize;           /* size of guard area */
+  pthread_descr p_self;         /* Pointer to this structure */
   int p_nr;                     /* Index of descriptor in __pthread_handles */
   int p_report_events;         /* Nonzero if events must be reported.  */
   td_eventbuf_t p_eventbuf;     /* Data for event.  */
   struct pthread_atomic p_resume_count; /* number of times restart() was
-					   called on thread */
+                                           called on thread */
   char p_woken_by_cancel;       /* cancellation performed wakeup */
   pthread_extricate_if *p_extricate; /* See above */
   pthread_readlock_info *p_readlock_list;  /* List of readlock info structs */
   pthread_readlock_info *p_readlock_free;  /* Free list of structs */
-  int p_untracked_readlock_count;	/* Readlocks not tracked by list */
+  int p_untracked_readlock_count;       /* Readlocks not tracked by list */
   /* New elements must be added at the end.  */
 };

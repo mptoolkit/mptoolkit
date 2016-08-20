@@ -24,9 +24,9 @@
   Created 2000-10-06 Ian McCulloch
 
   TODO: there is no error checking so far.  Some exceptions would be nice.
-        Need to document which pthreads functions are safe to call direct.  
+        Need to document which pthreads functions are safe to call direct.
         eg pthread_exit() is safe.
-	These functions should then be included in the interface.
+        These functions should then be included in the interface.
 */
 
 #if !defined(THREADS_H_FDHJSF89RF7Y34TER89U3U8989U)

@@ -55,22 +55,22 @@ LatticeSite CreateFermionSite(half_int m, std::string const& Sym1 = "N", std::st
    X = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    N_S = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    N_H = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
-  
+
    // create up spin
    CHup("up",     "empty")     =  1;
    CHup("double", "down")      =  1;
-   
+
    // annihilate up spin
    Cup = adjoint(CHup);
 
-   // create down spin   
+   // create down spin
    CHdown("down",   "empty")   =  1;
    CHdown("double", "up")      = -1;
-   
+
    // annihilate down spin
    Cdown = adjoint(CHdown);
 
-   // parity = (-1)^N   
+   // parity = (-1)^N
    P("empty",  "empty")     =  1;
    P("up",     "up")        = -1;
    P("down",   "down")      = -1;
@@ -87,18 +87,18 @@ LatticeSite CreateFermionSite(half_int m, std::string const& Sym1 = "N", std::st
    N_S("up",     "up")        = 1;
    N_S("down",   "down")      = 1;
 
-   // spatial reflection   
+   // spatial reflection
    R("empty",  "empty")     =  1;
    R("up",     "up")        =  1;
    R("down",   "down")      =  1;
    R("double", "double")    = -1;
- 
-   // particle number  
+
+   // particle number
    N("up",     "up")        =  1;
    N("down",   "down")      =  1;
    N("double", "double")    =  2;
 
-   // projection onto double occupied state 
+   // projection onto double occupied state
    // == asymmetric coulomb operator == n_up * n_down
    Pdouble("double", "double") = 1.0;
 
@@ -107,7 +107,7 @@ LatticeSite CreateFermionSite(half_int m, std::string const& Sym1 = "N", std::st
    I("up",     "up")        =  1;
    I("down",   "down")      =  1;
    I("double", "double")    =  1;
-   
+
    // z-component of spin
    Sz("up",   "up")       =  m.to_double();
    Sz("down", "down")     = -m.to_double();

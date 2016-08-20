@@ -58,65 +58,65 @@ class MatrixPtrIterator<Scalar, RowMajor>
 
       typedef vector_iterator_dense category;
 
-      MatrixPtrIterator(Scalar* Base, 
-			size_type Size1, difference_type Stride1,
-			size_type Size2, difference_type Stride2, 
-			size_type OuterIndex = 0)
-	 : Base_(Base), Size1_(Size1), Stride1_(Stride1), 
-	 Size2_(Size2), Stride2_(Stride2),
-	 OuterIndex_(OuterIndex)
-	 {}
+      MatrixPtrIterator(Scalar* Base,
+                        size_type Size1, difference_type Stride1,
+                        size_type Size2, difference_type Stride2,
+                        size_type OuterIndex = 0)
+         : Base_(Base), Size1_(Size1), Stride1_(Stride1),
+         Size2_(Size2), Stride2_(Stride2),
+         OuterIndex_(OuterIndex)
+         {}
 
       template <typename OtherScalar>
       MatrixPtrIterator(MatrixPtrIterator<OtherScalar, RowMajor> const& Other)
-	 : Base_(Other.base()), Size1_(Other.size1()), Stride1_(Other.stride1()),
-	 Size2_(Other.size2()), Stride2_(Other.stride2()), OuterIndex_(Other.index()) 
-	{}
+         : Base_(Other.base()), Size1_(Other.size1()), Stride1_(Other.stride1()),
+         Size2_(Other.size2()), Stride2_(Other.stride2()), OuterIndex_(Other.index())
+        {}
       //{ TRACE(Base_); }
 
-      MatrixPtrIterator& operator++() 
-         { DEBUG_CHECK(OuterIndex_ < Size1_)(OuterIndex_)(Size1_); 
-	 ++OuterIndex_; return *this; }
+      MatrixPtrIterator& operator++()
+         { DEBUG_CHECK(OuterIndex_ < Size1_)(OuterIndex_)(Size1_);
+         ++OuterIndex_; return *this; }
 
       MatrixPtrIterator operator++(int)
-         { DEBUG_CHECK(OuterIndex_ < Size1_)(OuterIndex_)(Size1_); 
-	   return MatrixPtrIterator(Base_, Size1_, Stride1_,
-				    Size2_, Stride2_, OuterIndex_++); }
+         { DEBUG_CHECK(OuterIndex_ < Size1_)(OuterIndex_)(Size1_);
+           return MatrixPtrIterator(Base_, Size1_, Stride1_,
+                                    Size2_, Stride2_, OuterIndex_++); }
 
-      MatrixPtrIterator& operator--() 
-         { DEBUG_CHECK(OuterIndex_ > 0)(OuterIndex_); 
-	 --OuterIndex_; return *this; }
+      MatrixPtrIterator& operator--()
+         { DEBUG_CHECK(OuterIndex_ > 0)(OuterIndex_);
+         --OuterIndex_; return *this; }
 
       MatrixPtrIterator operator--(int)
-         { DEBUG_CHECK(OuterIndex_ > 0)(OuterIndex_); 
-	   return MatrixPtrIterator(Base_, Size1_, Stride1_,
-				    Size2_, Stride2_, OuterIndex_--); }
+         { DEBUG_CHECK(OuterIndex_ > 0)(OuterIndex_);
+           return MatrixPtrIterator(Base_, Size1_, Stride1_,
+                                    Size2_, Stride2_, OuterIndex_--); }
 
       MatrixPtrIterator& operator+=(difference_type n)
-	 { DEBUG_CHECK(difference_type(OuterIndex_) + n >= 0 && 
-		       difference_type(OuterIndex_) + n <= Size1_)
-	               (OuterIndex_)(Size1_);
-	 OuterIndex_ += n; return *this; }
+         { DEBUG_CHECK(difference_type(OuterIndex_) + n >= 0 &&
+                       difference_type(OuterIndex_) + n <= Size1_)
+                       (OuterIndex_)(Size1_);
+         OuterIndex_ += n; return *this; }
 
       MatrixPtrIterator& operator-=(difference_type n)
-	 { DEBUG_CHECK(difference_type(OuterIndex_) - n >= 0 && 
-		       difference_type(OuterIndex_) - n <= Size1_)
-	               (OuterIndex_)(Size1_);
-	 OuterIndex_ -= n; return *this; }
+         { DEBUG_CHECK(difference_type(OuterIndex_) - n >= 0 &&
+                       difference_type(OuterIndex_) - n <= Size1_)
+                       (OuterIndex_)(Size1_);
+         OuterIndex_ -= n; return *this; }
 
       size_type index() const { return OuterIndex_; }
 
-      reference operator*() const 
-	 { return reference(this->ptr(), Size2_, Stride2_); }
+      reference operator*() const
+         { return reference(this->ptr(), Size2_, Stride2_); }
 
-      reference operator[](difference_type n) const 
-	 { return reference(this->ptr(n), Size2_, Stride2_); }
+      reference operator[](difference_type n) const
+         { return reference(this->ptr(n), Size2_, Stride2_); }
 
       operator bool() const { return OuterIndex_ != Size1_; }
 
       Scalar* ptr() const { return Base_ + difference_type(OuterIndex_) * Stride1_; }
-      Scalar* ptr(difference_type n) const 
-	 { return Base_ + (difference_type(OuterIndex_) + n) * Stride1_; }
+      Scalar* ptr(difference_type n) const
+         { return Base_ + (difference_type(OuterIndex_) + n) * Stride1_; }
 
       size_type size() const { return Size1_ - OuterIndex_; }
 
@@ -130,13 +130,13 @@ class MatrixPtrIterator<Scalar, RowMajor>
       size_type inner_size() const { return Size2_; }
       difference_type inner_stride() const { return Stride2_; }
 
-      iterator iterate() const 
-	 { return iterator(basic_iterator(this->ptr(), Size2_, 0, Stride2_),
-			   OuterIndex_); }
+      iterator iterate() const
+         { return iterator(basic_iterator(this->ptr(), Size2_, 0, Stride2_),
+                           OuterIndex_); }
 
-      const_iterator const_iterate() const 
-	 { return const_iterator(const_basic_iterator(this->ptr(), Size2_, 0, Stride2_),
-				 OuterIndex_); }
+      const_iterator const_iterate() const
+         { return const_iterator(const_basic_iterator(this->ptr(), Size2_, 0, Stride2_),
+                                 OuterIndex_); }
 
       Scalar* base() const { return Base_; }
 
@@ -164,63 +164,63 @@ class MatrixPtrIterator<Scalar, ColMajor>
 
       typedef vector_iterator_dense category;
 
-      MatrixPtrIterator(Scalar* Base, 
-			size_type Size1, difference_type Stride1,
-			size_type Size2, difference_type Stride2, 
-			size_type OuterIndex = 0)
-	 : Base_(Base), Size1_(Size1), Stride1_(Stride1), 
-	 Size2_(Size2), Stride2_(Stride2),
-	 OuterIndex_(OuterIndex) 
-	 {}
+      MatrixPtrIterator(Scalar* Base,
+                        size_type Size1, difference_type Stride1,
+                        size_type Size2, difference_type Stride2,
+                        size_type OuterIndex = 0)
+         : Base_(Base), Size1_(Size1), Stride1_(Stride1),
+         Size2_(Size2), Stride2_(Stride2),
+         OuterIndex_(OuterIndex)
+         {}
 
       template <typename OtherScalar>
       MatrixPtrIterator(MatrixPtrIterator<OtherScalar, ColMajor> const& Other)
-	 : Base_(Other.base()), Size1_(Other.size1()), Stride1_(Other.stride1()),
-	 Size2_(Other.size2()), Stride2_(Other.stride2()), OuterIndex_(Other.index()) {}
+         : Base_(Other.base()), Size1_(Other.size1()), Stride1_(Other.stride1()),
+         Size2_(Other.size2()), Stride2_(Other.stride2()), OuterIndex_(Other.index()) {}
 
-      MatrixPtrIterator& operator++() 
-         { DEBUG_CHECK(OuterIndex_ < Size2_)(OuterIndex_)(Size2_); 
-	 ++OuterIndex_; return *this; }
+      MatrixPtrIterator& operator++()
+         { DEBUG_CHECK(OuterIndex_ < Size2_)(OuterIndex_)(Size2_);
+         ++OuterIndex_; return *this; }
 
       MatrixPtrIterator operator++(int)
-         { DEBUG_CHECK(OuterIndex_ < Size2_)(OuterIndex_)(Size2_); 
-	   return MatrixPtrIterator(Base_, Size1_, Stride1_,
-				    Size2_, Stride2_, OuterIndex_++); }
+         { DEBUG_CHECK(OuterIndex_ < Size2_)(OuterIndex_)(Size2_);
+           return MatrixPtrIterator(Base_, Size1_, Stride1_,
+                                    Size2_, Stride2_, OuterIndex_++); }
 
-      MatrixPtrIterator& operator--() 
-         { DEBUG_CHECK(OuterIndex_ > 0)(OuterIndex_); 
-	 --OuterIndex_; return *this; }
+      MatrixPtrIterator& operator--()
+         { DEBUG_CHECK(OuterIndex_ > 0)(OuterIndex_);
+         --OuterIndex_; return *this; }
 
       MatrixPtrIterator operator--(int)
-         { DEBUG_CHECK(OuterIndex_ > 0)(OuterIndex_); 
-	   return MatrixPtrIterator(Base_, Size1_, Stride1_,
-				    Size2_, Stride2_, OuterIndex_--); }
+         { DEBUG_CHECK(OuterIndex_ > 0)(OuterIndex_);
+           return MatrixPtrIterator(Base_, Size1_, Stride1_,
+                                    Size2_, Stride2_, OuterIndex_--); }
 
       MatrixPtrIterator& operator+=(difference_type n)
-	 { DEBUG_CHECK(difference_type(OuterIndex_) + n >= 0 && 
-		       difference_type(OuterIndex_) + n <= Size2_)
-	               (OuterIndex_)(Size2_);
-	 OuterIndex_ += n; return *this; }
+         { DEBUG_CHECK(difference_type(OuterIndex_) + n >= 0 &&
+                       difference_type(OuterIndex_) + n <= Size2_)
+                       (OuterIndex_)(Size2_);
+         OuterIndex_ += n; return *this; }
 
       MatrixPtrIterator& operator-=(difference_type n)
-	 { DEBUG_CHECK(difference_type(OuterIndex_) - n >= 0 && 
-		       difference_type(OuterIndex_) - n <= Size2_)
-	               (OuterIndex_)(Size2_);
-	 OuterIndex_ -= n; return *this; }
+         { DEBUG_CHECK(difference_type(OuterIndex_) - n >= 0 &&
+                       difference_type(OuterIndex_) - n <= Size2_)
+                       (OuterIndex_)(Size2_);
+         OuterIndex_ -= n; return *this; }
 
       size_type index() const { return OuterIndex_; }
 
-      reference operator*() const 
-	 { return reference(this->ptr(), Size1_, Stride1_); }
+      reference operator*() const
+         { return reference(this->ptr(), Size1_, Stride1_); }
 
-      reference operator[](difference_type n) const 
-	 { return reference(this->ptr(n), Size1_, Stride1_); }
+      reference operator[](difference_type n) const
+         { return reference(this->ptr(n), Size1_, Stride1_); }
 
       operator bool() const { return OuterIndex_ != Size2_; }
 
       Scalar* ptr() const { return Base_ + difference_type(OuterIndex_) * Stride2_; }
-      Scalar* ptr(difference_type n) const 
-	 { return Base_ + (difference_type(OuterIndex_) + n) * Stride2_; }
+      Scalar* ptr(difference_type n) const
+         { return Base_ + (difference_type(OuterIndex_) + n) * Stride2_; }
 
       size_type size() const { return Size2_ - OuterIndex_; }
 
@@ -234,13 +234,13 @@ class MatrixPtrIterator<Scalar, ColMajor>
       size_type inner_size() const { return Size1_; }
       difference_type inner_stride() const { return Stride1_; }
 
-      iterator iterate() const 
-	 { return iterator(basic_iterator(this->ptr(), Size1_, 0, Stride1_),
-			   OuterIndex_); }
+      iterator iterate() const
+         { return iterator(basic_iterator(this->ptr(), Size1_, 0, Stride1_),
+                           OuterIndex_); }
 
-      const_iterator const_iterate() const 
-	 { return const_iterator(const_basic_iterator(this->ptr(), Size1_, 0, Stride1_),
-				 OuterIndex_); }
+      const_iterator const_iterate() const
+         { return const_iterator(const_basic_iterator(this->ptr(), Size1_, 0, Stride1_),
+                                 OuterIndex_); }
 
       Scalar* base() const { return Base_; }
 

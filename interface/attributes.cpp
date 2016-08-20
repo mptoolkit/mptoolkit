@@ -66,7 +66,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, AttributeList& l)
    return in >> l.data_;
 }
 
-Attribute 
+Attribute
 AttributeList::operator[](std::string const& s) const
 {
    const_iterator I = data_.find(s);

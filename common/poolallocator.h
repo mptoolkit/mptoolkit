@@ -49,7 +49,7 @@
   if NDEBUG is not defined, the allocation heap will be checked on program termination
   and leaked pointers will be reported.  If POOL_ALLOCATOR_VERBOSE is defined, the report contains
   more detailed information.
-*/ 
+*/
 
 #if !defined(MPTOOLKIT_COMMON_POOLALLOCATOR_H)
 #define MPTOOLKIT_COMMON_POOLALLOCATOR_H
@@ -89,19 +89,19 @@ struct pool_allocator
    static void deallocate(T* ptr);
 };
 
-#define IMPLEMENT_POOL_ALLOCATOR_NEW(Obj)					\
-inline void* operator new(size_t size)						\
-{										\
-   DEBUG_CHECK(size == sizeof(Obj));						\
-   void* Ptr = PoolAlloc::allocate(size);					\
-   TRACE_POOLALLOC("PoolAlloc operator new")(typeid(Obj).name())(size)(Ptr);	\
-   return Ptr;									\
-}										\
-										\
-inline void operator delete(void* p)						\
-{										\
-   TRACE_POOLALLOC("PoolAlloc operator delete")(typeid(Obj).name())(p);		\
-   PoolAlloc::deallocate(p, sizeof(Obj));					\
+#define IMPLEMENT_POOL_ALLOCATOR_NEW(Obj)                                       \
+inline void* operator new(size_t size)                                          \
+{                                                                               \
+   DEBUG_CHECK(size == sizeof(Obj));                                            \
+   void* Ptr = PoolAlloc::allocate(size);                                       \
+   TRACE_POOLALLOC("PoolAlloc operator new")(typeid(Obj).name())(size)(Ptr);    \
+   return Ptr;                                                                  \
+}                                                                               \
+                                                                                \
+inline void operator delete(void* p)                                            \
+{                                                                               \
+   TRACE_POOLALLOC("PoolAlloc operator delete")(typeid(Obj).name())(p);         \
+   PoolAlloc::deallocate(p, sizeof(Obj));                                       \
 }
 
 // For debugging, walks the heap and reports the count of allocated vs freed blocks

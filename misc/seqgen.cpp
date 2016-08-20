@@ -64,7 +64,7 @@ Vector<double> GetEigen(int const D, int const Chi, int const L)
       ComplexMatrix Xp(Chi, Chi, 0.0) ;
       for (int s = 0; s < D; ++s)
       {
-	 Xp += A[s] * X * herm(A[s]);
+         Xp += A[s] * X * herm(A[s]);
       }
       X = Xp;
    }
@@ -75,7 +75,7 @@ Vector<double> GetEigen(int const D, int const Chi, int const L)
    {
       for (int t = 0; t < D; ++t)
       {
-	 rho(s,t) = ComplexMatrix(LeftBoundary * A[s] * X * herm(A[t]) * herm(LeftBoundary))(0,0);
+         rho(s,t) = ComplexMatrix(LeftBoundary * A[s] * X * herm(A[t]) * herm(LeftBoundary))(0,0);
       }
    }
 
@@ -103,7 +103,7 @@ void check(int const D, int const Chi, int const L)
       ComplexMatrix Xp(Chi, Chi, 0.0) ;
       for (int s = 0; s < D; ++s)
       {
-	 Xp += herm(A[s]) * X * A[s];
+         Xp += herm(A[s]) * X * A[s];
       }
       X = Xp;
    }
@@ -136,4 +136,3 @@ int main()
       std::cout << std::setw(20) << ((i+0.5)/NumBuckets) << ' ' << Hist[i] << '\n';
    }
 }
- 

@@ -134,11 +134,11 @@ class MatrixTransposeProxy : public MatrixBase<MatrixTransposeProxy<BaseProxyRef
    // do we want transpose to be an l-value?
 #if 0
       reference operator()(size_type i, size_type j)
-	 { return Base_(j,i); }
+         { return Base_(j,i); }
 #endif
 
       const_reference operator()(size_type i, size_type j) const
-	 { return Base_(j,i); }
+         { return Base_(j,i); }
 
       base_reference base() { return Base_; }
 
@@ -287,7 +287,7 @@ struct MatrixRow_MatrixTransposeProxy {};
 
 template <typename M>
 struct MatrixRow_MatrixTransposeProxy<
-   M, 
+   M,
    typename boost::enable_if<exists<typename MatrixCol<M>::result_type> >::type>
 {
    typedef typename MatrixCol<M>::result_type result_type;
@@ -295,7 +295,7 @@ struct MatrixRow_MatrixTransposeProxy<
    typedef size_type second_argument_type;
    result_type operator()(first_argument_type x,
       size_type n) const { return matrix_col(x, n); }
-};   
+};
 
 template <typename M>
 struct MatrixRow<MatrixTransposeProxy<M> > : MatrixRow_MatrixTransposeProxy<M> {};
@@ -305,7 +305,7 @@ struct MatrixCol_MatrixTransposeProxy {};
 
 template <typename M>
 struct MatrixCol_MatrixTransposeProxy<
-   M, 
+   M,
    typename boost::enable_if<exists<typename MatrixRow<M>::result_type> >::type>
 {
    typedef typename MatrixRow<M>::result_type result_type;
@@ -329,8 +329,8 @@ struct MatrixTranspose<MatrixTransposeProxy<M>, F, Enable>
    typedef argument_type first_argument_type;
    typedef F second_argument_type;
    result_type operator()(argument_type x) const { return transform(x.base(), F()); }
-   result_type operator()(first_argument_type x, 
-			  second_argument_type f) const { return transform(x.base(), f); }
+   result_type operator()(first_argument_type x,
+                          second_argument_type f) const { return transform(x.base(), f); }
 };
 
 template <typename M, typename F, typename Enable>
@@ -342,8 +342,8 @@ struct MatrixTranspose<MatrixTransposeProxy<M>&, F, Enable>
    typedef argument_type first_argument_type;
    typedef F second_argument_type;
    result_type operator()(argument_type x) const { return transform(x.base(), F()); }
-   result_type operator()(first_argument_type x, 
-			  second_argument_type f) const { return transform(x.base(), f); }
+   result_type operator()(first_argument_type x,
+                          second_argument_type f) const { return transform(x.base(), f); }
 };
 
 
@@ -357,8 +357,8 @@ struct MatrixTranspose<MatrixTransposeProxy<M>, F, typename boost::enable_if<is_
    typedef argument_type first_argument_type;
    typedef F second_argument_type;
    result_type operator()(argument_type x) const { return x.base(); }
-   result_type operator()(first_argument_type x, 
-			  second_argument_type const&) const { return x.base(); }
+   result_type operator()(first_argument_type x,
+                          second_argument_type const&) const { return x.base(); }
 };
 
 template <typename M, typename F>
@@ -370,8 +370,8 @@ struct MatrixTranspose<MatrixTransposeProxy<M>&, F, typename boost::enable_if<is
    typedef argument_type first_argument_type;
    typedef F second_argument_type;
    result_type operator()(argument_type x) const { return x.base(); }
-   result_type operator()(first_argument_type x, 
-			  second_argument_type const&) { return x.base(); }
+   result_type operator()(first_argument_type x,
+                          second_argument_type const&) { return x.base(); }
 };
 
 template <typename M, typename F, typename Mv, typename Mi, typename Enable>
@@ -383,8 +383,8 @@ struct MatrixTransposeInterface<M, F, Concepts::LocalMatrix<Mv, Mi>, Enable>
    typedef argument_type first_argument_type;
    typedef F second_argument_type;
    result_type operator()(M const& m) const { return result_type(transform(m, F())); }
-   result_type operator()(first_argument_type m, 
-			  second_argument_type f) const { return result_type(transform(m,f)); }
+   result_type operator()(first_argument_type m,
+                          second_argument_type f) const { return result_type(transform(m,f)); }
 };
 
 template <typename M, typename F, typename Mv, typename Mi>
@@ -396,8 +396,8 @@ struct MatrixTransposeInterface<M&, F, Concepts::LocalMatrix<Mv, Mi>>
    typedef argument_type first_argument_type;
    typedef F second_argument_type;
    result_type operator()(M& m) const { return result_type(transform(m, F())); }
-   result_type operator()(first_argument_type m, 
-			  second_argument_type f) const { return result_type(transform(m,f)); }
+   result_type operator()(first_argument_type m,
+                          second_argument_type f) const { return result_type(transform(m,f)); }
 };
 
 // SwapSortOrder
@@ -408,10 +408,10 @@ struct SwapSortOrder<MatrixTransposeProxy<M> >
    typedef boost::mpl::true_ involutary;
    typedef typename reference_to_arg<M>::type MArg;
    typedef typename SwapSortOrder<MArg>::result_type SwappedBase;
-   typedef typename Transpose<typename reference_to_arg<SwappedBase>::type>::result_type 
+   typedef typename Transpose<typename reference_to_arg<SwappedBase>::type>::result_type
    result_type;
    typedef MatrixTransposeProxy<M> const& argument_type;
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    { return transpose(swap_sort_order(x.base())); }
 };
 
@@ -423,7 +423,7 @@ struct SwapSortOrder<MatrixTransposeProxy<M>&>
    typedef typename SwapSortOrder<MArg>::result_type SwappedBase;
    typedef typename Transpose<typename reference_to_arg<SwappedBase>::type>::result_type result_type;
    typedef MatrixTransposeProxy<M>& argument_type;
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    { return transpose(swap_sort_order(x.base())); }
 };
 

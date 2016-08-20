@@ -58,7 +58,7 @@ template <typename FormatType, typename BuiltinType>
 inline
 FormatType cast_builtin_to_format(BuiltinType f)
 {
-   return Private::FormatCastHelper<FormatType, 
+   return Private::FormatCastHelper<FormatType,
      CurrentFormat::IsTrivialConversion<BuiltinType, FormatType>::value>::apply(f);
 }
 
@@ -66,7 +66,7 @@ template <typename BuiltinType, typename FormatType>
 inline
 BuiltinType cast_format_to_builtin(FormatType f)
 {
-   return Private::FormatCastHelper<BuiltinType, 
+   return Private::FormatCastHelper<BuiltinType,
      CurrentFormat::IsTrivialConversion<BuiltinType, FormatType>::value>::apply(f);
 }
 

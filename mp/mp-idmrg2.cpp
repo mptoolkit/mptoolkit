@@ -54,7 +54,7 @@ struct SuperblockMultiply
    typedef MatrixOperator argument_type;
 
    SuperblockMultiply(MPStateComponent const& Left_,
-		      MPStateComponent const& Right_);
+                      MPStateComponent const& Right_);
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
    {
@@ -66,7 +66,7 @@ struct SuperblockMultiply
 
 inline
 SuperblockMultiply::SuperblockMultiply(MPStateComponent const& Left_,
-				       MPStateComponent const& Right_)
+                                       MPStateComponent const& Right_)
    : Left(Left_), Right(Right_)
 {
 }
@@ -74,12 +74,12 @@ SuperblockMultiply::SuperblockMultiply(MPStateComponent const& Left_,
 bool ExpandL = true, ExpandR = true;
 
 MatrixOperator
-DoDMRGSweepLeft(LinearWavefunction& Psi, 
-		MatrixOperator const& C_r, 
-		SimpleMPOperator const& Ham,
-		std::deque<MPStateComponent>& LeftBlockHam,
-		MPStateComponent const& IncomingHam,
-		StatesInfo const& SInfo)
+DoDMRGSweepLeft(LinearWavefunction& Psi,
+                MatrixOperator const& C_r,
+                SimpleMPOperator const& Ham,
+                std::deque<MPStateComponent>& LeftBlockHam,
+                MPStateComponent const& IncomingHam,
+                StatesInfo const& SInfo)
 {
    LinearWavefunction Result;
    std::deque<MPStateComponent> RightBlockHam;
@@ -107,7 +107,7 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
       // apply the solver
       int Iterations = 10;
       double Energy = Lanczos(C, SuperblockMultiply(LeftBlockHam.back(), RightBlockHam.front()),
-			      Iterations);
+                              Iterations);
 
       // truncate
       MatrixOperator Rho = scalar_prod(herm(C), C);
@@ -119,10 +119,10 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
                                             Info);
       MatrixOperator U = DM.ConstructTruncator(DM.begin(), DMPivot);
 
-      std::cout << "Energy=" << Energy 
-		<< " States=" << Info.KeptStates()
-		<< " TruncError=" << Info.TruncationError()
-		<< " Entropy=" << Info.KeptEntropy() << '\n';
+      std::cout << "Energy=" << Energy
+                << " States=" << Info.KeptStates()
+                << " TruncError=" << Info.TruncationError()
+                << " Entropy=" << Info.KeptEntropy() << '\n';
 
       C = C * herm(U);
       R = prod(U, R);
@@ -144,12 +144,12 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
 }
 
 MatrixOperator
-DoDMRGSweepRight(MatrixOperator const& C_l, 
-		 LinearWavefunction& Psi, 
-		 SimpleMPOperator const& Ham,
-		 MPStateComponent const& IncomingHam,
-		 std::deque<MPStateComponent>& RightBlockHam,
-		 StatesInfo const& SInfo)
+DoDMRGSweepRight(MatrixOperator const& C_l,
+                 LinearWavefunction& Psi,
+                 SimpleMPOperator const& Ham,
+                 MPStateComponent const& IncomingHam,
+                 std::deque<MPStateComponent>& RightBlockHam,
+                 StatesInfo const& SInfo)
 {
    LinearWavefunction Result;
    std::deque<MPStateComponent> LeftBlockHam;
@@ -175,7 +175,7 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
       // apply the solver
       int Iterations = 10;
       double Energy = Lanczos(C, SuperblockMultiply(LeftBlockHam.back(), RightBlockHam.front()),
-			      Iterations);
+                              Iterations);
 
       // truncate
       MatrixOperator Rho = scalar_prod(C, herm(C));
@@ -187,10 +187,10 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
                                             Info);
       MatrixOperator U = DM.ConstructTruncator(DM.begin(), DMPivot);
 
-      std::cout << "Energy=" << Energy 
-		<< " States=" << Info.KeptStates()
-		<< " TruncError=" << Info.TruncationError()
-		<< " Entropy=" << Info.KeptEntropy() << '\n';
+      std::cout << "Energy=" << Energy
+                << " States=" << Info.KeptStates()
+                << " TruncError=" << Info.TruncationError()
+                << " Entropy=" << Info.KeptEntropy() << '\n';
 
       C = U * C;
       L = prod(L, herm(U));
@@ -219,30 +219,30 @@ double const InvertEpsilon = 1E-8;
 int niter = 0;
 
 void DoIteration(LinearWavefunction& Left, MatrixOperator& C_LR, LinearWavefunction& Right,
-		 SimpleMPOperator const& LeftHam, SimpleMPOperator const& RightHam,
-		 MatrixOperator& C_RL, 
-		 std::deque<MPStateComponent>& LeftBlockHam,
-		 std::deque<MPStateComponent>& RightBlockHam,
-		 StatesInfo SInfo, int Iterations)
+                 SimpleMPOperator const& LeftHam, SimpleMPOperator const& RightHam,
+                 MatrixOperator& C_RL,
+                 std::deque<MPStateComponent>& LeftBlockHam,
+                 std::deque<MPStateComponent>& RightBlockHam,
+                 StatesInfo SInfo, int Iterations)
 {
    //TRACE(C_LR);
    int Iter = Iterations;
 
    // These two could be done in parallel
    MPStateComponent LBack = LeftBlockHam.back();
-   MatrixOperator C_left = DoDMRGSweepLeft(Left, C_LR, LeftHam, 
-					   LeftBlockHam, RightBlockHam.front(), SInfo);
+   MatrixOperator C_left = DoDMRGSweepLeft(Left, C_LR, LeftHam,
+                                           LeftBlockHam, RightBlockHam.front(), SInfo);
 
-   MatrixOperator C_right = DoDMRGSweepRight(C_LR, Right, RightHam, 
-					     LBack, RightBlockHam, SInfo);
-   
+   MatrixOperator C_right = DoDMRGSweepRight(C_LR, Right, RightHam,
+                                             LBack, RightBlockHam, SInfo);
+
    //TRACE(C_RL)(InvertDiagonal(C_RL));
 
    // update C_RL
    //TRACE(C_RL)(InvertDiagonal(C_RL, 1E-7));
    C_RL = C_right * InvertDiagonal(C_RL, InvertEpsilon) * C_left;
    //TRACE(C_RL)(C_right)(C_left);
-   
+
    //TRACE(C_left)(C_LR)(C_RL)(C_right)(C_LR.Basis1())(C_LR.Basis2())(C_left.Basis2())(C_right.Basis1());
 
    // solve
@@ -255,7 +255,7 @@ void DoIteration(LinearWavefunction& Left, MatrixOperator& C_LR, LinearWavefunct
       C_RL_Old *= 1.0 / norm_frob(C_RL_Old);
       C_RL *= 1.0 / norm_frob(C_RL);
       Energy = Lanczos(C_RL, SuperblockMultiply(RightBlockHam.back(), LeftBlockHam.front()),
-		       Iterations);
+                       Iterations);
       PsiDifference = 1.0 - norm_frob(inner_prod(C_RL, C_RL_Old));
       // adjust for the energy per site
       RightBlockHam.back().front() -= (0.5 * Energy) * MatrixOperator::make_identity(C_RL.Basis1());
@@ -268,15 +268,15 @@ void DoIteration(LinearWavefunction& Left, MatrixOperator& C_LR, LinearWavefunct
       MatrixOperator RhoL = scalar_prod(C_RL, herm(C_RL));
       DensityMatrix<MatrixOperator> DML(RhoL);
       TruncationInfo Info;
-      MatrixOperator TruncL = DML.ConstructTruncator(DML.begin(), 
-						     TruncateFixTruncationErrorAbsolute(DML.begin(),
-											DML.end(),
-											SInfo,
-											Info));
-      std::cout << "A Energy=" << Energy 
-		<< " States=" << Info.KeptStates()
-		<< " TruncError=" << Info.TruncationError()
-		<< " Entropy=" << Info.KeptEntropy() 
+      MatrixOperator TruncL = DML.ConstructTruncator(DML.begin(),
+                                                     TruncateFixTruncationErrorAbsolute(DML.begin(),
+                                                                                        DML.end(),
+                                                                                        SInfo,
+                                                                                        Info));
+      std::cout << "A Energy=" << Energy
+                << " States=" << Info.KeptStates()
+                << " TruncError=" << Info.TruncationError()
+                << " Entropy=" << Info.KeptEntropy()
                 << " PsiDiff=" << PsiDifference
                 << '\n';
       //DML.DensityMatrixReport(std::cout);
@@ -288,11 +288,11 @@ void DoIteration(LinearWavefunction& Left, MatrixOperator& C_LR, LinearWavefunct
       MatrixOperator RhoR = scalar_prod(herm(C_RL), C_RL);
       DensityMatrix<MatrixOperator> DMR(RhoR);
       TruncationInfo InfoR;
-      MatrixOperator TruncR = DMR.ConstructTruncator(DMR.begin(), 
-						     TruncateFixTruncationErrorAbsolute(DMR.begin(),
-											DMR.end(),
-											SInfo,
-											InfoR));
+      MatrixOperator TruncR = DMR.ConstructTruncator(DMR.begin(),
+                                                     TruncateFixTruncationErrorAbsolute(DMR.begin(),
+                                                                                        DMR.end(),
+                                                                                        SInfo,
+                                                                                        InfoR));
       C_RL = C_RL * herm(TruncR);
       Left.set_front(prod(TruncR, Left.get_front()));
       LeftBlockHam.front() = triple_prod(TruncR, LeftBlockHam.front(), herm(TruncR));
@@ -319,7 +319,7 @@ void DoIteration(LinearWavefunction& Left, MatrixOperator& C_LR, LinearWavefunct
       C_LR_Old *= 1.0 / norm_frob(C_LR_Old);
       C_LR *= 1.0 / norm_frob(C_LR);
       Energy = Lanczos(C_LR, SuperblockMultiply(LeftBlockHam.back(), RightBlockHam.front()),
-		       Iterations);
+                       Iterations);
       PsiDifference = 1.0 - norm_frob(inner_prod(C_LR, C_LR_Old));
       // adjust for the energy per site
       LeftBlockHam.back().front() -= (0.5 * Energy) * MatrixOperator::make_identity(C_LR.Basis1());
@@ -332,15 +332,15 @@ void DoIteration(LinearWavefunction& Left, MatrixOperator& C_LR, LinearWavefunct
       MatrixOperator RhoL = scalar_prod(C_LR, herm(C_LR));
       DensityMatrix<MatrixOperator> DML(RhoL);
       TruncationInfo Info;
-      MatrixOperator TruncL = DML.ConstructTruncator(DML.begin(), 
-						     TruncateFixTruncationErrorAbsolute(DML.begin(),
-											DML.end(),
-											SInfo,
-											Info));
-      std::cout << "B Energy=" << Energy 
-		<< " States=" << Info.KeptStates()
-		<< " TruncError=" << Info.TruncationError()
-		<< " Entropy=" << Info.KeptEntropy() 
+      MatrixOperator TruncL = DML.ConstructTruncator(DML.begin(),
+                                                     TruncateFixTruncationErrorAbsolute(DML.begin(),
+                                                                                        DML.end(),
+                                                                                        SInfo,
+                                                                                        Info));
+      std::cout << "B Energy=" << Energy
+                << " States=" << Info.KeptStates()
+                << " TruncError=" << Info.TruncationError()
+                << " Entropy=" << Info.KeptEntropy()
                 << " PsiDiff=" << PsiDifference
                 << '\n';
       //DML.DensityMatrixReport(std::cout);
@@ -352,11 +352,11 @@ void DoIteration(LinearWavefunction& Left, MatrixOperator& C_LR, LinearWavefunct
       MatrixOperator RhoR = scalar_prod(herm(C_LR), C_LR);
       DensityMatrix<MatrixOperator> DMR(RhoR);
       TruncationInfo InfoR;
-      MatrixOperator TruncR = DMR.ConstructTruncator(DMR.begin(), 
-						     TruncateFixTruncationErrorAbsolute(DMR.begin(),
-											DMR.end(),
-											SInfo,
-											InfoR));
+      MatrixOperator TruncR = DMR.ConstructTruncator(DMR.begin(),
+                                                     TruncateFixTruncationErrorAbsolute(DMR.begin(),
+                                                                                        DMR.end(),
+                                                                                        SInfo,
+                                                                                        InfoR));
       C_LR = C_LR * herm(TruncR);
       Right.set_front(prod(TruncR, Right.get_front()));
       RightBlockHam.front() = triple_prod(TruncR, RightBlockHam.front(), herm(TruncR));
@@ -388,33 +388,33 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("iter,i", prog_opt::value<int>(&NumIter), "Number of Lanczos iterations per step [default 4]")
-	 ("max-states,m", prog_opt::value<int>(&MaxStates), 
+         ("iter,i", prog_opt::value<int>(&NumIter), "Number of Lanczos iterations per step [default 4]")
+         ("max-states,m", prog_opt::value<int>(&MaxStates),
           "Maximum number of states to keep [default 100000]")
          ("min-states", prog_opt::value<int>(&MinStates), "Minimum number of states to keep [default 1]")
-         ("trunc,r", prog_opt::value<double>(&TruncCutoff), 
+         ("trunc,r", prog_opt::value<double>(&TruncCutoff),
           "Truncation error cutoff [default 0]")
-         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff), 
+         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           ("Cutoff threshold for density matrix eigenvalues (alternative to truncation error) [default "
            +boost::lexical_cast<std::string>(EigenCutoff)+"]").c_str())
-	 ("steps,s", prog_opt::value<int>(&NumSteps), "Number of DMRG steps to perform [default 10]")
-	 ("out,o", prog_opt::value(&OutName), "Output filename")
-	 ("spin", prog_opt::value(&Spin), "spin (for xxx,xxz,xyz hamiltonians) [default 0.5]")
-	 ("J2", prog_opt::value(&J2), "next-nearest-neighbor hopping J2 (for xxx) [default 0]")
-	 ("theta", prog_opt::value(&Theta), "biquadratic term (biquadratic model, in units of pi) [default 0]")
-	 ("lambda", prog_opt::value(&Lambda), "transverse field strength"
-	  " (for itf hamiltonian) [default 1.0])")
-	 ;
+         ("steps,s", prog_opt::value<int>(&NumSteps), "Number of DMRG steps to perform [default 10]")
+         ("out,o", prog_opt::value(&OutName), "Output filename")
+         ("spin", prog_opt::value(&Spin), "spin (for xxx,xxz,xyz hamiltonians) [default 0.5]")
+         ("J2", prog_opt::value(&J2), "next-nearest-neighbor hopping J2 (for xxx) [default 0]")
+         ("theta", prog_opt::value(&Theta), "biquadratic term (biquadratic model, in units of pi) [default 0]")
+         ("lambda", prog_opt::value(&Lambda), "transverse field strength"
+          " (for itf hamiltonian) [default 1.0])")
+         ;
 
       prog_opt::options_description opt;
       opt.add(desc);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("out") == 0) 
+      if (vm.count("help") || vm.count("out") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-idmrg [options]\n";
@@ -451,13 +451,13 @@ int main(int argc, char** argv)
    SiteBlock Boundary = CreateSU2SpinSite(0.5);
    SiteBlock Site = CreateSU2SpinSite(0.5);
 
-   MpOpTriangular Ham = TriangularTwoSite(-sqrt(3.0)*Site["S"], 
-   					  Site["S"], 
-   					  Site["I"].TransformsAs());
+   MpOpTriangular Ham = TriangularTwoSite(-sqrt(3.0)*Site["S"],
+                                          Site["S"],
+                                          Site["I"].TransformsAs());
 
-   MpOpTriangular BoundaryHam = TriangularTwoSite(-sqrt(3.0)*Boundary["S"], 
-   						  Boundary["S"], 
-   						  Boundary["I"].TransformsAs());
+   MpOpTriangular BoundaryHam = TriangularTwoSite(-sqrt(3.0)*Boundary["S"],
+                                                  Boundary["S"],
+                                                  Boundary["I"].TransformsAs());
 #endif
 
    // SU(2) bilinear-biquadratic Heisenberg model
@@ -472,16 +472,16 @@ int main(int argc, char** argv)
 
    TRACE(Theta)(J)(B);
 
-   MpOpTriangular Ham = J*TriangularTwoSite(-sqrt(3.0)*Site["S"], 
-   					  Site["S"], 
-   					  Site["I"].TransformsAs())
+   MpOpTriangular Ham = J*TriangularTwoSite(-sqrt(3.0)*Site["S"],
+                                          Site["S"],
+                                          Site["I"].TransformsAs())
       + B*TriangularTwoSite(sqrt(5)*Site["Q"],
                           Site["Q"],
                           Site["I"].TransformsAs());
 
-   MpOpTriangular BoundaryHam = J*TriangularTwoSite(-sqrt(3.0)*Boundary["S"], 
-   						  Boundary["S"], 
-   						  Boundary["I"].TransformsAs())
+   MpOpTriangular BoundaryHam = J*TriangularTwoSite(-sqrt(3.0)*Boundary["S"],
+                                                  Boundary["S"],
+                                                  Boundary["I"].TransformsAs())
       + B*TriangularTwoSite(sqrt(5)*Boundary["Q"],
                           Boundary["Q"],
                           Boundary["I"].TransformsAs());
@@ -494,12 +494,12 @@ int main(int argc, char** argv)
    SiteBlock Boundary = CreateSU2SpinSite(0.5);
    SiteBlock Site = CreateSU2SpinSite(0.5);
 
-   MpOpTriangular Ham = TriangularTwoSitePBC(-sqrt(3.0)*Site["S"], 
-                                             Site["S"], 
+   MpOpTriangular Ham = TriangularTwoSitePBC(-sqrt(3.0)*Site["S"],
+                                             Site["S"],
                                              Site["I"].TransformsAs());
 
-   MpOpTriangular BoundaryHam = TriangularTwoSitePBC_Boundary(-sqrt(3.0)*Boundary["S"], 
-                                                              Boundary["S"], 
+   MpOpTriangular BoundaryHam = TriangularTwoSitePBC_Boundary(-sqrt(3.0)*Boundary["S"],
+                                                              Boundary["S"],
                                                               Boundary["I"].TransformsAs());
 #endif
 
@@ -508,12 +508,12 @@ int main(int argc, char** argv)
    SiteBlock Boundary = CreateSpinSite(0.5);
    SiteBlock Site = CreateSpinSite(0.5);
 
-   MpOpTriangular Ham = 0.5 * (TriangularTwoSite(Site["Sp"], Site["Sm"]) + 
-			       TriangularTwoSite(Site["Sm"], Site["Sp"]))
+   MpOpTriangular Ham = 0.5 * (TriangularTwoSite(Site["Sp"], Site["Sm"]) +
+                               TriangularTwoSite(Site["Sm"], Site["Sp"]))
       + TriangularTwoSite(Site["Sz"], Site["Sz"]);
 
-   MpOpTriangular BoundaryHam = 0.5 * (TriangularTwoSite(Boundary["Sp"], Boundary["Sm"]) + 
-				       TriangularTwoSite(Boundary["Sm"], Boundary["Sp"]))
+   MpOpTriangular BoundaryHam = 0.5 * (TriangularTwoSite(Boundary["Sp"], Boundary["Sm"]) +
+                                       TriangularTwoSite(Boundary["Sm"], Boundary["Sp"]))
       + TriangularTwoSite(Boundary["Sz"], Boundary["Sz"]);
 
    TRACE(Ham.data());
@@ -529,7 +529,7 @@ int main(int argc, char** argv)
 #endif
 
    // SU(2) Kagome lattice
-#if 0 
+#if 0
    SiteBlock Boundary = CreateSU2SpinSite(0.5);
    SiteBlock Site = CreateSU2SpinSite(0.5);
 
@@ -559,9 +559,9 @@ int main(int argc, char** argv)
 
    Center = MakeRandomMatrixOperator(A1.Basis2(), B2.Basis1());
    int Iterations = NumIter;
-   double Energy = Lanczos(Center, 
-			   SuperblockMultiply(E, F),
-			   Iterations);
+   double Energy = Lanczos(Center,
+                           SuperblockMultiply(E, F),
+                           Iterations);
    TRACE(Energy);
    // switch to basis where Center is diagonal
    MatrixOperator U, D, Vt;
@@ -584,9 +584,9 @@ int main(int argc, char** argv)
    Center = MakeRandomMatrixOperator(A1.Basis2(), B2.Basis1());
 
    Iterations = NumIter;
-   Energy = Lanczos(Center, 
-		    SuperblockMultiply(E, F),
-		    Iterations);
+   Energy = Lanczos(Center,
+                    SuperblockMultiply(E, F),
+                    Iterations);
    double WavefunctionDifference = 0;
    TRACE(Energy);
 
@@ -627,15 +627,15 @@ int main(int argc, char** argv)
       Psi.Psi = LinearWavefunction();
       for (LinearWavefunction::const_iterator I = Left.begin(); I != Left.end(); ++I)
       {
-	 Psi.Psi.push_back(*I);
+         Psi.Psi.push_back(*I);
       }
 
       MatrixOperator U = C_LR;
       for (LinearWavefunction::const_iterator I = Right.begin(); I != Right.end(); ++I)
       {
-	 MPStateComponent x = prod(U, *I);
-	 U = TruncateBasis2(x);
-	 Psi.Psi.push_back(x);
+         MPStateComponent x = prod(U, *I);
+         U = TruncateBasis2(x);
+         Psi.Psi.push_back(x);
       }
       Psi.C_right = U;
       Psi.QShift = QuantumNumbers::QuantumNumber(U.GetSymmetryList());

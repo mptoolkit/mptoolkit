@@ -29,7 +29,7 @@ int main()
    typedef LinearAlgebra::Vector<LinearAlgebra::Vector<double> > vt;
 
    test_ctor<vt>();
-   
+
    LinearAlgebra::Vector<double> v1(4,1);
    test_dense_single<vt>(v1);
 

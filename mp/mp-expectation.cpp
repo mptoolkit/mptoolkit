@@ -44,10 +44,10 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("real,r", prog_opt::bool_switch(&ShowRealPart),
-	  "display only the real part of the result")
-	 ("imag,i", prog_opt::bool_switch(&ShowImagPart),
-	  "display only the imaginary part of the result")
+         ("real,r", prog_opt::bool_switch(&ShowRealPart),
+          "display only the real part of the result")
+         ("imag,i", prog_opt::bool_switch(&ShowImagPart),
+          "display only the imaginary part of the result")
          ("notempfile", prog_opt::bool_switch(&NoTempFile),
           "don't use a temporary data file, keep everything in RAM "
           "(faster, but needs enough RAM)")
@@ -70,10 +70,10 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || vm.count("operator") == 0)
       {
@@ -113,17 +113,17 @@ int main(int argc, char** argv)
       std::complex<double> x = expectation(*Psi1, Op, *Psi2);
       if (ShowRealPart || ShowImagPart)
       {
-	 if (ShowRealPart)
-	 {
-	    std::cout << x.real();
-	    if (ShowImagPart)
-	       std::cout << "   " << x.imag();
-	 }
-	 else // if we get here then ShowImagPart is true and ShowRealPart is false
-	    std::cout << x.imag(); 
+         if (ShowRealPart)
+         {
+            std::cout << x.real();
+            if (ShowImagPart)
+               std::cout << "   " << x.imag();
+         }
+         else // if we get here then ShowImagPart is true and ShowRealPart is false
+            std::cout << x.imag();
       }
       else // default to C++ complex output
-	 std::cout << x;
+         std::cout << x;
 
       std::cout << '\n';
 

@@ -36,7 +36,7 @@ int main(int argc, char** argv)
    // get the lattice size
    int LatticeSize = System->size();
 
-   // a shortcut to refer to the "S" (spin) operator   
+   // a shortcut to refer to the "S" (spin) operator
    OperatorAtSite<OperatorList const, int> Sp(*System, "Sp");
    OperatorAtSite<OperatorList const, int> Sm(*System, "Sm");
    OperatorAtSite<OperatorList const, int> Sz(*System, "Sz");

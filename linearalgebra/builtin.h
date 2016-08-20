@@ -34,10 +34,10 @@ namespace LinearAlgebra
 // builtin_conversion
 //
 // From the C++ Standard, section 5.2:
-//    Many binary operators that expect operands of arithmetic type cause 
-//    conversions and yield result types in a similar way. The purpose is 
-//    to yield a common type, which is also the type of the result. This 
-//    pattern is called the usual arithmetic conversions. 
+//    Many binary operators that expect operands of arithmetic type cause
+//    conversions and yield result types in a similar way. The purpose is
+//    to yield a common type, which is also the type of the result. This
+//    pattern is called the usual arithmetic conversions.
 //
 // For builtin arithmetic types, builtin_conversion<T1, T2>::type
 // is the type of the expression resulting from "usual arithmetic conversion",
@@ -60,10 +60,10 @@ template <> struct type_weight<bool> { static int const value = 0; };
 template <> struct type_weight<char> { static int const value = 0; };
 
 template <> struct type_weight<signed char> { static int const value = 0; };
-template <> struct type_weight<unsigned char> 
+template <> struct type_weight<unsigned char>
 { static int const value = sizeof(unsigned char) >= sizeof(int); };
 template <> struct type_weight<short> { static int const value = 0; };
-template <> struct type_weight<unsigned short> 
+template <> struct type_weight<unsigned short>
 { static int const value = sizeof(unsigned short) >= sizeof(int); };
 template <> struct type_weight<int> { static int const value = 0; };
 
@@ -89,9 +89,9 @@ template <> struct type_weight<double> { static int const value = 9; };
   weight type is 'promoted' to an unsigned type.
 */
 
-template <typename T1, typename T2, 
-	  int UnsignedSigned = (type_weight<T1>::value % 2 != 0) &&
-	  (type_weight<T2>::value % 2 == 0)>
+template <typename T1, typename T2,
+          int UnsignedSigned = (type_weight<T1>::value % 2 != 0) &&
+          (type_weight<T2>::value % 2 == 0)>
 struct promote_unsigned;
 
 template <typename T1, typename T2>
@@ -129,7 +129,7 @@ struct builtin_conversion
       static int const v1 = Private::type_weight<T1>::value;
       static int const v2 = Private::type_weight<T2>::value;
       static int const value = v1 <= v2 ? Private::promote_unsigned<T1, T2>::value
-				   : Private::promote_unsigned<T2, T1>::value;
+                                   : Private::promote_unsigned<T2, T1>::value;
    public:
       typedef typename Private::type_from_weight<value>::type type;
 };

@@ -60,7 +60,7 @@ namespace LinearAlgebra
 // TODO: specify constraints on nested interfaces.
 
 //
-// 2015-10-03: The InjectiveMatrix isn't used - decided to make 
+// 2015-10-03: The InjectiveMatrix isn't used - decided to make
 // SparseMatrix injective.
 
 // tags for row/column major
@@ -217,7 +217,7 @@ template <typename T, typename Enable = void>
 struct is_dense_matrix : boost::mpl::false_ {};
 
 template <typename T>
-struct is_dense_matrix<T, 
+struct is_dense_matrix<T,
    typename boost::enable_if<exists<typename interface<T>::type> >::type>
    : Private::is_dense_matrix_helper<typename interface<T>::type> {};
 
@@ -228,26 +228,26 @@ struct is_dense_matrix<T,
 // this needs a lot of work - should encapsulate both shape & sparseness.
 //
 
-struct matrix_abstract_dense 
+struct matrix_abstract_dense
 {
    typedef matrix_abstract_dense type;
 };
 
-struct matrix_abstract_sparse 
+struct matrix_abstract_sparse
 {
    typedef matrix_abstract_sparse type;
 };
 
 // union of matrices; dense+anything -> dense;  sparse+sparse -> sparse.
 template <typename T, typename U>
-struct matrix_abstract_or 
-   : boost::mpl::if_<boost::is_same<typename T::type, typename U::type>, typename T::type, 
+struct matrix_abstract_or
+   : boost::mpl::if_<boost::is_same<typename T::type, typename U::type>, typename T::type,
                      matrix_abstract_dense> {};
 
 // intersection matrices; sparse+anything -> sparse;  dense+dense -> dense.
 template <typename T, typename U>
 struct matrix_abstract_and
-   : boost::mpl::if_<boost::is_same<typename T::type, typename U::type>, 
+   : boost::mpl::if_<boost::is_same<typename T::type, typename U::type>,
                      typename T::type, matrix_abstract_sparse> {};
 
 // The abstract interfaces for concrete types
@@ -264,7 +264,7 @@ struct abstract_interface_interface<T, Concepts::SparseMatrix<Tv, Ti>>
 //
 
 // generic sparse unordered iterator
-struct matrix_iterator_sparse 
+struct matrix_iterator_sparse
 {
    typedef matrix_iterator_sparse type;
 };
@@ -316,15 +316,15 @@ T* MakePtr();   // dummy function, not implemented
 IsSparse& TestCategory(...);
 
 IsInjective& TestCategory(vector_iterator_injective const*,
-			  vector_iterator_injective const*);
+                          vector_iterator_injective const*);
 
-IsDense& TestCategory(vector_iterator_dense const*, 
-		      vector_iterator_dense const*);
+IsDense& TestCategory(vector_iterator_dense const*,
+                      vector_iterator_dense const*);
 
 } // namespace Private
 
 template <typename T, typename U>
-struct get_matrix_category 
+struct get_matrix_category
    : Private::category_from_size<
         sizeof(Private::TestCategory(Private::MakePtr<T>(), Private::MakePtr<U>()))
      > {};
@@ -396,14 +396,14 @@ template <typename T, typename Tinterface = typename interface<T>::type>
 struct is_row_major : boost::mpl::false_ {};
 
 template <typename T, typename Tv, typename Ti>
-struct is_row_major<T, Concepts::DenseMatrix<Tv, RowMajor, Ti>> : boost::mpl::true_ 
+struct is_row_major<T, Concepts::DenseMatrix<Tv, RowMajor, Ti>> : boost::mpl::true_
 {};
 
 template <typename T, typename Tinterface = typename interface<T>::type>
 struct is_col_major : boost::mpl::false_ {};
 
 template <typename T, typename Tv, typename Ti>
-struct is_col_major<T, Concepts::DenseMatrix<Tv, ColMajor, Ti>> : boost::mpl::true_ 
+struct is_col_major<T, Concepts::DenseMatrix<Tv, ColMajor, Ti>> : boost::mpl::true_
 {};
 
 

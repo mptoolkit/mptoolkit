@@ -80,13 +80,13 @@ class AddConstIter
       typedef std::iterator_traits<Iter>::iterator_category iterator_category;
       typedef value_type const*                             pointer;
       typedef value_type const&                             reference;
-      
+
       AddConstIter() {}
 
       AddConstIter(Iter const& i_) : i(i_) {}
 
       AddConstIter& operator=(Iter const& i_) { i = i_; return *this; }
- 
+
       reference operator*() const { return *i; }
       pointer operator->() const { return i; }
 
@@ -142,7 +142,7 @@ inline
 AddConstIter<Iter> operator+(typename AddConstIter<Iter>::difference_type n, AddConstIter<Iter>& x)
 {
    return AddConstIter<Iter>(x.i + n);
-} 
+}
 
 template <class Iter>
 class proxy_container
@@ -157,8 +157,8 @@ class proxy_container
 
       // As an optimization, if the pointer type is (value_type const*), then the iterator is already const.
       // Otherwise, make a AddConstIter out of it.
-      typedef typename select_type<compare_types<pointer, value_type const*>::equal, 
-	                           iterator, 
+      typedef typename select_type<compare_types<pointer, value_type const*>::equal,
+                                   iterator,
                                    AddConstIter<iterator> >::type                    const_iterator;
 
       typedef std::iterator_traits<const_iterator>::pointer                          const_pointer;
@@ -184,9 +184,9 @@ class proxy_container
 
       void swap(proxy_container<Iter>& other)
       {
-	 using std::swap;
-	 swap(start, other.start);
-	 swap(finish, other.finish);
+         using std::swap;
+         swap(start, other.start);
+         swap(finish, other.finish);
       }
 
    private:
@@ -208,7 +208,7 @@ inline bool operator<(proxy_container<Iter> const& x, proxy_container<Iter> cons
 template <class Iter>
 inline bool operator!=(proxy_container<Iter> const& x, proxy_container<Iter> const& y) { return !(x == y); }
 template <class Iter>
-inline bool operator>(proxy_container<Iter> const& x, proxy_container<Iter> const& y) { return y < x; } 
+inline bool operator>(proxy_container<Iter> const& x, proxy_container<Iter> const& y) { return y < x; }
 template <class Iter>
 inline bool operator>=(proxy_container<Iter> const& x, proxy_container<Iter> const& y) { return !(x < y); }
 template <class Iter>

@@ -67,7 +67,7 @@ void CheckMult1()
    MMCFCheck(1,2) = 26;
    MMCFCheck(2,0) = 45;
    MMCFCheck(2,1) = 57;
-   MMCFCheck(2,2) = 82; 
+   MMCFCheck(2,2) = 82;
 
    Ctype MMCF = M * N;
 
@@ -118,7 +118,7 @@ void CheckMult2()
    MMCFCheck(1,2) = 26;
    MMCFCheck(2,0) = 45;
    MMCFCheck(2,1) = 57;
-   MMCFCheck(2,2) = 82; 
+   MMCFCheck(2,2) = 82;
 
    Ctype MMCF = M * N;
 

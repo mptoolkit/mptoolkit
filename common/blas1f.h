@@ -63,10 +63,10 @@ void dcopy(integer n, double const* dx, integer incx, double* restrict dy, integ
 
 double ddot(integer n, double const* dx, integer incx, double const* dy, integer incy);
 
-double dnrm2(integer n, double const* dx, integer incx); 
+double dnrm2(integer n, double const* dx, integer incx);
 
-void drot(integer n, double* restrict dx, integer incx, 
-	  double* restrict dy, integer incy, double c, double s);
+void drot(integer n, double* restrict dx, integer incx,
+          double* restrict dy, integer incy, double c, double s);
 
 void drotg(double* restrict da, double* restrict db, double* restrict c, double* restrict s);
 
@@ -81,40 +81,40 @@ integer idamax(integer n, double const* dx, integer incx);
 
 double dzasum(integer n, std::complex<double> const* dx, integer incx);
 
-void zaxpy(integer n, std::complex<double> da, 
-	   std::complex<double> const* dx, integer incx, 
-	   std::complex<double>* restrict dy, integer incy);
+void zaxpy(integer n, std::complex<double> da,
+           std::complex<double> const* dx, integer incx,
+           std::complex<double>* restrict dy, integer incy);
 
-void zcopy(integer n, std::complex<double> const* dx, integer incx, 
-	   std::complex<double>* restrict dy, integer incy);
+void zcopy(integer n, std::complex<double> const* dx, integer incx,
+           std::complex<double>* restrict dy, integer incy);
 
 #if defined(HAVE_FORTRAN_COMPLEX_RETURN)
 
-std::complex<double> zdotu(integer n, std::complex<double> const* dx, integer incx, 
-			   std::complex<double> const* dy, integer incy);
+std::complex<double> zdotu(integer n, std::complex<double> const* dx, integer incx,
+                           std::complex<double> const* dy, integer incy);
 #define HAVE_ZDOTU
 
-std::complex<double> zdotc(integer n, std::complex<double> const* dx, integer incx, 
-			   std::complex<double> const* dy, integer incy);
+std::complex<double> zdotc(integer n, std::complex<double> const* dx, integer incx,
+                           std::complex<double> const* dy, integer incy);
 #define HAVE_ZDOTC
 
 #endif
 
-double dznrm2(integer n, std::complex<double> const* dx, integer incx); 
+double dznrm2(integer n, std::complex<double> const* dx, integer incx);
 
-void zrot(integer n, std::complex<double>* restrict dx, integer incx, 
-	  std::complex<double>* restrict dy, integer incy, 
-	  std::complex<double> c, std::complex<double> s);
+void zrot(integer n, std::complex<double>* restrict dx, integer incx,
+          std::complex<double>* restrict dy, integer incy,
+          std::complex<double> c, std::complex<double> s);
 
-void zrotg(std::complex<double>* restrict da, std::complex<double>* restrict db, 
-	   std::complex<double>* restrict c, std::complex<double>* restrict s);
+void zrotg(std::complex<double>* restrict da, std::complex<double>* restrict db,
+           std::complex<double>* restrict c, std::complex<double>* restrict s);
 
 void zscal(integer n, std::complex<double> da, std::complex<double>* dx, integer incx);
 
 void zdscal(integer n, double da, std::complex<double>* dx, integer incx);
 
-void zswap(integer n, std::complex<double>* restrict dx, integer incx, 
-	   std::complex<double>* restrict dy, integer incy);
+void zswap(integer n, std::complex<double>* restrict dx, integer incx,
+           std::complex<double>* restrict dy, integer incy);
 
 // return value here is adjusted to be zero-based
 integer izamax(integer n, std::complex<double> const* dx, integer incx);
@@ -130,25 +130,25 @@ extern "C"
 
 double F77NAME(dasum)(const integer *n, const double *dx, const integer *incx);
 
-void F77NAME(daxpy)(const integer *n, const double *da, const double *dx, 
-		    const integer *incx, double* restrict dy, const integer *incy);
+void F77NAME(daxpy)(const integer *n, const double *da, const double *dx,
+                    const integer *incx, double* restrict dy, const integer *incy);
 
-void F77NAME(dcopy)(const integer *n, double const* dx, const integer *incx, double *dy, 
-		    const integer *incy);
+void F77NAME(dcopy)(const integer *n, double const* dx, const integer *incx, double *dy,
+                    const integer *incy);
 
-double F77NAME(ddot)(const integer *n, const double *dx, const integer *incx, 
-		     const double *dy, const integer *incy);
+double F77NAME(ddot)(const integer *n, const double *dx, const integer *incx,
+                     const double *dy, const integer *incy);
 
-double F77NAME(dnrm2)(const integer *n, const double *dx, const integer *incx); 
+double F77NAME(dnrm2)(const integer *n, const double *dx, const integer *incx);
 
-void F77NAME(drot)(const integer *n, double* restrict dx, integer const* incx, double* restrict dy, 
+void F77NAME(drot)(const integer *n, double* restrict dx, integer const* incx, double* restrict dy,
                         integer const* incy, const double *c, const double *s);
 
 void F77NAME(drotg)(double* restrict da, double* restrict db, double* restrict c, double* restrict s);
 
 void F77NAME(dscal)(const integer *n, double* const da, double* dx, const integer *incx);
 
-void F77NAME(dswap)(const integer *n, double *dx, const integer *incx, double *dy, 
+void F77NAME(dswap)(const integer *n, double *dx, const integer *incx, double *dy,
                         const integer *incy);
 
 integer F77NAME(idamax)(const integer *n, const double *dx, const integer *incx);
@@ -157,50 +157,50 @@ integer F77NAME(idamax)(const integer *n, const double *dx, const integer *incx)
 
 double F77NAME(dzasum)(const integer *n, const std::complex<double> *dx, const integer *incx);
 
-void F77NAME(zaxpy)(const integer *n, const std::complex<double> *da, const std::complex<double> *dx, 
-		    const integer *incx, std::complex<double>* restrict dy, const integer *incy);
+void F77NAME(zaxpy)(const integer *n, const std::complex<double> *da, const std::complex<double> *dx,
+                    const integer *incx, std::complex<double>* restrict dy, const integer *incy);
 
-void F77NAME(zcopy)(const integer *n, 
-		    std::complex<double> const* dx, const integer *incx, 
-		    std::complex<double> *dy, const integer *incy);
+void F77NAME(zcopy)(const integer *n,
+                    std::complex<double> const* dx, const integer *incx,
+                    std::complex<double> *dy, const integer *incy);
 
 #if defined(FORTRAN_COMPLEX_RETURN_FIRST_ARG)
-void F77NAME(zdotu)(std::complex<double>* result, const integer *n, 
-                    const std::complex<double> *dx, const integer *incx, 
+void F77NAME(zdotu)(std::complex<double>* result, const integer *n,
+                    const std::complex<double> *dx, const integer *incx,
                     const std::complex<double> *dy, const integer *incy);
 
-void F77NAME(zdotc)(std::complex<double>* result, const integer *n, 
-                    const std::complex<double> *dx, const integer *incx, 
+void F77NAME(zdotc)(std::complex<double>* result, const integer *n,
+                    const std::complex<double> *dx, const integer *incx,
                     const std::complex<double> *dy, const integer *incy);
 #elif defined(FORTRAN_COMPLEX_RETURN_IN_REGISTER)
 Fortran::complex
-F77NAME(zdotu)(const integer *n, 
-	       const std::complex<double> *dx, const integer *incx, 
-	       const std::complex<double> *dy, const integer *incy);
+F77NAME(zdotu)(const integer *n,
+               const std::complex<double> *dx, const integer *incx,
+               const std::complex<double> *dy, const integer *incy);
 Fortran::complex
-F77NAME(zdotc)(const integer *n, 
-	       const std::complex<double> *dx, const integer *incx, 
-	       const std::complex<double> *dy, const integer *incy);
+F77NAME(zdotc)(const integer *n,
+               const std::complex<double> *dx, const integer *incx,
+               const std::complex<double> *dy, const integer *incy);
 #endif
 
-double F77NAME(dznrm2)(const integer *n, 
-		       const std::complex<double> *dx, const integer *incx); 
+double F77NAME(dznrm2)(const integer *n,
+                       const std::complex<double> *dx, const integer *incx);
 
-void F77NAME(zrot)(const integer *n, std::complex<double>* restrict dx, integer const* incx, 
-		   std::complex<double>* restrict dy, integer const* incy, 
-		   const std::complex<double> *c, const std::complex<double> *s);
+void F77NAME(zrot)(const integer *n, std::complex<double>* restrict dx, integer const* incx,
+                   std::complex<double>* restrict dy, integer const* incy,
+                   const std::complex<double> *c, const std::complex<double> *s);
 
-void F77NAME(zrotg)(std::complex<double>* restrict da, std::complex<double>* restrict db, 
-		    std::complex<double>* restrict c, std::complex<double>* restrict s);
+void F77NAME(zrotg)(std::complex<double>* restrict da, std::complex<double>* restrict db,
+                    std::complex<double>* restrict c, std::complex<double>* restrict s);
 
-void F77NAME(zscal)(const integer *n, std::complex<double>* const da, 
-		    std::complex<double>* dx, const integer *incx);
+void F77NAME(zscal)(const integer *n, std::complex<double>* const da,
+                    std::complex<double>* dx, const integer *incx);
 
-void F77NAME(zdscal)(const integer *n, double* const da, 
-		     std::complex<double>* dx, const integer *incx);
+void F77NAME(zdscal)(const integer *n, double* const da,
+                     std::complex<double>* dx, const integer *incx);
 
-void F77NAME(zswap)(const integer *n, std::complex<double> *dx, const integer *incx, 
-		    std::complex<double> *dy, const integer *incy);
+void F77NAME(zswap)(const integer *n, std::complex<double> *dx, const integer *incx,
+                    std::complex<double> *dy, const integer *incy);
 
 integer F77NAME(izamax)(const integer *n, const std::complex<double> *dx, const integer *incx);
 
@@ -248,16 +248,16 @@ double dnrm2(integer n, double const* dx, integer incx)
 }
 
 inline
-void drot(integer n, double* restrict dx, integer incx, 
-	  double* restrict dy, integer incy, double c, double s)
+void drot(integer n, double* restrict dx, integer incx,
+          double* restrict dy, integer incy, double c, double s)
 {
    TRACE_BLAS1("BLAS1: drot")(n)(dx)(incx)(dy)(incy)(c)(s);
    raw::F77NAME(drot)(&n, dx, &incx, dy, &incy, &c, &s);
 }
 
 inline
-void drotg(double* restrict da, double* restrict db, 
-	   double* restrict c, double* restrict s)
+void drotg(double* restrict da, double* restrict db,
+           double* restrict c, double* restrict s)
 {
    TRACE_BLAS1("BLAS1: drotg")(da)(db)(c)(s);
    raw::F77NAME(drotg)(da, db, c, s);
@@ -294,17 +294,17 @@ double dzasum(integer n, std::complex<double> const* dx, integer incx)
 }
 
 inline
-void zaxpy(integer n, std::complex<double> da, 
-	   std::complex<double> const* dx, integer incx, 
-	   std::complex<double>* restrict dy, integer incy)
+void zaxpy(integer n, std::complex<double> da,
+           std::complex<double> const* dx, integer incx,
+           std::complex<double>* restrict dy, integer incy)
 {
    TRACE_BLAS1("BLAS1: zaxpy")(n)(da)(dx)(incx)(dy)(incy);
    raw::F77NAME(zaxpy)(&n, &da, dx, &incx, dy, &incy);
 }
 
 inline
-void zcopy(integer n, std::complex<double> const* dx, integer incx, 
-	   std::complex<double>* restrict dy, integer incy)
+void zcopy(integer n, std::complex<double> const* dx, integer incx,
+           std::complex<double>* restrict dy, integer incy)
 {
    TRACE_BLAS1("BLAS1: zcopy")(n)(dx)(incx)(dy)(incy);
    raw::F77NAME(zcopy)(&n, dx, &incx, dy, &incy);
@@ -313,7 +313,7 @@ void zcopy(integer n, std::complex<double> const* dx, integer incx,
 #if defined(FORTRAN_COMPLEX_RETURN_FIRST_ARG)
 inline
 std::complex<double>
-zdotu(integer n, std::complex<double> const* dx, integer incx, 
+zdotu(integer n, std::complex<double> const* dx, integer incx,
       std::complex<double> const* dy, integer incy)
 {
    std::complex<double> result;
@@ -324,7 +324,7 @@ zdotu(integer n, std::complex<double> const* dx, integer incx,
 
 inline
 std::complex<double>
-zdotc(integer n, std::complex<double> const* dx, integer incx, 
+zdotc(integer n, std::complex<double> const* dx, integer incx,
       std::complex<double> const* dy, integer incy)
 {
    std::complex<double> result;
@@ -335,7 +335,7 @@ zdotc(integer n, std::complex<double> const* dx, integer incx,
 #elif defined(FORTRAN_COMPLEX_RETURN_IN_REGISTER)
 inline
 std::complex<double>
-zdotu(integer n, std::complex<double> const* dx, integer incx, 
+zdotu(integer n, std::complex<double> const* dx, integer incx,
       std::complex<double> const* dy, integer incy)
 {
    TRACE_BLAS1("BLAS1: zdotu")(n)(dx)(incx)(dy)(incy);
@@ -344,7 +344,7 @@ zdotu(integer n, std::complex<double> const* dx, integer incx,
 
 inline
 std::complex<double>
-zdotc(integer n, std::complex<double> const* dx, integer incx, 
+zdotc(integer n, std::complex<double> const* dx, integer incx,
       std::complex<double> const* dy, integer incy)
 {
    TRACE_BLAS1("BLAS1: zdotc")(&result)(n)(dx)(incx)(dy)(incy);
@@ -360,17 +360,17 @@ double dznrm2(integer n, std::complex<double> const* dx, integer incx)
 }
 
 inline
-void zrot(integer n, std::complex<double>* restrict dx, integer incx, 
-	  std::complex<double>* restrict dy, integer incy, 
-	  std::complex<double> c, std::complex<double> s)
+void zrot(integer n, std::complex<double>* restrict dx, integer incx,
+          std::complex<double>* restrict dy, integer incy,
+          std::complex<double> c, std::complex<double> s)
 {
    TRACE_BLAS1("BLAS1: zrot")(n)(dx)(incx)(dy)(incy)(c)(s);
    raw::F77NAME(zrot)(&n, dx, &incx, dy, &incy, &c, &s);
 }
 
 inline
-void zrotg(std::complex<double>* restrict da, std::complex<double>* restrict db, 
-	   std::complex<double>* restrict c, std::complex<double>* restrict s)
+void zrotg(std::complex<double>* restrict da, std::complex<double>* restrict db,
+           std::complex<double>* restrict c, std::complex<double>* restrict s)
 {
    TRACE_BLAS1("BLAS1: zrotg")(da)(db)(c)(s);
    raw::F77NAME(zrotg)(da, db, c, s);
@@ -391,8 +391,8 @@ void zdscal(integer n, double da, std::complex<double>* dx, integer incx)
 }
 
 inline
-void zswap(integer n, std::complex<double>* restrict dx, integer incx, 
-	   std::complex<double>* restrict dy, integer incy)
+void zswap(integer n, std::complex<double>* restrict dx, integer incx,
+           std::complex<double>* restrict dy, integer incy)
 {
    TRACE_BLAS1("BLAS1: zswap")(n)(dx)(incx)(dy)(incy);
    raw::F77NAME(zswap)(&n, dx, &incx, dy, &incy);
@@ -417,7 +417,7 @@ sasum, dasum, scasum, dzasum
 Sum of the absolute value
 
 FORMAT
-  {S,D}ASUM (n,x,incx) 
+  {S,D}ASUM (n,x,incx)
   SCASUM (n,x,incx)
   DZASUM (n,x,incx)
 
@@ -560,7 +560,7 @@ Example
 **************************************************************************************
 
 
-scopy, dcopy, ccopy, zcopy 
+scopy, dcopy, ccopy, zcopy
 Copy of a vector
 
 FORMAT
@@ -672,7 +672,7 @@ inner product of two vectors
 
 FORMAT
   {S,D}DOT (n, x,incx, y, incy)
-  DSDOT (n, x, incx, y, incy) 
+  DSDOT (n, x, incx, y, incy)
   {C,Z}DOT{C,U} (n, x, incx, y, incy)
 
 Function Value
@@ -786,12 +786,12 @@ Example
 **************************************************************************************
 
 
-snrm2, dnrm2, scnrm2, dznrm2 
+snrm2, dnrm2, scnrm2, dznrm2
 Square root of sum of the squares of the elements of a vector
 
 FORMAT
-  {S,D}NRM2 (n, x, incx) 
-  SCNRM2 (n, x, incx) 
+  {S,D}NRM2 (n, x, incx)
+  SCNRM2 (n, x, incx)
   DZNRM2 (n, x, incx)
 
 Function Value
@@ -855,11 +855,11 @@ Example
 **************************************************************************************
 
 
-srot, drot, crot, zrot, csrot, zdrot 
+srot, drot, crot, zrot, csrot, zdrot
 Apply givens plane rotation
 
 FORMAT
-  {S,D,C,Z}ROT (n, x, incx, y, incy, c, s) 
+  {S,D,C,Z}ROT (n, x, incx, y, incy, c, s)
   CSROT (n, x,  incx, y, incy, c, s)
   ZDROT (n, x, incx, y, incy, c, s)
 
@@ -963,7 +963,7 @@ Example
 **************************************************************************************
 
 
-srotg, drotg, crotg, zrotg 
+srotg, drotg, crotg, zrotg
 Generate elements for a givens plane rotation
 
 FORMAT
@@ -1076,8 +1076,8 @@ sscal, dscal, cscal, zscal, csscal, zdscal
 Product of a scalar and a vector
 
 FORMAT
-  {S,D,C,Z}SCAL (n, alpha, x, incx) 
-  CSSCAL (n, alpha, x, incx) 
+  {S,D,C,Z}SCAL (n, alpha, x, incx)
+  CSSCAL (n, alpha, x, incx)
   ZDSCAL (n, alpha, x, incx)
 
 Arguments
@@ -1233,7 +1233,7 @@ Example
 **************************************************************************************
 
 
-isamax, idamax, icamax, izamax 
+isamax, idamax, icamax, izamax
 Index of the element of a vector with maximum absolute value
 
 FORMAT

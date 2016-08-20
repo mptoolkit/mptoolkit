@@ -38,55 +38,55 @@ namespace BLAS
 
 using namespace Fortran;
 
-void sgemv(char trans, integer M, integer N, float alpha, 
-	   float const* A, integer lda, float const* dx, 
-	   integer incx, float beta, float* restrict dy, integer incy);
+void sgemv(char trans, integer M, integer N, float alpha,
+           float const* A, integer lda, float const* dx,
+           integer incx, float beta, float* restrict dy, integer incy);
 
 
-void dgemv(char trans, integer M, integer N, double alpha, 
-	   double const* A, integer lda, double const* dx, 
-	   integer incx, double beta, double* restrict dy, integer incy);
+void dgemv(char trans, integer M, integer N, double alpha,
+           double const* A, integer lda, double const* dx,
+           integer incx, double beta, double* restrict dy, integer incy);
 
-void dgbmv(char trans, integer M, integer N, integer kl, 
-	   integer ku, double alpha, double const* A, integer lda, 
-	   double const* dx, integer incx, double beta, 
-	   double* restrict dy, integer incy);
+void dgbmv(char trans, integer M, integer N, integer kl,
+           integer ku, double alpha, double const* A, integer lda,
+           double const* dx, integer incx, double beta,
+           double* restrict dy, integer incy);
 
-void dsymv(char uplo, integer N, double alpha, double const* A, 
-	   integer lda, double const* dx, integer incx, double beta,
-	   double* restrict dy, integer incy);
+void dsymv(char uplo, integer N, double alpha, double const* A,
+           integer lda, double const* dx, integer incx, double beta,
+           double* restrict dy, integer incy);
 
-void dsbmv(char uplo, integer N, integer k, double alpha, 
-	   double const* A, integer lda, double const* dx, 
-	   integer incx, double beta, double* restrict dy, integer incy);
+void dsbmv(char uplo, integer N, integer k, double alpha,
+           double const* A, integer lda, double const* dx,
+           integer incx, double beta, double* restrict dy, integer incy);
 
-void dspmv(char uplo, integer N, double alpha, double* restrict AP, 
-	   double const* dx, integer incx, double beta, double* restrict dy, 
-	   integer incy);
+void dspmv(char uplo, integer N, double alpha, double* restrict AP,
+           double const* dx, integer incx, double beta, double* restrict dy,
+           integer incy);
 
-void dtrmv(char uplo, char trans, char diag, integer N, 
-	   double const* A, integer lda, double* restrict dx, 
-	   integer incx);
+void dtrmv(char uplo, char trans, char diag, integer N,
+           double const* A, integer lda, double* restrict dx,
+           integer incx);
 
-void dtrsv(char uplo, char trans, char diag, integer N, 
-	   double const* A, integer lda, double* restrict dx, integer incx);
+void dtrsv(char uplo, char trans, char diag, integer N,
+           double const* A, integer lda, double* restrict dx, integer incx);
 
-void dger(integer M, integer N, double alpha, 
-	  double const* dx, integer incx, double const* dy, integer incy, 
-	  double* restrict A, integer lda);
+void dger(integer M, integer N, double alpha,
+          double const* dx, integer incx, double const* dy, integer incy,
+          double* restrict A, integer lda);
 
-void dsyr(char uplo, integer N, double alpha, double const* dx, 
-	  integer incx, double* restrict A, integer lda);
+void dsyr(char uplo, integer N, double alpha, double const* dx,
+          integer incx, double* restrict A, integer lda);
 
-void dspr(char uplo, integer N, double alpha, double const* dx, 
-	  integer incx, double* restrict AP);
+void dspr(char uplo, integer N, double alpha, double const* dx,
+          integer incx, double* restrict AP);
 
-void dsyr2(char uplo, integer N, double alpha, double* const dx, 
-	   integer incx, double* const dy, integer incy, double* restrict A, 
-	   integer lda);
+void dsyr2(char uplo, integer N, double alpha, double* const dx,
+           integer incx, double* const dy, integer incy, double* restrict A,
+           integer lda);
 
-void dspr2(char uplo, integer N, double alpha, double const* dx, 
-	   integer incx, double const* dy, integer incy, double* restrict AP);
+void dspr2(char uplo, integer N, double alpha, double const* dx,
+           integer incx, double const* dy, integer incy, double* restrict AP);
 
 
 namespace raw
@@ -94,55 +94,55 @@ namespace raw
 
 extern "C"
 {
-     void F77NAME(sgemv)(char* trans, integer* M, integer* N, float* alpha, 
-			 const float* A, integer* lda, const float* dx, 
-			 integer* incx, float* beta, float* dy, integer* incy);
+     void F77NAME(sgemv)(char* trans, integer* M, integer* N, float* alpha,
+                         const float* A, integer* lda, const float* dx,
+                         integer* incx, float* beta, float* dy, integer* incy);
 
 
-     void F77NAME(dgemv)(char* trans, integer* M, integer* N, double* alpha, 
-			 const double* A, integer* lda, const double* dx, 
-			 integer* incx, double* beta, double* dy, integer* incy);
+     void F77NAME(dgemv)(char* trans, integer* M, integer* N, double* alpha,
+                         const double* A, integer* lda, const double* dx,
+                         integer* incx, double* beta, double* dy, integer* incy);
 
-     void F77NAME(dgbmv)(char* trans, integer* M, integer* N, integer* kl, 
-			 integer* ku, double* alpha, const double* A, integer* lda, 
-			 const double* dx, integer* incx, double* beta, 
-			 double* dy, integer* incy);
+     void F77NAME(dgbmv)(char* trans, integer* M, integer* N, integer* kl,
+                         integer* ku, double* alpha, const double* A, integer* lda,
+                         const double* dx, integer* incx, double* beta,
+                         double* dy, integer* incy);
 
-     void F77NAME(dsymv)(char* uplo, integer* N, double* alpha, const double* A, 
-			 integer* lda, const double* dx, integer* incx, double* beta,
-			 double* dy, integer* incy);
+     void F77NAME(dsymv)(char* uplo, integer* N, double* alpha, const double* A,
+                         integer* lda, const double* dx, integer* incx, double* beta,
+                         double* dy, integer* incy);
 
-     void F77NAME(dsbmv)(char* uplo, integer* N, integer* k, double* alpha, 
-			 const double* A, integer* lda, const double* dx, 
-			 integer* incx, double* beta, double* dy, integer* incy);
+     void F77NAME(dsbmv)(char* uplo, integer* N, integer* k, double* alpha,
+                         const double* A, integer* lda, const double* dx,
+                         integer* incx, double* beta, double* dy, integer* incy);
 
-     void F77NAME(dspmv)(char* uplo, integer* N, double* alpha, double* AP, 
-			 double const* dx, integer const* incx, double* beta, double* dy, 
-			 integer* incy);
+     void F77NAME(dspmv)(char* uplo, integer* N, double* alpha, double* AP,
+                         double const* dx, integer const* incx, double* beta, double* dy,
+                         integer* incy);
 
-     void F77NAME(dtrmv)(char* uplo, char* trans, char* diag, const integer* N, 
-			 const double* A, integer* lda, const double* dx, 
-			 integer* incx);
+     void F77NAME(dtrmv)(char* uplo, char* trans, char* diag, const integer* N,
+                         const double* A, integer* lda, const double* dx,
+                         integer* incx);
 
-     void F77NAME(dtrsv)(char* uplo, char* trans, char* diag, const integer* N, 
-			 double* A, integer* lda, double* dx, integer* incx);
+     void F77NAME(dtrsv)(char* uplo, char* trans, char* diag, const integer* N,
+                         double* A, integer* lda, double* dx, integer* incx);
 
-     void F77NAME(dger)(integer* M, integer* N, double* alpha, 
-			double* dx, integer* incx, double* dy, integer* incy, 
-			double* A, integer* lda);
+     void F77NAME(dger)(integer* M, integer* N, double* alpha,
+                        double* dx, integer* incx, double* dy, integer* incy,
+                        double* A, integer* lda);
 
-     void F77NAME(dsyr)(char* uplo, integer* N, double* alpha, double* dx, 
-			integer* incx, double* A, integer* lda);
+     void F77NAME(dsyr)(char* uplo, integer* N, double* alpha, double* dx,
+                        integer* incx, double* A, integer* lda);
 
-     void F77NAME(dspr)(char* uplo, integer* N, double* alpha, double* dx, 
-			integer* incx, double* AP);
+     void F77NAME(dspr)(char* uplo, integer* N, double* alpha, double* dx,
+                        integer* incx, double* AP);
 
-     void F77NAME(dsyr2)(char* uplo, integer* N, double* alpha, double* dx, 
-			 integer* incx, double* dy, integer* incy, double* A, 
-			 integer* lda);
+     void F77NAME(dsyr2)(char* uplo, integer* N, double* alpha, double* dx,
+                         integer* incx, double* dy, integer* incy, double* A,
+                         integer* lda);
 
-     void F77NAME(dspr2)(char* uplo, integer* N, double* alpha, double* dx, 
-			 integer* incx, double* dy, integer* incy, double* AP);
+     void F77NAME(dspr2)(char* uplo, integer* N, double* alpha, double* dx,
+                         integer* incx, double* dy, integer* incy, double* AP);
 
 } // extern "C"
 
@@ -152,93 +152,93 @@ extern "C"
 
 // float
 
-inline void sgemv(char trans, integer M, integer N, float alpha, 
-		  float const* A, integer lda, float const* dx, 
-		  integer incx, float beta, float* restrict dy, integer incy)
+inline void sgemv(char trans, integer M, integer N, float alpha,
+                  float const* A, integer lda, float const* dx,
+                  integer incx, float beta, float* restrict dy, integer incy)
 {
    raw::F77NAME(sgemv)(&trans, &M, &N, &alpha, A, &lda, dx, &incx, &beta, dy, &incy);
 }
 
 // double
 
-inline void dgemv(char trans, integer M, integer N, double alpha, 
-		  double const* A, integer lda, double const* dx, 
-		  integer incx, double beta, double* restrict dy, integer incy)
+inline void dgemv(char trans, integer M, integer N, double alpha,
+                  double const* A, integer lda, double const* dx,
+                  integer incx, double beta, double* restrict dy, integer incy)
 {
    raw::F77NAME(dgemv)(&trans, &M, &N, &alpha, A, &lda, dx, &incx, &beta, dy, &incy);
 }
 
-inline void dgbmv(char trans, integer M, integer N, integer kl, 
-		  integer ku, double alpha, double const* A, integer lda, 
-		  double const* dx, integer incx, double beta, 
-		  double* restrict dy, integer incy)
+inline void dgbmv(char trans, integer M, integer N, integer kl,
+                  integer ku, double alpha, double const* A, integer lda,
+                  double const* dx, integer incx, double beta,
+                  double* restrict dy, integer incy)
 {
    raw::F77NAME(dgbmv)(&trans, &M, &N, &kl, &ku, &alpha, A, &lda, dx, &incx, &beta, dy, &incy);
 }
 
-inline void dsymv(char uplo, integer N, double alpha, double const* A, 
-		  integer lda, double const* dx, integer incx, double beta,
-		  double* restrict dy, integer incy)
+inline void dsymv(char uplo, integer N, double alpha, double const* A,
+                  integer lda, double const* dx, integer incx, double beta,
+                  double* restrict dy, integer incy)
 {
    raw::F77NAME(dsymv)(&uplo, &N, &alpha, A, &lda, dx, &incx, &beta, dy, &incy);
 }
 
-inline void dsbmv(char uplo, integer N, integer k, double alpha, 
-		  double const* A, integer lda, double const* dx, 
-		  integer incx, double beta, double* restrict dy, integer incy)
+inline void dsbmv(char uplo, integer N, integer k, double alpha,
+                  double const* A, integer lda, double const* dx,
+                  integer incx, double beta, double* restrict dy, integer incy)
 {
    raw::F77NAME(dsbmv)(&uplo, &N, &k, &alpha, A, &lda, dx, &incx, &beta, dy, &incy);
 }
 
 #if 0
-inline void dspmv(char uplo, integer N, double alpha, double* restrict AP, 
-		  double const* dx, integer incx, double beta, double* restrict dy, 
-		  integer incy)
+inline void dspmv(char uplo, integer N, double alpha, double* restrict AP,
+                  double const* dx, integer incx, double beta, double* restrict dy,
+                  integer incy)
 {
    raw::F77NAME(dspmv)(&uplo, &N, &alpha, AP, dx, &incx, &beta, dy, &incy);
 }
 
-inline void dtrmv(char uplo, char trans, char diag, integer N, 
-		  double const* A, integer lda, double* restrict dx, 
-		  integer incx)
+inline void dtrmv(char uplo, char trans, char diag, integer N,
+                  double const* A, integer lda, double* restrict dx,
+                  integer incx)
 {
    raw::F77NAME(dtrmv)(&uplo, &trans, &diag, &N, A, &lda, dx, &incx);
 }
 
-inline void dtrsv(char uplo, char trans, char diag, integer N, 
-		  double const* A, integer lda, double* restrict dx, integer incx)
+inline void dtrsv(char uplo, char trans, char diag, integer N,
+                  double const* A, integer lda, double* restrict dx, integer incx)
 {
    raw::F77NAME(dtrsv)(&uplo, &trans, &diag, &N, A, &lda, dx, &incx);
 }
 
-inline void dger(integer M, integer N, double alpha, 
-		 double const* dx, integer incx, double const* dy, integer incy, 
-		 double* restrict A, integer lda)
+inline void dger(integer M, integer N, double alpha,
+                 double const* dx, integer incx, double const* dy, integer incy,
+                 double* restrict A, integer lda)
 {
    raw::F77NAME(dger)(&M, &N, &alpha, dx, &incx, &dy, &incy, A, &lda);
 }
 
-inline void dsyr(char uplo, integer N, double alpha, double const* dx, 
-		 integer incx, double* restrict A, integer lda)
+inline void dsyr(char uplo, integer N, double alpha, double const* dx,
+                 integer incx, double* restrict A, integer lda)
 {
    raw::F77NAME(dsyr)(&uplo, &N, &alpha, dx, &incx, A, &lda);
 }
 
-inline void dspr(char uplo, integer N, double alpha, double const* dx, 
-		 integer incx, double* restrict AP)
+inline void dspr(char uplo, integer N, double alpha, double const* dx,
+                 integer incx, double* restrict AP)
 {
    raw::F77NAME(dspr)(&uplo, &N, *alpha, dx, &incx, AP);
 }
 
-inline void dsyr2(char uplo, integer N, double alpha, double* const dx, 
-		  integer incx, double* const dy, integer incy, double* restrict A, 
-		  integer lda)
+inline void dsyr2(char uplo, integer N, double alpha, double* const dx,
+                  integer incx, double* const dy, integer incy, double* restrict A,
+                  integer lda)
 {
    raw::F77NAME(dsyr2)(&uplo, &N, &alpha, dx, &incx, dy, &incy, A, &lda);
 }
 
-inline void dspr2(char uplo, integer N, double alpha, double const* dx, 
-		  integer incx, double const* dy, integer incy, double* restrict AP)
+inline void dspr2(char uplo, integer N, double alpha, double const* dx,
+                  integer incx, double const* dy, integer incy, double* restrict AP)
 {
    raw::F77NAME(dspr2)(&uplo, &N, &alpha, dx, &incx, dy, &incy, AP);
 }
@@ -252,13 +252,13 @@ BLAS documentation
 **************************************************************************************
 
 
-sgemv, dgemv, cgemv, zgemv 
+sgemv, dgemv, cgemv, zgemv
 Matrix-vector product for a general matrix
 
-FORMAT  
+FORMAT
   {S,D,C,Z}GEMV (trans, m, n, alpha, a, lda, x, incx, beta, y, incy)
 
-Arguments  
+Arguments
 
   trans               character*1
                       On entry, specifies the operation to be performed:
@@ -327,7 +327,7 @@ Arguments
                       must not equal zero.
                       On exit, incy is unchanged.
 
-Description  
+Description
   The _GEMV subprograms compute a matrix-vector product for either a general
   matrix or its transpose: y  =  alpha*Ax + beta*y
     y  =  alpha*transp(A)*x + beta*y
@@ -339,7 +339,7 @@ Description
   alpha and beta are scalars, x and y are vectors, and A is an m by n matrix.
 
 Example
-  
+
   REAL*8 A(20,20), X(20), Y(20), alpha, beta
   INCX = 1
   INCY = 1
@@ -368,13 +368,13 @@ Example
 **************************************************************************************
 
 
-sgbmv, ddbmv, cgbmv, zgbmv 
+sgbmv, ddbmv, cgbmv, zgbmv
 Matrix-vector product for a general band matrix
 
-FORMAT  
+FORMAT
   {S,D,C,Z}GBMV (trans, m, n, kl, ku, alpha, a, lda, x, incx, beta, y, incy)
 
-Arguments  
+Arguments
 
   trans               character*1
                       On entry, specifies the operation to be performed:
@@ -460,7 +460,7 @@ Arguments
                       must not equal zero.
                       On exit, incy is unchanged.
 
-Description  
+Description
   The _GBMV subprograms compute a matrix-vector product for either a general
   band matrix or its transpose: y  =  alpha*Ax + beta*y
     y  =  alpha*transp(A)*x + beta*y
@@ -472,8 +472,8 @@ Description
   alphaand betaare scalars, x and y are vectors, and A is an m by n band
   matrix.
 
-Example 
- 
+Example
+
   COMPLEX*16 A(5,20), X(20), Y(20), alpha, beta
   M = 5
   N = 20
@@ -494,14 +494,14 @@ Example
 **************************************************************************************
 
 
-ssymv, dsymv, chemv, zhemv 
+ssymv, dsymv, chemv, zhemv
 Matrix-vector product for a symmetric or hermitian matrix
 
-FORMAT  
+FORMAT
   {S,D}SYMV (uplo, n, alpha, a, lda, x, incx, beta, y, incy) {C,Z}HEMV (uplo,
   n, alpha, a, lda, x, incx, beta, y, incy)
 
-Arguments  
+Arguments
   uplo                character*1
                       On entry, specifies whether the upper- or lower-
                       triangular part of the array A is referenced:
@@ -569,7 +569,7 @@ Arguments
                       must not equal zero.
                       On exit, incy is unchanged.
 
-Description  
+Description
   SSYMV and DSYMV compute a matrix-vector product for a real symmetric
   matrix.  CHEMV and ZHEMV compute a matrix-vector product for a complex
   Hermitian matrix.  Both products are described by the following operation:
@@ -579,7 +579,7 @@ Description
   an n by n matrix. In the case of SSYMV and DSYMV, matrix A is a symmetric
   matrix and in the case of CHEMV and ZHEMV, matrix A is a Hermitian matrix.
 
-Example  
+Example
 
   REAL*8 A(100,40), X(40), Y(40), alpha, beta
   N = 40
@@ -609,15 +609,15 @@ Example
 **************************************************************************************
 
 
-ssbmv, dsbmv, chbmv, zhbmv 
+ssbmv, dsbmv, chbmv, zhbmv
 Matrix-vector product for a symmetric or hermitian band matrix
 
-FORMAT  
+FORMAT
   {S,D}SBMV (uplo, n, k, alpha, a, lda, x, incx, beta, y, incy) {C,Z}HBMV
   (uplo, n, k, alpha, a, lda, x, incx, beta, y, incy)
 
 Arguments
-  
+
   uplo                character*1
                       On entry, specifies whether the upper- or lower-
                       triangular part of the array A is referenced:
@@ -695,7 +695,7 @@ Arguments
                       must not equal zero.
                       On exit, incy is unchanged.
 
-Description  
+Description
   SSBMV and DSBMV compute a matrix-vector product for a real symmetric band
   matrix. CHBMV and ZHBMV compute a matrix-vector product for a complex
   Hermitian band matrix. Both products are described by the following
@@ -705,7 +705,7 @@ Description
   case of SSBMV and DSBMV, A is a symmetric matrix and in the case of CHBMV
   and ZHBMV, A is a Hermitian matrix.
 
-Example  
+Example
 
   REAL*8 A(2,10), X(10), Y(10), alpha, beta
   N = 10
@@ -735,14 +735,14 @@ Example
 **************************************************************************************
 
 
-sspmv, dspmv, chpmv, zhpmv 
+sspmv, dspmv, chpmv, zhpmv
 Matrix-vector product for a symmetric or hermitian matrix stored in packed form
 
-FORMAT  
+FORMAT
   {S,D}SPMV (uplo, n, alpha, ap, x, incx, beta, y, incy) {C,Z}HPMV (uplo, n,
   alpha, ap, x, incx, beta, y, incy)
 
-Arguments  
+Arguments
   uplo                character*1
                       On entry, specifies whether the upper- or lower-
                       triangular part of the matrix A is supplied in the
@@ -811,7 +811,7 @@ Arguments
                       must not equal zero.
                       On exit, incy is unchanged.
 
-Description  
+Description
   SSPMV and DSPMV compute a matrix-vector product for a real symmetric matrix
   stored in packed form. CHPMV and ZHPMV compute a matrix-vector product for
   a complex Hermitian matrix stored in packed form. Both products are
@@ -821,7 +821,7 @@ Description
   an n by n matrix. In the case of SSPMV and DSPMV, matrix A is a symmetric
   matrix and in the case of CHPMV and ZHPMV, matrix A is a Hermitian matrix.
 
-Example  
+Example
 
   COMPLEX*16 AP(250), X(20), Y(20), alpha, beta
   N = 20
@@ -839,13 +839,13 @@ Example
 **************************************************************************************
 
 
-strmv, dtrmv, ctrmv, ztrmv 
+strmv, dtrmv, ctrmv, ztrmv
 Marix-vector product for a triangular matrix
 
-FORMAT  
+FORMAT
   {S,D,C,Z}TRMV (uplo, trans, diag, n, a, lda, x, incx)
 
-Arguments  
+Arguments
   uplo                character*1
                       On entry, specifies whether the matrix A is an upper-
                       or lower-triangular matrix:
@@ -867,7 +867,7 @@ Arguments
                       If trans = 'C' or 'c', the operation is y  =
                       alpha*conjug_transp(A)*x + beta*y.
                       On exit, trans is unchanged.
-                      
+
   diag                character*1
                       On entry, specifies whether the matrix A is unit-
                       triangular:
@@ -914,7 +914,7 @@ Arguments
                       must not equal zero.
                       On exit, incx is unchanged.
 
-Description  
+Description
   The _TRMV subprograms compute a matrix-vector product for a triangular
   matrix or its transpose: x  =  Ax or  x  =  transp(A)*x .  In addition to
   these operations, the CTRMV and ZTRMV subprograms compute a matrix-vector
@@ -923,7 +923,7 @@ Description
   x is a vector with n elements, and A is an n by n, unit or non-unit, upper-
   or lower-triangular matrix.
 
-Example  
+Example
 
   REAL*4 A(50,20), X(20)
   INCX = 1
@@ -938,13 +938,13 @@ Example
 **************************************************************************************
 
 
-strsv, dtrsv, ctrsv, ztrsv 
+strsv, dtrsv, ctrsv, ztrsv
 Solver of a system of linear equations with a triangular matrix
 
-FORMAT  
+FORMAT
   {S,D,C,Z}TRSV (uplo, trans, diag, n, a, lda, x, incx)
 
-Arguments  
+Arguments
   uplo                character*1
                       On entry, specifies whether the matrix A is an upper-
                       or lower-triangular matrix:
@@ -1010,7 +1010,7 @@ Arguments
                       must not equal zero.
                       On exit, incx is unchanged.
 
-Description  
+Description
   The _TRSV subprograms solve one of the following systems of linear
   equations for x:  Ax = b  or  transp(A)*x = b .  In addition to these
   operations, the CTRSV and ZTRSV subprograms solve the following systems of
@@ -1024,7 +1024,7 @@ Description
   depend on the application.  If necessary, perform the test in your
   application program before calling this routine.
 
-Example  
+Example
 
   REAL*8 A(100,40), X(40)
   INCX = 1
@@ -1040,14 +1040,14 @@ Example
 **************************************************************************************
 
 
-sger, dger, cgerc, zgerc, cgeru, zgeru 
+sger, dger, cgerc, zgerc, cgeru, zgeru
 Rank-one update of a general matrix
 
-FORMAT  
+FORMAT
   {S,D}GER (m, n, alpha, x, incx, y, incy, a, lda) {C,Z}GER{C,U} (m, n,
   alpha, x, incx, y, incy, a, lda)
 
-Arguments  
+Arguments
   m                   integer*4
                       On entry, the number of rows of the matrix A; m >= 0.
                       On exit, m is unchanged.
@@ -1092,7 +1092,7 @@ Arguments
                       On entry, the first dimension of A; lda >= MAX(1,m).
                       On exit, lda is unchanged.
 
-Description  
+Description
   SGER and DGER perform a rank-one update of a real general matrix: A  =
   alpha*x*transp(y) + A
 
@@ -1105,7 +1105,7 @@ Description
   alphais a scalar, x is an m-element vector, y is an n-element vector, and A
   is an m by n matrix.
 
-Example  
+Example
 
   REAL*4 A(10,10), X(10), Y(5), alpha
   INCX = 1
@@ -1137,14 +1137,14 @@ Example
 **************************************************************************************
 
 
-ssyr, dsyr, cher, zher 
+ssyr, dsyr, cher, zher
 Rank-one update of a symmetric or hermitian matrix
 
-FORMAT  
+FORMAT
   {S,D}SYR (uplo, n, alpha, x, incx, a, lda) {C,Z}HER (uplo, n, alpha, x,
   incx, a, lda)
 
-Arguments  
+Arguments
 
   uplo                character*1
                       On entry, specifies whether the upper- or lower-
@@ -1208,7 +1208,7 @@ Description  SSYR and DSYR perform the rank-one update of a real symmetric matri
   in packed form. In the case of SSYR and DSYR, matrix A is a symmetric
   matrix and in the case of CHER and ZHER, matrix A is a Hermitian matrix.
 
-Example  
+Example
 
   REAL*4 A(50,20), X(20), alpha
   INCX = 1
@@ -1234,16 +1234,16 @@ Example
 
 
 **************************************************************************************
- 
 
-sspr, dspr, chpr, zhpr 
+
+sspr, dspr, chpr, zhpr
 Rank-one update of a symmetric or hermitian matrix stored in packed form
 
-FORMAT  
+FORMAT
   {S,D}SPR (uplo, n, alpha, x, incx, ap) {C,Z}HPR (uplo, n, alpha, x, incx,
   ap)
 
-Arguments  
+Arguments
   uplo                character*1
                       On entry, specifies whether the upper- or lower-
                       triangular part of the matrix A is supplied in the
@@ -1293,7 +1293,7 @@ Arguments
 
   On exit, ap is overwritten by the specified part of the updated matrix.
 
-Description  
+Description
   SSPR and DSPR perform the rank-one update of a real symmetric matrix stored
   in packed form: A  =  alpha*x*transp(x) + A
 
@@ -1318,16 +1318,16 @@ Example
 
 
 **************************************************************************************
- 
 
-ssyr2, dsyr2, cher2, zher2 
+
+ssyr2, dsyr2, cher2, zher2
 Rank-two update of a symmetric or hermitian matrix
 
-FORMAT  
+FORMAT
   {S,D}SYR2 (uplo, n, alpha, x, incx, y, incy, a, lda) {C,Z}HER2 (uplo, n,
   alpha, x, incx, y, incy, a, lda)
 
-Arguments  
+Arguments
   uplo                character*1
                       On entry, specifies whether the upper- or lower-
                       triangular part of the array A is referenced:
@@ -1403,7 +1403,7 @@ Description
   matrix. In the case of SSYR2 and DSYR2, matrix A is a symmetric matrix and
   in the case of CHER2 and ZHER2, matrix A is a Hermitian matrix.
 
-Example  
+Example
 
   REAL*8 A(50,20), X(20), Y(20), alpha
   INCX = 1
@@ -1421,14 +1421,14 @@ Example
 **************************************************************************************
 
 
-sspr2, dspr2, chpr2, zhpr2, 
+sspr2, dspr2, chpr2, zhpr2,
 Rank-two update of a symmetric or hermitian matrix stored in packed form
 
-FORMAT  
+FORMAT
   {S,D}SPR2 (uplo, n, alpha, x, incx, y, incy, ap) {C,Z}HPR2 (uplo, n, alpha,
   x, incx, y, incy, ap)
 
-Arguments  
+Arguments
   uplo                character*1
                       On entry, specifies whether the upper- or lower-
                       triangular part of the matrix A is supplied in the
@@ -1489,7 +1489,7 @@ Arguments
 
   On exit, ap is overwritten by the specified part of the updated matrix.
 
-Description  
+Description
   SSPR2 and DSPR2 perform the rank-two update of a real symmetric matrix
   stored in packed form: A  =  alpha*x*transp(y)
    + alpha*y*transp(x) + A
@@ -1502,7 +1502,7 @@ Description
   in packed form. In the case of SSPR2 and DSPR2, matrix A is a symmetric
   matrix and in the case of CHPR2 and ZHPR2, matrix A is a Hermitian matrix.
 
-Example  
+Example
 
   REAL*4 AP(250), X(20), Y(20), alpha
   INCX = 1
@@ -1520,5 +1520,5 @@ Example
 **************************************************************************************
 
 */
- 
+
 #endif

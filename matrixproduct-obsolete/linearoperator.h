@@ -18,7 +18,7 @@
 // ENDHEADER
 //
 // LinearOperator: wrapper around a MPOpCompressed for a linear matrix product operator.
-// 
+//
 
 #if !defined(LINEAROPERATOR_H_JDCHJKEHY589758YUER89H489)
 #define LINEAROPERATOR_H_JDCHJKEHY589758YUER89H489

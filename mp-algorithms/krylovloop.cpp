@@ -35,7 +35,7 @@ double KrylovLoop::SweepRight(double MinTrunc, bool FullMixing)
    Solver_.Solve(FullOrtho_);
    double TruncPerStep = MinTrunc / Solver_.Krylov[0].size();
    double Trunc = 0;
-   TruncationInfo Info = Solver_.TruncateLeft(MinStates_, MaxStates_, 
+   TruncationInfo Info = Solver_.TruncateLeft(MinStates_, MaxStates_,
                                               TruncPerStep, MixFactor_, FullMixing, FullOrtho_);
    Trunc += Info.TruncationError();
    std::cout << "partition=(" << Solver_.LeftSize() << ',' << Solver_.RightSize() << ")"
@@ -47,7 +47,7 @@ double KrylovLoop::SweepRight(double MinTrunc, bool FullMixing)
       Solver_.ShiftRightAndExpand(FullOrtho_);
       if (TwoSite_) Solver_.ExpandRight(FullOrtho_);
       Solver_.Solve(FullOrtho_);
-      Info = Solver_.TruncateLeft(MinStates_, MaxStates_, TruncPerStep, MixFactor_, FullMixing, 
+      Info = Solver_.TruncateLeft(MinStates_, MaxStates_, TruncPerStep, MixFactor_, FullMixing,
                                   FullOrtho_);
       Trunc += Info.TruncationError();
       std::cout << "partition=(" << Solver_.LeftSize() << ',' << Solver_.RightSize() << ")"
@@ -64,7 +64,7 @@ double KrylovLoop::SweepLeft(double MinTrunc, bool FullMixing)
    Solver_.Solve(FullOrtho_);
    double TruncPerStep = MinTrunc / Solver_.Krylov[0].size();
    double Trunc = 0;
-   TruncationInfo Info = Solver_.TruncateRight(MinStates_, MaxStates_, TruncPerStep, 
+   TruncationInfo Info = Solver_.TruncateRight(MinStates_, MaxStates_, TruncPerStep,
                                                MixFactor_, FullMixing, FullOrtho_);
    Trunc += Info.TruncationError();
    std::cout << "partition=(" << Solver_.LeftSize() << ',' << Solver_.RightSize() << ")"
@@ -76,7 +76,7 @@ double KrylovLoop::SweepLeft(double MinTrunc, bool FullMixing)
       Solver_.ShiftLeftAndExpand(FullOrtho_);
       if (TwoSite_) Solver_.ExpandLeft(FullOrtho_);
       Solver_.Solve(FullOrtho_);
-      Info = Solver_.TruncateRight(MinStates_, MaxStates_, TruncPerStep, 
+      Info = Solver_.TruncateRight(MinStates_, MaxStates_, TruncPerStep,
                                    MixFactor_, FullMixing, FullOrtho_);
       Trunc += Info.TruncationError();
       std::cout << "partition=(" << Solver_.LeftSize() << ',' << Solver_.RightSize() << ")"
@@ -117,7 +117,7 @@ void KrylovLoop::EvolveNextKrylov(double RequiredVariance)
       Variance = Solver_.Variance(FullOrtho_);
       TRACE(Variance);
    }
-   std::cout << (Variance <= RequiredVariance ? "Krylov vector has converged." 
+   std::cout << (Variance <= RequiredVariance ? "Krylov vector has converged."
                  : "Krylov vector has NOT converged, but max-sweeps has been reached.");
    std::cout << "  Required variance = " << RequiredVariance
                 << ", actual variance = " << Variance << ", number of sweeps = " << NumSweeps << std::endl;
@@ -193,18 +193,18 @@ void KrylovLoop::ConstructKrylovBasis(std::complex<double> Timestep)
       CoeffVec = Solver_.Exponentiate(Timestep);
 
       Coeff = LinearAlgebra::norm_2_sq(CoeffVec[CoeffVec.size()-1]);
-      
-      if (OldCoeffVec_.size() >= CoeffVec.size()) 
+
+      if (OldCoeffVec_.size() >= CoeffVec.size())
          if (Coeff < LinearAlgebra::norm_2_sq(OldCoeffVec_[CoeffVec.size()-1]))
             Coeff = LinearAlgebra::norm_2_sq(OldCoeffVec_[CoeffVec.size()-1]);
 
-      
+
       if (LastNumKrylov_ < int(Solver_.Krylov.size()+1))
          LastNumKrylov_ = Solver_.Krylov.size()+1;
       NextError = ErrorScaleFactor_ * ErrorBound_ / (Coeff * LastNumKrylov_);
    }
    LastNumKrylov_ = Solver_.Krylov.size();
-   
+
    OldCoeffVec_ = CoeffVec;
 
    TRACE(CoeffVec)(NextError)(Coeff)(LastNumKrylov_);

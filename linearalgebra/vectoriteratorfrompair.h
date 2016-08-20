@@ -57,7 +57,7 @@ class VectorIteratorFromPair
       VectorIteratorFromPair() {}
 
       VectorIteratorFromPair(BaseIter const& Here, BaseIter const& End)
-	 : Here_(Here), End_(End) {}
+         : Here_(Here), End_(End) {}
 
       VectorIteratorFromPair& operator++()
       { DEBUG_CHECK(Here_ != End_); ++Here_; return *this; }
@@ -104,12 +104,12 @@ class VectorConstIteratorFromPair
       VectorConstIteratorFromPair() {}
 
       VectorConstIteratorFromPair(BaseIter const& Here, BaseIter const& End)
-	 : Here_(Here), End_(End) {}
+         : Here_(Here), End_(End) {}
 
       template <typename OtherBaseIter>
       VectorConstIteratorFromPair(VectorIteratorFromPair
-				      <OtherBaseIter, Category> const& Other)
-	 : Here_(Other.Here_), End_(Other.End_) {}
+                                      <OtherBaseIter, Category> const& Other)
+         : Here_(Other.Here_), End_(Other.End_) {}
 
       VectorConstIteratorFromPair& operator++()
       { DEBUG_CHECK(Here_ != End_); ++Here_; return *this; }

@@ -60,28 +60,28 @@ class MatrixSectionOuterIterator<Base, RowMajor, RowIndexIter, ColIndexRef>
 
       template <typename OtherBase>
          MatrixSectionOuterIterator(MatrixSectionOuterIterator<
-                                    OtherBase, 
+                                    OtherBase,
                                     RowMajor,
-                                    RowIndexIter, 
+                                    RowIndexIter,
                                     ColIndexRef> const& Other)
          : Base_(Other.base()), RowIndexIter_(Other.row_index_iter()),
          ColIndex_(Other.col_index()) {}
 
-      iterator iterate() const 
+      iterator iterate() const
    { using LinearAlgebra::iterate; return iterator(iterate(this->operator*()), this->index()); }
 
       MatrixSectionOuterIterator& operator++() { ++RowIndexIter_; ++RowIndex_; return *this; }
 
-      MatrixSectionOuterIterator& operator++(int) 
+      MatrixSectionOuterIterator& operator++(int)
          { return MatrixSectionOuterIterator(Base_, RowIndexIter_++, ColIndex_, RowIndex_++); }
 
-      MatrixSectionOuterIterator& operator+=(size_type n) 
+      MatrixSectionOuterIterator& operator+=(size_type n)
          { RowIndexIter_ += n; RowIndex_ += n; return *this; }
 
-      reference operator*() const 
+      reference operator*() const
          { return reference(Base_[*RowIndexIter_], ColIndex_); }
 
-      reference operator[](difference_type n) const 
+      reference operator[](difference_type n) const
          { return reference(Base_[RowIndexIter_[n]], ColIndex_); }
 
       pointer operator->() const { return pointer(&(this->operator*())); }
@@ -122,28 +122,28 @@ class MatrixSectionOuterIterator<Base, ColMajor, ColIndexIter, RowIndexRef>
 
       template <typename OtherBase>
          MatrixSectionOuterIterator(MatrixSectionOuterIterator<
-                                    OtherBase, 
+                                    OtherBase,
                                     ColMajor,
-                                    ColIndexIter, 
+                                    ColIndexIter,
                                     RowIndexRef> const& Other)
          : Base_(Other.base()), ColIndexIter_(Other.row_index_iter()),
          ColIndex_(Other.col_index()) {}
 
-      iterator iterate() const 
+      iterator iterate() const
    { using LinearAlgebra::iterate; return iterator(iterate(this->operator*()), this->index()); }
 
       MatrixSectionOuterIterator& operator++() { ++ColIndexIter_; return *this; }
 
-      MatrixSectionOuterIterator& operator++(int) 
+      MatrixSectionOuterIterator& operator++(int)
          { return MatrixSectionOuterIterator(Base_, ColIndexIter_++, ColIndex_); }
 
-      MatrixSectionOuterIterator& operator+=(size_type n) 
+      MatrixSectionOuterIterator& operator+=(size_type n)
          { ColIndexIter_ += n; return *this; }
 
-      reference operator*() const 
+      reference operator*() const
          { return reference(Base_[*ColIndexIter_], ColIndex_); }
 
-      reference operator[](difference_type n) const 
+      reference operator[](difference_type n) const
          { return reference(Base_[ColIndexIter_[n]], ColIndex_); }
 
       pointer operator->() const { return pointer(&(this->operator*())); }

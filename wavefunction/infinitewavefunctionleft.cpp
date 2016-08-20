@@ -64,7 +64,7 @@ struct LeftMultiply
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   LeftMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_, int Verbose_ = 0) 
+   LeftMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_, int Verbose_ = 0)
       : L(L_), QShift(QShift_), Verbose(Verbose_) {}
 
    result_type operator()(argument_type const& x) const
@@ -73,10 +73,10 @@ struct LeftMultiply
       int s = 0;
       for (LinearWavefunction::const_iterator I = L.begin(); I != L.end(); ++I)
       {
-	 if (Verbose > 0)
-	    std::cout << "site " << s << std::endl;
-	 r = operator_prod(herm(*I), r, *I);
-	 ++s;
+         if (Verbose > 0)
+            std::cout << "site " << s << std::endl;
+         r = operator_prod(herm(*I), r, *I);
+         ++s;
       }
       return r;
    }
@@ -85,13 +85,13 @@ struct LeftMultiply
    QuantumNumber QShift;
    int Verbose;
 };
-   
+
 struct RightMultiply
 {
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   RightMultiply(LinearWavefunction const& R_, QuantumNumber const& QShift_, int Verbose_ = 0) 
+   RightMultiply(LinearWavefunction const& R_, QuantumNumber const& QShift_, int Verbose_ = 0)
       : R(R_), QShift(QShift_), Verbose(Verbose_) {}
 
    result_type operator()(argument_type const& x) const
@@ -101,11 +101,11 @@ struct RightMultiply
       LinearWavefunction::const_iterator I = R.end();
       while (I != R.begin())
       {
-	 --s;
-	 if (Verbose > 0)
-	    std::cout << "site " << s << std::endl;
-	 --I;
-	 r = operator_prod(*I, r, herm(*I));
+         --s;
+         if (Verbose > 0)
+            std::cout << "site " << s << std::endl;
+         --I;
+         r = operator_prod(*I, r, herm(*I));
       }
       return delta_shift(r, adjoint(QShift));
    }
@@ -124,8 +124,8 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(QuantumNumbers::QuantumNumber
 
 InfiniteWavefunctionLeft
 InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction const& Psi, MatrixOperator const& Lambda,
-						  QuantumNumbers::QuantumNumber const& QShift_,
-						  int Verbose)
+                                                  QuantumNumbers::QuantumNumber const& QShift_,
+                                                  int Verbose)
 {
    InfiniteWavefunctionLeft Result(QShift_);
    Result.Initialize(Psi, Lambda, Verbose-1);
@@ -134,21 +134,21 @@ InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction const& Psi,
 
 InfiniteWavefunctionLeft
 InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi,
-				    QuantumNumbers::QuantumNumber const& QShift_,
-				    int Verbose)
+                                    QuantumNumbers::QuantumNumber const& QShift_,
+                                    int Verbose)
 {
    return InfiniteWavefunctionLeft::Construct(Psi, MatrixOperator::make_identity(Psi.Basis2()), QShift_, Verbose);
 }
 
 InfiniteWavefunctionLeft
 InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperator const& GuessRho,
-				    QuantumNumbers::QuantumNumber const& QShift,
-				    int Verbose)
+                                    QuantumNumbers::QuantumNumber const& QShift,
+                                    int Verbose)
 {
    LinearWavefunction PsiL = Psi;
 
    MatrixOperator Guess = MatrixOperator::make_identity(PsiL.Basis2());
-   
+
    // initialize LeftEigen to a guess eigenvector.  Since L satisfies the left orthogonality
    // constraint (except for the final matrix), we can do one iteration beyond the identity
    // and intialize it to herm(Xu) * Xu
@@ -160,18 +160,18 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    int Iterations = 20;
    double Tol = ArnoldiTol;
    LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
-   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, QShift, Verbose-2), 
-                                                      Iterations, Tol, 
-						      LinearSolvers::LargestAlgebraicReal, false, Verbose-1);
+   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, QShift, Verbose-2),
+                                                      Iterations, Tol,
+                                                      LinearSolvers::LargestAlgebraicReal, false, Verbose-1);
    while (Tol < 0)
    {
       if (Verbose > 0)
-	 std::cout << "LeftEigen: Arnoldi not converged, restarting.  EValue=" 
-		   << EtaL << ", Tol=" << Tol << "\n";
+         std::cout << "LeftEigen: Arnoldi not converged, restarting.  EValue="
+                   << EtaL << ", Tol=" << Tol << "\n";
       Iterations = 20; Tol = ArnoldiTol;
       LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
-      EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, QShift, Verbose-2), Iterations, 
-				    Tol, LinearSolvers::LargestAlgebraicReal, false, Verbose-1);
+      EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, QShift, Verbose-2), Iterations,
+                                    Tol, LinearSolvers::LargestAlgebraicReal, false, Verbose-1);
    }
 
    CHECK(EtaL.real() > 0)("Eigenvalue must be positive");
@@ -224,13 +224,13 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    PsiL.set_back(prod(PsiL.get_back(), AInv));
 #endif
 
-   // At this point, the left eigenvector is the identity matrix. 
+   // At this point, the left eigenvector is the identity matrix.
 #if !defined(NDEBUG)
    MatrixOperator I = MatrixOperator::make_identity(PsiL.Basis1());
    MatrixOperator R = delta_shift(D*D, QShift);
    A = delta_shift(LeftMultiply(PsiL, QShift)(delta_shift(I, adjoint(QShift))), QShift);
    CHECK(norm_frob(inner_prod(A-EtaL*I, R)) < 10*A.Basis1().total_dimension() * ArnoldiTol)(norm_frob(A-EtaL*I))(A)(I)(D);
-#endif 
+#endif
 
    // same for the right eigenvector, which will be the density matrix
 
@@ -242,19 +242,19 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    // get the eigenmatrix
    Iterations = 20; Tol = ArnoldiTol;
    RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
-   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, QShift, Verbose-2), 
-                                                      Iterations, Tol, 
-						      LinearSolvers::LargestAlgebraicReal, false, Verbose-1);
+   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, QShift, Verbose-2),
+                                                      Iterations, Tol,
+                                                      LinearSolvers::LargestAlgebraicReal, false, Verbose-1);
    //   DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
    while (Tol < 0)
    {
       if (Verbose > 0)
-	 std::cout << "RightEigen: Arnoldi not converged, restarting.  EValue=" 
-		   << EtaR << ", Tol=" << Tol << "\n";
+         std::cout << "RightEigen: Arnoldi not converged, restarting.  EValue="
+                   << EtaR << ", Tol=" << Tol << "\n";
       Iterations = 20; Tol = ArnoldiTol;
       RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
-      EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, QShift, Verbose-2), 
-				    Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false, Verbose-1);
+      EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, QShift, Verbose-2),
+                                    Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false, Verbose-1);
    }
    DEBUG_TRACE(EtaR);
 
@@ -282,7 +282,7 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    MatrixOperator Rho = D*D;
    A = RightMultiply(PsiL, QShift)(Rho);
    CHECK(norm_frob(A-EtaR*Rho) < 10*A.Basis2().total_dimension() * ArnoldiTol);
-#endif 
+#endif
 
 
 #else
@@ -344,7 +344,7 @@ InfiniteWavefunctionLeft::Initialize(LinearWavefunction const& Psi_, MatrixOpera
    for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I, ++n)
    {
       if (Verbose > 1)
-	 std::cout << "orthogonalizing site " << n << std::endl;
+         std::cout << "orthogonalizing site " << n << std::endl;
       StateComponent A = prod(M, *I);
       M = ExpandBasis2(A);
       SingularValueDecomposition(M, U, D, Vh);
@@ -378,7 +378,7 @@ void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Vers
       in >> PsiLinear;
       in >> C_right;
       in >> Attr;
-   
+
       Psi = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiLinear, C_right, QShift);
    }
    else if (Version == 2)
@@ -386,7 +386,7 @@ void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Vers
       int BaseVersion = Psi.CanonicalWavefunctionBase::ReadStream(in);
       in >> Psi.QShift;
       if (BaseVersion < 3)
-	 Psi.set_lambda(0, delta_shift(Psi.lambda_r(), Psi.qshift()));
+         Psi.set_lambda(0, delta_shift(Psi.lambda_r(), Psi.qshift()));
    }
    else
    {
@@ -576,7 +576,7 @@ void inplace_reflect(InfiniteWavefunctionLeft& Psi)
    // old code that used the D basis (and hence introduces a gauge transformation)
    Result.set_lambda(0, delta_shift(flip_conj(D), Psi.qshift()));
    Result.set(0, prod(herm(delta_shift(flip_conj(U), Psi.qshift())), Result[0]));
-   
+
    Result.setBasis1(Result[0].Basis1());
    Result.setBasis2(adjoint(D.Basis2()));
 #endif
@@ -639,30 +639,30 @@ InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
    {
       QuantumNumber q(Psi.GetSymmetryList());
       for (int i = 1; i < Count; ++i)
-	 q = delta_shift(q, Psi.qshift());
+         q = delta_shift(q, Psi.qshift());
 
       for (InfiniteWavefunctionLeft::const_mps_iterator I = Psi.begin(); I != Psi.end(); ++I)
       {
-	 // The very first time through the loop, set the Basis1.
-	 // We are guaranteed to go through this loop at least once, because
-	 // we return early if Count < 2
-	 if (First)
-	 {
-	    StateComponent A = delta_shift(*I, q);
-	    Result.setBasis1(A.Basis1());
-	    Result.push_back(A);
-	    Result.QShift = q;
-	    First = false;
-	 }
-	 else
-	 {
-	    Result.push_back(delta_shift(*I, q));
-	 }
+         // The very first time through the loop, set the Basis1.
+         // We are guaranteed to go through this loop at least once, because
+         // we return early if Count < 2
+         if (First)
+         {
+            StateComponent A = delta_shift(*I, q);
+            Result.setBasis1(A.Basis1());
+            Result.push_back(A);
+            Result.QShift = q;
+            First = false;
+         }
+         else
+         {
+            Result.push_back(delta_shift(*I, q));
+         }
       }
 
       for (InfiniteWavefunctionLeft::const_lambda_iterator I = Psi.lambda_begin(); I != LambdaE; ++I)
       {
-	 Result.push_back_lambda(delta_shift(*I, q));
+         Result.push_back_lambda(delta_shift(*I, q));
       }
 
    }
@@ -674,8 +674,8 @@ InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
    }
 
    // Here, we do want to go right to the end
-   for (InfiniteWavefunctionLeft::const_base_lambda_iterator I = Psi.lambda_base_begin(); 
-	I != Psi.lambda_base_end(); ++I)
+   for (InfiniteWavefunctionLeft::const_base_lambda_iterator I = Psi.lambda_base_begin();
+        I != Psi.lambda_base_end(); ++I)
    {
       Result.push_back_lambda(*I);
    }
@@ -689,11 +689,11 @@ InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
 
 std::tuple<std::complex<double>, int, StateComponent>
 overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
-	InfiniteWavefunctionLeft const& y,
-	QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
+        InfiniteWavefunctionLeft const& y,
+        QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
 {
    int Length = statistics::lcm(x.size(), y.size(), StringOp.size());
-   
+
    LinearWavefunction xPsi = get_left_canonical(x).first;
    LinearWavefunction yPsi = get_left_canonical(y).first;
 
@@ -708,12 +708,12 @@ overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
    {
       std::cerr << "Starting Arnoldi, Tol=" << MyTol << ", Iterations=" << Iter << '\n';
    }
-   std::complex<double> Eta = LinearSolvers::Arnoldi(Init, 
-						     LeftMultiplyOperator(xPsi, x.qshift(), Str, 
-									  yPsi, y.qshift(), Length), 
-                                                     Iterations, 
-						     MyTol, 
-						     LinearSolvers::LargestMagnitude, false, Verbose);
+   std::complex<double> Eta = LinearSolvers::Arnoldi(Init,
+                                                     LeftMultiplyOperator(xPsi, x.qshift(), Str,
+                                                                          yPsi, y.qshift(), Length),
+                                                     Iterations,
+                                                     MyTol,
+                                                     LinearSolvers::LargestMagnitude, false, Verbose);
    TotalIterations += Iterations;
    DEBUG_TRACE(Eta)(Iterations);
 
@@ -723,9 +723,9 @@ overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
          std::cerr << "Restarting Arnoldi, eta=" << Eta << ", Tol=" << -MyTol << '\n';
       Iterations = Iter;
       MyTol = Tol;
-      Eta = LinearSolvers::Arnoldi(Init, LeftMultiplyOperator(xPsi, x.qshift(), Str, 
-							      yPsi, y.qshift(), Length), 
-				   Iterations, MyTol, LinearSolvers::LargestMagnitude, false, Verbose);
+      Eta = LinearSolvers::Arnoldi(Init, LeftMultiplyOperator(xPsi, x.qshift(), Str,
+                                                              yPsi, y.qshift(), Length),
+                                   Iterations, MyTol, LinearSolvers::LargestMagnitude, false, Verbose);
       TotalIterations += Iterations;
       DEBUG_TRACE(Eta)(Iterations);
    }
@@ -741,7 +741,7 @@ std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const&
                              QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
 {
    CHECK_EQUAL(x.qshift(), y.qshift())("The wavefunctions must have the same quantum number per unit cell");
-   
+
    LinearWavefunction xPsi = get_left_canonical(x).first;
    LinearWavefunction yPsi = get_left_canonical(y).first;
 
@@ -750,12 +750,12 @@ std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const&
    int Iterations = Iter;
    int TotalIterations = 0;
    double MyTol = Tol;
-   std::complex<double> Eta = LinearSolvers::Arnoldi(Init, 
+   std::complex<double> Eta = LinearSolvers::Arnoldi(Init,
                 LeftMultiplyString(xPsi, StringOp * MakeIdentityFrom(StringOp, Sector),
-				   yPsi, x.qshift()), 
-                                                     Iterations, 
-						     MyTol, 
-						     LinearSolvers::LargestMagnitude, false, Verbose);
+                                   yPsi, x.qshift()),
+                                                     Iterations,
+                                                     MyTol,
+                                                     LinearSolvers::LargestMagnitude, false, Verbose);
    TotalIterations += Iterations;
    DEBUG_TRACE(Eta)(Iterations);
 
@@ -765,9 +765,9 @@ std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const&
          std::cerr << "Restarting Arnoldi, eta=" << Eta << ", Tol=" << -MyTol << '\n';
       Iterations = Iter;
       MyTol = Tol;
-      Eta = LinearSolvers::Arnoldi(Init, LeftMultiplyString(xPsi, StringOp * MakeIdentityFrom(StringOp, Sector), 
-							    yPsi, x.qshift()), 
-				   Iterations, MyTol, LinearSolvers::LargestMagnitude, false, Verbose);
+      Eta = LinearSolvers::Arnoldi(Init, LeftMultiplyString(xPsi, StringOp * MakeIdentityFrom(StringOp, Sector),
+                                                            yPsi, x.qshift()),
+                                   Iterations, MyTol, LinearSolvers::LargestMagnitude, false, Verbose);
       TotalIterations += Iterations;
       DEBUG_TRACE(Eta)(Iterations);
    }
@@ -780,7 +780,7 @@ std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const&
 
 std::pair<std::complex<double>, StateComponent>
 overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefunctionLeft const& y,
-	QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
+        QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
 {
    CHECK_EQUAL(x.size(), y.size());
    std::tuple<std::complex<double>, int, StateComponent> Result =
@@ -804,9 +804,9 @@ InfiniteWavefunctionLeft::SetDefaultAttributes(AttributeList& A) const
 
 // inject_left for a FiniteMPO.  This can have support on multiple wavefunction unit cells
 MatrixOperator
-inject_left(MatrixOperator const& m, 
+inject_left(MatrixOperator const& m,
             InfiniteWavefunctionLeft const& Psi1,
-            FiniteMPO const& Op, 
+            FiniteMPO const& Op,
             InfiniteWavefunctionLeft const& Psi2)
 {
    CHECK_EQUAL(Psi1.size(), Psi2.size());
@@ -831,9 +831,9 @@ inject_left(MatrixOperator const& m,
    {
       if (I1 == Psi1.end())
       {
-	 I1 = Psi1.begin();
-	 I2 = Psi2.begin();
-	 E = delta_shift(E, Psi1.qshift());
+         I1 = Psi1.begin();
+         I2 = Psi2.begin();
+         E = delta_shift(E, Psi1.qshift());
       }
       E = contract_from_left(*OpIter, herm(*I1), E, *I2);
       ++I1; ++I2; ++OpIter;
@@ -846,9 +846,9 @@ expectation(InfiniteWavefunctionLeft const& Psi, FiniteMPO const& Op)
 {
    MatrixOperator X = MatrixOperator::make_identity(Psi.Basis1());
    X = inject_left(X, Psi, Op, Psi);
-   
+
    MatrixOperator Rho = Psi.lambda_r();
    Rho = Rho*Rho;
-   
+
    return inner_prod(delta_shift(Rho, Psi.qshift()), X);
 }

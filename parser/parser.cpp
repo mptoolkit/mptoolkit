@@ -121,23 +121,23 @@ ParserError::ParserError(std::exception const& Prev, std::string const& Why)
 }
 
 ParserError::ParserError(std::list<std::string> const& CallStack_, char const* Position,
-			 std::string const& Hint_)
+                         std::string const& Hint_)
    : CallStack(CallStack_), Hint(Hint_), Pos(Position), End(NULL)
 {
    this->AssembleMessage();
 }
 
 ParserError::ParserError(std::list<std::string> const& CallStack_, char const* Position,
-			 char const* End_, std::string const& Hint_)
+                         char const* End_, std::string const& Hint_)
    : CallStack(CallStack_), Hint(Hint_), Pos(Position), End(End_)
 {
    this->AssembleMessage();
 }
 
-ParserError::ParserError(std::list<std::string> const& CallStack_, 
-			 std::string const& Why, char const* Position, char const* End_,
-			 char const* beg, char const* end,
-			 std::string const& Hint_)
+ParserError::ParserError(std::list<std::string> const& CallStack_,
+                         std::string const& Why, char const* Position, char const* End_,
+                         char const* beg, char const* end,
+                         std::string const& Hint_)
    : CallStack(CallStack_), Hint(Hint_), Pos(NULL), End(NULL)
 {
    std::string Next = Why + "\n" + std::string(beg, end);
@@ -145,25 +145,25 @@ ParserError::ParserError(std::list<std::string> const& CallStack_,
    {
       int Count = End_ ? std::distance(Position, End_) : 1;
       Next = Next + "\n" + std::string(std::distance(beg, Position), ' ')
-	 + ColorPrompt(std::string(Count, '^'));
+         + ColorPrompt(std::string(Count, '^'));
    }
    CallStack.push_back(Next);
    this->AssembleMessage();
 }
 
-ParserError 
+ParserError
 ParserError::AtPosition(std::string const& Why, char const* Position)
 {
    return ParserError(std::list<std::string>(1, Why), Position);
 }
 
-ParserError 
+ParserError
 ParserError::AtPosition(ParserError const& Prev, char const* Position)
 {
    return ParserError(Prev.CallStack, Position, Prev.hint());
 }
 
-ParserError 
+ParserError
 ParserError::AtPosition(std::exception const& Prev, char const* Position)
 {
    return ParserError(std::list<std::string>(1, Prev.what()), Position);
@@ -207,11 +207,11 @@ ParserError::AssembleMessage()
    {
       if (I == CallStack.begin())
       {
-	 Msg = Msg + (*I);
+         Msg = Msg + (*I);
       }
       else
       {
-	 Msg = Msg + '\n' + ColorNote("note: ") + (*I);
+         Msg = Msg + '\n' + ColorNote("note: ") + (*I);
       }
    }
    if (!Hint.empty())

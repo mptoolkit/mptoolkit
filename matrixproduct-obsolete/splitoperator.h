@@ -198,7 +198,7 @@ SplitOperator& SplitOperator::operator*=(double x)
 }
 
 inline
-SplitOperator& 
+SplitOperator&
 SplitOperator::operator*=(std::complex<double> const& x)
 {
    Op_ *= x;

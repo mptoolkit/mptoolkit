@@ -79,6 +79,7 @@ int main(int argc, char** argv)
 
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("Bosonic 2-leg ladder with flux");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_J0",  "nearest neighbor leg 0 hopping")
          ("H_J1",  "nearest neighbor leg 1 hopping")
@@ -118,6 +119,8 @@ int main(int argc, char** argv)
 
       LatticeSite Site = BosonU1(MaxN);
       UnitCell Cell(repeat(Site, 2));
+      InfiniteLattice Lattice(&Cell);
+
       UnitCellOperator BH(Cell, "BH"), B(Cell, "B"), N(Cell, "N"), N2(Cell, "N2"),
          j0(Cell, "j0"), j1(Cell, "j1"), jk(Cell, "jk");
 
@@ -134,8 +137,6 @@ int main(int argc, char** argv)
 
       Cell.func("jTotalU0")("K", "alpha", arg("J")=1.0) = "K^2 * sin(pi*alpha) / (8*J * "
          "sin(pi*alpha/2)^4 * (1+(K/(2*J*sin(pi*alpha/2)))^2)^0.5)";
-
-      InfiniteLattice Lattice(Cell);
 
       UnitCellMPO HJ0, HJ1, HJc0, HJc1, HK, HKc, HU;
       HJ0 = BH(0)[0]*B(1)[0] + B(0)[0]*BH(1)[0];

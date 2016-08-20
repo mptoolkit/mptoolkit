@@ -47,14 +47,14 @@
   when thread 2 detects that the reference count has gone to zero, it knows that thread 1
   has no pending access in the shared object (and can therefore destroy it safely).
 
-  Thread 2 requires a read memory barrier after decrementing the count, to prevent any reads 
+  Thread 2 requires a read memory barrier after decrementing the count, to prevent any reads
   required by the object destructor from been prefetched before the count goes to zero.
   The barrier must be after the count is decremented, to prevent the following unlikely scenario:
 
   Thread 1                                            Thread 2
                                                       Barrier
                                                       (prefetch some data in the shared object)
-  Access shared object 
+  Access shared object
   (overwriting thread 2's prefetched data)
   Barrier
   Decrement reference count, returns non-zero
@@ -93,7 +93,7 @@
   starts copy                                         increments count
   subtracts original count
 
-  
+
 
 The user view of AtomicRefCount:
 

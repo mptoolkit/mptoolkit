@@ -62,7 +62,7 @@ void DmrgLoop(Algorithm& solver, ConstList const& Conf, StatesList const& States
          solver.ExpandRight();
          double E = solver.Solve(NumIter);
          TruncationInfo States = solver.TruncateLeft(MaxStates, CFactor);
-         
+
          std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
                    << ") " << E << ' ' << States.m << ' ' << States.trunc << '\n';
          CumulativeTruncation += States.trunc;
@@ -70,7 +70,7 @@ void DmrgLoop(Algorithm& solver, ConstList const& Conf, StatesList const& States
 
       SweepLog << SweepRecNum << ' ' << SweepNum << ' ';
 
-      if (!States.WaitConverge(SweepRecNum) && !States.SaveState(SweepRecNum) 
+      if (!States.WaitConverge(SweepRecNum) && !States.SaveState(SweepRecNum)
           && SweepRecNum != States.NumSweeps()-1)
       {
          ++SweepRecNum;
@@ -89,7 +89,7 @@ void DmrgLoop(Algorithm& solver, ConstList const& Conf, StatesList const& States
          std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
                    << ") " << E << ' ' << States.m << ' ' << States.trunc << '\n';
       }
-      
+
       // sweep left
       while (solver.LeftSize() > 1)
       {
@@ -101,14 +101,14 @@ void DmrgLoop(Algorithm& solver, ConstList const& Conf, StatesList const& States
          std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
                    << ") " << E << ' ' << States.m << ' ' << States.trunc << '\n';
       }
-      
-      if (States.SaveState(SweepRecNum) 
+
+      if (States.SaveState(SweepRecNum)
           && (!States.WaitConverge(SweepRecNum) || solver.IsConverged()))
       {
-         solver.SaveWavefunction(BasePath + BaseFilename + ".psi." 
+         solver.SaveWavefunction(BasePath + BaseFilename + ".psi."
                                  + boost::lexical_cast<std::string>(SweepRecNum+1));
       }
-      
+
       if (!States.WaitConverge(SweepRecNum) || solver.IsConverged())
          ++SweepRecNum;
 

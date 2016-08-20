@@ -19,7 +19,7 @@
 
 #include "generic_mpo.h"
 
-std::vector<BasisList> 
+std::vector<BasisList>
 GenericMPO::LocalBasis1List() const
 {
    std::vector<BasisList> Result;
@@ -31,7 +31,7 @@ GenericMPO::LocalBasis1List() const
    return Result;
 }
 
-std::vector<BasisList> 
+std::vector<BasisList>
 GenericMPO::LocalBasis2List() const
 {
    std::vector<BasisList> Result;
@@ -54,7 +54,7 @@ GenericMPO::check_structure() const
       ++I;
       if (I != this->end())
       {
-	 CHECK_EQUAL(J->Basis2(), I->Basis1());
+         CHECK_EQUAL(J->Basis2(), I->Basis1());
       }
    }
 }
@@ -220,7 +220,7 @@ void zero_unused_elements(GenericMPO& Op)
    } // while (!Done)
 }
 
-bool update_mask(OperatorComponent const& x, OperatorComponent const& y, 
+bool update_mask(OperatorComponent const& x, OperatorComponent const& y,
                  std::vector<int> const& M1, std::vector<int>& Mask, std::vector<int> const& M2)
 {
    typedef OperatorComponent::data_type OpMatrixType;
@@ -339,16 +339,16 @@ void cull_unused_elements(GenericMPO& Op)
          if (cull_boundary(*I, *J))
             Done = false;
 
-	 I=J;
-	 ++J;
+         I=J;
+         ++J;
       }
 
       // now work backwards and cull columns
       while (I != Op.begin())
       {
-	 J=I;
-	 --I;
-       
+         J=I;
+         --I;
+
          if (cull_boundary(*I, *J))
             Done = false;
       }
@@ -434,7 +434,7 @@ GenericMPO coarse_grain(GenericMPO const& Op, int N)
       OperatorComponent c = local_tensor_prod(Op[i], Op[i+1]);
       for (int j = 2; j < N; ++j)
       {
-	 c = local_tensor_prod(c, Op[j]);
+         c = local_tensor_prod(c, Op[j]);
       }
       Result.push_back(c);
    }
@@ -613,7 +613,7 @@ OperatorClassification classify(GenericMPO const& Op, double UnityEpsilon)
             }
             else
             {
-	       Factor *= std::sqrt(x);
+               Factor *= std::sqrt(x);
             }
          }
 
@@ -628,8 +628,8 @@ OperatorClassification classify(GenericMPO const& Op, double UnityEpsilon)
       if (IsPropIdentity)
       {
          Result.PropIdentity_ = true;
-         Result.Identity_ = LinearAlgebra::norm_frob_sq(Factor - std::complex<double>(1.0, 0)) 
-	    < UnityEpsilon*UnityEpsilon;
+         Result.Identity_ = LinearAlgebra::norm_frob_sq(Factor - std::complex<double>(1.0, 0))
+            < UnityEpsilon*UnityEpsilon;
 
          // if we claim to be an identity operator, we might as well make it exact
          if (Result.Identity_)
@@ -693,7 +693,7 @@ void optimize(GenericMPO& Op)
             Reduced = true;
       }
       Op.back() = T * Op.back();
-      
+
       // Working right to left, optimize Basis1
       T = TruncateBasis1(Op.back());
       if (T.size1() != T.size2())
@@ -701,7 +701,7 @@ void optimize(GenericMPO& Op)
       for (int i = Op.size()-2; i >= 1; --i)
       {
          Op[i] = Op[i] * T;
-	 T = TruncateBasis1(Op[i]);
+         T = TruncateBasis1(Op[i]);
          if (T.size1() != T.size2())
             Reduced = true;
       }

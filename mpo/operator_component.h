@@ -58,14 +58,14 @@ class OperatorComponent
       typedef LinearAlgebra::const_inner_iterator<data_type>::type const_inner_iterator;
 
       OperatorComponent() {}
-   
-      // Construction of an empty OperatorComponent.  The local basis comes first.
-      OperatorComponent(BasisList const& LocalB, 
-			BasisList const& B1, BasisList const& B2);
-      OperatorComponent(BasisList const& LocalB1, BasisList const& LocalB2, 
-			BasisList const& B1, BasisList const& B2);
 
-      SymmetryList const& GetSymmetryList() const 
+      // Construction of an empty OperatorComponent.  The local basis comes first.
+      OperatorComponent(BasisList const& LocalB,
+                        BasisList const& B1, BasisList const& B2);
+      OperatorComponent(BasisList const& LocalB1, BasisList const& LocalB2,
+                        BasisList const& B1, BasisList const& B2);
+
+      SymmetryList const& GetSymmetryList() const
       { return LocalBasis1_.GetSymmetryList(); }
 
       BasisList const& Basis1() const { return Basis1_; }
@@ -106,7 +106,7 @@ class OperatorComponent
 
       bool is_null() const { return is_zero(Data_); }
 
-      const_inner_iterator iterate_at(int i, int j) const 
+      const_inner_iterator iterate_at(int i, int j) const
       { return LinearAlgebra::iterate_at(Data_, i, j); }
 
       data_type& data() { return Data_; }
@@ -121,9 +121,9 @@ class OperatorComponent
       void check_structure() const;
       void debug_check_structure() const;
 
-   friend PStream::opstream& 
+   friend PStream::opstream&
           operator<<(PStream::opstream& out, OperatorComponent const& Op);
-   friend PStream::ipstream& 
+   friend PStream::ipstream&
           operator>>(PStream::ipstream& in, OperatorComponent& Op);
 
    private:
@@ -146,7 +146,7 @@ void print_structure(OperatorComponent const& Op, std::ostream& out)
 }
 
 inline
-OperatorComponent 
+OperatorComponent
 OperatorComponent::make_identity(BasisList const& LocalBasis)
 {
    BasisList bl = Tensor::make_vacuum_basis(LocalBasis.GetSymmetryList());
@@ -156,7 +156,7 @@ OperatorComponent::make_identity(BasisList const& LocalBasis)
 }
 
 inline
-OperatorComponent 
+OperatorComponent
 OperatorComponent::make_identity(BasisList const& LocalBasis, BasisList const& AuxBasis)
 {
    OperatorComponent Result(LocalBasis, LocalBasis, AuxBasis, AuxBasis);
@@ -248,15 +248,15 @@ struct Conj<OperatorComponent>
    typedef OperatorComponent const& argument_type;
    typedef OperatorComponent result_type;
 
-   result_type operator()(argument_type x) const 
-   { 
+   result_type operator()(argument_type x) const
+   {
       OperatorComponent Result(x);
       for (OperatorComponent::iterator I = iterate(Result); I; ++I)
       {
-	 for (OperatorComponent::inner_iterator J = iterate(I); J; ++J)
-	 {
-	    *J = conj(*J);
-	 }
+         for (OperatorComponent::inner_iterator J = iterate(I); J; ++J)
+         {
+            *J = conj(*J);
+         }
       }
       return Result;
    }
@@ -271,15 +271,15 @@ struct Adjoint<OperatorComponent>
    typedef OperatorComponent const& argument_type;
    typedef OperatorComponent result_type;
 
-   result_type operator()(argument_type x) const 
-   { 
+   result_type operator()(argument_type x) const
+   {
       OperatorComponent Result(x.LocalBasis2(), x.LocalBasis1(), adjoint(x.Basis1()), adjoint(x.Basis2()));
       for (OperatorComponent::const_iterator I = iterate(x); I; ++I)
       {
-	 for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
-	 {
-	    Result(J.index1(), J.index2()) = adjoint(*J);
-	 }
+         for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
+         {
+            Result(J.index1(), J.index2()) = adjoint(*J);
+         }
       }
       Result.debug_check_structure();
       return Result;
@@ -292,15 +292,15 @@ struct InvAdjoint<OperatorComponent>
    typedef OperatorComponent const& argument_type;
    typedef OperatorComponent result_type;
 
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    {
       OperatorComponent Result(x.LocalBasis2(), x.LocalBasis1(), adjoint(x.Basis1()), adjoint(x.Basis2()));
       for (OperatorComponent::const_iterator I = iterate(x); I; ++I)
       {
-	 for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
-	 {
-	    Result(J.index1(), J.index2()) = inv_adjoint(*J);
-	 }
+         for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
+         {
+            Result(J.index1(), J.index2()) = inv_adjoint(*J);
+         }
       }
       Result.debug_check_structure();
       return Result;
@@ -314,19 +314,19 @@ struct InvAdjoint<OperatorComponent>
 OperatorComponent
 tensor_sum(OperatorComponent const& A, OperatorComponent const& B,
            SumBasis<BasisList> const& B1, SumBasis<BasisList> const& B2);
-	   
+
 // Constructs a MPOpComponent that represents the sum of A and B,
 // at the left boundary of the matrix product state.
 // Precondition: A.Basis1() == B.Basis1()
 // The resulting state has Result'[s] = (A[s], B[s])  (row-wise concatenation)
-OperatorComponent 
-tensor_row_sum(OperatorComponent const& A, 
-	       OperatorComponent const& B, 
-	       SumBasis<BasisList> const& B2);
+OperatorComponent
+tensor_row_sum(OperatorComponent const& A,
+               OperatorComponent const& B,
+               SumBasis<BasisList> const& B2);
 
-OperatorComponent 
-tensor_row_sum(OperatorComponent const& A, 
-	       OperatorComponent const& B);
+OperatorComponent
+tensor_row_sum(OperatorComponent const& A,
+               OperatorComponent const& B);
 
 
 // Constructs a MPOpComponent that represents the sum of A and B,
@@ -334,14 +334,14 @@ tensor_row_sum(OperatorComponent const& A,
 // Precondition: A.Basis2() == B.Basis2()
 // The resulting state has Result'[s] = ( A[s] )
 //                                      ( B[s] )  (column-wise concatenation)
-OperatorComponent 
-tensor_col_sum(OperatorComponent const& A, 
-	       OperatorComponent const& B, 
-	       SumBasis<BasisList> const& B1);
+OperatorComponent
+tensor_col_sum(OperatorComponent const& A,
+               OperatorComponent const& B,
+               SumBasis<BasisList> const& B1);
 
-OperatorComponent 
-tensor_col_sum(OperatorComponent const& A, 
-	       OperatorComponent const& B);
+OperatorComponent
+tensor_col_sum(OperatorComponent const& A,
+               OperatorComponent const& B);
 
 // Multiplies the component by a SimpleOperator acting on the auxiliary space
 OperatorComponent prod(OperatorComponent const& A, SimpleOperator const& Op, double Tol = 1e-14);
@@ -397,7 +397,7 @@ local_adjoint(OperatorComponent const& A);
 OperatorComponent flip_conj(OperatorComponent const& A);
 
 // exchanges the local and auxiliary components of the MPO.  This corresponds to a
-// transpose operation on the 4-index tensor.  
+// transpose operation on the 4-index tensor.
 OperatorComponent exchange(OperatorComponent const& A);
 
 // Basis truncation via removal of parallel components.
@@ -420,23 +420,23 @@ TruncateBasis2(OperatorComponent& A);
 SimpleOperator
 TruncateBasis2MkII(OperatorComponent& A, double Epsilon = 0.0);
 
-OperatorComponent 
+OperatorComponent
 operator+(OperatorComponent const& A, OperatorComponent const& Op);
 
-OperatorComponent 
+OperatorComponent
 operator-(OperatorComponent const& A, OperatorComponent const& Op);
 
 #if 0
 // dont need these, linearalgebra::multiplication<> takes care
 inline
-OperatorComponent 
+OperatorComponent
 operator*(OperatorComponent const& A, LinearAlgebra::HermitianProxy<SimpleOperator> const& Op)
 {
    return prod(A, Op);
 }
 
 inline
-OperatorComponent 
+OperatorComponent
 operator*(LinearAlgebra::HermitianProxy<SimpleOperator> const& Op, OperatorComponent const& A)
 {
    return prod(Op, A);
@@ -473,7 +473,7 @@ conj(OperatorComponent const& x);
 #if defined(OLD_OPERATOR_PROD)
 StateComponent
 operator_prod(OperatorComponent const& M,
-              StateComponent const& A, 
+              StateComponent const& A,
               StateComponent const& E,
               LinearAlgebra::HermitianProxy<StateComponent> const& B);
 #endif
@@ -495,16 +495,16 @@ operator_prod(OperatorComponent const& M,
 // Result'[a'](i',j') = herm(M(s',s)(a',a)) A[s'](i',i) F[a](i,j) herm(B[s](j',j))
 StateComponent
 contract_from_right(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
-		    StateComponent const& A, 
-		    StateComponent const& F,
-		    LinearAlgebra::HermitianProxy<StateComponent> const& B);
+                    StateComponent const& A,
+                    StateComponent const& F,
+                    LinearAlgebra::HermitianProxy<StateComponent> const& B);
 
 inline
 StateComponent
 contract_from_right(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
-		    SimpleStateComponent const& A, 
-		    StateComponent const& F,
-		    LinearAlgebra::HermitianProxy<SimpleStateComponent> const& B)
+                    SimpleStateComponent const& A,
+                    StateComponent const& F,
+                    LinearAlgebra::HermitianProxy<SimpleStateComponent> const& B)
 {
    // TODO: optimize this implementation
    StateComponent AX = A;
@@ -514,11 +514,11 @@ contract_from_right(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
 
 StateComponent
 contract_from_right_mask(HermitianProxy<OperatorComponent> const& M,
-			 StateComponent const& A, 
-			 StateComponent const& F,
-			 HermitianProxy<StateComponent> const& B,
-			 std::vector<int> const& Mask1,
-			 std::vector<int> const& Mask2);
+                         StateComponent const& A,
+                         StateComponent const& F,
+                         HermitianProxy<StateComponent> const& B,
+                         std::vector<int> const& Mask1,
+                         std::vector<int> const& Mask2);
 
 // Contraction from the left
 // Result'[a](i,j) = herm(M(s',s)(a',a)) herm(A[s'](i',i)) E[a'](i',j') B[s](j',j)
@@ -526,7 +526,7 @@ contract_from_right_mask(HermitianProxy<OperatorComponent> const& M,
 #if defined(OLD_OPERATOR_PROD)
 StateComponent
 operator_prod(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
-              LinearAlgebra::HermitianProxy<StateComponent> const& A, 
+              LinearAlgebra::HermitianProxy<StateComponent> const& A,
               StateComponent const& F,
               StateComponent const& B);
 #endif
@@ -542,16 +542,16 @@ operator_prod(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
 // Result'[a](i,j) = M(s',s)(a',a) herm(A[s'](i',i)) E[a'](i',j') B[s](j',j)
 StateComponent
 contract_from_left(OperatorComponent const& M,
-		   LinearAlgebra::HermitianProxy<StateComponent> const& A, 
-		   StateComponent const& E,
-		   StateComponent const& B);
+                   LinearAlgebra::HermitianProxy<StateComponent> const& A,
+                   StateComponent const& E,
+                   StateComponent const& B);
 
 
 // Action of an operator on B
 // Result[s'](i',i) = M(s',s)[a',a] E[a'](i',j') B[s](j',j) herm(F[a](i,j))
 StateComponent
 operator_prod_inner(OperatorComponent const& M,
-                    StateComponent const& E, 
+                    StateComponent const& E,
                     StateComponent const& B,
                     LinearAlgebra::HermitianProxy<StateComponent> const& F);
 
@@ -561,30 +561,30 @@ operator_prod_inner(OperatorComponent const& M,
 // F.back() = 1, M is upper triangular normal form.
 StateComponent
 operator_prod_regular(OperatorComponent const& M,
-		      StateComponent const& A, 
-		      StateComponent const& F,
-		      LinearAlgebra::HermitianProxy<StateComponent> const& B);
+                      StateComponent const& A,
+                      StateComponent const& F,
+                      LinearAlgebra::HermitianProxy<StateComponent> const& B);
 
 // Precondition: The MPS is normalized, such that scalar_prod(herm(A), B) = 1,
 // E.front = 1, M is upper triangular normal form.
 StateComponent
 operator_prod_regular(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
-		      LinearAlgebra::HermitianProxy<StateComponent> const& A, 
-		      StateComponent const& E,
-		      StateComponent const& B);
+                      LinearAlgebra::HermitianProxy<StateComponent> const& A,
+                      StateComponent const& E,
+                      StateComponent const& B);
 
 #if 0
 // does Result'[s'](i',j') = M(s',s)(a',a) E[a'](i',i)^* [s](i,j) F[a](j',j)^*
 // This is the action of an operator on a state E A herm(F)
 StateComponent
 operator_prod_inner(OperatorComponent const& M,
-                    StateComponent const& E, 
+                    StateComponent const& E,
                     StateComponent const& A,
                     LinearAlgebra::HermitianProxy<StateComponent> const& F);
 
 StateComponent
 operator_prod_inner(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
-                    LinearAlgebra::HermitianProxy<StateComponent> const& E, 
+                    LinearAlgebra::HermitianProxy<StateComponent> const& E,
                     StateComponent const& A,
                     StateComponent const& F);
 #endif
@@ -620,34 +620,34 @@ project_columns(OperatorComponent const& x, std::set<int> const& Cols);
 // This is a fine-graining operation on the operator,
 // the inverse of the tensor_prod
 std::vector<std::pair<SimpleRedOperator, SimpleRedOperator> >
-decompose_tensor_prod(SimpleOperator const& Op, 
+decompose_tensor_prod(SimpleOperator const& Op,
                       ProductBasis<BasisList, BasisList> const& B1,
                       ProductBasis<BasisList, BasisList> const& B2);
 
 // fine-grain an OperatorComponent, the inverse of local_tensor_prod
 std::pair<OperatorComponent, OperatorComponent>
-decompose_local_tensor_prod(OperatorComponent const& Op, 
-			    ProductBasis<BasisList, BasisList> const& B1,
-			    ProductBasis<BasisList, BasisList> const& B2);
+decompose_local_tensor_prod(OperatorComponent const& Op,
+                            ProductBasis<BasisList, BasisList> const& B1,
+                            ProductBasis<BasisList, BasisList> const& B2);
 
 // Decompose a SimpleOperator into an MPO, with vacuum on the right basis,
 // single on the left basis.
 std::pair<OperatorComponent, OperatorComponent>
-decompose_local_tensor_prod(SimpleOperator const& Op, 
-			    ProductBasis<BasisList, BasisList> const& B1,
-			    ProductBasis<BasisList, BasisList> const& B2);
+decompose_local_tensor_prod(SimpleOperator const& Op,
+                            ProductBasis<BasisList, BasisList> const& B1,
+                            ProductBasis<BasisList, BasisList> const& B2);
 
 // Version for when the Basis1 and Basis2 of the SimpleOperator are the same
 std::pair<OperatorComponent, OperatorComponent>
-decompose_local_tensor_prod(SimpleOperator const& Op, 
-			    ProductBasis<BasisList, BasisList> const& B);
+decompose_local_tensor_prod(SimpleOperator const& Op,
+                            ProductBasis<BasisList, BasisList> const& B);
 
 // Version for when the Basis1 and Basis2 of the SimpleOperator are the same,
 // and the product basis is a simple cartesian product of two BasisList's.
 // BasisA and BasisB will be the local_basis of the two result OperatorComponent's
 std::pair<OperatorComponent, OperatorComponent>
-decompose_local_tensor_prod(SimpleOperator const& Op, 
-			    BasisList const& BasisA, BasisList const& BasisB);
+decompose_local_tensor_prod(SimpleOperator const& Op,
+                            BasisList const& BasisA, BasisList const& BasisB);
 
 // Take a state component A^s(i,j) and rotate it into an operator component
 // M(s,0)(i,j), where (i,j) is the new local basis and the right boundary
@@ -662,7 +662,7 @@ OperatorComponent
 RotateToOperatorLeftBoundary(StateComponent const& x);
 
 // update_mask_basis functions.  Given a 'mask' of used basis elements for one basis,
-// update a mask for the other basis.  The mask is a vector of boolean (vector<int>, to 
+// update a mask for the other basis.  The mask is a vector of boolean (vector<int>, to
 // avoid the vector<bool> bogosity)
 void
 update_mask_basis1(std::vector<int>& Mask1, SimpleOperator const& Op, std::vector<int> const& Mask2);

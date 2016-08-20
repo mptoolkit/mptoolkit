@@ -27,7 +27,7 @@ using LinearAlgebra::range;
 template <typename VectorType, typename MultiplyFunctor>
 void LanczosExponential(VectorType const& x,
                         MultiplyFunctor MatVecMultiply, int Iterations,
-                        sd::vector<std::complex<double> > const& Theta, 
+                        sd::vector<std::complex<double> > const& Theta,
                         std::vector<VectorType>& Out)
 {
    std::vector<VectorType>     v(Iterations+1);         // the Krylov vectors
@@ -51,8 +51,8 @@ void LanczosExponential(VectorType const& x,
 
       if (Beta[i] <= tol)
       {
-	++i;
-	break;
+        ++i;
+        break;
       }
    }
    Iterations = i-1;

@@ -97,7 +97,7 @@ void iter_fill(I i, V x)
 }
 
 // for pointer types, we can use std::fill which may be faster
-// (or may not - surprisingly STL implementations don't seem to 
+// (or may not - surprisingly STL implementations don't seem to
 //  do these optimizations)
 template <typename T, typename V>
 inline
@@ -222,7 +222,7 @@ void iter_assign(I1 i1, I2 i2, vector_iterator_dense, vector_iterator_ordered)
       while (i1.index() < i2Index)
       {
          assign(*i1, zero<typename I1::value_type>());
-	 ++i1;
+         ++i1;
       }
       assign(*i1, *i2);
       ++i2;
@@ -330,9 +330,9 @@ bool iter_equal_to(I1 i1, I2 i2, vector_iterator_dense, vector_iterator_dense)
       if (i1.index() != i2.index()) return false;
       while (i1 && i2)
       {
-	 if (*i1 != *i2) return false;
-	 ++i1;
-	 ++i2;
+         if (*i1 != *i2) return false;
+         ++i1;
+         ++i2;
       }
    }
    return !(i1 || i2);
@@ -414,7 +414,7 @@ bool iter_equal_to(I1 const& i1, I2 const& i2)
 //
 
 template <typename I>
-typename Norm1<typename I::value_type>::result_type 
+typename Norm1<typename I::value_type>::result_type
 iter_norm_1(I i, vector_iterator_injective)
 {
    typedef typename Norm1<typename I::value_type>::result_type result_type;
@@ -432,7 +432,7 @@ iter_norm_1(I i, vector_iterator_injective)
 
 template <typename I>
 inline
-typename Norm1<typename I::value_type>::result_type 
+typename Norm1<typename I::value_type>::result_type
 iter_norm_1(I const& i)
 {
    return iter_norm_1(i, typename I::category());
@@ -443,7 +443,7 @@ iter_norm_1(I const& i)
 //
 
 template <typename I>
-typename Norm2Sq<typename I::value_type>::result_type 
+typename Norm2Sq<typename I::value_type>::result_type
 iter_norm_2_sq(I i, vector_iterator_injective)
 {
    typedef typename Norm2Sq<typename I::value_type>::result_type result_type;
@@ -461,7 +461,7 @@ iter_norm_2_sq(I i, vector_iterator_injective)
 
 template <typename I>
 inline
-typename Norm2Sq<typename I::value_type>::result_type 
+typename Norm2Sq<typename I::value_type>::result_type
 iter_norm_2_sq(I const& i)
 {
    return iter_norm_2_sq(i, typename I::category());
@@ -473,7 +473,7 @@ iter_norm_2_sq(I const& i)
 
 template <typename I>
 inline
-typename Norm2Sq<typename I::value_type>::result_type 
+typename Norm2Sq<typename I::value_type>::result_type
 iter_norm_2(I const& i)
 {
    using std::sqrt;
@@ -486,7 +486,7 @@ iter_norm_2(I const& i)
 //
 
 template <typename I>
-typename NormFrobSq<typename I::value_type>::result_type 
+typename NormFrobSq<typename I::value_type>::result_type
 iter_norm_frob_sq(I i, vector_iterator_injective)
 {
    typedef typename NormFrobSq<typename I::value_type>::result_type result_type;
@@ -504,7 +504,7 @@ iter_norm_frob_sq(I i, vector_iterator_injective)
 
 template <typename I>
 inline
-typename NormFrobSq<typename I::value_type>::result_type 
+typename NormFrobSq<typename I::value_type>::result_type
 iter_norm_frob_sq(I const& i)
 {
    return iter_norm_frob_sq(i, typename I::category());
@@ -516,7 +516,7 @@ iter_norm_frob_sq(I const& i)
 
 template <typename I>
 inline
-typename NormFrobSq<typename I::value_type>::result_type 
+typename NormFrobSq<typename I::value_type>::result_type
 iter_norm_frob(I const& i)
 {
    using std::sqrt;
@@ -534,7 +534,7 @@ iter_norm_frob(I const& i)
 
 template <typename I>
 typename boost::disable_if<is_complex<typename I::value_type>,
-			   typename NormInf<typename I::value_type>::result_type>::type
+                           typename NormInf<typename I::value_type>::result_type>::type
 iter_norm_inf(I i, vector_iterator_injective)
 {
    using std::max;
@@ -553,7 +553,7 @@ iter_norm_inf(I i, vector_iterator_injective)
 
 template <typename I>
 typename boost::enable_if<is_complex<typename I::value_type>,
-			  typename NormInf<typename I::value_type>::result_type>::type
+                          typename NormInf<typename I::value_type>::result_type>::type
 iter_norm_inf(I i, vector_iterator_injective)
 {
    using std::max;
@@ -572,7 +572,7 @@ iter_norm_inf(I i, vector_iterator_injective)
 
 template <typename I>
 inline
-typename NormInf<typename I::value_type>::result_type 
+typename NormInf<typename I::value_type>::result_type
 iter_norm_inf(I const& i)
 {
    return iter_norm_inf(i, typename I::category());
@@ -1052,7 +1052,7 @@ iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func const& f,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f,
                             vector_iterator_dense, vector_iterator_sparse)
 {
    typedef typename CF::result_type cf_result;
@@ -1101,7 +1101,7 @@ iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f,
                             vector_iterator_dense, vector_iterator_hashed)
 {
    typedef typename CF::result_type cf_result;
@@ -1149,7 +1149,7 @@ iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f,
                             vector_iterator_dense, vector_iterator_ordered)
 {
    typedef typename CF::result_type cf_result;
@@ -1199,7 +1199,7 @@ iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f,
                             vector_iterator_ordered, vector_iterator_sparse)
 {
    typedef typename CF::result_type cf_result;
@@ -1249,7 +1249,7 @@ iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f,
                             vector_iterator_hashed, vector_iterator_sparse)
 {
    typedef typename CF::result_type cf_result;
@@ -1274,7 +1274,7 @@ iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f,
                             vector_iterator_sparse, vector_iterator_hashed)
 {
    typedef typename CF::result_type cf_result;
@@ -1299,7 +1299,7 @@ iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f,
                             vector_iterator_hashed, vector_iterator_ordered)
 {
    typedef typename CF::result_type cf_result;
@@ -1324,7 +1324,7 @@ iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f,
                             vector_iterator_ordered, vector_iterator_hashed)
 {
    typedef typename CF::result_type cf_result;
@@ -1349,7 +1349,7 @@ iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, Func f,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf,
                             Func f, vector_iterator_hashed, vector_iterator_hashed)
 {
    // TODO: this could be made more efficient for some cases
@@ -1378,7 +1378,7 @@ iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf,
 
 template <typename I1, typename I2, typename CF, typename Func>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf, 
+iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf,
                             Func const& f, vector_iterator_ordered, vector_iterator_ordered)
 {
    typedef typename result_value<Func>::type result_type;
@@ -1445,7 +1445,7 @@ iter_coefficient_inner_prod(I1 i1, I2 i2, CF const& cf,
 
       cf_result x(cf(i2.index()));
       if (!is_zero(x))
-	 Result += x * f(*i1, *i2);
+         Result += x * f(*i1, *i2);
       ++i1; ++i2;
    }
    return Result;
@@ -1456,8 +1456,8 @@ inline
 typename make_value_with_zero<typename Func::result_type>::type
 iter_coefficient_inner_prod(I1 const& i1, I2 const& i2, CF const& cf, Func const& f)
 {
-   return iter_coefficient_inner_prod(i1, i2, cf, f, 
-					    typename I1::category(), typename I2::category());
+   return iter_coefficient_inner_prod(i1, i2, cf, f,
+                                            typename I1::category(), typename I2::category());
 }
 
 //
@@ -1466,8 +1466,8 @@ iter_coefficient_inner_prod(I1 const& i1, I2 const& i2, CF const& cf, Func const
 
 template <typename I1, typename I2, typename CF, typename Func, typename Float>
 typename make_value_with_zero<typename Func::result_type>::type
-iter_coefficient_inner_prod_cull(I1 i1, I2 i2, CF const& cf, 
-				 Func const& f, Float Tol, vector_iterator_ordered, vector_iterator_ordered)
+iter_coefficient_inner_prod_cull(I1 i1, I2 i2, CF const& cf,
+                                 Func const& f, Float Tol, vector_iterator_ordered, vector_iterator_ordered)
 {
    typedef typename result_value<Func>::type result_type;
    typedef typename CF::result_type cf_result;
@@ -1535,16 +1535,16 @@ iter_coefficient_inner_prod_cull(I1 i1, I2 i2, CF const& cf,
 
       while (i1 && i2 && (i1.index() == i2.index()))
       {
-	 DEBUG_CHECK_EQUAL(i1.index(), i2.index());
-	 cf_result x(cf(i2.index()));
-	 if (!is_zero(x))
-	 {
-	    result_type Temp = x * f(*i1, *i2);
-	    NormSq += norm_err_sq(Temp);
-	    Result += Temp;
-	    ++Count;
-	 }
-	 ++i1; ++i2;
+         DEBUG_CHECK_EQUAL(i1.index(), i2.index());
+         cf_result x(cf(i2.index()));
+         if (!is_zero(x))
+         {
+            result_type Temp = x * f(*i1, *i2);
+            NormSq += norm_err_sq(Temp);
+            Result += Temp;
+            ++Count;
+         }
+         ++i1; ++i2;
       }
    }
    TRACE_IF(norm_err_sq(Result) < NormSq * Tol * Tol)(Result);
@@ -1559,7 +1559,7 @@ typename make_value_with_zero<typename Func::result_type>::type
 iter_coefficient_inner_prod_cull(I1 const& i1, I2 const& i2, CF const& cf, Func const& f, Float Tol)
 {
    return iter_coefficient_inner_prod_cull(i1, i2, cf, f, Tol,
-					     typename I1::category(), typename I2::category());
+                                             typename I1::category(), typename I2::category());
 }
 
 //
@@ -1619,7 +1619,7 @@ Iter iter_min(Iter const& I)
 //
 
 template <typename I>
-typename make_value_with_zero<typename I::value_type>::type 
+typename make_value_with_zero<typename I::value_type>::type
 iter_sum(I i, vector_iterator_injective)
 {
    typedef typename make_value_with_zero<typename I::value_type>::type result_type;
@@ -1637,7 +1637,7 @@ iter_sum(I i, vector_iterator_injective)
 
 template <typename I>
 inline
-typename make_value_with_zero<typename I::value_type>::type 
+typename make_value_with_zero<typename I::value_type>::type
 iter_sum(I const& i)
 {
    return iter_sum(i, typename I::category());

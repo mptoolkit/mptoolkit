@@ -42,33 +42,33 @@ int main(int argc, char** argv)
    // a shortcut to refer to the spin exchange operators
    OperatorAtSite<OperatorList const, int> S(*System, "S");
 
-   // here, Left denotes the set in Omega, Right denotes \bar\Omega 
+   // here, Left denotes the set in Omega, Right denotes \bar\Omega
    MPOperator SALeft, SARight, SBLeft, SBRight;
    int nAL=0, nBL=0, nAR=0, nBR=0;
    for (int i = 1; i <= NumSitesInOmega; ++i)
    {
       if (i % 2 == 0)
       {
-	 ++nAL;
-	 SALeft += S(i);
+         ++nAL;
+         SALeft += S(i);
       }
       else
       {
-	 ++nBL;
-	 SBLeft += S(i);
+         ++nBL;
+         SBLeft += S(i);
       }
    }
    for (int i = NumSitesInOmega+1; i <= LatticeSize; ++i)
    {
       if (i % 2 == 0)
       {
-	 ++nAR;
-	 SARight += S(i);
+         ++nAR;
+         SARight += S(i);
       }
       else
       {
-	 ++nBR;
-	 SBRight += S(i);
+         ++nBR;
+         SBRight += S(i);
       }
    }
 
@@ -76,7 +76,7 @@ int main(int argc, char** argv)
 
    // insert our operator into the lattice
    (*System.mutate())[OpName] = sqrt(3.0) * (prod(SALeft, SBRight, Ident)
-					     + prod(SBLeft, SARight, Ident));
+                                             + prod(SBLeft, SARight, Ident));
    //      + 0.25 * (nAL*nBR + nBL*nAR) * (*System)["I"];
 
    // save the lattice

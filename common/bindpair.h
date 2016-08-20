@@ -24,7 +24,7 @@
   Ian McCulloch
 
   Defines the reference_pair template class, and the bind_pair() function.  The reference_pair
-  class has no public constructors and should not be used directly.  
+  class has no public constructors and should not be used directly.
   bind_pair(x, y) returns a pair-like object that acts as an l-value.  For example,
 
   pair<int, int> MyPair;
@@ -49,7 +49,7 @@ template <class T1, class T2> class reference_pair;
 template <class T1, class T2>
 reference_pair<T1,T2> bind_pair(T1& first, T2& second);
 
-template <class T1, class T2> 
+template <class T1, class T2>
 class reference_pair
 {
    public:

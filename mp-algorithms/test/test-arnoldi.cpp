@@ -29,20 +29,20 @@ struct MultBy
 {
    MultBy(Matrix<complex> const& M_) : M(M_) {}
 
-   Vector<complex> operator()(Vector<complex> const& x) const 
+   Vector<complex> operator()(Vector<complex> const& x) const
    {
       TRACE(size(x));
       Vector<complex> Result(size(x), 0.0);
       for (unsigned i = 0; i < size(x); ++i)
       {
-	 for (unsigned j = 0; j < size(x); ++j)
-	 {
-	    Result[i] += M(i,j) * x[j];
-	 }
+         for (unsigned j = 0; j < size(x); ++j)
+         {
+            Result[i] += M(i,j) * x[j];
+         }
       }
       return Result;
    }
-   
+
    Matrix<complex> M;
 };
 
@@ -60,7 +60,7 @@ int main()
    Matrix<complex> M = LinearAlgebra::random_matrix<complex>(4,4);
 
    TRACE(M);
-  
+
    Vector<complex> x(size1(M), 1.0);
    //   x[0] = 1.0;
 

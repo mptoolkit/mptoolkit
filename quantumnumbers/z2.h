@@ -123,7 +123,7 @@ std::complex<double> cross_product_factor(Z2 const&, Z2 const&)
 
 inline
 double clebsch_gordan(Z2 const& q1, Z2 const& q2, Z2 const& q,
-	  Z2Projection const& m1,  Z2Projection const& m2,  Z2Projection const& m)
+          Z2Projection const& m1,  Z2Projection const& m2,  Z2Projection const& m)
 {
    DEBUG_CHECK_EQUAL(q1,m1);
    DEBUG_CHECK_EQUAL(q2,m2);
@@ -133,7 +133,7 @@ double clebsch_gordan(Z2 const& q1, Z2 const& q2, Z2 const& q,
 
 inline
 double product_coefficient(Z2 const& k1, Z2 const& k2, Z2 const& k,
-			  Z2 const& qp, Z2 const& q, Z2 const& qpp)
+                          Z2 const& qp, Z2 const& q, Z2 const& qpp)
 {
    return ((k1 *k2 == k) && (qp == k1*qpp) && (qpp == k2*q)) ? 1 : 0;
 }
@@ -148,8 +148,8 @@ inline
 
 inline
 double tensor_coefficient(Z2 const& k1,  Z2 const& k2,  Z2 const& k,
-			 Z2 const& q1p, Z2 const& q2p, Z2 const& qp,
-			 Z2 const& q1,  Z2 const& q2,  Z2 const& q)
+                         Z2 const& q1p, Z2 const& q2p, Z2 const& qp,
+                         Z2 const& q1,  Z2 const& q2,  Z2 const& q)
 {
    PRECONDITION(k1*k2 == k)(k1)(k2)(k);
    PRECONDITION(q1p*q2p == qp)(q1p)(q2p)(qp);
@@ -175,7 +175,7 @@ double inverse_tensor_coefficient(Z2 const& k1,  Z2 const& k2,  Z2 const& k,
 }
 inline
 double recoupling(Z2 const& q1, Z2 const& q3, Z2 const& q13,
-		  Z2 const& q2, Z2 const& q, Z2 const& q23)
+                  Z2 const& q2, Z2 const& q, Z2 const& q23)
 {
    DEBUG_PRECONDITION_EQUAL(q13, q1*q3);
    DEBUG_PRECONDITION_EQUAL(q23, q2*q3);

@@ -42,13 +42,13 @@ extern bool ShowSmallestKept;
 // If ShowInfo is true, then information is written to std::cout, as per the global variables
 // above.
 void SweepRightEvolve(LinearWavefunction& Psi, std::list<SimpleOperator> const& BondOperators,
-		      StatesInfo const& SInfo, bool ShowInfo = false);
+                      StatesInfo const& SInfo, bool ShowInfo = false);
 
 // Assuming the wavefunction is in right-most normal form, applies a list of bond operators
 // from right to left.  The first bond operator to be applied is BondOperators.back(),
 // the bond operator at the start of the list is applied last, to the left-most bond.
 // At the end of this function, Psi will be in normal form.
 void SweepLeftEvolve(LinearWavefunction& Psi, std::list<SimpleOperator> const& BondOperators,
-		     StatesInfo const& SInfo, bool ShowInfo = false);
+                     StatesInfo const& SInfo, bool ShowInfo = false);
 
 #endif

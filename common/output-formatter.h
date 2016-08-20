@@ -47,9 +47,9 @@ class OutputFormatter
    public:
       OutputFormatter() : DefaultWidth(18), DefaultPrecision(14), Color(false) { }
 
-      explicit OutputFormatter(int DefaultWidth_ = 16, 
-			       int DefaultPrecision_ = 14,
-			       bool Color_ = false) : Color(Color_) { }
+      explicit OutputFormatter(int DefaultWidth_ = 16,
+                               int DefaultPrecision_ = 14,
+                               bool Color_ = false) : Color(Color_) { }
 
       void ShowColors(bool Color_) { Color = Color_; }
 
@@ -65,15 +65,15 @@ class OutputFormatter
 
    private:
       template <typename T, typename... Args>
-      void FormatImpl(std::string& Result, char const* p, char const* end, 
-		      bool InColor, T x, Args... Remain) const;
+      void FormatImpl(std::string& Result, char const* p, char const* end,
+                      bool InColor, T x, Args... Remain) const;
 
       template <typename T>
-      void FormatImpl(std::string& Result, char const* p, char const* end, 
-		      bool InColor, T x) const;
+      void FormatImpl(std::string& Result, char const* p, char const* end,
+                      bool InColor, T x) const;
 
-      void FormatImpl(std::string& Result, char const* p, char const* end, 
-		      bool InColor) const;
+      void FormatImpl(std::string& Result, char const* p, char const* end,
+                      bool InColor) const;
 
       int DefaultWidth;
       int DefaultPrecision;
@@ -133,7 +133,7 @@ FormatSpec::is_flag(char c)
    return c == '0' || c == '+' || c == '#' || c == ' ' || c == '-';
 }
 
-FormatSpec 
+FormatSpec
 FormatSpec::parse(char const*& beg, char const* end)
 {
    FormatSpec Result;
@@ -187,9 +187,9 @@ std::string
 OutputFormatter::printf(std::string Format, Args... x) const
 {
    std::string Result;
-   FormatImpl(Result, Format.c_str(), 
-	      Format.c_str()+Format.size(), false,
-	      x...);
+   FormatImpl(Result, Format.c_str(),
+              Format.c_str()+Format.size(), false,
+              x...);
    return Result;
 }
 
@@ -198,8 +198,8 @@ std::string
 OutputFormatter::printf(std::string Format)  const
 {
    std::string Result;
-   this->FormatImpl(Result, Format.c_str(), 
-		    Format.c_str()+Format.size(), false);
+   this->FormatImpl(Result, Format.c_str(),
+                    Format.c_str()+Format.size(), false);
    return Result;
 }
 
@@ -209,9 +209,9 @@ std::string
 OutputFormatter::printf(char const* Format, Args... x) const
 {
    std::string Result;
-   this->FormatImpl(Result, Format, 
-		    Format + std::strlen(Format), false,
-		    x...);
+   this->FormatImpl(Result, Format,
+                    Format + std::strlen(Format), false,
+                    x...);
    return Result;
 }
 
@@ -220,63 +220,63 @@ std::string
 OutputFormatter::printf(char const* Format) const
 {
    std::string Result;
-   FormatImpl(Result, Format, 
-	      Format+std::strlen(Format), false);
+   FormatImpl(Result, Format,
+              Format+std::strlen(Format), false);
    return Result;
 }
 
 template <typename T, typename... Args>
 void
 OutputFormatter::FormatImpl(std::string& Result,
-			    char const* p, char const* end, 
-			    bool InColor, 
-			    T x, Args... Remain) const
+                            char const* p, char const* end,
+                            bool InColor,
+                            T x, Args... Remain) const
 {
    // text of a \[color]{text} region
    while (*p != '\0')
    {
       if (p[0] == '\[' || (p[0] == '\\' && p[1] == '['))
       {
-	 // a color spec
-	 // skip over the initial tokens
-	 if (p[0] == '\[')
-	    ++p;
-	 else
-	    p += 2;
-	 char const* e = std::find(p, end, ']');
-	 std::string ColorSpec = std::string(p,e);
-	 p = end;
-	 ++p;
-	 if (*p != '{')
-	 {
-	    abort();
-	 }
-	 ++p;
-	 InColor = true;
-	 if (Color)
-	    Result += terminal::parse_color_codes(ColorSpec);
+         // a color spec
+         // skip over the initial tokens
+         if (p[0] == '\[')
+            ++p;
+         else
+            p += 2;
+         char const* e = std::find(p, end, ']');
+         std::string ColorSpec = std::string(p,e);
+         p = end;
+         ++p;
+         if (*p != '{')
+         {
+            abort();
+         }
+         ++p;
+         InColor = true;
+         if (Color)
+            Result += terminal::parse_color_codes(ColorSpec);
       }
       else if (InColor && p[0] == '\\' && p[1] == '}')
       {
-	 p += 2;
-	 Result +=  '}';
+         p += 2;
+         Result +=  '}';
       }
       else if (InColor && p[0] == '}')
       {
-	 ++p;
-	 if (Color)
-	    Result += terminal::color_code(terminal::color::Reset);
+         ++p;
+         if (Color)
+            Result += terminal::color_code(terminal::color::Reset);
       }
       else if (p[0] != '%')
       {
-	 Result += *p++;
+         Result += *p++;
       }
       else // p[0] == '%'
       {
-	 FormatSpec f = FormatSpec::parse(p, end);
-	 Result += f.printf(x);
-	 FormatImpl(Result, p, end, InColor, Remain...);
-	 return;
+         FormatSpec f = FormatSpec::parse(p, end);
+         Result += f.printf(x);
+         FormatImpl(Result, p, end, InColor, Remain...);
+         return;
       }
    }
    // too many parameters supplied
@@ -286,55 +286,55 @@ OutputFormatter::FormatImpl(std::string& Result,
 template <typename T>
 void
 OutputFormatter::FormatImpl(std::string& Result,
-			    char const* p, char const* end, 
-			    bool InColor, 
-			    T x) const
+                            char const* p, char const* end,
+                            bool InColor,
+                            T x) const
 {
    // text of a \[color]{text} region
    while (*p != '\0')
    {
       if (p[0] == '\[' || (p[0] == '\\' && p[1] == '['))
       {
-	 // a color spec
-	 // skip over the initial tokens
-	 if (p[0] == '\[')
-	    ++p;
-	 else
-	    p += 2;
-	 char const* e = std::find(p, end, ']');
-	 std::string ColorSpec = std::string(p,e);
-	 p = e;
-	 ++p;
-	 if (*p != '{')
-	 {
-	    abort();
-	 }
-	 ++p;
-	 InColor = true;
-	 if (Color)
-	    Result += terminal::parse_color_codes(ColorSpec);
+         // a color spec
+         // skip over the initial tokens
+         if (p[0] == '\[')
+            ++p;
+         else
+            p += 2;
+         char const* e = std::find(p, end, ']');
+         std::string ColorSpec = std::string(p,e);
+         p = e;
+         ++p;
+         if (*p != '{')
+         {
+            abort();
+         }
+         ++p;
+         InColor = true;
+         if (Color)
+            Result += terminal::parse_color_codes(ColorSpec);
       }
       else if (InColor && p[0] == '\\' && p[1] == '}')
       {
-	 p += 2;
-	 Result +=  '}';
+         p += 2;
+         Result +=  '}';
       }
       else if (InColor && p[0] == '}')
       {
-	 ++p;
-	 if (Color)
-	    Result += terminal::color_code(terminal::color::Reset);
+         ++p;
+         if (Color)
+            Result += terminal::color_code(terminal::color::Reset);
       }
       else if (p[0] != '%')
       {
-	 Result += *p++;
+         Result += *p++;
       }
       else // p[0] == '%'
       {
-	 FormatSpec f = FormatSpec::parse(p, end);
-	 Result += f.printf(x);
-	 FormatImpl(Result, p, end, InColor);
-	 return;
+         FormatSpec f = FormatSpec::parse(p, end);
+         Result += f.printf(x);
+         FormatImpl(Result, p, end, InColor);
+         return;
       }
    }
    // too many parameters supplied
@@ -343,52 +343,52 @@ OutputFormatter::FormatImpl(std::string& Result,
 
 void
 OutputFormatter::FormatImpl(std::string& Result,
-			    char const* p, char const* end, 
-			    bool InColor) const
+                            char const* p, char const* end,
+                            bool InColor) const
 {
    // text of a \[color]{text} region
    while (*p != '\0')
    {
       if (p[0] == '\[' || (p[0] == '\\' && p[1] == '['))
       {
-	 // a color spec
-	 // skip over the initial tokens
-	 if (p[0] == '\[')
-	    ++p;
-	 else
-	    p += 2;
-	 char const* e = std::find(p, end, ']');
-	 std::string ColorSpec = std::string(p,e);
-	 p = end;
-	 ++p;
-	 if (*p != '{')
-	 {
-	    abort();
-	 }
-	 ++p;
-	 InColor = true;
-	 if (Color)
-	    Result += terminal::parse_color_codes(ColorSpec);
+         // a color spec
+         // skip over the initial tokens
+         if (p[0] == '\[')
+            ++p;
+         else
+            p += 2;
+         char const* e = std::find(p, end, ']');
+         std::string ColorSpec = std::string(p,e);
+         p = end;
+         ++p;
+         if (*p != '{')
+         {
+            abort();
+         }
+         ++p;
+         InColor = true;
+         if (Color)
+            Result += terminal::parse_color_codes(ColorSpec);
       }
       else if (InColor && p[0] == '\\' && p[1] == '}')
       {
-	 p += 2;
-	 Result +=  '}';
+         p += 2;
+         Result +=  '}';
       }
       else if (InColor && p[0] == '}')
       {
-	 ++p;
-	 if (Color)
-	    Result += terminal::color_code(terminal::color::Reset);
+         ++p;
+         if (Color)
+            Result += terminal::color_code(terminal::color::Reset);
       }
       else if (p[0] != '%')
       {
-	 Result += *p++;
+         Result += *p++;
       }
       else // p[0] == '%'
       {
-	 abort();
-	 // too many format specifiers
+         abort();
+         // too many format specifiers
       }
    }
 }

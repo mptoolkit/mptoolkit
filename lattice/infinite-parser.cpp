@@ -36,18 +36,18 @@ typedef InfiniteMPOElement ElementType;
 struct push_operator
 {
    push_operator(InfiniteLattice const& Lattice_,
-		 std::stack<std::string>& IdentStack_, 
-		 std::stack<ElementType>& eval_)
+                 std::stack<std::string>& IdentStack_,
+                 std::stack<ElementType>& eval_)
       : Lattice(Lattice_), IdentStack(IdentStack_), eval(eval_) {}
-   
+
    void operator()(char const* start, char const* end) const
    {
       std::string OpName = IdentStack.top();
       IdentStack.pop();
       if (!Lattice.operator_exists(OpName))
       {
-	 throw ParserError::AtPosition("Operator does not exist or wrong type: " 
-				       + ColorQuote(OpName), start);
+         throw ParserError::AtPosition("Operator does not exist or wrong type: "
+                                       + ColorQuote(OpName), start);
       }
       eval.push(Lattice[OpName].op());
    }
@@ -60,12 +60,12 @@ struct push_operator
 struct eval_function
 {
    eval_function(InfiniteLattice const& Lattice_,
-		 std::stack<std::string>& FunctionStack_, 
-		 std::stack<Function::ParameterList>& ParamStack_,
-		 std::stack<ElementType>& eval_)
-      : Lattice(Lattice_), FunctionStack(FunctionStack_), 
-	ParamStack(ParamStack_), eval(eval_) {}
-   
+                 std::stack<std::string>& FunctionStack_,
+                 std::stack<Function::ParameterList>& ParamStack_,
+                 std::stack<ElementType>& eval_)
+      : Lattice(Lattice_), FunctionStack(FunctionStack_),
+        ParamStack(ParamStack_), eval(eval_) {}
+
    void operator()(char const*, char const*) const
    {
       eval.push(Lattice.eval_function(FunctionStack.top(), ParamStack.top()).op());
@@ -84,27 +84,27 @@ struct eval_function
 struct scale_cells_to_sites
 {
    scale_cells_to_sites(InfiniteLattice const& Lattice_,
-			std::stack<ElementType>& eval_)
+                        std::stack<ElementType>& eval_)
       : Lattice(Lattice_), eval(eval_) {}
-   
+
    void operator()(char const* a, char const*) const
    {
       try
       {
-	 int Cells = pop_int(eval);
-	 eval.push(std::complex<double>(double(Cells*Lattice.GetUnitCell().size())));
+         int Cells = pop_int(eval);
+         eval.push(std::complex<double>(double(Cells*Lattice.GetUnitCell().size())));
       }
       catch (ParserError const& p)
       {
-	 throw ParserError::AtPosition(p, a);
+         throw ParserError::AtPosition(p, a);
       }
       catch (std::exception const& p)
       {
-	 throw ParserError::AtPosition(p, a);
+         throw ParserError::AtPosition(p, a);
       }
       catch (...)
       {
-	 throw;
+         throw;
       }
    }
 
@@ -116,9 +116,9 @@ struct scale_cells_to_sites
 struct push_number_of_sites
 {
    push_number_of_sites(InfiniteLattice const& Lattice_,
-			std::stack<ElementType>& eval_)
+                        std::stack<ElementType>& eval_)
       : Lattice(Lattice_), eval(eval_) {}
-   
+
    void operator()(char const*, char const*) const
    {
       eval.push(std::complex<double>(double(Lattice.GetUnitCell().size())));
@@ -131,16 +131,16 @@ struct push_number_of_sites
 struct push_prod_unit
 {
    push_prod_unit(InfiniteLattice const& Lattice_,
-		  std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
+                  std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
       : Lattice(Lattice_), eval(eval_), Args(Args_) {}
-   
+
    void operator()(char const* Start, char const* End) const
    {
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
       {
-	 throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
-				    Start, End);
+         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+                                    Start, End);
       }
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
       UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End), Args);
@@ -156,16 +156,16 @@ struct push_prod_unit
 struct push_prod_unit_r
 {
    push_prod_unit_r(InfiniteLattice const& Lattice_,
-		    std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
+                    std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
       : Lattice(Lattice_), eval(eval_), Args(Args_) {}
-   
+
    void operator()(char const* Start, char const* End) const
    {
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
       {
-	 throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
-				    Start, End);
+         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+                                    Start, End);
       }
       UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End), Args);
       Op.ExtendToCoverUnitCell(Sites);
@@ -180,7 +180,7 @@ struct push_prod_unit_r
 struct push_trans_right
 {
    push_trans_right(InfiniteLattice const& Lattice_,
-		    std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
+                    std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
       : Lattice(Lattice_), eval(eval_), Args(Args_) {}
 
    void operator()(char const* Start, char const* End) const
@@ -189,7 +189,7 @@ struct push_trans_right
       std::vector<BasisList> LocalBasisList;
       for (int i = 0; i < Lattice.GetUnitCell().size(); ++i)
       {
-	 LocalBasisList.push_back(Lattice.GetUnitCell().LocalBasis(i).Basis());
+         LocalBasisList.push_back(Lattice.GetUnitCell().LocalBasis(i).Basis());
       }
       eval.push(pow(translate_right(LocalBasisList), Sites));
    }
@@ -203,11 +203,11 @@ struct push_string
 {
    push_string(InfiniteLattice const& Lattice_, std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
       : Lattice(Lattice_), eval(eval_), Args(Args_) {}
-   
+
    void operator()(char const* Start, char const* End) const
    {
-      FiniteMPO Op = ParseStringOperator(*Lattice.GetUnitCell().GetSiteList(), 
-					 std::string(Start, End), Lattice.GetUnitCell().size() /* , Args */);
+      FiniteMPO Op = ParseStringOperator(*Lattice.GetUnitCell().GetSiteList(),
+                                         std::string(Start, End), Lattice.GetUnitCell().size() /* , Args */);
       // TODO: Add Args to ParseStringOperator()
       eval.push(prod_unit_left_to_right(Op, Lattice.GetUnitCell().size()));
    }
@@ -220,35 +220,35 @@ struct push_string
 struct push_sum_unit
 {
    push_sum_unit(InfiniteLattice const& Lattice_,
-		 std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
+                 std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
       : Lattice(Lattice_), eval(eval_), Args(Args_) {}
-   
+
    void operator()(char const* Start, char const* End) const
    {
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
       {
-	 throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
-				    Start, End);
+         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+                                    Start, End);
       }
-      
+
       try
       {
-	 UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End), Args);
-	 //Op.ExtendToCoverUnitCell(Sites);
-	 eval.push(sum_unit(Op, Sites));
+         UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End), Args);
+         //Op.ExtendToCoverUnitCell(Sites);
+         eval.push(sum_unit(Op, Sites));
       }
       catch (ParserError const& p)
       {
-	 throw ParserError::AtPosition(p, Start);
+         throw ParserError::AtPosition(p, Start);
       }
       catch (std::exception const& p)
       {
-	 throw ParserError::AtPosition(p, Start);
+         throw ParserError::AtPosition(p, Start);
       }
       catch (...)
       {
-	 throw;
+         throw;
       }
    }
 
@@ -260,9 +260,9 @@ struct push_sum_unit
 struct push_sum_k
 {
    push_sum_k(InfiniteLattice const& Lattice_,
-	      std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
+              std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
       : Lattice(Lattice_), eval(eval_), Args(Args_) {}
-   
+
    void operator()(char const* Start, char const* End) const
    {
       std::complex<double> k = boost::get<std::complex<double> >(eval.top());
@@ -270,27 +270,27 @@ struct push_sum_k
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
       {
-	 throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
-				    Start, End);
+         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+                                    Start, End);
       }
 
       try
       {
-	 UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End), Args);
-	 //Op.ExtendToCoverUnitCell(Sites);
-	 eval.push(sum_k(k, Op, Sites));
+         UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End), Args);
+         //Op.ExtendToCoverUnitCell(Sites);
+         eval.push(sum_k(k, Op, Sites));
       }
       catch (ParserError const& p)
       {
-	 throw ParserError::AtPosition(p, Start);
+         throw ParserError::AtPosition(p, Start);
       }
       catch (std::exception const& p)
       {
-	 throw ParserError::AtPosition(p, Start);
+         throw ParserError::AtPosition(p, Start);
       }
       catch (...)
       {
-	 throw;
+         throw;
       }
    }
 
@@ -302,16 +302,16 @@ struct push_sum_k
 struct push_sum_kink
 {
    push_sum_kink(InfiniteLattice const& Lattice_,
-		 std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
+                 std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
       : Lattice(Lattice_), eval(eval_), Args(Args_) {}
-   
+
    void operator()(char const* Start, char const* End) const
    {
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
       {
-	 throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
-				    Start, End);
+         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+                                    Start, End);
       }
 
       // Find the comma separating the two operators
@@ -319,15 +319,15 @@ struct push_sum_kink
       char const* Comma = Start;
       while (Comma != End && (*Comma != ',' || nBracket > 0))
       {
-	 if (*Comma == '(')
-	    ++nBracket;
-	 else if (*Comma == ')')
-	    --nBracket;
-	 ++Comma;
+         if (*Comma == '(')
+            ++nBracket;
+         else if (*Comma == ')')
+            --nBracket;
+         ++Comma;
       }
       if (Comma == End)
       {
-	 throw ParserError::AtRange(ColorQuote("sum_kink") + " expects two parameters", Start, End);
+         throw ParserError::AtRange(ColorQuote("sum_kink") + " expects two parameters", Start, End);
       }
 
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
@@ -346,16 +346,16 @@ struct push_sum_kink
 struct push_sum_string_inner
 {
    push_sum_string_inner(InfiniteLattice const& Lattice_,
-		 std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
+                 std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
       : Lattice(Lattice_), eval(eval_), Args(Args_) {}
-   
+
    void operator()(char const* Start, char const* End) const
    {
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
       {
-	 throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
-				    Start, End);
+         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+                                    Start, End);
       }
 
       // here we expect 3 operators, separated by commas
@@ -364,16 +364,16 @@ struct push_sum_string_inner
       char const* Comma = Start;
       while (Comma != End && (*Comma != ',' || nBracket > 0))
       {
-	 if (*Comma == '(')
-	    ++nBracket;
-	 else if (*Comma == ')')
-	    --nBracket;
-	 ++Comma;
+         if (*Comma == '(')
+            ++nBracket;
+         else if (*Comma == ')')
+            --nBracket;
+         ++Comma;
       }
       if (Comma == End)
       {
-	 throw ParserError::AtRange(ColorQuote("sum_string_inner")
-				    + " expects three parameters, only found one", Start, End);
+         throw ParserError::AtRange(ColorQuote("sum_string_inner")
+                                    + " expects three parameters, only found one", Start, End);
       }
 
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
@@ -383,16 +383,16 @@ struct push_sum_string_inner
       Start = Comma;
       while (Comma != End && (*Comma != ',' || nBracket > 0))
       {
-	 if (*Comma == '(')
-	    ++nBracket;
-	 else if (*Comma == ')')
-	    --nBracket;
-	 ++Comma;
+         if (*Comma == '(')
+            ++nBracket;
+         else if (*Comma == ')')
+            --nBracket;
+         ++Comma;
       }
       if (Comma == End)
       {
-	 throw ParserError::AtRange(ColorQuote("sum_string_inner") 
-				    + " expects three parameters, only found two", Start, End);
+         throw ParserError::AtRange(ColorQuote("sum_string_inner")
+                                    + " expects three parameters, only found two", Start, End);
       }
       UnitCellMPO String = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, Comma), Args);
       ++Comma; // skip over the comma
@@ -408,16 +408,16 @@ struct push_sum_string_inner
 struct push_sum_string_dot
 {
    push_sum_string_dot(InfiniteLattice const& Lattice_,
-		 std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
+                 std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
       : Lattice(Lattice_), eval(eval_), Args(Args_) {}
-   
+
    void operator()(char const* Start, char const* End) const
    {
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
       {
-	 throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
-				    Start, End);
+         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+                                    Start, End);
       }
       // here we expect 3 operators, separated by commas
       // Find the comma separating the two operators
@@ -425,16 +425,16 @@ struct push_sum_string_dot
       char const* Comma = Start;
       while (Comma != End && (*Comma != ',' || nBracket > 0))
       {
-	 if (*Comma == '(')
-	    ++nBracket;
-	 else if (*Comma == ')')
-	    --nBracket;
-	 ++Comma;
+         if (*Comma == '(')
+            ++nBracket;
+         else if (*Comma == ')')
+            --nBracket;
+         ++Comma;
       }
       if (Comma == End)
       {
-	 throw ParserError::AtRange(ColorQuote("sum_string_dot") 
-				    + " expects three parameters, only found one", Start, End);
+         throw ParserError::AtRange(ColorQuote("sum_string_dot")
+                                    + " expects three parameters, only found one", Start, End);
       }
 
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
@@ -444,16 +444,16 @@ struct push_sum_string_dot
       Start = Comma;
       while (Comma != End && (*Comma != ',' || nBracket > 0))
       {
-	 if (*Comma == '(')
-	    ++nBracket;
-	 else if (*Comma == ')')
-	    --nBracket;
-	 ++Comma;
+         if (*Comma == '(')
+            ++nBracket;
+         else if (*Comma == ')')
+            --nBracket;
+         ++Comma;
       }
       if (Comma == End)
       {
-	 throw ParserError::AtRange(ColorQuote("sum_string_dot") 
-				    + " expects three parameters, only found two", Start, End);
+         throw ParserError::AtRange(ColorQuote("sum_string_dot")
+                                    + " expects three parameters, only found two", Start, End);
       }
       UnitCellMPO String = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, Comma), Args);
       ++Comma; // skip over the comma
@@ -469,19 +469,19 @@ struct push_sum_string_dot
 struct push_coarse_grain
 {
    push_coarse_grain(InfiniteLattice const& Lattice_,
-		 std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
+                 std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
       : Lattice(Lattice_), eval(eval_), Args(Args_) {}
-   
+
    void operator()(char const* Start, char const* End) const
    {
       ElementType Op = eval.top();
       eval.pop();
-      
+
       int Sites = pop_int(eval);
       if (Sites <= 0)
-	 throw ParserError::AtRange(ColorHighlight("coarse_grain:") 
-				    + " canot coarse-grain to zero or negative size!", 
-				    Start, End);
+         throw ParserError::AtRange(ColorHighlight("coarse_grain:")
+                                    + " canot coarse-grain to zero or negative size!",
+                                    Start, End);
 
       TriangularMPO TOp = boost::get<TriangularMPO>(Op);
       TOp = coarse_grain(TOp, Sites);
@@ -517,228 +517,228 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
    static unary_funcs<ElementType>  unary_funcs_p;
    static binary_funcs<ElementType> binary_funcs_p;
 
-   InfiniteLatticeParser(ElemStackType& eval_, 
-		  UnaryFuncStackType& func_stack_,
-		  BinaryFuncStackType& bin_func_stack_,
-		  IdentifierStackType& IdentifierStack_,
-		  FunctionStackType& Functions_,
-		  ParameterStackType& Parameters_,
-		  ArgumentType& Arguments_,
-			 InfiniteLattice const& Lattice_,
-			 RawArgumentType const& Args_)
+   InfiniteLatticeParser(ElemStackType& eval_,
+                  UnaryFuncStackType& func_stack_,
+                  BinaryFuncStackType& bin_func_stack_,
+                  IdentifierStackType& IdentifierStack_,
+                  FunctionStackType& Functions_,
+                  ParameterStackType& Parameters_,
+                  ArgumentType& Arguments_,
+                         InfiniteLattice const& Lattice_,
+                         RawArgumentType const& Args_)
       : eval(eval_), func_stack(func_stack_), bin_func_stack(bin_func_stack_),
       IdentifierStack(IdentifierStack_), FunctionStack(Functions_),
       ParameterStack(Parameters_), Arguments(Arguments_),
-	Lattice(Lattice_), Args(Args_)
+        Lattice(Lattice_), Args(Args_)
    {}
-   
+
    template <typename ScannerT>
    struct definition
    {
       definition(InfiniteLatticeParser const& self)
       {
-	 real = ureal_p[push_value<ElementType>(self.eval)];
-	 
-	 imag = lexeme_d[ureal_p >> chset<>("iIjJ")][push_imag<ElementType>(self.eval)];
-	 
-	 identifier = lexeme_d[alpha_p >> *(alnum_p | '_')];
-	 //[push_identifier(self.IdentifierStack)];
+         real = ureal_p[push_value<ElementType>(self.eval)];
 
-	 // We re-use the IdentifierStack for quantum numbers, and rely on the grammar rules to
-	 // avoid chaos!
-	 quantumnumber = lexeme_d[*(anychar_p - chset<>("()"))]
-	    [push_identifier(self.IdentifierStack)];
+         imag = lexeme_d[ureal_p >> chset<>("iIjJ")][push_imag<ElementType>(self.eval)];
 
-	 named_parameter = eps_p(identifier >> '=')
-	    >> identifier[push_identifier(self.IdentifierStack)]
-	    >> '='
-	    >> expression[push_named_parameter<ElementType>(self.eval, 
-							     self.IdentifierStack, 
-							     self.ParameterStack)];
+         identifier = lexeme_d[alpha_p >> *(alnum_p | '_')];
+         //[push_identifier(self.IdentifierStack)];
 
-	 parameter = expression[push_parameter<ElementType>(self.eval, self.ParameterStack)];
+         // We re-use the IdentifierStack for quantum numbers, and rely on the grammar rules to
+         // avoid chaos!
+         quantumnumber = lexeme_d[*(anychar_p - chset<>("()"))]
+            [push_identifier(self.IdentifierStack)];
 
-	 // parameter_list is a comma-separated list of parameters, may be empty
-	 // at least one parameter
-	 parameter_list = '{' >> (!((named_parameter | parameter) % ',')) >> '}';
+         named_parameter = eps_p(identifier >> '=')
+            >> identifier[push_identifier(self.IdentifierStack)]
+            >> '='
+            >> expression[push_named_parameter<ElementType>(self.eval,
+                                                             self.IdentifierStack,
+                                                             self.ParameterStack)];
 
-	 prod_expression = (str_p("prod") >> '(' >> expression >> ',' >> expression >> ',' >> quantumnumber >> ')')
-	    [push_prod<ElementType>(self.IdentifierStack, self.eval)];
- 
-	 bracket_expr = '(' >> expression >> ')';
+         parameter = expression[push_parameter<ElementType>(self.eval, self.ParameterStack)];
 
-	 sq_bracket_expr = '[' >> expression >> ']';
+         // parameter_list is a comma-separated list of parameters, may be empty
+         // at least one parameter
+         parameter_list = '{' >> (!((named_parameter | parameter) % ',')) >> '}';
 
-	 expression_string = lexeme_d[+((anychar_p - chset<>("()"))
-					| (ch_p('(') >> expression_string >> ch_p(')')))];
+         prod_expression = (str_p("prod") >> '(' >> expression >> ',' >> expression >> ',' >> quantumnumber >> ')')
+            [push_prod<ElementType>(self.IdentifierStack, self.eval)];
 
-	 num_cells = (eps_p((str_p("cells") | str_p("sites")) >> '=')
-		      >> ((str_p("cells") >> '=' >> expression >> ',')
-			  [scale_cells_to_sites(self.Lattice, self.eval)]
-			  | (str_p("sites") >> '=' >> expression >> ',')))
-	    | eps_p[push_number_of_sites(self.Lattice, self.eval)];
+         bracket_expr = '(' >> expression >> ')';
 
-	 num_cells_no_comma = (eps_p((str_p("cells") | str_p("sites")) >> '=')
-			       >> ((str_p("cells") >> '=' >> expression)
-				   [scale_cells_to_sites(self.Lattice, self.eval)]
-				   | (str_p("sites") >> '=' >> expression)))
-	    | eps_p[push_number_of_sites(self.Lattice, self.eval)];
-      
-	 // ProductMPO expressions
+         sq_bracket_expr = '[' >> expression >> ']';
 
-	 string_expression = str_p("string")
-	    >> '(' 
-	    >> expression_string[push_string(self.Lattice, self.eval, self.Args)]
-	    >> ')';
+         expression_string = lexeme_d[+((anychar_p - chset<>("()"))
+                                        | (ch_p('(') >> expression_string >> ch_p(')')))];
 
-	 prod_unit_expression = str_p("prod_unit")
-	    >> '(' 
-	    >> num_cells
-	    >> expression_string[push_prod_unit(self.Lattice, self.eval, self.Args)]
-	    >> ')';
+         num_cells = (eps_p((str_p("cells") | str_p("sites")) >> '=')
+                      >> ((str_p("cells") >> '=' >> expression >> ',')
+                          [scale_cells_to_sites(self.Lattice, self.eval)]
+                          | (str_p("sites") >> '=' >> expression >> ',')))
+            | eps_p[push_number_of_sites(self.Lattice, self.eval)];
 
-	 prod_unit_r_expression = str_p("prod_unit_r")
-	    >> '(' 
-	    >> num_cells
-	    >> expression_string[push_prod_unit_r(self.Lattice, self.eval, self.Args)]
-	    >> ')';
+         num_cells_no_comma = (eps_p((str_p("cells") | str_p("sites")) >> '=')
+                               >> ((str_p("cells") >> '=' >> expression)
+                                   [scale_cells_to_sites(self.Lattice, self.eval)]
+                                   | (str_p("sites") >> '=' >> expression)))
+            | eps_p[push_number_of_sites(self.Lattice, self.eval)];
 
-	 trans_right_expression = str_p("trans_right")
-	    >> '(' 
-	    >> num_cells_no_comma[push_trans_right(self.Lattice, self.eval, self.Args)]
-	    >> ')';
+         // ProductMPO expressions
 
-	 // TriangularMPO expressions
+         string_expression = str_p("string")
+            >> '('
+            >> expression_string[push_string(self.Lattice, self.eval, self.Args)]
+            >> ')';
 
-	 sum_unit_expression = str_p("sum_unit")
-	    >> '('
-	    >> num_cells
-	    >> expression_string[push_sum_unit(self.Lattice, self.eval, self.Args)]
-	    >> ')';
+         prod_unit_expression = str_p("prod_unit")
+            >> '('
+            >> num_cells
+            >> expression_string[push_prod_unit(self.Lattice, self.eval, self.Args)]
+            >> ')';
 
-	 sum_kink_expression = str_p("sum_kink")
-	    >> '(' 
-	    >> num_cells
-	    >> expression_string[push_sum_kink(self.Lattice, self.eval, self.Args)]
-	    >> ')';
-	 
-	 sum_k_expression = str_p("sum_k")
-	    >> '(' 
-	    >> num_cells
-	    >> expression >> ','
-	    >> expression_string[push_sum_k(self.Lattice, self.eval, self.Args)]
-	    >> ')';
+         prod_unit_r_expression = str_p("prod_unit_r")
+            >> '('
+            >> num_cells
+            >> expression_string[push_prod_unit_r(self.Lattice, self.eval, self.Args)]
+            >> ')';
 
-	 sum_string_inner_expression = str_p("sum_string_inner")
-	    >> '('
-	    >> num_cells
-	    >> expression_string[push_sum_string_inner(self.Lattice, self.eval, self.Args)]
-	    >> ')';
+         trans_right_expression = str_p("trans_right")
+            >> '('
+            >> num_cells_no_comma[push_trans_right(self.Lattice, self.eval, self.Args)]
+            >> ')';
 
-	 sum_string_dot_expression = str_p("sum_string_dot")
-	    >> '('
-	    >> num_cells
-	    >> expression_string[push_sum_string_dot(self.Lattice, self.eval, self.Args)]
-	    >> ')';
+         // TriangularMPO expressions
 
-	 coarse_grain_expression = str_p("coarse_grain") 
-	    >> '('
-	    >> (num_cells
-		>> expression >> ')')[push_coarse_grain(self.Lattice, self.eval, self.Args)];
+         sum_unit_expression = str_p("sum_unit")
+            >> '('
+            >> num_cells
+            >> expression_string[push_sum_unit(self.Lattice, self.eval, self.Args)]
+            >> ')';
 
-	 function_expression = eps_p(identifier >> '{')
-	    >> identifier[push_function(self.FunctionStack, self.ParameterStack)]
-	    >> parameter_list[eval_function(self.Lattice, 
-					     self.FunctionStack, 
-					     self.ParameterStack,
-					     self.eval)];
-	 
-	 operator_expression = 
-		identifier[push_identifier(self.IdentifierStack)]
-		[push_operator(self.Lattice, self.IdentifierStack, self.eval)];
-	 
-	 unary_function = 
-	    eps_p(unary_funcs_p >> '(') 
-	    >>  unary_funcs_p[push_unary<ElementType>(self.func_stack)]
-	    >>  ('(' >> expression >> ')')[eval_unary<ElementType>(self.func_stack, self.eval)];
-	 
-	 binary_function = 
-	    eps_p(self.binary_funcs_p >> '(') 
-	    >>  self.binary_funcs_p[push_binary<ElementType>(self.bin_func_stack)]
-	    >>  ('(' >> expression >> ','  >> expression >> ')')
-	    [eval_binary<ElementType>(self.bin_func_stack, self.eval)];
-	 
-	 commutator_bracket = 
-	    ('[' >> expression >> ',' >> expression >> ']')[invoke_binary<ElementType, 
-							    binary_commutator<ElementType> >(self.eval)];
-	 
-	 factor =
-	    imag
-	    |   real
-	    |   unary_function
-	    |   binary_function
-	    |   keyword_d[constants_p[push_value<ElementType>(self.eval)]]
-	    |   keyword_d[self.Arguments[push_value<ElementType>(self.eval)]]
-	    |   prod_expression
-	    |   string_expression
-	    |   prod_unit_expression
-	    |   prod_unit_r_expression
-	    |   trans_right_expression
-	    |   sum_unit_expression
-	    |   sum_kink_expression
-	    |   sum_k_expression
+         sum_kink_expression = str_p("sum_kink")
+            >> '('
+            >> num_cells
+            >> expression_string[push_sum_kink(self.Lattice, self.eval, self.Args)]
+            >> ')';
+
+         sum_k_expression = str_p("sum_k")
+            >> '('
+            >> num_cells
+            >> expression >> ','
+            >> expression_string[push_sum_k(self.Lattice, self.eval, self.Args)]
+            >> ')';
+
+         sum_string_inner_expression = str_p("sum_string_inner")
+            >> '('
+            >> num_cells
+            >> expression_string[push_sum_string_inner(self.Lattice, self.eval, self.Args)]
+            >> ')';
+
+         sum_string_dot_expression = str_p("sum_string_dot")
+            >> '('
+            >> num_cells
+            >> expression_string[push_sum_string_dot(self.Lattice, self.eval, self.Args)]
+            >> ')';
+
+         coarse_grain_expression = str_p("coarse_grain")
+            >> '('
+            >> (num_cells
+                >> expression >> ')')[push_coarse_grain(self.Lattice, self.eval, self.Args)];
+
+         function_expression = eps_p(identifier >> '{')
+            >> identifier[push_function(self.FunctionStack, self.ParameterStack)]
+            >> parameter_list[eval_function(self.Lattice,
+                                             self.FunctionStack,
+                                             self.ParameterStack,
+                                             self.eval)];
+
+         operator_expression =
+                identifier[push_identifier(self.IdentifierStack)]
+                [push_operator(self.Lattice, self.IdentifierStack, self.eval)];
+
+         unary_function =
+            eps_p(unary_funcs_p >> '(')
+            >>  unary_funcs_p[push_unary<ElementType>(self.func_stack)]
+            >>  ('(' >> expression >> ')')[eval_unary<ElementType>(self.func_stack, self.eval)];
+
+         binary_function =
+            eps_p(self.binary_funcs_p >> '(')
+            >>  self.binary_funcs_p[push_binary<ElementType>(self.bin_func_stack)]
+            >>  ('(' >> expression >> ','  >> expression >> ')')
+            [eval_binary<ElementType>(self.bin_func_stack, self.eval)];
+
+         commutator_bracket =
+            ('[' >> expression >> ',' >> expression >> ']')[invoke_binary<ElementType,
+                                                            binary_commutator<ElementType> >(self.eval)];
+
+         factor =
+            imag
+            |   real
+            |   unary_function
+            |   binary_function
+            |   keyword_d[constants_p[push_value<ElementType>(self.eval)]]
+            |   keyword_d[self.Arguments[push_value<ElementType>(self.eval)]]
+            |   prod_expression
+            |   string_expression
+            |   prod_unit_expression
+            |   prod_unit_r_expression
+            |   trans_right_expression
+            |   sum_unit_expression
+            |   sum_kink_expression
+            |   sum_k_expression
             |   coarse_grain_expression
-	    |   sum_string_inner_expression
-	    |   sum_string_dot_expression
-	    |   commutator_bracket
-	    |   '(' >> expression >> ')'
-	    |   ('-' >> factor)[do_negate<ElementType>(self.eval)]
-	    |   ('+' >> factor)
-	    |   function_expression
-	    |   operator_expression
-	    ;
-	 
-	 // power operator, next precedence, operates to the right
-	 pow_term =
-	    factor
-	    >> *(  ('^' >> pow_term)[invoke_binary<ElementType, binary_power<ElementType> >(self.eval)]
-		   )
-	    ;
-	 
-	 term =
-	    pow_term
-	    >> *(   ('*' >> pow_term)[invoke_binary<ElementType, 
-				      binary_multiplication<ElementType> >(self.eval)]
-                    |   ('/' >> pow_term)[invoke_binary<ElementType, 
-					  binary_division<ElementType> >(self.eval)]
-                    |   ('%' >> pow_term)[invoke_binary<ElementType, 
-					  binary_modulus<ElementType> >(self.eval)]
+            |   sum_string_inner_expression
+            |   sum_string_dot_expression
+            |   commutator_bracket
+            |   '(' >> expression >> ')'
+            |   ('-' >> factor)[do_negate<ElementType>(self.eval)]
+            |   ('+' >> factor)
+            |   function_expression
+            |   operator_expression
+            ;
+
+         // power operator, next precedence, operates to the right
+         pow_term =
+            factor
+            >> *(  ('^' >> pow_term)[invoke_binary<ElementType, binary_power<ElementType> >(self.eval)]
+                   )
+            ;
+
+         term =
+            pow_term
+            >> *(   ('*' >> pow_term)[invoke_binary<ElementType,
+                                      binary_multiplication<ElementType> >(self.eval)]
+                    |   ('/' >> pow_term)[invoke_binary<ElementType,
+                                          binary_division<ElementType> >(self.eval)]
+                    |   ('%' >> pow_term)[invoke_binary<ElementType,
+                                          binary_modulus<ElementType> >(self.eval)]
                     )
-	    ;
-	 
-	 expression =
-	    term
-	    >> *(  ('+' >> term)[invoke_binary<ElementType, 
-				 binary_addition<ElementType> >(self.eval)]
-		   |   ('-' >> term)[invoke_binary<ElementType, 
-				     binary_subtraction<ElementType> >(self.eval)]
-		   )
-	    >> !end_p     // skip trailing whitespace
-	    ;
+            ;
+
+         expression =
+            term
+            >> *(  ('+' >> term)[invoke_binary<ElementType,
+                                 binary_addition<ElementType> >(self.eval)]
+                   |   ('-' >> term)[invoke_binary<ElementType,
+                                     binary_subtraction<ElementType> >(self.eval)]
+                   )
+            >> !end_p     // skip trailing whitespace
+            ;
       }
-      
+
       rule<ScannerT> expression, term, factor, real, imag, operator_literal, unary_function,
-	 binary_function, bracket_expr, quantumnumber, prod_expression, sq_bracket_expr, 
-	 operator_expression, operator_bracket_sq, operator_sq_bracket, operator_bracket, operator_sq,
-	 parameter, named_parameter, parameter_list, expression_string, 
-	 sum_unit_expression, sum_kink_expression, sum_k_expression,
-	 identifier, pow_term, commutator_bracket, num_cells, num_cells_no_comma, function_expression,
-	 string_expression, prod_unit_expression, prod_unit_r_expression, trans_right_expression,
-	 sum_string_inner_expression, sum_string_dot_expression, coarse_grain_expression;
+         binary_function, bracket_expr, quantumnumber, prod_expression, sq_bracket_expr,
+         operator_expression, operator_bracket_sq, operator_sq_bracket, operator_bracket, operator_sq,
+         parameter, named_parameter, parameter_list, expression_string,
+         sum_unit_expression, sum_kink_expression, sum_k_expression,
+         identifier, pow_term, commutator_bracket, num_cells, num_cells_no_comma, function_expression,
+         string_expression, prod_unit_expression, prod_unit_r_expression, trans_right_expression,
+         sum_string_inner_expression, sum_string_dot_expression, coarse_grain_expression;
 
       rule<ScannerT> const& start() const { return expression; }
    };
-   
+
    std::stack<ElementType>& eval;
    std::stack<unary_func_type>& func_stack;
    std::stack<binary_func_type>& bin_func_stack;
@@ -757,7 +757,7 @@ binary_funcs<InfiniteLatticeParser::ElementType> InfiniteLatticeParser::binary_f
 
 InfiniteMPOElement
 ParseInfiniteOperator(InfiniteLattice const& Lattice, std::string const& Str,
-		      Function::ArgumentList const& Args)
+                      Function::ArgumentList const& Args)
 {
    typedef InfiniteLatticeParser::ElementType ElementType;
 
@@ -785,14 +785,14 @@ ParseInfiniteOperator(InfiniteLattice const& Lattice, std::string const& Str,
    char const* beg = Str.c_str();
    char const* end = beg + Str.size();
 
-   InfiniteLatticeParser Parser(ElemStack, UnaryFuncStack, BinaryFuncStack, IdentStack, 
-				FunctionStack, ParamStack, 
-				Arguments, Lattice, Args);
+   InfiniteLatticeParser Parser(ElemStack, UnaryFuncStack, BinaryFuncStack, IdentStack,
+                                FunctionStack, ParamStack,
+                                Arguments, Lattice, Args);
    try
    {
       parse_info<> info = parse(beg, Parser, space_p);
       if (!info.full)
-	 throw ParserError::AtRange("Failed to parse an expression", info.stop, end);
+         throw ParserError::AtRange("Failed to parse an expression", info.stop, end);
    }
    catch (ParserError const& p)
    {
@@ -841,7 +841,7 @@ ParseInfiniteOperatorAndLattice(std::string const& Str)
 
 ProductMPO
 ParseProductOperator(InfiniteLattice const& Lattice, std::string const& Str,
-		     Function::ArgumentList const& Args)
+                     Function::ArgumentList const& Args)
 {
    InfiniteMPO Op = ParseInfiniteOperator(Lattice, Str, Args);
    return Op.as_product_mpo();
@@ -857,7 +857,7 @@ ParseProductOperatorAndLattice(std::string const& Str)
 
 TriangularMPO
 ParseTriangularOperator(InfiniteLattice const& Lattice, std::string const& Str,
-			Function::ArgumentList const& Args)
+                        Function::ArgumentList const& Args)
 {
    InfiniteMPO Op = ParseInfiniteOperator(Lattice, Str, Args);
    return Op.as_triangular_mpo();
@@ -873,7 +873,7 @@ ParseTriangularOperatorAndLattice(std::string const& Str)
 
 std::complex<double>
 ParseInfiniteNumber(InfiniteLattice const& Lattice, std::string const& Str,
-		    Function::ArgumentList const& Args)
+                    Function::ArgumentList const& Args)
 {
    InfiniteMPO Op = ParseInfiniteOperator(Lattice, Str, Args);
    return Op.as_complex();

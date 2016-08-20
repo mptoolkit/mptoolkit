@@ -33,7 +33,7 @@
   template <class T, class U> compare_types is a traits
   class that provides static const bool equal, which
   is true if T and U are the same type, and false otherwise.
-  
+
   template <class T, class U> assert_equal_types
   produces a compile time error if T and U are not equal.
 
@@ -73,7 +73,7 @@
 #include "metautility.h"
 
 template <bool b>
-struct ct_assert 
+struct ct_assert
 {
    int assert_failed[int(b)];
 };

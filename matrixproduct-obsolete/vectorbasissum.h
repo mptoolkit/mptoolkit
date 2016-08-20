@@ -64,7 +64,7 @@ basis_truncation(VectorBasis const& B1, FwdIter KeepFirst, FwdIter KeepLast)
    typedef std::set<int>::const_iterator SetIter;
    for (unsigned k = 0; k < B1.size(); ++k)
       for (int l = 0; l < B1.dim(k); ++l)
-	 DiscardStates[k].insert(l);
+         DiscardStates[k].insert(l);
 
    // Make a pass over the kept states to get the set of kept and discarded states
    for (FwdIter I = KeepFirst; I != KeepLast; ++I)
@@ -81,13 +81,13 @@ basis_truncation(VectorBasis const& B1, FwdIter KeepFirst, FwdIter KeepLast)
    {
       if (!KeepStates[k].empty())
       {
-	 KeepSubspace[k] = Keep.size();
-	 Keep.push_back(B1[k], KeepStates[k].size());
+         KeepSubspace[k] = Keep.size();
+         Keep.push_back(B1[k], KeepStates[k].size());
       }
       if (!DiscardStates[k].empty())
       {
-	 DiscardSubspace[k] = Discard.size();
-	 Discard.push_back(B1[k], DiscardStates[k].size());
+         DiscardSubspace[k] = Discard.size();
+         Discard.push_back(B1[k], DiscardStates[k].size());
       }
    }
 
@@ -99,20 +99,20 @@ basis_truncation(VectorBasis const& B1, FwdIter KeepFirst, FwdIter KeepLast)
    for (unsigned k = 0; k < B1.size(); ++k)
    {
       if (!KeepStates[k].empty())
-	 KeepP(KeepSubspace[k], k) = 
-	    LinearAlgebra::Matrix<double>(Keep.dim(KeepSubspace[k]), B1.dim(k), 0.0);
+         KeepP(KeepSubspace[k], k) =
+            LinearAlgebra::Matrix<double>(Keep.dim(KeepSubspace[k]), B1.dim(k), 0.0);
       int i = 0;
       for (SetIter I = KeepStates[k].begin(); I != KeepStates[k].end(); ++I,++i)
       {
-	 KeepP(KeepSubspace[k], k)(i,*I) = 1.0;
+         KeepP(KeepSubspace[k], k)(i,*I) = 1.0;
       }
       if (!DiscardStates[k].empty())
-	 DiscardP(DiscardSubspace[k], k) = 
-	    LinearAlgebra::Matrix<double>(Discard.dim(DiscardSubspace[k]), B1.dim(k), 0.0);
+         DiscardP(DiscardSubspace[k], k) =
+            LinearAlgebra::Matrix<double>(Discard.dim(DiscardSubspace[k]), B1.dim(k), 0.0);
       i = 0;
       for (SetIter I = DiscardStates[k].begin(); I != DiscardStates[k].end(); ++I,++i)
       {
-	 DiscardP(DiscardSubspace[k], k)(i,*I) = 1.0;
+         DiscardP(DiscardSubspace[k], k)(i,*I) = 1.0;
       }
    }
 

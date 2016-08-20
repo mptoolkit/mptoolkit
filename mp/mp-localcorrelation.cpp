@@ -48,13 +48,13 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("real,r", prog_opt::bool_switch(&ShowRealPart),
-	  "display only the real part of the result")
-	 ("imag,i", prog_opt::bool_switch(&ShowImagPart),
-	  "display only the imaginary part of the result")
+         ("real,r", prog_opt::bool_switch(&ShowRealPart),
+          "display only the real part of the result")
+         ("imag,i", prog_opt::bool_switch(&ShowImagPart),
+          "display only the imaginary part of the result")
          ("string,s", prog_opt::value(&StringOp),
           "calculate a string correlation with the given operator S, as operator1 "
-	  "\\otimes S \\otimes S .... S \\otimes operator2")
+          "\\otimes S \\otimes S .... S \\otimes operator2")
          ("includefirst,d", prog_opt::bool_switch(&IncludeFirst),
           "when calculating a string correlation, apply the string operator also "
           "to the first site, as operator1*S")
@@ -85,10 +85,10 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (Fermionic)
       {
@@ -119,12 +119,12 @@ int main(int argc, char** argv)
       // to reproduce the old behaviour, if both ShowRealPart and ShowImagPart are false
       // we need to show both components.  Other tools would revert to showing the complex
       // number in standard C++ style (real,imag), but we never did this in the past for
-      // mp-localcorrelation (we always used two columns for the real and imag, the 
+      // mp-localcorrelation (we always used two columns for the real and imag, the
       // same format as if both --real and --imag were specified), and lets not change it now.
       if (!ShowRealPart && !ShowImagPart)
          ShowRealPart = ShowImagPart = true;
 
-      bool FermionicWarning = false;  // set to true if we have already warned the user about 
+      bool FermionicWarning = false;  // set to true if we have already warned the user about
       // a possible fermionic problem
 
       mp_pheap::InitializeTempPHeap();
@@ -154,8 +154,8 @@ int main(int argc, char** argv)
             if (!Quiet)
                std::cerr << "mp-localcorrelation: warning: string operator " << StringOp
                          << " doesn't exist at site number " << i << ", assuming identity operator instead.\n";
-            
-            ThisStringOp = Lat[i].find("I");   
+
+            ThisStringOp = Lat[i].find("I");
             CHECK(ThisStringOp != Lat[i].end());  // the identity operator should always exist
          }
 
@@ -164,8 +164,8 @@ int main(int argc, char** argv)
          for (OpMapType::iterator mI = OpMap.begin(); mI != OpMap.end(); ++mI)
          {
             mI->second = new MatrixOperator(operator_prod(herm(ThisString),
-                                                          herm(Psi.Left()), 
-                                                          *mI->second.load(), 
+                                                          herm(Psi.Left()),
+                                                          *mI->second.load(),
                                                           Psi.Left()));
          }
 
@@ -191,9 +191,9 @@ int main(int argc, char** argv)
 
 
             MatrixOperator LeftIdentity = MatrixOperator::make_identity(Psi.Left().Basis1());
-            OpMap[i] = new MatrixOperator(operator_prod(herm(MyOp), 
-                                                        herm(Psi.Left()), 
-                                                        LeftIdentity, 
+            OpMap[i] = new MatrixOperator(operator_prod(herm(MyOp),
+                                                        herm(Psi.Left()),
+                                                        LeftIdentity,
                                                         Psi.Left()));
          }
 
@@ -215,12 +215,12 @@ int main(int argc, char** argv)
                }
                else
                {
-                  Res = inner_prod(Psi.Center(), 
-                                   triple_prod(*mI->second.load(), 
-                                               Psi.Center(), 
+                  Res = inner_prod(Psi.Center(),
+                                   triple_prod(*mI->second.load(),
+                                               Psi.Center(),
                                                herm(F)));
                }
-               std::cout << std::setw(5) << Lat.coordinate_at_site(mI->first) << "   " 
+               std::cout << std::setw(5) << Lat.coordinate_at_site(mI->first) << "   "
                          << std::setw(5) << Lat.coordinate_at_site(i+1);
                if (ShowRealPart)
                   std::cout << "   " << std::setw(18) << Res.real();

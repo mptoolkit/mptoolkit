@@ -26,10 +26,10 @@
 //   MatrixOperator P0 = (5.0/12.0)*MS + (-1.0/6.0) * MQ + (5.0/9.0) * I;
 //   TRACE(triple_prod(U, P0, herm(U)));
 
-LinearAlgebra::Matrix<std::complex<double> > 
+LinearAlgebra::Matrix<std::complex<double> >
 ToMatrix(MatrixOperator const& M)
 {
-   return LinearAlgebra::transform(M.data(), 
+   return LinearAlgebra::transform(M.data(),
        LinearAlgebra::Trace<LinearAlgebra::Matrix<std::complex<double> > >());
 }
 
@@ -103,7 +103,7 @@ int main()
    double c          = (1/25.0)   * p0 + (3/25.0)  * p1 + (1/5.0)    * p2 + (7/25.0)  * p3 + (9/25.0)    * p4;
 
    TRACE(Dipole)(Quadrapole)(Hexapole)(Octapole)(c);
-   
+
    LinearAlgebra::Matrix<double> Mat = Dipole*MSd + Quadrapole*MQd + Hexapole*MTd + Octapole*MFd + c*RHS;
 
    TRACE(Mat);

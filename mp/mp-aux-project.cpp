@@ -53,11 +53,11 @@ ConstructProjectorOntoPositiveDiagonal(MatrixOperator const& M)
       MatrixOperator::const_inner_iterator I = iterate_at(M.data(), i,i);
       if (I)
       {
-	 for (unsigned j = 0; j < size1(*I); ++j)
-	 {
-	    if ((*I)(j,j).real() > 0)
-	       KeptStates[i].push_back(j);
-	 }
+         for (unsigned j = 0; j < size1(*I); ++j)
+         {
+            if ((*I)(j,j).real() > 0)
+               KeptStates[i].push_back(j);
+         }
       }
    }
 
@@ -67,7 +67,7 @@ ConstructProjectorOntoPositiveDiagonal(MatrixOperator const& M)
    {
       // Skip over any sectors where we have no kept states
       if (!KeptStates[i].empty())
-	 B.push_back(M.Basis1()[i], KeptStates[i].size());
+         B.push_back(M.Basis1()[i], KeptStates[i].size());
    }
 
    // Assemble the projector
@@ -77,20 +77,20 @@ ConstructProjectorOntoPositiveDiagonal(MatrixOperator const& M)
    {
       if (!KeptStates[i].empty())
       {
-	 LinearAlgebra::Matrix<std::complex<double>> m(KeptStates[i].size(), M.Basis1().dim(i), 0.0);
-	 for (unsigned k = 0; k < KeptStates[i].size(); ++k)
-	 {
-	    m(k,KeptStates[i][k]) = 1.0;
-	 }
-	 U(n,i) = m;
-	 ++n;
+         LinearAlgebra::Matrix<std::complex<double>> m(KeptStates[i].size(), M.Basis1().dim(i), 0.0);
+         for (unsigned k = 0; k < KeptStates[i].size(); ++k)
+         {
+            m(k,KeptStates[i][k]) = 1.0;
+         }
+         U(n,i) = m;
+         ++n;
       }
    }
 
    U.check_structure();
    return U;
 }
-      
+
 
 template <typename Func>
 struct PackApplyFunc
@@ -102,7 +102,7 @@ struct PackApplyFunc
       StateComponent x = Pack.unpack(In);
       x = f(x);
       Pack.pack(x, Out);
-   } 
+   }
    PackStateComponent const& Pack;
    Func f;
 };
@@ -116,7 +116,7 @@ MakePackApplyFunc(PackStateComponent const& Pack_, Func f_)
 
 std::tuple<std::complex<double>, int, StateComponent>
 get_left_eigenvector(LinearWavefunction const& Psi1, QuantumNumber const& QShift1,
-		     LinearWavefunction const& Psi2, QuantumNumber const& QShift2, 
+                     LinearWavefunction const& Psi2, QuantumNumber const& QShift2,
                      ProductMPO const& StringOp,
                      double tol = 1E-14, int Verbose = 0)
 {
@@ -129,15 +129,15 @@ get_left_eigenvector(LinearWavefunction const& Psi1, QuantumNumber const& QShift
    int NumEigen = 1;
 
    std::vector<std::complex<double> > OutVec;
-      LinearAlgebra::Vector<std::complex<double> > LeftEigen = 
+      LinearAlgebra::Vector<std::complex<double> > LeftEigen =
          LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
-							    LeftMultiplyOperator(Psi1, QShift1,
-										 StringOp, 
-										 Psi2, QShift2, Length, Verbose-2)),
-					  n, NumEigen, tol, &OutVec, ncv, false, Verbose);
+                                                            LeftMultiplyOperator(Psi1, QShift1,
+                                                                                 StringOp,
+                                                                                 Psi2, QShift2, Length, Verbose-2)),
+                                          n, NumEigen, tol, &OutVec, ncv, false, Verbose);
 
    StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
-      
+
    return std::make_tuple(LeftEigen[0], Length, LeftVector);
 }
 
@@ -163,10 +163,10 @@ int main(int argc, char** argv)
           "a temporary data file for workspace (path set by environment MP_BINPATH)")
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
-	 ("force,f", prog_opt::bool_switch(&Force),
-	  "allow overwriting the output file, if it already exists")
-	 ("quiet,q", prog_opt::bool_switch(&Quiet), "suppress informational preamble about each operator")
-	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
+         ("force,f", prog_opt::bool_switch(&Force),
+          "allow overwriting the output file, if it already exists")
+         ("quiet,q", prog_opt::bool_switch(&Quiet), "suppress informational preamble about each operator")
+         ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
          ;
 
       prog_opt::options_description hidden("Hidden options");
@@ -188,10 +188,10 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || vm.count("psi2") < 1)
       {
@@ -213,15 +213,15 @@ int main(int argc, char** argv)
 
 
       if (Verbose > 0)
-	 std::cout << "Loading wavefunction..." << std::endl;
+         std::cout << "Loading wavefunction..." << std::endl;
 
       pvalue_ptr<MPWavefunction> PsiPtr;
       if (InputFile == OutputFile)
-	 PsiPtr = pheap::OpenPersistent(InputFile.c_str(), mp_pheap::CacheSize());
+         PsiPtr = pheap::OpenPersistent(InputFile.c_str(), mp_pheap::CacheSize());
       else
       {
-	 pheap::Initialize(OutputFile, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
-	 PsiPtr = pheap::ImportHeap(InputFile);
+         pheap::Initialize(OutputFile, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
+         PsiPtr = pheap::ImportHeap(InputFile);
       }
 
       InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
@@ -240,7 +240,7 @@ int main(int argc, char** argv)
       ProductMPO Op2 = ParseProductOperatorAndLattice(Operator2).first;
 
       if (Verbose > 0)
-	 std::cout << "Calculating eigenmatrix of operator 1..." << std::endl;
+         std::cout << "Calculating eigenmatrix of operator 1..." << std::endl;
 
       std::complex<double> e1;
       StateComponent v1;
@@ -259,12 +259,12 @@ int main(int argc, char** argv)
 
       if (!Quiet)
       {
-	 std::cout << "#Operator " << Operator1 << '\n'
-		   << "#eigenvalue = " << e1 << '\n';
+         std::cout << "#Operator " << Operator1 << '\n'
+                   << "#eigenvalue = " << e1 << '\n';
       }
 
       if (Verbose > 0)
-	 std::cout << "Calculating eigenmatrix of operator 2..." << std::endl;
+         std::cout << "Calculating eigenmatrix of operator 2..." << std::endl;
 
       std::complex<double> e2;
       StateComponent v2;
@@ -282,12 +282,12 @@ int main(int argc, char** argv)
 
       if (!Quiet)
       {
-	 std::cout << "#Operator " << Operator2 << '\n'
-		   << "#eigenvalue = " << e2 << '\n';
+         std::cout << "#Operator " << Operator2 << '\n'
+                   << "#eigenvalue = " << e2 << '\n';
       }
 
       if (Verbose > 0)
-	 std::cout << "Calculating commutator..." << std::endl;
+         std::cout << "Calculating commutator..." << std::endl;
 
       // A^\dagger B^\dagger A B
       MatrixOperator U = scalar_prod(herm(v1), operator_prod(herm(v2), v1, v2));
@@ -296,30 +296,30 @@ int main(int argc, char** argv)
       // construct the projector onto the subspace
       MatrixOperator P = 0.5 * (U + Sign * MatrixOperator::make_identity(U.Basis1()));
 
-      
+
 
 #else
       // project onto the parts of U that are positive
       if (Verbose > 0)
-	 std::cout << "Calculating projector..." << std::endl;
+         std::cout << "Calculating projector..." << std::endl;
       MatrixOperator P = ConstructProjectorOntoPositiveDiagonal(U);
 #endif
 
       if (!Quiet)
-	 std::cout << "Number of states in projected basis: " << P.Basis1().total_dimension() << std::endl;
-      
+         std::cout << "Number of states in projected basis: " << P.Basis1().total_dimension() << std::endl;
+
       // apply the projector
       Psi1.set_front(prod(P, Psi1.get_front()));
       Psi1.set_back(prod(Psi1.get_back(), herm(P)));
 
       // save the wavefunction
       if (Verbose > 0)
-	 std::cout << "Orthogonalizing wavefunction..." << std::endl;
+         std::cout << "Orthogonalizing wavefunction..." << std::endl;
       PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::Construct(Psi1, Psi.qshift(), Verbose);
       PsiPtr.mutate()->AppendHistory(EscapeCommandline(argc, argv));
 
       if (Verbose > 0)
-	 std::cout << "Finished." << std::endl;
+         std::cout << "Finished." << std::endl;
 
       pheap::ShutdownPersistent(PsiPtr);
    }

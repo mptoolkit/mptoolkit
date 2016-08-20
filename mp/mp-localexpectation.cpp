@@ -69,8 +69,8 @@ int main(int argc, char** argv)
          MatrixOperator LeftIdentity = MatrixOperator::make_identity(Psi.Left().Basis1());
          MatrixOperator x = operator_prod(herm(MyOp), herm(Psi.Left()), LeftIdentity, Psi.Left());
          complex Res = inner_prod(Psi.Center(), x * Psi.Center());
-         std::cout << std::setw(5) << Lat.coordinate_at_site(i) << "   " 
-                   << std::setw(18) << Res.real() << "   " 
+         std::cout << std::setw(5) << Lat.coordinate_at_site(i) << "   "
+                   << std::setw(18) << Res.real() << "   "
                    << std::setw(18) << Res.imag() << '\n';
       }
       if (i != LastSite-1)
@@ -85,8 +85,8 @@ int main(int argc, char** argv)
       MatrixOperator Ident = MatrixOperator::make_identity(Psi.Right().Basis2());
       MatrixOperator x = operator_prod(MyOp, Psi.Right(), Ident, herm(Psi.Right()));
       complex Res = inner_prod(Psi.Center() * x, Psi.Center());
-      std::cout << std::setw(5) << Lat.coordinate_at_site(LastSite) << "   " 
-                << std::setw(18) << Res.real() << "   " 
+      std::cout << std::setw(5) << Lat.coordinate_at_site(LastSite) << "   "
+                << std::setw(18) << Res.real() << "   "
                 << std::setw(18) << Res.imag() << '\n';
    }
 

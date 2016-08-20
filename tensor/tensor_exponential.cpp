@@ -45,26 +45,26 @@ Exponentiate(IrredTensor<std::complex<double>, BasisList, BasisList> const& m)
       LinearAlgebra::Matrix<std::complex<double> > M(LinearMap.size(), LinearMap.size(), 0.0);
       for (const_iterator<TensorType>::type I = iterate(m); I; ++I)
       {
-	 if (m.Basis1()[I.index()] != *Q)
-	    continue;
-	 for (const_inner_iterator<TensorType>::type J = iterate(I); J; ++J)
-	 {
-	    if (m.Basis2()[J.index2()] != *Q)
-	       continue;
+         if (m.Basis1()[I.index()] != *Q)
+            continue;
+         for (const_inner_iterator<TensorType>::type J = iterate(I); J; ++J)
+         {
+            if (m.Basis2()[J.index2()] != *Q)
+               continue;
 
-	    M(LinearMap[J.index1()], LinearMap[J.index2()]) = *J;
-	 }
+            M(LinearMap[J.index1()], LinearMap[J.index2()]) = *J;
+         }
       }
 
       M = LinearAlgebra::Exponentiate(1.0, M);
       for (std::map<int, int>::const_iterator I = LinearMap.begin(); I != LinearMap.end(); ++I)
       {
-	 for (std::map<int, int>::const_iterator J = LinearMap.begin(); J != LinearMap.end(); ++J)
-	 {
-	    std::complex<double> x = M(I->second, J->second);
-	    if (LinearAlgebra::norm_frob(x) > 1e-14)
-	       Result(I->first, J->first) = x;
-	 }
+         for (std::map<int, int>::const_iterator J = LinearMap.begin(); J != LinearMap.end(); ++J)
+         {
+            std::complex<double> x = M(I->second, J->second);
+            if (LinearAlgebra::norm_frob(x) > 1e-14)
+               Result(I->first, J->first) = x;
+         }
       }
    }
 
@@ -80,7 +80,7 @@ exp(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, Vector
    if (!is_regular_basis(m.Basis1()))
    {
       IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis> X
-	 = Regularize(m.Basis1());
+         = Regularize(m.Basis1());
 
       return triple_prod(herm(X), exp(triple_prod(X, m, herm(X))), X);
    }
@@ -92,13 +92,13 @@ exp(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, Vector
    {
       if (!iterate_at(Result.data(), i,i))
       {
-	 int Dim = Result.Basis1().dim(i);
-	 // element is zero, so the exponential is the identity
-	 Result.data()(i,i) = LinearAlgebra::DiagonalMatrix<double>(Dim, Dim, 1.0);
+         int Dim = Result.Basis1().dim(i);
+         // element is zero, so the exponential is the identity
+         Result.data()(i,i) = LinearAlgebra::DiagonalMatrix<double>(Dim, Dim, 1.0);
       }
       else
       {
-	 Result.data()(i,i) = LinearAlgebra::Exponentiate(1.0, Result.data()(i,i));
+         Result.data()(i,i) = LinearAlgebra::Exponentiate(1.0, Result.data()(i,i));
       }
    }
 

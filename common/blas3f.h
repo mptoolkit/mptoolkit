@@ -46,75 +46,75 @@ using namespace Fortran;
 // real
 
 void dgemm(char transa, char transb, integer m, integer n, integer k,
-	   double alpha, double const* a, integer lda, double const* b, 
-	   integer ldb, double beta, double* restrict c, integer ldc);
-    
+           double alpha, double const* a, integer lda, double const* b,
+           integer ldb, double beta, double* restrict c, integer ldc);
+
 void dtrsm(char *side, char *uplo, char *transa, char *diag,
-	   integer *m, integer *n, double *alpha, const double *A, integer *lda,
-	   const double *B, integer *ldb);
+           integer *m, integer *n, double *alpha, const double *A, integer *lda,
+           const double *B, integer *ldb);
 
 void dtrmm(char *side, char *uplo, char *transa, char *diag,
-	   integer *m, integer *n, double *alpha, const double *A, integer *lda,
-	   const double *B, integer *ldb);
+           integer *m, integer *n, double *alpha, const double *A, integer *lda,
+           const double *B, integer *ldb);
 
-void dsymm(char *side, char *uplo, integer *m, integer *n, 
-	   double *alpha, const double *A, integer *lda, const double *B, 
-	   integer *ldb, double *beta, double *C, integer *ldc);
+void dsymm(char *side, char *uplo, integer *m, integer *n,
+           double *alpha, const double *A, integer *lda, const double *B,
+           integer *ldb, double *beta, double *C, integer *ldc);
 
-void dsyrk(char *uplo, char *transa, integer *n, integer *k, 
-	   double *alpha, double *A, integer *lda, double *beta, double *C, 
-	   integer *ldc);
+void dsyrk(char *uplo, char *transa, integer *n, integer *k,
+           double *alpha, double *A, integer *lda, double *beta, double *C,
+           integer *ldc);
 
-void dsyr2k(char *uplo, char *transa, integer *n, integer *k, 
-	    double *alpha, double *A, integer *lda, double *B, integer *ldb,
-	    double *beta, double *C, integer *ldc);
+void dsyr2k(char *uplo, char *transa, integer *n, integer *k,
+            double *alpha, double *A, integer *lda, double *B, integer *ldb,
+            double *beta, double *C, integer *ldc);
 
 
 // complex
 
 void zgemm(char transa, char transb, integer m, integer n, integer k,
-	   std::complex<double> alpha, std::complex<double> const* a, integer lda, 
-	   std::complex<double> const* b, integer ldb, std::complex<double> beta, 
-	   std::complex<double>* restrict c, integer ldc);
+           std::complex<double> alpha, std::complex<double> const* a, integer lda,
+           std::complex<double> const* b, integer ldb, std::complex<double> beta,
+           std::complex<double>* restrict c, integer ldc);
 
 // the raw functions are in their own namespace, the wrapper functions call these.
-namespace raw  
+namespace raw
 {
 using Fortran::complex;
 extern "C"
 {
-   void F77NAME(dgemm)(char const* transa, char const* transb, integer const* m, integer const* n, 
-		       integer const* k,
-		       double const* alpha, double const* a, integer const* lda, double const* b, 
-		       integer const* ldb, double const* beta, double* restrict c, integer const* ldc);
-    
+   void F77NAME(dgemm)(char const* transa, char const* transb, integer const* m, integer const* n,
+                       integer const* k,
+                       double const* alpha, double const* a, integer const* lda, double const* b,
+                       integer const* ldb, double const* beta, double* restrict c, integer const* ldc);
+
    void F77NAME(dtrsm)(char *side, char *uplo, char *transa, char *diag,
-		       integer *m, integer *n, double *alpha, const double *A, integer *lda,
-		       const double *B, integer *ldb);
+                       integer *m, integer *n, double *alpha, const double *A, integer *lda,
+                       const double *B, integer *ldb);
 
    void F77NAME(dtrmm)(char *side, char *uplo, char *transa, char *diag,
-		       integer *m, integer *n, double *alpha, const double *A, integer *lda,
-		       const double *B, integer *ldb);
+                       integer *m, integer *n, double *alpha, const double *A, integer *lda,
+                       const double *B, integer *ldb);
 
-   void F77NAME(dsymm)(char *side, char *uplo, integer *m, integer *n, 
-		       double *alpha, const double *A, integer *lda, const double *B, 
-		       integer *ldb, double *beta, double *C, integer *ldc);
+   void F77NAME(dsymm)(char *side, char *uplo, integer *m, integer *n,
+                       double *alpha, const double *A, integer *lda, const double *B,
+                       integer *ldb, double *beta, double *C, integer *ldc);
 
-   void F77NAME(dsyrk)(char *uplo, char *transa, integer *n, integer *k, 
-		       double *alpha, double *A, integer *lda, double *beta, double *C, 
-		       integer *ldc);
+   void F77NAME(dsyrk)(char *uplo, char *transa, integer *n, integer *k,
+                       double *alpha, double *A, integer *lda, double *beta, double *C,
+                       integer *ldc);
 
-   void F77NAME(dsyr2k)(char *uplo, char *transa, integer *n, integer *k, 
-			double *alpha, double *A, integer *lda, double *B, integer *ldb,
-			double *beta, double *C, integer *ldc);
+   void F77NAME(dsyr2k)(char *uplo, char *transa, integer *n, integer *k,
+                        double *alpha, double *A, integer *lda, double *B, integer *ldb,
+                        double *beta, double *C, integer *ldc);
 
    // complex
 
-   void F77NAME(zgemm)(char const* transa, char const* transb, 
-		       integer const* m, integer const* n, integer const* k,
-		       std::complex<double> const* alpha, std::complex<double> const* a, integer const* lda, 
-		       std::complex<double> const* b, integer const* ldb, std::complex<double> const* beta, 
-		       std::complex<double>* restrict c, integer const* ldc);
+   void F77NAME(zgemm)(char const* transa, char const* transb,
+                       integer const* m, integer const* n, integer const* k,
+                       std::complex<double> const* alpha, std::complex<double> const* a, integer const* lda,
+                       std::complex<double> const* b, integer const* ldb, std::complex<double> const* beta,
+                       std::complex<double>* restrict c, integer const* ldc);
 
 
 } // extern "C"
@@ -124,18 +124,18 @@ extern "C"
 #if defined(DEBUG_DGEMM)
 namespace DGS
 {
-   extern char transa; 
-   extern char transb; 
-   extern integer m; 
-   extern integer n; 
+   extern char transa;
+   extern char transb;
+   extern integer m;
+   extern integer n;
    extern integer k;
-   extern double alpha; 
-   extern double const* a; 
-   extern integer lda; 
-   extern double const* b; 
-   extern integer ldb; 
-   extern double beta; 
-   extern double const* c; 
+   extern double alpha;
+   extern double const* a;
+   extern integer lda;
+   extern double const* b;
+   extern integer ldb;
+   extern double beta;
+   extern double const* c;
    extern integer ldc;
 
    void DebugPrintDgemm();
@@ -147,8 +147,8 @@ namespace DGS
 // real
 
 inline void dgemm(char transa, char transb, integer m, integer n, integer k,
-		  double alpha, double const* a, integer lda, double const* b, 
-		  integer ldb, double beta, double* restrict c, integer ldc)
+                  double alpha, double const* a, integer lda, double const* b,
+                  integer ldb, double beta, double* restrict c, integer ldc)
 {
    TRACE_BLAS3("BLAS3: dgemm")(transa)(transb)(m)(n)(k)(alpha)(a)(lda)(b)(ldb)(beta)(c)(ldc);
 #if defined(DEBUG_DGEMM)
@@ -171,36 +171,36 @@ inline void dgemm(char transa, char transb, integer m, integer n, integer k,
 }
 
 inline void dtrsm(char *side, char *uplo, char *transa, char *diag,
-		  integer *m, integer *n, double *alpha, const double *A, integer *lda,
-		  const double *B, integer *ldb)
+                  integer *m, integer *n, double *alpha, const double *A, integer *lda,
+                  const double *B, integer *ldb)
 {
     raw::F77NAME(dtrsm)(side, uplo, transa, diag, m, n, alpha, A, lda, B, ldb);
 }
 
 inline void dtrmm(char *side, char *uplo, char *transa, char *diag,
-		  integer *m, integer *n, double *alpha, const double *A, integer *lda,
-		  const double *B, integer *ldb)
+                  integer *m, integer *n, double *alpha, const double *A, integer *lda,
+                  const double *B, integer *ldb)
 {
    raw::F77NAME(dtrmm)(side, uplo, transa, diag, m, n, alpha, A, lda, B, ldb);
 }
 
-inline void dsymm(char *side, char *uplo, integer *m, integer *n, 
-		  double *alpha, const double *A, integer *lda, const double *B, 
-		  integer *ldb, double *beta, double *C, integer *ldc)
+inline void dsymm(char *side, char *uplo, integer *m, integer *n,
+                  double *alpha, const double *A, integer *lda, const double *B,
+                  integer *ldb, double *beta, double *C, integer *ldc)
 {
    raw::F77NAME(dsymm)(side, uplo, m, n, alpha, A, lda, B, ldb, beta, C, ldc);
 }
 
-inline void dsyrk(char *uplo, char *transa, integer *n, integer *k, 
-		  double *alpha, double *A, integer *lda, double *beta, double *C, 
-		  integer *ldc)
+inline void dsyrk(char *uplo, char *transa, integer *n, integer *k,
+                  double *alpha, double *A, integer *lda, double *beta, double *C,
+                  integer *ldc)
 {
    raw::F77NAME(dsyrk)(uplo, transa, n, k, alpha, A, lda, beta, C, ldc);
 }
 
-inline void dsyr2k(char *uplo, char *transa, integer *n, integer *k, 
-		   double *alpha, double *A, integer *lda, double *B, integer *ldb,
-		   double *beta, double *C, integer *ldc)
+inline void dsyr2k(char *uplo, char *transa, integer *n, integer *k,
+                   double *alpha, double *A, integer *lda, double *B, integer *ldb,
+                   double *beta, double *C, integer *ldc)
 {
    raw::F77NAME(dsyr2k)(uplo, transa, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
 }
@@ -209,19 +209,19 @@ inline void dsyr2k(char *uplo, char *transa, integer *n, integer *k,
 
 inline
 void zgemm(char transa, char transb, integer m, integer n, integer k,
-	   std::complex<double> alpha, std::complex<double> const* a, integer lda, 
-	   std::complex<double> const* b, integer ldb, std::complex<double> beta, 
-	   std::complex<double>* restrict c, integer ldc)
+           std::complex<double> alpha, std::complex<double> const* a, integer lda,
+           std::complex<double> const* b, integer ldb, std::complex<double> beta,
+           std::complex<double>* restrict c, integer ldc)
 {
    //   using Fortran::complex;
    TRACE_BLAS3("BLAS3: zgemm")(transa)(transb)(m)(n)(k)(alpha)(a)(lda)(b)(ldb)(beta)(c)(ldc);
-   raw::F77NAME(zgemm)(&transa, &transb, &m, &n, &k, 
+   raw::F77NAME(zgemm)(&transa, &transb, &m, &n, &k,
                        &alpha, a, &lda, b, &ldb, &beta, c, &ldc);
-   //		       reinterpret_cast<complex const*>(&alpha), 
-   //		       reinterpret_cast<complex const*>(a), &lda, 
-   //		       reinterpret_cast<complex const*>(b), &ldb, 
-   //		       reinterpret_cast<complex const*>(&beta), 
-   //		       reinterpret_cast<complex*>(c), &ldc);
+   //                  reinterpret_cast<complex const*>(&alpha),
+   //                  reinterpret_cast<complex const*>(a), &lda,
+   //                  reinterpret_cast<complex const*>(b), &ldb,
+   //                  reinterpret_cast<complex const*>(&beta),
+   //                  reinterpret_cast<complex*>(c), &ldc);
 }
 
 } // namespace BLAS
@@ -650,7 +650,7 @@ Example
 ssymm, dsymm,   csymm, zsymm, chemm, zhemm - Matrix-matrix product and addition for a symmetric or hermitian matrix
 
 FORMAT
-  {S,D,C,Z}SYMM ( side, uplo,   m, n, alpha, a, lda, b, ldb, beta, c, ldc ) 
+  {S,D,C,Z}SYMM ( side, uplo,   m, n, alpha, a, lda, b, ldb, beta, c, ldc )
   {C,Z}HEMM ( side, uplo, m, n, alpha, a, lda, b, ldb, beta, c, ldc )
 
 Arguments
@@ -747,7 +747,7 @@ Arguments
 
 Description
   These routines compute a matrix-matrix product and addition for a real or
-  complex symmetric matrix or a complex Hermitian matrix: 
+  complex symmetric matrix or a complex Hermitian matrix:
   C  = alpha * A*B + beta*C
   alpha and beta are scalars, A is the symmetric or Hermitian matrix, and B
   and C are m by n matrices.

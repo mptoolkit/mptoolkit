@@ -68,13 +68,13 @@ class Appearance
       enum ShadingTypes {Constant, Flat, Smooth, CSmooth};
 
       Property<bool>   ShowFace;        // true = draw faces
-      Property<bool>   ShowEdge;        // true = draw edges   
-      Property<bool>   ShowVECT;        // true = show VECTs    
-      Property<bool>   ShowTransparent; // true = show transparency   
-      Property<bool>   ShowNormal;      // true = show surface normals 
+      Property<bool>   ShowEdge;        // true = draw edges
+      Property<bool>   ShowVECT;        // true = show VECTs
+      Property<bool>   ShowTransparent; // true = show transparency
+      Property<bool>   ShowNormal;      // true = show surface normals
       Property<double> NormalLength;    // length of surface normals in object coords
       Property<bool>   Evert;           // true = every normals to always face camera
-      Property<bool>   ShowTextures;    // true = show textures  
+      Property<bool>   ShowTextures;    // true = show textures
       Property<bool>   BackCull;        // true = cull backfaces
       Property<bool>   HandleConcave;   // true = handle concave shapes
       Property<bool>   ShadeLines;      // true = shade lines as if they were cylinders (GL only)
@@ -84,20 +84,20 @@ class Appearance
 
       struct MaterialProperties
       {
-	 Property<double> AmbientReflection;  // coefficient of ambient reflection
-	 Property<Color>  AmbientColor;      // ambient color - alpha is ignored
-	 Property<double> DiffuseReflection; // coefficient of diffuse reflection
-	 Property<Color>  DiffuseColor;      // diffuse color - alpha is ignored
-	 Property<double> SpecularReflection; // coefficient of specular reflection
-	 Property<Color>  SpecularColor;      // specular color - alpha is ignored
-	 Property<double> Shininess;          // specular exponent - larger values = sharper highlights
-	 Property<Color>  BackDiffuseColor;   // back-face color for two-sided surfaces
-	 Property<double> Alpha;              // transparancy.  1 = opaque, 0 = transparent
+         Property<double> AmbientReflection;  // coefficient of ambient reflection
+         Property<Color>  AmbientColor;      // ambient color - alpha is ignored
+         Property<double> DiffuseReflection; // coefficient of diffuse reflection
+         Property<Color>  DiffuseColor;      // diffuse color - alpha is ignored
+         Property<double> SpecularReflection; // coefficient of specular reflection
+         Property<Color>  SpecularColor;      // specular color - alpha is ignored
+         Property<double> Shininess;          // specular exponent - larger values = sharper highlights
+         Property<Color>  BackDiffuseColor;   // back-face color for two-sided surfaces
+         Property<double> Alpha;              // transparancy.  1 = opaque, 0 = transparent
 
-	 Property<Color>  EdgeColor;          // line & edge color
-	 Property<Color>  NormalColor;        // color for surface normal vectors
+         Property<Color>  EdgeColor;          // line & edge color
+         Property<Color>  NormalColor;        // color for surface normal vectors
 
-	 bool empty() const;
+         bool empty() const;
       };
 
       MaterialProperties Material;

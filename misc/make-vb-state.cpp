@@ -43,7 +43,7 @@ int main(int argc, char** argv)
    OperatorAtSite<OperatorList const, int> Sp(*System, "Spp");
    OperatorAtSite<OperatorList const, int> Sm(*System, "Smm");
 
-   // here, Left denotes the set in Omega, Right denotes \bar\Omega 
+   // here, Left denotes the set in Omega, Right denotes \bar\Omega
    MPOperator SPlusLeft, SPlusRight, SMinusLeft, SMinusRight;
 
    for (int i = 1; i <= NumSitesInOmega; ++i)

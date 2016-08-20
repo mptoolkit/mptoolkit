@@ -45,8 +45,8 @@ struct SuperblockMultiply
    typedef MatrixOperator const& argument_type;
 
    SuperblockMultiply(SimpleOperator const& Op_,
-		      MPStateComponent const& Left_,
-		      MPStateComponent const& Right_)
+                      MPStateComponent const& Left_,
+                      MPStateComponent const& Right_)
       : Op(Op_), Left(Left_), Right(Right_) {}
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
@@ -120,9 +120,9 @@ double SolverHermitian::Solve(int MaxIterations)
    int Iter = MaxIterations;
    double Tol = 1E-10;
 
-   ConjugateGradient(x.Center(), 
+   ConjugateGradient(x.Center(),
                      SuperblockMultiply(conj(A.Center()),
-                                        x_A_x.Left(), 
+                                        x_A_x.Left(),
                                         x_A_x.Right()),
                      yprime,
                      Iter, Tol,
@@ -140,9 +140,9 @@ double SolverHermitian::SolveLeft(int MaxIterations, int MaxStates)
    int Iter = MaxIterations;
    double Tol = 1E-10;
 
-   MatrixOperator Ax = operator_prod(conj(A.Center()), 
-                                     x_A_x.Left(), 
-                                     x.Center(), 
+   MatrixOperator Ax = operator_prod(conj(A.Center()),
+                                     x_A_x.Left(),
+                                     x.Center(),
                                      herm(x_A_x.Right()));
 
    MatrixOperator Rho_Ax = scalar_prod(Ax, herm(Ax));
@@ -158,9 +158,9 @@ double SolverHermitian::SolveLeft(int MaxIterations, int MaxStates)
    U = scalar_prod(herm(U), U);
    MatrixOperator Yp = U * Ax;
 
-   ConjugateGradient(x.Center(), 
+   ConjugateGradient(x.Center(),
                      SuperblockMultiply(conj(A.Center()),
-                                        x_A_x.Left(), 
+                                        x_A_x.Left(),
                                         x_A_x.Right()),
                      Yp,
                      Iter, Tol,
@@ -178,9 +178,9 @@ double SolverHermitian::SolveRight(int MaxIterations, int MaxStates)
    int Iter = MaxIterations;
    double Tol = 1E-10;
 
-   MatrixOperator Ax = operator_prod(conj(A.Center()), 
-                                     x_A_x.Left(), 
-                                     x.Center(), 
+   MatrixOperator Ax = operator_prod(conj(A.Center()),
+                                     x_A_x.Left(),
+                                     x.Center(),
                                      herm(x_A_x.Right()));
 
    MatrixOperator Rho_Ax = scalar_prod(herm(Ax), Ax);
@@ -195,9 +195,9 @@ double SolverHermitian::SolveRight(int MaxIterations, int MaxStates)
    U = scalar_prod(herm(U), U);
    MatrixOperator Yp = Ax * U;
 
-   ConjugateGradient(x.Center(), 
+   ConjugateGradient(x.Center(),
                      SuperblockMultiply(conj(A.Center()),
-                                        x_A_x.Left(), 
+                                        x_A_x.Left(),
                                         x_A_x.Right()),
                      Yp,
                      Iter, Tol,
@@ -209,10 +209,10 @@ double SolverHermitian::SolveRight(int MaxIterations, int MaxStates)
 
 std::complex<double> SolverHermitian::Overlap() const
 {
-   return inner_prod(operator_prod(A.Center(), 
-                                   x_A_x.Left(), 
-                                   x.Center(), 
-                                   herm(x_A_x.Right())), 
+   return inner_prod(operator_prod(A.Center(),
+                                   x_A_x.Left(),
+                                   x.Center(),
+                                   herm(x_A_x.Right())),
                      yprime);
 }
 
@@ -257,7 +257,7 @@ int main(int argc, char** argv)
       TruncationInfo States = solver.TruncateLeft(MaxStates, CFactor);
       TRACE(solver.ResidualNorm());
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m << std::endl;
+                << ") " << E << ' ' << States.m << std::endl;
    }
 
    // sweep right
@@ -266,7 +266,7 @@ int main(int argc, char** argv)
 
       if (solver.RightSize() == 22 && !First)
       {
-         
+
          for (int i = 0; i < 10; ++i)
          {
             TRACE(solver.ResidualNorm());
@@ -279,7 +279,7 @@ int main(int argc, char** argv)
             TRACE(solver.ResidualNorm());
             TruncationInfo States = solver.TruncateLeft(MaxStates, CFactor);
             TRACE(solver.ResidualNorm());
-            
+
             std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
                       << ") " << E << ' ' << States.m << std::endl;
 
@@ -347,7 +347,7 @@ int main(int argc, char** argv)
       TRACE(solver.ResidualNorm());
 
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m << ' ' << States.trunc << std::endl;
+                << ") " << E << ' ' << States.m << ' ' << States.trunc << std::endl;
    }
    First = false;
 
@@ -356,7 +356,7 @@ int main(int argc, char** argv)
       double E = solver.Solve(NumIter);
       TruncationInfo States = solver.TruncateRight(MaxStates, CFactor);
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m << ' ' << States.trunc << std::endl;
+                << ") " << E << ' ' << States.m << ' ' << States.trunc << std::endl;
    }
 
    // sweep left
@@ -371,7 +371,7 @@ int main(int argc, char** argv)
       TruncationInfo States = solver.TruncateRight(MaxStates, CFactor);
 
       std::cout << '(' << solver.LeftSize() << ',' << solver.RightSize()
-		<< ") " << E << ' ' << States.m << ' ' << States.trunc << std::endl;
+                << ") " << E << ' ' << States.m << ' ' << States.trunc << std::endl;
    }
 
    }

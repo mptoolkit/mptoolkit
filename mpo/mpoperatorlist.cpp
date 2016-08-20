@@ -27,10 +27,10 @@ OperatorList::OperatorList(Lattice const& L_) : L(L_)
    {
       std::string Coords = '(' + L.Coords(i) + ')';
       for (SiteBlock::const_iterator I = L.BlockAtSite(i).begin();
-	   I != L.BlockAtSite(i).end(); ++I)
+           I != L.BlockAtSite(i).end(); ++I)
       {
-	 if (I->first == "I") continue;  // don't bother adding the identity operator!
-	 Data[I->first + Coords] = CreateMPOperator(L, I->first, i);
+         if (I->first == "I") continue;  // don't bother adding the identity operator!
+         Data[I->first + Coords] = CreateMPOperator(L, I->first, i);
       }
    }
 #endif
@@ -38,12 +38,12 @@ OperatorList::OperatorList(Lattice const& L_) : L(L_)
    Data["I"] = CreateMPOperator(L, "I", 0);
 }
 
-OperatorList::OperatorType& 
-OperatorList::operator[](std::string const& s) 
-{ 
+OperatorList::OperatorType&
+OperatorList::operator[](std::string const& s)
+{
    if (Data.find(s) == Data.end())
       Data[s] = this->DoConstruct(s);
-   return Data[s]; 
+   return Data[s];
 }
 
 OperatorList::OperatorType

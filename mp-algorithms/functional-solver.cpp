@@ -27,8 +27,8 @@ struct SuperblockMultiply
    typedef MatrixOperator const& argument_type;
 
    SuperblockMultiply(SimpleOperator const& Op_,
-		      MPStateComponent const& Left_,
-		      MPStateComponent const& Right_)
+                      MPStateComponent const& Left_,
+                      MPStateComponent const& Right_)
       : Op(Op_), Left(Left_), Right(Right_) {}
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
@@ -64,10 +64,10 @@ struct SuperblockMultiplySquare
    MPStateComponent Left2, Right2;
 };
 
-FunctionalSolver::FunctionalSolver(CenterWavefunction const& Psi_, SplitOperator const& A_, 
-               SplitOperator const& B_, SplitOperator const& H_, SplitOperator const& Hb_, 
+FunctionalSolver::FunctionalSolver(CenterWavefunction const& Psi_, SplitOperator const& A_,
+               SplitOperator const& B_, SplitOperator const& H_, SplitOperator const& Hb_,
                CenterWavefunction const& Rhs_, double Freq_, double Broad_)
-   : x(Psi_), A(A_), B(B_), H(H_), Hb(Hb_), y(Rhs_), Frequency(Freq_), 
+   : x(Psi_), A(A_), B(B_), H(H_), Hb(Hb_), y(Rhs_), Frequency(Freq_),
      Broadening(Broad_), Ident(Psi_.GetSymmetryList()), Precision(0.0), MinIterations(0), TwoStepKrylov(false),
      MixNormalize(false), LanczosMixFactor(0.0), LinearSolver(false), SquareMeHarder(false), UseResid(false)
 {
@@ -151,26 +151,26 @@ FunctionalSolver::FunctionalSolver(CenterWavefunction const& Psi_, SplitOperator
    {
       x_A_x.PushLeft(operator_prod(herm(A.LookupLeft(Loc)),
                                    herm(x.LookupLeft(Loc)),
-                                   x_A_x.Left(), 
+                                   x_A_x.Left(),
                                    x.LookupLeft(Loc)));
 
       x_H_x.PushLeft(operator_prod(herm(H.LookupLeft(Loc)),
                                    herm(x.LookupLeft(Loc)),
-                                   x_H_x.Left(), 
+                                   x_H_x.Left(),
                                    x.LookupLeft(Loc)));
 
       x_Hb_x.PushLeft(operator_prod(herm(Hb.LookupLeft(Loc)),
                                     herm(x.LookupLeft(Loc)),
-                                    x_Hb_x.Left(), 
+                                    x_Hb_x.Left(),
                                     x.LookupLeft(Loc)));
 
       x_B_y.PushLeft(operator_prod(herm(B.LookupLeft(Loc)),
                                    herm(x.LookupLeft(Loc)),
-                                   x_B_y.Left(), 
+                                   x_B_y.Left(),
                                    y.LookupLeft(Loc)));
 
       x_y.PushLeft(operator_prod(herm(x.LookupLeft(Loc)),
-                                 x_y.Left(), 
+                                 x_y.Left(),
                                  y.LookupLeft(Loc)));
    }
 
@@ -191,25 +191,25 @@ void FunctionalSolver::ExpandLeft()
    x_A_x.PopLeft();
    x_A_x.PushLeft(operator_prod(herm(A.Left()),
                                 herm(x.Left()),
-                                x_A_x.Left(), 
+                                x_A_x.Left(),
                                 x.Left()));
 
    x_H_x.PopLeft();
    x_H_x.PushLeft(operator_prod(herm(H.Left()),
                                 herm(x.Left()),
-                                x_H_x.Left(), 
+                                x_H_x.Left(),
                                 x.Left()));
 
    x_Hb_x.PopLeft();
    x_Hb_x.PushLeft(operator_prod(herm(Hb.Left()),
                                  herm(x.Left()),
-                                 x_Hb_x.Left(), 
+                                 x_Hb_x.Left(),
                                  x.Left()));
 
    x_B_y.PopLeft();
    x_B_y.PushLeft(operator_prod(herm(B.Left()),
-                                herm(x.Left()), 
-                                x_B_y.Left(), 
+                                herm(x.Left()),
+                                x_B_y.Left(),
                                 y.Left()));
 
    x_y.PopLeft();
@@ -226,27 +226,27 @@ void FunctionalSolver::ExpandRight()
 
    // matrix elements
    x_A_x.PopRight();
-   x_A_x.PushRight(operator_prod(A.Right(), 
-                                 x.Right(), 
-                                 x_A_x.Right(), 
+   x_A_x.PushRight(operator_prod(A.Right(),
+                                 x.Right(),
+                                 x_A_x.Right(),
                                  herm(x.Right())));
 
    x_H_x.PopRight();
-   x_H_x.PushRight(operator_prod(H.Right(), 
-                                 x.Right(), 
-                                 x_H_x.Right(), 
+   x_H_x.PushRight(operator_prod(H.Right(),
+                                 x.Right(),
+                                 x_H_x.Right(),
                                  herm(x.Right())));
 
    x_Hb_x.PopRight();
-   x_Hb_x.PushRight(operator_prod(Hb.Right(), 
-                                  x.Right(), 
-                                  x_Hb_x.Right(), 
+   x_Hb_x.PushRight(operator_prod(Hb.Right(),
+                                  x.Right(),
+                                  x_Hb_x.Right(),
                                   herm(x.Right())));
 
    x_B_y.PopRight();
    x_B_y.PushRight(operator_prod(B.Right(),
-                                 x.Right(), 
-                                 x_B_y.Right(), 
+                                 x.Right(),
+                                 x_B_y.Right(),
                                  herm(y.Right())));
 
    x_y.PopRight();
@@ -269,31 +269,31 @@ void FunctionalSolver::ShiftRightAndExpand()
    //TRACE(norm_frob_sq(x.Center()));
    x.PushLeft(prod(x.Center(), x.Right()));
    x.PopRight();
-   x.Center() = ExpandBasis2(x.Left()); 
+   x.Center() = ExpandBasis2(x.Left());
    //TRACE(norm_frob_sq(x.Center()));
 
    // new matrix elements
-   x_A_x.PushLeft(operator_prod(herm(A.Left()), 
-                                herm(x.Left()), 
-                                x_A_x.Left(), 
+   x_A_x.PushLeft(operator_prod(herm(A.Left()),
+                                herm(x.Left()),
+                                x_A_x.Left(),
                                 x.Left()));
    x_A_x.PopRight();
 
    x_H_x.PushLeft(operator_prod(herm(H.Left()),
                                 herm(x.Left()),
-                                x_H_x.Left(), 
+                                x_H_x.Left(),
                                 x.Left()));
    x_H_x.PopRight();
 
    x_Hb_x.PushLeft(operator_prod(herm(Hb.Left()),
                                  herm(x.Left()),
-                                 x_Hb_x.Left(), 
+                                 x_Hb_x.Left(),
                                  x.Left()));
    x_Hb_x.PopRight();
 
    x_B_y.PushLeft(operator_prod(herm(B.Left()),
-                                herm(x.Left()), 
-                                x_B_y.Left(), 
+                                herm(x.Left()),
+                                x_B_y.Left(),
                                 y.Left()));
    x_B_y.PopRight();
 
@@ -324,21 +324,21 @@ void FunctionalSolver::ShiftLeftAndExpand()
                                  herm(x.Right())));
    x_A_x.PopLeft();
 
-   x_H_x.PushRight(operator_prod(H.Right(), 
-                                 x.Right(), 
-                                 x_H_x.Right(), 
+   x_H_x.PushRight(operator_prod(H.Right(),
+                                 x.Right(),
+                                 x_H_x.Right(),
                                  herm(x.Right())));
    x_H_x.PopLeft();
 
-   x_Hb_x.PushRight(operator_prod(Hb.Right(), 
-                                  x.Right(), 
-                                  x_Hb_x.Right(), 
+   x_Hb_x.PushRight(operator_prod(Hb.Right(),
+                                  x.Right(),
+                                  x_Hb_x.Right(),
                                   herm(x.Right())));
    x_Hb_x.PopLeft();
 
    x_B_y.PushRight(operator_prod(B.Right(),
-                                 x.Right(), 
-                                 x_B_y.Right(), 
+                                 x.Right(),
+                                 x_B_y.Right(),
                                  herm(y.Right())));
    x_B_y.PopLeft();
 
@@ -363,15 +363,15 @@ TruncationInfo FunctionalSolver::TruncateLeft(StatesInfo const& SInfo, double CF
       Rho_y *= 1.0 / trace(Rho_y);
    }
 
-   MatrixOperator Rho = (1.0 / (1.0 + LanczosMixFactor)) * Rho_x 
+   MatrixOperator Rho = (1.0 / (1.0 + LanczosMixFactor)) * Rho_x
       + (LanczosMixFactor / (1.0 + LanczosMixFactor)) * Rho_y;
 
    if (CFactor != 0)
    {
       for (unsigned i = 0; i < x_A_x.Left().size(); ++i)
       {
-         MatrixOperator Correction = triple_prod(x_A_x.Left()[i], 
-                                                 Rho, 
+         MatrixOperator Correction = triple_prod(x_A_x.Left()[i],
+                                                 Rho,
                                                  herm(x_A_x.Left()[i]));
          Correction *= (CFactor / trace(Correction) * double(x_A_x.Left().size()));
          Rho += Correction;
@@ -390,7 +390,7 @@ TruncationInfo FunctionalSolver::TruncateLeft(StatesInfo const& SInfo, double CF
    DensityMatrix<MatrixOperator> DM(Rho);
    //   DM.DensityMatrixReport(std::cerr);
    TruncationInfo Info;
-   DensityMatrix<MatrixOperator>::const_iterator E 
+   DensityMatrix<MatrixOperator>::const_iterator E
       = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), SInfo, Info);
 
    // truncate
@@ -421,15 +421,15 @@ TruncationInfo FunctionalSolver::TruncateRight(StatesInfo const& SInfo, double C
       Rho_y *= 1.0 / trace(Rho_y);
    }
 
-   MatrixOperator Rho = (1.0 / (1.0 + LanczosMixFactor)) * Rho_x 
+   MatrixOperator Rho = (1.0 / (1.0 + LanczosMixFactor)) * Rho_x
       + (LanczosMixFactor / (1.0 + LanczosMixFactor)) * Rho_y;
 
    if (CFactor != 0)
    {
       for (unsigned i = 0; i < x_A_x.Right().size(); ++i)
       {
-         MatrixOperator Correction = triple_prod(x_A_x.Right()[i], 
-                                                 Rho, 
+         MatrixOperator Correction = triple_prod(x_A_x.Right()[i],
+                                                 Rho,
                                                  herm(x_A_x.Right()[i]));
          Correction *= CFactor / trace(Correction) * double(x_A_x.Right().size());
          Rho += Correction;
@@ -448,7 +448,7 @@ TruncationInfo FunctionalSolver::TruncateRight(StatesInfo const& SInfo, double C
    DensityMatrix<MatrixOperator> DM(Rho);
    //   DM.DensityMatrixReport(std::cerr);
    TruncationInfo Info;
-   DensityMatrix<MatrixOperator>::const_iterator E 
+   DensityMatrix<MatrixOperator>::const_iterator E
       = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), SInfo, Info);
 
    // truncate
@@ -477,14 +477,14 @@ double FunctionalSolver::Solve(int MaxIterations)
 
       MatrixOperator yprime = triple_prod(x_y.Left(), y.Center(), herm(x_y.Right()));
 
-      GmRes(x.Center(), 
+      GmRes(x.Center(),
             SuperblockMultiply(conj(H.Center()),
-                               x_H_x.Left(), 
+                               x_H_x.Left(),
                                x_H_x.Right()),
             yprime,
             m, Iter, Resid,
             LinearAlgebra::Identity<MatrixOperator>());
-      
+
       IterationNumMultiplies = Iter;
       // calculate the functional value
       std::complex<double> h = inner_prod(x.Center(), operator_prod(A.Center(), x_A_x.Left(), x.Center(), herm(x_A_x.Right())));
@@ -499,20 +499,20 @@ double FunctionalSolver::Solve(int MaxIterations)
       {
          MatrixOperator yprime = triple_prod(x_y.Left(), y.Center(), herm(x_y.Right()));
 
-         double f = FunctionalMinimizeWithResidVector(x.Center(), 
+         double f = FunctionalMinimizeWithResidVector(x.Center(),
                                                       SuperblockMultiplySquare(conj(H.Center()),
-                                                                               x_H_x.Left(), 
+                                                                               x_H_x.Left(),
                                                                                x_H_x.Right(),
                                                                                conj(Hb.Center()),
                                                                                x_Hb_x.Left(),
                                                                                x_Hb_x.Right()),
                                                       operator_prod(-1.0*conj(Hb.Center()),
-                                                                    x_Hb_x.Left(), 
-                                                                    yprime, 
+                                                                    x_Hb_x.Left(),
+                                                                    yprime,
                                                                     herm(x_Hb_x.Right())),
                                                       MaxIterations,
                                                       SuperblockMultiply(conj(H.Center()),
-                                                                         x_H_x.Left(), 
+                                                                         x_H_x.Left(),
                                                                          x_H_x.Right()),
                                                       yprime,
                                                       norm_frob_sq(yprime),
@@ -520,7 +520,7 @@ double FunctionalSolver::Solve(int MaxIterations)
                                                       TwoStepKrylov,
                                                       MinIterations
                                                       );
-         
+
          //         TRACE(f+norm_frob_sq(yprime));
          std::complex<double> h = inner_prod(x.Center(), operator_prod(A.Center(), x_A_x.Left(), x.Center(), herm(x_A_x.Right())));
          std::complex<double> g = inner_prod(x.Center(), operator_prod(B.Center(), x_B_y.Left(), y.Center(), herm(x_B_y.Right())));
@@ -535,17 +535,17 @@ double FunctionalSolver::Solve(int MaxIterations)
          if (UseResid)
          {
             MatrixOperator yprime = triple_prod(x_y.Left(), y.Center(), herm(x_y.Right()));
-            double f = FunctionalMinimizeWithResidVector(x.Center(), 
+            double f = FunctionalMinimizeWithResidVector(x.Center(),
                                                          SuperblockMultiply(conj(A.Center()),
-                                                                            x_A_x.Left(), 
+                                                                            x_A_x.Left(),
                                                                             x_A_x.Right()),
                                                          operator_prod(conj(B.Center()),
-                                                                       x_B_y.Left(), 
-                                                                       y.Center(), 
+                                                                       x_B_y.Left(),
+                                                                       y.Center(),
                                                                        herm(x_B_y.Right())),
                                                          MaxIterations,
                                                          SuperblockMultiply(conj(H.Center()),
-                                                                            x_H_x.Left(), 
+                                                                            x_H_x.Left(),
                                                                             x_H_x.Right()),
                                                          yprime,
                                                          norm_frob_sq(yprime),
@@ -559,17 +559,17 @@ double FunctionalSolver::Solve(int MaxIterations)
          }
          else
          {
-            double f = FunctionalMinimizeWithPre(x.Center(), 
+            double f = FunctionalMinimizeWithPre(x.Center(),
                                                  SuperblockMultiply(conj(A.Center()),
-                                                                    x_A_x.Left(), 
+                                                                    x_A_x.Left(),
                                                                     x_A_x.Right()),
                                                  operator_prod(conj(B.Center()),
-                                                               x_B_y.Left(), 
-                                                               y.Center(), 
+                                                               x_B_y.Left(),
+                                                               y.Center(),
                                                                herm(x_B_y.Right())),
                                                  MaxIterations,
                                                  SuperblockMultiply(conj(H.Center()),
-                                                                    x_H_x.Left(), 
+                                                                    x_H_x.Left(),
                                                                     x_H_x.Right()),
                                                  Precision,
                                                  TwoStepKrylov,

@@ -46,16 +46,16 @@ struct identity_func : public std::unary_function<T, T>
 };
 
 template <typename Key, class HashFun = hash<Key>, class Cmp = std::equal_to<Key> >
-class hash_set : public Private::hash_table<Key, 
-					    Key, 
-					    HashFun, 
-					    Cmp, 
-					    identity_func<Key>,
+class hash_set : public Private::hash_table<Key,
+                                            Key,
+                                            HashFun,
+                                            Cmp,
+                                            identity_func<Key>,
                                             identity_func<Key> >
 {
    private:
-      typedef Private::hash_table<Key, Key, HashFun, Cmp, 
-                                  identity_func<Key>, 
+      typedef Private::hash_table<Key, Key, HashFun, Cmp,
+                                  identity_func<Key>,
                                   identity_func<Key> >       TBase;
    public:
       typedef typename TBase::key_type        key_type;
@@ -87,12 +87,12 @@ class hash_set : public Private::hash_table<Key,
 
 #if defined(USE_PSTREAM)
 template <int Format, typename Key, class HashFun, class Cmp>
-PStream::opstreambuf<Format>& operator<<(PStream::opstreambuf<Format>&, 
-					 hash_set<Key, HashFun, Cmp> const&);
+PStream::opstreambuf<Format>& operator<<(PStream::opstreambuf<Format>&,
+                                         hash_set<Key, HashFun, Cmp> const&);
 
 template <int Format, typename Key, class HashFun, class Cmp>
-PStream::ipstreambuf<Format>& operator>>(PStream::ipstreambuf<Format>&, 
-					 hash_set<Key, HashFun, Cmp>&);
+PStream::ipstreambuf<Format>& operator>>(PStream::ipstreambuf<Format>&,
+                                         hash_set<Key, HashFun, Cmp>&);
 #endif
 
 } // namespace ext

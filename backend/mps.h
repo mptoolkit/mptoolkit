@@ -43,7 +43,7 @@ class StateDescription
 
    private:
 
-      
+
 
 };
 
@@ -59,30 +59,30 @@ struct InnerProdElement;
 typedef std::vector<InnerProdElement> InnerProdDescription;
 
 double inner_prod(InnerProdDescription const& Desc,
-		  double const* v1, double const* v2)
+                  double const* v1, double const* v2)
 {
    double Result = 0.0;
    unsigned sz = Desc.size();
    for (unsigned i = 0; i < sz; ++i)
    {
       Result += Desc[i].Prefactor
-	 * inner_prod(v1+Desc[i].Offset, 
-		      v2+Desc[i].Offset, 
-		      Desc[i].Size);
+         * inner_prod(v1+Desc[i].Offset,
+                      v2+Desc[i].Offset,
+                      Desc[i].Size);
    }
    return Result;
 }
 
 
 double norm_frob(InnerProdDescription const& Desc,
-		 double const* v)
+                 double const* v)
 {
    double Result = 0.0;
    unsigned sz = Desc.size();
    for (unsigned i = 0; i < sz; ++i)
    {
       Result += Desc[i].Prefactor
-	 * norm_frob(v+Desc[i].Offset, Desc[i].Size);
+         * norm_frob(v+Desc[i].Offset, Desc[i].Size);
    }
    return Result;
 }

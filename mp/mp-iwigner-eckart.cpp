@@ -44,7 +44,7 @@ StateComponent wigner_eckart(StateComponent const& A, SymmetryList const& FinalS
       QuantumNumbers::ProjectionList pl = enumerate_projections(A.LocalBasis()[i]);
       for (unsigned pi = 0; pi < pl.size(); ++pi)
       {
-	 AbelianLocalBasis.push_back(map_projection_to_quantum(pl[pi], FinalSL));
+         AbelianLocalBasis.push_back(map_projection_to_quantum(pl[pi], FinalSL));
       }
    }
 
@@ -55,7 +55,7 @@ StateComponent wigner_eckart(StateComponent const& A, SymmetryList const& FinalS
       QuantumNumbers::ProjectionList pl = enumerate_projections(I->LocalBasis()[i]);
       for (unsigned pi = 0; pi < pl.size(); ++pi)
       {
-	 Result[k++] = wigner_eckart((*I)[i], pl[pi], W1, W2);
+         Result[k++] = wigner_eckart((*I)[i], pl[pi], W1, W2);
       }
    }
    return Result;
@@ -96,7 +96,7 @@ wigner_eckart(InfiniteWavefunctionLeft const& Psi, SymmetryList const& FinalSL)
    Result.setBasis2(W2);
 
    Result.check_structure();
-			   
+
    return Result;
 }
 

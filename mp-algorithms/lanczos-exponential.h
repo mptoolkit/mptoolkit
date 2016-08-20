@@ -113,7 +113,7 @@ VectorType LanczosExponential(VectorType const& x,
    DEBUG_TRACE(inner_prod(x, x));
 
    ETol = Error;
-   
+
    return Out;
 }
 

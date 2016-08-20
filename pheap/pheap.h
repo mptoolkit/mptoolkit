@@ -117,9 +117,9 @@ class PHeapObject
       static PHeapObject* Create(Private::PointerToObject* Obj, id_type ObjectID_);
 
       // creates a copy of a descriptor (ie from another filesystem).
-      static PHeapObject* Create(PHeapFileSystem::Descriptor const& Desc, 
-				 id_type ID, 
-				 int InitialReferenceCount);
+      static PHeapObject* Create(PHeapFileSystem::Descriptor const& Desc,
+                                 id_type ID,
+                                 int InitialReferenceCount);
 
       // creates a PHeapObject with no Object or Descriptor,
       // and with the mutex locked.  This adds the object to the heap,
@@ -167,7 +167,7 @@ class PHeapObject
       void AddReference(int Count);
 
       // Flushes the object to disk (if it wasn't already), sets the internal
-      // descriptor to NULL and returns the real descriptor.  
+      // descriptor to NULL and returns the real descriptor.
       // This has the effect of deleting the PHeapObject.
       PHeapFileSystem::Descriptor Persist();
 
@@ -193,8 +193,8 @@ class PHeapObject
 
       explicit PHeapObject(Private::PointerToObject* Obj, id_type ID);
 
-      PHeapObject(PHeapFileSystem::Descriptor* Desc, id_type ID, 
-		  int InitialReferenceCount);
+      PHeapObject(PHeapFileSystem::Descriptor* Desc, id_type ID,
+                  int InitialReferenceCount);
 
       ~PHeapObject();
 
@@ -249,7 +249,7 @@ std::pair<T*, PHeapObject*> GetObject(id_type ID)
 }
 
 // Initializes the persistent heap
-void Initialize(std::string const& FileName, int NumFiles, 
+void Initialize(std::string const& FileName, int NumFiles,
                 size_t PageSize, size_t PageCacheByteSize,
                 bool Unlink = false, bool AllowOverwrite = false);
 
@@ -300,13 +300,13 @@ PHeapFileSystem::PageId ExportHeap(PHeapFileSystem::BlockFileSystem* FS_, PHeapO
 // Exports an object to the new persistent heap of the given filename.
 // The default PageSize is CurrentPageSize(), or
 // DefaultPageSize() if CurrentPageSize() == 0.
-void ExportHeap(std::string const& FileName, PHeapObject* MainObject, 
-		int NumFiles = 1, size_t PageSize = 0);
+void ExportHeap(std::string const& FileName, PHeapObject* MainObject,
+                int NumFiles = 1, size_t PageSize = 0);
 
 // imports an object from another filesystem.
 PHeapObject* ImportHeap(std::string const& FileName);
 
-// returns the number of allocated pheap objects.  
+// returns the number of allocated pheap objects.
 // Useful diagnostic for detecting leaks.
 size_t PHeapSize();
 

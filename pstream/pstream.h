@@ -108,7 +108,7 @@
   or use one of the int8, int16, int32, int64 etc types defined in inttype.h,
   or use one of the format types defined in [i|o]pstreambuf<Format>::size_type, difference_type etc.
 
-  The int template parameter of the pstreambuf classes is for efficiency: rather than 
+  The int template parameter of the pstreambuf classes is for efficiency: rather than
   using virtual functions, the pstream class contains the int parameter of its concrete buffer class,
   and dispatch to the correct format object is done by an array lookup.  In pseudo-code:
 
@@ -126,7 +126,7 @@
   is the same though.  The tradeoff is that the number of concrete buffer classes
   (ie. number of different output representations) must be a compile-time constant
   and all of them must be known at the point of instantiation of the streaming operator.
-  
+
   The [i|o]pstreambuf<> classes have an implicit conversion to [i|o]pstream,
   which handles the case where a [i|o]pstreambuf extractor/inserter contains
   an object that has only an [i|o]pstream operator.
@@ -150,7 +150,7 @@
   TODO: Explanation of how streaming of polymorphic objects works.  Short answer: inherit from
   StreamableBase and implement the ReadStream() and WriteStream() functions.  Streaming of
   base classes must be done by explicitly calling base::ReadStream() or base::WriteStream().
-  There is no special support for streaming virtual base classes.  
+  There is no special support for streaming virtual base classes.
 
   Versioning support:
 
@@ -180,7 +180,7 @@
 
   The global tag object can be a static member of the class.
 
-  If the version number is to be read from the stream, then 
+  If the version number is to be read from the stream, then
   use in.read<int>() as the version number.
 
   While the VersionTag object is in scope, then the pstream will keep
@@ -342,7 +342,7 @@ class generic_opstreambuf
       void put_n_bswap(byte_type const* Src, size_t Count);
 
       //      void put_n_reverse(byte_type const* Src, size_t Count);
-      
+
       // direct access to the buffer
       byte_type* buf_begin() const { return BufBegin; }
       byte_type* buf_end() const { return BufEnd; }
@@ -370,7 +370,7 @@ class generic_opstreambuf
 
    protected:
       generic_opstreambuf(opstream* BackPointer_,
-			  byte_type* Beg, byte_type* End, byte_type* Ptr);
+                          byte_type* Beg, byte_type* End, byte_type* Ptr);
 
       generic_opstreambuf(generic_opstreambuf const& Buffer);
 
@@ -384,11 +384,11 @@ class generic_opstreambuf
 
    private:
       static generic_opstreambuf* CopyOpstreambuf(int Format, generic_opstreambuf const& Buffer);
-      static generic_opstreambuf* MakeOpstreambuf(int Format, 
-						  opstream* BackPointer,
-						  byte_type* BufBegin, 
-						  byte_type* BufEnd, 
-						  byte_type* BufPtr);
+      static generic_opstreambuf* MakeOpstreambuf(int Format,
+                                                  opstream* BackPointer,
+                                                  byte_type* BufBegin,
+                                                  byte_type* BufEnd,
+                                                  byte_type* BufPtr);
 
       template <int Atom>
       void put_bswap_unchecked(byte_type const* Src);
@@ -415,11 +415,11 @@ class opstreambuf : public generic_opstreambuf
       ~opstreambuf();
 
       opstreambuf(opstream* BackPointer_,
-		  byte_type* Beg, byte_type* End, byte_type* Ptr);
+                  byte_type* Beg, byte_type* End, byte_type* Ptr);
 
 
       opstreambuf(generic_opstreambuf const& Other)
-	: generic_opstreambuf(Other) {}
+        : generic_opstreambuf(Other) {}
 
       opstreambuf(opstreambuf&);             // not implemented
       opstreambuf& operator==(opstreambuf&); // not implemented
@@ -464,9 +464,9 @@ class ipstream
       // reads the format ID from the stream and changes to it.  Returns the new format.
       int get_format();
 
-      void set_buffer(byte_type const* BufBegin, 
-		      byte_type const* BufEnd, 
-		      byte_type const* BufPtr);
+      void set_buffer(byte_type const* BufBegin,
+                      byte_type const* BufEnd,
+                      byte_type const* BufPtr);
 
       byte_type const* buf_begin() const;
       byte_type const* buf_end() const;
@@ -523,7 +523,7 @@ class generic_ipstreambuf
 
    protected:
       generic_ipstreambuf(ipstream* BackPointer_,
-			  byte_type const* Beg, byte_type const* End, byte_type const* Ptr);
+                          byte_type const* Beg, byte_type const* End, byte_type const* Ptr);
 
       virtual ~generic_ipstreambuf();
 
@@ -539,11 +539,11 @@ class generic_ipstreambuf
 
    private:
       static generic_ipstreambuf* CopyIpstreambuf(int Format, generic_ipstreambuf const& Buffer);
-      static generic_ipstreambuf* MakeIpstreambuf(int Format, 
-						  ipstream* BackPointer,
-						  byte_type const* BufBegin, 
-						  byte_type const* BufEnd, 
-						  byte_type const* BufPtr);
+      static generic_ipstreambuf* MakeIpstreambuf(int Format,
+                                                  ipstream* BackPointer,
+                                                  byte_type const* BufBegin,
+                                                  byte_type const* BufEnd,
+                                                  byte_type const* BufPtr);
 
       generic_ipstreambuf& operator=(generic_ipstreambuf const&); // not implemented
 
@@ -564,11 +564,11 @@ class ipstreambuf : public generic_ipstreambuf
       ~ipstreambuf();
 
       ipstreambuf(ipstream* BackPointer_,
-		  byte_type const* Beg, byte_type const* End, byte_type const* Ptr);
+                  byte_type const* Beg, byte_type const* End, byte_type const* Ptr);
 
 
       ipstreambuf(generic_ipstreambuf const& Other)
-	: generic_ipstreambuf(Other) {}
+        : generic_ipstreambuf(Other) {}
 
       ipstreambuf(ipstreambuf&);             // not implemented
       ipstreambuf& operator==(ipstreambuf&); // not implemented
@@ -590,13 +590,13 @@ class opstream_iterator : public std::iterator<std::output_iterator_tag, T, void
 
       opstream_iterator& operator=(T const& value)
       {
- 	 *out << value;
-	 return *this;
+         *out << value;
+         return *this;
       }
 
       opstream_iterator& operator*()      { return *this; }
-      opstream_iterator& operator++()     { return *this; } 
-      opstream_iterator& operator++(int)  { return *this; } 
+      opstream_iterator& operator++()     { return *this; }
+      opstream_iterator& operator++(int)  { return *this; }
 
  private:
       opstream* out;
@@ -609,15 +609,15 @@ class opstreambuf_iterator : public std::iterator<std::output_iterator_tag, T, v
       opstreambuf_iterator(opstreambuf<Format>& out_) : out(&out_) {}
       opstreambuf_iterator(opstreambuf_iterator<Format, T> const& os) : out(os.out) {}
 
-      opstreambuf_iterator& operator=(T const& value) 
+      opstreambuf_iterator& operator=(T const& value)
       {
-	 *out << value;
-	 return *this;
+         *out << value;
+         return *this;
       }
 
       opstreambuf_iterator& operator*()      { return *this; }
-      opstreambuf_iterator& operator++()     { return *this; } 
-      opstreambuf_iterator& operator++(int)  { return *this; } 
+      opstreambuf_iterator& operator++()     { return *this; }
+      opstreambuf_iterator& operator++(int)  { return *this; }
 
  private:
       opstreambuf<Format>* out;
@@ -664,8 +664,8 @@ class ipstreambuf_iterator : public std::iterator<std::input_iterator_tag, T, pt
       T const& operator*() const { (*in) >> value; return value; }
       T const* operator->() const { (*in) >> value; return &value; }
 
-      ipstreambuf_iterator& operator++()     { return *this; } 
-      ipstreambuf_iterator& operator++(int)  { return *this; } 
+      ipstreambuf_iterator& operator++()     { return *this; }
+      ipstreambuf_iterator& operator++(int)  { return *this; }
 
  private:
       ipstreambuf<Format>* in;
@@ -712,7 +712,7 @@ class VersionSentry
 
       // Force a change in an existing version.  Might be useful to workaround bugs!
       void change_version(int NewV);
-      
+
    private:
       VersionTag const& Tag;
       ipstream* in;
@@ -763,18 +763,18 @@ struct poly_traits
       class TestPoly : public T
       {
          public:
-	    virtual ~TestPoly();
+            virtual ~TestPoly();
       };
 
    public:
       static const bool is_polymorphic = (sizeof(T) == sizeof(TestPoly));
 };
 
-#define DEFINE_BUILTIN_POLY_TRAITS(type)	\
-template <>					\
-struct poly_traits<type>			\
-{						\
-   static const bool is_polymorphic = false;	\
+#define DEFINE_BUILTIN_POLY_TRAITS(type)        \
+template <>                                     \
+struct poly_traits<type>                        \
+{                                               \
+   static const bool is_polymorphic = false;    \
 };
 
 DEFINE_BUILTIN_POLY_TRAITS(bool)

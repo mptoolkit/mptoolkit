@@ -35,7 +35,7 @@ struct ExpProd
 
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      DEBUG_PRECONDITION_EQUAL(x.Basis1().size(), 1);      
+      DEBUG_PRECONDITION_EQUAL(x.Basis1().size(), 1);
       DEBUG_PRECONDITION_EQUAL(y.Basis2().size(), 1);
       return trace(prod(x, y, QuantumNumbers::QuantumNumber(x.GetSymmetryList())));
    }
@@ -98,7 +98,7 @@ void TwoSiteScalarApply(MPOpComponent& A, MPOpComponent& B, std::complex<double>
 
    for (std::size_t i = 0; i < size(D) && D[i] > 1E-10; ++i)
    {
-      
+
       int iMax = 0;
       double Max = LinearAlgebra::norm_2(U(iMax,i));
 
@@ -116,7 +116,7 @@ void TwoSiteScalarApply(MPOpComponent& A, MPOpComponent& B, std::complex<double>
 
    A = MPOpComponent(A.SiteBasis(), A.Basis1(), AuxBasis);
    B = MPOpComponent(B.SiteBasis(), AuxBasis, B.Basis2());
-   
+
    for (std::size_t i = 0; i < size(D); ++i)
    {
       if (D[i] < 1E-10) continue;
@@ -131,7 +131,7 @@ void TwoSiteScalarApply(MPOpComponent& A, MPOpComponent& B, std::complex<double>
             A[alpha[k]].data()(l,m)(1,k) = U(k,i) * D[i];
          }
       }
-   
+
       for (std::size_t k = 0; k < size2(Vt); ++k)
       {
          if (LinearAlgebra::norm_2(Vt(i,k)) > 1E-10)

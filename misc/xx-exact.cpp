@@ -32,7 +32,7 @@
 using namespace std;
 
 double XX_Sz_exact( double t, int n)
-{ 
+{
    double Sz=0;  int j0=n;
    if( j0<0 ) j0=-j0-1;
    for(int j=-j0; j<=j0; j++)
@@ -55,7 +55,7 @@ int main(int argc, char** argv)
    cout.precision(20);
    for (int n = 0; n < L; ++n)
    {
-      cout << setw(25) << t << ' ' 
+      cout << setw(25) << t << ' '
                 << setw(25) <<  XX_Sz_exact(t, n-L/2) << endl;
    }
 }

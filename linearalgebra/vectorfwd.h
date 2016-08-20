@@ -22,7 +22,7 @@
 
   Forward declarations so we can define the default value_types of expressions
   in vectorinterface.h
-  
+
   Created 2005-01-12 Ian McCulloch
 */
 

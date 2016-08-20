@@ -50,9 +50,9 @@ class Lattice
 
       Lattice(SymmetryList const& sl, SiteBlock const& s);
       Lattice(SymmetryList const& sl, SiteBlock const& s, SiteBlock const& t);
-      Lattice(SymmetryList const& sl, SiteBlock const& s, SiteBlock const& t, 
+      Lattice(SymmetryList const& sl, SiteBlock const& s, SiteBlock const& t,
               SiteBlock const& u);
-      Lattice(SymmetryList const& sl, SiteBlock const& s, SiteBlock const& t, 
+      Lattice(SymmetryList const& sl, SiteBlock const& s, SiteBlock const& t,
               SiteBlock const& u, SiteBlock const& v);
 
       Lattice(int RepeatCount, Lattice const& l);
@@ -71,7 +71,7 @@ class Lattice
       run_length_compressed<SiteBlock> const& data() const { return Data_; }
 
       SymmetryList GetSymmetryList() const { return Data_.front().GetSymmetryList(); }
-   
+
       // fowards to run_length_compressed
       bool empty() const { return Data_.empty(); }
       int size() const { return Data_.size(); }
@@ -151,7 +151,7 @@ class Lattice
 
    private:
       // Sets the 'reverse mapping' SiteAtCoord_ and sets CoordinatesFixed_ = true
-      void Fixate(); 
+      void Fixate();
 
       run_length_compressed<SiteBlock> Data_;
       std::vector<std::string> Coordinates_;
@@ -170,20 +170,20 @@ Lattice join(Lattice const& x, Lattice const& y);
 Lattice join(Lattice const& x, Lattice const& y, Lattice const& z);
 Lattice join(Lattice const& x, Lattice const& y, Lattice const& z, Lattice const& w);
 Lattice join(Lattice const& x, Lattice const& y, Lattice const& z, Lattice const& w,
-	     Lattice const& v);
+             Lattice const& v);
 
 // Constructs a tensor product operator over the lattice L.
 // If Operator does not exist at some site in L, the identity operator "I"
 // is substituted.  Operator must transform as a scalar.
 // The matrix basis for the operator is b at all sites.
-MPOpCompressed 
-CreateTensorProductOpCompressed(Lattice const& L, 
-                                std::string const& Operator, 
+MPOpCompressed
+CreateTensorProductOpCompressed(Lattice const& L,
+                                std::string const& Operator,
                                 BasisList const& b);
 
 // Constructs a local operator acting over a lattice L.
 // The bosonic/fermionic character of the operator is properly taken into account.
-MPOpCompressed 
+MPOpCompressed
 CreateMPOpCompressed(Lattice const& L, std::string const& Operator, int Site);
 
 MPOperator CreateMPOperator(Lattice const& L, std::string const& Operator, int Site);

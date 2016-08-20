@@ -43,7 +43,7 @@ MatrixOperator DensityMatrix<MatrixOperator>::ConstructTruncator(FwdIterX Start,
    {
       if (LinearMapping[q].size() > 0)
       {
-	 NewSubspace[q] = NewBasis.size();
+         NewSubspace[q] = NewBasis.size();
          NewBasis.push_back(B[q], LinearMapping[q].size());
       }
    }
@@ -64,7 +64,7 @@ MatrixOperator DensityMatrix<MatrixOperator>::ConstructTruncator(FwdIterX Start,
 #if defined(RANDOMIZE_VECTORS)
       for (unsigned i = 0; i < LinearMapping[q].size(); ++i)
       {
-	 Transform(sp, s)(i, LinearAlgebra::all) *= std::pow(-1, i);
+         Transform(sp, s)(i, LinearAlgebra::all) *= std::pow(-1, i);
       }
 #endif
 
@@ -100,18 +100,18 @@ SimpleOperator DensityMatrix<SimpleOperator>::ConstructTruncator(FwdIter Start, 
 
       for (std::size_t sp = 0; sp < NewBasis.size(); ++sp)
       {
-	 int qp, qpi;
-	 std::tie(qp, qpi) = KeptStates[sp];
-	 if (qp == q)
-	    Transform(sp, s) = RawDMList[q](qpi, qi);
+         int qp, qpi;
+         std::tie(qp, qpi) = KeptStates[sp];
+         if (qp == q)
+            Transform(sp, s) = RawDMList[q](qpi, qi);
       }
    }
    return Transform;
 }
 
 template <class FwdIter>
-SimpleOperator DensityMatrix<SimpleOperator>::ConstructUnnormalizedTruncator(FwdIter Start, 
-									     FwdIter End) const
+SimpleOperator DensityMatrix<SimpleOperator>::ConstructUnnormalizedTruncator(FwdIter Start,
+                                                                             FwdIter End) const
 {
    BasisList NewBasis(B.GetSymmetryList());
    // make a pass over the eigenvalue list and get the linear indices of the
@@ -135,10 +135,10 @@ SimpleOperator DensityMatrix<SimpleOperator>::ConstructUnnormalizedTruncator(Fwd
 
       for (std::size_t sp = 0; sp < NewBasis.size(); ++sp)
       {
-	 int qp, qpi;
-	 std::tie(qp, qpi) = KeptStates[sp];
-	 if (qp == q)
-	    Transform(sp, s) = RawDMList[q](qpi, qi) * KeptEigenvalue[sp];
+         int qp, qpi;
+         std::tie(qp, qpi) = KeptStates[sp];
+         if (qp == q)
+            Transform(sp, s) = RawDMList[q](qpi, qi) * KeptEigenvalue[sp];
       }
    }
    return Transform;
@@ -151,8 +151,8 @@ SimpleOperator DensityMatrix<SimpleOperator>::ConstructUnnormalizedTruncator(Fwd
 template <typename FwdIter>
 void
 SingularDecomposition<StateComponent, StateComponent>::
-ConstructMatrices(FwdIter first, FwdIter last, 
-		  StateComponent& A, RealDiagonalOperator& C, StateComponent& B)
+ConstructMatrices(FwdIter first, FwdIter last,
+                  StateComponent& A, RealDiagonalOperator& C, StateComponent& B)
 {
    // make a pass over the eigenvalue list and get the linear indices of the
    // states to keep for each quantum number
@@ -169,10 +169,10 @@ ConstructMatrices(FwdIter first, FwdIter last,
 template <typename FwdIter>
 void
 SingularDecomposition<MatrixOperator, MatrixOperator>::
-ConstructMatrices(FwdIter first, FwdIter last, 
-		       MatrixOperator& A, 
-		       RealDiagonalOperator& C, 
-		       MatrixOperator& B)
+ConstructMatrices(FwdIter first, FwdIter last,
+                       MatrixOperator& A,
+                       RealDiagonalOperator& C,
+                       MatrixOperator& B)
 {
    // make a pass over the eigenvalue list and get the linear indices of the
    // states to keep for each quantum number

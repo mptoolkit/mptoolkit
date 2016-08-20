@@ -62,7 +62,7 @@ int main()
 
   MySlice.range(Range(0,2)) = 3.4 * MySlice.range(Range(2,4));
   std::cout << "After MySlice.range(Range(0,2)) = 3.4 * MySlice.range(2,4), MyVec is "
-	    << MyVec << '\n';
+            << MyVec << '\n';
 
   //  BLAS::daxpy(MySlice.size(), 2.1, MySlice.begin().base(), MySlice.stride(), MySlice.begin().base(), MySlice.stride());
 

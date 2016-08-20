@@ -46,9 +46,9 @@ bool operator<(TransEigenInfo const& x, TransEigenInfo const& y)
    return LinearAlgebra::norm_frob_sq(x.x) > LinearAlgebra::norm_frob_sq(y.x);
 }
 
-void PrintFormat(TransEigenInfo const& x, bool ShowRealPart, bool ShowImagPart, 
-		 bool ShowCorrLength, bool ShowMagnitude, bool ShowArgument,
-		 bool ShowRadians, double ScaleFactor)
+void PrintFormat(TransEigenInfo const& x, bool ShowRealPart, bool ShowImagPart,
+                 bool ShowCorrLength, bool ShowMagnitude, bool ShowArgument,
+                 bool ShowRadians, double ScaleFactor)
 {
    std::string SectorStr = boost::lexical_cast<std::string>(x.q);
    std::complex<double> Value = std::pow(x.x, ScaleFactor);
@@ -64,7 +64,7 @@ void PrintFormat(TransEigenInfo const& x, bool ShowRealPart, bool ShowImagPart,
    if (ShowCorrLength)
    {
       std::cout << std::setw(20) << (-1.0/std::log(LinearAlgebra::norm_frob(Value)))
-		<< "    ";
+                << "    ";
    }
    if (ShowMagnitude)
    {
@@ -74,7 +74,7 @@ void PrintFormat(TransEigenInfo const& x, bool ShowRealPart, bool ShowImagPart,
    {
       double Arg =  std::atan2(Value.imag(), Value.real());
       if (!ShowRadians)
-	 Arg *= 180.0 / math_const::pi;
+         Arg *= 180.0 / math_const::pi;
       std::cout << std::setw(20) << Arg << "    ";
    }
    std::cout << std::endl;
@@ -106,24 +106,24 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("cart,c", prog_opt::bool_switch(&ShowCartesian),
-	  "show the result in cartesian coordinates [equivalent to --real --imag]")
-	 ("polar,p", prog_opt::bool_switch(&ShowPolar),
-	  "show the result in polar coodinates [equivalent to --mag --arg]")
-	 ("real,r", prog_opt::bool_switch(&ShowRealPart),
-	  "display the real part of the result")
-	 ("imag,i", prog_opt::bool_switch(&ShowImagPart),
-	  "display the imaginary part of the result")
+         ("cart,c", prog_opt::bool_switch(&ShowCartesian),
+          "show the result in cartesian coordinates [equivalent to --real --imag]")
+         ("polar,p", prog_opt::bool_switch(&ShowPolar),
+          "show the result in polar coodinates [equivalent to --mag --arg]")
+         ("real,r", prog_opt::bool_switch(&ShowRealPart),
+          "display the real part of the result")
+         ("imag,i", prog_opt::bool_switch(&ShowImagPart),
+          "display the imaginary part of the result")
          ("mag,m", prog_opt::bool_switch(&ShowMagnitude),
           "display the magnitude of the result")
          ("arg,a", prog_opt::bool_switch(&ShowArgument),
           "display the argument (angle) of the result")
-	 ("radians", prog_opt::bool_switch(&ShowRadians),
-	  "display the argument in radians instead of degrees")
-	 ("corr,x", prog_opt::bool_switch(&ShowCorrLength),
-	  "display the equivalent correlation length")
-	 ("unitcell,u", prog_opt::value(&UnitCellSize),
-	  "scale the results to use this unit cell size [default wavefunction unit cell]")
+         ("radians", prog_opt::bool_switch(&ShowRadians),
+          "display the argument in radians instead of degrees")
+         ("corr,x", prog_opt::bool_switch(&ShowCorrLength),
+          "display the equivalent correlation length")
+         ("unitcell,u", prog_opt::value(&UnitCellSize),
+          "scale the results to use this unit cell size [default wavefunction unit cell]")
          ("tempfile", prog_opt::bool_switch(&UseTempFile),
           "a temporary data file for workspace (path set by environment MP_BINPATH)")
          ("rotate", prog_opt::value(&Rotate),
@@ -163,10 +163,10 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || vm.count("rhs") == 0)
       {
@@ -180,30 +180,30 @@ int main(int argc, char** argv)
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
       if (!Quiet)
-	 print_preamble(std::cout, argc, argv);
+         print_preamble(std::cout, argc, argv);
 
       // If no output switches are used, default to showing everything
       if (!ShowRealPart && !ShowImagPart && !ShowMagnitude
-	  && !ShowCartesian && !ShowPolar && !ShowArgument
-	  && !ShowRadians && !ShowCorrLength)
+          && !ShowCartesian && !ShowPolar && !ShowArgument
+          && !ShowRadians && !ShowCorrLength)
       {
-	 ShowCartesian = true;
-	 ShowPolar = true;
-	 ShowCorrLength = true;
+         ShowCartesian = true;
+         ShowPolar = true;
+         ShowCorrLength = true;
       }
-      
+
       if (ShowCartesian)
       {
-	 ShowRealPart = true;
-	 ShowImagPart = true;
+         ShowRealPart = true;
+         ShowImagPart = true;
       }
       if (ShowPolar)
       {
-	 ShowMagnitude = true;
-	 ShowArgument = true;
+         ShowMagnitude = true;
+         ShowArgument = true;
       }
       if (ShowRadians)
-	 ShowArgument = true;      
+         ShowArgument = true;
 
       if (Verbose)
          std::cout << "Loading LHS wavefunction...\n";
@@ -225,11 +225,11 @@ int main(int argc, char** argv)
 
       InfiniteWavefunctionLeft Psi2;
       if (RhsStr.empty())
-	 Psi2 = Psi1;
+         Psi2 = Psi1;
       else
       {
-	 pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::ImportHeap(RhsStr);
-	 Psi2 = Psi2Ptr->get<InfiniteWavefunctionLeft>();
+         pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::ImportHeap(RhsStr);
+         Psi2 = Psi2Ptr->get<InfiniteWavefunctionLeft>();
       }
 
       if (Verbose)
@@ -245,14 +245,14 @@ int main(int argc, char** argv)
       {
          if (Verbose)
             std::cout << "Reflecting psi2..." << std::endl;
-	 inplace_reflect(Psi2);
+         inplace_reflect(Psi2);
       }
 
       if (Conj)
       {
          if (Verbose)
             std::cout << "Conjugating psi2..." << std::endl;
-	 inplace_conj(Psi2);
+         inplace_conj(Psi2);
       }
 
       int Size = statistics::lcm(Psi1.size(), Psi2.size());
@@ -260,12 +260,12 @@ int main(int argc, char** argv)
       ProductMPO StringOp;
       if (vm.count("string"))
       {
-	 InfiniteLattice Lattice;
-	 std::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(String);
-	 if (Print)
-	 {
-	    std::cout << "String MPO is:\n" << StringOp << '\n';
-	 }
+         InfiniteLattice Lattice;
+         std::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(String);
+         if (Print)
+         {
+            std::cout << "String MPO is:\n" << StringOp << '\n';
+         }
       }
       else
       {
@@ -277,15 +277,15 @@ int main(int argc, char** argv)
 
       if (Verbose > 0 && Psi1.size() != Psi2.size())
       {
-	 std::cerr << "Wavefunction unit cells differ, extending wavefunctions to size " << Size << '\n';
+         std::cerr << "Wavefunction unit cells differ, extending wavefunctions to size " << Size << '\n';
       }
 
       Psi1 = repeat(Psi1, Size/Psi1.size());
       Psi2 = repeat(Psi2, Size/Psi2.size());
-      
+
       // The default UnitCellSize for output is the wavefunction size
       if (UnitCellSize == 0)
-	 UnitCellSize = Size;
+         UnitCellSize = Size;
       double ScaleFactor = double(UnitCellSize) / double(Psi1.size());
 
       // get the list of quantum number sectors
@@ -300,25 +300,25 @@ int main(int argc, char** argv)
       }
       else
       {
-	 // auto-detect the quantum number sectors
-	 std::set<QuantumNumber> B1 = QuantumNumbersInBasis(Psi1.Basis1().Basis());
+         // auto-detect the quantum number sectors
+         std::set<QuantumNumber> B1 = QuantumNumbersInBasis(Psi1.Basis1().Basis());
 
-	 // Merge B2 with the operator basis
-	 std::set<QuantumNumber> B2 = QuantumNumbersInBasis(Psi2.Basis1().Basis());
-	 std::set<QuantumNumber> OpBasis = QuantumNumbersInBasis(StringOp.Basis1());
-	 std::set<QuantumNumber> OpB2;
-	 for (QuantumNumber const& q2 : B2)
-	 {
-	    for (QuantumNumber const& qOp : OpBasis)
+         // Merge B2 with the operator basis
+         std::set<QuantumNumber> B2 = QuantumNumbersInBasis(Psi2.Basis1().Basis());
+         std::set<QuantumNumber> OpBasis = QuantumNumbersInBasis(StringOp.Basis1());
+         std::set<QuantumNumber> OpB2;
+         for (QuantumNumber const& q2 : B2)
+         {
+            for (QuantumNumber const& qOp : OpBasis)
             {
-	       transform_targets(q2, qOp, std::inserter(OpB2, OpB2.begin()));
-	    }
-	 }
+               transform_targets(q2, qOp, std::inserter(OpB2, OpB2.begin()));
+            }
+         }
 
-	 // finally determine the target quantum numbers as B1 * target = B2
-	 for (QuantumNumber const& qi : B1)
-	 {
-	    for (QuantumNumber const& qj : OpB2)
+         // finally determine the target quantum numbers as B1 * target = B2
+         for (QuantumNumber const& qi : B1)
+         {
+            for (QuantumNumber const& qj : OpB2)
             {
                inverse_transform_targets(qj, qi, std::inserter(Sectors, Sectors.begin()));
             }
@@ -327,12 +327,12 @@ int main(int argc, char** argv)
 
       if (!Quiet)
       {
-	 std::cout << "\n#quantities are calculated per unit cell size of " << UnitCellSize 
-		   << (UnitCellSize == 1 ? " site\n" : " sites\n");
-	 if (Size != UnitCellSize)
-	 {
-	    std::cout << "#actual size of wavefunction is " << Size << '\n';
-	 }
+         std::cout << "\n#quantities are calculated per unit cell size of " << UnitCellSize
+                   << (UnitCellSize == 1 ? " site\n" : " sites\n");
+         if (Size != UnitCellSize)
+         {
+            std::cout << "#actual size of wavefunction is " << Size << '\n';
+         }
          std::cout << "#sector     ";
          if (ShowRealPart)
             std::cout << "#real                   ";
@@ -352,13 +352,13 @@ int main(int argc, char** argv)
       std::vector<TransEigenInfo> EigenList;
       for (std::set<QuantumNumber>::const_iterator I = Sectors.begin(); I != Sectors.end(); ++I)
       {
-	 //FiniteMPO StringOp = FiniteMPO::make_identity(ExtractLocalBasis(Psi2.Psi));
+         //FiniteMPO StringOp = FiniteMPO::make_identity(ExtractLocalBasis(Psi2.Psi));
          TransEigenInfo Info(*I, std::get<0>(overlap(Psi1, StringOp, Psi2, *I, Iter, Tol, Verbose)));
          if (Sort)
             EigenList.push_back(Info);
          else
             PrintFormat(Info, ShowRealPart, ShowImagPart, ShowCorrLength, ShowMagnitude,
-			ShowArgument, ShowRadians, ScaleFactor);
+                        ShowArgument, ShowRadians, ScaleFactor);
       }
 
       if (Sort)
@@ -367,7 +367,7 @@ int main(int argc, char** argv)
          for (unsigned i = 0; i < EigenList.size(); ++i)
          {
             PrintFormat(EigenList[i], ShowRealPart, ShowImagPart, ShowCorrLength, ShowMagnitude, ShowArgument,
-			ShowRadians, ScaleFactor);
+                        ShowRadians, ScaleFactor);
          }
       }
 

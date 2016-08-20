@@ -65,7 +65,7 @@ class SU2
       static int Size() { return 1; }
 
       static int num_casimir() { return 1; }
-      static std::string casimir_name(std::string const& QName, int) 
+      static std::string casimir_name(std::string const& QName, int)
       { return QName + "^2"; }
 
       half_int j;
@@ -183,11 +183,11 @@ std::complex<double> cross_product_factor(SU2 const& q1, SU2 const& q2)
 
 inline
 double clebsch_gordan(SU2 const& q1, SU2 const& q2, SU2 const& q,
-		      Sz const& m1,  Sz const& m2,  Sz const& m)
+                      Sz const& m1,  Sz const& m2,  Sz const& m)
 {
    PRECONDITION(is_triangle(q1.j, q2.j, q.j));
 
-   // to get the convention of Varshalovich et al insert factor 
+   // to get the convention of Varshalovich et al insert factor
    return
 #if defined(PRESERVE_NORM)
       (minus1pow(q2.j.twice()) / sqrt(q1.j.twice()+1)) *
@@ -197,34 +197,34 @@ double clebsch_gordan(SU2 const& q1, SU2 const& q2, SU2 const& q,
 
 inline
 double product_coefficient(SU2 const& k1, SU2 const& k2, SU2 const& k,
-			  SU2 const& qp, SU2 const& q, SU2 const& qpp)
+                          SU2 const& qp, SU2 const& q, SU2 const& qpp)
 {
    DEBUG_PRECONDITION(is_triangle(k1.j, k2.j, k.j));
    DEBUG_PRECONDITION(is_triangle(qp.j, k1.j, qpp.j));
    DEBUG_PRECONDITION(is_triangle(qpp.j, k2.j, q.j));
    DEBUG_PRECONDITION(is_triangle(qp.j, k.j, q.j));
 
-   return minus1pow(to_int(k1.j + k2.j - k.j)) * sqrt(degree(qpp)) * sqrt(degree(k)) * 
+   return minus1pow(to_int(k1.j + k2.j - k.j)) * sqrt(degree(qpp)) * sqrt(degree(k)) *
      Racah(qp.j, k1.j, q.j, k2.j, qpp.j, k.j);
 }
 
 inline
 double inverse_product_coefficient(SU2 const& k1, SU2 const& k2, SU2 const& k,
-				   SU2 const& qp, SU2 const& q, SU2 const& qpp)
+                                   SU2 const& qp, SU2 const& q, SU2 const& qpp)
 {
    DEBUG_PRECONDITION(is_triangle(k1.j, k2.j, k.j));
    DEBUG_PRECONDITION(is_triangle(qp.j, k1.j, qpp.j));
    DEBUG_PRECONDITION(is_triangle(qpp.j, k2.j, q.j));
    DEBUG_PRECONDITION(is_triangle(qp.j, k.j, q.j));
-   
-   return minus1pow(to_int(k1.j + k2.j - k.j)) * sqrt(degree(qpp)) * sqrt(degree(k)) * 
+
+   return minus1pow(to_int(k1.j + k2.j - k.j)) * sqrt(degree(qpp)) * sqrt(degree(k)) *
       Racah(qp.j, k1.j, q.j, k2.j, qpp.j, k.j);
 }
 
 inline
 double tensor_coefficient(SU2 const& j1,  SU2 const& j2,  SU2 const& j12,
-			  SU2 const& j3,  SU2 const& j4,  SU2 const& j34,
-			  SU2 const& j13, SU2 const& j24, SU2 const& j)
+                          SU2 const& j3,  SU2 const& j4,  SU2 const& j34,
+                          SU2 const& j13, SU2 const& j24, SU2 const& j)
 {
    DEBUG_PRECONDITION(is_triangle(j1.j,  j2.j, j12.j))(j1.j)(j2.j)(j12.j);
    DEBUG_PRECONDITION(is_triangle(j3.j, j4.j, j34.j))(j3.j)(j4.j)(j34.j);
@@ -238,7 +238,7 @@ double tensor_coefficient(SU2 const& j1,  SU2 const& j2,  SU2 const& j12,
    double f3 = sqrt(degree(j24));
    double f4 = sqrt(degree(j34));
 
-   double Result =  f1*f2*f3*f4*Coupling9j(j1.j,  j2.j,  j12.j, 
+   double Result =  f1*f2*f3*f4*Coupling9j(j1.j,  j2.j,  j12.j,
                                            j3.j,  j4.j,  j34.j,
                                            j13.j, j24.j, j.j);
    return Result;
@@ -246,8 +246,8 @@ double tensor_coefficient(SU2 const& j1,  SU2 const& j2,  SU2 const& j12,
 
 inline
 double inverse_tensor_coefficient(SU2 const& j1,  SU2 const& j2,  SU2 const& j12,
-				  SU2 const& j3,  SU2 const& j4,  SU2 const& j34,
-				  SU2 const& j13, SU2 const& j24, SU2 const& j)
+                                  SU2 const& j3,  SU2 const& j4,  SU2 const& j34,
+                                  SU2 const& j13, SU2 const& j24, SU2 const& j)
 {
    DEBUG_PRECONDITION(is_triangle(j1.j,  j2.j, j12.j))(j1.j)(j2.j)(j12.j);
    DEBUG_PRECONDITION(is_triangle(j3.j, j4.j, j34.j))(j3.j)(j4.j)(j34.j);
@@ -264,25 +264,25 @@ double inverse_tensor_coefficient(SU2 const& j1,  SU2 const& j2,  SU2 const& j12
    double denominator = f1*f2*f3*f4;
    double numerator = degree(j3)*degree(j4)*degree(j12)*degree(j);
 
-   double Result =  (numerator/denominator)*Coupling9j(j1.j,  j2.j,  j12.j, 
-						       j3.j,  j4.j,  j34.j,
-						       j13.j, j24.j, j.j);
+   double Result =  (numerator/denominator)*Coupling9j(j1.j,  j2.j,  j12.j,
+                                                       j3.j,  j4.j,  j34.j,
+                                                       j13.j, j24.j, j.j);
    return Result;
 }
 
 inline
 double recoupling(SU2 const& q1, SU2 const& q2, SU2 const& q12,
-		  SU2 const& q3, SU2 const& q, SU2 const& q23)
+                  SU2 const& q3, SU2 const& q, SU2 const& q23)
 {
-   return sqrt(degree(q12)) * sqrt(degree(q23)) * 
+   return sqrt(degree(q12)) * sqrt(degree(q23)) *
       Racah(q1.j, q2.j, q.j, q3.j, q12.j, q23.j);
 }
 
 inline
-double recoupling_12_3__13_2(SU2 const& q1, SU2 const& q2, 
-			     SU2 const& q12,
-			     SU2 const& q3, SU2 const& q, 
-			     SU2 const& q13)
+double recoupling_12_3__13_2(SU2 const& q1, SU2 const& q2,
+                             SU2 const& q12,
+                             SU2 const& q3, SU2 const& q,
+                             SU2 const& q13)
 {
    return minus1pow(to_int(q1.j+q.j+q12.j+q13.j)) * sqrt(degree(q13)) * sqrt(degree(q12))
       * Racah(q1.j, q2.j, q3.j, q.j, q12.j, q13.j);
@@ -414,7 +414,7 @@ double weight(Sz const& p)
 inline
 double delta_shift_coefficient(SU2 const& qp, SU2 const& k, SU2 const& q, SU2 const& Delta)
 {
-   double Result = minus1pow(to_int(q.j - k.j + qp.j)) 
+   double Result = minus1pow(to_int(q.j - k.j + qp.j))
       * sqrt(double(q.j.twice()+Delta.j.twice()+1)*double(qp.j.twice()+1))
       * Racah(q.j, qp.j, q.j+Delta.j, qp.j+Delta.j, k.j, Delta.j);
 

@@ -35,8 +35,8 @@ class PackMatrixOperator
    public:
       typedef std::complex<double> value_type;
 
-      PackMatrixOperator(VectorBasis const& Basis1, 
-                         VectorBasis const& Basis2, 
+      PackMatrixOperator(VectorBasis const& Basis1,
+                         VectorBasis const& Basis2,
                          QuantumNumbers::QuantumNumber const& q);
 
       PackMatrixOperator(MatrixOperator const& m);
@@ -44,12 +44,12 @@ class PackMatrixOperator
       value_type* pack(MatrixOperator const& m, value_type* Iter) const;
 
       MatrixOperator unpack(value_type const* Iter) const;
-   
+
       std::size_t size() const { return Size_; }
-   
+
    private:
-      void Initialize(VectorBasis const& Basis1, 
-                      VectorBasis const& Basis2, 
+      void Initialize(VectorBasis const& Basis1,
+                      VectorBasis const& Basis2,
                       QuantumNumbers::QuantumNumber const& q_);
 
       // OffsetRecType contains the information for an individual dense block
@@ -77,7 +77,7 @@ class PackStateComponent
    public:
       typedef std::complex<double> value_type;
 
-      PackStateComponent(BasisList const& LocalBasis, VectorBasis const& Basis1, 
+      PackStateComponent(BasisList const& LocalBasis, VectorBasis const& Basis1,
                          VectorBasis const& Basis2);
 
       PackStateComponent(StateComponent const& m);
@@ -85,17 +85,17 @@ class PackStateComponent
       value_type* pack(StateComponent const& m, value_type* Iter) const;
 
       StateComponent unpack(value_type const* Iter) const;
-   
+
       std::size_t size() const { return Size_; }
-   
+
    private:
-      void Initialize(BasisList const& LocalBasis, VectorBasis const& Basis1, 
+      void Initialize(BasisList const& LocalBasis, VectorBasis const& Basis1,
                       VectorBasis const& Basis2);
 
       // OffsetRecType contains the information for an individual dense block
       struct OffsetRecType
       {
-	 int q;             // index into the StateComponent
+         int q;             // index into the StateComponent
          int r, c;          // row and column of the StateComponent
          int Offset;        // offset into the packed array of this section
          unsigned Size;     // size of this block
@@ -177,8 +177,8 @@ ConstructSuperOperatorSparse(F f, MatrixOperator const& Init)
       Pack.pack(M, &L[0]);
       for (unsigned j = 0; j < Size; ++j)
       {
-	 if (norm_frob(Out(j,i)) != 0)
-	    Out(j,i) = L[j];
+         if (norm_frob(Out(j,i)) != 0)
+            Out(j,i) = L[j];
       }
    }
 
@@ -210,10 +210,10 @@ ConstructSuperOperatorBinaryFile(F f, MatrixOperator const& Init, std::streambuf
       Pack.pack(M, &L[0]);
       for (unsigned j = 0; j < Size; ++j)
       {
-	 double r = L[j].real();
-	 double c = L[j].real();
-	 Out->sputn(reinterpret_cast<char const*>(&r), sizeof(r));
-	 Out->sputn(reinterpret_cast<char const*>(&c), sizeof(c));
+         double r = L[j].real();
+         double c = L[j].real();
+         Out->sputn(reinterpret_cast<char const*>(&r), sizeof(r));
+         Out->sputn(reinterpret_cast<char const*>(&c), sizeof(c));
       }
    }
 

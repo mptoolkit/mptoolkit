@@ -43,7 +43,7 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("lattice,l", prog_opt::value(&LatticeFile), 
+         ("lattice,l", prog_opt::value(&LatticeFile),
           "lattice file [required]")
          ("input-operator,i", prog_opt::value(&OperatorName),
           "name of the input operator [required]")
@@ -53,11 +53,11 @@ int main(int argc, char** argv)
           "size of the unit cell [default 1]")
          ;
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).run(), vm);
-      prog_opt::notify(vm);    
-      
+      prog_opt::notify(vm);
+
       if (vm.count("help") || !vm.count("lattice") || !vm.count("input-operator"))
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
@@ -87,10 +87,10 @@ int main(int argc, char** argv)
          MPOperator OpK;
          for (int i = 0; i < LatticeSize; ++i)
          {
-            OpK += std::sqrt(2./double(LatticeSize)) * 
-	       std::complex<double>(cos(math_const::pi * k * i / LatticeSize),
-				    sin(math_const::pi * k * i / LatticeSize))
-	       * InputOp(i+1);
+            OpK += std::sqrt(2./double(LatticeSize)) *
+               std::complex<double>(cos(math_const::pi * k * i / LatticeSize),
+                                    sin(math_const::pi * k * i / LatticeSize))
+               * InputOp(i+1);
          }
          OutputOp(k) = OpK;
       }

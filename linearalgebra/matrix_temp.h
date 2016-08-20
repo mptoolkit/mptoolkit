@@ -26,7 +26,7 @@
 */
 
 #if !defined(MATRIX_TEMP_H_HSFUJRHT7843Y7FHOL894Y39HWH)
-#define MATRIX_TEMP_H_HSFUJRHT7843Y7FHOL894Y39HWH 
+#define MATRIX_TEMP_H_HSFUJRHT7843Y7FHOL894Y39HWH
 
 #include "matrixtypes.h"
 #include "common/stackallocator.h"
@@ -94,14 +94,14 @@ class TempMatrixRef : public MatrixSlice<Scalar, TempMatrixRef<Scalar> >
       template <class S2, class D2>
       TempMatrixRef& operator=(MatrixConstExpression<S2, D2> const& V)
       {
-	 this->assign_copy(V.as_derived());
-	 return *this;
+         this->assign_copy(V.as_derived());
+         return *this;
       }
 
       TempMatrixRef& operator=(TempMatrixRef const& V)
       {
-	 this->assign(V.as_derived());
-	 return *this;
+         this->assign(V.as_derived());
+         return *this;
       }
 
       size_type size() const { return Size1 * Size2; }
@@ -114,23 +114,23 @@ class TempMatrixRef : public MatrixSlice<Scalar, TempMatrixRef<Scalar> >
       iterator2 begin2() { return iterator2(Data, Range(0, Size2), 0, Slice(0, Size1, Size2)); }
       iterator2 end2() { return iterator2(Data, Range(0, Size2), Size2, Slice(0, Size1, Size2)); }
 
-      const_iterator1 begin1() const 
-	{ return const_iterator1(Data, Slice(0, Size1, Size2), 0, Range(0, Size2)); }
+      const_iterator1 begin1() const
+        { return const_iterator1(Data, Slice(0, Size1, Size2), 0, Range(0, Size2)); }
 
       const_iterator1 end1() const
-	{ return const_iterator1(Data, Slice(0, Size1, Size2), Size1, Range(0, Size2)); }
+        { return const_iterator1(Data, Slice(0, Size1, Size2), Size1, Range(0, Size2)); }
 
       const_iterator2 begin2() const
-	{ return const_iterator2(Data, Range(0, Size2), 0, Slice(0, Size1, Size2)); }
+        { return const_iterator2(Data, Range(0, Size2), 0, Slice(0, Size1, Size2)); }
 
       const_iterator2 end2() const
-	{ return const_iterator2(Data, Range(0, Size2), Size2, Slice(0, Size1, Size2)); }
+        { return const_iterator2(Data, Range(0, Size2), Size2, Slice(0, Size1, Size2)); }
 
-      Scalar const& operator()(size_type i, size_type j) const 
-	{ return Data[i * Size2 + j]; }
+      Scalar const& operator()(size_type i, size_type j) const
+        { return Data[i * Size2 + j]; }
 
       Scalar& operator()(size_type i, size_type j)
-	{ return Data[i * Size2 + j]; }
+        { return Data[i * Size2 + j]; }
 
 
       // members defined in MatrixStride
@@ -158,7 +158,7 @@ template <typename Scalar, typename Nest>
 struct MatrixTranspose<TempMatrixRef<Scalar>, Nest>
    : public MatrixTransform<MatrixTransformProxy<TempMatrixRef<Scalar> >, Nest>
 {
-   MatrixTranspose(Nest n = Nest()) 
+   MatrixTranspose(Nest n = Nest())
       : MatrixTransform<MatrixTransformProxy<TempMatrixRef<Scalar> >, Nest>(n) {}
 };
 
@@ -166,7 +166,7 @@ template <typename Scalar, typename Nest>
 struct MatrixConstTranspose<TempMatrixRef<Scalar>, Nest>
    : public MatrixTransform<MatrixConstTransformProxy<TempMatrixRef<Scalar> >, Nest>
 {
-   MatrixConstTranspose(Nest n = Nest()) 
+   MatrixConstTranspose(Nest n = Nest())
       : MatrixConstTransform<MatrixTransformProxy<TempMatrixRef<Scalar> >, Nest>(n) {}
 };
 #endif
@@ -218,29 +218,29 @@ class TempMatrix : public TempMatrixRef<Scalar>
       typedef typename traits_type::const_transpose_type const_transpose_type;
 
       TempMatrix(size_type Size1, size_type Size2)
-	: TempMatrixRef<Scalar>(Size1, Size2) {}
+        : TempMatrixRef<Scalar>(Size1, Size2) {}
 
       TempMatrix(size_type Size1, size_type Size2, Scalar const& Init)
-	: TempMatrixRef<Scalar>(Size1, Size2, Init) {}
+        : TempMatrixRef<Scalar>(Size1, Size2, Init) {}
 
       TempMatrix(TempMatrix const& V)
-	: TempMatrixRef<Scalar>(V.size1(), V.size2()) { this->assign(V); }
+        : TempMatrixRef<Scalar>(V.size1(), V.size2()) { this->assign(V); }
 
       template <class S2, class D2>
       TempMatrix(GenericMatrix<S2, D2> const& V)
-	: TempMatrixRef<Scalar>(V.size1(), V.size2()) { this->assign(V); }
+        : TempMatrixRef<Scalar>(V.size1(), V.size2()) { this->assign(V); }
 
       template <class S2, class D2>
       TempMatrix& operator=(GenericMatrix<S2, D2> const& V)
       {
-	 this->assign_copy(V.as_derived());
-	 return *this;
+         this->assign_copy(V.as_derived());
+         return *this;
       }
 
       TempMatrix& operator=(TempMatrix const& V)
       {
-	 this->assign(V.as_derived());
-	 return *this;
+         this->assign(V.as_derived());
+         return *this;
       }
 
       ~TempMatrix() { this->deallocate(); }

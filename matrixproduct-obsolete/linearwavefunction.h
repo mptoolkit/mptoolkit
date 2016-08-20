@@ -18,9 +18,9 @@
 // ENDHEADER
 //
 // LinearWavefunction: main class to represent a linear matrix product wavefunction.
-// 
+//
 // An MPWavefunction is currently a typedef for a LinearWavefunction, but MPWavefunction
-// has some additional properties.  Assumed to be always in 'normal' form; with all 
+// has some additional properties.  Assumed to be always in 'normal' form; with all
 // matrices satisfying the right-orthonormality constraint except possibly the left most A-matrix.
 //
 // Eventually an MPWavefunction will be a different beast, that allows Y-junctions
@@ -86,13 +86,13 @@ class LinearWavefunction
       const_iterator begin() const { return const_iterator(Data.begin()); }
       const_iterator end() const { return const_iterator(Data.end()); }
 
-      void push_front(value_type const& x) 
+      void push_front(value_type const& x)
       { Data.push_front(handle_type(new value_type(x))); }
 
-      void push_back(value_type const& x) 
+      void push_back(value_type const& x)
       { Data.push_back(handle_type(new value_type(x))); }
 
-      // Because the items are stored by handle, we can't provide a 
+      // Because the items are stored by handle, we can't provide a
       // reference-returning front() or back() function.  Instead,
       // we use get/set.
       value_type get_front() const;
@@ -174,23 +174,23 @@ std::complex<double>
 overlap_conj(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2);
 
 MPMatrix
-reduced_matrix_element(LinearWavefunction const& Psi1, 
-                       LinearOperator const& M, 
+reduced_matrix_element(LinearWavefunction const& Psi1,
+                       LinearOperator const& M,
                        LinearWavefunction const& Psi2);
 
 MPMatrix
-reduced_matrix_element_conj(LinearWavefunction const& Psi1, 
-                            LinearOperator const& M, 
+reduced_matrix_element_conj(LinearWavefunction const& Psi1,
+                            LinearOperator const& M,
                             LinearWavefunction const& Psi2);
 
 std::complex<double>
-expectation(LinearWavefunction const& Psi1, 
-            LinearOperator const& M, 
+expectation(LinearWavefunction const& Psi1,
+            LinearOperator const& M,
             LinearWavefunction const& Psi2);
 
 std::complex<double>
-expectation_conj(LinearWavefunction const& Psi1, 
-                 LinearOperator const& M, 
+expectation_conj(LinearWavefunction const& Psi1,
+                 LinearOperator const& M,
                  LinearWavefunction const& Psi2);
 
 // action of an operator on a wavefunction (exact)
@@ -214,14 +214,14 @@ herm(LinearWavefunction const& x)
 
 // from left to right, calculates the action of the transfer operator R = A^\dagger m B
 MatrixOperator
-operator_prod(HermitianProxy<LinearWavefunction> const& A, 
-              MatrixOperator const& m, 
+operator_prod(HermitianProxy<LinearWavefunction> const& A,
+              MatrixOperator const& m,
               LinearWavefunction const& B);
 
 // from right to left, calculates the action of the transfer operator R = A m B^\dagger
 MatrixOperator
 operator_prod(LinearWavefunction const& A,
-              MatrixOperator const& m, 
+              MatrixOperator const& m,
               HermitianProxy<LinearWavefunction> const& B);
 
 double norm_2_sq(LinearWavefunction const& Psi);

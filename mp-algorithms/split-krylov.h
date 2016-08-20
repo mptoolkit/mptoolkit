@@ -64,16 +64,16 @@ class SplitKrylov
       // obtained from ConstructWavefunctionFromRitz, as fewer projections are done.
       MatrixOperator ConstructLeftDensityMatrixFromRitz(Vector<std::complex<double> > const& x);
       MatrixOperator ConstructRightDensityMatrixFromRitz(Vector<std::complex<double> > const& x);
- 
-      void TruncateLeft(double MixFactor, MatrixOperator Rho_k0L, 
-			MatrixOperator Rho_k0R, int MaxStates);
 
-      void TruncateRight(double MixFactor, MatrixOperator Rho_k0L, 
-			 MatrixOperator Rho_k0R, int MaxStates);
+      void TruncateLeft(double MixFactor, MatrixOperator Rho_k0L,
+                        MatrixOperator Rho_k0R, int MaxStates);
+
+      void TruncateRight(double MixFactor, MatrixOperator Rho_k0L,
+                         MatrixOperator Rho_k0R, int MaxStates);
 
       // The common part of TruncateLeft/Right
-      void TruncateCommon(double MixFactor, MatrixOperator Rho_k0L, 
-			  MatrixOperator Rho_k0R, int MaxStates, int Direction);
+      void TruncateCommon(double MixFactor, MatrixOperator Rho_k0L,
+                          MatrixOperator Rho_k0R, int MaxStates, int Direction);
 
       // Returns the truncation operator U, given the density matrix Rho.
       // In principle, this does not depend on the left/right direction, or on i.  But

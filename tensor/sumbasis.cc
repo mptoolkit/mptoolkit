@@ -69,7 +69,7 @@ SumBasis<BasisT>::SumBasis(BasisType const& B)
 {
    this->AddBasis(B);
 }
-   
+
 template <typename BasisT>
 SumBasis<BasisT>::SumBasis(BasisType const& B1, BasisType const& B2)
    : BasisType(B1.GetSymmetryList())
@@ -82,8 +82,8 @@ SumBasis<BasisT>::SumBasis(BasisType const& B1, BasisType const& B2)
 template <typename C, typename Basis1T, typename Basis2T>
 IrredOperator<C, Basis1T, Basis2T>
 tensor_sum(IrredOperator<C, Basis1T, Basis2T> const& x,
-	   IrredOperator<C, Basis1T, Basis2T> const& y, 
-           SumBasis<Basis1T> const& B1, 
+           IrredOperator<C, Basis1T, Basis2T> const& y,
+           SumBasis<Basis1T> const& B1,
            SumBasis<Basis2T> const& B2)
 {
    DEBUG_PRECONDITION(x.TransformsAs() == y.TransformsAs());
@@ -101,7 +101,7 @@ tensor_sum(IrredOperator<C, Basis1T, Basis2T> const& x,
    {
       for (typename const_iterator1::const_iterator J = I.begin(); J != I.end(); ++J)
       {
-	 Result(B1(0,i), B2(0,J.index())) = J.data();
+         Result(B1(0,i), B2(0,J.index())) = J.data();
       }
    }
    i = 0;
@@ -109,7 +109,7 @@ tensor_sum(IrredOperator<C, Basis1T, Basis2T> const& x,
    {
       for (typename const_iterator1::const_iterator J = I.begin(); J != I.end(); ++J)
       {
-	 Result(B1(1,i), B2(1,J.index())) = J.data();
+         Result(B1(1,i), B2(1,J.index())) = J.data();
       }
    }
    return Result;
@@ -119,17 +119,17 @@ template <typename C, typename Basis1T, typename Basis2T>
 inline
 IrredOperator<C, Basis1T, Basis2T>
 tensor_sum(IrredOperator<C, Basis1T, Basis2T> const& x,
-	   IrredOperator<C, Basis1T, Basis2T> const& y)
+           IrredOperator<C, Basis1T, Basis2T> const& y)
 {
-   return tensor_sum(x, y, 
-                     SumBasis<Basis1T>(x.Basis1(), y.Basis1()), 
+   return tensor_sum(x, y,
+                     SumBasis<Basis1T>(x.Basis1(), y.Basis1()),
                      SumBasis<Basis2T>(x.Basis2(), y.Basis2()));
 }
 
 template <typename C, typename Basis1T, typename Basis2T>
 IrredOperator<C, Basis1T, Basis2T>
 tensor_row_sum(IrredOperator<C, Basis1T, Basis2T> const& x,
-	       IrredOperator<C, Basis1T, Basis2T> const& y, SumBasis<Basis2T> const& B2)
+               IrredOperator<C, Basis1T, Basis2T> const& y, SumBasis<Basis2T> const& B2)
 {
    DEBUG_PRECONDITION(x.TransformsAs() == y.TransformsAs());
    DEBUG_PRECONDITION(B2.NumBasis() == 2);
@@ -144,7 +144,7 @@ tensor_row_sum(IrredOperator<C, Basis1T, Basis2T> const& x,
    {
       for (typename const_iterator1::const_iterator J = I.begin(); J != I.end(); ++J)
       {
-	 Result(i, B2(0,J.index())) = J.data();
+         Result(i, B2(0,J.index())) = J.data();
       }
    }
    i = 0;
@@ -152,7 +152,7 @@ tensor_row_sum(IrredOperator<C, Basis1T, Basis2T> const& x,
    {
       for (typename const_iterator1::const_iterator J = I.begin(); J != I.end(); ++J)
       {
-	 Result(i, B2(1,J.index())) = J.data();
+         Result(i, B2(1,J.index())) = J.data();
       }
    }
    return Result;
@@ -162,7 +162,7 @@ template <typename C, typename Basis1T, typename Basis2T>
 inline
 IrredOperator<C, Basis1T, Basis2T>
 tensor_row_sum(IrredOperator<C, Basis1T, Basis2T> const& x,
-	       IrredOperator<C, Basis1T, Basis2T> const& y)
+               IrredOperator<C, Basis1T, Basis2T> const& y)
 {
    return tensor_row_sum(x, y, SumBasis<Basis2T>(x.Basis2(), y.Basis2()));
 }
@@ -170,7 +170,7 @@ tensor_row_sum(IrredOperator<C, Basis1T, Basis2T> const& x,
 template <typename C, typename Basis1T, typename Basis2T>
 IrredOperator<C, Basis1T, Basis2T>
 tensor_col_sum(IrredOperator<C, Basis1T, Basis2T> const& x,
-	       IrredOperator<C, Basis1T, Basis2T> const& y, SumBasis<Basis1T> const& B1)
+               IrredOperator<C, Basis1T, Basis2T> const& y, SumBasis<Basis1T> const& B1)
 {
    DEBUG_PRECONDITION(x.TransformsAs() == y.TransformsAs());
    DEBUG_PRECONDITION(B1.NumBasis() == 2);
@@ -185,7 +185,7 @@ tensor_col_sum(IrredOperator<C, Basis1T, Basis2T> const& x,
    {
       for (typename const_iterator1::const_iterator J = I.begin(); J != I.end(); ++J)
       {
-	 Result(B1(0,i), J.index()) = J.data();
+         Result(B1(0,i), J.index()) = J.data();
       }
    }
    i = 0;
@@ -193,7 +193,7 @@ tensor_col_sum(IrredOperator<C, Basis1T, Basis2T> const& x,
    {
       for (typename const_iterator1::const_iterator J = I.begin(); J != I.end(); ++J)
       {
-	 Result(B1(1,i), J.index()) = J.data();
+         Result(B1(1,i), J.index()) = J.data();
       }
    }
    return Result;
@@ -203,7 +203,7 @@ template <typename C, typename Basis1T, typename Basis2T>
 inline
 IrredOperator<C, Basis1T, Basis2T>
 tensor_col_sum(IrredOperator<C, Basis1T, Basis2T> const& x,
-	       IrredOperator<C, Basis1T, Basis2T> const& y)
+               IrredOperator<C, Basis1T, Basis2T> const& y)
 {
    return tensor_col_sum(x, y, SumBasis<Basis1T>(x.Basis1(), y.Basis1()));
 }
@@ -214,7 +214,7 @@ tensor_col_sum(IrredOperator<C, Basis1T, Basis2T> const& x,
 template <typename FwdIter, typename Basis1T, typename Basis2T>
 typename std::iterator_traits<FwdIter>::value_type
 tensor_accumulate(FwdIter first, FwdIter last,
-           SumBasis<Basis1T> const& B1, 
+           SumBasis<Basis1T> const& B1,
            SumBasis<Basis2T> const& B2)
 {
    typedef typename std::iterator_traits<FwdIter>::value_type ResultType;
@@ -243,10 +243,10 @@ tensor_accumulate(FwdIter first, FwdIter last,
       ResultType const Element = *F;
       for (const_iterator1 I = Element.begin1(); I != Element.end1(); ++I, ++i)
       {
-	 for (typename const_iterator1::const_iterator J = I.begin(); J != I.end(); ++J)
-	 {
-	    Result(B1(f,i), B2(f,J.index())) = J.data();
-	 }
+         for (typename const_iterator1::const_iterator J = I.begin(); J != I.end(); ++J)
+         {
+            Result(B1(f,i), B2(f,J.index())) = J.data();
+         }
       }
    }
    return Result;
@@ -282,10 +282,10 @@ tensor_row_accumulate(FwdIter first, FwdIter last, SumBasis<Basis2T> const& B2)
       ResultType const Element = *F;
       for (const_iterator1 I = Element.begin1(); I != Element.end1(); ++I, ++i)
       {
-	 for (typename const_iterator1::const_iterator J = I.begin(); J != I.end(); ++J)
-	 {
-	    Result(i, B2(f,J.index())) = J.data();
-	 }
+         for (typename const_iterator1::const_iterator J = I.begin(); J != I.end(); ++J)
+         {
+            Result(i, B2(f,J.index())) = J.data();
+         }
       }
    }
    return Result;
@@ -323,10 +323,10 @@ tensor_col_accumulate(FwdIter first, FwdIter last, SumBasis<Basis1T> const& B1)
       ResultType const Element = *F;
       for (const_iterator1 I = Element.begin1(); I != Element.end1(); ++I, ++i)
       {
-	 for (typename const_iterator1::const_iterator J = I.begin(); J != I.end(); ++J)
-	 {
-	    Result(B1(f,i), J.index()) = J.data();
-	 }
+         for (typename const_iterator1::const_iterator J = I.begin(); J != I.end(); ++J)
+         {
+            Result(B1(f,i), J.index()) = J.data();
+         }
       }
    }
    return Result;

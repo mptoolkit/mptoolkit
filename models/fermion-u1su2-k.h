@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// models/fermion-u1su2.h
+// models/fermion-u1su2-k.h
 //
 // Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
@@ -25,8 +25,8 @@
 template <int NN>
 inline
 LatticeSite FermionU1SU2_K(half_int k,
-			   std::string const& Sym1 = "N", std::string const& Sym2 = "S",
-			   std::string const& Sym3 = "K")
+                           std::string const& Sym1 = "N", std::string const& Sym2 = "S",
+                           std::string const& Sym3 = "K")
 {
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":SU(2),"+Sym3+":Z_"+boost::lexical_cast<std::string>(NN));
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2,
@@ -55,7 +55,7 @@ LatticeSite FermionU1SU2_K(half_int k,
       ("Qz"      , "eta z operator, equivalent to (N-1)/2")
       ("ES"      , "exp(i*pi*s)")
       ("Hu"      , "symmetrized Coulomb operator (n_up - 1/2) * (n_down - 1/2)")
-      ("Pdouble" , "projector onto the double-occupied site") 
+      ("Pdouble" , "projector onto the double-occupied site")
       ("Pg"      , "Gutswiller projector = 1-Pdouble")
       ;
 
@@ -75,7 +75,7 @@ LatticeSite FermionU1SU2_K(half_int k,
    // annihilate fermion
    C("empty",  "single")    =  std::sqrt(2.0);
    C("single", "double")    =  1;
-   
+
    // create fermion
    CH = adjoint(C);
 
@@ -83,17 +83,17 @@ LatticeSite FermionU1SU2_K(half_int k,
    Qp = sqrt(2.0) * prod(CH, CH, QN(2,0,2*k));
    Qm = sqrt(2.0) * prod(C, C, QN(-2,0,-2*k));
 
-   // parity = (-1)^N   
+   // parity = (-1)^N
    P("empty",  "empty")     =  1;
    P("single", "single")    = -1;
    P("double", "double")    =  1;
 
-   // spatial reflection   
+   // spatial reflection
    R("empty",  "empty")     =  1;
    R("single", "single")    =  1;
    R("double", "double")    = -1;
- 
-   // particle number  
+
+   // particle number
    N("single", "single")    =  1;
    N("double", "double")    =  2;
 
@@ -111,7 +111,7 @@ LatticeSite FermionU1SU2_K(half_int k,
    I("double", "double")    =  1;
 
    Pg = I - Pdouble; // Gutzwiller projector
-   
+
    // S
    S("single", "single")   = std::sqrt(0.75);
 

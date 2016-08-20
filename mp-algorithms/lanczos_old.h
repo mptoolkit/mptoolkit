@@ -55,12 +55,12 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int MaxIterati
    //   std::cout << "   n                    a                  b^2               Energy     Norm^2    Overlap\n";
 
    //      std::cout << std::setw(4) << n << " "
-   //	<< std::setprecision(14)
-   //	<< std::setw(20) << a[n] << " " << std::setw(20) << b[n]
-   //	<< " " << std::setw(20) << Energy
-   //	<< std::setprecision(4)
-   //	<< " " << std::setw(10) << std::sqrt(NormSq[n]) << " " << std::setw(10)
-   //	<< Overlap << std::endl;
+   //   << std::setprecision(14)
+   //   << std::setw(20) << a[n] << " " << std::setw(20) << b[n]
+   //   << " " << std::setw(20) << Energy
+   //   << std::setprecision(4)
+   //   << " " << std::setw(10) << std::sqrt(NormSq[n]) << " " << std::setw(10)
+   //   << Overlap << std::endl;
 
    ++n; // n=1 iteration
    f[n] = Hfn - a[n-1] * f[n-1];
@@ -80,36 +80,36 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int MaxIterati
    Energy = LinearAlgebra::EigenvaluesHermitian(M(range(0,2), range(0,2)))[0];
 
    //     std::cout << std::setw(4) << n << " "
-   //	<< std::setprecision(14)
-   //	<< std::setw(20) << a[n] << " " << std::setw(20) << b[n]
-   //	<< " " << std::setw(20) << Energy
-   //	<< std::setprecision(4)
-   //	<< " " << std::setw(10) << std::sqrt(NormSq[n]) << " " << std::setw(10)
-   //	<< Overlap << std::endl;
+   //   << std::setprecision(14)
+   //   << std::setw(20) << a[n] << " " << std::setw(20) << b[n]
+   //   << " " << std::setw(20) << Energy
+   //   << std::setprecision(4)
+   //   << " " << std::setw(10) << std::sqrt(NormSq[n]) << " " << std::setw(10)
+   //   << Overlap << std::endl;
 
    if (MaxIterations > 1)
    {
       while (n < MaxIterations && std::abs(Energy - EOld) > 1E-10)
       {
          ++n;
-	 f[n] = Hfn - a[n-1] * f[n-1] - b[n-1] * f[n-2];
-	 Hfn = MatVecMultiply(f[n]);
-	 NormSq[n] = norm_frob_sq(f[n]);
-	 a[n] = real(inner_prod(Hfn, f[n])) / NormSq[n];
-	 b[n] = NormSq[n] / NormSq[n-1];
-         //	 Overlap = LinearAlgebra::norm_2(inner_prod(Guess, f[n])) 
+         f[n] = Hfn - a[n-1] * f[n-1] - b[n-1] * f[n-2];
+         Hfn = MatVecMultiply(f[n]);
+         NormSq[n] = norm_frob_sq(f[n]);
+         a[n] = real(inner_prod(Hfn, f[n])) / NormSq[n];
+         b[n] = NormSq[n] / NormSq[n-1];
+         //      Overlap = LinearAlgebra::norm_2(inner_prod(Guess, f[n]))
          //            / (PsiNorm * std::sqrt(NormSq[n]));
 
-	 M(n,n) = a[n];
-	 M(n-1,n) = M(n,n-1) = std::sqrt(b[n]);
+         M(n,n) = a[n];
+         M(n-1,n) = M(n,n-1) = std::sqrt(b[n]);
 
-	 EOld = Energy;
+         EOld = Energy;
          //         TRACE(M(range(0,n+1), range(0,n+1)));
-	 Energy = LinearAlgebra::EigenvaluesHermitian(M(range(0,n+1), range(0,n+1)))[0];
+         Energy = LinearAlgebra::EigenvaluesHermitian(M(range(0,n+1), range(0,n+1)))[0];
 
          // TRACE(Energy)(a[n])(inner_prod(Hfn, f[n]));
-	 //	 double Next = ProcControl::GetCPUTime();
-	 //	 Now = Next;
+         //      double Next = ProcControl::GetCPUTime();
+         //      Now = Next;
       }
    }
 

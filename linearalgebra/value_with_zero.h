@@ -48,36 +48,36 @@ class value_with_zero // : private boost::optional<T>
 
       value_with_zero(T const& x) : value(boost::optional<T>(x)) {}
 
-      value_with_zero(value_with_zero const& rhs) 
+      value_with_zero(value_with_zero const& rhs)
          : value(rhs.value) {}
 
       template <typename U>
-      value_with_zero(value_with_zero<U> const& rhs) 
+      value_with_zero(value_with_zero<U> const& rhs)
          : value(rhs.value) {}
 
       template <typename Expr>
       value_with_zero(Expr const& expr) : value(expr) {}
 
-      value_with_zero& operator=(T const& v) 
+      value_with_zero& operator=(T const& v)
         { value = v; return *this; }
 
       value_with_zero& operator=(value_with_zero const& rhs)
          { value = rhs.value; return *this; }
 
-      template <typename U> 
+      template <typename U>
       value_with_zero& operator=(value_with_zero<U> const& rhs)
           { value = rhs.value; return *this; }
 
       template <typename Expr>
-	 value_with_zero& operator=(Expr const& expr)
-	 { value = expr; return *this; }
+         value_with_zero& operator=(Expr const& expr)
+         { value = expr; return *this; }
 
       T& get() { return value.get(); }
       T const& get() const { return value.get(); }
 
       bool is_initialized() const { return value.is_initialized(); }
 
-      operator T const&() const { DEBUG_PRECONDITION(!this->is_zero()); 
+      operator T const&() const { DEBUG_PRECONDITION(!this->is_zero());
       DEBUG_PRECONDITION(this->is_initialized()); return this->get(); }
       operator T&() { return this->get(); }
 
@@ -86,70 +86,70 @@ class value_with_zero // : private boost::optional<T>
 
       value_with_zero& operator+=(T const& x)
       {
-	 if (this->is_zero()) this->operator=(x);
-	 else this->get() += x;
-	 return *this;
+         if (this->is_zero()) this->operator=(x);
+         else this->get() += x;
+         return *this;
       }
 
       value_with_zero& operator+=(value_with_zero const& x)
       {
-	 if (!x.is_zero())
-	 {
-	    (*this) += x.get();
-	 }
-	 return *this;
+         if (!x.is_zero())
+         {
+            (*this) += x.get();
+         }
+         return *this;
       }
 
       template <typename U>
       value_with_zero& operator+=(U const& x)
       {
-	 if (this->is_zero()) this->operator=(x);
-	 else this->get() += x;
-	 return *this;
+         if (this->is_zero()) this->operator=(x);
+         else this->get() += x;
+         return *this;
       }
 
       template <typename U>
       value_with_zero& operator+=(value_with_zero<U> const& x)
       {
-	 if (!x.is_zero())
-	 {
-	    (*this) += x.get();
-	 }
-	 return *this;
+         if (!x.is_zero())
+         {
+            (*this) += x.get();
+         }
+         return *this;
       }
 
       value_with_zero& operator-=(T const& x)
       {
-	 if (this->is_zero()) this->operator=(-x);
-	 else this->get() -= x;
-	 return *this;
+         if (this->is_zero()) this->operator=(-x);
+         else this->get() -= x;
+         return *this;
       }
 
       value_with_zero& operator-=(value_with_zero const& x)
       {
-	 if (!x.is_zero())
-	 {
-	    (*this) -= x.get();
-	 }
-	 return *this;
+         if (!x.is_zero())
+         {
+            (*this) -= x.get();
+         }
+         return *this;
       }
 
       template <typename U>
       value_with_zero& operator-=(U const& x)
       {
-	 if (this->is_zero()) this->operator=(-x);
-	 else this->get() -= x;
-	 return *this;
+         if (this->is_zero()) this->operator=(-x);
+         else this->get() -= x;
+         return *this;
       }
 
       template <typename U>
       value_with_zero& operator-=(value_with_zero<U> const& x)
       {
-	 if (!x.is_zero())
-	 {
-	    (*this) -= x.get();
-	 }
-	 return *this;
+         if (!x.is_zero())
+         {
+            (*this) -= x.get();
+         }
+         return *this;
       }
 
    private:

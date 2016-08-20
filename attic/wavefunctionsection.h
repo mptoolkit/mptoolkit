@@ -25,7 +25,7 @@
 //  |          |                     |
 // -A- lambda -A- lambda ... lambda -A-
 //
-// The difference from CanonicalWavefunction is that we do not have lambda matrices 
+// The difference from CanonicalWavefunction is that we do not have lambda matrices
 // at the boundaries.
 //
 // This is a base class for common functions between variants of canonical wavefunctions,
@@ -98,11 +98,11 @@ class WavefunctionSection
 
       // return the i'th MPS matrix.  Because they are stored by handle, we can't
       // return a reference, but the tensors are reference counted anyway so a copy is cheap
-      mps_type operator[](int i) const 
+      mps_type operator[](int i) const
       { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return *Data[i].lock(); }
 
       // returns the lambda matrix at partition i
-      lambda_type lambda(int i) const 
+      lambda_type lambda(int i) const
       { DEBUG_RANGE_CHECK_OPEN(i, 1, int(Data.size())); return *Lambda[i-1].lock(); }
 
       static PStream::VersionTag VersionT;

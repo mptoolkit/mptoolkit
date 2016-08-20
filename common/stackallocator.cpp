@@ -79,12 +79,12 @@ void* allocate(size_t Size)
       UsedBlocks->push(std::make_pair(Block, Current));
       if (FreeBlocks->empty())
       {
-	 Current = Block = ::operator new(BlockSize);
+         Current = Block = ::operator new(BlockSize);
       }
       else
       {
-	 Current = Block = FreeBlocks->top();
-	 FreeBlocks->pop();
+         Current = Block = FreeBlocks->top();
+         FreeBlocks->pop();
       }
    }
 
@@ -100,14 +100,14 @@ void* allocate(size_t Size)
 
 void deallocate(void* ptr, size_t Size)
 {
-   if (Size > BlockSize) 
+   if (Size > BlockSize)
    {
       ::operator delete(ptr);
       return;
    }
 
    Size = RoundSize(Size);
-   
+
    if (Current == Block)
    {
       FreeBlocks->push(Block);
@@ -124,4 +124,4 @@ void deallocate(void* ptr, size_t Size)
 #endif
 }
 
-} // namespace 
+} // namespace

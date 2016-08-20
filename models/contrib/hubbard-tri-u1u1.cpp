@@ -38,14 +38,14 @@ int main(int argc, char** argv)
          ("help", "show this help message")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
-      
-      prog_opt::variables_map vm;        
+
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).style(prog_opt::command_line_style::default_style ^
                                           prog_opt::command_line_style::allow_guessing).
                       run(), vm);
-      prog_opt::notify(vm);    
-      
+      prog_opt::notify(vm);
+
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("U(1)xU(1) Triangular Hubbard model");
       OpDescriptions.add_operators()
@@ -84,7 +84,9 @@ int main(int argc, char** argv)
 
       LatticeSite Site = FermionU1U1();
       UnitCell Cell(repeat(Site, 3));
-      UnitCellOperator CHup(Cell, "CHup"), CHdown(Cell, "CHdown"), Cup(Cell, "Cup"), 
+      InfiniteLattice Lattice(&Cell);
+
+      UnitCellOperator CHup(Cell, "CHup"), CHdown(Cell, "CHdown"), Cup(Cell, "Cup"),
          Cdown(Cell, "Cdown"), Pdouble(Cell, "Pdouble"),
          Hu(Cell, "Hu"), N(Cell, "N"), Sz(Cell, "Sz"), Sp(Cell, "Sp"), Sm(Cell, "Sm"),
          R(Cell, "R");
@@ -102,8 +104,6 @@ int main(int argc, char** argv)
       Sz = Sz[0] + Sz[1] + Sz[2];
       Sp = Sp[0] + Sp[1] + Sp[2];
       Sm = Sm[0] + Sm[1] + Sm[2];
-
-      InfiniteLattice Lattice(Cell);
 
       Lattice["H_tup"]   = sum_unit(-(dot(CHup(0)[1], Cup(1)[1]) - dot(Cup(0)[1], CHup(1)[1])));
       Lattice["H_tdown"] = sum_unit(-(dot(CHdown(0)[1], Cdown(1)[1]) - dot(Cdown(0)[1], CHdown(1)[1])));

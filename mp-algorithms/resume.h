@@ -54,7 +54,7 @@ int GenericResume(int argc, char** argv, std::string const& ProgName)
 
       Solver = pheap::OpenPersistent(BinPath+FileName+".bin", PageCacheSize);
 
-      ProcControl::Initialize(argv[0], 
+      ProcControl::Initialize(argv[0],
                               Solver->PreviousCPUTime(),
                               Solver->PreviousElapsedTime(),
                               true);

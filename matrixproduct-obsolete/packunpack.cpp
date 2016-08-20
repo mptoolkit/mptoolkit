@@ -20,8 +20,8 @@
 #include "packunpack.h"
 #include <cstring>
 
-void PackMatrixOperator:: Initialize(VectorBasis const& Basis1, 
-                                     VectorBasis const& Basis2, 
+void PackMatrixOperator:: Initialize(VectorBasis const& Basis1,
+                                     VectorBasis const& Basis2,
                                      QuantumNumbers::QuantumNumber const& q)
 {
    B1_ = Basis1;
@@ -45,8 +45,8 @@ void PackMatrixOperator:: Initialize(VectorBasis const& Basis1,
    Size_ = Offset;
 }
 
-PackMatrixOperator::PackMatrixOperator(VectorBasis const& Basis1, 
-                                       VectorBasis const& Basis2, 
+PackMatrixOperator::PackMatrixOperator(VectorBasis const& Basis1,
+                                       VectorBasis const& Basis2,
                                        QuantumNumbers::QuantumNumber const& q)
 {
    Initialize(Basis1, Basis2, q);
@@ -57,7 +57,7 @@ PackMatrixOperator::PackMatrixOperator(MatrixOperator const& m)
    Initialize(m.Basis1(), m.Basis2(), m.TransformsAs());
 }
 
-PackMatrixOperator::value_type* 
+PackMatrixOperator::value_type*
 PackMatrixOperator::pack(MatrixOperator const& m, value_type* Iter) const
 {
    typedef LinearAlgebra::VectorMemProxy<value_type> VecProxy;
@@ -70,7 +70,7 @@ PackMatrixOperator::pack(MatrixOperator const& m, value_type* Iter) const
       {
          DEBUG_CHECK_EQUAL(I->Size, size1(*J)*size2(*J));
          // normalization correction is sqrt(degree(B1[I->r]))
-         VecProxy(Iter+I->Offset, I->Size) 
+         VecProxy(Iter+I->Offset, I->Size)
             = std::sqrt(double(degree(B1_[I->r]))) * ConstVecProxy(data(*J), I->Size);
       }
       else

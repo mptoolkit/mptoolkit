@@ -106,30 +106,30 @@ struct pstreambuf_traits
    typedef typename format_traits<Format>::Format  format;
    typedef typename format::size_type              size_type;
    typedef typename format::difference_type        difference_type;
-};  
+};
 
 //
 // Streaming of builtins
 //
 
-#define DEFINE_PBINARYBUF_BUILTIN(type, Which)						\
-inline											\
-opstreambuf<Which>& operator<<(opstreambuf<Which>& out, type c)				\
-{											\
-   pack_format<pstreambuf_traits<Which>::format>(out, c);				\
-   return out;										\
-}											\
-inline											\
-ipstreambuf<Which>& operator>>(ipstreambuf<Which>& in, type& c)				\
-{											\
-   unpack_format<pstreambuf_traits<Which>::format>(in, c);				\
-   return in;										\
+#define DEFINE_PBINARYBUF_BUILTIN(type, Which)                                          \
+inline                                                                                  \
+opstreambuf<Which>& operator<<(opstreambuf<Which>& out, type c)                         \
+{                                                                                       \
+   pack_format<pstreambuf_traits<Which>::format>(out, c);                               \
+   return out;                                                                          \
+}                                                                                       \
+inline                                                                                  \
+ipstreambuf<Which>& operator>>(ipstreambuf<Which>& in, type& c)                         \
+{                                                                                       \
+   unpack_format<pstreambuf_traits<Which>::format>(in, c);                              \
+   return in;                                                                           \
 }
 
-#define DEFINE_ALL_PBINARYBUF_BUILTIN(type)	\
-DEFINE_PBINARYBUF_BUILTIN(type, 0)		\
-DEFINE_PBINARYBUF_BUILTIN(type, 1)		\
-DEFINE_PBINARYBUF_BUILTIN(type, 2)		\
+#define DEFINE_ALL_PBINARYBUF_BUILTIN(type)     \
+DEFINE_PBINARYBUF_BUILTIN(type, 0)              \
+DEFINE_PBINARYBUF_BUILTIN(type, 1)              \
+DEFINE_PBINARYBUF_BUILTIN(type, 2)              \
 DEFINE_PBINARYBUF_BUILTIN(type, 3)
 
 DEFINE_ALL_PBINARYBUF_BUILTIN(bool)
@@ -149,24 +149,24 @@ DEFINE_ALL_PBINARYBUF_BUILTIN(unsigned long long)
 DEFINE_ALL_PBINARYBUF_BUILTIN(float)
 DEFINE_ALL_PBINARYBUF_BUILTIN(double)
 
-#define DEFINE_PBINARYBUF_FIXEDSIZE(type, Which)					\
-inline											\
-opstreambuf<Which>& operator<<(opstreambuf<Which>& out, inttype::StrongType<type> c)	\
-{											\
-   pack_endian<pstreambuf_traits<Which>::format::Endianness>(out, c.value());		\
-   return out;										\
-}											\
-inline											\
-ipstreambuf<Which>& operator>>(ipstreambuf<Which>& in, inttype::StrongType<type>& c)	\
-{											\
-   unpack_endian<pstreambuf_traits<Which>::format::Endianness>(in, c.value());		\
-   return in;										\
+#define DEFINE_PBINARYBUF_FIXEDSIZE(type, Which)                                        \
+inline                                                                                  \
+opstreambuf<Which>& operator<<(opstreambuf<Which>& out, inttype::StrongType<type> c)    \
+{                                                                                       \
+   pack_endian<pstreambuf_traits<Which>::format::Endianness>(out, c.value());           \
+   return out;                                                                          \
+}                                                                                       \
+inline                                                                                  \
+ipstreambuf<Which>& operator>>(ipstreambuf<Which>& in, inttype::StrongType<type>& c)    \
+{                                                                                       \
+   unpack_endian<pstreambuf_traits<Which>::format::Endianness>(in, c.value());          \
+   return in;                                                                           \
 }
 
-#define DEFINE_ALL_PBINARYBUF_FIXEDSIZE(type)	\
-DEFINE_PBINARYBUF_FIXEDSIZE(type, 0)		\
-DEFINE_PBINARYBUF_FIXEDSIZE(type, 1)		\
-DEFINE_PBINARYBUF_FIXEDSIZE(type, 2)		\
+#define DEFINE_ALL_PBINARYBUF_FIXEDSIZE(type)   \
+DEFINE_PBINARYBUF_FIXEDSIZE(type, 0)            \
+DEFINE_PBINARYBUF_FIXEDSIZE(type, 1)            \
+DEFINE_PBINARYBUF_FIXEDSIZE(type, 2)            \
 DEFINE_PBINARYBUF_FIXEDSIZE(type, 3)
 
 DEFINE_ALL_PBINARYBUF_FIXEDSIZE(boost::int8_t)

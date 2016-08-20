@@ -35,7 +35,7 @@ void ZeroUpper(Mat& M)
    {
       for (unsigned j = i+1; j < M.size2(); ++j)
       {
-	 M(i,j) = 0.0;
+         M(i,j) = 0.0;
       }
    }
 }
@@ -47,7 +47,7 @@ void ZeroLower(Mat& M)
    {
       for (unsigned i = j+1; i < M.size1(); ++i)
       {
-	 M(i,j) = 0.0;
+         M(i,j) = 0.0;
       }
    }
 }

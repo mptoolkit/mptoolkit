@@ -52,7 +52,7 @@ struct LE_L64
 
    typedef CurrentFormat::uint64 size_type;
    typedef CurrentFormat::int64  difference_type;
-   
+
    template <class T>
    struct TypeTraits;
 };

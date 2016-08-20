@@ -87,7 +87,7 @@ angle_map<T>::angle_map(angle_map<T> const& Other)
 }
 
 template <typename T>
-T& 
+T&
 angle_map<T>::operator[](std::complex<double> const& c)
 {
    double r = c.real()*c.real() + c.imag()*c.imag();

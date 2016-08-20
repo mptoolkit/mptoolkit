@@ -49,47 +49,47 @@ int main(int argc, char** argv)
       double RealTime = 0;
       double Beta = 0;
       double MaxTimestep = 1e10;
-      
+
       std::cout.precision(14);
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Hamiltonian,H", prog_opt::value<std::string>(), 
+         ("Hamiltonian,H", prog_opt::value<std::string>(),
           "operator to use for the Hamiltonian (wavefunction attribute \"Hamiltonian\")")
          ("wavefunction,w", prog_opt::value<std::string>(),
           "initial wavefunction (required)")
-	 ("two-site,2", "modify 2 neighboring sites at once")
-	 ("krylov,k", prog_opt::value<int>(&NumKrylov), "Number of Krylov vectors [default 4]")
-	 ("min-states,m", prog_opt::value<int>(&MinStates), "Minimum number of states to keep [default 50]")
-	 ("max-states,x", prog_opt::value<int>(&MaxStates), "Maximum number of states to keep [default 5000]")
-	 ("mix-factor,f", prog_opt::value<double>(&MixFactor), 
+         ("two-site,2", "modify 2 neighboring sites at once")
+         ("krylov,k", prog_opt::value<int>(&NumKrylov), "Number of Krylov vectors [default 4]")
+         ("min-states,m", prog_opt::value<int>(&MinStates), "Minimum number of states to keep [default 50]")
+         ("max-states,x", prog_opt::value<int>(&MaxStates), "Maximum number of states to keep [default 5000]")
+         ("mix-factor,f", prog_opt::value<double>(&MixFactor),
           "Mixing coefficient for the density matrix [default 0.01]")
-	 ("hnorm,h", prog_opt::value<double>(&HNorm), 
+         ("hnorm,h", prog_opt::value<double>(&HNorm),
           "2-norm of the Hamiltonian operator (used to guess the timestep for the first iteration)")
          ("initialstep,i", prog_opt::value<double>(&InitialTimestep),
           "Initial timestep to use (alternative to specifying --hnorm)")
-	 ("time,t", prog_opt::value<std::complex<double> >(&Timestep), "Time to evolve (can be complex) [default 1]")
-         ("Time,T", prog_opt::value<double>(&RealTime), 
+         ("time,t", prog_opt::value<std::complex<double> >(&Timestep), "Time to evolve (can be complex) [default 1]")
+         ("Time,T", prog_opt::value<double>(&RealTime),
           "Absolute real time of the input wavefunction (wavefunction attribute \"Time\")")
-	 ("Beta,B", prog_opt::value<double>(&Beta),
-	  "Absolute imaginary time (inverse temperature) of the input wavefunction "
-	  "(wavefunction attribute \"Beta\")")
+         ("Beta,B", prog_opt::value<double>(&Beta),
+          "Absolute imaginary time (inverse temperature) of the input wavefunction "
+          "(wavefunction attribute \"Beta\")")
          ("error-bound,e", prog_opt::value<double>(&EBound), "Error bound per unit time [default 1e-4]")
-	 ("max-timestep", prog_opt::value<double>(&MaxTimestep),
-	  "Maximum timestep [default 1e10]")
+         ("max-timestep", prog_opt::value<double>(&MaxTimestep),
+          "Maximum timestep [default 1e10]")
          ("full-ortho,F", "full orthogonalization of the Krylov subspace")
-	  ;
+          ;
 
       prog_opt::options_description opt;
       opt.add(desc);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("wavefunction") == 0) 
+      if (vm.count("help") || vm.count("wavefunction") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-evolve-krylov [options]\n";
@@ -114,19 +114,19 @@ int main(int argc, char** argv)
       // Make sure the center matrix is at one edge
       if (Psi.LeftSize() != 1 && Psi.RightSize() != 1)
       {
-	 TRACE(Psi.LeftSize())(Psi.RightSize());
-	 std::cout << "The center matrix is not located at an edge.  Rotating..." << std::flush;
-	 if (Psi.LeftSize() > Psi.RightSize())
-	 {
-	    while (Psi.RightSize() > 1)
-	       Psi.RotateRight();
-	 }
-	 else
-	 {
-	    while (Psi.LeftSize() > 1)
-	       Psi.RotateLeft();
-	 }
-	 std::cout << "done" << std::endl;
+         TRACE(Psi.LeftSize())(Psi.RightSize());
+         std::cout << "The center matrix is not located at an edge.  Rotating..." << std::flush;
+         if (Psi.LeftSize() > Psi.RightSize())
+         {
+            while (Psi.RightSize() > 1)
+               Psi.RotateRight();
+         }
+         else
+         {
+            while (Psi.LeftSize() > 1)
+               Psi.RotateLeft();
+         }
+         std::cout << "done" << std::endl;
       }
 
       // Set up the Hamiltonian
@@ -167,7 +167,7 @@ int main(int argc, char** argv)
       TwoSite = vm.count("two-site");
       if (TwoSite)
       {
-	 std::cout << "Optimizing two sites at a time" << std::endl;
+         std::cout << "Optimizing two sites at a time" << std::endl;
       }
 
       std::cout << "Density matrix mixing coefficient: " << MixFactor << std::endl;
@@ -194,7 +194,7 @@ int main(int argc, char** argv)
 
       double CurrentTime = 0;
 
-      // Determine the first timestep, either specified as a parameter or 
+      // Determine the first timestep, either specified as a parameter or
       // from the Hochbruck bound given the 2-norm of the Hamiltonian
       double LastTimestep = InitialTimestep;
       if (HNorm > 0)
@@ -207,8 +207,8 @@ int main(int argc, char** argv)
             LastTimestep = TimeDistance-CurrentTime;
          dmrg.ConstructKrylovBasis(NumKrylov, LastTimestep);
          double NextTimestep = dmrg.GetTimestep(LastTimestep);
-	 if (NextTimestep > MaxTimestep)
-	    NextTimestep = MaxTimestep;
+         if (NextTimestep > MaxTimestep)
+            NextTimestep = MaxTimestep;
 
          // Dont evolve beyond where we want to go!
          if (NextTimestep >= TimeDistance - CurrentTime)
@@ -223,8 +223,8 @@ int main(int argc, char** argv)
          std::cout << "NextTimestep = " << NextTimestep << '\n';
          std::cout << "Constructing evolved wavefunction..." << std::endl;
          dmrg.Evolve(NextTimestep, EBound * EBound * NextTimestep * NextTimestep);
-	 std::cout << "done.  Current time is " << dmrg.RealTime_
-		   << ", current beta is " << dmrg.Beta_ << std::endl;
+         std::cout << "done.  Current time is " << dmrg.RealTime_
+                   << ", current beta is " << dmrg.Beta_ << std::endl;
          LastTimestep = NextTimestep;
          TRACE(dmrg.Norm());
       }

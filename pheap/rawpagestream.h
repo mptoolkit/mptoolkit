@@ -60,7 +60,7 @@ class irawpagestream : public PStream::ipstream
 
       ~irawpagestream();
 
-      // deallocates the pages, so they can be reused by the PageFile.  
+      // deallocates the pages, so they can be reused by the PageFile.
       // This must be done explicitly,
       // simply destructing the irawpagestream is not enough.
       void free();

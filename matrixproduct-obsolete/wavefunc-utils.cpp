@@ -24,8 +24,8 @@
 // TransformStack
 //
 
-void InitializeTransformStack(TransformOperator& x_y, 
-                              CenterWavefunction const& x, 
+void InitializeTransformStack(TransformOperator& x_y,
+                              CenterWavefunction const& x,
                               CenterWavefunction const& y)
 {
    x_y = TransformOperator();
@@ -38,7 +38,7 @@ void InitializeTransformStack(TransformOperator& x_y,
    CHECK_EQUAL(x.LookupLeft(0).Basis1().size(), 1);
 
    QuantumNumber Ident(x.GetSymmetryList());
-   
+
    // The initial matrix elements represent the vacuum basis on the right hand side
    BasisList Vacuum = make_vacuum_basis(x.GetSymmetryList());
 
@@ -65,38 +65,38 @@ void InitializeTransformStack(TransformOperator& x_y,
    for (int Loc = 0; Loc < x.LeftSize(); ++Loc)
    {
       x_y.PushLeft(operator_prod(herm(x.LookupLeft(Loc)),
-                                 x_y.Left(), 
+                                 x_y.Left(),
                                  y.LookupLeft(Loc)));
    }
 }
 
-void TransformStackRotateLeft(TransformOperator& x_y, 
-			      CenterWavefunction const& x, 
-			      CenterWavefunction const& y)
+void TransformStackRotateLeft(TransformOperator& x_y,
+                              CenterWavefunction const& x,
+                              CenterWavefunction const& y)
 {
    x_y.PushRight(operator_prod(x.Right(), x_y.Right(), herm(y.Right())));
    x_y.PopLeft();
-}   
+}
 
-void TransformStackRotateRight(TransformOperator& x_y, 
-			       CenterWavefunction const& x, 
-			       CenterWavefunction const& y)
+void TransformStackRotateRight(TransformOperator& x_y,
+                               CenterWavefunction const& x,
+                               CenterWavefunction const& y)
 {
    x_y.PushLeft(operator_prod(herm(x.Left()), x_y.Left(), y.Left()));
    x_y.PopRight();
 }
 
-void TransformStackUpdateLeft(TransformOperator& x_y, 
-			      CenterWavefunction const& x, 
-			      CenterWavefunction const& y)
+void TransformStackUpdateLeft(TransformOperator& x_y,
+                              CenterWavefunction const& x,
+                              CenterWavefunction const& y)
 {
    x_y.PopLeft();
    x_y.PushLeft(operator_prod(herm(x.Left()), x_y.Left(), y.Left()));
-}   
+}
 
-void TransformStackUpdateRight(TransformOperator& x_y, 
-			       CenterWavefunction const& x, 
-			       CenterWavefunction const& y)
+void TransformStackUpdateRight(TransformOperator& x_y,
+                               CenterWavefunction const& x,
+                               CenterWavefunction const& y)
 {
    x_y.PopRight();
    x_y.PushRight(operator_prod(x.Right(), x_y.Right(), herm(y.Right())));
@@ -106,10 +106,10 @@ void TransformStackUpdateRight(TransformOperator& x_y,
 // SuperblockStack
 //
 
-void InitializeSuperblockStack(SuperblockOperator& x_A_y, 
-			       CenterWavefunction const& x, 
-			       SplitOperator& A,
-			       CenterWavefunction const& y)
+void InitializeSuperblockStack(SuperblockOperator& x_A_y,
+                               CenterWavefunction const& x,
+                               SplitOperator& A,
+                               CenterWavefunction const& y)
 {
    x_A_y = SuperblockOperator();
 
@@ -137,55 +137,55 @@ void InitializeSuperblockStack(SuperblockOperator& x_A_y,
    {
       x_A_y.PushLeft(operator_prod(herm(A.LookupLeft(Loc)),
                                    herm(x.LookupLeft(Loc)),
-                                   x_A_y.Left(), 
+                                   x_A_y.Left(),
                                    y.LookupLeft(Loc)));
    }
 }
 
-void SuperblockStackRotateLeft(SuperblockOperator& x_A_y, 
-			       CenterWavefunction const& x, 
-			       SplitOperator const& A,
-			       CenterWavefunction const& y)
+void SuperblockStackRotateLeft(SuperblockOperator& x_A_y,
+                               CenterWavefunction const& x,
+                               SplitOperator const& A,
+                               CenterWavefunction const& y)
 {
    x_A_y.PushRight(operator_prod(A.Right(),
-				 x.Right(),
-				 x_A_y.Right(),
-				 herm(y.Right())));
+                                 x.Right(),
+                                 x_A_y.Right(),
+                                 herm(y.Right())));
    x_A_y.PopLeft();
 }
 
-void SuperblockStackRotateRight(SuperblockOperator& x_A_y, 
-				CenterWavefunction const& x, 
-				SplitOperator const& A,
-				CenterWavefunction const& y)
+void SuperblockStackRotateRight(SuperblockOperator& x_A_y,
+                                CenterWavefunction const& x,
+                                SplitOperator const& A,
+                                CenterWavefunction const& y)
 {
    x_A_y.PushLeft(operator_prod(herm(A.Left()),
-				herm(x.Left()),
-				x_A_y.Left(), 
-				y.Left()));
+                                herm(x.Left()),
+                                x_A_y.Left(),
+                                y.Left()));
    x_A_y.PopRight();
 }
 
-void SuperblockStackUpdateLeft(SuperblockOperator& x_A_y, 
-			       CenterWavefunction const& x, 
-			       SplitOperator const& A,
-			       CenterWavefunction const& y)
+void SuperblockStackUpdateLeft(SuperblockOperator& x_A_y,
+                               CenterWavefunction const& x,
+                               SplitOperator const& A,
+                               CenterWavefunction const& y)
 {
    x_A_y.PopLeft();
    x_A_y.PushLeft(operator_prod(herm(A.Left()),
-				herm(x.Left()),
-				x_A_y.Left(), 
-				y.Left()));
+                                herm(x.Left()),
+                                x_A_y.Left(),
+                                y.Left()));
 }
 
-void SuperblockStackUpdateRight(SuperblockOperator& x_A_y, 
-				CenterWavefunction const& x, 
-				SplitOperator const& A,
-				CenterWavefunction const& y)
+void SuperblockStackUpdateRight(SuperblockOperator& x_A_y,
+                                CenterWavefunction const& x,
+                                SplitOperator const& A,
+                                CenterWavefunction const& y)
 {
    x_A_y.PopRight();
    x_A_y.PushRight(operator_prod(A.Right(),
-				 x.Right(),
-				 x_A_y.Right(),
-				 herm(y.Right())));
+                                 x.Right(),
+                                 x_A_y.Right(),
+                                 herm(y.Right())));
 }

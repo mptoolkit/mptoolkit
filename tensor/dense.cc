@@ -134,11 +134,11 @@ scalar_prod(DenseOperator const& x, DenseOperator const& y)
 }
 
 inline
-DenseOperator prod(DenseOperator const& x, DenseOperator const& y, 
-		   QuantumNumber const& q = QuantumNUmber())
+DenseOperator prod(DenseOperator const& x, DenseOperator const& y,
+                   QuantumNumber const& q = QuantumNUmber())
 {
    DenseOperator Result(x.Basis1(), y.Basis2(),
-			prod(x.data(), y.data(), q));
+                        prod(x.data(), y.data(), q));
 }
 
 inline
@@ -150,15 +150,15 @@ HermitianProxy<DenseOperator const> herm(DenseOperator const& x)
 inline
 DenseOperator scalar_product(DenseOperator const& x, HermitianProxy<DenseOperator const> y)
 {
-   return DenseOperator(x.Basis1(), y.base().Basis1(), 
-			scalar_product(x.data(), herm(y.base().data())));
+   return DenseOperator(x.Basis1(), y.base().Basis1(),
+                        scalar_product(x.data(), herm(y.base().data())));
 }
 
 inline
 DenseOperator scalar_product(HermitianProxy<DenseOperator const> x, DenseOperator const& y)
 {
    return DenseOperator(x.base().Basis2(), y.Basis2(),
-			scalar_product(herm(x.base().data()), y.data()));
+                        scalar_product(herm(x.base().data()), y.data()));
 }
 
 inline

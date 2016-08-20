@@ -72,15 +72,15 @@ acceptable.  Do NOT use for cryptographic purposes.
 uint32_t hash_bytes(unsigned char const* k, size_t length, uint32_t initval = 0xdeadbeef);
 
 /*
-  My comment (Ian McCulloch): By default, hash table sizes are primes, and expansion 
-  is by factor ~ 2.  The list of table sizes is given by FindNextPrime() which has a table of 
-  prime numbers taken from SGI's STL library.  If you define HASHTABLE_POWER2, the hash table 
-  size is instead always a power 2, and the modulo operation is replaced by a bit-wise 'and' 
+  My comment (Ian McCulloch): By default, hash table sizes are primes, and expansion
+  is by factor ~ 2.  The list of table sizes is given by FindNextPrime() which has a table of
+  prime numbers taken from SGI's STL library.  If you define HASHTABLE_POWER2, the hash table
+  size is instead always a power 2, and the modulo operation is replaced by a bit-wise 'and'
   with a mask.
-  
+
   In benchmark tests on a pentium3, defining HASHTABLE_POWER2 gives a measurable but
-  very small speedup - negligable for most practical purposes.  For general use, it is 
-  probably better to default to NOT defining HASHTABLE_POWER2, which gives better 
+  very small speedup - negligable for most practical purposes.  For general use, it is
+  probably better to default to NOT defining HASHTABLE_POWER2, which gives better
   behaviour with poor hash functions.
 
   On a pentium3, the hash_map implementation benchmarks as slightly slower than
@@ -93,7 +93,7 @@ uint32_t hash_bytes(unsigned char const* k, size_t length, uint32_t initval = 0x
   faster than GNU.  The performance is much more erratic than GNU though, I don't know why.
 */
 
-// default hash functor.  Specializations are defined for builtin integral types, 
+// default hash functor.  Specializations are defined for builtin integral types,
 // char*, char const* (assumed to be C-style strings), std::string,
 // void* and void const* (hashes on the value of the pointer).
 

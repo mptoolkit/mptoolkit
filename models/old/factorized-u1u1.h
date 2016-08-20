@@ -19,7 +19,7 @@
 //
 // factorized-u1u1.h
 //
-// Site blocks for bosonic and fermionic models factorized into 
+// Site blocks for bosonic and fermionic models factorized into
 // (0 up) \otimes (0 down) sites.
 //
 
@@ -30,8 +30,8 @@
 
 
 inline
-LatticeSite FactorizedSite(int MyN, half_int MySz, 
-                         std::string const& Sym1 = "N", 
+LatticeSite FactorizedSite(int MyN, half_int MySz,
+                         std::string const& Sym1 = "N",
                          std::string const& Sym2 = "Sz")
 {
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":U(1)");
@@ -53,7 +53,7 @@ LatticeSite FactorizedSite(int MyN, half_int MySz,
 
    // annihilate particle
    C("0", "1") = std::sqrt(double(MyN));
-   
+
    // create particle
    CH = adjoint(C);
 
@@ -67,7 +67,7 @@ LatticeSite FactorizedSite(int MyN, half_int MySz,
 
    R = I;
 
-   // particle number  
+   // particle number
    N = prod(CH, C, QN(0,0));
 
    // z-component of spin

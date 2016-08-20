@@ -33,7 +33,7 @@
 #include <map>
 
 MatrixOperator ParseMatrixOperator(std::string const& Str,
-				   Function::ArgumentList const& Args,
-				   std::map<std::string, MatrixOperator> const& Matrices);
+                                   Function::ArgumentList const& Args,
+                                   std::map<std::string, MatrixOperator> const& Matrices);
 
 #endif

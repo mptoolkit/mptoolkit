@@ -32,7 +32,7 @@ struct ExpProd
 
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      DEBUG_PRECONDITION_EQUAL(x.Basis1().size(), 1);      
+      DEBUG_PRECONDITION_EQUAL(x.Basis1().size(), 1);
       DEBUG_PRECONDITION_EQUAL(y.Basis2().size(), 1);
       return trace(prod(x, y, QuantumNumbers::QuantumNumber(x.GetSymmetryList())));
    }
@@ -67,7 +67,7 @@ TwoSiteExponential(SimpleOperator const& A, SimpleOperator const& B, std::comple
    PartialProdType PartialProd = decompose_tensor_prod(TP, PB, PB);
 
    // rearrange the matrix elements to do a singular value decomposition
-   
+
    BasisList BondBasis(A.GetSymmetryList()); // bond of the MPO
    std::vector<SimpleOperator> MatLeft, MatRight;
 
@@ -92,14 +92,14 @@ TwoSiteExponential(SimpleOperator const& A, SimpleOperator const& B, std::comple
       int nLeft = 0, nRight = 0;
       for (PartialProdType::const_iterator I = PartialProd.begin(); I != PartialProd.end(); ++I)
       {
-	 if (*q == I->first.qRight) // filter by quantum number
-	 {
-	    if (LeftBasis.find(std::make_pair(I->first.Left1, I->first.Left2)) == LeftBasis.end())
-	       LeftBasis[std::make_pair(I->first.Left1, I->first.Left2)] = nLeft++;
+         if (*q == I->first.qRight) // filter by quantum number
+         {
+            if (LeftBasis.find(std::make_pair(I->first.Left1, I->first.Left2)) == LeftBasis.end())
+               LeftBasis[std::make_pair(I->first.Left1, I->first.Left2)] = nLeft++;
 
-	    if (RightBasis.find(std::make_pair(I->first.Right1, I->first.Right2)) == RightBasis.end())
-	       RightBasis[std::make_pair(I->first.Right1, I->first.Right2)] = nRight++;
-	 }
+            if (RightBasis.find(std::make_pair(I->first.Right1, I->first.Right2)) == RightBasis.end())
+               RightBasis[std::make_pair(I->first.Right1, I->first.Right2)] = nRight++;
+         }
       }
 
       // now make a matrix
@@ -107,11 +107,11 @@ TwoSiteExponential(SimpleOperator const& A, SimpleOperator const& B, std::comple
       // fill it
       for (PartialProdType::const_iterator I = PartialProd.begin(); I != PartialProd.end(); ++I)
       {
-	 if (*q == I->first.qRight) // filter by quantum number
-	 {
-	    Mat(LeftBasis[std::make_pair(I->first.Left1, I->first.Left2)], 
-		RightBasis[std::make_pair(I->first.Right1, I->first.Right2)]) = I->second;
-	 }
+         if (*q == I->first.qRight) // filter by quantum number
+         {
+            Mat(LeftBasis[std::make_pair(I->first.Left1, I->first.Left2)],
+                RightBasis[std::make_pair(I->first.Right1, I->first.Right2)]) = I->second;
+         }
       }
       // SVD
       LinearAlgebra::Matrix<std::complex<double> > U, Vt;
@@ -126,24 +126,24 @@ TwoSiteExponential(SimpleOperator const& A, SimpleOperator const& B, std::comple
       while (nnz < int(size(D)) && fabs(D[nnz]) > 1e-12) ++nnz;
 
       //      TRACE(size(D))(nnz);
-      
+
       // assemble the components
       for (int i = 0; i < nnz; ++i)
       {
-	 BondBasis.push_back(*q);
-	 SimpleOperator MR(B.Basis1(), B.Basis2(), *q);
-	 SimpleOperator ML(A.Basis1(), A.Basis2(), adjoint(*q));
-	 for (BasisEnumerationType::const_iterator I = RightBasis.begin(); I != RightBasis.end(); ++I)
-	 {
-	    MR(I->first.first, I->first.second) = Vt(i, I->second);
-	 }
-	 for (BasisEnumerationType::const_iterator I = LeftBasis.begin(); I != LeftBasis.end(); ++I)
-	 {
-	    ML(I->first.first, I->first.second) = U(I->second, i) * D[i];
-	 }
-	 //TRACE(ML)(MR)(tensor_prod(ML, MR, Ident));
-	 MatRight.push_back(MR);
-	 MatLeft.push_back(ML);
+         BondBasis.push_back(*q);
+         SimpleOperator MR(B.Basis1(), B.Basis2(), *q);
+         SimpleOperator ML(A.Basis1(), A.Basis2(), adjoint(*q));
+         for (BasisEnumerationType::const_iterator I = RightBasis.begin(); I != RightBasis.end(); ++I)
+         {
+            MR(I->first.first, I->first.second) = Vt(i, I->second);
+         }
+         for (BasisEnumerationType::const_iterator I = LeftBasis.begin(); I != LeftBasis.end(); ++I)
+         {
+            ML(I->first.first, I->first.second) = U(I->second, i) * D[i];
+         }
+         //TRACE(ML)(MR)(tensor_prod(ML, MR, Ident));
+         MatRight.push_back(MR);
+         MatLeft.push_back(ML);
       }
    }
 
@@ -166,10 +166,10 @@ TwoSiteExponential(SimpleOperator const& A, SimpleOperator const& B, std::comple
       for (MPOpComponent::const_iterator J = MB.begin(); J != MB.end(); ++J)
       {
          if (is_transform_target(I->first, J->first, Ident))
-	 {
+         {
             TPtest += tensor_prod(I->second, J->second, PB, PB, Ident, ExpProd());
-	    //TRACE(tensor_prod(I->second, J->second, PB, PB, Ident, ExpProd()));
-	 }
+            //TRACE(tensor_prod(I->second, J->second, PB, PB, Ident, ExpProd()));
+         }
       }
    }
    //TRACE(TPtest);
@@ -276,7 +276,7 @@ void TwoSiteExponential(MPOpComponent& A, MPOpComponent& B, std::complex<double>
 SplitOperator BondExponential(std::complex<double> x, SplitOperator const& Op)
 {
    SplitOperator Result(Op);
-   
+
    std::complex<double> Scale = 1.0;
 
    QuantumNumber Ident = Op.TransformsAs();

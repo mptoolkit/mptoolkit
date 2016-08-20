@@ -54,20 +54,20 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("two-site,2", "modify 2 neighboring sites at once")
-	 ("min-states", prog_opt::value<int>(&MinStates), "Minimum number of states to keep [default 1]")
-	 ("max-states,m", prog_opt::value<int>(&MaxStates), "Maximum number of states to keep [default 10000]")
-         ("trunc,r", prog_opt::value<double>(&MinTrunc), 
+         ("two-site,2", "modify 2 neighboring sites at once")
+         ("min-states", prog_opt::value<int>(&MinStates), "Minimum number of states to keep [default 1]")
+         ("max-states,m", prog_opt::value<int>(&MaxStates), "Maximum number of states to keep [default 10000]")
+         ("trunc,r", prog_opt::value<double>(&MinTrunc),
           "Cutoff for the truncation error per site [default 0]")
-         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff), 
+         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           ("Cutoff threshold for density matrix eigenvalues [default "
            +boost::lexical_cast<std::string>(EigenCutoff)+"]").c_str())
-	 ("mix-factor,f", prog_opt::value<double>(&MixFactor), 
+         ("mix-factor,f", prog_opt::value<double>(&MixFactor),
           "Mixing coefficient for the density matrix [default 0.01]")
-	 ("sweeps,s", prog_opt::value<int>(&NumSweeps), "Number of half-sweeps to perform [default 2]")
+         ("sweeps,s", prog_opt::value<int>(&NumSweeps), "Number of half-sweeps to perform [default 2]")
          ("wavefunction,w", prog_opt::value(&PsiStr),
           "wavefunction (required)")
-         //         ("out,o", prog_opt::value(&OutStr), 
+         //         ("out,o", prog_opt::value(&OutStr),
          //          "initial part of filename to use for output files (required)")
          ("operator", prog_opt::value(&OperatorStr), "operator list (can supply multiple of these)")
          ("rhs", prog_opt::value(&RhsStr), "right hand side wavefunction (one per operator)")
@@ -76,10 +76,10 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || vm.count("wavefunction") == 0)
       {
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
       SInfo.MaxStates = MaxStates;
       SInfo.TruncationCutoff = MinTrunc;
       SInfo.EigenvalueCutoff = EigenCutoff;
-      
+
 
       std::vector<SplitOperator> OpList;
       std::vector<CenterWavefunction> RhsList;

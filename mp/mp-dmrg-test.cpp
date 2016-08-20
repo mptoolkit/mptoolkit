@@ -47,48 +47,48 @@ int main(int argc, char** argv)
       double EnvTrunc = 1;
       double EnvMixFactor = 0;
       double DiscardMixFactor = 0;
-      
+
       std::cout.precision(14);
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Hamiltonian,H", prog_opt::value<std::string>(), 
+         ("Hamiltonian,H", prog_opt::value<std::string>(),
           "operator to use for the Hamiltonian (wavefunction attribute \"Hamiltonian\")")
          ("wavefunction,w", prog_opt::value<std::string>(),
           "wavefunction to apply DMRG (required)")
-	 ("iter,i", prog_opt::value<int>(&NumIter), "Number of Lanczos iterations per step [default 4]")
-	 ("min-states,m", prog_opt::value<int>(&MinStates), "Minimum number of states to keep [default 50]")
+         ("iter,i", prog_opt::value<int>(&NumIter), "Number of Lanczos iterations per step [default 4]")
+         ("min-states,m", prog_opt::value<int>(&MinStates), "Minimum number of states to keep [default 50]")
          ("max-states,x", prog_opt::value<int>(&MaxStates), "Maximum number of states to keep [default 100000]")
-         ("trunc,t", prog_opt::value<double>(&MinTrunc), 
+         ("trunc,t", prog_opt::value<double>(&MinTrunc),
           ("Minimum permitted truncation error [default "
-	  +boost::lexical_cast<std::string>(MinTrunc)+"]").c_str())
-	 ("env-min-states", prog_opt::value(&EnvMinStates), 
-	  "Minimum number of states in the environment [default 0]")
-	 ("env-max-states", prog_opt::value(&EnvMaxStates), 
-	  "Minimum number of states in the environment [default 50]")
-	 ("env-weight", prog_opt::value(&EnvTrunc),
-	  "Kept weight for the environment states [default trunc]")
-	 ("mix-factor,f", prog_opt::value<double>(&MixFactor), 
-	  "Mixing coefficient for the density matrix [default 0]")
-	 ("env-mix-factor", prog_opt::value<double>(&EnvMixFactor), 
-	  "Mixing coefficient for the environment density matrix [default 0]")
-	 ("discard-mix-factor", prog_opt::value<double>(&DiscardMixFactor), 
-	  "Mixing coefficient for the discarded states (large value gives 2-site DMRG) [default 0]")
-	 ("sweeps,s", prog_opt::value<int>(&NumSweeps), "Number of full sweeps to perform [default 2]")
-	 //         ("orthogonal", prog_opt::value<std::vector<std::string> >(), 
-	 //          "force the wavefunction to be orthogonal to this state")
-	  ;
+          +boost::lexical_cast<std::string>(MinTrunc)+"]").c_str())
+         ("env-min-states", prog_opt::value(&EnvMinStates),
+          "Minimum number of states in the environment [default 0]")
+         ("env-max-states", prog_opt::value(&EnvMaxStates),
+          "Minimum number of states in the environment [default 50]")
+         ("env-weight", prog_opt::value(&EnvTrunc),
+          "Kept weight for the environment states [default trunc]")
+         ("mix-factor,f", prog_opt::value<double>(&MixFactor),
+          "Mixing coefficient for the density matrix [default 0]")
+         ("env-mix-factor", prog_opt::value<double>(&EnvMixFactor),
+          "Mixing coefficient for the environment density matrix [default 0]")
+         ("discard-mix-factor", prog_opt::value<double>(&DiscardMixFactor),
+          "Mixing coefficient for the discarded states (large value gives 2-site DMRG) [default 0]")
+         ("sweeps,s", prog_opt::value<int>(&NumSweeps), "Number of full sweeps to perform [default 2]")
+         //         ("orthogonal", prog_opt::value<std::vector<std::string> >(),
+         //          "force the wavefunction to be orthogonal to this state")
+          ;
 
       prog_opt::options_description opt;
       opt.add(desc);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("wavefunction") == 0) 
+      if (vm.count("help") || vm.count("wavefunction") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-dmrg [options]\n";
@@ -133,7 +133,7 @@ int main(int argc, char** argv)
 
       // Default value for env-trunc
       if (vm.count("env-trunc") == 0)
-	 EnvTrunc = MinTrunc;
+         EnvTrunc = MinTrunc;
 
       dmrg.NumIterations = NumIter;
       dmrg.MinStates = MinStates;
@@ -151,18 +151,18 @@ int main(int argc, char** argv)
       int Step = 0;
       for (int Sweep = 0; Sweep < NumSweeps; ++Sweep)
       {
-	 while (dmrg.Hi != dmrg.Ham.end())
-	 {
-	    dmrg.DoIterationMoveRight();
-	    std::cout << "Step: " << Step++ << '\n';
-	 }
-	 dmrg.RightEndpoint();
-	 while (dmrg.Hi != dmrg.Ham.begin())
-	 {
-	    dmrg.DoIterationMoveLeft();
-	    std::cout << "Step: " << --Step << '\n';
-	 }
-	 dmrg.LeftEndpoint();
+         while (dmrg.Hi != dmrg.Ham.end())
+         {
+            dmrg.DoIterationMoveRight();
+            std::cout << "Step: " << Step++ << '\n';
+         }
+         dmrg.RightEndpoint();
+         while (dmrg.Hi != dmrg.Ham.begin())
+         {
+            dmrg.DoIterationMoveLeft();
+            std::cout << "Step: " << --Step << '\n';
+         }
+         dmrg.LeftEndpoint();
       }
 
       //      std::cout << "Finished." << std::endl;

@@ -39,10 +39,10 @@ class KrylovSolver
       KrylovSolver(SplitOperator const& H_, SplitOperator const& H2_, CenterWavefunction const& Psi);
 
       KrylovSolver(SplitOperator const& H_, SplitOperator const& H2_, CenterWavefunction const& Psi,
-		   double Energy);
+                   double Energy);
 
       KrylovSolver(SplitOperator const& H_, SplitOperator const& H2_, CenterWavefunction const& Psi,
-		   double Energy, double ExpectationH2);
+                   double Energy, double ExpectationH2);
 
       void ShiftRightAndExpand(bool FullOrtho);
       void ShiftLeftAndExpand(bool FullOrtho);
@@ -60,10 +60,10 @@ class KrylovSolver
       // matrix elements
       void FixKrylovVector(bool FullOrtho);
 
-      Vector<std::complex<double> > 
+      Vector<std::complex<double> >
       Exponentiate(std::complex<double> Tau, double SubElement) const;
 
-      Vector<std::complex<double> > 
+      Vector<std::complex<double> >
       Exponentiate(std::complex<double> Tau) const;
 
       void Solve(bool FullOrthogonalization);
@@ -75,7 +75,7 @@ class KrylovSolver
       void TruncateLeft(int MaxStates, double MixFactor, bool FullOrtho);
       void TruncateRight(int MaxStates, double MixFactor, bool FullOrtho);
 
-      TruncationInfo TruncateLeft(int MinStates, int MaxStates, double MinTrunc, double MixFactor, 
+      TruncationInfo TruncateLeft(int MinStates, int MaxStates, double MinTrunc, double MixFactor,
                                   bool FullMixing, bool FullOrtho);
       TruncationInfo TruncateRight(int MinStates, int MaxStates, double MinTrunc, double MixFactor,
                                    bool FullMixing, bool FullOrtho);
@@ -96,7 +96,7 @@ class KrylovSolver
       SuperblockOperator kn1_H_kn;              // matrix elements <k[n+1] | H | k[n] >
 
       Matrix<TransformOperator>       ki_kj;    // this is upper triangular, j > i
- 
+
       Matrix<std::complex<double> >   sub_I;    // I in the Krylov basis
       Matrix<std::complex<double> >   sub_H;    // H in the Krylov basis, dimension is
                                                 // number of Krylov vectors minus 1

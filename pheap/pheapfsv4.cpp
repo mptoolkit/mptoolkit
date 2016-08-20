@@ -108,8 +108,8 @@ namespace Private
 // PageInfoType
 //
 
-PageInfoType::PageInfoType(int InitialLockCount, int InitialReferenceCount, 
-			   size_t Page_, unsigned char* Ptr_, FileSystem* FS_, PageFile* PF_, size_t LocalPage_)
+PageInfoType::PageInfoType(int InitialLockCount, int InitialReferenceCount,
+                           size_t Page_, unsigned char* Ptr_, FileSystem* FS_, PageFile* PF_, size_t LocalPage_)
    : LockCount(InitialLockCount), ReferenceCount(InitialReferenceCount),
      GlobalPage(Page_), Ptr(Ptr_), BackFS(FS_), PF(PF_), LocalPage(LocalPage_), InPageCache(false)
 {
@@ -195,16 +195,16 @@ void PageInfoType::DoLockCountZero()
    if (!LockCount.is_zero()) return;
 
    TRACE_PHEAP("DoLockCountZero")(this)(LocalPage);
-   
+
    if (BackFS != NULL)
    {
       if (ReferenceCount.is_zero())
       {
-	 BackFS->deallocate(this);
+         BackFS->deallocate(this);
       }
       else if (!InPageCache) // if we have entered this function twice, don't write it a second time
       {
-	 BackFS->write(this);
+         BackFS->write(this);
       }
    }
 }
@@ -350,7 +350,7 @@ FileSystem::~FileSystem()
 {
 }
 
-void FileSystem::create(std::string const& FilePath, int NumFiles, 
+void FileSystem::create(std::string const& FilePath, int NumFiles,
                         size_t DesiredPageSize, size_t PageCacheByteSize,
                         bool Unlink, bool AllowOverwrite)
 {
@@ -363,7 +363,7 @@ void FileSystem::create(std::string const& FilePath, int NumFiles,
    {
       PathSep = PathSepNext;
       ++PathSep;
-      PathSepNext = std::find(PathSep, FilePath.end(), '/');   
+      PathSepNext = std::find(PathSep, FilePath.end(), '/');
    }
    std::string Path = std::string(FilePath.begin(), PathSep);
    if (Path.empty()) Path = ".";  // default path is current directory
@@ -427,15 +427,15 @@ int FileSystem::ReadPageFileMetadata(std::string const& Path, std::string const&
    if (pheap::ExpectedPageFileVersion() != -1 && pheap::ExpectedPageFileVersion() != int(CheckVersion))
    {
       std::ostringstream Out;
-      Out << "Page file version mismatch, expected version=" << pheap::ExpectedPageFileVersion() 
-	  << " but version is " << CheckVersion;
+      Out << "Page file version mismatch, expected version=" << pheap::ExpectedPageFileVersion()
+          << " but version is " << CheckVersion;
       throw pheap::PHeapVersionMismatch(Out.str());
    }
 
    if (CheckVersion < 1 || CheckVersion > 2)
    {
       WARNING("Page file version mismatch, file version is ") << CheckVersion
-							      << " expected version is " << MetadataVersion << "\nFilename: " << FileName;
+                                                              << " expected version is " << MetadataVersion << "\nFilename: " << FileName;
    }
 
    // Number of page files
@@ -447,8 +447,8 @@ int FileSystem::ReadPageFileMetadata(std::string const& Path, std::string const&
    }
    else if (CheckNumPageFiles != PageFileNames.size())
    {
-      PANIC("Page file consistency error") << FileName << " lists " 
-	    << CheckNumPageFiles << " page files, but we expected " << PageFileNames.size();
+      PANIC("Page file consistency error") << FileName << " lists "
+            << CheckNumPageFiles << " page files, but we expected " << PageFileNames.size();
    }
 
    // Page file names
@@ -457,12 +457,12 @@ int FileSystem::ReadPageFileMetadata(std::string const& Path, std::string const&
       std::string CheckFileName = MetaIn.read<std::string>();
       if (PageFileNames[i].empty())
       {
-	 PageFileNames[i] = CheckFileName;
+         PageFileNames[i] = CheckFileName;
       }
       else if (PageFileNames[i] != CheckFileName)
       {
-	 PANIC("Page file consistency error") << FileName << " lists a file name of "
-	       << CheckFileName << ", but we expected " << PageFileNames[i];
+         PANIC("Page file consistency error") << FileName << " lists a file name of "
+               << CheckFileName << ", but we expected " << PageFileNames[i];
       }
    }
 
@@ -474,8 +474,8 @@ int FileSystem::ReadPageFileMetadata(std::string const& Path, std::string const&
    }
    else if (HookPageNumber != CheckHookPageNumber)
    {
-      PANIC("Page file consistency error") << FileName << " lists a HookPageNumber of " 
-	    << CheckHookPageNumber << " , but we expected " << HookPageNumber;
+      PANIC("Page file consistency error") << FileName << " lists a HookPageNumber of "
+            << CheckHookPageNumber << " , but we expected " << HookPageNumber;
    }
 
    // PageListSize
@@ -486,8 +486,8 @@ int FileSystem::ReadPageFileMetadata(std::string const& Path, std::string const&
    }
    else if (PageList.size() != CheckPageListSize)
    {
-      PANIC("Page file consistency error") << FileName << " lists a page list size of " 
-	    << CheckPageListSize << " , but we expected " << PageList.size();
+      PANIC("Page file consistency error") << FileName << " lists a page list size of "
+            << CheckPageListSize << " , but we expected " << PageList.size();
    }
 
    // page file number
@@ -495,15 +495,15 @@ int FileSystem::ReadPageFileMetadata(std::string const& Path, std::string const&
    if (PageFileNumber > CheckNumPageFiles)
    {
       PANIC("Page file consistency error") << FileName << " claims to be page file number "
-	    << PageFileNumber << ", but only " << CheckNumPageFiles << " files were expected.";
+            << PageFileNumber << ", but only " << CheckNumPageFiles << " files were expected.";
    }
 
    // Make sure that this PageFileList entry does not yet exist, and then set it
    if (PageFileList[PageFileNumber] != NULL)
    {
       PANIC("Page file consistency error") << FileName << " claims to be file number "
-	    << PageFileNumber << ", but this file has already been processed (as file "
-	    << PageFileNames[PageFileNumber] << ")";
+            << PageFileNumber << ", but this file has already been processed (as file "
+            << PageFileNames[PageFileNumber] << ")";
    }
    PageFileList[PageFileNumber] = PF;
 
@@ -523,8 +523,8 @@ int FileSystem::ReadPageFileMetadata(std::string const& Path, std::string const&
       uint32_t LocalPageNumber = MetaIn.read<uint32>();
       CHECK(PageList[GlobalPageNumber] == NULL);
 
-      PageList[GlobalPageNumber] = new 
-	Private::PageInfoType(0, 0, GlobalPageNumber, NULL, this, PF, LocalPageNumber);
+      PageList[GlobalPageNumber] = new
+        Private::PageInfoType(0, 0, GlobalPageNumber, NULL, this, PF, LocalPageNumber);
    }
 
    // We no longer free the metadata, so that we don't overwrite it
@@ -549,7 +549,7 @@ PageId FileSystem::open(std::string const& FilePath, size_t PageCacheByteSize, b
    {
       PathSep = PathSepNext;
       ++PathSep;
-      PathSepNext = std::find(PathSep, FilePath.end(), '/');   
+      PathSepNext = std::find(PathSep, FilePath.end(), '/');
    }
    std::string Path = std::string(FilePath.begin(), PathSep);
    if (*PathSep == '/') ++PathSep;
@@ -615,12 +615,12 @@ void FileSystem::flush()
 
       if (PageInfo->PF == NULL)
       {
-	 PageInfo->PF = AllocatePageFile();
-	 PageInfo->LocalPage = PageInfo->PF->write(PageInfo->Ptr);
+         PageInfo->PF = AllocatePageFile();
+         PageInfo->LocalPage = PageInfo->PF->write(PageInfo->Ptr);
       }
       else
       {
-	 DeallocatePageBuffer(PageInfo->Ptr);
+         DeallocatePageBuffer(PageInfo->Ptr);
       }
       PageInfo->InPageCache = false;
       PageInfo->Ptr = NULL;
@@ -634,13 +634,13 @@ void FileSystem::flush()
    {
       if (PageList[i] && PageList[i]->Ptr != NULL && PageList[i]->PF == NULL)
       {
-	 CHECK(!PageList[i]->LockCount.is_zero());
-	 PageList[i]->PF = AllocatePageFile();
-	 PageList[i]->LocalPage = PageList[i]->PF->write(PageList[i]->Ptr);
+         CHECK(!PageList[i]->LockCount.is_zero());
+         PageList[i]->PF = AllocatePageFile();
+         PageList[i]->LocalPage = PageList[i]->PF->write(PageList[i]->Ptr);
       }
    }
    notify_log(20, pheap::PHeapLog) << "Flushing page files completed.\n";
-}	 
+}
 
 void FileSystem::persistent_shutdown(PageId UserPage)
 {
@@ -721,8 +721,8 @@ void FileSystem::WritePageFileMetadata(int FileNumber, uint32_t MetaHook)
    {
       if (PageList[i] && PageList[i]->PF == PF)
       {
-	 out.write<uint32>(PageList[i]->GlobalPage);
-	 out.write<uint32>(PageList[i]->LocalPage);
+         out.write<uint32>(PageList[i]->GlobalPage);
+         out.write<uint32>(PageList[i]->LocalPage);
       }
    }
    uint32_t LocalHook = out.commit();
@@ -738,9 +738,9 @@ WriteBuffer FileSystem::allocate()
    if (FreeList.empty())
    {
       Page = new Private::PageInfoType(1, 0, PageList.size(), Buf, this, NULL, 0);
-      //      std::cout << "Allocated new PageInfo " << Page->Page << ' ' 
-      //		<< PageList.size() << ' ' << FreeList.size() << ' ' << num_free_pages() << ' '
-      //		<< num_file_allocated_pages() << std::endl;
+      //      std::cout << "Allocated new PageInfo " << Page->Page << ' '
+      //                << PageList.size() << ' ' << FreeList.size() << ' ' << num_free_pages() << ' '
+      //                << num_file_allocated_pages() << std::endl;
       PageList.push_back(Page);
    }
    else
@@ -749,9 +749,9 @@ WriteBuffer FileSystem::allocate()
       FreeList.erase(FreeList.begin());
       Page = PageList[FreePage];
       Page->ResetBuffer(Buf);
-      //      std::cout << "Allocated from free list PageInfo " << (void*) Page << ' ' 
-      //		<< PageList.size() << ' ' << FreeList.size() << ' ' << num_free_pages() << ' '
-      //		<< num_file_allocated_pages() << std::endl;
+      //      std::cout << "Allocated from free list PageInfo " << (void*) Page << ' '
+      //                << PageList.size() << ' ' << FreeList.size() << ' ' << num_free_pages() << ' '
+      //                << num_file_allocated_pages() << std::endl;
    }
    return WriteBuffer(Page, Buf);
 }
@@ -767,11 +767,11 @@ PageId FileSystem::get_page(size_t Page) const
       pthread::mutex::sentry MyLock(PageCacheMutex);
       PageInfo = PageList[Page];
    }
-      
-   // Make sure the page exists.  
+
+   // Make sure the page exists.
    // Technically, we should grab the PageMutex to do the precondition check...
    DEBUG_PRECONDITION(PageInfo->Ptr != NULL || PageInfo->PF != NULL);
-   return PageId(PageInfo); 
+   return PageId(PageInfo);
 }
 
 
@@ -794,13 +794,13 @@ void FileSystem::read(Private::PageInfoType* PageInfo)
       if (PageInfo->InPageCache)
       {
          pthread::mutex::sentry MyLock(PageCacheMutex);
-	 //      	 std::cout << "reading PageInfo " << PageInfo->Page << " is in cache." << std::endl;
-	 PageCache.erase(PageInfo->PageCacheLoc);
-	 PageInfo->InPageCache = false;
+         //              std::cout << "reading PageInfo " << PageInfo->Page << " is in cache." << std::endl;
+         PageCache.erase(PageInfo->PageCacheLoc);
+         PageInfo->InPageCache = false;
 
-         //	 DEBUG_TRACE("Removed PageInfo from PageCache")((void*) PageInfo)(PageCache.size());
+         //      DEBUG_TRACE("Removed PageInfo from PageCache")((void*) PageInfo)(PageCache.size());
 
-	 return;
+         return;
       }
    }
 
@@ -848,15 +848,15 @@ void FileSystem::write(Private::PageInfoType* PageInfo)
       // Only write the page if its not already on disk
       if (PageInfo->PF == NULL)
       {
-	 // 	 std::cout << "flushing PageInfo " << PageInfo->Page << " to disk." << std::endl;
-	 PageInfo->PF = AllocatePageFile();
-	 PageInfo->LocalPage = PageInfo->PF->write(PageInfo->Ptr);
-	 //std::cout << "local page is " << PageInfo->LocalPage << std::endl;
+         //      std::cout << "flushing PageInfo " << PageInfo->Page << " to disk." << std::endl;
+         PageInfo->PF = AllocatePageFile();
+         PageInfo->LocalPage = PageInfo->PF->write(PageInfo->Ptr);
+         //std::cout << "local page is " << PageInfo->LocalPage << std::endl;
       }
       else
       {
-	 // The page is already on disk, just drop the in-memory version
-	 DeallocatePageBuffer(PageInfo->Ptr);
+         // The page is already on disk, just drop the in-memory version
+         DeallocatePageBuffer(PageInfo->Ptr);
       }
       PageInfo->InPageCache = false;
       PageInfo->Ptr = NULL;
@@ -887,10 +887,10 @@ void FileSystem::deallocate(Private::PageInfoType* PageInfo)
    {
       if (PageFileList.empty())
       {
-	 notify_log(0, pheap::PHeapLog) 
-	   << "probable bug: in FileSystem::deallocate(Private::PageInfoType* PageInfo): "
-	   << "deallocating a page but the PageFile no longer exists!\n";
-	 return;
+         notify_log(0, pheap::PHeapLog)
+           << "probable bug: in FileSystem::deallocate(Private::PageInfoType* PageInfo): "
+           << "deallocating a page but the PageFile no longer exists!\n";
+         return;
       }
       PageInfo->PF->deallocate(PageInfo->LocalPage);
       //      std::cout << "Local page is " << PageInfo->LocalPage << std::endl;
@@ -919,19 +919,19 @@ void FileSystem::shutdown(bool Remove)
 
    // walk the page list and deallocate the pages.  We don't destroy the PageInfo*'s themselves,
    // since there may be pointers to them elsewhere (as PageId's, for example) that
-   // will want to destroy themselves cleanly.  
+   // will want to destroy themselves cleanly.
    for (size_t i = 0; i < PageList.size(); ++i)
    {
       if (PageList[i])
       {
-	 PageList[i]->BackFS = NULL;
-	 PageList[i]->PF = NULL;
-	 PageList[i]->InPageCache = false;
-	 if (PageList[i]->Ptr != NULL)
-	 {
-	    DeallocatePageBuffer(PageList[i]->Ptr);
-	    PageList[i]->Ptr = NULL;
-	 }
+         PageList[i]->BackFS = NULL;
+         PageList[i]->PF = NULL;
+         PageList[i]->InPageCache = false;
+         if (PageList[i]->Ptr != NULL)
+         {
+            DeallocatePageBuffer(PageList[i]->Ptr);
+            PageList[i]->Ptr = NULL;
+         }
       }
    }
 
@@ -1052,7 +1052,7 @@ std::ostream& operator<<(std::ostream& out, std::list<std::size_t> const& l)
 void FileSystem::Debug()
 {
    std::cerr << "FileSystem debug report\n";
-   //	     << "FreeList: " << FreeList;
+   //        << "FreeList: " << FreeList;
 
    for (size_t i = 0; i < PageFileList.size(); ++i)
    {

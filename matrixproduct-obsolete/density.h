@@ -27,7 +27,7 @@
 #include <list>
 
 // sometimes we need a number of states that stands for 'infinite'
-int const DefaultMaxStates = 50000;  
+int const DefaultMaxStates = 50000;
 
 typedef IrredTensor
         <
@@ -43,11 +43,11 @@ typedef std::set<QuantumNumbers::QuantumNumber> KeepListType;
 // in KeepList \otimes SiteQN is represented in the KeepStates.
 // The updated KeepList is then set to the quantum numbers in the final basis.
 void UpdateKeepList(KeepListType& KeepList,
-		    std::set<QuantumNumbers::QuantumNumber> const& SiteQN,
-		    VectorBasis const& FullBasis,
-		    std::list<EigenInfo>& KeepStates, 
-		    std::list<EigenInfo>& DiscardStates,
-		    TruncationInfo& Info);
+                    std::set<QuantumNumbers::QuantumNumber> const& SiteQN,
+                    VectorBasis const& FullBasis,
+                    std::list<EigenInfo>& KeepStates,
+                    std::list<EigenInfo>& DiscardStates,
+                    TruncationInfo& Info);
 
 // Function to get the dimension of each quantum number subspace in the
 // eigenvalue list
@@ -83,7 +83,7 @@ TruncateFixEigenDimensions(EigenDimensionsType const& EDim, FwdIter first, FwdIt
 
 template <typename FwdIter>
 std::list<EigenInfo>
-TruncateFixEigenDimensions(EigenDimensionsType const& EDim_, VectorBasis const& B, 
+TruncateFixEigenDimensions(EigenDimensionsType const& EDim_, VectorBasis const& B,
                            int MinStates,
                            FwdIter first, FwdIter last,
                            TruncationInfo& Info)
@@ -110,7 +110,7 @@ TruncateFixEigenDimensions(EigenDimensionsType const& EDim_, VectorBasis const& 
    }
    return Result;
 }
-   
+
 template <typename BasisT>
 class LinearBasis;
 
@@ -163,7 +163,7 @@ class DensityMatrixBase
       const_iterator end() const { return EigenInfoList.end(); }
 
       // shows a report of the density matrix eigenvalues, showing at most MaxEigenvalues of
-      // the eigenvalue, cumulative truncation error, 
+      // the eigenvalue, cumulative truncation error,
       // TODO: fix the code rot
       std::ostream& DensityMatrixReport(std::ostream& out, int MaxEigenvalues = -1, bool Base2 = false);
 
@@ -175,7 +175,7 @@ class DensityMatrixBase
    protected:
       DensityMatrixBase() {}
 
-      // this function diagonalizes the RawDMList, and initializes the EigenInfoList.  
+      // this function diagonalizes the RawDMList, and initializes the EigenInfoList.
       // It is assumed
       // on entry that Basis is valid, and RawDMList is the undiagonalized density matrix.
       void DiagonalizeDMHelper(bool Sort = true);
@@ -343,16 +343,16 @@ class SingularDecomposition<MPStateComponent, MPStateComponent> : public Singula
       SingularDecomposition(MPStateComponent const& A, ProductBasis<BasisList, BasisList> const& Factors);
 
       template <typename FwdIter>
-      void ConstructMatrices(FwdIter first, FwdIter last, 
-			     MPStateComponent& A, 
-			     RealDiagonalOperator& C, 
-			     MPStateComponent& B);
+      void ConstructMatrices(FwdIter first, FwdIter last,
+                             MPStateComponent& A,
+                             RealDiagonalOperator& C,
+                             MPStateComponent& B);
 
    private:
       QuantumNumber Lookup(int Subspace) const;
-   
+
       void ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
-				  MPStateComponent& A, MatrixOperator& C, MPStateComponent& B);
+                                  MPStateComponent& A, MatrixOperator& C, MPStateComponent& B);
 
       VectorBasis B1, B2;
       ProductBasis<BasisList, BasisList> Factors;

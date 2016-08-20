@@ -45,7 +45,7 @@ OpType MakeHopping(OpType const& LeftIdent)
 
 OpType MakeHopping(OpType const& LeftIdent, OpType const& SpinIdent)
 {
-   return 
+   return
       tensor_prod(tensor_prod(tensor_prod(tensor_prod(LeftIdent, CHupP), SpinIdent), SpinIdent), Cup)
       + tensor_prod(tensor_prod(tensor_prod(tensor_prod(LeftIdent, CHdownP), SpinIdent), SpinIdent), Cdown)
       SIGN tensor_prod(tensor_prod(tensor_prod(tensor_prod(LeftIdent, CupP), SpinIdent), SpinIdent), CHup)
@@ -124,23 +124,23 @@ int main()
       + MakeHopping(MidIdent);
 
    // now the spin interactions
-   OpType SpinJ1 = 0.5 * (tensor_prod(tensor_prod(BandI, BandSp), SpinSm) 
-			  + tensor_prod(tensor_prod(BandI, BandSm), SpinSp))
+   OpType SpinJ1 = 0.5 * (tensor_prod(tensor_prod(BandI, BandSp), SpinSm)
+                          + tensor_prod(tensor_prod(BandI, BandSm), SpinSp))
       + tensor_prod(tensor_prod(BandI, BandSz), SpinSz);
    SpinJ1 = ApplyIdent(SpinJ1, SpinI);
    SpinJ1 = ApplyIdent(SpinJ1, BandI, 2);
 
    OpType SpinJ2 = ApplyIdent(LeftIdent, SpinI);
-   SpinJ2 = 0.5 * (tensor_prod(tensor_prod(SpinJ2, SpinSp), BandSm) 
-		   + tensor_prod(tensor_prod(SpinJ2, SpinSm), BandSp))
+   SpinJ2 = 0.5 * (tensor_prod(tensor_prod(SpinJ2, SpinSp), BandSm)
+                   + tensor_prod(tensor_prod(SpinJ2, SpinSm), BandSp))
       + tensor_prod(tensor_prod(SpinJ2, SpinSz), BandSz);
    SpinJ2 = ApplyIdent(SpinJ2, BandI);
-   
+
    OpType SzSz = tensor_prod(tensor_prod(LeftIdent, SpinSz), SpinSz);
    SzSz = ApplyIdent(SzSz, BandI, 2);
 
-   OpType SS = 0.5 * (tensor_prod(tensor_prod(LeftIdent, SpinSp), SpinSm) 
-		      + tensor_prod(tensor_prod(LeftIdent, SpinSm), SpinSp))
+   OpType SS = 0.5 * (tensor_prod(tensor_prod(LeftIdent, SpinSp), SpinSm)
+                      + tensor_prod(tensor_prod(LeftIdent, SpinSm), SpinSp))
       + tensor_prod(tensor_prod(LeftIdent, SpinSz), SpinSz);
    SS = ApplyIdent(SS, BandI, 2);
 
@@ -176,12 +176,12 @@ int main()
    {
       for (const_inner_iterator<OpType>::type J = iterate(I); J; ++J)
       {
-	 if (first)
-	    first = false;
-	 else
-	    std::cout << ",\n";
+         if (first)
+            first = false;
+         else
+            std::cout << ",\n";
 
-	 std::cout << "Rule[{" << (J.index1()+1) << ',' << (J.index2()+1) << "}, " << J->real() << "]";
+         std::cout << "Rule[{" << (J.index1()+1) << ',' << (J.index2()+1) << "}, " << J->real() << "]";
       }
    }
    std::cout << "}\n";

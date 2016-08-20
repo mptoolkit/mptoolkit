@@ -23,7 +23,7 @@
 //
 
 #if !defined(MPOPERATOR_H_SDHWEUYT439786Y8Y)
-#define MPOPERATOR_H_SDHWEUYT439786Y8Y 
+#define MPOPERATOR_H_SDHWEUYT439786Y8Y
 
 #include "linearoperator.h"
 

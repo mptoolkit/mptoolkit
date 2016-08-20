@@ -53,16 +53,16 @@ int main(int argc, char** argv)
       JoinFirst = true;
 
    // we would like to multiply the left-hand wavefunction by op1 and then calculate
-   // the expectation value (Ps1Op1, Op2, Psi2), but we cannot, because 
+   // the expectation value (Ps1Op1, Op2, Psi2), but we cannot, because
    // Op1 might not be hermitian, and we don't know how to take the adjoint of
    // an MPOperator yet...
    std::cout.precision(14);
-   MPOperator Operator1 = (Op1 == "I") ? (*System)["I"] 
+   MPOperator Operator1 = (Op1 == "I") ? (*System)["I"]
       : System->Lookup(Op1, boost::lexical_cast<std::string>(FirstSite));
    if (JoinFirst)
    {
       // incorporate the join into the first site as well
-      Operator1 = prod(Operator1, System->Lookup(Join, boost::lexical_cast<std::string>(FirstSite)), 
+      Operator1 = prod(Operator1, System->Lookup(Join, boost::lexical_cast<std::string>(FirstSite)),
                        Operator1.TransformsAs());
    }
 
@@ -73,12 +73,12 @@ int main(int argc, char** argv)
       MPOperator Op = prod(Operator1, Operator2, QuantumNumber(System->GetSymmetryList()));
       for (int P = FirstSite+1; P < Pos; ++P)
       {
-	 Op = prod(Op, System->Lookup(Join, boost::lexical_cast<std::string>(P)), 
-		   QuantumNumber(System->GetSymmetryList()));
+         Op = prod(Op, System->Lookup(Join, boost::lexical_cast<std::string>(P)),
+                   QuantumNumber(System->GetSymmetryList()));
       }
-      std::cout << std::setw(4) << FirstSite << ' ' << std::setw(4) << Pos 
-		<< ' ' << std::setw(16)
-		<< expectation(*Psi1, Op, *Psi2) << '\n';
+      std::cout << std::setw(4) << FirstSite << ' ' << std::setw(4) << Pos
+                << ' ' << std::setw(16)
+                << expectation(*Psi1, Op, *Psi2) << '\n';
    }
 
    pheap::Shutdown();

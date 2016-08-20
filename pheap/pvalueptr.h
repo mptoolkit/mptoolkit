@@ -33,7 +33,7 @@
 #include "pheap.h"
 #include "polycast.h"
 
-// the pvalue_ptr is a descriptor of an object on the persistent heap, with 
+// the pvalue_ptr is a descriptor of an object on the persistent heap, with
 // value semantics.
 
 // pvalue_lock.  The idea of this class is that it avoids multiple calls to pvalue_ptr::mutate()
@@ -41,7 +41,7 @@
 //
 // pvalue_ptr<T> foo = bar;
 // pvalue_ptr<T>::lock foo_lock(foo_lock);
-// while (cond) 
+// while (cond)
 //    foo_lock->modify();
 //
 // this is equivalent to
@@ -227,7 +227,7 @@ class pvalue_handle
 
       template <class U> friend class pvalue_handle;
 };
-      
+
 template <typename T>
 bool operator<(pvalue_handle<T> const& x, pvalue_handle<T> const& y); // not implemented
 
@@ -279,7 +279,7 @@ void ShutdownPersistent(pvalue_ptr<T>& MainObject)
 }
 template <typename T>
 void ExportHeap(std::string const& FileName, pvalue_ptr<T>& MainObject,
-		int NumFiles = 1, size_t PageSize = 0)
+                int NumFiles = 1, size_t PageSize = 0)
 {
    ExportHeap(FileName, MainObject.get_handle(), NumFiles, PageSize);
 }
@@ -288,8 +288,8 @@ void ExportHeap(std::string const& FileName, pvalue_ptr<T>& MainObject,
 // ExportHeap(FileName, pvalue_ptr<T>(new T(Obj)), NumFiles, PageSize)
 template <typename T>
 void
-ExportObject(std::string const& FileName, T const& Obj, 
-	     int NumFiles = 1, size_t PageSize = 0)
+ExportObject(std::string const& FileName, T const& Obj,
+             int NumFiles = 1, size_t PageSize = 0)
 {
    pvalue_ptr<T> Ptr(new T(Obj));
    ExportHeap(FileName, Ptr, NumFiles, PageSize);

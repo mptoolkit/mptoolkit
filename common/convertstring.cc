@@ -89,7 +89,7 @@ struct convert_string_helper<T, FwdIter, true>
    T apply(FwdIter start, FwdIter end)
    {
       if (start == end) throw invalid_string_conversion();
-      if (*start == '-') 
+      if (*start == '-')
       {
          return convert_negative_string<T>(++start, end);
       }
@@ -101,16 +101,16 @@ struct convert_string_helper<T, FwdIter, true>
 
 // convert_string specializations for the builtin types
 
-#define IMPLEMENT_CONVERT_STRING_BUILTIN(type)				\
-template <typename FwdIter>						\
-struct convert_string_partial<type, FwdIter>				\
-{									\
-   inline static       							\
-   type									\
-   apply(FwdIter start, FwdIter end)					\
-   {									\
-     return convert_string_helper<type, FwdIter>::apply(start, end);	\
-   }									\
+#define IMPLEMENT_CONVERT_STRING_BUILTIN(type)                          \
+template <typename FwdIter>                                             \
+struct convert_string_partial<type, FwdIter>                            \
+{                                                                       \
+   inline static                                                        \
+   type                                                                 \
+   apply(FwdIter start, FwdIter end)                                    \
+   {                                                                    \
+     return convert_string_helper<type, FwdIter>::apply(start, end);    \
+   }                                                                    \
 };
 
 IMPLEMENT_CONVERT_STRING_BUILTIN(char)

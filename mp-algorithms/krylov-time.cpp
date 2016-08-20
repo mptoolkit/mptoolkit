@@ -30,25 +30,25 @@ using MessageLogger::msg_log;
 PStream::opstream& operator<<(PStream::opstream& out, KrylovSolver const& s)
 {
    return out << s.Psi
-	      << s.Krylov
-	      << s.Ident
-	      << s.Timestep
+              << s.Krylov
+              << s.Ident
+              << s.Timestep
       ;
 }
 
 PStream::ipstream& operator>>(PStream::ipstream& in, KrylovSolver& s)
 {
    return in >> s.Psi
-	     >> s.Krylov
-	     >> s.Ident
-	     >> s.Timestep
+             >> s.Krylov
+             >> s.Ident
+             >> s.Timestep
       ;
 }
 
-KrylovSolver::KrylovSolver(MPWavefunction const& Psi_, 
-			   MPOperator const& H_,
-			   std::complex<double> Timestep_, 
-			   int NumKrylovVectors_)
+KrylovSolver::KrylovSolver(MPWavefunction const& Psi_,
+                           MPOperator const& H_,
+                           std::complex<double> Timestep_,
+                           int NumKrylovVectors_)
    : Psi(Psi_), Krylov(H_, std::vector<MPWavefunction>(NumKrylovVectors_+1, Psi_)),
      Ident(Psi_.GetSymmetryList()), Timestep(Timestep_)
 {

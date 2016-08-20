@@ -43,10 +43,10 @@ int pop_int(std::stack<element_type>& eval)
 struct push_operator
 {
    push_operator(InfiniteLattice const& Lattice_,
-		 std::stack<std::string>& IdentStack_, 
-		 std::stack<element_type>& eval_)
+                 std::stack<std::string>& IdentStack_,
+                 std::stack<element_type>& eval_)
       : Lattice(Lattice_), IdentStack(IdentStack_), eval(eval_) {}
-   
+
    void operator()(char const*, char const*) const
    {
       std::string OpName = IdentStack.top();
@@ -65,12 +65,12 @@ struct push_operator
 struct push_operator_param
 {
    push_operator_param(InfiniteLattice const& Lattice_,
-		       std::stack<std::string>& IdentStack_, 
-		       std::stack<std::stack<element_type> >& ParamStack_,
-		       std::stack<element_type>& eval_)
-      : Lattice(Lattice_), IdentStack(IdentStack_), 
-	ParamStack(ParamStack_), eval(eval_) {}
-   
+                       std::stack<std::string>& IdentStack_,
+                       std::stack<std::stack<element_type> >& ParamStack_,
+                       std::stack<element_type>& eval_)
+      : Lattice(Lattice_), IdentStack(IdentStack_),
+        ParamStack(ParamStack_), eval(eval_) {}
+
    void operator()(char const*, char const*) const
    {
       std::string OpName = IdentStack.top();
@@ -81,8 +81,8 @@ struct push_operator_param
       std::vector<std::complex<double> > Params(NumParam);
       while (!ParamStack.top().empty())
       {
-	 Params[--NumParam] = boost::get<std::complex<double> >(ParamStack.top().top());
-	 ParamStack.top().pop();
+         Params[--NumParam] = boost::get<std::complex<double> >(ParamStack.top().top());
+         ParamStack.top().pop();
       }
       ParamStack.pop();
 
@@ -95,7 +95,7 @@ struct push_operator_param
    std::stack<element_type >& eval;
 };
 
-// We read parameters initially into the element stack, so 
+// We read parameters initially into the element stack, so
 // this function moves an item from the element stack to the parameter stack
 template <typename T>
 struct move_to_parameter_pack;
@@ -104,7 +104,7 @@ template <>
 struct move_to_parameter_pack<element_type>
 {
    move_to_parameter_pack(std::stack<std::stack<element_type> >& ParamStack_,
-			  std::stack<element_type>& eval_)
+                          std::stack<element_type>& eval_)
       : ParamStack(ParamStack_), eval(eval_) {}
 
    void operator()(char const*, char const*) const
@@ -144,9 +144,9 @@ struct push_parameter_pack<element_type>
 struct scale_cells_to_sites
 {
    scale_cells_to_sites(InfiniteLattice const& Lattice_,
-			std::stack<element_type>& eval_)
+                        std::stack<element_type>& eval_)
       : Lattice(Lattice_), eval(eval_) {}
-   
+
    void operator()(char const*, char const*) const
    {
       int Cells = pop_int(eval);
@@ -161,9 +161,9 @@ struct scale_cells_to_sites
 struct push_number_of_sites
 {
    push_number_of_sites(InfiniteLattice const& Lattice_,
-			std::stack<element_type>& eval_)
+                        std::stack<element_type>& eval_)
       : Lattice(Lattice_), eval(eval_) {}
-   
+
    void operator()(char const*, char const*) const
    {
       eval.push(std::complex<double>(double(Lattice.GetUnitCell().size())));
@@ -176,9 +176,9 @@ struct push_number_of_sites
 struct push_sum_unit
 {
    push_sum_unit(InfiniteLattice const& Lattice_,
-		 std::stack<element_type>& eval_)
+                 std::stack<element_type>& eval_)
       : Lattice(Lattice_), eval(eval_) {}
-   
+
    void operator()(char const* Start, char const* End) const
    {
       int Sites = pop_int(eval);
@@ -196,9 +196,9 @@ struct push_sum_unit
 struct push_sum_k
 {
    push_sum_k(InfiniteLattice const& Lattice_,
-	      std::stack<element_type>& eval_)
+              std::stack<element_type>& eval_)
       : Lattice(Lattice_), eval(eval_) {}
-   
+
    void operator()(char const* Start, char const* End) const
    {
       std::complex<double> k = boost::get<std::complex<double> >(eval.top());
@@ -218,9 +218,9 @@ struct push_sum_k
 struct push_sum_kink
 {
    push_sum_kink(InfiniteLattice const& Lattice_,
-		 std::stack<element_type>& eval_)
+                 std::stack<element_type>& eval_)
       : Lattice(Lattice_), eval(eval_) {}
-   
+
    void operator()(char const* Start, char const* End) const
    {
       int Sites = pop_int(eval);
@@ -231,15 +231,15 @@ struct push_sum_kink
       char const* Comma = Start;
       while (Comma != End && (*Comma != ',' || nBracket > 0))
       {
-	 if (*Comma == '(')
-	    ++nBracket;
-	 else if (*Comma == ')')
-	    --nBracket;
-	 ++Comma;
+         if (*Comma == '(')
+            ++nBracket;
+         else if (*Comma == ')')
+            --nBracket;
+         ++Comma;
       }
       if (Comma == End)
       {
-	 PANIC("Failed to parse two parameters in sum_kink");
+         PANIC("Failed to parse two parameters in sum_kink");
       }
 
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
@@ -275,149 +275,149 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
    static unary_funcs<element_type>  unary_funcs_p;
    //   static binary_funcs<element_type> binary_funcs_p;
 
-   InfiniteLatticeParser(ElemStackType& eval_, 
-		  IdentStackType& identifier_stack_,
-		  ParamStackType& param_stack_,
-		  UnaryFuncStackType& func_stack_,
-		  BinaryFuncStackType& bin_func_stack_,
-		  InfiniteLattice const& Lattice_)
-      : eval(eval_), identifier_stack(identifier_stack_), 
-	param_stack(param_stack_),
-	func_stack(func_stack_), bin_func_stack(bin_func_stack_), Lattice(Lattice_),
-	binary_funcs_p() {}
-   
+   InfiniteLatticeParser(ElemStackType& eval_,
+                  IdentStackType& identifier_stack_,
+                  ParamStackType& param_stack_,
+                  UnaryFuncStackType& func_stack_,
+                  BinaryFuncStackType& bin_func_stack_,
+                  InfiniteLattice const& Lattice_)
+      : eval(eval_), identifier_stack(identifier_stack_),
+        param_stack(param_stack_),
+        func_stack(func_stack_), bin_func_stack(bin_func_stack_), Lattice(Lattice_),
+        binary_funcs_p() {}
+
    template <typename ScannerT>
    struct definition
    {
       definition(InfiniteLatticeParser const& self)
       {
-	 real = ureal_p[push_real<element_type>(self.eval)];
-	 
-	 imag = lexeme_d[ureal_p >> chset<>("iIjJ")][push_imag<element_type>(self.eval)];
-	 
-	 identifier = lexeme_d[alpha_p >> *(alnum_p | '_')][push_identifier(self.identifier_stack)];
+         real = ureal_p[push_real<element_type>(self.eval)];
 
-	 // We re-use the identifier_stack for quantum numbers, and rely on the grammar rules to
-	 // avoid chaos!
-	 quantumnumber = lexeme_d[*(anychar_p - chset<>("()"))]
-	    [push_identifier(self.identifier_stack)];
+         imag = lexeme_d[ureal_p >> chset<>("iIjJ")][push_imag<element_type>(self.eval)];
 
-	 parameter = expression[move_to_parameter_pack<element_type>(self.param_stack, self.eval)];
+         identifier = lexeme_d[alpha_p >> *(alnum_p | '_')][push_identifier(self.identifier_stack)];
 
-	 parameter_list = ch_p('{')[push_parameter_pack<element_type>(self.param_stack)]
-	    >> parameter >> *(',' >> parameter) >> '}';
+         // We re-use the identifier_stack for quantum numbers, and rely on the grammar rules to
+         // avoid chaos!
+         quantumnumber = lexeme_d[*(anychar_p - chset<>("()"))]
+            [push_identifier(self.identifier_stack)];
 
-	 prod_expression = (str_p("prod") >> '(' >> expression >> ',' >> expression >> ',' >> quantumnumber >> ')')
-	    [push_prod<element_type>(self.identifier_stack, self.eval)];
- 
-	 bracket_expr = '(' >> expression >> ')';
+         parameter = expression[move_to_parameter_pack<element_type>(self.param_stack, self.eval)];
 
-	 sq_bracket_expr = '[' >> expression >> ']';
+         parameter_list = ch_p('{')[push_parameter_pack<element_type>(self.param_stack)]
+            >> parameter >> *(',' >> parameter) >> '}';
 
-	 expression_string = lexeme_d[+((anychar_p - chset<>("()"))
-					| (ch_p('(') >> expression_string >> ch_p(')')))];
+         prod_expression = (str_p("prod") >> '(' >> expression >> ',' >> expression >> ',' >> quantumnumber >> ')')
+            [push_prod<element_type>(self.identifier_stack, self.eval)];
 
-	 num_cells = (eps_p((str_p("cells") | str_p("sites")) >> '=')
-		      >> ((str_p("cells") >> '=' >> expression >> ',')
-			  [scale_cells_to_sites(self.Lattice, self.eval)]
-			  | (str_p("sites") >> '=' >> expression >> ',')))
-	    | eps_p[push_number_of_sites(self.Lattice, self.eval)];
-      
-	 sum_unit_expression = str_p("sum_unit")
-	    >> '('
-	    >> num_cells
-	    >> expression_string[push_sum_unit(self.Lattice, self.eval)]
-	    >> ')';
+         bracket_expr = '(' >> expression >> ')';
 
-	 sum_kink_expression = str_p("sum_kink")
-	    >> '(' 
-	    >> num_cells
-	    >> expression_string[push_sum_kink(self.Lattice, self.eval)]
-	    >> ')';
-	 
-	 sum_k_expression = str_p("sum_k")
-	    >> '(' 
-	    >> num_cells
-	    >> expression >> ','
-	    >> expression_string[push_sum_k(self.Lattice, self.eval)]
-	    >> ')';
+         sq_bracket_expr = '[' >> expression >> ']';
 
-	 operator_expression = 
-	    identifier
-	    >> (parameter_list[push_operator_param(self.Lattice, 
-						   self.identifier_stack, 
-						   self.param_stack,
-						   self.eval)]
-		|   eps_p[push_operator(self.Lattice, self.identifier_stack, self.eval)]
-		);
-	 
-	 unary_function = 
-	    eps_p(unary_funcs_p >> '(') 
-	    >>  unary_funcs_p[push_unary<element_type>(self.func_stack)]
-	    >>  ('(' >> expression >> ')')[eval_unary<element_type>(self.func_stack, self.eval)];
-	 
-	 binary_function = 
-	    eps_p(self.binary_funcs_p >> '(') 
-	    >>  self.binary_funcs_p[push_binary<element_type>(self.bin_func_stack)]
-	    >>  ('(' >> expression >> ','  >> expression >> ')')
-	    [eval_binary<element_type>(self.bin_func_stack, self.eval)];
-	 
-	 commutator_bracket = 
-	    ('[' >> expression >> ',' >> expression >> ']')[invoke_binary<element_type, 
-							    binary_commutator<element_type> >(self.eval)];
-	 
-	 factor =
-	    imag
-	    |   real
-	    |   unary_function
-	    |   binary_function
-	    |   keyword_d[constants_p[push_real<element_type>(self.eval)]]
-	    |   prod_expression
-	    |   sum_unit_expression
-	    |   sum_kink_expression
-	    |   sum_k_expression
-	    |   commutator_bracket
-	    |   '(' >> expression >> ')'
-	    |   ('-' >> factor)[do_negate<element_type>(self.eval)]
-	    |   ('+' >> factor)
-	    |   operator_expression
-	    ;
-	 
-	 // power operator, next precedence, operates to the right
-	 pow_term =
-	    factor
-	    >> *(  ('^' >> pow_term)[invoke_binary<element_type, binary_power<element_type> >(self.eval)]
-		   )
-	    ;
-	 
-	 term =
-	    pow_term
-	    >> *(   ('*' >> pow_term)[invoke_binary<element_type, 
-				      binary_multiplication<element_type> >(self.eval)]
-                    |   ('/' >> pow_term)[invoke_binary<element_type, 
-					  binary_division<element_type> >(self.eval)]
+         expression_string = lexeme_d[+((anychar_p - chset<>("()"))
+                                        | (ch_p('(') >> expression_string >> ch_p(')')))];
+
+         num_cells = (eps_p((str_p("cells") | str_p("sites")) >> '=')
+                      >> ((str_p("cells") >> '=' >> expression >> ',')
+                          [scale_cells_to_sites(self.Lattice, self.eval)]
+                          | (str_p("sites") >> '=' >> expression >> ',')))
+            | eps_p[push_number_of_sites(self.Lattice, self.eval)];
+
+         sum_unit_expression = str_p("sum_unit")
+            >> '('
+            >> num_cells
+            >> expression_string[push_sum_unit(self.Lattice, self.eval)]
+            >> ')';
+
+         sum_kink_expression = str_p("sum_kink")
+            >> '('
+            >> num_cells
+            >> expression_string[push_sum_kink(self.Lattice, self.eval)]
+            >> ')';
+
+         sum_k_expression = str_p("sum_k")
+            >> '('
+            >> num_cells
+            >> expression >> ','
+            >> expression_string[push_sum_k(self.Lattice, self.eval)]
+            >> ')';
+
+         operator_expression =
+            identifier
+            >> (parameter_list[push_operator_param(self.Lattice,
+                                                   self.identifier_stack,
+                                                   self.param_stack,
+                                                   self.eval)]
+                |   eps_p[push_operator(self.Lattice, self.identifier_stack, self.eval)]
+                );
+
+         unary_function =
+            eps_p(unary_funcs_p >> '(')
+            >>  unary_funcs_p[push_unary<element_type>(self.func_stack)]
+            >>  ('(' >> expression >> ')')[eval_unary<element_type>(self.func_stack, self.eval)];
+
+         binary_function =
+            eps_p(self.binary_funcs_p >> '(')
+            >>  self.binary_funcs_p[push_binary<element_type>(self.bin_func_stack)]
+            >>  ('(' >> expression >> ','  >> expression >> ')')
+            [eval_binary<element_type>(self.bin_func_stack, self.eval)];
+
+         commutator_bracket =
+            ('[' >> expression >> ',' >> expression >> ']')[invoke_binary<element_type,
+                                                            binary_commutator<element_type> >(self.eval)];
+
+         factor =
+            imag
+            |   real
+            |   unary_function
+            |   binary_function
+            |   keyword_d[constants_p[push_real<element_type>(self.eval)]]
+            |   prod_expression
+            |   sum_unit_expression
+            |   sum_kink_expression
+            |   sum_k_expression
+            |   commutator_bracket
+            |   '(' >> expression >> ')'
+            |   ('-' >> factor)[do_negate<element_type>(self.eval)]
+            |   ('+' >> factor)
+            |   operator_expression
+            ;
+
+         // power operator, next precedence, operates to the right
+         pow_term =
+            factor
+            >> *(  ('^' >> pow_term)[invoke_binary<element_type, binary_power<element_type> >(self.eval)]
+                   )
+            ;
+
+         term =
+            pow_term
+            >> *(   ('*' >> pow_term)[invoke_binary<element_type,
+                                      binary_multiplication<element_type> >(self.eval)]
+                    |   ('/' >> pow_term)[invoke_binary<element_type,
+                                          binary_division<element_type> >(self.eval)]
                     )
-	    ;
-	 
-	 expression =
-	    term
-	    >> *(  ('+' >> term)[invoke_binary<element_type, 
-				 binary_addition<element_type> >(self.eval)]
-		   |   ('-' >> term)[invoke_binary<element_type, 
-				     binary_subtraction<element_type> >(self.eval)]
-		   )
-	    ;
+            ;
+
+         expression =
+            term
+            >> *(  ('+' >> term)[invoke_binary<element_type,
+                                 binary_addition<element_type> >(self.eval)]
+                   |   ('-' >> term)[invoke_binary<element_type,
+                                     binary_subtraction<element_type> >(self.eval)]
+                   )
+            ;
       }
-      
+
       rule<ScannerT> expression, term, factor, real, imag, operator_literal, unary_function,
-	 binary_function, bracket_expr, quantumnumber, prod_expression, sq_bracket_expr, 
-	 operator_expression, operator_bracket_sq, operator_sq_bracket, operator_bracket, operator_sq,
-	 parameter, parameter_list, expression_string, sum_unit_expression, sum_kink_expression, sum_k_expression,
-	 identifier, pow_term, commutator_bracket, num_cells;
+         binary_function, bracket_expr, quantumnumber, prod_expression, sq_bracket_expr,
+         operator_expression, operator_bracket_sq, operator_sq_bracket, operator_bracket, operator_sq,
+         parameter, parameter_list, expression_string, sum_unit_expression, sum_kink_expression, sum_k_expression,
+         identifier, pow_term, commutator_bracket, num_cells;
       rule<ScannerT> const&
       start() const { return expression; }
    };
-   
+
    std::stack<element_type>& eval;
    IdentStackType& identifier_stack;
    ParamStackType& param_stack;
@@ -445,8 +445,8 @@ ParseTriangularOperator(InfiniteLattice const& Lattice, std::string const& Str)
    InfiniteLatticeParser::UnaryFuncStackType UnaryFuncStack;
    InfiniteLatticeParser::BinaryFuncStackType BinaryFuncStack;
 
-   InfiniteLatticeParser Parser(ElemStack, IdentStack, ParamStack, 
-			 UnaryFuncStack, BinaryFuncStack, Lattice);
+   InfiniteLatticeParser Parser(ElemStack, IdentStack, ParamStack,
+                         UnaryFuncStack, BinaryFuncStack, Lattice);
 
    parse_info<> info = parse(Str.c_str(), Parser, space_p);
    if (!info.full)

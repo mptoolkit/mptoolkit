@@ -43,7 +43,7 @@ int main(int argc, char** argv)
       cerr << "usage: readsurf <lattice-size> <theta-delta>\n";
       exit(1);
    }
-   
+
    double Sz = boost::lexical_cast<double>(argv[1]);
    double Th = boost::lexical_cast<double>(argv[2]);
 
@@ -84,26 +84,26 @@ int main(int argc, char** argv)
    for (row_type::const_iterator j = m.begin()->second.begin(); j != m.begin()->second.end(); ++j)
    {
       vLastRow[j->first] = j->second;
-   }   
+   }
    for (mat_type::const_iterator i = m.begin(); i != m.end(); ++i)
    {
       vLastCol = i->second.begin()->second;
       for (row_type::const_iterator j = i->second.begin(); j != i->second.end(); ++j)
       {
-	 double v = std::sqrt((vLastRow[j->first] - j->second) * (vLastRow[j->first] - j->second)
-			      + (vLastCol - j->second) * (vLastCol - j->second));
-	 MDeriv[i->first][j->first] = v;
-	 //	 TRACE(i->first)(j->first)(v);
-	 if (vMin == 0)
-	    vMin = v;
-	 else
-	    vMin = std::min(v, vMin);
-	 if (vMax == 0)
-	    vMax = v;
-	 else
-	    vMax = std::max(v, vMax);
-	 vLastCol = j->second;
-	 vLastRow[j->first] = j->second;
+         double v = std::sqrt((vLastRow[j->first] - j->second) * (vLastRow[j->first] - j->second)
+                              + (vLastCol - j->second) * (vLastCol - j->second));
+         MDeriv[i->first][j->first] = v;
+         //      TRACE(i->first)(j->first)(v);
+         if (vMin == 0)
+            vMin = v;
+         else
+            vMin = std::min(v, vMin);
+         if (vMax == 0)
+            vMax = v;
+         else
+            vMax = std::max(v, vMax);
+         vLastCol = j->second;
+         vLastRow[j->first] = j->second;
       }
    }
 
@@ -114,8 +114,8 @@ int main(int argc, char** argv)
       for (row_type::const_iterator j = i->second.begin(); j != i->second.end(); ++j)
       {
          M(i->first-umin, j->first-umin) = j->second * ZSize;
-	 //	 double Color = double(j->second - zmin) / (zmax - zmin);
-	 double Color =(MDeriv[i->first][j->first] - vMin) / (vMax - vMin);
+         //      double Color = double(j->second - zmin) / (zmax - zmin);
+         double Color =(MDeriv[i->first][j->first] - vMin) / (vMax - vMin);
          C(i->first-umin, j->first-umin) = oogl::Color::HSV(359.0 * Color, 1, 1);
       }
    }

@@ -81,7 +81,7 @@ int main()
    TRACE(typeid_name(Test+M));
 
    TRACE(typeid_name(Test-M));
-   
+
    TRACE(Test-M);
    TRACE(M-Test);
 

@@ -39,7 +39,7 @@ int main()
    C("Empty",  "Single")    = sqrt(2.0);
    C("Single", "Double")    = 1.0;
 
-   // and the creation operator   
+   // and the creation operator
    SiteOperator CH(HubbardBasis, QN(1, 0.5));
    CH("Single", "Empty")     = 1.0;
    CH("Double", "Single")    = -sqrt(2.0);
@@ -52,27 +52,27 @@ int main()
    CCH("Empty",  "Empty")  = -2.0;
    CCH("Single", "Single") = -1.0;
 
-   CHECK(equal(CCH, sqrt(2.0) * prod(C, adjoint(C), QN(0,0))))(CCH)(sqrt(2.0) 
-								    * prod(C, adjoint(C), QN(0,0)));
+   CHECK(equal(CCH, sqrt(2.0) * prod(C, adjoint(C), QN(0,0))))(CCH)(sqrt(2.0)
+                                                                    * prod(C, adjoint(C), QN(0,0)));
 
    // check that adjoint(C) * C is what we expect (ie. N)
    SiteOperator N(HubbardBasis, QN(0, 0));
    N("Single", "Single")  = 1.0;
    N("Double", "Double")  = 2.0;
 
-   CHECK(equal(N, sqrt(2.0) * prod(adjoint(C), C, QN(0,0))))(N)(sqrt(2.0) 
-								* prod(adjoint(C), C, QN(0,0)));
+   CHECK(equal(N, sqrt(2.0) * prod(adjoint(C), C, QN(0,0))))(N)(sqrt(2.0)
+                                                                * prod(adjoint(C), C, QN(0,0)));
 
    // the 'inverse adjoint' should give the opposite sign for these spin-1/2 operators.
 
    CHECK(equal(inv_adjoint(C), -CH))(inv_adjoint(C))(-CH);
-   CHECK(equal(CCH, -sqrt(2.0) 
-	       * prod(C, inv_adjoint(C), QN(0,0))))(CCH)(-sqrt(2.0) 
-							 * prod(C, inv_adjoint(C), QN(0,0)));
+   CHECK(equal(CCH, -sqrt(2.0)
+               * prod(C, inv_adjoint(C), QN(0,0))))(CCH)(-sqrt(2.0)
+                                                         * prod(C, inv_adjoint(C), QN(0,0)));
 
-   CHECK(equal(N, -sqrt(2.0) 
-	       * prod(inv_adjoint(C), C, QN(0,0))))(N)(-sqrt(2.0) 
-						       * prod(inv_adjoint(C), C, QN(0,0)));
+   CHECK(equal(N, -sqrt(2.0)
+               * prod(inv_adjoint(C), C, QN(0,0))))(N)(-sqrt(2.0)
+                                                       * prod(inv_adjoint(C), C, QN(0,0)));
 
    TRACE(N);
    TRACE(CH);

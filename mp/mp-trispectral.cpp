@@ -100,14 +100,14 @@ int main(int argc, char** argv)
          ("verbose,v", prog_opt::bool_switch(),
           //("verbose,v", prog_opt::value<std::vector<bool> >(),
           "increase verbosity")
-	  ;
+          ;
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("min-freq") == 0 || vm.count("max-freq") == 0) 
+      if (vm.count("help") || vm.count("min-freq") == 0 || vm.count("max-freq") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-trispectral [options] < tridiagonalform\n";
@@ -148,7 +148,7 @@ int main(int argc, char** argv)
       {
          M(i,i) = Alpha[i];
          if (i != Alpha.size()-1)
-            M(i+1,i) = M(i,i+1) = Beta[i]; 
+            M(i+1,i) = M(i,i+1) = Beta[i];
       }
       LinearAlgebra::Vector<double> Eigen = DiagonalizeHermitian(M);   // eigenvalues
       LinearAlgebra::Vector<double> EVec = M(LinearAlgebra::all, 0);   // lanczos vector in the eigenbasis
@@ -185,8 +185,8 @@ int main(int argc, char** argv)
          for (double f = MinFreq; f < MaxFreq+Interval/10; f += Interval)
          {
             double ActualBroadening = BroadPropToFreq ? (fabs(Broadening * f)) : Broadening;
-            complex x = LanczosNorm*(BroadPropToEnergy ? 
-                CalculateSpectralBroadeningPropToEnergy(Eigen, Components, GroundstateEnergy, f, ActualBroadening) 
+            complex x = LanczosNorm*(BroadPropToEnergy ?
+                CalculateSpectralBroadeningPropToEnergy(Eigen, Components, GroundstateEnergy, f, ActualBroadening)
                                      : CalculateSpectral(Eigen, Components, GroundstateEnergy, f, ActualBroadening));
             std::cout << std::setw(20) << f << "    ";
             if (ShowDos)
@@ -202,8 +202,8 @@ int main(int argc, char** argv)
          {
             double f = MinFreq + (MaxFreq-MinFreq) * i / (Count-1);
             double ActualBroadening = BroadPropToFreq ? (fabs(Broadening * f)) : Broadening;
-            complex x = LanczosNorm*(BroadPropToEnergy ? 
-                CalculateSpectralBroadeningPropToEnergy(Eigen, Components, GroundstateEnergy, f, ActualBroadening) 
+            complex x = LanczosNorm*(BroadPropToEnergy ?
+                CalculateSpectralBroadeningPropToEnergy(Eigen, Components, GroundstateEnergy, f, ActualBroadening)
                                      : CalculateSpectral(Eigen, Components, GroundstateEnergy, f, ActualBroadening));
             std::cout << std::setw(20) << f << "    ";
             if (ShowDos)

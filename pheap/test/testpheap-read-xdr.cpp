@@ -25,9 +25,9 @@ typedef pvalue_ptr<mypair> ppair;
 
 int main()
 {
-   pheap::PHeapLog.SetStream(std::cerr);  
+   pheap::PHeapLog.SetStream(std::cerr);
    pheap::PHeapLog.SetThreshold(100);
-   
+
    ppair N = pheap::OpenPersistent("testdata", 16*1024*1024);
 
    TRACE(N->first)(N->second);

@@ -19,7 +19,7 @@
 //
 // Matrix product operator defined on finite support.
 // The boundary states are normally one dimensional
-// (we also allow the operator to be reducible, 
+// (we also allow the operator to be reducible,
 // representing a sum of quantum number components, in which case the Basis1() will have dimension > 1).
 // We used to require that the Basis2() was a scalar, but no longer,
 // this isn't possible for extracted components of triangular or
@@ -37,7 +37,7 @@ class FiniteMPO
       typedef GenericMPO data_type;
 
    public:
-      typedef OperatorComponent         value_type; 
+      typedef OperatorComponent         value_type;
       typedef data_type::const_iterator const_iterator;
       typedef data_type::iterator       iterator;
       typedef OperatorComponent::basis1_type basis1_type;
@@ -141,7 +141,7 @@ class FiniteMPO
       // Make an identity MPO over the given unit cell basis
       static FiniteMPO make_identity(std::vector<BasisList> const& Basis);
       static FiniteMPO make_identity(std::vector<BasisList> const& Basis,
-				     QuantumNumber const& q);
+                                     QuantumNumber const& q);
 
    private:
       data_type Data;
@@ -224,8 +224,8 @@ SimpleRedOperator coarse_grain(FiniteMPO const& x);
 // The opposite of coarse_grain - decompose an operator acting on the entire Hilbert space
 // into a FiniteMPO
 FiniteMPO fine_grain(SimpleOperator const& x,
-		     std::vector<BasisList> const& LocalBasis1,
-		     std::vector<BasisList> const& LocalBasis2);
+                     std::vector<BasisList> const& LocalBasis1,
+                     std::vector<BasisList> const& LocalBasis2);
 
 // Make an identity operator that acts on the same local Hilbert space as x
 FiniteMPO
@@ -258,7 +258,7 @@ FiniteMPO identity_mpo(SiteListType const& SiteList);
 
 // Returns the string MPO corresponding to the given local operator name
 FiniteMPO string_mpo(SiteListType const& SiteList,
-		     std::string const& OpName, QuantumNumbers::QuantumNumber const& Trans);
+                     std::string const& OpName, QuantumNumbers::QuantumNumber const& Trans);
 
 FiniteMPO string_mpo(SiteListType const& SiteList, std::string const& OpName);
 

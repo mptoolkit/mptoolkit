@@ -21,7 +21,7 @@
   Version 2,
   Created 2000-06-16 Ian McCulloch
 
-  Modified to use the sparse column format SparseMatrix rather than 
+  Modified to use the sparse column format SparseMatrix rather than
   the completely sparse std::map.  This is to partially merge the SiteOperator
   and BlockOperator concepts.  Ie, a SiteOperator is now essentially
   just the LinearSparsePart of a BlockOperator.
@@ -145,8 +145,8 @@ class SiteProductBasis
    public:
       SiteProductBasis(SiteBasis const& B1, SiteBasis const& B2);
 
-      SiteProductBasis(SiteBasis const& B1, SiteBasis const& B2, 
-		       SymmetryList const& ProductSymmetry);
+      SiteProductBasis(SiteBasis const& B1, SiteBasis const& B2,
+                       SymmetryList const& ProductSymmetry);
 
       SiteBasis const& Basis() const { return Basis_; }
 

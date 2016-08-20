@@ -48,7 +48,7 @@ struct RedOperator
 RedOperator operator*(RedOperator const& r, SiteOperator const& s)
 {
    RedOperator Result;
-   for (std::map<QuantumNumber, SiteOperator>::const_iterator 
+   for (std::map<QuantumNumber, SiteOperator>::const_iterator
            I = r.Op.begin(); I != r.Op.end(); ++I)
    {
       QuantumNumberList Q = transform_targets(I->first, s.TransformsAs());
@@ -70,7 +70,7 @@ RedOperator operator*(RedOperator const& r, SiteOperator const& s)
 RedOperator operator*(complex x, RedOperator const& r)
 {
    RedOperator Result = r;
-   for (std::map<QuantumNumber, SiteOperator>::iterator 
+   for (std::map<QuantumNumber, SiteOperator>::iterator
            I = Result.Op.begin(); I != Result.Op.end(); ++I)
    {
       I->second *= x;
@@ -81,7 +81,7 @@ RedOperator operator*(complex x, RedOperator const& r)
 RedOperator operator+(RedOperator const& x, RedOperator const& r)
 {
    RedOperator Result = x;
-   for (std::map<QuantumNumber, SiteOperator>::const_iterator 
+   for (std::map<QuantumNumber, SiteOperator>::const_iterator
            I = r.Op.begin(); I != r.Op.end(); ++I)
    {
       if (Result.Op.count(I->first))
@@ -95,7 +95,7 @@ RedOperator operator+(RedOperator const& x, RedOperator const& r)
 RedOperator operator*(RedOperator const& r, RedOperator const& s)
 {
    RedOperator Result;
-   for (std::map<QuantumNumber, SiteOperator>::const_iterator 
+   for (std::map<QuantumNumber, SiteOperator>::const_iterator
            I = s.Op.begin(); I != s.Op.end(); ++I)
    {
       Result = Result + r*I->second;
@@ -105,7 +105,7 @@ RedOperator operator*(RedOperator const& r, RedOperator const& s)
 
 std::ostream& operator<<(std::ostream& out, RedOperator const& r)
 {
-   for (std::map<QuantumNumber, SiteOperator>::const_iterator 
+   for (std::map<QuantumNumber, SiteOperator>::const_iterator
            I = r.Op.begin(); I != r.Op.end(); ++I)
    {
       out << "Component transforms as " << I->first << ":\n";

@@ -109,13 +109,13 @@ struct Coefficients6j
 inline
 bool operator==(Coefficients6j const& x, Coefficients6j const& y)
 {
-   return x.j1 == y.j1 && x.j2 == y.j2 && x.j3 == y.j3 && 
+   return x.j1 == y.j1 && x.j2 == y.j2 && x.j3 == y.j3 &&
      x.j4 == y.j4 && x.j5 == y.j5 && x.j6 == y.j6;
 }
 
 inline
-Coefficients6j::Coefficients6j(half_int j1_, half_int j2_, half_int j3_, 
-			       half_int j4_, half_int j5_, half_int j6_)
+Coefficients6j::Coefficients6j(half_int j1_, half_int j2_, half_int j3_,
+                               half_int j4_, half_int j5_, half_int j6_)
    : j1(j1_.twice()), j2(j2_.twice()), j3(j3_.twice()), j4(j4_.twice()), j5(j5_.twice()), j6(j6_.twice())
 {
 }
@@ -148,30 +148,30 @@ bool Coefficients6j::Canonicalize()
       // 25 > 14
       if (max36 > max25 || (max36 == max25 && min36 > min25))
       {
-	 // 36 > 25 > 14.  swap(36,14)
-	 swap(j1, j3);
-	 swap(j4, j6);
-	 // swap(max14, max36); - not needed
-	 // swap(min14, min36); - not needed
+         // 36 > 25 > 14.  swap(36,14)
+         swap(j1, j3);
+         swap(j4, j6);
+         // swap(max14, max36); - not needed
+         // swap(min14, min36); - not needed
       }
       else if (max36 > max14 || (max36 == max14 && min36 > min14))
       {
-	 // 25 >= 36 > 14.  rotate.
-	 int w = j1, x = j4;
-	 j1 = j2;
-	 j4 = j5;
+         // 25 >= 36 > 14.  rotate.
+         int w = j1, x = j4;
+         j1 = j2;
+         j4 = j5;
 
-	 j2 = j3;
-	 j5 = j6;
+         j2 = j3;
+         j5 = j6;
 
-	 j3 = w;
-	 j6 = x;
+         j3 = w;
+         j6 = x;
       }
       else
       {
-	 // 25 > 14 >= 36.  swap(25,14)
-	 swap(j1, j2);
-	 swap(j4, j5);
+         // 25 > 14 >= 36.  swap(25,14)
+         swap(j1, j2);
+         swap(j4, j5);
       }
    }
    else
@@ -179,28 +179,28 @@ bool Coefficients6j::Canonicalize()
       // 14 >= 25
       if (max36 > max14 || (max36 == max14 && min36 > min14))
       {
-	 // 36 > 14 >= 25.  rotate
-	 int w = j2, x = j5;
+         // 36 > 14 >= 25.  rotate
+         int w = j2, x = j5;
 
-	 j2 = j1;
-	 j5 = j4;
+         j2 = j1;
+         j5 = j4;
 
-	 j1 = j3;
-	 j4 = j6;
+         j1 = j3;
+         j4 = j6;
 
-	 j3 = w;
-	 j6 = x;
+         j3 = w;
+         j6 = x;
       }
       else if (max36 > max25 || (max36 == max25 && min36 > min25))
       {
-	 // 14 >= 36 > 25.  swap(36, 25)
-	 swap(j3, j2);
-	 swap(j6, j5);
+         // 14 >= 36 > 25.  swap(36, 25)
+         swap(j3, j2);
+         swap(j6, j5);
       }
       else
       {
-	 // final combination is 14 >= 25 >= 36.  Already ordered, no action.
-	 ColumnMix = false;
+         // final combination is 14 >= 25 >= 36.  Already ordered, no action.
+         ColumnMix = false;
       }
    }
 
@@ -208,7 +208,7 @@ bool Coefficients6j::Canonicalize()
    // The strategy here is to put the largest elements on top.  If we swap (j1,j4) then
    // we also need to swap one of (j2,j5) or (j3,j6).  If we do not swap (j1,j4) then
    // we decide whether to swap (j2,j5) (and hence also (j3,j6)).
-   // An interesting case is when one of the columns have equal entries; 
+   // An interesting case is when one of the columns have equal entries;
    // here we can freely swap entries in any column.
 
    if (j1 < j4)
@@ -218,23 +218,23 @@ bool Coefficients6j::Canonicalize()
       // now decide which of (j2,j5) or (j3,j6) to swap
       if (j2 < j5)
       {
-	 swap(j2, j5);
+         swap(j2, j5);
       }
       else if (j3 < j6 || (j5 < j2 && j6 < j3))
       {
-	 swap(j3, j6);
+         swap(j3, j6);
       }
       else
       {
-	 // in this case, one column has equal entries so we don't need to do anything.
-	 CHECK(j2 == j5 || j3 == j6);
+         // in this case, one column has equal entries so we don't need to do anything.
+         CHECK(j2 == j5 || j3 == j6);
       }
    }
    else if (j2 < j5)
    {
       swap(j2,j5);
       if (j1 != j4)
-	 swap(j3,j6);
+         swap(j3,j6);
    }
    else if (j3 < j6 && (j1 == j4 || j2 == j5))
    {
@@ -253,15 +253,15 @@ double
 Coupling6j_NoCache(Coefficients6j const& x)
 {
    int sign = minus1pow((x.j1 + x.j2 + x.j4 + x.j5) / 2);
-   return sign * Racah_NoCache(from_twice(x.j1), from_twice(x.j2), 
-			       from_twice(x.j5), from_twice(x.j4), 
-			       from_twice(x.j3), from_twice(x.j6));
+   return sign * Racah_NoCache(from_twice(x.j1), from_twice(x.j2),
+                               from_twice(x.j5), from_twice(x.j4),
+                               from_twice(x.j3), from_twice(x.j6));
 }
 
 std::ostream& operator<<(std::ostream& out, Coefficients6j const& x) // for debugging
 {
-   return out << '{' << x.j1 << ',' << x.j2 << ',' << x.j3 << ',' 
-	      << x.j4 << ',' << x.j5 << ',' << x.j6 << '}';
+   return out << '{' << x.j1 << ',' << x.j2 << ',' << x.j3 << ','
+              << x.j4 << ',' << x.j5 << ',' << x.j6 << '}';
 }
 
 // specialization of the ext::hash<> function for Coefficients6j
@@ -302,7 +302,7 @@ double Coupling6j(half_int j1, half_int j2, half_int j3, half_int j4, half_int j
 
    // do some checking of parameters
    if (j1 < 0 || j2 < 0 || j3 < 0 || j4 < 0 || j5 < 0 || j6 < 0) throw std::domain_error("negative j in Coupling6j()");
-  
+
    if (!is_triangle(j1,j2,j3) || !is_triangle(j4,j5,j3) || !is_triangle(j1,j5,j6) || !is_triangle(j2,j4,j6))
      return 0;
 
@@ -324,51 +324,51 @@ double Coupling6j(half_int j1, half_int j2, half_int j3, half_int j4, half_int j
       bool WasCanonical = CanonicalCoeff.Canonicalize();
       if (!WasCanonical)
       {
-	 I = HashTable.find(CanonicalCoeff);
-	 if (I == HashTable.end())
-	 {
-	    // neither the original nor the canonical entry was in the table
-	    double x = Coupling6j_NoCache(CanonicalCoeff);
-	    HashTable[CanonicalCoeff] = x;
-	    HashTable[Coeff] = x;
-	    return x;
-	 }
-	 else
-	 {
-	    // the canonical form is in the table
-	    double x = I->second;
-	    HashTable[Coeff] = x;
-	    return x;
-	 }
+         I = HashTable.find(CanonicalCoeff);
+         if (I == HashTable.end())
+         {
+            // neither the original nor the canonical entry was in the table
+            double x = Coupling6j_NoCache(CanonicalCoeff);
+            HashTable[CanonicalCoeff] = x;
+            HashTable[Coeff] = x;
+            return x;
+         }
+         else
+         {
+            // the canonical form is in the table
+            double x = I->second;
+            HashTable[Coeff] = x;
+            return x;
+         }
       }
       else
 #endif
       {
-	 // it was already in canonical form
-	 double x = Coupling6j_NoCache(Coeff);
-	 HashTable[Coeff] = x;
-	 return x;
+         // it was already in canonical form
+         double x = Coupling6j_NoCache(Coeff);
+         HashTable[Coeff] = x;
+         return x;
       }
    }
    // else the coefficient was already in the table, no canonicalization needed
    return I->second;
 }
 
-double Coupling9j(half_int j11, half_int j12, half_int j13, 
-                  half_int j21, half_int j22, half_int j23, 
+double Coupling9j(half_int j11, half_int j12, half_int j13,
+                  half_int j21, half_int j22, half_int j23,
                   half_int j31, half_int j32, half_int j33)
 {
   //   std::cout<<std::setw(3)<<j11<<' '<<std::setw(3)<<j12<<' '<<std::setw(3)<<j13<<'\n'
   //            <<std::setw(3)<<j21<<' '<<std::setw(3)<<j22<<' '<<std::setw(3)<<j23<<'\n'
   //            <<std::setw(3)<<j31<<' '<<std::setw(3)<<j32<<' '<<std::setw(3)<<j33<<std::endl;
 
-   if (j11 < 0 || j12 < 0 || j13 < 0 || 
+   if (j11 < 0 || j12 < 0 || j13 < 0 ||
        j21 < 0 || j22 < 0 || j23 < 0 ||
-       j31 < 0 || j32 < 0 || j33 < 0) 
+       j31 < 0 || j32 < 0 || j33 < 0)
    {
       throw std::domain_error("negative j in Coupling9j()");
    }
-   
+
    if (!is_triangle(j11, j12, j13) ||
        !is_triangle(j21, j22, j23) ||
        !is_triangle(j31, j32, j33) ||
@@ -394,11 +394,11 @@ double Coupling9j(half_int j11, half_int j12, half_int j13,
 
       double term = s1 * s2 * s3;
 
-      if(term > 0) 
+      if(term > 0)
       {
         sum_pos += (k.twice() + 1) * term;
       }
-      else 
+      else
       {
         sum_neg += (k.twice() + 1) * term;
       }
@@ -431,50 +431,50 @@ rational CGSummation(half_int j1, half_int m1, half_int j2, half_int m2, half_in
    for (long k = KMin; k <= KMax; ++k)
    {
       Sum += minus1pow(k) / (gmp::factorial(k) * gmp::factorial(j1j2_j - k) * gmp::factorial(j1_m1 - k)
-	* gmp::factorial(j2m2 - k) * gmp::factorial(j_j2m1 + k) * gmp::factorial(j_j1_m2 + k));
+        * gmp::factorial(j2m2 - k) * gmp::factorial(j_j2m1 + k) * gmp::factorial(j_j1_m2 + k));
    };
 
    return Sum;
 }
 
 double PreFactor(
-half_int j1, half_int m1, 
-half_int j2, half_int m2, 
+half_int j1, half_int m1,
+half_int j2, half_int m2,
 half_int j, half_int m)
 {
-   rational T = to_int(2*j+1) * gmp::factorial(to_int(j1+j2-j)) * gmp::factorial(to_int(j1-j2+j)) * 
-     gmp::factorial(to_int(-j1+j2+j)) 
+   rational T = to_int(2*j+1) * gmp::factorial(to_int(j1+j2-j)) * gmp::factorial(to_int(j1-j2+j)) *
+     gmp::factorial(to_int(-j1+j2+j))
                / gmp::factorial(to_int(j1+j2+j+1));
 
    return sqrt((T * gmp::factorial(to_int(j1+m1))*gmp::factorial(to_int(j1-m1))*gmp::factorial(to_int(j2+m2))*
-			  gmp::factorial(to_int(j2-m2))*
+                          gmp::factorial(to_int(j2-m2))*
                           gmp::factorial(to_int(j+m))*gmp::factorial(to_int(j-m))).to_double());
 }
 
 // returns the square of the prefactor as a rational
 rational PreFactorSq(
-half_int j1, half_int m1, 
-half_int j2, half_int m2, 
+half_int j1, half_int m1,
+half_int j2, half_int m2,
 half_int j, half_int m)
 {
-   rational T = to_int(2*j+1) * gmp::factorial(to_int(j1+j2-j)) * gmp::factorial(to_int(j1-j2+j)) * 
-     gmp::factorial(to_int(-j1+j2+j)) 
+   rational T = to_int(2*j+1) * gmp::factorial(to_int(j1+j2-j)) * gmp::factorial(to_int(j1-j2+j)) *
+     gmp::factorial(to_int(-j1+j2+j))
                / gmp::factorial(to_int(j1+j2+j+1));
 
    return T * gmp::factorial(to_int(j1+m1))*gmp::factorial(to_int(j1-m1))*gmp::factorial(to_int(j2+m2))*
-			  gmp::factorial(to_int(j2-m2))*
+                          gmp::factorial(to_int(j2-m2))*
       gmp::factorial(to_int(j+m))*gmp::factorial(to_int(j-m));
 }
 
 } // namespace
 
 double ClebschGordan(
-half_int j1, half_int m1, 
+half_int j1, half_int m1,
 half_int j2, half_int m2,
 half_int j,  half_int m)
 {
    // first, the paranoid check
-   if (j1 < 0 || j2 < 0 || j < 0) 
+   if (j1 < 0 || j2 < 0 || j < 0)
       throw std::invalid_argument("negative angular momenta encountered in function ClebschGordan");
 
    // any coefficients outside the allowable ranges are zero
@@ -496,12 +496,12 @@ half_int j,  half_int m)
 }
 
 std::pair<rational, rational>
-ClebschGordanSquared(half_int j1, half_int m1, 
-		     half_int j2, half_int m2,
-		     half_int j,  half_int m)
+ClebschGordanSquared(half_int j1, half_int m1,
+                     half_int j2, half_int m2,
+                     half_int j,  half_int m)
 {
    // first, the paranoid check
-   if (j1 < 0 || j2 < 0 || j < 0) 
+   if (j1 < 0 || j2 < 0 || j < 0)
       throw std::invalid_argument("negative angular momenta encountered in function ClebschGordanSquared");
 
    // any coefficients outside the allowable ranges are zero

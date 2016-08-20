@@ -30,27 +30,27 @@ using LinearAlgebra::range;
 PStream::opstream& operator<<(PStream::opstream& out, KrylovSolver const& s)
 {
    return out << s.Krylov
-	      << s.H
-	      << s.kn1_H_kn
-	      << s.ki_kj
-	      << s.sub_H
-	      << s.Ident
+              << s.H
+              << s.kn1_H_kn
+              << s.ki_kj
+              << s.sub_H
+              << s.Ident
       ;
 }
 
 PStream::ipstream& operator>>(PStream::ipstream& in, KrylovSolver& s)
 {
    return in >> s.Krylov
-	     >> s.H
-	     >> s.kn1_H_kn
-	     >> s.ki_kj
-	     >> s.sub_H
-	     >> s.Ident
+             >> s.H
+             >> s.kn1_H_kn
+             >> s.ki_kj
+             >> s.sub_H
+             >> s.Ident
       ;
 }
 
 KrylovSolver::KrylovSolver(SplitOperator const& H_, SplitOperator const& H2_, CenterWavefunction const& Psi_)
-   : Krylov(1, Psi_), NumConvergedKrylov(1), H(H_), H2(H2_), kn1_H_kn(), ki_kj(1,1), 
+   : Krylov(1, Psi_), NumConvergedKrylov(1), H(H_), H2(H2_), kn1_H_kn(), ki_kj(1,1),
      sub_I(1, 1, 1.0),
      sub_H(1, 1, expectation(Psi_, H_, Psi_).real()),
      sub_H2(1, expectation(Psi_, H2_, Psi_).real()),
@@ -66,7 +66,7 @@ KrylovSolver::KrylovSolver(SplitOperator const& H_, SplitOperator const& H2_, Ce
 }
 
 KrylovSolver::KrylovSolver(SplitOperator const& H_, SplitOperator const& H2_, CenterWavefunction const& Psi_, double Energy)
-   : Krylov(1, Psi_),  NumConvergedKrylov(1), H(H_), kn1_H_kn(), ki_kj(1,1), 
+   : Krylov(1, Psi_),  NumConvergedKrylov(1), H(H_), kn1_H_kn(), ki_kj(1,1),
      sub_I(1, 1, 1.0),
      sub_H(1, 1, Energy),
      sub_H2(1, expectation(Psi_, H2_, Psi_).real()),
@@ -81,9 +81,9 @@ KrylovSolver::KrylovSolver(SplitOperator const& H_, SplitOperator const& H2_, Ce
    ortho_H = sub_Linv * sub_H * herm(sub_Linv);
 }
 
-KrylovSolver::KrylovSolver(SplitOperator const& H_, SplitOperator const& H2_, CenterWavefunction const& Psi_, 
-			   double Energy, double ExpectationH2)
-   : Krylov(1, Psi_),  NumConvergedKrylov(1), H(H_), kn1_H_kn(), ki_kj(1,1), 
+KrylovSolver::KrylovSolver(SplitOperator const& H_, SplitOperator const& H2_, CenterWavefunction const& Psi_,
+                           double Energy, double ExpectationH2)
+   : Krylov(1, Psi_),  NumConvergedKrylov(1), H(H_), kn1_H_kn(), ki_kj(1,1),
      sub_I(1, 1, 1.0),
      sub_H(1, 1, Energy),
      sub_H2(1, ExpectationH2),
@@ -146,7 +146,7 @@ void KrylovSolver::ShiftRightAndExpand(bool FullOrtho)
    {
       for (std::size_t j = i+1; j < Krylov.size(); ++j)
       {
-	 TransformStackRotateRight(ki_kj(i,j), Krylov[i], Krylov[j]);
+         TransformStackRotateRight(ki_kj(i,j), Krylov[i], Krylov[j]);
       }
    }
    this->DebugCheckBasis();
@@ -171,7 +171,7 @@ void KrylovSolver::ShiftLeftAndExpand(bool FullOrtho)
    {
       for (std::size_t j = i+1; j < Krylov.size(); ++j)
       {
-	 TransformStackRotateLeft(ki_kj(i,j), Krylov[i], Krylov[j]);
+         TransformStackRotateLeft(ki_kj(i,j), Krylov[i], Krylov[j]);
       }
    }
    this->DebugCheckBasis();
@@ -216,11 +216,11 @@ Matrix<complex> KrylovSolver::OrthogonalityMatrix() const
       Result(i,i) = norm_frob_sq(Krylov[i].Center());
       for (unsigned j = i+1; j < Krylov.size(); ++j)
       {
-	 Result(i,j) = inner_prod(triple_prod(herm(ki_kj(j,i).Left()), 
-					      Krylov[j].Center(), 
-					      ki_kj(j,i).Right()),
-				  Krylov[i].Center());
-	 Result(j,i) = Result(i,j);
+         Result(i,j) = inner_prod(triple_prod(herm(ki_kj(j,i).Left()),
+                                              Krylov[j].Center(),
+                                              ki_kj(j,i).Right()),
+                                  Krylov[i].Center());
+         Result(j,i) = Result(i,j);
       }
    }
    return Result;
@@ -234,24 +234,24 @@ KrylovSolver::Solve(bool FullOrthogonalization)
    unsigned const jStart = (FullOrthogonalization || NumConvergedKrylov < 2) ? 0 : NumConvergedKrylov-2;
    // Psi[k+1] = H|Psi[k]> - sum_{j<=k} <Psi[j] | H | Psi[k] > | Psi[j] >
    Krylov.back().Center() = operator_prod(conj(H.Center()),
-					  kn1_H_kn.Left(), 
-					  Krylov[Krylov.size()-2].Center(), 
-					  herm(kn1_H_kn.Right()));
+                                          kn1_H_kn.Left(),
+                                          Krylov[Krylov.size()-2].Center(),
+                                          herm(kn1_H_kn.Right()));
    for (unsigned j = jStart; j < NumConvergedKrylov; ++j)
    {
-      Krylov.back().Center() -= sub_H(j, NumConvergedKrylov-1) * 
-	 triple_prod(herm(ki_kj(j, NumConvergedKrylov).Left()),
-		     Krylov[j].Center(),
-		     ki_kj(j, NumConvergedKrylov).Right());
+      Krylov.back().Center() -= sub_H(j, NumConvergedKrylov-1) *
+         triple_prod(herm(ki_kj(j, NumConvergedKrylov).Left()),
+                     Krylov[j].Center(),
+                     ki_kj(j, NumConvergedKrylov).Right());
    }
 #if 0
    // if the local H is zero, add a bit of Psi[k] itself...
    if (norm_frob_sq(Krylov.back().Center()) < 1E-14)
    {
-      Krylov.back().Center() += 1E-10 * 
+      Krylov.back().Center() += 1E-10 *
          triple_prod(herm(ki_kj(NumConvergedKrylov-1, NumConvergedKrylov).Left()),
-		     Krylov[NumConvergedKrylov-1].Center(),
-		     ki_kj(NumConvergedKrylov-1, NumConvergedKrylov).Right());
+                     Krylov[NumConvergedKrylov-1].Center(),
+                     ki_kj(NumConvergedKrylov-1, NumConvergedKrylov).Right());
    }
 #endif
 }
@@ -271,26 +271,26 @@ KrylovSolver::Variance(bool FullOrtho) const
    {
       for (unsigned l = jStart; l < NumConvergedKrylov; ++l)
       {
-	 SumPart += sub_H(j, NumConvergedKrylov-1) * sub_H(NumConvergedKrylov-1, l) * sub_I(l,j);
+         SumPart += sub_H(j, NumConvergedKrylov-1) * sub_H(NumConvergedKrylov-1, l) * sub_I(l,j);
       }
    }
 
    // <k+1|H|k> + h.c.
-   double k1HkPart = 2.0 * inner_prod(Krylov.back().Center(), 
-				      operator_prod(conj(H.Center()),
-						    kn1_H_kn.Left(), 
-						    Krylov[Krylov.size()-2].Center(), 
-						    herm(kn1_H_kn.Right()))).real();
+   double k1HkPart = 2.0 * inner_prod(Krylov.back().Center(),
+                                      operator_prod(conj(H.Center()),
+                                                    kn1_H_kn.Left(),
+                                                    Krylov[Krylov.size()-2].Center(),
+                                                    herm(kn1_H_kn.Right()))).real();
 
    // sum_{j<=k} <j|H|k><k+1|j> + h.c.
    double HPart = 0;
    for (unsigned j = jStart; j < NumConvergedKrylov; ++j)
    {
-      HPart += 2.0 * (sub_H(j, NumConvergedKrylov-1) * 
-		      inner_prod(Krylov[Krylov.size()-1].Center(),
-				 triple_prod(herm(ki_kj(j, Krylov.size()-1).Left()),
-					     Krylov[j].Center(),
-					     ki_kj(j, Krylov.size()-1).Right()))).real();
+      HPart += 2.0 * (sub_H(j, NumConvergedKrylov-1) *
+                      inner_prod(Krylov[Krylov.size()-1].Center(),
+                                 triple_prod(herm(ki_kj(j, Krylov.size()-1).Left()),
+                                             Krylov[j].Center(),
+                                             ki_kj(j, Krylov.size()-1).Right()))).real();
    }
 
    // sum_{j<=k} <j|H|k> <k|H|j> + h.c.
@@ -310,7 +310,7 @@ double KrylovSolver::SubMatrixElement() const
    // This function is incorrect, do not use it.
 
    // <k|H^2|k>
-   double H2Part = sub_H2[NumConvergedKrylov-1] 
+   double H2Part = sub_H2[NumConvergedKrylov-1]
       / LinearAlgebra::norm_2_sq(sub_L(NumConvergedKrylov-1, NumConvergedKrylov-1));
 
    // sum_{j<=k} sum_{l<=k} <j|H|k><k|H|l><l|j>
@@ -395,14 +395,14 @@ void KrylovSolver::FixKrylovVector(bool FullOrtho)
    sub_H = new_sub_H;
 
    sub_H(Krylov.size()-1, Krylov.size()-1) = expectation(Krylov.back(), H, Krylov.back()).real();
-   sub_H(Krylov.size()-1, Krylov.size()-2) = inner_prod(Krylov.back().Center(), 
-							operator_prod(conj(H.Center()),
-								      kn1_H_kn.Left(), 
-								      Krylov[Krylov.size()-2].Center(), 
-								      herm(kn1_H_kn.Right())));
-   DEBUG_CHECK(LinearAlgebra::equal(sub_H(Krylov.size()-1, Krylov.size()-2), 
-		     expectation(Krylov.back(), H, Krylov[Krylov.size()-2]),
-		     1E-5))
+   sub_H(Krylov.size()-1, Krylov.size()-2) = inner_prod(Krylov.back().Center(),
+                                                        operator_prod(conj(H.Center()),
+                                                                      kn1_H_kn.Left(),
+                                                                      Krylov[Krylov.size()-2].Center(),
+                                                                      herm(kn1_H_kn.Right())));
+   DEBUG_CHECK(LinearAlgebra::equal(sub_H(Krylov.size()-1, Krylov.size()-2),
+                     expectation(Krylov.back(), H, Krylov[Krylov.size()-2]),
+                     1E-5))
       (sub_H(Krylov.size()-1, Krylov.size()-2))
       (expectation(Krylov.back(), H, Krylov[Krylov.size()-2]));
    sub_H(Krylov.size()-2, Krylov.size()-1) = conj(sub_H(Krylov.size()-1, Krylov.size()-2));
@@ -422,16 +422,16 @@ void KrylovSolver::FixKrylovVector(bool FullOrtho)
    for (unsigned j = jStart; j < Krylov.size()-1; ++j)
    {
       sub_I(Krylov.size()-1, j) = inner_prod(Krylov[Krylov.size()-1].Center(),
-					     triple_prod(herm(ki_kj(j, Krylov.size()-1).Left()),
-							 Krylov[j].Center(),
-							 ki_kj(j, Krylov.size()-1).Right()));
+                                             triple_prod(herm(ki_kj(j, Krylov.size()-1).Left()),
+                                                         Krylov[j].Center(),
+                                                         ki_kj(j, Krylov.size()-1).Right()));
       sub_I(j, Krylov.size()-1) = conj(sub_I(Krylov.size()-1, j));
 
-      DEBUG_CHECK(LinearAlgebra::equal(sub_I(Krylov.size()-1, j), 
-			overlap(Krylov[Krylov.size()-1], Krylov[j]),
-			1E-5))
-		  (sub_I(Krylov.size()-1, j))
-		  (overlap(Krylov[Krylov.size()-1], Krylov[j]));
+      DEBUG_CHECK(LinearAlgebra::equal(sub_I(Krylov.size()-1, j),
+                        overlap(Krylov[Krylov.size()-1], Krylov[j]),
+                        1E-5))
+                  (sub_I(Krylov.size()-1, j))
+                  (overlap(Krylov[Krylov.size()-1], Krylov[j]));
    }
    for (unsigned j = 0; j < jStart; ++j)
    {
@@ -470,18 +470,18 @@ KrylovSolver::TruncateLeft(int MaxStates, double MixFactor, bool FullOrtho)
    {
       Rho *= (1.0 / Tr);
    }
-      
+
    if (MixFactor != 0)
    {
       MatrixOperator RhoLast = Krylov[Krylov.size()-2].Center();
       RhoLast = scalar_prod(RhoLast, herm(RhoLast));
       MatrixOperator Correction =
-         operator_prod(kn1_H_kn.Left(), 
-                       RhoLast, 
+         operator_prod(kn1_H_kn.Left(),
+                       RhoLast,
                        herm(kn1_H_kn.Left()));
       Correction *= (MixFactor / trace(Correction));
       Rho += Correction;
-   }      
+   }
 
    DensityMatrix<MatrixOperator> DM(Rho);
    DensityMatrix<MatrixOperator>::const_iterator E = DM.begin();
@@ -553,7 +553,7 @@ KrylovSolver::TruncateRight(int MaxStates, double MixFactor, bool FullOrtho)
 }
 
 TruncationInfo
-KrylovSolver::TruncateLeft(int MinStates, int MaxStates, double MinTruncation, double MixFactor, 
+KrylovSolver::TruncateLeft(int MinStates, int MaxStates, double MinTruncation, double MixFactor,
                            bool FullMixing, bool FullOrtho)
 {
    CHECK_EQUAL(NumConvergedKrylov, Krylov.size()-1);
@@ -574,12 +574,12 @@ KrylovSolver::TruncateLeft(int MinStates, int MaxStates, double MinTruncation, d
       MatrixOperator RhoLast = Krylov[Krylov.size()-2].Center();
       RhoLast = scalar_prod(RhoLast, herm(RhoLast));
       MatrixOperator Correction =
-         operator_prod(kn1_H_kn.Left(), 
-                       RhoLast, 
+         operator_prod(kn1_H_kn.Left(),
+                       RhoLast,
                        herm(kn1_H_kn.Left()));
       Correction *= (MixFactor / trace(Correction));
       Rho += Correction;
-   }      
+   }
 
    DensityMatrix<MatrixOperator> DM = FullMixing ?  DensityMatrix<MatrixOperator>(Rho)
       : DensityMatrix<MatrixOperator>(Rho, RhoPsi);
@@ -656,7 +656,7 @@ KrylovSolver::TruncateRight(int MinStates, int MaxStates, double MinTruncation, 
    return Info;
 }
 
-CenterWavefunction 
+CenterWavefunction
 KrylovSolver::ConstructExpansion(LinearAlgebra::Vector<std::complex<double> > const& n,
                                  StatesInfo const& SInfo) const
 {
@@ -683,10 +683,10 @@ void KrylovSolver::DebugCheckBasis() const
    {
       for (std::size_t j = i+1; j < Krylov.size(); ++j)
       {
-	 DEBUG_CHECK_EQUAL(ki_kj(i,j).Left().Basis2(), Krylov[j].Center().Basis1());
-	 DEBUG_CHECK_EQUAL(ki_kj(i,j).Left().Basis1(), Krylov[i].Center().Basis1());
-	 DEBUG_CHECK_EQUAL(ki_kj(i,j).Right().Basis2(), Krylov[j].Center().Basis2());
-	 DEBUG_CHECK_EQUAL(ki_kj(i,j).Right().Basis1(), Krylov[i].Center().Basis2());
+         DEBUG_CHECK_EQUAL(ki_kj(i,j).Left().Basis2(), Krylov[j].Center().Basis1());
+         DEBUG_CHECK_EQUAL(ki_kj(i,j).Left().Basis1(), Krylov[i].Center().Basis1());
+         DEBUG_CHECK_EQUAL(ki_kj(i,j).Right().Basis2(), Krylov[j].Center().Basis2());
+         DEBUG_CHECK_EQUAL(ki_kj(i,j).Right().Basis1(), Krylov[i].Center().Basis2());
       }
    }
 #endif

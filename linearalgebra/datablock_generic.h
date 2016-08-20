@@ -22,7 +22,7 @@
   also defines range, which is a template to represent an iterator range, and
   fast_copy, which is similar to std::copy, but only uses preincrement.
 
-  2002-07-01: Fixed a bug in DataBlock::DataBlock(size_t) where allocating size zero would fail.  
+  2002-07-01: Fixed a bug in DataBlock::DataBlock(size_t) where allocating size zero would fail.
   It no longer fails, although maybe it should instead be a precondition violation?
 */
 
@@ -35,7 +35,7 @@
 #include "common/atomic.h"
 #include "common/construct_array.h"
 
-size_t const CacheLineSize = 0;  // This is a hook to make the data block 
+size_t const CacheLineSize = 0;  // This is a hook to make the data block
                                  // aligned on a cache-line.  not yet implemented.
 
 namespace Private
@@ -114,7 +114,7 @@ inline
 T* DataBlockAllocator<T, Header>::copy(T const* Data)
 {
    size_t Size = DataBlockAllocator<T, Header>::GetSize(Data);
-   
+
    unsigned char* NewBase;
    try
    {
@@ -134,7 +134,7 @@ T* DataBlockAllocator<T, Header>::copy(T const* Data)
 }
 
 template <typename T, typename Header>
-inline 
+inline
 AtomicRefCount& DataBlockAllocator<T, Header>::GetRefCount(T const* Data)
 {
    unsigned char* Base = reinterpret_cast<unsigned char*>(const_cast<T*>(Data)) - ArrayOffset;
@@ -142,7 +142,7 @@ AtomicRefCount& DataBlockAllocator<T, Header>::GetRefCount(T const* Data)
 }
 
 template <typename T, typename Header>
-inline 
+inline
 size_t DataBlockAllocator<T, Header>::GetSize(T* Data)
 {
    unsigned char const* Base = reinterpret_cast<unsigned char const*>(const_cast<T*>(Data)) - ArrayOffset;
@@ -150,7 +150,7 @@ size_t DataBlockAllocator<T, Header>::GetSize(T* Data)
 }
 
 template <typename T, typename Header>
-inline 
+inline
 Header& DataBlockAllocator<T, Header>::GetHeader(T const* Data)
 {
    unsigned char* Base = reinterpret_cast<unsigned char*>(const_cast<T*>(Data)) - ArrayOffset;
@@ -174,7 +174,7 @@ class DataBlock
       DataBlock(DataBlock<T> const& Other) : Data(Other.Data)
       { ++this->ref_count(); }
 
-      DataBlock& operator=(DataBlock<T> const& Other) 
+      DataBlock& operator=(DataBlock<T> const& Other)
       { ++Other->ref_count(); if (--this->ref_count() == 0) { Allocator::deallocate(Data); }
       Data = Other.Data;
       return *this; }
@@ -223,12 +223,12 @@ class DataBlock<T const, Header>
       DataBlock(DataBlock<T const, Header> const& Other) : Data(Other.Data)
       { ++this->ref_count(); }
 
-      DataBlock& operator=(DataBlock<T, Header> const& Other) 
+      DataBlock& operator=(DataBlock<T, Header> const& Other)
       { ++Other->ref_count(); if (--this->ref_count() == 0) { Allocator::deallocate(Data); }
       Data = Other.Data;
       return *this; }
 
-      DataBlock& operator=(DataBlock<T const, Header> const& Other) 
+      DataBlock& operator=(DataBlock<T const, Header> const& Other)
       { ++Other->ref_count(); if (--this->ref_count() == 0) { Allocator::deallocate(Data); }
       Data = Other.Data;
       return *this; }

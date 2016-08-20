@@ -52,11 +52,11 @@ int main(int argc, char** argv)
    int const L = System->size();
 
    // we would like to multiply the left-hand wavefunction by op1 and then calculate
-   // the expectation value (Ps1Op1, Op2, Psi2), but we cannot, because 
+   // the expectation value (Ps1Op1, Op2, Psi2), but we cannot, because
    // Op1 might not be hermitian, and we don't know how to take the adjoint of
    // an MPOperator yet...
    std::cout.precision(14);
-   MPOperator Operator1 = (Op1 == "I") ? (*System)["I"] 
+   MPOperator Operator1 = (Op1 == "I") ? (*System)["I"]
       : System->Lookup(Op1, boost::lexical_cast<std::string>(FirstSite));
 
    OperatorAtSite<OperatorList const> SpinonProj(*System, "N_S");
@@ -72,11 +72,11 @@ int main(int argc, char** argv)
          MPOperator Join = std::exp(complex(0,math_const::pi * kS / L)) * SpinonProj(P)
             + std::exp(complex(0,math_const::pi * kH / L)) * HolonProj(P);
 
-	 Op = prod(Op, Join, QuantumNumber(System->GetSymmetryList()));
+         Op = prod(Op, Join, QuantumNumber(System->GetSymmetryList()));
       }
-      std::cout << std::setw(4) << FirstSite << ' ' << std::setw(4) << Pos 
-		<< ' ' << std::setw(16)
-		<< expectation(*Psi1, Op, *Psi2) << '\n';
+      std::cout << std::setw(4) << FirstSite << ' ' << std::setw(4) << Pos
+                << ' ' << std::setw(16)
+                << expectation(*Psi1, Op, *Psi2) << '\n';
    }
 
    pheap::Shutdown();

@@ -38,13 +38,13 @@ namespace LinearAlgebra
 //
 
 template <typename LHS,
-	  typename M1, typename M1Orient,
-	  typename M2, typename M2Orient,
+          typename M1, typename M1Orient,
+          typename M2, typename M2Orient,
           typename Nested>
 struct AssignProduct2_Sparse;
 
 template <typename LHS,
-	  typename M1, typename M2, typename Nested>
+          typename M1, typename M2, typename Nested>
 struct AssignProduct2_Sparse<LHS, M1, RowMajor, M2, ColMajor, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, Nested const& f)
@@ -53,19 +53,19 @@ struct AssignProduct2_Sparse<LHS, M1, RowMajor, M2, ColMajor, Nested>
       typename const_iterator<M1>::type I = iterate(m1);
       while (I)
       {
-	 typename const_iterator<M2>::type J = iterate(m2);
-	 while (J)
-	 {
-	    add_element_check_if_zero(lhs, I.index(), J.index(), parallel_prod(*I, *J, f));
-	    ++J;
-	 }
-	 ++I;
+         typename const_iterator<M2>::type J = iterate(m2);
+         while (J)
+         {
+            add_element_check_if_zero(lhs, I.index(), J.index(), parallel_prod(*I, *J, f));
+            ++J;
+         }
+         ++I;
       }
    }
 };
 
 template <typename LHS,
-	  typename M1, typename M2, typename Nested>
+          typename M1, typename M2, typename Nested>
 struct AssignProduct2_Sparse<LHS, M1, ColMajor, M2, ColMajor, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, Nested const& f)
@@ -76,7 +76,7 @@ struct AssignProduct2_Sparse<LHS, M1, ColMajor, M2, ColMajor, Nested>
 };
 
 template <typename LHS,
-	  typename M1, typename M2, typename Nested>
+          typename M1, typename M2, typename Nested>
 struct AssignProduct2_Sparse<LHS, M1, ColMajor, M2, RowMajor, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, Nested const& f)
@@ -88,7 +88,7 @@ struct AssignProduct2_Sparse<LHS, M1, ColMajor, M2, RowMajor, Nested>
 };
 
 template <typename LHS,
-	  typename M1, typename M2, typename Nested>
+          typename M1, typename M2, typename Nested>
 struct AssignProduct2_Sparse<LHS, M1, RowMajor, M2, RowMajor, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, Nested const& f)
@@ -99,13 +99,13 @@ struct AssignProduct2_Sparse<LHS, M1, RowMajor, M2, RowMajor, Nested>
 };
 
 template <typename LHS, typename M1, typename M2, typename Nested,
-	  typename LHSv, typename LHSi,
-	  typename M1v, typename M1Orient, typename M1i,
-	  typename M2v, typename M2Orient, typename M2i>
+          typename LHSv, typename LHSi,
+          typename M1v, typename M1Orient, typename M1i,
+          typename M2v, typename M2Orient, typename M2i>
 struct AssignProduct2<LHS, M1, M2, Nested,
-		      LOCAL_MATRIX(LHSv, LHSi),
-		      COMPRESSED_OUTER_MATRIX(M1v, M1Orient, M1i),
-		      COMPRESSED_OUTER_MATRIX(M2v, M2Orient, M2i)>
+                      LOCAL_MATRIX(LHSv, LHSi),
+                      COMPRESSED_OUTER_MATRIX(M1v, M1Orient, M1i),
+                      COMPRESSED_OUTER_MATRIX(M2v, M2Orient, M2i)>
 : AssignProduct2_Sparse<LHS, M1, M1Orient, M2, M2Orient, Nested> {};
 
 //
@@ -113,12 +113,12 @@ struct AssignProduct2<LHS, M1, M2, Nested,
 //
 
 template <typename LHS,
-	  typename M1, typename M1Orient,
-	  typename M2, typename M2Orient, typename Nested>
+          typename M1, typename M1Orient,
+          typename M2, typename M2Orient, typename Nested>
 struct AddProduct2_Sparse;
 
 template <typename LHS,
-	  typename M1, typename M2, typename Nested>
+          typename M1, typename M2, typename Nested>
 struct AddProduct2_Sparse<LHS, M1, RowMajor, M2, ColMajor, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, Nested const& f)
@@ -126,19 +126,19 @@ struct AddProduct2_Sparse<LHS, M1, RowMajor, M2, ColMajor, Nested>
       typename const_iterator<M1>::type I = iterate(m1);
       while (I)
       {
-	 typename const_iterator<M2>::type J = iterate(m2);
-	 while (J)
-	 {
-	    add_element_check_if_zero(lhs, I.index(), J.index(), parallel_prod(*I, *J, f));
-	    ++J;
-	 }
-	 ++I;
+         typename const_iterator<M2>::type J = iterate(m2);
+         while (J)
+         {
+            add_element_check_if_zero(lhs, I.index(), J.index(), parallel_prod(*I, *J, f));
+            ++J;
+         }
+         ++I;
       }
    }
 };
 
 template <typename LHS,
-	  typename M1, typename M2, typename Nested>
+          typename M1, typename M2, typename Nested>
 struct AddProduct2_Sparse<LHS, M1, ColMajor, M2, ColMajor, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, Nested const& f)
@@ -149,7 +149,7 @@ struct AddProduct2_Sparse<LHS, M1, ColMajor, M2, ColMajor, Nested>
 };
 
 template <typename LHS,
-	  typename M1, typename M2, typename Nested>
+          typename M1, typename M2, typename Nested>
 struct AddProduct2_Sparse<LHS, M1, ColMajor, M2, RowMajor, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, Nested const& f)
@@ -161,7 +161,7 @@ struct AddProduct2_Sparse<LHS, M1, ColMajor, M2, RowMajor, Nested>
 };
 
 template <typename LHS,
-	  typename M1, typename M2, typename Nested>
+          typename M1, typename M2, typename Nested>
 struct AddProduct2_Sparse<LHS, M1, RowMajor, M2, RowMajor, Nested>
 {
    static void apply(LHS& lhs, M1 const& m1, M2 const& m2, Nested const& f)
@@ -172,13 +172,13 @@ struct AddProduct2_Sparse<LHS, M1, RowMajor, M2, RowMajor, Nested>
 };
 
 template <typename LHS, typename M1, typename M2, typename Nested,
-	  typename LHSv, typename LHSi,
-	  typename M1v, typename M1Orient, typename M1i,
-	  typename M2v, typename M2Orient, typename M2i>
+          typename LHSv, typename LHSi,
+          typename M1v, typename M1Orient, typename M1i,
+          typename M2v, typename M2Orient, typename M2i>
 struct AddProduct2<LHS, M1, M2, Nested,
-		      LOCAL_MATRIX(LHSv, LHSi),
-		      COMPRESSED_OUTER_MATRIX(M1v, M1Orient, M1i),
-		      COMPRESSED_OUTER_MATRIX(M2v, M2Orient, M2i)>
+                      LOCAL_MATRIX(LHSv, LHSi),
+                      COMPRESSED_OUTER_MATRIX(M1v, M1Orient, M1i),
+                      COMPRESSED_OUTER_MATRIX(M2v, M2Orient, M2i)>
 : AddProduct2_Sparse<LHS, M1, M1Orient, M2, M2Orient, Nested> {};
 
 } // namespace LinearAlgebra

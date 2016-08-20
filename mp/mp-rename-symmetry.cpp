@@ -50,9 +50,9 @@ int main(int argc, char** argv)
    {
       if (argc != 4)
       {
-	 print_copyright(std::cerr, "tools", basename(argv[0]));
-	 std::cerr << "usage: mp-rename-symmetry <old> <new> <psi>\n";
-	 return 1;
+         print_copyright(std::cerr, "tools", basename(argv[0]));
+         std::cerr << "usage: mp-rename-symmetry <old> <new> <psi>\n";
+         return 1;
       }
 
       std::string OldQ = argv[1];
@@ -63,10 +63,10 @@ int main(int argc, char** argv)
       int const s = Psi->GetSymmetryList().WhichSymmetry(OldQ);
       if (s == -1)
       {
-	 std::cerr << "mp-shift-basis: warning: \"" + OldQ 
-	    + "\" does not name a quantum number.\n";
-	 pheap::ShutdownPersistent(Psi);
-	 return 0; // this isn't really an error
+         std::cerr << "mp-shift-basis: warning: \"" + OldQ
+            + "\" does not name a quantum number.\n";
+         pheap::ShutdownPersistent(Psi);
+         return 0; // this isn't really an error
       }
 
       // construct the new symmetry list

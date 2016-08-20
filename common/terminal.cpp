@@ -44,7 +44,7 @@
 namespace terminal
 {
 
-std::map<color, std::string> ColorNames = 
+std::map<color, std::string> ColorNames =
    {{color::Reset,        "Reset"},
     {color::Bold,         "Bold"},
     {color::Dim,          "Dim"},
@@ -141,9 +141,9 @@ color parse_code(std::string s)
       // search for a named color
       auto i = ColorNames.begin();
       while (i != ColorNames.end() && !boost::iequals(s, i->second))
-	 ++i;
+         ++i;
       if (i == ColorNames.end())
-	 return color::Reset;
+         return color::Reset;
       return i->first;
    }
 }

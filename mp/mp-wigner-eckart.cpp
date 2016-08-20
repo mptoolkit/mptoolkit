@@ -41,8 +41,8 @@ using QuantumNumbers::Projection;
 namespace prog_opt = boost::program_options;
 
 StateComponent wigner_eckart(StateComponent const& A,
-			     WignerEckartBasis<VectorBasis> const& W1,
-			     WignerEckartBasis<VectorBasis> const& W2)
+                             WignerEckartBasis<VectorBasis> const& W1,
+                             WignerEckartBasis<VectorBasis> const& W2)
 {
    // Get the projected local basis
    BasisList AbelianLocalBasis(W1.AbelianBasis().GetSymmetryList());
@@ -51,7 +51,7 @@ StateComponent wigner_eckart(StateComponent const& A,
       QuantumNumbers::ProjectionList pl = enumerate_projections(A.LocalBasis()[i]);
       for (unsigned pi = 0; pi < pl.size(); ++pi)
       {
-	 AbelianLocalBasis.push_back(map_projection_to_quantum(pl[pi], AbelianLocalBasis.GetSymmetryList()));
+         AbelianLocalBasis.push_back(map_projection_to_quantum(pl[pi], AbelianLocalBasis.GetSymmetryList()));
       }
    }
 
@@ -62,7 +62,7 @@ StateComponent wigner_eckart(StateComponent const& A,
       QuantumNumbers::ProjectionList pl = enumerate_projections(A.LocalBasis()[i]);
       for (unsigned pi = 0; pi < pl.size(); ++pi)
       {
-	 Result[k++] = wigner_eckart(A[i], pl[pi], W1, W2);
+         Result[k++] = wigner_eckart(A[i], pl[pi], W1, W2);
       }
    }
    return Result;
@@ -102,7 +102,7 @@ wigner_project(InfiniteWavefunctionLeft const& Psi, SymmetryList const& FinalSL)
    Result.setBasis2(W2.AbelianBasis());
 
    Result.check_structure();
-			   
+
    return Result;
 }
 
@@ -140,7 +140,7 @@ wigner_project(InfiniteWavefunctionRight const& Psi, SymmetryList const& FinalSL
    Result.setBasis2(W2.AbelianBasis());
 
    Result.check_structure();
-			   
+
    return Result;
 }
 
@@ -154,11 +154,11 @@ IBCWavefunction
 wigner_project(IBCWavefunction const& Psi, SymmetryList const& FinalSL)
 {
    return IBCWavefunction(wigner_project(Psi.Left, FinalSL),
-			  wigner_project(Psi.Window, FinalSL),
-			  wigner_project(Psi.Right, FinalSL),
-			  Psi.window_offset(),
-			  Psi.WindowLeftSites,
-			  Psi.WindowRightSites);
+                          wigner_project(Psi.Window, FinalSL),
+                          wigner_project(Psi.Right, FinalSL),
+                          Psi.window_offset(),
+                          Psi.WindowLeftSites,
+                          Psi.WindowRightSites);
 }
 
 // functor to use the visitor pattern with wavefunction types
@@ -188,9 +188,9 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("force,f", prog_opt::bool_switch(&Force),
-	  "overwrite the output file, if it exists")
-	 ;
+         ("force,f", prog_opt::bool_switch(&Force),
+          "overwrite the output file, if it exists")
+         ;
 
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
@@ -207,22 +207,22 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || vm.count("inpsi") < 1)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] <symmetry-list> <input-psi> [output-psi]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "This tool maps a non-abelian symmetry into a set of abelian projections.\n"
-	    "The only projection currently defined is from SU(2) to U(1), and partial projections are\n"
-	    "not allowed - that is, if there is more than one SU(2) symmetry, then ALL of them must be\n"
-	    "projected.  The final symmetry list must be idential to the original symmetry list, but\n"
-	    "with each SU(2) symmetry replaced by a U(1) symmetry, in the same order (the name doesn't matter).\n"
-	    ;
+         std::cerr << "This tool maps a non-abelian symmetry into a set of abelian projections.\n"
+            "The only projection currently defined is from SU(2) to U(1), and partial projections are\n"
+            "not allowed - that is, if there is more than one SU(2) symmetry, then ALL of them must be\n"
+            "projected.  The final symmetry list must be idential to the original symmetry list, but\n"
+            "with each SU(2) symmetry replaced by a U(1) symmetry, in the same order (the name doesn't matter).\n"
+            ;
          return 1;
       }
 
@@ -230,24 +230,24 @@ int main(int argc, char** argv)
 
       if (OutputFile.empty())
       {
-	 // re-use the input file as the output file
-	 InputPsi = pheap::OpenPersistent(InputFile, mp_pheap::CacheSize());
+         // re-use the input file as the output file
+         InputPsi = pheap::OpenPersistent(InputFile, mp_pheap::CacheSize());
       }
       else
       {
-	 // create a new file for output
-	 pheap::Initialize(OutputFile, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
-	 // and load the input wavefunction
-	 InputPsi = pheap::ImportHeap(InputFile);
+         // create a new file for output
+         pheap::Initialize(OutputFile, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
+         // and load the input wavefunction
+         InputPsi = pheap::ImportHeap(InputFile);
       }
-	 
+
       SymmetryList FinalSL = SymmetryList(SList);
 
       // If we are overwriting the old file, copy the old history and attributes
       MPWavefunction Result;
       if (OutputFile.empty())
       {
-	 Result = MPWavefunction(InputPsi->Attributes(), InputPsi->History());
+         Result = MPWavefunction(InputPsi->Attributes(), InputPsi->History());
       }
       Result.AppendHistory(EscapeCommandline(argc, argv));
       Result.Wavefunction() = boost::apply_visitor(ApplyWignerEckart(FinalSL), InputPsi->Wavefunction());

@@ -18,7 +18,7 @@
 // ENDHEADER
 
 /*
-  2005-10-12: NOTE: this header is now obsolete. 
+  2005-10-12: NOTE: this header is now obsolete.
 */
 
 #warning Obsolete
@@ -34,7 +34,7 @@ double Entropy(FwdIter first, FwdIter last)
    {
       double x = first->Eigenvalue;
       if (x > 0)
-	 E -= x * log(x);
+         E -= x * log(x);
 
       ++first;
    }
@@ -49,7 +49,7 @@ double TruncError(FwdIter first, FwdIter last)
    {
       double x = first->Eigenvalue;
       if (x > 0)
-	 E += x;
+         E += x;
 
       ++first;
    }
@@ -62,8 +62,8 @@ struct SuperblockMultiply
    typedef MatrixOperator const& argument_type;
 
    SuperblockMultiply(SimpleOperator const& Op_,
-		      MPStateComponent const& Left_,
-		      MPStateComponent const& Right_);
+                      MPStateComponent const& Left_,
+                      MPStateComponent const& Right_);
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
    {
@@ -77,8 +77,8 @@ struct SuperblockMultiply
 
 inline
 SuperblockMultiply::SuperblockMultiply(SimpleOperator const& Op_,
-				       MPStateComponent const& Left_,
-				       MPStateComponent const& Right_)
+                                       MPStateComponent const& Left_,
+                                       MPStateComponent const& Right_)
    : Op(Op_), Left(Left_), Right(Right_)
 {
 }
@@ -198,15 +198,15 @@ Solver::Solver(MPWavefunction const& Psi_, MPOperator const& Op_, MPWavefunction
    {
       yprime_A_x.PushLeft(operator_prod(herm(A.LookupLeft(Loc)),
                                         herm(yprime.LookupLeft(Loc)),
-                                        yprime_A_x.Left(), 
+                                        yprime_A_x.Left(),
                                         x.LookupLeft(Loc)));
 
       yprime_y.PushLeft(operator_prod(herm(yprime.LookupLeft(Loc)),
-                                      yprime_y.Left(), 
+                                      yprime_y.Left(),
                                       y.LookupLeft(Loc)));
 
       yprime_x.PushLeft(operator_prod(herm(yprime.LookupLeft(Loc)),
-                                      yprime_x.Left(), 
+                                      yprime_x.Left(),
                                       x.LookupLeft(Loc)));
    }
 
@@ -219,10 +219,10 @@ double Solver::Energy()
    //   DEBUG_TRACE(scalar_prod(Psi.Center(), Psi.Center()));
    //   DEBUG_TRACE(scalar_prod(PsiP, PsiP));
 
-   return inner_prod(operator_prod(conj(A.Center()), 
-                                   yprime_A_x.Left(), 
-                                   x.Center(), 
-                                   herm(yprime_A_x.Right())), 
+   return inner_prod(operator_prod(conj(A.Center()),
+                                   yprime_A_x.Left(),
+                                   x.Center(),
+                                   herm(yprime_A_x.Right())),
                      yprime.Center()).real();
 }
 
@@ -234,12 +234,12 @@ double Solver::Solve(int MaxIterations)
    int Iter = MaxIterations;
    double Tol = 1E-10;
 
-   BiConjugateGradient(x.Center(), 
+   BiConjugateGradient(x.Center(),
                        SuperblockMultiply(conj(A.Center()),
-                                          yprime_A_x.Left(), 
+                                          yprime_A_x.Left(),
                                           yprime_A_x.Right()),
                        SuperblockMultiplyHerm(conj(A.Center()),
-                                              yprime_A_x.Left(), 
+                                              yprime_A_x.Left(),
                                               yprime_A_x.Right()),
                        yprime.Center(),
                        Iter, Tol,
@@ -253,7 +253,7 @@ double Solver::Solve(int MaxIterations)
 
 void Solver::Evaluate()
 {
-   yprime.Center() = operator_prod(conj(A.Center()), 
+   yprime.Center() = operator_prod(conj(A.Center()),
                                    yprime_A_x.Left(), x.Center(), herm(yprime_A_x.Right()));
 }
 
@@ -271,17 +271,17 @@ void Solver::ExpandLeft()
    yprime_A_x.PopLeft();
    yprime_A_x.PushLeft(operator_prod(herm(A.Left()),
                                      herm(yprime.Left()),
-                                     yprime_A_x.Left(), 
+                                     yprime_A_x.Left(),
                                      x.Left()));
 
    yprime_y.PopLeft();
    yprime_y.PushLeft(operator_prod(herm(yprime.Left()),
-                                   yprime_y.Left(), 
+                                   yprime_y.Left(),
                                    y.Left()));
 
    yprime_x.PopLeft();
    yprime_x.PushLeft(operator_prod(herm(yprime.Left()),
-                                   yprime_x.Left(), 
+                                   yprime_x.Left(),
                                    x.Left()));
 
    // yprime is just y transformed into the new basis
@@ -303,9 +303,9 @@ void Solver::ExpandRight()
 
    // matrix elements
    yprime_A_x.PopRight();
-   yprime_A_x.PushRight(operator_prod(A.Right(), 
-                                      yprime.Right(), 
-                                      yprime_A_x.Right(), 
+   yprime_A_x.PushRight(operator_prod(A.Right(),
+                                      yprime.Right(),
+                                      yprime_A_x.Right(),
                                       herm(x.Right())));
 
    yprime_y.PopRight();
@@ -330,7 +330,7 @@ void Solver::ShiftRightAndExpand()
 
    x.PushLeft(prod(x.Center(), x.Right()));
    x.PopRight();
-   x.Center() = ExpandBasis2(x.Left()); 
+   x.Center() = ExpandBasis2(x.Left());
 
    yprime.PushLeft(prod(yprime.Center(), yprime.Right()));
    yprime.PopRight();
@@ -395,9 +395,9 @@ void Solver::ShiftLeftAndExpand()
 TruncationInfo Solver::TruncateLeft(int MaxStates)
 {
    // calculate Ax - TODO: this was already done by the solver, should be saved somewhere
-   MatrixOperator Ax = operator_prod(conj(A.Center()), 
-                                     yprime_A_x.Left(), 
-                                     x.Center(), 
+   MatrixOperator Ax = operator_prod(conj(A.Center()),
+                                     yprime_A_x.Left(),
+                                     x.Center(),
                                      herm(yprime_A_x.Right()));
 
     MatrixOperator Rho_x = scalar_prod(x.Center(), herm(x.Center()));
@@ -419,7 +419,7 @@ TruncationInfo Solver::TruncateLeft(int MaxStates)
    DensityMatrix<MatrixOperator>::const_iterator E = DM.begin();
    int Count = 0;
    while (E != DM.end() && Count < MaxStates)
-      //	  (E->Eigenvalue > EigenvalueEpsilon * DM.EigenSum()
+      //          (E->Eigenvalue > EigenvalueEpsilon * DM.EigenSum()
       //           || Count < MaxStates))
    {
       ++E; ++Count;
@@ -466,9 +466,9 @@ TruncationInfo Solver::TruncateLeft(int MaxStates)
 TruncationInfo Solver::TruncateRight(int MaxStates)
 {
    // calculate Ax - TODO: this was already done by the solver, should be saved somewhere
-   MatrixOperator Ax = operator_prod(conj(A.Center()), 
-                                     yprime_A_x.Left(), 
-                                     x.Center(), 
+   MatrixOperator Ax = operator_prod(conj(A.Center()),
+                                     yprime_A_x.Left(),
+                                     x.Center(),
                                      herm(yprime_A_x.Right()));
 
    MatrixOperator Rho_x = scalar_prod(herm(x.Center()), x.Center());
@@ -487,7 +487,7 @@ TruncationInfo Solver::TruncateRight(int MaxStates)
    DensityMatrix<MatrixOperator>::const_iterator E = DM.begin();
    int Count = 0;
    while (E != DM.end() && Count < MaxStates)
-      //	  (E->Eigenvalue > EigenvalueEpsilon * DM.EigenSum()
+      //          (E->Eigenvalue > EigenvalueEpsilon * DM.EigenSum()
       //           || Count < MaxStates))
    {
       ++E; ++Count;

@@ -68,11 +68,11 @@ class MatrixBinaryTransformProxy
       typedef typename make_value<reference>::type value_type;
 
       MatrixBinaryTransformProxy(reference1 x, reference2 y, functor_type f = functor_type())
-	 : x_(x), y_(y), f_(f) 
-      { 
-	 using LinearAlgebra::size1; using LinearAlgebra::size2;
-	 DEBUG_PRECONDITION_EQUAL(size1(x), size1(y)); 
-	 DEBUG_PRECONDITION_EQUAL(size2(x), size2(y));
+         : x_(x), y_(y), f_(f)
+      {
+         using LinearAlgebra::size1; using LinearAlgebra::size2;
+         DEBUG_PRECONDITION_EQUAL(size1(x), size1(y));
+         DEBUG_PRECONDITION_EQUAL(size2(x), size2(y));
       }
 
       size_type size1() const { return Size1<matrix1_type>()(x_);  }
@@ -94,27 +94,27 @@ class MatrixBinaryTransformProxy
 // interface
 
 template <typename T1, typename T2, typename F,
-	  typename I1 = typename interface<T1>::type, 
-	  typename I2 = typename interface<T2>::type,
-	  typename Value = typename MatrixBinaryTransformProxy<T1, T2, F>::value_type>
+          typename I1 = typename interface<T1>::type,
+          typename I2 = typename interface<T2>::type,
+          typename Value = typename MatrixBinaryTransformProxy<T1, T2, F>::value_type>
 struct MatrixBinaryTransformInterface;
 
 template <typename T1, typename T2, typename F, typename Orient,
-	  typename I1v, typename I1i,
-	  typename I2v, typename I2i,
-	  typename Value>
+          typename I1v, typename I1i,
+          typename I2v, typename I2i,
+          typename Value>
 struct MatrixBinaryTransformInterface<T1, T2, F,
-				      Concepts::DenseMatrix<I1v, Orient, I1i>,
-				      Concepts::DenseMatrix<I2v, Orient, I2i>, Value>
+                                      Concepts::DenseMatrix<I1v, Orient, I1i>,
+                                      Concepts::DenseMatrix<I2v, Orient, I2i>, Value>
 {
    typedef Concepts::DenseMatrix<Value, Orient, void> type;
    typedef Value value_type;
 };
 
 template <typename T1, typename T2, typename F>
-struct interface<MatrixBinaryTransformProxy<T1, T2, F> > 
-   : public MatrixBinaryTransformInterface<T1, T2, F> 
-{ 
+struct interface<MatrixBinaryTransformProxy<T1, T2, F> >
+   : public MatrixBinaryTransformInterface<T1, T2, F>
+{
 };
 
 // iterators
@@ -123,8 +123,8 @@ template <typename T1, typename T2, typename F, typename Ti>
 struct MatrixBinaryTransformIterate {};
 
 template <typename T1, typename T2, typename F>
-struct Iterate<MatrixBinaryTransformProxy<T1, T2, F> > 
-   : MatrixBinaryTransformIterate<T1, T2, F, 
+struct Iterate<MatrixBinaryTransformProxy<T1, T2, F> >
+   : MatrixBinaryTransformIterate<T1, T2, F,
                                   typename interface<MatrixBinaryTransformProxy<T1, T2, F> >::type> {};
 
 template <typename T1, typename T2, typename F, typename Tv, typename TOrient, typename Ti>
@@ -147,50 +147,50 @@ struct MatrixBinaryTransformIterate<T1, T2, F, Concepts::DenseMatrix<Tv, TOrient
 // BinaryTransform specializations
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti, typename Orient>
-struct BinaryTransformMatrix<S, T, F, 
-			     Concepts::DenseMatrix<Sv, Orient, Si>,
-			     Concepts::DenseMatrix<Tv, Orient, Ti>>
+struct BinaryTransformMatrix<S, T, F,
+                             Concepts::DenseMatrix<Sv, Orient, Si>,
+                             Concepts::DenseMatrix<Tv, Orient, Ti>>
 {
-   typedef MatrixBinaryTransformProxy<typename make_const_reference<S>::type, 
+   typedef MatrixBinaryTransformProxy<typename make_const_reference<S>::type,
                                typename make_const_reference<T>::type, F> result_type;
    typedef S const& first_argument_type;
    typedef T const& second_argument_type;
    typedef F third_argument_type;
    result_type operator()(S const& x, T const& y) const { return result_type(x, y); }
 
-   result_type operator()(S const& x, T const& y, F const& f) const 
+   result_type operator()(S const& x, T const& y, F const& f) const
    { return result_type(x, y, f); }
 };
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti, typename Orient>
-struct BinaryTransformMatrixSemiregular<S, T, F, 
-					Concepts::CompressedOuterMatrix<Sv, Orient, Si>, 
-					Concepts::CompressedOuterMatrix<Tv, Orient, Ti>>
+struct BinaryTransformMatrixSemiregular<S, T, F,
+                                        Concepts::CompressedOuterMatrix<Sv, Orient, Si>,
+                                        Concepts::CompressedOuterMatrix<Tv, Orient, Ti>>
 {
-   typedef MatrixBinaryTransformProxy<typename make_const_reference<S>::type, 
+   typedef MatrixBinaryTransformProxy<typename make_const_reference<S>::type,
                                typename make_const_reference<T>::type, F> result_type;
    typedef S const& first_argument_type;
    typedef T const& second_argument_type;
    typedef F third_argument_type;
    result_type operator()(S const& x, T const& y) const { return result_type(x, y); }
 
-   result_type operator()(S const& x, T const& y, F const& f) const 
+   result_type operator()(S const& x, T const& y, F const& f) const
    { return result_type(x, y, f); }
 };
 
 template <typename S, typename T, typename F, typename Sv, typename Si, typename Tv, typename Ti>
-struct BinaryTransformMatrixSemiregular<S, T, F, 
-					Concepts::DiagonalMatrix<Sv,Si>, 
-					Concepts::DiagonalMatrix<Tv,Ti>>
+struct BinaryTransformMatrixSemiregular<S, T, F,
+                                        Concepts::DiagonalMatrix<Sv,Si>,
+                                        Concepts::DiagonalMatrix<Tv,Ti>>
 {
-   typedef MatrixBinaryTransformProxy<typename make_const_reference<S>::type, 
+   typedef MatrixBinaryTransformProxy<typename make_const_reference<S>::type,
                                typename make_const_reference<T>::type, F> result_type;
    typedef S const& first_argument_type;
    typedef T const& second_argument_type;
    typedef F third_argument_type;
    result_type operator()(S const& x, T const& y) const { return result_type(x, y); }
 
-   result_type operator()(S const& x, T const& y, F const& f) const 
+   result_type operator()(S const& x, T const& y, F const& f) const
    { return result_type(x, y, f); }
 };
 

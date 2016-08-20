@@ -115,8 +115,8 @@ try_resize(T& v, size_type n)
 // function (ie. undefined) unless is_defined<operation>
 // Similar effect to using boost::enable_if.
 template <typename T, typename S, typename U>
-struct NegateInterface<T, VECTOR_EXPRESSION(S,U) > 
-   : TransformIfDefined<T, Negate<S> > 
+struct NegateInterface<T, VECTOR_EXPRESSION(S,U) >
+   : TransformIfDefined<T, Negate<S> >
 {
 };
 
@@ -163,7 +163,7 @@ struct TransposeInterface<T, VECTOR_EXPRESSION(S,U) > : TransformIfDefined<T, Tr
 // GetVectorElement
 
 template <typename T,
-	  typename TInterface = typename interface<T>::type>
+          typename TInterface = typename interface<T>::type>
 struct GetVectorElementInterface { };
 
 template <typename T, typename Enable = void>
@@ -208,7 +208,7 @@ struct GetVectorElementDefault<
    typedef typename T::reference result_type;
    typedef T& first_argument_type;
    typedef size_type second_argument_type;
-   
+
    result_type operator()(first_argument_type v, second_argument_type n) const
    {
       return v[n];
@@ -224,7 +224,7 @@ struct GetVectorElementDefault<
    typedef typename T::const_reference result_type;
    typedef T const& first_argument_type;
    typedef size_type second_argument_type;
-   
+
    result_type operator()(first_argument_type v, second_argument_type n) const
    {
       return v[n];
@@ -243,7 +243,7 @@ struct GetVectorElementInterface<T, STRIDE_VECTOR(Tv, Ti)>
    typedef Tv const& result_type;
    typedef T const& first_argument_type;
    typedef size_type second_argument_type;
-   
+
    result_type operator()(first_argument_type v, second_argument_type n) const
    {
       DEBUG_PRECONDITION(n < size(v))(n)(size(v));
@@ -257,7 +257,7 @@ struct GetVectorElementInterface<T&, STRIDE_VECTOR(Tv, Ti)>
    typedef Tv& result_type;
    typedef T& first_argument_type;
    typedef size_type second_argument_type;
-   
+
    result_type operator()(first_argument_type v, second_argument_type n) const
    {
       DEBUG_PRECONDITION(n < size(v))(n)(size(v));
@@ -271,7 +271,7 @@ struct GetVectorElementInterface<T, CONTIGUOUS_VECTOR(Tv, Ti)>
    typedef Tv const& result_type;
    typedef T const& first_argument_type;
    typedef size_type second_argument_type;
-   
+
    result_type operator()(first_argument_type v, second_argument_type n) const
    {
       DEBUG_PRECONDITION(n < size(v))(n)(size(v));
@@ -285,7 +285,7 @@ struct GetVectorElementInterface<T&, CONTIGUOUS_VECTOR(Tv, Ti)>
    typedef Tv& result_type;
    typedef T& first_argument_type;
    typedef size_type second_argument_type;
-   
+
    result_type operator()(first_argument_type v, second_argument_type n) const
    {
       DEBUG_PRECONDITION(n < size(v))(n)(size(v));
@@ -296,7 +296,7 @@ struct GetVectorElementInterface<T&, CONTIGUOUS_VECTOR(Tv, Ti)>
 // SetElement
 
 template <typename T, typename Value,
-	  typename TInterface = typename interface<T>::type, typename Enable = void>
+          typename TInterface = typename interface<T>::type, typename Enable = void>
 struct SetElement { };
 
 template <typename T, typename Value>
@@ -319,7 +319,7 @@ set_new_element(T& v, size_type n, Value const& x)
 // AddElement
 
 template <typename T, typename Value,
-	  typename TInterface = typename interface<T>::type, typename Enable = void>
+          typename TInterface = typename interface<T>::type, typename Enable = void>
 struct AddElement { };
 
 template <typename T, typename Value>
@@ -331,7 +331,7 @@ add_element(T& v, size_type n, Value const& x)
 }
 
 template <typename T, typename Value, typename Float,
-	  typename TInterface = typename interface<T>::type, typename Enable = void>
+          typename TInterface = typename interface<T>::type, typename Enable = void>
 struct AddElementCull { };
 
 template <typename T, typename Value, typename Float>
@@ -345,7 +345,7 @@ add_element_cull(T& v, size_type n, Value const& x, Float const& Tol)
 // SubtractElement
 
 template <typename T, typename Value,
-	  typename TInterface = typename interface<T>::type, typename Enable = void>
+          typename TInterface = typename interface<T>::type, typename Enable = void>
 struct SubtractElement { };
 
 template <typename T, typename Value>
@@ -357,7 +357,7 @@ subtract_element(T& v, size_type n, Value const& x)
 }
 
 template <typename T, typename Value, typename Float,
-	  typename TInterface = typename interface<T>::type, typename Enable = void>
+          typename TInterface = typename interface<T>::type, typename Enable = void>
 struct SubtractElementCull { };
 
 template <typename T, typename Value, typename Float>
@@ -370,8 +370,8 @@ subtract_element_cull(T& v, size_type n, Value const& x, Float const& Tol)
 
 // ZeroElement
 
-template <typename T, typename TInterface = typename interface<T>::type, 
-	  typename Enable = void>
+template <typename T, typename TInterface = typename interface<T>::type,
+          typename Enable = void>
 struct ZeroElement { };
 
 template <typename T>
@@ -588,12 +588,12 @@ struct Max<T, DENSE_VECTOR(Tv, Ti)>
 
 // inner_prod
 
-template <typename S, typename T, 
-	  typename Nested = InnerProd<typename interface<S>::value_type, 
-				      typename interface<T>::value_type>,
-	  typename SInterface = typename interface<S>::type, 
-	  typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+template <typename S, typename T,
+          typename Nested = InnerProd<typename interface<S>::value_type,
+                                      typename interface<T>::value_type>,
+          typename SInterface = typename interface<S>::type,
+          typename TInterface = typename interface<T>::type,
+          typename Enable = void>
 struct VectorInnerProd
 {
 };
@@ -611,12 +611,12 @@ template <typename S, typename T, typename Sv, typename Si, typename Tv, typenam
 struct InnerProdInterface<S, T, ANY_VECTOR(Sv, Si), ANY_VECTOR(Tv, Ti)>
    : VectorInnerProd<S, T> {};
 
-template <typename S, typename T, typename Func, 
-	  typename Sv, typename Si, typename Tv, typename Ti>
+template <typename S, typename T, typename Func,
+          typename Sv, typename Si, typename Tv, typename Ti>
 struct VectorInnerProd<S, T, Func, VECTOR_EXPRESSION(Sv, Si), VECTOR_EXPRESSION(Tv, Ti)>
    : VectorInnerProd<typename EvalExpression<S>::result_type,
-		     typename EvalExpression<T>::result_type,
-		     Func> 
+                     typename EvalExpression<T>::result_type,
+                     Func>
 {
    typedef VectorInnerProd<typename EvalExpression<S>::result_type,
       typename EvalExpression<T>::result_type,
@@ -625,8 +625,8 @@ struct VectorInnerProd<S, T, Func, VECTOR_EXPRESSION(Sv, Si), VECTOR_EXPRESSION(
    VectorInnerProd(Func const& f) : base(f) {}
 };
 
-template <typename S, typename T, typename Func, 
-	  typename Sv, typename Si, typename Tv, typename Ti>
+template <typename S, typename T, typename Func,
+          typename Sv, typename Si, typename Tv, typename Ti>
 struct VectorInnerProd<S, T, Func, LOCAL_VECTOR(Sv, Si), LOCAL_VECTOR(Tv, Ti)>
 {
    typedef typename make_value_with_zero<typename Func::result_type>::type result_type;
@@ -649,19 +649,19 @@ struct VectorInnerProd<S, T, Func, LOCAL_VECTOR(Sv, Si), LOCAL_VECTOR(Tv, Ti)>
 
 // parallel_prod
 
-template <typename S, typename T, 
-	  typename Nested = Multiplication<typename interface<S>::value_type, 
-					   typename interface<T>::value_type>,
-	  typename SInterface = typename interface<S>::type, 
-	  typename TInterface = typename interface<T>::type,
-	  typename Enable = void>
+template <typename S, typename T,
+          typename Nested = Multiplication<typename interface<S>::value_type,
+                                           typename interface<T>::value_type>,
+          typename SInterface = typename interface<S>::type,
+          typename TInterface = typename interface<T>::type,
+          typename Enable = void>
 struct ParallelProdInterface {};
 
-template <typename S, typename T, 
-	  typename Nested = Multiplication<typename interface<S>::value_type, 
-					   typename interface<T>::value_type>,
-	  typename Enable = void>
-struct ParallelProd : ParallelProdInterface<S, T, Nested> 
+template <typename S, typename T,
+          typename Nested = Multiplication<typename interface<S>::value_type,
+                                           typename interface<T>::value_type>,
+          typename Enable = void>
+struct ParallelProd : ParallelProdInterface<S, T, Nested>
 {
    ParallelProd() {}
    ParallelProd(Nested const& n) : ParallelProdInterface<S, T, Nested>(n) {}
@@ -672,7 +672,7 @@ template <typename S, typename T, typename Nested,
           typename Sv, typename Si,
           typename Tv, typename Ti>
 struct ParallelProdInterface<S, T, Nested, ANY_VECTOR(Sv, Si), ANY_VECTOR(Tv, Ti)>
-   : VectorInnerProd<S, T, Nested> 
+   : VectorInnerProd<S, T, Nested>
 {
    ParallelProdInterface() {}
    ParallelProdInterface(Nested const& n) : VectorInnerProd<S, T, Nested>(n) {}
@@ -758,19 +758,19 @@ struct SubtractionInterface<S, T, VECTOR_EXPRESSION(Sv, Si), VECTOR_EXPRESSION(T
 // old stuff, new version of equal doesn't yet se interface matching
 template <typename S1, typename D1, typename S2, typename D2>
 inline
-bool equal(VectorConstExpression<S1, D1> const& x, VectorConstExpression<S2, D2> const& y, 
-	   double tol = default_tolerance())
+bool equal(VectorConstExpression<S1, D1> const& x, VectorConstExpression<S2, D2> const& y,
+           double tol = default_tolerance())
 {
-   return x.size() == y.size() && norm_inf(x-y) <= 
+   return x.size() == y.size() && norm_inf(x-y) <=
       tol + 2 * std::numeric_limits<double>::epsilon() * (norm_inf(x) + norm_inf(y));
 }
 #endif
 
 // DirectSum
 
-template <typename S, typename T, 
-	  typename SInterface = typename interface<S>::type,
-	  typename TInterface = typename interface<T>::type>
+template <typename S, typename T,
+          typename SInterface = typename interface<S>::type,
+          typename TInterface = typename interface<T>::type>
 struct VectorDirectSum {};
 
 template <typename S, typename T, typename Sv, typename Si, typename Tv, typename Ti>
@@ -892,15 +892,15 @@ struct SwapInterface<T&, U&, DENSE_VECTOR(V, Ti), DENSE_VECTOR(V, Ui)>
 // square-bracket operator
 //
 
-template <typename T, typename Arg, 
-	  typename Ti = typename interface<T>::type,
-	  typename Argi = typename interface<Arg>::type>
+template <typename T, typename Arg,
+          typename Ti = typename interface<T>::type,
+          typename Argi = typename interface<Arg>::type>
 struct VectorBracketInterface { };
 
 template <typename T, typename Arg, typename Enable = void>
 struct VectorBracket : VectorBracketInterface<T, Arg> {};
 
-// 
+//
 template <typename T, typename Arg>
 struct VectorBracket<
    T
@@ -921,9 +921,9 @@ struct VectorBracket<
 // vector * scalar
 
 template <typename S, typename T,
-	  typename NestedMultiply = Multiplication<typename interface<S>::value_type, T>,
-	  typename SInterface = typename interface<S>::type, 
-	  typename Enable = void>
+          typename NestedMultiply = Multiplication<typename interface<S>::value_type, T>,
+          typename SInterface = typename interface<S>::type,
+          typename Enable = void>
 struct VectorScalarMultiplication
 {
 };
@@ -944,21 +944,21 @@ struct VectorScalarMultiplication<S, T, Mult, ANY_VECTOR(SV, U) >
    }
 };
 
-// we forward to VectorScalarMultiplication<S, typename interface<T>::value_type> 
+// we forward to VectorScalarMultiplication<S, typename interface<T>::value_type>
 // rather than using T directly, to handle the case where T is a ScalarProxy.
 
 template <typename S, typename T, typename SV, typename SI>
 struct MultiplicationInterface<S, T, ANY_VECTOR(SV, SI), AnyScalar<T> >
-   : VectorScalarMultiplication<S, typename interface<T>::value_type> 
+   : VectorScalarMultiplication<S, typename interface<T>::value_type>
 {
 };
 
 // scalar * vector
 
 template <typename S, typename T,
-	  typename NestedMultiply = Multiplication<S, typename interface<T>::value_type>,
-	  typename TInterface = typename interface<T>::type, 
-	  typename Enable = void>
+          typename NestedMultiply = Multiplication<S, typename interface<T>::value_type>,
+          typename TInterface = typename interface<T>::type,
+          typename Enable = void>
 struct ScalarVectorMultiplication
 {
 };
@@ -980,7 +980,7 @@ struct ScalarVectorMultiplication<S, T, Mult, ANY_VECTOR(TV, U) >
 
 template <typename S, typename T, typename TV, typename TI>
 struct MultiplicationInterface<S, T, AnyScalar<S>, ANY_VECTOR(TV, TI)>
-   : ScalarVectorMultiplication<typename interface<S>::value_type, T> 
+   : ScalarVectorMultiplication<typename interface<S>::value_type, T>
 {
 };
 
@@ -1150,9 +1150,9 @@ struct Stride<T, CONTIGUOUS_VECTOR(Tv, Ti)>
 
 // equal
 
-template <typename T, typename U, typename TolType, 
-	  typename Tv, typename Ti,
-	  typename Uv, typename Ui>
+template <typename T, typename U, typename TolType,
+          typename Tv, typename Ti,
+          typename Uv, typename Ui>
 struct EqualInterface<T, U, TolType, ANY_VECTOR(Tv,Ti), ANY_VECTOR(Uv, Ui)>
 {
    typedef bool result_type;
@@ -1163,8 +1163,8 @@ struct EqualInterface<T, U, TolType, ANY_VECTOR(Tv,Ti), ANY_VECTOR(Uv, Ui)>
 
    bool operator()(T const& x, U const& y) const
    {
-      return (size(x) == size(y)) && norm_inf(x-y) 
-	 <= Tol_ + 2 * std::numeric_limits<TolType>::epsilon() * (norm_inf(x) + norm_inf(y));
+      return (size(x) == size(y)) && norm_inf(x-y)
+         <= Tol_ + 2 * std::numeric_limits<TolType>::epsilon() * (norm_inf(x) + norm_inf(y));
    }
 
    private:
@@ -1217,8 +1217,8 @@ struct AssignInterface<LHS&, RHS, DENSE_VECTOR(S1, U1), COMPRESSED_VECTOR(S2, U2
       typename Iterate<LHS&>::result_type l = iterate(x);
       while (r)
       {
-	 l[r.index()] += *r;
-	 ++r;
+         l[r.index()] += *r;
+         ++r;
       }
    }
 };
@@ -1238,8 +1238,8 @@ struct AssignInterface<LHS&, RHS, DENSE_VECTOR(S1, U1), INJECTIVE_VECTOR(S2, U2)
       typename Iterate<LHS&>::result_type l = iterate(x);
       while (r)
       {
-	 l[r.index()] = *r;
-	 ++r;
+         l[r.index()] = *r;
+         ++r;
       }
    }
 };
@@ -1258,8 +1258,8 @@ struct AssignInterface<LHS&, RHS, COMPRESSED_VECTOR(S1, U1), COMPRESSED_VECTOR(S
       typename Iterate<RHS>::result_type r = iterate(y);
       while (r)
       {
-	 add_element(x, r.index(), *r);
-	 ++r;
+         add_element(x, r.index(), *r);
+         ++r;
       }
    }
 };
@@ -1278,8 +1278,8 @@ struct AssignInterface<LHS&, RHS, INJECTIVE_VECTOR(S1, U1), INJECTIVE_VECTOR(S2,
       typename Iterate<RHS>::result_type r = iterate(y);
       while (r)
       {
-	 set_new_element(x, r.index(), *r);
-	 ++r;
+         set_new_element(x, r.index(), *r);
+         ++r;
       }
    }
 };
@@ -1328,8 +1328,8 @@ struct AddInterface<LHS&, RHS, DENSE_VECTOR(S1, U1), COMPRESSED_VECTOR(S2, U2) >
       typename Iterate<LHS&>::result_type l = iterate(x);
       while (r)
       {
-	 l[r.index()] += *r;
-	 ++r;
+         l[r.index()] += *r;
+         ++r;
       }
    }
 };
@@ -1346,8 +1346,8 @@ struct AddInterface<LHS&, RHS, COMPRESSED_VECTOR(S1, U1), COMPRESSED_VECTOR(S2, 
       typename Iterate<RHS>::result_type r = iterate(y);
       while (r)
       {
-	 add_element(x, r.index(), *r);
-	 ++r;
+         add_element(x, r.index(), *r);
+         ++r;
       }
    }
 };
@@ -1396,8 +1396,8 @@ struct SubtractInterface<LHS&, RHS, DENSE_VECTOR(S1, U1), COMPRESSED_VECTOR(S2, 
       typename Iterate<LHS&>::result_type l = iterate(x);
       while (r)
       {
-	 l[r.index()] -= *r;
-	 ++r;
+         l[r.index()] -= *r;
+         ++r;
       }
    }
 };
@@ -1414,8 +1414,8 @@ struct SubtractInterface<LHS&, RHS, COMPRESSED_VECTOR(S1, U1), COMPRESSED_VECTOR
       typename Iterate<RHS>::result_type r = iterate(y);
       while (r)
       {
-	 subtract_element(x, r.index(), *r);
-	 ++r;
+         subtract_element(x, r.index(), *r);
+         ++r;
       }
    }
 };
@@ -1452,7 +1452,7 @@ struct TryIterate { };
 template <typename T>
 struct TryIterate<T&, typename boost::enable_if<
   boost::mpl::and_<exists<typename T::iterator>,
-		   boost::mpl::not_<boost::is_const<T> > > >::type>
+                   boost::mpl::not_<boost::is_const<T> > > >::type>
 {
    typedef typename T::iterator result_type;
    typedef T& argument_type;
@@ -1460,8 +1460,8 @@ struct TryIterate<T&, typename boost::enable_if<
 };
 
 template <typename T>
-struct TryIterate<T, 
-		  typename boost::enable_if<exists<typename T::const_iterator> >::type>
+struct TryIterate<T,
+                  typename boost::enable_if<exists<typename T::const_iterator> >::type>
 {
    typedef typename T::const_iterator result_type;
    typedef T const& argument_type;

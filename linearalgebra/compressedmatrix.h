@@ -60,10 +60,10 @@ class CompressedMatrixBase : public MatrixBase<Derived>
 
       typedef typename GetVectorElement<data_type>::result_type  const_outer_reference;
 
-   //      typedef typename GetElement<typename 
+   //      typedef typename GetElement<typename
    //         basic_type<outer_reference>::type&>::result_type reference;
 
-      typedef typename GetVectorElement<typename 
+      typedef typename GetVectorElement<typename
          basic_type<const_outer_reference>::type>::result_type const_reference;
 
 };
@@ -72,7 +72,7 @@ template <typename VecOfVec, typename Orientation = RowMajor>
 class CompressedMatrix;
 
 template <typename VecOfVec>
-class CompressedMatrix<VecOfVec, RowMajor> 
+class CompressedMatrix<VecOfVec, RowMajor>
    : public CompressedMatrixBase<VecOfVec, CompressedMatrix<VecOfVec, RowMajor> >
 {
    public:
@@ -84,10 +84,10 @@ class CompressedMatrix<VecOfVec, RowMajor>
       typedef typename make_const_reference<VecOfVec>::type const_vec_reference;
 
       CompressedMatrix(size_t Rows, size_t Cols)
-	 : InnerSize_(Cols), Data_(Rows, outer_value_type(Cols)) {}
+         : InnerSize_(Cols), Data_(Rows, outer_value_type(Cols)) {}
 
-      CompressedMatrix(CompressedMatrix const& x) 
-	 : InnerSize_(x.inner_size()), Data_(x.Data_) {}
+      CompressedMatrix(CompressedMatrix const& x)
+         : InnerSize_(x.inner_size()), Data_(x.Data_) {}
 
       template <typename U>
       CompressedMatrix(U const& x, typename boost::enable_if<is_matrix<U> >::type* dummy = 0);
@@ -96,14 +96,14 @@ class CompressedMatrix<VecOfVec, RowMajor>
       typename MatrixBracket<CompressedMatrix, Arg1, Arg2>::result_type
       operator()(Arg1 const& x, Arg2 const& y) const
       {
-	 return MatrixBracket<CompressedMatrix, Arg1, Arg2>()(*this, x,y);
+         return MatrixBracket<CompressedMatrix, Arg1, Arg2>()(*this, x,y);
       }
 
       template <typename Arg1, typename Arg2>
       typename MatrixBracket<CompressedMatrix&, Arg1, Arg2>::result_type
       operator()(Arg1 const& x, Arg2 const& y)
       {
-	 return MatrixBracket<CompressedMatrix&, Arg1, Arg2>()(*this, x,y);
+         return MatrixBracket<CompressedMatrix&, Arg1, Arg2>()(*this, x,y);
       }
 
       vec_reference vec() { return Data_; }
@@ -117,7 +117,7 @@ class CompressedMatrix<VecOfVec, RowMajor>
 };
 
 template <typename VecOfVec>
-class CompressedMatrix<VecOfVec, ColMajor> 
+class CompressedMatrix<VecOfVec, ColMajor>
    : public CompressedMatrixBase<VecOfVec, CompressedMatrix<VecOfVec, ColMajor> >
 {
    public:
@@ -129,10 +129,10 @@ class CompressedMatrix<VecOfVec, ColMajor>
       typedef typename make_const_reference<VecOfVec>::type const_vec_reference;
 
       CompressedMatrix(size_t Rows, size_t Cols)
-	 : InnerSize_(Rows), Data_(Cols, outer_value_type(Rows)) {}
+         : InnerSize_(Rows), Data_(Cols, outer_value_type(Rows)) {}
 
-      CompressedMatrix(CompressedMatrix const& x) 
-	 : InnerSize_(x.inner_size()), Data_(x.Data_) {}
+      CompressedMatrix(CompressedMatrix const& x)
+         : InnerSize_(x.inner_size()), Data_(x.Data_) {}
 
       template <typename U>
       CompressedMatrix(U const& x, typename boost::enable_if<is_matrix<U> >::type* dummy = 0);
@@ -141,14 +141,14 @@ class CompressedMatrix<VecOfVec, ColMajor>
       typename MatrixBracket<CompressedMatrix, Arg1, Arg2>::result_type
       operator()(Arg1 const& x, Arg2 const& y) const
       {
-	 return MatrixBracket<CompressedMatrix, Arg1, Arg2>()(*this, x,y);
+         return MatrixBracket<CompressedMatrix, Arg1, Arg2>()(*this, x,y);
       }
 
       template <typename Arg1, typename Arg2>
       typename MatrixBracket<CompressedMatrix&, Arg1, Arg2>::result_type
       operator()(Arg1 const& x, Arg2 const& y)
       {
-	 return MatrixBracket<CompressedMatrix&, Arg1, Arg2>()(*this, x,y);
+         return MatrixBracket<CompressedMatrix&, Arg1, Arg2>()(*this, x,y);
       }
 
       vec_reference vec() { return Data_; }
@@ -229,8 +229,8 @@ struct Size2<CompressedMatrix<VecOfVec, RowMajor> >
 {
    typedef size_type result_type;
    typedef CompressedMatrix<VecOfVec, RowMajor> const& argument_type;
-   result_type operator()(argument_type x) const 
-   { 
+   result_type operator()(argument_type x) const
+   {
       return x.inner_size();
    }
 };
@@ -248,8 +248,8 @@ struct Size1<CompressedMatrix<VecOfVec, ColMajor> >
 {
    typedef size_type result_type;
    typedef CompressedMatrix<VecOfVec, ColMajor> const& argument_type;
-   result_type operator()(argument_type x) const 
-   { 
+   result_type operator()(argument_type x) const
+   {
       return x.inner_size();
    }
 };
@@ -316,7 +316,7 @@ struct GetMatrixElement_Compressed<
    >::type
 >
 {
-   typedef typename GetVectorElement<typename boost::add_reference<VecOfVec>::type>::result_type 
+   typedef typename GetVectorElement<typename boost::add_reference<VecOfVec>::type>::result_type
    outer_result_type;
    typedef typename GetVectorElement<outer_result_type>::result_type result_type;
    typedef CompressedMatrix<VecOfVec, RowMajor>& first_argument_type;
@@ -330,34 +330,34 @@ struct GetMatrixElement_Compressed<
 };
 
 template <typename VecOfVec, typename Orient>
-struct GetMatrixElement<CompressedMatrix<VecOfVec, Orient> > 
+struct GetMatrixElement<CompressedMatrix<VecOfVec, Orient> >
    : GetMatrixElement_Compressed<CompressedMatrix<VecOfVec, Orient> > {};
 
 template <typename VecOfVec, typename Orient>
-struct GetMatrixElement<CompressedMatrix<VecOfVec, Orient>&> 
+struct GetMatrixElement<CompressedMatrix<VecOfVec, Orient>&>
    : GetMatrixElement_Compressed<CompressedMatrix<VecOfVec, Orient>&> {};
 
 // add_element
 
 template <typename VecOfVec, typename Value>
-struct AddMatrixElement<CompressedMatrix<VecOfVec, RowMajor>, Value> 
+struct AddMatrixElement<CompressedMatrix<VecOfVec, RowMajor>, Value>
 {
    typedef void result_type;
    typedef CompressedMatrix<VecOfVec, RowMajor>& first_argument_type;
-   void operator()(CompressedMatrix<VecOfVec, RowMajor>& m, 
-		   size_type i, size_type j, Value const& x)
+   void operator()(CompressedMatrix<VecOfVec, RowMajor>& m,
+                   size_type i, size_type j, Value const& x)
    {
       add_element(get_element(m.vec(),i), j, x);
    }
 };
 
 template <typename VecOfVec, typename Value>
-struct AddMatrixElement<CompressedMatrix<VecOfVec, ColMajor>, Value> 
+struct AddMatrixElement<CompressedMatrix<VecOfVec, ColMajor>, Value>
 {
    typedef void result_type;
    typedef CompressedMatrix<VecOfVec, RowMajor>& first_argument_type;
-   void operator()(CompressedMatrix<VecOfVec, ColMajor>& m, 
-		   size_type i, size_type j, Value const& x)
+   void operator()(CompressedMatrix<VecOfVec, ColMajor>& m,
+                   size_type i, size_type j, Value const& x)
    {
       add_element(get_element(m.vec(),j), i, x);
    }
@@ -366,24 +366,24 @@ struct AddMatrixElement<CompressedMatrix<VecOfVec, ColMajor>, Value>
 // subtract_element
 
 template <typename VecOfVec, typename Value>
-struct SubtractMatrixElement<CompressedMatrix<VecOfVec, RowMajor>, Value> 
+struct SubtractMatrixElement<CompressedMatrix<VecOfVec, RowMajor>, Value>
 {
    typedef void result_type;
    typedef CompressedMatrix<VecOfVec, RowMajor>& first_argument_type;
-   void operator()(CompressedMatrix<VecOfVec, ColMajor>& m, 
-		   size_type i, size_type j, Value const& x)
+   void operator()(CompressedMatrix<VecOfVec, ColMajor>& m,
+                   size_type i, size_type j, Value const& x)
    {
       subtract_element(get_element(m.vec(),i), j, x);
    }
 };
 
 template <typename VecOfVec, typename Value>
-struct SubtractMatrixElement<CompressedMatrix<VecOfVec, ColMajor>, Value> 
+struct SubtractMatrixElement<CompressedMatrix<VecOfVec, ColMajor>, Value>
 {
    typedef void result_type;
    typedef CompressedMatrix<VecOfVec, RowMajor>& first_argument_type;
-   void operator()(CompressedMatrix<VecOfVec, ColMajor>& m, 
-		   size_type i, size_type j, Value const& x)
+   void operator()(CompressedMatrix<VecOfVec, ColMajor>& m,
+                   size_type i, size_type j, Value const& x)
    {
       subtract_element(get_element(m.vec(),j), i, x);
    }
@@ -392,24 +392,24 @@ struct SubtractMatrixElement<CompressedMatrix<VecOfVec, ColMajor>, Value>
 // zero_element
 
 template <typename VecOfVec, typename Value>
-struct ZeroMatrixElement<CompressedMatrix<VecOfVec, RowMajor>, Value> 
+struct ZeroMatrixElement<CompressedMatrix<VecOfVec, RowMajor>, Value>
 {
    typedef void result_type;
    typedef CompressedMatrix<VecOfVec, RowMajor>& first_argument_type;
-   void operator()(CompressedMatrix<VecOfVec, ColMajor>& m, 
-		   size_type i, size_type j, Value const& x)
+   void operator()(CompressedMatrix<VecOfVec, ColMajor>& m,
+                   size_type i, size_type j, Value const& x)
    {
       zero_element(get_element(m.vec(),i), j, x);
    }
 };
 
 template <typename VecOfVec, typename Value>
-struct ZeroMatrixElement<CompressedMatrix<VecOfVec, ColMajor>, Value> 
+struct ZeroMatrixElement<CompressedMatrix<VecOfVec, ColMajor>, Value>
 {
    typedef void result_type;
    typedef CompressedMatrix<VecOfVec, RowMajor>& first_argument_type;
-   void operator()(CompressedMatrix<VecOfVec, ColMajor>& m, 
-		   size_type i, size_type j, Value const& x)
+   void operator()(CompressedMatrix<VecOfVec, ColMajor>& m,
+                   size_type i, size_type j, Value const& x)
    {
       zero_element(get_element(m.vec(),j), i, x);
    }
@@ -418,24 +418,24 @@ struct ZeroMatrixElement<CompressedMatrix<VecOfVec, ColMajor>, Value>
 // set_element
 
 template <typename VecOfVec, typename Value>
-struct SetMatrixElement<CompressedMatrix<VecOfVec, RowMajor>, Value> 
+struct SetMatrixElement<CompressedMatrix<VecOfVec, RowMajor>, Value>
 {
    typedef void result_type;
    typedef CompressedMatrix<VecOfVec, RowMajor>& first_argument_type;
-   void operator()(CompressedMatrix<VecOfVec, ColMajor>& m, 
-		   size_type i, size_type j, Value const& x)
+   void operator()(CompressedMatrix<VecOfVec, ColMajor>& m,
+                   size_type i, size_type j, Value const& x)
    {
       set_element(get_element(m.vec(),i), j, x);
    }
 };
 
 template <typename VecOfVec, typename Value>
-struct SetMatrixElement<CompressedMatrix<VecOfVec, ColMajor>, Value> 
+struct SetMatrixElement<CompressedMatrix<VecOfVec, ColMajor>, Value>
 {
    typedef void result_type;
    typedef CompressedMatrix<VecOfVec, RowMajor>& first_argument_type;
-   void operator()(CompressedMatrix<VecOfVec, ColMajor>& m, 
-		   size_type i, size_type j, Value const& x)
+   void operator()(CompressedMatrix<VecOfVec, ColMajor>& m,
+                   size_type i, size_type j, Value const& x)
    {
       set_element(get_element(m.vec(),j), i, x);
    }

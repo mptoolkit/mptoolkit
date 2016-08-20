@@ -40,42 +40,45 @@ int main(int argc, char** argv)
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
-      
-      prog_opt::variables_map vm;        
+
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).style(prog_opt::command_line_style::default_style ^
-					  prog_opt::command_line_style::allow_guessing).
-		      run(), vm);
-      prog_opt::notify(vm);    
-      
+                                          prog_opt::command_line_style::allow_guessing).
+                      run(), vm);
+      prog_opt::notify(vm);
+
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("U(1) Spin chain");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
-	 ("H_J1z", "nearest neighbor spin coupling Sz Sz")
-	 ("H_J1t", "nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
-	 ("H_J1" , "nearest neighbor spin exchange = H_J1z + H_J1t")
-	 ("H_J2z", "next-nearest neighbor spin coupling Sz Sz")
-	 ("H_J2t", "next-nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
-	 ("H_J2" , "next-nearest neighbor spin exchange = H_J1z + H_J1t")
-	 ("H_B1" , "nearest neighbor biquadratic spin exchange (S.S)^2")
-	 ("H_B2" , "next-nearest neighbor biquadratic spin exchange (S.S)^2")
-	 ("H_mu" , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
-	 ;
+         ("H_J1z" , "nearest neighbor spin coupling Sz Sz")
+         ("H_J1t" , "nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
+         ("H_J1"  , "nearest neighbor spin exchange = H_J1z + H_J1t")
+         ("H_J2z" , "next-nearest neighbor spin coupling Sz Sz")
+         ("H_J2t" , "next-nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
+         ("H_J2"  , "next-nearest neighbor spin exchange = H_J1z + H_J1t")
+         ("H_B1"  , "nearest neighbor biquadratic spin exchange (S.S)^2")
+         ("H_B2"  , "next-nearest neighbor biquadratic spin exchange (S.S)^2")
+         ("H_mu"  , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
+         ("H_AKLT", "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
+         ;
+
 
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Operators:\n" << OpDescriptions;
-	 std::cerr << "only for spin-1: H_AKLT  - AKLT Hamiltonian H+J1 + (1/3)*H_B1\n";
+         std::cerr << "Operators:\n" << OpDescriptions;
+         std::cerr << "only for spin-1: H_AKLT  - AKLT Hamiltonian H+J1 + (1/3)*H_B1\n";
          return 1;
       }
 
       LatticeSite Site = SpinU1(Spin);
       UnitCell Cell(Site);
       UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
-      InfiniteLattice Lattice(Cell);
+      InfiniteLattice Lattice(&Cell);
 
       Lattice["H_J1z"] = sum_unit(Sz(0)*Sz(1));
       Lattice["H_J1t"] = 0.5 * sum_unit(Sp(0)*Sm(1) + Sm(0)*Sp(1));
@@ -92,9 +95,13 @@ int main(int argc, char** argv)
 
       if (Spin == 1)
       {
-	 Lattice["H_AKLT"] = Lattice["H_J1"] + (1.0/3.0)*Lattice["H_B1"];
-	 Lattice["H_AKLT"].set_description("AKLT Hamiltonian H_J1 + (1/3)*H_B1");
+         Lattice["H_AKLT"] = Lattice["H_J1"] + (1.0/3.0)*Lattice["H_B1"];
       }
+
+      Lattice.func("H_J1t_twist")("theta") =
+         "0.5 * sum_unit(exp(i*theta)*Sp(0)*Sm(1) + exp(-i*theta)*Sm(0)*Sp(1))";
+
+      Lattice.func("H_J1_twist")("theta") = "H_J1z + H_J1t_twist{theta}";
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);

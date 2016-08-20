@@ -66,7 +66,7 @@ LatticeSite Boson2ComponentU1Z2(int MaxN, std::string const& Sym1 = "N", std::st
    {
       for (int m = 0; m <= MaxN; ++m)
       {
-	 Basis.push_back(Coord(n, m), QN(n+m, Parity(m)));
+         Basis.push_back(Coord(n, m), QN(n+m, Parity(m)));
       }
    }
 
@@ -79,20 +79,20 @@ LatticeSite Boson2ComponentU1Z2(int MaxN, std::string const& Sym1 = "N", std::st
    {
       for (int m = 0; m <= MaxN; ++m)
       {
-	 int l1 = Basis.LookupOrNeg(Coord(n, m+1));
-	 int l2 = Basis.LookupOrNeg(Coord(n, m));
-	 if (l1 >= 0 && l2 >= 0) 
-	 {
-	    BH_A(Coord(n, m+1), Coord(n, m)) = std::sqrt(double(m + 1));
-	 }
-	 
-	 l1 = Basis.LookupOrNeg(Coord(n+1, m));
-	 l2 = Basis.LookupOrNeg(Coord(n, m));
-	 if (l1 >= 0 && l2 >= 0) 
-	 {
-	    BH_S(Coord(n+1, m), Coord(n, m)) = std::sqrt(double(n + 1));
-	 }
-	 Z(Basis.LookupOrNeg(Coord(n, m)), Basis.LookupOrNeg(Coord(n, m))) = Parity(m);
+         int l1 = Basis.LookupOrNeg(Coord(n, m+1));
+         int l2 = Basis.LookupOrNeg(Coord(n, m));
+         if (l1 >= 0 && l2 >= 0)
+         {
+            BH_A(Coord(n, m+1), Coord(n, m)) = std::sqrt(double(m + 1));
+         }
+
+         l1 = Basis.LookupOrNeg(Coord(n+1, m));
+         l2 = Basis.LookupOrNeg(Coord(n, m));
+         if (l1 >= 0 && l2 >= 0)
+         {
+            BH_S(Coord(n+1, m), Coord(n, m)) = std::sqrt(double(n + 1));
+         }
+         Z(Basis.LookupOrNeg(Coord(n, m)), Basis.LookupOrNeg(Coord(n, m))) = Parity(m);
       }
    }
 
@@ -107,7 +107,7 @@ LatticeSite Boson2ComponentU1Z2(int MaxN, std::string const& Sym1 = "N", std::st
    N_S = BH_S*B_S;
 
    N = N_A + N_S;
-   
+
    N2_A = N_A * (N_A-I);
    N2_S = N_S * (N_S-I);
 

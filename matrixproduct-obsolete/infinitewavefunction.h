@@ -30,7 +30,7 @@
 // We also keep the quantum number that determines the density (ie, quantum number per
 // unit cell).  This logically fits in at the left hand of the unit cell.
 //
-// By convention, we take C_old to be always diagonal.  In practice, 
+// By convention, we take C_old to be always diagonal.  In practice,
 // this means that C_0.Basis1() == C_0.Basis2().
 //
 // The right basis for C_0 is the same as the right basis of C_R.  The left basis
@@ -86,7 +86,7 @@ class InfiniteWavefunction
 double const InverseTolDefault = 1E-7;
 extern double InverseTol;
 
-// rotate sites in the unit cell, by taking the left-most site and putting 
+// rotate sites in the unit cell, by taking the left-most site and putting
 // it on the right hand side, repeat Count times
 InfiniteWavefunction rotate_left(InfiniteWavefunction const& Psi, int Count);
 

@@ -53,7 +53,7 @@ struct SuperblockMultiplyX
    typedef MatrixOperator argument_type;
 
    SuperblockMultiplyX(MPStateComponent const& Left_,
-		      MPStateComponent const& Right_);
+                      MPStateComponent const& Right_);
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
    {
@@ -65,7 +65,7 @@ struct SuperblockMultiplyX
 
 inline
 SuperblockMultiplyX::SuperblockMultiplyX(MPStateComponent const& Left_,
-				       MPStateComponent const& Right_)
+                                       MPStateComponent const& Right_)
    : Left(Left_), Right(Right_)
 {
 }
@@ -79,7 +79,7 @@ struct SuperblockMultiply
 
    SuperblockMultiply(MPOpComponent const& H_,
                       MPStateComponent const& Left_,
-		      MPStateComponent const& Right_);
+                      MPStateComponent const& Right_);
 
    MPStateComponent operator()(MPStateComponent const& Psi) const
    {
@@ -93,7 +93,7 @@ struct SuperblockMultiply
 inline
 SuperblockMultiply::SuperblockMultiply(MPOpComponent const& H_,
                                        MPStateComponent const& Left_,
-				       MPStateComponent const& Right_)
+                                       MPStateComponent const& Right_)
    : H(H_), Left(Left_), Right(Right_)
 {
 }
@@ -102,11 +102,11 @@ SuperblockMultiply::SuperblockMultiply(MPOpComponent const& H_,
 // the incoming wavefunction.  The RightBlockHam is defined on Psi.front().Basis2().
 // On exit, RightBlockHam is replaced by a container of the left block hamiltonians.
 
-void DoDMRGSweepRight(LinearWavefunction& Psi, 
-		 SimpleMPOperator const& Ham,
-		 std::deque<MPStateComponent>& LeftBlockHam,
-		 std::deque<MPStateComponent>& RightBlockHam,
-		 StatesInfo const& SInfo)
+void DoDMRGSweepRight(LinearWavefunction& Psi,
+                 SimpleMPOperator const& Ham,
+                 std::deque<MPStateComponent>& LeftBlockHam,
+                 std::deque<MPStateComponent>& RightBlockHam,
+                 StatesInfo const& SInfo)
 {
    LinearWavefunction::iterator I = Psi.begin();
    LinearWavefunction::iterator J = I; ++J;
@@ -119,22 +119,22 @@ void DoDMRGSweepRight(LinearWavefunction& Psi,
    {
       MPStateComponent A = local_tensor_prod(R, *J);
       MPOpComponent H = local_tensor_prod(*H1, *H2);
-      
+
       // apply the solver
       int Iterations = 10;
       double Energy = Lanczos(A, SuperblockMultiply(H, LeftBlockHam.back(), RightBlockHam.front()),
-			      Iterations);
+                              Iterations);
 
       // truncate
       AMatSVD SL(A, Tensor::ProductBasis<BasisList, BasisList>(R.LocalBasis(), J->LocalBasis()));
       TruncationInfo Info;
-      AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), 
+      AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(),
                                                                   SInfo, Info);
-      
-      std::cout << "Energy=" << Energy 
-		<< " States=" << Info.KeptStates()
-		<< " TruncError=" << Info.TruncationError()
-		<< " Entropy=" << Info.KeptEntropy() << '\n';
+
+      std::cout << "Energy=" << Energy
+                << " States=" << Info.KeptStates()
+                << " TruncError=" << Info.TruncationError()
+                << " Entropy=" << Info.KeptEntropy() << '\n';
 
       MatrixOperator C;
       SL.ConstructMatrices(SL.begin(), Cutoff, *I, C, R);
@@ -155,7 +155,7 @@ void DoDMRGSweepRight(LinearWavefunction& Psi,
 // the incoming wavefunction.  The RightBlockHam is defined on Psi.front().Basis2().
 // On exit, RightBlockHam is replaced by a container of the left block hamiltonians.
 
-void DoDMRGSweepLeft(LinearWavefunction& Psi, 
+void DoDMRGSweepLeft(LinearWavefunction& Psi,
                      SimpleMPOperator const& Ham,
                      std::deque<MPStateComponent>& LeftBlockHam,
                      std::deque<MPStateComponent>& RightBlockHam,
@@ -175,22 +175,22 @@ void DoDMRGSweepLeft(LinearWavefunction& Psi,
 
       MPStateComponent A = local_tensor_prod(*I, R);
       MPOpComponent H = local_tensor_prod(*H1, *H2);
-      
+
       // apply the solver
       int Iterations = 10;
       double Energy = Lanczos(A, SuperblockMultiply(H, LeftBlockHam.back(), RightBlockHam.front()),
-			      Iterations);
+                              Iterations);
 
       // truncate
       AMatSVD SL(A, Tensor::ProductBasis<BasisList, BasisList>(I->LocalBasis(), R.LocalBasis()));
       TruncationInfo Info;
-      AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), 
+      AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(),
                                                                   SInfo, Info);
-      
-      std::cout << "Energy=" << Energy 
-		<< " States=" << Info.KeptStates()
-		<< " TruncError=" << Info.TruncationError()
-		<< " Entropy=" << Info.KeptEntropy() << '\n';
+
+      std::cout << "Energy=" << Energy
+                << " States=" << Info.KeptStates()
+                << " TruncError=" << Info.TruncationError()
+                << " Entropy=" << Info.KeptEntropy() << '\n';
 
       MatrixOperator C;
       SL.ConstructMatrices(SL.begin(), Cutoff, R, C, *J);
@@ -203,27 +203,27 @@ void DoDMRGSweepLeft(LinearWavefunction& Psi,
 }
 
 void DoStep(LinearWavefunction& Left, MatrixOperator& C, LinearWavefunction& Right,
-		 SimpleMPOperator const& LeftHam, SimpleMPOperator const& RightHam,
-		 std::deque<MPStateComponent>& LeftBlockHam,
-		 std::deque<MPStateComponent>& RightBlockHam,
-		 StatesInfo SInfo)
+                 SimpleMPOperator const& LeftHam, SimpleMPOperator const& RightHam,
+                 std::deque<MPStateComponent>& LeftBlockHam,
+                 std::deque<MPStateComponent>& RightBlockHam,
+                 StatesInfo SInfo)
 {
    MPStateComponent A = local_tensor_prod(prod(Left.get_back(), C), Right.get_front());
    MPOpComponent H = local_tensor_prod(LeftHam.back(), RightHam.front());
-   
+
    int Iterations = 10;
 
    double Energy = Lanczos(A, SuperblockMultiply(H, LeftBlockHam.back(), RightBlockHam.front()),
                            Iterations);
 
    // truncate
-   AMatSVD SL(A, Tensor::ProductBasis<BasisList, BasisList>(Left.get_back().LocalBasis(), 
+   AMatSVD SL(A, Tensor::ProductBasis<BasisList, BasisList>(Left.get_back().LocalBasis(),
                                                             Right.get_front().LocalBasis()));
    TruncationInfo Info;
-   AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), 
+   AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(),
                                                                SInfo, Info);
 
-   std::cout << "Energy=" << Energy 
+   std::cout << "Energy=" << Energy
              << " States=" << Info.KeptStates()
              << " TruncError=" << Info.TruncationError()
              << " Entropy=" << Info.KeptEntropy() << '\n';
@@ -236,15 +236,15 @@ void DoStep(LinearWavefunction& Left, MatrixOperator& C, LinearWavefunction& Rig
 }
 
 void DoIteration(LinearWavefunction& Left, MatrixOperator& C, LinearWavefunction& Right,
-		 SimpleMPOperator const& LeftHam, SimpleMPOperator const& RightHam,
-		 std::deque<MPStateComponent>& LeftBlockHam,
-		 std::deque<MPStateComponent>& RightBlockHam,
+                 SimpleMPOperator const& LeftHam, SimpleMPOperator const& RightHam,
+                 std::deque<MPStateComponent>& LeftBlockHam,
+                 std::deque<MPStateComponent>& RightBlockHam,
                  MatrixOperator& C_old,
-		 StatesInfo SInfo)
+                 StatesInfo SInfo)
 {
    // These two could be done in parallel
    std::deque<MPStateComponent> NewRightBlockHam;
-   NewRightBlockHam.push_front(operator_prod(RightHam.front(), 
+   NewRightBlockHam.push_front(operator_prod(RightHam.front(),
                                              Right.get_front(),
                                              RightBlockHam.front(),
                                              herm(Right.get_front())));
@@ -328,13 +328,13 @@ int main(int argc, char** argv)
    SiteBlock Boundary = CreateSU2SpinSite(0.5);
    SiteBlock Site = CreateSU2SpinSite(0.5);
 
-   MpOpTriangular Ham = TriangularTwoSite(-sqrt(3.0)*Site["S"], 
-   					  Site["S"], 
-   					  Site["I"].TransformsAs());
+   MpOpTriangular Ham = TriangularTwoSite(-sqrt(3.0)*Site["S"],
+                                          Site["S"],
+                                          Site["I"].TransformsAs());
 
-   MpOpTriangular BoundaryHam = TriangularTwoSite(-sqrt(3.0)*Boundary["S"], 
-   						  Boundary["S"], 
-   						  Boundary["I"].TransformsAs());
+   MpOpTriangular BoundaryHam = TriangularTwoSite(-sqrt(3.0)*Boundary["S"],
+                                                  Boundary["S"],
+                                                  Boundary["I"].TransformsAs());
 #endif
 
    // Heisenberg model with no symmetries
@@ -342,12 +342,12 @@ int main(int argc, char** argv)
    SiteBlock Boundary = CreateSpinSite(0.5);
    SiteBlock Site = CreateSpinSite(0.5);
 
-   MpOpTriangular Ham = 0.5 * (TriangularTwoSite(Site["Sp"], Site["Sm"]) + 
-			       TriangularTwoSite(Site["Sm"], Site["Sp"]))
+   MpOpTriangular Ham = 0.5 * (TriangularTwoSite(Site["Sp"], Site["Sm"]) +
+                               TriangularTwoSite(Site["Sm"], Site["Sp"]))
       + TriangularTwoSite(Site["Sz"], Site["Sz"]);
 
-   MpOpTriangular BoundaryHam = 0.5 * (TriangularTwoSite(Boundary["Sp"], Boundary["Sm"]) + 
-				       TriangularTwoSite(Boundary["Sm"], Boundary["Sp"]))
+   MpOpTriangular BoundaryHam = 0.5 * (TriangularTwoSite(Boundary["Sp"], Boundary["Sm"]) +
+                                       TriangularTwoSite(Boundary["Sm"], Boundary["Sp"]))
       + TriangularTwoSite(Boundary["Sz"], Boundary["Sz"]);
 
    TRACE(Ham.data());
@@ -394,28 +394,28 @@ int main(int argc, char** argv)
 
       if (i < 100 || (i%100 == 0))
       {
-	 std::string FileName = "dmrg.psi." + boost::lexical_cast<std::string>(i);
-	 // Convert the wavefunction into an InfiniteWavefunction
-	 //C_RL *= 1.0 / norm_frob(C_RL);  // normalize after the last truncation
-	 InfiniteWavefunction Psi;
-	 Psi.C_old = C_RL;
-	 for (LinearWavefunction::const_iterator I = Left.begin(); I != Left.end(); ++I)
-	 {
-	    Psi.Psi.push_back(*I);
-	 }
+         std::string FileName = "dmrg.psi." + boost::lexical_cast<std::string>(i);
+         // Convert the wavefunction into an InfiniteWavefunction
+         //C_RL *= 1.0 / norm_frob(C_RL);  // normalize after the last truncation
+         InfiniteWavefunction Psi;
+         Psi.C_old = C_RL;
+         for (LinearWavefunction::const_iterator I = Left.begin(); I != Left.end(); ++I)
+         {
+            Psi.Psi.push_back(*I);
+         }
 
-	 MatrixOperator U = C_LR;
-	 for (LinearWavefunction::const_iterator I = Right.begin(); I != Right.end(); ++I)
-	 {
-	    MPStateComponent x = prod(U, *I);
-	    U = TruncateBasis2(x);
-	    Psi.Psi.push_back(x);
-	 }
-	 Psi.C_right = U;
-	 Psi.QShift = QuantumNumbers::QuantumNumber(U.GetSymmetryList());
-	 
-	 pvalue_ptr<InfiniteWavefunction> Out = new InfiniteWavefunction(Psi);
-	 pheap::ExportHeap(FileName, Out);
+         MatrixOperator U = C_LR;
+         for (LinearWavefunction::const_iterator I = Right.begin(); I != Right.end(); ++I)
+         {
+            MPStateComponent x = prod(U, *I);
+            U = TruncateBasis2(x);
+            Psi.Psi.push_back(x);
+         }
+         Psi.C_right = U;
+         Psi.QShift = QuantumNumbers::QuantumNumber(U.GetSymmetryList());
+
+         pvalue_ptr<InfiniteWavefunction> Out = new InfiniteWavefunction(Psi);
+         pheap::ExportHeap(FileName, Out);
       }
    }
 }

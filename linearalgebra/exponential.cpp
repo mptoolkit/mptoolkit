@@ -33,7 +33,7 @@ namespace LinearAlgebra
 namespace Private
 {
 
-void Exponentiate(double t, int Size, std::complex<double> const* H, int ldH, 
+void Exponentiate(double t, int Size, std::complex<double> const* H, int ldH,
                   std::complex<double>* R, int ldR)
 {
    // 2015-06-26: Increased degree of Pade approximation from 6 to 10, to get

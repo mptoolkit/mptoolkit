@@ -114,62 +114,62 @@ int main(int argc, char** argv)
       Line >> State;
       if (!SiteBasisHasLabel(Basis, State))
       {
-	 // currently we allow this case only when the site basis is one-dimensional.
-	 // we could support other cases and disambiguate on quantum number alone,
-	 // but that is a bit messy.
-	 if (Basis.size() != 1)
-	 {
-	    std::cerr << "Error in " << argv[2] << " at line " << LineNum 
-		      << ": '" << State 
+         // currently we allow this case only when the site basis is one-dimensional.
+         // we could support other cases and disambiguate on quantum number alone,
+         // but that is a bit messy.
+         if (Basis.size() != 1)
+         {
+            std::cerr << "Error in " << argv[2] << " at line " << LineNum
+                      << ": '" << State
                       << "' is not a valid site basis element, possible choices are ";
-	    for (std::size_t s = 0; s < Basis.size(); ++s) std::cerr << Basis.Label(s) << ' ';
-	    std::cerr << '\n';
-	    exit(1);
-	 }
-	 q = State;
-	 State = Basis.Label(0);
+            for (std::size_t s = 0; s < Basis.size(); ++s) std::cerr << Basis.Label(s) << ' ';
+            std::cerr << '\n';
+            exit(1);
+         }
+         q = State;
+         State = Basis.Label(0);
       }
       else
       {
-	 Line >> q;
+         Line >> q;
       }
 
-      QuantumNumbers::QuantumNumberList PossibleQ 
+      QuantumNumbers::QuantumNumberList PossibleQ
          = transform_targets(Q, Basis[Basis.Lookup(State)].second);
       if (q == "")
       {
-	 if (PossibleQ.size() != 1)
-	 {
-	    std::cerr << "Error in " << argv[2] << " at line " << LineNum 
-		      << ": a quantum number must be specified\n"
-		      << "   to disambiguate between ";
-	    std::copy(PossibleQ.begin(), PossibleQ.end(), 
+         if (PossibleQ.size() != 1)
+         {
+            std::cerr << "Error in " << argv[2] << " at line " << LineNum
+                      << ": a quantum number must be specified\n"
+                      << "   to disambiguate between ";
+            std::copy(PossibleQ.begin(), PossibleQ.end(),
                       std::ostream_iterator<QuantumNumber>(std::cerr, " "));
-	    std::cerr << '\n';
-	    exit(1);
-	 }
-	 Q = PossibleQ[0];
+            std::cerr << '\n';
+            exit(1);
+         }
+         Q = PossibleQ[0];
       }
       else
       {
-	 bool Found = false;
-	 for (std::size_t n = 0; n < PossibleQ.size() && !Found; ++n)
-	 {
-	    if (PossibleQ[n].ToString() == q)
-	    {
-	       Q = PossibleQ[n];
-	       Found = true;
-	    }
-	 }
-	 if (!Found)
-	 {
-	    std::cerr << "Error in " << argv[2] << " at line " << LineNum
-		      << ": quantum number " << q << " is not possible; possible are ";
-	    std::copy(PossibleQ.begin(), PossibleQ.end(), 
+         bool Found = false;
+         for (std::size_t n = 0; n < PossibleQ.size() && !Found; ++n)
+         {
+            if (PossibleQ[n].ToString() == q)
+            {
+               Q = PossibleQ[n];
+               Found = true;
+            }
+         }
+         if (!Found)
+         {
+            std::cerr << "Error in " << argv[2] << " at line " << LineNum
+                      << ": quantum number " << q << " is not possible; possible are ";
+            std::copy(PossibleQ.begin(), PossibleQ.end(),
                       std::ostream_iterator<QuantumNumber>(std::cerr, " "));
-	    std::cerr << '\n';
-	    exit(1);
-	 }
+            std::cerr << '\n';
+            exit(1);
+         }
       }
       Heights.push_back(std::make_pair(Q, State));
    }
@@ -177,13 +177,13 @@ int main(int argc, char** argv)
    In >> std::skipws >> c;
    if (In)
    {
-      std::cerr << "warning: extraneous input in " << argv[2] 
+      std::cerr << "warning: extraneous input in " << argv[2]
                 << " beyond line " << LineNum << '\n';
    }
 
-   pvalue_ptr<MPWavefunction> Psi 
-      = new MPWavefunction(CreateRank1Wavefunction(OpList->GetLattice(), 
-                                                   Heights.begin(), 
+   pvalue_ptr<MPWavefunction> Psi
+      = new MPWavefunction(CreateRank1Wavefunction(OpList->GetLattice(),
+                                                   Heights.begin(),
                                                    Heights.end()).AsLinearWavefunction());
    pheap::ShutdownPersistent(Psi);
 }

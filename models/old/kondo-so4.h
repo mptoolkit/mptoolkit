@@ -32,7 +32,7 @@ LatticeSite CreateSO4KondoSiteCommon(std::string const& Sym1 = "Q", std::string 
    SymmetryList Symmetry(Sym1+":SU(2),"+Sym2+":SU(2)");
    QuantumNumbers::QNConstructor<QuantumNumbers::SU2,QuantumNumbers::SU2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
-   SiteOperator C_A, C_B, CH_A, CH_B, P, R, N, S, Sf, Sc, ScSf, I, Hu, Pdouble, 
+   SiteOperator C_A, C_B, CH_A, CH_B, P, R, N, S, Sf, Sc, ScSf, I, Hu, Pdouble,
       Ep, Em, Ns, Nh, Pg;
    LatticeSite Site;
 
@@ -67,7 +67,7 @@ LatticeSite CreateSO4KondoSiteCommon(std::string const& Sym1 = "Q", std::string 
    C_B("triplet", "holon")  =  sqrt(2.0);
    C_B("holon",  "singlet") =  sqrt(0.5);
    C_B("holon",  "triplet") = -sqrt(1.5);
-   
+
    // create fermion
    CH_A = adjoint(C_A);
    CH_B = adjoint(C_B);

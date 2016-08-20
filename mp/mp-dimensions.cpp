@@ -40,10 +40,10 @@ void AddSite(SymmetrySizes const& S, BasisList const& Basis, SymmetrySizes& Resu
       {
          QuantumNumberList QList = transform_targets(I->first, Basis[i]);
          QuantumNumberList::const_iterator const Qend = QList.end();
-	 for (QuantumNumberList::const_iterator s = QList.begin(); s != Qend; ++s)
+         for (QuantumNumberList::const_iterator s = QList.begin(); s != Qend; ++s)
          {
-	    Result[*s] += I->second;
-	 }
+            Result[*s] += I->second;
+         }
       }
    }
 }

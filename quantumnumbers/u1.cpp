@@ -28,7 +28,7 @@ U1::U1(std::string const& s)
 {
 }
 
-std::string 
+std::string
 U1::ToString() const
 {
    return ConvertToString(x);
@@ -40,7 +40,7 @@ void U1::Register()
 }
 
 #if 0
-std::string 
+std::string
 U1Projection::ToString() const
 {
    return std::string();

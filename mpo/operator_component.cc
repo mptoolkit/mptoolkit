@@ -18,7 +18,7 @@
 // ENDHEADER
 
 inline
-OperatorComponent& 
+OperatorComponent&
 OperatorComponent::operator+=(OperatorComponent const& x)
 {
    DEBUG_CHECK_EQUAL(LocalBasis1_, x.LocalBasis1_);
@@ -30,7 +30,7 @@ OperatorComponent::operator+=(OperatorComponent const& x)
 }
 
 inline
-OperatorComponent& 
+OperatorComponent&
 OperatorComponent::operator-=(OperatorComponent const& x)
 {
    DEBUG_CHECK_EQUAL(LocalBasis1_, x.LocalBasis1_);
@@ -88,8 +88,8 @@ OperatorComponent::is_lower_triangular() const
    {
       for (const_inner_iterator J = iterate(I); J; ++J)
       {
-	 if (J.index1() > J.index2())
-	    return false;
+         if (J.index1() > J.index2())
+            return false;
       }
    }
    return true;

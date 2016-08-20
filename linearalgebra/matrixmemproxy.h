@@ -33,16 +33,16 @@ namespace LinearAlgebra
 {
 
 template <typename T, typename Orientation,
-	  typename Size1 = tagVariable, 
-	  typename Stride1 = tagVariable, 
-	  typename Size2 = tagVariable, 
-	  typename Stride2 = tagVariable>
+          typename Size1 = tagVariable,
+          typename Stride1 = tagVariable,
+          typename Size2 = tagVariable,
+          typename Stride2 = tagVariable>
 class MatrixMemProxy;
 
 
 template <typename T, typename Orientation>
 class MatrixMemProxy<T, Orientation,
-		     tagVariable, tagVariable, tagVariable, tagVariable>
+                     tagVariable, tagVariable, tagVariable, tagVariable>
 {
    public:
       typedef boost::is_const<T>                    const_proxy;
@@ -55,37 +55,37 @@ class MatrixMemProxy<T, Orientation,
       typedef T const& const_reference;
 
       MatrixMemProxy(T* Data, size_type Size1, difference_type Stride1,
-		     size_type Size2, difference_type Stride2)
-	 : Data_(Data), Size1_(Size1), Size2_(Size2), Stride1_(Stride1), Stride2_(Stride2) 
-     	 {}
-      //	 { TRACE(this)(Data_)(Size1_)(Stride1_)(Size2_)(Stride2_); }
+                     size_type Size2, difference_type Stride2)
+         : Data_(Data), Size1_(Size1), Size2_(Size2), Stride1_(Stride1), Stride2_(Stride2)
+         {}
+      //         { TRACE(this)(Data_)(Size1_)(Stride1_)(Size2_)(Stride2_); }
 
       MatrixMemProxy& operator=(MatrixMemProxy const& Other)
       {
-	 assign(*this, Other);
+         assign(*this, Other);
       }
 
       template <typename U>
       typename boost::enable_if<is_matrix<U>, MatrixMemProxy&>::type
       operator=(U const& x)
       {
-	 // TODO: better temp type
-	 typename make_value<U>::type Temp(x);
+         // TODO: better temp type
+         typename make_value<U>::type Temp(x);
 
-	 assign(*this, Temp);
-	 return *this;
+         assign(*this, Temp);
+         return *this;
       }
 
       template <typename U>
       typename boost::enable_if<is_matrix<U>, MatrixMemProxy&>::type
       operator=(NoAliasProxy<U> const& x)
       {
-	 assign(*this, x.value());
-	 return *this;
+         assign(*this, x.value());
+         return *this;
       }
 
       reference operator()(size_type i, size_type j)
-	 { return Data_[difference_type(i) * Stride1_ + difference_type(j) * Stride2_]; }
+         { return Data_[difference_type(i) * Stride1_ + difference_type(j) * Stride2_]; }
 
       size_type size1() const { return Size1_; }
       size_type size2() const { return Size2_; }
@@ -113,7 +113,7 @@ struct interface<MatrixMemProxy<Scalar, Orientation> >
 // iterators
 
 template <typename T, typename Orient,
-	  typename Size1, typename Stride1, typename Size2, typename Stride2>
+          typename Size1, typename Stride1, typename Size2, typename Stride2>
 struct Iterate<MatrixMemProxy<T, Orient, Size1, Stride1, Size2, Stride2>&>
 {
    typedef MatrixPtrIterator<T, Orient> result_type;
@@ -126,7 +126,7 @@ struct Iterate<MatrixMemProxy<T, Orient, Size1, Stride1, Size2, Stride2>&>
 };
 
 template <typename T, typename Orient,
-	  typename Size1, typename Stride1, typename Size2, typename Stride2>
+          typename Size1, typename Stride1, typename Size2, typename Stride2>
 struct Iterate<MatrixMemProxy<T, Orient, Size1, Stride1, Size2, Stride2> >
 {
    typedef MatrixPtrIterator<T const, Orient> result_type;
@@ -145,7 +145,7 @@ struct TransposeInterface<MatrixMemProxy<T, Orient>, Concepts::StrideMatrix<Tv, 
 {
    typedef MatrixMemProxy<Tv const, typename SwapOrientation<Orient>::type> result_type;
    typedef MatrixMemProxy<T, Orient> argument_type;
-   result_type operator()(argument_type const& m) const 
+   result_type operator()(argument_type const& m) const
       { return result_type(data(m), size2(m), stride2(m), size1(m), stride1(m)); }
 };
 
@@ -158,7 +158,7 @@ struct SwapSortOrderInterface<T, Concepts::StrideMatrix<Tv, Orient, Ti>>
 {
    typedef MatrixMemProxy<Tv const, typename SwapOrientation<Orient>::type> result_type;
    typedef T const& argument_type;
-   result_type operator()(argument_type m) const 
+   result_type operator()(argument_type m) const
       { return result_type(data(m), size1(m), stride1(m), size2(m), stride2(m)); }
 };
 
@@ -167,7 +167,7 @@ struct SwapSortOrderInterface<T&, Concepts::StrideMatrix<Tv, Orient, Ti>>
 {
    typedef MatrixMemProxy<Tv, typename SwapOrientation<Orient>::type> result_type;
    typedef T& argument_type;
-   result_type operator()(argument_type m) const 
+   result_type operator()(argument_type m) const
       { return result_type(data(m), size1(m), stride1(m), size2(m), stride2(m)); }
 };
 
@@ -178,10 +178,10 @@ struct RealInterface<T, Concepts::StrideMatrix<std::complex<Tv>, To, Ti>>
 {
    typedef MatrixMemProxy<Tv const, To> result_type;
    typedef T const& argument_type;
-   result_type operator()(T const& x) const 
-      { return result_type(reinterpret_cast<Tv const*>(data(x)), 
-			   size1(x), 2 * stride1(x),
-			   size2(x), 2 * stride2(x)); }
+   result_type operator()(T const& x) const
+      { return result_type(reinterpret_cast<Tv const*>(data(x)),
+                           size1(x), 2 * stride1(x),
+                           size2(x), 2 * stride2(x)); }
 };
 
 template <typename T, typename Tv, typename To, typename Ti>
@@ -189,10 +189,10 @@ struct RealInterface<T&, Concepts::StrideMatrix<std::complex<Tv>, To, Ti>>
 {
    typedef MatrixMemProxy<Tv, To> result_type;
    typedef T& argument_type;
-   result_type operator()(T& x) const 
-      { return result_type(reinterpret_cast<Tv*>(data(x)), 
-			   size1(x), 2 * stride1(x),
-			   size2(x), 2 * stride2(x)); }
+   result_type operator()(T& x) const
+      { return result_type(reinterpret_cast<Tv*>(data(x)),
+                           size1(x), 2 * stride1(x),
+                           size2(x), 2 * stride2(x)); }
 };
 
 // hack Imag for STRIDE_MATRIX
@@ -202,10 +202,10 @@ struct ImagInterface<T, Concepts::StrideMatrix<std::complex<Tv>, To, Ti>>
 {
    typedef MatrixMemProxy<Tv const, To> result_type;
    typedef T const& argument_type;
-   result_type operator()(T const& x) const 
-      { return result_type(reinterpret_cast<Tv const*>(data(x))+1, 
-			   size1(x), 2 * stride1(x),
-			   size2(x), 2 * stride2(x)); }
+   result_type operator()(T const& x) const
+      { return result_type(reinterpret_cast<Tv const*>(data(x))+1,
+                           size1(x), 2 * stride1(x),
+                           size2(x), 2 * stride2(x)); }
 };
 
 template <typename T, typename Tv, typename To, typename Ti>
@@ -213,10 +213,10 @@ struct ImagInterface<T&, Concepts::StrideMatrix<std::complex<Tv>, To, Ti>>
 {
    typedef MatrixMemProxy<Tv, To> result_type;
    typedef T& argument_type;
-   result_type operator()(T& x) const 
-      { return result_type(reinterpret_cast<Tv*>(data(x))+1, 
-			   size1(x), 2 * stride1(x),
-			   size2(x), 2 * stride2(x)); }
+   result_type operator()(T& x) const
+      { return result_type(reinterpret_cast<Tv*>(data(x))+1,
+                           size1(x), 2 * stride1(x),
+                           size2(x), 2 * stride2(x)); }
 };
 
 
@@ -229,7 +229,7 @@ class MatrixStrideDims1
 {
    public:
       MatrixStrideDims1(size_type Size1)
-	 : Size1_(Size1) {}
+         : Size1_(Size1) {}
 
       size_type size1() const { return Size1_; }
 
@@ -242,7 +242,7 @@ class MatrixStrideDims1<boost::mpl::int_<Size1_> >
 {
    public:
       MatrixStrideDims1(size_type Size1)
-	 { DEBUG_PRECONDITION_EQUAL(Size1, Size1_); }
+         { DEBUG_PRECONDITION_EQUAL(Size1, Size1_); }
 
       size_type size1() const { return Size1_; }
       static size_type const static_size1 = Size1_;
@@ -255,8 +255,8 @@ class MatrixStrideDims2 : public MatrixStrideDims1<Sz1>
 {
    public:
       MatrixStrideDims2(size_type Size1, difference_type Stride1)
-	 : MatrixStrideDims1<Sz1>(Size1),
-	 Stride1_(Stride1) {}
+         : MatrixStrideDims1<Sz1>(Size1),
+         Stride1_(Stride1) {}
 
       difference_type stride1() const { return Stride1_; }
 
@@ -269,8 +269,8 @@ class MatrixStrideDims2<Sz1, boost::mpl::int_<Stride1_> > : public MatrixStrideD
 {
    public:
       MatrixStrideDims2(size_type Size1, difference_type Stride1)
-	 : MatrixStrideDims1<Sz1>(Size1)
-	 { DEBUG_PRECONDITION_EQUAL(Stride1, Stride1_); }
+         : MatrixStrideDims1<Sz1>(Size1)
+         { DEBUG_PRECONDITION_EQUAL(Stride1, Stride1_); }
 
       difference_type stride1() const { return Stride1_; }
       static difference_type const static_stride1 = Stride1_;
@@ -283,9 +283,9 @@ class MatrixStrideDims3 : public MatrixStrideDims2<Sz1, Sr1>
 {
    public:
       MatrixStrideDims3(size_type Size1, difference_type Stride1,
-		       size_type Size2)
-	 : MatrixStrideDims2<Sz1, Sr1>(Size1, Stride1),
-	 Size2_(Size2) {}
+                       size_type Size2)
+         : MatrixStrideDims2<Sz1, Sr1>(Size1, Stride1),
+         Size2_(Size2) {}
 
       size_type size2() const { return Size2_; }
 
@@ -298,9 +298,9 @@ class MatrixStrideDims3<Sz1, Sr1, boost::mpl::int_<Size2_> > : public MatrixStri
 {
    public:
       MatrixStrideDims3(size_type Size1, difference_type Stride1,
-		       size_type Size2)
-	 : MatrixStrideDims2<Sz1, Sr1>(Size1, Stride1)
-	 { DEBUG_PRECONDITION_EQUAL(Size2, Size2_); }
+                       size_type Size2)
+         : MatrixStrideDims2<Sz1, Sr1>(Size1, Stride1)
+         { DEBUG_PRECONDITION_EQUAL(Size2, Size2_); }
 
       size_type size2() const { return Size2_; }
       static size_type const static_size2 = Size2_;
@@ -313,9 +313,9 @@ class MatrixStrideDims : public MatrixStrideDims3<Sz1, Sr1, Sz2>
 {
    public:
       MatrixStrideDims(size_type Size1, difference_type Stride1,
-		       size_type Size2, difference_type Stride2)
-	 : MatrixStrideDims3<Sz1, Sr1, Sz2>(Size1, Stride1, Size2),
-	 Stride2_(Stride2) {}
+                       size_type Size2, difference_type Stride2)
+         : MatrixStrideDims3<Sz1, Sr1, Sz2>(Size1, Stride1, Size2),
+         Stride2_(Stride2) {}
 
       difference_type stride2() const { return Stride2_; }
 
@@ -324,14 +324,14 @@ class MatrixStrideDims : public MatrixStrideDims3<Sz1, Sr1, Sz2>
 };
 
 template <typename Sz1, typename Sr1, typename Sz2, int Stride2_>
-class MatrixStrideDims<Sz1, Sr1, Sz2, boost::mpl::int_<Stride2_> > 
+class MatrixStrideDims<Sz1, Sr1, Sz2, boost::mpl::int_<Stride2_> >
    : public MatrixStrideDims3<Sz1, Sr1, Sz2>
 {
    public:
       MatrixStrideDims(size_type Size1, difference_type Stride1,
-		       size_type Size2, difference_type Stride2)
-	 : MatrixStrideDims3<Sz1, Sr1, Sz2>(Size1, Stride1, Size2)
-	 { DEBUG_PRECONDITION_EQUAL(Stride2, Stride2_); }
+                       size_type Size2, difference_type Stride2)
+         : MatrixStrideDims3<Sz1, Sr1, Sz2>(Size1, Stride1, Size2)
+         { DEBUG_PRECONDITION_EQUAL(Stride2, Stride2_); }
 
       difference_type stride2() const { return Stride2_; }
       static difference_type const static_stride2 = Stride2_;
@@ -341,25 +341,25 @@ class MatrixStrideDims<Sz1, Sr1, Sz2, boost::mpl::int_<Stride2_> >
 
 // linear stride case
 template <typename T, typename Size1, int Stride1_, int Size2_, int Stride2_>
-struct MatrixStrideRowIterator<T, Size1, 
-			       boost::mpl::int_<Stride1_>, 
-			       boost::mpl::int_<Size2_>, 
-			       boost::mpl::int_<Stride2_>, 
-			       typename boost::enable_if<Stride1_ == Size2_ * Stride2_>::type>
+struct MatrixStrideRowIterator<T, Size1,
+                               boost::mpl::int_<Stride1_>,
+                               boost::mpl::int_<Size2_>,
+                               boost::mpl::int_<Stride2_>,
+                               typename boost::enable_if<Stride1_ == Size2_ * Stride2_>::type>
 {
-   //   typedef 
+   //   typedef
 };
 
 
 // contiguous stride case
 template <typename T, typename Size1, int Stride1_, int Size2_>
-struct MatrixStrideRowIterator<T, Size1, 
-			       boost::mpl::int_<Stride1_>, 
-			       boost::mpl::int_<Size2_>, 
-			       boost::mpl::int_<1>, 
-			       typename boost::enable_if<Stride1_ == Size2_>::type>
+struct MatrixStrideRowIterator<T, Size1,
+                               boost::mpl::int_<Stride1_>,
+                               boost::mpl::int_<Size2_>,
+                               boost::mpl::int_<1>,
+                               typename boost::enable_if<Stride1_ == Size2_>::type>
 {
-   //   typedef 
+   //   typedef
 };
 
 #endif

@@ -43,7 +43,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
    {
       for (std::size_t j = 0; j < Ortho.size(); ++j)
       {
-	 r -= inner_prod(Ortho[j], r) * Ortho[j];
+         r -= inner_prod(Ortho[j], r) * Ortho[j];
       }
    }
 
@@ -63,21 +63,21 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       // DGKS-like correction
       if (UseDGKS)
       {
-	 for (std::size_t j = 0; j < Ortho.size(); ++j)
-	 {
-	    r -= inner_prod(Ortho[j], r) * Ortho[j];
-	 }
+         for (std::size_t j = 0; j < Ortho.size(); ++j)
+         {
+            r -= inner_prod(Ortho[j], r) * Ortho[j];
+         }
       }
       if (i > 1)
-	 r = r - Beta[i-1] * v[i-1];
+         r = r - Beta[i-1] * v[i-1];
       Alpha[i] = real(inner_prod(v[i], r));
       r = r - Alpha[i] * v[i];
       Beta[i] = norm_frob(r);
 
       if (Beta[i] <= tol)
       {
-	++i;
-	break;
+        ++i;
+        break;
       }
    }
    Iterations = i-1;

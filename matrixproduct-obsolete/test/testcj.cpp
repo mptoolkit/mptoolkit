@@ -36,10 +36,10 @@ struct DoMultiply
       Vector Result(size1(M_), 0.0);
       for (int i = 0; i < size1(M_); ++i)
       {
-	 for (int j = 0; j < size2(M_); ++j)
-	 {
-	    Result[i] += M_(i,j) * v[j];
-	 }
+         for (int j = 0; j < size2(M_); ++j)
+         {
+            Result[i] += M_(i,j) * v[j];
+         }
       }
       return Result;
    }

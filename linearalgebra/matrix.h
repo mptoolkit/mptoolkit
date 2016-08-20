@@ -45,18 +45,18 @@ struct MatrixDimensions
    // transpose is trivial, and the transpose must have a stride1 that
    // is not 1.  Thus, we do a check and set the original stride2 to be size1 for this case.
    // This should be otherwise harmless.
-   MatrixDimensions(size_type Rows, size_type Cols, RowMajor) 
+   MatrixDimensions(size_type Rows, size_type Cols, RowMajor)
       : size1(Rows), size2(Cols), stride1(Cols), stride2(Cols == 1 ? Rows : 1) {}
    //      : size1(Rows), size2(Cols), stride1(Cols), stride2(Rows) {}
 
    // FIXME: is this correct?
-   MatrixDimensions(size_type Rows, size_type Cols, ColMajor) 
+   MatrixDimensions(size_type Rows, size_type Cols, ColMajor)
       : size1(Rows), size2(Cols), stride1(Rows == 1 ? Cols : 1), stride2(Rows) {}
    //      : size1(Rows), size2(Cols), stride1(Cols), stride2(Rows) {}
-   
+
    // TODO: the above note applies to this ctor too.
-   //   MatrixDimensions(size_type Rows, size_type Cols, 
-   //		    difference_type RowStride, difference_type ColStride)
+   //   MatrixDimensions(size_type Rows, size_type Cols,
+   //               difference_type RowStride, difference_type ColStride)
    //      : size1(Rows), size2(Cols), stride1(RowStride), stride2(ColStride) {}
 
    size_type size() const { return size1*size2; }
@@ -64,11 +64,11 @@ struct MatrixDimensions
 
 #if defined(USE_PSTREAM)
 template <int Format>
-PStream::opstreambuf<Format>& 
+PStream::opstreambuf<Format>&
 operator<<(PStream::opstreambuf<Format>& out, MatrixDimensions const& d);
 
 template <int Format>
-PStream::ipstreambuf<Format>& 
+PStream::ipstreambuf<Format>&
 operator>>(PStream::opstreambuf<Format>& in, MatrixDimensions& d);
 #endif
 
@@ -106,13 +106,13 @@ class MatrixRef : public MatrixBase<typename MatrixRefDerivedType<Scalar, Orient
       typedef Scalar const& const_reference;
       typedef Scalar const* const_pointer;
 
-      MatrixRef(MatrixRef const& V) 
-	: Block(V.Block) {}
+      MatrixRef(MatrixRef const& V)
+        : Block(V.Block) {}
 
       MatrixRef& operator=(MatrixRef const& V)
       {
-	 this->assign(V);   // safe because assign() calls begin(), which calls cow()
-	 return *this;
+         this->assign(V);   // safe because assign() calls begin(), which calls cow()
+         return *this;
       }
 
       template <typename U>
@@ -127,13 +127,13 @@ class MatrixRef : public MatrixBase<typename MatrixRefDerivedType<Scalar, Orient
       size_type size1() const { return Block.local_header().size1; }
       size_type size2() const { return Block.local_header().size2; }
 
-      Scalar const& operator()(size_type i, size_type j) const 
-      { DEBUG_RANGE_CHECK_OPEN(i, 0U, this->size1()); 
+      Scalar const& operator()(size_type i, size_type j) const
+      { DEBUG_RANGE_CHECK_OPEN(i, 0U, this->size1());
         DEBUG_RANGE_CHECK_OPEN(j, 0U, this->size2());
-	return *(Block.get() + this->stride1() * i + this->stride2() * j); }
+        return *(Block.get() + this->stride1() * i + this->stride2() * j); }
 
       Scalar& operator()(size_type i, size_type j)
-      { DEBUG_RANGE_CHECK_OPEN(i, 0U, this->size1()); 
+      { DEBUG_RANGE_CHECK_OPEN(i, 0U, this->size1());
         DEBUG_RANGE_CHECK_OPEN(j, 0U, this->size2());
         this->cow(); return *(Block.get() + this->stride1() * i + this->stride2() * j); }
 
@@ -146,29 +146,29 @@ class MatrixRef : public MatrixBase<typename MatrixRefDerivedType<Scalar, Orient
       // members defined in MatrixRef
       void inplace_transpose();
 
-      difference_type leading_dimension() const 
+      difference_type leading_dimension() const
          { return std::max(Block.local_header().stride1, Block.local_header().stride2); }
 
    protected:
-      block_type const& block() const { return Block; } 
+      block_type const& block() const { return Block; }
       block_type& block() { return Block; }  // danger: this does not call cow()
 
       MatrixRef() : Block(NoHeader(), MatrixDimensions(0,0, Orientation())) {}
 
       explicit MatrixRef(size_type Rows, size_type Cols)
-	: Block(Rows*Cols, NoHeader(), MatrixDimensions(Rows, Cols, Orientation())) {}
+        : Block(Rows*Cols, NoHeader(), MatrixDimensions(Rows, Cols, Orientation())) {}
 
       explicit MatrixRef(size_type Rows, size_type Cols, Scalar const& Fill)
-                  : Block(Rows*Cols, Fill, NoHeader(), MatrixDimensions(Rows, Cols, Orientation())) 
+                  : Block(Rows*Cols, Fill, NoHeader(), MatrixDimensions(Rows, Cols, Orientation()))
                { }
-         //         : Block(Rows*Cols, NoHeader(), MatrixDimensions(Rows, Cols, Orientation())) 
+         //         : Block(Rows*Cols, NoHeader(), MatrixDimensions(Rows, Cols, Orientation()))
    //{ LinearAlgebra::Fill<MatrixRef<Scalar, Orientation, Derived>&, Scalar>()(*this, Fill); }
-  
+
       explicit MatrixRef(block_type const& Block_) : Block(Block_) {}
 
       void resize(size_type NewRows, size_type NewCols);
-  
-      void swap(MatrixRef& Other) 
+
+      void swap(MatrixRef& Other)
         { this->cow(); Other.cow(); std::swap(Block, Other.Block); }
 
    private:
@@ -236,7 +236,7 @@ class Matrix : public MatrixRef<Scalar, Orientation, Matrix<Scalar, Orientation>
       Matrix(size_type Rows, size_type Cols, Iter first, Iter last);
 
       Matrix(Matrix const& V)
-	: MatrixRef<Scalar, Orientation, Matrix<Scalar, Orientation> >(V.block().copy()) { }
+        : MatrixRef<Scalar, Orientation, Matrix<Scalar, Orientation> >(V.block().copy()) { }
 
       template <typename U>
       Matrix(U const& x, typename boost::enable_if<is_matrix<U> >::type* dummy = 0);
@@ -252,7 +252,7 @@ class Matrix : public MatrixRef<Scalar, Orientation, Matrix<Scalar, Orientation>
       operator=(NoAliasProxy<U> const& x);
 
       void resize(size_type NewRows, size_type NewCols)
-	{ this->MatrixRef<Scalar, Orientation, Matrix<Scalar, Orientation> >::resize(NewRows, NewCols); }
+        { this->MatrixRef<Scalar, Orientation, Matrix<Scalar, Orientation> >::resize(NewRows, NewCols); }
 
       void swap(Matrix& Other) { this->MatrixRef<Scalar, Orientation>::swap(Other); }
 };

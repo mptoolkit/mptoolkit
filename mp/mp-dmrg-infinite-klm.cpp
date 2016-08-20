@@ -75,7 +75,7 @@ MPOperator ConstructHamiltonian(int L, double Jk, double Jh)
    for (int i = 1; i <= L; ++i)
    {
       SiteBlock const& bSiteC = (i % 2 == 1) ? bSiteA : bSiteB;  // bipartite
-      
+
       std::string Site = boost::lexical_cast<std::string>(i);
       MyLattice.Append("0," + Site, bSiteS);
       MyLattice.Append("1," + Site, bSiteC);
@@ -87,7 +87,7 @@ MPOperator ConstructHamiltonian(int L, double Jk, double Jh)
    OperatorAtSite<OperatorList const, int, int> CH(OpList, "CH");
    OperatorAtSite<OperatorList const, int, int> S(OpList, "S");
    MPOperator Hamiltonian;
-   
+
    QuantumNumber Ident(MyLattice.GetSymmetryList());  // the scalar quantum number
    // hopping matrix elements
 
@@ -113,7 +113,7 @@ MPOperator ConstructHamiltonian(int L, double Jk, double Jh)
 
 QuantumNumber GetTarget(QuantumNumber const& FinalTarget, int FinalL, int L)
 {
-   QuantumNumbers::QNConstructor<QuantumNumbers::SU2,QuantumNumbers::SU2> 
+   QuantumNumbers::QNConstructor<QuantumNumbers::SU2,QuantumNumbers::SU2>
       QN(FinalTarget.GetSymmetryList());
 
    half_int s_target = FinalTarget.Get<QuantumNumbers::SU2>("S").j;
@@ -151,41 +151,41 @@ int main(int argc, char** argv)
       std::string OutputPsi;
       double Jk;
       double Jh = 0;
-      
+
       std::cout.precision(14);
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("max-states,m", prog_opt::value<int>(&MaxStates), 
-	  ("Maximum number of states to keep [default "
-	   + boost::lexical_cast<std::string>(MaxStates)+"]").c_str())
-         ("min-states", prog_opt::value<int>(&MinStates), 
-	  ("Minimum number of states to keep [default "
-	   +boost::lexical_cast<std::string>(MinStates)+"]").c_str())
-         ("min-trunc,t", prog_opt::value<double>(&MinTrunc), 
+         ("max-states,m", prog_opt::value<int>(&MaxStates),
+          ("Maximum number of states to keep [default "
+           + boost::lexical_cast<std::string>(MaxStates)+"]").c_str())
+         ("min-states", prog_opt::value<int>(&MinStates),
+          ("Minimum number of states to keep [default "
+           +boost::lexical_cast<std::string>(MinStates)+"]").c_str())
+         ("min-trunc,t", prog_opt::value<double>(&MinTrunc),
           "Minimum desired truncation error (overriden by max-states) [default 0]")
-	 ("mix-factor,f", prog_opt::value<double>(&MixFactor), 
-	  "Mixing coefficient for the density matrix [default 0.01]")
-	 ("size,s", prog_opt::value(&TargetL),
-	  "Target lattice size (must be multiple of unit cell size) [required]")
-	 ("target,r", prog_opt::value<std::string>(&TargetStateStr),
-	  "Target quantum number")
-	 ("out,o", prog_opt::value(&OutputPsi),
-	  "Filename for the output wavefunction [required]")
-	 ("Jk", prog_opt::value(&Jk), "Kondo coupling")
-	 ("Jh", prog_opt::value(&Jh), 
-	  ("Direct Heisenberg coupling [default "
-	   + boost::lexical_cast<std::string>(Jh) + "]").c_str())
-	 ;
-      
+         ("mix-factor,f", prog_opt::value<double>(&MixFactor),
+          "Mixing coefficient for the density matrix [default 0.01]")
+         ("size,s", prog_opt::value(&TargetL),
+          "Target lattice size (must be multiple of unit cell size) [required]")
+         ("target,r", prog_opt::value<std::string>(&TargetStateStr),
+          "Target quantum number")
+         ("out,o", prog_opt::value(&OutputPsi),
+          "Filename for the output wavefunction [required]")
+         ("Jk", prog_opt::value(&Jk), "Kondo coupling")
+         ("Jh", prog_opt::value(&Jh),
+          ("Direct Heisenberg coupling [default "
+           + boost::lexical_cast<std::string>(Jh) + "]").c_str())
+         ;
+
       prog_opt::options_description opt;
       opt.add(desc);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") || !vm.count("size") || !vm.count("out") || !vm.count("Jk"))
       {
@@ -215,7 +215,7 @@ int main(int argc, char** argv)
       std::vector<SiteBasis> UnitCellRight(UnitCell.begin()+SplitLoc, UnitCell.end());
 
       std::cout << "Splitting the unit cell into partition ("
-		<< UnitCellLeft.size() << "," << UnitCellRight.size() << ")\n";
+                << UnitCellLeft.size() << "," << UnitCellRight.size() << ")\n";
 
       // Initial lattice
       int L = UnitCell.size();
@@ -224,12 +224,12 @@ int main(int argc, char** argv)
       std::swap(UnitCellLeft, UnitCellRight);
       while (L < 6)
       {
-	 L += UnitCell.size();
-	 LeftStartLattice.insert(LeftStartLattice.end(), 
-				 UnitCellLeft.begin(), UnitCellLeft.end());
-	 RightStartLattice.insert(RightStartLattice.begin(), 
-				  UnitCellRight.begin(), UnitCellRight.end());
-	 std::swap(UnitCellLeft, UnitCellRight);
+         L += UnitCell.size();
+         LeftStartLattice.insert(LeftStartLattice.end(),
+                                 UnitCellLeft.begin(), UnitCellLeft.end());
+         RightStartLattice.insert(RightStartLattice.begin(),
+                                  UnitCellRight.begin(), UnitCellRight.end());
+         std::swap(UnitCellLeft, UnitCellRight);
       }
       QuantumNumber CurrentTarget = GetTarget(Target, TargetL, L);
 
@@ -242,16 +242,16 @@ int main(int argc, char** argv)
       RightBasis.push_back(QuantumNumber(MySList), 1);
       for (unsigned i = 0; i < LeftStartLattice.size(); ++i)
       {
-	 Psi.PushLeft(MPStateComponent::ConstructFullBasis2(LeftBasis, 
-							    LeftStartLattice[i].Basis()));
+         Psi.PushLeft(MPStateComponent::ConstructFullBasis2(LeftBasis,
+                                                            LeftStartLattice[i].Basis()));
          TRACE(Psi.Left())(scalar_prod(herm(Psi.Left()),Psi.Left()));
-	 LeftBasis = Psi.Left().Basis2();
+         LeftBasis = Psi.Left().Basis2();
       }
       for (int i = RightStartLattice.size()-1; i >= 0; --i)
       {
-	 Psi.PushRight(MPStateComponent::ConstructFullBasis1(RightStartLattice[i].Basis(), 
-							     RightBasis));
-	 RightBasis = Psi.Right().Basis1();
+         Psi.PushRight(MPStateComponent::ConstructFullBasis1(RightStartLattice[i].Basis(),
+                                                             RightBasis));
+         RightBasis = Psi.Right().Basis1();
       }
       // Initial Center matrix
       Psi.Center() = MakeRandomMatrixOperator(Psi.Left().Basis2(), Psi.Right().Basis1());
@@ -271,27 +271,27 @@ int main(int argc, char** argv)
 
       while (L < TargetL)
       {
-	 // insert sites
-	 L += UnitCell.size();
-	 CurrentTarget = GetTarget(Target, TargetL, L);
+         // insert sites
+         L += UnitCell.size();
+         CurrentTarget = GetTarget(Target, TargetL, L);
 
-	 std::cout << "Constructing Hamiltonian" << std::endl;
-	 MPOperator Ham = ConstructHamiltonian(L, Jk, Jh);
-	 std::cout << "Inserting sites" << std::endl;
-	 dmrg.InsertSitesDeltaShift(UnitCellLeft, UnitCellRight, CurrentTarget, Ham);
+         std::cout << "Constructing Hamiltonian" << std::endl;
+         MPOperator Ham = ConstructHamiltonian(L, Jk, Jh);
+         std::cout << "Inserting sites" << std::endl;
+         dmrg.InsertSitesDeltaShift(UnitCellLeft, UnitCellRight, CurrentTarget, Ham);
 
-	 std::swap(UnitCellLeft, UnitCellRight);
+         std::swap(UnitCellLeft, UnitCellRight);
 
-	 std::cout << "Solving" << std::endl;
-	 double Energy = dmrg.Solve(NumIter);
-	 std::cout << "Truncating" << std::endl;
-	 dmrg.TruncateLeft(MinStates, MaxStates, MinTrunc, MixFactor);
-	 dmrg.TruncateRight(MinStates, MaxStates, MinTrunc, MixFactor);
+         std::cout << "Solving" << std::endl;
+         double Energy = dmrg.Solve(NumIter);
+         std::cout << "Truncating" << std::endl;
+         dmrg.TruncateLeft(MinStates, MaxStates, MinTrunc, MixFactor);
+         dmrg.TruncateRight(MinStates, MaxStates, MinTrunc, MixFactor);
 
-	 std::cout << "L=" << L << ", Target=" << CurrentTarget
-		   << ", Energy=" << Energy << std::endl;
+         std::cout << "L=" << L << ", Target=" << CurrentTarget
+                   << ", Energy=" << Energy << std::endl;
 
-	 DEBUG_TRACE(dmrg.Wavefunction().LeftVacuumBasis());
+         DEBUG_TRACE(dmrg.Wavefunction().LeftVacuumBasis());
       }
 
       std::cout << "Finished." << std::endl;

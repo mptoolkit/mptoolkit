@@ -19,8 +19,8 @@
 
 template <typename T>
 Lattice::Lattice(SiteBlock const& s, T const& Coord)
-   : Data_(s), 
-     Coordinates_(1, boost::lexical_cast<std::string>(Coord)), 
+   : Data_(s),
+     Coordinates_(1, boost::lexical_cast<std::string>(Coord)),
      CoordinatesFixed_(false)
 {
 }

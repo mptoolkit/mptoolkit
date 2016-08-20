@@ -81,7 +81,7 @@ void DoMinimization(double w, double E,  double Eta, Matrix<complex> const& Iden
    Matrix<complex> Cv = LinearSolveHPD(LHS, RHS_vec);
 
    // residual norm
-   double r2 = inner_prod(Cv, Matrix<complex>((LHS-H2+RealH2)*Cv)).real() 
+   double r2 = inner_prod(Cv, Matrix<complex>((LHS-H2+RealH2)*Cv)).real()
       + inner_prod(Lv, Matrix<complex>(Ident*Lv)).real()
       - 2.0*inner_prod(Cv, Matrix<complex>(RHS*Lv)).real();
 
@@ -113,8 +113,8 @@ void DoMinimization(double w, double E,  double Eta, Matrix<complex> const& Iden
                 << '\n';
    else
       std::cout << std::setw(20) << w
-                << "    " << std::setw(20) << G.real() 
-                << "    " << std::setw(20) << G.imag() 
+                << "    " << std::setw(20) << G.real()
+                << "    " << std::setw(20) << G.imag()
                 << "    " << std::setw(20) << r2
                 << '\n';
 }
@@ -177,10 +177,10 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") || vm.count("ident") == 0 || vm.count("ham") == 0
           || vm.count("Broadening") == 0 || vm.count("GroundstateEnergy") == 0
@@ -194,9 +194,9 @@ int main(int argc, char** argv)
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
-      
-      if (Verbose >= 1) 
-         std::cerr << "mp-min-resid: Loading matrix elements of identity operator from file " 
+
+      if (Verbose >= 1)
+         std::cerr << "mp-min-resid: Loading matrix elements of identity operator from file "
                    << IdentFileStr << '\n';
       Matrix<complex> Ident = ReadHermitianMatrix(IdentFileStr);
       if (Verbose >= 2)
@@ -206,10 +206,10 @@ int main(int argc, char** argv)
       if (min(IdentEigen) < std::numeric_limits<double>::epsilon() * 10)
       {
          PANIC("Identity operator is not positive definite")(IdentEigen);
-      }           
+      }
 
-      if (Verbose >= 1) 
-         std::cerr << "mp-min-resid: Loading matrix elements of Hamiltonian operator from file " 
+      if (Verbose >= 1)
+         std::cerr << "mp-min-resid: Loading matrix elements of Hamiltonian operator from file "
                    << HFileStr << '\n';
       Matrix<complex> H = ReadHermitianMatrix(HFileStr);
       if (Verbose >= 2)
@@ -221,7 +221,7 @@ int main(int argc, char** argv)
       Matrix<complex> H2, RealH2;
       if (vm.count("ham2"))
       {
-         if (Verbose >= 1) 
+         if (Verbose >= 1)
             std::cerr << "mp-min-resid: Loading matrix elements of Hamiltonian"
                " squared operator from file " << H2FileStr << '\n';
          RealH2 = ReadHermitianMatrix(H2FileStr);
@@ -250,7 +250,7 @@ int main(int argc, char** argv)
          H2 = RealH2;
 
       // The lanczos vector is (1,0,0,...) in this basis.
-      // Actually, better make it a matrix 
+      // Actually, better make it a matrix
       Matrix<complex> Lv(size1(H), 1, 0.0); Lv(0,0) = 1.0;
 
       if (UseOrthoBasis)

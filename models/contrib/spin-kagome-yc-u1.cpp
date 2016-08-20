@@ -18,7 +18,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-// Description: spin systems on kagome lattices with YC structure and efficient way of numbering; 
+// Description: spin systems on kagome lattices with YC structure and efficient way of numbering;
 // U(1)-symmetric.
 
 // YC configuration of a kagome lattice.
@@ -71,15 +71,15 @@ int main(int argc, char** argv)
       desc.add_options()
          ("help", "show this help message")
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
-	 ("width,w", prog_opt::value(&w), "width of the cylinder, should be even [default 4]")
+         ("width,w", prog_opt::value(&w), "width of the cylinder, should be even [default 4]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
       prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).style(prog_opt::command_line_style::default_style ^
-					  prog_opt::command_line_style::allow_guessing).
-		      run(), vm);
+                                          prog_opt::command_line_style::allow_guessing).
+                      run(), vm);
       prog_opt::notify(vm);
 
       if (vm.count("help") || !vm.count("out"))
@@ -87,16 +87,16 @@ int main(int argc, char** argv)
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Constructs a kagome lattice in the YC configuration with an\n"
-		   << "efficient way of numbering of 1D chain. The default unit-cell size\n" 
+         std::cerr << "Constructs a kagome lattice in the YC configuration with an\n"
+                   << "efficient way of numbering of 1D chain. The default unit-cell size\n"
                    << "is '(3/2)*width' value.\n"
                    << "Operators:\n"
-		   << "H_J1    - nearest neighbor spin exchange\n"
-		   << "H_J2    - next-nearest neighbor spin exchange\n"
+                   << "H_J1    - nearest neighbor spin exchange\n"
+                   << "H_J2    - next-nearest neighbor spin exchange\n"
                    << "Functions:\n"
                    << "H( J1 = NN coupling strength, J2 = NNN coupling strength, theta = atan(J2/J1)\n"
                    << "  \"radians\", alpha = J2/J1 )\n"
-	    ;
+            ;
          return 1;
       }
 
@@ -106,18 +106,16 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinU1(Spin);
       UnitCell Cell = repeat(Site, u);
+      InfiniteLattice Lattice(&Cell);
 
       // Add some operators on the unit cell
       UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
       for (int i = 0; i < u; ++i)
       {
-	 Sp += Sp[i];     // total spin on a leg of cylinder
-	 Sm += Sm[i];     // total spin on a leg of cylinder
-	 Sz += Sz[i];     // total spin on a leg of cylinder
+         Sp += Sp[i];     // total spin on a leg of cylinder
+         Sm += Sm[i];     // total spin on a leg of cylinder
+         Sz += Sz[i];     // total spin on a leg of cylinder
       }
-
-      // Now we construct the InfiniteLattice,
-      InfiniteLattice Lattice(Cell);
 
       unsigned num_bonds_j1 = 0;
       unsigned num_bonds_j2 = 0;
@@ -126,10 +124,10 @@ int main(int argc, char** argv)
       UnitCellMPO H1, H2;
       for (int i = 0; i < u; ++i)
       {
-	 // Nearest neighbor bonds
+         // Nearest neighbor bonds
 
-	 // vertical bonds:
-	 if ( i%3 != 1 )
+         // vertical bonds:
+         if ( i%3 != 1 )
          {
            if ( i%3 == 0 )
              H1 += Sz(0)[i]*Sz(0)[i+2] + 0.5 * (Sp(0)[i]*Sm(0)[i+2] + Sm(0)[i]*Sp(0)[i+2]);
@@ -138,8 +136,8 @@ int main(int argc, char** argv)
            ++num_bonds_j1;
          }
 
-	 // 60 degree bonds:
-	 if ( i%3 == 0 )
+         // 60 degree bonds:
+         if ( i%3 == 0 )
            {
              H1 += Sz(0)[i]*Sz(0)[i+1] + 0.5 * (Sp(0)[i]*Sm(0)[i+1] + Sm(0)[i]*Sp(0)[i+1]);
              ++num_bonds_j1;
@@ -147,7 +145,7 @@ int main(int argc, char** argv)
          else if ( i%3 == 1 )
            {
              H1 += Sz(0)[i]*Sz(1)[i+1] + 0.5 * (Sp(0)[i]*Sm(1)[i+1] + Sm(0)[i]*Sp(1)[i+1]);
-	     H1 += Sz(0)[i]*Sz(1)[(i+2)%u] + 0.5 * (Sp(0)[i]*Sm(1)[(i+2)%u] + Sm(0)[i]*Sp(1)[(i+2)%u]);
+             H1 += Sz(0)[i]*Sz(1)[(i+2)%u] + 0.5 * (Sp(0)[i]*Sm(1)[(i+2)%u] + Sm(0)[i]*Sp(1)[(i+2)%u]);
              num_bonds_j1 += 2;
            }
          else if ( i%3 == 2 )
@@ -156,9 +154,9 @@ int main(int argc, char** argv)
              ++num_bonds_j1;
            }
 
-	 // Next-nearest neighbor bonds:
-	 // horizontal bonds:
-	 if ( i%3 != 1 )
+         // Next-nearest neighbor bonds:
+         // horizontal bonds:
+         if ( i%3 != 1 )
          {
            if ( i%3 == 0 )
              H2 += Sz(0)[i]*Sz(1)[i+2] + 0.5 * (Sp(0)[i]*Sm(1)[i+2] + Sm(0)[i]*Sp(1)[i+2]);
@@ -193,7 +191,7 @@ int main(int argc, char** argv)
       Lattice["H_J2"] = sum_unit(H2);
 
       Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
-	 = "J1*H_J1 + J2*H_J2";
+         = "J1*H_J1 + J2*H_J2";
 
       // save the lattice
       pheap::ExportObject(FileName, Lattice);

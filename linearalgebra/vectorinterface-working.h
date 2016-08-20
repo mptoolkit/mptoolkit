@@ -81,10 +81,10 @@ namespace LinearAlgebra
 //
 // Currently, it is not possible for a vector to satisfy the LocalVector
 // interface without also satisfying either the DenseVector or CompressedVector
-// interface.  
-// 
+// interface.
+//
 // The interface satisfied by all iterators is an indexed iterator,
-// with dereference, a member function index() that returns the 
+// with dereference, a member function index() that returns the
 // index of the iterator location, and a conversion to bool
 // that returns true if the iterator is non-singular, false otherwise.
 // Whether this is a forward iterator or bidirectional is yet to be determined;
@@ -285,19 +285,19 @@ struct is_vector<T, typename boost::enable_if<exists<
 // simply whether a type should be sparse or dense.
 //
 
-struct vector_abstract_dense 
+struct vector_abstract_dense
 {
    typedef vector_abstract_dense type;
 };
 
-struct vector_abstract_sparse 
+struct vector_abstract_sparse
 {
    typedef vector_abstract_sparse type;
 };
 
 // union of vectors; dense+anything -> dense;  sparse+sparse -> sparse.
 template <typename T, typename U>
-struct vector_abstract_or 
+struct vector_abstract_or
    : boost::mpl::if_<boost::is_same<T, U>, T, vector_abstract_dense> {};
 
 // intersection vectors; sparse+anything -> sparse;  dense+dense -> dense.
@@ -331,7 +331,7 @@ struct make_vector_from_abstract<T, vector_abstract_sparse>
 // vector_abstract_of_expression
 //
 // For a type that is an expression, return the abstract type (sparse or dense).
-// The easiest way to define it is to declare nested typedef 
+// The easiest way to define it is to declare nested typedef
 // T::abstract_type.  Otherwise, specialize vector_abstract_of_expression itself.
 //
 
@@ -421,7 +421,7 @@ struct vector_iterator_sparse {};
 // unordered but distinct indices
 struct vector_iterator_injective : vector_iterator_sparse {};
 
-// hashed indices; contains operator() for lookup, 
+// hashed indices; contains operator() for lookup,
 // member function has_element(), member function size().
 // Size can only be an approximation in some cases; is it actually useful for anything?
 struct vector_iterator_hashed : vector_iterator_injective {};

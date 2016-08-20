@@ -24,8 +24,8 @@
 // PackMatrixOperator
 //
 
-void PackMatrixOperator::Initialize(VectorBasis const& Basis1, 
-                                     VectorBasis const& Basis2, 
+void PackMatrixOperator::Initialize(VectorBasis const& Basis1,
+                                     VectorBasis const& Basis2,
                                      QuantumNumbers::QuantumNumber const& q)
 {
    B1_ = Basis1;
@@ -49,8 +49,8 @@ void PackMatrixOperator::Initialize(VectorBasis const& Basis1,
    Size_ = Offset;
 }
 
-PackMatrixOperator::PackMatrixOperator(VectorBasis const& Basis1, 
-                                       VectorBasis const& Basis2, 
+PackMatrixOperator::PackMatrixOperator(VectorBasis const& Basis1,
+                                       VectorBasis const& Basis2,
                                        QuantumNumbers::QuantumNumber const& q)
 {
    this->Initialize(Basis1, Basis2, q);
@@ -61,7 +61,7 @@ PackMatrixOperator::PackMatrixOperator(MatrixOperator const& m)
    Initialize(m.Basis1(), m.Basis2(), m.TransformsAs());
 }
 
-PackMatrixOperator::value_type* 
+PackMatrixOperator::value_type*
 PackMatrixOperator::pack(MatrixOperator const& m, value_type* Iter) const
 {
    typedef LinearAlgebra::VectorMemProxy<value_type> VecProxy;
@@ -74,7 +74,7 @@ PackMatrixOperator::pack(MatrixOperator const& m, value_type* Iter) const
       {
          DEBUG_CHECK_EQUAL(I->Size, size1(*J)*size2(*J));
          // normalization correction is sqrt(degree(B1[I->r]))
-         VecProxy(Iter+I->Offset, I->Size) 
+         VecProxy(Iter+I->Offset, I->Size)
             = std::sqrt(double(degree(B1_[I->r]))) * ConstVecProxy(data(*J), I->Size);
       }
       else
@@ -105,35 +105,35 @@ PackMatrixOperator::unpack(value_type const* Iter) const
 // PackStateComponent
 //
 
-void PackStateComponent::Initialize(BasisList const& LocalBasis, VectorBasis const& Basis1, 
-				    VectorBasis const& Basis2)
+void PackStateComponent::Initialize(BasisList const& LocalBasis, VectorBasis const& Basis1,
+                                    VectorBasis const& Basis2)
 {
    B_ = LocalBasis;
    B1_ = Basis1;
    B2_ = Basis2;
    OffsetMatrix_ = OffsetMatrixType(B_.size(),
-				    LinearAlgebra::Matrix<int>(Basis1.size(), Basis2.size(), -1));
+                                    LinearAlgebra::Matrix<int>(Basis1.size(), Basis2.size(), -1));
    unsigned Offset = 0;
    for (unsigned q = 0; q < B_.size(); ++q)
    {
       for (unsigned i = 0; i < Basis1.size(); ++i)
       {
-	 for (unsigned j = 0; j < Basis2.size(); ++j)
-	 {
-	    if (is_transform_target(Basis2[j], B_[q], Basis1[i]))
-	    {
-	       unsigned Sz = Basis1.dim(i) * Basis2.dim(j);
-	       OffsetMatrix_[q](i,j) = Offset;
-	       OffsetArray_.push_back(OffsetRecType(q,i,j,Offset,Sz));
-	       Offset += Sz;
-	    }
+         for (unsigned j = 0; j < Basis2.size(); ++j)
+         {
+            if (is_transform_target(Basis2[j], B_[q], Basis1[i]))
+            {
+               unsigned Sz = Basis1.dim(i) * Basis2.dim(j);
+               OffsetMatrix_[q](i,j) = Offset;
+               OffsetArray_.push_back(OffsetRecType(q,i,j,Offset,Sz));
+               Offset += Sz;
+            }
          }
       }
    }
    Size_ = Offset;
 }
 
-PackStateComponent::PackStateComponent(BasisList const& LocalBasis, VectorBasis const& Basis1, 
+PackStateComponent::PackStateComponent(BasisList const& LocalBasis, VectorBasis const& Basis1,
                                        VectorBasis const& Basis2)
 {
    this->Initialize(LocalBasis, Basis1, Basis2);
@@ -144,7 +144,7 @@ PackStateComponent::PackStateComponent(StateComponent const& m)
    Initialize(m.LocalBasis(), m.Basis1(), m.Basis2());
 }
 
-PackStateComponent::value_type* 
+PackStateComponent::value_type*
 PackStateComponent::pack(StateComponent const& m, value_type* Iter) const
 {
    DEBUG_CHECK_EQUAL(m.LocalBasis(), B_);
@@ -153,14 +153,14 @@ PackStateComponent::pack(StateComponent const& m, value_type* Iter) const
    typedef LinearAlgebra::VectorMemProxy<value_type> VecProxy;
    typedef LinearAlgebra::VectorMemProxy<value_type const> ConstVecProxy;
    for (OffsetArrayType::const_iterator I = OffsetArray_.begin();
-	I != OffsetArray_.end(); ++I)
+        I != OffsetArray_.end(); ++I)
    {
       const_inner_iterator<MatrixOperator>::type J = iterate_at(m[I->q].data(), I->r, I->c);
       if (J)
       {
          DEBUG_CHECK_EQUAL(I->Size, size1(*J)*size2(*J));
          // normalization correction is sqrt(degree(B1[I->r]))
-         VecProxy(Iter+I->Offset, I->Size) 
+         VecProxy(Iter+I->Offset, I->Size)
             = std::sqrt(double(degree(B1_[I->r]))) * ConstVecProxy(data(*J), I->Size);
       }
       else

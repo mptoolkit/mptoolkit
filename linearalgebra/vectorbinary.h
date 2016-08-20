@@ -38,10 +38,10 @@ class VectorBinaryTransformProxy
       // mark this type as a const proxy reference
       typedef boost::mpl::true_ const_proxy;
 
-      // the abstract interface type - 
+      // the abstract interface type -
       // shortcut for specializing LinearAlgebra::abstract_interface
       typedef vector_abstract_or<typename abstract_interface<T1>::type,
-				 typename abstract_interface<T2>::type> abstract_interface;
+                                 typename abstract_interface<T2>::type> abstract_interface;
 
       typedef typename interface<T1>::value_type value1_type;
       typedef typename interface<T2>::value_type value2_type;
@@ -54,8 +54,8 @@ class VectorBinaryTransformProxy
       typedef typename make_const_reference<T2>::type reference2;
 
       VectorBinaryTransformProxy(reference1 x, reference2 y, functor_type f)
-	 : x_(x), y_(y), f_(f) {} //{ CHECK_EQUAL(Size<T1>()(x_), Size<T2>()(y_)); }
-   
+         : x_(x), y_(y), f_(f) {} //{ CHECK_EQUAL(Size<T1>()(x_), Size<T2>()(y_)); }
+
       size_type size() const { using LinearAlgebra::size; return size(x_); }
    // return Size<T1>()(x_); }
 
@@ -72,27 +72,27 @@ class VectorBinaryTransformProxy
       functor_type f_;
 };
 
-template <typename T1, typename T2, typename Func, 
-	  typename I1 = typename interface<T1>::type, 
-	  typename I2 = typename interface<T2>::type,
-	  typename Value = typename make_value<typename Func::result_type>::type>
+template <typename T1, typename T2, typename Func,
+          typename I1 = typename interface<T1>::type,
+          typename I2 = typename interface<T2>::type,
+          typename Value = typename make_value<typename Func::result_type>::type>
 struct VectorBinaryInterface;
 
-template <typename T1, typename T2, typename Func, 
-	  typename I1v, typename I1i,
-	  typename I2v, typename I2i,
-	  typename Value>
-struct VectorBinaryInterface<T1, T2, Func, 
-			     DENSE_VECTOR(I1v, I1i), 
-			     DENSE_VECTOR(I2v, I2i), Value>
+template <typename T1, typename T2, typename Func,
+          typename I1v, typename I1i,
+          typename I2v, typename I2i,
+          typename Value>
+struct VectorBinaryInterface<T1, T2, Func,
+                             DENSE_VECTOR(I1v, I1i),
+                             DENSE_VECTOR(I2v, I2i), Value>
 {
    typedef DENSE_VECTOR(Value, void) type;
 };
 
 template <typename T1, typename T2, typename F>
-struct interface<VectorBinaryTransformProxy<T1, T2, F> > 
-   : public VectorBinaryInterface<T1, T2, F> 
-{ 
+struct interface<VectorBinaryTransformProxy<T1, T2, F> >
+   : public VectorBinaryInterface<T1, T2, F>
+{
 };
 
 // iterators
@@ -122,7 +122,7 @@ struct BinaryTransformVector<S, T, F, DENSE_VECTOR(Sv, Si), DENSE_VECTOR(Tv, Ti)
    typedef F const& third_argument_type;
    result_type operator()(S const& x, T const& y) const { return result_type(x, y); }
 
-   result_type operator()(S const& x, T const& y, F const& f) const 
+   result_type operator()(S const& x, T const& y, F const& f) const
    { return result_type(x, y, f); }
 };
 
@@ -137,7 +137,7 @@ struct BinaryTransformVectorSemiregular<S, T, F, ORDERED_VECTOR(Sv, Si), ORDERED
    typedef F const& third_argument_type;
    result_type operator()(S const& x, T const& y) const { return result_type(x, y); }
 
-   result_type operator()(S const& x, T const& y, F const& f) const 
+   result_type operator()(S const& x, T const& y, F const& f) const
    { return result_type(x, y, f); }
 };
 

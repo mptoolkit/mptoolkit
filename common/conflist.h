@@ -34,7 +34,7 @@ class ConfList
       // is thrown.
       ConfList(std::string const& file);
 
-      template <class T> 
+      template <class T>
       T Get(const std::string& s, T const& Default) const;
 
       // overloaded special cases.
@@ -67,7 +67,7 @@ T ConfList::Get(const std::string& s, const T& Default) const
 
    std::istringstream InStream(I->second);
    T Val(Default);
- 
+
    InStream >> Val;
 
    return InStream ? Val : Default;

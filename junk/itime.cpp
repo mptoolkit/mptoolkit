@@ -50,7 +50,7 @@ int main(int argc, char** argv)
    for (int i = 0; i < Iterations; ++i)
    {
       std::cout << std::setw(9) << i+1 << "   "
-		<< std::setw(20) << overlap(P, HP);
+                << std::setw(20) << overlap(P, HP);
       HP *= Delta;
       P = P + HP;
       P.normalize();

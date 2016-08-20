@@ -32,7 +32,7 @@ namespace pthread
 ThreadBase::ThreadBase()
 {
 }
- 
+
 ThreadBase::~ThreadBase()
 {
 }
@@ -54,14 +54,14 @@ void join_helper<void>(pthread_t const& Thread)
    void* Ret;
    if (int ErrCode = ::pthread_join(Thread, &Ret) != 0)
    {
-      throw std::runtime_error("cannot join thread."); 
+      throw std::runtime_error("cannot join thread.");
    }
 }
 
 void throw_pthread_error(std::string Pre, int Err)
 {
    throw std::runtime_error(Pre + ErrorMsg(Err));
-}   
+}
 
 char const* ErrorMsg(int Err)
 {
@@ -71,13 +71,13 @@ char const* ErrorMsg(int Err)
       case EDEADLK : return "deadlock";
       case EBUSY   : return "busy";
       case EPERM   : return "not owner";
-   } 
+   }
    return "unknown error";
 }
 
 // thread_specific
 
-#if 0 
+#if 0
 tsd_base::~tsd_base()
 {
 }
@@ -107,21 +107,21 @@ std::ostream& operator<<(std::ostream& out, debug_mutex const& D)
    return out;
 }
 
-debug_mutex::debug_mutex() 
-{ 
+debug_mutex::debug_mutex()
+{
    //CHECK(Magic != MagicInit)(this); // this check is broken for multiprocessors!
    pthread_mutexattr_t myAttr;
    ::pthread_mutexattr_init(&myAttr);
    ::pthread_mutexattr_settype(&myAttr, PTHREAD_MUTEX_ERRORCHECK);
-   ::pthread_mutex_init(&M, &myAttr); 
+   ::pthread_mutex_init(&M, &myAttr);
    ::pthread_mutexattr_destroy(&myAttr);
    Owner = 0;
    Magic = MagicInit;
    //TRACE("mutex initialized")(this);
 }
 
-debug_mutex::~debug_mutex() 
-{ 
+debug_mutex::~debug_mutex()
+{
    CHECK(Magic == MagicInit)(this);
    Magic = 0;
    //TRACE("mutex destroyed")(this);
@@ -129,7 +129,7 @@ debug_mutex::~debug_mutex()
 }
 
 void debug_mutex::lock()
-{ 
+{
    //   CHECK(Magic == MagicInit)(this);
    if (int Err = ::pthread_mutex_lock(&M) != 0) PANIC("debug_mutex::lock(): ")(ErrorMsg(Err));
    if (Owner != 0)
@@ -144,15 +144,15 @@ void debug_mutex::unlock()
 {
    //   CHECK(Magic == MagicInit)(this);
    //   DEBUGMSG(*this << " unlocked by thread_id " << pthread_self()
-   //	    << ", owner is thread_id " << Owner);
+   //       << ", owner is thread_id " << Owner);
    pthread_t OldOwner = Owner;
    Owner = 0;
-   if (int Err = ::pthread_mutex_unlock(&M) != 0) 
+   if (int Err = ::pthread_mutex_unlock(&M) != 0)
    {
       //      PANIC("debug_mutex::unlock(): " << ErrorMsg(Err)
-      //	    << " this = " << (void*) this
-      //	    << " pthread_self = " << ::pthread_self()
-      //	    << " Owner = " << OldOwner);
+      //            << " this = " << (void*) this
+      //            << " pthread_self = " << ::pthread_self()
+      //            << " Owner = " << OldOwner);
    }
 }
 
@@ -162,7 +162,7 @@ void wait(condition& c, debug_mutex& m)
    //   CHECK(m.Magic == debug_mutex::MagicInit);
    CHECK(m.Owner == pthread_self());
    m.Owner = 0;
-   if (int Err = pthread_cond_wait(c.get_cond(), m.get_mutex()) != 0) 
+   if (int Err = pthread_cond_wait(c.get_cond(), m.get_mutex()) != 0)
       PANIC("condition")(ErrorMsg(Err));
    //   DEBUGMSG("condition triggered " << (void*) &c << " with " << m << " by thread_id " << pthread_self());
    m.Owner = pthread_self();
@@ -170,12 +170,12 @@ void wait(condition& c, debug_mutex& m)
 
 #endif
 
-rec_mutex::rec_mutex() 
-{ 
+rec_mutex::rec_mutex()
+{
    pthread_mutexattr_t myAttr;
    ::pthread_mutexattr_init(&myAttr);
    ::pthread_mutexattr_settype(&myAttr, PTHREAD_MUTEX_RECURSIVE);
-   ::pthread_mutex_init(&M, &myAttr); 
+   ::pthread_mutex_init(&M, &myAttr);
    ::pthread_mutexattr_destroy(&myAttr);
 }
 

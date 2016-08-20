@@ -24,7 +24,8 @@
 // infinite product of operators defined on the unit cell, and also have a QShift, with
 // the requirement that Basis1() == delta_shift(Basis2(), QShift).
 //
-// The unit cell of the operators is allowed to a a multiple of the lattice UnitCell.
+// The unit cell of the operators is allowed to a multiple of the lattice UnitCell.
+// We do some fancy tracking to keep the UnitCell by pointer where possible
 
 #if !defined(MPTOOLKIT_LATTICE_INFINITELATTICE_H)
 #define MPTOOLKIT_LATTICE_INFINITELATTICE_H
@@ -65,12 +66,23 @@ class InfiniteLattice
 
       InfiniteLattice();
 
-      explicit InfiniteLattice(UnitCell const& uc);
+      explicit InfiniteLattice(UnitCell* uc);
+      explicit InfiniteLattice(UnitCell&& uc);
+   //      explicit InfiniteLattice(UnitCell const& uc);  // maybe confusing to have this?
 
-      InfiniteLattice(std::string const& Description, UnitCell const& uc);
+      InfiniteLattice(std::string const& Description, UnitCell& uc);
+      InfiniteLattice(std::string const& Description, UnitCell&& uc);
 
-      UnitCell& GetUnitCell() { return UnitCell_; }
-      UnitCell const& GetUnitCell() const { return UnitCell_; }
+      InfiniteLattice(InfiniteLattice const& Other);
+      InfiniteLattice(InfiniteLattice&& Other);
+
+      InfiniteLattice& operator=(InfiniteLattice const& Other);
+      InfiniteLattice& operator=(InfiniteLattice&& Other);
+
+      ~InfiniteLattice();
+
+      UnitCell& GetUnitCell() { return *UnitCell_; }
+      UnitCell const& GetUnitCell() const { return *UnitCell_; }
 
       std::string description() const { return Description_; }
       void set_description(std::string s) { Description_ = s; }
@@ -117,7 +129,7 @@ class InfiniteLattice
       // arguments
 
       bool arg_empty() const { return Arguments_.empty(); }
-      
+
       const_argument_iterator begin_arg() const { return Arguments_.begin(); }
       const_argument_iterator end_arg() const { return Arguments_.end(); }
 
@@ -129,22 +141,22 @@ class InfiniteLattice
 
       std::complex<double> arg(std::string const& a) const;
 
-      std::complex<double>& arg(std::string const& a) 
+      std::complex<double>& arg(std::string const& a)
       { return Arguments_[a]; }
 
       // functions
 
       bool function_empty() const { return Functions_.empty(); }
- 
+
       // iterators
       const_function_iterator begin_function() const { return Functions_.begin(); }
       const_function_iterator end_function() const { return Functions_.end(); }
 
       // find
-      const_function_iterator find_function(std::string const& s) const 
+      const_function_iterator find_function(std::string const& s) const
       { return Functions_.find(s); }
 
-      bool function_exists(std::string const& s) const 
+      bool function_exists(std::string const& s) const
       { return Functions_.find(s) != Functions_.end(); }
 
       // lookup
@@ -155,18 +167,19 @@ class InfiniteLattice
       // evaluate a function
       InfiniteMPO
       eval_function(Function::OperatorFunction const& Func,
-		    Function::ParameterList const& Params) const;
+                    Function::ParameterList const& Params) const;
 
       InfiniteMPO
       eval_function(std::string const& Func,
-		    Function::ParameterList const& Params) const;
+                    Function::ParameterList const& Params) const;
 
    private:
       std::string Description_;
       authors_type Authors_;
       std::string CommandLine_;
       std::string Timestamp_;
-      UnitCell UnitCell_;
+      UnitCell* UnitCell_;
+      bool OwnUnitCell_;               // true if UnitCell_ is owned by us on the heap
       OperatorListType Operators_;
       ArgumentListType Arguments_;
       FunctionListType Functions_;
@@ -191,7 +204,7 @@ TriangularMPO sum_unit(UnitCellMPO const& Op);
 
 // Variant of sum_unit where we add the kink operator (generally will be unitary) to the left hand side
 TriangularMPO sum_kink(SiteListType const& SiteList, FiniteMPO const& Kink,
-		       FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
+                       FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
 
 TriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op, int UnitCellSize);
 
@@ -200,7 +213,7 @@ TriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op);
 // sum_k
 
 TriangularMPO sum_k(SiteListType const& SiteList, std::complex<double> const& k,
-		       FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
+                       FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
 
 TriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op, int UnitCellSize);
 
@@ -213,22 +226,22 @@ TriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op);
 // PRECONDITION(JW.qn2() == Op1.qn1() && Op1.qn2() == String.qn1() && String.qn2() == Op1.qn1()
 // && is_scalar(Op2.qn2()))
 TriangularMPO sum_string(SiteListType const& SiteList, FiniteMPO const& JW, FiniteMPO const& Op1,
-			 FiniteMPO const& String, FiniteMPO const& Op2, int UnitCellSize,
-			 QuantumNumbers::QuantumNumber q);
+                         FiniteMPO const& String, FiniteMPO const& Op2, int UnitCellSize,
+                         QuantumNumbers::QuantumNumber q);
 
 // This version of sum_string takes UnitCellMPO's for the operator arguments.  The String term
 // must be a scalar with bosonic commutation, and cannot be any longer than UnitCellSize.
-TriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_, 
-			 int UnitCellSize,
-			 QuantumNumbers::QuantumNumber q);
+TriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_,
+                         int UnitCellSize,
+                         QuantumNumbers::QuantumNumber q);
 
-TriangularMPO sum_string_dot(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_, 
-			     int UnitCellSize);
+TriangularMPO sum_string_dot(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_,
+                             int UnitCellSize);
 
 TriangularMPO sum_string_dot(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_);
 
-TriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_, 
-			       int UnitCellSize);
+TriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_,
+                               int UnitCellSize);
 
 TriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_);
 

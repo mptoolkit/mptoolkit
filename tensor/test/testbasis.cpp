@@ -100,5 +100,5 @@ int main()
    VBc.set_dim(2, 7);
 
    CHECK_EQUAL(VB, VBc);
-   
+
 }

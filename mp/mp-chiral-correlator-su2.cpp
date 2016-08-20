@@ -70,8 +70,8 @@ int main(int argc, char** argv)
       // Update all the existing E matrices
       for (OpMapType::iterator mI = OpMap.begin(); mI != OpMap.end(); ++mI)
       {
-         mI->second = operator_prod(herm(Psi.Left()), 
-                                    mI->second, 
+         mI->second = operator_prod(herm(Psi.Left()),
+                                    mI->second,
                                     Psi.Left());
       }
 
@@ -106,14 +106,14 @@ int main(int argc, char** argv)
          MatrixOperator F = operator_prod(MyOp, Psi.Right(), F2, herm(Psi.Right()), qVector);
          for (OpMapType::iterator mI = OpMap.begin(); mI != OpMap.end(); ++mI)
          {
-            std::complex<double> Res = inner_prod(Psi.Center(), 
-                                                  triple_prod(mI->second, 
-                                                              Psi.Center(), 
+            std::complex<double> Res = inner_prod(Psi.Center(),
+                                                  triple_prod(mI->second,
+                                                              Psi.Center(),
                                                               herm(F)));
             // The 2.0 here for the sqrt(2)'s that arise in the cross product of S=1
-            std::cout << std::setw(5) << Lat.coordinate_at_site(mI->first) << "   " 
+            std::cout << std::setw(5) << Lat.coordinate_at_site(mI->first) << "   "
                       << std::setw(5) << Lat.coordinate_at_site(i+1) << "   "
-                      << std::setw(18) << sqrt(12.0) * Res.real() << "   " 
+                      << std::setw(18) << sqrt(12.0) * Res.real() << "   "
                       << std::setw(18) << sqrt(12.0) * Res.imag() << '\n';
          }
       }

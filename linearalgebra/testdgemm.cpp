@@ -28,7 +28,7 @@ int main()
    {
       for (int j = 0; j < M1.cols(); ++j)
       {
-	 M1(i,j) = i-j;
+         M1(i,j) = i-j;
       }
    }
 
@@ -36,7 +36,7 @@ int main()
    {
       for (int j = 0; j < M2.cols(); ++j)
       {
-	 M2(i,j) = i*j;
+         M2(i,j) = i*j;
       }
    }
 

@@ -43,15 +43,15 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("wavefunction,w", prog_opt::value(&InputFile), "input iMPS wavefunction [required]")
-	 ("output,o", prog_opt::value(&OutputFile), "output IBC wavefuction [required]")
-	 ("force,f", prog_opt::bool_switch(&Force), "overwrite output files")
-	 ("size,s", prog_opt::value(&WindowSize), 
-	  "initial size (in sites) of the finite window [default is the unit cell size of the input wavefunction]")
-	 ("offset", prog_opt::value(&Offset), "site index of the first site of the window [default 0]")
+         ("wavefunction,w", prog_opt::value(&InputFile), "input iMPS wavefunction [required]")
+         ("output,o", prog_opt::value(&OutputFile), "output IBC wavefuction [required]")
+         ("force,f", prog_opt::bool_switch(&Force), "overwrite output files")
+         ("size,s", prog_opt::value(&WindowSize),
+          "initial size (in sites) of the finite window [default is the unit cell size of the input wavefunction]")
+         ("offset", prog_opt::value(&Offset), "site index of the first site of the window [default 0]")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "extra debug output [can be used multiple times]")
-	 ;
+         ;
 
       prog_opt::options_description hidden("Hidden options");
 
@@ -60,10 +60,10 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || InputFile.empty() || OutputFile.empty())
       {
@@ -82,11 +82,11 @@ int main(int argc, char** argv)
       InfiniteWavefunctionLeft Psi = InPsi->get<InfiniteWavefunctionLeft>();
 
       if (WindowSize == -1)
-	 WindowSize = Psi.size();
+         WindowSize = Psi.size();
 
       if (WindowSize % Psi.size() != 0)
       {
-	 PANIC("FIXME: currently the window size must be a multiple of the wavefunction unit cell.");
+         PANIC("FIXME: currently the window size must be a multiple of the wavefunction unit cell.");
       }
 
       WavefunctionSectionLeft Window(repeat(Psi, WindowSize / Psi.size()));

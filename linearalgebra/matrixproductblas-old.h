@@ -70,9 +70,9 @@ size_t leading_dimension(MatrixConstSlice<Scalar, Derived> const& M)
 
 template <typename Derived, typename D1, typename D2>
 void
-assign_product2(MatrixSlice<double, Derived>& lhs, 
-		MatrixConstSlice<double, D1> const& r1, 
-		MatrixConstSlice<double, D2> const& r2)
+assign_product2(MatrixSlice<double, Derived>& lhs,
+                MatrixConstSlice<double, D1> const& r1,
+                MatrixConstSlice<double, D2> const& r2)
 {
    PRECONDITION(lhs.size1() == r1.size1())(lhs.size1())(r1.size1());
    PRECONDITION(lhs.size2() == r2.size2())(lhs.size2())(r2.size2());
@@ -82,17 +82,17 @@ assign_product2(MatrixSlice<double, Derived>& lhs,
    {
       if (blas_trans_col(lhs) == 'T')
       {
-	 BLAS::dgemm(blas_trans_row(r2), blas_trans_row(r1), r2.size2(), r1.size1(), r1.size2(),
-		     1, r2.data(), leading_dimension(r2), 
-		     r1.data(), leading_dimension(r1),
-		     0, lhs.data(), leading_dimension(lhs));
+         BLAS::dgemm(blas_trans_row(r2), blas_trans_row(r1), r2.size2(), r1.size1(), r1.size2(),
+                     1, r2.data(), leading_dimension(r2),
+                     r1.data(), leading_dimension(r1),
+                     0, lhs.data(), leading_dimension(lhs));
       }
       else
       {
-	 BLAS::dgemm(blas_trans_col(r1), blas_trans_col(r2), r1.size1(), r2.size2(), r1.size2(),
-		     1, r1.data(), leading_dimension(r1), 
-		     r2.data(), leading_dimension(r2),
-		     0, lhs.data(), leading_dimension(lhs));
+         BLAS::dgemm(blas_trans_col(r1), blas_trans_col(r2), r1.size1(), r2.size2(), r1.size2(),
+                     1, r1.data(), leading_dimension(r1),
+                     r2.data(), leading_dimension(r2),
+                     0, lhs.data(), leading_dimension(lhs));
       }
       return;
    }
@@ -112,16 +112,16 @@ assign_product2(MatrixSlice<double, Derived>& lhs,
       M2iterator2 M2J = r2.begin2();
       for (iiterator J = I.begin(); J != JEnd; ++J, ++M2J)
       {
-	 *J = inner_prod(*M1I, *M2J);
+         *J = inner_prod(*M1I, *M2J);
       }
    }
 }
 
 template <typename Derived, typename D1, typename D2>
 void
-add_product2(MatrixSlice<double, Derived>& lhs, 
-	     MatrixConstSlice<double, D1> const& r1, 
-	     MatrixConstSlice<double, D2> const& r2)
+add_product2(MatrixSlice<double, Derived>& lhs,
+             MatrixConstSlice<double, D1> const& r1,
+             MatrixConstSlice<double, D2> const& r2)
 {
    PRECONDITION(lhs.size1() == r1.size1())(lhs.size1())(r1.size1());
    PRECONDITION(lhs.size2() == r2.size2())(lhs.size2())(r2.size2());
@@ -131,17 +131,17 @@ add_product2(MatrixSlice<double, Derived>& lhs,
    {
       if (blas_trans_col(lhs) == 'T')
       {
-	 BLAS::dgemm(blas_trans_row(r2), blas_trans_row(r1), r2.size2(), r1.size1(), r1.size2(),
-		     1, r2.data(), leading_dimension(r2), 
-		     r1.data(), leading_dimension(r1),
-		     1, lhs.data(), leading_dimension(lhs));
+         BLAS::dgemm(blas_trans_row(r2), blas_trans_row(r1), r2.size2(), r1.size1(), r1.size2(),
+                     1, r2.data(), leading_dimension(r2),
+                     r1.data(), leading_dimension(r1),
+                     1, lhs.data(), leading_dimension(lhs));
       }
       else
       {
-	 BLAS::dgemm(blas_trans_col(r1), blas_trans_col(r2), r1.size1(), r2.size2(), r1.size2(),
-		     1, r1.data(), leading_dimension(r1), 
-		     r2.data(), leading_dimension(r2),
-		     1, lhs.data(), leading_dimension(lhs));
+         BLAS::dgemm(blas_trans_col(r1), blas_trans_col(r2), r1.size1(), r2.size2(), r1.size2(),
+                     1, r1.data(), leading_dimension(r1),
+                     r2.data(), leading_dimension(r2),
+                     1, lhs.data(), leading_dimension(lhs));
       }
       return;
    }
@@ -161,16 +161,16 @@ add_product2(MatrixSlice<double, Derived>& lhs,
       M2iterator2 M2J = r2.begin2();
       for (iiterator J = I.begin(); J != JEnd; ++J, ++M2J)
       {
-	 *J += inner_prod(*M1I, *M2J);
+         *J += inner_prod(*M1I, *M2J);
       }
    }
 }
 
 template <typename Derived, typename D1, typename D2>
 void
-sub_product2(MatrixSlice<double, Derived>& lhs, 
-	     MatrixConstSlice<double, D1> const& r1, 
-	     MatrixConstSlice<double, D2> const& r2)
+sub_product2(MatrixSlice<double, Derived>& lhs,
+             MatrixConstSlice<double, D1> const& r1,
+             MatrixConstSlice<double, D2> const& r2)
 {
    PRECONDITION(lhs.size1() == r1.size1())(lhs.size1())(r1.size1());
    PRECONDITION(lhs.size2() == r2.size2())(lhs.size2())(r2.size2());
@@ -180,17 +180,17 @@ sub_product2(MatrixSlice<double, Derived>& lhs,
    {
       if (blas_trans_col(lhs) == 'T')
       {
-	 BLAS::dgemm(blas_trans_row(r2), blas_trans_row(r1), r2.size2(), r1.size1(), r1.size2(),
-		     -1, r2.data(), leading_dimension(r2), 
-		     r1.data(), leading_dimension(r1),
-		     1, lhs.data(), leading_dimension(lhs));
+         BLAS::dgemm(blas_trans_row(r2), blas_trans_row(r1), r2.size2(), r1.size1(), r1.size2(),
+                     -1, r2.data(), leading_dimension(r2),
+                     r1.data(), leading_dimension(r1),
+                     1, lhs.data(), leading_dimension(lhs));
       }
       else
       {
-	 BLAS::dgemm(blas_trans_col(r1), blas_trans_col(r2), r1.size1(), r2.size2(), r1.size2(),
-		     -1, r1.data(), leading_dimension(r1), 
-		     r2.data(), leading_dimension(r2),
-		     1, lhs.data(), leading_dimension(lhs));
+         BLAS::dgemm(blas_trans_col(r1), blas_trans_col(r2), r1.size1(), r2.size2(), r1.size2(),
+                     -1, r1.data(), leading_dimension(r1),
+                     r2.data(), leading_dimension(r2),
+                     1, lhs.data(), leading_dimension(lhs));
       }
       return;
    }
@@ -210,19 +210,19 @@ sub_product2(MatrixSlice<double, Derived>& lhs,
       M2iterator2 M2J = r2.begin2();
       for (iiterator J = I.begin(); J != JEnd; ++J, ++M2J)
       {
-	 *J -= inner_prod(*M1I, *M2J);
+         *J -= inner_prod(*M1I, *M2J);
       }
    }
 }
 
 template <typename Derived, typename Scalar, typename D1, typename D2>
 void
-assign_scaled_product2(MatrixSlice<double, Derived>& lhs, 
-		       Scalar x,
-		       MatrixConstSlice<double, D1> const& r1, 
-		       MatrixConstSlice<double, D2> const& r2,
-		       typename boost::enable_if<
-		       boost::is_convertible<Scalar, double> >::type* dummy = 0)
+assign_scaled_product2(MatrixSlice<double, Derived>& lhs,
+                       Scalar x,
+                       MatrixConstSlice<double, D1> const& r1,
+                       MatrixConstSlice<double, D2> const& r2,
+                       typename boost::enable_if<
+                       boost::is_convertible<Scalar, double> >::type* dummy = 0)
 {
    PRECONDITION(lhs.size1() == r1.size1())(lhs.size1())(r1.size1());
    PRECONDITION(lhs.size2() == r2.size2())(lhs.size2())(r2.size2());
@@ -232,17 +232,17 @@ assign_scaled_product2(MatrixSlice<double, Derived>& lhs,
    {
       if (blas_trans_col(lhs) == 'T')
       {
-	 BLAS::dgemm(blas_trans_row(r2), blas_trans_row(r1), r2.size2(), r1.size1(), r1.size2(),
-		     x, r2.data(), leading_dimension(r2), 
-		     r1.data(), leading_dimension(r1),
-		     0, lhs.data(), leading_dimension(lhs));
+         BLAS::dgemm(blas_trans_row(r2), blas_trans_row(r1), r2.size2(), r1.size1(), r1.size2(),
+                     x, r2.data(), leading_dimension(r2),
+                     r1.data(), leading_dimension(r1),
+                     0, lhs.data(), leading_dimension(lhs));
       }
       else
       {
-	 BLAS::dgemm(blas_trans_col(r1), blas_trans_col(r2), r1.size1(), r2.size2(), r1.size2(),
-		     x, r1.data(), leading_dimension(r1), 
-		     r2.data(), leading_dimension(r2),
-		     0, lhs.data(), leading_dimension(lhs));
+         BLAS::dgemm(blas_trans_col(r1), blas_trans_col(r2), r1.size1(), r2.size2(), r1.size2(),
+                     x, r1.data(), leading_dimension(r1),
+                     r2.data(), leading_dimension(r2),
+                     0, lhs.data(), leading_dimension(lhs));
       }
       return;
    }
@@ -262,7 +262,7 @@ assign_scaled_product2(MatrixSlice<double, Derived>& lhs,
       M2iterator2 M2J = r2.begin2();
       for (iiterator J = I.begin(); J != JEnd; ++J, ++M2J)
       {
-	 *J = x * inner_prod(*M1I, *M2J);
+         *J = x * inner_prod(*M1I, *M2J);
       }
    }
 }
@@ -270,11 +270,11 @@ assign_scaled_product2(MatrixSlice<double, Derived>& lhs,
 
 template <typename Derived, typename Scalar, typename D1, typename D2>
 void
-add_scaled_product2(MatrixSlice<double, Derived>& lhs, 
-		    Scalar x,
-		    MatrixConstSlice<double, D1> const& r1, 
-		    MatrixConstSlice<double, D2> const& r2,
-		    typename boost::enable_if<boost::is_convertible<Scalar, double> >::type* dummy = 0)
+add_scaled_product2(MatrixSlice<double, Derived>& lhs,
+                    Scalar x,
+                    MatrixConstSlice<double, D1> const& r1,
+                    MatrixConstSlice<double, D2> const& r2,
+                    typename boost::enable_if<boost::is_convertible<Scalar, double> >::type* dummy = 0)
 {
    PRECONDITION(lhs.size1() == r1.size1())(lhs.size1())(r1.size1());
    PRECONDITION(lhs.size2() == r2.size2())(lhs.size2())(r2.size2());
@@ -284,17 +284,17 @@ add_scaled_product2(MatrixSlice<double, Derived>& lhs,
    {
       if (blas_trans_col(lhs) == 'T')
       {
-	 BLAS::dgemm(blas_trans_row(r2), blas_trans_row(r1), r2.size2(), r1.size1(), r1.size2(),
-		     x, r2.data(), leading_dimension(r2), 
-		     r1.data(), leading_dimension(r1),
-		     1, lhs.data(), leading_dimension(lhs));
+         BLAS::dgemm(blas_trans_row(r2), blas_trans_row(r1), r2.size2(), r1.size1(), r1.size2(),
+                     x, r2.data(), leading_dimension(r2),
+                     r1.data(), leading_dimension(r1),
+                     1, lhs.data(), leading_dimension(lhs));
       }
       else
       {
-	 BLAS::dgemm(blas_trans_col(r1), blas_trans_col(r2), r1.size1(), r2.size2(), r1.size2(),
-		     x, r1.data(), leading_dimension(r1), 
-		     r2.data(), leading_dimension(r2),
-		     1, lhs.data(), leading_dimension(lhs));
+         BLAS::dgemm(blas_trans_col(r1), blas_trans_col(r2), r1.size1(), r2.size2(), r1.size2(),
+                     x, r1.data(), leading_dimension(r1),
+                     r2.data(), leading_dimension(r2),
+                     1, lhs.data(), leading_dimension(lhs));
       }
       return;
    }
@@ -314,19 +314,19 @@ add_scaled_product2(MatrixSlice<double, Derived>& lhs,
       M2iterator2 M2J = r2.begin2();
       for (iiterator J = I.begin(); J != JEnd; ++J, ++M2J)
       {
-	 *J += x * inner_prod(*M1I, *M2J);
+         *J += x * inner_prod(*M1I, *M2J);
       }
    }
 }
 
 template <typename Derived, typename Scalar, typename D1, typename D2>
 void
-sub_scaled_product2(MatrixSlice<double, Derived>& lhs, 
-		    Scalar x,
-		    MatrixConstSlice<double, D1> const& r1, 
-		    MatrixConstSlice<double, D2> const& r2,
-		    typename boost::enable_if<
-		      boost::is_convertible<Scalar, double> >::type* dummy = 0)
+sub_scaled_product2(MatrixSlice<double, Derived>& lhs,
+                    Scalar x,
+                    MatrixConstSlice<double, D1> const& r1,
+                    MatrixConstSlice<double, D2> const& r2,
+                    typename boost::enable_if<
+                      boost::is_convertible<Scalar, double> >::type* dummy = 0)
 {
    PRECONDITION(lhs.size1() == r1.size1())(lhs.size1())(r1.size1());
    PRECONDITION(lhs.size2() == r2.size2())(lhs.size2())(r2.size2());
@@ -336,17 +336,17 @@ sub_scaled_product2(MatrixSlice<double, Derived>& lhs,
    {
       if (blas_trans_col(lhs) == 'T')
       {
-	 BLAS::dgemm(blas_trans_row(r2), blas_trans_row(r1), r2.size2(), r1.size1(), r1.size2(),
-		     -x, r2.data(), leading_dimension(r2), 
-		     r1.data(), leading_dimension(r1),
-		     1, lhs.data(), leading_dimension(lhs));
+         BLAS::dgemm(blas_trans_row(r2), blas_trans_row(r1), r2.size2(), r1.size1(), r1.size2(),
+                     -x, r2.data(), leading_dimension(r2),
+                     r1.data(), leading_dimension(r1),
+                     1, lhs.data(), leading_dimension(lhs));
       }
       else
       {
-	 BLAS::dgemm(blas_trans_col(r1), blas_trans_col(r2), r1.size1(), r2.size2(), r1.size2(),
-		     -x, r1.data(), leading_dimension(r1), 
-		     r2.data(), leading_dimension(r2),
-		     1, lhs.data(), leading_dimension(lhs));
+         BLAS::dgemm(blas_trans_col(r1), blas_trans_col(r2), r1.size1(), r2.size2(), r1.size2(),
+                     -x, r1.data(), leading_dimension(r1),
+                     r2.data(), leading_dimension(r2),
+                     1, lhs.data(), leading_dimension(lhs));
       }
       return;
    }
@@ -366,7 +366,7 @@ sub_scaled_product2(MatrixSlice<double, Derived>& lhs,
       M2iterator2 M2J = r2.begin2();
       for (iiterator J = I.begin(); J != JEnd; ++J, ++M2J)
       {
-	 *J += x * inner_prod(*M1I, *M2J);
+         *J += x * inner_prod(*M1I, *M2J);
       }
    }
 }
@@ -378,9 +378,9 @@ sub_scaled_product2(MatrixSlice<double, Derived>& lhs,
 
 template <typename Derived, typename D1, typename D2>
 void
-assign_product2(MatrixSlice<std::complex<double>, Derived>& lhs, 
-		MatrixConstSlice<std::complex<double>, D1> const& r1, 
-		MatrixConstSlice<std::complex<double>, D2> const& r2)
+assign_product2(MatrixSlice<std::complex<double>, Derived>& lhs,
+                MatrixConstSlice<std::complex<double>, D1> const& r1,
+                MatrixConstSlice<std::complex<double>, D2> const& r2)
 {
    PRECONDITION(lhs.size1() == r1.size1())(lhs.size1())(r1.size1());
    PRECONDITION(lhs.size2() == r2.size2())(lhs.size2())(r2.size2());
@@ -390,17 +390,17 @@ assign_product2(MatrixSlice<std::complex<double>, Derived>& lhs,
    {
       if (blas_trans_col(lhs) == 'T')
       {
-	 BLAS::zgemm(blas_trans_row(r2), blas_trans_row(r1), r2.size2(), r1.size1(), r1.size2(),
-		     1, r2.data(), leading_dimension(r2), 
-		     r1.data(), leading_dimension(r1),
-		     0, lhs.data(), leading_dimension(lhs));
+         BLAS::zgemm(blas_trans_row(r2), blas_trans_row(r1), r2.size2(), r1.size1(), r1.size2(),
+                     1, r2.data(), leading_dimension(r2),
+                     r1.data(), leading_dimension(r1),
+                     0, lhs.data(), leading_dimension(lhs));
       }
       else
       {
-	 BLAS::zgemm(blas_trans_col(r1), blas_trans_col(r2), r1.size1(), r2.size2(), r1.size2(),
-		     1, r1.data(), leading_dimension(r1), 
-		     r2.data(), leading_dimension(r2),
-		     0, lhs.data(), leading_dimension(lhs));
+         BLAS::zgemm(blas_trans_col(r1), blas_trans_col(r2), r1.size1(), r2.size2(), r1.size2(),
+                     1, r1.data(), leading_dimension(r1),
+                     r2.data(), leading_dimension(r2),
+                     0, lhs.data(), leading_dimension(lhs));
       }
       return;
    }
@@ -420,16 +420,16 @@ assign_product2(MatrixSlice<std::complex<double>, Derived>& lhs,
       M2iterator2 M2J = r2.begin2();
       for (iiterator J = I.begin(); J != JEnd; ++J, ++M2J)
       {
-	 *J = inner_prod(*M1I, *M2J);
+         *J = inner_prod(*M1I, *M2J);
       }
    }
 }
 
 template <typename Derived, typename D1, typename D2>
 void
-assign_product2(MatrixSlice<std::complex<double>, Derived>& lhs, 
-		MatrixConstExpression<std::complex<double>, D1> const& r1, 
-		MatrixConstExpression<std::complex<double>, D2> const& r2)
+assign_product2(MatrixSlice<std::complex<double>, Derived>& lhs,
+                MatrixConstExpression<std::complex<double>, D1> const& r1,
+                MatrixConstExpression<std::complex<double>, D2> const& r2)
 {
    TempMatrix<std::complex<double> > x1(r1.as_derived());
    TempMatrix<std::complex<double> > x2(r2.as_derived());

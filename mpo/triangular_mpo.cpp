@@ -75,7 +75,7 @@ GenericMPO extract_lower_column(TriangularMPO const& Op, int Col)
    return MPOp;
 }
 
-FiniteMPO 
+FiniteMPO
 TriangularMPO::operator()(int Row, int Col) const
 {
    GenericMPO MPOp(Data_);
@@ -119,7 +119,7 @@ void deparallelize(TriangularMPO& Op)
             Reduced = true;
       }
       Op.front() = T * Op.front();
-      
+
       // Working right to left, optimize Basis1
       T = TruncateBasis1(Op.back());
       if (T.size1() != T.size2())
@@ -127,7 +127,7 @@ void deparallelize(TriangularMPO& Op)
       for (int i = Op.size()-2; i >= 0; --i)
       {
          Op[i] = Op[i] * T;
-	 T = TruncateBasis1(Op[i]);
+         T = TruncateBasis1(Op[i]);
          if (T.size1() != T.size2())
             Reduced = true;
       }
@@ -160,7 +160,7 @@ void qr_optimize(TriangularMPO& Op)
       OperatorComponent Op2 = Op.front();
       if (!First && Second)
       {
-	 TRACE("XXXXX");
+         TRACE("XXXXX");
       }
       SimpleOperator T2 = TruncateBasis2MkII(Op2, First ? 0.0 : Eps);
       TRACE(norm_frob(Op.front() - Op2*T2));
@@ -177,7 +177,7 @@ void qr_optimize(TriangularMPO& Op)
             Reduced = true;
       }
       Op.back() = T * Op.back();
-      
+
       // Working right to left, optimize Basis1
       T = TruncateBasis1MkII(Op.back(), Eps);
       if (T.size1() != T.size2())
@@ -185,12 +185,12 @@ void qr_optimize(TriangularMPO& Op)
       for (int i = Op.size()-2; i >= 1; --i)
       {
          Op[i] = Op[i] * T;
-	 T = TruncateBasis1MkII(Op[i], Eps);
+         T = TruncateBasis1MkII(Op[i], Eps);
          if (T.size1() != T.size2())
             Reduced = true;
       }
       Op.front() = Op.front() * T;
-      
+
       if (!First) Second = false;
       First = false;
    }
@@ -267,7 +267,7 @@ equal(TriangularMPO const& Op1, TriangularMPO const& Op2, double Tol)
 // if we recognise that columns (or rows) 2,3 are parallel, because they are the same above the diagonal,
 // and also have the same diagonal term.
 //
-// Extending this to larger unit cells, suppose that A is 1x2x1 on 4 unit cells.  
+// Extending this to larger unit cells, suppose that A is 1x2x1 on 4 unit cells.
 // ( A B ) ( C D ) ( K )
 //         ( E F ) ( L )
 //
@@ -324,44 +324,44 @@ bool tri_optimize_rows(TriangularMPO& Op)
       int r2 = r1+1;
       while (r2 < Sz)
       {
-	 // check rows r1 and r2
-	 FiniteMPO Diagonal2 = Op(r2, r2);
+         // check rows r1 and r2
+         FiniteMPO Diagonal2 = Op(r2, r2);
 
-	 // The diagonal operators must match, otherwise quit early
-	 if (!equal(Diagonal1, Diagonal2, Tol))
-	 {
-	    ++r2;
-	    continue;
-	 }
+         // The diagonal operators must match, otherwise quit early
+         if (!equal(Diagonal1, Diagonal2, Tol))
+         {
+            ++r2;
+            continue;
+         }
 
-	 // test the remaining components.
-	 // Firstly, the columns of row r1 from column r1+1 up to r2 (inclusive) must be zero
-	 int c = r1+1;
-	 while (c <= r2 && log_norm_frob_sq(Op(r1, c)) <= std::log(Tol))
-	    ++c;
+         // test the remaining components.
+         // Firstly, the columns of row r1 from column r1+1 up to r2 (inclusive) must be zero
+         int c = r1+1;
+         while (c <= r2 && log_norm_frob_sq(Op(r1, c)) <= std::log(Tol))
+            ++c;
 
-	 if (c <= r2)
-	 {
-	    ++r2;
-	    continue;
-	 }
+         if (c <= r2)
+         {
+            ++r2;
+            continue;
+         }
 
-	 // the remaining columns up to Sz must have equal entries
-	 while (c < Sz && equal(Op(r1, c), Op(r2, c), Tol))
-	    ++c;
+         // the remaining columns up to Sz must have equal entries
+         while (c < Sz && equal(Op(r1, c), Op(r2, c), Tol))
+            ++c;
 
-	 if (c < Sz)
-	 {
-	    ++r2;
-	    continue;
-	 }
+         if (c < Sz)
+         {
+            ++r2;
+            continue;
+         }
 
-	 // if we get here, then rows r1 and r2 can be compressed
-	 // compress r2 onto r1
-	 compress_row(Op, r1, r2);
-	 Result = true;
+         // if we get here, then rows r1 and r2 can be compressed
+         // compress r2 onto r1
+         compress_row(Op, r1, r2);
+         Result = true;
 
-	 // Don't increase r2 here, since we just did a compression
+         // Don't increase r2 here, since we just did a compression
       }
       ++r1;
    }
@@ -387,7 +387,7 @@ void tri_optimize(TriangularMPO& Op)
 
 void balance(TriangularMPO& Op)
 {
-   // 
+   //
 }
 
 void print_structure(TriangularMPO const& Op, std::ostream& out, double UnityEpsilon, int Verbose)
@@ -528,7 +528,7 @@ TriangularMPO operator+(TriangularMPO const& x, TriangularMPO const& y)
       for (int i = 1; i < y_cols; ++i)
          yProjector2(i+x_cols-2,i) = 1.0;
 
-      OperatorComponent Next = triple_prod(xProjector1, x[Here], herm(xProjector2)) 
+      OperatorComponent Next = triple_prod(xProjector1, x[Here], herm(xProjector2))
          + triple_prod(yProjector1, y[Here], herm(yProjector2));
 
       Next(0,0) = x[Here](0,0);
@@ -592,63 +592,63 @@ TriangularMPO prod(TriangularMPO const& x, TriangularMPO const& y, QuantumNumber
 
       for (OperatorComponent::const_iterator I1 = iterate(x[Here].data()); I1; ++I1)
       {
-	 for (OperatorComponent::const_inner_iterator I2 = iterate(I1); I2; ++I2)
-	 {
+         for (OperatorComponent::const_inner_iterator I2 = iterate(I1); I2; ++I2)
+         {
 
-	    for (OperatorComponent::const_iterator J1 = iterate(y[Here].data()); J1; ++J1)
-	    {
-	       for (OperatorComponent::const_inner_iterator J2 = iterate(J1); J2; ++J2)
-	       {
+            for (OperatorComponent::const_iterator J1 = iterate(y[Here].data()); J1; ++J1)
+            {
+               for (OperatorComponent::const_inner_iterator J2 = iterate(J1); J2; ++J2)
+               {
 
-		  ProductBasis<BasisList, BasisList>::const_iterator B1End = B1.end(I2.index1(), J2.index1());
-		  ProductBasis<BasisList, BasisList>::const_iterator B2End = B2.end(I2.index2(), J2.index2());
+                  ProductBasis<BasisList, BasisList>::const_iterator B1End = B1.end(I2.index1(), J2.index1());
+                  ProductBasis<BasisList, BasisList>::const_iterator B2End = B2.end(I2.index2(), J2.index2());
 
-		  ProductBasis<BasisList, BasisList>::const_iterator B1Iter = B1.begin(I2.index1(), J2.index1());
+                  ProductBasis<BasisList, BasisList>::const_iterator B1Iter = B1.begin(I2.index1(), J2.index1());
 
-		  while (B1Iter != B1End)
-		  {
-		     ProductBasis<BasisList, BasisList>::const_iterator B2Iter = B2.begin(I2.index2(), J2.index2());
-		     while (B2Iter != B2End)
-		     {
-			SimpleRedOperator ToInsert(x[Here].LocalBasis1(), y[Here].LocalBasis2());
+                  while (B1Iter != B1End)
+                  {
+                     ProductBasis<BasisList, BasisList>::const_iterator B2Iter = B2.begin(I2.index2(), J2.index2());
+                     while (B2Iter != B2End)
+                     {
+                        SimpleRedOperator ToInsert(x[Here].LocalBasis1(), y[Here].LocalBasis2());
 
-			// iterate over components of the reducible operators *I1 and *I2
-			for (SimpleRedOperator::const_iterator IComponent = I2->begin(); IComponent != I2->end(); ++IComponent)
-			{
-			   for (SimpleRedOperator::const_iterator JComponent = J2->begin(); JComponent != J2->end(); ++JComponent)
-			   {
+                        // iterate over components of the reducible operators *I1 and *I2
+                        for (SimpleRedOperator::const_iterator IComponent = I2->begin(); IComponent != I2->end(); ++IComponent)
+                        {
+                           for (SimpleRedOperator::const_iterator JComponent = J2->begin(); JComponent != J2->end(); ++JComponent)
+                           {
 
-			      QuantumNumbers::QuantumNumberList ql = transform_targets(IComponent->TransformsAs(),
-										       JComponent->TransformsAs());
+                              QuantumNumbers::QuantumNumberList ql = transform_targets(IComponent->TransformsAs(),
+                                                                                       JComponent->TransformsAs());
 
-			      for (QuantumNumbers::QuantumNumberList::const_iterator q = ql.begin(); q != ql.end(); ++q)
-			      {
-				 if (is_transform_target(B2[*B2Iter], *q, B1[*B1Iter]))
-				 {
-				    SimpleOperator Next = 
-				       tensor_coefficient(B1, B2, 
-							  IComponent->TransformsAs(), JComponent->TransformsAs(), *q,
-							  I2.index1(), J2.index1(), *B1Iter,
-							  I2.index2(), J2.index2(), *B2Iter) *
-				       prod(*IComponent, *JComponent, *q);
-				    if (!is_zero(Next.data()))
-				       ToInsert += Next;
+                              for (QuantumNumbers::QuantumNumberList::const_iterator q = ql.begin(); q != ql.end(); ++q)
+                              {
+                                 if (is_transform_target(B2[*B2Iter], *q, B1[*B1Iter]))
+                                 {
+                                    SimpleOperator Next =
+                                       tensor_coefficient(B1, B2,
+                                                          IComponent->TransformsAs(), JComponent->TransformsAs(), *q,
+                                                          I2.index1(), J2.index1(), *B1Iter,
+                                                          I2.index2(), J2.index2(), *B2Iter) *
+                                       prod(*IComponent, *JComponent, *q);
+                                    if (!is_zero(Next.data()))
+                                       ToInsert += Next;
 
-				 }
-			      }
-			   }
-			}
+                                 }
+                              }
+                           }
+                        }
 
-			if (!ToInsert.empty())
-			   Op.data()(*B1Iter, *B2Iter) = ToInsert;
+                        if (!ToInsert.empty())
+                           Op.data()(*B1Iter, *B2Iter) = ToInsert;
 
-			++B2Iter;
-		     }
-		     ++B1Iter;
-		  }
-	       }
-	    }
-	 }
+                        ++B2Iter;
+                     }
+                     ++B1Iter;
+                  }
+               }
+            }
+         }
       }
 
       Result[Here] = Op;
@@ -704,12 +704,12 @@ TriangularMPO outer(TriangularMPO const& x, TriangularMPO const& y)
    {
       if (degree(L[i]) > degree(q))
       {
-	 q = L[i];
-	 Unique = true;
+         q = L[i];
+         Unique = true;
       }
       else if (degree(L[i]) == degree(q))
       {
-	 Unique = false;
+         Unique = false;
       }
    }
    CHECK(Unique)("outer product is not defined for these operators")
@@ -755,7 +755,7 @@ TriangularMPO coarse_grain(TriangularMPO const& x, int N)
    int MinSize = statistics::lcm(N, x.size());
    return TriangularMPO(coarse_grain(repeat(x, MinSize/x.size()).data(), N).data());
 }
-			 
+
 // initial operators
 
 StateComponent Initial_E(TriangularMPO const& m, VectorBasis const& Vac)
@@ -832,7 +832,7 @@ bool remove_redundant_by_row(OperatorComponent& Op)
          SimpleRedOperator Diag = ConstOp(i,i);
          int j = i+1;
          while (j < Size-1)
-         { 
+         {
             if (ToDelete.count(j) || norm_frob_sq(ConstOp(j,j) - Diag) >= std::numeric_limits<double>::epsilon() * 1000)
             {
                ++j;
@@ -862,7 +862,7 @@ bool remove_redundant_by_row(OperatorComponent& Op)
             }
             //            TRACE(ijInner)(iNormSq)(jNormSq);
             // are rows i,j proportional to each other?
-            if (LinearAlgebra::norm_frob(LinearAlgebra::norm_frob_sq(ijInner) - iNormSq*jNormSq) 
+            if (LinearAlgebra::norm_frob(LinearAlgebra::norm_frob_sq(ijInner) - iNormSq*jNormSq)
                 < std::numeric_limits<double>::epsilon() * iNormSq*jNormSq*100)
             {
                //DEBUG_TRACE((LinearAlgebra::norm_frob_sq(ijInner) - iNormSq*jNormSq)/(iNormSq*jNormSq))(iNormSq)(jNormSq);
@@ -871,7 +871,7 @@ bool remove_redundant_by_row(OperatorComponent& Op)
                ToCollapseOnto[j] = std::make_pair(i, Factor);
                ToDelete.insert(j);
             }
-            else if (LinearAlgebra::norm_frob(LinearAlgebra::norm_frob_sq(ijInner) - iNormSq*jNormSq) 
+            else if (LinearAlgebra::norm_frob(LinearAlgebra::norm_frob_sq(ijInner) - iNormSq*jNormSq)
                 < std::numeric_limits<double>::epsilon() * iNormSq*jNormSq*10000000)
             {
                TRACE("smallish norm")(LinearAlgebra::norm_frob_sq(ijInner))(iNormSq)(jNormSq);
@@ -962,7 +962,7 @@ bool remove_redundant_by_column(OperatorComponent& Op)
          SimpleRedOperator Diag = ConstOp(i,i);
          int j = i-1;
          while (j > 0)
-         { 
+         {
             if (ToDelete.count(j) || norm_frob_sq(ConstOp(j,j) - Diag) >= std::numeric_limits<double>::epsilon() * 1000)
             {
                --j;
@@ -974,9 +974,9 @@ bool remove_redundant_by_column(OperatorComponent& Op)
             double jNormSq = 0;
             std::complex<double> ijInner;
             for (int k = j+1; k < Size; ++k)
-	    {
+            {
                jNormSq += norm_frob_sq(ConstOp(k,j));
-	    }
+            }
             for (int k = j+1; k < Size; ++k)
             {
                //               TRACE(i)(j)(k)(ConstOp(k,i))(ConstOp(k,j));
@@ -989,7 +989,7 @@ bool remove_redundant_by_column(OperatorComponent& Op)
             }
             //            TRACE(ijInner)(iNormSq)(jNormSq);
             // are rows i,j proportional to each other?
-            if (LinearAlgebra::norm_frob(LinearAlgebra::norm_frob_sq(ijInner) - iNormSq*jNormSq) 
+            if (LinearAlgebra::norm_frob(LinearAlgebra::norm_frob_sq(ijInner) - iNormSq*jNormSq)
                 < std::numeric_limits<double>::epsilon()*iNormSq*jNormSq*100)
             {
                // yes, get the constant of proportionality
@@ -998,8 +998,8 @@ bool remove_redundant_by_column(OperatorComponent& Op)
                ToDelete.insert(j);
                //               TRACE("Collapsible")(i)(j)(Factor);
             }
-            else if (LinearAlgebra::norm_frob(LinearAlgebra::norm_frob_sq(ijInner) 
-					      - iNormSq*jNormSq) 
+            else if (LinearAlgebra::norm_frob(LinearAlgebra::norm_frob_sq(ijInner)
+                                              - iNormSq*jNormSq)
                 < std::numeric_limits<double>::epsilon() * iNormSq*jNormSq*10000000)
             {
                TRACE("smallish norm")(LinearAlgebra::norm_frob_sq(ijInner))(iNormSq)(jNormSq);
@@ -1039,13 +1039,13 @@ bool remove_redundant_by_column(OperatorComponent& Op)
 
          if (ToCollapseOnto.find(j) != ToCollapseOnto.end())
          {
-	    DEBUG_CHECK(NewBasisMapping[ToCollapseOnto[j].first] > NewBasisMapping[i]);
-            Result(NewBasisMapping[ToCollapseOnto[j].first], NewBasisMapping[i]) 
-	       += ToCollapseOnto[j].second * ConstOp(j,i);
+            DEBUG_CHECK(NewBasisMapping[ToCollapseOnto[j].first] > NewBasisMapping[i]);
+            Result(NewBasisMapping[ToCollapseOnto[j].first], NewBasisMapping[i])
+               += ToCollapseOnto[j].second * ConstOp(j,i);
          }
          else if (NewBasisMapping[j] >= 0)
          {
-	    DEBUG_CHECK(NewBasisMapping[j] > NewBasisMapping[i]);
+            DEBUG_CHECK(NewBasisMapping[j] > NewBasisMapping[i]);
             Result(NewBasisMapping[j], NewBasisMapping[i]) += ConstOp(j,i);
          }
       }

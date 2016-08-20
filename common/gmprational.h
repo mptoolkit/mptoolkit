@@ -310,7 +310,7 @@ void rational::swap(rational& x)
 // arithmetic
 
 inline
-rational& 
+rational&
 rational::operator+=(rational const& x)
 {
    mpq_add(Data, Data, x.Data);
@@ -318,26 +318,26 @@ rational::operator+=(rational const& x)
 }
 
 inline
-rational& 
+rational&
 rational::operator-=(rational const& x)
 {
-   mpq_sub(Data, Data, x.Data); 
+   mpq_sub(Data, Data, x.Data);
    return *this;
 }
 
 inline
-rational& 
+rational&
 rational::operator*=(rational const& x)
 {
-   mpq_mul(Data, Data, x.Data);  
+   mpq_mul(Data, Data, x.Data);
    return *this;
 }
 
 inline
-rational& 
+rational&
 rational::operator/=(rational const& x)
 {
-   mpq_div(Data, Data, x.Data);  
+   mpq_div(Data, Data, x.Data);
    return *this;
 }
 

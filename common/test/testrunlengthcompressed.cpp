@@ -73,23 +73,23 @@ int main()
    // make sure that adding a empty node does nothing
    x.push_back(run_length_repeat<int>(0, run_length_compressed<int>(4)));
    CHECK_EQUAL(x.size(), 16);
-   CHECK_EQUAL(x.node_count(), 3); 
-   CHECK_EQUAL(x.leaf_count(), 2); 
+   CHECK_EQUAL(x.node_count(), 3);
+   CHECK_EQUAL(x.leaf_count(), 2);
 
    x.push_back(run_length_array<int>());
    CHECK_EQUAL(x.size(), 16);
-   CHECK_EQUAL(x.node_count(), 3); 
-   CHECK_EQUAL(x.leaf_count(), 2); 
-   
+   CHECK_EQUAL(x.node_count(), 3);
+   CHECK_EQUAL(x.leaf_count(), 2);
+
    x.push_front(run_length_repeat<int>(0, run_length_compressed<int>(4)));
    CHECK_EQUAL(x.size(), 16);
-   CHECK_EQUAL(x.node_count(), 3); 
-   CHECK_EQUAL(x.leaf_count(), 2); 
+   CHECK_EQUAL(x.node_count(), 3);
+   CHECK_EQUAL(x.leaf_count(), 2);
 
    x.push_front(run_length_array<int>());
    CHECK_EQUAL(x.size(), 16);
-   CHECK_EQUAL(x.node_count(), 3); 
-   CHECK_EQUAL(x.leaf_count(), 2); 
+   CHECK_EQUAL(x.node_count(), 3);
+   CHECK_EQUAL(x.leaf_count(), 2);
 
    xTest.clear();
    std::copy(x.begin(), x.end(), std::back_insert_iterator<std::vector<int> >(xTest));

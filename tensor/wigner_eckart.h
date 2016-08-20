@@ -51,7 +51,7 @@ class WignerEckartBasis<VectorBasis>
       basis_type const& NonAbelianBasis() const { return NonAbBasis; }
       basis_type const& AbelianBasis() const { return AbBasis; }
 
-      // returns the subspace in the abelian basis corresponding to the 
+      // returns the subspace in the abelian basis corresponding to the
       // given non-abelian subspace and the projection, or -1 if this state is not in the basis
       int Map(int NonAbelianSubspace, int Projection) const;
 
@@ -72,16 +72,16 @@ QPSetType UpdateAllowedProjections(QPSetType const& qp, std::set<QuantumNumber> 
 // the Wigner Eckart mappings b1 and b2, for the left basis and right basis respectively.
 template <typename T, typename B1T, typename B2T>
 IrredTensor<T, B1T, B2T, DefaultStructure>
-wigner_eckart(IrredTensor<T, B1T, B2T, DefaultStructure> const& x, 
-              Projection const& p, 
-              WignerEckartBasis<B1T> const& b1, 
+wigner_eckart(IrredTensor<T, B1T, B2T, DefaultStructure> const& x,
+              Projection const& p,
+              WignerEckartBasis<B1T> const& b1,
               WignerEckartBasis<B1T> const& b2);
 
 template <typename T, typename B1T, typename B2T, typename S>
 IrredTensor<T, B1T, B2T, DefaultStructure>
-wigner_eckart(IrredTensor<T, B1T, B2T, DiagonalStructure> const& x, 
-              Projection const& p, 
-              WignerEckartBasis<B1T> const& b1, 
+wigner_eckart(IrredTensor<T, B1T, B2T, DiagonalStructure> const& x,
+              Projection const& p,
+              WignerEckartBasis<B1T> const& b1,
               WignerEckartBasis<B1T> const& b2);
 
 } // namespace Tensor

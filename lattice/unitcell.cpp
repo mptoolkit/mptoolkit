@@ -30,13 +30,13 @@ UnitCell::UnitCell()
 }
 
 UnitCell::UnitCell(UnitCell const& Other)
-   : Sites(Other.Sites), Operators(Other.Operators), 
+   : Sites(Other.Sites), Operators(Other.Operators),
      Arguments(Other.Arguments), Functions(Other.Functions)
 {
 }
 
 UnitCell::UnitCell(LatticeSite const& s)
-   : Sites(new SiteListType(1, s)), 
+   : Sites(new SiteListType(1, s)),
      Arguments(s.begin_arg(), s.end_arg())
 {
    this->SetDefaultOperators();
@@ -122,8 +122,8 @@ UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite con
    this->check_structure();
 }
 
-UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t, 
-		   LatticeSite const& u, LatticeSite const& v)
+UnitCell::UnitCell(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t,
+                   LatticeSite const& u, LatticeSite const& v)
    : Sites(new SiteListType(1, CoerceSymmetryList(s, sl)))
 {
    {
@@ -144,7 +144,7 @@ UnitCell::UnitCell(int RepeatCount, UnitCell const& l)
       Lock->reserve(l.size()*RepeatCount);
       for (int i = 0; i < RepeatCount; ++i)
       {
-	 Lock->insert(Lock->end(), l.Sites->begin(), l.Sites->end());
+         Lock->insert(Lock->end(), l.Sites->begin(), l.Sites->end());
       }
    }
    if (RepeatCount == 1)
@@ -213,7 +213,7 @@ UnitCell::operator=(UnitCell const& Other)
    return *this;
 }
 
-LatticeSite const& 
+LatticeSite const&
 UnitCell::operator[](int n) const
 {
    return (*Sites)[n];
@@ -329,11 +329,11 @@ UnitCell::map_local_operator(SiteOperator const& Operator, int Cell, int n) cons
    {
       if (!(*Sites)[i].operator_exists(SignOperator))
       {
-	 WARNING("JW-string operator doesn't exist at a lattice site, using the identity")
-	    (i)(SignOperator);
+         WARNING("JW-string operator doesn't exist at a lattice site, using the identity")
+            (i)(SignOperator);
       }
-      SimpleOperator Op = (*Sites)[i].operator_exists(SignOperator) ? 
-	 (*Sites)[i][SignOperator] : (*Sites)[i].identity();
+      SimpleOperator Op = (*Sites)[i].operator_exists(SignOperator) ?
+         (*Sites)[i][SignOperator] : (*Sites)[i].identity();
       Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Basis, Basis);
       Result[i](0,0) = Op;
    }
@@ -346,8 +346,8 @@ UnitCell::map_local_operator(SiteOperator const& Operator, int Cell, int n) cons
       Result[i](0,0) = I;
    }
 
-   return UnitCellMPO(Sites, Result, Operator.Commute(), Cell*this->size(), 
-		      Operator.description());
+   return UnitCellMPO(Sites, Result, Operator.Commute(), Cell*this->size(),
+                      Operator.description());
 }
 
 UnitCell::operator_type
@@ -372,7 +372,7 @@ struct ParseUnitCellExpression
    ParseUnitCellExpression(UnitCell const& Cell_) : Cell(Cell_) {}
 
    std::complex<double> operator()(Function::ArgumentList const& Args,
-				   std::string const& Str) const
+                                   std::string const& Str) const
    {
       return ParseUnitCellNumber(Cell, 0, Str, Args);
    }
@@ -384,7 +384,7 @@ struct ParseUnitCellExpression
 
 boost::variant<UnitCell::operator_type, std::complex<double> >
 UnitCell::eval_function(Function::OperatorFunction const& Func, int Cell,
-			Function::ParameterList const& Params) const
+                        Function::ParameterList const& Params) const
 {
    Function::ArgumentList Args = GetArguments(Func.Args, Params, ParseUnitCellExpression(*this));
    boost::variant<UnitCell::operator_type, std::complex<double> > Result
@@ -398,7 +398,7 @@ UnitCell::eval_function(Function::OperatorFunction const& Func, int Cell,
 
 boost::variant<UnitCell::operator_type, std::complex<double> >
 UnitCell::eval_function(std::string const& Func, int Cell,
-			Function::ParameterList const& Params) const
+                        Function::ParameterList const& Params) const
 {
    if (this->function_exists(Func))
       return this->eval_function(this->func(Func), Cell, Params);
@@ -408,7 +408,7 @@ UnitCell::eval_function(std::string const& Func, int Cell,
 
 boost::variant<UnitCell::operator_type, std::complex<double> >
 UnitCell::eval_local_function(std::string const& Func, int Cell, int Site,
-			      Function::ParameterList const& Params) const
+                              Function::ParameterList const& Params) const
 {
    SiteElementType Element = Sites->operator[](Site).eval_function(Func, Params);
 
@@ -435,7 +435,7 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
    // Now we need to turn that into something that can use the local P operators only.
    // Note that P_i = (-1)^N_i.  Therefore, the number of fermions on site i (mod 2) is
    // 0.5*(1-P_i).  Call this F_i.  We can replace all of the N_i above with F_i.
-   // The F_i on each site commute, so we can expand out the exponential.  
+   // The F_i on each site commute, so we can expand out the exponential.
    // Hence we can write this as (-1)^{....} =
    //   (-1)^{F_i F_{i+1}                    }
    // * (-1)^{F_i         F_{i+2}            }
@@ -452,7 +452,7 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
 
    // maybe easier to do products of nearest-neighbor swaps?
    // If the swap is nearest-neighbor then the number of fermions is F_i * F_j.
-   
+
    // Need to write it as a function of the individual basis states in F_i and F_j,
    // and write it as a modifier on the sign of the swap gate between those states.
    // if they are both fermions or neither are fermions then there is no change.
@@ -495,11 +495,11 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
    ProductBasis<BasisList, BasisList> Basis_ji(Basis_j, Basis_i);
 
    // The actual gate operator
-   SimpleOperator Op = ::swap_gate_fermion(Basis_i, Parity_i, 
-					   Basis_j, Parity_j,
-					   Basis_ji, Basis_ij);
+   SimpleOperator Op = ::swap_gate_fermion(Basis_i, Parity_i,
+                                           Basis_j, Parity_j,
+                                           Basis_ji, Basis_ij);
 
-   // decompose it back into sites   
+   // decompose it back into sites
    OperatorComponent R1, R2;
    std::tie(R1, R2) = decompose_local_tensor_prod(Op, Basis_ji, Basis_ij);
 
@@ -524,18 +524,18 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
       Result[n] = OperatorComponent(this->LocalBasis(n % this->size()), R1.Basis2(), R1.Basis2());
       for (unsigned p = 0; p < Basis_ji.size(); ++p)
       {
-	 std::pair<int,int> x = Basis_ji.rmap(p);
-	 // cast to int to make sure we're comparing properly
-	 if (int(Parity_i[x.second]) == int(Parity_j[x.first]))
-	 {
-	    // identity
-	    Result[n](p,p) = this->operator[](n % this->size())["I"];
-	 }
-	 else
-	 {
-	    // parity
-	    Result[n](p,p) = this->operator[](n % this->size())["P"];
-	 }
+         std::pair<int,int> x = Basis_ji.rmap(p);
+         // cast to int to make sure we're comparing properly
+         if (int(Parity_i[x.second]) == int(Parity_j[x.first]))
+         {
+            // identity
+            Result[n](p,p) = this->operator[](n % this->size())["I"];
+         }
+         else
+         {
+            // parity
+            Result[n](p,p) = this->operator[](n % this->size())["P"];
+         }
       }
    }
 
@@ -590,7 +590,7 @@ UnitCell::swap_gate_no_sign(int Cell_i, int i, int Cell_j, int j) const
    // The actual gate operator
    SimpleOperator Op = ::swap_gate(Basis_i, Basis_j, Basis_ji, Basis_ij);
 
-   // decompose it back into sites   
+   // decompose it back into sites
    OperatorComponent R1, R2;
    std::tie(R1, R2) = decompose_local_tensor_prod(Op, Basis_ji, Basis_ij);
 
@@ -623,7 +623,7 @@ UnitCell::SetDefaultOperators()
       return;
 
    Operators["I"] = UnitCellMPO(Sites, identity_mpo(*Sites), LatticeCommute::Bosonic, 0,
-				"Identity");
+                                "Identity");
 
    // we don't need the R operator if we have string() in the parser.
    //   Operators["R"] = UnitCellMPO(Sites, string_mpo(Sites, ), LatticeCommute::Bosonic, 0);
@@ -661,7 +661,7 @@ UnitCell::string_mpo(std::string const& OpName, QuantumNumbers::QuantumNumber co
    {
       if (!this->operator_exists(OpName))
       {
-	 WARNING("JW-string operator doesn't exist at a lattice site, using the identity")(i)(OpName);
+         WARNING("JW-string operator doesn't exist at a lattice site, using the identity")(i)(OpName);
       }
       SimpleOperator Op = (*Data)[i].operator_exists(OpName) ? (*Data)[i][OpName] : (*Data)[i].identity();
       Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Vacuum, Vacuum);
@@ -748,7 +748,7 @@ UnitCell join(UnitCell const& x, UnitCell const& y, UnitCell const& z, UnitCell 
 }
 
 UnitCell join(UnitCell const& x, UnitCell const& y, UnitCell const& z, UnitCell const& w,
-	     UnitCell const& v)
+             UnitCell const& v)
 {
    return join(UnitCell(x,y,z,w), v);
 }

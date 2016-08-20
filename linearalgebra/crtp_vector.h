@@ -115,7 +115,7 @@ class VectorBase
       // operator []
 
       template <typename RHS>
-      typename boost::disable_if<is_const_proxy<derived_type>, 
+      typename boost::disable_if<is_const_proxy<derived_type>,
                                  typename VectorBracket<derived_type&, RHS>::result_type>::type
       operator[](RHS const& x)
       {

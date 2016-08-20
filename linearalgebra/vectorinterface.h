@@ -79,12 +79,12 @@ namespace LinearAlgebra
 // VectorExpression defines only size(), eval() and assignment semantics.
 // Local defines the Iterate function, and iterator types.
 //
-// Currently, it is not possible for a vector to satisfy the Local      
-// interface without also satisfying either the Dense or Compressed      
-// interface.  
-// 
+// Currently, it is not possible for a vector to satisfy the Local
+// interface without also satisfying either the Dense or Compressed
+// interface.
+//
 // The interface satisfied by all iterators is an indexed iterator,
-// with dereference, a member function index() that returns the 
+// with dereference, a member function index() that returns the
 // index of the iterator location, and a conversion to bool
 // that returns true if the iterator is non-singular, false otherwise.
 // Whether this is a forward iterator or bidirectional is yet to be determined;
@@ -145,145 +145,145 @@ struct VectorExpression
 template <typename LocalPart, typename T>
 struct DistributedVector {};
 
-#define DISTRIBUTED_VECTOR(Value, Local, T)				\
-  LinearAlgebra::Concepts::VectorExpression< Value, 			\
+#define DISTRIBUTED_VECTOR(Value, Local, T)                             \
+  LinearAlgebra::Concepts::VectorExpression< Value,                     \
    LinearAlgebra::Concepts::DistributedVector< Local, T > > /**/
 
 
 template <typename T>
 struct Local {};
 
-#define LOCAL_STORAGE(T) 			\
+#define LOCAL_STORAGE(T)                        \
    LinearAlgebra::Concepts::Local< T > /**/
 
-#define LOCAL_VECTOR(Value, T)				\
-LinearAlgebra::Concepts::VectorExpression< Value ,	\
+#define LOCAL_VECTOR(Value, T)                          \
+LinearAlgebra::Concepts::VectorExpression< Value ,      \
    LinearAlgebra::Concepts::Local< T > > /**/
 
 
 template <typename T>
 struct Compressed {}; // : Local<Compressed<T> > {};
 
-#define COMPRESSED_STORAGE(T) 				\
-   LinearAlgebra::Concepts::Local<			\
+#define COMPRESSED_STORAGE(T)                           \
+   LinearAlgebra::Concepts::Local<                      \
       LinearAlgebra::Concepts::Compressed< T > > /**/
 
-#define COMPRESSED_VECTOR(Value, T)			\
-LinearAlgebra::Concepts::VectorExpression< Value ,	\
-   LinearAlgebra::Concepts::Local<			\
+#define COMPRESSED_VECTOR(Value, T)                     \
+LinearAlgebra::Concepts::VectorExpression< Value ,      \
+   LinearAlgebra::Concepts::Local<                      \
       LinearAlgebra::Concepts::Compressed< T > > > /**/
 
 
 template <typename T>
 struct Injective {}; // : Compressed<Injective<T> > {};
 
-#define INJECTIVE_STORAGE(T) 					\
-   LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::Compressed<			\
+#define INJECTIVE_STORAGE(T)                                    \
+   LinearAlgebra::Concepts::Local<                              \
+      LinearAlgebra::Concepts::Compressed<                      \
          LinearAlgebra::Concepts::Injective< T > > > /**/
 
-#define INJECTIVE_VECTOR(Value, T)				\
-LinearAlgebra::Concepts::VectorExpression< Value ,		\
-   LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::Compressed<			\
+#define INJECTIVE_VECTOR(Value, T)                              \
+LinearAlgebra::Concepts::VectorExpression< Value ,              \
+   LinearAlgebra::Concepts::Local<                              \
+      LinearAlgebra::Concepts::Compressed<                      \
          LinearAlgebra::Concepts::Injective< T > > > > /**/
 
 
 template <typename T>
 struct Hashed {}; // : Injective<Hashed<T> > {};
 
-#define HASHED_STORAGE(T)					\
-   LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::Compressed<			\
-         LinearAlgebra::Concepts::Injective<			\
+#define HASHED_STORAGE(T)                                       \
+   LinearAlgebra::Concepts::Local<                              \
+      LinearAlgebra::Concepts::Compressed<                      \
+         LinearAlgebra::Concepts::Injective<                    \
             LinearAlgebra::Concepts::Hashed< T > > > > /**/
 
-#define HASHED_VECTOR(Value, T)					\
-LinearAlgebra::Concepts::VectorExpression< Value ,		\
-   LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::Compressed<			\
-         LinearAlgebra::Concepts::Injective<			\
+#define HASHED_VECTOR(Value, T)                                 \
+LinearAlgebra::Concepts::VectorExpression< Value ,              \
+   LinearAlgebra::Concepts::Local<                              \
+      LinearAlgebra::Concepts::Compressed<                      \
+         LinearAlgebra::Concepts::Injective<                    \
             LinearAlgebra::Concepts::Hashed< T > > > > > /**/
 
 
 template <typename T>
 struct Ordered {}; // : Injective<Ordered<T> > {};
 
-#define ORDERED_STORAGE(T)					\
-   LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::Compressed<			\
-         LinearAlgebra::Concepts::Injective<			\
+#define ORDERED_STORAGE(T)                                      \
+   LinearAlgebra::Concepts::Local<                              \
+      LinearAlgebra::Concepts::Compressed<                      \
+         LinearAlgebra::Concepts::Injective<                    \
             LinearAlgebra::Concepts::Ordered< T > > > > /**/
 
-#define ORDERED_VECTOR(Value, T)					\
-LinearAlgebra::Concepts::VectorExpression< Value ,			\
-   LinearAlgebra::Concepts::Local<					\
-      LinearAlgebra::Concepts::Compressed<				\
-         LinearAlgebra::Concepts::Injective<				\
+#define ORDERED_VECTOR(Value, T)                                        \
+LinearAlgebra::Concepts::VectorExpression< Value ,                      \
+   LinearAlgebra::Concepts::Local<                                      \
+      LinearAlgebra::Concepts::Compressed<                              \
+         LinearAlgebra::Concepts::Injective<                            \
             LinearAlgebra::Concepts::Ordered< T > > > > > /**/
 
 
 template <typename T>
 struct Search {}; // : Ordered<Search<T> > {};
 
-#define SEARCH_STORAGE(T)						\
-   LinearAlgebra::Concepts::Local<					\
-      LinearAlgebra::Concepts::Compressed<				\
-         LinearAlgebra::Concepts::Injective<				\
-            LinearAlgebra::Concepts::Ordered<				\
+#define SEARCH_STORAGE(T)                                               \
+   LinearAlgebra::Concepts::Local<                                      \
+      LinearAlgebra::Concepts::Compressed<                              \
+         LinearAlgebra::Concepts::Injective<                            \
+            LinearAlgebra::Concepts::Ordered<                           \
                LinearAlgebra::Concepts::Search< T > > > > > /**/
 
-#define SEARCH_VECTOR(Value, T)						\
-LinearAlgebra::Concepts::VectorExpression< Value ,			\
-   LinearAlgebra::Concepts::Local<					\
-      LinearAlgebra::Concepts::Compressed<				\
-         LinearAlgebra::Concepts::Injective<				\
-            LinearAlgebra::Concepts::Ordered<				\
+#define SEARCH_VECTOR(Value, T)                                         \
+LinearAlgebra::Concepts::VectorExpression< Value ,                      \
+   LinearAlgebra::Concepts::Local<                                      \
+      LinearAlgebra::Concepts::Compressed<                              \
+         LinearAlgebra::Concepts::Injective<                            \
+            LinearAlgebra::Concepts::Ordered<                           \
                LinearAlgebra::Concepts::Search< T > > > > > > /**/
 
 
 template <typename T>
 struct Dense {}; // : Local<Dense<T> > {};
 
-#define DENSE_STORAGE(T) 				\
-   LinearAlgebra::Concepts::Local<			\
+#define DENSE_STORAGE(T)                                \
+   LinearAlgebra::Concepts::Local<                      \
       LinearAlgebra::Concepts::Dense< T > > /**/
 
-#define DENSE_VECTOR(Value, T)				\
-LinearAlgebra::Concepts::VectorExpression< Value ,	\
-   LinearAlgebra::Concepts::Local<			\
+#define DENSE_VECTOR(Value, T)                          \
+LinearAlgebra::Concepts::VectorExpression< Value ,      \
+   LinearAlgebra::Concepts::Local<                      \
       LinearAlgebra::Concepts::Dense< T > > > /**/
 
 
 template <typename T>
 struct Stride {}; // : Dense<Stride<T> > {};
 
-#define STRIDE_STORAGE(T) 				\
-   LinearAlgebra::Concepts::Local<			\
-      LinearAlgebra::Concepts::Dense<			\
+#define STRIDE_STORAGE(T)                               \
+   LinearAlgebra::Concepts::Local<                      \
+      LinearAlgebra::Concepts::Dense<                   \
          LinearAlgebra::Concepts::Stride< T > > > /**/
 
-#define STRIDE_VECTOR(Value, T)				\
-LinearAlgebra::Concepts::VectorExpression< Value ,	\
-   LinearAlgebra::Concepts::Local<			\
-      LinearAlgebra::Concepts::Dense<			\
+#define STRIDE_VECTOR(Value, T)                         \
+LinearAlgebra::Concepts::VectorExpression< Value ,      \
+   LinearAlgebra::Concepts::Local<                      \
+      LinearAlgebra::Concepts::Dense<                   \
          LinearAlgebra::Concepts::Stride< T > > > > /**/
 
 
 template <typename T>
 struct Contiguous {}; // : Stride<Contiguous<T> > {};
 
-#define CONTIGUOUS_STORAGE(T)					\
-   LinearAlgebra::Concepts::Local<				\
-      LinearAlgebra::Concepts::Dense<				\
-         LinearAlgebra::Concepts::Stride<			\
+#define CONTIGUOUS_STORAGE(T)                                   \
+   LinearAlgebra::Concepts::Local<                              \
+      LinearAlgebra::Concepts::Dense<                           \
+         LinearAlgebra::Concepts::Stride<                       \
             LinearAlgebra::Concepts::Contiguous< T > > > > /**/
 
-#define CONTIGUOUS_VECTOR(Value, T)					\
-LinearAlgebra::Concepts::VectorExpression< Value ,			\
-   LinearAlgebra::Concepts::Local<					\
-      LinearAlgebra::Concepts::Dense<					\
-         LinearAlgebra::Concepts::Stride<				\
+#define CONTIGUOUS_VECTOR(Value, T)                                     \
+LinearAlgebra::Concepts::VectorExpression< Value ,                      \
+   LinearAlgebra::Concepts::Local<                                      \
+      LinearAlgebra::Concepts::Dense<                                   \
+         LinearAlgebra::Concepts::Stride<                               \
             LinearAlgebra::Concepts::Contiguous< T > > > > > /**/
 
 } // namespace Concepts
@@ -392,19 +392,19 @@ struct is_vector<T, typename boost::enable_if<exists<
 // simply whether a type should be sparse or dense.
 //
 
-struct vector_abstract_dense 
+struct vector_abstract_dense
 {
    typedef vector_abstract_dense type;
 };
 
-struct vector_abstract_sparse 
+struct vector_abstract_sparse
 {
    typedef vector_abstract_sparse type;
 };
 
 // union of vectors; dense+anything -> dense;  sparse+sparse -> sparse.
 template <typename T, typename U>
-struct vector_abstract_or 
+struct vector_abstract_or
    : boost::mpl::if_<boost::is_same<T, U>, T, vector_abstract_dense> {};
 
 // intersection vectors; sparse+anything -> sparse;  dense+dense -> dense.
@@ -561,7 +561,7 @@ struct vector_iterator_sparse {};
 // unordered but distinct indices
 struct vector_iterator_injective : vector_iterator_sparse {};
 
-// hashed indices; contains operator() for lookup, 
+// hashed indices; contains operator() for lookup,
 // member function has_element(), member function size().
 // Size can only be an approximation in some cases; is it actually useful for anything?
 struct vector_iterator_hashed : vector_iterator_injective {};

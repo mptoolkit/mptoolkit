@@ -60,8 +60,8 @@ typedef boost::variant<complex, UnitCellMPO> ElementType;
 struct push_local_operator
 {
    push_local_operator(UnitCell const& Cell_, int NumCells_,
-		       std::stack<std::string>& IdentStack_, 
-		       std::stack<ElementType>& eval_)
+                       std::stack<std::string>& IdentStack_,
+                       std::stack<ElementType>& eval_)
       : Cell(Cell_), NumCells(NumCells_), IdentStack(IdentStack_), eval(eval_) {}
 
    void operator()(char const* start, char const* end) const
@@ -74,15 +74,15 @@ struct push_local_operator
       CHECK(NumCells == 0 || (j >= 0 && j < NumCells))("Site index out of bounds")(j)(NumCells);
       if (!Cell.local_operator_exists(OpName, n))
       {
-	 ParserError w = ParserError::AtRange("Local operator does not exist: '" 
-					      + ColorHighlight(OpName) + "'", start, end);
-	 if (Cell.operator_exists(OpName))
-	 {
-	    w.AddHint("Did you intend the unit cell operator " 
-		      + ColorHighlight(OpName + "(" +
-				      boost::lexical_cast<std::string>(n) + ")") + " ?");
-	 }
-	 throw w;
+         ParserError w = ParserError::AtRange("Local operator does not exist: '"
+                                              + ColorHighlight(OpName) + "'", start, end);
+         if (Cell.operator_exists(OpName))
+         {
+            w.AddHint("Did you intend the unit cell operator "
+                      + ColorHighlight(OpName + "(" +
+                                      boost::lexical_cast<std::string>(n) + ")") + " ?");
+         }
+         throw w;
       }
 
       // Fetch the operator and JW string
@@ -100,8 +100,8 @@ struct push_local_operator
 struct push_cell_operator
 {
    push_cell_operator(UnitCell const& Cell_, int NumCells_,
-		      std::stack<std::string>& IdentStack_, 
-		      std::stack<ElementType>& eval_)
+                      std::stack<std::string>& IdentStack_,
+                      std::stack<ElementType>& eval_)
       : Cell(Cell_), NumCells(NumCells_), IdentStack(IdentStack_), eval(eval_) {}
 
    void operator()(char const* a, char const*) const
@@ -111,23 +111,23 @@ struct push_cell_operator
 
       try
       {
-	 int j = pop_int(eval);
-	 if (!Cell.operator_exists(OpName))
-	    throw ParserError("Operator not found in the unit cell: '" + ColorHighlight(OpName)
-			      + "'");
-	 eval.push(ElementType(Cell(OpName, j)));
+         int j = pop_int(eval);
+         if (!Cell.operator_exists(OpName))
+            throw ParserError("Operator not found in the unit cell: '" + ColorHighlight(OpName)
+                              + "'");
+         eval.push(ElementType(Cell(OpName, j)));
       }
       catch (ParserError const& p)
       {
-	 throw ParserError::AtPosition(p, a);
+         throw ParserError::AtPosition(p, a);
       }
       catch (std::exception const& p)
       {
-	 throw ParserError::AtPosition(p, a);
+         throw ParserError::AtPosition(p, a);
       }
       catch (...)
       {
-	 throw;
+         throw;
       }
    }
 
@@ -145,11 +145,11 @@ struct push_cell_operator
 struct eval_local_function
 {
    eval_local_function(UnitCell const& Cell_,
-		       std::stack<std::string>& FuncStack_, 
-		       std::stack<Function::ParameterList>& ParamStack_,
-		       std::stack<ElementType>& eval_)
-      : Cell(Cell_), FuncStack(FuncStack_), 
-	ParamStack(ParamStack_), eval(eval_) {}
+                       std::stack<std::string>& FuncStack_,
+                       std::stack<Function::ParameterList>& ParamStack_,
+                       std::stack<ElementType>& eval_)
+      : Cell(Cell_), FuncStack(FuncStack_),
+        ParamStack(ParamStack_), eval(eval_) {}
 
    void operator()(char const*, char const*) const
    {
@@ -162,17 +162,17 @@ struct eval_local_function
       SiteElementType Element = Cell[Site].eval_function(FuncStack.top(), ParamStack.top());
       FuncStack.pop();
       ParamStack.pop();
-      
+
       // If we have a c-number, we can return it immediately
       std::complex<double>* c = boost::get<std::complex<double> >(&Element);
       if (c)
       {
- 	 eval.push(*c);
+         eval.push(*c);
       }
       else
       {
-	 SiteOperator Op = boost::get<SiteOperator>(Element);
-	 eval.push(Cell.map_local_operator(Op, n, Site));
+         SiteOperator Op = boost::get<SiteOperator>(Element);
+         eval.push(Cell.map_local_operator(Op, n, Site));
       }
       TRACE(eval.size());
    }
@@ -187,11 +187,11 @@ struct eval_local_function
 struct eval_local_c_function
 {
    eval_local_c_function(UnitCell const& Cell_,
-			 std::stack<std::string>& FuncStack_, 
-			 std::stack<Function::ParameterList>& ParamStack_,
-			 std::stack<ElementType>& eval_)
-      : Cell(Cell_), FuncStack(FuncStack_), 
-	ParamStack(ParamStack_), eval(eval_) {}
+                         std::stack<std::string>& FuncStack_,
+                         std::stack<Function::ParameterList>& ParamStack_,
+                         std::stack<ElementType>& eval_)
+      : Cell(Cell_), FuncStack(FuncStack_),
+        ParamStack(ParamStack_), eval(eval_) {}
 
    void operator()(char const*, char const*) const
    {
@@ -217,18 +217,18 @@ struct eval_local_c_function
 struct eval_cell_function
 {
    eval_cell_function(UnitCell const& Cell_,
-		      int NumCells_,
-		      std::stack<std::string>& FuncStack_, 
-		      std::stack<Function::ParameterList>& ParamStack_,
-		      std::stack<ElementType>& eval_)
+                      int NumCells_,
+                      std::stack<std::string>& FuncStack_,
+                      std::stack<Function::ParameterList>& ParamStack_,
+                      std::stack<ElementType>& eval_)
       : Cell(Cell_), NumCells(NumCells_), FuncStack(FuncStack_),
-	ParamStack(ParamStack_), eval(eval_) {}
-   
+        ParamStack(ParamStack_), eval(eval_) {}
+
    void operator()(char const*, char const*) const
    {
       int j = pop_int(eval);
       CHECK(NumCells == 0 || (j >= 0 && j < NumCells))("Cell index out of bounds")(j)(NumCells);
- 
+
       // Construct the operator
       UnitCellElementType Result = Cell.eval_function(FuncStack.top(), j, ParamStack.top());
 
@@ -249,12 +249,12 @@ struct eval_cell_function
 struct eval_cell_c_function
 {
    eval_cell_c_function(UnitCell const& Cell_,
-		      std::stack<std::string>& FuncStack_, 
-		      std::stack<Function::ParameterList>& ParamStack_,
-		      std::stack<ElementType>& eval_)
+                      std::stack<std::string>& FuncStack_,
+                      std::stack<Function::ParameterList>& ParamStack_,
+                      std::stack<ElementType>& eval_)
       : Cell(Cell_), FuncStack(FuncStack_),
-	ParamStack(ParamStack_), eval(eval_) {}
-   
+        ParamStack(ParamStack_), eval(eval_) {}
+
    void operator()(char const* beg, char const* end) const
    {
       // Construct the operator
@@ -265,9 +265,9 @@ struct eval_cell_c_function
       std::complex<double>* c = boost::get<std::complex<double> >(&Result);
       if (!c)
       {
-	 throw ParserError::AtRange("Function without cell index must return a c-number: "
-				    + ColorHighlight(FuncStack.top()),
-				    beg, end);
+         throw ParserError::AtRange("Function without cell index must return a c-number: "
+                                    + ColorHighlight(FuncStack.top()),
+                                    beg, end);
       }
 
       FuncStack.pop();
@@ -287,8 +287,8 @@ struct eval_cell_c_function
 struct push_local_argument
 {
    push_local_argument(UnitCell const& Cell_,
-		       std::stack<std::string>& IdentStack_, 
-		       std::stack<ElementType>& eval_)
+                       std::stack<std::string>& IdentStack_,
+                       std::stack<ElementType>& eval_)
       : Cell(Cell_), IdentStack(IdentStack_), eval(eval_) {}
 
    void operator()(char const*, char const*) const
@@ -315,7 +315,7 @@ struct push_local_argument
 struct push_swapb_cell_site
 {
    push_swapb_cell_site(UnitCell const& Cell_, int NumCells_,
-		       std::stack<ElementType>& eval_)
+                       std::stack<ElementType>& eval_)
       : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
 
    void operator()(char const*, char const*) const
@@ -340,7 +340,7 @@ struct push_swapb_cell_site
 struct push_swapb_site
 {
    push_swapb_site(UnitCell const& Cell_, int NumCells_,
-		  std::stack<ElementType>& eval_)
+                  std::stack<ElementType>& eval_)
       : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
 
    void operator()(char const*, char const*) const
@@ -363,7 +363,7 @@ struct push_swapb_site
 struct push_swapb_cell
 {
    push_swapb_cell(UnitCell const& Cell_, int NumCells_,
-		  std::stack<ElementType>& eval_)
+                  std::stack<ElementType>& eval_)
       : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
 
    void operator()(char const*, char const*) const
@@ -393,7 +393,7 @@ struct push_swapb_cell
 struct push_swap_cell_site
 {
    push_swap_cell_site(UnitCell const& Cell_, int NumCells_,
-		       std::stack<ElementType>& eval_)
+                       std::stack<ElementType>& eval_)
       : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
 
    void operator()(char const*, char const*) const
@@ -419,7 +419,7 @@ struct push_swap_cell_site
 struct push_swap_site
 {
    push_swap_site(UnitCell const& Cell_, int NumCells_,
-		  std::stack<ElementType>& eval_)
+                  std::stack<ElementType>& eval_)
       : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
 
    void operator()(char const*, char const*) const
@@ -443,7 +443,7 @@ struct push_swap_site
 struct push_swap_cell
 {
    push_swap_cell(UnitCell const& Cell_, int NumCells_,
-		  std::stack<ElementType>& eval_)
+                  std::stack<ElementType>& eval_)
       : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
 
    void operator()(char const*, char const*) const
@@ -469,18 +469,18 @@ struct push_swap_cell
 struct push_string
 {
    push_string(UnitCell const& Cell_, int NumCells_,
-	       std::stack<ElementType>& eval_)
-      : Cell(Cell_), NumCells(NumCells_), eval(eval_) 
+               std::stack<ElementType>& eval_)
+      : Cell(Cell_), NumCells(NumCells_), eval(eval_)
    {
       // If the number of unit cells is unspecified, use 1
       if (NumCells == 0)
-	 NumCells = 1;
+         NumCells = 1;
    }
-   
+
    void operator()(char const* Start, char const* End) const
    {
-      FiniteMPO Op = ParseStringOperator(*Cell.GetSiteList(), 
-					 std::string(Start, End), NumCells*Cell.size());
+      FiniteMPO Op = ParseStringOperator(*Cell.GetSiteList(),
+                                         std::string(Start, End), NumCells*Cell.size());
       eval.push(UnitCellMPO(Cell.GetSiteList(), Op, LatticeCommute::Bosonic, 0));
    }
 
@@ -531,19 +531,19 @@ fsup(int Offset1, int Offset2, InfiniteMPOElement const& Op)
 struct push_fsup
 {
    push_fsup(UnitCell const& Cell_, int NumCells_,
-	     std::stack<ElementType>& eval_)
-      : Cell(Cell_), NumCells(NumCells_), eval(eval_) 
+             std::stack<ElementType>& eval_)
+      : Cell(Cell_), NumCells(NumCells_), eval(eval_)
    {
       // If the number of unit cells is unspecified, use 1
       if (NumCells == 0)
-	 NumCells = 1;
+         NumCells = 1;
    }
-   
+
    void operator()(char const* Start, char const* End) const
    {
       if (!ILattice)
       {
-	 PANIC("Lattice not defined.");
+         PANIC("Lattice not defined.");
       }
       int Cell2 = pop_int(eval);
       int Cell1 = pop_int(eval);
@@ -583,363 +583,363 @@ struct UnitCellParser : public grammar<UnitCellParser>
    static unary_funcs<ElementType>  unary_funcs_p;
    static binary_funcs<ElementType> binary_funcs_p;
 
-   UnitCellParser(ElemStackType& eval_, 
-		  UnaryFuncStackType& func_stack_,
-		  BinaryFuncStackType& bin_func_stack_,
-		  IdentifierStackType& IdentifierStack_,
-		  FunctionStackType& Functions_,
-		  ParameterStackType& Parameters_,
-		  ArgumentType& Arguments_,
-		  UnitCell const& Cell_, int NumCells_)
+   UnitCellParser(ElemStackType& eval_,
+                  UnaryFuncStackType& func_stack_,
+                  BinaryFuncStackType& bin_func_stack_,
+                  IdentifierStackType& IdentifierStack_,
+                  FunctionStackType& Functions_,
+                  ParameterStackType& Parameters_,
+                  ArgumentType& Arguments_,
+                  UnitCell const& Cell_, int NumCells_)
       : eval(eval_), func_stack(func_stack_), bin_func_stack(bin_func_stack_),
       IdentifierStack(IdentifierStack_), FunctionStack(Functions_),
       ParameterStack(Parameters_), Arguments(Arguments_),
       Cell(Cell_), NumCells(NumCells_)
    {}
-   
+
    template <typename ScannerT>
    struct definition
    {
       definition(UnitCellParser const& self)
       {
-	 real_t = ureal_p;
-	 real = real_t[push_value<ElementType>(self.eval)];
+         real_t = ureal_p;
+         real = real_t[push_value<ElementType>(self.eval)];
 
-	 imag_t = lexeme_d[ureal_p >> chset<>("iIjJ")];
-	 imag = imag_t[push_imag<ElementType>(self.eval)];
-	 
-	 identifier_t = lexeme_d[alpha_p >> *(alnum_p | '_')];
-	 identifier = identifier_t;
-	 //[push_identifier(self.identifier_stack)];
+         imag_t = lexeme_d[ureal_p >> chset<>("iIjJ")];
+         imag = imag_t[push_imag<ElementType>(self.eval)];
 
-	 // We re-use the identifier_stack for quantum numbers, and rely on the grammar rules to
-	 // avoid chaos!
-	 quantumnumber_t = lexeme_d[*(anychar_p - chset<>("()"))];
+         identifier_t = lexeme_d[alpha_p >> *(alnum_p | '_')];
+         identifier = identifier_t;
+         //[push_identifier(self.identifier_stack)];
 
-	 quantumnumber = quantumnumber_t[push_identifier(self.IdentifierStack)];
+         // We re-use the identifier_stack for quantum numbers, and rely on the grammar rules to
+         // avoid chaos!
+         quantumnumber_t = lexeme_d[*(anychar_p - chset<>("()"))];
 
-	 named_parameter_t = identifier_t >> '=' >> expression_t;
+         quantumnumber = quantumnumber_t[push_identifier(self.IdentifierStack)];
 
-	 named_parameter = eps_p(identifier >> '=')
-	    >> identifier[push_identifier(self.IdentifierStack)]
-	    >> '='
-	    >> expression[push_named_parameter<ElementType>(self.eval, 
-							     self.IdentifierStack, 
-							     self.ParameterStack)];
+         named_parameter_t = identifier_t >> '=' >> expression_t;
 
-	 parameter_t = expression_t;
-	 parameter = expression[push_parameter<ElementType>(self.eval, self.ParameterStack)];
+         named_parameter = eps_p(identifier >> '=')
+            >> identifier[push_identifier(self.IdentifierStack)]
+            >> '='
+            >> expression[push_named_parameter<ElementType>(self.eval,
+                                                             self.IdentifierStack,
+                                                             self.ParameterStack)];
 
-	 // parameter_list is a comma-separated list of parameters, may be empty
-	 // at least one parameter
-	 parameter_list_t = '{' >> (!((named_parameter_t | parameter_t) % ',')) >> '}';
-	 parameter_list = '{' >> (!((named_parameter | parameter) % ',')) >> '}';
+         parameter_t = expression_t;
+         parameter = expression[push_parameter<ElementType>(self.eval, self.ParameterStack)];
 
-	 prod_expression_t = (str_p("prod") >> '(' >> expression_t >> ',' 
-			      >> expression_t >> ',' >> quantumnumber_t >> ')');
+         // parameter_list is a comma-separated list of parameters, may be empty
+         // at least one parameter
+         parameter_list_t = '{' >> (!((named_parameter_t | parameter_t) % ',')) >> '}';
+         parameter_list = '{' >> (!((named_parameter | parameter) % ',')) >> '}';
 
-	 prod_expression = (str_p("prod") >> '(' >> expression >> ',' 
-			    >> expression >> ',' >> quantumnumber >> ')')
-	    [push_prod<ElementType>(self.IdentifierStack, self.eval)];
- 
-	 bracket_expr_t = '(' >> expression_t >> ')';
+         prod_expression_t = (str_p("prod") >> '(' >> expression_t >> ','
+                              >> expression_t >> ',' >> quantumnumber_t >> ')');
 
-	 bracket_expr = '(' >> expression >> ')';
+         prod_expression = (str_p("prod") >> '(' >> expression >> ','
+                            >> expression >> ',' >> quantumnumber >> ')')
+            [push_prod<ElementType>(self.IdentifierStack, self.eval)];
 
-	 sq_bracket_expr_t = '[' >> expression_t >> ']';
+         bracket_expr_t = '(' >> expression_t >> ')';
 
-	 sq_bracket_expr = '[' >> expression >> ']';
+         bracket_expr = '(' >> expression >> ')';
 
-	 expression_string = lexeme_d[+((anychar_p - chset<>("()"))
-					| (ch_p('(') >> expression_string >> ch_p(')')))];
+         sq_bracket_expr_t = '[' >> expression_t >> ']';
 
-	 fsup_t = str_p("fsup") >> '(' >> expression >> ',' >> expression >> ',' >> expression_string >> ')';
+         sq_bracket_expr = '[' >> expression >> ']';
 
-	 fsup = str_p("fsup") >> '(' >> expression >> ',' >> expression >> ','
-			      >> expression_string[push_fsup(self.Cell, self.NumCells, self.eval)]
-			      >> ')';
+         expression_string = lexeme_d[+((anychar_p - chset<>("()"))
+                                        | (ch_p('(') >> expression_string >> ch_p(')')))];
 
-	 swapb_cell_expr_t = (str_p("swapb") >> '(' >> expression_t >> ',' >> expression_t >> ')')
-	    >> !('[' >> expression_t >> ',' >> expression_t >> ']');
+         fsup_t = str_p("fsup") >> '(' >> expression >> ',' >> expression >> ',' >> expression_string >> ')';
 
-	 swapb_cell_expr = (str_p("swapb") >> '(' >> expression >> ',' >> expression >> ')')
-	    >> (('[' >> expression >> ',' >> expression >> ']')
-		[push_swapb_cell_site(self.Cell, self.NumCells, self.eval)]
-		|  eps_p[push_swapb_cell(self.Cell, self.NumCells, self.eval)]);
-	
-	 swapb_site_expr_t = (str_p("swapb") >> '[' >> expression_t >> ',' >> expression_t >> ']');
+         fsup = str_p("fsup") >> '(' >> expression >> ',' >> expression >> ','
+                              >> expression_string[push_fsup(self.Cell, self.NumCells, self.eval)]
+                              >> ')';
 
-	 swapb_site_expr = (str_p("swapb") >> '[' >> expression >> ',' >> expression >> ']')
-	    [push_swapb_site(self.Cell, self.NumCells, self.eval)];
+         swapb_cell_expr_t = (str_p("swapb") >> '(' >> expression_t >> ',' >> expression_t >> ')')
+            >> !('[' >> expression_t >> ',' >> expression_t >> ']');
 
-	 swap_cell_expr_t = (str_p("swap") >> '(' >> expression_t >> ',' >> expression_t >> ')')
-	    >> !('[' >> expression_t >> ',' >> expression_t >> ']');
+         swapb_cell_expr = (str_p("swapb") >> '(' >> expression >> ',' >> expression >> ')')
+            >> (('[' >> expression >> ',' >> expression >> ']')
+                [push_swapb_cell_site(self.Cell, self.NumCells, self.eval)]
+                |  eps_p[push_swapb_cell(self.Cell, self.NumCells, self.eval)]);
 
-	 swap_cell_expr = (str_p("swap") >> '(' >> expression >> ',' >> expression >> ')')
-	    >> (('[' >> expression >> ',' >> expression >> ']')
-		[push_swap_cell_site(self.Cell, self.NumCells, self.eval)]
-		|  eps_p[push_swap_cell(self.Cell, self.NumCells, self.eval)]);
+         swapb_site_expr_t = (str_p("swapb") >> '[' >> expression_t >> ',' >> expression_t >> ']');
 
-	 swap_site_expr_t = (str_p("swap") >> '[' >> expression_t >> ',' >> expression_t >> ']');
+         swapb_site_expr = (str_p("swapb") >> '[' >> expression >> ',' >> expression >> ']')
+            [push_swapb_site(self.Cell, self.NumCells, self.eval)];
 
-	 swap_site_expr =  (str_p("swap") >> '[' >> expression >> ',' >> expression >> ']')
-	    [push_swap_site(self.Cell, self.NumCells, self.eval)];
+         swap_cell_expr_t = (str_p("swap") >> '(' >> expression_t >> ',' >> expression_t >> ')')
+            >> !('[' >> expression_t >> ',' >> expression_t >> ']');
 
-	 // A local function of the form f(Cell)[Site]{Params}
-	 local_function_t = identifier_t >> bracket_expr_t >> sq_bracket_expr_t 
-					 >> parameter_list_t;
+         swap_cell_expr = (str_p("swap") >> '(' >> expression >> ',' >> expression >> ')')
+            >> (('[' >> expression >> ',' >> expression >> ']')
+                [push_swap_cell_site(self.Cell, self.NumCells, self.eval)]
+                |  eps_p[push_swap_cell(self.Cell, self.NumCells, self.eval)]);
 
-	 local_function = identifier[push_function(self.FunctionStack, 
-						   self.ParameterStack)]
-	    >> bracket_expr
-	    >> sq_bracket_expr
-	    >> parameter_list[eval_local_function(self.Cell,
-						  self.FunctionStack,
-						  self.ParameterStack,
-						  self.eval)];
-	 
-	 local_c_function_t = identifier_t >> sq_bracket_expr_t >> parameter_list_t;
-	 
-	 // We can parse a function of the form f[site]{Params}
-	 // (ie. no cell index), as long as it evalates to a c-number.
-	 local_c_function = identifier[push_function(self.FunctionStack, 
-						     self.ParameterStack)]
-	    >> sq_bracket_expr
-	    >> parameter_list[eval_local_c_function(self.Cell,
-						    self.FunctionStack,
-						    self.ParameterStack,
-						    self.eval)];
-	 
-	 // A local operator of the form Op(cell)[site]
-	 local_operator_t = identifier_t >> bracket_expr_t >> sq_bracket_expr_t;
+         swap_site_expr_t = (str_p("swap") >> '[' >> expression_t >> ',' >> expression_t >> ']');
 
-	 local_operator = identifier[push_identifier(self.IdentifierStack)]
-	    >> bracket_expr
-	    >> sq_bracket_expr[push_local_operator(self.Cell, 
-						   self.NumCells, 
-						   self.IdentifierStack, 
-						   self.eval)];
+         swap_site_expr =  (str_p("swap") >> '[' >> expression >> ',' >> expression >> ']')
+            [push_swap_site(self.Cell, self.NumCells, self.eval)];
 
-	 // A cell function of the form Op(cell){params}
-	 cell_function_t = identifier_t >> bracket_expr_t >> parameter_list_t;
+         // A local function of the form f(Cell)[Site]{Params}
+         local_function_t = identifier_t >> bracket_expr_t >> sq_bracket_expr_t
+                                         >> parameter_list_t;
 
-	 cell_function = identifier[push_function(self.FunctionStack, self.ParameterStack)]
-	    >> bracket_expr
-	    >> parameter_list[eval_cell_function(self.Cell,
-						 self.NumCells,
-						 self.FunctionStack,
-						 self.ParameterStack,
-						 self.eval)];
+         local_function = identifier[push_function(self.FunctionStack,
+                                                   self.ParameterStack)]
+            >> bracket_expr
+            >> sq_bracket_expr
+            >> parameter_list[eval_local_function(self.Cell,
+                                                  self.FunctionStack,
+                                                  self.ParameterStack,
+                                                  self.eval)];
 
-	 // A cell operator of the form Op(cell)
-	 cell_operator_t = identifier_t >> bracket_expr_t;
+         local_c_function_t = identifier_t >> sq_bracket_expr_t >> parameter_list_t;
 
-	 cell_operator = identifier[push_identifier(self.IdentifierStack)]
-	    >> bracket_expr[push_cell_operator(self.Cell,
-					       self.NumCells,
-					       self.IdentifierStack,
-					       self.eval)];
+         // We can parse a function of the form f[site]{Params}
+         // (ie. no cell index), as long as it evalates to a c-number.
+         local_c_function = identifier[push_function(self.FunctionStack,
+                                                     self.ParameterStack)]
+            >> sq_bracket_expr
+            >> parameter_list[eval_local_c_function(self.Cell,
+                                                    self.FunctionStack,
+                                                    self.ParameterStack,
+                                                    self.eval)];
 
-	 // An operator of the form Op[i]
-	 // with no cell index, this can only be a local argument
-	 local_arg_t = identifier_t >> sq_bracket_expr_t;
+         // A local operator of the form Op(cell)[site]
+         local_operator_t = identifier_t >> bracket_expr_t >> sq_bracket_expr_t;
 
-	 local_arg = identifier[push_identifier(self.IdentifierStack)]
-	    >> sq_bracket_expr[push_local_argument(self.Cell,
-						   self.IdentifierStack,
-						   self.eval)];
+         local_operator = identifier[push_identifier(self.IdentifierStack)]
+            >> bracket_expr
+            >> sq_bracket_expr[push_local_operator(self.Cell,
+                                                   self.NumCells,
+                                                   self.IdentifierStack,
+                                                   self.eval)];
 
-	 // An operator with no indices, f{Params},
-	 // is a valid function call, but only if it is c-number valued.
-	 cell_c_function_t = identifier_t >> parameter_list_t;
+         // A cell function of the form Op(cell){params}
+         cell_function_t = identifier_t >> bracket_expr_t >> parameter_list_t;
 
-	 cell_c_function = identifier[push_function(self.FunctionStack,
-						    self.ParameterStack)]
-	    >> parameter_list[eval_cell_c_function(self.Cell,
-						   self.FunctionStack,
-						   self.ParameterStack,
-						   self.eval)];
+         cell_function = identifier[push_function(self.FunctionStack, self.ParameterStack)]
+            >> bracket_expr
+            >> parameter_list[eval_cell_function(self.Cell,
+                                                 self.NumCells,
+                                                 self.FunctionStack,
+                                                 self.ParameterStack,
+                                                 self.eval)];
 
-	 // combining the above operator/function expressions.
-	 // It is important that we parse them in the right order, from
-	 // longest to shortest
-	 operator_expression_t =
-	    local_function_t
-	    | local_c_function_t
-	    | local_operator_t
-	    | cell_function_t
-	    | cell_operator_t
-	    | local_arg_t
-	    | cell_c_function_t;
+         // A cell operator of the form Op(cell)
+         cell_operator_t = identifier_t >> bracket_expr_t;
 
-	 operator_expression = 
-	    (eps_p(local_function_t) >> local_function)
-	    | (eps_p(local_c_function_t) >> local_c_function)
-	    | (eps_p(local_operator_t) >> local_operator)
-	    | (eps_p(cell_function_t) >> cell_function)
-	    | (eps_p(cell_operator_t) >> cell_operator)
-	    | (eps_p(local_arg_t) >> local_arg)
-	    | (eps_p(cell_c_function_t) >> cell_c_function)
-	    ;
-	 
-	 expression_string_t = lexeme_d[+((anychar_p - chset<>("()"))
-					  | (ch_p('(') >> expression_string >> ch_p(')')))];
+         cell_operator = identifier[push_identifier(self.IdentifierStack)]
+            >> bracket_expr[push_cell_operator(self.Cell,
+                                               self.NumCells,
+                                               self.IdentifierStack,
+                                               self.eval)];
 
-	 expression_string = lexeme_d[+((anychar_p - chset<>("()"))
-					| (ch_p('(') >> expression_string >> ch_p(')')))];
+         // An operator of the form Op[i]
+         // with no cell index, this can only be a local argument
+         local_arg_t = identifier_t >> sq_bracket_expr_t;
 
-	 string_expression_t = str_p("string")
-	    >> '(' 
-	    >> expression_string_t
-	    >> ')';
+         local_arg = identifier[push_identifier(self.IdentifierStack)]
+            >> sq_bracket_expr[push_local_argument(self.Cell,
+                                                   self.IdentifierStack,
+                                                   self.eval)];
 
-	 string_expression = str_p("string")
-	    >> '(' 
-	    >> expression_string[push_string(self.Cell, self.NumCells, self.eval)]
-	    >> ')';
+         // An operator with no indices, f{Params},
+         // is a valid function call, but only if it is c-number valued.
+         cell_c_function_t = identifier_t >> parameter_list_t;
 
-	 unary_function_t = unary_funcs_p >> '(' >> expression_t >> ')';
-	 unary_function_t = unary_funcs_p >> '(' >> expression_t >> ')';
+         cell_c_function = identifier[push_function(self.FunctionStack,
+                                                    self.ParameterStack)]
+            >> parameter_list[eval_cell_c_function(self.Cell,
+                                                   self.FunctionStack,
+                                                   self.ParameterStack,
+                                                   self.eval)];
 
-	 unary_function = 
-	    eps_p(unary_funcs_p >> '(') 
-	    >>  unary_funcs_p[push_unary<ElementType>(self.func_stack)]
-	    >>  ('(' >> expression >> ')')[eval_unary<ElementType>(self.func_stack, self.eval)];
-	 
-	 binary_function_t = binary_funcs_p >> '(' >> expression_t >> ',' >> expression_t >> ')';
+         // combining the above operator/function expressions.
+         // It is important that we parse them in the right order, from
+         // longest to shortest
+         operator_expression_t =
+            local_function_t
+            | local_c_function_t
+            | local_operator_t
+            | cell_function_t
+            | cell_operator_t
+            | local_arg_t
+            | cell_c_function_t;
 
-	 binary_function = 
-	    eps_p(self.binary_funcs_p >> '(') 
-	    >>  self.binary_funcs_p[push_binary<ElementType>(self.bin_func_stack)]
-	    >>  ('(' >> expression >> ','  >> expression >> ')')
-	    [eval_binary<ElementType>(self.bin_func_stack, self.eval)];
-      
-	 commutator_bracket_t = ch_p('[') >> expression_t >> ']';
-	 
-	 commutator_bracket = 
-	    ('[' >> expression >> ',' >> expression >> ']')[invoke_binary<ElementType, 
-							    binary_commutator<ElementType> >(self.eval)];
+         operator_expression =
+            (eps_p(local_function_t) >> local_function)
+            | (eps_p(local_c_function_t) >> local_c_function)
+            | (eps_p(local_operator_t) >> local_operator)
+            | (eps_p(cell_function_t) >> cell_function)
+            | (eps_p(cell_operator_t) >> cell_operator)
+            | (eps_p(local_arg_t) >> local_arg)
+            | (eps_p(cell_c_function_t) >> cell_c_function)
+            ;
 
-	 
-	 factor_t =
-	    imag_t
-	    |   real_t
-	    |   unary_function_t
-	    |   binary_function_t
-	    |   keyword_d[constants_p[eps_p]]
-	    |   keyword_d[self.Arguments]
-	    |   prod_expression_t
-	    |   commutator_bracket_t
+         expression_string_t = lexeme_d[+((anychar_p - chset<>("()"))
+                                          | (ch_p('(') >> expression_string >> ch_p(')')))];
+
+         expression_string = lexeme_d[+((anychar_p - chset<>("()"))
+                                        | (ch_p('(') >> expression_string >> ch_p(')')))];
+
+         string_expression_t = str_p("string")
+            >> '('
+            >> expression_string_t
+            >> ')';
+
+         string_expression = str_p("string")
+            >> '('
+            >> expression_string[push_string(self.Cell, self.NumCells, self.eval)]
+            >> ')';
+
+         unary_function_t = unary_funcs_p >> '(' >> expression_t >> ')';
+         unary_function_t = unary_funcs_p >> '(' >> expression_t >> ')';
+
+         unary_function =
+            eps_p(unary_funcs_p >> '(')
+            >>  unary_funcs_p[push_unary<ElementType>(self.func_stack)]
+            >>  ('(' >> expression >> ')')[eval_unary<ElementType>(self.func_stack, self.eval)];
+
+         binary_function_t = binary_funcs_p >> '(' >> expression_t >> ',' >> expression_t >> ')';
+
+         binary_function =
+            eps_p(self.binary_funcs_p >> '(')
+            >>  self.binary_funcs_p[push_binary<ElementType>(self.bin_func_stack)]
+            >>  ('(' >> expression >> ','  >> expression >> ')')
+            [eval_binary<ElementType>(self.bin_func_stack, self.eval)];
+
+         commutator_bracket_t = ch_p('[') >> expression_t >> ']';
+
+         commutator_bracket =
+            ('[' >> expression >> ',' >> expression >> ']')[invoke_binary<ElementType,
+                                                            binary_commutator<ElementType> >(self.eval)];
+
+
+         factor_t =
+            imag_t
+            |   real_t
+            |   unary_function_t
+            |   binary_function_t
+            |   keyword_d[constants_p[eps_p]]
+            |   keyword_d[self.Arguments]
+            |   prod_expression_t
+            |   commutator_bracket_t
             |   fsup_t
-	    |   swapb_cell_expr_t
-	    |   swapb_site_expr_t
-	    |   swap_cell_expr_t
-	    |   swap_site_expr_t
-	    |   string_expression_t
-	    |   '(' >> expression_t >> ')'
-	    |   ('-' >> factor_t)
-	    |   ('+' >> factor_t)
-	    |   operator_expression_t
-	    ;
+            |   swapb_cell_expr_t
+            |   swapb_site_expr_t
+            |   swap_cell_expr_t
+            |   swap_site_expr_t
+            |   string_expression_t
+            |   '(' >> expression_t >> ')'
+            |   ('-' >> factor_t)
+            |   ('+' >> factor_t)
+            |   operator_expression_t
+            ;
 
-	 factor =
-	    imag
-	    |   real
-	    |   unary_function
-	    |   binary_function
-	    |   keyword_d[constants_p[push_value<ElementType>(self.eval)]]
-	    |   keyword_d[self.Arguments[push_value<ElementType>(self.eval)]]
-	    |   prod_expression
-	    |   commutator_bracket
-	    |   fsup
-	    |   swapb_cell_expr
-	    |   swapb_site_expr
-	    |   swap_cell_expr
-	    |   swap_site_expr
-	    |   string_expression
-	    |   '(' >> expression >> ')'
-	    |   ('-' >> factor)[do_negate<ElementType>(self.eval)]
-	    |   ('+' >> factor)
-	    |   operator_expression
-	    ;
-	 
-	 // power operator, next precedence, operates to the right
-	 pow_term_t =
-	    factor_t
-	    >> *(('^' >> pow_term_t));
+         factor =
+            imag
+            |   real
+            |   unary_function
+            |   binary_function
+            |   keyword_d[constants_p[push_value<ElementType>(self.eval)]]
+            |   keyword_d[self.Arguments[push_value<ElementType>(self.eval)]]
+            |   prod_expression
+            |   commutator_bracket
+            |   fsup
+            |   swapb_cell_expr
+            |   swapb_site_expr
+            |   swap_cell_expr
+            |   swap_site_expr
+            |   string_expression
+            |   '(' >> expression >> ')'
+            |   ('-' >> factor)[do_negate<ElementType>(self.eval)]
+            |   ('+' >> factor)
+            |   operator_expression
+            ;
 
-	 pow_term =
-	    factor
-	    >> *(  ('^' >> pow_term)[invoke_binary<ElementType, binary_power<ElementType> >(self.eval)]
-		   )
-	    ;
-	 
-	 term_t =
-	    pow_term_t
-	    >> *(   ('*' >> pow_term_t)
+         // power operator, next precedence, operates to the right
+         pow_term_t =
+            factor_t
+            >> *(('^' >> pow_term_t));
+
+         pow_term =
+            factor
+            >> *(  ('^' >> pow_term)[invoke_binary<ElementType, binary_power<ElementType> >(self.eval)]
+                   )
+            ;
+
+         term_t =
+            pow_term_t
+            >> *(   ('*' >> pow_term_t)
                     |   ('/' >> pow_term_t)
-		    |   ('%' >> pow_term_t)
+                    |   ('%' >> pow_term_t)
                     )
-	    ;
-	 term =
-	    pow_term
-	    >> *(   ('*' >> pow_term)[invoke_binary<ElementType, 
-				      binary_multiplication<ElementType> >(self.eval)]
-                    |   ('/' >> pow_term)[invoke_binary<ElementType, 
-					  binary_division<ElementType> >(self.eval)]
-		    |   ('%' >> pow_term)[invoke_binary<ElementType, 
-					  binary_modulus<ElementType> >(self.eval)]
+            ;
+         term =
+            pow_term
+            >> *(   ('*' >> pow_term)[invoke_binary<ElementType,
+                                      binary_multiplication<ElementType> >(self.eval)]
+                    |   ('/' >> pow_term)[invoke_binary<ElementType,
+                                          binary_division<ElementType> >(self.eval)]
+                    |   ('%' >> pow_term)[invoke_binary<ElementType,
+                                          binary_modulus<ElementType> >(self.eval)]
                     )
-	    ;
-	 
-	 expression_t =
-	    term_t
-	    >> *(  ('+' >> term_t)
-		   |   ('-' >> term_t)
-		   )
-	    ;
-	 expression =
-	    term
-	    >> *(  ('+' >> term)[invoke_binary<ElementType, 
-				 binary_addition<ElementType> >(self.eval)]
-		   |   ('-' >> term)[invoke_binary<ElementType, 
-				     binary_subtraction<ElementType> >(self.eval)]
-		   )
-	    >> !end_p     // skip trailing whitespace
-	    ;
+            ;
+
+         expression_t =
+            term_t
+            >> *(  ('+' >> term_t)
+                   |   ('-' >> term_t)
+                   )
+            ;
+         expression =
+            term
+            >> *(  ('+' >> term)[invoke_binary<ElementType,
+                                 binary_addition<ElementType> >(self.eval)]
+                   |   ('-' >> term)[invoke_binary<ElementType,
+                                     binary_subtraction<ElementType> >(self.eval)]
+                   )
+            >> !end_p     // skip trailing whitespace
+            ;
       }
-      
+
       rule<ScannerT> real, imag, identifier, quantumnumber,
-	 parameter, named_parameter, parameter_list, 
-	 prod_expression,
-	 bracket_expr, sq_bracket_expr,
-	 swap_cell_expr, swap_site_expr, swapb_cell_expr, swapb_site_expr,
-	 local_function, local_c_function, local_operator, cell_function, cell_operator,
-	 local_arg, cell_c_function, 
-	 operator_expression, fsup,
-	 expression_string,
-	 string_expression,
-	 unary_function, binary_function,
-	 commutator_bracket,
-	 factor, pow_term, term, expression;
+         parameter, named_parameter, parameter_list,
+         prod_expression,
+         bracket_expr, sq_bracket_expr,
+         swap_cell_expr, swap_site_expr, swapb_cell_expr, swapb_site_expr,
+         local_function, local_c_function, local_operator, cell_function, cell_operator,
+         local_arg, cell_c_function,
+         operator_expression, fsup,
+         expression_string,
+         string_expression,
+         unary_function, binary_function,
+         commutator_bracket,
+         factor, pow_term, term, expression;
 
       rule<ScannerT> real_t, imag_t, identifier_t, quantumnumber_t,
-	 parameter_t, named_parameter_t, parameter_list_t, 
-	 prod_expression_t,
-	 bracket_expr_t, sq_bracket_expr_t,
-	 swap_cell_expr_t, swap_site_expr_t, swapb_cell_expr_t, swapb_site_expr_t,
-	 local_function_t, local_c_function_t, local_operator_t, cell_function_t, cell_operator_t,
-	 local_arg_t, cell_c_function_t, 
-	 operator_expression_t, fsup_t,
-	 expression_string_t,
-	 string_expression_t,
-	 unary_function_t, binary_function_t,
-	 commutator_bracket_t,
-	 factor_t, pow_term_t, term_t, expression_t;
+         parameter_t, named_parameter_t, parameter_list_t,
+         prod_expression_t,
+         bracket_expr_t, sq_bracket_expr_t,
+         swap_cell_expr_t, swap_site_expr_t, swapb_cell_expr_t, swapb_site_expr_t,
+         local_function_t, local_c_function_t, local_operator_t, cell_function_t, cell_operator_t,
+         local_arg_t, cell_c_function_t,
+         operator_expression_t, fsup_t,
+         expression_string_t,
+         string_expression_t,
+         unary_function_t, binary_function_t,
+         commutator_bracket_t,
+         factor_t, pow_term_t, term_t, expression_t;
 
       rule<ScannerT> const& start() const { return expression; }
    };
-   
+
    std::stack<ElementType>& eval;
    std::stack<unary_func_type>& func_stack;
    std::stack<binary_func_type>& bin_func_stack;
@@ -959,7 +959,7 @@ binary_funcs<UnitCellParser::ElementType> UnitCellParser::binary_funcs_p;
 
 UnitCellElementType
 ParseUnitCellElement(UnitCell const& Cell, int NumCells, std::string const& Str,
-		     Function::ArgumentList const& Args)
+                     Function::ArgumentList const& Args)
 {
    typedef UnitCellParser::ElementType ElementType;
 
@@ -985,9 +985,9 @@ ParseUnitCellElement(UnitCell const& Cell, int NumCells, std::string const& Str,
    char const* beg = Str.c_str();
    char const* end = beg + Str.size();
 
-   UnitCellParser Parser(ElemStack, UnaryFuncStack, BinaryFuncStack, IdentStack, 
-			 FunctionStack, ParamStack, 
-			 Arguments, Cell, NumCells);
+   UnitCellParser Parser(ElemStack, UnaryFuncStack, BinaryFuncStack, IdentStack,
+                         FunctionStack, ParamStack,
+                         Arguments, Cell, NumCells);
 
    try
    {
@@ -995,7 +995,7 @@ ParseUnitCellElement(UnitCell const& Cell, int NumCells, std::string const& Str,
 
       parse_info<> info = parse(beg, Parser, space_p);
       if (!info.full)
-	 throw ParserError::AtRange("Failed to parse an expression", info.stop, end);
+         throw ParserError::AtRange("Failed to parse an expression", info.stop, end);
    }
    catch (ParserError const& p)
    {
@@ -1024,7 +1024,7 @@ ParseUnitCellElement(UnitCell const& Cell, int NumCells, std::string const& Str,
 
 UnitCellMPO
 ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& Str,
-		      Function::ArgumentList const& Args)
+                      Function::ArgumentList const& Args)
 {
    ElementType Result = ParseUnitCellElement(Cell, NumCells, Str, Args);
 
@@ -1040,7 +1040,7 @@ ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& Str
 
 std::complex<double>
 ParseUnitCellNumber(UnitCell const& Cell, int NumCells, std::string const& Str,
-		    Function::ArgumentList const& Args)
+                    Function::ArgumentList const& Args)
 {
    UnitCellElementType Result = ParseUnitCellElement(Cell, NumCells, Str, Args);
    complex* x = boost::get<complex>(&Result);

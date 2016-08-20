@@ -42,7 +42,7 @@ LinearBasis<VectorBasis>::LinearBasis(VectorBasis const& B)
 
    // Now we know the dimensions of the quantum numbers, we can add the subspaces the basis
    std::map<QuantumNumber, int> QNSubspace;
-   for (std::map<QuantumNumber, int>::const_iterator I = QNDimension.begin(); 
+   for (std::map<QuantumNumber, int>::const_iterator I = QNDimension.begin();
         I != QNDimension.end(); ++I)
    {
       QNSubspace[I->first] = this->size();
@@ -70,7 +70,7 @@ LinearBasis<BasisList>::LinearBasis(BasisList const& B)
 
    // Now we know the dimensions of the quantum numbers, we can add the subspaces the basis
    std::map<QuantumNumber, int> QNSubspace;
-   for (std::map<QuantumNumber, int>::const_iterator I = QNDimension.begin(); 
+   for (std::map<QuantumNumber, int>::const_iterator I = QNDimension.begin();
         I != QNDimension.end(); ++I)
    {
       QNSubspace[I->first] = this->size();
@@ -94,7 +94,7 @@ LinearBasis<BasisList>::ReverseLookup(int s, int index) const
    return -1;
 }
 
-std::ostream& 
+std::ostream&
 DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalues, bool Base2)
 {
    std::ostringstream out;
@@ -115,13 +115,13 @@ DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalu
       if (EVal > 0) Entropy -= EVal * (Base2 ? log2(EVal) : log(EVal)) * Iter->Degree;
       TotalDegree += Iter->Degree;
       ++n;
-      out << std::right << std::setw(6) << n << "  " 
-	  << std::right << std::setw(20) << Iter->Eigenvalue 
+      out << std::right << std::setw(6) << n << "  "
+          << std::right << std::setw(20) << Iter->Eigenvalue
           << "  " << std::setw(10) << Iter->Degree
           << "  " << std::setw(20) << Sigma
-	  << "  " << std::setw(20) << Entropy
-	  << "   " << std::left 
-	  << this->Lookup(Iter->Subspace) << '\n';
+          << "  " << std::setw(20) << Entropy
+          << "   " << std::left
+          << this->Lookup(Iter->Subspace) << '\n';
    }
    out << n << " out of " << EigenInfoList.size() << " eigenvalues shown.  ";
    out << "Total degree = " << TotalDegree << '\n';
@@ -158,8 +158,8 @@ void DensityMatrixBase::DiagonalizeDMHelper(bool Sort)
       // add the eigenvalues and eigenvector pointers to EigenInfoList
       for (std::size_t i = 0; i < RawDMList[q1].size1(); ++i)
       {
- 	 EigenInfoList.push_back(EigenInfo(Eigenvalues[i], CurrentDegree, q1, i));
-	 ESum += Eigenvalues[i] * CurrentDegree;
+         EigenInfoList.push_back(EigenInfo(Eigenvalues[i], CurrentDegree, q1, i));
+         ESum += Eigenvalues[i] * CurrentDegree;
       }
    }
 
@@ -197,11 +197,11 @@ DensityMatrix<MatrixOperator>::DensityMatrix(MatrixOperator const& Op)
          int tp;
          LinearAlgebra::Range rtp;
          std::tie(tp, rtp) = B.Lookup(J.index1());
-	 int t;
-	 LinearAlgebra::Range rt;
-	 std::tie(t, rt) = B.Lookup(J.index2());
-	 CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal")(B[tp])(B[t])(Op)(B);
-	 RawDMList[tp](rtp, rt) = *J;
+         int t;
+         LinearAlgebra::Range rt;
+         std::tie(t, rt) = B.Lookup(J.index2());
+         CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal")(B[tp])(B[t])(Op)(B);
+         RawDMList[tp](rtp, rt) = *J;
       }
    }
    // diagonalize them
@@ -240,11 +240,11 @@ DensityMatrix<MatrixOperator>::DensityMatrix(MatrixOperator const& Op, MatrixOpe
          int tp;
          LinearAlgebra::Range rtp;
          std::tie(tp, rtp) = B.Lookup(J.index1());
-	 int t;
-	 LinearAlgebra::Range rt;
-	 std::tie(t, rt) = B.Lookup(J.index2());
-	 CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal")(B[tp])(B[t])(Op)(B);
-	 RawDMList[tp](rtp, rt) = *J;
+         int t;
+         LinearAlgebra::Range rt;
+         std::tie(t, rt) = B.Lookup(J.index2());
+         CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal")(B[tp])(B[t])(Op)(B);
+         RawDMList[tp](rtp, rt) = *J;
       }
    }
 
@@ -256,11 +256,11 @@ DensityMatrix<MatrixOperator>::DensityMatrix(MatrixOperator const& Op, MatrixOpe
          int tp;
          LinearAlgebra::Range rtp;
          std::tie(tp, rtp) = B.Lookup(J.index1());
-	 int t;
-	 LinearAlgebra::Range rt;
-	 std::tie(t, rt) = B.Lookup(J.index2());
-	 CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal")(B[tp])(B[t])(WavefunctionDM)(B);
-	 PsiDMList[tp](rtp, rt) = *J;
+         int t;
+         LinearAlgebra::Range rt;
+         std::tie(t, rt) = B.Lookup(J.index2());
+         CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal")(B[tp])(B[t])(WavefunctionDM)(B);
+         PsiDMList[tp](rtp, rt) = *J;
       }
    }
 
@@ -308,10 +308,10 @@ DensityMatrix<SimpleOperator>::DensityMatrix(SimpleOperator const& Op)
       {
          int tp, rtp;
          std::tie(tp, rtp) = B.Lookup(J.index1());
-	 int t, rt;
-	 std::tie(t, rt) = B.Lookup(J.index2());
-	 CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal");
- 	 RawDMList[tp](rtp, rt) = *J;
+         int t, rt;
+         std::tie(t, rt) = B.Lookup(J.index2());
+         CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal");
+         RawDMList[tp](rtp, rt) = *J;
       }
    }
    // diagonalize them
@@ -319,11 +319,11 @@ DensityMatrix<SimpleOperator>::DensityMatrix(SimpleOperator const& Op)
 }
 
 void UpdateKeepList(KeepListType& KeepList,
-		    std::set<QuantumNumbers::QuantumNumber> const& SiteQN,
-		    VectorBasis const& FullBasis,
-		    std::list<EigenInfo>& KeepStates, 
-		    std::list<EigenInfo>& DiscardStates,
-		    TruncationInfo& Info)
+                    std::set<QuantumNumbers::QuantumNumber> const& SiteQN,
+                    VectorBasis const& FullBasis,
+                    std::list<EigenInfo>& KeepStates,
+                    std::list<EigenInfo>& DiscardStates,
+                    TruncationInfo& Info)
 {
    typedef std::set<QuantumNumbers::QuantumNumber> SiteQNType;
    typedef std::list<EigenInfo> StatesListType;
@@ -340,31 +340,31 @@ void UpdateKeepList(KeepListType& KeepList,
    {
       qnType qn;  // the set of updated quantum numbers corresponding to keep state I
       for (SiteQNType::const_iterator Q = SiteQN.begin(); Q != SiteQN.end(); ++Q)
-	 transform_targets(*I, *Q, std::inserter(qn, qn.end()));
+         transform_targets(*I, *Q, std::inserter(qn, qn.end()));
       // make sure that at least one of qn exists in KeptQN
       SiteQNType Intersect;
-      std::set_intersection(KeptQN.begin(), KeptQN.end(), qn.begin(), qn.end(), 
-			    std::inserter(Intersect, Intersect.end()));
+      std::set_intersection(KeptQN.begin(), KeptQN.end(), qn.begin(), qn.end(),
+                            std::inserter(Intersect, Intersect.end()));
       if (Intersect.empty())
       {
-	 // No kept state, go through the discard list and resurrect a state
-	 StatesListType::iterator Piv = DiscardStates.begin();
-	 while (Piv != DiscardStates.end() && qn.count(FullBasis[Piv->Subspace]) == 0)
-	    ++Piv;
-	 if (Piv == DiscardStates.end())
-	 {
-	    WARNING("Unexpected: cannot force quantum number into basis")(*I);
-	 }
-	 else
-	 {
-	    DEBUG_WARNING("Forcing keep state")(*I)(FullBasis[Piv->Subspace])(Piv->Weight());
-	    ++Info.KeptStates_;
-	    Info.KeptWeight_ += Piv->Weight();
-	    Info.KeptEntropy_ += Piv->Entropy(Info.TotalWeight_);
-	    KeptQN.insert(FullBasis[Piv->Subspace]);
-	    KeepStates.push_back(*Piv);
-	    DiscardStates.erase(Piv);
-	 }
+         // No kept state, go through the discard list and resurrect a state
+         StatesListType::iterator Piv = DiscardStates.begin();
+         while (Piv != DiscardStates.end() && qn.count(FullBasis[Piv->Subspace]) == 0)
+            ++Piv;
+         if (Piv == DiscardStates.end())
+         {
+            WARNING("Unexpected: cannot force quantum number into basis")(*I);
+         }
+         else
+         {
+            DEBUG_WARNING("Forcing keep state")(*I)(FullBasis[Piv->Subspace])(Piv->Weight());
+            ++Info.KeptStates_;
+            Info.KeptWeight_ += Piv->Weight();
+            Info.KeptEntropy_ += Piv->Entropy(Info.TotalWeight_);
+            KeptQN.insert(FullBasis[Piv->Subspace]);
+            KeepStates.push_back(*Piv);
+            DiscardStates.erase(Piv);
+         }
       }
    }
 
@@ -404,11 +404,11 @@ void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType> const& M)
       LeftVectors.push_back(U);
       RightVectors.push_back(Vh);
       SingularValues.push_back(D);
-      
+
       int CurrentDegree = degree(this->Lookup(i));
       for (unsigned j = 0; j < size(D); ++j)
       {
-         double Weight = D[j]*D[j]; 
+         double Weight = D[j]*D[j];
          EigenInfoList.push_back(EigenInfo(Weight, CurrentDegree, i, j));
          ESum += Weight * CurrentDegree;
       }
@@ -417,7 +417,7 @@ void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType> const& M)
    std::sort(EigenInfoList.begin(), EigenInfoList.end(), EigenCompare);
 }
 
-QuantumNumber 
+QuantumNumber
 SingularDecomposition<MPStateComponent, MPStateComponent>::Lookup(int Subspace) const
 {
    return UsedQuantumNumbers[Subspace];
@@ -450,28 +450,28 @@ SingularDecomposition(MPStateComponent const& A, ProductBasis<BasisList, BasisLi
 
       for (unsigned i = 0; i < A.Basis1().size(); ++i)
       {
-	 QuantumNumberList ql = transform_targets(A.Basis1()[i], k1q_bar);
-	 for (QuantumNumberList::const_iterator qi = ql.begin(); qi != ql.end(); ++qi)
-	 {
-	    int LinearIndex;
-	    std::map<QuantumNumber, int>::iterator I = QuantumNumberLinearMapping.find(*qi);
-	    if (I == QuantumNumberLinearMapping.end())
-	    {
-	       // not found, add it
-	       LinearIndex = UsedQuantumNumbers.size();
-	       QuantumNumberLinearMapping[*qi] = LinearIndex;
-	       UsedQuantumNumbers.push_back(*qi);
-	       LinearDimensions.push_back(std::pair<int, int>(0,0));
-	    }
-	    else
-	       LinearIndex = I->second;
+         QuantumNumberList ql = transform_targets(A.Basis1()[i], k1q_bar);
+         for (QuantumNumberList::const_iterator qi = ql.begin(); qi != ql.end(); ++qi)
+         {
+            int LinearIndex;
+            std::map<QuantumNumber, int>::iterator I = QuantumNumberLinearMapping.find(*qi);
+            if (I == QuantumNumberLinearMapping.end())
+            {
+               // not found, add it
+               LinearIndex = UsedQuantumNumbers.size();
+               QuantumNumberLinearMapping[*qi] = LinearIndex;
+               UsedQuantumNumbers.push_back(*qi);
+               LinearDimensions.push_back(std::pair<int, int>(0,0));
+            }
+            else
+               LinearIndex = I->second;
 
-	    int dim = A.Basis1().dim(i);
-	    int current = LinearDimensions[LinearIndex].first;
-	    LeftSubspaceInfo.push_back(ProductSubspaceInfo(k1, i, LinearIndex,
-							   LinearAlgebra::Range(current, current+dim)));
-	    LinearDimensions[LinearIndex].first += dim;
-	 }
+            int dim = A.Basis1().dim(i);
+            int current = LinearDimensions[LinearIndex].first;
+            LeftSubspaceInfo.push_back(ProductSubspaceInfo(k1, i, LinearIndex,
+                                                           LinearAlgebra::Range(current, current+dim)));
+            LinearDimensions[LinearIndex].first += dim;
+         }
       }
    }
 
@@ -483,31 +483,31 @@ SingularDecomposition(MPStateComponent const& A, ProductBasis<BasisList, BasisLi
 
       for (unsigned i = 0; i < A.Basis2().size(); ++i)
       {
-	 QuantumNumberList ql = transform_targets(A.Basis2()[i], k2q);
+         QuantumNumberList ql = transform_targets(A.Basis2()[i], k2q);
 
-	 for (QuantumNumberList::const_iterator qi = ql.begin(); qi != ql.end(); ++qi)
-	 {
-	    int LinearIndex;
-	    std::map<QuantumNumber, int>::iterator I = QuantumNumberLinearMapping.find(*qi);
-	    if (I == QuantumNumberLinearMapping.end())
-	    {
-	       // not found, add it.  This is a degenerate case in this context, 
-	       // since the quantum number doesn't exist in the left basis so
-	       // this component is a zero-dimensional matrix
-	       LinearIndex = UsedQuantumNumbers.size();
-	       QuantumNumberLinearMapping[*qi] = LinearIndex;
-	       UsedQuantumNumbers.push_back(*qi);
-	       LinearDimensions.push_back(std::pair<int, int>(0,0));
-	    }
-	    else
-	       LinearIndex = I->second;
+         for (QuantumNumberList::const_iterator qi = ql.begin(); qi != ql.end(); ++qi)
+         {
+            int LinearIndex;
+            std::map<QuantumNumber, int>::iterator I = QuantumNumberLinearMapping.find(*qi);
+            if (I == QuantumNumberLinearMapping.end())
+            {
+               // not found, add it.  This is a degenerate case in this context,
+               // since the quantum number doesn't exist in the left basis so
+               // this component is a zero-dimensional matrix
+               LinearIndex = UsedQuantumNumbers.size();
+               QuantumNumberLinearMapping[*qi] = LinearIndex;
+               UsedQuantumNumbers.push_back(*qi);
+               LinearDimensions.push_back(std::pair<int, int>(0,0));
+            }
+            else
+               LinearIndex = I->second;
 
-	    int dim = A.Basis2().dim(i);
-	    int current = LinearDimensions[LinearIndex].second;
-	    RightSubspaceInfo.push_back(ProductSubspaceInfo(k2, i, LinearIndex,
-							   LinearAlgebra::Range(current, current+dim)));
-	    LinearDimensions[LinearIndex].second += dim;
-	 }
+            int dim = A.Basis2().dim(i);
+            int current = LinearDimensions[LinearIndex].second;
+            RightSubspaceInfo.push_back(ProductSubspaceInfo(k2, i, LinearIndex,
+                                                           LinearAlgebra::Range(current, current+dim)));
+            LinearDimensions[LinearIndex].second += dim;
+         }
       }
    }
 
@@ -523,51 +523,51 @@ SingularDecomposition(MPStateComponent const& A, ProductBasis<BasisList, BasisLi
    {
       for (unsigned lin_2 = 0; lin_2 < RightSubspaceInfo.size(); ++lin_2)
       {
-	 // we only care about blocks that are on the diagonal
-	 if (LeftSubspaceInfo[lin_1].LinearIndex != RightSubspaceInfo[lin_2].LinearIndex)
-	    continue;
+         // we only care about blocks that are on the diagonal
+         if (LeftSubspaceInfo[lin_1].LinearIndex != RightSubspaceInfo[lin_2].LinearIndex)
+            continue;
 
-	 // and make sure that block also has some non-zero element
-	 if (LeftSubspaceInfo[lin_1].LinearRange.size() == 0 || RightSubspaceInfo[lin_2].LinearRange.size() == 0)
-	    continue;
+         // and make sure that block also has some non-zero element
+         if (LeftSubspaceInfo[lin_1].LinearRange.size() == 0 || RightSubspaceInfo[lin_2].LinearRange.size() == 0)
+            continue;
 
-	 // sum over k
-	 ProductBasis<BasisList, BasisList>::const_iterator klEnd 
-	    = Factors.end(LeftSubspaceInfo[lin_1].k,
-			  RightSubspaceInfo[lin_2].k);
-	 ProductBasis<BasisList, BasisList>::const_iterator klIter
-	    = Factors.begin(LeftSubspaceInfo[lin_1].k,
-			    RightSubspaceInfo[lin_2].k);
-	 for ( ; klIter != klEnd; ++klIter)
-	 {
-	    const_inner_iterator<MatrixOperator>::type J = iterate_at(A[*klIter].data(), 
-								      LeftSubspaceInfo[lin_1].s, 
-								      RightSubspaceInfo[lin_2].s);
-	    if (J)
-	    {
-	       double Coeff 
-		  = inverse_product_coefficient(Factors.Left()[LeftSubspaceInfo[lin_1].k],
-						Factors.Right()[RightSubspaceInfo[lin_2].k],
-						Factors.Basis()[*klIter],
-						A.Basis1()[LeftSubspaceInfo[lin_1].s],
-						A.Basis2()[RightSubspaceInfo[lin_2].s],
-						UsedQuantumNumbers[LeftSubspaceInfo[lin_1].LinearIndex]);
+         // sum over k
+         ProductBasis<BasisList, BasisList>::const_iterator klEnd
+            = Factors.end(LeftSubspaceInfo[lin_1].k,
+                          RightSubspaceInfo[lin_2].k);
+         ProductBasis<BasisList, BasisList>::const_iterator klIter
+            = Factors.begin(LeftSubspaceInfo[lin_1].k,
+                            RightSubspaceInfo[lin_2].k);
+         for ( ; klIter != klEnd; ++klIter)
+         {
+            const_inner_iterator<MatrixOperator>::type J = iterate_at(A[*klIter].data(),
+                                                                      LeftSubspaceInfo[lin_1].s,
+                                                                      RightSubspaceInfo[lin_2].s);
+            if (J)
+            {
+               double Coeff
+                  = inverse_product_coefficient(Factors.Left()[LeftSubspaceInfo[lin_1].k],
+                                                Factors.Right()[RightSubspaceInfo[lin_2].k],
+                                                Factors.Basis()[*klIter],
+                                                A.Basis1()[LeftSubspaceInfo[lin_1].s],
+                                                A.Basis2()[RightSubspaceInfo[lin_2].s],
+                                                UsedQuantumNumbers[LeftSubspaceInfo[lin_1].LinearIndex]);
 
-	       // The normalization factor is to satisfy the left-normalization constraint
-	       // with the quantum-number dependent prefactor.  See section 7.1 of the nonabelianmp,
-	       // equation eq:LeftAMatrixNorm.  Given an ordinary unitary matrix, if we insert it
-	       // into an A-matrix, the normalization changes due to the conventions of the reduced
-	       // matrix elements.  To counteract this, we need to scale the unitary matrix by
-	       // a factor as it is inserted into the A-matrix, and apply the inverse of the
-	       // scale factor at this point here.
-	       double NormFactor = std::sqrt(double(degree(A.Basis1()[LeftSubspaceInfo[lin_1].s]))
-				       / degree(UsedQuantumNumbers[LeftSubspaceInfo[lin_1].LinearIndex]));
+               // The normalization factor is to satisfy the left-normalization constraint
+               // with the quantum-number dependent prefactor.  See section 7.1 of the nonabelianmp,
+               // equation eq:LeftAMatrixNorm.  Given an ordinary unitary matrix, if we insert it
+               // into an A-matrix, the normalization changes due to the conventions of the reduced
+               // matrix elements.  To counteract this, we need to scale the unitary matrix by
+               // a factor as it is inserted into the A-matrix, and apply the inverse of the
+               // scale factor at this point here.
+               double NormFactor = std::sqrt(double(degree(A.Basis1()[LeftSubspaceInfo[lin_1].s]))
+                                       / degree(UsedQuantumNumbers[LeftSubspaceInfo[lin_1].LinearIndex]));
 
-	       Matrices[LeftSubspaceInfo[lin_1].LinearIndex](LeftSubspaceInfo[lin_1].LinearRange,
-							     RightSubspaceInfo[lin_2].LinearRange)
-		  += NormFactor * Coeff * (*J);
-	    }
-	 }
+               Matrices[LeftSubspaceInfo[lin_1].LinearIndex](LeftSubspaceInfo[lin_1].LinearRange,
+                                                             RightSubspaceInfo[lin_2].LinearRange)
+                  += NormFactor * Coeff * (*J);
+            }
+         }
       }
    }
 
@@ -578,7 +578,7 @@ SingularDecomposition(MPStateComponent const& A, ProductBasis<BasisList, BasisLi
 void
 SingularDecomposition<MPStateComponent, MPStateComponent>::
 ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
-		  MPStateComponent& A, RealDiagonalOperator& C, MPStateComponent& B)
+                  MPStateComponent& A, RealDiagonalOperator& C, MPStateComponent& B)
 {
    int NumQ = UsedQuantumNumbers.size();
    VectorBasis NewBasis(B1.GetSymmetryList());
@@ -589,7 +589,7 @@ ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
    {
       if (LinearMapping[q].size() > 0)
       {
-	 NewSubspace[q] = NewBasis.size();
+         NewSubspace[q] = NewBasis.size();
          NewBasis.push_back(this->Lookup(q), LinearMapping[q].size());
       }
    }
@@ -600,15 +600,15 @@ ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
       int ss = LeftSubspaceInfo[i].LinearIndex;
       if (!LinearMapping[ss].empty())
       {
-	 std::vector<int> lm(LinearMapping[ss].begin(), LinearMapping[ss].end());
+         std::vector<int> lm(LinearMapping[ss].begin(), LinearMapping[ss].end());
 
-	 // Apply the normalization factor to ensure A satisfies the left-orthonormalization constraint.
-	 // This is the reciprocal of the factor we applied previously.
-	 double NormFactor = std::sqrt(double(degree(A.Basis2()[NewSubspace[ss]]))
-				       / degree(A.Basis1()[LeftSubspaceInfo[i].s]));
+         // Apply the normalization factor to ensure A satisfies the left-orthonormalization constraint.
+         // This is the reciprocal of the factor we applied previously.
+         double NormFactor = std::sqrt(double(degree(A.Basis2()[NewSubspace[ss]]))
+                                       / degree(A.Basis1()[LeftSubspaceInfo[i].s]));
 
-	 A[LeftSubspaceInfo[i].k](LeftSubspaceInfo[i].s, NewSubspace[ss])
-	    = NormFactor * LeftVectors[ss](LeftSubspaceInfo[i].LinearRange, lm);
+         A[LeftSubspaceInfo[i].k](LeftSubspaceInfo[i].s, NewSubspace[ss])
+            = NormFactor * LeftVectors[ss](LeftSubspaceInfo[i].LinearRange, lm);
       }
    }
 
@@ -620,8 +620,8 @@ ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
       std::vector<int> lm(LinearMapping[ss].begin(), LinearMapping[ss].end());
       if (!lm.empty())
       {
-	 B[RightSubspaceInfo[i].k](NewSubspace[ss], RightSubspaceInfo[i].s)
-	    = RightVectors[ss](lm, RightSubspaceInfo[i].LinearRange);
+         B[RightSubspaceInfo[i].k](NewSubspace[ss], RightSubspaceInfo[i].s)
+            = RightVectors[ss](lm, RightSubspaceInfo[i].LinearRange);
       }
    }
 
@@ -631,10 +631,10 @@ ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
    {
       if (!LinearMapping[i].empty())
       {
-	 int b = NewSubspace[i];
-	 C(b,b) = LinearAlgebra::DiagonalMatrix(SingularValues[i][std::vector<int>(LinearMapping[i].begin(), LinearMapping[i].end())]);
+         int b = NewSubspace[i];
+         C(b,b) = LinearAlgebra::DiagonalMatrix(SingularValues[i][std::vector<int>(LinearMapping[i].begin(), LinearMapping[i].end())]);
       }
    }
 }
-   
+
 #endif

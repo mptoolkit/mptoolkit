@@ -73,4 +73,4 @@ int main(int argc, char** argv)
    std::cout << "Created operator: " << tEStr << "\nCreated operator: " << tOStr << std::endl;
 
    pheap::ShutdownPersistent(System);
-} 
+}

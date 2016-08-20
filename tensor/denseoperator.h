@@ -59,8 +59,8 @@ classs DenseOperator
 bool operator==(DenseOperator const& x, DenseOperator const& y);
 bool operator!=(DenseOperator const& x, DenseOperator const& y);
 
-bool equal(DenseOperator const& x, DenseOperator const& y, 
-	   double tol = LinearAlgebra::default_tolerance());
+bool equal(DenseOperator const& x, DenseOperator const& y,
+           double tol = LinearAlgebra::default_tolerance());
 
 DenseOperator operator-(DenseOperator const& x);
 
@@ -79,8 +79,8 @@ std::ostream& operator<<(std::ostream& out, DenseOperator const& x);
 
 double scalar_prod(DenseOperator const& x, DenseOperator const& y);
 
-DenseOperator prod(DenseOperator const& x, DenseOperator const& y, 
-		   QuantumNumber const& q = QuantumNumber());
+DenseOperator prod(DenseOperator const& x, DenseOperator const& y,
+                   QuantumNumber const& q = QuantumNumber());
 
 HermitianProxy<DenseOperator const> herm(DenseOperator const& x);
 
@@ -92,32 +92,32 @@ DenseOperator inv_adjoint(DenseOperator const& x);
 
 #if 0
 DenseOperator tensor_prod(DenseOperator const& x, DenseOperator const& y,
-			  VectorProductBasis const& b1,
-			  VectorProductBasis const& b2,
-			  QuantumNumber const& q);
+                          VectorProductBasis const& b1,
+                          VectorProductBasis const& b2,
+                          QuantumNumber const& q);
 
 DenseOperator tensor_prod(DenseOperator const& x, DenseOperator const& y,
-			  VectorProductBasis const& b1,
-			  VectorProductBasis const& b2);
+                          VectorProductBasis const& b1,
+                          VectorProductBasis const& b2);
 
 DenseOperator tensor_prod(DenseOperator const& x, DenseOperator const& y,
-			  VectorProductBasis const& b,
-			  QuantumNumber const& q);
+                          VectorProductBasis const& b,
+                          QuantumNumber const& q);
 
 DenseOperator tensor_prod(DenseOperator const& x, DenseOperator const& y,
-			  VectorProductBasis const& b);
+                          VectorProductBasis const& b);
 
 DenseOperator tensor_sum(DenseOperator const& x, DenseOperator const& y,
-			 VectorSumBasis const& b1, VectorSumBasis const& b2);
+                         VectorSumBasis const& b1, VectorSumBasis const& b2);
 
 DenseOperator tensor_sum(DenseOperator const& x, DenseOperator const& y,
-			 VectorSumBasis const& b);
+                         VectorSumBasis const& b);
 
 DenseOperator tensor_row_sum(DenseOperator const& x, DenseOperator const& y,
-			     VectorSumBasis const& b1);
+                             VectorSumBasis const& b1);
 
 DenseOperator tensor_col_sum(DenseOperator const& x, DenseOperator const& y,
-			     VectorSumBasis const& b2);
+                             VectorSumBasis const& b2);
 #endif
 
 #include "denseoperator.cc"

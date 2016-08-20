@@ -22,7 +22,7 @@
   also defines range, which is a template to represent an iterator range, and
   fast_copy, which is similar to std::copy, but only uses preincrement.
 
-  2002-07-01: Fixed a bug in DataBlock::DataBlock(size_t) where allocating size zero would fail.  
+  2002-07-01: Fixed a bug in DataBlock::DataBlock(size_t) where allocating size zero would fail.
   It no longer fails, although maybe it should instead be a precondition violation?
 */
 
@@ -97,8 +97,8 @@ class DataBlock
       DataBlock(DataBlock<T> const& Other) : Data(Other.get()), RefCount(Other.RefCount)
       { ++*RefCount; }
 
-      DataBlock& operator=(DataBlock<T> const& Other) 
-      { ++*Other.RefCount; if (--*RefCount == 0) { delete[] Data; delete RefCount; } Data = Other.Data; RefCount = Other.RefCount; 
+      DataBlock& operator=(DataBlock<T> const& Other)
+      { ++*Other.RefCount; if (--*RefCount == 0) { delete[] Data; delete RefCount; } Data = Other.Data; RefCount = Other.RefCount;
       return *this; }
 
       ~DataBlock() { if (--*RefCount == 0) { delete[] Data; delete RefCount; } }
@@ -117,7 +117,7 @@ class DataBlock
 
 template <class T>
 DataBlock<T>::DataBlock(size_t Size)
-   : Data(new T[std::max(size_t(1), Size + CacheLineSize)]), RefCount(new AtomicRefCount(1)) 
+   : Data(new T[std::max(size_t(1), Size + CacheLineSize)]), RefCount(new AtomicRefCount(1))
 {
 }
 
@@ -136,11 +136,11 @@ class DataBlock<T const>
       DataBlock(DataBlock<T> const& Other) : Data(Other.get()), RefCount(Other.RefCount)
       { ++*RefCount; }
 
-      DataBlock& operator=(DataBlock<T const> const& Other) 
-      { ++*Other.RefCount; if (--*RefCount == 0) { delete[] Data; delete RefCount; } Data = Other.Data; RefCount = Other.RefCount; 
+      DataBlock& operator=(DataBlock<T const> const& Other)
+      { ++*Other.RefCount; if (--*RefCount == 0) { delete[] Data; delete RefCount; } Data = Other.Data; RefCount = Other.RefCount;
       return *this; }
 
-      DataBlock& operator=(DataBlock<T> const& Other) 
+      DataBlock& operator=(DataBlock<T> const& Other)
       { ++*Other.RefCount; if (--*RefCount == 0) { delete[] Data; delete RefCount; } Data = Other.Data; RefCount = Other.RefCount;
       return *this; }
 
@@ -158,7 +158,7 @@ class DataBlock<T const>
 
 template <class T>
 DataBlock<T const>::DataBlock(size_t Size)
-   : Data(new T[std::max(size_t(1), Size + CacheLineSize)]), RefCount(new AtomicRefCount(1)) 
+   : Data(new T[std::max(size_t(1), Size + CacheLineSize)]), RefCount(new AtomicRefCount(1))
 {
 }
 

@@ -54,7 +54,7 @@ LatticeSite CreateU1HardcoreBoson(std::string const& Sym = "N")
 
    P("empty", "empty") = 1.0;
    P("boson", "boson") = 1.0;
-   
+
    Site["I"] = I;
    Site["P"] = P;
    Site["R"] = R;

@@ -41,45 +41,45 @@ class UnwrappedIterator
 
       UnwrappedIterator() {}
 
-      explicit UnwrappedIterator(outer_iterator const& Out) 
-	: Outer(Out), Inner(Out.begin()), InnerEnd(Out.end()) {}
-  
-      UnwrappedIterator& operator++() 
+      explicit UnwrappedIterator(outer_iterator const& Out)
+        : Outer(Out), Inner(Out.begin()), InnerEnd(Out.end()) {}
+
+      UnwrappedIterator& operator++()
         { if (++Inner == InnerEnd) { ++Outer; Inner = Outer.begin(); InnerEnd = Outer.end(); } return *this; }
 
-      UnwrappedIterator& operator--() 
+      UnwrappedIterator& operator--()
         { if (Inner == Outer.begin()) { --Outer; Inner = InnerEnd = Outer.end(); } --Inner; return *this; }
 
       UnwrappedIterator& operator+=(difference_type n)
         {
-	   if (n > 0)
-	   {
-	      int Remain = InnerEnd - Inner;
-	      if (n < Remain)
-	      {
-		 Inner += n;
-		 return *this;
-	      }
-	      n -= Remain;
-	      ++Outer;
-	   }
-	   else
-	   {
-	      int Remain = Outer.begin() - Inner;  // negative
-	      if (n > Remain)
-	      {
-		 Inner += n;
-		 return *this;
-	      }
-	      n -= Remain;
-	   }
-		 
-	   numerics::div_result<difference_type> Res = numerics::divp(n, Outer.size());
-	   Outer += Res.quot;
-	   Inner = Outer.begin() + Res.rem;
-	   InnerEnd = Outer.end();
-	   return *this;
-	}
+           if (n > 0)
+           {
+              int Remain = InnerEnd - Inner;
+              if (n < Remain)
+              {
+                 Inner += n;
+                 return *this;
+              }
+              n -= Remain;
+              ++Outer;
+           }
+           else
+           {
+              int Remain = Outer.begin() - Inner;  // negative
+              if (n > Remain)
+              {
+                 Inner += n;
+                 return *this;
+              }
+              n -= Remain;
+           }
+
+           numerics::div_result<difference_type> Res = numerics::divp(n, Outer.size());
+           Outer += Res.quot;
+           Inner = Outer.begin() + Res.rem;
+           InnerEnd = Outer.end();
+           return *this;
+        }
 
       UnwrappedIterator& operator-=(difference_type n) { return this->operator+=(-n); }
 
@@ -93,7 +93,7 @@ class UnwrappedIterator
    private:
       outer_iterator Outer;
       inner_iterator Inner, InnerEnd;
-}; 
+};
 
 template <typename Iter1, typename Iter2>
 bool operator==(UnwrappedIterator<Iter1> const& i1, UnwrappedIterator<Iter2> const& i2)
@@ -115,25 +115,25 @@ bool operator!=(UnwrappedIterator<Iter1> const& i1, UnwrappedIterator<Iter2> con
 // points to the (1,0) element.  So the best we can do is optimize
 // the order for short-circuit evaluation.
 template <typename Iter1, typename Iter2, typename F1, typename F2>
-bool operator==(UnwrappedIterator<MatrixOuterIterator<Iter1, F1, F2> > const& i1, 
-		UnwrappedIterator<MatrixOuterIterator<Iter2, F1, F2> > const& i2)
+bool operator==(UnwrappedIterator<MatrixOuterIterator<Iter1, F1, F2> > const& i1,
+                UnwrappedIterator<MatrixOuterIterator<Iter2, F1, F2> > const& i2)
 {
    return i1.inner() == i2.inner() && i1.outer() == i2.outer();
 }
 
 template <typename Iter1, typename Iter2, typename F1, typename F2>
-bool operator!=(UnwrappedIterator<MatrixOuterIterator<Iter1, F1, F2> > const& i1, 
-		UnwrappedIterator<MatrixOuterIterator<Iter2, F1, F2> > const& i2)
+bool operator!=(UnwrappedIterator<MatrixOuterIterator<Iter1, F1, F2> > const& i1,
+                UnwrappedIterator<MatrixOuterIterator<Iter2, F1, F2> > const& i2)
 {
    return i1.inner() != i2.inner() || i1.outer() != i2.outer();
 }
 
 template <typename OuterIterator>
-struct IteratorTraits<UnwrappedIterator<OuterIterator> > 
+struct IteratorTraits<UnwrappedIterator<OuterIterator> >
   : public IteratorTraits<typename OuterIterator::inner_iterator>
 { };
 
-     
+
 } // namespace LinearAlgebra
 
 
@@ -165,7 +165,7 @@ struct UnwrapIterator<MatrixOuterIterator<Iter, Slice, Slice> >
       return Stride1 == Size2 * Stride2;
    }
 
-   static result_type unwrap(MatrixOuterIterator<Iter, Slice, Slice> const& first) 
+   static result_type unwrap(MatrixOuterIterator<Iter, Slice, Slice> const& first)
    {
       DEBUG_PRECONDITION((UnwrapIterator<MatrixOuterIterator<Iter, Slice, Slice> >::is_unwrap(first)));
       int Stride1 = first.func1().stride();
@@ -190,7 +190,7 @@ struct UnwrapIterator<MatrixOuterIterator<Iter, Slice, Range> >
       return Stride1 == Size2 * Stride2;
    }
 
-   static result_type unwrap(MatrixOuterIterator<Iter, Slice, Range> const& first) 
+   static result_type unwrap(MatrixOuterIterator<Iter, Slice, Range> const& first)
    {
       DEBUG_PRECONDITION((UnwrapIterator<MatrixOuterIterator<Iter, Slice, Range> >::is_unwrap(first)));
       int Start = first.func1().start() + first.func2().first();
@@ -215,7 +215,7 @@ struct UnwrapIterator<MatrixOuterIterator<Iter, Range, Slice> >
       return Stride1 == Size2 * Stride2;
    }
 
-   static result_type unwrap(MatrixOuterIterator<Iter, Range, Slice> const& first) 
+   static result_type unwrap(MatrixOuterIterator<Iter, Range, Slice> const& first)
    {
       DEBUG_PRECONDITION((UnwrapIterator<MatrixOuterIterator<Iter, Range, Slice> >::is_unwrap(first)));
       int Start = first.func1().first() + first.func2().start();
@@ -227,9 +227,9 @@ struct UnwrapIterator<MatrixOuterIterator<Iter, Range, Slice> >
 
 template <typename Iter, typename F>
 typename F::result_type
-unwrap_dispatch_unordered(MatrixOuterIterator<Iter, Slice, Slice> const& first, 
-			  MatrixOuterIterator<Iter, Slice, Slice> const& last, 
-			  F f)
+unwrap_dispatch_unordered(MatrixOuterIterator<Iter, Slice, Slice> const& first,
+                          MatrixOuterIterator<Iter, Slice, Slice> const& last,
+                          F f)
 {
    DEBUG_PRECONDITION(first.base_begin() == last.base_begin());
    DEBUG_PRECONDITION(first.func1() == last.func1());
@@ -250,7 +250,7 @@ unwrap_dispatch_unordered(MatrixOuterIterator<Iter, Slice, Slice> const& first,
       int FirstOffset = first.index1() * Stride1 + Start;
       int LastOffset = last.index1() * Stride1 + Start;
       return f(StrideIterator<Iter>(first.base_begin() + FirstOffset, Stride2),
-	       StrideIterator<Iter>(first.base_begin() + LastOffset, Stride2));
+               StrideIterator<Iter>(first.base_begin() + LastOffset, Stride2));
    }
 
    if (Stride2 == Size1 * Stride1)
@@ -258,7 +258,7 @@ unwrap_dispatch_unordered(MatrixOuterIterator<Iter, Slice, Slice> const& first,
       int FirstOffset = first.index1() * Stride1 + Start;
       int LastOffset = FirstOffset + Size2 * Stride2;
       return f(StrideIterator<Iter>(first.base_begin() + FirstOffset, Stride1),
-	       StrideIterator<Iter>(first.base_begin() + LastOffset, Stride1));
+               StrideIterator<Iter>(first.base_begin() + LastOffset, Stride1));
    }
 
    // else linearization is not possible
@@ -275,8 +275,8 @@ struct FastNorm2Sq
 
 template <typename Iter>
 inline
-double fast_norm_2_sq(MatrixOuterIterator<Iter, Slice, Slice> first, 
-		      MatrixOuterIterator<Iter, Slice, Slice> last)
+double fast_norm_2_sq(MatrixOuterIterator<Iter, Slice, Slice> first,
+                      MatrixOuterIterator<Iter, Slice, Slice> last)
 {
    return unwrap_dispatch_unordered(first, last, FastNorm2Sq());
 }
@@ -290,16 +290,16 @@ struct FastFill
 
 template <typename Iter>
 inline
-void fast_fill(MatrixOuterIterator<Iter, Slice, Slice> first, 
-	       MatrixOuterIterator<Iter, Slice, Slice> last)
+void fast_fill(MatrixOuterIterator<Iter, Slice, Slice> first,
+               MatrixOuterIterator<Iter, Slice, Slice> last)
 {
    return unwrap_dispatch_unordered(first, last, FastFill());
 }
 
 template <typename Iter, typename F1, typename F2, typename Scalar>
 inline
-void fast_fill(MatrixOuterIterator<Iter, F1, F2> first, 
-	       MatrixOuterIterator<Iter, F1, F2> last, Scalar const& s)
+void fast_fill(MatrixOuterIterator<Iter, F1, F2> first,
+               MatrixOuterIterator<Iter, F1, F2> last, Scalar const& s)
 {
    typedef UnwrapIterator<MatrixOuterIterator<Iter, F1, F2> > UnwrapIter;
    typedef UnwrappedIterator<MatrixOuterIterator<Iter, F1, F2> > UIterType;
@@ -316,8 +316,8 @@ void fast_fill(MatrixOuterIterator<Iter, F1, F2> first,
 
 template <typename Iter, typename F1, typename F2, typename Scalar>
 inline
-void fast_multiply(MatrixOuterIterator<Iter, F1, F2> first, 
-		   MatrixOuterIterator<Iter, F1, F2> last, Scalar const& s)
+void fast_multiply(MatrixOuterIterator<Iter, F1, F2> first,
+                   MatrixOuterIterator<Iter, F1, F2> last, Scalar const& s)
 {
    typedef UnwrapIterator<MatrixOuterIterator<Iter, F1, F2> > UnwrapIter;
    typedef UnwrappedIterator<MatrixOuterIterator<Iter, F1, F2> > UIterType;
@@ -334,7 +334,7 @@ void fast_multiply(MatrixOuterIterator<Iter, F1, F2> first,
 
 template <typename Iter1, typename F11, typename F12, typename Iter2, typename F21, typename F22>
 void fast_add(MatrixOuterIterator<Iter1, F11, F12> first, MatrixOuterIterator<Iter1, F11, F12> last,
-	      MatrixOuterIterator<Iter2, F21, F22> dest)
+              MatrixOuterIterator<Iter2, F21, F22> dest)
 {
    typedef UnwrapIterator<MatrixOuterIterator<Iter1, F11, F12> > UnwrapIter1;
    typedef UnwrapIterator<MatrixOuterIterator<Iter2, F21, F22> > UnwrapIter2;
@@ -346,29 +346,29 @@ void fast_add(MatrixOuterIterator<Iter1, F11, F12> first, MatrixOuterIterator<It
    {
       if (UnwrapIter2::is_unwrap(dest))
       {
-	 fast_add(UnwrapIter1::unwrap(first), UnwrapIter1::unwrap(last), UnwrapIter2::unwrap(dest));
+         fast_add(UnwrapIter1::unwrap(first), UnwrapIter1::unwrap(last), UnwrapIter2::unwrap(dest));
       }
       else
       {
-	 fast_add(UnwrapIter1::unwrap(first), UnwrapIter1::unwrap(last), UIterType2(dest));
+         fast_add(UnwrapIter1::unwrap(first), UnwrapIter1::unwrap(last), UIterType2(dest));
       }
    }
    else
    {
       if (UnwrapIter2::is_unwrap(dest))
       {
-	 fast_add(UIterType1(first), UIterType1(last), UnwrapIter2::unwrap(dest));
+         fast_add(UIterType1(first), UIterType1(last), UnwrapIter2::unwrap(dest));
       }
       else
       {
-	 fast_add(UIterType1(first), UIterType1(last), UIterType2(dest));
+         fast_add(UIterType1(first), UIterType1(last), UIterType2(dest));
       }
    }
 }
 
 template <typename Iter1, typename F11, typename F12, typename Iter2, typename F21, typename F22>
 void fast_subtract(MatrixOuterIterator<Iter1, F11, F12> first, MatrixOuterIterator<Iter1, F11, F12> last,
-	      MatrixOuterIterator<Iter2, F21, F22> dest)
+              MatrixOuterIterator<Iter2, F21, F22> dest)
 {
    typedef UnwrapIterator<MatrixOuterIterator<Iter1, F11, F12> > UnwrapIter1;
    typedef UnwrapIterator<MatrixOuterIterator<Iter2, F21, F22> > UnwrapIter2;
@@ -380,29 +380,29 @@ void fast_subtract(MatrixOuterIterator<Iter1, F11, F12> first, MatrixOuterIterat
    {
       if (UnwrapIter2::is_unwrap(dest))
       {
-	 fast_subtract(UnwrapIter1::unwrap(first), UnwrapIter1::unwrap(last), UnwrapIter2::unwrap(dest));
+         fast_subtract(UnwrapIter1::unwrap(first), UnwrapIter1::unwrap(last), UnwrapIter2::unwrap(dest));
       }
       else
       {
-	 fast_subtract(UnwrapIter1::unwrap(first), UnwrapIter1::unwrap(last), UIterType2(dest));
+         fast_subtract(UnwrapIter1::unwrap(first), UnwrapIter1::unwrap(last), UIterType2(dest));
       }
    }
    else
    {
       if (UnwrapIter2::is_unwrap(dest))
       {
-	 fast_subtract(UIterType1(first), UIterType1(last), UnwrapIter2::unwrap(dest));
+         fast_subtract(UIterType1(first), UIterType1(last), UnwrapIter2::unwrap(dest));
       }
       else
       {
-	 fast_subtract(UIterType1(first), UIterType1(last), UIterType2(dest));
+         fast_subtract(UIterType1(first), UIterType1(last), UIterType2(dest));
       }
    }
 }
 
 template <typename Iter1, typename F11, typename F12, typename Iter2, typename F21, typename F22>
 void fast_copy(MatrixOuterIterator<Iter1, F11, F12> first, MatrixOuterIterator<Iter1, F11, F12> last,
-	       MatrixOuterIterator<Iter2, F21, F22> dest)
+               MatrixOuterIterator<Iter2, F21, F22> dest)
 {
    typedef UnwrapIterator<MatrixOuterIterator<Iter1, F11, F12> > UnwrapIter1;
    typedef UnwrapIterator<MatrixOuterIterator<Iter2, F21, F22> > UnwrapIter2;
@@ -414,22 +414,22 @@ void fast_copy(MatrixOuterIterator<Iter1, F11, F12> first, MatrixOuterIterator<I
    {
       if (UnwrapIter2::is_unwrap(dest))
       {
-	 fast_copy(UnwrapIter1::unwrap(first), UnwrapIter1::unwrap(last), UnwrapIter2::unwrap(dest));
+         fast_copy(UnwrapIter1::unwrap(first), UnwrapIter1::unwrap(last), UnwrapIter2::unwrap(dest));
       }
       else
       {
-	 fast_copy(UnwrapIter1::unwrap(first), UnwrapIter1::unwrap(last), UIterType2(dest));
+         fast_copy(UnwrapIter1::unwrap(first), UnwrapIter1::unwrap(last), UIterType2(dest));
       }
    }
    else
    {
       if (UnwrapIter2::is_unwrap(dest))
       {
-	 fast_copy(UIterType1(first), UIterType1(last), UnwrapIter2::unwrap(dest));
+         fast_copy(UIterType1(first), UIterType1(last), UnwrapIter2::unwrap(dest));
       }
       else
       {
-	 fast_copy(UIterType1(first), UIterType1(last), UIterType2(dest));
+         fast_copy(UIterType1(first), UIterType1(last), UIterType2(dest));
       }
    }
 }

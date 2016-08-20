@@ -20,8 +20,8 @@
 #include "aggregator.h"
 
 void Aggregator::ConstructLeft(std::vector<MPWavefunction> const& Psi,
-                               std::vector<MPOperator> const& Op, 
-                               std::vector<OperatorType>& LeftMap, 
+                               std::vector<MPOperator> const& Op,
+                               std::vector<OperatorType>& LeftMap,
                                std::vector<double> const& Weights,
                                int MaxStates,
                                double MinTrunc)
@@ -31,7 +31,7 @@ void Aggregator::ConstructLeft(std::vector<MPWavefunction> const& Psi,
    {
       LeftMap[i] = operator_prod(herm(Aggregate_left), LeftMap[i], Psi[i].Left());
    }
-                      
+
    // Construct the density matrix
    OperatorType Rho;
    for (unsigned i = 0; i < Psi.size(); ++i)
@@ -50,7 +50,7 @@ void Aggregator::ConstructLeft(std::vector<MPWavefunction> const& Psi,
                                                                                    MinTrunc,
                                                                                    Info));
    if (ShowStates)
-      std::cerr << "left density matrix at partition (" << Psi[0].LeftSize() << "," << Psi[0].RightSize() 
+      std::cerr << "left density matrix at partition (" << Psi[0].LeftSize() << "," << Psi[0].RightSize()
                 << "), states=" << Info.KeptStates() << ", trunc=" << Info.TruncationError() << '\n';
 
    // Truncate
@@ -68,8 +68,8 @@ void Aggregator::ConstructLeft(std::vector<MPWavefunction> const& Psi,
 }
 
 void Aggregator::ConstructRight(std::vector<MPWavefunction> const& Psi,
-                                std::vector<MPOperator> const& Op, 
-                                std::vector<OperatorType>& RightMap, 
+                                std::vector<MPOperator> const& Op,
+                                std::vector<OperatorType>& RightMap,
                                 std::vector<double> const& Weights,
                                 int MaxStates,
                                 double MinTrunc)
@@ -98,7 +98,7 @@ void Aggregator::ConstructRight(std::vector<MPWavefunction> const& Psi,
                                                                                    MinTrunc,
                                                                                    Info));
    if (ShowStates)
-      std::cerr << "right density matrix at partition (" << Psi[0].LeftSize() << "," << Psi[0].RightSize() 
+      std::cerr << "right density matrix at partition (" << Psi[0].LeftSize() << "," << Psi[0].RightSize()
                 << "), states=" << Info.KeptStates() << ", trunc=" << Info.TruncationError() << '\n';
 
    // Truncate
@@ -143,8 +143,8 @@ void Aggregator::RotateRight(std::vector<MPWavefunction>& Psi, std::vector<MPOpe
                                                    Psi[0].Left().SiteBasis());
 }
 
-Aggregator::Aggregator(std::vector<MPWavefunction> Psi, 
-                       std::vector<MPOperator> Op, 
+Aggregator::Aggregator(std::vector<MPWavefunction> Psi,
+                       std::vector<MPOperator> Op,
                        bool ShowStates_,
                        int MaxStates,
                        double MinTrunc,
@@ -208,7 +208,7 @@ Aggregator::Aggregator(std::vector<MPWavefunction> Psi,
       Op_right.push_back(make_vacuum_state(Psi[0].GetSymmetryList()));
    }
 
-   Aggregate_right = Component::ConstructFullBasis1(Psi[0].Right().SiteBasis(), 
+   Aggregate_right = Component::ConstructFullBasis1(Psi[0].Right().SiteBasis(),
                                                     Psi[0].Right().Basis2());
 
 

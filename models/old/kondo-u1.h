@@ -33,7 +33,7 @@ LatticeSite CreateU1KondoSite(std::string const& Sym = "N")
    QuantumNumbers::QNConstructor<QuantumNumbers::U1> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator Cup, Cdown, CHup, CHdown, P, R, N, Sp, Sm, Sz, Sfp, Sfm, Sfz, Scp, Scm, Scz,
-      ScpSfm, ScmSfp, SczSfz, ScSf, I, Hu, Pdouble, 
+      ScpSfm, ScmSfp, SczSfz, ScSf, I, Hu, Pdouble,
       Ep, Em, Ns, Nh, Pg, CupP, CdownP, CHupP, CHdownP, Rs, Sx, Sy, Sfx, Sfy, Scx, Scy,
       mSz, Top;
    LatticeSite Site;
@@ -82,9 +82,9 @@ LatticeSite CreateU1KondoSite(std::string const& Sym = "N")
 
    Rs("double-down",  "double-up")    = -1.0;   // double-occupied singlet is antisymmetric
    Rs("double-up",    "double-down")  = -1.0;
-   
+
    Rs("singlet",      "singlet")      = -1.0; // again, an antisymmetric triplet
-   
+
    Rs("triplet-down", "triplet-up")   =  1.0;
    Rs("triplet-zero", "triplet-zero") =  1.0;
    Rs("triplet-up",   "triplet-down") =  1.0;
@@ -163,7 +163,7 @@ LatticeSite CreateU1KondoSite(std::string const& Sym = "N")
    I("double-down",  "double-down")  =  1;
 
    Pg = I - Pdouble; // Gutzwiller projector
-   
+
    // local spin
    Sfz("empty-up",     "empty-up")     =  0.5;
    Sfz("empty-down",   "empty-down")   = -0.5;
@@ -258,7 +258,7 @@ LatticeSite CreateU1KondoSite(std::string const& Sym = "N")
    // the x,y components of the spin
    // Sp = Sx + iSy
    // Sm = Sx - iSy
-   // so that 
+   // so that
    // Sx = (Sp + Sm) / 2
    // Sy = (Sp - Sm)/2i
 

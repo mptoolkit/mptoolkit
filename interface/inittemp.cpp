@@ -44,7 +44,7 @@ void InitializeTempPHeap(bool Verbose)
          std::cerr << "Using temporary file";
       else
          std::cerr << "Using temporary filespec " << TempFile;
-      std::cerr << ", with page size " << PageSize()        
+      std::cerr << ", with page size " << PageSize()
                 << ", cache size " << CacheSize() << '\n';
    }
    bool ShouldUnlink = getenv_or_default("MP_UNLINKTEMP", 1);

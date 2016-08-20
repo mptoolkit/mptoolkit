@@ -47,7 +47,7 @@ double const DefaultTol = 1E-14;
 
 // Solve an MPO in the left-handed sense, as x_L * Op = lambda * x_L
 // We currently assume there is only one eigenvalue 1 of the transfer operator.
-// The LeftIdentity and RightIdentity are the right and left eigenmatrices of the 
+// The LeftIdentity and RightIdentity are the right and left eigenmatrices of the
 // transfer operator in the Basis1 of Psi.
 // If Psi is left-orthogonal then LeftIdentity = I and RightIdentity = Rho
 // if Psi is right-orthogonal then LeftIdentity = rho and RightIdentity = I
@@ -59,8 +59,8 @@ double const DefaultTol = 1E-14;
 // don't need the complete matrix elements.
 // The EMatK is a vector of the already-converged E-matrix elements.
 // If no matrix elements are known then this can be initialized to the empty matrix.
-// If EMatK is non-empty, then the supplied elements MUST be exactly the 
-// elements of the final solution (this isn't checked, but the behaviour 
+// If EMatK is non-empty, then the supplied elements MUST be exactly the
+// elements of the final solution (this isn't checked, but the behaviour
 // will be unspecified otherwise).
 // This is intended, eg for calculating higher powers of an MPO, where the solution at a lower
 // power can be re-used to speed up the next power.
@@ -68,11 +68,11 @@ double const DefaultTol = 1E-14;
 // overlap of this matrix element with the density matrix (RightIdentity).
 void
 SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
-	      LinearWavefunction const& Psi, QuantumNumber const& QShift,
+              LinearWavefunction const& Psi, QuantumNumber const& QShift,
               TriangularMPO const& Op, MatrixOperator const& LeftIdentity,
-              MatrixOperator const& RightIdentity, 
-	      bool NeedFinalMatrix, double Tol = DefaultTol,
-	      double EigenUnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
+              MatrixOperator const& RightIdentity,
+              bool NeedFinalMatrix, double Tol = DefaultTol,
+              double EigenUnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
 
 //
 // 'Simple' solvers, for first order operators (eg Hamiltonians).  Return value is
@@ -82,20 +82,20 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
 
 std::complex<double>
 SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
-		    QuantumNumber const& QShift, TriangularMPO const& Op,
-		    MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
+                    QuantumNumber const& QShift, TriangularMPO const& Op,
+                    MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
 
 std::complex<double>
 SolveSimpleMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
-		    TriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
+                    TriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
 
 std::complex<double>
 SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
-		     QuantumNumber const& QShift, TriangularMPO const& Op,
-		     MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
+                     QuantumNumber const& QShift, TriangularMPO const& Op,
+                     MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
 
 std::complex<double>
 SolveSimpleMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi,
-		     TriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
+                     TriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
 
 #endif

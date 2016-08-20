@@ -40,7 +40,7 @@ int main(int argc, char** argv)
    std::string OutPsi = argv[3];
 
    pvalue_ptr<MPWavefunction> Psi;
-   
+
    long CacheSize = getenv_or_default("MP_CACHESIZE", DEFAULT_PAGE_CACHE_SIZE);
    if (InPsi == OutPsi)
       Psi = pheap::OpenPersistent(InPsi.c_str(), CacheSize);
@@ -73,7 +73,7 @@ int main(int argc, char** argv)
       if (QList.size() != 1)
       {
          std::cerr << "quantum number of operator-wavefunction product is ambiguous,\n"
-                   << "  choices are "; 
+                   << "  choices are ";
          std::copy(QList.begin(), QList.end(), std::ostream_iterator<QuantumNumber>(std::cerr, " "));
          std::cerr << '\n';
          exit(1);

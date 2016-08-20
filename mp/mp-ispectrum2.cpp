@@ -69,7 +69,7 @@ struct LeftMultiply
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   LeftMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_) 
+   LeftMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_)
       : L(L_), QShift(QShift_) {}
 
    result_type operator()(argument_type const& x) const
@@ -77,7 +77,7 @@ struct LeftMultiply
       result_type r = delta_shift(x, QShift);
       for (LinearWavefunction::const_iterator I = L.begin(); I != L.end(); ++I)
       {
-	 r = operator_prod(herm(*I), r, *I);
+         r = operator_prod(herm(*I), r, *I);
       }
       return r;
    }
@@ -92,8 +92,8 @@ struct LeftMultiplyString
    typedef MatrixOperator result_type;
 
    LeftMultiplyString(LinearWavefunction const& L_, QuantumNumber const& QShift_,
-                      GenericMPO const& StringOp_) 
-      : L(L_), QShift(QShift_), StringOp(StringOp_) 
+                      GenericMPO const& StringOp_)
+      : L(L_), QShift(QShift_), StringOp(StringOp_)
    {
       CHECK_EQUAL(L.size(), StringOp.size())("The string operator must be the same length as the unit cell");
    }
@@ -109,13 +109,13 @@ struct LeftMultiplyString
    QuantumNumber QShift;
    GenericMPO StringOp;
 };
-   
+
 struct LeftMultiplyOp
 {
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   LeftMultiplyOp(LinearWavefunction const& L_, QuantumNumber const& QShift_, SimpleOperator const& Op_) 
+   LeftMultiplyOp(LinearWavefunction const& L_, QuantumNumber const& QShift_, SimpleOperator const& Op_)
       : L(L_), QShift(QShift_), Op(Op_) {}
 
    result_type operator()(argument_type const& x) const
@@ -123,7 +123,7 @@ struct LeftMultiplyOp
       result_type r = delta_shift(x, QShift);
       for (LinearWavefunction::const_iterator I = L.begin(); I != L.end(); ++I)
       {
-	 r = operator_prod(herm(Op), herm(*I), r, *I);
+         r = operator_prod(herm(Op), herm(*I), r, *I);
       }
       return r;
    }
@@ -138,17 +138,17 @@ struct RightMultiply
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   RightMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_) 
+   RightMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_)
       : L(L_), QShift(QShift_) {}
 
    result_type operator()(argument_type const& x) const
    {
-      result_type r = x; 
+      result_type r = x;
       LinearWavefunction::const_iterator I = L.end();
       while (I != L.begin())
       {
          --I;
-	 r = operator_prod(*I, r, herm(*I));
+         r = operator_prod(*I, r, herm(*I));
       }
       return delta_shift(r, adjoint(QShift));
    }
@@ -163,7 +163,7 @@ struct RightMultiplyString
    typedef MatrixOperator result_type;
 
    RightMultiplyString(LinearWavefunction const& L_, QuantumNumber const& QShift_,
-                       GenericMPO const& StringOp_) 
+                       GenericMPO const& StringOp_)
       : L(L_), QShift(QShift_) , StringOp(StringOp_)
    {
       CHECK_EQUAL(L.size(), StringOp.size())("The string operator must be the same length as the unit cell");
@@ -185,17 +185,17 @@ struct RightMultiplyOp
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   RightMultiplyOp(LinearWavefunction const& L_, QuantumNumber const& QShift_, SimpleOperator const& Op_) 
+   RightMultiplyOp(LinearWavefunction const& L_, QuantumNumber const& QShift_, SimpleOperator const& Op_)
       : L(L_), QShift(QShift_), Op(Op_) {}
 
    result_type operator()(argument_type const& x) const
    {
-      result_type r = x; 
+      result_type r = x;
       LinearWavefunction::const_iterator I = L.end();
       while (I != L.begin())
       {
          --I;
-	 r = operator_prod(Op, *I, r, herm(*I));
+         r = operator_prod(Op, *I, r, herm(*I));
       }
       return delta_shift(x, adjoint(QShift));
    }
@@ -207,7 +207,7 @@ struct RightMultiplyOp
 
 struct MultFunc
 {
-   MultFunc(LinearWavefunction const& Psi, QuantumNumber const& QShift, 
+   MultFunc(LinearWavefunction const& Psi, QuantumNumber const& QShift,
             QuantumNumbers::QuantumNumber const& q)
       : Mult(Psi, QShift), Pack(Psi.Basis2(), Psi.Basis2(), q) {}
 
@@ -224,7 +224,7 @@ struct MultFunc
 
 struct MultFuncTrans
 {
-   MultFuncTrans(LinearWavefunction const& Psi, QuantumNumber const& QShift, 
+   MultFuncTrans(LinearWavefunction const& Psi, QuantumNumber const& QShift,
             QuantumNumbers::QuantumNumber const& q)
       : Mult(Psi, QShift), Pack(Psi.Basis2(), Psi.Basis2(), q) {}
 
@@ -241,7 +241,7 @@ struct MultFuncTrans
 
 struct MultFuncString
 {
-   MultFuncString(LinearWavefunction const& Psi, QuantumNumber const& QShift, 
+   MultFuncString(LinearWavefunction const& Psi, QuantumNumber const& QShift,
                   QuantumNumbers::QuantumNumber const& q,
                   FiniteMPO const& StringOp)
       : Mult(Psi, QShift, StringOp), Pack(Psi.Basis2(), Psi.Basis2(), q) { }
@@ -259,7 +259,7 @@ struct MultFuncString
 
 struct MultFuncStringTrans
 {
-   MultFuncStringTrans(LinearWavefunction const& Psi, QuantumNumber const& QShift, 
+   MultFuncStringTrans(LinearWavefunction const& Psi, QuantumNumber const& QShift,
                        QuantumNumbers::QuantumNumber const& q,
                        GenericMPO const& StringOp)
       : Mult(Psi, QShift, StringOp), Pack(Psi.Basis2(), Psi.Basis2(), q) { }
@@ -275,11 +275,11 @@ struct MultFuncStringTrans
    PackMatrixOperator Pack;
 };
 
-LinearAlgebra::Vector<std::complex<double> > 
+LinearAlgebra::Vector<std::complex<double> >
 get_spectrum(LinearWavefunction const& Psi, QuantumNumber const& QShift, int NumEigen,
              QuantumNumbers::QuantumNumber const& q, double tol = 1e-10,
-             LinearAlgebra::Vector<MatrixOperator>* RightVectors = NULL, 
-             LinearAlgebra::Vector<MatrixOperator>* LeftVectors = NULL, 
+             LinearAlgebra::Vector<MatrixOperator>* RightVectors = NULL,
+             LinearAlgebra::Vector<MatrixOperator>* LeftVectors = NULL,
              int ncv = 0, bool Sort = false, int Verbose = 0)
 {
    PackMatrixOperator Pack(Psi.Basis2(), Psi.Basis2(), q);
@@ -287,9 +287,9 @@ get_spectrum(LinearWavefunction const& Psi, QuantumNumber const& QShift, int Num
    double tolsave = tol;
    int ncvsave = ncv;
 
-   std::vector<std::complex<double> >* OutVec 
+   std::vector<std::complex<double> >* OutVec
       = RightVectors ? new std::vector<std::complex<double> >() : NULL;
-   LinearAlgebra::Vector<std::complex<double> >  RightEigen = 
+   LinearAlgebra::Vector<std::complex<double> >  RightEigen =
       LinearAlgebra::DiagonalizeARPACK(MultFunc(Psi, QShift, q),
                                        n, NumEigen, tol, OutVec, ncv, Sort, Verbose);
 
@@ -298,14 +298,14 @@ get_spectrum(LinearWavefunction const& Psi, QuantumNumber const& QShift, int Num
       tol = tolsave;
       ncv = ncvsave;
       std::vector<std::complex<double> >* OutLeftVec = new std::vector<std::complex<double> >();
-      LinearAlgebra::Vector<std::complex<double> >  LeftEigen = 
+      LinearAlgebra::Vector<std::complex<double> >  LeftEigen =
          LinearAlgebra::DiagonalizeARPACK(MultFuncTrans(Psi, QShift, q),
                                           n, NumEigen, tol, OutLeftVec, ncv, Sort, Verbose);
       // The left vectors are the hermitian conjugate, not the transpose.  So conjugate eigenvalues
       LeftEigen = conj(LeftEigen);
       *LeftVectors = LinearAlgebra::Vector<MatrixOperator>(LeftEigen.size());
 
-      // If we have both left & right eigenvectors, then match the corresponding eigenvalues      
+      // If we have both left & right eigenvectors, then match the corresponding eigenvalues
       if (RightVectors)
          LinearAlgebra::MatchEigenvectors(n, LeftEigen, *OutLeftVec, RightEigen, *OutVec, tolsave*10);
 
@@ -329,13 +329,13 @@ get_spectrum(LinearWavefunction const& Psi, QuantumNumber const& QShift, int Num
    return RightEigen;
 }
 
-LinearAlgebra::Vector<std::complex<double> > 
-get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift, 
+LinearAlgebra::Vector<std::complex<double> >
+get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
                     FiniteMPO const& StringOp,
                     int NumEigen,
                     QuantumNumbers::QuantumNumber const& q, double tol = 1e-10,
-                    LinearAlgebra::Vector<MatrixOperator>* RightVectors = NULL, 
-                    LinearAlgebra::Vector<MatrixOperator>* LeftVectors = NULL, 
+                    LinearAlgebra::Vector<MatrixOperator>* RightVectors = NULL,
+                    LinearAlgebra::Vector<MatrixOperator>* LeftVectors = NULL,
                     int ncv = 0, bool Sort = false, int Verbose = 0)
 {
    PackMatrixOperator Pack(Psi.Basis2(), Psi.Basis2(), q);
@@ -348,9 +348,9 @@ get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
       std::cerr << "Calculating right eigenvalues\n";
    }
 
-   std::vector<std::complex<double> >* OutVec 
+   std::vector<std::complex<double> >* OutVec
       = RightVectors ? new std::vector<std::complex<double> >() : NULL;
-   LinearAlgebra::Vector<std::complex<double> >  RightEigen = 
+   LinearAlgebra::Vector<std::complex<double> >  RightEigen =
       LinearAlgebra::DiagonalizeARPACK(MultFuncString(Psi, QShift, q, StringOp),
                                        n, NumEigen, tol, OutVec, ncv, Sort, Verbose);
 
@@ -363,14 +363,14 @@ get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
       tol = tolsave;
       ncv = ncvsave;
       std::vector<std::complex<double> >* OutLeftVec = new std::vector<std::complex<double> >();
-      LinearAlgebra::Vector<std::complex<double> >  LeftEigen = 
+      LinearAlgebra::Vector<std::complex<double> >  LeftEigen =
          LinearAlgebra::DiagonalizeARPACK(MultFuncStringTrans(Psi, QShift, q, StringOp),
                                           n, NumEigen, tol, OutLeftVec, ncv, Sort, Verbose);
       // The left vectors are the hermitian conjugate, not the transpose.  So conjugate eigenvalues
       LeftEigen = conj(LeftEigen);
       *LeftVectors = LinearAlgebra::Vector<MatrixOperator>(LeftEigen.size());
 
-      // If we have both left & right eigenvectors, then match the corresponding eigenvalues      
+      // If we have both left & right eigenvectors, then match the corresponding eigenvalues
       if (RightVectors)
          LinearAlgebra::MatchEigenvectors(n, LeftEigen, *OutLeftVec, RightEigen, *OutVec, tolsave*10);
 
@@ -397,7 +397,7 @@ get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 // returns the left/right eigenvector pair corresponding to the eigenvalue 1
 // TODO: handle the degenerate case where there is more than one eigenvalue = 1
 std::pair<MatrixOperator, MatrixOperator>
-get_principal_eigenpair(LinearWavefunction const& Psi, QuantumNumber const& QShift, 
+get_principal_eigenpair(LinearWavefunction const& Psi, QuantumNumber const& QShift,
                         double TolIn = 1E-14, int Verbose = 0)
 {
    // get the left eigenvector
@@ -408,7 +408,7 @@ get_principal_eigenpair(LinearWavefunction const& Psi, QuantumNumber const& QShi
    int Iterations = 20;
    double Tol = TolIn;
    LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
-   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMult, 
+   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMult,
                                                       Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    while (Iterations == 20)
    {
@@ -426,7 +426,7 @@ get_principal_eigenpair(LinearWavefunction const& Psi, QuantumNumber const& QShi
 
    Iterations = 20; Tol = TolIn;
    RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
-   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMult, 
+   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMult,
                                                       Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    //   DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
    while (Iterations == 20)
@@ -449,16 +449,16 @@ void PrintEigenvalue(std::ostream& out, std::complex<double> x, bool ShowCart, b
    if (ShowCart)
    {
       out << std::setw(21) << std::scientific << x.real() << "  "
-	  << std::setw(21) << std::scientific << x.imag() << "  ";
+          << std::setw(21) << std::scientific << x.imag() << "  ";
    }
    else
    {
       double Magnitude = norm_frob(x);
       double Arg = std::atan2(x.imag(), x.real());
       if (!ShowRadians)
-	 Arg *= 180.0 / math_const::pi;
+         Arg *= 180.0 / math_const::pi;
       out << std::setw(21) << std::scientific << Magnitude << "  "
-	  << std::setw(21) << std::fixed << Arg << "  ";
+          << std::setw(21) << std::fixed << Arg << "  ";
    }
 }
 
@@ -497,27 +497,27 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 //         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff), 
-	 //          ("Cutoff threshold for eigenvalues [default "
-	 //           +boost::lexical_cast<std::string>(EigenCutoff)+"]").c_str())
+         //         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
+         //          ("Cutoff threshold for eigenvalues [default "
+         //           +boost::lexical_cast<std::string>(EigenCutoff)+"]").c_str())
          ("num-eigenvalues,n", prog_opt::value(&MaxEigen),
-	  FormatDefault("Number of eigenvalues to calculate", MaxEigen).c_str())
-	 ("quantumnumber,q", prog_opt::value(&Target), "Calculate spectrum only in this symmetry sector")
-	 ("tol,t", prog_opt::value(&Tol), FormatDefault("Tolerance of eigensolver", Tol).c_str())
-	 ("model", prog_opt::value(&Model), "use this model for the operator to examine "
-	  "(tri-u1)")
-	 ("spin", prog_opt::value(&Spin), "for spin models, the value of the spin [default 0.5]")
+          FormatDefault("Number of eigenvalues to calculate", MaxEigen).c_str())
+         ("quantumnumber,q", prog_opt::value(&Target), "Calculate spectrum only in this symmetry sector")
+         ("tol,t", prog_opt::value(&Tol), FormatDefault("Tolerance of eigensolver", Tol).c_str())
+         ("model", prog_opt::value(&Model), "use this model for the operator to examine "
+          "(tri-u1)")
+         ("spin", prog_opt::value(&Spin), "for spin models, the value of the spin [default 0.5]")
          ("nmax", prog_opt::value(&NMax), "for Bose-Hubbard model, the max number of bosons per site")
-	 ("lcoefficients,l", prog_opt::value(&OpL), 
-	  "Calculate the expansion coefficients of this operator acting on the left (can be used more than once)")
-	 ("rcoefficients,r", prog_opt::value(&OpR), 
-	  "Calculate the expansion coefficients of this operator acting on the right (can be used more than once)")
-	 ("symmetric,s", prog_opt::bool_switch(&Symmetric),
-	  "Transform the state to the approximate symmetric orthonormalization constraint")
-	 ("krylov,k", prog_opt::value(&KrylovLength), 
-	  "Length of the Krylov sequence [default 2*num-eigenvalues]")
-	 ("cart", prog_opt::bool_switch(&ShowEigenvaluesCart),
-	  "Show the real and imaginary parts of the eigenvalue, instead of (magnitude,argument)")
+         ("lcoefficients,l", prog_opt::value(&OpL),
+          "Calculate the expansion coefficients of this operator acting on the left (can be used more than once)")
+         ("rcoefficients,r", prog_opt::value(&OpR),
+          "Calculate the expansion coefficients of this operator acting on the right (can be used more than once)")
+         ("symmetric,s", prog_opt::bool_switch(&Symmetric),
+          "Transform the state to the approximate symmetric orthonormalization constraint")
+         ("krylov,k", prog_opt::value(&KrylovLength),
+          "Length of the Krylov sequence [default 2*num-eigenvalues]")
+         ("cart", prog_opt::bool_switch(&ShowEigenvaluesCart),
+          "Show the real and imaginary parts of the eigenvalue, instead of (magnitude,argument)")
          ("radians", prog_opt::bool_switch(&ShowRadians),
           "Show the argument of the eigenvalues in radians, instead of degrees")
          ("corr", prog_opt::bool_switch(&ShowCorrelationLength),
@@ -526,8 +526,8 @@ int main(int argc, char** argv)
           FormatDefault("String operator", StringOp).c_str())
          ("overlaps", prog_opt::bool_switch(&ShowEigenvectorOverlaps),
           "Write the matrix of overlaps of the left/right eigenvectors to cerr (for debugging)")
-	 ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
-	 ("debug", prog_opt::bool_switch(&Debug), "debug mode")
+         ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
+         ("debug", prog_opt::bool_switch(&Debug), "debug mode")
          ;
 
       prog_opt::options_description hidden("Hidden options");
@@ -541,10 +541,10 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || vm.count("psi") < 1)
       {
@@ -563,21 +563,21 @@ int main(int argc, char** argv)
       UnitCell Cell;
       if (Model == "tri-u1")
       {
-	 LatticeSite Site = CreateU1U1HubbardSite();
-	 Cell = UnitCell(3, Site);
+         LatticeSite Site = CreateU1U1HubbardSite();
+         Cell = UnitCell(3, Site);
       }
       else if (Model != "")
       {
-	 PANIC("Unknown model");
+         PANIC("Unknown model");
       }
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
-      pvalue_ptr<InfiniteWavefunction> Psi1 
+      pvalue_ptr<InfiniteWavefunction> Psi1
          = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
 
       // firstly, get the LinearWavefunction
       QuantumNumber QShift = Psi1->QShift;
-      MatrixOperator x_unit =  Psi1->C_right * delta_shift(InvertDiagonal(Psi1->C_old, InverseTol), 
+      MatrixOperator x_unit =  Psi1->C_right * delta_shift(InvertDiagonal(Psi1->C_old, InverseTol),
                                                            adjoint(QShift));
       LinearWavefunction Psi = Psi1->Psi;
       Psi.set_back(prod(Psi.get_back(), x_unit));
@@ -606,7 +606,7 @@ int main(int argc, char** argv)
       QSetType QL;
       if (vm.count("quantumnumber") != 0)
       {
-	 QL.insert(QuantumNumbers::QuantumNumber(Psi.GetSymmetryList(), Target));
+         QL.insert(QuantumNumbers::QuantumNumber(Psi.GetSymmetryList(), Target));
       }
       else
       {
@@ -634,14 +634,14 @@ int main(int argc, char** argv)
       // show the help info
       if (Verbose >= 0)
       {
-	 if (ShowCorrelationLength)
-	    std::cout << "#Unit cell for the correlation lengths is " << UnitCellSize << "sites.\n";
-	 if (!OpL.empty() || !OpR.empty())
-	 {
-	    std::cout << "#Absolute phases for left and right observables is arbitrary.\n"
-		      << "#Relative phases of operators between the same eigenvalue are well-defined.\n"
-		      << "#The product of a left operator with a right operator has a well-defined phase.\n";
-	 }
+         if (ShowCorrelationLength)
+            std::cout << "#Unit cell for the correlation lengths is " << UnitCellSize << "sites.\n";
+         if (!OpL.empty() || !OpR.empty())
+         {
+            std::cout << "#Absolute phases for left and right observables is arbitrary.\n"
+                      << "#Relative phases of operators between the same eigenvalue are well-defined.\n"
+                      << "#The product of a left operator with a right operator has a well-defined phase.\n";
+         }
       }
 
       // show the title
@@ -653,22 +653,22 @@ int main(int argc, char** argv)
          std::cout << " #xi                   ";
 
       if (!OpL.empty())
-	 std::cout << "#L ";
+         std::cout << "#L ";
       for (unsigned j = 0; j < OpL.size(); ++j)
       {
-	 std::cout << "#" << std::left << std::setw(20) 
-		   << (OpL[j] + (ShowEigenvaluesCart ? " (real)" : " (mag)")) << "  ";
-	 std::cout << "#" << std::left << std::setw(20) 
-		   << (OpL[j] + (ShowEigenvaluesCart ? " (imag)" : " (arg)")) << "  ";
+         std::cout << "#" << std::left << std::setw(20)
+                   << (OpL[j] + (ShowEigenvaluesCart ? " (real)" : " (mag)")) << "  ";
+         std::cout << "#" << std::left << std::setw(20)
+                   << (OpL[j] + (ShowEigenvaluesCart ? " (imag)" : " (arg)")) << "  ";
       }
       if (!OpR.empty())
-	 std::cout << "#R ";
+         std::cout << "#R ";
       for (unsigned j = 0; j < OpR.size(); ++j)
       {
-	 std::cout << "#" << std::left << std::setw(20) 
-		   << (OpR[j] + (ShowEigenvaluesCart ? " (real)" : " (mag)")) << "  ";
-	 std::cout << "#" << std::left << std::setw(20) 
-		   << (OpR[j] + (ShowEigenvaluesCart ? " (imag)" : " (arg)")) << "  ";
+         std::cout << "#" << std::left << std::setw(20)
+                   << (OpR[j] + (ShowEigenvaluesCart ? " (real)" : " (mag)")) << "  ";
+         std::cout << "#" << std::left << std::setw(20)
+                   << (OpR[j] + (ShowEigenvaluesCart ? " (imag)" : " (arg)")) << "  ";
       }
       std::cout << '\n' << std::right;
 
@@ -677,15 +677,15 @@ int main(int argc, char** argv)
 
       for (unsigned i = 0; i < OpL.size(); ++i)
       {
-	 GenericMPO Op = ParseUnitCellOperator(Cell, OpL[i]);
+         GenericMPO Op = ParseUnitCellOperator(Cell, OpL[i]);
          local_basis_compatible_or_abort(Psi, Op);
          LeftObservables.push_back(inject_left_qshift(LeftIdent, Op, Psi, QShift));
       }
       for (unsigned i = 0; i < OpR.size(); ++i)
       {
-	 GenericMPO Op = ParseUnitCellOperator(Cell, OpR[i]);
+         GenericMPO Op = ParseUnitCellOperator(Cell, OpR[i]);
          local_basis_compatible_or_abort(Psi, Op);
-	 RightObservables.push_back(inject_right_qshift(RightIdent, Op, Psi, QShift));
+         RightObservables.push_back(inject_right_qshift(RightIdent, Op, Psi, QShift));
       }
 
       // iterate over the relevant quantum number sectors
@@ -696,28 +696,28 @@ int main(int argc, char** argv)
          LinearAlgebra::Vector<std::complex<double> > EValues;
 
          // determine the spectrum
-         EValues = get_spectrum_string(Psi, QShift, MyStringOp*identity_mpo(Cell, *qI), 
-				       MaxEigen, *qI, Tol, &RightEigenvectors, 
+         EValues = get_spectrum_string(Psi, QShift, MyStringOp*identity_mpo(Cell, *qI),
+                                       MaxEigen, *qI, Tol, &RightEigenvectors,
                                        &LeftEigenvectors, KrylovLength, true, Verbose);
 
-	 if (ShowEigenvectorOverlaps)
-	 {
-	    LinearAlgebra::Matrix<double> EigenOverlaps(size(RightEigenvectors), size(LeftEigenvectors));
-	    for (unsigned i = 0; i < size(RightEigenvectors); ++i)
-	       for (unsigned j = 0; j < size(LeftEigenvectors); ++j)
-		  EigenOverlaps(i,j) = norm_frob(inner_prod(LeftEigenvectors[j], RightEigenvectors[i]));
-	    std::cerr << "Eigenvector overlap matrix:\n" << EigenOverlaps << '\n';
+         if (ShowEigenvectorOverlaps)
+         {
+            LinearAlgebra::Matrix<double> EigenOverlaps(size(RightEigenvectors), size(LeftEigenvectors));
+            for (unsigned i = 0; i < size(RightEigenvectors); ++i)
+               for (unsigned j = 0; j < size(LeftEigenvectors); ++j)
+                  EigenOverlaps(i,j) = norm_frob(inner_prod(LeftEigenvectors[j], RightEigenvectors[i]));
+            std::cerr << "Eigenvector overlap matrix:\n" << EigenOverlaps << '\n';
          }
 
          for (int i = 0; i < int(size(EValues)); ++i)
          {
-	    std::map<int, std::complex<double> > LeftOverlaps;
-	    std::map<int, std::complex<double> > RightOverlaps;
+            std::map<int, std::complex<double> > LeftOverlaps;
+            std::map<int, std::complex<double> > RightOverlaps;
 
             std::cout << std::setw(7) << boost::lexical_cast<std::string>(*qI) << "  "
                       << std::setw(6) << i << "  ";
 
-	    PrintEigenvalue(std::cout, EValues[i], ShowEigenvaluesCart, ShowRadians);
+            PrintEigenvalue(std::cout, EValues[i], ShowEigenvaluesCart, ShowRadians);
 
             if (ShowCorrelationLength)
             {
@@ -726,38 +726,38 @@ int main(int argc, char** argv)
                std::cout << std::setw(21) << std::scientific << CorrLen << "  ";
             }
 
-	    // The phase of each component is arbitrary, only the relative phase counts.
-	    // Also the phase of a left observable multplied by a right observable is well-defined.
-	    if (!LeftObservables.empty())
-	       std::cout << "   "; // for the "#L " title
-	    for (unsigned j = 0; j < LeftObservables.size(); ++j)
-	    {
-	       if (LeftObservables[j].TransformsAs() == *qI)
-	       {
-		  std::complex<double> E = inner_prod(LeftObservables[j], LeftEigenvectors[i]);
-		  PrintEigenvalue(std::cout, E, ShowEigenvaluesCart, ShowRadians);
-	       }
-	       else
-	       {
-		  PrintEmptyEigenvalue(std::cout, ShowEigenvaluesCart, ShowRadians);
-	       }
-	    }
+            // The phase of each component is arbitrary, only the relative phase counts.
+            // Also the phase of a left observable multplied by a right observable is well-defined.
+            if (!LeftObservables.empty())
+               std::cout << "   "; // for the "#L " title
+            for (unsigned j = 0; j < LeftObservables.size(); ++j)
+            {
+               if (LeftObservables[j].TransformsAs() == *qI)
+               {
+                  std::complex<double> E = inner_prod(LeftObservables[j], LeftEigenvectors[i]);
+                  PrintEigenvalue(std::cout, E, ShowEigenvaluesCart, ShowRadians);
+               }
+               else
+               {
+                  PrintEmptyEigenvalue(std::cout, ShowEigenvaluesCart, ShowRadians);
+               }
+            }
 
-	    if (!RightObservables.empty())
-	       std::cout << "   "; // for the "#R " title
-	    for (unsigned j = 0; j < RightObservables.size(); ++j)
-	    {
-	       if (RightObservables[j].TransformsAs() == *qI)
-	       {
-		  std::complex<double> E = inner_prod(RightEigenvectors[i], RightObservables[j])
-		     / (inner_prod(RightEigenvectors[i], LeftEigenvectors[i])*IdentNormalizationFactor);
-		  PrintEigenvalue(std::cout, E, ShowEigenvaluesCart, ShowRadians);
-	       }
-	       else
-	       {
-		  PrintEmptyEigenvalue(std::cout, ShowEigenvaluesCart, ShowRadians);
-	       }
-	    }
+            if (!RightObservables.empty())
+               std::cout << "   "; // for the "#R " title
+            for (unsigned j = 0; j < RightObservables.size(); ++j)
+            {
+               if (RightObservables[j].TransformsAs() == *qI)
+               {
+                  std::complex<double> E = inner_prod(RightEigenvectors[i], RightObservables[j])
+                     / (inner_prod(RightEigenvectors[i], LeftEigenvectors[i])*IdentNormalizationFactor);
+                  PrintEigenvalue(std::cout, E, ShowEigenvaluesCart, ShowRadians);
+               }
+               else
+               {
+                  PrintEmptyEigenvalue(std::cout, ShowEigenvaluesCart, ShowRadians);
+               }
+            }
 
             std::cout << '\n';
 

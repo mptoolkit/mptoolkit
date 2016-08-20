@@ -28,15 +28,15 @@
 
 /*
   rationale:
-  The original method was to store quantum numbers as strings.  This very flexible, 
+  The original method was to store quantum numbers as strings.  This very flexible,
   but unfortunately too slow, and with some disadvantages (for example, the quantum numbers
   don't know which symmetry group they are representing).
   This seeks to remedy this by storing quantum numbers directly without need for
   string conversions.
 
-  The proper OO way of doing this would be to store each quantum number as a vector 
+  The proper OO way of doing this would be to store each quantum number as a vector
   of pointers to an abstract base class,
-  with virtual functions for obtaining the coupling coefficients etc.  But copying 
+  with virtual functions for obtaining the coupling coefficients etc.  But copying
   these objects would still be pretty slow.
 
   The compromise position is to store quantum numbers as a raw block of memory, such
@@ -65,7 +65,7 @@
   Storage -> | pointer to            |
              | SymmetryListImpl      |
              +-----------------------+
-	     |      Data             |
+             |      Data             |
              |  (variable size)      |
              .                       .
              .                       .
@@ -144,7 +144,7 @@ class RepLabelBase
       // assigns the quantum number list, and allocates the storage array, does not initialize it
       RepLabelBase(SymmetryListImpl const* q, int Size);
 
-      // assigns the quantum number list, and allocates the storage array and 
+      // assigns the quantum number list, and allocates the storage array and
       // initializes it from the provided input iterator
       template <typename InputIter>
       RepLabelBase(SymmetryListImpl const* q, int Size, InputIter InitIter);
@@ -153,24 +153,24 @@ class RepLabelBase
 
       bool is_less_than(RepLabelBase const& Q) const;
 
-      size_t StorageSize() const 
-	 { return this->CalculatePrivateSize(this->size()); }
+      size_t StorageSize() const
+         { return this->CalculatePrivateSize(this->size()); }
 
       SymmetryListImpl const* GetSymmetryListImpl() const { return Storage.SList; }
 
       // implements swap(*this, Other)
-      void DoSwap(RepLabelBase& Other) 
-	 { std::swap(Storage, Other.Storage); }
+      void DoSwap(RepLabelBase& Other)
+         { std::swap(Storage, Other.Storage); }
 
    private:
       struct RepLabelBaseStorage
       {
-	 SymmetryListImpl const* SList;
-	 int NumberArray[QUANTUM_NUMBER_FIXED_SIZE];
+         SymmetryListImpl const* SList;
+         int NumberArray[QUANTUM_NUMBER_FIXED_SIZE];
       };
 
       static size_t CalculatePrivateSize(int Size)
-	 { return sizeof(RepLabelBaseStorage) + (Size - QUANTUM_NUMBER_FIXED_SIZE) * sizeof(int); }
+         { return sizeof(RepLabelBaseStorage) + (Size - QUANTUM_NUMBER_FIXED_SIZE) * sizeof(int); }
 
       RepLabelBaseStorage Storage;
 
@@ -181,7 +181,7 @@ class RepLabelBase
 class QuantumNumber : public RepLabelBase<QuantumNumber>
 {
    public:
-      struct NoInitialization {};  // tag class for the constructor that 
+      struct NoInitialization {};  // tag class for the constructor that
                                    // allocates space but does not initialize
 
       QuantumNumber();
@@ -223,7 +223,7 @@ class QuantumNumber : public RepLabelBase<QuantumNumber>
 
       void swap(QuantumNumber& Other) { this->DoSwap(Other); }
 
-      // Get the quantum number component of the given Name, 
+      // Get the quantum number component of the given Name,
       // which is of type T.  For example, given a symmetry list "N:U(1),S:SU(2)",
       // and a quantum number q = "3,0.5",
       // q.get<U1>("N") will return a U1 object with value 3,
@@ -283,7 +283,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, QuantumNumber& L);
 class Projection : public RepLabelBase<Projection>
 {
    public:
-      struct NoInitialization {};  // tag class for the constructor that 
+      struct NoInitialization {};  // tag class for the constructor that
                                    // allocates space but does not initialize
 
       Projection();
@@ -357,8 +357,8 @@ class QuantumNumberList
       QuantumNumberList() {}
 
       explicit QuantumNumberList(size_t Size, QuantumNumber const& q = QuantumNumber())
-	 : Impl(Size, q) {}
-      
+         : Impl(Size, q) {}
+
       QuantumNumberList(QuantumNumberList const& q) : Impl(q.Impl) {}
 
       template <typename FwdIter>
@@ -645,7 +645,7 @@ class QNConstructor
       SymmetryList SList;
 };
 
-// returns true if q is the identity 
+// returns true if q is the identity
 inline
 bool is_scalar(QuantumNumber const& q)
 {
@@ -661,7 +661,7 @@ double trace(QuantumNumber const& q);
 
 // The matrix element of the identity operator |q><q|
 // This is defined to be degree(q) / trace(q)
-// for our chosen normalization of the coupling coefficients, this is 
+// for our chosen normalization of the coupling coefficients, this is
 // always 1.  The normalization of Varshalovish is different,
 // so this was introduced as an experiment.  But we implicitly
 // assume this is 1 so often, it would be a big task to change the normalization.
@@ -687,68 +687,68 @@ std::complex<double> cross_product_factor(QuantumNumber const& q1, QuantumNumber
 // < q m | T[q2,m2] | q1 m1 > = GC(q1, q2, q, m1, m2, m) * < q || T[q2] || q1 >
 // precondition: multiplicity(q1,q2,q) == 1
 double clebsch_gordan(QuantumNumber const& q1, QuantumNumber const& q2, QuantumNumber const& q,
-	  Projection const&    m1, Projection const&    m2, Projection const&    m);
+          Projection const&    m1, Projection const&    m2, Projection const&    m);
 
-// coupling coefficent c such that 
+// coupling coefficent c such that
 // <q' | AB(k) | q > = sum_{q''} c * < q' | A(k1) | q'' > < q'' | B(k2) | q >
 double product_coefficient(QuantumNumber const& k1, QuantumNumber const& k2, QuantumNumber const& k,
-			   QuantumNumber const& qp, QuantumNumber const& q, QuantumNumber const& qpp);
+                           QuantumNumber const& qp, QuantumNumber const& q, QuantumNumber const& qpp);
 
 // coupling coefficent c such that a product can be decomposed as
 // < q' | A(k1) | q'' > < q'' | B(k2) | q > = sum_k c * <q' | AB(k) | q >
-double 
+double
 inverse_product_coefficient(QuantumNumber const& k1, QuantumNumber const& k2, QuantumNumber const& k,
-			    QuantumNumber const& qp, QuantumNumber const& q, QuantumNumber const& qpp);
+                            QuantumNumber const& qp, QuantumNumber const& q, QuantumNumber const& qpp);
 
 // coupling coefficient <q' | (A \otimes B)(k) | q> = c * <q1' | A(k1) | q1> <q2' | B(k2) | q2>
 // precondition: (k1,k2,k), (q1p, q2p, qp), (q1, q2, q) are all valid transform triplets.
 double tensor_coefficient(QuantumNumber const& q1, QuantumNumber const& q2, QuantumNumber const& q,
-			  QuantumNumber const& k1, QuantumNumber const& k2, QuantumNumber const& k,
-			  QuantumNumber const& q1p, QuantumNumber const& q2p, QuantumNumber const& qp);
+                          QuantumNumber const& k1, QuantumNumber const& k2, QuantumNumber const& k,
+                          QuantumNumber const& q1p, QuantumNumber const& q2p, QuantumNumber const& qp);
 
 // coupling coefficient <q1' | A(k1) | q1> <q2' | B(k2) | q2> = c * <q' | (A \otimes B)(k) | q>
 // precondition: (k1,k2,k), (q1p, q2p, qp), (q1, q2, q) are all valid transform triplets.
-double inverse_tensor_coefficient(QuantumNumber const& q1, QuantumNumber const& q2, 
-				  QuantumNumber const& q,
-				  QuantumNumber const& k1, QuantumNumber const& k2, 
-				  QuantumNumber const& k,
-				  QuantumNumber const& q1p, QuantumNumber const& q2p, 
-				  QuantumNumber const& qp);
+double inverse_tensor_coefficient(QuantumNumber const& q1, QuantumNumber const& q2,
+                                  QuantumNumber const& q,
+                                  QuantumNumber const& k1, QuantumNumber const& k2,
+                                  QuantumNumber const& k,
+                                  QuantumNumber const& q1p, QuantumNumber const& q2p,
+                                  QuantumNumber const& qp);
 
 // the coupling coefficient between < q1q2(q12), q3 q | q1, q2q3(q23) q >
 double recoupling(QuantumNumber const& q1, QuantumNumber const& q2, QuantumNumber const& q12,
-		  QuantumNumber const& q3, QuantumNumber const& q, QuantumNumber const& q23);
+                  QuantumNumber const& q3, QuantumNumber const& q, QuantumNumber const& q23);
 
 // the coupling coefficient between < q1q2(q12) q3 q | q1q3(q13) q2 q >
-double recoupling_12_3__13_2(QuantumNumber const& q1, QuantumNumber const& q2, 
-			     QuantumNumber const& q12,
-			     QuantumNumber const& q3, QuantumNumber const& q, 
-			     QuantumNumber const& q13);
+double recoupling_12_3__13_2(QuantumNumber const& q1, QuantumNumber const& q2,
+                             QuantumNumber const& q12,
+                             QuantumNumber const& q3, QuantumNumber const& q,
+                             QuantumNumber const& q13);
 
-// returns the conjugate of q (from the metric interpretation, 
+// returns the conjugate of q (from the metric interpretation,
 // adjoint(q) * q contains the identity representation)
 QuantumNumber adjoint(QuantumNumber const& q);
 
 // returns the coefficient c that gives <qp || adjoint(T[k]) || q> = c conj( <q || T[k] || qp> )
 // precondition: multiplicity(qp,k,q) == 1
-double adjoint_coefficient(QuantumNumber const& qp, 
-			   QuantumNumber const& k, 
-			   QuantumNumber const& q);
+double adjoint_coefficient(QuantumNumber const& qp,
+                           QuantumNumber const& k,
+                           QuantumNumber const& q);
 
-double conj_phase(QuantumNumber const& qp, 
-                  QuantumNumber const& k, 
+double conj_phase(QuantumNumber const& qp,
+                  QuantumNumber const& k,
                   QuantumNumber const& q);
 
 // returns the coefficient c that gives <qp || T[k] || q> = c conj( <q || adjoint(T[k]) || qp> )
 // precondition: multiplicity(q,k,qp) == 1
 inline
-double inverse_adjoint_coefficient(QuantumNumber const& qp, 
-				   QuantumNumber const& k, QuantumNumber const& q)
+double inverse_adjoint_coefficient(QuantumNumber const& qp,
+                                   QuantumNumber const& k, QuantumNumber const& q)
 {
    return 1.0 / adjoint_coefficient(q,adjoint(k),qp);
 }
 
-// returns true if q is a member of the product basis q1 * q2 
+// returns true if q is a member of the product basis q1 * q2
 bool is_transform_target(QuantumNumber const& q1, QuantumNumber const& q2, QuantumNumber const& q);
 
 // returns the number of quantum numbers in the Clebsch-Gordan expansion of q1 * q2
@@ -808,8 +808,8 @@ bool is_projection(QuantumNumber const& q, Projection const& p);
 
 // returns true if an operator that transforms as (Q,P) could
 // contain a non-zero matrix element <q1 | T(Q,P) | q2>
-bool is_delta(QuantumNumber const& q1, QuantumNumber const& Q, Projection const& P, 
-	      QuantumNumber const& q2);
+bool is_delta(QuantumNumber const& q1, QuantumNumber const& Q, Projection const& P,
+              QuantumNumber const& q2);
 
 // returns the projection p such that q1 = q2 + p
 Projection difference(QuantumNumber const& q1, QuantumNumber const& q2);
@@ -834,7 +834,7 @@ QuantumNumber heighest_weight(Projection const& p);
 // returns true if there exists a projection p in PList such that is_delta(q1, q, p, q2)
 inline
 bool is_possibleDelta(QuantumNumber const& q1, QuantumNumber const& q,
-		     ProjectionList const& PList, QuantumNumber const& q2)
+                     ProjectionList const& PList, QuantumNumber const& q2)
 {
    for (ProjectionList::const_iterator P = PList.begin(); P != PList.end(); ++P)
    {
@@ -843,7 +843,7 @@ bool is_possibleDelta(QuantumNumber const& q1, QuantumNumber const& q,
    return false;
 }
 
-// returns the coefficient of the tensor product 
+// returns the coefficient of the tensor product
 // < qp+Delta | A(k) | q+Delta > = c * < qp | A(k) | q > < Delta | I | Delta >
 double delta_shift_coefficient(QuantumNumber const& qp, QuantumNumber const& k,
                                QuantumNumber const& q, QuantumNumber const& Delta);

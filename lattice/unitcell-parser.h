@@ -45,19 +45,19 @@ UnitCellElementType;
 
 UnitCellElementType
 ParseUnitCellElement(UnitCell const& Cell, int NumCells, std::string const& str,
-		     Function::ArgumentList const& Args = Function::ArgumentList());
+                     Function::ArgumentList const& Args = Function::ArgumentList());
 
 UnitCellMPO
 ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& str,
-		      Function::ArgumentList const& Args = Function::ArgumentList());
+                      Function::ArgumentList const& Args = Function::ArgumentList());
 
 std::complex<double>
 ParseUnitCellNumber(UnitCell const& Cell, int NumCells, std::string const& str,
-		    Function::ArgumentList const& Args = Function::ArgumentList());
+                    Function::ArgumentList const& Args = Function::ArgumentList());
 
 std::pair<UnitCellMPO, InfiniteLattice>
 ParseUnitCellOperatorAndLattice(std::string const& Str);
-   
+
 namespace Parser
 {
 

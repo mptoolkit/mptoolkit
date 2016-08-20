@@ -67,7 +67,7 @@ struct PositionMap
    // below.  Currently this resets some limits based on the constraints
    void fix();
 
-   // returns true if the combination Op1(Loc1)*Op2(Loc2) is required   
+   // returns true if the combination Op1(Loc1)*Op2(Loc2) is required
    bool Need12(int Loc1, int Loc2) const;
 
    // returns true if Op1(Loc1) * Op2(n) is needed for any n > Loc2
@@ -97,7 +97,7 @@ struct PositionMap
    int klmin_, klmax_;
 };
 
-PositionMap::PositionMap(int Size) 
+PositionMap::PositionMap(int Size)
    : Size_(Size),
      imin_(1), imax_(Size-3), jmin_(2), jmax_(Size-2), kmin_(3), kmax_(Size-1), lmin_(4), lmax_(Size),
      ijmin_(1), ijmax_(Size-3), ikmin_(2), ikmax_(Size-2), ilmin_(3), ilmax_(Size-1),
@@ -224,36 +224,36 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("imin", prog_opt::value<int>(), "minimum value for i [default 1]")
-	 ("imax", prog_opt::value<int>(), "maximum value for i [default size-3]")
-	 ("jmin", prog_opt::value<int>(), "minimum value for j [default 2]")
-	 ("jmax", prog_opt::value<int>(), "maximum value for j [default size-2]")
-	 ("kmin", prog_opt::value<int>(), "minimum value for k [default 3]")
-	 ("kmax", prog_opt::value<int>(), "maximum value for k [default size-1]")
-	 ("lmin", prog_opt::value<int>(), "minimum value for l [default 4]")
-	 ("lmax", prog_opt::value<int>(), "maximum value for l [default size]")
+         ("imin", prog_opt::value<int>(), "minimum value for i [default 1]")
+         ("imax", prog_opt::value<int>(), "maximum value for i [default size-3]")
+         ("jmin", prog_opt::value<int>(), "minimum value for j [default 2]")
+         ("jmax", prog_opt::value<int>(), "maximum value for j [default size-2]")
+         ("kmin", prog_opt::value<int>(), "minimum value for k [default 3]")
+         ("kmax", prog_opt::value<int>(), "maximum value for k [default size-1]")
+         ("lmin", prog_opt::value<int>(), "minimum value for l [default 4]")
+         ("lmax", prog_opt::value<int>(), "maximum value for l [default size]")
 
-	 ("ijmin", prog_opt::value<int>(), "minimum separation between i and j [default 1]")
-	 ("ijmax", prog_opt::value<int>(), "maximum separation between i and j [default infinity]")
-	 ("jkmin", prog_opt::value<int>(), "minimum separation between j and k [default 1]")
-	 ("jkmax", prog_opt::value<int>(), "maximum separation between j and k [default infinity]")
-	 ("klmin", prog_opt::value<int>(), "minimum separation between k and l [default 1]")
-	 ("klmax", prog_opt::value<int>(), "maximum separation between k and l [default infinity]")
+         ("ijmin", prog_opt::value<int>(), "minimum separation between i and j [default 1]")
+         ("ijmax", prog_opt::value<int>(), "maximum separation between i and j [default infinity]")
+         ("jkmin", prog_opt::value<int>(), "minimum separation between j and k [default 1]")
+         ("jkmax", prog_opt::value<int>(), "maximum separation between j and k [default infinity]")
+         ("klmin", prog_opt::value<int>(), "minimum separation between k and l [default 1]")
+         ("klmax", prog_opt::value<int>(), "maximum separation between k and l [default infinity]")
 
-	 ("ikmin", prog_opt::value<int>(), "minimum separation between i and k [default 2]")
-	 ("ikmax", prog_opt::value<int>(), "maximum separation between i and k [default infinity]")
-	 ("jlmin", prog_opt::value<int>(), "minimum separation between j and l [default 2]")
-	 ("jlmax", prog_opt::value<int>(), "maximum separation between j and l [default infinity]")
+         ("ikmin", prog_opt::value<int>(), "minimum separation between i and k [default 2]")
+         ("ikmax", prog_opt::value<int>(), "maximum separation between i and k [default infinity]")
+         ("jlmin", prog_opt::value<int>(), "minimum separation between j and l [default 2]")
+         ("jlmax", prog_opt::value<int>(), "maximum separation between j and l [default infinity]")
 
-	 ("ilmin", prog_opt::value<int>(), "minimum separation between i and l [default 3]")
-	 ("ilmax", prog_opt::value<int>(), "maximum separation between i and l [default infinity]")
+         ("ilmin", prog_opt::value<int>(), "minimum separation between i and l [default 3]")
+         ("ilmax", prog_opt::value<int>(), "maximum separation between i and l [default infinity]")
 
-	 ("middle-quantum", prog_opt::value<std::string>(), 
-	  "project op1*op2 onto this quantum number (only needed in non-Abelian case)")
+         ("middle-quantum", prog_opt::value<std::string>(),
+          "project op1*op2 onto this quantum number (only needed in non-Abelian case)")
 
          ("verbose,v", prog_opt::bool_switch(&Verbose),
           "extra debug output (currently does nothing)")
-	 ;
+         ;
 
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
@@ -276,16 +276,16 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || vm.count("op4") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-local-fourpoint-ex [options] <lattice> <psi> <op1> <op2> <op3> <op4>\n";
-	 std::cerr << "evaluates the 4-point correlation function < op1(i) op2(j) op3(k) op4(l) >\n";
+         std::cerr << "evaluates the 4-point correlation function < op1(i) op2(j) op3(k) op4(l) >\n";
          std::cerr << desc << '\n';
          return 1;
       }
@@ -330,8 +330,8 @@ int main(int argc, char** argv)
 
       boost::optional<QuantumNumbers::QuantumNumber> MiddleProjection = boost::none;
       if (vm.count("middle-quantum") > 0)
-	 MiddleProjection = QuantumNumbers::QuantumNumber(Psi.GetSymmetryList(), 
-							  vm["middle-quantum"].as<std::string>());
+         MiddleProjection = QuantumNumbers::QuantumNumber(Psi.GetSymmetryList(),
+                                                          vm["middle-quantum"].as<std::string>());
 
       // This holds the E matrices for the left system
       typedef std::map<int, MatrixOperator> OpMapType;
@@ -353,64 +353,64 @@ int main(int argc, char** argv)
       DEBUG_TRACE("Constructing right block stack");
       for (int i = Position.LastSite(); i >= Position.FirstSite(); --i)
       {
-	 DEBUG_TRACE("Top of right block consstruction loop")(i);
-	 MPStateComponent PsiR = Psi.LookupLinear(i-1);
-	 // Update Op3Block as necessary
-	 RightBlockType::iterator I = Op3Block.begin();
-	 while (I != Op3Block.end())
-	 {
-	    I->push_back(new MatrixOperator(operator_prod(PsiR, *I->back().load(), herm(PsiR))));
-	    ++I;
-	 }
+         DEBUG_TRACE("Top of right block consstruction loop")(i);
+         MPStateComponent PsiR = Psi.LookupLinear(i-1);
+         // Update Op3Block as necessary
+         RightBlockType::iterator I = Op3Block.begin();
+         while (I != Op3Block.end())
+         {
+            I->push_back(new MatrixOperator(operator_prod(PsiR, *I->back().load(), herm(PsiR))));
+            ++I;
+         }
 
-	 // Update Op4Block
-	 Op4PosListType::iterator Ip4 = Op4Position.begin();
-	 OpListType::iterator I4 = Op4Block.begin();
-	 SiteBlock::const_iterator I3 = Lat[i].find(Op3);
-	 bool Op3ExistsHere = (I3 != Lat[i].end());
-	 while (I4 != Op4Block.end())
-	 {
-	    if (Op3ExistsHere && Position.Need34(i, *Ip4))
-	    {
-	       DEBUG_TRACE("Adding op3*op4")(i)(*Ip4);
-	       Op3Position.push_front(std::make_pair(i, *Ip4));
-	       if (MiddleProjection)
-		  Op3Block.push_front(OpStackType(1, new MatrixOperator
-						  (operator_prod(SimpleOperator(I3->second),
-								 PsiR, *I4, herm(PsiR), 
-								 adjoint(*MiddleProjection)))));
-	       else
-		  Op3Block.push_front(OpStackType(1, new MatrixOperator
-						  (operator_prod(SimpleOperator(I3->second),
-								 PsiR, *I4, herm(PsiR)))));
-	    }
+         // Update Op4Block
+         Op4PosListType::iterator Ip4 = Op4Position.begin();
+         OpListType::iterator I4 = Op4Block.begin();
+         SiteBlock::const_iterator I3 = Lat[i].find(Op3);
+         bool Op3ExistsHere = (I3 != Lat[i].end());
+         while (I4 != Op4Block.end())
+         {
+            if (Op3ExistsHere && Position.Need34(i, *Ip4))
+            {
+               DEBUG_TRACE("Adding op3*op4")(i)(*Ip4);
+               Op3Position.push_front(std::make_pair(i, *Ip4));
+               if (MiddleProjection)
+                  Op3Block.push_front(OpStackType(1, new MatrixOperator
+                                                  (operator_prod(SimpleOperator(I3->second),
+                                                                 PsiR, *I4, herm(PsiR),
+                                                                 adjoint(*MiddleProjection)))));
+               else
+                  Op3Block.push_front(OpStackType(1, new MatrixOperator
+                                                  (operator_prod(SimpleOperator(I3->second),
+                                                                 PsiR, *I4, herm(PsiR)))));
+            }
 
-	    if (Position.Need4Later(i, *Ip4))
-	    {
-	       *I4 = operator_prod(PsiR, *I4, herm(PsiR));
-	       ++I4;
-	       ++Ip4;
-	    }
-	    else
-	    {
-	       // don't need Op4 anymore
-	       DEBUG_TRACE("Discarding op4")(*Ip4);
-	       I4 = Op4Block.erase(I4);
-	       Ip4 = Op4Position.erase(Ip4);
-	    }
-	 }
+            if (Position.Need4Later(i, *Ip4))
+            {
+               *I4 = operator_prod(PsiR, *I4, herm(PsiR));
+               ++I4;
+               ++Ip4;
+            }
+            else
+            {
+               // don't need Op4 anymore
+               DEBUG_TRACE("Discarding op4")(*Ip4);
+               I4 = Op4Block.erase(I4);
+               Ip4 = Op4Position.erase(Ip4);
+            }
+         }
 
-	 // add current site to Op4Block, as necessary
-	 SiteBlock::const_iterator Si4 = Lat[i].find(Op4);
-	 bool Op4ExistsHere = (Si4 != Lat[i].end());
-	 if (Op4ExistsHere && Position.Need4Later(i, i))
-	 {
-	    DEBUG_TRACE("Adding op4")(i);
-	    MatrixOperator Ident = MatrixOperator::make_identity(PsiR.Basis2());
-	    Op4Position.push_back(i);
-	    Op4Block.push_back(operator_prod(SimpleOperator(Si4->second),
-					     PsiR, Ident, herm(PsiR)));
-	 }
+         // add current site to Op4Block, as necessary
+         SiteBlock::const_iterator Si4 = Lat[i].find(Op4);
+         bool Op4ExistsHere = (Si4 != Lat[i].end());
+         if (Op4ExistsHere && Position.Need4Later(i, i))
+         {
+            DEBUG_TRACE("Adding op4")(i);
+            MatrixOperator Ident = MatrixOperator::make_identity(PsiR.Basis2());
+            Op4Position.push_back(i);
+            Op4Block.push_back(operator_prod(SimpleOperator(Si4->second),
+                                             PsiR, Ident, herm(PsiR)));
+         }
       }
 
       // left blocks that represent Op1,Op2 at various locations.
@@ -423,141 +423,141 @@ int main(int argc, char** argv)
       std::list<MatrixOperator> Op1Block, Op2Block;
       std::list<int> Op1Position;
       std::list<std::pair<int, int> > Op2Position;
-      
+
       DEBUG_TRACE("Rotating right");
 
       // rotate Psi to the first needed position for the left blocks
       while (Psi.LeftSize() < Position.FirstSite())
-	 Psi.RotateRight();
+         Psi.RotateRight();
 
       for (int i = Position.FirstSite(); i < Position.LastSite(); ++i)
       {
-	 DEBUG_TRACE("Top of left block construction loop")(i);
-	 // update the Op2Block as necessary
-	 OpListType::iterator I = Op2Block.begin();
-	 Op2PosListType::iterator Ip2 = Op2Position.begin();
-	 while (I != Op2Block.end())
-	 {
-	    // do we need to keep this entry?
-	    if (Position.Need12Later(Ip2->first, Ip2->second, i))
-	    {
-	       *I = operator_prod(herm(Psi.Left()), *I, Psi.Left());
-	       ++I;
-	       ++Ip2;
-	    }
-	    else
-	    {
-	       DEBUG_TRACE("Discarding left block operator")(Ip2->first)(Ip2->second);
-	       I = Op2Block.erase(I);
-	       Ip2 = Op2Position.erase(Ip2);
-	    }
-	 }
-	 CHECK(Ip2 == Op2Position.end());
+         DEBUG_TRACE("Top of left block construction loop")(i);
+         // update the Op2Block as necessary
+         OpListType::iterator I = Op2Block.begin();
+         Op2PosListType::iterator Ip2 = Op2Position.begin();
+         while (I != Op2Block.end())
+         {
+            // do we need to keep this entry?
+            if (Position.Need12Later(Ip2->first, Ip2->second, i))
+            {
+               *I = operator_prod(herm(Psi.Left()), *I, Psi.Left());
+               ++I;
+               ++Ip2;
+            }
+            else
+            {
+               DEBUG_TRACE("Discarding left block operator")(Ip2->first)(Ip2->second);
+               I = Op2Block.erase(I);
+               Ip2 = Op2Position.erase(Ip2);
+            }
+         }
+         CHECK(Ip2 == Op2Position.end());
 
-	 // Update the Op1 list.
-	 SiteBlock::const_iterator I2 = Lat[i].find(Op2);
-	 bool Op2ExistsHere = (I2 != Lat[i].end());
-	 I = Op1Block.begin();
-	 Op1PosListType::iterator Ip1 = Op1Position.begin();
-	 while (I != Op1Block.end())
-	 {
-	    // do we need the combination (*I) * Op2(i) ?
-	    if (Op2ExistsHere && Position.Need12(*Ip1, i))
-	    {
-	       DEBUG_TRACE("Inserting op1*op2 combination")(*Ip1)(i);
-	       Op2Position.push_back(std::make_pair(*Ip1, i));
-	       SimpleOperator LocalOp2 = I2->second;
-	       if (MiddleProjection)
-		  Op2Block.push_back(operator_prod(herm(LocalOp2), herm(Psi.Left()), *I,
-						   Psi.Left(), adjoint(*MiddleProjection)));
-	       else
-		  Op2Block.push_back(operator_prod(herm(LocalOp2), herm(Psi.Left()), *I,
-						   Psi.Left()));
-	    }
-	 
-	    // either update this operator with the local identity, or discard it
-	    if (Position.Need1Later(*Ip1, i))
-	    {
-	       *I = operator_prod(herm(Psi.Left()), *I, Psi.Left());
-	       ++I;
-	       ++Ip1;
-	    }
-	    else
-	    {
-	       DEBUG_TRACE("Discarding op1")(*Ip1);
-	       I = Op1Block.erase(I);
-	       Ip1 = Op1Position.erase(Ip1);
-	    }
-	 }
-	 CHECK(Ip1 == Op1Position.end());
+         // Update the Op1 list.
+         SiteBlock::const_iterator I2 = Lat[i].find(Op2);
+         bool Op2ExistsHere = (I2 != Lat[i].end());
+         I = Op1Block.begin();
+         Op1PosListType::iterator Ip1 = Op1Position.begin();
+         while (I != Op1Block.end())
+         {
+            // do we need the combination (*I) * Op2(i) ?
+            if (Op2ExistsHere && Position.Need12(*Ip1, i))
+            {
+               DEBUG_TRACE("Inserting op1*op2 combination")(*Ip1)(i);
+               Op2Position.push_back(std::make_pair(*Ip1, i));
+               SimpleOperator LocalOp2 = I2->second;
+               if (MiddleProjection)
+                  Op2Block.push_back(operator_prod(herm(LocalOp2), herm(Psi.Left()), *I,
+                                                   Psi.Left(), adjoint(*MiddleProjection)));
+               else
+                  Op2Block.push_back(operator_prod(herm(LocalOp2), herm(Psi.Left()), *I,
+                                                   Psi.Left()));
+            }
 
-	 // Add Op1 at the current site to Op1Block as necessary
-	 SiteBlock::const_iterator I1 = Lat[i].find(Op1);
-	 bool Op1ExistsHere = (I1 != Lat[i].end());
-	 if (Position.Need1Later(i,i) && Op1ExistsHere)
-	 {
-	    MatrixOperator Ident = MatrixOperator::make_identity(Psi.Left().Basis1());
-	    Op1Position.push_back(i);
-	    Op1Block.push_back(operator_prod(herm(SimpleOperator(I1->second)), 
-					     herm(Psi.Left()), Ident, Psi.Left()));
-	 }
+            // either update this operator with the local identity, or discard it
+            if (Position.Need1Later(*Ip1, i))
+            {
+               *I = operator_prod(herm(Psi.Left()), *I, Psi.Left());
+               ++I;
+               ++Ip1;
+            }
+            else
+            {
+               DEBUG_TRACE("Discarding op1")(*Ip1);
+               I = Op1Block.erase(I);
+               Ip1 = Op1Position.erase(Ip1);
+            }
+         }
+         CHECK(Ip1 == Op1Position.end());
 
-	 // Go through the right stack and update (ie, pop off the stack the un-needed operator)
-	 RightBlockType::iterator R = Op3Block.begin();
-	 Op3PosListType::iterator Rp = Op3Position.begin();
-	 while (R != Op3Block.end())
-	 {
-	    R->pop_back();
-	    if (R->empty())
-	    {
-	       R = Op3Block.erase(R);
-	       Rp = Op3Position.erase(Rp);
-	    }
-	    else
-	    {
-	       ++R;
-	       ++Rp;
-	    }
-	 }
-	 
-	 // evaluate the expectation values with the right blocks.  We do this at the
-	 // point where Op2 is evaluated at the left site.  this is a somewhat
-	 // arbitrary choice.
-	 I = Op2Block.begin();
-	 Ip2 = Op2Position.begin();
-	 while (I != Op2Block.end())
-	 {
-	    if (Ip2->second != i)  // evaluate only at Op2(i)
-	    {
-	       ++I;
-	       ++Ip2;
-	       continue;
-	    }
-	    
-	    R = Op3Block.begin();
-	    Rp = Op3Position.begin();
-	    while (R != Op3Block.end())
-	    {
-	       if (Position.ShouldEvaluate(Ip2->first, Ip2->second, Rp->first, Rp->second))
-	       {
-		  std::complex<double> Res = inner_prod(Psi.Center(),
-							triple_prod(*I, Psi.Center(),
-								    herm(*R->back().load())));
-		  std::cout << std::setw(5) << Lat.coordinate_at_site(Ip2->first) << "   " 
-			    << std::setw(5) << Lat.coordinate_at_site(Ip2->second) << "   "
-			    << std::setw(5) << Lat.coordinate_at_site(Rp->first) << "   "
-			    << std::setw(5) << Lat.coordinate_at_site(Rp->second) << "   "
-			    << std::setw(18) << Res.real() << "   " 
-			    << std::setw(18) << Res.imag() << '\n';
-	       }
-	       ++R;
-	       ++Rp;
-	    }
-	    ++I;
-	    ++Ip2;
-	 }
-         
-	 Psi.RotateRight();
+         // Add Op1 at the current site to Op1Block as necessary
+         SiteBlock::const_iterator I1 = Lat[i].find(Op1);
+         bool Op1ExistsHere = (I1 != Lat[i].end());
+         if (Position.Need1Later(i,i) && Op1ExistsHere)
+         {
+            MatrixOperator Ident = MatrixOperator::make_identity(Psi.Left().Basis1());
+            Op1Position.push_back(i);
+            Op1Block.push_back(operator_prod(herm(SimpleOperator(I1->second)),
+                                             herm(Psi.Left()), Ident, Psi.Left()));
+         }
+
+         // Go through the right stack and update (ie, pop off the stack the un-needed operator)
+         RightBlockType::iterator R = Op3Block.begin();
+         Op3PosListType::iterator Rp = Op3Position.begin();
+         while (R != Op3Block.end())
+         {
+            R->pop_back();
+            if (R->empty())
+            {
+               R = Op3Block.erase(R);
+               Rp = Op3Position.erase(Rp);
+            }
+            else
+            {
+               ++R;
+               ++Rp;
+            }
+         }
+
+         // evaluate the expectation values with the right blocks.  We do this at the
+         // point where Op2 is evaluated at the left site.  this is a somewhat
+         // arbitrary choice.
+         I = Op2Block.begin();
+         Ip2 = Op2Position.begin();
+         while (I != Op2Block.end())
+         {
+            if (Ip2->second != i)  // evaluate only at Op2(i)
+            {
+               ++I;
+               ++Ip2;
+               continue;
+            }
+
+            R = Op3Block.begin();
+            Rp = Op3Position.begin();
+            while (R != Op3Block.end())
+            {
+               if (Position.ShouldEvaluate(Ip2->first, Ip2->second, Rp->first, Rp->second))
+               {
+                  std::complex<double> Res = inner_prod(Psi.Center(),
+                                                        triple_prod(*I, Psi.Center(),
+                                                                    herm(*R->back().load())));
+                  std::cout << std::setw(5) << Lat.coordinate_at_site(Ip2->first) << "   "
+                            << std::setw(5) << Lat.coordinate_at_site(Ip2->second) << "   "
+                            << std::setw(5) << Lat.coordinate_at_site(Rp->first) << "   "
+                            << std::setw(5) << Lat.coordinate_at_site(Rp->second) << "   "
+                            << std::setw(18) << Res.real() << "   "
+                            << std::setw(18) << Res.imag() << '\n';
+               }
+               ++R;
+               ++Rp;
+            }
+            ++I;
+            ++Ip2;
+         }
+
+         Psi.RotateRight();
       }
       pheap::Shutdown();
 

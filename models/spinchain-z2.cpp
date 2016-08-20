@@ -40,41 +40,42 @@ int main(int argc, char** argv)
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
-      
-      prog_opt::variables_map vm;        
+
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).style(prog_opt::command_line_style::default_style ^
-					  prog_opt::command_line_style::allow_guessing).
-		      run(), vm);
-      prog_opt::notify(vm);    
-      
+                                          prog_opt::command_line_style::allow_guessing).
+                      run(), vm);
+      prog_opt::notify(vm);
+
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("Spin chain");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
-	 ("H_xx", "nearest neighbor spin coupling Sx Sx")
-	 ("H_yy", "nearest neighbor spin exchange Sy Sy")
-	 ("H_zz", "nearest neighbor spin exchange Sz Sz")
-	 ("H_x" , "magnetic field in the x direction")
-	 ("H_J1z", "same as H_zz")
-	 ("H_J1t", "transverse spin exchange, H_xx + H_yy")
-	 ("H_J1" , "nearest neighbor spin exchange = H_J1z + H_J1t")
-	 ("H_B1" , "nearest neighbor biquadratic spin exchange (S.S)^2")
-	 ("H_mu" , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
-	 ("H_ITF", "Ising transverse-field model, equivalent to -4*H_zz + 2*H_x")
-	 ;
+         ("H_xx", "nearest neighbor spin coupling Sx Sx")
+         ("H_yy", "nearest neighbor spin exchange Sy Sy")
+         ("H_zz", "nearest neighbor spin exchange Sz Sz")
+         ("H_x" , "magnetic field in the x direction")
+         ("H_J1z", "same as H_zz")
+         ("H_J1t", "transverse spin exchange, H_xx + H_yy")
+         ("H_J1" , "nearest neighbor spin exchange = H_J1z + H_J1t")
+         ("H_B1" , "nearest neighbor biquadratic spin exchange (S.S)^2")
+         ("H_mu" , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
+         ("H_ITF", "Ising transverse-field model, equivalent to -4*H_zz + 2*H_x")
+         ;
 
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-	 std::cerr << "Operators:\n" << OpDescriptions;
+         std::cerr << "Operators:\n" << OpDescriptions;
          return 1;
       }
 
       LatticeSite Site = SpinZ2(Spin);
       UnitCell Cell(Site);
-      InfiniteLattice Lattice("Spin chain", Cell);
+      InfiniteLattice Lattice(&Cell);
       UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz");
       UnitCellOperator I(Cell, "I"); // identity operator
 

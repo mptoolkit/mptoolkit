@@ -33,7 +33,7 @@ namespace prog_opt = boost::program_options;
 
 int main(int argc, char** argv)
 {
-   try 
+   try
    {
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -51,19 +51,19 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
-      
-      if (vm.count("help") || vm.count("input-wavefunction") == 0) 
+      prog_opt::notify(vm);
+
+      if (vm.count("help") || vm.count("input-wavefunction") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-iprint [options] input-wavefunction\n";
          std::cerr << desc << "\n";
          return 1;
       }
-      
+
       std::string Wavefunc = vm["input-wavefunction"].as<std::string>();
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
@@ -76,11 +76,11 @@ int main(int argc, char** argv)
 
       std::cout << "Symmetry list=" << Psi->C_right.GetSymmetryList() << '\n';
       std::cout << "Transforms as=" << Psi->shift() << '\n';
-      
+
       std::cout << "Number of states=" << Psi->C_right.Basis1().total_dimension() << '\n';
       std::cout << "Degree=" << Psi->C_right.Basis1().total_degree() << '\n';
       std::cout << "Unit cell size=" << Psi->Psi.size() << '\n';
-      
+
       std::cout << "Orthogonality fidelity=" << (1.0 - orthogonality_fidelity(*Psi)) << '\n';
 
       InfiniteWavefunction P = *Psi;
@@ -106,12 +106,12 @@ int main(int argc, char** argv)
       }
 
    }
-   catch(std::exception& e) 
+   catch(std::exception& e)
    {
       std::cerr << "error: " << e.what() << "\n";
       return 1;
    }
-   catch(...) 
+   catch(...)
    {
       std::cerr << "Exception of unknown type!\n";
    }

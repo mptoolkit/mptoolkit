@@ -41,7 +41,7 @@ int main()
    C("Empty",  "Single")    = complex(0, sqrt(2.0));
    C("Single", "Double")    = complex(0, 1.0);
 
-   // and the creation operator   
+   // and the creation operator
    SiteOperator CH(HubbardBasis, QN(1, 0.5));
    CH("Single", "Empty")     = complex(0, -1.0);
    CH("Double", "Single")    = complex(0, sqrt(2.0));

@@ -40,7 +40,7 @@ MatchBasis(VectorBasis const& B1, VectorBasis const& B2)
       UsedQN.insert(B1[i]);
       for (int j = 0; j < B1.dim(i); ++j)
       {
-	 Count1[B1[i]].push_back(std::make_pair(i,j));
+         Count1[B1[i]].push_back(std::make_pair(i,j));
       }
    }
 
@@ -51,29 +51,29 @@ MatchBasis(VectorBasis const& B1, VectorBasis const& B2)
       UsedQN.insert(B2[i]);
       for (int j = 0; j < B2.dim(i); ++j)
       {
-	 Count2[B2[i]].push_back(std::make_pair(i,j));
+         Count2[B2[i]].push_back(std::make_pair(i,j));
       }
    }
 
    // go through the used quantum numbers and fill the result operator
-   for (std::set<QuantumNumbers::QuantumNumber>::const_iterator I = UsedQN.begin(); 
-	I != UsedQN.end(); ++I)
+   for (std::set<QuantumNumbers::QuantumNumber>::const_iterator I = UsedQN.begin();
+        I != UsedQN.end(); ++I)
    {
       if (Count1[*I].empty() || Count2[*I].empty()) continue;
 
       SubIndexPair::const_iterator I1 = Count1[*I].begin();
       SubIndexPair::const_iterator I2 = Count2[*I].begin();
-      
+
       while (I1 != Count1[*I].end() && I2 != Count2[*I].end())
       {
-	 if (size1(Result(I1->first, I2->first)) == 0)
-	    Result(I1->first, I2->first) = 
-	       LinearAlgebra::Matrix<double>(B1.dim(I1->first), B2.dim(I2->first), 0.0);
+         if (size1(Result(I1->first, I2->first)) == 0)
+            Result(I1->first, I2->first) =
+               LinearAlgebra::Matrix<double>(B1.dim(I1->first), B2.dim(I2->first), 0.0);
 
-	 Result(I1->first, I2->first)(I1->second, I2->second) = 1.0;
+         Result(I1->first, I2->first)(I1->second, I2->second) = 1.0;
 
-	 ++I1;
-	 ++I2;
+         ++I1;
+         ++I2;
       }
    }
 
@@ -95,7 +95,7 @@ MatchBasisReverse(VectorBasis const& B1, VectorBasis const& B2)
       UsedQN.insert(B1[i]);
       for (int j = 0; j < B1.dim(i); ++j)
       {
-	 Count1[B1[i]].push_front(std::make_pair(i,j));
+         Count1[B1[i]].push_front(std::make_pair(i,j));
       }
    }
 
@@ -106,29 +106,29 @@ MatchBasisReverse(VectorBasis const& B1, VectorBasis const& B2)
       UsedQN.insert(B2[i]);
       for (int j = 0; j < B2.dim(i); ++j)
       {
-	 Count2[B2[i]].push_front(std::make_pair(i,j));
+         Count2[B2[i]].push_front(std::make_pair(i,j));
       }
    }
 
    // go through the used quantum numbers and fill the result operator
-   for (std::set<QuantumNumbers::QuantumNumber>::const_iterator I = UsedQN.begin(); 
-	I != UsedQN.end(); ++I)
+   for (std::set<QuantumNumbers::QuantumNumber>::const_iterator I = UsedQN.begin();
+        I != UsedQN.end(); ++I)
    {
       if (Count1[*I].empty() || Count2[*I].empty()) continue;
 
       SubIndexPair::const_iterator I1 = Count1[*I].begin();
       SubIndexPair::const_iterator I2 = Count2[*I].begin();
-      
+
       while (I1 != Count1[*I].end() && I2 != Count2[*I].end())
       {
-	 if (size1(Result(I1->first, I2->first)) == 0)
-	    Result(I1->first, I2->first) = 
-	       LinearAlgebra::Matrix<double>(B1.dim(I1->first), B2.dim(I2->first), 0.0);
+         if (size1(Result(I1->first, I2->first)) == 0)
+            Result(I1->first, I2->first) =
+               LinearAlgebra::Matrix<double>(B1.dim(I1->first), B2.dim(I2->first), 0.0);
 
-	 Result(I1->first, I2->first)(I1->second, I2->second) = 1.0;
+         Result(I1->first, I2->first)(I1->second, I2->second) = 1.0;
 
-	 ++I1;
-	 ++I2;
+         ++I1;
+         ++I2;
       }
    }
 

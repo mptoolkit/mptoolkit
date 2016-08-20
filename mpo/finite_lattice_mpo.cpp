@@ -159,56 +159,56 @@ FiniteLatticeMPO operator-(FiniteLatticeMPO const& x)
 FiniteLatticeMPO operator*(double a, FiniteLatticeMPO const& x)
 {
    return FiniteLatticeMPO(x.GetUnitCell(), x.JWString(), a * x.AsFiniteMPO());
-}   
+}
 
 FiniteLatticeMPO operator*(FiniteLatticeMPO const& x, double a)
 {
    return FiniteLatticeMPO(x.GetUnitCell(), x.JWString(), x.AsFiniteMPO() * a);
-}   
+}
 
 
 FiniteLatticeMPO operator*(std::complex<double> a, FiniteLatticeMPO const& x)
 {
    return FiniteLatticeMPO(x.GetUnitCell(), x.JWString(), a * x.AsFiniteMPO());
-}   
+}
 
 
 FiniteLatticeMPO operator*(FiniteLatticeMPO const& x, std::complex<double> a)
 {
    return FiniteLatticeMPO(x.GetUnitCell(), x.JWString(), x.AsFiniteMPO() * a);
-}   
+}
 
-FiniteLatticeMPO prod(FiniteLatticeMPO const& x, FiniteLatticeMPO const& y, 
-		      QuantumNumbers::QuantumNumber const& q)
+FiniteLatticeMPO prod(FiniteLatticeMPO const& x, FiniteLatticeMPO const& y,
+                      QuantumNumbers::QuantumNumber const& q)
 {
    CHECK_EQUAL(x.GetUnitCell(), y.GetUnitCell());
    int Size = std::max(x.size(), y.size());
-   return FiniteLatticeMPO(x.GetUnitCell(), x.JWString() * y.JWString(), 
-			   prod(x.AsFiniteMPO(Size), y.AsFiniteMPO(Size), q));
+   return FiniteLatticeMPO(x.GetUnitCell(), x.JWString() * y.JWString(),
+                           prod(x.AsFiniteMPO(Size), y.AsFiniteMPO(Size), q));
 }
 
 FiniteLatticeMPO prod(FiniteLatticeMPO const& x, FiniteLatticeMPO const& y)
 {
    CHECK_EQUAL(x.GetUnitCell(), y.GetUnitCell());
    int Size = std::max(x.size(), y.size());
-   return FiniteLatticeMPO(x.GetUnitCell(), x.JWString() * y.JWString(), 
-			   prod(x.AsFiniteMPO(Size), y.AsFiniteMPO(Size)));
+   return FiniteLatticeMPO(x.GetUnitCell(), x.JWString() * y.JWString(),
+                           prod(x.AsFiniteMPO(Size), y.AsFiniteMPO(Size)));
 }
 
 FiniteLatticeMPO operator*(FiniteLatticeMPO const& x, FiniteLatticeMPO const& y)
 {
    CHECK_EQUAL(x.GetUnitCell(), y.GetUnitCell());
    int Size = std::max(x.size(), y.size());
-   return FiniteLatticeMPO(x.GetUnitCell(), x.JWString() * y.JWString(), 
-			   prod(x.AsFiniteMPO(Size), y.AsFiniteMPO(Size)));
+   return FiniteLatticeMPO(x.GetUnitCell(), x.JWString() * y.JWString(),
+                           prod(x.AsFiniteMPO(Size), y.AsFiniteMPO(Size)));
 }
 
 FiniteLatticeMPO dot(FiniteLatticeMPO const& x, FiniteLatticeMPO const& y)
 {
    CHECK_EQUAL(x.GetUnitCell(), y.GetUnitCell());
    int Size = std::max(x.size(), y.size());
-   return FiniteLatticeMPO(x.GetUnitCell(), x.JWString() * y.JWString(), 
-			   dot(x.AsFiniteMPO(Size), y.AsFiniteMPO(Size)));
+   return FiniteLatticeMPO(x.GetUnitCell(), x.JWString() * y.JWString(),
+                           dot(x.AsFiniteMPO(Size), y.AsFiniteMPO(Size)));
 }
 
 FiniteLatticeMPO project(FiniteLatticeMPO const& x, QuantumNumbers::QuantumNumber const& q)
@@ -220,7 +220,7 @@ FiniteLatticeMPO pow(FiniteLatticeMPO const& x, int n)
 {
    return FiniteLatticeMPO(x.GetUnitCell(), x.JWString(), pow(x.AsFiniteMPO(), n));
 }
-   
+
 FiniteLatticeMPO conj(FiniteLatticeMPO const& x)
 {
    return FiniteLatticeMPO(x.GetUnitCell(), x.JWString(), conj(x.AsFiniteMPO()));

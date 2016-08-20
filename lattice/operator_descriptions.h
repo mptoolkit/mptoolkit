@@ -36,11 +36,15 @@
 #include <map>
 #include <iostream>
 #include <iomanip>
+#include <functional>
+#include <boost/optional.hpp>
 
 class OperatorDescriptions
 {
    public:
-      typedef std::pair<std::string, std::string> value_type;
+      // tuple of: name, description, conditional description, conductional function (optional)
+      typedef boost::optional<std::function<bool()>> ftype;
+      typedef std::tuple<std::string, std::string, std::string, boost::optional<std::function<bool()>>> value_type;
       typedef std::vector<value_type> data_type;
 
       typedef data_type::const_iterator const_iterator;
@@ -82,14 +86,48 @@ class OperatorDescriptions
             if (Index.find(Name) == Index.end())
             {
                Index[Name] = Descriptions.size();
-               Descriptions.push_back(std::make_pair(Name, Desc));
+               Descriptions.push_back(std::make_tuple(Name, Desc, "", ftype()));
             }
             else
             {
-               Descriptions[Index[Name]] = std::make_pair(Name, Desc);
+               Descriptions[Index[Name]] = std::make_tuple(Name, Desc, "", ftype());
             }
             return *this;
          }
+
+         OperatorDescProxy const& operator()(std::string const& Name,
+                                             std::string const& Desc,
+                                             std::string const& Condition) const
+         {
+            if (Index.find(Name) == Index.end())
+            {
+               Index[Name] = Descriptions.size();
+               Descriptions.push_back(std::make_tuple(Name, Desc, Condition, ftype()));
+            }
+            else
+            {
+               Descriptions[Index[Name]] = std::make_tuple(Name, Desc, Condition, ftype());
+            }
+            return *this;
+         }
+
+         OperatorDescProxy const& operator()(std::string const& Name,
+                                             std::string const& Desc,
+                                             std::string const& Condition,
+                                             std::function<bool()> Test) const
+         {
+            if (Index.find(Name) == Index.end())
+            {
+               Index[Name] = Descriptions.size();
+               Descriptions.push_back(std::make_tuple(Name, Desc, Condition, Test));
+            }
+            else
+            {
+               Descriptions[Index[Name]] = std::make_tuple(Name, Desc, Condition, Test);
+            }
+            return *this;
+         }
+
          data_type& Descriptions;
          index_type& Index;
       };
@@ -158,9 +196,28 @@ std::ostream& operator<<(std::ostream& out, OperatorDescriptions const& d)
    out << "Operators:\n";
    if (d.size() == 0)
       out << "(none)\n";
+   // divide up into various conditions
+   std::set<std::string> Conditions;
    for (OperatorDescriptions::const_iterator I = d.begin(); I != d.end(); ++I)
    {
-      out << std::setw(10) << std::left << I->first << " - " << I->second << '\n';
+      if (!std::get<2>(*I).empty() || std::get<3>(*I))
+      {
+         Conditions.insert(std::get<2>(*I));
+      }
+      else
+         out << std::setw(10) << std::left << std::get<0>(*I) << " - " << std::get<1>(*I) << '\n';
+   }
+   // iterate over the possible conditions
+   for (std::string const& m : Conditions)
+   {
+      out << "\nOperators conditional on: " << m << "\n";
+      for (OperatorDescriptions::const_iterator I = d.begin(); I != d.end(); ++I)
+      {
+         if (std::get<2>(*I) == m && (!m.empty() || std::get<3>(*I)))
+         {
+            out << std::setw(10) << std::left << std::get<0>(*I) << " - " << std::get<1>(*I) << '\n';
+         }
+      }
    }
 
    out << "\nFunctions:\n";

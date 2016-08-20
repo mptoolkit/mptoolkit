@@ -87,7 +87,7 @@ std::ostream& operator<<(std::ostream& out, MPOpCompressed const& x);
 // implementation here, and in mpoperator.cpp
 
 // helper function to construct an operator that merges repeated
-// quantum numbers in the basis.  
+// quantum numbers in the basis.
 SimpleOperator CollapseBasis(BasisList const& b);
 
 SimpleOperator RemoveEmptyRows(SimpleOperator const& c);

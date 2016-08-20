@@ -154,7 +154,7 @@ class PageFileImpl
 
 PageFileImpl::PageFileImpl()
   : Alloc(NULL), FD(-1), PageSize(0), NumAllocatedPages(0), MetaVersion(PageFileMetadataVersion), ReadOnly(false),
-    PagesRead(0), PagesWritten(0), 
+    PagesRead(0), PagesWritten(0),
     PageCheckpointLimit(0)
 {
 }
@@ -219,8 +219,8 @@ uint64 PageFileImpl::open(std::string const& FileName_, bool ReadOnly_)
    if (Version > 2)
    {
       throw pheap::PHeapFileError(FileName_, "file version mismatch, version is " +
-				  boost::lexical_cast<std::string>(Version) + " but expected version <= 2\n"
-				  "Probably this file was created with a newer version of the software.");
+                                  boost::lexical_cast<std::string>(Version) + " but expected version <= 2\n"
+                                  "Probably this file was created with a newer version of the software.");
    }
 
    PageSize = MetaIn.read<uint32>();
@@ -306,10 +306,10 @@ void PageFileImpl::persistent_shutdown(uint64 UserData)
    // The page size and number of allocated pages goes at the front
    MetaOut.lseek(0, SEEK_SET);
    MetaOut << PageFileMagic
-	   << PageFileMetadataVersion
-	   << uint32(PageSize)
-	   << uint32(NumAllocatedPages)
-	   << UserData;
+           << PageFileMetadataVersion
+           << uint32(PageSize)
+           << uint32(NumAllocatedPages)
+           << UserData;
 
    MetaOut.flush();
    MetaOut.close();
@@ -348,10 +348,10 @@ void PageFileImpl::persistent_shutdown(uint64 UserData)
 
    MetaOut.lseek(0, SEEK_SET);
    MetaOut << PageFileMagic
-	   << PageFileMetadataVersion
-	   << uint32(PageSize)
-	   << uint32(NumAllocatedPages)
-	   << UserData
+           << PageFileMetadataVersion
+           << uint32(PageSize)
+           << uint32(NumAllocatedPages)
+           << UserData
            << FreeListAdditionalPages;
 
    std::vector<uint32> TempFreeList(FreeList.begin(), FreeList.end());
@@ -425,7 +425,7 @@ size_t PageFileImpl::write(unsigned char const* Buffer)
          case EIO    : PANIC("physical I/O error while writing persistent heap file!");
          case ENOSPC : PANIC("no free space to write persistent heap file.");
          default     : PANIC("cannot write to persistent heap file")(strerror(Err));
-      }  
+      }
    }
    else if (Written < ssize_t(PageSize))
    {
@@ -480,8 +480,8 @@ size_t PageFileImpl::AllocatePage()
    {
       if (PageCheckpointLimit > 0 && NumAllocatedPages >= PageCheckpointLimit)
       {
-	 ProcControl::AsyncCheckpoint(ProcControl::ReturnDiskLimitExceeded, 
-				      "Page file has exceeded checkpoint limit.");
+         ProcControl::AsyncCheckpoint(ProcControl::ReturnDiskLimitExceeded,
+                                      "Page file has exceeded checkpoint limit.");
       }
       return NumAllocatedPages++;
    }
@@ -512,8 +512,8 @@ unsigned long PageFileImpl::get_checkpoint_limit_kb() const
 void PageFileImpl::Debug()
 {
    std::cerr << "PageFileImpl: FileName=" << FileName
-	     << ", FreeList=" << FreeList
-	     << '\n';
+             << ", FreeList=" << FreeList
+             << '\n';
 }
 
 } // namespace PHeapFileSystem

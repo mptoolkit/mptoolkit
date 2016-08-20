@@ -60,52 +60,52 @@ class VecPtrIterator
 
       VecPtrIterator() {}
 
-   VecPtrIterator(Scalar* Base, size_type Size, size_type Index) //__attribute__((always_inline)) 
-	 : Base_(Base), Size_(Size), Index_(Index) 
+   VecPtrIterator(Scalar* Base, size_type Size, size_type Index) //__attribute__((always_inline))
+         : Base_(Base), Size_(Size), Index_(Index)
      { }
 
       VecPtrIterator(Scalar* Base, size_type Size, size_type Index,
-		     difference_type Str)
-	 : Base_(Base), Size_(Size), Index_(Index) 
+                     difference_type Str)
+         : Base_(Base), Size_(Size), Index_(Index)
      { DEBUG_PRECONDITION_EQUAL(Str, Stride::value); }
 
       // this overload handles const conversions
       VecPtrIterator(VecPtrIterator<value_type, Stride> const& i)
-	 : Base_(i.Base_), Size_(i.Size_), Index_(i.Index_) {}
+         : Base_(i.Base_), Size_(i.Size_), Index_(i.Index_) {}
 
-      VecPtrIterator& operator++() 
+      VecPtrIterator& operator++()
          { DEBUG_CHECK(Index_ < Size_)(Index_)(Size_); ++Index_; return *this; }
 
-      VecPtrIterator operator++(int) 
-         { DEBUG_CHECK(Index_ < Size_)(Index_)(Size_); 
-	   return VecPtrIterator(Base_, Size_, Index_++); }
+      VecPtrIterator operator++(int)
+         { DEBUG_CHECK(Index_ < Size_)(Index_)(Size_);
+           return VecPtrIterator(Base_, Size_, Index_++); }
 
-      VecPtrIterator& operator--() 
+      VecPtrIterator& operator--()
          { DEBUG_CHECK(Index_ > 0)(Index_); --Index_; return *this; }
 
-      VecPtrIterator operator--(int) 
-         { DEBUG_CHECK(Index_ > 0)(Index_); 
-	   return VecPtrIterator(Base_, Size_, Index_--); }
+      VecPtrIterator operator--(int)
+         { DEBUG_CHECK(Index_ > 0)(Index_);
+           return VecPtrIterator(Base_, Size_, Index_--); }
 
       VecPtrIterator& operator+=(difference_type n)
-	 { DEBUG_CHECK(difference_type(Index_) + n >= 0 && 
-		       difference_type(Index_) + n <= Size_)(Index_)(Size_);
-	 Index_ += n; return *this; }
+         { DEBUG_CHECK(difference_type(Index_) + n >= 0 &&
+                       difference_type(Index_) + n <= Size_)(Index_)(Size_);
+         Index_ += n; return *this; }
 
       VecPtrIterator& operator-=(difference_type n)
-	 { DEBUG_CHECK(difference_type(Index_) - n >= 0 && 
-		       difference_type(Index_) - n <= Size_)(Index_)(Size_);
-	 Index_ -= n; return *this; }
+         { DEBUG_CHECK(difference_type(Index_) - n >= 0 &&
+                       difference_type(Index_) - n <= Size_)(Index_)(Size_);
+         Index_ -= n; return *this; }
 
       size_type index() const { return Index_; }
 
-      reference operator*() const 
+      reference operator*() const
       { DEBUG_CHECK(Index_ < Size_)(Index_)(Size_); return Base_[Index_ * Stride_]; }
 
-      pointer operator->() const 
+      pointer operator->() const
       {  DEBUG_CHECK(Index_ < Size_)(Index_)(Size_); return Base_ + Index_ * Stride_; }
 
-      reference operator[](difference_type n) const 
+      reference operator[](difference_type n) const
       {  DEBUG_RANGE_CHECK_OPEN(difference_type(Index_) + n, 0, difference_type(Size_));
          return Base_[(difference_type(Index_)+n) * Stride_]; }
 
@@ -117,11 +117,11 @@ class VecPtrIterator
       difference_type stride() const { return Stride_; }
 
       static difference_type const static_stride = Stride_;
-   
-      // For BLAS, the required pointer is to the lowest element in memory.  
+
+      // For BLAS, the required pointer is to the lowest element in memory.
       // For negative stride,
       // this is actually the 'back' of the array.
-      Scalar* blas_base() const 
+      Scalar* blas_base() const
       { return Base_ + difference_type(Stride_ > 0 ? Index_ : Size_) * Stride_; }
 
    private:
@@ -143,46 +143,46 @@ class VecPtrIterator<Scalar, tagVariable>
       VecPtrIterator() {}
 
       VecPtrIterator(VecPtrIterator<value_type, tagVariable> const& i)
-	 : Base_(i.Base_), Size_(i.Size_), Index_(i.Index_), Stride_(i.Stride_) {}
+         : Base_(i.Base_), Size_(i.Size_), Index_(i.Index_), Stride_(i.Stride_) {}
 
       VecPtrIterator(Scalar* Base, size_type Size, size_type Index, difference_type Stride)
-	 : Base_(Base), Size_(Size), Index_(Index), Stride_(Stride) { }
+         : Base_(Base), Size_(Size), Index_(Index), Stride_(Stride) { }
 
-      VecPtrIterator& operator++() 
+      VecPtrIterator& operator++()
          { DEBUG_CHECK(Index_ < Size_)(Index_)(Size_); ++Index_; return *this; }
       //         { ++Index_; return *this; }
 
-      VecPtrIterator operator++(int) 
-         { DEBUG_CHECK(Index_ < Size_)(Index_)(Size_); 
-	   return VecPtrIterator(Base_, Size_, Index_++); }
+      VecPtrIterator operator++(int)
+         { DEBUG_CHECK(Index_ < Size_)(Index_)(Size_);
+           return VecPtrIterator(Base_, Size_, Index_++); }
 
-      VecPtrIterator& operator--() 
+      VecPtrIterator& operator--()
          { DEBUG_CHECK(Index_ > 0)(Index_); --Index_; return *this; }
 
-      VecPtrIterator operator--(int) 
-         { DEBUG_CHECK(Index_ > 0)(Index_); 
-	   Index_ -= Stride_; return VecPtrIterator(Base_, Size_, Index_+Stride_); }
+      VecPtrIterator operator--(int)
+         { DEBUG_CHECK(Index_ > 0)(Index_);
+           Index_ -= Stride_; return VecPtrIterator(Base_, Size_, Index_+Stride_); }
 
       VecPtrIterator& operator+=(difference_type n)
-	 { DEBUG_CHECK(difference_type(Index_) + n >= 0 && 
-		       difference_type(Index_) + n <= Size_)(Index_)(Size_);
-	 Index_ += n; return *this; }
+         { DEBUG_CHECK(difference_type(Index_) + n >= 0 &&
+                       difference_type(Index_) + n <= Size_)(Index_)(Size_);
+         Index_ += n; return *this; }
 
       VecPtrIterator& operator-=(difference_type n)
-	 { DEBUG_CHECK(difference_type(Index_) - n >= 0 && 
-		       difference_type(Index_) - n <= Size_)(Index_)(Size_);
-	 Index_ -= n; return *this; }
+         { DEBUG_CHECK(difference_type(Index_) - n >= 0 &&
+                       difference_type(Index_) - n <= Size_)(Index_)(Size_);
+         Index_ -= n; return *this; }
 
       size_type index() const { return Index_; }
 
-      reference operator*() const 
+      reference operator*() const
       { DEBUG_CHECK(Index_ < Size_)(Index_)(Size_); return Base_[Index_ * Stride_]; }
    //      { return Base_[Index_ * Stride_]; }
 
-      pointer operator->() const 
+      pointer operator->() const
       {  DEBUG_CHECK(Index_ < Size_)(Index_)(Size_); return Base_ + Index_ * Stride_; }
 
-      reference operator[](difference_type n) const 
+      reference operator[](difference_type n) const
       {  DEBUG_RANGE_CHECK_OPEN(difference_type(Index_) + n, 0, difference_type(Size_));
          return Base_[(difference_type(Index_)+n) * Stride_]; }
 
@@ -193,10 +193,10 @@ class VecPtrIterator<Scalar, tagVariable>
       size_type size() const { return Size_ - Index_; }
       difference_type stride() const { return Stride_; }
 
-      // For BLAS, the required pointer is to the lowest element in memory.  
+      // For BLAS, the required pointer is to the lowest element in memory.
       // For negative stride,
       // this is actually the 'back' of the array.
-      Scalar* blas_base() const 
+      Scalar* blas_base() const
       { return Base_ + difference_type(Stride_ > 0 ? Index_ : Size_) * Stride_; }
 
    private:
@@ -223,45 +223,45 @@ class VecPtrIterator<Scalar, boost::mpl::int_<1> >
 
       // this overload handles const conversions
       VecPtrIterator(VecPtrIterator<value_type, boost::mpl::int_<1> > const& i)
-	 : Base_(i.Base_), Size_(i.Size_), Index_(i.Index_) {}
+         : Base_(i.Base_), Size_(i.Size_), Index_(i.Index_) {}
 
-      VecPtrIterator(Scalar* Base, size_type Size, size_type Index, 
-		     difference_type Stride = 1)
-	 : Base_(Base), Size_(Size), Index_(Index) { DEBUG_PRECONDITION_EQUAL(Stride, 1); }
+      VecPtrIterator(Scalar* Base, size_type Size, size_type Index,
+                     difference_type Stride = 1)
+         : Base_(Base), Size_(Size), Index_(Index) { DEBUG_PRECONDITION_EQUAL(Stride, 1); }
 
-      VecPtrIterator& operator++() 
+      VecPtrIterator& operator++()
          { DEBUG_CHECK(Index_ < Size_)(Index_)(Size_); ++Index_; return *this; }
 
-      VecPtrIterator operator++(int) 
-         { DEBUG_CHECK(Index_ < Size_)(Index_)(Size_); 
-	   return VecPtrIterator(Base_, Size_, Index_++); }
+      VecPtrIterator operator++(int)
+         { DEBUG_CHECK(Index_ < Size_)(Index_)(Size_);
+           return VecPtrIterator(Base_, Size_, Index_++); }
 
-      VecPtrIterator& operator--() 
+      VecPtrIterator& operator--()
          { DEBUG_CHECK(Index_ > 0)(Index_); --Index_; return *this; }
 
-      VecPtrIterator operator--(int) 
-         { DEBUG_CHECK(Index_ > 0)(Index_); 
-	   Index_ -= Stride_; return VecPtrIterator(Base_, Size_, Index_+Stride_); }
+      VecPtrIterator operator--(int)
+         { DEBUG_CHECK(Index_ > 0)(Index_);
+           Index_ -= Stride_; return VecPtrIterator(Base_, Size_, Index_+Stride_); }
 
       VecPtrIterator& operator+=(difference_type n)
-	 { DEBUG_CHECK(difference_type(Index_) + n >= 0 && 
-		       Index_ + size_type(n) <= Size_)(Index_)(Size_);
-	 Index_ += n; return *this; }
+         { DEBUG_CHECK(difference_type(Index_) + n >= 0 &&
+                       Index_ + size_type(n) <= Size_)(Index_)(Size_);
+         Index_ += n; return *this; }
 
       VecPtrIterator& operator-=(difference_type n)
-	 { DEBUG_CHECK(difference_type(Index_) - n >= 0 && 
-		       difference_type(Index_) - n <= Size_)(Index_)(Size_);
-	 Index_ -= n; return *this; }
+         { DEBUG_CHECK(difference_type(Index_) - n >= 0 &&
+                       difference_type(Index_) - n <= Size_)(Index_)(Size_);
+         Index_ -= n; return *this; }
 
       size_type index() const { return Index_; }
 
-      reference operator*() const 
+      reference operator*() const
       { DEBUG_CHECK(Index_ < Size_)(Index_)(Size_); return Base_[Index_]; }
 
-      pointer operator->() const 
+      pointer operator->() const
       {  DEBUG_CHECK(Index_ < Size_)(Index_)(Size_); return Base_ + Index_; }
 
-      reference operator[](difference_type n) const 
+      reference operator[](difference_type n) const
       {  DEBUG_RANGE_CHECK_OPEN(difference_type(Index_) + n, 0, difference_type(Size_));
          return Base_[difference_type(Index_)+n]; }
 

@@ -50,7 +50,7 @@ int main()
    CHECK_EQUAL(VB1.total_degree(), 8);
 
    BasisList B2(Symmetry);
-   B2.push_back(QN(1, 0.5));   
+   B2.push_back(QN(1, 0.5));
    B2.push_back(QN(2, 0.5));
    int Dims2[2] = {2,1};
 

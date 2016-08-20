@@ -37,7 +37,7 @@ int main()
    TRACE(Mat);
 
    Matrix<double> Mat2 = Mat*M;
-   
+
    TRACE(Mat);
    //   TRACE(Matrix<double>(M*Mat));
    TRACE(Matrix<double>(Mat*M));

@@ -20,7 +20,7 @@
 // LinearWavefunctionOld - the old format for LinearWavefunction
 // This is only to support legacy streaming, to facilitate
 // conversion to the new MPWavefunction
-// 
+//
 
 #if !defined(MPTOOLKIT_WAVEFUNCTION_LINEARWAVEFUNCTION_OLD_H)
 #define MPTOOLKIT_WAVEFUNCTION_LINEARWAVEFUNCTION_OLD_H

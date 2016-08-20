@@ -48,7 +48,7 @@ class pref_ptr
 
       pref_ptr();
 
-      template <class U> 
+      template <class U>
       pref_ptr(U* p);
 
       pref_ptr(pheap::PHeapObject* Obj);
@@ -176,7 +176,7 @@ class pref_handle
 
       template <class U> friend class pref_handle;
 };
-      
+
 // persistent stream output of pref_handle<T> gives identical results to
 // writing a pref_ptr<T> of the same object.
 // Similarly, stream input of a pref_handle is interchangeable with pref_ptr.
@@ -222,15 +222,15 @@ void ExportHeap(PHeapFileSystem::BlockFileSystem* FS, pref_ptr<T>& MainObject)
 }
 
 template <typename T>
-void ExportHeap(std::string const& FileName, pref_handle<T>& MainObject, 
-		int NumFiles = 1, size_t PageSize = 0)
+void ExportHeap(std::string const& FileName, pref_handle<T>& MainObject,
+                int NumFiles = 1, size_t PageSize = 0)
 {
    ExportHeap(FileName, MainObject.get_handle(), NumFiles, PageSize);
 }
 
 template <typename T>
-void ExportHeap(std::string const& FileName, pref_ptr<T>& MainObject, 
-		int NumFiles = 1, size_t PageSize = 0)
+void ExportHeap(std::string const& FileName, pref_ptr<T>& MainObject,
+                int NumFiles = 1, size_t PageSize = 0)
 {
    ExportHeap(FileName, MainObject.get_handle(), NumFiles, PageSize);
 }

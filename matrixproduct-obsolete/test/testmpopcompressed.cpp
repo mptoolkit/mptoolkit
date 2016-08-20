@@ -131,5 +131,5 @@ int main()
    Cx = Cx * Cxr;
    SumTest = inject_right(SumTest, Cx);
    TRACE(C0)(Cx)(SumTest);
-   
+
 }

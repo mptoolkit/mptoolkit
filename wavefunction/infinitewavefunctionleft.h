@@ -40,41 +40,41 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
 
       // named constructors
 
-      // construction from a LinearWavefunction (in left-canonical form with lambda 
+      // construction from a LinearWavefunction (in left-canonical form with lambda
       // matrix on the right)
       static
-      InfiniteWavefunctionLeft ConstructFromOrthogonal(LinearWavefunction const& Psi, 
-						       MatrixOperator const& Lambda, 
-						       QuantumNumbers::QuantumNumber const& QShift_,
-						       int Verbose = 0);
+      InfiniteWavefunctionLeft ConstructFromOrthogonal(LinearWavefunction const& Psi,
+                                                       MatrixOperator const& Lambda,
+                                                       QuantumNumbers::QuantumNumber const& QShift_,
+                                                       int Verbose = 0);
 
       // construct and orthogonalize from a LinearWavefunction
       static
-      InfiniteWavefunctionLeft Construct(LinearWavefunction const& Psi, 
-					 QuantumNumbers::QuantumNumber const& QShift, 
-					 int Verbose = 0);
+      InfiniteWavefunctionLeft Construct(LinearWavefunction const& Psi,
+                                         QuantumNumbers::QuantumNumber const& QShift,
+                                         int Verbose = 0);
 
       // construct and orthogonalize from a LinearWavefunction, with an approximation
       // for the right-most density matrix
       static
-      InfiniteWavefunctionLeft Construct(LinearWavefunction const& Psi, 
-					 MatrixOperator const& GuessRho, 
-					 QuantumNumbers::QuantumNumber const& QShift, 
-					 int Verbose = 0);
+      InfiniteWavefunctionLeft Construct(LinearWavefunction const& Psi,
+                                         MatrixOperator const& GuessRho,
+                                         QuantumNumbers::QuantumNumber const& QShift,
+                                         int Verbose = 0);
 
-      InfiniteWavefunctionLeft(InfiniteWavefunctionLeft const& Psi) 
-	 : CanonicalWavefunctionBase(Psi), QShift(Psi.QShift) {}
+      InfiniteWavefunctionLeft(InfiniteWavefunctionLeft const& Psi)
+         : CanonicalWavefunctionBase(Psi), QShift(Psi.QShift) {}
 
       InfiniteWavefunctionLeft& operator=(InfiniteWavefunctionLeft const& Psi)
       { CanonicalWavefunctionBase::operator=(Psi); QShift = Psi.QShift; return *this; }
 
       QuantumNumber qshift() const { return QShift; }
 
-      // Rotates the wavefunction to the left, by taking the left-most site 
+      // Rotates the wavefunction to the left, by taking the left-most site
       // and moving it to the right
       void rotate_left(int Count);
 
-      // Rotates the wavefunction to the left, by taking the right-most site 
+      // Rotates the wavefunction to the left, by taking the right-most site
       // and moving it to the left
       void rotate_right(int Count);
 
@@ -86,8 +86,8 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       static PStream::VersionTag VersionT;
 
       friend PStream::ipstream& operator>>(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi);
-      friend PStream::opstream& operator<<(PStream::opstream& out, 
-					   InfiniteWavefunctionLeft const& Psi);
+      friend PStream::opstream& operator<<(PStream::opstream& out,
+                                           InfiniteWavefunctionLeft const& Psi);
       friend void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Version);
 
       void check_structure() const;
@@ -106,7 +106,7 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
 
       // spatial reflection of the wavefunction in-place.  The Basis1() / Basis2() of the reflected wavefunctions
       // are exactly the flip_conj() of the original Basis1/Basis2, with no change in gauge across the cell boundary
-      // (that is, if the wavefunction is written in a reflection-symmetric basis then Psi' = Psi (up to 
+      // (that is, if the wavefunction is written in a reflection-symmetric basis then Psi' = Psi (up to
       // internal gauge).
       friend void inplace_reflect(InfiniteWavefunctionLeft& Psi);
 
@@ -118,14 +118,14 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       friend InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count);
 
       friend InfiniteWavefunctionLeft wigner_project(InfiniteWavefunctionLeft const& Psi,
-						    SymmetryList const& FinalSL);
-      friend InfiniteWavefunctionLeft ReorderSymmetry(InfiniteWavefunctionLeft const& Psi, 
-						      SymmetryList const& NewSL);
+                                                    SymmetryList const& FinalSL);
+      friend InfiniteWavefunctionLeft ReorderSymmetry(InfiniteWavefunctionLeft const& Psi,
+                                                      SymmetryList const& NewSL);
 };
 
 class InfiniteWavefunctionRight;
 
-// Convert a, infinite wavefunction to left-canonical form, 
+// Convert a, infinite wavefunction to left-canonical form,
 // and returns the Lambda matrix on the right-hand-side.
 RealDiagonalOperator
 left_canonicalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift);
@@ -171,24 +171,24 @@ extern double const InverseTol;
 // x and y must have the same size
 std::pair<std::complex<double>, StateComponent>
 overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefunctionLeft const& y,
-	QuantumNumbers::QuantumNumber const& Sector, 
-	int Iter = 20, double Tol = 1E-12, int Verbose = 0);
+        QuantumNumbers::QuantumNumber const& Sector,
+        int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
 // This version allows a string operator also.
 // This version is deprecated.
 std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const& StringOp,
                              InfiniteWavefunctionLeft const& y,
-                             QuantumNumbers::QuantumNumber const& Sector, 
-			     int Iter = 20, double Tol = 1E-12, int Verbose = 0);
+                             QuantumNumbers::QuantumNumber const& Sector,
+                             int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
 // This version allows the wavefunctions and operator to have different sizes.
 // The overlap is returned as a quantity per length, which is the lowest
 // common multiple of x.size(), y.size(), StringOp.size()
 std::tuple<std::complex<double>, int, StateComponent>
 overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
-	InfiniteWavefunctionLeft const& y,
-	QuantumNumbers::QuantumNumber const& Sector, 
-	int Iter = 20, double Tol = 1E-12, int Verbose = 0);
+        InfiniteWavefunctionLeft const& y,
+        QuantumNumbers::QuantumNumber const& Sector,
+        int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
 // Reflect a wavefunction in place
 void inplace_reflect(InfiniteWavefunctionLeft& Psi);
@@ -200,7 +200,7 @@ void inplace_conj(InfiniteWavefunctionLeft& Psi);
 InfiniteWavefunctionRight reflect(InfiniteWavefunctionLeft const& Psi);
 
 // version of reflect where we apply a local operator also
-//InfiniteWavefunctionRight reflect(InfiniteWavefunction const& Psi, 
+//InfiniteWavefunctionRight reflect(InfiniteWavefunction const& Psi,
 // std::vector<SimpleOperator> const& Op);
 
 // Calculates an expectation value over the wavefunction.

@@ -170,7 +170,7 @@ struct DirectSumInterface<S, T, LOCAL_VECTOR(Sv, Si),  AnyScalar<Tv> >
 {
    typedef typename make_value<typename Addition<Sv, Tv>::result_type>::type value_type;
 
-   typedef typename make_vector_from_abstract<value_type, 
+   typedef typename make_vector_from_abstract<value_type,
       typename abstract_interface<S>::type>::type result_type;
 
    typedef S const& first_argument_type;
@@ -237,7 +237,7 @@ struct DirectSumInterface<S, T, AnyScalar<Sv>, LOCAL_VECTOR(Tv, Ti)>
 {
    typedef typename make_value<typename Addition<Sv, Tv>::result_type>::type value_type;
 
-   typedef typename make_vector_from_abstract<value_type, 
+   typedef typename make_vector_from_abstract<value_type,
       typename abstract_interface<T>::type>::type result_type;
 
    typedef S const& first_argument_type;
@@ -262,7 +262,7 @@ struct DirectSumInterface<S, T, AnyScalar<Sv>, DENSE_VECTOR(Tv, Ti)>
 {
    typedef typename make_value<typename Addition<Sv, Tv>::result_type>::type value_type;
 
-   typedef typename make_vector_from_abstract<value_type, 
+   typedef typename make_vector_from_abstract<value_type,
       typename abstract_interface<T>::type>::type result_type;
 
    typedef S const& first_argument_type;

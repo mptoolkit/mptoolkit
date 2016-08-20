@@ -58,7 +58,7 @@ SpinSU2(half_int Spin, std::string const& Sym = "S")
    Q = prod(S, S, QN(2));
    T = prod(Q, S, QN(3));
    F = prod(Q, Q, QN(4));
-   
+
    Site.arg("Spin") = Spin.to_double();
 
    Site["I"] = I;

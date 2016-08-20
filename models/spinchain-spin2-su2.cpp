@@ -39,16 +39,17 @@ int main(int argc, char** argv)
          ("help", "show this help message")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
-      
-      prog_opt::variables_map vm;        
+
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).style(prog_opt::command_line_style::default_style ^
-					  prog_opt::command_line_style::allow_guessing).
-		      run(), vm);
-      prog_opt::notify(vm);    
+                                          prog_opt::command_line_style::allow_guessing).
+                      run(), vm);
+      prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("Spin chain");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_p0"     , "projector onto nearest-neighbor spin 0 bond")
          ("H_p1"     , "projector onto nearest-neighbor spin 1 bond")
@@ -60,7 +61,7 @@ int main(int argc, char** argv)
          ("H_hex"    , "nearest neighbor hexapole spin exchange   (T.T)")
          ("H_oct"    , "nearest neighbor octapole spin exchange   (F.F)")
          ;
- 
+
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
@@ -72,7 +73,7 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinSU2(Spin);
       UnitCell Cell(Site);
-      InfiniteLattice Lattice(Cell);
+      InfiniteLattice Lattice(&Cell);
       UnitCellOperator S(Cell, "S"), Q(Cell, "Q"), T(Cell, "T"), F(Cell, "F"), I(Cell, "I");
 
       // (Q.Q) = -1/3 (S^2 . S^2) + (S.S)^2 + 1/2 S.S

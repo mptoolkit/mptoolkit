@@ -64,7 +64,7 @@ class MatrixProductProxy
       typedef NestedMult functor_type;
 
       typedef typename std::result_of<functor_type(typename matrix1_type::value_type,
-						   typename matrix2_type::value_type)>::type reference;
+                                                   typename matrix2_type::value_type)>::type reference;
 
       typedef typename std::decay<reference>::type value_type;
 
@@ -74,11 +74,11 @@ class MatrixProductProxy
       reference1 matrix1() const { return x_; }
       reference2 matrix2() const { return y_; }
 
-      MatrixProductProxy(reference1 x, reference2 y, 
+      MatrixProductProxy(reference1 x, reference2 y,
                          functor_type f = functor_type()) : x_(x), y_(y), f_(f)
       {
-	 using LinearAlgebra::size1; using LinearAlgebra::size2;
-	 DEBUG_PRECONDITION_EQUAL(size2(x), size1(y));
+         using LinearAlgebra::size1; using LinearAlgebra::size2;
+         DEBUG_PRECONDITION_EQUAL(size2(x), size1(y));
       }
 
       functor_type functor() const { return f_; }
@@ -95,7 +95,7 @@ class MatrixProductProxy
 // interface
 
 template <typename T1, typename T2, typename Nested>
-struct interface<MatrixProductProxy<T1, T2, Nested> > 
+struct interface<MatrixProductProxy<T1, T2, Nested> >
 {
    typedef typename interface<T1>::value_type value1_type;
    typedef typename interface<T2>::value_type value2_type;
@@ -156,22 +156,22 @@ struct SubtractExpression<LHS&, MatrixProductProxy<T1, T2, F> >
    }
 };
 
-// 
+//
 // MatrixMatrixMultiplication
 //
 
-template <typename M1, typename M2, 
+template <typename M1, typename M2,
           typename Nested,
-          typename M1v, typename M1i, 
+          typename M1v, typename M1i,
           typename M2v, typename M2i>
 struct MatrixMatrixMultiplication<M1, M2, Nested,
-				  Concepts::AnyMatrix<M1v, M1i>, 
-				  Concepts::AnyMatrix<M2v, M2i>>
+                                  Concepts::AnyMatrix<M1v, M1i>,
+                                  Concepts::AnyMatrix<M2v, M2i>>
 {
    typedef M1 const& first_argument_type;
    typedef M2 const& second_argument_type;
    typedef MatrixProductProxy<typename make_const_reference<M1>::type,
-			      typename make_const_reference<M2>::type,
+                              typename make_const_reference<M2>::type,
                               Nested> result_type;
 
    result_type operator()(M1 const& m1, M2 const& m2) const { return result_type(m1, m2); }
@@ -182,7 +182,7 @@ struct MatrixMatrixMultiplication<M1, M2, Nested,
 // transpose
 
 template <typename M1, typename M2>
-struct Transpose<MatrixProductProxy<M1, M2, 
+struct Transpose<MatrixProductProxy<M1, M2,
                                     Multiplication<typename basic_type<M1>::type::value_type,
                                                    typename basic_type<M2>::type::value_type> > >
 {

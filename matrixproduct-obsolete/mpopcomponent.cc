@@ -20,7 +20,7 @@
 template <typename T>
 std::ostream& operator<<(std::ostream& out, MPOperatorComponent<T> const& Op)
 {
-  out << "Site basis:\n" << Op.SiteBasis() << "Basis1:\n" << Op.Basis1() 
+  out << "Site basis:\n" << Op.SiteBasis() << "Basis1:\n" << Op.Basis1()
       << "Basis2:\n" << Op.Basis2() << '\n';
   for (typename MPOperatorComponent<T>::const_iterator I = Op.begin(); I != Op.end(); ++I)
   {
@@ -95,12 +95,12 @@ void MPOperatorComponent<T>::set_operator(int i, int j, SimpleOperator const& x)
    {
       for (typename LinearAlgebra::inner_iterator<SimpleOperator const>::type b = iterate(a); b; ++b)
       {
-	 if (this->operator[](x.TransformsAs())(b.index1(), b.index2()).is_null())
-	 {
-	    Data_[x.TransformsAs()](b.index1(), b.index2()) 
-	       = SimpleOperator(Basis1_, Basis2_, x.TransformsAs());
-	 }
-	 Data_[x.TransformsAs()](b.index1(), b.index2())(i,j) = *b;
+         if (this->operator[](x.TransformsAs())(b.index1(), b.index2()).is_null())
+         {
+            Data_[x.TransformsAs()](b.index1(), b.index2())
+               = SimpleOperator(Basis1_, Basis2_, x.TransformsAs());
+         }
+         Data_[x.TransformsAs()](b.index1(), b.index2())(i,j) = *b;
       }
    }
 }
@@ -114,7 +114,7 @@ struct ScalarProdABh
    typedef T result_type;
    typedef T const& first_argument_type;
    typedef T const& second_argument_type;
-   
+
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
       return scalar_prod(x, herm(y));
@@ -127,7 +127,7 @@ struct ScalarProdAhB
    typedef T result_type;
    typedef T const& first_argument_type;
    typedef T const& second_argument_type;
-   
+
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
       return scalar_prod(herm(x), y);
@@ -135,10 +135,10 @@ struct ScalarProdAhB
 };
 
 template <typename T>
-typename ScalarProd<MPOperatorComponent<T>, 
+typename ScalarProd<MPOperatorComponent<T>,
                     HermitianProxy<MPOperatorComponent<T> > >::result_type
 ScalarProd<MPOperatorComponent<T>, HermitianProxy<MPOperatorComponent<T> > >::
-operator()(MPOperatorComponent<T> const& A, 
+operator()(MPOperatorComponent<T> const& A,
            HermitianProxy<MPOperatorComponent<T> > const& B) const
 {
    typedef typename MPOperatorComponent<T>::OperatorType OperatorType;
@@ -162,10 +162,10 @@ operator()(MPOperatorComponent<T> const& A,
 }
 
 template <typename T>
-typename ScalarProd<HermitianProxy<MPOperatorComponent<T> >, 
+typename ScalarProd<HermitianProxy<MPOperatorComponent<T> >,
                     MPOperatorComponent<T> >::result_type
 ScalarProd<HermitianProxy<MPOperatorComponent<T> >, MPOperatorComponent<T> >::
-operator()(HermitianProxy<MPOperatorComponent<T> > const& A, 
+operator()(HermitianProxy<MPOperatorComponent<T> > const& A,
            MPOperatorComponent<T> const& B) const
 {
    typedef typename MPOperatorComponent<T>::OperatorType OperatorType;

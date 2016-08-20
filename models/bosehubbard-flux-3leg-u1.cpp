@@ -94,6 +94,7 @@ int main(int argc, char** argv)
 
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("Bosonic 3-leg ladder with flux");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_J0",  "nearest neighbor leg 0 hopping")
          ("H_J1",  "nearest neighbor leg 1 hopping")
@@ -130,6 +131,8 @@ int main(int argc, char** argv)
 
       LatticeSite Site = BosonU1(MaxN);
       UnitCell Cell(repeat(Site, 3));
+      InfiniteLattice Lattice(&Cell);
+
       UnitCellOperator BH(Cell, "BH"), B(Cell, "B"), N(Cell, "N"), N2(Cell, "N2"),
          j0(Cell, "j0"), j1(Cell, "j1"), j2(Cell, "j2"), k0(Cell, "k0"), k1(Cell, "k1");
 
@@ -139,8 +142,6 @@ int main(int argc, char** argv)
 
       k0 = std::complex<double>(0,1)*(BH(0)[0]*B(0)[1] - B(0)[0]*BH(0)[1]);
       k1 = std::complex<double>(0,1)*(BH(0)[1]*B(0)[2] - B(0)[1]*BH(0)[2]);
-
-      InfiniteLattice Lattice(Cell);
 
       UnitCellMPO HJ0, HJ1, HJ2, HJc0, HJc1, HJc2, HK, HKc, HKp, HKcp, HU;
       HJ0 = BH(0)[0]*B(1)[0] + B(0)[0]*BH(1)[0];

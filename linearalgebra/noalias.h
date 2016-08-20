@@ -41,8 +41,8 @@ template <typename T, typename Enable = void>
 struct is_declared_noalias : boost::mpl::false_ {};
 
 template <typename T>
-struct is_declared_noalias<T, 
-    typename boost::enable_if<exists<typename T::noalias> >::type> 
+struct is_declared_noalias<T,
+    typename boost::enable_if<exists<typename T::noalias> >::type>
 : boost::mpl::true_ {};
 
 } // namespace Private
@@ -64,8 +64,8 @@ T const& strip_noalias(T const& x)
    return x;
 }
 
-template <typename RefType, 
-	  typename RInterface = typename interface<typename make_value<RefType>::type>::type>
+template <typename RefType,
+          typename RInterface = typename interface<typename make_value<RefType>::type>::type>
 class NoAliasProxy
 {
    public:
@@ -76,7 +76,7 @@ class NoAliasProxy
       typedef boost::mpl::true_ noalias;
 
       typedef typename boost::remove_const<
-	 typename boost::remove_reference<RefType>::type>::type value_type;
+         typename boost::remove_reference<RefType>::type>::type value_type;
 
       typedef RefType reference;
       typedef typename make_const_reference<reference>::type const_reference;
@@ -89,15 +89,15 @@ class NoAliasProxy
       template <typename U>
       NoAliasProxy& operator=(U const& x)
       {
-	 assign(Value_, x);
-	 return *this;
+         assign(Value_, x);
+         return *this;
       }
 
       // just in case...
       NoAliasProxy& operator=(NoAliasProxy const& x)
       {
-	 assign(Value_, x.value());
-	 return *this;
+         assign(Value_, x.value());
+         return *this;
       }
 
       // to allow assignment with temporary proxies,
@@ -107,21 +107,21 @@ class NoAliasProxy
       template <typename U>
       NoAliasProxy& operator+=(U const& x)
       {
-	 add(Value_, x);
-	 return *this;
+         add(Value_, x);
+         return *this;
       }
 
       template <typename U>
       NoAliasProxy& operator-=(U const& x)
       {
-	 subtract(Value_, x);
-	 return *this;
+         subtract(Value_, x);
+         return *this;
       }
 
       reference value() { return Value_; }
       const_reference value() const { return Value_; }
 
-      operator NoAliasProxy<const_reference>() const 
+      operator NoAliasProxy<const_reference>() const
       { return NoAliasProxy<const_reference>(Value_); }
 
    private:
@@ -154,7 +154,7 @@ class NoAliasProxy<RefType, ANY_VECTOR(Rv, Ri)>
       {
          assign(Value_, x);
          //Value_ = noalias(x);
-	 return *this;
+         return *this;
       }
 
       // just in case...
@@ -162,7 +162,7 @@ class NoAliasProxy<RefType, ANY_VECTOR(Rv, Ri)>
       {
          assign(Value_, x.value());
          //         Value_ = x;
-	 return *this;
+         return *this;
       }
 
       // to allow assignment with temporary proxies,
@@ -172,21 +172,21 @@ class NoAliasProxy<RefType, ANY_VECTOR(Rv, Ri)>
       template <typename U>
       NoAliasProxy& operator+=(U const& x)
       {
-	 add(Value_, x);
-	 return *this;
+         add(Value_, x);
+         return *this;
       }
 
       template <typename U>
       NoAliasProxy& operator-=(U const& x)
       {
-	 subtract(Value_, x);
-	 return *this;
+         subtract(Value_, x);
+         return *this;
       }
 
       reference value() { return Value_; }
       const_reference value() const { return Value_; }
 
-      operator NoAliasProxy<const_reference>() const 
+      operator NoAliasProxy<const_reference>() const
       { return NoAliasProxy<const_reference>(Value_); }
 
 
@@ -195,16 +195,16 @@ class NoAliasProxy<RefType, ANY_VECTOR(Rv, Ri)>
       typename VectorRange<const_arg_type, RangeType>::result_type
       range(RangeType r) const
       {
-	 using LinearAlgebra::range;
-	 return range(Value_, r);
+         using LinearAlgebra::range;
+         return range(Value_, r);
       }
 
       template <typename RangeType>
       typename VectorRange<arg_type, RangeType>::result_type
       range(RangeType r)
       {
-	 using LinearAlgebra::range;
-	 return range(Value_, r);
+         using LinearAlgebra::range;
+         return range(Value_, r);
       }
 
       template <typename IntType>
@@ -212,8 +212,8 @@ class NoAliasProxy<RefType, ANY_VECTOR(Rv, Ri)>
          VectorRange<const_arg_type, Range> >::type::result_type
       range(IntType first, IntType last) const
       {
-	 using LinearAlgebra::range;
-	 return range(Value_, Range(first, last));
+         using LinearAlgebra::range;
+         return range(Value_, Range(first, last));
       }
 
       template <typename IntType>
@@ -221,24 +221,24 @@ class NoAliasProxy<RefType, ANY_VECTOR(Rv, Ri)>
          VectorRange<arg_type, Range> >::type::result_type
       range(IntType first, IntType last)
       {
-	 using LinearAlgebra::range;
-	 return range(Value_, Range(first, last));
+         using LinearAlgebra::range;
+         return range(Value_, Range(first, last));
       }
 
       template <typename SliceType>
       typename VectorSlice<const_arg_type, SliceType>::result_type
       slice(SliceType s) const
       {
-	 using LinearAlgebra::slice;
-	 return slice(Value_, s);
+         using LinearAlgebra::slice;
+         return slice(Value_, s);
       }
 
       template <typename SliceType>
       typename VectorSlice<arg_type, SliceType>::result_type
       slice(SliceType s)
       {
-	 using LinearAlgebra::slice;
-	 return slice(Value_, s);
+         using LinearAlgebra::slice;
+         return slice(Value_, s);
       }
 
       template <typename StartType, typename SizeType, typename StrideType>
@@ -246,8 +246,8 @@ class NoAliasProxy<RefType, ANY_VECTOR(Rv, Ri)>
          VectorSlice<const_arg_type, Slice> >::type::result_type
       slice(StartType Start, SizeType Size, StrideType Stride) const
       {
-	 using LinearAlgebra::slice;
-	 return slice(Value_, Slice(Start, Size, Stride));
+         using LinearAlgebra::slice;
+         return slice(Value_, Slice(Start, Size, Stride));
       }
 
       template <typename StartType, typename SizeType, typename StrideType>
@@ -255,8 +255,8 @@ class NoAliasProxy<RefType, ANY_VECTOR(Rv, Ri)>
          VectorSlice<arg_type, Slice> >::type::result_type
       slice(StartType Start, SizeType Size, StrideType Stride)
       {
-	 using LinearAlgebra::slice;
-	 return slice(Value_, Slice(Start, Size, Stride));
+         using LinearAlgebra::slice;
+         return slice(Value_, Slice(Start, Size, Stride));
       }
 #endif
 
@@ -270,11 +270,11 @@ template <typename LHS, typename RHS>
 struct Assign<NoAliasProxy<LHS&>&, RHS> : Assign<LHS&, RHS> {};
 
 template <typename LHS, typename RHS>
-struct Assign<LHS&, NoAliasProxy<RHS> > 
+struct Assign<LHS&, NoAliasProxy<RHS> >
    : Assign<LHS&, typename basic_type<RHS>::type> {};
 
 template <typename LHS, typename RHS>
-struct Assign<NoAliasProxy<LHS&>&, NoAliasProxy<RHS> > 
+struct Assign<NoAliasProxy<LHS&>&, NoAliasProxy<RHS> >
    : Assign<LHS&, typename basic_type<RHS>::type> {};
 
 
@@ -282,11 +282,11 @@ template <typename LHS, typename RHS>
 struct AssignCopy<NoAliasProxy<LHS&>&, RHS> : Assign<LHS&, RHS> {};
 
 template <typename LHS, typename RHS>
-struct AssignCopy<LHS&, NoAliasProxy<RHS> > 
+struct AssignCopy<LHS&, NoAliasProxy<RHS> >
    : Assign<LHS&, typename basic_type<RHS>::type> {};
 
 template <typename LHS, typename RHS>
-struct AssignCopy<NoAliasProxy<LHS&>&, NoAliasProxy<RHS> > 
+struct AssignCopy<NoAliasProxy<LHS&>&, NoAliasProxy<RHS> >
    : Assign<LHS&, typename basic_type<RHS>::type> {};
 
 
@@ -295,11 +295,11 @@ template <typename LHS, typename RHS>
 struct Add<NoAliasProxy<LHS&>&, RHS> : Add<LHS&, RHS> {};
 
 template <typename LHS, typename RHS>
-struct Add<LHS&, NoAliasProxy<RHS> > 
+struct Add<LHS&, NoAliasProxy<RHS> >
    : Add<LHS&, typename basic_type<RHS>::type> {};
 
 template <typename LHS, typename RHS>
-struct Add<NoAliasProxy<LHS&>&, NoAliasProxy<RHS> > 
+struct Add<NoAliasProxy<LHS&>&, NoAliasProxy<RHS> >
    : Add<LHS&, typename basic_type<RHS>::type> {};
 
 
@@ -307,11 +307,11 @@ template <typename LHS, typename RHS>
 struct AddCopy<NoAliasProxy<LHS&>&, RHS> : Add<LHS&, RHS> {};
 
 template <typename LHS, typename RHS>
-struct AddCopy<LHS&, NoAliasProxy<RHS> > 
+struct AddCopy<LHS&, NoAliasProxy<RHS> >
    : Add<LHS&, typename basic_type<RHS>::type> {};
 
 template <typename LHS, typename RHS>
-struct AddCopy<NoAliasProxy<LHS&>&, NoAliasProxy<RHS> > 
+struct AddCopy<NoAliasProxy<LHS&>&, NoAliasProxy<RHS> >
    : Add<LHS&, typename basic_type<RHS>::type> {};
 
 
@@ -320,11 +320,11 @@ template <typename LHS, typename RHS>
 struct Subtract<NoAliasProxy<LHS&>&, RHS> : Subtract<LHS&, RHS> {};
 
 template <typename LHS, typename RHS>
-struct Subtract<LHS&, NoAliasProxy<RHS> > 
+struct Subtract<LHS&, NoAliasProxy<RHS> >
    : Subtract<LHS&, typename basic_type<RHS>::type> {};
 
 template <typename LHS, typename RHS>
-struct Subtract<NoAliasProxy<LHS&>&, NoAliasProxy<RHS> > 
+struct Subtract<NoAliasProxy<LHS&>&, NoAliasProxy<RHS> >
    : Subtract<LHS&, typename basic_type<RHS>::type> {};
 
 
@@ -332,11 +332,11 @@ template <typename LHS, typename RHS>
 struct SubtractCopy<NoAliasProxy<LHS&>&, RHS> : Subtract<LHS&, RHS> {};
 
 template <typename LHS, typename RHS>
-struct SubtractCopy<LHS&, NoAliasProxy<RHS> > 
+struct SubtractCopy<LHS&, NoAliasProxy<RHS> >
    : Subtract<LHS&, typename basic_type<RHS>::type> {};
 
 template <typename LHS, typename RHS>
-struct SubtractCopy<NoAliasProxy<LHS&>&, NoAliasProxy<RHS> > 
+struct SubtractCopy<NoAliasProxy<LHS&>&, NoAliasProxy<RHS> >
    : Subtract<LHS&, typename basic_type<RHS>::type> {};
 
 

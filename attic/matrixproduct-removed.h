@@ -25,27 +25,27 @@
 
 template <typename Scalar, typename Derived, typename Sc, typename M1, typename M2, typename S, typename D>
 inline void
-assign_product2(MatrixExpression<Scalar, Derived>& lhs, 
-		ScaledMatrixProductExpression<Sc, M1, M2> const& r1,
-		MatrixConstExpression<S, D> const& r2)
+assign_product2(MatrixExpression<Scalar, Derived>& lhs,
+                ScaledMatrixProductExpression<Sc, M1, M2> const& r1,
+                MatrixConstExpression<S, D> const& r2)
 {
    assign_scaled_product3(lhs.as_derived(), r1.value(), r1.matrix1(), r1.matrix2(), r2.as_derived());
 }
 
 template <typename Scalar, typename Derived, typename Sc, typename M1, typename M2, typename S, typename D>
 inline void
-assign_product2(MatrixExpression<Scalar, Derived>& lhs, 
-		MatrixConstExpression<S, D> const& r1,
-		ScaledMatrixProductExpression<Sc, M1, M2> const& r2)
+assign_product2(MatrixExpression<Scalar, Derived>& lhs,
+                MatrixConstExpression<S, D> const& r1,
+                ScaledMatrixProductExpression<Sc, M1, M2> const& r2)
 {
    assign_product3(lhs.as_derived(), r1.value(), r1.as_derived(), r2.matrix1(), r2.matrix2());
 }
 
 template <typename Scalar, typename Derived, typename Sc, typename M1, typename M2, typename M3, typename M4>
 inline void
-assign_product2(MatrixExpression<Scalar, Derived>& lhs, 
-		ScaledMatrixProductExpression<Sc, M1, M2> const& r1,
-		MatrixProductExpression<M3, M4> const& r2)
+assign_product2(MatrixExpression<Scalar, Derived>& lhs,
+                ScaledMatrixProductExpression<Sc, M1, M2> const& r1,
+                MatrixProductExpression<M3, M4> const& r2)
 {
    TempMatrix<typename ScaledMatrixProductExpression<Sc, M1, M2>::value_type> Temp1(r1.size1(), r1.size2());
    assign_scaled_product2(Temp1, r1.value(), r1.matrix1(), r1.matrix2());
@@ -58,9 +58,9 @@ assign_product2(MatrixExpression<Scalar, Derived>& lhs,
 
 template <typename Scalar, typename Derived, typename Sc, typename M1, typename M2, typename M3, typename M4>
 inline void
-assign_product2(MatrixExpression<Scalar, Derived>& lhs, 
-		MatrixProductExpression<M1, M2> const& r1,
-		ScaledMatrixProductExpression<Sc, M3, M4> const& r2)
+assign_product2(MatrixExpression<Scalar, Derived>& lhs,
+                MatrixProductExpression<M1, M2> const& r1,
+                ScaledMatrixProductExpression<Sc, M3, M4> const& r2)
 {
    TempMatrix<typename MatrixProductExpression<M1, M2>::value_type> Temp1(r1.size1(), r1.size2());
    assign_product2(Temp1, r1.matrix1(), r1.matrix2());
@@ -72,11 +72,11 @@ assign_product2(MatrixExpression<Scalar, Derived>& lhs,
 }
 
 template <typename Scalar, typename Derived, typename S1, typename S2,
-	  typename M1, typename M2, typename M3, typename M4>
+          typename M1, typename M2, typename M3, typename M4>
 inline void
-assign_product2(MatrixExpression<Scalar, Derived>& lhs, 
-		ScaledMatrixProductExpression<S1, M1, M2> const& r1,
-		ScaledMatrixProductExpression<S2, M3, M4> const& r2)
+assign_product2(MatrixExpression<Scalar, Derived>& lhs,
+                ScaledMatrixProductExpression<S1, M1, M2> const& r1,
+                ScaledMatrixProductExpression<S2, M3, M4> const& r2)
 {
    TempMatrix<typename ScaledMatrixProductExpression<S1, M1, M2>::value_type> Temp1(r1.size1(), r1.size2());
    assign_scaled_product2(Temp1, r1.value(), r1.matrix1(), r1.matrix2());
@@ -104,30 +104,30 @@ assign_product2(MatrixExpression<Scalar, Derived>& lhs,
 
 template <typename Scalar, typename Derived, typename SS, typename Sc, typename M1, typename M2, typename S, typename D>
 inline void
-assign_scaled_product2(MatrixExpression<Scalar, Derived>& lhs, 
-		       SS const& x,
-		       ScaledMatrixProductExpression<Sc, M1, M2> const& r1,
-		       MatrixConstExpression<S, D> const& r2)
+assign_scaled_product2(MatrixExpression<Scalar, Derived>& lhs,
+                       SS const& x,
+                       ScaledMatrixProductExpression<Sc, M1, M2> const& r1,
+                       MatrixConstExpression<S, D> const& r2)
 {
    assign_scaled_product3(lhs.as_derived(), x * r1.value(), r1.matrix1(), r1.matrix2(), r2.as_derived());
 }
 
 template <typename Scalar, typename Derived, typename SS, typename Sc, typename M1, typename M2, typename S, typename D>
 inline void
-assign_scaled_product2(MatrixExpression<Scalar, Derived>& lhs, 
-		       SS const& x,
-		       MatrixConstExpression<S, D> const& r1,
-		       ScaledMatrixProductExpression<Sc, M1, M2> const& r2)
+assign_scaled_product2(MatrixExpression<Scalar, Derived>& lhs,
+                       SS const& x,
+                       MatrixConstExpression<S, D> const& r1,
+                       ScaledMatrixProductExpression<Sc, M1, M2> const& r2)
 {
    assign_product3(lhs.as_derived(), x* r1.value(), r1.as_derived(), r2.matrix1(), r2.matrix2());
 }
 
 template <typename Scalar, typename Derived, typename SS, typename Sc, typename M1, typename M2, typename M3, typename M4>
 inline void
-assign_scaled_product2(MatrixExpression<Scalar, Derived>& lhs, 
-		       SS const& x,
-		       ScaledMatrixProductExpression<Sc, M1, M2> const& r1,
-		       MatrixProductExpression<M3, M4> const& r2)
+assign_scaled_product2(MatrixExpression<Scalar, Derived>& lhs,
+                       SS const& x,
+                       ScaledMatrixProductExpression<Sc, M1, M2> const& r1,
+                       MatrixProductExpression<M3, M4> const& r2)
 {
    TempMatrix<typename ScaledMatrixProductExpression<Sc, M1, M2>::value_type> Temp1(r1.size1(), r1.size2());
    assign_scaled_product2(Temp1, r1.value(), r1.matrix1(), r1.matrix2());
@@ -140,10 +140,10 @@ assign_scaled_product2(MatrixExpression<Scalar, Derived>& lhs,
 
 template <typename Scalar, typename Derived, typename SS, typename Sc, typename M1, typename M2, typename M3, typename M4>
 inline void
-assign_scaled_product2(MatrixExpression<Scalar, Derived>& lhs, 
-		       SS const& x,
-		       MatrixProductExpression<M1, M2> const& r1,
-		       ScaledMatrixProductExpression<Sc, M3, M4> const& r2)
+assign_scaled_product2(MatrixExpression<Scalar, Derived>& lhs,
+                       SS const& x,
+                       MatrixProductExpression<M1, M2> const& r1,
+                       ScaledMatrixProductExpression<Sc, M3, M4> const& r2)
 {
    TempMatrix<typename MatrixProductExpression<M1, M2>::value_type> Temp1(r1.size1(), r1.size2());
    assign_product2(Temp1, r1.matrix1(), r1.matrix2());
@@ -155,12 +155,12 @@ assign_scaled_product2(MatrixExpression<Scalar, Derived>& lhs,
 }
 
 template <typename Scalar, typename Derived, typename SS, typename S1, typename S2,
-	  typename M1, typename M2, typename M3, typename M4>
+          typename M1, typename M2, typename M3, typename M4>
 inline void
-assign_scaled_product2(MatrixExpression<Scalar, Derived>& lhs, 
-		       SS const& x,
-		       ScaledMatrixProductExpression<S1, M1, M2> const& r1,
-		       ScaledMatrixProductExpression<S2, M3, M4> const& r2)
+assign_scaled_product2(MatrixExpression<Scalar, Derived>& lhs,
+                       SS const& x,
+                       ScaledMatrixProductExpression<S1, M1, M2> const& r1,
+                       ScaledMatrixProductExpression<S2, M3, M4> const& r2)
 {
    TempMatrix<typename ScaledMatrixProductExpression<S1, M1, M2>::value_type> Temp1(r1.size1(), r1.size2());
    assign_scaled_product2(Temp1, r1.value(), r1.matrix1(), r1.matrix2());

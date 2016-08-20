@@ -93,7 +93,7 @@ void fast_fill(Iter first, Iter last, Scalar s)
 }
 
 // for pointer types, we can use std::fill which may be faster
-// (or may not - surprisingly most STL implementations don't seem to 
+// (or may not - surprisingly most STL implementations don't seem to
 //  do these optimizations)
 template <typename T, typename Scalar>
 inline
@@ -156,11 +156,11 @@ void fast_fill(StrideIterator<Iter> first, StrideIterator<Iter> last, Scalar s)
    {
       while (first != last)
       {
-	 *first = s;
-	 ++first;
+         *first = s;
+         ++first;
       }
    }
-}  
+}
 
 //
 // fast_copy
@@ -184,14 +184,14 @@ void fast_copy(T1* first, T1* last, T2* dest)
    std::copy(first, last, dest);
 }
 
-// Most implementations of std::copy fail to specialize for builtins, 
+// Most implementations of std::copy fail to specialize for builtins,
 // so we do it ourselves.
 // if we had pod_traits we could generalize this
-#define IMPLEMENT_FAST_COPY_BUILTIN(BuiltinT)					\
-inline										\
-void fast_copy(BuiltinT const* first, BuiltinT const* last, BuiltinT* dest)	\
-{										\
-   memcpy(dest, first, (last-first) * sizeof(BuiltinT));			\
+#define IMPLEMENT_FAST_COPY_BUILTIN(BuiltinT)                                   \
+inline                                                                          \
+void fast_copy(BuiltinT const* first, BuiltinT const* last, BuiltinT* dest)     \
+{                                                                               \
+   memcpy(dest, first, (last-first) * sizeof(BuiltinT));                        \
 }
 
 IMPLEMENT_FAST_COPY_BUILTIN(char)
@@ -218,9 +218,9 @@ IMPLEMENT_FAST_COPY_BUILTIN(std::complex<double>)
 // fast_copy on a TransformIterator turns into fast_copy_transform
 template <typename BaseIter, typename Functor, typename Iter2>
 inline
-void fast_copy(TransformIterator<BaseIter, Functor> const& first, 
-	       TransformIterator<BaseIter, Functor> const& last,
-	       Iter2 const& dest)
+void fast_copy(TransformIterator<BaseIter, Functor> const& first,
+               TransformIterator<BaseIter, Functor> const& last,
+               Iter2 const& dest)
 {
    fast_copy_transform(first.func(), first.base(), last.base(), dest);
 }
@@ -256,14 +256,14 @@ void fast_copy_transform(Functor const& f, Iter1 first, Iter1 last, Iter2 dest)
 }
 
 #if 0
-// fast_copy_transform on a functor that is 
+// fast_copy_transform on a functor that is
 // BinderFirst<BinaryOperator<Multiplication, T1, T2> >
 // gets transformed into fast_copy_scaled
 template <typename T1, typename T2, typename Iter1, typename Iter2>
 inline
-void fast_copy_transform(BinderFirst<BinaryOperator<Multiplication, T1, T2> > const& f, 
-			 Iter1 const& first, Iter1 const& last,
-			 Iter2 const& dest)
+void fast_copy_transform(BinderFirst<BinaryOperator<Multiplication, T1, T2> > const& f,
+                         Iter1 const& first, Iter1 const& last,
+                         Iter2 const& dest)
 {
    fast_copy_scaled(f.b, first, last, dest);
 }
@@ -286,9 +286,9 @@ void fast_add(Iter1 first, Iter1 last, Iter2 dest)
 // fast_add on a TransformIterator turns into fast_add_transform
 template <typename BaseIter, typename Functor, typename Iter2>
 inline
-void fast_add(TransformIterator<BaseIter, Functor> const& first, 
-	      TransformIterator<BaseIter, Functor> const& last,
-	      Iter2 const& dest)
+void fast_add(TransformIterator<BaseIter, Functor> const& first,
+              TransformIterator<BaseIter, Functor> const& last,
+              Iter2 const& dest)
 {
    fast_add_transform(first.func(), first.base(), last.base(), dest);
 }
@@ -323,20 +323,20 @@ void fast_add_transform(Functor f, Iter1 first, Iter1 last, Iter2 dest)
 }
 
 #if 0
-// fast_add_transform on a functor that is 
+// fast_add_transform on a functor that is
 // BinderFirst<BinaryOperator<Multiplication, T1, T2> >
 // gets transformed into fast_add_scaled
 template <typename T1, typename T2, typename Iter1, typename Iter2>
 inline
-void fast_add_transform(BinderFirst<BinaryOperator<Multiplication, T1, T2> > const& f, 
-			Iter1 const& first, Iter1 const& last,
-			Iter2 const& dest)
+void fast_add_transform(BinderFirst<BinaryOperator<Multiplication, T1, T2> > const& f,
+                        Iter1 const& first, Iter1 const& last,
+                        Iter2 const& dest)
 {
    fast_add_scaled(f.b, first, last, dest);
 }
 #endif
 
-// fast_add_transform on a functor that is Negate<F> gets 
+// fast_add_transform on a functor that is Negate<F> gets
 // transformed into fast_subtract.
 // There is an obscure corner case with these transformations: if type T is
 // different from Iter1::value_type as well as Iter2::value_type, then
@@ -345,17 +345,17 @@ void fast_add_transform(BinderFirst<BinaryOperator<Multiplication, T1, T2> > con
 // (eg. consider Iter1::value_type == Iter2::value_type == double, and T = int !)
 template <typename T, typename Iter1, typename Iter2>
 inline
-void fast_add_transform(Negate<T>, Iter1 const& first, Iter1 const& last, 
-			Iter2 const& dest)
+void fast_add_transform(Negate<T>, Iter1 const& first, Iter1 const& last,
+                        Iter2 const& dest)
 {
    fast_subtract(first, last, dest);
 }
 
 template <typename T, typename F, typename Iter1, typename Iter2>
 inline
-void fast_add_transform(UnaryComposer<Negate<T>, F> const& f, Iter1 const& first, 
-			Iter1 const& last, 
-			Iter2 const& dest)
+void fast_add_transform(UnaryComposer<Negate<T>, F> const& f, Iter1 const& first,
+                        Iter1 const& last,
+                        Iter2 const& dest)
 {
    fast_subtract_transform(f.second, first, last, dest);
 }
@@ -403,34 +403,34 @@ void fast_subtract_transform(Functor f, Iter1 first, Iter1 last, Iter2 dest)
 }
 
 #if 0
-// fast_subtract_transform on a functor that is 
+// fast_subtract_transform on a functor that is
 // BinderFirst<BinaryOperator<Multiplication, T1, T2> >
 // gets transformed into fast_subtract_scaled
 template <typename T1, typename T2, typename Iter1, typename Iter2>
 inline
-void fast_subtract_transform(BinderFirst<BinaryOperator<Multiplication, T1, T2> > const& f, 
-			     Iter1 const& first, Iter1 const& last,
-			     Iter2 const& dest)
+void fast_subtract_transform(BinderFirst<BinaryOperator<Multiplication, T1, T2> > const& f,
+                             Iter1 const& first, Iter1 const& last,
+                             Iter2 const& dest)
 {
    fast_subtract_scaled(f.b, first, last, dest);
 }
 #endif
 
-// fast_subtract_transform on a functor that is Negate<F> gets 
+// fast_subtract_transform on a functor that is Negate<F> gets
 // transformed into fast_add
 template <typename T, typename Iter1, typename Iter2>
 inline
-void fast_subtract_transform(Negate<T>, Iter1 const& first, Iter1 const& last, 
-			     Iter2 const& dest)
+void fast_subtract_transform(Negate<T>, Iter1 const& first, Iter1 const& last,
+                             Iter2 const& dest)
 {
    fast_add(first, last, dest);
 }
 
 template <typename T, typename F, typename Iter1, typename Iter2>
 inline
-void fast_subtract_transform(UnaryComposer<Negate<T>, F> const& f, Iter1 const& first, 
-			     Iter1 const& last, 
-			     Iter2 const& dest)
+void fast_subtract_transform(UnaryComposer<Negate<T>, F> const& f, Iter1 const& first,
+                             Iter1 const& last,
+                             Iter2 const& dest)
 {
    fast_add_transform(f.second, first, last, dest);
 }
@@ -466,11 +466,11 @@ bool fast_equal(Iter1 first, Iter1 last, Iter2 dest)
 // conj
 //
 
-#define IMPLEMENT_BUILTIN_CONJ(T)		\
-inline						\
-T conj(T x)					\
-{						\
-  return x;					\
+#define IMPLEMENT_BUILTIN_CONJ(T)               \
+inline                                          \
+T conj(T x)                                     \
+{                                               \
+  return x;                                     \
 }
 
 IMPLEMENT_BUILTIN_CONJ(char)
@@ -513,7 +513,7 @@ double fast_norm_2_sq(Iter first, Iter last)
 }
 
 //
-// fast_norm2.  This is defined as the square root of fast_norm2sq, 
+// fast_norm2.  This is defined as the square root of fast_norm2sq,
 // it should usually be unnecessary to overload/specialize.
 //
 

@@ -180,7 +180,7 @@ struct run_length_compressed<T>::const_iterator::IterBegin : public boost::stati
 };
 
 template <typename T>
-struct run_length_compressed<T>::const_iterator::IterEndDec 
+struct run_length_compressed<T>::const_iterator::IterEndDec
    : public boost::static_visitor<>
 {
    IterEndDec(NodeStackType* Nodes_, IterStackType* Current_, T const** Item_)
@@ -586,7 +586,7 @@ run_length_compressed<T>::run_length_compressed(T const& x1, T const& x2, T cons
 }
 
 template <typename T>
-run_length_compressed<T>::run_length_compressed(T const& x1, T const& x2, 
+run_length_compressed<T>::run_length_compressed(T const& x1, T const& x2,
                                                 T const& x3, T const& x4)
 {
    std::list<T> ls(1, x1);
@@ -644,7 +644,7 @@ struct RLE_empty : public boost::static_visitor<bool>
       return false;
    }
    template <typename U>
-   bool operator()(U const& x) const 
+   bool operator()(U const& x) const
    {
       return x.empty();
    }
@@ -961,7 +961,7 @@ struct RLE_leaf_count : public boost::static_visitor<int>
    {
       return 1;
    }
-   int operator()(run_length_repeat<T> const& x) const 
+   int operator()(run_length_repeat<T> const& x) const
    {
       return x.nested().leaf_count();
    }
@@ -976,7 +976,7 @@ struct RLE_leaf_count : public boost::static_visitor<int>
 
 template <typename T>
 int
-run_length_compressed<T>::leaf_count() const 
+run_length_compressed<T>::leaf_count() const
 {
    return boost::apply_visitor(RLE_leaf_count<T>(), Data);
 }
@@ -988,7 +988,7 @@ struct RLE_node_count : public boost::static_visitor<int>
    {
       return 0;
    }
-   int operator()(run_length_repeat<T> const& x) const 
+   int operator()(run_length_repeat<T> const& x) const
    {
       return x.nested().node_count() + 1;
    }
@@ -1003,7 +1003,7 @@ struct RLE_node_count : public boost::static_visitor<int>
 
 template <typename T>
 int
-run_length_compressed<T>::node_count() const 
+run_length_compressed<T>::node_count() const
 {
    return boost::apply_visitor(RLE_node_count<T>(), Data);
 }
@@ -1027,8 +1027,8 @@ apply_visitor(Visitor const& v, run_length_compressed<T>& x)
 template <typename T, typename Visitor>
 inline
 typename Visitor::result_type
-apply_visitor(Visitor const& v, 
-              run_length_compressed<T> const& x, 
+apply_visitor(Visitor const& v,
+              run_length_compressed<T> const& x,
               run_length_compressed<T> const& y)
 {
    return boost::apply_visitor(v, x.data(), y.data());
@@ -1040,14 +1040,14 @@ apply_visitor(Visitor const& v,
 
 // Visitor functor to implement the split() function
 template <typename T>
-struct DoSplit 
+struct DoSplit
    : public boost::static_visitor<std::pair<run_length_compressed<T>, run_length_compressed<T> > >
 {
    typedef run_length_compressed<T> value_type;
    typedef run_length_repeat<T> repeat_type;
    typedef run_length_array<T> array_type;
    typedef std::pair<value_type, value_type> result_type;
-   
+
    DoSplit(int Loc_) : Loc(Loc_) {}
 
    result_type operator()(T const& x) const
@@ -1073,16 +1073,16 @@ struct DoSplit
       array_type ResultL(repeat_type(LocCount, x.nested()));
       std::pair<value_type, value_type> JoinPart = x.nested().apply_visitor(DoSplit(LocRem));
       ResultL.push_back(JoinPart.first);
-      
+
       int RemCount = x.size() - LocCount - 1;  // -1 for the part we just split
       if (RemCount == 0) // if we split the right most part, we have finished
-	 return result_type(ResultL, JoinPart.second);
+         return result_type(ResultL, JoinPart.second);
       else
       {
-	 // otherwise add the rest of the array
-	 array_type ResultR(JoinPart.second);
-	 ResultR.push_back(repeat_type(RemCount, x.nested()));
-	 return result_type(ResultL, ResultR);
+         // otherwise add the rest of the array
+         array_type ResultR(JoinPart.second);
+         ResultR.push_back(repeat_type(RemCount, x.nested()));
+         return result_type(ResultL, ResultR);
       }
    }
 
@@ -1121,10 +1121,10 @@ split(run_length_compressed<T> const& x, int Loc)
 {
    CHECK(Loc >= 0 && Loc <= x.size())(Loc)(x.size());
    if (Loc == 0)
-      return std::pair<run_length_compressed<T>, 
+      return std::pair<run_length_compressed<T>,
          run_length_compressed<T> >(run_length_compressed<T>(), x);
    if (Loc == x.size())
-      return std::pair<run_length_compressed<T>, 
+      return std::pair<run_length_compressed<T>,
          run_length_compressed<T> >(x, run_length_compressed<T>());
 
    return x.apply_visitor(DoSplit<T>(Loc));

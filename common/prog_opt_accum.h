@@ -40,7 +40,7 @@
 
 #include <boost/program_options.hpp>
 
-namespace prog_opt_ext 
+namespace prog_opt_ext
 {
    namespace prog_opt = boost::program_options;
 

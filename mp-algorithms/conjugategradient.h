@@ -23,19 +23,19 @@
 // CG solves the symmetric positive definite linear
 // system Ax=b using the Conjugate Gradient method.
 //
-// CG follows the algorithm described on p. 15 in the 
+// CG follows the algorithm described on p. 15 in the
 // SIAM Templates book.
 //
 // The return value indicates convergence within max_iter (input)
 // iterations (0), or no convergence within max_iter iterations (1).
 //
 // Upon successful return, output arguments have the following values:
-//  
+//
 //        x  --  approximate solution to Ax = b
 // max_iter  --  the number of iterations performed before the
 //               tolerance was reached
 //      tol  --  the residual after the final iteration
-//  
+//
 //*****************************************************************
 
 #include "linearalgebra/eigen.h"
@@ -51,7 +51,7 @@ template <typename Vector, typename MultiplyFunctor,
 void
 ConjugateGradient(Vector &x, MultiplyFunctor MatVecMultiply, Vector const& b,
                   int& max_iter, double& tol,
-                  PreFunctor Precondition, 
+                  PreFunctor Precondition,
                   InnerProdLRFunctor InnerProd_LR,
                   InnerProdRLFunctor InnerProd_RL)
 {
@@ -70,10 +70,10 @@ ConjugateGradient(Vector &x, MultiplyFunctor MatVecMultiply, Vector const& b,
   Krylov.push_back(r);
 #endif
 
-  if (normb == 0.0) 
+  if (normb == 0.0)
      normb = 1;
-  
-  if ((resid = norm_frob(r) / normb) <= tol) 
+
+  if ((resid = norm_frob(r) / normb) <= tol)
   {
      tol = resid;
      max_iter = 0;
@@ -82,7 +82,7 @@ ConjugateGradient(Vector &x, MultiplyFunctor MatVecMultiply, Vector const& b,
 
   TRACE(resid);
 
-  for (int i = 1; i <= max_iter; i++) 
+  for (int i = 1; i <= max_iter; i++)
   {
      z = Precondition(r);
      rho = InnerProd_RL(r, z);
@@ -92,26 +92,26 @@ ConjugateGradient(Vector &x, MultiplyFunctor MatVecMultiply, Vector const& b,
      //    rho = conj(rho);
 
      //     TRACE(rho)(norm_frob(z))(norm_frob(r))(InnerProd(z, conj(r)));
-    
+
      if (i == 1)
         p = z;
-     else 
+     else
      {
         beta = rho / rho_1;
         //        TRACE(beta);
 
-	//	Px = q;
+        //      Px = q;
         p = z + beta * p;
 
-	//	TRACE(inner_prod(p,Px));
+        //      TRACE(inner_prod(p,Px));
      }
-    
+
      q = MatVecMultiply(p);
      alpha = rho / InnerProd_LR(p, q);
      TRACE(norm_frob(r))(InnerProd_RL(r,r))(rho)(alpha)(norm_frob(p))(norm_frob(q));
 
      //     TRACE(norm_frob_sq(p))(norm_frob_sq(q))(InnerProd(p,q))(InnerProd(p,conj(q)));
-    
+
      //     TRACE(norm_frob(r - alpha*q))(norm_frob(r + alpha*q));
      //     TRACE(norm_frob(r + conj(alpha)*q))(norm_frob(r - conj(alpha)*q));
      //     TRACE(norm_frob(r + conj(alpha*q)))(norm_frob(r - conj(alpha*q)));
@@ -132,7 +132,7 @@ ConjugateGradient(Vector &x, MultiplyFunctor MatVecMultiply, Vector const& b,
      Krylov.push_back(r);
 #endif
 
-     if ((resid = norm_frob(r) / normb) <= tol) 
+     if ((resid = norm_frob(r) / normb) <= tol)
      {
         tol = resid;
         max_iter = i;
@@ -142,7 +142,7 @@ ConjugateGradient(Vector &x, MultiplyFunctor MatVecMultiply, Vector const& b,
      TRACE(resid);
      rho_1 = rho;
   }
-  
+
   tol = resid;
   // at this point, we did not converge
   return;

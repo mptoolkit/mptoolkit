@@ -55,8 +55,8 @@ void* AllocatePool(size_t UnitSize, size_t NAlloc = PoolAlloc::DefaultAllocation
    char* Array = static_cast<char*>(::operator new(NAlloc*AllocSize + PoolAlloc::MinAlign*2));
    for (int i = 0; i < int(NAlloc)-1; ++i)
    {
-      *static_cast<void**>(static_cast<void*>(Array + i*AllocSize +  PoolAlloc::MinAlign*2)) 
-	= (Array + (i+1)*AllocSize + PoolAlloc::MinAlign*2);
+      *static_cast<void**>(static_cast<void*>(Array + i*AllocSize +  PoolAlloc::MinAlign*2))
+        = (Array + (i+1)*AllocSize + PoolAlloc::MinAlign*2);
    }
    *static_cast<void**>(static_cast<void*>(Array + (NAlloc-1)*AllocSize +  PoolAlloc::MinAlign*2)) = NULL;
 
@@ -71,7 +71,7 @@ void* AllocatePool(size_t UnitSize, size_t NAlloc = PoolAlloc::DefaultAllocation
 }
 
 void CheckForAllocatedBlocks(size_t UnitSize, std::set<void*> const& Free)
-{ 
+{
    void* Ptr = BlockRecHead[UnitSize];
    while (Ptr)
    {
@@ -79,11 +79,11 @@ void CheckForAllocatedBlocks(size_t UnitSize, std::set<void*> const& Free)
       int NAlloc = *reinterpret_cast<size_t*>(static_cast<char*>(Ptr) +  PoolAlloc::MinAlign);
       for (int i = 0; i < NAlloc; ++i)
       {
-	 if (Free.count(First) == 0) 
-	 {
-	    std::cerr << "\n      Block size " << (UnitSize * PoolAlloc::MinAlign) << " at " << (void*)First << " has leaked!";
-	 }
-	 First += UnitSize * PoolAlloc::MinAlign;
+         if (Free.count(First) == 0)
+         {
+            std::cerr << "\n      Block size " << (UnitSize * PoolAlloc::MinAlign) << " at " << (void*)First << " has leaked!";
+         }
+         First += UnitSize * PoolAlloc::MinAlign;
       }
       Ptr = *static_cast<void**>(Ptr);
    }
@@ -92,7 +92,7 @@ void CheckForAllocatedBlocks(size_t UnitSize, std::set<void*> const& Free)
 #if defined(POOLALLOCATOR_DEBUG)
 // returns true if p is a valid address of a block of data of size UnitSize.
 bool IsValidAddress(void* p, size_t UnitSize)
-{ 
+{
    void* Ptr = BlockRecHead[UnitSize];
    while (Ptr)
    {
@@ -101,15 +101,15 @@ bool IsValidAddress(void* p, size_t UnitSize)
 
       if (First <= p && p < First + NAlloc * UnitSize * PoolAlloc::MinAlign)
       {
-	 ptrdiff_t Offset = static_cast<char*>(p) - First;
-	 return Offset % (UnitSize * PoolAlloc::MinAlign) == 0;
+         ptrdiff_t Offset = static_cast<char*>(p) - First;
+         return Offset % (UnitSize * PoolAlloc::MinAlign) == 0;
       }
       Ptr = *static_cast<void**>(Ptr);
    }
    return false;
 }
 
-// verifies that a pointer is valid in preparation for freeing it.  
+// verifies that a pointer is valid in preparation for freeing it.
 // If it is already on the free list, it is reported as being freed twice.
 void DebugCheck(void* p, size_t size)
 {
@@ -130,8 +130,8 @@ void DebugCheck(void* p, size_t size)
    // also check that p is a valid pointer
    if (!IsValidAddress(p, UnitSize))
    {
-     std::cerr << "PoolAlloc: Attempted deallocate of block of " << size << " bytes at " << p 
-	       << " failed - block address is not valid!" << std::endl;
+     std::cerr << "PoolAlloc: Attempted deallocate of block of " << size << " bytes at " << p
+               << " failed - block address is not valid!" << std::endl;
      // walk the heap then seg fault
      PoolAlloc::walk_heap();
      PANIC("PoolAlloc: double deallocation of a block")(size)(p);
@@ -139,10 +139,10 @@ void DebugCheck(void* p, size_t size)
 }
 #endif
 
-// Walks the heap for the given UnitSize.  Returns false if 
+// Walks the heap for the given UnitSize.  Returns false if
 // there are allocated memory blocks, true if there are no allocated memory blocks.
 // If Verbose is true, detailed debug info is written to std::cerr
-// If AssumeLeaked is true, then any allocated memory blocks are reported as memory leaks. 
+// If AssumeLeaked is true, then any allocated memory blocks are reported as memory leaks.
 bool WalkHeap(size_t UnitSize, bool Verbose = false, bool AssumeLeaked = true)
 {
    // calculate how many total blocks exist of size unitSize
@@ -155,8 +155,8 @@ bool WalkHeap(size_t UnitSize, bool Verbose = false, bool AssumeLeaked = true)
    while (Ptr)
    {
       int ThisSize = *reinterpret_cast<size_t*>(static_cast<char*>(Ptr) + PoolAlloc::MinAlign);
-      if (Verbose > 0) std::cerr << "  Block starting " << Ptr << ", " << ThisSize << " records, " 
-		<< (ThisSize * UnitSize * PoolAlloc::MinAlign + PoolAlloc::MinAlign*2) << " bytes\n";
+      if (Verbose > 0) std::cerr << "  Block starting " << Ptr << ", " << ThisSize << " records, "
+                << (ThisSize * UnitSize * PoolAlloc::MinAlign + PoolAlloc::MinAlign*2) << " bytes\n";
        CountUsed += ThisSize;
       Ptr = *static_cast<void**>(Ptr);
    }
@@ -178,15 +178,15 @@ bool WalkHeap(size_t UnitSize, bool Verbose = false, bool AssumeLeaked = true)
 
    if (CountFree != CountUsed) HeapOk = false;
 
-   if (Verbose || CountFree != CountUsed) 
+   if (Verbose || CountFree != CountUsed)
    {
      std::cerr << "Block size " << (UnitSize * PoolAlloc::MinAlign) << ", total=" << CountUsed
-	     << ", free=" << CountFree << ", allocated=" << (CountUsed - CountFree);
+             << ", free=" << CountFree << ", allocated=" << (CountUsed - CountFree);
       if (AssumeLeaked && CountFree != CountUsed)
       {
-	 std::cerr << " LEAKED!";
-	 // find out which pointers are leaked
-	 CheckForAllocatedBlocks(UnitSize, FreePointers);
+         std::cerr << " LEAKED!";
+         // find out which pointers are leaked
+         CheckForAllocatedBlocks(UnitSize, FreePointers);
       }
       std::cerr << std::endl;
    }
@@ -207,8 +207,8 @@ void* allocate(size_t size)
 
    //   pthread::mutex::sentry MyLock(BlockMutex[UnitSize]);
 
-   if (!(FreeList[UnitSize])) FreeList[UnitSize] = AllocatePool(UnitSize, 
-								PoolAlloc::DefaultAllocationUnits/UnitSize+1);
+   if (!(FreeList[UnitSize])) FreeList[UnitSize] = AllocatePool(UnitSize,
+                                                                PoolAlloc::DefaultAllocationUnits/UnitSize+1);
 
    void* Ret = FreeList[UnitSize];
    FreeList[UnitSize] = *static_cast<void**>(FreeList[UnitSize]);
@@ -263,13 +263,13 @@ void PoolAllocatorExit()
        // see if the heap checks out OK, and if it does, free the blocks
        if (WalkHeap(i, Verbose))
        {
-	  void* Ptr = BlockRecHead[i];
-	  while (Ptr)
-	  {
-	     void* PtrSave = Ptr;
-	     Ptr = *static_cast<void**>(Ptr);
-	     ::operator delete(static_cast<char*>(PtrSave));
-	  }
+          void* Ptr = BlockRecHead[i];
+          while (Ptr)
+          {
+             void* PtrSave = Ptr;
+             Ptr = *static_cast<void**>(Ptr);
+             ::operator delete(static_cast<char*>(PtrSave));
+          }
        }
    }
 #endif

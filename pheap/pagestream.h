@@ -29,9 +29,9 @@
   and returns the PageId of the head of the list.  (If the opagestream is destructed
   before calling commit(), the pages will be reclaimed safely, although this
   is almost certainly a bug and a warning is issued).
-  
+
   The ipagestream constructor takes the PageId that is the head of the list.
-  
+
 */
 
 #if !defined(PAGESTREAM_H_HJYRUY43985Y8FH4H383298)

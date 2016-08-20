@@ -49,15 +49,15 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("left,l", prog_opt::value(&Left),
-	  "rotate this many sites to the left")
-	 ("right,r", prog_opt::value(&Right),
-	  "rotate this many sites to the right")
-	 ("force,f", prog_opt::bool_switch(&Force),
-	  "allow overwriting the output file, if it already exists")
-	 ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
+         ("left,l", prog_opt::value(&Left),
+          "rotate this many sites to the left")
+         ("right,r", prog_opt::value(&Right),
+          "rotate this many sites to the right")
+         ("force,f", prog_opt::bool_switch(&Force),
+          "allow overwriting the output file, if it already exists")
+         ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "extra debug output [can be used multiple times]")
-	 ;
+         ;
 
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
@@ -72,19 +72,19 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || vm.count("psi2") < 1 || (vm.count("left") == 0 && vm.count("right") == 0))
       {
          print_copyright(std::cerr, "tools", "mp-irotate");
          std::cerr << "usage: " << basename(argv[0]) << " [options] <operator> <input-psi> <output-psi>\n";
          std::cerr << desc << '\n';
-	 std::cerr << "This tool rotates an iMPS wavefunction unit cell by an arbitrary number of sites.\n"
-		   << "This can be specified as a rotation to the left (--left <sites>) or to the right (--right <sites>)\n"
-		   << "A rotation to the left by N sites is equivalent to a rotation to the right by UnitCellSize-N sites.\n";
+         std::cerr << "This tool rotates an iMPS wavefunction unit cell by an arbitrary number of sites.\n"
+                   << "This can be specified as a rotation to the left (--left <sites>) or to the right (--right <sites>)\n"
+                   << "A rotation to the left by N sites is equivalent to a rotation to the right by UnitCellSize-N sites.\n";
          return 1;
       }
 
@@ -92,29 +92,29 @@ int main(int argc, char** argv)
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
       if (Verbose > 0)
-	 std::cout << "Loading wavefunction..." << std::endl;
+         std::cout << "Loading wavefunction..." << std::endl;
 
       pvalue_ptr<MPWavefunction> PsiPtr;
       if (InputFile == OutputFile)
-	 PsiPtr = pheap::OpenPersistent(InputFile.c_str(), mp_pheap::CacheSize());
+         PsiPtr = pheap::OpenPersistent(InputFile.c_str(), mp_pheap::CacheSize());
       else
       {
-	 pheap::Initialize(OutputFile, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
-	 PsiPtr = pheap::ImportHeap(InputFile);
+         pheap::Initialize(OutputFile, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
+         PsiPtr = pheap::ImportHeap(InputFile);
       }
 
       InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
 
       if (Left > 0)
-	 Psi.rotate_left(Left);
+         Psi.rotate_left(Left);
       if (Right > 0)
-	 Psi.rotate_right(Right);
+         Psi.rotate_right(Right);
 
       PsiPtr.mutate()->Wavefunction() = Psi;
       PsiPtr.mutate()->AppendHistory(EscapeCommandline(argc, argv));
 
       if (Verbose > 0)
-	 std::cout << "Finished." << std::endl;
+         std::cout << "Finished." << std::endl;
 
       pheap::ShutdownPersistent(PsiPtr);
    }

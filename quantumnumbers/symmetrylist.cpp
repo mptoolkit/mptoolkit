@@ -47,8 +47,8 @@ SymmetryListImpl* CreateSymmetryList(std::string const& List)
    {
       std::string::iterator ColonLoc = std::find(NameType[i].begin(), NameType[i].end(), ':');
       CHECK(ColonLoc != NameType[i].end())("Colon missing in symmetry list")(List);
-      pImpl->Append(std::string(NameType[i].begin(), ColonLoc), 
-		    SymmetryBase::Create(std::string(ColonLoc+1, NameType[i].end())));
+      pImpl->Append(std::string(NameType[i].begin(), ColonLoc),
+                    SymmetryBase::Create(std::string(ColonLoc+1, NameType[i].end())));
    }
 
    // Check that the reconstructed full name agrees with pImpl->FullName()
@@ -61,7 +61,7 @@ SymmetryListImpl* CreateSymmetryList(std::string const& List)
    if (CheckFullName != pImpl->FullName())
    {
      PANIC("") << "Unexpected mismatch between supplied symmetry list name " << pImpl->FullName()
-	    << " and the reconstructed name " << CheckFullName;
+            << " and the reconstructed name " << CheckFullName;
    }
 
    return pImpl;
@@ -126,11 +126,11 @@ SymmetryListImpl* SymmetryListImpl::SearchForCreated(std::string const& Name)
    return NULL;
 }
 
-int 
+int
 SymmetryListImpl::NumCasimirOperators() const
 {
    int Result = 0;
-   for (unsigned i = 0; i < Data.size(); ++i) 
+   for (unsigned i = 0; i < Data.size(); ++i)
       Result += Data[i]->num_casimir();
    return Result;
 }
@@ -156,13 +156,13 @@ std::ostream& operator<<(std::ostream& out, SymmetryList const& s)
    else
       out << s.FullName();
 #if 0
-   out << ", QuantumNumberSize=" << s.QuantumNumberSize() << ", NumSymmetries=" 
+   out << ", QuantumNumberSize=" << s.QuantumNumberSize() << ", NumSymmetries="
        << s.NumSymmetries() << ", ";
    for (int i = 0; i < s.NumSymmetries(); ++i)
    {
       if (i != 0) out << ", ";
       out << '(' << s.SymmetryName(i) << ':' << s.SymmetryType(i) << '='
-	  << s.QuantumNumberOffset(i) << '+' << s.QuantumNumberSize(i) << ')';
+          << s.QuantumNumberOffset(i) << '+' << s.QuantumNumberSize(i) << ')';
    }
 #endif
    return out;
@@ -198,7 +198,7 @@ SymmetryList::SymmetryList(char const* List)
 
 int SymmetryList::degree(sc_iter q) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    int d = 1;
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
@@ -209,7 +209,7 @@ int SymmetryList::degree(sc_iter q) const
 
 double SymmetryList::trace(sc_iter q) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    double d = 1;
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
@@ -224,9 +224,9 @@ SymmetryList::cross_product_exists(sc_iter q1, sc_iter q2) const
    DEBUG_CHECK(pImpl);
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
-      if (!(pImpl->GetSymmetryBase(i)->cross_product_exists(q1+pImpl->QuantumNumberOffset(i), 
-							    q2+pImpl->QuantumNumberOffset(i))))
-	 return false;
+      if (!(pImpl->GetSymmetryBase(i)->cross_product_exists(q1+pImpl->QuantumNumberOffset(i),
+                                                            q2+pImpl->QuantumNumberOffset(i))))
+         return false;
    }
    return true;
 }
@@ -245,28 +245,28 @@ SymmetryList::cross_product_transforms_as(sc_iter q1, sc_iter q2, s_iter qOut) c
 std::complex<double>
 SymmetryList::cross_product_factor(sc_iter q1, sc_iter q2) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    // the result is the product of the cross product factor of each symmetry
    std::complex<double> d = 1.0;
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
-      d *= pImpl->GetSymmetryBase(i)->cross_product_factor(q1+pImpl->QuantumNumberOffset(i), 
-							   q2+pImpl->QuantumNumberOffset(i));
+      d *= pImpl->GetSymmetryBase(i)->cross_product_factor(q1+pImpl->QuantumNumberOffset(i),
+                                                           q2+pImpl->QuantumNumberOffset(i));
    }
    return d;
 }
 
 double SymmetryList::recoupling(sc_iter q1, sc_iter q3, sc_iter q13,
-				sc_iter q2, sc_iter q,  sc_iter q23) const
+                                sc_iter q2, sc_iter q,  sc_iter q23) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    double Value = 1;
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
       int Offset = pImpl->QuantumNumberOffset(i);
 
       Value *= pImpl->GetSymmetryBase(i)->recoupling(q1+Offset, q3+Offset, q13+Offset,
-						     q2+Offset, q+Offset,  q23+Offset);
+                                                     q2+Offset, q+Offset,  q23+Offset);
    }
    return Value;
 }
@@ -275,7 +275,7 @@ double SymmetryList::recoupling(sc_iter q1, sc_iter q3, sc_iter q13,
 double SymmetryList::recoupling_12_3__13_2(sc_iter q1, sc_iter q3, sc_iter q13,
                                            sc_iter q2, sc_iter q,  sc_iter q23) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    double Value = 1;
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
@@ -288,65 +288,65 @@ double SymmetryList::recoupling_12_3__13_2(sc_iter q1, sc_iter q3, sc_iter q13,
 }
 
 double SymmetryList::product_coefficient(sc_iter k1, sc_iter k2, sc_iter k,
-					sc_iter qp, sc_iter q, sc_iter qpp) const
+                                        sc_iter qp, sc_iter q, sc_iter qpp) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    double Value = 1;
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
       int Offset = pImpl->QuantumNumberOffset(i);
 
       Value *= pImpl->GetSymmetryBase(i)->product_coefficient(k1+Offset, k2+Offset, k+Offset,
-							     qp+Offset, q+Offset,  qpp+Offset);
+                                                             qp+Offset, q+Offset,  qpp+Offset);
    }
    return Value;
 }
 
 double SymmetryList::inverse_product_coefficient(sc_iter k1, sc_iter k2, sc_iter k,
-						 sc_iter qp, sc_iter q, sc_iter qpp) const
+                                                 sc_iter qp, sc_iter q, sc_iter qpp) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    double Value = 1;
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
       int Offset = pImpl->QuantumNumberOffset(i);
 
       Value *= pImpl->GetSymmetryBase(i)->inverse_product_coefficient(k1+Offset, k2+Offset, k+Offset,
-								      qp+Offset, q+Offset,  qpp+Offset);
+                                                                      qp+Offset, q+Offset,  qpp+Offset);
    }
    return Value;
 }
 
 double SymmetryList::tensor_coefficient(sc_iter k1,  sc_iter k2,  sc_iter k,
-				       sc_iter q1p, sc_iter q2p, sc_iter qp,
-				       sc_iter q1,  sc_iter q2,  sc_iter q) const
+                                       sc_iter q1p, sc_iter q2p, sc_iter qp,
+                                       sc_iter q1,  sc_iter q2,  sc_iter q) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    double Value = 1;
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
       int Offset = pImpl->QuantumNumberOffset(i);
 
       Value *= pImpl->GetSymmetryBase(i)->tensor_coefficient(k1+Offset,  k2+Offset,  k+Offset,
-							    q1p+Offset, q2p+Offset, qp+Offset,
-							    q1+Offset,  q2+Offset,  q+Offset);
+                                                            q1p+Offset, q2p+Offset, qp+Offset,
+                                                            q1+Offset,  q2+Offset,  q+Offset);
    }
    return Value;
 }
 
 double SymmetryList::inverse_tensor_coefficient(sc_iter k1,  sc_iter k2,  sc_iter k,
-						sc_iter q1p, sc_iter q2p, sc_iter qp,
-						sc_iter q1,  sc_iter q2,  sc_iter q) const
+                                                sc_iter q1p, sc_iter q2p, sc_iter qp,
+                                                sc_iter q1,  sc_iter q2,  sc_iter q) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    double Value = 1;
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
       int Offset = pImpl->QuantumNumberOffset(i);
 
       Value *= pImpl->GetSymmetryBase(i)->inverse_tensor_coefficient(k1+Offset,  k2+Offset,  k+Offset,
-								     q1p+Offset, q2p+Offset, qp+Offset,
-								     q1+Offset,  q2+Offset,  q+Offset);
+                                                                     q1p+Offset, q2p+Offset, qp+Offset,
+                                                                     q1+Offset,  q2+Offset,  q+Offset);
    }
    return Value;
 }
@@ -354,7 +354,7 @@ double SymmetryList::inverse_tensor_coefficient(sc_iter k1,  sc_iter k2,  sc_ite
 int
 SymmetryList::num_transform_targets(sc_iter q1, sc_iter q2) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    int n = 1;
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
@@ -364,24 +364,24 @@ SymmetryList::num_transform_targets(sc_iter q1, sc_iter q2) const
    return n;
 }
 
-bool 
+bool
 SymmetryList::is_transform_target(sc_iter q1, sc_iter q2, sc_iter q) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
       int Offset = pImpl->QuantumNumberOffset(i);
-      
+
       if (!(pImpl->GetSymmetryBase(i)->
-	    is_transform_target(q1+Offset, q2+Offset, q+Offset))) return false;
+            is_transform_target(q1+Offset, q2+Offset, q+Offset))) return false;
    }
    return true;
 }
 
-int 
+int
 SymmetryList::num_inverse_transform_targets(sc_iter q1, sc_iter q) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    int n = 1;
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
@@ -391,10 +391,10 @@ SymmetryList::num_inverse_transform_targets(sc_iter q1, sc_iter q) const
    return n;
 }
 
-void 
+void
 SymmetryList::adjoint(sc_iter q, s_iter qOut) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
       int Offset = pImpl->QuantumNumberOffset(i);
@@ -403,10 +403,10 @@ SymmetryList::adjoint(sc_iter q, s_iter qOut) const
    }
 }
 
-double 
+double
 SymmetryList::adjoint_coefficient(sc_iter qp, sc_iter k, sc_iter q) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    double Value = 1;
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
@@ -417,10 +417,10 @@ SymmetryList::adjoint_coefficient(sc_iter qp, sc_iter k, sc_iter q) const
    return Value;
 }
 
-double 
+double
 SymmetryList::conj_phase(sc_iter qp, sc_iter k, sc_iter q) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    double Value = 1;
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
@@ -431,11 +431,11 @@ SymmetryList::conj_phase(sc_iter qp, sc_iter k, sc_iter q) const
    return Value;
 }
 
-double 
+double
 SymmetryList::clebsch_gordan(sc_iter qp,  sc_iter k,  sc_iter q,
-			     sc_iter qpm, sc_iter km, sc_iter qm) const
+                             sc_iter qpm, sc_iter km, sc_iter qm) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    double Value = 1;
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
@@ -443,16 +443,16 @@ SymmetryList::clebsch_gordan(sc_iter qp,  sc_iter k,  sc_iter q,
       int NthProjectionOffset = pImpl->ProjectionOffset(i);
 
       Value *= pImpl->GetSymmetryBase(i)->
-	 clebsch_gordan(qp+Offset, k+Offset, q+Offset,
-			qpm+NthProjectionOffset, km+NthProjectionOffset, qm+NthProjectionOffset);
+         clebsch_gordan(qp+Offset, k+Offset, q+Offset,
+                        qpm+NthProjectionOffset, km+NthProjectionOffset, qm+NthProjectionOffset);
    }
    return Value;
 }
 
-std::string 
+std::string
 SymmetryList::QuantumNumberToString(sc_iter q) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    std::string Result;
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
@@ -464,10 +464,10 @@ SymmetryList::QuantumNumberToString(sc_iter q) const
    return Result;
 }
 
-void 
+void
 SymmetryList::StringToQuantumNumber(std::string const& s, s_iter q) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    std::string::const_iterator beg = s.begin(), end = s.end();
 
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
@@ -481,10 +481,10 @@ SymmetryList::StringToQuantumNumber(std::string const& s, s_iter q) const
    }
 }
 
-std::string 
+std::string
 SymmetryList::ProjectionToString(sc_iter p) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    std::string Result;
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
@@ -496,10 +496,10 @@ SymmetryList::ProjectionToString(sc_iter p) const
    return Result;
 }
 
-void 
+void
 SymmetryList::StringToProjection(std::string const& s, s_iter p) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    std::string::const_iterator beg = s.begin(), end = s.end();
 
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
@@ -513,10 +513,10 @@ SymmetryList::StringToProjection(std::string const& s, s_iter p) const
    }
 }
 
-void 
+void
 SymmetryList::scalar_transforms_as(s_iter q) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {
       int Offset = pImpl->QuantumNumberOffset(i);
@@ -537,17 +537,17 @@ void AppendSymmetryNameType(NameTypeMapType& NameTypeMap, SymmetryList const& L)
    {
       if (NameTypeMap.count(L.SymmetryName(i)) != 0)
       {
-	 CHECK(NameTypeMap[L.SymmetryName(i)] == L.SymmetryType(i));
+         CHECK(NameTypeMap[L.SymmetryName(i)] == L.SymmetryType(i));
       }
       else
       {
-	 NameTypeMap[L.SymmetryName(i)] = L.SymmetryType(i);
+         NameTypeMap[L.SymmetryName(i)] = L.SymmetryType(i);
       }
    }
 }
 
-SymmetryList FindSymmetrySuperset(SymmetryList const& L1, 
-				  SymmetryList const& L2)
+SymmetryList FindSymmetrySuperset(SymmetryList const& L1,
+                                  SymmetryList const& L2)
 {
    // early return in the case where the symmetry lists are the same
    if (L1.GetSymmetryListImpl() == L2.GetSymmetryListImpl()) return L1;
@@ -558,10 +558,10 @@ SymmetryList FindSymmetrySuperset(SymmetryList const& L1,
    AppendSymmetryNameType(AllSymmetries, L2);
 
    // if either L1 or L2 is already a superset, then just return that one (otherwise we
-   // might re-order the quantum numbers unnecessarily).  We can do this by simply 
+   // might re-order the quantum numbers unnecessarily).  We can do this by simply
    // checking the size.
-   if (L1.NumSymmetries() == int(AllSymmetries.size())) return L1; 
-   if (L2.NumSymmetries() == int(AllSymmetries.size())) return L2; 
+   if (L1.NumSymmetries() == int(AllSymmetries.size())) return L1;
+   if (L2.NumSymmetries() == int(AllSymmetries.size())) return L2;
 
    // now assemble the full name of the combined symmetry list
    std::string FullName;
@@ -574,9 +574,9 @@ SymmetryList FindSymmetrySuperset(SymmetryList const& L1,
    return SymmetryList(FullName);
 }
 
-SymmetryList FindSymmetrySuperset(SymmetryList const& L1, 
-				  SymmetryList const& L2,
-				  SymmetryList const& L3)
+SymmetryList FindSymmetrySuperset(SymmetryList const& L1,
+                                  SymmetryList const& L2,
+                                  SymmetryList const& L3)
 {
    // early return in the case where the symmetry lists are the same
    if (L1.GetSymmetryListImpl() == L2.GetSymmetryListImpl()
@@ -589,10 +589,10 @@ SymmetryList FindSymmetrySuperset(SymmetryList const& L1,
    AppendSymmetryNameType(AllSymmetries, L3);
 
    // if any symmetry list is already a superset, then just return that one (otherwise we
-   // might re-order the quantum numbers unnecessarily).  We can do this by simply 
+   // might re-order the quantum numbers unnecessarily).  We can do this by simply
    // checking the size.
-   if (L1.NumSymmetries() == int(AllSymmetries.size())) return L1; 
-   if (L2.NumSymmetries() == int(AllSymmetries.size())) return L2; 
+   if (L1.NumSymmetries() == int(AllSymmetries.size())) return L1;
+   if (L2.NumSymmetries() == int(AllSymmetries.size())) return L2;
    if (L3.NumSymmetries() == int(AllSymmetries.size())) return L3;
 
    // now assemble the full name of the combined symmetry list
@@ -606,10 +606,10 @@ SymmetryList FindSymmetrySuperset(SymmetryList const& L1,
    return SymmetryList(FullName);
 }
 
-SymmetryList FindSymmetrySuperset(SymmetryList const& L1, 
-				  SymmetryList const& L2,
-				  SymmetryList const& L3,
-				  SymmetryList const& L4)
+SymmetryList FindSymmetrySuperset(SymmetryList const& L1,
+                                  SymmetryList const& L2,
+                                  SymmetryList const& L3,
+                                  SymmetryList const& L4)
 {
    // early return in the case where the symmetry lists are the same
    if (L1.GetSymmetryListImpl() == L2.GetSymmetryListImpl()
@@ -624,10 +624,10 @@ SymmetryList FindSymmetrySuperset(SymmetryList const& L1,
    AppendSymmetryNameType(AllSymmetries, L4);
 
    // if any symmetry list is already a superset, then just return that one (otherwise we
-   // might re-order the quantum numbers unnecessarily).  We can do this by simply 
+   // might re-order the quantum numbers unnecessarily).  We can do this by simply
    // checking the size.
-   if (L1.NumSymmetries() == int(AllSymmetries.size())) return L1; 
-   if (L2.NumSymmetries() == int(AllSymmetries.size())) return L2; 
+   if (L1.NumSymmetries() == int(AllSymmetries.size())) return L1;
+   if (L2.NumSymmetries() == int(AllSymmetries.size())) return L2;
    if (L3.NumSymmetries() == int(AllSymmetries.size())) return L3;
    if (L4.NumSymmetries() == int(AllSymmetries.size())) return L4;
 
@@ -643,17 +643,17 @@ SymmetryList FindSymmetrySuperset(SymmetryList const& L1,
 }
 
 SymmetryList ChangeSymmetryName(SymmetryList const& L,
-				std::string const& OldName,
-				std::string const& NewName)
+                                std::string const& OldName,
+                                std::string const& NewName)
 {
    std::string NewList;
    for (int i = 0; i < L.NumSymmetries(); ++i)
    {
       std::string Name = L.SymmetryName(i);
       if (Name == OldName)
-	 Name = NewName;
+         Name = NewName;
       if (i != 0)
-	 NewList += ',';
+         NewList += ',';
       NewList += Name + ':' + L.SymmetryType(i);
    }
    return SymmetryList(NewList);
@@ -666,19 +666,19 @@ void Replicate(int const* Source, int SourceSize, int SourceCount, int* Out, int
    {
       for (int const* LocalPos = Source; LocalPos != SourceEnd; LocalPos += SourceSize)
       {
-	 for (int Repeat = 0; Repeat < RepeatCount; ++Repeat)
-	 {
-	    memcpy(Out, LocalPos, SourceSize * sizeof(int));
-	    Out += Stride;
-	 }
+         for (int Repeat = 0; Repeat < RepeatCount; ++Repeat)
+         {
+            memcpy(Out, LocalPos, SourceSize * sizeof(int));
+            Out += Stride;
+         }
       }
    }
 }
 
-void 
+void
 SymmetryList::transform_targets(sc_iter q1, sc_iter q2, std::vector<int>& RawList) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    // Construct a linear buffer to accept the packed list of quantum numbers
    int NumTargets = this->num_transform_targets(q1, q2);
    int Size = this->QuantumNumberSize();
@@ -708,10 +708,10 @@ SymmetryList::transform_targets(sc_iter q1, sc_iter q2, std::vector<int>& RawLis
    }
 }
 
-void 
+void
 SymmetryList::inverse_transform_targets(sc_iter q1, sc_iter q, std::vector<int>& RawList) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    // Construct a linear buffer to accept the packed list of quantum numbers
    int NumTargets = this->num_inverse_transform_targets(q1, q);
    int Size = this->QuantumNumberSize();
@@ -731,21 +731,21 @@ SymmetryList::inverse_transform_targets(sc_iter q1, sc_iter q, std::vector<int>&
       int Offset = this->pImpl->QuantumNumberOffset(i);
       int ThisSize = this->pImpl->QuantumNumberSize(i);
       int ThisNum = this->pImpl->GetSymmetryBase(i)->
-	 num_inverse_transform_targets(q1+Offset, q+Offset);
+         num_inverse_transform_targets(q1+Offset, q+Offset);
       ReplicaCount /= ThisNum;
 
       this->pImpl->GetSymmetryBase(i)->
-	 inverse_transform_targets(q1+Offset, q+Offset, TargetsBegin);
+         inverse_transform_targets(q1+Offset, q+Offset, TargetsBegin);
       Replicate(TargetsBegin, ThisSize, ThisNum, &RawList[Offset], Size, RepeatCount, ReplicaCount);
 
       RepeatCount *= ThisNum;
    }
 }
 
-void 
+void
 SymmetryList::enumerate_projections(sc_iter q, std::vector<int>& RawList) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    // Construct a linear buffer to accept the packed list of projections
    int degree = this->degree(q);
    int Size = this->ProjectionSize();
@@ -776,24 +776,24 @@ SymmetryList::enumerate_projections(sc_iter q, std::vector<int>& RawList) const
    }
 }
 
-bool 
+bool
 SymmetryList::is_delta(sc_iter q1, sc_iter Q, sc_iter P, sc_iter q2) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    for (int i = 0; i < this->pImpl->NumSymmetries(); ++i)
    {
       int Offset = this->pImpl->QuantumNumberOffset(i);
       int ProjOffset = this->pImpl->ProjectionOffset(i);
 
-      if (!this->pImpl->GetSymmetryBase(i)->is_delta(q1+Offset, Q+Offset, P+ProjOffset, q2+Offset)) 
-	return false;
+      if (!this->pImpl->GetSymmetryBase(i)->is_delta(q1+Offset, Q+Offset, P+ProjOffset, q2+Offset))
+        return false;
    }
    return true;
 }
 
 void SymmetryList::difference(sc_iter q1, sc_iter q2, s_iter P) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    for (int i = 0; i < this->pImpl->NumSymmetries(); ++i)
    {
       int Offset = this->pImpl->QuantumNumberOffset(i);
@@ -804,7 +804,7 @@ void SymmetryList::difference(sc_iter q1, sc_iter q2, s_iter P) const
 
 void SymmetryList::negate(s_iter p) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    for (int i = 0; i < this->pImpl->NumSymmetries(); ++i)
    {
       int ProjOffset = this->pImpl->ProjectionOffset(i);
@@ -814,7 +814,7 @@ void SymmetryList::negate(s_iter p) const
 
 void SymmetryList::sum(sc_iter p1, sc_iter p2, s_iter r) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    for (int i = 0; i < this->pImpl->NumSymmetries(); ++i)
    {
       int ProjOffset = this->pImpl->ProjectionOffset(i);
@@ -824,7 +824,7 @@ void SymmetryList::sum(sc_iter p1, sc_iter p2, s_iter r) const
 
 bool SymmetryList::is_projection(sc_iter q, sc_iter p) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    for (int i = 0; i < this->pImpl->NumSymmetries(); ++i)
    {
       int Offset = this->pImpl->QuantumNumberOffset(i);
@@ -836,7 +836,7 @@ bool SymmetryList::is_projection(sc_iter q, sc_iter p) const
 
 bool SymmetryList::is_possible(sc_iter q, sc_iter p) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    for (int i = 0; i < this->pImpl->NumSymmetries(); ++i)
    {
       int Offset = this->pImpl->QuantumNumberOffset(i);
@@ -848,7 +848,7 @@ bool SymmetryList::is_possible(sc_iter q, sc_iter p) const
 
 void SymmetryList::change(sc_iter q, sc_iter p, s_iter Q) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    for (int i = 0; i < this->pImpl->NumSymmetries(); ++i)
    {
       int Offset = this->pImpl->QuantumNumberOffset(i);
@@ -870,7 +870,7 @@ void SymmetryList::heighest_weight(sc_iter p, s_iter q) const
 
 double SymmetryList::weight(sc_iter p) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    double Ret = 0;
    for (int i = 0; i < this->pImpl->NumSymmetries(); ++i)
    {
@@ -883,7 +883,7 @@ double SymmetryList::weight(sc_iter p) const
 double SymmetryList::delta_shift_coefficient(sc_iter qp, sc_iter k, sc_iter q,
                                              sc_iter Delta) const
 {
-   DEBUG_CHECK(pImpl); 
+   DEBUG_CHECK(pImpl);
    double Value = 1;
    for (int i = 0; i < pImpl->NumSymmetries(); ++i)
    {

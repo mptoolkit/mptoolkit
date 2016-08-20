@@ -83,7 +83,7 @@ class RangeIterator
 
       size_type first() const { return First_; }
       size_type last() const { return Last_; }
-  
+
    private:
       size_type First_, Last_, n_;
 };
@@ -104,7 +104,7 @@ class Range
       Range() : First_(0), Last_(0) {}
 
       Range(size_type First, size_type Last)
-	: First_(First), Last_(Last) { DEBUG_PRECONDITION(First <= Last); }
+        : First_(First), Last_(Last) { DEBUG_PRECONDITION(First <= Last); }
 
       Range& operator=(Range const& r) { First_ = r.First_; Last_ = r.Last_; return *this; }
 
@@ -214,8 +214,8 @@ class SliceIterator
       typedef vector_iterator_dense category;
 
       SliceIterator() {}
-      SliceIterator(size_type Start, size_type Size, difference_type Stride, size_type n = 0) 
-	 : Start_(Start), Size_(Size), Stride_(Stride), n_(n) {}
+      SliceIterator(size_type Start, size_type Size, difference_type Stride, size_type n = 0)
+         : Start_(Start), Size_(Size), Stride_(Stride), n_(n) {}
 
       SliceIterator& operator++() { ++n_; return *this; }
       SliceIterator operator++(int) { return SliceIterator(Start_, Size_, Stride_, n_++); }
@@ -226,7 +226,7 @@ class SliceIterator
       SliceIterator& operator+=(difference_type i) { n_ += i; return *this; }
       SliceIterator& operator-=(difference_type i) { n_ -= i; return *this; }
 
-      size_type operator*() const 
+      size_type operator*() const
       { return difference_type(Start_) + difference_type(n_) * Stride_; }
 
       size_type operator[](difference_type n) const
@@ -244,7 +244,7 @@ class SliceIterator
       size_type last() const { return difference_type(Start_) + difference_type(Size_) * Stride_; }
 
       difference_type stride() const { return Stride_; }
-  
+
    private:
       size_type Start_;
       size_type Size_;
@@ -273,19 +273,19 @@ class Slice
       size_type size() const { return Size_; }
       difference_type stride() const { return Stride_; }
 
-      size_type operator()(size_type n) const 
+      size_type operator()(size_type n) const
       { return difference_type(Start_) + difference_type(n)*Stride_; }
 
-      size_type operator[](size_type n) const 
+      size_type operator[](size_type n) const
       { return difference_type(Start_) + difference_type(n)*Stride_; }
 
-      bool operator==(Slice const& s) const 
+      bool operator==(Slice const& s) const
       { return Start_ == s.Start_ && Size_ == s.Size_ && Stride_ == s.Stride_; }
 
-      bool operator!=(Slice const& s) const 
+      bool operator!=(Slice const& s) const
       { return Start_ != s.Start_ || Size_ != s.Size_ || Stride_ != s.Stride_; }
 
-      const_iterator iterate() const 
+      const_iterator iterate() const
       { return const_iterator(Start_, Size_, Stride_); }
 
    private:
@@ -365,9 +365,9 @@ struct StreamInsert<Slice, DENSE_VECTOR(size_type, Slice)>
    typedef Slice second_argument_type;
    result_type operator()(std::ostream& out, Slice const& s) const
    {
-      return out << "slice(start = " << s.start() 
-		 << ", size = " << s.size() 
-		 << ", stride = " << s.stride() << ')';
+      return out << "slice(start = " << s.start()
+                 << ", size = " << s.size()
+                 << ", stride = " << s.stride() << ')';
    }
 };
 
@@ -378,7 +378,7 @@ inline
 Slice compose(Slice const& s1, Slice const& s2)
 {
    PRECONDITION(s2(s2.size()) < s1.size() + s2.stride())(s1)(s2);
-   return Slice(s1(s2.start()), s2.size(), s1.stride() * s2.stride()); 
+   return Slice(s1(s2.start()), s2.size(), s1.stride() * s2.stride());
 }
 
 // functional composition of a slice and a range.
@@ -387,16 +387,16 @@ inline
 Slice compose(Slice const& s, Range const& r)
 {
    PRECONDITION(r.last() <= s(s.size()))(s)(r);
-   return Slice(s(r.first()), r.size(), s.stride()); 
+   return Slice(s(r.first()), r.size(), s.stride());
 }
 
 // functional composition of a range and a slice.
 // Returns a slice S such that S(i) = r(s(i))
 inline
-Slice compose(Range const& r, Slice const& s) 
+Slice compose(Range const& r, Slice const& s)
 {
    PRECONDITION(s(s.size()) < r.last() + s.stride())(r)(s);
-   return Slice(r.first() + s.start(), s.size(), s.stride()); 
+   return Slice(r.first() + s.start(), s.size(), s.stride());
 }
 
 // functional composition of ranges.

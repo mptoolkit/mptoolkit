@@ -28,7 +28,7 @@ Z2::Z2(std::string const& s)
 {
 }
 
-std::string 
+std::string
 Z2::ToString() const
 {
    return ConvertToString(x);

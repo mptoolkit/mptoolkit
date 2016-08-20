@@ -33,9 +33,9 @@ class LocalEigensolver
 
       // Apply the solver
       double Solve(StateComponent& C,
-		   StateComponent const& LeftBlockHam,
-		   OperatorComponent const& H,
-		   StateComponent const& RightBlockHam);
+                   StateComponent const& LeftBlockHam,
+                   OperatorComponent const& H,
+                   StateComponent const& RightBlockHam);
 
       // Eigensolver parameters
       // Eigensolver tolerance is min(sqrt(AverageFidelity()) * FidelityScale, MaxTol)

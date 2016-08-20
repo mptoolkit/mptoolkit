@@ -79,9 +79,9 @@ void ShowStateInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
    {
       VectorBasis B = Psi.lambda(*I).Basis1();
       out << std::setw(10) << (*I) << "  "
-	  << std::setw(10) << B.total_dimension() << "  "
-	  << std::setw(7) <<  B.total_degree()
-	  << '\n';
+          << std::setw(10) << B.total_dimension() << "  "
+          << std::setw(7) <<  B.total_degree()
+          << '\n';
    }
    out << std::endl;
 }
@@ -106,8 +106,8 @@ void ShowEntropyInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
       DensityMatrix<MatrixOperator> DM(Rho);
 
       double Entropy = DensityEntropy(DM.begin(), DM.end(), DM.EigenSum(), Base2);
-      out << std::setw(10) << (*I) << ' ' << std::setw(11) << (Psi.size() - (*I)) << ' ' 
-	  << std::setw(18) << Entropy << '\n';
+      out << std::setw(10) << (*I) << ' ' << std::setw(11) << (Psi.size() - (*I)) << ' '
+          << std::setw(18) << Entropy << '\n';
    }
    out << std::endl;
 }
@@ -136,10 +136,10 @@ void ShowCasimirInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
    for (int i = 0; i < NumCasimir; ++i)
    {
       if (i != 0)
-	 out << " ";
+         out << " ";
       std::string Name = "#" + SList.CasimirName(i);
       out << std::setw(20) << Name << ' '
-	  << std::setw(20) << std::string(Name+"^2");
+          << std::setw(20) << std::string(Name+"^2");
    }
    out << '\n';
 
@@ -153,10 +153,10 @@ void ShowCasimirInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
       out << std::setw(10) << (*I) << ' ' << std::setw(11) << (Psi.size() - *I) << "   ";
       for (int i = 0; i < NumCasimir; ++i)
       {
-	 if (i != 0) 
-	    out << ' ';
-	 out << std::setw(20) << DM.EvaluateCasimir(i);
-	 out << std::setw(20) << DM.EvaluateCasimirMoment(i);
+         if (i != 0)
+            out << ' ';
+         out << std::setw(20) << DM.EvaluateCasimir(i);
+         out << std::setw(20) << DM.EvaluateCasimirMoment(i);
       }
       out << '\n';
    }
@@ -197,7 +197,7 @@ ShowWavefunction::operator()(InfiniteWavefunctionLeft const& Psi) const
    {
       // all partitions
       for (int i = 0; i <= Psi.size(); ++i)
-	 Partition.push_back(i);
+         Partition.push_back(i);
    }
 
    if (ShowStates)
@@ -227,7 +227,7 @@ ShowWavefunction::operator()(IBCWavefunction const& Psi) const
    {
       // all partitions in the window
       for (int i = 0; i <= Psi.window_size(); ++i)
-	 Partition.push_back(i);
+         Partition.push_back(i);
    }
 
    if (ShowStates)
@@ -251,7 +251,7 @@ ShowWavefunction::operator()(IBCWavefunction const& Psi) const
 
 int main(int argc, char** argv)
 {
-   try 
+   try
    {
       std::string WavefuncFile;
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -259,22 +259,22 @@ int main(int argc, char** argv)
          ("help", "show this help message")
          ("entropy,e", prog_opt::bool_switch(&ShowEntropy), "show the entropy at each partition")
          ("states,s", prog_opt::bool_switch(&ShowStates), "show the number of states at each partition")
-	 ("basis,a", prog_opt::bool_switch(&ShowBasis), "show the complete basis at each partition")
+         ("basis,a", prog_opt::bool_switch(&ShowBasis), "show the complete basis at each partition")
          ("density-matrix,d", prog_opt::bool_switch(&ShowDensity), "show the density matrix eigenvalues")
          ("degen", prog_opt::bool_switch(&ShowDegen),
           "Show degeneracies in the density matrix as repeated eigenvalues (implies -d)")
-         ("limit,l", prog_opt::value<int>(&MaxEigenvalues), 
+         ("limit,l", prog_opt::value<int>(&MaxEigenvalues),
           "limit the density matrix display to N eigenvalues (implies -d)")
-	 ("casimir,c", prog_opt::bool_switch(&ShowCasimir), 
-	  "show the values of the casimir invariant operators and 2nd moments at each partition")
+         ("casimir,c", prog_opt::bool_switch(&ShowCasimir),
+          "show the values of the casimir invariant operators and 2nd moments at each partition")
          ("localbasis,b", prog_opt::bool_switch(&ShowLocalBasis),
           "Show the local basis at each site")
-	 ("base2,2", prog_opt::bool_switch(&Base2), "show the entropy using base 2 instead of base e")
-         ("partition,p", prog_opt::value(&Partition), 
+         ("base2,2", prog_opt::bool_switch(&Base2), "show the entropy using base 2 instead of base e")
+         ("partition,p", prog_opt::value(&Partition),
           "show quantities only for this parition (zero-based, can be used more than once; use --partition 0 to show only quantities at the edge of the unit cell")
-	 ("warranty", "show the complete explanation as to why there is NO WARRANTY, to the extent permitted by law")
-	 ("copying", "This program is free software, show the conditions under which it may be copied or modified")
-	 ("citations", "show information about the citations that publications using this software should reference")
+         ("warranty", "show the complete explanation as to why there is NO WARRANTY, to the extent permitted by law")
+         ("copying", "This program is free software, show the conditions under which it may be copied or modified")
+         ("citations", "show information about the citations that publications using this software should reference")
          ;
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
@@ -287,52 +287,52 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
-      
+      prog_opt::notify(vm);
+
       if (vm.count("warranty"))
-	 print_warranty(std::cout);
+         print_warranty(std::cout);
 
       if (vm.count("copying"))
-	 print_copying(std::cout);
+         print_copying(std::cout);
 
       if (vm.count("citations"))
-	 print_citations(std::cout);
+         print_citations(std::cout);
 
       if (vm.count("warranty") || vm.count("copying") || vm.count("citations"))
-	 return 0;
+         return 0;
 
-      if (vm.count("help") || vm.count("input-wavefunction") == 0) 
+      if (vm.count("help") || vm.count("input-wavefunction") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] <wavefunction>\n";
          std::cerr << desc << "\n";
          return 1;
       }
-      
+
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
       if (vm.count("limit"))
-	 ShowDensity = true;
+         ShowDensity = true;
 
       if (ShowDegen)
-	 ShowDensity = true;
+         ShowDensity = true;
 
       if (!ShowEntropy && !ShowStates && !ShowLocalBasis && !ShowBasis && !ShowCasimir && !ShowDensity)
-	 ShowBasic = true;
+         ShowBasic = true;
 
       pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(WavefuncFile, mp_pheap::CacheSize(), true);
 
       if (ShowBasic)
       {
-	 boost::apply_visitor(ShowWavefunctionBasicInfo(), Psi->Wavefunction());
+         boost::apply_visitor(ShowWavefunctionBasicInfo(), Psi->Wavefunction());
 
-	 std::cout << "Attributes:\n" << Psi->Attributes();
+         std::cout << "Attributes:\n" << Psi->Attributes();
 
-	 std::cout << "\nLast history entry:\n" << Psi->History().back() << "\n\n";
+         std::cout << "\nLast history entry:\n" << Psi->History().back() << "\n\n";
       }
 
       boost::apply_visitor(ShowWavefunction(), Psi->Wavefunction());
@@ -343,12 +343,12 @@ int main(int argc, char** argv)
       std::cerr << "Exception while processing command line options: " << e.what() << '\n';
       return 1;
    }
-   catch(std::exception& e) 
+   catch(std::exception& e)
    {
       std::cerr << "error: " << e.what() << "\n";
       return 1;
    }
-   catch(...) 
+   catch(...)
    {
       std::cerr << "Exception of unknown type!\n";
    }

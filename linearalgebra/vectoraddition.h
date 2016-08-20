@@ -42,10 +42,10 @@ class VectorAdditionProxy
       // mark this type as a const proxy reference
       typedef boost::mpl::true_ const_proxy;
 
-      // the abstract interface type - 
+      // the abstract interface type -
       // shortcut for specializing LinearAlgebra::abstract_interface
       typedef vector_abstract_or<typename abstract_interface<T1>::type,
-				 typename abstract_interface<T2>::type> abstract_interface;
+                                 typename abstract_interface<T2>::type> abstract_interface;
 
       typedef typename interface<T1>::value_type value1_type;
       typedef typename interface<T2>::value_type value2_type;
@@ -58,8 +58,8 @@ class VectorAdditionProxy
       typedef typename make_const_reference<T2>::type reference2;
 
       VectorAdditionProxy(reference1 x, reference2 y)
-	 : x_(x), y_(y) {} //{ CHECK_EQUAL(Size<T1>()(x_), Size<T2>()(y_)); }
-   
+         : x_(x), y_(y) {} //{ CHECK_EQUAL(Size<T1>()(x_), Size<T2>()(y_)); }
+
       size_type size() const { using LinearAlgebra::size; return size(x_); }
    // return Size<T1>()(x_); }
 
@@ -75,40 +75,40 @@ class VectorAdditionProxy
 
 // interface
 
-template <typename T1, typename T2, 
-	  typename I1 = typename interface<T1>::type, 
-	  typename I2 = typename interface<T2>::type,
-	  typename Value = typename VectorAdditionProxy<T1, T2>::value_type>
+template <typename T1, typename T2,
+          typename I1 = typename interface<T1>::type,
+          typename I2 = typename interface<T2>::type,
+          typename Value = typename VectorAdditionProxy<T1, T2>::value_type>
 struct VectorAdditionInterface;
 
 template <typename T1, typename T2,
-	  typename I1v, typename I1i,
-	  typename I2v, typename I2i,
-	  typename Value>
+          typename I1v, typename I1i,
+          typename I2v, typename I2i,
+          typename Value>
 struct VectorAdditionInterface<T1, T2,
-			     DENSE_VECTOR(I1v, I1i), 
-			     DENSE_VECTOR(I2v, I2i), Value>
+                             DENSE_VECTOR(I1v, I1i),
+                             DENSE_VECTOR(I2v, I2i), Value>
 {
    typedef DENSE_VECTOR(Value, void) type;
    typedef Value value_type;
 };
 
 template <typename T1, typename T2,
-	  typename I1v, typename I1i,
-	  typename I2v, typename I2i,
-	  typename Value>
+          typename I1v, typename I1i,
+          typename I2v, typename I2i,
+          typename Value>
 struct VectorAdditionInterface<T1, T2,
-			     VECTOR_EXPRESSION(I1v, I1i), 
-			     VECTOR_EXPRESSION(I2v, I2i), Value>
+                             VECTOR_EXPRESSION(I1v, I1i),
+                             VECTOR_EXPRESSION(I2v, I2i), Value>
 {
    typedef VECTOR_EXPRESSION(Value, void) type;
    typedef Value value_type;
 };
 
 template <typename T1, typename T2>
-struct interface<VectorAdditionProxy<T1, T2> > 
-   : public VectorAdditionInterface<T1, T2> 
-{ 
+struct interface<VectorAdditionProxy<T1, T2> >
+   : public VectorAdditionInterface<T1, T2>
+{
 };
 
 // iterators
@@ -142,8 +142,8 @@ template <typename S, typename T, typename F,  typename Si = typename interface<
 struct BinaryTransformVectorRegular : BinaryTransformVectorSemiregular<S, T, F> {};
 
 // Dispatch to one of the above functors based on F
-template <typename S, typename T, typename F, 
-          bool IsSemiregular = is_semiregular<F>::value, 
+template <typename S, typename T, typename F,
+          bool IsSemiregular = is_semiregular<F>::value,
           bool IsRegular = is_regular<F>::value>
 struct BinaryTransformVectorDispatchFunc : BinaryTransformVector<S, T, F> {};
 
@@ -175,7 +175,7 @@ struct BinaryTransformVectorOverrideFunc<S, T, Addition<Sv, Tv> >
    typedef Addition<Sv, Tv> third_argument_type;
    result_type operator()(S const& x, T const& y) const { return result_type(x, y); }
 
-   result_type operator()(S const& x, T const& y, Addition<Sv, Tv> const& f) const 
+   result_type operator()(S const& x, T const& y, Addition<Sv, Tv> const& f) const
    { return result_type(x, y); }
 };
 
@@ -196,7 +196,7 @@ struct BinaryTransformVectorOverrideFunc<S, T, Subtraction<Sv, Tv> >
 
    result_type operator()(S const& x, T const& y) const { return result_type(x, -y); }
 
-   result_type operator()(S const& x, T const& y, Subtraction<Sv, Tv> const& f) const 
+   result_type operator()(S const& x, T const& y, Subtraction<Sv, Tv> const& f) const
    { return result_type(x, -y); }
 };
 

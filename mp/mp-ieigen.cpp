@@ -57,7 +57,7 @@ MPStateComponent SolveRight(LinearWavefunction const& Psi, SimpleIrredMPOperator
    {
       R[i++].push_back(MatrixOperator::make_identity(I->Basis2()));
    }
-   
+
    while (R.back().size() < Psi.Basis2().size())
    {
       bool OpAddedThisPass = false; // set to true if we add a new element to R this pass.
@@ -72,11 +72,11 @@ MPStateComponent SolveRight(LinearWavefunction const& Psi, SimpleIrredMPOperator
 
          // set as many terms of R[r] that we can from the elements in R[i].
          // There are two cases here; either we can set the element exactly
-         // as Op[i] has non-zero elements only in the first R[i].size() 
+         // as Op[i] has non-zero elements only in the first R[i].size()
          // columns of the R[r].size() row.  Or, the element
          // Op[i](R[r].size(), R[i].size()) is the identity operator.
          // In this case, we must end up with a complete set at all sites
-         // in the unit cell that satisfy this property, and we have a 
+         // in the unit cell that satisfy this property, and we have a
          // nonhomogeneous equation to solve.
          // alternatively, we could handle only the first case here
          // and defer the nonhomogeneous equation to a second pass.
@@ -132,7 +132,7 @@ MPStateComponent SolveLeft(LinearWavefunction const& Psi, SimpleMPOperator const
       {
          int CurrentRank = R[i].size();
          int Cols = Op[i].Basis2().size();
-         // while column 
+         // while column
          R[i++].push_front(MatrixOperator::make_identity(I->Basis1()));
       }
 
@@ -208,9 +208,9 @@ int main(int argc, char** argv)
 
    // SU(2) Heisenberg model
 #if 1
-   MpOpTriangular Ham = TriangularTwoSite(-sqrt(3.0)*Site["S"], 
-   					  Site["S"], 
-   					  Site["I"].TransformsAs());
+   MpOpTriangular Ham = TriangularTwoSite(-sqrt(3.0)*Site["S"],
+                                          Site["S"],
+                                          Site["I"].TransformsAs());
 #endif
 
    //   Ham = Ham*Ham;

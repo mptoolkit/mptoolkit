@@ -77,8 +77,8 @@ MpsQmc::MpsQmc(LinearWavefunction const& Psi_, WavefunctionDesc const& Configura
    while (pLoc != Psi.begin())
    {
       --pLoc; --iLoc;
-      RightStack.push(prod((*pLoc)[Configuration.State[iLoc]], 
-                           RightStack.top(), 
+      RightStack.push(prod((*pLoc)[Configuration.State[iLoc]],
+                           RightStack.top(),
                            Configuration.Height[iLoc]));
       LocalBasis.push_back(pLoc->LocalBasis());
    }
@@ -137,7 +137,7 @@ void MpsQmc::Flip()
    }
    // get a list of the possible flips with that quantum number
    std::vector<int> PossibleFlips;
-   for (int 
+   for (int
 
 int main(int argc, char** argv)
 {

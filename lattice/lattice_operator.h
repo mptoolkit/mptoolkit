@@ -62,7 +62,7 @@ class LatticeOperator
 
       // Extend an operator to an integral multiple of the unit cell size,
       // offset from the left by some number of sites.
-      // PRECONDITION: Size % this->UnitCellSize() == 0 
+      // PRECONDITION: Size % this->UnitCellSize() == 0
       // && Offset % this->UnitCellSize() == 0
       // && Size+Offset >= this->size()
       FiniteMPO AsFiniteMPO(int Size, int Offset) const;
@@ -79,7 +79,7 @@ class LatticeOperator
 
       // Returns a triangular version of the operator.  If it is
       // a finite operator, then convert it into a sum across the unit cell,
-      // with exponential decrease lambda per size.  
+      // with exponential decrease lambda per size.
       // If it is already triangular, then multiply by an exponential decay lambda
       TriangularMPO AsTriangularMPODecay(double lambda) const;
 

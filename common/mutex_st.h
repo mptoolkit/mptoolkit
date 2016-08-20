@@ -29,7 +29,7 @@ class mutex
       class sentry
       {
          public:
-   	    sentry(mutex& m) {}
+            sentry(mutex& m) {}
       };
 
       void* get_mutex() { return 0; }
@@ -51,7 +51,7 @@ class rec_mutex
       class sentry
       {
          public:
-   	    sentry(rec_mutex& m) {}
+            sentry(rec_mutex& m) {}
       };
 
       void* get_rec_mutex() { return 0; }
@@ -84,24 +84,24 @@ class readers_writers
       class write_sentry
       {
          public:
-   	    write_sentry(readers_writers& rw_) {}
+            write_sentry(readers_writers& rw_) {}
          private:
-	    write_sentry(write_sentry const&);            // not implemented
-	    write_sentry& operator=(write_sentry const&); // not implemented
+            write_sentry(write_sentry const&);            // not implemented
+            write_sentry& operator=(write_sentry const&); // not implemented
       };
 
       class read_sentry
       {
          public:
-	    read_sentry(readers_writers& rw_) {} 
+            read_sentry(readers_writers& rw_) {}
          private:
-	    read_sentry(read_sentry const&);            // not implemented
-	    read_sentry& operator=(read_sentry const&); // not implemented
+            read_sentry(read_sentry const&);            // not implemented
+            read_sentry& operator=(read_sentry const&); // not implemented
       };
 };
 
 inline
-void signal(condition& c) 
+void signal(condition& c)
 {
 }
 

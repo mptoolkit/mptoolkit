@@ -60,7 +60,7 @@ struct OneMinusTransfer
    MatrixOperator operator()(MatrixOperator const& x) const
    {
       MatrixOperator r = x-Scale_*transfer_from_left(x, Psi_);
-      //      MatrixOperator r = x-Scale_*0.5*(operator_prod(herm(Psi_), x, Psi_) 
+      //      MatrixOperator r = x-Scale_*0.5*(operator_prod(herm(Psi_), x, Psi_)
       // + operator_prod(Psi_, x, herm(Psi_)));
       r -= inner_prod(r, Rho_) * Identity_; // orthogonalize to the identity
       return r;
@@ -95,9 +95,9 @@ struct EigenPair
 typedef Polynomial<MatrixOperator> PolynomialType;
 
 // move to linearwavefunction.h
-StateComponent 
-inject_left(StateComponent const& In, 
-            LinearWavefunction const& Psi1, 
+StateComponent
+inject_left(StateComponent const& In,
+            LinearWavefunction const& Psi1,
             MPOperator const& Op,
             LinearWavefunction const& Psi2)
 {
@@ -116,8 +116,8 @@ inject_left(StateComponent const& In,
    return Result;
 }
 
-StateComponent 
-inject_right(LinearWavefunction const& Psi1, 
+StateComponent
+inject_right(LinearWavefunction const& Psi1,
              MPOperator const& Op,
              LinearWavefunction const& Psi2,
              StateComponent const& In);
@@ -126,8 +126,8 @@ inject_right(LinearWavefunction const& Psi1,
 // Or better as vector<Polynomial<MatrixOperator> > ?
 // Probably even better, to do finite momentum at the same time.
 std::vector<PolynomialType>
-inject_left(std::vector<PolynomialType> const& In, 
-            LinearWavefunction const& Psi1, 
+inject_left(std::vector<PolynomialType> const& In,
+            LinearWavefunction const& Psi1,
             MPOperator const& Op,
             LinearWavefunction const& Psi2)
 {
@@ -159,7 +159,7 @@ inject_left(std::vector<PolynomialType> const& In,
 }
 
 std::vector<PolynomialType>
-inject_right(LinearWavefunction const& Psi1, 
+inject_right(LinearWavefunction const& Psi1,
              MPOperator const& Op,
              LinearWavefunction const& Psi2,
              std::vector<PolynomialType> const& In);
@@ -167,9 +167,9 @@ inject_right(LinearWavefunction const& Psi1,
 // Calculates result' = C[column] = sum_{j > Column} E[j] * T_Op(j, Column)
 // Assumes that E[j] is defined, for j > Column
 PolynomialType
-MultiplyLeft(std::vector<PolynomialType> const& E, 
-             TriangularOperator const& Op, 
-             LinearWavefunction const& Psi, 
+MultiplyLeft(std::vector<PolynomialType> const& E,
+             TriangularOperator const& Op,
+             LinearWavefunction const& Psi,
              QuantumNumber const& QShift, int Column)
 {
    CHECK_EQUAL(Op.size(), Psi.size());
@@ -253,7 +253,7 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
          {
             // diagonal element is the identity
             DEBUG_TRACE("Unit diagonal element")(Col);
-         
+
             // decompose C into components parallel and perpendicular to the identity
             ComplexPolyType CParallel;
             for (PolyType::iterator I = C.begin(); I != C.end(); ++I)
@@ -274,10 +274,10 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
                }
                EParallel[m+1] *= 1.0 / (1.0 + m);
             }
-         } 
+         }
 
          // Now the remaining components
-      
+
          // Components perpendicular to the identity satisfy equation (24)
          PolyType E;
          for (int m = C.degree(); m >= 0; --m)
@@ -287,7 +287,7 @@ SolveMPO_Left(LinearWavefunction const& Psi, QuantumNumber const& QShift,
             {
                Rhs -= double(Binomial(k,m)) * E[k];
             }
-            
+
             // orthogonalize Rhs against the identity again, which is a kind of
             // DGKS correction
             Rhs -= inner_prod(Rho, Rhs) * Identity;
@@ -387,9 +387,9 @@ int main(int argc, char** argv)
    TriangularOperator Const4 = Const2*Const2;
 
    TRACE(Op);
-   
+
    //Op = Op*Const;
-   
+
    //Op = Op*Op;
 
    //Op = Op - 1.2883390008989e-07 * TriangularOneSite(Site["I"]);
@@ -407,7 +407,7 @@ int main(int argc, char** argv)
    MatrixOperator Identity = MatrixOperator::make_identity(Psi.Psi.Basis1());
    MatrixOperator Rho = scalar_prod(Psi.C_right, herm(Psi.C_right));
    LinearWavefunction Phi = Psi.Psi; // no need to bugger around with C_old,C_right
- 
+
    MatrixOperator LambdaSqrt = SqrtDiagonal(Psi.C_old);
    MatrixOperator LambdaInvSqrt = InvertDiagonal(LambdaSqrt, InverseTol);
 

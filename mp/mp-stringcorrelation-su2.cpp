@@ -85,8 +85,8 @@ int main(int argc, char** argv)
    for (int Pos = FirstSite; Pos < LastSite; ++Pos)
    {
       P = prod(P, Projector(*System, Pos, Pos+1), P.TransformsAs());
-      std::cout << std::setw(4) << FirstSite << ' ' << std::setw(4) << (Pos+1) 
-		<< ' ' << std::setw(16)
+      std::cout << std::setw(4) << FirstSite << ' ' << std::setw(4) << (Pos+1)
+                << ' ' << std::setw(16)
                 << expectation(*Psi1, P, *Psi2) << '\n';
    }
 #endif
@@ -100,9 +100,9 @@ int main(int argc, char** argv)
    for (int Pos = FirstSite+1; Pos <= LastSite; ++Pos)
    {
       MPOperator ThisOp = prod(Op, S(Pos), Ident);
-      std::cout << std::setw(4) << FirstSite << ' ' << std::setw(4) << Pos 
-		<< ' ' << std::setw(16)
-		<< (-std::sqrt(3.0) * expectation(*Psi1, ThisOp, *Psi2)) << std::endl;
+      std::cout << std::setw(4) << FirstSite << ' ' << std::setw(4) << Pos
+                << ' ' << std::setw(16)
+                << (-std::sqrt(3.0) * expectation(*Psi1, ThisOp, *Psi2)) << std::endl;
 
       Op = prod(Op, BondPhase(*System, Pos-1, Pos), Op.TransformsAs());
    }
@@ -119,17 +119,17 @@ int main(int argc, char** argv)
    for (int Pos = FirstSite+1; Pos <= LastSite; ++Pos)
    {
       MPOperator ThisOp = prod(Op, S(Pos), Ident);
-      std::cout << std::setw(4) << FirstSite << ' ' << std::setw(4) << Pos 
-		<< ' ' << x << ' ' << std::setw(16)
-		<< (-std::sqrt(3.0) * expectation(*Psi1, ThisOp, *Psi2)) << '\n';
+      std::cout << std::setw(4) << FirstSite << ' ' << std::setw(4) << Pos
+                << ' ' << x << ' ' << std::setw(16)
+                << (-std::sqrt(3.0) * expectation(*Psi1, ThisOp, *Psi2)) << '\n';
 
-      //      Op += x / fabs(x) * std::sqrt(fabs(x)) 
-      //         * prod(Op, prod(S(Pos), S(Pos), QuantumNumber(Op.GetSymmetryList(), "2")), 
+      //      Op += x / fabs(x) * std::sqrt(fabs(x))
+      //         * prod(Op, prod(S(Pos), S(Pos), QuantumNumber(Op.GetSymmetryList(), "2")),
       //                Op.TransformsAs());
 
       Op += x * prod(Op, S(Pos), Op.TransformsAs());
 
-      //Op = prod(Op, prod(S(Pos), S(Pos), QuantumNumber(Op.GetSymmetryList(), "2")), 
+      //Op = prod(Op, prod(S(Pos), S(Pos), QuantumNumber(Op.GetSymmetryList(), "2")),
       //          Op.TransformsAs());
       //Op *= std::sqrt(27.0 / 20.0);
       //Op = prod(Op, I, Op.TransformsAs());

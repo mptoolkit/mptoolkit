@@ -24,17 +24,17 @@ using namespace std;
 
 int main()
 {
-   Vertex v1(1,0,0);   
-   Vertex v2(0,1,0);   
+   Vertex v1(1,0,0);
+   Vertex v2(0,1,0);
    Vertex v3(0,0,1);
 
-   Transform r1 = Transform::rot_x(3.1415927 / 4.0);   
+   Transform r1 = Transform::rot_x(3.1415927 / 4.0);
    Transform r2 = Transform::rot_y(3.1415927 / 4.0);
    Transform r3 = Transform::rot_z(3.1415927 / 4.0);
 
-   Transform t1 = Transform::trans_x(1.5);   
-   Transform t2 = Transform::trans_y(2);   
-   Transform t3 = Transform::trans_z(2.5);   
+   Transform t1 = Transform::trans_x(1.5);
+   Transform t2 = Transform::trans_y(2);
+   Transform t3 = Transform::trans_z(2.5);
 
    cout.precision(12);
 
@@ -49,7 +49,7 @@ int main()
    std::cout << "t1 = \n" << t1 << '\n';
    std::cout << "t2 = \n" << t2 << '\n';
    std::cout << "t3 = \n" << t3 << '\n';
-   
+
    std::cout << "v1*r1 = " << (v1*r1) << '\n';
    std::cout << "v1*r2 = " << (v1*r2) << '\n';
    std::cout << "v1*r3 = " << (v1*r3) << '\n';

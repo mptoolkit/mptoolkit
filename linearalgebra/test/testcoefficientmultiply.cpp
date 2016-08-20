@@ -73,7 +73,7 @@ void CheckCF()
    MMCFCheck(1,2) = 106;
    MMCFCheck(2,0) = 144;
    MMCFCheck(2,1) = 195;
-   MMCFCheck(2,2) = 378; 
+   MMCFCheck(2,2) = 378;
 
    Ctype MMCF = coefficient_multiply(M, N, CF());
    CHECK_CLOSE(MMCF, MMCFCheck);

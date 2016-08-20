@@ -33,7 +33,7 @@ LatticeSite CreateU1U1KondoSite(std::string const& Sym = "N", std::string const&
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::U1> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator Cup, Cdown, CHup, CHdown, P, R, N, Sp, Sm, Sz, Sfp, Sfm, Sfz, Scp, Scm, Scz,
-      ScpSfm, ScmSfp, SczSfz, ScSf, I, Hu, Pdouble, 
+      ScpSfm, ScmSfp, SczSfz, ScSf, I, Hu, Pdouble,
       Ep, Em, Ns, Nh, Pg, CupP, CdownP, CHupP, CHdownP, Rs, mSz, Top;
    LatticeSite Site;
 
@@ -154,7 +154,7 @@ LatticeSite CreateU1U1KondoSite(std::string const& Sym = "N", std::string const&
    I("double-down",  "double-down")  =  1;
 
    Pg = I - Pdouble; // Gutzwiller projector
-   
+
    // local spin
    Sfz("empty-up",     "empty-up")     =  0.5;
    Sfz("empty-down",   "empty-down")   = -0.5;

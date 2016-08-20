@@ -66,7 +66,7 @@ class GenericMPO
 
       value_type& operator[](int x) { return Data_[x]; }
       value_type const& operator[](int x) const { return Data_[x]; }
-    
+
       value_type const& front() const { return Data_.front(); }
       value_type& front() { return Data_.front(); }
 
@@ -223,7 +223,7 @@ struct Herm<GenericMPO>
    typedef GenericMPO const& argument_type;
    typedef HermitianProxy<GenericMPO> result_type;
 
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    { return result_type(x); }
 };
 
@@ -233,12 +233,12 @@ struct Conj<GenericMPO>
    typedef GenericMPO const& argument_type;
    typedef GenericMPO result_type;
 
-   result_type operator()(argument_type x) const 
-   { 
+   result_type operator()(argument_type x) const
+   {
       GenericMPO Result(x);
       for (GenericMPO::iterator I = Result.begin(); I != Result.end(); ++I)
       {
-	 *I = conj(*I);
+         *I = conj(*I);
       }
       return Result;
    }
@@ -250,12 +250,12 @@ struct Adjoint<GenericMPO>
    typedef GenericMPO const& argument_type;
    typedef GenericMPO result_type;
 
-   result_type operator()(argument_type x) const 
-   { 
+   result_type operator()(argument_type x) const
+   {
       GenericMPO Result(x);
       for (GenericMPO::iterator I = Result.begin(); I != Result.end(); ++I)
       {
-	 *I = adjoint(*I);
+         *I = adjoint(*I);
       }
       return Result;
    }
@@ -267,12 +267,12 @@ struct InvAdjoint<GenericMPO>
    typedef GenericMPO const& argument_type;
    typedef GenericMPO result_type;
 
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    {
       GenericMPO Result(x);
       for (GenericMPO::iterator I = Result.begin(); I != Result.end(); ++I)
       {
-	 *I = inv_adjoint(*I);
+         *I = inv_adjoint(*I);
       }
       return Result;
    }

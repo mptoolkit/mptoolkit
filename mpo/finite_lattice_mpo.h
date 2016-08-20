@@ -80,9 +80,9 @@ class FiniteLatticeMPO
       FiniteMPO Operator_;
 
       friend PStream::opstream&
-	 operator<<(PStream::opstream& out, FiniteLatticeMPO const& op);
+         operator<<(PStream::opstream& out, FiniteLatticeMPO const& op);
       friend PStream::ipstream&
-	 operator>>(PStream::ipstream& in, FiniteLatticeMPO& op);
+         operator>>(PStream::ipstream& in, FiniteLatticeMPO& op);
 
       friend FiniteLatticeMPO& operator*=(FiniteLatticeMPO& x, double a);
       friend FiniteLatticeMPO& operator*=(FiniteLatticeMPO& x, std::complex<double> a);
@@ -131,8 +131,8 @@ FiniteLatticeMPO operator*(FiniteLatticeMPO const& x, double a);
 FiniteLatticeMPO operator*(std::complex<double> a, FiniteLatticeMPO const& x);
 FiniteLatticeMPO operator*(FiniteLatticeMPO const& x, std::complex<double> a);
 
-FiniteLatticeMPO prod(FiniteLatticeMPO const& x, FiniteLatticeMPO const& y, 
-		      QuantumNumbers::QuantumNumber const& q);
+FiniteLatticeMPO prod(FiniteLatticeMPO const& x, FiniteLatticeMPO const& y,
+                      QuantumNumbers::QuantumNumber const& q);
 FiniteLatticeMPO prod(FiniteLatticeMPO const& x, FiniteLatticeMPO const& y);
 FiniteLatticeMPO operator*(FiniteLatticeMPO const& x, FiniteLatticeMPO const& y);
 

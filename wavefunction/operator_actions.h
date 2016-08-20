@@ -29,7 +29,7 @@
 // This means however that if we calculate eigenvalues of
 // some MPO from the left, then the resulting eigenvalue
 // is the conjgate of what we would expect.
-  
+
 #if !defined(OPERATOR_ACTIONS_H_SDH47589FOIJHO9JEW)
 #define OPERATOR_ACTIONS_H_SDH47589FOIJHO9JEW
 
@@ -46,20 +46,20 @@
 // m  Op---...--Op
 // |  |         |
 // +-Psi2--...-Psi2--
-MatrixOperator 
-inject_left(MatrixOperator const& m, 
-            GenericMPO const& Op, 
+MatrixOperator
+inject_left(MatrixOperator const& m,
+            GenericMPO const& Op,
             LinearWavefunction const& Psi);
 
-MatrixOperator 
-inject_left(MatrixOperator const& m, 
+MatrixOperator
+inject_left(MatrixOperator const& m,
             LinearWavefunction const& Psi,
-            GenericMPO const& Op, 
+            GenericMPO const& Op,
             LinearWavefunction const& Psi2);
 
-MatrixOperator 
-inject_left_qshift(MatrixOperator const& m, 
-                   GenericMPO const& Op, 
+MatrixOperator
+inject_left_qshift(MatrixOperator const& m,
+                   GenericMPO const& Op,
                    LinearWavefunction const& Psi,
                    QuantumNumber const& QShift);
 
@@ -77,7 +77,7 @@ struct InjectLeft
    {
       return inject_left(m, Op_, Psi_);
    }
-   
+
    GenericMPO const& Op_;
    LinearWavefunction const& Psi_;
 };
@@ -96,7 +96,7 @@ struct InjectLeftQShift
    {
       return delta_shift(inject_left(m, Op_, Psi_), QShift_);
    }
-   
+
    GenericMPO const& Op_;
    LinearWavefunction const& Psi_;
    QuantumNumber const& QShift_;
@@ -110,9 +110,9 @@ struct InjectLeftQShift
 // |  |          |
 // +-Psi2-- ... Psi2--
 
-StateComponent 
-inject_left(StateComponent const& E, 
-            LinearWavefunction const& Psi1, 
+StateComponent
+inject_left(StateComponent const& E,
+            LinearWavefunction const& Psi1,
             GenericMPO const& Op,
             LinearWavefunction const& Psi2);
 
@@ -120,9 +120,9 @@ inject_left(StateComponent const& E,
 // inject right variants
 //
 
-MatrixOperator 
-inject_right(MatrixOperator const& m, 
-             GenericMPO const& Op, 
+MatrixOperator
+inject_right(MatrixOperator const& m,
+             GenericMPO const& Op,
              LinearWavefunction const& Psi);
 
 // Calculates the operator contraction, with a matrix
@@ -135,14 +135,14 @@ inject_right(MatrixOperator const& m,
 // --Psi2*-... Psi2*-+
 
 MatrixOperator
-inject_right(MatrixOperator const& m, 
+inject_right(MatrixOperator const& m,
              LinearWavefunction const& Psi1,
-             GenericMPO const& Op, 
+             GenericMPO const& Op,
              LinearWavefunction const& Psi2);
 
-MatrixOperator 
-inject_right_qshift(MatrixOperator const& m, 
-                    GenericMPO const& Op, 
+MatrixOperator
+inject_right_qshift(MatrixOperator const& m,
+                    GenericMPO const& Op,
                     LinearWavefunction const& Psi,
                     QuantumNumber const& QShift);
 
@@ -160,7 +160,7 @@ struct InjectRight
    {
       return inject_right(m, Op_, Psi_);
    }
-   
+
    GenericMPO const& Op_;
    LinearWavefunction const& Psi_;
 };
@@ -179,7 +179,7 @@ struct InjectRightQShift
    {
       return inject_right(delta_shift(m, adjoint(QShift_)), Op_, Psi_);
    }
-   
+
    GenericMPO const& Op_;
    LinearWavefunction const& Psi_;
    QuantumNumber const& QShift_;
@@ -189,8 +189,8 @@ struct InjectRightQShift
 /*
 currently not used anywhere, but can be added
 
-StateComponent 
-inject_right(LinearWavefunction const& Psi1, 
+StateComponent
+inject_right(LinearWavefunction const& Psi1,
              MPOperator const& Op,
              LinearWavefunction const& Psi2,
              StateComponent const& In);
@@ -204,10 +204,10 @@ struct LeftMultiplyString
    typedef MatrixOperator argument_type;
    typedef MatrixOperator result_type;
 
-   LeftMultiplyString(LinearWavefunction const& L1_, 
-		      GenericMPO const& StringOp_,
-		      LinearWavefunction const& L2_, 
-		      QuantumNumber const& QShift_) 
+   LeftMultiplyString(LinearWavefunction const& L1_,
+                      GenericMPO const& StringOp_,
+                      LinearWavefunction const& L2_,
+                      QuantumNumber const& QShift_)
       : L1(L1_), StringOp(StringOp_) , L2(L2_), QShift(QShift_)
    {
       CHECK_EQUAL(L1.size(), L2.size())
@@ -242,19 +242,19 @@ struct LeftMultiplyOperator
    typedef StateComponent result_type;
 
    LeftMultiplyOperator(LinearWavefunction const& L1_, QuantumNumber const& QShift1_,
-			ProductMPO const& StringOp_,
-			LinearWavefunction const& L2_, QuantumNumber const& QShift2_,
-			int Length_ = 0, int Verbose_ = 0)
+                        ProductMPO const& StringOp_,
+                        LinearWavefunction const& L2_, QuantumNumber const& QShift2_,
+                        int Length_ = 0, int Verbose_ = 0)
       : Psi1(L1_), QShift1(QShift1_), StringOp(StringOp_) , Psi2(L2_), QShift2(QShift2_), Length(Length_),
-	Verbose(Verbose_)
+        Verbose(Verbose_)
    {
       if (Length == 0)
       {
-	 Length = statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size());
+         Length = statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size());
       }
       else
       {
-	 DEBUG_CHECK_EQUAL(Length, statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size()));
+         DEBUG_CHECK_EQUAL(Length, statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size()));
       }
    }
 
@@ -271,37 +271,37 @@ struct LeftMultiplyOperator
       QuantumNumber q2 = QuantumNumber(QShift2.GetSymmetryList());
       if (Verbose > 0)
       {
-	 std::cerr << "contracting operator, total length is " << Length << " sites.\n";
+         std::cerr << "contracting operator, total length is " << Length << " sites.\n";
       }
       while (I1 != Psi1.end() || I2 != Psi2.end() || OpIter != StringOp.end())
       {
-	 if (Verbose > 1)
-	 {
-	    std::cerr << "Site " << n << ", E-matrix dimension " << R.size() 
-		      << "x" << R.Basis1().total_dimension()
-		      << "x" << R.Basis2().total_dimension()
-		      << '\n';
-	 }
-	 if (I1 == Psi1.end())
-	 {
-	    I1 = Psi1.begin();
-	    q1 = delta_shift(q1, QShift1);
-	 }
-	 if (I2 == Psi2.end())
-	 {
-	    I2 = Psi2.begin();
-	    q2 = delta_shift(q2, QShift2);
-	 }
-	 if (OpIter == StringOp.end())
-	 {
-	    OpIter = StringOp.begin();
-	 }
-	 R = contract_from_left(*OpIter, herm(delta_shift(*I1, adjoint(q1))), R, 
-				delta_shift(*I2, adjoint(q2)));
-	 ++n;
-	 ++I1;
-	 ++I2;
-	 ++OpIter;
+         if (Verbose > 1)
+         {
+            std::cerr << "Site " << n << ", E-matrix dimension " << R.size()
+                      << "x" << R.Basis1().total_dimension()
+                      << "x" << R.Basis2().total_dimension()
+                      << '\n';
+         }
+         if (I1 == Psi1.end())
+         {
+            I1 = Psi1.begin();
+            q1 = delta_shift(q1, QShift1);
+         }
+         if (I2 == Psi2.end())
+         {
+            I2 = Psi2.begin();
+            q2 = delta_shift(q2, QShift2);
+         }
+         if (OpIter == StringOp.end())
+         {
+            OpIter = StringOp.begin();
+         }
+         R = contract_from_left(*OpIter, herm(delta_shift(*I1, adjoint(q1))), R,
+                                delta_shift(*I2, adjoint(q2)));
+         ++n;
+         ++I1;
+         ++I2;
+         ++OpIter;
       }
       q1 = delta_shift(q1, QShift1);
       q2 = delta_shift(q2, QShift2);
@@ -326,19 +326,19 @@ struct RightMultiplyOperator
    typedef StateComponent result_type;
 
    RightMultiplyOperator(LinearWavefunction const& L1_, QuantumNumber const& QShift1_,
-			 ProductMPO const& StringOp_,
-			 LinearWavefunction const& L2_, QuantumNumber const& QShift2_,
-			 int Length_ = 0, int Verbose_ = 0)
+                         ProductMPO const& StringOp_,
+                         LinearWavefunction const& L2_, QuantumNumber const& QShift2_,
+                         int Length_ = 0, int Verbose_ = 0)
       : Psi1(L1_), QShift1(QShift1_), StringOp(StringOp_) , Psi2(L2_), QShift2(QShift2_), Length(Length_),
-	Verbose(Verbose_)
+        Verbose(Verbose_)
    {
       if (Length == 0)
       {
-	 Length = statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size());
+         Length = statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size());
       }
       else
       {
-	 DEBUG_CHECK_EQUAL(Length, statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size()));
+         DEBUG_CHECK_EQUAL(Length, statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size()));
       }
    }
 
@@ -355,53 +355,53 @@ struct RightMultiplyOperator
       QuantumNumber q2 = QuantumNumber(QShift2.GetSymmetryList());
       if (Verbose > 0)
       {
-	 std::cerr << "contracting operator, total length is " << Length << " sites.\n";
+         std::cerr << "contracting operator, total length is " << Length << " sites.\n";
       }
       while (I1 != Psi1.begin() || I2 != Psi2.begin() || OpIter != StringOp.begin())
       {
-	 --n;
+         --n;
 
-	 if (I1 == Psi1.begin())
-	 {
-	    I1 = Psi1.end();
-	    q1 = delta_shift(q1, adjoint(QShift1));
-	 }
-	 --I1;
+         if (I1 == Psi1.begin())
+         {
+            I1 = Psi1.end();
+            q1 = delta_shift(q1, adjoint(QShift1));
+         }
+         --I1;
 
-	 if (I2 == Psi2.begin())
-	 {
-	    I2 = Psi2.end();
-	    q2 = delta_shift(q2, adjoint(QShift2));
-	 }
-	 --I2;
+         if (I2 == Psi2.begin())
+         {
+            I2 = Psi2.end();
+            q2 = delta_shift(q2, adjoint(QShift2));
+         }
+         --I2;
 
-	 if (OpIter == StringOp.begin())
-	    OpIter = StringOp.end();
-	 --OpIter;
+         if (OpIter == StringOp.begin())
+            OpIter = StringOp.end();
+         --OpIter;
 
-	 if (Verbose > 1)
-	 {
-	    std::cerr << "Site " << n << ", E-matrix dimension " << R.size() 
-		      << "x" << R.Basis1().total_dimension()
-		      << "x" << R.Basis2().total_dimension()
-		      << '\n';
-	 }
-	 if (I1 == Psi1.end())
-	 {
-	    I1 = Psi1.begin();
-	    q1 = delta_shift(q1, QShift1);
-	 }
-	 if (I2 == Psi2.end())
-	 {
-	    I2 = Psi2.begin();
-	    q2 = delta_shift(q2, QShift2);
-	 }
-	 if (OpIter == StringOp.end())
-	 {
-	    OpIter = StringOp.begin();
-	 }
-	 R = contract_from_right(herm(*OpIter), delta_shift(*I1, adjoint(q1)), R, 
-				 herm(delta_shift(*I2, adjoint(q2))));
+         if (Verbose > 1)
+         {
+            std::cerr << "Site " << n << ", E-matrix dimension " << R.size()
+                      << "x" << R.Basis1().total_dimension()
+                      << "x" << R.Basis2().total_dimension()
+                      << '\n';
+         }
+         if (I1 == Psi1.end())
+         {
+            I1 = Psi1.begin();
+            q1 = delta_shift(q1, QShift1);
+         }
+         if (I2 == Psi2.end())
+         {
+            I2 = Psi2.begin();
+            q2 = delta_shift(q2, QShift2);
+         }
+         if (OpIter == StringOp.end())
+         {
+            OpIter = StringOp.begin();
+         }
+         R = contract_from_right(herm(*OpIter), delta_shift(*I1, adjoint(q1)), R,
+                                 herm(delta_shift(*I2, adjoint(q2))));
       }
       q1 = delta_shift(q1, adjoint(QShift1));
       q2 = delta_shift(q2, adjoint(QShift2));
@@ -426,15 +426,15 @@ struct RightMultiplyOperator
 // The length of the mask is Op.size()+1
 
 StateComponent
-inject_left_mask(StateComponent const& In, 
-                 LinearWavefunction const& Psi1, 
+inject_left_mask(StateComponent const& In,
+                 LinearWavefunction const& Psi1,
                  GenericMPO const& Op,
                  LinearWavefunction const& Psi2,
                  std::vector<std::vector<int> > const& Mask);
 
 StateComponent
-inject_right_mask(StateComponent const& In, 
-                 LinearWavefunction const& Psi1, 
+inject_right_mask(StateComponent const& In,
+                 LinearWavefunction const& Psi1,
                  GenericMPO const& Op,
                  LinearWavefunction const& Psi2,
                  std::vector<std::vector<int> > const& Mask);
@@ -472,23 +472,23 @@ struct OneMinusTransferLeft
 //      -Psi--
 struct OneMinusTransferLeft_Ortho
 {
-   OneMinusTransferLeft_Ortho(FiniteMPO const& Op, LinearWavefunction const& Psi, QuantumNumber const& QShift, 
-			      MatrixOperator const& LeftUnit,
-			      MatrixOperator const& RightUnit, bool Orthogonalize)
-      : Op_(Op), Psi_(Psi), 
-	QShift_(QShift), LeftUnit_(LeftUnit), 
-	RightUnit_(RightUnit), Orthogonalize_(Orthogonalize) { }
+   OneMinusTransferLeft_Ortho(FiniteMPO const& Op, LinearWavefunction const& Psi, QuantumNumber const& QShift,
+                              MatrixOperator const& LeftUnit,
+                              MatrixOperator const& RightUnit, bool Orthogonalize)
+      : Op_(Op), Psi_(Psi),
+        QShift_(QShift), LeftUnit_(LeftUnit),
+        RightUnit_(RightUnit), Orthogonalize_(Orthogonalize) { }
 
    MatrixOperator operator()(MatrixOperator const& x) const
    {
       MatrixOperator r = x-delta_shift(inject_left(x, Op_, Psi_), QShift_);
       if (Orthogonalize_ && r.TransformsAs() == RightUnit_.TransformsAs())
-	 {
-	    DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be small");
-	    DEBUG_TRACE(inner_prod(LeftUnit_, r));
-	    r -= conj(inner_prod(r, RightUnit_)) * LeftUnit_; // orthogonalize to the identity
-	    DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be zero");
-	 }
+         {
+            DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be small");
+            DEBUG_TRACE(inner_prod(LeftUnit_, r));
+            r -= conj(inner_prod(r, RightUnit_)) * LeftUnit_; // orthogonalize to the identity
+            DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be zero");
+         }
       return r;
    }
 

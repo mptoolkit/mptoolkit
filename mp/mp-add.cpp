@@ -33,7 +33,7 @@ namespace prog_opt = boost::program_options;
 
 int main(int argc, char** argv)
 {
-   try 
+   try
    {
       int MinStates = 1;
       int MaxStates = 100000;
@@ -45,13 +45,13 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("min-states", prog_opt::value<int>(&MinStates), 
+         ("min-states", prog_opt::value<int>(&MinStates),
           "Minimum number of states to keep [default 1]")
-	 ("max-states,m", prog_opt::value<int>(&MaxStates), 
+         ("max-states,m", prog_opt::value<int>(&MaxStates),
           "Maximum number of states to keep [default 100000]")
-         ("trunc,r", prog_opt::value<double>(&TruncCutoff), 
+         ("trunc,r", prog_opt::value<double>(&TruncCutoff),
           "Cutoff truncation error per site [default 0]")
-         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff), 
+         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           ("Cutoff threshold for density matrix eigenvalues [default "
            +boost::lexical_cast<std::string>(EigenCutoff)+"]").c_str())
          ("balanced,b", prog_opt::bool_switch(&Balanced),
@@ -72,12 +72,12 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
-      
-      if (vm.count("help") || vm.count("output") == 0 || vm.count("input") == 0) 
+      prog_opt::notify(vm);
+
+      if (vm.count("help") || vm.count("output") == 0 || vm.count("input") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-add [options] -o output-file-name input1 input2 ...\n";
@@ -88,8 +88,8 @@ int main(int argc, char** argv)
       int PageSize = getenv_or_default("MP_PAGESIZE", 65536);
       long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
       pheap::Initialize(OutName, 1, PageSize, CacheSize);
-      
-      std::vector<std::string> InputWavefunctions 
+
+      std::vector<std::string> InputWavefunctions
          = vm["input"].as<std::vector<std::string> >();
 
       std::vector<CenterWavefunction> Psi;

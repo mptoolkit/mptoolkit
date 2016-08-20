@@ -39,9 +39,9 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("reverse,r", prog_opt::bool_switch(&Reverse), "reverse order, newest first")
-	 ("message,m", prog_opt::value(&Message), "add a new history entry")
-	 ;
+         ("reverse,r", prog_opt::bool_switch(&Reverse), "reverse order, newest first")
+         ("message,m", prog_opt::value(&Message), "add a new history entry")
+         ;
 
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
-      
+
       prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
@@ -69,21 +69,21 @@ int main(int argc, char** argv)
 
       if (vm.count("message"))
       {
-	 pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(Filename, mp_pheap::CacheSize());
-	 Psi.mutate()->AppendHistory(Message);
-	 pheap::ShutdownPersistent(Psi);
+         pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(Filename, mp_pheap::CacheSize());
+         Psi.mutate()->AppendHistory(Message);
+         pheap::ShutdownPersistent(Psi);
       }
       else
       {
-	 pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(Filename, mp_pheap::CacheSize(), true);
-	 if (Reverse)
-	 {
-	    Psi->History().print_newest_first(std::cout);
-	 }
-	 else
-	 {
-	    Psi->History().print(std::cout);
-	 }
+         pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(Filename, mp_pheap::CacheSize(), true);
+         if (Reverse)
+         {
+            Psi->History().print_newest_first(std::cout);
+         }
+         else
+         {
+            Psi->History().print(std::cout);
+         }
       }
    }
    catch (prog_opt::error& e)

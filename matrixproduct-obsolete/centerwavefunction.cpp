@@ -54,8 +54,8 @@ CenterWavefunction::CenterWavefunction(MatrixOperator const& C, LinearWavefuncti
 }
 
 VectorBasis CenterWavefunction::LeftVacuumBasis() const
-{ 
-   return this->LeftSize() == 0 ? this->Center().Basis1() : this->LookupLeft(0).Basis1(); 
+{
+   return this->LeftSize() == 0 ? this->Center().Basis1() : this->LookupLeft(0).Basis1();
 }
 
 VectorBasis CenterWavefunction::RightVacuumBasis() const
@@ -63,14 +63,14 @@ VectorBasis CenterWavefunction::RightVacuumBasis() const
    return this->RightSize() == 0 ? this->Center().Basis2() : this->LookupRight(0).Basis2();
 }
 
-CenterWavefunction& CenterWavefunction::normalize() 
-{ 
-   *this *= 1.0 / norm_2(*this); return *this; 
+CenterWavefunction& CenterWavefunction::normalize()
+{
+   *this *= 1.0 / norm_2(*this); return *this;
 }
 
-CenterWavefunction& CenterWavefunction::Normalize() 
-{ 
-   *this *= 1.0 / norm_2(*this); return *this; 
+CenterWavefunction& CenterWavefunction::Normalize()
+{
+   *this *= 1.0 / norm_2(*this); return *this;
 }
 
 QuantumNumber CenterWavefunction::TransformsAs() const

@@ -83,11 +83,11 @@ T min5(T const& a, T const& b, T const& c, T const& d, T const& e)
 // sorting a fixed number of arguments into increasing order using operator<
 
 template <class T>
-inline 
+inline
 bool sort2(T& a, T& b)
 {
    using std::swap;
-   if (b < a) 
+   if (b < a)
    {
       swap(a,b);
       return false;
@@ -104,14 +104,14 @@ void sort3(T& a, T& b, T& c)
    {
       if (c < b)
       {
-	 // order is c < b < a
-	 swap(a,c);
+         // order is c < b < a
+         swap(a,c);
       }
       else
       {
-	 // b <= c
-	 swap(a,b);
-	 if (c < b) swap(b,c);
+         // b <= c
+         swap(a,b);
+         if (c < b) swap(b,c);
       }
    }
    else
@@ -119,14 +119,14 @@ void sort3(T& a, T& b, T& c)
       // a <= b
       if (c < b)
       {
-	 swap(b,c);
-	 if (b < a) swap(a,b);
+         swap(b,c);
+         if (b < a) swap(a,b);
       }
    }
 }
 
 template <class T>
-inline 
+inline
 void sort4(T& a, T& b, T& c, T& d)
 {
    // this isn't as efficient as it could be

@@ -29,14 +29,14 @@
                http://www.cuj.com/documents/s=8464/cujcexp0308alexandr/
 
                Also updated the logging mechanism so it is customizable via
-	       set_panic_handler() and set_trace_handler().
+               set_panic_handler() and set_trace_handler().
 
                added PANIC() macro.  This replaces THROW()
 
                Eliminated dependency on trace.cpp by making the global variables static
-	       members of inline functions.  This is standard C++, the compiler is
-	       required to just figure it out.
-	       All functions are either inlined or templates.
+               members of inline functions.  This is standard C++, the compiler is
+               required to just figure it out.
+               All functions are either inlined or templates.
 
                Defining NDEBUG disables DEBUG_*() macros.
 
@@ -64,7 +64,7 @@
    2016      : C++-11 support
 
   BUGS: String messages appear before all variables, rather than in the order they appear.
-	(This may be a feature.)
+        (This may be a feature.)
 
         DUMMY_TRACE might not be optimized away completely on all compilers, need to check this.
 
@@ -165,7 +165,7 @@
 
   In general it is a good idea to leave precondition checks in the program,
   until it is demonstrated that it affects the performance.
-  For cases where the checks are not wanted in the production version, 
+  For cases where the checks are not wanted in the production version,
   rhere are versions that expand to nothing if NDEBUG is defined:
 
   DEBUG_PRECONDITION
@@ -179,7 +179,7 @@
   DEBUG_TRACE_IF
 
   For living dangerously, if TRACER_DISABLE_ALL_CHECKS is defined then
-  ALL of the precondition and trace/warning macros are disabled 
+  ALL of the precondition and trace/warning macros are disabled
   (except PANIC() can never be disabled).
   Use this only as a performance check to see if any checks are slowing
   down the program, or, in rare cases, the precondition checks themselves
@@ -188,7 +188,7 @@
 
   The assertion checks invoke the tracer::panic(char const* Msg) function, which then invokes
   the 'panic handler'.  The default 'panic handler' writes the message to standard error
-  and calls abort().  
+  and calls abort().
 
   Similarly, the trace macros invoke the tracer::trace(char const* Msg) function, which then
   invokes the 'trace handler'.  The default 'trace handler' writes the message to standard error
@@ -209,7 +209,7 @@
 
   These functions are in namespace tracer.
 
-  For example, 
+  For example,
 
   void my_panic_handler(char const* Msg)
   {
@@ -324,22 +324,22 @@ std::string indent_typeid(std::string In)
    {
       if (*I == '<')
       {
-	 ++Indent;
-	 Out << "<\n";
-	 for (int i = 0; i < Indent*3; ++i) Out << ' ';
+         ++Indent;
+         Out << "<\n";
+         for (int i = 0; i < Indent*3; ++i) Out << ' ';
       }
       else if (*I == '>')
       {
-	 --Indent;
-	 Out << '\n';
-	 for (int i = 0; i < Indent*3; ++i) Out << ' ';
-	 Out << ">";
+         --Indent;
+         Out << '\n';
+         for (int i = 0; i < Indent*3; ++i) Out << ' ';
+         Out << ">";
       }
       else if (*I == ',')
       {
-	 Out << '\n';
-	 for (int i = 0; i < (Indent-1)*3; ++i) Out << ' ';
-	 Out << " ,";
+         Out << '\n';
+         for (int i = 0; i < (Indent-1)*3; ++i) Out << ' ';
+         Out << " ,";
       }
       else Out << (*I);
       ++I;
@@ -466,7 +466,7 @@ std::string fudge_value(double x)
   Buf << x;
 
   return Buf.str();
-}  
+}
 
 template <typename T>
 T& make_lvalue(T const& x)
@@ -474,7 +474,7 @@ T& make_lvalue(T const& x)
    return const_cast<T&>(x);
 }
 
-inline 
+inline
 std::ostream&& PrepareStream(std::ostream&& out)
 {
    out.precision(TracerDummyClass<>::Precision);
@@ -497,7 +497,7 @@ class Assert
       // helpers to enable the recursive macros
       Assert& SMART_ASSERT_A;
       Assert& SMART_ASSERT_B;
-   
+
       Assert(Assert const& Other);
 
       ~Assert();
@@ -507,27 +507,27 @@ class Assert
       // Adds a (Name, Value) pair to the list of variables to display.
       // This attempts to disambiguate string literals from other expressions.
       // if Name starts with '"' then it is assumed to be a string literal, in which case
-      // msg(Value) is invoked instead.  
+      // msg(Value) is invoked instead.
       // Additionally, if T is an arithmetic type and the string conversion coincides with
       // Name, then nothing is displayed.  This avoids silly messages like "0 = 0".
    //      template <typename T>
       Assert& print_value(char const* Name, //T const& Value,
-			  std::string const& ValueStr);
+                          std::string const& ValueStr);
 
       template <typename T>
       Assert& operator<<(T const& x);
 
-      static Assert MakeAssert(char const* Preamble_, char const* File_, 
-			       int Line_, char const* Func_, 
-			       char const* Message_, assert_handler Handler);
+      static Assert MakeAssert(char const* Preamble_, char const* File_,
+                               int Line_, char const* Func_,
+                               char const* Message_, assert_handler Handler);
 
   private:
       Assert(char const* Preamble_, char const* File_, int Line_, char const* Func_,
-	     char const* Message_, assert_handler Handler_) 
-	: SMART_ASSERT_A(*this), SMART_ASSERT_B(*this),
-	  ShouldHandle(true), Preamble(Preamble_), File(File_), Line(Line_), Func(Func_), 
-	  Message(Message_),
-	Handler(Handler_) {}
+             char const* Message_, assert_handler Handler_)
+        : SMART_ASSERT_A(*this), SMART_ASSERT_B(*this),
+          ShouldHandle(true), Preamble(Preamble_), File(File_), Line(Line_), Func(Func_),
+          Message(Message_),
+        Handler(Handler_) {}
 
       Assert& operator=(Assert const&); // not implemented
 
@@ -554,9 +554,9 @@ Assert<Dummy>& Assert<Dummy>::operator<<(T const& x)
 
 template <int Dummy>
 inline
-Assert<Dummy> Assert<Dummy>::MakeAssert(char const* Preamble_, char const* File_, 
-					int Line_, char const* Func_, char const* Message_, 
-					assert_handler Handler)
+Assert<Dummy> Assert<Dummy>::MakeAssert(char const* Preamble_, char const* File_,
+                                        int Line_, char const* Func_, char const* Message_,
+                                        assert_handler Handler)
 {
 #if defined(MULTITHREAD)
    std::ostringstream obuf;
@@ -569,10 +569,10 @@ Assert<Dummy> Assert<Dummy>::MakeAssert(char const* Preamble_, char const* File_
 
 template <int Dummy>
 inline
-Assert<Dummy>::Assert(Assert const& Other) 
+Assert<Dummy>::Assert(Assert const& Other)
   : SMART_ASSERT_A(*this), SMART_ASSERT_B(*this),
     ShouldHandle(Other.ShouldHandle), Preamble(Other.Preamble),
-    File(Other.File), Line(Other.Line), 
+    File(Other.File), Line(Other.Line),
     Message(Other.Message), Handler(Other.Handler),
      VariableList(Other.VariableList)
 {
@@ -592,10 +592,10 @@ Assert<Dummy>& Assert<Dummy>::msg(std::string const& Msg)
 
 template <int Dummy>
 //template <typename T>
-Assert<Dummy>& Assert<Dummy>::print_value(char const* Name,// T const& Value, 
-					  std::string const& ValueStr)
+Assert<Dummy>& Assert<Dummy>::print_value(char const* Name,// T const& Value,
+                                          std::string const& ValueStr)
 {
-   if (Name[0] == '"') 
+   if (Name[0] == '"')
      this->msg(ValueStr);
    else
    {
@@ -624,7 +624,7 @@ Assert<Dummy>::~Assert()
       FullMessage += Padding + VariableList[0].first + " = " + VariableList[0].second + '\n';
       for (int i = 1; i < int(VariableList.size()); ++i)
       {
-	 FullMessage += Padding + VariableList[i].first + " = " + VariableList[i].second + '\n';
+         FullMessage += Padding + VariableList[i].first + " = " + VariableList[i].second + '\n';
       }
    }
    this->Handler(FullMessage.c_str());
@@ -729,30 +729,30 @@ DummyAssert DummyAssertHandler<T>::value;
 
 #define INVOKE_ASSERT(Preamble, Message)                                        \
    ::tracer::Assert<>::MakeAssert((Preamble), __FILE__, __LINE__, __PRETTYFUNC__, (Message), \
-				::tracer::GetPanicHandler()).SMART_ASSERT_A     \
+                                ::tracer::GetPanicHandler()).SMART_ASSERT_A     \
    /**/
 
 #define INVOKE_PANIC(Preamble, Name, Value)                                     \
    ::tracer::Assert<>::MakeAssert((Preamble), __FILE__, __LINE__, __PRETTYFUNC__, "",           \
-				::tracer::GetPanicHandler()).                   \
+                                ::tracer::GetPanicHandler()).                   \
        print_value(Name, TRACER_CONVERT_TO_STRING((Value))).SMART_ASSERT_A      \
    /**/
 
 #define INVOKE_TRACE(Preamble, Name, Value)                                     \
    ::tracer::Assert<>::MakeAssert((Preamble), __FILE__, __LINE__,  __PRETTYFUNC__, "",           \
-				::tracer::GettraceHandler()).                   \
+                                ::tracer::GettraceHandler()).                   \
       print_value(Name, TRACER_CONVERT_TO_STRING((Value))).SMART_ASSERT_A       \
    /**/
 
 #define INVOKE_TRACE_IF(Preamble, Message)                                      \
    ::tracer::Assert<>::MakeAssert((Preamble), __FILE__, __LINE__,  __PRETTYFUNC__, (Message),    \
-				::tracer::GettraceHandler()).SMART_ASSERT_A     \
+                                ::tracer::GettraceHandler()).SMART_ASSERT_A     \
    /**/
 
 #if 0
 
-#define INVOKE_DUMMY(junk)				\
-   ::tracer::DummyAssertHandler<>::value.SMART_ASSERT_A	\
+#define INVOKE_DUMMY(junk)                              \
+   ::tracer::DummyAssertHandler<>::value.SMART_ASSERT_A \
    /**/
 
 #else
@@ -772,7 +772,7 @@ DummyAssertType operator<<(DummyAssertType, T const&)
 //int const DUMMY_ASSERT_B = 0;
 
 #define INVOKE_DUMMY(junk)                      \
-   ::tracer:: DUMMY_ASSERT_A		\
+   ::tracer:: DUMMY_ASSERT_A            \
    /* */
 
 #define DUMMY_ASSERT_A(x) DUMMY_ASSERT_OP(B)
@@ -786,8 +786,8 @@ DummyAssertType operator<<(DummyAssertType, T const&)
 #define SMART_ASSERT_A(x) SMART_ASSERT_OP(x, B)
 #define SMART_ASSERT_B(x) SMART_ASSERT_OP(x, A)
 
-#define SMART_ASSERT_OP(x, next)								\
-   SMART_ASSERT_A.print_value(#x, TRACER_CONVERT_TO_STRING((x))).SMART_ASSERT_ ## next	\
+#define SMART_ASSERT_OP(x, next)                                                                \
+   SMART_ASSERT_A.print_value(#x, TRACER_CONVERT_TO_STRING((x))).SMART_ASSERT_ ## next  \
    /**/
 
 
@@ -811,8 +811,8 @@ bool RangeCheckOpen(T const& Var, U const& Min, V const& Max)
 }
 
 // dummy version of TRACE so that users can define their own conditional trace functions
-#define DUMMY_TRACE(Message)			\
-if (true) ;					\
+#define DUMMY_TRACE(Message)                    \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
 // Debugging versions of the precondition and checking macros.  They expand to nothing
@@ -820,216 +820,216 @@ else INVOKE_DUMMY("")
 
 #if defined(NDEBUG) || defined(TRACER_DISABLE_ALL_CHECKS)
 
-#define DEBUG_CHECK(Condition)			\
-if (true) ;					\
+#define DEBUG_CHECK(Condition)                  \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define DEBUG_CHECK_EQUAL(x,y)			\
-if (true) ;				        \
+#define DEBUG_CHECK_EQUAL(x,y)                  \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define DEBUG_CHECK_COMPARE(x,comp,y)		\
-if (true) ;					\
+#define DEBUG_CHECK_COMPARE(x,comp,y)           \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define DEBUG_PRECONDITION(Condition)		\
-if (true) ;					\
+#define DEBUG_PRECONDITION(Condition)           \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define DEBUG_PRECONDITION_EQUAL(x,y)		\
-if (true) ;				        \
+#define DEBUG_PRECONDITION_EQUAL(x,y)           \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define DEBUG_PRECONDITION_COMPARE(x,comp,y)	\
-if (true) ;					\
+#define DEBUG_PRECONDITION_COMPARE(x,comp,y)    \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define DEBUG_RANGE_CHECK(Var, Min, Max)	\
-if (true) ;					\
+#define DEBUG_RANGE_CHECK(Var, Min, Max)        \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define DEBUG_RANGE_CHECK_OPEN(Var, Min, Max)	\
-if (true) ;					\
+#define DEBUG_RANGE_CHECK_OPEN(Var, Min, Max)   \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define DEBUG_TRACE(Message)			\
-if (true) ;					\
+#define DEBUG_TRACE(Message)                    \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define DEBUG_TRACE_IF(Message)			\
-if (true) ;					\
+#define DEBUG_TRACE_IF(Message)                 \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define DEBUG_WARNING(Message)			\
-if (true) ;					\
+#define DEBUG_WARNING(Message)                  \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
 #else // !( defined(NDEBUG) || defined(TRACER_DISABLE_ALL_CHECKS) )
 
-#define DEBUG_CHECK(Condition)				\
-if ((Condition)) ;					\
+#define DEBUG_CHECK(Condition)                          \
+if ((Condition)) ;                                      \
 else INVOKE_ASSERT("CHECK", #Condition " is false")
 
-#define DEBUG_CHECK_EQUAL(x, y)				        \
-if ((x) == (y)) ;						\
+#define DEBUG_CHECK_EQUAL(x, y)                                 \
+if ((x) == (y)) ;                                               \
 else INVOKE_ASSERT("CHECK", #x " == " #y " is false")(x)(y)
 
-#define DEBUG_CHECK_COMPARE(x, comp, y)					\
-if ((x) comp (y)) ;							\
+#define DEBUG_CHECK_COMPARE(x, comp, y)                                 \
+if ((x) comp (y)) ;                                                     \
 else INVOKE_ASSERT("CHECK", #x " " #comp " " #y " is false")(x)(y)
 
-#define DEBUG_PRECONDITION(Condition)				\
-if ((Condition)) ;						\
+#define DEBUG_PRECONDITION(Condition)                           \
+if ((Condition)) ;                                              \
 else INVOKE_ASSERT("PRECONDITION", #Condition " is false")
 
-#define DEBUG_PRECONDITION_EQUAL(x, y)					\
-if ((x) == (y)) ;							\
+#define DEBUG_PRECONDITION_EQUAL(x, y)                                  \
+if ((x) == (y)) ;                                                       \
 else INVOKE_ASSERT("PRECONDITION", #x " == " #y " is false")(x)(y)
 
-#define DEBUG_PRECONDITION_COMPARE(x, comp, y)					\
-if ((x) comp (y)) ;								\
+#define DEBUG_PRECONDITION_COMPARE(x, comp, y)                                  \
+if ((x) comp (y)) ;                                                             \
 else INVOKE_ASSERT("PRECONDITION", #x " " #comp " " #y " is false")(x)(y)
 
-#define DEBUG_RANGE_CHECK(Var, Min, Max)					\
-if (!::tracer::RangeCheck((Var), (Min), (Max))) ;				\
-else INVOKE_ASSERT("RANGE CHECK",						\
-		   std::string(#Var " = "					\
-			       + TRACER_CONVERT_TO_STRING(Var) 			\
-			       + " is not in range ["				\
-			       + TRACER_CONVERT_TO_STRING(Min) + ", "		\
-			       + TRACER_CONVERT_TO_STRING(Max) + "]").c_str())
+#define DEBUG_RANGE_CHECK(Var, Min, Max)                                        \
+if (!::tracer::RangeCheck((Var), (Min), (Max))) ;                               \
+else INVOKE_ASSERT("RANGE CHECK",                                               \
+                   std::string(#Var " = "                                       \
+                               + TRACER_CONVERT_TO_STRING(Var)                  \
+                               + " is not in range ["                           \
+                               + TRACER_CONVERT_TO_STRING(Min) + ", "           \
+                               + TRACER_CONVERT_TO_STRING(Max) + "]").c_str())
 
 #define DEBUG_RANGE_CHECK_OPEN(Var, Min, Max)                                   \
 if (!::tracer::RangeCheckOpen((Var), (Min), (Max))) ;                           \
 else INVOKE_ASSERT("RANGE CHECK",                                               \
-		   std::string(#Var " = "                                       \
-			       + TRACER_CONVERT_TO_STRING(Var)                  \
-			       + " is not in half-open range ["                 \
-			       + TRACER_CONVERT_TO_STRING(Min) + ", "           \
-			       + TRACER_CONVERT_TO_STRING(Max) + ")").c_str())
+                   std::string(#Var " = "                                       \
+                               + TRACER_CONVERT_TO_STRING(Var)                  \
+                               + " is not in half-open range ["                 \
+                               + TRACER_CONVERT_TO_STRING(Min) + ", "           \
+                               + TRACER_CONVERT_TO_STRING(Max) + ")").c_str())
 
-#define DEBUG_TRACE(Msg)			\
-if (false) ;					\
+#define DEBUG_TRACE(Msg)                        \
+if (false) ;                                    \
 else INVOKE_TRACE("TRACE", #Msg, (Msg))
 
-#define DEBUG_TRACE_IF(Cond)			\
-if (!bool(Cond)) ;				\
+#define DEBUG_TRACE_IF(Cond)                    \
+if (!bool(Cond)) ;                              \
 else INVOKE_TRACE_IF("TRACE_IF", #Cond " is true")
 
-#define DEBUG_WARNING(Msg)			\
-if (false) ;					\
+#define DEBUG_WARNING(Msg)                      \
+if (false) ;                                    \
 else INVOKE_TRACE("WARNING", #Msg, (Msg))
 
 #endif // ( defined(NDEBUG) || defined(TRACER_DISABLE_ALL_CHECKS) ) else
 
 #if defined(TRACER_DISABLE_ALL_CHECKS)
 
-#define CHECK(Condition)			\
-if (true) ;					\
+#define CHECK(Condition)                        \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define CHECK_EQUAL(x,y)			\
-if (true) ;				        \
+#define CHECK_EQUAL(x,y)                        \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define CHECK_COMPARE(x,comp,y)		\
-if (true) ;					\
+#define CHECK_COMPARE(x,comp,y)         \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define PRECONDITION(Condition)			\
-if (true) ;				        \
+#define PRECONDITION(Condition)                 \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define PRECONDITION_EQUAL(x,y)			\
-if (true) ;				        \
+#define PRECONDITION_EQUAL(x,y)                 \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define PRECONDITION_COMPARE(x,comp,y)	\
-if (true) ;					\
+#define PRECONDITION_COMPARE(x,comp,y)  \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define RANGE_CHECK(Var, Min, Max)		\
-if (true) ;					\
+#define RANGE_CHECK(Var, Min, Max)              \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define RANGE_CHECK_OPEN(Var, Min, Max)		\
-if (true) ;					\
+#define RANGE_CHECK_OPEN(Var, Min, Max)         \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define TRACE(Message)				\
-if (true) ;					\
+#define TRACE(Message)                          \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define TRACE_IF(Message)			\
-if (true) ;					\
+#define TRACE_IF(Message)                       \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
-#define WARNING(Message)			\
-if (true) ;					\
+#define WARNING(Message)                        \
+if (true) ;                                     \
 else INVOKE_DUMMY("")
 
 #else // !( defined(TRACER_DISABLE_ALL_CHECKS) )
 
-#define CHECK(Condition)				\
-if ((Condition)) ;					\
+#define CHECK(Condition)                                \
+if ((Condition)) ;                                      \
 else INVOKE_ASSERT("CHECK", #Condition " is false")
 
-#define CHECK_EQUAL(x, y)					\
-if ((x) == (y)) ;						\
+#define CHECK_EQUAL(x, y)                                       \
+if ((x) == (y)) ;                                               \
 else INVOKE_ASSERT("CHECK", #x " == " #y " is false")(x)(y)
 
-#define CHECK_COMPARE(x, comp, y)					\
-if ((x) comp (y)) ;							\
+#define CHECK_COMPARE(x, comp, y)                                       \
+if ((x) comp (y)) ;                                                     \
 else INVOKE_ASSERT("CHECK", #x " " #comp " " #y " is false")(x)(y)
 
-#define PRECONDITION(Condition)					\
-if ((Condition)) ;						\
+#define PRECONDITION(Condition)                                 \
+if ((Condition)) ;                                              \
 else INVOKE_ASSERT("PRECONDITION", #Condition " is false")
 
-#define PRECONDITION_EQUAL(x, y)					\
-if ((x) == (y)) ;							\
+#define PRECONDITION_EQUAL(x, y)                                        \
+if ((x) == (y)) ;                                                       \
 else INVOKE_ASSERT("PRECONDITION", #x " == " #y " is false")(x)(y)
 
-#define PRECONDITION_COMPARE(x, comp, y)					\
-if ((x) comp (y)) ;								\
+#define PRECONDITION_COMPARE(x, comp, y)                                        \
+if ((x) comp (y)) ;                                                             \
 else INVOKE_ASSERT("PRECONDITION", #x " " #comp " " #y " is false")(x)(y)
 
-#define RANGE_CHECK(Var, Min, Max)						\
-if (!::tracer::RangeCheck((Var), (Min), (Max))) ;				\
-else INVOKE_ASSERT("RANGE CHECK",						\
-		   std::string(#Var " = " 					\
-			       + TRACER_CONVERT_TO_STRING(Var) 			\
-			       + " is not in range ["				\
-			       + TRACER_CONVERT_TO_STRING(Min) + ", "		\
-			       + TRACER_CONVERT_TO_STRING(Max) + "]").c_str())
+#define RANGE_CHECK(Var, Min, Max)                                              \
+if (!::tracer::RangeCheck((Var), (Min), (Max))) ;                               \
+else INVOKE_ASSERT("RANGE CHECK",                                               \
+                   std::string(#Var " = "                                       \
+                               + TRACER_CONVERT_TO_STRING(Var)                  \
+                               + " is not in range ["                           \
+                               + TRACER_CONVERT_TO_STRING(Min) + ", "           \
+                               + TRACER_CONVERT_TO_STRING(Max) + "]").c_str())
 
-#define RANGE_CHECK_OPEN(Var, Min, Max)						\
-if (!::tracer::RangeCheckOpen((Var), (Min), (Max))) ;				\
-else INVOKE_ASSERT("RANGE CHECK",						\
-		   std::string(#Var " = " 					\
-			       + TRACER_CONVERT_TO_STRING(Var) 			\
-			       + " is not in half-open range ["			\
-			       + TRACER_CONVERT_TO_STRING(Min) + ", "		\
-			       + TRACER_CONVERT_TO_STRING(Max) + ")").c_str())
+#define RANGE_CHECK_OPEN(Var, Min, Max)                                         \
+if (!::tracer::RangeCheckOpen((Var), (Min), (Max))) ;                           \
+else INVOKE_ASSERT("RANGE CHECK",                                               \
+                   std::string(#Var " = "                                       \
+                               + TRACER_CONVERT_TO_STRING(Var)                  \
+                               + " is not in half-open range ["                 \
+                               + TRACER_CONVERT_TO_STRING(Min) + ", "           \
+                               + TRACER_CONVERT_TO_STRING(Max) + ")").c_str())
 
-#define TRACE(Msg)				\
-if (false) ;					\
+#define TRACE(Msg)                              \
+if (false) ;                                    \
 else INVOKE_TRACE("TRACE", #Msg, (Msg))
 
-#define TRACE_IF(Cond)				\
-if (!bool(Cond)) ;				\
+#define TRACE_IF(Cond)                          \
+if (!bool(Cond)) ;                              \
 else INVOKE_TRACE_IF("TRACE_IF", #Cond " is true")
 
-#define WARNING(Msg)				\
-if (false) ;					\
+#define WARNING(Msg)                            \
+if (false) ;                                    \
 else INVOKE_TRACE("WARNING", #Msg, (Msg))
 
 #endif // ( TRACER_DISABLE_ALL_CHECKS ) else
 
 // even if TRACER_DISABLE_ALL_CHECKS is defined, PANIC still functions
 
-#define PANIC(Msg)				\
-if (false) ;					\
+#define PANIC(Msg)                              \
+if (false) ;                                    \
 else INVOKE_PANIC("PANIC", #Msg, (Msg))
 
 } // namespace tracer

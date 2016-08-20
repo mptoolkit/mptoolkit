@@ -52,9 +52,9 @@ LocalEigensolver::SetInitialFidelity(int UnitCellSize, double f)
 
 double
 LocalEigensolver::Solve(StateComponent& C,
-			StateComponent const& LeftBlockHam,
-			OperatorComponent const& H,
-			StateComponent const& RightBlockHam)
+                        StateComponent const& LeftBlockHam,
+                        OperatorComponent const& H,
+                        StateComponent const& RightBlockHam)
 {
    DEBUG_CHECK_EQUAL(C.Basis1(), LeftBlockHam.Basis2());
    DEBUG_CHECK_EQUAL(C.Basis2(), RightBlockHam.Basis1());
@@ -72,13 +72,13 @@ LocalEigensolver::Solve(StateComponent& C,
       LastIter_ = MaxIter;
       if (Verbose > 2)
       {
-	 std::cerr << "Starting eigensolver.  Initial guess vector has dimensions "
-		   << C.Basis1().total_dimension() << " x " << C.LocalBasis().size()
-		   << " x " << C.Basis2().total_dimension() << '\n';
+         std::cerr << "Starting eigensolver.  Initial guess vector has dimensions "
+                   << C.Basis1().total_dimension() << " x " << C.LocalBasis().size()
+                   << " x " << C.Basis2().total_dimension() << '\n';
       }
       LastEnergy_ = Lanczos(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
-			    LastIter_, LastTol_, MinIter, Verbose-1);
-      
+                            LastIter_, LastTol_, MinIter, Verbose-1);
+
    }
    else
    {

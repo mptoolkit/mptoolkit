@@ -29,7 +29,7 @@ double Entropy(FwdIter first, FwdIter last)
    {
       double x = first->Eigenvalue;
       if (x > 0)
-	 E -= x * log(x);
+         E -= x * log(x);
 
       ++first;
    }
@@ -44,7 +44,7 @@ double TruncError(FwdIter first, FwdIter last)
    {
       double x = first->Eigenvalue;
       if (x > 0)
-	 E += x;
+         E += x;
 
       ++first;
    }
@@ -112,15 +112,15 @@ Solver::Solver(MPWavefunction const& Psi_, MPOperator const& Op_, MPWavefunction
    {
       yprime_A_x.PushLeft(operator_prod(herm(A.LookupLeft(Loc)),
                                         herm(yprime.LookupLeft(Loc)),
-                                        yprime_A_x.Left(), 
+                                        yprime_A_x.Left(),
                                         x.LookupLeft(Loc)));
 
       yprime_y.PushLeft(operator_prod(herm(yprime.LookupLeft(Loc)),
-                                      yprime_y.Left(), 
+                                      yprime_y.Left(),
                                       y.LookupLeft(Loc)));
 
       yprime_x.PushLeft(operator_prod(herm(yprime.LookupLeft(Loc)),
-                                      yprime_x.Left(), 
+                                      yprime_x.Left(),
                                       x.LookupLeft(Loc)));
    }
 
@@ -153,7 +153,7 @@ void Solver::ExpandLeft()
    yprime_A_x.PopLeft();
    yprime_A_x.PushLeft(operator_prod(herm(A.Left()),
                                      herm(yprime.Left()),
-                                     yprime_A_x.Left(), 
+                                     yprime_A_x.Left(),
                                      x.Left()));
 
    yprime_y.PopLeft();
@@ -189,9 +189,9 @@ void Solver::ExpandRight()
 
 
    yprime_A_x.PopRight();
-   yprime_A_x.PushRight(operator_prod(A.Right(), 
-                                      yprime.Right(), 
-                                      yprime_A_x.Right(), 
+   yprime_A_x.PushRight(operator_prod(A.Right(),
+                                      yprime.Right(),
+                                      yprime_A_x.Right(),
                                       herm(x.Right())));
 
    Ax = operator_prod(A.Center(), yprime_A_x.Left(), x.Center(), herm(yprime_A_x.Right()));
@@ -208,7 +208,7 @@ void Solver::ExpandRight()
    TRACE(yprime.Right().Basis2().total_degree());
    TRACE(trace(scalar_prod(yprime.Right(), herm(yprime.Right()))));
    TRACE(trace(scalar_prod(herm(yprime.Right()), yprime.Right())));
- 
+
    TRACE(norm_frob(yprime.Center()));
    // for yprime, the Center is y transformed to the basis
    yprime.Right() = prod(yprime.Center(), yprime.Right());
@@ -217,9 +217,9 @@ void Solver::ExpandRight()
 
 
    yprime_A_x.PopRight();
-   yprime_A_x.PushRight(operator_prod(A.Right(), 
-                                      yprime.Right(), 
-                                      yprime_A_x.Right(), 
+   yprime_A_x.PushRight(operator_prod(A.Right(),
+                                      yprime.Right(),
+                                      yprime_A_x.Right(),
                                       herm(x.Right())));
    Ax = operator_prod(A.Center(), yprime_A_x.Left(), x.Center(), herm(yprime_A_x.Right()));
    TRACE(norm_frob(Ax - yprime.Center()));
@@ -233,7 +233,7 @@ void Solver::ExpandRight()
    Ax = prod(Ax, adjoint(U), Ax.TransformsAs());
    yprime.Center() = prod(yprime.Center(), adjoint(U), yprime.Center().TransformsAs());
    TRACE(norm_frob(Ax - yprime.Center()));
-   
+
 
    yprime.Right() = prod(U, yprime.Right());
    //   yprime.Center() = prod(yprime.Center(), adjoint(U), yprime.Center().TransformsAs());
@@ -256,9 +256,9 @@ void Solver::ExpandRight()
 
    // matrix elements
    yprime_A_x.PopRight();
-   yprime_A_x.PushRight(operator_prod(A.Right(), 
-                                      yprime.Right(), 
-                                      yprime_A_x.Right(), 
+   yprime_A_x.PushRight(operator_prod(A.Right(),
+                                      yprime.Right(),
+                                      yprime_A_x.Right(),
                                       herm(x.Right())));
 
 
@@ -301,7 +301,7 @@ void Solver::ShiftRightAndExpand()
    // need the basis expanded
 
    //TRACE(norm_frob_sq(yprime.Center()));
-   //MatrixOperator Ax = operator_prod(A.Center(), yprime_A_x.Left(), x.Center(), 
+   //MatrixOperator Ax = operator_prod(A.Center(), yprime_A_x.Left(), x.Center(),
    // herm(yprime_A_x.Right()));
    //TRACE(norm_frob_sq(Ax));
    //TRACE(norm_frob(Ax - yprime.Center()));
@@ -312,7 +312,7 @@ void Solver::ShiftRightAndExpand()
    //TRACE(norm_frob_sq(x.Center()));
    x.PushLeft(prod(x.Center(), x.Right()));
    x.PopRight();
-   x.Center() = ExpandBasis2(x.Left()); 
+   x.Center() = ExpandBasis2(x.Left());
    //TRACE(norm_frob_sq(x.Center()));
 
    yprime.PushLeft(prod(yprime.Center(), yprime.Right()));
@@ -320,9 +320,9 @@ void Solver::ShiftRightAndExpand()
    ExpandBasis2(yprime.Left());  // dont update yprime.Center() - do later
 
    // new matrix elements
-   yprime_A_x.PushLeft(operator_prod(herm(A.Left()), 
-                                     herm(yprime.Left()), 
-                                     yprime_A_x.Left(), 
+   yprime_A_x.PushLeft(operator_prod(herm(A.Left()),
+                                     herm(yprime.Left()),
+                                     yprime_A_x.Left(),
                                      x.Left()));
    yprime_A_x.PopRight();
 
@@ -397,9 +397,9 @@ void Solver::ShiftLeftAndExpand()
 TruncationInfo Solver::TruncateLeft(int MaxStates, double CFactor)
 {
    // calculate Ax - TODO: this was already done by the solver, should be saved somewhere
-   MatrixOperator Ax = operator_prod(conj(A.Center()), 
-                                     yprime_A_x.Left(), 
-                                     x.Center(), 
+   MatrixOperator Ax = operator_prod(conj(A.Center()),
+                                     yprime_A_x.Left(),
+                                     x.Center(),
                                      herm(yprime_A_x.Right()));
 
    Ax = operator_prod(A.Center(), yprime_A_x.Left(), x.Center(), herm(yprime_A_x.Right()));
@@ -519,7 +519,7 @@ TruncationInfo Solver::TruncateLeft(int MaxStates, double CFactor)
    DensityMatrix<MatrixOperator>::const_iterator E = DM.begin();
    int Count = 0;
    while (E != DM.end() && Count < MaxStates)
-      //	  (E->Eigenvalue > EigenvalueEpsilon * DM.EigenSum()
+      //          (E->Eigenvalue > EigenvalueEpsilon * DM.EigenSum()
       //           || Count < MaxStates))
    {
       ++E; ++Count;
@@ -577,9 +577,9 @@ TruncationInfo Solver::TruncateLeft(int MaxStates, double CFactor)
 TruncationInfo Solver::TruncateRight(int MaxStates, double CFactor)
 {
    // calculate Ax - TODO: this was already done by the solver, should be saved somewhere
-   MatrixOperator Ax = operator_prod(conj(A.Center()), 
-                                     yprime_A_x.Left(), 
-                                     x.Center(), 
+   MatrixOperator Ax = operator_prod(conj(A.Center()),
+                                     yprime_A_x.Left(),
+                                     x.Center(),
                                      herm(yprime_A_x.Right()));
 
    MatrixOperator Rho_x = scalar_prod(herm(x.Center()), x.Center());
@@ -610,7 +610,7 @@ TruncationInfo Solver::TruncateRight(int MaxStates, double CFactor)
    DensityMatrix<MatrixOperator>::const_iterator E = DM.begin();
    int Count = 0;
    while (E != DM.end() && Count < MaxStates)
-      //	  (E->Eigenvalue > EigenvalueEpsilon * DM.EigenSum()
+      //          (E->Eigenvalue > EigenvalueEpsilon * DM.EigenSum()
       //           || Count < MaxStates))
    {
       ++E; ++Count;

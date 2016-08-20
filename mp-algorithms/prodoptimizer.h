@@ -30,7 +30,7 @@ struct ProductOptimizer
 
    ProductOptimizer(CenterWavefunction const& Psi_, SplitOperator const& A_, CenterWavefunction const& Rhs);
 
-   ProductOptimizer(CenterWavefunction const& Psi_, std::vector<SplitOperator> const& A_, 
+   ProductOptimizer(CenterWavefunction const& Psi_, std::vector<SplitOperator> const& A_,
                     std::vector<CenterWavefunction> const& Rhs_);
 
    CenterWavefunction const& Wavefunction() const { return Psi; }

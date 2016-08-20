@@ -27,7 +27,7 @@ double Entropy(FwdIter first, FwdIter last)
    {
       double x = first->Eigenvalue;
       if (x > 0)
-	 E -= x * log(x);
+         E -= x * log(x);
 
       ++first;
    }
@@ -42,23 +42,23 @@ double TruncError(FwdIter first, FwdIter last)
    {
       double x = first->Eigenvalue;
       if (x > 0)
-	 E += x;
+         E += x;
 
       ++first;
    }
    return 1.0 - E;
 }
 
-ProductOptimizer::ProductOptimizer(CenterWavefunction const& Psi_, SplitOperator const& A_, 
+ProductOptimizer::ProductOptimizer(CenterWavefunction const& Psi_, SplitOperator const& A_,
                                    CenterWavefunction const& Rhs_)
    : Psi(Psi_), A(1, A_), Rhs(1, Rhs_), Psi_A_Rhs(1), Ident(Psi_.GetSymmetryList())
 {
    // construct the OpMatrix elements for the right hand side
 
-   this->Initialize(); 
+   this->Initialize();
 }
 
-ProductOptimizer::ProductOptimizer(CenterWavefunction const& Psi_, std::vector<SplitOperator> const& A_, 
+ProductOptimizer::ProductOptimizer(CenterWavefunction const& Psi_, std::vector<SplitOperator> const& A_,
                                    std::vector<CenterWavefunction> const& Rhs_)
    : Psi(Psi_), A(A_), Rhs(Rhs_), Psi_A_Rhs(Rhs_.size()), Ident(Psi_.GetSymmetryList())
 {
@@ -86,10 +86,10 @@ ProductOptimizer::Initialize()
    {
       while (A[i].LeftSize() > 1) A[i].RotateLeft();
       while (Rhs[i].LeftSize() > 1) Rhs[i].RotateLeft();
-      
+
 
       Psi_A_Rhs[i].PushRight(make_vacuum_state(Psi.GetSymmetryList()));
-   
+
       // apply the Right matrices
       for (int Loc = 0; Loc < Psi.RightSize(); ++Loc)
       {
@@ -122,7 +122,7 @@ ProductOptimizer::Initialize()
       {
          Psi_A_Rhs[i].PushLeft(operator_prod(herm(A[i].LookupLeft(Loc)),
                                              herm(Psi.LookupLeft(Loc)),
-                                             Psi_A_Rhs[i].Left(), 
+                                             Psi_A_Rhs[i].Left(),
                                              Rhs[i].LookupLeft(Loc)));
       }
    }
@@ -173,11 +173,11 @@ void ProductOptimizer::ExpandLeft()
 
    // matrix elements
    for (unsigned i = 0; i < A.size(); ++i)
-   {   
+   {
       Psi_A_Rhs[i].PopLeft();
       Psi_A_Rhs[i].PushLeft(operator_prod(herm(A[i].Left()),
                                        herm(Psi.Left()),
-                                       Psi_A_Rhs[i].Left(), 
+                                       Psi_A_Rhs[i].Left(),
                                        Rhs[i].Left()));
    }
 }
@@ -188,11 +188,11 @@ void ProductOptimizer::ExpandRight()
 
    // matrix elements
    for (unsigned i = 0; i < A.size(); ++i)
-   {   
+   {
       Psi_A_Rhs[i].PopRight();
       Psi_A_Rhs[i].PushRight(operator_prod(A[i].Right(),
                                         Psi.Right(),
-                                        Psi_A_Rhs[i].Right(), 
+                                        Psi_A_Rhs[i].Right(),
                                         herm(Rhs[i].Right())));
    }
 }
@@ -207,7 +207,7 @@ void ProductOptimizer::ShiftRightAndExpand()
    // Rotate the wavefunctions to the right.  A and x are fixed and do not
    // need the basis expanded
    for (unsigned i = 0; i < A.size(); ++i)
-   {   
+   {
       A[i].RotateRight();
       Rhs[i].RotateRight();
       Psi_A_Rhs[i].PushLeft(operator_prod(herm(A[i].Left()), herm(Psi.Left()), Psi_A_Rhs[i].Left(), Rhs[i].Left()));
@@ -222,7 +222,7 @@ void ProductOptimizer::ShiftLeftAndExpand()
    ExpandBasis1(Psi.Right());  // dont update yprime.Center() - do later
 
    for (unsigned i = 0; i < A.size(); ++i)
-   {   
+   {
       // Rotate the wavefunctions to the left.  A and x are fixed and do not
       // need the basis expanded
       A[i].RotateLeft();
@@ -249,12 +249,12 @@ TruncationInfo ProductOptimizer::TruncateLeft(StatesInfo const& SInfo, double CF
          MatrixOperator RhoRhs = scalar_prod(Rhs[i].Center(), herm(Rhs[i].Center()));
          for (unsigned j = 0; j < Psi_A_Rhs[i].Left().size(); ++j)
          {
-            MatrixOperator Correction = triple_prod(Psi_A_Rhs[i].Left()[j], 
+            MatrixOperator Correction = triple_prod(Psi_A_Rhs[i].Left()[j],
                                                     RhoRhs,
                                                     herm(Psi_A_Rhs[i].Left()[j]));
-	    std::complex<double> Tr = trace(Correction);
-	    if (LinearAlgebra::norm_2(Tr) > std::numeric_limits<double>::epsilon() * 100)
-	    {
+            std::complex<double> Tr = trace(Correction);
+            if (LinearAlgebra::norm_2(Tr) > std::numeric_limits<double>::epsilon() * 100)
+            {
                Correction *= CFactor / Tr;
                Rhop += Correction;
                Count++;
@@ -284,7 +284,7 @@ TruncationInfo ProductOptimizer::TruncateLeft(StatesInfo const& SInfo, double CF
 TruncationInfo ProductOptimizer::TruncateRight(StatesInfo const& SInfo, double CFactor)
 {
    MatrixOperator ydm = scalar_prod(herm(Psi.Center()), Psi.Center());
-   if (CFactor != 0) 
+   if (CFactor != 0)
    {
       int Count = 0;
       MatrixOperator Rhop;
@@ -293,12 +293,12 @@ TruncationInfo ProductOptimizer::TruncateRight(StatesInfo const& SInfo, double C
          MatrixOperator RhoRhs = scalar_prod(herm(Rhs[i].Center()), Rhs[i].Center());
          for (unsigned j = 0; j < Psi_A_Rhs[i].Right().size(); ++j)
          {
-            MatrixOperator Correction = triple_prod(Psi_A_Rhs[i].Right()[j], 
+            MatrixOperator Correction = triple_prod(Psi_A_Rhs[i].Right()[j],
                                                     RhoRhs,
                                                     herm(Psi_A_Rhs[i].Right()[j]));
-	    std::complex<double> Tr = trace(Correction);
-	    if (LinearAlgebra::norm_2(Tr) > std::numeric_limits<double>::epsilon() * 100)
-	    {
+            std::complex<double> Tr = trace(Correction);
+            if (LinearAlgebra::norm_2(Tr) > std::numeric_limits<double>::epsilon() * 100)
+            {
                Correction *= CFactor / Tr;
                Rhop += Correction;
                Count++;

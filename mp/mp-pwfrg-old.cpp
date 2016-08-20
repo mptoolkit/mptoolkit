@@ -49,7 +49,7 @@ struct SuperblockMultiply
    typedef MatrixOperator argument_type;
 
    SuperblockMultiply(MPStateComponent const& Left_,
-		      MPStateComponent const& Right_);
+                      MPStateComponent const& Right_);
 
    MatrixOperator operator()(MatrixOperator const& Psi) const
    {
@@ -61,7 +61,7 @@ struct SuperblockMultiply
 
 inline
 SuperblockMultiply::SuperblockMultiply(MPStateComponent const& Left_,
-				       MPStateComponent const& Right_)
+                                       MPStateComponent const& Right_)
    : Left(Left_), Right(Right_)
 {
 }
@@ -76,28 +76,28 @@ ExtractDiagonal(MatrixOperator const& m)
    {
       if (iterate_at(m.data(), i, i))
       {
-	 for (int j = 0; j < m.Basis1().dim(i); ++j)
-	 {
-	    x.push_back(m(i,i)(j,j).real());
-	 }
+         for (int j = 0; j < m.Basis1().dim(i); ++j)
+         {
+            x.push_back(m(i,i)(j,j).real());
+         }
       }
       else
       {
-	 for (int j = 0; j < m.Basis1().dim(i); ++j)
-	 {
-	    x.push_back(0.0);
-	 }
+         for (int j = 0; j < m.Basis1().dim(i); ++j)
+         {
+            x.push_back(0.0);
+         }
       }
    }
    return LinearAlgebra::Vector<double>(x.begin(), x.end());
 }
 
-void DoIteration(MPOpComponent const& Ham, 
-		 MPStateComponent& A1, MPStateComponent& B2,
-		 MatrixOperator& OldCenter,
-		 MatrixOperator& Center,
-		 MPStateComponent& E,
-		 MPStateComponent& F)
+void DoIteration(MPOpComponent const& Ham,
+                 MPStateComponent& A1, MPStateComponent& B2,
+                 MatrixOperator& OldCenter,
+                 MatrixOperator& Center,
+                 MPStateComponent& E,
+                 MPStateComponent& F)
 {
    DEBUG_CHECK_EQUAL(A1.Basis2(), Center.Basis1());
    DEBUG_CHECK_EQUAL(E.Basis2(), Center.Basis1());
@@ -114,15 +114,15 @@ void DoIteration(MPOpComponent const& Ham,
    {
       if (iterate_at(OldCenter.data(), i, i))
       {
-	 for (int j = 0; j < std::min(OldCenter.Basis1().dim(i), OldCenter.Basis2().dim(i)); ++j)
-	 {
-	    double x = OldCenter(i,i)(j,j).real();
-	    if (fabs(x) < 1e-5) 
-	       x = 0;
-	    else 
-	       x = 1.0 / x;
-	    OldCenterInverse(i,i)(j,j) = x;
-	 }
+         for (int j = 0; j < std::min(OldCenter.Basis1().dim(i), OldCenter.Basis2().dim(i)); ++j)
+         {
+            double x = OldCenter(i,i)(j,j).real();
+            if (fabs(x) < 1e-5)
+               x = 0;
+            else
+               x = 1.0 / x;
+            OldCenterInverse(i,i)(j,j) = x;
+         }
       }
    }
 
@@ -133,7 +133,7 @@ void DoIteration(MPOpComponent const& Ham,
    // rotate to the left
    MPStateComponent B1 = prod(A1, Center);
    MatrixOperator Cl = TruncateBasis1(B1);
-   
+
    // insert the sites
    OldCenter = Center;
    // wavefunction transform
@@ -153,10 +153,10 @@ void DoIteration(MPOpComponent const& Ham,
    {
       if (iterate_at(Dr.data(), i, i))
       {
-	 for (int j = 0; j < std::min(Dr.Basis1().dim(i), Dr.Basis2().dim(i)); ++j)
-	 {
-	    Dr(i,i)(j,j) = std::sqrt(Dr(i,i)(j,j));
-	 }
+         for (int j = 0; j < std::min(Dr.Basis1().dim(i), Dr.Basis2().dim(i)); ++j)
+         {
+            Dr(i,i)(j,j) = std::sqrt(Dr(i,i)(j,j));
+         }
       }
    }
 
@@ -164,10 +164,10 @@ void DoIteration(MPOpComponent const& Ham,
    {
       if (iterate_at(Dr.data(), i, i))
       {
-	 for (int j = 0; j < std::min(Dl.Basis1().dim(i), Dl.Basis2().dim(i)); ++j)
-	 {
-	    Dl(i,i)(j,j) = std::sqrt(Dl(i,i)(j,j));
-	 }
+         for (int j = 0; j < std::min(Dl.Basis1().dim(i), Dl.Basis2().dim(i)); ++j)
+         {
+            Dl(i,i)(j,j) = std::sqrt(Dl(i,i)(j,j));
+         }
       }
    }
 
@@ -224,10 +224,10 @@ int main(int argc, char** argv)
    SInfo.TruncationCutoff = TruncCutoff;
    SInfo.EigenvalueCutoff = EigenCutoff;
    std::cout << SInfo << '\n';
-   
-   MpOpTriangular Ham = TriangularTwoSite(-sqrt(3.0)*Site["S"], 
-					  Site["S"], 
-					  Site["I"].TransformsAs());
+
+   MpOpTriangular Ham = TriangularTwoSite(-sqrt(3.0)*Site["S"],
+                                          Site["S"],
+                                          Site["I"].TransformsAs());
 
    MPStateComponent E = Initial_E(Ham);
    MPStateComponent F = Initial_F(Ham);
@@ -299,9 +299,9 @@ int main(int argc, char** argv)
 
    int Iterations = NumIter;
    Center = 0.5 * (Center + adjoint(Center));
-   double Energy = Lanczos(Center, 
-			   SuperblockMultiply(E, F),
-			   Iterations);
+   double Energy = Lanczos(Center,
+                           SuperblockMultiply(E, F),
+                           Iterations);
    Center = 0.5 * (Center + adjoint(Center));
    TRACE(Energy);
 
@@ -314,29 +314,29 @@ int main(int argc, char** argv)
       MatrixOperator RhoL = scalar_prod(Center, herm(Center));
       DensityMatrix<MatrixOperator> DML(RhoL);
       TruncationInfo Info;
-      MatrixOperator TruncL = DML.ConstructTruncator(DML.begin(), 
-						     TruncateFixTruncationErrorAbsolute(DML.begin(),
-											DML.end(),
-											SInfo,
-											Info));
+      MatrixOperator TruncL = DML.ConstructTruncator(DML.begin(),
+                                                     TruncateFixTruncationErrorAbsolute(DML.begin(),
+                                                                                        DML.end(),
+                                                                                        SInfo,
+                                                                                        Info));
 
       // randomize the signs of TruncL
       for (int j = 0; j < TruncL.Basis1().size(); ++j)
       {
-	 for (int k = 0; k < TruncL.Basis1().dim(j); ++k)
-	 {
-	    int sign = ((rand() / 1000) % 2) * 2 - 1;
-	    for (int l = 0; l < TruncL.Basis2().size(); ++l)
-	    {
-	       if (iterate_at(TruncL.data(), j,l))
-	       {
-		  for (int m = 0; m < TruncL.Basis2().dim(l); ++m)
-		  {
-		     TruncL(j,l)(k,m) *= sign;
-		  }
-	       }
-	    }
-	 }
+         for (int k = 0; k < TruncL.Basis1().dim(j); ++k)
+         {
+            int sign = ((rand() / 1000) % 2) * 2 - 1;
+            for (int l = 0; l < TruncL.Basis2().size(); ++l)
+            {
+               if (iterate_at(TruncL.data(), j,l))
+               {
+                  for (int m = 0; m < TruncL.Basis2().dim(l); ++m)
+                  {
+                     TruncL(j,l)(k,m) *= sign;
+                  }
+               }
+            }
+         }
       }
 
       TRACE(ExtractDiagonal(scalar_prod(TruncL, herm(TruncL))));
@@ -347,15 +347,15 @@ int main(int argc, char** argv)
 
       SaveTrunc.push_back(TruncL);
 
-#if 0      
+#if 0
       MatrixOperator RhoR = scalar_prod(herm(Center), Center);
       DensityMatrix<MatrixOperator> DMR(RhoR);
       TruncationInfo InfoR;
-      MatrixOperator TruncR = DMR.ConstructTruncator(DMR.begin(), 
-						     TruncateFixTruncationErrorAbsolute(DMR.begin(),
-											DMR.end(),
-											SInfo,
-											InfoR));
+      MatrixOperator TruncR = DMR.ConstructTruncator(DMR.begin(),
+                                                     TruncateFixTruncationErrorAbsolute(DMR.begin(),
+                                                                                        DMR.end(),
+                                                                                        SInfo,
+                                                                                        InfoR));
 #else
       MatrixOperator TruncR = TruncL;
 #endif
@@ -383,7 +383,7 @@ int main(int argc, char** argv)
       TRACE(BondE);
 
       //      if (i%2)
-      //	 TRACE(ExtractDiagonal(Center));
+      //         TRACE(ExtractDiagonal(Center));
 
       CenterQ.back() = Center;
 
@@ -391,8 +391,8 @@ int main(int argc, char** argv)
       MatrixOperator pE = MatchBasisReverse(A2.front().Basis1(), A1.front().Basis1());
       for (int i = 0; i < UnitCellSize; ++i)
       {
-	 TRACE(SingularValues(pE));
-	 pE = operator_prod(herm(A2[i]), pE, A1[i]);
+         TRACE(SingularValues(pE));
+         pE = operator_prod(herm(A2[i]), pE, A1[i]);
       }
       MPStateComponent A = prod(pE, A2.front());
 
@@ -400,7 +400,7 @@ int main(int argc, char** argv)
       MatrixOperator pF = MatchBasis(B1.back().Basis2(), B2.back().Basis2());
       for (int i = UnitCellSize-1; i >= 0; --i)
       {
-	 pF = operator_prod(B1[i], pF, herm(B2[i]));
+         pF = operator_prod(B1[i], pF, herm(B2[i]));
       }
 #else
       MatrixOperator pF = pE;
@@ -412,7 +412,7 @@ int main(int argc, char** argv)
 
       if (min(SingularValues(pE)) < 0.9)
       {
-	 TRACE("Singular value failure")(min(SingularValues(pE)));
+         TRACE("Singular value failure")(min(SingularValues(pE)));
       }
 
       // new singular values
@@ -430,15 +430,15 @@ int main(int argc, char** argv)
 
 #if 0
       {
-	 MatrixOperator U = TruncateBasis2(A);
-	 Center = U * Center * herm(U);
+         MatrixOperator U = TruncateBasis2(A);
+         Center = U * Center * herm(U);
       }
       //      {
-      //	 MatrixOperator U = TruncateBasis1(B);
-      //	 Center = Center * U;
+      //         MatrixOperator U = TruncateBasis1(B);
+      //         Center = Center * U;
       //      }
       if (norm_frob(Center) > 1E-10)
-	 TRACE(ExtractDiagonal(Center));
+         TRACE(ExtractDiagonal(Center));
 #endif
 
       //TRACE(ExtractDiagonal(Center));
@@ -458,12 +458,12 @@ int main(int argc, char** argv)
       // expand basis
       CHECK_EQUAL(A.Basis2(), B.Basis1());
       {
-	 MatrixOperator U = ExpandBasis2(A);
-	 Center = U * Center;
+         MatrixOperator U = ExpandBasis2(A);
+         Center = U * Center;
       }
       {
-      	 MatrixOperator U = ExpandBasis1(B);
-      	 Center = Center * U;
+         MatrixOperator U = ExpandBasis1(B);
+         Center = Center * U;
       }
 
       CHECK_EQUAL(Center.Basis1(), Center.Basis2());
@@ -474,7 +474,7 @@ int main(int argc, char** argv)
 
       //for (int i = 0; i < UnitCellSize; ++i)
       //{
-      //	 TRACE(i)(A2[i].Basis2())(CenterQ[i].Basis1());
+      //         TRACE(i)(A2[i].Basis2())(CenterQ[i].Basis1());
       //}
 
       //CHECK_EQUAL(A2.front().Basis2(), CenterQ.front().Basis1());
@@ -484,23 +484,23 @@ int main(int argc, char** argv)
 
       if (norm_frob(Center) < 1E-10)
       {
-	 TRACE(norm_frob(Center));
-	 Center = MakeRandomMatrixOperator(Center.Basis1(), Center.Basis2());
+         TRACE(norm_frob(Center));
+         Center = MakeRandomMatrixOperator(Center.Basis1(), Center.Basis2());
       }
 
       Center = 0.5 * (Center + adjoint(Center));
       MatrixOperator CenterSave = Center;
       Iterations = NumIter;
-      Energy = Lanczos(Center, 
-		       SuperblockMultiply(E, F),
-		       Iterations);
+      Energy = Lanczos(Center,
+                       SuperblockMultiply(E, F),
+                       Iterations);
       Center = 0.5 * (Center + adjoint(Center));
       TRACE(Energy)(inner_prod(Center, CenterSave));
 
       //      TRACE(norm_frob(Center))(norm_frob(CenterSave));
       //      TRACE(Center)(CenterSave);
       //      TRACE(EigenvaluesHermitian(scalar_prod(Center, herm(Center))))
-      //	 (EigenvaluesHermitian(scalar_prod(CenterSave, herm(CenterSave))));
+      //         (EigenvaluesHermitian(scalar_prod(CenterSave, herm(CenterSave))));
       //      TRACE(Center.Basis1());
       //      TRACE(CenterSave.Basis1());
 

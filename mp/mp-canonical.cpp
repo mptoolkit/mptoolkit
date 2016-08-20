@@ -96,7 +96,7 @@ LinearWavefunction ConstructCanonicalWavefunction(Lattice const& L)
    {
       std::cout << "Working (" << ((i+1)/2) << ") ..." << std::endl;
       DEBUG_TRACE("here")(CurrentBasis);
-      std::pair<MPStateComponent, MPStateComponent> APair = 
+      std::pair<MPStateComponent, MPStateComponent> APair =
          ConstructMaxEntangledState(AllBasis[i-1], AllBasis[i]);
       // make the tensor product with the identity operator in the CurrentBasis
       MatrixOperator Ident = MatrixOperator::make_identity(CurrentBasis);

@@ -36,7 +36,7 @@ class FattenedIterator
 
       result_type operator[](difference_type i) { FlattenedIterator Temp(*this); Temp += i; return *Temp; }
 
-      FlattenedIterator& operator+=(difference_type i) { 
+      FlattenedIterator& operator+=(difference_type i) {
 
    private:
      outer_type Outer;

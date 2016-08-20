@@ -45,7 +45,7 @@ VectorRef<Scalar>::operator=(NoAliasProxy<U> const& x)
 
 template <class Scalar>
 inline
-void 
+void
 VectorRef<Scalar>::resize(size_type NewSize)
 {
    // Early return in the case that the data block is not shared
@@ -74,9 +74,9 @@ Vector<Scalar>::Vector(size_t Size_, Scalar const& fill_)
 template <class Scalar>
 template <typename Iter>
 inline
-Vector<Scalar>::Vector(Iter first, Iter last, 
-		       typename boost::enable_if<
-		       boost::mpl::not_<boost::is_arithmetic<Iter> > >::type*)
+Vector<Scalar>::Vector(Iter first, Iter last,
+                       typename boost::enable_if<
+                       boost::mpl::not_<boost::is_arithmetic<Iter> > >::type*)
    : VectorRef<Scalar>(std::distance(first, last))
 {
    assign(*this, std::vector<Scalar>(first, last));
@@ -85,8 +85,8 @@ Vector<Scalar>::Vector(Iter first, Iter last,
 template <class Scalar>
 template <typename U>
 inline
-Vector<Scalar>::Vector(U const& x, 
-		       typename boost::enable_if<is_vector<U> >::type*)
+Vector<Scalar>::Vector(U const& x,
+                       typename boost::enable_if<is_vector<U> >::type*)
   : VectorRef<Scalar>(Size<U>()(x))
 {
    assign(*this, x);
@@ -136,8 +136,8 @@ struct Assign<Vector<Scalar>, RHS, Any, LOCAL_VECTOR(RValue, U)>
       typename const_iterator<RHS>::type Iter = iterate(y);
       while (y)
       {
-	 x[y.index()] = *y;
-	 ++y;
+         x[y.index()] = *y;
+         ++y;
       }
    }
 };

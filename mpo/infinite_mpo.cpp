@@ -22,7 +22,7 @@
 #include "mpo/infinite_mpo_actions.h"
 #include "pstream/variant.h"
 
-// Warning: Due to the implicit conversion of TriangularMPO and ProductMPO to 
+// Warning: Due to the implicit conversion of TriangularMPO and ProductMPO to
 // InfiniteMPOElement and InfiniteMPO, we can get some weird errors if
 // the visitor functions don't find a match.
 
@@ -67,7 +67,7 @@ InfiniteMPO::as_triangular_mpo() const
 {
    return boost::get<TriangularMPO>(this->op());
 }
-      
+
 bool
 InfiniteMPO::is_product() const
 {
@@ -85,7 +85,7 @@ InfiniteMPO::is_complex() const
 {
    return bool(boost::get<std::complex<double> >(&this->op()));
 }
- 
+
 std::complex<double>
 InfiniteMPO::as_complex() const
 {
@@ -158,12 +158,12 @@ InfiniteMPO operator*(InfiniteMPO const& x, std::complex<double> a)
    return x*InfiniteMPO(a);
 }
 
-InfiniteMPO prod(InfiniteMPO const& x, InfiniteMPO const& y, 
-		 QuantumNumbers::QuantumNumber const& q)
+InfiniteMPO prod(InfiniteMPO const& x, InfiniteMPO const& y,
+                 QuantumNumbers::QuantumNumber const& q)
 {
    return boost::apply_visitor(ternary_product_q<InfiniteMPOElement>(q), x.op(), y.op());
 }
-   
+
 InfiniteMPO prod(InfiniteMPO const& x, InfiniteMPO const& y)
 {
    return boost::apply_visitor(binary_multiplication<InfiniteMPOElement>(), x.op(), y.op());

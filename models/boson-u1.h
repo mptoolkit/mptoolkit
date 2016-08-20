@@ -114,7 +114,7 @@ LatticeSite BosonU1(int MaxN, std::string const& Sym1 = "N")
       SiteOperator X(Basis, QN(0), LatticeCommute::Bosonic);
       SetMatElementU1(X, n, n, 1);
       std::string OpName = std::string("P_")
-	+ boost::lexical_cast<std::string>(n);
+        + boost::lexical_cast<std::string>(n);
       X.set_description("projector onto occupation number " + boost::lexical_cast<std::string>(n));
       Site[OpName] = X;
    }

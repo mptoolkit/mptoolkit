@@ -66,32 +66,32 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Hamiltonian,H", prog_opt::value(&Hamiltonian), 
+         ("Hamiltonian,H", prog_opt::value(&Hamiltonian),
           "operator to use for the Hamiltonian, not an expression!"
-	  " Valid choices: itf, xyz, xxz-u1, xxx-su2")
+          " Valid choices: itf, xyz, xxz-u1, xxx-su2")
          ("wavefunction,w", prog_opt::value<std::string>(),
           "wavefunction to apply DMRG (required)")
-	 ("max-states,m", prog_opt::value<int>(&MaxStates), 
+         ("max-states,m", prog_opt::value<int>(&MaxStates),
           ("Maximum number of states to keep [default "
           +boost::lexical_cast<std::string>(MaxStates)+"]").c_str())
          ("min-states", prog_opt::value<int>(&MinStates), ("Minimum number of states to keep [default "
           +boost::lexical_cast<std::string>(MinStates)+"]").c_str())
-         ("trunc,r", prog_opt::value<double>(&TruncCutoff), 
+         ("trunc,r", prog_opt::value<double>(&TruncCutoff),
           "Truncation error cutoff [default 0]")
-         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff), 
+         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           ("Cutoff threshold for density matrix eigenvalues (alternative to truncation error) [default "
            +boost::lexical_cast<std::string>(EigenCutoff)+"]").c_str())
          ("relative", prog_opt::bool_switch(&Relative), "truncate relative weights, rather than"
           " absolute (for imaginary time evolution you surely want this)")
-	 ("all,a", prog_opt::bool_switch(&EvolveAll), "evolve all bonds at once [PRA 60, 1956 (1999)]")
-	 ("spin", prog_opt::value(&Spin), "spin (for xxx,xxz,xyz hamiltonians)")
-	 ("jx", prog_opt::value(&Jx), "J_x (for xyz hamiltonian) [default 1.0]")
-	 ("jy", prog_opt::value(&Jy), "J_y (for xyz hamiltonian) [default 1.0]")
-	 ("jz", prog_opt::value(&Jz), "J_z (for xxz,xyz hamiltonians) [default 1.0]")
-	 ("V", prog_opt::value(&V), "nearest-neighbor coulomb (for spinless fermions) [default 0]")
-	 ("lambda", prog_opt::value(&Lambda), "transverse field strength"
-	  " (for itf hamiltonian) [default 1.0])")
-	  ;
+         ("all,a", prog_opt::bool_switch(&EvolveAll), "evolve all bonds at once [PRA 60, 1956 (1999)]")
+         ("spin", prog_opt::value(&Spin), "spin (for xxx,xxz,xyz hamiltonians)")
+         ("jx", prog_opt::value(&Jx), "J_x (for xyz hamiltonian) [default 1.0]")
+         ("jy", prog_opt::value(&Jy), "J_y (for xyz hamiltonian) [default 1.0]")
+         ("jz", prog_opt::value(&Jz), "J_z (for xxz,xyz hamiltonians) [default 1.0]")
+         ("V", prog_opt::value(&V), "nearest-neighbor coulomb (for spinless fermions) [default 0]")
+         ("lambda", prog_opt::value(&Lambda), "transverse field strength"
+          " (for itf hamiltonian) [default 1.0])")
+          ;
 
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
@@ -104,12 +104,12 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("Hamiltonian") == 0) 
+      if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("Hamiltonian") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-evolve-bonds [options] timestep1 timestep2 .... \n";
@@ -119,51 +119,51 @@ int main(int argc, char** argv)
 
       if (Timesteps.size() == 0 || Timesteps.size() % 2 != 0)
       {
-	 std::cerr << "mp-evolve-bonds: error: must have an even number of timesteps.\n";
+         std::cerr << "mp-evolve-bonds: error: must have an even number of timesteps.\n";
          TRACE(Timesteps.size());
-	 return 1;
+         return 1;
       }
 
       SimpleOperator Ham;
       if (Hamiltonian == "xyz")
       {
-	 std::cout << "Hamiltonian is XYZ model with spin S=" << Spin
-		   << "\nJx=" << Jx << ", Jy= " << Jy << ", Jz=" << Jz << '\n';
-	 SiteBlock Site = CreateSpinSite(Spin);
-	 Ham = Jx * tensor_prod(Site["Sx"], Site["Sx"])
-	    + Jy * tensor_prod(Site["Sy"], Site["Sy"])
-	    + Jz * tensor_prod(Site["Sz"], Site["Sz"]);
+         std::cout << "Hamiltonian is XYZ model with spin S=" << Spin
+                   << "\nJx=" << Jx << ", Jy= " << Jy << ", Jz=" << Jz << '\n';
+         SiteBlock Site = CreateSpinSite(Spin);
+         Ham = Jx * tensor_prod(Site["Sx"], Site["Sx"])
+            + Jy * tensor_prod(Site["Sy"], Site["Sy"])
+            + Jz * tensor_prod(Site["Sz"], Site["Sz"]);
       }
       else if (Hamiltonian == "xxz-u1")
       {
-	 std::cout << "Hamiltonian is XXZ model with spin S=" << Spin
-		   << ", Jz=" << Jz << '\n';
-	 SiteBlock Site = CreateU1SpinSite(Spin);
-	 Ham = 0.5 * (tensor_prod(Site["Sp"], Site["Sm"])
-		      + tensor_prod(Site["Sm"], Site["Sp"]))
-	    + Jz * tensor_prod(Site["Sz"], Site["Sz"]);
+         std::cout << "Hamiltonian is XXZ model with spin S=" << Spin
+                   << ", Jz=" << Jz << '\n';
+         SiteBlock Site = CreateU1SpinSite(Spin);
+         Ham = 0.5 * (tensor_prod(Site["Sp"], Site["Sm"])
+                      + tensor_prod(Site["Sm"], Site["Sp"]))
+            + Jz * tensor_prod(Site["Sz"], Site["Sz"]);
       }
       else if (Hamiltonian == "xxx-su2")
       {
-	 std::cout << "Hamiltonian is XXX model with spin S=" << Spin << '\n';
-	 SiteBlock Site = CreateSU2SpinSite(Spin);
-	 Ham = -sqrt(3.0) * tensor_prod(Site["S"], Site["S"], QuantumNumber(Site.GetSymmetryList()));
+         std::cout << "Hamiltonian is XXX model with spin S=" << Spin << '\n';
+         SiteBlock Site = CreateSU2SpinSite(Spin);
+         Ham = -sqrt(3.0) * tensor_prod(Site["S"], Site["S"], QuantumNumber(Site.GetSymmetryList()));
       }
       else if (Hamiltonian == "itf")
       {
-	 std::cout << "Hamiltonian is transverse-field ising.\n";
-	 SiteBlock Site = CreateSpinSite(0.5);
-	 Ham = 4.0 * tensor_prod(Site["Sz"], Site["Sz"])
-	    + Lambda * (tensor_prod(Site["Sx"], Site["I"]) + tensor_prod(Site["I"], Site["Sx"]));
+         std::cout << "Hamiltonian is transverse-field ising.\n";
+         SiteBlock Site = CreateSpinSite(0.5);
+         Ham = 4.0 * tensor_prod(Site["Sz"], Site["Sz"])
+            + Lambda * (tensor_prod(Site["Sx"], Site["I"]) + tensor_prod(Site["I"], Site["Sx"]));
       }
       else if (Hamiltonian == "sf")
       {
-	 std::cout << "Hamiltonian is spinless fermions.\n";
-	 SiteBlock Site = CreateU1SpinlessFermion();
-	 QuantumNumbers::QNConstructor<QuantumNumbers::U1> QN(Site.GetSymmetryList());
-	 Ham = -1.0 * (tensor_prod(prod(Site["CH"], Site["P"], QN(1)), Site["C"])
-		       - tensor_prod(prod(Site["C"], Site["P"], QN(-1)), Site["CH"]))
-	    + V * tensor_prod(Site["N"], Site["N"]);
+         std::cout << "Hamiltonian is spinless fermions.\n";
+         SiteBlock Site = CreateU1SpinlessFermion();
+         QuantumNumbers::QNConstructor<QuantumNumbers::U1> QN(Site.GetSymmetryList());
+         Ham = -1.0 * (tensor_prod(prod(Site["CH"], Site["P"], QN(1)), Site["C"])
+                       - tensor_prod(prod(Site["C"], Site["P"], QN(-1)), Site["CH"]))
+            + V * tensor_prod(Site["N"], Site["N"]);
       }
       else
       {
@@ -193,19 +193,19 @@ int main(int argc, char** argv)
       std::complex<double> complex_i(0.0, -1.0);
       for (unsigned i = 0; i < Timesteps.size(); ++i)
       {
-	 std::list<SimpleOperator> EvolList;
-	 for (unsigned s = 0; s < Size-1; ++s)
-	 {
-	    if ((s % 2 == i % 2 || EvolveAll) && Timesteps[i] != 0.0)
-	       EvolList.push_back(Exponentiate(complex_i*Timesteps[i]*Ham));
-	    else
-	       EvolList.push_back(SimpleOperator::make_identity(Ham.Basis1()));
-	 }
-	 
-	 if (i % 2 == 0)
-	    SweepRightEvolve(Psi, EvolList, SInfo, true);
-	 else
-	    SweepLeftEvolve(Psi, EvolList, SInfo, true);
+         std::list<SimpleOperator> EvolList;
+         for (unsigned s = 0; s < Size-1; ++s)
+         {
+            if ((s % 2 == i % 2 || EvolveAll) && Timesteps[i] != 0.0)
+               EvolList.push_back(Exponentiate(complex_i*Timesteps[i]*Ham));
+            else
+               EvolList.push_back(SimpleOperator::make_identity(Ham.Basis1()));
+         }
+
+         if (i % 2 == 0)
+            SweepRightEvolve(Psi, EvolList, SInfo, true);
+         else
+            SweepLeftEvolve(Psi, EvolList, SInfo, true);
       }
 
       std::cout << "Finished." << std::endl;

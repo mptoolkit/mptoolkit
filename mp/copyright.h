@@ -58,7 +58,7 @@ inline void print_copyright(std::ostream& out)
       "Contact: " PACKAGE_BUGREPORT "\n"
       "Compiled on " __DATE__ " at " __TIME__ "\n"
       "Configured using compiler " CONFIG_COMPILER_VENDOR " " CONFIG_COMPILER_VERSION "\n"
-      "Using Boost version " << (BOOST_VERSION / 100000) 
+      "Using Boost version " << (BOOST_VERSION / 100000)
        << "." << (BOOST_VERSION / 100 % 1000)
        << "." << (BOOST_VERSION % 100) << "\n"
       "This program comes with ABSOLUTELY NO WARRANTY; for details run 'mp-info --warranty'.\n"
@@ -111,20 +111,20 @@ std::string Wikify(std::string const& x, bool itool = true)
    {
       if (c == '-')
       {
-	 Hyphen = true;
-	 Capital = true;
+         Hyphen = true;
+         Capital = true;
       }
       else
       {
-	 if (Capital)
-	 {
-	    Result += char(toupper(c));
-	    if (!Hyphen || (!itool) || c != 'i')
-	       Capital = false;
-	    Hyphen = false;
-	 }
-	 else
-	    Result += char(tolower(c));
+         if (Capital)
+         {
+            Result += char(toupper(c));
+            if (!Hyphen || (!itool) || c != 'i')
+               Capital = false;
+            Hyphen = false;
+         }
+         else
+            Result += char(tolower(c));
       }
    }
    return Result;

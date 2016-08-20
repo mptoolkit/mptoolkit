@@ -40,7 +40,7 @@ int main()
    C(0,1)    = sqrt(2.0);
    C(1,2)    = 1.0;
 
-   // and the creation operator   
+   // and the creation operator
    IrredTensor<double> CH(HubbardBasis, QN(1, 0.5));
    CH(1,0)    = 1.0;
    CH(2,1)    = -sqrt(2.0);
@@ -76,7 +76,7 @@ int main()
    IrredTensor<double> HSSI = tensor_prod(HS, SI);
    CHECK_EQUAL(HSSI.Basis1(), HSBasis.Basis());
    CHECK_EQUAL(HSSI.Basis2(), HSBasis.Basis());
-   
+
    IrredTensor<double> TotalS = HISS+HSSI;
    CHECK_CLOSE(TotalS(0,0), sqrt(0.75));
    CHECK_CLOSE(TotalS(2,2), sqrt(2.0));

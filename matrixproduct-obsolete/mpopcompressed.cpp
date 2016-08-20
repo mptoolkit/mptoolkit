@@ -28,7 +28,7 @@
 struct DoProd : public boost::static_visitor<MPOpCompressed>
 {
    DoProd(SimpleOperator& C_, ProductBasis<BasisList, BasisList>& B_)
-      : C(C_), B(B_) 
+      : C(C_), B(B_)
    {
       DEBUG_CHECK_EQUAL(C.Basis2(), B.Basis());
    }
@@ -60,7 +60,7 @@ struct DoProd : public boost::static_visitor<MPOpCompressed>
    ProductBasis<BasisList, BasisList>& B;
 };
 
-MPOpCompressed 
+MPOpCompressed
 DoProd::operator()(MPOpComponent const& a, MPOpComponent const& b) const
 {
    DEBUG_CHECK_EQUAL(a.Basis1(), B.Left());
@@ -73,35 +73,35 @@ DoProd::operator()(MPOpComponent const& a, MPOpComponent const& b) const
    return MPOpCompressed(Next);
 }
 
-MPOpCompressed 
+MPOpCompressed
 DoProd::operator()(MPOpComponent const& a, MPOpArray const& b) const
 {
    CHECK(b.size() == 1);
    return apply_visitor(*this, MPOpCompressed(a), b.data().front());
 }
 
-MPOpCompressed 
+MPOpCompressed
 DoProd::operator()(MPOpComponent const& a, MPOpRepeat const& b) const
 {
    CHECK(b.size() == 1);
    return apply_visitor(*this, MPOpCompressed(a), b.nested());
 }
 
-MPOpCompressed 
+MPOpCompressed
 DoProd::operator()(MPOpArray const& a, MPOpComponent const& b) const
 {
    CHECK(a.size() == 1);
    return apply_visitor(*this, a.data().front(), MPOpCompressed(b));
 }
 
-MPOpCompressed 
+MPOpCompressed
 DoProd::operator()(MPOpRepeat const& a, MPOpComponent const& b) const
 {
    CHECK(a.size() == 1);
    return apply_visitor(*this, a.nested(), MPOpCompressed(b));
 }
 
-MPOpCompressed 
+MPOpCompressed
 DoProd::operator()(MPOpRepeat const& a, MPOpRepeat const& b) const
 {
    //DEBUG_TRACE(a.size())(a.nested().size())(b.size())(b.nested().size());
@@ -128,7 +128,7 @@ DoProd::operator()(MPOpRepeat const& a, MPOpRepeat const& b) const
    return Result;
 }
 
-MPOpCompressed 
+MPOpCompressed
 DoProd::operator()(MPOpRepeat const& a, MPOpArray const& b) const
 {
    //DEBUG_TRACE(a.size())(a.nested().size())(b.size())(a.logical_size())(b.logical_size());
@@ -144,7 +144,7 @@ DoProd::operator()(MPOpRepeat const& a, MPOpArray const& b) const
          Result.push_back(do_prod(C, B, MPOpRepeat(I->size()/a.nested().size(), a.nested()), *I));
          ++I;
       }
-      else 
+      else
       {
          // in this case, the array must be a split unit cell
          MPOpArray::const_iterator First = I;
@@ -162,7 +162,7 @@ DoProd::operator()(MPOpRepeat const& a, MPOpArray const& b) const
    return Result;
 }
 
-MPOpCompressed 
+MPOpCompressed
 DoProd::operator()(MPOpArray const& a, MPOpRepeat const& b) const
 {
    //DEBUG_TRACE(a.size())(b.size())(b.nested().size());
@@ -178,7 +178,7 @@ DoProd::operator()(MPOpArray const& a, MPOpRepeat const& b) const
          Result.push_back(do_prod(C, B, *I, MPOpRepeat(I->size()/b.nested().size(), b.nested())));
          ++I;
       }
-      else 
+      else
       {
          // in this case, the array must be a split unit cell
          MPOpArray::const_iterator First = I;
@@ -196,7 +196,7 @@ DoProd::operator()(MPOpArray const& a, MPOpRepeat const& b) const
    return Result;
 }
 
-MPOpCompressed 
+MPOpCompressed
 DoProd::operator()(MPOpArray const& a, MPOpArray const& b) const
 {
    //DEBUG_TRACE(a.size())(b.size());
@@ -260,7 +260,7 @@ MPOpCompressed do_prod(SimpleOperator& C, ProductBasis<BasisList, BasisList>& B,
 struct DoSum : public boost::static_visitor<MPOpCompressed>
 {
    DoSum(SimpleOperator& C_, SumBasis<BasisList>& B_)
-      : C(C_), B(B_) 
+      : C(C_), B(B_)
    {
       DEBUG_CHECK_EQUAL(C.Basis2(), B);
    }
@@ -291,7 +291,7 @@ struct DoSum : public boost::static_visitor<MPOpCompressed>
    SumBasis<BasisList>& B;
 };
 
-MPOpCompressed 
+MPOpCompressed
 DoSum::operator()(MPOpComponent const& a, MPOpComponent const& b) const
 {
    DEBUG_CHECK_EQUAL(a.Basis1(), B.Basis(0));
@@ -304,28 +304,28 @@ DoSum::operator()(MPOpComponent const& a, MPOpComponent const& b) const
    return MPOpCompressed(Next);
 }
 
-MPOpCompressed 
+MPOpCompressed
 DoSum::operator()(MPOpComponent const& a, MPOpArray const& b) const
 {
    CHECK(b.size() == 1);
    return apply_visitor(*this, MPOpCompressed(a), b.data().front());
 }
 
-MPOpCompressed 
+MPOpCompressed
 DoSum::operator()(MPOpComponent const& a, MPOpRepeat const& b) const
 {
    CHECK(b.size() == 1);
    return apply_visitor(*this, MPOpCompressed(a), b.nested());
 }
 
-MPOpCompressed 
+MPOpCompressed
 DoSum::operator()(MPOpArray const& a, MPOpComponent const& b) const
 {
    CHECK(a.size() == 1);
    return apply_visitor(*this, a.data().front(), MPOpCompressed(b));
 }
 
-MPOpCompressed 
+MPOpCompressed
 DoSum::operator()(MPOpRepeat const& a, MPOpComponent const& b) const
 {
    CHECK(a.size() == 1);
@@ -333,7 +333,7 @@ DoSum::operator()(MPOpRepeat const& a, MPOpComponent const& b) const
 }
 
 
-MPOpCompressed 
+MPOpCompressed
 DoSum::operator()(MPOpRepeat const& a, MPOpRepeat const& b) const
 {
    CHECK_EQUAL(a.size(), b.size());
@@ -359,7 +359,7 @@ DoSum::operator()(MPOpRepeat const& a, MPOpRepeat const& b) const
    return Result;
 }
 
-MPOpCompressed 
+MPOpCompressed
 DoSum::operator()(MPOpRepeat const& a, MPOpArray const& b) const
 {
    MPOpArray Result;
@@ -375,7 +375,7 @@ DoSum::operator()(MPOpRepeat const& a, MPOpArray const& b) const
          Result.push_back(do_sum(C, B, MPOpRepeat(I->size()/a.nested().size(), a.nested()), *I));
          ++I;
       }
-      else 
+      else
       {
          // in this case, the array must be a split unit cell
          MPOpArray::const_iterator First = I;
@@ -393,7 +393,7 @@ DoSum::operator()(MPOpRepeat const& a, MPOpArray const& b) const
    return Result;
 }
 
-MPOpCompressed 
+MPOpCompressed
 DoSum::operator()(MPOpArray const& a, MPOpRepeat const& b) const
 {
    MPOpArray Result;
@@ -408,7 +408,7 @@ DoSum::operator()(MPOpArray const& a, MPOpRepeat const& b) const
          Result.push_back(do_sum(C, B, *I, MPOpRepeat(I->size()/b.nested().size(), b.nested())));
          ++I;
       }
-      else 
+      else
       {
          // in this case, the array must be a split unit cell
          MPOpArray::const_iterator First = I;
@@ -426,7 +426,7 @@ DoSum::operator()(MPOpArray const& a, MPOpRepeat const& b) const
    return Result;
 }
 
-MPOpCompressed 
+MPOpCompressed
 DoSum::operator()(MPOpArray const& a, MPOpArray const& b) const
 {
    // this is the messy case.  We need to match up elements where the nested sizes may be
@@ -615,7 +615,7 @@ struct DoMultiplyLeft : boost::static_visitor<MPOpCompressed>
          Front.push_back(MPOpRepeat(x.size()-1, x.nested()));
       return Front;
    }
-   
+
    SimpleOperator const& C;
 };
 

@@ -98,14 +98,14 @@ void fast_copy(T1* first, T1* last, T2* dest)
    std::copy(first, last, dest);
 }
 
-// Most implementations of std::copy fail to specialize for builtins, 
+// Most implementations of std::copy fail to specialize for builtins,
 // so we do it ourselves.
 // if we had pod_traits we could generalize this
-#define IMPLEMENT_FAST_COPY_BUILTIN(BuiltinT)					\
-inline										\
-void fast_copy(BuiltinT const* first, BuiltinT const* last, BuiltinT* dest)	\
-{										\
-   memcpy(dest, first, (last-first) * sizeof(BuiltinT));			\
+#define IMPLEMENT_FAST_COPY_BUILTIN(BuiltinT)                                   \
+inline                                                                          \
+void fast_copy(BuiltinT const* first, BuiltinT const* last, BuiltinT* dest)     \
+{                                                                               \
+   memcpy(dest, first, (last-first) * sizeof(BuiltinT));                        \
 }
 
 IMPLEMENT_FAST_COPY_BUILTIN(char)
@@ -135,7 +135,7 @@ void fast_copy(double const* first, double const* last, double* dest)
 }
 
 inline
-void fast_copy(std::complex<double> const* first, std::complex<double> const* last, 
+void fast_copy(std::complex<double> const* first, std::complex<double> const* last,
                std::complex<double>* dest)
 {
    BLAS::zcopy(last-first, first, 1, dest, 1);
@@ -153,7 +153,7 @@ void iter_assign_2(I1 i1, I2 i2, vector_iterator_sparse, vector_iterator_sparse)
 }
 
 template <typename I1, typename I2>
-inline void 
+inline void
 iter_assign_2(I1 const& i1, I2 const& i2)
 {
    iter_assign_2(i1, i2, typename I1::category(), typename I2::category());
@@ -211,9 +211,9 @@ void iter_fill_2(MatrixPtrIterator<T, Orient> i, V x)
       size_type n = 0;
       while (n < i.size())
       {
-	 iter_fill(VecPtrIterator<T, tagVariable>(I, i.inner_size(), 0, i.inner_stride()), x);
-	 I += i.outer_stride();
-	 ++n;
+         iter_fill(VecPtrIterator<T, tagVariable>(I, i.inner_size(), 0, i.inner_stride()), x);
+         I += i.outer_stride();
+         ++n;
       }
    }
 }

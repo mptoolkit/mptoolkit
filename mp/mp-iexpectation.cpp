@@ -67,10 +67,10 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("real,r", prog_opt::bool_switch(&ShowReal),
-	  "display only the real part of the result")
-	 ("imag,i", prog_opt::bool_switch(&ShowImag),
-	  "display only the imaginary part of the result")
+         ("real,r", prog_opt::bool_switch(&ShowReal),
+          "display only the real part of the result")
+         ("imag,i", prog_opt::bool_switch(&ShowImag),
+          "display only the imaginary part of the result")
          ("print,p", prog_opt::bool_switch(&Print), "Print the MPO to standard output (use --verbose to see more detail)")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose),
           "Verbose output (use multiple times for more output)")
@@ -89,10 +89,10 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || vm.count("op") == 0)
       {
@@ -114,33 +114,33 @@ int main(int argc, char** argv)
 
       if (!PsiPtr->is<InfiniteWavefunctionLeft>())
       {
-	 std::cerr << "fatal: wavefunction is not an iMPS!\n";
-	 exit(1);
+         std::cerr << "fatal: wavefunction is not an iMPS!\n";
+         exit(1);
       }
 
       InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
 
       UnitCellMPO Op;
       InfiniteLattice Lattice;
-      std::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(OpStr);     
+      std::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(OpStr);
 
       CHECK(Op.GetSiteList() == Lattice.GetUnitCell().GetSiteList());
 
       if (Print)
       {
-	 print_structure(Op.MPO(), std::cout);
-	 if (Verbose > 0)
-	 {
-	    std::cout << Op.MPO() << '\n';
-	 }
-	 if (Verbose > 1)
-	 {
-	    SimpleRedOperator x = coarse_grain(Op.MPO());
-	    std::cout << x << "\n";
-	 }
-	 //	 std::cout << Op << '\n';
-	 //std::cout << "\nTransfer matrix:" << construct_transfer_matrix(herm(GenericMPO(Op.MPO())),
-	 //							GenericMPO(Op.MPO())) << '\n';
+         print_structure(Op.MPO(), std::cout);
+         if (Verbose > 0)
+         {
+            std::cout << Op.MPO() << '\n';
+         }
+         if (Verbose > 1)
+         {
+            SimpleRedOperator x = coarse_grain(Op.MPO());
+            std::cout << x << "\n";
+         }
+         //      std::cout << Op << '\n';
+         //std::cout << "\nTransfer matrix:" << construct_transfer_matrix(herm(GenericMPO(Op.MPO())),
+         //                                                     GenericMPO(Op.MPO())) << '\n';
       };
 
       // Check that Op is bosonic, otherwise it is not defined
@@ -152,9 +152,9 @@ int main(int argc, char** argv)
       std::complex<double> x = expectation(Psi, Op.MPO());
 
       if (ShowReal)
-	 std::cout << x.real() << "   ";
+         std::cout << x.real() << "   ";
       if (ShowImag)
-	 std::cout << x.imag();
+         std::cout << x.imag();
       std::cout << '\n';
 
       pheap::Shutdown();

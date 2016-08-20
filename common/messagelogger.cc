@@ -72,9 +72,9 @@ class LogImpl
          Private::Register(this);
       }
 
-      LogImpl(const std::string& LogName_, ostream_t& stream_, 
+      LogImpl(const std::string& LogName_, ostream_t& stream_,
               int Threshold_ = Logger::DefaultRunTimeThreshold)
-         : LogName(LogName_), stream(&stream_), Threshold(Threshold_) 
+         : LogName(LogName_), stream(&stream_), Threshold(Threshold_)
       {
          Private::Register(this);
       }
@@ -147,7 +147,7 @@ std::string const& Logger::Name() const
 
 inline
 void Logger::SetThreshold(int Thresh_) const
-{ 
+{
    pImpl->SetThreshold(Thresh_);
 }
 
@@ -176,9 +176,9 @@ bool Logger::Accept(int Level) const
 }
 
 inline
-bool ShouldFlush() 
-{ 
-   return Private::Variables<>::ShouldFlush; 
+bool ShouldFlush()
+{
+   return Private::Variables<>::ShouldFlush;
 }
 
 inline
@@ -212,47 +212,47 @@ OStreamWrapper::operator<<(std::ios_base& (*pf)(std::ios_base&)) const
 }
 
 inline
-OStreamWrapper::OStreamWrapper(int N_, Logger const& L1, Logger const& L2) 
-  : Threshold(N_) 
-{ 
-   this->push_back(L1); 
-   this->push_back(L2); 
+OStreamWrapper::OStreamWrapper(int N_, Logger const& L1, Logger const& L2)
+  : Threshold(N_)
+{
+   this->push_back(L1);
+   this->push_back(L2);
 }
 
 inline
-OStreamWrapper::OStreamWrapper(int N_, Logger const& L1, Logger const& L2, Logger const& L3) 
-  : Threshold(N_) 
-{ 
-   this->push_back(L1); 
-   this->push_back(L2); 
+OStreamWrapper::OStreamWrapper(int N_, Logger const& L1, Logger const& L2, Logger const& L3)
+  : Threshold(N_)
+{
+   this->push_back(L1);
+   this->push_back(L2);
    this->push_back(L3);
 }
 
 inline
-OStreamWrapper::OStreamWrapper(int N_, Logger const& L1, Logger const& L2, Logger const& L3, 
-                               Logger const& L4) 
-  : Threshold(N_) 
-{ 
-   this->push_back(L1); 
-   this->push_back(L2); 
+OStreamWrapper::OStreamWrapper(int N_, Logger const& L1, Logger const& L2, Logger const& L3,
+                               Logger const& L4)
+  : Threshold(N_)
+{
+   this->push_back(L1);
+   this->push_back(L2);
    this->push_back(L3);
    this->push_back(L4);
 }
 
 inline
-OStreamWrapper::OStreamWrapper(int N_, Logger const& L1, Logger const& L2, Logger const& L3, 
-                               Logger const& L4, Logger const& L5) 
-  : Threshold(N_) 
-{ 
-   this->push_back(L1); 
-   this->push_back(L2); 
+OStreamWrapper::OStreamWrapper(int N_, Logger const& L1, Logger const& L2, Logger const& L3,
+                               Logger const& L4, Logger const& L5)
+  : Threshold(N_)
+{
+   this->push_back(L1);
+   this->push_back(L2);
    this->push_back(L3);
    this->push_back(L4);
    this->push_back(L5);
 }
 
 template <class T>
-const OStreamWrapper& 
+const OStreamWrapper&
 operator<<(const OStreamWrapper& stream, const T& Thing)
 {
    for (OStreamWrapper::const_iterator I = stream.begin(); I != stream.end(); ++I)

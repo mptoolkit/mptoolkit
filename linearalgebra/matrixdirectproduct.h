@@ -41,11 +41,11 @@ namespace LinearAlgebra
 {
 
 template <typename T1, typename T2, typename Nested,
-	  typename T1v, typename T1o, typename T1i,
-	  typename T2v, typename T2o, typename T2i>
-struct MatrixDirectProduct<T1, T2, Nested, 
-			   Concepts::DenseMatrix<T1v, T1o, T1i>, 
-			   Concepts::StrideMatrix<T2v, T2o, T2i>>
+          typename T1v, typename T1o, typename T1i,
+          typename T2v, typename T2o, typename T2i>
+struct MatrixDirectProduct<T1, T2, Nested,
+                           Concepts::DenseMatrix<T1v, T1o, T1i>,
+                           Concepts::StrideMatrix<T2v, T2o, T2i>>
 {
    typedef T1 const& first_argument_type;
    typedef T2 const& second_argument_type;
@@ -64,10 +64,10 @@ struct MatrixDirectProduct<T1, T2, Nested,
       {
          for (size_type j = 0; j < m1s2; ++j)
          {
-	    //	    TRACE("here")(tracer::typeid_name(*this));
-	    assign(project(Res, Range(i * m2s1, (i+1) * m2s1), Range(j * m2s2, (j+1) * m2s2)),
-		   left_scalar_prod(get_element(m1, i,j), m2, f));
-	 }
+            //      TRACE("here")(tracer::typeid_name(*this));
+            assign(project(Res, Range(i * m2s1, (i+1) * m2s1), Range(j * m2s2, (j+1) * m2s2)),
+                   left_scalar_prod(get_element(m1, i,j), m2, f));
+         }
       }
       return Res;
    }
@@ -81,11 +81,11 @@ struct MatrixDirectProduct<T1, T2, Nested,
 // FIXME: this should be sparse
 
 template <typename T1, typename T2, typename Nested,
-	  typename T1v, typename T1o, typename T1i,
-	  typename T2v, typename T2i>
-struct MatrixDirectProduct<T1, T2, Nested, 
-			   Concepts::DenseMatrix<T1v, T1o, T1i>, 
-			   Concepts::SparseMatrix<T2v, T2i>>
+          typename T1v, typename T1o, typename T1i,
+          typename T2v, typename T2i>
+struct MatrixDirectProduct<T1, T2, Nested,
+                           Concepts::DenseMatrix<T1v, T1o, T1i>,
+                           Concepts::SparseMatrix<T2v, T2i>>
 {
    typedef T1 const& first_argument_type;
    typedef T2 const& second_argument_type;
@@ -104,10 +104,10 @@ struct MatrixDirectProduct<T1, T2, Nested,
       {
          for (size_type j = 0; j < m1s2; ++j)
          {
-	    //	    TRACE("here")(tracer::typeid_name(*this));
-	    assign(project(Res, Range(i * m2s1, (i+1) * m2s1), Range(j * m2s2, (j+1) * m2s2)),
-		   left_scalar_prod(get_element(m1, i,j), m2, f));
-	 }
+            //      TRACE("here")(tracer::typeid_name(*this));
+            assign(project(Res, Range(i * m2s1, (i+1) * m2s1), Range(j * m2s2, (j+1) * m2s2)),
+                   left_scalar_prod(get_element(m1, i,j), m2, f));
+         }
       }
       return Res;
    }
@@ -121,11 +121,11 @@ struct MatrixDirectProduct<T1, T2, Nested,
 // FIXME: this should be sparse, or even block-sparse
 
 template <typename T1, typename T2, typename Nested,
-	  typename T1v, typename T1i,
-	  typename T2v, typename T2o, typename T2i>
-struct MatrixDirectProduct<T1, T2, Nested, 
-			   Concepts::SparseMatrix<T1v, T1i>, 
-			   Concepts::DenseMatrix<T2v, T2o, T2i>>
+          typename T1v, typename T1i,
+          typename T2v, typename T2o, typename T2i>
+struct MatrixDirectProduct<T1, T2, Nested,
+                           Concepts::SparseMatrix<T1v, T1i>,
+                           Concepts::DenseMatrix<T2v, T2o, T2i>>
 {
    typedef T1 const& first_argument_type;
    typedef T2 const& second_argument_type;
@@ -150,10 +150,10 @@ struct MatrixDirectProduct<T1, T2, Nested,
             size_type i = J.index1();
             size_type j = J.index2();
 
-	    assign(project(Res, Range(i * m2s1, (i+1) * m2s1), Range(j * m2s2, (j+1) * m2s2)),
-		   left_scalar_prod(*J, m2, f));
+            assign(project(Res, Range(i * m2s1, (i+1) * m2s1), Range(j * m2s2, (j+1) * m2s2)),
+                   left_scalar_prod(*J, m2, f));
             ++J;
-	 }
+         }
          ++I;
       }
       return Res;
@@ -167,27 +167,27 @@ struct MatrixDirectProduct<T1, T2, Nested,
 
 
 template <typename T1, typename T2, typename Nested,
-	  typename T1v, typename T1o, typename T1i,
-	  typename T2v, typename T2o, typename T2i>
-struct MatrixDirectProduct<T1, T2, Nested, 
-			   Concepts::DenseMatrix<T1v, T1o, T1i>, 
-			   Concepts::DenseMatrix<T2v, T2o, T2i>>
+          typename T1v, typename T1o, typename T1i,
+          typename T2v, typename T2o, typename T2i>
+struct MatrixDirectProduct<T1, T2, Nested,
+                           Concepts::DenseMatrix<T1v, T1o, T1i>,
+                           Concepts::DenseMatrix<T2v, T2o, T2i>>
    : MatrixDirectProduct<T1, Matrix<T2v, T2o>, Nested> {};
 
 template <typename T1, typename T2, typename Nested,
-	  typename T1i,
-	  typename T2v, typename T2i>
+          typename T1i,
+          typename T2v, typename T2i>
 struct MatrixDirectProduct<T1, T2, Nested,
-			   AnyScalar<T1i>,
-			   Concepts::AnyMatrix<T2v, T2i>>
+                           AnyScalar<T1i>,
+                           Concepts::AnyMatrix<T2v, T2i>>
 : ScalarMatrixMultiplication<T1, T2, Nested> {};
 
 template <typename T1, typename T2, typename Nested,
-	  typename T1v, typename T1i,
-	  typename T2i>
+          typename T1v, typename T1i,
+          typename T2i>
 struct MatrixDirectProduct<T1, T2, Nested,
-			   Concepts::AnyMatrix<T1v, T1i>,
-			   AnyScalar<T2i> >
+                           Concepts::AnyMatrix<T1v, T1i>,
+                           AnyScalar<T2i> >
 : MatrixScalarMultiplication<T1, T2, Nested> {};
 
 } // namespace LinearAlgebra

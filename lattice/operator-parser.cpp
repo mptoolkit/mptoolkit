@@ -481,7 +481,7 @@ struct eval_unary
 
    void operator()(char const* beg, char const* end) const
    {
-      element_type n = s.top()(eval.top()); 
+      element_type n = s.top()(eval.top());
       eval.pop();
       s.pop();
       eval.push(n);
@@ -511,7 +511,7 @@ struct eval_binary
    {
       element_type second = eval.top();
       eval.pop();
-      element_type n = s.top()(eval.top(), second); 
+      element_type n = s.top()(eval.top(), second);
       eval.pop();
       s.pop();
       eval.push(n);
@@ -525,7 +525,7 @@ template <typename BinaryFunc>
 struct invoke_binary
 {
    invoke_binary(std::stack<element_type >& eval_) : eval(eval_) {}
-   invoke_binary(std::stack<element_type >& eval_, OperatorList const& OpList) 
+   invoke_binary(std::stack<element_type >& eval_, OperatorList const& OpList)
       : eval(eval_), f(OpList) {}
 
    invoke_binary(std::stack<element_type >& eval_, BinaryFunc f_) : eval(eval_), f(f_) {}
@@ -593,7 +593,7 @@ struct push_operator
 
 struct calculator : public grammar<calculator>
 {
-    calculator(std::stack<element_type >& eval_, 
+    calculator(std::stack<element_type >& eval_,
                std::stack<unary_func_type>& func_stack_,
                std::stack<binary_func_type>& bin_func_stack_,
                OperatorList const& OpList_)
@@ -614,25 +614,25 @@ struct calculator : public grammar<calculator>
 
             lattice_operator = (identifier >> !bracket_expr)[push_operator(self.OpList, self.eval)];
 
-            unary_function = 
-               eps_p(unary_funcs_p >> '(') 
+            unary_function =
+               eps_p(unary_funcs_p >> '(')
                >>  unary_funcs_p[push_unary(self.func_stack)]
                >>  ('(' >> expression >> ')')[eval_unary(self.func_stack, self.eval)];
 
-            binary_function = 
-               eps_p(binary_funcs_p >> '(') 
+            binary_function =
+               eps_p(binary_funcs_p >> '(')
                >>  binary_funcs_p[push_binary(self.bin_func_stack)]
                >>  ('(' >> expression >> ','  >> expression >> ')')
-	       [eval_binary(self.bin_func_stack, self.eval)];
+               [eval_binary(self.bin_func_stack, self.eval)];
 
-            commutator_bracket = 
+            commutator_bracket =
                ('[' >> expression >> ',' >> expression >> ']')[invoke_binary<binary_commutator>(self.eval)];
 
             factor =
                imag
                |   real
                |   unary_function
-	       |   binary_function
+               |   binary_function
                |   keyword_d[constants_p[push_real(self.eval)]]
                |   commutator_bracket
                |   '(' >> expression >> ')'
@@ -664,7 +664,7 @@ struct calculator : public grammar<calculator>
         }
 
         rule<ScannerT> expression, term, factor, real, imag, operator_literal, unary_function,
-	   binary_function,
+           binary_function,
            bracket_expr, lattice_operator, identifier, pow_term, commutator_bracket;
         rule<ScannerT> const&
         start() const { return expression; }
@@ -695,7 +695,7 @@ ParseLatticeAndOperator(std::string const& str)
    std::stack<element_type> eval;
    std::stack<unary_func_type> func_stack;
    std::stack<binary_func_type> bin_func_stack;
-   
+
    calculator calc(eval, func_stack, bin_func_stack, *System); //  Our parser
    parse_info<> info = parse(Expr.c_str(), calc, space_p);
    if (!info.full)

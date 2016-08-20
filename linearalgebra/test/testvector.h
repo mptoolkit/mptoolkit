@@ -20,7 +20,7 @@
 template <typename VecType>
 void test_vector()
 {
-   VecType v1;   
+   VecType v1;
    CHECK_EQUAL(v1.size(), 0);
    CHECK_EQUAL(size(v1), 0);
    CHECK_EQUAL(nnz(v1), 0);
@@ -66,20 +66,20 @@ void test_vector()
 
    // check that negating twice gets us back to the same type,
    // so the double negation is absorbed.
-   CHECK(typeid(transform(transform(v3, LinearAlgebra::Negate<double>()), 
-			  LinearAlgebra::Negate<double>())) 
-	 == typeid(v3));
+   CHECK(typeid(transform(transform(v3, LinearAlgebra::Negate<double>()),
+                          LinearAlgebra::Negate<double>()))
+         == typeid(v3));
 
    // operator== for rhs proxy
    CHECK_EQUAL(v4, -v3);
 
    // sanity check
    CHECK(v4 != v3)(v4)(v3);
-   
+
    // real, conj, transpose, herm should all be identity transformations
    // for real vectors
    CHECK_EQUAL(real(v3), -v4);
-   
+
    CHECK(typeid(real(v3)) == typeid(v3));
    CHECK(typeid(conj(v3)) == typeid(v3));
    CHECK(typeid(transpose(v3)) == typeid(v3));

@@ -66,15 +66,15 @@ struct EigenInfo
    struct QuantumNumberEqualTo
    {
       typedef bool result_type;
-   
+
       QuantumNumberEqualTo(VectorBasis const& B_, QuantumNumbers::QuantumNumber const& q_)
-	 : B(B_), q(q_) {}
+         : B(B_), q(q_) {}
 
       bool operator()(EigenInfo const& e) const
       {
-	 return B[e.Subspace] == q;
+         return B[e.Subspace] == q;
       }
-   
+
       VectorBasis const& B;
       QuantumNumbers::QuantumNumber q;
    };
@@ -116,9 +116,9 @@ struct StatesInfo
    // otherwise the cutoff values are in absolute units
 
    StatesInfo()
-      : MinStates(0), 
-        MaxStates(DefaultMaxStates), 
-        TruncationCutoff(0), 
+      : MinStates(0),
+        MaxStates(DefaultMaxStates),
+        TruncationCutoff(0),
         EigenvalueCutoff(0),
         TruncateRelative(false){}
 };
@@ -126,9 +126,9 @@ struct StatesInfo
 inline
 std::ostream& operator<<(std::ostream& out, StatesInfo const& s)
 {
-   return out << "MinStates: " << s.MinStates 
+   return out << "MinStates: " << s.MinStates
               << " MaxStates: " << s.MaxStates
-              << " TruncationCutoff: " << s.TruncationCutoff 
+              << " TruncationCutoff: " << s.TruncationCutoff
               << " EigenvalueCutoff: " << s.EigenvalueCutoff;
 }
 
@@ -211,7 +211,7 @@ double DensityEntropyBase2(FwdIter first, FwdIter last, double EigenSum)
    {
       double x = first->Eigenvalue/EigenSum;
       if (x > 0)
-	 E -= x * log2(x) * first->Degree;
+         E -= x * log2(x) * first->Degree;
       else if (x < -1E-10)
       {
          WARNING("Entropy: eigenvalue is negative and big!")(x)(first->Eigenvalue)(EigenSum);
@@ -231,7 +231,7 @@ double DensityEntropyBaseE(FwdIter first, FwdIter last, double EigenSum)
    {
       double x = first->Eigenvalue/EigenSum;
       if (x > 0)
-	 E -= x * log(x) * first->Degree;
+         E -= x * log(x) * first->Degree;
       else if (x < -1E-10)
       {
          WARNING("Entropy: eigenvalue is negative and big!")(x)(first->Eigenvalue)(EigenSum);
@@ -244,9 +244,9 @@ double DensityEntropyBaseE(FwdIter first, FwdIter last, double EigenSum)
 template <typename FwdIter>
 double DensityEntropy(FwdIter first, FwdIter last, double EigenSum, bool Base2 = false)
 {
-   return Base2 ? 
+   return Base2 ?
       DensityEntropyBase2(first, last, EigenSum)
-      : 
+      :
       DensityEntropyBaseE(first, last, EigenSum);
 }
 
@@ -259,7 +259,7 @@ double DensityTruncation(FwdIter first, FwdIter last, double EigenSum)
    {
       double x = first->Eigenvalue * first->Degree;
       if (x > 0)
-	 E += x;
+         E += x;
 
       ++first;
    }
@@ -268,8 +268,8 @@ double DensityTruncation(FwdIter first, FwdIter last, double EigenSum)
 
 // Truncate to the given truncation error, normalized to norm 1
 template <typename FwdIter>
-FwdIter 
-TruncateFixTruncationErrorRelative(FwdIter first, FwdIter last, 
+FwdIter
+TruncateFixTruncationErrorRelative(FwdIter first, FwdIter last,
                                    StatesInfo const& States, TruncationInfo& Info)
 {
    Info.TotalWeight_ = DensitySigma(first, last);
@@ -281,10 +281,10 @@ TruncateFixTruncationErrorRelative(FwdIter first, FwdIter last,
    Info.SmallestKeptEigenvalue_ = 0;
    double const RequiredSigma = Info.TotalWeight_ * (1.0 - States.TruncationCutoff);
    double const RequiredWeight = Info.TotalWeight_ * States.EigenvalueCutoff;
-   while (first != last && (Info.KeptStates_ < States.MinStates || 
-                            (first->Weight() > RequiredWeight && 
-			     Info.KeptWeight_ < RequiredSigma && 
-			     Info.KeptStates_ < States.MaxStates)))
+   while (first != last && (Info.KeptStates_ < States.MinStates ||
+                            (first->Weight() > RequiredWeight &&
+                             Info.KeptWeight_ < RequiredSigma &&
+                             Info.KeptStates_ < States.MaxStates)))
    {
       ++Info.KeptStates_;
       Info.KeptWeight_ += first->Weight();
@@ -301,8 +301,8 @@ TruncateFixTruncationErrorRelative(FwdIter first, FwdIter last,
 
 // Truncate to the given truncation error, absolute normalization
 template <typename FwdIter>
-FwdIter 
-TruncateFixTruncationErrorAbsolute(FwdIter first, FwdIter last, 
+FwdIter
+TruncateFixTruncationErrorAbsolute(FwdIter first, FwdIter last,
                                    StatesInfo const& States, TruncationInfo& Info)
 {
    Info.TotalWeight_ = DensitySigma(first, last);
@@ -314,10 +314,10 @@ TruncateFixTruncationErrorAbsolute(FwdIter first, FwdIter last,
    Info.SmallestKeptEigenvalue_ = 0;
    double const RequiredSigma = Info.TotalWeight_ - States.TruncationCutoff;
    double const RequiredWeight = States.EigenvalueCutoff;
-   while (first != last && (Info.KeptStates_ < States.MinStates || 
-                            (first->Weight() > RequiredWeight && 
-			     Info.KeptWeight_ < RequiredSigma && 
-			     Info.KeptStates_ < States.MaxStates)))
+   while (first != last && (Info.KeptStates_ < States.MinStates ||
+                            (first->Weight() > RequiredWeight &&
+                             Info.KeptWeight_ < RequiredSigma &&
+                             Info.KeptStates_ < States.MaxStates)))
    {
       ++Info.KeptStates_;
       Info.KeptWeight_ += first->Weight();
@@ -333,11 +333,11 @@ TruncateFixTruncationErrorAbsolute(FwdIter first, FwdIter last,
 }
 
 template <typename FwdIter>
-FwdIter 
-TruncateFixTruncationError(FwdIter first, FwdIter last, 
+FwdIter
+TruncateFixTruncationError(FwdIter first, FwdIter last,
                            StatesInfo const& States, TruncationInfo& Info)
 {
-   return States.TruncateRelative 
+   return States.TruncateRelative
       ? TruncateFixTruncationErrorRelative(first, last, States, Info)
       : TruncateFixTruncationErrorAbsolute(first, last, States, Info);
 }

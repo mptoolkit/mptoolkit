@@ -55,10 +55,10 @@ struct push_site_operator
 
 struct eval_function
 {
-   eval_function(std::stack<std::string>& FuncStack_, 
-		 std::stack<Function::ParameterList>& ParamStack_,
-		 std::stack<element_type>& eval_,
-		 LatticeSite const& Site_)
+   eval_function(std::stack<std::string>& FuncStack_,
+                 std::stack<Function::ParameterList>& ParamStack_,
+                 std::stack<element_type>& eval_,
+                 LatticeSite const& Site_)
       : FuncStack(FuncStack_), ParamStack(ParamStack_), eval(eval_), Site(Site_) {}
 
    void operator()(char const*, char const*) const
@@ -91,121 +91,121 @@ struct SiteOperatorParser : public grammar<SiteOperatorParser>
    static unary_funcs<element_type>  unary_funcs_p;
    static binary_funcs<element_type> binary_funcs_p;
 
-   SiteOperatorParser(ElementStackType& eval_, 
-		      UnaryFuncStackType& func_stack_,
-		      BinaryFuncStackType& bin_func_stack_,
-		      IdentifierStackType& IdentifierStack_,
-		      FunctionStackType& Functions_,
-		      ParameterStackType& Parameters_,
-		      ArgumentType& Arguments_,
-		      LatticeSite const& Site_)
-      : eval(eval_), func_stack(func_stack_), bin_func_stack(bin_func_stack_), 
-	IdentifierStack(IdentifierStack_), FunctionStack(Functions_),
-	ParameterStack(Parameters_), 
-	Arguments(Arguments_), Site(Site_) {}
-   
+   SiteOperatorParser(ElementStackType& eval_,
+                      UnaryFuncStackType& func_stack_,
+                      BinaryFuncStackType& bin_func_stack_,
+                      IdentifierStackType& IdentifierStack_,
+                      FunctionStackType& Functions_,
+                      ParameterStackType& Parameters_,
+                      ArgumentType& Arguments_,
+                      LatticeSite const& Site_)
+      : eval(eval_), func_stack(func_stack_), bin_func_stack(bin_func_stack_),
+        IdentifierStack(IdentifierStack_), FunctionStack(Functions_),
+        ParameterStack(Parameters_),
+        Arguments(Arguments_), Site(Site_) {}
+
    template <typename ScannerT>
    struct definition
    {
       definition(SiteOperatorParser const& self)
       {
-	 real = ureal_p[push_value<element_type>(self.eval)];
-	 
-	 imag = lexeme_d[ureal_p >> chset<>("iIjJ")][push_imag<element_type>(self.eval)];
-	 
-	 identifier = lexeme_d[alpha_p >> *(alnum_p | '_')];
-	 
-	 bracket_expr = '(' >> *((anychar_p - chset<>("()")) | bracket_expr) >> ')';
-	 
-	 lattice_operator = identifier[push_site_operator(self.eval, self.Site)];
+         real = ureal_p[push_value<element_type>(self.eval)];
 
-	 named_parameter = eps_p(identifier >> '=')
-	    >> identifier[push_identifier(self.IdentifierStack)]
-	    >> '='
-	    >> expression[push_named_parameter<element_type>(self.eval, 
-							     self.IdentifierStack, 
-							     self.ParameterStack)];
+         imag = lexeme_d[ureal_p >> chset<>("iIjJ")][push_imag<element_type>(self.eval)];
 
-	 parameter = expression[push_parameter<element_type>(self.eval, self.ParameterStack)];
+         identifier = lexeme_d[alpha_p >> *(alnum_p | '_')];
 
-	 // parameter_list is a comma-separated list of parameters, may be empty
-	 // at least one parameter
-	 parameter_list = !((named_parameter | parameter) % ',');
-	 
-	 siteoperator_function = eps_p(identifier >> '{')
-	    >> identifier[push_function(self.FunctionStack, self.ParameterStack)]
-	    >> ('{' >> parameter_list >> '}')[eval_function(self.FunctionStack,
-							    self.ParameterStack,
-							    self.eval,
-							    self.Site)];
+         bracket_expr = '(' >> *((anychar_p - chset<>("()")) | bracket_expr) >> ')';
 
-	 unary_function = 
-	    eps_p(unary_funcs_p >> '(') 
-	    >>  unary_funcs_p[push_unary<element_type>(self.func_stack)]
-	    >>  ('(' >> expression >> ')')[eval_unary<element_type>(self.func_stack, 
-								    self.eval)];
-	 
-	 binary_function = 
-	    eps_p(binary_funcs_p >> '(') 
-	    >>  binary_funcs_p[push_binary<element_type>(self.bin_func_stack)]
-	    >>  ('(' >> expression >> ','  >> expression >> ')')
-	    [eval_binary<element_type>(self.bin_func_stack, self.eval)];
-	 
-	 commutator_bracket = 
-	    ('[' >> expression >> ',' >> expression >> ']')[invoke_binary<element_type, 
-							    binary_commutator<element_type> >(self.eval)];
+         lattice_operator = identifier[push_site_operator(self.eval, self.Site)];
 
-	 factor =
-	    imag
-	    |   real
-	    |   unary_function
-	    |   binary_function
-	    |   keyword_d[constants_p[push_value<element_type>(self.eval)]]
-	    |   keyword_d[self.Arguments[push_value<element_type>(self.eval)]]
-	    |   commutator_bracket
-	    |   '(' >> expression >> ')'
-	    |   ('-' >> factor)[do_negate<element_type>(self.eval)]
-	    |   ('+' >> factor)
-	    |   siteoperator_function
-	    |   lattice_operator
-	    ;
-	 
-	 // power operator, next precedence, operates to the right
-	 pow_term =
-	    factor
-	    >> *(  ('^' >> pow_term)[invoke_binary<element_type, binary_power<element_type> >(self.eval)]
-		   )
-	    ;
-	 
-	 term =
-	    pow_term
-	    >> *(   ('*' >> pow_term)[invoke_binary<element_type, 
-				      binary_multiplication<element_type> >(self.eval)]
-                    |   ('/' >> pow_term)[invoke_binary<element_type, 
-					  binary_division<element_type> >(self.eval)]
-		    |   ('%' >> pow_term)[invoke_binary<element_type, 
-					  binary_modulus<element_type> >(self.eval)]
+         named_parameter = eps_p(identifier >> '=')
+            >> identifier[push_identifier(self.IdentifierStack)]
+            >> '='
+            >> expression[push_named_parameter<element_type>(self.eval,
+                                                             self.IdentifierStack,
+                                                             self.ParameterStack)];
+
+         parameter = expression[push_parameter<element_type>(self.eval, self.ParameterStack)];
+
+         // parameter_list is a comma-separated list of parameters, may be empty
+         // at least one parameter
+         parameter_list = !((named_parameter | parameter) % ',');
+
+         siteoperator_function = eps_p(identifier >> '{')
+            >> identifier[push_function(self.FunctionStack, self.ParameterStack)]
+            >> ('{' >> parameter_list >> '}')[eval_function(self.FunctionStack,
+                                                            self.ParameterStack,
+                                                            self.eval,
+                                                            self.Site)];
+
+         unary_function =
+            eps_p(unary_funcs_p >> '(')
+            >>  unary_funcs_p[push_unary<element_type>(self.func_stack)]
+            >>  ('(' >> expression >> ')')[eval_unary<element_type>(self.func_stack,
+                                                                    self.eval)];
+
+         binary_function =
+            eps_p(binary_funcs_p >> '(')
+            >>  binary_funcs_p[push_binary<element_type>(self.bin_func_stack)]
+            >>  ('(' >> expression >> ','  >> expression >> ')')
+            [eval_binary<element_type>(self.bin_func_stack, self.eval)];
+
+         commutator_bracket =
+            ('[' >> expression >> ',' >> expression >> ']')[invoke_binary<element_type,
+                                                            binary_commutator<element_type> >(self.eval)];
+
+         factor =
+            imag
+            |   real
+            |   unary_function
+            |   binary_function
+            |   keyword_d[constants_p[push_value<element_type>(self.eval)]]
+            |   keyword_d[self.Arguments[push_value<element_type>(self.eval)]]
+            |   commutator_bracket
+            |   '(' >> expression >> ')'
+            |   ('-' >> factor)[do_negate<element_type>(self.eval)]
+            |   ('+' >> factor)
+            |   siteoperator_function
+            |   lattice_operator
+            ;
+
+         // power operator, next precedence, operates to the right
+         pow_term =
+            factor
+            >> *(  ('^' >> pow_term)[invoke_binary<element_type, binary_power<element_type> >(self.eval)]
+                   )
+            ;
+
+         term =
+            pow_term
+            >> *(   ('*' >> pow_term)[invoke_binary<element_type,
+                                      binary_multiplication<element_type> >(self.eval)]
+                    |   ('/' >> pow_term)[invoke_binary<element_type,
+                                          binary_division<element_type> >(self.eval)]
+                    |   ('%' >> pow_term)[invoke_binary<element_type,
+                                          binary_modulus<element_type> >(self.eval)]
                     )
-	    ;
-	 
-	 expression =
-	    term
-	    >> *(  ('+' >> term)[invoke_binary<element_type, 
-				 binary_addition<element_type> >(self.eval)]
-		   |   ('-' >> term)[invoke_binary<element_type, 
-				     binary_subtraction<element_type> >(self.eval)]
-		   )
-	    >> !end_p     // skip trailing whitespace
-	    ;
+            ;
+
+         expression =
+            term
+            >> *(  ('+' >> term)[invoke_binary<element_type,
+                                 binary_addition<element_type> >(self.eval)]
+                   |   ('-' >> term)[invoke_binary<element_type,
+                                     binary_subtraction<element_type> >(self.eval)]
+                   )
+            >> !end_p     // skip trailing whitespace
+            ;
       }
-      
+
       rule<ScannerT> expression, term, factor, real, imag, operator_literal, unary_function,
-	 binary_function, parameter, named_parameter, parameter_list, siteoperator_function,
-	 bracket_expr, lattice_operator, identifier, pow_term, commutator_bracket;
+         binary_function, parameter, named_parameter, parameter_list, siteoperator_function,
+         bracket_expr, lattice_operator, identifier, pow_term, commutator_bracket;
       rule<ScannerT> const&
       start() const { return expression; }
    };
-   
+
    ElementStackType& eval;
    UnaryFuncStackType& func_stack;
    BinaryFuncStackType& bin_func_stack;
@@ -222,9 +222,9 @@ unary_funcs<element_type> SiteOperatorParser::unary_funcs_p;
 binary_funcs<element_type> SiteOperatorParser::binary_funcs_p;
 
 SiteElementType
-ParseSiteElement(LatticeSite const& Site, 
-		 std::string const& Str, 
-		 Function::ArgumentList const& Args)
+ParseSiteElement(LatticeSite const& Site,
+                 std::string const& Str,
+                 Function::ArgumentList const& Args)
 {
    SiteOperatorParser::ElementStackType    ElementStack;
    SiteOperatorParser::UnaryFuncStackType  UnaryFuncStack;
@@ -251,14 +251,14 @@ ParseSiteElement(LatticeSite const& Site,
    char const* beg = Str.c_str();
    char const* end = beg + Str.size();
 
-   SiteOperatorParser Parser(ElementStack, UnaryFuncStack, BinaryFuncStack, 
-			     IdentifierStack, FunctionStack, ParameterStack, Arguments, Site);
+   SiteOperatorParser Parser(ElementStack, UnaryFuncStack, BinaryFuncStack,
+                             IdentifierStack, FunctionStack, ParameterStack, Arguments, Site);
 
    try
    {
       parse_info<> info = parse(beg, Parser, space_p);
       if (!info.full)
-	 throw ParserError::AtRange("Failed to parse an expression", info.stop, end);
+         throw ParserError::AtRange("Failed to parse an expression", info.stop, end);
    }
    catch (ParserError const& p)
    {
@@ -286,9 +286,9 @@ ParseSiteElement(LatticeSite const& Site,
 }
 
 SiteOperator
-ParseSiteOperator(LatticeSite const& Site, 
-		  std::string const& Str, 
-		  Function::ArgumentList const& Args)
+ParseSiteOperator(LatticeSite const& Site,
+                  std::string const& Str,
+                  Function::ArgumentList const& Args)
 {
    SiteElementType Result = ParseSiteElement(Site, Str, Args);
 
@@ -303,9 +303,9 @@ ParseSiteOperator(LatticeSite const& Site,
 }
 
 std::complex<double>
-ParseSiteNumber(LatticeSite const& Site, 
-		std::string const& Str,
-		Function::ArgumentList const& Args)
+ParseSiteNumber(LatticeSite const& Site,
+                std::string const& Str,
+                Function::ArgumentList const& Args)
 {
    SiteElementType Result = ParseSiteElement(Site, Str, Args);
    complex* x = boost::get<complex>(&Result);

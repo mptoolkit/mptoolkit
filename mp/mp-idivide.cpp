@@ -36,8 +36,8 @@ using QuantumNumbers::QuantumNumber;
 namespace prog_opt = boost::program_options;
 
 #if 0
-InfiniteWavefunctionLeft take_subset(InfiniteWavefunctionLeft const& Psi, 
-				     MatrixOperator const& U, int first, int last)
+InfiniteWavefunctionLeft take_subset(InfiniteWavefunctionLeft const& Psi,
+                                     MatrixOperator const& U, int first, int last)
 {
    CHECK(first >= 0 && first < last && last <= Psi.size());
    InfiniteWavefunctionLeft Result;
@@ -50,7 +50,7 @@ InfiniteWavefunctionLeft take_subset(InfiniteWavefunctionLeft const& Psi,
       Result.push_back(*iA);
    }
 
-   Result.push_back_lambda(*iL); 
+   Result.push_back_lambda(*iL);
    ++iL;
 
    // for the last site, we wrap around to the first using U
@@ -84,10 +84,10 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-	 ("force,f", prog_opt::bool_switch(&Force),
-	  "allow overwriting the output file, if it already exists")
-	 ("divide,d", prog_opt::value(&Div), "divide the wavefunction into this many parts [default 2]")
-	 ("unitcell,u", prog_opt::value(&NewUnitCellSize), "new unit cell size (alternative to --divide)")
+         ("force,f", prog_opt::bool_switch(&Force),
+          "allow overwriting the output file, if it already exists")
+         ("divide,d", prog_opt::value(&Div), "divide the wavefunction into this many parts [default 2]")
+         ("unitcell,u", prog_opt::value(&NewUnitCellSize), "new unit cell size (alternative to --divide)")
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
@@ -108,29 +108,29 @@ int main(int argc, char** argv)
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).positional(p).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || vm.count("lhs") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] <input-psi> <output-psi>\n";
          std::cerr << desc << '\n';
-	 std::cerr << "This tool is used to divide the unit cell of an iMPS of unit cell size N,\n"
-		   << "in the case where it is translationally invariant under a smaller unit cell size M\n"
-		   << "(which will exactly divide N).  This means that the unit cell can be reduced in size\n"
-		   << "with no loss of information.  This requires that the wavefunction is exactly translationally\n"
-		   << "invariant under an M-site shift; that is, mp-ioverlap --rotate M psi psi gives numerically 1.0.\n";
+         std::cerr << "This tool is used to divide the unit cell of an iMPS of unit cell size N,\n"
+                   << "in the case where it is translationally invariant under a smaller unit cell size M\n"
+                   << "(which will exactly divide N).  This means that the unit cell can be reduced in size\n"
+                   << "with no loss of information.  This requires that the wavefunction is exactly translationally\n"
+                   << "invariant under an M-site shift; that is, mp-ioverlap --rotate M psi psi gives numerically 1.0.\n";
          return 1;
       }
 
       // it is an error to specify both --divide and --unitcell
       if (vm.count("divide") && vm.count("unitcell"))
       {
-	 std::cerr << basename(argv[0]) << ": fatal: --divide and --unitcell cannot both be specified.\n";
-	 return 1;
+         std::cerr << basename(argv[0]) << ": fatal: --divide and --unitcell cannot both be specified.\n";
+         return 1;
       }
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
@@ -138,11 +138,11 @@ int main(int argc, char** argv)
 
       pvalue_ptr<MPWavefunction> PsiPtr;
       if (OutputFile.empty() || InputFile == OutputFile)
-	 PsiPtr = pheap::OpenPersistent(InputFile.c_str(), mp_pheap::CacheSize());
+         PsiPtr = pheap::OpenPersistent(InputFile.c_str(), mp_pheap::CacheSize());
       else
       {
-	 pheap::Initialize(OutputFile, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
-	 PsiPtr = pheap::ImportHeap(InputFile);
+         pheap::Initialize(OutputFile, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
+         PsiPtr = pheap::ImportHeap(InputFile);
       }
 
       InfiniteWavefunctionLeft Psi1 = PsiPtr->get<InfiniteWavefunctionLeft>();
@@ -152,20 +152,20 @@ int main(int argc, char** argv)
       // if --unitcell was specified, then use that number.  Otherwise, use --divide (which has a default value)
       if (vm.count("unitcell"))
       {
-	 if (UnitCellSize % NewUnitCellSize != 0)
-	 {
-	    std::cerr << basename(argv[0]) << ": fatal: the input unit cell is not a multiple of the specified output unit cell.\n";
-	    return 1;
-	 }
-      } 
+         if (UnitCellSize % NewUnitCellSize != 0)
+         {
+            std::cerr << basename(argv[0]) << ": fatal: the input unit cell is not a multiple of the specified output unit cell.\n";
+            return 1;
+         }
+      }
       else
       {
-	 if (UnitCellSize % Div != 0)
-	 {
-	    std::cerr << basename(argv[0]) << ": fatal: the input unit cell is not a multiple of the number of divisions.\n";
-	    return 1;
-	 }
-	 NewUnitCellSize = UnitCellSize / Div;
+         if (UnitCellSize % Div != 0)
+         {
+            std::cerr << basename(argv[0]) << ": fatal: the input unit cell is not a multiple of the number of divisions.\n";
+            return 1;
+         }
+         NewUnitCellSize = UnitCellSize / Div;
       }
 
       InfiniteWavefunctionLeft Psi2 = Psi1;
@@ -179,22 +179,22 @@ int main(int argc, char** argv)
       std::complex<double> e;
       StateComponent Vec;
       std::tie(e, Vec) = overlap(Psi1, Psi2, Ident, Iter, Tol, Verbose);
-      
+
       if (!Quiet)
       {
-	 std::cout << "Overlap eigenvalue is " << format_complex(e) << '\n';
+         std::cout << "Overlap eigenvalue is " << format_complex(e) << '\n';
       }
 
       // Check that e is close to 1.0
       if (norm_frob(e - 1.0) > 0.1)
       {
-	 std::cerr <<  basename(argv[0]) << ": warning: overlap eigenvalue " << format_complex(e) 
-		   << " is not close to 1.0, results are surely not reliable!\n";
+         std::cerr <<  basename(argv[0]) << ": warning: overlap eigenvalue " << format_complex(e)
+                   << " is not close to 1.0, results are surely not reliable!\n";
       }
       else if (norm_frob(e - 1.0) > 1E-5)
       {
-	 std::cerr <<  basename(argv[0]) << ": warning: overlap eigenvalue " << format_complex(e) 
-		   << " is slightly different from 1.0, results might not be reliable.\n";
+         std::cerr <<  basename(argv[0]) << ": warning: overlap eigenvalue " << format_complex(e)
+                   << " is slightly different from 1.0, results might not be reliable.\n";
       }
 
       // Vec only has one component, in the identity sector.  It should be a unitary matrix.
@@ -215,7 +215,7 @@ int main(int argc, char** argv)
 
       // See how close we were to unitary.  To do this, we check how similar the singular values are -
       // in principle they are all equal (but with some overall normalization). But we don't expect that
-      // it will be perfectly unitary for components corresponding to small singular values. 
+      // it will be perfectly unitary for components corresponding to small singular values.
       // lambda U D^2 U^\dagger \lambda^\dagger
       // The trace of this gives the overall normalization
       // Then once D is normalized, U D^2 U^\dagger should be the identity, so subtract the identity
@@ -257,7 +257,7 @@ int main(int argc, char** argv)
    }
    catch (prog_opt::error& e)
    {
-      std::cerr << "Exception while processing command line options: " << e.what() << '\n'; 
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
       pheap::Cleanup();
       return 1;
    }

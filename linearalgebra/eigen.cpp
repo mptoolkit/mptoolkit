@@ -45,9 +45,9 @@ void LinearSolveSPD(int Size, int Nrhs, double* A, int ldA, double* B, int ldB)
    CHECK(info == 0)("LAPACK::dposv")(info);
 }
 
-void LinearSolveHPD(int Size, int Nrhs, 
-		    std::complex<double>* A, int ldA, 
-		    std::complex<double>* B, int ldB)
+void LinearSolveHPD(int Size, int Nrhs,
+                    std::complex<double>* A, int ldA,
+                    std::complex<double>* B, int ldB)
 {
    char uplo = 'L';
    Fortran::integer info = 0;
@@ -90,16 +90,16 @@ void EigenvaluesSymmetric(int Size, double* Data, int LeadingDim, double* Eigen)
    DiagonalizeSymmetric(Size, Data, LeadingDim, Eigen);
 }
 
-void EigenvaluesHermitian(int Size, std::complex<double>* Data, 
-			  int LeadingDim, double* Eigen)
+void EigenvaluesHermitian(int Size, std::complex<double>* Data,
+                          int LeadingDim, double* Eigen)
 {
    // FIXME: we can do better than this by calling LAPACK such that we don't
    // bother calculating the eigenvectors
    DiagonalizeHermitian(Size, Data, LeadingDim, Eigen);
 }
 
-void EigenvaluesComplex(int Size, std::complex<double>* Data, 
-			int LeadingDim, std::complex<double>* Eigen)
+void EigenvaluesComplex(int Size, std::complex<double>* Data,
+                        int LeadingDim, std::complex<double>* Eigen)
 {
    // First step: balance the matrix
    Fortran::integer ilo = 0, ihi = 0, info = 0;
@@ -142,7 +142,7 @@ Matrix<double> makeMatrix(double const* Data, int Size, int LeadingDim)
    {
       for (int j = 0; j < Size; ++j)
       {
-	 M(i,j) = Data[i*LeadingDim + j];
+         M(i,j) = Data[i*LeadingDim + j];
       }
    }
    return M;
@@ -223,14 +223,14 @@ void Diagonalize(int Size, std::complex<double> const* DataX, int LeadingDim, st
    rwork = static_cast<double*>(StackAlloc::allocate(lrwork * sizeof(double)));
 
    // query for the optimial size of the workspace
-   LAPACK::zgeev(jobl, jobr, Size, Data, LeadingDim, Eigen, LeftVectors, LeftLeadingDim, 
+   LAPACK::zgeev(jobl, jobr, Size, Data, LeadingDim, Eigen, LeftVectors, LeftLeadingDim,
                  RightVectors, RightLeadingDim, work, lwork, rwork, info);
 
    lwork = int(work[0].real());
    work = static_cast<std::complex<double>*>(StackAlloc::allocate(lwork * sizeof(std::complex<double>)));
 
    // do the actual call
-   LAPACK::zgeev(jobl, jobr, Size, Data, LeadingDim, Eigen, LeftVectors, LeftLeadingDim, 
+   LAPACK::zgeev(jobl, jobr, Size, Data, LeadingDim, Eigen, LeftVectors, LeftLeadingDim,
                  RightVectors, RightLeadingDim, work, lwork, rwork, info);
 
    CHECK(info == 0)("LAPACK::zgeev")(info);
@@ -241,7 +241,7 @@ void Diagonalize(int Size, std::complex<double> const* DataX, int LeadingDim, st
 }
 
 void GeneralizedEigenSymmetric(int Size, double* A, int ldA, double* B, int ldB,
-			       int First, int Last, double* Eigenval, double* Z, int ldZ, double abstol)
+                               int First, int Last, double* Eigenval, double* Z, int ldZ, double abstol)
 {
    int itype = 1;  // mode 1: solve A*x = (lambda)*B*x
    char jobz = 'V';
@@ -264,14 +264,14 @@ void GeneralizedEigenSymmetric(int Size, double* A, int ldA, double* B, int ldB,
 
    // query for the optimial size of the workspace
    LAPACK::dsygvx(itype, jobz, range, uplo, Size, A, ldA, B, ldB, 0, 0, First, Last, abstol, M, W, Z, ldZ,
-		  work, lwork, iwork, ifail, info);
+                  work, lwork, iwork, ifail, info);
 
    lwork = int(work[0]);
    work = static_cast<double*>(StackAlloc::allocate(lwork * sizeof(double)));
 
    // do the actual call
    LAPACK::dsygvx(itype, jobz, range, uplo, Size, A, ldA, B, ldB, 0, 0, First, Last, abstol, M, W, Z, ldZ,
-		  work, lwork, iwork, ifail, info);
+                  work, lwork, iwork, ifail, info);
 
    CHECK(info == 0)("LAPACK::dsygvx")(info);
 
@@ -285,7 +285,7 @@ void GeneralizedEigenSymmetric(int Size, double* A, int ldA, double* B, int ldB,
 }
 
 void GeneralizedEigenHermitian(int Size, std::complex<double>* A, int ldA, std::complex<double>* B, int ldB,
-			       int First, int Last, double* Eigenval, std::complex<double>* Z, int ldZ, double abstol)
+                               int First, int Last, double* Eigenval, std::complex<double>* Z, int ldZ, double abstol)
 {
    int itype = 1;  // mode 1: solve A*x = (lambda)*B*x
    char jobz = 'V';
@@ -311,14 +311,14 @@ void GeneralizedEigenHermitian(int Size, std::complex<double>* A, int ldA, std::
 
    // query for the optimial size of the workspace
    LAPACK::zhegvx(itype, jobz, range, uplo, Size, A, ldA, B, ldB, 0, 0, First, Last, abstol, M, W, Z, ldZ,
-		  work, lwork, rwork, iwork, ifail, info);
+                  work, lwork, rwork, iwork, ifail, info);
 
    lwork = int(work[0].real());
    work = static_cast<std::complex<double>*>(StackAlloc::allocate(lwork * sizeof(std::complex<double>)));
 
    // do the actual call
    LAPACK::zhegvx(itype, jobz, range, uplo, Size, A, ldA, B, ldB, 0, 0, First, Last, abstol, M, W, Z, ldZ,
-		  work, lwork, rwork, iwork, ifail, info);
+                  work, lwork, rwork, iwork, ifail, info);
 
    CHECK(info == 0)("LAPACK::zhegvx")(info);
 
@@ -333,7 +333,7 @@ void GeneralizedEigenHermitian(int Size, std::complex<double>* A, int ldA, std::
 }
 
 void SingularValueDecomposition(int Size1, int Size2, double* A, double* U,
-				double* D, double* VT)
+                                double* D, double* VT)
 {
    // For FORTRAN, we have to regard everything as the transpose.  The SDV of A^T is
    // VT^T * D * U^T, which means we have to swap all row/column numbers,
@@ -368,18 +368,18 @@ void SingularValueDecomposition(int Size1, int Size2, double* A, double* U,
    StackAlloc::deallocate(work, lwork * sizeof(double));
 }
 
-void SingularValueDecomposition(int Size1, int Size2, 
-				std::complex<double>* A, 
-				std::complex<double>* U,
-				double* D, 
-				std::complex<double>* VH)
+void SingularValueDecomposition(int Size1, int Size2,
+                                std::complex<double>* A,
+                                std::complex<double>* U,
+                                double* D,
+                                std::complex<double>* VH)
 {
    // For FORTRAN, we have to regard everything as the transpose.  The SDV of A^T is
    // VH^T * D * U^T, which means we have to swap all row/column numbers,
    // and also interchange VH and U.
    char jobu = 'S';
    char jobvh = 'S';
-   int m = Size2;    // remembering that FORTRAN regards the matrices as the 
+   int m = Size2;    // remembering that FORTRAN regards the matrices as the
                      // transpose, rows/cols are reversed.
    int n = Size1;
    int min_mn = std::min(m,n);
@@ -419,7 +419,7 @@ void SingularValueDecomposition(int Size1, int Size2,
 // D is MAX x MAX
 // VT is MAX x N
 void SingularValueDecompositionFull(int Size1, int Size2, double* A, double* U,
-				    double* D, double* VT)
+                                    double* D, double* VT)
 {
    // For FORTRAN, we have to regard everything as the transpose.  The SDV of A^T is
    // VT^T * D * U^T, which means we have to swap all row/column numbers,
@@ -468,11 +468,11 @@ void SingularValueDecompositionFull(int Size1, int Size2, double* A, double* U,
 // D'  = D is min(m,n)
 // VH' = U^T is n x n
 
-void SingularValueDecompositionFull(int Size1, int Size2, 
-				    std::complex<double>* A, 
-				    std::complex<double>* U,
-				    double* D, 
-				    std::complex<double>* VH)
+void SingularValueDecompositionFull(int Size1, int Size2,
+                                    std::complex<double>* A,
+                                    std::complex<double>* U,
+                                    double* D,
+                                    std::complex<double>* VH)
 {
    // For FORTRAN, we have to regard everything as the transpose.  The SDV of A^T is
    // VH^T * D * U^T, which means we have to swap all row/column numbers,
@@ -513,7 +513,7 @@ void SingularValueDecompositionFull(int Size1, int Size2,
    StackAlloc::deallocate_type<double>(rwork, lrwork);
 }
 
-void TridiagonalizeHermitian(int Size, std::complex<double>* A, int ldA, 
+void TridiagonalizeHermitian(int Size, std::complex<double>* A, int ldA,
                              double* Diag,
                              double* SubDiag)
 {
@@ -543,7 +543,7 @@ void CholeskyUpper(int Size, std::complex<double>* A, int ldA)
    LAPACK::zpotrf('U', Size, A, ldA, info);
    CHECK(info == 0)("LAPACK::zpotrf")(info);
 }
-   
+
 void CholeskyUpper(int Size, double* A, int ldA)
 {
    Fortran::integer info = 0;
@@ -645,7 +645,7 @@ operator*(Matrix<std::complex<double>> const& M, Vector<std::complex<double>> co
       std::complex<double> x = 0.0;
       for (unsigned j = 0; j < size2(M); ++j)
       {
-	 x += M(i,j) * v[j];
+         x += M(i,j) * v[j];
       }
       Result[i] = x;
    }
@@ -663,18 +663,18 @@ Vector<std::complex<double>> const& v)
       std::complex<double> x = 0.0;
       for (unsigned j = 0; j < size1(M); ++j)
       {
-	 x += conj(M(j,i)) * v[j];
+         x += conj(M(j,i)) * v[j];
       }
       Result[i] = x;
    }
    return Result;
 }
-	  
+
 
 
 std::pair<double, Vector<std::complex<double>>>
 LeastSquaresRegularized(Matrix<std::complex<double>> const& A, Vector<std::complex<double>> const& b,
-			double alpha)
+                        double alpha)
 {
    Matrix<std::complex<double>> U, Vh;
    DiagonalMatrix<double> D;

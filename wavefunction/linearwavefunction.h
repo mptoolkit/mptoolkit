@@ -18,7 +18,7 @@
 // ENDHEADER
 //
 // LinearWavefunction: main class to represent a linear matrix product wavefunction.
-// 
+//
 
 #if !defined(MPTOOLKIT_WAVEFUNCTION_LINEARWAVEFUNCTION_H)
 #define MPTOOLKIT_WAVEFUNCTION_LINEARWAVEFUNCTION_H
@@ -59,7 +59,7 @@ class LinearWavefunction
       // iff the left basis contains only a single site.
       bool is_irreducible() const;
 
-      // returns true if the state can be considered to be a pure state; which 
+      // returns true if the state can be considered to be a pure state; which
       // implies that both the right hand basis is one-dimensional.
       // We can interpret a reducible left-hand basis also as a pure state, by summing
       // the states, so we do not require that the left-hand basis is one-dimensional.
@@ -79,16 +79,16 @@ class LinearWavefunction
       const_iterator begin() const { return const_iterator(Data.begin()); }
       const_iterator end() const { return const_iterator(Data.end()); }
 
-      void push_front(value_type const& x) 
+      void push_front(value_type const& x)
       { Data.push_front(handle_type(new value_type(x))); }
 
-      void push_back(value_type const& x) 
+      void push_back(value_type const& x)
       { Data.push_back(handle_type(new value_type(x))); }
 
       void push_front(LinearWavefunction const& x)
-      { 
+      {
          const_iterator Ibegin = x.begin();
-         const_iterator I = x.end(); 
+         const_iterator I = x.end();
          while (I != x.begin())
          {
             --I;
@@ -105,7 +105,7 @@ class LinearWavefunction
          }
       }
 
-      // Because the items are stored by handle, we can't provide a 
+      // Because the items are stored by handle, we can't provide a
       // reference-returning front() or back() function.  Instead,
       // we use get/set.
       value_type get_front() const;
@@ -145,12 +145,12 @@ class LinearWavefunction
 
       void pop_front()
       {
-	 Data.pop_front();
+         Data.pop_front();
       }
 
       void pop_back()
       {
-	 Data.pop_back();
+         Data.pop_back();
       }
 
    private:
@@ -198,23 +198,23 @@ overlap_conj(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2);
 
 #if 0
 StateComponent
-reduced_matrix_element(LinearWavefunction const& Psi1, 
-                       LinearOperator const& M, 
+reduced_matrix_element(LinearWavefunction const& Psi1,
+                       LinearOperator const& M,
                        LinearWavefunction const& Psi2);
 
 StateComponent
-reduced_matrix_element_conj(LinearWavefunction const& Psi1, 
-                            LinearOperator const& M, 
+reduced_matrix_element_conj(LinearWavefunction const& Psi1,
+                            LinearOperator const& M,
                             LinearWavefunction const& Psi2);
 
 std::complex<double>
-expectation(LinearWavefunction const& Psi1, 
-            LinearOperator const& M, 
+expectation(LinearWavefunction const& Psi1,
+            LinearOperator const& M,
             LinearWavefunction const& Psi2);
 
 std::complex<double>
-expectation_conj(LinearWavefunction const& Psi1, 
-                 LinearOperator const& M, 
+expectation_conj(LinearWavefunction const& Psi1,
+                 LinearOperator const& M,
                  LinearWavefunction const& Psi2);
 
 // action of an operator on a wavefunction (exact)
@@ -233,8 +233,8 @@ LinearWavefunction prod(LinearOperator const& Op, LinearWavefunction const& Psi,
 // m  |          |
 // |  |          |
 // +-Psi2-- ... Psi2--
-MatrixOperator 
-inject_left(MatrixOperator const& m, 
+MatrixOperator
+inject_left(MatrixOperator const& m,
             LinearWavefunction const& Psi1,
             LinearWavefunction const& Psi2);
 
@@ -251,8 +251,8 @@ inject_left(MatrixOperator const& m, LinearWavefunction const& Psi);
 //    |         |     |
 // --Psi2*- ... Psi2*-+
 // Two argument version, for a different wavefunction on the left and right.
-MatrixOperator 
-inject_right(MatrixOperator const& m, 
+MatrixOperator
+inject_right(MatrixOperator const& m,
             LinearWavefunction const& Psi1,
             LinearWavefunction const& Psi2);
 
@@ -270,43 +270,43 @@ herm(LinearWavefunction const& x)
 
 // from left to right, calculates the action of the transfer operator R = A^\dagger m B
 MatrixOperator
-operator_prod(HermitianProxy<LinearWavefunction> const& A, 
-              MatrixOperator const& E, 
+operator_prod(HermitianProxy<LinearWavefunction> const& A,
+              MatrixOperator const& E,
               LinearWavefunction const& B);
 
 // from right to left, calculates the action of the transfer operator R = A m B^\dagger
 MatrixOperator
 operator_prod(LinearWavefunction const& A,
-              MatrixOperator const& F, 
+              MatrixOperator const& F,
               HermitianProxy<LinearWavefunction> const& B);
 
 #if 0
 // from right to left, calculates the action of the transfer operator R = A m B^\dagger
 // with respect to the MPO Op
 StateComponent
-operator_prod(LinearOperator const& Op, 
-              LinearWavefunction const& A,  
-              StateComponent const& F, 
+operator_prod(LinearOperator const& Op,
+              LinearWavefunction const& A,
+              StateComponent const& F,
               HermitianProxy<LinearWavefunction> const& B);
 
 StateComponent
-operator_prod(LinearOperator const& Op, 
-              HermitianProxy<LinearWavefunction> const& A,  
-              StateComponentOperator const& E, 
+operator_prod(LinearOperator const& Op,
+              HermitianProxy<LinearWavefunction> const& A,
+              StateComponentOperator const& E,
               LinearWavefunction const& B);
 
 // These versions require that Op as one-dimensional left and right bases.
 // It is a shortcut for a StateComponent with a one-dimensional local basis.
 MatrixOperator
-operator_prod(LinearOperator const& Op, 
-              LinearWavefunction const& A,  
-              StateComponent const& F, 
+operator_prod(LinearOperator const& Op,
+              LinearWavefunction const& A,
+              StateComponent const& F,
               HermitianProxy<LinearWavefunction> const& B);
 
 MatrixOperator
-operator_prod(LinearOperator const& Op, 
-              HermitianProxy<LinearWavefunction> const& A,  
-              MatrixOperator const& E, 
+operator_prod(LinearOperator const& Op,
+              HermitianProxy<LinearWavefunction> const& A,
+              MatrixOperator const& E,
               LinearWavefunction const& B);
 #endif
 

@@ -136,7 +136,7 @@ int multiplicity(Cn const& q1, Cn const& q2, Cn const& q)
 
 inline
 double CG(Cn const& q1, Cn const& q2, Cn const& q,
-	  CnProjection const& m1,  CnProjection const& m2,  CnProjection const& m)
+          CnProjection const& m1,  CnProjection const& m2,  CnProjection const& m)
 {
    DEBUG_PRECONDITION(q1.N == q.N);
    DEBUG_PRECONDITION(q2.N == q.N);
@@ -148,15 +148,15 @@ double CG(Cn const& q1, Cn const& q2, Cn const& q,
 
 inline
 double product_coefficient(Cn const& k1, Cn const& k2, Cn const& k,
-			  Cn const& qp, Cn const& q, Cn const& qpp)
+                          Cn const& qp, Cn const& q, Cn const& qpp)
 {
    return ((k1.x + k2.x == k.x) && (qp.x == k1.x + qpp.x) && (qpp.x == k2.x + q.x)) ? 1 : 0;
 }
 
 inline
 double tensor_coefficient(Cn const& k1,  Cn const& k2,  Cn const& k,
-			 Cn const& q1p, Cn const& q2p, Cn const& qp,
-			 Cn const& q1,  Cn const& q2,  Cn const& q)
+                         Cn const& q1p, Cn const& q2p, Cn const& qp,
+                         Cn const& q1,  Cn const& q2,  Cn const& q)
 {
    int N = k.N;
    DEBUG_PRECONDITION(k1.N == N);
@@ -178,7 +178,7 @@ double tensor_coefficient(Cn const& k1,  Cn const& k2,  Cn const& k,
 
 inline
 double recoupling(Cn const& q1, Cn const& q3, Cn const& q13,
-		  Cn const& q2, Cn const& q, Cn const& q23)
+                  Cn const& q2, Cn const& q, Cn const& q23)
 {
    int N = q.N;
    DEBUG_PRECONDITION(q1.N == N);
@@ -186,7 +186,7 @@ double recoupling(Cn const& q1, Cn const& q3, Cn const& q13,
    DEBUG_PRECONDITION(q3.N == N);
    DEBUG_PRECONDITION(q13.N == N);
    DEBUG_PRECONDITION(q23.N == N);
-   return (q13.x == (q1.x + q3.x)%N) && (q23.x == (q2.x + q3.x)%N) && (q.x == (q1.x+q2.x+q3.x)%N) && 
+   return (q13.x == (q1.x + q3.x)%N) && (q23.x == (q2.x + q3.x)%N) && (q.x == (q1.x+q2.x+q3.x)%N) &&
      ((q1.x + q23.x)%N == q.x) && ((q13.x + q2.x)%N == q.x) ? 1 : 0;
 }
 

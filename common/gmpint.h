@@ -20,7 +20,7 @@
 /*
   gmpint.h
 
-  Created 2000-10-14 
+  Created 2000-10-14
 
   Wraps the GNU-MP library for integers
 
@@ -319,7 +319,7 @@ void bigint::swap(bigint& x)
 // arithmetic
 
 inline
-bigint& 
+bigint&
 bigint::operator+=(bigint const& x)
 {
    mpz_add(Data, Data, x.Data);  // we are allowed to alias parameters in GNU MP
@@ -327,30 +327,30 @@ bigint::operator+=(bigint const& x)
 }
 
 inline
-bigint& 
+bigint&
 bigint::operator-=(bigint const& x)
 {
-   mpz_sub(Data, Data, x.Data); 
+   mpz_sub(Data, Data, x.Data);
    return *this;
 }
 
 inline
-bigint& 
+bigint&
 bigint::operator*=(bigint const& x)
 {
-   mpz_mul(Data, Data, x.Data);  
+   mpz_mul(Data, Data, x.Data);
    return *this;
 }
 
 inline
-bool 
+bool
 bigint::is_odd() const
 {
    return mpz_odd_p(Data);
 }
 
 inline
-bool 
+bool
 bigint::is_even() const
 {
    return mpz_even_p(Data);
@@ -445,14 +445,14 @@ bigint operator*(bigint const& x, bigint const& y)
 // factorial
 
 inline
-bigint 
+bigint
 factorial(unsigned long x)
 {
    return bigint(x, bigint::factorial_tag());
 }
 
 inline
-bigint 
+bigint
 factorial(long x)
 {
    DEBUG_PRECONDITION(x >= 0);
@@ -460,14 +460,14 @@ factorial(long x)
 }
 
 inline
-bigint 
+bigint
 factorial(unsigned int x)
 {
    return bigint(x, bigint::factorial_tag());
 }
 
 inline
-bigint 
+bigint
 factorial(int x)
 {
    DEBUG_PRECONDITION(x >= 0);
@@ -475,14 +475,14 @@ factorial(int x)
 }
 
 inline
-bigint 
+bigint
 factorial(unsigned short x)
 {
    return bigint(x, bigint::factorial_tag());
 }
 
 inline
-bigint 
+bigint
 factorial(short x)
 {
    DEBUG_PRECONDITION(x >= 0);

@@ -45,8 +45,8 @@ struct AssociateLeft : public boost::mpl::false_
 // multiplication is associative if there is a promote traits
 template <typename T1, typename T23, typename T2, typename T3>
 struct AssociateRight<BinaryOperator<Multiplication, T1, T23>, BinaryOperator<Multiplication, T2, T3>,
-		      boost::enable_if<boost::and_<has_value_type<PromoteTraits<T1, T23> >,
-						   has_value_type<PromoteTraits<T2, T3> > > >::type>
+                      boost::enable_if<boost::and_<has_value_type<PromoteTraits<T1, T23> >,
+                                                   has_value_type<PromoteTraits<T2, T3> > > >::type>
   : public boost::mpl
 {
    typedef BinaryOpertor<Multiplication, T1, T2> LeftOperator;
@@ -56,8 +56,8 @@ struct AssociateRight<BinaryOperator<Multiplication, T1, T23>, BinaryOperator<Mu
 // multiplication is associative if there is a promote traits
 template <typename T1, typename T2, typename T12, typename T3>
 struct AssociateLeft<BinaryOperator<Multiplication, T1, T2>, BinaryOperator<Multiplication, T12, T3>,
-		      boost::enable_if<boost::and_<has_value_type<PromoteTraits<T1, T2> >,
-						   has_value_type<PromoteTraits<T12, T3> > > >::type>
+                      boost::enable_if<boost::and_<has_value_type<PromoteTraits<T1, T2> >,
+                                                   has_value_type<PromoteTraits<T12, T3> > > >::type>
   : public boost::mpl
 {
    typedef BinaryOperator<Multiplication, T2, T3> RightOperator;
@@ -72,9 +72,9 @@ struct AssociateLeft<BinaryOperator<Multiplication, T1, T2>, BinaryOperator<Mult
 template <typename T1, typename T23, typename T2, typename T3>
 struct AssociateRight<ScalarMatrixProduct<T1, T23>, ScalarMatrixProduct<T2, T3>,
  boost::enable_if<AssociateRight<BinaryOperator<Multiplication, T1, T2>,
-				 BinaryOperator<Multiplication, 
-						typename BinaryOperator<Multiplication, T1, T2>::value_type,
-						T3> > >::type> 
+                                 BinaryOperator<Multiplication,
+                                                typename BinaryOperator<Multiplication, T1, T2>::value_type,
+                                                T3> > >::type>
   : public boost::mpl::true_
 {
    typedef BinaryOperator<Multiplication, T1, T2> LeftOperator;
@@ -93,8 +93,8 @@ struct AssociateRight<ScalarMatrixProduct<T1, T23>, ScalarMatrixProduct<T2, T3>,
 
 
 template <typename Tag, typename T1, typename T2, typename T3>
-struct AssociativeTraits<T1, Multiplication, T2, Multiplication, T3, 
-			 typename boost::enable_if<
+struct AssociativeTraits<T1, Multiplication, T2, Multiplication, T3,
+                         typename boost::enable_if<
                             boost::and_<
                                has_value_type<PromoteTraits<T1, T2> >,
                                has_value_type<PromoteTraits<T2, T3> >,
@@ -122,33 +122,33 @@ struct AssociativityTraits<T1, MatrixScalarMultiplication, T2, Multiplication, T
 // matrix-matrix multiply associates iff the underlying types do
 template <typename T1, typename T2, typename T3>
 struct AssociativityTraits<T1, MatrixMatrixMultiplication, T2, MatrixMatrixMultiplication, T3>
-  : public AssociativityTraits<typename T1::value_type, Multiplication, 
-			       typename T2::value_type, Multiplication, 
-			       typename T3::value_type>
+  : public AssociativityTraits<typename T1::value_type, Multiplication,
+                               typename T2::value_type, Multiplication,
+                               typename T3::value_type>
 {
 };
 
 // matrix-matrix multiply associates iff the underlying types do
 template <typename T1, typename T2, typename T3>
 struct AssociativityTraits<T1, MatrixMatrixMultiplication, T2, MatrixMatrixMultiplication, T3>
-  : public AssociativityTraits<typename T1::value_type, Multiplication, 
-			       typename T2::value_type, Multiplication, 
-			       typename T3::value_type>
+  : public AssociativityTraits<typename T1::value_type, Multiplication,
+                               typename T2::value_type, Multiplication,
+                               typename T3::value_type>
 {
 };
 
 template <typename T1, typename T2, typename T3>
 struct AssociativityTraits<T1, MatrixMatrixMultiplication, T2, MatrixScalarMultiplication, T3>
-  : public AssociativityTraits<typename T1::value_type, Multiplication, 
-			       typename T2::value_type, Multiplication, 
-			       T3>
+  : public AssociativityTraits<typename T1::value_type, Multiplication,
+                               typename T2::value_type, Multiplication,
+                               T3>
 {
 };
 
 template <typename T1, typename T2, typename T3>
 struct AssociativityTraits<T1, ScalarMatrixMultiplication, T2, MatrixMatrixMultiplication, T3>
-  : public AssociativityTraits<T1, Multiplication, 
-			       typename T2::value_type, Multiplication, 
-			       typename T3::value_type>
+  : public AssociativityTraits<T1, Multiplication,
+                               typename T2::value_type, Multiplication,
+                               typename T3::value_type>
 {
 };

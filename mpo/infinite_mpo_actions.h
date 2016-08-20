@@ -87,7 +87,7 @@ struct negate_element<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEle
    }
 };
 
-#if 0 
+#if 0
 // not needed - the default version is OK
 template <>
 struct unary_power<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
@@ -126,11 +126,11 @@ struct binary_power<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEleme
 
       int i = int(round(y.real()));
       if (std::norm(complex(double(i)) - y) > 1E-7)
-	 throw ParserError("cannot take a fractional or complex power " + format_complex(y)
-			   + " of a TriangularMPO");
+         throw ParserError("cannot take a fractional or complex power " + format_complex(y)
+                           + " of a TriangularMPO");
       if (i < 0)
-	 throw ParserError("cannot take negative power " + boost::lexical_cast<std::string>(i)
-			   + " of a TriangularMPO");
+         throw ParserError("cannot take negative power " + boost::lexical_cast<std::string>(i)
+                           + " of a TriangularMPO");
       return i == 0 ? InfiniteMPOElement(complex(1.0,0.0)) : pow(x, i);
    }
 
@@ -139,11 +139,11 @@ struct binary_power<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEleme
 
       int i = int(round(y.real()));
       if (std::norm(complex(double(i)) - y) > 1E-7)
-	 throw ParserError("cannot take a fractional or complex power " + format_complex(y)
-			   + " of a ProductMPO");
+         throw ParserError("cannot take a fractional or complex power " + format_complex(y)
+                           + " of a ProductMPO");
       if (i < 0)
-	 throw ParserError("cannot take negative power " + boost::lexical_cast<std::string>(i)
-			   + " of a ProductMPO");
+         throw ParserError("cannot take negative power " + boost::lexical_cast<std::string>(i)
+                           + " of a ProductMPO");
       return i == 0 ? InfiniteMPOElement(complex(1.0,0.0)) : pow(x, i);
    }
 
@@ -158,7 +158,7 @@ template <>
 struct binary_addition<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
 {
    InfiniteMPOElement operator()(complex const& x, complex const& y) const
-   { 
+   {
       return InfiniteMPOElement(x+y);
    }
 
@@ -178,7 +178,7 @@ template <>
 struct binary_subtraction<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
 {
    InfiniteMPOElement operator()(complex const& x, complex const& y) const
-   { 
+   {
       return InfiniteMPOElement(x-y);
    }
 
@@ -488,10 +488,10 @@ struct ternary_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
       QuantumNumbers::QuantumNumber q(y.GetSymmetryList(), qStr);
       if (q != y.TransformsAs())
       {
-	 throw ParserError("In prod(x,y,q): quantum number is not possible."
-			   "\nq = " + q.ToString()
-			   + "\nthe only possible quantum number in this context is "
-			   + y.TransformsAs().ToString());
+         throw ParserError("In prod(x,y,q): quantum number is not possible."
+                           "\nq = " + q.ToString()
+                           + "\nthe only possible quantum number in this context is "
+                           + y.TransformsAs().ToString());
       }
       return x*y;
    }
@@ -501,10 +501,10 @@ struct ternary_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
       QuantumNumbers::QuantumNumber q(x.GetSymmetryList(), qStr);
       if (q != x.TransformsAs())
       {
-	 throw ParserError("In prod(x,y,q): quantum number is not possible."
-			   "\nq = " + q.ToString()
-			   + "\nthe only possible quantum number in this context is "
-			   + x.TransformsAs().ToString());
+         throw ParserError("In prod(x,y,q): quantum number is not possible."
+                           "\nq = " + q.ToString()
+                           + "\nthe only possible quantum number in this context is "
+                           + x.TransformsAs().ToString());
       }
       return x*y;
    }
@@ -520,8 +520,8 @@ struct ternary_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
       QuantumNumbers::QuantumNumber q(x.GetSymmetryList(), qStr);
       if (!is_scalar(q))
       {
-	 throw ParserError("In operator prod(x,y,q): the quantum number must be scalar."
-			   "\nq = " + q.ToString());
+         throw ParserError("In operator prod(x,y,q): the quantum number must be scalar."
+                           "\nq = " + q.ToString());
       }
       return x*y;
    }
@@ -530,7 +530,7 @@ struct ternary_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
    InfiniteMPOElement operator()(T const& x, U const& y) const
    {
       throw ParserError("In operator prod(x,y,q): "
-			"cannot evaluate product between "+name_of(x)+" and "+name_of(y));
+                        "cannot evaluate product between "+name_of(x)+" and "+name_of(y));
    }
 
    std::string qStr;

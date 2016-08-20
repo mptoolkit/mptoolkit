@@ -82,15 +82,15 @@ class CoefficientMatrixProductProxy
       CoefficientMatrixProductProxy(reference1 x, reference2 y, CoeffFunc const& cf,
                          functor_type const& f = functor_type()) : x_(x), y_(y), cf_(cf), f_(f)
       {
-	 using LinearAlgebra::size1; using LinearAlgebra::size2;
-	 DEBUG_PRECONDITION_EQUAL(size2(x), size1(y));
+         using LinearAlgebra::size1; using LinearAlgebra::size2;
+         DEBUG_PRECONDITION_EQUAL(size2(x), size1(y));
       }
 
       functor_type functor() const { return f_; }
       coefficient_functor_type coefficient_functor() const { return cf_; }
 
    private:
-      CoefficientMatrixProductProxy& operator=(CoefficientMatrixProductProxy const&); 
+      CoefficientMatrixProductProxy& operator=(CoefficientMatrixProductProxy const&);
    // not implemented
 
       reference1 x_;
@@ -103,7 +103,7 @@ class CoefficientMatrixProductProxy
 // interface
 
 template <typename T1, typename T2, typename CoeffFunc, typename Nested>
-struct interface<CoefficientMatrixProductProxy<T1, T2, CoeffFunc, Nested> > 
+struct interface<CoefficientMatrixProductProxy<T1, T2, CoeffFunc, Nested> >
 {
    typedef typename interface<T1>::value_type value1_type;
    typedef typename interface<T2>::value_type value2_type;
@@ -114,8 +114,8 @@ struct interface<CoefficientMatrixProductProxy<T1, T2, CoeffFunc, Nested> >
       >::type
    >::type value_type;
 
-   using type = Concepts::MatrixExpression<value_type, 
-					   CoefficientMatrixProductProxy<T1, T2, CoeffFunc, Nested>>;
+   using type = Concepts::MatrixExpression<value_type,
+                                           CoefficientMatrixProductProxy<T1, T2, CoeffFunc, Nested>>;
 };
 
 // Assign
@@ -129,8 +129,8 @@ struct AssignExpression<LHS&, CoefficientMatrixProductProxy<T1, T2, CF, F> >
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
       try_resize(x, size1(y), size2(y));
-      assign_coefficient_product2(x, y.matrix1(), y.matrix2(), 
-				  y.coefficient_functor(), y.functor());
+      assign_coefficient_product2(x, y.matrix1(), y.matrix2(),
+                                  y.coefficient_functor(), y.functor());
       return x;
    }
 };
@@ -147,8 +147,8 @@ struct AddExpression<LHS&, CoefficientMatrixProductProxy<T1, T2, CF, F> >
    {
       PRECONDITION_EQUAL(size1(x), size1(y));
       PRECONDITION_EQUAL(size2(x), size2(y));
-      add_coefficient_product2(x, y.matrix1(), y.matrix2(), 
-			       y.coefficient_functor(), y.functor());
+      add_coefficient_product2(x, y.matrix1(), y.matrix2(),
+                               y.coefficient_functor(), y.functor());
    }
 };
 
@@ -164,21 +164,21 @@ struct SubtractExpression<LHS&, CoefficientMatrixProductProxy<T1, T2, CF, F> >
    {
       PRECONDITION_EQUAL(size1(x), size1(y));
       PRECONDITION_EQUAL(size2(x), size2(y));
-      subtract_coefficient_product2(x, y.matrix1(), y.matrix2(), 
-				    y.coefficient_functor(), y.functor());
+      subtract_coefficient_product2(x, y.matrix1(), y.matrix2(),
+                                    y.coefficient_functor(), y.functor());
    }
 };
 
-// 
+//
 // CoefficientMatrixMatrixMultiplication
 //
 
-template <typename M1, typename M2, 
-	  typename CF,
+template <typename M1, typename M2,
+          typename CF,
           typename Nested = Multiplication<typename interface<M1>::value_type,
-	                                   typename interface<M2>::value_type>,
-	  typename M1i = typename interface<M1>::type,
-	  typename M2i = typename interface<M2>::type>
+                                           typename interface<M2>::value_type>,
+          typename M1i = typename interface<M1>::type,
+          typename M2i = typename interface<M2>::type>
 struct CoefficientMatrixMatrixMultiplication {};
 
 template <typename M1, typename M2, typename CF>
@@ -197,14 +197,14 @@ coefficient_multiply(M1 const& m1, M2 const& m2, CF const& cf, F const& f)
    return CoefficientMatrixMatrixMultiplication<M1, M2, CF, F>()(m1, m2, cf, f);
 }
 
-template <typename M1, typename M2, 
-	  typename CF,
+template <typename M1, typename M2,
+          typename CF,
           typename Nested,
-          typename M1v, typename M1i, 
+          typename M1v, typename M1i,
           typename M2v, typename M2i>
 struct CoefficientMatrixMatrixMultiplication<M1, M2, CF, Nested,
-					     Concepts::MatrixExpression<M1v, M1i>, 
-					     Concepts::MatrixExpression<M2v, M2i>>
+                                             Concepts::MatrixExpression<M1v, M1i>,
+                                             Concepts::MatrixExpression<M2v, M2i>>
 {
    typedef M1 const& first_argument_type;
    typedef M2 const& second_argument_type;
@@ -215,10 +215,10 @@ struct CoefficientMatrixMatrixMultiplication<M1, M2, CF, Nested,
                                          CF, Nested> result_type;
 
    result_type operator()(M1 const& m1, M2 const& m2,
-			  CF const& cf) const { return result_type(m1, m2, cf); }
+                          CF const& cf) const { return result_type(m1, m2, cf); }
 
    result_type operator()(M1 const& m1, M2 const& m2,
-			  CF const& cf, Nested const& f) const 
+                          CF const& cf, Nested const& f) const
       { return result_type(m1, m2, cf, f); }
 };
 
@@ -241,8 +241,8 @@ coefficient_transpose(MatType const& M, Func Coefficient)
       typename inner_iterator<result_type>::type J = iterate(I);
       while (J)
       {
-	 *J *= Coefficient(J.index2(), J.index1());
-	 ++J;
+         *J *= Coefficient(J.index2(), J.index1());
+         ++J;
       }
       ++I;
    }
@@ -264,8 +264,8 @@ coefficient_transpose(MatType const& M, Func Coefficient, Nest n)
       typename inner_iterator<result_type>::type J = iterate(I);
       while (J)
       {
-	 *J *= Coefficient(J.index2(), J.index1());
-	 ++J;
+         *J *= Coefficient(J.index2(), J.index1());
+         ++J;
       }
       ++I;
    }
@@ -311,12 +311,12 @@ class CoefficientMatrixProductCullProxy
       reference2 matrix2() const { return y_; }
 
       CoefficientMatrixProductCullProxy(reference1 x, reference2 y, CoeffFunc const& cf,
-					Float const& Tol, 
-					functor_type const& f = functor_type())
-	 : x_(x), y_(y), cf_(cf), Tol_(Tol), f_(f)
+                                        Float const& Tol,
+                                        functor_type const& f = functor_type())
+         : x_(x), y_(y), cf_(cf), Tol_(Tol), f_(f)
       {
-	 using LinearAlgebra::size1; using LinearAlgebra::size2;
-	 DEBUG_PRECONDITION_EQUAL(size2(x), size1(y));
+         using LinearAlgebra::size1; using LinearAlgebra::size2;
+         DEBUG_PRECONDITION_EQUAL(size2(x), size1(y));
       }
 
       functor_type functor() const { return f_; }
@@ -324,7 +324,7 @@ class CoefficientMatrixProductCullProxy
       Float const& tol() const { return Tol_; }
 
    private:
-      CoefficientMatrixProductCullProxy& operator=(CoefficientMatrixProductCullProxy const&); 
+      CoefficientMatrixProductCullProxy& operator=(CoefficientMatrixProductCullProxy const&);
    // not implemented
 
       reference1 x_;
@@ -338,7 +338,7 @@ class CoefficientMatrixProductCullProxy
 // interface
 
 template <typename T1, typename T2, typename CoeffFunc, typename Nested, typename Float>
-struct interface<CoefficientMatrixProductCullProxy<T1, T2, CoeffFunc, Nested, Float> > 
+struct interface<CoefficientMatrixProductCullProxy<T1, T2, CoeffFunc, Nested, Float> >
 {
    typedef typename interface<T1>::value_type value1_type;
    typedef typename interface<T2>::value_type value2_type;
@@ -349,9 +349,9 @@ struct interface<CoefficientMatrixProductCullProxy<T1, T2, CoeffFunc, Nested, Fl
       >::type
    >::type value_type;
 
-   using type = Concepts::MatrixExpression<value_type, 
-					   CoefficientMatrixProductCullProxy<T1, T2, 
-									     CoeffFunc, Nested, Float>>;
+   using type = Concepts::MatrixExpression<value_type,
+                                           CoefficientMatrixProductCullProxy<T1, T2,
+                                                                             CoeffFunc, Nested, Float>>;
 };
 
 // Assign
@@ -365,8 +365,8 @@ struct AssignExpression<LHS&, CoefficientMatrixProductCullProxy<T1, T2, CF, F, F
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
       try_resize(x, size1(y), size2(y));
-      assign_coefficient_cull_product2(x, y.matrix1(), y.matrix2(), 
-				       y.coefficient_functor(), y.functor(), y.tol());
+      assign_coefficient_cull_product2(x, y.matrix1(), y.matrix2(),
+                                       y.coefficient_functor(), y.functor(), y.tol());
       return x;
    }
 };
@@ -383,8 +383,8 @@ struct AddExpression<LHS&, CoefficientMatrixProductCullProxy<T1, T2, CF, F, Floa
    {
       PRECONDITION_EQUAL(size1(x), size1(y));
       PRECONDITION_EQUAL(size2(x), size2(y));
-      add_coefficient_cull_product2(x, y.matrix1(), y.matrix2(), 
-				    y.coefficient_functor(), y.functor(), y.tol());
+      add_coefficient_cull_product2(x, y.matrix1(), y.matrix2(),
+                                    y.coefficient_functor(), y.functor(), y.tol());
    }
 };
 
@@ -400,21 +400,21 @@ struct SubtractExpression<LHS&, CoefficientMatrixProductCullProxy<T1, T2, CF, F,
    {
       PRECONDITION_EQUAL(size1(x), size1(y));
       PRECONDITION_EQUAL(size2(x), size2(y));
-      subtract_coefficient_product2(x, y.matrix1(), y.matrix2(), 
-				    y.coefficient_functor(), y.functor(), y.tol());
+      subtract_coefficient_product2(x, y.matrix1(), y.matrix2(),
+                                    y.coefficient_functor(), y.functor(), y.tol());
    }
 };
 
-// 
+//
 // CoefficientMatrixMatrixMultiplicationCull
 //
 
-template <typename M1, typename M2, 
-	  typename CF, typename Float,
+template <typename M1, typename M2,
+          typename CF, typename Float,
           typename Nested = Multiplication<typename interface<M1>::value_type,
-	                                   typename interface<M2>::value_type>,
-	  typename M1i = typename interface<M1>::type,
-	  typename M2i = typename interface<M2>::type>
+                                           typename interface<M2>::value_type>,
+          typename M1i = typename interface<M1>::type,
+          typename M2i = typename interface<M2>::type>
 struct CoefficientMatrixMatrixMultiplicationCull {};
 
 template <typename M1, typename M2, typename CF, typename Float>
@@ -433,14 +433,14 @@ coefficient_multiply_cull(M1 const& m1, M2 const& m2, CF const& cf, Float const&
    return CoefficientMatrixMatrixMultiplicationCull<M1, M2, CF, Float, F>()(m1, m2, cf, Tol, f);
 }
 
-template <typename M1, typename M2, 
-	  typename CF, typename Float,
+template <typename M1, typename M2,
+          typename CF, typename Float,
           typename Nested,
-          typename M1v, typename M1i, 
+          typename M1v, typename M1i,
           typename M2v, typename M2i>
 struct CoefficientMatrixMatrixMultiplicationCull<M1, M2, CF, Float, Nested,
-						 Concepts::MatrixExpression<M1v, M1i>, 
-						 Concepts::MatrixExpression<M2v, M2i>>
+                                                 Concepts::MatrixExpression<M1v, M1i>,
+                                                 Concepts::MatrixExpression<M2v, M2i>>
 {
    typedef M1 const& first_argument_type;
    typedef M2 const& second_argument_type;
@@ -448,14 +448,14 @@ struct CoefficientMatrixMatrixMultiplicationCull<M1, M2, CF, Float, Nested,
    typedef Float const& fourth_argument_type;
    typedef Nested const& fifth_argument_type;
    typedef CoefficientMatrixProductCullProxy<typename make_const_reference<M1>::type,
-					     typename make_const_reference<M2>::type,
-					     CF, Nested, Float> result_type;
+                                             typename make_const_reference<M2>::type,
+                                             CF, Nested, Float> result_type;
 
    result_type operator()(M1 const& m1, M2 const& m2,
-			  CF const& cf, Float const& Tol) const { return result_type(m1, m2, cf, Tol); }
+                          CF const& cf, Float const& Tol) const { return result_type(m1, m2, cf, Tol); }
 
    result_type operator()(M1 const& m1, M2 const& m2,
-			  CF const& cf, Float const& Tol, Nested const& f) const 
+                          CF const& cf, Float const& Tol, Nested const& f) const
    { return result_type(m1, m2, cf, Tol, f); }
 };
 

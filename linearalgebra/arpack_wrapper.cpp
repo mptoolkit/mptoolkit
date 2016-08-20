@@ -34,8 +34,8 @@ void swap_vectors(int n, complex* x, complex* y)
 }
 
 void
-MatchEigenvectors(int n, 
-                  Vector<std::complex<double> >& LeftValues, 
+MatchEigenvectors(int n,
+                  Vector<std::complex<double> >& LeftValues,
                   std::vector<std::complex<double> >& LeftVectors,
                   Vector<std::complex<double> >& RightValues,
                   std::vector<std::complex<double> >& RightVectors, double tol)

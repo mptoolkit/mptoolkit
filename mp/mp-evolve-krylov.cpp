@@ -66,12 +66,12 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Hamiltonian,H", prog_opt::value<std::string>(), 
+         ("Hamiltonian,H", prog_opt::value<std::string>(),
           "operator to use for the Hamiltonian (wavefunction attribute \"Hamiltonian\")")
          ("wavefunction,w", prog_opt::value<std::string>(), "initial wavefunction (required)")
-	 ("two-site,2", "modify 2 neighboring sites at once")
-	 ("min-states,m", prog_opt::value<int>(&MinStates), "Minimum number of states to keep [default 50]")
-	 ("max-states,x", prog_opt::value<int>(&MaxStates), "Maximum number of states to keep [default 5000]")
+         ("two-site,2", "modify 2 neighboring sites at once")
+         ("min-states,m", prog_opt::value<int>(&MinStates), "Minimum number of states to keep [default 50]")
+         ("max-states,x", prog_opt::value<int>(&MaxStates), "Maximum number of states to keep [default 5000]")
          ("min-krylov", prog_opt::value(&MinKrylovVectors),
           ("Minimum number of Krylov vectors to use.  The program will abort if fewer than this number of "
            "vectors are relevant - increase the timestep if this happens [default "
@@ -80,41 +80,41 @@ int main(int argc, char** argv)
           ("Maximum number of Krylov vectors to use.  The program will adaptively reduce the timestep if "
            "this happens [default "
            +boost::lexical_cast<std::string>(MaxKrylovVectors)+"]").c_str())
-	 ("mix-factor,f", prog_opt::value<double>(&MixFactor), 
+         ("mix-factor,f", prog_opt::value<double>(&MixFactor),
           "Mixing coefficient for the Krylov vector density matrix [default 0.01]")
-	 ("timestep,t", prog_opt::value<std::complex<double> >(&Timestep), "Timestep (can be complex) [default 1]")
+         ("timestep,t", prog_opt::value<std::complex<double> >(&Timestep), "Timestep (can be complex) [default 1]")
          ("num-timesteps,n", prog_opt::value<int>(&NumTimesteps), "Total number of timesteps to calculate [default 1]")
-         ("save-timesteps,s", prog_opt::value<int>(&SaveTimesteps), 
+         ("save-timesteps,s", prog_opt::value<int>(&SaveTimesteps),
           "Save the wavefunction after every s timesteps [default 1]")
-         ("Time,T", prog_opt::value<double>(&RealTime), 
+         ("Time,T", prog_opt::value<double>(&RealTime),
           "Absolute real time of the input wavefunction (wavefunction attribute \"Time\")")
-	 ("Beta,B", prog_opt::value<double>(&Beta),
-	  "Absolute imaginary time (inverse temperature) of the input wavefunction "
-	  "(wavefunction attribute \"Beta\")")
+         ("Beta,B", prog_opt::value<double>(&Beta),
+          "Absolute imaginary time (inverse temperature) of the input wavefunction "
+          "(wavefunction attribute \"Beta\")")
          ("error-bound,e", prog_opt::value<double>(&EBound), "Truncation error bound per timestep [default 1e-4]")
-         ("variance-mod,r", prog_opt::value<double>(&ErrorScaleFactor), 
+         ("variance-mod,r", prog_opt::value<double>(&ErrorScaleFactor),
           "Scale factor for the variance of the Krylov vectors [default 0.2]")
          ("krylov-cutoff", prog_opt::value<double>(&KrylovCutoffFactor),
           "Buffer factor for the cutoff contribution from the Krylov vectors [default 0.2]")
          ("out,o", prog_opt::value<std::string>(&OutputPrefix),
           "Filename prefix for saved wavefunctions [defaults to the initial wavefunction name]")
          ("krylov,k", prog_opt::value<int>(&GuessNumKrylov), "Initial guess for the number of krylov vectors to use [default 8]")
-         ("max-sweeps", prog_opt::value(&MaxSweeps), 
+         ("max-sweeps", prog_opt::value(&MaxSweeps),
           "Maximum number of sweeps to use in the Krylov optimization (dangerous!) [default 0 = no limit]")
          ("full-ortho,F", "full orthogonalization of the Krylov subspace")
          ("normalize", "Normalize the saved wavefunctions.")
          ("reduction-sweep", "Do an additional set of sweeps to try to reduce the dimension of the Krylov vectors")
-	  ;
+          ;
 
       prog_opt::options_description opt;
       opt.add(desc);
 
-      prog_opt::variables_map vm;        
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).run(), vm);
-      prog_opt::notify(vm);    
+      prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("wavefunction") == 0) 
+      if (vm.count("help") || vm.count("wavefunction") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-evolve-krylov [options]\n";
@@ -178,19 +178,19 @@ int main(int argc, char** argv)
       // Make sure the center matrix is at one edge
       if (Psi.LeftSize() != 1 && Psi.RightSize() != 1)
       {
-	 TRACE(Psi.LeftSize())(Psi.RightSize());
-	 std::cout << "The center matrix is not located at an edge.  Rotating..." << std::flush;
-	 if (Psi.LeftSize() > Psi.RightSize())
-	 {
-	    while (Psi.RightSize() > 1)
-	       Psi.RotateRight();
-	 }
-	 else
-	 {
-	    while (Psi.LeftSize() > 1)
-	       Psi.RotateLeft();
-	 }
-	 std::cout << "done" << std::endl;
+         TRACE(Psi.LeftSize())(Psi.RightSize());
+         std::cout << "The center matrix is not located at an edge.  Rotating..." << std::flush;
+         if (Psi.LeftSize() > Psi.RightSize())
+         {
+            while (Psi.RightSize() > 1)
+               Psi.RotateRight();
+         }
+         else
+         {
+            while (Psi.LeftSize() > 1)
+               Psi.RotateLeft();
+         }
+         std::cout << "done" << std::endl;
       }
 #endif
 
@@ -227,14 +227,14 @@ int main(int argc, char** argv)
       }
 
       // Now we can construct the actual KrylovSolver object
-      KrylovLoop dmrg((SplitOperator(Hamiltonian)), 
-                      SplitOperator(prod(Hamiltonian, Hamiltonian, Hamiltonian.TransformsAs())), 
+      KrylovLoop dmrg((SplitOperator(Hamiltonian)),
+                      SplitOperator(prod(Hamiltonian, Hamiltonian, Hamiltonian.TransformsAs())),
                       CenterWavefunction(Psi));
 
       TwoSite = vm.count("two-site");
       if (TwoSite)
       {
-	 std::cout << "Optimizing two sites at a time" << std::endl;
+         std::cout << "Optimizing two sites at a time" << std::endl;
       }
 
       std::cout << "Density matrix mixing coefficient: " << MixFactor << std::endl;
@@ -268,7 +268,7 @@ int main(int argc, char** argv)
       SInfo.MaxStates = MaxStates;
       SInfo.TruncationCutoff = EBound / Psi.size(); // truncation per lattice site
       //SInfo.EigenvalueCutoff = EigenCutoff;
-            
+
       for (int CurrentTimestep = 0; CurrentTimestep < NumTimesteps; ++CurrentTimestep)
       {
          dmrg.ConstructKrylovBasis(Timestep);
@@ -280,7 +280,7 @@ int main(int argc, char** argv)
 
          if (dmrg.LastNumKrylov_ < MinKrylovVectors)
          {
-            std::cerr << "fatal: number of Krylov vectors (" << dmrg.LastNumKrylov_ 
+            std::cerr << "fatal: number of Krylov vectors (" << dmrg.LastNumKrylov_
                       << ") has dropped below the minimum possible (" << MinKrylovVectors << ").  Aborting.\n";
             std::exit(2);
          }
@@ -308,7 +308,7 @@ int main(int argc, char** argv)
             NumTimesteps *= 2;
             SaveTimesteps *= 2;
             ++CurrentTimestep; // Since we just halved Timestep, we have effectively done two timesteps this iteration
-            std::cout << "Number of Krylov vectors (" << dmrg.LastNumKrylov_ 
+            std::cout << "Number of Krylov vectors (" << dmrg.LastNumKrylov_
                       << ") has exceeded the maximum (" << MaxKrylovVectors << ".  Decreasing timestep to "
                       << Timestep << std::endl;
          }

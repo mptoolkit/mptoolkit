@@ -63,7 +63,7 @@ class TriangularMPO
 
       const_iterator begin() const { return Data_.begin(); }
       const_iterator end() const { return Data_.end(); }
-   
+
       // The Basis1() and Basis2() always coincide for a TriangularMPO
       basis_type Basis() const { return Data_.front().Basis1(); }
       basis_type Basis1() const { return Data_.front().Basis1(); }
@@ -213,7 +213,7 @@ StateComponent Initial_F(TriangularMPO const& m, VectorBasis const& B);
 // For example, given the MPO
 // (1 a)
 // (0 1)
-// the E-dependences are {-1,0}, 
+// the E-dependences are {-1,0},
 // because row 0 of the E matrix doesn't have any dependencies, and
 // calculating row 1 requires row 0.
 // Similarly the F-dependences are {1,2}, since column 1 doesn't have
@@ -227,7 +227,7 @@ StateComponent Initial_F(TriangularMPO const& m, VectorBasis const& B);
 // (0 0 0 0 1)
 // Here the E-dependencies are {-1, 0, 1, 1, 3}.  In particular, note that
 // the second diagonal element doesn't require that the first diagonal element is
-// already calculated, since it only uses E-elements [0,1].  
+// already calculated, since it only uses E-elements [0,1].
 std::vector<int> Dependencies_E(TriangularMPO const& m);
 
 void optimize(TriangularMPO& Op);
@@ -277,7 +277,7 @@ struct Herm<TriangularMPO>
    typedef TriangularMPO const& argument_type;
    typedef HermitianProxy<TriangularMPO> result_type;
 
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    { return result_type(x); }
 };
 
@@ -287,12 +287,12 @@ struct Conj<TriangularMPO>
    typedef TriangularMPO const& argument_type;
    typedef TriangularMPO result_type;
 
-   result_type operator()(argument_type x) const 
-   { 
+   result_type operator()(argument_type x) const
+   {
       TriangularMPO Result(x);
       for (TriangularMPO::iterator I = Result.begin(); I != Result.end(); ++I)
       {
-	 *I = conj(*I);
+         *I = conj(*I);
       }
       return Result;
    }
@@ -304,12 +304,12 @@ struct Adjoint<TriangularMPO>
    typedef TriangularMPO const& argument_type;
    typedef TriangularMPO result_type;
 
-   result_type operator()(argument_type x) const 
-   { 
+   result_type operator()(argument_type x) const
+   {
       TriangularMPO Result(x);
       for (TriangularMPO::iterator I = Result.begin(); I != Result.end(); ++I)
       {
-	 *I = adjoint(*I);
+         *I = adjoint(*I);
       }
       return Result;
    }
@@ -321,12 +321,12 @@ struct InvAdjoint<TriangularMPO>
    typedef TriangularMPO const& argument_type;
    typedef TriangularMPO result_type;
 
-   result_type operator()(argument_type x) const 
+   result_type operator()(argument_type x) const
    {
       TriangularMPO Result(x);
       for (TriangularMPO::iterator I = Result.begin(); I != Result.end(); ++I)
       {
-	 *I = inv_adjoint(*I);
+         *I = inv_adjoint(*I);
       }
       return Result;
    }

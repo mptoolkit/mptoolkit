@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// models/hubbard-u1su2.cpp
+// models/hubbardcylinder-u1su2-k2.cpp
 //
 // Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
@@ -50,7 +50,8 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("U(1)xSU(2) Fermi Hubbard model");
+      OpDescriptions.set_description("U(1)xSU(2) Fermi Hubbard cylinder");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_tx" , "nearest neighbor hopping in y-direction")
          ("H_ty" , "nearest neighbor hopping in x-direction")
@@ -71,48 +72,48 @@ int main(int argc, char** argv)
       std::vector<LatticeSite> Sites;
       for (int k = 0; k < w; ++k)
       {
-	 Sites.push_back(FermionU1SU2());
+         Sites.push_back(FermionU1SU2());
       }
 
       std::vector<LatticeSite> Sites2 = {Sites[0], Sites[4], Sites[1], Sites[5], Sites[2], Sites[6],
-					 Sites[3], Sites[7]};
+                                         Sites[3], Sites[7]};
 
       std::vector<int> kk = {0,2,4,6,1,3,5,7};
       //std::vector<int> kk = {0,1,2,3,4,5,6,7};
 
       UnitCell Cell(Sites2);
-      InfiniteLattice Lattice(Cell);
+      InfiniteLattice Lattice(&Cell);
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), Pdouble(Cell, "Pdouble"),
          Hu(Cell, "Hu"), N(Cell, "N");
 
       UnitCellMPO tx, ty, Pd, hu;
 
-      QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2> 
-	 QN(Cell.GetSymmetryList());
+      QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2>
+         QN(Cell.GetSymmetryList());
 
       for (int k = 0; k < w; ++k)
       {
-	 ty += std::cos(math_const::pi*2*k / w) * N(0)[k];
+         ty += std::cos(math_const::pi*2*k / w) * N(0)[k];
       }
 
       for (int k = 0; k < w; ++k)
       {
-	 tx += dot(CH(0)[k], C(1)[k]) + dot(C(0)[k], CH(1)[k]);
+         tx += dot(CH(0)[k], C(1)[k]) + dot(C(0)[k], CH(1)[k]);
       }
 
       for (int k = 0; k < w; ++k)
       {
-	 for (int l = 0; l < w; ++l)
-	 {
-	    for (int m = 0; m < w; ++m)
-	    {
-	       UnitCellMPO Op = (1.0/w) * prod(CH(0)[kk[k]], C(0)[kk[l]], QN(0,0))
-		  * prod(CH(0)[kk[m]], C(0)[kk[(k-l+m+w)%w]], QN(0,0));
-	       CHECK(Op.size() != 0);
-	       hu += Op;
-	    }
-	 }
-	 Pd -= N(0)[k];
+         for (int l = 0; l < w; ++l)
+         {
+            for (int m = 0; m < w; ++m)
+            {
+               UnitCellMPO Op = (1.0/w) * prod(CH(0)[kk[k]], C(0)[kk[l]], QN(0,0))
+                  * prod(CH(0)[kk[m]], C(0)[kk[(k-l+m+w)%w]], QN(0,0));
+               CHECK(Op.size() != 0);
+               hu += Op;
+            }
+         }
+         Pd -= N(0)[k];
       }
       Pd += hu;
 
