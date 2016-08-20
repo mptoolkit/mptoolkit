@@ -55,6 +55,12 @@
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 
+using math_const::pi;
+
+std::complex<double> phase(double theta)
+{
+   return std::exp(std::complex<double>(0.0, theta));
+}
 
 namespace prog_opt = boost::program_options;
 
@@ -67,15 +73,18 @@ int IntPow(int x, int p) {
 
 // Functions that produces dimer terms for the Hamiltonian (including their h.c. (rotated) terms):
 
-UnitCellMPO DimerKinetic(half_int spin, int width, int cell1, int site1, int cell2, int site2, int cell3, int site3, int cell4, int site4) {
+UnitCellMPO DimerKinetic(half_int spin, int width, int cell1, int site1,
+                         int cell2, int site2, int cell3, int site3, int cell4, int site4) {
 
  LatticeSite Site = SpinSU2(spin);
  UnitCell Cell = repeat(Site, width);
  UnitCellOperator S(Cell, "S"), I(Cell, "I");
  UnitCellMPO H, Dots, DoubleDots, CrossDots;
 
- Dots = inner(S(cell1)[site1], S(cell4)[site4]) + inner(S(cell2)[site2], S(cell3)[site3]) - inner(S(cell1)[site1], S(cell2)[site2]) -
-        inner(S(cell3)[site3], S(cell4)[site4]) - inner(S(cell1)[site1], S(cell3)[site3]) - inner(S(cell2)[site2], S(cell4)[site4]);
+ Dots = inner(S(cell1)[site1], S(cell4)[site4]) + inner(S(cell2)[site2], S(cell3)[site3])
+    - inner(S(cell1)[site1], S(cell2)[site2])
+    - inner(S(cell3)[site3], S(cell4)[site4]) - inner(S(cell1)[site1], S(cell3)[site3])
+    - inner(S(cell2)[site2], S(cell4)[site4]);
 
  DoubleDots = inner(S(cell1)[site1], S(cell2)[site2])*inner(S(cell3)[site3], S(cell4)[site4]) +
               inner(S(cell1)[site1], S(cell3)[site3])*inner(S(cell2)[site2], S(cell4)[site4]);
@@ -89,7 +98,8 @@ UnitCellMPO DimerKinetic(half_int spin, int width, int cell1, int site1, int cel
 
 }
 
-UnitCellMPO DimerPotential(half_int spin, int width, int cell1, int site1, int cell2, int site2, int cell3, int site3, int cell4, int site4) {
+UnitCellMPO DimerPotential(half_int spin, int width, int cell1, int site1, int cell2, int site2,
+                           int cell3, int site3, int cell4, int site4) {
 
  LatticeSite Site = SpinSU2(spin);
  UnitCell Cell = repeat(Site, width);
@@ -174,6 +184,8 @@ int main(int argc, char** argv)
           [&w]()->bool {return w%3 == 0;})
          ("Stag_p60"   , "staggered magnetization order parameter with FM stripes in +60^degree direction",
           "width even",  [&w]()->bool {return w%2 == 0;})
+         ("S120"       , "120 degee order parameter", "width multiple of 3",
+          [&w]()->bool {return w%3 == 0;})
          ;
       OpDescriptions.add_functions()
          ("THM2", "Hamiltonian, {J2 = NNN coupling strength, J_chi = chiral term coupling strength}")
@@ -191,15 +203,12 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinSU2(Spin);
       UnitCell Cell = repeat(Site, w);
+      InfiniteLattice Lattice(&Cell);
+
       UnitCellOperator S(Cell, "S"), StagS(Cell, "StagS");
       UnitCellOperator I(Cell, "I"); // identity operator
       UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
       UnitCellOperator RyUnit(Cell, "RyUnit");
-
-      // Construct the lattice object (we can modify Cell after this if we want.)
-      InfiniteLattice Lattice(&Cell);
-
-      // Add some operators on the unit-cell
 
       for (int i = 0; i < w; ++i)
       {
@@ -212,8 +221,11 @@ int main(int argc, char** argv)
          UnitCellMPO S_stag_p60;
          for (int i = 0; i < w; ++i)
          {
-            StagS += IntPow(-1,i) * S[i];                                 // staggered magnetization with alternating sublattices in Y-direction (note: only one of the three possible formations).
-            S_stag_p60 += IntPow(-1,i)*S(0)[i] + IntPow(-1,i+1)*S(1)[i];  // staggered magnetization order parameter with FM stripes in +60^degree direction.
+            // staggered magnetization with alternating sublattices in Y-direction
+            // (note: only one of the three possible formations).
+            StagS += IntPow(-1,i) * S[i];
+            // staggered magnetization order parameter with FM stripes in +60^degree direction.
+            S_stag_p60 += IntPow(-1,i)*S(0)[i] + IntPow(-1,i+1)*S(1)[i];
          }
          Lattice["Stag_p60"] = sum_unit(S_stag_p60, w*2);
       }
@@ -241,15 +253,18 @@ int main(int argc, char** argv)
       if (w%3 == 0)
       {
          UnitCellMPO S_A, S_B, S_C;
+         UnitCellMPO S120;
          for (int i = 0; i < w; i += 3)
          {
             S_A += S(0)[i+0] + S(1)[(i+2)%w] + S(2)[(i+1)%w];
             S_B += S(0)[i+1] + S(1)[(i+3)%w] + S(2)[(i+2)%w];
             S_C += S(0)[i+2] + S(1)[(i+4)%w] + S(2)[(i+3)%w];
+            S120 += S_A + phase(4*pi/3)*S_B + phase(-4*pi/3)*S_C;
          }
          Lattice["Sa"] = sum_unit(S_A, w*3);
          Lattice["Sb"] = sum_unit(S_B, w*3);
          Lattice["Sc"] = sum_unit(S_C, w*3);
+         Lattice["S120"] = sum_unit(S120, w*3);
       }
 
       // Construct the Hamiltonian for a single unit-cell,
@@ -335,11 +350,6 @@ int main(int argc, char** argv)
 
       Lattice.func("Test")(arg("J2")) = "THM2{J2}";
 
-      // Add the tripartite sublattice magnetization operators
-      if (w%3 == 4)
-      {
-      }
-
       // Momentum operators in Y-direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
 
@@ -413,9 +423,9 @@ int main(int argc, char** argv)
       }
 
       // 'identity' operator in the spin-1/2 auxiliary basis
-      Lattice["I_2"] = prod_unit_left_to_right(UnitCellMPO(I(0)).MPO(), w)
-                     * ProductMPO::make_identity(UnitCellMPO(I(0)).MPO().LocalBasis2List(),
-                       QuantumNumber(Cell.GetSymmetryList(), "0.5"));
+      //  Lattice["I_2"] = prod_unit_left_to_right(UnitCellMPO(I(0)).MPO(), w)
+      //                 * ProductMPO::make_identity(UnitCellMPO(I(0)).MPO().LocalBasis2List(),
+      //                   QuantumNumber(Cell.GetSymmetryList(), "0.5"));
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);
