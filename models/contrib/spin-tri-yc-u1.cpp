@@ -301,9 +301,8 @@ int main(int argc, char** argv)
       std::printf("\33[2K\r");
       std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 21*w+(w*(w-1)/2)+13
 
-      /* Lattice.func("LongRangeIsing_InterCell_YC4_test00")(arg("alpha00")=0.0, arg("lambda00")=0.0)
-                  = "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[0], exp(-lambda00)*I(0), Sz(0)[0] ) )";
-      std::cout << ". " << std::flush; */
+      Lattice.func("TestFunc00")(arg("alpha00")=0.0, arg("lambda00")=0.0)
+                  = "sin(2.5)*alpha00*HS{lambda=-lambda00,i=1,j=2}";
 
       Lattice.func("LongRangeIsing_IntraCell_YC4")(arg("alpha") = 2.0)
                   = "sum_unit( ( ( sin( pi/4 ) / sin( (1-0)*pi/4 ) )^alpha * Sz(0)[0]*Sz(0)[1] ) + "
