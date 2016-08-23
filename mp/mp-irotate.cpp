@@ -80,7 +80,7 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("psi2") < 1 || (vm.count("left") == 0 && vm.count("right") == 0))
       {
          print_copyright(std::cerr, "tools", "mp-irotate");
-         std::cerr << "usage: " << basename(argv[0]) << " [options] <operator> <input-psi> <output-psi>\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <input-psi> <output-psi>\n";
          std::cerr << desc << '\n';
          std::cerr << "This tool rotates an iMPS wavefunction unit cell by an arbitrary number of sites.\n"
                    << "This can be specified as a rotation to the left (--left <sites>) or to the right (--right <sites>)\n"

@@ -72,6 +72,7 @@ int main(int argc, char** argv)
       // Descriptions for the operators
       OpDescriptions.add_functions()
          ("H_exp", "Exponential decay spin exchange parameterized by lambda as exp(-lambda*r)")
+	 ("H_BQ"  , "Bilinear-biquadratic model, parameterized by theta", "spin 1", [&Spin]()->bool {return Spin==1;})
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -110,6 +111,7 @@ int main(int argc, char** argv)
       if (Spin == 1)
       {
          Lattice["H_AKLT"] = Lattice["H_J1"] + (1.0/3.0)*Lattice["H_B1"];
+	 Lattice.func("H_BQ")("theta") = "cos(theta)*H_J1 + sin(theta)*H_B1";
       }
 
       Lattice.func("H_exp")(arg("lambda") = 0.5)

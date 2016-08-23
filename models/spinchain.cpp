@@ -54,22 +54,25 @@ int main(int argc, char** argv)
       OpDescriptions.set_description("Spin chain");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
-         ("H_xx", "nearest neighbor spin coupling Sx Sx")
-         ("H_yy", "nearest neighbor spin exchange Sy Sy")
-         ("H_zz", "nearest neighbor spin exchange Sz Sz")
-         ("H_x" , "magnetic field in the x direction")
-         ("H_y" , "magnetic field in the y direction")
-         ("H_z" , "magnetic field in the z direction")
-         ("H_J1z", "same as H_zz")
-         ("H_J1t", "transverse spin exchange, H_xx + H_yy")
-         ("H_J1" , "nearest neighbor spin exchange = H_J1z + H_J1t")
-         ("H_B1" , "nearest neighbor biquadratic spin exchange (S.S)^2")
-         ("H_mu" , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
-         ("X"    , "pi rotation about the X axis, equivalent to prod_unit(exp(i*pi*Sx(0)))")
-         ("Y"    , "pi rotation about the Y axis, equivalent to prod_unit(exp(i*pi*Sy(0)))")
-         ("Z"    , "pi rotation about the Z axis, equivalent to prod_unit(exp(i*pi*Sz(0)))")
-         ("H_AKLT", "AKLT Hamiltonian H_J1 + (1/3)*H_J2", "spin 1", [&Spin]()->bool {return Spin==1;})
+         ("H_xx"  , "nearest neighbor spin coupling Sx Sx")
+         ("H_yy"  , "nearest neighbor spin exchange Sy Sy")
+         ("H_zz"  , "nearest neighbor spin exchange Sz Sz")
+         ("H_x"   , "magnetic field in the x direction")
+         ("H_y"   , "magnetic field in the y direction")
+         ("H_z"   , "magnetic field in the z direction")
+         ("H_J1z" , "same as H_zz")
+         ("H_J1t" , "transverse spin exchange, H_xx + H_yy")
+         ("H_J1"  , "nearest neighbor spin exchange = H_J1z + H_J1t")
+         ("H_B1"  , "nearest neighbor biquadratic spin exchange (S.S)^2")
+         ("H_mu"  , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
+         ("X"     , "pi rotation about the X axis, equivalent to prod_unit(exp(i*pi*Sx(0)))")
+         ("Y"     , "pi rotation about the Y axis, equivalent to prod_unit(exp(i*pi*Sy(0)))")
+         ("Z"     , "pi rotation about the Z axis, equivalent to prod_unit(exp(i*pi*Sz(0)))")
+         ("H_AKLT", "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
          ;
+      OpDescriptions.add_functions()
+	 ("H_BQ"  , "Bilinear-biquadratic model, parameterized by theta", "spin 1", [&Spin]()->bool {return Spin==1;})
+	 ;
 
       if (vm.count("help") || !vm.count("out"))
       {
@@ -77,7 +80,6 @@ int main(int argc, char** argv)
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
          std::cerr << OpDescriptions << '\n';
-         std::cerr << "only for spin-1: H_AKLT  - AKLT Hamiltonian H_J1 + (1/3)*H_B1\n";
          return 1;
       }
 
@@ -117,6 +119,7 @@ int main(int argc, char** argv)
       if (Spin == 1)
       {
          Lattice["H_AKLT"] = Lattice["H_J1"] + (1.0/3.0)*Lattice["H_B1"];
+	 Lattice.func("H_BQ")("theta") = "cos(theta)*H_J1 + sin(theta)*H_B1";
       }
 
       Lattice["X"] = prod_unit(exp(std::complex<double>(0.0, math_const::pi)*Sx(0)));
