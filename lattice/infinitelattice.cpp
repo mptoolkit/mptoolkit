@@ -53,7 +53,7 @@ InfiniteLattice::InfiniteLattice(InfiniteLattice const& Other)
      Authors_(Other.Authors_),
      CommandLine_(Other.CommandLine_),
      Timestamp_(Other.Timestamp_),
-     UnitCell_(Other.OwnUnitCell_ ? Other.UnitCell_ : new UnitCell(*Other.UnitCell_)),
+     UnitCell_(Other.OwnUnitCell_ ? new UnitCell(*Other.UnitCell_) : Other.UnitCell_),
      OwnUnitCell_(Other.OwnUnitCell_),
      Operators_(Other.Operators_),
      Arguments_(Other.Arguments_),
@@ -66,7 +66,7 @@ InfiniteLattice::InfiniteLattice(InfiniteLattice&& Other)
      Authors_(std::move(Other.Authors_)),
      CommandLine_(std::move(Other.CommandLine_)),
      Timestamp_(std::move(Other.Timestamp_)),
-     UnitCell_(std::move(UnitCell_)),
+     UnitCell_(std::move(Other.UnitCell_)),
      OwnUnitCell_(std::move(Other.OwnUnitCell_)),
      Operators_(std::move(Other.Operators_)),
      Arguments_(std::move(Other.Arguments_)),
@@ -83,7 +83,7 @@ InfiniteLattice::operator=(InfiniteLattice const& Other)
    Authors_ = Other.Authors_;
    CommandLine_ = Other.CommandLine_;
    Timestamp_ = Other.Timestamp_;
-   UnitCell_ = Other.OwnUnitCell_ ? Other.UnitCell_ : new UnitCell(*Other.UnitCell_);
+   UnitCell_ = Other.OwnUnitCell_ ? new UnitCell(*Other.UnitCell_) : Other.UnitCell_;
    OwnUnitCell_ = Other.OwnUnitCell_;
    Operators_ = Other.Operators_;
    Arguments_ = Other.Arguments_;
