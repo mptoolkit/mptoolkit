@@ -64,6 +64,9 @@ int main(int argc, char** argv)
          ("H_AKLT", "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
          ;
 
+      OpDescriptions.add_functions()
+	 ("H_BQ"  , "Bilinear-biquadratic model, parameterized by theta", "spin 1", [&Spin]()->bool {return Spin==1;})
+	 ;
 
       if (vm.count("help") || !vm.count("out"))
       {
@@ -96,6 +99,7 @@ int main(int argc, char** argv)
       if (Spin == 1)
       {
          Lattice["H_AKLT"] = Lattice["H_J1"] + (1.0/3.0)*Lattice["H_B1"];
+	 Lattice.func("H_BQ")("theta") = "cos(theta)*H_J1 + sin(theta)*H_B1";
       }
 
       Lattice.func("H_J1t_twist")("theta") =

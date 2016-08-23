@@ -53,7 +53,7 @@ InfiniteLattice::InfiniteLattice(InfiniteLattice const& Other)
      Authors_(Other.Authors_),
      CommandLine_(Other.CommandLine_),
      Timestamp_(Other.Timestamp_),
-     UnitCell_(Other.OwnUnitCell_ ? Other.UnitCell_ : new UnitCell(*Other.UnitCell_)),
+     UnitCell_(Other.OwnUnitCell_ ? new UnitCell(*Other.UnitCell_) : Other.UnitCell_),
      OwnUnitCell_(Other.OwnUnitCell_),
      Operators_(Other.Operators_),
      Arguments_(Other.Arguments_),
@@ -66,7 +66,7 @@ InfiniteLattice::InfiniteLattice(InfiniteLattice&& Other)
      Authors_(std::move(Other.Authors_)),
      CommandLine_(std::move(Other.CommandLine_)),
      Timestamp_(std::move(Other.Timestamp_)),
-     UnitCell_(std::move(UnitCell_)),
+     UnitCell_(std::move(Other.UnitCell_)),
      OwnUnitCell_(std::move(Other.OwnUnitCell_)),
      Operators_(std::move(Other.Operators_)),
      Arguments_(std::move(Other.Arguments_)),
@@ -83,7 +83,7 @@ InfiniteLattice::operator=(InfiniteLattice const& Other)
    Authors_ = Other.Authors_;
    CommandLine_ = Other.CommandLine_;
    Timestamp_ = Other.Timestamp_;
-   UnitCell_ = Other.OwnUnitCell_ ? Other.UnitCell_ : new UnitCell(*Other.UnitCell_);
+   UnitCell_ = Other.OwnUnitCell_ ? new UnitCell(*Other.UnitCell_) : Other.UnitCell_;
    OwnUnitCell_ = Other.OwnUnitCell_;
    Operators_ = Other.Operators_;
    Arguments_ = Other.Arguments_;
@@ -189,17 +189,39 @@ InfiniteLattice::set_operator_descriptions(OperatorDescriptions const& Desc)
    }
 
    // Same for the functions
-   for (OperatorDescriptions::const_function_iterator I = Desc.begin_function();
-        I != Desc.end_function(); ++I)
+   for (OperatorDescriptions::const_iterator I = Desc.begin_function(); I != Desc.end_function(); ++I)
    {
-      if (this->function_exists(I->first))
+      if (this->operator_exists(std::get<0>(*I)))
       {
-         Functions_[I->first].set_description(I->second);
+         // see if the function is conditional
+         if (std::get<3>(*I) && (!(*std::get<3>(*I))()))
+         {
+            std::cerr << "warning: conditional lattice function " << std::get<0>(*I)
+                      << " (conditional on: " << std::get<2>(*I) << ") should not be defined, but is!\n";
+         }
+         Operators_[std::get<0>(*I)].set_description(std::get<1>(*I));
       }
       else
       {
-         std::cerr << "warning: function " << I->first
-                   << " has a descrption but is not defined in the lattice.\n";
+         // is the operator optional?
+         if (!std::get<2>(*I).empty() || std::get<3>(*I))
+         {
+            // yes, check and see that we satisfy the condition
+            if (std::get<3>(*I))
+            {
+               // invoke the function
+               if (((*std::get<3>(*I))()))
+               {
+                  std::cerr << "warning: conditional lattice function "  << std::get<0>(*I)
+                            << " should be defined but is not.\n";
+               }
+            }
+         }
+         else
+         {
+            std::cerr << "warning: function " << std::get<0>(*I)
+                      << " has a description but is not defined in the lattice.\n";
+         }
       }
    }
 

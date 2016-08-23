@@ -49,9 +49,6 @@ class OperatorDescriptions
 
       typedef data_type::const_iterator const_iterator;
 
-      typedef std::map<std::string, std::string> function_list_type;
-      typedef function_list_type::const_iterator const_function_iterator;
-
    private:
       typedef std::map<std::string, int> index_type;
 
@@ -144,31 +141,16 @@ class OperatorDescriptions
 
       // Functions
 
-      struct FunctionDescProxy
-      {
-         FunctionDescProxy(function_list_type& F_)
-            : F(&F_) {}
-
-         FunctionDescProxy const& operator()(std::string const& Name,
-                                             std::string const& Desc) const
-         {
-            (*F)[Name] = Desc;
-            return *this;
-         }
-
-         function_list_type* F;
-      };
-
-      FunctionDescProxy add_functions() { return FunctionDescProxy(Functions); }
+      OperatorDescProxy add_functions() { return OperatorDescProxy(Functions, FunctionIndex); }
 
       unsigned size_function() const { return Functions.size(); }
 
-      const_function_iterator begin_function() const { return Functions.begin(); }
-      const_function_iterator end_function() const { return Functions.end(); }
+      const_iterator begin_function() const { return Functions.begin(); }
+      const_iterator end_function() const { return Functions.end(); }
 
-      FunctionDescProxy add_cell_functions() { return FunctionDescProxy(CellFunctions); }
+      OperatorDescProxy add_cell_functions() { return OperatorDescProxy(CellFunctions, CellFunctionIndex); }
 
-      function_list_type const& cell_functions() const { return CellFunctions; }
+      data_type const& cell_functions() const { return CellFunctions; }
 
    private:
       std::string Description;
@@ -180,9 +162,11 @@ class OperatorDescriptions
       data_type CellOperatorDescriptions;
       std::map<std::string, int> CellIndex;
 
-      function_list_type Functions;
+      data_type Functions;
+      std::map<std::string, int> FunctionIndex;
 
-      function_list_type CellFunctions;
+      data_type CellFunctions;
+      std::map<std::string, int> CellFunctionIndex;
 };
 
 inline
@@ -223,10 +207,27 @@ std::ostream& operator<<(std::ostream& out, OperatorDescriptions const& d)
    out << "\nFunctions:\n";
    if (d.size_function() == 0)
       out << "(none)\n";
-   for (OperatorDescriptions::const_function_iterator I = d.begin_function();
-        I != d.end_function(); ++I)
+   Conditions.clear();
+   for (OperatorDescriptions::const_iterator I = d.begin_function(); I != d.end_function(); ++I)
    {
-      out << std::setw(10) << std::left << I->first << " - " << I->second << '\n';
+      if (!std::get<2>(*I).empty() || std::get<3>(*I))
+      {
+         Conditions.insert(std::get<2>(*I));
+      }
+      else
+         out << std::setw(10) << std::left << std::get<0>(*I) << " - " << std::get<1>(*I) << '\n';
+   }
+   // iterate over the possible conditions
+   for (std::string const& m : Conditions)
+   {
+      out << "\nFunctions conditional on: " << m << "\n";
+      for (OperatorDescriptions::const_iterator I = d.begin_function(); I != d.end_function(); ++I)
+      {
+         if (std::get<2>(*I) == m && (!m.empty() || std::get<3>(*I)))
+         {
+            out << std::setw(10) << std::left << std::get<0>(*I) << " - " << std::get<1>(*I) << '\n';
+         }
+      }
    }
 
    return out;
