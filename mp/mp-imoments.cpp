@@ -380,6 +380,13 @@ int main(int argc, char** argv)
       InfiniteLattice Lattice;
       std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(OpStr);
 
+      int Size = statistics::lcm(Psi.size(), Op.size());
+
+      // TODO: a better approach would be to get SolveMPO to understand how to do
+      // a multiple unit-cell operator.
+      Psi = repeat(Psi, Size / Psi.size());
+      Op = repeat(Op, Size / Op.size());
+
       // Make a LinearWavefunction in the symmetric orthogonality constraint
       // TODO: actually this is left-orthogonal.  Which might be OK?
       RealDiagonalOperator D;
@@ -391,16 +398,6 @@ int main(int argc, char** argv)
       Rho = delta_shift(Rho, Psi.qshift());
 
       MatrixOperator Identity = MatrixOperator::make_identity(Phi.Basis1());
-
-      // make Op the same size as our unit cell
-      if (WavefuncUnitCellSize % Op.size() != 0)
-      {
-         std::cout << "mp-icumulant: fatal: the wavefunction unit cell "
-            "must be a multiple of the operator unit cell.\n";
-         return 1;
-      }
-
-      Op = repeat(Op, WavefuncUnitCellSize / Op.size());
 
       // Check that the local basis for the wavefunction and hamiltonian are compatible
       if (ExtractLocalBasis(Psi) != ExtractLocalBasis1(Op))
