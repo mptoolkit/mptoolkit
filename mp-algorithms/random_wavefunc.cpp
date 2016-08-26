@@ -19,6 +19,7 @@
 
 #include "random_wavefunc.h"
 #include "linearalgebra/matrix_utility.h"
+#include "common/randutil.h"
 
 bool
 WavefunctionDesc::Flip(std::vector<BasisList> const& Basis, int Site, int NewState,
@@ -143,21 +144,18 @@ CreateRandomConfiguration(std::vector<BasisList> const& Basis,
    return Psi;
 }
 
-LinearWavefunction CreateRandomWavefunction(std::vector<BasisList> const& Basis,
-                                        QuantumNumber const& q, double Beta,
-                                        QuantumNumber const& RightBoundary)
+LinearWavefunction WavefunctionFromConfiguration(WavefunctionDesc const& Psi, std::vector<BasisList> const& Basis,
+						 QuantumNumber const& RightBoundary)
 {
-   WavefunctionDesc Psi = CreateRandomConfiguration(Basis, q, Beta, RightBoundary);
-
    BasisList Vac = make_single_basis(RightBoundary);
    VectorBasis B2(Vac);
-   QuantumNumber Ident(Basis[0].GetSymmetryList());  // the scalar quantum number
+   QuantumNumber Ident(RightBoundary.GetSymmetryList());  // the scalar quantum number
 
    LinearWavefunction Result;
 
    MatrixOperator Center(B2, B2, Ident);
    Center(0,0) = LinearAlgebra::Matrix<double>(1,1,1);
-
+      
    for (int i = Basis.size()-1; i >= 0; --i)
    {
       //      TRACE(i)(Psi.Height[i]);
@@ -172,7 +170,22 @@ LinearWavefunction CreateRandomWavefunction(std::vector<BasisList> const& Basis,
       Result.push_front(R);
       B2 = B1;
    }
+   
+   return Result;
+}
 
+LinearWavefunction CreateRandomWavefunction(std::vector<BasisList> const& Basis,
+					    QuantumNumber const& q, double Beta,
+					    QuantumNumber const& RightBoundary, int NConfig)
+{
+   LinearWavefunction Result;
+   
+   for (int i = 0; i < NConfig; ++i)
+   {
+      WavefunctionDesc Psi = CreateRandomConfiguration(Basis, q, Beta, RightBoundary);
+      Result = Result + (randutil::rand()*2-1) * WavefunctionFromConfiguration(Psi, Basis, RightBoundary);
+   }
+   
    return Result;
 }
 

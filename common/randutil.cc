@@ -1,0 +1,59 @@
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// common/random.h
+//
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
+#include <cmath>
+
+namespace randutil
+{
+
+// implementation details
+namespace detail
+{
+   extern std::uniform_real_distribution<double> UniformDist;
+   extern std::normal_distribution<double> NormalDist;
+} // namespace detail
+
+
+inline
+int rand_int(int Min, int Max)
+{
+   return int(std::floor(randutil::rand() * (Max-Min+1))) - Min;
+}
+
+// returns a real number in the range [0,1)
+inline
+double rand()
+{
+   return detail::UniformDist(u_rand);
+}
+
+// returns a uniformly distributed real number
+inline
+double randn()
+{
+   return detail::NormalDist(u_rand);
+}
+
+template <typename T>
+void seed(std::initializer_list<T> s)
+{
+   seed(std::vector<unsigned>(s));
+}
+
+} // namespace

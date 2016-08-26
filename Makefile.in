@@ -133,7 +133,7 @@ parserobj = parser.o
 mpobj = $(mpoobj) $(mpsobj) $(latticeobj) $(wavefunctionobj)
 
 commonobj = niftycounter.o poolallocator.o hash.o proccontrol.o \
-	    halfint.o stackallocator.o conflist.o terminal.o
+	    halfint.o stackallocator.o conflist.o terminal.o randutil.o
 
 debugobj = backtrace.o debughandler.o
 
@@ -185,7 +185,9 @@ mpo_tests = test_operator_decompose
 
 pheap_tests = testpheap-write testpheap-read testpheap-read-xdr
 
-common_tests = testrunlengthcompressed
+common_tests = testrunlengthcompressed test_random
+
+test_random : randutil.o
 
 quantumnumber_tests = testcoupling
 

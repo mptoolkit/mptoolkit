@@ -146,6 +146,12 @@ MatrixOperator CollapseBasis(VectorBasis const& b)
 
 LinearWavefunction operator+(LinearWavefunction const& x, LinearWavefunction const& y)
 {
+   // quick return for sum involving a null wavefunction
+   if (x.empty())
+      return y;
+   if (y.empty())
+      return x;
+
    CHECK_EQUAL(x.GetSymmetryList(), y.GetSymmetryList());
    LinearWavefunction Result(x.GetSymmetryList());
    LinearWavefunction::const_iterator xi = x.begin(), yi = y.begin();
