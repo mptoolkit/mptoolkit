@@ -1547,7 +1547,7 @@ iter_coefficient_inner_prod_cull(I1 i1, I2 i2, CF const& cf,
          ++i1; ++i2;
       }
    }
-   TRACE_IF(norm_err_sq(Result) < NormSq * Tol * Tol)(Result);
+   DEBUG_TRACE_IF(norm_err_sq(Result) < NormSq * Tol * Tol)(Result);
    if (norm_err_sq(Result) < NormSq * Tol * Tol)
       return zero_or_die<value_type>();
    return Result;

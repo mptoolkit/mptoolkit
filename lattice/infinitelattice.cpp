@@ -191,7 +191,7 @@ InfiniteLattice::set_operator_descriptions(OperatorDescriptions const& Desc)
    // Same for the functions
    for (OperatorDescriptions::const_iterator I = Desc.begin_function(); I != Desc.end_function(); ++I)
    {
-      if (this->operator_exists(std::get<0>(*I)))
+      if (this->function_exists(std::get<0>(*I)))
       {
          // see if the function is conditional
          if (std::get<3>(*I) && (!(*std::get<3>(*I))()))
@@ -199,7 +199,7 @@ InfiniteLattice::set_operator_descriptions(OperatorDescriptions const& Desc)
             std::cerr << "warning: conditional lattice function " << std::get<0>(*I)
                       << " (conditional on: " << std::get<2>(*I) << ") should not be defined, but is!\n";
          }
-         Operators_[std::get<0>(*I)].set_description(std::get<1>(*I));
+         Functions_[std::get<0>(*I)].set_description(std::get<1>(*I));
       }
       else
       {
