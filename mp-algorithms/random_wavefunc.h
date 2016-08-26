@@ -74,7 +74,7 @@ CreateRandomWavefunction(std::vector<BasisList> const& Basis,
 LinearWavefunction
 CreateRandomWavefunction(std::vector<BasisList> const& Basis,
                          QuantumNumber const& q, double Beta,
-                         QuantumNumber const& RightBoundary, int NConfig = 10);
+                         QuantumNumber const& RightBoundary, int NConfig = 20);
 
 #if 0
 LinearWavefunction
