@@ -56,4 +56,30 @@ void seed(std::initializer_list<T> s)
    seed(std::vector<unsigned>(s));
 }
 
+// class random_stream
+
+inline
+int random_stream::rand_int(int Min, int Max)
+{
+   return int(std::floor(this->rand() * (Max-Min+1))) - Min;
+}
+
+inline
+double random_stream::rand()
+{
+   return UniformDist(u_rand);
+}
+
+inline
+double random_stream::randn()
+{
+   return NormalDist(u_rand);
+}
+
+template <typename T>
+void random_stream::seed(std::initializer_list<T> s)
+{
+   this->seed(std::vector<unsigned>(s));
+}
+
 } // namespace
