@@ -187,8 +187,6 @@ pheap_tests = testpheap-write testpheap-read testpheap-read-xdr
 
 common_tests = testrunlengthcompressed test_random
 
-test_random : randutil.o
-
 quantumnumber_tests = testcoupling
 
 alltests = $(linearalgebra_tests) $(tensor_tests) $(lattice_tests) \
@@ -337,6 +335,12 @@ $(all-models) :  $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
 
 $(mp-misc) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
                $(dmrgobj) $(mpobj)
+
+#
+# dependencies for common tests
+#
+
+test_random : randutil.o
 
 #
 # dependencies for tensor tests
