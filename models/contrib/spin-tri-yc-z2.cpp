@@ -321,7 +321,7 @@ int main(int argc, char** argv)
 
       OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+12
 
-      Lattice.func("LongRangeIsing_InterCell_YC6_part1")(arg("alpha00")=0.0, arg("lambda00")=0.0, arg("alpha01")=0.0, arg("lambda01")=0.0, arg("alpha02")=0.0, arg("lambda02")=0.0, arg("alpha03")=0.0, arg("lambda03")=0.0, arg("alpha04")=0.0, arg("lambda04")=0.0, arg("alpha05")=0.0, arg("lambda05")=0.0)
+      Lattice.func("LongRangeIsing_InterCell_YC6")(arg("alpha00")=0.0, arg("lambda00")=0.0, arg("alpha01")=0.0, arg("lambda01")=0.0, arg("alpha02")=0.0, arg("lambda02")=0.0, arg("alpha03")=0.0, arg("lambda03")=0.0, arg("alpha04")=0.0, arg("lambda04")=0.0, arg("alpha05")=0.0, arg("lambda05")=0.0)
                   = "alpha00*(HS{lambda=lambda00,p=0,q=0} + HS{lambda=lambda00,p=1,q=1} + HS{lambda=lambda00,p=2,q=2} + HS{lambda=lambda00,p=3,q=3}  + HS{lambda=lambda00,p=4,q=4} + HS{lambda=lambda00,p=5,q=5}) + "
                     "alpha01*(HS{lambda=lambda01,p=0,q=1} + HS{lambda=lambda01,p=1,q=2} + HS{lambda=lambda01,p=2,q=3} + HS{lambda=lambda01,p=3,q=4}  + HS{lambda=lambda01,p=4,q=5} + HS{lambda=lambda01,p=5,q=0}) + "
                     "alpha02*(HS{lambda=lambda02,p=0,q=2} + HS{lambda=lambda02,p=1,q=3} + HS{lambda=lambda02,p=2,q=4} + HS{lambda=lambda02,p=3,q=5}  + HS{lambda=lambda02,p=4,q=0} + HS{lambda=lambda02,p=5,q=1}) + "
