@@ -20,6 +20,34 @@
 #include "triangular_mpo.h"
 #include "common/statistics.h"
 
+enum class OptimizationChoice { Delinearize, Deparallelize, QR, None };
+
+OptimizationChoice SelectOptimization(char const* Str)
+{
+   // default
+   if (Str == NULL)
+      return OptimizationChoice::Deparallelize;
+   std::string s(Str);
+
+   if (s == "none")
+      return OptimizationChoice::None;
+
+   if (s == "deparallelize")
+      return OptimizationChoice::Deparallelize;
+
+   if (s == "delinearize")
+      return OptimizationChoice::Delinearize;
+
+   if (s == "qr")
+      return OptimizationChoice::QR;
+
+   WARNING("Invalid optimization choice:")(s);
+
+   return OptimizationChoice::Deparallelize;
+}
+
+OptimizationChoice TriangularMPOOptimization = SelectOptimization(getenv("MP_TRI_MPO_OPTIM"));
+
 void
 TriangularMPO::check_structure() const
 {
@@ -137,7 +165,16 @@ void deparallelize(TriangularMPO& Op)
 
 void optimize(TriangularMPO& Op)
 {
-   deparallelize(Op);
+   switch (TriangularMPOOptimization)
+   {
+   case OptimizationChoice::None:
+      break;
+   case OptimizationChoice::Deparallelize:
+      deparallelize(Op);
+      break;
+   default:
+      WARNING("Unsupported TriangularMPO optimization");
+   }
 }
 
 void qr_optimize(TriangularMPO& Op)

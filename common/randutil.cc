@@ -33,7 +33,7 @@ namespace detail
 inline
 int rand_int(int Min, int Max)
 {
-   return int(std::floor(randutil::rand() * (Max-Min+1))) - Min;
+   return int(std::floor(randutil::rand() * (Max-Min+1))) + Min;
 }
 
 // returns a real number in the range [0,1)
@@ -61,7 +61,7 @@ void seed(std::initializer_list<T> s)
 inline
 int random_stream::rand_int(int Min, int Max)
 {
-   return int(std::floor(this->rand() * (Max-Min+1))) - Min;
+   return int(std::floor(this->rand() * (Max-Min+1))) + Min;
 }
 
 inline
