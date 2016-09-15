@@ -56,13 +56,13 @@
 #include <boost/program_options.hpp>
 
 using math_const::pi;
+namespace prog_opt = boost::program_options;
+
 
 std::complex<double> phase(double theta)
 {
    return std::exp(std::complex<double>(0.0, theta));
 }
-
-namespace prog_opt = boost::program_options;
 
 
 int IntPow(int x, int p) {
@@ -71,8 +71,7 @@ int IntPow(int x, int p) {
   return x * IntPow(x, p-1);
 }
 
-// Functions that produces dimer terms for the Hamiltonian (including their h.c. (rotated) terms):
-
+// Functions for producing dimer terms in the Hamiltonian (including their h.c. (rotated) terms):
 UnitCellMPO DimerKinetic(half_int spin, int width, int cell1, int site1,
                          int cell2, int site2, int cell3, int site3, int cell4, int site4) {
 
@@ -97,6 +96,7 @@ UnitCellMPO DimerKinetic(half_int spin, int width, int cell1, int site1,
  return H;
 
 }
+
 
 UnitCellMPO DimerPotential(half_int spin, int width, int cell1, int site1, int cell2, int site2,
                            int cell3, int site3, int cell4, int site4) {
@@ -253,18 +253,18 @@ int main(int argc, char** argv)
       if (w%3 == 0)
       {
          UnitCellMPO S_A, S_B, S_C;
-         UnitCellMPO S120;
+         UnitCellMPO S_120;
          for (int i = 0; i < w; i += 3)
          {
             S_A += S(0)[i+0] + S(1)[(i+2)%w] + S(2)[(i+1)%w];
             S_B += S(0)[i+1] + S(1)[(i+3)%w] + S(2)[(i+2)%w];
             S_C += S(0)[i+2] + S(1)[(i+4)%w] + S(2)[(i+3)%w];
-            S120 += S_A + phase(4*pi/3)*S_B + phase(-4*pi/3)*S_C;
+            S_120 += S_A + phase(4*pi/3)*S_B + phase(-4*pi/3)*S_C;
          }
          Lattice["Sa"] = sum_unit(S_A, w*3);
          Lattice["Sb"] = sum_unit(S_B, w*3);
          Lattice["Sc"] = sum_unit(S_C, w*3);
-         Lattice["S120"] = sum_unit(S120, w*3);
+         Lattice["S120"] = sum_unit(S_120, w*3);
       }
 
       // Construct the Hamiltonian for a single unit-cell,
@@ -348,7 +348,7 @@ int main(int argc, char** argv)
       Lattice.func("THM2")(arg("J2") = 0.0, arg("J_chi") = 0.0)
               = "H_J1 + J2*H_J2 + J_chi*H_chi";
 
-      Lattice.func("Test")(arg("J2")) = "THM2{J2}";
+      // Lattice.func("Test")(arg("J2")) = "THM2{J2}";
 
       // Momentum operators in Y-direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);

@@ -116,7 +116,7 @@ int main(int argc, char** argv)
       const double PI = 4.0*std::atan(1.0);
       //const std::complex<double> jj(0.0,theta*PI);
       int oo = 0;
-      int oo_max = 8*w+(w*w/2)+15;
+      int oo_max = 8*w+(w*w/2)+13;
 
       LatticeSite Site = SpinZ2(Spin);
       UnitCell Cell = repeat(Site, w);
@@ -279,8 +279,8 @@ int main(int argc, char** argv)
       OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+8
 
       // a basic function for Haldane-Shastry model with Sz*Sz interations
-      Lattice.func("HS")(arg("lambda") = 0.5, arg("i") = "0", arg("j") = "0")
-                  = "exp(-lambda)*sum_string_inner( Sz(0)[i], exp(-lambda)*I(0), Sz(0)[j] )";
+      Lattice.func("HS")(arg("lambda") = 0.5, arg("p") = "0", arg("q") = "0")
+                  = "exp(-lambda)*sum_string_inner( Sz(0)[p], exp(-lambda)*I(0), Sz(0)[q] )";
 
       OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+9
 
@@ -313,73 +313,23 @@ int main(int argc, char** argv)
 
       OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+11
 
-      Lattice.func("LongRangeIsing_InterCell_YC4_part1")(arg("alpha00")=0.0, arg("lambda00")=0.0, arg("alpha01")=0.0, arg("lambda01")=0.0)
-                  = "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[0], exp(-lambda00)*I(0), Sz(0)[0] ) ) + "
-                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[1], exp(-lambda00)*I(0), Sz(0)[1] ) ) + "
-                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[2], exp(-lambda00)*I(0), Sz(0)[2] ) ) + "
-                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[3], exp(-lambda00)*I(0), Sz(0)[3] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[0], exp(-lambda01)*I(0), Sz(0)[1] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[1], exp(-lambda01)*I(0), Sz(0)[2] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[2], exp(-lambda01)*I(0), Sz(0)[3] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[3], exp(-lambda01)*I(0), Sz(0)[0] ) )   ";
+      Lattice.func("LongRangeIsing_InterCell_YC4")(arg("alpha00")=0.0, arg("lambda00")=0.0, arg("alpha01")=0.0, arg("lambda01")=0.0, arg("alpha02")=0.0, arg("lambda02")=0.0, arg("alpha03")=0.0, arg("lambda03")=0.0)
+                  = "alpha00*(HS{lambda=lambda00,p=0,q=0} + HS{lambda=lambda00,p=1,q=1} + HS{lambda=lambda00,p=2,q=2} + HS{lambda=lambda00,p=3,q=3}) + "
+                    "alpha01*(HS{lambda=lambda01,p=0,q=1} + HS{lambda=lambda01,p=1,q=2} + HS{lambda=lambda01,p=2,q=3} + HS{lambda=lambda01,p=3,q=0}) + "
+                    "alpha02*(HS{lambda=lambda02,p=0,q=2} + HS{lambda=lambda02,p=1,q=3} + HS{lambda=lambda02,p=2,q=0} + HS{lambda=lambda02,p=3,q=1}) + "
+                    "alpha03*(HS{lambda=lambda03,p=0,q=3} + HS{lambda=lambda03,p=1,q=0} + HS{lambda=lambda03,p=2,q=1} + HS{lambda=lambda03,p=3,q=2})";
 
       OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+12
 
-      Lattice.func("LongRangeIsing_InterCell_YC4_part2")(arg("alpha02")=0.0, arg("lambda02")=0.0, arg("alpha03")=0.0, arg("lambda03")=0.0)
-                  = "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[0], exp(-lambda02)*I(0), Sz(0)[2] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[1], exp(-lambda02)*I(0), Sz(0)[3] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[2], exp(-lambda02)*I(0), Sz(0)[0] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[3], exp(-lambda02)*I(0), Sz(0)[1] ) ) + "
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[0], exp(-lambda03)*I(0), Sz(0)[3] ) ) + "
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[1], exp(-lambda03)*I(0), Sz(0)[0] ) ) + "
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[2], exp(-lambda03)*I(0), Sz(0)[1] ) ) + "
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[3], exp(-lambda03)*I(0), Sz(0)[2] ) )   ";
+      Lattice.func("LongRangeIsing_InterCell_YC6_part1")(arg("alpha00")=0.0, arg("lambda00")=0.0, arg("alpha01")=0.0, arg("lambda01")=0.0, arg("alpha02")=0.0, arg("lambda02")=0.0, arg("alpha03")=0.0, arg("lambda03")=0.0, arg("alpha04")=0.0, arg("lambda04")=0.0, arg("alpha05")=0.0, arg("lambda05")=0.0)
+                  = "alpha00*(HS{lambda=lambda00,p=0,q=0} + HS{lambda=lambda00,p=1,q=1} + HS{lambda=lambda00,p=2,q=2} + HS{lambda=lambda00,p=3,q=3}  + HS{lambda=lambda00,p=4,q=4} + HS{lambda=lambda00,p=5,q=5}) + "
+                    "alpha01*(HS{lambda=lambda01,p=0,q=1} + HS{lambda=lambda01,p=1,q=2} + HS{lambda=lambda01,p=2,q=3} + HS{lambda=lambda01,p=3,q=4}  + HS{lambda=lambda01,p=4,q=5} + HS{lambda=lambda01,p=5,q=0}) + "
+                    "alpha02*(HS{lambda=lambda02,p=0,q=2} + HS{lambda=lambda02,p=1,q=3} + HS{lambda=lambda02,p=2,q=4} + HS{lambda=lambda02,p=3,q=5}  + HS{lambda=lambda02,p=4,q=0} + HS{lambda=lambda02,p=5,q=1}) + "
+                    "alpha03*(HS{lambda=lambda03,p=0,q=3} + HS{lambda=lambda03,p=1,q=4} + HS{lambda=lambda03,p=2,q=5} + HS{lambda=lambda03,p=3,q=0}  + HS{lambda=lambda03,p=4,q=1} + HS{lambda=lambda03,p=5,q=2}) + "
+                    "alpha04*(HS{lambda=lambda04,p=0,q=4} + HS{lambda=lambda04,p=1,q=5} + HS{lambda=lambda04,p=2,q=0} + HS{lambda=lambda04,p=3,q=1}  + HS{lambda=lambda04,p=4,q=2} + HS{lambda=lambda04,p=5,q=3}) + "
+                    "alpha05*(HS{lambda=lambda05,p=0,q=5} + HS{lambda=lambda05,p=1,q=0} + HS{lambda=lambda05,p=2,q=1} + HS{lambda=lambda05,p=3,q=2}  + HS{lambda=lambda05,p=4,q=3} + HS{lambda=lambda05,p=5,q=4})";
 
       OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+13
-
-      Lattice.func("LongRangeIsing_InterCell_YC6_part1")(arg("alpha00")=0.0, arg("lambda00")=0.0, arg("alpha01")=0.0, arg("lambda01")=0.0, arg("alpha02")=0.0, arg("lambda02")=0.0)
-                  = "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[0], exp(-lambda00)*I(0), Sz(0)[0] ) ) + "
-                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[1], exp(-lambda00)*I(0), Sz(0)[1] ) ) + "
-                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[2], exp(-lambda00)*I(0), Sz(0)[2] ) ) + "
-                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[3], exp(-lambda00)*I(0), Sz(0)[3] ) ) + "
-                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[4], exp(-lambda00)*I(0), Sz(0)[4] ) ) + "
-                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[5], exp(-lambda00)*I(0), Sz(0)[5] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[0], exp(-lambda01)*I(0), Sz(0)[1] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[1], exp(-lambda01)*I(0), Sz(0)[2] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[2], exp(-lambda01)*I(0), Sz(0)[3] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[3], exp(-lambda01)*I(0), Sz(0)[4] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[4], exp(-lambda01)*I(0), Sz(0)[5] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[5], exp(-lambda01)*I(0), Sz(0)[0] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[0], exp(-lambda02)*I(0), Sz(0)[2] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[1], exp(-lambda02)*I(0), Sz(0)[3] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[2], exp(-lambda02)*I(0), Sz(0)[4] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[3], exp(-lambda02)*I(0), Sz(0)[5] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[4], exp(-lambda02)*I(0), Sz(0)[0] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[5], exp(-lambda02)*I(0), Sz(0)[1] ) )   ";
-
-      OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+14
-
-      Lattice.func("LongRangeIsing_InterCell_YC6_part2")(arg("alpha03")=0.0, arg("lambda03")=0.0, arg("alpha04")=0.0, arg("lambda04")=0.0, arg("alpha05")=0.0, arg("lambda05")=0.0)
-                  = "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[0], exp(-lambda03)*I(0), Sz(0)[3] ) ) +"
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[1], exp(-lambda03)*I(0), Sz(0)[4] ) ) +"
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[2], exp(-lambda03)*I(0), Sz(0)[5] ) ) +"
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[3], exp(-lambda03)*I(0), Sz(0)[0] ) ) +"
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[4], exp(-lambda03)*I(0), Sz(0)[1] ) ) +"
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[5], exp(-lambda03)*I(0), Sz(0)[2] ) ) +"
-                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[0], exp(-lambda04)*I(0), Sz(0)[4] ) ) +"
-                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[1], exp(-lambda04)*I(0), Sz(0)[5] ) ) +"
-                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[2], exp(-lambda04)*I(0), Sz(0)[0] ) ) +"
-                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[3], exp(-lambda04)*I(0), Sz(0)[1] ) ) +"
-                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[4], exp(-lambda04)*I(0), Sz(0)[2] ) ) +"
-                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[5], exp(-lambda04)*I(0), Sz(0)[3] ) ) +"
-                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[0], exp(-lambda05)*I(0), Sz(0)[5] ) ) +"
-                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[1], exp(-lambda05)*I(0), Sz(0)[0] ) ) +"
-                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[2], exp(-lambda05)*I(0), Sz(0)[1] ) ) +"
-                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[3], exp(-lambda05)*I(0), Sz(0)[2] ) ) +"
-                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[4], exp(-lambda05)*I(0), Sz(0)[3] ) ) +"
-                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[5], exp(-lambda05)*I(0), Sz(0)[4] ) )  ";
-
-      OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)+15
 
       std::cout << "--> finished.\n";
 

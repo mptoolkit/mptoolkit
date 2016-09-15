@@ -54,6 +54,20 @@
 #include <boost/program_options.hpp>
 
 namespace prog_opt = boost::program_options;
+using math_const::pi;
+
+std::complex<double> phase(double theta)
+{
+   return std::exp(std::complex<double>(0.0, theta));
+}
+
+
+int IntPow(int x, int p) {
+  if (p == 0) return 1;
+  if (p == 1) return x;
+  return x * IntPow(x, p-1);
+}
+
 
 int main(int argc, char** argv)
 {
@@ -101,7 +115,7 @@ int main(int argc, char** argv)
       UnitCell Cell = repeat(Site, w);
       InfiniteLattice Lattice(&Cell);
 
-      UnitCellOperator S(Cell, "S");
+      UnitCellOperator S(Cell, "S"), StagS(Cell, "StagS");
       UnitCellOperator H1(Cell, "H1");
       UnitCellOperator H2(Cell, "H2");
 
@@ -111,16 +125,32 @@ int main(int argc, char** argv)
          S += S[i];     // total spin
       }
 
+      // Staggered magnetization requires width to be even
+      if (w%2 == 0)
+      {
+        for (int i = 0; i < w; ++i)
+        {
+           // staggered magnetization with alternating sublattices in Y-direction
+           // (note: only one of the three possible formations).
+           StagS += IntPow(-1,i) * S[i];
+        }
+       }
+                  
       // if we have tripartite symmetry, add operators for the sublattice magnetization
-      UnitCellMPO S_A, S_B, S_C;
       if (w%3 == 0)
       {
+         UnitCellMPO S_A, S_B, S_C, S_120;
          for (int i = 0; i < w; i += 3)
          {
             S_A += S(0)[i]   + S(1)[(i+1)%w] + S(2)[(i+2)%w];
             S_B += S(0)[i+1] + S(1)[(i+2)%w] + S(2)[i%w];
             S_C += S(0)[i+2] + S(1)[i%w]     + S(2)[(i+1)%w];
+            S_120 += S_A + phase(4*pi/3)*S_B + phase(-4*pi/3)*S_C;
          }
+         Lattice["Sa"] = sum_unit(S_A, w*3);
+         Lattice["Sb"] = sum_unit(S_B, w*3);
+         Lattice["Sc"] = sum_unit(S_C, w*3);
+         Lattice["S120"] = sum_unit(S_120, w*3);
       }
 
       // Construct the Hamiltonian for a single unit cell
@@ -141,16 +171,11 @@ int main(int argc, char** argv)
       Lattice["H_J1"] = sum_unit(H1);
       Lattice["H_J2"] = sum_unit(H2);
 
-      // Add the tripartite sublattice magnetization operators
-      if (w%3 == 0)
-      {
-         Lattice["Sa"] = sum_unit(S_A, w*3);
-         Lattice["Sb"] = sum_unit(S_B, w*3);
-         Lattice["Sc"] = sum_unit(S_C, w*3);
-      }
+      // Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
+      //   = "J1*H_J1 + J2*H_J2";  // a lattice function for an old set of calculations during 2014-15 
 
-      Lattice.func("H")(arg("J1") = "cos(theta)", arg("J2") = "sin(theta)", arg("theta") = "atan(alpha)", arg("alpha") = 0.0)
-         = "J1*H_J1 + J2*H_J2";
+      Lattice.func("THM2")(arg("J2") = 0.0)
+        = "H_J1 + J2*H_J2";
 
       // save the lattice
       pheap::ExportObject(FileName, Lattice);

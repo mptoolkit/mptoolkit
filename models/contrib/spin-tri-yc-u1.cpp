@@ -294,15 +294,15 @@ int main(int argc, char** argv)
       std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 21*w+(w*(w-1)/2)+12
 
       // a basic function for Haldane-Shastry model with Sz*Sz interations
-      Lattice.func("HS")(arg("lambda") = 0.5, arg("i") = "0", arg("j") = "0")
-                  = "exp(-lambda)*sum_string_inner( Sz(0)[i], exp(-lambda)*I(0), Sz(0)[j] )";
+      Lattice.func("HS")(arg("lambda") = 0.5, arg("j") = "0", arg("k") = "0")
+                  = "exp(-lambda)*sum_string_inner( Sz(0)[j], exp(-lambda)*I(0), Sz(0)[k] )";
 
       oo++;
       std::printf("\33[2K\r");
       std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 21*w+(w*(w-1)/2)+13
 
       Lattice.func("TestFunc00")(arg("alpha00")=0.0, arg("lambda00")=0.0)
-                  = "sin(2.5)*alpha00*HS{lambda=-lambda00,i=1,j=2}";
+                  = "sin(2.5)*alpha00*HS{lambda=-lambda00,j=1,k=2}";
 
       Lattice.func("LongRangeIsing_IntraCell_YC4")(arg("alpha") = 2.0)
                   = "sum_unit( ( ( sin( pi/4 ) / sin( (1-0)*pi/4 ) )^alpha * Sz(0)[0]*Sz(0)[1] ) + "
