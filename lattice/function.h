@@ -196,33 +196,10 @@ class OperatorFunction
 
       // operator() is a helper for defining a function - it allows notation
       // OperatorFunction f;
-      // f("arg1", arg("arg2")=x) = y;
-      OperatorFunction& operator()(FormalArgument const& arg1);
+      // f("arg1", arg("arg2")=x, ...) = y;
 
-      OperatorFunction& operator()(FormalArgument const& arg1,
-                                   FormalArgument const& arg2);
-
-      OperatorFunction& operator()(FormalArgument const& arg1,
-                                   FormalArgument const& arg2,
-                                   FormalArgument const& arg3);
-
-      OperatorFunction& operator()(FormalArgument const& arg1,
-                                   FormalArgument const& arg2,
-                                   FormalArgument const& arg3,
-                                   FormalArgument const& arg4);
-
-      OperatorFunction& operator()(FormalArgument const& arg1,
-                                   FormalArgument const& arg2,
-                                   FormalArgument const& arg3,
-                                   FormalArgument const& arg4,
-                                   FormalArgument const& arg5);
-
-      OperatorFunction& operator()(FormalArgument const& arg1,
-                                   FormalArgument const& arg2,
-                                   FormalArgument const& arg3,
-                                   FormalArgument const& arg4,
-                                   FormalArgument const& arg5,
-                                   FormalArgument const& arg6);
+      template <typename... ArgList>
+      OperatorFunction& operator()(ArgList... args);
 
       // not the assignment operator, but sets the function definition.
       void operator=(std::string const& Def_) { Def = Def_; }
@@ -234,95 +211,50 @@ class OperatorFunction
          return *this;
       }
 
+      std::string const& definition() const { return Def; }
+
+      FormalArgumentList const& args() const { return Args; }
+
+   private:
+      void add_arg(FormalArgument const& arg);
+
+      template <typename... ArgList>
+      void add_arg(FormalArgument const& arg, ArgList... args);
+
       FormalArgumentList Args;
       std::string Def;
       std::string Desc;
+
+   friend PStream::opstream& operator<<(PStream::opstream& out, OperatorFunction const& f);
+   friend PStream::ipstream& operator>>(PStream::ipstream& in, OperatorFunction& f);
 };
 
 std::ostream& operator<<(std::ostream& out, OperatorFunction const& f);
 
+template <typename... ArgList>
 inline
 OperatorFunction&
-OperatorFunction::operator()(FormalArgument const& arg1)
+OperatorFunction::operator()(ArgList... args)
 {
    Args.clear();
-   Args.push_back(arg1);
+   this->add_arg(args...);
    return *this;
 }
 
 inline
-OperatorFunction&
-OperatorFunction::operator()(FormalArgument const& arg1,
-                             FormalArgument const& arg2)
+void
+OperatorFunction::add_arg(FormalArgument const& arg)
 {
-   Args.clear();
-   Args.push_back(arg1);
-   Args.push_back(arg2);
-   return *this;
+   Args.push_back(arg);
 }
 
+template <typename... ArgList>
 inline
-OperatorFunction&
-OperatorFunction::operator()(FormalArgument const& arg1,
-                             FormalArgument const& arg2,
-                             FormalArgument const& arg3)
+void
+OperatorFunction::add_arg(FormalArgument const& arg, ArgList... args)
 {
-   Args.clear();
-   Args.push_back(arg1);
-   Args.push_back(arg2);
-   Args.push_back(arg3);
-   return *this;
-}
-
-inline
-OperatorFunction&
-OperatorFunction::operator()(FormalArgument const& arg1,
-                             FormalArgument const& arg2,
-                             FormalArgument const& arg3,
-                             FormalArgument const& arg4)
-{
-   Args.clear();
-   Args.push_back(arg1);
-   Args.push_back(arg2);
-   Args.push_back(arg3);
-   Args.push_back(arg4);
-   return *this;
-}
-
-inline
-OperatorFunction&
-OperatorFunction::operator()(FormalArgument const& arg1,
-                             FormalArgument const& arg2,
-                             FormalArgument const& arg3,
-                             FormalArgument const& arg4,
-                             FormalArgument const& arg5)
-{
-   Args.clear();
-   Args.push_back(arg1);
-   Args.push_back(arg2);
-   Args.push_back(arg3);
-   Args.push_back(arg4);
-   Args.push_back(arg5);
-   return *this;
-}
-
-inline
-OperatorFunction&
-OperatorFunction::operator()(FormalArgument const& arg1,
-                             FormalArgument const& arg2,
-                             FormalArgument const& arg3,
-                             FormalArgument const& arg4,
-                             FormalArgument const& arg5,
-                             FormalArgument const& arg6)
-{
-   Args.clear();
-   Args.push_back(arg1);
-   Args.push_back(arg2);
-   Args.push_back(arg3);
-   Args.push_back(arg4);
-   Args.push_back(arg5);
-   Args.push_back(arg6);
-   return *this;
+   Args.push_back(arg);
+   this->add_arg(args...);
 }
 
 PStream::opstream& operator<<(PStream::opstream& out, OperatorFunction const& f);

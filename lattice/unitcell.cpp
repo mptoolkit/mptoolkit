@@ -386,9 +386,9 @@ boost::variant<UnitCell::operator_type, std::complex<double> >
 UnitCell::eval_function(Function::OperatorFunction const& Func, int Cell,
                         Function::ParameterList const& Params) const
 {
-   Function::ArgumentList Args = GetArguments(Func.Args, Params, ParseUnitCellExpression(*this));
+   Function::ArgumentList Args = GetArguments(Func.args(), Params, ParseUnitCellExpression(*this));
    boost::variant<UnitCell::operator_type, std::complex<double> > Result
-      = ParseUnitCellElement(*this, 0, Func.Def, Args);
+      = ParseUnitCellElement(*this, 0, Func.definition(), Args);
    if (boost::get<UnitCell::operator_type>(&Result))
    {
       boost::get<UnitCell::operator_type>(&Result)->translate(Cell*this->size());

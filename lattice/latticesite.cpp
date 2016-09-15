@@ -160,8 +160,8 @@ boost::variant<SiteOperator, std::complex<double> >
 LatticeSite::eval_function(Function::OperatorFunction const& Func,
                            Function::ParameterList const& Params) const
 {
-   Function::ArgumentList Args = GetArguments(Func.Args, Params, ParseSiteExpression(*this));
-   return ParseSiteElement(*this, Func.Def, Args);
+   Function::ArgumentList Args = GetArguments(Func.args(), Params, ParseSiteExpression(*this));
+   return ParseSiteElement(*this, Func.definition(), Args);
 }
 
 boost::variant<SiteOperator, std::complex<double> >
