@@ -66,7 +66,7 @@ inline void print_copyright(std::ostream& out)
       "run 'mp-info --copying' for details.\n"
       "Reseach publications making use of this software should include appropriate citations\n"
       "and/or acknowledgements; run 'mp-info --citations' for details.\n"
-      "Website: http://physics.uq.edu.au/people/ianmcc/mptoolkit/\n"
+      "Website: https://people.smp.uq.edu.au/IanMcCulloch/mptoolkit/\n"
       ;
 }
 
@@ -135,7 +135,7 @@ inline void print_copyright(std::ostream& out, std::string const& Category, std:
    print_copyright(out);
    std::string URL = "index.php?n=" + Wikify(Category) + "." + Wikify(Name, Name != "mp-info");
    out << "Documentation: "
-       << "http://physics.uq.edu.au/people/ianmcc/mptoolkit/" << URL << "\n";
+       << " https://people.smp.uq.edu.au/IanMcCulloch/mptoolkit/" << URL << "\n";
 }
 
 // The basename() function is useful in help messages for printing the program name

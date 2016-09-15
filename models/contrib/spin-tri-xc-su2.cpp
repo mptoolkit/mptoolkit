@@ -27,27 +27,27 @@
 // Example for W=8:
 //
 //  (4)-(12)
-//  / \ / 
+//  / \ /
 //(0)-(8)--
 //  \ / \ /
 //   7---15
-//  / \ / 
+//  / \ /
 // 3---11--
 //  \ / \ /
 //   6---14
-//  / \ / 
+//  / \ /
 // 2---10--
 //  \ / \ /
 //   5---13
-//  / \ / 
+//  / \ /
 // 1---9---
 //  \ / \ /
 //   4---12
-//  / \ / 
+//  / \ /
 // 0---8---
 //  \ / \ /
 //  (7)-(15)
-//  / \ / 
+//  / \ /
 //(3)-(11)--
 
 #include "pheap/pheap.h"
@@ -82,14 +82,14 @@ int main(int argc, char** argv)
 	 ("width,w", prog_opt::value(&w), "width of the cylinder [default 3]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
-      
-      prog_opt::variables_map vm;        
+
+      prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(desc).style(prog_opt::command_line_style::default_style ^
 					  prog_opt::command_line_style::allow_guessing).
 		      run(), vm);
-      prog_opt::notify(vm);    
-      
+      prog_opt::notify(vm);
+
       OperatorDescriptions OpDescriptions;
       OpDescriptions.add_operators()
 	 ("H_J1",     "nearest neighbor spin exchange")
@@ -130,7 +130,7 @@ int main(int argc, char** argv)
       int const w2 = w/2;
 
       // Add some operators on the unit-cell
-   
+
       for (int i = 0; i < w; ++i)
       {
 	 S += S[i];                       // total spin on a unit cell
@@ -146,21 +146,21 @@ int main(int argc, char** argv)
        }
 
        // to test existence of bipartite/tripartite symmetry, add operators for the staggered/sublattice magnetization:
-       // NOTE: XC structure does NOT need a 3*W unit-cell for sublattice magnetization operators. 
+       // NOTE: XC structure does NOT need a 3*W unit-cell for sublattice magnetization operators.
        UnitCellMPO S_A, S_B, S_C;
-       UnitCellMPO S_stag_n60;             
+       UnitCellMPO S_stag_n60;
 
        for (int i = 0; i < w; i += 3)
          {
             S_A += S(0)[i];
             if ( (i+1)<w ) S_B += S(0)[i+1];
             if ( (i+2)<w ) S_C += S(0)[i+2];
-            S_stag_n60 += IntPow(-1,i+(i/w2))*S(0)[i] + IntPow(-1,i+(i/w2)+1)*S(1)[i];    // staggered magnetization order parameter with FM stripes in -60^degree direction.  
+            S_stag_n60 += IntPow(-1,i+(i/w2))*S(0)[i] + IntPow(-1,i+(i/w2)+1)*S(1)[i];    // staggered magnetization order parameter with FM stripes in -60^degree direction.
          }
-              
+
       // Construct the Hamiltonian for a single unit-cell,
       UnitCellMPO H1, H2, H_Jcell;
-    
+
       for (int i = 0; i < w2; ++i)
       {
 	 // nearest neighbor bonds, first column
@@ -195,7 +195,7 @@ int main(int argc, char** argv)
 
 
       // Now we construct the InfiniteLattice,
-      InfiniteLattice Lattice(Cell);
+      InfiniteLattice Lattice(&Cell);
 
       Lattice["H_J1"]    = sum_unit(H1);
       Lattice["H_J2"]    = sum_unit(H2);
