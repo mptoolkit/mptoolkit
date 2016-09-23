@@ -377,9 +377,9 @@ InfiniteMPO
 InfiniteLattice::eval_function(Function::OperatorFunction const& Func,
                                Function::ParameterList const& Params) const
 {
-   Function::ArgumentList Args = GetArguments(Func.Args, Params,
+   Function::ArgumentList Args = GetArguments(Func.args(), Params,
                                               ParseInfiniteArgument(*this));
-   return ParseInfiniteOperator(*this, Func.Def, Args);
+   return ParseInfiniteOperator(*this, Func.definition(), Args);
 }
 
 InfiniteMPO
