@@ -565,8 +565,10 @@ void inplace_reflect(InfiniteWavefunctionLeft& Psi)
    // and merge the U into the final A-matrix.
 
 #if 1
-   Result.set_lambda(0, delta_shift(flip_conj(DSave), Psi.qshift()));
-   Result.set_lambda(Size, flip_conj(DSave));
+   //   Result.set_lambda(0, delta_shift(flip_conj(DSave), Psi.qshift()));
+   //   Result.set_lambda(Size, flip_conj(DSave));
+   Result.set_lambda(0, flip_conj(DSave));
+   Result.set_lambda(Size, delta_shift(flip_conj(DSave), adjoint(Psi.qshift())));
 
    Result.set(Size-1, prod(Result[Size-1], herm(flip_conj(U))));
 
