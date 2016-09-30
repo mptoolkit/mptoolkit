@@ -118,7 +118,7 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      const double PI = 4.0*std::atan(1.0);
+      //const double PI = 4.0*std::atan(1.0);
       //const std::complex<double> jj(0.0,theta*PI);
       int oo = 0;
       int oo_max = 8*w+(w*w/2)+13;
@@ -236,7 +236,7 @@ int main(int argc, char** argv)
         for (int j = i+1; j < w; ++j)
         {
           // Long-range Ising -- inter-cell interations only for alpha=2.0
-          H_intra2 += std::pow( ( std::sin( PI/w ) / std::sin( (j-i)*PI/w ) ) , 2) * Sz(0)[i]*Sz(0)[j];
+          H_intra2 += std::pow( ( std::sin( pi/w ) / std::sin( (j-i)*pi/w ) ) , 2) * Sz(0)[i]*Sz(0)[j];
           OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)
         }
       }
