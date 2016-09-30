@@ -221,8 +221,8 @@ int main(int argc, char** argv)
          UnitCellMPO S_stag_p60;
          for (int i = 0; i < w; ++i)
          {
-            // staggered magnetization with alternating sublattices in Y-direction
-            // (note: only one of the three possible formations).
+            // staggered magnetization with alternating sublattices in lattice Y-direction.
+            // (note: only one of the three possible formations)
             StagS += IntPow(-1,i) * S[i];
             // staggered magnetization order parameter with FM stripes in +60^degree direction.
             S_stag_p60 += IntPow(-1,i)*S(0)[i] + IntPow(-1,i+1)*S(1)[i];
