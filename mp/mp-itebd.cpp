@@ -288,19 +288,17 @@ int main(int argc, char** argv)
 
       RealDiagonalOperator Lambda = Psi.lambda(2);
 
-      // the initial half timestep
-      DoTEBD(A, B, Lambda, EvenUHalf, SInfo);
-
       if (SaveEvery == 0)
          SaveEvery = N;
 
+      // the initial half timestep
       int tstep = 0;
+      DoTEBD(A, B, Lambda, EvenUHalf, SInfo);
+      DoTEBD(A, B, Lambda, OddU, SInfo);
+
       while (tstep < N)
       {
-         DoTEBD(A, B, Lambda, OddU, SInfo);
-         ++tstep;
-         std::cout << "Timestep " << tstep << " time " << (InitialTime+tstep*Timestep) << '\n';
-         for (int i = 0; i < SaveEvery-1; ++i)
+         while (tstep % SaveEvery != 0)
          {
             DoTEBD(A, B, Lambda, EvenU, SInfo);
             DoTEBD(A, B, Lambda, OddU, SInfo);
@@ -308,16 +306,25 @@ int main(int argc, char** argv)
             std::cout << "Timestep " << tstep << " time " << (InitialTime+tstep*Timestep) << '\n';
          }
 
-         DoTEBD(A, B, Lambda, EvenUHalf, SInfo);
+         // evolve the final half step and save the wavefunction
+         // do this with a temporary copy, since if we continue then we do another slice anyway
+         StateComponent Ax = A;
+         StateComponent Bx = B;
+         RealDiagonalOperator Lambdax = Lambda;
+
+         DoTEBD(Ax, Bx, Lambdax, EvenUHalf, SInfo);
 
          // save the wavefunction
          std::cout << "Saving wavefunction\n";
          LinearWavefunction Psi;
-         Psi.push_back(B);
-         Psi.push_back(A);
+         Psi.push_back(Ax);
+         Psi.push_back(Bx);
          MPWavefunction Wavefunction;
          std::string TimeStr = FormatDigits(InitialTime + tstep * Timestep, OutputDigits);
-         Wavefunction.Wavefunction() = InfiniteWavefunctionLeft::Construct(Psi, QuantumNumbers::QuantumNumber(Psi.GetSymmetryList()));
+         InfiniteWavefunctionLeft PsiL = InfiniteWavefunctionLeft::Construct(Psi, QuantumNumbers::QuantumNumber(Psi.GetSymmetryList()));
+         // rotate to the A,B back into the right order
+         PsiL.rotate_left(1);
+         Wavefunction.Wavefunction() = std::move(PsiL);
          Wavefunction.AppendHistory(EscapeCommandline(argc, argv));
          Wavefunction.SetDefaultAttributes();
          Wavefunction.Attributes()["Time"] = TimeStr;
@@ -325,6 +332,14 @@ int main(int argc, char** argv)
          *PsiPtr.mutate() = std::move(Wavefunction);
 
          pheap::ExportHeap(OutputPrefix + TimeStr, PsiPtr);
+
+         if (tstep+1 < N)
+         {
+            DoTEBD(A, B, Lambda, EvenU, SInfo);
+            DoTEBD(A, B, Lambda, OddU, SInfo);
+            ++tstep;
+            std::cout << "Timestep " << tstep << " time " << (InitialTime+tstep*Timestep) << '\n';
+         }
       }
    }
    catch (prog_opt::error& e)
