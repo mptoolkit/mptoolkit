@@ -44,27 +44,6 @@
 
 namespace prog_opt = boost::program_options;
 
-void RandomizeRowSigns(MatrixOperator& TruncL)
-{
-   for (unsigned j = 0; j < TruncL.Basis1().size(); ++j)
-   {
-      for (int k = 0; k < TruncL.Basis1().dim(j); ++k)
-      {
-         int sign = ((rand() / 1000) % 2) * 2 - 1;
-         for (unsigned l = 0; l < TruncL.Basis2().size(); ++l)
-         {
-            if (iterate_at(TruncL.data(), j,l))
-            {
-               for (int m = 0; m < TruncL.Basis2().dim(l); ++m)
-               {
-                  TruncL(j,l)(k,m) *= sign;
-               }
-            }
-         }
-      }
-   }
-}
-
 TruncationInfo
 DoIteration(MPStateComponent& A, MatrixOperator& Center, MPStateComponent& B,
                  MPOpComponent const& H_A, MPOpComponent const& H_B,
@@ -144,12 +123,6 @@ DoIteration(MPStateComponent& A, MatrixOperator& Center, MPStateComponent& B,
                                                                                         DMR.end(),
                                                                                         SInfo,
                                                                                         InfoR));
-#else
-      MatrixOperator TruncR = TruncL;
-      //RandomizeRowSigns(TruncR);
-      //TRACE(Center*herm(TruncL))(Center*herm(TruncR));
-#endif
-
       Center = Center * herm(TruncR);
       B = prod(TruncR, B);
 
@@ -189,42 +162,112 @@ InfiniteWavefunction MakeWavefunction(MPStateComponent const& A, MatrixOperator 
 
 int main(int argc, char** argv)
 {
-   mp_pheap::InitializeTempPHeap(false);
+   try
+   {
+      int Verbose = 0;
+      double Timestep = 0;
+      int N = 1;
+      int SaveEvery = 1;
+      std::string OpStr;
+      std::string InputFile;
+      std::string OutputPrefix;
+      std::string Operator;
+      std::string Operator2;
+      int States = 100;
+      double TruncCutoff = 0;
+      double EigenCurtoff = 1E-16;
 
-   // set up the lattice
-   SiteBlock Site = CreateSU2SpinSite(0.5);
-   double J = 1;
-   double DeltaTau = 0.2;
-   double DeltaT = 0.0;
-   double Epsilon = 1e-7;
-   double Eps = Epsilon;
-   //   MpOpTriangular Ham = TriangularTwoSite(-sqrt(3.0)*Site["S"],
-   //                                             Site["S"],
-   //                                             Site["I"].TransformsAs());
-   MPOpComponent H_A, H_B;
-   std::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
-                                             std::complex<double>(-DeltaTau, -DeltaT));
+      prog_opt::options_description desc("Allowed options", terminal::columns());
+      desc.add_options()
+         ("help", "show this help message")
+	 ("wavefunction,w", prog_opt::value(InputFile), "input wavefunction")
+	 ("output,o", prog_opt::value(OutputPrefix), "prefix for saving output files")
+	 ("operator", prog_opt::value(&Operator), "operator for the first slice ST decomposition")
+	 ("operator2", prog_opt::value(&Operator2), "operator for the second slice ST decomposition [optional]")
+	 ("timestep,t", prog_opt::value(&Timestep), "timestep (required)")
+	 ("num-timesteps,n", prog_opt::value(N), FormatDefault("number of timesteps to calculate", N).c_str())
+	 ("save-timesteps,s", prog_opt::value(SaveEvery), "save the wavefunction every s timesteps")
+         ("states,m", prog_opt::value(&States),
+          FormatDefault("number of states", States).c_str())
+         ("trunc,r", prog_opt::value<double>(&TruncCutoff),
+          FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
+         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
+          FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
+         ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
+          "extra debug output [can be used multiple times]")
+         ;
 
-   MPOpComponent half_H_A, half_H_B;
-   std::tie(half_H_A, half_H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
-                                                       std::complex<double>(-DeltaTau/2.0, -DeltaT/2.0));
+      prog_opt::variables_map vm;
+      prog_opt::store(prog_opt::command_line_parser(argc, argv).
+                      options(desc).run(), vm);
+      prog_opt::notify(vm);
 
-   //TRACE(H_A)(H_B);
+      if (vm.count("help") > 0 || vm.count("wavefunction") < 1 || vm.count("operator") < 1)
+      {
+         print_copyright(std::cerr, "tools", "mp-itebd");
+         std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
+         std::cerr << desc << '\n';
+         return 1;
+      }
 
-   int MinStates = 1;
-   int MaxStates = 200;
-   double TruncCutoff = 0;
-   double EigenCutoff = 0; // 1e-10;
+      std::cout.precision(getenv_or_default("MP_PRECISION", 14));
+      std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-   StatesInfo SInfo;
-   SInfo.MinStates = MinStates;
-   SInfo.MaxStates = MaxStates;
-   SInfo.TruncationCutoff = TruncCutoff;
-   SInfo.EigenvalueCutoff = EigenCutoff;
-   std::cout.precision(12);
-   std::cout << SInfo << '\n';
+      if (Verbose > 0)
+         std::cout << "Loading wavefunction..." << std::endl;
 
-   // initial state
+      pheap::Initialize(OutputPrefix+".bin", 1, PageSize, CacheSize, mp_pheap::PageSize(), mp_pheap::CacheSize());
+      PsiPtr = pheap::ImportHeap(InputFile);
+
+      InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
+
+      UnitCellMPO EvenOp, OddOp;
+      InfiniteLattice Lattice;
+      std::tie(EvenOp, Lattice) = ParseUnitCellOperatorAndLattice(Operator);
+      if (Operator2.empty())
+      {
+	 OddOp = translate(EvenOp, 1);
+      }
+      else
+      {
+	 std::tie(EvenOp, Lattice) = ParseUnitCellOperatorAndLattice(Operator2);
+      }
+
+      EvenOp.ExtendToCover(2, 0);
+      OddOp.ExtendToCover(3, 0);
+
+      if (EvenOp.offset() != 0)
+      {
+	 std::cerr << "mp-itebd: fatal: slice 1 operator not valid.\n";
+	 return 1;
+      }
+      std::array<MPOpComponent, 2> EvenSlice(EvenOp.MPO()[0], EvenOp.MPO()[1]);
+
+      if (OddOp.offset() != 0)
+      {
+	 std::cerr << "mp-itebd: fatal: slice 2 operator not valid.\n";
+	 return 1;
+      }
+      std::array<MPOpComponent, 2> OddSlice(OddOp.MPO()[1], OddOp.MPO()[2]);
+
+      
+      std::array<MPOpComponent, 2> EvenTimestep = TwoSiteExponential(EvenSlice, Timestep);
+      std::array<MPOpComponent, 2> OddTimestep = TwoSiteExponential(OddSlice, Timestep);
+
+      std::array<MPOpComponent, 2> EvenTimestepHalf = TwoSiteExponential(EvenSlice, Timestep/2);
+      std::array<MPOpComponent, 2> OddTimestepHald = TwoSiteExponential(OddSlice, Timestep/2);
+
+      StatesInfo SInfo;
+      SInfo.MinStates = MinStates;
+      SInfo.MaxStates = 0;
+      SInfo.TruncationCutoff = TruncCutoff;
+      SInfo.EigenvalueCutoff = EigenCutoff;
+
+      std::cout << SInfo << '\n';
+
+      // initial state
+      
+
    VectorBasis B1 = VectorBasis(make_vacuum_basis(Site.GetSymmetryList()));
    VectorBasis B2 = VectorBasis(Site.Basis1().Basis());
 
