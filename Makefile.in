@@ -220,7 +220,7 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-imoments mp-iexpectation mp-wigner-eckart mp-reorder-symmetry \
         mp-ispectrum mp-lattice-info mp-show-operator mp-aux-matrix mp-aux-algebra mp-iapply mp-attr \
         mp-idivide mp-ies mp-irepeat \
-        mp-irotate mp-icorrelation mp-fluctuation
+        mp-irotate mp-icorrelation mp-fluctuation mp-itebd
 
 experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg
 
@@ -511,6 +511,7 @@ mp-aux-algebra : infinitewavefunctionleft.o packunpack.o matrix-parser.o
 mp-aux-matrix : infinitewavefunctionleft.o packunpack.o
 mp-ies : infinitewavefunctionleft.o packunpack.o
 mp-aux-project : infinitewavefunctionleft.o packunpack.o
+mp-itebd : $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o
 
 
 mp-ireorder-symmetry : infinitewavefunctionleft.o
@@ -523,8 +524,6 @@ mp-iinfo : infinitewavefunctionleft.o
 mp-iprint : infinitewavefunctionleft.o
 mp-iorthogonalize : triangular_operator.o infinitewavefunctionleft.o
 mp-pwfrg : triangular_operator.o match_basis.o
-mp-itebd : mpexponential.o $(expokitobj) infinitewavefunctionleft.o
-mp-itebd2 : $(expokitobj) infinitewavefunctionleft.o random_wavefunc.o
 mp-evolve-bonds : local-evolution.o $(expokitobj)
 mp-ispectrum : infinitewavefunctionleft.o packunpack.o arpack_wrapper.o siteoperator-parser.o
 mp-ispectrum2 : infinitewavefunctionleft.o packunpack.o arpack_wrapper.o unitcell-parser.o unitcell.o latticesite.o $(expokitobj)
