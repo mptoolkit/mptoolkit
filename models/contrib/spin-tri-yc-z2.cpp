@@ -66,6 +66,7 @@ int IntPow(int x, int p) {
   if (p == 1) return x;
   return x * IntPow(x, p-1);
 }
+:q
 
 
 std::ostream &OpProgress(int *n, int step, int max)

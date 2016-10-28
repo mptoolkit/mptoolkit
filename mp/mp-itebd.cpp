@@ -17,380 +17,338 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "matrixproduct/lattice.h"
-#include "matrixproduct/mpoperatorlist.h"
-#include "matrixproduct/mpwavefunction.h"
-#include "matrixproduct/mpoperator.h"
-#include "matrixproduct/mpoperatorlist.h"
-#include "matrixproduct/wavefunc-utils.h"
-#include "matrixproduct/triangularoperator.h"
+#include "mpo/triangular_mpo.h"
+#include "wavefunction/infinitewavefunctionleft.h"
+#include "wavefunction/mpwavefunction.h"
 #include "quantumnumbers/all_symmetries.h"
-#include "mp-algorithms/lanczos.h"
 #include "pheap/pheap.h"
 #include "mp/copyright.h"
-#include "interface/operator-parser.h"
 #include "common/environment.h"
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 #include <iostream>
 #include "common/environment.h"
-#include "matrixproduct/mpexponential.h"
 #include "interface/inittemp.h"
-
-#include "models/spin-su2.h"
-#include "tensor/tensor_eigen.h"
-#include "tensor/regularize.h"
-#include "matrixproduct/infinitewavefunction.h"
+#include "common/prog_options.h"
+#include "lattice/unitcell_mpo.h"
+#include "lattice/unitcell-parser.h"
+#include <cctype>
+#include "interface/inittemp.h"
 
 namespace prog_opt = boost::program_options;
 
-void RandomizeRowSigns(MatrixOperator& TruncL)
+// returns the number of digits of precision used in the decimal number f
+int Digits(std::string const& f)
 {
-   for (unsigned j = 0; j < TruncL.Basis1().size(); ++j)
+   std::string::const_iterator dot = std::find(f.begin(), f.end(), '.');
+   if (dot == f.end())
+      return 0;
+   ++dot;
+   std::string::const_iterator x = dot;
+   while (x != f.end() && isdigit(*x))
+      ++x;
+   if (x != f.end() && (*x == 'e' || *x == 'E'))
    {
-      for (int k = 0; k < TruncL.Basis1().dim(j); ++k)
-      {
-         int sign = ((rand() / 1000) % 2) * 2 - 1;
-         for (unsigned l = 0; l < TruncL.Basis2().size(); ++l)
-         {
-            if (iterate_at(TruncL.data(), j,l))
-            {
-               for (int m = 0; m < TruncL.Basis2().dim(l); ++m)
-               {
-                  TruncL(j,l)(k,m) *= sign;
-               }
-            }
-         }
-      }
+      // exponential notation
+      ++x;
+      int Exp = std::stoi(std::string(x, f.end()));
+      return std::max(0, int((x-dot) - Exp));
    }
+   return x-dot;
 }
 
-TruncationInfo
-DoIteration(MPStateComponent& A, MatrixOperator& Center, MPStateComponent& B,
-                 MPOpComponent const& H_A, MPOpComponent const& H_B,
-            StatesInfo const& SInfo, bool ShowReport = false)
+std::string FormatDigits(double x, int Digits)
 {
-   //   TRACE(norm_frob_sq(Center));
+   std::ostringstream str;
+   str << std::fixed << std::setprecision(Digits) << std::setfill('0') << x;
+   return str.str();
+}
 
-   // expand left and right
-   {
-      MatrixOperator U = ExpandBasis2(A);
-      Center = U * Center;
-   }
-   {
-      MatrixOperator U = ExpandBasis1(B);
-      Center = Center * U;
-   }
+#if 0
+void DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda, SimpleOperator const& U, StatesInfo const& Info)
+{
+   // Algorithm avoids matrix inversion.  Let A,B be left-orthogonalized.
+   // Let C^{s1,s2} = A^{s1} B^{s2}
+   // Let C'^{s1,s2} = U(C^{s1,s2}) is the unitary gate applied to C
 
-   //   TRACE(norm_frob_sq(Center));
+   // Let X^{s1,s2} = C'^{s1,s2} lambda_2
 
-   // construct the E matrices for the evolution operator
-   MPStateComponent E(make_vacuum_basis(A.GetSymmetryList()), A.Basis1(), A.Basis1());
-   E[0] = MatrixOperator::make_identity(A.Basis1());
-   E = operator_prod(herm(H_A), herm(A), E, A);
+   // Do an SVD of X.  X^{s1,s2} = A'{s1} lambda_1 B'{s2}
+   // Use orthogonality of A': sum_{s1} A'\dagger{s1} A'{s1} = I
+   // sum_{s1} A'\dagger{s1} C'{s1,s2} = lambda_1 B'{s2} lambda_2^{-1} = G^{s2}
 
-   MPStateComponent F(make_vacuum_basis(A.GetSymmetryList()), B.Basis2(), B.Basis2());
-   F[0] = MatrixOperator::make_identity(B.Basis2());
-   F = operator_prod(H_B, B, F, herm(B));
+   // Then form D^{s2,s1} = G^{s2} A^{s1}
+   // and so on
 
-   // if the wavefunction has ~zero weight, things might get screwy
-   if (norm_frob(Center) < 1e-10)
-   {
-      Center = MakeRandomMatrixOperator(Center.Basis1(), Center.Basis2());
-      Center *= 1.0 / norm_frob(Center);    // normalize
-   }
+   StateComponent C = local_tensor_prod(A,B);
+   StateComponent Cu = local_prod(U, C);
 
-   // apply the evolution operator
-   MatrixOperator Old = Center;
-   Center = operator_prod(E, Center, herm(F));
+   StateComponent X = Cu * Lambda;
+   AMatSVD SL(X, Tensor::ProductBasis<BasisList, BasisList>(A.LocalBasis(), B.LocalBasis()));
+   TruncationInfo Info;
+   AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(),
+                                                               SInfo, Info);
+   std::cout << " Entropy=" << Info.TotalEntropy()
+             << " States=" << Info.KeptStates()
+             << " Trunc=" << Info.TruncationError()
+             << std::endl;
 
-   //   TRACE(inner_prod(Old, Center));
+   SL.ConstructMatrices(SL.begin(), Cutoff, A, Lambda, B);
 
-   //TRACE(Center);
+   StateComponent G = partial_prod(herm(A), Cu, Tensor::ProductBasis<BasisList, BasisList>(A.LocalBasis(), B.LocalBasis()));
 
-   // normalize
-   Center *= 1.0 / norm_frob(Center);
-
-   //TRACE(Center);
-
-   // truncate
-      MatrixOperator RhoL = scalar_prod(Center, herm(Center));
-      DensityMatrix<MatrixOperator> DML(RhoL);
-
-      //DML.DensityMatrixReport(std::cerr);
-      TruncationInfo Info;
-      MatrixOperator TruncL = DML.ConstructTruncator(DML.begin(),
-                                                     TruncateFixTruncationErrorAbsolute(DML.begin(),
-                                                                                        DML.end(),
-                                                                                        SInfo,
-                                                                                        Info));
-
-      if (ShowReport)
-         DML.DensityMatrixReport(std::cout);
-
-      //RandomizeRowSigns(TruncL);
-      //TRACE(Info.TruncationError());
-      //TRACE(TruncL.Basis1())(TruncL.Basis2());
-
-      Center = TruncL * Center;
-      A = prod(A, herm(TruncL));
-
-#if 1
-      MatrixOperator RhoR = scalar_prod(herm(Center), Center);
-      DensityMatrix<MatrixOperator> DMR(RhoR);
-      TruncationInfo InfoR;
-      MatrixOperator TruncR = DMR.ConstructTruncator(DMR.begin(),
-                                                     TruncateFixTruncationErrorAbsolute(DMR.begin(),
-                                                                                        DMR.end(),
-                                                                                        SInfo,
-                                                                                        InfoR));
+   B = A;
+   A = Lambda*G;
+}
 #else
-      MatrixOperator TruncR = TruncL;
-      //RandomizeRowSigns(TruncR);
-      //TRACE(Center*herm(TruncL))(Center*herm(TruncR));
-#endif
-
-      Center = Center * herm(TruncR);
-      B = prod(TruncR, B);
-
-      //TRACE(Center);
-
-#if 1
-      // Make the singular values positive
-   MatrixOperator U, D, Vh;
-   SingularValueDecomposition(Center, U, D, Vh);
-   A = prod(A, U);
-   B = prod(Vh, B);
-   Center = D;
-#endif
-
-   //TRACE(norm_frob_sq(Center));
-
-   // normalize
-   Center *= 1.0 / norm_frob(Center);
-
-   return Info;
-}
-
-InfiniteWavefunction MakeWavefunction(MPStateComponent const& A, MatrixOperator const& Lambda2,
-                                      MPStateComponent const& B, MatrixOperator const& Lambda1)
+LinearAlgebra::DiagonalMatrix<double>
+InvertDiagonal(LinearAlgebra::DiagonalMatrix<double> const& D, double Tol = 1E-15)
 {
-   // Convert to an InfiniteWavefunction
-   InfiniteWavefunction Psi;
-   Psi.C_old = Lambda1;
-   Psi.Psi.push_back(A);
-   MPStateComponent BNew = prod(Lambda2, B);
-   MatrixOperator Lambda2New = TruncateBasis2(BNew);
-   Psi.Psi.push_back(BNew);
-   Psi.C_right = Lambda2New;
-   Psi.QShift = QuantumNumbers::QuantumNumber(Lambda2.GetSymmetryList());
-   return Psi;
+   LinearAlgebra::DiagonalMatrix<double> Result(size1(D), size2(D));
+   for (unsigned i = 0; i < size1(D); ++i)
+   {
+      Result.diagonal()[i] = norm_frob(D.diagonal()[i]) < Tol ? 0.0 : 1.0 / D.diagonal()[i];
+   }
+   return Result;
 }
+RealDiagonalOperator
+InvertDiagonal(RealDiagonalOperator const& D, double Tol = 1E-15)
+{
+   RealDiagonalOperator Result(D.Basis1(), D.Basis2());
+   for (unsigned i = 0; i < D.Basis1().size(); ++i)
+   {
+      Result(i,i) = InvertDiagonal(D(i,i), Tol);
+   }
+   return Result;
+}
+
+void DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda, SimpleOperator const& U, StatesInfo const& SInfo)
+{
+   // simple algorithm with matrix inversion
+   RealDiagonalOperator LambdaSave = Lambda;
+   StateComponent C = local_tensor_prod(A,B);
+   StateComponent Cu = local_prod(U, C);
+   StateComponent X = Cu * Lambda;
+   AMatSVD SL(X, Tensor::ProductBasis<BasisList, BasisList>(A.LocalBasis(), B.LocalBasis()));
+   TruncationInfo Info;
+   AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(),
+                                                               SInfo, Info);
+   std::cout << " Entropy=" << Info.TotalEntropy()
+             << " States=" << Info.KeptStates()
+             << " Trunc=" << Info.TruncationError()
+             << std::endl;
+
+   SL.ConstructMatrices(SL.begin(), Cutoff, A, Lambda, B);
+
+   StateComponent G = B * InvertDiagonal(LambdaSave, 1E-8);
+
+   B = A;
+   A = Lambda*G;
+}
+#endif
 
 int main(int argc, char** argv)
 {
-   mp_pheap::InitializeTempPHeap(false);
-
-   // set up the lattice
-   SiteBlock Site = CreateSU2SpinSite(0.5);
-   double J = 1;
-   double DeltaTau = 0.2;
-   double DeltaT = 0.0;
-   double Epsilon = 1e-7;
-   double Eps = Epsilon;
-   //   MpOpTriangular Ham = TriangularTwoSite(-sqrt(3.0)*Site["S"],
-   //                                             Site["S"],
-   //                                             Site["I"].TransformsAs());
-   MPOpComponent H_A, H_B;
-   std::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
-                                             std::complex<double>(-DeltaTau, -DeltaT));
-
-   MPOpComponent half_H_A, half_H_B;
-   std::tie(half_H_A, half_H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
-                                                       std::complex<double>(-DeltaTau/2.0, -DeltaT/2.0));
-
-   //TRACE(H_A)(H_B);
-
-   int MinStates = 1;
-   int MaxStates = 200;
-   double TruncCutoff = 0;
-   double EigenCutoff = 0; // 1e-10;
-
-   StatesInfo SInfo;
-   SInfo.MinStates = MinStates;
-   SInfo.MaxStates = MaxStates;
-   SInfo.TruncationCutoff = TruncCutoff;
-   SInfo.EigenvalueCutoff = EigenCutoff;
-   std::cout.precision(12);
-   std::cout << SInfo << '\n';
-
-   // initial state
-   VectorBasis B1 = VectorBasis(make_vacuum_basis(Site.GetSymmetryList()));
-   VectorBasis B2 = VectorBasis(Site.Basis1().Basis());
-
-   MPStateComponent A(Site.Basis1().Basis(), B1, B2);
-   A[0] = MatrixOperator(B1, B2, Site.Basis1().Basis()[0]);
-   A[0](0,0) = LinearAlgebra::Matrix<double>(1,1,1.0);
-
-   MPStateComponent B(Site.Basis1().Basis(), B2, B1);
-   B[0] = MatrixOperator(B2, B1, adjoint(Site.Basis1().Basis()[0]));
-   B[0](0,0) = LinearAlgebra::Matrix<double>(1,1,1.0);
-
-   MatrixOperator Lambda1 = MatrixOperator::make_identity(B.Basis2());
-   MatrixOperator Lambda2 = MatrixOperator::make_identity(A.Basis2());
-   MatrixOperator Lambda1Inv = InvertDiagonal(Lambda1, Eps), Lambda2Inv = InvertDiagonal(Lambda2, Eps);
-
-   double E1, E2;
-
-
-      Lambda2 = Lambda2Inv;
-      DoIteration(A, Lambda2, B, half_H_A, half_H_B, SInfo);
-      Lambda2Inv = InvertDiagonal(Lambda2, Eps);
-
-      // energy
-      {
-         MatrixOperator E = operator_prod(herm(SimpleOperator(-sqrt(3.0)*Site["S"])), herm(A), A);
-         MatrixOperator F = operator_prod(SimpleOperator(Site["S"]), B, herm(B));
-         double Energy = inner_prod(triple_prod(herm(E), Lambda2, F), Lambda2).real();
-         E1 = Energy;
-         //TRACE(Energy);
-      }
-
-      A = prod(A, Lambda2);
-      B = prod(Lambda2, B);
-
-      Lambda1 = Lambda1Inv;
-      DoIteration(B, Lambda1, A, H_A, H_B, SInfo);
-      Lambda1Inv = InvertDiagonal(Lambda1, Eps);
-
-      // energy
-      {
-         MatrixOperator E = operator_prod(herm(SimpleOperator(-sqrt(3.0)*Site["S"])), herm(B), B);
-         MatrixOperator F = operator_prod(SimpleOperator(Site["S"]), A, herm(A));
-         double Energy = inner_prod(triple_prod(herm(E), Lambda1, F), Lambda1).real();
-         E2 = Energy;
-         //TRACE(Energy);
-      }
-
-      B = prod(B, Lambda1);
-      A = prod(Lambda1, A);
-
-
-      TruncationInfo Info;
-
-   int NumIter = 200;
-   for (int iter = 0; iter < NumIter; ++iter)
+   try
    {
-      //      if (iter == 2000)
+      int Verbose = 0;
+      std::string TimestepStr;  // so we can get the number of digits to use
+      std::string InitialTimeStr;
+      int N = 1;
+      int SaveEvery = 1;
+      std::string OpStr;
+      std::string InputFile;
+      std::string OutputPrefix;
+      std::string Operator;
+      std::string Operator2;
+      int States = 100;
+      double TruncCutoff = 0;
+      double EigenCutoff = 1E-16;
+      int OutputDigits = 0;
+
+      prog_opt::options_description desc("Allowed options", terminal::columns());
+      desc.add_options()
+         ("help", "show this help message")
+	 ("wavefunction,w", prog_opt::value(&InputFile), "input wavefunction")
+	 ("output,o", prog_opt::value(&OutputPrefix), "prefix for saving output files")
+	 ("operator", prog_opt::value(&Operator), "operator for the first slice ST decomposition")
+	 ("operator2", prog_opt::value(&Operator2), "operator for the second slice ST decomposition [optional]")
+	 ("timestep,t", prog_opt::value(&TimestepStr), "timestep (required)")
+	 ("num-timesteps,n", prog_opt::value(&N), FormatDefault("number of timesteps to calculate", N).c_str())
+	 ("save-timesteps,s", prog_opt::value(&SaveEvery), "save the wavefunction every s timesteps")
+         ("states,m", prog_opt::value(&States),
+          FormatDefault("number of states", States).c_str())
+         ("trunc,r", prog_opt::value<double>(&TruncCutoff),
+          FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
+         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
+          FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
+         ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
+          "extra debug output [can be used multiple times]")
+         ;
+
+      prog_opt::variables_map vm;
+      prog_opt::store(prog_opt::command_line_parser(argc, argv).
+                      options(desc).run(), vm);
+      prog_opt::notify(vm);
+
+      if (vm.count("help") > 0 || vm.count("wavefunction") < 1 || vm.count("operator") < 1 || vm.count("timestep") < 1)
       {
-         DeltaTau *= 1.0 - 1e-4;
-         std::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
-                                                   std::complex<double>(-DeltaTau, -DeltaT));
+         print_copyright(std::cerr, "tools", "mp-itebd");
+         std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
+         std::cerr << desc << '\n';
+         return 1;
       }
 
-      Lambda2 = Lambda2Inv;
+      std::cout.precision(getenv_or_default("MP_PRECISION", 14));
+      std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-      // energy
+      if (Verbose > 0)
+         std::cout << "Loading wavefunction..." << std::endl;
+
+      mp_pheap::InitializeTempPHeap();
+      pvalue_ptr<MPWavefunction> PsiPtr = pheap::ImportHeap(InputFile);
+
+      InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
+
+      if (OutputPrefix.empty())
+         OutputPrefix = PsiPtr->Attributes()["Prefix"].as<std::string>();
+
+      if (OutputPrefix.empty())
       {
-         MatrixOperator E = operator_prod(herm(SimpleOperator(-sqrt(3.0)*Site["S"])), herm(A), A);
-         MatrixOperator F = operator_prod(SimpleOperator(Site["S"]), B, herm(B));
-         double Energy = inner_prod(triple_prod(herm(E), Lambda2, F), Lambda2).real();
-         E1 = Energy;
-         //TRACE(Energy);
+         std::cerr << "mp-itebd: fatal: no output prefix specified\n";
+         return 1;
       }
 
-      if (iter % 1000 == 0)
-      {
-         // to a half-step, to simulate 2nd order S-T decomposition
-         MPOpComponent H_Ax, H_Bx;
-         std::tie(H_Ax, H_Bx) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
-                                                   std::complex<double>(-DeltaTau*0.5/(1.0-1e-4), 0));
-         SInfo.MaxStates = 100;
-         MPStateComponent Ax = A, Bx = B;
-         MatrixOperator L2x = Lambda2;
-         Info = DoIteration(Ax, L2x, Bx, H_Ax, H_Bx, SInfo, iter % 1000 == 0);
+      if (InitialTimeStr.empty())
+         InitialTimeStr = PsiPtr->Attributes()["Time"].as<std::string>();
 
-         std::string Filename = "tebdx.psi." + boost::lexical_cast<std::string>(iter);
-         pvalue_ptr<InfiniteWavefunction> Ps = new InfiniteWavefunction(MakeWavefunction(Ax, L2x, Bx, Lambda1));
-         pheap::ExportHeap(Filename, Ps);
+      double InitialTime = InitialTimeStr.empty() ? 0.0 : stod(InitialTimeStr);
+
+      double Timestep = stod(TimestepStr);
+
+      if (OutputDigits == 0)
+      {
+         OutputDigits = std::max(Digits(InitialTimeStr), Digits(TimestepStr));
       }
 
-      SInfo.MaxStates = 100;
-      Info = DoIteration(A, Lambda2, B, H_A, H_B, SInfo, iter % 1000 == 0);
-      Eps = std::max(Epsilon, Info.LargestDiscardedEigenvalue());
-      Lambda2Inv = InvertDiagonal(Lambda2, Eps);
-
-      // energy
+      UnitCellMPO EvenOp, OddOp;
+      InfiniteLattice Lattice;
+      std::tie(EvenOp, Lattice) = ParseUnitCellOperatorAndLattice(Operator);
+      if (Operator2.empty())
       {
-         MatrixOperator E = operator_prod(herm(SimpleOperator(-sqrt(3.0)*Site["S"])), herm(A), A);
-         MatrixOperator F = operator_prod(SimpleOperator(Site["S"]), B, herm(B));
-         double Energy = inner_prod(triple_prod(herm(E), Lambda2, F), Lambda2).real();
-#if 0
-         if ()
+	 OddOp = translate(EvenOp, 1);
+      }
+      else
+      {
+	 std::tie(EvenOp, Lattice) = ParseUnitCellOperatorAndLattice(Operator2);
+      }
+
+      EvenOp.ExtendToCover(2, 0);
+      OddOp.ExtendToCover(2, 1);
+
+      if (EvenOp.offset() != 0 || EvenOp.size() != 2)
+      {
+	 std::cerr << "mp-itebd: fatal: slice 1 operator not valid.\n";
+	 return 1;
+      }
+
+      if (OddOp.offset() != 1 || OddOp.size() != 2)
+      {
+	 std::cerr << "mp-itebd: fatal: slice 2 operator not valid.\n";
+	 return 1;
+      }
+
+      SimpleOperator EvenX = coarse_grain(EvenOp.MPO()).scalar();
+      SimpleOperator OddX = coarse_grain(EvenOp.MPO()).scalar();
+
+      SimpleOperator EvenU = Exponentiate(std::complex<double>(0, -Timestep) * EvenX);
+      SimpleOperator OddU = Exponentiate(std::complex<double>(0, -Timestep) * OddX);
+
+      SimpleOperator EvenUHalf = Exponentiate(std::complex<double>(0, -Timestep/2) * EvenX);
+
+      StatesInfo SInfo;
+      SInfo.MinStates = States;
+      SInfo.MaxStates = 0;
+      SInfo.TruncationCutoff = TruncCutoff;
+      SInfo.EigenvalueCutoff = EigenCutoff;
+
+      std::cout << SInfo << '\n';
+
+      if (Psi.size() == 1)
+         Psi = repeat(Psi, 2);
+
+      if (Psi.size() != 2)
+      {
+         std::cerr << "mp-itebd: fatal: wavefunction must be exactly two sites long.\n";
+         return 1;
+      }
+
+      StateComponent A(Psi[0]);
+      StateComponent B(Psi[1]);
+
+      RealDiagonalOperator Lambda = Psi.lambda(2);
+
+      // the initial half timestep
+      DoTEBD(A, B, Lambda, EvenUHalf, SInfo);
+
+      if (SaveEvery == 0)
+         SaveEvery = N;
+
+      int tstep = 0;
+      while (tstep < N)
+      {
+         DoTEBD(A, B, Lambda, OddU, SInfo);
+         ++tstep;
+         std::cout << "Timestep " << tstep << " time " << (InitialTime+tstep*Timestep) << '\n';
+         for (int i = 0; i < SaveEvery-1; ++i)
          {
-            std::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
-                                                      std::complex<double>(0.0, 0.0));
+            DoTEBD(A, B, Lambda, EvenU, SInfo);
+            DoTEBD(A, B, Lambda, OddU, SInfo);
+            ++tstep;
+            std::cout << "Timestep " << tstep << " time " << (InitialTime+tstep*Timestep) << '\n';
          }
-         else
-         {
-            //      DeltaTau *= 0.5;
-            // TRACE("Reducing DeltaTau")(DeltaTau);
-            std::tie(H_A, H_B) = TwoSiteExponential(-sqrt(3.0) * Site["S"], Site["S"],
-                                                      std::complex<double>(-DeltaTau, -DeltaT));
-         }
-#endif
-         E1 = Energy;
-         //TRACE(Energy);
 
-         std::cout << " BE=" << Energy
-                   << " Ent=" << Info.TotalEntropy()
-                   << " NS=" << Info.KeptStates()
-                   << " TError=" << Info.TruncationError()
-                   << " KEigen=" << Info.SmallestKeptEigenvalue()
-                   << " DeltaT=" << DeltaTau
-                   << std::endl;
+         DoTEBD(A, B, Lambda, EvenUHalf, SInfo);
+
+         // save the wavefunction
+         std::cout << "Saving wavefunction\n";
+         LinearWavefunction Psi;
+         Psi.push_back(B);
+         Psi.push_back(A);
+         MPWavefunction Wavefunction;
+         std::string TimeStr = FormatDigits(InitialTime + tstep * Timestep, OutputDigits);
+         Wavefunction.Wavefunction() = InfiniteWavefunctionLeft::Construct(Psi, QuantumNumbers::QuantumNumber(Psi.GetSymmetryList()));
+         Wavefunction.AppendHistory(EscapeCommandline(argc, argv));
+         Wavefunction.SetDefaultAttributes();
+         Wavefunction.Attributes()["Time"] = TimeStr;
+         Wavefunction.Attributes()["Prefix"] = OutputPrefix;
+         *PsiPtr.mutate() = std::move(Wavefunction);
+
+         pheap::ExportHeap(OutputPrefix + TimeStr, PsiPtr);
       }
-
-      A = prod(A, Lambda2);
-      B = prod(Lambda2, B);
-
-      Lambda1 = Lambda1Inv;
-
-
-      // energy - is this stable???
-      {
-         MatrixOperator E = operator_prod(herm(SimpleOperator(-sqrt(3.0)*Site["S"])), herm(B), B);
-         MatrixOperator F = operator_prod(SimpleOperator(Site["S"]), A, herm(A));
-         double Energy = inner_prod(triple_prod(herm(E), Lambda1, F), Lambda1).real();
-         E2 = Energy;
-         //TRACE(Energy);
-      }
-
-      SInfo.MaxStates = 100;
-      Info = DoIteration(B, Lambda1, A, H_A, H_B, SInfo, iter % 1000 == 0);
-      Eps = std::max(Epsilon, Info.LargestDiscardedEigenvalue());
-      //TRACE(Eps);
-      Lambda1Inv = InvertDiagonal(Lambda1, Eps);
-      //      TRACE(norm_frob_sq(Lambda1))(norm_frob_sq(Lambda1Inv));
-
-      // energy
-      {
-         MatrixOperator E = operator_prod(herm(SimpleOperator(-sqrt(3.0)*Site["S"])), herm(B), B);
-         MatrixOperator F = operator_prod(SimpleOperator(Site["S"]), A, herm(A));
-         double Energy = inner_prod(triple_prod(herm(E), Lambda1, F), Lambda1).real();
-         E2 = Energy;
-         //TRACE(Energy);
-
-         std::cout << " BE=" << Energy
-                   << " Ent=" << Info.TotalEntropy()
-                   << " NS=" << Info.KeptStates()
-                   << " TError=" << Info.TruncationError()
-                   << " KEigen=" << Info.SmallestKeptEigenvalue()
-                   << " DeltaT=" << DeltaTau
-                   << std::endl;
-      }
-
-      B = prod(B, Lambda1);
-      A = prod(Lambda1, A);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      pheap::Cleanup();
+      return 1;
+   }
+   catch (pheap::PHeapCannotCreateFile& e)
+   {
+      std::cerr << "Exception: " << e.what() << '\n';
+      if (e.Why == "File exists")
+         std::cerr << "Note: use --force (-f) option to overwrite.\n";
+   }
+   catch (std::exception& e)
+   {
+      std::cerr << "Exception: " << e.what() << '\n';
+      pheap::Cleanup();
+      return 1;
+   }
+   catch (...)
+   {
+      std::cerr << "Unknown exception!\n";
+      pheap::Cleanup();
+      return 1;
    }
 }
