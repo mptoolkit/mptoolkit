@@ -292,9 +292,10 @@ int main(int argc, char** argv)
          SaveEvery = N;
 
       // the initial half timestep
-      int tstep = 0;
+      int tstep = 1;
       DoTEBD(A, B, Lambda, EvenUHalf, SInfo);
       DoTEBD(A, B, Lambda, OddU, SInfo);
+      std::cout << "Timestep " << tstep << " time " << (InitialTime+tstep*Timestep) << '\n';
 
       while (tstep < N)
       {
