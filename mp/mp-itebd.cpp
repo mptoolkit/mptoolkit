@@ -122,7 +122,9 @@ InvertDiagonal(RealDiagonalOperator const& D, double Tol = 1E-15)
    return Result;
 }
 
-void DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda, SimpleOperator const& U, StatesInfo const& SInfo)
+void DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
+            QuantumNumber const& QShift, int Polarity,
+            SimpleOperator const& U, StatesInfo const& SInfo)
 {
    // simple algorithm with matrix inversion
    RealDiagonalOperator LambdaSave = Lambda;
@@ -144,6 +146,20 @@ void DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda, 
 
    B = A;
    A = Lambda*G;
+
+   if (Polarity == 1)
+   {
+      A = delta_shift(A, QShift);
+   }
+   else
+   {
+      B = delta_shift(B, adjoint(QShift));
+      Lambda = delta_shift(Lambda, adjoint(QShift));
+   }
+
+   CHECK_EQUAL(A.Basis2(), B.Basis1());
+   CHECK_EQUAL(B.Basis2(), Lambda.Basis1());
+   CHECK_EQUAL(delta_shift(Lambda, QShift).Basis2(), A.Basis1());
 }
 #endif
 
@@ -283,6 +299,8 @@ int main(int argc, char** argv)
          return 1;
       }
 
+      QuantumNumber QShift = Psi.qshift();
+
       StateComponent A(Psi[0]);
       StateComponent B(Psi[1]);
 
@@ -293,16 +311,16 @@ int main(int argc, char** argv)
 
       // the initial half timestep
       int tstep = 1;
-      DoTEBD(A, B, Lambda, EvenUHalf, SInfo);
-      DoTEBD(A, B, Lambda, OddU, SInfo);
+      DoTEBD(A, B, Lambda, QShift, 1, EvenUHalf, SInfo);
+      DoTEBD(A, B, Lambda, QShift, -1, OddU, SInfo);
       std::cout << "Timestep " << tstep << " time " << (InitialTime+tstep*Timestep) << '\n';
 
       while (tstep < N)
       {
          while (tstep % SaveEvery != 0)
          {
-            DoTEBD(A, B, Lambda, EvenU, SInfo);
-            DoTEBD(A, B, Lambda, OddU, SInfo);
+            DoTEBD(A, B, Lambda, QShift, 1, EvenU, SInfo);
+            DoTEBD(A, B, Lambda, QShift, -1, OddU, SInfo);
             ++tstep;
             std::cout << "Timestep " << tstep << " time " << (InitialTime+tstep*Timestep) << '\n';
          }
@@ -313,7 +331,7 @@ int main(int argc, char** argv)
          StateComponent Bx = B;
          RealDiagonalOperator Lambdax = Lambda;
 
-         DoTEBD(Ax, Bx, Lambdax, EvenUHalf, SInfo);
+         DoTEBD(Ax, Bx, Lambdax, QShift, 1, EvenUHalf, SInfo);
 
          // save the wavefunction
          std::cout << "Saving wavefunction\n";
@@ -322,7 +340,7 @@ int main(int argc, char** argv)
          Psi.push_back(Bx);
          MPWavefunction Wavefunction;
          std::string TimeStr = FormatDigits(InitialTime + tstep * Timestep, OutputDigits);
-         InfiniteWavefunctionLeft PsiL = InfiniteWavefunctionLeft::Construct(Psi, QuantumNumbers::QuantumNumber(Psi.GetSymmetryList()));
+         InfiniteWavefunctionLeft PsiL = InfiniteWavefunctionLeft::Construct(Psi, QShift);
          // rotate to the A,B back into the right order
          PsiL.rotate_left(1);
          Wavefunction.Wavefunction() = std::move(PsiL);
@@ -336,8 +354,8 @@ int main(int argc, char** argv)
 
          if (tstep+1 < N)
          {
-            DoTEBD(A, B, Lambda, EvenU, SInfo);
-            DoTEBD(A, B, Lambda, OddU, SInfo);
+            DoTEBD(A, B, Lambda, QShift, 1, EvenU, SInfo);
+            DoTEBD(A, B, Lambda, QShift, -1, OddU, SInfo);
             ++tstep;
             std::cout << "Timestep " << tstep << " time " << (InitialTime+tstep*Timestep) << '\n';
          }
