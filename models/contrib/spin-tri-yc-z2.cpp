@@ -52,8 +52,13 @@
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 
-
+using math_const::pi;
 namespace prog_opt = boost::program_options;
+
+std::complex<double> phase(double theta)
+{
+   return std::exp(std::complex<double>(0.0, theta));
+}
 
 
 int IntPow(int x, int p) {
@@ -61,7 +66,6 @@ int IntPow(int x, int p) {
   if (p == 1) return x;
   return x * IntPow(x, p-1);
 }
-:q
 
 
 std::ostream &OpProgress(int *n, int step, int max)
@@ -114,7 +118,7 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      const double PI = 4.0*std::atan(1.0);
+      //const double PI = 4.0*std::atan(1.0);
       //const std::complex<double> jj(0.0,theta*PI);
       int oo = 0;
       int oo_max = 8*w+(w*w/2)+13;
@@ -123,7 +127,7 @@ int main(int argc, char** argv)
       UnitCell Cell = repeat(Site, w);
       InfiniteLattice Lattice(&Cell);
 
-      UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz");
+      UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz"), StagSz(Cell, "StagSz");
       UnitCellOperator I(Cell, "I"); // identity operator
       UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
       UnitCellOperator RyUnit(Cell, "RyUnit");
@@ -137,6 +141,10 @@ int main(int argc, char** argv)
          Sx += Sx[i];                                         // total spin (x-component) on a leg of cylinder
          Sy += Sy[i];                                         // total spin (y-component) on a leg of cylinder
          Sz += Sz[i];                                         // total spin (z-component) on a leg of cylinder
+
+         // staggered magnetization with alternating sublattices in lattice Y-direction.
+         // (note: only one of the three possible formations)
+         StagSz += IntPow(-1,i) * Sz[i];
 
          //oo+=3;
          //std::printf("\33[2K\r");
@@ -157,10 +165,26 @@ int main(int argc, char** argv)
            Ref = Ref(0) * Cell.swap_gate_no_sign(i, w-i-1);
            OpProgress(&oo,1,oo_max); // operator series count: 4*w+(w/2)-1
        }
+ 
 
-      // if we could have tripartite symmetry, add operators for the sublattice magnetization
-      //UnitCellMPO S_A, S_B, S_C;
-      //not yet implemented ...
+      // if we could have tripartite symmetry, add operators for the three-sublattice magnetization order parameters:
+      if (w%3 == 0)
+      {
+         UnitCellMPO Sz_A, Sz_B, Sz_C;
+         UnitCellMPO Mz_3;
+         for (int i = 0; i < w; i += 3)
+         {
+            Sz_A += Sz(0)[i+0] + Sz(1)[(i+2)%w] + Sz(2)[(i+1)%w];
+            Sz_B += Sz(0)[i+1] + Sz(1)[(i+3)%w] + Sz(2)[(i+2)%w];
+            Sz_C += Sz(0)[i+2] + Sz(1)[(i+4)%w] + Sz(2)[(i+3)%w];
+            Mz_3 += Sz_A + phase(4*pi/3)*Sz_B + phase(-4*pi/3)*Sz_C;
+         }
+         Lattice["Sz_a"] = sum_unit(Sz_A, w*3);
+         Lattice["Sz_b"] = sum_unit(Sz_B, w*3);
+         Lattice["Sz_c"] = sum_unit(Sz_C, w*3);
+         Lattice["Mz3"] = sum_unit(Mz_3, w*3);
+      }
+
 
       UnitCellMPO Ry = I(0);
       for (int c = 0; c < w; ++c)
@@ -212,7 +236,7 @@ int main(int argc, char** argv)
         for (int j = i+1; j < w; ++j)
         {
           // Long-range Ising -- inter-cell interations only for alpha=2.0
-          H_intra2 += std::pow( ( std::sin( PI/w ) / std::sin( (j-i)*PI/w ) ) , 2) * Sz(0)[i]*Sz(0)[j];
+          H_intra2 += std::pow( ( std::sin( pi/w ) / std::sin( (j-i)*pi/w ) ) , 2) * Sz(0)[i]*Sz(0)[j];
           OpProgress(&oo,1,oo_max); // operator series count: 8*w+(w*w/2)
         }
       }
