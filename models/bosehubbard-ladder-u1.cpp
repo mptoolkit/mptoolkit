@@ -95,7 +95,7 @@ int main(int argc, char** argv)
       for (int i = 0; i < Width-1; ++i)
       {
          HK -= BH(0)[i]*B(0)[i+1] + B(0)[i]*BH(0)[i+1];
-         HU12 = N(0)[i] * N(0)[i+i];
+         HU12 = N(0)[i] * N(0)[i+1];
       }
 
       Lattice["H_J"]   = sum_unit(HJ);
