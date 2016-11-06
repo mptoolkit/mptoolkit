@@ -56,6 +56,7 @@ int main(int argc, char** argv)
       OpDescriptions.add_operators()
          ("H_J"    , "nearest-neighbor hopping\n")
          ("H_U"    , "on-site Coulomb repulsion N*(N-1)/2\n")
+         ("H_V"    , "nearest-neighbour Coulomb repulsion\n")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -75,6 +76,7 @@ int main(int argc, char** argv)
 
       Lattice["H_J"] = sum_unit(BH(0)*B(1) + B(0)*BH(1));
       Lattice["H_U"] = sum_unit(0.5*N2(0));
+      Lattice["H_V"] = sum_unit(N(0)*N(1));
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);
