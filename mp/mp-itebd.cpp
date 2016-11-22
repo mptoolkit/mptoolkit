@@ -177,6 +177,7 @@ int main(int argc, char** argv)
       std::string OutputPrefix;
       std::string Operator;
       std::string Operator2;
+      int MinStates = 1;
       int States = 100;
       double TruncCutoff = 0;
       double EigenCutoff = 1E-16;
@@ -192,6 +193,8 @@ int main(int argc, char** argv)
 	 ("timestep,t", prog_opt::value(&TimestepStr), "timestep (required)")
 	 ("num-timesteps,n", prog_opt::value(&N), FormatDefault("number of timesteps to calculate", N).c_str())
 	 ("save-timesteps,s", prog_opt::value(&SaveEvery), "save the wavefunction every s timesteps")
+         ("min-states", prog_opt::value<int>(&MinStates),
+          FormatDefault("Minimum number of states to keep", MinStates).c_str())
          ("states,m", prog_opt::value(&States),
           FormatDefault("number of states", States).c_str())
          ("trunc,r", prog_opt::value<double>(&TruncCutoff),
@@ -283,8 +286,8 @@ int main(int argc, char** argv)
       SimpleOperator EvenUHalf = Exponentiate(std::complex<double>(0, -Timestep/2) * EvenX);
 
       StatesInfo SInfo;
-      SInfo.MinStates = States;
-      SInfo.MaxStates = 0;
+      SInfo.MinStates = MinStates;
+      SInfo.MaxStates = States;
       SInfo.TruncationCutoff = TruncCutoff;
       SInfo.EigenvalueCutoff = EigenCutoff;
 

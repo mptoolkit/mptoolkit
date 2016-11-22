@@ -60,6 +60,7 @@
 #endif
 
 #include <complex>
+#include <cstdint>
 
 #if defined(FORTRAN_DOUBLE_UNDERSCORE)
 #define F77NAME(x) x##__
@@ -78,8 +79,8 @@
 namespace Fortran
 {
 
-typedef int integer;
-typedef int logical;
+typedef int32_t integer;
+typedef int32_t logical;
 typedef double real;
 
 struct complex
