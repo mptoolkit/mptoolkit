@@ -146,6 +146,7 @@ ShowValuesBySector(MatrixOperator const& v, RealDiagonalOperator const& Rho,
       // Need to include the degree in the weight by hand, since Rho(i,i) loses the quantum number information
       WeightBySector[Rho.Basis1()[i]] += trace(Rho(i,i)) * degree(Rho.Basis1()[i]);
    }
+   std::complex<double> Sum = 0.0;
    for (auto const& x : ValueBySector)
    {
       double Weight = WeightBySector[x.first];
@@ -154,8 +155,13 @@ ShowValuesBySector(MatrixOperator const& v, RealDiagonalOperator const& Rho,
       PrintFormat(x.second / Weight,
                   ShowRealPart, ShowImagPart, ShowMagnitude,
                   ShowArgument, ShowRadians);
+      Sum += x.second;
       std::cout << '\n';
    }
+   std::cout << "Total: ";
+   PrintFormat(Sum, ShowRealPart, ShowImagPart, ShowMagnitude,
+	       ShowArgument, ShowRadians);
+   std::cout << '\n';
 }
 
 int main(int argc, char** argv)
@@ -180,6 +186,7 @@ int main(int argc, char** argv)
       std::vector<int> PolyDegree;
       int Partition = 0;  // not yet implemented
       double UnityEpsilon = DefaultEigenUnityEpsilon;
+      int Power = 1;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -202,6 +209,7 @@ int main(int argc, char** argv)
           "display the argument in radians instead of degrees")
          ("degree", prog_opt::value(&PolyDegree),
           "for a TriangularMPO, only show the results for the terms of this degree [can be used more than once]")
+	 ("moment", prog_opt::value(&Power), "For a triangular operator, calculate this moment [default 1]")
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
          ("unityepsilon", prog_opt::value(&UnityEpsilon),
@@ -360,7 +368,7 @@ int main(int argc, char** argv)
             if (v.has_term(d) && (ShowPolyDegree.empty() || (ShowPolyDegree.find(d) != ShowPolyDegree.end())))
             {
                std::cout << "#degree " << d << '\n';
-               ShowValuesBySector(v[d], delta_shift(RhoDiag, InfPsi.qshift()), Quiet, ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
+               ShowValuesBySector(pow(v[d],Power), delta_shift(RhoDiag, InfPsi.qshift()), Quiet, ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
             }
          }
       }
