@@ -89,14 +89,14 @@ int main(int argc, char** argv)
       for (int i = 0; i < Width; ++i)
       {
          HJ -= BH(0)[i]*B(1)[i] + B(0)[i]*BH(1)[i];
+         HU += 0.5*N2(0)[i];
       }
 
       for (int i = 0; i < Width-1; ++i)
       {
          HK -= BH(0)[i]*B(0)[i+1] + B(0)[i]*BH(0)[i+1];
-         HU += 0.5*N2(0)[i];
+         HU12 = N(0)[i] * N(0)[i+1];
       }
-      HU12 = N(0)[0] * N(0)[Width-1];
 
       Lattice["H_J"]   = sum_unit(HJ);
       Lattice["H_K"]   = sum_unit(HK);
