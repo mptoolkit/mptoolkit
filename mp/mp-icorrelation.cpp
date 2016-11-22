@@ -399,7 +399,7 @@ int main(int argc, char** argv)
             std::cerr << "mp-icorrelation: fatal: cannot construct a connected correlator of a non-bosonic operator!\n";
             return 1;
          }
-         if (is_scalar(Op1.TransformsAs()))
+         if (!is_scalar(Op1.TransformsAs()))
          {
             std::cerr << "mp-icorrelation: fatal: cannot construct a connected correlator of a non-scalar operator!\n";
             return 1;
