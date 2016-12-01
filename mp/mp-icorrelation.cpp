@@ -659,7 +659,7 @@ int main(int argc, char** argv)
 
                // output the expectation value
                if (Connected)
-                  e -= ExpectOp1[x] * ExpectOp2[x];
+                  e -= ExpectOp1[x] * ExpectOp2[y];
 
                if (Average)
                {
