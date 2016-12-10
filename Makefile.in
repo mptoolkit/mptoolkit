@@ -282,7 +282,7 @@ dep : $(cxx_depend)
 
 % : %.cpp
 	@$(MAKEDEPEND_INFO)
-	$(CXX) $(CXXFLAGS) $(CXXFLAGS_$@) $(LDFLAGS) $(filter %.o %.cpp, $^) $(LIB) $(LIBS_$@) -o $@
+	$(CXX) $(CXXFLAGS) $(CXXFLAGS_$@) $(LDFLAGS) $(filter %.o %.cpp, $^) $(LIBS_$@) $(LIB) -o $@
 
 %.o : %.cpp %.d
 	@$(MAKEDEPEND_INFO)
