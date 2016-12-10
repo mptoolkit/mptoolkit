@@ -25,7 +25,6 @@
 #include "eigen.h"
 #include "diagonalmatrix.h"
 #include "common/lapackf.h"
-#include "common/stackallocator.h"
 #include <algorithm>
 
 namespace LinearAlgebra
@@ -161,14 +160,14 @@ void DiagonalizeSymmetric(int Size, double* Data, int LeadingDim, double* Eigen)
    LAPACK::dsyev(jobz, uplo, Size, Data, LeadingDim, Eigen, work, lwork, info);
 
    lwork = int(work[0]);
-   work = static_cast<double*>(StackAlloc::allocate(lwork * sizeof(double)));
+   work = new double[lwork];
 
    // do the actual call
    LAPACK::dsyev(jobz, uplo, Size, Data, LeadingDim, Eigen, work, lwork, info);
 
    CHECK(info == 0)("LAPACK::dsyev")(info)(makeMatrix(Data, Size, LeadingDim));
 
-   StackAlloc::deallocate(work, lwork * sizeof(double));
+   delete[] work;
 }
 
 void DiagonalizeHermitian(int Size, std::complex<double>* Data, int LeadingDim, double* Eigen)
@@ -188,22 +187,23 @@ void DiagonalizeHermitian(int Size, std::complex<double>* Data, int LeadingDim, 
    int lrwork = std::max(1, 3*Size-2);
    Fortran::integer info = 0;
 
-   rwork = static_cast<double*>(StackAlloc::allocate(lrwork * sizeof(double)));
+   rwork = new double[lrwork];
 
    // query for the optimial size of the workspace
    LAPACK::zheev(jobz, uplo, Size, Data, LeadingDim, Eigen, work, lwork, rwork, info);
 
    lwork = int(work[0].real());
-   work = static_cast<std::complex<double>*>(StackAlloc::allocate(lwork * sizeof(std::complex<double>)));
+   work = new std::complex<double>[lwork];
 
    // do the actual call
    LAPACK::zheev(jobz, uplo, Size, Data, LeadingDim, Eigen, work, lwork, rwork, info);
 
    CHECK(info == 0)("LAPACK::zheev")(info);
 
-   StackAlloc::deallocate(work , lwork * sizeof(std::complex<double>));
-   StackAlloc::deallocate(rwork, lrwork * sizeof(double));
+   delete[] work;
+   delete[] rwork;
 }
+
 void Diagonalize(int Size, std::complex<double> const* DataX, int LeadingDim, std::complex<double>* Eigen,
                  std::complex<double>* LeftVectors, int LeftLeadingDim,
                  std::complex<double>* RightVectors, int RightLeadingDim)
@@ -217,17 +217,17 @@ void Diagonalize(int Size, std::complex<double> const* DataX, int LeadingDim, st
    int lrwork = 2 * Size;
    Fortran::integer info = 0;
 
-   std::complex<double>* Data = StackAlloc::allocate_type<std::complex<double> >(Size*Size);
+   std::complex<double>* Data = new std::complex<double>[Size*Size];
    memcpy(Data, DataX, Size*Size*sizeof(std::complex<double>));
 
-   rwork = static_cast<double*>(StackAlloc::allocate(lrwork * sizeof(double)));
+   rwork = new double[lrwork];
 
    // query for the optimial size of the workspace
    LAPACK::zgeev(jobl, jobr, Size, Data, LeadingDim, Eigen, LeftVectors, LeftLeadingDim,
                  RightVectors, RightLeadingDim, work, lwork, rwork, info);
 
    lwork = int(work[0].real());
-   work = static_cast<std::complex<double>*>(StackAlloc::allocate(lwork * sizeof(std::complex<double>)));
+   work = new std::complex<double>[lwork];
 
    // do the actual call
    LAPACK::zgeev(jobl, jobr, Size, Data, LeadingDim, Eigen, LeftVectors, LeftLeadingDim,
@@ -235,9 +235,9 @@ void Diagonalize(int Size, std::complex<double> const* DataX, int LeadingDim, st
 
    CHECK(info == 0)("LAPACK::zgeev")(info);
 
-   StackAlloc::deallocate(work , lwork * sizeof(std::complex<double>));
-   StackAlloc::deallocate(rwork, lrwork * sizeof(double));
-   StackAlloc::deallocate_type<std::complex<double> >(Data, Size*Size);
+   delete[] work;
+   delete[] rwork;
+   delete[] Data;
 }
 
 void GeneralizedEigenSymmetric(int Size, double* A, int ldA, double* B, int ldB,
@@ -250,7 +250,7 @@ void GeneralizedEigenSymmetric(int Size, double* A, int ldA, double* B, int ldB,
    Fortran::integer M = Last-First+1;
    // Note: the LAPACK docs don't guarantee that only the first M elements of the eivenvalue array
    // are accessed, so to be safe we supply a new vector of length Size and do a copy
-   double* W = static_cast<double*>(StackAlloc::allocate(Size * sizeof(double)));
+   double* W = new double[Size];
    double worksize;
    double* work = &worksize;
    int lwork = -1;                         // for query of lwork
@@ -259,15 +259,15 @@ void GeneralizedEigenSymmetric(int Size, double* A, int ldA, double* B, int ldB,
    Fortran::integer* ifail;
    Fortran::integer info = 0;
 
-   iwork = static_cast<Fortran::integer*>(StackAlloc::allocate(liwork * sizeof(Fortran::integer)));
-   ifail = static_cast<Fortran::integer*>(StackAlloc::allocate(Size * sizeof(Fortran::integer)));
+   iwork = new Fortran::integer[liwork];
+   ifail = new Fortran::integer[Size];
 
    // query for the optimial size of the workspace
    LAPACK::dsygvx(itype, jobz, range, uplo, Size, A, ldA, B, ldB, 0, 0, First, Last, abstol, M, W, Z, ldZ,
                   work, lwork, iwork, ifail, info);
 
    lwork = int(work[0]);
-   work = static_cast<double*>(StackAlloc::allocate(lwork * sizeof(double)));
+   work = new double[lwork];
 
    // do the actual call
    LAPACK::dsygvx(itype, jobz, range, uplo, Size, A, ldA, B, ldB, 0, 0, First, Last, abstol, M, W, Z, ldZ,
@@ -278,10 +278,10 @@ void GeneralizedEigenSymmetric(int Size, double* A, int ldA, double* B, int ldB,
    // copy the eigenvalues into the Eigenval array
    std::copy(W, W+M, Eigenval);
 
-   StackAlloc::deallocate(work, lwork * sizeof(double));
-   StackAlloc::deallocate(ifail, Size * sizeof(Fortran::integer));
-   StackAlloc::deallocate(iwork, liwork * sizeof(Fortran::integer));
-   StackAlloc::deallocate(W, Size * sizeof(double));
+   delete[] work;
+   delete[] ifail;
+   delete[] iwork;
+   delete[] W;
 }
 
 void GeneralizedEigenHermitian(int Size, std::complex<double>* A, int ldA, std::complex<double>* B, int ldB,
@@ -294,7 +294,7 @@ void GeneralizedEigenHermitian(int Size, std::complex<double>* A, int ldA, std::
    Fortran::integer M = Last-First+1;
    // Note: the LAPACK docs don't guarantee that only the first M elements of the eivenvalue array
    // are accessed, so to be safe we supply a new vector of length Size and do a copy
-   double* W = static_cast<double*>(StackAlloc::allocate(Size * sizeof(double)));
+   double* W = new double[Size];
    std::complex<double> worksize;
    std::complex<double>* work = &worksize;
    int lwork = -1;                         // for query of lwork
@@ -305,16 +305,16 @@ void GeneralizedEigenHermitian(int Size, std::complex<double>* A, int ldA, std::
    Fortran::integer* ifail;
    Fortran::integer info = 0;
 
-   rwork = static_cast<double*>(StackAlloc::allocate(lrwork * sizeof(double)));
-   iwork = static_cast<Fortran::integer*>(StackAlloc::allocate(liwork * sizeof(Fortran::integer)));
-   ifail = static_cast<Fortran::integer*>(StackAlloc::allocate(Size * sizeof(Fortran::integer)));
+   rwork = new double[lrwork];
+   iwork = new Fortran::integer[liwork];
+   ifail = new Fortran::integer[Size];
 
    // query for the optimial size of the workspace
    LAPACK::zhegvx(itype, jobz, range, uplo, Size, A, ldA, B, ldB, 0, 0, First, Last, abstol, M, W, Z, ldZ,
                   work, lwork, rwork, iwork, ifail, info);
 
    lwork = int(work[0].real());
-   work = static_cast<std::complex<double>*>(StackAlloc::allocate(lwork * sizeof(std::complex<double>)));
+   work = new std::complex<double>[lwork];
 
    // do the actual call
    LAPACK::zhegvx(itype, jobz, range, uplo, Size, A, ldA, B, ldB, 0, 0, First, Last, abstol, M, W, Z, ldZ,
@@ -325,11 +325,11 @@ void GeneralizedEigenHermitian(int Size, std::complex<double>* A, int ldA, std::
    // copy the eigenvalues into the Eigenval array
    std::copy(W, W+M, Eigenval);
 
-   StackAlloc::deallocate(work, lwork * sizeof(std::complex<double>));
-   StackAlloc::deallocate(ifail, Size * sizeof(Fortran::integer));
-   StackAlloc::deallocate(iwork, liwork * sizeof(Fortran::integer));
-   StackAlloc::deallocate(rwork, lrwork * sizeof(double));
-   StackAlloc::deallocate(W, Size * sizeof(double));
+   delete[] work;
+   delete[] ifail;
+   delete[] iwork;
+   delete[] rwork;
+   delete[] W;
 }
 
 void SingularValueDecomposition(int Size1, int Size2, double* A, double* U,
@@ -359,13 +359,13 @@ void SingularValueDecomposition(int Size1, int Size2, double* A, double* U,
    LAPACK::dgesvd(jobu, jobvt, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, info);
 
    lwork = int(work[0]);
-   work = static_cast<double*>(StackAlloc::allocate(lwork * sizeof(double)));
+   work = new double[lwork];
 
    // do the actual call
    LAPACK::dgesvd(jobu, jobvt, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, info);
    CHECK(info == 0)("LAPACK::dgesvd")(info);
 
-   StackAlloc::deallocate(work, lwork * sizeof(double));
+   delete[] work;
 }
 
 void SingularValueDecomposition(int Size1, int Size2,
@@ -397,20 +397,21 @@ void SingularValueDecomposition(int Size1, int Size2,
    int lrwork = 5 * min_mn;
    Fortran::integer info = 0;
 
-   double* rwork = StackAlloc::allocate_type<double>(lrwork);
+   double* rwork = new double[lrwork];
 
    // query for the optimial sizes of the workspace
    LAPACK::zgesvd(jobu, jobvh, m, n, a, lda, s, u, ldu, vh, ldvh, work, lwork, rwork, info);
+   CHECK(info == 0)("LAPACK::zgesvd")(info);
 
    lwork = int(work[0].real());
-   work = StackAlloc::allocate_type<std::complex<double> >(lwork);
+   work = new std::complex<double>[lwork];
 
    // do the actual call
    LAPACK::zgesvd(jobu, jobvh, m, n, a, lda, s, u, ldu, vh, ldvh, work, lwork, rwork, info);
    CHECK(info == 0)("LAPACK::zgesvd")(info);
 
-   StackAlloc::deallocate_type<std::complex<double> >(work, lwork);
-   StackAlloc::deallocate_type<double>(rwork, lrwork);
+   delete[] work;
+   delete[] rwork;
 }
 
 // let MAX = max(M,N)
@@ -445,13 +446,13 @@ void SingularValueDecompositionFull(int Size1, int Size2, double* A, double* U,
    LAPACK::dgesvd(jobu, jobvt, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, info);
 
    lwork = int(work[0]);
-   work = static_cast<double*>(StackAlloc::allocate(lwork * sizeof(double)));
+   work = new double[lwork];
 
    // do the actual call
    LAPACK::dgesvd(jobu, jobvt, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, info);
    CHECK(info == 0)("LAPACK::dgesvd")(info);
 
-   StackAlloc::deallocate(work, lwork * sizeof(double));
+   delete[] work;
 }
 
 // A is MxN
@@ -497,20 +498,20 @@ void SingularValueDecompositionFull(int Size1, int Size2,
    int lrwork = 5 * min_mn;
    Fortran::integer info = 0;
 
-   double* rwork = StackAlloc::allocate_type<double>(lrwork);
+   double* rwork = new  double[lrwork];
 
    // query for the optimial sizes of the workspace
    LAPACK::zgesvd(jobu, jobvh, m, n, a, lda, s, u, ldu, vh, ldvh, work, lwork, rwork, info);
 
    lwork = int(work[0].real());
-   work = StackAlloc::allocate_type<std::complex<double> >(lwork);
+   work = new std::complex<double>[lwork];
 
    // do the actual call
    LAPACK::zgesvd(jobu, jobvh, m, n, a, lda, s, u, ldu, vh, ldvh, work, lwork, rwork, info);
    CHECK(info == 0)("LAPACK::zgesvd")(info);
 
-   StackAlloc::deallocate_type<std::complex<double> >(work, lwork);
-   StackAlloc::deallocate_type<double>(rwork, lrwork);
+   delete[] work;
+   delete[] rwork;
 }
 
 void TridiagonalizeHermitian(int Size, std::complex<double>* A, int ldA,
@@ -519,7 +520,7 @@ void TridiagonalizeHermitian(int Size, std::complex<double>* A, int ldA,
 {
    Fortran::integer info = 0;
    int lwork = -1;
-   std::complex<double>* tau = StackAlloc::allocate_type<std::complex<double> >(Size-1);
+   std::complex<double>* tau = new std::complex<double>[Size-1];
    std::complex<double> worksize;
    std::complex<double>* work = &worksize;
 
@@ -527,14 +528,14 @@ void TridiagonalizeHermitian(int Size, std::complex<double>* A, int ldA,
    LAPACK::zhetrd('U', Size, A, ldA, Diag, SubDiag, tau, work, lwork, info);
 
    lwork = int(work[0].real());
-   work = StackAlloc::allocate_type<std::complex<double> >(lwork);
+   work = new std::complex<double>[lwork];
 
    // do the actual call
    LAPACK::zhetrd('U', Size, A, ldA, Diag, SubDiag, tau, work, lwork, info);
    CHECK(info == 0)("LAPACK::zhetrd")(info);
 
-   StackAlloc::deallocate_type<std::complex<double> >(work, lwork);
-   StackAlloc::deallocate_type<std::complex<double> >(tau, Size-1);
+   delete[] work;
+   delete[] tau;
 }
 
 void CholeskyUpper(int Size, std::complex<double>* A, int ldA)
@@ -586,7 +587,7 @@ void InvertHPD(int Size, std::complex<double>* A, int ldA)
 void InvertGeneral(int Size, std::complex<double>* A, int ldA)
 {
    Fortran::integer info = 0;
-   Fortran::integer* ipiv = StackAlloc::allocate_type<Fortran::integer>(Size);
+   Fortran::integer* ipiv = new Fortran::integer[Size];
    LAPACK::zgetrf(Size , Size, A, ldA, ipiv, info);
    CHECK(info == 0)("LAPACK::zgetrf")(info);
 
@@ -596,12 +597,12 @@ void InvertGeneral(int Size, std::complex<double>* A, int ldA)
    LAPACK::zgetri(Size, A, ldA, ipiv, work, lwork, info);
 
    lwork = int(work[0].real());
-   work = StackAlloc::allocate_type<std::complex<double> >(lwork);
+   work = new std::complex<double>[lwork];
    LAPACK::zgetri(Size, A, ldA, ipiv, work, lwork, info);
    CHECK(info == 0)("LAPACK::zgetri")(info);
 
-   StackAlloc::deallocate_type<std::complex<double> >(work, lwork);
-   StackAlloc::deallocate_type<Fortran::integer>(ipiv, Size);
+   delete[] work;
+   delete[] ipiv;
 }
 
 void InvertUpperTriangular(int Size, std::complex<double>* A, int ldA)
@@ -627,11 +628,11 @@ void LQ_Factorize(int Size1, int Size2, std::complex<double>* A, int ldA, std::c
    LAPACK::zgelqf(Size1, Size2, A, ldA, Tau, Work, lWork, info);
 
    lWork = int(Work[0].real());
-   Work = StackAlloc::allocate_type<std::complex<double> >(lWork);
+   Work = new std::complex<double>[lWork];
    LAPACK::zgelqf(Size1, Size2, A, ldA, Tau, Work, lWork, info);
    CHECK(info == 0)("LAPACK::zgelqf")(info);
 
-   StackAlloc::deallocate_type<std::complex<double> >(Work, lWork);
+   delete[] Work;
 }
 
 } // namespace Private

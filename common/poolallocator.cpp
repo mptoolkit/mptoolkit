@@ -17,10 +17,6 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#if defined(HACK_MULTITHREAD) && !defined(MULTITHREAD)
-#define MULTITHREAD
-#endif
-
 #if defined(HAVE_CONFIG_H)
 #include "config.h"         // for configuration options
 #endif
@@ -28,6 +24,7 @@
 #include <iostream>
 #include <iomanip>
 #include <set>
+#include <mutex>
 
 namespace
 {
@@ -37,7 +34,7 @@ namespace
 void* FreeList[PoolAlloc::MaxBlockAllocatorUnits+1] = {NULL};
 void* BlockRecHead[PoolAlloc::MaxBlockAllocatorUnits+1] = {NULL};
 void* BlockRecTail[PoolAlloc::MaxBlockAllocatorUnits+1] = {NULL};
-//pthread::mutex BlockMutex[PoolAlloc::MaxBlockAllocatorUnits+1];
+std::mutex BlockMutex[PoolAlloc::MaxBlockAllocatorUnits+1];
 
 // returns the UnitSize of the corresponding actual size
 inline size_t GetUnitSize(size_t size)
@@ -205,7 +202,7 @@ void* allocate(size_t size)
 
    PRECONDITION(UnitSize < MaxBlockAllocatorUnits);
 
-   //   pthread::mutex::sentry MyLock(BlockMutex[UnitSize]);
+   std::lock_guard<std::mutex> MyLock(BlockMutex[UnitSize]);
 
    if (!(FreeList[UnitSize])) FreeList[UnitSize] = AllocatePool(UnitSize,
                                                                 PoolAlloc::DefaultAllocationUnits/UnitSize+1);
@@ -228,6 +225,8 @@ void deallocate(void* p, size_t size)
 #if defined(POOLALLOCATOR_DEBUG)
    DebugCheck(p, size);
 #endif
+
+   std::lock_guard<std::mutex> MyLock(BlockMutex[UnitSize]);
 
    *static_cast<void**>(p) = FreeList[UnitSize];
    FreeList[UnitSize] = p;

@@ -65,7 +65,8 @@ std::string FormatDigits(double x, int Digits)
 }
 
 #if 0
-void DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda, SimpleOperator const& U, StatesInfo const& Info)
+void DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
+            SimpleOperator const& U, StatesInfo const& Info)
 {
    // Algorithm avoids matrix inversion.  Let A,B be left-orthogonalized.
    // Let C^{s1,s2} = A^{s1} B^{s2}
@@ -95,7 +96,9 @@ void DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda, 
 
    SL.ConstructMatrices(SL.begin(), Cutoff, A, Lambda, B);
 
-   StateComponent G = partial_prod(herm(A), Cu, Tensor::ProductBasis<BasisList, BasisList>(A.LocalBasis(), B.LocalBasis()));
+   StateComponent G = partial_prod(herm(A), Cu,
+                                   Tensor::ProductBasis<BasisList, BasisList>(A.LocalBasis(),
+                                                                              B.LocalBasis()));
 
    B = A;
    A = Lambda*G;
@@ -122,8 +125,19 @@ InvertDiagonal(RealDiagonalOperator const& D, double Tol = 1E-15)
    return Result;
 }
 
+//
+// Input is A, B, Lambda
+// A,B are in left-canonical form
+// Lambda01 Gamma1 Lambda12 Gamma2 Lambda23
+// A = Lambda01 Gamma1
+// B = Lambda12 Gamma2
+// Lambda = Lambda23
+//
+// On exit, A and B are in left canonical form,
+// final Lambda' = Lambda12
+//
+
 void DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
-            QuantumNumber const& QShift, int Polarity,
             SimpleOperator const& U, StatesInfo const& SInfo)
 {
    // simple algorithm with matrix inversion
@@ -144,24 +158,57 @@ void DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
 
    StateComponent G = B * InvertDiagonal(LambdaSave, 1E-8);
 
-   B = A;
-   A = Lambda*G;
-
-   if (Polarity == 1)
-   {
-      A = delta_shift(A, QShift);
-   }
-   else
-   {
-      B = delta_shift(B, adjoint(QShift));
-      Lambda = delta_shift(Lambda, adjoint(QShift));
-   }
+   B = Lambda*G;
 
    CHECK_EQUAL(A.Basis2(), B.Basis1());
-   CHECK_EQUAL(B.Basis2(), Lambda.Basis1());
-   CHECK_EQUAL(delta_shift(Lambda, QShift).Basis2(), A.Basis1());
+   CHECK_EQUAL(A.Basis2(), Lambda.Basis1());
 }
 #endif
+
+LinearWavefunction
+DoEvenStep(std::deque<StateComponent> Psi, std::deque<RealDiagonalOperator> Lambda,
+           SimpleOperator const& UEven, StatesInfo const& SInfo)
+{
+   #pragma omp parallel for schedule(dynamic)
+   for (unsigned i = 0; i < Psi.size(); i += 2)
+   {
+      DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], UEven, SInfo);
+   }
+   return LinearWavefunction::FromContainer(Psi.begin(), Psi.end());
+}
+
+void DoEvenOddStep(std::deque<StateComponent>& Psi, std::deque<RealDiagonalOperator>& Lambda,
+                   QuantumNumber const& QShift,
+                   SimpleOperator const& UEven, SimpleOperator const& UOdd, StatesInfo const& SInfo)
+{
+   // physical state is A B (Lambda) C D (Lambda) ...
+   // All A,B,C,D,... are left canonical
+   // After even slice, the state is
+   // A (Lambda) B C (Lambda) D E (Lambda) ...
+   // In preparation for the odd slice, we rotate to
+   // Z A (Lambda) B C (Lambda) D E (Lambda) ...
+   // After the odd slice, we have
+   // Z (Lamda) A B (Lambda) C D (Lambda) ...
+   // which we need to rotate back to
+   // A B (Lambda) C D (Lambda) ..... Z (Lambda)
+   #pragma omp parallel for schedule(dynamic)
+   for (unsigned i = 0; i < Psi.size(); i += 2)
+   {
+      DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], UEven, SInfo);
+   }
+   // need to the pair that wraps around separately
+   Psi.push_front(delta_shift(Psi.back(), QShift));
+   Psi.pop_back();
+   #pragma omp parallel for schedule(dynamic)
+   for (unsigned i = 0; i < Psi.size(); i += 2)
+   {
+      DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], UOdd, SInfo);
+   }
+   Psi.push_back(delta_shift(Psi.front(), adjoint(QShift)));
+   Psi.pop_front();
+   Lambda.push_back(delta_shift(Lambda.front(), adjoint(QShift)));
+   Lambda.pop_front();
+}
 
 int main(int argc, char** argv)
 {
@@ -210,7 +257,8 @@ int main(int argc, char** argv)
                       options(desc).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") > 0 || vm.count("wavefunction") < 1 || vm.count("operator") < 1 || vm.count("timestep") < 1)
+      if (vm.count("help") > 0 || vm.count("wavefunction") < 1
+          || vm.count("operator") < 1 || vm.count("timestep") < 1)
       {
          print_copyright(std::cerr, "tools", "mp-itebd");
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
@@ -296,51 +344,45 @@ int main(int argc, char** argv)
       if (Psi.size() == 1)
          Psi = repeat(Psi, 2);
 
-      if (Psi.size() != 2)
+      if (Psi.size()%2 != 0)
       {
-         std::cerr << "mp-itebd: fatal: wavefunction must be exactly two sites long.\n";
+         std::cerr << "mp-itebd: fatal: wavefunction must be multiple of 2 sites.\n";
          return 1;
       }
 
       QuantumNumber QShift = Psi.qshift();
 
-      StateComponent A(Psi[0]);
-      StateComponent B(Psi[1]);
 
-      RealDiagonalOperator Lambda = Psi.lambda(2);
+      std::deque<StateComponent> PsiVec(Psi.begin(), Psi.end());
+      std::deque<RealDiagonalOperator> Lambda;
+
+      for (unsigned i = 2; i <= Psi.size(); i += 2)
+      {
+         Lambda.push_back(Psi.lambda(i));
+      }
 
       if (SaveEvery == 0)
          SaveEvery = N;
 
       // the initial half timestep
       int tstep = 1;
-      DoTEBD(A, B, Lambda, QShift, 1, EvenUHalf, SInfo);
-      DoTEBD(A, B, Lambda, QShift, -1, OddU, SInfo);
+      DoEvenOddStep(PsiVec, Lambda, QShift, EvenUHalf, OddU, SInfo);
       std::cout << "Timestep " << tstep << " time " << (InitialTime+tstep*Timestep) << '\n';
 
       while (tstep < N)
       {
          while (tstep % SaveEvery != 0)
          {
-            DoTEBD(A, B, Lambda, QShift, 1, EvenU, SInfo);
-            DoTEBD(A, B, Lambda, QShift, -1, OddU, SInfo);
+            DoEvenOddStep(PsiVec, Lambda, QShift, EvenU, OddU, SInfo);
             ++tstep;
             std::cout << "Timestep " << tstep << " time " << (InitialTime+tstep*Timestep) << '\n';
          }
 
          // evolve the final half step and save the wavefunction
-         // do this with a temporary copy, since if we continue then we do another slice anyway
-         StateComponent Ax = A;
-         StateComponent Bx = B;
-         RealDiagonalOperator Lambdax = Lambda;
-
-         DoTEBD(Ax, Bx, Lambdax, QShift, 1, EvenUHalf, SInfo);
+         LinearWavefunction Psi = DoEvenStep(PsiVec, Lambda, EvenUHalf, SInfo);
 
          // save the wavefunction
          std::cout << "Saving wavefunction\n";
-         LinearWavefunction Psi;
-         Psi.push_back(Ax);
-         Psi.push_back(Bx);
          MPWavefunction Wavefunction;
          std::string TimeStr = FormatDigits(InitialTime + tstep * Timestep, OutputDigits);
          InfiniteWavefunctionLeft PsiL = InfiniteWavefunctionLeft::Construct(Psi, QShift);
@@ -357,8 +399,7 @@ int main(int argc, char** argv)
 
          if (tstep+1 < N)
          {
-            DoTEBD(A, B, Lambda, QShift, 1, EvenU, SInfo);
-            DoTEBD(A, B, Lambda, QShift, -1, OddU, SInfo);
+            DoEvenOddStep(PsiVec, Lambda, QShift, EvenU, OddU, SInfo);
             ++tstep;
             std::cout << "Timestep " << tstep << " time " << (InitialTime+tstep*Timestep) << '\n';
          }

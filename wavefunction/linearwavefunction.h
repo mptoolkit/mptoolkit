@@ -48,9 +48,18 @@ class LinearWavefunction
       // construction from an array of handles
       template <typename FwdIter>
       LinearWavefunction(FwdIter first, FwdIter last)
-         : Data(first, last) { SList = this->Basis1().GetSymmetryList(); }
+         : Data(first, last) { if (first != last) SList = first->lock()->GetSymmetryList(); }
 
-      SymmetryList GetSymmetryList() const { return this->begin()->GetSymmetryList(); }
+      template <typename FwdIter>
+      LinearWavefunction(SymmetryList const& sl, FwdIter first, FwdIter last)
+         : SList(sl), Data(first, last) {}
+
+      // construction from a container of StateComponent's
+      template <typename FwdIter>
+      static
+      LinearWavefunction FromContainer(FwdIter first, FwdIter last);
+
+      SymmetryList GetSymmetryList() const { SList; }
 
       std::size_t size() const { return Data.size(); }
       bool empty() const { return Data.empty(); }
@@ -80,10 +89,10 @@ class LinearWavefunction
       const_iterator end() const { return const_iterator(Data.end()); }
 
       void push_front(value_type const& x)
-      { Data.push_front(handle_type(new value_type(x))); }
+      { Data.push_front(handle_type(new value_type(x))); if (SList.is_null()) SList = x.GetSymmetryList(); }
 
       void push_back(value_type const& x)
-      { Data.push_back(handle_type(new value_type(x))); }
+      { Data.push_back(handle_type(new value_type(x))); if (SList.is_null()) SList = x.GetSymmetryList(); }
 
       void push_front(LinearWavefunction const& x)
       {
@@ -94,6 +103,8 @@ class LinearWavefunction
             --I;
             this->push_front(*I);
          }
+         if (SList.is_null())
+            SList = x.GetSymmetryList();
       }
 
       void push_back(LinearWavefunction const& x)
@@ -103,6 +114,8 @@ class LinearWavefunction
          {
             this->push_front(*I);
          }
+         if (SList.is_null())
+            SList = x.GetSymmetryList();
       }
 
       // Because the items are stored by handle, we can't provide a
@@ -133,10 +146,18 @@ class LinearWavefunction
       const_base_iterator base_end() const { return Data.end(); }
 
       void push_front(handle_type const& x)
-     { Data.push_front(x); }
+      {
+         Data.push_front(x);
+         if (SList.is_null())
+            SList = x.lock()->GetSymmetryList();
+      }
 
       void push_back(handle_type const& x)
-      { Data.push_back(x); }
+      {
+         Data.push_back(x);
+         if (SList.is_null())
+            SList = x.lock()->GetSymmetryList();
+      }
 
       base_iterator insert(base_iterator pos, handle_type const& h)
       {
@@ -384,6 +405,20 @@ TruncateBasis2(StateComponent& A)
    // apply the truncation
    A = prod(A, herm(U));
    return prod(U, Trunc, QuantumNumber(Trunc.GetSymmetryList()));
+}
+
+// template definitions
+
+template <typename FwdIter>
+LinearWavefunction
+LinearWavefunction::FromContainer(FwdIter first, FwdIter last)
+{
+   LinearWavefunction Result;
+   while (first != last)
+   {
+      Result.push_back(*first++);
+   }
+   return Result;
 }
 
 #endif

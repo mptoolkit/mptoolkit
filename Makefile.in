@@ -278,15 +278,15 @@ dep : $(cxx_depend)
 
 # we don't need this rule (it doesnt work with repsect to dependency generation anyway)
 #% : %.o
-#	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ $(LIB) $(LIBS_$@) -o $@
+#	$(CXX) $(CXXFLAGS) $(CXXFLAGS_$@) $(LDFLAGS) $^ $(LIB) $(LIBS_$@) -o $@
 
 % : %.cpp
 	@$(MAKEDEPEND_INFO)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(filter %.o %.cpp, $^) $(LIB) $(LIBS_$@) -o $@
+	$(CXX) $(CXXFLAGS) $(CXXFLAGS_$@) $(LDFLAGS) $(filter %.o %.cpp, $^) $(LIB) $(LIBS_$@) -o $@
 
 %.o : %.cpp %.d
 	@$(MAKEDEPEND_INFO)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(CXXFLAGS_$@) -c $< -o $@
 
 %.o : %.f
 	$(F77) $(FFLAGS) -c $< -o $@
@@ -534,21 +534,16 @@ mp-imake-transverse-lattice-folded : triangular_operator.o infinitewavefunctionl
 mp-iexpectation-tri : infinitewavefunctionleft.o triangular_operator.o mpoperator.o packunpack.o
 mp-iwigner-eckart : infinitewavefunctionleft.o wigner_eckart.o
 
-
 LIBS_mp-ispectrum = $(LIBARPACK)
-
 LIBS_mp-ispectrum2 = $(LIBARPACK)
-
 LIBS_mp-aux-algebra = $(LIBARPACK)
-
 LIBS_mp-aux-matrix = $(LIBARPACK)
-
 LIBS_mp-fluctuation = $(LIBARPACK)
-
 LIBS_mp-ies = $(LIBARPACK)
-
 LIBS_mp-aux-project = $(LIBARPACK)
 
+#CXXFLAGS_mp-itebd.o = $(OPENMP_CXXFLAGS)
+#CXXFLAGS_mp-itebd = $(OPENMP_CXXFLAGS)
 
 #LIBS_mp-idmrg5 = $(LIBARPACK)
 

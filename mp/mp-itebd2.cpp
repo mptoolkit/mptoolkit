@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// mp/mp-itebd2.cpp
+// mp/mp-itebd.cpp
 //
 // Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
@@ -17,401 +17,435 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+#include "mpo/triangular_mpo.h"
+#include "wavefunction/infinitewavefunctionleft.h"
+#include "wavefunction/mpwavefunction.h"
 #include "quantumnumbers/all_symmetries.h"
-#include "mp-algorithms/lanczos.h"
 #include "pheap/pheap.h"
 #include "mp/copyright.h"
 #include "common/environment.h"
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 #include <iostream>
-#include "common/prog_opt_accum.h"
+#include "common/environment.h"
 #include "interface/inittemp.h"
-#include "mps/state_component.h"
-#include "mps/density.h"
-#include "mp-algorithms/random_wavefunc.h"
-#include "models/bosehubbard-spinless-u1.h"
-
-#include "models/spin-su2.h"
-#include "models/spin.h"
-#include "tensor/tensor_eigen.h"
-#include "tensor/regularize.h"
-#include "mps/infinitewavefunction.h"
-#include "tensor/tensor_exponential.h"
+#include "common/prog_options.h"
+#include "lattice/unitcell_mpo.h"
+#include "lattice/unitcell-parser.h"
+#include <cctype>
+#include "interface/inittemp.h"
 
 namespace prog_opt = boost::program_options;
 
-void RandomizeRowSigns(MatrixOperator& TruncL)
+// returns the number of digits of precision used in the decimal number f
+int Digits(std::string const& f)
 {
-   for (unsigned j = 0; j < TruncL.Basis1().size(); ++j)
+   std::string::const_iterator dot = std::find(f.begin(), f.end(), '.');
+   if (dot == f.end())
+      return 0;
+   ++dot;
+   std::string::const_iterator x = dot;
+   while (x != f.end() && isdigit(*x))
+      ++x;
+   if (x != f.end() && (*x == 'e' || *x == 'E'))
    {
-      for (int k = 0; k < TruncL.Basis1().dim(j); ++k)
-      {
-         int sign = ((rand() / 1000) % 2) * 2 - 1;
-         for (unsigned l = 0; l < TruncL.Basis2().size(); ++l)
-         {
-            if (iterate_at(TruncL.data(), j,l))
-            {
-               for (int m = 0; m < TruncL.Basis2().dim(l); ++m)
-               {
-                  TruncL(j,l)(k,m) *= sign;
-               }
-            }
-         }
-      }
+      // exponential notation
+      ++x;
+      int Exp = std::stoi(std::string(x, f.end()));
+      return std::max(0, int((x-dot) - Exp));
    }
+   return x-dot;
 }
 
-TruncationInfo
-DoIteration(StateComponent& A, RealDiagonalOperator& Center, StateComponent& B,
-            SimpleOperator const& EvolOperator,
-            StatesInfo const& SInfo, SimpleOperator const& EnergyOperator, double& Energy)
+std::string FormatDigits(double x, int Digits)
 {
-   // if the wavefunction has ~zero weight, things might get screwy
-   if (norm_frob(Center) < 1e-10)
-   {
-      std::cerr << "warning: Center matrix has small norm!\n";
-      //      Center = MakeRandomMatrixOperator(Center.Basis1(), Center.Basis2());
-      //      Center *= 1.0 / norm_frob(Center);    // normalize
-   }
+   std::ostringstream str;
+   str << std::fixed << std::setprecision(Digits) << std::setfill('0') << x;
+   return str.str();
+}
 
-   // coarse-grain the tensors
-   StateComponent Pair = local_tensor_prod(prod(A, Center), B);
+#if 0
+void DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
+            SimpleOperator const& U, StatesInfo const& Info)
+{
+   // Algorithm avoids matrix inversion.  Let A,B be left-orthogonalized.
+   // Let C^{s1,s2} = A^{s1} B^{s2}
+   // Let C'^{s1,s2} = U(C^{s1,s2}) is the unitary gate applied to C
 
+   // Let X^{s1,s2} = C'^{s1,s2} lambda_2
 
-   // bond energy prior to evolution
-   double Energy1 = inner_prod(Pair, local_prod(EnergyOperator, Pair)).real() / norm_frob(Pair);
+   // Do an SVD of X.  X^{s1,s2} = A'{s1} lambda_1 B'{s2}
+   // Use orthogonality of A': sum_{s1} A'\dagger{s1} A'{s1} = I
+   // sum_{s1} A'\dagger{s1} C'{s1,s2} = lambda_1 B'{s2} lambda_2^{-1} = G^{s2}
 
-   // apply the evolution operator
-   Pair = local_prod(EvolOperator, Pair);
+   // Then form D^{s2,s1} = G^{s2} A^{s1}
+   // and so on
 
-   // bond energy after to evolution
-   double Energy2 = inner_prod(Pair, local_prod(EnergyOperator, Pair)).real() / norm_frob(Pair);
+   StateComponent C = local_tensor_prod(A,B);
+   StateComponent Cu = local_prod(U, C);
 
-   Energy = (Energy1 + Energy2) / 2;  // this is rather hueristic, but a better guess then Energy2
-
-   // truncate
-   SingularDecomposition<StateComponent, StateComponent>
-      SL(Pair, Tensor::make_product_basis(A.LocalBasis(), B.LocalBasis()));
-
+   StateComponent X = Cu * Lambda;
+   AMatSVD SL(X, Tensor::ProductBasis<BasisList, BasisList>(A.LocalBasis(), B.LocalBasis()));
    TruncationInfo Info;
-   RealDiagonalOperator C;
-   SL.ConstructMatrices(SL.begin(), TruncateFixTruncationErrorRelative(SL.begin(),
-                                                                       SL.end(),
-                                                                       SInfo,
-                                                                       Info),
-                        A, C, B);
+   AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(),
+                                                               SInfo, Info);
+   std::cout << " Entropy=" << Info.TotalEntropy()
+             << " States=" << Info.KeptStates()
+             << " Trunc=" << Info.TruncationError()
+             << std::endl;
 
-   // normalize
-   C *= 1.0 / norm_frob(C);
-   Center = C;
+   SL.ConstructMatrices(SL.begin(), Cutoff, A, Lambda, B);
 
-   return Info;
+   StateComponent G = partial_prod(herm(A), Cu,
+                                   Tensor::ProductBasis<BasisList, BasisList>(A.LocalBasis(),
+                                                                              B.LocalBasis()));
+
+   B = A;
+   A = Lambda*G;
 }
-
-RealDiagonalOperator ProjectRealDiagonal(MatrixOperator const& M)
+#else
+LinearAlgebra::DiagonalMatrix<double>
+InvertDiagonal(LinearAlgebra::DiagonalMatrix<double> const& D, double Tol = 1E-15)
 {
-   RealDiagonalOperator Result(M.Basis1(), M.Basis2(), M.TransformsAs());
-
-   for (unsigned i = 0; i < M.Basis1().size(); ++i)
+   LinearAlgebra::DiagonalMatrix<double> Result(size1(D), size2(D));
+   for (unsigned i = 0; i < size1(D); ++i)
    {
-      if (iterate_at(M.data(), i, i))
-      {
-         Result(i,i) = LinearAlgebra::DiagonalMatrix<double>(M.Basis2().dim(i), M.Basis1().dim(i), 0.0);
-         for (int j = 0; j < std::min(M.Basis1().dim(i), M.Basis2().dim(i)); ++j)
-         {
-            Result(i,i)(j,j) = M(i,i)(j,j).real();
-         }
-      }
+      Result.diagonal()[i] = norm_frob(D.diagonal()[i]) < Tol ? 0.0 : 1.0 / D.diagonal()[i];
+   }
+   return Result;
+}
+RealDiagonalOperator
+InvertDiagonal(RealDiagonalOperator const& D, double Tol = 1E-15)
+{
+   RealDiagonalOperator Result(D.Basis1(), D.Basis2());
+   for (unsigned i = 0; i < D.Basis1().size(); ++i)
+   {
+      Result(i,i) = InvertDiagonal(D(i,i), Tol);
    }
    return Result;
 }
 
-InfiniteWavefunction MakeWavefunction(StateComponent const& A, MatrixOperator const& Lambda2,
-                                      StateComponent const& B, MatrixOperator const& Lambda1,
-                                      QuantumNumber const& QShift)
+void DoTEBD(std::deque<StateComponent>& L, std::deque<StateComponent>& R, RealDiagonalOperator& Lambda,
+            QuantumNumber const& QShift, int Polarity,
+            SimpleOperator const& U, StatesInfo const& SInfo)
 {
-   // Convert to an InfiniteWavefunction
-   InfiniteWavefunction Psi;
-   Psi.C_old = Lambda1;
-   Psi.Psi.push_back(A);
-   StateComponent BNew = prod(Lambda2, B);
-   MatrixOperator Lambda2New = TruncateBasis2(BNew);
-   Psi.Psi.push_back(BNew);
-   Psi.C_right = Lambda2New;
-   Psi.QShift = QShift;
-   return Psi;
+   StateComponent A = L.back(); L.pop_back();
+   StateComponent B = R.front(); R.pop_front();
+   DoTEBD(A, B, Lambda, QShift, Polarity, U, SInfo);
+
+   std::swap(L, R);
+   R.push_back(A);
+   L.push_front(B);
 }
 
-void LoadFromWavefunction(InfiniteWavefunction const& Psi,
-                          StateComponent& A, RealDiagonalOperator& Lambda2,
-                          StateComponent& B, RealDiagonalOperator& Lambda1, QuantumNumber& QShift)
-{
-   Lambda1 = ProjectRealDiagonal(Psi.C_old);
+//
+// Input is A, B, Lambda
+// A,B are in left-canonical form
+// Lambda01 Gamma1 Lambda12 Gamma2 Lambda23
+// A = Lambda01 Gamma1
+// B = Lambda12 Gamma2
+// Lambda = Lambda23
+//
+// On exit, A and B are in left canonical form,
+// final Lambda' = Lambda12
+//
 
-   A = Psi.Psi.get_front();
-   B = Psi.Psi.get_back();
-   B = prod(B, Psi.C_right);
-   Lambda2 = RealDiagonalOperator::make_identity(B.Basis1());
-   QShift = Psi.QShift;
-   //prod(InvertDiagonal(Lambda2, Epsilon), Psi.Psi.get_back());
-   //   Lambda2 = ProjectRealDiagonal(Psi.C_right);
+void DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
+            SimpleOperator const& U, StatesInfo const& SInfo)
+{
+   // simple algorithm with matrix inversion
+   RealDiagonalOperator LambdaSave = Lambda;
+   StateComponent C = local_tensor_prod(A,B);
+   StateComponent Cu = local_prod(U, C);
+   StateComponent X = Cu * Lambda;
+   AMatSVD SL(X, Tensor::ProductBasis<BasisList, BasisList>(A.LocalBasis(), B.LocalBasis()));
+   TruncationInfo Info;
+   AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(),
+                                                               SInfo, Info);
+   std::cout << " Entropy=" << Info.TotalEntropy()
+             << " States=" << Info.KeptStates()
+             << " Trunc=" << Info.TruncationError()
+             << std::endl;
+
+   SL.ConstructMatrices(SL.begin(), Cutoff, A, Lambda, B);
+
+   StateComponent G = B * InvertDiagonal(LambdaSave, 1E-8);
+
+   B = Lambda*G;
+
+   CHECK_EQUAL(A.Basis2(), B.Basis1());
+   CHECK_EQUAL(A.Basis2(), Lambda.Basis1());
+}
+#endif
+
+LinearWavefunction
+DoEvenStep(std::vector<StateComponent> Psi, std::deque<RealDiagonalOperator> Lambda,
+           SimpleOperator const& UEven, StatesInfo const& SInfo)
+{
+   for (unsigned i = 0; i < Psi.size(); i += 2)
+   {
+      DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], UEven, SInfo);
+   }
+   return LinearWavefunction(Psi.begin(), Psi.end());
+}
+
+void DoEvenOddStep(std::deque<StateComponent>& Psi, std::deque<RealDiagonalOperator>& Lambda,
+                   QuantumNumber const& QShift,
+                   SimpleOperator const& UEven, SimpleOperator const& UOdd, StatesInfo const& SInfo)
+{
+   // physical state is A B (Lambda) C D (Lambda) ...
+   // All A,B,C,D,... are left canonical
+   // After even slice, the state is
+   // A (Lambda) B C (Lambda) D E (Lambda) ...
+   // In preparation for the odd slice, we rotate to
+   // Z A (Lambda) B C (Lambda) D E (Lambda) ...
+   // After the odd slice, we have
+   // Z (Lamda) A B (Lambda) C D (Lambda) ...
+   // which we need to rotate back to
+   // A B (Lambda) C D (Lambda) ..... Z (Lambda)
+   for (unsigned i = 0; i < Psi.size(); i += 2)
+   {
+      DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], UEven, SInfo);
+   }
+   // need to the pair that wraps around separately
+   Psi.push_front(delta_shift(Psi.back(), QShift));
+   Psi.pop_back();
+   for (unsigned i = 0; i < Psi.size(); i += 2)
+   {
+      DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], UOdd, SInfo);
+   }
+   Psi.push_back(delta_shift(Psi.front(), adjoint(QShift)));
+   Psi.pop_front();
+   Lambda.push_back(delta_shift(Lambda.front(), adjoint(QShift)));
+   Lambda.pop_front();
 }
 
 int main(int argc, char** argv)
 {
-   ProcControl::Initialize(argv[0], 0, 0, true);
    try
    {
-      double DeltaTau = 0.0;
-      double DeltaT = 0.0;
-      double Epsilon = 1e-7;      // epsilon for inverse of singular values
+      int Verbose = 0;
+      std::string TimestepStr;  // so we can get the number of digits to use
+      std::string InitialTimeStr;
+      int N = 1;
+      int SaveEvery = 1;
+      std::string OpStr;
+      std::string InputFile;
+      std::string OutputPrefix;
+      std::string Operator;
+      std::string Operator2;
       int MinStates = 1;
-      int MaxStates = 100000;
+      int States = 100;
       double TruncCutoff = 0;
-      double EigenCutoff = -1;
-      std::string FName;
-      std::string HamStr;
-      bool CreateWavefunction = false;
-      int NumIter = 10;
-      QuantumNumber QShift;
-
-      double J = 1.0;
-      double U = 0;
-      double Lambda = 1.0;
-      int NMax = 3;
-
-      std::cout.precision(getenv_or_default("MP_PRECISION", 14));
+      double EigenCutoff = 1E-16;
+      int OutputDigits = 0;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Hamiltonian,H", prog_opt::value(&HamStr),
-          "model Hamiltonian.  Valid choices: itf, xxx-su2, bh-u1")
-         ("wavefunction,w", prog_opt::value(&FName),
-          "wavefunction file to evolve (required)")
-         ("max-states,m", prog_opt::value<int>(&MaxStates),
-          FormatDefault("Maximum number of states to keep", MaxStates).c_str())
+	 ("wavefunction,w", prog_opt::value(&InputFile), "input wavefunction")
+	 ("output,o", prog_opt::value(&OutputPrefix), "prefix for saving output files")
+	 ("operator", prog_opt::value(&Operator), "operator for the first slice ST decomposition")
+	 ("operator2", prog_opt::value(&Operator2), "operator for the second slice ST decomposition [optional]")
+	 ("timestep,t", prog_opt::value(&TimestepStr), "timestep (required)")
+	 ("num-timesteps,n", prog_opt::value(&N), FormatDefault("number of timesteps to calculate", N).c_str())
+	 ("save-timesteps,s", prog_opt::value(&SaveEvery), "save the wavefunction every s timesteps")
          ("min-states", prog_opt::value<int>(&MinStates),
           FormatDefault("Minimum number of states to keep", MinStates).c_str())
+         ("states,m", prog_opt::value(&States),
+          FormatDefault("number of states", States).c_str())
          ("trunc,r", prog_opt::value<double>(&TruncCutoff),
           FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
-         ("create,c", prog_opt::bool_switch(&CreateWavefunction),
-          "Create a new (random) wavefunction for the initial state, overwriting any existing file")
-         ("numiter,n", prog_opt::value(&NumIter),
-          FormatDefault("Number of timesteps to perform", NumIter).c_str())
-         ("time,t", prog_opt::value(&DeltaT),
-          FormatDefault("real part of the timestep per iteration", DeltaT).c_str())
-         ("tau", prog_opt::value(&DeltaTau),
-          FormatDefault("imaginary part of the timestep per iteration", DeltaTau).c_str())
-         ("epsilon", prog_opt::value(&Epsilon),
-          FormatDefault("Cutoff singular value for inversion", Epsilon).c_str())
-         ("lambda", prog_opt::value(&Lambda),
-          FormatDefault("transverse field strength (for itf hamiltonian)", Lambda).c_str())
-         ("J", prog_opt::value(&J),
-          FormatDefault("Hopping (for bh hamiltonian)", Lambda).c_str())
-         ("U", prog_opt::value(&U),
-          FormatDefault("Coulomb repulsion (for bh hamiltonian)", Lambda).c_str())
-         ("nmax", prog_opt::value(&NMax),
-          FormatDefault("Maximum number of particles (for bose-hubbard model)", NMax).c_str())
+         ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
+          "extra debug output [can be used multiple times]")
          ;
-
-      prog_opt::options_description opt;
-      opt.add(desc);
 
       prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
-                      options(opt).run(), vm);
+                      options(desc).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("wavefunction") == 0 || HamStr.empty())
+      if (vm.count("help") > 0 || vm.count("wavefunction") < 1
+          || vm.count("operator") < 1 || vm.count("timestep") < 1)
       {
-         print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: mp-itebd [options]\n";
+         print_copyright(std::cerr, "tools", "mp-itebd");
+         std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
          return 1;
       }
 
-      // we require 1 or more iterations
-      if (NumIter < 1)
+      std::cout.precision(getenv_or_default("MP_PRECISION", 14));
+      std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
+
+      if (Verbose > 0)
+         std::cout << "Loading wavefunction..." << std::endl;
+
+      mp_pheap::InitializeTempPHeap();
+      pvalue_ptr<MPWavefunction> PsiPtr = pheap::ImportHeap(InputFile);
+
+      InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
+
+      if (OutputPrefix.empty())
+         OutputPrefix = PsiPtr->Attributes()["Prefix"].as<std::string>();
+
+      if (OutputPrefix.empty())
       {
-         std::cerr << "mp-itebd: error: numiter must be > 0\n";
-         exit(1);
+         std::cerr << "mp-itebd: fatal: no output prefix specified\n";
+         return 1;
       }
 
-      // Set up the Hamiltonian
-      SiteBlock Site;
-      SimpleOperator BondHamiltonian;
-      if (HamStr == "itf")
+      if (InitialTimeStr.empty())
+         InitialTimeStr = PsiPtr->Attributes()["Time"].as<std::string>();
+
+      double InitialTime = InitialTimeStr.empty() ? 0.0 : stod(InitialTimeStr);
+
+      double Timestep = stod(TimestepStr);
+
+      if (OutputDigits == 0)
       {
-         std::cout << "Hamiltonian is transverse-field Ising, J=" << J << ", Lambda=" << Lambda << "\n";
-         Site = CreateSpinSite(0.5);
-         BondHamiltonian = J * 4.0 * tensor_prod(Site["Sz"], Site["Sz"])
-            + Lambda * (tensor_prod(Site["Sx"], Site["I"]) + tensor_prod(Site["I"], Site["Sx"]));
+         OutputDigits = std::max(Digits(InitialTimeStr), Digits(TimestepStr));
       }
-      else if (HamStr == "xxx-su2")
+
+      UnitCellMPO EvenOp, OddOp;
+      InfiniteLattice Lattice;
+      std::tie(EvenOp, Lattice) = ParseUnitCellOperatorAndLattice(Operator);
+      if (Operator2.empty())
       {
-         Site = CreateSU2SpinSite(0.5);
-         QuantumNumbers::QuantumNumber Ident(Site.GetSymmetryList());
-         BondHamiltonian = -sqrt(3.0) * tensor_prod(Site["S"], Site["S"], Ident);
-      }
-      else if (HamStr == "bh-u1")
-      {
-         std::cout << "Hamiltonian is Bose-Hubbard, J=" << J << ", U=" << U << "\n";
-         Site = CreateBoseHubbardSpinlessU1Site(NMax);
-         QuantumNumbers::QuantumNumber Ident(Site.GetSymmetryList());
-         BondHamiltonian = -J * (tensor_prod(Site["BH"], Site["B"]) + tensor_prod(Site["B"], Site["BH"]))
-            + (U / 4.0) * (tensor_prod(Site["N2"], Site["I"]) + tensor_prod(Site["I"], Site["N2"]));
+	 OddOp = translate(EvenOp, 1);
       }
       else
       {
-         std::cerr << "mp-itebd: error: unrecognized Hamiltonian\n";
-         exit(1);
+	 std::tie(EvenOp, Lattice) = ParseUnitCellOperatorAndLattice(Operator2);
       }
 
-      // Construct or load the MPS
-      StateComponent A,B;
-      RealDiagonalOperator Lambda1, Lambda2, Lambda1Inv, Lambda2Inv;
+      EvenOp.ExtendToCover(2, 0);
+      OddOp.ExtendToCover(2, 1);
 
-      if (CreateWavefunction)
+      if (EvenOp.offset() != 0 || EvenOp.size() != 2)
       {
-         std::cout << "Creating wavefunction.\n";
-         pheap::Initialize(FName, 1, mp_pheap::PageSize(), mp_pheap::CacheSize());
-
-         VectorBasis B1 = VectorBasis(make_vacuum_basis(Site.GetSymmetryList()));
-
-         InfiniteWavefunction Psi;
-         Psi.C_old = MatrixOperator::make_identity(B1);
-         Psi.C_right = MatrixOperator::make_identity(B1);
-         Psi.QShift = QuantumNumbers::QuantumNumber(Site.GetSymmetryList());
-         std::vector<BasisList> BasisVec(2, Site.Basis1().Basis());
-         Psi.Psi = CreateRandomWavefunction(BasisVec, QuantumNumbers::QuantumNumber(Site.GetSymmetryList()), 3);
-         LoadFromWavefunction(Psi, A, Lambda2, B, Lambda1, QShift);
+	 std::cerr << "mp-itebd: fatal: slice 1 operator not valid.\n";
+	 return 1;
       }
-      else
+
+      if (OddOp.offset() != 1 || OddOp.size() != 2)
       {
-         long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
-         pvalue_ptr<InfiniteWavefunction> PsiPtr = pheap::OpenPersistent(FName, CacheSize);
-         LoadFromWavefunction(*PsiPtr, A, Lambda2, B, Lambda1, QShift);
+	 std::cerr << "mp-itebd: fatal: slice 2 operator not valid.\n";
+	 return 1;
       }
 
-      // Initialize the inverse matrices
-      double Eps = Epsilon;
-      Lambda1Inv = InvertDiagonal(Lambda1, Eps);
-      Lambda2Inv = InvertDiagonal(Lambda2, Eps);
+      SimpleOperator EvenX = coarse_grain(EvenOp.MPO()).scalar();
+      SimpleOperator OddX = coarse_grain(EvenOp.MPO()).scalar();
+
+      SimpleOperator EvenU = Exponentiate(std::complex<double>(0, -Timestep) * EvenX);
+      SimpleOperator OddU = Exponentiate(std::complex<double>(0, -Timestep) * OddX);
+
+      SimpleOperator EvenUHalf = Exponentiate(std::complex<double>(0, -Timestep/2) * EvenX);
 
       StatesInfo SInfo;
       SInfo.MinStates = MinStates;
-      SInfo.MaxStates = MaxStates;
+      SInfo.MaxStates = States;
       SInfo.TruncationCutoff = TruncCutoff;
       SInfo.EigenvalueCutoff = EigenCutoff;
+
       std::cout << SInfo << '\n';
 
-      TruncationInfo Info;
-      // Initial evolution operator for a half timestep
-      SimpleOperator EvolOperator = Exponentiate(0.5 * std::complex<double>(-DeltaTau, -DeltaT) * BondHamiltonian);
+      if (Psi.size() == 1)
+         Psi = repeat(Psi, 2);
 
-      double Energy = 0.0;
-
-      Lambda2 = Lambda2Inv;
-      Info = DoIteration(A, Lambda2, B, EvolOperator, SInfo, BondHamiltonian, Energy);
-      Eps = std::max(Epsilon, Info.LargestDiscardedEigenvalue());
-      Lambda2Inv = InvertDiagonal(Lambda2, Eps);
-
-      A = prod(A, Lambda2);
-      B = delta_shift(prod(Lambda2, B), QShift);
-
-      // main iterations
-      EvolOperator = Exponentiate(std::complex<double>(-DeltaTau, -DeltaT) * BondHamiltonian);
-
-      //Lambda1 = delta_shift(Lambda1Inv, adjoint(QShift));
-      Lambda1 = Lambda1Inv;
-      Info = DoIteration(B, Lambda1, A, EvolOperator, SInfo, BondHamiltonian, Energy);
-      Eps = std::max(Epsilon, Info.LargestDiscardedEigenvalue());
-      Lambda1Inv = InvertDiagonal(Lambda1, Eps);
-
-      B = delta_shift(prod(B, Lambda1), adjoint(QShift));
-      A = prod(Lambda1, A);
-
-      std::cout << " BE=" << Energy
-                << " Ent=" << Info.TotalEntropy()
-                << " NS=" << Info.KeptStates()
-                << " TError=" << Info.TruncationError()
-                << " KEigen=" << Info.SmallestKeptEigenvalue()
-                << " DeltaT=" << DeltaTau
-                << std::endl;
-
-      for (int iter = 1; iter < NumIter; ++iter)
+      if (Psi.size()%2 != 0)
       {
-         // do we want to play around with the timestep?
-#if 0
-         DeltaTau *= 1.0 - 2e-5;
-         EvolOperator = Exponentiate(std::complex<double>(-DeltaTau, -DeltaT) * BondHamiltonian);
-#endif
+         std::cerr << "mp-itebd: fatal: wavefunction must be multiple of 2 sites.\n";
+         return 1;
+      }
 
-         Lambda2 = Lambda2Inv;
-         //         Lambda2 = delta_shift(Lambda2Inv, adjoint(QShift));
-         Info = DoIteration(A, Lambda2, B, EvolOperator, SInfo, BondHamiltonian, Energy);
-         Eps = std::max(Epsilon, Info.LargestDiscardedEigenvalue());
-         Lambda2Inv = InvertDiagonal(Lambda2, Eps);
-
-         std::cout << " BE=" << Energy
-                   << " Ent=" << Info.TotalEntropy()
-                   << " NS=" << Info.KeptStates()
-                   << " TError=" << Info.TruncationError()
-                   << " KEigen=" << Info.SmallestKeptEigenvalue()
-                   << " DeltaT=" << DeltaTau
-                   << std::endl;
-
-         A = prod(A, Lambda2);
-         B = delta_shift(prod(Lambda2, B), QShift);
-
-         //         Lambda1 = delta_shift(Lambda1Inv, adjoint(QShift));
-         Lambda1 = Lambda1Inv;
-         Info = DoIteration(B, Lambda1, A, EvolOperator, SInfo, BondHamiltonian, Energy);
-         Eps = std::max(Epsilon, Info.LargestDiscardedEigenvalue());
-         Lambda1Inv = InvertDiagonal(Lambda1, Eps);
+      QuantumNumber QShift = Psi.qshift();
 
 
-         std::cout << " BE=" << Energy
-                   << " Ent=" << Info.TotalEntropy()
-                   << " NS=" << Info.KeptStates()
-                   << " TError=" << Info.TruncationError()
-                   << " KEigen=" << Info.SmallestKeptEigenvalue()
-                   << " DeltaT=" << DeltaTau
-                   << std::endl;
+      std::vector<StateComponent> PsiVec(Psi.begin(), Psi.end());
+      std::deque<RealDiagonalOperator> Lambda;
 
-         B = delta_shift(prod(B, Lambda1), adjoint(QShift));
-         A = prod(Lambda1, A);
+      for (unsigned i = 2; i <= Psi.size(); ++i)
+      {
+         Lambda.push_back(Psi.lambda(2*(i+1)));
+      }
 
-      } // end for loop over main iterations
+      if (SaveEvery == 0)
+         SaveEvery = N;
 
+      // the initial half timestep
+      int tstep = 1;
+      DoEvenOddStep(Psi, Lambda, QShift, EvenUHalf, OddU, SInfo);
+      std::cout << "Timestep " << tstep << " time " << (InitialTime+tstep*Timestep) << '\n';
 
+      while (tstep < N)
+      {
+         while (tstep % SaveEvery != 0)
+         {
+            DoEvenOddStep(Psi, Lambda, QShift, EvenU, OddU, SInfo);
+            ++tstep;
+            std::cout << "Timestep " << tstep << " time " << (InitialTime+tstep*Timestep) << '\n';
+         }
 
-      // do a half-step, to finish off the 2nd order S-T decomposition
-      EvolOperator = Exponentiate(0.5 * std::complex<double>(-DeltaTau, -DeltaT) * BondHamiltonian);
+         // evolve the final half step and save the wavefunction
+         // do this with a temporary copy, since if we continue then we do another slice anyway
+         StateComponent Ax = A;
+         StateComponent Bx = B;
+         RealDiagonalOperator Lambdax = Lambda;
 
-      Lambda2 = Lambda2Inv;
-      Info = DoIteration(A, Lambda2, B, EvolOperator, SInfo, BondHamiltonian, Energy);
+         DoTEBD(Ax, Bx, Lambdax, QShift, 1, EvenUHalf, SInfo);
 
-      pvalue_ptr<InfiniteWavefunction> PsiPtr = new InfiniteWavefunction(MakeWavefunction(A, Lambda2, B, Lambda1,
-                                                                                          QShift));
-      orthogonalize(*PsiPtr.lock());
+         // save the wavefunction
+         std::cout << "Saving wavefunction\n";
+         LinearWavefunction Psi;
+         Psi.push_back(Ax);
+         Psi.push_back(Bx);
+         MPWavefunction Wavefunction;
+         std::string TimeStr = FormatDigits(InitialTime + tstep * Timestep, OutputDigits);
+         InfiniteWavefunctionLeft PsiL = InfiniteWavefunctionLeft::Construct(Psi, QShift);
+         // rotate to the A,B back into the right order
+         PsiL.rotate_left(1);
+         Wavefunction.Wavefunction() = std::move(PsiL);
+         Wavefunction.AppendHistory(EscapeCommandline(argc, argv));
+         Wavefunction.SetDefaultAttributes();
+         Wavefunction.Attributes()["Time"] = TimeStr;
+         Wavefunction.Attributes()["Prefix"] = OutputPrefix;
+         *PsiPtr.mutate() = std::move(Wavefunction);
 
-      pheap::ShutdownPersistent(PsiPtr);
+         pheap::ExportHeap(OutputPrefix + TimeStr, PsiPtr);
 
-      ProcControl::Shutdown();
+         if (tstep+1 < N)
+         {
+            DoTEBD(A, B, Lambda, QShift, 1, EvenU, SInfo);
+            DoTEBD(A, B, Lambda, QShift, -1, OddU, SInfo);
+            ++tstep;
+            std::cout << "Timestep " << tstep << " time " << (InitialTime+tstep*Timestep) << '\n';
+         }
+      }
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      pheap::Cleanup();
+      return 1;
+   }
+   catch (pheap::PHeapCannotCreateFile& e)
+   {
+      std::cerr << "Exception: " << e.what() << '\n';
+      if (e.Why == "File exists")
+         std::cerr << "Note: use --force (-f) option to overwrite.\n";
    }
    catch (std::exception& e)
    {
       std::cerr << "Exception: " << e.what() << '\n';
+      pheap::Cleanup();
       return 1;
    }
    catch (...)
    {
       std::cerr << "Unknown exception!\n";
+      pheap::Cleanup();
       return 1;
    }
 }

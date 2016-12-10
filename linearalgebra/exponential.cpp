@@ -24,7 +24,6 @@
 
 #include "eigen.h"
 #include "expokit/expokitf.h"
-#include "common/stackallocator.h"
 #include <algorithm>
 
 namespace LinearAlgebra
@@ -41,8 +40,8 @@ void Exponentiate(double t, int Size, std::complex<double> const* H, int ldH,
    // 2015-08-15: The sweet spot for accuracy of exponentials appears to be degree 9
    int ideg = 9;
    int lwork = 4*Size*Size + ideg + 1;
-   std::complex<double>* work = StackAlloc::allocate_type<std::complex<double> >(lwork);
-   int* ipiv = StackAlloc::allocate_type<int>(Size);
+   std::complex<double>* work = new std::complex<double>[lwork];
+   int* ipiv = new int[Size];
    int iexph;
    int ns;
    int iflag;
@@ -52,8 +51,8 @@ void Exponentiate(double t, int Size, std::complex<double> const* H, int ldH,
 
    memcpy(R, work+iexph-1, Size*Size*sizeof(std::complex<double>));
 
-   StackAlloc::deallocate_type<int>(ipiv, Size);
-   StackAlloc::deallocate_type<std::complex<double> >(work, lwork);
+   delete[] ipiv;
+   delete[] work;
 }
 
 } // namespace Private
