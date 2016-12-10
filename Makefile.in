@@ -133,11 +133,11 @@ parserobj = parser.o
 mpobj = $(mpoobj) $(mpsobj) $(latticeobj) $(wavefunctionobj)
 
 commonobj = copyright.o niftycounter.o poolallocator.o hash.o proccontrol.o \
-	    halfint.o stackallocator.o conflist.o terminal.o randutil.o
+	    halfint.o conflist.o terminal.o randutil.o
 
 debugobj = backtrace.o debughandler.o
 
-simplecommonobj = poolallocator.o stackallocator.o backtrace.o debughandler.o catchsegv.o
+simplecommonobj = poolallocator.o backtrace.o debughandler.o catchsegv.o
 
 expokitobj = zgpadm.o exponential.o tensor_exponential.o
 
@@ -568,16 +568,16 @@ kondo-exactdiag : $(expokitobj)
 
 # misc progs
 
-untridiagonalize : eigen.o stackallocator.o poolallocator.o
-tridiag-kspace : eigen.o stackallocator.o poolallocator.o
+untridiagonalize : eigen.o poolallocator.o
+tridiag-kspace : eigen.o poolallocator.o
 
 readsurf : oogl.o poolallocator.o
 
 get-k : $(commonobj) $(linearalgebraobj)
 
-seqgen : eigen.o stackallocator.o poolallocator.o
+seqgen : eigen.o poolallocator.o
 seqgen2 : $(commonobj) $(pstreamobj) $(pheapobj) $(quantumnumbersobj) $(linearalgebraobj) $(mpobj) $(tensorobj)
-seqgen-dm : eigen.o stackallocator.o poolallocator.o
+seqgen-dm : eigen.o poolallocator.o
 
 # old stuff for the pheap examples
 examples/pheap/example1 : $(commonobj)
@@ -610,7 +610,7 @@ spin1 : eigen.o
 
 # utils
 
-diag-list : eigen.o stackallocator.o poolallocator.o
+diag-list : eigen.o poolallocator.o
 
 # examples
 
