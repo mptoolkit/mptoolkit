@@ -667,7 +667,7 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
    }
 
    // Make it Hermitian
-   E.back() = 0.5 * (E.back() + adjoint(E.back()));
+   //   E.back() = 0.5 * (E.back() + adjoint(E.back()));
 
    // Stability fix: remove overall constant
    if (Verbose > 0)
@@ -714,6 +714,18 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
    return Energy;
 }
 
+std::complex<double>
+SolveSimpleMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
+                    TriangularMPO const& Op, double Tol, int Verbose)
+{
+   LinearWavefunction PsiLinear;
+   RealDiagonalOperator Lambda;
+   std::tie(PsiLinear, Lambda) = get_left_canonical(Psi);
+   MatrixOperator Rho = Lambda*Lambda;
+
+   return SolveSimpleMPO_Left(E, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
+}
+
 //
 // SolveSimpleMPO_Right
 //
@@ -750,18 +762,6 @@ struct SubProductRightProject
    MatrixOperator const& Proj;
    MatrixOperator const& Ident;
 };
-
-std::complex<double>
-SolveSimpleMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
-                    TriangularMPO const& Op, double Tol, int Verbose)
-{
-   LinearWavefunction PsiLinear;
-   RealDiagonalOperator Lambda;
-   std::tie(PsiLinear, Lambda) = get_left_canonical(Psi);
-   MatrixOperator Rho = Lambda*Lambda;
-
-   return SolveSimpleMPO_Left(E, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
-}
 
 std::complex<double>
 SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
@@ -865,7 +865,7 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
    CHECK_EQUAL(Res, 0);
 
    // Make it Hermitian
-   F.front() = 0.5 * (F.front() + adjoint(F.front()));
+   //   F.front() = 0.5 * (F.front() + adjoint(F.front()));
 
    // stability fix
    if (Verbose > 0)
@@ -877,27 +877,9 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
       std::cerr << "Spurius constant " << inner_prod(F.front(), Rho) << '\n';
    F.front() -= inner_prod(Rho, F.front()) * F.back();
 
-
-#if 0
-   // this doesn't work anyway, copied from the Left version
-   // residual
-   MatrixOperator R = F.front();
-   for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
-   {
-      R = operator_prod(herm(*I), R, *I);
-   }
-   R = delta_shift(R, QShift);
-   R += C;
-
-   TRACE("Residual norm")(norm_frob(F.front() - R));
-
-   F.front() = R;
-
-   // Make it Hermitian
-   F.front() = 0.5 * (F.front() + adjoint(F.front()));
-#endif
-
-   return Energy;
+   // Everything here is in the Hermitian representation, so the actual energy is
+   // the conjugate
+   return conj(Energy);
 }
 
 std::complex<double>

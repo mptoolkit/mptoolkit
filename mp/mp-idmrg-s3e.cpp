@@ -905,8 +905,12 @@ iDMRG::ShowInfo(char c)
 {
    std::cout << c
              << " Sweep=" << SweepNumber
-             << " Energy=" << Solver_.LastEnergy()
-             << " States=" << Info.KeptStates()
+             << " Energy=";
+   if (Solver_.is_complex())
+      std::cout << Solver_.LastEnergy();
+   else
+      std::cout << Solver_.LastEnergyReal();
+   std::cout << " States=" << Info.KeptStates()
              << " TruncError=" << Info.TruncationError()
              << " Entropy=" << Info.KeptEntropy()
              << " Fidelity=" << Solver_.LastFidelity()
@@ -1024,6 +1028,9 @@ int main(int argc, char** argv)
          ("seed", prog_opt::value<unsigned long>(), "random seed")
          ("gmrestol", prog_opt::value(&GMRESTol),
           FormatDefault("tolerance for GMRES linear solver for the initial H matrix elements", GMRESTol).c_str())
+	 ("solver", prog_opt::value<std::string>(), 
+	  "Eigensolver to use.  Supported values are lanzcos [default], arnoldi")
+	  
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
           ;
 
@@ -1421,6 +1428,10 @@ int main(int argc, char** argv)
       idmrg.Solver().FidelityScale = FidelityScale;
       idmrg.Solver().Verbose = Verbose;
       idmrg.Solver().EvolveDelta = EvolveDelta;
+      if (vm.count("solver"))
+      {
+	 idmrg.Solver().SetSolver(vm["solver"].as<std::string>());
+      }
 
       int ReturnCode = 0;
 

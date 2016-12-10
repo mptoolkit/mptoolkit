@@ -614,8 +614,10 @@ Assert<Dummy>::~Assert()
    if (!this->ShouldHandle) return;
 
    this->msg(ExtraBuf.str());
-   std::string FullMessage = Preamble + " in file " + File + " in function " + Func
-     + " at line " + ToString(Line) + ": " + Message + '\n';
+   std::string FullMessage = Preamble + " in file " + File 
+      + " at line " + ToString(Line) 
+      + " in function " + Func
+      + ": " + Message + '\n';
    if (!VariableList.empty())
    {
       int PadSize = int(Preamble.size() + 1);

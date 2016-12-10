@@ -48,6 +48,7 @@ int main(int argc, char** argv)
 
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("U(1)xSU(2) Triangular Hubbard model");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_t"   , "nearest-neighbor hopping between the apex sites of clusters")
          ("H_t2"  , "next-nearest-neighbor hopping between the apex sites of clusters")

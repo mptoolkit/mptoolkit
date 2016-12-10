@@ -54,7 +54,7 @@ extern double const ArnoldiTol = getenv_or_default("MP_ARNOLDI_TOL", 1E-15);
 extern double const InverseTol = getenv_or_default("MP_INVERSE_TOL", 1E-7);
 
 // the tol used in the orthogonalization can apparently be a bit smaller
-extern double const OrthoTol = getenv_or_default("MP_ORTHO_TOL", 1E-9);
+extern double const OrthoTol = getenv_or_default("MP_ORTHO_TOL", 1E-8);
 
 namespace
 {
@@ -178,8 +178,12 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
 
    DEBUG_TRACE(EtaL);
 
-   if (trace(LeftEigen).real() < 0)
-      LeftEigen = -LeftEigen;
+   // Adjust the phase of the eigenvector to maximize the trace (ie, make it positive)
+   std::complex<double> Alpha = conj(trace(LeftEigen));
+   Alpha *= 1.0 / norm_frob(Alpha);
+   LeftEigen *= Alpha;
+
+   //TRACE(LeftEigen)(EigenvaluesHermitian(LeftEigen));
 
    DEBUG_CHECK(norm_frob(LeftEigen - adjoint(LeftEigen)) < 1e-12)
       (norm_frob(LeftEigen - adjoint(LeftEigen)));
@@ -209,7 +213,7 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
 
    // LeftEigen = triple_prod(U, D*D, herm(U))
    DEBUG_CHECK(norm_frob(LeftEigen - triple_prod(herm(U), D*D, U)) < 1e-10)
-      (norm_frob(LeftEigen - triple_prod(herm(U), D*D, U)));
+      (norm_frob(LeftEigen - triple_prod(herm(U), D*D, U)))(D)(DInv);
 
    MatrixOperator A = delta_shift(D * U, QShift);
    MatrixOperator AInv = adjoint(U) * DInv;
@@ -230,6 +234,7 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    MatrixOperator R = delta_shift(D*D, QShift);
    A = delta_shift(LeftMultiply(PsiL, QShift)(delta_shift(I, adjoint(QShift))), QShift);
    CHECK(norm_frob(inner_prod(A-EtaL*I, R)) < 10*A.Basis1().total_dimension() * ArnoldiTol)(norm_frob(A-EtaL*I))(A)(I)(D);
+   TRACE(norm_frob(inner_prod(A-EtaL*I, R)));
 #endif
 
    // same for the right eigenvector, which will be the density matrix
@@ -258,11 +263,15 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    }
    DEBUG_TRACE(EtaR);
 
-   if (trace(RightEigen).real() < 0)
-      RightEigen = -RightEigen;
+   // Adjust the phase of the eigenvector to maximize the trace (ie, make it positive)
+   Alpha = conj(trace(RightEigen));
+   Alpha *= 1.0 / norm_frob(Alpha);
+   RightEigen *= Alpha;
+
+   //TRACE(trace(RightEigen));
 
    DEBUG_CHECK(norm_frob(RightEigen - adjoint(RightEigen)) < 1e-12)
-      (norm_frob(RightEigen - adjoint(RightEigen)));
+      (norm_frob(RightEigen - adjoint(RightEigen)))(RightEigen);
 
    D = RightEigen;
    U = DiagonalizeHermitian(D);

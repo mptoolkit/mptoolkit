@@ -2,8 +2,8 @@
       subroutine ZGPADM(ideg,m,t,H,ldh,wsp,lwsp,ipiv,iexph,ns,iflag)
 
       implicit none
-      double precision t
-      integer          ideg, m, ldh, lwsp, iexph, ns, iflag, ipiv(m)
+      real*8           t
+      integer*4        ideg, m, ldh, lwsp, iexph, ns, iflag, ipiv(m)
       complex*16       H(ldh,m), wsp(lwsp)
 
 *-----Purpose----------------------------------------------------------|

@@ -132,7 +132,7 @@ parserobj = parser.o
 
 mpobj = $(mpoobj) $(mpsobj) $(latticeobj) $(wavefunctionobj)
 
-commonobj = niftycounter.o poolallocator.o hash.o proccontrol.o \
+commonobj = copyright.o niftycounter.o poolallocator.o hash.o proccontrol.o \
 	    halfint.o stackallocator.o conflist.o terminal.o randutil.o
 
 debugobj = backtrace.o debughandler.o

@@ -19,6 +19,8 @@
 
 #include "eigensolver.h"
 #include "mp-algorithms/lanczos.h"
+#include "mp-algorithms/arnoldi.h"
+#include <boost/algorithm/string.hpp>
 
 struct MPSMultiply
 {
@@ -38,9 +40,47 @@ struct MPSMultiply
    StateComponent const& F;
 };
 
-LocalEigensolver::LocalEigensolver()
-   : FidelityScale(0.1), MaxTol(1e-4), MinTol(1-10), MinIter(2), MaxIter(20), Verbose(0)
+LocalEigensolver::Solver
+LocalEigensolver::SolverFromStr(std::string Str)
 {
+   Str = boost::to_lower_copy(Str);
+   if (Str == "lanczos")
+      return Solver::Lanczos;
+   else if (Str == "arnoldi")
+      return Solver::Arnoldi;
+   else if (Str == "davidson")
+      return Solver::Davidson;
+   return Solver::InvalidSolver;
+}
+
+std::string
+LocalEigensolver::SolverStr(LocalEigensolver::Solver s)
+{
+   if (s == Solver::Lanczos)
+      return "Lanczos";
+   else if (s == Solver::Arnoldi)
+      return "Arnoldi";
+   else if (s == Solver::Davidson)
+      return "Davidson";
+   return "Invalid Solver";
+}
+
+LocalEigensolver::LocalEigensolver()
+   : FidelityScale(0.1), MaxTol(1e-4), MinTol(1-10), MinIter(2), MaxIter(20), Verbose(0),
+     Solver_(Solver::Lanczos)
+{
+}
+
+LocalEigensolver::LocalEigensolver(Solver s)
+   : FidelityScale(0.1), MaxTol(1e-4), MinTol(1-10), MinIter(2), MaxIter(20), Verbose(0),
+     Solver_(s)
+{
+}
+
+void
+LocalEigensolver::SetSolver(Solver s)
+{
+   Solver_ = s;
 }
 
 void
@@ -50,7 +90,7 @@ LocalEigensolver::SetInitialFidelity(int UnitCellSize, double f)
    FidelityAv_.push(f);
 }
 
-double
+std::complex<double>
 LocalEigensolver::Solve(StateComponent& C,
                         StateComponent const& LeftBlockHam,
                         OperatorComponent const& H,
@@ -76,9 +116,22 @@ LocalEigensolver::Solve(StateComponent& C,
                    << C.Basis1().total_dimension() << " x " << C.LocalBasis().size()
                    << " x " << C.Basis2().total_dimension() << '\n';
       }
-      LastEnergy_ = Lanczos(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
-                            LastIter_, LastTol_, MinIter, Verbose-1);
-
+      if (Solver_ == Solver::Lanczos)
+      {
+	 LastEnergy_ = Lanczos(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
+			       LastIter_, LastTol_, MinIter, Verbose-1);
+      }
+      else if (Solver_ == Solver::Arnoldi)
+      {
+	 LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
+					      LastIter_, LastTol_, 
+					      LinearSolvers::SmallestMagnitude,
+					      true, Verbose-1);
+      }
+      else
+      {
+	 PANIC("Unsupported solver")(SolverStr(Solver_));
+      }
    }
    else
    {

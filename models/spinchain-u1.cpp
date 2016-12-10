@@ -65,7 +65,8 @@ int main(int argc, char** argv)
          ;
 
       OpDescriptions.add_functions()
-	 ("H_BQ"  , "Bilinear-biquadratic model, parameterized by theta", "spin 1", [&Spin]()->bool {return Spin==1;})
+	 ("H_BQ"  , "Bilinear-biquadratic model, parameterized by theta", "spin 1", 
+	  [&Spin]()->bool {return Spin==1;})
 	 ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -73,8 +74,7 @@ int main(int argc, char** argv)
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-         std::cerr << "Operators:\n" << OpDescriptions;
-         std::cerr << "only for spin-1: H_AKLT  - AKLT Hamiltonian H+J1 + (1/3)*H_B1\n";
+         std::cerr << OpDescriptions;
          return 1;
       }
 
@@ -104,8 +104,10 @@ int main(int argc, char** argv)
 
       Lattice.func("H_J1t_twist")("theta") =
          "0.5 * sum_unit(exp(i*theta)*Sp(0)*Sm(1) + exp(-i*theta)*Sm(0)*Sp(1))";
+      Lattice.func("H_J1t_twist").set_description("Twisted spin exchange");
 
       Lattice.func("H_J1_twist")("theta") = "H_J1z + H_J1t_twist{theta}";
+      Lattice.func("H_J1_twist").set_description("Twisted J1");
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);

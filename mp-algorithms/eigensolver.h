@@ -27,15 +27,23 @@
 class LocalEigensolver
 {
    public:
+      enum class Solver { InvalidSolver, Lanczos, Arnoldi, Davidson };
+
+      static Solver SolverFromStr(std::string str);
+
+      static std::string SolverStr(Solver s);
+
       LocalEigensolver();
+
+      LocalEigensolver(Solver s);
 
       void SetInitialFidelity(int UnitCellSize, double f);
 
       // Apply the solver
-      double Solve(StateComponent& C,
-                   StateComponent const& LeftBlockHam,
-                   OperatorComponent const& H,
-                   StateComponent const& RightBlockHam);
+      std::complex<double> Solve(StateComponent& C,
+				 StateComponent const& LeftBlockHam,
+				 OperatorComponent const& H,
+				 StateComponent const& RightBlockHam);
 
       // Eigensolver parameters
       // Eigensolver tolerance is min(sqrt(AverageFidelity()) * FidelityScale, MaxTol)
@@ -51,17 +59,25 @@ class LocalEigensolver
 
       int Verbose;
 
+      Solver GetSolver() const { return Solver_; }
+      void SetSolver(Solver s);
+      void SetSolver(std::string const& s) { this->SetSolver(SolverFromStr(s)); }
+
       // information on the state of the solver
-      double LastEnergy() const { return LastEnergy_; }
+      bool is_complex() const { return Solver_ == Solver::Arnoldi; }
+
+      std::complex<double> LastEnergy() const { return LastEnergy_; }
+      double LastEnergyReal() const { return LastEnergy_.real(); }
       double LastFidelity() const { return LastFidelity_; }
       double LastTol() const { return LastTol_; }
       double LastIter() const { return LastIter_; }
       double AverageFidelity() const { return FidelityAv_.value(); }
 
    private:
+      Solver Solver_;
       // information on the last solver application
       double LastFidelity_;
-      double LastEnergy_;
+      std::complex<double> LastEnergy_;
       double LastTol_;
       int LastIter_;
 

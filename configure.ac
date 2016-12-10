@@ -13,8 +13,9 @@ AC_CONFIG_MACRO_DIR([m4])
 m4_include([m4/macros.m4])
 AC_PREFIX_DEFAULT("$HOME")
 
-dnl debug flags -- needs to be called before any AC_PROG_* macros
+CXXFLAGS_MPTK_SAVE="$CXXFLAGS"
 
+dnl debug flags -- needs to be called before any AC_PROG_* macros
 AX_CHECK_ENABLE_DEBUG(no, [CONFIG_DEBUG], [CONFIG_NODEBUG], no)
 
 dnl Checks for compilers
@@ -22,25 +23,24 @@ AC_PROG_CXX
 dnl AC_PROG_F77
 AC_F77_LIBRARY_LDFLAGS
 
-dnl backup cxx flags, if nothing has been specified
-
-if test "x$CXXFLAGS" = "x" ; then
-   AC_MSG_NOTICE([Setting default CXXFLAGS])
-   CXXFLAGS="-O2"
-   AC_LANG_PUSH(C++)
-   AX_CHECK_COMPILE_FLAG("-march=native", [CXXFLAGS="${CXXFLAGS} -march=native"])
-   AX_CHECK_COMPILE_FLAG("-flto", [CXXFLAGS="${CXXFLAGS} -flto"])
-   AC_LANG_POP(C++)
-   AC_LANG_PUSH([Fortran 77])
-   AX_CHECK_COMPILE_FLAG("-flto", [FFLAGS="${FFLAGS} -flto"])
-   AC_LANG_POP([Fortran 77])
-   AC_MSG_NOTICE([CXXFLAGS are $CXXFLAGS])
-fi
-
 dnl put DNDEBUG on the command line, rather than in config.h
 if test "x$enable_debug" != "xyes" ; then
    CFLAGS="${CFLAGS} -DNDEBUG"
    CXXFLAGS="${CXXFLAGS} -DNDEBUG"
+
+   dnl backup cxx flags, if nothing has been specified.
+   if test "x$CXXFLAGS_MPTK_SAVE" = "x" ; then
+      AC_MSG_NOTICE([Setting default CXXFLAGS])
+      CXXFLAGS="${CXXFLAGS} -O2"
+      AC_LANG_PUSH(C++)
+      AX_CHECK_COMPILE_FLAG("-march=native", [CXXFLAGS="${CXXFLAGS} -march=native"])
+      AX_CHECK_COMPILE_FLAG("-flto", [CXXFLAGS="${CXXFLAGS} -flto"])
+      AC_LANG_POP(C++)
+      AC_LANG_PUSH([Fortran 77])
+      AX_CHECK_COMPILE_FLAG("-flto", [FFLAGS="${FFLAGS} -flto"])
+      AC_LANG_POP([Fortran 77])
+      AC_MSG_NOTICE([CXXFLAGS are $CXXFLAGS])
+   fi
 fi
 
 dnl C++11 support
