@@ -221,6 +221,9 @@ void qr_optimize(FiniteMPO& Op);
 // For non-abelian symmetries, this coarse-grain occurs from left to right.
 SimpleRedOperator coarse_grain(FiniteMPO const& x);
 
+// Does a N-1 coarse graining of an operator.  The length must be a multiple of N
+FiniteMPO coarse_grain(FiniteMPO const& Op, int N);
+
 // The opposite of coarse_grain - decompose an operator acting on the entire Hilbert space
 // into a FiniteMPO
 FiniteMPO fine_grain(SimpleOperator const& x,

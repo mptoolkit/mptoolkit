@@ -21,7 +21,7 @@
 #include "lattice/infinite-parser.h"
 #include "mp/copyright.h" // for EscapeArgument
 
-PStream::VersionTag LatticeVersion(3);
+PStream::VersionTag LatticeVersion(4);
 
 InfiniteLattice::InfiniteLattice() : UnitCell_(new UnitCell()), OwnUnitCell_(true)
 {

@@ -41,7 +41,8 @@ class UnitCellMPO
       UnitCellMPO() = default;
 
       UnitCellMPO(SiteListPtrType const& SiteList_, FiniteMPO Op_,
-                  LatticeCommute Com_, int Offset_ = 0, std::string Description = "");
+                  LatticeCommute Com_, int Offset_ = 0, std::string Description = "",
+		  int CoarseGrain_ = 1);
 
       // When we assign a UnitCellMPO, we don't want to copy the description
       // if it has already been set. Hence we need a custom assignment, and therefore
@@ -58,6 +59,9 @@ class UnitCellMPO
 
       // returns the size of the unit cell
       int unit_cell_size() const { return SiteList->size(); }
+
+      // if the operator has been coarse-grained, then return the scale factor
+      int coarse_grain_factor() const { return CoarseGrain; }
 
       // The offset - the site number of the first site of the MPO.
       // This must be a multiple of the unit cell size.
@@ -137,9 +141,11 @@ class UnitCellMPO
       LatticeCommute Com;
       int Offset;
       std::string Description;
+      int CoarseGrain;
 
       friend PStream::opstream& operator<<(PStream::opstream& out, UnitCellMPO const& L);
       friend PStream::ipstream& operator>>(PStream::ipstream& in, UnitCellMPO& L);
+      friend UnitCellMPO coarse_grain(UnitCellMPO const& Op, int N);
 };
 
 std::ostream& operator<<(std::ostream& out, UnitCellMPO const& Op);
@@ -200,6 +206,16 @@ UnitCellMPO inv_adjoint(UnitCellMPO const& x);
 // the unit cell size.  TODO: relax this restriction as long as the
 // SiteList is invariant under the shift
 UnitCellMPO translate(UnitCellMPO x, int Sites);
+
+// N into 1 coarse graining
+UnitCellMPO coarse_grain(UnitCellMPO const& Op, int N);
+
+inline
+UnitCellMPO coarse_grain(UnitCellMPO const& Op, int N)
+{
+   return UnitCellMPO(Op.SiteList, coarse_grain(Op.Op, N), Op.Com, Op.Offset, Op.Description,
+		      Op.CoarseGrain*N);
+}
 
 // Constructs an identity MPO from a given unit cell
 UnitCellMPO MakeIdentityFrom(UnitCellMPO const& x);

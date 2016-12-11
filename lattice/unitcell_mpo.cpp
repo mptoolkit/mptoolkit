@@ -22,8 +22,8 @@
 #include "common/statistics.h"
 
 UnitCellMPO::UnitCellMPO(SiteListPtrType const& SiteList_, FiniteMPO Op_, LatticeCommute Com_, int Offset_,
-                         std::string Description_)
-   : SiteList(SiteList_), Op(std::move(Op_)), Com(Com_), Offset(Offset_), Description(std::move(Description_))
+                         std::string Description_, int CoarseGrain_)
+   : SiteList(SiteList_), Op(std::move(Op_)), Com(Com_), Offset(Offset_), Description(std::move(Description_)), CoarseGrain(CoarseGrain_)
 {
 }
 
@@ -36,6 +36,7 @@ UnitCellMPO::operator=(UnitCellMPO const& c)
    Offset = c.Offset;
    if (Description.empty())
       Description = c.Description;
+   CoarseGrain = c.CoarseGrain;
 }
 
 UnitCellMPO&
@@ -47,6 +48,7 @@ UnitCellMPO::operator=(UnitCellMPO&& c)
    Offset = c.Offset;
    if (Description.empty())
       Description = std::move(c.Description);
+   CoarseGrain = c.CoarseGrain;
    return *this;
 }
 
@@ -54,7 +56,7 @@ extern PStream::VersionTag LatticeVersion;
 
 PStream::opstream& operator<<(PStream::opstream& out, UnitCellMPO const& L)
 {
-   out << L.SiteList << L.Op << L.Com << L.Offset << L.Description;
+   out << L.SiteList << L.Op << L.Com << L.Offset << L.Description << L.CoarseGrain;
    return out;
 }
 
@@ -69,6 +71,10 @@ PStream::ipstream& operator>>(PStream::ipstream& in, UnitCellMPO& L)
    {
       L.Description = "";
    }
+   if (in.version_of(LatticeVersion) >= 4)
+   {
+      in >> L.CoarseGrain;
+   }
    return in;
 }
 
@@ -76,6 +82,7 @@ std::ostream& operator<<(std::ostream& out, UnitCellMPO const& Op)
 {
    out << "Unit cell operator starts at offset " << Op.offset() << ", size " << Op.size() << '\n';
    out << "Commutes: " << Op.Commute() << '\n';
+   out << "Coarse grain: " << Op.coarse_grain_factor() << '\n';
    out << Op.MPO();
    return out;
 }

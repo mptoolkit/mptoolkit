@@ -560,6 +560,86 @@ struct push_fsup
    std::stack<ElementType >& eval;
 };
 
+// convert the top of the expression stack from a number of cells
+// to a number of sites, by multiplying by the unit cell size
+struct scale_cells_to_sites
+{
+   scale_cells_to_sites(UnitCell const& Cell_, int NumCells_,
+                        std::stack<ElementType>& eval_)
+      : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
+
+   void operator()(char const* a, char const*) const
+   {
+      try
+      {
+         int Cells = pop_int(eval);
+         eval.push(std::complex<double>(double(Cells*Cell.size())));
+      }
+      catch (ParserError const& p)
+      {
+         throw ParserError::AtPosition(p, a);
+      }
+      catch (std::exception const& p)
+      {
+         throw ParserError::AtPosition(p, a);
+      }
+      catch (...)
+      {
+         throw;
+      }
+   }
+
+   UnitCell const& Cell;
+   int NumCells;
+   std::stack<ElementType >& eval;
+};
+
+// push the number of sites in the unit cell onto the top of the expression stack
+struct push_number_of_sites
+{
+   push_number_of_sites(UnitCell const& Cell_, int NumCells_,
+                        std::stack<ElementType>& eval_)
+      : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
+
+   void operator()(char const*, char const*) const
+   {
+      eval.push(std::complex<double>(double(Cell.size())));
+   }
+
+   UnitCell const& Cell;
+   int NumCells;
+   std::stack<ElementType >& eval;
+};
+
+
+struct push_coarse_grain
+{
+   push_coarse_grain(UnitCell const& Cell_, int NumCells_,
+                 std::stack<ElementType>& eval_)
+      : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
+
+   void operator()(char const* Start, char const* End) const
+   {
+      ElementType Op = eval.top();
+      eval.pop();
+
+      int Sites = pop_int(eval);
+      if (Sites <= 0)
+         throw ParserError::AtRange(ColorHighlight("coarse_grain:")
+                                    + " canot coarse-grain to zero or negative size!",
+                                    Start, End);
+
+      UnitCellMPO TOp = boost::get<UnitCellMPO>(Op);
+      TOp = coarse_grain(TOp, Sites);
+      eval.push(ElementType(TOp));
+   }
+
+   UnitCell const& Cell;
+   int NumCells;
+   std::stack<ElementType >& eval;
+};
+
+
 
 } // namespace UP
 
@@ -650,10 +730,27 @@ struct UnitCellParser : public grammar<UnitCellParser>
 
          sq_bracket_expr = '[' >> expression >> ']';
 
-         expression_string = lexeme_d[+((anychar_p - chset<>("()"))
-                                        | (ch_p('(') >> expression_string >> ch_p(')')))];
+         num_cells_t = (eps_p((str_p("cells") | str_p("sites")) >> '=')
+                      >> ((str_p("cells") >> '=' >> expression_t >> ',')
+                          | (str_p("sites") >> '=' >> expression_t >> ',')));
 
-         fsup_t = str_p("fsup") >> '(' >> expression >> ',' >> expression >> ',' >> expression_string >> ')';
+         num_cells = (eps_p((str_p("cells") | str_p("sites")) >> '=')
+                      >> ((str_p("cells") >> '=' >> expression >> ',')
+                          [scale_cells_to_sites(self.Cell, self.NumCells, self.eval)]
+                          | (str_p("sites") >> '=' >> expression >> ',')))
+            | eps_p[push_number_of_sites(self.Cell, self.NumCells, self.eval)];
+
+         coarse_grain_expression_t = str_p("coarse_grain")
+            >> '('
+            >> (num_cells_t
+                >> expression >> ')');
+	 
+         coarse_grain_expression = str_p("coarse_grain")
+            >> '('
+            >> (num_cells
+                >> expression >> ')')[push_coarse_grain(self.Cell, self.NumCells, self.eval)];
+
+         fsup_t = str_p("fsup") >> '(' >> expression_t >> ',' >> expression_t >> ',' >> expression_string >> ')';
 
          fsup = str_p("fsup") >> '(' >> expression >> ',' >> expression >> ','
                               >> expression_string[push_fsup(self.Cell, self.NumCells, self.eval)]
@@ -831,6 +928,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
             |   prod_expression_t
             |   commutator_bracket_t
             |   fsup_t
+            |   coarse_grain_expression_t
             |   swapb_cell_expr_t
             |   swapb_site_expr_t
             |   swap_cell_expr_t
@@ -852,6 +950,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
             |   prod_expression
             |   commutator_bracket
             |   fsup
+	    |   coarse_grain_expression
             |   swapb_cell_expr
             |   swapb_site_expr
             |   swap_cell_expr
@@ -921,7 +1020,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
          string_expression,
          unary_function, binary_function,
          commutator_bracket,
-         factor, pow_term, term, expression;
+         factor, pow_term, term, expression, num_cells, coarse_grain_expression;
 
       rule<ScannerT> real_t, imag_t, identifier_t, quantumnumber_t,
          parameter_t, named_parameter_t, parameter_list_t,
@@ -935,7 +1034,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
          string_expression_t,
          unary_function_t, binary_function_t,
          commutator_bracket_t,
-         factor_t, pow_term_t, term_t, expression_t;
+         factor_t, pow_term_t, term_t, expression_t, num_cells_t, coarse_grain_expression_t;
 
       rule<ScannerT> const& start() const { return expression; }
    };
