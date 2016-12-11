@@ -59,7 +59,7 @@ class LinearWavefunction
       static
       LinearWavefunction FromContainer(FwdIter first, FwdIter last);
 
-      SymmetryList GetSymmetryList() const { SList; }
+      SymmetryList GetSymmetryList() const { return SList; }
 
       std::size_t size() const { return Data.size(); }
       bool empty() const { return Data.empty(); }

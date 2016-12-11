@@ -155,7 +155,6 @@ LinearWavefunction WavefunctionFromConfiguration(WavefunctionDesc const& Psi, st
 
    MatrixOperator Center(B2, B2, Ident);
    Center(0,0) = LinearAlgebra::Matrix<double>(1,1,1);
-      
    for (int i = Basis.size()-1; i >= 0; --i)
    {
       //      TRACE(i)(Psi.Height[i]);
@@ -170,7 +169,6 @@ LinearWavefunction WavefunctionFromConfiguration(WavefunctionDesc const& Psi, st
       Result.push_front(R);
       B2 = B1;
    }
-   
    return Result;
 }
 
@@ -179,13 +177,11 @@ LinearWavefunction CreateRandomWavefunction(std::vector<BasisList> const& Basis,
 					    QuantumNumber const& RightBoundary, int NConfig)
 {
    LinearWavefunction Result;
-   
    for (int i = 0; i < NConfig; ++i)
    {
       WavefunctionDesc Psi = CreateRandomConfiguration(Basis, q, Beta, RightBoundary);
       Result = Result + (randutil::rand()*2-1) * WavefunctionFromConfiguration(Psi, Basis, RightBoundary);
    }
-   
    return Result;
 }
 

@@ -922,7 +922,7 @@ iDMRG::ShowInfo(char c)
 
 int main(int argc, char** argv)
 {
-   ProcControl::Initialize(argv[0], 0, 0, true);
+   ProcControl::Initialize(argv[0], 0, 0, true, false);
    try
    {
       // flush cout if we write to cerr
@@ -1028,9 +1028,9 @@ int main(int argc, char** argv)
          ("seed", prog_opt::value<unsigned long>(), "random seed")
          ("gmrestol", prog_opt::value(&GMRESTol),
           FormatDefault("tolerance for GMRES linear solver for the initial H matrix elements", GMRESTol).c_str())
-	 ("solver", prog_opt::value<std::string>(), 
+	 ("solver", prog_opt::value<std::string>(),
 	  "Eigensolver to use.  Supported values are lanzcos [default], arnoldi")
-	  
+
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
           ;
 
@@ -1217,9 +1217,6 @@ int main(int argc, char** argv)
          std::vector<BasisList> FullBL = BL;
          while (int(FullBL.size()) < WavefuncUnitCellSize)
             std::copy(BL.begin(), BL.end(), std::back_inserter(FullBL));
-
-         QShift = QuantumNumbers::QuantumNumber(HamMPO[0].GetSymmetryList(), TargetState);
-         std::cout << "Target quantum number = " << QShift << '\n';
 
          QuantumNumber LBoundary, RBoundary;
          if (BoundaryState.empty())
