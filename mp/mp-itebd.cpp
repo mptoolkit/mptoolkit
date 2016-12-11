@@ -152,8 +152,8 @@ DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
    AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(),
                                                                SInfo, Info);
    SL.ConstructMatrices(SL.begin(), Cutoff, A, Lambda, B);
-
-   TRACE(norm_frob_sq(Lambda));
+   // normalize
+   Lambda *= 1.0 / norm_frob(Lambda);
 
    StateComponent G = B * InvertDiagonal(LambdaSave, 1E-8);
 
