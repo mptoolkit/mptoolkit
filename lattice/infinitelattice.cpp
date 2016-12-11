@@ -411,10 +411,10 @@ operator>>(PStream::ipstream& in, InfiniteLattice& L)
 {
    PStream::VersionSentry Sentry(in, LatticeVersion, in.read<int>());
 
-   if (Sentry.version() > 3)
+   if (Sentry.version() > 4)
    {
       PANIC("This program is too old to read this lattice file format,"
-            "  Maximum readable version number is 2")(Sentry.version());
+            "  Maximum readable version number is 4")(Sentry.version());
    } else if (Sentry.version() < 0)
    {
       PANIC("Lattice file is too old, please reconstruct the lattice."
