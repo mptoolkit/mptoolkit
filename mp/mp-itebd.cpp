@@ -420,8 +420,6 @@ int main(int argc, char** argv)
          MPWavefunction Wavefunction;
          std::string TimeStr = FormatDigits(InitialTime + tstep * Timestep, OutputDigits);
          InfiniteWavefunctionLeft PsiL = InfiniteWavefunctionLeft::Construct(Psi, QShift);
-         // rotate to the A,B back into the right order
-         PsiL.rotate_left(1);
          Wavefunction.Wavefunction() = std::move(PsiL);
          Wavefunction.AppendHistory(EscapeCommandline(argc, argv));
          Wavefunction.SetDefaultAttributes();
