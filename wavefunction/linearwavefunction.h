@@ -348,7 +348,7 @@ double scalar_difference_sq(LinearWavefunction const& x, LinearWavefunction cons
 inline
 double scalar_difference(LinearWavefunction const& x, LinearWavefunction const& y)
 {
-   return std::sqrt(scalar_difference(x,y));
+   return std::sqrt(scalar_difference_sq(x,y));
 }
 
 // Truncate the wavefunction to the given parameters.  If ShowStates=true, some info is written to std::cerr

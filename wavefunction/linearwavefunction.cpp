@@ -86,6 +86,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, LinearWavefunction& psi)
    // so fix it up if it isn't defined properly
    if (psi.SList.is_null() && !psi.Data.empty())
       psi.SList = psi.Data.front().lock()->GetSymmetryList();
+   return in;
 }
 
 LinearWavefunction operator*(double a, LinearWavefunction const& x)

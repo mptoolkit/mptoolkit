@@ -34,7 +34,7 @@ QuantumNumber::QuantumNumber(SymmetryList const& qL, std::string const& Str)
   : RepLabelBase<QuantumNumber>(qL.GetSymmetryListImpl(), qL.QuantumNumberSize())
 {
    QN_TRACE("Constructing from string ")(Str);
-   std::string::const_iterator beg = Str.begin(), end = Str.end(), next = Str.begin();
+   std::string::const_iterator beg = Str.begin(), end = Str.end();
 
    for (int i = 0; i < qL.NumSymmetries(); ++i)
    {

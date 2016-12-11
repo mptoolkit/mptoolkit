@@ -27,7 +27,7 @@
 #define PHEAP_H_HUIHFE89Y54T98YA89TATP5ATO
 
 #include "common/trace.h"
-#include "common/atomic.h"
+#include "common/atomicrefcount.h"
 #include "common/poolallocator.h"
 #include "common/mutex.h"
 #include "common/hash_map.h"

@@ -307,7 +307,7 @@ T* PHeapObject::Lock()
          // we cannot increment the lock count until the object is loaded.
          // we also need a memory barrier here so that the object's memory
          // is coherent before the lock count becomes non-zero.
-         write_memory_barrier();
+         //         write_memory_barrier();
          ++LockCount;
 
          return Ptr;

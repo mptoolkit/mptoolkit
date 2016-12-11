@@ -58,7 +58,7 @@ template <typename Key, typename T, class HashFun, class Cmp, class EKey, class 
 template <class Iter>
 hash_table<Key, T, HashFun, Cmp, EKey, CValue>::hash_table(Iter first, Iter last)
   : hf(hasher()), KeyCompare(key_equal()), KeyExtractor(EKey()), ValueCtor(CValue()),
-    Size(0), RehashSize(Private::DefaultMaxLoadFactor * Private::MinBuckets),
+    Size(0), RehashSize(size_type(Private::DefaultMaxLoadFactor * Private::MinBuckets)),
   NumBuckets(Private::MinBuckets), MaxLoadFactor(Private::DefaultMaxLoadFactor)
 #if defined(HASHTABLE_POWER2)
     , Mask(Private::MinMask)

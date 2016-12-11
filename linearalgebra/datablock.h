@@ -35,7 +35,7 @@
 
 #include <stdlib.h>
 #include <algorithm>
-#include "common/atomic.h"
+#include "common/atomicrefcount.h"
 #include "common/construct_array.h"
 #include "common/trace.h"
 #include <memory>

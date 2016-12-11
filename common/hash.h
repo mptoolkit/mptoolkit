@@ -97,12 +97,12 @@ uint32_t hash_bytes(unsigned char const* k, size_t length, uint32_t initval = 0x
 // char*, char const* (assumed to be C-style strings), std::string,
 // void* and void const* (hashes on the value of the pointer).
 
-template <typename Key> class hash;
+template <typename Key> struct hash;
 
 // class for calculating a hash from arbitary data.
 // Possibly this should be templated on a hash function?
 // Currently we use the hash_bytes() function.
-class hash_buffer
+struct hash_buffer
 {
    public:
       hash_buffer() {}

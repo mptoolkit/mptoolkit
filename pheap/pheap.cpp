@@ -20,10 +20,11 @@
 #include "config.h"
 #include "pheap.h"
 #include "common/hash.h"
-#include "common/atomic.h"
+#include "common/atomicrefcount.h"
 #include "pagestream.h"
 #include <iomanip>
 #include <set>
+#include <atomic>
 
 namespace pheap
 {
@@ -50,7 +51,7 @@ struct GlobalHeapDataType
    GlobalHeapType GlobalHeap;
    pthread::mutex HeapMutex;
    BlockFileSystem* FileSystem;
-   atomic<id_type> SequenceNumber;
+   std::atomic<id_type> SequenceNumber;
    id_type InitialSequenceNumber;
    pthread::mutex PendingFlushMutex;
    std::set<PHeapObject*> PendingFlushList;
@@ -112,7 +113,7 @@ pthread::mutex& GlobalHeapMutex()
    return GlobalHeapDataType::Data->HeapMutex;
 }
 
-atomic<id_type>& SequenceNumber()
+std::atomic<id_type>& SequenceNumber()
 {
   return GlobalHeapDataType::Data->SequenceNumber;
 }

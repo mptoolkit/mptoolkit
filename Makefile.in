@@ -542,8 +542,8 @@ LIBS_mp-fluctuation = $(LIBARPACK)
 LIBS_mp-ies = $(LIBARPACK)
 LIBS_mp-aux-project = $(LIBARPACK)
 
-#CXXFLAGS_mp-itebd.o = $(OPENMP_CXXFLAGS)
-#CXXFLAGS_mp-itebd = $(OPENMP_CXXFLAGS)
+CXXFLAGS_mp-itebd.o = $(OPENMP_CXXFLAGS)
+CXXFLAGS_mp-itebd = $(OPENMP_CXXFLAGS)
 
 #LIBS_mp-idmrg5 = $(LIBARPACK)
 

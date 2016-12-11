@@ -55,7 +55,7 @@
 #if !defined(PHEAPFSV4_H_VEUIOH8RTY89YG78Y7834R8934Y89EYRE)
 #define PHEAPFSV4_H_VEUIOH8RTY89YG78Y7834R8934Y89EYRE
 
-#include "common/atomic.h"
+#include "common/atomicrefcount.h"
 #include "common/mutex.h"
 #include "common/inttype.h"
 #include "pagefile.h"

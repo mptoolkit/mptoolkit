@@ -114,6 +114,7 @@ InvertDiagonal(LinearAlgebra::DiagonalMatrix<double> const& D, double Tol = 1E-1
    }
    return Result;
 }
+
 RealDiagonalOperator
 InvertDiagonal(RealDiagonalOperator const& D, double Tol = 1E-15)
 {
@@ -137,8 +138,9 @@ InvertDiagonal(RealDiagonalOperator const& D, double Tol = 1E-15)
 // final Lambda' = Lambda12
 //
 
-void DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
-            SimpleOperator const& U, StatesInfo const& SInfo)
+TruncationInfo
+DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
+       SimpleOperator const& U, StatesInfo const& SInfo)
 {
    // simple algorithm with matrix inversion
    RealDiagonalOperator LambdaSave = Lambda;
@@ -149,12 +151,9 @@ void DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
    TruncationInfo Info;
    AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(),
                                                                SInfo, Info);
-   std::cout << " Entropy=" << Info.TotalEntropy()
-             << " States=" << Info.KeptStates()
-             << " Trunc=" << Info.TruncationError()
-             << std::endl;
-
    SL.ConstructMatrices(SL.begin(), Cutoff, A, Lambda, B);
+
+   TRACE(norm_frob_sq(Lambda));
 
    StateComponent G = B * InvertDiagonal(LambdaSave, 1E-8);
 
@@ -162,6 +161,8 @@ void DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
 
    CHECK_EQUAL(A.Basis2(), B.Basis1());
    CHECK_EQUAL(A.Basis2(), Lambda.Basis1());
+
+   return Info;
 }
 #endif
 
@@ -169,11 +170,22 @@ LinearWavefunction
 DoEvenStep(std::deque<StateComponent> Psi, std::deque<RealDiagonalOperator> Lambda,
            SimpleOperator const& UEven, StatesInfo const& SInfo)
 {
+   unsigned Sz = Psi.size();
+   std::vector<TruncationInfo> TInfo(Sz/2);
    #pragma omp parallel for schedule(dynamic)
-   for (unsigned i = 0; i < Psi.size(); i += 2)
+   for (unsigned i = 0; i < Sz; i += 2)
    {
-      DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], UEven, SInfo);
+      TInfo[i/2] = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], UEven, SInfo);
    }
+   for (unsigned i = 0; i < Sz; i += 2)
+   {
+      std::cout << "Bond=" << (i+1)
+                << " Entropy=" << TInfo[i/2].TotalEntropy()
+                << " States=" << TInfo[i/2].KeptStates()
+                << " Trunc=" << TInfo[i/2].TruncationError()
+                << '\n';
+   }
+   std::cout << std::flush;
    return LinearWavefunction::FromContainer(Psi.begin(), Psi.end());
 }
 
@@ -191,19 +203,41 @@ void DoEvenOddStep(std::deque<StateComponent>& Psi, std::deque<RealDiagonalOpera
    // Z (Lamda) A B (Lambda) C D (Lambda) ...
    // which we need to rotate back to
    // A B (Lambda) C D (Lambda) ..... Z (Lambda)
+   unsigned Sz = Psi.size();
+   std::vector<TruncationInfo> TInfo(Sz/2);
    #pragma omp parallel for schedule(dynamic)
-   for (unsigned i = 0; i < Psi.size(); i += 2)
+   for (unsigned i = 0; i < Sz; i += 2)
    {
-      DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], UEven, SInfo);
+      TInfo[i/2] = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], UEven, SInfo);
    }
+   for (unsigned i = 0; i < Sz; i += 2)
+   {
+      std::cout << "Bond=" << (i+1)
+                << " Entropy=" << TInfo[i/2].TotalEntropy()
+                << " States=" << TInfo[i/2].KeptStates()
+                << " Trunc=" << TInfo[i/2].TruncationError()
+                << '\n';
+   }
+   std::cout << std::flush;
+
    // need to the pair that wraps around separately
    Psi.push_front(delta_shift(Psi.back(), QShift));
    Psi.pop_back();
    #pragma omp parallel for schedule(dynamic)
-   for (unsigned i = 0; i < Psi.size(); i += 2)
+   for (unsigned i = 0; i < Sz; i += 2)
    {
-      DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], UOdd, SInfo);
+      TInfo[i/2] = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], UOdd, SInfo);
    }
+   for (unsigned i = 0; i < Sz; i += 2)
+   {
+      std::cout << "Bond=" << i
+                << " Entropy=" << TInfo[i/2].TotalEntropy()
+                << " States=" << TInfo[i/2].KeptStates()
+                << " Trunc=" << TInfo[i/2].TruncationError()
+                << '\n';
+   }
+   std::cout << std::flush;
+
    Psi.push_back(delta_shift(Psi.front(), adjoint(QShift)));
    Psi.pop_front();
    Lambda.push_back(delta_shift(Lambda.front(), adjoint(QShift)));
@@ -356,7 +390,7 @@ int main(int argc, char** argv)
       std::deque<StateComponent> PsiVec(Psi.begin(), Psi.end());
       std::deque<RealDiagonalOperator> Lambda;
 
-      for (unsigned i = 2; i <= Psi.size(); i += 2)
+      for (int i = 2; i <= Psi.size(); i += 2)
       {
          Lambda.push_back(Psi.lambda(i));
       }

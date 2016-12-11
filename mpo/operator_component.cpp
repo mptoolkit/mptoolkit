@@ -1328,7 +1328,7 @@ SimpleOperator CompressBasis2_LinDep(OperatorComponent& A)
          continue;
       }
 
-      bool Dependent = false;  // is vector i linearly dependent on some other set?
+      //bool Dependent = false;  // is vector i linearly dependent on some other set?
       // assemble the list of candidate columns that could give a linear dependence
       std::vector<int> Candidates;
       for (int j = 0; j < i; ++j)
