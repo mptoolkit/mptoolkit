@@ -210,13 +210,6 @@ UnitCellMPO translate(UnitCellMPO x, int Sites);
 // N into 1 coarse graining
 UnitCellMPO coarse_grain(UnitCellMPO const& Op, int N);
 
-inline
-UnitCellMPO coarse_grain(UnitCellMPO const& Op, int N)
-{
-   return UnitCellMPO(Op.SiteList, coarse_grain(Op.Op, N), Op.Com, Op.Offset, Op.Description,
-		      Op.CoarseGrain*N);
-}
-
 // Constructs an identity MPO from a given unit cell
 UnitCellMPO MakeIdentityFrom(UnitCellMPO const& x);
 
@@ -235,6 +228,13 @@ UnitCellMPO ExtendToCoverUnitCell(UnitCellMPO const& Op, int OtherSize)
    UnitCellMPO Result(Op);
    Result.ExtendToCoverUnitCell(OtherSize);
    return Result;
+}
+
+inline
+UnitCellMPO coarse_grain(UnitCellMPO const& Op, int N)
+{
+   return UnitCellMPO(Op.SiteList, coarse_grain(ExtendToCoverUnitCell(Op,N).Op, N), Op.Com, Op.Offset, Op.Description,
+		      Op.CoarseGrain*N);
 }
 
 // Optimize the representation - in this case we simply forward to the FiniteMPO representation
