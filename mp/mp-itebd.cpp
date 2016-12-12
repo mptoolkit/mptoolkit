@@ -263,6 +263,7 @@ int main(int argc, char** argv)
       double TruncCutoff = 0;
       double EigenCutoff = 1E-16;
       int OutputDigits = 0;
+      int Coarsegrain = 1;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -282,6 +283,8 @@ int main(int argc, char** argv)
           FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
+         ("coarsegrain", prog_opt::value(&Coarsegrain),
+          "coarse-grain N-to-1 sites")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "extra debug output [can be used multiple times]")
          ;
@@ -337,23 +340,23 @@ int main(int argc, char** argv)
       std::tie(EvenOp, Lattice) = ParseUnitCellOperatorAndLattice(Operator);
       if (Operator2.empty())
       {
-	 OddOp = translate(EvenOp, 1);
+	 OddOp = translate(EvenOp, Coarsegrain);
       }
       else
       {
 	 std::tie(EvenOp, Lattice) = ParseUnitCellOperatorAndLattice(Operator2);
       }
 
-      EvenOp.ExtendToCover(2, 0);
-      OddOp.ExtendToCover(2, 1);
+      EvenOp.ExtendToCover(2*Coarsegrain, 0);
+      OddOp.ExtendToCover(2*Coarsegrain, Coarsegrain);
 
-      if (EvenOp.offset() != 0 || EvenOp.size() != 2)
+      if (EvenOp.offset() != 0 || EvenOp.size() != 2*Coarsegrain)
       {
 	 std::cerr << "mp-itebd: fatal: slice 1 operator not valid.\n";
 	 return 1;
       }
 
-      if (OddOp.offset() != 1 || OddOp.size() != 2)
+      if (OddOp.offset() != Coarsegrain || OddOp.size() != 2*Coarsegrain)
       {
 	 std::cerr << "mp-itebd: fatal: slice 2 operator not valid.\n";
 	 return 1;

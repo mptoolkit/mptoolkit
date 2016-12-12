@@ -88,6 +88,7 @@ InfiniteLattice::operator=(InfiniteLattice const& Other)
    Operators_ = Other.Operators_;
    Arguments_ = Other.Arguments_;
    Functions_ = Other.Functions_;
+   return *this;
 }
 
 InfiniteLattice&
@@ -104,6 +105,7 @@ InfiniteLattice::operator=(InfiniteLattice&& Other)
    Functions_ = std::move(Other.Functions_);
    Other.UnitCell_ = nullptr;
    Other.OwnUnitCell_ = false;
+   return *this;
 }
 
 InfiniteLattice::~InfiniteLattice()

@@ -37,6 +37,7 @@ UnitCellMPO::operator=(UnitCellMPO const& c)
    if (Description.empty())
       Description = c.Description;
    CoarseGrain = c.CoarseGrain;
+   return *this;
 }
 
 UnitCellMPO&
@@ -377,7 +378,7 @@ void qr_optimize(UnitCellMPO& Op)
 
 UnitCellMPO translate(UnitCellMPO x, int Sites)
 {
-   CHECK(Sites % x.unit_cell_size() == 0);
+   //CHECK(Sites % x.unit_cell_size() == 0);
    UnitCellMPO Result(std::move(x));
    Result.translate(Sites);
    return Result;
