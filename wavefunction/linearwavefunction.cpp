@@ -611,3 +611,22 @@ ExtractLocalBasis(LinearWavefunction const& Psi)
    }
    return Basis;
 }
+
+LinearWavefunction coarse_grain(LinearWavefunction const& x, int N)
+{
+   CHECK(x.size() % N == 0)(x.size())(N);
+   LinearWavefunction Result(x.GetSymmetryList());
+   LinearWavefunction::const_iterator I = x.begin();
+   while (I != x.end())
+   {
+      StateComponent A = *I;
+      for (int i = 1; i < N; ++i)
+      {
+	 ++I;
+	 A = local_tensor_prod(A, *I);
+      }
+      ++I;
+      Result.push_back(A);
+   }
+   return Result;
+}

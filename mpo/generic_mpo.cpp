@@ -427,6 +427,9 @@ mask_row(GenericMPO const& Op, int Row)
 
 GenericMPO coarse_grain(GenericMPO const& Op, int N)
 {
+   if (N == 1)
+      return Op;
+
    CHECK(Op.size() % N == 0);
    std::vector<OperatorComponent> Result;
    for (unsigned i = 0; i < Op.size(); i += N)

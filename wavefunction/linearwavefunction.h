@@ -207,6 +207,9 @@ LinearWavefunction operator-(LinearWavefunction const& x, LinearWavefunction con
 // project a (reducible) wavefunction onto an irreducible component
 void project(LinearWavefunction& x, QuantumNumbers::QuantumNumber const& q);
 
+// N-to-1 coarsegraining of a wavefunction
+LinearWavefunction coarse_grain(LinearWavefunction const& x, int N);
+
 LinearWavefunction conj(LinearWavefunction const& x);
 
 // calculates the inner product <Psi1|Psi2>

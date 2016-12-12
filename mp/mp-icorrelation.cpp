@@ -222,6 +222,7 @@ int main(int argc, char** argv)
       bool IncludeOverlap = true;
       std::vector<int> LeftOffsets;
       std::vector<int> RightOffsets;
+      int Coarsegrain = 1;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -259,6 +260,7 @@ int main(int argc, char** argv)
          ("separate", prog_opt::bool_switch(&Separate),
           "print the 'connected' part <A><B> as a separate column [not yet implemented]")
          ("left", prog_opt::value(&LeftOffsets), "start the correlation from this offset [can be used more than once]")
+	 ("coarsegrain", prog_opt::value(&Coarsegrain), "coarse-grain N-to-1 sites")
          ("tempfile", prog_opt::bool_switch(&UseTempFile),
           "a temporary data file for workspace (path set by environment MP_BINPATH)")
          ("quiet", prog_opt::bool_switch(&Quiet),
@@ -300,6 +302,12 @@ int main(int argc, char** argv)
       {
          std::cerr << "mp-icorrelation: fatal: cannot construct a connected string correlation function!\n";
          return 1;
+      }
+
+      if (Coarsegrain != 1)
+      {
+	 std::cerr << "--coarsegrain is not yet supported!\n";
+	 return 1;
       }
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));

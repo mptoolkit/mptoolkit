@@ -864,3 +864,46 @@ expectation(InfiniteWavefunctionLeft const& Psi, FiniteMPO const& Op)
 
    return inner_prod(delta_shift(Rho, Psi.qshift()), X);
 }
+
+#if 0
+InfiniteWavefunctionLeft
+fine_grain(InfiniteWavefunctionLeft const& x, int N, std::vector<BasisList> const& FineGrainBasis,
+	   SimpleOperator const& U, StatesInfo const& SInfo)
+{
+   // better approach: construct a right-canonical wavefunction and then do a left-right sweep
+
+   CHECK_EQUAL(x.size()*N, FineGrainBasis.size());
+   LinearWavefunction Result(x.GetSymmetryList());
+   for (int n = 0; n < x.size(); ++n)
+   {
+      RealDiagonalOperator Lambda = x.lambda(n+1);
+      StateComponent A = x[n];
+
+      std::stack<BasisList> B1;
+      B1.push(FineGrainBasis[n*N]);
+      for (int i = 0; i < N-1; ++i)
+      {
+	 B1.push(make_product_basis(B1.top(), FineGrainBasis[n*N+i]));
+      }
+      std::stack<StateComponent> R;
+      while (!B1.empty())
+      {
+	 AMatSVD SL(A*Lambda, 
+		    Tensor::ProductBasis<BasisList, BasisList>(B1.top, FineGrainBasis[n*N+B1.size()]));
+	 AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(),
+								     SInfo, Info);
+	 StateComponent B;
+	 SL.ConstructMatrices(SL.begin(), Cutoff, A, Lambda, B);
+	 // normalize
+	 Lambda *= 1.0 / norm_frob(Lambda);
+	 R.push(B);
+	 B1.pop();
+      }
+
+)
+#endif
+
+	 
+      
+
+

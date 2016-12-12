@@ -63,6 +63,7 @@ int main(int argc, char** argv)
       std::string OpStr;
       int Verbose = 0;
       bool Print = false;
+      int Coarsegrain = 1;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -72,6 +73,7 @@ int main(int argc, char** argv)
          ("imag,i", prog_opt::bool_switch(&ShowImag),
           "display only the imaginary part of the result")
          ("print,p", prog_opt::bool_switch(&Print), "Print the MPO to standard output (use --verbose to see more detail)")
+	 ("coarsegrain", prog_opt::value(&Coarsegrain), "coarse-grain N-to-1 sites")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose),
           "Verbose output (use multiple times for more output)")
          ;
@@ -147,9 +149,9 @@ int main(int argc, char** argv)
       CHECK(Op.Commute() == LatticeCommute::Bosonic)("Cannot evaluate non-bosonic operator")(Op.Commute());
 
       // extend Op1 to a multiple of the wavefunction size
-      Op.ExtendToCoverUnitCell(Psi.size());
+      Op.ExtendToCoverUnitCell(Psi.size() * Coarsegrain);
 
-      std::complex<double> x = expectation(Psi, Op.MPO());
+      std::complex<double> x = expectation(Psi, coarse_grain(Op.MPO(), Coarsegrain));
 
       if (ShowReal)
          std::cout << x.real() << "   ";
