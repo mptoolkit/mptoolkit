@@ -73,6 +73,7 @@ class run_length_compressed
 
       run_length_compressed();
       run_length_compressed(run_length_compressed const& x) : Data(x.Data) {}
+      run_length_compressed(run_length_compressed&& x) : Data(std::move(x.Data)) {}
 
       explicit run_length_compressed(T const& x);
       run_length_compressed(int Size, T const& x);
@@ -101,6 +102,10 @@ class run_length_compressed
 
       T const& front() const;
       T const& back() const;
+
+      // returns the n'th element of the container, equivalent to
+      // *std::advance(this->begin(), n);
+      T const& find(int n) const;
 
       void push_front(T const& x);
       void push_front(run_length_repeat<T> const& x);

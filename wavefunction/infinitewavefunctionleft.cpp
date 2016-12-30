@@ -4,7 +4,7 @@
 //
 // wavefunction/infinitewavefunctionleft.cpp
 //
-// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -905,5 +905,3 @@ fine_grain(InfiniteWavefunctionLeft const& x, int N, std::vector<BasisList> cons
 
 	 
       
-
-

@@ -4,7 +4,7 @@
 //
 // pheap/pvalueptr.cc
 //
-// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,8 +16,6 @@
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER
-
-#include "common/bindpair.h"
 
 template <class T>
 pvalue_ptr<T>::pvalue_ptr() : Handle(NULL), Ptr(NULL) {}

@@ -33,6 +33,7 @@
 #include "pstream/pstream.h"
 #include "pheap/pvalueptr.h"
 #include "quantumnumbers/symmetrylist.h"
+#include "quantumnumbers/braidgroup.h"
 #include "siteoperator.h"
 #include "function.h"
 #include "operator_descriptions.h"
@@ -160,11 +161,11 @@ class LatticeSite
          OperatorListType Operators;
          ArgumentListType Arguments;
          FunctionListType Functions;
+	 BraidGroup Braid;
 
          ImplType() {}
          ImplType(std::string const& Desc_) : Description(Desc_) {}
-         ImplType(std::string const& Desc_,
-                  Function::ArgumentList const& Args)
+         ImplType(std::string const& Desc_, Function::ArgumentList const& Args)
             : Description(Desc_), Arguments(Args) {}
 
          friend PStream::opstream& operator<<(PStream::opstream& out, ImplType const& Impl);

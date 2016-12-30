@@ -14,11 +14,26 @@ fi
 mode="$1"
 shift
 
+current_year="$(date +%Y)"
+
 top_header="// -*- C++ -*-
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/"
 
-default_copyright="// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>"
+default_copyright="// Copyright (C) ${current_year} Ian McCulloch <ianmcc@physics.uq.edu.au>"
+
+default_copyright_str ()
+{
+   year=$(git log -- $1 | grep 'Date: ' | tail -n 1 | awk '{print $6}')
+   if [ "${year}" == "2012" ] ; then  # start of git log
+      year="2004"
+   fi
+   if [ -z "${year}" -o "${year}" == "${current_year}" ] ; then
+      echo "// Copyright (C) ${current_year} Ian McCulloch <ianmcc@physics.uq.edu.au>"
+   else
+      echo "// Copyright (C) ${year}-${current_year} Ian McCulloch <ianmcc@physics.uq.edu.au>"
+   fi
+}
 
 main_header="//
 // This program is free software: you can redistribute it and/or modify
@@ -65,9 +80,10 @@ for i in $files ; do
 
    copyright="$(grep '^// Copyright' $i)"
 
-   if [ -z "$copyright" ]; then
+   if [ -z "$copyright" -o "$copyright" == "${default_copyright}" ] ; then
 #      echo "Copyrights: default"
-      copyright="$default_copyright"
+      copyright=$(default_copyright_str $filename)
+#      copyright="$default_copyright"
 #   else
 #      echo "Copyrights:"
 #      echo "$copyright"

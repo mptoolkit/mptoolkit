@@ -4,7 +4,7 @@
 //
 // common/runlengthcompressed.cc
 //
-// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2006-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -695,6 +695,49 @@ template <typename T>
 T const& run_length_compressed<T>::back() const
 {
    return boost::apply_visitor(RLE_back<T>(), Data);
+}
+
+template <typename T>
+struct RLE_find : public boost::static_visitor<T const&>
+{
+   explicit RLE_find(int n_) : n(n_) {}
+
+   T const& operator()(run_length_repeat<T> const& x) const
+   {
+      return x.nested().find(x.nested().size() % Sz);
+   }
+
+   T const& operator()(run_length_array<T> const& x) const
+   {
+      run_length_array<T>::const_iterator I = x.begin();
+      int Sz = I->size();
+      while (Sz >= n)
+      {
+	 n -= Sz;
+	 ++I;
+	 Sz = I->size();
+      }
+      return I->find(n);
+   }
+
+   T const& operator()(T const& x) const
+   {
+      DEBUG_CHECK_EQUAL(n, 0);
+      return x;
+   }
+   template <typename U>
+   T const& operator()(U const& x) const
+   {
+      return boost::apply_visitor(RLE_back<T>(), x.back());
+   }
+   int n;
+};
+
+template <typename T>
+T const& run_length_compressed<T>::find(int n) const
+{
+   DEBUG_CHECK(n >= 0 && n < this->size())(n)(this->size());
+   return boost::apply_visitor(RLE_find<T>(n), Data);
 }
 
 template <typename T>

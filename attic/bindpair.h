@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// common/bindpair.h
+// attic/bindpair.h
 //
 // Copyright (C) 1999-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
@@ -36,6 +36,8 @@
 
   We also define a couple of (unrelated) functors, extract_first, extract_second,
   that return first and second respectively of a pair.
+
+  This functionality is obsoleted by the std::tie() mechanism.
 */
 
 #if !defined(BINDPAIR_H_D64356UK7Y7F53FYYY755644R783478Y89UR567HUY)

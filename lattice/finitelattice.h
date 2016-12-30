@@ -4,7 +4,7 @@
 //
 // lattice/finitelattice.h
 //
-// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2014-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,112 +17,171 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-// A FiniteLattice is an array of LatticeSite's.  This uses run-length compression to handle
+// A FiniteLattice is an array of Unit Cells.  This uses run-length compression to handle
 // large arrays.
 
-// This was formerly known as a Lattice, and used to contain a mechanism to set
-// the coordinates of each site.  This is removed now and the coordinates of
-// each site are fixed to be 0,1,... indexed by square brackets.
+#if !defined(MPTOOLKIT_LATTICE_FINITELATTICE_H)
+#define MPTOOLKIT_LATTICE_FINITELATTICE_H
 
-#if !defined(UNITCELL_H_GT3QY87GYO87Y437YWLO87YLO0)
-#define UNITCELL_H_GT3QY87GYO87Y437YWLO87YLO0
-
-#include "lattice/latticesite.h"
-#include "common/runlengthcompressed.h"
+#include <vector>
+#include "quantumnumbers/braidgroup.h"
+#include "finitelatticempo.h"
+#include "unitcell.h"
+#include "mpo/finite_mpo.h"
 #include "pheap/pvalueptr.h"
+#include "lattice/function.h"
+#include "lattice/operator_descriptions.h"
+
+// Lattice version number for streaming
+extern PStream::VersionTag FiniteLatticeVersion;
+
+typedef run_length_compressed<UnitCell> UnitCellListType;
+typedef pvalue_ptr<UnitCellListType> UnitCellPtrType;
 
 class FiniteLattice
 {
    public:
-      typedef LatticeSite                        value_type;
-      typedef run_length_compressed<LatticeSite> data_type;
-      typedef data_type::const_iterator          const_iterator;
-
-      FiniteLattice();
-      FiniteLattice(LatticeSite const& s);
-      FiniteLattice(LatticeSite const& s, LatticeSite const& t);
-      FiniteLattice(LatticeSite const& s, LatticeSite const& t, LatticeSite const& u);
-      FiniteLattice(LatticeSite const& s, LatticeSite const& t, LatticeSite const& u, LatticeSite const& v);
-
-      FiniteLattice(SymmetryList const& sl, LatticeSite const& s);
-      FiniteLattice(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t);
-      FiniteLattice(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t,
-              LatticeSite const& u);
-      FiniteLattice(SymmetryList const& sl, LatticeSite const& s, LatticeSite const& t,
-              LatticeSite const& u, LatticeSite const& v);
-
-      FiniteLattice(int RepeatCount, FiniteLattice const& l);
-      FiniteLattice(FiniteLattice const& x1, FiniteLattice const& x2);
-      FiniteLattice(FiniteLattice const& x1, FiniteLattice const& x2, FiniteLattice const& x3);
-      FiniteLattice(FiniteLattice const& x1, FiniteLattice const& x2, FiniteLattice const& x3, FiniteLattice const& x4);
-
-      FiniteLattice(int Size, LatticeSite const& s);
-
-      // Constructs a singleton lattice, setting the coordinate at the same time
-      FiniteLattice(LatticeSite const& s, std::string const& Coord);
-
-      template <typename T>
-      FiniteLattice(LatticeSite const& s, T const& Coord);
-
-      run_length_compressed<LatticeSite> const& data() const { return *Data_; }
-
-      SymmetryList GetSymmetryList() const { return Data_->front().GetSymmetryList(); }
-
-      // fowards to run_length_compressed
-      bool empty() const { return Data_->empty(); }
-      int size() const { return Data_->size(); }
-      int leaf_count() const { return Data_->leaf_count(); }
-      int node_count() const { return Data_->node_count(); }
-      value_type const& front() const { return Data_->front(); }
-      value_type const& back() const { return Data_->back(); }
-
-      const_iterator begin() const { return Data_->begin(); }
-      const_iterator end() const { return Data_->end(); }
-
-      template <typename Visitor>
-      typename Visitor::result_type
-      apply_visitor(Visitor const& v) const;
-
-      template <typename Visitor>
-      typename Visitor::result_type
-      apply_visitor(Visitor const& v);
-
-      LatticeSite const& operator[](int i) const;
-
-      // returns the local basis at site i of the lattice
-      SiteBasis LocalBasis(int i) const
-      { return this->operator[](i)["I"].Basis(); }
+      typedef FiniteLatticeMPO           operator_type;
+      typedef Function::OperatorFunction function_type;
+      typedef Function::Argument         argument_type;
 
    private:
-      typedef run_length_compressed<LatticeSite> FiniteLatticeType;
-      pvalue_ptr<FiniteLatticeType> Data_;
+      typedef std::map<std::string, operator_type>    OperatorListType;
+      typedef std::map<std::string, function_type>    FunctionListType;
+      typedef Function::ArgumentList                  ArgumentListType;
+
+   public:
+      typedef OperatorListType::iterator        operator_iterator;
+      typedef OperatorListType::const_iterator  const_operator_iterator;
+
+      typedef FunctionListType::iterator        function_iterator;
+      typedef FunctionListType::const_iterator  const_function_iterator;
+
+      typedef ArgumentListType::iterator        argument_iterator;
+      typedef ArgumentListType::const_iterator  const_argument_iterator;
+
+      typedef std::vector<std::pair<std::string, std::string>> authors_type;
+
+      FiniteLattice();
+
+      explicit FiniteLattice(UnitCell const& uc);
+
+      FiniteLattice(std::string const& Description);
+      FiniteLattice(std::string const& Description, UnitCell const& uc);
+
+      FiniteLattice(FiniteLattice const& Other);
+      FiniteLattice(FiniteLattice&& Other);
+
+      FiniteLattice& operator=(FiniteLattice const& Other);
+      FiniteLattice& operator=(FiniteLattice&& Other);
+
+      ~FiniteLattice();
+
+      // returns the number of unit cells in the lattice
+      int size() const;
+
+      // returns the total number of sites in the lattice
+      int sites() const;
+
+      // returns the n'th unit cell (zero-based)
+      UnitCell const& operator[](int i) const;
+
+      std::string description() const { return Description_; }
+      void set_description(std::string s) { Description_ = s; }
+
+      // Set the command_line used to construct the lattice.  Also sets the timestamp.
+      void set_command_line(int argc, char** argv);
+
+      // lattice file author information
+      authors_type& authors() { return Authors_; }
+      authors_type const& authors() const { return Authors_; }
+
+      std::string command_line() const { return CommandLine_; }
+      std::string timestamp() const { return Timestamp_; }
+
+      SymmetryList GetSymmetryList() const { return this->GetUnitCell().GetSymmetryList(); }
+
+      BraidGroup GetBraidGroup() const;
+
+      // operators
+
+      const_operator_iterator begin_operator() const
+      { return Operators_.begin(); }
+      const_operator_iterator end_operator() const
+      { return Operators_.end(); }
+
+      // returns true if the given operator exits
+      bool operator_exists(std::string const& s) const;
+
+      // Sets the description of the operators according to Desc.  Prints a warning to cerr
+      // if there are extra operators named in Desc that are not part of the lattice,
+      // or if any operators don't have a name.
+      void set_operator_descriptions(OperatorDescriptions const& Desc);
+
+      // Lookup the named operator
+      FiniteLatticeMPO& operator[](std::string const& Op);
+      FiniteLatticeMPO const& operator[](std::string const& Op) const;
+
+      // arguments
+
+      bool arg_empty() const { return Arguments_.empty(); }
+
+      const_argument_iterator begin_arg() const { return Arguments_.begin(); }
+      const_argument_iterator end_arg() const { return Arguments_.end(); }
+
+      const_argument_iterator find_arg(std::string const& s) const
+      { return Arguments_.find(s); }
+
+      argument_iterator find_arg(std::string const& s)
+      { return Arguments_.find(s); }
+
+      std::complex<double> arg(std::string const& a) const;
+
+      std::complex<double>& arg(std::string const& a)
+      { return Arguments_[a]; }
+
+      // functions
+
+      bool function_empty() const { return Functions_.empty(); }
+
+      // iterators
+      const_function_iterator begin_function() const { return Functions_.begin(); }
+      const_function_iterator end_function() const { return Functions_.end(); }
+
+      // find
+      const_function_iterator find_function(std::string const& s) const
+      { return Functions_.find(s); }
+
+      bool function_exists(std::string const& s) const
+      { return Functions_.find(s) != Functions_.end(); }
+
+      // lookup
+      function_type& func(std::string const& s) { return Functions_[s]; }
+
+      function_type func(std::string const& s) const;
+
+      // evaluate a function
+      FiniteLatticeMPO
+      eval_function(Function::OperatorFunction const& Func,
+                    Function::ParameterList const& Params) const;
+
+      FiniteLatticeMPO
+      eval_function(std::string const& Func,
+                    Function::ParameterList const& Params) const;
+
+   private:
+      std::string Description_;
+      authors_type Authors_;
+      std::string CommandLine_;
+      std::string Timestamp_;
+      UnitCell* UnitCell_;
+      bool OwnUnitCell_;               // true if UnitCell_ is owned by us on the heap
+      OperatorListType Operators_;
+      ArgumentListType Arguments_;
+      FunctionListType Functions_;
 
    friend PStream::opstream& operator<<(PStream::opstream& out, FiniteLattice const& L);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, FiniteLattice& L);
-
-   friend bool operator==(FiniteLattice const& u1, FiniteLattice const& u2);
-   friend bool operator!=(FiniteLattice const& u1, FiniteLattice const& u2);
 };
-
-// Make a new lattice out of RepeatCount copies of x
-FiniteLattice repeat(FiniteLattice const& x, int RepeatCount);
-
-// Make a new lattice out of the join of x and y
-FiniteLattice join(FiniteLattice const& x, FiniteLattice const& y);
-FiniteLattice join(FiniteLattice const& x, FiniteLattice const& y, FiniteLattice const& z);
-FiniteLattice join(FiniteLattice const& x, FiniteLattice const& y, FiniteLattice const& z, FiniteLattice const& w);
-FiniteLattice join(FiniteLattice const& x, FiniteLattice const& y, FiniteLattice const& z, FiniteLattice const& w,
-             FiniteLattice const& v);
-
-bool
-operator==(FiniteLattice const& u1, FiniteLattice const& u2);
-
-bool
-operator!=(FiniteLattice const& u1, FiniteLattice const& u2);
-
-std::ostream&
-operator<<(std::ostream& out, FiniteLattice const& u);
-
-#include "unitcell.cc"
 
 #endif
