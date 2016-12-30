@@ -57,12 +57,12 @@ int main(int argc, char** argv)
       OpDescriptions.set_description("U(1) Bose-Hubbard ladder");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
-         ("H_J"    , "nearest-neighbor hopping on the legs\n")
-         ("H_K"    , "nearest-neighbor hopping on the rungs\n")
-         ("H_U"    , "on-site Coulomb repulsion N*(N-1)/2\n")
-         ("H_U12"  , "nearest-neighbor Coulomb repulsion on the rungs\n")
-         ("D"      , "difference in occupation number between leg (W-1) and leg 0\n")
-         ("D2"     , "squared difference in occuptation number between leg (W-1) and leg 0\n")
+         ("H_J"    , "nearest-neighbor hopping on the legs")
+         ("H_K"    , "nearest-neighbor hopping on the rungs")
+         ("H_U"    , "on-site Coulomb repulsion N*(N-1)/2")
+         ("H_U12"  , "nearest-neighbor Coulomb repulsion on the rungs")
+         ("D"      , "difference in occupation number between leg (W-1) and leg 0")
+         ("D2"     , "squared difference in occuptation number between leg (W-1) and leg 0")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -83,6 +83,7 @@ int main(int argc, char** argv)
 
       // difference of boson occupation numbers between edges of the ladder
       Delta(0) = N(0)[Width-1] - N(0)[0];
+      Delta.set_description("difference in occupation number between leg (W-1) and leg 0");
 
 
       UnitCellMPO HJ, HK, HU, HU12;
