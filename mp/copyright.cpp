@@ -53,10 +53,11 @@
 void print_copyright(std::ostream& out)
 {
    out << "Matrix Product Toolkit version " VERSION "\n"
-      "Copyright (C) Ian McCulloch 1999-2016\n"
+      "Copyright (C) Ian McCulloch 1999-2017\n"
       "Contact: " PACKAGE_BUGREPORT "\n"
       "Compiled on " __DATE__ " at " __TIME__ "\n"
       "Configured using compiler " CONFIG_COMPILER_VENDOR " " CONFIG_COMPILER_VERSION "\n"
+      "Compiler flags: " CONFIG_CXXFLAGS "\n"
       "Using Boost version " << (BOOST_VERSION / 100000)
        << "." << (BOOST_VERSION / 100 % 1000)
        << "." << (BOOST_VERSION % 100) << "\n"

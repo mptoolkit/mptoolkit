@@ -9,6 +9,9 @@
 /* C++ compiler version */
 #undef CONFIG_COMPILER_VERSION
 
+/* C++ compiler flags */
+#undef CONFIG_CXXFLAGS
+
 /* Define if debugging is enabled */
 #undef CONFIG_DEBUG
 

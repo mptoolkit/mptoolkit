@@ -1,8 +1,8 @@
 dnl -$- Autoconf -$-
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([Matrix Product Toolkit], [HEAD], [ianmcc@physics.uq.edu.au], 
-        [mptoolkit], [http://physics.uq.edu.au/people/ianmcc/mptoolkit])
+AC_INIT([Matrix Product Toolkit], [(git)], [ianmcc@physics.uq.edu.au], 
+        [mptoolkit], [https://people.smp.uq.edu.au/IanMcCulloch/mptoolkit/])
 
 dnl use C++ mode by default
 AC_LANG(C++)
@@ -207,5 +207,8 @@ AC_ARG_ENABLE(shared, AC_HELP_STRING([--disable-shared],[build static libraries 
   fi
  ]
 )
+
+dnl save the compiler flags to the config header
+AC_DEFINE_UNQUOTED([CONFIG_CXXFLAGS], ["${CXXFLAGS}"], [C++ compiler flags])
 
 AC_OUTPUT(Makefile, echo timestamp > stamp-h)
