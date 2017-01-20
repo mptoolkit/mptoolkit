@@ -6691,6 +6691,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
+#include <cstddef> // workaround for bug https://gcc.gnu.org/gcc-4.9/porting_to.html
 #include "gmp.h"
 
 int
@@ -6713,6 +6714,7 @@ rm -f core conftest.err conftest.$ac_objext \
    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
+#include <cstddef> // workaround for bug https://gcc.gnu.org/gcc-4.9/porting_to.html
 #include "gmp.h"
 
 int
@@ -12229,9 +12231,10 @@ if test "${enable_shared+set}" = set; then :
 fi
 
 
+esccxxflags=\"${CXXFLAGS}\"
 
 cat >>confdefs.h <<_ACEOF
-#define CONFIG_CXXFLAGS "${CXXFLAGS}"
+#define CONFIG_CXXFLAGS ${esccxxflags}
 _ACEOF
 
 

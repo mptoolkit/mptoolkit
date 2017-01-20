@@ -20,6 +20,7 @@ AC_DEFUN([ACX_GMP],
   acx_save_LDFLAGS="$LDFLAGS"
   if test x"$acx_gmp_dir" = x; then
    AC_TRY_LINK([
+#include <cstddef> // workaround for bug https://gcc.gnu.org/gcc-4.9/porting_to.html
 #include "gmp.h"
 ], [], acx_gmp=yes; gmp_search_dir= )
   fi
@@ -27,6 +28,7 @@ AC_DEFUN([ACX_GMP],
    CPPFLAGS="$acx_save_CPPFLAGS -I$try_dir/include"
    LDFLAGS="$acx_save_LDFLAGS -L$try_dir/lib"
    AC_TRY_LINK([
+#include <cstddef> // workaround for bug https://gcc.gnu.org/gcc-4.9/porting_to.html
 #include "gmp.h"
 ], [], 
       acx_gmp_dir="$try_dir" ; break)

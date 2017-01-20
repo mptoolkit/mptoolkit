@@ -209,6 +209,7 @@ AC_ARG_ENABLE(shared, AC_HELP_STRING([--disable-shared],[build static libraries 
 )
 
 dnl save the compiler flags to the config header
-AC_DEFINE_UNQUOTED([CONFIG_CXXFLAGS], ["${CXXFLAGS}"], [C++ compiler flags])
+esccxxflags=AS_ESCAPE(m4_dquote(m4_expand("[${CXXFLAGS}]")), ['\"'])
+AC_DEFINE_UNQUOTED([CONFIG_CXXFLAGS], [${esccxxflags}], [C++ compiler flags])
 
 AC_OUTPUT(Makefile, echo timestamp > stamp-h)
