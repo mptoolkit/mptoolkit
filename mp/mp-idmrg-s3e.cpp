@@ -1468,6 +1468,8 @@ int main(int argc, char** argv)
       std::cerr << "Orthogonalizing wavefunction...\n";
       Wavefunction.Wavefunction() = InfiniteWavefunctionLeft::Construct(idmrg.Wavefunction(), idmrg.QShift);
 
+      std::cerr << "Orthogonalization finished.\n";
+
       // any other attributes?
       Wavefunction.Attributes()["LastEnergy"] = idmrg.Solver().LastEnergy();
       Wavefunction.SetDefaultAttributes();
