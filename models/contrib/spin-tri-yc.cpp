@@ -310,8 +310,8 @@ int main(int argc, char** argv)
       std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 11*w+(w*w/2)+9
 
       // a basic function for Haldane-Shastry model with Sz*Sz interations
-      Lattice.func("HS")(arg("lambda") = 0.5, arg("i") = "0", arg("j") = "0")
-                  = "exp(-lambda)*sum_string_inner( Sz(0)[i], exp(-lambda)*I(0), Sz(0)[j] )";
+      Lattice.func("HS")(arg("lambda") = 0.5, arg("p") = "0", arg("q") = "0")
+                  = "exp(-lambda)*sum_string_inner( Sz(0)[p], exp(-lambda)*I(0), Sz(0)[q] )";
 
       oo++;
       std::printf("\33[2K\r");
