@@ -20,6 +20,7 @@
 #include "eigensolver.h"
 #include "mp-algorithms/lanczos.h"
 #include "mp-algorithms/arnoldi.h"
+#include "mp-algorithms/gmres.h"
 #include <boost/algorithm/string.hpp>
 
 struct MPSMultiply
@@ -40,6 +41,25 @@ struct MPSMultiply
    StateComponent const& F;
 };
 
+struct MPSMultiplyShift
+{
+   MPSMultiplyShift(StateComponent const& E_, OperatorComponent const& H_, StateComponent const& F_, double Energy_)
+      : E(E_), H(H_), F(F_), Energy(Energy_)
+   {
+   }
+
+   StateComponent operator()(StateComponent const& Psi) const
+   {
+      StateComponent R = operator_prod_inner(H, E, Psi, herm(F)) - Energy*Psi;
+      return R;
+   }
+
+   StateComponent const& E;
+   OperatorComponent const& H;
+   StateComponent const& F;
+   double Energy;
+};
+
 LocalEigensolver::Solver
 LocalEigensolver::SolverFromStr(std::string Str)
 {
@@ -50,6 +70,8 @@ LocalEigensolver::SolverFromStr(std::string Str)
       return Solver::Arnoldi;
    else if (Str == "davidson")
       return Solver::Davidson;
+   else if (Str == "shift-invert")
+      return Solver::ShiftInvert;
    return Solver::InvalidSolver;
 }
 
@@ -62,18 +84,20 @@ LocalEigensolver::SolverStr(LocalEigensolver::Solver s)
       return "Arnoldi";
    else if (s == Solver::Davidson)
       return "Davidson";
+   else if (s == Solver::ShiftInvert)
+      return "Shift-Invert";
    return "Invalid Solver";
 }
 
 LocalEigensolver::LocalEigensolver()
    : FidelityScale(0.1), MaxTol(1e-4), MinTol(1-10), MinIter(2), MaxIter(20), Verbose(0),
-     Solver_(Solver::Lanczos)
+     Solver_(Solver::Lanczos), ShiftInvertEnergy(0)
 {
 }
 
 LocalEigensolver::LocalEigensolver(Solver s)
    : FidelityScale(0.1), MaxTol(1e-4), MinTol(1-10), MinIter(2), MaxIter(20), Verbose(0),
-     Solver_(s)
+     Solver_(s), ShiftInvertEnergy(0)
 {
 }
 
@@ -84,11 +108,19 @@ LocalEigensolver::SetSolver(Solver s)
 }
 
 void
+LocalEigensolver::SetShiftInvertEnergy(double E)
+{
+   ShiftInvertEnergy = E;
+}
+
+void
 LocalEigensolver::SetInitialFidelity(int UnitCellSize, double f)
 {
    FidelityAv_ = statistics::moving_exponential<double>(exp(log(0.25)/UnitCellSize));
    FidelityAv_.push(f);
 }
+
+double CNorm = 1;
 
 std::complex<double>
 LocalEigensolver::Solve(StateComponent& C,
@@ -127,6 +159,19 @@ LocalEigensolver::Solve(StateComponent& C,
 					      LastIter_, LastTol_, 
 					      LinearSolvers::SmallestMagnitude,
 					      true, Verbose-1);
+      }
+      else if (Solver_ == Solver::ShiftInvert)
+      {
+	 StateComponent RHS = C;
+	 // scale the initial state
+	 C *= CNorm;
+         GmRes(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy),
+	       RHS, LastIter_, LastIter_, LastTol_,
+	       LinearAlgebra::Identity<StateComponent>(), Verbose-1);
+	 // normalization
+	 CNorm = norm_frob(C);
+	 C *= 1.0 / CNorm;
+	 LastEnergy_ = ShiftInvertEnergy;
       }
       else
       {

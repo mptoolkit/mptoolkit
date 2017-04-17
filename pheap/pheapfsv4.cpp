@@ -559,12 +559,12 @@ PageId FileSystem::open(std::string const& FilePath, size_t PageCacheByteSize, b
    IsReadOnly = IsReadOnly_;
    CreatedNew = false;
 
-   int InitialPageFileNumber = ReadPageFileMetadata(Path, FileName);
+   int InitialPageFileNumber = this->ReadPageFileMetadata(Path, FileName);
 
    for (int FileNum = 0; FileNum < int(PageFileList.size()); ++FileNum)
    {
       if (FileNum == InitialPageFileNumber) continue;         // don't process the initial file twice
-      ReadPageFileMetadata(Path, PageFileNames[FileNum]);
+      this->ReadPageFileMetadata(Path, PageFileNames[FileNum]);
    }
 
    MaxPageCacheSize = PageCacheByteSize / PageSize + 1;

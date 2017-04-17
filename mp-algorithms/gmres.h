@@ -38,8 +38,8 @@
 //
 //*****************************************************************
 
-#if !defined(GMRES_H_DHFJDKH48Y78932Y78YHFO7H7O8W)
-#define GMRES_H_DHFJDKH48Y78932Y78YHFO7H7O8W
+#if !defined(MPTOOLKIT_MP_ALGORITHMS_GMRES_H)
+#define MPTOOLKIT_MP_ALGORITHMS_GMRES_H
 
 #include "linearalgebra/eigen.h"
 #include "common/proccontrol.h"
@@ -110,10 +110,18 @@ void ApplyPlaneRotation(Real &dx, Real &dy, Real cs, Real sn)
    dx = temp;
 }
 
+// GmRes algorithm
+// Solve for x: MatVecMultiply(x) = b
+// m = krylov subspace size (if this is reached, do a restart)
+// using at most max_iter iterations
+//
+// On exit: tol = residual norm
+// max_iter = number of iterations performed
+
 template <typename Vector, typename MultiplyFunc, typename PrecFunc>
 int
 GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
-      int& m, int& max_iter, double& tol, PrecFunc Precondition, int Verbose = 0)
+      int m, int& max_iter, double& tol, PrecFunc Precondition, int Verbose = 0)
 {
   //  typedef typename Vector::value_type value_type;
   typedef std::complex<double> value_type;
@@ -258,7 +266,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
         max_iter = j;
         delete [] v;
         DEBUG_TRACE(beta)(normb);
-        if (Verbose)
+        if (Verbose > 0)
            std::cerr << "GMRES: finished, iter=" << (j-1) << ", approx resid=" << resid
                      << ", actual resid=" << UpdatedResid << std::endl;
         return 0;

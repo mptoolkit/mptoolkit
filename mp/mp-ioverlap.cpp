@@ -95,7 +95,7 @@ int main(int argc, char** argv)
       std::string LhsStr, RhsStr;
       std::vector<std::string> Sector;
       double Tol = 1E-15;
-      int Iter = 30;
+      int Iter = 40;         // 2017-04-17: increased default from 30 to 40
       bool Sort = false;
       bool Quiet = false;
       bool Reflect = false;
@@ -363,7 +363,7 @@ int main(int argc, char** argv)
       for (std::set<QuantumNumber>::const_iterator I = Sectors.begin(); I != Sectors.end(); ++I)
       {
          //FiniteMPO StringOp = FiniteMPO::make_identity(ExtractLocalBasis(Psi2.Psi));
-         TransEigenInfo Info(*I, std::get<0>(overlap(Psi1, StringOp, Psi2, *I, Iter, Tol, Verbose)));
+         TransEigenInfo Info(*I, std::get<0>(overlap_arpack(Psi1, StringOp, Psi2, *I, Iter, Tol, Verbose)));
          if (Sort)
             EigenList.push_back(Info);
          else

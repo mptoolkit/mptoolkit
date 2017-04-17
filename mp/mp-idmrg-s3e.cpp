@@ -70,7 +70,6 @@
 #include "common/statistics.h"
 #include "common/prog_opt_accum.h"
 #include "mp-algorithms/gmres.h"
-#include "mp-algorithms/arnoldi.h"
 #include "tensor/tensor_eigen.h"
 #include "tensor/regularize.h"
 #include "mp-algorithms/stateslist.h"
@@ -964,6 +963,7 @@ int main(int argc, char** argv)
       double MaxTol = 4E-4;  // never use an eigensolver tolerance larger than this
       double MinTol = 1E-16; // lower bound for the eigensolver tolerance - seems we dont really need it
       double HMix = 0;  // Hamiltonian length-scale mixing factor
+      double ShiftInvertEnergy = 0;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -1029,7 +1029,9 @@ int main(int argc, char** argv)
          ("gmrestol", prog_opt::value(&GMRESTol),
           FormatDefault("tolerance for GMRES linear solver for the initial H matrix elements", GMRESTol).c_str())
 	 ("solver", prog_opt::value<std::string>(),
-	  "Eigensolver to use.  Supported values are lanzcos [default], arnoldi")
+	  "Eigensolver to use.  Supported values are lanzcos [default], arnoldi, shift-invert")
+	 ("shift-invert-energy", prog_opt::value(&ShiftInvertEnergy),
+	  "For the shift-invert solver, the target energy")
 
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
           ;
@@ -1429,6 +1431,7 @@ int main(int argc, char** argv)
       {
 	 idmrg.Solver().SetSolver(vm["solver"].as<std::string>());
       }
+      idmrg.Solver().SetShiftInvertEnergy(ShiftInvertEnergy);
 
       int ReturnCode = 0;
 

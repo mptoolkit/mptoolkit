@@ -176,10 +176,10 @@ overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefunctionLeft const& y,
 
 // This version allows a string operator also.
 // This version is deprecated.
-std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const& StringOp,
-                             InfiniteWavefunctionLeft const& y,
-                             QuantumNumbers::QuantumNumber const& Sector,
-                             int Iter = 20, double Tol = 1E-12, int Verbose = 0);
+//std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const& StringOp,
+//                             InfiniteWavefunctionLeft const& y,
+//                             QuantumNumbers::QuantumNumber const& Sector,
+//                             int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
 // This version allows the wavefunctions and operator to have different sizes.
 // The overlap is returned as a quantity per length, which is the lowest
@@ -189,6 +189,11 @@ overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
         InfiniteWavefunctionLeft const& y,
         QuantumNumbers::QuantumNumber const& Sector,
         int Iter = 20, double Tol = 1E-12, int Verbose = 0);
+
+std::tuple<std::complex<double>, int>
+overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
+	       InfiniteWavefunctionLeft const& y,
+	       QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
 // Reflect a wavefunction in place
 void inplace_reflect(InfiniteWavefunctionLeft& Psi);

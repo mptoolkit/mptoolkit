@@ -137,6 +137,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
       for (int i = 0; i <= j; ++i)
       {
          complex z = inner_prod(v[i], w);
+	 //TRACE_ARNOLDI(z);
          SubH(i,j) = z;
          NormFrobSqH += LinearAlgebra::norm_frob_sq(z);
          w -= z * v[i];
@@ -146,17 +147,18 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
       double NormFrobSqF = norm_frob_sq(w);
       if (NormFrobSqF < DGKS_Threshold * DGKS_Threshold * NormFrobSqH)
       {
-         TRACE_ARNOLDI("DGKS")(NormFrobSqF)(NormFrobSqH)(SubH(range(0,j+1),range(0,j+1)));
+         TRACE_ARNOLDI("DGKS")(NormFrobSqF)(NormFrobSqH); //(SubH(range(0,j+1),range(0,j+1)));
          NormFrobSqH = 0;
          for (int i = 0; i <= j; ++i)
          {
             complex z = inner_prod(v[i], w);
+	    //TRACE_ARNOLDI(z);
             SubH(i,j) += z;
             NormFrobSqH += LinearAlgebra::norm_frob_sq(SubH(i,j));
             w -= z * v[i];
          }
          NormFrobSqF = norm_frob_sq(w);
-
+	 TRACE_ARNOLDI("DGKS finished")(NormFrobSqF);
 #if 0
          // attempt to detect breakdown of orthogonality - doesn't really work
          if (NormFrobSqF < DGKS_Threshold * DGKS_Threshold * NormFrobSqH)
@@ -218,7 +220,6 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
 
       // Calculate the residual vector r = H*y - Theta*y
       VectorType r = (-Theta) * y;
-      TRACE_ARNOLDI(norm_frob(r));
       for (int i = 0; i <= j; ++i)
          r += Right(EigenIndex,i) * Hv[i];
 

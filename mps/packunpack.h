@@ -114,6 +114,81 @@ class PackStateComponent
       OffsetMatrixType OffsetMatrix_;  // offset of each valid block
 };
 
+// some helper functors
+
+template <typename F>
+struct ApplyToPackedOperator
+{
+   ApplyToPackedOperator(F const& f, VectorBasis const& B1, VectorBasis const& B2, 
+			 QuantumNumbers::QuantumNumber const& q) 
+      : f_(f),
+	Pack(B1, B2, q)
+   {}
+
+   ApplyToPackedOperator(F const& f, MatrixOperator const& M)
+      : f_(f),
+	Pack(M.Basis1(), M.Basis2(), M.TransformsAs())
+   {}
+
+   int pack_size() const { return Pack.size(); }
+
+   void pack(MatrixOperator const& x, std::complex<double>* Out) const
+   {
+      Pack.pack(x, Out);
+   }
+
+   MatrixOperator unpack(std::complex<double> const* In) const
+   {
+      return Pack.unpack(In);
+   }
+
+   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
+   {
+      MatrixOperator x = Pack.unpack(In);
+      x = f_(x);
+      Pack.pack(x, Out);
+   }
+
+   PackMatrixOperator Pack;
+   F f_;
+};
+
+template <typename F>
+struct ApplyToPackedStateComponent
+{
+   ApplyToPackedStateComponent(F const& f, BasisList const& B, 
+			       VectorBasis const& B1, VectorBasis const& B2) 
+      : f_(f),
+	Pack(B, B1, B2)
+   {}
+
+   ApplyToPackedStateComponent(F const& f, StateComponent const& M)
+      : f_(f),
+	Pack(M.LocalBasis(), M.Basis1(), M.Basis2())
+   {}
+
+   int pack_size() const { return Pack.size(); }
+
+   void pack(StateComponent const& x, std::complex<double>* Out) const
+   {
+      Pack.pack(x, Out);
+   }
+
+   StateComponent unpack(std::complex<double> const* In) const
+   {
+      return Pack.unpack(In);
+   }
+   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
+   {
+      StateComponent x = Pack.unpack(In);
+      x = f_(x);
+      Pack.pack(x, Out);
+   }
+
+   PackStateComponent Pack;
+   F f_;
+};
+
 // construct the full matrix representation of some superoperator
 // given by the functor F : MatrixOperator -> MatrixOperator
 template <typename F>

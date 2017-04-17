@@ -27,7 +27,7 @@
 class LocalEigensolver
 {
    public:
-      enum class Solver { InvalidSolver, Lanczos, Arnoldi, Davidson };
+      enum class Solver { InvalidSolver, Lanczos, Arnoldi, Davidson, ShiftInvert };
 
       static Solver SolverFromStr(std::string str);
 
@@ -63,6 +63,13 @@ class LocalEigensolver
       void SetSolver(Solver s);
       void SetSolver(std::string const& s) { this->SetSolver(SolverFromStr(s)); }
 
+      // For solver-specific parameters, we probably should provide a generic format.
+      // Since we only have one solver-specific parameter we just have a special case for now.
+      void SetShiftInvertEnergy(double E);
+
+      // A better approach is a function to set a solver parameter, eg
+      // void SetSolverParameter(std::string const& s);
+
       // information on the state of the solver
       bool is_complex() const { return Solver_ == Solver::Arnoldi; }
 
@@ -80,6 +87,7 @@ class LocalEigensolver
       std::complex<double> LastEnergy_;
       double LastTol_;
       int LastIter_;
+      double ShiftInvertEnergy;
 
       // state information
       statistics::moving_exponential<double> FidelityAv_;

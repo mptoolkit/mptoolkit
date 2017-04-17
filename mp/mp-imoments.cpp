@@ -25,7 +25,6 @@
 #include "common/environment.h"
 #include "interface/inittemp.h"
 #include "mp-algorithms/gmres.h"
-#include "mp-algorithms/arnoldi.h"
 #include "common/polynomial.h"
 #include "tensor/tensor_eigen.h"
 #include "mp/copyright.h"
