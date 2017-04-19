@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// wavefunction/finitewavefunction.h
+// wavefunction/finitewavefunctionleft.h
 //
 // Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //

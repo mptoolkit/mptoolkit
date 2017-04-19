@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// mpo/infinite_mpo.h
+// mpo/zero_mpo.h
 //
 // Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
