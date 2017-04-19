@@ -390,7 +390,10 @@ class IrredTensor
       typedef Basis1T basis1_type;
       typedef Basis2T basis2_type;
 
-      IrredTensor() {}
+      IrredTensor() = default;
+
+      IrredTensor(IrredTensor const& Other) = default;
+      IrredTensor(IrredTensor&& Other) = default;
 
       IrredTensor(basis1_type const& Basis, QuantumNumber const& Trans);
 
@@ -403,12 +406,15 @@ class IrredTensor
       // In this variant, the quantum number defaults to the identity
       IrredTensor(basis1_type const& Basis1, basis2_type const& Basis2);
 
+      explicit IrredTensor(basis1_type const& Basis);
+
       template <typename U, typename US>
       IrredTensor(IrredTensor<U, Basis1T, Basis2T, US> const& r)
          : Basis1_(r.Basis1()), Basis2_(r.Basis2()), Trans_(r.TransformsAs()),
            Data_(r.data()) {}
 
       IrredTensor& operator=(IrredTensor const& Other) = default;
+      IrredTensor& operator=(IrredTensor&& Other) = default;
 
       template <typename U, typename US>
       IrredTensor& operator=(IrredTensor<U, Basis1T, Basis2T, US> const& r)
@@ -1041,11 +1047,11 @@ struct ScalarProd<HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S> >,
       iter2 yI = iterate(y);
       for ( ; xI; ++xI, ++yI)
       {
-         double InnerDegree = degree(y.Basis1()[yI.index()]);
          for (inner1 xJ = iterate(xI); xJ; ++xJ)
          {
             for (inner2 yJ = iterate(yI); yJ; ++yJ)
             {
+	       double InnerDegree = degree(y.Basis1()[yJ.index1()]);
                // accept only scalar elements (diagonal in the quantum number)
                if (Result.Basis1()[xJ.index2()] == Result.Basis2()[yJ.index2()])
                   add_element(Result.data(), xJ.index2(), yJ.index2(),

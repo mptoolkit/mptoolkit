@@ -26,13 +26,16 @@
 
 #include "infinitewavefunctionleft.h"
 #include "ibc.h"
+#include "finitewavefunctionleft.h"
 #include <boost/variant.hpp>
 #include "pstream/pstream.h"
 #include "pstream/variant.h"
 #include "interface/attributes.h"
 #include "interface/history.h"
 
-typedef boost::variant<InfiniteWavefunctionLeft, IBCWavefunction> WavefunctionTypes;
+typedef boost::variant<InfiniteWavefunctionLeft, 
+		       IBCWavefunction,
+		       FiniteWavefunctionLeft> WavefunctionTypes;
 
 class MPWavefunction
 {

@@ -806,7 +806,7 @@ std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const&
 
    while (MyTol < 0)
    {
-      if (Verbose)
+      if (Verbose > 0)
          std::cerr << "Restarting Arnoldi, eta=" << Eta << ", Tol=" << -MyTol << '\n';
       Iterations = Iter;
       MyTol = Tol;
@@ -816,7 +816,7 @@ std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const&
       TotalIterations += Iterations;
       DEBUG_TRACE(Eta)(Iterations);
    }
-   if (Verbose)
+   if (Verbose > 0)
       std::cerr << "Converged.  TotalIterations=" << TotalIterations
                 << ", Tol=" << MyTol << '\n';
 

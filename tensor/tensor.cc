@@ -27,6 +27,13 @@ namespace Tensor
 //
 
 template <typename T, typename B1, typename B2, typename S>
+IrredTensor<T, B1, B2, S>::IrredTensor(basis1_type const& Basis)
+   : Basis1_(Basis), Basis2_(Basis), Trans_(Basis.GetSymmetryList()), Data_(Basis.size(), Basis.size())
+{
+   DEBUG_CHECK_EQUAL(Basis.GetSymmetryList(), Trans.GetSymmetryList());
+}
+
+template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>::IrredTensor(basis1_type const& Basis, QuantumNumber const& Trans)
    : Basis1_(Basis), Basis2_(Basis), Trans_(Trans), Data_(Basis.size(), Basis.size())
 {

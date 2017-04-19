@@ -121,6 +121,8 @@ LocalEigensolver::SetInitialFidelity(int UnitCellSize, double f)
 }
 
 double CNorm = 1;
+double ActualEnergy = 1;
+int SubspaceSize = 30;
 
 std::complex<double>
 LocalEigensolver::Solve(StateComponent& C,
@@ -163,14 +165,22 @@ LocalEigensolver::Solve(StateComponent& C,
       else if (Solver_ == Solver::ShiftInvert)
       {
 	 StateComponent RHS = C;
-	 // scale the initial state
+	 // scale the initial state using the previous norm
 	 C *= CNorm;
+	 //TRACE(norm_frob(C));
+	 //ActualEnergy = inner_prod(C, MPSMultiply(LeftBlockHam, H, RightBlockHam)(C)).real();
+	 //C *= 1.0 / (ActualEnergy - ShiftInvertEnergy);
          GmRes(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy),
-	       RHS, LastIter_, LastIter_, LastTol_,
+	       RHS, SubspaceSize, LastIter_, LastTol_,
 	       LinearAlgebra::Identity<StateComponent>(), Verbose-1);
 	 // normalization
 	 CNorm = norm_frob(C);
+	 TRACE(CNorm);
+	 // Adjust tol by CNorm to give a more realistic estimate
+	 LastTol_ /= CNorm;
 	 C *= 1.0 / CNorm;
+	 ActualEnergy = inner_prod(C, MPSMultiply(LeftBlockHam, H, RightBlockHam)(C)).real();
+	 TRACE(ActualEnergy);
 	 LastEnergy_ = ShiftInvertEnergy;
       }
       else

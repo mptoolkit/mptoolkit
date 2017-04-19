@@ -420,14 +420,13 @@ expectation_conj(LinearWavefunction const& Psi1,
 #endif
 
 MatrixOperator
-left_orthogonalize(MatrixOperator const& Mat, LinearWavefunction& Psi, int Verbose)
+left_orthogonalize(MatrixOperator M, LinearWavefunction& Psi, int Verbose)
 {
-   MatrixOperator M = Mat;
    LinearWavefunction::iterator Pi = Psi.begin();
    int n = 0;
    while (Pi != Psi.end())
    {
-      if (Verbose)
+      if (Verbose > 0)
          std::cout << "orthogonalizing site " << n << std::endl;
       StateComponent x = prod(M, *Pi);
       M = TruncateBasis2(x);
@@ -438,22 +437,33 @@ left_orthogonalize(MatrixOperator const& Mat, LinearWavefunction& Psi, int Verbo
 }
 
 MatrixOperator
-right_orthogonalize(LinearWavefunction& Psi, MatrixOperator const& Mat, int Verbose)
+left_orthogonalize(LinearWavefunction& Psi, int Verbose)
 {
-   MatrixOperator M = Mat;
+   return left_orthogonalize(MatrixOperator::make_identity(Psi.Basis1()), Psi, Verbose);
+}
+
+MatrixOperator
+right_orthogonalize(LinearWavefunction& Psi, MatrixOperator M, int Verbose)
+{
    LinearWavefunction Result(Psi.GetSymmetryList());
    LinearWavefunction::iterator Pi = Psi.end();
    int n = Psi.size();
    while (Pi != Psi.begin())
    {
       --Pi; --n;
-      if (Verbose)
+      if (Verbose > 0)
          std::cout << "orthogonalizing site " << n << std::endl;
       StateComponent x = prod(*Pi, M);
       M = TruncateBasis1(x);
       *Pi = x;
    }
    return M;
+}
+
+MatrixOperator
+right_orthogonalize(LinearWavefunction& Psi, int Verbose)
+{
+   return right_orthogonalize(Psi, MatrixOperator::make_identity(Psi.Basis2()), Verbose);
 }
 
 #if 0

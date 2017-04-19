@@ -26,19 +26,20 @@
 #if !defined(MPTOOLKIT_MPO_INFINITE_MPO_H)
 #define MPTOOLKIT_MPO_INFINITE_MPO_H
 
+#include "zero_mpo.h"
 #include "triangular_mpo.h"
 #include "product_mpo.h"
 #include <boost/variant.hpp>
 
-typedef boost::variant<std::complex<double>, TriangularMPO, ProductMPO>
+typedef boost::variant<std::complex<double>, ZeroMPO, TriangularMPO, ProductMPO>
 InfiniteMPOElement;
 
 class InfiniteMPO
 {
    public:
-      typedef boost::variant<std::complex<double>, TriangularMPO, ProductMPO> operator_type;
+      typedef boost::variant<std::complex<double>, ZeroMPO, TriangularMPO, ProductMPO> operator_type;
 
-      InfiniteMPO() {}
+      InfiniteMPO() : Operator(ZeroMPO()) {}
 
       InfiniteMPO(operator_type const& Op) : Operator(Op) {}
       InfiniteMPO(InfiniteMPO const& Op) : Operator(Op.Operator), Description(Op.Description) {}
@@ -97,6 +98,8 @@ class InfiniteMPO
          return Operator.apply_visitor(v);
       }
 #endif
+
+      static PStream::VersionTag VersionT;
 
    private:
       operator_type Operator;

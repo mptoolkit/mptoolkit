@@ -109,6 +109,9 @@ class CanonicalWavefunctionBase
       mps_type operator[](int i) const
       { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return *Data[i].lock(); }
 
+      // returns the final MPS matrix
+      mps_type get_back() { return *Data.front().lock(); }
+
       // returns the lambda matrix at partition i
       lambda_type lambda(int i) const
       { DEBUG_RANGE_CHECK(i, 0, int(Data.size())); return *Lambda[i].lock(); }
@@ -149,6 +152,7 @@ class CanonicalWavefunctionBase
       void pop_back_lambda() { Lambda.pop_back(); }
 
       void set(int i, mps_type const& A) { Data[i] = new mps_type(A); }
+      void set_back(mps_type const& A) { Data.back() = new mps_type(A); }
       void set_lambda(int i, lambda_type const& L) { Lambda[i] = new lambda_type(L); }
 
       void setBasis1(VectorBasis const& B) { Basis1_ = B; }

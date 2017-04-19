@@ -26,19 +26,49 @@
 // InfiniteMPOElement and InfiniteMPO, we can get some weird errors if
 // the visitor functions don't find a match.
 
+// Streaming versions:
+//
+// No explicit versioning information, check the LatticeVersion for <= 4
+// boost::variant<std::complex<double>, TriangularMPO, ProductMPO> Operator
+// std::string                                                     Description
+//
+// Version 2:
+// Explicit version support.
+// boost::variant<std::complex<double>, ZeroMPO, TriangularMPO, ProductMPO> Operator
+// std::string                                                              Description
+
+PStream::VersionTag
+InfiniteMPO::VersionT(2);
+
 using namespace Parser;
 
 PStream::opstream&
 operator<<(PStream::opstream& out, InfiniteMPO const& Op)
 {
+   out << InfiniteMPO::VersionT.default_version();
    out << Op.Operator;
    out << Op.Description;
    return out;
 }
 
+extern PStream::VersionTag LatticeVersion;
+
 PStream::ipstream&
 operator>>(PStream::ipstream& in, InfiniteMPO& Op)
 {
+   // Prior to version 5, we didn't have separate versioning support for InfiniteMPO.
+   int Version = in.version_of(LatticeVersion) >= 5 ? in.read<int>() : 1;
+
+   if (Version == 1)
+   {
+      boost::variant<std::complex<double>, TriangularMPO, ProductMPO> x;
+      in >> x;
+      Op.Operator = x;
+      in >> Op.Description;
+      return in;
+   }
+   // else
+
    in >> Op.Operator;
    in >> Op.Description;
    return in;

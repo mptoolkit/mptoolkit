@@ -26,11 +26,31 @@
 #define MPTOOLKIT_MPS_FINITEWAVEFUNCTION_H
 
 #include "canonicalwavefunction.h"
+#include "wavefunction/linearwavefunction.h"
+#include "mpo/finite_mpo.h"
+
+class AttributeList;
 
 class FiniteWavefunction : public CanonicalWavefunctionBase
 {
    public:
       FiniteWavefunction();
+
+      // named constructors
+
+      // construction from a LinearWavefunction (in left-canonical form with lambda
+      // matrix on the right)
+      static
+      FiniteWavefunction ConstructFromOrthogonal(LinearWavefunction const& Psi,
+						 MatrixOperator const& Lambda,
+						 QuantumNumbers::QuantumNumber const& QShift_,
+						 int Verbose = 0);
+
+      // construct and orthogonalize from a LinearWavefunction
+      static
+      FiniteWavefunctionLeft Construct(LinearWavefunction const& Psi,
+				       QuantumNumbers::QuantumNumber const& QShift,
+				       int Verbose = 0);
 
       FiniteWavefunction(FiniteWavefunction const& Psi);
 

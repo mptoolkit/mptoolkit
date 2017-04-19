@@ -124,7 +124,7 @@ mpoobj = operator_component.o generic_mpo.o finite_mpo.o triangular_mpo.o produc
 mpsobj = state_component.o density.o
 
 wavefunctionobj = linearwavefunction.o canonicalwavefunction.o infinitewavefunctionleft.o \
-                  infinitewavefunctionright.o ibc.o \
+                  infinitewavefunctionright.o ibc.o finitewavefunctionleft.o \
                   mpwavefunction.o operator_actions.o \
                   attributes.o history.o
 
@@ -204,7 +204,7 @@ allobj = $(quantumnumbersobj) \
 contrib-models = spin-tri-yc-su2 spin-tri-xc-su2 spin-tri-yc-su2-NonEff \
                  spin-tri-2SiteUnitCell-su2 spin-tri-1SiteUnitCell-su2 spin-tri-yc-u1 spin-tri-yc \
                  tki-u1su2 tki-u1u1 hubbard-tri-u1su2 hubbard-tri-u1u1 hubbard-tri \
-                 spin-tri-yc-z2
+                 spin-tri-yc-z2 spinchain-random-field-u1
 
 # default / examplar models
 default-models = spinchain-su2 spinchain-spin2-su2 \

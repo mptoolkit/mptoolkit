@@ -71,6 +71,16 @@ void ShowBasicInfo(IBCWavefunction const& Psi, std::ostream& out)
    out << std::endl;
 }
 
+void ShowBasicInfo(FiniteWavefunctionLeft const& Psi, std::ostream& out)
+{
+   out << "Wavefunction is a FiniteWavefunction in the left canonical basis.\n";
+   out << "Symmetry list = " << Psi.GetSymmetryList() << '\n';
+   out << "Length = " << Psi.size() << '\n';
+   out << "Quantum number = " << Psi.TransformsAs() << '\n';
+   out << "Norm = " << norm_2(Psi) << '\n';
+   out << std::endl;
+}
+
 void ShowStateInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
 {
    out << "#partition  #dimension  #degree\n";
@@ -187,6 +197,7 @@ struct ShowWavefunction : public boost::static_visitor<void>
 {
    void operator()(InfiniteWavefunctionLeft const& Psi) const;
    void operator()(IBCWavefunction const& Psi) const;
+   void operator()(FiniteWavefunctionLeft const& Psi) const;
 };
 
 void
@@ -247,6 +258,36 @@ ShowWavefunction::operator()(IBCWavefunction const& Psi) const
 
    if (ShowLocalBasis)
       ShowLocalBasisInfo(Psi.Window, std::cout);
+}
+
+void
+ShowWavefunction::operator()(FiniteWavefunctionLeft const& Psi) const
+{
+   std::sort(Partition.begin(), Partition.end());
+   if (Partition.empty())
+   {
+      // all partitions
+      for (int i = 0; i <= Psi.size(); ++i)
+         Partition.push_back(i);
+   }
+
+   if (ShowStates)
+      ShowStateInfo(Psi, std::cout);
+
+   if (ShowBasis)
+      ShowBasisInfo(Psi, std::cout);
+
+   if (ShowEntropy)
+      ShowEntropyInfo(Psi, std::cout);
+
+   if (ShowDensity)
+      ShowDM(Psi, std::cout);
+
+   if (ShowCasimir)
+      ShowCasimirInfo(Psi, std::cout);
+
+   if (ShowLocalBasis)
+      ShowLocalBasisInfo(Psi, std::cout);
 }
 
 int main(int argc, char** argv)

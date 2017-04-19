@@ -21,7 +21,9 @@
 #include "lattice/infinite-parser.h"
 #include "mp/copyright.h" // for EscapeArgument
 
-PStream::VersionTag LatticeVersion(4);
+PStream::VersionTag LatticeVersion(5);
+// version 5 doesn't change anything in the InfiniteLattice directly, but
+// adds versioning support for the InfiniteMPO structure
 
 InfiniteLattice::InfiniteLattice() : UnitCell_(new UnitCell()), OwnUnitCell_(true)
 {
@@ -413,7 +415,7 @@ operator>>(PStream::ipstream& in, InfiniteLattice& L)
 {
    PStream::VersionSentry Sentry(in, LatticeVersion, in.read<int>());
 
-   if (Sentry.version() > 4)
+   if (Sentry.version() > 5)
    {
       PANIC("This program is too old to read this lattice file format,"
             "  Maximum readable version number is 4")(Sentry.version());
