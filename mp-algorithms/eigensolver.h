@@ -60,6 +60,7 @@ class LocalEigensolver
       int Verbose;
 
       Solver GetSolver() const { return Solver_; }
+      std::string GetSolverStr() const { return SolverStr(Solver_); }
       void SetSolver(Solver s);
       void SetSolver(std::string const& s) { this->SetSolver(SolverFromStr(s)); }
 

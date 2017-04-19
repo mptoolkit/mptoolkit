@@ -85,6 +85,9 @@ class MPWavefunction
       void AppendHistory(std::string const& s)
       { History_.append(s); }
 
+      void AppendHistoryNote(std::string const& s)
+      { History_.append("#note: " + s); }
+
       static PStream::VersionTag VersionT;
 
       void check_structure() const;

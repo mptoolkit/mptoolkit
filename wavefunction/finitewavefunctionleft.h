@@ -85,6 +85,12 @@ double norm_2(FiniteWavefunctionLeft const& Psi);
 
 double norm_2_sq(FiniteWavefunctionLeft const& Psi);
 
+inline
+void normalize(FiniteWavefunctionLeft& Psi)
+{
+   Psi *= 1.0 / norm_2(Psi);
+}
+
 FiniteWavefunctionLeft operator*(double a, FiniteWavefunctionLeft x);
 FiniteWavefunctionLeft operator*(FiniteWavefunctionLeft x, double a);
 FiniteWavefunctionLeft operator*(std::complex<double> a, FiniteWavefunctionLeft x);

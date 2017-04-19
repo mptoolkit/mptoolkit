@@ -55,6 +55,7 @@ FLIBS = @FLIBS@
 LAPACK_LIBS = @LAPACK_LIBS@
 BLAS_LIBS = @BLAS_LIBS@
 BOOST_LIBS = @BOOST_PROGRAM_OPTIONS_LIB@
+LIBARPACK=@LIBARPACK@
 LIBS = @LIBS@ $(LIBS_EXTRA)
 
 PACKAGE_NAME=@PACKAGE_NAME@
@@ -63,7 +64,6 @@ PACKAGE_VERSION=@PACKAGE_VERSION@
 PACKAGE_STRING=@PACKAGE_STRING@
 PACKAGE_FULLNAME=$(PACKAGE_TARNAME)-$(PACKAGE_VERSION)
 
-LIBARPACK=@LIBARPACK@
 
 PBS_LIB=-L/opt/pbs/lib -lpbs
 
@@ -220,7 +220,7 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-imoments mp-iexpectation mp-wigner-eckart mp-reorder-symmetry \
         mp-ispectrum mp-lattice-info mp-show-operator mp-aux-matrix mp-aux-algebra mp-iapply mp-attr \
         mp-idivide mp-ies mp-irepeat \
-        mp-irotate mp-icorrelation mp-fluctuation mp-itebd mp-coarsegrain
+        mp-irotate mp-icorrelation mp-fluctuation mp-itebd mp-coarsegrain mp-dmrg mp-random
 
 experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg
 
@@ -328,7 +328,7 @@ $(tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
            $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj) $(parserobj)
 
 $(experimental-tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-                        $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj)
+                        $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj) $(parserobj)
 
 $(all-models) :  $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
               $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj) $(parserobj)
@@ -506,13 +506,13 @@ mp-iexcitation : triangular_operator.o mpoperator.o infinitewavefunctionleft.o r
 mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-igradient : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-ispectral-expansion : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o
-mp-ioverlap : infinitewavefunctionleft.o packunpack.o
+mp-ioverlap : infinitewavefunctionleft.o infinitewavefunctionleft_arpack.o packunpack.o
 mp-aux-algebra : infinitewavefunctionleft.o packunpack.o matrix-parser.o
 mp-aux-matrix : infinitewavefunctionleft.o packunpack.o
 mp-ies : infinitewavefunctionleft.o packunpack.o
 mp-aux-project : infinitewavefunctionleft.o packunpack.o
 mp-itebd : $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o
-
+mp-dmrg : dmrg.o $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
 
 mp-ireorder-symmetry : infinitewavefunctionleft.o
 

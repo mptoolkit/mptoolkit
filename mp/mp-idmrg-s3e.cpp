@@ -936,7 +936,6 @@ int main(int argc, char** argv)
       double EigenCutoff = 1E-16;
       std::string FName;
       std::string HamStr;
-      std::string CouplingFile;
       bool Force = false;
       bool TwoSite = true;
       bool OneSite = false;
@@ -1468,7 +1467,7 @@ int main(int argc, char** argv)
       }
 
       // finished the iterations.
-      std::cerr << "Orthogonalizing wavefunction...\n";
+      std::cout << "Orthogonalizing wavefunction...\n";
       Wavefunction.Wavefunction() = InfiniteWavefunctionLeft::Construct(idmrg.Wavefunction(), idmrg.QShift);
 
       // any other attributes?

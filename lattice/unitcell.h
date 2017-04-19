@@ -305,6 +305,17 @@ operator!=(UnitCell const& u1, UnitCell const& u2);
 std::ostream&
 operator<<(std::ostream& out, UnitCell const& u);
 
+inline
+std::vector<BasisList> ExtractLocalBasis1(UnitCell const& c)
+{
+   std::vector<BasisList> Result;
+   for (int i = 0; i < c.size(); ++i)
+   {
+      Result.push_back(c.LocalBasis(i));
+   }
+   return Result;
+}
+
 #include "unitcell.cc"
 
 #endif

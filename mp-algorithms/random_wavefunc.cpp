@@ -174,13 +174,15 @@ LinearWavefunction WavefunctionFromConfiguration(WavefunctionDesc const& Psi, st
 
 LinearWavefunction CreateRandomWavefunction(std::vector<BasisList> const& Basis,
 					    QuantumNumber const& q, double Beta,
-					    QuantumNumber const& RightBoundary, int NConfig)
+					    QuantumNumber const& RightBoundary, int NConfig, int Verbose)
 {
    LinearWavefunction Result;
    for (int i = 0; i < NConfig; ++i)
    {
       WavefunctionDesc Psi = CreateRandomConfiguration(Basis, q, Beta, RightBoundary);
       Result = Result + (randutil::rand()*2-1) * WavefunctionFromConfiguration(Psi, Basis, RightBoundary);
+      if (Verbose > 0)
+	 std::cout << "." << std::flush;
    }
    return Result;
 }
@@ -189,71 +191,4 @@ LinearWavefunction CreateRandomWavefunction(std::vector<BasisList> const& Basis,
                                         QuantumNumber const& q, double Beta)
 {
    return CreateRandomWavefunction(Basis, q, Beta, QuantumNumber(Basis[0].GetSymmetryList()));
-}
-
-#if 0
-
-LinearWavefunction CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q, double Beta,
-                                        QuantumNumber const& RightBoundary)
-{
-   std::vector<BasisList> Basis(L.size());
-   //   Lattice::const_iterator Li = L.end();
-   Lattice::const_iterator Li = L.begin();
-   for (int i = 0; i < L.size(); ++i)
-   {
-      //      --Li;
-      Basis[i] = Li->Basis1().Basis();
-      ++Li;
-   }
-   return CreateRandomWavefunction(Basis, q, Beta, RightBoundary);
-}
-
-LinearWavefunction CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q, double Beta)
-{
-   return CreateRandomWavefunction(L, q, Beta, QuantumNumber(L.GetSymmetryList()));
-}
-
-LinearWavefunction CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q,
-                                        double Beta,
-                                        QuantumNumber const& RightBoundary,
-                                        int Count)
-{
-   LinearWavefunction Psi = CreateRandomWavefunction(L, q, Beta, RightBoundary);
-   while (Count > 1)
-   {
-      std::cout << "Working..." << std::endl;
-      LinearWavefunction P2 = CreateRandomWavefunction(L, q, Beta, RightBoundary);
-      //      P2 *= 2.0 * (double(rand()) / RAND_MAX) - 1.0;
-      //      Psi = Psi + P2;
-      --Count;
-   }
-   //   Psi.normalize();
-   return Psi;
-}
-
-LinearWavefunction CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q,
-                                        double Beta,
-                                        int Count)
-{
-   return CreateRandomWavefunction(L, q, Beta, QuantumNumber(L.GetSymmetryList()), Count);
-}
-
-#endif
-
-std::complex<double>
-Amplitude(LinearWavefunction const& Psi, WavefunctionDesc const& Config)
-{
-   MatrixOperator x = MatrixOperator::make_identity(Psi.Basis2());
-   LinearWavefunction::const_iterator I = Psi.end();
-   int s = Psi.size();
-   while (I != Psi.begin())
-   {
-      --I; --s;
-      x = prod((*I)[Config.State[s]], x, Config.Height[s]);
-      //DEBUG_CHECK(norm_frob_sq(x) > 0)(x);
-   }
-   CHECK_EQUAL(s, 0);
-   if (iterate_at(x.data(), 0, 0))
-      return x(0,0)(0,0);
-   else return 0.0;
 }

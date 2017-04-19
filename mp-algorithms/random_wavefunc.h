@@ -74,27 +74,6 @@ CreateRandomWavefunction(std::vector<BasisList> const& Basis,
 LinearWavefunction
 CreateRandomWavefunction(std::vector<BasisList> const& Basis,
                          QuantumNumber const& q, double Beta,
-                         QuantumNumber const& RightBoundary, int NConfig = 20);
-
-#if 0
-LinearWavefunction
-CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q, double Beta);
-
-LinearWavefunction
-CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q, double Beta,
-                         QuantumNumber const& RightBoundary);
-
-LinearWavefunction
-CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q, double Beta, int Count);
-
-LinearWavefunction
-CreateRandomWavefunction(Lattice const& L, QuantumNumber const& q, double Beta,
-                         QuantumNumber const& RightBoundary, int Count);
-
-// calculate the amplitude of the given configuration in the wavefunction
-std::complex<double>
-Amplitude(LinearWavefunction const& Psi, WavefunctionDesc const& Config);
-
-#endif
+                         QuantumNumber const& RightBoundary, int NConfig = 20, int Verbose = 0);
 
 #endif

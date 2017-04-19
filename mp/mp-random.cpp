@@ -18,11 +18,20 @@
 // ENDHEADER
 
 #include "mp-algorithms/random_wavefunc.h"
+#include "wavefunction/finitewavefunctionleft.h"
+#include "wavefunction/mpwavefunction.h"
 #include "mp/copyright.h"
 #include "common/terminal.h"
 #include "common/environment.h"
 #include <boost/program_options.hpp>
 #include "common/hash.h"
+#include "pheap/pheap.h"
+#include "common/environment.h"
+#include "common/prog_opt_accum.h"
+#include "common/terminal.h"
+#include "common/prog_options.h"
+#include "interface/inittemp.h"
+#include "lattice/infinitelattice.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -31,39 +40,40 @@ int main(int argc, char** argv)
    try
    {
       double Beta = 3;
-      int Count = 10;
+      int Count = 20;
       std::string LatticeFile;
-      std::string OutFile;
+      std::string FName;
       std::string Target;
+      int Size;
+      bool Force = false;
+      bool Quiet = false;
+      int Verbose = 0;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help,h", "show this help message")
          ("lattice,l", prog_opt::value(&LatticeFile), "Lattice file (required)")
+         ("unitcell,u", prog_opt::value(&Size), "Number of sites")
          ("quantumnumber,q", prog_opt::value(&Target), "Target quantum number")
          ("count,c", prog_opt::value(&Count), "Count of m=1 states to make a superposition [default 10]")
-         ("out,o", prog_opt::value(&OutFile), "Output file (required)")
+         ("out,o", prog_opt::value(&FName), "Output file (required)")
          ("beta,b", prog_opt::value(&Beta), "Inverse temperature for monte-carlo sampling [default 3]")
          ("seed,s", prog_opt::value<unsigned int>(),
           ("Random seed [range 0.."+boost::lexical_cast<std::string>(RAND_MAX)+"]").c_str())
+         ("force,f", prog_opt::bool_switch(&Force), "Allow overwriting output files")
+         ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
+	 ("quiet", prog_opt::bool_switch(&Quiet), "Don't print informational messages")
          ;
-
-      prog_opt::positional_options_description p;
-      p.add("lattice", 1);
-      p.add("quantumnumber", 1);
-      p.add("count", 1);
-      p.add("out", 1);
 
       prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
-                      options(desc).positional(p).run(), vm);
+                      options(desc).run(), vm);
       prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || vm.count("lattice") == 0 || vm.count("out") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: mp-random [options]\n";
-         std::cerr << "alternative usage: mp-random <lattice> <quantumnumber> <count> <out>\n";
          std::cerr << desc << '\n';
          return 1;
       }
@@ -71,43 +81,67 @@ int main(int argc, char** argv)
       unsigned int RandSeed = vm.count("seed") ? (vm["seed"].as<unsigned long>() % RAND_MAX) : (ext::get_unique() % RAND_MAX);
       srand(RandSeed);
 
-      int PageSize = getenv_or_default("MP_PAGESIZE", 65536);
-      long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
-      pheap::Initialize(OutFile, 1, PageSize, CacheSize);
-      pvalue_ptr<OperatorList> OpList = pheap::ImportHeap(LatticeFile);
+      pheap::Initialize(FName, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
 
-      QuantumNumber Q(OpList->GetSymmetryList(), Target);
+      pvalue_ptr<InfiniteLattice> Lattice = pheap::ImportHeap(LatticeFile);
+ 
+      QuantumNumber Q(Lattice->GetSymmetryList(), Target);
+      QuantumNumber Ident(Lattice->GetSymmetryList());
 
-      std::cout << "Working." << std::flush;
-      MPWavefunction Psi = CreateRandomWavefunction(OpList->GetLattice(), Q, Beta, 1);
-      while (Count > 1)
+      std::vector<BasisList> BL = ExtractLocalBasis1(Lattice->GetUnitCell());
+      std::vector<BasisList> FullBL = BL;
+      while (int(FullBL.size()) < Size)
+	 std::copy(BL.begin(), BL.end(), std::back_inserter(FullBL));
+      if (Size != int(FullBL.size()))
       {
-         std::cout << "." << std::flush;
-         MPWavefunction P2 = CreateRandomWavefunction(OpList->GetLattice(), Q, Beta, 1);
-         P2 *= 2.0 * (double(rand()) / RAND_MAX) - 1.0;
-         Psi = Psi + P2;
-         --Count;
+	 std::cout << "mp-idmrg: fatal: the wavefunction size must be a multiple of the unit cell size\n";
+	 return 1;
       }
-      Psi.normalize();
-      std::cout << "done" << std::endl;
 
-      Psi.Attributes()["CmdLine"] = cmdline(argc, argv);
-      Psi.Attributes()["RandomSeed"] = RandSeed;
+      if (!Quiet)
+	 std::cout << "Working..." << std::flush;
+      LinearWavefunction Psi = CreateRandomWavefunction(FullBL, Q, Beta, Ident, Count, Verbose + 1 - Quiet);
 
-      //TRACE(overlap(Psi, Psi));
+      if (!Quiet)
+	 std::cout << "Done" << std::endl;
 
-      pvalue_ptr<MPWavefunction> Ret = new MPWavefunction(Psi);
-      pheap::ShutdownPersistent(Ret);
+      FiniteWavefunctionLeft PsiL = FiniteWavefunctionLeft::Construct(Psi);
+      normalize(PsiL);
 
+      MPWavefunction Wavefunction;
+      Wavefunction.Wavefunction() = PsiL;
+      Wavefunction.SetDefaultAttributes();
+
+      // History log
+      Wavefunction.AppendHistory(EscapeCommandline(argc, argv));
+      Wavefunction.AppendHistoryNote("Random seed " + std::to_string(RandSeed));
+
+      // save wavefunction
+      pvalue_ptr<MPWavefunction> P(new MPWavefunction(Wavefunction));
+      pheap::ShutdownPersistent(P);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      pheap::Cleanup();
+      return 1;
+   }
+   catch (pheap::PHeapCannotCreateFile& e)
+   {
+      std::cerr << "Exception: " << e.what() << '\n';
+      if (e.Why == "File exists")
+         std::cerr << "Note: use --force (-f) option to overwrite.\n";
    }
    catch (std::exception& e)
    {
       std::cerr << "Exception: " << e.what() << '\n';
+      pheap::Cleanup();
       return 1;
    }
    catch (...)
    {
       std::cerr << "Unknown exception!\n";
+      pheap::Cleanup();
       return 1;
    }
 }

@@ -110,7 +110,7 @@ class CanonicalWavefunctionBase
       { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return *Data[i].lock(); }
 
       // returns the final MPS matrix
-      mps_type get_back() { return *Data.front().lock(); }
+      mps_type get_back() { return *Data.back().lock(); }
 
       // returns the lambda matrix at partition i
       lambda_type lambda(int i) const
