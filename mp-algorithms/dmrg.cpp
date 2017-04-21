@@ -38,7 +38,9 @@ using MessageLogger::msg_log;
 
 std::pair<MatrixOperator, RealDiagonalOperator>
 SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateComponent const& RightHam,
-                     MixInfo const& Mix, StatesInfo const& States, TruncationInfo& Info,
+                     MixInfo const& Mix, KeepListType& KeepList,
+		     std::set<QuantumNumbers::QuantumNumber> const& AddedQN,
+		     StatesInfo const& States, TruncationInfo& Info,
                      StateComponent const& LeftHam)
 {
    // truncate - FIXME: this is the s3e step
@@ -89,18 +91,30 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
       TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
                                          States,
                                          Info);
-   MatrixOperator U = DM.ConstructTruncator(DM.begin(), DMPivot);
-   Lambda = Lambda * herm(U);
+
+   std::list<EigenInfo> KeptStates(DM.begin(), DMPivot);
+   std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
+   // Update the keep list.  It would perhaps be better to do this with respect
+   // to the stage 2 density matrix, but easier to do it here
+   UpdateKeepList(KeepList, 
+		  AddedQN,
+		  DM.Basis(),
+		  KeptStates,
+		  DiscardStates,
+		  Info);
+
+   MatrixOperator UKeep = DM.ConstructTruncator(KeptStates.begin(), KeptStates.end());
+   Lambda = Lambda * herm(UKeep);
 
    //TRACE(Lambda);
 
 #if defined(SSC)
-   C = U*CX; //prod(U, CX);
+   C = UKeep*CX; //prod(U, CX);
 #else
-   C = prod(U, C);
+   C = prod(UKeep, C);
 #endif
 
-   MatrixOperator Vh;
+   MatrixOperator U, Vh;
    RealDiagonalOperator D;
    SingularValueDecompositionKeepBasis2(Lambda, U, D, Vh);
 
@@ -115,7 +129,9 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 // Postcondition: C' Lambda' U' = C (up to truncation!)
 std::pair<RealDiagonalOperator, MatrixOperator>
 SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateComponent const& LeftHam,
-                     MixInfo const& Mix, StatesInfo const& States, TruncationInfo& Info,
+                     MixInfo const& Mix, KeepListType& KeepList,
+		     std::set<QuantumNumbers::QuantumNumber> const& AddedQN,
+		     StatesInfo const& States, TruncationInfo& Info,
                      StateComponent const& RightHam)
 {
    // truncate - FIXME: this is the s3e step
@@ -151,12 +167,23 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
       TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
                                          States,
                                          Info);
-   MatrixOperator U = DM.ConstructTruncator(DM.begin(), DMPivot);
+   std::list<EigenInfo> KeptStates(DM.begin(), DMPivot);
+   std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
+   // Update the keep list.  It would perhaps be better to do this with respect
+   // to the stage 2 density matrix, but easier to do it here
+   UpdateKeepList(KeepList, 
+		  AddedQN,
+		  DM.Basis(),
+		  KeptStates,
+		  DiscardStates,
+		  Info);
 
-   Lambda = U * Lambda;
-   C = prod(C, herm(U));
+   MatrixOperator UKeep = DM.ConstructTruncator(KeptStates.begin(), KeptStates.end());
 
-   MatrixOperator Vh;
+   Lambda = UKeep * Lambda;
+   C = prod(C, herm(UKeep));
+
+   MatrixOperator U, Vh;
    RealDiagonalOperator D;
    SingularValueDecompositionKeepBasis1(Lambda, U, D, Vh);
 
@@ -587,8 +614,12 @@ TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)
    MatrixOperator U;
    RealDiagonalOperator Lambda;
    TruncationInfo Info;
-   std::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixingInfo, States, Info,
-                                                HamMatrices.left());
+   LinearWavefunction::const_iterator CNext = C;
+   --CNext;
+   std::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixingInfo, 
+					      KeepList, QuantumNumbersInBasis(CNext->LocalBasis()),
+					      States, Info,
+					      HamMatrices.left());
 
    if (Verbose > 1)
    {
@@ -621,8 +652,12 @@ TruncationInfo DMRG::TruncateAndShiftRight(StatesInfo const& States)
    RealDiagonalOperator Lambda;
    MatrixOperator U;
    TruncationInfo Info;
-   std::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, HamMatrices.left(), MixingInfo, States, Info,
-                                                HamMatrices.right());
+   LinearWavefunction::const_iterator CNext = C;
+   ++CNext;
+   std::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, HamMatrices.left(), MixingInfo, 
+					      KeepList, QuantumNumbersInBasis(CNext->LocalBasis()),
+					      States, Info,
+					      HamMatrices.right());
    if (Verbose > 1)
    {
       std::cerr << "Truncating right basis, states=" << Info.KeptStates() << '\n';

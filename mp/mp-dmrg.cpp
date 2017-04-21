@@ -160,6 +160,8 @@ int main(int argc, char** argv)
           "force the wavefunction to be orthogonal to this state")
          ("no-variance", prog_opt::bool_switch(&NoVariance), "Don't calculate the variance")
          ("dgks", prog_opt::bool_switch(&UseDGKS), "Use DGKS correction for the orthogonality vectors")
+	 ("shift-invert-energy", prog_opt::value(&ShiftInvertEnergy),
+	  "For the shift-invert solver, the target energy")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
           ;
 
@@ -233,8 +235,11 @@ int main(int argc, char** argv)
       dmrg.Solver().EvolveDelta = EvolveDelta;
       dmrg.Solver().SetShiftInvertEnergy(ShiftInvertEnergy);
 
+      dmrg.MixingInfo.MixFactor = MixFactor;
+      dmrg.MixingInfo.RandomMixFactor = RandomMixFactor;
+
       StatesInfo SInfo;
-      SInfo.MinStates = 0;
+      SInfo.MinStates = 1;
       SInfo.MaxStates = MaxStates;
       SInfo.TruncationCutoff = TruncCutoff;
       SInfo.EigenvalueCutoff = EigenCutoff;
@@ -254,7 +259,7 @@ int main(int argc, char** argv)
 
       for (int Sweeps = 0; Sweeps < MyStates.size(); ++Sweeps)
       {
-	 SInfo.MinStates = MyStates[Sweeps].NumStates;
+	 SInfo.MaxStates = MyStates[Sweeps].NumStates;
          if (Sweeps % 2 == 0)
             SweepLeft(dmrg, SInfo, Sweeps+1);
          else

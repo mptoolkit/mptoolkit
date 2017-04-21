@@ -20,6 +20,8 @@
 #include "infinitewavefunctionleft.h"
 #include "linearalgebra/arpack_wrapper.h"
 #include "mps/packunpack.h"
+#include "common/statistics.h"
+#include "wavefunction/operator_actions.h"
 
 std::tuple<std::complex<double>, int>
 overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,

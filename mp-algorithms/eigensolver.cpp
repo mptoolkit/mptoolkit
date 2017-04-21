@@ -166,10 +166,11 @@ LocalEigensolver::Solve(StateComponent& C,
       {
 	 StateComponent RHS = C;
 	 // scale the initial state using the previous norm
-	 C *= CNorm;
+	 //C *= CNorm;
 	 //TRACE(norm_frob(C));
 	 //ActualEnergy = inner_prod(C, MPSMultiply(LeftBlockHam, H, RightBlockHam)(C)).real();
 	 //C *= 1.0 / (ActualEnergy - ShiftInvertEnergy);
+	 C *= 0;
          GmRes(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy),
 	       RHS, SubspaceSize, LastIter_, LastTol_,
 	       LinearAlgebra::Identity<StateComponent>(), Verbose-1);
@@ -177,11 +178,11 @@ LocalEigensolver::Solve(StateComponent& C,
 	 CNorm = norm_frob(C);
 	 TRACE(CNorm);
 	 // Adjust tol by CNorm to give a more realistic estimate
-	 LastTol_ /= CNorm;
+	 //LastTol_ /= CNorm;
 	 C *= 1.0 / CNorm;
 	 ActualEnergy = inner_prod(C, MPSMultiply(LeftBlockHam, H, RightBlockHam)(C)).real();
-	 TRACE(ActualEnergy);
-	 LastEnergy_ = ShiftInvertEnergy;
+	 //TRACE(ActualEnergy);
+	 LastEnergy_ = ActualEnergy; //ShiftInvertEnergy;
       }
       else
       {

@@ -105,7 +105,7 @@ void GeneratePlaneRotation(Real &dx, Real &dy, Real &cs, Real &sn)
 template<typename Real>
 void ApplyPlaneRotation(Real &dx, Real &dy, Real cs, Real sn)
 {
-   Real temp  =  conj(cs) * dx + conj(sn) * dy;
+   Real temp  = conj(cs) * dx + conj(sn) * dy;
    dy = -sn * dx + cs * dy;
    dx = temp;
 }
@@ -173,6 +173,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
 
   if ((resid = norm_frob(r) / normb) <= tol || norm_frob(w) / norm_frob(x) <= tol)
   {
+#if 0
      if (norm_frob(w) / norm_frob(x) <= tol && Verbose > 0)
      {
         // This means that the matrix is effectively zero
@@ -181,6 +182,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
      tol = resid;
      max_iter = 0;
      return 0;
+#endif
   }
 
   Vector* v = new Vector[m+1];
