@@ -157,26 +157,39 @@ LinearWavefunction operator+(LinearWavefunction const& x, LinearWavefunction con
    if (y.empty())
       return x;
 
-   CHECK_EQUAL(x.GetSymmetryList(), y.GetSymmetryList());
+   CHECK_EQUAL(x.size(), y.size());
+   CHECK_EQUAL(x.Basis1(), y.Basis1());
+   CHECK_EQUAL(x.Basis2(), y.Basis2());
+
    LinearWavefunction Result(x.GetSymmetryList());
    LinearWavefunction::const_iterator xi = x.begin(), yi = y.begin();
 
-   SumBasis<VectorBasis> B1(xi->Basis1(), yi->Basis1());
-   while (xi != x.end())
+   // special case for size 1
+   if (x.size() == 1)
    {
-      SumBasis<VectorBasis> B2(xi->Basis2(), yi->Basis2());
+      Result.push_back((*xi) + (*yi));
+      return Result;
+   }
+
+   SumBasis<VectorBasis> B2(xi->Basis2(), yi->Basis2());
+   Result.push_back(tensor_row_sum(*xi, *yi, B2));
+   ++xi;
+   ++yi;
+
+   int n = 1;
+   while (n < x.size()-1)
+   {
+      SumBasis<VectorBasis> B1 = B2;
+      B2 = SumBasis<VectorBasis>(xi->Basis2(), yi->Basis2());
       Result.push_back(tensor_sum(*xi, *yi, B1, B2));
-      B1 = B2;
       ++xi;
       ++yi;
    }
 
-   MatrixOperator M = CollapseBasis(Result.Basis1());
-   M = left_orthogonalize(M, Result);
-   M = M * herm(CollapseBasis(M.Basis2()));
-   M = right_orthogonalize(Result, M);
-   LinearWavefunction::iterator It = Result.begin();
-   *It = prod(M, *It);
+   Result.push_back(tensor_col_sum(*xi, *yi, B2));
+
+   // *** removed old orthogonalization code
+
    return Result;
 }
 
