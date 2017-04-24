@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// mp/mp-expectation.cpp
+// mp/mp-iexpectation.cpp
 //
 // Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
@@ -17,55 +17,76 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "matrixproduct/lattice.h"
-#include "matrixproduct/mpwavefunction.h"
-#include "matrixproduct/mpoperatorlist.h"
-#include "quantumnumbers/all_symmetries.h"
-#include "pheap/pheap.h"
-#include "mp/copyright.h"
-#include <iostream>
-#include "interface/inittemp.h"
-#include "interface/operator-parser.h"
-#include "common/terminal.h"
+#include "wavefunction/mpwavefunction.h"
+#include "lattice/latticesite.h"
 #include "common/environment.h"
+#include "common/terminal.h"
+#include "mp/copyright.h"
 #include <boost/program_options.hpp>
+#include "common/environment.h"
+#include "common/prog_options.h"
+#include "interface/inittemp.h"
+#include "tensor/tensor_eigen.h"
+#include "lattice/unitcell-parser.h"
+#include "wavefunction/operator_actions.h"
 
 namespace prog_opt = boost::program_options;
+
+void DisplayHeading(bool ShowReal, bool ShowImag)
+{
+   // Output the heading
+   std::cout << "#i #j";
+   if (ShowReal)
+      std::cout << " #real";
+   if (ShowImag)
+      std::cout << " #imag";
+   std::cout << '\n';
+}
+
+void
+Display(std::complex<double> x, int s1, int s2, bool ShowReal, bool ShowImag)
+{
+   std::cout << s1 << "    " << s2 << "   ";
+   if (ShowReal)
+      std::cout << x.real() << "   ";
+   if (ShowImag)
+      std::cout << x.imag();
+   std::cout << '\n';
+}
 
 int main(int argc, char** argv)
 {
    try
    {
-      bool Verbose = false;
-      bool NoTempFile = false;
-      bool ShowRealPart = false, ShowImagPart = false;
-      std::string LhsStr, OpStr, RhsStr;
+      bool ShowReal = false, ShowImag = false;
+      std::string PsiStr;
+      std::string OpStr;
+      int Verbose = 0;
+      bool Print = false;
+      int Coarsegrain = 1;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("real,r", prog_opt::bool_switch(&ShowRealPart),
+         ("real,r", prog_opt::bool_switch(&ShowReal),
           "display only the real part of the result")
-         ("imag,i", prog_opt::bool_switch(&ShowImagPart),
+         ("imag,i", prog_opt::bool_switch(&ShowImag),
           "display only the imaginary part of the result")
-         ("notempfile", prog_opt::bool_switch(&NoTempFile),
-          "don't use a temporary data file, keep everything in RAM "
-          "(faster, but needs enough RAM)")
-         ("verbose,v", prog_opt::bool_switch(&Verbose),
-          "extra debug output")
+         ("print,p", prog_opt::bool_switch(&Print), "Print the MPO to standard output (use --verbose to see more detail)")
+	 ("coarsegrain", prog_opt::value(&Coarsegrain), "coarse-grain N-to-1 sites")
+         ("verbose,v", prog_opt_ext::accum_value(&Verbose),
+          "Verbose output (use multiple times for more output)")
          ;
 
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
-         ("lhs", prog_opt::value<std::string>(&LhsStr), "psi1")
-         ("operator", prog_opt::value<std::string>(&OpStr), "operator")
-         ("rhs", prog_opt::value<std::string>(&RhsStr), "psi2")
+         ("psi", prog_opt::value(&PsiStr), "psi")
+         ("op", prog_opt::value(&OpStr), "op")
          ;
 
       prog_opt::positional_options_description p;
-      p.add("lhs", 1);
-      p.add("operator", 1);
-      p.add("rhs", 1);
+      p.add("psi", 1);
+      p.add("op", 1);
 
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
@@ -75,60 +96,76 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") > 0 || vm.count("operator") == 0)
+      if (vm.count("help") > 0 || vm.count("op") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: mp-expectation [options] <psi1> <operator> [<psi2>]\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> <operator>\n";
          std::cerr << desc << '\n';
          return 1;
       }
 
-      if (Verbose)
-         std::cout << "Loading LHS wavefunction...\n";
-
-      pvalue_ptr<MPWavefunction> Psi1;
-      if (NoTempFile)
-         Psi1 = pheap::OpenPersistent(LhsStr, mp_pheap::CacheSize(), true);
-      else
-      {
-         mp_pheap::InitializeTempPHeap(Verbose);
-         Psi1 = pheap::ImportHeap(LhsStr);
-      }
-
-      if (Verbose)
-         std::cout << "Parsing operator...\n";
-
-      MPOperator Op = ParseOperator(OpStr);
-
-      if (Verbose)
-         std::cout << "Loading RHS wavefunction...\n";
-
-      pvalue_ptr<MPWavefunction> Psi2 = RhsStr.empty() ? Psi1 :
-         pheap::ImportHeap(RhsStr);
-
-      if (Verbose)
-         std::cout << "Calculating expectation value...\n";
-
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
-      std::complex<double> x = expectation(*Psi1, Op, *Psi2);
-      if (ShowRealPart || ShowImagPart)
-      {
-         if (ShowRealPart)
-         {
-            std::cout << x.real();
-            if (ShowImagPart)
-               std::cout << "   " << x.imag();
-         }
-         else // if we get here then ShowImagPart is true and ShowRealPart is false
-            std::cout << x.imag();
-      }
-      else // default to C++ complex output
-         std::cout << x;
+      std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
+      // If no real or imag specifiation is used, show both parts
+      if (!ShowReal && !ShowImag)
+         ShowReal = ShowImag = true;
+
+      mp_pheap::InitializeTempPHeap();
+      pvalue_ptr<MPWavefunction> PsiPtr = pheap::ImportHeap(PsiStr);
+
+      if (!PsiPtr->is<InfiniteWavefunctionLeft>())
+      {
+         std::cerr << "fatal: wavefunction is not an iMPS!\n";
+         exit(1);
+      }
+
+      InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
+
+      UnitCellMPO Op;
+      InfiniteLattice Lattice;
+      std::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(OpStr);
+
+      CHECK(Op.GetSiteList() == Lattice.GetUnitCell().GetSiteList());
+
+      if (Print)
+      {
+         print_structure(Op.MPO(), std::cout);
+         if (Verbose > 0)
+         {
+            std::cout << Op.MPO() << '\n';
+         }
+         if (Verbose > 1)
+         {
+            SimpleRedOperator x = coarse_grain(Op.MPO());
+            std::cout << x << "\n";
+         }
+         //      std::cout << Op << '\n';
+         //std::cout << "\nTransfer matrix:" << construct_transfer_matrix(herm(GenericMPO(Op.MPO())),
+         //                                                     GenericMPO(Op.MPO())) << '\n';
+      };
+
+      // Check that Op is bosonic, otherwise it is not defined
+      CHECK(Op.Commute() == LatticeCommute::Bosonic)("Cannot evaluate non-bosonic operator")(Op.Commute());
+
+      // extend Op1 to a multiple of the wavefunction size
+      Op.ExtendToCoverUnitCell(Psi.size() * Coarsegrain);
+
+      std::complex<double> x = expectation(Psi, coarse_grain(Op.MPO(), Coarsegrain));
+
+      if (ShowReal)
+         std::cout << x.real() << "   ";
+      if (ShowImag)
+         std::cout << x.imag();
       std::cout << '\n';
 
       pheap::Shutdown();
 
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
    }
    catch (std::exception& e)
    {
