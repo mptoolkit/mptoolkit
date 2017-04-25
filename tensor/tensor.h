@@ -882,6 +882,7 @@ struct InnerProd<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2, B1
       PRECONDITION_EQUAL(M1.Basis2(), M2.Basis2());
 
       // TODO: this assumes the Tensor::IrredTensor is implemented as a row-major matrix!
+      // TODO: This fails for inner_prod for RealDiagonalOperator.
       typename Tensor::IrredTensor<T1, B1, B2, S1>::const_iterator I1 = iterate(M1);
       typename Tensor::IrredTensor<T2, B1, B2, S2>::const_iterator I2 = iterate(M2);
       while (I1)
@@ -1054,12 +1055,14 @@ struct ScalarProd<HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S> >,
 	       double InnerDegree = degree(y.Basis1()[yJ.index1()]);
                // accept only scalar elements (diagonal in the quantum number)
                if (Result.Basis1()[xJ.index2()] == Result.Basis2()[yJ.index2()])
+	       {
                   add_element(Result.data(), xJ.index2(), yJ.index2(),
                               (InnerDegree / degree(Result.Basis1()[xJ.index2()])) * f_(herm(*xJ), *yJ));
+	       }
             }
          }
       }
-      CHECK(!std::isnan(norm_frob_sq(Result)));
+      DEBUG_CHECK(!std::isnan(norm_frob_sq(Result)));
       return Result;
    }
 

@@ -268,6 +268,26 @@ struct GetMatrixElement_DiagonalMatrix<
 };
 
 template <typename T>
+struct GetMatrixElement_DiagonalMatrix<
+   T&
+ , typename boost::disable_if<has_zero<typename make_value<T>::type> >::type
+>
+{
+   typedef DiagonalMatrix<T>& first_argument_type;
+   typedef size_type second_argument_type;
+   typedef size_type third_argument_type;
+   typedef typename DiagonalMatrix<T>::reference result_type;
+
+   result_type operator()(first_argument_type x, size_type i, size_type j) const
+   {
+      DEBUG_CHECK_EQUAL(i,j);
+      DEBUG_PRECONDITION_COMPARE(i, <, x.size1());
+      DEBUG_PRECONDITION_COMPARE(j, <, x.size2());
+      return x.diagonal()[i];
+   }
+};
+
+template <typename T>
 struct GetMatrixElement<DiagonalMatrix<T> > : GetMatrixElement_DiagonalMatrix<T> {};
 
 // mutable version of GetMatrixElement
@@ -285,6 +305,30 @@ struct GetMatrixElement<DiagonalMatrix<T>&>
       DEBUG_PRECONDITION_COMPARE(j, <, x.size2());
       DEBUG_PRECONDITION_EQUAL(i,j);
       return x.diagonal()[i];
+   }
+};
+
+//
+// SetMatrixElement
+//
+
+//
+// AddMatrixElement
+//
+
+// mutable version of GetMatrixElement
+template <typename T, typename Value>
+struct AddMatrixElement<DiagonalMatrix<T>&, Value>
+{
+   typedef void result_type;
+   typedef DiagonalMatrix<T>& first_argument_type;
+
+   void operator()(first_argument_type x, size_type i, size_type j, Value const& v) const
+   {
+      DEBUG_PRECONDITION_COMPARE(i, <, x.size1());
+      DEBUG_PRECONDITION_COMPARE(j, <, x.size2());
+      DEBUG_PRECONDITION_EQUAL(i,j);
+      x.diagonal()[i] += v;
    }
 };
 

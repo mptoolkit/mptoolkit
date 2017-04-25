@@ -61,6 +61,7 @@ int main(int argc, char** argv)
       bool ShowReal = false, ShowImag = false;
       std::string PsiStr;
       std::string OpStr;
+      std::string Psi2Str;
       int Verbose = 0;
       bool Print = false;
       int Coarsegrain = 1;
@@ -82,11 +83,13 @@ int main(int argc, char** argv)
       hidden.add_options()
          ("psi", prog_opt::value(&PsiStr), "psi")
          ("op", prog_opt::value(&OpStr), "op")
+         ("psi2", prog_opt::value(&Psi2Str), "psi2")
          ;
 
       prog_opt::positional_options_description p;
       p.add("psi", 1);
       p.add("op", 1);
+      p.add("psi2", 1);
 
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
@@ -99,7 +102,7 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("op") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> <operator>\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> <operator> [psi2]\n";
          std::cerr << desc << '\n';
          return 1;
       }
@@ -113,14 +116,6 @@ int main(int argc, char** argv)
 
       mp_pheap::InitializeTempPHeap();
       pvalue_ptr<MPWavefunction> PsiPtr = pheap::ImportHeap(PsiStr);
-
-      if (!PsiPtr->is<InfiniteWavefunctionLeft>())
-      {
-         std::cerr << "fatal: wavefunction is not an iMPS!\n";
-         exit(1);
-      }
-
-      InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
 
       UnitCellMPO Op;
       InfiniteLattice Lattice;
@@ -148,10 +143,43 @@ int main(int argc, char** argv)
       // Check that Op is bosonic, otherwise it is not defined
       CHECK(Op.Commute() == LatticeCommute::Bosonic)("Cannot evaluate non-bosonic operator")(Op.Commute());
 
-      // extend Op1 to a multiple of the wavefunction size
-      Op.ExtendToCoverUnitCell(Psi.size() * Coarsegrain);
+      std::complex<double> x; // the expectation value
 
-      std::complex<double> x = expectation(Psi, coarse_grain(Op.MPO(), Coarsegrain));
+      if (PsiPtr->is<InfiniteWavefunctionLeft>())
+      {
+	 if (vm.count("psi2"))
+	 {
+	    std::cerr << "mp-expectation: fatal: cannot calculate a mixed expectation value of infnite MPS.\n";
+	    return 1;
+	 }
+	 InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
+      
+	 // extend Op1 to a multiple of the wavefunction size
+	 Op.ExtendToCoverUnitCell(Psi.size() * Coarsegrain);
+
+	 x = expectation(Psi, coarse_grain(Op.MPO(), Coarsegrain));
+      }
+      else if (PsiPtr->is<FiniteWavefunctionLeft>())
+      {
+	 FiniteWavefunctionLeft Psi = PsiPtr->get<FiniteWavefunctionLeft>();
+	 FiniteWavefunctionLeft Psi2;
+	 if (vm.count("psi2"))
+	 {
+	    pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::ImportHeap(Psi2Str);  
+	    if (!Psi2Ptr->is<FiniteWavefunctionLeft>())
+	    {
+	       std::cerr << "mp-expectation: fatal: cannot calculate a mixed expectation value between different types!\n";
+	       return 1;
+	    }
+	    Psi2 = Psi2Ptr->get<FiniteWavefunctionLeft>();
+	 }
+	 else
+	    Psi2 = Psi;
+
+	 Op.ExtendToCoverUnitCell(Psi.size());
+
+	 x = expectation(Psi, Op.MPO(), Psi2);
+      }
 
       if (ShowReal)
          std::cout << x.real() << "   ";
