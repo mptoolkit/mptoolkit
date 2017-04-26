@@ -19,8 +19,8 @@
 
 // InfiniteMPO
 //
-// A variant of complex, TriangularMPO and ProductMPO.
-// THe complex can also be interpreted as a constant multiplied by the
+// A variant of complex, ZeroMPO, TriangularMPO and ProductMPO.
+// The complex can also be interpreted as a constant multiplied by the
 // identity ProductMPO.
 
 #if !defined(MPTOOLKIT_MPO_INFINITE_MPO_H)

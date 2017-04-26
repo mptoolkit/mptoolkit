@@ -23,10 +23,10 @@
 // representing a sum of quantum number components, in which case the Basis1() will have dimension > 1).
 // We used to require that the Basis2() was a scalar, but no longer,
 // this isn't possible for extracted components of triangular or
-// generic operators.  But we can always do a delta_shift to give a scalar (can we??!?)
+// generic operators.
 
-#if !defined(FINITE_MPO_H_JDCHJKEHY589758YUER89H489)
-#define FINITE_MPO_H_JDCHJKEHY589758YUER89H489
+#if !defined(MPTOOLKIT_MPO_FINITE_MPO_H)
+#define MPTOOLKIT_MPO_FINITE_MPO_H
 
 #include "generic_mpo.h"
 #include "lattice/latticesite.h"
