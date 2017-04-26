@@ -126,7 +126,7 @@ int main(int argc, char** argv)
       for (unsigned i = 0; i < TriangularOperators.size(); ++i)
       {
          std::cout << "Triangular Operator " << TriangularOperators[i] << '\n';
-         TriangularMPO Op;
+         BasicTriangularMPO Op;
          InfiniteLattice Lattice;
          std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(TriangularOperators[i]);
          if (Optimize)

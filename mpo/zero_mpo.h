@@ -22,7 +22,7 @@
 // It is convenient to have an explicit representation for an MPO that
 // is empty, so that we can have a default-constructed InfiniteMPO
 // that is a 'true zero' without having to worry about the distinction
-// between TriangularMPO and ProductMPO's.
+// between BasicTriangularMPO and ProductMPO's.
 
 #if !defined(MPTOOLKIT_MPO_ZERO_MPO_H)
 #define MPTOOLKIT_MPO_ZERO_MPO_H

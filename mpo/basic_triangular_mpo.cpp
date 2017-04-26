@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// mpo/triangular_mpo.cpp
+// mpo/basic_triangular_mpo.cpp
 //
 // Copyright (C) 2013-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "triangular_mpo.h"
+#include "basic_triangular_mpo.h"
 #include "common/statistics.h"
 
 enum class OptimizationChoice { Delinearize, Deparallelize, QR, None };
@@ -46,10 +46,10 @@ OptimizationChoice SelectOptimization(char const* Str)
    return OptimizationChoice::Deparallelize;
 }
 
-OptimizationChoice TriangularMPOOptimization = SelectOptimization(getenv("MP_TRI_MPO_OPTIM"));
+OptimizationChoice BasicTriangularMPOOptimization = SelectOptimization(getenv("MP_TRI_MPO_OPTIM"));
 
 void
-TriangularMPO::check_structure() const
+BasicTriangularMPO::check_structure() const
 {
    for (int i = 0; i < this->size(); ++i)
    {
@@ -58,20 +58,20 @@ TriangularMPO::check_structure() const
 }
 
 PStream::opstream&
- operator<<(PStream::opstream& out, TriangularMPO const& Op)
+ operator<<(PStream::opstream& out, BasicTriangularMPO const& Op)
 {
    out << Op.Data_;
    return out;
 }
 
 PStream::ipstream&
- operator>>(PStream::ipstream& in, TriangularMPO& Op)
+ operator>>(PStream::ipstream& in, BasicTriangularMPO& Op)
 {
    in >> Op.Data_;
    return in;
 }
 
-GenericMPO extract_column(TriangularMPO const& Op, int Col)
+GenericMPO extract_column(BasicTriangularMPO const& Op, int Col)
 {
    GenericMPO MPOp(Op.begin(), Op.end());
 
@@ -84,7 +84,7 @@ GenericMPO extract_column(TriangularMPO const& Op, int Col)
    return MPOp;
 }
 
-GenericMPO extract_lower_column(TriangularMPO const& Op, int Col)
+GenericMPO extract_lower_column(BasicTriangularMPO const& Op, int Col)
 {
    GenericMPO MPOp(Op.begin(), Op.end());
 
@@ -104,7 +104,7 @@ GenericMPO extract_lower_column(TriangularMPO const& Op, int Col)
 }
 
 FiniteMPO
-TriangularMPO::operator()(int Row, int Col) const
+BasicTriangularMPO::operator()(int Row, int Col) const
 {
    GenericMPO MPOp(Data_);
 
@@ -122,12 +122,12 @@ TriangularMPO::operator()(int Row, int Col) const
 }
 
 std::ostream&
-operator<<(std::ostream& out, TriangularMPO const& op)
+operator<<(std::ostream& out, BasicTriangularMPO const& op)
 {
    return out << op.data();
 }
 
-void deparallelize(TriangularMPO& Op)
+void deparallelize(BasicTriangularMPO& Op)
 {
    bool Reduced = true; // flag to indicate that we reduced a dimension
    // loop until we do a complete sweep with no reduction in dimensions
@@ -163,9 +163,9 @@ void deparallelize(TriangularMPO& Op)
    }
 }
 
-void optimize(TriangularMPO& Op)
+void optimize(BasicTriangularMPO& Op)
 {
-   switch (TriangularMPOOptimization)
+   switch (BasicTriangularMPOOptimization)
    {
    case OptimizationChoice::None:
       break;
@@ -173,11 +173,11 @@ void optimize(TriangularMPO& Op)
       deparallelize(Op);
       break;
    default:
-      WARNING("Unsupported TriangularMPO optimization");
+      WARNING("Unsupported BasicTriangularMPO optimization");
    }
 }
 
-void qr_optimize(TriangularMPO& Op)
+void qr_optimize(BasicTriangularMPO& Op)
 {
    //   if (Op.size() < 2)
    //      return;
@@ -237,12 +237,12 @@ void qr_optimize(TriangularMPO& Op)
 }
 
 std::pair<std::complex<double>, double>
-log_inner_prod(TriangularMPO const& Op1, TriangularMPO const& Op2)
+log_inner_prod(BasicTriangularMPO const& Op1, BasicTriangularMPO const& Op2)
 {
 }
 
 double
-log_norm_frob_sq(TriangularMPO const& Op)
+log_norm_frob_sq(BasicTriangularMPO const& Op)
 {
 }
 
@@ -252,7 +252,7 @@ equal(FiniteMPO const& Op1, FiniteMPO const& Op2, double Tol)
 }
 
 bool
-equal(TriangularMPO const& Op1, TriangularMPO const& Op2, double Tol)
+equal(BasicTriangularMPO const& Op1, BasicTriangularMPO const& Op2, double Tol)
 {
    // Do we want to scale Tol by the system size?  Bond dimension?
 
@@ -342,12 +342,12 @@ equal(TriangularMPO const& Op1, TriangularMPO const& Op2, double Tol)
 
 // remove row r2, by compressing it onto row r1 (likewise for the columns)
 void
-compress_row(TriangularMPO& Op, int r1, int r2)
+compress_row(BasicTriangularMPO& Op, int r1, int r2)
 {
 }
 
 // returns true if a compression was achieved
-bool tri_optimize_rows(TriangularMPO& Op)
+bool tri_optimize_rows(BasicTriangularMPO& Op)
 {
    double Tol = 1E-14;
 
@@ -406,12 +406,12 @@ bool tri_optimize_rows(TriangularMPO& Op)
    return Result;
 }
 
-bool tri_optimize_columns(TriangularMPO& Op)
+bool tri_optimize_columns(BasicTriangularMPO& Op)
 {
    return false;
 }
 
-void tri_optimize(TriangularMPO& Op)
+void tri_optimize(BasicTriangularMPO& Op)
 {
    // optimize rows first, then columns.  Iterate until we don't succeed in a compression step.
    bool Compressed = true;  // set to true if we succeed at a compression
@@ -422,14 +422,14 @@ void tri_optimize(TriangularMPO& Op)
    }
 }
 
-void balance(TriangularMPO& Op)
+void balance(BasicTriangularMPO& Op)
 {
    //
 }
 
-void print_structure(TriangularMPO const& Op, std::ostream& out, double UnityEpsilon, int Verbose)
+void print_structure(BasicTriangularMPO const& Op, std::ostream& out, double UnityEpsilon, int Verbose)
 {
-   out << "TriangularMPO has " << Op.size() << " sites\n";
+   out << "BasicTriangularMPO has " << Op.size() << " sites\n";
    for (int i = 0; i < Op.size(); ++i)
    {
       if (Verbose > 0)
@@ -445,7 +445,7 @@ void print_structure(TriangularMPO const& Op, std::ostream& out, double UnityEps
 
 // arithmetic
 
-TriangularMPO& operator*=(TriangularMPO& Op, double x)
+BasicTriangularMPO& operator*=(BasicTriangularMPO& Op, double x)
 {
    for (int i = 0; i < Op.size(); ++i)
    {
@@ -458,7 +458,7 @@ TriangularMPO& operator*=(TriangularMPO& Op, double x)
    return Op;
 }
 
-TriangularMPO& operator*=(TriangularMPO& Op, std::complex<double> x)
+BasicTriangularMPO& operator*=(BasicTriangularMPO& Op, std::complex<double> x)
 {
    for (int i = 0; i < Op.size(); ++i)
    {
@@ -471,35 +471,35 @@ TriangularMPO& operator*=(TriangularMPO& Op, std::complex<double> x)
    return Op;
 }
 
-TriangularMPO operator*(TriangularMPO const& Op, double x)
+BasicTriangularMPO operator*(BasicTriangularMPO const& Op, double x)
 {
-   TriangularMPO Result(Op);
+   BasicTriangularMPO Result(Op);
    Result *= x;
    return Result;
 }
 
-TriangularMPO operator*(double x, TriangularMPO const& Op)
+BasicTriangularMPO operator*(double x, BasicTriangularMPO const& Op)
 {
-   TriangularMPO Result(Op);
+   BasicTriangularMPO Result(Op);
    Result *= x;
    return Result;
 }
 
-TriangularMPO operator*(TriangularMPO const& Op, std::complex<double> x)
+BasicTriangularMPO operator*(BasicTriangularMPO const& Op, std::complex<double> x)
 {
-   TriangularMPO Result(Op);
+   BasicTriangularMPO Result(Op);
    Result *= x;
    return Result;
 }
 
-TriangularMPO operator*(std::complex<double> x, TriangularMPO const& Op)
+BasicTriangularMPO operator*(std::complex<double> x, BasicTriangularMPO const& Op)
 {
-   TriangularMPO Result(Op);
+   BasicTriangularMPO Result(Op);
    Result *= x;
    return Result;
 }
 
-TriangularMPO operator+(TriangularMPO const& x, TriangularMPO const& y)
+BasicTriangularMPO operator+(BasicTriangularMPO const& x, BasicTriangularMPO const& y)
 {
    if (x.size() == 0)
       return y;
@@ -516,7 +516,7 @@ TriangularMPO operator+(TriangularMPO const& x, TriangularMPO const& y)
    PRECONDITION_EQUAL(x.GetSymmetryList(), y.GetSymmetryList());
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
 
-   TriangularMPO Result(x.size());
+   BasicTriangularMPO Result(x.size());
 
    for (int Here = 0; Here < x.size(); ++Here)
    {
@@ -581,18 +581,18 @@ TriangularMPO operator+(TriangularMPO const& x, TriangularMPO const& y)
    return Result;
 }
 
-TriangularMPO& operator+=(TriangularMPO& x, TriangularMPO const& y)
+BasicTriangularMPO& operator+=(BasicTriangularMPO& x, BasicTriangularMPO const& y)
 {
    x = x+y;
    return x;
 }
 
-TriangularMPO operator-(TriangularMPO const& x, TriangularMPO const& y)
+BasicTriangularMPO operator-(BasicTriangularMPO const& x, BasicTriangularMPO const& y)
 {
    return x + (-1.0)*y;
 }
 
-TriangularMPO operator*(TriangularMPO const& x, TriangularMPO const& y)
+BasicTriangularMPO operator*(BasicTriangularMPO const& x, BasicTriangularMPO const& y)
 {
    QuantumNumber qx = x.TransformsAs();
    QuantumNumber qy = y.TransformsAs();
@@ -601,7 +601,7 @@ TriangularMPO operator*(TriangularMPO const& x, TriangularMPO const& y)
    return prod(x, y, ql.front());
 }
 
-TriangularMPO prod(TriangularMPO const& x, TriangularMPO const& y, QuantumNumbers::QuantumNumber const& q)
+BasicTriangularMPO prod(BasicTriangularMPO const& x, BasicTriangularMPO const& y, QuantumNumbers::QuantumNumber const& q)
 {
    if (x.size() != y.size())
    {
@@ -615,7 +615,7 @@ TriangularMPO prod(TriangularMPO const& x, TriangularMPO const& y, QuantumNumber
 
    typedef Tensor::ProductBasis<BasisList, BasisList> PBasisType;
 
-   TriangularMPO Result(x.size());
+   BasicTriangularMPO Result(x.size());
 
    // The basis that wraps around gets the final element projected onto component q only
    PBasisType ProjectedBasis = PBasisType::MakeTriangularProjected(x.front().Basis1(), y.front().Basis1(), q);
@@ -694,17 +694,17 @@ TriangularMPO prod(TriangularMPO const& x, TriangularMPO const& y, QuantumNumber
    return Result;
 }
 
-TriangularMPO
-repeat(TriangularMPO const& x, int count)
+BasicTriangularMPO
+repeat(BasicTriangularMPO const& x, int count)
 {
-   TriangularMPO Result(x.size() * count);
+   BasicTriangularMPO Result(x.size() * count);
    for (int i = 0; i < count; ++i)
       for (int j = 0; j < x.size(); ++j)
          Result[i*x.size()+j] = x[j];
    return Result;
 }
 
-TriangularMPO dot(TriangularMPO const& x, TriangularMPO const& y)
+BasicTriangularMPO dot(BasicTriangularMPO const& x, BasicTriangularMPO const& y)
 {
    if (x.empty())
       return x;
@@ -717,12 +717,12 @@ TriangularMPO dot(TriangularMPO const& x, TriangularMPO const& y)
    return std::sqrt(double(degree(x.TransformsAs()))) * prod(x, y, Ident);
 }
 
-TriangularMPO inner(TriangularMPO const& x, TriangularMPO const& y)
+BasicTriangularMPO inner(BasicTriangularMPO const& x, BasicTriangularMPO const& y)
 {
    return dot(adjoint(x), y);
 }
 
-TriangularMPO cross(TriangularMPO const& x, TriangularMPO const& y)
+BasicTriangularMPO cross(BasicTriangularMPO const& x, BasicTriangularMPO const& y)
 {
    CHECK(cross_product_exists(x.TransformsAs(), y.TransformsAs()))
       ("Cross product does not exist for these operators")
@@ -732,7 +732,7 @@ TriangularMPO cross(TriangularMPO const& x, TriangularMPO const& y)
       * prod(x, y, cross_product_transforms_as(x.TransformsAs(), y.TransformsAs()));
 }
 
-TriangularMPO outer(TriangularMPO const& x, TriangularMPO const& y)
+BasicTriangularMPO outer(BasicTriangularMPO const& x, BasicTriangularMPO const& y)
 {
    QuantumNumbers::QuantumNumberList L = transform_targets(x.TransformsAs(), y.TransformsAs());
    QuantumNumbers::QuantumNumber q = L[0];
@@ -759,8 +759,8 @@ TriangularMPO outer(TriangularMPO const& x, TriangularMPO const& y)
    return outer_coefficient(dx, dy, dq) *  prod(x,y,q);
 }
 
-TriangularMPO
-pow(TriangularMPO const& x, int n)
+BasicTriangularMPO
+pow(BasicTriangularMPO const& x, int n)
 {
    if (n == 0)
    {
@@ -781,41 +781,41 @@ pow(TriangularMPO const& x, int n)
    }
 }
 
-TriangularMPO
-operator-(TriangularMPO const& x)
+BasicTriangularMPO
+operator-(BasicTriangularMPO const& x)
 {
    return x * -1.0;
 }
 
-TriangularMPO coarse_grain(TriangularMPO const& x, int N)
+BasicTriangularMPO coarse_grain(BasicTriangularMPO const& x, int N)
 {
    int MinSize = statistics::lcm(N, x.size());
-   return TriangularMPO(coarse_grain(repeat(x, MinSize/x.size()).data(), N).data());
+   return BasicTriangularMPO(coarse_grain(repeat(x, MinSize/x.size()).data(), N).data());
 }
 
 // initial operators
 
-StateComponent Initial_E(TriangularMPO const& m, VectorBasis const& Vac)
+StateComponent Initial_E(BasicTriangularMPO const& m, VectorBasis const& Vac)
 {
    StateComponent Result(m.data().Basis1(), Vac, Vac);
    Result[0] = MatrixOperator::make_identity(Vac);
    return Result;
 }
 
-StateComponent Initial_F(TriangularMPO const& m, VectorBasis const& Vac)
+StateComponent Initial_F(BasicTriangularMPO const& m, VectorBasis const& Vac)
 {
    StateComponent Result(m.data().Basis2(), Vac, Vac);
    Result[m.data().Basis2().size()-1] = MatrixOperator::make_identity(Vac);
    return Result;
 }
 
-StateComponent Initial_E(TriangularMPO const& m)
+StateComponent Initial_E(BasicTriangularMPO const& m)
 {
    VectorBasis Vac(make_vacuum_basis(m.GetSymmetryList()));
    return Initial_E(m, Vac);
 }
 
-StateComponent Initial_F(TriangularMPO const& m)
+StateComponent Initial_F(BasicTriangularMPO const& m)
 {
    VectorBasis Vac(make_vacuum_basis(m.GetSymmetryList()));
    return Initial_F(m, Vac);

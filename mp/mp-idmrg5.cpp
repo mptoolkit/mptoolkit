@@ -21,7 +21,7 @@
 // variant of iDMRG where we keep intact the unit cell.
 // This prohibits relfection symmetry.
 
-#include "mpo/triangular_mpo.h"
+#include "mpo/basic_triangular_mpo.h"
 #include "mps/infinitewavefunction.h"
 #include "quantumnumbers/all_symmetries.h"
 #include "mp-algorithms/lanczos.h"
@@ -88,7 +88,7 @@ struct ProductLeft
    typedef StateComponent result_type;
    typedef StateComponent argument_type;
 
-   ProductLeft(LinearWavefunction const& Psi_, TriangularMPO const& Op_,
+   ProductLeft(LinearWavefunction const& Psi_, BasicTriangularMPO const& Op_,
                QuantumNumber const& QShift_)
       : Psi(Psi_), Op(Op_), QShift(QShift_)
    {
@@ -97,7 +97,7 @@ struct ProductLeft
    StateComponent operator()(StateComponent const& In) const
    {
       StateComponent Guess = delta_shift(In, QShift);
-      TriangularMPO::const_iterator HI = Op.begin();
+      BasicTriangularMPO::const_iterator HI = Op.begin();
       for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I, ++HI)
       {
          Guess = operator_prod(herm(*HI), herm(*I), Guess, *I);
@@ -107,7 +107,7 @@ struct ProductLeft
    }
 
    LinearWavefunction const& Psi;
-   TriangularMPO const& Op;
+   BasicTriangularMPO const& Op;
    QuantumNumber QShift;
 };
 
@@ -116,7 +116,7 @@ struct ProductRight
    typedef StateComponent result_type;
    typedef StateComponent argument_type;
 
-   ProductRight(LinearWavefunction const& Psi_, TriangularMPO const& Op_,
+   ProductRight(LinearWavefunction const& Psi_, BasicTriangularMPO const& Op_,
                 QuantumNumber const& QShift_)
       : Psi(Psi_), Op(Op_), QShift(QShift_)
    {
@@ -126,7 +126,7 @@ struct ProductRight
    {
       StateComponent Guess = In;
       LinearWavefunction::const_iterator I = Psi.end();
-      TriangularMPO::const_iterator HI = Op.end();
+      BasicTriangularMPO::const_iterator HI = Op.end();
       while (I != Psi.begin())
       {
          --I;
@@ -138,7 +138,7 @@ struct ProductRight
    }
 
    LinearWavefunction const& Psi;
-   TriangularMPO const& Op;
+   BasicTriangularMPO const& Op;
    QuantumNumber QShift;
 };
 
@@ -147,7 +147,7 @@ struct FrontProductLeft
    typedef MatrixOperator result_type;
    typedef MatrixOperator argument_type;
 
-   FrontProductLeft(LinearWavefunction const& Psi_, TriangularMPO const& Op_,
+   FrontProductLeft(LinearWavefunction const& Psi_, BasicTriangularMPO const& Op_,
                     StateComponent const& E_, double Energy_)
       : Psi(Psi_), Op(Op_), E(E_)
    {
@@ -157,7 +157,7 @@ struct FrontProductLeft
    {
       StateComponent Guess = E;
       Guess.back() = In;
-      TriangularMPO::const_iterator OpIter = Op.begin();
+      BasicTriangularMPO::const_iterator OpIter = Op.begin();
       for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I, ++OpIter)
       {
          Guess = operator_prod(herm(*OpIter), herm(*I), Guess, *I);
@@ -166,7 +166,7 @@ struct FrontProductLeft
    }
 
    LinearWavefunction const& Psi;
-   TriangularMPO const& Op;
+   BasicTriangularMPO const& Op;
    StateComponent const& E;
    double Energy;
 };
@@ -283,7 +283,7 @@ struct SubProductRightProject
 
 std::complex<double>
 MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
-                    QuantumNumber const& QShift, TriangularMPO const& Op,
+                    QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                     MatrixOperator const& Rho)
 {
    ProductLeft Prod(Psi, Op, QShift);
@@ -328,7 +328,7 @@ MPO_EigenvaluesLeft(StateComponent& Guess, LinearWavefunction const& Psi,
 
 std::complex<double>
 MPO_EigenvaluesRight(StateComponent& Guess, LinearWavefunction const& Psi,
-                     QuantumNumber const& QShift, TriangularMPO const& Op,
+                     QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                      MatrixOperator const& Rho)
 {
    ProductRight Prod(Psi, Op, QShift);
@@ -403,7 +403,7 @@ bool ExpandL = true, ExpandR = true;
 MatrixOperator
 DoDMRGSweepLeft(LinearWavefunction& Psi,
                 MatrixOperator const& C_r,
-                TriangularMPO const& Ham,
+                BasicTriangularMPO const& Ham,
                 std::deque<StateComponent>& LeftBlockHam,
                 std::deque<StateComponent>& RightBlockHam,
                 StatesInfo const& SInfo, int MinIter, int NumIter,
@@ -413,7 +413,7 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
 {
    LinearWavefunction Result;
    LinearWavefunction::const_iterator I = Psi.end();
-   TriangularMPO::const_iterator H = Ham.end();
+   BasicTriangularMPO::const_iterator H = Ham.end();
       --I; --H;
 
    StateComponent R = prod(*I, C_r);
@@ -515,7 +515,7 @@ DoDMRGSweepLeft(LinearWavefunction& Psi,
 MatrixOperator
 DoDMRGSweepRight(MatrixOperator const& C_l,
                  LinearWavefunction& Psi,
-                 TriangularMPO const& Ham,
+                 BasicTriangularMPO const& Ham,
                  std::deque<StateComponent>& LeftBlockHam,
                  std::deque<StateComponent>& RightBlockHam,
                  StatesInfo const& SInfo, int MinIter, int NumIter,
@@ -526,7 +526,7 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
    LinearWavefunction Result;
 
    LinearWavefunction::const_iterator I = Psi.begin();
-   TriangularMPO::const_iterator H = Ham.begin();
+   BasicTriangularMPO::const_iterator H = Ham.begin();
 
    StateComponent L = prod(C_l, *I);
    MatrixOperator C = ExpandBasis2Used(L, *H);
@@ -628,7 +628,7 @@ DoDMRGSweepRight(MatrixOperator const& C_l,
 
 #if defined(ENABLE_ONE_SITE_SCHEME)
 void OneSiteScheme(InfiniteWavefunction& Psi, LinearWavefunction& MyPsi, double& LastEnergy, MatrixOperator& C,
-                   TriangularMPO const& HamMPO,
+                   BasicTriangularMPO const& HamMPO,
                    QuantumNumber const& QShift,
                    std::deque<StateComponent>& LeftBlock,
                    std::deque<StateComponent>& RightBlock,
@@ -1168,7 +1168,7 @@ int main(int argc, char** argv)
       bool StartFromFixedPoint = !NoFixedPoint; // we've reversed the option
 
       // Hamiltonian
-      TriangularMPO HamMPO;
+      BasicTriangularMPO HamMPO;
       if (HamStr == "itf")
       {
          std::cout << "Hamiltonian is transverse-field Ising, J=" << J << ", Lambda=" << Lambda << "\n";
@@ -1176,7 +1176,7 @@ int main(int argc, char** argv)
          CHECK_EQUAL(LongRangeCoeff.size(), LongRangeExp.size())
             ("Must supply equal numbers of coefficients and exponents");
          LatticeSite Site = SpinSite(0.5);
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham = J * 4.0 * TriangularTwoSite(Site["Sz"], Site["Sz"])
             + Lambda * 2.0 * TriangularOneSite(Site["Sx"]);
 
@@ -1207,7 +1207,7 @@ int main(int argc, char** argv)
          }
          LatticeSite Site = HamStr == "lr-itf" ? SpinSite(0.5) : CreateZ2SpinSite(0.5);
          std::vector<BasisList> Sites(NLegs, Site["I"].Basis());
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          int i,j,r2;
          double Alpha, Beta;
          while (In >> i >> j >> Alpha >> Beta >> r2)
@@ -1243,7 +1243,7 @@ int main(int argc, char** argv)
       {
          std::cout << "Hamiltonian is transverse-field Ising with Z2, J=" << J << ", Lambda=" << Lambda << "\n";
          LatticeSite Site = CreateZ2SpinSite(0.5);
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham = J * 4.0 * TriangularTwoSite(Site["Sz"], Site["Sz"])
             + Lambda * 2.0 * TriangularOneSite(Site["Sx"]);
          HamMPO = Ham;
@@ -1257,7 +1257,7 @@ int main(int argc, char** argv)
 
          // see Aguado - PRB 79, 012408 (2009)
          LatticeSite Site = CreateU1U1SpinSite();
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham = (J/2) * (0.25 * (TriangularTwoSite(Site["Tp"], Site["Tm"])
                                 + TriangularTwoSite(Site["Tm"], Site["Tp"])
                                 + TriangularTwoSite(Site["Up"], Site["Um"])
@@ -1320,7 +1320,7 @@ int main(int argc, char** argv)
             ("Must supply equal numbers of coefficients and exponents");
 
          LatticeSite Site = SpinSU2(Spin);
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          if (Dipole != 0)
             Ham = Ham + Dipole * TriangularTwoSite(-sqrt(3.0)*Site["S"], Site["S"], Site["I"].TransformsAs());
          if (Quadrapole != 0.0)
@@ -1356,7 +1356,7 @@ int main(int argc, char** argv)
                    << ", J=" << J << ", Jperp=" << Jperp << ", periodic=" << Periodic
                    << '\n';
          LatticeSite Site = SpinSU2(Spin);
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
 
          // N-site unit cell
          std::vector<BasisList> Sites(NLegs, Site["I"].Basis());
@@ -1383,7 +1383,7 @@ int main(int argc, char** argv)
                    << ", J=" << J << ", Jperp=" << Jperp << ", periodic=" << Periodic
                    << '\n';
          LatticeSite Site = SpinSU2(Spin);
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
 
          // N-site unit cell
          std::vector<BasisList> Sites(NLegs, Site["I"].Basis());
@@ -1435,7 +1435,7 @@ int main(int argc, char** argv)
             TwistFactor = TwistFactorConj = 1.0;
          }
          LatticeSite Site = SpinU1(Spin);
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham = Jz * TriangularTwoSite(Site["Sz"], Site["Sz"])
             + J * 0.5 * (TwistFactor * TriangularTwoSite(Site["Sp"], Site["Sm"])
                          + TwistFactorConj * TriangularTwoSite(Site["Sm"], Site["Sp"]));
@@ -1484,7 +1484,7 @@ int main(int argc, char** argv)
 
          LatticeSite Site = CreateZ2SpinSite(Spin);
 
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham = Jz * TriangularTwoSite(Site["Sz"], Site["Sz"], Site["I"].TransformsAs())
                     + J * (TriangularTwoSite(Site["Sx"], Site["Sx"], Site["I"].TransformsAs())
                            + TriangularTwoSite(Site["Sy"], Site["Sy"], Site["I"].TransformsAs()));
@@ -1506,7 +1506,7 @@ int main(int argc, char** argv)
             ("Must supply equal numbers of coefficients and exponents");
 
          LatticeSite Site = SpinSite(Spin);
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham = Jz*TriangularTwoSite(Site["Sz"], Site["Sz"], Site["I"].TransformsAs())
             + 0.5 * J * (TriangularTwoSite(Site["Sp"], Site["Sm"], Site["I"].TransformsAs())
                                 + TriangularTwoSite(Site["Sm"], Site["Sp"], Site["I"].TransformsAs()));
@@ -1545,7 +1545,7 @@ int main(int argc, char** argv)
                    << ", Jx=" << Jx << ", Jy=" << Jy << ", Jz=" << Jz
                    << ", Jr=" << Jr << '\n';
          LatticeSite Site = SpinSite(Spin);
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham = Jz*TriangularTwoSite(Site["Sz"], Site["Sz"])
             + Jx*TriangularTwoSite(Site["Sx"], Site["Sx"])
             + Jy*TriangularTwoSite(Site["Sy"], Site["Sy"]);
@@ -1561,24 +1561,24 @@ int main(int argc, char** argv)
          LatticeSite Site = CreateU1SU2tJSite();
          double tSqrt2 = (-sqrt(2.0)) * t;  // the -sqrt(2) is an SU(2) factor
          double tprimeSqrt2 = (-sqrt(2.0)) * tprime;  // the -sqrt(2) is an SU(2) factor
-         TriangularMPO H1 = -tSqrt2 * (TriangularTwoSite(Site["CHP"], Site["C"])
+         BasicTriangularMPO H1 = -tSqrt2 * (TriangularTwoSite(Site["CHP"], Site["C"])
                                         + TriangularTwoSite(Site["CP"], Site["CH"]))
             + (-tprimeSqrt2) * (TriangularThreeSite(Site["CHP"], Site["P"], Site["C"])
                                 +  TriangularThreeSite(Site["CP"], Site["P"], Site["CH"]));
-         TriangularMPO H2 = H1;
+         BasicTriangularMPO H2 = H1;
          H1 += (delta / 2) * TriangularOneSite(Site["N"]);
          H2 += (-delta / 2) * TriangularOneSite(Site["N"]);
          std::vector<OperatorComponent> HamList;
          HamList.push_back(H1[0]);
          HamList.push_back(H2[0]);
-         HamMPO = TriangularMPO(HamList);
+         HamMPO = BasicTriangularMPO(HamList);
       }
       else if (HamStr == "tj-zigzag-u1")
       {
          std::cout << "Hamiltonian is t-J model with t=" << t << ", t'=" << tprime
                    << ", delta=" << delta << '\n';
          LatticeSite Site = CreateU1tJSite();
-         TriangularMPO H1 = -t * (TriangularTwoSite(Site["CHupP"], Site["Cup"])
+         BasicTriangularMPO H1 = -t * (TriangularTwoSite(Site["CHupP"], Site["Cup"])
                                    - TriangularTwoSite(Site["CupP"], Site["CHup"])
                                    + TriangularTwoSite(Site["CHdownP"], Site["Cdown"])
                                    - TriangularTwoSite(Site["CdownP"], Site["CHdown"]))
@@ -1586,30 +1586,30 @@ int main(int argc, char** argv)
                            -  TriangularThreeSite(Site["CupP"], Site["P"], Site["CHup"])
                            + TriangularThreeSite(Site["CHdownP"], Site["P"], Site["Cdown"])
                            -  TriangularThreeSite(Site["CdownP"], Site["P"], Site["CHdown"]));
-         TriangularMPO H2 = H1;
+         BasicTriangularMPO H2 = H1;
          H1 += (delta / 2) * TriangularOneSite(Site["N"]);
          H2 += (-delta / 2) * TriangularOneSite(Site["N"]);
          std::vector<OperatorComponent> HamList;
          HamList.push_back(H1[0]);
          HamList.push_back(H2[0]);
-         HamMPO = TriangularMPO(HamList);
+         HamMPO = BasicTriangularMPO(HamList);
       }
       else if (HamStr == "sf-zigzag-u1")
       {
          std::cout << "Hamiltonian is spinless fermions with t=" << t << ", t'=" << tprime
                    << ", delta=" << delta << '\n';
          LatticeSite Site = CreateU1SpinlessFermion();
-         TriangularMPO H1 = -t * (TriangularTwoSite(Site["CHP"], Site["C"])
+         BasicTriangularMPO H1 = -t * (TriangularTwoSite(Site["CHP"], Site["C"])
                                    - TriangularTwoSite(Site["CP"], Site["CH"]))
             + (-tprime) * (TriangularThreeSite(Site["CHP"], Site["P"], Site["C"])
                            -  TriangularThreeSite(Site["CP"], Site["P"], Site["CH"]));
-         TriangularMPO H2 = H1;
+         BasicTriangularMPO H2 = H1;
          H1 += (delta / 2) * TriangularOneSite(Site["N"]);
          H2 += (-delta / 2) * TriangularOneSite(Site["N"]);
          std::vector<OperatorComponent> HamList;
          HamList.push_back(H1[0]);
          HamList.push_back(H2[0]);
-         HamMPO = TriangularMPO(HamList);
+         HamMPO = BasicTriangularMPO(HamList);
       }
       else if (HamStr == "klm-so4")
       {
@@ -1617,7 +1617,7 @@ int main(int argc, char** argv)
          LatticeSite SiteA = CreateSO4KondoSiteA();
          LatticeSite SiteB = CreateSO4KondoSiteB();
          std::vector<BasisList> Sites(2, SiteA["I"].Basis());
-         TriangularMPO Ham = -2.0 * t * TwoPointOperator(Sites, 0, SiteA["CHP"], 1, SiteB["C"]);
+         BasicTriangularMPO Ham = -2.0 * t * TwoPointOperator(Sites, 0, SiteA["CHP"], 1, SiteB["C"]);
          Ham += -2.0 * t * TwoPointOperator(Sites, 1, SiteB["CHP"], 2, SiteA["C"]);
          if (U != 0)
          {
@@ -1633,7 +1633,7 @@ int main(int argc, char** argv)
       {
          std::cout << "Hamiltonian is Kondo Lattice with J=" << J << '\n';
          LatticeSite Site = CreateU1SU2KondoSite();
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          double tSqrt2 = (-sqrt(2.0)) * t;  // the -sqrt(2) is an SU(2) factor
          Ham = -tSqrt2 * (TriangularTwoSite(Site["CHP"], Site["C"])
                           + TriangularTwoSite(Site["CP"], Site["CH"]));
@@ -1644,7 +1644,7 @@ int main(int argc, char** argv)
       {
          std::cout << "Hamiltonian is U(1) Kondo Lattice with J=" << J << ", Jz=" << Jz << '\n';
          LatticeSite Site = CreateU1KondoSite();
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham =  -t * (TriangularTwoSite(Site["CHupP"], Site["Cup"])
                       - TriangularTwoSite(Site["CupP"], Site["CHup"])
                       + TriangularTwoSite(Site["CHdownP"], Site["Cdown"])
@@ -1660,7 +1660,7 @@ int main(int argc, char** argv)
       {
          std::cout << "Hamiltonian is U(1)xU(1) Kondo Lattice with J=" << J << ", Jz=" << Jz << '\n';
          LatticeSite Site = CreateU1U1KondoSite();
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham =  -t * (TriangularTwoSite(Site["CHupP"], Site["Cup"])
                       - TriangularTwoSite(Site["CupP"], Site["CHup"])
                       + TriangularTwoSite(Site["CHdownP"], Site["Cdown"])
@@ -1676,14 +1676,14 @@ int main(int argc, char** argv)
       {
          std::cout << "Hamiltonian is Hubbard model with t=" << t << ", U = " << U << '\n';
          LatticeSite Site = FermionSO4_A();
-         TriangularMPO H1 = -2.0 * t * TriangularTwoSite(Site["C_A"], Site["C_B"]);
-         TriangularMPO H2 = -2.0 * t * TriangularTwoSite(Site["C_B"], Site["C_A"]);
+         BasicTriangularMPO H1 = -2.0 * t * TriangularTwoSite(Site["C_A"], Site["C_B"]);
+         BasicTriangularMPO H2 = -2.0 * t * TriangularTwoSite(Site["C_B"], Site["C_A"]);
          H1 = H1 + 0.25 * U * TriangularOneSite(Site["P"]);
          H2 = H2 + 0.25 * U * TriangularOneSite(Site["P"]);
          std::vector<OperatorComponent> HamList;
          HamList.push_back(H1[0]);
          HamList.push_back(H2[0]);
-         HamMPO = TriangularMPO(HamList);
+         HamMPO = BasicTriangularMPO(HamList);
       }
       else if (HamStr == "hubbard-u1su2")
       {
@@ -1691,7 +1691,7 @@ int main(int argc, char** argv)
                    << ", U = " << U
                    << ", Delta=" << delta << '\n';
          LatticeSite Site = FermionU1SU2();
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham =  -t * sqrt(2.0) * (TriangularTwoSite(Site["CHP"], Site["C"])
                       + TriangularTwoSite(Site["CP"], Site["CH"]));
          if (t2 != 0)
@@ -1716,7 +1716,7 @@ int main(int argc, char** argv)
                    << ", U = " << U
                    << ", Delta=" << delta << '\n';
          LatticeSite Site = CreateU1U1HubbardSite();
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham =  -t * (TriangularTwoSite(Site["CHupP"], Site["Cup"])
                       - TriangularTwoSite(Site["CupP"], Site["CHup"])
                       + TriangularTwoSite(Site["CHdownP"], Site["Cdown"])
@@ -1744,7 +1744,7 @@ int main(int argc, char** argv)
          // These parameters (e.g. mu) are defined in this form to match the Lieb-Liniger model, U = m g dz / hbar^2, energy scaled by hbar^2 / 2 m dz^2
          std::cout << "Hamiltonian is spinless Bose-Hubbard, no symmetry, T=1, U=" << U << ", mu=" << mu << "- 2.0 \n";
          LatticeSite Site = Boson(3);
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham = -1.0 * TriangularTwoSite(Site["BH"], Site["B"]) - 1.0 * TriangularTwoSite(Site["B"], Site["BH"])
             + U * TriangularOneSite(Site["N2"]) - (mu - 2.0) * TriangularOneSite(Site["N"]);
          HamMPO = Ham;
@@ -1753,7 +1753,7 @@ int main(int argc, char** argv)
       {
          std::cout << "Hamiltonian is spinless Bose-Hubbard, no symmetry, J/U=" << J << ", mu=" << mu << "\n";
          LatticeSite Site = Boson(NMax);
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham = -J * TriangularTwoSite(Site["BH"], Site["B"]) - J * TriangularTwoSite(Site["B"], Site["BH"])
             + 0.5 * TriangularOneSite(Site["N2"]) - mu * TriangularOneSite(Site["N"]);
          HamMPO = Ham;
@@ -1768,7 +1768,7 @@ int main(int argc, char** argv)
          std::vector<BasisList> Sites(1, Site["I"].Basis());
 
 
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham = -J * TriangularTwoSite(Site["BH"], Site["B"]) - J * TriangularTwoSite(Site["B"], Site["BH"]);
          if (U != 0)
             Ham += 0.5*U * TriangularOneSite(Site["N2"]);
@@ -1790,7 +1790,7 @@ int main(int argc, char** argv)
                    << '\n';
          LatticeSite Site = BosonU1(NMax);
          std::vector<BasisList> Sites(2, Site["I"].Basis());
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham = -J1 * (TwoPointOperator(Sites, 0, Site["BH"], 2, Site["B"]) + TwoPointOperator(Sites, 0, Site["B"], 2, Site["BH"]) );
          Ham += -J2 * (TwoPointOperator(Sites, 1, Site["BH"], 3, Site["B"]) + TwoPointOperator(Sites, 1, Site["B"], 3, Site["BH"]) );
          if (U1 != 0)
@@ -1809,7 +1809,7 @@ int main(int argc, char** argv)
                    << ", Omega=" << Omega << "\n";
 
          LatticeSite Site = Boson2ComponentU1Z2(NMax);
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham = -J * (TriangularTwoSite(Site["BH_S"], Site["B_S"]) + TriangularTwoSite(Site["B_S"], Site["BH_S"])
                      + TriangularTwoSite(Site["BH_A"], Site["B_A"]) + TriangularTwoSite(Site["B_A"], Site["BH_A"]));
 
@@ -1829,7 +1829,7 @@ int main(int argc, char** argv)
          // These parameters are defined in this form to match the Lieb-Liniger model, U = m g dz / hbar^2, energy scaled by hbar^2 / 2 m dz^2
          std::cout << "Hamiltonian is spinless Bose-Hubbard with next-nearest neighbour tunnelling, no symmetry, T=4/3, Tprime=" << tprime << "/-12, U=" << U << ", mu=" << mu << " - 2.5 \n";
          LatticeSite Site = Boson(3);
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham = -4.0/3.0 * TriangularTwoSite(Site["BH"], Site["B"]) - 4.0/3.0 * TriangularTwoSite(Site["B"], Site["BH"])
                + 1.0/12.0*tprime * TriangularThreeSite(Site["B"], Site["I"], Site["BH"]) + 1.0/12.0*tprime * TriangularThreeSite(Site["BH"], Site["I"], Site["B"])
             + U * TriangularOneSite(Site["N2"]) - (mu - 2.5) * TriangularOneSite(Site["N"]);
@@ -1842,7 +1842,7 @@ int main(int argc, char** argv)
             std::cout << "D = " << D << ", lambda=" << Lambda << '\n';
 
          LatticeSite Site = BosonU1(NMax);
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham = -1.0 * TriangularTwoSite(Site["BH"], Site["B"]) - 1.0 * TriangularTwoSite(Site["B"], Site["BH"])
          + (U/2) * TriangularOneSite(Site["N2"]);
          if (D != 0)
@@ -1858,7 +1858,7 @@ int main(int argc, char** argv)
          double tConst =  UnitCellSize * UnitCellSize / (math_const::pi * math_const::pi);
          double UConst = 1.0 / (math_const::pi * math_const::pi);
          std::vector<BasisList> Sites(UnitCellSize, Site["I"].Basis());
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          for (int i = 0; i < UnitCellSize; ++i)
          {
             Ham += -tConst * TwoPointOperator(Sites, i, Site["BH"], i+1, Site["B"]);
@@ -1875,7 +1875,7 @@ int main(int argc, char** argv)
          // These parameters are defined in this form to match the Lieb-Liniger model, U = m g dz / hbar^2, energy scaled by hbar^2 / 2 m dz^2
          std::cout << "Hamiltonian is spinless Bose-Hubbard with next-nearest neighbour tunnelling, U1 symmetry, T=4/3, Tprime=" << tprime << "/-12, U=" << U << ", Nmax=3\n";
          LatticeSite Site = BosonU1(3);
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham = -4.0/3.0 * TriangularTwoSite(Site["BH"], Site["B"]) - 4.0/3.0 * TriangularTwoSite(Site["B"], Site["BH"])
                + 1.0/12.0*tprime * TriangularThreeSite(Site["B"], Site["I"], Site["BH"]) + 1.0/12.0*tprime * TriangularThreeSite(Site["BH"], Site["I"], Site["B"])
             + U * TriangularOneSite(Site["N2"]) + 2.5 * TriangularOneSite(Site["N"]);
@@ -1887,7 +1887,7 @@ int main(int argc, char** argv)
          LatticeSite Site = SpinSU2(0.5);
          // 3-site unit cell
          std::vector<BasisList> Sites(3, Site["I"].Basis());
-         TriangularMPO Ham = Jcross * (TwoPointOperator(Sites, 0, Site["S"], 1, Site["S"])
+         BasicTriangularMPO Ham = Jcross * (TwoPointOperator(Sites, 0, Site["S"], 1, Site["S"])
                                             + TwoPointOperator(Sites, 0, Site["S"], 2, Site["S"])
                                             + TwoPointOperator(Sites, 1, Site["S"], 3, Site["S"])
                                             + TwoPointOperator(Sites, 2, Site["S"], 3, Site["S"]));
@@ -1909,7 +1909,7 @@ int main(int argc, char** argv)
          std::vector<BasisList> Sites(3*NLegs, Site["I"].Basis());
 
          // J1 interactions
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
 
          for(int i = 0; i < NLegs; ++i)
          {
@@ -1929,7 +1929,7 @@ int main(int argc, char** argv)
          Ham *= J1;
 
          // J2 interactions
-         TriangularMPO Htwo;
+         BasicTriangularMPO Htwo;
 
          for(int i = 0; i < NLegs; ++i)
          {
@@ -1959,7 +1959,7 @@ int main(int argc, char** argv)
          std::vector<BasisList> Sites(6*NLegs, Site["I"].Basis());
 
          // J1 interactions
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
 
          for(int i = 0; i < NLegs; ++i)
          {
@@ -1973,7 +1973,7 @@ int main(int argc, char** argv)
          Ham *= J1;
 
          // J2 interactions
-         TriangularMPO Htwo;
+         BasicTriangularMPO Htwo;
 
          for(int i = 0; i < NLegs; ++i)
          {
@@ -2002,7 +2002,7 @@ int main(int argc, char** argv)
          std::vector<BasisList> Sites(9*NLegs, Site["I"].Basis());
 
          // J1 interactions
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
 
          for(int i = 0; i < NLegs; ++i)
          {
@@ -2016,7 +2016,7 @@ int main(int argc, char** argv)
          Ham *= J1;
 
          // J2 interactions
-         TriangularMPO Htwo;
+         BasicTriangularMPO Htwo;
 
          for(int i = 0; i < NLegs; ++i)
          {
@@ -2045,7 +2045,7 @@ int main(int argc, char** argv)
          std::vector<BasisList> Sites(12*NLegs, Site["I"].Basis());
 
          // J1 interactions
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
 
          for(int i = 0; i < NLegs; ++i)
          {
@@ -2059,7 +2059,7 @@ int main(int argc, char** argv)
          Ham *= J1;
 
          // J2 interactions
-         TriangularMPO Htwo;
+         BasicTriangularMPO Htwo;
 
          for(int i = 0; i < NLegs; ++i)
          {
@@ -2088,7 +2088,7 @@ int main(int argc, char** argv)
          std::vector<BasisList> Sites(5*NLegs, Site["I"].Basis());
 
          // J1 interactions
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
 
          for(int i = 0; i < NLegs; ++i)
          { for(int j = 0; j < 5; ++j)
@@ -2101,7 +2101,7 @@ int main(int argc, char** argv)
          Ham *= J1;
 
          // J2 interactions
-         TriangularMPO Htwo;
+         BasicTriangularMPO Htwo;
 
          for(int i = 0; i < NLegs; ++i)
          { for(int j = 0; j < 5; ++j)
@@ -2129,7 +2129,7 @@ int main(int argc, char** argv)
          std::vector<BasisList> Sites(4*NLegs, Site["I"].Basis());
 
          // J1 interactions
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
 
          for(int i = 0; i < NLegs; ++i)
          {
@@ -2153,7 +2153,7 @@ int main(int argc, char** argv)
          Ham *= J1;
 
          // J2 interactions
-         TriangularMPO Htwo;
+         BasicTriangularMPO Htwo;
 
          for(int i = 0; i < NLegs; ++i)
          {
@@ -2184,7 +2184,7 @@ int main(int argc, char** argv)
          LatticeSite Site = SpinSU2(0.5);
          // 24-site unit cell
          std::vector<BasisList> Sites(KagomeUnitCell, Site["I"].Basis());
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          for (int k = 0; k < KagomeUnitCell / 3; ++k)
          {
             Ham += Jcross * (TwoPointOperator(Sites, k*3 + 0, Site["S"], k*3 + 1, Site["S"])
@@ -2211,7 +2211,7 @@ int main(int argc, char** argv)
          std::vector<BasisList> Sites(NLegs*3, Site["I"].Basis());
 
          // J1 interaction
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          for(int i = 0; i < NLegs; ++i)
          {
             // intra-unit-cell interactions
@@ -2228,7 +2228,7 @@ int main(int argc, char** argv)
          }
 
          // J2 interaction
-         TriangularMPO Htwo;
+         BasicTriangularMPO Htwo;
          for(int i = 0; i < NLegs; ++i)
          {
             Htwo += TwoPointOperator(Sites, i*3, Site["S"], ((i+1)%NLegs)*3, Site["S"])
@@ -2261,7 +2261,7 @@ int main(int argc, char** argv)
 
          double tSqrt2 = (-sqrt(2.0))*t; // SU(2) factor
          double JSqrt3 = (-sqrt(3.0))*J2; // SU(2) factor
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
 
          for(int i = 0; i < NLegs-1; ++i)
          {
@@ -2295,7 +2295,7 @@ int main(int argc, char** argv)
          double tcSqrt2 = (-sqrt(2.0)) * tc;  // the -sqrt(2) is an SU(2) factor
          // 3-site unit cell
          std::vector<BasisList> Sites(3, Site["I"].Basis());
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham += -tcSqrt2 * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 1, Site["C"])
                             + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 1, Site["CH"]));
          Ham += -tcSqrt2 * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 2, Site["C"])
@@ -2330,7 +2330,7 @@ int main(int argc, char** argv)
          LatticeSite Site = CreateU1U1HubbardSite();
          // 3-site unit cell
          std::vector<BasisList> Sites(3, Site["I"].Basis());
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham += -tc * (TwoPointStringOperator(Sites, 0, Site["CHupP"], Site["P"], 1, Site["Cup"])
                             - TwoPointStringOperator(Sites, 0, Site["CupP"], Site["P"], 1, Site["CHup"])
                        + TwoPointStringOperator(Sites, 0, Site["CHdownP"], Site["P"], 1, Site["Cdown"])
@@ -2372,7 +2372,7 @@ int main(int argc, char** argv)
          double tSqrt2 = (-sqrt(2.0)) * t;  // the -sqrt(2) is an SU(2) factor
          // 3-site unit cell
          std::vector<BasisList> Sites(3, Site["I"].Basis());
-         TriangularMPO Ham;
+         BasicTriangularMPO Ham;
          Ham += - (-sqrt(2.0)*tc1) * (TwoPointStringOperator(Sites, 0, Site["CHP"], Site["P"], 1, Site["C"])
                             + TwoPointStringOperator(Sites, 0, Site["CP"], Site["P"], 1, Site["CH"]));
          Ham += - (-sqrt(2.0)*tc2) * (TwoPointStringOperator(Sites, 1, Site["CHP"], Site["P"], 2, Site["C"])
@@ -2583,7 +2583,7 @@ int main(int argc, char** argv)
       QuantumNumber QShift = Psi.QShift;  // quantum number shift per unit cell
 
       LinearWavefunction::const_iterator I = Psi.Psi.end();
-      TriangularMPO::const_iterator HI = HamMPO.begin();
+      BasicTriangularMPO::const_iterator HI = HamMPO.begin();
 
       DEBUG_TRACE(inner_prod(C, operator_prod(LeftBlock.back(), C, herm(RightBlock.front()))));
       DEBUG_TRACE(inner_prod(LeftBlock.back().back(), scalar_prod(C, herm(C))));

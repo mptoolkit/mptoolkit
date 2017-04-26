@@ -483,7 +483,7 @@ struct push_coarse_grain
                                     + " canot coarse-grain to zero or negative size!",
                                     Start, End);
 
-      TriangularMPO TOp = boost::get<TriangularMPO>(Op);
+      BasicTriangularMPO TOp = boost::get<BasicTriangularMPO>(Op);
       TOp = coarse_grain(TOp, Sites);
       eval.push(ElementType(TOp));
    }
@@ -608,7 +608,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
             >> num_cells_no_comma[push_trans_right(self.Lattice, self.eval, self.Args)]
             >> ')';
 
-         // TriangularMPO expressions
+         // BasicTriangularMPO expressions
 
          sum_unit_expression = str_p("sum_unit")
             >> '('
@@ -855,20 +855,20 @@ ParseProductOperatorAndLattice(std::string const& Str)
    return std::make_pair(p.first.as_product_mpo(), p.second);
 }
 
-TriangularMPO
+BasicTriangularMPO
 ParseTriangularOperator(InfiniteLattice const& Lattice, std::string const& Str,
                         Function::ArgumentList const& Args)
 {
    InfiniteMPO Op = ParseInfiniteOperator(Lattice, Str, Args);
-   return Op.as_triangular_mpo();
+   return Op.as_basic_triangular_mpo();
 }
 
-std::pair<TriangularMPO, InfiniteLattice>
+std::pair<BasicTriangularMPO, InfiniteLattice>
 ParseTriangularOperatorAndLattice(std::string const& Str)
 {
    std::pair<InfiniteMPO, InfiniteLattice>
       p = ParseInfiniteOperatorAndLattice(Str);
-   return std::make_pair(p.first.as_triangular_mpo(), p.second);
+   return std::make_pair(p.first.as_basic_triangular_mpo(), p.second);
 }
 
 std::complex<double>

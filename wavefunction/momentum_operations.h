@@ -25,7 +25,7 @@
 #include "common/polynomial.h"
 #include "wavefunction/linearwavefunction.h"
 #include "mpo/generic_mpo.h"
-#include "mpo/triangular_mpo.h"
+#include "mpo/basic_triangular_mpo.h"
 #include "common/angle_map.h"
 
 //
@@ -66,7 +66,7 @@ inject_left(std::vector<MatrixPolyType> const& In,
 // Assumes that E[j] is defined, for j > Column
 MatrixPolyType
 MultiplyLeft(std::vector<MatrixPolyType> const& E,
-             TriangularMPO const& Op,
+             BasicTriangularMPO const& Op,
              LinearWavefunction const& Psi,
              QuantumNumber const& QShift, int Column);
 

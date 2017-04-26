@@ -285,7 +285,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, DMRG& d)
    }
 }
 
-DMRG::DMRG(FiniteWavefunctionLeft const& Psi_, TriangularMPO const& Ham_, int Verbose_)
+DMRG::DMRG(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_, int Verbose_)
    : Hamiltonian(Ham_),
      NormalizeWavefunction(false),
      IsPsiConverged(false), IsConvergedValid(false),

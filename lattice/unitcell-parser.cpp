@@ -490,7 +490,7 @@ struct push_string
 };
 
 FiniteMPO
-fsup(int Offset1, int Offset2, TriangularMPO const& Op)
+fsup(int Offset1, int Offset2, BasicTriangularMPO const& Op)
 {
    int const Size = Offset2 - Offset1;
    Offset1 = Offset1 % Op.size();
@@ -514,9 +514,9 @@ fsup(int Offset1, int Offset2, ProductMPO const& Op)
 FiniteMPO
 fsup(int Offset1, int Offset2, InfiniteMPOElement const& Op)
 {
-   if (boost::get<TriangularMPO>(&Op))
+   if (boost::get<BasicTriangularMPO>(&Op))
    {
-      return fsup(Offset1, Offset2, boost::get<TriangularMPO>(Op));
+      return fsup(Offset1, Offset2, boost::get<BasicTriangularMPO>(Op));
    }
    else if (boost::get<ProductMPO>(&Op))
    {

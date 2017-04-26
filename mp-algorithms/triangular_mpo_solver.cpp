@@ -295,7 +295,7 @@ SolveZeroDiagonal(KMatrixPolyType const& C)
 void
 SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
               LinearWavefunction const& Psi, QuantumNumber const& QShift,
-              TriangularMPO const& Op, MatrixOperator const& LeftIdentity,
+              BasicTriangularMPO const& Op, MatrixOperator const& LeftIdentity,
               MatrixOperator const& RightIdentity, bool NeedFinalMatrix,
               double Tol,
               double UnityEpsilon, int Verbose)
@@ -563,7 +563,7 @@ struct SubProductLeftProject
 
 std::complex<double>
 SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
-                    QuantumNumber const& QShift, TriangularMPO const& Op,
+                    QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                     MatrixOperator const& Rho, double Tol, int Verbose)
 {
    if (E.is_null())
@@ -716,7 +716,7 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
 
 std::complex<double>
 SolveSimpleMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
-                    TriangularMPO const& Op, double Tol, int Verbose)
+                    BasicTriangularMPO const& Op, double Tol, int Verbose)
 {
    LinearWavefunction PsiLinear;
    RealDiagonalOperator Lambda;
@@ -765,7 +765,7 @@ struct SubProductRightProject
 
 std::complex<double>
 SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
-                    QuantumNumber const& QShift, TriangularMPO const& Op,
+                    QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                     MatrixOperator const& Rho, double Tol, int Verbose)
 {
    if (F.is_null())
@@ -884,7 +884,7 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
 
 std::complex<double>
 SolveSimpleMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi,
-                     TriangularMPO const& Op, double Tol, int Verbose)
+                     BasicTriangularMPO const& Op, double Tol, int Verbose)
 {
    LinearWavefunction PsiLinear;
    RealDiagonalOperator Lambda;

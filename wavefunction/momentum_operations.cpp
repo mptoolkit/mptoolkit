@@ -82,7 +82,7 @@ inject_left(MatrixPolyType const& In,
 // Assumes that E[j] is defined, for j > Column
 MatrixPolyType
 MultiplyLeft(std::vector<MatrixPolyType> const& E,
-             TriangularMPO const& Op,
+             BasicTriangularMPO const& Op,
              LinearWavefunction const& Psi,
              QuantumNumber const& QShift, int Column)
 {

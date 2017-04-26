@@ -25,7 +25,7 @@
 #include "mp-algorithms/eigensolver.h"
 #include "wavefunction/finitewavefunctionleft.h"
 #include "wavefunction/linearwavefunction.h"
-#include "mpo/triangular_mpo.h"
+#include "mpo/basic_triangular_mpo.h"
 #include <boost/shared_ptr.hpp>
 #include <fstream>
 
@@ -42,7 +42,7 @@ class DMRG
 
       DMRG() {}
 
-      DMRG(FiniteWavefunctionLeft const& Psi_, TriangularMPO const& Ham_, int Verbose_);
+      DMRG(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_, int Verbose_);
 
       // Adds x to the 'orthogonal set', that we explicitly orthogonalize the
       // wavefunction against
@@ -91,8 +91,8 @@ class DMRG
       LinearWavefunction Psi;
       int Site;                          // Site is the index of the iterator C
       LinearWavefunction::iterator C;
-      TriangularMPO Hamiltonian;
-      TriangularMPO::const_iterator H;
+      BasicTriangularMPO Hamiltonian;
+      BasicTriangularMPO::const_iterator H;
       int LeftStop;                      // the site numbers where we stop iterations
       int RightStop;
 

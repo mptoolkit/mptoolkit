@@ -208,7 +208,7 @@ int main(int argc, char** argv)
          ("radians", prog_opt::bool_switch(&ShowRadians),
           "display the argument in radians instead of degrees")
          ("degree", prog_opt::value(&PolyDegree),
-          "for a TriangularMPO, only show the results for the terms of this degree [can be used more than once]")
+          "for a BasicTriangularMPO, only show the results for the terms of this degree [can be used more than once]")
 	 ("moment", prog_opt::value(&Power), "For a triangular operator, calculate this moment [default 1]")
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
@@ -352,7 +352,7 @@ int main(int argc, char** argv)
          First = false;
          if (!Quiet)
             std::cout << "#Triangular Operator " << TriangularOperators[i] << '\n';
-         TriangularMPO Op;
+         BasicTriangularMPO Op;
          InfiniteLattice Lattice;
          std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(TriangularOperators[i]);
 

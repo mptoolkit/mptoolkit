@@ -18,7 +18,7 @@
 // ENDHEADER
 
 
-#include "mpo/triangular_mpo.h"
+#include "mpo/basic_triangular_mpo.h"
 #include "wavefunction/finitewavefunctionleft.h"
 #include "wavefunction/mpwavefunction.h"
 #include "quantumnumbers/all_symmetries.h"
@@ -201,7 +201,7 @@ int main(int argc, char** argv)
 
       // Hamiltonian
       InfiniteLattice Lattice;
-      TriangularMPO HamMPO;
+      BasicTriangularMPO HamMPO;
       
       // get the Hamiltonian from the attributes, if it wasn't supplied
       if (HamStr.empty())

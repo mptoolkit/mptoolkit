@@ -22,10 +22,10 @@
 
 #include "infinitelattice.h"
 
-TriangularMPO
+BasicTriangularMPO
 ParseTriangularOperator(InfiniteLattice const& Lattice, std::string const& Str);
 
-std::pair<TriangularMPO, InfiniteLattice>
+std::pair<BasicTriangularMPO, InfiniteLattice>
 ParseTriangularOperatorAndLattice(std::string const& Str);
 
 #endif
