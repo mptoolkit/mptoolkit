@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// mpo/triangular_mpo.h
+// mpo/window_triangular_mpo.h
 //
 // Copyright (C) 2013-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //

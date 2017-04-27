@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// lattice/ibc_lattice.h
+// lattice/windowlattice.h
 //
 // Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //

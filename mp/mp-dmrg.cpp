@@ -113,7 +113,6 @@ int main(int argc, char** argv)
       int NumSweeps = 10;
       double TruncCutoff = 0;
       double EigenCutoff = -1;
-      bool NoVariance = false;
       bool UseDGKS = false;
       std::string Solver = "lanczos";
       bool Quiet = false;
@@ -133,7 +132,7 @@ int main(int argc, char** argv)
           "operator to use for the Hamiltonian (wavefunction attribute \"Hamiltonian\")")
          ("wavefunction,w", prog_opt::value(&FName),
           "wavefunction to apply DMRG (required)")
-         ("two-site,2", "modify 2 neighboring sites at once (traditional DMRG)")
+         ("two-site,2", "modify 2 neighboring sites at once (traditional DMRG) **NOT IMPLEMENTED**")
          ("states,m", prog_opt::value(&States),
           FormatDefault("number of states, or a StatesList", States).c_str())
          ("max-states", prog_opt::value<int>(&MaxStates),
@@ -155,10 +154,9 @@ int main(int argc, char** argv)
          ("sweeps,s", prog_opt::value(&NumSweeps),
           FormatDefault("Number of half-sweeps to perform", NumSweeps).c_str())
          ("Solver,S", prog_opt::value(&Solver),
-          FormatDefault("Eigensoler to use ('lanczos', 'arnoldi', 'davidson')", Solver).c_str())
+          FormatDefault("Eigensoler to use ('lanczos', 'arnoldi', 'shift-invert')", Solver).c_str())
          ("orthogonal", prog_opt::value<std::vector<std::string> >(),
-          "force the wavefunction to be orthogonal to this state")
-         ("no-variance", prog_opt::bool_switch(&NoVariance), "Don't calculate the variance")
+          "force the wavefunction to be orthogonal to this state ***NOT YET IMPLEMENTED***")
          ("dgks", prog_opt::bool_switch(&UseDGKS), "Use DGKS correction for the orthogonality vectors")
 	 ("shift-invert-energy", prog_opt::value(&ShiftInvertEnergy),
 	  "For the shift-invert solver, the target energy")

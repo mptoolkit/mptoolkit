@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// mp/mp-iexpectation.cpp
+// mp/mp-expectation.cpp
 //
 // Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
