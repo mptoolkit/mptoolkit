@@ -16,22 +16,12 @@
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER
-// -*- C++ -*- $Id$
 
-// An InfiniteLattice is defined over a UnitCell, and also defines operators
-// with infinite support (ie Triangular mpo's).
-//
-// We really should also define also a ProductMPO.  This would represent the
-// infinite product of operators defined on the unit cell, and also have a QShift, with
-// the requirement that Basis1() == delta_shift(Basis2(), QShift).
-//
-// The unit cell of the operators is allowed to a a multiple of the lattice UnitCell.
-
-#if !defined(MPTOOLKIT_LATTICE_INFINITELATTICE_H)
-#define MPTOOLKIT_LATTICE_INFINITELATTICE_H
+#if !defined(MPTOOLKIT_LATTICE_WINDOWLATTICE_H)
+#define MPTOOLKIT_LATTICE_WINDOWLATTICE_H
 
 #include "unitcell.h"
-#include "mpo/infinite_mpo.h"
+#include "mpo/window_mpo.h"
 #include <vector>
 #include "pheap/pvalueptr.h"
 #include "lattice/function.h"
@@ -40,10 +30,10 @@
 // Lattice version number for streaming
 extern PStream::VersionTag LatticeVersion;
 
-class InfiniteLattice
+class WindowLattice
 {
    public:
-      typedef InfiniteMPO                operator_type;
+      typedef WindowMPO                  operator_type;
       typedef Function::OperatorFunction function_type;
       typedef Function::Argument         argument_type;
 
@@ -62,11 +52,11 @@ class InfiniteLattice
       typedef ArgumentListType::iterator        argument_iterator;
       typedef ArgumentListType::const_iterator  const_argument_iterator;
 
-      InfiniteLattice();
+      WindowLattice();
 
-      explicit InfiniteLattice(UnitCell const& uc);
+      explicit WindowLattice(UnitCell const& uc);
 
-      InfiniteLattice(std::string const& Description, UnitCell const& uc);
+      WindowLattice(std::string const& Description, UnitCell const& uc);
 
       UnitCell const& GetUnitCell() const { return UnitCell_; }
 
@@ -159,73 +149,15 @@ class InfiniteLattice
       std::string Description_;
       std::string CommandLine_;
       std::string Timestamp_;
-      UnitCell UnitCell_;
+      UnitCell LeftUnitCell_;
+      std:vector<UnitCell> Window_;
+      UnitCell RightUnitCell_;
       OperatorListType Operators_;
       ArgumentListType Arguments_;
       FunctionListType Functions_;
 
-   friend PStream::opstream& operator<<(PStream::opstream& out, InfiniteLattice const& L);
-   friend PStream::ipstream& operator>>(PStream::ipstream& in, InfiniteLattice& L);
+   friend PStream::opstream& operator<<(PStream::opstream& out, WindowLattice const& L);
+   friend PStream::ipstream& operator>>(PStream::ipstream& in, WindowLattice& L);
 };
-
-// Constucts a BasicTriangularMPO from the summation over unit cell translations of a finite MPO.
-// The Op must have a size() that is a multiple of SiteListTypeSize, which must itself be an
-// integer multiple of SiteListType.size().
-// The aux basis for JW is assumed to be compatible with Op -- that is, JW.qn2() == Op.qn1()
-BasicTriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& JW, FiniteMPO const& Op, int UnitCellSize);
-
-BasicTriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
-
-BasicTriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& Op, LatticeCommute Com);
-
-BasicTriangularMPO sum_unit(UnitCellMPO const& Op, int UnitCellSize);
-
-BasicTriangularMPO sum_unit(UnitCellMPO const& Op);
-
-// Variant of sum_unit where we add the kink operator (generally will be unitary) to the left hand side
-BasicTriangularMPO sum_kink(SiteListType const& SiteList, FiniteMPO const& Kink,
-                       FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
-
-BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op, int UnitCellSize);
-
-BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op);
-
-// sum_k
-
-BasicTriangularMPO sum_k(SiteListType const& SiteList, std::complex<double> const& k,
-                       FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
-
-BasicTriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op, int UnitCellSize);
-
-BasicTriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op);
-
-// sum_string
-// Constsructs a BasicTriangularMPO of the form
-// A(0)*C(1) + A(0)*B(1)*C(2) + A(0)*B(1)*B(2)*C(3) + ....
-// plus translations.
-// PRECONDITION(JW.qn2() == Op1.qn1() && Op1.qn2() == String.qn1() && String.qn2() == Op1.qn1()
-// && is_scalar(Op2.qn2()))
-BasicTriangularMPO sum_string(SiteListType const& SiteList, FiniteMPO const& JW, FiniteMPO const& Op1,
-                         FiniteMPO const& String, FiniteMPO const& Op2, int UnitCellSize,
-                         QuantumNumbers::QuantumNumber q);
-
-// This version of sum_string takes UnitCellMPO's for the operator arguments.  The String term
-// must be a scalar with bosonic commutation, and cannot be any longer than UnitCellSize.
-BasicTriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_,
-                         int UnitCellSize,
-                         QuantumNumbers::QuantumNumber q);
-
-BasicTriangularMPO sum_string_dot(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_,
-                             int UnitCellSize);
-
-BasicTriangularMPO sum_string_dot(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_);
-
-BasicTriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_,
-                               int UnitCellSize);
-
-BasicTriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_);
-
-// Constructs a zero triangular MPO
-BasicTriangularMPO make_zero(SiteListType const& SiteList);
 
 #endif
