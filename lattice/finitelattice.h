@@ -27,7 +27,7 @@
 #include "quantumnumbers/braidgroup.h"
 #include "finitelatticempo.h"
 #include "unitcell.h"
-#include "mpo/finite_mpo.h"
+#include "mpo/basic_finite_mpo.h"
 #include "pheap/pvalueptr.h"
 #include "lattice/function.h"
 #include "lattice/operator_descriptions.h"

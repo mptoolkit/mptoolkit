@@ -262,12 +262,12 @@ struct MultFuncStringTrans
 };
 
 
-// inject_left for a FiniteMPO.  This can have support on multiple wavefunction unit cells
+// inject_left for a BasicFiniteMPO.  This can have support on multiple wavefunction unit cells
 MatrixOperator
 inject_left(MatrixOperator const& m,
             LinearWavefunction const& Psi1,
             QuantumNumbers::QuantumNumber const& QShift,
-            FiniteMPO const& Op,
+            BasicFiniteMPO const& Op,
             LinearWavefunction const& Psi2)
 {
    CHECK_EQUAL(Psi1.size(), Psi2.size());
@@ -286,7 +286,7 @@ inject_left(MatrixOperator const& m,
    E.debug_check_structure();
    LinearWavefunction::const_iterator I1 = Psi1.begin();
    LinearWavefunction::const_iterator I2 = Psi2.begin();
-   FiniteMPO::const_iterator OpIter = Op.begin();
+   BasicFiniteMPO::const_iterator OpIter = Op.begin();
    while (OpIter != Op.end())
    {
       if (I1 == Psi1.end())
@@ -741,7 +741,7 @@ int main(int argc, char** argv)
          UnitCellMPO Op = ParseUnitCellOperatorAndLattice(LeftOpStr[i]).first;
          Op.ExtendToCoverUnitCell(Psi.size());
          // Adjust the MPO so that the left basis is the identity
-         FiniteMPO Mpo = Op.MPO() * FiniteMPO::make_identity(Op.MPO().LocalBasis2List(),
+         BasicFiniteMPO Mpo = Op.MPO() * BasicFiniteMPO::make_identity(Op.MPO().LocalBasis2List(),
                                                               adjoint(Op.TransformsAs()));
          Mpo = project(Mpo, QuantumNumbers::QuantumNumber(Op.GetSymmetryList()));
          LeftOp.push_back(inject_left(LeftIdent, Psi, QShift, Mpo, Psi));

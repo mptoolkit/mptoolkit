@@ -29,8 +29,8 @@
 class FiniteLatticeMPO
 {
    public:
-      typedef FiniteMPO::basis1_type basis1_type;
-      typedef FiniteMPO::basis2_type basis2_type;
+      typedef BasicFiniteMPO::basis1_type basis1_type;
+      typedef BasicFiniteMPO::basis2_type basis2_type;
 
       FiniteLatticeMPO() = default;
 
@@ -91,7 +91,7 @@ class FiniteLatticeMPO
 
    private:
       run_length_compressed<GenericMPO> Data;
-      FiniteMPO Op;
+      BasicFiniteMPO Op;
       std::string Description;
 
       friend PStream::opstream& operator<<(PStream::opstream& out, FiniteLatticeMPO const& L);

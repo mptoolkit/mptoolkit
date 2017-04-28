@@ -28,7 +28,7 @@
 #define MPTOOLKIT_MPO_PRODUCT_MPO_H
 
 #include "generic_mpo.h"
-#include "finite_mpo.h"
+#include "basic_finite_mpo.h"
 
 class ProductMPO
 {
@@ -160,8 +160,8 @@ ProductMPO conj(ProductMPO const& x);
 ProductMPO adjoint(ProductMPO const& x);
 ProductMPO inv_adjoint(ProductMPO const& x);
 
-// constructs a ProductMPO as a repeated string of some FiniteMPO
-ProductMPO string(FiniteMPO const& Op);
+// constructs a ProductMPO as a repeated string of some BasicFiniteMPO
+ProductMPO string(BasicFiniteMPO const& Op);
 
 // Constructs a ProductMPO as the infinite product of translations of Op.
 // Op.size() must be an integer multiple of UnitCellSize,
@@ -169,7 +169,7 @@ ProductMPO string(FiniteMPO const& Op);
 // This does the products in the left-to-right sense, that is, if our operator is
 // AB then the product is ... * A(0)B(1) * A(1)B(2) * A(2)B(3) * ...
 // = B(0)A(0) B(1)A(1) B(2)A(2) ...
-ProductMPO prod_unit_left_to_right(FiniteMPO const& Op, int UnitCellSize);
+ProductMPO prod_unit_left_to_right(BasicFiniteMPO const& Op, int UnitCellSize);
 
 // Constructs a ProductMPO as the infinite product of translations of Op.
 // Op.size() must be an integer multiple of UnitCellSize,
@@ -177,7 +177,7 @@ ProductMPO prod_unit_left_to_right(FiniteMPO const& Op, int UnitCellSize);
 // This does the products in the right-to-left sense, that is, if our operator is
 // AB then the product is .... * A(2)B(3) * A(1)B(2) * A(0)B(1) * ...
 // = A(0)B(0) A(1)B(1) A(2)B(2) ...
-ProductMPO prod_unit_right_to_left(FiniteMPO const& Op, int UnitCellSize);
+ProductMPO prod_unit_right_to_left(BasicFiniteMPO const& Op, int UnitCellSize);
 
 // Construct the operator to do a right translation by one site, given the
 // array of local basis states

@@ -27,7 +27,7 @@
 
 #include "canonicalwavefunction.h"
 #include "wavefunction/linearwavefunction.h"
-#include "mpo/finite_mpo.h"
+#include "mpo/basic_finite_mpo.h"
 
 class AttributeList;
 
@@ -78,7 +78,7 @@ overlap_conj(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2);
 // calculates <Psi1|M|Psi2>
 std::complex<double>
 expectation(FiniteWavefunction const& Psi1,
-            FiniteMPO const& M,
+            BasicFiniteMPO const& M,
             FiniteWavefunction const& Psi2);
 
 double norm_2(FiniteWavefunction const& Psi);

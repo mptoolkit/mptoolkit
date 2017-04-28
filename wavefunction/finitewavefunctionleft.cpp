@@ -158,7 +158,7 @@ overlap_conj(FiniteWavefunctionLeft const& Psi1, FiniteWavefunctionLeft const& P
 
 std::complex<double>
 expectation(FiniteWavefunctionLeft const& Psi1,
-            FiniteMPO const& M,
+            BasicFiniteMPO const& M,
             FiniteWavefunctionLeft const& Psi2)
 {
    if (Psi1.empty() || Psi2.empty())
@@ -172,7 +172,7 @@ expectation(FiniteWavefunctionLeft const& Psi1,
    StateComponent E(M.Basis1(), Psi1.Basis1(), Psi2.Basis1());
    E[0] = scalar_prod(herm(Psi1.lambda_l()), Psi2.lambda_l());
    FiniteWavefunctionLeft::const_mps_iterator I1 = Psi1.begin(), I2 = Psi2.begin();
-   FiniteMPO::const_iterator I = M.begin();
+   BasicFiniteMPO::const_iterator I = M.begin();
    while (I1 != Psi1.end())
    {
       E = contract_from_left(*I, herm(*I1), E, *I2);

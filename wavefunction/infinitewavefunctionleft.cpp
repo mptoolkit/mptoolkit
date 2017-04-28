@@ -749,7 +749,7 @@ overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
 }
 
 #if 0
-std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const& StringOp,
+std::complex<double> overlap(InfiniteWavefunctionLeft const& x, BasicFiniteMPO const& StringOp,
                              InfiniteWavefunctionLeft const& y,
                              QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
 {
@@ -816,11 +816,11 @@ InfiniteWavefunctionLeft::SetDefaultAttributes(AttributeList& A) const
    A["QShift"] = this->qshift();
 }
 
-// inject_left for a FiniteMPO.  This can have support on multiple wavefunction unit cells
+// inject_left for a BasicFiniteMPO.  This can have support on multiple wavefunction unit cells
 MatrixOperator
 inject_left(MatrixOperator const& m,
             InfiniteWavefunctionLeft const& Psi1,
-            FiniteMPO const& Op,
+            BasicFiniteMPO const& Op,
             InfiniteWavefunctionLeft const& Psi2)
 {
    CHECK_EQUAL(Psi1.size(), Psi2.size());
@@ -840,7 +840,7 @@ inject_left(MatrixOperator const& m,
    E.debug_check_structure();
    InfiniteWavefunctionLeft::const_mps_iterator I1 = Psi1.begin();
    InfiniteWavefunctionLeft::const_mps_iterator I2 = Psi2.begin();
-   FiniteMPO::const_iterator OpIter = Op.begin();
+   BasicFiniteMPO::const_iterator OpIter = Op.begin();
    while (OpIter != Op.end())
    {
       if (I1 == Psi1.end())
@@ -856,7 +856,7 @@ inject_left(MatrixOperator const& m,
 }
 
 std::complex<double>
-expectation(InfiniteWavefunctionLeft const& Psi, FiniteMPO const& Op)
+expectation(InfiniteWavefunctionLeft const& Psi, BasicFiniteMPO const& Op)
 {
    MatrixOperator X = MatrixOperator::make_identity(Psi.Basis1());
    X = inject_left(X, Psi, Op, Psi);

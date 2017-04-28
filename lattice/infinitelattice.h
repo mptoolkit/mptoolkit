@@ -192,19 +192,19 @@ class InfiniteLattice
 // The Op must have a size() that is a multiple of SiteListTypeSize, which must itself be an
 // integer multiple of SiteListType.size().
 // The aux basis for JW is assumed to be compatible with Op -- that is, JW.qn2() == Op.qn1()
-BasicTriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& JW, FiniteMPO const& Op, int UnitCellSize);
+BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& JW, BasicFiniteMPO const& Op, int UnitCellSize);
 
-BasicTriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
+BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
 
-BasicTriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& Op, LatticeCommute Com);
+BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& Op, LatticeCommute Com);
 
 BasicTriangularMPO sum_unit(UnitCellMPO const& Op, int UnitCellSize);
 
 BasicTriangularMPO sum_unit(UnitCellMPO const& Op);
 
 // Variant of sum_unit where we add the kink operator (generally will be unitary) to the left hand side
-BasicTriangularMPO sum_kink(SiteListType const& SiteList, FiniteMPO const& Kink,
-                       FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
+BasicTriangularMPO sum_kink(SiteListType const& SiteList, BasicFiniteMPO const& Kink,
+                       BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
 
 BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op, int UnitCellSize);
 
@@ -213,7 +213,7 @@ BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op);
 // sum_k
 
 BasicTriangularMPO sum_k(SiteListType const& SiteList, std::complex<double> const& k,
-                       FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
+                       BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
 
 BasicTriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op, int UnitCellSize);
 
@@ -225,8 +225,8 @@ BasicTriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op);
 // plus translations.
 // PRECONDITION(JW.qn2() == Op1.qn1() && Op1.qn2() == String.qn1() && String.qn2() == Op1.qn1()
 // && is_scalar(Op2.qn2()))
-BasicTriangularMPO sum_string(SiteListType const& SiteList, FiniteMPO const& JW, FiniteMPO const& Op1,
-                         FiniteMPO const& String, FiniteMPO const& Op2, int UnitCellSize,
+BasicTriangularMPO sum_string(SiteListType const& SiteList, BasicFiniteMPO const& JW, BasicFiniteMPO const& Op1,
+                         BasicFiniteMPO const& String, BasicFiniteMPO const& Op2, int UnitCellSize,
                          QuantumNumbers::QuantumNumber q);
 
 // This version of sum_string takes UnitCellMPO's for the operator arguments.  The String term

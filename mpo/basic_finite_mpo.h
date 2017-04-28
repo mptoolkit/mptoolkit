@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// mpo/finite_mpo.h
+// mpo/basic_finite_mpo.h
 //
 // Copyright (C) 2013-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
@@ -31,7 +31,7 @@
 #include "generic_mpo.h"
 #include "lattice/latticesite.h"
 
-class FiniteMPO
+class BasicFiniteMPO
 {
    private:
       typedef GenericMPO data_type;
@@ -43,20 +43,20 @@ class FiniteMPO
       typedef OperatorComponent::basis1_type basis1_type;
       typedef OperatorComponent::basis2_type basis2_type;
 
-      FiniteMPO() {}
+      BasicFiniteMPO() {}
 
-      FiniteMPO(FiniteMPO const& Other) : Data(Other.Data) {}
+      BasicFiniteMPO(BasicFiniteMPO const& Other) : Data(Other.Data) {}
 
-      // Removed this constructor because it doesn't make much sense to define a FiniteMPO
+      // Removed this constructor because it doesn't make much sense to define a BasicFiniteMPO
       // without specifying the LatticeCommute
-      //      explicit FiniteMPO(int Size) : Data(Size) {}
+      //      explicit BasicFiniteMPO(int Size) : Data(Size) {}
 
-      explicit FiniteMPO(int Size) : Data(Size) {}
+      explicit BasicFiniteMPO(int Size) : Data(Size) {}
 
       // Construction from a generic MPO.  The generic MPO must already be in finite form.
-      explicit FiniteMPO(GenericMPO const& Other);
+      explicit BasicFiniteMPO(GenericMPO const& Other);
 
-      FiniteMPO& operator=(FiniteMPO const& Other) { Data = Other.Data; return *this; }
+      BasicFiniteMPO& operator=(BasicFiniteMPO const& Other) { Data = Other.Data; return *this; }
 
       // returns the total number of sites this operator contains
       int size() const { return Data.size(); }
@@ -139,150 +139,150 @@ class FiniteMPO
       void debug_check_structure() const { Data.debug_check_structure(); }
 
       // Make an identity MPO over the given unit cell basis
-      static FiniteMPO make_identity(std::vector<BasisList> const& Basis);
-      static FiniteMPO make_identity(std::vector<BasisList> const& Basis,
+      static BasicFiniteMPO make_identity(std::vector<BasisList> const& Basis);
+      static BasicFiniteMPO make_identity(std::vector<BasisList> const& Basis,
                                      QuantumNumber const& q);
 
    private:
       data_type Data;
 };
 
-PStream::opstream& operator<<(PStream::opstream& out, FiniteMPO const& op);
-PStream::ipstream& operator>>(PStream::ipstream& in, FiniteMPO& op);
+PStream::opstream& operator<<(PStream::opstream& out, BasicFiniteMPO const& op);
+PStream::ipstream& operator>>(PStream::ipstream& in, BasicFiniteMPO& op);
 
 // Returns the MPO that is Op1 \otimes Op2.
 // PRECONDITION: Op1.Basis2() == Op2.Basis1()
-FiniteMPO join(FiniteMPO const& Op1, FiniteMPO const& Op2);
+BasicFiniteMPO join(BasicFiniteMPO const& Op1, BasicFiniteMPO const& Op2);
 
 // Repeats Op Count number of times, Op^{\oprod Count}.
 // PRECONDITION: Op.Basis2() == Op.Basis1()
-FiniteMPO repeat(FiniteMPO const& Op, int Count);
+BasicFiniteMPO repeat(BasicFiniteMPO const& Op, int Count);
 
-FiniteMPO& operator*=(FiniteMPO& x, double a);
-FiniteMPO& operator*=(FiniteMPO& x, std::complex<double> a);
+BasicFiniteMPO& operator*=(BasicFiniteMPO& x, double a);
+BasicFiniteMPO& operator*=(BasicFiniteMPO& x, std::complex<double> a);
 
-FiniteMPO& operator+=(FiniteMPO& x, FiniteMPO const& y);
-FiniteMPO& operator-=(FiniteMPO& x, FiniteMPO const& y);
+BasicFiniteMPO& operator+=(BasicFiniteMPO& x, BasicFiniteMPO const& y);
+BasicFiniteMPO& operator-=(BasicFiniteMPO& x, BasicFiniteMPO const& y);
 
-FiniteMPO operator+(FiniteMPO const& x, FiniteMPO const& y);
-FiniteMPO operator-(FiniteMPO const& x, FiniteMPO const& y);
+BasicFiniteMPO operator+(BasicFiniteMPO const& x, BasicFiniteMPO const& y);
+BasicFiniteMPO operator-(BasicFiniteMPO const& x, BasicFiniteMPO const& y);
 
-FiniteMPO operator-(FiniteMPO const& x);
+BasicFiniteMPO operator-(BasicFiniteMPO const& x);
 
-FiniteMPO operator*(double a, FiniteMPO const& x);
-FiniteMPO operator*(FiniteMPO const& x, double a);
-FiniteMPO operator*(std::complex<double> a, FiniteMPO const& x);
-FiniteMPO operator*(FiniteMPO const& x, std::complex<double> a);
+BasicFiniteMPO operator*(double a, BasicFiniteMPO const& x);
+BasicFiniteMPO operator*(BasicFiniteMPO const& x, double a);
+BasicFiniteMPO operator*(std::complex<double> a, BasicFiniteMPO const& x);
+BasicFiniteMPO operator*(BasicFiniteMPO const& x, std::complex<double> a);
 
-FiniteMPO prod(FiniteMPO const& x, FiniteMPO const& y, QuantumNumbers::QuantumNumber const& q);
-FiniteMPO prod(FiniteMPO const& x, FiniteMPO const& y);
-FiniteMPO operator*(FiniteMPO const& x, FiniteMPO const& y);
+BasicFiniteMPO prod(BasicFiniteMPO const& x, BasicFiniteMPO const& y, QuantumNumbers::QuantumNumber const& q);
+BasicFiniteMPO prod(BasicFiniteMPO const& x, BasicFiniteMPO const& y);
+BasicFiniteMPO operator*(BasicFiniteMPO const& x, BasicFiniteMPO const& y);
 
 // dot product - takes into account the multiplicity to rescale the result
-FiniteMPO dot(FiniteMPO const& x, FiniteMPO const& y);
+BasicFiniteMPO dot(BasicFiniteMPO const& x, BasicFiniteMPO const& y);
 
 // cross product (if it exists)
-FiniteMPO cross(FiniteMPO const& x, FiniteMPO const& y);
+BasicFiniteMPO cross(BasicFiniteMPO const& x, BasicFiniteMPO const& y);
 
 // Helper function for the coupling coefficient for the outer() function
 double outer_coefficient(int degree_x, int degree_y, int degree_q);
 
 // outer product of tensors.  This is defined as the product to the maximum
 // degree quantum number q.  There is also a scaling factor sqrt(degree(q))
-FiniteMPO outer(FiniteMPO const& x, FiniteMPO const& y);
+BasicFiniteMPO outer(BasicFiniteMPO const& x, BasicFiniteMPO const& y);
 
 // project a (reducible) operator onto an irreducible component
-FiniteMPO project(FiniteMPO const& x, QuantumNumbers::QuantumNumber const& q);
+BasicFiniteMPO project(BasicFiniteMPO const& x, QuantumNumbers::QuantumNumber const& q);
 
 // power of an operator.  Requires n > 1.
-FiniteMPO pow(FiniteMPO const& x, int n);
+BasicFiniteMPO pow(BasicFiniteMPO const& x, int n);
 
 // Exponential operator.
-FiniteMPO exp(FiniteMPO const& x);
+BasicFiniteMPO exp(BasicFiniteMPO const& x);
 
 // Conjugate
-FiniteMPO conj(FiniteMPO const& x);
+BasicFiniteMPO conj(BasicFiniteMPO const& x);
 
 // Adjoint
-FiniteMPO adjoint(FiniteMPO const& x);
+BasicFiniteMPO adjoint(BasicFiniteMPO const& x);
 
 // Inverse Adjoint
-FiniteMPO inv_adjoint(FiniteMPO const& x);
+BasicFiniteMPO inv_adjoint(BasicFiniteMPO const& x);
 
 // optimize the representation
-void optimize(FiniteMPO& Op);
+void optimize(BasicFiniteMPO& Op);
 
 // optimize the representation using QR decomposition
-void qr_optimize(FiniteMPO& Op);
+void qr_optimize(BasicFiniteMPO& Op);
 
 // completely coarse-grain the MPO into a simple operator.
 // The dimensions of this operator are exponentially big in the number of sites
 // in x, so be careful!
 // For non-abelian symmetries, this coarse-grain occurs from left to right.
-SimpleRedOperator coarse_grain(FiniteMPO const& x);
+SimpleRedOperator coarse_grain(BasicFiniteMPO const& x);
 
 // Does a N-1 coarse graining of an operator.  The length must be a multiple of N
-FiniteMPO coarse_grain(FiniteMPO const& Op, int N);
+BasicFiniteMPO coarse_grain(BasicFiniteMPO const& Op, int N);
 
 // The opposite of coarse_grain - decompose an operator acting on the entire Hilbert space
-// into a FiniteMPO
-FiniteMPO fine_grain(SimpleOperator const& x,
+// into a BasicFiniteMPO
+BasicFiniteMPO fine_grain(SimpleOperator const& x,
                      std::vector<BasisList> const& LocalBasis1,
                      std::vector<BasisList> const& LocalBasis2);
 
 // Make an identity operator that acts on the same local Hilbert space as x
-FiniteMPO
-MakeIdentityFrom(FiniteMPO const& x);
+BasicFiniteMPO
+MakeIdentityFrom(BasicFiniteMPO const& x);
 
 // Make an identity operator that acts on the same local Hilbert space as x,
 // with the given quantum number in the auxiliary basis
-FiniteMPO
-MakeIdentityFrom(FiniteMPO const& x, QuantumNumber const& q);
+BasicFiniteMPO
+MakeIdentityFrom(BasicFiniteMPO const& x, QuantumNumber const& q);
 
 // output to a stream
-std::ostream& operator<<(std::ostream& out, FiniteMPO const& x);
+std::ostream& operator<<(std::ostream& out, BasicFiniteMPO const& x);
 
 // prints the structure of the component, as an 'x' for a non-zero
 // component or blank for a zero component
-void print_structure(FiniteMPO const& Op, std::ostream& out, double UnityEpsilon);
+void print_structure(BasicFiniteMPO const& Op, std::ostream& out, double UnityEpsilon);
 
 inline
-void print_structure(FiniteMPO const& Op, std::ostream& out)
+void print_structure(BasicFiniteMPO const& Op, std::ostream& out)
 {
    print_structure(Op, out, DefaultClassifyUnityEpsilon);
 }
 
-// returns the FiniteMPO for the identity operator acting on the unit cell
+// returns the BasicFiniteMPO for the identity operator acting on the unit cell
 // with quantum number q in the auxiliary basis
-FiniteMPO identity_mpo(SiteListType const& SiteList, QuantumNumbers::QuantumNumber const& q);
+BasicFiniteMPO identity_mpo(SiteListType const& SiteList, QuantumNumbers::QuantumNumber const& q);
 
-// returns the FiniteMPO for the identity operator acting on the unit cell
-FiniteMPO identity_mpo(SiteListType const& SiteList);
+// returns the BasicFiniteMPO for the identity operator acting on the unit cell
+BasicFiniteMPO identity_mpo(SiteListType const& SiteList);
 
 // Returns the string MPO corresponding to the given local operator name
-FiniteMPO string_mpo(SiteListType const& SiteList,
+BasicFiniteMPO string_mpo(SiteListType const& SiteList,
                      std::string const& OpName, QuantumNumbers::QuantumNumber const& Trans);
 
-FiniteMPO string_mpo(SiteListType const& SiteList, std::string const& OpName);
+BasicFiniteMPO string_mpo(SiteListType const& SiteList, std::string const& OpName);
 
 // Given an expression, parse it as a SiteOperator on each site of SitesList,
 // and form it into a scalar MPO.  The result is a string operator.
-FiniteMPO
+BasicFiniteMPO
 ParseStringOperator(SiteListType const& SiteList, std::string const& Expr, int Size);
 
 // returns true if Op1 and Op2 are equal, to the specified tolerance
-bool equal(FiniteMPO const& Op1, FiniteMPO const& Op2, double Tol = 1E-15);
+bool equal(BasicFiniteMPO const& Op1, BasicFiniteMPO const& Op2, double Tol = 1E-15);
 
 // calculates the logarithm of the squared Frobenius norm of the operator
 double
-log_norm_frob_sq(FiniteMPO const& Op);
+log_norm_frob_sq(BasicFiniteMPO const& Op);
 
 // returns the logarithm of the inner product <Op1|Op2> as
 // <Op1|Op2> = Result.first * exp(Result.second)
 // Result.first is a complex number on the unit circle.
 std::pair<std::complex<double>, double>
-log_inner_prod(FiniteMPO const& Op1, FiniteMPO const& Op2);
+log_inner_prod(BasicFiniteMPO const& Op1, BasicFiniteMPO const& Op2);
 
-#include "finite_mpo.cc"
+#include "basic_finite_mpo.cc"
 
 #endif

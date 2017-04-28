@@ -19,13 +19,13 @@
 
 inline
 std::ostream&
-operator<<(std::ostream& out, FiniteMPO const& x)
+operator<<(std::ostream& out, BasicFiniteMPO const& x)
 {
    return out << x.data();
 }
 
 inline
-FiniteMPO::FiniteMPO(GenericMPO const& Other)
+BasicFiniteMPO::BasicFiniteMPO(GenericMPO const& Other)
    : Data(Other)
 {
    //   CHECK(Data.back().Basis2().is_identity())("Finite operator: right basis must be scalar");
@@ -33,7 +33,7 @@ FiniteMPO::FiniteMPO(GenericMPO const& Other)
 }
 
 inline
-FiniteMPO coarse_grain(FiniteMPO const& Op, int N)
+BasicFiniteMPO coarse_grain(BasicFiniteMPO const& Op, int N)
 {
-   return FiniteMPO(coarse_grain(Op.data(), N));
+   return BasicFiniteMPO(coarse_grain(Op.data(), N));
 }

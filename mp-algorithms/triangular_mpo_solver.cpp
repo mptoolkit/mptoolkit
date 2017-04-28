@@ -174,7 +174,7 @@ DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
 
 KMatrixPolyType
 DecomposePerpendicularParts(KMatrixPolyType& C,
-                            FiniteMPO const& Diag,
+                            BasicFiniteMPO const& Diag,
                             MatrixOperator const& UnitMatrixLeft,
                             MatrixOperator const& UnitMatrixRight,
                             LinearWavefunction const& Psi,
@@ -366,7 +366,7 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
       C = inject_left_mask(EMatK, Psi, QShift, Op.data(), Psi, Mask)[Col];
 
       // Now do the classification, based on the properties of the diagonal operator
-      FiniteMPO Diag = Op(Col, Col);
+      BasicFiniteMPO Diag = Op(Col, Col);
       OperatorClassification Classification = classify(Diag, UnityEpsilon);
 
       if (Classification.is_null())
@@ -598,7 +598,7 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
       C = delta_shift(C, QShift);
 
       // Now do the classification, based on the properties of the diagonal operator
-      FiniteMPO Diag = Op(Col, Col);
+      BasicFiniteMPO Diag = Op(Col, Col);
       OperatorClassification Classification = classify(Diag, UnityEpsilon);
 
       if (Classification.is_null())
@@ -800,7 +800,7 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
       C.delta_shift(adjoint(QShift));
 
       // Now do the classification, based on the properties of the diagonal operator
-      FiniteMPO Diag = Op(Row, Row);
+      BasicFiniteMPO Diag = Op(Row, Row);
       OperatorClassification Classification = classify(Diag, UnityEpsilon);
 
       if (Classification.is_null())

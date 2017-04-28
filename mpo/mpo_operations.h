@@ -49,19 +49,19 @@
 // over every unit cell.
 // PRECONDITION: Operator.size() is a multiple of UnitCellSize
 BasicTriangularMPO
-sum_over_unit_cell(FiniteMPO const& Operator, int UnitCellSize);
+sum_over_unit_cell(BasicFiniteMPO const& Operator, int UnitCellSize);
 
 // Sum the operator over every unit cell, with phase factor
 // exp(i*MomentumPerUnitCell) per unit cell.
 BasicTriangularMPO
-sum_over_unit_cell(FiniteMPO const& Operator, int UnitCellSize,
+sum_over_unit_cell(BasicFiniteMPO const& Operator, int UnitCellSize,
                    double MomentumPerUnitCell);
 
-// Convert a triangular MPO into a FiniteMPO by restricting the summation
+// Convert a triangular MPO into a BasicFiniteMPO by restricting the summation
 // to a finite size.
 // PRECONDITION: Size is a multiple of Operator.size()
 // This is sort-of an inverse operation of sum_over_unit_cell.
-FiniteMPO
+BasicFiniteMPO
 restrict(BasicTriangularMPO const& Operator, int Size);
 
 // Constructs the triangular MPO that represents the infinite sum
@@ -77,12 +77,12 @@ restrict(BasicTriangularMPO const& Operator, int Size);
 // PRECONDITION: Op2.size() is a multiple of UnitCellSize
 // PRECONDITION: UnitCellSize is a multiple of String.size()
 BasicTriangularMPO
-string_product(FiniteMPO const& Op1, FiniteMPO const& String, FiniteMPO const& Op2,
+string_product(BasicFiniteMPO const& Op1, BasicFiniteMPO const& String, BasicFiniteMPO const& Op2,
                int UnitCellSize);
 
 // version of string_product where the string operator is Factor*identity_{UnitCellSize}
 BasicTriangularMPO
-string_product(FiniteMPO const& Op1, std::complex<double> Factor, FiniteMPO const& Op2,
+string_product(BasicFiniteMPO const& Op1, std::complex<double> Factor, BasicFiniteMPO const& Op2,
                int UnitCellSize);
 
 #endif

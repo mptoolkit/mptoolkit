@@ -21,7 +21,7 @@
 #include "unitcell.h"
 #include "common/statistics.h"
 
-UnitCellMPO::UnitCellMPO(SiteListPtrType const& SiteList_, FiniteMPO Op_, LatticeCommute Com_, int Offset_,
+UnitCellMPO::UnitCellMPO(SiteListPtrType const& SiteList_, BasicFiniteMPO Op_, LatticeCommute Com_, int Offset_,
                          std::string Description_, int CoarseGrain_)
    : SiteList(SiteList_), Op(std::move(Op_)), Com(Com_), Offset(Offset_), Description(std::move(Description_)), CoarseGrain(CoarseGrain_)
 {
@@ -151,14 +151,14 @@ UnitCellMPO::ExtendToCoverUnitCell(int OtherSize)
    this->ExtendToCover(NewSize, NewOffset);
 }
 
-FiniteMPO
+BasicFiniteMPO
 UnitCellMPO::GetJWStringUnit()
 {
    return string_mpo(*SiteList, Com.SignOperator(), Op.qn1());
 }
 
 // Many of these implementations are not the most efficient possible.
-// We simpy copy the argument and extend it so we can use the FiniteMPO operations.
+// We simpy copy the argument and extend it so we can use the BasicFiniteMPO operations.
 // In many cases we could avoid the copy.
 
 UnitCellMPO& operator+=(UnitCellMPO& x, UnitCellMPO const& y)

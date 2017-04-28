@@ -32,7 +32,7 @@
 //#include "periodic_mpo.h"
 
 
-enum OperatorType { TypeFiniteMPO, TypeBasicTriangularMPO };
+enum OperatorType { TypeBasicFiniteMPO, TypeBasicTriangularMPO };
 
 class LatticeOperator
 {
@@ -52,7 +52,7 @@ class LatticeOperator
       // a triangular operator, then close off the boundaries
       // to make it finite on the unit cell.
       // PRECONDITION: operator is finite or triangular
-      FiniteMPO AsFiniteMPO() const;
+      BasicFiniteMPO AsBasicFiniteMPO() const;
 
       // returns the UnitCell of this operator
       UnitCell const& GetUnitCell() const { return *pUnitCell; }
@@ -65,7 +65,7 @@ class LatticeOperator
       // PRECONDITION: Size % this->UnitCellSize() == 0
       // && Offset % this->UnitCellSize() == 0
       // && Size+Offset >= this->size()
-      FiniteMPO AsFiniteMPO(int Size, int Offset) const;
+      BasicFiniteMPO AsBasicFiniteMPO(int Size, int Offset) const;
 
       // Returns a triangular version of the operator.  If it is
       // a finite operator, then convert it into a sum of unit cells
@@ -91,7 +91,7 @@ class LatticeOperator
    private:
       pvalue_ptr<UnitCell> pUnitCell;
       std::string JWString;
-      boost::variant<FiniteMPO, BasicTriangularMPO> Operator;
+      boost::variant<BasicFiniteMPO, BasicTriangularMPO> Operator;
 };
 
 LatticeOperator MakeFinite(LatticeOperator const& Op);

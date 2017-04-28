@@ -449,7 +449,7 @@ inject_right_mask(StateComponent const& In,
 //      -Psi--
 struct OneMinusTransferLeft
 {
-   OneMinusTransferLeft(FiniteMPO const& Op, LinearWavefunction const& Psi, QuantumNumber const& QShift)
+   OneMinusTransferLeft(BasicFiniteMPO const& Op, LinearWavefunction const& Psi, QuantumNumber const& QShift)
       : Op_(Op), Psi_(Psi), QShift_(QShift) {}
 
    MatrixOperator operator()(MatrixOperator const& x) const
@@ -457,7 +457,7 @@ struct OneMinusTransferLeft
       return x-delta_shift(inject_left(x, Op_, Psi_), QShift_);
    }
 
-   FiniteMPO const& Op_;
+   BasicFiniteMPO const& Op_;
    LinearWavefunction const& Psi_;
    QuantumNumber const& QShift_;
 };
@@ -472,7 +472,7 @@ struct OneMinusTransferLeft
 //      -Psi--
 struct OneMinusTransferLeft_Ortho
 {
-   OneMinusTransferLeft_Ortho(FiniteMPO const& Op, LinearWavefunction const& Psi, QuantumNumber const& QShift,
+   OneMinusTransferLeft_Ortho(BasicFiniteMPO const& Op, LinearWavefunction const& Psi, QuantumNumber const& QShift,
                               MatrixOperator const& LeftUnit,
                               MatrixOperator const& RightUnit, bool Orthogonalize)
       : Op_(Op), Psi_(Psi),
@@ -492,7 +492,7 @@ struct OneMinusTransferLeft_Ortho
       return r;
    }
 
-   FiniteMPO const& Op_;
+   BasicFiniteMPO const& Op_;
    LinearWavefunction const& Psi_;
    QuantumNumber const& QShift_;
    MatrixOperator const& LeftUnit_;
@@ -509,7 +509,7 @@ struct OneMinusTransferLeft_Ortho
 //      -Psi*--
 struct OneMinusTransferRight
 {
-   OneMinusTransferRight(FiniteMPO const& Op, LinearWavefunction const& Psi, QuantumNumber const& QShift)
+   OneMinusTransferRight(BasicFiniteMPO const& Op, LinearWavefunction const& Psi, QuantumNumber const& QShift)
       : Op_(Op), Psi_(Psi), QShift_(QShift) {}
 
    MatrixOperator operator()(MatrixOperator const& x) const
@@ -517,7 +517,7 @@ struct OneMinusTransferRight
       return x-delta_shift(inject_right(x, Op_, Psi_), adjoint(QShift_));
    }
 
-   FiniteMPO const& Op_;
+   BasicFiniteMPO const& Op_;
    LinearWavefunction const& Psi_;
    QuantumNumber const& QShift_;
 };

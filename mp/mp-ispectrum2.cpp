@@ -243,7 +243,7 @@ struct MultFuncString
 {
    MultFuncString(LinearWavefunction const& Psi, QuantumNumber const& QShift,
                   QuantumNumbers::QuantumNumber const& q,
-                  FiniteMPO const& StringOp)
+                  BasicFiniteMPO const& StringOp)
       : Mult(Psi, QShift, StringOp), Pack(Psi.Basis2(), Psi.Basis2(), q) { }
 
    void operator()(std::complex<double> const* In, std::complex<double>* Out) const
@@ -331,7 +331,7 @@ get_spectrum(LinearWavefunction const& Psi, QuantumNumber const& QShift, int Num
 
 LinearAlgebra::Vector<std::complex<double> >
 get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
-                    FiniteMPO const& StringOp,
+                    BasicFiniteMPO const& StringOp,
                     int NumEigen,
                     QuantumNumbers::QuantumNumber const& q, double tol = 1e-10,
                     LinearAlgebra::Vector<MatrixOperator>* RightVectors = NULL,
@@ -598,7 +598,7 @@ int main(int argc, char** argv)
       std::complex<double> IdentNormalizationFactor = inner_prod(LeftIdent, RightIdent);
 
       // Assemble the string operator (which may be the identity)
-      FiniteMPO MyStringOp = ParseUnitCellOperator(Cell, StringOp);
+      BasicFiniteMPO MyStringOp = ParseUnitCellOperator(Cell, StringOp);
       MyStringOp = repeat(MyStringOp, Psi.size()/MyStringOp.size());
 
       // get the set of quantum numbers to show

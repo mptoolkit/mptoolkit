@@ -125,30 +125,30 @@ WindowTriangularMPO& operator-=(WindowTriangularMPO& Op, WindowTriangularMPO con
 WindowTriangularMPO& operator+=(WindowTriangularMPO& Op, FiniteTriangularMPO const& x);
 WindowTriangularMPO& operator-=(WindowTriangularMPO& Op, FiniteTriangularMPO const& x);
 
-WindowTriangularMPO& operator+=(WindowTriangularMPO& Op, FiniteMPO const& x);
-WindowTriangularMPO& operator-=(WindowTriangularMPO& Op, FiniteMPO const& x);
+WindowTriangularMPO& operator+=(WindowTriangularMPO& Op, BasicFiniteMPO const& x);
+WindowTriangularMPO& operator-=(WindowTriangularMPO& Op, BasicFiniteMPO const& x);
 
 WindowTriangularMPO operator+(WindowTriangularMPO const& x, WindowTriangularMPO const& y);
 WindowTriangularMPO operator-(WindowTriangularMPO const& x, WindowTriangularMPO const& y);
 
-WindowTriangularMPO operator+(WindowTriangularMPO const& x, FiniteMPO const& y);
-WindowTriangularMPO operator-(WindowTriangularMPO const& x, FiniteMPO const& y);
+WindowTriangularMPO operator+(WindowTriangularMPO const& x, BasicFiniteMPO const& y);
+WindowTriangularMPO operator-(WindowTriangularMPO const& x, BasicFiniteMPO const& y);
 
-WindowTriangularMPO operator+(FiniteMPO const& x, WindowTriangularMPO const& y);
-WindowTriangularMPO operator-(FiniteMPO const& x, WindowTriangularMPO const& y);
+WindowTriangularMPO operator+(BasicFiniteMPO const& x, WindowTriangularMPO const& y);
+WindowTriangularMPO operator-(BasicFiniteMPO const& x, WindowTriangularMPO const& y);
 
 // multiplication
 WindowTriangularMPO operator*(WindowTriangularMPO const& x, WindowTriangularMPO const& y);
 WindowTriangularMPO operator*(WindowTriangularMPO const& x, InfiniteTriangularMPO const& y);
 WindowTriangularMPO operator*(InfiniteTriangularMPO const& x, WindowTriangularMPO const& y);
-WindowTriangularMPO operator*(WindowTriangularMPO const& x, FiniteMPO const& y);
-WindowTriangularMPO operator*(FiniteMPO const& x, WindowTriangularMPO const& y);
-WindowTriangularMPO operator*(InfiniteTriangularMPO const& x, FiniteMPO const& y);
-WindowTriangularMPO operator*(FiniteMPO const& x, InfiniteTriangularMPO const& y);
+WindowTriangularMPO operator*(WindowTriangularMPO const& x, BasicFiniteMPO const& y);
+WindowTriangularMPO operator*(BasicFiniteMPO const& x, WindowTriangularMPO const& y);
+WindowTriangularMPO operator*(InfiniteTriangularMPO const& x, BasicFiniteMPO const& y);
+WindowTriangularMPO operator*(BasicFiniteMPO const& x, InfiniteTriangularMPO const& y);
 
 WindowTriangularMPO& operator*=(WindowTriangularMPO& x, WindowTriangularMPO const& y);
 WindowTriangularMPO& operator*=(WindowTriangularMPO& x, InfiniteTriangularMPO const& y);
-WindowTriangularMPO& operator*=(WindowTriangularMPO& x, FiniteMPO const& y);
+WindowTriangularMPO& operator*=(WindowTriangularMPO& x, BasicFiniteMPO const& y);
 
 // TODO: we could define multiply by a WindowProductMPO
 // TODO: do we also have a FiniteTriangularMPO ?
@@ -163,10 +163,10 @@ WindowTriangularMPO coarse_grain(WindowTriangularMPO const& x, int N);
 WindowTriangularMPO prod(WindowTriangularMPO const& x, WindowTriangularMPO const& y, QuantumNumbers::QuantumNumber const& q);
 WindowTriangularMPO prod(WindowTriangularMPO const& x, InfiniteTriangularMPO const& y, QuantumNumbers::QuantumNumber const& q);
 WindowTriangularMPO prod(InfiniteTriangularMPO const& x, WindowTriangularMPO const& y, QuantumNumbers::QuantumNumber const& q);
-WindowTriangularMPO prod(WindowTriangularMPO const& x, FiniteMPO const& y, QuantumNumbers::QuantumNumber const& q);
-WindowTriangularMPO prod(FiniteMPO const& x, WindowTriangularMPO const& y, QuantumNumbers::QuantumNumber const& q);
-WindowTriangularMPO prod(InfiniteTriangularMPO const& x, FiniteMPO const& y, QuantumNumbers::QuantumNumber const& q);
-WindowTriangularMPO prod(FiniteMPO const& x, InfiniteTriangularMPO const& y, QuantumNumbers::QuantumNumber const& q);
+WindowTriangularMPO prod(WindowTriangularMPO const& x, BasicFiniteMPO const& y, QuantumNumbers::QuantumNumber const& q);
+WindowTriangularMPO prod(BasicFiniteMPO const& x, WindowTriangularMPO const& y, QuantumNumbers::QuantumNumber const& q);
+WindowTriangularMPO prod(InfiniteTriangularMPO const& x, BasicFiniteMPO const& y, QuantumNumbers::QuantumNumber const& q);
+WindowTriangularMPO prod(BasicFiniteMPO const& x, InfiniteTriangularMPO const& y, QuantumNumbers::QuantumNumber const& q);
 
 // dot product - takes into account the multiplicity to rescale the result
 WindowTriangularMPO dot(WindowTriangularMPO const& x, WindowTriangularMPO const& y);

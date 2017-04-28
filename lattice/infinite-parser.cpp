@@ -206,7 +206,7 @@ struct push_string
 
    void operator()(char const* Start, char const* End) const
    {
-      FiniteMPO Op = ParseStringOperator(*Lattice.GetUnitCell().GetSiteList(),
+      BasicFiniteMPO Op = ParseStringOperator(*Lattice.GetUnitCell().GetSiteList(),
                                          std::string(Start, End), Lattice.GetUnitCell().size() /* , Args */);
       // TODO: Add Args to ParseStringOperator()
       eval.push(prod_unit_left_to_right(Op, Lattice.GetUnitCell().size()));

@@ -31,7 +31,7 @@
 #define TRIANGULAR_MPO_H_SDJFHU47894789H9O43
 
 #include "generic_mpo.h"
-#include "finite_mpo.h"
+#include "basic_finite_mpo.h"
 #include <ostream>
 
 class BasicTriangularMPO
@@ -81,19 +81,19 @@ class BasicTriangularMPO
       QuantumNumber TransformsAs() const { return this->Basis().front(); }
 
       // returns the component at entry (i,j).  Result is a 1x1 MPO (although the internal bond dimension might be bigger)
-      FiniteMPO operator()(int i, int j) const;
+      BasicFiniteMPO operator()(int i, int j) const;
 
       // Returns the 1x1 MPO on the top left diagonal, the left 'string' term,
       // equivalent to operator()(0,0)
-      FiniteMPO left_string() const { return this->operator()(0,0); }
+      BasicFiniteMPO left_string() const { return this->operator()(0,0); }
 
       // Returns the 1x1 MPO on the bottom right diagonal, the right 'string' term,
       // equivalent to operator()(Basis().size()-1, Basis().size())
-      FiniteMPO right_string() const { return this->operator()(this->Basis().size()-1, this->Basis().size()-1); }
+      BasicFiniteMPO right_string() const { return this->operator()(this->Basis().size()-1, this->Basis().size()-1); }
 
       // Returns the 1x1 MPO at the top right element, which corresponds to the
       // value of the MPO with support within the unit cell
-      FiniteMPO as_finite() const { return this->operator()(0, this->Basis().size()-1); }
+      BasicFiniteMPO as_finite() const { return this->operator()(0, this->Basis().size()-1); }
 
       operator GenericMPO const&() const { return Data_; }
 

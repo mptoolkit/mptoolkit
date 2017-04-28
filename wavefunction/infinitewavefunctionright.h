@@ -26,7 +26,7 @@
 
 #include "wavefunction/canonicalwavefunction.h"
 #include "wavefunction/linearwavefunction.h"
-#include "mpo/finite_mpo.h"
+#include "mpo/basic_finite_mpo.h"
 #include "mpo/product_mpo.h"
 #include <tuple>
 

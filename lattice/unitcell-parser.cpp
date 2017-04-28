@@ -479,7 +479,7 @@ struct push_string
 
    void operator()(char const* Start, char const* End) const
    {
-      FiniteMPO Op = ParseStringOperator(*Cell.GetSiteList(),
+      BasicFiniteMPO Op = ParseStringOperator(*Cell.GetSiteList(),
                                          std::string(Start, End), NumCells*Cell.size());
       eval.push(UnitCellMPO(Cell.GetSiteList(), Op, LatticeCommute::Bosonic, 0));
    }
@@ -489,7 +489,7 @@ struct push_string
    std::stack<ElementType >& eval;
 };
 
-FiniteMPO
+BasicFiniteMPO
 fsup(int Offset1, int Offset2, BasicTriangularMPO const& Op)
 {
    int const Size = Offset2 - Offset1;
@@ -502,16 +502,16 @@ fsup(int Offset1, int Offset2, BasicTriangularMPO const& Op)
    // patch up the first and last sites
    Result.front() = project_rows(Result.front(), std::set<int>({0}));
    Result.back() = project_columns(Result.back(), std::set<int>({int(Result.back().Basis2().size())-1}));
-   return FiniteMPO(Result);
+   return BasicFiniteMPO(Result);
 }
 
-FiniteMPO
+BasicFiniteMPO
 fsup(int Offset1, int Offset2, ProductMPO const& Op)
 {
    PANIC("not yet implemented");
 }
 
-FiniteMPO
+BasicFiniteMPO
 fsup(int Offset1, int Offset2, InfiniteMPOElement const& Op)
 {
    if (boost::get<BasicTriangularMPO>(&Op))
@@ -551,7 +551,7 @@ struct push_fsup
       //      TRACE(Str);
       InfiniteMPOElement Op = ParseInfiniteOperator(*ILattice, Str);
 
-      FiniteMPO NewOp = fsup(Cell1*Cell.size(), Cell2*Cell.size(), Op);
+      BasicFiniteMPO NewOp = fsup(Cell1*Cell.size(), Cell2*Cell.size(), Op);
       eval.push(UnitCellMPO(Cell.GetSiteList(), NewOp, LatticeCommute::Bosonic, Cell1*Cell.size()));
    }
 

@@ -319,7 +319,7 @@ UnitCell::map_local_operator(SiteOperator const& Operator, int Cell, int n) cons
 {
    std::string SignOperator = Operator.Commute().SignOperator();
 
-   FiniteMPO Result(Sites->size());
+   BasicFiniteMPO Result(Sites->size());
 
    BasisList Vacuum = make_vacuum_basis(Operator.GetSymmetryList());
    BasisList Basis = make_single_basis(Operator.TransformsAs());
@@ -503,8 +503,8 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
    OperatorComponent R1, R2;
    std::tie(R1, R2) = decompose_local_tensor_prod(Op, Basis_ji, Basis_ij);
 
-   // now turn this into a FiniteMPO
-   FiniteMPO Result(this->size() * (Cell_j-Cell_i+1));
+   // now turn this into a BasicFiniteMPO
+   BasicFiniteMPO Result(this->size() * (Cell_j-Cell_i+1));
 
    // components up to site i are identity
    for (int n = 0; n <i; ++n)
@@ -594,8 +594,8 @@ UnitCell::swap_gate_no_sign(int Cell_i, int i, int Cell_j, int j) const
    OperatorComponent R1, R2;
    std::tie(R1, R2) = decompose_local_tensor_prod(Op, Basis_ji, Basis_ij);
 
-   // now turn this into a FiniteMPO
-   FiniteMPO Result(this->size() * (Cell_j-Cell_i+1));
+   // now turn this into a BasicFiniteMPO
+   BasicFiniteMPO Result(this->size() * (Cell_j-Cell_i+1));
    for (int n = 0; n <i; ++n)
    {
       Result[n] = OperatorComponent::make_identity(this->LocalBasis(n % this->size()));
@@ -630,10 +630,10 @@ UnitCell::SetDefaultOperators()
 }
 
 #if 0
-FiniteMPO
+BasicFiniteMPO
 UnitCell::identity_mpo(QuantumNumbers::QuantumNumber const& q) const
 {
-   FiniteMPO Result(this->size());
+   BasicFiniteMPO Result(this->size());
    BasisList b = make_single_basis(q);
    for (int i = 0; i < this->size(); ++i)
    {
@@ -643,16 +643,16 @@ UnitCell::identity_mpo(QuantumNumbers::QuantumNumber const& q) const
    return Result;
 }
 
-FiniteMPO
+BasicFiniteMPO
 UnitCell::identity_mpo() const
 {
    return this->identity_mpo(QuantumNumbers::QuantumNumber(this->GetSymmetryList()));
 }
 
-FiniteMPO
+BasicFiniteMPO
 UnitCell::string_mpo(std::string const& OpName, QuantumNumbers::QuantumNumber const& Trans) const
 {
-   FiniteMPO Result(this->size());
+   BasicFiniteMPO Result(this->size());
 
    BasisList Vacuum = make_single_basis(Trans);
 
@@ -670,7 +670,7 @@ UnitCell::string_mpo(std::string const& OpName, QuantumNumbers::QuantumNumber co
    return Result;
 }
 
-FiniteMPO
+BasicFiniteMPO
 UnitCell::string_mpo(LatticeCommute Com, QuantumNumbers::QuantumNumber const& Trans) const
 {
    return this->string_mpo(Com.SignOperator(), Trans);
@@ -754,7 +754,7 @@ UnitCell join(UnitCell const& x, UnitCell const& y, UnitCell const& z, UnitCell 
 }
 
 #if 0
-FiniteMPO
+BasicFiniteMPO
 UnitCell::Parse(std::string const& s)
 {
 }

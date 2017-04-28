@@ -103,7 +103,7 @@ GenericMPO extract_lower_column(BasicTriangularMPO const& Op, int Col)
    return MPOp;
 }
 
-FiniteMPO
+BasicFiniteMPO
 BasicTriangularMPO::operator()(int Row, int Col) const
 {
    GenericMPO MPOp(Data_);
@@ -118,7 +118,7 @@ BasicTriangularMPO::operator()(int Row, int Col) const
    //   TRACE(MPOp.back());
 
    cull_unused_elements(MPOp);
-   return FiniteMPO(MPOp);
+   return BasicFiniteMPO(MPOp);
 }
 
 std::ostream&
@@ -247,7 +247,7 @@ log_norm_frob_sq(BasicTriangularMPO const& Op)
 }
 
 bool
-equal(FiniteMPO const& Op1, FiniteMPO const& Op2, double Tol)
+equal(BasicFiniteMPO const& Op1, BasicFiniteMPO const& Op2, double Tol)
 {
 }
 
@@ -356,13 +356,13 @@ bool tri_optimize_rows(BasicTriangularMPO& Op)
    int r1 = 0;
    while (r1 < Sz)
    {
-      FiniteMPO Diagonal1 = Op(r1, r1);
+      BasicFiniteMPO Diagonal1 = Op(r1, r1);
 
       int r2 = r1+1;
       while (r2 < Sz)
       {
          // check rows r1 and r2
-         FiniteMPO Diagonal2 = Op(r2, r2);
+         BasicFiniteMPO Diagonal2 = Op(r2, r2);
 
          // The diagonal operators must match, otherwise quit early
          if (!equal(Diagonal1, Diagonal2, Tol))
