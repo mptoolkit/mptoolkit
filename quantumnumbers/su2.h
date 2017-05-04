@@ -26,13 +26,12 @@
   We have two braid group representations defined, bosonic and fermionic.
 */
 
+#if !defined(MPTOOKLIT_QUANTUMNUMBERS_SU2_H)
+#define MPTOOKLIT_QUANTUMNUMBERS_SU2_H
+
 // definitions:
 // integral: all dimensions are integers
 // pointed: all dimensions are 1
-
-
-#if !defined(MPTOOKLIT_QUANTUMNUMBERS_SU2_H)
-#define MPTOOKLIT_QUANTUMNUMBERS_SU2_H
 
 #include "common/types.h"
 #include "common/niftycounter.h"
@@ -296,6 +295,7 @@ class SU2 : public StaticLieGroup_MF<SU2>
       static std::string casimir_name(std::string const& QName, int)
       { return QName + "^2"; }
 
+<<<<<<< HEAD
       static real casimir(half_int j, int n)
       {
          DEBUG_CHECK_EQUAL(n, 0);
@@ -317,6 +317,13 @@ class SU2 : public StaticLieGroup_MF<SU2>
       static half_int adjoint(half_int j)
       {
          return j;
+      }
+
+      static int multiplicity(half_int j1, half_int j2, half_int j)
+      {
+         return ((j.twice() <= j1.twice() + j2.twice())
+                 && (j.twice() >= std::abs(j1.twice() - j2.twice())))
+            ? 1 : 0;
       }
 
       // cross product is defined only for vector operators
@@ -371,6 +378,7 @@ class SU2 : public StaticLieGroup_MF<SU2>
       template <typename OutIter>
       static OutIter transform_targets(half_int j1, half_int j2, OutIter Out)
       {
+<<<<<<< HEAD
          for (half_int j = abs(j1 - j2); j <= j1 + j2; ++j)
          {
             *Out++ = j;
