@@ -52,12 +52,12 @@ class SU2
 
       static half_int from_iter(int const* InIter)
       {
-    return half_int::from_twice(*InIter);
+	 return half_int::from_twice(*InIter);
       }
 
       static int* write_iter(int* OutIter, half_int j)
       {
-    *OutIter++ = j;.twice();
+	 *OutIter++ = j;.twice();
       }
 
       static char const* name() { return "SU(2)"; }
@@ -69,110 +69,101 @@ class SU2
 
       double casimir(half_int j, int n)
       {
-    DEBUG_CHECK_EQUAL(n, 0);
-    return j.to_double() * (j.to_double() + 1);
-      }
-
-      static bool is_scalar(half_int j)
-      {
-    return j == 0;
+	 DEBUG_CHECK_EQUAL(n, 0);
+	 return j.to_double() * (j.to_double() + 1);
       }
 
       static double degree(half_int j)
       {
-    return j.twice() + 1;
+	 return j.twice() + 1;
       }
 
       static half_int adjoint(half_int j)
       {
-    return j;
+	 return j;
       }
 
       static int multiplicity(half_int j1, half_int j2, half_int j)
       {
-    return ((j.twice() <= j1.twice() + j2.twice())
-       && (j.twice() >= std::abs(j1.twice() - j2.twice())))
-       ? 1 : 0;
+	 return ((j.twice() <= j1.twice() + j2.twice()) 
+		 && (j.twice() >= std::abs(j1.twice() - j2.twice())))
+	    ? 1 : 0;
       }
 
       // cross product is defined only for vector operators
       static bool cross_product_exists(half_int j1, half_int j2)
       {
-    return j1 == 1 && j2 == 1;
+	 return j1 == 1 && j2 == 1;
       }
 
       static half_int cross_product_transforms_as(half_int j1, half_int j2)
       {
-    DEBUG_CHECK_EQUAL(j1, 1);
-    DEBUG_CHECK_EQUAL(j2, 1);
-    return j1;
+	 DEBUG_CHECK_EQUAL(j1, 1);
+	 DEBUG_CHECK_EQUAL(j2, 1);
+	 return j1;
       }
 
       static std::complex<double> cross_product_factor(half_int j1, half_int j2)
       {
-    DEBUG_CHECK_EQUAL(j1, 1);
-    DEBUG_CHECK_EQUAL(j2, 1);
-    return std::complex<double>(0.0, std::sqrt(2.0));
+	 DEBUG_CHECK_EQUAL(j1, 1);
+	 DEBUG_CHECK_EQUAL(j2, 1);
+	 return std::complex<double>(0.0, std::sqrt(2.0));
       }
 
       static double coupling_3j_phase(half_int j1, half_int j2, half_int j)
       {
-    return minus1pow(j1+j2-j);
+	 return minus1pow(j1+j2-j);
       }
 
       static double coupling_6j(half_int j1, half_int j2, half_int j3,
-            half_int j4, half_int j5, half_int j6)
+				half_int j4, half_int j5, half_int j6)
       {
-    return CouplingSU2::Coupling6j(j1, j2, j3, j4, j5, j6);
-      }
+	 return 
 
       static double coupling_9j(half_int j1 , half_int j2 , half_int j12,
-            half_int j3 , half_int j4 , half_int j34,
-            half_int j13, half_int j24, half_int j  )
-      {
-    return CouplingSU2::Coupling9j(j1, j2, j12, j3, j4, j34, j12, j24, j);
-      }
+				half_int j3 , half_int j4 , half_int j34,
+				half_int j13, half_int j24, half_int j  );
 
       static bool is_transform_target(half_int j1, half_int j2, half_int j)
       {
-    return (j.twice() <= j1.twice() + j2.twice())
-       && (j.twice() >= std::abs(j1.twice() - j2.twice()));
+	 return (j.twice() <= j1.twice() + j2.twice()) 
+	    && (j.twice() >= std::abs(j1.twice() - j2.twice()));
       }
 
       static int num_transform_targets(half_int j1, half_int j2)
       {
-    return std::min(j1.twice(), j2.twice()) + 1;
+	 return std::min(j1.twice(), j2.twice()) + 1;
       }
 
       template <typename OutIter>
       static OutIter transform_targets(half_int j1, half_int j2, OutIter Out)
       {
-    for (half_int j = abs(j1 - j2); j <= j1 + j2; ++j)
-    {
-       *Out++ = j;
-    }
-    return Out;
+	 for (half_int j = abs(j1 - j2); j <= j1 + j2; ++j)
+	 {
+	    *Out++ = j;
+	 }
+	 return Out;
       }
 
       static difference_type difference(half_int j1, half_int j2)
       {
-    return j1 - j2;
+	 return j1 - j2;
       }
 
       static bool is_possible_change(half_int j, difference_type delta)
       {
-    return j + delta >= 0;
+	 return j + delta >= 0;
       }
 
       static half_int change_by(half_int j, difference_type delta)
       {
-    DEBUG_CHECK(J+delta >= 0);
-    return j + delta;
+	 DEBUG_CHECK(J+delta >= 0);
+	 return j + delta;
       }
 
       static double weight(difference_type x)
       {
-    return std::abs(x.to_double());
+	 return std::abs(x.to_double());
       }
 
       SU2() : j(0) {}
@@ -331,11 +322,9 @@ double product_coefficient(SU2 const& k1, SU2 const& k2, SU2 const& k,
    DEBUG_PRECONDITION(is_triangle(qpp.j, k2.j, q.j));
    DEBUG_PRECONDITION(is_triangle(qp.j, k.j, q.j));
 
-   return minus1pow(to_int(qp.j + q.j + k.j)) * sqrt(degree(qpp)) * sqrt(degree(k)) *
-      Coupling6j(qp.j, k1.j, qpp.j, k2.j, q.j, k.j);
+   return minus1pow(to_int(k1.j + k2.j - k.j)) * sqrt(degree(qpp)) * sqrt(degree(k)) *
+     Racah(qp.j, k1.j, q.j, k2.j, qpp.j, k.j);
 }
-
-
 
 inline
 double inverse_product_coefficient(SU2 const& k1, SU2 const& k2, SU2 const& k,

@@ -23,8 +23,8 @@
   Created 2001-05-17 Ian McCulloch
 */
 
-#if !defined(QUANTUMNUMBER_H_FDSH37Y8FY7843RY7843YIWUER34JY3)
-#define QUANTUMNUMBER_H_FDSH37Y8FY7843RY7843YIWUER34JY3
+#if !defined(MPTOOLKIT_QUANTUMNUMBERS_QUANTUMNUMBER_H)
+#define MPTOOLKIT_QUANTUMNUMBERS_QUANTUMNUMBER_H
 
 /*
   rationale:
@@ -275,64 +275,6 @@ std::ostream& operator<<(std::ostream& out, QuantumNumber const& Q);
 
 PStream::opstream& operator<<(PStream::opstream& out, QuantumNumber const& L);
 PStream::ipstream& operator>>(PStream::ipstream& in, QuantumNumber& L);
-
-//
-// Projection
-//
-// stores a projection of a quantum number
-//
-
-class Projection : public RepLabelBase<Projection>
-{
-   public:
-      struct NoInitialization {};  // tag class for the constructor that
-                                   // allocates space but does not initialize
-
-      Projection() noexcept;
-
-      // Occasionally, we want to construct a projection and initialize it later.
-      // This allocates memory but does not initialize it.
-      Projection(SymmetryList const& q, NoInitialization);
-
-      // Constructs an un-initialized projection
-      explicit Projection(SymmetryList const& q);
-
-      // constructs a projection and initializes it from the provided input iterator
-      template <typename InputIter>
-      explicit Projection(SymmetryList const& q, InputIter InitIter);
-
-      // construction from string
-      Projection(SymmetryList const& q, std::string const& s);
-      Projection(SymmetryList const& q, char const* s);
-      Projection(SymmetryList const& q, char* s);  // needed on intel 6.0 - is it a broken compiler?
-
-      size_t size() const { return this->GetSymmetryListImpl()->ProjectionSize(); }
-
-      bool operator==(Projection const& Q) const;
-      bool operator!=(Projection const& Q) const;
-
-      bool operator<(Projection const& Q) const { return this->is_less_than(Q); }
-
-      // returns a string representation of the quantum number
-      std::string ToString() const;
-
-      void CoerceSymmetryList(SymmetryList const& SList);
-};
-
-std::ostream& operator<<(std::ostream& out, Projection const& Q);
-
-PStream::opstream& operator<<(PStream::opstream& out, Projection const& L);
-PStream::ipstream& operator>>(PStream::ipstream& in, Projection& L);
-
-Projection CoerceSymmetryList(Projection const& q, SymmetryList const& SList);
-
-inline
-void CoerceSymmetryListInPlace(Projection& q, SymmetryList const& SList)
-{
-   q.CoerceSymmetryList(SList);
-}
-
-typedef std::vector<Projection> ProjectionList;
 
 //
 // QuantumNumberList
@@ -636,12 +578,6 @@ class QNConstructor
       QuantumNumber operator()(T1 n1, T2 n2, T3 n3, T4 n4) const { return MakeQN(SList, n1, n2, n3, n4); }
       QuantumNumber operator()(T1 n1, T2 n2, T3 n3, T4 n4, T5 n5) const { return MakeQN(SList, n1, n2, n3, n4, n5); }
 
-      Projection projection(P1 p1) const { return MakeP(SList, p1); }
-      Projection projection(P1 n1, P2 n2) const { return MakeP(SList, n1, n2); }
-      Projection projection(P1 n1, P2 n2, P3 n3) const { return MakeP(SList, n1, n2, n3); }
-      Projection projection(P1 n1, P2 n2, P3 n3, P4 n4) const { return MakeP(SList, n1, n2, n3, n4); }
-      Projection projection(P1 n1, P2 n2, P3 n3, P4 n4, P5 n5) const { return MakeP(SList, n1, n2, n3, n4, n5); }
-
       SymmetryList GetSymmetryList() const { return SList; }
 
    private:
@@ -656,23 +592,11 @@ bool is_scalar(QuantumNumber const& q)
 }
 
 // returns the degee (dimension) of the representation q
-int degree(QuantumNumber const& q);
-
-// The trace of a scalar matrix element |q><q|.
-// For our choice of normalization, this is always degree(q).
-double trace(QuantumNumber const& q);
-
-// The matrix element of the identity operator |q><q|
-// This is defined to be degree(q) / trace(q)
-// for our chosen normalization of the coupling coefficients, this is
-// always 1.  The normalization of Varshalovish is different,
-// so this was introduced as an experiment.  But we implicitly
-// assume this is 1 so often, it would be a big task to change the normalization.
-// Probably, this function should be removed.
-double identity(QuantumNumber const& q);
+// this can be fractional, in the case of anyonic quantum numbers
+double degree(QuantumNumber const& q);
 
 // The multiplicity of the representation.  Currently, we do not handle
-// non-multiplicity-free algebras at all, so this must always be 1.  But
+// non-multiplicity-free algebras at all, so this must always be 0 or 1.  But
 // one day we will maybe do SU(3) ?  And this will be useful ;)
 int multiplicity(QuantumNumber const& q1, QuantumNumber const& q2, QuantumNumber const& q);
 
@@ -686,16 +610,14 @@ QuantumNumber cross_product_transforms_as(QuantumNumber const& q1, QuantumNumber
 // cross_product_factor(q1,q2) * prod(q1,q2,cross_product_transforms_as(q1,q2))
 std::complex<double> cross_product_factor(QuantumNumber const& q1, QuantumNumber const& q2);
 
-// returns the Clebsch-Gordan coefficient, such that the matrix elements of an operator are
-// < q m | T[q2,m2] | q1 m1 > = GC(q1, q2, q, m1, m2, m) * < q || T[q2] || q1 >
-// precondition: multiplicity(q1,q2,q) == 1
-double clebsch_gordan(QuantumNumber const& q1, QuantumNumber const& q2, QuantumNumber const& q,
-          Projection const&    m1, Projection const&    m2, Projection const&    m);
-
 // coupling coefficent c such that
 // <q' | AB(k) | q > = sum_{q''} c * < q' | A(k1) | q'' > < q'' | B(k2) | q >
 double product_coefficient(QuantumNumber const& k1, QuantumNumber const& k2, QuantumNumber const& k,
-                           QuantumNumber const& qp, QuantumNumber const& q, QuantumNumber const& qpp);
+                           QuantumNumber const& qp, QuantumNumber const& q, QuantumNumber const& qpp)
+{
+   return coupling_3j_phase(q, qp, k) * sqrt(degree(qpp) / degree(k))
+      * coupling_6j(qp, k1, qpp, k2, q, k);
+}
 
 // coupling coefficent c such that a product can be decomposed as
 // < q' | A(k1) | q'' > < q'' | B(k2) | q > = sum_k c * <q' | AB(k) | q >

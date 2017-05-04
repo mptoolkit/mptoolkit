@@ -48,7 +48,7 @@ struct WavefunctionDesc
    // (in the sense of a Bratelli diagram).  Returns true if the
    // flip was successful, false if the flip was rejected as invalid.
    // A flip is invalid if it would cause any of the heights on the
-   // Bratelli diagram to be invalid.  (SU(2) example: if
+   // Bratteli diagram to be invalid.  (SU(2) example: if
    // a flip decreases the height at one point, this might cause a
    // height somewhere to the left to become negative, which is not possible.)
    bool Flip(std::vector<BasisList> const& Basis, int Site, int NewState,

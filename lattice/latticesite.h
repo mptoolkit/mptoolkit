@@ -4,7 +4,7 @@
 //
 // lattice/latticesite.h
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2017 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,8 +16,7 @@
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER
-/* -*- C++ -*- $Id$
-
+/*
   Created 2004-09-05 Ian McCulloch
 
   originally a 'site block' in DMRG terminology, now a LatticeSite is
@@ -186,38 +185,6 @@ class LatticeSite
 std::ostream& operator<<(std::ostream& out, LatticeSite const& s);
 
 using Function::par;  // shortcut for constructing parameters
-
-// proxy function for an operator
-class SiteOperatorFunction
-{
-   public:
-      typedef std::complex<double> complex;
-
-      SiteOperatorFunction(LatticeSite const* Site, std::string const& Name,
-                           Function::OperatorFunction const& Func);
-
-      SiteOperator operator()(Function::Parameter const& arg1);
-      SiteOperator operator()(Function::Parameter const& arg1,
-                              Function::Parameter const& arg2);
-      SiteOperator operator()(Function::Parameter const& arg1,
-                              Function::Parameter const& arg2,
-                              Function::Parameter const& arg3);
-      SiteOperator operator()(Function::Parameter const& arg1,
-                              Function::Parameter const& arg2,
-                              Function::Parameter const& arg3,
-                              Function::Parameter const& arg4);
-      SiteOperator operator()(Function::Parameter const& arg1,
-                              Function::Parameter const& arg2,
-                              Function::Parameter const& arg3,
-                              Function::Parameter const& arg4,
-                              Function::Parameter const& arg5);
-      SiteOperator operator()(Function::Parameter const& arg1,
-                              Function::Parameter const& arg2,
-                              Function::Parameter const& arg3,
-                              Function::Parameter const& arg4,
-                              Function::Parameter const& arg5,
-                              Function::Parameter const& arg6);
-};
 
 // This is used by UnitCell and UnitCellMPO
 typedef std::vector<LatticeSite> SiteListType;

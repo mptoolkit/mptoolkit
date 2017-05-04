@@ -1,0 +1,642 @@
+\documentclass[12pt]{article}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{svg}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1em}
+\renewcommand{\baselinestretch}{1.1}
+
+\usepackage{enumitem}
+\setlist{nosep}
+
+\input{macros}
+
+   \newcommand{\qninejc}[9]{\mbox{$\left( \begin{array}{ccc} \!{#1}\! &
+                                \!{#2}\! & \!{#3}\! \\ \!{#4}\! & \!{#5}\! &
+                                \!{#6}\! \\ \!{#7}\! & \!{#8}\! & \!{#9}\! 
+                                \end{array} \right)$}}
+
+\newcommand{\ad}{\ddagger}
+\newcommand{\invad}{{\ddagger \ddagger \ddagger}}
+
+\newcommand{\fsymbol}[6]{\mbox{$\left( F^{#1,#2,#3}_{#4} \right)_{#5,#6}$}}
+
+\begin{document}
+
+\title{Generalized algebras of Clebsch-Gordan, $6j$, $9j$, F-moves}
+
+\author{I. P. McCulloch}
+\date{\today}
+
+\maketitle
+
+\section{Introduction}
+
+The purpose of this paper is to provide exposition and reference material for constructing
+6j and 9j symbols of various algebras, and eventually to also construct projection
+transformations (eg the conventional Clebsch-Gordan coefficients are associated with the
+group chain $U(1) \subset SU(2)$, but we want to generalize this to other group subsets). 
+This is somewhat complicated by different notation conventions; historically in $SU(2)$ theory
+the Clebsch-Gordan/3j, 6j and 9j coefficients are used, which have been generalized
+in similar notation to point groups (used eg in quantum chemistry). On the other hand
+anyons are often described in terms of F-symbols and F-moves, of which there are two
+common variants (a 3-1 move and a 2-2 move). In practical calculations, the F-symbols are
+probably the most useful; these give directly the coefficients of basis transformations eg
+$\fsymbol{j_1}{j_2}{j_3}{j}{j_{12}}{j_{23}} 
+= \langle (j_1 j_2 j_{12}) j_3 j \vert j_1 (j_2 j_3 j_{23}) j \rangle$, 
+which differs by a normalization and phase factors from a 6j symbol. However the 6j symbols
+have more symmetry so are useful as an underlying implementation tool in computational
+algorithms. Hence we want to find generic ways to transform beyween F-symbols and 6j symbols.
+
+We also hope to unify this picture with braiding statistics and particle exchange statistics;
+it is not a priori clear that these are the same thing! In particular, I haven't seen yet
+any good discussion on the different types of exchange statistics that are possible for the
+same particle algebra (eg spinless fermions versus bosons, or even abelian anyons, all
+appear to have the same $U(1)$ fusion algebra). For non-abelian anyons, the
+$R$ symbols are generally presented as fixed quantitities, but clearly for simple spinless
+(eg $U(1)$) particles we have a choice of particle exchange statistics, which appears to be
+possible to encode into the $R$ matrix, but this then implies that the $R$ matrix is \emph{not}
+fixed by the fusion algebra alone. Is this different in the anyonic case? Eg can we give
+non-abelian anyons an additional fermionic phase? I'm thinking that the R matrix for
+anyons \emph{is} fixed, up to some braid group that mutually commutes. An example is if we have
+anyons with particle conservation,  then we can attach an arbitrary abelian anyonic braid representation
+(ie bosonic, fermionic or anyonic phase factor)
+to the $U(1)$ part. But typically we \emph{cannot} add such a phase to non-abelian anyons alone,
+eg for Fibonacci anyons we have $\tau \times \tau = 1 + \tau$, so no abelian phase factor is possible.
+On the other hand, for Ising anyons, it appears at first glance we could attach a phase $-1$
+to the $\sigma$ anyon.
+
+The specific symmetry groups that we want to handle here are
+\begin{enumerate}
+\item $U(1)$
+\item $SU(2)$
+\item finite cyclic groups $Z_n$
+\item Dihedral groups $D_n$. THere are two notations for dihedral groups, sometimes $D_{2n}$ is used.
+\item Ising anyons $SU(2)_2$
+\item Fibonacci anyons $SU(2)_3$
+\item $SU(3)_2$ -- discussed in a nice paper by Ardonne and Slingerland\cite{Ardonne}
+\end{enumerate}
+Where possible we want to allow projective representations too. Such representations occur
+as boundary conditions or edge particles in topological states. For the Dihedral
+groups, this means allowing for half-integer quantum numbers.
+
+\section{Quantum numbers}
+
+a quantum number is a representation of some symmetry group. Fusion of quantum
+numbers is equivalent to taking products of representations, and is given by
+the Clebsch-Gordan expansion,
+\begin{equation}
+a \otimes b = \bigoplus n^{c}_{ab} \: c
+\end{equation}
+where $n^{c}_{ab}$ is the \emph{multiplicity} of the representation $c$ in the expansion
+of $a \otimes b$.
+Technically we should distinguish the representation label $j$ from the representation
+matrices $D(j)$, but we won't bother with this distsinction here, unless it gives a clearer
+notation.
+If $n^{j}){j_1,j_2} > 1$ then a representation occurs more than once in the expansion,
+and this greatly complicates the description of the coupling. This is commonly
+referred to as the \emph{multiplicity problem}. Symmetry groups that always have 
+$n^{j}_{j_1,j_2} \leq 1$ are referred to as \emph{multiplicity free}.
+
+Examples:
+\begin{itemize}
+\item $U(1)$: label the representations by a (half-)integer $j$, eg representing
+the particle number or $z$-component of spin. Then the Clebsch-Gordan
+expansion corresponds to simple addition of the quantum number, $D(j_1) \otimes D(j_2) = D(j_1+j+2)$.
+\item $SU(2)$: The product of $SU(2)$ spins $j_1$ and $j_2$ (always non-negative) 
+is a sum of $\min(2j_1+1,2j_2+1)$
+representations. $n^{j}_{j_1,j_2} = 1$, if 
+$j \in \{|j_1 - j_2|, |J_1 - j_2| + 1, \cdots, j_1+j_2\}$,
+and $0$ otherwise.
+\item Ising anyons, corresponding to $SU(2)_3$, contain spins $1$ (the identiy,
+which has spin 0) and $\tau$ (analagous to a spin 1), with the
+fusion rules $1 \times 1 = 1$, $1 \times \tau = \tau \times 1 = \tau$, $tau \times \tau = 1 + \tau$.
+\item $SU(3)_3 / Z_3$ is probably the simplest algebra that is \emph{not} 
+multiplicity-free\cite{Ardonne}, via
+\begin{equation}
+8 \times 8 = 1 + 8 + 8' + 10 + \bar{10}
+\end{equation}
+where the representation $8$ occurs twice on the right hand side.
+
+\end{itemize}
+
+The `zero' quantum number always exists. This is often denoted with a 1, since it corresponds
+to the trivial (identity) representation of the algebra. But in practice the spin is
+0. The identity quantum number is also referred to as \emph{scalar}, since it is
+the unique representation that is invariant under symmetry transformations.
+A representation $j$ has a conjugate or dual representation, denoted $\bar{j}$. 
+\begin{itemize}
+\item In $U(1)$ the conjugate correpsonds to negation, so $\bar{j} = -j$.
+\item $SU(2)$ is self-dual, so $\bar{j} = j$.
+\end{itemize}
+The `conjugate' operation here has nothing to do with complex conjugation.  In the Matrix
+Product Toolkit, the operation $\bar{j}$ is referred to as \texttt{adjoint(j)}.
+Commonly, discussions of $SU(2)$ coupling coefficients omit the quantum number conjugation,
+but it is still important eg for spinful particles we often have $U(1)\times SU(2)$, and
+we cannot neglect the quantum number conjugation in the $U(1)$ case.
+
+The \emph{dimension} of a representation $j$ is the dimension of the matrix $D(j)$. This
+is often denoted $d_j$. For classical symmetries the dimension is an integer. For non-abelian
+anyons, the dimension can be fractional and is then known as the \emph{quantum dimension}.
+The dimensions satisfy the sum rule
+\begin{equation}
+d_{j_1} d_{j_2} = \sum_j n^{j}_{j_1,j_2} \; d_j
+\end{equation}
+
+
+If, for some symmetry group, all of the representations have $d_j = 1$, then the
+group is abelian. This is equivalent to the statement that for each $a,b$ there is exactly
+one $c$ such that $n^{c}_{ab} = 1$, and all other multiplicities are zero.
+
+\section{Fusion}
+
+Hilbert spaces are complex spaces with an in inner product, so we need to distinguish
+bra's and ket's as separate entities. In diagrammantic notation, we do this  with incoming
+or outgoing arrows. It doesn't matter whether we regard an incoming arrow as a bra state
+or as a ket, as long as we are globally consistent.
+Fusion of two quantum numbers looks like
+\begin{equation}
+\begin{gathered}
+\includesvg[width=1.5cm]{fusion}
+\end{gathered}
+\end{equation}
+where we fuse two incoming states $a,b$ into an outgoing state $c$. 
+When fusing three particles $a,b,c$ together, there is an ambiguity as to whether
+we fuse $a,b$ first and then $c$, or fuse $a$ with the fusion of $b,c$. The difference
+is the intermediate quantum number, here denoted $e$ or $f$. The difference between
+these forms of fusion is given by the $F$ symbol.
+\begin{equation}
+\begin{gathered}
+\includesvg[width=2cm]{fusion4left}
+\end{gathered}
+= \sum_f \fsymbol{a}{b}{c}{d}{e}{f}
+\begin{gathered}
+\includesvg[width=2cm]{fusion4right}
+\end{gathered}
+\end{equation}
+Alternatively, we can write
+\begin{equation}
+\rket{((abe)c)d} = \sum_f \fsymbol{a}{b}{c}{d}{e}{f} \rket{(a(bcf))d}
+\end{equation}
+or as
+\begin{equation}
+\fsymbol{j_1}{j_2}{j_3}{j}{j_{12}}{j_{23}} 
+= \rbraket{(j_1 j_2 j_{12}) j_3 j}{j_1 (j_2 j_3 j_{23}) j}
+\end{equation}
+where we use the notation $\rket{a}$ to denote a state vector, as a reminder
+that we may have $d_a > 1$, so it isn't an ordinary vector. But we need to be careful
+with normalization of the inner product, maybe we should have a $1/d_j$ here?
+For given exterior legs $a,b,c,d$ we can view the F-symbol as the basis transformation
+that maps between two different choices of internal labelling.
+
+Note that the left-right ordering of spins $a,b,c,d$ is important here. Although the
+Clebsch-Gordan series for $a \otimes b$ is the same as that for $b \otimes a$, the
+F-symbol is \emph{not} symmetric under this interchange. We can represent this with an
+$R$ matrix,
+\begin{equation}
+\begin{gathered}
+\includesvg[width=2cm]{fusionswap}
+\end{gathered}
+=
+\begin{gathered}
+\includesvg[width=2cm]{rmatrix}
+\end{gathered}
+= R^c_{ab}
+\begin{gathered}
+\includesvg[width=2cm]{fusion}
+\end{gathered}
+\end{equation}
+
+
+
+\section{Irreducible Tensors}
+
+Using the normalization convention of Beidenharn, we define
+\beq
+\bigbraket{j'm'}{T^{[k]}_M}{jm}
+= \rbigbraket{j'}{\vektor{T}^{[k]}}{j} \; \qcg{j}{k}{j'}{m}{M}{m'}
+\label{eq:ITensorDef}
+\eeq
+Using the orthogonality of the CG coefficients, this defines the
+reduced matrix elements\footnote{That this factorization exists is
+  precisely the celebrated Wigner-Eckart theorem.},
+\beq
+\rbigbraket{j'}{\vektor{T}^{[k]}}{j}
+= \sum_{mM} \qcg{j}{k}{j'}{m}{M}{m'} \bigbraket{j'm'}{T^{[k]}_M}{jm}
+\eeq
+where $m'$ is arbitrary.  Alternatively,
+we can sum over $m'$ and divide by $(2m'+1)$,
+\beq
+\rbigbraket{j'}{\vektor{T}^{[k]}}{j}
+= \sum_{mMm'} \frac{1}{2j'+1} \qcg{j}{k}{j'}{m}{M}{m'} \bigbraket{j'm'}{T^{[k]}_M}{jm}
+\eeq
+This is a hint that this normalization of the reduced matrix elements
+is not as symmetric as one might like; however
+using this normalization the reduced and
+full matrix elements of scalar operators coincide.  In particular,
+the reduced matrix elements of the identity operator are
+\beq
+\rbigbraket{j'}{I}{j} = \delta_{j'j}
+\eeq
+and those of the angular momentum operator are
+\beq
+\rbigbraket{j'}{J}{j} = \sqrt{j(j+1)} \; \delta_{j'j}
+\eeq
+But the trace of a scalar operator needs to be normalized properly;
+\beq
+\Tr X = \sum_{j} (2j+1) \rbigbraket{j}{X}{j}
+\eeq
+
+The normalization used here
+is \textit{not} equivalent to that of Edmonds,
+who instead defines
+\beq
+\bigbraket{j'm'}{T^{[k]}_M}{jm}
+= \rbigbraket{j'}{\vektor{T}^{[k]}}{j}_{\mbox{Edmonds}}
+\; \frac{(-1)^{j-m}}{\sqrt{2k+1}} \qcg{j'}{j}{k}{m'}{-m}{M}
+\eeq
+This normalization is also used by Varshalovich \etal \cite{Varsh}, 
+thus it is important to
+distinguish properties that explicitly depend on the normalization choice
+for the reduced matrix elements versus intrinsic properties.
+
+\subsection{Tensor multiplication}
+
+The coupling of two operators is just as for ordinary spins;
+\beq
+\left[ \itensor{S}{k_1} \times \itensor{T}{k_2} \right]^{[k]}
+\eeq
+which denotes the set of operators with components
+\beq
+\left[ \itensor{S}{k_1} \times \itensor{T}{k_2} \right]^{[k]}_{\mu}
+=
+\sum_{\mu_1 \mu_2} \qcg{k_1}{k_2}{k}{\mu_1}{\mu_2}{\mu}
+\itensorcomp{S}{k_1}{\mu_1} \itensorcomp{T}{k_2}{\mu_2}
+\eeq
+Applying the Wigner-Eckart gives, after a few lines of algebra,
+\beq
+\begin{array}{c}
+\rbigbraket{j'}{\left[ \itensor{S}{k_1} \times \itensor{T}{k_2} \right]^{[k]}}{j}
+\\
+= (-1)^{j+j'+k} \sum_{j''} \sqrt{(2j''+1)(2k+1)} \qsixj{j'}{k_1}{j''}{k_2}{j}{k}
+\\ \times
+\rbigbraket{j'}{\itensor{S}{k_1}}{j''}
+\rbigbraket{j''}{\itensor{T}{k_2}}{j}
+\end{array}
+\label{eq:TensorProduct}
+\eeq
+
+Note that multiplication of a tensor operator by a \textit{scalar} is a special
+case where $k_2 = 0$, and \refeq{eq:6jzero} implies the coupling coefficient is identically 1.
+
+
+\appendix
+
+\section{Coupling coefficients for $SU(2)$}
+
+\subsection{Clebsch-Gordan coefficients}
+
+We use the notation of Biedenharn:
+\beq
+\qcg{j_1}{j_2}{j_3}{m_1}{m_2}{m_3}
+\eeq
+For fixed $j_1$ and $j_2$, these coefficients form a unitary matrix
+of dimension $(2j_1 +1)(2j_2+1)$, with rows labelled by
+$m_1,m_2$ and columns labelled by $j,m$.
+An explicit form is:
+\beq
+\begin{array}{rcl}
+\qcg{j_1}{j_2}{j_{}}{m_1}{m_2}{m_{}} & = & \delta_{m_1+m_2,m}
+\vspace{0.2cm} \\ & & \times
+\left[ \frac{\displaystyle (2j_{}+1)(j_{}+j_1-j_2)!(j_{}-j_1+j_2)!(j_1+j_2-j_{})!}
+            {\displaystyle (j_{}+j_1+j_2+1)!}
+\right]^{\frac{1}{2}} 
+\vspace{0.2cm} \\ & & \times
+\left[ \frac{\displaystyle (j+m)!(j-m!)}
+            {\displaystyle (j_1+m_1)!(j_1-m_1)!(j_2+m_2)!(j_2-m_2)!}
+\right]^{\frac{1}{2}}
+\vspace{0.2cm} \\ & & \times
+\displaystyle \sum_{\displaystyle s} 
+\frac{\displaystyle (-1)^{j_2+m_2+s_{}} (j_2+j_{}+m_1+s_{})!(j_1-m_1+s_{})!}
+{\displaystyle s_{}!(j_{}-j_1+j_2-s_{})!(j_{}+m_{}-s_{})!(j_1-j_2-m_{}+s_{})!} \; .
+\end{array}
+\eeq
+Orthogonality of rows
+\beq
+\sum_{m_1 m_2} \qcg{j_1}{j_2}{j}{m_1}{m_2}{m} \qcg{j_1}{j_2}{j'}{m_1}{m_2}{m'}
+= \delta_{jj'} \delta_{mm'}
+\eeq
+and orthogonality of columns
+\beq
+\sum_{jm} \qcg{j_1}{j_2}{j}{m_1}{m_2}{m} \qcg{j_1}{j_2}{j}{m'_1}{m'_2}{m}
+= \delta_{m_1 m'_1} \delta_{m_2 m'_2}
+\eeq
+
+The `classical' symmetries form a group of order 12 
+and until the work of Regge\cite{Regge}
+it was believed that these exhausted the symmetries. 
+The true symmetry group is of order 72.
+The symmetry relations are (the group is generated by the first 4, the
+remainder are for reference),
+\beq
+\begin{array}{rcl}
+\qcg{j_1}{j_2}{j_{}}{m_1}{m_2}{m_{}} 
+& = & (-1)^{j_1+j_2-j} \qcg{j_1}{j_2}{j_{}}{-m_1,}{-m_2,}{-m_{}} \, , 
+\vspace{0.2cm} \\
+\qcg{j_1}{j_2}{j_{}}{m_1}{m_2}{m_{}} 
+& = & (-1)^{j_1+j_2-j} \qcg{j_2}{j_1}{j_{}}{m_2}{m_1}{m_{}} \, , 
+\vspace{0.2cm} \\
+\qcg{j_1}{j_2}{j_{}}{m_1,}{m_2,}{m_1+m_2} 
+& = & \qcg{\frac{1}{2}(j_1+j_2+m_1+m_2)}{\frac{1}{2}(j_1+j_2-m_1-m_2)}{j_{}}
+{\frac{1}{2}(j_1-j_2+m_1-m_2),}{\frac{1}{2}(j_1-j_2-m_1+m_2),}{j_1-j_2} \, , 
+        \vspace{0.2cm} \\
+\qcg{j_1}{j_2}{j_{}}{m_1}{m_2}{m_{}}
+& = & (-1)^{j_2+m_2} \sqrt{\frac{2j+1}{2j_1+1}} 
+\qcg{j_{}}{j_2}{j_1}{-m_{},}{m_2,}{-m_1} \, , 
+        \vspace{0.2cm} \\
+\qcg{j_1}{j_2}{j_{}}{m_1}{m_2}{m_{}}
+& = & (-1)^{j_1-m_1} \sqrt{\frac{2j+1}{2j_2+1}} 
+\qcg{j_1}{j_{}}{j_2}{m_1,}{-m_{},}{-m_2} \, , 
+        \vspace{0.2cm} \\
+\qcg{j_1}{j_2}{j_{}}{m_1}{m_2}{m_{}}
+& = & (-1)^{j_2+m_2} \sqrt{\frac{2j+1}{2j_1+1}} 
+\qcg{j_2}{j_{}}{j_1}{-m_2,}{m_{},}{m_1} \, , 
+        \vspace{0.2cm} \\
+\qcg{j_1}{j_2}{j_{}}{m_1}{m_2}{m_{}}
+& = & (-1)^{j_1-m_1} \sqrt{\frac{2j+1}{2j_2+1}} \qcg{j_{}}{j_1}{j_2}{m_{}}{-m_1}{m_2}
+\end{array}
+\eeq
+
+A useful special case is
+\beq
+\qcg{j_1}{0}{j}{m_1}{0}{m} = \delta_{j_1 j} \delta_{m_1 m}
+\label{eq:CG_SpecialCase}
+\eeq
+
+
+Alternate notation (Edmonds 1957):
+\beq
+\qcg{j_1}{j_2}{j}{m_1}{m_2}{m} \equiv
+\braket{j_1 m_1 j_2 m_2}{j_1 j_2 j m}
+\label{eq:EdmondsNotation}
+\eeq
+
+Alternate notation (Varshalovich \etal) \cite{Varsh}:
+\beq
+\qcg{j_1}{j_2}{j}{m_1}{m_2}{m} \equiv C^{jm}_{j_1 m_1 j_2 m_2}
+\eeq
+
+As is apparant from the phase factors and normalizations arising in
+the symmetry relations, the Clebsch-Gordan coefficients have a mixed
+symmetry. This is also clear from the notation \refeq{EdmondsNotation}
+where $j_1$ and $j_2$ transform as bras, but $j$ transforms as a ket.
+To see how this works, we can interpret the special
+coefficient $\qcg{j'}{j}{0}{m'}{m}{0}$ as a metric tensor $\eta_{j'j}$, that
+couples spins $j'$ and $j$ to a scalar. Here, $j'$ is the conjugate
+spin to $j$. For $SU(2)$, we have numerically $j' = j$, but for
+$U(1)$ we have $m' = -m$. In this form, the Clebsh-Gordan coefficient
+has mixed symmetry $C_{j_1} {}_{j_1} {}^{j}$. This is convenient 
+because \refeq{eq:EdmondsNotation} is usually exactly what we want,
+but it is important to keep this detail in mind. The `symmetric'
+version of the Clebsch-Gordan coefficient is the $3j$ coefficient
+(an unfortunate name because it is a rather different object to the
+$N-j$ coefficients for $N > 3$), and has the form
+\beq
+\qthreej{j_1}{j_2}{j}{m_1}{m_2}{m} = (-1)^{j+m+2j_1} \frac{1}{\sqrt{2j+1}}
+\qcg{j_1}{j_2}{j}{-m_1}{-m_2}{m}
+\eeq
+The inverse form is
+\beq
+\qcg{j_1}{j_2}{j}{m_1}{m_2}{m} = (-1)^{j_1-j_2+m} \sqrt{2j+1}
+\qthreej{j_1}{j_2}{j}{m_1}{m_2}{-m}
+\eeq
+The phase factors are chosen so that any cyclic permutation of columns leaves
+the $3j$ symbol unchanged. Under an odd permutation of columns, the symbol
+picks up a phase factor $(-1)^{j_1+j_2+j}$, which is the same phase factor
+from the transformation $(m_1,m_2,m) \rightarrow (-m_1,-m_2,-m)$.
+
+\subsection{$6j$ Symbols}
+
+The simplest known explitit form is due to Racah\cite{Racah1,Racah2},
+\beq
+\begin{array}{c}
+\multicolumn{1}{l}{
+\qsixj{j_1}{j_2}{j_{}}{k_1}{k_2}{k_{}} =
+\Delta(j_1j_2j_{})\Delta(k_1k_2j_{})\Delta(j_1k_2k_{})\Delta(k_1j_2k_{})}
+\hfill \vspace{0.2cm} \\  \times
+\displaystyle \sum_z \frac{\displaystyle (-1)^z (z+1)!}
+            {\displaystyle (z_{}-j_1-j_2-j_{})!(z_{}-k_1-k_2-j_{})!
+                           (z_{}-j_1-k_2-k_{})!(z_{}-k_1-j_2-k_{})!}
+ \vspace{0.2cm} \\  \times
+\frac{\displaystyle 1}
+     {\displaystyle (j_1+j_2+k_1+k_2-z_{})!(j_1+k_1+j_{}+k_{}-z_{})!
+(j_2+k_2+j_{}+k_{}-z_{})!} \, ,
+\end{array}
+\eeq
+where $\Delta(abc)$ is the {\em triangle coefficient},
+\beq
+\Delta(abc) = \epsilon_{abc} \left[ 
+  \frac{(a+b-c)!(a-b+c)!(-a+b+c)!}{(a+b+c+1)!} 
+\right]^{\frac{1}{2}} \; .
+\eeq
+Here $\epsilon_{abc}$ enforces the {\em triangle condition},
+\beq
+\epsilon_{abc} = 
+\begin{cases}
+1, & \text{if $c \in \{|a-b|, |a-b|+1, \ldots, a+b \}$}  \\
+0, & \text{otherwise}
+\end{cases} 
+\;.
+\eeq
+This is, despite the apparant asymmetry, in fact symmetric in all 
+permutations of $a,b,c$.
+The definition of the $6j$ symbols seems to be universal, with just one
+common alternate, the Racah coefficient $W$, that differs by a simple
+phase factor (note also the change in ordering of the indices),
+\beq
+W(j_1, j_2, j_5, j_4 ; j_3, j_6) =
+\qsixj{j_1}{j_2}{j_3}{j_4}{j_5}{j_6} \; (-1)^{j_1+j_2+j_3+j_4}
+\eeq
+
+The $6j$ symbol is invariant under permutations of its columns, and
+swapping the elements of \textit{two} columns.  \ie
+\beq
+\qsixj{j_1}{j_2}{j_3}{j_4}{j_5}{j_6}
+= \qsixj{j_2}{j_1}{j_3}{j_5}{j_4}{j_6}
+= \qsixj{j_1}{j_3}{j_2}{j_4}{j_6}{j_5}
+= \qsixj{j_4}{j_5}{j_3}{j_1}{j_2}{j_6}
+\eeq
+and so on. The full symmetry group is bigger, 144 elements, but 
+the remaining symmetries are not pure permutations. They also satisfy an orthogonality constraint,
+\beq
+\sum_{j_3} (2j_3+1) \qsixj{j_1}{j_2}{j_3}{j_4}{j_5}{j_6} \qsixj{j_1}{j_2}{j_3}{j_4}{j_5}{j'_6} 
+= \frac{\delta_{j^{}_6 j'_6}}{2j_6+1}
+\label{eq:6jortho}
+\eeq
+and a special case where one of the $j$'s is zero,
+\beq
+\qsixj{j_1}{j_2}{j_3}{j_4}{j_5}{0} = \delta_{j_2 j_4} \delta_{j_1 j_5} 
+\frac{(-1)^{j_1+j-2+j_3}}{\sqrt{(2j_1+1)(2j_2+1)}} \; .
+\label{eq:6jzero}
+\eeq
+
+The $6j$ symbol gives the recoupling of three angular momenta,
+\beq
+\begin{array}{c}
+\braket{j_1 (j_2 j_3) j_{23} ; j'm'}{(j_1 j_2) j_{12} j_3 ; jm}
+\\
+ = \delta_{j'j} \delta_{m'm} (-1)^{j_1+j_2+j_3+j} \sqrt{(2j_{12}+1)(2j_{23}+1)}
+\qsixj{j_1}{j_2}{j_{12}}{j_3}{j}{j_{23}}
+\end{array}
+\eeq
+
+This is different to Eq. (2.121) in my thesis, I think the ordering of
+the $j's$ in that equation is incorrect.
+
+Alternative couplings:
+\beq
+\begin{array}{c}
+\braket{(j_1 j_2) j_{12} j_3 ; j'm'}{(j_1 j_3) j_{13} j_2 ; jm}
+\\
+= \delta_{j'j} \delta_{m'm} (-1)^{j_2+j_3+j_{12}+j_{13}} \sqrt{(2j_{12}+1)(2j_{23}+1)}
+\qsixj{j_2}{j_1}{j_{12}}{j_3}{j}{j_{13}}
+\end{array}
+\eeq
+\beq
+\begin{array}{c}
+\braket{j_1 (j_2 j_3) j_{23} ; j'm'}{(j_1 j_3) j_{13} j_2 ; jm}
+\\
+= \delta_{j'j} \delta_{m'm} (-1)^{j_1+j_3+j_{23}} \sqrt{(2j_{13}+1)(2j_{23}+1)}
+\qsixj{j_1}{j_3}{j_{13}}{j_3}{j}{j_{23}}
+\end{array}
+\eeq
+
+This is simply a notation change from the recoupling of tensor operators,
+\beq
+\begin{array}{l}
+  ((\itensor{P}{j_1} \times \itensor{Q}{j_2})^{[j_{12}]} \times
+  \itensor{R}{j_3})^{[j]} = (-1)^{j_1+j_2+j_3+j} \sum_{j_{23}}
+  \sqrt{(2j_{12}+1)(2j_{23}+1)} \\
+  \quad \times
+  \qsixj{j_1}{j_2}{j_{12}}{j_3}{j}{j_{23}} 
+  (\itensor{P}{j_1} \times (\itensor{Q}{j_2} \times
+  \itensor{R}{j_3})^{[j_{23}]})^{[j]}
+\end{array}
+\eeq
+and so on.
+
+For tensors that commute, there is a phase factor from the coupling;
+\beq
+(\itensor{P}{j_1} \times \itensor{Q}{j_2})^{[j]} = (-1)^{j_1+j_2-j}
+(\itensor{Q}{j_2} \times \itensor{P}{j_1})^{[j]}
+\label{eq:CommutationPhase}
+\eeq
+
+The definition of the $6j$ symbols in terms of the Clebsch-Gordan coefficients is
+\beq
+\begin{array}{c}
+\displaystyle
+\sum_{m m_i m_{ij}} \qcg{j_{12}}{j_3}{j}{m_{12}}{m_3}{m} 
+\qcg{j_1}{j_2}{j_{12}}{m_1}{m_2}{m_{12}}
+\qcg{j_1}{j_{23}}{j'}{m_1}{m_{23}}{m'} \qcg{j_2}{j_3}{j_{23}}{m_2}{m_3}{m_{23}}
+\\
+= \delta_{j'j} \delta_{m'm} (-1)^{j_1+j_2+j_3+j} \sqrt{(2j_{12}+1)(2j_{23}+1)}
+\qsixj{j_1}{j_2}{j_{12}}{j_3}{j}{j_{23}}
+\end{array}
+\label{eq:SixJCG}
+\eeq
+
+When one argument is zero, the $6j$ coefficients reduce to a simple form,
+\beq
+\qsixj{a}{b}{c}{d}{e}{0} = (-1)^{a+b+c} 
+\frac{\delta_{ae} \delta_{bd}}{\sqrt{(2a+1)(2b+1)}}
+\eeq
+The symmetry relations can be used to shift the zero to any position.
+There are many formulas for other special cases listed in
+Varshalovich \etal \cite{Varsh}.
+
+\subsection{$9j$ Symbols}
+
+A practical formula for evaluation of $9j$ coefficients is in terms of
+a summation over $6j$ coeffecients:
+\beq
+\qninej{j_{11}}{j_{12}}{j_{13}}{j_{21}}{j_{22}}{j_{23}}{j_{31}}{j_{32}}{j_{33}}
+= \sum_k (-1)^{2k} (2k+1) 
+        \qsixj{j_{11}}{j_{21}}{j_{31}}{j_{32}}{j_{33}}{k_{}}
+        \qsixj{j_{12}}{j_{22}}{j_{32}}{j_{21}}{k_{}}{j_{23}}
+        \qsixj{j_{13}}{j_{23}}{j_{33}}{k_{}}{j_{11}}{j_{12}} \; .
+\label{eq:NineJDefinition}
+\eeq
+From this, it can be shown that the $9j$ coefficient is zero unless the triangle 
+conditions are fulfilled by the entries in each row and each column. There are
+72 known symmetries of the $9j$ coefficent. The $9j$ coefficient is invarant
+under even permutations of its rows, even permutation of its columns and
+under interchange of rows and columns (transposition). It is multiplied by
+a factor $(-1)^{\sum_{ik}j_{ik}}$ under an odd permutation of its rows or columns.
+
+The $9j$ symbols are related to the recoupling of 4 angular momenta,
+\beq
+\begin{array}{c}
+\braket{(j_1 j_2) j_{12} (j_3 j_4) j_{34} \; j'm'}{(j_1 j_3) j_{13} (j_2 j_4) j_{24} \; jm} 
+\\
+=
+\delta_{jj'} \delta_{mm'}
+\qninejsq{j_1}{j_2}{j_{12}}{j_3}{j_4}{j_{34}}{j_{13}}{j_{24}}{j}
+\end{array}
+\eeq
+where
+\beq
+\begin{array}{c}
+\qninejsq{j_1}{j_2}{j_{12}}{j_3}{j_4}{j_{34}}{j_{13}}{j_{24}}{j}
+=
+\\
+\sqrt{(2j_{12}+1)(2j_{13}+1)(2j_{24}+1)(2j_{34}+1)}
+\qninej{j_1}{j_2}{j_{12}}{j_3}{j_4}{j_{34}}{j_{13}}{j_{24}}{j}
+\end{array}
+\eeq
+
+As follows from the definition, a $9j$ symbol can also be expressed as
+a sum of products of Clebsch-Gordan coefficients,
+\beq
+\begin{array}{c}
+\displaystyle \sum_{m_i, m_{ik}}
+\qcg{j_1}{j_2}{j_{12}}{m_1}{m_2}{m_{12}}
+\qcg{j_3}{j_4}{j_{34}}{m_3}{m_4}{m_{34}}
+\qcg{j_{12}}{j_{34}}{j}{m_{12}}{m_{34}}{m}
+\qcg{j_1}{j_3}{j_{13}}{m_1}{m_3}{m_{13}}
+\qcg{j_2}{j_4}{j_{24}}{m_2}{m_4}{m_{24}}
+\qcg{j_{13}}{j_{24}}{j'}{m_{13}}{m_{24}}{m'}
+\\
+= \delta_{jj'} \delta_{mm'}
+\qninejsq{j_1}{j_2}{j_{12}}{j_3}{j_4}{j_{34}}{j_{13}}{j_{24}}{j}
+\end{array}
+\label{eq:NineJSqDef}
+\eeq
+If we sum over all of the $m$'s, then we get an additional factor $2j+1$ on the right hand side.
+
+We will encounter this $[\cdots]$ symbol quite a lot, so it is worthwhile to examine a bit its symmetries.
+From the symmetries of the $9j$ coefficient, the $[\cdots]$ is symmetric under transpose of all indices.
+\beq
+\qninejsq{j_1}{j_2}{j_{12}}{j_3}{j_4}{j_{34}}{j_{13}}{j_{24}}{j}
+=
+\qninejsq{j_1}{j_3}{j_{13}}{j_2}{j_4}{j_{24}}{j_{12}}{j_{34}}{j}
+\eeq
+
+Under a swap of the first two rows or first two columns, it picks up a phase factor of $(-1)^{\sum j}$,
+being the sum of all 9 quantum numbers. Hence it is invariant under the combined swap of the first two
+rows and first two columns,
+\beq
+\qninejsq{j_1}{j_2}{j_{12}}{j_3}{j_4}{j_{34}}{j_{13}}{j_{24}}{j}
+=
+\qninejsq{j_4}{j_3}{j_{34}}{j_2}{j_1}{j_{12}}{j_{24}}{j_{13}}{j}
+\eeq
+Other symmetries are more complicated as they involve non-unitary prefactors.
+
+\begin{thebibliography}{99}
+\bibitem{Ardonne} \url{http://dx.doi.org/10.1088/1751-8113/43/39/395205}
+\end{thebibliography}
+
+\end{document}

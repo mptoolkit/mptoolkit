@@ -17,12 +17,13 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#if !defined(HALFINT_H_FDS78347FVUFUIJ89UEJI389URVJI)
-#define HALFINT_H_FDS78347FVUFUIJ89UEJI389URVJI
+#if !defined(MPTOOLKIT_COMMON_HALFINT_H)
+#define MPTOOLKIT_COMMON_HALFINT_H
 
 #include <iostream>
 #include <stdexcept>
-#include <math.h>
+#include <cmath>
+#include <cstdlib>   // for std::abs(int)
 #include <string>
 #include "convertstring.h"
 #include "trace.h"
@@ -43,6 +44,8 @@ class half_int
 
       struct twice_tag {};
       half_int(int N, twice_tag) : N2(N) {}
+
+      static half_int from_twice(int x) { return half_int(x, twice_tag()); }
 
       const half_int& operator=(const half_int& H) { N2 = H.N2; return *this; }
 

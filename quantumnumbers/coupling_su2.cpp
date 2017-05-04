@@ -4,7 +4,7 @@
 //
 // quantumnumbers/coupling.cpp
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 1999-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,15 +17,15 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "coupling.h"
+#include "coupling_su2.h"
 #include "common/gmprational.h"
 #include "common/sortsearch.h"
+#include "common/mutex.h"
+#include "common/hash_map.h"
 #include <fstream>
 #include <iomanip>
 #include <limits>
 #include <vector>
-#include <unordered_map>
-#include <mutex>
 
 namespace CouplingSU2
 {
@@ -270,7 +270,7 @@ std::ostream& operator<<(std::ostream& out, Coefficients6j const& x) // for debu
 
 // specialization of the ext::hash<> function for Coefficients6j
 
-namespace std
+namespace ext
 {
 
 template <>
@@ -295,11 +295,11 @@ struct hash<Coefficients6j>
    }
 };
 
-} // namespace std
+} // namespace ext
 
-typedef std::unordered_map<Coefficients6j, double> Hash6jType;
+typedef ext::hash_map<Coefficients6j, double> Hash6jType;
 Hash6jType HashTable;
-std::mutex HashMutex;
+pthread::mutex HashMutex;
 
 double Coupling6j(half_int j1, half_int j2, half_int j3, half_int j4, half_int j5, half_int j6)
 {
@@ -317,7 +317,7 @@ double Coupling6j(half_int j1, half_int j2, half_int j3, half_int j4, half_int j
    Coeff.Canonicalize();
 #endif
 
-   std::lock_guard<std::mutex> MyLock(HashMutex);
+   pthread::mutex::sentry MyLock(HashMutex);
 
    Hash6jType::iterator I = HashTable.find(Coeff);
    if (I == HashTable.end())

@@ -270,7 +270,7 @@ class UnitCell
       // Called after Sites is initialized.
       void SetDefaultOperators();
 
-      pvalue_ptr<SiteListType> Sites;
+      SiteListPtrType Sites;
       OperatorListType Operators;
       ArgumentListType Arguments;
       FunctionListType Functions;
@@ -293,14 +293,6 @@ UnitCell join(UnitCell const& x, UnitCell const& y, UnitCell const& z);
 UnitCell join(UnitCell const& x, UnitCell const& y, UnitCell const& z, UnitCell const& w);
 UnitCell join(UnitCell const& x, UnitCell const& y, UnitCell const& z, UnitCell const& w,
               UnitCell const& v);
-
-#if 0 // These operators probably don't make much sense
-bool
-operator==(UnitCell const& u1, UnitCell const& u2);
-
-bool
-operator!=(UnitCell const& u1, UnitCell const& u2);
-#endif
 
 std::ostream&
 operator<<(std::ostream& out, UnitCell const& u);

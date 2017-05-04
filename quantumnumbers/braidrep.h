@@ -2,9 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// quantumnumbers/braidgroup.h
+// quantumnumbers/braidrep.h
 //
-// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2016-2017 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,24 +17,25 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 //
-// A representation of the Braid group associated with a symmetry list.
-// For example, with U(1) symmetries
+// BreadRep denotes a representation of a braid group.  There is one
+// representation for each symmetry.  For example, with U(1) symmetries
 // we have three classes of representations,
 // bosonic, fermionic, or anyonic (with some phase theta).
 // If we had a SymmetryList of "N:U(1)", then we might define
 // a BraidGroup as eg "N:Bosonic", or "N:Fermionic", or "N:AbelianAnyon($theta)".
+// A BraidRep then defines a specific representation of that braid group.
 
-#if !defined(MPTOOLKIT_QUANTUMNUMBERS_BRAIDGROUP_H)
-#define MPTOOLKIT_QUANTUMNUMBERS_BRAIDGROUP_H
+#if !defined(MPTOOLKIT_QUANTUMNUMBERS_BRAIDREP_H)
+#define MPTOOLKIT_QUANTUMNUMBERS_BRAIDREP_H
 
-class BraidGroup
+class BraidRep
 {
    public:
 
    private:
 };
 
-PStream::opstream& operator<<(PStream::opstream& out, BraidGroup const& x);
-PStream::opstream& operator>>(PStream::opstream& out, BraidGroup& x);
+PStream::opstream& operator<<(PStream::opstream& out, BraidRep const& x);
+PStream::opstream& operator>>(PStream::opstream& out, BraidRep& x);
 
 #endif
