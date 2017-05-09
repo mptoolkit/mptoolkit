@@ -12268,10 +12268,10 @@ if test "${enable_shared+set}" = set; then :
 fi
 
 
-esccxxflags=\"${CXXFLAGS}\"
+esccxxflags="${CXXFLAGS//\"/\\\"}"
 
 cat >>confdefs.h <<_ACEOF
-#define CONFIG_CXXFLAGS ${esccxxflags}
+#define CONFIG_CXXFLAGS "${CXXFLAGS//\"/\\\"}"
 _ACEOF
 
 

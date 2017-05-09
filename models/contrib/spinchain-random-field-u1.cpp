@@ -25,6 +25,8 @@
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 #include <boost/random.hpp>
+#include <boost/random/uniform_real.hpp>
+
 
 namespace prog_opt = boost::program_options;
 
@@ -72,7 +74,7 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      std::vector<double> Fields = {0.781016, 1.48551, 3.44303, 5.50825, 1.64421, 5.72713, 0.718131, 5.55603, 
+      std::vector<double> Fields = {0.781016, 1.48551, 3.44303, 5.50825, 1.64421, 5.72713, 0.718131, 5.55603,
 				    -1.22152, 1.97702, 2.33431, -1.84989, -0.998605, -3.23945, 6.26837, -7.09259 };
       TRACE(Fields.size());
       double h = 8;
@@ -82,7 +84,7 @@ int main(int argc, char** argv)
 	 boost::random::uniform_real_distribution<double> box(-h,+h);
 	 {
 	    std::cout << "# fields= {";
-	    for(size_t i=0; i<Fields.size(); i++) 
+	    for(size_t i=0; i<Fields.size(); i++)
 	    {
 	       Fields[i]= box(generator);
 	       std::cout << Fields[i] << " ";
