@@ -25,7 +25,7 @@
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 #include <boost/random.hpp>
-#include <boost/random/uniform_real.hpp>
+#include <boost/random/uniform_real_distribution.hpp>
 
 
 namespace prog_opt = boost::program_options;

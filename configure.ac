@@ -166,7 +166,7 @@ dnl BLAS/LAPACK
 AX_BLAS([], [AC_MSG_ERROR([BLAS library not found, aborting.])])
 AX_LAPACK([], [AC_MSG_ERROR([LAPACK library not found, aborting.])])
 
-AX_BOOST_BASE([1.35], [], [AC_MSG_ERROR([boost libraries not found, aborting.])])
+AX_BOOST_BASE([1.47], [], [AC_MSG_ERROR([boost libraries not found, aborting.])])
 AX_BOOST_PROGRAM_OPTIONS
 
 ACX_ARPACK
