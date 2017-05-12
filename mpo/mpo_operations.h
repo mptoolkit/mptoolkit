@@ -42,27 +42,27 @@
 #if !defined(MPTOOLKIT_MPO_MPO_OPERATIONS_H)
 #define MPTOOLKIT_MPO_MPO_OPERATIONS_H
 
-#include "triangular_mpo.h"
+#include "basic_triangular_mpo.h"
 #include "finite_mpo.h"
 
 // returns the triangular MPO that corresponds to summing the operator
 // over every unit cell.
 // PRECONDITION: Operator.size() is a multiple of UnitCellSize
-TriangularMPO
-sum_over_unit_cell(FiniteMPO const& Operator, int UnitCellSize);
+BasicTriangularMPO
+sum_over_unit_cell(BasicFiniteMPO const& Operator, int UnitCellSize);
 
 // Sum the operator over every unit cell, with phase factor
 // exp(i*MomentumPerUnitCell) per unit cell.
-TriangularMPO
-sum_over_unit_cell(FiniteMPO const& Operator, int UnitCellSize,
+BasicTriangularMPO
+sum_over_unit_cell(BasicFiniteMPO const& Operator, int UnitCellSize,
                    double MomentumPerUnitCell);
 
-// Convert a triangular MPO into a FiniteMPO by restricting the summation
+// Convert a triangular MPO into a BasicFiniteMPO by restricting the summation
 // to a finite size.
 // PRECONDITION: Size is a multiple of Operator.size()
 // This is sort-of an inverse operation of sum_over_unit_cell.
-FiniteMPO
-restrict(TriangularMPO const& Operator, int Size);
+BasicFiniteMPO
+restrict(BasicTriangularMPO const& Operator, int Size);
 
 // Constructs the triangular MPO that represents the infinite sum
 // Op1 \otimes Op2
@@ -76,13 +76,13 @@ restrict(TriangularMPO const& Operator, int Size);
 // PRECONDITION: Op1.size() is a multiple of UnitCellSize
 // PRECONDITION: Op2.size() is a multiple of UnitCellSize
 // PRECONDITION: UnitCellSize is a multiple of String.size()
-TriangularMPO
-string_product(FiniteMPO const& Op1, FiniteMPO const& String, FiniteMPO const& Op2,
+BasicTriangularMPO
+string_product(BasicFiniteMPO const& Op1, BasicFiniteMPO const& String, BasicFiniteMPO const& Op2,
                int UnitCellSize);
 
 // version of string_product where the string operator is Factor*identity_{UnitCellSize}
-TriangularMPO
-string_product(FiniteMPO const& Op1, std::complex<double> Factor, FiniteMPO const& Op2,
+BasicTriangularMPO
+string_product(BasicFiniteMPO const& Op1, std::complex<double> Factor, BasicFiniteMPO const& Op2,
                int UnitCellSize);
 
 #endif

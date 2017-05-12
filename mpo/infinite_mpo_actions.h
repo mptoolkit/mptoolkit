@@ -18,6 +18,8 @@
 // ENDHEADER
 
 // Specializations of the visitor actions for InfiniteMPO types
+// TODO: The exception here shouldn't really be a ParserError, it is more like
+// a type mismatch error.
 
 #if !defined(MPTOOLKIT_MPO_INFINITE_MPO_ACTIONS_H)
 #define MPTOOLKIT_MPO_INFINITE_MPO_ACTIONS_H
@@ -32,9 +34,16 @@ namespace Parser
 
 template <>
 inline
-std::string name_of<TriangularMPO>(TriangularMPO const&)
+std::string name_of<ZeroMPO>(ZeroMPO const&)
 {
-   return "TriangularMPO";
+   return "ZeroMPO";
+}
+
+template <>
+inline
+std::string name_of<BasicTriangularMPO>(BasicTriangularMPO const&)
+{
+   return "BasicTriangularMPO";
 }
 
 template <>
@@ -52,14 +61,19 @@ struct ElementExp<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement
       return std::exp(c);
    }
 
+   InfiniteMPOElement operator()(ZeroMPO const&) const
+   {
+      return std::complex<double>(1.0);
+   }
+
    InfiniteMPOElement operator()(ProductMPO const&) const
    {
       throw ParserError("exp() is not implemented for ProductMPO's!");
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const&) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const&) const
    {
-      throw ParserError("exp() is not implemented for TriangularMPO's!");
+      throw ParserError("exp() is not implemented for BasicTriangularMPO's!");
    }
 };
 
@@ -76,12 +90,17 @@ struct negate_element<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEle
       return -c;
    }
 
+   InfiniteMPOElement operator()(ZeroMPO const&) const
+   {
+      return ZeroMPO();
+   }
+
    InfiniteMPOElement operator()(ProductMPO const&) const
    {
       throw ParserError("Unary negation is not defined for ProductMPO");
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x) const
    {
       return -x;
    }
@@ -104,7 +123,7 @@ struct unary_power<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElemen
       return pow(x, n);
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x) const
    {
       return pow(x, n);
    }
@@ -121,16 +140,16 @@ struct binary_power<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEleme
       return std::pow(x,y);
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, complex const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, complex const& y) const
    {
 
       int i = int(round(y.real()));
       if (std::norm(complex(double(i)) - y) > 1E-7)
          throw ParserError("cannot take a fractional or complex power " + format_complex(y)
-                           + " of a TriangularMPO");
+                           + " of a BasicTriangularMPO");
       if (i < 0)
          throw ParserError("cannot take negative power " + boost::lexical_cast<std::string>(i)
-                           + " of a TriangularMPO");
+                           + " of a BasicTriangularMPO");
       return i == 0 ? InfiniteMPOElement(complex(1.0,0.0)) : pow(x, i);
    }
 
@@ -162,9 +181,26 @@ struct binary_addition<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
       return InfiniteMPOElement(x+y);
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, TriangularMPO const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, BasicTriangularMPO const& y) const
    {
       return InfiniteMPOElement(x+y);
+   }
+
+   InfiniteMPOElement operator()(ZeroMPO const&, ZeroMPO const&) const
+   {
+      return ZeroMPO();
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(ZeroMPO const&, T const& y) const
+   {
+      return y;
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(T const& x, ZeroMPO const&) const
+   {
+      return x;
    }
 
    template <typename T, typename U>
@@ -182,9 +218,30 @@ struct binary_subtraction<InfiniteMPOElement> : boost::static_visitor<InfiniteMP
       return InfiniteMPOElement(x-y);
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, TriangularMPO const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, BasicTriangularMPO const& y) const
    {
       return InfiniteMPOElement(x-y);
+   }
+
+   InfiniteMPOElement operator()(ZeroMPO const&, ZeroMPO const&) const
+   {
+      return ZeroMPO();
+   }
+
+   InfiniteMPOElement operator()(ZeroMPO const&, BasicTriangularMPO const& y) const
+   {
+      return -y;
+   }
+
+   InfiniteMPOElement operator()(ZeroMPO const&, complex const& y) const
+   {
+      return -y;
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(T const& x, ZeroMPO const&) const
+   {
+      return x;
    }
 
    template <typename T, typename U>
@@ -203,6 +260,8 @@ struct binary_multiplication<InfiniteMPOElement> : boost::static_visitor<Infinit
    // triangular*complex
    // triangular*triangular
    // product*product
+   // anything*zero
+   // zero*anything
 
    // Not defined for:
    // complex*product
@@ -220,14 +279,31 @@ struct binary_multiplication<InfiniteMPOElement> : boost::static_visitor<Infinit
       throw ParserError("Cannot multiply ProductMPO by a scalar");
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const&, ProductMPO const&) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const&, ProductMPO const&) const
    {
-      throw ParserError("Cannot multiply ProductMPO and TriangularMPO");
+      throw ParserError("Cannot multiply ProductMPO and BasicTriangularMPO");
    }
 
-   InfiniteMPOElement operator()(ProductMPO const&, TriangularMPO const&) const
+   InfiniteMPOElement operator()(ProductMPO const&, BasicTriangularMPO const&) const
    {
-      throw ParserError("Cannot multiply ProductMPO and TriangularMPO");
+      throw ParserError("Cannot multiply ProductMPO and BasicTriangularMPO");
+   }
+
+   InfiniteMPOElement operator()(ZeroMPO const&, ZeroMPO const&) const
+   {
+      return ZeroMPO();
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(ZeroMPO const&, T const&) const
+   {
+      return ZeroMPO();
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(T const&, ZeroMPO const&) const
+   {
+      return ZeroMPO();
    }
 
    template <typename T, typename U>
@@ -243,15 +319,22 @@ struct binary_division<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
    // division is defined for:
    // complex/complex
    // triangular/complex
+   // zero/anything
 
    InfiniteMPOElement operator()(complex const& x, complex const& y) const
    {
       return InfiniteMPOElement(x/y);
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, complex const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, complex const& y) const
    {
       return InfiniteMPOElement((1.0/y) * x);
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(ZeroMPO const&, T const&) const
+   {
+      return ZeroMPO();
    }
 
    template <typename T, typename U>
@@ -277,17 +360,17 @@ struct binary_dot_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMP
       return InfiniteMPOElement(x*y);
    }
 
-   InfiniteMPOElement operator()(complex const& x, TriangularMPO const& y) const
+   InfiniteMPOElement operator()(complex const& x, BasicTriangularMPO const& y) const
    {
       return InfiniteMPOElement(x*y);
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, complex const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, complex const& y) const
    {
       return InfiniteMPOElement(x*y);
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, TriangularMPO const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, BasicTriangularMPO const& y) const
    {
       return InfiniteMPOElement(dot(x,y));
    }
@@ -295,6 +378,23 @@ struct binary_dot_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMP
    InfiniteMPOElement operator()(ProductMPO const& x, ProductMPO const& y) const
    {
       return InfiniteMPOElement(dot(x,y));
+   }
+
+   InfiniteMPOElement operator()(ZeroMPO const&, ZeroMPO const&) const
+   {
+      return ZeroMPO();
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(ZeroMPO const&, T const&) const
+   {
+      return ZeroMPO();
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(T const&, ZeroMPO const&) const
+   {
+      return ZeroMPO();
    }
 
    template <typename T, typename U>
@@ -319,17 +419,17 @@ struct binary_inner_product<InfiniteMPOElement> : boost::static_visitor<Infinite
       return InfiniteMPOElement(x*y);
    }
 
-   InfiniteMPOElement operator()(complex const& x, TriangularMPO const& y) const
+   InfiniteMPOElement operator()(complex const& x, BasicTriangularMPO const& y) const
    {
       return InfiniteMPOElement(x*y);
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, complex const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, complex const& y) const
    {
       return InfiniteMPOElement(x*y);
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, TriangularMPO const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, BasicTriangularMPO const& y) const
    {
       return InfiniteMPOElement(inner(x,y));
    }
@@ -337,6 +437,23 @@ struct binary_inner_product<InfiniteMPOElement> : boost::static_visitor<Infinite
    InfiniteMPOElement operator()(ProductMPO const& x, ProductMPO const& y) const
    {
       return InfiniteMPOElement(inner(x,y));
+   }
+
+   InfiniteMPOElement operator()(ZeroMPO const&, ZeroMPO const&) const
+   {
+      return ZeroMPO();
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(ZeroMPO const&, T const&) const
+   {
+      return ZeroMPO();
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(T const&, ZeroMPO const&) const
+   {
+      return ZeroMPO();
    }
 
    template <typename T, typename U>
@@ -361,17 +478,17 @@ struct binary_outer_product<InfiniteMPOElement> : boost::static_visitor<Infinite
       return InfiniteMPOElement(x*y);
    }
 
-   InfiniteMPOElement operator()(complex const& x, TriangularMPO const& y) const
+   InfiniteMPOElement operator()(complex const& x, BasicTriangularMPO const& y) const
    {
       return InfiniteMPOElement(x*y);
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, complex const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, complex const& y) const
    {
       return InfiniteMPOElement(x*y);
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, TriangularMPO const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, BasicTriangularMPO const& y) const
    {
       return InfiniteMPOElement(outer(x,y));
    }
@@ -379,6 +496,23 @@ struct binary_outer_product<InfiniteMPOElement> : boost::static_visitor<Infinite
    InfiniteMPOElement operator()(ProductMPO const& x, ProductMPO const& y) const
    {
       return InfiniteMPOElement(outer(x,y));
+   }
+
+   InfiniteMPOElement operator()(ZeroMPO const&, ZeroMPO const&) const
+   {
+      return ZeroMPO();
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(ZeroMPO const&, T const&) const
+   {
+      return ZeroMPO();
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(T const&, ZeroMPO const&) const
+   {
+      return ZeroMPO();
    }
 
    template <typename T, typename U>
@@ -402,19 +536,36 @@ struct binary_cross_product<InfiniteMPOElement> : boost::static_visitor<Infinite
       return complex(0.0);
    }
 
-   InfiniteMPOElement operator()(complex const& x, TriangularMPO const& y) const
+   InfiniteMPOElement operator()(complex const& x, BasicTriangularMPO const& y) const
    {
       return complex(0.0);
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, complex const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, complex const& y) const
    {
       return complex(0.0);
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, TriangularMPO const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, BasicTriangularMPO const& y) const
    {
       return InfiniteMPOElement(cross(x,y));
+   }
+
+   InfiniteMPOElement operator()(ZeroMPO const&, ZeroMPO const&) const
+   {
+      return ZeroMPO();
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(ZeroMPO const&, T const&) const
+   {
+      return ZeroMPO();
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(T const&, ZeroMPO const&) const
+   {
+      return ZeroMPO();
    }
 
    template <typename T, typename U>
@@ -438,17 +589,17 @@ struct binary_commutator<InfiniteMPOElement> : boost::static_visitor<InfiniteMPO
       return complex(0.0);
    }
 
-   InfiniteMPOElement operator()(complex const& x, TriangularMPO const& y) const
+   InfiniteMPOElement operator()(complex const& x, BasicTriangularMPO const& y) const
    {
       return complex(0.0);
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, complex const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, complex const& y) const
    {
       return complex(0.0);
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, TriangularMPO const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, BasicTriangularMPO const& y) const
    {
       return InfiniteMPOElement(x*y - y*x);
    }
@@ -483,7 +634,7 @@ struct ternary_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
       return InfiniteMPOElement(x*y);
    }
 
-   InfiniteMPOElement operator()(complex const& x, TriangularMPO const& y) const
+   InfiniteMPOElement operator()(complex const& x, BasicTriangularMPO const& y) const
    {
       QuantumNumbers::QuantumNumber q(y.GetSymmetryList(), qStr);
       if (q != y.TransformsAs())
@@ -496,7 +647,7 @@ struct ternary_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
       return x*y;
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, complex const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, complex const& y) const
    {
       QuantumNumbers::QuantumNumber q(x.GetSymmetryList(), qStr);
       if (q != x.TransformsAs())
@@ -509,7 +660,7 @@ struct ternary_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
       return x*y;
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, TriangularMPO const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, BasicTriangularMPO const& y) const
    {
       QuantumNumbers::QuantumNumber q(x.GetSymmetryList(), qStr);
       return prod(x,y,q);
@@ -524,6 +675,23 @@ struct ternary_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
                            "\nq = " + q.ToString());
       }
       return x*y;
+   }
+
+   InfiniteMPOElement operator()(ZeroMPO const&, ZeroMPO const&) const
+   {
+      return ZeroMPO();
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(ZeroMPO const&, T const&) const
+   {
+      return ZeroMPO();
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(T const&, ZeroMPO const&) const
+   {
+      return ZeroMPO();
    }
 
    template <typename T, typename U>
@@ -560,19 +728,19 @@ struct ternary_product_q<InfiniteMPOElement> : boost::static_visitor<InfiniteMPO
       return InfiniteMPOElement(x*y);
    }
 
-   InfiniteMPOElement operator()(complex const& x, TriangularMPO const& y) const
+   InfiniteMPOElement operator()(complex const& x, BasicTriangularMPO const& y) const
    {
       CHECK_EQUAL(q, y.TransformsAs());
       return x*y;
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, complex const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, complex const& y) const
    {
       CHECK_EQUAL(q, x.TransformsAs());
       return x*y;
    }
 
-   InfiniteMPOElement operator()(TriangularMPO const& x, TriangularMPO const& y) const
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x, BasicTriangularMPO const& y) const
    {
       return prod(x,y,q);
    }
@@ -581,6 +749,23 @@ struct ternary_product_q<InfiniteMPOElement> : boost::static_visitor<InfiniteMPO
    {
       CHECK(is_scalar(q));
       return prod(x,y);
+   }
+
+   InfiniteMPOElement operator()(ZeroMPO const&, ZeroMPO const&) const
+   {
+      return ZeroMPO();
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(ZeroMPO const&, T const&) const
+   {
+      return ZeroMPO();
+   }
+
+   template <typename T>
+   InfiniteMPOElement operator()(T const&, ZeroMPO const&) const
+   {
+      return ZeroMPO();
    }
 
    template <typename T, typename U>

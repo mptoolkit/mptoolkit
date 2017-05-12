@@ -262,12 +262,12 @@ struct MultFuncStringTrans
 };
 
 
-// inject_left for a FiniteMPO.  This can have support on multiple wavefunction unit cells
+// inject_left for a BasicFiniteMPO.  This can have support on multiple wavefunction unit cells
 MatrixOperator
 inject_left(MatrixOperator const& m,
             LinearWavefunction const& Psi1,
             QuantumNumbers::QuantumNumber const& QShift,
-            FiniteMPO const& Op,
+            BasicFiniteMPO const& Op,
             LinearWavefunction const& Psi2)
 {
    CHECK_EQUAL(Psi1.size(), Psi2.size());
@@ -286,7 +286,7 @@ inject_left(MatrixOperator const& m,
    E.debug_check_structure();
    LinearWavefunction::const_iterator I1 = Psi1.begin();
    LinearWavefunction::const_iterator I2 = Psi2.begin();
-   FiniteMPO::const_iterator OpIter = Op.begin();
+   BasicFiniteMPO::const_iterator OpIter = Op.begin();
    while (OpIter != Op.end())
    {
       if (I1 == Psi1.end())
@@ -335,65 +335,6 @@ inject_right(MatrixOperator const& m,
    return delta_shift(E[0], adjoint(QShift));
 }
 
-
-
-
-
-
-LinearAlgebra::Vector<std::complex<double> >
-get_spectrum(LinearWavefunction const& Psi, QuantumNumber const& QShift, int NumEigen,
-             QuantumNumbers::QuantumNumber const& q, double tol = 1e-10,
-             LinearAlgebra::Vector<MatrixOperator>* RightVectors = NULL,
-             LinearAlgebra::Vector<MatrixOperator>* LeftVectors = NULL,
-             int ncv = 0, bool Sort = false, int Verbose = 0)
-{
-   PackMatrixOperator Pack(Psi.Basis2(), Psi.Basis2(), q);
-   int n = Pack.size();
-   double tolsave = tol;
-   int ncvsave = ncv;
-
-   std::vector<std::complex<double> >* OutVec
-      = RightVectors ? new std::vector<std::complex<double> >() : NULL;
-   LinearAlgebra::Vector<std::complex<double> >  RightEigen =
-      LinearAlgebra::DiagonalizeARPACK(MultFunc(Psi, QShift, q),
-                                       n, NumEigen, tol, OutVec, ncv, Sort, Verbose);
-
-   if (LeftVectors)
-   {
-      tol = tolsave;
-      ncv = ncvsave;
-      std::vector<std::complex<double> >* OutLeftVec = new std::vector<std::complex<double> >();
-      LinearAlgebra::Vector<std::complex<double> >  LeftEigen =
-         LinearAlgebra::DiagonalizeARPACK(MultFuncTrans(Psi, QShift, q),
-                                          n, NumEigen, tol, OutLeftVec, ncv, Sort, Verbose);
-      // The left vectors are the hermitian conjugate, not the transpose.  So conjugate eigenvalues
-      LeftEigen = conj(LeftEigen);
-      *LeftVectors = LinearAlgebra::Vector<MatrixOperator>(LeftEigen.size());
-
-      // If we have both left & right eigenvectors, then match the corresponding eigenvalues
-      if (RightVectors)
-         LinearAlgebra::MatchEigenvectors(n, LeftEigen, *OutLeftVec, RightEigen, *OutVec, tolsave*10);
-
-      // Unpack the eigenvectors into the output array.  We also conjugate them here
-      for (unsigned i = 0; i < LeftEigen.size(); ++i)
-      {
-         (*LeftVectors)[i] = Pack.unpack(&((*OutLeftVec)[n*i]));
-      }
-   }
-
-   // eigenvectors
-   if (RightVectors)
-   {
-      *RightVectors = LinearAlgebra::Vector<MatrixOperator>(RightEigen.size());
-      for (unsigned i = 0; i < RightEigen.size(); ++i)
-      {
-         (*RightVectors)[i] = Pack.unpack(&((*OutVec)[n*i]));
-      }
-   }
-
-   return RightEigen;
-}
-
 LinearAlgebra::Vector<std::complex<double> >
 get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
                     ProductMPO const& StringOp,
@@ -439,7 +380,9 @@ get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
       if (RightVectors)
          LinearAlgebra::MatchEigenvectors(n, LeftEigen, *OutLeftVec, RightEigen, *OutVec, tolsave*10);
 
-      // Unpack the eigenvectors into the output array.  We also conjugate them here
+      // Unpack the eigenvectors into the output array.
+      // note that we do not conjugate the eigenvector, since we want this to be a 'column vector',
+      // that we will use on the left-hand side of an inner product (eg inner_prod(left, right)).
       for (unsigned i = 0; i < LeftEigen.size(); ++i)
       {
          (*LeftVectors)[i] = Pack.unpack(&((*OutLeftVec)[n*i]));
@@ -798,7 +741,7 @@ int main(int argc, char** argv)
          UnitCellMPO Op = ParseUnitCellOperatorAndLattice(LeftOpStr[i]).first;
          Op.ExtendToCoverUnitCell(Psi.size());
          // Adjust the MPO so that the left basis is the identity
-         FiniteMPO Mpo = Op.MPO() * FiniteMPO::make_identity(Op.MPO().LocalBasis2List(),
+         BasicFiniteMPO Mpo = Op.MPO() * BasicFiniteMPO::make_identity(Op.MPO().LocalBasis2List(),
                                                               adjoint(Op.TransformsAs()));
          Mpo = project(Mpo, QuantumNumbers::QuantumNumber(Op.GetSymmetryList()));
          LeftOp.push_back(inject_left(LeftIdent, Psi, QShift, Mpo, Psi));

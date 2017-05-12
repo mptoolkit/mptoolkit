@@ -26,13 +26,29 @@
 
 #include "infinitewavefunctionleft.h"
 #include "ibc.h"
+#include "finitewavefunctionleft.h"
 #include <boost/variant.hpp>
 #include "pstream/pstream.h"
 #include "pstream/variant.h"
 #include "interface/attributes.h"
 #include "interface/history.h"
 
-typedef boost::variant<InfiniteWavefunctionLeft, IBCWavefunction> WavefunctionTypes;
+typedef boost::variant<InfiniteWavefunctionLeft,
+		       IBCWavefunction,
+		       FiniteWavefunctionLeft> WavefunctionTypes;
+
+class InvalidWavefunction : public std::runtime_error
+{
+   public:
+      explicit InvalidWavefunction(std::string const& Expected, std::string const& Suplied);
+};
+
+inline
+InvalidWavefunction::InvalidWavefunction(std::string const& Expected, std::string const& Supplied)
+   : std::runtime_error("Wavefunction type is not correct, expected " + Expected + " but was given "
+                        + Supplied)
+{
+}
 
 class MPWavefunction
 {
@@ -60,14 +76,17 @@ class MPWavefunction
 
       // Get the wavefunction, assuming it is of the specified type (will fail otherwise)
       template <typename T>
-      T& get() { return boost::get<T>(Psi_); }
+      T& get();
 
       template <typename T>
-      T const& get() const { return boost::get<T>(Psi_); }
+      T const& get() const;
 
       // returns true if the MPWavefunction contains the given type
       template <typename T>
       bool is() const { return bool(boost::get<T>(&Psi_)); }
+
+      // returns a string indicating the type of wavefunction
+      std::string Type() const;
 
       AttributeList& Attributes() { return Attr_; }
       AttributeList const& Attributes() const { return Attr_; }
@@ -81,6 +100,9 @@ class MPWavefunction
       // appends an entry to the history log
       void AppendHistory(std::string const& s)
       { History_.append(s); }
+
+      void AppendHistoryNote(std::string const& s)
+      { History_.append("#note: " + s); }
 
       static PStream::VersionTag VersionT;
 
@@ -97,5 +119,27 @@ class MPWavefunction
       friend PStream::opstream& operator<<(PStream::opstream& out, MPWavefunction const& Psi);
       friend void read_version(PStream::ipstream& in, MPWavefunction& Psi, int Version);
 };
+
+template <typename T>
+T& MPWavefunction::get()
+{
+   T* Result = boost::get<T>(&Psi_);
+   if (!Result)
+   {
+      throw InvalidWavefunction(T::Type, this->Type());
+   }
+   return *Result;
+}
+
+template <typename T>
+T const& MPWavefunction::get() const
+{
+   T const* Result = boost::get<T>(&Psi_);
+   if (!Result)
+   {
+      throw InvalidWavefunction(T::Type, this->Type());
+   }
+   return *Result;
+}
 
 #endif

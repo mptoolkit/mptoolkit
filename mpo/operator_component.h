@@ -540,6 +540,7 @@ operator_prod(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
 // +--B--- j
 //
 // Result'[a](i,j) = M(s',s)(a',a) herm(A[s'](i',i)) E[a'](i',j') B[s](j',j)
+// This function is defined in e-optim.cpp
 StateComponent
 contract_from_left(OperatorComponent const& M,
                    LinearAlgebra::HermitianProxy<StateComponent> const& A,

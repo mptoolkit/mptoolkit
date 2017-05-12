@@ -30,7 +30,6 @@
 #include "common/environment.h"
 #include "interface/inittemp.h"
 #include "tensor/tensor_eigen.h"
-#include "mp-algorithms/arnoldi.h"
 #include "lattice/unitcell.h"
 #include "lattice/infinite-parser.h"
 #include "linearalgebra/arpack_wrapper.h"

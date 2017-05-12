@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "finite_mpo.h"
+#include "basic_finite_mpo.h"
 #include "pstream/variant.h"
 #include "tensor/tensor_exponential.h"
 #include "lattice/siteoperator-parser.h"
@@ -26,12 +26,12 @@
 
 using QuantumNumbers::QuantumNumber;
 
-bool FiniteMPO::is_irreducible() const
+bool BasicFiniteMPO::is_irreducible() const
 {
    return this->is_null() || (this->Basis1().size() == 1 && QuantumNumbers::is_scalar(this->qn2()));
 }
 
-bool FiniteMPO::is_scalar() const
+bool BasicFiniteMPO::is_scalar() const
 {
    return this->is_null() || (this->Basis1().size() == 1 && QuantumNumbers::is_scalar(this->qn1())
                               && QuantumNumbers::is_scalar(this->qn2()));
@@ -39,7 +39,7 @@ bool FiniteMPO::is_scalar() const
 
 #if !defined(DISABLE_FINITE_MPO_TRANSFORMS_AS)
 QuantumNumbers::QuantumNumber
-FiniteMPO::TransformsAs() const
+BasicFiniteMPO::TransformsAs() const
 {
    if (this->is_null())
       return QuantumNumbers::QuantumNumber();
@@ -49,7 +49,7 @@ FiniteMPO::TransformsAs() const
 #endif
 
 QuantumNumbers::QuantumNumber
-FiniteMPO::qn1() const
+BasicFiniteMPO::qn1() const
 {
    if (this->is_null())
       return QuantumNumbers::QuantumNumber();
@@ -58,7 +58,7 @@ FiniteMPO::qn1() const
 }
 
 QuantumNumbers::QuantumNumber
-FiniteMPO::qn2() const
+BasicFiniteMPO::qn2() const
 {
    if (this->is_null())
       return QuantumNumbers::QuantumNumber();
@@ -66,19 +66,19 @@ FiniteMPO::qn2() const
    return this->Basis2()[0];
 }
 
-PStream::opstream& operator<<(PStream::opstream& out, FiniteMPO const& op)
+PStream::opstream& operator<<(PStream::opstream& out, BasicFiniteMPO const& op)
 {
    return out << op.data();
 }
 
-PStream::ipstream& operator>>(PStream::ipstream& in, FiniteMPO& op)
+PStream::ipstream& operator>>(PStream::ipstream& in, BasicFiniteMPO& op)
 {
    return in >> op.data();
 }
 
-void print_structure(FiniteMPO const& Op, std::ostream& out, double UnityEpsilon)
+void print_structure(BasicFiniteMPO const& Op, std::ostream& out, double UnityEpsilon)
 {
-   out << "FiniteMPO has " << Op.size() << " sites\n";
+   out << "BasicFiniteMPO has " << Op.size() << " sites\n";
    for (int i = 0; i < Op.size(); ++i)
    {
       out << "Site " << i << " dimension " << Op[i].size1() << " x " << Op[i].size2() << '\n';
@@ -86,15 +86,15 @@ void print_structure(FiniteMPO const& Op, std::ostream& out, double UnityEpsilon
    }
 }
 
-FiniteMPO
-join(FiniteMPO const& Op1, FiniteMPO const& Op2)
+BasicFiniteMPO
+join(BasicFiniteMPO const& Op1, BasicFiniteMPO const& Op2)
 {
    if (Op1.is_null())
       return Op2;
    if (Op2.is_null())
       return Op1;
    CHECK_EQUAL(Op1.Basis2(), Op2.Basis1());
-   FiniteMPO Result(Op1.size() + Op2.size());
+   BasicFiniteMPO Result(Op1.size() + Op2.size());
    for (int i = 0; i < Op1.size(); ++i)
    {
       Result[i] = Op1[i];
@@ -106,11 +106,11 @@ join(FiniteMPO const& Op1, FiniteMPO const& Op2)
    return Result;
 }
 
-FiniteMPO
-repeat(FiniteMPO const& Op, int Count)
+BasicFiniteMPO
+repeat(BasicFiniteMPO const& Op, int Count)
 {
    CHECK_EQUAL(Op.Basis1(), Op.Basis2());
-   FiniteMPO Result(Op.size()*Count);
+   BasicFiniteMPO Result(Op.size()*Count);
    for (int i = 0; i < Result.size(); ++i)
    {
       Result[i] = Op[i%Op.size()];
@@ -118,7 +118,7 @@ repeat(FiniteMPO const& Op, int Count)
    return Result;
 }
 
-void optimize(FiniteMPO& Op)
+void optimize(BasicFiniteMPO& Op)
 {
    if (Op.size() < 2)
       return;
@@ -170,7 +170,7 @@ void optimize(FiniteMPO& Op)
 #endif
 }
 
-void qr_optimize(FiniteMPO& Op)
+void qr_optimize(BasicFiniteMPO& Op)
 {
    if (Op.size() < 2)
       return;
@@ -246,8 +246,8 @@ void qr_optimize(FiniteMPO& Op)
 #endif
 }
 
-FiniteMPO&
-operator+=(FiniteMPO& x, FiniteMPO const& y)
+BasicFiniteMPO&
+operator+=(BasicFiniteMPO& x, BasicFiniteMPO const& y)
 {
    if (x.empty())
    {
@@ -272,15 +272,15 @@ operator+=(FiniteMPO& x, FiniteMPO const& y)
    return x;
 }
 
-FiniteMPO
-operator+(FiniteMPO const& x, FiniteMPO const& y)
+BasicFiniteMPO
+operator+(BasicFiniteMPO const& x, BasicFiniteMPO const& y)
 {
    if (x.empty())
       return y;
    if (y.empty())
       return x;
 
-   FiniteMPO Result(x.size());
+   BasicFiniteMPO Result(x.size());
 
    SumBasis<BasisList> sb1(x.Basis1(), y.Basis1());
    SimpleOperator C = CollapseBasis(sb1.Basis());
@@ -297,15 +297,15 @@ operator+(FiniteMPO const& x, FiniteMPO const& y)
    return Result;
 }
 
-FiniteMPO
-operator-(FiniteMPO const& x, FiniteMPO const& y)
+BasicFiniteMPO
+operator-(BasicFiniteMPO const& x, BasicFiniteMPO const& y)
 {
    if (x.empty())
       return y;
    if (y.empty())
       return x;
 
-   FiniteMPO Result(x.size());
+   BasicFiniteMPO Result(x.size());
 
    SumBasis<BasisList> sb1(x.Basis1(), y.Basis1());
    SimpleOperator C = CollapseBasis(sb1.Basis());
@@ -322,17 +322,17 @@ operator-(FiniteMPO const& x, FiniteMPO const& y)
    return Result;
 }
 
-FiniteMPO
-operator-(FiniteMPO const& x)
+BasicFiniteMPO
+operator-(BasicFiniteMPO const& x)
 {
-   FiniteMPO Result(x);
+   BasicFiniteMPO Result(x);
    if (!Result.empty())
       Result.front() *= -1.0;
    return Result;
 }
 
-FiniteMPO&
-operator-=(FiniteMPO& x, FiniteMPO const& y)
+BasicFiniteMPO&
+operator-=(BasicFiniteMPO& x, BasicFiniteMPO const& y)
 {
    if (x.empty())
    {
@@ -357,67 +357,67 @@ operator-=(FiniteMPO& x, FiniteMPO const& y)
    return x;
 }
 
-FiniteMPO&
-operator*=(FiniteMPO& m, double x)
+BasicFiniteMPO&
+operator*=(BasicFiniteMPO& m, double x)
 {
    if (!m.empty())
       m.front() *= x;
    return m;
 }
 
-FiniteMPO&
-operator*=(FiniteMPO& m, std::complex<double> x)
+BasicFiniteMPO&
+operator*=(BasicFiniteMPO& m, std::complex<double> x)
 {
    if (!m.empty())
       m.front() *= x;
    return m;
 }
 
-FiniteMPO
-operator*(FiniteMPO const& m, double x)
+BasicFiniteMPO
+operator*(BasicFiniteMPO const& m, double x)
 {
-   FiniteMPO Result(m);
+   BasicFiniteMPO Result(m);
    if (!Result.empty())
       Result.front() *= x;
    return Result;
 }
 
-FiniteMPO
-operator*(FiniteMPO const& m, std::complex<double> x)
+BasicFiniteMPO
+operator*(BasicFiniteMPO const& m, std::complex<double> x)
 {
-   FiniteMPO Result(m);
+   BasicFiniteMPO Result(m);
    if (!Result.empty())
       Result.front() *= x;
    return Result;
 }
 
-FiniteMPO
-operator*(double x, FiniteMPO const& m)
+BasicFiniteMPO
+operator*(double x, BasicFiniteMPO const& m)
 {
-   FiniteMPO Result(m);
+   BasicFiniteMPO Result(m);
    if (!Result.empty())
       Result.front() *= x;
    return Result;
 }
 
-FiniteMPO
-operator*(std::complex<double> x, FiniteMPO const& m)
+BasicFiniteMPO
+operator*(std::complex<double> x, BasicFiniteMPO const& m)
 {
-   FiniteMPO Result(m);
+   BasicFiniteMPO Result(m);
    if (!Result.empty())
       Result.front() *= x;
    return Result;
 }
 
-FiniteMPO
-operator*(FiniteMPO const& x, FiniteMPO const& y)
+BasicFiniteMPO
+operator*(BasicFiniteMPO const& x, BasicFiniteMPO const& y)
 {
    if (x.empty())
       return x;
    if (y.empty())
       return y;
    CHECK_EQUAL(x.size(), y.size());
-   FiniteMPO Result(x.size());
+   BasicFiniteMPO Result(x.size());
    for (int i = 0; i < x.size(); ++i)
    {
       Result[i] = aux_tensor_prod(x[i], y[i]);
@@ -428,29 +428,29 @@ operator*(FiniteMPO const& x, FiniteMPO const& y)
    return Result;
 }
 
-FiniteMPO
-prod(FiniteMPO const& x, FiniteMPO const& y)
+BasicFiniteMPO
+prod(BasicFiniteMPO const& x, BasicFiniteMPO const& y)
 {
    return x*y;
 }
 
-FiniteMPO
-prod(FiniteMPO const& x, FiniteMPO const& y, QuantumNumbers::QuantumNumber const& q)
+BasicFiniteMPO
+prod(BasicFiniteMPO const& x, BasicFiniteMPO const& y, QuantumNumbers::QuantumNumber const& q)
 {
    return project(x*y, q);
 }
 
-FiniteMPO
-project(FiniteMPO const& x, QuantumNumbers::QuantumNumber const& q)
+BasicFiniteMPO
+project(BasicFiniteMPO const& x, QuantumNumbers::QuantumNumber const& q)
 {
-   FiniteMPO Result(x);
+   BasicFiniteMPO Result(x);
    Result.front() = ProjectBasis(Result.front().Basis1(), q) * Result.front();
    optimize(Result);
    return Result;
 }
 
 
-FiniteMPO dot(FiniteMPO const& x, FiniteMPO const& y)
+BasicFiniteMPO dot(BasicFiniteMPO const& x, BasicFiniteMPO const& y)
 {
    if (x.empty())
       return x;
@@ -460,14 +460,14 @@ FiniteMPO dot(FiniteMPO const& x, FiniteMPO const& y)
    // If the MPO's are reducible then sum over every combination that
    // leads to a scalar.  I'm not sure if this is physically useful?
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
-   FiniteMPO Result;
+   BasicFiniteMPO Result;
    for (BasisList::const_iterator xI = x.Basis1().begin(); xI != x.Basis1().end(); ++xI)
    {
       for (BasisList::const_iterator yI = y.Basis1().begin(); yI != y.Basis1().end(); ++yI)
       {
          if (is_transform_target(*xI, *yI, Ident))
          {
-            FiniteMPO Temp = prod(project(x, *xI), project(y, *yI), QuantumNumber(x.GetSymmetryList()));
+            BasicFiniteMPO Temp = prod(project(x, *xI), project(y, *yI), QuantumNumber(x.GetSymmetryList()));
             Temp *= std::sqrt(double(degree(*xI)));
             Result += Temp;
          }
@@ -477,8 +477,8 @@ FiniteMPO dot(FiniteMPO const& x, FiniteMPO const& y)
    return Result;
 }
 
-FiniteMPO
-cross(FiniteMPO const& x, FiniteMPO const& y)
+BasicFiniteMPO
+cross(BasicFiniteMPO const& x, BasicFiniteMPO const& y)
 {
    CHECK(cross_product_exists(x.TransformsAs(), y.TransformsAs()))
       ("Cross product does not exist for these operators")
@@ -511,7 +511,7 @@ double outer_coefficient(int dx, int dy, int dq)
    return Factor;
 }
 
-FiniteMPO outer(FiniteMPO const& x, FiniteMPO const& y)
+BasicFiniteMPO outer(BasicFiniteMPO const& x, BasicFiniteMPO const& y)
 {
    QuantumNumbers::QuantumNumberList L = transform_targets(x.TransformsAs(), y.TransformsAs());
    QuantumNumbers::QuantumNumber q = L[0];
@@ -537,9 +537,9 @@ FiniteMPO outer(FiniteMPO const& x, FiniteMPO const& y)
    return outer_coefficient(dx, dy, dq) * prod(x,y,q);
 }
 
-FiniteMPO conj(FiniteMPO const& x)
+BasicFiniteMPO conj(BasicFiniteMPO const& x)
 {
-   FiniteMPO Result(x);
+   BasicFiniteMPO Result(x);
    for (int i = 0; i < x.size(); ++i)
    {
       Result[i] = conj(Result[i]);
@@ -547,13 +547,13 @@ FiniteMPO conj(FiniteMPO const& x)
    return Result;
 }
 
-SimpleRedOperator coarse_grain(FiniteMPO const& x)
+SimpleRedOperator coarse_grain(BasicFiniteMPO const& x)
 {
    if (x.is_null())
       return SimpleRedOperator();
    // else
 
-   FiniteMPO::const_iterator I = x.begin();
+   BasicFiniteMPO::const_iterator I = x.begin();
    OperatorComponent Op = *I;
    ++I;
    while (I != x.end())
@@ -571,7 +571,7 @@ SimpleRedOperator coarse_grain(FiniteMPO const& x)
    return Result;
 }
 
-FiniteMPO fine_grain(SimpleOperator const& x,
+BasicFiniteMPO fine_grain(SimpleOperator const& x,
                      std::vector<BasisList> const& LocalBasis1,
                      std::vector<BasisList> const& LocalBasis2)
 {
@@ -579,12 +579,12 @@ FiniteMPO fine_grain(SimpleOperator const& x,
    // quick return if we're already fine enough
    if (LocalBasis1.size() == 0)
    {
-      return FiniteMPO();
+      return BasicFiniteMPO();
    }
    if (LocalBasis1.size() == 1)
    {
       // Turn the operator into a 1x1 MPO
-      FiniteMPO Result(1);
+      BasicFiniteMPO Result(1);
       BasisList Vacuum = make_vacuum_basis(x.GetSymmetryList());
       BasisList B1(x.GetSymmetryList());
       B1.push_back(x.TransformsAs());
@@ -608,7 +608,7 @@ FiniteMPO fine_grain(SimpleOperator const& x,
    }
 
    // And now reverse the decomposition
-   FiniteMPO Result(LocalBasis1.size());
+   BasicFiniteMPO Result(LocalBasis1.size());
    OperatorComponent R1, R2;
    std::tie(R1, R2) = decompose_local_tensor_prod(x, TensorProdBasis1.top(), TensorProdBasis2.top());
    int i = LocalBasis1.size()-1;
@@ -632,18 +632,18 @@ FiniteMPO fine_grain(SimpleOperator const& x,
    return Result;
 }
 
-FiniteMPO exp(FiniteMPO const& x)
+BasicFiniteMPO exp(BasicFiniteMPO const& x)
 {
    CHECK(x.is_scalar())("Must be a scalar operator to calculate the operator exponential!");
 
    SimpleOperator Op = coarse_grain(x).scalar();
    Op = Tensor::Exponentiate(Op);
-   FiniteMPO Result = fine_grain(Op, x.LocalBasis1List(), x.LocalBasis2List());
+   BasicFiniteMPO Result = fine_grain(Op, x.LocalBasis1List(), x.LocalBasis2List());
    return Result;
 }
 
-FiniteMPO
-pow(FiniteMPO const& x, int n)
+BasicFiniteMPO
+pow(BasicFiniteMPO const& x, int n)
 {
    if (n == 0)
    {
@@ -663,32 +663,32 @@ pow(FiniteMPO const& x, int n)
    }
 }
 
-FiniteMPO
-adjoint(FiniteMPO const& x)
+BasicFiniteMPO
+adjoint(BasicFiniteMPO const& x)
 {
-   FiniteMPO Result(x);
-   for (FiniteMPO::iterator I = Result.begin(); I != Result.end(); ++I)
+   BasicFiniteMPO Result(x);
+   for (BasicFiniteMPO::iterator I = Result.begin(); I != Result.end(); ++I)
    {
       *I = adjoint(*I);
    }
    return Result;
 }
 
-FiniteMPO
-inv_adjoint(FiniteMPO const& x)
+BasicFiniteMPO
+inv_adjoint(BasicFiniteMPO const& x)
 {
-   FiniteMPO Result(x);
-   for (FiniteMPO::iterator I = Result.begin(); I != Result.end(); ++I)
+   BasicFiniteMPO Result(x);
+   for (BasicFiniteMPO::iterator I = Result.begin(); I != Result.end(); ++I)
    {
       *I = inv_adjoint(*I);
    }
    return Result;
 }
 
-FiniteMPO
-FiniteMPO::make_identity(std::vector<BasisList> const& Basis)
+BasicFiniteMPO
+BasicFiniteMPO::make_identity(std::vector<BasisList> const& Basis)
 {
-   FiniteMPO Result(Basis.size());
+   BasicFiniteMPO Result(Basis.size());
    if (Basis.empty())
       return Result;
 
@@ -703,10 +703,10 @@ FiniteMPO::make_identity(std::vector<BasisList> const& Basis)
    return Result;
 }
 
-FiniteMPO
-FiniteMPO::make_identity(std::vector<BasisList> const& Basis, QuantumNumber const& q)
+BasicFiniteMPO
+BasicFiniteMPO::make_identity(std::vector<BasisList> const& Basis, QuantumNumber const& q)
 {
-   FiniteMPO Result(Basis.size());
+   BasicFiniteMPO Result(Basis.size());
    if (Basis.empty())
       return Result;
    BasisList b(Basis[0].GetSymmetryList());
@@ -719,10 +719,10 @@ FiniteMPO::make_identity(std::vector<BasisList> const& Basis, QuantumNumber cons
    return Result;
 }
 
-FiniteMPO
-MakeIdentityFrom(FiniteMPO const& x)
+BasicFiniteMPO
+MakeIdentityFrom(BasicFiniteMPO const& x)
 {
-   FiniteMPO Result(x.size());
+   BasicFiniteMPO Result(x.size());
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
    BasisList b(x.GetSymmetryList());
    b.push_back(Ident);
@@ -735,10 +735,10 @@ MakeIdentityFrom(FiniteMPO const& x)
    return Result;
 }
 
-FiniteMPO
-MakeIdentityFrom(FiniteMPO const& x, QuantumNumber const& q)
+BasicFiniteMPO
+MakeIdentityFrom(BasicFiniteMPO const& x, QuantumNumber const& q)
 {
-   FiniteMPO Result(x.size());
+   BasicFiniteMPO Result(x.size());
    BasisList b(x.GetSymmetryList());
    b.push_back(q);
    for (int i = 0; i < x.size(); ++i)
@@ -750,9 +750,9 @@ MakeIdentityFrom(FiniteMPO const& x, QuantumNumber const& q)
    return Result;
 }
 
-FiniteMPO identity_mpo(SiteListType const& SiteList, QuantumNumbers::QuantumNumber const& q)
+BasicFiniteMPO identity_mpo(SiteListType const& SiteList, QuantumNumbers::QuantumNumber const& q)
 {
-   FiniteMPO Result(SiteList.size());
+   BasicFiniteMPO Result(SiteList.size());
    BasisList b = make_single_basis(q);
    for (unsigned i = 0; i < SiteList.size(); ++i)
    {
@@ -762,17 +762,17 @@ FiniteMPO identity_mpo(SiteListType const& SiteList, QuantumNumbers::QuantumNumb
    return Result;
 }
 
-FiniteMPO identity_mpo(SiteListType const& SiteList)
+BasicFiniteMPO identity_mpo(SiteListType const& SiteList)
 {
    if (SiteList.empty())
-      return FiniteMPO();
+      return BasicFiniteMPO();
    return identity_mpo(SiteList, QuantumNumbers::QuantumNumber(SiteList[0].GetSymmetryList()));
 }
 
-FiniteMPO string_mpo(SiteListType const& SiteList,
+BasicFiniteMPO string_mpo(SiteListType const& SiteList,
                      std::string const& OpName, QuantumNumbers::QuantumNumber const& Trans)
 {
-   FiniteMPO Result(SiteList.size());
+   BasicFiniteMPO Result(SiteList.size());
 
    BasisList Vacuum = make_single_basis(Trans);
 
@@ -791,20 +791,20 @@ FiniteMPO string_mpo(SiteListType const& SiteList,
    return Result;
 }
 
-FiniteMPO string_mpo(SiteListType const& SiteList, std::string const& OpName)
+BasicFiniteMPO string_mpo(SiteListType const& SiteList, std::string const& OpName)
 {
    if (SiteList.empty())
-      return FiniteMPO();
+      return BasicFiniteMPO();
    return string_mpo(SiteList, OpName, QuantumNumbers::QuantumNumber(SiteList[0].GetSymmetryList()));
 }
 
-FiniteMPO
+BasicFiniteMPO
 ParseStringOperator(SiteListType const& SiteList, std::string const& Expr, int Size)
 {
    CHECK(Size % SiteList.size() == 0)
       ("The size of the string operator must be a multiple of the unit cell");
 
-   FiniteMPO Result(SiteList.size());
+   BasicFiniteMPO Result(SiteList.size());
 
    BasisList Vacuum = make_vacuum_basis(SiteList[0].GetSymmetryList());
 
@@ -821,7 +821,7 @@ ParseStringOperator(SiteListType const& SiteList, std::string const& Expr, int S
 }
 
 double
-log_norm_frob_sq(FiniteMPO const& Op)
+log_norm_frob_sq(BasicFiniteMPO const& Op)
 {
    return 0;
 }

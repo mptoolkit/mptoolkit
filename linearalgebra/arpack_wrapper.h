@@ -34,6 +34,16 @@ namespace LinearAlgebra
 // writes the result of the matrix-vector multiply to the second output argument.
 // TODO: this could easily be generalized to other modes of ARPACK
 
+// Mult       Functor that computes the matrix-vector multiply in-place, given an array of complex<double>
+// n          vector size
+// NumEigen   number of eigenvalues to calculate
+// tol        eigensolver tolerance
+// OutVectors pointer to a vector that stores the eigenvectors.  If you don't need eigenvectors, set to nullptr
+// ncv        length of the Krylov sequence.  Must be > NumEigen, recommend at least NumEigen*2.  If zero,
+//            then initialize to a default (2*NumEigen+10)
+// Sort       if true, then sort the eigenvalues in order of decreasing magnitude
+// Verbose    verbose output level
+
 template <typename MultFunc>
 Vector<std::complex<double> >
 DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol = 1e-10,

@@ -78,6 +78,8 @@ class WavefunctionSectionLeft : public CanonicalWavefunctionBase
       MatrixOperator const& LeftU() const { return LeftU_; }
       MatrixOperator const& RightU() const { return RightU_; }
 
+      static std::string const Type;
+
       static PStream::VersionTag VersionT;
 
    private:
@@ -128,6 +130,8 @@ class IBCWavefunction
       int window_offset() const { return WindowOffset; }
 
       void SetDefaultAttributes(AttributeList& A) const;
+
+      static std::string const Type;
 
       static PStream::VersionTag VersionT;
 

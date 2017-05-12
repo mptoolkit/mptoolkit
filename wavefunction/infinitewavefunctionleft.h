@@ -26,7 +26,7 @@
 
 #include "wavefunction/canonicalwavefunction.h"
 #include "wavefunction/linearwavefunction.h"
-#include "mpo/finite_mpo.h"
+#include "mpo/basic_finite_mpo.h"
 #include "mpo/product_mpo.h"
 #include <tuple>
 
@@ -82,6 +82,8 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       double orthogonality_fidelity() const;
 
       void SetDefaultAttributes(AttributeList& A) const;
+
+      static std::string Type;
 
       static PStream::VersionTag VersionT;
 
@@ -176,10 +178,10 @@ overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefunctionLeft const& y,
 
 // This version allows a string operator also.
 // This version is deprecated.
-std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const& StringOp,
-                             InfiniteWavefunctionLeft const& y,
-                             QuantumNumbers::QuantumNumber const& Sector,
-                             int Iter = 20, double Tol = 1E-12, int Verbose = 0);
+//std::complex<double> overlap(InfiniteWavefunctionLeft const& x, BasicFiniteMPO const& StringOp,
+//                             InfiniteWavefunctionLeft const& y,
+//                             QuantumNumbers::QuantumNumber const& Sector,
+//                             int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
 // This version allows the wavefunctions and operator to have different sizes.
 // The overlap is returned as a quantity per length, which is the lowest
@@ -189,6 +191,11 @@ overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
         InfiniteWavefunctionLeft const& y,
         QuantumNumbers::QuantumNumber const& Sector,
         int Iter = 20, double Tol = 1E-12, int Verbose = 0);
+
+std::tuple<std::complex<double>, int>
+overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
+	       InfiniteWavefunctionLeft const& y,
+	       QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
 // Reflect a wavefunction in place
 void inplace_reflect(InfiniteWavefunctionLeft& Psi);
@@ -206,7 +213,7 @@ InfiniteWavefunctionRight reflect(InfiniteWavefunctionLeft const& Psi);
 // Calculates an expectation value over the wavefunction.
 // Op.size() must be a multiple of Psi.size()
 std::complex<double>
-expectation(InfiniteWavefunctionLeft const& Psi, FiniteMPO const& Op);
+expectation(InfiniteWavefunctionLeft const& Psi, BasicFiniteMPO const& Op);
 
 inline
 void

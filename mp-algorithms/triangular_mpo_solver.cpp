@@ -174,7 +174,7 @@ DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
 
 KMatrixPolyType
 DecomposePerpendicularParts(KMatrixPolyType& C,
-                            FiniteMPO const& Diag,
+                            BasicFiniteMPO const& Diag,
                             MatrixOperator const& UnitMatrixLeft,
                             MatrixOperator const& UnitMatrixRight,
                             LinearWavefunction const& Psi,
@@ -189,13 +189,13 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
    {
       std::complex<double> K = I->first;  // the momentum (complex phase)
 
-      if (Verbose)
+      if (Verbose > 0)
          std::cerr << "Momentum " << K << std::endl;
 
       DEBUG_TRACE("Momentum")(K)(HasEigenvalue1);
       for (int m = I->second.degree(); m >= 0; --m)
       {
-         if (Verbose)
+         if (Verbose > 0)
             std::cerr << "Degree " << m << std::endl;
 
          DEBUG_TRACE("degree")(m);
@@ -295,7 +295,7 @@ SolveZeroDiagonal(KMatrixPolyType const& C)
 void
 SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
               LinearWavefunction const& Psi, QuantumNumber const& QShift,
-              TriangularMPO const& Op, MatrixOperator const& LeftIdentity,
+              BasicTriangularMPO const& Op, MatrixOperator const& LeftIdentity,
               MatrixOperator const& RightIdentity, bool NeedFinalMatrix,
               double Tol,
               double UnityEpsilon, int Verbose)
@@ -308,7 +308,7 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
    int Dim = Op.Basis1().size();       // dimension of the MPO
    EMatK.reserve(Dim);
 
-   if (Verbose)
+   if (Verbose > 0)
       std::cerr << "SolveMPO_Left: dimension is " << Dim << std::endl;
 
    if (EMatK.empty())
@@ -354,7 +354,7 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
    // solve recursively column 1 onwards
    for (int Col = StartCol; Col < Dim; ++Col)
    {
-      if (Verbose)
+      if (Verbose > 0)
       {
          std::cerr << "Solving column " << Col << " of " << (Dim-1) << '\n';
       }
@@ -366,19 +366,19 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
       C = inject_left_mask(EMatK, Psi, QShift, Op.data(), Psi, Mask)[Col];
 
       // Now do the classification, based on the properties of the diagonal operator
-      FiniteMPO Diag = Op(Col, Col);
+      BasicFiniteMPO Diag = Op(Col, Col);
       OperatorClassification Classification = classify(Diag, UnityEpsilon);
 
       if (Classification.is_null())
       {
          DEBUG_TRACE("Zero diagonal element")(Col)(Diag);
-         if (Verbose)
+         if (Verbose > 0)
             std::cerr << "Zero diagonal matrix element at column " << Col << std::endl;
          EMatK[Col] = SolveZeroDiagonal(C);
       }
       else
       {
-         if (Verbose)
+         if (Verbose > 0)
             std::cerr << "Non-zero diagonal matrix element at column " << Col << std::endl;
 
          // Non-zero diagonal element.
@@ -403,7 +403,7 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
          if (Classification.is_unitary())
 #endif
          {
-            if (Verbose)
+            if (Verbose > 0)
             {
                if (Classification.is_complex_identity())
                {
@@ -425,13 +425,13 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
                                                                   InjectLeftQShift(Diag, Psi, QShift),
                                                                   Tol, Verbose);
             EtaL = conj(EtaL); // left eigenvalue, so conjugate (see comment at operator_actions.h)
-            if (Verbose)
+            if (Verbose > 0)
                std::cerr << "Eigenvalue of unitary operator is " << EtaL << std::endl;
             Factor = EtaL;
 
             if (std::abs(norm_frob(EtaL) - 1.0) < UnityEpsilon)
             {
-               if (Verbose)
+               if (Verbose > 0)
                   std::cerr << "Found an eigenvalue 1, so we need the right eigenvector..." << std::endl;
 
                UnitMatrixRight = UnitMatrixLeft;
@@ -440,7 +440,7 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
                                                                      InjectRightQShift(Diag, Psi,
                                                                                        QShift),
                                                                      Tol, Verbose);
-               if (Verbose)
+               if (Verbose > 0)
                   std::cerr << "Right eigenvalue is " << EtaR << std::endl;
 
                CHECK(norm_frob(EtaL-EtaR) < UnityEpsilon)("Left and right eigenvalues do not agree!")(EtaL)(EtaR);
@@ -476,13 +476,13 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
          {
             HasEigenvalue1 = true;
             //DEBUG_TRACE(UnitMatrixLeft)(UnitMatrixRight);
-            if (Verbose)
+            if (Verbose > 0)
                std::cerr << "Decomposing parts parallel to the unit matrix\n";
             EParallel = DecomposeParallelParts(C, Factor, UnitMatrixLeft, UnitMatrixRight, UnityEpsilon);
          }
          else
          {
-            if (Verbose)
+            if (Verbose > 0)
             {
                std::cerr << "Diagonal component is not unitary, assuming spectral radius < 1\n";
                DEBUG_TRACE(Diag)(Classification);
@@ -497,12 +497,12 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
          // skip this operation
          if (Col < Dim-1 || NeedFinalMatrix)
          {
-            if (Verbose)
+            if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
             E = DecomposePerpendicularParts(C, Diag, UnitMatrixLeft, UnitMatrixRight,
                                             Psi, QShift, HasEigenvalue1, Tol, Verbose);
          }
-         else if (Verbose)
+         else if (Verbose > 0)
          {
             std::cerr << "Skipping parts perpendicular to the unit matrix for the last column.\n";
          }
@@ -563,7 +563,7 @@ struct SubProductLeftProject
 
 std::complex<double>
 SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
-                    QuantumNumber const& QShift, TriangularMPO const& Op,
+                    QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                     MatrixOperator const& Rho, double Tol, int Verbose)
 {
    if (E.is_null())
@@ -587,7 +587,7 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
    }
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
-   if (Verbose)
+   if (Verbose > 0)
       std::cerr << "SolveSimpleMPO_Left: dimension is " << Dim << std::endl;
 
    // Column 0 (E[0]) is the Identity, we don't need to solve for it
@@ -598,19 +598,19 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
       C = delta_shift(C, QShift);
 
       // Now do the classification, based on the properties of the diagonal operator
-      FiniteMPO Diag = Op(Col, Col);
+      BasicFiniteMPO Diag = Op(Col, Col);
       OperatorClassification Classification = classify(Diag, UnityEpsilon);
 
       if (Classification.is_null())
       {
          DEBUG_TRACE("Zero diagonal element")(Col)(Diag);
-         if (Verbose)
+         if (Verbose > 0)
             std::cerr << "Zero diagonal matrix element at column " << Col << std::endl;
          E[Col] = C;
       }
       else
       {
-         if (Verbose)
+         if (Verbose > 0)
             std::cerr << "Non-zero diagonal matrix element at column " << Col << std::endl;
 
          // non-zero diagonal element.  The only case that we support here is
@@ -716,7 +716,7 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
 
 std::complex<double>
 SolveSimpleMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
-                    TriangularMPO const& Op, double Tol, int Verbose)
+                    BasicTriangularMPO const& Op, double Tol, int Verbose)
 {
    LinearWavefunction PsiLinear;
    RealDiagonalOperator Lambda;
@@ -765,7 +765,7 @@ struct SubProductRightProject
 
 std::complex<double>
 SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
-                    QuantumNumber const& QShift, TriangularMPO const& Op,
+                    QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                     MatrixOperator const& Rho, double Tol, int Verbose)
 {
    if (F.is_null())
@@ -789,7 +789,7 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
    }
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
-   if (Verbose)
+   if (Verbose > 0)
       std::cerr << "SolveSimpleMPO_Right: dimension is " << Dim << std::endl;
 
    // Row Dim-1 (F[Dim-1]) is the Identity, we don't need to solve for it
@@ -800,19 +800,19 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
       C.delta_shift(adjoint(QShift));
 
       // Now do the classification, based on the properties of the diagonal operator
-      FiniteMPO Diag = Op(Row, Row);
+      BasicFiniteMPO Diag = Op(Row, Row);
       OperatorClassification Classification = classify(Diag, UnityEpsilon);
 
       if (Classification.is_null())
       {
          DEBUG_TRACE("Zero diagonal element")(Row)(Diag);
-         if (Verbose)
+         if (Verbose > 0)
             std::cerr << "Zero diagonal matrix element at row " << Row << std::endl;
          F[Row] = C;
       }
       else
       {
-         if (Verbose)
+         if (Verbose > 0)
             std::cerr << "Non-zero diagonal matrix element at row " << Row << std::endl;
 
          // non-zero diagonal element.  The only case that we support here is
@@ -884,7 +884,7 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
 
 std::complex<double>
 SolveSimpleMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi,
-                     TriangularMPO const& Op, double Tol, int Verbose)
+                     BasicTriangularMPO const& Op, double Tol, int Verbose)
 {
    LinearWavefunction PsiLinear;
    RealDiagonalOperator Lambda;

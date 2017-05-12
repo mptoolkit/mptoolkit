@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-// A UnitCellMPO is a FiniteMPO plus its associated UnitCell.
+// A UnitCellMPO is a BasicFiniteMPO plus its associated UnitCell.
 //
 // The UnitCellMPO always starts at a unit cell boundary, and has a size that is
 // an integer multiple of the unit cell size.
@@ -29,18 +29,18 @@
 #if !defined(MPTOOLKIT_LATTICE_UNITCELL_MPO_H)
 #define MPTOOLKIT_LATTICE_UNITCELL_MPO_H
 
-#include "mpo/finite_mpo.h"
+#include "mpo/basic_finite_mpo.h"
 #include "lattice/latticesite.h"
 
 class UnitCellMPO
 {
    public:
-      typedef FiniteMPO::basis1_type basis1_type;
-      typedef FiniteMPO::basis2_type basis2_type;
+      typedef BasicFiniteMPO::basis1_type basis1_type;
+      typedef BasicFiniteMPO::basis2_type basis2_type;
 
       UnitCellMPO() = default;
 
-      UnitCellMPO(SiteListPtrType const& SiteList_, FiniteMPO Op_,
+      UnitCellMPO(SiteListPtrType const& SiteList_, BasicFiniteMPO Op_,
                   LatticeCommute Com_, int Offset_ = 0, std::string Description = "",
 		  int CoarseGrain_ = 1);
 
@@ -114,10 +114,10 @@ class UnitCellMPO
       basis2_type const& Basis2() const { return Op.Basis2(); }
 
       // Access to the underlying MPO
-      FiniteMPO const& MPO() const { return Op; }
+      BasicFiniteMPO const& MPO() const { return Op; }
 
       // Access to the underlying MPO
-      FiniteMPO& MPO() { return Op; }
+      BasicFiniteMPO& MPO() { return Op; }
 
       LatticeCommute Commute() const { return Com; }
 
@@ -131,13 +131,13 @@ class UnitCellMPO
       // so that it covers complete multiples of OtherSize on both the left and right.
       void ExtendToCoverUnitCell(int OtherSize);
 
-      // returns a representation of the JW string operator as a FiniteMPO
+      // returns a representation of the JW string operator as a BasicFiniteMPO
       // acting on a single unit cell
-      FiniteMPO GetJWStringUnit();
+      BasicFiniteMPO GetJWStringUnit();
 
    private:
       SiteListPtrType SiteList;
-      FiniteMPO Op;
+      BasicFiniteMPO Op;
       LatticeCommute Com;
       int Offset;
       std::string Description;
@@ -237,7 +237,7 @@ UnitCellMPO coarse_grain(UnitCellMPO const& Op, int N)
 		      Op.CoarseGrain*N);
 }
 
-// Optimize the representation - in this case we simply forward to the FiniteMPO representation
+// Optimize the representation - in this case we simply forward to the BasicFiniteMPO representation
 void optimize(UnitCellMPO& Op);
 
 void qr_optimize(UnitCellMPO& Op);

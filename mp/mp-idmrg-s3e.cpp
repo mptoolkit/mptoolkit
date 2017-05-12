@@ -54,7 +54,7 @@
 // lambdaR -> U^\dagger lambdaR U
 // and the Hamiltonian matrix elements will change by H -> U^\dagger H U
 
-#include "mpo/triangular_mpo.h"
+#include "mpo/basic_triangular_mpo.h"
 #include "wavefunction/infinitewavefunctionleft.h"
 #include "wavefunction/mpwavefunction.h"
 #include "quantumnumbers/all_symmetries.h"
@@ -70,7 +70,6 @@
 #include "common/statistics.h"
 #include "common/prog_opt_accum.h"
 #include "mp-algorithms/gmres.h"
-#include "mp-algorithms/arnoldi.h"
 #include "tensor/tensor_eigen.h"
 #include "tensor/regularize.h"
 #include "mp-algorithms/stateslist.h"
@@ -240,7 +239,7 @@ struct ProductLeft
    typedef StateComponent result_type;
    typedef StateComponent argument_type;
 
-   ProductLeft(LinearWavefunction const& Psi_, TriangularMPO const& Op_,
+   ProductLeft(LinearWavefunction const& Psi_, BasicTriangularMPO const& Op_,
                QuantumNumber const& QShift_)
       : Psi(Psi_), Op(Op_), QShift(QShift_)
    {
@@ -249,7 +248,7 @@ struct ProductLeft
    StateComponent operator()(StateComponent const& In) const
    {
       StateComponent Guess = delta_shift(In, QShift);
-      TriangularMPO::const_iterator HI = Op.begin();
+      BasicTriangularMPO::const_iterator HI = Op.begin();
       for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I, ++HI)
       {
          Guess = contract_from_left(*HI, herm(*I), Guess, *I);
@@ -259,7 +258,7 @@ struct ProductLeft
    }
 
    LinearWavefunction const& Psi;
-   TriangularMPO const& Op;
+   BasicTriangularMPO const& Op;
    QuantumNumber QShift;
 };
 
@@ -268,7 +267,7 @@ struct ProductRight
    typedef StateComponent result_type;
    typedef StateComponent argument_type;
 
-   ProductRight(LinearWavefunction const& Psi_, TriangularMPO const& Op_,
+   ProductRight(LinearWavefunction const& Psi_, BasicTriangularMPO const& Op_,
                 QuantumNumber const& QShift_)
       : Psi(Psi_), Op(Op_), QShift(QShift_)
    {
@@ -278,7 +277,7 @@ struct ProductRight
    {
       StateComponent Guess = In;
       LinearWavefunction::const_iterator I = Psi.end();
-      TriangularMPO::const_iterator HI = Op.end();
+      BasicTriangularMPO::const_iterator HI = Op.end();
       while (I != Psi.begin())
       {
          --I;
@@ -291,7 +290,7 @@ struct ProductRight
    }
 
    LinearWavefunction const& Psi;
-   TriangularMPO const& Op;
+   BasicTriangularMPO const& Op;
    QuantumNumber QShift;
 };
 
@@ -303,7 +302,7 @@ struct ProductRight
 std::complex<double>
 PartialSolveSimpleMPO_Left(StateComponent& E, StateComponent const& OldE,
                            LinearWavefunction const& Psi,
-                           QuantumNumber const& QShift, TriangularMPO const& Op,
+                           QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                            MatrixOperator const& Rho, int Iter)
 {
 }
@@ -473,7 +472,7 @@ class iDMRG
       // LambdaR being the lambda matrix on the right edge.
       iDMRG(LinearWavefunction const& Psi_, RealDiagonalOperator const& LambdaR,
             MatrixOperator const& UR,
-            QuantumNumber const& QShift_, TriangularMPO const& Hamiltonian_,
+            QuantumNumber const& QShift_, BasicTriangularMPO const& Hamiltonian_,
             StateComponent const& LeftHam, StateComponent const& RightHam,
             std::complex<double> InitialEnergy = 0.0, int Verbose = 0);
 
@@ -529,7 +528,7 @@ class iDMRG
 
 
       //   private:
-      TriangularMPO Hamiltonian;
+      BasicTriangularMPO Hamiltonian;
       LinearWavefunction Psi;
       QuantumNumber QShift;
 
@@ -537,7 +536,7 @@ class iDMRG
       std::deque<StateComponent> RightHamiltonian;
 
       LinearWavefunction::iterator C;
-      TriangularMPO::const_iterator H;
+      BasicTriangularMPO::const_iterator H;
 
       int Verbose;
 
@@ -563,7 +562,7 @@ class iDMRG
 };
 
 iDMRG::iDMRG(LinearWavefunction const& Psi_, RealDiagonalOperator const& LambdaR, MatrixOperator const& UR,
-             QuantumNumber const& QShift_, TriangularMPO const& Hamiltonian_,
+             QuantumNumber const& QShift_, BasicTriangularMPO const& Hamiltonian_,
              StateComponent const& LeftHam, StateComponent const& RightHam,
              std::complex<double> InitialEnergy, int Verbose_)
    : Hamiltonian(Hamiltonian_), Psi(Psi_), QShift(QShift_),
@@ -937,7 +936,6 @@ int main(int argc, char** argv)
       double EigenCutoff = 1E-16;
       std::string FName;
       std::string HamStr;
-      std::string CouplingFile;
       bool Force = false;
       bool TwoSite = true;
       bool OneSite = false;
@@ -964,6 +962,7 @@ int main(int argc, char** argv)
       double MaxTol = 4E-4;  // never use an eigensolver tolerance larger than this
       double MinTol = 1E-16; // lower bound for the eigensolver tolerance - seems we dont really need it
       double HMix = 0;  // Hamiltonian length-scale mixing factor
+      double ShiftInvertEnergy = 0;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -1029,7 +1028,9 @@ int main(int argc, char** argv)
          ("gmrestol", prog_opt::value(&GMRESTol),
           FormatDefault("tolerance for GMRES linear solver for the initial H matrix elements", GMRESTol).c_str())
 	 ("solver", prog_opt::value<std::string>(),
-	  "Eigensolver to use.  Supported values are lanzcos [default], arnoldi")
+	  "Eigensolver to use.  Supported values are lanzcos [default], arnoldi, shift-invert")
+	 ("shift-invert-energy", prog_opt::value(&ShiftInvertEnergy),
+	  "For the shift-invert solver, the target energy")
 
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
           ;
@@ -1104,7 +1105,7 @@ int main(int argc, char** argv)
 
       // Hamiltonian
       InfiniteLattice Lattice;
-      TriangularMPO HamMPO;
+      BasicTriangularMPO HamMPO;
 
       // get the Hamiltonian from the attributes, if it wasn't supplied
       if (HamStr.empty())
@@ -1429,6 +1430,7 @@ int main(int argc, char** argv)
       {
 	 idmrg.Solver().SetSolver(vm["solver"].as<std::string>());
       }
+      idmrg.Solver().SetShiftInvertEnergy(ShiftInvertEnergy);
 
       int ReturnCode = 0;
 
@@ -1465,7 +1467,7 @@ int main(int argc, char** argv)
       }
 
       // finished the iterations.
-      std::cerr << "Orthogonalizing wavefunction...\n";
+      std::cout << "Orthogonalizing wavefunction...\n";
       Wavefunction.Wavefunction() = InfiniteWavefunctionLeft::Construct(idmrg.Wavefunction(), idmrg.QShift);
 
       std::cerr << "Orthogonalization finished.\n";

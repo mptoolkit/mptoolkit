@@ -21,27 +21,32 @@ namespace statistics
 {
 
 template <class FwdIter>
-double mean(FwdIter start, FwdIter end)
+auto mean(FwdIter start, FwdIter end) -> decltype(*start * 1.0)
 {
-   size_t n = 0;
-   double x = 0;
+   if (start == end)
+      return decltype(*start * 1.0){};
+
+   size_t n = 1;
+   decltype(*start * 1.0) x(*start);
+   ++start;
    while (start != end)
    {
       x += *start;
       ++n;
       ++start;
    }
-   return n == 0 ? 0 : x / n;
+   return x / double(n);
 }
 
-template <class FwdIter>
-double variance(FwdIter start, FwdIter end, double mean, int dof)
+template <typename FwdIter, typename T>
+double variance(FwdIter start, FwdIter end, T mean, int dof)
 {
+   using std::norm;
    size_t n = 0;
    double v = 0;
    while (start != end)
    {
-      v += (mean - *start) * (mean - *start);
+      v += norm(mean - *start);
       ++n;
       ++start;
    }

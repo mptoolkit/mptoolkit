@@ -2,9 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// mpo/finite_mpo.cc
+// parser/matrix-parser.h
 //
-// Copyright (C) 2013-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,23 +17,24 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-inline
-std::ostream&
-operator<<(std::ostream& out, FiniteMPO const& x)
-{
-   return out << x.data();
-}
+// Simple parser for complex numbers
+
+#if !defined(MPTOOLKIT_NUMBER_PARSER_H)
+#define MPTOOLKIT_NUMBER_PARSER_H
+
+#include "mps/state_component.h"
+#include "lattice/function.h"
+#include <string>
+#include <map>
+
+std::complex<double>
+ParseNumber(std::string const& Str, Function::ArgumentList const& Args);
 
 inline
-FiniteMPO::FiniteMPO(GenericMPO const& Other)
-   : Data(Other)
+std::complex<double>
+ParseNumber(std::string const& Str)
 {
-   //   CHECK(Data.back().Basis2().is_identity())("Finite operator: right basis must be scalar");
-   CHECK(Data.back().Basis2().is_regular())("Finite operator: left basis must be regular");
+   return ParseNumber(Str, Function::ArgumentList());
 }
 
-inline
-FiniteMPO coarse_grain(FiniteMPO const& Op, int N)
-{
-   return FiniteMPO(coarse_grain(Op.data(), N));
-}
+#endif

@@ -35,6 +35,7 @@ if test "x$enable_debug" != "xyes" ; then
       AC_LANG_PUSH(C++)
       AX_CHECK_COMPILE_FLAG("-march=native", [CXXFLAGS="${CXXFLAGS} -march=native"])
       AX_CHECK_COMPILE_FLAG("-flto", [CXXFLAGS="${CXXFLAGS} -flto"])
+      AX_CHECK_COMPILE_FLAG("-Wno-lto-type-mismatch", [CXXFLAGS="${CXXFLAGS} -Wno-lto-type-mismatch"])
       AC_LANG_POP(C++)
       AC_LANG_PUSH([Fortran 77])
       AX_CHECK_COMPILE_FLAG("-flto", [FFLAGS="${FFLAGS} -flto"])
@@ -165,7 +166,7 @@ dnl BLAS/LAPACK
 AX_BLAS([], [AC_MSG_ERROR([BLAS library not found, aborting.])])
 AX_LAPACK([], [AC_MSG_ERROR([LAPACK library not found, aborting.])])
 
-AX_BOOST_BASE([1.35], [], [AC_MSG_ERROR([boost libraries not found, aborting.])])
+AX_BOOST_BASE([1.47], [], [AC_MSG_ERROR([boost libraries not found, aborting.])])
 AX_BOOST_PROGRAM_OPTIONS
 
 ACX_ARPACK
@@ -209,7 +210,7 @@ AC_ARG_ENABLE(shared, AC_HELP_STRING([--disable-shared],[build static libraries 
 )
 
 dnl save the compiler flags to the config header
-esccxxflags=AS_ESCAPE(m4_dquote(m4_expand("[${CXXFLAGS}]")), ['\"'])
-AC_DEFINE_UNQUOTED([CONFIG_CXXFLAGS], [${esccxxflags}], [C++ compiler flags])
+esccxxflags="${CXXFLAGS//\"/\\\"}"
+AC_DEFINE_UNQUOTED([CONFIG_CXXFLAGS], ["${CXXFLAGS//\"/\\\"}"], [C++ compiler flags])
 
 AC_OUTPUT(Makefile, echo timestamp > stamp-h)

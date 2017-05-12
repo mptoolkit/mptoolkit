@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "mpo/triangular_mpo.h"
+#include "mpo/basic_triangular_mpo.h"
 #include "wavefunction/mpwavefunction.h"
 #include "wavefunction/operator_actions.h"
 #include "common/environment.h"
@@ -25,7 +25,6 @@
 #include "common/environment.h"
 #include "interface/inittemp.h"
 #include "mp-algorithms/gmres.h"
-#include "mp-algorithms/arnoldi.h"
 #include "common/polynomial.h"
 #include "tensor/tensor_eigen.h"
 #include "mp/copyright.h"
@@ -375,7 +374,7 @@ int main(int argc, char** argv)
                    << (UnitCellSize == 1 ? " site\n" : " sites\n");
       }
 
-      TriangularMPO Op;
+      BasicTriangularMPO Op;
 
       InfiniteLattice Lattice;
       std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(OpStr);
@@ -412,7 +411,7 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      TriangularMPO OriginalOp = Op;  // keep a copy so we can do repeated powers
+      BasicTriangularMPO OriginalOp = Op;  // keep a copy so we can do repeated powers
 
       std::vector<Polynomial<std::complex<double> > > Moments;
 

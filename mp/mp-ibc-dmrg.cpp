@@ -21,7 +21,7 @@
 //
 // Experimental DMRG code for infinite boundary conditions
 
-#include "mpo/triangular_mpo.h"
+#include "mpo/basic_triangular_mpo.h"
 #include "wavefunction/infinitewavefunctionleft.h"
 #include "wavefunction/mpwavefunction.h"
 #include "quantumnumbers/all_symmetries.h"
@@ -211,7 +211,7 @@ class IBC_DMRG
       // Construct an iDMRG object.  It is assumed that Psi_ is in left-canonical form, with
       // LambdaR being the lambda matrix on the right edge.
       IBC_DMRG(LinearWavefunction const& Psi_, MatrixOperator const& LambdaR,
-               TriangularMPO const& Hamiltonian_,
+               BasicTriangularMPO const& Hamiltonian_,
                StateComponent const& LeftHam, StateComponent const& RightHam,
                int Verbose = 0);
 
@@ -245,14 +245,14 @@ class IBC_DMRG
 
 
       //   private:
-      TriangularMPO Hamiltonian;
+      BasicTriangularMPO Hamiltonian;
       LinearWavefunction Psi;
 
       std::deque<StateComponent> LeftHamiltonian;
       std::deque<StateComponent> RightHamiltonian;
 
       LinearWavefunction::iterator C;
-      TriangularMPO::const_iterator H;
+      BasicTriangularMPO::const_iterator H;
 
       int Verbose;
 
@@ -272,7 +272,7 @@ class IBC_DMRG
 
 
 IBC_DMRG::IBC_DMRG(LinearWavefunction const& Psi_, MatrixOperator const& LambdaR,
-                   TriangularMPO const& Hamiltonian_,
+                   BasicTriangularMPO const& Hamiltonian_,
                    StateComponent const& LeftHam, StateComponent const& RightHam,
                    int Verbose_)
    : Hamiltonian(Hamiltonian_),
@@ -301,7 +301,7 @@ void
 IBC_DMRG::ConstructInitialHamiltonian()
 {
    LinearWavefunction::const_iterator c = Psi.begin();
-   TriangularMPO::const_iterator h = Hamiltonian.begin();
+   BasicTriangularMPO::const_iterator h = Hamiltonian.begin();
 
    while (c != C)
    {
@@ -568,7 +568,7 @@ int main(int argc, char** argv)
 
       // Hamiltonian
       InfiniteLattice Lattice;
-      TriangularMPO HamMPO;
+      BasicTriangularMPO HamMPO;
 
       // get the Hamiltonian from the attributes, if it wasn't supplied
       if (HamStr.empty())
@@ -606,8 +606,8 @@ int main(int argc, char** argv)
       }
       std::cout << MyStates << '\n';
 
-      TriangularMPO LeftHamMPO = HamMPO;
-      TriangularMPO RightHamMPO = HamMPO;
+      BasicTriangularMPO LeftHamMPO = HamMPO;
+      BasicTriangularMPO RightHamMPO = HamMPO;
 
       // replicate the HamMPO until it has the same size as the unit cell
       HamMPO = repeat(HamMPO, Psi.window_size() / HamMPO.size());

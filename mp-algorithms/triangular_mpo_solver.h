@@ -69,7 +69,7 @@ double const DefaultTol = 1E-14;
 void
 SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
               LinearWavefunction const& Psi, QuantumNumber const& QShift,
-              TriangularMPO const& Op, MatrixOperator const& LeftIdentity,
+              BasicTriangularMPO const& Op, MatrixOperator const& LeftIdentity,
               MatrixOperator const& RightIdentity,
               bool NeedFinalMatrix, double Tol = DefaultTol,
               double EigenUnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
@@ -82,20 +82,20 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
 
 std::complex<double>
 SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
-                    QuantumNumber const& QShift, TriangularMPO const& Op,
+                    QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                     MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
 
 std::complex<double>
 SolveSimpleMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
-                    TriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
+                    BasicTriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
 
 std::complex<double>
 SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
-                     QuantumNumber const& QShift, TriangularMPO const& Op,
+                     QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                      MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
 
 std::complex<double>
 SolveSimpleMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi,
-                     TriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
+                     BasicTriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
 
 #endif

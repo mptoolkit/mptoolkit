@@ -107,6 +107,22 @@ IBCWavefunction ReorderSymmetry(IBCWavefunction const& Psi, SymmetryList const& 
                           Psi.WindowRightSites);
 }
 
+FiniteWavefunctionLeft ReorderSymmetry(FiniteWavefunctionLeft const& Psi, SymmetryList const& NewSL)
+{
+   FiniteWavefunctionLeft Result;
+   for (int i = 0; i < Psi.size(); ++i)
+   {
+      Result.push_back(CoerceSymmetryList(Psi[i], NewSL));
+      Result.push_back_lambda(CoerceSymmetryList(Psi.lambda(i), NewSL));
+   }
+
+   Result.push_back_lambda(CoerceSymmetryList(Psi.lambda_r(), NewSL));
+
+   Result.setBasis1(Result.lambda_l().Basis1());
+   Result.setBasis2(Result.lambda_r().Basis2());
+   return Result;
+}
+
 struct ApplyReorderSymmetry : public boost::static_visitor<WavefunctionTypes>
 {
    ApplyReorderSymmetry(SymmetryList const& FinalSL_)

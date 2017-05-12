@@ -58,15 +58,15 @@ ProductMPO::is_string() const
 ProductMPO
 ProductMPO::make_identity(std::vector<BasisList> const& Basis)
 {
-   // delegate to the FiniteMPO version
-   return ProductMPO(FiniteMPO::make_identity(Basis));
+   // delegate to the BasicFiniteMPO version
+   return ProductMPO(BasicFiniteMPO::make_identity(Basis));
 }
 
 ProductMPO
 ProductMPO::make_identity(std::vector<BasisList> const& Basis, QuantumNumber const& q)
 {
-   // delegate to the FiniteMPO version
-   return ProductMPO(FiniteMPO::make_identity(Basis, q));
+   // delegate to the BasicFiniteMPO version
+   return ProductMPO(BasicFiniteMPO::make_identity(Basis, q));
 }
 
 PStream::opstream&
@@ -219,7 +219,7 @@ inv_adjoint(ProductMPO const& x)
 //     | | | A B ...
 // so that our unit cell is the tensor product B \otimes A
 ProductMPO
-prod_unit_right_to_left(FiniteMPO const& Op, int UnitCellSize)
+prod_unit_right_to_left(BasicFiniteMPO const& Op, int UnitCellSize)
 {
    CHECK(Op.size() % UnitCellSize == 0)("prod_unit: Operator must be a multiple of the unit cell size!")
       (Op.size())(UnitCellSize);
@@ -253,7 +253,7 @@ prod_unit_right_to_left(FiniteMPO const& Op, int UnitCellSize)
 // ... A B | | | |
 // so that our unit cell is the tensor product A \otimes B
 ProductMPO
-prod_unit_left_to_right(FiniteMPO const& Op, int UnitCellSize)
+prod_unit_left_to_right(BasicFiniteMPO const& Op, int UnitCellSize)
 {
    CHECK(Op.size() % UnitCellSize == 0)("prod_unit: Operator must be a multiple of the unit cell size!")
       (Op.size())(UnitCellSize);

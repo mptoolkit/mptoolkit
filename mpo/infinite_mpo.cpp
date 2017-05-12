@@ -22,23 +22,53 @@
 #include "mpo/infinite_mpo_actions.h"
 #include "pstream/variant.h"
 
-// Warning: Due to the implicit conversion of TriangularMPO and ProductMPO to
+// Warning: Due to the implicit conversion of BasicTriangularMPO and ProductMPO to
 // InfiniteMPOElement and InfiniteMPO, we can get some weird errors if
 // the visitor functions don't find a match.
+
+// Streaming versions:
+//
+// No explicit versioning information, check the LatticeVersion for <= 4
+// boost::variant<std::complex<double>, BasicTriangularMPO, ProductMPO> Operator
+// std::string                                                     Description
+//
+// Version 2:
+// Explicit version support.
+// boost::variant<std::complex<double>, ZeroMPO, BasicTriangularMPO, ProductMPO> Operator
+// std::string                                                              Description
+
+PStream::VersionTag
+InfiniteMPO::VersionT(2);
 
 using namespace Parser;
 
 PStream::opstream&
 operator<<(PStream::opstream& out, InfiniteMPO const& Op)
 {
+   out << InfiniteMPO::VersionT.default_version();
    out << Op.Operator;
    out << Op.Description;
    return out;
 }
 
+extern PStream::VersionTag LatticeVersion;
+
 PStream::ipstream&
 operator>>(PStream::ipstream& in, InfiniteMPO& Op)
 {
+   // Prior to version 5, we didn't have separate versioning support for InfiniteMPO.
+   int Version = in.version_of(LatticeVersion) >= 5 ? in.read<int>() : 1;
+
+   if (Version == 1)
+   {
+      boost::variant<std::complex<double>, BasicTriangularMPO, ProductMPO> x;
+      in >> x;
+      Op.Operator = x;
+      in >> Op.Description;
+      return in;
+   }
+   // else
+
    in >> Op.Operator;
    in >> Op.Description;
    return in;
@@ -50,7 +80,7 @@ InfiniteMPO::name() const
    if (this->is_complex())
       return "complex";
    if (this->is_triangular())
-      return "TriangularMPO";
+      return "BasicTriangularMPO";
    if (this->is_product())
       return "ProductMPO";
    return "unknown";
@@ -59,13 +89,13 @@ InfiniteMPO::name() const
 bool
 InfiniteMPO::is_triangular() const
 {
-   return bool(boost::get<TriangularMPO>(&this->op()));
+   return bool(boost::get<BasicTriangularMPO>(&this->op()));
 }
 
-TriangularMPO const&
-InfiniteMPO::as_triangular_mpo() const
+BasicTriangularMPO const&
+InfiniteMPO::as_basic_triangular_mpo() const
 {
-   return boost::get<TriangularMPO>(this->op());
+   return boost::get<BasicTriangularMPO>(this->op());
 }
 
 bool

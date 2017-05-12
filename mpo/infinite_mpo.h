@@ -19,48 +19,49 @@
 
 // InfiniteMPO
 //
-// A variant of complex, TriangularMPO and ProductMPO.
-// THe complex can also be interpreted as a constant multiplied by the
+// A variant of complex, ZeroMPO, BasicTriangularMPO and ProductMPO.
+// The complex can also be interpreted as a constant multiplied by the
 // identity ProductMPO.
 
 #if !defined(MPTOOLKIT_MPO_INFINITE_MPO_H)
 #define MPTOOLKIT_MPO_INFINITE_MPO_H
 
-#include "triangular_mpo.h"
+#include "zero_mpo.h"
+#include "basic_triangular_mpo.h"
 #include "product_mpo.h"
 #include <boost/variant.hpp>
 
-typedef boost::variant<std::complex<double>, TriangularMPO, ProductMPO>
+typedef boost::variant<std::complex<double>, ZeroMPO, BasicTriangularMPO, ProductMPO>
 InfiniteMPOElement;
 
 class InfiniteMPO
 {
    public:
-      typedef boost::variant<std::complex<double>, TriangularMPO, ProductMPO> operator_type;
+      typedef boost::variant<std::complex<double>, ZeroMPO, BasicTriangularMPO, ProductMPO> operator_type;
 
-      InfiniteMPO() {}
+      InfiniteMPO() : Operator(ZeroMPO()) {}
 
       InfiniteMPO(operator_type const& Op) : Operator(Op) {}
       InfiniteMPO(InfiniteMPO const& Op) : Operator(Op.Operator), Description(Op.Description) {}
       InfiniteMPO(std::complex<double> const& x) : Operator(x) {}
       InfiniteMPO(double x) : Operator(std::complex<double>(x)) {}
-      InfiniteMPO(TriangularMPO const& Op) : Operator(Op) {}
+      InfiniteMPO(BasicTriangularMPO const& Op) : Operator(Op) {}
       InfiniteMPO(ProductMPO const& Op) : Operator(Op) {}
 
       InfiniteMPO& operator=(InfiniteMPO const& Op) { Operator=Op.op(); Description = Op.Description; return *this; }
       InfiniteMPO& operator=(std::complex<double> const& x) { Operator=x; return *this; }
       InfiniteMPO& operator=(double x) { Operator=std::complex<double>(x); return *this; }
-      InfiniteMPO& operator=(TriangularMPO const& Op) { Operator=Op; return *this; }
+      InfiniteMPO& operator=(BasicTriangularMPO const& Op) { Operator=Op; return *this; }
       InfiniteMPO& operator=(ProductMPO const& Op) { Operator=Op; return *this; }
 
-      // returns a friendly name for this object, either 'complex', 'TriangularMPO',
+      // returns a friendly name for this object, either 'complex', 'BasicTriangularMPO',
       // 'ProductMPO'
       std::string name() const;
 
-      // returns true if this operator is a TriangularMPO
+      // returns true if this operator is a BasicTriangularMPO
       bool is_triangular() const;
 
-      TriangularMPO const& as_triangular_mpo() const;
+      BasicTriangularMPO const& as_basic_triangular_mpo() const;
 
       // returns true if this operator is a ProductMPO
       bool is_product() const;
@@ -98,6 +99,8 @@ class InfiniteMPO
       }
 #endif
 
+      static PStream::VersionTag VersionT;
+
    private:
       operator_type Operator;
       std::string Description;
@@ -107,7 +110,7 @@ class InfiniteMPO
 };
 
 // operations.  The implementations can re-use the visitor patterns for the parser.
-// None of these operations can mix TriangularMPO and ProductMPO forms.
+// None of these operations can mix BasicTriangularMPO and ProductMPO forms.
 
 std::ostream& operator<<(std::ostream& out, InfiniteMPO const& Op);
 
@@ -145,11 +148,11 @@ InfiniteMPO cross(InfiniteMPO const& x, InfiniteMPO const& y);
 InfiniteMPO outer(InfiniteMPO const& x, InfiniteMPO const& y);
 
 // power of an operator.  Defined for complex x and any n,
-// or x TriangularMPO and n >= 0
+// or x BasicTriangularMPO and n >= 0
 InfiniteMPO pow(InfiniteMPO const& x, int n);
 
 // power of an operator.  Defined for complex x,y,
-// or x TriangularMPO and y integer >= 0
+// or x BasicTriangularMPO and y integer >= 0
 InfiniteMPO pow(InfiniteMPO const& x, InfiniteMPO const& y);
 
 // Exponential - only defined for complex

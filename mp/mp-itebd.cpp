@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "mpo/triangular_mpo.h"
+#include "mpo/basic_triangular_mpo.h"
 #include "wavefunction/infinitewavefunctionleft.h"
 #include "wavefunction/mpwavefunction.h"
 #include "quantumnumbers/all_symmetries.h"

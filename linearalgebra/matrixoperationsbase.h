@@ -1996,6 +1996,11 @@ struct AddInterface<LHS&, RHS, Concepts::LocalMatrix<S1, U1>, Concepts::LocalMat
    typedef RHS const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
+      if (is_zero(x))
+      {
+	 assign(x, y);
+	 return;
+      }
       typedef typename const_iterator<RHS>::type outer_iterator;
       typedef typename const_iterator<outer_iterator>::type inner_iterator;
       outer_iterator r = iterate(y);

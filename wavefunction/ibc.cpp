@@ -36,6 +36,8 @@ WavefunctionSectionLeft::WavefunctionSectionLeft()
 {
 }
 
+std::string const WavefunctionSectionLeft::Type = "WavefunctionSectionLeft";
+
 WavefunctionSectionLeft::WavefunctionSectionLeft(InfiniteWavefunctionLeft const& Psi)
    : CanonicalWavefunctionBase(Psi)
 {
@@ -176,6 +178,8 @@ WavefunctionSectionLeft::check_structure() const
 
 PStream::VersionTag
 IBCWavefunction::VersionT(1);
+
+std::string const IBCWavefunction::Type = "IBCWavefunction";
 
 IBCWavefunction::IBCWavefunction()
    : WindowLeftSites(0), WindowRightSites(0), WindowOffset(0)

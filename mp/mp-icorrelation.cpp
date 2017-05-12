@@ -74,7 +74,7 @@ void ShowHeading(bool ShowRealPart, bool ShowImagPart,
 }
 
 // copied from mp-ispectrum.cpp
-// inject_left for a FiniteMPO.  This can have support on multiple wavefunction unit cells
+// inject_left for a BasicFiniteMPO.  This can have support on multiple wavefunction unit cells
 
 // TODO: convert this to act on InfiniteWavefunctionLeft and UnitCellMPO
 
@@ -83,7 +83,7 @@ void ShowHeading(bool ShowRealPart, bool ShowImagPart,
 MatrixOperator
 contract_from_left(MatrixOperator const& m,
                    InfiniteWavefunctionLeft const& Psi,
-                   FiniteMPO const& Op)
+                   BasicFiniteMPO const& Op)
 {
    CHECK(Op.size() % Psi.size() == 0)(Op.size())(Psi.size());
    DEBUG_CHECK_EQUAL(m.Basis2(), Psi.Basis1());
@@ -99,7 +99,7 @@ contract_from_left(MatrixOperator const& m,
    E[0] = m;
    E.debug_check_structure();
    InfiniteWavefunctionLeft::const_mps_iterator I = Psi.begin();
-   FiniteMPO::const_iterator OpIter = Op.begin();
+   BasicFiniteMPO::const_iterator OpIter = Op.begin();
    while (OpIter != Op.end())
    {
       if (I == Psi.end())
@@ -484,7 +484,7 @@ int main(int argc, char** argv)
       StringOp = repeat(StringOp, UnitCellSize / StringOp.size());
 
       // get a finite MPO version of the string operator
-      UnitCellMPO StringOpPerUnitCell = UnitCellMPO(Op1.GetSiteList(), FiniteMPO(StringOp),
+      UnitCellMPO StringOpPerUnitCell = UnitCellMPO(Op1.GetSiteList(), BasicFiniteMPO(StringOp),
                                                     LatticeCommute::Bosonic, 0);
 
       MatrixOperator LeftIdent = MatrixOperator::make_identity(Psi.Basis1());
@@ -518,10 +518,10 @@ int main(int argc, char** argv)
       std::map<int, int> LeftOperatorOffsetUnits;
 
       // The JW string for Op2
-      FiniteMPO JW = Op2.GetJWStringUnit();
+      BasicFiniteMPO JW = Op2.GetJWStringUnit();
       JW = repeat(JW, UnitCellSize/JW.size());
 
-      FiniteMPO WavefunctionStringJW = StringOpPerUnitCell.MPO() * JW;
+      BasicFiniteMPO WavefunctionStringJW = StringOpPerUnitCell.MPO() * JW;
       WavefunctionStringJW = repeat(WavefunctionStringJW, Psi.size()/WavefunctionStringJW.size());
 
       // the density matrix at the unit cell boundary

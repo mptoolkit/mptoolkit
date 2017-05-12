@@ -95,7 +95,7 @@ int main(int argc, char** argv)
       std::string LhsStr, RhsStr;
       std::vector<std::string> Sector;
       double Tol = 1E-15;
-      int Iter = 30;
+      int Iter = 40;         // 2017-04-17: increased default from 30 to 40
       bool Sort = false;
       bool Quiet = false;
       bool Reflect = false;
@@ -168,10 +168,10 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") > 0 || vm.count("rhs") == 0)
+      if (vm.count("help") > 0 || vm.count("lhs") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi1> <psi2>\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi1> [<psi2>]\n";
          std::cerr << desc << '\n';
          return 1;
       }
@@ -362,8 +362,8 @@ int main(int argc, char** argv)
       std::vector<TransEigenInfo> EigenList;
       for (std::set<QuantumNumber>::const_iterator I = Sectors.begin(); I != Sectors.end(); ++I)
       {
-         //FiniteMPO StringOp = FiniteMPO::make_identity(ExtractLocalBasis(Psi2.Psi));
-         TransEigenInfo Info(*I, std::get<0>(overlap(Psi1, StringOp, Psi2, *I, Iter, Tol, Verbose)));
+         //BasicFiniteMPO StringOp = BasicFiniteMPO::make_identity(ExtractLocalBasis(Psi2.Psi));
+         TransEigenInfo Info(*I, std::get<0>(overlap_arpack(Psi1, StringOp, Psi2, *I, Iter, Tol, Verbose)));
          if (Sort)
             EigenList.push_back(Info);
          else

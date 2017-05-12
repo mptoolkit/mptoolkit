@@ -20,8 +20,8 @@
 // C++ interface to the fortran ARPACK routines.  Only a few wrapper functions are
 // implemented so far: dsaupd, dseupd, znaupd, zneupd
 
-#if !defined(ARPACK_H_DSFHFSH389UER89UJU89UER8JJCERJ809)
-#define ARPACK_H_DSFHFSH389UER89UJU89UER8JJCERJ809
+#if !defined(MPTOOLKIT_COMMON_ARPACK_H)
+#define MPTOOLKIT_COMMON_ARPACK_H
 
 #if defined(HAVE_CONFIG_H)
 #include "config.h"

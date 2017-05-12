@@ -78,12 +78,12 @@ int lcm(int a, int b, int c, int d)
 
 // calculates the mean of a sequence.  Returns 0 if the sequence is empty
 template <class FwdIter>
-double mean(FwdIter start, FwdIter end);
+auto mean(FwdIter start, FwdIter end) -> decltype(*start * 1.0);
 
 // calculates the variance with a given mean.  Formula is
 // variance = sum_i (\bar{x} - x_i)^2 / (N - dof)
-template <class FwdIter>
-double variance(FwdIter start, FwdIter end, double mean, int dof = 0);
+template <typename FwdIter, typename T>
+double variance(FwdIter start, FwdIter end, T mean, int dof = 0);
 
 // helper function to calculate the variance when the mean is not known.
 // this is slower but numerically more stable than the one-pass formula

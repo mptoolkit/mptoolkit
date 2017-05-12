@@ -21,9 +21,9 @@
 #include "tensor/tensor_eigen.h"
 #include "mp-algorithms/arnoldi.h"
 #include "common/environment.h"
+
 #include "common/statistics.h"
 
-#include "mps/packunpack.h"
 #include <fstream>
 
 #include "wavefunction/operator_actions.h"
@@ -55,6 +55,8 @@ extern double const InverseTol = getenv_or_default("MP_INVERSE_TOL", 1E-7);
 
 // the tol used in the orthogonalization can apparently be a bit smaller
 extern double const OrthoTol = getenv_or_default("MP_ORTHO_TOL", 1E-8);
+
+std::string InfiniteWavefunctionLeft::Type = "InfiniteWavefunctionLeft";
 
 namespace
 {
@@ -748,7 +750,8 @@ overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
    return std::make_tuple(Eta, Length, Init);
 }
 
-std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const& StringOp,
+#if 0
+std::complex<double> overlap(InfiniteWavefunctionLeft const& x, BasicFiniteMPO const& StringOp,
                              InfiniteWavefunctionLeft const& y,
                              QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
 {
@@ -773,7 +776,7 @@ std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const&
 
    while (MyTol < 0)
    {
-      if (Verbose)
+      if (Verbose > 0)
          std::cerr << "Restarting Arnoldi, eta=" << Eta << ", Tol=" << -MyTol << '\n';
       Iterations = Iter;
       MyTol = Tol;
@@ -783,12 +786,13 @@ std::complex<double> overlap(InfiniteWavefunctionLeft const& x, FiniteMPO const&
       TotalIterations += Iterations;
       DEBUG_TRACE(Eta)(Iterations);
    }
-   if (Verbose)
+   if (Verbose > 0)
       std::cerr << "Converged.  TotalIterations=" << TotalIterations
                 << ", Tol=" << MyTol << '\n';
 
    return Eta;
 }
+#endif
 
 std::pair<std::complex<double>, StateComponent>
 overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefunctionLeft const& y,
@@ -814,11 +818,11 @@ InfiniteWavefunctionLeft::SetDefaultAttributes(AttributeList& A) const
    A["QShift"] = this->qshift();
 }
 
-// inject_left for a FiniteMPO.  This can have support on multiple wavefunction unit cells
+// inject_left for a BasicFiniteMPO.  This can have support on multiple wavefunction unit cells
 MatrixOperator
 inject_left(MatrixOperator const& m,
             InfiniteWavefunctionLeft const& Psi1,
-            FiniteMPO const& Op,
+            BasicFiniteMPO const& Op,
             InfiniteWavefunctionLeft const& Psi2)
 {
    CHECK_EQUAL(Psi1.size(), Psi2.size());
@@ -838,7 +842,7 @@ inject_left(MatrixOperator const& m,
    E.debug_check_structure();
    InfiniteWavefunctionLeft::const_mps_iterator I1 = Psi1.begin();
    InfiniteWavefunctionLeft::const_mps_iterator I2 = Psi2.begin();
-   FiniteMPO::const_iterator OpIter = Op.begin();
+   BasicFiniteMPO::const_iterator OpIter = Op.begin();
    while (OpIter != Op.end())
    {
       if (I1 == Psi1.end())
@@ -854,7 +858,7 @@ inject_left(MatrixOperator const& m,
 }
 
 std::complex<double>
-expectation(InfiniteWavefunctionLeft const& Psi, FiniteMPO const& Op)
+expectation(InfiniteWavefunctionLeft const& Psi, BasicFiniteMPO const& Op)
 {
    MatrixOperator X = MatrixOperator::make_identity(Psi.Basis1());
    X = inject_left(X, Psi, Op, Psi);
@@ -888,7 +892,7 @@ fine_grain(InfiniteWavefunctionLeft const& x, int N, std::vector<BasisList> cons
       std::stack<StateComponent> R;
       while (!B1.empty())
       {
-	 AMatSVD SL(A*Lambda, 
+	 AMatSVD SL(A*Lambda,
 		    Tensor::ProductBasis<BasisList, BasisList>(B1.top, FineGrainBasis[n*N+B1.size()]));
 	 AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(),
 								     SInfo, Info);
@@ -903,5 +907,5 @@ fine_grain(InfiniteWavefunctionLeft const& x, int N, std::vector<BasisList> cons
 )
 #endif
 
-	 
-      
+
+

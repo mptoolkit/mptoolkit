@@ -21,7 +21,9 @@
 #include "lattice/infinite-parser.h"
 #include "mp/copyright.h" // for EscapeArgument
 
-PStream::VersionTag LatticeVersion(4);
+PStream::VersionTag LatticeVersion(5);
+// version 5 doesn't change anything in the InfiniteLattice directly, but
+// adds versioning support for the InfiniteMPO structure
 
 InfiniteLattice::InfiniteLattice() : UnitCell_(new UnitCell()), OwnUnitCell_(true)
 {
@@ -324,12 +326,12 @@ InfiniteLattice::operator[](std::string const& Op)
    return Operators_[Op];
 }
 
-TriangularMPO const&
-InfiniteLattice::as_triangular_mpo(std::string const& Op) const
+BasicTriangularMPO const&
+InfiniteLattice::as_basic_triangular_mpo(std::string const& Op) const
 {
    OperatorListType::const_iterator I = Operators_.find(Op);
    CHECK(I != Operators_.end())("Operator does not exist in the lattice!")(Op);
-   return I->second.as_triangular_mpo();
+   return I->second.as_basic_triangular_mpo();
 }
 
 ProductMPO const&
@@ -413,7 +415,7 @@ operator>>(PStream::ipstream& in, InfiniteLattice& L)
 {
    PStream::VersionSentry Sentry(in, LatticeVersion, in.read<int>());
 
-   if (Sentry.version() > 4)
+   if (Sentry.version() > 5)
    {
       PANIC("This program is too old to read this lattice file format,"
             "  Maximum readable version number is 4")(Sentry.version());
@@ -473,26 +475,26 @@ SetComponents(OperatorComponent& C, OperatorComponent const& Op, int xStart, int
    }
 }
 
-TriangularMPO sum_unit(UnitCellMPO const& Op)
+BasicTriangularMPO sum_unit(UnitCellMPO const& Op)
 {
    if (Op.is_null())
-      return TriangularMPO();
+      return BasicTriangularMPO();
    return sum_unit(*Op.GetSiteList(), Op.MPO(), Op.Commute(), Op.GetSiteList()->size());
 }
 
-TriangularMPO sum_unit(UnitCellMPO const& Op, int UnitCellSize)
+BasicTriangularMPO sum_unit(UnitCellMPO const& Op, int UnitCellSize)
 {
    if (Op.is_null())
-      return TriangularMPO();
+      return BasicTriangularMPO();
    return sum_unit(*Op.GetSiteList(), ExtendToCoverUnitCell(Op, UnitCellSize).MPO(), Op.Commute(), UnitCellSize);
 }
 
-TriangularMPO sum_unit(UnitCell const& Cell, FiniteMPO const& Op, LatticeCommute Com)
+BasicTriangularMPO sum_unit(UnitCell const& Cell, BasicFiniteMPO const& Op, LatticeCommute Com)
 {
    return sum_unit(*Cell.GetSiteList(), Op, Com, Cell.size());
 }
 
-TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize)
+BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize)
 {
    CHECK_EQUAL(Op.Basis1().size(), 1)("Operator Basis1 is not one dimensional.  Basis must contain only one quantum number for sum_unit()");
    CHECK_EQUAL(Op.Basis2().size(), 1)("Operator Basis2 is not one dimensional.  Basis must contain only one quantum number for sum_unit()");
@@ -500,12 +502,12 @@ TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& Op, Lattic
 }
 
 std::vector<std::vector<OperatorComponent>>
-   SplitOperator(FiniteMPO const& Op, int UnitCellSize)
+   SplitOperator(BasicFiniteMPO const& Op, int UnitCellSize)
 {
    DEBUG_CHECK_EQUAL(Op.size() % UnitCellSize, 0);
    std::vector<std::vector<OperatorComponent> > Result;
-   FiniteMPO::const_iterator I = Op.begin();
-   FiniteMPO::const_iterator J = I;
+   BasicFiniteMPO::const_iterator I = Op.begin();
+   BasicFiniteMPO::const_iterator J = I;
    while (J != Op.end())
    {
       std::advance(J, UnitCellSize);
@@ -515,16 +517,16 @@ std::vector<std::vector<OperatorComponent>>
    return Result;
 }
 
-TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& JW2, FiniteMPO const& Op2, int UnitCellSize)
+BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& JW2, BasicFiniteMPO const& Op2, int UnitCellSize)
 {
-   FiniteMPO Op = Op2;
+   BasicFiniteMPO Op = Op2;
    optimize(Op);
 
-   FiniteMPO JW = JW2;
+   BasicFiniteMPO JW = JW2;
    optimize(JW);
 
    if (Op.is_null())
-      return TriangularMPO();
+      return BasicTriangularMPO();
    CHECK(Op.is_irreducible());
    CHECK(UnitCellSize % SiteList.size() == 0)
       ("UnitCellSize for sum_unit() must be a multiple of UnitCell.size()");
@@ -536,7 +538,7 @@ TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& JW2, Finit
       ("JW string for sum_unit() must divide UnitCell.size()");
 
    // Suppose that the unit cell size is 1.  Then if Op is A \times B \otimes C, then
-   // the resulting TriangularMPO is
+   // the resulting BasicTriangularMPO is
    // ( X A 0 0 )
    // ( 0 0 B 0 )
    // ( 0 0 0 C )
@@ -569,9 +571,9 @@ TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& JW2, Finit
    std::vector<std::vector<OperatorComponent>> SplitOp = SplitOperator(Op, UnitCellSize);
 
    // and finally the identity operator
-   FiniteMPO Ident = identity_mpo(SiteList, Op.qn2());
+   BasicFiniteMPO Ident = identity_mpo(SiteList, Op.qn2());
 
-   TriangularMPO Result(UnitCellSize);
+   BasicTriangularMPO Result(UnitCellSize);
    for (int i = 0; i < UnitCellSize; ++i)
    {
       // Construct the basis
@@ -634,10 +636,10 @@ TriangularMPO sum_unit(SiteListType const& SiteList, FiniteMPO const& JW2, Finit
 }
 
 
-TriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op, int UnitCellSize)
+BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op, int UnitCellSize)
 {
    if (Op.is_null() || Kink.is_null())
-      return TriangularMPO();
+      return BasicTriangularMPO();
    return sum_kink(*Op.GetSiteList(),
                    ExtendToCoverUnitCell(Kink, UnitCellSize).MPO(),
                    ExtendToCoverUnitCell(Op, UnitCellSize).MPO(),
@@ -645,49 +647,49 @@ TriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op, int UnitC
                    UnitCellSize);
 }
 
-TriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op)
+BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op)
 {
    if (Op.is_null() || Kink.is_null())
-      return TriangularMPO();
+      return BasicTriangularMPO();
    CHECK_EQUAL(Kink.GetSiteList()->size(), Op.GetSiteList()->size())
       ("Operators for sum_kink must have the same unit cell!");
    return sum_kink(*Op.GetSiteList(), Kink.MPO(), Op.MPO(), Op.Commute(), Op.GetSiteList()->size());
 }
 
-TriangularMPO sum_kink(SiteListType const& SiteList, FiniteMPO const& Kink, FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize)
+BasicTriangularMPO sum_kink(SiteListType const& SiteList, BasicFiniteMPO const& Kink, BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize)
 {
-   FiniteMPO Ident = repeat(string_mpo(SiteList, Com.SignOperator(), Op.qn1()), Kink.size() / SiteList.size());
+   BasicFiniteMPO Ident = repeat(string_mpo(SiteList, Com.SignOperator(), Op.qn1()), Kink.size() / SiteList.size());
    return sum_unit(SiteList, Kink*Ident, Op, UnitCellSize);
 }
 
-TriangularMPO sum_k(SiteListType const& SiteList, std::complex<double> const& k,
-                       FiniteMPO const& Op, LatticeCommute Com, int UnitCellSize)
+BasicTriangularMPO sum_k(SiteListType const& SiteList, std::complex<double> const& k,
+                       BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize)
 {
    return sum_unit(SiteList, exp(std::complex<double>(0,1)*k)
                    *string_mpo(SiteList, Com.SignOperator(), Op.qn1()), Op, UnitCellSize);
 }
 
-TriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op, int UnitCellSize)
+BasicTriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op, int UnitCellSize)
 {
    if (Op.is_null())
-      return TriangularMPO();
+      return BasicTriangularMPO();
    return sum_unit(*Op.GetSiteList(), exp(std::complex<double>(0,1)*k)
                    *string_mpo(*Op.GetSiteList(), Op.Commute().SignOperator(), Op.qn1()), Op.MPO(), UnitCellSize);
 }
 
-TriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op)
+BasicTriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op)
 {
    if (Op.is_null())
-      return TriangularMPO();
+      return BasicTriangularMPO();
    return sum_unit(*Op.GetSiteList(), exp(std::complex<double>(0,1)*k)
                    *string_mpo(*Op.GetSiteList(), Op.Commute().SignOperator(), Op.qn1()), Op.MPO(),
                    Op.GetSiteList()->size());
 }
 
-TriangularMPO make_zero(SiteListType const& SiteList)
+BasicTriangularMPO make_zero(SiteListType const& SiteList)
 {
    if (SiteList.empty())
-      return TriangularMPO();
+      return BasicTriangularMPO();
 
    // The auxiliary basis is the same at every site
    // Construct the basis
@@ -696,7 +698,7 @@ TriangularMPO make_zero(SiteListType const& SiteList)
    b.push_back(Ident);
    b.push_back(Ident);
 
-   TriangularMPO Result(SiteList.size());
+   BasicTriangularMPO Result(SiteList.size());
    for (unsigned i = 0; i < SiteList.size(); ++i)
    {
 
@@ -715,14 +717,14 @@ TriangularMPO make_zero(SiteListType const& SiteList)
 // sum_string
 //
 
-TriangularMPO sum_string(SiteListType const& SiteList, FiniteMPO const& JW, FiniteMPO const& Op1,
-                         FiniteMPO const& String, FiniteMPO const& Op2, int UnitCellSize,
+BasicTriangularMPO sum_string(SiteListType const& SiteList, BasicFiniteMPO const& JW, BasicFiniteMPO const& Op1,
+                         BasicFiniteMPO const& String, BasicFiniteMPO const& Op2, int UnitCellSize,
                          QuantumNumbers::QuantumNumber q)
 {
-   FiniteMPO X = JW;
-   FiniteMPO A = Op1;
-   FiniteMPO B = String;
-   FiniteMPO C = Op2;
+   BasicFiniteMPO X = JW;
+   BasicFiniteMPO A = Op1;
+   BasicFiniteMPO B = String;
+   BasicFiniteMPO C = Op2;
    // Suppose the unit cell is 1 site, and all operators are 1-site local.
    // We want to generate the string
    // X * ...  * X * A * B * ... * B * C * I * ....
@@ -786,9 +788,9 @@ TriangularMPO sum_string(SiteListType const& SiteList, FiniteMPO const& JW, Fini
    std::vector<std::vector<OperatorComponent>> SplitC = SplitOperator(C, UnitCellSize);
 
    // and make the identity operator; C.qn2() is always the identity
-   FiniteMPO Ident = identity_mpo(SiteList, C.qn2());
+   BasicFiniteMPO Ident = identity_mpo(SiteList, C.qn2());
 
-   TriangularMPO Result(UnitCellSize);
+   BasicTriangularMPO Result(UnitCellSize);
    for (int i = 0; i < UnitCellSize; ++i)
    {
       // Construct the basis
@@ -883,7 +885,7 @@ TriangularMPO sum_string(SiteListType const& SiteList, FiniteMPO const& JW, Fini
 
 // This version of sum_string takes UnitCellMPO's for the operator arguments.  The String term
 // must be a scalar with bosonic commutation, and cannot be any longer than UnitCellSize.
-TriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_,
+BasicTriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_,
                          int UnitCellSize,
                          QuantumNumbers::QuantumNumber q)
 {
@@ -891,9 +893,9 @@ TriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String_, Un
    CHECK(String_.size() <= UnitCellSize)("String operator cannot exceed the UnitCellSize in sum_string()");
    CHECK(is_scalar(String_.TransformsAs()));
 
-   FiniteMPO Op1 = ExtendToCoverUnitCell(Op1_, UnitCellSize).MPO();
-   FiniteMPO String = ExtendToCoverUnitCell(String_, UnitCellSize).MPO();
-   FiniteMPO Op2 = ExtendToCoverUnitCell(Op2_, UnitCellSize).MPO();
+   BasicFiniteMPO Op1 = ExtendToCoverUnitCell(Op1_, UnitCellSize).MPO();
+   BasicFiniteMPO String = ExtendToCoverUnitCell(String_, UnitCellSize).MPO();
+   BasicFiniteMPO Op2 = ExtendToCoverUnitCell(Op2_, UnitCellSize).MPO();
 
    SiteListType SiteList = *Op1_.GetSiteList();
 
@@ -901,24 +903,24 @@ TriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String_, Un
       ("UnitCellSize for sum_string must be a multiple of the lattice unit cell size");
 
    // shifting the quantum numbers in the aux basis
-   FiniteMPO IdentShiftAB = identity_mpo(SiteList, Op2.qn1());
+   BasicFiniteMPO IdentShiftAB = identity_mpo(SiteList, Op2.qn1());
    String = String * repeat(IdentShiftAB, String.size() / SiteList.size());
    Op1 = project(Op1 * repeat(IdentShiftAB, Op1.size() / SiteList.size()), q);
 
    // Multiply through the JW string of Op2
-   FiniteMPO JW2 = repeat(string_mpo(SiteList, Op2_.Commute().SignOperator(), QuantumNumber(Op2.GetSymmetryList())),
+   BasicFiniteMPO JW2 = repeat(string_mpo(SiteList, Op2_.Commute().SignOperator(), QuantumNumber(Op2.GetSymmetryList())),
                           UnitCellSize / SiteList.size());
    String = String * JW2;
    Op1 = Op1 * repeat(JW2, Op1.size() / JW2.size());
 
    // compute the overall JW string
-   FiniteMPO JW = repeat(string_mpo(SiteList, Op1_.Commute().SignOperator(), Op1.qn1()),
+   BasicFiniteMPO JW = repeat(string_mpo(SiteList, Op1_.Commute().SignOperator(), Op1.qn1()),
                          UnitCellSize / SiteList.size()) * JW2;
 
    return sum_string(SiteList, JW, Op1, String, Op2, UnitCellSize, q);
 }
 
-TriangularMPO sum_string_dot(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_,
+BasicTriangularMPO sum_string_dot(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_,
                              int UnitCellSize)
 {
 
@@ -926,19 +928,19 @@ TriangularMPO sum_string_dot(UnitCellMPO const& Op1_, UnitCellMPO const& String_
                          QuantumNumber(Op1_.GetSymmetryList()));
 }
 
-TriangularMPO sum_string_dot(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_)
+BasicTriangularMPO sum_string_dot(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_)
 {
    return sum_string_dot(Op1_, String_, Op2_, Op1_.GetSiteList()->size());
 }
 
-TriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_,
+BasicTriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_,
                              int UnitCellSize)
 {
 
    return sum_string_dot(adjoint(Op1_), String_, Op2_, UnitCellSize);
 }
 
-TriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_)
+BasicTriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_)
 {
    return sum_string_dot(adjoint(Op1_), String_, Op2_, Op1_.GetSiteList()->size());
 }

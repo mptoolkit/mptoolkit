@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 //
-// a FiniteLatticeMPO is a FiniteMPO that also knows about the
+// a FiniteLatticeMPO is a BasicFiniteMPO that also knows about the
 // unit cell, and it also knows what its commutation Jordan-Wigner string looks like.
 // This means that it is possible to extend a FiniteLatticeMPO by adding a unit
 // cell to either the left or the right.
@@ -38,7 +38,7 @@ class FiniteLatticeMPO
       FiniteLatticeMPO& operator=(FiniteLatticeMPO const& Other);
 
       // Construction via components
-      FiniteLatticeMPO(UnitCell const& UC, FiniteMPO const& JW, FiniteMPO const& Op);
+      FiniteLatticeMPO(UnitCell const& UC, BasicFiniteMPO const& JW, BasicFiniteMPO const& Op);
 
       // returns the number of sites that this operator is defined over.
       // This is always a multiple of the unit cell size.
@@ -46,11 +46,11 @@ class FiniteLatticeMPO
 
       // returns the Jordan-Wigner string associated with this operator,
       // This is always a 1x1 MPO, with the same size as the unit cell.
-      FiniteMPO const& JWString() const { return JWString_; }
+      BasicFiniteMPO const& JWString() const { return JWString_; }
 
       // returns the Jordan-Wigner string associated with this operator,
       // extended to be Size sites (which must be a multiple of the UnitCellSize)
-      FiniteMPO JWString(int Size) const;
+      BasicFiniteMPO JWString(int Size) const;
 
       // returns the UnitCell of this operator
       UnitCell const& GetUnitCell() const { return UnitCell_; }
@@ -58,26 +58,26 @@ class FiniteLatticeMPO
       // shorthand for GetUnitCell().size()
       int UnitCellSize() const { return UnitCell_.size(); }
 
-      // implicit conversion to FiniteMPO
-      operator FiniteMPO const&() const { return Operator_; }
+      // implicit conversion to BasicFiniteMPO
+      operator BasicFiniteMPO const&() const { return Operator_; }
 
-      // named conversion to FiniteMPO
-      FiniteMPO const& AsFiniteMPO() const { return Operator_; }
+      // named conversion to BasicFiniteMPO
+      BasicFiniteMPO const& AsBasicFiniteMPO() const { return Operator_; }
 
       // Multiplies this operator by the Jordan-Wigner string of f, and returns
-      // the FiniteMPO.  This corresponds to the operator obtained on the left hand
+      // the BasicFiniteMPO.  This corresponds to the operator obtained on the left hand
       // side when multiplying by operator f that acts on a unit cell off the right hand
       // side of this operator, ie *this \oprod f
-      FiniteMPO ApplyJW(FiniteLatticeMPO const& f);
+      BasicFiniteMPO ApplyJW(FiniteLatticeMPO const& f);
 
       // Extends the operator to be Size sites (must be a multiple of the UnitCellSize)
       // by adding identity operators on the right hand side.
-      FiniteMPO AsFiniteMPO(int Size) const;
+      BasicFiniteMPO AsBasicFiniteMPO(int Size) const;
 
    private:
       UnitCell UnitCell_;
-      FiniteMPO JWString_;
-      FiniteMPO Operator_;
+      BasicFiniteMPO JWString_;
+      BasicFiniteMPO Operator_;
 
       friend PStream::opstream&
          operator<<(PStream::opstream& out, FiniteLatticeMPO const& op);
@@ -92,12 +92,12 @@ class FiniteLatticeMPO
 };
 
 // Returns the identity operator for the given unit cell
-FiniteMPO
+BasicFiniteMPO
 identity_mpo(UnitCell const& c);
 
 // Returns the identity operator for the given unit cell, extended
 // to Size sites, which must be a multiple of the unit cell size.
-FiniteMPO
+BasicFiniteMPO
 identity_mpo(UnitCell const& c, int Size);
 
 // extends a FiniteLatticeMPO to Size sites, by adding identity operators

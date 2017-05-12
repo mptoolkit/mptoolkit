@@ -1,20 +1,20 @@
-TriangularMPO TriangularOneSite(SimpleOperator const& x);
+BasicTriangularMPO TriangularOneSite(SimpleOperator const& x);
 
 // A one-site operator with the given momentum, in angular units
-TriangularMPO TriangularOneSite(SimpleOperator const& x, double Momentum);
+BasicTriangularMPO TriangularOneSite(SimpleOperator const& x, double Momentum);
 
-TriangularMPO TriangularTwoSite(SimpleOperator const& x, SimpleOperator const& y,
+BasicTriangularMPO TriangularTwoSite(SimpleOperator const& x, SimpleOperator const& y,
                                      QuantumNumbers::QuantumNumber const& Trans);
 
-TriangularMPO TriangularTwoSite(SimpleOperator const& x, SimpleOperator const& y);
+BasicTriangularMPO TriangularTwoSite(SimpleOperator const& x, SimpleOperator const& y);
 
-TriangularMPO TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperator const& y,
+BasicTriangularMPO TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperator const& y,
                                                 std::complex<double> Factor, QuantumNumber const& Trans);
 
-TriangularMPO TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperator const& y,
+BasicTriangularMPO TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperator const& y,
                                                 std::complex<double> Factor);
 
-TriangularMPO TriangularThreeSite(SimpleOperator const& x,
+BasicTriangularMPO TriangularThreeSite(SimpleOperator const& x,
                                        SimpleOperator const& y,
                                        SimpleOperator const& z);
 
@@ -23,7 +23,7 @@ TriangularMPO TriangularThreeSite(SimpleOperator const& x,
 // we can handle fermions, especially for the case n2<n1.
 // this is assumed to be a bosonic operator; if n2 < n1 we swap the sites
 // (which is incorrect for fermions)
-TriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
+BasicTriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
                                     int n1, SimpleOperator const& x1,
                                     int n2, SimpleOperator const& x2);
 
@@ -32,7 +32,7 @@ TriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
 // PRECONDITION: Sites.size() <= n2 < 2*Sites.size()
 // That is, the operator1 must be in the first unit cell, the operator2 must be
 // in the second unit cell.
-TriangularMPO TwoPointExponentialOperator(std::vector<BasisList> const& Sites,
+BasicTriangularMPO TwoPointExponentialOperator(std::vector<BasisList> const& Sites,
                                           int n1, SimpleOperator const& x1,
                                           int n2, SimpleOperator const& x2,
                                           std::complex<double> Factor);
@@ -43,38 +43,38 @@ TriangularMPO TwoPointExponentialOperator(std::vector<BasisList> const& Sites,
 // Because this function can be used to implement fermionic operators,
 // we demand normal ordering of sites; it is an error to call this function
 // with n2<n1.
-TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
+BasicTriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
                                      int n1, SimpleOperator const& x1,
                                      SimpleOperator const& String,
                                      int n2, SimpleOperator const& x2);
 
-TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
+BasicTriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
                                      int n1, SimpleOperator const& x1,
                                      std::vector<SimpleOperator> const& String,
                                      int n2, SimpleOperator const& x2);
 
 // A one-site operator on a lattice with a given momentum, in angular units per unit cell
-TriangularMPO OnePointOperator(std::vector<BasisList> const& Sites,
+BasicTriangularMPO OnePointOperator(std::vector<BasisList> const& Sites,
                                     int n, SimpleOperator const& x, double Momentum = 0);
 
 // A one-site operator on a lattice with a given momentum, in angular units per unit cell
-TriangularMPO OnePointStringOperator(std::vector<BasisList> const& Sites,
+BasicTriangularMPO OnePointStringOperator(std::vector<BasisList> const& Sites,
                                           std::vector<SimpleOperator> const& String,
                                           int n, SimpleOperator const& x, double Momentum = 0);
 
 // A one-site operator on a lattice with a given momentum, in angular units per unit cell
 // Here we exclude the string term on the unit cell where the operator is defined
-TriangularMPO OnePointStringOperatorExclude(std::vector<BasisList> const& Sites,
+BasicTriangularMPO OnePointStringOperatorExclude(std::vector<BasisList> const& Sites,
                                             std::vector<SimpleOperator> const& String,
                                             int n, SimpleOperator const& x, double Momentum = 0);
 
-TriangularMPO OneCellStringOperator(std::vector<BasisList> const& Sites,
+BasicTriangularMPO OneCellStringOperator(std::vector<BasisList> const& Sites,
                                     std::vector<SimpleOperator> const& String,
                                     std::vector<SimpleOperator> const& CellOp,
                                     double Momentum = 0);
 
 
-TriangularMPO TriangularOneSite(SimpleOperator const& x)
+BasicTriangularMPO TriangularOneSite(SimpleOperator const& x)
 {
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
    BasisList b(x.GetSymmetryList());
@@ -89,10 +89,10 @@ TriangularMPO TriangularOneSite(SimpleOperator const& x)
    data.set_operator(1,1,I);
    data.set_operator(0,1,x);
 
-   return TriangularMPO(data);
+   return BasicTriangularMPO(data);
 }
 
-TriangularMPO TriangularOneSite(SimpleOperator const& x, double Momentum)
+BasicTriangularMPO TriangularOneSite(SimpleOperator const& x, double Momentum)
 {
    std::complex<double> r = std::exp(std::complex<double>(0.0, 1.0) * Momentum);
 
@@ -108,10 +108,10 @@ TriangularMPO TriangularOneSite(SimpleOperator const& x, double Momentum)
    data.set_operator(1,1,I);
    data.set_operator(0,1,x);
 
-   return TriangularMPO(data);
+   return BasicTriangularMPO(data);
 }
 
-TriangularMPO TriangularTwoSite(SimpleOperator const& x, SimpleOperator const& y, QuantumNumber const& Trans)
+BasicTriangularMPO TriangularTwoSite(SimpleOperator const& x, SimpleOperator const& y, QuantumNumber const& Trans)
 {
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
    BasisList b(x.GetSymmetryList());
@@ -127,10 +127,10 @@ TriangularMPO TriangularTwoSite(SimpleOperator const& x, SimpleOperator const& y
    data.set_operator(0,1,x);
    data.set_operator(1,2,y);
 
-   return TriangularMPO(data);
+   return BasicTriangularMPO(data);
 }
 
-TriangularMPO TriangularTwoSite(SimpleOperator const& x, SimpleOperator const& y)
+BasicTriangularMPO TriangularTwoSite(SimpleOperator const& x, SimpleOperator const& y)
 {
    QuantumNumber q;
    if (num_transform_targets(x.TransformsAs(), y.TransformsAs()) == 1)
@@ -140,7 +140,7 @@ TriangularMPO TriangularTwoSite(SimpleOperator const& x, SimpleOperator const& y
    return TriangularTwoSite(x, y, q);
 }
 
-TriangularMPO TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperator const& y, std::complex<double> Factor, QuantumNumber const& Trans)
+BasicTriangularMPO TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperator const& y, std::complex<double> Factor, QuantumNumber const& Trans)
 {
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
    BasisList b(x.GetSymmetryList());
@@ -157,10 +157,10 @@ TriangularMPO TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperat
    data.set_operator(0,1,x);
    data.set_operator(1,2,y);
 
-   return TriangularMPO(data);
+   return BasicTriangularMPO(data);
 }
 
-TriangularMPO TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperator const& y, std::complex<double> Factor)
+BasicTriangularMPO TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperator const& y, std::complex<double> Factor)
 {
    QuantumNumber q;
    if (num_transform_targets(x.TransformsAs(), y.TransformsAs()) == 1)
@@ -172,7 +172,7 @@ TriangularMPO TriangularTwoSiteExponential(SimpleOperator const& x, SimpleOperat
 
 
 
-TriangularMPO TriangularThreeSite(SimpleOperator const& x, SimpleOperator const& y, SimpleOperator const& z,
+BasicTriangularMPO TriangularThreeSite(SimpleOperator const& x, SimpleOperator const& y, SimpleOperator const& z,
                                    QuantumNumber const& yz_trans)
 {
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
@@ -192,10 +192,10 @@ TriangularMPO TriangularThreeSite(SimpleOperator const& x, SimpleOperator const&
    data.set_operator(1,2,y);
    data.set_operator(2,3,z);
 
-   return TriangularMPO(data);
+   return BasicTriangularMPO(data);
 }
 
-TriangularMPO TriangularStretchedTwoSite(SimpleOperator const& x, int NumNeighbors,
+BasicTriangularMPO TriangularStretchedTwoSite(SimpleOperator const& x, int NumNeighbors,
                                           SimpleOperator const& y)
 {
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
@@ -220,18 +220,18 @@ TriangularMPO TriangularStretchedTwoSite(SimpleOperator const& x, int NumNeighbo
    data.set_operator(1+NumNeighbors,2+NumNeighbors,y);
    data.set_operator(2+NumNeighbors,2+NumNeighbors,I);
 
-   return TriangularMPO(data);
+   return BasicTriangularMPO(data);
 }
 
 
-TriangularMPO TriangularThreeSite(SimpleOperator const& x, SimpleOperator const& y, SimpleOperator const& z)
+BasicTriangularMPO TriangularThreeSite(SimpleOperator const& x, SimpleOperator const& y, SimpleOperator const& z)
 {
    QuantumNumbers::QuantumNumberList ql = transform_targets(y.TransformsAs(), z.TransformsAs());
    CHECK_EQUAL(ql.size(), 1)("ambiguous coupling of y and z")(y.TransformsAs())(z.TransformsAs());
    return TriangularThreeSite(x,y,z, ql[0]);
 }
 
-TriangularMPO TriangularFourSite(SimpleOperator const& w, SimpleOperator const& x, QuantumNumber const& wx_trans,
+BasicTriangularMPO TriangularFourSite(SimpleOperator const& w, SimpleOperator const& x, QuantumNumber const& wx_trans,
                                  SimpleOperator const& y, QuantumNumber const& wxy_trans,
                                  SimpleOperator const& z)
 {
@@ -254,10 +254,10 @@ TriangularMPO TriangularFourSite(SimpleOperator const& w, SimpleOperator const& 
    data.set_operator(2,3,y);
    data.set_operator(3,4,z);
 
-   return TriangularMPO(data);
+   return BasicTriangularMPO(data);
 }
 
-TriangularMPO TriangularFourSite(SimpleOperator const& w, SimpleOperator const& x,
+BasicTriangularMPO TriangularFourSite(SimpleOperator const& w, SimpleOperator const& x,
                                   SimpleOperator const& y, SimpleOperator const& z)
 {
    QuantumNumbers::QuantumNumberList ql = transform_targets(w.TransformsAs(), x.TransformsAs());
@@ -273,7 +273,7 @@ TriangularMPO TriangularFourSite(SimpleOperator const& w, SimpleOperator const& 
 }
 
 #if 0
-TriangularMPO ZigZagChain(SimpleOperator const& S, SimpleOperator const& T, double J1, double J2)
+BasicTriangularMPO ZigZagChain(SimpleOperator const& S, SimpleOperator const& T, double J1, double J2)
 {
    QuantumNumbers::QuantumNumber Ident(S.GetSymmetryList());
 
@@ -293,12 +293,12 @@ TriangularMPO ZigZagChain(SimpleOperator const& S, SimpleOperator const& T, doub
    data.set_operator(3,2,J2*T);
    data.set_operator(3,1,J1*T);
 
-   return TriangularMPO(data);
+   return BasicTriangularMPO(data);
 }
 
 // temporary hacks for specific hamiltonians
 
-TriangularMPO TriangularTwoSitePBC(SimpleOperator const& x, SimpleOperator const& y, QuantumNumber const& Trans)
+BasicTriangularMPO TriangularTwoSitePBC(SimpleOperator const& x, SimpleOperator const& y, QuantumNumber const& Trans)
 {
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
    BasisList b(x.GetSymmetryList());
@@ -316,16 +316,16 @@ TriangularMPO TriangularTwoSitePBC(SimpleOperator const& x, SimpleOperator const
    data.set_operator(1,0,y);
    data.set_operator(3,1,x);
 
-   return TriangularMPO(data);
+   return BasicTriangularMPO(data);
 }
 
-TriangularMPO TriangularTwoSitePBC(SimpleOperator const& x, SimpleOperator const& y)
+BasicTriangularMPO TriangularTwoSitePBC(SimpleOperator const& x, SimpleOperator const& y)
 {
    CHECK_EQUAL(num_transform_targets(x.TransformsAs(), y.TransformsAs()), 1);
    return TriangularTwoSitePBC(x, y, transform_targets(x.TransformsAs(), y.TransformsAs())[0]);
 }
 
-TriangularMPO TriangularTwoSitePBC_Boundary(SimpleOperator const& x, SimpleOperator const& y, QuantumNumber const& Trans)
+BasicTriangularMPO TriangularTwoSitePBC_Boundary(SimpleOperator const& x, SimpleOperator const& y, QuantumNumber const& Trans)
 {
    QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
    BasisList b(x.GetSymmetryList());
@@ -344,17 +344,17 @@ TriangularMPO TriangularTwoSitePBC_Boundary(SimpleOperator const& x, SimpleOpera
    data.set_operator(3,1,x);
    data.set_operator(3,2,x);
 
-   return TriangularMPO(data);
+   return BasicTriangularMPO(data);
 }
 
-TriangularMPO TriangularTwoSitePBC_Boundary(SimpleOperator const& x, SimpleOperator const& y)
+BasicTriangularMPO TriangularTwoSitePBC_Boundary(SimpleOperator const& x, SimpleOperator const& y)
 {
    CHECK_EQUAL(num_transform_targets(x.TransformsAs(), y.TransformsAs()), 1);
    return TriangularTwoSitePBC_Boundary(x, y, transform_targets(x.TransformsAs(), y.TransformsAs())[0]);
 }
 #endif
 
-TriangularMPO OnePointStringOperator(std::vector<BasisList> const& Sites,
+BasicTriangularMPO OnePointStringOperator(std::vector<BasisList> const& Sites,
                                           std::vector<SimpleOperator> const& String,
                                           int n, SimpleOperator const& x, double Momentum)
 {
@@ -396,10 +396,10 @@ TriangularMPO OnePointStringOperator(std::vector<BasisList> const& Sites,
    }
 
    Result[n](0,1) = x;
-   return TriangularMPO(Result.data());
+   return BasicTriangularMPO(Result.data());
 }
 
-TriangularMPO OnePointStringOperatorExclude(std::vector<BasisList> const& Sites,
+BasicTriangularMPO OnePointStringOperatorExclude(std::vector<BasisList> const& Sites,
                                             std::vector<SimpleOperator> const& String,
                                             int n, SimpleOperator const& x, double Momentum)
 {
@@ -469,10 +469,10 @@ TriangularMPO OnePointStringOperatorExclude(std::vector<BasisList> const& Sites,
          Result[i](1,1) = SimpleOperator::make_identity(Sites[i]);
       }
    }
-   return TriangularMPO(Result.data());
+   return BasicTriangularMPO(Result.data());
 }
 
-TriangularMPO OneCellStringOperator(std::vector<BasisList> const& Sites,
+BasicTriangularMPO OneCellStringOperator(std::vector<BasisList> const& Sites,
                                     std::vector<SimpleOperator> const& String,
                                     std::vector<SimpleOperator> const& CellOp,
                                     double Momentum)
@@ -532,16 +532,16 @@ TriangularMPO OneCellStringOperator(std::vector<BasisList> const& Sites,
          Result[i](2,1) = SimpleOperator::make_identity(Sites[i]);
       }
    }
-   return TriangularMPO(Result.data());
+   return BasicTriangularMPO(Result.data());
 }
 
-TriangularMPO OnePointOperator(std::vector<BasisList> const& Sites,
+BasicTriangularMPO OnePointOperator(std::vector<BasisList> const& Sites,
                                     int n, SimpleOperator const& x, double Momentum)
 {
    return OnePointStringOperator(Sites, MakeIdentityUnitCell(Sites), n, x, Momentum);
 }
 
-TriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
+BasicTriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
                                     int n1, SimpleOperator const& x1,
                                     int n2, SimpleOperator const& x2)
 {
@@ -597,13 +597,13 @@ TriangularMPO TwoPointOperator(std::vector<BasisList> const& Sites,
    }
    //   TRACE(n1)(n2)(LinearAlgebra::Vector<int>(Loc));
    Result[smod(n2,Size)](Loc[smod(n2,Size)],Loc[smod(n2+1,Size)]+1) = x2;
-   TriangularMPO TriResult(Result.data());
+   BasicTriangularMPO TriResult(Result.data());
    //TRACE(TriResult);
    TriResult.debug_check_structure();
    return TriResult;
 }
 
-TriangularMPO TwoPointExponentialOperator(std::vector<BasisList> const& Sites,
+BasicTriangularMPO TwoPointExponentialOperator(std::vector<BasisList> const& Sites,
                                           int n1, SimpleOperator const& x1,
                                           int n2, SimpleOperator const& x2,
                                           std::complex<double> Factor)
@@ -649,12 +649,12 @@ TriangularMPO TwoPointExponentialOperator(std::vector<BasisList> const& Sites,
    Result[n1](0,1) = x1;
    Result[smod(n2,Size)](1,2) = x2;
 
-   TriangularMPO TriResult(Result.data());
+   BasicTriangularMPO TriResult(Result.data());
    TriResult.debug_check_structure();
    return TriResult;
 }
 
-TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
+BasicTriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
                                      int n1, SimpleOperator const& x1,
                                      SimpleOperator const& String,
                                      int n2, SimpleOperator const& x2)
@@ -663,7 +663,7 @@ TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
                                  n2, x2);
 }
 
-TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
+BasicTriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
                                      int n1, SimpleOperator const& x1,
                                      std::vector<SimpleOperator> const& String,
                                      int n2, SimpleOperator const& x2)
@@ -713,5 +713,5 @@ TriangularMPO TwoPointStringOperator(std::vector<BasisList> const& Sites,
       ++Loc[smod(i+1,Size)];
    }
    Result[smod(n2,Size)](Loc[smod(n2,Size)],Loc[smod(n2+1,Size)]+1) = x2;
-   return TriangularMPO(Result.data());
+   return BasicTriangularMPO(Result.data());
 }

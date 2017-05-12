@@ -25,7 +25,7 @@
 
 using namespace Parser;
 
-typedef boost::variant<complex, TriangularMPO> element_type;
+typedef boost::variant<complex, BasicTriangularMPO> element_type;
 
 namespace ILP // to avoid confusion of duplicate names
 {
@@ -261,7 +261,7 @@ using namespace ILP;
 
 struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 {
-   typedef boost::variant<complex, TriangularMPO> element_type;
+   typedef boost::variant<complex, BasicTriangularMPO> element_type;
    typedef boost::function<element_type(element_type)> unary_func_type;
    typedef boost::function<element_type(element_type, element_type)> binary_func_type;
 
@@ -434,7 +434,7 @@ constants InfiniteLatticeParser::constants_p;
 unary_funcs<InfiniteLatticeParser::element_type> InfiniteLatticeParser::unary_funcs_p;
 //binary_funcs<InfiniteLatticeParser::element_type> InfiniteLatticeParser::binary_funcs_p;
 
-TriangularMPO
+BasicTriangularMPO
 ParseTriangularOperator(InfiniteLattice const& Lattice, std::string const& Str)
 {
    typedef InfiniteLatticeParser::element_type element_type;
@@ -463,7 +463,7 @@ ParseTriangularOperator(InfiniteLattice const& Lattice, std::string const& Str)
    ElemStack.pop();
    CHECK(ElemStack.empty());
 
-   TriangularMPO* Op = boost::get<TriangularMPO>(&Result);
+   BasicTriangularMPO* Op = boost::get<BasicTriangularMPO>(&Result);
    if (Op)
    {
       return *Op;
@@ -473,7 +473,7 @@ ParseTriangularOperator(InfiniteLattice const& Lattice, std::string const& Str)
    return x*Lattice.Triangular("I");
 }
 
-std::pair<TriangularMPO, InfiniteLattice>
+std::pair<BasicTriangularMPO, InfiniteLattice>
 ParseTriangularOperatorAndLattice(std::string const& Str)
 {
    std::string::const_iterator Delim = std::find(Str.begin(), Str.end(), ':');
@@ -489,6 +489,6 @@ ParseTriangularOperatorAndLattice(std::string const& Str)
    ++Delim;
    std::string Expr(Delim, Str.end());
 
-   TriangularMPO Op = ParseTriangularOperator(*Lattice, Expr);
+   BasicTriangularMPO Op = ParseTriangularOperator(*Lattice, Expr);
    return std::make_pair(Op, *Lattice);
 }

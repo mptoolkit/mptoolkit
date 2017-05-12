@@ -230,6 +230,11 @@ class VectorBasis
       // returns true if this basis is empty
       bool is_empty() const { return Basis_.size() == 0; }
 
+      // returns true if the basis is a 'vacuum basis', that is,
+      // a 1-dimensional basis in the scalar sector
+      bool is_vacuum() const { return Basis_.size() == 1 && is_scalar(Basis_[0]) &&
+	    Dimension_[0] == 1; }
+
       value_type const& operator[](int s) const { return Basis_[s]; }
 
       void set_dim(int s, int d) { Dimension_[s] = d; }

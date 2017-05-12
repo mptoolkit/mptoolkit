@@ -40,14 +40,14 @@ ParseProductOperator(InfiniteLattice const& Lattice, std::string const& Str,
 std::pair<ProductMPO, InfiniteLattice>
 ParseProductOperatorAndLattice(std::string const& Str);
 
-// TriangularMPO versions
+// BasicTriangularMPO versions
 
-TriangularMPO
+BasicTriangularMPO
 ParseTriangularOperator(InfiniteLattice const& Lattice, std::string const& Str,
                         Function::ArgumentList const& Args = Function::ArgumentList());
 
 
-std::pair<TriangularMPO, InfiniteLattice>
+std::pair<BasicTriangularMPO, InfiniteLattice>
 ParseTriangularOperatorAndLattice(std::string const& Str);
 
 // complex versions

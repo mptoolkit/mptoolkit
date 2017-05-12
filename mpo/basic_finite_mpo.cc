@@ -2,9 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// attic/triangular-parser.h
+// mpo/finite_mpo.cc
 //
-// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2013-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,15 +17,23 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#if !defined(MPTOOLKIT_LATTICE_INFINITELATTICE_PARSER_H)
-#define MPTOOLKIT_LATTICE_INFINITELATTICE_PARSER_H
+inline
+std::ostream&
+operator<<(std::ostream& out, BasicFiniteMPO const& x)
+{
+   return out << x.data();
+}
 
-#include "infinitelattice.h"
+inline
+BasicFiniteMPO::BasicFiniteMPO(GenericMPO const& Other)
+   : Data(Other)
+{
+   //   CHECK(Data.back().Basis2().is_identity())("Finite operator: right basis must be scalar");
+   CHECK(Data.back().Basis2().is_regular())("Finite operator: left basis must be regular");
+}
 
-BasicTriangularMPO
-ParseTriangularOperator(InfiniteLattice const& Lattice, std::string const& Str);
-
-std::pair<BasicTriangularMPO, InfiniteLattice>
-ParseTriangularOperatorAndLattice(std::string const& Str);
-
-#endif
+inline
+BasicFiniteMPO coarse_grain(BasicFiniteMPO const& Op, int N)
+{
+   return BasicFiniteMPO(coarse_grain(Op.data(), N));
+}
