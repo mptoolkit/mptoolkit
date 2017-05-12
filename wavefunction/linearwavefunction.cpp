@@ -184,6 +184,7 @@ LinearWavefunction operator+(LinearWavefunction const& x, LinearWavefunction con
       Result.push_back(tensor_sum(*xi, *yi, B1, B2));
       ++xi;
       ++yi;
+      ++n;
    }
 
    Result.push_back(tensor_col_sum(*xi, *yi, B2));
