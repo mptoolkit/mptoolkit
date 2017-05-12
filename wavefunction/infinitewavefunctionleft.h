@@ -83,6 +83,8 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
 
       void SetDefaultAttributes(AttributeList& A) const;
 
+      static std::string Type;
+
       static PStream::VersionTag VersionT;
 
       friend PStream::ipstream& operator>>(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi);

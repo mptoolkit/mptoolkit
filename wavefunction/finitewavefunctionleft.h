@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 //
-// FiniteWavefunctionLeft: class to represent a finite-size matrix product wavefunction 
+// FiniteWavefunctionLeft: class to represent a finite-size matrix product wavefunction
 // in left canonical form.
 //
 
@@ -54,7 +54,7 @@ class FiniteWavefunctionLeft : public CanonicalWavefunctionBase
       static PStream::VersionTag VersionT;
 
       friend FiniteWavefunctionLeft& operator*=(FiniteWavefunctionLeft& psi, double a);
-      friend FiniteWavefunctionLeft& operator*=(FiniteWavefunctionLeft& psi, 
+      friend FiniteWavefunctionLeft& operator*=(FiniteWavefunctionLeft& psi,
 						std::complex<double> a);
       friend void inplace_conj(FiniteWavefunctionLeft& Psi);
       friend void inplace_reflect(FiniteWavefunctionLeft& Psi);
@@ -65,6 +65,8 @@ class FiniteWavefunctionLeft : public CanonicalWavefunctionBase
       friend FiniteWavefunctionLeft
       wigner_project(FiniteWavefunctionLeft const& Psi, SymmetryList const& FinalSL);
       friend FiniteWavefunctionLeft ReorderSymmetry(FiniteWavefunctionLeft const& Psi, SymmetryList const& NewSL);
+
+      static std::string const Type;
 };
 
 // calculates the inner product <Psi1|Psi2>
@@ -104,5 +106,7 @@ FiniteWavefunctionLeft conj(FiniteWavefunctionLeft const& Psi);
 FiniteWavefunctionLeft reflect(FiniteWavefunctionLeft const& Psi);
 
 void inplace_reflect(FiniteWavefunctionLeft& Psi);
+
+void inplace_conj(FiniteWavefunctionLeft& Psi);
 
 #endif

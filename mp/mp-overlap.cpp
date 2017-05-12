@@ -17,33 +17,82 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "matrixproduct/lattice.h"
-#include "matrixproduct/mpwavefunction.h"
-#include "matrixproduct/mpoperatorlist.h"
-#include "quantumnumbers/all_symmetries.h"
-#include "pheap/pheap.h"
+#include "wavefunction/mpwavefunction.h"
 #include "mp/copyright.h"
-#include <iostream>
+#include <boost/program_options.hpp>
+#include "common/environment.h"
+#include "interface/inittemp.h"
 #include "common/terminal.h"
 #include "common/environment.h"
-#include <boost/program_options.hpp>
+#include "common/prog_options.h"
 
 namespace prog_opt = boost::program_options;
+
+void PrintFormat(std::complex<double> Value, bool ShowRealPart, bool ShowImagPart,
+                 bool ShowMagnitude, bool ShowArgument, bool ShowRadians)
+{
+   if (ShowRealPart)
+   {
+      std::cout << std::setw(20) << Value.real() << "    ";
+   }
+   if (ShowImagPart)
+   {
+      std::cout << std::setw(20) << Value.imag() << "    ";
+   }
+   if (ShowMagnitude)
+   {
+      std::cout << std::setw(20) << LinearAlgebra::norm_frob(Value) << "    ";
+   }
+   if (ShowArgument)
+   {
+      double Arg =  std::atan2(Value.imag(), Value.real());
+      if (!ShowRadians)
+         Arg *= 180.0 / math_const::pi;
+      std::cout << std::setw(20) << Arg << "    ";
+   }
+   std::cout << std::endl;
+}
+
 
 int main(int argc, char** argv)
 {
    try
    {
-      bool ShowRealPart = false, ShowImagPart = false;
+      int Verbose = 0;
+      bool UseTempFile = false;
+      bool ShowRealPart = false, ShowImagPart = false, ShowMagnitude = false;
+      bool ShowCartesian = false, ShowPolar = false, ShowArgument = false;
+      bool ShowRadians = false, ShowCorrLength = false;
       std::string LhsStr, RhsStr;
+      bool Quiet = false;
+      bool Reflect = false;
+      bool Conj = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
+         ("cart,c", prog_opt::bool_switch(&ShowCartesian),
+          "show the result in cartesian coordinates [equivalent to --real --imag]")
+         ("polar,p", prog_opt::bool_switch(&ShowPolar),
+          "show the result in polar coodinates [equivalent to --mag --arg]")
          ("real,r", prog_opt::bool_switch(&ShowRealPart),
-          "display only the real part of the result")
+          "display the real part of the result")
          ("imag,i", prog_opt::bool_switch(&ShowImagPart),
-          "display only the imaginary part of the result")
+          "display the imaginary part of the result")
+         ("mag,m", prog_opt::bool_switch(&ShowMagnitude),
+          "display the magnitude of the result")
+         ("arg,a", prog_opt::bool_switch(&ShowArgument),
+          "display the argument (angle) of the result")
+         ("radians", prog_opt::bool_switch(&ShowRadians),
+          "display the argument in radians instead of degrees")
+         ("reflect", prog_opt::bool_switch(&Reflect),
+          "reflect psi2")
+         ("conj", prog_opt::bool_switch(&Conj),
+          "complex conjugate psi2")
+         ("quiet", prog_opt::bool_switch(&Quiet),
+          "don't show the column headings")
+         ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
+          "extra debug output [can be used multiple times]")
          ;
 
       prog_opt::options_description hidden("Hidden options");
@@ -67,33 +116,105 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("rhs") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: mp-overlap [options] <psi1> <psi2>\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi1> <psi2>\n";
          std::cerr << desc << '\n';
          return 1;
       }
 
-      long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
-      pvalue_ptr<MPWavefunction> Psi1 = pheap::OpenPersistent(LhsStr, CacheSize, true);
-      pvalue_ptr<MPWavefunction> Psi2 = pheap::ImportHeap(RhsStr);
-
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
-      std::complex<double> x = overlap(*Psi1, *Psi2);
+      std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-      if (ShowRealPart || ShowImagPart)
+      if (!Quiet)
+         print_preamble(std::cout, argc, argv);
+
+      // If no output switches are used, default to showing everything
+      if (!ShowRealPart && !ShowImagPart && !ShowMagnitude
+          && !ShowCartesian && !ShowPolar && !ShowArgument
+          && !ShowRadians && !ShowCorrLength)
       {
-         if (ShowRealPart)
-         {
-            std::cout << x.real();
-            if (ShowImagPart)
-               std::cout << "   " << x.imag();
-         }
-         else // if we get here then ShowImagPart is true and ShowRealPart is false
-            std::cout << x.imag();
+         ShowCartesian = true;
+         ShowPolar = true;
+         ShowCorrLength = true;
       }
-      else // default to C++ complex output
-         std::cout << x;
 
-      std::cout << '\n';
+      if (ShowCartesian)
+      {
+         ShowRealPart = true;
+         ShowImagPart = true;
+      }
+      if (ShowPolar)
+      {
+         ShowMagnitude = true;
+         ShowArgument = true;
+      }
+      if (ShowRadians)
+         ShowArgument = true;
+
+      if (Verbose)
+         std::cout << "Loading LHS wavefunction...\n";
+
+      pvalue_ptr<MPWavefunction> Psi1Ptr;
+      if (UseTempFile)
+      {
+         mp_pheap::InitializeTempPHeap(Verbose);
+         Psi1Ptr = pheap::ImportHeap(LhsStr);
+      }
+      else
+      {
+         Psi1Ptr = pheap::OpenPersistent(LhsStr, mp_pheap::CacheSize(), true);
+      }
+      FiniteWavefunctionLeft Psi1 = Psi1Ptr->get<FiniteWavefunctionLeft>();
+
+      if (Verbose)
+         std::cout << "Loading RHS wavefunction...\n";
+
+      int Size = Psi1.size();
+
+      pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::ImportHeap(RhsStr);
+      FiniteWavefunctionLeft Psi2 = Psi2Ptr->get<FiniteWavefunctionLeft>();
+
+      if (ExtractLocalBasis(Psi1) != ExtractLocalBasis(Psi2))
+      {
+         std::cerr << "mp-ioverlap: fatal: local basis for LHS and RHS wavefunctions do not match!\n";
+         return 1;
+      }
+
+      if (Verbose)
+         std::cout << "Calculating overlap...\n";
+
+      if (Reflect)
+      {
+         if (Verbose)
+            std::cout << "Reflecting psi2..." << std::endl;
+         inplace_reflect(Psi2);
+      }
+
+      if (Conj)
+      {
+         if (Verbose)
+            std::cout << "Conjugating psi2..." << std::endl;
+         inplace_conj(Psi2);
+      }
+
+
+      if (!Quiet)
+      {
+         std::cout << "#size of wavefunction is " << Size << " sites\n";
+         if (ShowRealPart)
+            std::cout << "#real                   ";
+         if (ShowImagPart)
+            std::cout << "#imag                   ";
+         if (ShowMagnitude)
+            std::cout << "#magnitude              ";
+         if (ShowArgument)
+            std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
+         std::cout << '\n';
+         std::cout << std::left;
+      }
+
+      std::complex<double> x = overlap(Psi1, Psi2);
+
+      PrintFormat(x, ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
 
       pheap::Shutdown();
 

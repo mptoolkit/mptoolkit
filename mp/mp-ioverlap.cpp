@@ -168,10 +168,10 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") > 0 || vm.count("rhs") == 0)
+      if (vm.count("help") > 0 || vm.count("lhs") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi1> <psi2>\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi1> [<psi2>]\n";
          std::cerr << desc << '\n';
          return 1;
       }

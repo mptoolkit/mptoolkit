@@ -221,7 +221,7 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-ispectrum mp-lattice-info mp-show-operator mp-aux-matrix mp-aux-algebra mp-iapply mp-attr \
         mp-idivide mp-ies mp-irepeat \
         mp-irotate mp-icorrelation mp-fluctuation mp-itebd mp-coarsegrain mp-dmrg mp-random \
-        mp-expectation
+        mp-expectation mp-overlap mp-scale
 
 experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg
 
@@ -513,6 +513,8 @@ mp-ies : infinitewavefunctionleft.o packunpack.o
 mp-aux-project : infinitewavefunctionleft.o packunpack.o
 mp-itebd : $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o
 mp-dmrg : dmrg.o $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
+mp-overlap : finitewavefunctionleft.o
+mp-scale : finitewavefunctionleft.o number-parser.o
 
 mp-ireorder-symmetry : infinitewavefunctionleft.o
 

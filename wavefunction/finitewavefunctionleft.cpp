@@ -20,6 +20,8 @@
 #include "finitewavefunctionleft.h"
 #include "tensor/tensor_eigen.h"
 
+std::string const FiniteWavefunctionLeft::Type = "FiniteWavefunctionLeft";
+
 FiniteWavefunctionLeft
 FiniteWavefunctionLeft::ConstructFromRightOrthogonal(LinearWavefunction Psi,
 						     std::complex<double> a,

@@ -56,6 +56,8 @@ extern double const InverseTol = getenv_or_default("MP_INVERSE_TOL", 1E-7);
 // the tol used in the orthogonalization can apparently be a bit smaller
 extern double const OrthoTol = getenv_or_default("MP_ORTHO_TOL", 1E-8);
 
+std::string InfiniteWavefunctionLeft::Type = "InfiniteWavefunctionLeft";
+
 namespace
 {
 
@@ -890,7 +892,7 @@ fine_grain(InfiniteWavefunctionLeft const& x, int N, std::vector<BasisList> cons
       std::stack<StateComponent> R;
       while (!B1.empty())
       {
-	 AMatSVD SL(A*Lambda, 
+	 AMatSVD SL(A*Lambda,
 		    Tensor::ProductBasis<BasisList, BasisList>(B1.top, FineGrainBasis[n*N+B1.size()]));
 	 AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(),
 								     SInfo, Info);
@@ -905,5 +907,5 @@ fine_grain(InfiniteWavefunctionLeft const& x, int N, std::vector<BasisList> cons
 )
 #endif
 
-	 
-      
+
+

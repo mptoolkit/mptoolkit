@@ -177,3 +177,21 @@ MPWavefunction::SetDefaultAttributes()
 {
    boost::apply_visitor(DoSetDefaultAttributes(Attr_), Psi_);
 }
+
+namespace
+{
+struct get_WF_type
+{
+   template <typename T>
+   std::string operator()(T const&) const
+   {
+      return T::Type;
+   }
+};
+} // namespace
+
+std::string
+MPWavefunction::Type() const
+{
+   return boost::apply_visitor(get_WF_type(), Psi_);
+}
