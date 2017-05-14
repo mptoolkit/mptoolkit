@@ -23,12 +23,7 @@
 #include "mp/copyright.h"
 #include "common/terminal.h"
 #include "common/environment.h"
-#include <boost/program_options.hpp>
-#include "common/hash.h"
-#include "pheap/pheap.h"
-#include "common/environment.h"
-#include "common/prog_opt_accum.h"
-#include "common/terminal.h"
+#include "common/proccontrol.h"
 #include "common/prog_options.h"
 #include "interface/inittemp.h"
 #include "lattice/infinitelattice.h"
@@ -55,9 +50,9 @@ int main(int argc, char** argv)
          ("lattice,l", prog_opt::value(&LatticeFile), "Lattice file (required)")
          ("unitcell,u", prog_opt::value(&Size), "Number of sites")
          ("quantumnumber,q", prog_opt::value(&Target), "Target quantum number")
-         ("count,c", prog_opt::value(&Count), "Count of m=1 states to make a superposition [default 10]")
+         ("count,c", prog_opt::value(&Count), FormatDefault("Count of m=1 states to make a superposition", Count).c_str())
          ("out,o", prog_opt::value(&FName), "Output file (required)")
-         ("beta,b", prog_opt::value(&Beta), "Inverse temperature for monte-carlo sampling [default 3]")
+         ("beta,b", prog_opt::value(&Beta), FormatDefault("Inverse temperature for monte-carlo sampling", Beta).c_str())
          ("seed,s", prog_opt::value<unsigned int>(),
           ("Random seed [range 0.."+boost::lexical_cast<std::string>(RAND_MAX)+"]").c_str())
          ("force,f", prog_opt::bool_switch(&Force), "Allow overwriting output files")
@@ -84,7 +79,7 @@ int main(int argc, char** argv)
       pheap::Initialize(FName, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
 
       pvalue_ptr<InfiniteLattice> Lattice = pheap::ImportHeap(LatticeFile);
- 
+
       QuantumNumber Q(Lattice->GetSymmetryList(), Target);
       QuantumNumber Ident(Lattice->GetSymmetryList());
 

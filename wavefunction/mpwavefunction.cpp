@@ -182,6 +182,7 @@ namespace
 {
 struct get_WF_type
 {
+   typedef std::string result_type;
    template <typename T>
    std::string operator()(T const&) const
    {
