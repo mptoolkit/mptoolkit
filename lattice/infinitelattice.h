@@ -144,6 +144,8 @@ class InfiniteLattice
       std::complex<double>& arg(std::string const& a)
       { return Arguments_[a]; }
 
+      ArgumentListType const& args() const { return Arguments_; }
+
       // functions
 
       bool function_empty() const { return Functions_.empty(); }

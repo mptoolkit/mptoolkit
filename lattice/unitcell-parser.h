@@ -37,6 +37,7 @@
 #include "lattice/unitcell.h"
 #include "lattice/unitcell_mpo.h"
 #include "lattice/infinitelattice.h"
+#include "common/sha256.h"
 
 extern InfiniteLattice const* ILattice;
 

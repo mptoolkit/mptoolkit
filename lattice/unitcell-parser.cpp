@@ -557,7 +557,7 @@ struct push_fsup
 
    UnitCell const& Cell;
    int NumCells;
-   std::stack<ElementType >& eval;
+   std::stack<ElementType>& eval;
 };
 
 // convert the top of the expression stack from a number of cells
@@ -636,9 +636,59 @@ struct push_coarse_grain
 
    UnitCell const& Cell;
    int NumCells;
-   std::stack<ElementType >& eval;
+   std::stack<ElementType>& eval;
 };
 
+struct init_num_param_stack
+{
+   init_num_param_stack(std::stack<int>& Stack_) : Stack(Stack_) {}
+
+   void operator()(char const* Start, char const* End) const
+   {
+      Stack.push(1);
+   }
+
+   std::stack<int>& Stack;
+};
+
+
+struct increment_num_param_stack
+{
+   increment_num_param_stack(std::stack<int>& Stack_) : Stack(Stack_) {}
+
+   void operator()(char const* Start, char const* End) const
+   {
+      CHECK(!Stack.empty());
+      ++Stack.top();
+   }
+
+   std::stack<int>& Stack;
+};
+
+struct push_rand_expr
+{
+   push_rand_expr(std::stack<int>& NumParam_, std::stack<ElementType>& eval_)
+      : NumParam(NumParam_), eval(eval_) {}
+
+   void operator()(char const* Start, char const* End) const
+   {
+      int n = NumParam.top();
+      NumParam.pop();
+
+      std::vector<uint32_t> Data(n);
+      for (int i = 0; i < n; ++i)
+      {
+         Data[i] = pop_int(eval);
+      }
+      std::array<uint32_t, 8> Digest = SHA256::hash(Data);
+      uint64_t k = (uint64_t(Digest[2]) << 32) | Digest[6];
+      double x = int64_t(k) * 5.421010862427522e-20 + 0.5;
+      eval.push(std::complex<double>(x));
+   }
+
+   std::stack<int>& NumParam;
+   std::stack<ElementType>& eval;
+};
 
 
 } // namespace UP
@@ -655,6 +705,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
    typedef std::stack<unary_func_type>         UnaryFuncStackType;
    typedef std::stack<binary_func_type>        BinaryFuncStackType;
    typedef std::stack<std::string>             IdentifierStackType;
+   typedef std::stack<int>                     NumParameterStackType;
    typedef std::stack<std::string>             FunctionStackType;
    typedef std::stack<Function::ParameterList> ParameterStackType;
    typedef symbols<complex>                    ArgumentType;
@@ -667,14 +718,16 @@ struct UnitCellParser : public grammar<UnitCellParser>
                   UnaryFuncStackType& func_stack_,
                   BinaryFuncStackType& bin_func_stack_,
                   IdentifierStackType& IdentifierStack_,
+                  NumParameterStackType& NumParameterStack_,
                   FunctionStackType& Functions_,
                   ParameterStackType& Parameters_,
                   ArgumentType& Arguments_,
                   UnitCell const& Cell_, int NumCells_)
       : eval(eval_), func_stack(func_stack_), bin_func_stack(bin_func_stack_),
-      IdentifierStack(IdentifierStack_), FunctionStack(Functions_),
-      ParameterStack(Parameters_), Arguments(Arguments_),
-      Cell(Cell_), NumCells(NumCells_)
+        IdentifierStack(IdentifierStack_), NumParameterStack(NumParameterStack_),
+        FunctionStack(Functions_),
+        ParameterStack(Parameters_), Arguments(Arguments_),
+        Cell(Cell_), NumCells(NumCells_)
    {}
 
    template <typename ScannerT>
@@ -744,7 +797,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
             >> '('
             >> (num_cells_t
                 >> expression >> ')');
-	 
+
          coarse_grain_expression = str_p("coarse_grain")
             >> '('
             >> (num_cells
@@ -755,6 +808,12 @@ struct UnitCellParser : public grammar<UnitCellParser>
          fsup = str_p("fsup") >> '(' >> expression >> ',' >> expression >> ','
                               >> expression_string[push_fsup(self.Cell, self.NumCells, self.eval)]
                               >> ')';
+
+         randexpr_t = str_p("rand") >> '(' >> expression_t >> *(',' >> expression_t) >> ')';
+
+         randexpr = (str_p("rand") >> '(' >> expression[init_num_param_stack(self.NumParameterStack)]
+                     >> *(',' >> expression[increment_num_param_stack(self.NumParameterStack)]) >> ')')
+            [push_rand_expr(self.NumParameterStack, self.eval)];
 
          swapb_cell_expr_t = (str_p("swapb") >> '(' >> expression_t >> ',' >> expression_t >> ')')
             >> !('[' >> expression_t >> ',' >> expression_t >> ']');
@@ -928,6 +987,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
             |   prod_expression_t
             |   commutator_bracket_t
             |   fsup_t
+            |   randexpr_t
             |   coarse_grain_expression_t
             |   swapb_cell_expr_t
             |   swapb_site_expr_t
@@ -950,6 +1010,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
             |   prod_expression
             |   commutator_bracket
             |   fsup
+            |   randexpr
 	    |   coarse_grain_expression
             |   swapb_cell_expr
             |   swapb_site_expr
@@ -1015,7 +1076,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
          swap_cell_expr, swap_site_expr, swapb_cell_expr, swapb_site_expr,
          local_function, local_c_function, local_operator, cell_function, cell_operator,
          local_arg, cell_c_function,
-         operator_expression, fsup,
+         operator_expression, fsup, randexpr,
          expression_string,
          string_expression,
          unary_function, binary_function,
@@ -1029,7 +1090,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
          swap_cell_expr_t, swap_site_expr_t, swapb_cell_expr_t, swapb_site_expr_t,
          local_function_t, local_c_function_t, local_operator_t, cell_function_t, cell_operator_t,
          local_arg_t, cell_c_function_t,
-         operator_expression_t, fsup_t,
+         operator_expression_t, fsup_t, randexpr_t,
          expression_string_t,
          string_expression_t,
          unary_function_t, binary_function_t,
@@ -1043,6 +1104,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
    std::stack<unary_func_type>& func_stack;
    std::stack<binary_func_type>& bin_func_stack;
    IdentifierStackType& IdentifierStack;
+   NumParameterStackType& NumParameterStack;
    FunctionStackType& FunctionStack;
    ParameterStackType& ParameterStack;
    ArgumentType& Arguments;
@@ -1062,13 +1124,14 @@ ParseUnitCellElement(UnitCell const& Cell, int NumCells, std::string const& Str,
 {
    typedef UnitCellParser::ElementType ElementType;
 
-   UnitCellParser::ElemStackType       ElemStack;
-   UnitCellParser::UnaryFuncStackType  UnaryFuncStack;
-   UnitCellParser::BinaryFuncStackType BinaryFuncStack;
-   UnitCellParser::IdentifierStackType IdentStack;
-   UnitCellParser::ParameterStackType  ParamStack;
-   UnitCellParser::FunctionStackType   FunctionStack;
-   UnitCellParser::ArgumentType        Arguments;
+   UnitCellParser::ElemStackType         ElemStack;
+   UnitCellParser::UnaryFuncStackType    UnaryFuncStack;
+   UnitCellParser::BinaryFuncStackType   BinaryFuncStack;
+   UnitCellParser::IdentifierStackType   IdentStack;
+   UnitCellParser::NumParameterStackType NumParamStack;
+   UnitCellParser::ParameterStackType    ParamStack;
+   UnitCellParser::FunctionStackType     FunctionStack;
+   UnitCellParser::ArgumentType          Arguments;
 
    for (Function::ArgumentList::const_iterator I = Args.begin(); I != Args.end(); ++I)
    {
@@ -1084,7 +1147,7 @@ ParseUnitCellElement(UnitCell const& Cell, int NumCells, std::string const& Str,
    char const* beg = Str.c_str();
    char const* end = beg + Str.size();
 
-   UnitCellParser Parser(ElemStack, UnaryFuncStack, BinaryFuncStack, IdentStack,
+   UnitCellParser Parser(ElemStack, UnaryFuncStack, BinaryFuncStack, IdentStack, NumParamStack,
                          FunctionStack, ParamStack,
                          Arguments, Cell, NumCells);
 
@@ -1113,6 +1176,7 @@ ParseUnitCellElement(UnitCell const& Cell, int NumCells, std::string const& Str,
    CHECK(BinaryFuncStack.empty());
    CHECK(IdentStack.empty());
    CHECK(ParamStack.empty());
+   CHECK(NumParamStack.empty());
    CHECK(!ElemStack.empty());
    ElementType Result = ElemStack.top();
    ElemStack.pop();
@@ -1165,7 +1229,7 @@ ParseUnitCellOperatorAndLattice(std::string const& Str)
    ++Delim;
    std::string Expr(Delim, Str.end());
 
-   UnitCellMPO Op = ParseUnitCellOperator(Lattice->GetUnitCell(), 0, Expr);
+   UnitCellMPO Op = ParseUnitCellOperator(Lattice->GetUnitCell(), 0, Expr, Lattice->args());
 
    ILattice = NULL;
 
