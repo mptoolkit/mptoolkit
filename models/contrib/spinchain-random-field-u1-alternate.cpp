@@ -24,7 +24,9 @@
 #include "models/spin-u1.h"
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
-#include "common/randutil.h"
+#include <boost/random.hpp>
+#include <boost/random/uniform_real_distribution.hpp>
+
 
 namespace prog_opt = boost::program_options;
 
@@ -35,15 +37,15 @@ int main(int argc, char** argv)
       half_int Spin = 0.5;
       std::string FileName;
       int Length;
-      uint32_t Seed = 0;
+      int Seed;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
-	 ("unitcell,u", prog_opt::value(&Length), "unit cell size")
+	 ("unitell,u", prog_opt::value(&Length), "unit cell size")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
-	 ("seed,s", prog_opt::value(&Seed), "random seed [if not specified, this is initialized randomly]")
+	 ("seed,s", prog_opt::value(&Seed), "random seed")
          ;
 
       prog_opt::variables_map vm;
@@ -60,9 +62,7 @@ int main(int argc, char** argv)
          ("H_J1z" , "nearest neighbor spin coupling Sz Sz")
          ("H_J1t" , "nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
          ("H_J1"  , "nearest neighbor spin exchange = H_J1z + H_J1t")
-         ;
-      OpDescriptions.add_functions()
-         ("Field" , "random bonds uniform on [-1,1], indexed by an integer disorder realization")
+	 ("H_h"   , "random bonds uniform on [-1,1]")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -74,22 +74,24 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      if (!vm.count("seed"))
+      std::vector<double> Fields = {0.781016, 1.48551, 3.44303, 5.50825, 1.64421, 5.72713, 0.718131, 5.55603,
+				    -1.22152, 1.97702, 2.33431, -1.84989, -0.998605, -3.23945, 6.26837, -7.09259 };
+      TRACE(Fields.size());
+      double h = 8;
       {
-         // we only need 1 random number, so might as well use crypto_rand(),
-         // since this consumes fewer resources than seeding the RNG
-         // seed randomly
-         Seed = randutil::crypto_rand();
+	 boost::mt19937 generator;
+	 generator.seed(0);
+	 boost::random::uniform_real_distribution<double> box(-h,+h);
+	 {
+	    std::cout << "# fields= {";
+	    for(size_t i=0; i<Fields.size(); i++)
+	    {
+	       Fields[i]= box(generator);
+	       std::cout << Fields[i] << " ";
+	    }
+	 }
+	 std::cout << '}' << std::endl;
       }
-
-      std::vector<double> Fields;
-
-      std::string FieldFunc = "sum_unit((2*rand(SEED,n,0)-1)*Sz(0)[0]";
-      for (int i = 1; i < Length; ++i)
-      {
-         FieldFunc += "+(2*rand(SEED,n," + std::to_string(i) + ")-1)*Sz(0)[" + std::to_string(i) + "]";
-      }
-      FieldFunc += ')';
 
       LatticeSite Site = SpinU1(Spin);
       UnitCell Cell(repeat(Site, Length));
@@ -103,9 +105,10 @@ int main(int argc, char** argv)
       }
       Lattice["H_J1"] = Lattice["H_J1z"] + Lattice["H_J1t"];
 
-      Lattice.func("Field")(arg("n")) = FieldFunc;
-
-      Lattice.arg("SEED") = std::complex<double>(Seed);
+      for (int i = 0; i < Length; ++i)
+      {
+	 Lattice["H_h"] += sum_unit(Fields[i] * Sz(0)[i]);
+      }
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);

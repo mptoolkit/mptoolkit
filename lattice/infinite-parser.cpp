@@ -62,6 +62,7 @@ struct eval_function
    eval_function(InfiniteLattice const& Lattice_,
                  std::stack<std::string>& FunctionStack_,
                  std::stack<Function::ParameterList>& ParamStack_,
+                 //                 Function::ArgumentList const& Args_,
                  std::stack<ElementType>& eval_)
       : Lattice(Lattice_), FunctionStack(FunctionStack_),
         ParamStack(ParamStack_), eval(eval_) {}
@@ -76,6 +77,7 @@ struct eval_function
    InfiniteLattice const& Lattice;
    std::stack<std::string>& FunctionStack;
    std::stack<Function::ParameterList>& ParamStack;
+   //   Function::ArgumentList const& Args;
    std::stack<ElementType>& eval;
 };
 
@@ -649,9 +651,10 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
          function_expression = eps_p(identifier >> '{')
             >> identifier[push_function(self.FunctionStack, self.ParameterStack)]
             >> parameter_list[eval_function(self.Lattice,
-                                             self.FunctionStack,
-                                             self.ParameterStack,
-                                             self.eval)];
+                                            self.FunctionStack,
+                                            self.ParameterStack,
+                                            //                                            self.Args,
+                                            self.eval)];
 
          operator_expression =
                 identifier[push_identifier(self.IdentifierStack)]
@@ -757,7 +760,7 @@ binary_funcs<InfiniteLatticeParser::ElementType> InfiniteLatticeParser::binary_f
 
 InfiniteMPOElement
 ParseInfiniteOperator(InfiniteLattice const& Lattice, std::string const& Str,
-                      Function::ArgumentList const& Args)
+                      Function::ArgumentList const& ArgsOld)
 {
    typedef InfiniteLatticeParser::ElementType ElementType;
 
@@ -769,15 +772,22 @@ ParseInfiniteOperator(InfiniteLattice const& Lattice, std::string const& Str,
    InfiniteLatticeParser::FunctionStackType   FunctionStack;
    InfiniteLatticeParser::ArgumentType        Arguments;
 
+   Function::ArgumentList Args = ArgsOld;
+
    CheckParentheses(Str.begin(), Str.end());
 
-   for (Function::ArgumentList::const_iterator I = Args.begin(); I != Args.end(); ++I)
+   // Add the lattice constants to Args, but don't overwrite any existing values
+   for (InfiniteLattice::const_argument_iterator I = Lattice.begin_arg(); I != Lattice.end_arg(); ++I)
    {
-      Arguments.add(I->first.c_str(), I->second);
+      if (Args.find(I->first) == Args.end())
+      {
+         Args.insert(*I);
+      }
    }
 
-   // Put the lattice args into Arguments - this won't override existing values
-   for (InfiniteLattice::const_argument_iterator I = Lattice.begin_arg(); I != Lattice.end_arg(); ++I)
+   // now make a symbols version of all of the arge
+
+   for (Function::ArgumentList::const_iterator I = Args.begin(); I != Args.end(); ++I)
    {
       Arguments.add(I->first.c_str(), I->second);
    }
