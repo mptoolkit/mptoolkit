@@ -236,7 +236,7 @@ struct push_sum_unit
 
       try
       {
-         UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End), Args);
+         UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End), Args, &Lattice);
          //Op.ExtendToCoverUnitCell(Sites);
          eval.push(sum_unit(Op, Sites));
       }
