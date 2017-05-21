@@ -25,6 +25,7 @@
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 #include "common/randutil.h"
+#include <sstream>
 
 namespace prog_opt = boost::program_options;
 
@@ -34,8 +35,9 @@ int main(int argc, char** argv)
    {
       half_int Spin = 0.5;
       std::string FileName;
-      int Length;
+      int Length = 0;
       uint32_t Seed = 0;
+      std::string FieldStr;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -44,12 +46,13 @@ int main(int argc, char** argv)
 	 ("unitcell,u", prog_opt::value(&Length), "unit cell size")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
 	 ("seed,s", prog_opt::value(&Seed), "random seed [if not specified, this is initialized randomly]")
+         ("field", prog_opt::value(&FieldStr), "user-specified random field configuration into H_Field")
          ;
 
       prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
-                      options(desc).style(prog_opt::command_line_style::default_style ^
-                                          prog_opt::command_line_style::allow_guessing).
+                      options(desc).style(prog_opt::command_line_style::default_style).
+                      //                                          prog_opt::command_line_style::allow_guessing).
                       run(), vm);
       prog_opt::notify(vm);
 
@@ -57,9 +60,10 @@ int main(int argc, char** argv)
       OpDescriptions.set_description("U(1) spin chain with random field");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
-         ("H_J1z" , "nearest neighbor spin coupling Sz Sz")
-         ("H_J1t" , "nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
-         ("H_J1"  , "nearest neighbor spin exchange = H_J1z + H_J1t")
+         ("H_J1z"  , "nearest neighbor spin coupling Sz Sz")
+         ("H_J1t"  , "nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
+         ("H_J1"   , "nearest neighbor spin exchange = H_J1z + H_J1t")
+         ("H_Field", "user-specified field configuration", "option --field", [&FieldStr]()->bool {return !FieldStr.empty();})
          ;
       OpDescriptions.add_functions()
          ("Field" , "random bonds uniform on [-1,1], indexed by an integer disorder realization")
@@ -82,7 +86,22 @@ int main(int argc, char** argv)
          Seed = randutil::crypto_rand();
       }
 
-      std::vector<double> Fields;
+      std::vector<double> Field;
+      std::istringstream Str(FieldStr);
+      double x;
+      while (Str >> x)
+      {
+         Field.push_back(x);
+      }
+
+      if (Length == 0)
+         Length = Field.size();
+
+      if (Length == 0)
+      {
+         std::cerr << basename(argv[0]) << ": fatal: unit cell length must be specified.\n";
+         return 1;
+      }
 
       std::string FieldFunc = "sum_unit((2*rand(SEED,n,0)-1)*Sz(0)[0]";
       for (int i = 1; i < Length; ++i)
@@ -95,6 +114,21 @@ int main(int argc, char** argv)
       UnitCell Cell(repeat(Site, Length));
       UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
       InfiniteLattice Lattice(&Cell);
+
+      if (!Field.empty())
+      {
+         if (Field.size() != Length)
+         {
+            std::cerr <<  basename(argv[0]) << ": fatal: --fields option must supply name number of terms as the unit cell size.\n";
+            return 1;
+         }
+         UnitCellMPO F;
+         for (int i = 0; i < Field.size(); ++i)
+         {
+            F += Field[i] * Sz(0)[i];
+         }
+         Lattice["H_Field"] = sum_unit(F);
+      }
 
       for (int i = 0; i < Length-1; ++i)
       {

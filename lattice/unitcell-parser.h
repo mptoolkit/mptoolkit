@@ -50,7 +50,8 @@ ParseUnitCellElement(UnitCell const& Cell, int NumCells, std::string const& str,
 
 UnitCellMPO
 ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& str,
-                      Function::ArgumentList const& Args = Function::ArgumentList());
+                      Function::ArgumentList const& Args = Function::ArgumentList(),
+                      InfiniteLattice const* Lat = NULL);
 
 std::complex<double>
 ParseUnitCellNumber(UnitCell const& Cell, int NumCells, std::string const& str,

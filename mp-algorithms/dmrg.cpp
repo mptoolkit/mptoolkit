@@ -96,7 +96,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
    std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
    // Update the keep list.  It would perhaps be better to do this with respect
    // to the stage 2 density matrix, but easier to do it here
-   UpdateKeepList(KeepList, 
+   UpdateKeepList(KeepList,
 		  AddedQN,
 		  DM.Basis(),
 		  KeptStates,
@@ -171,7 +171,7 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
    std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
    // Update the keep list.  It would perhaps be better to do this with respect
    // to the stage 2 density matrix, but easier to do it here
-   UpdateKeepList(KeepList, 
+   UpdateKeepList(KeepList,
 		  AddedQN,
 		  DM.Basis(),
 		  KeptStates,
@@ -242,7 +242,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, DMRG& d)
              >> d.Hamiltonian
 	     >> d.LeftStop
 	     >> d.RightStop
-      
+
              >> d.LastOverlap
              >> d.IsPsiConverged
              >> d.IsConvergedValid
@@ -616,7 +616,7 @@ TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)
    TruncationInfo Info;
    LinearWavefunction::const_iterator CNext = C;
    --CNext;
-   std::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixingInfo, 
+   std::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixingInfo,
 					      KeepList, QuantumNumbersInBasis(CNext->LocalBasis()),
 					      States, Info,
 					      HamMatrices.left());
@@ -654,7 +654,7 @@ TruncationInfo DMRG::TruncateAndShiftRight(StatesInfo const& States)
    TruncationInfo Info;
    LinearWavefunction::const_iterator CNext = C;
    ++CNext;
-   std::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, HamMatrices.left(), MixingInfo, 
+   std::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, HamMatrices.left(), MixingInfo,
 					      KeepList, QuantumNumbersInBasis(CNext->LocalBasis()),
 					      States, Info,
 					      HamMatrices.right());

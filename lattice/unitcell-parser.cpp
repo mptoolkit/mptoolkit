@@ -1187,8 +1187,10 @@ ParseUnitCellElement(UnitCell const& Cell, int NumCells, std::string const& Str,
 
 UnitCellMPO
 ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& Str,
-                      Function::ArgumentList const& Args)
+                      Function::ArgumentList const& Args, InfiniteLattice const* Lat)
 {
+   InfiniteLattice const* OldILattice = ILattice;
+   ILattice = Lat;
    ElementType Result = ParseUnitCellElement(Cell, NumCells, Str, Args);
 
    UnitCellMPO* Op = boost::get<UnitCellMPO>(&Result);
@@ -1198,6 +1200,8 @@ ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& Str
    }
    // else, we also handle the case where the operator is a number
    complex x = boost::get<complex>(Result);
+
+   ILattice = OldILattice;
    return x*Cell["I"];
 }
 
@@ -1224,6 +1228,7 @@ ParseUnitCellOperatorAndLattice(std::string const& Str)
    boost::trim(LatticeFile);
    pvalue_ptr<InfiniteLattice> Lattice = pheap::ImportHeap(LatticeFile);
 
+   InfiniteLattice const* OldILattice = ILattice;
    ILattice = &(*Lattice);
 
    ++Delim;
@@ -1231,7 +1236,7 @@ ParseUnitCellOperatorAndLattice(std::string const& Str)
 
    UnitCellMPO Op = ParseUnitCellOperator(Lattice->GetUnitCell(), 0, Expr, Lattice->args());
 
-   ILattice = NULL;
+   ILattice = OldILattice;
 
    return std::make_pair(Op, *Lattice);
 }
