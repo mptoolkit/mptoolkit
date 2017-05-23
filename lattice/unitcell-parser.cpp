@@ -1190,8 +1190,15 @@ ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& Str
                       Function::ArgumentList const& Args, InfiniteLattice const* Lat)
 {
    InfiniteLattice const* OldILattice = ILattice;
-   ILattice = Lat;
+   if (Lat)
+   {
+      ILattice = Lat;
+   }
    ElementType Result = ParseUnitCellElement(Cell, NumCells, Str, Args);
+   if (Lat)
+   {
+      ILattice = OldILattice;
+   }
 
    UnitCellMPO* Op = boost::get<UnitCellMPO>(&Result);
    if (Op)
@@ -1201,7 +1208,6 @@ ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& Str
    // else, we also handle the case where the operator is a number
    complex x = boost::get<complex>(Result);
 
-   ILattice = OldILattice;
    return x*Cell["I"];
 }
 
