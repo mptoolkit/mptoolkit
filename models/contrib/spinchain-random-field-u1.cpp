@@ -82,8 +82,8 @@ int main(int argc, char** argv)
       {
          // we only need 1 random number, so might as well use crypto_rand(),
          // since this consumes fewer resources than seeding the RNG
-         // seed randomly
-         Seed = randutil::crypto_rand();
+         // seed randomly.  Restrict it to 31 bits so that we can't store it in an int.
+         Seed = randutil::crypto_rand() & 0x7FFFFFFF;
       }
 
       std::vector<double> Field;
@@ -103,10 +103,10 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      std::string FieldFunc = "sum_unit((2*rand(SEED,n,0)-1)*Sz(0)[0]";
+      std::string FieldFunc = "sum_unit(rand[-1,1](SEED,n,0)*Sz(0)[0]";
       for (int i = 1; i < Length; ++i)
       {
-         FieldFunc += "+(2*rand(SEED,n," + std::to_string(i) + ")-1)*Sz(0)[" + std::to_string(i) + "]";
+         FieldFunc += "+rand[-1,1](SEED,n," + std::to_string(i) + ")*Sz(0)[" + std::to_string(i) + "]";
       }
       FieldFunc += ')';
 

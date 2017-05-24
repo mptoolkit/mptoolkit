@@ -59,6 +59,7 @@ int main(int argc, char** argv)
    try
    {
       bool ShowReal = false, ShowImag = false;
+      bool ShowDefault = true;
       std::string PsiStr;
       std::string OpStr;
       std::string Psi2Str;
@@ -110,9 +111,9 @@ int main(int argc, char** argv)
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-      // If no real or imag specifiation is used, show both parts
-      if (!ShowReal && !ShowImag)
-         ShowReal = ShowImag = true;
+      // Default formatting a+ib is used unless either --real or --imag is specified
+      if (ShowReal || ShowImag)
+         ShowDefault = false;
 
       mp_pheap::InitializeTempPHeap();
       pvalue_ptr<MPWavefunction> PsiPtr = pheap::ImportHeap(PsiStr);
@@ -153,7 +154,7 @@ int main(int argc, char** argv)
 	    return 1;
 	 }
 	 InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
-      
+
 	 // extend Op1 to a multiple of the wavefunction size
 	 Op.ExtendToCoverUnitCell(Psi.size() * Coarsegrain);
 
@@ -165,7 +166,7 @@ int main(int argc, char** argv)
 	 FiniteWavefunctionLeft Psi2;
 	 if (vm.count("psi2"))
 	 {
-	    pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::ImportHeap(Psi2Str);  
+	    pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::ImportHeap(Psi2Str);
 	    if (!Psi2Ptr->is<FiniteWavefunctionLeft>())
 	    {
 	       std::cerr << "mp-expectation: fatal: cannot calculate a mixed expectation value between different types!\n";
@@ -181,11 +182,18 @@ int main(int argc, char** argv)
 	 x = expectation(Psi, Op.MPO(), Psi2);
       }
 
-      if (ShowReal)
-         std::cout << x.real() << "   ";
-      if (ShowImag)
-         std::cout << x.imag();
-      std::cout << '\n';
+      if (ShowDefault)
+      {
+         std::cout << format_complex(x) << '\n';
+      }
+      else
+      {
+         if (ShowReal)
+            std::cout << x.real() << "   ";
+         if (ShowImag)
+            std::cout << x.imag();
+         std::cout << '\n';
+      }
 
       pheap::Shutdown();
 

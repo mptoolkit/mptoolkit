@@ -665,6 +665,19 @@ struct increment_num_param_stack
    std::stack<int>& Stack;
 };
 
+struct push_default_randexpr
+{
+   push_default_randexpr(std::stack<ElementType>& eval_)
+      : eval(eval_) {}
+
+   void operator()(char const* Start, char const* End) const
+   {
+      eval.push(std::complex<double>(0.0));
+      eval.push(std::complex<double>(1.0));
+   }
+   std::stack<ElementType>& eval;
+};
+
 struct push_rand_expr
 {
    push_rand_expr(std::stack<int>& NumParam_, std::stack<ElementType>& eval_)
@@ -681,9 +694,18 @@ struct push_rand_expr
          Data[i] = pop_int(eval);
       }
       std::array<uint32_t, 8> Digest = SHA256::hash(Data);
-      uint64_t k = (uint64_t(Digest[2]) << 32) | Digest[6];
-      double x = int64_t(k) * 5.421010862427522e-20 + 0.5;
-      eval.push(std::complex<double>(x));
+      uint64_t k = (uint64_t(Digest[2]) << 32) | uint64_t(Digest[6]);
+      double x = k * 5.42101086242752217e-20;
+
+      double Max = pop_real(eval);
+      double Min = pop_real(eval);
+      if (Max <= Min)
+      {
+         throw ParserError::AtRange(ColorHighlight("rand:")
+                                    + " Range is not valid, require min < max!",
+                                    Start, End);
+      }
+      eval.push(std::complex<double>(x * (Max - Min) + Min));
    }
 
    std::stack<int>& NumParam;
@@ -809,9 +831,12 @@ struct UnitCellParser : public grammar<UnitCellParser>
                               >> expression_string[push_fsup(self.Cell, self.NumCells, self.eval)]
                               >> ')';
 
-         randexpr_t = str_p("rand") >> '(' >> expression_t >> *(',' >> expression_t) >> ')';
+         randexpr_t = str_p("rand") >> !('[' >> expression_t >> ',' >> expression_t >> ']')
+                                    >> '(' >> expression_t >> *(',' >> expression_t) >> ')';
 
-         randexpr = (str_p("rand") >> '(' >> expression[init_num_param_stack(self.NumParameterStack)]
+         randexpr = (str_p("rand") >> (('[' >> expression >> ',' >> expression >> ']')
+                                       | eps_p[push_default_randexpr(self.eval)])
+                     >> '(' >> expression[init_num_param_stack(self.NumParameterStack)]
                      >> *(',' >> expression[increment_num_param_stack(self.NumParameterStack)]) >> ')')
             [push_rand_expr(self.NumParameterStack, self.eval)];
 

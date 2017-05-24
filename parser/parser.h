@@ -214,6 +214,18 @@ int pop_int(std::stack<ElementType>& eval)
    return as_int(x);
 }
 
+template <typename ElementType>
+double pop_real(std::stack<ElementType>& eval)
+{
+   if (eval.empty())
+      throw ParserError("expected an integer, but the stack is empty!");
+   if (!boost::get<complex>(&eval.top()))
+      throw ParserError("expected an integer, got a " + name_of(eval.top()));
+   complex x = boost::get<complex>(eval.top());
+   eval.pop();
+   return as_real(x);
+}
+
 // apply a unary math function to an element
 template <typename Func>
 struct unary_math : boost::static_visitor<complex>

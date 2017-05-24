@@ -123,6 +123,14 @@ int as_int(complex x)
    return j;
 }
 
+inline
+double as_real(complex x)
+{
+   if (LinearAlgebra::norm_frob(x.imag()) > 1E-7)
+       throw ParserError("expected a real number, got a complex number: " + format_complex(x));
+   return x.real();
+}
+
 //
 // unary functions
 //
