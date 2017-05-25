@@ -344,7 +344,7 @@ int main(int argc, char** argv)
       }
       else
       {
-	 std::tie(EvenOp, Lattice) = ParseUnitCellOperatorAndLattice(Operator2);
+	 std::tie(OddOp, Lattice) = ParseUnitCellOperatorAndLattice(Operator2);
       }
 
       EvenOp.ExtendToCover(2*Coarsegrain, 0);
