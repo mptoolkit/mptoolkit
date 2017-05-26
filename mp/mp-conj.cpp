@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 
       boost::apply_visitor(ApplyConj(), Psi.mutate()->Wavefunction());
 
-      Psi.mutate()->AppendHistory(EscapeCommandline(argc, argv));
+      Psi.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));
       Psi.mutate()->SetDefaultAttributes();
 
       pheap::ShutdownPersistent(Psi);

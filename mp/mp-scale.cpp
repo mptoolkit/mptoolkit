@@ -88,7 +88,7 @@ int main(int argc, char** argv)
          std::cerr << "mp-scale: fatal: wavefunction type " << Psi->Type() << " is not supported.\n";
          return 1;
       }
-      Psi.mutate()->AppendHistory(EscapeCommandline(argc, argv));
+      Psi.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));
 
       pheap::ShutdownPersistent(Psi);
    }

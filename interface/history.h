@@ -47,13 +47,13 @@ class HistoryEntry
 
       explicit HistoryEntry(std::string const& Str);
 
-      HistoryEntry(std::string const& Str, time_t Tatestamp_);
+      HistoryEntry(std::string const& Str, time_t Timestamp_);
 
       std::string timestamp() const { return Timestamp; }
 
       std::string entry() const { return Entry; }
 
-      std::string formatted() const { return "Date: " + Timestamp + '\n' + Entry; }
+      std::string formatted() const { return "#Date: " + Timestamp + '\n' + Entry; }
 
       // Helper to construct a timestamp from a time_t, using the current local timezone
       static std::string MakeTimestamp(time_t Timestamp_);
@@ -78,11 +78,15 @@ class HistoryLog
 
       typedef std::list<HistoryEntry>::const_iterator const_iterator;
 
-      // adds a new entry (assumed to be later in time than previous entries)
-      void append(HistoryEntry const& H);
+      // add a command to the history log
+      void append_command(std::string const& Entry);
 
-      // adds a new entry, with timestamp set to the current system time
-      void append(std::string const& Entry);
+      // add a note (will appear as a comment '#....') to the history log
+      void append_note(std::string const& Entry);
+
+      // commit the history entry.  It is not necessary to call this, unless a long-running
+      // job wants to add multiple history entries at different times.
+      void commit();
 
       const_iterator begin() const { return History_.begin(); }
       const_iterator end() const { return History_.end(); }
@@ -98,9 +102,10 @@ class HistoryLog
 
    private:
       std::list<HistoryEntry> History_;
+      std::string CurrentEntry_;
 
 #if defined(USE_PSTREAM)
-      friend PStream::opstream& operator<<(PStream::opstream& out, HistoryLog const& Log);
+      friend PStream::opstream& operator<<(PStream::opstream& out, HistoryLog Log);
       friend PStream::ipstream& operator>>(PStream::ipstream& in, HistoryLog& Log);
 #endif
 

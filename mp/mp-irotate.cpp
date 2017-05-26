@@ -111,7 +111,7 @@ int main(int argc, char** argv)
          Psi.rotate_right(Right);
 
       PsiPtr.mutate()->Wavefunction() = Psi;
-      PsiPtr.mutate()->AppendHistory(EscapeCommandline(argc, argv));
+      PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));
 
       if (Verbose > 0)
          std::cout << "Finished." << std::endl;

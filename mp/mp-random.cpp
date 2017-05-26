@@ -108,8 +108,8 @@ int main(int argc, char** argv)
       Wavefunction.SetDefaultAttributes();
 
       // History log
-      Wavefunction.AppendHistory(EscapeCommandline(argc, argv));
       Wavefunction.AppendHistoryNote("Random seed " + std::to_string(RandSeed));
+      Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
 
       // save wavefunction
       pvalue_ptr<MPWavefunction> P(new MPWavefunction(Wavefunction));

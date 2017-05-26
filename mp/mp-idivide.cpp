@@ -249,7 +249,7 @@ int main(int argc, char** argv)
       Psi2 = Psi1;
 
       PsiPtr.mutate()->Wavefunction() = PsiOut;
-      PsiPtr.mutate()->AppendHistory(EscapeCommandline(argc, argv));
+      PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));
       PsiPtr.mutate()->SetDefaultAttributes();
 
       pheap::ShutdownPersistent(PsiPtr);

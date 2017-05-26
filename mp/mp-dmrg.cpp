@@ -63,7 +63,7 @@ void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum)
       else
 	 std::cout << dmrg.Solver().LastEnergyReal();
       std::cout << " States=" << States.KeptStates()
-		<< " Truncrror=" << States.TruncationError() 
+		<< " Truncrror=" << States.TruncationError()
 		<< " Iter=" << dmrg.Solver().LastIter()
 		<< " Tol=" << dmrg.Solver().LastTol()
 		<< '\n';
@@ -200,7 +200,7 @@ int main(int argc, char** argv)
       // Hamiltonian
       InfiniteLattice Lattice;
       BasicTriangularMPO HamMPO;
-      
+
       // get the Hamiltonian from the attributes, if it wasn't supplied
       if (HamStr.empty())
       {
@@ -295,7 +295,7 @@ int main(int argc, char** argv)
       Wavefunction.SetDefaultAttributes();
 
       // History log
-      Wavefunction.AppendHistory(EscapeCommandline(argc, argv));
+      Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
 
       // save wavefunction
       pvalue_ptr<MPWavefunction> P(new MPWavefunction(Wavefunction));

@@ -1475,7 +1475,7 @@ int main(int argc, char** argv)
       Wavefunction.SetDefaultAttributes();
 
       // History log
-      Wavefunction.AppendHistory(EscapeCommandline(argc, argv));
+      Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
 
       // save wavefunction
       pvalue_ptr<MPWavefunction> P(new MPWavefunction(Wavefunction));
