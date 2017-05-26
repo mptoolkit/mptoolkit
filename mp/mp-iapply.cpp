@@ -148,7 +148,7 @@ int main(int argc, char** argv)
          PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::Construct(PsiL, Psi.qshift(), Verbose);
       }
 
-      PsiPtr.mutate()->AppendHistory(EscapeCommandline(argc, argv));
+      PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));
       PsiPtr.mutate()->SetDefaultAttributes();
 
       if (Verbose > 0)

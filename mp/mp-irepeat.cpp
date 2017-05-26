@@ -103,7 +103,7 @@ int main(int argc, char** argv)
       Psi = repeat(Psi, Times);
 
       PsiPtr.mutate()->Wavefunction() = Psi;
-      PsiPtr.mutate()->AppendHistory(EscapeCommandline(argc, argv));
+      PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));
       PsiPtr.mutate()->SetDefaultAttributes();
 
       if (Verbose > 0)

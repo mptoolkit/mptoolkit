@@ -285,7 +285,7 @@ int main(int argc, char** argv)
       {
          Result = MPWavefunction(InputPsi->Attributes(), InputPsi->History());
       }
-      Result.AppendHistory(EscapeCommandline(argc, argv));
+      Result.AppendHistoryCommand(EscapeCommandline(argc, argv));
       Result.Wavefunction() = boost::apply_visitor(ApplyWignerEckart(FinalSL), InputPsi->Wavefunction());
       Result.SetDefaultAttributes();
 

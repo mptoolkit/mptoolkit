@@ -98,11 +98,11 @@ class MPWavefunction
       HistoryLog const& History() const { return History_; }
 
       // appends an entry to the history log
-      void AppendHistory(std::string const& s)
-      { History_.append(s); }
+      void AppendHistoryCommand(std::string const& s)
+      { History_.append_command(s); }
 
       void AppendHistoryNote(std::string const& s)
-      { History_.append("#note: " + s); }
+      { History_.append_note(s); }
 
       static PStream::VersionTag VersionT;
 

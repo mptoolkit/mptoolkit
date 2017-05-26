@@ -69,15 +69,26 @@ PStream::ipstream& operator>>(PStream::ipstream& in, HistoryEntry& H)
 //
 
 void
-HistoryLog::append(HistoryEntry const& H)
+HistoryLog::commit()
 {
-   History_.push_back(H);
+   History_.push_back(HistoryEntry(CurrentEntry_));
+   CurrentEntry_.clear();
 }
 
 void
-HistoryLog::append(std::string const& Entry)
+HistoryLog::append_command(std::string const& Entry)
 {
-   History_.push_back(HistoryEntry(Entry));
+   if (!CurrentEntry_.empty())
+      CurrentEntry_ += '\n';
+   CurrentEntry_ += Entry;
+}
+
+void
+HistoryLog::append_note(std::string const& Entry)
+{
+   if (!CurrentEntry_.empty())
+      CurrentEntry_ += '\n';
+   CurrentEntry_ += '#' + Entry;
 }
 
 HistoryEntry
@@ -118,8 +129,9 @@ HistoryLog::print_newest_first(std::ostream& out) const
 }
 
 #if defined(USE_PSTREAM)
-PStream::opstream& operator<<(PStream::opstream& out, HistoryLog const& Log)
+PStream::opstream& operator<<(PStream::opstream& out, HistoryLog Log)
 {
+   Log.commit();
    out << Log.History_;
    return out;
 }

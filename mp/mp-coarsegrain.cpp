@@ -104,9 +104,9 @@ int main(int argc, char** argv)
 
       Psi = InfiniteWavefunctionLeft::ConstructFromOrthogonal(coarse_grain(PsiL, Coarsegrain),
 							      Lambda, Psi.qshift());
-      
+
       PsiPtr.mutate()->Wavefunction() = Psi;
-      PsiPtr.mutate()->AppendHistory(EscapeCommandline(argc, argv));
+      PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));
       PsiPtr.mutate()->SetDefaultAttributes();
 
       if (Verbose > 0)

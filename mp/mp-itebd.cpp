@@ -424,7 +424,7 @@ int main(int argc, char** argv)
          std::string TimeStr = FormatDigits(InitialTime + tstep * Timestep, OutputDigits);
          InfiniteWavefunctionLeft PsiL = InfiniteWavefunctionLeft::Construct(Psi, QShift);
          Wavefunction.Wavefunction() = std::move(PsiL);
-         Wavefunction.AppendHistory(EscapeCommandline(argc, argv));
+         Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
          Wavefunction.SetDefaultAttributes();
          Wavefunction.Attributes()["Time"] = TimeStr;
          Wavefunction.Attributes()["Prefix"] = OutputPrefix;

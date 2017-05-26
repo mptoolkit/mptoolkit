@@ -35,12 +35,14 @@ int main(int argc, char** argv)
       bool Reverse = false;
       std::string Filename;
       std::string Message;
+      std::string Command;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
          ("reverse,r", prog_opt::bool_switch(&Reverse), "reverse order, newest first")
-         ("message,m", prog_opt::value(&Message), "add a new history entry")
+         ("message,m", prog_opt::value(&Message), "add a new history entry as a note")
+         ("command,c", prog_opt::value(&Command), "add a new history entry as a command")
          ;
 
       prog_opt::options_description hidden("Hidden options");
@@ -67,10 +69,13 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      if (vm.count("message"))
+      if (vm.count("message") || vm.count("command"))
       {
          pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(Filename, mp_pheap::CacheSize());
-         Psi.mutate()->AppendHistory(Message);
+         if (!Message.empty())
+            Psi.mutate()->AppendHistoryNote(Message);
+         if (!Command.empty())
+            Psi.mutate()->AppendHistoryNote(Command);
          pheap::ShutdownPersistent(Psi);
       }
       else
