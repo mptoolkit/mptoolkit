@@ -119,6 +119,12 @@ half_int operator%(half_int h, int n);
 
 bool is_integral(half_int h);
 
+inline
+bool is_integral(int)
+{
+   return true;
+}
+
 int to_int(half_int h);             // throws if h is not integral
 int to_int_assert(half_int h);       // assumes h is integral as a precondition (faster)
 

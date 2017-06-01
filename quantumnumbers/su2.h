@@ -35,12 +35,148 @@
 #include "coupling_su2.h"
 #include <iostream>
 
-//#define PRESERVE_NORM
-
 namespace QuantumNumbers
 {
 
-class SU2
+template <typename Derived>
+class StaticLieGroup_MF
+{
+   public:
+      using value_type = Derived::value_type;
+
+      using is_integral = std::true_type;
+      using is_pointed = std::true_type;
+      using is_finite = std::false_type;
+      using is_real = std::true_type;
+
+      static double qdim(value_type v)
+      {
+         return Derived::degree(v);
+      }
+};
+
+// the identity rep of the braid group
+template <typename Symmetry>
+class Bosonic
+{
+   public:
+      using is_real = std::true_type;
+      using value_type = Symmetry::value_type;
+
+      explicit Bosonic(Symmetry const& s_, std::string const& Name) : symmetry(s_)
+      {
+         CHECK_EQUAL(Name, "Bosonic");
+      }
+
+      static std::string name() { return "Bosonic"; }
+
+      static bool is_valid(Symmetry const& s, std::string const& Name)
+      {
+         return Name == "Bosonic";
+      }
+
+      static double r_matrix(value_type a, value_type b, value_type c)
+      {
+         DEBUG_CHECK(symmetry.is_transform_target(a,b,c));
+         return 1;
+      }
+
+   private:
+      Symmetry symmetry;
+
+};
+
+template <typename Symmetry>
+class FermionicSpin
+{
+   public:
+      using is_real = std::true_type;
+      using value_type = Symmetry::value_type;
+
+      static_assert(std::is_same<value_type, half_int>::value);
+
+      explicit FermionicSpin(Symmetry const& s_, std::string const& Name) : symmetry(s_)
+      {
+         CHECK_EQUAL(Name, "FermionicSpin");
+      }
+
+      static std::string name() { return "FermionicSpin"; }
+
+      static bool is_valid(Symmetry const& s, std::string const& Name)
+      {
+         return Name == "FermionicSpin";
+      }
+
+      static double r_matrix(half_int a, half_int b, half_int c)
+      {
+         DEBUG_CHECK(symmetry.is_transform_target(a,b,c));
+         return (is_integral(a) || is_integral(b)) ? 1.0 : -1.0;
+      }
+
+   private:
+      Symmetry symmetry;
+
+};
+
+template <typename T>
+class FermionicParticleImpl;
+
+template <>
+class FermionicParticleImpl<int>
+{
+   public:
+      static double r_matrix(int a, int b, int)
+      {
+         return ((a%2 == 1) && (b%2 == 1)) ? -1.0 : 1.0;
+      }
+};
+
+template <>
+class FermionicParticleImpl<half_int>
+{
+   public:
+      static double r_matrix(half_int a, half_int b, half_int)
+      {
+         DEBUG_CHECK(is_integral(a));
+         DEBUG_CHECK(is_integral(b));
+         return ((a.to_int_assert()%2 == 1) && (b.to_int_assert()%2 == 1)) ? -1.0 : 1.0;
+      }
+};
+
+template <typename Symmetry>
+class FermionicParticle : public FermionicParticleImpl<typename Symmetry::value_type>
+{
+   public:
+      using is_real = std::true_type;
+      using value_type = Symmetry::value_type;
+
+      static_assert(std::is_same<value_type, half_int>::value
+                    || std::is_same<value_type, int>::value);
+
+      explicit FermionicParticle(Symmetry const& s_, std::string const& Name) : symmetry(s_)
+      {
+         CHECK_EQUAL(Name, "FermionicParticle");
+      }
+
+      static std::string name() { return "FermionicParticle"; }
+
+      static bool is_valid(Symmetry const& s, std::string const& Name)
+      {
+         return Name == "FermionicParticle";
+      }
+
+      static double r_matrix(value_type a, value_type b, value_type c)
+      {
+         DEBUG_CHECK(symmetry.is_transform_target(a,b,c));
+         return FermionicParticleImpl<value_type>::r_matrix(a,b,c);
+      }
+
+   private:
+      Symmetry symmetry;
+
+};
+
+class SU2 : public StaticLieGroup_MF<SU2>
 {
    public:
       typedef half_int   value_type;
@@ -48,131 +184,168 @@ class SU2
 
       static std::string as_string(half_int j);
       static half_int from_string(std::string const& s);
-      static int iter_size() { return 1; }
 
-      static half_int from_iter(int const* InIter)
+      static half_int from_int(int n)
       {
-    return half_int::from_twice(*InIter);
+         return half_int::from_twice(n);
       }
 
-      static int* write_iter(int* OutIter, half_int j)
+      static int to_int(half_int j)
       {
-    *OutIter++ = j;.twice();
+         return j.twice();
       }
 
-      static char const* name() { return "SU(2)"; }
+      static std::string name() { return "SU(2)"; }
 
+      // 'friendly' ordering of quantum numbers.  The identity must
+      // compare as less than all other non-identity reps.
+      static bool less(half_int j1, half_int j2)
+      {
+         // order is 0,1/2,-1/2,1,-1,3/2,-3/2,...
+         return abs(j1) < abs(j2) || (abs(j1) == abs(j2) && j2 < j1);
+      }
+
+      // enumerate the possible quantum numbers from a non-negative integer.
+      // This must be consistent with the ordering from the 'less' function:
+      // for integers i,j, we have:
+      // i < j iff less(enumerate(i), enumerate(j))
+      // (this implies that the scalar (identity) quantum number is n=0
+      static half_int enumerate(int n)
+      {
+         if (n == 0)
+            return 0;
+         if (n % 2 == 1)
+         {
+            return half_int::from_twice(n/2);
+         }
+         return -half_int::from_twice(n/2);
+      }
+
+      using std::tuple<FermionicSpin<SU2>, Bosonic<SU2>> braid_rep_types;
+
+      using default_braid_type = Bosonic;
+
+      static default_braid_type default_braid_rep()
+      {
+         return default_braid_type();
+      }
+
+      // Casmir invariant operators (Lie algebra terminology).
+      // For finite groups, these are the expectation values of the centre
+      // of the enveloping algebra (a linearly independent set that spans)
       static int num_casimir() { return 1; }
 
       static std::string casimir_name(std::string const& QName, int)
       { return QName + "^2"; }
 
-      double casimir(half_int j, int n)
+      static double casimir(half_int j, int n)
       {
-    DEBUG_CHECK_EQUAL(n, 0);
-    return j.to_double() * (j.to_double() + 1);
+         DEBUG_CHECK_EQUAL(n, 0);
+         return j.to_double() * (j.to_double() + 1);
       }
 
+      // true if this is the scalar (identity) quantum number
       static bool is_scalar(half_int j)
       {
-    return j == 0;
+         return j == 0;
       }
 
-      static double degree(half_int j)
+      // degree of the representation
+      static int degree(half_int j)
       {
-    return j.twice() + 1;
+         return j.twice() + 1;
       }
 
       static half_int adjoint(half_int j)
       {
-    return j;
+         return j;
       }
 
       static int multiplicity(half_int j1, half_int j2, half_int j)
       {
-    return ((j.twice() <= j1.twice() + j2.twice())
-       && (j.twice() >= std::abs(j1.twice() - j2.twice())))
-       ? 1 : 0;
+         return ((j.twice() <= j1.twice() + j2.twice())
+                 && (j.twice() >= std::abs(j1.twice() - j2.twice())))
+            ? 1 : 0;
       }
 
       // cross product is defined only for vector operators
       static bool cross_product_exists(half_int j1, half_int j2)
       {
-    return j1 == 1 && j2 == 1;
+         return j1 == 1 && j2 == 1;
       }
 
       static half_int cross_product_transforms_as(half_int j1, half_int j2)
       {
-    DEBUG_CHECK_EQUAL(j1, 1);
-    DEBUG_CHECK_EQUAL(j2, 1);
-    return j1;
+         DEBUG_CHECK_EQUAL(j1, 1);
+         DEBUG_CHECK_EQUAL(j2, 1);
+         return j1;
       }
 
       static std::complex<double> cross_product_factor(half_int j1, half_int j2)
       {
-    DEBUG_CHECK_EQUAL(j1, 1);
-    DEBUG_CHECK_EQUAL(j2, 1);
-    return std::complex<double>(0.0, std::sqrt(2.0));
+         DEBUG_CHECK_EQUAL(j1, 1);
+         DEBUG_CHECK_EQUAL(j2, 1);
+         return std::complex<double>(0.0, std::sqrt(2.0));
       }
 
       static double coupling_3j_phase(half_int j1, half_int j2, half_int j)
       {
-    return minus1pow(j1+j2-j);
+         return minus1pow(j1+j2-j);
       }
 
       static double coupling_6j(half_int j1, half_int j2, half_int j3,
-            half_int j4, half_int j5, half_int j6)
+                                half_int j4, half_int j5, half_int j6)
       {
-    return CouplingSU2::Coupling6j(j1, j2, j3, j4, j5, j6);
+         return CouplingSU2::Coupling6j(j1, j2, j3, j4, j5, j6);
       }
 
       static double coupling_9j(half_int j1 , half_int j2 , half_int j12,
-            half_int j3 , half_int j4 , half_int j34,
-            half_int j13, half_int j24, half_int j  )
+                                half_int j3 , half_int j4 , half_int j34,
+                                half_int j13, half_int j24, half_int j  )
       {
-    return CouplingSU2::Coupling9j(j1, j2, j12, j3, j4, j34, j12, j24, j);
+         return CouplingSU2::Coupling9j(j1, j2, j12, j3, j4, j34, j12, j24, j);
       }
 
       static bool is_transform_target(half_int j1, half_int j2, half_int j)
       {
-    return (j.twice() <= j1.twice() + j2.twice())
-       && (j.twice() >= std::abs(j1.twice() - j2.twice()));
+         return (j.twice() <= j1.twice() + j2.twice())
+            && (j.twice() >= std::abs(j1.twice() - j2.twice()));
       }
 
       static int num_transform_targets(half_int j1, half_int j2)
       {
-    return std::min(j1.twice(), j2.twice()) + 1;
+         return std::min(j1.twice(), j2.twice()) + 1;
       }
 
       template <typename OutIter>
       static OutIter transform_targets(half_int j1, half_int j2, OutIter Out)
       {
-    for (half_int j = abs(j1 - j2); j <= j1 + j2; ++j)
-    {
-       *Out++ = j;
-    }
-    return Out;
+         for (half_int j = abs(j1 - j2); j <= j1 + j2; ++j)
+         {
+            *Out++ = j;
+         }
+         return Out;
       }
 
       static difference_type difference(half_int j1, half_int j2)
       {
-    return j1 - j2;
+         return j1 - j2;
       }
 
       static bool is_possible_change(half_int j, difference_type delta)
       {
-    return j + delta >= 0;
+         return j + delta >= 0;
       }
 
       static half_int change_by(half_int j, difference_type delta)
       {
-    DEBUG_CHECK(J+delta >= 0);
-    return j + delta;
+         DEBUG_CHECK(J+delta >= 0);
+         return j + delta;
       }
 
       static double weight(difference_type x)
       {
-    return std::abs(x.to_double());
+         return std::abs(x.to_double());
       }
 
       SU2() : j(0) {}
@@ -207,43 +380,13 @@ std::ostream& operator<<(std::ostream& out, SU2 const& s)
    return out << s.j;
 }
 
-class Sz
-{
-   public:
-      typedef SU2 QuantumNumberType;
-
-      Sz(half_int m_) : m(m_) {}
-      Sz(int m_) : m(m_) {}
-      Sz(double m_) : m(m_) {}
-      explicit Sz(int const* InIter);
-      explicit Sz(std::string const& s);
-
-      std::string ToString() const;
-
-      int* Convert(int* OutIter) const
-      { *OutIter = m.twice(); return ++OutIter; }
-
-      static char const* Type() { return "SU(2)"; }
-
-      static char const* Suffix() { return "_m"; }
-
-      static int Size() { return 1; }
-
-      half_int m;
-};
-
-inline
-std::ostream& operator<<(std::ostream& out, Sz const& s)
-{
-   return out << s.m;
-}
 //
 // inlines
 //
 
 inline
 SU2::SU2(int const* InIter)
-  : j(from_twice(*InIter))
+   : j(from_twice(*InIter))
 {
 }
 
@@ -262,21 +405,13 @@ int degree(SU2 const& q)
 inline
 double trace(SU2 const& q)
 {
-#if defined(PRESERVE_NORM)
-   return 1;
-#else
    return q.j.twice() + 1;
-#endif
 }
 
 inline
 double identity(SU2 const& q)
 {
-#if defined(PRESERVE_NORM)
-   return q.j.twice() + 1;
-#else
    return 1;
-#endif
 }
 
 inline
@@ -324,7 +459,7 @@ double clebsch_gordan(SU2 const& q1, SU2 const& q2, SU2 const& q,
 
 inline
 double product_coefficient(SU2 const& k1, SU2 const& k2, SU2 const& k,
-                          SU2 const& qp, SU2 const& q, SU2 const& qpp)
+                           SU2 const& qp, SU2 const& q, SU2 const& qpp)
 {
    DEBUG_PRECONDITION(is_triangle(k1.j, k2.j, k.j));
    DEBUG_PRECONDITION(is_triangle(qp.j, k1.j, qpp.j));
@@ -420,7 +555,7 @@ double recoupling_12_3__13_2(SU2 const& q1, SU2 const& q2,
 inline
 SU2 adjoint(SU2 const& q)
 {
-  return q;
+   return q;
 }
 
 inline
@@ -477,7 +612,7 @@ template <typename OutIter>
 inline
 void enumerate_projections(SU2 const& q, OutIter Out)
 {
-  //  std::cout << "Enumerating projections of " << q << std::endl;
+   //  std::cout << "Enumerating projections of " << q << std::endl;
    for (half_int m = -q.j; m <= q.j; ++m)
    {
       *Out++ = m;
@@ -548,7 +683,7 @@ double delta_shift_coefficient(SU2 const& qp, SU2 const& k, SU2 const& q, SU2 co
       * Racah(q.j, qp.j, q.j+Delta.j, qp.j+Delta.j, k.j, Delta.j);
 
    double ResultCheck = tensor_coefficient(Delta, q, SU2(Delta.j+q.j),
-                                          SU2(0), k, k,
+                                           SU2(0), k, k,
                                            Delta, qp, SU2(Delta.j+qp.j));
 
    CHECK(fabs(Result-ResultCheck) < 1E-12)(Result)(ResultCheck);
@@ -569,7 +704,7 @@ double casimir(SU2 const& s, int n)
 
 inline
 Sz::Sz(int const* InIter)
-  : m(from_twice(*InIter))
+   : m(from_twice(*InIter))
 {
 }
 
@@ -581,7 +716,7 @@ std::string Sz::ToString() const
 
 namespace
 {
-   NiftyCounter::nifty_counter<SU2::Register> SU2Counter;
+NiftyCounter::nifty_counter<SU2::Register> SU2Counter;
 }
 
 } // namespace QuantumNumbers
