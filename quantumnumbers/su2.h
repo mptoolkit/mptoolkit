@@ -64,6 +64,7 @@ struct has_degree_function
 };
 
 // helper class for a multiplicity-free Lie group
+
 template <typename Derived>
 class StaticLieGroup_MF
 {
@@ -84,6 +85,130 @@ class StaticLieGroup_MF
 // helper class for a multiplicity-free finite group
 template <typename Derived>
 class StaticFiniteGroup_MF
+=======
+// the identity rep of the braid group
+template <typename Symmetry>
+class Bosonic
+{
+   public:
+      using is_real = std::true_type;
+      using value_type = Symmetry::value_type;
+
+      explicit Bosonic(Symmetry const& s_, std::string const& Name) : symmetry(s_)
+      {
+         CHECK_EQUAL(Name, "Bosonic");
+      }
+
+      static std::string name() { return "Bosonic"; }
+
+      static bool is_valid(Symmetry const& s, std::string const& Name)
+      {
+         return Name == "Bosonic";
+      }
+
+      static double r_matrix(value_type a, value_type b, value_type c)
+      {
+         DEBUG_CHECK(symmetry.is_transform_target(a,b,c));
+         return 1;
+      }
+
+   private:
+      Symmetry symmetry;
+
+};
+
+template <typename Symmetry>
+class FermionicSpin
+{
+   public:
+      using is_real = std::true_type;
+      using value_type = Symmetry::value_type;
+
+      static_assert(std::is_same<value_type, half_int>::value);
+
+      explicit FermionicSpin(Symmetry const& s_, std::string const& Name) : symmetry(s_)
+      {
+         CHECK_EQUAL(Name, "FermionicSpin");
+      }
+
+      static std::string name() { return "FermionicSpin"; }
+
+      static bool is_valid(Symmetry const& s, std::string const& Name)
+      {
+         return Name == "FermionicSpin";
+      }
+
+      static double r_matrix(half_int a, half_int b, half_int c)
+      {
+         DEBUG_CHECK(symmetry.is_transform_target(a,b,c));
+         return (is_integral(a) || is_integral(b)) ? 1.0 : -1.0;
+      }
+
+   private:
+      Symmetry symmetry;
+
+};
+
+template <typename T>
+class FermionicParticleImpl;
+
+template <>
+class FermionicParticleImpl<int>
+{
+   public:
+      static double r_matrix(int a, int b, int)
+      {
+         return ((a%2 == 1) && (b%2 == 1)) ? -1.0 : 1.0;
+      }
+};
+
+template <>
+class FermionicParticleImpl<half_int>
+{
+   public:
+      static double r_matrix(half_int a, half_int b, half_int)
+      {
+         DEBUG_CHECK(is_integral(a));
+         DEBUG_CHECK(is_integral(b));
+         return ((a.to_int_assert()%2 == 1) && (b.to_int_assert()%2 == 1)) ? -1.0 : 1.0;
+      }
+};
+
+template <typename Symmetry>
+class FermionicParticle : public FermionicParticleImpl<typename Symmetry::value_type>
+{
+   public:
+      using is_real = std::true_type;
+      using value_type = Symmetry::value_type;
+
+      static_assert(std::is_same<value_type, half_int>::value
+                    || std::is_same<value_type, int>::value);
+
+      explicit FermionicParticle(Symmetry const& s_, std::string const& Name) : symmetry(s_)
+      {
+         CHECK_EQUAL(Name, "FermionicParticle");
+      }
+
+      static std::string name() { return "FermionicParticle"; }
+
+      static bool is_valid(Symmetry const& s, std::string const& Name)
+      {
+         return Name == "FermionicParticle";
+      }
+
+      static double r_matrix(value_type a, value_type b, value_type c)
+      {
+         DEBUG_CHECK(symmetry.is_transform_target(a,b,c));
+         return FermionicParticleImpl<value_type>::r_matrix(a,b,c);
+      }
+
+   private:
+      Symmetry symmetry;
+
+};
+
+class SU2 : public StaticLieGroup_MF<SU2>
+>>>>>>> sketch for how braid reps would work
 {
    public:
       using value_type = Derived::value_type;
@@ -282,6 +407,46 @@ class SU2 : public StaticLieGroup_MF<SU2>
 
       using default_braid_type = Bosonic;
 
+      static half_int from_int(int n)
+      {
+         return half_int::from_twice(n);
+      }
+
+      static int to_int(half_int j)
+      {
+         return j.twice();
+      }
+
+      static std::string name() { return "SU(2)"; }
+
+      // 'friendly' ordering of quantum numbers.  The identity must
+      // compare as less than all other non-identity reps.
+      static bool less(half_int j1, half_int j2)
+      {
+         // order is 0,1/2,-1/2,1,-1,3/2,-3/2,...
+         return abs(j1) < abs(j2) || (abs(j1) == abs(j2) && j2 < j1);
+      }
+
+      // enumerate the possible quantum numbers from a non-negative integer.
+      // This must be consistent with the ordering from the 'less' function:
+      // for integers i,j, we have:
+      // i < j iff less(enumerate(i), enumerate(j))
+      // (this implies that the scalar (identity) quantum number is n=0
+      static half_int enumerate(int n)
+      {
+         if (n == 0)
+            return 0;
+         if (n % 2 == 1)
+         {
+            return half_int::from_twice(n/2);
+         }
+         return -half_int::from_twice(n/2);
+      }
+
+      using std::tuple<FermionicSpin<SU2>, Bosonic<SU2>> braid_rep_types;
+
+      using default_braid_type = Bosonic;
+
       static default_braid_type default_braid_rep()
       {
          return default_braid_type();
@@ -295,7 +460,6 @@ class SU2 : public StaticLieGroup_MF<SU2>
       static std::string casimir_name(std::string const& QName, int)
       { return QName + "^2"; }
 
-<<<<<<< HEAD
       static real casimir(half_int j, int n)
       {
          DEBUG_CHECK_EQUAL(n, 0);
@@ -378,7 +542,6 @@ class SU2 : public StaticLieGroup_MF<SU2>
       template <typename OutIter>
       static OutIter transform_targets(half_int j1, half_int j2, OutIter Out)
       {
-<<<<<<< HEAD
          for (half_int j = abs(j1 - j2); j <= j1 + j2; ++j)
          {
             *Out++ = j;
@@ -513,7 +676,7 @@ real clebsch_gordan(SU2 const& q1, SU2 const& q2, SU2 const& q,
 
 inline
 real product_coefficient(SU2 const& k1, SU2 const& k2, SU2 const& k,
-                           SU2 const& qp, SU2 const& q, SU2 const& qpp)
+                         SU2 const& qp, SU2 const& q, SU2 const& qpp)
 {
    using std::sqrt;
    DEBUG_PRECONDITION(is_triangle(k1.j, k2.j, k.j));
@@ -529,7 +692,7 @@ real product_coefficient(SU2 const& k1, SU2 const& k2, SU2 const& k,
 
 inline
 real inverse_product_coefficient(SU2 const& k1, SU2 const& k2, SU2 const& k,
-                                   SU2 const& qp, SU2 const& q, SU2 const& qpp)
+                                 SU2 const& qp, SU2 const& q, SU2 const& qpp)
 {
    using std::sqrt;
    DEBUG_PRECONDITION(is_triangle(k1.j, k2.j, k.j));
@@ -543,8 +706,8 @@ real inverse_product_coefficient(SU2 const& k1, SU2 const& k2, SU2 const& k,
 
 inline
 real tensor_coefficient(SU2 const& j1,  SU2 const& j2,  SU2 const& j12,
-                          SU2 const& j3,  SU2 const& j4,  SU2 const& j34,
-                          SU2 const& j13, SU2 const& j24, SU2 const& j)
+                        SU2 const& j3,  SU2 const& j4,  SU2 const& j34,
+                        SU2 const& j13, SU2 const& j24, SU2 const& j)
 {
    using std::sqrt;
    DEBUG_PRECONDITION(is_triangle(j1.j,  j2.j, j12.j))(j1.j)(j2.j)(j12.j);
