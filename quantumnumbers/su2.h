@@ -26,6 +26,11 @@
   We have two braid group representations defined, bosonic and fermionic.
 */
 
+// definitions:
+// integral: all dimensions are integers
+// pointed: all dimensions are 1
+
+
 #if !defined(MPTOOKLIT_QUANTUMNUMBERS_SU2_H)
 #define MPTOOKLIT_QUANTUMNUMBERS_SU2_H
 
@@ -85,28 +90,46 @@ class StaticLieGroup_MF
 // helper class for a multiplicity-free finite group
 template <typename Derived>
 class StaticFiniteGroup_MF
-=======
+
+{
+   public:
+      using value_type = Derived::value_type;
+      using is_multiplicity_free = std::true_type;
+      using is_integral = std::true_type;
+      using is_pointed = std::true_type;
+      using is_finite = std::true_type;
+      using is_real = std::true_type;
+
+      static real qdim(value_type v)
+      {
+         return Derived::degree(v);
+      }
+};
+
+
+>>>>>>> Work in progress on new QN library
 // the identity rep of the braid group
 template <typename Symmetry>
 class Bosonic
 {
    public:
-      using is_real = std::true_type;
       using value_type = Symmetry::value_type;
+      using is_real = std::true_type;
+      using is_symmetric = std::true_type;     // alias for is_real
 
       explicit Bosonic(Symmetry const& s_, std::string const& Name) : symmetry(s_)
       {
-         CHECK_EQUAL(Name, "Bosonic");
+         CHECK_EQUAL(Name, "bosonic");
       }
 
-      static std::string name() { return "Bosonic"; }
+      static std::string name() { return "bosonic"; }
 
       static bool is_valid(Symmetry const& s, std::string const& Name)
       {
-         return Name == "Bosonic";
+         return Name == "bosonic";
       }
 
-      static double r_matrix(value_type a, value_type b, value_type c)
+      static real r_matrix(value_type a, value_type b, value_type c)
       {
          DEBUG_CHECK(symmetry.is_transform_target(a,b,c));
          return 1;
@@ -122,6 +145,7 @@ class FermionicSpin
 {
    public:
       using is_real = std::true_type;
+      using is_symmetric = std::true_type;     // alias for is_real
       using value_type = Symmetry::value_type;
 
       static_assert(std::is_same<value_type, half_int>::value);
@@ -138,7 +162,7 @@ class FermionicSpin
          return Name == "FermionicSpin";
       }
 
-      static double r_matrix(half_int a, half_int b, half_int c)
+      static real r_matrix(half_int a, half_int b, half_int c)
       {
          DEBUG_CHECK(symmetry.is_transform_target(a,b,c));
          return (is_integral(a) || is_integral(b)) ? 1.0 : -1.0;
@@ -156,7 +180,7 @@ template <>
 class FermionicParticleImpl<int>
 {
    public:
-      static double r_matrix(int a, int b, int)
+      static real r_matrix(int a, int b, int)
       {
          return ((a%2 == 1) && (b%2 == 1)) ? -1.0 : 1.0;
       }
@@ -166,7 +190,7 @@ template <>
 class FermionicParticleImpl<half_int>
 {
    public:
-      static double r_matrix(half_int a, half_int b, half_int)
+      static real r_matrix(half_int a, half_int b, half_int)
       {
          DEBUG_CHECK(is_integral(a));
          DEBUG_CHECK(is_integral(b));
@@ -179,6 +203,7 @@ class FermionicParticle : public FermionicParticleImpl<typename Symmetry::value_
 {
    public:
       using is_real = std::true_type;
+      using is_symmetric = std::true_type;     // alias for is_real
       using value_type = Symmetry::value_type;
 
       static_assert(std::is_same<value_type, half_int>::value
@@ -196,7 +221,7 @@ class FermionicParticle : public FermionicParticleImpl<typename Symmetry::value_
          return Name == "FermionicParticle";
       }
 
-      static double r_matrix(value_type a, value_type b, value_type c)
+      static real r_matrix(value_type a, value_type b, value_type c)
       {
          DEBUG_CHECK(symmetry.is_transform_target(a,b,c));
          return FermionicParticleImpl<value_type>::r_matrix(a,b,c);
@@ -261,6 +286,7 @@ template <typename Symmetry>
 class FermionicSpin
 {
    public:
+<<<<<<< HEAD
       using is_real = std::true_type;
       using is_symmetric = std::true_type;     // alias for is_real
       using value_type = Symmetry::value_type;
@@ -417,7 +443,7 @@ class SU2 : public StaticLieGroup_MF<SU2>
          return j.twice();
       }
 
-      static std::string name() { return "SU(2)"; }
+      static std::string static_name() { return "SU(2)"; }
 
       // 'friendly' ordering of quantum numbers.  The identity must
       // compare as less than all other non-identity reps.
@@ -425,6 +451,13 @@ class SU2 : public StaticLieGroup_MF<SU2>
       {
          // order is 0,1/2,-1/2,1,-1,3/2,-3/2,...
          return abs(j1) < abs(j2) || (abs(j1) == abs(j2) && j2 < j1);
+      }
+
+      // 'size' is the number of members of the category.  For an infinite category,
+      // return 0
+      static int size()
+      {
+         return 0;
       }
 
       // enumerate the possible quantum numbers from a non-negative integer.
@@ -481,13 +514,6 @@ class SU2 : public StaticLieGroup_MF<SU2>
       static half_int adjoint(half_int j)
       {
          return j;
-      }
-
-      static int multiplicity(half_int j1, half_int j2, half_int j)
-      {
-         return ((j.twice() <= j1.twice() + j2.twice())
-                 && (j.twice() >= std::abs(j1.twice() - j2.twice())))
-            ? 1 : 0;
       }
 
       // cross product is defined only for vector operators
