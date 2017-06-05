@@ -16,7 +16,7 @@
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER
-/* -*- C++ -*-
+/*
   niftycounter.h
 
   An implementation of the nifty counter used to ensure correct ordering of static data initialization.
@@ -35,30 +35,46 @@
 namespace NiftyCounter
 {
 
-typedef void(*InitFuncType)();
 
-void DoNothing();
+template <typename Init, typename Exit = void>
+class nifty_counter;
 
-template <InitFuncType Init, InitFuncType Exit = DoNothing>
+template <typename Init, typename Exit>
 class nifty_counter
 {
    public:
       nifty_counter()
       {
-         if (count++ == 0) Init();
+         if (count++ == 0) InitFunc();
       }
 
       ~nifty_counter()
       {
-         if (--count == 0) Exit();
+         if (--count == 0) ExitFunc();
       }
 
    private:
+      Init InitFunc;
+      Exit ExitFunc;
       static int count;
 };
 
-template <InitFuncType InitFunc, InitFuncType ExitFunc>
-int nifty_counter<InitFunc, ExitFunc>::count = 0;
+template <typename Init>
+class nifty_counter<Init, void>
+{
+   public:
+      nifty_counter()
+      {
+         if (count++ == 0) InitFunc();
+      }
+
+   private:
+      Init InitFunc;
+      static int count;
+};
+
+template <typename Init, typename Exit>
+int nifty_counter<Init, Exit>::count = 0;
 
 } // namespace NiftyCounter
 

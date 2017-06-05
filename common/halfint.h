@@ -20,6 +20,7 @@
 #if !defined(MPTOOLKIT_COMMON_HALFINT_H)
 #define MPTOOLKIT_COMMON_HALFINT_H
 
+#include "common/types.h"
 #include <iostream>
 #include <stdexcept>
 #include <cmath>
@@ -36,8 +37,11 @@ class half_int
 {
    public:
       half_int() : N2(0) {}  // initialize to zero, rather than leave N2 unitialized.
-      half_int(double D) { N2 = int(floor(D * 2.0 + 0.5)); }     // round 2D to nearest int
+      half_int(double D) { N2 = int(std::floor(D*2 + 0.5)); }     // round 2D to nearest int
       half_int(int I) { N2 = 2 * I; }
+#if defined(HAVE_FLOAT128)
+      half_int(float128 D) { N2 = int(floor(D*2 + 0.5Q)); }
+#endif
 
       // use compiler defined copy ctor, assignment and dtor
       // (user defined ctor affects performance on intel 6 compiler)
@@ -59,6 +63,12 @@ class half_int
       half_int operator--(int) { half_int Temp(*this); N2 -= 2; return Temp; }
 
       double to_double() const { return N2 / 2.0; }
+
+#if defined(HAVE_FLOAT128)
+      float128 to_float128() const { return N2 * float128(0.5); }
+#endif
+
+      real to_real() const { return N2 * real(0.5); }
 
       int to_int() const
         { if (!is_integral()) throw_cannot_convert(); return N2 >> 1; }
@@ -105,8 +115,15 @@ half_int operator*(int i, half_int h);
 double   operator*(half_int h, double d);
 double   operator*(double d, half_int h);
 double   operator*(half_int h1, half_int h2);
-
 double   operator/(half_int h, double d);
+
+#if defined(HAVE_FLOAT128)
+float128 operator*(half_int h, float128 d);
+float128 operator*(float128 d, half_int h);
+// operator*(half_int, half_int doesn't need a float128 version as the result is exactly representable
+// with double precision
+float128 operator/(half_int h, float128 d);
+#endif
 
 half_int operator+(half_int h1, half_int h2);
 half_int operator-(half_int h1, half_int h2);
@@ -202,13 +219,13 @@ half_int operator*(int i, half_int h)
 inline
 double operator*(half_int h, double d)
 {
-   return h.twice() * d / 2.0;
+   return (h.twice() * d) / 2;
 }
 
 inline
 double operator*(double d, half_int h)
 {
-   return d * h.twice() / 2.0;
+   return (d * h.twice()) / 2;
 }
 
 inline
@@ -222,6 +239,25 @@ double operator/(half_int h, double d)
 {
    return h.twice() / (d * 2.0);
 }
+
+#if defined(HAVE_FLOAT128)
+inline
+float128 operator*(half_int h, float128 d)
+{
+   return (h.twice() * d) / 2;
+}
+
+inline
+float128 operator*(float128 d, half_int h)
+{
+   return (d * h.twice()) / 2;
+}
+inline
+float128 operator/(half_int h, float128 d)
+{
+   return h.twice() / (d * 2);
+}
+#endif
 
 inline
 half_int operator+(half_int h1, half_int h2)

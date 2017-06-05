@@ -23,59 +23,106 @@
   The SU(2) quantum number registers an object that allows the name "SU(2)"
   in the SymmetryList.  eg, MyQuantumNumbers = SymmetryList("S:SU(2)")
 
-  This header simply has a nifty counter that ensures that the static object is initialized.
+  We have two braid group representations defined, bosonic and fermionic.
 */
+
+// definitions:
+// integral: all dimensions are integers
+// pointed: all dimensions are 1
+
 
 #if !defined(MPTOOKLIT_QUANTUMNUMBERS_SU2_H)
 #define MPTOOKLIT_QUANTUMNUMBERS_SU2_H
 
+#include "common/types.h"
 #include "common/niftycounter.h"
 #include "common/halfint.h"
 #include "quantumnumber.h"
 #include "coupling_su2.h"
 #include <iostream>
+#include <type_traits>
 
 namespace QuantumNumbers
 {
 
+// detect if class T has a .degree(T::value_type) member function
+template <typename T>
+struct has_degree_function
+{
+   template <typename C> static constexpr
+   decltype(std::declval<C>().degree(std::declval<typename T::value_type>()), bool())
+      test(int)
+   {
+      return true;
+   }
+
+   template <typename C> static constexpr bool test(...)
+   {
+      return false;
+   }
+   static constexpr bool value = test<T>(int());
+   using type = std::integral_constant<bool, value>;
+};
+
+// helper class for a multiplicity-free Lie group
 template <typename Derived>
 class StaticLieGroup_MF
 {
    public:
       using value_type = Derived::value_type;
-
+      using is_multiplicity_free = std::true_type;
       using is_integral = std::true_type;
       using is_pointed = std::true_type;
       using is_finite = std::false_type;
       using is_real = std::true_type;
 
-      static double qdim(value_type v)
+      static real qdim(value_type v)
       {
          return Derived::degree(v);
       }
 };
+
+// helper class for a multiplicity-free finite group
+template <typename Derived>
+class StaticFiniteGroup_MF
+{
+   public:
+      using value_type = Derived::value_type;
+      using is_multiplicity_free = std::true_type;
+      using is_integral = std::true_type;
+      using is_pointed = std::true_type;
+      using is_finite = std::true_type;
+      using is_real = std::true_type;
+
+      static real qdim(value_type v)
+      {
+         return Derived::degree(v);
+      }
+};
+
 
 // the identity rep of the braid group
 template <typename Symmetry>
 class Bosonic
 {
    public:
-      using is_real = std::true_type;
       using value_type = Symmetry::value_type;
+      using is_real = std::true_type;
+      using is_symmetric = std::true_type;     // alias for is_real
 
       explicit Bosonic(Symmetry const& s_, std::string const& Name) : symmetry(s_)
       {
-         CHECK_EQUAL(Name, "Bosonic");
+         CHECK_EQUAL(Name, "bosonic");
       }
 
-      static std::string name() { return "Bosonic"; }
+      static std::string name() { return "bosonic"; }
 
       static bool is_valid(Symmetry const& s, std::string const& Name)
       {
-         return Name == "Bosonic";
+         return Name == "bosonic";
       }
 
-      static double r_matrix(value_type a, value_type b, value_type c)
+      static real r_matrix(value_type a, value_type b, value_type c)
       {
          DEBUG_CHECK(symmetry.is_transform_target(a,b,c));
          return 1;
@@ -91,6 +138,7 @@ class FermionicSpin
 {
    public:
       using is_real = std::true_type;
+      using is_symmetric = std::true_type;     // alias for is_real
       using value_type = Symmetry::value_type;
 
       static_assert(std::is_same<value_type, half_int>::value);
@@ -107,7 +155,7 @@ class FermionicSpin
          return Name == "FermionicSpin";
       }
 
-      static double r_matrix(half_int a, half_int b, half_int c)
+      static real r_matrix(half_int a, half_int b, half_int c)
       {
          DEBUG_CHECK(symmetry.is_transform_target(a,b,c));
          return (is_integral(a) || is_integral(b)) ? 1.0 : -1.0;
@@ -125,7 +173,7 @@ template <>
 class FermionicParticleImpl<int>
 {
    public:
-      static double r_matrix(int a, int b, int)
+      static real r_matrix(int a, int b, int)
       {
          return ((a%2 == 1) && (b%2 == 1)) ? -1.0 : 1.0;
       }
@@ -135,7 +183,7 @@ template <>
 class FermionicParticleImpl<half_int>
 {
    public:
-      static double r_matrix(half_int a, half_int b, half_int)
+      static real r_matrix(half_int a, half_int b, half_int)
       {
          DEBUG_CHECK(is_integral(a));
          DEBUG_CHECK(is_integral(b));
@@ -148,6 +196,7 @@ class FermionicParticle : public FermionicParticleImpl<typename Symmetry::value_
 {
    public:
       using is_real = std::true_type;
+      using is_symmetric = std::true_type;     // alias for is_real
       using value_type = Symmetry::value_type;
 
       static_assert(std::is_same<value_type, half_int>::value
@@ -165,7 +214,7 @@ class FermionicParticle : public FermionicParticleImpl<typename Symmetry::value_
          return Name == "FermionicParticle";
       }
 
-      static double r_matrix(value_type a, value_type b, value_type c)
+      static real r_matrix(value_type a, value_type b, value_type c)
       {
          DEBUG_CHECK(symmetry.is_transform_target(a,b,c));
          return FermionicParticleImpl<value_type>::r_matrix(a,b,c);
@@ -179,12 +228,14 @@ class FermionicParticle : public FermionicParticleImpl<typename Symmetry::value_
 class SU2 : public StaticLieGroup_MF<SU2>
 {
    public:
-      typedef half_int   value_type;
-      typedef half_int   difference_type;
+      using value_type      = half_int;
+      using difference_type = half_int;
 
+      // conversion to/from string representation
       static std::string as_string(half_int j);
       static half_int from_string(std::string const& s);
 
+      // converstion to/from int storage (not to be confused with the integer enumeration!)
       static half_int from_int(int n)
       {
          return half_int::from_twice(n);
@@ -195,7 +246,7 @@ class SU2 : public StaticLieGroup_MF<SU2>
          return j.twice();
       }
 
-      static std::string name() { return "SU(2)"; }
+      static std::string static_name() { return "SU(2)"; }
 
       // 'friendly' ordering of quantum numbers.  The identity must
       // compare as less than all other non-identity reps.
@@ -203,6 +254,13 @@ class SU2 : public StaticLieGroup_MF<SU2>
       {
          // order is 0,1/2,-1/2,1,-1,3/2,-3/2,...
          return abs(j1) < abs(j2) || (abs(j1) == abs(j2) && j2 < j1);
+      }
+
+      // 'size' is the number of members of the category.  For an infinite category,
+      // return 0
+      static int size()
+      {
+         return 0;
       }
 
       // enumerate the possible quantum numbers from a non-negative integer.
@@ -238,10 +296,10 @@ class SU2 : public StaticLieGroup_MF<SU2>
       static std::string casimir_name(std::string const& QName, int)
       { return QName + "^2"; }
 
-      static double casimir(half_int j, int n)
+      static real casimir(half_int j, int n)
       {
          DEBUG_CHECK_EQUAL(n, 0);
-         return j.to_double() * (j.to_double() + 1);
+         return j.to_real() * (j.to_real() + 1);
       }
 
       // true if this is the scalar (identity) quantum number
@@ -261,13 +319,6 @@ class SU2 : public StaticLieGroup_MF<SU2>
          return j;
       }
 
-      static int multiplicity(half_int j1, half_int j2, half_int j)
-      {
-         return ((j.twice() <= j1.twice() + j2.twice())
-                 && (j.twice() >= std::abs(j1.twice() - j2.twice())))
-            ? 1 : 0;
-      }
-
       // cross product is defined only for vector operators
       static bool cross_product_exists(half_int j1, half_int j2)
       {
@@ -281,27 +332,27 @@ class SU2 : public StaticLieGroup_MF<SU2>
          return j1;
       }
 
-      static std::complex<double> cross_product_factor(half_int j1, half_int j2)
+      static complex cross_product_factor(half_int j1, half_int j2)
       {
          DEBUG_CHECK_EQUAL(j1, 1);
          DEBUG_CHECK_EQUAL(j2, 1);
-         return std::complex<double>(0.0, std::sqrt(2.0));
+         return complex(0.0, math_const::sqrt_2);
       }
 
-      static double coupling_3j_phase(half_int j1, half_int j2, half_int j)
+      static real coupling_3j_phase(half_int j1, half_int j2, half_int j)
       {
          return minus1pow(j1+j2-j);
       }
 
-      static double coupling_6j(half_int j1, half_int j2, half_int j3,
-                                half_int j4, half_int j5, half_int j6)
+      static real coupling_6j(half_int j1, half_int j2, half_int j3,
+                              half_int j4, half_int j5, half_int j6)
       {
          return CouplingSU2::Coupling6j(j1, j2, j3, j4, j5, j6);
       }
 
-      static double coupling_9j(half_int j1 , half_int j2 , half_int j12,
-                                half_int j3 , half_int j4 , half_int j34,
-                                half_int j13, half_int j24, half_int j  )
+      static real coupling_9j(half_int j1 , half_int j2 , half_int j12,
+                              half_int j3 , half_int j4 , half_int j34,
+                              half_int j13, half_int j24, half_int j  )
       {
          return CouplingSU2::Coupling9j(j1, j2, j12, j3, j4, j34, j12, j24, j);
       }
@@ -343,15 +394,15 @@ class SU2 : public StaticLieGroup_MF<SU2>
          return j + delta;
       }
 
-      static double weight(difference_type x)
+      static real weight(difference_type x)
       {
-         return std::abs(x.to_double());
+         return std::abs(x.to_real());
       }
 
       SU2() : j(0) {}
       SU2(half_int j_) : j(j_) {}
       SU2(int j_) : j(j_) {}
-      SU2(double j_) : j(j_) {}
+      SU2(real j_) : j(j_) {}
       explicit SU2(int const* InIter);
       explicit SU2(std::string const& s);
 
@@ -403,19 +454,13 @@ int degree(SU2 const& q)
 }
 
 inline
-double trace(SU2 const& q)
+real trace(SU2 const& q)
 {
    return q.j.twice() + 1;
 }
 
 inline
-double identity(SU2 const& q)
-{
-   return 1;
-}
-
-inline
-int multiplicity(SU2 const& q1, SU2 const& q2, SU2 const& q)
+real identity(SU2 const& q)
 {
    return 1;
 }
@@ -436,18 +481,19 @@ SU2 cross_product_transforms_as(SU2 const& q1, SU2 const& q2)
 }
 
 inline
-std::complex<double> cross_product_factor(SU2 const& q1, SU2 const& q2)
+complex cross_product_factor(SU2 const& q1, SU2 const& q2)
 {
    DEBUG_CHECK_EQUAL(q1.j, 1);
    DEBUG_CHECK_EQUAL(q2.j, 1);
-   return std::complex<double>(0.0, std::sqrt(2.0));
+   return complex(0.0, math_const::sqrt_2);
 }
 
 inline
-double clebsch_gordan(SU2 const& q1, SU2 const& q2, SU2 const& q,
+real clebsch_gordan(SU2 const& q1, SU2 const& q2, SU2 const& q,
                       Sz const& m1,  Sz const& m2,  Sz const& m)
 {
    PRECONDITION(is_triangle(q1.j, q2.j, q.j));
+   using std::sqrt;
 
    // to get the convention of Varshalovich et al insert factor
    return
@@ -458,9 +504,10 @@ double clebsch_gordan(SU2 const& q1, SU2 const& q2, SU2 const& q,
 }
 
 inline
-double product_coefficient(SU2 const& k1, SU2 const& k2, SU2 const& k,
+real product_coefficient(SU2 const& k1, SU2 const& k2, SU2 const& k,
                            SU2 const& qp, SU2 const& q, SU2 const& qpp)
 {
+   using std::sqrt;
    DEBUG_PRECONDITION(is_triangle(k1.j, k2.j, k.j));
    DEBUG_PRECONDITION(is_triangle(qp.j, k1.j, qpp.j));
    DEBUG_PRECONDITION(is_triangle(qpp.j, k2.j, q.j));
@@ -473,9 +520,10 @@ double product_coefficient(SU2 const& k1, SU2 const& k2, SU2 const& k,
 
 
 inline
-double inverse_product_coefficient(SU2 const& k1, SU2 const& k2, SU2 const& k,
+real inverse_product_coefficient(SU2 const& k1, SU2 const& k2, SU2 const& k,
                                    SU2 const& qp, SU2 const& q, SU2 const& qpp)
 {
+   using std::sqrt;
    DEBUG_PRECONDITION(is_triangle(k1.j, k2.j, k.j));
    DEBUG_PRECONDITION(is_triangle(qp.j, k1.j, qpp.j));
    DEBUG_PRECONDITION(is_triangle(qpp.j, k2.j, q.j));
@@ -486,10 +534,11 @@ double inverse_product_coefficient(SU2 const& k1, SU2 const& k2, SU2 const& k,
 }
 
 inline
-double tensor_coefficient(SU2 const& j1,  SU2 const& j2,  SU2 const& j12,
+real tensor_coefficient(SU2 const& j1,  SU2 const& j2,  SU2 const& j12,
                           SU2 const& j3,  SU2 const& j4,  SU2 const& j34,
                           SU2 const& j13, SU2 const& j24, SU2 const& j)
 {
+   using std::sqrt;
    DEBUG_PRECONDITION(is_triangle(j1.j,  j2.j, j12.j))(j1.j)(j2.j)(j12.j);
    DEBUG_PRECONDITION(is_triangle(j3.j, j4.j, j34.j))(j3.j)(j4.j)(j34.j);
    DEBUG_PRECONDITION(is_triangle(j13.j, j24.j, j.j))(j13.j)(j24.j)(j.j);
@@ -497,22 +546,23 @@ double tensor_coefficient(SU2 const& j1,  SU2 const& j2,  SU2 const& j12,
    DEBUG_PRECONDITION(is_triangle(j2.j, j4.j, j24.j))(j2.j)(j4.j)(j24.j);
    DEBUG_PRECONDITION(is_triangle(j12.j, j34.j, j.j))(j12.j)(j34.j)(j.j);
 
-   double f1 = sqrt(degree(j12));
-   double f2 = sqrt(degree(j13));
-   double f3 = sqrt(degree(j24));
-   double f4 = sqrt(degree(j34));
+   real f1 = sqrt(degree(j12));
+   real f2 = sqrt(degree(j13));
+   real f3 = sqrt(degree(j24));
+   real f4 = sqrt(degree(j34));
 
-   double Result =  f1*f2*f3*f4*Coupling9j(j1.j,  j2.j,  j12.j,
+   real Result =  f1*f2*f3*f4*Coupling9j(j1.j,  j2.j,  j12.j,
                                            j3.j,  j4.j,  j34.j,
                                            j13.j, j24.j, j.j);
    return Result;
 }
 
 inline
-double inverse_tensor_coefficient(SU2 const& j1,  SU2 const& j2,  SU2 const& j12,
+real inverse_tensor_coefficient(SU2 const& j1,  SU2 const& j2,  SU2 const& j12,
                                   SU2 const& j3,  SU2 const& j4,  SU2 const& j34,
                                   SU2 const& j13, SU2 const& j24, SU2 const& j)
 {
+   using std::sqrt;
    DEBUG_PRECONDITION(is_triangle(j1.j,  j2.j, j12.j))(j1.j)(j2.j)(j12.j);
    DEBUG_PRECONDITION(is_triangle(j3.j, j4.j, j34.j))(j3.j)(j4.j)(j34.j);
    DEBUG_PRECONDITION(is_triangle(j13.j, j24.j, j.j))(j13.j)(j24.j)(j.j);
@@ -520,34 +570,36 @@ double inverse_tensor_coefficient(SU2 const& j1,  SU2 const& j2,  SU2 const& j12
    DEBUG_PRECONDITION(is_triangle(j2.j, j4.j, j24.j))(j2.j)(j4.j)(j24.j);
    DEBUG_PRECONDITION(is_triangle(j12.j, j34.j, j.j))(j12.j)(j34.j)(j.j);
 
-   double f1 = sqrt(degree(j12));
-   double f2 = sqrt(degree(j13));
-   double f3 = sqrt(degree(j24));
-   double f4 = sqrt(degree(j34));
+   real f1 = sqrt(degree(j12));
+   real f2 = sqrt(degree(j13));
+   real f3 = sqrt(degree(j24));
+   real f4 = sqrt(degree(j34));
 
-   double denominator = f1*f2*f3*f4;
-   double numerator = degree(j3)*degree(j4)*degree(j12)*degree(j);
+   real denominator = f1*f2*f3*f4;
+   real numerator = degree(j3)*degree(j4)*degree(j12)*degree(j);
 
-   double Result =  (numerator/denominator)*Coupling9j(j1.j,  j2.j,  j12.j,
+   real Result =  (numerator/denominator)*Coupling9j(j1.j,  j2.j,  j12.j,
                                                        j3.j,  j4.j,  j34.j,
                                                        j13.j, j24.j, j.j);
    return Result;
 }
 
 inline
-double recoupling(SU2 const& q1, SU2 const& q2, SU2 const& q12,
-                  SU2 const& q3, SU2 const& q, SU2 const& q23)
+real recoupling(SU2 const& q1, SU2 const& q2, SU2 const& q12,
+                SU2 const& q3, SU2 const& q, SU2 const& q23)
 {
+   using std::sqrt;
    return sqrt(degree(q12)) * sqrt(degree(q23)) *
       Racah(q1.j, q2.j, q.j, q3.j, q12.j, q23.j);
 }
 
 inline
-double recoupling_12_3__13_2(SU2 const& q1, SU2 const& q2,
+real recoupling_12_3__13_2(SU2 const& q1, SU2 const& q2,
                              SU2 const& q12,
                              SU2 const& q3, SU2 const& q,
                              SU2 const& q13)
 {
+   using std::sqrt;
    return minus1pow(to_int(q1.j+q.j+q12.j+q13.j)) * sqrt(degree(q13)) * sqrt(degree(q12))
       * Racah(q1.j, q2.j, q3.j, q.j, q12.j, q13.j);
 }
@@ -559,13 +611,14 @@ SU2 adjoint(SU2 const& q)
 }
 
 inline
-double adjoint_coefficient(SU2 const& qp, SU2 const& k, SU2 const& q)
+real adjoint_coefficient(SU2 const& qp, SU2 const& k, SU2 const& q)
 {
-   return minus1pow(to_int(q.j + k.j - qp.j)) * sqrt(degree(q)/double(degree(qp)));
+   using std::sqrt;
+   return minus1pow(to_int(q.j + k.j - qp.j)) * sqrt(degree(q)/real(degree(qp)));
 }
 
 inline
-double conj_phase(SU2 const& qp, SU2 const& k, SU2 const& q)
+real conj_phase(SU2 const& qp, SU2 const& k, SU2 const& q)
 {
    return minus1pow(to_int(q.j + k.j - qp.j));
 }
@@ -670,32 +723,35 @@ SU2 heighest_weight(Sz const& z)
 }
 
 inline
-double weight(Sz const& p)
+real weight(Sz const& p)
 {
-   return fabs(p.m.to_double());
+   using std::abs;
+   return abs(p.m.to_real());
 }
 
 inline
-double delta_shift_coefficient(SU2 const& qp, SU2 const& k, SU2 const& q, SU2 const& Delta)
+real delta_shift_coefficient(SU2 const& qp, SU2 const& k, SU2 const& q, SU2 const& Delta)
 {
-   double Result = minus1pow(to_int(q.j - k.j + qp.j))
-      * sqrt(double(q.j.twice()+Delta.j.twice()+1)*double(qp.j.twice()+1))
+   using std::sqrt;
+   using std::abs;
+   real Result = minus1pow(to_int(q.j - k.j + qp.j))
+      * sqrt(real(q.j.twice()+Delta.j.twice()+1)*real(qp.j.twice()+1))
       * Racah(q.j, qp.j, q.j+Delta.j, qp.j+Delta.j, k.j, Delta.j);
 
-   double ResultCheck = tensor_coefficient(Delta, q, SU2(Delta.j+q.j),
+   real ResultCheck = tensor_coefficient(Delta, q, SU2(Delta.j+q.j),
                                            SU2(0), k, k,
                                            Delta, qp, SU2(Delta.j+qp.j));
 
-   CHECK(fabs(Result-ResultCheck) < 1E-12)(Result)(ResultCheck);
+   CHECK(abs(Result-ResultCheck) < 1E-12)(Result)(ResultCheck);
 
    return Result;
 }
 
 inline
-double casimir(SU2 const& s, int n)
+real casimir(SU2 const& s, int n)
 {
    CHECK_EQUAL(n, 0);
-   return s.j.to_double() * (s.j.to_double() + 1);
+   return s.j.to_real() * (s.j.to_real() + 1);
 }
 
 //

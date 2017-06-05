@@ -121,14 +121,6 @@ double trace(Zn<n> const&)
 
 template <int n>
 inline
-int multiplicity(Zn<n> const& q1, Zn<n> const& q2, Zn<n> const& q)
-{
-   DEBUG_PRECONDITION_EQUAL(q1+q2,q);
-   return 1;
-}
-
-template <int n>
-inline
 bool cross_product_exists(Zn<n> const&, Zn<n> const&)
 {
    return true;

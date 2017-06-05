@@ -178,6 +178,17 @@ AX_LAPACK([], [AC_MSG_ERROR([LAPACK library not found, aborting.])])
 AX_BOOST_BASE([1.47], [], [AC_MSG_ERROR([boost libraries not found, aborting.])])
 AX_BOOST_PROGRAM_OPTIONS
 
+dnl do we want to use float128?
+AC_ARG_ENABLE([float128], AC_HELP_STRING([--enable-float128], 
+  [use 128-bit quad precision instead of 64-bit precision]), 
+        [, action-if-not-present)
+
+AS_IF([test "x$enable_float128" = "xyes"], [
+  dnl should do some checking here to see if it will actually work
+  AC_SUBST([HAVE_FLOAT128])
+  AC_SUBST([USE_FLOAT128])
+])
+
 ACX_ARPACK
 
 if test "x$acx_arpack_ok" != "xyes"; then
