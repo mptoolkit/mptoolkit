@@ -52,5 +52,4 @@ using real = double;
 using complex = std::complex<double>;
 #endif
 
-
 #endif
