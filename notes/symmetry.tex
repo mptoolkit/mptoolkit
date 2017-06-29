@@ -51,23 +51,42 @@ which differs by a normalization and phase factors from a 6j symbol. However the
 have more symmetry so are useful as an underlying implementation tool in computational
 algorithms. Hence we want to find generic ways to transform beyween F-symbols and 6j symbols.
 
-We also hope to unify this picture with braiding statistics and particle exchange statistics;
-it is not a priori clear that these are the same thing! In particular, I haven't seen yet
-any good discussion on the different types of exchange statistics that are possible for the
-same particle algebra (eg spinless fermions versus bosons, or even abelian anyons, all
-appear to have the same $U(1)$ fusion algebra). For non-abelian anyons, the
-$R$ symbols are generally presented as fixed quantitities, but clearly for simple spinless
-(eg $U(1)$) particles we have a choice of particle exchange statistics, which appears to be
-possible to encode into the $R$ matrix, but this then implies that the $R$ matrix is \emph{not}
-fixed by the fusion algebra alone. Is this different in the anyonic case? Eg can we give
-non-abelian anyons an additional fermionic phase? I'm thinking that the R matrix for
-anyons \emph{is} fixed, up to some braid group that mutually commutes. An example is if we have
-anyons with particle conservation,  then we can attach an arbitrary abelian anyonic braid representation
-(ie bosonic, fermionic or anyonic phase factor)
-to the $U(1)$ part. But typically we \emph{cannot} add such a phase to non-abelian anyons alone,
-eg for Fibonacci anyons we have $\tau \times \tau = 1 + \tau$, so no abelian phase factor is possible.
-On the other hand, for Ising anyons, it appears at first glance we could attach a phase $-1$
-to the $\sigma$ anyon.
+The general structure that admits a consistent set of F-symbols is known as a fusion tensor category.
+It is necessary and sufficient that the F-symbols obey the Biedenharn-Elliott identity, also
+known as the Hexagon relation.
+
+The F-symbols alone are not sufficient to describe an operator algebra.  In particular, the F-symbols
+do not in general give enough information to be able to determine particle statistics. For
+this, we need also the braiding statistics, which is encapsulated in the symbol R^{c}_{ab}, which
+is a coefficient (or, for non-multiplicity-free algebras, a matrix) that gives the phase change
+of two charges $a$ and $b$, which fuse to particle type $c$, and we braid $b$ over the top of $a$.
+For a given fusion algebra, there may be more than one possible set of braiding. The consistency
+between the $R$ and $F$ symbols is given by the Pentagon relation. This gives
+a braided tensor fusion category, which is ultimately the object that we are interested in.
+Mathematically, we need also some other conditions, which I find to be not particularly well specified
+in the literature, such as $K$-linear, semi-simplicity, existence of duals, and non-degenerate. 
+Generally the literature
+also looks at the \emph{finite} case (finite rank, number of charges). We are interested also in the infinite case,
+which arises from semi-simple Lie agebras. I haven't seen any discussion of infinite braided tensor
+categories that are \emph{not} derived from a semi-simple Lie algebra.
+
+The classification of \emph{finite} braided tensor fusion categories is more-or-less known, up to
+categories of rank ~ 5 (where the rank denotes the number of distinct charges in the category).
+We can subdivide braided tensor fusion categories (BTC for short) into some syb-types,
+\begin{itemize}
+\item \emph{symmetric}: A symmetric braided tensor category (STC) satisfies $R^{c}_{ab} = R^{c}_{ba}$ for
+all possible $a,b,c$. This implies $(R^{c}_{ab})^2 = 1$, and hence the charges behave as essentially
+fermionic or bosonic character. There is a strong connection between STC and finite groups. I am not sure
+if this is 1--1. For the purposes of this document, we also include infinite groups (ie, semi-simple
+Lie groups) in this class. 
+\item \emph{modular tensor category} (MTC): this is the 'opposite' of an STC, in the sense that the
+'symmetric centre' of the category is trivial. 
+\item \emph{integral}: if the quantum dimension of all objects is an integer, then the BTC is known as integral.
+All STC's are integral.
+\item \emph{pointed}: if the quantum dimension of all objects is unity, then the BTC is known as pointed.
+STC's arising from an abelian group are pointed. But there are many examples of MTC's that are also pointed,
+for example abelian anyons.
+\end{itemize}
 
 The specific symmetry groups that we want to handle here are
 \begin{enumerate}
@@ -82,6 +101,15 @@ The specific symmetry groups that we want to handle here are
 Where possible we want to allow projective representations too. Such representations occur
 as boundary conditions or edge particles in topological states. For the Dihedral
 groups, this means allowing for half-integer quantum numbers.
+
+\section{Literature summary}
+
+In this section we give an overview of the primary literature that was used in the development of this document/
+
+\begin{itemize}
+\item \cite{Bonderson} The canonical reference for anyons.
+\item \cite{MTC} Introduction to modular categories.
+\end{itemize}
 
 \section{Quantum numbers}
 
@@ -641,6 +669,8 @@ Other symmetries are more complicated as they involve non-unitary prefactors.
 
 \begin{thebibliography}{99}
 \bibitem{Ardonne} \url{http://dx.doi.org/10.1088/1751-8113/43/39/395205}
+\bibitem{Bonderson} Parsa Bonderson, PhD thesis, CalTech 2007.  \url{http://thesis.library.caltech.edu/2447/}
+\bibitem{MTC} M. M\"uger, Modular Categories.  http://arxiv.org/abs/1201.6593v2
 \end{thebibliography}
 
 \end{document}
