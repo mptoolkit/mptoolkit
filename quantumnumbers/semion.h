@@ -73,13 +73,16 @@ class Semion
       using value_type      = bool;
       using difference_type = bool;
 
+      using is_pointed      = std::true_type;
+
       Semion() {}
 
       // conversion to/from string representation
       static std::string as_string(bool j);
       static bool from_string(std::string const& s);
 
-      // converstion to/from int storage (not to be confused with the integer enumeration!)
+      // converstion to/from int storage (not to be confused with the
+      // integer enumeration!)
       static bool from_int(int n)
       {
          return n;
@@ -136,6 +139,7 @@ class Semion
       }
 
       // degree of the representation
+      // this is redundant for a pointed category
       static int degree(bool j)
       {
          return 1;
@@ -146,12 +150,14 @@ class Semion
          return j;
       }
 
+      // Frobenius-Schur indicator
       static real fb_indicator(bool j)
       {
          return j ? -1 : 1;
       }
 
-      // cross product is just ordinary product
+      // cross product is just ordinary product.
+      // In this case we shouldn't need to define it explicitly
       static bool cross_product_exists(bool j1, bool j2)
       {
          return true;
@@ -195,6 +201,12 @@ class Semion
       {
       }
 
+      static bool product(bool j1, bool j2)
+      {
+         return j1 ^ j2;
+      }
+
+      // following functions are redundant for a pointed category
       static bool is_transform_target(bool j1, bool j2, bool j)
       {
          return j == (j1 ^ j2);
