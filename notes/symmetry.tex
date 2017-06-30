@@ -22,7 +22,7 @@
 \newcommand{\ad}{\ddagger}
 \newcommand{\invad}{{\ddagger \ddagger \ddagger}}
 
-\newcommand{\fsymbol}[6]{\mbox{$\left( F^{#1,#2,#3}_{#4} \right)_{#5,#6}$}}
+\newcommand{\fsymbol}[6]{\mbox{$\left[ F^{#1,#2,#3}_{#4} \right]_{#5,#6}$}}
 
 \begin{document}
 
@@ -53,15 +53,15 @@ algorithms. Hence we want to find generic ways to transform beyween F-symbols an
 
 The general structure that admits a consistent set of F-symbols is known as a fusion tensor category.
 It is necessary and sufficient that the F-symbols obey the Biedenharn-Elliott identity, also
-known as the Hexagon relation.
+known as the Pentagon relation.
 
 The F-symbols alone are not sufficient to describe an operator algebra.  In particular, the F-symbols
 do not in general give enough information to be able to determine particle statistics. For
-this, we need also the braiding statistics, which is encapsulated in the symbol R^{c}_{ab}, which
+this, we need also the braiding statistics, which is encapsulated in the symbol $R^{c}_{ab}$, which
 is a coefficient (or, for non-multiplicity-free algebras, a matrix) that gives the phase change
 of two charges $a$ and $b$, which fuse to particle type $c$, and we braid $b$ over the top of $a$.
 For a given fusion algebra, there may be more than one possible set of braiding. The consistency
-between the $R$ and $F$ symbols is given by the Pentagon relation. This gives
+between the $R$ and $F$ symbols is given by the Hexagon relation. This gives
 a braided tensor fusion category, which is ultimately the object that we are interested in.
 Mathematically, we need also some other conditions, which I find to be not particularly well specified
 in the literature, such as $K$-linear, semi-simplicity, existence of duals, and non-degenerate. 
@@ -104,10 +104,10 @@ groups, this means allowing for half-integer quantum numbers.
 
 \section{Literature summary}
 
-In this section we give an overview of the primary literature that was used in the development of this document/
+In this section we give an overview of the primary literature that was used in the development of this document.
 
 \begin{itemize}
-\item \cite{Bonderson} The canonical reference for anyons.
+\item \cite{Bonderson} The canonical reference for anyons in physics. 
 \item \cite{MTC} Introduction to modular categories.
 \end{itemize}
 
@@ -117,31 +117,31 @@ a quantum number is a representation of some symmetry group. Fusion of quantum
 numbers is equivalent to taking products of representations, and is given by
 the Clebsch-Gordan expansion,
 \begin{equation}
-a \otimes b = \bigoplus n^{c}_{ab} \: c
+a \otimes b \simeq \bigoplus N^{c}_{ab} \: c
 \end{equation}
-where $n^{c}_{ab}$ is the \emph{multiplicity} of the representation $c$ in the expansion
+where $N^{c}_{ab}$ is the \emph{multiplicity} of the representation $c$ in the expansion
 of $a \otimes b$.
 Technically we should distinguish the representation label $j$ from the representation
 matrices $D(j)$, but we won't bother with this distsinction here, unless it gives a clearer
 notation.
-If $n^{j}){j_1,j_2} > 1$ then a representation occurs more than once in the expansion,
+If $N^{c}_{ab} > 1$ then a representation occurs more than once in the expansion,
 and this greatly complicates the description of the coupling. This is commonly
 referred to as the \emph{multiplicity problem}. Symmetry groups that always have 
-$n^{j}_{j_1,j_2} \leq 1$ are referred to as \emph{multiplicity free}.
+$N^{c}_{ab} \leq 1$ are referred to as \emph{multiplicity free}.
 
 Examples:
 \begin{itemize}
 \item $U(1)$: label the representations by a (half-)integer $j$, eg representing
 the particle number or $z$-component of spin. Then the Clebsch-Gordan
-expansion corresponds to simple addition of the quantum number, $D(j_1) \otimes D(j_2) = D(j_1+j+2)$.
+expansion corresponds to simple addition of the quantum number, $D(j_1) \otimes D(j_2) = D(j_1+j_2)$.
 \item $SU(2)$: The product of $SU(2)$ spins $j_1$ and $j_2$ (always non-negative) 
 is a sum of $\min(2j_1+1,2j_2+1)$
-representations. $n^{j}_{j_1,j_2} = 1$, if 
+representations. $N^{j}_{j_1,j_2} = 1$, if 
 $j \in \{|j_1 - j_2|, |J_1 - j_2| + 1, \cdots, j_1+j_2\}$,
 and $0$ otherwise.
 \item Ising anyons, corresponding to $SU(2)_3$, contain spins $1$ (the identiy,
 which has spin 0) and $\tau$ (analagous to a spin 1), with the
-fusion rules $1 \times 1 = 1$, $1 \times \tau = \tau \times 1 = \tau$, $tau \times \tau = 1 + \tau$.
+fusion rules $1 \times 1 = 1$, $1 \times \tau = \tau \times 1 = \tau$, $\tau \times \tau = 1 + \tau$.
 \item $SU(3)_3 / Z_3$ is probably the simplest algebra that is \emph{not} 
 multiplicity-free\cite{Ardonne}, via
 \begin{equation}
@@ -152,10 +152,11 @@ where the representation $8$ occurs twice on the right hand side.
 \end{itemize}
 
 The `zero' quantum number always exists. This is often denoted with a 1, since it corresponds
-to the trivial (identity) representation of the algebra. But in practice the spin is
-0. The identity quantum number is also referred to as \emph{scalar}, since it is
+to the trivial (identity) representation of the algebra. 
+The identity quantum number is also referred to as \emph{scalar}, since it is
 the unique representation that is invariant under symmetry transformations.
-A representation $j$ has a conjugate or dual representation, denoted $\bar{j}$. 
+A representation $j$ has a conjugate or dual representation, denoted $\bar{j}$,
+or in some literature as $j^*$.
 \begin{itemize}
 \item In $U(1)$ the conjugate correpsonds to negation, so $\bar{j} = -j$.
 \item $SU(2)$ is self-dual, so $\bar{j} = j$.
@@ -171,20 +172,72 @@ is often denoted $d_j$. For classical symmetries the dimension is an integer. Fo
 anyons, the dimension can be fractional and is then known as the \emph{quantum dimension}.
 The dimensions satisfy the sum rule
 \begin{equation}
-d_{j_1} d_{j_2} = \sum_j n^{j}_{j_1,j_2} \; d_j
+d_{j_1} d_{j_2} = \sum_j N^{j}_{j_1,j_2} \; d_j
 \end{equation}
-
 
 If, for some symmetry group, all of the representations have $d_j = 1$, then the
 group is abelian. This is equivalent to the statement that for each $a,b$ there is exactly
-one $c$ such that $n^{c}_{ab} = 1$, and all other multiplicities are zero.
+one $c$ such that $N^{c}_{ab} = 1$, and all other multiplicities are zero.
 
-\section{Fusion}
+The quantum dimension $q_a$ can be obtained as the largest eigenvalue of $N^c_{ab}$, treated
+as a matrix in the indices $b$, $c$. It is also possible to define the quantum dimensions through
+the F-symbols (see below), as
+\begin{equation}
+d_a = d_{\bar{a}} = \left| [F^{a\bar{a}a}_a]_{1,1} \right|^{-1}
+\end{equation}
+
+The fusion multiplicities obey the relations
+\begin{equation}
+N^{c}_{ab} = N^{c}_{ba} = N^{\bar{c}}_{\bar{a}\bar{b}} = N^{\bar{a}}_{b \bar{c}}
+\end{equation}
+This is 12 relations in total (all permutations of $a,b,c$ plus the dual versions).
+We also have
+\begin{equation}
+\sum_e N^{e}_{ab} N^d_{ec} = \sum_f N^d_{af} N^f_{bc}
+\end{equation}
+This is essentially associativity of tensor products; the number of ways of fusing
+charges $a,b,c$ to a charge $d$ is the same, whether we to the fusion as
+$(a\otimes b) \otimes c$ or $a \otimes (b \otimes c)$.
+
+
+\section{F-symbols}
 
 Hilbert spaces are complex spaces with an in inner product, so we need to distinguish
-bra's and ket's as separate entities. In diagrammantic notation, we do this  with incoming
-or outgoing arrows. It doesn't matter whether we regard an incoming arrow as a bra state
-or as a ket, as long as we are globally consistent.
+bra's and ket's as separate entities. In diagrammantic notation, we do this with
+arrows that end at a point, either as an incoming arrow or an outgoing arrow.
+It doesn't matter whether we regard an incoming arrow as a bra state
+or as a ket, as long as we are globally consistent. Reversing the orientation of a line
+requires conjugating the charge label, ie
+\begin{equation}
+\begin{gathered}
+\includesvg[width=1.5cm]{labeldown}
+\end{gathered}
+=
+\begin{gathered}
+\includesvg[width=1.5cm]{labelup}
+\end{gathered}
+\end{equation}
+We can think of this as the equivalence $\ket{a} \otimes \bra{a} = \bra{\bar{a}} \otimes \ket{\bar{a}}$.
+
+Normalization of basis vectors is important. A commonly used normalization convention
+is known as `isotopy invariance', which means that the value of a diagram is invariant under continuous
+deformations, as long as end points are fixed and lines are not passed through each other or around
+open end points. Now we want to connect our diagrams to physical states in Hilbert space.
+To do that, we assign a correspondence between end points of a diagram and bra or ket states.
+Bonderson\cite{Bonderson} does this in a slightly different way to how I do it here.
+I will set a terminating line with an outgoing arrow to be a ket, and a terminating line
+with an incoming arrow to be a bra. We will normalize the basis vectors such that
+$\braket{a}{a} = 1$. Note that
+this convention isn't as obvious as it looks: in $SU(2)$ it is common to consider a spin $j$ as a 
+'reduced ket', $\rket{j}$ which stands for a vector of $2j+1$ basis vectors (ie, a mixed state)
+\begin{equation}
+\rket{j} \equiv \left( \begin{array}{c} \ket{j;-j} \\ \ket{j;-j+1} \\ \vdots
+\\ \ket{j;j} \end{array} \right)
+\end{equation}
+in which case we have $\rbraket{j}{j} = 2j+1 = d_j$. 
+We will see later that physically relevant operations tend to reinsert these factors, for
+example in the trace, $\Tr [ \ket{a} \bra{a} ] = d_a$ is the physically relevant trace operation.
+
 Fusion of two quantum numbers looks like
 \begin{equation}
 \begin{gathered}
@@ -192,6 +245,36 @@ Fusion of two quantum numbers looks like
 \end{gathered}
 \end{equation}
 where we fuse two incoming states $a,b$ into an outgoing state $c$. 
+Isotopy invariance means that we need a normalization factor to relate this to basis vectors,
+\begin{equation}
+\left(\frac{d_c}{d_a d_b} \right)^{1/4}
+\begin{gathered}
+\includesvg[width=1.5cm]{fusion}
+\end{gathered}
+= \ket{c} \bra{a}\bra{b}
+\end{equation}
+In alternate notation, we can express the right hand side as $\ket{a,b;c}$.
+
+We can turn this diagram around, to represent splitting the charge $c$ into $a$ and $b$,
+\begin{equation}
+\left(\frac{d_c}{d_a d_b} \right)^{1/4}
+\begin{gathered}
+\includesvg[width=1.5cm]{splitting}
+\end{gathered}
+= \ket{a}\ket{b} \bra{c}
+\end{equation}
+
+Putting these together, we can form the inner product,
+\begin{equation}
+\begin{gathered}
+\includesvg[width=1.5cm]{inner}
+\end{gathered}
+= \delta_{c,c'} \sqrt{\frac{d_a d_b}{d_c}}
+\begin{gathered}
+\includesvg[width=1.5cm]{cline}
+\end{gathered}
+\end{equation}
+
 When fusing three particles $a,b,c$ together, there is an ambiguity as to whether
 we fuse $a,b$ first and then $c$, or fuse $a$ with the fusion of $b,c$. The difference
 is the intermediate quantum number, here denoted $e$ or $f$. The difference between
@@ -205,18 +288,19 @@ these forms of fusion is given by the $F$ symbol.
 \includesvg[width=2cm]{fusion4right}
 \end{gathered}
 \end{equation}
-Alternatively, we can write
+Alternatively, we can write, in Bonderson's notation.
 \begin{equation}
-\rket{((abe)c)d} = \sum_f \fsymbol{a}{b}{c}{d}{e}{f} \rket{(a(bcf))d}
+\ket{a,b;e} \ket{e,c;d} = \sum_f  \fsymbol{a}{b}{c}{d}{e}{f} \ket{b,c;f} \ket{a,f;d}
+\end{equation}
+Or as
+\begin{equation}
+\ket{((abe)c)d} = \sum_f \fsymbol{a}{b}{c}{d}{e}{f} \ket{(a(bcf))d}
 \end{equation}
 or as
 \begin{equation}
 \fsymbol{j_1}{j_2}{j_3}{j}{j_{12}}{j_{23}} 
 = \rbraket{(j_1 j_2 j_{12}) j_3 j}{j_1 (j_2 j_3 j_{23}) j}
 \end{equation}
-where we use the notation $\rket{a}$ to denote a state vector, as a reminder
-that we may have $d_a > 1$, so it isn't an ordinary vector. But we need to be careful
-with normalization of the inner product, maybe we should have a $1/d_j$ here?
 For given exterior legs $a,b,c,d$ we can view the F-symbol as the basis transformation
 that maps between two different choices of internal labelling.
 
@@ -237,7 +321,6 @@ $R$ matrix,
 \includesvg[width=2cm]{fusion}
 \end{gathered}
 \end{equation}
-
 
 \section{Symmetries of 6j symbols}
 
