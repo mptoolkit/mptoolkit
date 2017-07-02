@@ -355,8 +355,8 @@ int main(int argc, char** argv)
          if (ShowArgument)
             std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
          std::cout << '\n';
-         std::cout << std::left;
       }
+      std::cout << std::left;
 
       // Calculate the actual overlaps
       std::vector<TransEigenInfo> EigenList;
