@@ -53,7 +53,7 @@ class HistoryEntry
 
       std::string entry() const { return Entry; }
 
-      std::string formatted() const { return "#Date: " + Timestamp + '\n' + Entry; }
+      std::string formatted() const { if (Entry.empty()) return "(empty)"; else return "#Date: " + Timestamp + '\n' + Entry; }
 
       // Helper to construct a timestamp from a time_t, using the current local timezone
       static std::string MakeTimestamp(time_t Timestamp_);

@@ -44,8 +44,8 @@
 
 namespace pheap
 {
-// the default page file version is the current version, 2
-int RequiredPageFileVersion = 2;
+// allow all version numbers by default
+int RequiredPageFileVersion = -1;
 
 void SetExpectedPageFileVersion(int v)
 {
