@@ -95,7 +95,7 @@ HistoryEntry
 HistoryLog::front() const
 {
    if (History_.empty())
-      return HistoryEntry("(empty history log)");
+      return HistoryEntry("");
    return History_.front();
 }
 
@@ -103,7 +103,7 @@ HistoryEntry
 HistoryLog::back() const
 {
    if (History_.empty())
-      return HistoryEntry("(empty history log)");
+      return HistoryEntry("");
    return History_.back();
 }
 

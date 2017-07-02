@@ -383,10 +383,12 @@ void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Vers
       LinearWavefunction PsiLinear;
       MatrixOperator C_right;
       AttributeList Attr;
+      AttributeList AttrDummy;
 
       in >> C_old;
       in >> QShift;
       in >> PsiLinear;
+      in >> AttrDummy;
       in >> C_right;
       in >> Attr;
 

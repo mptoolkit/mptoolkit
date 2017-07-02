@@ -71,6 +71,10 @@ int main(int argc, char** argv)
          ("H_AKLT", "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
          ;
       OpDescriptions.add_functions()
+	 ("H_expx", "Exponentially decaying spin exchange in x direction parametrized by lambda s exp(-lambda*r)")
+	 ("H_expy", "Exponentially decaying spin exchange in y direction parametrized by lambda s exp(-lambda*r)")
+	 ("H_expz", "Exponentially decaying spin exchange in z direction parametrized by lambda s exp(-lambda*r)")
+	 ("H_expS", "Exponentially decaying spin-spin exchange")
 	 ("H_BQ"  , "Bilinear-biquadratic model, parameterized by theta", "spin 1", [&Spin]()->bool {return Spin==1;})
 	 ;
 
@@ -111,6 +115,15 @@ int main(int argc, char** argv)
          Lattice["H_AKLT"] = Lattice["H_J1"] + (1.0/3.0)*Lattice["H_B1"];
 	 Lattice.func("H_BQ")("theta") = "cos(theta)*H_J1 + sin(theta)*H_B1";
       }
+
+      Lattice.func("H_expx")(arg("lambda")=0.5)
+         = "exp(-lambda)*sum_string_inner(Sx(0),exp(-lambda)*I(0), Sx(0))";
+      Lattice.func("H_expy")(arg("lambda")=0.5)
+         = "exp(-lambda)*sum_string_inner(Sy(0),exp(-lambda)*I(0), Sy(0))";
+      Lattice.func("H_expz")(arg("lambda")=0.5)
+         = "exp(-lambda)*sum_string_inner(Sz(0),exp(-lambda)*I(0), Sz(0))";
+      Lattice.func("H_expS")(arg("lambda")=0.5)
+         = "H_expx{lambda}+H_expy{lambda}+H_expz{lambda}";
 
       Lattice["X"] = prod_unit(exp(std::complex<double>(0.0, math_const::pi)*Sx(0)));
       Lattice["Y"] = prod_unit(exp(std::complex<double>(0.0, math_const::pi)*Sy(0)));
