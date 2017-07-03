@@ -786,6 +786,12 @@ void ExportHeap(std::string const& FileName, PHeapObject* MainObject,
 PHeapObject* ImportHeap(BlockFileSystem* FS_, PageId MetaPage)
 {
    PRECONDITION(FileSystem() != NULL);
+
+   if (FileSystem()->version() != FS_->version())
+   {
+      PANIC("Cannot import a heap with a different version number.");
+   }
+
    id_type MainObjectID;
    HeapType HeapRecords;
 

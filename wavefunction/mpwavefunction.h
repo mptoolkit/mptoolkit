@@ -53,22 +53,22 @@ InvalidWavefunction::InvalidWavefunction(std::string const& Expected, std::strin
 class MPWavefunction
 {
    public:
-      MPWavefunction() {}
+      MPWavefunction() : Version_(0) {}
 
-      MPWavefunction(WavefunctionTypes const& Psi) : Psi_(Psi) {}
+      MPWavefunction(WavefunctionTypes const& Psi) : Psi_(Psi), Version_(0) {}
 
       MPWavefunction(WavefunctionTypes const& Psi, AttributeList const& Attr)
-         : Psi_(Psi), Attr_(Attr) {}
+         : Psi_(Psi), Attr_(Attr), Version_(0) {}
 
       // construct an MPWavefunction with the given attributes and history
       MPWavefunction(AttributeList const& Attr, HistoryLog const& Hist)
-         : Attr_(Attr), History_(Hist) {}
+         : Attr_(Attr), History_(Hist), Version_(0) {}
 
       MPWavefunction& operator=(MPWavefunction const& Psi2)
-      { Psi_ = Psi2.Psi_; Attr_ = Psi2.Attr_; History_ = Psi2.History_; return *this; }
+      { Psi_ = Psi2.Psi_; Attr_ = Psi2.Attr_; History_ = Psi2.History_; Version_ = 0; return *this; }
 
       MPWavefunction& operator=(WavefunctionTypes const& Psi2)
-      { Psi_ = Psi2; return *this; }
+      { Psi_ = Psi2; Version_ = 0; return *this; }
 
       WavefunctionTypes& Wavefunction() { return Psi_; }
 
@@ -110,10 +110,15 @@ class MPWavefunction
 
       void debug_check_structure() const;
 
+      // read-only; version number read from the stream.  Will be zero for
+      // wavefunctions that are not read directly from a stream.
+      int version() const { return Version_; }
+
    private:
       WavefunctionTypes Psi_;
       AttributeList Attr_;
       HistoryLog History_;
+      int Version_;
 
       friend PStream::ipstream& operator>>(PStream::ipstream& in, MPWavefunction& Psi);
       friend PStream::opstream& operator<<(PStream::opstream& out, MPWavefunction const& Psi);

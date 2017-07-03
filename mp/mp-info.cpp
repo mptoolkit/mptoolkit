@@ -369,6 +369,7 @@ int main(int argc, char** argv)
 
       if (ShowBasic)
       {
+	 std::cout << "Wavefunction version " << Psi->version() << '\n';
          boost::apply_visitor(ShowWavefunctionBasicInfo(), Psi->Wavefunction());
 
          std::cout << "Attributes:\n" << Psi->Attributes();

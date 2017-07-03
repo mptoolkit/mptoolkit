@@ -69,7 +69,8 @@ extern MessageLogger::Logger PHeapLog;
 
 // if the ExpectedPageFileVersion is set, then
 // abort if the file has the wrong version.
-// The default expexted page file version is 2
+// The default expected page file version is -1, meaning any version is allowed,
+// as long as the underlying system can read it.
 int ExpectedPageFileVersion();
 
 } // namespace pheap

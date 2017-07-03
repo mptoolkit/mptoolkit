@@ -86,6 +86,7 @@ void read_version(PStream::ipstream& in, MPWavefunction& Psi, int Version)
       InfiniteWavefunctionLeft x;
       read_version(in, x, 1);
       Psi = x;
+      Psi.Version_ = 1;
       return;
    }
 
@@ -94,8 +95,11 @@ void read_version(PStream::ipstream& in, MPWavefunction& Psi, int Version)
       InfiniteWavefunctionLeft x;
       read_version(in, x, 2);
       Psi = x;
+      Psi.Version_ = 2;
       return;
    }
+
+   Psi.Version_ = Version;
 
    if (Version <= 4)
    {
