@@ -789,7 +789,7 @@ PHeapObject* ImportHeap(BlockFileSystem* FS_, PageId MetaPage)
 
    if (FileSystem()->version() != FS_->version())
    {
-      PANIC("Cannot import a heap with a different version number.");
+      PANIC("Cannot import a heap with a different version number.")(FileSystem()->version())(FS_->version());
    }
 
    id_type MainObjectID;

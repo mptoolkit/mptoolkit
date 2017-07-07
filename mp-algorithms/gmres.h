@@ -121,7 +121,7 @@ void ApplyPlaneRotation(Real &dx, Real &dy, Real cs, Real sn)
 template <typename Vector, typename MultiplyFunc, typename PrecFunc>
 int
 GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
-      int m, int& max_iter, double& tol, PrecFunc Precondition, int Verbose = 0)
+      int m, int& max_iter, double& tol, PrecFunc Precondition, int Verbose = 0, bool NormalizeResid = true)
 {
   //  typedef typename Vector::value_type value_type;
   typedef std::complex<double> value_type;
@@ -129,7 +129,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
   VecType s(m+1), cs(m+1), sn(m+1);
   LinearAlgebra::Matrix<value_type> H(m+1, m+1, 0.0);
 
-  double normb = norm_frob(Precondition(b));
+  double normb = NormalizeResid ? norm_frob(Precondition(b)) : 1.0;
   Vector w = Precondition(MatVecMultiply(x));
   Vector r = Precondition(b) - w; // - MatVecMultiply(x));
   double beta = norm_frob(r);

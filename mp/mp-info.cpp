@@ -37,6 +37,7 @@ bool ShowBasis = false;
 bool ShowCasimir = false;
 bool ShowDensity = false;
 bool ShowDegen = false;
+bool Quiet = false;
 std::vector<int> Partition;
 
 void ShowBasicInfo(InfiniteWavefunctionLeft const& Psi, std::ostream& out)
@@ -108,7 +109,8 @@ void ShowBasisInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
 
 void ShowEntropyInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
 {
-   out << "#left-size #right-size   #entropy" << (Base2 ? "(base-2)" : "(base-e)") << '\n';
+   if (!Quiet)
+      out << "#left-size #right-size   #entropy" << (Base2 ? "(base-2)" : "(base-e)") << '\n';
    for (std::vector<int>::const_iterator I = Partition.begin(); I != Partition.end(); ++I)
    {
       RealDiagonalOperator Rho = Psi.lambda(*I);
@@ -131,9 +133,10 @@ void ShowDM(CanonicalWavefunctionBase const& Psi, std::ostream& out)
 
       DensityMatrix<MatrixOperator> DM(Rho);
 
-      out << "#Reduced density matrix at partition ("
-          << (*I) << "," << (Psi.size() - *I) << ") :\n";
-      DM.DensityMatrixReport(out, MaxEigenvalues, Base2, ShowDegen);
+      if (!Quiet)
+	 out << "#Reduced density matrix at partition ("
+	     << (*I) << "," << (Psi.size() - *I) << ") :\n";
+      DM.DensityMatrixReport(out, MaxEigenvalues, Base2, ShowDegen, Quiet);
       out << std::endl;
    }
 }
@@ -313,6 +316,7 @@ int main(int argc, char** argv)
          ("base2,2", prog_opt::bool_switch(&Base2), "show the entropy using base 2 instead of base e")
          ("partition,p", prog_opt::value(&Partition),
           "show quantities only for this parition (zero-based, can be used more than once; use --partition 0 to show only quantities at the edge of the unit cell")
+	 ("quiet", prog_opt::bool_switch(&Quiet), "don't show column headings")
          ("warranty", "show the complete explanation as to why there is NO WARRANTY, to the extent permitted by law")
          ("copying", "This program is free software, show the conditions under which it may be copied or modified")
          ("citations", "show information about the citations that publications using this software should reference")
@@ -369,8 +373,8 @@ int main(int argc, char** argv)
 
       if (ShowBasic)
       {
-	 std::cout << "Wavefunction version " << Psi->version() << '\n';
          boost::apply_visitor(ShowWavefunctionBasicInfo(), Psi->Wavefunction());
+	 std::cout << "File format version " << Psi->version() << '\n';
 
          std::cout << "Attributes:\n" << Psi->Attributes();
 
