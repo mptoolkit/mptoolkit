@@ -88,34 +88,6 @@ AC_DEFUN(
  ]
 )
 
-
-dnl
-dnl check for __attribute__((noreturn))
-dnl
-AC_DEFUN(
- [ACX_CXX_NORETURN],
- [AC_CACHE_CHECK(
-  [whether the C++ compiler supports __attribute__((noreturn))],
-  [acx_cv_cxx_noreturn],
-   acx_cv_cxx_noreturn=unsupported
-    AC_LANG_PUSH(C++)
-    for acx_kw in "__attribute__((noreturn))" ; do
-     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [[void foo() $acx_kw; ]])], 
-	               acx_cv_cxx_noreturn="$acx_kw" ; break)
-    done
-    AC_LANG_POP(C++)
-   
-  )
-  if test "$acx_cv_cxx_noreturn" != unsupported; then
-   acx_kw="$acx_cv_cxx_noreturn"
-   AC_DEFINE(HAVE_CXX_NORETURN,,[Defined if the compiler supports __attribute__((noreturn)).])
-  else
-   acx_kw=""
-  fi
-  AC_DEFINE_UNQUOTED(FUNC_NORETURN,$acx_kw,[((noreturn)) attribute])
- ]
-)
-  
 dnl
 dnl check convention for returning complex parameters from fortran functions
 dnl

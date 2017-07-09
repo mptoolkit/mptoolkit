@@ -2633,9 +2633,6 @@ ac_config_headers="$ac_config_headers config.h"
 
 
 
-
-
-
 CXXFLAGS_MPTK_SAVE="$CXXFLAGS"
 
 
@@ -11518,69 +11515,6 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
   fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the C++ compiler supports __attribute__((noreturn))" >&5
-$as_echo_n "checking whether the C++ compiler supports __attribute__((noreturn))... " >&6; }
-if ${acx_cv_cxx_noreturn+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  acx_cv_cxx_noreturn=unsupported
-    ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-    for acx_kw in "__attribute__((noreturn))" ; do
-     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-void foo() $acx_kw;
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-  acx_cv_cxx_noreturn="$acx_kw" ; break
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-    done
-    ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $acx_cv_cxx_noreturn" >&5
-$as_echo "$acx_cv_cxx_noreturn" >&6; }
-  if test "$acx_cv_cxx_noreturn" != unsupported; then
-   acx_kw="$acx_cv_cxx_noreturn"
-
-$as_echo "#define HAVE_CXX_NORETURN /**/" >>confdefs.h
-
-  else
-   acx_kw=""
-  fi
-
-cat >>confdefs.h <<_ACEOF
-#define FUNC_NORETURN $acx_kw
-_ACEOF
-
 
 
 

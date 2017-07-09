@@ -182,7 +182,6 @@ fi
 dnl C++ features
 ACX_FORTRAN_COMPLEX_RETURN
 ACX_CXX_RESTRICT
-ACX_CXX_NORETURN
 
 dnl Checks for library functions.
 AC_FUNC_MEMCMP
