@@ -23,8 +23,8 @@
 #include "mp-algorithms/gmres.h"
 #include "common/environment.h"
 
-bool UseIterativeRefinement = false;
-
+// maximum number of iterations used in GMRES.  In some cases of slow convergence
+// it is necessary to increase this.
 int const MaxIter = getenv_or_default("MP_GMRES_MAXITER", 10000);
 
 // A note on orthogonalizing vectors in non-orthogonal Hilbert spaces.
@@ -64,100 +64,65 @@ LinearSolve(Func F, MatrixOperator const& Rhs, double Tol = 1E-14, int Verbose =
    return Guess;
 }
 
+//#define USE_ITERATIVE_REFINEMENT
+// iterative refinement doesn't appear to add anything useful here, but increasing the
+// krylov length has a useful effect to avoid stagnation
 template <typename Func>
 void
 LinearSolve(MatrixOperator& x, Func F, MatrixOperator const& Rhs, double Tol = 1E-14, int Verbose = 0)
 {
-   int m = 30;
-   int max_iter = MaxIter;
-   double tol = Tol;
-   int Ret = GmRes(x, F, Rhs, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
-   if (Ret != 0)
-   {
-      // failed
-      PANIC("Linear solver failed to converge after max_iter iterations")(max_iter);
-   }
+   int m = 30;     // krylov subspace size
+   int iter = 0;   // total number of iterations performed
 
-   if (UseIterativeRefinement)
+   double normb = norm_frob(Rhs);
+
+   int IterThisRound = m*50; // if it takes more than 50 rounds to converge, then we've proably stagnated
+   double tol = Tol;
+   int Ret = GmRes(x, F, normb, Rhs, m, IterThisRound, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
+   iter += IterThisRound;
+
+   while (Ret != 0 && iter < MaxIter)
    {
-      TRACE("Iterative refinement");
-      // iterative refinement
-      m = 30;
-      max_iter = MaxIter;
-      tol = Tol;
+      // Attempt to avoid stagnation by increasing the number of iterations
+      m=m+10;
+      if (Verbose > 1)
+      {
+	 std::cerr << "Refinement step, increasing m to " << m << '\n';
+      }
+
+      //      TRACE("Refinement step")(iter);
+      // iterative refinement step
+#if defined(USE_ITERATIVE_REFINEMENT)
+      MatrixOperator R = Rhs- F(x);
+      MatrixOperator xRefine = R;
+#else
+      MatrixOperator R = Rhs;
       MatrixOperator xRefine = x;
-      MatrixOperator RhsRefine = Rhs - F(x);
-      Ret = GmRes(xRefine, F, RhsRefine, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
-      if (Ret != 0)
-      {
-	 // failed
-	 PANIC("Linear solver failed to converge after max_iter iterations")(max_iter);
-      }
-      x = x - xRefine;
-   }
-}
+#endif
+      IterThisRound = m*50;
+      double tol = Tol;
+      Ret = GmRes(xRefine, F, normb, R, m, IterThisRound, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
 
-template <typename Func>
-void
-LinearSolve(MatrixOperator& x, Func F, MatrixOperator const& Rhs, 
-	    MatrixOperator const& LeftUnit, MatrixOperator const& RightUnit, double Tol = 1E-14, int Verbose = 0)
-{
-   // Updated to use iterative refinement.  Note that although we have LeftUnit and RightUnit parameters
-   // we currently don't use them - it doesn't seem to give any improvement, and for operations that depend
-   // on orthogonality this is already built into the matrix-vector multiply functor.
-   // We aren't really using iterative refinement properly here.  What we should do is use iterative refinement to
-   // reduce the final residual norm in cases where it doesn't converge properly the first time due to poor conditioning.
-   // As such, the iterative refinement probably should be built into GmRes itself rather than here.
-   int m = 30;
-   int max_iter = MaxIter;
-   double tol = Tol;
-   int Ret = GmRes(x, F, Rhs, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
+      iter += IterThisRound;
+#if defined(USE_ITERATIVE_REFINEMENT)
+      x += xRefine;
+#else
+      x = xRefine;
+#endif
+
+      if (Verbose > 1)
+      {
+	 double Resid = norm_frob(F(x) - Rhs) / normb;
+	 std::cerr << "Residual after refinement step = " << Resid << '\n';
+      }
+   }
+
    if (Ret != 0)
    {
       // failed
-      PANIC("Linear solver failed to converge after max_iter iterations")(max_iter);
-   }
-
-   //   x -= conj(inner_prod(x, RightUnit)) * LeftUnit; // orthogonalize to the identity
-
-   if (UseIterativeRefinement)
-   {
-      //x -= conj(inner_prod(x, RightUnit)) * LeftUnit; // orthogonalize to the identity
-      MatrixOperator RhsRefine = Rhs - F(x);
-      int count = 0;
-      while (norm_frob(RhsRefine) > Tol * 100)
-      {
-	 if (Verbose > 0)
-	 {
-	    std::cerr << "Iterative refinement step " << (++count) << ", RnsNorm = " << norm_frob(RhsRefine) << '\n';
-	 }
-	 //TRACE("Iterative refinement");
-	 // iterative refinement
-	 m = 30;
-	 max_iter = MaxIter;
-	 tol = Tol * 10; // increased Tol since we use absolute scaling here
-	 MatrixOperator xRefine = x * norm_frob(RhsRefine);
-	 Ret = GmRes(xRefine, F, RhsRefine, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose, false);
-	 //xRefine -= conj(inner_prod(xRefine, RightUnit)) * LeftUnit; // orthogonalize to the identity
-	 if (Ret != 0)
-	 {
-	    // failed
-	    TRACE(norm_frob(x));
-	    PANIC("Linear solver failed to converge after max_iter iterations")(max_iter);
-	 }
-	 x = x + xRefine;
-	 RhsRefine = Rhs - F(x);
-	 //RhsRefine = RhsRefine - F(xRefine);
-	 //TRACE(norm_frob(RhsRefine));
-      }
-      if (Verbose > 0 && count > 0)
-      {
-	 double ActualResid = norm_frob(F(x) - Rhs) / norm_frob(Rhs);
-	 std::cerr << "Actual residual after iterative refinement = " << ActualResid << '\n';
-      }
+      PANIC("Linear solver failed to converge after max_iter iterations")(MaxIter);
    }
 }
-
 
 // Calculate the (complex) eigenvalue that is closest to 1.0
 // using Arnoldi.
@@ -321,7 +286,7 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
 
             LinearSolve(E[K][m], OneMinusTransferLeft_Ortho(K*Diag, Psi, QShift,
                                                             UnitMatrixLeft, UnitMatrixRight, HasEigenvalue1),
-                        Rhs, UnitMatrixLeft, UnitMatrixRight, Tol, Verbose);
+                        Rhs, Tol, Verbose);
 
             // do another orthogonalization -- this should be unncessary but for the paranoid...
             if (HasEigenvalue1 && E[K][m].TransformsAs() == UnitMatrixRight.TransformsAs())
@@ -707,7 +672,10 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
          // Initial guess for linear solver
          E[Col] = C;
 
-	 LinearSolve(E[Col], OneMinusTransferLeft_Ortho(Diag, Psi, QShift, Ident, Rho, false), C, Ident, Rho, Tol, Verbose);
+	 if (Col == 2)
+	    TRACE(C);
+
+	 LinearSolve(E[Col], OneMinusTransferLeft_Ortho(Diag, Psi, QShift, Ident, Rho, false), C, Tol, Verbose);
          //LinearSolve(E[Col], OneMinusTransferLeft(Diag, Psi, QShift), C, Ident, Rho, Tol, Verbose);
       }
    }
@@ -732,7 +700,7 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
    // solve for the first component
    SubProductLeftProject ProdL(Psi, QShift, Rho, Ident);
    E[Col] = C;
-   LinearSolve(E[Col], ProdL, C, Ident,  Rho, Tol, Verbose);
+   LinearSolve(E[Col], ProdL, C, Tol, Verbose);
 
    // Make it Hermitian
    //   E.back() = 0.5 * (E.back() + adjoint(E.back()));
@@ -894,7 +862,7 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
          // Initial guess for linear solver
          F[Row] = C;
 
-	 LinearSolve(F[Row], OneMinusTransferRight(Diag, Psi, QShift), C, Ident, Rho, Tol, Verbose);
+	 LinearSolve(F[Row], OneMinusTransferRight(Diag, Psi, QShift), C, Tol, Verbose);
       }
    }
    // Final row, must be identity
@@ -917,7 +885,7 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
    // solve for the first component
    SubProductRightProject ProdR(Psi, QShift, Rho, Ident);
    F[Row] = C;
-   LinearSolve(F[Row], ProdR, C, Ident, Rho, Tol, Verbose);
+   LinearSolve(F[Row], ProdR, C, Verbose);
 
    // Make it Hermitian
    //   F.front() = 0.5 * (F.front() + adjoint(F.front()));
