@@ -86,10 +86,12 @@ Lie groups) in this class.
 \item \emph{modular tensor category} (MTC): this is the `opposite' of an STC, in the sense that the
 `symmetric center' of the category is trivial. 
 \item \emph{integral}: if the quantum dimension of all objects is an integer, then the BTC is known as integral. 
-All STC's are integral. All categories arising from semi-simple Lie algebras are integral.
+All STC's are integral. 
 \item \emph{pointed}: if the quantum dimension of all objects is unity, then the BTC is known as pointed.
 STC's arising from an abelian group are pointed. But there are many examples of MTC's that are also pointed,
-for example abelian anyons.
+for example abelian anyons. There are anyon algebras that are integral but not pointed (ie, all of the quantum
+dimensions are integral but there is at least one member that has dimension > 1), Bonderson gives an example
+based on the fusion rules for $D_5$, but in principle any finite group could also have some non-trivial braid solutions.
 \end{itemize}
 
 The specific symmetry groups that we want to handle here are
@@ -118,6 +120,7 @@ are from this thesis.
 modular tensor categories of rank $\leq 4$.
 \item \cite{Pfeifer} Discusses in detail the effect of surface topology on the construction of fusion diagrams, in
 particular how to handle boundary conditions for 1D anyon chains.
+\item \cite{AnyonDMRG} DMRG for anyon chains, good discussion of normalization convention.
 \end{itemize}
 
 \section{Quantum numbers}
@@ -231,28 +234,40 @@ irrespective of the direction of the arrow. Often it is convenient to use the ab
 that the direction of 'time' and the direction of the arrows coincide. There are some subtleties
 involved in bending the leg of a tensor in such a way that it points backwards, see below.
 
-Normalization of basis vectors is important. A commonly used normalization convention
+Normalization of basis vectors is important. We can choose a normalization such that some particular
+operation becomes easier to express. A commonly used normalization convention
 is known as `isotopy invariance', which means that the value of a diagram is invariant under continuous
 deformations, as long as end points are fixed and lines are not passed through each other or around
 open end points. Note however there is a subtlety that we cannot bend 
 Now we want to connect our diagrams to physical states in Hilbert space.
-To do that, we assign a correspondence between end points of a diagram and bra or ket states.
-Bonderson\cite{Bonderson} does this in a slightly different way to how I do it here.
-I will set a terminating line with an outgoing arrow to be a ket, and a terminating line
-with an incoming arrow to be a bra. We will normalize the basis vectors such that
-$\braket{a}{a} = 1$. Note that
-this convention isn't as obvious as it looks: in $SU(2)$ it is common to consider a spin $j$ as a 
+This is a useful normalization when considering an operator point of view, because then the
+matrix elements of the identity operator are 1.
+This means that composing operators is very simple, we just join the corresponding lines
+of the tensor diagrams and there are no additional normalization factors to consider.
+However, a consequence of this is that the trace operation has a normalization factor,
+$Tr a = d_a$, where $d_a$ is the dimension of the representation.
+This corresponds to a common normalization convention in $SU(2)$; it is common to consider a spin $j$ as a 
 'reduced ket', $\rket{j}$ which stands for a vector of $2j+1$ basis vectors (ie, a mixed state)
 \begin{equation}
 \rket{j} \equiv \left( \begin{array}{c} \ket{j;-j} \\ \ket{j;-j+1} \\ \vdots
 \\ \ket{j;j} \end{array} \right)
 \end{equation}
 in which case we have $\rbraket{j}{j} = 2j+1 = d_j$. 
-We will see later that physically relevant operations tend to reinsert these factors, for
-example in the trace, $\Tr [ \ket{a} \bra{a} ] = d_a$ is the physically relevant trace operation.
+This is the normalization convention that us used by Bonderson \cite{Bonderson}, and we will use it
+for most of these notes. However it might be computationally more convenient to use an alternative
+normalization convention whereby $\rbraket{j}{j} = 1$. Ref \cite{AnyonDMRG} calls this `implicit'
+normalization, and uses a mix of both conventions in numerical calculations.
+The Matrix Product Toolkit uses the isotopy convention, which is certainly more natural for constructing
+matrix elements. The Matrix Product Toolkit reuses the tensor arithmetic for states and operators, and
+it would be a major complication to mix normalization conventions. However the implicit normalization
+has some computational advantages, especially the inner product operation has \emph{no} additional
+normalization factors, so as far as external algorithms are concerned we can treat anyonic states
+as ordinary vectors, which simplifies interfacing to numerical algorithms. This will be discussed in more
+detail later.
 
-Isotopy invariance has some subtlties, which are overlooked by some authors. In particular, although
+Tensor diagrams have some subleties which are overlooked by some authors. In particular, although
 we can freely bend tensor legs to the left and right, we \emph{cannot} freely bend them up and down.
+This is discussed in Bonderson \cite{Bonderson}, also by Pfeifer et al\cite{AnyonDMRG}.
 In particular, the following two diagrams are \emph{not} equivaent,
 \begin{equation}
 \begin{gathered}
@@ -402,6 +417,8 @@ Note it is important here that both $e$ and $f$ legs are pointing in the same di
 See Butler page 59
 
 \section{Braiding}
+
+\iffalse
 
 \begin{equation}
 \begin{gathered}
@@ -841,6 +858,8 @@ rows and first two columns,
 \eeq
 Other symmetries are more complicated as they involve non-unitary prefactors.
 
+\fi
+
 \begin{thebibliography}{99}
 \bibitem{Ardonne} \doi{10.1088/1751-8113/43/39/395205}
 \bibitem{Bonderson} Parsa Bonderson, PhD thesis, CalTech 2007.  \url{http://thesis.library.caltech.edu/2447/}
@@ -852,6 +871,8 @@ Other symmetries are more complicated as they involve non-unitary prefactors.
 Matthias Troyer, and Guifre Vidal, Phys. Rev. B 86, 155111 (2012).
 \arxiv{1005.5486}
 \doi{10.1103/PhysRevB.86.155111}
+\bibitem{AnyonDMRG} Robert N. C. Pfeifer and Sukhwinder Singh, Phys. Rev. B 92, 115135 (2015).
+\doi{10.1103/PhysRevB.92.115135}
 
 \end{thebibliography}
 
