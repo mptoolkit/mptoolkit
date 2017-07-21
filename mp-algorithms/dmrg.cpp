@@ -70,6 +70,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
          if (Prefactor == 0)
             Prefactor = 1;
          RhoMix += Prefactor * triple_prod(herm(RH[i]), Rho, RH[i]);
+	 //TRACE(i)(Prefactor);
       }
       // check for a zero mixing term - can happen if there are no interactions that span
       // the current bond
@@ -151,6 +152,7 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
          if (Prefactor == 0)
             Prefactor = 1;
          RhoMix += Prefactor * triple_prod(LH[i], Rho, herm(LH[i]));
+	 //	 TRACE(i)(Prefactor);
       }
       double RhoTrace = trace(RhoMix).real();
       if (RhoTrace != 0)

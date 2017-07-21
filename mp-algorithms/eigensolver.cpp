@@ -23,6 +23,8 @@
 #include "mp-algorithms/gmres.h"
 #include <boost/algorithm/string.hpp>
 
+#include "mps/packunpack.h"
+
 struct MPSMultiply
 {
    MPSMultiply(StateComponent const& E_, OperatorComponent const& H_, StateComponent const& F_)
@@ -43,7 +45,7 @@ struct MPSMultiply
 
 struct MPSMultiplyShift
 {
-   MPSMultiplyShift(StateComponent const& E_, OperatorComponent const& H_, StateComponent const& F_, double Energy_)
+   MPSMultiplyShift(StateComponent const& E_, OperatorComponent const& H_, StateComponent const& F_, std::complex<double> Energy_)
       : E(E_), H(H_), F(F_), Energy(Energy_)
    {
    }
@@ -57,7 +59,7 @@ struct MPSMultiplyShift
    StateComponent const& E;
    OperatorComponent const& H;
    StateComponent const& F;
-   double Energy;
+   std::complex<double> Energy;
 };
 
 LocalEigensolver::Solver
@@ -72,6 +74,8 @@ LocalEigensolver::SolverFromStr(std::string Str)
       return Solver::Davidson;
    else if (Str == "shift-invert")
       return Solver::ShiftInvert;
+   else if (Str == "shift-invert-direct")
+      return Solver::ShiftInvertDirect;
    return Solver::InvalidSolver;
 }
 
@@ -79,25 +83,35 @@ std::string
 LocalEigensolver::SolverStr(LocalEigensolver::Solver s)
 {
    if (s == Solver::Lanczos)
-      return "Lanczos";
+      return "lanczos";
    else if (s == Solver::Arnoldi)
-      return "Arnoldi";
+      return "arnoldi";
    else if (s == Solver::Davidson)
-      return "Davidson";
+      return "davidson";
    else if (s == Solver::ShiftInvert)
-      return "Shift-Invert";
+      return "shift-Invert";
+   else if (s == Solver::ShiftInvertDirect)
+      return "shift-invert-direct";
    return "Invalid Solver";
 }
 
-LocalEigensolver::LocalEigensolver()
-   : FidelityScale(0.1), MaxTol(1e-4), MinTol(1-10), MinIter(2), MaxIter(20), Verbose(0),
-     Solver_(Solver::Lanczos), ShiftInvertEnergy(0)
+std::vector<std::string>
+LocalEigensolver::EnumerateSolvers()
 {
+   std::vector<std::string> Result;
+   for (int s = int(Solver::Lanczos); s <= int(Solver::ShiftInvertDirect); ++s)
+      Result.push_back(SolverStr(Solver(s)));
+   return Result;
 }
 
 LocalEigensolver::LocalEigensolver(Solver s)
    : FidelityScale(0.1), MaxTol(1e-4), MinTol(1-10), MinIter(2), MaxIter(20), Verbose(0),
-     Solver_(s), ShiftInvertEnergy(0)
+     Solver_(s), ShiftInvertEnergy(0), SubspaceSize(30), UsePreconditioning(false)
+{
+}
+
+LocalEigensolver::LocalEigensolver()
+   : LocalEigensolver(Solver::Lanczos)
 {
 }
 
@@ -108,9 +122,21 @@ LocalEigensolver::SetSolver(Solver s)
 }
 
 void
-LocalEigensolver::SetShiftInvertEnergy(double E)
+LocalEigensolver::SetShiftInvertEnergy(std::complex<double> E)
 {
    ShiftInvertEnergy = E;
+}
+
+void
+LocalEigensolver::SetSubspaceSize(int k)
+{
+   SubspaceSize = k;
+}
+
+void
+LocalEigensolver::SetPreconditioning(bool p)
+{
+   UsePreconditioning = p;
 }
 
 void
@@ -120,9 +146,132 @@ LocalEigensolver::SetInitialFidelity(int UnitCellSize, double f)
    FidelityAv_.push(f);
 }
 
-double CNorm = 1;
-double ActualEnergy = 1;
-int SubspaceSize = 30;
+template <typename Func>
+void
+LinearSolveDirect(StateComponent& x, Func F, StateComponent const& Rhs, int Verbose = 0)
+{
+   LinearAlgebra::Matrix<double> HMat = real(ConstructSuperOperator(F, x));
+
+   PackStateComponent Pack(x);
+   if (Verbose > 0)
+   {
+      std::cerr << "Linear solver dimension " << Pack.size() << '\n';
+   }
+   
+   LinearAlgebra::Vector<std::complex<double>> v(Pack.size());
+   Pack.pack(Rhs, v.data());
+
+   LinearAlgebra::Matrix<double> vv(size(v),1);
+   vv(LinearAlgebra::all,0) = real(v);
+   LinearAlgebra::Vector<std::complex<double>> xx = LinearAlgebra::LinearSolve(HMat, vv)(LinearAlgebra::all, 0);
+
+   x = Pack.unpack(xx.data());
+}
+
+template <typename Func, typename Prec>
+void
+LinearSolve(StateComponent& x, Func F, Prec P, StateComponent const& Rhs, int k, int& MaxIter, double& Tol, int Verbose = 0)
+{
+   int m = k;     // krylov subspace size
+   int iter = 0;   // total number of iterations performed
+
+   double normb = norm_frob(P(Rhs));
+
+   int IterThisRound = m*500;
+   if (IterThisRound > MaxIter)
+      IterThisRound = MaxIter;
+   double tol = Tol;
+   int Ret = GmRes(x, F, normb, Rhs, m, IterThisRound, tol, P, Verbose);
+   iter += IterThisRound;
+
+   while (Ret != 0 && iter < MaxIter)
+   {
+      // Attempt to avoid stagnation by increasing the number of iterations
+      m += 10; // avoid stagnation
+      if (Verbose > 1)
+      {
+	 std::cerr << "Refinement step, increasing m to " << m << '\n';
+      }
+
+      //      TRACE("Refinement step")(iter);
+      // iterative refinement step
+      StateComponent R = Rhs- F(x);
+      StateComponent xRefine = R;
+      IterThisRound = m*500;
+      tol = Tol;
+      Ret = GmRes(xRefine, F, normb, R, m, IterThisRound, tol, P, Verbose);
+
+      iter += IterThisRound;
+
+      if (Verbose > 1)
+      {
+	 double Resid = norm_frob(F(xRefine) - R) / normb;
+	 std::cerr << "Residual of refined solver = " << Resid << '\n';
+      }
+
+      x += xRefine;
+
+      if (Verbose > 1)
+      {
+	 double Resid = norm_frob(F(x) - Rhs) / normb;
+	 std::cerr << "Residual after refinement step = " << Resid << '\n';
+      }
+   }
+   Tol = tol;
+   if (Ret != 0)
+      Tol = -Tol;
+   MaxIter = iter;
+}
+
+struct InverseDiagonalPrecondition
+{
+   InverseDiagonalPrecondition(StateComponent const& Diag_, std::complex<double> Energy_)
+      : Diag(Diag_), Energy(Energy_) 
+   {
+      //      TRACE(Diag);
+      for (unsigned i = 0; i < Diag.size(); ++i)
+      {
+	 for (StateComponent::operator_type::iterator I = iterate(Diag[i]); I;  ++I)
+	 {
+	    for (StateComponent::operator_type::inner_iterator J = iterate(I); J; ++J)
+	    {
+	       for (auto II = iterate(*J); II; ++II)
+	       {
+		  for (auto JJ = iterate(II); JJ; ++JJ)
+		  {
+		     *JJ = (1.0 / (*JJ - Energy));
+		  }
+	       }
+	    }
+	 }
+      }
+      //TRACE(Diag)(Energy);
+   }
+
+   StateComponent operator()(StateComponent const& x) const
+   {
+      StateComponent Result(x);
+      for (unsigned i = 0; i < x.size(); ++i)
+      {
+	 for (StateComponent::operator_type::iterator I = iterate(Result[i]); I;  ++I)
+	 {
+	    for (StateComponent::operator_type::inner_iterator J = iterate(I); J; ++J)
+	    {
+	       StateComponent::operator_type::const_inner_iterator d = iterate_at(Diag[i].data(), J.index1(), J.index2());
+	       if (d)
+	       {
+		  *J = transform(*J, *d, LinearAlgebra::Multiplication<std::complex<double>, std::complex<double>>());
+	       }
+	    }
+	 }
+      }
+      return Result;
+   }
+
+   StateComponent Diag;
+   std::complex<double> Energy;
+
+};
 
 std::complex<double>
 LocalEigensolver::Solve(StateComponent& C,
@@ -148,7 +297,7 @@ LocalEigensolver::Solve(StateComponent& C,
       {
          std::cerr << "Starting eigensolver.  Initial guess vector has dimensions "
                    << C.Basis1().total_dimension() << " x " << C.LocalBasis().size()
-                   << " x " << C.Basis2().total_dimension() << '\n';
+                   << " x " << C.Basis2().total_dimension() << ", requested Tol=" << LastTol_ << '\n';
       }
       if (Solver_ == Solver::Lanczos)
       {
@@ -165,24 +314,64 @@ LocalEigensolver::Solve(StateComponent& C,
       else if (Solver_ == Solver::ShiftInvert)
       {
 	 StateComponent RHS = C;
-	 // scale the initial state using the previous norm
-	 //C *= CNorm;
-	 //TRACE(norm_frob(C));
-	 //ActualEnergy = inner_prod(C, MPSMultiply(LeftBlockHam, H, RightBlockHam)(C)).real();
-	 //C *= 1.0 / (ActualEnergy - ShiftInvertEnergy);
-	 C *= 0;
-         GmRes(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy),
-	       RHS, SubspaceSize, LastIter_, LastTol_,
-	       LinearAlgebra::Identity<StateComponent>(), Verbose-1);
+	 if (UsePreconditioning)
+	 {
+	    if (Verbose > 2)
+	    {
+	       std::cerr << "Using diagonal preconditioning\n";
+	    }
+	    StateComponent D = operator_prod_inner_diagonal(H, LeftBlockHam, herm(RightBlockHam));
+
+#if !defined(NDEBUG)
+	    // debug check the diagonal
+	    LinearAlgebra::Matrix<std::complex<double>> HMat = ConstructSuperOperator(MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy), D);
+	    PackStateComponent Pack(D);
+   	    LinearAlgebra::Vector<std::complex<double>> v(Pack.size());
+	    Pack.pack(D, v.data());
+	    LinearAlgebra::Vector<double> Diag = real(v);
+	    for (int i = 0; i < size(Diag); ++i)
+	    {
+	       if (norm_frob(Diag[i] - HMat(i,i)) > 1E-10)
+	       {
+		  PANIC(i)(Diag[i])(HMat(i,i));
+	       }
+	    }
+#endif
+
+	    //	    TRACE(D);
+	    LinearSolve(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy),
+			InverseDiagonalPrecondition(D, ShiftInvertEnergy),
+			RHS, SubspaceSize, LastIter_, LastTol_, Verbose-1);
+	    //TRACE(C);
+	 }
+	 else
+	 {
+	    LinearSolve(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy),
+			LinearAlgebra::Identity<StateComponent>(),
+			RHS, SubspaceSize, LastIter_, LastTol_, Verbose-1);
+	 }
+
 	 // normalization
-	 CNorm = norm_frob(C);
-	 TRACE(CNorm);
+	 double CNorm = norm_frob(C);
+	 //TRACE(CNorm);
 	 // Adjust tol by CNorm to give a more realistic estimate
 	 //LastTol_ /= CNorm;
 	 C *= 1.0 / CNorm;
-	 ActualEnergy = inner_prod(C, MPSMultiply(LeftBlockHam, H, RightBlockHam)(C)).real();
-	 //TRACE(ActualEnergy);
-	 LastEnergy_ = ActualEnergy; //ShiftInvertEnergy;
+	 LastEnergy_ = inner_prod(C, MPSMultiply(LeftBlockHam, H, RightBlockHam)(C));
+      }
+      else if (Solver_ == Solver::ShiftInvertDirect)
+      {
+	 StateComponent RHS = C;
+	 //TRACE(ShiftInvertEnergy);
+	 LinearSolveDirect(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy), RHS, Verbose-1);
+	 LastTol_ = norm_frob(MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy)(C) - RHS);
+	 // normalization
+	 double CNorm = norm_frob(C);
+	 //TRACE(CNorm);
+	 // Adjust tol by CNorm to give a more realistic estimate
+	 //LastTol_ /= CNorm;
+	 C *= 1.0 / CNorm;
+	 LastEnergy_ = inner_prod(C, MPSMultiply(LeftBlockHam, H, RightBlockHam)(C));
       }
       else
       {

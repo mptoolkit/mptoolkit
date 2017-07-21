@@ -248,6 +248,14 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, double normb, Vector const& b,
            Update(X2, i-1, H, s, v);
            Vector R = Precondition(b - MatVecMultiply(X2));
            TRACE(i)(norm_2(s[i]))(norm_frob(R));
+	   X2 = R;
+           for (int k = 0; k <= i; k++)
+           {
+	      X2 -= inner_prod(v[k], X2) * v[k];
+           }
+	   TRACE(norm_frob(X2));
+
+	   
         }
 #endif
 

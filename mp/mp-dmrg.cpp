@@ -64,6 +64,7 @@ void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum)
 	 std::cout << dmrg.Solver().LastEnergyReal();
       std::cout << " States=" << States.KeptStates()
 		<< " Truncrror=" << States.TruncationError()
+		<< " Fidelity=" << dmrg.Solver().LastFidelity()
 		<< " Iter=" << dmrg.Solver().LastIter()
 		<< " Tol=" << dmrg.Solver().LastTol()
 		<< '\n';
@@ -89,6 +90,7 @@ void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum)
 	 std::cout << dmrg.Solver().LastEnergyReal();
       std::cout << " States=" << States.KeptStates()
 		<< " Truncrror=" << States.TruncationError()
+		<< " Fidelity=" << dmrg.Solver().LastFidelity()
 		<< " Iter=" << dmrg.Solver().LastIter()
 		<< " Tol=" << dmrg.Solver().LastTol()
 		<< '\n';
@@ -113,11 +115,13 @@ int main(int argc, char** argv)
       int NumSweeps = 10;
       double TruncCutoff = 0;
       double EigenCutoff = -1;
+      int SubspaceSize = 30;
+      bool UsePreconditioning = false;
       bool UseDGKS = false;
       std::string Solver = "lanczos";
       bool Quiet = false;
       int Verbose = 0;
-      double ShiftInvertEnergy = 0.0;
+      std::complex<double> ShiftInvertEnergy = 0.0;
       double MaxTol = 4E-4;  // never use an eigensolver tolerance larger than this
       double MinTol = 1E-16; // lower bound for the eigensolver tolerance - seems we dont really need it
       std::string States = "100";
@@ -154,12 +158,16 @@ int main(int argc, char** argv)
          ("sweeps,s", prog_opt::value(&NumSweeps),
           FormatDefault("Number of half-sweeps to perform", NumSweeps).c_str())
          ("Solver,S", prog_opt::value(&Solver),
-          FormatDefault("Eigensoler to use ('lanczos', 'arnoldi', 'shift-invert')", Solver).c_str())
+          FormatDefault("Eigensoler to use ("
+			+ boost::algorithm::join(LocalEigensolver::EnumerateSolvers(), ", ") + ")", Solver).c_str())
          ("orthogonal", prog_opt::value<std::vector<std::string> >(),
           "force the wavefunction to be orthogonal to this state ***NOT YET IMPLEMENTED***")
          ("dgks", prog_opt::bool_switch(&UseDGKS), "Use DGKS correction for the orthogonality vectors")
 	 ("shift-invert-energy", prog_opt::value(&ShiftInvertEnergy),
-	  "For the shift-invert solver, the target energy")
+	  "For the shift-invert and shift-invert-direct solver, the target energy")
+	 ("subspacesize", prog_opt::value(&SubspaceSize),
+	  FormatDefault("Maximum Krylov subspace size for shift-invert solver", SubspaceSize).c_str())
+	 ("precondition", prog_opt::bool_switch(&UsePreconditioning), "use diagonal preconditioning in the shift-invert solver")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
           ;
 
@@ -232,6 +240,8 @@ int main(int argc, char** argv)
       dmrg.Solver().Verbose = Verbose;
       dmrg.Solver().EvolveDelta = EvolveDelta;
       dmrg.Solver().SetShiftInvertEnergy(ShiftInvertEnergy);
+      dmrg.Solver().SetSubspaceSize(SubspaceSize);
+      dmrg.Solver().SetPreconditioning(UsePreconditioning);
 
       dmrg.MixingInfo.MixFactor = MixFactor;
       dmrg.MixingInfo.RandomMixFactor = RandomMixFactor;

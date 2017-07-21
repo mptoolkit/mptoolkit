@@ -227,6 +227,43 @@ ConstructSuperOperator(F f, MatrixOperator const& Init)
    return Out;
 }
 
+// construct the full matrix representation of some superoperator
+// given by the functor F : StateComponent -> StateComponent
+template <typename F>
+LinearAlgebra::Matrix<std::complex<double> >
+ConstructSuperOperator(F f, StateComponent const& Init);
+
+template <typename F>
+LinearAlgebra::Matrix<std::complex<double> >
+ConstructSuperOperator(F f, StateComponent const& Init)
+{
+   PackStateComponent Pack(Init);
+
+   std::size_t Size = Pack.size();
+
+   LinearAlgebra::Matrix<std::complex<double> > Out(Size, Size);
+
+   std::vector<std::complex<double> > L(Size), R(Size);
+   for (unsigned i = 0; i < Size; ++i)
+   {
+      if (i > 0)
+         R[i-1] = 0.0;
+
+      R[i] = 1.0;
+
+      StateComponent M = Pack.unpack(&R[0]);
+      M = f(M);
+      Pack.pack(M, &L[0]);
+      for (unsigned j = 0; j < Size; ++j)
+      {
+         Out(j,i) = L[j];
+      }
+   }
+
+   return Out;
+}
+
+
 template <typename F>
 LinearAlgebra::SparseMatrix<std::complex<double> >
 ConstructSuperOperatorSparse(F f, MatrixOperator const& Init)
@@ -234,8 +271,6 @@ ConstructSuperOperatorSparse(F f, MatrixOperator const& Init)
    PackMatrixOperator Pack(Init);
 
    std::size_t Size = Pack.size();
-
-   TRACE(Size)(Size*Size);
 
    LinearAlgebra::SparseMatrix<std::complex<double> > Out(Size, Size);
 
@@ -268,9 +303,6 @@ ConstructSuperOperatorBinaryFile(F f, MatrixOperator const& Init, std::streambuf
    PackMatrixOperator Pack(Init);
 
    std::size_t Size = Pack.size();
-
-   TRACE(Size)(Size*Size);
-
 
    std::vector<std::complex<double> > L(Size), R(Size);
    for (unsigned i = 0; i < Size; ++i)

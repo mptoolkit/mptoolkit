@@ -119,7 +119,7 @@ pstreamobj = pstream.o pfilestream.o
 linearalgebraobj = eigen.o
 
 mpoobj = operator_component.o generic_mpo.o basic_finite_mpo.o basic_triangular_mpo.o product_mpo.o infinite_mpo.o \
-         f-optim.o e-optim.o
+         f-optim.o e-optim.o operator-diagonal.o
 
 mpsobj = state_component.o density.o
 
@@ -281,9 +281,13 @@ dep : $(cxx_depend)
 #% : %.o
 #	$(CXX) $(CXXFLAGS) $(CXXFLAGS_$@) $(LDFLAGS) $^ $(LIB) $(LIBS_$@) -o $@
 
+#When building
+# from the source directory, the %.cpp ends up listed twice,
+# once as %.cpp and once as ./%.cpp
+# so we filter this out with $(filter-out ./%, $(filter %.o %.cpp, $^))
 % : %.cpp
 	@$(MAKEDEPEND_INFO)
-	$(CXX) $(CXXFLAGS) $(CXXFLAGS_$@) $(LDFLAGS) $(filter %.o %.cpp, $^) $(LIBS_$@) $(LIB) -o $@
+	$(CXX) $(CXXFLAGS) $(CXXFLAGS_$@) $(LDFLAGS) $(filter-out ./%, $(filter %.o %.cpp, $^)) $(LIBS_$@) $(LIB) -o $@
 
 %.o : %.cpp %.d
 	@$(MAKEDEPEND_INFO)

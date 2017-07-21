@@ -556,6 +556,13 @@ operator_prod_inner(OperatorComponent const& M,
                     StateComponent const& B,
                     LinearAlgebra::HermitianProxy<StateComponent> const& F);
 
+// obtains the diagonal component of an operator
+// Result[s](i',i) = M(s,s)[a',a] E[a'](i',i') herm(F[a](i,i))
+StateComponent
+operator_prod_inner_diagonal(OperatorComponent const& M,
+			     StateComponent const& E,
+			     LinearAlgebra::HermitianProxy<StateComponent> const& F);
+
 // Variants for a regular triangular MPO
 
 // Precondition: The MPS is normalized, such that scalar_prod(A, herm(B)) = 1,
