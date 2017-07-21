@@ -27,11 +27,13 @@
 class LocalEigensolver
 {
    public:
-      enum class Solver { InvalidSolver, Lanczos, Arnoldi, Davidson, ShiftInvert };
+      enum class Solver { InvalidSolver, Lanczos, Arnoldi, Davidson, ShiftInvert, ShiftInvertDirect };
 
       static Solver SolverFromStr(std::string str);
 
       static std::string SolverStr(Solver s);
+
+      static std::vector<std::string> EnumerateSolvers();
 
       LocalEigensolver();
 
@@ -66,7 +68,13 @@ class LocalEigensolver
 
       // For solver-specific parameters, we probably should provide a generic format.
       // Since we only have one solver-specific parameter we just have a special case for now.
-      void SetShiftInvertEnergy(double E);
+      void SetShiftInvertEnergy(std::complex<double> E);
+
+      // subspace size, used by shift-invert solver
+      void SetSubspaceSize(int k);
+
+      // set whether or not to use preconditioning in the shift-invert solver
+      void SetPreconditioning(bool Pre);
 
       // A better approach is a function to set a solver parameter, eg
       // void SetSolverParameter(std::string const& s);
@@ -88,7 +96,9 @@ class LocalEigensolver
       std::complex<double> LastEnergy_;
       double LastTol_;
       int LastIter_;
-      double ShiftInvertEnergy;
+      std::complex<double> ShiftInvertEnergy;
+      int SubspaceSize;
+      bool UsePreconditioning;
 
       // state information
       statistics::moving_exponential<double> FidelityAv_;

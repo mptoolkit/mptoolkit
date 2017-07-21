@@ -95,16 +95,19 @@ LinearBasis<BasisList>::ReverseLookup(int s, int index) const
 }
 
 std::ostream&
-DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalues, bool Base2, bool ShowDegen)
+DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalues, bool Base2, bool ShowDegen, bool Quiet)
 {
    std::ostringstream out;
    out.precision(12);
    out << std::scientific;
    if (MaxEigenvalues < 0) MaxEigenvalues = EigenInfoList.size();
-   out << "#Eigenvalue sum = " << this->EigenSum() << '\n';
-   out << "#von Neumann Entropy " << (Base2 ? "(base 2)" : "(base e)") << " = " << this->Entropy() << '\n';
-   if (MaxEigenvalues > 0)
-      out << "#Number    #Eigenvalue         #Degen    #Weight               #Energy             #QuantumNumber\n";
+   if (!Quiet)
+   {
+      out << "#Eigenvalue sum = " << this->EigenSum() << '\n';
+      out << "#von Neumann Entropy " << (Base2 ? "(base 2)" : "(base e)") << " = " << this->Entropy() << '\n';
+      if (MaxEigenvalues > 0)
+	 out << "#Number    #Eigenvalue         #Degen    #Weight               #Energy             #QuantumNumber\n";
+   }
    int n = 0;
    int TotalDegree = 0;
    double EShift = 0;
@@ -139,8 +142,11 @@ DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalu
              << this->Lookup(Iter->Subspace) << '\n';
       }
    }
-   out << '#' << n << " out of " << (ShowDegen ? TotalDegree : EigenInfoList.size()) << " eigenvalues shown.  ";
-   out << "Total degree = " << TotalDegree << '\n';
+   if (!Quiet)
+   {
+      out << '#' << n << " out of " << (ShowDegen ? TotalDegree : EigenInfoList.size()) << " eigenvalues shown.  ";
+      out << "Total degree = " << TotalDegree << '\n';
+   }
    outstream << out.str();
    return outstream;
 }

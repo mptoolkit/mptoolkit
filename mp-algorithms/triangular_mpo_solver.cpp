@@ -21,7 +21,11 @@
 #include "wavefunction/operator_actions.h"
 #include "mp-algorithms/arnoldi.h"
 #include "mp-algorithms/gmres.h"
+#include "common/environment.h"
 
+// maximum number of iterations used in GMRES.  In some cases of slow convergence
+// it is necessary to increase this.
+int const MaxIter = getenv_or_default("MP_GMRES_MAXITER", 10000);
 
 // A note on orthogonalizing vectors in non-orthogonal Hilbert spaces.
 // Suppose <l| and |r> are left and right eigenvectors, satisfying <l|r>=1.
@@ -60,21 +64,65 @@ LinearSolve(Func F, MatrixOperator const& Rhs, double Tol = 1E-14, int Verbose =
    return Guess;
 }
 
+//#define USE_ITERATIVE_REFINEMENT
+// iterative refinement doesn't appear to add anything useful here, but increasing the
+// krylov length has a useful effect to avoid stagnation
 template <typename Func>
 void
 LinearSolve(MatrixOperator& x, Func F, MatrixOperator const& Rhs, double Tol = 1E-14, int Verbose = 0)
 {
-   int m = 30;
-   int max_iter = 10000;
+   int m = 30;     // krylov subspace size
+   int iter = 0;   // total number of iterations performed
+
+   double normb = norm_frob(Rhs);
+
+   int IterThisRound = m*50; // if it takes more than 50 rounds to converge, then we've proably stagnated
    double tol = Tol;
-   int Ret = GmRes(x, F, Rhs, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
+   int Ret = GmRes(x, F, normb, Rhs, m, IterThisRound, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
+   iter += IterThisRound;
+
+   while (Ret != 0 && iter < MaxIter)
+   {
+      // Attempt to avoid stagnation by increasing the number of iterations
+      m=m+10;
+      if (Verbose > 1)
+      {
+	 std::cerr << "Refinement step, increasing m to " << m << '\n';
+      }
+
+      //      TRACE("Refinement step")(iter);
+      // iterative refinement step
+#if defined(USE_ITERATIVE_REFINEMENT)
+      MatrixOperator R = Rhs- F(x);
+      MatrixOperator xRefine = R;
+#else
+      MatrixOperator R = Rhs;
+      MatrixOperator xRefine = x;
+#endif
+      IterThisRound = m*50;
+      double tol = Tol;
+      Ret = GmRes(xRefine, F, normb, R, m, IterThisRound, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
+
+      iter += IterThisRound;
+#if defined(USE_ITERATIVE_REFINEMENT)
+      x += xRefine;
+#else
+      x = xRefine;
+#endif
+
+      if (Verbose > 1)
+      {
+	 double Resid = norm_frob(F(x) - Rhs) / normb;
+	 std::cerr << "Residual after refinement step = " << Resid << '\n';
+      }
+   }
+
    if (Ret != 0)
    {
       // failed
-      PANIC("Linear solver failed to converge after max_iter iterations")(max_iter);
+      PANIC("Linear solver failed to converge after max_iter iterations")(MaxIter);
    }
 }
-
 
 // Calculate the (complex) eigenvalue that is closest to 1.0
 // using Arnoldi.
@@ -624,16 +672,11 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
          // Initial guess for linear solver
          E[Col] = C;
 
-         int m = 30;
-         int max_iter = 10000;
-         double tol = Tol;
-         int Ret = GmRes(E[Col], OneMinusTransferLeft(Diag, Psi, QShift), C, m, max_iter, tol,
-                         LinearAlgebra::Identity<MatrixOperator>(), Verbose);
-         if (Ret != 0)
-         {
-            // failed
-            PANIC("Linear solver failed to converge after max_iter iterations")(max_iter);
-         }
+	 if (Col == 2)
+	    TRACE(C);
+
+	 LinearSolve(E[Col], OneMinusTransferLeft_Ortho(Diag, Psi, QShift, Ident, Rho, false), C, Tol, Verbose);
+         //LinearSolve(E[Col], OneMinusTransferLeft(Diag, Psi, QShift), C, Ident, Rho, Tol, Verbose);
       }
    }
    // Final column, must be identity
@@ -657,14 +700,7 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
    // solve for the first component
    SubProductLeftProject ProdL(Psi, QShift, Rho, Ident);
    E[Col] = C;
-   int m = 30;
-   int max_iter = 10000;
-   double tol = Tol;
-   int Res = GmRes(E[Col], ProdL, C, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
-   if (Res != 0)
-   {
-      throw std::runtime_error("SolveSimpleMPO_Left: GMRES exceeded maximum iterations.");
-   }
+   LinearSolve(E[Col], ProdL, C, Tol, Verbose);
 
    // Make it Hermitian
    //   E.back() = 0.5 * (E.back() + adjoint(E.back()));
@@ -826,16 +862,7 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
          // Initial guess for linear solver
          F[Row] = C;
 
-         int m = 30;
-         int max_iter = 10000;
-         double tol = Tol;
-         int Ret = GmRes(F[Row], OneMinusTransferRight(Diag, Psi, QShift), C, m, max_iter, tol,
-                         LinearAlgebra::Identity<MatrixOperator>(), Verbose);
-         if (Ret != 0)
-         {
-            // failed
-            PANIC("Linear solver failed to converge after max_iter iterations")(max_iter);
-         }
+	 LinearSolve(F[Row], OneMinusTransferRight(Diag, Psi, QShift), C, Tol, Verbose);
       }
    }
    // Final row, must be identity
@@ -858,11 +885,7 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
    // solve for the first component
    SubProductRightProject ProdR(Psi, QShift, Rho, Ident);
    F[Row] = C;
-   int m = 30;
-   int max_iter = 10000;
-   double tol = Tol;
-   int Res = GmRes(F[Row], ProdR, C, m, max_iter, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
-   CHECK_EQUAL(Res, 0);
+   LinearSolve(F[Row], ProdR, C, Verbose);
 
    // Make it Hermitian
    //   F.front() = 0.5 * (F.front() + adjoint(F.front()));

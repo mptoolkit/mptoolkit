@@ -371,6 +371,7 @@ void FileSystem::create(std::string const& FilePath, int NumFiles,
 
    IsReadOnly = false;
    CreatedNew = true;
+   MetaVersion = MetadataVersion;
    MaxPageCacheSize = PageCacheByteSize / PageSize + 1;
 
    for (int i = 0; i < NumFiles; ++i)

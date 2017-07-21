@@ -278,7 +278,12 @@ MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleRedOperator> co
 std::ostream& operator<<(std::ostream& out, StateComponent const& Psi)
 {
   out << "Site basis:\n" << Psi.LocalBasis() << "Basis1:\n" << Psi.Basis1()
-      << "Basis2:\n" << Psi.Basis2() << '\n' << Psi.Data;
+      << "Basis2:\n" << Psi.Basis2() << "\nNumber of components: " << Psi.Data.size() << '\n';
+  for (int i = 0; i < Psi.Data.size(); ++i)
+  {
+     out << "Component " << i << ":\n";
+     out << Psi.Data[i] << '\n';
+  }
   return out;
 }
 

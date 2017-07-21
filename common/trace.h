@@ -264,16 +264,10 @@ void show_backtrace_handler(char const* Msg)
 
 #if defined(HAVE_CONFIG_H)
 #include "config.h"
-#if !defined(FUNC_NORETURN)
-#error "config.h does not define FUNC_NORETURN"
-#endif
 #if !defined(__PRETTYFUNC__)
 #error "config.h does not define __PRETTYFUNC__"
 #endif
 #else
-#if !defined(FUNC_NORETURN)
-#define FUNC_NORETURN
-#endif
 #if !defined(__PRETTYFUNC__)
 #define __PRETTYFUNC__ __func__
 #endif
@@ -308,7 +302,7 @@ assert_handler set_panic_handler(assert_handler H);
 assert_handler set_trace_handler(assert_handler H);
 
 // invokes the panic handler
-void panic(char const* Msg) FUNC_NORETURN;
+void panic [[noreturn]] (char const* Msg);
 
 // invokes the trace handler
 void trace(char const* Msg);

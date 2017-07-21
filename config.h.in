@@ -46,9 +46,6 @@
 /* Defined if the Fortran returns complex in registers */
 #undef FORTRAN_COMPLEX_RETURN_IN_REGISTER
 
-/* ((noreturn)) attribute */
-#undef FUNC_NORETURN
-
 /* Define to 1 if `TIOCGWINSZ' requires <sys/ioctl.h>. */
 #undef GWINSZ_IN_SYS_IOCTL
 
@@ -63,9 +60,6 @@
 
 /* define if the compiler supports basic C++11 syntax */
 #undef HAVE_CXX11
-
-/* Defined if the compiler supports __attribute__((noreturn)). */
-#undef HAVE_CXX_NORETURN
 
 /* Defined if the compiler supports the restrict keyword. */
 #undef HAVE_CXX_RESTRICT

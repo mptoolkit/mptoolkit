@@ -1121,7 +1121,7 @@ int main(int argc, char** argv)
          Wavefunction.Attributes()["Hamiltonian"] = HamStr;
 
       std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
-      int const UnitCellSize = Lattice.GetUnitCell().size();
+      int const UnitCellSize = HamMPO.size(); //Lattice.GetUnitCell().size();
       if (WavefuncUnitCellSize == 0)
          WavefuncUnitCellSize = UnitCellSize;
 

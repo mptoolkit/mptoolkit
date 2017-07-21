@@ -120,7 +120,7 @@ void ApplyPlaneRotation(Real &dx, Real &dy, Real cs, Real sn)
 
 template <typename Vector, typename MultiplyFunc, typename PrecFunc>
 int
-GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
+GmRes(Vector &x, MultiplyFunc MatVecMultiply, double normb, Vector const& b,
       int m, int& max_iter, double& tol, PrecFunc Precondition, int Verbose = 0)
 {
   //  typedef typename Vector::value_type value_type;
@@ -129,7 +129,6 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
   VecType s(m+1), cs(m+1), sn(m+1);
   LinearAlgebra::Matrix<value_type> H(m+1, m+1, 0.0);
 
-  double normb = norm_frob(Precondition(b));
   Vector w = Precondition(MatVecMultiply(x));
   Vector r = Precondition(b) - w; // - MatVecMultiply(x));
   double beta = norm_frob(r);
@@ -249,6 +248,14 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
            Update(X2, i-1, H, s, v);
            Vector R = Precondition(b - MatVecMultiply(X2));
            TRACE(i)(norm_2(s[i]))(norm_frob(R));
+	   X2 = R;
+           for (int k = 0; k <= i; k++)
+           {
+	      X2 -= inner_prod(v[k], X2) * v[k];
+           }
+	   TRACE(norm_frob(X2));
+
+	   
         }
 #endif
 
@@ -286,6 +293,14 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
   tol = resid;
   delete [] v;
   return 1;
+}
+
+template <typename Vector, typename MultiplyFunc, typename PrecFunc>
+int
+GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
+      int m, int& max_iter, double& tol, PrecFunc Precondition, int Verbose = 0)
+{
+   return GmRes(x, MatVecMultiply, norm_frob(b), b, m, max_iter, tol, Precondition, Verbose);
 }
 
 #endif

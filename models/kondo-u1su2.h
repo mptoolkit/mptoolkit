@@ -23,23 +23,42 @@
 #include "quantumnumbers/u1.h"
 #include "quantumnumbers/su2.h"
 
-
-
-
 inline
-LatticeSite CreateU1SU2KondoSite(std::string const& Sym1 = "N", std::string const& Sym2 = "S")
+LatticeSite
+KondoU1SU2(std::string const& Sym1 = "N", std::string const& Sym2 = "S")
 {
    SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":SU(2)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator C, CH, P, R, N, S, Sf, Sc, ScSf, I, Hu, Pdouble,
       Ep, Em, Ns, Nh, Pg, CP, CHP;
-   LatticeSite Site;
+   LatticeSite Site("U(1)xSU(2) Kondo impurity");
 
    Basis.push_back("empty",  QN(0, 0.5));
    Basis.push_back("double", QN(2, 0.5));
    Basis.push_back("singlet", QN(1, 0));
    Basis.push_back("triplet", QN(1, 1));
+
+   OperatorDescriptions OpDescriptions;
+   OpDescriptions.add_operators()
+      ("I"       , "identity")
+      ("R"       , "reflection")
+      ("C"       , "annihilation operator")
+      ("CH"      , "creation operator")
+      ("P"       , "fermion parity")
+      ("N"       , "number operator")
+      ("N_S"     , "number of spins")
+      ("N_H"     , "number of holons")
+      ("S"       , "spin vector")
+      ("Sc"      , "conduction spin vector")
+      ("Sf"      , "f-spin vector") 
+      ("Ep"      , "create double-occupied site (eta paring)")
+      ("Em"      , "annihilate double-occupied site (eta paring)")
+      ("Hu"      , "symmetrized Coulomb operator (n_up - 1/2) * (n_down - 1/2)")
+      ("Pdouble" , "projector onto the double-occupied site")
+      ("ScSf"    , "Kondo spin interaction Sc . Sf")
+      ("Pg"      , "Gutswiller projector = 1-Pdouble")
+      ;
 
    C = SiteOperator(Basis, QN(-1,0.5), LatticeCommute::Fermionic);
    CH = SiteOperator(Basis, QN(1,0.5), LatticeCommute::Fermionic);
@@ -75,10 +94,6 @@ LatticeSite CreateU1SU2KondoSite(std::string const& Sym1 = "N", std::string cons
    P("singlet", "singlet")    = -1;
    P("triplet", "triplet")    = -1;
    P("double",  "double")     =  1;
-
-   // parity modified creation/annihilation
-   CP = C*P;
-   CHP = CH*P;
 
    // spatial reflection
    R("empty",  "empty")       =  1;
@@ -138,21 +153,23 @@ LatticeSite CreateU1SU2KondoSite(std::string const& Sym1 = "N", std::string cons
 
    Site["I"] = I;
    Site["P"] = P;
-   Site[Sym1] = N;
+   Site["N"] = N;
    Site["Hu"] = Hu;
    Site["Pdouble"] = Pdouble;
    Site["Pg"] = Pg;
-   Site[Sym2] = S;
-   Site[Sym2+'f'] = Sf;
-   Site[Sym2+'c'] = Sc;
+   Site["S"] = S;
+   Site["Sf"] = Sf;
+   Site["Sc"] = Sc;
    Site["C"] = C;
+   Site["R"] = R;
    Site["CH"] = CH;
-   Site["CP"] = CP;
-   Site["CHP"] = CHP;
    Site["Ep"] = Ep;
    Site["Em"] = Em;
    Site["N_S"] = Ns;
    Site["N_H"] = Nh;
-   Site[Sym2+'c'+Sym2+'f'] = ScSf;
+   Site["ScSf"] = ScSf;
+
+   Site.set_operator_descriptions(OpDescriptions);
+
    return Site;
 }
