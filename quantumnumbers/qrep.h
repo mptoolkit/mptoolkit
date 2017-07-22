@@ -8,58 +8,6 @@
 namespace QuantumNumbers
 {
 
-template <typename From, typename To>
-class branch;
-
-template <>
-class branch<SU2, Dinf>
-{
-   public:
-      branch(SU2 const&, Dinf const&) {}
-
-      // branching rules
-      static std::vector<signed_half_int>
-      branch(half_int j)
-      {
-         std::vector<signed_half_int> Result;
-         if (j.is_integral())
-         {
-            // for j odd-integer the first element is -0
-            // for j even-integer the first element is +0
-            Result.push_back(-(j.to_int() % 2)*2 + 1, 0);
-            for (int n = 1; n < j.to_int(); ++n)
-            {
-               Result.push_back(n);
-            }
-         }
-         else
-         {
-            for (half_int n = 0.5; n <= j; ++n)
-            {
-               Result.push_back(n);
-            }
-         }
-         return Result;
-      }
-
-      // 3jm symbols
-      // page 135 of Butler.
-      //using cyclic permutations of the 3jm,
-      static
-      real coupling_3jm(half_int j1, half_int j2, half_int j3,
-                        signed_half_int m1, signed_half_int m2, signed_half_int m3);
-};
-
-
-template <>
-real
-branch<SU2, Dinf>coupling_3jm(half_int j1, half_int j2, half_int j3,
-                              signed_half_int m1, signed_half_int m2, signed_half_int m3)
-{
-
-}
-
-
 class symmetry_not_integral : public std::runtime_error
 {
    public:

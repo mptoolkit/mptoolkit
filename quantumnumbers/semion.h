@@ -119,8 +119,8 @@ class Semion
       // no default braid type
 
       // Casmir invariant operators (Lie algebra terminology).
-      // For finite groups, these are the expectation values of the centre
-      // of the enveloping algebra (a linearly independent set that spans)
+      // For finite groups, these are the expectation values of the center
+      // of the enveloping algebra,
       static int num_casimir() { return 1; }
 
       static std::string casimir_name(std::string const& QName, int)
