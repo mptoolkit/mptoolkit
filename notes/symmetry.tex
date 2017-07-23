@@ -24,7 +24,7 @@
 
 \newcommand{\fsymbol}[6]{\mbox{$\left[ F^{#1,#2,#3}_{#4} \right]_{#5,#6}$}}
 \newcommand{\fsymboltt}[6]{\mbox{$\left[ F^{#1,#2}_{#3,#4} \right]_{#5,#6}$}}
-
+\newcommand{\fb}{\mathrm{fb}}
 
 \newcommand{\doi}[1]{\href{https://dx.doi.org/#1}{doi:#1}}
 \newcommand{\arxiv}[1]{\href{https://arxiv.org/abs/#1}{arXiv:#1}}
@@ -282,7 +282,7 @@ In particular, the following two diagrams are \emph{not} equivaent,
 \end{gathered}
 \neq
 \begin{gathered}
-\includesvg[width=3cm]{twisted}
+  includesvg[width=3cm]{twisted}
 \end{gathered}
 \label{eq:TwistedTime}
 \end{equation}
@@ -421,7 +421,41 @@ Note it is important here that both $e$ and $f$ legs are pointing in the same di
 \section{Symmetries of 6j symbols}
 
 
-See Butler page 59
+See Butler page 59, and Ardonne\cite{Ardonne}.
+
+Theta symbol.  Is this the same as the $3j$ phase?
+
+The $6j$ symbol is also known as the tetraheral symbol, based on its symmetries.
+It is represented by the diagram
+\begin{equation}
+\frac{1}{\sqrt{d_a d_b d_c d_d d_e d_f}}
+\begin{gathered}
+%\includesvg{tetrahedral}
+\end{gathered}
+\end{equation}
+Note the normalization factor; this is to give the same normalization as the conventional $6j$ symbol
+in $SU(2)$.
+
+Evalution of these diagrams gives
+\begin{equation}
+\mathcal{G}(a,b,c,d,e,f) = theta(a,d,f) \theta(b,c,f) \fb_f \; \fsymbol a b c d e f \frac{1}{\sqrt{d_e d_f}}
+\end{equation}
+
+reversing this, and assuming that $\theta = \pm 1$, we have
+\begin{equation}
+\fsymbol a b c d e f = theta(a,d,f) \theta(b,c,f) \fb_f \sqrt{d_e d_f} \mathcal{G}(a,b,c,d,e,f)
+\end{equation}
+
+\subsection{Comparison to other notations}
+
+Ardonne uses similar notation but different normalization for the $\theta$ symbols and the $64$ coefficient
+$\mathcal{G}$. 
+
+\begin{equation}
+\mathcal{G}(a,b,c,d,e,f) = \qsixj{a}{b}{e}{d}{c}{f}
+\end{equation}
+
+Also Racah(a,b,d,c,e,f)
 
 \section{Braiding}
 
