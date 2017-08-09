@@ -885,7 +885,7 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
    // solve for the first component
    SubProductRightProject ProdR(Psi, QShift, Rho, Ident);
    F[Row] = C;
-   LinearSolve(F[Row], ProdR, C, Verbose);
+   LinearSolve(F[Row], ProdR, C, Tol, Verbose);
 
    // Make it Hermitian
    //   F.front() = 0.5 * (F.front() + adjoint(F.front()));
