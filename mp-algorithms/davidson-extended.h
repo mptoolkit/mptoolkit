@@ -19,7 +19,7 @@
 /*
    Davidson solver.  This is extended by allowing for an additional set of vectors
    that are outside the Hilbert space.  For these vectors, we must supply
-   the matrix elements <i|j> and <i|H|j>.  For the krylov vectors |k>, we
+   the matrix elements <i|j> and <i|H|j>.  For the subspace vectors |k>, we
    obtain <k|i> and <k|H|i>.  The Davidson algorithm then gives us the
    matrix elements <k1|H|k2>, with <k1|k2> = delta_{k1,k_2}.  A Cholesky
    decomposition then gives us an orthogonal matrix from which to determine
