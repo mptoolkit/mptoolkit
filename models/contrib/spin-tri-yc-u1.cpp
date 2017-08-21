@@ -68,6 +68,7 @@ int main(int argc, char** argv)
       int w = 3;
       double theta = 0.0;
       std::string FileName;
+      bool NoReflect = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
