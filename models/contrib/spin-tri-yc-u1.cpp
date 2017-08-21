@@ -152,6 +152,36 @@ int main(int argc, char** argv)
          std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 4*w
       }
 
+      UnitCellMPO Ry = I(0);
+      if (!NoReflect)
+      {
+         for (int c = 0; c < w; ++c)
+         {
+            UnitCellMPO ThisR = I(0);
+            // get the 'pivot' site/bond that we reflect about
+            int const p1 = c/2;
+            int const p2 = (c+1)/2;
+
+            // if we're reflecting about a bond, do that first
+            if (p1 != p2)
+               ThisR = ThisR * Cell.swap_gate_no_sign(p1,p2);
+
+            int i1 = (p1+w-1)%w;
+            int i2 = (p2+1)%w;
+
+            while (i1 != p1 + w/2)
+            {
+               ThisR = ThisR * Cell.swap_gate_no_sign(i1,i2);
+               i1 = (i1+w-1)%w;
+               i2 = (i2+1)%w;
+            }
+
+            ThisR.translate(c*w);
+            Ry = Ry * ThisR;
+         }
+      }
+
+
       // Construct the Hamiltonian for a single unit-cell,
       UnitCellMPO Hz_v, Hz1, H1, H1_flux, H2, H2_flux, H_intra2;
 
@@ -271,6 +301,9 @@ int main(int argc, char** argv)
 
       // Momentum operators in Y direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
+
+      // Reflection about Y
+      Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w*w);
 
       oo++;
       std::printf("\33[2K\r");

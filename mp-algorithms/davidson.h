@@ -17,9 +17,12 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 /*
-   Davidson solver
+   Davidson solver.
 
-   The preconditioning step is missing.
+   This can operate in 3 modes, which determines how we select the desired eigenvalue.
+   DavidsonMode::Lowest is the 'standard' mode, which selects the arithmetic lowest eigenvalue.
+   DavidsonMode::Target selects the eigenvalue closest to the selected target eigenvalue.
+   DavidsonMode::MaxOverlap selects the eigenvector that has the largest overlap with the initial guess vector.
 */
 
 #include "linearalgebra/eigen.h"
@@ -32,6 +35,8 @@ namespace LinearSolvers
 
 using namespace LinearAlgebra;
 typedef std::complex<double> complex;
+
+enum class DavidsonMode { Lowest, Target, MaxOverlap };
 
 template <typename VectorType>
 bool GramSchmidtAppend(std::vector<VectorType>& Basis,
@@ -68,8 +73,72 @@ bool GramSchmidtAppend(std::vector<VectorType>& Basis,
    return true;
 }
 
-template <typename VectorType, typename MultiplyFunctor>
-double Davidson(VectorType& Guess, VectorType const& Diagonal, MultiplyFunctor MatVecMultiply, int& Iterations)
+struct InverseDiagonalPrecondition
+{
+   InverseDiagonalPrecondition(StateComponent const& Diag_, std::complex<double> Energy_)
+      : Diag(Diag_), Energy(Energy_)
+   {
+      //      TRACE(Diag);
+      for (unsigned i = 0; i < Diag.size(); ++i)
+      {
+	 for (StateComponent::operator_type::iterator I = iterate(Diag[i]); I;  ++I)
+	 {
+	    for (StateComponent::operator_type::inner_iterator J = iterate(I); J; ++J)
+	    {
+	       for (auto II = iterate(*J); II; ++II)
+	       {
+		  for (auto JJ = iterate(II); JJ; ++JJ)
+		  {
+		     *JJ = (1.0 / (*JJ - Energy));
+		  }
+	       }
+	    }
+	 }
+      }
+      //TRACE(Diag)(Energy);
+   }
+
+   StateComponent operator()(StateComponent const& x) const
+   {
+      StateComponent Result(x);
+      for (unsigned i = 0; i < x.size(); ++i)
+      {
+	 for (StateComponent::operator_type::iterator I = iterate(Result[i]); I;  ++I)
+	 {
+	    for (StateComponent::operator_type::inner_iterator J = iterate(I); J; ++J)
+	    {
+	       StateComponent::operator_type::const_inner_iterator d = iterate_at(Diag[i].data(), J.index1(), J.index2());
+	       if (d)
+	       {
+		  *J = transform(*J, *d, LinearAlgebra::Multiplication<std::complex<double>, std::complex<double>>());
+	       }
+	    }
+	 }
+      }
+      return Result;
+   }
+
+   StateComponent Diag;
+   std::complex<double> Energy;
+
+};
+
+
+template <typename VectorType>
+void
+JacobiDavidsonIteration(VectorType& r, VectorType const& Diagonal, double Theta, VectorType const& Eigenvector)
+{
+   // orthogonalize against the Eigenvector
+   r -= inner_prod(Eigenvector, r) * Eigenvector;
+   // approximately solve (A-Theta)^{-1} x = r
+   r = InverseDiagonalPrecondition(Diagonal, Theta)(r);
+   // orthogonalize again
+   r -= inner_prod(Eigenvector, r) * Eigenvector;
+}
+
+template <typename VectorType, typename MultiplyFunctor, typename Preconditioner>
+double Davidson(VectorType& Guess, VectorType const& Diagonal, MultiplyFunctor MatVecMultiply,
+		DavidsonMode Mode, int& Iterations, double TargetEnergy = 0.0)
 {
    std::vector<VectorType> v;                                 // the subspace vectors
    std::vector<VectorType> Hv;                                // H * the subspace vectors
@@ -99,13 +168,44 @@ double Davidson(VectorType& Guess, VectorType const& Diagonal, MultiplyFunctor M
       }
 
       Matrix<complex> sH = SubH(range(0,j), range(0,j));
-      Vector<double> Eigen = DiagonalizeHermitian(sH);   // dominant eigenpair is Eigen[0],sH(0,all)
-      Theta = Eigen[0];
+      Vector<double> Eigen = DiagonalizeHermitian(sH);
+      // The eigenvalues are ordered, so lowest energy is in Eigen[0]
+      int n = 0;
+      if (Mode == DavidsonMode::MaxOverlap)
+      {
+         // Find the vector with maximum overlap with the initial state (which is v[0]),
+         // so this will be the vector n that has a maximum entry of sH(n,0)
+         double MaxElement = norm_frob_sq(sH(n,0));
+         for (int i = 1; i < j; ++i)
+         {
+            double ThisMaxElement = norm_frob_sq(sH(i,0));
+            if (ThisMaxElement > MaxElement)
+            {
+               MaxElement = ThisMaxElement;
+               n = i;
+            }
+         }
+      }
+      else if (Mode == DavidsonMode::Target)
+      {
+         double EDiff = norm_frob(Eigen[0] - TargetEnergy);
+         for (int i = 1; i < j; ++i)
+         {
+            double ThisEDiff = norm_frob(Eigen[i] - TargetEnergy);
+            if (ThisEDiff < EDiff)
+            {
+               EDiff = ThisEDiff;
+               n = i;
+            }
+         }
+      }
+      // the eigenpair we want is Eigen[n], sH(n,all)
+      Theta = Eigen[n];
 
       // Calculate y = Ritz vector of the eigenvector
-      VectorType y = sH(0,0) * v[0];
+      VectorType y = sH(n,0) * v[0];
       for (int i = 1; i < j; ++i)
-         y += sH(0,i) * v[i];
+         y += sH(n,i) * v[i];
 
       if (j == Iterations)  // finished?
       {
@@ -117,10 +217,11 @@ double Davidson(VectorType& Guess, VectorType const& Diagonal, MultiplyFunctor M
       // Residual r = H*y - Theta*y
       VectorType r = (-Theta) * y;
       for (int i = 0; i < j; ++i)
-         r += sH(0,i) * Hv[i];
+         r += sH(n,i) * Hv[i];
 
       // Insert preconditioning step here
-      Precondition(r, Diagonal, Theta);
+      // Jacobi-Davidson would orthogonalize r against the Ritz eigenvector y here
+      JacobiDavidsonIteration(r, Diagonal, Theta, y);
 
       // Orthogonalization step
       bool Added = GramSchmidtAppend(v, r, 1E-6);

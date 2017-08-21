@@ -672,8 +672,8 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
          // Initial guess for linear solver
          E[Col] = C;
 
-	 if (Col == 2)
-	    TRACE(C);
+         //	 if (Col == 2)
+         //	    TRACE(C);
 
 	 LinearSolve(E[Col], OneMinusTransferLeft_Ortho(Diag, Psi, QShift, Ident, Rho, false), C, Tol, Verbose);
          //LinearSolve(E[Col], OneMinusTransferLeft(Diag, Psi, QShift), C, Ident, Rho, Tol, Verbose);
