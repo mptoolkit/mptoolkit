@@ -177,9 +177,9 @@ double Davidson(VectorType& Guess, VectorType const& Diagonal, MultiplyFunctor M
       }
 
       Matrix<complex> sH = SubH(range(0,j), range(0,j));
-      TRACE(sH);
+      //      TRACE(sH);
       Vector<double> Eigen = DiagonalizeHermitian(sH);
-      TRACE(sH)(Eigen);
+      //TRACE(sH)(Eigen);
       // The eigenvalues are ordered, so lowest energy is in Eigen[0]
       int n = 0;
       if (Mode == DavidsonMode::MaxOverlap)
