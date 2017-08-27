@@ -108,14 +108,14 @@ class HamiltonianMultiply(sparse.linalg.LinearOperator):
 ## optimize a single site given the MPO matrix W, and tensors E,F
 def optimize_site(A, W, E, F):
     H = HamiltonianMultiply(E,W,F)
-    E,V = sparse.linalg.eigsh(H,1,which='SA')
+    E,V = sparse.linalg.eigsh(H,1,v0=A,which='SA')
     return (E[0],np.reshape(V[:,0], H.req_shape))
 
 def optimize_two_sites(A, B, W1, W2, E, F, m, dir):
     W = coarse_grain_MPO(W1,W2)
     AA = coarse_grain_MPS(A,B)
     H = HamiltonianMultiply(E,W,F)
-    E,V = sparse.linalg.eigsh(H,1,which='SA')
+    E,V = sparse.linalg.eigsh(H,1,v0=AA,which='SA')
     AA = np.reshape(V[:,0], H.req_shape)
     A,S,B = fine_grain_MPS(AA, [A.shape[0], B.shape[0]])
     A,S,B,trunc,m = truncate_MPS(A,S,B,m)
