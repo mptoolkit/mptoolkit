@@ -21,10 +21,10 @@ def initial_F(W):
     return F
 
 def contract_from_right(W, A, F, B):
-    return np.einsum("abst,sij,bjl,tkl->aik",W,A,F,B)
+    return np.einsum("abst,sij,bjl,tkl->aik",W,A,F,B, optimize=True)
 
 def contract_from_left(W, A, E, B):
-    return np.einsum("abst,sij,aik,tkl->bjl",W,A,E,B)
+    return np.einsum("abst,sij,aik,tkl->bjl",W,A,E,B, optimize=True)
 
 # construct the E-matrices for all sites except the first
 def construct_F(Alist, MPO, Blist):
@@ -102,7 +102,7 @@ class HamiltonianMultiply(sparse.linalg.LinearOperator):
         self.shape = [self.size, self.size]
 
     def _matvec(self, A):
-        R = np.einsum("aij,abst,bkl,sik->tjl",self.E,self.W,self.F,np.reshape(A, self.req_shape))
+        R = np.einsum("aij,abst,bkl,sik->tjl",self.E,self.W,self.F,np.reshape(A, self.req_shape), optimize=True)
         return np.reshape(R, -1)
 
 ## optimize a single site given the MPO matrix W, and tensors E,F

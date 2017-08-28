@@ -204,7 +204,7 @@ allobj = $(quantumnumbersobj) \
 contrib-models = spin-tri-yc-su2 spin-tri-xc-su2 spin-tri-yc-su2-NonEff \
                  spin-tri-2SiteUnitCell-su2 spin-tri-1SiteUnitCell-su2 spin-tri-yc-u1 spin-tri-yc \
                  tki-u1su2 tki-u1u1 hubbard-tri-u1su2 hubbard-tri-u1u1 hubbard-tri \
-                 spin-tri-yc-z2 spinchain-random-field-u1
+                 spin-tri-yc-z2 spinchain-random-field-u1 hubbard
 
 # default / examplar models
 default-models = spinchain-su2 spinchain-spin2-su2 \
