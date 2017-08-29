@@ -21,6 +21,7 @@
 #include "mp-algorithms/lanczos.h"
 #include "mp-algorithms/arnoldi.h"
 #include "mp-algorithms/gmres.h"
+#include "mp-algorithms/davidson.h"
 #include <boost/algorithm/string.hpp>
 
 #include "mps/packunpack.h"
@@ -76,6 +77,12 @@ LocalEigensolver::SolverFromStr(std::string Str)
       return Solver::ShiftInvert;
    else if (Str == "shift-invert-direct")
       return Solver::ShiftInvertDirect;
+   else if (Str == "davidson")
+      return Solver::Davidson;
+   else if (Str == "davidson-target")
+      return Solver::DavidsonTarget;
+   else if (Str == "davidson-max-overlap")
+      return Solver::DavidsonMaxOverlap;
    return Solver::InvalidSolver;
 }
 
@@ -92,6 +99,12 @@ LocalEigensolver::SolverStr(LocalEigensolver::Solver s)
       return "shift-Invert";
    else if (s == Solver::ShiftInvertDirect)
       return "shift-invert-direct";
+   else if (s == Solver::Davidson)
+      return "davidson";
+   else if (s == Solver::DavidsonTarget)
+      return "davidson-target";
+   else if (s == Solver::DavidsonMaxOverlap)
+      return "davidson-max-overlap";
    return "Invalid Solver";
 }
 
@@ -99,7 +112,7 @@ std::vector<std::string>
 LocalEigensolver::EnumerateSolvers()
 {
    std::vector<std::string> Result;
-   for (int s = int(Solver::Lanczos); s <= int(Solver::ShiftInvertDirect); ++s)
+   for (int s = int(Solver::Lanczos); s <= int(Solver::LastSolver); ++s)
       Result.push_back(SolverStr(Solver(s)));
    return Result;
 }
@@ -157,7 +170,7 @@ LinearSolveDirect(StateComponent& x, Func F, StateComponent const& Rhs, int Verb
    {
       std::cerr << "Linear solver dimension " << Pack.size() << '\n';
    }
-   
+
    LinearAlgebra::Vector<std::complex<double>> v(Pack.size());
    Pack.pack(Rhs, v.data());
 
@@ -226,7 +239,7 @@ LinearSolve(StateComponent& x, Func F, Prec P, StateComponent const& Rhs, int k,
 struct InverseDiagonalPrecondition
 {
    InverseDiagonalPrecondition(StateComponent const& Diag_, std::complex<double> Energy_)
-      : Diag(Diag_), Energy(Energy_) 
+      : Diag(Diag_), Energy(Energy_)
    {
       //      TRACE(Diag);
       for (unsigned i = 0; i < Diag.size(); ++i)
@@ -307,7 +320,7 @@ LocalEigensolver::Solve(StateComponent& C,
       else if (Solver_ == Solver::Arnoldi)
       {
 	 LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
-					      LastIter_, LastTol_, 
+					      LastIter_, LastTol_,
 					      LinearSolvers::SmallestMagnitude,
 					      true, Verbose-1);
       }
@@ -372,6 +385,21 @@ LocalEigensolver::Solve(StateComponent& C,
 	 //LastTol_ /= CNorm;
 	 C *= 1.0 / CNorm;
 	 LastEnergy_ = inner_prod(C, MPSMultiply(LeftBlockHam, H, RightBlockHam)(C));
+      }
+      else if (Solver_ == Solver::DavidsonTarget)
+      {
+         CHECK(ShiftInvertEnergy.imag() == 0)("Davidson solver requires real energy");
+         StateComponent Diagonal = operator_prod_inner_diagonal(H, LeftBlockHam, herm(RightBlockHam));
+         LastEnergy_ = LinearSolvers::Davidson(C, Diagonal, MPSMultiply(LeftBlockHam, H, RightBlockHam),
+                                               LinearSolvers::DavidsonMode::Target, LastIter_,
+                                               Verbose-1, ShiftInvertEnergy.real());
+      }
+      else if (Solver_ == Solver::DavidsonMaxOverlap)
+      {
+         StateComponent Diagonal = operator_prod_inner_diagonal(H, LeftBlockHam, herm(RightBlockHam));
+         LastEnergy_ = LinearSolvers::Davidson(C, Diagonal, MPSMultiply(LeftBlockHam, H, RightBlockHam),
+                                               LinearSolvers::DavidsonMode::MaxOverlap, LastIter_,
+                                               Verbose-1, ShiftInvertEnergy.real());
       }
       else
       {

@@ -19,10 +19,14 @@
 /*
    Davidson solver.
 
-   This can operate in 3 modes, which determines how we select the desired eigenvalue.
-   DavidsonMode::Lowest is the 'standard' mode, which selects the arithmetic lowest eigenvalue.
-   DavidsonMode::Target selects the eigenvalue closest to the selected target eigenvalue.
-   DavidsonMode::MaxOverlap selects the eigenvector that has the largest overlap with the initial guess vector.
+   This can operate in 3 modes, which determines how we select the desired
+   eigenvalue.
+   DavidsonMode::Lowest is the 'standard' mode, which selects the arithmetic
+   owest eigenvalue.
+   DavidsonMode::Target selects the eigenvalue closest to the selected target
+   eigenvalue.
+   DavidsonMode::MaxOverlap selects the eigenvector that has the largest overlap
+   with the initial guess vector.
 */
 
 #include "linearalgebra/eigen.h"
@@ -30,9 +34,12 @@
 #include <iostream>
 #include <cmath>
 
+// a hack for the preconditioner, should be moved somewhere else
+#include "mps/state_component.h"
+
 namespace LinearSolvers
 {
-
+//
 using namespace LinearAlgebra;
 typedef std::complex<double> complex;
 
@@ -41,15 +48,17 @@ enum class DavidsonMode { Lowest, Target, MaxOverlap };
 template <typename VectorType>
 bool GramSchmidtAppend(std::vector<VectorType>& Basis,
                        VectorType NewVec,
-                       double Ortho = 2.0, double ParallelThreshold = 0.0)
+                       double Ortho = 2.0, double ParallelThreshold = 1E-32)
 {
+   double OriginalNorm = norm_frob_sq(NewVec);
+   if (OriginalNorm < 1E-20)
+      return false;
+
    int BasisSize = Basis.size();
    Basis.push_back(NewVec);
 
-   double OriginalNorm = norm_frob_sq(NewVec);
    double Norm2 = OriginalNorm;
-   bool Converged = false;
-   while (!Converged)
+   for (int n = 0; n < 2; ++n)
    {
       double MaxOverlap = 0.0;
       for (int i = 0; i < BasisSize; ++i)
@@ -58,16 +67,13 @@ bool GramSchmidtAppend(std::vector<VectorType>& Basis,
          MaxOverlap = std::max(norm_frob_sq(Overlap), MaxOverlap);
          Basis.back() -= Overlap * Basis[i];
       }
-      double NewNorm2 = norm_frob_sq(Basis.back());
+      Norm2 = norm_frob_sq(Basis.back());
 
-      if (NewNorm2 / OriginalNorm <= ParallelThreshold)  // parallel - cannot add the vector.
+      if (Norm2 / OriginalNorm <= ParallelThreshold)  // parallel - cannot add the vector.
       {
          Basis.pop_back();
          return false;
       }
-
-      Converged = (MaxOverlap <= Ortho * sqrt(Norm2));
-      Norm2 = NewNorm2;
    }
    Basis.back() *= (1.0 / sqrt(Norm2));  // normalize
    return true;
@@ -89,7 +95,8 @@ struct InverseDiagonalPrecondition
 	       {
 		  for (auto JJ = iterate(II); JJ; ++JJ)
 		  {
-		     *JJ = (1.0 / (*JJ - Energy));
+                     // regularized inverse
+                     *JJ = conj(*JJ - Energy) / (norm_frob_sq(*JJ-Energy) + 1E-8);
 		  }
 	       }
 	    }
@@ -120,7 +127,6 @@ struct InverseDiagonalPrecondition
 
    StateComponent Diag;
    std::complex<double> Energy;
-
 };
 
 
@@ -136,9 +142,10 @@ JacobiDavidsonIteration(VectorType& r, VectorType const& Diagonal, double Theta,
    r -= inner_prod(Eigenvector, r) * Eigenvector;
 }
 
-template <typename VectorType, typename MultiplyFunctor, typename Preconditioner>
+template <typename VectorType, typename MultiplyFunctor>
 double Davidson(VectorType& Guess, VectorType const& Diagonal, MultiplyFunctor MatVecMultiply,
-		DavidsonMode Mode, int& Iterations, double TargetEnergy = 0.0)
+		DavidsonMode Mode, int& Iterations, int Verbose = 0, double TargetEnergy = 0.0,
+                double MaxEnergy = 0.0)
 {
    std::vector<VectorType> v;                                 // the subspace vectors
    std::vector<VectorType> Hv;                                // H * the subspace vectors
@@ -146,6 +153,8 @@ double Davidson(VectorType& Guess, VectorType const& Diagonal, MultiplyFunctor M
    double Theta;         // eigenvalue
    v.reserve(Iterations);
    Hv.reserve(Iterations);
+
+   MaxEnergy = TargetEnergy+1.0;
 
    VectorType w = Guess;
 
@@ -168,7 +177,9 @@ double Davidson(VectorType& Guess, VectorType const& Diagonal, MultiplyFunctor M
       }
 
       Matrix<complex> sH = SubH(range(0,j), range(0,j));
+      //      TRACE(sH);
       Vector<double> Eigen = DiagonalizeHermitian(sH);
+      //TRACE(sH)(Eigen);
       // The eigenvalues are ordered, so lowest energy is in Eigen[0]
       int n = 0;
       if (Mode == DavidsonMode::MaxOverlap)
@@ -176,15 +187,22 @@ double Davidson(VectorType& Guess, VectorType const& Diagonal, MultiplyFunctor M
          // Find the vector with maximum overlap with the initial state (which is v[0]),
          // so this will be the vector n that has a maximum entry of sH(n,0)
          double MaxElement = norm_frob_sq(sH(n,0));
+         double E = Eigen[n];
          for (int i = 1; i < j; ++i)
          {
-            double ThisMaxElement = norm_frob_sq(sH(i,0));
-            if (ThisMaxElement > MaxElement)
+            if ((E < TargetEnergy) || (Eigen[i] >= TargetEnergy && Eigen[i] <= MaxEnergy))
             {
-               MaxElement = ThisMaxElement;
-               n = i;
+               double ThisMaxElement = norm_frob_sq(sH(i,0));
+               if (E < TargetEnergy || ThisMaxElement > MaxElement)
+               {
+                  MaxElement = ThisMaxElement;
+                  n = i;
+                  E = Eigen[n];
+               }
             }
          }
+         if (Verbose > 2)
+            std::cerr << "Overlap " << MaxElement << '\n';
       }
       else if (Mode == DavidsonMode::Target)
       {
@@ -227,7 +245,8 @@ double Davidson(VectorType& Guess, VectorType const& Diagonal, MultiplyFunctor M
       bool Added = GramSchmidtAppend(v, r, 1E-6);
       if (!Added)
       {
-         WARNING("Failed to add subspace vector")(v.size());
+         if (Verbose > 1)
+            std::cerr << "Happy breakdown: failed to add subspace vector\n";
          Guess = y;
          Guess *= Beta; // normalize to the norm of the initial guess vector
          Iterations = j;

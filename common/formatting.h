@@ -36,9 +36,9 @@ format_complex(std::complex<double> const& c)
    Out.precision(16);
    Out << c.real();
    if (c.imag() > 0)
-      Out << '+' << c.imag() << 'i';
+      Out << " + " << c.imag() << 'i';
    else if (c.imag() < 0)
-      Out << c.imag() << 'i';
+      Out << ' ' << c.imag() << 'i';
    Out.flush();
    return Out.str();
 }
