@@ -206,7 +206,8 @@ MPO = [Wfirst] + ([W] * (N-2)) + [Wlast]
 
 HamSquared = product_MPO(MPO, MPO)
 
-MPS = two_site_dmrg(MPS, MPO, 10, 10)
+# 8 sweeps with m=10 states
+MPS = two_site_dmrg(MPS, MPO, 10, 8)
 
 Energy = Expectation(MPS, MPO, MPS)
 print("Final energy expectation value {}".format(Energy))

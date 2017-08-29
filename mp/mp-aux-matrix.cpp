@@ -50,16 +50,23 @@ bool FileExists(std::string const& Name)
    return stat(Name.c_str(), &buf) != -1 && S_ISREG(buf.st_mode);
 }
 
+enum class OutputFormats {Simple, MatrixMarket};
+
 // Write a matrix as sparse format.
 // Force option allows forcing the last element to appear, evn if it is zero,
 // which is needed in the Matlab sparse format because it doesn't list separately the dimensions of the matrix.
 
 void
 WriteMatrixAsSparse(std::ostream& out, LinearAlgebra::Matrix<std::complex<double> > const& Op,
+                    OutputFormats Format,
                     double Epsilon = 0.0,
                     int iOffset = 0, int jOffset = 0, bool ForceLast = false,
                     bool Polar = false, bool Radians = false)
 {
+   if (Format == OutputFormats::MatrixMarket)
+   {
+      out << size1(Op) << ' ' << size2(Op) << '\n';
+   }
    for (unsigned i = 0; i < size1(Op); ++i)
    {
       for (unsigned j = 0; j < size2(Op); ++j)
@@ -84,7 +91,9 @@ WriteMatrixAsSparse(std::ostream& out, LinearAlgebra::Matrix<std::complex<double
 }
 
 void
-WriteMatrixOperatorAsSparse(std::ostream& out, MatrixOperator const& Op, double Epsilon = 0.0,
+WriteMatrixOperatorAsSparse(std::ostream& out, MatrixOperator const& Op,
+                            OutputFormats Format,
+                            double Epsilon = 0.0,
                             bool Polar = false, bool Radians = false)
 {
    // We map the basis into a linear index.  So we need to get the offset of each subspace
@@ -102,12 +111,18 @@ WriteMatrixOperatorAsSparse(std::ostream& out, MatrixOperator const& Op, double 
    }
    CHECK_EQUAL(Basis2Offset.back(), Op.Basis2().total_dimension());
 
+   if (Format == OutputFormats::MatrixMarket)
+   {
+      out << Basis1Offset.back() << ' ' << Basis2Offset.back() << '\n';
+   }
+
    for (LinearAlgebra::const_iterator<MatrixOperator>::type I = iterate(Op); I; ++I)
    {
       for (LinearAlgebra::const_inner_iterator<MatrixOperator>::type J = iterate(I); J; ++J)
       {
          // Offset + 1 to use 1-based addressing
-         WriteMatrixAsSparse(out, *J, Epsilon, Basis1Offset[J.index1()]+1, Basis2Offset[J.index2()]+1,
+         WriteMatrixAsSparse(out, *J, OutputFormats::Simple,
+                             Epsilon, Basis1Offset[J.index1()]+1, Basis2Offset[J.index2()]+1,
                              J.index1() == Op.Basis1().size()-1 && J.index2() == Op.Basis2().size()-1,
                              Polar, Radians);
       }
@@ -121,11 +136,15 @@ WriteMatrixOperatorAsSparse(std::ostream& out, MatrixOperator const& Op, double 
 }
 
 void
-WriteMatrixOperatorAsSparseStates(std::ostream& out, MatrixOperator const& Op,
+WriteMatrixOperatorAsSparseStates(std::ostream& out, MatrixOperator const& Op, OutputFormats Format,
                                   std::vector<std::pair<int,int>> const& WhichStates,
                                   double Epsilon = 0.0,
                                   bool Polar = false, bool Radians = false)
 {
+   if (Format == OutputFormats::MatrixMarket)
+   {
+      out << WhichStates.size() << ' ' << WhichStates.size() << '\n';
+   }
    for (unsigned i = 0; i < WhichStates.size(); ++i)
    {
       for (unsigned j = 0; j < WhichStates.size(); ++j)
@@ -226,6 +245,7 @@ int main(int argc, char** argv)
       bool Polar = false;
       bool Radians = false;
       std::string WhichEigenvalues;
+      bool MatrixMarket = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -243,6 +263,7 @@ int main(int argc, char** argv)
          ("partition", prog_opt::value(&Partition), "Partition of the wavefunction cell,site (not yet implemented)")
          ("restrict", prog_opt::value(&WhichEigenvalues), "Use only this set of eigenvalues of the density matrix [list of indices]")
          ("force,f", prog_opt::bool_switch(&Force), "Overwrite files if they already exist")
+         ("matrixmarket", prog_opt::bool_switch(&MatrixMarket), "Use Matrix Market output format")
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
          ("polar", prog_opt::bool_switch(&Polar), "Write the matrix elements in <magnitude> <argument> format")
@@ -391,6 +412,8 @@ int main(int argc, char** argv)
 
       std::vector<std::pair<int, int>> WhichStates;
 
+      OutputFormats Format = MatrixMarket ? OutputFormats::MatrixMarket : OutputFormats::Simple;
+
       // make a new scope since we have some temporary values
       {
          // Sort the eigenvalues with an index sort
@@ -443,9 +466,9 @@ int main(int argc, char** argv)
          {
             Out.precision(getenv_or_default("MP_PRECISION", 14));
             if (WhichStates.empty())
-               WriteMatrixOperatorAsSparse(Out, Rho, Epsilon, Polar, Radians);
+               WriteMatrixOperatorAsSparse(Out, Rho, Format, Epsilon, Polar, Radians);
             else
-               WriteMatrixOperatorAsSparseStates(Out, Rho, WhichStates, Epsilon, Polar, Radians);
+               WriteMatrixOperatorAsSparseStates(Out, Rho, Format, WhichStates, Epsilon, Polar, Radians);
          }
       }
 
@@ -549,9 +572,9 @@ int main(int argc, char** argv)
          {
             Out.precision(getenv_or_default("MP_PRECISION", 14));
             if (WhichStates.empty())
-               WriteMatrixOperatorAsSparse(Out, M, Epsilon, Polar, Radians);
+               WriteMatrixOperatorAsSparse(Out, M, Format, Epsilon, Polar, Radians);
             else
-               WriteMatrixOperatorAsSparseStates(Out, M, WhichStates, Epsilon, Polar, Radians);
+               WriteMatrixOperatorAsSparseStates(Out, M, Format, WhichStates, Epsilon, Polar, Radians);
          }
       }
 
