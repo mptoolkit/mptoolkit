@@ -21,10 +21,20 @@ def initial_F(W):
     return F
 
 def contract_from_right(W, A, F, B):
-    return np.einsum("abst,sij,bjl,tkl->aik",W,A,F,B, optimize=True)
+    # the einsum function doesn't appear to optimize the contractions properly,
+    # so we split it into individual summations in the optimal order
+    #return np.einsum("abst,sij,bjl,tkl->aik",W,A,F,B, optimize=True)
+    Temp = np.einsum("sij,bjl->sbil", A, F)
+    Temp = np.einsum("sbil,abst->tail", Temp, W)
+    return np.einsum("tail,tkl->aik", Temp, B)
 
 def contract_from_left(W, A, E, B):
-    return np.einsum("abst,sij,aik,tkl->bjl",W,A,E,B, optimize=True)
+    # the einsum function doesn't appear to optimize the contractions properly,
+    # so we split it into individual summations in the optimal order
+    # return np.einsum("abst,sij,aik,tkl->bjl",W,A,E,B, optimize=True)
+    Temp = np.einsum("sij,aik->sajk", A, E)
+    Temp = np.einsum("sajk,abst->tbjk", Temp, W)
+    return np.einsum("tbjk,tkl->bjl", Temp, B)
 
 # construct the E-matrices for all sites except the first
 def construct_F(Alist, MPO, Blist):
@@ -102,13 +112,19 @@ class HamiltonianMultiply(sparse.linalg.LinearOperator):
         self.shape = [self.size, self.size]
 
     def _matvec(self, A):
-        R = np.einsum("aij,abst,bkl,sik->tjl",self.E,self.W,self.F,np.reshape(A, self.req_shape), optimize=True)
+        # the einsum function doesn't appear to optimize the contractions properly,
+        # so we split it into individual summations in the optimal order
+        #R = np.einsum("aij,sik,abst,bkl->tjl",self.E,np.reshape(A, self.req_shape),
+        #              self.W,self.F, optimize=True)
+        R = np.einsum("aij,sik->ajsk", self.E, np.reshape(A, self.req_shape))
+        R = np.einsum("ajsk,abst->bjtk", R, self.W)
+        R = np.einsum("bjtk,bkl->tjl", R, self.F)
         return np.reshape(R, -1)
 
 ## optimize a single site given the MPO matrix W, and tensors E,F
 def optimize_site(A, W, E, F):
     H = HamiltonianMultiply(E,W,F)
-    E,V = sparse.linalg.eigsh(H,1,v0=A,which='SA')
+    E,V = sparse.linalg.eigsh(H,1,v0=A,which='SA', tol=1E-8)
     return (E[0],np.reshape(V[:,0], H.req_shape))
 
 def optimize_two_sites(A, B, W1, W2, E, F, m, dir):
@@ -130,21 +146,21 @@ def two_site_dmrg(MPS, MPO, m, sweeps):
     E = construct_E(MPS, MPO, MPS)
     F = construct_F(MPS, MPO, MPS)
     F.pop()
-    for sweep in range(0,sweeps/2):
+    for sweep in range(0,int(sweeps/2)):
         for i in range(0, len(MPS)-2):
             Energy,MPS[i],MPS[i+1],trunc,states = optimize_two_sites(MPS[i],MPS[i+1],
                                                                      MPO[i],MPO[i+1],
                                                                      E[-1], F[-1], m, 'right')
-            print("Sweep {} Sites {},{}    Energy {:16.12f}    States {:4} Truncation {:16.12f}") \
-                     .format(sweep*2,i,i+1, Energy, states, trunc)
+            print("Sweep {:} Sites {:},{:}    Energy {:16.12f}    States {:4} Truncation {:16.12f}"
+                     .format(sweep*2,i,i+1, Energy, states, trunc))
             E.append(contract_from_left(MPO[i], MPS[i], E[-1], MPS[i]))
             F.pop();
         for i in range(len(MPS)-2, 0, -1):
             Energy,MPS[i],MPS[i+1],trunc,states = optimize_two_sites(MPS[i],MPS[i+1],
                                                                      MPO[i],MPO[i+1],
                                                                      E[-1], F[-1], m, 'left')
-            print("Sweep {} Sites {},{}    Energy {:16.12f}    States {:4} Truncation {:16.12f}") \
-                     .format(sweep*2+1,i,i+1, Energy, states, trunc)
+            print("Sweep {} Sites {},{}    Energy {:16.12f}    States {:4} Truncation {:16.12f}"
+                     .format(sweep*2+1,i,i+1, Energy, states, trunc))
             F.append(contract_from_right(MPO[i+1], MPS[i+1], F[-1], MPS[i+1]))
             E.pop();
     return MPS
@@ -159,7 +175,7 @@ InitialA2 = np.zeros((d,1,1))
 InitialA2[1,0,0] = 1
 
 ## initial state |01010101>
-MPS = [InitialA1, InitialA2] * (N/2)
+MPS = [InitialA1, InitialA2] * int(N/2)
 
 ## Local operators
 I = np.identity(2)
@@ -190,7 +206,7 @@ HamSquared = product_MPO(MPO, MPO)
 MPS = two_site_dmrg(MPS, MPO, 10, 6)
 
 Energy = Expectation(MPS, MPO, MPS)
-print("Final energy expectation value {}").format(Energy)
+print("Final energy expectation value {}".format(Energy))
 
 H2 = Expectation(MPS, HamSquared, MPS)
-print("variance = {:16.12f}").format(H2 - Energy*Energy)
+print("variance = {:16.12f}".format(H2 - Energy*Energy))
