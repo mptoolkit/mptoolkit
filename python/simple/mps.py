@@ -124,6 +124,9 @@ class HamiltonianMultiply(sparse.linalg.LinearOperator):
 ## optimize a single site given the MPO matrix W, and tensors E,F
 def optimize_site(A, W, E, F):
     H = HamiltonianMultiply(E,W,F)
+    # we choose tol=1E-8 here, which is OK for small calculations.
+    # to bemore robust, we should take the tol -> 0 towards the end
+    # of the calculation.
     E,V = sparse.linalg.eigsh(H,1,v0=A,which='SA', tol=1E-8)
     return (E[0],np.reshape(V[:,0], H.req_shape))
 
@@ -203,7 +206,7 @@ MPO = [Wfirst] + ([W] * (N-2)) + [Wlast]
 
 HamSquared = product_MPO(MPO, MPO)
 
-MPS = two_site_dmrg(MPS, MPO, 10, 6)
+MPS = two_site_dmrg(MPS, MPO, 10, 10)
 
 Energy = Expectation(MPS, MPO, MPS)
 print("Final energy expectation value {}".format(Energy))
