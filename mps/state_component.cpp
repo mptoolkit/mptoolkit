@@ -18,6 +18,7 @@
 // ENDHEADER
 
 #include "state_component.h"
+#include "common/openmp.h"
 #include "quantumnumbers/quantumnumber.h"
 #include "quantumnumbers/u1.h"
 #include "tensor/tensorproduct.h"
@@ -524,7 +525,9 @@ StateComponent prod(StateComponent const& A, MatrixOperator const& Op)
 
    StateComponent Result(A.LocalBasis(), A.Basis1(), Op.Basis2());
 
-   for (std::size_t s = 0; s < A.size(); ++s)
+   int Sz = A.size();
+#pragma openmp parallel for schedule(dynamic) num_threads(omp::threads_to_use(Sz))
+   for (int s = 0; s < Sz; ++s)
    {
       Result[s] = prod(A[s], Op, A[s].TransformsAs());
    }
@@ -538,7 +541,9 @@ StateComponent prod(StateComponent const& A, HermitianProxy<MatrixOperator> cons
 
    StateComponent Result(A.LocalBasis(), A.Basis1(), Op.base().Basis1());
 
-   for (std::size_t s = 0; s < A.size(); ++s)
+   int Sz = A.size();
+#pragma openmp parallel for schedule(dynamic) num_threads(omp::threads_to_use(Sz))
+   for (int s = 0; s < Sz; ++s)
    {
       Result[s] = A[s] * Op;
    }
@@ -552,7 +557,9 @@ StateComponent prod(MatrixOperator const& Op, StateComponent const& A)
 
    StateComponent Result(A.LocalBasis(), Op.Basis1(), A.Basis2());
 
-   for (std::size_t s = 0; s < A.size(); ++s)
+   int Sz = A.size();
+#pragma openmp parallel for schedule(dynamic) num_threads(omp::threads_to_use(Sz))
+   for (int s = 0; s < Sz; ++s)
    {
       Result[s] = prod(Op, A[s], A[s].TransformsAs());
    }
@@ -566,7 +573,9 @@ StateComponent prod(HermitianProxy<MatrixOperator> const& Op, StateComponent con
 
    StateComponent Result(A.LocalBasis(), Op.base().Basis2(), A.Basis2());
 
-   for (std::size_t s = 0; s < A.size(); ++s)
+   int Sz = A.size();
+#pragma openmp parallel for schedule(dynamic) num_threads(omp::threads_to_use(Sz))
+   for (std::size_t s = 0; s < Sz; ++s)
    {
       Result[s] = Op * A[s];
    }
@@ -624,7 +633,10 @@ StateComponent triple_prod(LinearAlgebra::HermitianProxy<MatrixOperator> const& 
                              MatrixOperator const&Op2)
 {
    StateComponent Result(A.LocalBasis(), Op1.base().Basis2(), Op2.Basis2());
-   for (std::size_t s = 0; s < A.size(); ++s)
+
+   int Sz = A.size();
+#pragma openmp parallel for schedule(dynamic) num_threads(omp::threads_to_use(Sz))
+   for (int s = 0; s < Sz; ++s)
    {
       Result[s] = triple_prod(Op1, A[s], Op2);
    }

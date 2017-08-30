@@ -70,11 +70,15 @@ AC_ARG_WITH([openmp], [AC_HELP_STRING([--with-openmp], [enable OpenMP paralleliz
 	[with_open=check])
 if test "x$with_openmp" != xno; then
    AC_LANG_PUSH(C++)
-   AX_OPENMP([AC_SUBST([OPENMP_CXXFLAGS]) AC_SUBST([HAVE_OPENMP], [1])], [AC_SUBST([HAVE_OPENMP], []) 
-                                        if test "x$with_openmp" = yes; then
-                     AC_MSG_FAILURE([--with-openmp was given, but the test for OpenMP failed!])
-                  fi
-                 ])
+   AX_OPENMP([
+        AC_SUBST([OPENMP_CXXFLAGS]) 
+        AC_SUBST([HAVE_OPENMP], [1]) 
+        AC_DEFINE([HAVE_OPENMP], [], [Use OpenMP threading])
+     ], [AC_SUBST([HAVE_OPENMP], []) 
+         if test "x$with_openmp" = yes; then
+            AC_MSG_FAILURE([--with-openmp was given, but the test for OpenMP failed!])
+         fi
+      ])
    AC_LANG_POP(C++)
 fi
 
