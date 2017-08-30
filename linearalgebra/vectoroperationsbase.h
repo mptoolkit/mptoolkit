@@ -307,6 +307,20 @@ set_element(T& v, size_type n, Value const& x)
    SetElement<T&, Value>()(v, n, x);
 }
 
+// SetElementLock
+
+template <typename T, typename Value,
+          typename TInterface = typename interface<T>::type, typename Enable = void>
+struct SetElementLock { };
+
+template <typename T, typename Value>
+inline
+typename SetElementLock<T&, Value>::result_type
+set_element_lock(T& v, size_type n, Value const& x)
+{
+   SetElementLock<T&, Value>()(v, n, x);
+}
+
 // FIXME: this should be a separate function, rather than delegate to SetElement
 template <typename T, typename Value>
 inline
@@ -328,6 +342,20 @@ typename AddElement<T&, Value>::result_type
 add_element(T& v, size_type n, Value const& x)
 {
    AddElement<T&, Value>()(v, n, x);
+}
+
+// AddElementLock
+
+template <typename T, typename Value,
+          typename TInterface = typename interface<T>::type, typename Enable = void>
+struct AddElementLock { };
+
+template <typename T, typename Value>
+inline
+typename AddElementLock<T&, Value>::result_type
+add_element_lock(T& v, size_type n, Value const& x)
+{
+   AddElementLock<T&, Value>()(v, n, x);
 }
 
 template <typename T, typename Value, typename Float,
@@ -354,6 +382,20 @@ typename SubtractElement<T&, Value>::result_type
 subtract_element(T& v, size_type n, Value const& x)
 {
    SubtractElement<T&, Value>()(v, n, x);
+}
+
+// SubtractElementLock
+
+template <typename T, typename Value,
+          typename TInterface = typename interface<T>::type, typename Enable = void>
+struct SubtractElementLock { };
+
+template <typename T, typename Value>
+inline
+typename SubtractElementLock<T&, Value>::result_type
+subtract_element_lock(T& v, size_type n, Value const& x)
+{
+   SubtractElementLock<T&, Value>()(v, n, x);
 }
 
 template <typename T, typename Value, typename Float,
@@ -1574,6 +1616,19 @@ struct SetElement<T&, Value, INJECTIVE_VECTOR(S, U) >
 };
 
 template <typename T, typename Value, typename S, typename U>
+struct SetElementLock<T&, Value, INJECTIVE_VECTOR(S, U) >
+{
+   typedef void result_type;
+   typedef T& first_argument_type;
+   typedef size_type second_argument_type;
+   typedef Value const& third_argument_type;
+   result_type operator()(T& v, size_type n, Value const& x) const
+   {
+      v.set_element_lock(n, x);
+   }
+};
+
+template <typename T, typename Value, typename S, typename U>
 struct AddElement<T&, Value, COMPRESSED_VECTOR(S, U) >
 {
    typedef void result_type;
@@ -1583,6 +1638,19 @@ struct AddElement<T&, Value, COMPRESSED_VECTOR(S, U) >
    result_type operator()(T& v, size_type n, Value const& x) const
    {
       v.add_element(n, x);
+   }
+};
+
+template <typename T, typename Value, typename S, typename U>
+struct AddElementLock<T&, Value, COMPRESSED_VECTOR(S, U) >
+{
+   typedef void result_type;
+   typedef T& first_argument_type;
+   typedef size_type second_argument_type;
+   typedef Value const& third_argument_type;
+   result_type operator()(T& v, size_type n, Value const& x) const
+   {
+      v.add_element_lock(n, x);
    }
 };
 
@@ -1609,6 +1677,19 @@ struct SubtractElement<T&, Value, COMPRESSED_VECTOR(S, U) >
    result_type operator()(T& v, size_type n, Value const& x) const
    {
       v.subtract_element(n, x);
+   }
+};
+
+template <typename T, typename Value, typename S, typename U>
+struct SubtractElementLock<T&, Value, COMPRESSED_VECTOR(S, U) >
+{
+   typedef void result_type;
+   typedef T& first_argument_type;
+   typedef size_type second_argument_type;
+   typedef Value const& third_argument_type;
+   result_type operator()(T& v, size_type n, Value const& x) const
+   {
+      v.subtract_element_lock(n, x);
    }
 };
 

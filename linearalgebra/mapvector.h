@@ -39,6 +39,7 @@
 #include "vectortransform.h"
 #include <map>
 #include "crtp_vector.h"
+#include <mutex>
 
 namespace LinearAlgebra
 {
@@ -78,6 +79,12 @@ class MapVector : public VectorBase<MapVector<T> >
       typename boost::enable_if<is_vector<U>, MapVector<T>&>::type
       operator=(NoAliasProxy<U> const& x);
 
+      MapVector(MapVector const& x) : Size_(x.Size_), Data_(x.Data_) {}
+      MapVector(MapVector&& x) : Size_(x.Size_), Data_(std::move(x.Data_)) {}
+
+      MapVector& operator=(MapVector const& x) { Size_ = x.Size_; Data_ = x.Data_; return *this; }
+      MapVector& operator=(MapVector&& x) { Size_ = x.Size_; Data_ = std::move(x.Data_); return *this; }
+
       const_reference operator[](size_type n) const;
       reference operator[](size_type n);
 
@@ -101,13 +108,22 @@ class MapVector : public VectorBase<MapVector<T> >
       void set_element(size_type n, U const& x);
 
       template <typename U>
+      void set_element_lock(size_type n, U const& x);
+
+      template <typename U>
       void add_element(size_type n, U const& x);
+
+      template <typename U>
+      void add_element_lock(size_type n, U const& x);
 
       template <typename U, typename Float>
       void add_element_cull(size_type n, U const& x, Float const& Tol);
 
       template <typename U>
       void subtract_element(size_type n, U const& x);
+
+      template <typename U>
+      void subtract_element_lock(size_type n, U const& x);
 
       template <typename U, typename Float>
       void subtract_element_cull(size_type n, U const& x, Float const& Tol);
@@ -124,6 +140,7 @@ class MapVector : public VectorBase<MapVector<T> >
    private:
       size_type Size_;
       container_type Data_;
+      std::mutex MapMutex_;
 };
 
 // interface

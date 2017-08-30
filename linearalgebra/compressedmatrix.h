@@ -441,6 +441,30 @@ struct SetMatrixElement<CompressedMatrix<VecOfVec, ColMajor>, Value>
    }
 };
 
+template <typename VecOfVec, typename Value>
+struct SetMatrixElementLock<CompressedMatrix<VecOfVec, RowMajor>, Value>
+{
+   typedef void result_type;
+   typedef CompressedMatrix<VecOfVec, RowMajor>& first_argument_type;
+   void operator()(CompressedMatrix<VecOfVec, ColMajor>& m,
+                   size_type i, size_type j, Value const& x)
+   {
+      set_element_lock(get_element(m.vec(),i), j, x);
+   }
+};
+
+template <typename VecOfVec, typename Value>
+struct SetMatrixElementLock<CompressedMatrix<VecOfVec, ColMajor>, Value>
+{
+   typedef void result_type;
+   typedef CompressedMatrix<VecOfVec, RowMajor>& first_argument_type;
+   void operator()(CompressedMatrix<VecOfVec, ColMajor>& m,
+                   size_type i, size_type j, Value const& x)
+   {
+      set_element_lock(get_element(m.vec(),j), i, x);
+   }
+};
+
 // zero_all
 
 template <typename VecOfVec, typename Orient>
