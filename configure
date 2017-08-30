@@ -5717,18 +5717,24 @@ fi
 $as_echo "$ax_cv_cxx_openmp" >&6; }
 if test "x$ax_cv_cxx_openmp" = "xunknown"; then
 
-                                        if test "x$with_openmp" = yes; then
-                     { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+         if test "x$with_openmp" = yes; then
+            { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "--with-openmp was given, but the test for OpenMP failed!
 See \`config.log' for more details" "$LINENO" 5; }
-                  fi
+         fi
 
 else
   if test "x$ax_cv_cxx_openmp" != "xnone"; then
     OPENMP_CXXFLAGS=$ax_cv_cxx_openmp
   fi
-   HAVE_OPENMP=1
+
+
+        HAVE_OPENMP=1
+
+
+$as_echo "#define HAVE_OPENMP /**/" >>confdefs.h
+
 
 fi
 
