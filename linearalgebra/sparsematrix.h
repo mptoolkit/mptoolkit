@@ -476,6 +476,32 @@ struct SetMatrixElement<SparseMatrix<T, ColMajor, InnerType, OuterType>&, Value>
    }
 };
 
+// set_element_lock
+
+template <typename T, typename InnerType, typename OuterType, typename Value>
+struct SetMatrixElementLock<SparseMatrix<T, RowMajor, InnerType, OuterType>&, Value>
+{
+   typedef void result_type;
+   typedef SparseMatrix<T, RowMajor, InnerType, OuterType>& first_argument_type;
+   void operator()(SparseMatrix<T, RowMajor, InnerType, OuterType>& m,
+                   size_type i, size_type j, Value const& x)
+   {
+      set_element_lock(get_element(m.vec(),i), j, x);
+   }
+};
+
+template <typename T, typename InnerType, typename OuterType, typename Value>
+struct SetMatrixElementLock<SparseMatrix<T, ColMajor, InnerType, OuterType>&, Value>
+{
+   typedef void result_type;
+   typedef SparseMatrix<T, RowMajor, InnerType, OuterType>& first_argument_type;
+   void operator()(SparseMatrix<T, ColMajor, InnerType, OuterType>& m,
+                   size_type i, size_type j, Value const& x)
+   {
+      set_element_lock(get_element(m.vec(),j), i, x);
+   }
+};
+
 // get_element
 
 template <typename SparseVec, typename Enable = void>

@@ -97,8 +97,36 @@ template <typename T>
 template <typename U>
 inline
 void
+MapVector<T>::set_element_lock(size_type n, U const& x)
+{
+   std::lock_guard<std::mutex> guard(MapMutex_);
+   base_iterator I = Data_.find(n);
+   if (I != Data_.end())
+      I->second = x;
+   else
+      Data_.insert(std::pair<size_type, T>(n, x));
+}
+
+template <typename T>
+template <typename U>
+inline
+void
 MapVector<T>::add_element(size_type n, U const& x)
 {
+   base_iterator I = Data_.find(n);
+   if (I != Data_.end())
+      I->second += x;
+   else
+      Data_.insert(std::pair<size_type, T>(n, x));
+}
+
+template <typename T>
+template <typename U>
+inline
+void
+MapVector<T>::add_element_lock(size_type n, U const& x)
+{
+   std::lock_guard<std::mutex> guard(MapMutex_);
    base_iterator I = Data_.find(n);
    if (I != Data_.end())
       I->second += x;
@@ -138,6 +166,20 @@ inline
 void
 MapVector<T>::subtract_element(size_type n, U const& x)
 {
+   base_iterator I = Data_.find(n);
+   if (I != Data_.end())
+      I->second -= x;
+   else
+      Data_.insert(std::pair<size_type, T>(n, -x));
+}
+
+template <typename T>
+template <typename U>
+inline
+void
+MapVector<T>::subtract_element_lock(size_type n, U const& x)
+{
+   std::lock_guard<std::mutex> guard(MapMutex_);
    base_iterator I = Data_.find(n);
    if (I != Data_.end())
       I->second -= x;

@@ -20,6 +20,8 @@
 #if !defined(MPTOOLKIT_COMMON_OPENMP_H)
 #define MPTOOLKIT_COMMON_OPENMP_H
 
+#include "config.h"
+
 #if defined(HAVE_OPENMP)
 #include "openmp_thread.h"
 #else

@@ -21,6 +21,7 @@
 //
 
 #include "mpo/operator_component.h"
+#include "common/openmp.h"
 
 // note: we could parallelize the construction of the G and H indices over jP
 
@@ -144,11 +145,22 @@ MatrixType
 OuterIndex::Evaluate(StateComponent const& B, JMatrixRefList const& J) const
 {
    DEBUG_CHECK(!Components.empty());
-   MatrixOperator::const_inner_iterator x = iterate_at(B[Components[0].s].data(), Components[0].jP, j);
-   DEBUG_CHECK(x);
-
+#if defined(HAVE_OPENMP)
+   int Sz = Components.size();
+   std::vector<MatrixType> Result(Sz);
+   //   std::cout << "Size:" << Sz << '\n';
+#pragma omp parallel for schedule(dynamic) num_threads(omp::threads_to_use(Sz))
+   for (int n = 0; n < Sz; ++n)
+   {
+      //      std::cout << omp_get_num_threads() << '\n';
+      MatrixOperator::const_inner_iterator x = iterate_at(B[Components[n].s].data(), Components[n].jP, j);
+      DEBUG_CHECK(x);
+      Result[n] = EvaluateK(Components[n].K, J) * (*x);
+   }
+   return omp::parallel_sum(std::move(Result));
+#else
    MatrixType Result = EvaluateK(Components[0].K, J) * (*x);
-
+   MatrixOperator::const_inner_iterator x = iterate_at(B[Components[0].s].data(), Components[0].jP, j);
    for (unsigned n = 1; n < Components.size(); ++n)
    {
       x = iterate_at(B[Components[n].s].data(), Components[n].jP, j);
@@ -156,6 +168,7 @@ OuterIndex::Evaluate(StateComponent const& B, JMatrixRefList const& J) const
       Result += EvaluateK(Components[n].K, J) * (*x);
    }
    return Result;
+#endif
 }
 
 } // namespace
@@ -431,11 +444,13 @@ contract_from_left(OperatorComponent const& M,
    // do the evaluations
    JList.Evaluate();
 
-   for (unsigned n = 0; n < C.size(); ++n)
+   int Sz = C.size();
+#pragma omp parallel for schedule(dynamic) num_threads(omp::threads_to_use(Sz))
+   for (int n = 0; n < Sz; ++n)
    {
       if (!C[n].empty())
       {
-         set_element(Result[C[n].a].data(), C[n].i, C[n].j, C[n].Evaluate(B,JList));
+         set_element_lock(Result[C[n].a].data(), C[n].i, C[n].j, C[n].Evaluate(B,JList));
       }
    }
 
