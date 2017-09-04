@@ -159,8 +159,8 @@ OuterIndex::Evaluate(StateComponent const& B, JMatrixRefList const& J) const
    }
    return omp::parallel_sum(std::move(Result));
 #else
-   MatrixType Result = EvaluateK(Components[0].K, J) * (*x);
    MatrixOperator::const_inner_iterator x = iterate_at(B[Components[0].s].data(), Components[0].jP, j);
+   MatrixType Result = EvaluateK(Components[0].K, J) * (*x);
    for (unsigned n = 1; n < Components.size(); ++n)
    {
       x = iterate_at(B[Components[n].s].data(), Components[n].jP, j);

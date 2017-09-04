@@ -34,6 +34,7 @@
 #include "mp-algorithms/triangular_mpo_solver.h"
 #include "common/prog_opt_accum.h"
 #include <boost/algorithm/string.hpp>
+#include "common/openmp.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -230,6 +231,7 @@ MomentsToCumulants(std::vector<Polynomial<std::complex<double> > > const& Moment
 
 int main(int argc, char** argv)
 {
+   omp::initialize();
    std::string FName;
    std::string OpStr;
 
