@@ -528,7 +528,7 @@ void Initialize(std::string const& ProgName,
                 double CumulativeCPUTime_, double CumulativeWallTime_,
                 bool CatchTERM, bool CatchSEGV)
 {
-   omp::initialize();
+   omp::initialize(3);
    notify_log(20, ProcControlLog) << "Installing signal handlers...\n";
    tracePath = static_cast<char*>(malloc(ProgName.size()+1));
    strcpy(tracePath, ProgName.c_str());

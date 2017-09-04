@@ -26,19 +26,23 @@ namespace omp
 {
 
 inline
-void initialize()
+void initialize(int Verbose = 0)
 {
    omp_set_dynamic(true);
    omp_set_nested(true);
-   int n = omp_get_thread_limit();
-   omp_set_num_threads(n); // seems we need to initialize this???
-#pragma omp parallel num_threads(100)
+   int NumProcs = omp_get_num_procs();
+   omp_set_num_threads(NumProcs*2);
+   if (Verbose > 0)
    {
-#pragma omp single
-      std::cout << "Number of threads: " << omp_get_num_threads() << '\n';
+      std::cout << "Number of processors: " << NumProcs << '\n';
+#pragma omp parallel num_threads(100)
+      {
+         //#pragma omp single
+         std::cout << "Number of threads: " << omp_get_num_threads() << '\n';
+      }
+      std::cout << "Max threads per section: " << omp_get_max_threads() << '\n';
+      std::cout << "Max threads: " << omp_get_thread_limit() << '\n';
    }
-   std::cout << "Max threads per section: " << omp_get_max_threads() << '\n';
-   std::cout << "Max threads: " << omp_get_thread_limit() << '\n';
 }
 
 inline
@@ -53,7 +57,7 @@ T
 parallel_sum(std::vector<T>&& x)
 {
    CHECK(x.size() > 0);
-#if 0
+#if 1
    T Result = x[0];
    for (unsigned n = 1; n < x.size(); ++n)
    {
