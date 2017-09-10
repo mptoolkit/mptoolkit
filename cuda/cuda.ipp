@@ -20,6 +20,52 @@ namespace cuda
 {
 
 //
+// device
+//
+
+inline
+int num_devices()
+{
+   int Result;
+   cudaError_t e = cudaGetDeviceCount(&Result);
+   if (e == cudaSuccess)
+      return Result;
+   if (e == cudaErrorNoDevice)
+      return 0;
+   if (e == cudaErrorInsufficientDriver)
+      return 0;
+   throw error(e);
+}
+
+inline
+void set_device(int d)
+{
+   check_error(cudaSetDevice(d));
+}
+
+inline
+int get_device()
+{
+   int Result;
+   check_error(cudaGetDevice(&Result));
+   return Result;
+}
+
+inline
+device_properties get_device_properties(int d)
+{
+   device_properties Result;
+   check_error(cudaGetDeviceProperties(&Result.p_, d));
+   return Result;
+}
+
+inline
+void device_synchronize()
+{
+   check_error(cudaDeviceSynchronize());
+}
+
+//
 // stream
 //
 
@@ -73,8 +119,8 @@ stream::Allocate()
 	 FreeList.push_back(s);
       }
    }
-   cudaStream_t s = FreeList.top();
-   FreeList.pop();
+   cudaStream_t s = FreeList.back();
+   FreeList.pop_back();
    return s;
 }
 
@@ -133,8 +179,8 @@ event::Allocate()
 	 FreeList.push_back(s);
       }
    }
-   cudaEvent_t s = FreeList.top();
-   FreeList.pop();
+   cudaEvent_t s = FreeList.back();
+   FreeList.pop_back();
    return s;
 }
 
@@ -160,11 +206,6 @@ timer::timer() : start_(Allocate()), stop_(Allocate())
 }
 
 inline
-timer::timer() : timer_(timer::Allocate())
-{
-}
-
-inline
 timer::timer(timer&& other) : start_(other.start_), stop_(other.stop_)
 {
    other.start_ = nullptr;
@@ -175,10 +216,10 @@ inline
 timer&
 timer::operator=(timer&& other)
 {
-   if (start_ || stop)
+   if (start_ || stop_)
    {
       std::lock_guard<std::mutex> lock(timer::FreeListMutex);
-      if (start)
+      if (start_)
 	 timer::FreeList.push_back(start_);
       if (stop_)
 	 timer::FreeList.push_back(stop_);
@@ -223,14 +264,14 @@ timer::Allocate()
 	 FreeList.push_back(s);
       }
    }
-   cudaEvent_t s = FreeList.top();
-   FreeList.pop();
+   cudaEvent_t s = FreeList.back();
+   FreeList.pop_back();
    return s;
 }
 
 inline
 float
-timer::elapsed_time_ms()
+timer::elapsed_time_ms() const
 {
    float Result;
    cudaError_t e = cudaEventElapsedTime(&Result, start_, stop_);

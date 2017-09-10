@@ -124,6 +124,7 @@ if test "x$with_pbs" != xno; then
    LIBS="$save_LIBS"
 fi
 
+
 dnl Checks for header files.
 AC_CHECK_HEADERS(fcntl.h unistd.h)
 
@@ -193,6 +194,41 @@ AC_FUNC_STRERROR_R
 AC_C_BIGENDIAN
 
 dnl Checks for programs
+
+dnl CUDA runtime support
+AC_ARG_WITH([cuda], AC_HELP_STRING([--with-cuda@<:@=ARG@:>@],[CUDA runtime support libcudart from standard location (ARG=yes), from the specified location (ARG=<path>) or disable it (ARG=no) @<:@ARG=no@:>@]),
+           [], [with_cuda=no])
+
+if test "x$with_cuda" != xno; then
+   AC_MSG_CHECKING([for CUDA runtime library])
+   AC_CHECK_HEADERS(cuda_runtime.h, [], [acx_cuda_ok=no])
+   if test "acx_cuda_ok" != xno; then
+      cuda_lib="$with_cuda"
+      if test "x$cuda_lib" == xcheck; then
+         cuda_lib="-lcudart";
+      fi
+      if test "x$cuda_lib" == xyes; then
+         cuda_lib="-lcudart";
+      fi
+      save_LIBS="$LIBS"; LIBS="$cuda_lib $LIBS"
+      AC_MSG_CHECKING([for cudaGetDeviceCount in "$cuda_lib"])
+      AC_TRY_LINK_FUNC([cudaGetDeviceCount], 
+         [acx_cuda_ok=yes
+          AC_SUBST([CUDA_LIBS], "$cuda_lib")
+          AC_DEFINE([HAVE_CUDA], [], [Define if you want to use CUDA])
+          AC_SUBST([HAVE_CUDA], [1])
+         ], 
+         [
+          if test "x$with_cuda" != xcheck; then
+            AC_MSG_FAILURE([--with-cuda was given, but test for the CUDA runtime library failed])
+          fi
+          CUDA_LIBS=""
+          acx_cuda_ok=no
+         ])
+      LIBS="$save_LIBS"
+   fi
+   AC_MSG_RESULT($acx_cuda_ok)
+fi
 
 AC_PROG_INSTALL
 

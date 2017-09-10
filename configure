@@ -627,6 +627,8 @@ ac_subst_vars='LTLIBOBJS
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
+HAVE_CUDA
+CUDA_LIBS
 LIBOBJS
 LIBARPACK
 BOOST_PROGRAM_OPTIONS_LIB
@@ -723,6 +725,7 @@ with_boost
 with_boost_libdir
 with_boost_program_options
 with_arpack
+with_cuda
 enable_shared
 '
       ac_precious_vars='build_alias
@@ -1398,6 +1401,9 @@ Optional Packages:
                           e.g.
                           --with-boost-program-options=boost_program_options-gcc-mt-1_33_1
   --with-arpack=<lib>     use ARPACK library, default=-larpack
+  --with-cuda[=ARG]       CUDA runtime support libcudart from standard
+                          location (ARG=yes), from the specified location
+                          (ARG=<path>) or disable it (ARG=no) [ARG=no]
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -6028,6 +6034,7 @@ rm -f core conftest.err conftest.$ac_objext \
 $as_echo "$acx_pbs_ok" >&6; }
    LIBS="$save_LIBS"
 fi
+
 
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
@@ -12093,6 +12100,99 @@ $as_echo "#define AC_APPLE_UNIVERSAL_BUILD 1" >>confdefs.h
  esac
 
 
+
+
+# Check whether --with-cuda was given.
+if test "${with_cuda+set}" = set; then :
+  withval=$with_cuda;
+else
+  with_cuda=no
+fi
+
+
+if test "x$with_cuda" != xno; then
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for CUDA runtime library" >&5
+$as_echo_n "checking for CUDA runtime library... " >&6; }
+   for ac_header in cuda_runtime.h
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "cuda_runtime.h" "ac_cv_header_cuda_runtime_h" "$ac_includes_default"
+if test "x$ac_cv_header_cuda_runtime_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_CUDA_RUNTIME_H 1
+_ACEOF
+
+else
+  acx_cuda_ok=no
+fi
+
+done
+
+   if test "acx_cuda_ok" != xno; then
+      cuda_lib="$with_cuda"
+      if test "x$cuda_lib" == xcheck; then
+         cuda_lib="-lcudart";
+      fi
+      if test "x$cuda_lib" == xyes; then
+         cuda_lib="-lcudart";
+      fi
+      save_LIBS="$LIBS"; LIBS="$cuda_lib $LIBS"
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for cudaGetDeviceCount in \"$cuda_lib\"" >&5
+$as_echo_n "checking for cudaGetDeviceCount in \"$cuda_lib\"... " >&6; }
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char cudaGetDeviceCount ();
+#ifdef F77_DUMMY_MAIN
+
+#  ifdef __cplusplus
+     extern "C"
+#  endif
+   int F77_DUMMY_MAIN() { return 1; }
+
+#endif
+int
+main ()
+{
+return cudaGetDeviceCount ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  acx_cuda_ok=yes
+          CUDA_LIBS="$cuda_lib"
+
+
+$as_echo "#define HAVE_CUDA /**/" >>confdefs.h
+
+          HAVE_CUDA=1
+
+
+else
+
+          if test "x$with_cuda" != xcheck; then
+            { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "--with-cuda was given, but test for the CUDA runtime library failed
+See \`config.log' for more details" "$LINENO" 5; }
+          fi
+          CUDA_LIBS=""
+          acx_cuda_ok=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      LIBS="$save_LIBS"
+   fi
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $acx_cuda_ok" >&5
+$as_echo "$acx_cuda_ok" >&6; }
+fi
 
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or

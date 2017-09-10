@@ -24,6 +24,8 @@
 #include "common/environment.h"
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
+#include "cuda/cuda-setup.h"
+#include <cstdlib>
 
 namespace prog_opt = boost::program_options;
 
@@ -293,6 +295,40 @@ ShowWavefunction::operator()(FiniteWavefunctionLeft const& Psi) const
       ShowLocalBasisInfo(Psi, std::cout);
 }
 
+void print_cuda_config(std::ostream& out)
+{
+   out << "CUDA configuration\n==================\n\n";
+
+   if (!cuda::is_cuda_enabled())
+   {
+      out << "CUDA is not enabled.  The Toolkit must be configured with "
+	 "--with-cuda to enable CUDA.\n";
+      return;
+   }
+   int n = cuda::num_cuda_devices();
+   out << "Number of CUDA devices available: " << n << "\n";
+   if (n > 0)
+   {
+      out << "\nCUDA device list:\n";
+      std::vector<std::string> Devices = cuda::get_cuda_device_names();
+      for (unsigned i = 0; i < Devices.size(); ++i)
+      {
+	 out << "Device " << i << " is " << Devices[i] << "\n";
+      }
+   }
+   out << '\n';
+   char const* dev = std::getenv("MP_CUDA_DEVICE");
+   if (dev)
+      out << "MP_CUDA_DEVICE=" << dev << "\n";
+   else
+   {
+      out << "MP_CUDA_DEVICE is not set";
+      if (n > 0)
+	 out << ", defaulting to device 0";
+      out << ".\n";
+   }
+}
+
 int main(int argc, char** argv)
 {
    try
@@ -315,10 +351,12 @@ int main(int argc, char** argv)
           "Show the local basis at each site")
          ("base2,2", prog_opt::bool_switch(&Base2), "show the entropy using base 2 instead of base e")
          ("partition,p", prog_opt::value(&Partition),
-          "show quantities only for this parition (zero-based, can be used more than once; use --partition 0 to show only quantities at the edge of the unit cell")
+          "show quantities only for this parition (zero-based, can be used more than once; "
+	  "use --partition 0 to show only quantities at the edge of the unit cell")
+	 ("cuda", "show available CUDA devices")
 	 ("quiet", prog_opt::bool_switch(&Quiet), "don't show column headings")
          ("warranty", "show the complete explanation as to why there is NO WARRANTY, to the extent permitted by law")
-         ("copying", "This program is free software, show the conditions under which it may be copied or modified")
+         ("copying", "this program is free software, show the conditions under which it may be copied or modified")
          ("citations", "show information about the citations that publications using this software should reference")
          ;
       prog_opt::options_description hidden("Hidden options");
@@ -346,7 +384,10 @@ int main(int argc, char** argv)
       if (vm.count("citations"))
          print_citations(std::cout);
 
-      if (vm.count("warranty") || vm.count("copying") || vm.count("citations"))
+      if (vm.count("cuda"))
+	  print_cuda_config(std::cout);
+
+      if (vm.count("warranty") || vm.count("copying") || vm.count("citations") || vm.count("cuda"))
          return 0;
 
       if (vm.count("help") || vm.count("input-wavefunction") == 0)

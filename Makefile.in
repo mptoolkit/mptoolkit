@@ -12,6 +12,7 @@ CXX = @CXX@
 
 HAVE_OPENMP = @HAVE_OPENMP@
 OPENMP_CXXFLAGS = @OPENMP_CXXFLAGS@
+HAVE_CUDA = @HAVE_CUDA@
 
 HAVE_MPI = @HAVE_MPI@
 MPICXX = @MPICXX@
@@ -57,6 +58,7 @@ BLAS_LIBS = @BLAS_LIBS@
 BOOST_LIBS = @BOOST_PROGRAM_OPTIONS_LIB@
 LIBARPACK=@LIBARPACK@
 LIBS = @LIBS@ $(LIBS_EXTRA)
+CUDA_LIBS = @CUDA_LIBS@
 
 PACKAGE_NAME=@PACKAGE_NAME@
 PACKAGE_TARNAME=@PACKAGE_TARNAME@
@@ -71,7 +73,7 @@ DISTDIR=$(PACKAGE_FULLNAME)
 
 TARDIR=$(PACKAGE_TARNAME)
 
-LIB = $(BOOST_LIBS) $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LIBS_EXTRA)
+LIB = $(BOOST_LIBS) $(LAPACK_LIBS) $(BLAS_LIBS) $(CUDA_LIBS) $(LIBS) $(FLIBS) $(LIBS_EXTRA)
 
 GIT_TAG_VERSION := $(shell cd $(SRCDIR) && git describe --dirty --always --tags)
 
@@ -84,7 +86,7 @@ CXXFLAGS += -DGIT_VERSION="$(GIT_VERSION)"
 SRCDIRS = common common/private quantumnumbers pstream pheap \
           tensor lattice mp-algorithms wavefunction \
           tutorial mp linearalgebra misc conf scripts utils interface expokit mpo \
-          benchmark misc misc/oogl junk mpo mps parser models models/contrib
+          benchmark misc misc/oogl junk mpo mps parser models models/contrib cuda
 
 TESTDIRS = tensor/test siteoperator/test linearalgebra/test matrixproduct/test pheap/test \
            common/test quantumnumbers/test mp-algorithms/test mpo/test
@@ -130,7 +132,13 @@ wavefunctionobj = linearwavefunction.o canonicalwavefunction.o infinitewavefunct
 
 parserobj = parser.o
 
+cudaobj = cuda-setup.o
+
 mpobj = $(mpoobj) $(mpsobj) $(latticeobj) $(wavefunctionobj)
+
+ifdef HAVE_CUDA
+   mpobj += $(cudaobj)
+endif
 
 commonobj = copyright.o niftycounter.o poolallocator.o hash.o proccontrol.o \
 	    halfint.o conflist.o terminal.o randutil.o

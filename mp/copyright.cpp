@@ -24,6 +24,7 @@
 #endif
 #include "config.h"
 
+#include "cuda/cuda-setup.h"
 #include <iostream>
 #include <iomanip>
 #include <boost/version.hpp>
@@ -60,8 +61,22 @@ void print_copyright(std::ostream& out)
       "Compiler flags: " CONFIG_CXXFLAGS "\n"
       "Using Boost version " << (BOOST_VERSION / 100000)
        << "." << (BOOST_VERSION / 100 % 1000)
-       << "." << (BOOST_VERSION % 100) << "\n"
-      "This program comes with ABSOLUTELY NO WARRANTY; for details run 'mp-info --warranty'.\n"
+       << "." << (BOOST_VERSION % 100) << "\n";
+   if (cuda::is_cuda_enabled())
+   {
+      out << "Using CUDA: yes\n"
+	  << "CUDA device: ";
+      int d = cuda::mp_cuda_device();
+      if (d == -1)
+	 out << "(no devices available)\n";
+      else
+	 out << cuda::get_cuda_device_names()[d] << "\n";
+   }
+   else
+   {
+      out << "Using CUDA: no\n";
+   }
+   out << "This program comes with ABSOLUTELY NO WARRANTY; for details run 'mp-info --warranty'.\n"
       "This is free software, and you are welcome to redistribute it under certain conditions;\n"
       "run 'mp-info --copying' for details.\n"
       "Reseach publications making use of this software should include appropriate citations\n"

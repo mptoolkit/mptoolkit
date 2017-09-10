@@ -20,8 +20,11 @@
 #if !defined(MPTOOLKIT_CUDA_CUDA_H)
 #define MPTOOLKIT_CUDA_CUDA_H
 
+#include <list>
 #include <mutex>
 #include <cuda_runtime.h>
+
+#include <iostream>
 
 namespace cuda
 {
@@ -31,15 +34,16 @@ class error : public std::runtime_error
 {
    public:
       error() = delete;
-      error(cudaError_t Err) : err_(Err) {}
+      error(cudaError_t Err) : std::runtime_error(cudaGetErrorString(Err)), err_(Err) 
+      {std::cerr << "Error " << int(Err) << '\n';}
 
-      cuda_error_t() error() const { return err_; }
+      cudaError_t code() const { return err_; }
       operator cudaError_t() const { return err_; }
 
-      virtual const char* what() noexcept { return cuda_errorName(err_); }
+      virtual const char* what() noexcept { return cudaGetErrorName(err_); }
 
-      char const* name() const { return cudaErrorName(err_); }
-      char const* string() const { return cudaErrorString(err_); }
+      char const* name() const { return cudaGetErrorName(err_); }
+      char const* string() const { return cudaGetErrorString(err_); }
 
    private:
       cudaError_t err_;
@@ -52,7 +56,40 @@ void check_error(cudaError_t e)
    if (e != cudaSuccess)
       throw error(e);
 }
-   
+
+// device enumeration
+
+// returns the number of devices with compute capability >= 2
+int num_devices();
+
+// sets the device.  This must be called per host thread.
+void set_device(int d);
+
+// returns which device is currently in use
+int get_device();
+
+class device_properties
+{
+   public:
+      device_properties() {}
+      device_properties(cudaDeviceProp const& p) : p_(p) {}
+
+      std::string name() const { return p_.name; }
+      std::size_t total_global_memory() const { return p_.totalGlobalMem; }
+      
+      // TODO: many other properties we can add here
+
+   private:
+      friend device_properties get_device_properties(int d);
+      cudaDeviceProp p_;
+};
+
+// get the properties of a specific device
+device_properties get_device_properties(int d);
+
+// synchronize on the device, and block until all submitted tasks are finished
+void device_synchronize();
+
 // wrapper for a cuda stream.  Moveable, but not copyable.
 // Streams are allocated by a pool.
 class stream
@@ -73,12 +110,17 @@ class stream
       static std::list<cudaStream_t> FreeList;
 
       cudaStream_t stream_;
-}:
+};
 
 class event
 {
    public:
       event();
+      event(event const&) = delete;
+      event(event&& other);
+      event& operator=(event const&) = delete;
+      event& operator=(event&& other);
+      ~event();
 
       // record the event as part of stream s
       void record(stream const& s);
@@ -89,7 +131,7 @@ class event
       cudaEvent_t raw_event() const { return event_; }
 
    private:
-      static cudaStream_t Allocate();
+      static cudaEvent_t Allocate();
       static std::mutex FreeListMutex;
       static std::list<cudaEvent_t> FreeList;
 
@@ -100,6 +142,11 @@ class timer
 {
    public:
       timer();
+      timer(timer const&) = delete;
+      timer(timer&& other);
+      timer& operator=(timer const&) = delete;
+      timer& operator=(timer&& other);
+      ~timer();
       
       // record the starting point as part of stream s
       void start(stream const& s);
@@ -121,7 +168,7 @@ class timer
       cudaEvent_t raw_stop() const { return stop_; }
 
    private:
-      static cudaStream_t Allocate();
+      static cudaEvent_t Allocate();
       static std::mutex FreeListMutex;
       static std::list<cudaEvent_t> FreeList;
 
