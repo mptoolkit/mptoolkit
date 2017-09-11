@@ -195,40 +195,30 @@ AC_C_BIGENDIAN
 
 dnl Checks for programs
 
-dnl CUDA runtime support
-AC_ARG_WITH([cuda], AC_HELP_STRING([--with-cuda@<:@=ARG@:>@],[CUDA runtime support libcudart from standard location (ARG=yes), from the specified location (ARG=<path>) or disable it (ARG=no) @<:@ARG=no@:>@]),
-           [], [with_cuda=no])
+#CUDA available? link with cublas and avoid cblas and clapack then...
+#AC_CHECK_LIB([cublas], [cublasInit], [MATPTROPT="" NVCC=nvcc NVCCFLAGS="-O -arch sm_20" CUDALIBS=-lcublas CUDAOPT=-DCUDALA CBLASOPT=-DNONCBLAS CLAPACKOPT=-DNONCLAPACK CBLASLIB=""], [CUDALIB="" CUDAOPT=""])
+#AC_CHECK_HEADER([cublas.h],,[CUDAOPT="" CUDALIBS=""], AC_INCLUDES_DEFAULT)
+#AC_SUBST([CUDALIBS])
+#AC_SUBST([CUDAOPT])
+#AC_SUBST([NVCC])
+#AC_SUBST([NVCCFLAGS])
+#AC_SUBST([MATPTROPT])
 
-if test "x$with_cuda" != xno; then
-   AC_MSG_CHECKING([for CUDA runtime library])
-   AC_CHECK_HEADERS(cuda_runtime.h, [], [acx_cuda_ok=no])
-   if test "acx_cuda_ok" != xno; then
-      cuda_lib="$with_cuda"
-      if test "x$cuda_lib" == xcheck; then
-         cuda_lib="-lcudart";
-      fi
-      if test "x$cuda_lib" == xyes; then
-         cuda_lib="-lcudart";
-      fi
-      save_LIBS="$LIBS"; LIBS="$cuda_lib $LIBS"
-      AC_MSG_CHECKING([for cudaGetDeviceCount in "$cuda_lib"])
-      AC_TRY_LINK_FUNC([cudaGetDeviceCount], 
-         [acx_cuda_ok=yes
-          AC_SUBST([CUDA_LIBS], "$cuda_lib")
-          AC_DEFINE([HAVE_CUDA], [], [Define if you want to use CUDA])
-          AC_SUBST([HAVE_CUDA], [1])
-         ], 
-         [
-          if test "x$with_cuda" != xcheck; then
-            AC_MSG_FAILURE([--with-cuda was given, but test for the CUDA runtime library failed])
-          fi
-          CUDA_LIBS=""
-          acx_cuda_ok=no
-         ])
-      LIBS="$save_LIBS"
+
+dnl CUDA runtime support
+
+dnl if we're using cublas then force detection of cuda by default
+if test "x$with_cuda" = x; then
+   if test "x$with_cublas" != xno && test "x$with_cublas" != x; then
+      with_cuda=yes
    fi
-   AC_MSG_RESULT($acx_cuda_ok)
 fi
+
+AX_CUDA([AC_CHECK_HEADERS(cuda_runtime.h, [], [AC_MSG_ERROR([Cannot find cuda_runtime.h])])], 
+[ AS_IF([test "x$ax_cuda_ok" != xdisable], [AC_MSG_ERROR([Cannot find CUDA library])]) ])
+
+dnl cublas support
+AX_CUBLAS([], AS_IF([test "x$ax_cublas_ok" != xdisable], [AC_MSG_ERROR([Cannot find cuBLAS library])]))
 
 AC_PROG_INSTALL
 

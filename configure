@@ -627,6 +627,8 @@ ac_subst_vars='LTLIBOBJS
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
+HAVE_CUBLAS
+CUBLAS_LIBS
 HAVE_CUDA
 CUDA_LIBS
 LIBOBJS
@@ -726,6 +728,7 @@ with_boost_libdir
 with_boost_program_options
 with_arpack
 with_cuda
+with_cublas
 enable_shared
 '
       ac_precious_vars='build_alias
@@ -1401,9 +1404,8 @@ Optional Packages:
                           e.g.
                           --with-boost-program-options=boost_program_options-gcc-mt-1_33_1
   --with-arpack=<lib>     use ARPACK library, default=-larpack
-  --with-cuda[=ARG]       CUDA runtime support libcudart from standard
-                          location (ARG=yes), from the specified location
-                          (ARG=<path>) or disable it (ARG=no) [ARG=no]
+  --with-cuda=<lib>       use CUDA library <lib>
+  --with-cublas=<lib>     use CUBLAS library <lib> (requires CUDA)
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -9017,7 +9019,7 @@ if test x"$ax_blas_ok" = xyes; then
 
 $as_echo "#define HAVE_BLAS 1" >>confdefs.h
 
-        :
+
 else
         ax_blas_ok=no
         as_fn_error $? "BLAS library not found, aborting." "$LINENO" 5
@@ -9761,179 +9763,6 @@ fi
 
 
 
-ax_lapack_ok=no
-
-
-# Check whether --with-lapack was given.
-if test "${with_lapack+set}" = set; then :
-  withval=$with_lapack;
-fi
-
-case $with_lapack in
-        yes | "") ;;
-        no) ax_lapack_ok=disable ;;
-        -* | */* | *.a | *.so | *.so.* | *.o) LAPACK_LIBS="$with_lapack" ;;
-        *) LAPACK_LIBS="-l$with_lapack" ;;
-esac
-
-# Get fortran linker name of LAPACK function to check for.
-ac_ext=f
-ac_compile='$F77 -c $FFLAGS conftest.$ac_ext >&5'
-ac_link='$F77 -o conftest$ac_exeext $FFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_f77_compiler_gnu
-case $ac_cv_f77_mangling in
-  upper*) ac_val="CHEEV" ;;
-  lower*) ac_val="cheev" ;;
-  *)      ac_val="unknown" ;;
-esac
-case $ac_cv_f77_mangling in *," underscore"*) ac_val="$ac_val"_ ;; esac
-
-cheev="$ac_val"
-
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-
-# We cannot use LAPACK if BLAS is not found
-if test "x$ax_blas_ok" != xyes; then
-        ax_lapack_ok=noblas
-        LAPACK_LIBS=""
-fi
-
-# First, check LAPACK_LIBS environment variable
-if test "x$LAPACK_LIBS" != x; then
-        save_LIBS="$LIBS"; LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $cheev in $LAPACK_LIBS" >&5
-$as_echo_n "checking for $cheev in $LAPACK_LIBS... " >&6; }
-        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $cheev ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $cheev ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ax_lapack_ok=yes
-else
-  LAPACK_LIBS=""
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_lapack_ok" >&5
-$as_echo "$ax_lapack_ok" >&6; }
-        LIBS="$save_LIBS"
-        if test $ax_lapack_ok = no; then
-                LAPACK_LIBS=""
-        fi
-fi
-
-# LAPACK linked to by default?  (is sometimes included in BLAS lib)
-if test $ax_lapack_ok = no; then
-        save_LIBS="$LIBS"; LIBS="$LIBS $BLAS_LIBS $FLIBS"
-        as_ac_var=`$as_echo "ac_cv_func_$cheev" | $as_tr_sh`
-ac_fn_cxx_check_func "$LINENO" "$cheev" "$as_ac_var"
-if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
-  ax_lapack_ok=yes
-fi
-
-        LIBS="$save_LIBS"
-fi
-
-# Generic LAPACK library?
-for lapack in lapack lapack_rs6k; do
-        if test $ax_lapack_ok = no; then
-                save_LIBS="$LIBS"; LIBS="$BLAS_LIBS $LIBS"
-                as_ac_Lib=`$as_echo "ac_cv_lib_$lapack''_$cheev" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $cheev in -l$lapack" >&5
-$as_echo_n "checking for $cheev in -l$lapack... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-l$lapack $FLIBS $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $cheev ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $cheev ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  ax_lapack_ok=yes; LAPACK_LIBS="-l$lapack"
-fi
-
-                LIBS="$save_LIBS"
-        fi
-done
-
-
-
-# Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
-if test x"$ax_lapack_ok" = xyes; then
-
-$as_echo "#define HAVE_LAPACK 1" >>confdefs.h
-
-        :
-else
-        ax_lapack_ok=no
-
-fi
-
-
-
 
 
 # Check whether --with-arpack was given.
@@ -10040,1315 +9869,6 @@ fi
 
 if test x"$BOOST_PROGRAM_OPTIONS_LIB" == x; then
   as_fn_error $? "boost program options library not found, aborting." "$LINENO" 5
-fi
-
-
-
-
-
-ax_blas_ok=no
-
-
-# Check whether --with-blas was given.
-if test "${with_blas+set}" = set; then :
-  withval=$with_blas;
-fi
-
-case $with_blas in
-	yes | "") ;;
-	no) ax_blas_ok=disable ;;
-	-* | */* | *.a | *.so | *.so.* | *.o) BLAS_LIBS="$with_blas" ;;
-	*) BLAS_LIBS="-l$with_blas" ;;
-esac
-
-# Get fortran linker names of BLAS functions to check for.
-ac_ext=f
-ac_compile='$F77 -c $FFLAGS conftest.$ac_ext >&5'
-ac_link='$F77 -o conftest$ac_exeext $FFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_f77_compiler_gnu
-case $ac_cv_f77_mangling in
-  upper*) ac_val="SGEMM" ;;
-  lower*) ac_val="sgemm" ;;
-  *)      ac_val="unknown" ;;
-esac
-case $ac_cv_f77_mangling in *," underscore"*) ac_val="$ac_val"_ ;; esac
-
-sgemm="$ac_val"
-
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-ac_ext=f
-ac_compile='$F77 -c $FFLAGS conftest.$ac_ext >&5'
-ac_link='$F77 -o conftest$ac_exeext $FFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_f77_compiler_gnu
-case $ac_cv_f77_mangling in
-  upper*) ac_val="DGEMM" ;;
-  lower*) ac_val="dgemm" ;;
-  *)      ac_val="unknown" ;;
-esac
-case $ac_cv_f77_mangling in *," underscore"*) ac_val="$ac_val"_ ;; esac
-
-dgemm="$ac_val"
-
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-
-ax_blas_save_LIBS="$LIBS"
-LIBS="$LIBS $FLIBS"
-
-# First, check BLAS_LIBS environment variable
-if test $ax_blas_ok = no; then
-if test "x$BLAS_LIBS" != x; then
-	save_LIBS="$LIBS"; LIBS="$BLAS_LIBS $LIBS"
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in $BLAS_LIBS" >&5
-$as_echo_n "checking for $sgemm in $BLAS_LIBS... " >&6; }
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ax_blas_ok=yes
-else
-  BLAS_LIBS=""
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_blas_ok" >&5
-$as_echo "$ax_blas_ok" >&6; }
-	LIBS="$save_LIBS"
-fi
-fi
-
-# BLAS linked to by default?  (happens on some supercomputers)
-if test $ax_blas_ok = no; then
-	save_LIBS="$LIBS"; LIBS="$LIBS"
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if $sgemm is being linked in already" >&5
-$as_echo_n "checking if $sgemm is being linked in already... " >&6; }
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ax_blas_ok=yes
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_blas_ok" >&5
-$as_echo "$ax_blas_ok" >&6; }
-	LIBS="$save_LIBS"
-fi
-
-# BLAS in OpenBLAS library? (http://xianyi.github.com/OpenBLAS/)
-if test $ax_blas_ok = no; then
-	as_ac_Lib=`$as_echo "ac_cv_lib_openblas_$sgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -lopenblas" >&5
-$as_echo_n "checking for $sgemm in -lopenblas... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lopenblas  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  ax_blas_ok=yes
-			                BLAS_LIBS="-lopenblas"
-fi
-
-fi
-
-# BLAS in ATLAS library? (http://math-atlas.sourceforge.net/)
-if test $ax_blas_ok = no; then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for ATL_xerbla in -latlas" >&5
-$as_echo_n "checking for ATL_xerbla in -latlas... " >&6; }
-if ${ac_cv_lib_atlas_ATL_xerbla+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-latlas  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char ATL_xerbla ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return ATL_xerbla ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_atlas_ATL_xerbla=yes
-else
-  ac_cv_lib_atlas_ATL_xerbla=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_atlas_ATL_xerbla" >&5
-$as_echo "$ac_cv_lib_atlas_ATL_xerbla" >&6; }
-if test "x$ac_cv_lib_atlas_ATL_xerbla" = xyes; then :
-  as_ac_Lib=`$as_echo "ac_cv_lib_f77blas_$sgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -lf77blas" >&5
-$as_echo_n "checking for $sgemm in -lf77blas... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lf77blas -latlas $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for cblas_dgemm in -lcblas" >&5
-$as_echo_n "checking for cblas_dgemm in -lcblas... " >&6; }
-if ${ac_cv_lib_cblas_cblas_dgemm+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcblas -lf77blas -latlas $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char cblas_dgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return cblas_dgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_cblas_cblas_dgemm=yes
-else
-  ac_cv_lib_cblas_cblas_dgemm=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_cblas_cblas_dgemm" >&5
-$as_echo "$ac_cv_lib_cblas_cblas_dgemm" >&6; }
-if test "x$ac_cv_lib_cblas_cblas_dgemm" = xyes; then :
-  ax_blas_ok=yes
-			 BLAS_LIBS="-lcblas -lf77blas -latlas"
-fi
-
-fi
-
-fi
-
-fi
-
-# BLAS in PhiPACK libraries? (requires generic BLAS lib, too)
-if test $ax_blas_ok = no; then
-	as_ac_Lib=`$as_echo "ac_cv_lib_blas_$sgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -lblas" >&5
-$as_echo_n "checking for $sgemm in -lblas... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lblas  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  as_ac_Lib=`$as_echo "ac_cv_lib_dgemm_$dgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $dgemm in -ldgemm" >&5
-$as_echo_n "checking for $dgemm in -ldgemm... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-ldgemm -lblas $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $dgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $dgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  as_ac_Lib=`$as_echo "ac_cv_lib_sgemm_$sgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -lsgemm" >&5
-$as_echo_n "checking for $sgemm in -lsgemm... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lsgemm -lblas $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  ax_blas_ok=yes; BLAS_LIBS="-lsgemm -ldgemm -lblas"
-fi
-
-fi
-
-fi
-
-fi
-
-# BLAS in Intel MKL library?
-if test $ax_blas_ok = no; then
-	# MKL for gfortran
-	if test x"$ac_cv_fc_compiler_gnu" = xyes; then
-		# 64 bit
-		if test $host_cpu = x86_64; then
-			as_ac_Lib=`$as_echo "ac_cv_lib_mkl_gf_lp64_$sgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -lmkl_gf_lp64" >&5
-$as_echo_n "checking for $sgemm in -lmkl_gf_lp64... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lmkl_gf_lp64 -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  ax_blas_ok=yes;BLAS_LIBS="-lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread"
-fi
-
-		# 32 bit
-		elif test $host_cpu = i686; then
-			as_ac_Lib=`$as_echo "ac_cv_lib_mkl_gf_$sgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -lmkl_gf" >&5
-$as_echo_n "checking for $sgemm in -lmkl_gf... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lmkl_gf -lmkl_gf -lmkl_sequential -lmkl_core -lpthread $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  ax_blas_ok=yes;BLAS_LIBS="-lmkl_gf -lmkl_sequential -lmkl_core -lpthread"
-fi
-
-		fi
-	# MKL for other compilers (Intel, PGI, ...?)
-	else
-		# 64-bit
-		if test $host_cpu = x86_64; then
-			as_ac_Lib=`$as_echo "ac_cv_lib_mkl_intel_lp64_$sgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -lmkl_intel_lp64" >&5
-$as_echo_n "checking for $sgemm in -lmkl_intel_lp64... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lmkl_intel_lp64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  ax_blas_ok=yes;BLAS_LIBS="-lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread"
-fi
-
-		# 32-bit
-		elif test $host_cpu = i686; then
-			as_ac_Lib=`$as_echo "ac_cv_lib_mkl_intel_$sgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -lmkl_intel" >&5
-$as_echo_n "checking for $sgemm in -lmkl_intel... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lmkl_intel -lmkl_intel -lmkl_sequential -lmkl_core -lpthread $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  ax_blas_ok=yes;BLAS_LIBS="-lmkl_intel -lmkl_sequential -lmkl_core -lpthread"
-fi
-
-		fi
-	fi
-fi
-# Old versions of MKL
-if test $ax_blas_ok = no; then
-	as_ac_Lib=`$as_echo "ac_cv_lib_mkl_$sgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -lmkl" >&5
-$as_echo_n "checking for $sgemm in -lmkl... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lmkl -lguide -lpthread $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  ax_blas_ok=yes;BLAS_LIBS="-lmkl -lguide -lpthread"
-fi
-
-fi
-
-# BLAS in Apple vecLib library?
-if test $ax_blas_ok = no; then
-	save_LIBS="$LIBS"; LIBS="-framework vecLib $LIBS"
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -framework vecLib" >&5
-$as_echo_n "checking for $sgemm in -framework vecLib... " >&6; }
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ax_blas_ok=yes;BLAS_LIBS="-framework vecLib"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_blas_ok" >&5
-$as_echo "$ax_blas_ok" >&6; }
-	LIBS="$save_LIBS"
-fi
-
-# BLAS in Alpha CXML library?
-if test $ax_blas_ok = no; then
-	as_ac_Lib=`$as_echo "ac_cv_lib_cxml_$sgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -lcxml" >&5
-$as_echo_n "checking for $sgemm in -lcxml... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcxml  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  ax_blas_ok=yes;BLAS_LIBS="-lcxml"
-fi
-
-fi
-
-# BLAS in Alpha DXML library? (now called CXML, see above)
-if test $ax_blas_ok = no; then
-	as_ac_Lib=`$as_echo "ac_cv_lib_dxml_$sgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -ldxml" >&5
-$as_echo_n "checking for $sgemm in -ldxml... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-ldxml  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  ax_blas_ok=yes;BLAS_LIBS="-ldxml"
-fi
-
-fi
-
-# BLAS in Sun Performance library?
-if test $ax_blas_ok = no; then
-	if test "x$GCC" != xyes; then # only works with Sun CC
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for acosp in -lsunmath" >&5
-$as_echo_n "checking for acosp in -lsunmath... " >&6; }
-if ${ac_cv_lib_sunmath_acosp+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lsunmath  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char acosp ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return acosp ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_sunmath_acosp=yes
-else
-  ac_cv_lib_sunmath_acosp=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_sunmath_acosp" >&5
-$as_echo "$ac_cv_lib_sunmath_acosp" >&6; }
-if test "x$ac_cv_lib_sunmath_acosp" = xyes; then :
-  as_ac_Lib=`$as_echo "ac_cv_lib_sunperf_$sgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -lsunperf" >&5
-$as_echo_n "checking for $sgemm in -lsunperf... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lsunperf -lsunmath $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  BLAS_LIBS="-xlic_lib=sunperf -lsunmath"
-                                 ax_blas_ok=yes
-fi
-
-fi
-
-	fi
-fi
-
-# BLAS in SCSL library?  (SGI/Cray Scientific Library)
-if test $ax_blas_ok = no; then
-	as_ac_Lib=`$as_echo "ac_cv_lib_scs_$sgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -lscs" >&5
-$as_echo_n "checking for $sgemm in -lscs... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lscs  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  ax_blas_ok=yes; BLAS_LIBS="-lscs"
-fi
-
-fi
-
-# BLAS in SGIMATH library?
-if test $ax_blas_ok = no; then
-	as_ac_Lib=`$as_echo "ac_cv_lib_complib.sgimath_$sgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -lcomplib.sgimath" >&5
-$as_echo_n "checking for $sgemm in -lcomplib.sgimath... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcomplib.sgimath  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  ax_blas_ok=yes; BLAS_LIBS="-lcomplib.sgimath"
-fi
-
-fi
-
-# BLAS in IBM ESSL library? (requires generic BLAS lib, too)
-if test $ax_blas_ok = no; then
-	as_ac_Lib=`$as_echo "ac_cv_lib_blas_$sgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -lblas" >&5
-$as_echo_n "checking for $sgemm in -lblas... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lblas  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  as_ac_Lib=`$as_echo "ac_cv_lib_essl_$sgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -lessl" >&5
-$as_echo_n "checking for $sgemm in -lessl... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lessl -lblas $FLIBS $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  ax_blas_ok=yes; BLAS_LIBS="-lessl -lblas"
-fi
-
-fi
-
-fi
-
-# Generic BLAS library?
-if test $ax_blas_ok = no; then
-	as_ac_Lib=`$as_echo "ac_cv_lib_blas_$sgemm" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $sgemm in -lblas" >&5
-$as_echo_n "checking for $sgemm in -lblas... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lblas  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $sgemm ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return $sgemm ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  ax_blas_ok=yes; BLAS_LIBS="-lblas"
-fi
-
-fi
-
-
-
-LIBS="$ax_blas_save_LIBS"
-
-# Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
-if test x"$ax_blas_ok" = xyes; then
-
-$as_echo "#define HAVE_BLAS 1" >>confdefs.h
-
-        :
-else
-        ax_blas_ok=no
-
 fi
 
 
@@ -12101,44 +10621,48 @@ $as_echo "#define AC_APPLE_UNIVERSAL_BUILD 1" >>confdefs.h
 
 
 
+#CUDA available? link with cublas and avoid cblas and clapack then...
+#AC_CHECK_LIB([cublas], [cublasInit], [MATPTROPT="" NVCC=nvcc NVCCFLAGS="-O -arch sm_20" CUDALIBS=-lcublas CUDAOPT=-DCUDALA CBLASOPT=-DNONCBLAS CLAPACKOPT=-DNONCLAPACK CBLASLIB=""], [CUDALIB="" CUDAOPT=""])
+#AC_CHECK_HEADER([cublas.h],,[CUDAOPT="" CUDALIBS=""], AC_INCLUDES_DEFAULT)
+#AC_SUBST([CUDALIBS])
+#AC_SUBST([CUDAOPT])
+#AC_SUBST([NVCC])
+#AC_SUBST([NVCCFLAGS])
+#AC_SUBST([MATPTROPT])
+
+
+
+if test "x$with_cuda" = x; then
+   if test "x$with_cublas" != xno && test "x$with_cublas" != x; then
+      with_cuda=yes
+   fi
+fi
+
+
+ax_cuda_ok=no
+
 
 # Check whether --with-cuda was given.
 if test "${with_cuda+set}" = set; then :
   withval=$with_cuda;
-else
-  with_cuda=no
 fi
 
 
-if test "x$with_cuda" != xno; then
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for CUDA runtime library" >&5
-$as_echo_n "checking for CUDA runtime library... " >&6; }
-   for ac_header in cuda_runtime.h
-do :
-  ac_fn_cxx_check_header_mongrel "$LINENO" "cuda_runtime.h" "ac_cv_header_cuda_runtime_h" "$ac_includes_default"
-if test "x$ac_cv_header_cuda_runtime_h" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_CUDA_RUNTIME_H 1
-_ACEOF
+case $with_cuda in
+        yes) ;;
+        no | "") ax_cuda_ok=disable ;;
+        -* | */* | *.a | *.so | *.so.* | *.o) CUDA_LIBS="$with_cuda" ;;
+        *) CUDA_LIBS="-l$with_cuda" ;;
+esac
 
-else
-  acx_cuda_ok=no
-fi
-
-done
-
-   if test "acx_cuda_ok" != xno; then
-      cuda_lib="$with_cuda"
-      if test "x$cuda_lib" == xcheck; then
-         cuda_lib="-lcudart";
-      fi
-      if test "x$cuda_lib" == xyes; then
-         cuda_lib="-lcudart";
-      fi
-      save_LIBS="$LIBS"; LIBS="$cuda_lib $LIBS"
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for cudaGetDeviceCount in \"$cuda_lib\"" >&5
-$as_echo_n "checking for cudaGetDeviceCount in \"$cuda_lib\"... " >&6; }
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+if test "x$ax_cuda_ok" = xdisable; then
+   CUDA_LIBS=""
+elif test "x$CUDA_LIBS" != x; then
+# First, check CUDA_LIBS environment variable
+        save_LIBS="$LIBS"; LIBS="$CUDA_LIBS $LIBS"
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for cudaGetDeviceCount in $CUDA_LIBS" >&5
+$as_echo_n "checking for cudaGetDeviceCount in $CUDA_LIBS... " >&6; }
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 /* Override any GCC internal prototype to avoid an error.
@@ -12165,34 +10689,248 @@ return cudaGetDeviceCount ();
 }
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  acx_cuda_ok=yes
-          CUDA_LIBS="$cuda_lib"
-
-
-$as_echo "#define HAVE_CUDA /**/" >>confdefs.h
-
-          HAVE_CUDA=1
-
-
+  ax_cuda_ok=yes
 else
-
-          if test "x$with_cuda" != xcheck; then
-            { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "--with-cuda was given, but test for the CUDA runtime library failed
-See \`config.log' for more details" "$LINENO" 5; }
-          fi
-          CUDA_LIBS=""
-          acx_cuda_ok=no
-
+  CUDA_LIBS=""
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-      LIBS="$save_LIBS"
-   fi
-   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $acx_cuda_ok" >&5
-$as_echo "$acx_cuda_ok" >&6; }
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cuda_ok" >&5
+$as_echo "$ax_cuda_ok" >&6; }
+        LIBS="$save_LIBS"
+        if test $ax_cuda_ok = no; then
+                CUDA_LIBS=""
+        fi
+else
+   # CUDA library in standard place?
+   for cuda in cudart ; do
+           if test $ax_cuda_ok = no; then
+                   as_ac_Lib=`$as_echo "ac_cv_lib_$cuda''_cudaGetDeviceCount" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cudaGetDeviceCount in -l$cuda" >&5
+$as_echo_n "checking for cudaGetDeviceCount in -l$cuda... " >&6; }
+if eval \${$as_ac_Lib+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-l$cuda $LIBS $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char cudaGetDeviceCount ();
+#ifdef F77_DUMMY_MAIN
+
+#  ifdef __cplusplus
+     extern "C"
+#  endif
+   int F77_DUMMY_MAIN() { return 1; }
+
+#endif
+int
+main ()
+{
+return cudaGetDeviceCount ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  eval "$as_ac_Lib=yes"
+else
+  eval "$as_ac_Lib=no"
 fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+eval ac_res=\$$as_ac_Lib
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
+  ax_cuda_ok=yes; CUDA_LIBS="-l$cuda"
+fi
+
+           fi
+   done
+fi
+
+
+
+# Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
+
+if test x"$ax_cuda_ok" = xyes; then
+
+$as_echo "#define HAVE_CUDA 1" >>confdefs.h
+
+        HAVE_CUDA=1
+
+        for ac_header in cuda_runtime.h
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "cuda_runtime.h" "ac_cv_header_cuda_runtime_h" "$ac_includes_default"
+if test "x$ac_cv_header_cuda_runtime_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_CUDA_RUNTIME_H 1
+_ACEOF
+
+else
+  as_fn_error $? "Cannot find cuda_runtime.h" "$LINENO" 5
+fi
+
+done
+
+else
+         if test "x$ax_cuda_ok" != xdisable; then :
+  as_fn_error $? "Cannot find CUDA library" "$LINENO" 5
+fi
+fi
+
+
+
+
+ax_cublas_ok=no
+
+
+# Check whether --with-cublas was given.
+if test "${with_cublas+set}" = set; then :
+  withval=$with_cublas;
+fi
+
+
+case $with_cublas in
+        yes | "") ;;
+        no) ax_cublas_ok=disable ;;
+        -* | */* | *.a | *.so | *.so.* | *.o) CUBLAS_LIBS="$with_cublas" ;;
+        *) CUBLAS_LIBS="-l$with_cublas" ;;
+esac
+
+# We cannot use CUBLAS if CUDA is not found
+if test "x$ax_cuda_ok" = xdisable; then
+        CUBLAS_LIBS=""
+elif test "x$CUBLAS_LIBS" != x; then
+# check CUBLAS_LIBS environment variable
+        save_LIBS="$LIBS"; LIBS="$CUBLAS_LIBS $CUDA_LIBS $LIBS"
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for cublasSetMatrix in $CUBLAS_LIBS" >&5
+$as_echo_n "checking for cublasSetMatrix in $CUBLAS_LIBS... " >&6; }
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char cublasSetMatrix ();
+#ifdef F77_DUMMY_MAIN
+
+#  ifdef __cplusplus
+     extern "C"
+#  endif
+   int F77_DUMMY_MAIN() { return 1; }
+
+#endif
+int
+main ()
+{
+return cublasSetMatrix ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ax_cublas_ok=yes
+else
+  CUBLAS_LIBS=""
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cublas_ok" >&5
+$as_echo "$ax_cublas_ok" >&6; }
+        LIBS="$save_LIBS"
+        if test $ax_cublas_ok = no; then
+                CUBLAS_LIBS=""
+        fi
+else
+   # CUBLAS in standard location?
+   for cublas in cublas; do
+           if test $ax_cublas_ok = no; then
+                   save_LIBS="$LIBS"; LIBS="$CUDA_LIBS $LIBS"
+                   as_ac_Lib=`$as_echo "ac_cv_lib_$cublas''_cublasSetMatrix" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cublasSetMatrix in -l$cublas" >&5
+$as_echo_n "checking for cublasSetMatrix in -l$cublas... " >&6; }
+if eval \${$as_ac_Lib+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-l$cublas $FLIBS $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char cublasSetMatrix ();
+#ifdef F77_DUMMY_MAIN
+
+#  ifdef __cplusplus
+     extern "C"
+#  endif
+   int F77_DUMMY_MAIN() { return 1; }
+
+#endif
+int
+main ()
+{
+return cublasSetMatrix ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  eval "$as_ac_Lib=yes"
+else
+  eval "$as_ac_Lib=no"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+eval ac_res=\$$as_ac_Lib
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
+  ax_cublas_ok=yes; CUBLAS_LIBS="-l$cublas"
+fi
+
+                   LIBS="$save_LIBS"
+           fi
+   done
+fi
+
+
+
+# Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
+if test x"$ax_cublas_ok" = xyes; then
+
+$as_echo "#define HAVE_CUBLAS 1" >>confdefs.h
+
+	HAVE_CUBLAS=1
+
+
+else
+        if test "x$ax_cublas_ok" != xdisable; then :
+  as_fn_error $? "Cannot find cuBLAS library" "$LINENO" 5
+fi
+fi
+
 
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or

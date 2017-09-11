@@ -58,7 +58,10 @@
 /* define if the Boost::PROGRAM_OPTIONS library is available */
 #undef HAVE_BOOST_PROGRAM_OPTIONS
 
-/* Define if you want to use CUDA */
+/* Define if you have CUBLAS library. */
+#undef HAVE_CUBLAS
+
+/* Define if you have CUDA library. */
 #undef HAVE_CUDA
 
 /* Define to 1 if you have the <cuda_runtime.h> header file. */

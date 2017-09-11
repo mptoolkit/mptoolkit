@@ -93,7 +93,7 @@ dnl check convention for returning complex parameters from fortran functions
 dnl
 AC_DEFUN(
  [ACX_FORTRAN_COMPLEX_RETURN],
- [AC_REQUIRE([ACX_BLAS])
+ [AC_REQUIRE([AX_BLAS])
   AC_CACHE_CHECK(
   [convention for returning complex values from Fortran functions],
   [acx_cv_fortran_complex_return],
@@ -148,7 +148,7 @@ int main()
 dnl check for ARPACK
 AC_DEFUN([ACX_ARPACK], 
 [
-        AC_REQUIRE([ACX_LAPACK])
+        AC_REQUIRE([AX_LAPACK])
 
         AC_ARG_WITH(arpack,
                 [AS_HELP_STRING([--with-arpack=<lib>], 
