@@ -90,6 +90,8 @@ device_properties get_device_properties(int d);
 // synchronize on the device, and block until all submitted tasks are finished
 void device_synchronize();
 
+class event;
+
 // wrapper for a cuda stream.  Moveable, but not copyable.
 // Streams are allocated by a pool.
 class stream
@@ -103,6 +105,14 @@ class stream
       ~stream();
 
       cudaStream_t raw_stream() const { return stream_; }
+
+      // wait for the given event
+      void wait(event const& e);
+
+      friend void swap(stream& a, stream& b)
+      {
+	 std::swap(a.stream_, b.stream_);
+      }
 
    private:
       static cudaStream_t Allocate();
@@ -129,6 +139,11 @@ class event
       bool is_complete() const;
 
       cudaEvent_t raw_event() const { return event_; }
+
+      friend void swap(event& a, event& b)
+      {
+	 std::swap(a.event_, b.event_);
+      }
 
    private:
       static cudaEvent_t Allocate();
@@ -167,6 +182,12 @@ class timer
       cudaEvent_t raw_start() const { return start_; }
       cudaEvent_t raw_stop() const { return stop_; }
 
+      friend void swap(timer& a, timer& b)
+      {
+	 std::swap(a.start_, b.start_);
+	 std::swap(a.stop_, b.stop_);
+      }
+
    private:
       static cudaEvent_t Allocate();
       static std::mutex FreeListMutex;
@@ -175,6 +196,23 @@ class timer
       cudaEvent_t start_;
       cudaEvent_t stop_;
 };
+
+// copy GPU memory asyncronously
+void memcpy_device_to_device_async(stream const& s, void const* src, void* dest, std::size_t size);
+
+inline
+void memcpy_device_to_device_async(stream const& s, void const* src, void* dest, std::size_t size)
+{
+   cudaMemcpyAsync(dest, src, size, cudaMemcpyDeviceToDevice, s.raw_stream());
+}
+
+void memcpy_host_to_device_async(stream const& s, void const* src, void* dest, std::size_t size);
+
+inline
+void memcpy_host_to_device_async(stream const& s, void const* src, void* dest, std::size_t size)
+{
+   cudaMemcpyAsync(dest, src, size, cudaMemcpyHostToDevice, s.raw_stream());
+}
 
 
 } // namespace cuda

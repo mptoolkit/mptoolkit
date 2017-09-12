@@ -10778,7 +10778,7 @@ if test "x$ac_cv_header_cuda_runtime_h" = xyes; then :
 _ACEOF
 
 else
-  as_fn_error $? "Cannot find cuda_runtime.h" "$LINENO" 5
+  as_fn_error $? "Cannot find cuda_runtime.h header" "$LINENO" 5
 fi
 
 done
@@ -10924,9 +10924,22 @@ $as_echo "#define HAVE_CUBLAS 1" >>confdefs.h
 
 	HAVE_CUBLAS=1
 
+        for ac_header in cublas_v2.h
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "cublas_v2.h" "ac_cv_header_cublas_v2_h" "$ac_includes_default"
+if test "x$ac_cv_header_cublas_v2_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_CUBLAS_V2_H 1
+_ACEOF
 
 else
-        if test "x$ax_cublas_ok" != xdisable; then :
+  as_fn_error $? "Cannot find cublas_v2.h header" "$LINENO" 5
+fi
+
+done
+
+else
+         if test "x$ax_cublas_ok" != xdisable; then :
   as_fn_error $? "Cannot find cuBLAS library" "$LINENO" 5
 fi
 fi

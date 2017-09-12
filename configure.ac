@@ -214,11 +214,12 @@ if test "x$with_cuda" = x; then
    fi
 fi
 
-AX_CUDA([AC_CHECK_HEADERS(cuda_runtime.h, [], [AC_MSG_ERROR([Cannot find cuda_runtime.h])])], 
+AX_CUDA([AC_CHECK_HEADERS(cuda_runtime.h, [], [AC_MSG_ERROR([Cannot find cuda_runtime.h header])])], 
 [ AS_IF([test "x$ax_cuda_ok" != xdisable], [AC_MSG_ERROR([Cannot find CUDA library])]) ])
 
 dnl cublas support
-AX_CUBLAS([], AS_IF([test "x$ax_cublas_ok" != xdisable], [AC_MSG_ERROR([Cannot find cuBLAS library])]))
+AX_CUBLAS([AC_CHECK_HEADERS(cublas_v2.h, [], [AC_MSG_ERROR([Cannot find cublas_v2.h header])])], 
+[ AS_IF([test "x$ax_cublas_ok" != xdisable], [AC_MSG_ERROR([Cannot find cuBLAS library])]) ])
 
 AC_PROG_INSTALL
 

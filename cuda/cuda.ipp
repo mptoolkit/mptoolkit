@@ -84,13 +84,7 @@ inline
 stream&
 stream::operator=(stream&& other)
 {
-   if (stream_)
-   {
-      std::lock_guard<std::mutex> lock(stream::FreeListMutex);
-      stream::FreeList.push_back(stream_);
-   }
-   stream_ = other.stream_;
-   other.stream_ = nullptr;
+   std::swap(stream_, other.stream_);
    return *this;
 }
 
@@ -143,13 +137,7 @@ inline
 event&
 event::operator=(event&& other)
 {
-   if (event_)
-   {
-      std::lock_guard<std::mutex> lock(event::FreeListMutex);
-      event::FreeList.push_back(event_);
-   }
-   event_ = other.event_;
-   other.event_ = nullptr;
+   std::swap(event_, other.event_);
    return *this;
 }
 
@@ -216,18 +204,9 @@ inline
 timer&
 timer::operator=(timer&& other)
 {
-   if (start_ || stop_)
-   {
-      std::lock_guard<std::mutex> lock(timer::FreeListMutex);
-      if (start_)
-	 timer::FreeList.push_back(start_);
-      if (stop_)
-	 timer::FreeList.push_back(stop_);
-   }
-   start_ = other.start_;
-   other.start_ = nullptr;
-   stop_ = other.stop_;
-   other.stop_ = nullptr;
+   using std::swap;
+   swap(start_, other.start_);
+   swap(stop_, other.stop_);
    return *this;
 }
 

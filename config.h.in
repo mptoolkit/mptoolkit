@@ -61,6 +61,9 @@
 /* Define if you have CUBLAS library. */
 #undef HAVE_CUBLAS
 
+/* Define to 1 if you have the <cublas_v2.h> header file. */
+#undef HAVE_CUBLAS_V2_H
+
 /* Define if you have CUDA library. */
 #undef HAVE_CUDA
 
