@@ -21,6 +21,8 @@
 #define MPTOOLKIT_CUDA_CUDBLAS_H
 
 #include "cuda.h"
+#include "gpu_buffer.h"
+#include "linearalgebra/matrix.h"
 #include <list>
 #include <mutex>
 #include <cublas_v2.h>
@@ -33,6 +35,84 @@ namespace cublas
 // returns the cublas version number
 int version();
 
+// TODO: cublas error class
+
+inline
+char const* cublasGetErrorName(cublasStatus_t error)
+{
+    switch (error)
+    {
+        case CUBLAS_STATUS_SUCCESS:
+            return "CUBLAS_STATUS_SUCCESS";
+
+        case CUBLAS_STATUS_NOT_INITIALIZED:
+            return "CUBLAS_STATUS_NOT_INITIALIZED";
+
+        case CUBLAS_STATUS_ALLOC_FAILED:
+            return "CUBLAS_STATUS_ALLOC_FAILED";
+
+        case CUBLAS_STATUS_INVALID_VALUE:
+            return "CUBLAS_STATUS_INVALID_VALUE";
+
+        case CUBLAS_STATUS_ARCH_MISMATCH:
+            return "CUBLAS_STATUS_ARCH_MISMATCH";
+
+        case CUBLAS_STATUS_MAPPING_ERROR:
+            return "CUBLAS_STATUS_MAPPING_ERROR";
+
+        case CUBLAS_STATUS_EXECUTION_FAILED:
+            return "CUBLAS_STATUS_EXECUTION_FAILED";
+
+        case CUBLAS_STATUS_INTERNAL_ERROR:
+            return "CUBLAS_STATUS_INTERNAL_ERROR";
+    }
+
+    return "<unknown>";
+}
+
+inline
+char const* cublasGetErrorString(cublasStatus_t error)
+{
+    switch (error)
+    {
+        case CUBLAS_STATUS_SUCCESS:
+            return "SUCCESS";
+
+        case CUBLAS_STATUS_NOT_INITIALIZED:
+            return "cuBLAS library not initialized";
+
+        case CUBLAS_STATUS_ALLOC_FAILED:
+            return "memory allocation failed";
+
+        case CUBLAS_STATUS_INVALID_VALUE:
+            return "invalid value or parameter";
+
+        case CUBLAS_STATUS_ARCH_MISMATCH:
+            return "feature not supported by this architecture (possible double-precision?)";
+
+        case CUBLAS_STATUS_MAPPING_ERROR:
+            return "invalid GPU memory mapping";
+
+        case CUBLAS_STATUS_EXECUTION_FAILED:
+            return "GPU kernel execution failed";
+
+        case CUBLAS_STATUS_INTERNAL_ERROR:
+            return "internal error";
+    }
+
+    return "<cublas-unknown>";
+}
+
+inline
+void check_error(cublasStatus_t s)
+{
+   if (s != CUBLAS_STATUS_SUCCESS)
+   {
+      std::string ss = std::string("cuBLAS error: ") + cublasGetErrorName(s);
+      throw std::runtime_error(ss);
+   }
+}
+
 // cublas handle.  Moveable, but not copyable.
 class handle
 {
@@ -41,7 +121,7 @@ class handle
       handle(handle&& other) : h_(other.h_) { other.h_ = nullptr; }
       handle(handle const&) = delete;
       handle& operator=(handle&& other) { std::swap(h_, other.h_); return *this; }
-      hasndle& operator=(handle const&) = delete;
+      handle& operator=(handle const&) = delete;
       ~handle() { if (h_) cublasDestroy(h_); }
 
       cublasHandle_t raw_handle() const { return h_; }
@@ -59,124 +139,74 @@ class handle
 // set the stream associated with the given cublas handle
 void set_stream(handle const& h, cuda::stream const& s);
 
-class gpu_ref;
+inline
+void set_stream(handle const& h, cuda::stream const& s)
+{
+   check_error(cublasSetStream(h.raw_handle(), s.raw_stream()));
+}
 
+// row-major matrix
 template <typename T>
-class gpu_buffer
+class gpu_matrix
 {
    public:
+      typedef T value_type;
 
-      gpu_ref<T> operator[](int n);
+      gpu_matrix(int Rows_, int Cols_, cuda::arena const& A);
 
-      // block modifications to this buffer until event e has been triggered
-      void wait(event const& e);
+      int rows() const { return Rows; }
+      int cols() const { return Cols; }
 
-      // 'lock' the buffer, ie forbid read/write operations until it is unlocked.
-      // Locking can be done recursively.
-      void lock();
+      int leading_dim() const { return LeadingDimension; }
 
-      void unlock();
+      T* device_ptr() { return Buf.device_ptr(); }
+      T const* device_ptr() const { return Buf.device_ptr(); }
 
    private:
-      T* Ptr;
-      cuda::stream Stream;
-      cuda::event Sync;
-      int LockCount;
-
-      // if we want to reference count the references, then this is what it looks like:
-      std::map<size_t, gpu_ref> LiveReferencex;
+      int Rows;
+      int Cols;
+      int LeadingDimension;
+      cuda::gpu_buffer<T> Buf;
 };
 
 template <typename T>
-void
-gpu_buffer<T>::lock()
+inline
+gpu_matrix<T>::gpu_matrix(int Rows_, int Cols_, cuda::arena const& A)
+   : Rows(Rows_), Cols(Cols_), LeadingDimension(Rows_),
+     Buf(cuda::gpu_buffer<T>::allocate(Rows_*Cols_, A))
 {
-   ++LockCount;
+}
+
+// blocking matrix get
+template <typename T>
+LinearAlgebra::Matrix<T>
+get_wait(gpu_matrix<T> const& M)
+{
+   LinearAlgebra::Matrix<T> Result(M.rows(), M.cols());
+   cublas::check_error(cublasGetMatrix(M.cols(), M.rows(), sizeof(T),
+				       M.device_ptr(), M.leading_dim(),
+				       Result.data(), leading_dimension(Result)));
+   return Result;
 }
 
 template <typename T>
 void
-gpu_buffer<T>::unlock()
+set_wait(gpu_matrix<T>& A, LinearAlgebra::Matrix<T> const& B)
 {
-   --LockCount;
+   //TRACE(A.cols())(A.rows())(A.device_ptr())(A.leading_dim())(B.data())(leading_dimension(B));
+   cublas::check_error(cublasSetMatrix(A.cols(), A.rows(), sizeof(T),
+				       B.data(), leading_dimension(B),
+				       A.device_ptr(), A.leading_dim()));
 }
 
-
-template <typename T>
-class gpu_ref
+// generic gemm = C' = alpha*A*B + beta*C
+inline
+void gemm(handle& H, double alpha, gpu_matrix<double> const& A, gpu_matrix<double> const& B, double beta, gpu_matrix<double>& C)
 {
-   public:
-      gpu_ref() = delete;
-
-      ~gpu_ref()
-      {
-	 Sync.record(Stream);
-	 Buf->wait(Sync);
-      }
-
-      gpu_ref(gpu_ref&& other) { using std::swap; swap(Buf, other.Buf); swap(Ptr, other.Ptr); swap(Stream, other.Stream);
-	 swap(Sync, other.Sync); }
-
-      gpu_ref(gpu_ref const&) = delete;
-
-      gpu_ref& operator=(gpu_ref<T>&&) = delete;
-
-      gpu_ref& operator=(gpu_ref<T> const& Other)
-      {
-	 // wait until the other stream has finished writing
-	 Stream.wait(Other.Sync);
-	 // do the copy
-	 memcpy_device_to_device_async(Stream, Other.Ptr, Ptr, sizeof(T));
-	 // signal our event that we have finished writing
-	 Sync.record(Stream);
-	 // make the other stream wait until the copy is finished
-	 Other.Stream.wait(Sync);
-	 return *this;
-      }
-
-      void set_block(T const& x)
-      {
-	 memcpy_host_to_device(Stream, &x, Other.Ptr, sizeof(T));
-	 Stream.record(Sync);
-      }
-
-      // sets the element asynchronously.
-      void set(T const& x)
-      {
-	 T const* Ptr = get_global_constant(x);
-	 memcpy_host_to_device_async(Stream, Ptr, Other.Ptr, sizeof(T));
-	 Stream.record(Sync);
-      }
-
-      // blocking get operation
-      T get_block()
-      {
-	 T x;
-	 memcpy_device_to_host(Ptr, &x, sizeof(T));
-	 return x;
-      }
-
-      // non-blocking get.  Returns a cuda::event, when triggered the host memory location is valid.
-      cuda::event get(T* x)
-      {
-	 cuda::event E;
-	 memcpy_device_to_host_async(Stream, Ptr, x, sizeof(T));
-	 Stream.record(E);
-	 return E;
-      }
-
-   private:
-      friend gpu_ref<T> gpu_buffer<T>::operator[](int n);
-
-      gpu_ref(gpu_buffer* Buf_, T* Ptr_) : Buf(Buf_), Ptr(Ptr_) { Buf->lock(); }
-
-      gup_buffer* Buf;
-      T* Ptr;
-      cuda::stream Stream;
-      cuda::event Sync;
-};
-
-
+   check_error(cublasDgemm(H.raw_handle(), CUBLAS_OP_T, CUBLAS_OP_T, B.cols(), B.rows(), A.rows(), 
+			    &alpha, B.device_ptr(), B.leading_dim(), A.device_ptr(), A.leading_dim(),
+			    &beta, C.device_ptr(), C.leading_dim()));
+}
 
 } // namespace cublas
 

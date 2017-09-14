@@ -218,8 +218,9 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-irotate mp-icorrelation mp-fluctuation mp-itebd mp-coarsegrain mp-dmrg mp-random \
         mp-expectation mp-overlap mp-scale
 
-experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg
+experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg mp-cublas-test
 
+LIBS_mp-cublas-test = $(CUBLAS_LIBS)
 
 benchmarks = benchtripleprod
 
@@ -483,6 +484,8 @@ mp-evolve-mixed : aggregator.o $(expokitobj)
 mp-dmrg-infinite-klm : dmrg.o
 mp-evolve-krylov-simple : simplekrylov.o $(expokitobj)
 mp-wigner-eckart : wigner_eckart.o
+
+mp-cublas-test : cuda.o
 
 mp-cv2 : functional-solver.o
 

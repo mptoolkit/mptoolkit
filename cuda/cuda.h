@@ -23,6 +23,7 @@
 #include <list>
 #include <mutex>
 #include <cuda_runtime.h>
+#include "common/atomicrefcount.h"
 
 #include <iostream>
 
@@ -120,6 +121,7 @@ class stream
       static std::list<cudaStream_t> FreeList;
 
       cudaStream_t stream_;
+      AtomicRefCount count_;
 };
 
 class event

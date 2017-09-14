@@ -172,7 +172,7 @@ event::Allocate()
    return s;
 }
 
-
+inline
 bool
 event::is_complete() const
 {
@@ -259,6 +259,7 @@ timer::elapsed_time_ms() const
    throw error(e);
 }
 
+inline
 bool
 timer::is_started() const
 {
@@ -270,6 +271,7 @@ timer::is_started() const
    throw error(e);
 }
 
+inline
 bool
 timer::is_complete() const
 {
