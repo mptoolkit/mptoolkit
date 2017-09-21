@@ -130,25 +130,6 @@ AllocationBlock::~AllocationBlock()
 
 std::size_t const DefaultBlockMultiple = 16777216;  // 2^24 = 16MB
 
-class AllocatorBase
-{
-   public:
-      AllocatorBase() {}
-
-      virtual void* allocate(std::size_t Size, std::size_t Align) = 0;
-
-      virtual void* allocate(std::size_t Size) = 0;
-
-      virtual void free(void* Ptr, std::size_t Size) = 0;
-
-      virtual ~AllocatorBase() = 0;
-};
-
-inline
-AllocatorBase::~AllocatorBase()
-{
-}
-
 class BlockAllocator : public AllocatorBase
 {
    public:
@@ -198,30 +179,6 @@ void BlockAllocator::free(void* Ptr, std::size_t Size)
 	 return;
    }
 }
-
-class arena
-{
-   public:
-      arena() {}
-
-      explicit arena(std::shared_ptr<AllocatorBase> Alloc_) : Alloc(Alloc_) {}
-
-      explicit arena(AllocatorBase* Alloc_) : Alloc(Alloc_) {}
-
-      void* allocate(std::size_t Size, std::size_t Align)
-      { return Alloc->allocate(Size, Align); }
-
-      void* allocate(std::size_t Size)
-      { return Alloc->allocate(Size); }
-
-      void free(void* Ptr, std::size_t Size)
-      {
-	 Alloc->free(Ptr, Size);
-      }
-
-   private:
-      std::shared_ptr<AllocatorBase> Alloc;
-};
 
 inline
 arena get_block_allocator()

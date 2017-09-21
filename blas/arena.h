@@ -1,0 +1,76 @@
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// blas/arena.h
+//
+// Copyright (C) 2017 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
+//
+// Memory allocation arena.
+// This is needed for GPU memory, but might also be useful
+// for specialized allocators for main memory.
+//
+
+#if !defined(MPTOOLKIT_BLAS_ARENA_H)
+#define MPTOOLKIT_BLAS_ARENA_H
+
+// base class for allocators
+
+class AllocatorBase
+{
+   public:
+      AllocatorBase() {}
+
+      virtual void* allocate(std::size_t Size, std::size_t Align) = 0;
+
+      virtual void* allocate(std::size_t Size) = 0;
+
+      virtual void free(void* Ptr, std::size_t Size) = 0;
+
+      virtual ~AllocatorBase() = 0;
+};
+
+inline
+AllocatorBase::~AllocatorBase()
+{
+}
+
+// memory arena
+
+class arena
+{
+   public:
+      arena() {}
+
+      explicit arena(std::shared_ptr<AllocatorBase> Alloc_) : Alloc(Alloc_) {}
+
+      explicit arena(AllocatorBase* Alloc_) : Alloc(Alloc_) {}
+
+      void* allocate(std::size_t Size, std::size_t Align)
+      { return Alloc->allocate(Size, Align); }
+
+      void* allocate(std::size_t Size)
+      { return Alloc->allocate(Size); }
+
+      void free(void* Ptr, std::size_t Size)
+      {
+	 Alloc->free(Ptr, Size);
+      }
+
+   private:
+      std::shared_ptr<AllocatorBase> Alloc;
+};
+
+#endif

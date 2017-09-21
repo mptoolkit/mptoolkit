@@ -22,7 +22,7 @@
 
 #include "cuda.h"
 #include "gpu_buffer.h"
-#include "linearalgebra/matrix.h"
+#include "linearalgebra2/matrix.h"
 #include <list>
 #include <mutex>
 #include <cublas_v2.h>
@@ -145,7 +145,10 @@ void set_stream(handle const& h, cuda::stream const& s)
    check_error(cublasSetStream(h.raw_handle(), s.raw_stream()));
 }
 
-// row-major matrix
+//
+// GPU-storage matrix type.  Column-major format for compatability with BLAS
+//
+
 template <typename T>
 class gpu_matrix
 {
@@ -183,7 +186,7 @@ LinearAlgebra::Matrix<T>
 get_wait(gpu_matrix<T> const& M)
 {
    LinearAlgebra::Matrix<T> Result(M.rows(), M.cols());
-   cublas::check_error(cublasGetMatrix(M.cols(), M.rows(), sizeof(T),
+   cublas::check_error(cublasGetMatrix(M.rows(), M.cols(), sizeof(T),
 				       M.device_ptr(), M.leading_dim(),
 				       Result.data(), leading_dimension(Result)));
    return Result;
@@ -194,7 +197,7 @@ void
 set_wait(gpu_matrix<T>& A, LinearAlgebra::Matrix<T> const& B)
 {
    //TRACE(A.cols())(A.rows())(A.device_ptr())(A.leading_dim())(B.data())(leading_dimension(B));
-   cublas::check_error(cublasSetMatrix(A.cols(), A.rows(), sizeof(T),
+   cublas::check_error(cublasSetMatrix(A.rows(), A.cols(), sizeof(T),
 				       B.data(), leading_dimension(B),
 				       A.device_ptr(), A.leading_dim()));
 }
@@ -203,8 +206,8 @@ set_wait(gpu_matrix<T>& A, LinearAlgebra::Matrix<T> const& B)
 inline
 void gemm(handle& H, double alpha, gpu_matrix<double> const& A, gpu_matrix<double> const& B, double beta, gpu_matrix<double>& C)
 {
-   check_error(cublasDgemm(H.raw_handle(), CUBLAS_OP_T, CUBLAS_OP_T, B.cols(), B.rows(), A.rows(), 
-			    &alpha, B.device_ptr(), B.leading_dim(), A.device_ptr(), A.leading_dim(),
+   check_error(cublasDgemm(H.raw_handle(), CUBLAS_OP_N, CUBLAS_OP_N, A.rows(), A.cols(), B.cols(), 
+			    &alpha, A.device_ptr(), A.leading_dim(), B.device_ptr(), B.leading_dim(),
 			    &beta, C.device_ptr(), C.leading_dim()));
 }
 
