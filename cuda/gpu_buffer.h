@@ -23,6 +23,7 @@
 #include "cuda.h"
 #include <memory>
 #include "common/trace.h"
+#include "blas/arena.h"
 
 namespace cuda
 {
@@ -30,6 +31,7 @@ namespace cuda
 template <typename T>
 class gpu_ref;
 
+inline
 std::size_t round_up(std::size_t numToRound, std::size_t multiple)
 {
     if (multiple == 0)
@@ -114,6 +116,7 @@ class AllocationBlock
       int NumAllocations;
 };
 
+inline
 AllocationBlock::AllocationBlock(std::size_t Size_, std::size_t Align_)
    : Align(Align_), Size(Size_), CurrentOffset(0), NumAllocations(0)
 {
@@ -122,6 +125,7 @@ AllocationBlock::AllocationBlock(std::size_t Size_, std::size_t Align_)
    BasePtr = static_cast<unsigned char*>(Ptr);
 }
 
+inline
 AllocationBlock::~AllocationBlock()
 {
    if (BasePtr)
@@ -167,7 +171,7 @@ void* BlockAllocator::allocate(std::size_t Size, std::size_t Align)
 inline
 void* BlockAllocator::allocate(std::size_t Size)
 {
-   return this->allocate(Size, 1); 
+   return this->allocate(Size, 1);
 }
 
 inline
@@ -203,10 +207,29 @@ class gpu_buffer
       gpu_ref<T> operator[](int n);
 
       // block modifications to this buffer until event e has been triggered
-      void wait(event const& e);
+      void wait(event const& e)
+      {
+         Stream.wait(e);
+      }
+
+      template <typename U>
+      void wait_for(gpu_buffer<U> const& Other)
+      {
+         this->wait(Other.get_event());
+      }
+
+      // records the event on the stream
+      void synchronization_point()
+      {
+         Sync.record(Stream);
+      }
 
       T* device_ptr() { return Ptr; }
       T const* device_ptr() const { return Ptr; }
+
+      cuda::stream const& get_stream() const { return Stream; }
+
+      cuda::event const& get_event() const { return Sync; }
 
       static gpu_buffer allocate(std::size_t Size, arena A)
       {

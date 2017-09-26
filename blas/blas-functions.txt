@@ -1,0 +1,31 @@
+
+Here, Matrix is used as a place-holder for a concrete matrix type,
+Vector is used as a place-holder for a concrete vector type.
+alpha, beta are scalars of the same value_type as the corresponding
+Matrix/Vector.
+
+Typically implementations will have one more layer of wrappers
+between these functions and the low-level BLAS library.
+
+
+Middle-level BLAS-like functions:
+
+// get the library name for the low-level blas library
+char const* <type>_blas_library()
+
+// y = x
+vector_copy(BlasVector x, BlasVector& y)
+
+y = alpha * x
+vector_copy_scaled(alpha, BlasVector x, BlasVector& y)
+
+
+
+// y = x
+matrix_copy(BlasMatrix x, Matrix& y)
+
+// y = alpha * x
+matrix_copy_scaled(alpha, BlasMatrix x, Matrix& y)
+
+// C = alpha * a * b + beta * C
+gemm(alpha, BlasMatrix a, BlasMatrix b, beta, Matrix& C)

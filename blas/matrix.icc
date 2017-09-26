@@ -1,0 +1,77 @@
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// blas/matrix.icc
+//
+// Copyright (C) 2017 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
+#include "matrix.h"
+
+namespace blas
+{
+
+template <typename VectorType, typename T>
+void vector_copy_from_stl(VectorType const& v, T* y, int incy)
+{
+   for (auto x : v)
+   {
+      *y = x;
+      y += incy;
+   }
+}
+
+template <typename T>
+void vector_copy_from_stl(std::vector<T> const& v, T* y, int incy)
+{
+   vector_copy(v.size(), v.data(), 1, y, incy);
+}
+
+template <typename T>
+template <typename U>
+Matrix<T>::Matrix(std::initializer_list<std::initializer_list<U>> m, arena Arena_)
+   : Arena(Arena_),
+     Rows(m.size()),
+     Cols(m.size() == 0 ? 0 : m.begin()->size())
+{
+   // Some slight contortions to initialize a column-major matrix from
+   // a row major initializer list
+   LeadingDimension = Cols;
+   Data = Arena.allocate_type<T>(Rows*Cols);
+   T* Ptr = Data;
+   for (auto x : m)
+   {
+      assert(x.size() == Cols);
+      vector_copy_from_stl(x, Ptr, LeadingDimension);
+      ++Ptr;
+   }
+}
+
+template <typename T>
+template <typename U>
+Matrix<T>::Matrix(MatrixRef<T, Matrix<T>, U> const& E, arena Arena_)
+   : Rows(E.rows()), Cols(E.cols()), LeadingDimension(leading_dimension(E.rows(), E.cols())),
+     Arena(Arena_),
+     Data(Arena.allocate(LeadingDimension * Cols, sizeof(T)))
+{
+   assign(*this, E.as_derived());
+}
+
+template <typename T>
+Matrix<T>::Matrix(int R, int C, arena Arena_)
+   : Arena(Arena_), Rows(R), Cols(C), LeadingDimension(C), Data(Arena.allocate_type<T>(Rows*Cols))
+{
+}
+
+} // namespace blas

@@ -22,7 +22,6 @@
 
 #include "cuda.h"
 #include "gpu_buffer.h"
-#include "linearalgebra2/matrix.h"
 #include <list>
 #include <mutex>
 #include <cublas_v2.h>
@@ -130,87 +129,32 @@ class handle
 
       void destroy() { cublasDestroy(h_); h_ = nullptr; }
 
+      // set the stream associated with the handle
+      void set_stream(cuda::stream const& s)
+      {
+         check_error(cublasSetStream(h_, s.raw_stream()));
+      }
+
+      void set_pointer_mode(cublasPointerMode_t m)
+      {
+         check_error(cublasSetPointerMode(h_, m));
+      }
+
    private:
       handle(cublasHandle_t h) : h_(h) {}
 
       cublasHandle_t h_;
 };
 
-// set the stream associated with the given cublas handle
-void set_stream(handle const& h, cuda::stream const& s);
+// intializes cublas to run in a thread - must be called once per thread prior to
+// making any other cublas calls.  The CUDA device must be intialized prior to this call.
+void setup_cublas_thread();
 
-inline
-void set_stream(handle const& h, cuda::stream const& s)
-{
-   check_error(cublasSetStream(h.raw_handle(), s.raw_stream()));
-}
-
-//
-// GPU-storage matrix type.  Column-major format for compatability with BLAS
-//
-
-template <typename T>
-class gpu_matrix
-{
-   public:
-      typedef T value_type;
-
-      gpu_matrix(int Rows_, int Cols_, cuda::arena const& A);
-
-      int rows() const { return Rows; }
-      int cols() const { return Cols; }
-
-      int leading_dim() const { return LeadingDimension; }
-
-      T* device_ptr() { return Buf.device_ptr(); }
-      T const* device_ptr() const { return Buf.device_ptr(); }
-
-   private:
-      int Rows;
-      int Cols;
-      int LeadingDimension;
-      cuda::gpu_buffer<T> Buf;
-};
-
-template <typename T>
-inline
-gpu_matrix<T>::gpu_matrix(int Rows_, int Cols_, cuda::arena const& A)
-   : Rows(Rows_), Cols(Cols_), LeadingDimension(Rows_),
-     Buf(cuda::gpu_buffer<T>::allocate(Rows_*Cols_, A))
-{
-}
-
-// blocking matrix get
-template <typename T>
-LinearAlgebra::Matrix<T>
-get_wait(gpu_matrix<T> const& M)
-{
-   LinearAlgebra::Matrix<T> Result(M.rows(), M.cols());
-   cublas::check_error(cublasGetMatrix(M.rows(), M.cols(), sizeof(T),
-				       M.device_ptr(), M.leading_dim(),
-				       Result.data(), leading_dimension(Result)));
-   return Result;
-}
-
-template <typename T>
-void
-set_wait(gpu_matrix<T>& A, LinearAlgebra::Matrix<T> const& B)
-{
-   //TRACE(A.cols())(A.rows())(A.device_ptr())(A.leading_dim())(B.data())(leading_dimension(B));
-   cublas::check_error(cublasSetMatrix(A.rows(), A.cols(), sizeof(T),
-				       B.data(), leading_dimension(B),
-				       A.device_ptr(), A.leading_dim()));
-}
-
-// generic gemm = C' = alpha*A*B + beta*C
-inline
-void gemm(handle& H, double alpha, gpu_matrix<double> const& A, gpu_matrix<double> const& B, double beta, gpu_matrix<double>& C)
-{
-   check_error(cublasDgemm(H.raw_handle(), CUBLAS_OP_N, CUBLAS_OP_N, A.rows(), A.cols(), B.cols(), 
-			    &alpha, A.device_ptr(), A.leading_dim(), B.device_ptr(), B.leading_dim(),
-			    &beta, C.device_ptr(), C.leading_dim()));
-}
+// returns the thread-local handle
+handle& get_handle();
 
 } // namespace cublas
+
+#include "cublas.icc"
 
 #endif

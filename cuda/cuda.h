@@ -35,7 +35,7 @@ class error : public std::runtime_error
 {
    public:
       error() = delete;
-      error(cudaError_t Err) : std::runtime_error(cudaGetErrorString(Err)), err_(Err) 
+      error(cudaError_t Err) : std::runtime_error(cudaGetErrorString(Err)), err_(Err)
       {std::cerr << "Error " << int(Err) << '\n';}
 
       cudaError_t code() const { return err_; }
@@ -77,7 +77,7 @@ class device_properties
 
       std::string name() const { return p_.name; }
       std::size_t total_global_memory() const { return p_.totalGlobalMem; }
-      
+
       // TODO: many other properties we can add here
 
    private:
@@ -155,6 +155,20 @@ class event
       cudaEvent_t event_;
 };
 
+inline
+void
+stream::wait(event const& e)
+{
+   check_error(cudaStreamWaitEvent(stream_, e.raw_event(), 0));
+}
+
+inline
+void
+event::record(stream const& s)
+{
+   check_error(cudaEventRecord(event_, s.raw_stream()));
+}
+
 class timer
 {
    public:
@@ -164,7 +178,7 @@ class timer
       timer& operator=(timer const&) = delete;
       timer& operator=(timer&& other);
       ~timer();
-      
+
       // record the starting point as part of stream s
       void start(stream const& s);
 
@@ -219,6 +233,6 @@ void memcpy_host_to_device_async(stream const& s, void const* src, void* dest, s
 
 } // namespace cuda
 
-#include "cuda.ipp"
+#include "cuda.icc"
 
 #endif

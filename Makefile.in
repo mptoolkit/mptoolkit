@@ -88,7 +88,7 @@ CXXFLAGS += -DGIT_VERSION="$(GIT_VERSION)"
 SRCDIRS = common common/private quantumnumbers pstream pheap \
           tensor lattice mp-algorithms wavefunction \
           tutorial mp linearalgebra misc conf scripts utils interface expokit mpo \
-          benchmark misc misc/oogl junk mpo mps parser models models/contrib cuda
+          benchmark misc misc/oogl junk mpo mps parser models models/contrib cuda blas
 
 TESTDIRS = tensor/test siteoperator/test linearalgebra/test matrixproduct/test pheap/test \
            common/test quantumnumbers/test mp-algorithms/test mpo/test
@@ -221,6 +221,8 @@ tools = mp-idmrg-s3e mp-ioverlap \
 experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg mp-cublas-test
 
 LIBS_mp-cublas-test = $(CUBLAS_LIBS)
+
+LIBS_test-gpu-matrix = $(CUBLAS_LIBS)
 
 benchmarks = benchtripleprod
 
@@ -540,6 +542,8 @@ mp-idump : infinitewavefunctionleft.o
 mp-imake-transverse-lattice : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
 mp-imake-transverse-lattice-folded : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
 mp-iwigner-eckart : infinitewavefunctionleft.o wigner_eckart.o
+
+test-gpu-matrix : cublas.o cuda.o cuda-setup.o
 
 LIBS_mp-ioverlap = $(LIBARPACK)
 LIBS_mp-ispectrum = $(LIBARPACK)

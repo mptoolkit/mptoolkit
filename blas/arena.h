@@ -26,6 +26,8 @@
 #if !defined(MPTOOLKIT_BLAS_ARENA_H)
 #define MPTOOLKIT_BLAS_ARENA_H
 
+#include <memory>
+
 // base class for allocators
 
 class AllocatorBase
@@ -58,6 +60,12 @@ class arena
 
       explicit arena(AllocatorBase* Alloc_) : Alloc(Alloc_) {}
 
+      template <typename T>
+      T* allocate_type(std::size_t Size)
+      {
+         return static_cast<T*>(this->allocate(Size*sizeof(T), sizeof(T)));
+      }
+
       void* allocate(std::size_t Size, std::size_t Align)
       { return Alloc->allocate(Size, Align); }
 
@@ -72,5 +80,35 @@ class arena
    private:
       std::shared_ptr<AllocatorBase> Alloc;
 };
+
+class MallocAllocator : public AllocatorBase
+{
+   public:
+      MallocAllocator() {}
+
+      virtual void* allocate(std::size_t Size, std::size_t Align)
+      {
+         return std::malloc(Size);
+      }
+
+      virtual void* allocate(std::size_t Size)
+      {
+         return std::malloc(Size);
+      }
+
+      virtual void free(void* Ptr, std::size_t Size)
+      {
+         std::free(Ptr);
+      }
+
+      virtual ~MallocAllocator() {}
+};
+
+inline
+arena& get_malloc_arena()
+{
+   static arena A(new MallocAllocator());
+   return A;
+}
 
 #endif
