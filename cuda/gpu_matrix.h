@@ -121,8 +121,8 @@ assign(gpu_matrix<T>& A, blas::Matrix<T> const& B)
 {
    cublas::check_error(cublasSetMatrixAsync(A.rows(), A.cols(), sizeof(T),
                                             B.data(), B.leading_dimension(),
-                                            A.buffer().device_ptr(), A.leading_dimension(), A.buffer().get_stream().
-                                            raw_stream()));
+                                            A.buffer().device_ptr(), A.leading_dimension(), 
+					    A.buffer().get_stream().raw_stream()));
    A.buffer().synchronization_point();
 }
 
@@ -136,7 +136,8 @@ gemm(cublas::handle& H, char Atrans, char Btrans, int M, int N, int K, double al
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    C.wait_for(A);
    C.wait_for(B);
-   check_error(cublasDgemm(H.raw_handle(), cublasOperation_t(Atrans), cublasOperation_t(Btrans), M, N, K,
+   TRACE(Atrans)(Btrans);
+   check_error(cublasDgemm(H.raw_handle(), cublas_trans(Atrans), cublas_trans(Btrans), M, N, K,
                            &alpha, A.device_ptr(), lda, B.device_ptr(), ldb,
                            &beta, C.device_ptr(), ldc));
    C.synchronization_point();

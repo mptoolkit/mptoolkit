@@ -146,6 +146,18 @@ class handle
       cublasHandle_t h_;
 };
 
+inline
+cublasOperation_t cublas_trans(char c)
+{
+   switch (c)
+   {
+   case 'N' : return CUBLAS_OP_N;
+   case 'T' : return CUBLAS_OP_T;
+   case 'C' : return CUBLAS_OP_C;
+   default : throw std::runtime_error("Unsupported TRANS in cublas");
+   }
+}
+
 // intializes cublas to run in a thread - must be called once per thread prior to
 // making any other cublas calls.  The CUDA device must be intialized prior to this call.
 void setup_cublas_thread();
