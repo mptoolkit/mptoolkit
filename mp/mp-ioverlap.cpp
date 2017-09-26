@@ -270,16 +270,6 @@ int main(int argc, char** argv)
 	    Psi2 = InfiniteWavefunctionLeft::ConstructFromOrthogonal(coarse_grain(PsiL, CoarseGrain2),
 								     Lambda, Psi2.qshift());
 	 }
-
-	 Size = statistics::lcm(Psi1.size(), Psi2.size());
-	 Psi1 = repeat(Psi1, Size/Psi1.size());
-	 Psi2 = repeat(Psi2, Size/Psi2.size());
-
-	 if (ExtractLocalBasis(Psi1) != ExtractLocalBasis(Psi2))
-	 {
-	    std::cerr << "mp-ioverlap: fatal: local basis for LHS and RHS wavefunctions do not match!\n";
-	    return 1;
-	 }
       }
 
       if (Verbose)
@@ -294,15 +284,15 @@ int main(int argc, char** argv)
       if (Reflect)
       {
          if (Verbose)
-            std::cout << "Reflecting psi2..." << std::endl;
-         inplace_reflect(Psi2);
+            std::cout << "Reflecting psi1..." << std::endl;
+         inplace_reflect(Psi1);
       }
 
       if (Conj)
       {
          if (Verbose)
-            std::cout << "Conjugating psi2..." << std::endl;
-         inplace_conj(Psi2);
+            std::cout << "Conjugating psi1..." << std::endl;
+         inplace_conj(Psi1);
       }
 
       ProductMPO StringOp;
@@ -328,8 +318,20 @@ int main(int argc, char** argv)
          std::cerr << "Wavefunction unit cells differ, extending wavefunctions to size " << Size << '\n';
       }
 
+      Size = statistics::lcm(Psi1.size(), Psi2.size());
       Psi1 = repeat(Psi1, Size/Psi1.size());
       Psi2 = repeat(Psi2, Size/Psi2.size());
+
+      if (ExtractLocalBasis2(StringOp) != ExtractLocalBasis(Psi2))
+      {
+         std::cerr << "mp-ioverlap: fatal: local basis for RHS wavefunction does not match!\n";
+         return 1;
+      }
+      if (ExtractLocalBasis1(StringOp) != ExtractLocalBasis(Psi1))
+      {
+         std::cerr << "mp-ioverlap: fatal: local basis for LHS wavefunction does not match!\n";
+         return 1;
+      }
 
       // The default UnitCellSize for output is the wavefunction size
       if (UnitCellSize == 0)

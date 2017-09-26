@@ -316,8 +316,8 @@ contract_from_left(OperatorComponent const& M,
                    StateComponent const& E,
                    StateComponent const& B)
 {
-   PRECONDITION_EQUAL(M.LocalBasis2(), A.base().LocalBasis());
-   PRECONDITION_EQUAL(M.LocalBasis1(), B.LocalBasis());
+   PRECONDITION_EQUAL(M.LocalBasis1(), A.base().LocalBasis());
+   PRECONDITION_EQUAL(M.LocalBasis2(), B.LocalBasis());
    DEBUG_PRECONDITION_EQUAL(M.Basis1(), E.LocalBasis());
    //   DEBUG_PRECONDITION_EQUAL(qshift(A.base().Basis1(), QShiftA), E.Basis1());
    //   DEBUG_PRECONDITION_EQUAL(E.Basis2(), delta_shift(B.Basis1(), QShiftB));
@@ -351,7 +351,7 @@ contract_from_left(OperatorComponent const& M,
             C.push_back(OuterIndex(i, a, j));
 
             // Iterate over B[s](jP,j)
-            for (unsigned s = 0; s < A.base().LocalBasis().size(); ++s)
+            for (unsigned s = 0; s < B.LocalBasis().size(); ++s)
             {
                // We already know j, unlike the F-matrix case we don't know the leading index
                // so we need to iterate
