@@ -107,6 +107,10 @@ class stream
 
       cudaStream_t raw_stream() const { return stream_; }
 
+      event record();
+
+      event_ref record_ref();
+
       // wait for the given event
       void wait(event const& e);
 
@@ -121,21 +125,17 @@ class stream
       static std::list<cudaStream_t> FreeList;
 
       cudaStream_t stream_;
-      AtomicRefCount count_;
 };
 
 class event
 {
    public:
-      event();
+      event() = delete;
       event(event const&) = delete;
       event(event&& other);
       event& operator=(event const&) = delete;
       event& operator=(event&& other);
       ~event();
-
-      // record the event as part of stream s
-      void record(stream const& s);
 
       // returns true if work has been sucessfully completed
       bool is_complete() const;
@@ -148,6 +148,11 @@ class event
       }
 
    private:
+      friend class stream;
+      
+      // the only constructor (aside from move-construction)
+      explicit event(cudaStream_t s);
+
       static cudaEvent_t Allocate();
       static std::mutex FreeListMutex;
       static std::list<cudaEvent_t> FreeList;
@@ -210,7 +215,6 @@ class timer
       static std::list<cudaEvent_t> FreeList;
 
       cudaEvent_t start_;
-      cudaEvent_t stop_;
 };
 
 // copy GPU memory asyncronously
