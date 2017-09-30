@@ -18,11 +18,12 @@ int main()
    cublas::gpu_matrix<double> gB(3,3, Mem);
    cublas::gpu_matrix<double> gC(3,3, Mem);
 
-   gA = A;
-   gB = B;
+   // non-blocking set - cannot change A or B until operation completes
+   set(gA, A);
+   set(gB, B);
 
    gC = 2 * gA * gB;
-   gC = 3 * gA * gB;
+   gC += 3 * gA * herm(gB);
 
    C = get_wait(gC);
 

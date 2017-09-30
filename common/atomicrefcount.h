@@ -21,6 +21,7 @@
 #define MPTOOLKIT_COMMON_ATOMICREFCOUNT_H
 
 #include <atomic>
+#include "trace.h"
 
 class AtomicRefCount
 {
@@ -89,5 +90,57 @@ bool AtomicRefCount::is_shared() const
 {
    return Count.load() != 1;
 }
+
+class shared_counter
+{
+   public:
+      shared_counter() { Count  = nullptr; }
+      shared_counter(shared_counter const& Other) = default;
+      shared_counter(shared_counter&& Other) : Count(Other.Count) { Other.Count = nullptr; }
+      ~shared_counter() = default;
+      shared_counter& operator=(shared_counter const& Other) = default;
+      shared_counter& operator=(shared_counter&& Other)
+      {
+	 Count = Other.Count;
+	 Other.Count = nullptr;
+	 return *this;
+      }
+
+      void allocate(int InitialValue = 0)
+      {
+	 DEBUG_CHECK(!Count);
+	 Count = new AtomicRefCount(InitialValue);
+      }
+
+      void deallocate()
+      {
+	 DEBUG_CHECK(Count);
+	 delete Count;
+	 Count = nullptr;
+      }
+
+      void operator++() const
+      {
+	 ++*Count;
+      }
+
+      int operator--() const
+      {
+	 return --*Count;
+      }
+
+      bool is_zero() const
+      {
+	 return Count->is_zero();
+      }
+
+      bool is_shared() const
+      {
+	 return Count->is_shared();
+      }
+
+   private:
+      AtomicRefCount* Count;
+};
 
 #endif

@@ -218,10 +218,16 @@ class gpu_buffer
          this->wait(Other.get_event());
       }
 
+      event record()
+      {
+	 Sync = Stream.record();
+	 return Sync;
+      }
+
       // records the event on the stream
       void synchronization_point()
       {
-         Sync.record(Stream);
+         Sync = Stream.record();
       }
 
       T* device_ptr() { return Ptr; }
@@ -263,12 +269,12 @@ class gpu_ref
 
       ~gpu_ref()
       {
-	 Sync.record(Stream);
-	 Buf->wait(Sync);
+	 Stream.synchronize();
 	 Buf->remove(this);
       }
 
-      gpu_ref(gpu_ref&& other) { using std::swap; swap(Buf, other.Buf); swap(Ptr, other.Ptr); swap(Stream, other.Stream);
+      gpu_ref(gpu_ref&& other) 
+      { using std::swap; swap(Buf, other.Buf); swap(Ptr, other.Ptr); swap(Stream, other.Stream);
 	 swap(Sync, other.Sync); }
 
       gpu_ref(gpu_ref const& Other) = delete;
@@ -282,7 +288,7 @@ class gpu_ref
 	 // do the copy
 	 memcpy_device_to_device_async(Stream, Other.Ptr, Ptr, sizeof(T));
 	 // signal our event that we have finished writing
-	 Sync.record(Stream);
+	 Sync = Stream.record();
 	 // make the other stream wait until the copy is finished
 	 Other.Stream.wait(Sync);
 	 return *this;
@@ -291,7 +297,7 @@ class gpu_ref
       void set_wait(T const& x)
       {
 	 memcpy_host_to_device(Stream, &x, Ptr, sizeof(T));
-	 Sync.record(Stream);
+	 Sync = Stream.record();
       }
 
       // sets the element asynchronously.
@@ -299,7 +305,7 @@ class gpu_ref
       {
 	 T const* Ptr = get_global_constant(x);
 	 memcpy_host_to_device_async(Stream, &x, Ptr, sizeof(T));
-	 Sync.record(Stream);
+	 Sync = Stream.record();
       }
 
       // blocking get operation
@@ -315,7 +321,7 @@ class gpu_ref
       {
 	 cuda::event E;
 	 memcpy_device_to_host_async(Stream, Ptr, x, sizeof(T));
-	 Sync.record(Stream);
+	 Sync = Stream.record();
 	 return E;
       }
 

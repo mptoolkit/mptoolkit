@@ -19,6 +19,17 @@
 namespace cuda
 {
 
+namespace detail
+{
+
+cudaStream_t AllocateStream();
+void FreeStream(cudaStream_t e);
+
+cudaEvent_t AllocateEvent();
+void FreeEvent(cudaEvent_t e);
+
+} // namespace detail
+
 //
 // device
 //
@@ -70,7 +81,7 @@ void device_synchronize()
 //
 
 inline
-stream::stream() : stream_(stream::Allocate())
+stream::stream() : stream_(detail::AllocateStream())
 {
 }
 
@@ -92,30 +103,40 @@ inline
 stream::~stream()
 {
    if (stream_)
-   {
-      std::lock_guard<std::mutex> lock(stream::FreeListMutex);
-      stream::FreeList.push_back(stream_);
-      stream_ = nullptr;
-   }
+      detail::FreeStream(stream_);
 }
 
 inline
-cudaStream_t
-stream::Allocate()
+void
+stream::wait(event const& e)
 {
-   std::lock_guard<std::mutex> lock(stream::FreeListMutex);
-   if (FreeList.empty())
-   {
-      for (int i = 0; i < 10; ++i)
-      {
-	 cudaStream_t s;
-	 check_error(cudaStreamCreate(&s));
-	 FreeList.push_back(s);
-      }
-   }
-   cudaStream_t s = FreeList.back();
-   FreeList.pop_back();
-   return s;
+   check_error(cudaStreamWaitEvent(stream_, e.raw_event(), 0));
+}
+
+inline
+event
+stream::record()
+{
+   return event(stream_);
+}
+
+inline
+void
+stream::synchronize()
+{
+   check_error(cudaStreamSynchronize(stream_));
+}
+
+inline
+bool
+stream::is_running() const
+{
+   cudaError_t e = cudaStreamQuery(stream_);
+   if (e == cudaErrorNotReady)
+      return true;
+   if (e == cudaSuccess)
+      return false;
+   throw error(e);
 }
 
 //
@@ -123,14 +144,29 @@ stream::Allocate()
 //
 
 inline
-event::event() : event_(event::Allocate())
+event::event() : event_(nullptr)
 {
 }
 
 inline
-event::event(event&& other) : event_(other.event_)
+event::event(cudaStream_t s)
+   : event_(detail::AllocateEvent())
+{
+   check_error(cudaEventRecord(event_, s));
+   count_.allocate(1);
+}
+
+inline
+event::event(event&& other) : event_(other.event_), count_(std::move(other.count_))
 {
    other.event_ = nullptr;
+}
+
+inline
+event::event(event const& other) : event_(other.event_), count_(other.count_)
+{
+   if (event_)
+      ++count_;
 }
 
 inline
@@ -138,39 +174,58 @@ event&
 event::operator=(event&& other)
 {
    std::swap(event_, other.event_);
+   std::swap(count_, other.count_);
    return *this;
 }
 
 inline
+event&
+event::operator=(event const& other)
+{
+   if (other.event_)
+      ++other.count_;
+
+   this->sub_reference();
+   event_ = other.event_;
+   count_ = other.count_;
+
+   return *this;
+}
+
+
+inline
 event::~event()
 {
-   if (event_)
-   {
-      std::lock_guard<std::mutex> lock(event::FreeListMutex);
-      event::FreeList.push_back(event_);
-      event_ = nullptr;
-   }
+   this->sub_reference();
+ }
+
+inline
+void
+event::clear()
+{
+   this->sub_reference();
+   event_ = nullptr;
 }
 
 inline
-cudaEvent_t
-event::Allocate()
+void
+event::wait() const
 {
-   std::lock_guard<std::mutex> lock(event::FreeListMutex);
-   if (FreeList.empty())
-   {
-      for (int i = 0; i < 10; ++i)
-      {
-	 cudaEvent_t s;
-	 // for debugging add cudaEventBlockingSync to the flags here
-	 check_error(cudaEventCreateWithFlags(&s, cudaEventDisableTiming));
-	 FreeList.push_back(s);
-      }
-   }
-   cudaEvent_t s = FreeList.back();
-   FreeList.pop_back();
-   return s;
+   check_error(cudaEventSynchronize(event_));
 }
+
+inline
+void
+event::sub_reference()
+ {
+   if (event_ && (--count_ == 0))
+   {
+      detail::FreeEvent(event_);
+      // NOTE: we do not set event_ = nullltr here, caller must do this if necessary
+      count_.deallocate();
+   }
+}
+
 
 inline
 bool

@@ -22,10 +22,65 @@
 namespace cuda
 {
 
-std::mutex stream::FreeListMutex;
-std::list<cudaStream_t> stream::FreeList;
+namespace detail
+{
 
-std::mutex event::FreeListMutex;
-std::list<cudaEvent_t> event::FreeList;
+// stream management
+
+std::mutex StreamFreeListMutex;
+std::list<cudaStream_t> StreamFreeList;
+
+cudaStream_t AllocateStream()
+{
+   std::lock_guard<std::mutex> lock(StreamFreeListMutex);
+   if (StreamFreeList.empty())
+   {
+      for (int i = 0; i < 10; ++i)
+      {
+	 cudaStream_t s;
+	 check_error(cudaStreamCreate(&s));
+	 StreamFreeList.push_back(s);
+      }
+   }
+   cudaStream_t s = StreamFreeList.back();
+   StreamFreeList.pop_back();
+   return s;
+}
+
+void FreeStream(cudaStream_t stream_)
+{
+   std::lock_guard<std::mutex> lock(StreamFreeListMutex);
+   StreamFreeList.push_back(stream_);
+}
+
+// event management
+
+std::mutex EventFreeListMutex;
+std::list<cudaEvent_t> EventFreeList;
+
+cudaEvent_t AllocateEvent()
+{
+   std::lock_guard<std::mutex> lock(EventFreeListMutex);
+   if (EventFreeList.empty())
+   {
+      for (int i = 0; i < 10; ++i)
+      {
+	 cudaEvent_t s;
+	 check_error(cudaEventCreateWithFlags(&s, cudaEventDisableTiming | cudaEventBlockingSync));
+	 EventFreeList.push_back(s);
+      }
+   }
+   cudaEvent_t s = EventFreeList.back();
+   EventFreeList.pop_back();
+   return s;
+}
+
+void FreeEvent(cudaEvent_t event_)
+{
+   std::lock_guard<std::mutex> lock(EventFreeListMutex);
+   EventFreeList.push_back(event_);
+}
+
+} // namespace detail
 
 } // namespace cuda

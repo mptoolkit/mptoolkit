@@ -50,11 +50,6 @@ class gpu_matrix : public blas::BlasMatrix<T, gpu_matrix<T>>
       {
       }
 
-      gpu_matrix& operator=(blas::Matrix<T> const& Other)
-      {
-         assign(*this, Other);
-      }
-
       gpu_matrix& operator=(gpu_matrix const& Other)
       {
          assign(*this, Other);
@@ -65,6 +60,20 @@ class gpu_matrix : public blas::BlasMatrix<T, gpu_matrix<T>>
       gpu_matrix& operator=(blas::MatrixRef<T, gpu_matrix<T>, U> const& E)
       {
 	 assign(*this, E.as_derived());
+	 return *this;
+      }
+
+      template <typename U>
+      gpu_matrix& operator+=(blas::MatrixRef<T, gpu_matrix<T>, U> const& E)
+      {
+	 add(*this, E.as_derived());
+	 return *this;
+      }
+
+      template <typename U>
+      gpu_matrix& operator-=(blas::MatrixRef<T, gpu_matrix<T>, U> const& E)
+      {
+	 subtract(*this, E.as_derived());
 	 return *this;
       }
 
@@ -116,14 +125,14 @@ set_wait(gpu_matrix<T>& A, blas::Matrix<T> const& B)
 }
 
 template <typename T>
-void
-assign(gpu_matrix<T>& A, blas::Matrix<T> const& B)
+cuda::event
+set(gpu_matrix<T>& A, blas::Matrix<T> const& B)
 {
    cublas::check_error(cublasSetMatrixAsync(A.rows(), A.cols(), sizeof(T),
                                             B.data(), B.leading_dimension(),
                                             A.buffer().device_ptr(), A.leading_dimension(), 
 					    A.buffer().get_stream().raw_stream()));
-   A.buffer().synchronization_point();
+   return A.buffer().record();
 }
 
 inline

@@ -502,6 +502,18 @@ void assign(MatrixRef<T, BaseType, Derived>& C, MatrixProduct<T, BaseType, U, V>
    gemm(a.Factor, a.A, a.B, number_traits<T>::zero(), C.as_derived());
 }
 
+template <typename T, typename BaseType, typename Derived, typename U, typename V>
+void add(MatrixRef<T, BaseType, Derived>& C, MatrixProduct<T, BaseType, U, V> const& a)
+{
+   gemm(a.Factor, a.A, a.B, number_traits<T>::identity(), C.as_derived());
+}
+
+template <typename T, typename BaseType, typename Derived, typename U, typename V>
+void subtract(MatrixRef<T, BaseType, Derived>& C, MatrixProduct<T, BaseType, U, V> const& a)
+{
+   gemm(-a.Factor, a.A, a.B, number_traits<T>::identity(), C.as_derived());
+}
+
 } // namespace blas
 
 #endif

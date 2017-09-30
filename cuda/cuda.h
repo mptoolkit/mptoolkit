@@ -107,12 +107,19 @@ class stream
 
       cudaStream_t raw_stream() const { return stream_; }
 
+      // record the event at the current location in the stream,
+      // as a single-use event
       event record();
 
-      event_ref record_ref();
+      // blocks until the stream has completed all operations
+      void synchronize();
 
       // wait for the given event
       void wait(event const& e);
+
+      // returns true if there are pending operations on the stream.
+      // returns false if all operations on the stream have completed.
+      bool is_running() const;
 
       friend void swap(stream& a, stream& b)
       {
@@ -120,59 +127,51 @@ class stream
       }
 
    private:
-      static cudaStream_t Allocate();
-      static std::mutex FreeListMutex;
-      static std::list<cudaStream_t> FreeList;
-
       cudaStream_t stream_;
 };
 
 class event
 {
    public:
-      event() = delete;
-      event(event const&) = delete;
+      event();
+      event(event const& other);
       event(event&& other);
-      event& operator=(event const&) = delete;
+      event& operator=(event const& other);
       event& operator=(event&& other);
       ~event();
 
+      // clears the event - equivalent to *this = event()
+      void clear();
+
+      // returns true if this is a null event
+      bool is_empty() const { return event_ == nullptr; }
+
       // returns true if work has been sucessfully completed
       bool is_complete() const;
+
+      // blocks the caller until the event has triggered
+      void wait() const;
 
       cudaEvent_t raw_event() const { return event_; }
 
       friend void swap(event& a, event& b)
       {
-	 std::swap(a.event_, b.event_);
+	 using std::swap;
+	 swap(a.event_, b.event_);
+	 swap(a.count_, b.count_);
       }
 
    private:
       friend class stream;
       
-      // the only constructor (aside from move-construction)
+      // the only constructor (aside from move/copy-construction)
       explicit event(cudaStream_t s);
 
-      static cudaEvent_t Allocate();
-      static std::mutex FreeListMutex;
-      static std::list<cudaEvent_t> FreeList;
+      void sub_reference();
 
       cudaEvent_t event_;
+      shared_counter count_;
 };
-
-inline
-void
-stream::wait(event const& e)
-{
-   check_error(cudaStreamWaitEvent(stream_, e.raw_event(), 0));
-}
-
-inline
-void
-event::record(stream const& s)
-{
-   check_error(cudaEventRecord(event_, s.raw_stream()));
-}
 
 class timer
 {
@@ -215,6 +214,7 @@ class timer
       static std::list<cudaEvent_t> FreeList;
 
       cudaEvent_t start_;
+      cudaEvent_t stop_;
 };
 
 // copy GPU memory asyncronously
