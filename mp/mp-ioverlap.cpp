@@ -276,7 +276,7 @@ int main(int argc, char** argv)
          std::cout << "Calculating overlap...\n";
 
       // Rotate as necessary.  Do this BEFORE determining the quantum number sectors!
-      Psi2.rotate_left(Rotate);
+      Psi1.rotate_right(Rotate);
 
       UnitCell Cell;
       LatticeSite Site;
