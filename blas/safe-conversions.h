@@ -88,7 +88,7 @@ DECLARE_CONVERSION(float128,std::complex<float128>);
 #endif
 
 #undef DECLARE_CONVERSION
-#undef DECLARE_CONVERSION_I
+#undef DECLARE_CONVERSION_INTERMEDIATE
 
 } // namespace detail
 
@@ -96,8 +96,9 @@ template <typename T, typename U, typename Enable = void>
 struct is_safe_conversion : public std::false_type {};
 
 template <typename T, typename U>
-struct is_safe_conversion<T, U, std::enable_if<std::is_same< U,
-                                                             decltype(detail::convert_impl<T,U>::convert(std::declval<T>()))>::value>>
+struct is_safe_conversion<T, U, std::enable_if<
+   std::is_same< U,
+                 decltype(detail::convert_impl<T,U>::convert(std::declval<T>()))>::value>>
    : public std::true_type {};
 
 template <typename T, typename U>

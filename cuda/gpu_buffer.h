@@ -185,7 +185,7 @@ void BlockAllocator::free(void* Ptr, std::size_t Size)
 }
 
 inline
-arena get_block_allocator()
+arena make_gpu_block_allocator()
 {
    return arena(new BlockAllocator());
 }
@@ -215,27 +215,38 @@ class gpu_buffer
       template <typename U>
       void wait_for(gpu_buffer<U> const& Other)
       {
-         this->wait(Other.get_event());
+         this->wait(Other.sync());
+         // Generally, calling wait_for() is going to be done just before
+         // doing some operation that writes to the buffer, so an invalidate()
+         // will follow shortly.  Note that we could force a sync() operation
+         // before waiting - currently we don't force a sync() so that means
+         // that if something else is going to wait_for() this buffer, then
+         // they should do that BEFORE calling this->wait_for(Other).
+         // Correct:
+         //    A.wait_for(B);
+         //    B.wait_for(C);
+         // Inefficient (causes A to block for longer than it needs to):
+         //    B.wait_for(C);
+         //    A.wait_for(B);
       }
 
-      event record()
+      event sync() const
       {
-	 Sync = Stream.record();
-	 return Sync;
+         if (Sync.is_null())
+            Sync = Stream.record();
+         return Sync;
       }
 
-      // records the event on the stream
-      void synchronization_point()
+      // resets the CUDA event associated with the stream
+      void invalidate()
       {
-         Sync = Stream.record();
+         Sync.clear();
       }
 
-      T* device_ptr() { return Ptr; }
+      T* device_ptr() { this->invalidate(); return Ptr; }
       T const* device_ptr() const { return Ptr; }
 
       cuda::stream const& get_stream() const { return Stream; }
-
-      cuda::event const& get_event() const { return Sync; }
 
       static gpu_buffer allocate(std::size_t Size, arena A)
       {
@@ -255,8 +266,8 @@ class gpu_buffer
 
       T* Ptr;
       std::size_t ByteSize;
-      cuda::stream Stream;
-      cuda::event Sync;
+      mutable cuda::stream Stream;
+      mutable cuda::event Sync;
       arena Arena;
 };
 
@@ -273,7 +284,7 @@ class gpu_ref
 	 Buf->remove(this);
       }
 
-      gpu_ref(gpu_ref&& other) 
+      gpu_ref(gpu_ref&& other)
       { using std::swap; swap(Buf, other.Buf); swap(Ptr, other.Ptr); swap(Stream, other.Stream);
 	 swap(Sync, other.Sync); }
 

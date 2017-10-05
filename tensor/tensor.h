@@ -28,9 +28,6 @@
 #define TENSOR_H_WUIYR74839Y78HV8975HY49
 
 #include "basis.h"
-#include "linearalgebra/sparsematrix.h"
-#include "linearalgebra/coefficient_trace.h"
-#include "linearalgebra/coefficient_operations.h"
 #include "quantumnumbers/quantumnumber.h"
 #include "pstream/pstream.h"
 #include <boost/mpl/assert.hpp>

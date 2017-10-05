@@ -45,6 +45,16 @@ class PermutationMatrix;
 //
 
 template <typename T>
+class Matrix;
+
+template <typename T>
+struct blas_traits<Matrix<T>>
+{
+   using storage_type       = T*;
+   using const_storage_type = T const*;
+};
+
+template <typename T>
 class Matrix : public BlasMatrix<T, Matrix<T>>
 {
    public:
@@ -129,8 +139,8 @@ class Matrix : public BlasMatrix<T, Matrix<T>>
 
       constexpr char trans() const { return 'N'; }
 
-      T* data() { return Data; }
-      T const* data() const { return Data; }
+      T* storage() { return Data; }
+      T const* storage() const { return Data; }
 
       T& operator()(int r, int c)
       {
@@ -153,19 +163,6 @@ class Matrix : public BlasMatrix<T, Matrix<T>>
       int LeadingDimension;
       T* Data;
 };
-
-// Retrieve the data() pointer from a BlasMatrix over Matrix<T>
-template <typename T, typename U>
-T const* data(BlasMatrix<T, Matrix<T>, U> const& x)
-{
-   return x.as_derived().data();
-}
-
-template <typename T, typename U>
-T* data(BlasMatrix<T, Matrix<T>, U>& x)
-{
-   return x.as_derived().data();
-}
 
 template <typename T>
 void

@@ -28,31 +28,48 @@ namespace blas
 
 template <typename T, typename U, typename V>
 inline
-void gemm(T alpha, BlasMatrix<T, Matrix<T>, U> const& A, BlasMatrix<T, Matrix<T>, V> const& B,
-          T beta, Matrix<T>& C)
+void gemm(T alpha, BlasMatrix<T, Matrix<T>, U> const& A,
+          T beta, BlasMatrix<T, Matrix<T>, V> const& B,
+          Matrix<T>& C)
 {
    DEBUG_CHECK_EQUAL(A.cols(), B.rows());
    DEBUG_CHECK_EQUAL(A.rows(), C.rows());
    DEBUG_CHECK_EQUAL(B.cols(), C.cols());
-   gemm(A.trans(), B.trans(), A.rows(), A.cols(), B.cols(), alpha, data(A.as_derived()),
-	A.leading_dimension(), data(B.as_derived()), B.leading_dimension(), beta,
-        C.data(), C.leading_dimension());
+   gemm(A.trans(), B.trans(), A.rows(), A.cols(), B.cols(), alpha, A.storage(),
+	A.leading_dimension(), B.storage(), B.leading_dimension(), beta,
+        C.storage(), C.leading_dimension());
 }
 
 template <typename T, typename U>
 inline
-void matrix_copy_scaled(T alpha, BlasMatrix<T, Matrix<T>, U> const& A, Matrix<T> const& C)
+void matrix_copy_scaled(T alpha, BlasMatrix<T, Matrix<T>, U> const& A, Matrix<T>& C)
 {
-   matrix_copy_scaled(A.trans(), A.rows(), A.cols(), alpha, A.leading_dimension(), data(A.as_derived()),
-                      C.data(), C.leading_dimension());
+   matrix_copy_scaled(A.trans(), A.rows(), A.cols(), alpha, A.leading_dimension(), A.storage(),
+                      C.storage(), C.leading_dimension());
 }
 
 template <typename T, typename U>
 inline
-void matrix_copy(BlasMatrix<T, Matrix<T>, U> const& A, Matrix<T> const& C)
+void matrix_copy(BlasMatrix<T, Matrix<T>, U> const& A, Matrix<T>& C)
 {
-   matrix_copy(A.trans(), A.rows(), A.cols(), A.leading_dimension(), data(A.as_derived()),
-                      C.data(), C.leading_dimension());
+   matrix_copy(A.trans(), A.rows(), A.cols(), A.leading_dimension(), A.storage(),
+                      C.storage(), C.leading_dimension());
+}
+
+template <typename T, typename U>
+inline
+void matrix_add_scaled(T alpha, BlasMatrix<T, Matrix<T>, U> const& A, Matrix<T>& C)
+{
+   matrix_add_scaled(A.trans(), A.rows(), A.cols(), alpha, A.leading_dimension(), A.storage(),
+                      C.storage(), C.leading_dimension());
+}
+
+template <typename T, typename U>
+inline
+void matrix_add(BlasMatrix<T, Matrix<T>, U> const& A, Matrix<T>& C)
+{
+   matrix_add(A.trans(), A.rows(), A.cols(), A.leading_dimension(), A.storage(),
+              C.storage(), C.leading_dimension());
 }
 
 } // namespace blas

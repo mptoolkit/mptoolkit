@@ -24,145 +24,10 @@
 #include <mutex>
 #include <iostream>
 #include "safe-conversions.h"
+#include "number_traits.h"
 
 namespace blas
 {
-
-// The BLAS trans parameter.
-// 'N' - normal
-// 'T' - transpose
-// 'C' - Hermitian conjugate
-// 'R' - complex conjugate (BLAS extension)
-
-struct blas_trans_real
-{
-   static char blas_trans(char c)
-   {
-      DEBUG_CHECK(c == 'N' || c == 'T');
-      return (c == 'N' ? 'T' : 'N');
-   }
-
-   static char blas_conj(char c)
-   {
-      DEBUG_CHECK(c == 'N' || c == 'T');
-      return c;
-   }
-
-   static char blas_herm(char c)
-   {
-      DEBUG_CHECK(c == 'N' || c == 'T');
-      return (c == 'N' ? 'T' : 'N');
-   }
-};
-
-struct blas_trans_complex
-{
-   static char blas_trans(char c)
-   {
-      DEBUG_CHECK(c == 'N' || c == 'T' || c == 'C' || c == 'R');
-      switch (c)
-      {
-      case 'N' : return 'T';
-      case 'T' : return 'N';
-      case 'C' : return 'R';
-      case 'R' : return 'C';
-      }
-   }
-
-   static char blas_conj(char c)
-   {
-      DEBUG_CHECK(c == 'N' || c == 'T');
-      switch (c)
-      {
-      case 'N' : return 'R';
-      case 'T' : return 'C';
-      case 'C' : return 'T';
-      case 'R' : return 'N';
-      }
-   }
-
-   static char blas_herm(char c)
-   {
-      DEBUG_CHECK(c == 'N' || c == 'T');
-      switch (c)
-      {
-      case 'N' : return 'C';
-      case 'T' : return 'R';
-      case 'C' : return 'N';
-      case 'R' : return 'T';
-      }
-   }
-};
-
-//
-// number_traits
-// basic information about scalar types that can be put in dense matrices
-//
-
-template <typename T>
-struct number_traits : public blas_trans_real
-{
-   using type = T;
-
-   static constexpr T zero() { return 0; }
-   static constexpr T identity() { return 1; }
-};
-
-template <>
-struct number_traits<float> : public blas_trans_real
-{
-   using type = float;
-
-   static constexpr float zero() { return 0.0f; }
-   static constexpr float identity() { return 1.0f; }
-};
-
-template <>
-struct number_traits<double> : public blas_trans_real
-{
-   using type = double;
-
-   static constexpr double zero() { return 0.0; }
-   static constexpr double identity() { return 1.0; }
-};
-
-template <>
-struct number_traits<std::complex<float>> : public blas_trans_complex
-{
-   using type = std::complex<float>;
-
-   static constexpr std::complex<float> zero() { return {0.0f,0.0f}; }
-   static constexpr std::complex<float> identity() { return {1.0f,0.0f}; }
-};
-
-template <>
-struct number_traits<std::complex<double>> : public blas_trans_complex
-{
-   using type = std::complex<double>;
-
-   static constexpr std::complex<double> zero() { return {0.0,0.0}; }
-   static constexpr std::complex<double> identity() { return {1.0,0.0}; }
-};
-
-#if defined(HAVE_FLOAT128)
-template <>
-struct number_traits<float128> : public blas_trans_real
-{
-   using type = float128;
-
-   static constexpr float128 zero() { return 0.0Q; }
-   static constexpr float128 identity() { return 1.0Q; }
-};
-
-template <>
-struct number_traits<std::complex<float128>> : public blas_trans_complex
-{
-   using type = std::complex<float128>;
-
-   static constexpr std::complex<float128> zero() { return {0.0Q,0.0Q}; }
-   static constexpr std::complex<float128> identity() { return {1.0Q,0.0Q}; }
-};
-#endif
 
 //
 // MatrixRef : generic base class for a matrix using expression templates.
@@ -207,13 +72,18 @@ class MatrixRef
 // We expose the leading_dimension() function, but not the memory storage, that needs
 // to be done separately for each BaseType.
 
+template <typename BaseTyepe>
+struct blas_traits {};
+
 template <typename ValueType, typename BaseType, typename DerivedType = BaseType>
 class BlasMatrix : public MatrixRef<ValueType, BaseType, DerivedType>
 {
    public:
-      using value_type   = ValueType;
-      using derived_type = DerivedType;
-      using base_type    = BaseType;
+      using value_type         = ValueType;
+      using derived_type       = DerivedType;
+      using base_type          = BaseType;
+      using storage_type       = typename blas_traits<base_type>::storage_type;
+      using const_storage_type = typename blas_traits<base_type>::const_storage_type;
 
       BlasMatrix() = default;
       ~BlasMatrix() = default;
@@ -223,6 +93,9 @@ class BlasMatrix : public MatrixRef<ValueType, BaseType, DerivedType>
 
       // The BLAS trans parameter ('N', 'T', 'C', 'R' - note 'R' is a BLAS extension denoting conjugation)
       char trans() const { return this->as_derived().trans(); }
+
+      storage_type storage() { return this->as_derived().storage(); }
+      const_storage_type storage() const { return this->as_derived().storage(); }
 };
 
 // proxy class for the transpose of a BlasMatrix
@@ -233,6 +106,8 @@ class BlasMatrixTrans : public BlasMatrix<T, BaseType, BlasMatrixTrans<T, BaseTy
    public:
       using base_type = BaseType;
       using value_type    = T;
+      using storage_type       = typename blas_traits<base_type>::storage_type;
+      using const_storage_type = typename blas_traits<base_type>::const_storage_type;
 
       BlasMatrixTrans(base_type const& Base_) : Base(Base_) {}
 
@@ -242,6 +117,9 @@ class BlasMatrixTrans : public BlasMatrix<T, BaseType, BlasMatrixTrans<T, BaseTy
       char trans() const { return number_traits<value_type>::blas_trans(Base.trans()); }
 
       base_type const& base() const { return Base; }
+
+      storage_type storage() { return Base.storage(); }
+      const_storage_type storage() const { return Base.storage(); }
 
    private:
       base_type const& Base;
@@ -255,6 +133,8 @@ class BlasMatrixHerm : public BlasMatrix<T, BaseType, BlasMatrixHerm<T, BaseType
    public:
       using base_type = BaseType;
       using value_type    = T;
+      using storage_type       = typename blas_traits<base_type>::storage_type;
+      using const_storage_type = typename blas_traits<base_type>::const_storage_type;
 
       BlasMatrixHerm(base_type const& Base_) : Base(Base_) {}
 
@@ -264,6 +144,9 @@ class BlasMatrixHerm : public BlasMatrix<T, BaseType, BlasMatrixHerm<T, BaseType
       char trans() const { return number_traits<value_type>::blas_herm(Base.trans()); }
 
       base_type const& base() const { return Base; }
+
+      storage_type storage() { return Base.storage(); }
+      const_storage_type storage() const { return Base.storage(); }
 
    private:
       base_type const& Base;
@@ -277,6 +160,8 @@ class BlasMatrixConj : public BlasMatrix<T, BaseType, BlasMatrixConj<T, BaseType
    public:
       using base_type = BaseType;
       using value_type    = T;
+      using storage_type       = typename blas_traits<base_type>::storage_type;
+      using const_storage_type = typename blas_traits<base_type>::const_storage_type;
 
       BlasMatrixConj(base_type const& Base_) : Base(Base_) {}
 
@@ -288,6 +173,9 @@ class BlasMatrixConj : public BlasMatrix<T, BaseType, BlasMatrixConj<T, BaseType
       T const* data() const { return Base.data(); }
 
       base_type const& base() const { return Base; }
+
+      storage_type storage() { return Base.storage(); }
+      const_storage_type storage() const { return Base.storage(); }
 
    private:
       base_type const& Base;
@@ -366,7 +254,7 @@ template <typename Base, typename Derived>
 BlasMatrixTrans<float, Derived>
 herm(BlasMatrix<float, Base, Derived> const& x)
 {
-   return BlasMatrixHerm<float, Derived>(x.as_derived());
+   return BlasMatrixTrans<float, Derived>(x.as_derived());
 }
 
 template <typename Derived>
@@ -381,7 +269,7 @@ template <typename Base, typename Derived>
 BlasMatrixTrans<float128, Derived>
 herm(BlasMatrix<float128, Base, Derived> const& x)
 {
-   return BlasMatrixHerm<float128, Derived>(x.as_derived());
+   return BlasMatrixTrans<float128, Derived>(x.as_derived());
 }
 #endif
 
@@ -418,11 +306,27 @@ conj(BlasMatrix<float128, Base, Derived> const& x)
 }
 #endif
 
+// assignment
 
-// expression templates for gemm operation: alpha * op(A) * op(B)
-// where op is normal, transpose, or hermitian, or conjugate
+template <typename T, typename BaseType>
+void assign(MatrixRef<T, BaseType>& A, MatrixRef<T, BaseType> const& B)
+{
+   matrix_copy(B.as_derived()(), A.as_derived());
+}
 
-// firstly, for a product of a matrix and a scalar
+template <typename T, typename BaseType>
+void add(MatrixRef<T, BaseType>& A, MatrixRef<T, BaseType> const& B)
+{
+   matrix_add(B.as_derived(), A.as_derived());
+}
+
+template <typename T, typename BaseType>
+void subtract(MatrixRef<T, BaseType>& A, MatrixRef<T, BaseType> const& B)
+{
+   matrix_add_scaled(-number_traits<T>::identity(), B.as_derived(), A.as_derived());
+}
+
+// expression template for alpha * op(A)
 
 template <typename T, typename BaseType>
 class ScaledMatrix : public MatrixRef<T, BaseType, ScaledMatrix<T,BaseType>>
@@ -450,17 +354,25 @@ operator*(X const& alpha, MatrixRef<T, U, Derived> const& M)
    return ScaledMatrix<T, Derived>(safe_convert<T>(alpha), M.as_derived());
 }
 
-template <typename T, typename BaseType, typename U>
-void add(MatrixRef<T, BaseType>& A, ScaledMatrix<T, U> const& B)
+template <typename T, typename BaseType>
+void assign(MatrixRef<T, BaseType>& A, ScaledMatrix<T, BaseType> const& B)
 {
-   add_scaled(A.as_derived(), B.factor(), B.base());
+   matrix_copy_scaled(B.factor(), B.base(), A.as_derived());
 }
 
-template <typename T, typename BaseType, typename U>
-void subtract(MatrixRef<T, BaseType>& A, ScaledMatrix<T, U> const& B)
+template <typename T, typename BaseType>
+void add(MatrixRef<T, BaseType>& A, ScaledMatrix<T, BaseType> const& B)
 {
-   subtract_scaled(A.as_derived(), B.factor(), B.base());
+   matrix_add_scaled(B.factor(), B.base(), A.as_derived());
 }
+
+template <typename T, typename BaseType>
+void subtract(MatrixRef<T, BaseType>& A, ScaledMatrix<T, BaseType> const& B)
+{
+   matrix_add_scaled(-B.factor(), B.base(), A.as_derived());
+}
+
+// expression template for alpha * op(A) * op(B)
 
 template <typename T, typename BaseType, typename U, typename V>
 struct MatrixProduct : public MatrixRef<T, BaseType, MatrixProduct<T, BaseType, U, V>>
@@ -499,19 +411,19 @@ operator*(ScaledMatrix<T, BaseType> const& A, MatrixRef<T, BaseType, V> const& B
 template <typename T, typename BaseType, typename Derived, typename U, typename V>
 void assign(MatrixRef<T, BaseType, Derived>& C, MatrixProduct<T, BaseType, U, V> const& a)
 {
-   gemm(a.Factor, a.A, a.B, number_traits<T>::zero(), C.as_derived());
+   gemm(a.Factor, a.A, number_traits<T>::zero(), a.B, C.as_derived());
 }
 
 template <typename T, typename BaseType, typename Derived, typename U, typename V>
 void add(MatrixRef<T, BaseType, Derived>& C, MatrixProduct<T, BaseType, U, V> const& a)
 {
-   gemm(a.Factor, a.A, a.B, number_traits<T>::identity(), C.as_derived());
+   gemm(a.Factor, a.A, number_traits<T>::identity(), a.B, C.as_derived());
 }
 
 template <typename T, typename BaseType, typename Derived, typename U, typename V>
 void subtract(MatrixRef<T, BaseType, Derived>& C, MatrixProduct<T, BaseType, U, V> const& a)
 {
-   gemm(-a.Factor, a.A, a.B, number_traits<T>::identity(), C.as_derived());
+   gemm(-a.Factor, a.A, number_traits<T>::identity(), a.B, C.as_derived());
 }
 
 } // namespace blas

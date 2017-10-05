@@ -130,6 +130,12 @@ class stream
       cudaStream_t stream_;
 };
 
+//
+// event
+//
+// A reference-counted wrapper around the cuda event type.
+//
+
 class event
 {
    public:
@@ -144,7 +150,7 @@ class event
       void clear();
 
       // returns true if this is a null event
-      bool is_empty() const { return event_ == nullptr; }
+      bool is_null() const { return event_ == nullptr; }
 
       // returns true if work has been sucessfully completed
       bool is_complete() const;
@@ -163,7 +169,7 @@ class event
 
    private:
       friend class stream;
-      
+
       // the only constructor (aside from move/copy-construction)
       explicit event(cudaStream_t s);
 

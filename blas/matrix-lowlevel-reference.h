@@ -60,6 +60,22 @@ matrix_copy_scaled(char Atrans, int M, int N, std::complex<double> alpha,
                    std::complex<double> const* A, int lda,
                    std::complex<double>* B, int ldb);
 
+void
+matrix_add(char Atrans, int M, int N, double const* A, int lda, double* , int ldbB);
+
+void
+matrix_add(char Atrans, int M, int N,
+           std::complex<double> const* A, int lda,
+           std::complex<double>* B, int ldb);
+
+void
+matrix_add_scaled(char Atrans, int M, int N, double alpha, double const* A, int lda, double* B, int ldb);
+
+void
+matrix_add_scaled(char Atrans, int M, int N, std::complex<double> alpha,
+                  std::complex<double> const* A, int lda,
+                  std::complex<double>* B, int ldb);
+
 } // namespace blas
 
 #include "matrix-lowlevel-reference.icc"

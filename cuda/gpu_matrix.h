@@ -31,12 +31,34 @@ namespace cublas
 //
 // GPU-storage matrix type.  Column-major format for compatability with BLAS
 //
+template <typename T>
+class gpu_matrix;
+
+} // namespace cublas
+
+namespace blas
+{
+template <typename T>
+struct blas_traits<cublas::gpu_matrix<T>>
+{
+   using storage_type       = cuda::gpu_buffer<T>*;
+   using const_storage_type = cuda::gpu_buffer<T> const*;
+};
+
+} // namespace blas
+
+namespace cublas
+{
 
 template <typename T>
 class gpu_matrix : public blas::BlasMatrix<T, gpu_matrix<T>>
 {
    public:
-      typedef T value_type;
+      using value_type         = T;
+      using storage_type       = cuda::gpu_buffer<T>*;
+      using const_storage_type = cuda::gpu_buffer<T> const*;
+
+      gpu_matrix(int Rows_, int Cols_, arena const& A, int leadingdim);
 
       gpu_matrix(int Rows_, int Cols_, arena const& A);
 
@@ -87,6 +109,14 @@ class gpu_matrix : public blas::BlasMatrix<T, gpu_matrix<T>>
       cuda::gpu_buffer<T>& buffer() { return Buf; }
       cuda::gpu_buffer<T> const& buffer() const { return Buf; }
 
+      storage_type storage() { return &Buf; }
+      const_storage_type storage() const { return &Buf; }
+
+      static int select_leading_dimension(int ld)
+      {
+         return ld == 1 ? 1 : cuda::round_up(ld, 32);
+      }
+
    private:
       int Rows;
       int Cols;
@@ -96,9 +126,17 @@ class gpu_matrix : public blas::BlasMatrix<T, gpu_matrix<T>>
 
 template <typename T>
 inline
+gpu_matrix<T>::gpu_matrix(int Rows_, int Cols_, arena const& Arena, int leadingdim)
+   : Rows(Rows_), Cols(Cols_), LeadingDimension(leadingdim),
+     Buf(cuda::gpu_buffer<T>::allocate(LeadingDimension*Rows, Arena))
+{
+   DEBUG_CHECK(LeadingDimension >= Rows);
+}
+
+template <typename T>
+inline
 gpu_matrix<T>::gpu_matrix(int Rows_, int Cols_, arena const& Arena)
-   : Rows(Rows_), Cols(Cols_), LeadingDimension(Rows_),
-     Buf(cuda::gpu_buffer<T>::allocate(Rows_*Cols_, Arena))
+   : gpu_matrix(Rows_, Cols_, Arena, select_leading_dimension(Rows_))
 {
 }
 
@@ -109,61 +147,99 @@ get_wait(gpu_matrix<T> const& M)
 {
    blas::Matrix<T> Result(M.rows(), M.cols());
    cublas::check_error(cublasGetMatrix(M.rows(), M.cols(), sizeof(T),
-				       M.buffer().device_ptr(), M.leading_dimension(),
-				       Result.data(), Result.leading_dimension()));
+				       M.storage()->device_ptr(), M.leading_dimension(),
+				       Result.storage(), Result.leading_dimension()));
    return Result;
 }
 
+// blocking matrix set
 template <typename T>
 void
 set_wait(gpu_matrix<T>& A, blas::Matrix<T> const& B)
 {
+   DEBUG_CHECK_EQUAL(A.rows(), B.rows());
+   DEBUG_CHECK_EQUAL(A.cols(), B.cols());
    //TRACE(A.cols())(A.rows())(A.device_ptr())(A.leading_dim())(B.data())(leading_dimension(B));
    cublas::check_error(cublasSetMatrix(A.rows(), A.cols(), sizeof(T),
 				       B.data(), leading_dimension(B),
 				       A.device_ptr(), A.leading_dim()));
 }
 
+// non-blocking set
 template <typename T>
 cuda::event
 set(gpu_matrix<T>& A, blas::Matrix<T> const& B)
 {
-   cublas::check_error(cublasSetMatrixAsync(A.rows(), A.cols(), sizeof(T),
-                                            B.data(), B.leading_dimension(),
-                                            A.buffer().device_ptr(), A.leading_dimension(), 
-					    A.buffer().get_stream().raw_stream()));
-   return A.buffer().record();
+   DEBUG_CHECK_EQUAL(A.rows(), B.rows());
+   DEBUG_CHECK_EQUAL(A.cols(), B.cols());
+   cublas::setMatrixAsync(A.rows(), A.cols(), B.storage(), B.leading_dimension(),
+                          *A.storage(), A.leading_dimension());
+   return A.storage()->sync();
 }
 
-inline
-void
-gemm(cublas::handle& H, char Atrans, char Btrans, int M, int N, int K, double alpha,
-     cuda::gpu_buffer<double> const& A, int lda, cuda::gpu_buffer<double> const& B, int ldb,
-     double beta, cuda::gpu_buffer<double>& C, int ldc)
-{
-   H.set_stream(C.get_stream());
-   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
-   C.wait_for(A);
-   C.wait_for(B);
-   TRACE(Atrans)(Btrans);
-   check_error(cublasDgemm(H.raw_handle(), cublas_trans(Atrans), cublas_trans(Btrans), M, N, K,
-                           &alpha, A.device_ptr(), lda, B.device_ptr(), ldb,
-                           &beta, C.device_ptr(), ldc));
-   C.synchronization_point();
-}
+// BLAS functions
 
 template <typename T, typename U, typename V>
 inline
 void
-gemm(T alpha, blas::BlasMatrix<T, gpu_matrix<T>, U> const& A, blas::BlasMatrix<T, gpu_matrix<T>, V> const& B,
-     T beta, gpu_matrix<T>& C)
+gemm(T alpha, blas::BlasMatrix<T, gpu_matrix<T>, U> const& A,
+     T beta, blas::BlasMatrix<T, gpu_matrix<T>, V> const& B,
+     gpu_matrix<T>& C)
 {
    DEBUG_CHECK_EQUAL(A.cols(), B.rows());
    DEBUG_CHECK_EQUAL(A.rows(), C.rows());
    DEBUG_CHECK_EQUAL(B.cols(), C.cols());
-   gemm(get_handle(), A.trans(), B.trans(), A.rows(), A.cols(), B.cols(), alpha, A.as_derived().buffer(),
-	A.leading_dimension(), B.as_derived().buffer(), B.leading_dimension(), beta,
-        C.buffer(), C.leading_dimension());
+   cublas::gemm(get_handle(), A.trans(), B.trans(), A.rows(), A.cols(), B.cols(), alpha, *A.storage(),
+                A.leading_dimension(), *B.storage(), B.leading_dimension(), beta,
+                *C.storage(), C.leading_dimension());
+}
+
+template <typename T, typename U>
+inline
+void matrix_copy_scaled(T alpha, blas::BlasMatrix<T, gpu_matrix<T>, U> const& A, gpu_matrix<T>& C)
+{
+   cublas::geam(get_handle(), A.trans(), A.rows(), A.cols(),
+                alpha, A.storage(), A.leading_dimension(),
+                blas::number_traits<T>::zero(), C.storage(), C.leading_dimension());
+}
+
+template <typename T, typename U>
+inline
+void matrix_copy(blas::BlasMatrix<T, gpu_matrix<T>, U> const& A, gpu_matrix<T>& C)
+{
+   cublas::geam(get_handle(), A.trans(), A.rows(), A.cols(),
+                blas::number_traits<T>::identity(), A.storage(), A.leading_dimension(),
+                blas::number_traits<T>::zero(), C.storage(), C.leading_dimension());
+}
+
+template <typename T, typename U>
+inline
+void matrix_add_scaled(T alpha, blas::BlasMatrix<T, gpu_matrix<T>, U> const& A, gpu_matrix<T>& C)
+{
+   cublas::geam(get_handle(), A.trans(), A.rows(), A.cols(),
+                alpha, A.storage(), A.leading_dimension(),
+                blas::number_traits<T>::identity(), C.storage(), C.leading_dimension());
+}
+
+template <typename T, typename U>
+inline
+void matrix_add(blas::BlasMatrix<T, gpu_matrix<T>, U> const& A, gpu_matrix<T>& C)
+{
+   cublas::geam(get_handle(), A.trans(), A.rows(), A.cols(),
+                blas::number_traits<T>::identity(), A.storage(), A.leading_dimension(),
+                blas::number_traits<T>::identity(), C.storage(), C.leading_dimension());
+}
+
+template <typename T, typename U, typename V>
+inline
+void geam(T alpha, blas::BlasMatrix<T, gpu_matrix<T>, U> const& A,
+          T beta, blas::BlasMatrix<T, gpu_matrix<T>, U> const& B,
+          gpu_matrix<T>& C)
+{
+   cublas::geam(get_handle(), A.trans(), B.trans(), A.rows(), A.cols(),
+                alpha, A.storage(), A.leading_dimension(),
+                beta, B.storage(), B.leading_dimension(),
+                C.storage(), C.leading_dimension());
 }
 
 } // namespace cublas

@@ -16,22 +16,12 @@
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER
-/* -*- C++ -*- $Id$
-
-  Extends BasisList to keep track of the dimension of each subspace, hence
-  the name 'VectorBasis', as each basis label represents a vector of states.
-
-*/
 
 #if !defined(MPTOOLKIT_TENSOR_BASIS_H)
 #define MPTOOLKIT_TENSOR_BASIS_H
 
 #include "quantumnumbers/symmetrylist.h"
 #include "quantumnumbers/quantumnumber.h"
-#include "linearalgebra/vector.h"
-#include "linearalgebra/pstreamio.h"
-#include "linearalgebra/sparsematrix.h"
-#include "linearalgebra/diagonalmatrix.h"
 
 namespace Tensor
 {

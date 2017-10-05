@@ -12,7 +12,7 @@ int main()
    blas::Matrix<double> B({{10,11,12},{13,14,15},{16,17,18}});
    blas::Matrix<double> C(3,3);
 
-   arena Mem = cuda::get_block_allocator();
+   arena Mem = cuda::make_gpu_block_allocator();
 
    cublas::gpu_matrix<double> gA(3,3, Mem);
    cublas::gpu_matrix<double> gB(3,3, Mem);

@@ -21,7 +21,6 @@
 #define TENSORPRODUCT_H_JHCIUWHFIUH98743Y9843YP9
 
 #include "tensor.h"
-#include "linearalgebra/matrix.h"
 #include "pstream/pstream.h"
 #include <tuple>
 

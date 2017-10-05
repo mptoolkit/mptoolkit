@@ -165,6 +165,63 @@ void setup_cublas_thread();
 // returns the thread-local handle
 handle& get_handle();
 
+inline
+void
+gemm(cublas::handle& H, char Atrans, char Btrans, int M, int N, int K, double alpha,
+     cuda::gpu_buffer<double> const& A, int lda, cuda::gpu_buffer<double> const& B, int ldb,
+     double beta, cuda::gpu_buffer<double>& C, int ldc)
+{
+   H.set_stream(C.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
+   C.wait_for(A);
+   C.wait_for(B);
+   check_error(cublasDgemm(H.raw_handle(), cublas_trans(Atrans), cublas_trans(Btrans), M, N, K,
+                           &alpha, A.device_ptr(), lda, B.device_ptr(), ldb,
+                           &beta, C.device_ptr(), ldc));
+}
+
+// geam - we have two versions, for in-place and out-of-place operations
+inline
+void
+geam(cublas::handle& H, char Atrans, int M, int N, double alpha,
+     cuda::gpu_buffer<double> const& A, int lda, cuda::gpu_buffer<double>& C, int ldc)
+{
+   H.set_stream(C.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
+   C.wait_for(A);
+   double beta = 0.0;
+   check_error(cublasDgeam(H.raw_handle(), cublas_trans(Atrans), CUBLAS_OP_N, M, N,
+                           &alpha, A.device_ptr(), lda,
+                           &beta, C.device_ptr(), ldc,
+                           C.device_ptr(), ldc));
+}
+
+inline
+void
+geam(cublas::handle& H, char Atrans, char Btrans, int M, int N,
+     double alpha, cuda::gpu_buffer<double> const& A, int lda,
+     double beta,  cuda::gpu_buffer<double> const& B, int ldb,
+     cuda::gpu_buffer<double>& C, int ldc)
+{
+   H.set_stream(C.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
+   C.wait_for(A);
+   C.wait_for(B);
+   check_error(cublasDgeam(H.raw_handle(), cublas_trans(Atrans), cublas_trans(Btrans), M, N,
+                           &alpha, A.device_ptr(), lda,
+                           &beta, B.device_ptr(), ldb,
+                           C.device_ptr(), ldc));
+}
+
+template <typename T>
+inline
+void
+setMatrixAsync(int N, int M, T const* A, int lda, cuda::gpu_buffer<T>& B, int ldb)
+{
+   check_error(cublasSetMatrixAsync(N, M, sizeof(T), A, lda, B.device_ptr(), ldb,
+                                    B.get_stream().raw_stream()));
+}
+
 } // namespace cublas
 
 #include "cublas.icc"

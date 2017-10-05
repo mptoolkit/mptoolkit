@@ -8,6 +8,13 @@ Typically implementations will have one more layer of wrappers
 between these functions and the low-level BLAS library.
 
 
+// middle-layer expression templates.  These are rewritten to use the appropriate BLAS-like functions.
+// Concrete class assignment operators should forward directly to these.
+// assign(A&, B)
+// add(A&, B)
+// subtract(A&, B)
+
+
 Middle-level BLAS-like functions:
 
 // get the library name for the low-level blas library
@@ -21,11 +28,44 @@ vector_copy_scaled(alpha, BlasVector x, BlasVector& y)
 
 
 
-// y = x
+// y = x, also does transpose etc operations
 matrix_copy(BlasMatrix x, Matrix& y)
 
 // y = alpha * x
 matrix_copy_scaled(alpha, BlasMatrix x, Matrix& y)
 
+// y += x
+matrix_add(BlasMatrix x, Matrix& y)
+
+// y += alpha * x
+matrix_add_scaled(alpha, BlasMatrix x, Matrix& y)
+
+// C = alpha * A + beta * B
+// If the underlying BLAS library supports in-place operations (ie B == C), eg cuBLAS,
+// the the add/copy operations above can be implemented in terms of geam
+geam(alpha, BlasMatrix A, beta, BlasMatrix B, Matrix& C)
+
 // C = alpha * a * b + beta * C
-gemm(alpha, BlasMatrix a, BlasMatrix b, beta, Matrix& C)
+gemm(alpha, BlasMatrix A, beta, BlasMatrix B, Matrix& C)
+
+
+
+// For conventional CPU storage, the low-level BLAS library implements, for
+// T = float/double/complex<float>/complex<double> :
+
+void vector_copy(int N, T const* x, int incx, T* y, int incy)
+
+void matrix_copy(char Atrans, int M, int N, T const* A, int lda, T* B, int ldb)
+
+void matrix_copy_scaled(char Atrans, int M, int N, T alpha, T const* A, int lda, T* B, int ldb)
+
+void matrix_add(char Atrans, int M, int N, T const* A, int lda, T* B, int ldb)
+
+void matrix_add_scaled(char Atrans, int M, int N, T alpha, T const* A, int lda, T* B, int ldb)
+
+gemm(char Atrans, char Btrans, int M, int N, int K, T alpha, T const* A, int lda,
+     T const* B, int ldb, T beta, T* C, int ldc)
+
+geam(char Atrans, char Btrans, int M, int N, T alpha, T const* A, int lda,
+     T beta, T const* B, int ldb,
+     T* C, int ldc)

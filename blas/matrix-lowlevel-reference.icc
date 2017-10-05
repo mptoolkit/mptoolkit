@@ -20,6 +20,10 @@
 namespace blas
 {
 
+//
+// matrix_copy
+//
+
 inline
 void
 matrix_copy(char Atrans, int M, int N, double const* A, int lda, double* B, int ldb)
@@ -202,5 +206,184 @@ matrix_copy_scaled(char Atrans, int M, int N, std::complex<double> alpha,
       }
    }
 }
+
+//
+// matrix_add
+//
+
+inline
+void
+matrix_add(char Atrans, int M, int N, double const* A, int lda, double* B, int ldb)
+{
+   if (Atrans == 'N')
+   {
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += A[r];
+         }
+         A += lda;
+         B += ldb;
+      }
+   }
+   else
+   {
+      // transpose
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += A[r*lda + c];
+         }
+         B += ldb;
+      }
+   }
+}
+
+inline
+void
+matrix_add(char Atrans, int M, int N,
+           std::complex<double> const* A, int lda,
+           std::complex<double>* B, int ldb)
+{
+   if (Atrans == 'N')
+   {
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += A[r];
+         }
+         A += lda;
+         B += ldb;
+      }
+   }
+   else if (Atrans = 'R')
+   {
+      // conjugate
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += conj(A[r]);
+         }
+         A += lda;
+         B += ldb;
+      }
+   }
+   else if (Atrans = 'T')
+   {
+      // transpose
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += A[r*lda + c];
+         }
+         B += ldb;
+      }
+   }
+   else if (Atrans = 'C')
+   {
+      // hermitian conjugate
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += conj(A[r*lda + c]);
+         }
+         B += ldb;
+      }
+   }
+}
+
+inline
+void
+matrix_add_scaled(char Atrans, int M, int N, double alpha, double const* A, int lda, double* B, int ldb)
+{
+   if (Atrans == 'N')
+   {
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += alpha * A[r];
+         }
+         A += lda;
+         B += ldb;
+      }
+   }
+   else
+   {
+      // transpose
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += A[r*lda + c];
+         }
+         B += ldb;
+      }
+   }
+}
+
+inline
+void
+matrix_add_scaled(char Atrans, int M, int N, std::complex<double> alpha,
+                  std::complex<double> const* A, int lda,
+                  std::complex<double>* B, int ldb)
+{
+   if (Atrans == 'N')
+   {
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += alpha * A[r];
+         }
+         A += lda;
+         B += ldb;
+      }
+   }
+   else if (Atrans = 'R')
+   {
+      // conjugate
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += alpha * conj(A[r]);
+         }
+         A += lda;
+         B += ldb;
+      }
+   }
+   else if (Atrans = 'T')
+   {
+      // transpose
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += alpha * A[r*lda + c];
+         }
+         B += ldb;
+      }
+   }
+   else if (Atrans = 'C')
+   {
+      // hermitian conjugate
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += alpha * conj(A[r*lda + c]);
+         }
+         B += ldb;
+      }
+   }
+}
+
 
 } // namespace blas

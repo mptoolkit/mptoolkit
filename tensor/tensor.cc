@@ -17,8 +17,6 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "linearalgebra/matrix.h"
-
 namespace Tensor
 {
 
