@@ -42,6 +42,8 @@
 #if !defined(MPTOOLKIT_BLAS_NUMBER_TRAITS_H)
 #define MPTOOLKIT_BLAS_NUMBER_TRAITS_H
 
+#include "common/trace.h"
+
 namespace blas
 {
 

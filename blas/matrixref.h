@@ -328,11 +328,11 @@ void subtract(MatrixRef<T, BaseType>& A, MatrixRef<T, BaseType> const& B)
 
 // expression template for alpha * op(A)
 
-template <typename T, typename BaseType>
-class ScaledMatrix : public MatrixRef<T, BaseType, ScaledMatrix<T,BaseType>>
+template <typename T, typename BaseType, typename SubType>
+class ScaledMatrix : public MatrixRef<T, BaseType, ScaledMatrix<T,BaseType, SubType>>
 {
    public:
-      using base_type = BaseType;
+      using base_type = SubType;
 
       ScaledMatrix(T const& Factor_, BaseType const& A_) : Factor(Factor_), A(A_) {}
 
@@ -347,27 +347,27 @@ class ScaledMatrix : public MatrixRef<T, BaseType, ScaledMatrix<T,BaseType>>
       base_type const& A;
 };
 
-template <typename T, typename U, typename Derived, typename X>
-ScaledMatrix<decltype(safe_convert<T>(std::declval<X>())), Derived>
-operator*(X const& alpha, MatrixRef<T, U, Derived> const& M)
+template <typename T, typename BaseType, typename Derived, typename X>
+ScaledMatrix<decltype(safe_convert<T>(std::declval<X>())), BaseType, Derived>
+operator*(X const& alpha, MatrixRef<T, BaseType, Derived> const& M)
 {
-   return ScaledMatrix<T, Derived>(safe_convert<T>(alpha), M.as_derived());
+   return ScaledMatrix<T, BaseType, Derived>(safe_convert<T>(alpha), M.as_derived());
 }
 
-template <typename T, typename BaseType>
-void assign(MatrixRef<T, BaseType>& A, ScaledMatrix<T, BaseType> const& B)
+template <typename T, typename BaseType, typename SubType>
+void assign(MatrixRef<T, BaseType>& A, ScaledMatrix<T, BaseType, SubType> const& B)
 {
    matrix_copy_scaled(B.factor(), B.base(), A.as_derived());
 }
 
-template <typename T, typename BaseType>
-void add(MatrixRef<T, BaseType>& A, ScaledMatrix<T, BaseType> const& B)
+template <typename T, typename BaseType, typename SubType>
+void add(MatrixRef<T, BaseType>& A, ScaledMatrix<T, BaseType, SubType> const& B)
 {
    matrix_add_scaled(B.factor(), B.base(), A.as_derived());
 }
 
-template <typename T, typename BaseType>
-void subtract(MatrixRef<T, BaseType>& A, ScaledMatrix<T, BaseType> const& B)
+template <typename T, typename BaseType, typename SubType>
+void subtract(MatrixRef<T, BaseType>& A, ScaledMatrix<T, BaseType, SubType> const& B)
 {
    matrix_add_scaled(-B.factor(), B.base(), A.as_derived());
 }
@@ -399,11 +399,11 @@ operator*(MatrixRef<T, BaseType, U> const& A, MatrixRef<T, BaseType, V> const& B
    return MatrixProduct<T, BaseType, U, V>(A.as_derived(), B.as_derived());
 }
 
-template <typename T, typename BaseType, typename V>
+template <typename T, typename BaseType, typename SubType, typename V>
 MatrixProduct<T, BaseType, BaseType, V>
-operator*(ScaledMatrix<T, BaseType> const& A, MatrixRef<T, BaseType, V> const& B)
+operator*(ScaledMatrix<T, BaseType, SubType> const& A, MatrixRef<T, BaseType, V> const& B)
 {
-   return MatrixProduct<T, BaseType, BaseType, V>(A.factor(), A.base(), B.as_derived());
+   return MatrixProduct<T, BaseType, SubType, V>(A.factor(), A.base(), B.as_derived());
 }
 
 // matrix product with a scalar, alpha * A * B

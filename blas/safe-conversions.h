@@ -36,6 +36,7 @@
 
 #include "config.h"
 #include <type_traits>
+#include <complex>
 
 namespace blas
 {

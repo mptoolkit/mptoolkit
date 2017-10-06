@@ -139,6 +139,16 @@ setVectorAsync(int N, T const* A, int stridea, cuda::gpu_ptr<T> B, int strideb)
                                     B.get_stream().raw_stream()));
 }
 
+// blocking
+template <typename T>
+inline
+void
+setVector(int N, T const* A, int stridea, cuda::gpu_ptr<T> B, int strideb)
+{
+   check_error(cublasSetVector(N, sizeof(T), A, stridea, B.device_ptr(), strideb));
+}
+
+
 // BLAS level 1
 
 inline

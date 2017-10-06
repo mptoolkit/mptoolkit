@@ -20,10 +20,11 @@
 #if !defined(MPTOOLKIT_CUBLAS_GPU_MATRIX_H)
 #define MPTOOLKIT_CUBLAS_GPU_MATRIX_H
 
-#include "cublas.h"
-#include "gpu_buffer.h"
 #include "blas/matrixref.h"
 #include "blas/matrix.h"
+#include "cublas.h"
+#include "gpu_vector.h"
+#include "gpu_buffer.h"
 
 namespace cublas
 {
@@ -104,6 +105,42 @@ class gpu_matrix : public blas::BlasMatrix<T, gpu_matrix<T>>
 	 return *this;
       }
 
+      gpu_vector_view<T>
+      row(int r)
+      {
+         return gpu_vector_view<T>(Cols, LeadingDimension, Buf.ptr(r));
+      }
+
+      const_gpu_vector_view<T>
+      row(int r) const
+      {
+         return const_gpu_vector_view<T>(Cols, LeadingDimension, Buf.ptr(r));
+      }
+
+      gpu_vector_view<T>
+      column(int c)
+      {
+         return gpu_vector_view<T>(Rows, 1, Buf.ptr(LeadingDimension*c));
+      }
+
+      const_gpu_vector_view<T>
+      column(int c) const
+      {
+         return const_gpu_vector_view<T>(Rows, 1, Buf.ptr(LeadingDimension*c));
+      }
+
+      gpu_vector_view<T>
+      diagonal()
+      {
+         return gpu_vector_view<T>(std::min(Rows,Cols), LeadingDimension+1, Buf.ptr());
+      }
+
+      const_gpu_vector_view<T>
+      diagonal() const
+      {
+         return const_gpu_vector_view<T>(std::min(Rows,Cols), LeadingDimension+1, Buf.ptr());
+      }
+
       constexpr char trans() const { return 'N'; }
 
       int rows() const { return Rows; }
@@ -128,19 +165,6 @@ class gpu_matrix : public blas::BlasMatrix<T, gpu_matrix<T>>
       int LeadingDimension;
       cuda::gpu_buffer<T> Buf;
 };
-
-namespace detail
-{
-struct gpu_default_arena
-{
-   static blas::arena Arena;
-};
-} // namespace detail
-
-namespace detail
-{
-blas::arena gpu_default_arena::Arena = blas::arena(new cuda::BlockAllocator(cuda::DefaultBlockMultiple, false));
-} // namespace detail
 
 } // namespace cublas
 
@@ -255,6 +279,20 @@ trace(gpu_matrix<T> const& x)
 #endif
 
 // BLAS functions
+
+template <typename T, typename U, typename V>
+inline
+void
+gemv(T alpha, blas::BlasMatrix<T, gpu_matrix<T>, U> const& A,
+     blas::BlasVector<T, gpu_vector<T>, V> const& x, T beta,
+     gpu_vector<T>& y)
+{
+   DEBUG_CHECK_EQUAL(A.cols(), x.size());
+   DEBUG_CHECK_EQUAL(y.size(), A.rows());
+   cublas::gemv(get_handle(), A.trans(), A.rows(), A.cols(), alpha, A.storage(),
+                A.leading_dimension(), x.storage(), x.stride(), beta,
+                y.storage(), y.stride());
+}
 
 template <typename T, typename U, typename V>
 inline

@@ -338,7 +338,7 @@ class gpu_ptr
 
       ~gpu_ptr() = default;
 
-      operator const_gpu_ptr<T>() { return const_gpu_ptr<T>(Buf, Offset); }
+      operator const_gpu_ptr<T>() const { return const_gpu_ptr<T>(Buf, Offset); }
 
       void wait(event const& e)
       {

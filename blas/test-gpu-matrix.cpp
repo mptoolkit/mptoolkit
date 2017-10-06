@@ -22,6 +22,8 @@ int main()
    set(gA, A);
    set(gB, B);
 
+   gA.row(0) = 2 * gA.row(0);
+
    gC = 2 * gA * gB;
    gC += 3 * gA * herm(gB);
 
@@ -40,6 +42,8 @@ int main()
    gy = 2*gC*gx;
 
    y = get_wait(gy);
+   std::cout << y << '\n';
 
+   y = get_wait(gA.diagonal());
    std::cout << y << '\n';
 }
