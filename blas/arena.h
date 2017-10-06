@@ -28,6 +28,9 @@
 
 #include <memory>
 
+namespace blas
+{
+
 // base class for allocators
 
 class AllocatorBase
@@ -61,18 +64,18 @@ class arena
       explicit arena(AllocatorBase* Alloc_) : Alloc(Alloc_) {}
 
       template <typename T>
-      T* allocate_type(std::size_t Size)
+      T* allocate_type(std::size_t Size) const
       {
          return static_cast<T*>(this->allocate(Size*sizeof(T), sizeof(T)));
       }
 
-      void* allocate(std::size_t Size, std::size_t Align)
+      void* allocate(std::size_t Size, std::size_t Align) const
       { return Alloc->allocate(Size, Align); }
 
-      void* allocate(std::size_t Size)
+      void* allocate(std::size_t Size) const
       { return Alloc->allocate(Size); }
 
-      void free(void* Ptr, std::size_t Size)
+      void free(void* Ptr, std::size_t Size) const
       {
 	 Alloc->free(Ptr, Size);
       }
@@ -105,10 +108,19 @@ class MallocAllocator : public AllocatorBase
 };
 
 inline
-arena& get_malloc_arena()
+arena const& get_malloc_arena()
 {
    static arena A(new MallocAllocator());
    return A;
 }
+
+// A 'default' arena for use in allocations involving objects of type T.
+// To use, specialize for some type and add an Arena static member.
+template <typename T>
+struct default_arena
+{
+};
+
+} // namespace
 
 #endif

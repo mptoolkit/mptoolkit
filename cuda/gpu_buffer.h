@@ -49,13 +49,14 @@ class AllocationBlock
    public:
       AllocationBlock() = delete;
 
-      explicit AllocationBlock(std::size_t Size_, std::size_t Align_);
+      explicit AllocationBlock(std::size_t Size_, std::size_t Align_, bool FreeOnDest = true);
 
       AllocationBlock(AllocationBlock&& Other) : Align(Other.Align),
 						 Size(Other.Size),
 						 BasePtr(Other.BasePtr),
 						 CurrentOffset(Other.CurrentOffset),
-						 NumAllocations(Other.NumAllocations)
+						 NumAllocations(Other.NumAllocations),
+                                                 FreeOnDestructor(Other.FreeOnDestructor)
       {
 	 Other.BasePtr = nullptr;
       }
@@ -80,13 +81,14 @@ class AllocationBlock
 	 if (NextOffset > Size - RequestSize)
 	    return nullptr;
 
+         ++NumAllocations;
 	 CurrentOffset = NextOffset + RequestSize;
 	 return static_cast<void*>(BasePtr + NextOffset);
       }
 
       // free memory that was previously allocated.
       // Returns true if this caused the allocation block to become empty
-      bool free(void* Ptr, size_t Size)
+      bool free(void* Ptr, size_t AllocSize)
       {
 	 // TOOD: add some debugging stuff
 	 if (--NumAllocations == 0)
@@ -96,12 +98,12 @@ class AllocationBlock
 	 }
       }
 
-      bool try_free(void* Ptr, size_t Size)
+      bool try_free(void* Ptr, size_t AllocSize)
       {
 	 if (static_cast<unsigned char*>(Ptr) < BasePtr)
 	    return false;
 
-	 if (BasePtr+Size < static_cast<unsigned char*>(Ptr))
+	 if (BasePtr+Size <= static_cast<unsigned char*>(Ptr))
 	    return false;
 
 	 this->free(Ptr, Size);
@@ -114,11 +116,12 @@ class AllocationBlock
       unsigned char* BasePtr;  // base pointer of the allocation
       size_t CurrentOffset;    // current one-past-the-end of allocated blocks
       int NumAllocations;
+      bool FreeOnDestructor;
 };
 
 inline
-AllocationBlock::AllocationBlock(std::size_t Size_, std::size_t Align_)
-   : Align(Align_), Size(Size_), CurrentOffset(0), NumAllocations(0)
+AllocationBlock::AllocationBlock(std::size_t Size_, std::size_t Align_, bool Free)
+   : Align(Align_), Size(Size_), CurrentOffset(0), NumAllocations(0), FreeOnDestructor(Free)
 {
    void* Ptr;
    check_error(cudaMalloc(&Ptr, Size_));
@@ -128,16 +131,21 @@ AllocationBlock::AllocationBlock(std::size_t Size_, std::size_t Align_)
 inline
 AllocationBlock::~AllocationBlock()
 {
-   if (BasePtr)
-      check_error(cudaFree(static_cast<void*>(BasePtr)));
+   if (FreeOnDestructor && BasePtr)
+   {
+      TRACE("Freeing");
+      DEBUG_TRACE_IF(NumAllocations != 0)(NumAllocations);
+      if (NumAllocations == 0)
+         check_error(cudaFree(static_cast<void*>(BasePtr)));
+   }
 }
 
 std::size_t const DefaultBlockMultiple = 16777216;  // 2^24 = 16MB
 
-class BlockAllocator : public AllocatorBase
+class BlockAllocator : public blas::AllocatorBase
 {
    public:
-      BlockAllocator(std::size_t Mult = DefaultBlockMultiple) : BlockMultiple(Mult) {}
+      BlockAllocator(std::size_t Mult = DefaultBlockMultiple, bool Free = true) : BlockMultiple(Mult), FreeOnDestructor(Free) {}
 
       void* allocate(std::size_t Size, std::size_t Align);
 
@@ -149,7 +157,7 @@ class BlockAllocator : public AllocatorBase
       std::list<AllocationBlock> Allocations;
 
       std::size_t BlockMultiple;
-      std::size_t MinAlign;
+      bool FreeOnDestructor;
 };
 
 inline
@@ -164,7 +172,7 @@ void* BlockAllocator::allocate(std::size_t Size, std::size_t Align)
    }
    // failed to allocate, need another block
    size_t BlockSize = round_up(Size, BlockMultiple);
-   Allocations.push_back(AllocationBlock(BlockSize, Align));
+   Allocations.push_back(AllocationBlock(BlockSize, Align, FreeOnDestructor));
    void* p = Allocations.back().try_allocate(Size, Align);
 }
 
@@ -182,12 +190,13 @@ void BlockAllocator::free(void* Ptr, std::size_t Size)
       if (a.try_free(Ptr, Size))
 	 return;
    }
+   PANIC("Attempt to free memory that wasn't allocated by this allocator!")(Ptr);
 }
 
 inline
-arena make_gpu_block_allocator()
+blas::arena make_gpu_block_allocator()
 {
-   return arena(new BlockAllocator());
+   return blas::arena(new BlockAllocator());
 }
 
 template <typename T>
@@ -248,13 +257,13 @@ class gpu_buffer
 
       cuda::stream const& get_stream() const { return Stream; }
 
-      static gpu_buffer allocate(std::size_t Size, arena A)
+      static gpu_buffer allocate(std::size_t Size, blas::arena A)
       {
 	 return gpu_buffer(Size, A);
       }
 
    private:
-      gpu_buffer(int Count, arena a)
+      gpu_buffer(int Count, blas::arena a)
 	 : ByteSize(Count*sizeof(T)), Arena(a)
       {
 	 Ptr = static_cast<T*>(Arena.allocate(ByteSize, sizeof(T)));
@@ -268,7 +277,7 @@ class gpu_buffer
       std::size_t ByteSize;
       mutable cuda::stream Stream;
       mutable cuda::event Sync;
-      arena Arena;
+      blas::arena Arena;
 };
 
 // a reference to a location within a gpu_buffer

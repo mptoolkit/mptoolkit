@@ -33,8 +33,7 @@
 #include <boost/mpl/assert.hpp>
 #include <cmath>
 
-// first, we declare some new operations that extend the LinearAlgebra operations
-namespace LinearAlgebra
+namespace Tensor
 {
 
 // A proxy class to represent the Hermitian conjugate of a tensor.
@@ -89,16 +88,6 @@ scalar_prod(S const& x, T const& y, Func const& f)
    return ScalarProd<S,T, Func>()(x,y,f);
 }
 
-// Adjoint
-// By default, this is the same as Herm
-// For IrredTensor, it is the 'Adjoint' operation
-template <typename T>
-struct Adjoint : public LinearAlgebra::Herm<T> { };
-
-// Adjoint applied to a tensor adds a function to apply to the value_type
-template <typename T, typename F = Adjoint<typename T::value_type> >
-struct TensorAdjoint;
-
 template <typename T>
 inline
 typename Adjoint<T>::result_type
@@ -114,12 +103,6 @@ adjoint(T const& x, Func const& f)
 {
    return TensorAdjoint<T, Func>(f)(x);
 }
-
-// InvAdjoint
-// By default, the 'inverse adjoint' is also the same as Herm
-// For IrredTensor, it is the inverse of the 'Adjoint' operation
-template <typename T>
-struct InvAdjoint : public LinearAlgebra::Herm<T> { };
 
 template <typename T>
 inline
@@ -166,13 +149,6 @@ flip_conj(T const& x, Func const& f)
 {
    return TensorFlipConjugate<T, Func>()(x);
 }
-
-// IrredProd
-// Extends Multiplication to irreducible tensors.
-template <typename Op1Type, typename Op2Type,
-          typename Nest = Multiplication<typename Op1Type::value_type,
-                                         typename Op2Type::value_type> >
-struct IrredProd {};
 
 template <typename S, typename T>
 inline
@@ -273,56 +249,21 @@ pow(S const& x, int n)
 
 }
 
-} // namespace LinearAlgebra
-
-namespace Tensor
-{
-
 using QuantumNumbers::QuantumNumber;
 using QuantumNumbers::Projection;
 using QuantumNumbers::SymmetryList;
-
-using LinearAlgebra::size_type;
-using LinearAlgebra::iterate;
-using LinearAlgebra::iterator;
-using LinearAlgebra::const_iterator;
-using LinearAlgebra::inner_iterator;
-using LinearAlgebra::const_inner_iterator;
-using LinearAlgebra::set_element;
-
-using LinearAlgebra::norm_frob;
-using LinearAlgebra::norm_frob_sq;
-using LinearAlgebra::inner_prod;
-
-using LinearAlgebra::equal;
-using LinearAlgebra::operator+;
-using LinearAlgebra::operator-;
-using LinearAlgebra::operator*;
-using LinearAlgebra::transform;
-using LinearAlgebra::trace;
-using LinearAlgebra::prod;
-using LinearAlgebra::inner_prod;
-using LinearAlgebra::parallel_prod;
-using LinearAlgebra::conj;
-using LinearAlgebra::herm;
-using LinearAlgebra::flip_conj;
-using LinearAlgebra::scalar_prod;
-using LinearAlgebra::adjoint;
-using LinearAlgebra::inv_adjoint;
-using LinearAlgebra::nnz;
-using LinearAlgebra::exp;
 
 // Structure traits types
 struct DefaultStructure
 {
    template <typename T>
-   using value = LinearAlgebra::SparseMatrix<T>;
+   using value = blas::SparseMatrix<T>;
 };
 
 struct DiagonalStructure
 {
    template <typename T>
-   using value = LinearAlgebra::DiagonalMatrix<T>;
+   using value = blas::DiagonalMatrix<T>;
 };
 
 // For operations that act on the structure and potentially modify it,
@@ -334,13 +275,13 @@ template <typename T>
 struct StructureOf {};
 
 template <typename T>
-struct StructureOf<LinearAlgebra::SparseMatrix<T>>
+struct StructureOf<blas::SparseMatrix<T>>
 {
    using type = DefaultStructure;
 };
 
 template <typename T>
-struct StructureOf<LinearAlgebra::DiagonalMatrix<T>>
+struct StructureOf<blas::DiagonalMatrix<T>>
 {
    using type = DiagonalStructure;
 };
@@ -349,7 +290,6 @@ template <typename T,
           typename Basis1T = BasisList,
           typename Basis2T = Basis1T,
           typename Structure = DefaultStructure >
-          //          typename Structure = LinearAlgebra::SparseMatrix<T> >
 class IrredTensor;
 
 template <typename T, typename B1, typename B2, typename S>
@@ -376,20 +316,14 @@ class IrredTensor
 
       using MatrixType = typename Structure::template value<T>;
 
-      BOOST_MPL_ASSERT((boost::is_same<value_type,
-                        typename LinearAlgebra::interface<MatrixType>::value_type>));
+      using numeric_type   = typename MatrixType::value_type;
 
-      typedef typename iterator<MatrixType>::type iterator;
-      typedef typename inner_iterator<MatrixType>::type inner_iterator;
-      typedef typename const_iterator<MatrixType>::type const_iterator;
-      typedef typename const_inner_iterator<MatrixType>::type const_inner_iterator;
+      using iterator       = typename MatrixType::iterator;
+      using const_iterator = typename MatrixType::iterator;
 
       typedef Basis1T basis1_type;
       typedef Basis2T basis2_type;
 
-      IrredTensor() = default;
-
-      IrredTensor(IrredTensor const& Other) = default;
       IrredTensor(IrredTensor&& Other) = default;
 
       IrredTensor(basis1_type const& Basis, QuantumNumber const& Trans);
@@ -397,21 +331,28 @@ class IrredTensor
       IrredTensor(basis1_type const& Basis1, basis2_type const& Basis2,
                   QuantumNumber const& Trans);
 
-      IrredTensor(basis1_type const& Basis1, basis2_type const& Basis2,
-                  QuantumNumber const& Trans, MatrixType const& Data);
-
       // In this variant, the quantum number defaults to the identity
       IrredTensor(basis1_type const& Basis1, basis2_type const& Basis2);
 
+
+      IrredTensor(basis1_type const& Basis1, basis2_type const& Basis2,
+                  QuantumNumber const& Trans, MatrixType&& Data);
+
       explicit IrredTensor(basis1_type const& Basis);
 
+#if 0
       template <typename U, typename US>
       IrredTensor(IrredTensor<U, Basis1T, Basis2T, US> const& r)
          : Basis1_(r.Basis1()), Basis2_(r.Basis2()), Trans_(r.TransformsAs()),
            Data_(r.data()) {}
+#endif
 
       IrredTensor& operator=(IrredTensor const& Other) = default;
       IrredTensor& operator=(IrredTensor&& Other) = default;
+
+      IrredTensor() = delete;
+      IrredTensor(IrredTensor const& Other) = delete;
+
 
       template <typename U, typename US>
       IrredTensor& operator=(IrredTensor<U, Basis1T, Basis2T, US> const& r)
@@ -515,279 +456,75 @@ MakeIdentityFrom(IrredTensor<T, Basis1T, Basis2T, Structure> const& s)
    return IrredTensor<T, Basis1T, Basis2T, Structure>::make_identity(s.Basis1());
 }
 
-} // namespace Tensor
-
-namespace LinearAlgebra
+template <typename T, typename B1, typename B2, typename S>
+IrredTensor<T, B1, B2, S>
+copy(IrredTensor<T, B1, B2, S> const& x, blas::arena const& A)
 {
+   return IrredTensor<T, B1, B2, S>(x.Basis1(), x.Basis2(), x.TransformsAs(), copy(x.data(), A));
+}
 
 template <typename T, typename B1, typename B2, typename S>
-struct interface<Tensor::IrredTensor<T, B1, B2, S> >
+IrredTensor<T, B1, B2, S>
+copy(IrredTensor<T, B1, B2, S> const& x)
 {
-   typedef void type;
-};
-
-// iterators
+   return IrredTensor<T, B1, B2, S>(x.Basis1(), x.Basis2(), x.TransformsAs(), copy(x.data()));
+}
 
 template <typename T, typename B1, typename B2, typename S>
-struct Iterate<Tensor::IrredTensor<T, B1, B2, S>&>
+IrredTensor<T, B1, B2, S>
+copy(IrredTensor<T, B1, B2, S>&& x)
 {
-   typedef Tensor::IrredTensor<T, B1, B2, S>& argument_type;
-   typedef typename Tensor::IrredTensor<T, B1, B2, S>::iterator result_type;
-
-   result_type operator()(argument_type x) const
-   {
-      return iterate(x.data());
-   }
-};
-
-template <typename T, typename B1, typename B2, typename S>
-struct Iterate<Tensor::IrredTensor<T, B1, B2, S> >
-{
-   typedef Tensor::IrredTensor<T, B1, B2, S> const& argument_type;
-   typedef typename Tensor::IrredTensor<T, B1, B2, S>::const_iterator result_type;
-
-   result_type operator()(argument_type x) const
-   {
-      return iterate(x.data());
-   }
-};
-
-// Assign
-
-template <typename T1, typename B1, typename B2, typename S1, typename T2, typename S2>
-struct Assign<Tensor::IrredTensor<T1, B1, B2, S1>&, Tensor::IrredTensor<T2, B1, B2, S2>>
-{
-   using result_type = void;
-   using first_argument_type = Tensor::IrredTensor<T1, B1, B2, S1>&;
-   using second_argument_type = Tensor::IrredTensor<T2, B1, B2, S2>;
-   void operator()(Tensor::IrredTensor<T1, B1, B2, S1>& x,
-                   Tensor::IrredTensor<T2, B1, B2, S2> const& y)
-   {
-      x = y;
-   }
-};
-
-// zero
-
-template <typename T, typename B1, typename B2, typename S>
-struct Zero<Tensor::IrredTensor<T, B1, B2, S> >
-{
-   typedef Tensor::IrredTensor<T, B1, B2, S> result_type;
-   result_type operator()() const { return result_type(); }
-};
-
-template <typename T, typename B1, typename B2, typename S>
-struct IsZero<Tensor::IrredTensor<T, B1, B2, S> >
-{
-   typedef bool result_type;
-   typedef Tensor::IrredTensor<T, B1, B2, S> const& argument_type;
-   result_type operator()(argument_type x) const
-   {
-      return x.is_null();
-   }
-};
-
-template <typename T, typename B1, typename B2, typename S>
-struct ZeroAll<Tensor::IrredTensor<T, B1, B2, S>&>
-{
-   typedef void result_type;
-   typedef Tensor::IrredTensor<T, B1, B2, S>& argument_type;
-   void operator()(argument_type x) const
-   {
-      zero_all(x.data());
-   }
-};
-
-// nnz
-
-template <typename T, typename B1, typename B2, typename S>
-struct NNZ<Tensor::IrredTensor<T, B1, B2, S> >
-{
-   typedef Tensor::IrredTensor<T, B1, B2, S> const& argument_type;
-   typedef std::size_t result_type;
-   result_type operator()(argument_type x) const { return nnz(x.data()); }
-};
-
-// comparison
-
-template <typename T, typename B1, typename B2, typename S1, typename S2>
-struct Equal<Tensor::IrredTensor<T, B1, B2, S1>,  Tensor::IrredTensor<T, B1, B2, S2> >
-{
-   typedef Tensor::IrredTensor<T, B1, B2, S1> const& first_argument_type;
-   typedef Tensor::IrredTensor<T, B1, B2, S2> const& second_argument_type;
-   typedef bool result_type;
-
-   Equal(double tol = LinearAlgebra::default_tolerance()) : tol_(tol) {}
-
-   bool operator()(first_argument_type x, second_argument_type y) const
-   {
-      if (x.is_null() && y.is_null()) return true;
-
-      DEBUG_PRECONDITION_EQUAL(x.Basis1(), y.Basis1());
-      DEBUG_PRECONDITION_EQUAL(x.Basis2(), y.Basis2());
-      return x.TransformsAs() == y.TransformsAs()
-         && LinearAlgebra::equal(x.data(), y.data(), tol_);
-   }
-
-   double tol_;
-};
-
-// element access
-
-template <typename T, typename B1, typename B2, typename S, typename V>
-struct SetMatrixElement<Tensor::IrredTensor<T, B1, B2, S>&, V>
-{
-   typedef void result_type;
-   typedef Tensor::IrredTensor<T, B1, B2, S>& first_argument_type;
-   typedef size_type second_argument_type;
-   typedef size_type third_argument_type;
-   typedef V const& fourth_argument_type;
-   void operator()(first_argument_type m, size_type i, size_type j, V const& x) const
-   {
-      DEBUG_PRECONDITION(is_transform_target(m.qn2(j), m.TransformsAs(), m.qn1(i)));
-      set_element(m.data(), i, j, x);
-   }
-};
+   return x;
+}
 
 // arithmetic
 
 template <typename T, typename B1, typename B2, typename S>
-struct Negate<Tensor::IrredTensor<T, B1, B2, S> >
+IrredTensor<T, B1, B2, S>
+operator-(IrredTensor<T, B1, B2, S>&& x)
 {
-   typedef Tensor::IrredTensor<T, B1, B2, S> const& argument_type;
-   typedef Tensor::IrredTensor<T, B1, B2, S> result_type;
+   return IrredTensor<T, B1, B2, S>(x.Basis1(), x.Basis2(), x.TransformsAs(), -std::move(x.data()));
+}
 
-   result_type operator()(Tensor::IrredTensor<T, B1, B2, S> const& x) const
-   {
-      return Tensor::IrredTensor<T, B1, B2, S>(x.Basis1(), x.Basis2(), x.TransformsAs(), -x.data());
-   }
-};
-
-template <typename T1, typename T2, typename B1, typename B2, typename S>
-struct Addition<Tensor::IrredTensor<T1, B1, B2, S>, Tensor::IrredTensor<T2, B1, B2, S> >
+template <typename T, typename B1, typename B2, typename S>
+IrredTensor<T, B1, B2, S>
+operator+(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& y)
 {
-   typedef Tensor::IrredTensor<T1, B1, B2, S> const& first_argument_type;
-   typedef Tensor::IrredTensor<T2, B1, B2, S> const& second_argument_type;
-   typedef typename result_value<Addition<T1, T2> >::type ResultValue;
-   typedef Tensor::IrredTensor<ResultValue, B1, B2, S> result_type;
+   if (x.is_null()) return copy(y);
+   if (y.is_null()) return copy(x);
+   PRECONDITION_EQUAL(x.Basis1(), y.Basis1());
+   PRECONDITION_EQUAL(x.Basis2(), y.Basis2());
+   PRECONDITION_EQUAL(x.TransformsAs(), y.TransformsAs());
+   return IrredTensor<T, B1, B2, S>(x.Basis1(), x.Basis2(), x.TransformsAs(), x.data() + y.data());
+}
 
-   result_type operator()(first_argument_type x, second_argument_type y) const
-   {
-      if (x.is_null()) return y;
-      if (y.is_null()) return x;
-      PRECONDITION_EQUAL(x.Basis1(), y.Basis1());
-      PRECONDITION_EQUAL(x.Basis2(), y.Basis2());
-      return result_type(x.Basis1(), x.Basis2(), x.TransformsAs(), x.data() + y.data());
-   }
-};
-
-template <typename T1, typename T2, typename B1, typename B2, typename S>
-struct Subtraction<Tensor::IrredTensor<T1, B1, B2, S>, Tensor::IrredTensor<T2, B1, B2, S> >
+template <typename T, typename B1, typename B2, typename S>
+IrredTensor<T, B1, B2, S>
+operator-(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& y)
 {
-   typedef Tensor::IrredTensor<T1, B1, B2, S> const& first_argument_type;
-   typedef Tensor::IrredTensor<T2, B1, B2, S> const& second_argument_type;
-   typedef typename result_value<Subtraction<T1, T2> >::type ResultValue;
-   typedef Tensor::IrredTensor<ResultValue, B1, B2, S> result_type;
-
-   result_type operator()(first_argument_type x, second_argument_type y) const
-   {
-      if (x.is_null()) return -y;
-      if (y.is_null()) return x;
-      PRECONDITION_EQUAL(x.Basis1(), y.Basis1());
-      PRECONDITION_EQUAL(x.Basis2(), y.Basis2());
-      return result_type(x.Basis1(), x.Basis2(), x.TransformsAs(), x.data() - y.data());
-   }
-};
+   if (x.is_null()) return copy(y);
+   if (y.is_null()) return copy(x);
+   PRECONDITION_EQUAL(x.Basis1(), y.Basis1());
+   PRECONDITION_EQUAL(x.Basis2(), y.Basis2());
+   PRECONDITION_EQUAL(x.TransformsAs(), y.TransformsAs());
+   return IrredTensor<T, B1, B2, S>(x.Basis1(), x.Basis2(), x.TransformsAs(), x.data() + y.data());
+}
 
 // multiply by scalar
 
-template <typename T, typename B1, typename B2, typename S, typename U>
-struct Multiplication<U, Tensor::IrredTensor<T, B1, B2, S> >
+template <typename T, typename B1, typename B2, typename S>
+IrredTensor<T, B1, B2, S>&
+operator*=(IrredTensor<T, B1, B2, S>& x, U cosnt& a)
 {
-   typedef U first_argument_type;
-   typedef Tensor::IrredTensor<T, B1, B2, S> const& second_argument_type;
-   typedef typename result_value<Multiplication<U, T> >::type ResultValue;
-   typedef Tensor::IrredTensor<ResultValue, B1, B2, S> result_type;
-
-   result_type operator()(first_argument_type y, second_argument_type x) const
-   {
-      return result_type(x.Basis1(), x.Basis2(), x.TransformsAs(), y * x.data());
-   }
-};
-
-template <typename T, typename B1, typename B2, typename S, typename U>
-struct Multiplication<Tensor::IrredTensor<T, B1, B2, S>, U>
-{
-   typedef Tensor::IrredTensor<T, B1, B2, S> const& first_argument_type;
-   typedef U second_argument_type;
-   typedef typename result_value<Multiplication<T, U> >::type ResultValue;
-   typedef Tensor::IrredTensor<ResultValue, B1, B2, S> result_type;
-
-   result_type operator()(first_argument_type x, second_argument_type y) const
-   {
-      return result_type(x.Basis1(), x.Basis2(), x.TransformsAs(), x.data() * y);
-   }
-};
-
-
-
-template <typename T, typename B1, typename B2, typename S, typename Func>
-struct Transform<Tensor::IrredTensor<T, B1, B2, S>, Func>
-{
-   typedef Tensor::IrredTensor<T, B1, B2, S> const& first_argument_type;
-   typedef Func second_argument_type;
-   typedef typename result_value<Transform<T, Func> >::type ResultValue;
-   typedef Tensor::IrredTensor<ResultValue, B1, B2, S> result_type;
-
-   result_type operator()(first_argument_type x, second_argument_type f) const
-   {
-      return result_type(x.Basis1(), x.Basis2(), x.TransformsAs(), transform(x.data(), f));
-   }
-};
-
-// complex conjugation
+   x.data() *= a;
+}
 
 template <typename T, typename B1, typename B2, typename S>
-struct Conj<Tensor::IrredTensor<T, B1, B2, S> >
+void
+inplace_conj(IrredTensor<T, B1, B2, S>& x)
 {
-   typedef Tensor::IrredTensor<T, B1, B2, S> const& argument_type;
-   typedef Tensor::IrredTensor<T, B1, B2, S> result_type;
-
-   result_type operator()(argument_type x) const
-   {
-      return result_type(x.Basis1(), x.Basis2(), x.TransformsAs(), conj(x.data()));
-   }
-};
-
-// hermitian conjugation
-
-template <typename T, typename B1, typename B2, typename S>
-struct Herm<Tensor::IrredTensor<T, B1, B2, S> >
-{
-   typedef Tensor::IrredTensor<T, B1, B2, S> const& argument_type;
-   typedef HermitianProxy<Tensor::IrredTensor<T, B1, B2, S> > result_type;
-
-   result_type operator()(argument_type x) const
-   {
-      return result_type(x);
-   }
-};
-
-// tensor conjugation.  This is a new function
-template <typename T>
-struct TensorConj {};
-
-template <typename T, typename B1, typename B2, typename S>
-struct TensorConj<Tensor::IrredTensor<T, B1, B2, S> >
-{
-   typedef Tensor::IrredTensor<T, B1, B2, S> const& argument_type;
-   typedef TensorConjugateProxy<Tensor::IrredTensor<T, B1, B2, S> > result_type;
-
-   result_type operator()(argument_type x) const
-   {
-      return result_type(x);
-   }
-};
+   inplace_conj(x.data());
+}
 
 template <typename T>
 typename TensorConj<T>::result_type
@@ -797,275 +534,119 @@ tensor_conj(T const& x)
 }
 
 // trace
-
-struct traceCoefficient
+#if 0
+template <typename T, typename B, typename S>
+typename IrredTensor<T, B, B, S>::numeric_type
+trace(IrredTensor<T, B, B, S> const& x)
 {
-   typedef double result_type;
-   typedef double value_type;
-
-   traceCoefficient(Tensor::BasisList const& B) : B_(B) {}
-
-   double operator()(int x) const { return degree(B_[x]); }
-
-   private:
-      Tensor::BasisList const& B_;
-};
-
-template <typename T, typename B1, typename B2, typename S>
-struct Trace<Tensor::IrredTensor<T, B1, B2, S> >
-{
-   typedef Tensor::IrredTensor<T, B1, B2, S> const& argument_type;
-   typedef typename result_value<Trace<T> >::type result_type;
-
-   result_type operator()(argument_type M) const
+   CHECK_EQUAL(x.Basis1(), x.Basis2());
+   using numeric_type = typename IrredTensor<T, B1, B2, S>::numeric_type;
+   std::vector<async_<numeric_type>> Results;
+   for (auto const& r : x)
    {
-      if (M.is_null())
-         return result_type();
-      PRECONDITION_EQUAL(M.Basis1(), M.Basis2());
-      PRECONDITION(QuantumNumbers::is_scalar(M.TransformsAs()))(M.TransformsAs());
-
-      return LinearAlgebra::coefficient_trace(M.data(), traceCoefficient(M.Basis1()));
+      auto c = r.iterate_at(r.row());
+      if (c != r.end())
+      {
+         Results.emplace_back(qdim(x.qn1(r.row())) * trace(c));
+      }
    }
-};
+   return sum(Results);
+}
+#endif
 
 // norm_frob
 
 template <typename T, typename B1, typename B2, typename S>
-struct NormFrobSq<Tensor::IrredTensor<T, B1, B2, S> >
+typename blas::real_type<typename IrredTensor<T, B1, B2, S>::numeric_type>::type
+norm_frob_sq(IrredTensor<T, B1, B2, S> const& x)
 {
-   typedef Tensor::IrredTensor<T, B1, B2, S> const& argument_type;
-   typedef typename result_value<NormFrobSq<T> >::type result_type;
-
-   result_type operator()(argument_type M) const
+   using type = blas::real_type<typename IrredTensor<T, B1, B2, S>::numeric_type>::type;
+   type Result = 0.0;
+   for (auto const& r : x)
    {
-      result_type Result = 0;
-      typename Tensor::IrredTensor<T, B1, B2, S>::const_iterator I = iterate(M);
-      while (I)
+      for (auto const& c : r)
       {
-         // this version is faster, but assumes S is a row-major matrix
-         //         Result += QuantumNumbers::degree(M.qn1(I.index())) * norm_frob_sq(*I);
-
-         // this version is more general
-         typename Tensor::IrredTensor<T, B1, B2, S>::const_inner_iterator J = iterate(I);
-         while (J)
-         {
-            Result += QuantumNumbers::degree(M.qn1(J.index1())) * norm_frob_sq(*J);
-            ++J;
-         }
-
-         ++I;
+         Result += qdim(x.qn1(r.row())) * norm_frob_sq(c.value);
       }
-      return Result;
    }
-};
+}
 
 // inner_prod
 
-template <typename T1, typename B1, typename B2, typename S1, typename T2, typename S2>
-struct InnerProd<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2, B1, B2, S2> >
+template <typename T, typename B1, typename B2, typename S>
+typename IrredTensor<T, B1, B2, S>::numeric_type
+inner_prod(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& y)
 {
-   typedef Tensor::IrredTensor<T1, B1, B2, S1> first_argument_type;
-   typedef Tensor::IrredTensor<T2, B1, B2, S2> second_argument_type;
-   typedef typename result_value<InnerProd<T1, T2> >::type result_type;
-
-   result_type operator()(first_argument_type const& M1, second_argument_type const& M2) const
+   PRECONDITION_EQUAL(x.TransformsAs(), y.TransformsAs());
+   PRECONDITION_EQUAL(x.Basis1(), y.Basis1());
+   PRECONDITION_EQUAL(x.Basis2(), y.Basis2());
+   typename IrredTensor<T, B1, B2, S>::numeric_type Result = 0.0;
+   for (int r = 0; r < x.data().rows(); ++r)
    {
-      result_type Result = 0;
-      if (M1.is_null() || M2.is_null())
-         return Result;
-
-      PRECONDITION_EQUAL(M1.TransformsAs(), M2.TransformsAs());
-      PRECONDITION_EQUAL(M1.Basis1(), M2.Basis1());
-      PRECONDITION_EQUAL(M1.Basis2(), M2.Basis2());
-
-      // TODO: this assumes the Tensor::IrredTensor is implemented as a row-major matrix!
-      // TODO: This fails for inner_prod for RealDiagonalOperator.
-      typename Tensor::IrredTensor<T1, B1, B2, S1>::const_iterator I1 = iterate(M1);
-      typename Tensor::IrredTensor<T2, B1, B2, S2>::const_iterator I2 = iterate(M2);
-      while (I1)
-      {
-         DEBUG_CHECK(I2);
-         Result += double(QuantumNumbers::degree(M1.qn1(I1.index()))) * inner_prod(*I1, *I2);
-         ++I1;
-         ++I2;
-      }
-      DEBUG_CHECK(!I2);
-      return Result;
+      Result += qdim(x.qn1(r)) * inner_prod(x.data()[r], y.data()[r]);
    }
-};
-
-// parallel_prod
-
-template <typename T1, typename B1, typename B2, typename S1, typename T2, typename S2,
-          typename Func>
-struct ParallelProd<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2, B1, B2, S2>, Func>
-{
-   typedef Tensor::IrredTensor<T1, B1, B2, S1> const& first_argument_type;
-   typedef Tensor::IrredTensor<T2, B1, B2, S2> const& second_argument_type;
-   typedef typename result_value<Func>::type result_type;
-
-   ParallelProd(Func f) : f_(f) {}
-
-   result_type operator()(first_argument_type M1, second_argument_type M2) const
-   {
-      if (M1.is_null() || M2.is_null()) return result_type();
-
-      PRECONDITION_EQUAL(M1.TransformsAs(), M2.TransformsAs());
-      PRECONDITION_EQUAL(M1.Basis1(), M2.Basis1());
-      PRECONDITION_EQUAL(M1.Basis2(), M2.Basis2());
-
-      // TODO: this assumes the Tensor::IrredTensor is implemented as a row-major matrix!
-      typename Tensor::IrredTensor<T1, B1, B2, S1>::const_iterator I1 = iterate(M1);
-      typename Tensor::IrredTensor<T2, B1, B2, S2>::const_iterator I2 = iterate(M2);
-
-      if (!I1) return result_type();
-      DEBUG_CHECK(I2);
-      result_type Result = double(QuantumNumbers::degree(M1.qn1(I1.index()))) *
-         (parallel_prod(*I1, *I2, f_));
-      ++I1;
-      ++I2;
-
-      while (I1)
-      {
-         DEBUG_CHECK(I2);
-         Result += double(QuantumNumbers::degree(M1.qn1(I1.index()))) *
-            (parallel_prod(*I1, *I2, f_));
-         ++I1;
-         ++I2;
-      }
-      DEBUG_CHECK(!I2);
-      return Result;
-   }
-
-   Func f_;
-};
+   return Result;
+}
 
 // scalar_prod - this is a new function
 
-template <typename T1, typename B1, typename B2,
-          typename T2, typename B3, typename Functor>
-struct ScalarProd<Tensor::IrredTensor<T1, B1, B2, Tensor::DefaultStructure>,
-                  HermitianProxy<Tensor::IrredTensor<T2, B3, B2, Tensor::DefaultStructure> >,
-                  Functor>
+IrredTensor<T, B2, B3, Tensor::DefaultStructure>
+scalar_prod(HermitianProxy<IrredTensor<T, B1, B2, Tensor::DefaultStructure>> const& x,
+            IrredTensor<T, B1, B3, Tensor::DefaultStructure> const& y)
 {
-   typedef Tensor::IrredTensor<T1, B1, B2, Tensor::DefaultStructure> const& first_argument_type;
-   typedef HermitianProxy<Tensor::IrredTensor<T2, B3, B2, Tensor::DefaultStructure> > const& second_argument_type;
-   typedef Tensor::IrredTensor<typename result_value<Functor>::type, B1, B3, Tensor::DefaultStructure> result_type;
+   using result_type = IrredTensor<T, B2, B3, Tensor::DefaultStructure>;
 
-   ScalarProd(Functor f = Functor()) : f_(f) {}
+   if (x.is_null() || y.base().is_null()) return result_type();
 
-   result_type operator()(first_argument_type x, second_argument_type y) const
+   result_type Result(x.base().Basis2(), y.Basis2());
+
+   //Result(a,b) = sum_r x(r,a) y(r,b)
+
+   for (auto const& rx : x.base().data())
    {
-      if (x.is_null() || y.base().is_null()) return result_type();
-
-      PRECONDITION_EQUAL(x.TransformsAs(), y.base().TransformsAs());
-      DEBUG_PRECONDITION_EQUAL(x.Basis2(), y.base().Basis2());
-
-      typedef typename const_iterator<Tensor::IrredTensor<T1, B1, B2, Tensor::DefaultStructure> >::type iter1;
-      typedef typename const_iterator<Tensor::IrredTensor<T2, B3, B2, Tensor::DefaultStructure> >::type iter2;
-
-      result_type Result(x.Basis1(), y.base().Basis1(), QuantumNumbers::QuantumNumber(x.GetSymmetryList()));
-      for (iter1 I1 = iterate(x); I1; ++I1)
+      for (auto const& cx : rx)
       {
-         for (iter2 I2 = iterate(y.base()); I2; ++I2)
+         for (auto const& cy : y.data()[rx.row()])
          {
-            // accept only scalar elements (diagonal in the quantum number)
-            if (Result.Basis1()[I1.index()] == Result.Basis2()[I2.index()])
-               add_element(Result.data(), I1.index(), I2.index(), parallel_prod(*I1, herm(*I2), f_));
-         }
-      }
-      return Result;
-   }
-
-   Functor f_;
-};
-
-template <typename T1, typename B1, typename B2,
-          typename T2, typename B3, typename Functor>
-struct ScalarProd<Tensor::IrredTensor<T1, B1, B2, Tensor::DiagonalStructure>,
-                  HermitianProxy<Tensor::IrredTensor<T2, B3, B2, Tensor::DiagonalStructure> >,
-                  Functor>
-{
-   typedef Tensor::IrredTensor<T1, B1, B2, Tensor::DiagonalStructure> const& first_argument_type;
-   typedef HermitianProxy<Tensor::IrredTensor<T2, B3, B2, Tensor::DiagonalStructure> > const& second_argument_type;
-   typedef Tensor::IrredTensor<typename result_value<Functor>::type, B1, B3, Tensor::DiagonalStructure>
-   result_type;
-
-   ScalarProd(Functor f = Functor()) : f_(f) {}
-
-   result_type operator()(first_argument_type x, second_argument_type y) const
-   {
-      if (x.is_null() || y.base().is_null()) return result_type();
-
-      PRECONDITION_EQUAL(x.TransformsAs(), y.base().TransformsAs());
-      DEBUG_PRECONDITION_EQUAL(x.Basis2(), y.base().Basis2());
-
-      typedef typename const_iterator<Tensor::IrredTensor<T1, B1, B2, Tensor::DiagonalStructure> >::type iter1;
-      typedef typename const_iterator<Tensor::IrredTensor<T2, B3, B2, Tensor::DiagonalStructure> >::type iter2;
-
-      result_type Result(x.Basis1(), y.base().Basis1(), QuantumNumbers::QuantumNumber(x.GetSymmetryList()));
-
-      // TODO: this doesn't use the functor - we actually need to call MatrixMatrixMultiplication
-      Result.data() = x.data() * herm(y.base().data()); //, f_);
-
-      return Result;
-   }
-
-   Functor f_;
-};
-
-template <typename T1, typename B1, typename B2, typename S,
-          typename T2, typename B3, typename Functor>
-struct ScalarProd<HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S> >,
-                  Tensor::IrredTensor<T2, B1, B3, S>,
-                  Functor>
-{
-   typedef HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S> > const& first_argument_type;
-   typedef Tensor::IrredTensor<T2, B1, B3, S> const& second_argument_type;
-   typedef Tensor::IrredTensor<typename result_value<Functor>::type, B2, B3, S> result_type;
-
-   ScalarProd(Functor f = Functor()) : f_(f) {}
-
-   result_type operator()(first_argument_type x, second_argument_type y) const
-   {
-      if (x.base().is_null() || y.is_null()) return result_type();
-
-      PRECONDITION_EQUAL(x.base().TransformsAs(), y.TransformsAs());
-      DEBUG_PRECONDITION_EQUAL(x.base().Basis1(), y.Basis1());
-
-      typedef typename const_iterator<Tensor::IrredTensor<T1, B1, B2, S> >::type iter1;
-      typedef typename const_iterator<Tensor::IrredTensor<T2, B1, B3, S> >::type iter2;
-
-      typedef typename const_inner_iterator<Tensor::IrredTensor<T1, B1, B2, S> >::type inner1;
-      typedef typename const_inner_iterator<Tensor::IrredTensor<T2, B1, B3, S> >::type inner2;
-
-      result_type Result(x.base().Basis2(), y.Basis2(), QuantumNumbers::QuantumNumber(y.GetSymmetryList()));
-
-      iter1 xI = iterate(x.base());
-      iter2 yI = iterate(y);
-      for ( ; xI; ++xI, ++yI)
-      {
-         for (inner1 xJ = iterate(xI); xJ; ++xJ)
-         {
-            for (inner2 yJ = iterate(yI); yJ; ++yJ)
+            // only diagonal components
+            if (Result.qn1(cx.col()) == Result.qn2(cy.col()))
             {
-	       double InnerDegree = degree(y.Basis1()[yJ.index1()]);
-               // accept only scalar elements (diagonal in the quantum number)
-               if (Result.Basis1()[xJ.index2()] == Result.Basis2()[yJ.index2()])
-	       {
-                  add_element(Result.data(), xJ.index2(), yJ.index2(),
-                              (InnerDegree / degree(Result.Basis1()[xJ.index2()])) * f_(herm(*xJ), *yJ));
-	       }
+               Result.add(cx.col(), cy.col(), (qdim(y.qn2(rx.row())) / qdim(Result.qn1(cx.col()))) *
+                          herm(cx.value()) * cy.value);
             }
          }
       }
-      DEBUG_CHECK(!std::isnan(norm_frob_sq(Result)));
-      return Result;
    }
+   return Result;
+}
 
-   Functor f_;
-};
+IrredTensor<T, B2, B3, Tensor::DefaultStructure>
+scalar_prod(IrredTensor<T, B1, B3, Tensor::DefaultStructure> const& x,
+            HermitianProxy<IrredTensor<T, B1, B2, Tensor::DefaultStructure>> const& y)
+{
+   using result_type = IrredTensor<T, B2, B3, Tensor::DefaultStructure>;
 
+   if (x.is_null() || y.base().is_null()) return result_type();
+
+   result_type Result(x.Basis1(), y.base().Basis1());
+
+   // Result(a,b) = sum_c x(a,c) * y(b,c)
+   for (auto const& rx : x.data())
+   {
+      for (auto const& cx : rx)
+      {
+         for (auto const& ry : y.base().data())
+         {
+            auto cy = ry.iterate_at(cx.col());
+            if (cy != ry.end())
+            {
+               Result.add(rx.row(), ry.row(), cx.value() * herm(cy->value));
+            }
+         }
+      }
+   }
+   return Result;
+}
 
 //
 // adjoint and inv_adjoint

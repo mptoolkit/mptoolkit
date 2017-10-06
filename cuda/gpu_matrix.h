@@ -58,9 +58,13 @@ class gpu_matrix : public blas::BlasMatrix<T, gpu_matrix<T>>
       using storage_type       = cuda::gpu_buffer<T>*;
       using const_storage_type = cuda::gpu_buffer<T> const*;
 
-      gpu_matrix(int Rows_, int Cols_, arena const& A, int leadingdim);
+      gpu_matrix(int Rows_, int Cols_);
 
-      gpu_matrix(int Rows_, int Cols_, arena const& A);
+      gpu_matrix(int Rows_, int Cols_, int leadingdim);
+
+      gpu_matrix(int Rows_, int Cols_, blas::arena const& A, int leadingdim);
+
+      gpu_matrix(int Rows_, int Cols_, blas::arena const& A);
 
       gpu_matrix(gpu_matrix&& Other) = default;
 
@@ -75,6 +79,7 @@ class gpu_matrix : public blas::BlasMatrix<T, gpu_matrix<T>>
       gpu_matrix& operator=(gpu_matrix const& Other)
       {
          assign(*this, Other);
+         return *this;
       }
 
       // assignment of expressions based on the same matrix type
@@ -124,9 +129,38 @@ class gpu_matrix : public blas::BlasMatrix<T, gpu_matrix<T>>
       cuda::gpu_buffer<T> Buf;
 };
 
+namespace detail
+{
+struct gpu_default_arena
+{
+   static blas::arena Arena;
+};
+} // namespace detail
+
+namespace detail
+{
+blas::arena gpu_default_arena::Arena = blas::arena(new cuda::BlockAllocator(cuda::DefaultBlockMultiple, false));
+} // namespace detail
+
+} // namespace cublas
+
+namespace blas
+{
+
+template <typename T>
+struct default_arena<cublas::gpu_matrix<T>> : cublas::detail::gpu_default_arena
+{
+   // Arena is inhereted from the base class
+};
+
+} // namespace blas
+
+namespace cublas
+{
+
 template <typename T>
 inline
-gpu_matrix<T>::gpu_matrix(int Rows_, int Cols_, arena const& Arena, int leadingdim)
+gpu_matrix<T>::gpu_matrix(int Rows_, int Cols_, blas::arena const& Arena, int leadingdim)
    : Rows(Rows_), Cols(Cols_), LeadingDimension(leadingdim),
      Buf(cuda::gpu_buffer<T>::allocate(LeadingDimension*Rows, Arena))
 {
@@ -135,8 +169,22 @@ gpu_matrix<T>::gpu_matrix(int Rows_, int Cols_, arena const& Arena, int leadingd
 
 template <typename T>
 inline
-gpu_matrix<T>::gpu_matrix(int Rows_, int Cols_, arena const& Arena)
+gpu_matrix<T>::gpu_matrix(int Rows_, int Cols_, blas::arena const& Arena)
    : gpu_matrix(Rows_, Cols_, Arena, select_leading_dimension(Rows_))
+{
+}
+
+template <typename T>
+inline
+gpu_matrix<T>::gpu_matrix(int Rows_, int Cols_, int leadingdim)
+   : gpu_matrix(Rows_, Cols_, blas::default_arena<gpu_matrix<T>>::Arena, leadingdim)
+{
+}
+
+template <typename T>
+inline
+gpu_matrix<T>::gpu_matrix(int Rows_, int Cols_)
+   : gpu_matrix(Rows_, Cols_, blas::default_arena<gpu_matrix<T>>::Arena, select_leading_dimension(Rows_))
 {
 }
 
@@ -176,6 +224,35 @@ set(gpu_matrix<T>& A, blas::Matrix<T> const& B)
                           *A.storage(), A.leading_dimension());
    return A.storage()->sync();
 }
+
+// copy
+
+template <typename T>
+gpu_matrix<T>
+copy(gpu_matrix<T> const& x, blas::arena const& A)
+{
+   gpu_matrix<T> Result(x.rows(), x.cols(), A, x.leading_dimension());
+   Result = x;
+   return Result;
+}
+
+// trace
+#if 0
+template <typename T>
+T trace_wait(gpu_matrix<T> const& x)
+{
+   DEBUG_CHECK_EQUAL(x.rows(), x.cols());
+   return cublas::dot_host(get_handle(), x.rows(), x.storage(), x.leading_dimension()+1, gpu_vecs<T>::ones.storage(), 1);
+}
+
+template <typename T>
+gpu_buffer<T>
+trace(gpu_matrix<T> const& x)
+{
+   DEBUG_CHECK_EQUAL(x.rows(), x.cols());
+   return cublas::dot_device(get_handle(), x.rows(), x.storage(), x.leading_dimension()+1, gpu_vecs<T>::ones.storage(), 1);
+}
+#endif
 
 // BLAS functions
 
