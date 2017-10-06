@@ -33,6 +33,30 @@ namespace blas
 
 inline
 void
+gemv(char Atrans, int M, int N, std::complex<double> alpha,
+     std::complex<double> const* A, int lda,
+     std::complex<double> const* x, int incx,
+     std::complex<double> beta,
+     std::complex<double>* y, int incy)
+{
+   CHECK(Atrans != 'R')("R trans is not yet implemented!");
+   BLAS::zgemv(Atrans, M, N, alpha, A, lda, x, incx, beta, y, incy);
+}
+
+inline
+void
+gemv(char Atrans, int M, int N, double alpha,
+     double const* A, int lda,
+     double const* x, int incx,
+     double beta,
+     double* y, int incy)
+{
+   CHECK(Atrans != 'R')("R trans is not yet implemented!");
+   BLAS::dgemv(Atrans, M, N, alpha, A, lda, x, incx, beta, y, incy);
+}
+
+inline
+void
 gemm(char Atrans, char Btrans, int M, int N, int K, double alpha, double const* A, int lda,
      double const* B, int ldb, double beta, double* C, int ldc)
 {

@@ -21,10 +21,25 @@
 #define MPTOOLKIT_BLAS_MATRIX_BLAS_H
 
 #include "matrix.h"
+#include "vector.h"
 #include "matrix-lowlevel-blas.h"
 
 namespace blas
 {
+
+template <typename T, typename U, typename V>
+inline
+void gemv(T alpha, BlasMatrix<T, Matrix<T>, U> const& A,
+          BlasVector<T, Vector<T>, V> const& x,
+          T beta,
+          Vector<T>& y)
+{
+   DEBUG_CHECK_EQUAL(A.cols(), x.size());
+   DEBUG_CHECK_EQUAL(A.rows(), y.size());
+   gemv(A.trans(), A.rows(), A.cols(), alpha, A.storage(),
+	A.leading_dimension(), x.storage(), x.stride(),
+        beta, y.storage(), y.stride());
+}
 
 template <typename T, typename U, typename V>
 inline
@@ -36,7 +51,7 @@ void gemm(T alpha, BlasMatrix<T, Matrix<T>, U> const& A,
    DEBUG_CHECK_EQUAL(A.rows(), C.rows());
    DEBUG_CHECK_EQUAL(B.cols(), C.cols());
    gemm(A.trans(), B.trans(), A.rows(), A.cols(), B.cols(), alpha, A.storage(),
-	A.leading_dimension(), B.storage(), B.leading_dimension(), beta,
+        A.leading_dimension(), B.storage(), B.leading_dimension(), beta,
         C.storage(), C.leading_dimension());
 }
 

@@ -1,0 +1,83 @@
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// cuda/cublas.h
+//
+// Copyright (C) 2017 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
+namespace cuda
+{
+
+template <typename T>
+template <typename U>
+inline
+void
+gpu_buffer<T>::wait_for(gpu_ptr<U> const& Other)
+{
+   this->wait(Other.sync());
+}
+
+template <typename T>
+template <typename U>
+inline
+void
+gpu_buffer<T>::wait_for(const_gpu_ptr<U> const& Other)
+{
+   this->wait(Other.sync());
+}
+
+template <typename T>
+gpu_ptr<T>
+gpu_buffer<T>::ptr()
+{
+   return gpu_ptr<T>(*this, 0);
+}
+
+template <typename T>
+const_gpu_ptr<T>
+gpu_buffer<T>::ptr() const
+{
+   return const_gpu_ptr<T>(*this, 0);
+}
+
+template <typename T>
+const_gpu_ptr<T>
+gpu_buffer<T>::cptr() const
+{
+   return const_gpu_ptr<T>(*this, 0);
+}
+
+template <typename T>
+gpu_ptr<T>
+gpu_buffer<T>::ptr(int Offset)
+{
+   return gpu_ptr<T>(*this, Offset);
+}
+
+template <typename T>
+const_gpu_ptr<T>
+gpu_buffer<T>::ptr(int Offset) const
+{
+   return const_gpu_ptr<T>(*this, Offset);
+}
+
+template <typename T>
+const_gpu_ptr<T>
+gpu_buffer<T>::cptr(int Offset) const
+{
+   return const_gpu_ptr<T>(*this, Offset);
+}
+
+} // namespace cuda

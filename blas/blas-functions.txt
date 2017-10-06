@@ -26,6 +26,16 @@ vector_copy(BlasVector x, BlasVector& y)
 y = alpha * x
 vector_copy_scaled(alpha, BlasVector x, BlasVector& y)
 
+// y += x
+vector_add(BlasVector x, BlasVector& y)
+
+y += alpha * x
+vector_add_scaled(alpha, BlasVector x, BlasVector& y)
+
+// y = alpha * A * x + beta * y
+gemv(alpha, BlasMatrix A, beta, BlasVector x, beta, Vector& y)
+
+scale(alpha, Vector& y)
 
 
 // y = x, also does transpose etc operations
@@ -48,12 +58,21 @@ geam(alpha, BlasMatrix A, beta, BlasMatrix B, Matrix& C)
 // C = alpha * a * b + beta * C
 gemm(alpha, BlasMatrix A, beta, BlasMatrix B, Matrix& C)
 
+scale(alpha, Matrix& y)
 
 
 // For conventional CPU storage, the low-level BLAS library implements, for
 // T = float/double/complex<float>/complex<double> :
 
 void vector_copy(int N, T const* x, int incx, T* y, int incy)
+
+void vector_add(int N, T const* x, int incx, T* y, int incy)
+
+void vector_add_scaled(int N, T alpha, T const* x, int incx, T* y, int incy)
+
+gemv(char Atrans, int M, int N, int K, T alpha, T const* A, int lda,
+     T const* B, int ldb, T beta, T* C, int ldc)
+
 
 void matrix_copy(char Atrans, int M, int N, T const* A, int lda, T* B, int ldb)
 

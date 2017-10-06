@@ -52,7 +52,7 @@ struct fail : public std::false_type {};
 template <typename T, typename U>
 struct convert_impl
 {
-      static_assert(fail<T,U>::value, "conversion is not allowed");
+   static_assert(fail<T,U>::value, "conversion is not allowed");
 };
 
 template <typename T>

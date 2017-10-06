@@ -134,7 +134,7 @@ wavefunctionobj = linearwavefunction.o canonicalwavefunction.o infinitewavefunct
 
 parserobj = parser.o
 
-cudaobj = cuda-setup.o
+cudaobj = cuda.o cublas.o
 
 mpobj = $(mpoobj) $(mpsobj) $(latticeobj) $(wavefunctionobj)
 
@@ -543,7 +543,7 @@ mp-imake-transverse-lattice : triangular_operator.o infinitewavefunctionleft.o r
 mp-imake-transverse-lattice-folded : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
 mp-iwigner-eckart : infinitewavefunctionleft.o wigner_eckart.o
 
-test-gpu-matrix : cublas.o cuda.o cuda-setup.o
+test-gpu-matrix : cublas.o cuda.o
 
 LIBS_mp-ioverlap = $(LIBARPACK)
 LIBS_mp-ispectrum = $(LIBARPACK)

@@ -200,6 +200,12 @@ blas::arena make_gpu_block_allocator()
 }
 
 template <typename T>
+class gpu_ptr;
+
+template <typename T>
+class const_gpu_ptr;
+
+template <typename T>
 class gpu_buffer
 {
    public:
@@ -215,11 +221,25 @@ class gpu_buffer
 
       gpu_ref<T> operator[](int n);
 
+      gpu_ptr<T> ptr();
+      const_gpu_ptr<T> ptr() const;
+      const_gpu_ptr<T> cptr() const;
+
+      gpu_ptr<T> ptr(int Offset);
+      const_gpu_ptr<T> ptr(int Offset) const;
+      const_gpu_ptr<T> cptr(int Offset) const;
+
       // block modifications to this buffer until event e has been triggered
       void wait(event const& e)
       {
          Stream.wait(e);
       }
+
+      template <typename U>
+      void wait_for(gpu_ptr<U> const& Other);
+
+      template <typename U>
+      void wait_for(const_gpu_ptr<U> const& Other);
 
       template <typename U>
       void wait_for(gpu_buffer<U> const& Other)
@@ -278,6 +298,89 @@ class gpu_buffer
       mutable cuda::stream Stream;
       mutable cuda::event Sync;
       blas::arena Arena;
+};
+
+// a gpu_ptr is a weak version of a gpu_buffer - it contains a stream and a device pointer.
+// Use when the access to the pointer happens via buffer backing stream, ie no effective
+// parallelization over different components of the buffer.
+
+template <typename T>
+class const_gpu_ptr
+{
+   public:
+      const_gpu_ptr() = delete;
+
+      const_gpu_ptr(gpu_buffer<T> const& Buf_, int Offset_) : Buf(Buf_), Offset(Offset_) {}
+
+      ~const_gpu_ptr() = default;
+
+      event sync() const
+      {
+         return Buf.sync();
+      }
+
+      T const* device_ptr() const { return Buf.device_ptr() + Offset; }
+
+      cuda::stream const& get_stream() const { return Buf.get_stream(); }
+
+   private:
+      gpu_buffer<T> const& Buf;
+      int Offset;
+};
+
+template <typename T>
+class gpu_ptr
+{
+   public:
+      gpu_ptr() = delete;
+
+      gpu_ptr(gpu_buffer<T>& Buf_, int Offset_) : Buf(Buf_), Offset(Offset_) {}
+
+      ~gpu_ptr() = default;
+
+      operator const_gpu_ptr<T>() { return const_gpu_ptr<T>(Buf, Offset); }
+
+      void wait(event const& e)
+      {
+         Buf.wait(e);
+      }
+
+      template <typename U>
+      void wait_for(gpu_buffer<U> const& Other)
+      {
+         Buf.wait_for(Other);
+      }
+
+      template <typename U>
+      void wait_for(gpu_ptr<U> const& Other)
+      {
+         Buf.wait_for(Other);
+      }
+
+      template <typename U>
+      void wait_for(const_gpu_ptr<U> const& Other)
+      {
+         Buf.wait_for(Other);
+      }
+
+      event sync() const
+      {
+         return Buf.sync();
+      }
+
+      void invalidate()
+      {
+         Buf.invalidate();
+      }
+
+      T const* device_ptr() const { return Buf.device_ptr() + Offset; }
+      T* device_ptr() { return Buf.device_ptr() + Offset; }
+
+      cuda::stream const& get_stream() const { return Buf.get_stream(); }
+
+   private:
+      gpu_buffer<T>& Buf;
+      int Offset;
 };
 
 // a reference to a location within a gpu_buffer
@@ -358,5 +461,7 @@ class gpu_ref
 };
 
 } // namsepace cuda
+
+#include "gpu_buffer.icc"
 
 #endif

@@ -1,5 +1,6 @@
 
 #include "blas/matrix.h"
+#include "blas/vector.h"
 #include "blas/matrix-blas.h"
 
 int main()
@@ -12,4 +13,12 @@ int main()
    C += 3 * A * herm(B);
 
    std::cout << C << '\n';
+
+
+   blas::Vector<double> x({1.0, 2.0, 3.0});
+   blas::Vector<double> y(3);
+
+   y = 2*C*x;
+
+   std::cout << y << '\n';
 }

@@ -41,8 +41,8 @@ namespace blas
 template <typename T>
 struct blas_traits<cublas::gpu_matrix<T>>
 {
-   using storage_type       = cuda::gpu_buffer<T>*;
-   using const_storage_type = cuda::gpu_buffer<T> const*;
+   using storage_type       = cuda::gpu_ptr<T>;
+   using const_storage_type = cuda::const_gpu_ptr<T>;
 };
 
 } // namespace blas
@@ -55,8 +55,8 @@ class gpu_matrix : public blas::BlasMatrix<T, gpu_matrix<T>>
 {
    public:
       using value_type         = T;
-      using storage_type       = cuda::gpu_buffer<T>*;
-      using const_storage_type = cuda::gpu_buffer<T> const*;
+      using storage_type       = cuda::gpu_ptr<T>;
+      using const_storage_type = cuda::const_gpu_ptr<T>;
 
       gpu_matrix(int Rows_, int Cols_);
 
@@ -114,8 +114,8 @@ class gpu_matrix : public blas::BlasMatrix<T, gpu_matrix<T>>
       cuda::gpu_buffer<T>& buffer() { return Buf; }
       cuda::gpu_buffer<T> const& buffer() const { return Buf; }
 
-      storage_type storage() { return &Buf; }
-      const_storage_type storage() const { return &Buf; }
+      storage_type storage() { return Buf.ptr(); }
+      const_storage_type storage() const { return Buf.cptr(); }
 
       static int select_leading_dimension(int ld)
       {
@@ -195,7 +195,7 @@ get_wait(gpu_matrix<T> const& M)
 {
    blas::Matrix<T> Result(M.rows(), M.cols());
    cublas::check_error(cublasGetMatrix(M.rows(), M.cols(), sizeof(T),
-				       M.storage()->device_ptr(), M.leading_dimension(),
+				       M.storage().device_ptr(), M.leading_dimension(),
 				       Result.storage(), Result.leading_dimension()));
    return Result;
 }
@@ -221,8 +221,8 @@ set(gpu_matrix<T>& A, blas::Matrix<T> const& B)
    DEBUG_CHECK_EQUAL(A.rows(), B.rows());
    DEBUG_CHECK_EQUAL(A.cols(), B.cols());
    cublas::setMatrixAsync(A.rows(), A.cols(), B.storage(), B.leading_dimension(),
-                          *A.storage(), A.leading_dimension());
-   return A.storage()->sync();
+                          A.storage(), A.leading_dimension());
+   return A.storage().sync();
 }
 
 // copy
@@ -266,9 +266,9 @@ gemm(T alpha, blas::BlasMatrix<T, gpu_matrix<T>, U> const& A,
    DEBUG_CHECK_EQUAL(A.cols(), B.rows());
    DEBUG_CHECK_EQUAL(A.rows(), C.rows());
    DEBUG_CHECK_EQUAL(B.cols(), C.cols());
-   cublas::gemm(get_handle(), A.trans(), B.trans(), A.rows(), A.cols(), B.cols(), alpha, *A.storage(),
-                A.leading_dimension(), *B.storage(), B.leading_dimension(), beta,
-                *C.storage(), C.leading_dimension());
+   cublas::gemm(get_handle(), A.trans(), B.trans(), A.rows(), A.cols(), B.cols(), alpha, A.storage(),
+                A.leading_dimension(), B.storage(), B.leading_dimension(), beta,
+                C.storage(), C.leading_dimension());
 }
 
 template <typename T, typename U>

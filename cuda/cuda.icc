@@ -83,10 +83,11 @@ void device_synchronize()
 inline
 stream::stream() : stream_(detail::AllocateStream())
 {
+   count_.allocate(1);
 }
 
 inline
-stream::stream(stream&& other) : stream_(other.stream_)
+stream::stream(stream&& other) : stream_(other.stream_), count_(std::move(other.count_))
 {
    other.stream_ = nullptr;
 }
@@ -96,14 +97,47 @@ stream&
 stream::operator=(stream&& other)
 {
    std::swap(stream_, other.stream_);
+   std::swap(count_, other.count_);
+   return *this;
+}
+
+inline
+stream::stream(stream const& other) : stream_(other.stream_), count_(other.count_)
+{
+   if (stream_)
+      ++count_;
+}
+
+inline
+stream&
+stream::operator=(stream const& other)
+{
+   if (other.stream_)
+      ++other.count_;
+
+   this->sub_reference();
+   stream_ = other.stream_;
+   count_ = other.count_;
+
    return *this;
 }
 
 inline
 stream::~stream()
 {
-   if (stream_)
+   this->sub_reference();
+}
+
+inline
+void
+stream::sub_reference()
+{
+   if (stream_ && (--count_ == 0))
+   {
       detail::FreeStream(stream_);
+      // NOTE: we do not set stream_ = nullltr here, caller must do this if necessary
+      count_.deallocate();
+   }
 }
 
 inline
@@ -191,7 +225,6 @@ event::operator=(event const& other)
 
    return *this;
 }
-
 
 inline
 event::~event()

@@ -1,0 +1,51 @@
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// blas/vector.icc
+//
+// Copyright (C) 2017 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
+namespace blas
+{
+
+template <typename T>
+template <typename U>
+Vector<T>::Vector(std::initializer_list<U> m, arena Arena_)
+   : Arena(Arena_),
+     Size(m.size())
+{
+   // Some slight contortions to initialize a column-major matrix from
+   // a row major initializer list
+   Data = Arena.allocate_type<T>(Size);
+   std::copy(m.begin(), m.end(), Data);
+}
+
+template <typename T>
+template <typename U>
+Vector<T>::Vector(VectorRef<T, Vector<T>, U> const& E, arena Arena_)
+   : Size(E.size()),
+     Arena(Arena_),
+     Data(Arena.allocate(Size, sizeof(T)))
+{
+   assign(*this, E.as_derived());
+}
+
+template <typename T>
+Vector<T>::Vector(int Size_, arena Arena_)
+   : Arena(Arena_), Size(Size_), Data(Arena.allocate_type<T>(Size_))
+{
+}
+
+} // namespace blas

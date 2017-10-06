@@ -36,12 +36,10 @@ class error : public std::runtime_error
    public:
       error() = delete;
       error(cudaError_t Err) : std::runtime_error(cudaGetErrorString(Err)), err_(Err)
-      {std::cerr << "Error " << int(Err) << '\n';}
+      {std::cerr << "CUDA Error " << int(Err) << '\n';}
 
       cudaError_t code() const { return err_; }
       operator cudaError_t() const { return err_; }
-
-      virtual const char* what() noexcept { return cudaGetErrorName(err_); }
 
       char const* name() const { return cudaGetErrorName(err_); }
       char const* string() const { return cudaGetErrorString(err_); }
@@ -93,15 +91,15 @@ void device_synchronize();
 
 class event;
 
-// wrapper for a cuda stream.  Moveable, but not copyable.
+// wrapper for a cuda stream.
 // Streams are allocated by a pool.
 class stream
 {
    public:
       stream();
-      stream(stream const&) = delete;
+      stream(stream const&);
       stream(stream&& other);
-      stream& operator=(stream const&) = delete;
+      stream& operator=(stream const&);
       stream& operator=(stream&& other);
       ~stream();
 
@@ -123,11 +121,16 @@ class stream
 
       friend void swap(stream& a, stream& b)
       {
-	 std::swap(a.stream_, b.stream_);
+         using std::swap;
+	 swap(a.stream_, b.stream_);
+         swap(a.count_, b.count_);
       }
 
    private:
+      void sub_reference();
+
       cudaStream_t stream_;
+      shared_counter count_;
 };
 
 //

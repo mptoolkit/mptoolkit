@@ -42,10 +42,13 @@ void sgemv(char trans, integer M, integer N, float alpha,
            float const* A, integer lda, float const* dx,
            integer incx, float beta, float* restrict dy, integer incy);
 
-
 void dgemv(char trans, integer M, integer N, double alpha,
            double const* A, integer lda, double const* dx,
            integer incx, double beta, double* restrict dy, integer incy);
+
+void zgemv(char trans, integer M, integer N, std::complex<double> alpha,
+           double const* A, integer lda, std::complex<double> const* dx,
+           integer incx, std::complex<double> beta, std::complex<double>* restrict dy, integer incy);
 
 void dgbmv(char trans, integer M, integer N, integer kl,
            integer ku, double alpha, double const* A, integer lda,
@@ -102,6 +105,10 @@ extern "C"
      void F77NAME(dgemv)(char* trans, integer* M, integer* N, double* alpha,
                          const double* A, integer* lda, const double* dx,
                          integer* incx, double* beta, double* dy, integer* incy);
+
+     void F77NAME(zgemv)(char* trans, integer* M, integer* N, std::complex<double>* alpha,
+                         std::complex<double> const* A, integer* lda, std::complex<double> const* dx,
+                         integer* incx, std::complex<double>* beta, std::complex<double>* dy, integer* incy);
 
      void F77NAME(dgbmv)(char* trans, integer* M, integer* N, integer* kl,
                          integer* ku, double* alpha, const double* A, integer* lda,
@@ -166,6 +173,13 @@ inline void dgemv(char trans, integer M, integer N, double alpha,
                   integer incx, double beta, double* restrict dy, integer incy)
 {
    raw::F77NAME(dgemv)(&trans, &M, &N, &alpha, A, &lda, dx, &incx, &beta, dy, &incy);
+}
+
+inline void zgemv(char trans, integer M, integer N, std::complex<double> alpha,
+                  std::complex<double> const* A, integer lda, std::complex<double> const* dx,
+                  integer incx, std::complex<double> beta, std::complex<double>* restrict dy, integer incy)
+{
+   raw::F77NAME(zgemv)(&trans, &M, &N, &alpha, A, &lda, dx, &incx, &beta, dy, &incy);
 }
 
 inline void dgbmv(char trans, integer M, integer N, integer kl,

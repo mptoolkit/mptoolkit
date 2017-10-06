@@ -17,6 +17,12 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+//
+// Basic functions for cuda initialization and device enumeration.
+// This header can be used even if there is no cuda environment;
+// in that case it implements dummy versions of the interfaces
+// that indicate that cuda is not enabled, and no devices are available.
+
 #if !defined(MPTOOLKIT_CUDA_CUDA_SETUP_H)
 #define MPTOOLKIT_CUDA_CUDA_SETUP_H
 

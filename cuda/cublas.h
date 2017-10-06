@@ -18,7 +18,7 @@
 // ENDHEADER
 
 #if !defined(MPTOOLKIT_CUDA_CUBLAS_H)
-#define MPTOOLKIT_CUDA_CUDBLAS_H
+#define MPTOOLKIT_CUDA_CUBLAS_H
 
 #include "cuda.h"
 #include "gpu_buffer.h"
@@ -34,81 +34,35 @@ namespace cublas
 // returns the cublas version number
 int version();
 
-// TODO: cublas error class
+// helper functions to get a name and error description from a cublasStatus_t
+char const* cublasGetErrorName(cublasStatus_t error);
 
-inline
-char const* cublasGetErrorName(cublasStatus_t error)
+char const* cublasGetErrorString(cublasStatus_t error);
+
+// wrapper for a cublasStatus_t, which can also function as an exception object
+class error : public std::runtime_error
 {
-    switch (error)
-    {
-        case CUBLAS_STATUS_SUCCESS:
-            return "CUBLAS_STATUS_SUCCESS";
+   public:
+      error() = delete;
+      error(cublasStatus_t Err) : std::runtime_error(std::string("cuBLAS error: ") + cublasGetErrorString(Err)), err_(Err)
+      {std::cerr << "cuBLAS Error " << int(Err) << ' ' << cublasGetErrorString(Err) << '\n';}
 
-        case CUBLAS_STATUS_NOT_INITIALIZED:
-            return "CUBLAS_STATUS_NOT_INITIALIZED";
+      cublasStatus_t code() const { return err_; }
+      operator cublasStatus_t() const { return err_; }
 
-        case CUBLAS_STATUS_ALLOC_FAILED:
-            return "CUBLAS_STATUS_ALLOC_FAILED";
+      char const* name() const { return cublasGetErrorName(err_); }
+      char const* string() const { return cublasGetErrorString(err_); }
 
-        case CUBLAS_STATUS_INVALID_VALUE:
-            return "CUBLAS_STATUS_INVALID_VALUE";
-
-        case CUBLAS_STATUS_ARCH_MISMATCH:
-            return "CUBLAS_STATUS_ARCH_MISMATCH";
-
-        case CUBLAS_STATUS_MAPPING_ERROR:
-            return "CUBLAS_STATUS_MAPPING_ERROR";
-
-        case CUBLAS_STATUS_EXECUTION_FAILED:
-            return "CUBLAS_STATUS_EXECUTION_FAILED";
-
-        case CUBLAS_STATUS_INTERNAL_ERROR:
-            return "CUBLAS_STATUS_INTERNAL_ERROR";
-    }
-
-    return "<unknown>";
-}
-
-inline
-char const* cublasGetErrorString(cublasStatus_t error)
-{
-    switch (error)
-    {
-        case CUBLAS_STATUS_SUCCESS:
-            return "SUCCESS";
-
-        case CUBLAS_STATUS_NOT_INITIALIZED:
-            return "cuBLAS library not initialized";
-
-        case CUBLAS_STATUS_ALLOC_FAILED:
-            return "memory allocation failed";
-
-        case CUBLAS_STATUS_INVALID_VALUE:
-            return "invalid value or parameter";
-
-        case CUBLAS_STATUS_ARCH_MISMATCH:
-            return "feature not supported by this architecture (possible double-precision?)";
-
-        case CUBLAS_STATUS_MAPPING_ERROR:
-            return "invalid GPU memory mapping";
-
-        case CUBLAS_STATUS_EXECUTION_FAILED:
-            return "GPU kernel execution failed";
-
-        case CUBLAS_STATUS_INTERNAL_ERROR:
-            return "internal error";
-    }
-
-    return "<cublas-unknown>";
-}
+   private:
+      cublasStatus_t err_;
+};
 
 inline
 void check_error(cublasStatus_t s)
 {
    if (s != CUBLAS_STATUS_SUCCESS)
    {
-      std::string ss = std::string("cuBLAS error: ") + cublasGetErrorName(s);
-      throw std::runtime_error(ss);
+      throw error(s);
    }
 }
 
@@ -165,26 +119,83 @@ void setup_cublas_thread();
 // returns the thread-local handle
 handle& get_handle();
 
+// utility functions
+
+template <typename T>
 inline
 void
-gemm(cublas::handle& H, char Atrans, char Btrans, int M, int N, int K, double alpha,
-     cuda::gpu_buffer<double> const& A, int lda, cuda::gpu_buffer<double> const& B, int ldb,
-     double beta, cuda::gpu_buffer<double>& C, int ldc)
+setMatrixAsync(int N, int M, T const* A, int lda, cuda::gpu_ptr<T> B, int ldb)
 {
-   H.set_stream(C.get_stream());
-   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
-   C.wait_for(A);
-   C.wait_for(B);
-   check_error(cublasDgemm(H.raw_handle(), cublas_trans(Atrans), cublas_trans(Btrans), M, N, K,
-                           &alpha, A.device_ptr(), lda, B.device_ptr(), ldb,
-                           &beta, C.device_ptr(), ldc));
+   check_error(cublasSetMatrixAsync(N, M, sizeof(T), A, lda, B.device_ptr(), ldb,
+                                    B.get_stream().raw_stream()));
 }
+
+template <typename T>
+inline
+void
+setVectorAsync(int N, T const* A, int stridea, cuda::gpu_ptr<T> B, int strideb)
+{
+   check_error(cublasSetVectorAsync(N, sizeof(T), A, stridea, B.device_ptr(), strideb,
+                                    B.get_stream().raw_stream()));
+}
+
+// BLAS level 1
+
+inline
+void
+copy(cublas::handle& H, int n, cuda::const_gpu_ptr<double> x, int incx,
+     cuda::gpu_ptr<double> y, int incy)
+{
+   H.set_stream(y.get_stream());
+   y.wait_for(x);
+   check_error(cublasDcopy(H.raw_handle(), n, x.device_ptr(), incx, y.device_ptr(), incy));
+}
+
+inline
+void
+scal(cublas::handle& H, int n, double alpha, cuda::gpu_ptr<double> y, int incy)
+{
+   H.set_stream(y.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
+   check_error(cublasDscal(H.raw_handle(), n, &alpha, y.device_ptr(), incy));
+}
+
+inline
+void
+axpy(cublas::handle& H, int n, double alpha,
+     cuda::const_gpu_ptr<double> x, int incx,
+     cuda::gpu_ptr<double> y, int incy)
+{
+   H.set_stream(y.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
+   y.wait_for(x);
+   check_error(cublasDaxpy(H.raw_handle(), n, &alpha, x.device_ptr(), incx, y.device_ptr(), incy));
+}
+
+// BLAS level 2
+
+inline
+void
+gemv(cublas::handle& H, char Atrans, int M, int N, double alpha,
+     cuda::const_gpu_ptr<double> A, int lda, cuda::const_gpu_ptr<double> x, int incx,
+     double beta, cuda::gpu_ptr<double> y, int incy)
+{
+   H.set_stream(y.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
+   y.wait_for(A);
+   y.wait_for(x);
+   check_error(cublasDgemv(H.raw_handle(), cublas_trans(Atrans), M, N,
+                           &alpha, A.device_ptr(), lda, x.device_ptr(), incx,
+                           &beta, y.device_ptr(), incy));
+}
+
+// BLAS level 2 extensions
 
 // geam - we have two versions, for in-place and out-of-place operations
 inline
 void
 geam(cublas::handle& H, char Atrans, int M, int N, double alpha,
-     cuda::gpu_buffer<double> const& A, int lda, cuda::gpu_buffer<double>& C, int ldc)
+     cuda::const_gpu_ptr<double> A, int lda, cuda::gpu_ptr<double> C, int ldc)
 {
    H.set_stream(C.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
@@ -199,9 +210,9 @@ geam(cublas::handle& H, char Atrans, int M, int N, double alpha,
 inline
 void
 geam(cublas::handle& H, char Atrans, char Btrans, int M, int N,
-     double alpha, cuda::gpu_buffer<double> const& A, int lda,
-     double beta,  cuda::gpu_buffer<double> const& B, int ldb,
-     cuda::gpu_buffer<double>& C, int ldc)
+     double alpha, cuda::const_gpu_ptr<double> A, int lda,
+     double beta,  cuda::const_gpu_ptr<double> B, int ldb,
+     cuda::gpu_ptr<double> C, int ldc)
 {
    H.set_stream(C.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
@@ -213,13 +224,21 @@ geam(cublas::handle& H, char Atrans, char Btrans, int M, int N,
                            C.device_ptr(), ldc));
 }
 
-template <typename T>
+// BLAS level 3
+
 inline
 void
-setMatrixAsync(int N, int M, T const* A, int lda, cuda::gpu_buffer<T>& B, int ldb)
+gemm(cublas::handle& H, char Atrans, char Btrans, int M, int N, int K, double alpha,
+     cuda::const_gpu_ptr<double> A, int lda, cuda::const_gpu_ptr<double> B, int ldb,
+     double beta, cuda::gpu_ptr<double> C, int ldc)
 {
-   check_error(cublasSetMatrixAsync(N, M, sizeof(T), A, lda, B.device_ptr(), ldb,
-                                    B.get_stream().raw_stream()));
+   H.set_stream(C.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
+   C.wait_for(A);
+   C.wait_for(B);
+   check_error(cublasDgemm(H.raw_handle(), cublas_trans(Atrans), cublas_trans(Btrans), M, N, K,
+                           &alpha, A.device_ptr(), lda, B.device_ptr(), ldb,
+                           &beta, C.device_ptr(), ldc));
 }
 
 } // namespace cublas

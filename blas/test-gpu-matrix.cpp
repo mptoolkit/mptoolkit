@@ -2,6 +2,8 @@
 #include "cuda/gpu_matrix.h"
 #include "blas/matrix.h"
 #include "cuda/cuda-setup.h"
+#include "blas/vector.h"
+#include "cuda/gpu_vector.h"
 
 int main()
 {
@@ -26,4 +28,18 @@ int main()
    C = get_wait(gC);
 
    std::cout << C << '\n';
+
+   blas::Vector<double> x({1.0, 2.0, 3.0});
+   blas::Vector<double> y(3);
+
+   cublas::gpu_vector<double> gx(3);
+   cublas::gpu_vector<double> gy(3);
+
+   set(gx, x);
+
+   gy = 2*gC*gx;
+
+   y = get_wait(gy);
+
+   std::cout << y << '\n';
 }
