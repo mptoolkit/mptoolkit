@@ -27,6 +27,7 @@
 #include <string>
 #include <complex>
 #include <sstream>
+#include <ostream>
 
 inline
 std::string
@@ -41,6 +42,25 @@ format_complex(std::complex<double> const& c)
       Out << ' ' << c.imag() << 'i';
    Out.flush();
    return Out.str();
+}
+
+template <typename T>
+void
+wite_format(std::ostream& out, T x)
+{
+   out << std::setw(6) << x;
+}
+
+void
+write_format(std::ostream& out, double x)
+{
+   out << std::setw(10) << x;
+}
+
+void
+write_format(std::ostream& out, std::complex<double> x)
+{
+   out << format_complex(x);
 }
 
 #endif

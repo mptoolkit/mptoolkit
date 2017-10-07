@@ -37,13 +37,13 @@ namespace blas
 // and can be constructed, used as a temporary, etc.
 //
 
-template <typename ValueType, typename BaseType, typename DerivedType = BaseType>
+template <typename ValueType, typename DerivedType, typename Tag>
 class VectorRef
 {
    public:
       using value_type     = ValueType;
       using derived_type   = DerivedType;
-      using base_type      = BaseType;
+      using tag_type       = Tag;
 
       // default construction and move construction are defined, no copying.
 
@@ -54,13 +54,33 @@ class VectorRef
       VectorRef& operator=(VectorRef&&) = delete;
       VectorRef& operator=(VectorRef const&) = delete;
 
-      derived_type&& as_derived() && { return std::move(*static_cast<derived_type*>(this)); }
+      derived_type&& as_derived() && { return static_cast<derived_type&&>(*static_cast<derived_type*>(this)); }
 
       derived_type& as_derived() & { return *static_cast<derived_type*>(this); }
       derived_type const& as_derived() const& { return *static_cast<derived_type const*>(this); }
 
       int size() const { return this->as_derived().size(); }
 };
+
+// assignment
+
+template <typename T, typename U, typename V, typename Tag>
+void assign(VectorRef<T, U, Tag>& A, VectorRef<T, V, Tag> const& B)
+{
+   vector_copy(B.as_derived(), A.as_derived());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+void add(VectorRef<T, U, Tag>& A, VectorRef<T, V, Tag> const& B)
+{
+   vector_add(B.as_derived(), A.as_derived());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+void subtract(VectorRef<T, U, Tag>& A, VectorRef<T, V, Tag> const& B)
+{
+   vector_add_scaled(-number_traits<T>::identity(), B.as_derived(), A.as_derived());
+}
 
 // Specialization of a VectorRef for a matrix that can be directly used in BLAS-like calls,
 // ie it physically exists and can be addressed (although not necessarily in main memory,
@@ -71,15 +91,15 @@ class VectorRef
 // storage() returns an opaque type that contains the backing storage of the vector,
 // and stride() is the array stride (the INC parameter in BLAS calls).
 
-template <typename ValueType, typename BaseType, typename DerivedType = BaseType>
-class BlasVector : public VectorRef<ValueType, BaseType, DerivedType>
+template <typename ValueType, typename DerivedType, typename Tag>
+class BlasVector : public VectorRef<ValueType, DerivedType, Tag>
 {
    public:
       using value_type         = ValueType;
       using derived_type       = DerivedType;
-      using base_type          = BaseType;
-      using storage_type       = typename blas_traits<base_type>::storage_type;
-      using const_storage_type = typename blas_traits<base_type>::const_storage_type;
+      using tag_type           = Tag;
+      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
+      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
 
       BlasVector() = default;
       ~BlasVector() = default;
@@ -93,14 +113,15 @@ class BlasVector : public VectorRef<ValueType, BaseType, DerivedType>
 
 // proxy class for the complex conjugate of a vector
 
-template <typename T, typename BaseType>
-class VectorConj : public VectorRef<T, BaseType, VectorConj<T, BaseType>>
+template <typename T, typename BaseType, typename Tag>
+class VectorConj : public VectorRef<T, VectorConj<T, BaseType, Tag>, Tag>
 {
    public:
-      using base_type = BaseType;
-      using value_type    = T;
-      using storage_type       = typename blas_traits<base_type>::storage_type;
-      using const_storage_type = typename blas_traits<base_type>::const_storage_type;
+      using value_type         = T;
+      using base_type          = BaseType;
+      using tag_type           = Tag;
+      using storage_type       = typename blas_traits<base_type>::template storage_type<value_type>;
+      using const_storage_type = typename blas_traits<base_type>::template const_storage_type<value_type>;
 
       VectorConj(base_type const& Base_) : Base(Base_) {}
 
@@ -112,66 +133,44 @@ class VectorConj : public VectorRef<T, BaseType, VectorConj<T, BaseType>>
       base_type const& Base;
 };
 
-template <typename T, typename Base, typename Derived>
-VectorConj<T, Derived>
-conj(VectorRef<T, Base, Derived> const& x)
+template <typename T, typename BaseType, typename Tag>
+VectorConj<T, BaseType, Tag>
+conj(VectorRef<T, BaseType, Tag> const& x)
 {
-   return VectorConj<T, Derived>(x.as_derived());
+   return VectorConj<T, BaseType, Tag>(x.as_derived());
 }
 
 // specialization for real types, conj() reduces to a no-op
-template <typename Base, typename Derived>
-Derived const&
-conj(VectorRef<float, Base, Derived> const& x)
+template <typename BaseType, typename Tag>
+BaseType const&
+conj(VectorRef<float, BaseType, Tag> const& x)
 {
    return x.as_derived();
 }
 
-template <typename Base, typename Derived>
-Derived const&
-conj(VectorRef<double, Base, Derived> const& x)
+template <typename BaseType, typename Tag>
+BaseType const&
+conj(VectorRef<double, BaseType, Tag> const& x)
 {
    return x.as_derived();
 }
 
 #if defined(HAVE_FLOAT128)
-template <typename Base, typename Derived>
-Derived const&
-conj(VectorRef<float128, Base, Derived> const& x)
+template <typename BaseType, typename Tag>
+BaseType const&
+conj(VectorRef<float128, BaseType, Tag> const& x)
 {
    return x.as_derived();
 }
 #endif
 
-// assignment
-
-template <typename T, typename BaseType, typename U, typename V>
-void assign(VectorRef<T, BaseType, U>& A, VectorRef<T, BaseType, V> const& B)
-{
-   vector_copy(B.as_derived(), A.as_derived());
-}
-
-template <typename T, typename BaseType>
-void add(VectorRef<T, BaseType>& A, VectorRef<T, BaseType> const& B)
-{
-   vector_add(B.as_derived(), A.as_derived());
-}
-
-template <typename T, typename BaseType>
-void subtract(VectorRef<T, BaseType>& A, VectorRef<T, BaseType> const& B)
-{
-   vector_add_scaled(-number_traits<T>::identity(), B.as_derived(), A.as_derived());
-}
-
 // expression template for alpha * A
 
-template <typename T, typename BaseType, typename SubType>
-class ScaledVector : public VectorRef<T, BaseType, ScaledVector<T, BaseType, SubType>>
+template <typename T, typename BaseType, typename Tag>
+class ScaledVector : public VectorRef<T, ScaledVector<T, BaseType, Tag>, Tag>
 {
    public:
-      // confusing naming here - base_type is the original object, but the
-      // template parameter is named SubType.  BaseType template parameter is the concrete vector type.
-      using base_type = SubType;
+      using base_type = BaseType;
 
       ScaledVector(T const& Factor_, base_type const& A_) : Factor(Factor_), A(A_) {}
 
@@ -185,48 +184,60 @@ class ScaledVector : public VectorRef<T, BaseType, ScaledVector<T, BaseType, Sub
       base_type const& A;
 };
 
-template <typename T, typename BaseType, typename SubType, typename X>
-ScaledVector<decltype(safe_convert<T>(std::declval<X>())), BaseType, SubType>
-operator*(X const& alpha, VectorRef<T, BaseType, SubType> const& M)
+template <typename T, typename BaseType, typename Tag, typename X>
+ScaledVector<decltype(safe_convert<T>(std::declval<X>())), BaseType, Tag>
+operator*(X const& alpha, VectorRef<T, BaseType, Tag> const& M)
 {
-   return ScaledVector<T, BaseType, SubType>(safe_convert<T>(alpha), M.as_derived());
+   return ScaledVector<T, BaseType, Tag>(safe_convert<T>(alpha), M.as_derived());
 }
 
-template <typename T, typename BaseType, typename SubType, typename U>
-void assign(VectorRef<T, BaseType, U>& A, ScaledVector<T, BaseType, SubType> const& B)
+// assignment involving ScaledVector
+
+template <typename T, typename U, typename V, typename Tag>
+void assign(VectorRef<T, U, Tag>& A, ScaledVector<T, V, Tag> const& B)
 {
    vector_copy_scaled(B.factor(), B.base(), A.as_derived());
 }
 
-template <typename T, typename BaseType, typename SubType, typename U>
-void assign(VectorRef<T, BaseType, U>&& A, ScaledVector<T, BaseType, SubType> const& B)
+template <typename T, typename U, typename V, typename Tag>
+void assign(VectorRef<T, U, Tag>&& A, ScaledVector<T, V, Tag> const& B)
 {
-   vector_copy_scaled(B.factor(), B.base(), std::move(A).as_derived());
+   vector_copy_scaled(B.factor(), B.base(), static_cast<U&&>(A.as_derived()));
 }
 
-template <typename T, typename BaseType, typename SubType>
-void add(VectorRef<T, BaseType>& A, ScaledVector<T, BaseType, SubType> const& B)
+template <typename T, typename U, typename V, typename Tag>
+void add(VectorRef<T, U, Tag>& A, ScaledVector<T, V, Tag> const& B)
 {
    vector_add_scaled(B.factor(), B.base(), A.as_derived());
 }
 
-template <typename T, typename BaseType, typename SubType>
-void subtract(VectorRef<T, BaseType>& A, ScaledVector<T, BaseType, SubType> const& B)
+template <typename T, typename U, typename V, typename Tag>
+void add(VectorRef<T, U, Tag>&& A, ScaledVector<T, V, Tag> const& B)
+{
+   vector_add_scaled(B.factor(), B.base(), static_cast<U&&>(A.as_derived()));
+}
+
+template <typename T, typename U, typename V, typename Tag>
+void subtract(VectorRef<T, U, Tag>& A, ScaledVector<T, V, Tag> const& B)
 {
    vector_add_scaled(-B.factor(), B.base(), A.as_derived());
 }
 
+template <typename T, typename U, typename V, typename Tag>
+void subtract(VectorRef<T, U, Tag>&& A, ScaledVector<T, V, Tag> const& B)
+{
+   vector_add_scaled(-B.factor(), B.base(), static_cast<U&&>(A.as_derived()));
+}
+
 // expression template for alpha * op(A) * op(B)
 
-template <typename T, typename BaseType, typename U, typename V>
-struct MatrixVectorProduct : public VectorRef<T, BaseType, MatrixVectorProduct<T, BaseType, U, V>>
+template <typename T, typename U, typename V, typename Tag>
+struct MatrixVectorProduct : public VectorRef<T, MatrixVectorProduct<T, U, V, Tag>, Tag>
 {
-   template <typename MatrixBaseType>
-   MatrixVectorProduct(MatrixRef<T, MatrixBaseType, U> const& A_, VectorRef<T, BaseType, V> const& B_)
+   MatrixVectorProduct(MatrixRef<T, U, Tag> const& A_, VectorRef<T, V, Tag> const& B_)
       : Factor(number_traits<T>::identity()), A(A_.as_derived()), B(B_.as_derived()) {}
 
-   template <typename MatrixBaseType>
-   MatrixVectorProduct(T const& Factor_, MatrixRef<T, MatrixBaseType, U> const& A_, VectorRef<T, BaseType, V> const& B_)
+   MatrixVectorProduct(T const& Factor_, MatrixRef<T, U, Tag> const& A_, VectorRef<T, V, Tag> const& B_)
       : Factor(Factor_), A(A_.as_derived()), B(B_.as_derived()) {}
 
    int size() const { return A.rows(); }
@@ -237,58 +248,57 @@ struct MatrixVectorProduct : public VectorRef<T, BaseType, MatrixVectorProduct<T
    V const& B;
 };
 
-template <typename T, typename MatrixBaseType, typename BaseType, typename U, typename V>
-MatrixVectorProduct<T, BaseType, U, V>
-operator*(MatrixRef<T, MatrixBaseType, U> const& A, VectorRef<T, BaseType, V> const& B)
+template <typename T, typename U, typename V, typename Tag>
+MatrixVectorProduct<T, U, V, Tag>
+operator*(MatrixRef<T, U, Tag> const& A, VectorRef<T, V, Tag> const& B)
 {
-   return MatrixVectorProduct<T, BaseType, U, V>(A.as_derived(), B.as_derived());
+   return MatrixVectorProduct<T, U, V, Tag>(A.as_derived(), B.as_derived());
 }
 
-template <typename T, typename MatrixBaseType, typename MatrixSubType, typename BaseType, typename V>
-MatrixVectorProduct<T, BaseType, MatrixBaseType, V>
-operator*(ScaledMatrix<T, MatrixBaseType, MatrixSubType> const& A, VectorRef<T, BaseType, V> const& B)
+template <typename T, typename U, typename V, typename Tag>
+MatrixVectorProduct<T, U, V, Tag>
+operator*(ScaledMatrix<T, U, Tag> const& A, VectorRef<T, V, Tag> const& B)
 {
-   return MatrixVectorProduct<T, BaseType, MatrixSubType, V>(A.factor(), A.base(), B.as_derived());
+   return MatrixVectorProduct<T, U, V, Tag>(A.factor(), A.base(), B.as_derived());
 }
 
-template <typename T, typename MatrixBaseType, typename BaseType, typename SubType, typename U>
-MatrixVectorProduct<T, BaseType, U, BaseType>
-operator*(VectorRef<T, MatrixBaseType, U> const& A, ScaledVector<T, BaseType, SubType> const& B)
+template <typename T, typename U, typename V, typename Tag>
+MatrixVectorProduct<T, U, V, Tag>
+operator*(VectorRef<T, U, Tag> const& A, ScaledVector<T, V, Tag> const& B)
 {
-   return MatrixVectorProduct<T, BaseType, U, SubType>(B.factor(), A.as_derived(), B.base());
+   return MatrixVectorProduct<T, U, V, Tag>(B.factor(), A.as_derived(), B.base());
 }
 
-template <typename T, typename MatrixBaseType, typename MatrixSubType, typename BaseType, typename SubType>
-MatrixVectorProduct<T, BaseType, MatrixBaseType, SubType>
-operator*(ScaledMatrix<T, MatrixBaseType, MatrixSubType> const& A, ScaledVector<T, BaseType, SubType> const& B)
+template <typename T, typename U, typename V, typename Tag>
+MatrixVectorProduct<T, U, V, Tag>
+operator*(ScaledMatrix<T, U, Tag> const& A, ScaledVector<T, V, Tag> const& B)
 {
-   return MatrixVectorProduct<T, BaseType, MatrixSubType, SubType>(A.factor() * B.factor(),
-                                                                   A.base(), B.as_derived());
+   return MatrixVectorProduct<T, U, V, Tag>(A.factor() * B.factor(), A.base(), B.as_derived());
 }
 
-template <typename T, typename BaseType, typename U, typename V, typename X>
-MatrixVectorProduct<decltype(safe_convert<T>(std::declval<X>())), BaseType, U, V>
-operator*(X const& alpha, MatrixVectorProduct<T, BaseType, U, V> const& x)
+template <typename T, typename U, typename V, typename Tag, typename X>
+MatrixVectorProduct<decltype(safe_convert<T>(std::declval<X>())), U, V, Tag>
+operator*(X const& alpha, MatrixVectorProduct<T, U, V, Tag> const& x)
 {
-   return MatrixVectorProduct<T, BaseType, U, V>(safe_convert<T>(alpha)*x.Factor, x.A, x.B);
+   return MatrixVectorProduct<T, U, V, Tag>(safe_convert<T>(alpha)*x.Factor, x.A, x.B);
 }
 
-// assignment
+// assignment involving MatrixVectorProduct
 
-template <typename T, typename BaseType, typename Derived, typename U, typename V>
-void assign(VectorRef<T, BaseType, Derived>& C, MatrixVectorProduct<T, BaseType, U, V> const& a)
+template <typename T, typename Derived, typename U, typename V, typename Tag>
+void assign(VectorRef<T, Derived, Tag>& C, MatrixVectorProduct<T, U, V, Tag> const& a)
 {
    gemv(a.Factor, a.A, a.B, number_traits<T>::zero(), C.as_derived());
 }
 
-template <typename T, typename BaseType, typename Derived, typename U, typename V>
-void add(VectorRef<T, BaseType, Derived>& C, MatrixVectorProduct<T, BaseType, U, V> const& a)
+template <typename T, typename Derived, typename U, typename V, typename Tag>
+void add(VectorRef<T, Derived, Tag>& C, MatrixVectorProduct<T, U, V, Tag> const& a)
 {
    gemv(a.Factor, a.A, a.B, number_traits<T>::identity(), C.as_derived());
 }
 
-template <typename T, typename BaseType, typename Derived, typename U, typename V>
-void subtract(VectorRef<T, BaseType, Derived>& C, MatrixVectorProduct<T, BaseType, U, V> const& a)
+template <typename T, typename Derived, typename U, typename V, typename Tag>
+void subtract(VectorRef<T, Derived, Tag>& C, MatrixVectorProduct<T, U, V, Tag> const& a)
 {
    gemv(-a.Factor, a.A, a.B, number_traits<T>::identity(), C.as_derived());
 }

@@ -21,12 +21,133 @@ namespace blas
 {
 
 //
-// matrix_copy
+// vector_copy
 //
 
 inline
 void
-matrix_copy(char Atrans, int M, int N, double const* A, int lda, double* B, int ldb)
+vector_copy(int N, double const* x, int incx, double* y, int incy)
+{
+   if (incx == 1 && incy == 1)
+   {
+      std::memcpy(y, x, N*sizeof(double));
+   }
+   else
+   {
+      for (int i = 0; i < N; ++i)
+      {
+         *y = *x;
+         x += incx;
+         y += incy;
+      }
+   }
+}
+
+inline
+void
+vector_copy(int N, std::complex<double> const* x, int incx, std::complex<double>* y, int incy)
+{
+   if (incx == 1 && incy == 1)
+   {
+      std::memcpy(y, x, N*sizeof(std::complex<double>));
+   }
+   for (int i = 0; i < N; ++i)
+   {
+      *y = *x;
+      x += incx;
+      y += incy;
+   }
+}
+
+//
+// vector_copy_scaled
+//
+
+void
+vector_copy_scaled(int N, double alpha, double const* x, int incx, double* y, int incy)
+{
+   for (int i = 0; i < N; ++i)
+   {
+      *y = alpha * (*x);
+      x += incx;
+      y += incy;
+   }
+}
+
+void
+vector_copy_scaled(int N, std::complex<double> alpha,
+                   std::complex<double> const* x, int incx,
+                   std::complex<double>* y, int incy)
+{
+   for (int i = 0; i < N; ++i)
+   {
+      *y = alpha * (*x);
+      x += incx;
+      y += incy;
+   }
+}
+
+//
+// vector_add
+//
+
+void
+vector_add(int N, double const* x, int incx, double* y, int incy)
+{
+   for (int i = 0; i < N; ++i)
+   {
+      *y += (*x);
+      x += incx;
+      y += incy;
+   }
+}
+
+void
+vector_add(int N, std::complex<double> const* x, int incx,
+           std::complex<double>* y, int incy)
+{
+   for (int i = 0; i < N; ++i)
+   {
+      *y += (*x);
+      x += incx;
+      y += incy;
+   }
+}
+
+//
+// vector_add_scaled
+//
+
+void
+vector_add_scaled(int N, double alpha, double const* x, int incx, double* y, int incy)
+{
+   for (int i = 0; i < N; ++i)
+   {
+      *y += alpha * (*x);
+      x += incx;
+      y += incy;
+   }
+}
+
+void
+vector_add_scaled(int N, std::complex<double> alpha,
+                  std::complex<double> const* x, int incx,
+                  std::complex<double>* y, int incy)
+{
+   for (int i = 0; i < N; ++i)
+   {
+      *y += alpha * (*x);
+      x += incx;
+      y += incy;
+   }
+}
+
+//
+// matrix_copy
+//
+
+inline
+void matrix_copy(char Atrans, int M, int N, double const* A, int lda, double* B, int ldb)
 {
    if (Atrans == 'N')
    {

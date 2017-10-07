@@ -24,6 +24,7 @@
 #include "gpu_buffer.h"
 #include "blas/vectorref.h"
 #include "blas/vector.h"
+#include "blas/vector_view.h"
 
 namespace cublas
 {
@@ -31,6 +32,12 @@ namespace cublas
 //
 // GPU-storage vector type.
 //
+
+class gpu_tag {};
+
+template <typename T>
+class gpu_matrix;
+
 template <typename T>
 class gpu_vector;
 
@@ -38,11 +45,20 @@ class gpu_vector;
 
 namespace blas
 {
-template <typename T>
-struct blas_traits<cublas::gpu_vector<T>>
+template <>
+struct blas_traits<cublas::gpu_tag>
 {
+   template <typename T>
    using storage_type       = cuda::gpu_ptr<T>;
+
+   template <typename T>
    using const_storage_type = cuda::const_gpu_ptr<T>;
+
+   template <typename T>
+   using matrix_type        = cublas::gpu_matrix<T>;
+
+   template <typename T>
+   using vector_type        = cublas::gpu_vector<T>;
 };
 
 } // namespace blas
@@ -51,7 +67,7 @@ namespace cublas
 {
 
 template <typename T>
-class gpu_vector : public blas::BlasVector<T, gpu_vector<T>>
+class gpu_vector : public blas::BlasVector<T, gpu_vector<T>, gpu_tag>
 {
    public:
       using value_type         = T;
@@ -80,21 +96,21 @@ class gpu_vector : public blas::BlasVector<T, gpu_vector<T>>
 
       // assignment of expressions based on the same vector type
       template <typename U>
-      gpu_vector& operator=(blas::VectorRef<T, gpu_vector<T>, U> const& E)
+      gpu_vector& operator=(blas::VectorRef<T, U, gpu_tag> const& E)
       {
 	 assign(*this, E.as_derived());
 	 return *this;
       }
 
       template <typename U>
-      gpu_vector& operator+=(blas::VectorRef<T, gpu_vector<T>, U> const& E)
+      gpu_vector& operator+=(blas::VectorRef<T, U, gpu_tag> const& E)
       {
 	 add(*this, E.as_derived());
 	 return *this;
       }
 
       template <typename U>
-      gpu_vector& operator-=(blas::VectorRef<T, gpu_vector<T>, U> const& E)
+      gpu_vector& operator-=(blas::VectorRef<T, U, gpu_tag> const& E)
       {
 	 subtract(*this, E.as_derived());
 	 return *this;
@@ -121,91 +137,10 @@ class gpu_vector : public blas::BlasVector<T, gpu_vector<T>>
 //
 
 template <typename T>
-class gpu_vector_view : public blas::BlasVector<T, gpu_vector<T>, gpu_vector_view<T>>
-{
-   public:
-      using value_type         = T;
-      using storage_type       = cuda::gpu_ptr<T>;
-      using const_storage_type = cuda::const_gpu_ptr<T>;
-
-      gpu_vector_view() = delete;
-
-      gpu_vector_view(int Size_, int Stride_, cuda::gpu_ptr<T> Ptr_)
-         : Size(Size_), Stride(Stride_), Ptr(Ptr_) {}
-
-      gpu_vector_view(gpu_vector_view&& Other) = default;
-
-      gpu_vector_view(gpu_vector_view const&) = delete;
-
-      gpu_vector_view& operator=(gpu_vector_view&&) = delete;
-
-      ~gpu_vector_view() = default;
-
-      template <typename U>
-      gpu_vector_view&& operator=(blas::VectorRef<T, gpu_vector<T>, U> const& E) &&
-      {
-	 assign(std::move(*this), E.as_derived());
-	 return std::move(*this);
-      }
-
-      template <typename U>
-      gpu_vector_view&& operator+=(blas::VectorRef<T, gpu_vector<T>, U> const& E) &&
-      {
-	 add(*this, E.as_derived());
-	 return *this;
-      }
-
-      template <typename U>
-      gpu_vector_view&& operator-=(blas::VectorRef<T, gpu_vector<T>, U> const& E) &&
-      {
-	 subtract(*this, E.as_derived());
-	 return *this;
-      }
-
-      int stride() const { return Stride; }
-
-      int size() const { return Size; }
-
-      storage_type storage() && { return Ptr; }
-      const_storage_type storage() const& { return Ptr; }
-
-   private:
-      int Size;
-      int Stride;
-      cuda::gpu_ptr<T> Ptr;
-};
+using gpu_vector_view = blas::vector_view<T, gpu_tag>;
 
 template <typename T>
-class const_gpu_vector_view : public blas::BlasVector<T, gpu_vector<T>, gpu_vector_view<T>>
-{
-   public:
-      using value_type         = T;
-      using storage_type       = cuda::const_gpu_ptr<T>;
-      using const_storage_type = cuda::const_gpu_ptr<T>;
-
-      const_gpu_vector_view() = delete;
-
-      const_gpu_vector_view(int Size_, int Stride_, cuda::const_gpu_ptr<T> Ptr_);
-
-      const_gpu_vector_view(const_gpu_vector_view&& Other) = default;
-
-      const_gpu_vector_view(const_gpu_vector_view const&) = delete;
-
-      const_gpu_vector_view& operator=(const_gpu_vector_view&&) = delete;
-
-      ~const_gpu_vector_view() = default;
-
-      int stride() const { return Stride; }
-
-      int size() const { return Size; }
-
-      const_storage_type storage() const { return Ptr; }
-
-   private:
-      int Size;
-      int Stride;
-      cuda::const_gpu_ptr<T> Ptr;
-};
+using const_gpu_vector_view = blas::const_vector_view<T, gpu_tag>;
 
 namespace detail
 {
@@ -253,7 +188,7 @@ gpu_vector<T>::gpu_vector(int Size_)
 // blocking vector get
 template <typename T, typename U>
 blas::Vector<T>
-get_wait(blas::BlasVector<T, gpu_vector<T>, U> const& M)
+get_wait(blas::BlasVector<T, U, gpu_tag> const& M)
 {
    blas::Vector<T> Result(M.size());
    cublas::check_error(cublasGetVector(M.size(), sizeof(T),
@@ -265,7 +200,7 @@ get_wait(blas::BlasVector<T, gpu_vector<T>, U> const& M)
 // blocking vector set
 template <typename T, typename U>
 void
-set_wait(gpu_vector<T>& A, blas::BlasVector<T, blas::Vector<T>, U> const& B)
+set_wait(gpu_vector<T>& A, blas::BlasVector<T, U, blas::cpu_tag> const& B)
 {
    DEBUG_CHECK_EQUAL(A.rows(), B.rows());
    DEBUG_CHECK_EQUAL(A.cols(), B.cols());
@@ -274,7 +209,7 @@ set_wait(gpu_vector<T>& A, blas::BlasVector<T, blas::Vector<T>, U> const& B)
 
 template <typename T, typename U>
 void
-set_wait(gpu_vector_view<T>&& A, blas::BlasVector<T, blas::Vector<T>, U> const& B)
+set_wait(gpu_vector_view<T>&& A, blas::BlasVector<T, U, blas::cpu_tag> const& B)
 {
    DEBUG_CHECK_EQUAL(A.rows(), B.rows());
    DEBUG_CHECK_EQUAL(A.cols(), B.cols());
@@ -326,7 +261,7 @@ copy(blas::BlasVector<T, gpu_vector<T>, U> const& x)
 
 template <typename T, typename U>
 inline
-void vector_copy_scaled(T alpha, blas::BlasVector<T, gpu_vector<T>, U> const& x, gpu_vector<T>& y)
+void vector_copy_scaled(T alpha, blas::BlasVector<T, U, gpu_tag> const& x, gpu_vector<T>& y)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
    cublas::copy(get_handle(), x.size(), x.storage(), x.stride(), y.storage(), y.stride());
@@ -335,7 +270,7 @@ void vector_copy_scaled(T alpha, blas::BlasVector<T, gpu_vector<T>, U> const& x,
 
 template <typename T, typename U>
 inline
-void vector_copy_scaled(T alpha, blas::BlasVector<T, gpu_vector<T>, U> const& x, gpu_vector_view<T>&& y)
+void vector_copy_scaled(T alpha, blas::BlasVector<T, U, gpu_tag> const& x, gpu_vector_view<T>&& y)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
    cublas::copy(get_handle(), x.size(), x.storage(), x.stride(), std::move(y).storage(), y.stride());
@@ -344,7 +279,7 @@ void vector_copy_scaled(T alpha, blas::BlasVector<T, gpu_vector<T>, U> const& x,
 
 template <typename T, typename U>
 inline
-void vector_copy(blas::BlasVector<T, gpu_vector<T>, U> const& x, gpu_vector<T>& y)
+void vector_copy(blas::BlasVector<T, U, gpu_tag> const& x, gpu_vector<T>& y)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
    cublas::copy(get_handle(), x.size(), x.storage(), x.stride(), y.storage(), y.stride());
@@ -352,7 +287,7 @@ void vector_copy(blas::BlasVector<T, gpu_vector<T>, U> const& x, gpu_vector<T>& 
 
 template <typename T, typename U>
 inline
-void vector_copy(blas::BlasVector<T, gpu_vector<T>, U> const& x, gpu_vector_view<T>&& y)
+void vector_copy(blas::BlasVector<T, U, gpu_tag> const& x, gpu_vector_view<T>&& y)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
    cublas::copy(get_handle(), x.size(), x.storage(), x.stride(), y.storage(), y.stride());
@@ -360,7 +295,7 @@ void vector_copy(blas::BlasVector<T, gpu_vector<T>, U> const& x, gpu_vector_view
 
 template <typename T, typename U>
 inline
-void vector_add_scaled(T alpha, blas::BlasVector<T, gpu_vector<T>, U> const& x, gpu_vector<T>& y)
+void vector_add_scaled(T alpha, blas::BlasVector<T, U, gpu_tag> const& x, gpu_vector<T>& y)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
    cublas::axpy(get_handle(), x.size(), alpha,
@@ -370,7 +305,7 @@ void vector_add_scaled(T alpha, blas::BlasVector<T, gpu_vector<T>, U> const& x, 
 
 template <typename T, typename U>
 inline
-void vector_add_scaled(T alpha, blas::BlasVector<T, gpu_vector<T>, U> const& x, gpu_vector_view<T>&& y)
+void vector_add_scaled(T alpha, blas::BlasVector<T, U, gpu_tag> const& x, gpu_vector_view<T>&& y)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
    cublas::axpy(get_handle(), x.size(), alpha,
@@ -380,7 +315,7 @@ void vector_add_scaled(T alpha, blas::BlasVector<T, gpu_vector<T>, U> const& x, 
 
 template <typename T, typename U>
 inline
-void vector_add(blas::BlasVector<T, gpu_vector<T>, U> const& x, gpu_vector<T>& y)
+void vector_add(blas::BlasVector<T, U, gpu_tag> const& x, gpu_vector<T>& y)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
    cublas::axpy(get_handle(), x.size(), blas::number_traits<T>::identity(),
@@ -390,7 +325,7 @@ void vector_add(blas::BlasVector<T, gpu_vector<T>, U> const& x, gpu_vector<T>& y
 
 template <typename T, typename U>
 inline
-void vector_add(blas::BlasVector<T, gpu_vector<T>, U> const& x, gpu_vector_view<T>&& y)
+void vector_add(blas::BlasVector<T, U, gpu_tag> const& x, gpu_vector_view<T>&& y)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
    cublas::axpy(get_handle(), x.size(), blas::number_traits<T>::identity(),

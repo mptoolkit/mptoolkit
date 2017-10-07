@@ -32,20 +32,45 @@ inline char const* matrix_blas_library()
    return "Standard BLAS (no extensions in use)";
 };
 
-inline
-void
-gemm(char Atrans, char Btrans, int M, int N, int K, std::complex<double> alpha,
-     std::complex<double> const* A, int lda,
-     std::complex<double> const* B, int ldb,
-     std::complex<double> beta, std::complex<double>* C, int ldc)
-{
-   CHECK(Atrans != 'R')("R trans is not yet implemented!");
-   CHECK(Btrans != 'R')("R trans is not yet implemented!");
-   BLAS::zgemm(Atrans, Btrans, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
-}
+//
+// vector
+//
 
 void
-matrix_copy(char Atrans, int M, int N, double const* A, int lda, double* , int ldbB);
+vector_copy(int M, double const* x, int incx, double* y, int incy);
+
+void
+vector_copy(int N, std::complex<double> const* x, int incx, std::complex<double>* y, int incy);
+
+void
+vector_copy_scaled(int N, double alpha, double const* A, int lda, double* B, int ldb);
+
+void
+vector_copy_scaled(int N, std::complex<double> alpha,
+                   std::complex<double> const* x, int incx,
+                   std::complex<double>* y, int incy);
+
+void
+vector_add(int N, double const* x, int incx, double* y, int incy);
+
+void
+vector_add(int N, std::complex<double> const* x, int incx,
+           std::complex<double>* y, int incy);
+
+void
+vector_add_scaled(int N, double alpha, double const* x, int incx, double* y, int incy);
+
+void
+vector_add_scaled(int N, std::complex<double> alpha,
+                  std::complex<double> const* x, int incx,
+                  std::complex<double>* y, int incy);
+
+//
+// matrix
+//
+
+void
+matrix_copy(char Atrans, int M, int N, double const* x, int incx, double* y, int incy);
 
 void
 matrix_copy(char Atrans, int M, int N,
@@ -75,6 +100,20 @@ void
 matrix_add_scaled(char Atrans, int M, int N, std::complex<double> alpha,
                   std::complex<double> const* A, int lda,
                   std::complex<double>* B, int ldb);
+
+// level 3
+
+inline
+void
+gemm(char Atrans, char Btrans, int M, int N, int K, std::complex<double> alpha,
+     std::complex<double> const* A, int lda,
+     std::complex<double> const* B, int ldb,
+     std::complex<double> beta, std::complex<double>* C, int ldc)
+{
+   CHECK(Atrans != 'R')("R trans is not yet implemented!");
+   CHECK(Btrans != 'R')("R trans is not yet implemented!");
+   BLAS::zgemm(Atrans, Btrans, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+}
 
 } // namespace blas
 

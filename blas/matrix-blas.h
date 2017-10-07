@@ -29,10 +29,7 @@ namespace blas
 
 template <typename T, typename U, typename V>
 inline
-void gemv(T alpha, BlasMatrix<T, Matrix<T>, U> const& A,
-          BlasVector<T, Vector<T>, V> const& x,
-          T beta,
-          Vector<T>& y)
+void gemv(T alpha, BlasMatrix<T, U, cpu_tag> const& A, BlasVector<T, V, cpu_tag> const& x, T beta, Vector<T>& y)
 {
    DEBUG_CHECK_EQUAL(A.cols(), x.size());
    DEBUG_CHECK_EQUAL(A.rows(), y.size());
@@ -43,8 +40,8 @@ void gemv(T alpha, BlasMatrix<T, Matrix<T>, U> const& A,
 
 template <typename T, typename U, typename V>
 inline
-void gemm(T alpha, BlasMatrix<T, Matrix<T>, U> const& A,
-          T beta, BlasMatrix<T, Matrix<T>, V> const& B,
+void gemm(T alpha, BlasMatrix<T, U, cpu_tag> const& A,
+          T beta, BlasMatrix<T, V, cpu_tag> const& B,
           Matrix<T>& C)
 {
    DEBUG_CHECK_EQUAL(A.cols(), B.rows());
@@ -57,7 +54,7 @@ void gemm(T alpha, BlasMatrix<T, Matrix<T>, U> const& A,
 
 template <typename T, typename U>
 inline
-void matrix_copy_scaled(T alpha, BlasMatrix<T, Matrix<T>, U> const& A, Matrix<T>& C)
+void matrix_copy_scaled(T alpha, BlasMatrix<T, U, cpu_tag> const& A, Matrix<T>& C)
 {
    matrix_copy_scaled(A.trans(), A.rows(), A.cols(), alpha, A.leading_dimension(), A.storage(),
                       C.storage(), C.leading_dimension());
@@ -65,7 +62,7 @@ void matrix_copy_scaled(T alpha, BlasMatrix<T, Matrix<T>, U> const& A, Matrix<T>
 
 template <typename T, typename U>
 inline
-void matrix_copy(BlasMatrix<T, Matrix<T>, U> const& A, Matrix<T>& C)
+void matrix_copy(BlasMatrix<T, U, cpu_tag> const& A, Matrix<T>& C)
 {
    matrix_copy(A.trans(), A.rows(), A.cols(), A.leading_dimension(), A.storage(),
                       C.storage(), C.leading_dimension());
@@ -73,7 +70,7 @@ void matrix_copy(BlasMatrix<T, Matrix<T>, U> const& A, Matrix<T>& C)
 
 template <typename T, typename U>
 inline
-void matrix_add_scaled(T alpha, BlasMatrix<T, Matrix<T>, U> const& A, Matrix<T>& C)
+void matrix_add_scaled(T alpha, BlasMatrix<T, U, cpu_tag> const& A, Matrix<T>& C)
 {
    matrix_add_scaled(A.trans(), A.rows(), A.cols(), alpha, A.leading_dimension(), A.storage(),
                       C.storage(), C.leading_dimension());
@@ -81,7 +78,7 @@ void matrix_add_scaled(T alpha, BlasMatrix<T, Matrix<T>, U> const& A, Matrix<T>&
 
 template <typename T, typename U>
 inline
-void matrix_add(BlasMatrix<T, Matrix<T>, U> const& A, Matrix<T>& C)
+void matrix_add(BlasMatrix<T, U, cpu_tag> const& A, Matrix<T>& C)
 {
    matrix_add(A.trans(), A.rows(), A.cols(), A.leading_dimension(), A.storage(),
               C.storage(), C.leading_dimension());

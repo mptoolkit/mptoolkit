@@ -1,0 +1,123 @@
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// blas/matrix.h
+//
+// Copyright (C) 2017 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
+#if !defined(MPTOOLKIT_BLAS_VECTOR_VIEW_H)
+#define MPTOOLKIT_BLAS_VECTOR_VIEW_H
+
+#include "vectorref.h"
+
+namespace blas
+{
+
+// vector_view is a proxy class that interprets strided 'view' of a
+// buffer as a vector.  vector_view can be used as It can be used as an l-value.
+//
+
+template <typename T, typename Tag>
+class vector_view : public BlasVector<T, vector_view<T, Tag>, Tag>
+{
+   public:
+      using value_type         = T;
+      using tag_type           = Tag;
+      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
+      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+
+      vector_view() = delete;
+
+      vector_view(int Size_, int Stride_, storage_type const& Ptr_)
+         : Size(Size_), Stride(Stride_), Ptr(Ptr_) {}
+
+      vector_view(vector_view&& Other) = default;
+
+      vector_view(vector_view const&) = delete;
+
+      vector_view& operator=(vector_view&&) = delete;
+
+      ~vector_view() = default;
+
+      template <typename U>
+      vector_view&& operator=(blas::VectorRef<T, U, Tag> const& E) &&
+      {
+	 assign(std::move(*this), E.as_derived());
+	 return std::move(*this);
+      }
+
+      template <typename U>
+      vector_view&& operator+=(blas::VectorRef<T, U, Tag> const& E) &&
+      {
+	 add(*this, E.as_derived());
+	 return *this;
+      }
+
+      template <typename U>
+      vector_view&& operator-=(blas::VectorRef<T, U, Tag> const& E) &&
+      {
+	 subtract(*this, E.as_derived());
+	 return *this;
+      }
+
+      int stride() const { return Stride; }
+
+      int size() const { return Size; }
+
+      storage_type storage() && { return Ptr; }
+      const_storage_type storage() const& { return Ptr; }
+
+   private:
+      int Size;
+      int Stride;
+      storage_type Ptr;
+};
+
+template <typename T, typename Tag>
+class const_vector_view : public blas::BlasVector<T,vector_view<T, Tag>, Tag>
+{
+   public:
+      using value_type         = T;
+      using tag_type           = Tag;
+      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
+      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+
+      const_vector_view() = delete;
+
+      const_vector_view(int Size_, int Stride_, const_storage_type const& Ptr_);
+
+      const_vector_view(const_vector_view&& Other) = default;
+
+      const_vector_view(const_vector_view const&) = delete;
+
+      const_vector_view& operator=(const_vector_view&&) = delete;
+
+      ~const_vector_view() = default;
+
+      int stride() const { return Stride; }
+
+      int size() const { return Size; }
+
+      const_storage_type storage() const { return Ptr; }
+
+   private:
+      int Size;
+      int Stride;
+      const_storage_type Ptr;
+};
+
+} // namespace blas
+
+#endif

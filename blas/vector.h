@@ -27,6 +27,8 @@
 #include "common/trace.h"
 #include "arena.h"
 #include "vectorref.h"
+#include "vector_view.h"
+#include "matrix-lowlevel-blas.h"
 #include <list>
 #include <mutex>
 #include <iostream>
@@ -36,23 +38,37 @@
 namespace blas
 {
 
+struct cpu_tag {};
+
+template <typename T>
+class Vector;
+
+template <typename T>
+class Matrix;
+
+template <>
+struct blas_traits<cpu_tag>
+{
+   template <typename T>
+   using storage_type       = T*;
+
+   template <typename T>
+   using const_storage_type = T const*;
+
+   template <typename T>
+   using matrix_type        = Matrix<T>;
+
+   template <typename T>
+   using vector_type        = Vector<T>;
+};
+
 //
 // Memory-based vector type.
 // Moveable, non-copyable, non-resizable (except by moving).
 //
 
 template <typename T>
-class Vector;
-
-template <typename T>
-struct blas_traits<Vector<T>>
-{
-   using storage_type       = T*;
-   using const_storage_type = T const*;
-};
-
-template <typename T>
-class Vector : public BlasVector<T, Vector<T>>
+class Vector : public BlasVector<T, Vector<T>, cpu_tag>
 {
    public:
       using value_type     = T;
@@ -121,21 +137,21 @@ class Vector : public BlasVector<T, Vector<T>>
       // eg they would generally block, and we can get the same effect with
       // move construction/assignment and get/set operations.
       template <typename U>
-      Vector& operator=(VectorRef<T, Vector<T>, U> const& E)
+      Vector& operator=(VectorRef<T, U, cpu_tag> const& E)
       {
 	 assign(*this, E.as_derived());
 	 return *this;
       }
 
       template <typename U>
-      Vector& operator+=(VectorRef<T, Vector<T>, U> const& E)
+      Vector& operator+=(VectorRef<T, U, cpu_tag> const& E)
       {
 	 add(*this, E.as_derived());
 	 return *this;
       }
 
       template <typename U>
-      Vector& operator-=(VectorRef<T, Vector<T>, U> const& E)
+      Vector& operator-=(VectorRef<T, U, cpu_tag> const& E)
       {
 	 subtract(*this, E.as_derived());
 	 return *this;
@@ -167,6 +183,12 @@ class Vector : public BlasVector<T, Vector<T>>
 };
 
 template <typename T>
+using VectorView = vector_view<T, cpu_tag>;
+
+template <typename T>
+using ConstVectorView = const_vector_view<T, cpu_tag>;
+
+template <typename T>
 std::ostream&
 operator<<(std::ostream& out, Vector<T> const& x)
 {
@@ -180,6 +202,110 @@ operator<<(std::ostream& out, Vector<T> const& x)
       first = false;
    }
    return out;
+}
+
+// copy
+
+template <typename T, typename U>
+Vector<T>
+copy(blas::BlasVector<T, Vector<T>, U> const& x, blas::arena const& A)
+{
+   Vector<T> Result(x.size(), A);
+   assign(Result, x.derived());
+   return Result;
+}
+
+template <typename T, typename U>
+Vector<T>
+copy(blas::BlasVector<T, Vector<T>, U> const& x)
+{
+   Vector<T> Result(x.size());
+   assign(Result, x.derived());
+   return Result;
+}
+
+// BLAS functions
+
+template <typename T, typename U>
+inline
+void vector_copy_scaled(T alpha, blas::BlasVector<T, U, cpu_tag> const& x, Vector<T>& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_copy_scaled(x.size(), alpha, x.storage(), x.stride(), y.storage(), y.stride());
+}
+
+template <typename T, typename U>
+inline
+void vector_copy_scaled(T alpha, blas::BlasVector<T, U, cpu_tag> const& x, VectorView<T>&& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_copy_scaled(x.size(), alpha, x.storage(), x.stride(), static_cast<VectorView<T>&&>(y).storage(), y.stride());
+}
+
+template <typename T, typename U>
+inline
+void vector_copy(blas::BlasVector<T, U, cpu_tag> const& x, Vector<T>& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_copy(x.size(), x.storage(), x.stride(), y.storage(), y.stride());
+}
+
+template <typename T, typename U>
+inline
+void vector_copy(blas::BlasVector<T, U, cpu_tag> const& x, VectorView<T>&& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_copy(x.size(), x.storage(), x.stride(), static_cast<VectorView<T>&&>(y).storage(), y.stride());
+}
+
+template <typename T, typename U>
+inline
+void vector_add_scaled(T alpha, blas::BlasVector<T, U, cpu_tag> const& x, Vector<T>& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_add_scaled(x.size(), alpha, x.storage(), x.stride(), y.storage(), y.stride());
+}
+
+template <typename T, typename U>
+inline
+void vector_add_scaled(T alpha, blas::BlasVector<T, U, cpu_tag> const& x, VectorView<T>&& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_add_scaled(x.size(), alpha, x.storage(), x.stride(), static_cast<VectorView<T>&&>(y).storage(), y.stride());
+}
+
+template <typename T, typename U>
+inline
+void vector_add(blas::BlasVector<T, U, cpu_tag> const& x, Vector<T>& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_add(x.size(), blas::number_traits<T>::identity(),
+              x.storage(), x.stride(),
+              y.storage(), y.stride());
+}
+
+template <typename T, typename U>
+inline
+void vector_add(blas::BlasVector<T, U, cpu_tag> const& x, VectorView<T>&& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_add(x.size(), blas::number_traits<T>::identity(),
+              x.storage(), x.stride(),
+              y.storage(), y.stride());
+}
+
+template <typename T>
+inline
+void vector_scale(T alpha, Vector<T>& y)
+{
+   vector_scale(y.size(), alpha, y.storage(), y.stride());
+}
+
+template <typename T>
+inline
+void vector_scale(T alpha, VectorView<T>&& y)
+{
+   vector_scale(y.size(), alpha, static_cast<VectorView<T>&&>(y).storage(), y.stride());
 }
 
 } // namespace blas

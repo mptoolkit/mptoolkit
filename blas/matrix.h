@@ -27,6 +27,8 @@
 #include "common/trace.h"
 #include "arena.h"
 #include "matrixref.h"
+#include "vector.h"
+#include "vector_view.h"
 #include <list>
 #include <mutex>
 #include <iostream>
@@ -45,17 +47,13 @@ class PermutationMatrix;
 //
 
 template <typename T>
-class Matrix;
+using VectorView = vector_view<T, cpu_tag>;
 
 template <typename T>
-struct blas_traits<Matrix<T>>
-{
-   using storage_type       = T*;
-   using const_storage_type = T const*;
-};
+using ConstVectorView = const_vector_view<T, cpu_tag>;
 
 template <typename T>
-class Matrix : public BlasMatrix<T, Matrix<T>>
+class Matrix : public BlasMatrix<T, Matrix<T>, cpu_tag>
 {
    public:
       typedef T value_type;
@@ -112,21 +110,21 @@ class Matrix : public BlasMatrix<T, Matrix<T>>
       // eg they would generally block, and we can get the same effect with
       // move construction/assignment and get/set operations.
       template <typename U>
-      Matrix& operator=(MatrixRef<T, Matrix<T>, U> const& E)
+      Matrix& operator=(MatrixRef<T, U, cpu_tag> const& E)
       {
 	 assign(*this, E.as_derived());
 	 return *this;
       }
 
       template <typename U>
-      Matrix& operator+=(MatrixRef<T, Matrix<T>, U> const& E)
+      Matrix& operator+=(MatrixRef<T, U, cpu_tag> const& E)
       {
 	 add(*this, E.as_derived());
 	 return *this;
       }
 
       template <typename U>
-      Matrix& operator-=(MatrixRef<T, Matrix<T>, U> const& E)
+      Matrix& operator-=(MatrixRef<T, U, cpu_tag> const& E)
       {
 	 subtract(*this, E.as_derived());
 	 return *this;
@@ -138,6 +136,42 @@ class Matrix : public BlasMatrix<T, Matrix<T>>
       int leading_dimension() const { return LeadingDimension; }
 
       constexpr char trans() const { return 'N'; }
+
+      VectorView<T>
+      row(int r)
+      {
+         return VectorView<T>(Cols, LeadingDimension, Data + r);
+      }
+
+      ConstVectorView<T>
+      row(int r) const
+      {
+         return ConstVectorView<T>(Cols, LeadingDimension, Data + r);
+      }
+
+      VectorView<T>
+      column(int c)
+      {
+         return VectorView<T>(Rows, 1, Data + LeadingDimension*c);
+      }
+
+      ConstVectorView<T>
+      column(int c) const
+      {
+         return ConstVectorView<T>(Rows, 1, Data + LeadingDimension*c);
+      }
+
+      VectorView<T>
+      diagonal()
+      {
+         return VectorView<T>(std::min(Rows,Cols), LeadingDimension+1, Data);
+      }
+
+      ConstVectorView<T>
+      diagonal() const
+      {
+         return ConstVectorView<T>(std::min(Rows,Cols), LeadingDimension+1, Data);
+      }
 
       T* storage() { return Data; }
       T const* storage() const { return Data; }
@@ -163,25 +197,6 @@ class Matrix : public BlasMatrix<T, Matrix<T>>
       int LeadingDimension;
       T* Data;
 };
-
-template <typename T>
-void
-wite_format(std::ostream& out, T x)
-{
-   out << std::setw(6) << x;
-}
-
-void
-write_format(std::ostream& out, double x)
-{
-   out << std::setw(10) << x;
-}
-
-void
-write_format(std::ostream& out, std::complex<double> x)
-{
-   out << format_complex(x);
-}
 
 template <typename T>
 std::ostream&

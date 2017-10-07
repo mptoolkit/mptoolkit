@@ -63,20 +63,6 @@ gemm(char Atrans, char Btrans, int M, int N, int K, double alpha, double const* 
    BLAS::dgemm(Atrans, Btrans, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
 }
 
-inline
-void
-vector_copy(int N, double const* x, int incx, double* y, int incy)
-{
-   BLAS::dcopy(N, x, incx, y, incy);
-}
-
-inline
-void
-vector_copy(int N, std::complex<double> const* x, int incx, std::complex<double>* y, int incy)
-{
-   BLAS::zcopy(N, x, incx, y, incy);
-}
-
 } // namespace blas
 
 #endif
