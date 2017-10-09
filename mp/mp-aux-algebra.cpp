@@ -277,7 +277,7 @@ int main(int argc, char** argv)
          std::complex<double> e;
          StateComponent v;
          int n;
-         std::tie(e, n, v) = get_left_eigenvector(Psi1, InfPsi.qshift(), *Psi2, InfPsi.qshift(), StringOperator,
+         std::tie(e, n, v) = get_left_eigenvector(*Psi2, InfPsi.qshift(), Psi1, InfPsi.qshift(), StringOperator,
                                                   Tol, Verbose);
 
 
