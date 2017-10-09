@@ -50,4 +50,9 @@ int main()
 
    y = get_wait(gA.diagonal());
    std::cout << y << '\n';
+
+   cublas::gpu_ref<double> x;
+   x = trace(A);
+
+   std::cout << get_wait(x) << '\n';
 }

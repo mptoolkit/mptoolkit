@@ -249,6 +249,8 @@ copy(gpu_matrix<T> const& x, blas::arena const& A)
    return Result;
 }
 
+// BLAS-like functions
+
 // trace
 #if 0
 template <typename T>
@@ -263,11 +265,12 @@ gpu_buffer<T>
 trace(gpu_matrix<T> const& x)
 {
    DEBUG_CHECK_EQUAL(x.rows(), x.cols());
+
    return cublas::dot_device(get_handle(), x.rows(), x.storage(), x.leading_dimension()+1, gpu_vecs<T>::ones.storage(), 1);
 }
 #endif
 
-// BLAS functions
+
 
 template <typename T, typename U, typename V>
 inline

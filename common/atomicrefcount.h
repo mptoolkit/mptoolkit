@@ -106,7 +106,7 @@ class shared_counter
 	 return *this;
       }
 
-      void allocate(int InitialValue = 0)
+      void allocate(int InitialValue = 1)
       {
 	 DEBUG_CHECK(!Count);
 	 Count = new AtomicRefCount(InitialValue);

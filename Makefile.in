@@ -134,7 +134,11 @@ wavefunctionobj = linearwavefunction.o canonicalwavefunction.o infinitewavefunct
 
 parserobj = parser.o
 
-cudaobj = cuda.o cublas.o
+cudaobj = cuda.o cublas.o gpu.o
+
+cudakernelobj = cub.cu.o
+
+gpu.o : $(cudakernelobj)
 
 mpobj = $(mpoobj) $(mpsobj) $(latticeobj) $(wavefunctionobj)
 
@@ -298,6 +302,12 @@ dep : $(cxx_depend)
 
 %.o : %.f
 	$(F77) $(FFLAGS) -c $< -o $@
+
+%.cu.o : %.cu
+	nvcc $(NVFLAGS) -c $< -o $@
+
+%.o : %.cu.o
+	nvcc $(NVFLAGS) -dlink $< -o $@
 
 %.d :
 	\

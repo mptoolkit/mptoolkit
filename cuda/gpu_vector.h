@@ -25,6 +25,7 @@
 #include "blas/vectorref.h"
 #include "blas/vector.h"
 #include "blas/vector_view.h"
+#include "cub.h"
 
 namespace cublas
 {
@@ -59,6 +60,9 @@ struct blas_traits<cublas::gpu_tag>
 
    template <typename T>
    using vector_type        = cublas::gpu_vector<T>;
+
+   template <typename T>
+   using async_value        = cuda::gpu_ref<T>;
 };
 
 } // namespace blas
@@ -345,6 +349,22 @@ inline
 void vector_scale(T alpha, gpu_vector_view<T>&& y)
 {
    cublas::scal(get_handle(), y.size(), alpha, y.storage(), y.stride());
+}
+
+// vector_sum
+
+template <typename T, typename U>
+void
+vector_sum(blas::BlasVector<T, U, gpu_tag> const& x, cuda::gpu_ref<T>& y)
+{
+   cub::vector_sum(x.size(), x.storage(), x.stride(), y);
+}
+
+template <typename T, typename U>
+void
+vector_sum_scaled(T const& alpha, blas::BlasVector<T, U, gpu_tag> const& x, cuda::gpu_ref<T>& y)
+{
+   cub::vector_sum(alpha, x.size(), x.storage(), x.stride(), y);
 }
 
 } // namespace cublas

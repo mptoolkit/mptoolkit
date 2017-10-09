@@ -35,7 +35,21 @@ vector_add_scaled(alpha, BlasVector x, BlasVector& y)
 // y = alpha * A * x + beta * y
 gemv(alpha, BlasMatrix A, beta, BlasVector x, beta, Vector& y)
 
+// y *= alpha
 scale(alpha, Vector& y)
+
+// functions that return scalar values - Ref here stands
+// for traits::async_ref<T>
+
+// y = sum x[i]
+vector_sum(BlasVector x, Ref& y)
+
+// y = alpha * (sum x[i])
+vector_sum_scaled(alpha, BlasVector x, Ref& y)
+
+// z = sum conj(x[i]) * y[i]
+vector_dot(BlasVector x, BlasVector y, Ref& z)
+
 
 
 // y = x, also does transpose etc operations

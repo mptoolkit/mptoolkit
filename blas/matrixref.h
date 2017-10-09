@@ -429,6 +429,24 @@ void subtract(MatrixRef<T, Derived, Tag>& C, MatrixProduct<T, U, V, Tag> const& 
    gemm(-a.Factor, a.A, number_traits<T>::zero(), a.B, C.as_derived());
 }
 
+// miscellaneous
+
+template <typename T, typename U, typename Tag>
+typename blas_traits<Tag>::template async_ref<T>
+trace(BlasMatrix<T, U, Tag> const& x)
+{
+   typename blas_traits<Tag>::template async_ref<T> Result;
+   trace(x, Result);
+   return Result;
+}
+
+template <typename T, typename U, typename Tag>
+void
+trace(BlasMatrix<T, U, Tag> const& x, typename blas_traits<Tag>::template async_ref<T>& r)
+{
+   vector_sum(x.size(), x.storage(), x.stride(), r);
+}
+
 } // namespace blas
 
 #endif
