@@ -67,9 +67,6 @@
 /* Define if you have CUDA library. */
 #undef HAVE_CUDA
 
-/* Define to 1 if you have the <cuda_runtime.h> header file. */
-#undef HAVE_CUDA_RUNTIME_H
-
 /* define if the compiler supports basic C++11 syntax */
 #undef HAVE_CXX11
 

@@ -60,6 +60,9 @@ struct blas_traits<cpu_tag>
 
    template <typename T>
    using vector_type        = Vector<T>;
+
+   template <typename T>
+   using async_ref          = T;
 };
 
 //

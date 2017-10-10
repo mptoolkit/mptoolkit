@@ -96,6 +96,7 @@ class AllocationBlock
 	    CurrentOffset = 0;
 	    return true;
 	 }
+         return false;
       }
 
       bool try_free(void* Ptr, size_t AllocSize)
@@ -174,6 +175,7 @@ void* BlockAllocator::allocate(std::size_t Size, std::size_t Align)
    size_t BlockSize = round_up(Size, BlockMultiple);
    Allocations.push_back(AllocationBlock(BlockSize, Align, FreeOnDestructor));
    void* p = Allocations.back().try_allocate(Size, Align);
+   return p;
 }
 
 inline
@@ -390,15 +392,28 @@ class gpu_ref
    public:
       gpu_ref() = delete;
 
-      ~gpu_ref()
+      gpu_ref(T* Ptr_, stream* ParentStream_ = nullptr)
+         : Ptr(Ptr_), ParentStream(ParentStream_)
       {
-	 Stream.synchronize();
-	 Buf->remove(this);
+         if (ParentStream)
+            Stream.wait(ParentStream->record());
       }
 
-      gpu_ref(gpu_ref&& other)
-      { using std::swap; swap(Buf, other.Buf); swap(Ptr, other.Ptr); swap(Stream, other.Stream);
-	 swap(Sync, other.Sync); }
+      ~gpu_ref()
+      {
+         if (ParentStream)
+         {
+            if (Sync.is_null())
+               Sync = Stream.record();
+            ParentStream->wait(Sync);
+         }
+      }
+
+      gpu_ref(gpu_ref&& other) : Ptr(other.Ptr), ParentStream(other.ParentStream), Stream(std::move(other.Stream)),
+                                 Sync(std::move(other.Sync))
+      {
+         other.ParentStream = nullptr;
+      }
 
       gpu_ref(gpu_ref const& Other) = delete;
 
@@ -407,32 +422,35 @@ class gpu_ref
       gpu_ref& operator=(gpu_ref<T> const& Other)
       {
 	 // wait until the other stream has finished writing
-	 Stream.wait(Other.Sync);
+	 Stream.wait(Other.sync());
 	 // do the copy
 	 memcpy_device_to_device_async(Stream, Other.Ptr, Ptr, sizeof(T));
 	 // signal our event that we have finished writing
 	 Sync = Stream.record();
 	 // make the other stream wait until the copy is finished
-	 Other.Stream.wait(Sync);
+	 Other.wait(Sync);
 	 return *this;
       }
 
+      event sync() const { if (Sync.is_null()) Sync = Stream.record(); return Sync; }
+
+      void wait(event const& e) const { Stream.wait(e); }
+
       void set_wait(T const& x)
       {
+         Sync.clear();
 	 memcpy_host_to_device(Stream, &x, Ptr, sizeof(T));
-	 Sync = Stream.record();
       }
 
       // sets the element asynchronously.
       void set(T const& x)
       {
-	 T const* Ptr = get_global_constant(x);
+         Sync.clear();
 	 memcpy_host_to_device_async(Stream, &x, Ptr, sizeof(T));
-	 Sync = Stream.record();
       }
 
       // blocking get operation
-      T get_wait()
+      T get_wait() const
       {
 	 T x;
 	 memcpy_device_to_host(Ptr, &x, sizeof(T));
@@ -445,20 +463,43 @@ class gpu_ref
 	 cuda::event E;
 	 memcpy_device_to_host_async(Stream, Ptr, x, sizeof(T));
 	 Sync = Stream.record();
-	 return E;
+	 return Sync;
       }
 
+      T* device_ptr() { return Ptr; }
+      cuda::stream const& get_stream() const { return Stream; }
+
    private:
-      friend gpu_ref<T> gpu_buffer<T>::operator[](int n);
-
-      gpu_ref(gpu_buffer<T>* Buf_, T* Ptr_) : Buf(Buf_), Ptr(Ptr_) { }
-
-      gpu_buffer<T>* Buf;
       T* Ptr;
-      AtomicRefCount Count;
-      cuda::stream Stream;
-      cuda::event Sync;
+      cuda::stream* ParentStream;
+      mutable cuda::stream Stream;
+      mutable cuda::event Sync;
 };
+
+template <typename T>
+inline
+T
+get_wait(gpu_ref<T> const& x)
+{
+   return x.get_wait();
+}
+
+// function to return a newly allocated gpu_ref
+template <typename T>
+gpu_ref<T>
+allocate_gpu_ref()
+{
+   static gpu_buffer<T> Buf = gpu_buffer<T>::allocate(100, make_gpu_block_allocator());
+   return Buf[0];
+}
+
+template <typename T>
+inline
+gpu_ref<T>
+gpu_buffer<T>::operator[](int n)
+{
+   return gpu_ref<T>(Ptr+n, &Stream);
+}
 
 } // namsepace cuda
 

@@ -51,8 +51,8 @@ int main()
    y = get_wait(gA.diagonal());
    std::cout << y << '\n';
 
-   cublas::gpu_ref<double> x;
-   x = trace(A);
+   cuda::gpu_ref<double> r = cuda::allocate_gpu_ref<double>();
+   trace(gA, r);
 
-   std::cout << get_wait(x) << '\n';
+   std::cout << get_wait(r) << '\n';
 }

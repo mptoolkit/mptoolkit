@@ -49,5 +49,6 @@ if test x"$ax_cuda_ok" = xyes; then
         $1
 else
         $2
+        echo -n
 fi
 ])dnl AX_CUDA

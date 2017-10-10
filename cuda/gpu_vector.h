@@ -62,7 +62,7 @@ struct blas_traits<cublas::gpu_tag>
    using vector_type        = cublas::gpu_vector<T>;
 
    template <typename T>
-   using async_value        = cuda::gpu_ref<T>;
+   using async_ref          = cuda::gpu_ref<T>;
 };
 
 } // namespace blas
@@ -361,10 +361,12 @@ vector_sum(blas::BlasVector<T, U, gpu_tag> const& x, cuda::gpu_ref<T>& y)
 }
 
 template <typename T, typename U>
-void
-vector_sum_scaled(T const& alpha, blas::BlasVector<T, U, gpu_tag> const& x, cuda::gpu_ref<T>& y)
+T
+vector_sum(blas::BlasVector<T, U, gpu_tag> const& x)
 {
-   cub::vector_sum(alpha, x.size(), x.storage(), x.stride(), y);
+   cuda::gpu_ref<T> y;
+   cub::vector_sum(x.size(), x.storage(), x.stride(), y);
+   return y;
 }
 
 } // namespace cublas

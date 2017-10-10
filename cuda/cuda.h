@@ -226,6 +226,16 @@ class timer
       cudaEvent_t stop_;
 };
 
+// copy GPU memory syncronously
+void memcpy_device_to_host(void const* src, void* dest, std::size_t size);
+
+inline
+void memcpy_device_to_host(void const* src, void* dest, std::size_t size)
+{
+   cudaMemcpyAsync(dest, src, size, cudaMemcpyDeviceToHost);
+}
+
+
 // copy GPU memory asyncronously
 void memcpy_device_to_device_async(stream const& s, void const* src, void* dest, std::size_t size);
 

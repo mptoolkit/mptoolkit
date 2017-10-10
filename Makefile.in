@@ -7,8 +7,11 @@ SHELL = /bin/sh
 SRCDIR = @srcdir@
 TOP_SRCDIR = @top_srcdir@
 
-LDFLAGS = @LDFLAGS@ @BOOST_LDFLAGS@ $(LDFLAGS_EXTRA)
 CXX = @CXX@
+LDFLAGS = @LDFLAGS@ @BOOST_LDFLAGS@ $(LDFLAGS_EXTRA)
+CUDA_LDFLAGS = @CUDA_LDFLAGS@
+
+NVCC = @NVCC@
 
 HAVE_OPENMP = @HAVE_OPENMP@
 OPENMP_CXXFLAGS = @OPENMP_CXXFLAGS@
@@ -26,6 +29,8 @@ CXXFLAGS = -I. -I$(SRCDIR) @CPPFLAGS@ @BOOST_CPPFLAGS@ @CXXFLAGS@ -DHAVE_CONFIG_
 # -DLAPACK_TRACE_DETAILED \
 # -DPHEAP_TRACE_DETAILED \
 # -DDATABLOCK_TRACE_DETAILED -DPOOL_ALLOCATOR_VERBOSE -DPOOLALLOC_TRACE_DETAILED \
+
+NVFLAGS = @NVFLAGS@ -I. -I$(SRCDIR)
 
 #either MAKEDEPEND line here will work (although the makedepend version hasn't been tested
 # since the last modifications).  We could possibly add a configure check for -MM and
@@ -137,8 +142,6 @@ parserobj = parser.o
 cudaobj = cuda.o cublas.o gpu.o
 
 cudakernelobj = cub.cu.o
-
-gpu.o : $(cudakernelobj)
 
 mpobj = $(mpoobj) $(mpsobj) $(latticeobj) $(wavefunctionobj)
 
@@ -303,11 +306,13 @@ dep : $(cxx_depend)
 %.o : %.f
 	$(F77) $(FFLAGS) -c $< -o $@
 
-%.cu.o : %.cu
-	nvcc $(NVFLAGS) -c $< -o $@
+.SUFFIXES: .cu .cu.o
 
-%.o : %.cu.o
-	nvcc $(NVFLAGS) -dlink $< -o $@
+%.cu.o : %.cu
+	$(NVCC) $(NVFLAGS) -c $< -o $@
+
+gpu.o : $(cudakernelobj)
+	$(NVCC) $(NVFLAGS) $(CUDA_LDFLAGS) -dlink $< -o $@
 
 %.d :
 	\
@@ -553,7 +558,7 @@ mp-imake-transverse-lattice : triangular_operator.o infinitewavefunctionleft.o r
 mp-imake-transverse-lattice-folded : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
 mp-iwigner-eckart : infinitewavefunctionleft.o wigner_eckart.o
 
-test-gpu-matrix : cublas.o cuda.o
+test-gpu-matrix : cublas.o cuda.o cub.cu.o gpu.o
 
 LIBS_mp-ioverlap = $(LIBARPACK)
 LIBS_mp-ispectrum = $(LIBARPACK)

@@ -17,8 +17,8 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "cuda/cub.h"
 #include "cub/cub.cuh"
+#include "cuda/cub.h"
 #include <type_traits>
 
 namespace cub
@@ -28,47 +28,59 @@ template <typename T>
 class stride_ptr
 {
    public:
-      using iterator_category = std::random_access_iterator_tag;
       using value_type        = typename std::remove_const<T>::type;
+      using iterator_category = std::random_access_iterator_tag;
       using pointer           = T*;
       using reference         = T&;
+      using difference_type   = std::ptrdiff_t;
 
-      stride_ptr() {}
-      stride_ptr(T* x_, int stride_) : x(x_), stride(stride_) {}
-      stride_ptr(stride_ptr<value_type> const& Other) : x(Other.x), stride(Other.stride) {}
+      __host__ __device__ stride_ptr() {}
+      __host__ __device__ stride_ptr(T* x, int stride) : x_(x), stride_(stride) {}
+      __host__ __device__ stride_ptr(stride_ptr<value_type> const& Other) : x_(Other.x_), stride_(Other.stride_) {}
 
-      reference operaor*() const { return *x; }
-      pointer operator->() const { return x; }
+      __host__ __device__ reference operator*() const { return *x_; }
+      __host__ __device__ pointer operator->() const { return x_; }
 
-      reference operator[](int i) const { return x[i*stride]; }
+      __host__ __device__ reference operator[](int i) const { return x_[i*stride_]; }
 
-      stride_ptr& operator++() { x += stride; return this; }
-      stride_ptr operator++(int) { T* Temp = x; x += stride; return stride_ptr(Temp, stride); }
+      __host__ __device__ stride_ptr& operator++() { x_ += stride_; return this; }
+      __host__ __device__ stride_ptr operator++(int) { T* Temp = x_; x_ += stride_; return stride_ptr(Temp, stride_); }
 
-      stride_ptr& operator--() { x -= stride; return this; }
-      stride_ptr operator--(int) { T* Temp = x; x -= stride; return stride_ptr(Temp, stride); }
+      __host__ __device__ stride_ptr& operator--() { x_ -= stride_; return this; }
+      __host__ __device__ stride_ptr operator--(int) { T* Temp = x_; x_ -= stride_; return stride_ptr(Temp, stride_); }
 
-      stride_ptr& operator+=(int i) { x += i*stride; return *this; }
+      __host__ __device__ stride_ptr& operator+=(int i) { x_ += i*stride_; return *this; }
+
+      __host__ __device__ int stride() const { return stride_; }
 
    private:
       friend class stride_ptr<value_type>;
 
-      T* x;
-      int stride;
+      T* x_;
+      int stride_;
 };
 
 template <typename T>
-void
-vector_sum(int Size, const_gpu_ptr<T> const& x, int incx, gpu_ref<T>& r)
+inline
+__host__ __device__
+stride_ptr<T>
+operator+(stride_ptr<T> const& x, int i)
 {
-   int TempStorageBytes = 0;
-   double* TempStorage = nullptr;
+   return stride_ptr<T>(x.operator->()+i, x.stride());
+}
+
+template <typename T>
+void
+vector_sum(int Size, cuda::const_gpu_ptr<T> const& x, int incx, cuda::gpu_ref<T>& r)
+{
+   std::size_t TempStorageBytes = 0;
+   void* TempStorage = nullptr;
    cub::DeviceReduce::Sum(TempStorage, TempStorageBytes, stride_ptr<T const>(x.device_ptr(), incx),
-                          r.device_ptr(), Size, r.stream().raw_stream());
+                          r.device_ptr(), Size, r.get_stream().raw_stream());
 }
 
 // template instantiations
-template void vector_sum(int Size, const_gpu_ptr<double> const& x, int incx, gpu_ref<double>& r);
+template void vector_sum<double>(int Size, cuda::const_gpu_ptr<double> const& x, int incx, cuda::gpu_ref<double>& r);
 
 } // namespace cub
 

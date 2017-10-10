@@ -432,19 +432,17 @@ void subtract(MatrixRef<T, Derived, Tag>& C, MatrixProduct<T, U, V, Tag> const& 
 // miscellaneous
 
 template <typename T, typename U, typename Tag>
-typename blas_traits<Tag>::template async_ref<T>
-trace(BlasMatrix<T, U, Tag> const& x)
-{
-   typename blas_traits<Tag>::template async_ref<T> Result;
-   trace(x, Result);
-   return Result;
-}
-
-template <typename T, typename U, typename Tag>
 void
 trace(BlasMatrix<T, U, Tag> const& x, typename blas_traits<Tag>::template async_ref<T>& r)
 {
-   vector_sum(x.size(), x.storage(), x.stride(), r);
+   vector_sum(x.as_derived().diagonal(), r);
+}
+
+template <typename T, typename U, typename Tag>
+T
+trace(BlasMatrix<T, U, Tag> const& x)
+{
+   return vector_sum(x.as_derived().diagonal());
 }
 
 } // namespace blas

@@ -193,18 +193,6 @@ AC_CHECK_HEADERS(sys/ioctl.h)
 AC_FUNC_STRERROR_R
 AC_C_BIGENDIAN
 
-dnl Checks for programs
-
-#CUDA available? link with cublas and avoid cblas and clapack then...
-#AC_CHECK_LIB([cublas], [cublasInit], [MATPTROPT="" NVCC=nvcc NVCCFLAGS="-O -arch sm_20" CUDALIBS=-lcublas CUDAOPT=-DCUDALA CBLASOPT=-DNONCBLAS CLAPACKOPT=-DNONCLAPACK CBLASLIB=""], [CUDALIB="" CUDAOPT=""])
-#AC_CHECK_HEADER([cublas.h],,[CUDAOPT="" CUDALIBS=""], AC_INCLUDES_DEFAULT)
-#AC_SUBST([CUDALIBS])
-#AC_SUBST([CUDAOPT])
-#AC_SUBST([NVCC])
-#AC_SUBST([NVCCFLAGS])
-#AC_SUBST([MATPTROPT])
-
-
 dnl CUDA runtime support
 
 dnl if we're using cublas then force detection of cuda by default
@@ -214,8 +202,13 @@ if test "x$with_cuda" = x; then
    fi
 fi
 
-AX_CUDA([AC_CHECK_HEADERS(cuda_runtime.h, [], [AC_MSG_ERROR([Cannot find cuda_runtime.h header])])], 
-[ AS_IF([test "x$ax_cuda_ok" != xdisable], [AC_MSG_ERROR([Cannot find CUDA library])]) ])
+AX_CUDA_CONFIG
+dnl ([AC_CHECK_HEADERS(cuda_runtime.h, [], [AC_MSG_ERROR([Cannot find cuda_runtime.h header])])], 
+dnl [ AS_IF([test "x$ax_cuda_ok" != xdisable], [AC_MSG_ERROR([Cannot find CUDA library])]) ])
+
+
+dnl AX_CUDA([AC_CHECK_HEADERS(cuda_runtime.h, [], [AC_MSG_ERROR([Cannot find cuda_runtime.h header])])], 
+dnl [ AS_IF([test "x$ax_cuda_ok" != xdisable], [AC_MSG_ERROR([Cannot find CUDA library])]) ])
 
 dnl cublas support
 AX_CUBLAS([AC_CHECK_HEADERS(cublas_v2.h, [], [AC_MSG_ERROR([Cannot find cublas_v2.h header])])], 

@@ -96,7 +96,8 @@ class const_vector_view : public blas::BlasVector<T,vector_view<T, Tag>, Tag>
 
       const_vector_view() = delete;
 
-      const_vector_view(int Size_, int Stride_, const_storage_type const& Ptr_);
+      const_vector_view(int Size_, int Stride_, const_storage_type const& Ptr_)
+         : Size(Size_), Stride(Stride_), Ptr(Ptr_) {}
 
       const_vector_view(const_vector_view&& Other) = default;
 
