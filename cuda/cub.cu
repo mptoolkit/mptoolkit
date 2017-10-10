@@ -20,6 +20,7 @@
 #include "cub/cub.cuh"
 #include "cuda/cub.h"
 #include <type_traits>
+#include "common/trace.h"
 
 namespace cub
 {
@@ -66,7 +67,7 @@ __host__ __device__
 stride_ptr<T>
 operator+(stride_ptr<T> const& x, int i)
 {
-   return stride_ptr<T>(x.operator->()+i, x.stride());
+   return stride_ptr<T>(x.operator->()+i*x.stride(), x.stride());
 }
 
 template <typename T>
@@ -77,6 +78,10 @@ vector_sum(int Size, cuda::const_gpu_ptr<T> const& x, int incx, cuda::gpu_ref<T>
    void* TempStorage = nullptr;
    cub::DeviceReduce::Sum(TempStorage, TempStorageBytes, stride_ptr<T const>(x.device_ptr(), incx),
                           r.device_ptr(), Size, r.get_stream().raw_stream());
+   TempStorage = cuda::allocate_gpu_temporary(TempStorageBytes);
+   cub::DeviceReduce::Sum(TempStorage, TempStorageBytes, stride_ptr<T const>(x.device_ptr(), incx),
+                          r.device_ptr(), Size, r.get_stream().raw_stream());
+   cuda::free_gpu_temporary(TempStorage, TempStorageBytes);
 }
 
 // template instantiations

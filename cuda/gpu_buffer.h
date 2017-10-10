@@ -134,7 +134,6 @@ AllocationBlock::~AllocationBlock()
 {
    if (FreeOnDestructor && BasePtr)
    {
-      TRACE("Freeing");
       DEBUG_TRACE_IF(NumAllocations != 0)(NumAllocations);
       if (NumAllocations == 0)
          check_error(cudaFree(static_cast<void*>(BasePtr)));
@@ -438,6 +437,7 @@ class gpu_ref
 
       void set_wait(T const& x)
       {
+         Stream.synchronize();
          Sync.clear();
 	 memcpy_host_to_device(Stream, &x, Ptr, sizeof(T));
       }
@@ -453,6 +453,7 @@ class gpu_ref
       T get_wait() const
       {
 	 T x;
+         Stream.synchronize();
 	 memcpy_device_to_host(Ptr, &x, sizeof(T));
 	 return x;
       }
@@ -468,6 +469,7 @@ class gpu_ref
 
       T* device_ptr() { return Ptr; }
       cuda::stream const& get_stream() const { return Stream; }
+      cuda::stream& get_stream() { return Stream; }
 
    private:
       T* Ptr;
@@ -500,6 +502,14 @@ gpu_buffer<T>::operator[](int n)
 {
    return gpu_ref<T>(Ptr+n, &Stream);
 }
+
+//
+// helper functions for temporary allocations
+//
+
+void* allocate_gpu_temporary(int Size);
+
+void free_gpu_temporary(void* Buf, int Size);
 
 } // namsepace cuda
 

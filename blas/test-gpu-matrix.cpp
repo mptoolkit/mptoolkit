@@ -52,6 +52,7 @@ int main()
    std::cout << y << '\n';
 
    cuda::gpu_ref<double> r = cuda::allocate_gpu_ref<double>();
+   //   vector_sum(gA.diagonal(), r);
    trace(gA, r);
 
    std::cout << get_wait(r) << '\n';

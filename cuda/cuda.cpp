@@ -29,6 +29,7 @@
 
 #include "cuda.h"
 #include "common/environment.h"
+#include "gpu_buffer.h"
 
 namespace cuda
 {
@@ -144,6 +145,9 @@ void FreeEvent(cudaEvent_t event_)
    std::lock_guard<std::mutex> lock(EventFreeListMutex);
    EventFreeList.push_back(event_);
 }
+
+// allocator for temporary GPU memory
+blas::arena gpu_temp_arena(new BlockAllocator(DefaultBlockMultiple, false));
 
 } // namespace detail
 

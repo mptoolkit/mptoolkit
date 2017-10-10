@@ -80,4 +80,24 @@ gpu_buffer<T>::cptr(int Offset) const
    return const_gpu_ptr<T>(*this, Offset);
 }
 
+namespace detail
+{
+extern blas::arena gpu_temp_arena;
+} // namespace detail
+
+inline
+void*
+allocate_gpu_temporary(int Size)
+{
+   return detail::gpu_temp_arena.allocate(Size, 8);
+}
+
+inline
+void
+free_gpu_temporary(void* Buf, int Size)
+{
+   detail::gpu_temp_arena.free(Buf, Size);
+}
+
+
 } // namespace cuda
