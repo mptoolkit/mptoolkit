@@ -26,7 +26,7 @@ namespace blas
 {
 
 // vector_view is a proxy class that interprets strided 'view' of a
-// buffer as a vector.  vector_view can be used as It can be used as an l-value.
+// buffer as a vector.  vector_view can be used as an l-value.
 //
 
 template <typename T, typename Tag>

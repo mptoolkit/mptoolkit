@@ -187,6 +187,7 @@ class BlasMatrixConj : public BlasMatrix<T, BlasMatrixConj<T, BaseType, Tag>, Ta
 // trans
 
 template <typename T, typename BaseType, typename Tag>
+inline
 BlasMatrixTrans<T, BaseType, Tag>
 trans(BlasMatrix<T, BaseType, Tag> const& x)
 {
@@ -201,6 +202,7 @@ trans(BlasMatrixTrans<T, BaseType, Tag> const& x)
 }
 
 template <typename T, typename BaseType, typename Tag>
+inline
 BlasMatrixConj<T, BaseType, Tag>
 trans(BlasMatrixHerm<T, BaseType, Tag> const& x)
 {
@@ -208,6 +210,7 @@ trans(BlasMatrixHerm<T, BaseType, Tag> const& x)
 }
 
 template <typename T, typename BaseType, typename Tag>
+inline
 BlasMatrixHerm<T, BaseType, Tag>
 trans(BlasMatrixConj<T, BaseType, Tag> const& x)
 {
@@ -217,6 +220,7 @@ trans(BlasMatrixConj<T, BaseType, Tag> const& x)
 // herm
 
 template <typename T, typename BaseType, typename Tag>
+inline
 BlasMatrixHerm<T, BaseType, Tag>
 herm(BlasMatrix<T, BaseType, Tag> const& x)
 {
@@ -225,6 +229,7 @@ herm(BlasMatrix<T, BaseType, Tag> const& x)
 
 
 template <typename T, typename BaseType, typename Tag>
+inline
 BlasMatrixHerm<T, BaseType, Tag>
 conj(BlasMatrixTrans<T, BaseType, Tag> const& x)
 {
@@ -232,6 +237,7 @@ conj(BlasMatrixTrans<T, BaseType, Tag> const& x)
 }
 
 template <typename T, typename BaseType, typename Tag>
+inline
 BaseType const&
 herm(BlasMatrixHerm<T, BaseType, Tag> const& x)
 {
@@ -239,6 +245,7 @@ herm(BlasMatrixHerm<T, BaseType, Tag> const& x)
 }
 
 template <typename T, typename BaseType, typename Tag>
+inline
 BlasMatrixTrans<T, BaseType, Tag>
 herm(BlasMatrixConj<T, BaseType, Tag> const& x)
 {
@@ -246,6 +253,7 @@ herm(BlasMatrixConj<T, BaseType, Tag> const& x)
 }
 
 template <typename T, typename BaseType, typename Tag>
+inline
 BlasMatrixConj<T, BaseType, Tag>
 herm(BlasMatrixTrans<T, BaseType, Tag> const& x)
 {
@@ -254,6 +262,7 @@ herm(BlasMatrixTrans<T, BaseType, Tag> const& x)
 
 // specialization for real types, herm() reduces to trans()
 template <typename BaseType, typename Tag>
+inline
 BlasMatrixTrans<float, BaseType, Tag>
 herm(BlasMatrix<float, BaseType, Tag> const& x)
 {
@@ -261,6 +270,7 @@ herm(BlasMatrix<float, BaseType, Tag> const& x)
 }
 
 template <typename BaseType, typename Tag>
+inline
 BlasMatrixTrans<double, BaseType, Tag>
 herm(BlasMatrix<double, BaseType, Tag> const& x)
 {
@@ -269,6 +279,7 @@ herm(BlasMatrix<double, BaseType, Tag> const& x)
 
 #if defined(HAVE_FLOAT128)
 template <typename BaseType, typename Tag>
+inline
 BlasMatrixTrans<float128, BaseType, Tag>
 herm(BlasMatrix<float128, BaseType, Tag> const& x)
 {
@@ -279,6 +290,7 @@ herm(BlasMatrix<float128, BaseType, Tag> const& x)
 // conj
 
 template <typename T, typename BaseType, typename Tag>
+inline
 BlasMatrixConj<T, BaseType, Tag>
 conj(BlasMatrix<T, BaseType, Tag> const& x)
 {
@@ -287,6 +299,7 @@ conj(BlasMatrix<T, BaseType, Tag> const& x)
 
 // specialization for real types, conj() reduces to a no-op
 template <typename BaseType, typename Tag>
+inline
 BaseType const&
 conj(BlasMatrix<float, BaseType, Tag> const& x)
 {
@@ -294,6 +307,7 @@ conj(BlasMatrix<float, BaseType, Tag> const& x)
 }
 
 template <typename BaseType, typename Tag>
+inline
 BaseType const&
 conj(BlasMatrix<double, BaseType, Tag> const& x)
 {
@@ -302,6 +316,7 @@ conj(BlasMatrix<double, BaseType, Tag> const& x)
 
 #if defined(HAVE_FLOAT128)
 template <typename BaseType, typename Tag>
+inline
 BaseType const&
 conj(BlasMatrix<float128, BaseType, Tag> const& x)
 {
@@ -312,18 +327,21 @@ conj(BlasMatrix<float128, BaseType, Tag> const& x)
 // assignment
 
 template <typename T, typename U, typename V, typename Tag>
+inline
 void assign(MatrixRef<T, U, Tag>& A, MatrixRef<T, V, Tag> const& B)
 {
-   matrix_copy(B.as_derived()(), A.as_derived());
+   matrix_copy(B.as_derived(), A.as_derived());
 }
 
 template <typename T, typename U, typename V, typename Tag>
+inline
 void add(MatrixRef<T, U, Tag>& A, MatrixRef<T, V, Tag> const& B)
 {
    matrix_add(B.as_derived(), A.as_derived());
 }
 
 template <typename T, typename U, typename V, typename Tag>
+inline
 void subtract(MatrixRef<T, U, Tag>& A, MatrixRef<T, V, Tag> const& B)
 {
    matrix_add_scaled(-number_traits<T>::identity(), B.as_derived(), A.as_derived());
@@ -351,6 +369,7 @@ class ScaledMatrix : public MatrixRef<T, ScaledMatrix<T, BaseType, Tag>, Tag>
 };
 
 template <typename T, typename BaseType, typename Tag, typename X>
+inline
 ScaledMatrix<decltype(safe_convert<T>(std::declval<X>())), BaseType, Tag>
 operator*(X const& alpha, MatrixRef<T, BaseType, Tag> const& M)
 {
@@ -358,18 +377,21 @@ operator*(X const& alpha, MatrixRef<T, BaseType, Tag> const& M)
 }
 
 template <typename T, typename U, typename V, typename Tag>
+inline
 void assign(MatrixRef<T, U, Tag>& A, ScaledMatrix<T, V, Tag> const& B)
 {
    matrix_copy_scaled(B.factor(), B.base(), A.as_derived());
 }
 
 template <typename T, typename U, typename V, typename Tag>
+inline
 void add(MatrixRef<T, U, Tag>& A, ScaledMatrix<T, V, Tag> const& B)
 {
    matrix_add_scaled(B.factor(), B.base(), A.as_derived());
 }
 
 template <typename T, typename U, typename V, typename Tag>
+inline
 void subtract(MatrixRef<T, U, Tag>& A, ScaledMatrix<T, V, Tag> const& B)
 {
    matrix_add_scaled(-B.factor(), B.base(), A.as_derived());
@@ -396,6 +418,7 @@ struct MatrixProduct : public MatrixRef<T, MatrixProduct<T, U, V, Tag>, Tag>
 };
 
 template <typename T, typename U, typename V, typename Tag>
+inline
 MatrixProduct<T, U, V, Tag>
 operator*(MatrixRef<T, U, Tag> const& A, MatrixRef<T, V, Tag> const& B)
 {
@@ -403,6 +426,7 @@ operator*(MatrixRef<T, U, Tag> const& A, MatrixRef<T, V, Tag> const& B)
 }
 
 template <typename T, typename U, typename V, typename Tag>
+inline
 MatrixProduct<T, U, V, Tag>
 operator*(ScaledMatrix<T, U, Tag> const& A, MatrixRef<T, V, Tag> const& B)
 {
@@ -412,18 +436,21 @@ operator*(ScaledMatrix<T, U, Tag> const& A, MatrixRef<T, V, Tag> const& B)
 // matrix product with a scalar, alpha * A * B
 
 template <typename T, typename Derived, typename U, typename V, typename Tag>
+inline
 void assign(MatrixRef<T, Derived, Tag>& C, MatrixProduct<T, U, V, Tag> const& a)
 {
    gemm(a.Factor, a.A, number_traits<T>::zero(), a.B, C.as_derived());
 }
 
 template <typename T, typename Derived, typename U, typename V, typename Tag>
+inline
 void add(MatrixRef<T, Derived, Tag>& C, MatrixProduct<T, U, V, Tag> const& a)
 {
    gemm(a.Factor, a.A, number_traits<T>::identity(), a.B, C.as_derived());
 }
 
 template <typename T, typename Derived, typename U, typename V, typename Tag>
+inline
 void subtract(MatrixRef<T, Derived, Tag>& C, MatrixProduct<T, U, V, Tag> const& a)
 {
    gemm(-a.Factor, a.A, number_traits<T>::zero(), a.B, C.as_derived());
@@ -433,12 +460,14 @@ void subtract(MatrixRef<T, Derived, Tag>& C, MatrixProduct<T, U, V, Tag> const& 
 
 template <typename T, typename U, typename Tag>
 void
+inline
 trace(BlasMatrix<T, U, Tag> const& x, typename blas_traits<Tag>::template async_ref<T>& r)
 {
    vector_sum(x.as_derived().diagonal(), r);
 }
 
 template <typename T, typename U, typename Tag>
+inline
 T
 trace(BlasMatrix<T, U, Tag> const& x)
 {

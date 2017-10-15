@@ -91,24 +91,25 @@ class BasicSparseVector
          base_iterator I = Elements.find(Col);
          if (I == Elements.end())
          {
-            Elements.insert(Col, value);
+            Elements.insert(std::make_pair(Col, copy(value)));
          }
          else
          {
-            (*I) += value;
+            I->second += value;
          }
       }
 
-      void add(int Col, T&& value)
+      template <typename U>
+      void add(int Col, U&& value)
       {
          base_iterator I = Elements.find(Col);
          if (I == Elements.end())
          {
-            Elements.insert(Col, std::move(value));
+            Elements.insert(std::make_pair(Col, T(std::move(value))));
          }
          else
          {
-            (*I) += std::move(value);
+            I->second += std::move(value);
          }
       }
 
@@ -117,24 +118,25 @@ class BasicSparseVector
          base_iterator I = Elements.find(Col);
          if (I == Elements.end())
          {
-            Elements.insert(Col, -value);
+            Elements.insert(std::make_pair(Col, -value));
          }
          else
          {
-            (*I) -= value;
+            I->second -= value;
          }
       }
 
-      void subtract(int Col, T&& value)
+      template <typename U>
+      void subtract(int Col, U&& value)
       {
          base_iterator I = Elements.find(Col);
          if (I == Elements.end())
          {
-            Elements.insert(Col, -std::move(value));
+            Elements.insert(std::make_pair(Col, -std::move(value)));
          }
          else
          {
-            (*I) -= std::move(value);
+            I->second -= std::move(value);
          }
       }
 
@@ -196,6 +198,12 @@ class SparseMatrix
       using iterator       = typename std::vector<SparseMatrixRow<T>>::iterator;
       using const_iterator = typename std::vector<SparseMatrixRow<T>>::const_iterator;
 
+      SparseMatrix() = delete;
+
+      SparseMatrix(SparseMatrix&& other) = default;
+
+      SparseMatrix(SparseMatrix const&) = delete;
+
       SparseMatrix(int Rows_, int Cols_) : Cols(Cols_)
       {
          RowStorage.reserve(Rows_);
@@ -209,7 +217,7 @@ class SparseMatrix
       int cols() const { return Cols; }
       int nnz() const { int Result = 0; for (auto const& x : RowStorage) { Result += x.nnz(); } return Result; }
 
-      void clear() { RowStorage.clear(); Cols = 0; }
+      void clear() { for (auto& r : RowStorage) { r.clear(); } }
 
       iterator begin() { return RowStorage.begin(); }
       iterator end() { return RowStorage.end(); }
@@ -220,8 +228,8 @@ class SparseMatrix
       const_iterator cbegin() const { return RowStorage.begin(); }
       const_iterator cend() const { return RowStorage.end(); }
 
-      row_type& operator[](int r) { return RowStorage[r]; }
-      row_type const& operator[](int r) const { return RowStorage[r]; }
+      row_type& operator[](int r) { DEBUG_RANGE_CHECK(r, 0, RowStorage.size()); return RowStorage[r]; }
+      row_type const& operator[](int r) const { DEBUG_RANGE_CHECK(r, 0, RowStorage.size()); return RowStorage[r]; }
 
       template<typename... Args>
       void emplace(int Row, int Col, Args&&... args)
@@ -232,19 +240,49 @@ class SparseMatrix
 
       void insert(int r, int c, T const& value)
       {
+         DEBUG_RANGE_CHECK(r, 0, RowStorage.size());
+         DEBUG_RANGE_CHECK(c, 0, Cols);
          RowStorage[r].insert(c, value);
       }
 
-      void insert(int r, int c, T&& value)
+      template <typename U>
+      void insert(int r, int c, U&& value)
       {
+         DEBUG_RANGE_CHECK(r, 0, RowStorage.size());
+         DEBUG_RANGE_CHECK(c, 0, Cols);
          RowStorage[r].insert(c, std::move(value));
       }
 
-      void add(int r, int c, T const& value);
-      void add(int r, int c, T&& value);
+      void add(int r, int c, T const& value)
+      {
+         DEBUG_RANGE_CHECK(r, 0, RowStorage.size());
+         DEBUG_RANGE_CHECK(c, 0, Cols);
+         RowStorage[r].add(c, value);
+      }
 
-      void subtract(int r, int c, T const& value);
-      void subtract(int r, int c, T&& value);
+      template <typename U>
+      void add(int r, int c, U&& value)
+      {
+         DEBUG_RANGE_CHECK(r, 0, RowStorage.size());
+         DEBUG_RANGE_CHECK(c, 0, Cols);
+         RowStorage[r].add(c, std::move(value));
+      }
+
+      void subtract(int r, int c, T const& value)
+      {
+         DEBUG_RANGE_CHECK(r, 0, RowStorage.size());
+         DEBUG_RANGE_CHECK(c, 0, Cols);
+         RowStorage[r].subtract(c, value);
+      }
+
+
+      template <typename U>
+      void subtract(int r, int c, U&& value)
+      {
+         DEBUG_RANGE_CHECK(r, 0, RowStorage.size());
+         DEBUG_RANGE_CHECK(c, 0, Cols);
+         RowStorage[r].subtract(c, std::move(value));
+      }
 
       std::vector<SparseMatrixRow<T>> const& access_rows() const { return RowStorage; }
       std::vector<SparseMatrixRow<T>>& access_rows() { return RowStorage; }

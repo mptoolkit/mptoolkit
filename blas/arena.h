@@ -77,7 +77,8 @@ class arena
 
       void free(void* Ptr, std::size_t Size) const
       {
-	 Alloc->free(Ptr, Size);
+         if (Ptr)
+            Alloc->free(Ptr, Size);
       }
 
    private:

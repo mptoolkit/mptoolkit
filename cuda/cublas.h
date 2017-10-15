@@ -204,13 +204,13 @@ gemv(cublas::handle& H, char Atrans, int M, int N, double alpha,
 // geam - we have two versions, for in-place and out-of-place operations
 inline
 void
-geam(cublas::handle& H, char Atrans, int M, int N, double alpha,
-     cuda::const_gpu_ptr<double> A, int lda, cuda::gpu_ptr<double> C, int ldc)
+geam(cublas::handle& H, char Atrans, int M, int N,
+     double alpha, cuda::const_gpu_ptr<double> A, int lda,
+     double beta, cuda::gpu_ptr<double> C, int ldc)
 {
    H.set_stream(C.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    C.wait_for(A);
-   double beta = 0.0;
    check_error(cublasDgeam(H.raw_handle(), cublas_trans(Atrans), CUBLAS_OP_N, M, N,
                            &alpha, A.device_ptr(), lda,
                            &beta, C.device_ptr(), ldc,

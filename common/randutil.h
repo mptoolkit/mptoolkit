@@ -23,7 +23,7 @@
 // The default seed is a constant -- applications should call one of the
 // seed() functions before generating random numbers.
 //
-// If multiple independent streams of random numbers are required, 
+// If multiple independent streams of random numbers are required,
 // then use the class random_stream.  It is safe to use different
 // random_stream objects in different threads.
 
@@ -39,7 +39,7 @@ namespace randutil
 
 // the random number generator.  This is the basic generator that is used
 // to construct a specific distribution, which uses a 32-bit Mersenne Twister.
-// It is an object that is declared here, but defined somewhere else 
+// It is an object that is declared here, but defined somewhere else
 // (in the randutil.cpp implementation file) so we declare it as 'extern'
 //
 // We can also get an unsigned integer with
@@ -60,10 +60,12 @@ unsigned crypto_rand();
 int rand_int(int Min, int Max);
 
 // returns a real number in the range [0,1)
-double rand();
+template <typename T = double>
+T rand();
 
 // returns a uniformly distributed real number, with mean 0, standard deviation 1
-double randn();
+template <typename T = double>
+T randn();
 
 //
 // functions seed the generator
@@ -140,7 +142,7 @@ class random_stream
       // seed from a list
       template <typename T>
       void seed(std::initializer_list<T> s);
-   
+
       // returns the seed that was previously set
       std::vector<unsigned> get_seed();
 
@@ -153,6 +155,6 @@ class random_stream
 } // namespace
 
 // include templates and definitions of inline functions
-#include "randutil.cc"
+#include "randutil.icc"
 
 #endif

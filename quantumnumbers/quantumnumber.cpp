@@ -18,7 +18,6 @@
 // ENDHEADER
 
 #include "common/trace.h"
-#include "common/poolallocator.h"
 #include "quantumnumber.h"
 #include "symmetrylist.h"
 #include <algorithm>

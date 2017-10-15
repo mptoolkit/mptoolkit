@@ -56,7 +56,7 @@ template <typename T, typename U>
 inline
 void matrix_copy_scaled(T alpha, BlasMatrix<T, U, cpu_tag> const& A, Matrix<T>& C)
 {
-   matrix_copy_scaled(A.trans(), A.rows(), A.cols(), alpha, A.leading_dimension(), A.storage(),
+   matrix_copy_scaled(A.trans(), A.rows(), A.cols(), alpha, A.storage(), A.leading_dimension(),
                       C.storage(), C.leading_dimension());
 }
 
@@ -64,7 +64,7 @@ template <typename T, typename U>
 inline
 void matrix_copy(BlasMatrix<T, U, cpu_tag> const& A, Matrix<T>& C)
 {
-   matrix_copy(A.trans(), A.rows(), A.cols(), A.leading_dimension(), A.storage(),
+   matrix_copy(A.trans(), A.rows(), A.cols(), A.storage(), A.leading_dimension(),
                       C.storage(), C.leading_dimension());
 }
 
@@ -72,7 +72,7 @@ template <typename T, typename U>
 inline
 void matrix_add_scaled(T alpha, BlasMatrix<T, U, cpu_tag> const& A, Matrix<T>& C)
 {
-   matrix_add_scaled(A.trans(), A.rows(), A.cols(), alpha, A.leading_dimension(), A.storage(),
+   matrix_add_scaled(A.trans(), A.rows(), A.cols(), alpha, A.storage(), A.leading_dimension(),
                       C.storage(), C.leading_dimension());
 }
 
@@ -80,7 +80,7 @@ template <typename T, typename U>
 inline
 void matrix_add(BlasMatrix<T, U, cpu_tag> const& A, Matrix<T>& C)
 {
-   matrix_add(A.trans(), A.rows(), A.cols(), A.leading_dimension(), A.storage(),
+   matrix_add(A.trans(), A.rows(), A.cols(), A.storage(), A.leading_dimension(),
               C.storage(), C.leading_dimension());
 }
 

@@ -154,7 +154,7 @@ inline
 void VectorBasis::push_back(QuantumNumber const& q, int Dimension)
 {
    Basis_.push_back(q);
-   Dimension_ = direct_sum(Dimension_, Dimension);
+   Dimension_.push_back(Dimension);
 }
 
 inline

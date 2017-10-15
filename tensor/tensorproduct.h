@@ -23,6 +23,7 @@
 #include "tensor.h"
 #include "pstream/pstream.h"
 #include <tuple>
+#include "blas/matrix.h"
 
 namespace Tensor
 {
@@ -51,18 +52,20 @@ class ProductBasisBase
       typedef std::pair<int, int> source_type;
 
    private:
-      typedef std::list<target_type>                TargetListType;
-      typedef LinearAlgebra::Vector<source_type>    SourceListType;
+      typedef std::list<target_type>      TargetListType;
+      typedef std::vector<source_type>    SourceListType;
 
    public:
       typedef TargetListType::const_iterator const_iterator;
+
+      ProductBasisBase(ProductBasisBase&& Other) = default;
 
       left_basis_type const& Left() const { return Left_; }
       right_basis_type const& Right() const { return Right_; }
 
       basis_type const& Basis() const { return Basis_; }
 
-      size_type size() const { return Basis_.size(); }
+      int size() const { return Basis_.size(); }
 
       bool is_null() const { return Basis_.is_null(); }
 
@@ -80,7 +83,7 @@ class ProductBasisBase
       value_type const& operator[](int s) const { return Basis_[s]; }
 
    protected:
-      ProductBasisBase() {}
+      //      ProductBasisBase() {}
       ProductBasisBase(left_basis_type const& B1, right_basis_type const& B2);
       ProductBasisBase(left_basis_type const& B1, right_basis_type const& B2,
                        QuantumNumber const& q);
@@ -98,7 +101,7 @@ class ProductBasisBase
       left_basis_type Left_;
       right_basis_type Right_;
 
-      LinearAlgebra::Matrix<TargetListType> TransformData_;
+      blas::Matrix<TargetListType> TransformData_;
       SourceListType ReverseMapping_;
 };
 
@@ -109,10 +112,10 @@ class ProductBasis<BasisList, BasisList>
    private:
       typedef ProductBasisBase<BasisList, BasisList, BasisList> base_type;
 
-      ProductBasis(base_type const& x) : base_type(x) {}
+      ProductBasis(base_type&& x) : base_type(std::move(x)) {}
 
    public:
-      ProductBasis() {}
+      //      ProductBasis() {}
 
       ProductBasis(left_basis_type const& B1, right_basis_type const& B2)
          : base_type(B1, B2) {}
@@ -141,7 +144,7 @@ class ProductBasis<VectorBasis, VectorBasis>
       typedef ProductBasisBase<VectorBasis, VectorBasis, VectorBasis> base_type;
 
    public:
-      ProductBasis() {}
+      //      ProductBasis() {}
       ProductBasis(left_basis_type const& B1, right_basis_type const& B2);
       ProductBasis(left_basis_type const& B1, right_basis_type const& B2, QuantumNumber const& q);
 
@@ -162,7 +165,7 @@ class ProductBasis<BasisList, VectorBasis>
       typedef ProductBasisBase<BasisList, VectorBasis, VectorBasis> base_type;
 
    public:
-      ProductBasis() {}
+      //      ProductBasis() {}
       ProductBasis(left_basis_type const& B1, right_basis_type const& B2);
       ProductBasis(left_basis_type const& B1, right_basis_type const& B2, QuantumNumber const& q);
 
@@ -183,7 +186,7 @@ class ProductBasis<VectorBasis, BasisList>
       typedef ProductBasisBase<VectorBasis, BasisList, VectorBasis> base_type;
 
    public:
-      ProductBasis() {}
+      //      ProductBasis() {}
       ProductBasis(left_basis_type const& B1, right_basis_type const& B2);
       ProductBasis(left_basis_type const& B1, right_basis_type const& B2, QuantumNumber const& q);
 
@@ -224,6 +227,8 @@ tensor_coefficient(ProductBasis<B1a, B1b> const& P1, ProductBasis<B2a, B2b> cons
                               P1.Left()[s1prime], P1.Right()[s2prime], P1[sprime]);
 }
 
+
+#if 0
 template <typename T1, typename B1, typename B2, typename S1,
           typename T2, typename B3, typename B4, typename S2, typename ProductFunctor>
 IrredTensor<typename LinearAlgebra::result_value<ProductFunctor>::type,
@@ -577,8 +582,10 @@ decompose_tensor_prod(IrredTensor<T, B1, B2, S> const& x,
    return Result;
 }
 
+#endif
+
 } // namespace Tensor
 
-#include "tensorproduct.cc"
+//#include "tensorproduct.cc"
 
 #endif

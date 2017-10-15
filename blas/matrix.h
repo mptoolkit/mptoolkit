@@ -34,6 +34,7 @@
 #include <iostream>
 #include <iomanip>
 #include "common/formatting.h"
+#include "common/randutil.h"
 
 namespace blas
 {
@@ -88,6 +89,13 @@ class Matrix : public BlasMatrix<T, Matrix<T>, cpu_tag>
 
       template <typename U>
       Matrix(std::initializer_list<std::initializer_list<U>> x) : Matrix(x, get_malloc_arena()) {}
+
+      template <typename U>
+      Matrix(MatrixRef<T, U, cpu_tag> const& E)
+         : Matrix(E.rows(), E.cols())
+      {
+         assign(*this, E.as_derived());
+      }
 
       ~Matrix() { if (Data) Arena.free(Data, LeadingDimension*Cols); }
 
@@ -198,23 +206,55 @@ class Matrix : public BlasMatrix<T, Matrix<T>, cpu_tag>
       T* Data;
 };
 
+// copy
+
+template <typename T>
+inline
+Matrix<T>
+copy(Matrix<T> const& x, blas::arena const& A)
+{
+   Matrix<T> Result(x.rows(), x.cols(), A);
+   Result = x;
+   return Result;
+}
+
+template <typename T>
+inline
+Matrix<T>
+copy(Matrix<T> const& x)
+{
+   Matrix<T> Result(x.rows(), x.cols());
+   Result = x;
+   return Result;
+}
+
+template <typename T>
+inline
+Matrix<T>
+copy(Matrix<T>&& x)
+{
+   return std::move(x);
+}
+
+// random_matrix
+
 template <typename T>
 std::ostream&
-operator<<(std::ostream& out, Matrix<T> const& x)
+operator<<(std::ostream& out, Matrix<T> const& x);
+
+template <typename T>
+Matrix<T>
+random_matrix(int Rows, int Cols)
 {
-   out << '[' << x.rows() << ", " << x.cols() << "]\n";
-   for (int r = 0; r < x.rows(); ++r)
+   Matrix<T> Result(Rows, Cols);
+   for (int r = 0; r < Rows; ++r)
    {
-      bool first = true;
-      for (int c = 0; c < x.cols(); ++c)
+      for (int c = 0; c < Cols; ++c)
       {
-         if (!first)
-            out << ", ";
-         write_format(out, x(r,c));
+         Result(r,c) = randutil::rand<T>();
       }
-      out << '\n';
    }
-   return out;
+   return Result;
 }
 
 } // namespace blas

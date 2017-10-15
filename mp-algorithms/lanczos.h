@@ -56,7 +56,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
                double& Tol, int MinIter = 2, int Verbose = 0)
 {
    std::vector<VectorType>     v;          // the Krylov vectors
-   std::vector<VectorType>     Hv;         // the Krylov vectors
+   std::vector<VectorType>     Hv;         // H * the Krylov vectors
 
    LinearAlgebra::Matrix<double> SubH(Iterations+1, Iterations+1, 0.0);
 

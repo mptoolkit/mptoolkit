@@ -33,12 +33,6 @@ std::mt19937 u_rand(TempInitializer);
 std::mutex rd_mutex;
 std::random_device rd;
 
-namespace detail
-{
-   std::uniform_real_distribution<double> UniformDist(0,1);
-   std::normal_distribution<double> NormalDist;
-} // namespace detail
-
 unsigned crypto_rand()
 {
    std::lock_guard<std::mutex> guard(rd_mutex);
@@ -47,7 +41,7 @@ unsigned crypto_rand()
 
 void seed()
 {
-   seed({crypto_rand(), crypto_rand(), crypto_rand(), crypto_rand(), 
+   seed({crypto_rand(), crypto_rand(), crypto_rand(), crypto_rand(),
 	 crypto_rand(), crypto_rand(), crypto_rand(), crypto_rand()});
 }
 
@@ -84,7 +78,7 @@ random_stream::random_stream()
 void
 random_stream::seed()
 {
-   this->seed({crypto_rand(), crypto_rand(), crypto_rand(), crypto_rand(), 
+   this->seed({crypto_rand(), crypto_rand(), crypto_rand(), crypto_rand(),
 	    crypto_rand(), crypto_rand(), crypto_rand(), crypto_rand()});
 }
 

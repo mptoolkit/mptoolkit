@@ -57,8 +57,28 @@ class nifty_counter
       static int count;
 };
 
+template <InitFuncType Init>
+class nifty_counter<Init, DoNothing>
+{
+   public:
+      nifty_counter()
+      {
+         if (count++ == 0) Init();
+      }
+
+      ~nifty_counter() = default;
+
+   private:
+      static int count;
+};
+
+
 template <InitFuncType InitFunc, InitFuncType ExitFunc>
 int nifty_counter<InitFunc, ExitFunc>::count = 0;
+
+template <InitFuncType InitFunc>
+int nifty_counter<InitFunc, DoNothing>::count = 0;
+
 
 } // namespace NiftyCounter
 

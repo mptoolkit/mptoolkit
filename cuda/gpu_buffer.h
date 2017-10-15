@@ -214,7 +214,12 @@ class gpu_buffer
 
       ~gpu_buffer() { Arena.free(Ptr, ByteSize); }
 
-      gpu_buffer(gpu_buffer&& other) = default;
+      gpu_buffer(gpu_buffer&& other) : Ptr(other.Ptr), ByteSize(other.ByteSize), Stream(std::move(other.Stream)),
+                                       Sync(std::move(other.Sync)), Arena(std::move(other.Arena))
+      {
+         other.Ptr = nullptr;
+      }
+
       gpu_buffer(gpu_buffer const& other) = delete;
 
       gpu_buffer& operator=(gpu_buffer&&) = delete;

@@ -60,11 +60,16 @@ class gpu_matrix : public blas::BlasMatrix<T, gpu_matrix<T>, gpu_tag>
 
       gpu_matrix(gpu_matrix const&) = delete;
 
+      template <typename U>
+      gpu_matrix(blas::MatrixRef<T, U, gpu_tag> const& E)
+         : gpu_matrix(E.rows(), E.cols())
+      {
+         assign(*this, E.as_derived());
+      }
+
       gpu_matrix& operator=(gpu_matrix&&) = delete;
 
-      ~gpu_matrix()
-      {
-      }
+      ~gpu_matrix() = default;
 
       gpu_matrix& operator=(gpu_matrix const& Other)
       {
@@ -241,6 +246,7 @@ set(gpu_matrix<T>& A, blas::Matrix<T> const& B)
 // copy
 
 template <typename T>
+inline
 gpu_matrix<T>
 copy(gpu_matrix<T> const& x, blas::arena const& A)
 {
@@ -250,27 +256,6 @@ copy(gpu_matrix<T> const& x, blas::arena const& A)
 }
 
 // BLAS-like functions
-
-// trace
-#if 0
-template <typename T>
-T trace_wait(gpu_matrix<T> const& x)
-{
-   DEBUG_CHECK_EQUAL(x.rows(), x.cols());
-   return cublas::dot_host(get_handle(), x.rows(), x.storage(), x.leading_dimension()+1, gpu_vecs<T>::ones.storage(), 1);
-}
-
-template <typename T>
-gpu_buffer<T>
-trace(gpu_matrix<T> const& x)
-{
-   DEBUG_CHECK_EQUAL(x.rows(), x.cols());
-
-   return cublas::dot_device(get_handle(), x.rows(), x.storage(), x.leading_dimension()+1, gpu_vecs<T>::ones.storage(), 1);
-}
-#endif
-
-
 
 template <typename T, typename U, typename V>
 inline

@@ -25,8 +25,29 @@ namespace randutil
 // implementation details
 namespace detail
 {
-   extern std::uniform_real_distribution<double> UniformDist;
-   extern std::normal_distribution<double> NormalDist;
+template <typename T>
+struct Dist
+{
+   static std::uniform_real_distribution<T> UniformDist;
+   static std::normal_distribution<T> NormalDist;
+
+   static T rand()
+   {
+      return UniformDist(u_rand);
+   }
+
+   static T randn()
+   {
+      return NormalDist(u_rand);
+   }
+};
+
+template <typename T>
+std::uniform_real_distribution<T> Dist<T>::UniformDist(0,1);
+
+template <typename T>
+std::normal_distribution<T> Dist<T>::NormalDist;
+
 } // namespace detail
 
 
@@ -37,17 +58,19 @@ int rand_int(int Min, int Max)
 }
 
 // returns a real number in the range [0,1)
+template <typename T>
 inline
-double rand()
+T rand()
 {
-   return detail::UniformDist(u_rand);
+   return detail::Dist<T>::rand();
 }
 
 // returns a uniformly distributed real number
+template <typename T>
 inline
-double randn()
+T randn()
 {
-   return detail::NormalDist(u_rand);
+   return detail::Dist<T>::randn();
 }
 
 template <typename T>

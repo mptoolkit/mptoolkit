@@ -74,4 +74,23 @@ Matrix<T>::Matrix(int R, int C, arena Arena_)
 {
 }
 
+template <typename T>
+std::ostream&
+operator<<(std::ostream& out, Matrix<T> const& x)
+{
+   out << '[' << x.rows() << ", " << x.cols() << "]\n";
+   for (int r = 0; r < x.rows(); ++r)
+   {
+      bool first = true;
+      for (int c = 0; c < x.cols(); ++c)
+      {
+         if (!first)
+            out << ", ";
+         write_format(out, x(r,c));
+      }
+      out << '\n';
+   }
+   return out;
+}
+
 } // namespace blas

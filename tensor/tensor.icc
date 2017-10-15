@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// tensor/tensor.cc
+// tensor/tensor.icc
 //
 // Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
@@ -55,6 +55,7 @@ IrredTensor<T, B1, B2, S>::IrredTensor(basis1_type const& Basis1, basis2_type co
    DEBUG_CHECK_EQUAL(Basis1.GetSymmetryList(), Basis2.GetSymmetryList());
 }
 
+#if 0
 template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>::IrredTensor(basis1_type const& Basis1, basis2_type const& Basis2,
                                QuantumNumber const& Trans, MatrixType const& Data)
@@ -67,68 +68,39 @@ IrredTensor<T, B1, B2, S>::IrredTensor(basis1_type const& Basis1, basis2_type co
    DEBUG_PRECONDITION_EQUAL(size1(Data), Basis1.size());
    DEBUG_PRECONDITION_EQUAL(size2(Data), Basis2.size());
 }
-
-template <typename T, typename B1, typename B2, typename S>
-inline
-typename LinearAlgebra::MatrixBracket<typename IrredTensor<T, B1, B2, S>::MatrixType&,
-                                      size_type, size_type>::result_type
-IrredTensor<T, B1, B2, S>::operator()(size_type i, size_type j)
-{
-   DEBUG_CHECK(i < this->Basis1().size())(i)(this->Basis1());
-   DEBUG_CHECK(j < this->Basis2().size())(j)(this->Basis2());
-   DEBUG_PRECONDITION(is_transform_target(this->qn2(j), this->TransformsAs(), this->qn1(i)))
-      (i)(j)(this->TransformsAs())(this->qn1(i))(this->qn2(j));
-   return Data_(i,j);
-}
-
-template <typename T, typename B1, typename B2, typename S>
-inline
-typename LinearAlgebra::MatrixBracket<typename IrredTensor<T, B1, B2, S>::MatrixType,
-                                      size_type, size_type>::result_type
-IrredTensor<T, B1, B2, S>::operator()(size_type i, size_type j) const
-{
-   DEBUG_CHECK(i < this->Basis1().size())(i)(this->Basis1());
-   DEBUG_CHECK(j < this->Basis2().size())(j)(this->Basis2());
-   DEBUG_PRECONDITION(is_transform_target(this->qn2(j), this->TransformsAs(), this->qn1(i)))
-      (this->qn2(j))(this->TransformsAs())(this->qn1(i));
-   return Data_(i,j);
-}
-
-
+#endif
 
 template <typename T, typename B1, typename B2, typename S>
 void implement_check_structure(IrredTensor<T, B1, B2, S> const& x)
 {
-   for (typename LinearAlgebra::const_iterator<IrredTensor<T, B1, B2, S> >::type
-           I = LinearAlgebra::iterate(x); I; ++I)
+   for (auto const& rx : x)
    {
-      for (typename LinearAlgebra::const_inner_iterator<IrredTensor<T, B1, B2, S> >::type
-              J = LinearAlgebra::iterate(I); J; ++J)
+      for (auto const& cx : rx)
       {
-         CHECK(is_transform_target(x.Basis2()[J.index2()], x.TransformsAs(),
-                                   x.Basis1()[J.index1()]))(x.Basis2()[J.index2()])
-            (x.Basis1()[J.index1()])(x.TransformsAs())(*J);
+         CHECK(is_transform_target(x.qn2(cx.col()),
+                                   x.TransformsAs(),
+                                   x.qn1(rx.row())))
+            (x.qn2(cx.col()))(x.TransformsAs())(x.qn1(rx.row()));
       }
    }
 }
 
-template <typename T, typename B1, typename B2, typename S>
-void implement_check_structure(IrredTensor<LinearAlgebra::Matrix<T>, B1, B2, S> const& x)
+template <typename T, typename S>
+void implement_check_structure(IrredTensor<T, VectorBasis, VectorBasis, S> const& x)
 {
-   for (auto I = LinearAlgebra::iterate(x); I; ++I)
+   for (auto const& rx : x)
    {
-      for (auto J = LinearAlgebra::iterate(I); J; ++J)
+      for (auto const& cx : rx)
       {
-         CHECK(is_transform_target(x.Basis2()[J.index2()], x.TransformsAs(),
-                                   x.Basis1()[J.index1()]))(x.Basis2()[J.index2()])
-            (x.Basis1()[J.index1()])(x.TransformsAs())(*J);
-
-         CHECK_EQUAL(int(size1(*J)), x.Basis1().dim(J.index1()));
-         CHECK_EQUAL(int(size2(*J)), x.Basis2().dim(J.index2()));
+         CHECK(is_transform_target(x.qn2(cx.col()),
+                                   x.TransformsAs(),
+                                   x.qn1(rx.row())))
+            (x.qn2(cx.col()))(x.TransformsAs())(x.qn1(rx.row()));
+         CHECK_EQUAL(cx.value.rows(), x.Basis1().dim(rx.row()));
+         CHECK_EQUAL(cx.value.cols(), x.Basis1().dim(cx.col()));
       }
    }
 }
-
 
 template <typename T, typename B1, typename B2, typename S>
 void IrredTensor<T, B1, B2, S>::check_structure() const
@@ -196,6 +168,7 @@ std::ostream& operator<<(std::ostream& out, IrredTensor<T, B1, B2, S> const& Op)
               << " as " << Op.TransformsAs() << ":\n" << Op.data();
 }
 
+#if 0
 template <typename T, typename B1, typename B2, typename S>
 std::string show_projections(IrredTensor<T, B1, B2, S> const& Op)
 {
@@ -205,7 +178,7 @@ std::string show_projections(IrredTensor<T, B1, B2, S> const& Op)
 
    std::vector<QuantumNumbers::Projection> Projections;
    enumerate_projections(Op.TransformsAs(), std::back_inserter(Projections));
-   for (size_type km = 0; km < Projections.size(); ++km)
+   for (int km = 0; km < Projections.size(); ++km)
    {
       out << "Projection " << std::setw(10) << Projections[km] << " :\n";
 
@@ -248,11 +221,13 @@ std::string show_projections(IrredTensor<T, B1, B2, S> const& Op)
    }
    return out.str();
 }
+#endif
 
 template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>&
 IrredTensor<T, B1, B2, S>::operator+=(IrredTensor const& Op)
 {
+#if 0
    // quick return if the right hand side is zero
    if (Op.is_null()) return *this;
 
@@ -261,11 +236,36 @@ IrredTensor<T, B1, B2, S>::operator+=(IrredTensor const& Op)
       *this = Op;
       return *this;
    }
+#endif
 
    PRECONDITION(Basis1_ == Op.Basis1_)(Basis1_)(Op.Basis1_);
    PRECONDITION(Basis2_ == Op.Basis2_)(Basis2_)(Op.Basis2_);
    PRECONDITION(Trans_ == Op.Trans_)(Trans_)(Op.Trans_);
    Data_ += Op.Data_;
+
+   this->debug_check_structure();
+   return *this;
+}
+
+template <typename T, typename B1, typename B2, typename S>
+IrredTensor<T, B1, B2, S>&
+IrredTensor<T, B1, B2, S>::operator+=(IrredTensor&& Op)
+{
+#if 0
+   // quick return if the right hand side is zero
+   if (Op.is_null()) return *this;
+
+   if (this->is_null())
+   {
+      *this = Op;
+      return *this;
+   }
+#endif
+
+   PRECONDITION(Basis1_ == Op.Basis1_)(Basis1_)(Op.Basis1_);
+   PRECONDITION(Basis2_ == Op.Basis2_)(Basis2_)(Op.Basis2_);
+   PRECONDITION(Trans_ == Op.Trans_)(Trans_)(Op.Trans_);
+   Data_ += std::move(Op.Data_);
 
    this->debug_check_structure();
    return *this;
@@ -293,10 +293,33 @@ IrredTensor<T, B1, B2, S>::operator-=(IrredTensor const& Op)
    return *this;
 }
 
+template <typename T, typename B1, typename B2, typename S>
+IrredTensor<T, B1, B2, S>&
+IrredTensor<T, B1, B2, S>::operator-=(IrredTensor&& Op)
+{
+   // quick return if the right hand side is zero
+   if (Op.is_null()) return *this;
+
+   if (this->is_null())
+   {
+      *this = -Op;
+      return *this;
+   }
+
+   PRECONDITION(Basis1_ == Op.Basis1_)(Basis1_)(Op.Basis1_);
+   PRECONDITION(Basis2_ == Op.Basis2_)(Basis2_)(Op.Basis2_);
+   PRECONDITION(Trans_ == Op.Trans_)(Trans_)(Op.Trans_);
+   Data_ -= std::move(Op.Data_);
+
+   this->debug_check_structure();
+   return *this;
+}
+
 //
 // triple_prod
 //
 
+#if 0
 template <typename T1, typename B1, typename B2, typename S1,
           typename T2, typename B3, typename S2,
           typename T3, typename B4, typename S3>
@@ -678,11 +701,13 @@ add_triple_prod(Tensor::IrredTensor<T4, B1, B4, S4>& Result,
 {
    add_triple_prod(Result, Factor, x, E, y, QuantumNumber(x.GetSymmetryList()), E.TransformsAs());
 }
+#endif
 
 //
 // prod for hermitian
 //
 
+#if 0
 template <typename T1, typename B1, typename B2, typename S1,
            typename T2, typename B3, typename S2>
 typename IrredProd_Herm<IrredTensor<T2, B1, B2, S2>,
@@ -788,6 +813,8 @@ IrredProd_Herm<HermitianProxy<IrredTensor<T1, B1, B2, S1> >,
    Result.debug_check_structure();
    return Result;
 }
+
+#endif
 
 //
 // delta_shift

@@ -149,7 +149,7 @@ ifdef HAVE_CUDA
    mpobj += $(cudaobj)
 endif
 
-commonobj = copyright.o niftycounter.o poolallocator.o hash.o proccontrol.o \
+commonobj = copyright.o poolallocator.o hash.o proccontrol.o \
 	    halfint.o conflist.o terminal.o randutil.o
 
 debugobj = backtrace.o debughandler.o
@@ -230,6 +230,9 @@ experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-
 LIBS_mp-cublas-test = $(CUBLAS_LIBS)
 
 LIBS_test-gpu-matrix = $(CUBLAS_LIBS)
+
+LIBS_test-gpu-tensor = $(CUBLAS_LIBS)
+
 
 benchmarks = benchtripleprod
 
@@ -559,6 +562,8 @@ mp-imake-transverse-lattice-folded : triangular_operator.o infinitewavefunctionl
 mp-iwigner-eckart : infinitewavefunctionleft.o wigner_eckart.o
 
 test-gpu-matrix : cublas.o cuda.o cub.cu.o gpu.o
+
+test-gpu-tensor : cublas.o cuda.o cub.cu.o gpu.o $(quantumnumbersobj) $(commonobj) basis.o
 
 LIBS_mp-ioverlap = $(LIBARPACK)
 LIBS_mp-ispectrum = $(LIBARPACK)

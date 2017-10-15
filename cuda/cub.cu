@@ -37,7 +37,7 @@ class stride_ptr
 
       __host__ __device__ stride_ptr() {}
       __host__ __device__ stride_ptr(T* x, int stride) : x_(x), stride_(stride) {}
-      __host__ __device__ stride_ptr(stride_ptr<value_type> const& Other) : x_(Other.x_), stride_(Other.stride_) {}
+      __host__ __device__ stride_ptr(stride_ptr const& Other) = default;
 
       __host__ __device__ reference operator*() const { return *x_; }
       __host__ __device__ pointer operator->() const { return x_; }

@@ -32,6 +32,8 @@
 // struct number_traits
 // {
 //    using type = NumberType;
+//    using real_type = (type, if it is real, otherwise T, if type is complex<T>)
+//    using complex_type = (type, if is complex, complex<type>)
 //    static constexpr type zero();
 //    static constexpr type identity();
 //    static blas_trans(char c);
@@ -121,6 +123,8 @@ template <typename T>
 struct number_traits : public detail::blas_trans_real
 {
    using type = T;
+   using real_type = T;
+   using complex_type = std::complex<T>;
 
    static constexpr T zero() { return 0; }
    static constexpr T identity() { return 1; }
@@ -130,6 +134,8 @@ template <>
 struct number_traits<float> : public detail::blas_trans_real
 {
    using type = float;
+   using real_type = float;
+   using complex_type = std::complex<float>;
 
    static constexpr float zero() { return 0.0f; }
    static constexpr float identity() { return 1.0f; }
@@ -139,6 +145,8 @@ template <>
 struct number_traits<double> : public detail::blas_trans_real
 {
    using type = double;
+   using real_type = double;
+   using complex_type = std::complex<double>;
 
    static constexpr double zero() { return 0.0; }
    static constexpr double identity() { return 1.0; }
@@ -148,6 +156,8 @@ template <>
 struct number_traits<std::complex<float>> : public detail::blas_trans_complex
 {
    using type = std::complex<float>;
+   using real_type = float;
+   using complex_type = std::complex<float>;
 
    static constexpr std::complex<float> zero() { return {0.0f,0.0f}; }
    static constexpr std::complex<float> identity() { return {1.0f,0.0f}; }
@@ -157,6 +167,8 @@ template <>
 struct number_traits<std::complex<double>> : public detail::blas_trans_complex
 {
    using type = std::complex<double>;
+   using real_type = double;
+   using complex_type = std::complex<double>;
 
    static constexpr std::complex<double> zero() { return {0.0,0.0}; }
    static constexpr std::complex<double> identity() { return {1.0,0.0}; }
@@ -167,6 +179,8 @@ template <>
 struct number_traits<float128> : public blas_trans_real
 {
    using type = float128;
+   using real_type = float128;
+   using complex_type = std::complex<float128>;
 
    static constexpr float128 zero() { return 0.0Q; }
    static constexpr float128 identity() { return 1.0Q; }
@@ -176,6 +190,8 @@ template <>
 struct number_traits<std::complex<float128>> : public detail::blas_trans_complex
 {
    using type = std::complex<float128>;
+   using real_type = float128;
+   using complex_type = std::complex<float128>;
 
    static constexpr std::complex<float128> zero() { return {0.0Q,0.0Q}; }
    static constexpr std::complex<float128> identity() { return {1.0Q,0.0Q}; }

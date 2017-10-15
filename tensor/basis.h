@@ -258,11 +258,11 @@ class VectorBasis
       void delta_shift(QuantumNumber const& q);
 
  private:
-      VectorBasis(BasisList const& b, LinearAlgebra::Vector<int> const& dim)
+      VectorBasis(BasisList const& b, std::vector<int> const& dim)
          : Basis_(b), Dimension_(dim) {}
 
       BasisList Basis_;
-      LinearAlgebra::Vector<int> Dimension_;
+      std::vector<int> Dimension_;
 
    friend PStream::opstream& operator<<(PStream::opstream& out, VectorBasis const& Bi);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, VectorBasis& Bi);
@@ -345,6 +345,7 @@ delta_shift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
 // make_zero
 //
 
+#if 0
 template <typename T, typename B1, typename B2>
 struct MakeZeroImpl {};
 
@@ -365,6 +366,7 @@ struct MakeZeroImpl<T, VectorBasis, VectorBasis>
       return LinearAlgebra::SparseMatrix<double>(b1.dim(i), b2.dim(j));
    }
 };
+#endif
 
 //
 // make_identity
@@ -388,7 +390,7 @@ struct MakeIdentityImpl<T, VectorBasis>
    T operator()(VectorBasis const& b, int i) const
    {
       //      return LinearAlgebra::identity_matrix<double>(b.dim(i));
-      return LinearAlgebra::DiagonalMatrix<double>(b.dim(i), b.dim(i), 1.0);
+      //return LinearAlgebra::DiagonalMatrix<double>(b.dim(i), b.dim(i), 1.0);
    }
 };
 

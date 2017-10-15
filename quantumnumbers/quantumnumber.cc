@@ -17,8 +17,6 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "common/poolallocator.h"
-
 namespace QuantumNumbers
 {
 
