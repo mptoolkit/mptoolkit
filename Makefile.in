@@ -200,21 +200,6 @@ allobj = $(quantumnumbersobj) \
 	 $(commonobj)         \
          $(parserobj)
 
-# contributed models.  Add new models here
-contrib-models = spin-tri-yc-su2 spin-tri-xc-su2 spin-tri-yc-su2-NonEff \
-                 spin-tri-2SiteUnitCell-su2 spin-tri-1SiteUnitCell-su2 spin-tri-yc-u1 spin-tri-yc \
-                 tki-u1su2 tki-u1u1 hubbard-tri-u1su2 hubbard-tri-u1u1 hubbard-tri \
-                 spin-tri-yc-z2 spinchain-random-field-u1 hubbard tki-u1su2_perp_hubb_cylinder3
-
-# default / examplar models
-default-models = spinchain-su2 spinchain-spin2-su2 \
-                 hubbard-u1su2 bosehubbard-flux-2leg-u1 \
-                 bosehubbard-flux-3leg-u1 spinchain-u1 spincylinder-su2 spincylinder-u1 \
-                 spinchain bosehubbard-ladder-u1 bosehubbard-2component-u1z2 \
-                 hubbard-so4 bosehubbard-u1 bosehubbard hubbard-u1u1 \
-                 hubbard-su2 spinladder-su2 spinchain-z2 hubbardcylinder-u1su2 \
-                 hubbardcylinder-u1su2-k hubbardcylinder-u1su2-k2 klm-u1su2
-
 tools = mp-idmrg-s3e mp-ioverlap \
         mp-info mp-history mp-reflect mp-conj \
         mp-imoments mp-iexpectation mp-wigner-eckart mp-reorder-symmetry \
@@ -233,12 +218,17 @@ misc-progs = untridiagonalize tridiag-kspace mp-min-resid seqgen2
 
 tools : $(tools)
 
+default-models := $(patsubst %.cpp,%,$(notdir $(wildcard $(SRCDIR)/models/*.cpp)))
+
+contrib-models := $(patsubst %.cpp,%,$(notdir $(wildcard $(SRCDIR)/models/contrib/*.cpp)))
+
+#$(info models is [${contrib-models}])
+
 default-models : $(default-models)
 
 contrib-models : $(contrib-models)
 
-
-models : default-models
+models : $(default-models)
 
 all-models = $(default-models) $(contrib-models)
 

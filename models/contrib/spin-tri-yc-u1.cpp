@@ -55,10 +55,37 @@
 
 namespace prog_opt = boost::program_options;
 
-/* void ClearScreen()
+// struct to get the prefactors of the flux terms.  The complete flux term at angle theta is
+// uniform_part + cos(theta)*real_part + i*sin(theta)*imag_part.
+// The prefactors give the contribution for hopping from site
+struct FluxPhase
 {
-    std::cout << std::string( 100, '\n' );
-} */
+   FluxPhase(int w_) : w(w_) {}
+
+   double uniform(int s1, int s2)
+   {
+      CHECK(std::abs(s1-s2) <= 2 || (w - abs(s1-s2)) <= 2);
+      return (std::abs(s1-s2) <= 2) ? 1 : 0;
+   }
+
+   double real(int s1, int s2)
+   {
+      // if we don't cross the boundary, then there is no flux contribution
+      if (std::abs(s1-s2) <= 2) return 0;
+      // else
+      return 1;
+   }
+
+   double imag(int s1, int s2)
+   {
+      // if we don't cross the boundary, then there is no flux contribution
+      if (std::abs(s1-s2) <= 2) return 0;
+      // else if we are going in the +ve direction (ie, s2 < s1, becase we wrapped around)
+      // then the flux is +1, otherwise -1
+      return (s2 < s1) ? 1 : -1;
+   }
+   int w;
+};
 
 int main(int argc, char** argv)
 {
@@ -66,7 +93,6 @@ int main(int argc, char** argv)
    {
       half_int Spin = 0.5;
       int w = 3;
-      double theta = 0.0;
       std::string FileName;
       bool NoReflect = false;
 
@@ -75,7 +101,6 @@ int main(int argc, char** argv)
          ("help", "show this help message")
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
          ("width,w", prog_opt::value(&w), "width of the cylinder [default 3]")
-         ("theta,t", prog_opt::value(&theta), "flux phase to twist boundary condition in Y-direction (in unit of PI) [default 0.0]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -88,20 +113,23 @@ int main(int argc, char** argv)
 
       OperatorDescriptions OpDescriptions;
       OpDescriptions.add_operators()
-         ("H_ver"                  , "nearest neighbor Ising spin exchange in Y-direction")
-         ("H_z1"                   , "nearest neighbor Ising spin exchange")
          ("H_J1"                   , "nearest neighbor Heisenberg spin exchange")
+         ("H_J1z"                  , "nearest neighbor Sz-Sz coupling")
+         ("H_J1p"                  , "nearest neighbor XY coupling")
+         ("H_J1p_flux_uniform"     , "nearest neighbor XY spin exchange with flux (uniform part)")
+         ("H_J1p_flux_cos"         , "nearest neighbor XY spin exchange with flux (real part)")
+         ("H_J1p_flux_sin"         , "nearest neighbor XY spin exchange with flux (imaginary part)")
          ("H_J2"                   , "next-nearest neighbor Heisenberg spin exchange")
-         ("H_J1_flux"              , "nearest neighbor Heisenberg spin exchange with flux")
-         ("H_J2_flux"              , "next-nearest neighbor Heisenberg spin exchange with flux")
-         ("H_LongRangeIsing_intra" , "intra-cell interactions of long-range Ising model")
+         ("H_J2z"                  , "next-nearest neighbor Sz-Sz coupling")
+         ("H_J2p"                  , "next-nearest neighbor XY coupling")
+         ("H_J2p_flux_uniform"     , "next-nearest neighbor XY spin exchange with flux (uniform part)")
+         ("H_J2p_flux_cos"         , "next-nearest neighbor XY spin exchange with flux (real part)")
+         ("H_J2p_flux_sin"         , "next-nearest neighbor XY spin exchange with flux (imaginary part)")
          ;
 
       OpDescriptions.add_functions()
-         ("THM_flux"                             , "J1-J2 Heiseneberg Hamiltonian on a triangular lattice with twisted BC in Y-direction as exp(i*theta)")
-         ("HS"                                   , "Haldane-Shastry Hamiltonian with Sz*Sz interactions, parametized by 'lambda' (exponential decay as exp(-lambda*r))")
-         ("LongRangeIsing_InterCell_YC4_part1"   , "long-range Ising model Hamiltonian on a 4-leg YC structure, parametized by 'alpha0j's and 'lambda0j's | PART 1")
-         ("LongRangeIsing_InterCell_YC4_part2"   , "long-range Ising model Hamiltonian on a 4-leg YC structure, parametized by 'alpha0j's and 'lambda0j's | PART 2")
+         ("H_J1_flux"                            , "nearest neighbor Heisenberg spin exchange with flux phase")
+         ("H_J2_flux"                            , "nearest neighbor Heisenberg spin exchange with flux phase")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -111,24 +139,17 @@ int main(int argc, char** argv)
          std::cerr << desc << '\n';
          std::cerr << "Constructs a triangular lattice in the YC configuration with lattice vector (0,1).\n";
          std::cerr << OpDescriptions << '\n';
-         std::cerr << "only if the lattice could be potentially tripartite (width is a multiple of 3):\n"
-                   << "define sublattice spin operators on 'width*3' unit-cells.\n";
             ;
          return 1;
       }
-
-      const double PI = 4.0*std::atan(1.0);
-      const std::complex<double> jj(0.0,theta*PI);
-      int oo = 0;
-      int oo_max = 21*w+(w*(w-1)/2)+18;
 
       LatticeSite Site = SpinU1(Spin);
       UnitCell Cell = repeat(Site, w);
       InfiniteLattice Lattice(&Cell);
 
-      std::cout << "Building all Hamiltonian operators:\n";
+      FluxPhase phase(w);
 
-      // Add some operators on the unit cell
+      // Add some operators on the unit cell, for convenience
       UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
       UnitCellOperator I(Cell, "I"), Trans(Cell, "Trans");
 
@@ -137,22 +158,19 @@ int main(int argc, char** argv)
          Sp += Sp[i];     // total S+ on a leg of cylinder
          Sm += Sm[i];     // total S- on a leg of cylinder
          Sz += Sz[i];     // total Sz on a leg of cylinder
-
-         oo+=2;
-         std::printf("\33[2K\r");
-         std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 3*w
       }
 
+      // Translation operator
       Trans = I(0);
       for (int i = 0; i < w-1; ++i)
       {
          Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
-
-         oo++;
-         std::printf("\33[2K\r");
-         std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 4*w
       }
 
+      // Add it to the lattice
+      Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
+
+      // Reflection operator
       UnitCellMPO Ry = I(0);
       if (!NoReflect)
       {
@@ -182,251 +200,110 @@ int main(int argc, char** argv)
          }
       }
 
+      // Add it to the lattice
+      Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w*w);
 
-      // Construct the Hamiltonian for a single unit-cell,
-      UnitCellMPO Hz_v, Hz1, H1, H1_flux, H2, H2_flux, H_intra2;
+      // Hamiltonian operators, constructed as a sum over terms that act on a unit cell
+      UnitCellMPO H1, H1z, H1p, H1p_flux_uniform, H1p_flux_cos, H1p_flux_sin;
+      UnitCellMPO H2, H2z, H2p, H2p_flux_uniform, H2p_flux_cos, H2p_flux_sin;
 
       for (int i = 0; i < w; ++i)
       {
-         // TIM - x-field terms
-         // Hx_f += 0.5*(Sp(0)[i]+Sm(0)[i]);
+         //
+         // Nearest-neighbour bonds
+         //
 
-         oo++;
-         std::printf("\33[2K\r");
-         std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 5*w
+         // Z-component
+         UnitCellMPO n1_z_vertical = Sz(0)[i]*Sz(0)[(i+1)%w];    // vertical
+         UnitCellMPO n1_z_up       = Sz(0)[i]*Sz(1)[i];          // +60 degrees
+         UnitCellMPO n1_z_down     = Sz(0)[i]*Sz(1)[(i+1)%w];    // -60 degrees
 
+         // Sp*Sm components
+         UnitCellMPO n1_plus_vertical = 0.5 * Sp(0)[i]*Sm(0)[(i+1)%w];
+         UnitCellMPO n1_plus_up       = 0.5 * Sp(0)[i]*Sm(1)[i];
+         UnitCellMPO n1_plus_down     = 0.5 * Sp(0)[i]*Sm(1)[(i+1)%w];
 
-         // TIM - nearest neighbor bonds
+         // Sm*Sp components
+         UnitCellMPO n1_minus_vertical = 0.5 * Sm(0)[i]*Sp(0)[(i+1)%w];
+         UnitCellMPO n1_minus_up       = 0.5 * Sm(0)[i]*Sp(1)[i];
+         UnitCellMPO n1_minus_down     = 0.5 * Sm(0)[i]*Sp(1)[(i+1)%w];
 
-         Hz_v += Sz(0)[i]*Sz(0)[(i+1)%w];             // --> vertical bonds for 'Hz_ver'
-         Hz1  += Sz(0)[i]*Sz(0)[(i+1)%w];             // --> vertical bonds for 'Hz1'
-         Hz1  += Sz(0)[i]*Sz(1)[i];                   // --> +60 degree bonds
-         Hz1  += Sz(0)[i]*Sz(1)[(i+1)%w];             // --> -60 degree bonds
+         // Hamiltonian
 
-         oo+=4;
-         std::printf("\33[2K\r");
-         std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 9*w
+         H1z += n1_z_vertical + n1_z_up + n1_z_down;
 
+         H1p += n1_plus_vertical + n1_minus_vertical
+            + n1_plus_up + n1_minus_up
+            + n1_plus_down + n1_minus_down;
 
-         // THM - nearest neighbor bonds
+         H1p_flux_uniform += phase.uniform(i,i+1) * (n1_plus_vertical + n1_minus_vertical)
+            + (n1_plus_up + n1_minus_up)
+            + phase.uniform(i,i+1) * (n1_plus_down + n1_minus_down);
 
-         // --> vertical bonds
-         H1 += Sz(0)[i]*Sz(0)[(i+1)%w] + 0.5 * (Sp(0)[i]*Sm(0)[(i+1)%w] + Sm(0)[i]*Sp(0)[(i+1)%w]);
+         H1p_flux_cos += phase.real(i,i+1) *
+            (n1_plus_vertical + n1_minus_vertical + n1_plus_down + n1_minus_down);
 
-         oo++;
-         std::printf("\33[2K\r");
-         std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 10*w
+         H1p_flux_sin += phase.imag(i,i+1) *
+            (n1_plus_vertical - n1_minus_vertical + n1_plus_down - n1_minus_down);
 
-         if ( (i+1)%w == 0 )
-           H1_flux += Sz(0)[i]*Sz(0)[(i+1)%w] + 0.5 * (std::exp(jj)*Sp(0)[i]*Sm(0)[(i+1)%w] + std::exp(-jj)*Sm(0)[i]*Sp(0)[(i+1)%w]);
-         else
-           H1_flux += Sz(0)[i]*Sz(0)[(i+1)%w] + 0.5 * (Sp(0)[i]*Sm(0)[(i+1)%w] + Sm(0)[i]*Sp(0)[(i+1)%w]);
+         //
+         // Next-nearest neighbor bonds
+         //
 
-         oo++;
-         std::printf("\33[2K\r");
-         std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 11*w
+         // Z-component
+         UnitCellMPO n2_z_horizontal = Sz(0)[i]*Sz(1)[(i+w-1)%w];
+         UnitCellMPO n2_z_up         = Sz(0)[i]*Sz(1)[(i+2)%w];
+         UnitCellMPO n2_z_down       = Sz(0)[i]*Sz(1)[(i+w-1)%w];
 
-         // --> 60 degree bonds
-         H1 += Sz(0)[i]*Sz(1)[i] + 0.5 * (Sp(0)[i]*Sm(1)[i] + Sm(0)[i]*Sp(1)[i]);
-         H1 += Sz(0)[i]*Sz(1)[(i+1)%w] + 0.5 * (Sp(0)[i]*Sm(1)[(i+1)%w] + Sm(0)[i]*Sp(1)[(i+1)%w]);
+         // Sp*Sm components
+         UnitCellMPO n2_plus_horizontal = 0.5 * Sp(0)[i]*Sm(1)[(i+w-1)%w];
+         UnitCellMPO n2_plus_up         = 0.5 * Sp(0)[i]*Sm(1)[(i+2)%w];
+         UnitCellMPO n2_plus_down       = 0.5 * Sp(0)[i]*Sm(1)[(i+w-1)%w];
 
-         oo+=2;
-         std::printf("\33[2K\r");
-         std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 13*w
+         // Sm*Sp components
+         UnitCellMPO n2_minus_horizontal = 0.5 * Sm(0)[i]*Sp(1)[(i+w-1)%w];
+         UnitCellMPO n2_minus_up         = 0.5 * Sm(0)[i]*Sp(1)[(i+2)%w];
+         UnitCellMPO n2_minus_down       = 0.5 * Sm(0)[i]*Sp(1)[(i+w-1)%w];
 
-         H1_flux += Sz(0)[i]*Sz(1)[i] + 0.5 * (Sp(0)[i]*Sm(1)[i] + Sm(0)[i]*Sp(1)[i]);
-         if ( (i+1)%w == 0 )
-           H1_flux += Sz(0)[i]*Sz(1)[(i+1)%w] + 0.5 * (std::exp(jj)*Sp(0)[i]*Sm(1)[(i+1)%w] + std::exp(-jj)*Sm(0)[i]*Sp(1)[(i+1)%w]);
-         else
-           H1_flux += Sz(0)[i]*Sz(1)[(i+1)%w] + 0.5 * (Sp(0)[i]*Sm(1)[(i+1)%w] + Sm(0)[i]*Sp(1)[(i+1)%w]);
+         // Hamiltonian
 
-         oo+=2;
-         std::printf("\33[2K\r");
-         std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 15*w
+         H2z += n2_z_horizontal + n2_z_up + n2_z_down;
 
-         // THM - next-nearest neighbor bonds
-         H2 += Sz(0)[i]*Sz(2)[(i+1)%w] + 0.5 * (Sp(0)[i]*Sm(2)[(i+1)%w] + Sm(0)[i]*Sp(2)[(i+1)%w]);
-         H2 += Sz(0)[i]*Sz(1)[(i+w-1)%w] + 0.5 * (Sp(0)[i]*Sm(1)[(i+w-1)%w] + Sm(0)[i]*Sp(1)[(i+w-1)%w]);
-         H2 += Sz(0)[i]*Sz(1)[(i+2)%w] + 0.5 * (Sp(0)[i]*Sm(1)[(i+2)%w] + Sm(0)[i]*Sp(1)[(i+2)%w]);
+         H2p += n2_plus_horizontal + n2_minus_horizontal
+            + n2_plus_up + n2_minus_up
+            + n2_plus_down + n2_minus_down;
 
-         oo+=3;
-         std::printf("\33[2K\r");
-         std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 18*w
+         H2p_flux_uniform += phase.uniform(i,i-1) * (n2_plus_horizontal + n2_minus_horizontal)
+            + phase.uniform(i,i+2) * (n2_plus_up + n2_minus_up)
+            + phase.uniform(i, i-1) * (n2_plus_down + n2_minus_down);
 
-         if ( (i+1)%w == 0 )
-         {
-           H2_flux += Sz(0)[i]*Sz(2)[(i+1)%w] + 0.5 * (std::exp(jj)*Sp(0)[i]*Sm(2)[(i+1)%w] + std::exp(-jj)*Sm(0)[i]*Sp(2)[(i+1)%w]);
-           H2_flux += Sz(0)[i]*Sz(1)[(i+2)%w] + 0.5 * (std::exp(jj)*Sp(0)[i]*Sm(1)[(i+2)%w] + std::exp(-jj)*Sm(0)[i]*Sp(1)[(i+2)%w]);
-         }
-         else
-         {
-           H2_flux += Sz(0)[i]*Sz(2)[(i+1)%w] + 0.5 * (Sp(0)[i]*Sm(2)[(i+1)%w] + Sm(0)[i]*Sp(2)[(i+1)%w]);
-           H2_flux += Sz(0)[i]*Sz(1)[(i+2)%w] + 0.5 * (Sp(0)[i]*Sm(1)[(i+2)%w] + Sm(0)[i]*Sp(1)[(i+2)%w]);
-         }
+         H2p_flux_cos += phase.real(i,i-1) * (n2_plus_horizontal + n2_minus_horizontal)
+            + phase.real(i,i+2) * (n2_plus_up + n2_minus_up)
+            + phase.real(i, i-1) * (n2_plus_down + n2_minus_down);
 
-         oo+=2;
-         std::printf("\33[2K\r");
-         std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 20*w
-
-         if ( i == 0 )
-           H2_flux += Sz(0)[i]*Sz(1)[(i+w-1)%w] + 0.5 * (std::exp(jj)*Sp(0)[i]*Sm(1)[(i+w-1)%w] + std::exp(-jj)*Sm(0)[i]*Sp(1)[(i+w-1)%w]);
-         else
-           H2_flux += Sz(0)[i]*Sz(1)[(i+w-1)%w] + 0.5 * (Sp(0)[i]*Sm(1)[(i+w-1)%w] + Sm(0)[i]*Sp(1)[(i+w-1)%w]);
-
-         oo++;
-         std::printf("\33[2K\r");
-         std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 21*w
-
-        for (int j = i+1; j < w; ++j)
-        {
-          // Long-range Ising - inter-cell interations
-          H_intra2 += std::pow( ( std::sin( PI/w ) / std::sin( (j-i)*PI/w ) ) , 2) * Sz(0)[i]*Sz(0)[j];
-
-          oo++;
-          std::printf("\33[2K\r");
-          std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 21*w+(w*(w-1)/2)
-        }
+         H2p_flux_sin += phase.imag(i,i-1) * (n2_plus_horizontal + n2_minus_horizontal)
+            + phase.imag(i,i+2) * (n2_plus_up + n2_minus_up)
+            + phase.imag(i, i-1) * (n2_plus_down + n2_minus_down);
       }
 
-      Lattice["Hz_ver"] = sum_unit(Hz_v);
-      Lattice["H_z1"] = sum_unit(Hz1);
-      Lattice["H_J1"] = sum_unit(H1);
-      Lattice["H_J2"] = sum_unit(H2);
-      Lattice["H_J1_flux"] = sum_unit(H1_flux);
-      Lattice["H_J2_flux"] = sum_unit(H2_flux);
-      Lattice["H_LongRangeIsing_IntraCell2"] = sum_unit(H_intra2);
+      // Add the operators to the lattice
 
-      oo+=8;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 21*w+(w*(w-1)/2)+8
+      Lattice["H_J1"] = sum_unit(H1z + H1p);
+      Lattice["H_J1z"] = sum_unit(H1z);
+      Lattice["H_J1p"] = sum_unit(H1p);
+      Lattice["H_J1p_flux_uniform"] = sum_unit(H1p_flux_uniform);
+      Lattice["H_J1p_flux_cos"] = sum_unit(H1p_flux_cos);
+      Lattice["H_J1p_flux_sin"] = sum_unit(H1p_flux_sin);
 
-      // Momentum operators in Y direction
-      Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
+      Lattice["H_J2"] = sum_unit(H2z + H2p);
+      Lattice["H_J2z"] = sum_unit(H2z);
+      Lattice["H_J2p"] = sum_unit(H2p);
+      Lattice["H_J2p_flux_uniform"] = sum_unit(H2p_flux_uniform);
+      Lattice["H_J2p_flux_cos"] = sum_unit(H2p_flux_cos);
+      Lattice["H_J2p_flux_sin"] = sum_unit(H2p_flux_sin);
 
-      // Reflection about Y
-      Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w*w);
-
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 21*w+(w*(w-1)/2)+9
-
-      Lattice.func("THM")(arg("J1") = "cos(theta2)", arg("J2") = "sin(theta2)", arg("theta2") = "atan(alpha)", arg("alpha") = 0.0)
-                  = "J1*H_J1 + J2*H_J2"; // an old lattice function, used in few projects in 2014-15.
-
-      Lattice.func("THM2")(arg("J2") = 0.0)
-              = "H_J1 + J2*H_J2";
-
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 21*w+(w*(w-1)/2)+11
-
-      Lattice.func("THM_flux")(arg("J1") = "cos(theta2)", arg("J2") = "sin(theta2)", arg("theta2") = "atan(alpha)", arg("alpha") = 0.0)
-                  = "J1*H_J1_flux + J2*H_J2_flux";
-
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 21*w+(w*(w-1)/2)+12
-
-      // a basic function for Haldane-Shastry model with Sz*Sz interations
-      Lattice.func("HS")(arg("lambda") = 0.5, arg("j") = "0", arg("k") = "0")
-                  = "exp(-lambda)*sum_string_inner( Sz(0)[j], exp(-lambda)*I(0), Sz(0)[k] )";
-
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 21*w+(w*(w-1)/2)+13
-
-      Lattice.func("TestFunc00")(arg("alpha00")=0.0, arg("lambda00")=0.0)
-                  = "sin(2.5)*alpha00*HS{lambda=-lambda00,j=1,k=2}";
-
-      Lattice.func("LongRangeIsing_IntraCell_YC4")(arg("alpha") = 2.0)
-                  = "sum_unit( ( ( sin( pi/4 ) / sin( (1-0)*pi/4 ) )^alpha * Sz(0)[0]*Sz(0)[1] ) + "
-                    "( ( sin( pi/4 ) / sin( (2-0)*pi/4 ) )^alpha * Sz(0)[0]*Sz(0)[2] ) + "
-                    "( ( sin( pi/4 ) / sin( (3-0)*pi/4 ) )^alpha * Sz(0)[0]*Sz(0)[3] ) + "
-                    "( ( sin( pi/4 ) / sin( (2-1)*pi/4 ) )^alpha * Sz(0)[1]*Sz(0)[2] ) + "
-                    "( ( sin( pi/4 ) / sin( (3-1)*pi/4 ) )^alpha * Sz(0)[1]*Sz(0)[3] ) + "
-                    "( ( sin( pi/4 ) / sin( (3-2)*pi/4 ) )^alpha * Sz(0)[2]*Sz(0)[3] ) )";
-
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 21*w+(w*(w-1)/2)+14
-
-      Lattice.func("LongRangeIsing_InterCell_YC4_part1")(arg("alpha00")=0.0, arg("lambda00")=0.0, arg("alpha01")=0.0, arg("lambda01")=0.0)
-                  = "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[0], exp(-lambda00)*I(0), Sz(0)[0] ) ) + "
-                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[1], exp(-lambda00)*I(0), Sz(0)[1] ) ) + "
-                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[2], exp(-lambda00)*I(0), Sz(0)[2] ) ) + "
-                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[3], exp(-lambda00)*I(0), Sz(0)[3] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[0], exp(-lambda01)*I(0), Sz(0)[1] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[1], exp(-lambda01)*I(0), Sz(0)[2] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[2], exp(-lambda01)*I(0), Sz(0)[3] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[3], exp(-lambda01)*I(0), Sz(0)[0] ) )   ";
-
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 21*w+(w*(w-1)/2)+15
-
-      Lattice.func("LongRangeIsing_InterCell_YC4_part2")(arg("alpha02")=0.0, arg("lambda02")=0.0, arg("alpha03")=0.0, arg("lambda03")=0.0)
-                  = "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[0], exp(-lambda02)*I(0), Sz(0)[2] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[1], exp(-lambda02)*I(0), Sz(0)[3] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[2], exp(-lambda02)*I(0), Sz(0)[0] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[3], exp(-lambda02)*I(0), Sz(0)[1] ) ) + "
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[0], exp(-lambda03)*I(0), Sz(0)[3] ) ) + "
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[1], exp(-lambda03)*I(0), Sz(0)[0] ) ) + "
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[2], exp(-lambda03)*I(0), Sz(0)[1] ) ) + "
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[3], exp(-lambda03)*I(0), Sz(0)[2] ) )   ";
-
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 21*w+(w*(w-1)/2)+16
-
-      Lattice.func("LongRangeIsing_InterCell_YC6_part1")(arg("alpha00")=0.0, arg("lambda00")=0.0, arg("alpha01")=0.0, arg("lambda01")=0.0, arg("alpha02")=0.0, arg("lambda02")=0.0)
-                  = "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[0], exp(-lambda00)*I(0), Sz(0)[0] ) ) + "
-                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[1], exp(-lambda00)*I(0), Sz(0)[1] ) ) + "
-                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[2], exp(-lambda00)*I(0), Sz(0)[2] ) ) + "
-                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[3], exp(-lambda00)*I(0), Sz(0)[3] ) ) + "
-                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[4], exp(-lambda00)*I(0), Sz(0)[4] ) ) + "
-                    "alpha00*( exp(-lambda00)*sum_string_inner( Sz(0)[5], exp(-lambda00)*I(0), Sz(0)[5] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[0], exp(-lambda01)*I(0), Sz(0)[1] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[1], exp(-lambda01)*I(0), Sz(0)[2] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[2], exp(-lambda01)*I(0), Sz(0)[3] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[3], exp(-lambda01)*I(0), Sz(0)[4] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[4], exp(-lambda01)*I(0), Sz(0)[5] ) ) + "
-                    "alpha01*( exp(-lambda01)*sum_string_inner( Sz(0)[5], exp(-lambda01)*I(0), Sz(0)[0] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[0], exp(-lambda02)*I(0), Sz(0)[2] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[1], exp(-lambda02)*I(0), Sz(0)[3] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[2], exp(-lambda02)*I(0), Sz(0)[4] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[3], exp(-lambda02)*I(0), Sz(0)[5] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[4], exp(-lambda02)*I(0), Sz(0)[0] ) ) + "
-                    "alpha02*( exp(-lambda02)*sum_string_inner( Sz(0)[5], exp(-lambda02)*I(0), Sz(0)[1] ) )   ";
-
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 21*w+(w*(w-1)/2)+17
-
-      Lattice.func("LongRangeIsing_InterCell_YC6_part2")(arg("alpha03")=0.0, arg("lambda03")=0.0, arg("alpha04")=0.0, arg("lambda04")=0.0, arg("alpha05")=0.0, arg("lambda05")=0.0)
-                  = "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[0], exp(-lambda03)*I(0), Sz(0)[3] ) ) +"
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[1], exp(-lambda03)*I(0), Sz(0)[4] ) ) +"
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[2], exp(-lambda03)*I(0), Sz(0)[5] ) ) +"
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[3], exp(-lambda03)*I(0), Sz(0)[0] ) ) +"
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[4], exp(-lambda03)*I(0), Sz(0)[1] ) ) +"
-                    "alpha03*( exp(-lambda03)*sum_string_inner( Sz(0)[5], exp(-lambda03)*I(0), Sz(0)[2] ) ) +"
-                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[0], exp(-lambda04)*I(0), Sz(0)[4] ) ) +"
-                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[1], exp(-lambda04)*I(0), Sz(0)[5] ) ) +"
-                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[2], exp(-lambda04)*I(0), Sz(0)[0] ) ) +"
-                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[3], exp(-lambda04)*I(0), Sz(0)[1] ) ) +"
-                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[4], exp(-lambda04)*I(0), Sz(0)[2] ) ) +"
-                    "alpha04*( exp(-lambda04)*sum_string_inner( Sz(0)[5], exp(-lambda04)*I(0), Sz(0)[3] ) ) +"
-                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[0], exp(-lambda05)*I(0), Sz(0)[5] ) ) +"
-                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[1], exp(-lambda05)*I(0), Sz(0)[0] ) ) +"
-                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[2], exp(-lambda05)*I(0), Sz(0)[1] ) ) +"
-                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[3], exp(-lambda05)*I(0), Sz(0)[2] ) ) +"
-                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[4], exp(-lambda05)*I(0), Sz(0)[3] ) ) +"
-                    "alpha05*( exp(-lambda05)*sum_string_inner( Sz(0)[5], exp(-lambda05)*I(0), Sz(0)[4] ) )  ";
-
-      oo++;
-      std::printf("\33[2K\r");
-      std::cout << "working... %" << (100*oo)/oo_max << std::flush; // operator series count: 21*w+(w*(w-1)/2)+18
-
-      std::cout << "--> finished.\n";
+      Lattice.func("H_J1_flux")(arg("theta")) = "H_J1z + H_J1p_flux_uniform + cos(theta)*H_J1p_flux_cos + i*sin(theta)*H_J1p_flux_sin";
+      Lattice.func("H_J2_flux")(arg("theta")) = "H_J2z + H_J2p_flux_uniform + cos(theta)*H_J2p_flux_cos + i*sin(theta)*H_J2p_flux_sin";
 
       // save the lattice
       pheap::ExportObject(FileName, Lattice);
