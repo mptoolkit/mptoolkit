@@ -418,6 +418,15 @@ struct MatrixProduct : public MatrixRef<T, MatrixProduct<T, U, V, Tag>, Tag>
 };
 
 template <typename T, typename U, typename V, typename Tag>
+typename blas_traits<Tag>::template matrix_type<T>
+evaluate(MatrixProduct<T, U, V, Tag>&& x)
+{
+   typename blas_traits<Tag>::template matrix_type<T> Result(x.rows(), x.cols());
+   assign(Result, std::move(x));
+   return Result;
+}
+
+template <typename T, typename U, typename V, typename Tag>
 inline
 MatrixProduct<T, U, V, Tag>
 operator*(MatrixRef<T, U, Tag> const& A, MatrixRef<T, V, Tag> const& B)

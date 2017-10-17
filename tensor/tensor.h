@@ -154,7 +154,7 @@ class IrredTensor
       typedef Basis1T basis1_type;
       typedef Basis2T basis2_type;
 
-      //IrredTensor() : Data_(0,0) {}
+      //      IrredTensor() : Data_(0,0) {}
 
       IrredTensor(IrredTensor const& Other) = delete;
 
@@ -633,7 +633,7 @@ prod(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S> const& y, Qua
 
 template <typename T, typename B1, typename B2, typename B3, typename S, typename U>
 void
-add_prod(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S> const& y, U Factor, IrredTensor<T, B1, B3, S>& Result)
+add_prod(U Factor, IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S> const& y, IrredTensor<T, B1, B3, S>& Result)
 {
    DEBUG_PRECONDITION_EQUAL(x.Basis2(), y.Basis1());
    DEBUG_PRECONDITION_EQUAL(x.Basis1(), Result.Basis1());

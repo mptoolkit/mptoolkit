@@ -13,6 +13,7 @@ between these functions and the low-level BLAS library.
 // assign(A&, B)
 // add(A&, B)
 // subtract(A&, B)
+// evaluate(A&&) // evaluates the expression and returns a concrete value (can be used for type deduction)
 
 
 Middle-level BLAS-like functions:

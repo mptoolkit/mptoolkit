@@ -48,7 +48,7 @@ int main()
    {
       if (i % 10 == 0)
          std::cout << i << '\n';
-      add_prod(gM, gM, 1.0, gK);
+      add_prod(1.0, gM, gM, gK);
       //gK += gM*gM;
    }
 #else
@@ -57,7 +57,7 @@ int main()
 
    for (int i = 0; i < 1000; ++i)
    {
-      add_prod(M,M, 1.0, K);
+      add_prod(1.0, M,M, K);
       //K += M*M;
    }
 #endif

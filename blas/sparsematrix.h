@@ -65,6 +65,16 @@ class BasicSparseVector
       const_iterator end() const noexcept { return const_iterator(Elements.end()); }
       const_iterator cend() const noexcept { return const_iterator(Elements.cend()); }
 
+      iterator find(int Col)
+      {
+         return iterator(Elements.find(Col));
+      }
+
+      const_iterator find(int Col) const
+      {
+         return const_iterator(Elements.find(Col));
+      }
+
       void clear() { Elements.clear(); }
 
       template<typename... Args>

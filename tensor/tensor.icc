@@ -24,6 +24,9 @@ namespace Tensor
 // IrredTensor
 //
 
+inline
+double qdim(QuantumNumber const& q) { return degree(q); }
+
 template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>::IrredTensor(basis1_type const& Basis)
    : Basis1_(Basis), Basis2_(Basis), Trans_(Basis.GetSymmetryList()), Data_(Basis.size(), Basis.size())
@@ -168,61 +171,6 @@ std::ostream& operator<<(std::ostream& out, IrredTensor<T, B1, B2, S> const& Op)
               << " as " << Op.TransformsAs() << ":\n" << Op.data();
 }
 
-#if 0
-template <typename T, typename B1, typename B2, typename S>
-std::string show_projections(IrredTensor<T, B1, B2, S> const& Op)
-{
-   std::ostringstream out;
-   out << "Operator transforms with symmetry " << Op.GetSymmetryList()
-       << " as " << Op.TransformsAs() << ":\n";
-
-   std::vector<QuantumNumbers::Projection> Projections;
-   enumerate_projections(Op.TransformsAs(), std::back_inserter(Projections));
-   for (int km = 0; km < Projections.size(); ++km)
-   {
-      out << "Projection " << std::setw(10) << Projections[km] << " :\n";
-
-      typename IrredTensor<T, B1, B2, S>::const_iterator I = iterate(Op);
-      while (I)
-      {
-         typename IrredTensor<T, B1, B2, S>::const_inner_iterator J = iterate(I);
-         while (J)
-         {
-            QuantumNumber qi = Op.qn1(J.index1());
-            QuantumNumber qj = Op.qn2(J.index2());
-
-            std::vector<QuantumNumbers::Projection> mi, mj;
-            enumerate_projections(qi, std::back_inserter(mi));
-            enumerate_projections(qj, std::back_inserter(mj));
-
-            for (size_type ii = 0; ii < mi.size(); ++ii)
-            {
-               for (size_type jj = 0; jj < mj.size(); ++jj)
-               {
-                  T elem = *J * clebsch_gordan(qj,    Op.TransformsAs(),  qi,
-                                               mj[jj], Projections[km], mi[ii]);
-
-                  if (LinearAlgebra::norm_frob(elem) > 1E-10)
-                  {
-                     out << "   " << elem
-                         << " |" << J.index1() << ": " << qi
-                         << ", " << mi[ii]
-                         << "> <"
-                         << J.index2() << ": " << qj
-                         << ", " << mj[jj]
-                         << "|\n";
-                  }
-               }
-            }
-            ++J;
-         }
-         ++I;
-      }
-   }
-   return out.str();
-}
-#endif
-
 template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>&
 IrredTensor<T, B1, B2, S>::operator+=(IrredTensor const& Op)
@@ -275,6 +223,7 @@ template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>&
 IrredTensor<T, B1, B2, S>::operator-=(IrredTensor const& Op)
 {
+#if 0
    // quick return if the right hand side is zero
    if (Op.is_null()) return *this;
 
@@ -283,6 +232,7 @@ IrredTensor<T, B1, B2, S>::operator-=(IrredTensor const& Op)
       *this = -Op;
       return *this;
    }
+#endif
 
    PRECONDITION(Basis1_ == Op.Basis1_)(Basis1_)(Op.Basis1_);
    PRECONDITION(Basis2_ == Op.Basis2_)(Basis2_)(Op.Basis2_);
@@ -297,6 +247,7 @@ template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>&
 IrredTensor<T, B1, B2, S>::operator-=(IrredTensor&& Op)
 {
+#if 0
    // quick return if the right hand side is zero
    if (Op.is_null()) return *this;
 
@@ -305,6 +256,7 @@ IrredTensor<T, B1, B2, S>::operator-=(IrredTensor&& Op)
       *this = -Op;
       return *this;
    }
+#endif
 
    PRECONDITION(Basis1_ == Op.Basis1_)(Basis1_)(Op.Basis1_);
    PRECONDITION(Basis2_ == Op.Basis2_)(Basis2_)(Op.Basis2_);
@@ -319,213 +271,24 @@ IrredTensor<T, B1, B2, S>::operator-=(IrredTensor&& Op)
 // triple_prod
 //
 
-#if 0
-template <typename T1, typename B1, typename B2, typename S1,
-          typename T2, typename B3, typename S2,
-          typename T3, typename B4, typename S3>
-IrredTensor<typename Prod3Type<T1, T2, T3>::type, B2, B4>
-triple_prod(HermitianProxy<IrredTensor<T1, B1, B2, S1> > const& x,
-            IrredTensor<T2, B1, B3, S2> const& E,
-            IrredTensor<T3, B3, B4, S3> const& y,
-            QuantumNumber qxy,
-            QuantumNumber qEp)
-{
-   if (x.base().is_null() || y.is_null() || E.is_null())
-      return IrredTensor<typename Prod3Type<T1, T2, T3>::type, B2, B4>();
-
-   DEBUG_PRECONDITION_EQUAL(y.GetSymmetryList(), x.base().GetSymmetryList());
-   DEBUG_PRECONDITION_EQUAL(y.GetSymmetryList(), qxy.GetSymmetryList());
-   DEBUG_PRECONDITION_EQUAL(y.GetSymmetryList(), E.GetSymmetryList());
-   DEBUG_PRECONDITION_EQUAL(y.GetSymmetryList(), qEp.GetSymmetryList());
-   QuantumNumber Transx = x.base().TransformsAs();
-   QuantumNumber Transy = y.TransformsAs();
-   QuantumNumber TransE = E.TransformsAs();
-   PRECONDITION(is_transform_target(Transy, qxy, Transx))(Transy)(qxy)(Transx);
-   PRECONDITION(is_transform_target(qEp, qxy, TransE))(qEp)(qxy)(TransE);
-   DEBUG_PRECONDITION_EQUAL(x.base().Basis1(), E.Basis1());
-   DEBUG_PRECONDITION_EQUAL(E.Basis2(), y.Basis1());
-
-   IrredTensor<T1, B1, B2, S1> const& xb = x.base();  // shortcut
-
-   IrredTensor<typename Prod3Type<T1, T2, T3>::type, B2, B4>
-      Result(x.base().Basis2(), y.Basis2(), qEp);
-
-   typedef typename const_iterator< IrredTensor<T1, B1, B2, S1> >::type       x_iter;
-   typedef typename const_inner_iterator< IrredTensor<T1, B1, B2, S1> >::type x_inner;
-
-   typedef typename const_iterator< IrredTensor<T2, B1, B3, S2> >::type       E_iter;
-   typedef typename const_inner_iterator< IrredTensor<T2, B1, B3, S2> >::type E_inner;
-
-   typedef typename const_iterator< IrredTensor<T3, B3, B4, S3> >::type       y_iter;
-   typedef typename const_inner_iterator< IrredTensor<T3, B3, B4, S3> >::type y_inner;
-
-   // iterate over elements in E first
-   for (E_iter Ei = iterate(E.data()); Ei; ++Ei)
-   {
-      x_iter xi = iterate(xb.data());
-      xi += Ei.index();
-      QuantumNumber qEi = E.Basis1()[Ei.index()];
-      double DegEi = degree(qEi);
-      for (E_inner Ein = iterate(Ei); Ein; ++Ein)
-      {
-         QuantumNumber qEj = E.Basis2()[Ein.index2()];
-
-         y_iter yi = iterate(y.data());
-         yi += Ein.index2();
-
-         for (x_inner xin = iterate(xi); xin; ++xin)
-         {
-            QuantumNumber qxip = xb.Basis2()[xin.index2()];
-            double DegXi = degree(qxip);
-            for (y_inner yin = iterate(yi); yin; ++yin)
-            {
-               QuantumNumber qyj = y.Basis2()[yin.index2()];
-               if (!(is_transform_target(qyj, qEp, qxip))) continue;
-
-               double Coefficient = (DegEi / DegXi) *
-                  tensor_coefficient(qyj, Transy, qEj,
-                                     qEp, qxy, TransE,
-                                     qxip, Transx, qEi);
-
-               if (fabs(Coefficient) > 1E-10)
-               {
-                  add_element(Result.data(), xin.index2(), yin.index2(), Coefficient *
-                              herm(*xin) * (*Ein) * (*yin));
-               }
-            }
-         }
-      }
-   }
-
-   Result.debug_check_structure();
-   return Result;
-}
-
-template <typename T1, typename B1, typename B2, typename S1,
-          typename T2, typename B3, typename S2,
-          typename T3, typename B4, typename S3>
-IrredTensor<typename Prod3Type<T1, T2, T3>::type, B1, B4>
-triple_prod(IrredTensor<T1, B1, B2, S1> const& x,
-            IrredTensor<T2, B2, B3, S2> const& E,
-            HermitianProxy<IrredTensor<T3, B4, B3, S3> > const& y,
-            QuantumNumber qxy,
-            QuantumNumber qEp)
-{
-   if (x.is_null() || E.is_null() || y.base().is_null())
-      return IrredTensor<typename Prod3Type<T1, T2, T3>::type, B1, B4>();
-
-   //DEBUG_PRECONDITION_EQUAL(x.GetSymmetryList(), y.base().GetSymmetryList());
-   //DEBUG_PRECONDITION_EQUAL(x.GetSymmetryList(), qxy.GetSymmetryList());
-   //DEBUG_PRECONDITION_EQUAL(x.GetSymmetryList(), E.GetSymmetryList());
-   //DEBUG_PRECONDITION_EQUAL(x.GetSymmetryList(), qEp.GetSymmetryList());
-   PRECONDITION_EQUAL(x.GetSymmetryList(), y.base().GetSymmetryList());
-   PRECONDITION_EQUAL(x.GetSymmetryList(), qxy.GetSymmetryList());
-   PRECONDITION_EQUAL(x.GetSymmetryList(), E.GetSymmetryList());
-   PRECONDITION_EQUAL(x.GetSymmetryList(), qEp.GetSymmetryList());
-   QuantumNumber Transx = x.TransformsAs();
-   QuantumNumber Transy = y.base().TransformsAs();
-   QuantumNumber TransE = E.TransformsAs();
-   PRECONDITION(is_transform_target(Transy, qxy, Transx))(Transy)(qxy)(Transx);
-   PRECONDITION(is_transform_target(TransE, qxy, qEp))(TransE)(qxy)(qEp);
-   //DEBUG_PRECONDITION_EQUAL(x.Basis2(), E.Basis1());
-   //DEBUG_PRECONDITION_EQUAL(E.Basis2(), y.base().Basis2());
-   PRECONDITION_EQUAL(x.Basis2(), E.Basis1());
-   PRECONDITION_EQUAL(E.Basis2(), y.base().Basis2());
-
-   IrredTensor<typename Prod3Type<T1, T2, T3>::type, B1, B4>
-      Result(x.Basis1(), y.base().Basis1(), qEp);
-
-   IrredTensor<T3, B4, B3, S3> const& yb = y.base();  // shortcut
-
-   typedef typename const_iterator< IrredTensor<T1, B1, B2, S1> >::type       x_iter;
-   typedef typename const_inner_iterator< IrredTensor<T1, B1, B2, S1> >::type x_inner;
-
-   typedef typename const_iterator< IrredTensor<T2, B2, B3, S2> >::type       E_iter;
-   typedef typename const_inner_iterator< IrredTensor<T2, B2, B3, S2> >::type E_inner;
-
-   typedef typename const_iterator< IrredTensor<T3, B4, B3, S3> >::type       y_iter;
-   typedef typename const_inner_iterator< IrredTensor<T3, B4, B3, S3> >::type y_inner;
-
-   for (x_iter xi = iterate(x); xi; ++xi)
-   {
-      QuantumNumber qxp = x.Basis1()[xi.index()];
-      for (y_iter yi = iterate(yb); yi; ++yi)
-      {
-         QuantumNumber qyp = yb.Basis1()[yi.index()];
-         if (!is_transform_target(qyp, qEp, qxp)) continue;
-
-         for (x_inner xin = iterate(xi); xin; ++xin)
-         {
-            for (y_inner yin = iterate(yi); yin; ++yin)
-            {
-               E_inner Ein = iterate_at(E.data(), xin.index2(), yin.index2());
-               if (Ein)
-               {
-                  /*
-                  double Coefficient = tensor_coefficient(x.Basis2()[xin.index2()], Transx, qxp,
-                                                          TransE, qxy, qEp,
-                                                          yb.Basis2()[yin.index2()], Transy, qyp);
-                  */
-                  double Coefficient = tensor_coefficient(yb.Basis2()[yin.index2()], Transy, qyp,
-                                                          TransE, qxy, qEp,
-                                                          x.Basis2()[xin.index2()], Transx, qxp);
-
-                  if (fabs(Coefficient) > 1E-10)
-                  {
-                     add_element(Result.data(), xin.index1(), yin.index1(),
-                                 Coefficient * (*xin) * E(xin.index2(), yin.index2()) * herm(*yin));
-                  }
-               }
-            }
-         }
-      }
-   }
-
-   Result.debug_check_structure();
-   return Result;
-}
-
-template <typename T1, typename B1, typename B2, typename S1,
-          typename T2, typename B3, typename S2,
-          typename T3, typename B4, typename S3>
-inline
-IrredTensor<typename Prod3Type<T1, T2, T3>::type, B2, B4>
-triple_prod(HermitianProxy<IrredTensor<T1, B1, B2, S1> > const& x,
-            IrredTensor<T2, B1, B3, S2> const& E,
-            IrredTensor<T3, B3, B4, S3> const& y)
-{
-   return triple_prod(x, E, y, QuantumNumber(y.GetSymmetryList()), E.TransformsAs());
-}
-
-template <typename T1, typename B1, typename B2, typename S1,
-          typename T2, typename B3, typename S2,
-          typename T3, typename B4, typename S3>
-inline
-IrredTensor<typename Prod3Type<T1, T2, T3>::type, B1, B4>
-triple_prod(IrredTensor<T1, B1, B2, S1> const& x,
-            IrredTensor<T2, B2, B3, S2> const& E,
-            HermitianProxy<IrredTensor<T3, B4, B3, S3> > const& y)
-{
-   return triple_prod(x, E, y, QuantumNumber(x.GetSymmetryList()), E.TransformsAs());
-}
-
 // add_triple_prod
 
-template <typename T1, typename B1, typename B2, typename S1,
+template <typename U, typename T1, typename B1, typename B2, typename S1,
           typename T2, typename B3, typename S2,
           typename T3, typename B4, typename S3, typename T4, typename S4>
 void
-add_triple_prod(Tensor::IrredTensor<T4, B1, B4, S4>& Result,
-                std::complex<double> Factor,
+add_triple_prod(U Factor,
                 HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> > const& x,
                 Tensor::IrredTensor<T2, B1, B3, S2> const& E,
                 Tensor::IrredTensor<T3, B3, B4, S3> const& y,
-                QuantumNumber qxy,
-                QuantumNumber qEp)
+                QuantumNumber qxy, Tensor::IrredTensor<T4, B1, B4, S4>& Result)
 {
+#if 0
    if (x.base().is_null() || y.is_null() || E.is_null())
       return;
+#endif
 
+   QuantumNumber qEp = Result.TransformsAs();
    DEBUG_PRECONDITION_EQUAL(y.GetSymmetryList(), x.base().GetSymmetryList());
    DEBUG_PRECONDITION_EQUAL(y.GetSymmetryList(), qxy.GetSymmetryList());
    DEBUG_PRECONDITION_EQUAL(y.GetSymmetryList(), E.GetSymmetryList());
@@ -539,38 +302,24 @@ add_triple_prod(Tensor::IrredTensor<T4, B1, B4, S4>& Result,
    DEBUG_PRECONDITION_EQUAL(E.Basis2(), y.Basis1());
    DEBUG_PRECONDITION_EQUAL(Result.Basis1(), x.base().Basis2());
    DEBUG_PRECONDITION_EQUAL(Result.Basis2(), y.Basis2());
-   DEBUG_PRECONDITION_EQUAL(Result.TransformsAs(), qEp);
 
    IrredTensor<T1, B1, B2, S1> const& xb = x.base();  // shortcut
 
-   typedef typename const_iterator< IrredTensor<T1, B1, B2, S1> >::type       x_iter;
-   typedef typename const_inner_iterator< IrredTensor<T1, B1, B2, S1> >::type x_inner;
-
-   typedef typename const_iterator< IrredTensor<T2, B1, B3, S2> >::type       E_iter;
-   typedef typename const_inner_iterator< IrredTensor<T2, B1, B3, S2> >::type E_inner;
-
-   typedef typename const_iterator< IrredTensor<T3, B3, B4, S3> >::type       y_iter;
-   typedef typename const_inner_iterator< IrredTensor<T3, B3, B4, S3> >::type y_inner;
-
    // iterate over elements in E first
-   for (E_iter Ei = iterate(E.data()); Ei; ++Ei)
+   for (auto const& Ei : E)
    {
-      x_iter xi = iterate(xb.data());
-      xi += Ei.index();
-      QuantumNumber qEi = E.Basis1()[Ei.index()];
-      double DegEi = degree(qEi);
-      for (E_inner Ein = iterate(Ei); Ein; ++Ein)
+      auto& xi = xb[Ei.row()];
+
+      QuantumNumber qEi = E.qn1(Ei.row());
+      double DegEi = qdim(qEi);
+      for (auto& Ein : Ei)
       {
-         QuantumNumber qEj = E.Basis2()[Ein.index2()];
-
-         y_iter yi = iterate(y.data());
-         yi += Ein.index2();
-
-         for (x_inner xin = iterate(xi); xin; ++xin)
+         QuantumNumber qEj = E.qn2(Ein.col());
+         for (auto const& xin : xb[Ei.row()])
          {
-            QuantumNumber qxip = xb.Basis2()[xin.index2()];
-            double DegXi = degree(qxip);
-            for (y_inner yin = iterate(yi); yin; ++yin)
+            QuantumNumber qxip = xb.qn2(xin.col());
+            double DegXi = qdim(qxip);
+            for (auto const& yin : y[Ein.col()])
             {
                QuantumNumber qyj = y.Basis2()[yin.index2()];
                if (!(is_transform_target(qyj, qEp, qxip))) continue;
@@ -582,33 +331,69 @@ add_triple_prod(Tensor::IrredTensor<T4, B1, B4, S4>& Result,
 
                if (fabs(Coefficient) > 1E-10)
                {
-                  add_element(Result.data(), xin.index2(), yin.index2(), (Factor * Coefficient) *
-                              herm(*xin) * (*Ein) * (*yin));
+                  auto Temp = evaluate(Ein->value * yin->value);
+                  Result.add(xin.col(), yin.col(), (Factor*Coefficient) * herm(xin->value) * Temp);
                }
             }
          }
       }
    }
-
    Result.debug_check_structure();
 }
 
+template <typename T, typename B1, typename B2, typename S1,
+          typename B3, typename S2,
+          typename B4, typename S3>
+IrredTensor<T, B2, B4>
+triple_prod(HermitianProxy<IrredTensor<T, B1, B2, S1> > const& x,
+            IrredTensor<T, B1, B3, S2> const& E,
+            IrredTensor<T, B3, B4, S3> const& y,
+            QuantumNumber qxy,
+            QuantumNumber qEp)
+{
+   IrredTensor<T, B2, B4> Result(x.base().Basis2(), y.Basis2(), qEp);
+   add_triple_prod(1.0, x, E, y, qxy, Result);
+   return Result;
+}
 
-template <typename T1, typename B1, typename B2, typename S1,
+template <typename T, typename B1, typename B2, typename S1,
+          typename B3, typename S2,
+          typename B4, typename S3>
+inline
+IrredTensor<T, B2, B4>
+triple_prod(HermitianProxy<IrredTensor<T, B1, B2, S1> > const& x,
+            IrredTensor<T, B1, B3, S2> const& E,
+            IrredTensor<T, B3, B4, S3> const& y)
+{
+   return triple_prod(x, E, y, QuantumNumber(y.GetSymmetryList()), E.TransformsAs());
+}
+
+template <typename U, typename T, typename B1, typename B2, typename S1,
+          typename B3, typename S2,
+          typename B4, typename S3, typename T4, typename S4>
+inline
+void
+add_triple_prod(U Factor, HermitianProxy<Tensor::IrredTensor<T, B1, B2, S1> > const& x,
+                Tensor::IrredTensor<T, B1, B3, S2> const& E,
+                Tensor::IrredTensor<T, B3, B4, S3> const& y,
+                Tensor::IrredTensor<T, B1, B4, S4>& Result)
+{
+   add_triple_prod(Factor, x, E, y, QuantumNumber(y.GetSymmetryList()), Result);
+}
+
+
+
+template <typename U, typename T1, typename B1, typename B2, typename S1,
           typename T2, typename B3, typename S2,
           typename T3, typename B4, typename S3, typename T4, typename S4>
 void
-add_triple_prod(Tensor::IrredTensor<T4, B1, B4, S4>& Result,
-                std::complex<double> Factor,
+add_triple_prod(U Factor,
                 Tensor::IrredTensor<T1, B1, B2, S1> const& x,
                 Tensor::IrredTensor<T2, B2, B3, S2> const& E,
                 HermitianProxy<Tensor::IrredTensor<T3, B4, B3, S3> > const& y,
-                QuantumNumber qxy,
-                QuantumNumber qEp)
+                QuantumNumber qxy, Tensor::IrredTensor<T4, B1, B4, S4>& Result)
 {
-   if (x.is_null() || E.is_null() || y.base().is_null())
-      return;
-
+   QuantumNumber qEp = Result.TransformsAs();
    DEBUG_PRECONDITION_EQUAL(x.GetSymmetryList(), y.base().GetSymmetryList());
    DEBUG_PRECONDITION_EQUAL(x.GetSymmetryList(), qxy.GetSymmetryList());
    DEBUG_PRECONDITION_EQUAL(x.GetSymmetryList(), E.GetSymmetryList());
@@ -622,47 +407,37 @@ add_triple_prod(Tensor::IrredTensor<T4, B1, B4, S4>& Result,
    DEBUG_PRECONDITION_EQUAL(E.Basis2(), y.base().Basis2());
    DEBUG_PRECONDITION_EQUAL(Result.Basis1(), x.Basis1());
    DEBUG_PRECONDITION_EQUAL(Result.Basis2(), y.base().Basis1());
-   DEBUG_PRECONDITION_EQUAL(Result.TransformsAs(), qEp);
 
    IrredTensor<T3, B4, B3, S3> const& yb = y.base();  // shortcut
 
-   typedef typename const_iterator< IrredTensor<T1, B1, B2, S1> >::type       x_iter;
-   typedef typename const_inner_iterator< IrredTensor<T1, B1, B2, S1> >::type x_inner;
-
-   typedef typename const_iterator< IrredTensor<T2, B2, B3, S2> >::type       E_iter;
-   typedef typename const_inner_iterator< IrredTensor<T2, B2, B3, S2> >::type E_inner;
-
-   typedef typename const_iterator< IrredTensor<T3, B4, B3, S3> >::type       y_iter;
-   typedef typename const_inner_iterator< IrredTensor<T3, B4, B3, S3> >::type y_inner;
-
-   for (x_iter xi = iterate(x); xi; ++xi)
+   for (auto const& xi : x)
    {
-      QuantumNumber qxp = x.Basis1()[xi.index()];
-      for (y_iter yi = iterate(yb); yi; ++yi)
+      QuantumNumber qxp = x.qn1(xi.row());
+      for (auto const& yi : yb)
       {
-         QuantumNumber qyp = yb.Basis1()[yi.index()];
+         QuantumNumber qyp = yb.qn1(yi.row());
          if (!is_transform_target(qyp, qEp, qxp)) continue;
 
-         for (x_inner xin = iterate(xi); xin; ++xin)
+         for (auto const& xin : xi)
          {
-            for (y_inner yin = iterate(yi); yin; ++yin)
+            for (auto const& yin : yi)
             {
-               E_inner Ein = iterate_at(E.data(), xin.index2(), yin.index2());
-               if (Ein)
+               auto const& EIn = E[xin.col()].find(yin.col());
+               if (EIn != E[xin.col()].end())
                {
                   /*
                   double Coefficient = tensor_coefficient(x.Basis2()[xin.index2()], Transx, qxp,
                                                           TransE, qxy, qEp,
                                                           yb.Basis2()[yin.index2()], Transy, qyp);
                   */
-                  double Coefficient = tensor_coefficient(yb.Basis2()[yin.index2()], Transy, qyp,
+                  double Coefficient = tensor_coefficient(yb.qn2(yin.col()), Transy, qyp,
                                                           TransE, qxy, qEp,
-                                                          x.Basis2()[xin.index2()], Transx, qxp);
+                                                          x.qn2(xin.col()), Transx, qxp);
 
                   if (fabs(Coefficient) > 1E-10)
                   {
-                     add_element(Result.data(), xin.index1(), yin.index1(),
-                                 (Factor * Coefficient) * (*xin) * E(xin.index2(), yin.index2()) * herm(*yin));
+                     auto Temp = evaluate(EIn->value * herm(yin->value));
+                     Result.add(xin.row(), yin.row(), (Factor * Coefficient) * xin->value * Temp);
                   }
                }
             }
@@ -673,35 +448,47 @@ add_triple_prod(Tensor::IrredTensor<T4, B1, B4, S4>& Result,
    Result.debug_check_structure();
 }
 
-
-template <typename T1, typename B1, typename B2, typename S1,
-          typename T2, typename B3, typename S2,
-          typename T3, typename B4, typename S3, typename T4, typename S4>
-inline
-void
-add_triple_prod(Tensor::IrredTensor<T4, B1, B4, S4>& Result,
-                std::complex<double> Factor,
-                HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> > const& x,
-                Tensor::IrredTensor<T2, B1, B3, S2> const& E,
-                Tensor::IrredTensor<T3, B3, B4, S3> const& y)
+template <typename T, typename B1, typename B2, typename S1,
+          typename B3, typename S2,
+          typename B4, typename S3, typename T4, typename S4>
+Tensor::IrredTensor<T, B1, B4, S4>
+triple_prod(Tensor::IrredTensor<T, B1, B2, S1> const& x,
+            Tensor::IrredTensor<T, B2, B3, S2> const& E,
+            HermitianProxy<Tensor::IrredTensor<T, B4, B3, S3> > const& y,
+            QuantumNumber qxy, QuantumNumber qEp)
 {
-   add_triple_prod(Result, Factor, x, E, y, QuantumNumber(y.GetSymmetryList()), E.TransformsAs());
+
+   Tensor::IrredTensor<T, B1, B4, S4> Result(x.Basis1(), y.base().Basis1(), qEp);
+   add_triple_prod(1.0, x, E, y, qxy, Result);
+   return Result;
 }
 
-template <typename T1, typename B1, typename B2, typename S1,
-          typename T2, typename B3, typename S2,
-          typename T3, typename B4, typename S3, typename T4, typename S4>
+
+template <typename T, typename B1, typename B2, typename S1,
+          typename B3, typename S2,
+          typename B4, typename S3>
+inline
+IrredTensor<T, B1, B4>
+triple_prod(IrredTensor<T, B1, B2, S1> const& x,
+            IrredTensor<T, B2, B3, S2> const& E,
+            HermitianProxy<IrredTensor<T, B4, B3, S3> > const& y)
+{
+   return triple_prod(x, E, y, QuantumNumber(x.GetSymmetryList()), E.TransformsAs());
+}
+
+template <typename U, typename T, typename B1, typename B2, typename S1,
+          typename B3, typename S2,
+          typename B4, typename S3, typename T4, typename S4>
 inline
 void
-add_triple_prod(Tensor::IrredTensor<T4, B1, B4, S4>& Result,
-                std::complex<double> Factor,
-                Tensor::IrredTensor<T1, B1, B2, S1> const& x,
-                Tensor::IrredTensor<T2, B2, B3, S2> const& E,
-                HermitianProxy<Tensor::IrredTensor<T3, B4, B3, S3> > const& y)
+add_triple_prod(U Factor,
+                Tensor::IrredTensor<T, B1, B2, S1> const& x,
+                Tensor::IrredTensor<T, B2, B3, S2> const& E,
+                HermitianProxy<Tensor::IrredTensor<T, B4, B3, S3> > const& y,
+                Tensor::IrredTensor<T, B1, B4, S4>& Result)
 {
-   add_triple_prod(Result, Factor, x, E, y, QuantumNumber(x.GetSymmetryList()), E.TransformsAs());
+   add_triple_prod(Result, Factor, x, E, y, QuantumNumber(x.GetSymmetryList()), Result);
 }
-#endif
 
 //
 // prod for hermitian
