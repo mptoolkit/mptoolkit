@@ -48,7 +48,8 @@ int main()
    {
       if (i % 10 == 0)
          std::cout << i << '\n';
-      gK += gM*gM;
+      add_prod(gM, gM, 1.0, gK);
+      //gK += gM*gM;
    }
 #else
    Tensor::IrredTensor<blas::Matrix<double>, VectorBasis, VectorBasis>
@@ -56,7 +57,8 @@ int main()
 
    for (int i = 0; i < 1000; ++i)
    {
-      K += M*M;
+      add_prod(M,M, 1.0, K);
+      //K += M*M;
    }
 #endif
 

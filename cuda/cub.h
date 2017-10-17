@@ -17,6 +17,8 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+// Miscellaneous GPU operations using the CUB library
+
 #if !defined(MPTOOLKIT_CUDA_CUB_H)
 #define MPTOOLKIT_CUDA_CUB_H
 

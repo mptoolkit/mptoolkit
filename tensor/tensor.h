@@ -628,6 +628,30 @@ prod(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S> const& y, Qua
          }
       }
    }
+   return Result;
+}
+
+template <typename T, typename B1, typename B2, typename B3, typename S, typename U>
+void
+add_prod(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S> const& y, U Factor, IrredTensor<T, B1, B3, S>& Result)
+{
+   DEBUG_PRECONDITION_EQUAL(x.Basis2(), y.Basis1());
+   DEBUG_PRECONDITION_EQUAL(x.Basis1(), Result.Basis1());
+   DEBUG_PRECONDITION_EQUAL(y.Basis2(), Result.Basis2());
+
+   QuantumNumber Trans = Result.TransformsAs();
+   for (auto const& rx : x.data())
+   {
+      for (auto const& cx : rx)
+      {
+         for (auto const& cy : y[cx.col()])
+         {
+            real_type r = product_coefficient(x.TransformsAs(), y.TransformsAs(), Trans,
+                                              x.qn1(rx.row()), y.qn2(cy.col()), x.qn2(cx.col()));
+            Result.add(rx.row(), cy.col(), Factor * r * cx.value * cy.value);
+         }
+      }
+   }
 }
 
 template <typename T, typename B1, typename B2, typename B3, typename S>
