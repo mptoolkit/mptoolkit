@@ -63,6 +63,17 @@ class MatrixRef
       int cols() const { return this->as_derived().cols(); }
 };
 
+// derived class for a diagonal matrix
+
+template <typename ValueType, typename DerivedType, typename Tag>
+class DiagonalMatrixRef : MatrixRef<ValueType, DerivedType, Tag>
+{
+   public:
+      using value_type     = ValueType;
+      using derived_type   = DerivedType;
+      using tag_type       = Tag;
+};
+
 // Specialization of a MatrixRef for a matrix that can be directly used in BLAS-like calls,
 // ie it physically exists and can be addressed (although not necessarily in main memory,
 // eg it might be on some other device such as a GPU), and has a valid BLAS trans parameter
@@ -482,6 +493,32 @@ trace(BlasMatrix<T, U, Tag> const& x)
 {
    return vector_sum(x.as_derived().diagonal());
 }
+
+//
+// DiagonalBlasMatrix - a matrix that physically exists in memory with a stride
+// Essentially a different view of a BlasVector.
+//
+
+template <typename ValueType, typename DerivedType, typename Tag>
+class DiagonalBlasMatrix : DiagonalMatrixRef<ValueType, DerivedType, Tag>
+{
+   public:
+      using value_type     = ValueType;
+      using derived_type   = DerivedType;
+      using tag_type       = Tag;
+      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
+      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+
+      DiagonalBlasMatrix() = default;
+      ~DiagonalBlasMatrix() = default;
+      DiagonalBlasMatrix(DiagonalBlasMatrix&& Other) = default;
+
+      int stride() const { return this->as_derived().stride(); }
+
+      storage_type storage() { return this->as_derived().storage(); }
+      const_storage_type storage() const { return this->as_derived().storage(); }
+};
+
 
 } // namespace blas
 

@@ -21,7 +21,7 @@
 #define TENSOR_EIGEN_H_DHCKJDHUREYT7845Y78Y78TY78TY78T
 
 #include "tensor.h"
-#include "linearalgebra/diagonalmatrix.h"
+#include "blas/diagonalmatrix.h"
 
 namespace Tensor
 {

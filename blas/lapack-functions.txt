@@ -1,0 +1,25 @@
+
+
+// LAPACK functions for matrices
+
+
+
+// Functions that we need to apply to IrredTensor (scalar tensors only!)
+
+// All versions of SVD use a DiagonalMatrix structure
+
+// size of D is min(M,N)
+SingularValueDecomposition
+
+// size of D is max(M,N)
+SingularValueDecompositionFull
+
+// size of D is M
+SingularValueDecompositionKeepBasis1
+
+// size of D is N
+SingularValueDecompositionKeepBasis2
+
+DiagonalizeHermitian
+
+EigenvaluesHermitian

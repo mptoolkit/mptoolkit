@@ -28,7 +28,6 @@
 #include "tensor/tensorsum.h"
 #include "tensor/basis.h"
 #include "tensor/tensorproduct.h"
-#include "linearalgebra/scalarmatrix.h"
 
 using namespace Tensor;
 
@@ -43,10 +42,12 @@ typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
                             VectorBasis,
                             VectorBasis> MatrixOperator;
 
+#if 0
 // an operator that acts trivially in each subspace
 typedef IrredTensor<LinearAlgebra::ScalarMatrix<std::complex<double>>,
                     VectorBasis,
                     VectorBasis> SimpleVectorOperator;
+#endif
 
 // typedef for a diagonal, real operator
 typedef IrredTensor

@@ -21,6 +21,7 @@
 #define REGULARIZE_H_DHCKJDHUREYT7845Y78Y78TY78TY78T
 
 #include "tensor.h"
+#include "blas/matrix.h"
 
 namespace Tensor
 {
@@ -28,7 +29,8 @@ namespace Tensor
 // Regularizes the basis, returns the transform matrix.
 // The regular basis is Result'.Basis1()
 // Result'.Basis2() is b.
-IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>
+template <typename T>
+IrredTensor<T, VectorBasis, VectorBasis>
 Regularize(VectorBasis const& b);
 
 // is_regular_basis
@@ -36,11 +38,11 @@ Regularize(VectorBasis const& b);
 bool is_regular_basis(VectorBasis const& b);
 
 // regularize a BasisList
-IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, BasisList>
+IrredTensor<blas::Matrix<double>, VectorBasis, BasisList>
 Regularize(BasisList const& b);
 
 // split a VectorBasis into a BasisList.  Returns the transpose of the tranform matrix
-IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, BasisList>
+IrredTensor<blas::Matrix<double>, VectorBasis, BasisList>
 SplitBasis(VectorBasis const& b);
 
 // Map a SimpleOperator defined over a 1x1 matrix onto the element itself.
@@ -50,11 +52,11 @@ SplitBasis(VectorBasis const& b);
 // precondition: All elements of Op are 1x1 matrices.
 template <typename T>
 IrredTensor<T, BasisList, BasisList>
-map_1x1_operator(IrredTensor<LinearAlgebra::Matrix<T>, BasisList, BasisList> const& Op);
+map_1x1_operator(IrredTensor<blas::Matrix<T>, BasisList, BasisList> const& Op);
 
    // convert a simple operator to a matrix operator
 template <typename T>
-IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
+IrredTensor<blas::Matrix<T>, VectorBasis, VectorBasis>
 ToMatrixOperator(IrredTensor<T, BasisList, BasisList> const& Op);
 
 } // namespace Tensor
