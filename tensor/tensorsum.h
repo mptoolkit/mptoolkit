@@ -38,7 +38,7 @@ class SumBasis<BasisList> : public BasisList
 
    private:
       typedef std::list<target_type> TargetListType;
-      typedef LinearAlgebra::Vector<source_type>    SourceListType;
+      typedef std::vector<source_type>    SourceListType;
 
    public:
       typedef TargetListType::const_iterator const_iterator;
@@ -175,6 +175,8 @@ template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>
 tensor_col_sum(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& y);
 
+// seems that these functions are never used
+#if 0
 template <typename FwdIter, typename B1, typename B2>
 typename std::iterator_traits<FwdIter>::value_type
 tensor_accumulate(FwdIter first, FwdIter last,
@@ -188,9 +190,10 @@ tensor_row_accumulate(FwdIter first, FwdIter last, SumBasis<B2> const& b2);
 template <typename FwdIter, typename B1>
 typename std::iterator_traits<FwdIter>::value_type
 tensor_col_accumulate(FwdIter first, FwdIter last, SumBasis<B1> const& b1);
+#endif
 
 } // namespace Tensor
 
-#include "tensorsum.cc"
+#include "tensorsum.icc"
 
 #endif

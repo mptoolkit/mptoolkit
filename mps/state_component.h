@@ -28,19 +28,7 @@
 #include "tensor/tensorsum.h"
 #include "tensor/basis.h"
 #include "tensor/tensorproduct.h"
-
-using namespace Tensor;
-
-// the standard operator type acting on a local space
-typedef IrredTensor<std::complex<double> > SimpleOperator;
-
-// a reducible operator acting on a local space
-typedef ReducibleTensor<std::complex<double>, BasisList, BasisList> SimpleRedOperator;
-
-// the standard operator type acting on the auxiliary space
-typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
-                            VectorBasis,
-                            VectorBasis> MatrixOperator;
+#include "tensor/tensor_types.h"
 
 #if 0
 // an operator that acts trivially in each subspace
@@ -49,16 +37,7 @@ typedef IrredTensor<LinearAlgebra::ScalarMatrix<std::complex<double>>,
                     VectorBasis> SimpleVectorOperator;
 #endif
 
-// typedef for a diagonal, real operator
-typedef IrredTensor
-<
-   LinearAlgebra::DiagonalMatrix<double>
-   , VectorBasis
-   , VectorBasis
-   , Tensor::DiagonalStructure
-   >
-RealDiagonalOperator;
-
+#if 0
 // RealSemiDiagonalOperator is an IrredTensor that is not diagonal
 // in the outer index, but made up of a DiagonalMatrix.  This
 // exists mostly for compatibility with old file formats that
@@ -71,6 +50,7 @@ typedef IrredTensor
    , Tensor::DefaultStructure
    >
 RealSemiDiagonalOperator;
+#endif
 
 template <typename T>
 struct BasicStateComponent;
@@ -209,9 +189,10 @@ BasicStateComponent<T>& operator*=(BasicStateComponent<T>& x, std::complex<doubl
    return x;
 }
 
-using SimpleStateComponent = BasicStateComponent<SimpleVectorOperator>;
+//using SimpleStateComponent = BasicStateComponent<SimpleVectorOperator>;
 
-using StateComponent = BasicStateComponent<MatrixOperator>;
+using StateComponent     = BasicStateComponent<MatrixOperator>;
+using RealStateComponent = BasicStateComponent<RealMatrixOperator>;
 
 std::ostream& operator<<(std::ostream& out, StateComponent const& Psi);
 

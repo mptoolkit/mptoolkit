@@ -17,11 +17,14 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#if !defined(TENSOR_EIGEN_H_DHCKJDHUREYT7845Y78Y78TY78TY78T)
-#define TENSOR_EIGEN_H_DHCKJDHUREYT7845Y78Y78TY78TY78T
+#if !defined(MPTOOLKIT_TENSOR_TENSOR_EIGEN_H)
+#define MPTOOLKIT_TENSOR_TENSOR_EIGEN_H
 
 #include "tensor.h"
 #include "blas/diagonalmatrix.h"
+#include "tensor_types.h"
+
+// These are mostly unused - just some of them for infinite wavefunctions (maybe)
 
 namespace Tensor
 {
@@ -31,12 +34,12 @@ namespace Tensor
 // x must be a symmetric scalar operator, with a regular basis
 //(ie. at most one subspace per quantum number).
 // Note, this interface differs from LinearAlgebra::DiagonalizeSymmetric
-IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>
-DiagonalizeHermitian(IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>& x);
+template <typename T>
+IrredTensor<T, VectorBasis, VectorBasis>
+DiagonalizeHermitian(IrredTensor<T, VectorBasis, VectorBasis>& x);
 
-IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
-DiagonalizeHermitian(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
-                     VectorBasis, VectorBasis>& x);
+
+
 
 LinearAlgebra::Vector<double>
 EigenvaluesHermitian(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,

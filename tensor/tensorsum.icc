@@ -146,21 +146,19 @@ tensor_sum(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& 
    DEBUG_PRECONDITION(b2.Basis(0) == x.Basis2());
    DEBUG_PRECONDITION(b2.Basis(1) == y.Basis2());
 
-   typedef typename const_iterator<IrredTensor<T, S> >::type iterator;
-   typedef typename const_inner_iterator<IrredTensor<T, S> >::type inner_iterator;
    IrredTensor<T, B1, B2, S> Result(b1, b2, x.TransformsAs());
-   for (iterator I = iterate(x); I; ++I)
+   for (auto const& rx : x)
    {
-      for (inner_iterator J = iterate(I); J; ++J)
+      for (auto const& cx : rx)
       {
-         Result(b1(0,J.index1()), b2(0,J.index2())) = *J;
+         Result.insert(b1(0,rx.row()), b2(0,cx.col()), rx.value);
       }
    }
-   for (iterator I = iterate(y); I; ++I)
+   for (auto const& ry : y)
    {
-      for (inner_iterator J = iterate(I); J; ++J)
+      for (auto const& cy : ry)
       {
-         Result(b1(1,J.index1()), b2(1,J.index2())) = *J;
+         Result.insert(b1(1,ry.row()), b2(1,cy.col()), ry.value);
       }
    }
    return Result;
@@ -177,21 +175,19 @@ tensor_row_sum(IrredTensor<T, B1, B2, S> const& x,
    DEBUG_PRECONDITION_EQUAL(x.Basis2(), b2.Basis(0));
    DEBUG_PRECONDITION_EQUAL(y.Basis2(), b2.Basis(1));
 
-   typedef typename const_iterator<IrredTensor<T, B1, B2, S> >::type iterator;
-   typedef typename const_inner_iterator<IrredTensor<T, B1, B2, S> >::type inner_iterator;
    IrredTensor<T, B1, B2, S> Result(x.Basis1(), b2, x.TransformsAs());
-   for (iterator I = iterate(x); I; ++I)
+   for (auto const& rx : x)
    {
-      for (inner_iterator J = iterate(I); J; ++J)
+      for (auto const& cx : rx)
       {
-         Result(J.index1(), b2(0,J.index2())) = *J;
+         Result.insert(rx.row(), b2(0,cx.col()), rx.value);
       }
    }
-   for (iterator I = iterate(y); I; ++I)
+   for (auto const& ry : y)
    {
-      for (inner_iterator J = iterate(I); J; ++J)
+      for (auto const& cy : ry)
       {
-         Result(J.index1(), b2(1,J.index2())) = *J;
+         Result.insert(ry.row(), b2(1,cy.col()), ry.value);
       }
    }
    return Result;
@@ -209,26 +205,25 @@ tensor_col_sum(IrredTensor<T, B1, B2, S> const& x,
    DEBUG_PRECONDITION_EQUAL(x.Basis1(), b1.Basis(0));
    DEBUG_PRECONDITION_EQUAL(y.Basis1(), b1.Basis(1));
 
-   typedef typename const_iterator<IrredTensor<T, B1, B2, S> >::type iterator;
-   typedef typename const_inner_iterator<IrredTensor<T, B1, B2, S> >::type inner_iterator;
    IrredTensor<T, B1, B2, S> Result(b1, x.Basis2(), x.TransformsAs());
-   for (iterator I = iterate(x); I; ++I)
+   for (auto const& rx : x)
    {
-      for (inner_iterator J = iterate(I); J; ++J)
+      for (auto const& cx : rx)
       {
-         Result(b1(0,J.index1()), J.index2()) = *J;
+         Result.insert(b1(0,rx.row()), cx.col(), rx.value);
       }
    }
-   for (iterator I = iterate(y); I; ++I)
+   for (auto const& ry : y)
    {
-      for (inner_iterator J = iterate(I); J; ++J)
+      for (auto const& cy : ry)
       {
-         Result(b1(1,J.index1()), J.index2()) = *J;
+         Result.insert(b1(1,ry.row()), cy.col(), ry.value);
       }
    }
    return Result;
 }
 
+#if 0
 template <typename FwdIter, typename B1, typename B2>
 typename std::iterator_traits<FwdIter>::value_type
 tensor_accumulate(FwdIter first, FwdIter last,
@@ -342,5 +337,6 @@ tensor_col_accumulate(FwdIter first, FwdIter last, SumBasis<B1> const& b1)
    }
    return Result;
 }
+#endif
 
 } // namespace Tensor

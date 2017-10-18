@@ -112,7 +112,7 @@ GSRCSUBDIRS = $(patsubst %,$(SRCDIR)/%, $(GSRCDIRS))
 quantumnumbersobj = quantumnumber.o symmetrybase.o symmetrylist.o \
 		    coupling.o u1.o su2.o null-quantumnumber.o z2.o zn.o
 
-tensorobj = tensorproduct.o tensorsum.o basis.o regularize.o tensor_eigen.o
+tensorobj = tensorproduct.o tensorsum.o basis.o # tensor_eigen.o # regularize.o
 
 latticeobj = siteoperator.o latticesite.o unitcell.o unitcell-parser.o unitcell_mpo.o \
              infinitelattice.o siteoperator-parser.o infinite-parser.o \

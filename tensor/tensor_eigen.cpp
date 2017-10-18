@@ -19,8 +19,7 @@
 
 #include "tensor_eigen.h"
 #include "regularize.h"
-#include "linearalgebra/eigen.h"
-#include "linearalgebra/matrix_utility.h"
+#include "blas/matrix-eigen.h"
 
 namespace Tensor
 {

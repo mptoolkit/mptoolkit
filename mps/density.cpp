@@ -19,9 +19,7 @@
 
 #include "density.h"
 #include "common/proccontrol.h"
-#include "linearalgebra/eigen.h"
-
-//typedef LinearAlgebra::Vector<std::pair<int, LinearAlgebra::Range> > BasisMappingType;
+#include "blas/matrix-eigen.h"
 
 
 LinearBasis<VectorBasis>::LinearBasis(VectorBasis const& B)
@@ -36,7 +34,7 @@ LinearBasis<VectorBasis>::LinearBasis(VectorBasis const& B)
       QuantumNumber q = B[i];
 
       int& MappedDim(QNDimension[q]);
-      Mapping[i].second = LinearAlgebra::Range(MappedDim, MappedDim + Dim);
+      Mapping[i].second = blas::Range(MappedDim, MappedDim + Dim);
       MappedDim += Dim;
    }
 
@@ -196,7 +194,7 @@ void DensityMatrixBase::DiagonalizeDMHelper(bool Sort)
 
    ESum = 0;  // running sum of the eigenvalues
    // diagonalize the DM
-   LinearAlgebra::Vector<double> Eigenvalues(MaxLinearDimension);
+   blas::Vector<double> Eigenvalues(MaxLinearDimension);
    for (std::size_t q1 = 0; q1 < RawDMList.size(); ++q1)
    {
       int CurrentDegree = degree(this->Lookup(q1));
@@ -233,22 +231,21 @@ DensityMatrix<MatrixOperator>::DensityMatrix(MatrixOperator const& Op)
    {
       int Dim = B.dim(q);
       //      std::cout << "dimension of " << q1 << " is " << Dim << std::endl;
-      RawDMList[q] = RawDMType(Dim, Dim);
-      LinearAlgebra::fill(RawDMList[q], std::complex<double>(0));
+      RawDMList[q] = RawDMType(Dim, Dim, 0.0);
       MaxLinearDimension = std::max<int>(MaxLinearDimension, Dim);
    }
 
    // Fill the raw density matrices
-   for (LinearAlgebra::const_iterator<MatrixOperator>::type I = iterate(Op); I; ++I)
+   for (auto const& rOp : Op)
    {
-      for (LinearAlgebra::const_inner_iterator<MatrixOperator>::type J = iterate(I); J; ++J)
+      for (auto const& cOp : rOp)
       {
          int tp;
          LinearAlgebra::Range rtp;
-         std::tie(tp, rtp) = B.Lookup(J.index1());
+         std::tie(tp, rtp) = B.Lookup(rOp.row());
          int t;
          LinearAlgebra::Range rt;
-         std::tie(t, rt) = B.Lookup(J.index2());
+         std::tie(t, rt) = B.Lookup(cOp.col());
          CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal")(B[tp])(B[t])(Op)(B);
          RawDMList[tp](rtp, rt) = *J;
       }
@@ -257,6 +254,7 @@ DensityMatrix<MatrixOperator>::DensityMatrix(MatrixOperator const& Op)
    this->DiagonalizeDMHelper();
 }
 
+#if 0
 DensityMatrix<MatrixOperator>::DensityMatrix(MatrixOperator const& Op, MatrixOperator const& WavefunctionDM)
    : B(Op.Basis1())
 {
@@ -274,40 +272,37 @@ DensityMatrix<MatrixOperator>::DensityMatrix(MatrixOperator const& Op, MatrixOpe
    {
       int Dim = B.dim(q);
       //      std::cout << "dimension of " << q1 << " is " << Dim << std::endl;
-      RawDMList[q] = RawDMType(Dim, Dim);
-      LinearAlgebra::fill(RawDMList[q], std::complex<double>(0));
-      PsiDMList[q] = RawDMType(Dim, Dim);
-      LinearAlgebra::fill(PsiDMList[q], std::complex<double>(0));
+      RawDMList[q] = RawDMType(Dim, Dim, 0.0);
+      PsiDMList[q] = RawDMType(Dim, Dim, 0.0);
       MaxLinearDimension = std::max<int>(MaxLinearDimension, Dim);
    }
 
    // Fill the raw density matrices
-   for (LinearAlgebra::const_iterator<MatrixOperator>::type I = iterate(Op); I; ++I)
+   for (auto const& rOp : Op)
    {
-      for (LinearAlgebra::const_inner_iterator<MatrixOperator>::type J = iterate(I); J; ++J)
+      for (auto const& cOp : rOp)
       {
          int tp;
          LinearAlgebra::Range rtp;
-         std::tie(tp, rtp) = B.Lookup(J.index1());
+         std::tie(tp, rtp) = B.Lookup(rOp.row());
          int t;
          LinearAlgebra::Range rt;
-         std::tie(t, rt) = B.Lookup(J.index2());
+         std::tie(t, rt) = B.Lookup(cOp.col());
          CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal")(B[tp])(B[t])(Op)(B);
          RawDMList[tp](rtp, rt) = *J;
       }
    }
 
-   // Fill the wavefunction DM
-   for (LinearAlgebra::const_iterator<MatrixOperator>::type I = iterate(WavefunctionDM); I; ++I)
+   for (auto const& rOp : WavefunctionDM)
    {
-      for (LinearAlgebra::const_inner_iterator<MatrixOperator>::type J = iterate(I); J; ++J)
+      for (auto const& cOp : rOp)
       {
          int tp;
          LinearAlgebra::Range rtp;
-         std::tie(tp, rtp) = B.Lookup(J.index1());
+         std::tie(tp, rtp) = B.Lookup(rOp.row()());
          int t;
          LinearAlgebra::Range rt;
-         std::tie(t, rt) = B.Lookup(J.index2());
+         std::tie(t, rt) = B.Lookup(cOp.col()());
          CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal")(B[tp])(B[t])(WavefunctionDM)(B);
          PsiDMList[tp](rtp, rt) = *J;
       }
@@ -331,6 +326,7 @@ DensityMatrix<MatrixOperator>::DensityMatrix(MatrixOperator const& Op, MatrixOpe
    CHECK_EQUAL(i, EigenInfoList.size());
    std::sort(EigenInfoList.begin(), EigenInfoList.end(), EigenCompare);
 }
+#endif
 
 //
 // DensityMatrix<SimpleOperator>
@@ -347,18 +343,18 @@ DensityMatrix<SimpleOperator>::DensityMatrix(SimpleOperator const& Op)
    {
       int Dim = B.dim(q);
       //      std::cout << "dimension of " << q << " is " << Dim << std::endl;
-      RawDMList[q] = LinearAlgebra::Matrix<double>(Dim, Dim, 0);
+      RawDMList[q] = Matrix_Device(Dim, Dim, 0);
       MaxLinearDimension = std::max<int>(MaxLinearDimension, Dim);
    }
    // Fill the raw density matrices
-   for (LinearAlgebra::const_iterator<SimpleOperator>::type I = iterate(Op); I; ++I)
+   for (auto const& rOp : Op)
    {
-      for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
+      for (auto const& cOp : rOp)
       {
          int tp, rtp;
-         std::tie(tp, rtp) = B.Lookup(J.index1());
+         std::tie(tp, rtp) = B.Lookup(rOp.row());
          int t, rt;
-         std::tie(t, rt) = B.Lookup(J.index2());
+         std::tie(t, rt) = B.Lookup(cOp.col());
          CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal");
          RawDMList[tp](rtp, rt) = *J;
       }
@@ -444,8 +440,8 @@ void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType> const& M)
    ESum = 0;  // Running sum of squares of the singular values
    for (std::size_t i = 0; i < M.size(); ++i)
    {
-      LinearAlgebra::Matrix<std::complex<double> > U, Vh;
-      LinearAlgebra::Vector<double> D;
+      Matrix_Device U, Vh;
+      RealVector_Device D;
       SingularValueDecomposition(M[i], U, D, Vh);
 
       LeftVectors.push_back(U);
@@ -500,8 +496,8 @@ SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(Mat
       for (MatrixOperator::const_inner_iterator J = iterate(I); J; ++J)
       {
          // determine where this (i,j) component fits within the matrices
-         std::pair<int, LinearAlgebra::Range> iIndex = B1.Lookup(J.index1());
-         std::pair<int, LinearAlgebra::Range> jIndex = B2.Lookup(J.index2());
+         std::pair<int, blas::Range> iIndex = B1.Lookup(J.index1());
+         std::pair<int, blas::Range> jIndex = B2.Lookup(J.index2());
          // map the index into the used subspaces
          int Subspace = IndexOfi[iIndex.first];
          CHECK(Subspace != -1);
@@ -576,7 +572,7 @@ ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
       if (!LinearMapping[i].empty())
       {
          int b = NewSubspace[i];
-         C(b,b) = LinearAlgebra::DiagonalMatrix<double>(SingularValues[i][std::vector<int>(LinearMapping[i].begin(), LinearMapping[i].end())]);
+         C(b,b) = DiagonalMatrix_Device(SingularValues[i][std::vector<int>(LinearMapping[i].begin(), LinearMapping[i].end())]);
       }
    }
 
@@ -636,7 +632,7 @@ SingularDecomposition(StateComponent const& A, ProductBasis<BasisList, BasisList
             int dim = A.Basis1().dim(i);
             int current = LinearDimensions[LinearIndex].first;
             LeftSubspaceInfo.push_back(ProductSubspaceInfo(k1, i, LinearIndex,
-                                                           LinearAlgebra::Range(current, current+dim)));
+                                                           blas::Range(current, current+dim)));
             LinearDimensions[LinearIndex].first += dim;
          }
       }
@@ -672,7 +668,7 @@ SingularDecomposition(StateComponent const& A, ProductBasis<BasisList, BasisList
             int dim = A.Basis2().dim(i);
             int current = LinearDimensions[LinearIndex].second;
             RightSubspaceInfo.push_back(ProductSubspaceInfo(k2, i, LinearIndex,
-                                                           LinearAlgebra::Range(current, current+dim)));
+                                                            blas::Range(current, current+dim)));
             LinearDimensions[LinearIndex].second += dim;
          }
       }
@@ -799,7 +795,7 @@ ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
       if (!LinearMapping[i].empty())
       {
          int b = NewSubspace[i];
-         C(b,b) = LinearAlgebra::DiagonalMatrix<double>(SingularValues[i][std::vector<int>(LinearMapping[i].begin(), LinearMapping[i].end())]);
+         C(b,b) = DiagonalMatrix_Device(SingularValues[i][std::vector<int>(LinearMapping[i].begin(), LinearMapping[i].end())]);
       }
    }
 }

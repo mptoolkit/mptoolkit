@@ -22,7 +22,8 @@
 
 #include "mps/state_component.h"
 #include "truncation.h"
-#include "linearalgebra/diagonalmatrix.h"
+#include "blas/diagonalmatrix.h"
+#include "blas/range.h"
 #include <tuple>
 #include <set>
 #include <list>
@@ -115,7 +116,7 @@ TruncateFixEigenDimensions(EigenDimensionsType const& EDim_, VectorBasis const& 
 // For each index i into the original basis, Lookup(i) returns a pair,
 // being the new subspace number (that uniquely identifies a symmetry sector),
 // and the location within the subspace where state i belongs.  For a VectorBasis,
-// this is a LinearAlgebra::Range.  For a BasisList, this is a simple integer.
+// this is a blas::Range.  For a BasisList, this is a simple integer.
 //
 
 template <typename BasisT>
@@ -126,7 +127,7 @@ class LinearBasis<VectorBasis> : public VectorBasis
 {
    public:
       typedef VectorBasis MappedBasisType;
-      typedef std::pair<int, LinearAlgebra::Range> MapType;
+      typedef std::pair<int, blas::Range> MapType;
 
       explicit LinearBasis(MappedBasisType const& B);
 
@@ -136,7 +137,7 @@ class LinearBasis<VectorBasis> : public VectorBasis
 
    private:
       MappedBasisType Orig;
-      LinearAlgebra::Vector<std::pair<int, LinearAlgebra::Range> > Mapping;
+      std::vector<std::pair<int, blas::Range>> Mapping;
 };
 
 template <>
@@ -156,7 +157,7 @@ class LinearBasis<BasisList> : public VectorBasis
 
    private:
       MappedBasisType Orig;
-      LinearAlgebra::Vector<std::pair<int, int> > Mapping;
+      std::vector<std::pair<int, int>> Mapping;
 };
 
 class DensityMatrixBase
@@ -203,7 +204,7 @@ class DensityMatrixBase
 
    protected:
       // RawDM is (new, old)
-      typedef LinearAlgebra::Matrix<std::complex<double> > RawDMType;
+      typedef std::vector<Matrix_Device> RawDMType;
 
       std::vector<RawDMType> RawDMList;
       std::vector<EigenInfo> EigenInfoList;
@@ -294,7 +295,7 @@ class SingularDecompositionBase
       double EigenSum() const { return ESum; }
 
    protected:
-      typedef LinearAlgebra::Matrix<std::complex<double> > RawDMType;
+      using RawDMType = Matrix_Device;
 
       SingularDecompositionBase();
 
@@ -308,7 +309,7 @@ class SingularDecompositionBase
 
       std::vector<RawDMType> LeftVectors, RightVectors;
       std::vector<EigenInfo> EigenInfoList;
-      std::vector<LinearAlgebra::Vector<double> > SingularValues;  // to avoid taking sqrt of density eigenvalues
+      std::vector<RealVector> SingularValues;  // to avoid taking sqrt of density eigenvalues
       int MaxLinearDimension;
       double ESum;
 };
@@ -319,10 +320,10 @@ struct ProductSubspaceInfo
    int s;  // index into the matrix basis
 
    int LinearIndex;                  // index into the combined linear basis
-   LinearAlgebra::Range LinearRange; // corresponding range of the linear basis
+   blas::Range LinearRange; // corresponding range of the linear basis
 
    ProductSubspaceInfo() {}
-   ProductSubspaceInfo(int k_, int s_, int LinearIndex_, LinearAlgebra::Range LinearRange_)
+   ProductSubspaceInfo(int k_, int s_, int LinearIndex_, blas::Range LinearRange_)
       : k(k_), s(s_), LinearIndex(LinearIndex_), LinearRange(LinearRange_) {}
 };
 
@@ -388,6 +389,6 @@ class SingularDecomposition<StateComponent, StateComponent> : public SingularDec
 
 typedef SingularDecomposition<StateComponent, StateComponent> AMatSVD;  // avoid typing...
 
-#include "density.cc"
+#include "density.icc"
 
 #endif
