@@ -110,8 +110,6 @@ class ReducibleTensor
       typedef boost::transform_iterator<GetSecond, map_iterator> iterator;
       typedef boost::transform_iterator<GetSecondConst, const_map_iterator> const_iterator;
 
-
-
       ReducibleTensor();
 
       ReducibleTensor(basis1_type const& Basis);
@@ -157,6 +155,9 @@ class ReducibleTensor
       // returns an IrredTensor for the component that transforms as q
       value_type project(QuantumNumber const& q) const;
       value_type& project(QuantumNumber const& q);
+
+      void insert(value_type const& x);
+      void insert(value_type&& x);
 
       // projects onto the scalar component
       value_type scalar() const;
@@ -271,126 +272,49 @@ ReducibleTensor<T, B1, B2, S>::make_identity(B1 const& b)
    return IrredTensor<T, B1, B2, S>::make_identity(b);
 }
 
-} // namespace Tensor
-
-// multiply by scalar
-
-template <typename T, typename B1, typename B2, typename S, typename U>
-struct Multiplication<U, Tensor::ReducibleTensor<T, B1, B2, S> >
-{
-   typedef U first_argument_type;
-   typedef Tensor::ReducibleTensor<T, B1, B2, S> const& second_argument_type;
-   typedef typename result_value<Multiplication<U, T> >::type ResultValue;
-   typedef Tensor::ReducibleTensor<ResultValue, B1, B2, S> result_type;
-
-   result_type operator()(first_argument_type n, second_argument_type x) const
-   {
-      result_type Result(x.Basis1(), x.Basis2());
-      for (typename result_type::const_iterator I = x.begin(); I != x.end(); ++I)
-      {
-         project(Result, I->TransformsAs()) = n * (*I);
-      }
-      return Result;
-   }
-};
-
-template <typename T, typename B1, typename B2, typename S, typename U>
-struct Multiplication<Tensor::ReducibleTensor<T, B1, B2, S>, U>
-{
-   typedef Tensor::ReducibleTensor<T, B1, B2, S> const& first_argument_type;
-  typedef U second_argument_type;
-   typedef typename result_value<Multiplication<T, U> >::type ResultValue;
-   typedef Tensor::ReducibleTensor<ResultValue, B1, B2, S> result_type;
-
-   result_type operator()(first_argument_type x, second_argument_type n) const
-   {
-      result_type Result(x.Basis1(), x.Basis2());
-      for (typename result_type::const_iterator I = x.begin(); I != x.end(); ++I)
-      {
-         project(Result, I->TransformsAs()) = (*I) * n;
-      }
-      return Result;
-   }
-};
-
-template <typename T, typename B1, typename B2, typename S, typename Func>
-struct Transform<Tensor::ReducibleTensor<T, B1, B2, S>, Func>
-{
-   typedef Tensor::ReducibleTensor<T, B1, B2, S> const& first_argument_type;
-   typedef Func second_argument_type;
-   typedef typename result_value<Transform<T, Func> >::type ResultValue;
-   typedef Tensor::ReducibleTensor<ResultValue, B1, B2, S> result_type;
-
-   result_type operator()(first_argument_type x, second_argument_type f) const
-   {
-      result_type Result(x.Basis1(), x.Basis2());
-      for (typename result_type::const_iterator I = x.begin(); I != x.end(); ++I)
-      {
-         project(Result, I->TransformsAs()) = transform(*I, f);
-      }
-      return Result;
-   }
-};
-
-
 // complex conjugation
 
 template <typename T, typename B1, typename B2, typename S>
-struct Conj<Tensor::ReducibleTensor<T, B1, B2, S> >
+ConjugateProxy<ReducibleTensor<T, B1, B2, S>>
+conj(Tensor::ReducibleTensor<T, B1, B2, S> const& x)
 {
-   typedef Tensor::ReducibleTensor<T, B1, B2, S> const& argument_type;
-   typedef Tensor::ReducibleTensor<T, B1, B2, S> result_type;
-
-   result_type operator()(argument_type x) const
-   {
-      result_type Result(x);
-      for (typename Tensor::ReducibleTensor<T, B1, B2, S>::iterator I = Result.begin();
-           I != Result.end(); ++I)
-      {
-         (*I) = conj(*I);
-      }
-      return Result;
-   }
-};
+   return ConjugateProxy<ReducibleTensor<T, B1, B2, S>>(x);
+}
 
 // hermitian conjugation
 
-template <typename T, typename B, typename B2, typename S>
-struct Herm<Tensor::ReducibleTensor<T, B, B2, S>>
+template <typename T, typename B1, typename B2, typename S>
+HermitianProxy<ReducibleTensor<T, B1, B2, S>>
+herm(ReducibleTensor<T, B1, B2, S> const& x)
 {
-   using argument_type = Tensor::ReducibleTensor<T, B, B2, S>;
-   using result_type = HermitianProxy<Tensor::ReducibleTensor<T, B, B2, S>>;
-   result_type operator()(Tensor::ReducibleTensor<T, B, B2, S> const& x)
-   {
-      return HermitianProxy<Tensor::ReducibleTensor<T, B, B2, S> >(x);
-   }
-};
+   return HermitianProxy<ReducibleTensor<T, B1, B2, S>>(x);
+}
 
 // flip conjugation
-
-template <typename T, typename B1, typename B2, typename S>
-struct FlipConjugate<Tensor::ReducibleTensor<T, B1, B2, S> > : TensorFlipConjugate<Tensor::ReducibleTensor<T, B1, B2, S> > {};
-
-template <typename T, typename B1, typename B2, typename S, typename F>
-struct TensorFlipConjugate<Tensor::ReducibleTensor<T, B1, B2, S>, F>
+ReducibleTensor<T, B2, B1, S>
+flip_conj(ReducibleTensor<T, B1, B2, S> const& x)
 {
-   TensorFlipConjugate(F f = F()) : f_(f) {}
-
-   typedef Tensor::ReducibleTensor<T, B1, B2, S> result_type;
-   typedef Tensor::ReducibleTensor<T, B1, B2, S> const& argument_type;
-
-   result_type operator()(Tensor::ReducibleTensor<T, B1, B2, S> const& x) const
+   ReducibleTensor<T, B2, B1, S> Result(adjoint(x.Basis1()), adjoint(x.Basis2()));
+   for (auto const& c : x)
    {
-      result_type Result(adjoint(x.Basis1()), adjoint(x.Basis2()));
-      for (typename Tensor::ReducibleTensor<T, B1, B2, S>::const_iterator I = x.begin(); I != x.end(); ++I)
-      {
-         Result.project(adjoint(I->TransformsAs())) = flip_conj(*I);
-      }
-      return Result;
+      Result.insert(flip_conj(c));
    }
-   F f_;
-};
+   return Result;
+}
 
+ReducibleTensor<T, B2, B1, S>
+flip_conj(ReducibleTensor<T, B1, B2, S>&& x)
+{
+   ReducibleTensor<T, B2, B1, S> Result(adjoint(x.Basis1()), adjoint(x.Basis2()));
+   for (auto&& c : x)
+   {
+      Result.insert(flip_conj(std::move(c)));
+   }
+   return Result;
+}
+
+
+#if 0
 // trace
 
 template <typename T, typename B1, typename B2, typename S>
@@ -761,8 +685,10 @@ tensor_prod(ReducibleTensor<T, B1, B2, S1> const& x, ReducibleTensor<T2, B3, B4,
    return  TensorProd<ReducibleTensor<T, B1, B2, S1>, ReducibleTensor<T2, B3, B4, S2> >()(x,y);
 }
 
+#endif
+
 } // namespace Tensor
 
-#include "reducible.cc"
+#include "reducible.icc"
 
 #endif

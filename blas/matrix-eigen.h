@@ -45,6 +45,7 @@ Vector<double> DiagonalizeSymmetric(Matrix<double>& M);
 template <typename U>
 void DiagonalizeSymmetric(Matrix<double>& M, BlasVector<double, U, cpu_tag>& v)
 
+// Version that takes a proxy-reference
 template <typename U>
 void DiagonalizeSymmetric(Matrix<double>& M, BlasVector<double, U, cpu_tag>&& v)
 
@@ -83,5 +84,7 @@ template <typename U>
 void DiagonalizeHermitian(Matrix<std::complex<double>>& M, BlasVector<double, U, cpu_tag>&& v);
 
 } // namespace blas
+
+#include "matrix-eigen.icc"
 
 #endif

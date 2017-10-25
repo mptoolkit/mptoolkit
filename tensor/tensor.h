@@ -61,13 +61,13 @@ struct HermitianProxy
 
 // A proxy class to represent the tensor conjugate.
 template <typename T>
-struct TensorConjugateProxy
+struct ConjugateProxy
 {
    typedef T base_type;
    typedef typename T::value_type value_type;
    typedef T const& reference;
 
-   explicit TensorConjugateProxy(T const& x) : x_(x) {}
+   explicit ConjugateProxy(T const& x) : x_(x) {}
 
    reference base() const { return x_; }
 
@@ -594,6 +594,18 @@ flip_conj(Tensor::IrredTensor<T, B1, B2, S> const& x)
    QuantumNumbers::QuantumNumber q = x.TransformsAs();
    Tensor::IrredTensor<T, B1, B2, S> Result(adjoint(x.Basis1()), adjoint(x.Basis2()), adjoint(q));
    Result.data() = conj(x.data());
+   return Result;
+}
+
+// for the real case, where conj is a no-op, this does something useful
+template <typename T, typename B1, typename B2, typename S>
+Tensor::IrredTensor<T, B1, B2, S>
+flip_conj(Tensor::IrredTensor<T, B1, B2, S>&& x)
+{
+   if (x.is_null()) return x;
+   QuantumNumbers::QuantumNumber q = x.TransformsAs();
+   Tensor::IrredTensor<T, B1, B2, S> Result(adjoint(x.Basis1()), adjoint(x.Basis2()), adjoint(q));
+   Result.data() = std::move(conj(x.data()));
    return Result;
 }
 

@@ -2,7 +2,8 @@
 
 // LAPACK functions for matrices
 
-
+// diagonalize a Hermitian matrix.
+void DiagonalizeHermitian(Matrix&, Vector&)
 
 // Functions that we need to apply to IrredTensor (scalar tensors only!)
 
@@ -15,10 +16,10 @@ SingularValueDecomposition
 SingularValueDecompositionFull
 
 // size of D is M
-SingularValueDecompositionKeepBasis1
+SingularValueDecompositionFullLeft
 
 // size of D is N
-SingularValueDecompositionKeepBasis2
+SingularValueDecompositionFullRight
 
 DiagonalizeHermitian
 
