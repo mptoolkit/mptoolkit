@@ -178,26 +178,26 @@ stream::is_running() const
 //
 
 inline
-event::event() : event_(nullptr)
+event::event() : event_(new cudaEvent_t(nullptr))
 {
 }
 
 inline
 event::event(cudaStream_t s)
-   : event_(detail::AllocateEvent())
+   : event_(new cudaEvent_t(detail::AllocateEvent()))
 {
    check_error(cudaEventRecord(event_, s));
    count_.allocate(1);
 }
 
 inline
-event::event(event&& other) : event_(other.event_), count_(std::move(other.count_))
+event::event(event&& other) : event_(std::move(other.event_)), count_(std::move(other.count_))
 {
-   other.event_ = nullptr;
+   other->event_.release();
 }
 
 inline
-event::event(event const& other) : event_(other.event_), count_(other.count_)
+event::event(event const& other) : event_(new cudaEvent(*other.event_)), count_(other.count_)
 {
    if (event_)
       ++count_;
@@ -216,11 +216,11 @@ inline
 event&
 event::operator=(event const& other)
 {
-   if (other.event_)
+   if (*other.event_)
       ++other.count_;
 
    this->sub_reference();
-   event_ = other.event_;
+   event_ = new cudaEvent_t(*other.event_);
    count_ = other.count_;
 
    return *this;
@@ -237,40 +237,52 @@ void
 event::clear()
 {
    this->sub_reference();
-   event_ = nullptr;
+   *event_ = nullptr;
 }
 
 inline
 void
 event::wait() const
 {
-   check_error(cudaEventSynchronize(event_));
+   check_error(cudaEventSynchronize(*event_));
 }
 
 inline
 void
 event::sub_reference()
  {
-   if (event_ && (--count_ == 0))
+   if (*event_ && (--count_ == 0))
    {
-      detail::FreeEvent(event_);
+      detail::FreeEvent(*event_);
       // NOTE: we do not set event_ = nullltr here, caller must do this if necessary
       count_.deallocate();
    }
 }
 
-
 inline
 bool
 event::is_complete() const
 {
-   cudaError_t e = cudaEventQuery(event_);
+   cudaError_t e = cudaEventQuery(*event_);
    if (e == cudaSuccess)
       return true;
    if (e == cudaErrorNotReady)
       return false;
    throw error(e);
 }
+
+inline
+bool
+event_ref::is_complete() const
+{
+   cudaError_t e = cudaEventQuery(*event_);
+   if (e == cudaSuccess)
+      return true;
+   if (e == cudaErrorNotReady)
+      return false;
+   throw error(e);
+}
+
 
 //
 // timer

@@ -153,7 +153,7 @@ class event
       void clear();
 
       // returns true if this is a null event
-      bool is_null() const { return event_ == nullptr; }
+      bool is_null() const { return *event_ == nullptr; }
 
       // returns true if work has been sucessfully completed
       bool is_complete() const;
@@ -161,7 +161,7 @@ class event
       // blocks the caller until the event has triggered
       void wait() const;
 
-      cudaEvent_t raw_event() const { return event_; }
+      cudaEvent_t raw_event() const { return *event_; }
 
       friend void swap(event& a, event& b)
       {
@@ -178,8 +178,31 @@ class event
 
       void sub_reference();
 
-      cudaEvent_t event_;
+      std::shared_ptr<cudaEvent_t> event_;
       shared_counter count_;
+
+      friend class event_ref;
+};
+
+class event_ref
+{
+   public:
+      event_ref() = delete;
+
+      event_ref(event const& e)
+         : event_(e.event_) {}
+
+      event_ref(event_ref&& Other) = default;
+      event_ref(event_ref const& other) = default;
+
+      event_ref& operator=(event_ref const& Other) = default;
+      event_ref& operator=(event_ref&& Other) = default;
+
+      // returns true if work has been sucessfully completed
+      bool is_complete() const;
+
+   private:
+      std::shared_ptr<cudaEvent_t> event_;
 };
 
 class timer

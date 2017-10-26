@@ -25,6 +25,83 @@ namespace async
 
 class event;
 
+struct task
+{
+   std::function<bool()> can_run;
+   std::function<void()> task;
+};
+
+class task
+{
+   public:
+      task() {}
+      virtual ~task() = default;
+
+      virtual bool can_run() const = 0;
+      virtual void run() = 0;
+};
+
+class simple_task : public task
+{
+   public:
+      simple_task(std::function<void()> const& f_) : f(f_) {}
+      virtual bool can_run() const { return true; }
+      virtual void run() { f(); }
+   private:
+      std::function<void()> f;
+};
+
+// we store the events via pointer, which is effectively a double
+// indirection.  There is a danger however that we end up with a
+// dangling pointer.  Maybe we need to incorporate the double indirection
+// into the cuda::event itself?
+// But we should be able to pass by value here?!?! No, because we
+// might schedule some task before the event has been recorded.  Although
+// the user must ensure that there is enough synchronization to ensure that
+// the event is recorded before the task executes, the task object itself
+// may be created arbitarily far before the event is initialized.
+class wait_gpu_task : public task
+{
+   public:
+      explicit wait_gpu_task(std::function<void()> const& f_,
+                             std::initializer_list<cuda::event const&> events)
+         : f(f_)
+      {
+         event_list.reserve(events.size());
+         for (auto const& e : events)
+         {
+            event_list.push_back(e);
+         }
+      }
+
+      virtual void can_run() const
+      {
+         auto I = event_list.begin();
+         while (I != event_list.end())
+         {
+            if (I->is_complete())
+            {
+               auto J = I;
+               ++I;
+               event_list.erase(J);
+            }
+            else
+            {
+               return false;
+            }
+         }
+         return true;
+      }
+
+      void run()
+      {
+         f();
+      }
+   private:
+      std::function<void()> f;
+      mutable std::vector<cuda::event_ref> event_list;
+};
+
 // A queue is a list of tasks.  A task is a function that returns a bool.
 // If the result is true, then the task was executed and can be removed
 // from the queue.  If the result is false, then the task couldn't be executed
@@ -34,6 +111,13 @@ using task_type = std::function<bool()>;
 class queue
 {
    public:
+      queue();
+      queue(Queue const&) = delete;
+      queue(queue&& Other);
+
+      // Queue destructor blocks until the task list is empty
+      ~queue();
+
       // records an event at the end of the queue
       event record() const;
 
@@ -42,8 +126,13 @@ class queue
 
       void add_task(task_type const& t);
 
+      void add_task(std::function<void()> const& t)
+      {
+         this->add_task([t]->bool { t(); return true; });
+      }
+
    private:
-      std::queue<task_type> TaskList;
+      std::queue<std::unique_ptr<task>> TaskList;
       mutable event Sync;
 };
 
@@ -156,25 +245,86 @@ class async_matrix : public blas::BlasMatrix<typename T::value_type, async_matri
       }
 
    private:
+      // order here is important, we need to destroy the queue before the base
+      // matrix, so construct in order Base, Queue, destroy in opposite order.
       base_type Base;
       async::queue Queue;
 };
 
 // BLAS-like functions
 
+// **NOTE**:
+// This sketch is erroneous, because the nested gemv() call here may involve temprary
+// objects which might be destroyed prior to the task getting executed.
+// The tasks must involve only raw memory pointers, no proxies.  Therefore we need
+// separate async_gpu_matrix and async_matrix classes.
+
 template <typename T, typename U, typename V, typename W>
 inline
 void
 gemv(T alpha, blas::BlasMatrix<T, U, async_tag> const& A,
      blas::BlasVector<T, V, async_tag> const& x, T beta,
-     async_matrix<W>& y)
+     async_vector<W>& y)
 {
    DEBUG_CHECK_EQUAL(A.cols(), x.size());
    DEBUG_CHECK_EQUAL(y.size(), A.rows());
    y.wait_for(A.queue());
    y.wait_for(x.queue());
-   y.add_task([&]{gemv(alpha, A.base(), x.base(), beta, y.base()); return true;});
+   y.queue().add_task([&]{gemv(alpha, A.base(), x.base(), beta, y.base()); return true;});
+   A.wait_for(y.queue());
+   x.wait_for(y.queue());
 }
+
+// version for an async_gpu_tag
+template <typename T, typename U, typename V>
+inline
+void
+gemv(T alpha, blas::BlasMatrix<T, U, async_gpu_tag> const& A,
+     blas::BlasVector<T, V, async_gpu_tag> const& x, T beta,
+     async_gpu_vector<T>& y)
+{
+   DEBUG_CHECK_EQUAL(A.cols(), x.size());
+   DEBUG_CHECK_EQUAL(y.size(), A.rows());
+   y.wait_for(A.queue());
+   y.wait_for(x.queue());
+   y.queue().add_task(std::bind(cublas::gemv, A.trans(), A.rows(), A.cols(),
+                                alpha, A.storage(),
+                                A.leading_dimension(), x.storage(), x.stride(),
+                                beta, y.storage(), y.stride()));
+   A.wait_for(y.queue());
+   x.wait_for(y.queue());
+}
+
+// another attempt at a generic version; assuming cublas calls have a
+// compatible signature to standard blas.
+// This is a bit tedious because we need to pass lots of parameters to the lambda function
+// by value with automatic variables.
+template <typename T, typename U, typename V, typename W>
+inline
+void
+gemv(T alpha, blas::BlasMatrix<T, U, async_tag> const& A,
+     blas::BlasVector<T, V, async_tag> const& x, T beta,
+     async_vector<W>& y)
+{
+   DEBUG_CHECK_EQUAL(A.cols(), x.size());
+   DEBUG_CHECK_EQUAL(y.size(), A.rows());
+   y.wait_for(A.queue());
+   y.wait_for(x.queue());
+   auto Atrans = A.trans();
+   auto Arows = A.rows();
+   auto Acols = A.cols();
+   auto Astorage = A.storage();
+   auto Aleading_dimension = A.leading_dimension();
+   auto xstorage = x.storage();
+   auto xstride = x.stride();
+   auto ystorage = y.storage();
+   auto ystride = y.stride();
+   y.queue().add_task([=](){ gemv(Atrans, Arows, Acols, alpha, Astorage, Aleading_dimension,
+                                  xstorage, xstride, beta, ystorage, ystride);});
+   A.wait_for(y.queue());
+   x.wait_for(y.queue());
+}
+
 
 } // namespace async
 

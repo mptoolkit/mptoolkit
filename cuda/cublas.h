@@ -17,6 +17,13 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+//
+// we possibly need to make the handle reference counted and copyable,
+// so that we can pass it by value to cublas calls.  Hence every parameter
+// can be passed by value and we don't have any problems with temporaries going
+// out of scope if we call functions asynchronously.
+//
+
 #if !defined(MPTOOLKIT_CUDA_CUBLAS_H)
 #define MPTOOLKIT_CUDA_CUBLAS_H
 
@@ -153,18 +160,20 @@ setVector(int N, T const* A, int stridea, cuda::gpu_ptr<T> B, int strideb)
 
 inline
 void
-copy(cublas::handle& H, int n, cuda::const_gpu_ptr<double> x, int incx,
-     cuda::gpu_ptr<double> y, int incy)
+copy(int n, cuda::const_gpu_ptr<double> x, int incx, cuda::gpu_ptr<double> y, int incy)
 {
+   cublas::handle& H = get_handle();
    H.set_stream(y.get_stream());
    y.wait_for(x);
    check_error(cublasDcopy(H.raw_handle(), n, x.device_ptr(), incx, y.device_ptr(), incy));
+   x.wait_for(y);
 }
 
 inline
 void
-scal(cublas::handle& H, int n, double alpha, cuda::gpu_ptr<double> y, int incy)
+scal(int n, double alpha, cuda::gpu_ptr<double> y, int incy)
 {
+   cublas::handle& H = get_handle();
    H.set_stream(y.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    check_error(cublasDscal(H.raw_handle(), n, &alpha, y.device_ptr(), incy));
@@ -172,24 +181,26 @@ scal(cublas::handle& H, int n, double alpha, cuda::gpu_ptr<double> y, int incy)
 
 inline
 void
-axpy(cublas::handle& H, int n, double alpha,
-     cuda::const_gpu_ptr<double> x, int incx,
+axpy(int n, double alpha, cuda::const_gpu_ptr<double> x, int incx,
      cuda::gpu_ptr<double> y, int incy)
 {
+   cublas::handle& H = get_handle();
    H.set_stream(y.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    y.wait_for(x);
    check_error(cublasDaxpy(H.raw_handle(), n, &alpha, x.device_ptr(), incx, y.device_ptr(), incy));
+   x.wait_for(y);
 }
 
 // BLAS level 2
 
 inline
 void
-gemv(cublas::handle& H, char Atrans, int M, int N, double alpha,
+gemv(char Atrans, int M, int N, double alpha,
      cuda::const_gpu_ptr<double> A, int lda, cuda::const_gpu_ptr<double> x, int incx,
      double beta, cuda::gpu_ptr<double> y, int incy)
 {
+   cublas::handle& H = get_handle();
    H.set_stream(y.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    y.wait_for(A);
@@ -197,6 +208,8 @@ gemv(cublas::handle& H, char Atrans, int M, int N, double alpha,
    check_error(cublasDgemv(H.raw_handle(), cublas_trans(Atrans), M, N,
                            &alpha, A.device_ptr(), lda, x.device_ptr(), incx,
                            &beta, y.device_ptr(), incy));
+   A.wait_for(y);
+   x.wait_for(y);
 }
 
 // BLAS level 2 extensions
@@ -204,10 +217,11 @@ gemv(cublas::handle& H, char Atrans, int M, int N, double alpha,
 // geam - we have two versions, for in-place and out-of-place operations
 inline
 void
-geam(cublas::handle& H, char Atrans, int M, int N,
+geam(char Atrans, int M, int N,
      double alpha, cuda::const_gpu_ptr<double> A, int lda,
      double beta, cuda::gpu_ptr<double> C, int ldc)
 {
+   cublas::handle& H = get_handle();
    H.set_stream(C.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    C.wait_for(A);
@@ -215,15 +229,17 @@ geam(cublas::handle& H, char Atrans, int M, int N,
                            &alpha, A.device_ptr(), lda,
                            &beta, C.device_ptr(), ldc,
                            C.device_ptr(), ldc));
+   A.wait_for(C);
 }
 
 inline
 void
-geam(cublas::handle& H, char Atrans, char Btrans, int M, int N,
+geam(char Atrans, char Btrans, int M, int N,
      double alpha, cuda::const_gpu_ptr<double> A, int lda,
      double beta,  cuda::const_gpu_ptr<double> B, int ldb,
      cuda::gpu_ptr<double> C, int ldc)
 {
+   cublas::handle& H = get_handle();
    H.set_stream(C.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    C.wait_for(A);
@@ -232,16 +248,19 @@ geam(cublas::handle& H, char Atrans, char Btrans, int M, int N,
                            &alpha, A.device_ptr(), lda,
                            &beta, B.device_ptr(), ldb,
                            C.device_ptr(), ldc));
+   A.wait_for(C);
+   B.wait_for(C);
 }
 
 // BLAS level 3
 
 inline
 void
-gemm(cublas::handle& H, char Atrans, char Btrans, int M, int N, int K, double alpha,
+gemm(char Atrans, char Btrans, int M, int N, int K, double alpha,
      cuda::const_gpu_ptr<double> A, int lda, cuda::const_gpu_ptr<double> B, int ldb,
      double beta, cuda::gpu_ptr<double> C, int ldc)
 {
+   cublas::handle& H = get_handle();
    H.set_stream(C.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    C.wait_for(A);
@@ -249,6 +268,8 @@ gemm(cublas::handle& H, char Atrans, char Btrans, int M, int N, int K, double al
    check_error(cublasDgemm(H.raw_handle(), cublas_trans(Atrans), cublas_trans(Btrans), M, N, K,
                            &alpha, A.device_ptr(), lda, B.device_ptr(), ldb,
                            &beta, C.device_ptr(), ldc));
+   A.wait_for(C);
+   B.wait_for(C);
 }
 
 } // namespace cublas
