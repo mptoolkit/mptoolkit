@@ -17,73 +17,25 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+// standard BLAS functions
+
 #if !defined(MPTOOLKIT_BLAS_MATRIX_BLAS_H)
 #define MPTOOLKIT_BLAS_MATRIX_BLAS_H
 
-#include "matrix.h"
-#include "vector.h"
-#include "matrix-lowlevel-blas.h"
+// determine which BLAS library we use
+#if defined(HAVE_OPENBLAS)
+// openblas
+#include "matrix-openblas.h"
+#elif defined(HAVE_MKL)
+// MKL
+#include "matrix-mkl.h"
 
-namespace blas
-{
-
-template <typename T, typename U, typename V>
-inline
-void gemv(T alpha, BlasMatrix<T, U, cpu_tag> const& A, BlasVector<T, V, cpu_tag> const& x, T beta, Vector<T>& y)
-{
-   DEBUG_CHECK_EQUAL(A.cols(), x.size());
-   DEBUG_CHECK_EQUAL(A.rows(), y.size());
-   gemv(A.trans(), A.rows(), A.cols(), alpha, A.storage(),
-	A.leading_dimension(), x.storage(), x.stride(),
-        beta, y.storage(), y.stride());
-}
-
-template <typename T, typename U, typename V>
-inline
-void gemm(T alpha, BlasMatrix<T, U, cpu_tag> const& A,
-          T beta, BlasMatrix<T, V, cpu_tag> const& B,
-          Matrix<T>& C)
-{
-   DEBUG_CHECK_EQUAL(A.cols(), B.rows());
-   DEBUG_CHECK_EQUAL(A.rows(), C.rows());
-   DEBUG_CHECK_EQUAL(B.cols(), C.cols());
-   gemm(A.trans(), B.trans(), A.rows(), A.cols(), B.cols(), alpha, A.storage(),
-        A.leading_dimension(), B.storage(), B.leading_dimension(), beta,
-        C.storage(), C.leading_dimension());
-}
-
-template <typename T, typename U>
-inline
-void matrix_copy_scaled(T alpha, BlasMatrix<T, U, cpu_tag> const& A, Matrix<T>& C)
-{
-   matrix_copy_scaled(A.trans(), A.rows(), A.cols(), alpha, A.storage(), A.leading_dimension(),
-                      C.storage(), C.leading_dimension());
-}
-
-template <typename T, typename U>
-inline
-void matrix_copy(BlasMatrix<T, U, cpu_tag> const& A, Matrix<T>& C)
-{
-   matrix_copy(A.trans(), A.rows(), A.cols(), A.storage(), A.leading_dimension(),
-                      C.storage(), C.leading_dimension());
-}
-
-template <typename T, typename U>
-inline
-void matrix_add_scaled(T alpha, BlasMatrix<T, U, cpu_tag> const& A, Matrix<T>& C)
-{
-   matrix_add_scaled(A.trans(), A.rows(), A.cols(), alpha, A.storage(), A.leading_dimension(),
-                      C.storage(), C.leading_dimension());
-}
-
-template <typename T, typename U>
-inline
-void matrix_add(BlasMatrix<T, U, cpu_tag> const& A, Matrix<T>& C)
-{
-   matrix_add(A.trans(), A.rows(), A.cols(), A.storage(), A.leading_dimension(),
-              C.storage(), C.leading_dimension());
-}
-
-} // namespace blas
+// last possibility is reference BLAS
+#eif !defined(HAVE_BLAS)
+#error "cannot identify a BLAS library!"
+#else
+// reference BLAS
+#include "matrix-blasreference.h"
+#endif
 
 #endif

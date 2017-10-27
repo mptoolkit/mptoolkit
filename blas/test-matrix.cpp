@@ -20,13 +20,14 @@ int main()
 
    std::cout << C << '\n';
 
-
    blas::Vector<double> x({1.0, 2.0, 3.0});
    blas::Vector<double> y(3);
 
    y = 2*C*x;
 
    std::cout << y << '\n';
+
+   C.row(0) = 2*A*y;
 
    y = A.diagonal();
    std::cout << y << '\n';

@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// blas/matrix.h
+// blas/vectorref.h
 //
 // Copyright (C) 2017 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
@@ -20,12 +20,15 @@
 #if !defined(MPTOOLKIT_BLAS_VECTORREF_H)
 #define MPTOOLKIT_BLAS_VECTORREF_H
 
-#include "matrixref.h"
 #include "safe-conversions.h"
 #include "number_traits.h"
 
 namespace blas
 {
+
+// blas_traits provides various types based on the tag type
+template <typename Tag>
+struct blas_traits {};
 
 //
 // VectorRef : generic base class for a vector using expression templates.
@@ -107,8 +110,30 @@ class BlasVector : public VectorRef<ValueType, DerivedType, Tag>
 
       int stride() const { return this->as_derived().stride(); }
 
-      storage_type storage() { return this->as_derived().storage(); }
-      const_storage_type storage() const { return this->as_derived().storage(); }
+      storage_type storage() & { return this->as_derived().storage(); }
+      const_storage_type storage() const & { return this->as_derived().storage(); }
+};
+
+// Specialization of BlasVector that can act as an rvalue-reference, ie
+// a temporary proxy that can appear on the left-hand side of an expression.
+template <typename ValueType, typename DerivedType, typename Tag>
+class BlasVectorProxy : public BlasVector<ValueType, DerivedType, Tag>
+{
+   public:
+      using value_type         = ValueType;
+      using derived_type       = DerivedType;
+      using tag_type           = Tag;
+      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
+      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+
+      BlasVectorProxy() = default;
+      ~BlasVectorProxy() = default;
+      BlasVectorProxy(BlasVectorProxy&& Other) = default;
+
+      int stride() const { return this->as_derived().stride(); }
+
+      storage_type storage() && { return static_cast<derived_type&&>(this->as_derived()).storage(); }
+      const_storage_type storage() const& { return this->as_derived().storage(); }
 };
 
 // proxy class for the complex conjugate of a vector
@@ -200,7 +225,7 @@ void assign(VectorRef<T, U, Tag>& A, ScaledVector<T, V, Tag> const& B)
 }
 
 template <typename T, typename U, typename V, typename Tag>
-void assign(VectorRef<T, U, Tag>&& A, ScaledVector<T, V, Tag> const& B)
+void assign(BlasVectorProxy<T, U, Tag>&& A, ScaledVector<T, V, Tag> const& B)
 {
    vector_copy_scaled(B.factor(), B.base(), static_cast<U&&>(A.as_derived()));
 }
@@ -212,7 +237,7 @@ void add(VectorRef<T, U, Tag>& A, ScaledVector<T, V, Tag> const& B)
 }
 
 template <typename T, typename U, typename V, typename Tag>
-void add(VectorRef<T, U, Tag>&& A, ScaledVector<T, V, Tag> const& B)
+void add(BlasVectorProxy<T, U, Tag>&& A, ScaledVector<T, V, Tag> const& B)
 {
    vector_add_scaled(B.factor(), B.base(), static_cast<U&&>(A.as_derived()));
 }
@@ -224,83 +249,9 @@ void subtract(VectorRef<T, U, Tag>& A, ScaledVector<T, V, Tag> const& B)
 }
 
 template <typename T, typename U, typename V, typename Tag>
-void subtract(VectorRef<T, U, Tag>&& A, ScaledVector<T, V, Tag> const& B)
+void subtract(BlasVectorProxy<T, U, Tag>&& A, ScaledVector<T, V, Tag> const& B)
 {
    vector_add_scaled(-B.factor(), B.base(), static_cast<U&&>(A.as_derived()));
-}
-
-// expression template for alpha * op(A) * op(B)
-
-template <typename T, typename U, typename V, typename Tag>
-struct MatrixVectorProduct : public VectorRef<T, MatrixVectorProduct<T, U, V, Tag>, Tag>
-{
-   MatrixVectorProduct(MatrixRef<T, U, Tag> const& A_, VectorRef<T, V, Tag> const& B_)
-      : Factor(number_traits<T>::identity()), A(A_.as_derived()), B(B_.as_derived()) {}
-
-   MatrixVectorProduct(T const& Factor_, MatrixRef<T, U, Tag> const& A_, VectorRef<T, V, Tag> const& B_)
-      : Factor(Factor_), A(A_.as_derived()), B(B_.as_derived()) {}
-
-   int size() const { return A.rows(); }
-   T factor() const { return Factor; }
-
-   T Factor;
-   U const& A;
-   V const& B;
-};
-
-template <typename T, typename U, typename V, typename Tag>
-MatrixVectorProduct<T, U, V, Tag>
-operator*(MatrixRef<T, U, Tag> const& A, VectorRef<T, V, Tag> const& B)
-{
-   return MatrixVectorProduct<T, U, V, Tag>(A.as_derived(), B.as_derived());
-}
-
-template <typename T, typename U, typename V, typename Tag>
-MatrixVectorProduct<T, U, V, Tag>
-operator*(ScaledMatrix<T, U, Tag> const& A, VectorRef<T, V, Tag> const& B)
-{
-   return MatrixVectorProduct<T, U, V, Tag>(A.factor(), A.base(), B.as_derived());
-}
-
-template <typename T, typename U, typename V, typename Tag>
-MatrixVectorProduct<T, U, V, Tag>
-operator*(VectorRef<T, U, Tag> const& A, ScaledVector<T, V, Tag> const& B)
-{
-   return MatrixVectorProduct<T, U, V, Tag>(B.factor(), A.as_derived(), B.base());
-}
-
-template <typename T, typename U, typename V, typename Tag>
-MatrixVectorProduct<T, U, V, Tag>
-operator*(ScaledMatrix<T, U, Tag> const& A, ScaledVector<T, V, Tag> const& B)
-{
-   return MatrixVectorProduct<T, U, V, Tag>(A.factor() * B.factor(), A.base(), B.as_derived());
-}
-
-template <typename T, typename U, typename V, typename Tag, typename X>
-MatrixVectorProduct<decltype(safe_convert<T>(std::declval<X>())), U, V, Tag>
-operator*(X const& alpha, MatrixVectorProduct<T, U, V, Tag> const& x)
-{
-   return MatrixVectorProduct<T, U, V, Tag>(safe_convert<T>(alpha)*x.Factor, x.A, x.B);
-}
-
-// assignment involving MatrixVectorProduct
-
-template <typename T, typename Derived, typename U, typename V, typename Tag>
-void assign(VectorRef<T, Derived, Tag>& C, MatrixVectorProduct<T, U, V, Tag> const& a)
-{
-   gemv(a.Factor, a.A, a.B, number_traits<T>::zero(), C.as_derived());
-}
-
-template <typename T, typename Derived, typename U, typename V, typename Tag>
-void add(VectorRef<T, Derived, Tag>& C, MatrixVectorProduct<T, U, V, Tag> const& a)
-{
-   gemv(a.Factor, a.A, a.B, number_traits<T>::identity(), C.as_derived());
-}
-
-template <typename T, typename Derived, typename U, typename V, typename Tag>
-void subtract(VectorRef<T, Derived, Tag>& C, MatrixVectorProduct<T, U, V, Tag> const& a)
-{
-   gemv(-a.Factor, a.A, a.B, number_traits<T>::identity(), C.as_derived());
 }
 
 } // namespace blas

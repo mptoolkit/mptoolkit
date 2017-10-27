@@ -206,19 +206,24 @@ class gpu_ptr;
 template <typename T>
 class const_gpu_ptr;
 
+// The destructor of gpu_buffer must block until the stream is finshed.
+// When run in async mode we want the destructor of an async gpu matrix to run as a task.
+// The way to handle this is to provide a way to move the memory buffer out of the
+// gpu_buffer so that it can be destroyed asynchronously.
 template <typename T>
 class gpu_buffer
 {
    public:
       gpu_buffer() = delete;
 
-      ~gpu_buffer() { Arena.free(Ptr, ByteSize); }
+      ~gpu_buffer() { Stream.synchronize(); Arena.free(Ptr, ByteSize); }
 
       gpu_buffer(gpu_buffer&& other) : Ptr(other.Ptr), ByteSize(other.ByteSize), Stream(std::move(other.Stream)),
                                        Sync(std::move(other.Sync)), Arena(std::move(other.Arena))
       {
          other.Ptr = nullptr;
       }
+
 
       gpu_buffer(gpu_buffer const& other) = delete;
 
@@ -236,19 +241,19 @@ class gpu_buffer
       const_gpu_ptr<T> cptr(int Offset) const;
 
       // block modifications to this buffer until event e has been triggered
-      void wait(event const& e)
+      void wait(event const& e) const
       {
          Stream.wait(e);
       }
 
       template <typename U>
-      void wait_for(gpu_ptr<U> const& Other);
+      void wait_for(gpu_ptr<U> const& Other) const;
 
       template <typename U>
-      void wait_for(const_gpu_ptr<U> const& Other);
+      void wait_for(const_gpu_ptr<U> const& Other) const;
 
       template <typename U>
-      void wait_for(gpu_buffer<U> const& Other)
+      void wait_for(gpu_buffer<U> const& Other) const
       {
          this->wait(Other.sync());
          // Generally, calling wait_for() is going to be done just before
@@ -288,6 +293,17 @@ class gpu_buffer
 	 return gpu_buffer(Size, A);
       }
 
+      // move the memory buffer information out, in prepration for
+      // destroying the buffer asynchronously (since the destructor must
+      // synchronize the stream).
+      std::tuple<void*, std::size_t, cuda::stream, blas::arena>
+      move_buffer() &&
+      {
+         void* P = static_cast<void*>(Ptr);
+         Ptr = nullptr;
+         return std::make_tuple(P, ByteSize, std::move(Sync), std::move(Arena));
+      }
+
    private:
       gpu_buffer(int Count, blas::arena a)
 	 : ByteSize(Count*sizeof(T)), Arena(a)
@@ -319,6 +335,29 @@ class const_gpu_ptr
       const_gpu_ptr(gpu_buffer<T> const& Buf_, int Offset_) : Buf(Buf_), Offset(Offset_) {}
 
       ~const_gpu_ptr() = default;
+
+      void wait(event const& e)
+      {
+         Buf.wait(e);
+      }
+
+      template <typename U>
+      void wait_for(gpu_buffer<U> const& Other)
+      {
+         Buf.wait_for(Other);
+      }
+
+      template <typename U>
+      void wait_for(gpu_ptr<U> const& Other)
+      {
+         Buf.wait_for(Other);
+      }
+
+      template <typename U>
+      void wait_for(const_gpu_ptr<U> const& Other)
+      {
+         Buf.wait_for(Other);
+      }
 
       event sync() const
       {

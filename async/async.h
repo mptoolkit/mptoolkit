@@ -41,10 +41,10 @@ class task
       virtual void run() = 0;
 };
 
-class simple_task : public task
+class task_simple : public task
 {
    public:
-      simple_task(std::function<void()> const& f_) : f(f_) {}
+      task_simple(std::function<void()> const& f_) : f(f_) {}
       virtual bool can_run() const { return true; }
       virtual void run() { f(); }
    private:
@@ -60,10 +60,10 @@ class simple_task : public task
 // the user must ensure that there is enough synchronization to ensure that
 // the event is recorded before the task executes, the task object itself
 // may be created arbitarily far before the event is initialized.
-class wait_gpu_task : public task
+class task_wait_gpu : public task
 {
    public:
-      explicit wait_gpu_task(std::function<void()> const& f_,
+      explicit task_wait_gpu(std::function<void()> const& f_,
                              std::initializer_list<cuda::event const&> events)
          : f(f_)
       {
@@ -100,6 +100,35 @@ class wait_gpu_task : public task
    private:
       std::function<void()> f;
       mutable std::vector<cuda::event_ref> event_list;
+};
+
+// a task to asynchronously destroy a gpu_buffer.  We move the buffer into
+// the task, which runs once the stream has finshed.
+class task_destroy_gpu_buffer : public task
+{
+   public:
+      template <typename T>
+      explicit task_destroy_gpu_buffer(gpu_buffer<T>&& Buf)
+      {
+         std::tie(Ptr, ByteSize, Stream, Arena) = std::move(Buf).move_buffer();
+      }
+
+      virtual void can_run() const
+      {
+         return !Stream.is_running();
+      }
+
+      void run()
+      {
+         Srream.synchronize();
+         Arena.free(Ptr, ByteSize);
+      }
+
+   private:
+      void* Ptr;
+      std::size_t ByteSize;
+      mutable cuda::stream Stream;
+      blas::arena Arena;
 };
 
 // A queue is a list of tasks.  A task is a function that returns a bool.
@@ -254,7 +283,7 @@ class async_matrix : public blas::BlasMatrix<typename T::value_type, async_matri
 // BLAS-like functions
 
 // **NOTE**:
-// This sketch is erroneous, because the nested gemv() call here may involve temprary
+// This sketch is erroneous, because the nested gemv() call here may involve temporary
 // objects which might be destroyed prior to the task getting executed.
 // The tasks must involve only raw memory pointers, no proxies.  Therefore we need
 // separate async_gpu_matrix and async_matrix classes.

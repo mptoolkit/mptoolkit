@@ -19,10 +19,10 @@
 
 // standard BLAS functions
 
-#if !defined(MPTOOLKIT_BLAS_MATRIX_LOWLEVEL_REFERENCE_H)
-#define MPTOOLKIT_BLAS_MATRIX_LOWLEVEL_REFERENCE_H
+#if !defined(MPTOOLKIT_BLAS_MATRIX_BLASREFERENCE_H)
+#define MPTOOLKIT_BLAS_MATRIX_BLASREFERENCE_H
 
-#include "matrix-lowlevel-base.h"
+#include "matrix-blas-base.h"
 
 namespace blas
 {
@@ -117,7 +117,7 @@ gemm(char Atrans, char Btrans, int M, int N, int K, std::complex<double> alpha,
 
 } // namespace blas
 
-#include "matrix-lowlevel-reference.icc"
+#include "matrix-blasreference.icc"
 
 #endif
 

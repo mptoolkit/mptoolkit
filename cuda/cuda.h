@@ -22,6 +22,7 @@
 
 #include <list>
 #include <mutex>
+#include <memory>
 #include <cuda_runtime.h>
 #include "common/atomicrefcount.h"
 
@@ -113,7 +114,7 @@ class stream
       void synchronize();
 
       // wait for the given event
-      void wait(event const& e);
+      void wait(event const& e) const;
 
       // returns true if there are pending operations on the stream.
       // returns false if all operations on the stream have completed.

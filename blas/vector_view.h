@@ -30,7 +30,7 @@ namespace blas
 //
 
 template <typename T, typename Tag>
-class vector_view : public BlasVector<T, vector_view<T, Tag>, Tag>
+class vector_view : public BlasVectorProxy<T, vector_view<T, Tag>, Tag>
 {
    public:
       using value_type         = T;
@@ -54,7 +54,7 @@ class vector_view : public BlasVector<T, vector_view<T, Tag>, Tag>
       template <typename U>
       vector_view&& operator=(blas::VectorRef<T, U, Tag> const& E) &&
       {
-	 assign(std::move(*this), E.as_derived());
+	 assign(static_cast<vector_view&&>(*this), E.as_derived());
 	 return std::move(*this);
       }
 

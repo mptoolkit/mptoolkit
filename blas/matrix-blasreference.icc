@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// blas/matrix-lowlevel-reference.icc
+// blas/matrix-blasreference.icc
 //
 // Copyright (C) 2017 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //

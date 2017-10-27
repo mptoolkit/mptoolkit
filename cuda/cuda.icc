@@ -134,6 +134,10 @@ stream::sub_reference()
 {
    if (stream_ && (--count_ == 0))
    {
+      if (this->is_running())
+      {
+         WARNING("Possible bug: destroying stream that has pending operations");
+      }
       detail::FreeStream(stream_);
       // NOTE: we do not set stream_ = nullltr here, caller must do this if necessary
       count_.deallocate();
@@ -142,7 +146,7 @@ stream::sub_reference()
 
 inline
 void
-stream::wait(event const& e)
+stream::wait(event const& e) const
 {
    check_error(cudaStreamWaitEvent(stream_, e.raw_event(), 0));
 }
@@ -186,18 +190,18 @@ inline
 event::event(cudaStream_t s)
    : event_(new cudaEvent_t(detail::AllocateEvent()))
 {
-   check_error(cudaEventRecord(event_, s));
+   check_error(cudaEventRecord(*event_, s));
    count_.allocate(1);
 }
 
 inline
 event::event(event&& other) : event_(std::move(other.event_)), count_(std::move(other.count_))
 {
-   other->event_.release();
+   other.event_.reset();
 }
 
 inline
-event::event(event const& other) : event_(new cudaEvent(*other.event_)), count_(other.count_)
+event::event(event const& other) : event_(new cudaEvent_t(*other.event_)), count_(other.count_)
 {
    if (event_)
       ++count_;
@@ -220,7 +224,7 @@ event::operator=(event const& other)
       ++other.count_;
 
    this->sub_reference();
-   event_ = new cudaEvent_t(*other.event_);
+   event_.reset(new cudaEvent_t(*other.event_));
    count_ = other.count_;
 
    return *this;

@@ -19,8 +19,8 @@
 
 // standard BLAS functions
 
-#if !defined(MPTOOLKIT_BLAS_MATRIX_LOWLEVEL_BASE_H)
-#define MPTOOLKIT_BLAS_MATRIX_LOWLEVEL_BASE_H
+#if !defined(MPTOOLKIT_BLAS_MATRIX_BLAS_BASE_H)
+#define MPTOOLKIT_BLAS_MATRIX_BLAS_BASE_H
 
 #include "common/blas1f.h"
 #include "common/blas2f.h"
@@ -57,7 +57,7 @@ gemv(char Atrans, int M, int N, double alpha,
 
 inline
 void
-gemm(char Atrans, char Btrans, int M, int N, int K, double alpha, double const* A, int lda,
+gemmx(char Atrans, char Btrans, int M, int N, int K, double alpha, double const* A, int lda,
      double const* B, int ldb, double beta, double* C, int ldc)
 {
    BLAS::dgemm(Atrans, Btrans, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);

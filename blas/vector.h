@@ -28,7 +28,6 @@
 #include "arena.h"
 #include "vectorref.h"
 #include "vector_view.h"
-#include "matrix-lowlevel-blas.h"
 #include <list>
 #include <mutex>
 #include <iostream>
@@ -164,8 +163,8 @@ class Vector : public BlasVector<T, Vector<T>, cpu_tag>
 
       constexpr int stride() const { return 1; }
 
-      T* storage() { return Data; }
-      T const* storage() const { return Data; }
+      T* storage() & { return Data; }
+      T const* storage() const& { return Data; }
 
       T& operator[](int i)
       {

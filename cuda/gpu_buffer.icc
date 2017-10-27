@@ -24,7 +24,7 @@ template <typename T>
 template <typename U>
 inline
 void
-gpu_buffer<T>::wait_for(gpu_ptr<U> const& Other)
+gpu_buffer<T>::wait_for(gpu_ptr<U> const& Other) const
 {
    this->wait(Other.sync());
 }
@@ -33,7 +33,7 @@ template <typename T>
 template <typename U>
 inline
 void
-gpu_buffer<T>::wait_for(const_gpu_ptr<U> const& Other)
+gpu_buffer<T>::wait_for(const_gpu_ptr<U> const& Other) const
 {
    this->wait(Other.sync());
 }

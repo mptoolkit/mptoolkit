@@ -27,6 +27,7 @@
 #include "common/trace.h"
 #include "arena.h"
 #include "matrixref.h"
+#include "matrix-blas.h"
 #include "vector.h"
 #include "vector_view.h"
 #include <list>
@@ -54,7 +55,7 @@ template <typename T>
 using ConstVectorView = const_vector_view<T, cpu_tag>;
 
 template <typename T>
-class Matrix : public BlasMatrix<T, Matrix<T>, cpu_tag>
+class Matrix : public NormalMatrix<T, Matrix<T>, cpu_tag>
 {
    public:
       typedef T value_type;
