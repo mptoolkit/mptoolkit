@@ -26,7 +26,10 @@ int main()
    set(gA, A);
    set(gB, B);
 
-   gA.row(0) = 2 * gA.row(0);
+   gA.row(1) = 2*gB.row(0);
+
+   std::cout << get_wait(gA) << '\n';
+   std::cout << get_wait(gB) << '\n';
 
    gC = 2 * gA * gB;
    gC += 3 * gA * herm(gB);
@@ -43,7 +46,7 @@ int main()
 
    set(gx, x);
 
-   gy = 2*gC*gx;
+   gy = 0.1*gC*gx;
 
    y = get_wait(gy);
    std::cout << y << '\n';
@@ -56,4 +59,9 @@ int main()
    trace(gA, r);
 
    std::cout << get_wait(r) << '\n';
+
+   gC.row(0) = 2*gA*gy;
+
+   std::cout << get_wait(gC) << '\n';
+
 }

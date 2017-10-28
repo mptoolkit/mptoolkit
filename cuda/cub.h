@@ -25,13 +25,17 @@
 #include "cuda.h"
 #include "gpu_buffer.h"
 
-namespace cub
+namespace cuda
 {
 
 template <typename T>
 void
 vector_sum(int Size, cuda::const_gpu_ptr<T> const& x, int incx, cuda::gpu_ref<T>& r);
 
-} // namespace cub
+template <typename T>
+void
+vector_sum(int Size, cuda::const_gpu_ptr<T> const& x, int incx, cuda::gpu_ref<T>&& r);
+
+} // namespace cuda
 
 #endif

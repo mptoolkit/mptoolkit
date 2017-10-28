@@ -240,10 +240,6 @@ copy(Matrix<T>&& x)
 // random_matrix
 
 template <typename T>
-std::ostream&
-operator<<(std::ostream& out, Matrix<T> const& x);
-
-template <typename T>
 Matrix<T>
 random_matrix(int Rows, int Cols)
 {
@@ -257,6 +253,12 @@ random_matrix(int Rows, int Cols)
    }
    return Result;
 }
+
+// I/O
+
+template <typename T, typename U>
+std::ostream&
+operator<<(std::ostream& out, NormalMatrix<T, U, cpu_tag> const& x);
 
 } // namespace blas
 

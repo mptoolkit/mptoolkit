@@ -65,6 +65,9 @@ vector_add_scaled(int N, std::complex<double> alpha,
                   std::complex<double> const* x, int incx,
                   std::complex<double>* y, int incy);
 
+void
+vector_sum(int N, double const* x, int incx, double& r);
+
 //
 // matrix
 //

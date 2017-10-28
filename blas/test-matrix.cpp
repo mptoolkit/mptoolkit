@@ -13,7 +13,10 @@ int main()
                            {16,17,18}});
    blas::Matrix<double> C(3,3);
 
-   A.row(0) = 2 * A.row(0);
+   A.row(1) = 2 * B.row(0);
+
+   std::cout << A << '\n';
+   std::cout << B << '\n';
 
    C = 2 * A * B;
    C += 3 * A * herm(B);
@@ -23,13 +26,18 @@ int main()
    blas::Vector<double> x({1.0, 2.0, 3.0});
    blas::Vector<double> y(3);
 
-   y = 2*C*x;
+   y = 0.1*C*x;
 
    std::cout << y << '\n';
+
+   std::cout << A.diagonal() << '\n';
+
+   double r;
+   trace(A, r);
+
+   std::cout << r << '\n';
 
    C.row(0) = 2*A*y;
 
-   y = A.diagonal();
-   std::cout << y << '\n';
-
+   std::cout << C << '\n';
 }

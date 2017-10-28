@@ -57,7 +57,7 @@ gemv(char Atrans, int M, int N, double alpha,
 
 inline
 void
-gemmx(char Atrans, char Btrans, int M, int N, int K, double alpha, double const* A, int lda,
+gemm(char Atrans, char Btrans, int M, int N, int K, double alpha, double const* A, int lda,
      double const* B, int ldb, double beta, double* C, int ldc)
 {
    BLAS::dgemm(Atrans, Btrans, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);

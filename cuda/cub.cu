@@ -22,7 +22,10 @@
 #include <type_traits>
 #include "common/trace.h"
 
-namespace cub
+namespace cuda
+{
+
+namespace detail
 {
 
 template <typename T>
@@ -70,22 +73,38 @@ operator+(stride_ptr<T> const& x, int i)
    return stride_ptr<T>(x.operator->()+i*x.stride(), x.stride());
 }
 
+} // namespace detail
+
+template <typename T>
+void
+vector_sum(int Size, cuda::const_gpu_ptr<T> const& x, int incx, cuda::gpu_ref<T>&& r)
+{
+   std::size_t TempStorageBytes = 0;
+   void* TempStorage = nullptr;
+   cub::DeviceReduce::Sum(TempStorage, TempStorageBytes, detail::stride_ptr<T const>(x.device_ptr(), incx),
+                          r.device_ptr(), Size, r.get_stream().raw_stream());
+   TempStorage = cuda::allocate_gpu_temporary(TempStorageBytes);
+   cub::DeviceReduce::Sum(TempStorage, TempStorageBytes, detail::stride_ptr<T const>(x.device_ptr(), incx),
+                          r.device_ptr(), Size, r.get_stream().raw_stream());
+   cuda::free_gpu_temporary(TempStorage, TempStorageBytes);
+}
+
 template <typename T>
 void
 vector_sum(int Size, cuda::const_gpu_ptr<T> const& x, int incx, cuda::gpu_ref<T>& r)
 {
    std::size_t TempStorageBytes = 0;
    void* TempStorage = nullptr;
-   cub::DeviceReduce::Sum(TempStorage, TempStorageBytes, stride_ptr<T const>(x.device_ptr(), incx),
+   cub::DeviceReduce::Sum(TempStorage, TempStorageBytes, detail::stride_ptr<T const>(x.device_ptr(), incx),
                           r.device_ptr(), Size, r.get_stream().raw_stream());
    TempStorage = cuda::allocate_gpu_temporary(TempStorageBytes);
-   cub::DeviceReduce::Sum(TempStorage, TempStorageBytes, stride_ptr<T const>(x.device_ptr(), incx),
+   cub::DeviceReduce::Sum(TempStorage, TempStorageBytes, detail::stride_ptr<T const>(x.device_ptr(), incx),
                           r.device_ptr(), Size, r.get_stream().raw_stream());
    cuda::free_gpu_temporary(TempStorage, TempStorageBytes);
 }
 
 // template instantiations
+template void vector_sum<double>(int Size, cuda::const_gpu_ptr<double> const& x, int incx, cuda::gpu_ref<double>&& r);
 template void vector_sum<double>(int Size, cuda::const_gpu_ptr<double> const& x, int incx, cuda::gpu_ref<double>& r);
 
-} // namespace cub
-
+} // namespace cuda

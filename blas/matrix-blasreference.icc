@@ -142,6 +142,30 @@ vector_add_scaled(int N, std::complex<double> alpha,
    }
 }
 
+void
+vector_sum(int N, double const* x, int incx, double& r)
+{
+   double rr = 0.0;
+   for (int i = 0; i < N; ++i)
+   {
+      rr += *x;
+      x += incx;
+   }
+   r = rr;
+}
+
+void
+vector_sum(int N, std::complex<double> const* x, int incx, std::complex<double>& r)
+{
+   std::complex<double> rr = 0.0;
+   for (int i = 0; i < N; ++i)
+   {
+      rr += *x;
+      x += incx;
+   }
+   r = rr;
+}
+
 //
 // matrix_copy
 //

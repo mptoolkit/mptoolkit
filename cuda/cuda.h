@@ -104,6 +104,14 @@ class stream
       stream& operator=(stream&& other);
       ~stream();
 
+      // Normally the stream destructor will emit a warning if we destroy the
+      // stream while it has pending operations, becuase this is often a bug (eg,
+      // the memory resources associated with the stream will probably get deallocated
+      // at the same time as the stream).  But in some cases this is OK, eg if the stream
+      // is part of a gpu_ref that is synchronized to a parent stream.  In that case,
+      // we can call this function immediately prior to destroying the stream.
+      void safe_to_destroy();
+
       cudaStream_t raw_stream() const { return stream_; }
 
       // record the event at the current location in the stream,

@@ -41,7 +41,7 @@ template <typename T>
 using const_gpu_vector_view = blas::const_vector_view<T, gpu_tag>;
 
 template <typename T>
-class gpu_matrix : public blas::BlasMatrix<T, gpu_matrix<T>, gpu_tag>
+class gpu_matrix : public blas::NormalMatrix<T, gpu_matrix<T>, gpu_tag>
 {
    public:
       using value_type         = T;
@@ -253,85 +253,6 @@ copy(gpu_matrix<T> const& x, blas::arena const& A)
    gpu_matrix<T> Result(x.rows(), x.cols(), A, x.leading_dimension());
    Result = x;
    return Result;
-}
-
-// BLAS-like functions
-
-template <typename T, typename U, typename V>
-inline
-void
-gemv(T alpha, blas::BlasMatrix<T, U, gpu_tag> const& A,
-     blas::BlasVector<T, V, gpu_tag> const& x, T beta,
-     gpu_vector<T>& y)
-{
-   DEBUG_CHECK_EQUAL(A.cols(), x.size());
-   DEBUG_CHECK_EQUAL(y.size(), A.rows());
-   cublas::gemv(get_handle(), A.trans(), A.rows(), A.cols(), alpha, A.storage(),
-                A.leading_dimension(), x.storage(), x.stride(), beta,
-                y.storage(), y.stride());
-}
-
-template <typename T, typename U, typename V>
-inline
-void
-gemm(T alpha, blas::BlasMatrix<T, U, gpu_tag> const& A,
-     T beta, blas::BlasMatrix<T, V, gpu_tag> const& B,
-     gpu_matrix<T>& C)
-{
-   DEBUG_CHECK_EQUAL(A.cols(), B.rows());
-   DEBUG_CHECK_EQUAL(A.rows(), C.rows());
-   DEBUG_CHECK_EQUAL(B.cols(), C.cols());
-   cublas::gemm(get_handle(), A.trans(), B.trans(), A.rows(), A.cols(), B.cols(), alpha, A.storage(),
-                A.leading_dimension(), B.storage(), B.leading_dimension(), beta,
-                C.storage(), C.leading_dimension());
-}
-
-template <typename T, typename U>
-inline
-void matrix_copy_scaled(T alpha, blas::BlasMatrix<T, U, gpu_tag> const& A, gpu_matrix<T>& C)
-{
-   cublas::geam(get_handle(), A.trans(), A.rows(), A.cols(),
-                alpha, A.storage(), A.leading_dimension(),
-                blas::number_traits<T>::zero(), C.storage(), C.leading_dimension());
-}
-
-template <typename T, typename U>
-inline
-void matrix_copy(blas::BlasMatrix<T, U, gpu_tag> const& A, gpu_matrix<T>& C)
-{
-   cublas::geam(get_handle(), A.trans(), A.rows(), A.cols(),
-                blas::number_traits<T>::identity(), A.storage(), A.leading_dimension(),
-                blas::number_traits<T>::zero(), C.storage(), C.leading_dimension());
-}
-
-template <typename T, typename U>
-inline
-void matrix_add_scaled(T alpha, blas::BlasMatrix<T, U, gpu_tag> const& A, gpu_matrix<T>& C)
-{
-   cublas::geam(get_handle(), A.trans(), A.rows(), A.cols(),
-                alpha, A.storage(), A.leading_dimension(),
-                blas::number_traits<T>::identity(), C.storage(), C.leading_dimension());
-}
-
-template <typename T, typename U>
-inline
-void matrix_add(blas::BlasMatrix<T, U, gpu_tag> const& A, gpu_matrix<T>& C)
-{
-   cublas::geam(get_handle(), A.trans(), A.rows(), A.cols(),
-                blas::number_traits<T>::identity(), A.storage(), A.leading_dimension(),
-                blas::number_traits<T>::identity(), C.storage(), C.leading_dimension());
-}
-
-template <typename T, typename U, typename V>
-inline
-void geam(T alpha, blas::BlasMatrix<T, U, gpu_tag> const& A,
-          T beta, blas::BlasMatrix<T, U, gpu_tag> const& B,
-          gpu_matrix<T>& C)
-{
-   cublas::geam(get_handle(), A.trans(), B.trans(), A.rows(), A.cols(),
-                alpha, A.storage(), A.leading_dimension(),
-                beta, B.storage(), B.leading_dimension(),
-                C.storage(), C.leading_dimension());
 }
 
 } // namespace cublas

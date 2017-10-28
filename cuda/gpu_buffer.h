@@ -301,7 +301,7 @@ class gpu_buffer
       {
          void* P = static_cast<void*>(Ptr);
          Ptr = nullptr;
-         return std::make_tuple(P, ByteSize, std::move(Sync), std::move(Arena));
+         return std::make_tuple(P, ByteSize, std::move(Stream), std::move(Arena));
       }
 
    private:
@@ -435,7 +435,7 @@ class gpu_ref
    public:
       gpu_ref() = delete;
 
-      gpu_ref(T* Ptr_, stream* ParentStream_ = nullptr)
+      explicit gpu_ref(T* Ptr_, stream* ParentStream_ = nullptr)
          : Ptr(Ptr_), ParentStream(ParentStream_)
       {
          if (ParentStream)
@@ -444,15 +444,24 @@ class gpu_ref
 
       ~gpu_ref()
       {
+         // If we have a parent stream then we don't need to synchronize our stream on destruction,
+         // since the parent will wait for us.  In that case, we want to destroy our stream
+         // without invoking the warning that we are destroying a stream with pending operations.
          if (ParentStream)
          {
             if (Sync.is_null())
                Sync = Stream.record();
             ParentStream->wait(Sync);
+            Stream.safe_to_destroy();
+         }
+         else
+         {
+            Stream.synchronize();
          }
       }
 
-      gpu_ref(gpu_ref&& other) : Ptr(other.Ptr), ParentStream(other.ParentStream), Stream(std::move(other.Stream)),
+      gpu_ref(gpu_ref&& other) : Ptr(other.Ptr), ParentStream(other.ParentStream),
+                                 Stream(std::move(other.Stream)),
                                  Sync(std::move(other.Sync))
       {
          other.ParentStream = nullptr;

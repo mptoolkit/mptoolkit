@@ -130,13 +130,26 @@ stream::~stream()
 
 inline
 void
+stream::safe_to_destroy()
+{
+   if (stream_ && !count_.is_shared())
+   {
+      // we are the only reference to the stream, we can kill it
+      stream_ = nullptr;
+      count_.deallocate();
+   }
+}
+
+
+inline
+void
 stream::sub_reference()
 {
    if (stream_ && (--count_ == 0))
    {
       if (this->is_running())
       {
-         WARNING("Possible bug: destroying stream that has pending operations");
+         PANIC("Possible bug: destroying stream that has pending operations");
       }
       detail::FreeStream(stream_);
       // NOTE: we do not set stream_ = nullltr here, caller must do this if necessary

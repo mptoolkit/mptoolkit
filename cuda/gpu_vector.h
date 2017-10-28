@@ -25,7 +25,6 @@
 #include "blas/vectorref.h"
 #include "blas/vector.h"
 #include "blas/vector_view.h"
-#include "cub.h"
 
 namespace cublas
 {
@@ -60,6 +59,9 @@ struct blas_traits<cublas::gpu_tag>
 
    template <typename T>
    using vector_type        = cublas::gpu_vector<T>;
+
+   template <typename T>
+   using async_proxy        = cuda::gpu_ref<T>;
 
    template <typename T>
    using async_ref          = cuda::gpu_ref<T>;
@@ -259,114 +261,6 @@ copy(blas::BlasVector<T, gpu_vector<T>, U> const& x)
    gpu_vector<T> Result(x.size());
    assign(Result, x.derived());
    return Result;
-}
-
-// BLAS functions
-
-template <typename T, typename U>
-inline
-void vector_copy_scaled(T alpha, blas::BlasVector<T, U, gpu_tag> const& x, gpu_vector<T>& y)
-{
-   DEBUG_CHECK_EQUAL(x.size(), y.size());
-   cublas::copy(get_handle(), x.size(), x.storage(), x.stride(), y.storage(), y.stride());
-   cublas::scal(get_handle(), y.size(), alpha, y.storage(), y.stride());
-}
-
-template <typename T, typename U>
-inline
-void vector_copy_scaled(T alpha, blas::BlasVector<T, U, gpu_tag> const& x, gpu_vector_view<T>&& y)
-{
-   DEBUG_CHECK_EQUAL(x.size(), y.size());
-   cublas::copy(get_handle(), x.size(), x.storage(), x.stride(), std::move(y).storage(), y.stride());
-   cublas::scal(get_handle(), y.size(), alpha, std::move(y).storage(), y.stride());
-}
-
-template <typename T, typename U>
-inline
-void vector_copy(blas::BlasVector<T, U, gpu_tag> const& x, gpu_vector<T>& y)
-{
-   DEBUG_CHECK_EQUAL(x.size(), y.size());
-   cublas::copy(get_handle(), x.size(), x.storage(), x.stride(), y.storage(), y.stride());
-}
-
-template <typename T, typename U>
-inline
-void vector_copy(blas::BlasVector<T, U, gpu_tag> const& x, gpu_vector_view<T>&& y)
-{
-   DEBUG_CHECK_EQUAL(x.size(), y.size());
-   cublas::copy(get_handle(), x.size(), x.storage(), x.stride(), y.storage(), y.stride());
-}
-
-template <typename T, typename U>
-inline
-void vector_add_scaled(T alpha, blas::BlasVector<T, U, gpu_tag> const& x, gpu_vector<T>& y)
-{
-   DEBUG_CHECK_EQUAL(x.size(), y.size());
-   cublas::axpy(get_handle(), x.size(), alpha,
-                x.storage(), x.stride(),
-                y.storage(), y.stride());
-}
-
-template <typename T, typename U>
-inline
-void vector_add_scaled(T alpha, blas::BlasVector<T, U, gpu_tag> const& x, gpu_vector_view<T>&& y)
-{
-   DEBUG_CHECK_EQUAL(x.size(), y.size());
-   cublas::axpy(get_handle(), x.size(), alpha,
-                x.storage(), x.stride(),
-                y.storage(), y.stride());
-}
-
-template <typename T, typename U>
-inline
-void vector_add(blas::BlasVector<T, U, gpu_tag> const& x, gpu_vector<T>& y)
-{
-   DEBUG_CHECK_EQUAL(x.size(), y.size());
-   cublas::axpy(get_handle(), x.size(), blas::number_traits<T>::identity(),
-                x.storage(), x.stride(),
-                y.storage(), y.stride());
-}
-
-template <typename T, typename U>
-inline
-void vector_add(blas::BlasVector<T, U, gpu_tag> const& x, gpu_vector_view<T>&& y)
-{
-   DEBUG_CHECK_EQUAL(x.size(), y.size());
-   cublas::axpy(get_handle(), x.size(), blas::number_traits<T>::identity(),
-                x.storage(), x.stride(),
-                y.storage(), y.stride());
-}
-
-template <typename T>
-inline
-void vector_scale(T alpha, gpu_vector<T>& y)
-{
-   cublas::scal(get_handle(), y.size(), alpha, y.storage(), y.stride());
-}
-
-template <typename T>
-inline
-void vector_scale(T alpha, gpu_vector_view<T>&& y)
-{
-   cublas::scal(get_handle(), y.size(), alpha, y.storage(), y.stride());
-}
-
-// vector_sum
-
-template <typename T, typename U>
-void
-vector_sum(blas::BlasVector<T, U, gpu_tag> const& x, cuda::gpu_ref<T>& y)
-{
-   cub::vector_sum(x.size(), x.storage(), x.stride(), y);
-}
-
-template <typename T, typename U>
-T
-vector_sum(blas::BlasVector<T, U, gpu_tag> const& x)
-{
-   cuda::gpu_ref<T> y;
-   cub::vector_sum(x.size(), x.storage(), x.stride(), y);
-   return y;
 }
 
 } // namespace cublas

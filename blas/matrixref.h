@@ -533,6 +533,14 @@ void subtract(MatrixRef<T, Derived, Tag>& C, MatrixProduct<T, U, V, Tag> const& 
 template <typename T, typename U, typename Tag>
 void
 inline
+trace(BlasMatrix<T, U, Tag> const& x, typename blas_traits<Tag>::template async_proxy<T>&& r)
+{
+   vector_sum(x.as_derived().diagonal(), std::move(r));
+}
+
+template <typename T, typename U, typename Tag>
+void
+inline
 trace(BlasMatrix<T, U, Tag> const& x, typename blas_traits<Tag>::template async_ref<T>& r)
 {
    vector_sum(x.as_derived().diagonal(), r);
@@ -652,7 +660,116 @@ void subtract(VectorRef<T, Derived, Tag>& C, MatrixVectorProduct<T, U, V, Tag> c
 }
 
 //
-// middle-layer BLAS wrappers, that forward from a matrix/vector ref to low-level storage
+// VECTOR middle-layer BLAS wrappers, that forward from a matrix/vector ref to low-level storage
+//
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void vector_copy_scaled(T alpha, blas::BlasVector<T, U, Tag> const& x, BlasVector<T, V, Tag>& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_copy_scaled(x.size(), alpha, x.storage(), x.stride(), y.storage(), y.stride());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void vector_copy_scaled(T alpha, blas::BlasVector<T, U, Tag> const& x, BlasVectorProxy<T, V, Tag>&& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_copy_scaled(x.size(), alpha, x.storage(), x.stride(), std::move(y).storage(), y.stride());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void vector_copy(blas::BlasVector<T, U, Tag> const& x, BlasVector<T, V, Tag>& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_copy(x.size(), x.storage(), x.stride(), y.storage(), y.stride());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void vector_copy(blas::BlasVector<T, U, Tag> const& x, BlasVectorProxy<T, V, Tag>&& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_copy(x.size(), x.storage(), x.stride(), std::move(y).storage(), y.stride());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void vector_add_scaled(T alpha, blas::BlasVector<T, U, Tag> const& x, BlasVector<T, V, Tag>& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_add_scaled(x.size(), alpha, x.storage(), x.stride(), y.storage(), y.stride());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void vector_add_scaled(T alpha, blas::BlasVector<T, U, Tag> const& x, BlasVectorProxy<T, V, Tag>&& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_add_scaled(x.size(), alpha, x.storage(), x.stride(), std::move(y).storage(), y.stride());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void vector_add(blas::BlasVector<T, U, Tag> const& x, BlasVector<T, V, Tag>& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_add(x.size(), blas::number_traits<T>::identity(),
+              x.storage(), x.stride(),
+              y.storage(), y.stride());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void vector_add(blas::BlasVector<T, U, Tag> const& x, BlasVectorProxy<T, V, Tag>&& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_add(x.size(), blas::number_traits<T>::identity(),
+              x.storage(), x.stride(),
+              y.storage(), y.stride());
+}
+
+template <typename T, typename U, typename Tag>
+inline
+void vector_scale(T alpha, BlasVector<T, U, Tag>& y)
+{
+   vector_scale(y.size(), alpha, y.storage(), y.stride());
+}
+
+template <typename T, typename U, typename Tag>
+inline
+void vector_scale(T alpha, BlasVectorProxy<T, U, Tag>&& y)
+{
+   vector_scale(y.size(), alpha, std::move(y).storage(), y.stride());
+}
+
+template <typename T, typename U, typename Tag>
+void
+vector_sum(blas::BlasVector<T, U, Tag> const& x, typename blas_traits<Tag>::template async_proxy<T>&& y)
+{
+   vector_sum(x.size(), x.storage(), x.stride(), y);
+}
+
+template <typename T, typename U, typename Tag>
+void
+vector_sum(blas::BlasVector<T, U, Tag> const& x, typename blas_traits<Tag>::template async_ref<T>& y)
+{
+   vector_sum(x.size(), x.storage(), x.stride(), y);
+}
+
+template <typename T, typename U, typename Tag>
+T
+vector_sum(blas::BlasVector<T, U, Tag> const& x)
+{
+   typename blas_traits<Tag>::template async_ref<T> y;
+   vector_sum(x.size(), x.storage(), x.stride(), y);
+   return y;
+}
+
+//
+// MATRIX middle-layer BLAS wrappers, that forward from a matrix/vector ref to low-level storage
 //
 
 template <typename T, typename U, typename V, typename W, typename Tag>
@@ -688,8 +805,7 @@ void gemm(T alpha, BlasMatrix<T, U, Tag> const& A,
    DEBUG_CHECK_EQUAL(A.cols(), B.rows());
    DEBUG_CHECK_EQUAL(A.rows(), C.rows());
    DEBUG_CHECK_EQUAL(B.cols(), C.cols());
-   using namespace blas;
-   gemmx(A.trans(), B.trans(), A.rows(), A.cols(), B.cols(), alpha, A.storage(),
+   gemm(A.trans(), B.trans(), A.rows(), A.cols(), B.cols(), alpha, A.storage(),
         A.leading_dimension(), B.storage(), B.leading_dimension(), beta,
         C.storage(), C.leading_dimension());
 }
@@ -703,8 +819,7 @@ void gemm(T alpha, BlasMatrix<T, U, Tag> const& A,
    DEBUG_CHECK_EQUAL(A.cols(), B.rows());
    DEBUG_CHECK_EQUAL(A.rows(), C.rows());
    DEBUG_CHECK_EQUAL(B.cols(), C.cols());
-   using namespace blas;
-   gemmx(A.trans(), B.trans(), A.rows(), A.cols(), B.cols(), alpha, A.storage(),
+   gemm(A.trans(), B.trans(), A.rows(), A.cols(), B.cols(), alpha, A.storage(),
         A.leading_dimension(), B.storage(), B.leading_dimension(), beta,
         std::move(C).storage(), C.leading_dimension());
 }

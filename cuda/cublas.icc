@@ -33,4 +33,5 @@ void setup_cublas_thread()
    get_handle() = handle::create();
 }
 
-} // namespace cubas
+} // namespace cublas
+
