@@ -146,6 +146,8 @@ class stream
 // event
 //
 // A reference-counted wrapper around the cuda event type.
+// This uses a double-indirection (via shared_ptr<cudaEvent_t>)
+//
 //
 
 class event
@@ -162,7 +164,7 @@ class event
       void clear();
 
       // returns true if this is a null event
-      bool is_null() const { return *event_ == nullptr; }
+      bool is_null() const { return !event_; }
 
       // returns true if work has been sucessfully completed
       bool is_complete() const;
@@ -171,13 +173,6 @@ class event
       void wait() const;
 
       cudaEvent_t raw_event() const { return *event_; }
-
-      friend void swap(event& a, event& b)
-      {
-	 using std::swap;
-	 swap(a.event_, b.event_);
-	 swap(a.count_, b.count_);
-      }
 
    private:
       friend class stream;

@@ -37,7 +37,7 @@ vector_add_scaled(alpha, BlasVector x, BlasVector& y)
 gemv(alpha, BlasMatrix A, beta, BlasVector x, beta, Vector& y)
 
 // y *= alpha
-scale(alpha, Vector& y)
+vector_scale(alpha, Vector& y)
 
 // functions that return scalar values - Ref here stands
 // for traits::async_ref<T>
@@ -73,7 +73,7 @@ geam(alpha, BlasMatrix A, beta, BlasMatrix B, Matrix& C)
 // C = alpha * a * b + beta * C
 gemm(alpha, BlasMatrix A, beta, BlasMatrix B, Matrix& C)
 
-scale(alpha, Matrix& y)
+matrix_scale(alpha, Matrix& y)
 
 
 // For conventional CPU storage, the low-level BLAS library implements, for

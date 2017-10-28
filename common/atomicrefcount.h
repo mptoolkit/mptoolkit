@@ -106,6 +106,12 @@ class shared_counter
 	 return *this;
       }
 
+      // equivalent to *this = shared_counter()
+      void reset()
+      {
+         Count = nullptr;
+      }
+
       void allocate(int InitialValue = 1)
       {
 	 DEBUG_CHECK(!Count);

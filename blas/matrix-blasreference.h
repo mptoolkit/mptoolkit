@@ -73,7 +73,7 @@ vector_sum(int N, double const* x, int incx, double& r);
 //
 
 void
-matrix_copy(char Atrans, int M, int N, double const* x, int incx, double* y, int incy);
+matrix_copy(char Atrans, int M, int N, double const* A, int lda, double* B, int ldb);
 
 void
 matrix_copy(char Atrans, int M, int N,

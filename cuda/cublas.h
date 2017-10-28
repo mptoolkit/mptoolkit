@@ -237,7 +237,8 @@ gemv(char Atrans, int M, int N, double alpha,
 
 // BLAS level 2 extensions
 
-// geam - we have two versions, for in-place and out-of-place operations
+// in-place two matrix version implements
+// C = alpha*A + beta*C
 inline
 void
 geam(char Atrans, int M, int N,
@@ -255,6 +256,8 @@ geam(char Atrans, int M, int N,
    A.wait_for(C);
 }
 
+// out-of-place version implements
+// C = alpha*A + beta*B
 inline
 void
 geam(char Atrans, char Btrans, int M, int N,
@@ -273,6 +276,48 @@ geam(char Atrans, char Btrans, int M, int N,
                            C.device_ptr(), ldc));
    A.wait_for(C);
    B.wait_for(C);
+}
+
+inline
+void
+matrix_copy(char Atrans, int M, int N, const_gpu_ptr<double> A, int lda, gpu_ptr<double> B, int ldb)
+{
+   geam(Atrans, M, N, 1.0, A, lda, 0.0, B, ldb);
+}
+
+inline
+void
+matrix_copy_scaled(char Atrans, int M, int N, double alpha, const_gpu_ptr<double> A, int lda, gpu_ptr<double> B, int ldb)
+{
+   geam(Atrans, M, N, alpha, A, lda, 0.0, B, ldb);
+}
+
+inline
+void
+matrix_add(char Atrans, int M, int N, const_gpu_ptr<double> A, int lda, gpu_ptr<double> B, int ldb)
+{
+   geam(Atrans, M, N, 1.0, A, lda, 1.0, B, ldb);
+}
+
+inline
+void
+matrix_add_scaled(char Atrans, int M, int N, double alpha, const_gpu_ptr<double> A, int lda, gpu_ptr<double> B, int ldb)
+{
+   geam(Atrans, M, N, alpha, A, lda, 1.0, B, ldb);
+}
+
+inline
+void
+matrix_scale(int M, int N, double alpha, cuda::gpu_ptr<double> A, int lda)
+{
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(A.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
+   double beta = 0.0;
+   cublas::check_error(cublasDgeam(H.raw_handle(), CUBLAS_OP_N, CUBLAS_OP_N, M, N,
+                           &alpha, A.device_ptr(), lda,
+                           &beta, nullptr, 1,
+                           A.device_ptr(), lda));
 }
 
 // BLAS level 3

@@ -195,7 +195,7 @@ stream::is_running() const
 //
 
 inline
-event::event() : event_(new cudaEvent_t(nullptr))
+event::event()
 {
 }
 
@@ -210,13 +210,12 @@ event::event(cudaStream_t s)
 inline
 event::event(event&& other) : event_(std::move(other.event_)), count_(std::move(other.count_))
 {
-   other.event_.reset();
 }
 
 inline
 event::event(event const& other) : event_(new cudaEvent_t(*other.event_)), count_(other.count_)
 {
-   if (event_)
+   if (event_ && *event_)
       ++count_;
 }
 
@@ -224,8 +223,8 @@ inline
 event&
 event::operator=(event&& other)
 {
-   std::swap(event_, other.event_);
-   std::swap(count_, other.count_);
+   event_ = std::move(other.event_);
+   count_ = std::move(other.count_);
    return *this;
 }
 
@@ -233,34 +232,41 @@ inline
 event&
 event::operator=(event const& other)
 {
-   if (*other.event_)
+   if (other.event_ && *other.event_)
       ++other.count_;
 
-   this->sub_reference();
-   event_.reset(new cudaEvent_t(*other.event_));
+   if (event_)
+      this->sub_reference();
+   if (other.event_)
+      event_.reset(new cudaEvent_t(*other.event_));
+   else
+      event_.reset();
    count_ = other.count_;
-
    return *this;
 }
 
 inline
 event::~event()
 {
-   this->sub_reference();
+   if (event_)
+      this->sub_reference();
  }
 
 inline
 void
 event::clear()
 {
-   this->sub_reference();
-   *event_ = nullptr;
+   if (event_)
+      this->sub_reference();
+   event_.reset();
+   count_.reset();
 }
 
 inline
 void
 event::wait() const
 {
+   CHECK(event_);
    check_error(cudaEventSynchronize(*event_));
 }
 

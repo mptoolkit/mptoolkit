@@ -328,6 +328,10 @@ gemv(T alpha, blas::BlasMatrix<T, U, async_gpu_tag> const& A,
 // compatible signature to standard blas.
 // This is a bit tedious because we need to pass lots of parameters to the lambda function
 // by value with automatic variables.
+
+// In async mode we are guaranteed that the objects live longer than this function, because we
+// put that intelligence into the destructors of the buffers.  So we don't need reference counting,
+// but do need careful handling of temporaries.
 template <typename T, typename U, typename V, typename W>
 inline
 void
