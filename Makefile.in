@@ -285,10 +285,11 @@ dep : $(cxx_depend)
 #When building
 # from the source directory, the %.cpp ends up listed twice,
 # once as %.cpp and once as ./%.cpp
-# so we filter this out with $(filter-out ./%, $(filter %.o %.cpp, $^))
+# so we filter this out by removing a leadting ./ (if it exists),
+# and sorting the files (which removes duplicates)
 % : %.cpp
 	@$(MAKEDEPEND_INFO)
-	$(CXX) $(CXXFLAGS) $(CXXFLAGS_$@) $(LDFLAGS) $(filter-out ./%, $(filter %.o %.cpp, $^)) $(LIBS_$@) $(LIB) -o $@
+	$(CXX) $(CXXFLAGS) $(CXXFLAGS_$@) $(LDFLAGS) $(sort $(patsubst ./%,%, $(filter %.o %.cpp, $^))) $(LIBS_$@) $(LIB) -o $@
 
 %.o : %.cpp %.d
 	@$(MAKEDEPEND_INFO)
