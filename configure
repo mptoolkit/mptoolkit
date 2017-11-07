@@ -627,6 +627,8 @@ ac_subst_vars='LTLIBOBJS
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
+HAVE_CUSOLVER
+CUSOLVER_LIBS
 HAVE_CUBLAS
 CUBLAS_LIBS
 CUDA_LIBS
@@ -736,6 +738,7 @@ with_boost_program_options
 with_arpack
 with_cuda
 with_cublas
+with_cusolver
 enable_shared
 '
       ac_precious_vars='build_alias
@@ -1419,6 +1422,7 @@ Optional Packages:
   --with-cuda             use CUDA
   --with-cuda=<lib>       use CUDA library <lib>
   --with-cublas=<lib>     use CUBLAS library <lib> (requires CUDA)
+  --with-cusolver=<lib>   use CUSOLVER library <lib> (requires CUDA)
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -9805,7 +9809,7 @@ fi
                   done
                 fi
             if test "x$ax_lib" = "x"; then
-                as_fn_error $? "Could not find a version of the library!" "$LINENO" 5
+                as_fn_error $? "Could not find a version of the boost program_options library!" "$LINENO" 5
             fi
 				if test "x$link_program_options" != "xyes"; then
 					as_fn_error $? "Could not link against $ax_lib !" "$LINENO" 5
@@ -11419,6 +11423,167 @@ done
 else
          if test "x$ax_cublas_ok" != xdisable; then :
   as_fn_error $? "Cannot find cuBLAS library" "$LINENO" 5
+fi
+fi
+
+
+
+
+
+
+ax_cusolver_ok=no
+
+
+# Check whether --with-cusolver was given.
+if test "${with_cusolver+set}" = set; then :
+  withval=$with_cusolver;
+fi
+
+
+case $with_cusolver in
+        yes | "") ;;
+        no) ax_cusolver_ok=disable ;;
+        -* | */* | *.a | *.so | *.so.* | *.o) CUSOLVER_LIBS="$with_cusolver" ;;
+        *) CUSOLVER_LIBS="-l$with_cusolver" ;;
+esac
+
+# We cannot use CUSOLVER if CUDA is not found
+if test "x$ax_cuda_ok" = xdisable; then
+        CUSOLVER_LIBS=""
+elif test "x$CUSOLVER_LIBS" != x; then
+# check CUSOLVER_LIBS environment variable
+        save_LIBS="$LIBS"; LIBS="$CUSOLVER_LIBS $CUDA_LIBS $LIBS"
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for cusolverDnCreate in $CUSOLVER_LIBS" >&5
+$as_echo_n "checking for cusolverDnCreate in $CUSOLVER_LIBS... " >&6; }
+        save_CXXFLAGS="$CXXFLAGS"; CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char cusolverDnCreate ();
+#ifdef F77_DUMMY_MAIN
+
+#  ifdef __cplusplus
+     extern "C"
+#  endif
+   int F77_DUMMY_MAIN() { return 1; }
+
+#endif
+int
+main ()
+{
+return cusolverDnCreate ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ax_cusolver_ok=yes
+else
+  CUSOLVER_LIBS=""
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cusolver_ok" >&5
+$as_echo "$ax_cusolver_ok" >&6; }
+        LIBS="$save_LIBS"
+        CXXFLAGS="$save_CXXFLAGS"
+        if test $ax_cusolver_ok = no; then
+                CUSOLVER_LIBS=""
+        fi
+else
+   # CUSOLVER in standard location?
+   for cusolver in cusolver; do
+           if test $ax_cusolver_ok = no; then
+                   save_LIBS="$LIBS"; LIBS="$CUDA_LIBS $LIBS"
+                   save_CXXFLAGS="$CXXFLAGS"; CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
+                   as_ac_Lib=`$as_echo "ac_cv_lib_$cusolver''_cusolverDnCreate" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cusolverDnCreate in -l$cusolver" >&5
+$as_echo_n "checking for cusolverDnCreate in -l$cusolver... " >&6; }
+if eval \${$as_ac_Lib+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-l$cusolver $FLIBS $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char cusolverDnCreate ();
+#ifdef F77_DUMMY_MAIN
+
+#  ifdef __cplusplus
+     extern "C"
+#  endif
+   int F77_DUMMY_MAIN() { return 1; }
+
+#endif
+int
+main ()
+{
+return cusolverDnCreate ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  eval "$as_ac_Lib=yes"
+else
+  eval "$as_ac_Lib=no"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+eval ac_res=\$$as_ac_Lib
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
+  ax_cusolver_ok=yes; CUSOLVER_LIBS="-l$cusolver"
+fi
+
+                   LIBS="$save_LIBS"
+                   CXXFLAGS="$save_CXXFLAGS"
+           fi
+   done
+fi
+
+
+
+# Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
+if test x"$ax_cusolver_ok" = xyes; then
+
+$as_echo "#define HAVE_CUSOLVER 1" >>confdefs.h
+
+	HAVE_CUSOLVER=1
+
+        for ac_header in cusolverDn.h
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "cusolverDn.h" "ac_cv_header_cusolverDn_h" "$ac_includes_default"
+if test "x$ac_cv_header_cusolverDn_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_CUSOLVERDN_H 1
+_ACEOF
+
+else
+  as_fn_error $? "Cannot find cusolverDn.h header" "$LINENO" 5
+fi
+
+done
+
+else
+         if test "x$ax_cusolver_ok" != xdisable; then :
+  as_fn_error $? "Cannot find cuSOLVER library" "$LINENO" 5
 fi
 fi
 

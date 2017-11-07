@@ -51,6 +51,12 @@ template <typename T>
 using const_gpu_vector_view = blas::const_vector_view<T, gpu_tag>;
 
 template <typename T>
+using gpu_normal_vector_view = blas::normal_vector_view<T, gpu_tag>;
+
+template <typename T>
+using const_gpu_normal_vector_view = blas::const_normal_vector_view<T, gpu_tag>;
+
+template <typename T>
 class gpu_matrix : public blas::NormalMatrix<T, gpu_matrix<T>, gpu_tag>
 {
    public:
@@ -128,16 +134,16 @@ class gpu_matrix : public blas::NormalMatrix<T, gpu_matrix<T>, gpu_tag>
          return const_gpu_vector_view<T>(Cols, LeadingDimension, Buf.ptr(r));
       }
 
-      gpu_vector_view<T>
+      gpu_normal_vector_view<T>
       column(int c)
       {
-         return gpu_vector_view<T>(Rows, 1, Buf.ptr(LeadingDimension*c));
+         return gpu_vector_view<T>(Rows, Buf.ptr(LeadingDimension*c));
       }
 
-      const_gpu_vector_view<T>
+      const_gpu_normal_vector_view<T>
       column(int c) const
       {
-         return const_gpu_vector_view<T>(Rows, 1, Buf.ptr(LeadingDimension*c));
+         return const_gpu_vector_view<T>(Rows, Buf.ptr(LeadingDimension*c));
       }
 
       gpu_vector_view<T>

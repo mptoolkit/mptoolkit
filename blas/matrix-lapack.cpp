@@ -22,13 +22,10 @@
 // Created 2004-06-07 Ian McCulloch
 //
 
-#include "matrix-eigen.h"
+#include "matrix-lapack.h"
 #include "common/lapackf.h"
 
 namespace blas
-{
-
-namespace detail
 {
 
 void DiagonalizeSymmetric(int Size, double* Data, int LeadingDim, double* Eigen)
@@ -87,7 +84,5 @@ void DiagonalizeHermitian(int Size, std::complex<double>* Data, int LeadingDim, 
    delete[] work;
    delete[] rwork;
 }
-
-} // namespace detail
 
 } // namespace blas

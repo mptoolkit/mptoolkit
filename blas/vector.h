@@ -70,7 +70,7 @@ struct blas_traits<cpu_tag>
 //
 
 template <typename T>
-class Vector : public BlasVector<T, Vector<T>, cpu_tag>
+class Vector : public NormalVector<T, Vector<T>, cpu_tag>
 {
    public:
       using value_type     = T;

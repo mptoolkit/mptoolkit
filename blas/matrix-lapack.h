@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// cuda/cublas.h
+// blas/matrix-lapack.h
 //
 // Copyright (C) 2017 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
@@ -17,15 +17,21 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-namespace cublas
+#if !defined(MPTOOLKIT_BLAS_MATRIX_LAPACK_H)
+#define MPTOOLKIT_BLAS_MATRIX_LAPACK_H
+
+//
+// LAPACK wrappers for ordinary matrices
+//
+
+namespace blas
 {
 
-inline
-handle& get_handle()
-{
-   static thread_local handle H = handle::create();
-   return H;
-}
+void DiagonalizeSymmetric(int Size, double* Data, int LeadingDim, double* Eigen);
 
-} // namespace cublas
+void DiagonalizeHermitian(int Size, std::complex<double>* Data, int LeadingDim, double* Eigen);
 
+} // namespace blas
+
+
+#endif

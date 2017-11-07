@@ -43,23 +43,24 @@ namespace cublas
 int version();
 
 // helper functions to get a name and error description from a cublasStatus_t
-char const* cublasGetErrorName(cublasStatus_t error);
+char const* GetErrorName(cublasStatus_t error);
 
-char const* cublasGetErrorString(cublasStatus_t error);
+char const* GetErrorString(cublasStatus_t error);
 
 // wrapper for a cublasStatus_t, which can also function as an exception object
 class error : public std::runtime_error
 {
    public:
       error() = delete;
-      error(cublasStatus_t Err) : std::runtime_error(std::string("cuBLAS error: ") + cublasGetErrorString(Err)), err_(Err)
-      {std::cerr << "cuBLAS Error " << int(Err) << ' ' << cublasGetErrorString(Err) << '\n';}
+      error(cublasStatus_t Err) : std::runtime_error(std::string("cuBLAS error: ")
+                                                     + cublas::GetErrorString(Err)), err_(Err)
+      {std::cerr << "cuBLAS Error " << int(Err) << ' ' << cublas::GetErrorString(Err) << '\n';}
 
       cublasStatus_t code() const { return err_; }
       operator cublasStatus_t() const { return err_; }
 
-      char const* name() const { return cublasGetErrorName(err_); }
-      char const* string() const { return cublasGetErrorString(err_); }
+      char const* name() const { return cublas::GetErrorName(err_); }
+      char const* string() const { return cublas::GetErrorString(err_); }
 
    private:
       cublasStatus_t err_;
@@ -107,10 +108,6 @@ class handle
 
       cublasHandle_t h_;
 };
-
-// intializes cublas to run in a thread - must be called once per thread prior to
-// making any other cublas calls.  The CUDA device must be intialized prior to this call.
-void setup_cublas_thread();
 
 // returns the thread-local handle
 handle& get_handle();

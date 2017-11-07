@@ -136,6 +136,51 @@ class BlasVectorProxy : public BlasVector<ValueType, DerivedType, Tag>
       const_storage_type storage() const& { return this->as_derived().storage(); }
 };
 
+// Specialization of a BlasVector for a vector that exists in memory and has stride 1
+
+template <typename ValueType, typename DerivedType, typename Tag>
+class NormalVector : public BlasVector<ValueType, DerivedType, Tag>
+{
+   public:
+      using value_type         = ValueType;
+      using derived_type       = DerivedType;
+      using tag_type           = Tag;
+      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
+      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+
+      NormalVector() = default;
+      ~NormalVector() = default;
+      NormalVector(NormalVector&& Other) = default;
+
+      constexpr int stride() const { return 1; }
+
+      storage_type storage() & { return this->as_derived().storage(); }
+      const_storage_type storage() const & { return this->as_derived().storage(); }
+};
+
+// Specialization of BlasVectorProxy that can act as an rvalue-reference, ie
+// a temporary proxy that can appear on the left-hand side of an expression.
+template <typename ValueType, typename DerivedType, typename Tag>
+class NormalVectorProxy : public BlasVectorProxy<ValueType, DerivedType, Tag>
+{
+   public:
+      using value_type         = ValueType;
+      using derived_type       = DerivedType;
+      using tag_type           = Tag;
+      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
+      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+
+      NormalVectorProxy() = default;
+      ~NormalVectorProxy() = default;
+      NormalVectorProxy(NormalVectorProxy&& Other) = default;
+
+      constexpr int stride() const { return 1; }
+
+      storage_type storage() && { return static_cast<derived_type&&>(this->as_derived()).storage(); }
+      const_storage_type storage() const& { return this->as_derived().storage(); }
+};
+
+
 // proxy class for the complex conjugate of a vector
 
 template <typename T, typename BaseType, typename Tag>

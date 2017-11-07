@@ -122,10 +122,16 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T>, cpu_tag>
 	 return *this;
       }
 
-      VectorView<T>
+      NormalVectorView<T>
       diagonal()
       {
-         return VectorView<T>(Size, 1, Data);
+         return NormalVectorView<T>(Size, Data);
+      }
+
+      ConstNormalVectorView<T>
+      diagonal() const
+      {
+         return ConstNormalVectorView<T>(Size, Data);
       }
 
       int rows() const { return Size; }

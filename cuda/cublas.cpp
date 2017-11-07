@@ -23,7 +23,7 @@ namespace cublas
 {
 
 char const*
-cublasGetErrorName(cublasStatus_t error)
+GetErrorName(cublasStatus_t error)
 {
     switch (error)
     {
@@ -56,33 +56,33 @@ cublasGetErrorName(cublasStatus_t error)
 }
 
 char const*
-cublasGetErrorString(cublasStatus_t error)
+GetErrorString(cublasStatus_t error)
 {
     switch (error)
     {
         case CUBLAS_STATUS_SUCCESS:
-            return "SUCCESS";
+            return "cuBLAS: SUCCESS";
 
         case CUBLAS_STATUS_NOT_INITIALIZED:
-            return "cuBLAS library not initialized";
+            return "cuBLAS: library not initialized";
 
         case CUBLAS_STATUS_ALLOC_FAILED:
-            return "memory allocation failed";
+            return "cuBLAS: memory allocation failed";
 
         case CUBLAS_STATUS_INVALID_VALUE:
-            return "invalid value or parameter";
+            return "cuBLAS: invalid value or parameter";
 
         case CUBLAS_STATUS_ARCH_MISMATCH:
-            return "feature not supported by this architecture (possible double-precision?)";
+            return "cuBLAS: feature not supported by this architecture (possible double-precision?)";
 
         case CUBLAS_STATUS_MAPPING_ERROR:
-            return "invalid GPU memory mapping";
+            return "cuBLAS: invalid GPU memory mapping";
 
         case CUBLAS_STATUS_EXECUTION_FAILED:
-            return "GPU kernel execution failed";
+            return "cuBLAS: GPU kernel execution failed";
 
         case CUBLAS_STATUS_INTERNAL_ERROR:
-            return "internal error";
+            return "cuBLAS: internal error";
     }
 
     return "<cublas-unknown>";

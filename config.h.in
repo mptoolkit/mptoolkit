@@ -67,6 +67,12 @@
 /* Define if you have CUDA library. */
 #undef HAVE_CUDA
 
+/* Define if you have CUSOLVER library. */
+#undef HAVE_CUSOLVER
+
+/* Define to 1 if you have the <cusolverDn.h> header file. */
+#undef HAVE_CUSOLVERDN_H
+
 /* define if the compiler supports basic C++11 syntax */
 #undef HAVE_CXX11
 

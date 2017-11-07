@@ -214,6 +214,11 @@ dnl cublas support
 AX_CUBLAS([AC_CHECK_HEADERS(cublas_v2.h, [], [AC_MSG_ERROR([Cannot find cublas_v2.h header])])], 
 [ AS_IF([test "x$ax_cublas_ok" != xdisable], [AC_MSG_ERROR([Cannot find cuBLAS library])]) ])
 
+dnl cusovler support
+
+AX_CUSOLVER([AC_CHECK_HEADERS(cusolverDn.h, [], [AC_MSG_ERROR([Cannot find cusolverDn.h header])])], 
+[ AS_IF([test "x$ax_cusolver_ok" != xdisable], [AC_MSG_ERROR([Cannot find cuSOLVER library])]) ])
+
 AC_PROG_INSTALL
 
 dnl shared library configuration

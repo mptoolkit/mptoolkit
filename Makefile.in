@@ -17,6 +17,7 @@ HAVE_OPENMP = @HAVE_OPENMP@
 OPENMP_CXXFLAGS = @OPENMP_CXXFLAGS@
 HAVE_CUDA = @HAVE_CUDA@
 HAVE_CUBLAS = @HAVE_CUBLAS@
+HAVE_CUSOLVER = @HAVE_CUSOLVER@
 
 HAVE_MPI = @HAVE_MPI@
 MPICXX = @MPICXX@
@@ -92,10 +93,10 @@ CXXFLAGS += -DGIT_VERSION="$(GIT_VERSION)"
 
 SRCDIRS = common common/private quantumnumbers pstream pheap \
           tensor lattice mp-algorithms wavefunction \
-          tutorial mp linearalgebra misc conf scripts utils interface expokit mpo \
+          tutorial mp misc conf scripts utils interface expokit mpo \
           benchmark misc misc/oogl junk mpo mps parser models models/contrib cuda blas
 
-TESTDIRS = tensor/test siteoperator/test linearalgebra/test matrixproduct/test pheap/test \
+TESTDIRS = tensor/test siteoperator/test matrixproduct/test pheap/test \
            common/test quantumnumbers/test mp-algorithms/test mpo/test
 
 DIRS = $(SRCDIRS) $(TESTDIRS)
@@ -125,8 +126,6 @@ pheapobj = bufferalloc.o pagefile.o pheapstream.o pheapfsblock.o \
 
 pstreamobj = pstream.o pfilestream.o
 
-linearalgebraobj = eigen.o
-
 mpoobj = operator_component.o generic_mpo.o basic_finite_mpo.o basic_triangular_mpo.o product_mpo.o infinite_mpo.o \
          f-optim.o e-optim.o operator-diagonal.o
 
@@ -139,11 +138,14 @@ wavefunctionobj = linearwavefunction.o canonicalwavefunction.o infinitewavefunct
 
 parserobj = parser.o
 
+blasobj = matrix-lapack.o
+
 cudaobj = cuda.o cublas.o gpu.o
 
+# cuda kernels, which are linked together to make gpu.o
 cudakernelobj = cub.cu.o
 
-mpobj = $(mpoobj) $(mpsobj) $(latticeobj) $(wavefunctionobj)
+mpobj = $(mpoobj) $(mpsobj) $(latticeobj) $(wavefunctionobj) $(blasobj)
 
 ifdef HAVE_CUDA
    mpobj += $(cudaobj)
@@ -162,30 +164,7 @@ objects = $(quantumnumbersobj) \
           $(dmrgobj)           \
           $(pheapobj)          \
           $(pstreamobj)        \
-          $(linearalgebraobj)  \
           $(commonobj)
-
-linearalgebra_tests = testmapvector testhashvector teststdvector \
-                      testvector testcomplexvector \
-                      testmatrix testlinearsolvespd testvectorcomplex \
-                      testlinearsolvehpd testfixedvector \
-                      testdirectproduct testcoefficientmultiply \
-                      testmultiply-nn testmultiply-tn \
-                      testscalarmatrix testsparsematrix testdiagonalizesymmetric \
-                      testdiagonalizehermitian testconj testequal testnorminf \
-                      testrangeprod testdirectsum testindex testtrig testmatrixserialize \
-                      testproject12 testfill testmultiply-corner testvectorswap \
-                      testvectorstring testvectorserialize testinverthpd testsum \
-                      testtrace testmatrixbinarytransform testflatten testmatrixrange \
-                      testmatrixminmax testcholesky testinverttri testmultiplyself \
-                      testexponential testrational testnormfrob_matrix testherm testqr testhaar
-
-linearalgebra_extra_tests = testcprod testcomplexvector \
-                            testmatrixsection testslicereal testsliceblas \
-                            testhermproduct testmatrixparallel testrangerange \
-                            testmatrixrangeslice testvectorrange testmatrixio \
-                            testinnerprod testparallelprod testmatrixvectorviewmem testdiagonalmatrix \
-	                    testsvd
 
 mp-algorithms_tests = test-arnoldi test-gmres
 
@@ -206,14 +185,13 @@ common_tests = testrunlengthcompressed test_random
 
 quantumnumber_tests = testcoupling
 
-alltests = $(linearalgebra_tests) $(tensor_tests) $(lattice_tests) \
+alltests = $(tensor_tests) $(lattice_tests) \
            $(matrixproduct_tests) $(common_tests) $(quantumnumber_tests)
 
 allobj = $(quantumnumbersobj) \
 	 $(dmrgobj)           \
 	 $(pheapobj)          \
 	 $(pstreamobj)        \
-	 $(linearalgebraobj)  \
 	 $(commonobj)         \
          $(parserobj)
 
@@ -347,17 +325,14 @@ test : $(alltests)
 test_tensor : $(tensor_tests)
 	$(SRCDIR)/generate-testreport.sh $(tensor_tests:%=./%)
 
-testla : $(linearalgebra_tests)
-	$(SRCDIR)/generate-testreport.sh $(linearalgebra_tests:%=./%)
-
 $(tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-           $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj) $(parserobj)
+           $(dmrgobj) $(mpobj) $(expokitobj) $(parserobj)
 
 $(experimental-tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-                        $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj) $(parserobj)
+                        $(dmrgobj) $(mpobj) $(expokitobj) $(parserobj)
 
 $(all-models) :  $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-              $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj) $(parserobj)
+              $(dmrgobj) $(mpobj) $(expokitobj) $(parserobj)
 
 $(mp-misc) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
                $(dmrgobj) $(mpobj)
@@ -419,13 +394,6 @@ test_operator_decompose : $(expokitobj) $(mpoobj) eigen.o
 
 $(lattice_tests) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) $(tensorobj) $(latticeobj)
 
-#
-# dependencies for linearalgebra tests
-#
-
-$(linearalgebra_tests) : $(commonobj) $(linearalgebraobj)
-
-$(linearalgebra_extra_tests) : $(commonobj) eigen.o
 
 testsiteoperator : eigen.o
 testsitebasis : eigen.o
@@ -437,9 +405,9 @@ testexponential : eigen.o zgpadm.o exponential.o
 # dependencies for mp-algorithms tests
 #
 
-$(mp-algorithms_tests) : $(commonobj) $(linearalgebraobj) eigen.o
+$(mp-algorithms_tests) : $(commonobj)
 
-#$(mp-algorithms_tests) : $(commonobj) $(linearalgebraobj) $(expokitobj) eigen.o
+#$(mp-algorithms_tests) : $(commonobj) $(expokitobj) eigen.o
 
 #
 # dependencies for pheap tests
@@ -474,7 +442,7 @@ spin1-unit : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) $(tenso
 
 # benchmarks
 
-bench-tripleprod : $(commonobj) $(linearalgebraobj) $(tensorobj) $(pstreamobj) $(pheapobj) $(quantumnumbersobj)
+bench-tripleprod : $(commonobj) $(tensorobj) $(pstreamobj) $(pheapobj) $(quantumnumbersobj)
 
 bench-rotate :  $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
               $(dmrgobj) $(mpobj)
@@ -580,7 +548,7 @@ CXXFLAGS_mp-itebd = $(OPENMP_CXXFLAGS)
 
 mp-idmrgx : dmrg.o match_basis.o
 
-mp-min-resid : $(commonobj) $(linearalgebraobj)
+mp-min-resid : $(commonobj)
 
 # $(mp-tools) : $(expokitobj)
 # $(mp-tools-experimental) : $(expokitobj)
@@ -595,48 +563,6 @@ testlanczos : $(commonobj) eigen.o
 testdlamch :
 
 kondo-exactdiag : $(expokitobj)
-
-
-# misc progs
-
-untridiagonalize : eigen.o poolallocator.o
-tridiag-kspace : eigen.o poolallocator.o
-
-readsurf : oogl.o poolallocator.o
-
-get-k : $(commonobj) $(linearalgebraobj)
-
-seqgen : eigen.o poolallocator.o
-seqgen2 : $(commonobj) $(pstreamobj) $(pheapobj) $(quantumnumbersobj) $(linearalgebraobj) $(mpobj) $(tensorobj)
-seqgen-dm : eigen.o poolallocator.o
-
-# old stuff for the pheap examples
-examples/pheap/example1 : $(commonobj)
-examples/pheap/example2 : $(commonobj) $(pstreamobj) $(pheapobj)
-examples/pheap/example3 : $(commonobj) $(pstreamobj) $(pheapobj)
-examples/pheap/example4-init : $(commonobj) $(pstreamobj) $(pheapobj)
-examples/pheap/example4-resume : $(commonobj) $(pstreamobj) $(pheapobj)
-
-examples/linearalgebra/matrix-example1 : $(commonobj) $(linearalgebraobj)
-
-testmp : mpstate.o mpopcomponent.o $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-            $(dmrgobj) eigen.o
-
-testassoc : coupling.o halfint.o
-
-testvector : $(commonobj)
-
-testslice : $(commonobj)
-
-examples/la-tng/vectorexample : $(commonobj)
-
-testvectortransform : $(commonobj)
-
-testmatelem : $(commonobj)  $(pstreamobj) $(pheapobj) $(quantumnumbersobj) $(linearalgebraobj) $(mpobj) $(tensorobj)
-
-spin2 : eigen.o
-
-spin1 : eigen.o
 
 
 # utils

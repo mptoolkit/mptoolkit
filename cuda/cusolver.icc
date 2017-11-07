@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// cuda/cublas.h
+// cuda/cusolver.h
 //
 // Copyright (C) 2017 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
@@ -17,15 +17,15 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-namespace cublas
+namespace cusovler
 {
 
 inline
 handle& get_handle()
 {
-   static thread_local handle H = handle::create();
+   static thread_local handle H = cusolver::handle::create();
    return H;
 }
 
-} // namespace cublas
+} // namespace cusovler
 

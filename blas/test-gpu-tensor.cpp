@@ -13,7 +13,6 @@ using Tensor::VectorBasis;
 int main()
 {
    cuda::setup_cuda();
-   cublas::setup_cublas_thread();
 
    QuantumNumbers::SymmetryList SL("U:U(1)");
    Tensor::VectorBasis B(SL);

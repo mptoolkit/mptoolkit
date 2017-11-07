@@ -888,6 +888,68 @@ void matrix_add(BlasMatrix<T, U, Tag> const& A, MatrixProxy<T, V, Tag>&& C)
               C.storage(), C.leading_dimension());
 }
 
+//
+// middle-layer ARPACK wrappers, that forward from a matrix/vector ref to low-level storage
+//
+
+//
+// DiagonalizeSymmetric
+//
+// Diagonalizes a matrix in-place.  The matrix is replaced by the transform matrix, with
+// the eigenvectors as sucessive column-vectors.  For input matrix M,
+// X = M' is the transform matrix, E is the diagonal matrix of eigenvalues,
+// we have MX = XE
+//
+
+template <typename U, typename V, typename Tag>
+inline
+void DiagonalizeSymmetric(NormalMatrix<double, U, Tag>& M, NormalVector<double, V, Tag>& v)
+{
+   DiagonalizeSymmetric(M.rows(), M.storage(), M.leading_dimension(), v.storage());
+}
+
+// Version that takes a proxy-reference for the eigenvalues
+template <typename U, typename V, typename Tag>
+inline
+void DiagonalizeSymmetric(NormalMatrix<double, U, Tag>& M, NormalVectorProxy<double, V, Tag>&& v)
+{
+   DiagonalizeSymmetric(M.rows(), M.storage(), M.leading_dimension(), v.storage());
+}
+
+// TODO: we could also add versions where M is passed as a MatrixProxy
+
+template <typename U, typename V, typename Tag>
+inline
+void DiagonalizeHermitian(NormalMatrix<double, U, Tag>& M, NormalVector<double, V, Tag>& v)
+{
+   DiagonalizeSymmetric(M.as_derived(), v.as_derived());
+}
+
+template <typename U, typename V, typename Tag>
+inline
+void DiagonalizeHermitian(NormalMatrix<double, U, Tag>& M, NormalVectorProxy<double, V, Tag>&& v)
+{
+   DiagonalizeSymmetric(M.as_derived(), static_cast<V&&>(v.as_derived()));
+}
+
+//
+// complex
+//
+
+template <typename U, typename V, typename Tag>
+inline
+void DiagonalizeHermitian(NormalMatrix<std::complex<double>, U, Tag>& M, NormalVector<double, V, Tag>& v)
+{
+   DiagonalizeHermitian(M.rows(), M.storage(), M.leading_dimension(), v.storage());
+}
+
+template <typename U, typename V, typename Tag>
+inline
+void DiagonalizeHermitian(NormalMatrix<std::complex<double>, U, Tag>& M, NormalVectorProxy<double, V, Tag>&& v)
+{
+   DiagonalizeHermitian(M.rows(), M.storage(), M.leading_dimension(), v.storage());
+}
+
 } // namespace blas
 
 #endif

@@ -28,6 +28,7 @@
 #include "arena.h"
 #include "matrixref.h"
 #include "matrix-blas.h"
+#include "matrix-lapack.h"
 #include "vector.h"
 #include "vector_view.h"
 #include <list>
@@ -53,6 +54,12 @@ using VectorView = vector_view<T, cpu_tag>;
 
 template <typename T>
 using ConstVectorView = const_vector_view<T, cpu_tag>;
+
+template <typename T>
+using NormalVectorView = normal_vector_view<T, cpu_tag>;
+
+template <typename T>
+using ConstNormalVectorView = const_normal_vector_view<T, cpu_tag>;
 
 template <typename T>
 class Matrix : public NormalMatrix<T, Matrix<T>, cpu_tag>
@@ -158,16 +165,16 @@ class Matrix : public NormalMatrix<T, Matrix<T>, cpu_tag>
          return ConstVectorView<T>(Cols, LeadingDimension, Data + r);
       }
 
-      VectorView<T>
+      NormalVectorView<T>
       column(int c)
       {
-         return VectorView<T>(Rows, 1, Data + LeadingDimension*c);
+         return VectorView<T>(Rows, Data + LeadingDimension*c);
       }
 
-      ConstVectorView<T>
+      ConstNormalVectorView<T>
       column(int c) const
       {
-         return ConstVectorView<T>(Rows, 1, Data + LeadingDimension*c);
+         return ConstVectorView<T>(Rows, Data + LeadingDimension*c);
       }
 
       VectorView<T>

@@ -120,7 +120,6 @@ class task_simple : public task
 // If we want to have the thread hold a mutex on the task list while running,
 // we could have a separate list for newly added tasks.
 
-
 class task_wait_gpu : public task
 {
    public:
@@ -181,7 +180,7 @@ class task_destroy_gpu_buffer : public task
 
       void run()
       {
-         Srream.synchronize();
+         Stream.synchronize();
          Arena.free(Ptr, ByteSize);
       }
 
@@ -192,7 +191,10 @@ class task_destroy_gpu_buffer : public task
       blas::arena Arena;
 };
 
-// A queue is a list of tasks.  A task is a function that returns a bool.
+// A queue is a list of tasks. Typically a queue is constructed on the heap,
+// and destroys itself with the self_destruct() method.
+
+// A task is
 // If the result is true, then the task was executed and can be removed
 // from the queue.  If the result is false, then the task couldn't be executed
 // yet (eg, bdecause it would block.
@@ -207,6 +209,13 @@ class queue
 
       // Queue destructor blocks until the task list is empty
       ~queue();
+
+      // The normal mode is to allocate a queue on the heap and
+      // let the queue control its own lifetime.  This function
+      // requires that the queue was allocated with operator new,
+      // and schedules the deallocation of the queue once the
+      // task list is empty.
+      void self_destruct();
 
       // records an event at the end of the queue
       event record() const;
@@ -316,119 +325,6 @@ class event
       std::atomic<bool>* trigger_;
       shared_counter count_;
 };
-
-template <typename T>
-class async_matrix : public blas::BlasMatrix<typename T::value_type, async_matrix<T>, async_tag>
-{
-   public:
-      using base_type          = T;
-      using value_type         = typename base_type::value_type;
-      using storage_type       = typename base_type::storage_type;
-      using const_storage_type = typename base_type::const_storage_type;
-
-      async_matrix(async_matrix&& Other) = default;
-
-      template <typename U>
-      async_matrix(blas::MatrixRef<value_type, U, async_tag> const& E)
-         : async_matrix(E.rows(), E.cols())
-      {
-         assign(*this, E.as_derived());
-      }
-
-      // check here that the queue is empty, and there are no other objects waiting for us.
-      // we can possibly work around other objects waiting for us with reference counting.
-      ~async_matrix();
-
-      void wait_for(async::queue const& x)
-      {
-         Queue.wait(x.record());
-      }
-
-   private:
-      // order here is important, we need to destroy the queue before the base
-      // matrix, so construct in order Base, Queue, destroy in opposite order.
-      base_type Base;
-      async::queue Queue;
-};
-
-// BLAS-like functions
-
-// **NOTE**:
-// This sketch is erroneous, because the nested gemv() call here may involve temporary
-// objects which might be destroyed prior to the task getting executed.
-// The tasks must involve only raw memory pointers, no proxies.  Therefore we need
-// separate async_gpu_matrix and async_matrix classes.
-
-template <typename T, typename U, typename V, typename W>
-inline
-void
-gemv(T alpha, blas::BlasMatrix<T, U, async_tag> const& A,
-     blas::BlasVector<T, V, async_tag> const& x, T beta,
-     async_vector<W>& y)
-{
-   DEBUG_CHECK_EQUAL(A.cols(), x.size());
-   DEBUG_CHECK_EQUAL(y.size(), A.rows());
-   y.wait_for(A.queue());
-   y.wait_for(x.queue());
-   y.queue().add_task([&]{gemv(alpha, A.base(), x.base(), beta, y.base()); return true;});
-   A.wait_for(y.queue());
-   x.wait_for(y.queue());
-}
-
-// version for an async_gpu_tag
-template <typename T, typename U, typename V>
-inline
-void
-gemv(T alpha, blas::BlasMatrix<T, U, async_gpu_tag> const& A,
-     blas::BlasVector<T, V, async_gpu_tag> const& x, T beta,
-     async_gpu_vector<T>& y)
-{
-   DEBUG_CHECK_EQUAL(A.cols(), x.size());
-   DEBUG_CHECK_EQUAL(y.size(), A.rows());
-   y.wait_for(A.queue());
-   y.wait_for(x.queue());
-   y.queue().add_task(std::bind(cublas::gemv, A.trans(), A.rows(), A.cols(),
-                                alpha, A.storage(),
-                                A.leading_dimension(), x.storage(), x.stride(),
-                                beta, y.storage(), y.stride()));
-   A.wait_for(y.queue());
-   x.wait_for(y.queue());
-}
-
-// another attempt at a generic version; assuming cublas calls have a
-// compatible signature to standard blas.
-// This is a bit tedious because we need to pass lots of parameters to the lambda function
-// by value with automatic variables.
-
-// In async mode we are guaranteed that the objects live longer than this function, because we
-// put that intelligence into the destructors of the buffers.  So we don't need reference counting,
-// but do need careful handling of temporaries.
-template <typename T, typename U, typename V, typename W>
-inline
-void
-gemv(T alpha, blas::BlasMatrix<T, U, async_tag> const& A,
-     blas::BlasVector<T, V, async_tag> const& x, T beta,
-     async_vector<W>& y)
-{
-   DEBUG_CHECK_EQUAL(A.cols(), x.size());
-   DEBUG_CHECK_EQUAL(y.size(), A.rows());
-   y.wait_for(A.queue());
-   y.wait_for(x.queue());
-   auto Atrans = A.trans();
-   auto Arows = A.rows();
-   auto Acols = A.cols();
-   auto Astorage = A.storage();
-   auto Aleading_dimension = A.leading_dimension();
-   auto xstorage = x.storage();
-   auto xstride = x.stride();
-   auto ystorage = y.storage();
-   auto ystride = y.stride();
-   y.queue().add_task([=](){ gemv(Atrans, Arows, Acols, alpha, Astorage, Aleading_dimension,
-                                  xstorage, xstride, beta, ystorage, ystride);});
-   A.wait_for(y.queue());
-   x.wait_for(y.queue());
-}
-
 
 } // namespace async
 
