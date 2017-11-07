@@ -36,7 +36,7 @@ namespace cusolver
 
 char const* GetErrorName(cusolverStatus_t error);
 
-char const* GetErrorString(cusovlerStatus_t error);
+char const* GetErrorString(cusolverStatus_t error);
 
 // wrapper for a cusolverStatus_t, which can also function as an exception object
 class error : public std::runtime_error
@@ -47,17 +47,17 @@ class error : public std::runtime_error
                                                        + cusolver::GetErrorString(Err)), err_(Err)
       {std::cerr << "cuSOLVER Error " << int(Err) << ' ' << cusolver::GetErrorString(Err) << '\n';}
 
-      cusovlerStatus_t code() const { return err_; }
+      cusolverStatus_t code() const { return err_; }
       operator cusolverStatus_t() const { return err_; }
 
       char const* name() const { return cusolver::GetErrorName(err_); }
-      char const* string() const { return cusovler::GetErrorString(err_); }
+      char const* string() const { return cusolver::GetErrorString(err_); }
 
    private:
-      cusovlerStatus_t err_;
+      cusolverStatus_t err_;
 };
 
-
+inline
 void check_error(cusolverStatus_t Status)
 {
    if (Status != CUSOLVER_STATUS_SUCCESS)
@@ -79,7 +79,7 @@ class handle
 
       cusolverDnHandle_t raw_handle() const { return h_; }
 
-      static handle create() { cublasHandle_t h; cusolverDnCreate(&h); return handle(h); }
+      static handle create() { cusolverDnHandle_t h; cusolverDnCreate(&h); return handle(h); }
 
       void destroy() { cusolverDnDestroy(h_); h_ = nullptr; }
 
@@ -89,15 +89,10 @@ class handle
          check_error(cusolverDnSetStream(h_, s.raw_stream()));
       }
 
-      void set_pointer_mode(cublasPointerMode_t m)
-      {
-         check_error(cublasSetPointerMode(h_, m));
-      }
-
    private:
       handle(cusolverDnHandle_t h) : h_(h) {}
 
-      cusovlerDnHandle_t h_;
+      cusolverDnHandle_t h_;
 };
 
 // returns the thread-local handle
@@ -106,27 +101,14 @@ handle& get_handle();
 } // namespace cusolver
 
 
-namespace blas
+namespace cuda
 {
 
 // LAPACK functions must go in namespace cuda so they are found during ADL
 
-void DiagonalizeSymmetric(int Size, cuda::gpu_ptr<double> A, int ldA, cuda::gpu_ptr<double> Eigen)
-{
-   cusolver::handle& H = cusolver::get_handle();
-   H.set_stream(A.get_stream());
-   A.wait_for(Eigen);
-   int lWork;
-   cusolverDnDsyevd_bufferSize(Handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER,
-                               Size, A.device_ptr(), ldA, Eigen.device_ptr(), &lWork);
-   double* Work = static_cast<double*>(cuda::allocate_gpu_temporary(lWork*sizeof(double)));
-   cusolverDnDsyevd(Handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER,
-                    Size, A.device_ptr(), ldA, Eigen.device_ptr(), Work, lWork, &DevInfo);
-   coda::free_gpu_temporary(Work, lWork*sizeof(double));
-   Eigen.wait_for(A);
-}
+void DiagonalizeSymmetric(int Size, cuda::gpu_ptr<double> A, int ldA, cuda::gpu_ptr<double> Eigen);
 
-} // namespace blas
+} // namespace cuda
 
 #include "cusolver.icc"
 

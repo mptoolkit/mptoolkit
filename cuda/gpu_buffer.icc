@@ -89,7 +89,7 @@ inline
 void*
 allocate_gpu_temporary(int Size)
 {
-   return detail::gpu_temp_arena.allocate(Size, 8);
+   return detail::gpu_temp_arena.allocate(Size, 32*8);
 }
 
 inline

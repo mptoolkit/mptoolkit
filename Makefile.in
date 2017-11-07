@@ -67,6 +67,7 @@ LIBARPACK=@LIBARPACK@
 LIBS = @LIBS@ $(LIBS_EXTRA)
 CUDA_LIBS = @CUDA_LIBS@
 CUBLAS_LIBS = @CUBLAS_LIBS@
+CUSOLVER_LIBS = @CUSOLVER_LIBS@
 
 PACKAGE_NAME=@PACKAGE_NAME@
 PACKAGE_TARNAME=@PACKAGE_TARNAME@
@@ -140,10 +141,11 @@ parserobj = parser.o
 
 blasobj = matrix-lapack.o
 
-cudaobj = cuda.o cublas.o gpu.o
-
-# cuda kernels, which are linked together to make gpu.o
+# cuda kernels, which are linked together to make gpu.o as the device objects
 cudakernelobj = cub.cu.o
+
+# all cuda-related objects; this includes the cuda kernel objects as host objects
+cudaobj = cuda.o cublas.o cusolver.o gpu.o $(cudakernelobj)
 
 mpobj = $(mpoobj) $(mpsobj) $(latticeobj) $(wavefunctionobj) $(blasobj)
 
@@ -207,7 +209,7 @@ experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-
 
 LIBS_mp-cublas-test = $(CUBLAS_LIBS)
 
-LIBS_test-gpu-matrix = $(CUBLAS_LIBS)
+LIBS_test-gpu-matrix = $(CUBLAS_LIBS) $(CUSOLVER_LIBS)
 
 LIBS_test-gpu-tensor = $(CUBLAS_LIBS)
 
@@ -260,7 +262,7 @@ dep : $(cxx_depend)
 .PHONY: clean mrproper dep test all install uninstall dist-clean \
         maintaner-clean install-dirs dist-dir tar-dir tar install-models install-tools \
         tools models default install_tools install_models models-install models_install \
-        tools-install tools_install
+        tools-install tools_install all-models all-contrib
 
 # turn off some implicit rules that we don't want
 %.o : %.cpp
@@ -529,9 +531,10 @@ mp-imake-transverse-lattice : triangular_operator.o infinitewavefunctionleft.o r
 mp-imake-transverse-lattice-folded : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
 mp-iwigner-eckart : infinitewavefunctionleft.o wigner_eckart.o
 
-test-gpu-matrix : cublas.o cuda.o cub.cu.o gpu.o
+test-gpu-matrix : $(cudaobj)
+CXXFLAGS_test-gpu-matrix = $(OPENMP_CXXFLAGS)
 
-test-gpu-tensor : cublas.o cuda.o cub.cu.o gpu.o $(quantumnumbersobj) $(commonobj) basis.o
+test-gpu-tensor : $(cudaobj) $(quantumnumbersobj) $(commonobj) basis.o
 
 LIBS_mp-ioverlap = $(LIBARPACK)
 LIBS_mp-ispectrum = $(LIBARPACK)

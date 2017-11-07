@@ -8,7 +8,6 @@
 int main()
 {
    cuda::setup_cuda();
-   cublas::setup_cublas_thread();
 
    blas::Matrix<double> A({{1,2,3},
                            {4,5,6},
@@ -63,5 +62,14 @@ int main()
    gC.row(0) = 2*gA*gy;
 
    std::cout << get_wait(gC) << '\n';
+
+   std::cout << "Testing cusolver\n";
+   gC = herm(gA);
+   gA += gC;
+   std::cout << get_wait(gA) << '\n';
+   blas::DiagonalizeSymmetric(gA, gx);
+
+   std::cout << get_wait(gA) << '\n' << get_wait(gx) << '\n';
+
 
 }

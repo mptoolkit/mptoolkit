@@ -73,7 +73,7 @@ namespace cublas
 {
 
 template <typename T>
-class gpu_vector : public blas::BlasVector<T, gpu_vector<T>, gpu_tag>
+class gpu_vector : public blas::NormalVector<T, gpu_vector<T>, gpu_tag>
 {
    public:
       using value_type         = T;

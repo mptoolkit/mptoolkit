@@ -34,6 +34,7 @@
 #include "blas/matrix.h"
 #include "blas/vector_view.h"
 #include "cublas.h"
+#include "cusolver.h"
 #include "gpu_vector.h"
 #include "gpu_buffer.h"
 

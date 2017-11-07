@@ -17,13 +17,13 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "cusovler.h"
+#include "cusolver.h"
 
-namespace cusovler
+namespace cusolver
 {
 
 char const*
-GetErrorName(cublasStatus_t error)
+GetErrorName(cusolverStatus_t error)
 {
     switch (error)
     {
@@ -56,7 +56,7 @@ GetErrorName(cublasStatus_t error)
 }
 
 char const*
-GetErrorString(cublasStatus_t error)
+GetErrorString(cusolverStatus_t error)
 {
     switch (error)
     {
@@ -89,4 +89,31 @@ GetErrorString(cublasStatus_t error)
     return "<cusolver-unknown>";
 }
 
-} // namespace cusovler
+} // namespace cusolver
+
+namespace cuda
+{
+
+void DiagonalizeSymmetric(int Size, cuda::gpu_ptr<double> A, int ldA, cuda::gpu_ptr<double> Eigen)
+{
+   cusolver::handle& H = cusolver::get_handle();
+   H.set_stream(A.get_stream());
+   A.wait_for(Eigen);
+   int lWork;
+   cusolver::check_error(cusolverDnDsyevd_bufferSize(H.raw_handle(),
+                                                     CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER,
+                                                     Size, A.device_ptr(), ldA, Eigen.device_ptr(), &lWork));
+   double* Work = static_cast<double*>(cuda::allocate_gpu_temporary(lWork*sizeof(double)));
+   int* DevInfo = static_cast<int*>(cuda::allocate_gpu_temporary(sizeof(int)));
+   cusolver::check_error(cusolverDnDsyevd(H.raw_handle(),
+                                          CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER,
+                                          Size, A.device_ptr(), ldA, Eigen.device_ptr(), Work, lWork, DevInfo));
+   int Info;
+   memcpy_device_to_host(DevInfo, &Info, sizeof(int));
+   CHECK_EQUAL(Info, 0);
+   cuda::free_gpu_temporary(DevInfo, sizeof(int));
+   cuda::free_gpu_temporary(Work, lWork*sizeof(double));
+   Eigen.wait_for(A);
+}
+
+} // namespace cuda
