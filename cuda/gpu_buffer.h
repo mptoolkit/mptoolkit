@@ -49,7 +49,7 @@ class AllocationBlock
    public:
       AllocationBlock() = delete;
 
-      explicit AllocationBlock(std::size_t Size_, std::size_t Align_, bool FreeOnDest = true);
+      explicit AllocationBlock(std::size_t Size_, bool FreeOnDest = true);
 
       AllocationBlock(AllocationBlock&& Other) : Align(Other.Align),
 						 Size(Other.Size),
@@ -121,10 +121,11 @@ class AllocationBlock
 };
 
 inline
-AllocationBlock::AllocationBlock(std::size_t Size_, std::size_t Align_, bool Free)
-   : Align(Align_), Size(Size_), CurrentOffset(0), NumAllocations(0), FreeOnDestructor(Free)
+AllocationBlock::AllocationBlock(std::size_t Size_, bool Free)
+   : Align(256), Size(Size_), CurrentOffset(0), NumAllocations(0), FreeOnDestructor(Free)
 {
    void* Ptr;
+   // memory alignment from cudaMalloc is always at least 256 bytes
    check_error(cudaMalloc(&Ptr, Size_));
    BasePtr = static_cast<unsigned char*>(Ptr);
 }
@@ -172,7 +173,7 @@ void* BlockAllocator::allocate(std::size_t Size, std::size_t Align)
    }
    // failed to allocate, need another block
    size_t BlockSize = round_up(Size, BlockMultiple);
-   Allocations.push_back(AllocationBlock(BlockSize, Align, FreeOnDestructor));
+   Allocations.push_back(AllocationBlock(BlockSize, FreeOnDestructor));
    void* p = Allocations.back().try_allocate(Size, Align);
    return p;
 }
