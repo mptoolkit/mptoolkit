@@ -136,6 +136,12 @@ class BlasVectorProxy : public BlasVector<ValueType, DerivedType, Tag>
       const_storage_type storage() const& { return this->as_derived().storage(); }
 };
 
+template <typename T, typename U, typename V, typename Tag>
+void assign(BlasVectorProxy<T, U, Tag>&& A, VectorRef<T, V, Tag> const& B)
+{
+   vector_copy(B.as_derived(), static_cast<U&&>(A.as_derived()));
+}
+
 // Specialization of a BlasVector for a vector that exists in memory and has stride 1
 
 template <typename ValueType, typename DerivedType, typename Tag>

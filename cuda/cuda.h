@@ -269,7 +269,7 @@ void memcpy_device_to_device_async(stream const& s, void const* src, void* dest,
 inline
 void memcpy_device_to_device_async(stream const& s, void const* src, void* dest, std::size_t size)
 {
-   cudaMemcpyAsync(dest, src, size, cudaMemcpyDeviceToDevice, s.raw_stream());
+   check_error(cudaMemcpyAsync(dest, src, size, cudaMemcpyDeviceToDevice, s.raw_stream()));
 }
 
 void memcpy_host_to_device_async(stream const& s, void const* src, void* dest, std::size_t size);
@@ -277,9 +277,20 @@ void memcpy_host_to_device_async(stream const& s, void const* src, void* dest, s
 inline
 void memcpy_host_to_device_async(stream const& s, void const* src, void* dest, std::size_t size)
 {
-   cudaMemcpyAsync(dest, src, size, cudaMemcpyHostToDevice, s.raw_stream());
+   check_error(cudaMemcpyAsync(dest, src, size, cudaMemcpyHostToDevice, s.raw_stream()));
 }
 
+inline
+void memset(void* dest, int x, std::size_t size)
+{
+   check_error(cudaMemset(dest, x, size));
+}
+
+inline
+void memset_async(stream const& s, void* dest, int x, std::size_t size)
+{
+   check_error(cudaMemsetAsync(dest, x, size, s.raw_stream()));
+}
 
 } // namespace cuda
 

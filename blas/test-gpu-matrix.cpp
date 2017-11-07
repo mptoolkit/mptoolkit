@@ -71,5 +71,12 @@ int main()
 
    std::cout << get_wait(gA) << '\n' << get_wait(gx) << '\n';
 
+   gC.clear();
+   gC.diagonal() = gx;
+   gB = gA * gC;
+   gC = gB * herm(gA);
+
+   // should be original matrix
+   std::cout << get_wait(gC) << '\n';
 
 }

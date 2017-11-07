@@ -53,7 +53,7 @@ struct fail : public std::false_type {};
 template <typename T, typename U>
 struct convert_impl
 {
-   static_assert(fail<T,U>::value, "conversion is not allowed");
+   //static_assert(fail<T,U>::value, "conversion is not allowed");
 };
 
 template <typename T>
@@ -107,7 +107,7 @@ using is_safe_conversion_v = typename is_safe_conversion<T,U>::value;
 
 template <typename T, typename U>
 inline
-T safe_convert(U const& x)
+auto safe_convert(U const& x) -> decltype(detail::convert_impl<U,T>::convert(x))
 {
    return detail::convert_impl<U,T>::convert(x);
 }

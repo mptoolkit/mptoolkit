@@ -159,6 +159,12 @@ class gpu_matrix : public blas::NormalMatrix<T, gpu_matrix<T>, gpu_tag>
          return const_gpu_vector_view<T>(std::min(Rows,Cols), LeadingDimension+1, Buf.ptr());
       }
 
+      // sets all elements to zero
+      void clear()
+      {
+         cuda::memset_async(Buf.get_stream(), Buf.device_ptr(), 0, LeadingDimension*Cols*sizeof(T));
+      }
+
       cuda::gpu_buffer<T>& buffer() { return Buf; }
       cuda::gpu_buffer<T> const& buffer() const { return Buf; }
 
