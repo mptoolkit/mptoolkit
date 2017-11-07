@@ -27,7 +27,7 @@
 // and tries to find a queue that has a runnable task.  To do that,
 // we first grab a spinlock from the queue (eg using an atomic_flag,
 // see http://en.cppreference.com/w/cpp/atomic/atomic_flag).  We then
-// see if the queue is runnable.  If not, then drop the spinlock and try the 
+// see if the queue is runnable.  If not, then drop the spinlock and try the
 // next queue.
 // If we can run a task then signal the thread pool, which will wake up another
 // thread.  Suggest that we only ever have one thread reading the queue list
@@ -117,7 +117,7 @@ class task_simple : public task
 // How efficient does the queue synchronization need to be?  We can use a similar
 // mechanism, but it should be fairly efficient.  Is polling good enough?
 //
-// If we want to have the thread hold a mutex on the task list while running, 
+// If we want to have the thread hold a mutex on the task list while running,
 // we could have a separate list for newly added tasks.
 
 
@@ -290,8 +290,9 @@ class event
       // triggers the event
       void trigger()
       {
-         *trigger_ = true;
-         std::atomic_thread_fence(std::memory_order_acquire);
+         std::atomic_thread_fence(std::memory_order_release);
+         std::atomic_store_explicit(trigger_, true, std::memory_order_release);
+      }
 
       // clears the event - equivalent to *this = event()
       void clear();
@@ -300,7 +301,16 @@ class event
       bool is_null() const { return event_ == nullptr; }
 
       // returns true if work has been sucessfully completed
-      bool is_complete() const;
+      bool is_complete() const
+      {
+         bool x = std::atomic_load_explicit(trigger_, std::memory_order_acquire);
+         if (x)
+         {
+            std::atomic_thread_fence(std::memory_order_acquire);
+         }
+         return x;
+      }
+
 
    private:
       std::atomic<bool>* trigger_;

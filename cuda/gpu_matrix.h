@@ -17,6 +17,16 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+//
+// gpu_matrix is a matrix stored in device memory on the GPU.
+// The basic operations are implemented by cuBLAS calls, which are
+// non-blocking.  Blocking calls have a wait_ prefix.
+//
+// LAPACK functionality (eg implemented by cuSOLVER) are generally
+// blocking calls.  There is no attempt to make these asynchronous.
+// Asynchronous LAPACK calls will be handled by a higher level library.
+//
+
 #if !defined(MPTOOLKIT_CUBLAS_GPU_MATRIX_H)
 #define MPTOOLKIT_CUBLAS_GPU_MATRIX_H
 
