@@ -43,6 +43,7 @@ int main(int argc, char** argv)
       bool Force = false;
       bool Quiet = false;
       int Verbose = 0;
+      bool Infinite = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -55,6 +56,7 @@ int main(int argc, char** argv)
          ("beta,b", prog_opt::value(&Beta), FormatDefault("Inverse temperature for monte-carlo sampling", Beta).c_str())
          ("seed,s", prog_opt::value<unsigned int>(),
           ("Random seed [range 0.."+boost::lexical_cast<std::string>(RAND_MAX)+"]").c_str())
+         ("infinite,i", prog_opt::bool_switch(&Infinite), "Construct an infinite wavefunction")
          ("force,f", prog_opt::bool_switch(&Force), "Allow overwriting output files")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
 	 ("quiet", prog_opt::bool_switch(&Quiet), "Don't print informational messages")
@@ -100,11 +102,27 @@ int main(int argc, char** argv)
       if (!Quiet)
 	 std::cout << "Done" << std::endl;
 
-      FiniteWavefunctionLeft PsiL = FiniteWavefunctionLeft::Construct(Psi);
-      normalize(PsiL);
-
+      // construct the final wavefunction
       MPWavefunction Wavefunction;
-      Wavefunction.Wavefunction() = PsiL;
+
+      if (Infinite)
+      {
+         // make an infinite wavefunction
+         if (degree(Q) != 1)
+         {
+            std::cerr << "mp-random: fatal: cannot construct infinite wavefunctions with representation dimension > 1\n";
+            return 1;
+         }
+         Wavefunction.Wavefunction() = InfiniteWavefunctionLeft::Construct(Psi, Q);
+      }
+      else
+      {
+         // make a finite wavefunction
+         FiniteWavefunctionLeft PsiL = FiniteWavefunctionLeft::Construct(Psi);
+         normalize(PsiL);
+         Wavefunction.Wavefunction() = PsiL;
+      }
+
       Wavefunction.SetDefaultAttributes();
 
       // History log
