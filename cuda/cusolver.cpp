@@ -111,9 +111,9 @@ void DiagonalizeSymmetric(int Size, cuda::gpu_ptr<double> A, int ldA, cuda::gpu_
    int Info;
    memcpy_device_to_host(DevInfo, &Info, sizeof(int));
    CHECK_EQUAL(Info, 0);
+   Eigen.wait_for(A);
    cuda::free_gpu_temporary(DevInfo, sizeof(int));
    cuda::free_gpu_temporary(Work, lWork*sizeof(double));
-   Eigen.wait_for(A);
 }
 
 } // namespace cuda

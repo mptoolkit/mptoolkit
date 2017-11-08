@@ -58,8 +58,6 @@ class stride_ptr
       __host__ __device__ int stride() const { return stride_; }
 
    private:
-      friend class stride_ptr<value_type>;
-
       T* x_;
       int stride_;
 };
