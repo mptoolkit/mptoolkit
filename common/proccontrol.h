@@ -83,22 +83,15 @@ double GetCumulativeCPUTime();
 // returns the cumulative elapsed time, the elapsed time of this process + previous time
 double GetCumulativeElapsedTime();
 
-#if defined(CONFIG_PBS_WALLTIME)
-// returns the absolute PBS walltime usage for the current job.
-// (slow - requires connecting to PBS server)
-double GetPBSTime();
+#if defined(CONFIG_SLURM)
 
-// returns the PBS walltime since the program started.
-// (slow - requires connecting to PBS server)
-double GetPBSElapsedTime();
+// returns the amount of time in seconds before the SLURM job will be terminated
+double GetSlurmTimeRemaining();
 
-// returns the amount of remaining walltime, in seconds (from the bound supplied to Initialize())
-// Note that only the sign is guaranteed accurate, the absolute value may be inaccurate.
-// Only connects to the PBS server if the elapsed time is larger than the bound.
-double GetPBSTimeRemaining();
+// set the time in seconds of 'grace period' before the SLURM job will
+// be terminated, at which point a checkpoint will be triggered
+void SetSlurmCheckpointGrace(double n);
 
-// set the maximum PBS walltime, at which point an async checkpoint is signalled.
-void SetPBSWallTimeLimit(double n);
 #endif
 
 // returns the amount of physical memory in use.  This is broken, doesn't work at all on linux.

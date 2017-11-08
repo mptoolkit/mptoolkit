@@ -905,6 +905,7 @@ template <typename U, typename V, typename Tag>
 inline
 void DiagonalizeSymmetric(NormalMatrix<double, U, Tag>& M, NormalVector<double, V, Tag>& v)
 {
+   CHECK_EQUAL(M.rows(), M.cols());
    DiagonalizeSymmetric(M.rows(), M.storage(), M.leading_dimension(), v.storage());
 }
 
@@ -913,6 +914,7 @@ template <typename U, typename V, typename Tag>
 inline
 void DiagonalizeSymmetric(NormalMatrix<double, U, Tag>& M, NormalVectorProxy<double, V, Tag>&& v)
 {
+   CHECK_EQUAL(M.rows(), M.cols());
    DiagonalizeSymmetric(M.rows(), M.storage(), M.leading_dimension(), v.storage());
 }
 
@@ -940,6 +942,7 @@ template <typename U, typename V, typename Tag>
 inline
 void DiagonalizeHermitian(NormalMatrix<std::complex<double>, U, Tag>& M, NormalVector<double, V, Tag>& v)
 {
+   CHECK_EQUAL(M.rows(), M.cols());
    DiagonalizeHermitian(M.rows(), M.storage(), M.leading_dimension(), v.storage());
 }
 
@@ -947,6 +950,7 @@ template <typename U, typename V, typename Tag>
 inline
 void DiagonalizeHermitian(NormalMatrix<std::complex<double>, U, Tag>& M, NormalVectorProxy<double, V, Tag>&& v)
 {
+   CHECK_EQUAL(M.rows(), M.cols());
    DiagonalizeHermitian(M.rows(), M.storage(), M.leading_dimension(), v.storage());
 }
 

@@ -653,7 +653,7 @@ CC
 EGREP
 GREP
 CXXCPP
-LIBPBS
+LIBSLURM
 HAVE_MPI
 MPILIBS
 MPICXX
@@ -727,7 +727,7 @@ enable_largefile
 with_openmp
 with_mpi
 with_pstream
-with_pbs
+with_slurm
 with_longlong
 with_gmp
 with_blas
@@ -1396,8 +1396,8 @@ Optional Packages:
   --with-openmp           enable OpenMP parallelization [default=check]
   --with-mpi              enable MPI [default=check]
   --without-pstream       disables persistent streams support
-  --with-pbs[=ARG]        PBS queue integration for checkpointing, libpbs from
-                          standard location (ARG=yes), from the specified
+  --with-slurm[=ARG]      SLURM queue integration for checkpointing, libslurm
+                          from standard location (ARG=yes), from the specified
                           location (ARG=<path>) or disable it (ARG=no)
                           [ARG=yes]
   --without-longlong      disables 'long long' support in the streaming lib
@@ -6033,24 +6033,24 @@ $as_echo "#define USE_PSTREAM /**/" >>confdefs.h
 
 
 
-# Check whether --with-pbs was given.
-if test "${with_pbs+set}" = set; then :
-  withval=$with_pbs;
+# Check whether --with-slurm was given.
+if test "${with_slurm+set}" = set; then :
+  withval=$with_slurm;
 else
-  with_pbs=check
+  with_slurm=check
 fi
 
 
-if test "x$with_pbs" != xno; then
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for PBS library" >&5
-$as_echo_n "checking for PBS library... " >&6; }
-   pbs_lib="$with_pbs"
-   if test "x$pbs_lib" == xcheck; then
-      pbs_lib="-lpbs";
+if test "x$with_slurm" != xno; then
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for SLURM library" >&5
+$as_echo_n "checking for SLURM library... " >&6; }
+   slurm_lib="$with_slurm"
+   if test "x$slurm_lib" == xcheck; then
+      slurm_lib="-lslurm";
    fi
-   save_LIBS="$LIBS"; LIBS="$pbs_lib $LIBS"
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pbs_connect in \"$pbs_lib\"" >&5
-$as_echo_n "checking for pbs_connect in \"$pbs_lib\"... " >&6; }
+   save_LIBS="$LIBS"; LIBS="$slurm_lib $LIBS"
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for slurm_get_end_time in \"$slurm_lib\"" >&5
+$as_echo_n "checking for slurm_get_end_time in \"$slurm_lib\"... " >&6; }
    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -6060,39 +6060,39 @@ $as_echo_n "checking for pbs_connect in \"$pbs_lib\"... " >&6; }
 #ifdef __cplusplus
 extern "C"
 #endif
-char pbs_connect ();
+char slurm_get_end_time ();
 int
 main ()
 {
-return pbs_connect ();
+return slurm_get_end_time ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  acx_pbs_ok=yes
-       LIBPBS="$pbs_lib"
+  acx_slurm_ok=yes
+       LIBSLURM="$slurm_lib"
 
 
-$as_echo "#define CONFIG_PBS_WALLTIME /**/" >>confdefs.h
+$as_echo "#define CONFIG_SLURM /**/" >>confdefs.h
 
 
 else
 
-       if test "x$with_pbs" != xcheck; then
+       if test "x$with_slurm" != xcheck; then
          { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "--with-pbs was given, but test for libpbs failed
+as_fn_error $? "--with-slurm was given, but test for libslurm failed
 See \`config.log' for more details" "$LINENO" 5; }
        fi
-       LIBPBS=""
-       acx_pbs_ok=no
+       LIBSLURM=""
+       acx_slurm_ok=no
 
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $acx_pbs_ok" >&5
-$as_echo "$acx_pbs_ok" >&6; }
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $acx_slurm_ok" >&5
+$as_echo "$acx_slurm_ok" >&6; }
    LIBS="$save_LIBS"
 fi
 

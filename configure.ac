@@ -96,31 +96,31 @@ test x"$with_pstream" != xno && AC_DEFINE([USE_PSTREAM], [], [Define if you want
 
 dnl AC_CHECK_LIB(pthread, pthread_create)
 
-dnl PBS integration (eg for PBS walltime)
-AC_ARG_WITH([pbs], AC_HELP_STRING([--with-pbs@<:@=ARG@:>@],[PBS queue integration for checkpointing, libpbs from standard location (ARG=yes), from the specified location (ARG=<path>) or disable it (ARG=no) @<:@ARG=yes@:>@]),
-           [], [with_pbs=check])
+dnl SLURM integration
+AC_ARG_WITH([slurm], AC_HELP_STRING([--with-slurm@<:@=ARG@:>@],[SLURM queue integration for checkpointing, libslurm from standard location (ARG=yes), from the specified location (ARG=<path>) or disable it (ARG=no) @<:@ARG=yes@:>@]),
+           [], [with_slurm=check])
 
-if test "x$with_pbs" != xno; then
-   AC_MSG_CHECKING([for PBS library])
-   pbs_lib="$with_pbs"
-   if test "x$pbs_lib" == xcheck; then
-      pbs_lib="-lpbs";
+if test "x$with_slurm" != xno; then
+   AC_MSG_CHECKING([for SLURM library])
+   slurm_lib="$with_slurm"
+   if test "x$slurm_lib" == xcheck; then
+      slurm_lib="-lslurm";
    fi
-   save_LIBS="$LIBS"; LIBS="$pbs_lib $LIBS"
-   AC_MSG_CHECKING([for pbs_connect in "$pbs_lib"])
-   AC_TRY_LINK_FUNC([pbs_connect], 
-      [acx_pbs_ok=yes
-       AC_SUBST([LIBPBS], "$pbs_lib")
-       AC_DEFINE([CONFIG_PBS_WALLTIME], [], [Define if you want PBS walltime integration])
+   save_LIBS="$LIBS"; LIBS="$slurm_lib $LIBS"
+   AC_MSG_CHECKING([for slurm_get_end_time in "$slurm_lib"])
+   AC_TRY_LINK_FUNC([slurm_get_end_time], 
+      [acx_slurm_ok=yes
+       AC_SUBST([LIBSLURM], "$slurm_lib")
+       AC_DEFINE([CONFIG_SLURM], [], [Define if you want SLURM queue integration])
       ], 
       [
-       if test "x$with_pbs" != xcheck; then
-         AC_MSG_FAILURE([--with-pbs was given, but test for libpbs failed])
+       if test "x$with_slurm" != xcheck; then
+         AC_MSG_FAILURE([--with-slurm was given, but test for libslurm failed])
        fi
-       LIBPBS=""
-       acx_pbs_ok=no
+       LIBSLURM=""
+       acx_slurm_ok=no
       ])
-   AC_MSG_RESULT($acx_pbs_ok)
+   AC_MSG_RESULT($acx_slurm_ok)
    LIBS="$save_LIBS"
 fi
 

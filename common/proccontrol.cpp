@@ -42,8 +42,8 @@
 #include <iomanip>
 #include "common/stringutil.h"
 
-#if defined(CONFIG_PBS_WALLTIME)
-#include "walltime.h"
+#if defined(CONFIG_SLURM)
+#include <slurm/slurm.h>
 #endif
 
 #if defined(DEBUG_DGEMM)
@@ -78,10 +78,9 @@ double PreviousElapsedTime = 0;
 
    //bool BacktraceDone = false; // only do a single backtrace in a multithread program
 
-#if defined(CONFIG_PBS_WALLTIME)
-double ProgStartPBSTime = pbs_timeused();
-double PBSWallTimeBound = 0;
-double MaxPBSTime = 0;
+#if defined(CONFIG_SLURM)
+double SlurmGrace = 120;
+uint32_t SlurmJobID = -2;
 #endif
 
 // path name and executable name, for doing a backtrace
@@ -381,13 +380,11 @@ void TestAsyncCheckpoint()
       throw Checkpoint(ReturnCPUTimeExceeded, "Walltime limit exceeded.");
    }
 
-#if defined(CONFIG_PBS_WALLTIME)
-   if (MaxPBSTime > 0 && GetPBSTimeRemaining() <= 0)
+#if defined(CONFIG_SLURM)
+   if (GetSlurmTimeRemaining() <= SlurmGrace)
    {
-      double Remain = GetPBSTimeRemaining();
-      notify_log(10, ProcControlLog) << "Checkpoint at PBS walltime limit exceeded by "
-                                     << (-Remain) << '\n';
-      throw Checkpoint(ReturnCPUTimeExceeded, "PBS Walltime time limit exceeded.");
+      notify_log(10, ProcControlLog) << "Checkpoint at SLURM time remaining less than grace period\n";
+      throw Checkpoint(ReturnCPUTimeExceeded, "SLURM time limit exceeded.");
    }
 #endif
 
@@ -458,32 +455,28 @@ double GetElapsedTime()
    return GetWallTime() - ProgStartWallTime;
 }
 
-#if defined(CONFIG_PBS_WALLTIME)
-double GetPBSTime()
+#if defined(CONFIG_SLURM)
+double GetSlurmTimeRemaining()
 {
-   return pbs_timeused();
+   if (SlurmJobID == -2)
+   {
+      int Err = slurm_pid2jobid(getpid(), &SlurmJobID);
+      if (Err == -1)
+      {
+         SlurmJobID = -1;
+      }
+   }
+   if (SlurmJobID == -1)
+      return -1;
+   // else
+   time_t Time;
+   slurm_get_end_time(SlurmJobID, &Time);
+   return Time;
 }
 
-double GetPBSElapsedTime()
+void SetSlurmCheckpointGrace(double n)
 {
-   return pbs_timeused() - ProgStartPBSTime;
-}
-
-double GetPBSTimeRemaining()
-{
-   double Now = GetWallTime();
-   if (Now < PBSWallTimeBound) return PBSWallTimeBound - Now;
-
-   double Remain = MaxPBSTime - GetPBSElapsedTime();
-   PBSWallTimeBound = Now + Remain;
-   return Remain;
-}
-
-void SetPBSWallTimeLimit(double n)
-{
-   MaxPBSTime = n;
-   notify_log(10, ProcControlLog) << "PBS Walltime limit is "
-                                  << n << (n == 0 ? " (infinite)" : " seconds") << '\n';
+   SlurmGrace = n;
 }
 #endif
 
@@ -571,6 +564,15 @@ void Initialize(std::string const& ProgName,
          exit(1);
       }
    }
+#if defined(CONFIG_SLURM)
+   int Err = slurm_pid2jobid(getpid(), &SlurmJobID);
+   if (Err == -1)
+   {
+      Err = slurm_get_errno();
+      SlurmJobID = -1;
+      notify_log(10, ProcControlLog) << "Slurm error: " << slurm_strerror(Err) << "\n";
+   }
+#endif
    if (CatchTERM || CatchSEGV) notify_log(20, ProcControlLog) << "signal handlers installed.\n";
 }
 
@@ -579,9 +581,6 @@ void Shutdown()
    notify_log(20, ProcControlLog) << "ProcControl is shutting down.\n";
    notify_log(10, ProcControlLog) << "CPU time used: " << GetCPUTime() << '\n';
    notify_log(10, ProcControlLog) << "Elapsed time: " << GetElapsedTime() << '\n';
-#if defined(CONFIG_PBS_WALLTIME)
-   notify_log(10, ProcControlLog) << "PBS walltime: " << GetPBSElapsedTime() << '\n';
-#endif
 
    if (TestAsyncCheckpointCalls > 0)
    {

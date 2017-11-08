@@ -24,11 +24,14 @@
 #if !defined(MPTOOLKIT_BLAS_MATRIX_H)
 #define MPTOOLKIT_BLAS_MATRIX_H
 
+// It is important that we include the BLAS and LAPACK headers before
+// matrixref.h here so that ADL can find the relevant functions at the
+// point of instantiation
 #include "common/trace.h"
 #include "arena.h"
-#include "matrixref.h"
 #include "matrix-blas.h"
 #include "matrix-lapack.h"
+#include "matrixref.h"
 #include "vector.h"
 #include "vector_view.h"
 #include <list>
@@ -187,6 +190,12 @@ class Matrix : public NormalMatrix<T, Matrix<T>, cpu_tag>
       diagonal() const
       {
          return ConstVectorView<T>(std::min(Rows,Cols), LeadingDimension+1, Data);
+      }
+
+      // sets all elements to zero
+      void clear()
+      {
+         std::memset(Data, 0, LeadingDimension*Cols*sizeof(T));
       }
 
       T* storage() { return Data; }

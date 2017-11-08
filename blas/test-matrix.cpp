@@ -40,4 +40,21 @@ int main()
    C.row(0) = 2*A*y;
 
    std::cout << C << '\n';
+
+   std::cout << "Testing lapack\n";
+   C = herm(A);
+   A += C;
+   std::cout << A << '\n';
+   blas::DiagonalizeSymmetric(A, x);
+
+   std::cout << A << '\n' << x << '\n';
+
+   C.clear();
+   C.diagonal() = x;
+   B = A * C;
+   C = B * herm(A);
+
+   // should be original matrix
+   std::cout << C << '\n';
+
 }

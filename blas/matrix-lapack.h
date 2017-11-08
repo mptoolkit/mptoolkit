@@ -20,6 +20,8 @@
 #if !defined(MPTOOLKIT_BLAS_MATRIX_LAPACK_H)
 #define MPTOOLKIT_BLAS_MATRIX_LAPACK_H
 
+#include <complex>
+
 //
 // LAPACK wrappers for ordinary matrices
 //

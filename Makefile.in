@@ -532,6 +532,7 @@ mp-imake-transverse-lattice-folded : triangular_operator.o infinitewavefunctionl
 mp-iwigner-eckart : infinitewavefunctionleft.o wigner_eckart.o
 
 test-gpu-matrix : $(cudaobj)
+test-matrix : $(blasobj)
 CXXFLAGS_test-gpu-matrix = $(OPENMP_CXXFLAGS)
 
 test-gpu-tensor : $(cudaobj) $(quantumnumbersobj) $(commonobj) basis.o
