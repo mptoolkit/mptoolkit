@@ -110,7 +110,7 @@ if test "x$with_slurm" != xno; then
    AC_MSG_CHECKING([for slurm_get_end_time in "$slurm_lib"])
    AC_TRY_LINK_FUNC([slurm_get_end_time], 
       [acx_slurm_ok=yes
-       AC_SUBST([LIBSLURM], "$slurm_lib")
+       AC_SUBST([SLURM_LIBS], "$slurm_lib")
        AC_DEFINE([CONFIG_SLURM], [], [Define if you want SLURM queue integration])
       ], 
       [

@@ -24,7 +24,6 @@
 #include "tensor/tensor.h"
 #include "tensor/reducible.h"
 #include "blas/matrix.h"
-#include "blas/matrix-eigen.h"
 
 using namespace Tensor;
 
@@ -40,7 +39,6 @@ using RealVector         = blas::Vector<real>;
 #if defined(HAVE_CUDA)
 #include "cuda/gpu_matrix.h"
 #include "cuda/gpu_vector.h"
-//#include "cuda/gpu_eigen.h"
 
 using Matrix_Device             = cuda::gpu_matrix<complex>;
 using RealMatrix_Device         = cuda::gpu_matrix<real>;
