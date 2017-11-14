@@ -32,18 +32,18 @@ int main()
 
    std::cout << "now\n";
 
-   Tensor::IrredTensor<cublas::gpu_matrix<double>, VectorBasis, VectorBasis>
+   Tensor::IrredTensor<blas::gpu_matrix<double>, VectorBasis, VectorBasis>
       gM(B, B, QuantumNumber(SL));
 
    set(gM, M);
 
-   Tensor::IrredTensor<cublas::gpu_matrix<double>, VectorBasis, VectorBasis>
+   Tensor::IrredTensor<blas::gpu_matrix<double>, VectorBasis, VectorBasis>
       gN(B, B, QuantumNumber(SL));
 
    set(gN, M);
 
 #if 1
-   Tensor::IrredTensor<cublas::gpu_matrix<double>, VectorBasis, VectorBasis>
+   Tensor::IrredTensor<blas::gpu_matrix<double>, VectorBasis, VectorBasis>
       gK = gN * gM;
 
    for (int i = 0; i < 1000; ++i)

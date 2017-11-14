@@ -53,12 +53,12 @@ class PermutationMatrix;
 //
 
 template <typename T, typename Tag = cpu_tag>
-class Matrix : public NormalMatrix<T, Matrix<T>, Tag>
+class Matrix : public NormalMatrix<T, Matrix<T, Tag>, Tag>
 {
    public:
       using value_type         = T;
-      using tag                = Tag;
-      using buffer_type        = typename tag::template buffer_type<T>;
+      using tag_type           = Tag;
+      using buffer_type        = typename tag_type::template buffer_type<T>;
       using storage_type       = typename buffer_type::storage_type;
       using const_storage_type = typename buffer_type::const_storage_type;
       using reference          = typename buffer_type::reference;
@@ -72,22 +72,23 @@ class Matrix : public NormalMatrix<T, Matrix<T>, Tag>
 
       Matrix(int Rows_, int Cols_, arena Arena_);
 
-      Matrix(int Rows_, int Cols_) : Matrix(Rows_, Cols_, tag::template default_arena<T>()) {}
+      Matrix(int Rows_, int Cols_) : Matrix(Rows_, Cols_, tag_type::template default_arena<T>()) {}
 
       Matrix(int Rows_, int Cols_, T const& Fill, arena Arena_);
 
-      Matrix(int Rows_, int Cols_, T const& Fill) : Matrix(Rows_, Cols_, Fill, tag::template default_arena<T>()) {}
+      Matrix(int Rows_, int Cols_, T const& Fill)
+         : Matrix(Rows_, Cols_, Fill, tag_type::template default_arena<T>()) {}
 
       // construction via expression template
       template <typename U>
-      Matrix(MatrixRef<T, U, tag> const& E, arena Arena_)
+      Matrix(MatrixRef<T, U, tag_type> const& E, arena Arena_)
          : Matrix(E.rows(), E.cols(), Arena_)
       {
          assign(*this, E.as_derived());
       }
 
       template <typename U>
-      Matrix(MatrixRef<T, U, tag> const& E)
+      Matrix(MatrixRef<T, U, tag_type> const& E)
          : Matrix(E.rows(), E.cols())
       {
          assign(*this, E.as_derived());
@@ -98,7 +99,8 @@ class Matrix : public NormalMatrix<T, Matrix<T>, Tag>
       Matrix(std::initializer_list<std::initializer_list<U>> x, arena Arena_);
 
       template <typename U>
-      Matrix(std::initializer_list<std::initializer_list<U>> x) : Matrix(x, tag::template default_arena<T>()) {}
+      Matrix(std::initializer_list<std::initializer_list<U>> x)
+         : Matrix(x, tag_type::template default_arena<T>()) {}
 
       ~Matrix() = default;
 
@@ -116,21 +118,21 @@ class Matrix : public NormalMatrix<T, Matrix<T>, Tag>
       // eg they would generally block, and we can get the same effect with
       // move construction/assignment and get/set operations.
       template <typename U>
-      Matrix& operator=(MatrixRef<T, U, tag> const& E)
+      Matrix& operator=(MatrixRef<T, U, tag_type> const& E)
       {
 	 assign(*this, E.as_derived());
 	 return *this;
       }
 
       template <typename U>
-      Matrix& operator+=(MatrixRef<T, U, tag> const& E)
+      Matrix& operator+=(MatrixRef<T, U, tag_type> const& E)
       {
 	 add(*this, E.as_derived());
 	 return *this;
       }
 
       template <typename U>
-      Matrix& operator-=(MatrixRef<T, U, tag> const& E)
+      Matrix& operator-=(MatrixRef<T, U, tag_type> const& E)
       {
 	 subtract(*this, E.as_derived());
 	 return *this;
@@ -143,46 +145,46 @@ class Matrix : public NormalMatrix<T, Matrix<T>, Tag>
 
       constexpr char trans() const { return 'N'; }
 
-      vector_view<T, tag>
+      vector_view<T, tag_type>
       row(int r)
       {
-         return vector_view<T, tag>(Cols, LeadingDimension, Buf.ptr(r));
+         return vector_view<T, tag_type>(Cols, LeadingDimension, Buf.ptr(r));
       }
 
-      const_vector_view<T, tag>
+      const_vector_view<T, tag_type>
       row(int r) const
       {
-         return const_vector_view<T, tag>(Cols, LeadingDimension, Buf.ptr(r));
+         return const_vector_view<T, tag_type>(Cols, LeadingDimension, Buf.ptr(r));
       }
 
-      normal_vector_view<T, tag>
+      normal_vector_view<T, tag_type>
       column(int c)
       {
-         return normal_vector_view<T, tag>(Rows, Buf.ptr(LeadingDimension*c));
+         return normal_vector_view<T, tag_type>(Rows, Buf.ptr(LeadingDimension*c));
       }
 
-      const_normal_vector_view<T, tag>
+      const_normal_vector_view<T, tag_type>
       column(int c) const
       {
-         return const_normal_vector_view<T, tag>(Rows, Buf.ptr(LeadingDimension*c));
+         return const_normal_vector_view<T, tag_type>(Rows, Buf.ptr(LeadingDimension*c));
       }
 
-      vector_view<T, tag>
+      vector_view<T, tag_type>
       diagonal()
       {
-         return vector_view<T, tag>(std::min(Rows,Cols), LeadingDimension+1, Buf.ptr());
+         return vector_view<T, tag_type>(std::min(Rows,Cols), LeadingDimension+1, Buf.ptr());
       }
 
-      const_vector_view<T, tag>
+      const_vector_view<T, tag_type>
       diagonal() const
       {
-         return const_vector_view<T, tag>(std::min(Rows,Cols), LeadingDimension+1, Buf.ptr());
+         return const_vector_view<T, tag_type>(std::min(Rows,Cols), LeadingDimension+1, Buf.ptr());
       }
 
       // sets all elements to zero
       void clear()
       {
-         matrix_clear(*this);
+         blas::clear(*this);
       }
 
       buffer_type& buffer() { return Buf; }
@@ -214,30 +216,30 @@ class Matrix : public NormalMatrix<T, Matrix<T>, Tag>
 
 // copy
 
-template <typename T, typename Tag>
+template <typename T, typename Tag_Type>
 inline
-Matrix<T, Tag>
-copy(Matrix<T, Tag> const& x, blas::arena const& A)
+Matrix<T, Tag_Type>
+copy(Matrix<T, Tag_Type> const& x, blas::arena const& A)
 {
    Matrix<T> Result(x.rows(), x.cols(), A);
    Result = x;
    return Result;
 }
 
-template <typename T, typename Tag>
+template <typename T, typename Tag_Type>
 inline
-Matrix<T, Tag>
-copy(Matrix<T, Tag> const& x)
+Matrix<T, Tag_Type>
+copy(Matrix<T, Tag_Type> const& x)
 {
-   Matrix<T, Tag> Result(x.rows(), x.cols());
+   Matrix<T, Tag_Type> Result(x.rows(), x.cols());
    Result = x;
    return Result;
 }
 
-template <typename T, typename Tag>
+template <typename T, typename Tag_Type>
 inline
-Matrix<T, Tag>
-copy(Matrix<T, Tag>&& x)
+Matrix<T, Tag_Type>
+copy(Matrix<T, Tag_Type>&& x)
 {
    return std::move(x);
 }

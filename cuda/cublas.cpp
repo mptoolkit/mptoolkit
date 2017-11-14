@@ -19,6 +19,13 @@
 
 #include "cublas.h"
 
+namespace blas
+{
+
+arena gpu_default_arena = blas::arena(new cuda::BlockAllocator(cuda::DefaultBlockMultiple, false));
+
+} // namespace blas
+
 namespace cublas
 {
 

@@ -36,6 +36,26 @@ inline char const* matrix_blas_library()
 // vector
 //
 
+template <typename I1, typename I2, typename T>
+inline
+void vector_copy_from_stl(I1 start, I2 finish, T* y, int incy)
+{
+   while (start != finish)
+   {
+      *y = *start;
+      y += incy;
+      ++start;
+   }
+}
+
+void vector_clear(int N, double* y, int incy);
+
+void vector_clear(int N, std::complex<double>* y, int incy);
+
+void vector_fill(double alpha, int N, double* y, int incy);
+
+void vector_fill(std::complex<double> alpha, int N, std::complex<double>* y, int incy);
+
 void
 vector_copy(int M, double const* x, int incx, double* y, int incy);
 
@@ -71,6 +91,12 @@ vector_sum(int N, double const* x, int incx, double& r);
 //
 // matrix
 //
+
+void matrix_clear(int M, int N, double* A, int lda);
+void matrix_clear(int N, std::complex<double>* y, int incy);
+
+void matrix_fill(double alpha, int M, int N, double* A, int lda);
+void matrix_fill(std::complex<double> alpha, int M, int N, std::complex<double>* A, int lda);
 
 void
 matrix_copy(char Atrans, int M, int N, double const* A, int lda, double* B, int ldb);

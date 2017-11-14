@@ -21,6 +21,68 @@ namespace blas
 {
 
 //
+// vector_clear
+//
+
+inline
+void vector_clear(int N, double* y, int incy)
+{
+   if (incy == 1)
+   {
+      std::memset(y, 0, N*sizeof(double));
+   }
+   else
+   {
+      for (int i = 0; i < N; ++i)
+      {
+         *y = 0;
+         y += incy;
+      }
+   }
+}
+
+inline
+void vector_clear(int N, std::complex<double>* y, int incy)
+{
+   if (incy == 1)
+   {
+      std::memset(y, 0, N*sizeof(std::complex<double>));
+   }
+   else
+   {
+      for (int i = 0; i < N; ++i)
+      {
+         *y = 0;
+         y += incy;
+      }
+   }
+}
+
+//
+// vector_fill
+//
+
+inline
+void vector_fill(double alpha, int N, double* y, int incy)
+{
+   for (int i = 0; i < N; ++i)
+   {
+      *y = alpha;
+      y += incy;
+   }
+}
+
+inline
+void vector_fill(std::complex<double> alpha, int N, std::complex<double>* y, int incy)
+{
+   for (int i = 0; i < N; ++i)
+   {
+      *y = alpha;
+      y += incy;
+   }
+}
+
+//
 // vector_copy
 //
 
@@ -164,6 +226,72 @@ vector_sum(int N, std::complex<double> const* x, int incx, std::complex<double>&
       x += incx;
    }
    r = rr;
+}
+
+//
+// matrix_clear
+//
+
+inline
+void matrix_clear(int M, int N, double* A, int lda)
+{
+   if (lda == N)
+   {
+      std::memset(A, 0, M*N*sizeof(double));
+   }
+   else
+   {
+      for (int c = 0; c < N; ++c)
+      {
+         std::memset(A, 0, M*sizeof(double));
+         A += lda;
+      }
+   }
+}
+
+inline
+void matrix_clear(int M, int N, std::complex<double>* A, int lda)
+{
+   if (lda == N)
+   {
+      std::memset(A, 0, M*N*sizeof(std::complex<double>));
+   }
+   else
+   {
+      for (int c = 0; c < N; ++c)
+      {
+         std::memset(A, 0, M*sizeof(std::complex<double>));
+         A += lda;
+      }
+   }
+}
+
+//
+// matrix_fill
+//
+
+inline
+void matrix_fill(double alpha, int M, int N, double* A, int lda)
+{
+   for (int c = 0; c < N; ++c)
+   {
+      for (int r = 0; r < M; ++r)
+      {
+         A[c*lda+r] = alpha;
+      }
+   }
+}
+
+inline
+void matrix_fill(std::complex<double> alpha, int M, int N, std::complex<double>* A, int lda)
+{
+   for (int c = 0; c < N; ++c)
+   {
+      for (int r = 0; r < M; ++r)
+      {
+         A[c*lda+r] = alpha;
+      }
+   }
 }
 
 //

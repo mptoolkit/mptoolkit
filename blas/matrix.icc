@@ -22,16 +22,6 @@
 namespace blas
 {
 
-template <typename VectorType, typename T>
-void vector_copy_from_stl(VectorType const& v, T* y, int incy)
-{
-   for (auto x : v)
-   {
-      *y = x;
-      y += incy;
-   }
-}
-
 template <typename T, typename Tag>
 template <typename U>
 Matrix<T, Tag>::Matrix(std::initializer_list<std::initializer_list<U>> m, arena Arena_)
@@ -41,7 +31,7 @@ Matrix<T, Tag>::Matrix(std::initializer_list<std::initializer_list<U>> m, arena 
    for (auto x : m)
    {
       assert(x.size() == Cols);
-      vector_copy_from_stl(x, Buf(r), LeadingDimension);
+      vector_copy_from_stl(x.begin(), x.end(), Buf.ptr(r), LeadingDimension);
       ++r;
    }
 }

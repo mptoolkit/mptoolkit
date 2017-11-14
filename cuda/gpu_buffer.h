@@ -215,6 +215,11 @@ template <typename T>
 class gpu_buffer
 {
    public:
+      using storage_type       = gpu_ptr<T>;
+      using const_storage_type = const_gpu_ptr<T>;
+      using reference          = gpu_ref<T>;
+      using const_reference    = gpu_ref<T>;
+
       gpu_buffer() = delete;
 
       ~gpu_buffer() { Stream.synchronize(); Arena.free(Ptr, ByteSize); }

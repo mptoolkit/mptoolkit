@@ -184,6 +184,20 @@ vector_scale(int n, double alpha, cuda::gpu_ptr<double> y, int incy)
 }
 
 inline
+void vector_clear(int N, cuda::gpu_ptr<double> y, int incy)
+{
+   cublas::handle& H = cublas::get_handle();
+   if (incy == 1)
+   {
+      cuda::memset_async(y.get_stream(), y.device_ptr(), 0, N*sizeof(double));
+   }
+   else
+   {
+      vector_scale(N, 0, y, incy);
+   }
+}
+
+inline
 void
 vector_copy_scaled(int n, double alpha, cuda::const_gpu_ptr<double> x, int incx, cuda::gpu_ptr<double> y, int incy)
 {
@@ -315,6 +329,19 @@ matrix_scale(int M, int N, double alpha, cuda::gpu_ptr<double> A, int lda)
                            &alpha, A.device_ptr(), lda,
                            &beta, nullptr, 1,
                            A.device_ptr(), lda));
+}
+
+inline
+void matrix_clear(int M, int N, cuda::gpu_ptr<double> A, int lda)
+{
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(A.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
+   double beta = 0.0;
+   cublas::check_error(cublasDgeam(H.raw_handle(), CUBLAS_OP_N, CUBLAS_OP_N, M, N,
+                                   &beta, A.device_ptr(), lda,
+                                   &beta, A.device_ptr(), lda,
+                                   A.device_ptr(), lda));
 }
 
 // BLAS level 3

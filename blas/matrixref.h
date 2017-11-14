@@ -416,6 +416,13 @@ void subtract(MatrixRef<T, U, Tag>& A, MatrixRef<T, V, Tag> const& B)
    matrix_add_scaled(-number_traits<T>::identity(), B.as_derived(), A.as_derived());
 }
 
+template <typename T, typename U, typename Tag>
+inline
+void clear(MatrixRef<T, U, Tag>& A)
+{
+   matrix_clear(A.as_derived());
+}
+
 // expression template for alpha * op(A)
 
 template <typename T, typename BaseType, typename Tag>
@@ -672,6 +679,20 @@ void subtract(VectorRef<T, Derived, Tag>& C, MatrixVectorProduct<T, U, V, Tag> c
 // VECTOR middle-layer BLAS wrappers, that forward from a matrix/vector ref to low-level storage
 //
 
+template <typename T, typename U, typename Tag>
+inline
+void clear(BlasVector<T, U, Tag>& C)
+{
+   vector_clear(C.size, C.storage(), C.stride());
+}
+
+template <typename T, typename U, typename Tag>
+inline
+void clear(BlasVectorProxy<T, U, Tag>&& C)
+{
+   vector_clear(C.size, std::move(C).storage(), C.stride());
+}
+
 template <typename T, typename U, typename V, typename Tag>
 inline
 void vector_copy_scaled(T alpha, blas::BlasVector<T, U, Tag> const& x, BlasVector<T, V, Tag>& y)
@@ -780,6 +801,20 @@ vector_sum(blas::BlasVector<T, U, Tag> const& x)
 //
 // MATRIX middle-layer BLAS wrappers, that forward from a matrix/vector ref to low-level storage
 //
+
+template <typename T, typename U, typename Tag>
+inline
+void clear(NormalMatrix<T, U, Tag>& C)
+{
+   matrix_clear(C.rows(), C.cols(), C.storage(), C.leading_dimension());
+}
+
+template <typename T, typename U, typename Tag>
+inline
+void clear(MatrixProxy<T, U, Tag>&& C)
+{
+   matrix_clear(C.rows(), C.cols(), std::move(C).storage(), C.leading_dimension());
+}
 
 template <typename T, typename U, typename V, typename W, typename Tag>
 inline

@@ -118,14 +118,132 @@ struct cpu_tag
 //
 
 template <typename T, typename Tag = cpu_tag>
-class Vector : public NormalVector<T, Vector<T>, Tag>
+class Vector : public NormalVector<T, Vector<T, Tag>, Tag>
 {
    public:
-      using value_type     = T;
-      using iterator       = T*;
-      using const_iterator = T const*;
-      using pointer        = T*;
-      using reference      = T&;
+      using value_type         = T;
+      using tag_type           = Tag;
+      using buffer_type        = typename tag_type::template buffer_type<T>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
+      using reference          = typename buffer_type::reference;
+      using const_reference    = typename buffer_type::const_reference;
+
+      Vector() = delete;
+
+      Vector(Vector const&) = delete;
+
+      Vector(Vector&& Other) = default;
+
+      Vector(int Size_, arena Arena_);
+
+      Vector(int Size_) : Vector(Size_, tag_type::template default_arena<T>()) {}
+
+      Vector(int Size_, T const& Fill, arena Arena_);
+
+      Vector(int Size_, T const& Fill) : Vector(Size_, Fill, tag_type::template default_arena<T>()) {}
+
+      // construction via expression template
+      template <typename U>
+      Vector(VectorRef<T, U, tag_type> const& E, arena Arena_);
+
+      template <typename U>
+      Vector(VectorRef<T, U, tag_type> const& E) : Vector(E, get_malloc_arena()) {}
+
+      // construction from intializer list
+      template <typename U>
+      Vector(std::initializer_list<U> x, arena Arena_);
+
+      template <typename U>
+      Vector(std::initializer_list<U> x) : Vector(x, get_malloc_arena()) {}
+
+      ~Vector() = default;
+
+      Vector& operator=(Vector const& Other)
+      {
+	 assign(*this, Other);
+	 return *this;
+      }
+
+      Vector& operator=(Vector&& Other) = default;
+
+      // assignment of expressions based on the same matrix type -- we don't allow assignment
+      // of expression templates of other matrix types (eg gpu_matrix)
+      // We could allow assignment of different concrete types, but probably not advisable,
+      // eg they would generally block, and we can get the same effect with
+      // move construction/assignment and get/set operations.
+      template <typename U>
+      Vector& operator=(VectorRef<T, U, tag_type> const& E)
+      {
+	 assign(*this, E.as_derived());
+	 return *this;
+      }
+
+      template <typename U>
+      Vector& operator+=(VectorRef<T, U, tag_type> const& E)
+      {
+	 add(*this, E.as_derived());
+	 return *this;
+      }
+
+      template <typename U>
+      Vector& operator-=(VectorRef<T, U, tag_type> const& E)
+      {
+	 subtract(*this, E.as_derived());
+	 return *this;
+      }
+
+      int size() const { return Size; }
+
+      constexpr int stride() const { return 1; }
+
+      // sets all elements to zero
+      void clear()
+      {
+         blas::clear(*this);
+      }
+
+      buffer_type& buffer() { return Buf; }
+      buffer_type const& buffer() const { return Buf; }
+
+      storage_type storage() { return Buf.ptr(); }
+      const_storage_type storage() const { return Buf.cptr(); }
+
+      reference operator[](int i)
+      {
+         DEBUG_RANGE_CHECK(i, 0, Size);
+         return Buf[i];
+      }
+
+      const_reference operator[](int i) const
+      {
+         DEBUG_RANGE_CHECK(i, 0, Size);
+         return Buf[i];
+      }
+
+   private:
+      int Size;
+      buffer_type Buf;
+};
+
+//
+// specialization for cpu_tag adds iterator interface
+//
+
+template <typename T>
+class Vector<T, cpu_tag> : public NormalVector<T, Vector<T, cpu_tag>, cpu_tag>
+{
+   public:
+      using value_type         = T;
+      using iterator           = T*;
+      using const_iterator     = T const*;
+      using pointer            = T*;
+      using reference          = T&;
+      using const_reference    = T const&;
+      using tag_type           = cpu_tag;
+      using buffer_type        = cpu_buffer<T>;
+      using storage_type       = T*;
+      using const_storage_type = T const*;
 
       Vector() = delete;
 
@@ -145,10 +263,10 @@ class Vector : public NormalVector<T, Vector<T>, Tag>
 
       // construction via expression template
       template <typename U>
-      Vector(VectorRef<T, Vector<T>, U> const& E, arena Arena_);
+      Vector(VectorRef<T, U, cpu_tag> const& E, arena Arena_);
 
       template <typename U>
-      Vector(VectorRef<T, Vector<T>, U> const& E) : Vector(E, get_malloc_arena()) {}
+      Vector(VectorRef<T, U, cpu_tag> const& E) : Vector(E, get_malloc_arena()) {}
 
       // construction from intializer list
       template <typename U>
@@ -232,12 +350,6 @@ class Vector : public NormalVector<T, Vector<T>, Tag>
       T* Data;
 };
 
-template <typename T>
-using VectorView = vector_view<T, cpu_tag>;
-
-template <typename T>
-using ConstVectorView = const_vector_view<T, cpu_tag>;
-
 template <typename T, typename U>
 std::ostream&
 operator<<(std::ostream& out, BlasVector<T, U, cpu_tag> const& x)
@@ -257,20 +369,20 @@ operator<<(std::ostream& out, BlasVector<T, U, cpu_tag> const& x)
 
 // copy
 
-template <typename T, typename U>
-Vector<T>
-copy(blas::BlasVector<T, Vector<T>, U> const& x, blas::arena const& A)
+template <typename T, typename U, typename Tag>
+Vector<T, Tag>
+copy(blas::BlasVector<T, U, Tag> const& x, blas::arena const& A)
 {
-   Vector<T> Result(x.size(), A);
+   Vector<T, Tag> Result(x.size(), A);
    assign(Result, x.derived());
    return Result;
 }
 
-template <typename T, typename U>
-Vector<T>
-copy(blas::BlasVector<T, Vector<T>, U> const& x)
+template <typename T, typename U, typename Tag>
+Vector<T, Tag>
+copy(blas::BlasVector<T, U, Tag> const& x)
 {
-   Vector<T> Result(x.size());
+   Vector<T, Tag> Result(x.size());
    assign(Result, x.derived());
    return Result;
 }

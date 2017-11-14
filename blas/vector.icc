@@ -23,26 +23,48 @@ namespace blas
 template <typename T, typename Tag>
 template <typename U>
 Vector<T, Tag>::Vector(std::initializer_list<U> m, arena Arena_)
-   : Arena(Arena_),
-     Size(m.size())
+   : Vector(m.size(), Arena_)
 {
-   Data = Arena.allocate_type<T>(Size);
-   std::copy(m.begin(), m.end(), Data);
+   vector_copy_from_stl(m.begin(), m.end(), Buf.ptr(), this->stride());
 }
 
 template <typename T, typename Tag>
 template <typename U>
-Vector<T, Tag>::Vector(VectorRef<T, Vector<T>, U> const& E, arena Arena_)
-   : Size(E.size()),
-     Arena(Arena_),
-     Data(Arena.allocate(Size, sizeof(T)))
+Vector<T, Tag>::Vector(VectorRef<T, U, Tag> const& E, arena Arena_)
+   : Vector(E.size(), Arena_)
 {
    assign(*this, E.as_derived());
 }
 
 template <typename T, typename Tag>
 Vector<T, Tag>::Vector(int Size_, arena Arena_)
-   : Arena(Arena_), Size(Size_), Data(Arena.allocate_type<T>(Size_))
+   : Size(Size_), Buf(buffer_type::allocate(Size_, Arena_))
+{
+}
+
+//
+// cpu_tag specialization
+//
+
+template <typename T>
+template <typename U>
+Vector<T, cpu_tag>::Vector(std::initializer_list<U> m, arena Arena_)
+   : Vector(m.size(), Arena_)
+{
+   vector_copy_from_stl(m.begin(), m.end(), Data, this->stride());
+}
+
+template <typename T>
+template <typename U>
+Vector<T, cpu_tag>::Vector(VectorRef<T, U, cpu_tag> const& E, arena Arena_)
+   : Vector(E.size(), Arena_)
+{
+   assign(*this, E.as_derived());
+}
+
+template <typename T>
+Vector<T, cpu_tag>::Vector(int Size_, arena Arena_)
+   : Arena(Arena_), Size(Size_), Data(Arena.allocate_type<T>(Size))
 {
 }
 

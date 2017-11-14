@@ -17,9 +17,9 @@ int main()
                            {16,17,18}});
    blas::Matrix<double> C(3,3);
 
-   cublas::gpu_matrix<double> gA(3,3);
-   cublas::gpu_matrix<double> gB(3,3);
-   cublas::gpu_matrix<double> gC(3,3);
+   blas::gpu_matrix<double> gA(3,3);
+   blas::gpu_matrix<double> gB(3,3);
+   blas::gpu_matrix<double> gC(3,3);
 
    // non-blocking set - cannot change A or B until operation completes
    set(gA, A);
@@ -40,8 +40,8 @@ int main()
    blas::Vector<double> x({1.0, 2.0, 3.0});
    blas::Vector<double> y(3);
 
-   cublas::gpu_vector<double> gx(3);
-   cublas::gpu_vector<double> gy(3);
+   blas::gpu_vector<double> gx(3);
+   blas::gpu_vector<double> gy(3);
 
    set(gx, x);
 

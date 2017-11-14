@@ -38,33 +38,11 @@
 #include "gpu_vector.h"
 #include "gpu_buffer.h"
 
-namespace cublas
+namespace blas
 {
-
-struct gpu_tag
-{
-   template <typename T>
-   using buffer_type cuda::gpu_buffer<T>;
-
-   template <typename T>
-   using storage_type = cuda::gpu_ptr<T>;
-
-   template <typename T>
-   using const_storage_type = cuda::const_gpu_ptr<T>;
-
-   template <typename T>
-   static
-   blas::arena default_arena() { return cublas::detail::gpu_default_arena; }
-
-   template <typename T>
-   static int select_leading_dimension(int ld)
-   {
-      return  ld == 1 ? 1 : cuda::round_up(ld, 32);
-   }
-};
 
 template <typename T>
-using gpu_matrix = blas::Matrix<T, gpu_rag>;
+using gpu_matrix = blas::Matrix<T, gpu_tag>;
 
 // blocking matrix get
 template <typename T>
@@ -101,18 +79,6 @@ set(gpu_matrix<T>& A, blas::Matrix<T> const& B)
    cublas::setMatrixAsync(A.rows(), A.cols(), B.storage(), B.leading_dimension(),
                           A.storage(), A.leading_dimension());
    return A.storage().sync();
-}
-
-// copy
-
-template <typename T>
-inline
-gpu_matrix<T>
-copy(gpu_matrix<T> const& x, blas::arena const& A)
-{
-   gpu_matrix<T> Result(x.rows(), x.cols(), A, x.leading_dimension());
-   Result = x;
-   return Result;
 }
 
 } // namespace cublas
