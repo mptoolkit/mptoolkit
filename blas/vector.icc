@@ -20,9 +20,9 @@
 namespace blas
 {
 
-template <typename T>
+template <typename T, typename Tag>
 template <typename U>
-Vector<T>::Vector(std::initializer_list<U> m, arena Arena_)
+Vector<T, Tag>::Vector(std::initializer_list<U> m, arena Arena_)
    : Arena(Arena_),
      Size(m.size())
 {
@@ -30,9 +30,9 @@ Vector<T>::Vector(std::initializer_list<U> m, arena Arena_)
    std::copy(m.begin(), m.end(), Data);
 }
 
-template <typename T>
+template <typename T, typename Tag>
 template <typename U>
-Vector<T>::Vector(VectorRef<T, Vector<T>, U> const& E, arena Arena_)
+Vector<T, Tag>::Vector(VectorRef<T, Vector<T>, U> const& E, arena Arena_)
    : Size(E.size()),
      Arena(Arena_),
      Data(Arena.allocate(Size, sizeof(T)))
@@ -40,8 +40,8 @@ Vector<T>::Vector(VectorRef<T, Vector<T>, U> const& E, arena Arena_)
    assign(*this, E.as_derived());
 }
 
-template <typename T>
-Vector<T>::Vector(int Size_, arena Arena_)
+template <typename T, typename Tag>
+Vector<T, Tag>::Vector(int Size_, arena Arena_)
    : Arena(Arena_), Size(Size_), Data(Arena.allocate_type<T>(Size_))
 {
 }

@@ -52,79 +52,13 @@ class PermutationMatrix;
 // Moveable, non-copyable, non-resizable (except by moving).
 //
 
-template <typename T>
-struct cpu_buffer
-{
-   Arena Arena;
-   T*    Ptr;
-   int   Size;
-
-   using storage_type       = T*;
-   using const_storage_type = T const*;
-
-   using reference       = T&;
-   using const_reference = T const&;
-
-   T* ptr() { return Ptr; }
-   T* ptr() const { return Ptr; }
-   T const* cptr() const { return Ptr; }
-
-   T* ptr(int offset) { return Ptr + offset; }
-   T* ptr(int offset) const { return Ptr + offset; }
-   T const* cptr(int offset) const { return Ptr + offset; }
-
-   T& operator[](int offset) { return Ptr[offset]; }
-   T const& operator[](int offset) const { return Ptr[offset]; }
-
-   cpu_buffer() = delete;
-   cpu_buffer(Arena const& a, T* p, int s) : Arena(a), Ptr(p), Size(s) {}
-   cpu_buffer(cpu_buffer&& other) : arena(std::move(other.Arena)), Ptr(other.Ptr), Size(other.Size)
-   {
-      other.Ptr = nullptr;
-   }
-
-   cpu_buffer(cpu_buffer&) = delete;
-
-   ~cpu_buffer()
-   {
-      if (Ptr)
-         Arena.free(Ptr, Size);
-      Ptr = nullptr;
-   }
-
-   cpu_buffer& operator=(cpu_buffer&) = delete;
-   cpu_buffer& operator=(cpu_buffer&&) = delete;
-};
-
-struct cpu_tag
-{
-   template <typename T>
-   using buffer_type = std::pair<T*, blas::Arena>;
-
-   template <typename T>
-   using storage_type = T*;
-
-   template <typename T>
-   using const_storage_type = T const*;
-
-   template <typename T>
-   Arena default_arena() { return get_malloc_arena(); }
-
-   static int select_leading_dimension(int ld)
-   {
-      return ld;
-   }
-};
-
-
-
-template <typename T, typename Tag>
+template <typename T, typename Tag = cpu_tag>
 class Matrix : public NormalMatrix<T, Matrix<T>, Tag>
 {
    public:
       using value_type         = T;
       using tag                = Tag;
-      using buffer_type        = tag::template buffer_type<T>;
+      using buffer_type        = typename tag::template buffer_type<T>;
       using storage_type       = typename buffer_type::storage_type;
       using const_storage_type = typename buffer_type::const_storage_type;
       using reference          = typename buffer_type::reference;
@@ -138,25 +72,19 @@ class Matrix : public NormalMatrix<T, Matrix<T>, Tag>
 
       Matrix(int Rows_, int Cols_, arena Arena_);
 
-      Matrix(int Rows_, int Cols_) : Matrix(Rows_, Cols_, tag::default_arena<T>()) {}
+      Matrix(int Rows_, int Cols_) : Matrix(Rows_, Cols_, tag::template default_arena<T>()) {}
 
       Matrix(int Rows_, int Cols_, T const& Fill, arena Arena_);
 
-      Matrix(int Rows_, int Cols_, T const& Fill) : Matrix(Rows_, Cols_, Fill, tag::default_arena<T>()) {}
+      Matrix(int Rows_, int Cols_, T const& Fill) : Matrix(Rows_, Cols_, Fill, tag::template default_arena<T>()) {}
 
       // construction via expression template
       template <typename U>
-      Matrix(MatrixRef<T, Matrix<T>, U> const& E, arena Arena_);
-
-      template <typename U>
-      Matrix(MatrixRef<T, Matrix<T>, U> const& E) : Matrix(E, get_malloc_arena()) {}
-
-      // construction from intializer list
-      template <typename U>
-      Matrix(std::initializer_list<std::initializer_list<U>> x, arena Arena_);
-
-      template <typename U>
-      Matrix(std::initializer_list<std::initializer_list<U>> x) : Matrix(x, tag::default_arena<T>()) {}
+      Matrix(MatrixRef<T, U, tag> const& E, arena Arena_)
+         : Matrix(E.rows(), E.cols(), Arena_)
+      {
+         assign(*this, E.as_derived());
+      }
 
       template <typename U>
       Matrix(MatrixRef<T, U, tag> const& E)
@@ -164,6 +92,13 @@ class Matrix : public NormalMatrix<T, Matrix<T>, Tag>
       {
          assign(*this, E.as_derived());
       }
+
+      // construction from intializer list
+      template <typename U>
+      Matrix(std::initializer_list<std::initializer_list<U>> x, arena Arena_);
+
+      template <typename U>
+      Matrix(std::initializer_list<std::initializer_list<U>> x) : Matrix(x, tag::template default_arena<T>()) {}
 
       ~Matrix() = default;
 
@@ -247,7 +182,7 @@ class Matrix : public NormalMatrix<T, Matrix<T>, Tag>
       // sets all elements to zero
       void clear()
       {
-         clear(*this);
+         matrix_clear(*this);
       }
 
       buffer_type& buffer() { return Buf; }
@@ -277,35 +212,32 @@ class Matrix : public NormalMatrix<T, Matrix<T>, Tag>
       buffer_type Buf;
 };
 
-}
-
-
 // copy
 
-template <typename T>
+template <typename T, typename Tag>
 inline
-Matrix<T>
-copy(Matrix<T> const& x, blas::arena const& A)
+Matrix<T, Tag>
+copy(Matrix<T, Tag> const& x, blas::arena const& A)
 {
    Matrix<T> Result(x.rows(), x.cols(), A);
    Result = x;
    return Result;
 }
 
-template <typename T>
+template <typename T, typename Tag>
 inline
-Matrix<T>
-copy(Matrix<T> const& x)
+Matrix<T, Tag>
+copy(Matrix<T, Tag> const& x)
 {
-   Matrix<T> Result(x.rows(), x.cols());
+   Matrix<T, Tag> Result(x.rows(), x.cols());
    Result = x;
    return Result;
 }
 
-template <typename T>
+template <typename T, typename Tag>
 inline
-Matrix<T>
-copy(Matrix<T>&& x)
+Matrix<T, Tag>
+copy(Matrix<T, Tag>&& x)
 {
    return std::move(x);
 }

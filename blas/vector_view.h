@@ -51,8 +51,9 @@ class normal_vector_view : public NormalVectorProxy<T, normal_vector_view<T, Tag
    public:
       using value_type         = T;
       using tag_type           = Tag;
-      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
-      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+      using buffer_type        = typename tag_type::template buffer_type<T>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
 
       normal_vector_view() = delete;
 
@@ -110,8 +111,9 @@ class const_normal_vector_view : public blas::NormalVector<T,normal_vector_view<
    public:
       using value_type         = T;
       using tag_type           = Tag;
-      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
-      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+      using buffer_type        = typename tag_type::template buffer_type<T>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
 
       const_normal_vector_view() = delete;
 
@@ -152,8 +154,9 @@ class vector_view : public BlasVectorProxy<T, vector_view<T, Tag>, Tag>
    public:
       using value_type         = T;
       using tag_type           = Tag;
-      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
-      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+      using buffer_type        = typename tag_type::template buffer_type<T>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
 
       vector_view() = delete;
 
@@ -213,8 +216,9 @@ class const_vector_view : public blas::BlasVector<T,vector_view<T, Tag>, Tag>
    public:
       using value_type         = T;
       using tag_type           = Tag;
-      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
-      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+      using buffer_type        = typename tag_type::template buffer_type<T>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
 
       const_vector_view() = delete;
 

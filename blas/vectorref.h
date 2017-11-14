@@ -26,10 +26,6 @@
 namespace blas
 {
 
-// blas_traits provides various types based on the tag type
-template <typename Tag>
-struct blas_traits {};
-
 //
 // VectorRef : generic base class for a vector using expression templates.
 // VectorRef is a reference to a matrix of type ValueType.  BaseType is
@@ -101,8 +97,9 @@ class BlasVector : public VectorRef<ValueType, DerivedType, Tag>
       using value_type         = ValueType;
       using derived_type       = DerivedType;
       using tag_type           = Tag;
-      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
-      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+      using buffer_type        = typename tag_type::template buffer_type<ValueType>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
 
       BlasVector() = default;
       ~BlasVector() = default;
@@ -123,8 +120,9 @@ class BlasVectorProxy : public BlasVector<ValueType, DerivedType, Tag>
       using value_type         = ValueType;
       using derived_type       = DerivedType;
       using tag_type           = Tag;
-      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
-      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+      using buffer_type        = typename tag_type::template buffer_type<ValueType>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
 
       BlasVectorProxy() = default;
       ~BlasVectorProxy() = default;
@@ -151,8 +149,9 @@ class NormalVector : public BlasVector<ValueType, DerivedType, Tag>
       using value_type         = ValueType;
       using derived_type       = DerivedType;
       using tag_type           = Tag;
-      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
-      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+      using buffer_type        = typename tag_type::template buffer_type<ValueType>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
 
       NormalVector() = default;
       ~NormalVector() = default;
@@ -173,8 +172,9 @@ class NormalVectorProxy : public BlasVectorProxy<ValueType, DerivedType, Tag>
       using value_type         = ValueType;
       using derived_type       = DerivedType;
       using tag_type           = Tag;
-      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
-      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+      using buffer_type        = typename tag_type::template buffer_type<ValueType>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
 
       NormalVectorProxy() = default;
       ~NormalVectorProxy() = default;
@@ -196,8 +196,9 @@ class VectorConj : public VectorRef<T, VectorConj<T, BaseType, Tag>, Tag>
       using value_type         = T;
       using base_type          = BaseType;
       using tag_type           = Tag;
-      using storage_type       = typename blas_traits<base_type>::template storage_type<value_type>;
-      using const_storage_type = typename blas_traits<base_type>::template const_storage_type<value_type>;
+      using buffer_type        = typename tag_type::template buffer_type<T>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
 
       VectorConj(base_type const& Base_) : Base(Base_) {}
 

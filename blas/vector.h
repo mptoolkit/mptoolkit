@@ -37,31 +37,79 @@
 namespace blas
 {
 
-struct cpu_tag {};
-
 template <typename T>
-class Vector;
+struct cpu_buffer
+{
+   arena Arena;
+   T*    Ptr;
+   int   Size;
 
-template <typename T>
-class Matrix;
+   using storage_type       = T*;
+   using const_storage_type = T const*;
 
-template <>
-struct blas_traits<cpu_tag>
+   using reference       = T&;
+   using const_reference = T const&;
+
+   cpu_buffer() = delete;
+
+   cpu_buffer(arena const& a, T* p, int s) : Arena(a), Ptr(p), Size(s) {}
+   cpu_buffer(cpu_buffer&& other) : Arena(std::move(other.Arena)), Ptr(other.Ptr), Size(other.Size)
+   {
+      other.Ptr = nullptr;
+   }
+
+   cpu_buffer(cpu_buffer&) = delete;
+
+   ~cpu_buffer()
+   {
+      if (Ptr)
+         Arena.free(Ptr, Size);
+      Ptr = nullptr;
+   }
+
+   cpu_buffer& operator=(cpu_buffer&) = delete;
+   cpu_buffer& operator=(cpu_buffer&&) = delete;
+
+   T* ptr() { return Ptr; }
+   T* ptr() const { return Ptr; }
+   T const* cptr() const { return Ptr; }
+
+   T* ptr(int offset) { return Ptr + offset; }
+   T* ptr(int offset) const { return Ptr + offset; }
+   T const* cptr(int offset) const { return Ptr + offset; }
+
+   T& operator[](int offset) { return Ptr[offset]; }
+   T const& operator[](int offset) const { return Ptr[offset]; }
+
+   static cpu_buffer allocate(int Size, arena A)
+   {
+      return cpu_buffer(A, A.allocate_type<T>(Size), Size);
+   }
+};
+
+struct cpu_tag
 {
    template <typename T>
-   using storage_type       = T*;
+   using buffer_type = cpu_buffer<T>;
+
+   template <typename T>
+   using storage_type = T*;
 
    template <typename T>
    using const_storage_type = T const*;
 
    template <typename T>
-   using matrix_type        = Matrix<T>;
+   using async_ref = T&;
 
    template <typename T>
-   using vector_type        = Vector<T>;
+   static
+   arena default_arena() { return get_malloc_arena(); }
 
    template <typename T>
-   using async_ref          = T;
+   static int select_leading_dimension(int ld)
+   {
+      return ld;
+   }
 };
 
 //
@@ -69,8 +117,8 @@ struct blas_traits<cpu_tag>
 // Moveable, non-copyable, non-resizable (except by moving).
 //
 
-template <typename T>
-class Vector : public NormalVector<T, Vector<T>, cpu_tag>
+template <typename T, typename Tag = cpu_tag>
+class Vector : public NormalVector<T, Vector<T>, Tag>
 {
    public:
       using value_type     = T;

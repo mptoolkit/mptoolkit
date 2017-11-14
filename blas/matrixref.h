@@ -99,8 +99,9 @@ class BlasMatrix : public MatrixRef<ValueType, DerivedType, Tag>
       using value_type         = ValueType;
       using derived_type       = DerivedType;
       using tag_type           = Tag;
-      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
-      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+      using buffer_type        = typename tag_type::template buffer_type<ValueType>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
 
       BlasMatrix() = default;
       ~BlasMatrix() = default;
@@ -123,8 +124,9 @@ class NormalMatrix : public BlasMatrix<ValueType, DerivedType, Tag>
       using value_type         = ValueType;
       using derived_type       = DerivedType;
       using tag_type           = Tag;
-      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
-      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+      using buffer_type        = typename tag_type::template buffer_type<ValueType>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
 
       NormalMatrix() = default;
       ~NormalMatrix() = default;
@@ -148,8 +150,9 @@ class MatrixProxy : public BlasMatrix<ValueType, DerivedType, Tag>
       using value_type         = ValueType;
       using derived_type       = DerivedType;
       using tag_type           = Tag;
-      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
-      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+      using buffer_type        = typename tag_type::template buffer_type<ValueType>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
 
       MatrixProxy() = default;
       ~MatrixProxy() = default;
@@ -173,8 +176,9 @@ class BlasMatrixTrans : public BlasMatrix<T, BlasMatrixTrans<T, BaseType, Tag>, 
       using value_type         = T;
       using base_type          = BaseType;
       using tag_type           = Tag;
-      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
-      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+      using buffer_type        = typename tag_type::template buffer_type<T>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
 
       BlasMatrixTrans(base_type const& Base_) : Base(Base_) {}
 
@@ -200,8 +204,9 @@ class BlasMatrixHerm : public BlasMatrix<T, BlasMatrixHerm<T, BaseType, Tag>, Ta
       using value_type         = T;
       using base_type          = BaseType;
       using tag_type           = Tag;
-      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
-      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+      using buffer_type        = typename tag_type::template buffer_type<T>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
 
       BlasMatrixHerm(base_type const& Base_) : Base(Base_) {}
 
@@ -227,8 +232,9 @@ class BlasMatrixConj : public BlasMatrix<T, BlasMatrixConj<T, BaseType, Tag>, Ta
       using value_type         = T;
       using base_type          = BaseType;
       using tag_type           = Tag;
-      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
-      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+      using buffer_type        = typename tag_type::template buffer_type<T>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
 
       BlasMatrixConj(base_type const& Base_) : Base(Base_) {}
 
@@ -480,6 +486,7 @@ struct MatrixProduct : public MatrixRef<T, MatrixProduct<T, U, V, Tag>, Tag>
    V const& B;
 };
 
+#if 0
 template <typename T, typename U, typename V, typename Tag>
 typename blas_traits<Tag>::template matrix_type<T>
 evaluate(MatrixProduct<T, U, V, Tag>&& x)
@@ -488,6 +495,7 @@ evaluate(MatrixProduct<T, U, V, Tag>&& x)
    assign(Result, std::move(x));
    return Result;
 }
+#endif
 
 template <typename T, typename U, typename V, typename Tag>
 inline
@@ -533,7 +541,7 @@ void subtract(MatrixRef<T, Derived, Tag>& C, MatrixProduct<T, U, V, Tag> const& 
 template <typename T, typename U, typename Tag>
 void
 inline
-trace(BlasMatrix<T, U, Tag> const& x, typename blas_traits<Tag>::template async_proxy<T>&& r)
+trace(BlasMatrix<T, U, Tag> const& x, typename Tag::template async_proxy<T>&& r)
 {
    vector_sum(x.as_derived().diagonal(), std::move(r));
 }
@@ -541,7 +549,7 @@ trace(BlasMatrix<T, U, Tag> const& x, typename blas_traits<Tag>::template async_
 template <typename T, typename U, typename Tag>
 void
 inline
-trace(BlasMatrix<T, U, Tag> const& x, typename blas_traits<Tag>::template async_ref<T>& r)
+trace(BlasMatrix<T, U, Tag> const& x, typename Tag::template async_ref<T>& r)
 {
    vector_sum(x.as_derived().diagonal(), r);
 }
@@ -566,8 +574,9 @@ class DiagonalBlasMatrix : DiagonalMatrixRef<ValueType, DerivedType, Tag>
       using value_type     = ValueType;
       using derived_type   = DerivedType;
       using tag_type       = Tag;
-      using storage_type       = typename blas_traits<tag_type>::template storage_type<value_type>;
-      using const_storage_type = typename blas_traits<tag_type>::template const_storage_type<value_type>;
+      using buffer_type        = typename tag_type::template buffer_type<ValueType>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
 
       DiagonalBlasMatrix() = default;
       ~DiagonalBlasMatrix() = default;
@@ -747,14 +756,14 @@ void vector_scale(T alpha, BlasVectorProxy<T, U, Tag>&& y)
 
 template <typename T, typename U, typename Tag>
 void
-vector_sum(blas::BlasVector<T, U, Tag> const& x, typename blas_traits<Tag>::template async_proxy<T>&& y)
+vector_sum(blas::BlasVector<T, U, Tag> const& x, typename Tag::template async_proxy<T>&& y)
 {
-   vector_sum(x.size(), x.storage(), x.stride(), y);
+   vector_sum(x.size(), x.storage(), x.stride(), std::move(y));
 }
 
 template <typename T, typename U, typename Tag>
 void
-vector_sum(blas::BlasVector<T, U, Tag> const& x, typename blas_traits<Tag>::template async_ref<T>& y)
+vector_sum(blas::BlasVector<T, U, Tag> const& x, typename Tag::template async_ref<T>& y)
 {
    vector_sum(x.size(), x.storage(), x.stride(), y);
 }
@@ -763,7 +772,7 @@ template <typename T, typename U, typename Tag>
 T
 vector_sum(blas::BlasVector<T, U, Tag> const& x)
 {
-   typename blas_traits<Tag>::template async_ref<T> y;
+   typename Tag::template async_ref<T> y;
    vector_sum(x.size(), x.storage(), x.stride(), y);
    return y;
 }

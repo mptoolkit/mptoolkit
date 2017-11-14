@@ -32,45 +32,24 @@ void vector_copy_from_stl(VectorType const& v, T* y, int incy)
    }
 }
 
-template <typename T>
-void vector_copy_from_stl(std::vector<T> const& v, T* y, int incy)
-{
-   vector_copy(v.size(), v.data(), 1, y, incy);
-}
-
-template <typename T>
+template <typename T, typename Tag>
 template <typename U>
-Matrix<T>::Matrix(std::initializer_list<std::initializer_list<U>> m, arena Arena_)
-   : Arena(Arena_),
-     Rows(m.size()),
-     Cols(m.size() == 0 ? 0 : m.begin()->size())
+Matrix<T, Tag>::Matrix(std::initializer_list<std::initializer_list<U>> m, arena Arena_)
+   : Matrix(m.size(), m.size() == 0 ? 0 : m.begin()->size(), Arena_)
 {
-   // Some slight contortions to initialize a column-major matrix from
-   // a row major initializer list
-   LeadingDimension = Cols;
-   Data = Arena.allocate_type<T>(Rows*Cols);
-   T* Ptr = Data;
+   int r = 0;
    for (auto x : m)
    {
       assert(x.size() == Cols);
-      vector_copy_from_stl(x, Ptr, LeadingDimension);
-      ++Ptr;
+      vector_copy_from_stl(x, Buf(r), LeadingDimension);
+      ++r;
    }
 }
 
-template <typename T>
-template <typename U>
-Matrix<T>::Matrix(MatrixRef<T, Matrix<T>, U> const& E, arena Arena_)
-   : Rows(E.rows()), Cols(E.cols()), LeadingDimension(leading_dimension(E.rows(), E.cols())),
-     Arena(Arena_),
-     Data(Arena.allocate(LeadingDimension * Cols, sizeof(T)))
-{
-   assign(*this, E.as_derived());
-}
-
-template <typename T>
-Matrix<T>::Matrix(int R, int C, arena Arena_)
-   : Arena(Arena_), Rows(R), Cols(C), LeadingDimension(C), Data(Arena.allocate_type<T>(Rows*Cols))
+template <typename T, typename Tag>
+Matrix<T, Tag>::Matrix(int R, int C, arena Arena_)
+   : Rows(R), Cols(C), LeadingDimension(Tag::template select_leading_dimension<T>(Cols)),
+     Buf(buffer_type::allocate(LeadingDimension*Cols, Arena_))
 {
 }
 

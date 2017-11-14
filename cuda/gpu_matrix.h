@@ -41,193 +41,30 @@
 namespace cublas
 {
 
-//
-// GPU-storage matrix type.  Column-major format for compatability with BLAS
-//
-
-template <typename T>
-using gpu_vector_view = blas::vector_view<T, gpu_tag>;
-
-template <typename T>
-using const_gpu_vector_view = blas::const_vector_view<T, gpu_tag>;
-
-template <typename T>
-using gpu_normal_vector_view = blas::normal_vector_view<T, gpu_tag>;
-
-template <typename T>
-using const_gpu_normal_vector_view = blas::const_normal_vector_view<T, gpu_tag>;
-
-template <typename T>
-class gpu_matrix : public blas::NormalMatrix<T, gpu_matrix<T>, gpu_tag>
+struct gpu_tag
 {
-   public:
-      using value_type         = T;
-      using storage_type       = cuda::gpu_ptr<T>;
-      using const_storage_type = cuda::const_gpu_ptr<T>;
+   template <typename T>
+   using buffer_type cuda::gpu_buffer<T>;
 
-      gpu_matrix(int Rows_, int Cols_);
+   template <typename T>
+   using storage_type = cuda::gpu_ptr<T>;
 
-      gpu_matrix(int Rows_, int Cols_, int leadingdim);
+   template <typename T>
+   using const_storage_type = cuda::const_gpu_ptr<T>;
 
-      gpu_matrix(int Rows_, int Cols_, blas::arena const& A, int leadingdim);
+   template <typename T>
+   static
+   blas::arena default_arena() { return cublas::detail::gpu_default_arena; }
 
-      gpu_matrix(int Rows_, int Cols_, blas::arena const& A);
-
-      gpu_matrix(gpu_matrix&& Other) = default;
-
-      gpu_matrix(gpu_matrix const&) = delete;
-
-      template <typename U>
-      gpu_matrix(blas::MatrixRef<T, U, gpu_tag> const& E)
-         : gpu_matrix(E.rows(), E.cols())
-      {
-         assign(*this, E.as_derived());
-      }
-
-      gpu_matrix& operator=(gpu_matrix&&) = delete;
-
-      ~gpu_matrix() = default;
-
-      gpu_matrix& operator=(gpu_matrix const& Other)
-      {
-         assign(*this, Other);
-         return *this;
-      }
-
-      // assignment of expressions based on the same matrix type
-      template <typename U>
-      gpu_matrix& operator=(blas::MatrixRef<T, U, gpu_tag> const& E)
-      {
-	 assign(*this, E.as_derived());
-	 return *this;
-      }
-
-      template <typename U>
-      gpu_matrix& operator+=(blas::MatrixRef<T, U, gpu_tag> const& E)
-      {
-	 add(*this, E.as_derived());
-	 return *this;
-      }
-
-      template <typename U>
-      gpu_matrix& operator-=(blas::MatrixRef<T, U, gpu_tag> const& E)
-      {
-	 subtract(*this, E.as_derived());
-	 return *this;
-      }
-
-      constexpr char trans() const { return 'N'; }
-
-      int rows() const { return Rows; }
-      int cols() const { return Cols; }
-
-      int leading_dimension() const { return LeadingDimension; }
-
-      gpu_vector_view<T>
-      row(int r)
-      {
-         return gpu_vector_view<T>(Cols, LeadingDimension, Buf.ptr(r));
-      }
-
-      const_gpu_vector_view<T>
-      row(int r) const
-      {
-         return const_gpu_vector_view<T>(Cols, LeadingDimension, Buf.ptr(r));
-      }
-
-      gpu_normal_vector_view<T>
-      column(int c)
-      {
-         return gpu_vector_view<T>(Rows, Buf.ptr(LeadingDimension*c));
-      }
-
-      const_gpu_normal_vector_view<T>
-      column(int c) const
-      {
-         return const_gpu_vector_view<T>(Rows, Buf.ptr(LeadingDimension*c));
-      }
-
-      gpu_vector_view<T>
-      diagonal()
-      {
-         return gpu_vector_view<T>(std::min(Rows,Cols), LeadingDimension+1, Buf.ptr());
-      }
-
-      const_gpu_vector_view<T>
-      diagonal() const
-      {
-         return const_gpu_vector_view<T>(std::min(Rows,Cols), LeadingDimension+1, Buf.ptr());
-      }
-
-      // sets all elements to zero
-      void clear()
-      {
-         cuda::memset_async(Buf.get_stream(), Buf.device_ptr(), 0, LeadingDimension*Cols*sizeof(T));
-      }
-
-      cuda::gpu_buffer<T>& buffer() { return Buf; }
-      cuda::gpu_buffer<T> const& buffer() const { return Buf; }
-
-      storage_type storage() { return Buf.ptr(); }
-      const_storage_type storage() const { return Buf.cptr(); }
-
-      static int select_leading_dimension(int ld)
-      {
-         return ld == 1 ? 1 : cuda::round_up(ld, 32);
-      }
-
-   private:
-      int Rows;
-      int Cols;
-      int LeadingDimension;
-      cuda::gpu_buffer<T> Buf;
+   template <typename T>
+   static int select_leading_dimension(int ld)
+   {
+      return  ld == 1 ? 1 : cuda::round_up(ld, 32);
+   }
 };
 
-} // namespace cublas
-
-namespace blas
-{
-
 template <typename T>
-struct default_arena<cublas::gpu_matrix<T>> : cublas::detail::gpu_default_arena
-{
-   // Arena is inhereted from the base class
-};
-
-} // namespace blas
-
-namespace cublas
-{
-
-template <typename T>
-inline
-gpu_matrix<T>::gpu_matrix(int Rows_, int Cols_, blas::arena const& Arena, int leadingdim)
-   : Rows(Rows_), Cols(Cols_), LeadingDimension(leadingdim),
-     Buf(cuda::gpu_buffer<T>::allocate(LeadingDimension*Rows, Arena))
-{
-   DEBUG_CHECK(LeadingDimension >= Rows);
-}
-
-template <typename T>
-inline
-gpu_matrix<T>::gpu_matrix(int Rows_, int Cols_, blas::arena const& Arena)
-   : gpu_matrix(Rows_, Cols_, Arena, select_leading_dimension(Rows_))
-{
-}
-
-template <typename T>
-inline
-gpu_matrix<T>::gpu_matrix(int Rows_, int Cols_, int leadingdim)
-   : gpu_matrix(Rows_, Cols_, blas::default_arena<gpu_matrix<T>>::Arena, leadingdim)
-{
-}
-
-template <typename T>
-inline
-gpu_matrix<T>::gpu_matrix(int Rows_, int Cols_)
-   : gpu_matrix(Rows_, Cols_, blas::default_arena<gpu_matrix<T>>::Arena, select_leading_dimension(Rows_))
-{
-}
+using gpu_matrix = blas::Matrix<T, gpu_rag>;
 
 // blocking matrix get
 template <typename T>

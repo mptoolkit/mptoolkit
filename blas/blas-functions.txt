@@ -51,6 +51,7 @@ vector_sum_scaled(alpha, BlasVector x, Ref& y)
 // z = sum conj(x[i]) * y[i]
 vector_dot(BlasVector x, BlasVector y, Ref& z)
 
+vector_clear(Vector& y)
 
 
 // y = x, also does transpose etc operations
@@ -74,6 +75,8 @@ geam(alpha, BlasMatrix A, beta, BlasMatrix B, Matrix& C)
 gemm(alpha, BlasMatrix A, beta, BlasMatrix B, Matrix& C)
 
 matrix_scale(alpha, Matrix& y)
+
+matrix_clear(Matrix& y)
 
 
 // For conventional CPU storage, the low-level BLAS library implements, for
