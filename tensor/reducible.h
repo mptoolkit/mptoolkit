@@ -126,12 +126,12 @@ class ReducibleTensor
       bool is_null() const { return this->empty(); }
 
       // returns the number of irreducible components
-      size_type size() const { return data_.size(); }
+      int size() const { return data_.size(); }
 
       SymmetryList GetSymmetryList() const { return Basis1_.GetSymmetryList(); }
 
-      size_type size1() const { return Basis1_.size(); }
-      size_type size2() const { return Basis2_.size(); }
+      int size1() const { return Basis1_.size(); }
+      int size2() const { return Basis2_.size(); }
 
       ReducibleTensor& operator+=(ReducibleTensor const& x);
       ReducibleTensor& operator-=(ReducibleTensor const& x);
@@ -183,8 +183,8 @@ class ReducibleTensor
       // exists in the container
       value_type const& project_assert(QuantumNumber const& q) const;
 
-      QuantumNumber const& qn1(size_type i) const { return Basis1_[i]; }
-      QuantumNumber const& qn2(size_type j) const { return Basis2_[j]; }
+      QuantumNumber const& qn1(int i) const { return Basis1_[i]; }
+      QuantumNumber const& qn2(int j) const { return Basis2_[j]; }
 
       // return the quantum numbers for which this tensor has non-zero matrix elements
       std::set<QuantumNumber> components() const;
@@ -291,6 +291,7 @@ herm(ReducibleTensor<T, B1, B2, S> const& x)
 }
 
 // flip conjugation
+template <typename T, typename B1, typename B2, typename S>
 ReducibleTensor<T, B2, B1, S>
 flip_conj(ReducibleTensor<T, B1, B2, S> const& x)
 {
@@ -302,6 +303,7 @@ flip_conj(ReducibleTensor<T, B1, B2, S> const& x)
    return Result;
 }
 
+template <typename T, typename B1, typename B2, typename S>
 ReducibleTensor<T, B2, B1, S>
 flip_conj(ReducibleTensor<T, B1, B2, S>&& x)
 {

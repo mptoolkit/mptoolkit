@@ -69,10 +69,10 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T>, cpu_tag>
 
       // construction via expression template
       template <typename U>
-      DiagonalMatrix(DiagonalMatrixRef<T, DiagonalMatrix<T>, U> const& E, arena Arena_);
+      DiagonalMatrix(DiagonalMatrixRef<T, U, cpu_tag> const& E, arena Arena_);
 
       template <typename U>
-      DiagonalMatrix(DiagonalMatrixRef<T, DiagonalMatrix<T>, U> const& E) : DiagonalMatrix(E, get_malloc_arena()) {}
+      DiagonalMatrix(DiagonalMatrixRef<T, U, cpu_tag> const& E) : DiagonalMatrix(E, get_malloc_arena()) {}
 
       // construction from intializer list
       template <typename U>

@@ -22,7 +22,7 @@
 
 #include "tensor/tensor.h"
 #include "tensor/reducible.h"
-#include "linearalgebra/vector.h"
+#include "blas/vector.h"
 #include "mps/state_component.h"
 
 // default epsilon for detecting whether an eigenvalue is equal to 1 for

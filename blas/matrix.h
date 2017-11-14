@@ -53,39 +53,96 @@ class PermutationMatrix;
 //
 
 template <typename T>
-using VectorView = vector_view<T, cpu_tag>;
+struct cpu_buffer
+{
+   Arena Arena;
+   T*    Ptr;
+   int   Size;
 
-template <typename T>
-using ConstVectorView = const_vector_view<T, cpu_tag>;
+   using storage_type       = T*;
+   using const_storage_type = T const*;
 
-template <typename T>
-using NormalVectorView = normal_vector_view<T, cpu_tag>;
+   using reference       = T&;
+   using const_reference = T const&;
 
-template <typename T>
-using ConstNormalVectorView = const_normal_vector_view<T, cpu_tag>;
+   T* ptr() { return Ptr; }
+   T* ptr() const { return Ptr; }
+   T const* cptr() const { return Ptr; }
 
-template <typename T>
-class Matrix : public NormalMatrix<T, Matrix<T>, cpu_tag>
+   T* ptr(int offset) { return Ptr + offset; }
+   T* ptr(int offset) const { return Ptr + offset; }
+   T const* cptr(int offset) const { return Ptr + offset; }
+
+   T& operator[](int offset) { return Ptr[offset]; }
+   T const& operator[](int offset) const { return Ptr[offset]; }
+
+   cpu_buffer() = delete;
+   cpu_buffer(Arena const& a, T* p, int s) : Arena(a), Ptr(p), Size(s) {}
+   cpu_buffer(cpu_buffer&& other) : arena(std::move(other.Arena)), Ptr(other.Ptr), Size(other.Size)
+   {
+      other.Ptr = nullptr;
+   }
+
+   cpu_buffer(cpu_buffer&) = delete;
+
+   ~cpu_buffer()
+   {
+      if (Ptr)
+         Arena.free(Ptr, Size);
+      Ptr = nullptr;
+   }
+
+   cpu_buffer& operator=(cpu_buffer&) = delete;
+   cpu_buffer& operator=(cpu_buffer&&) = delete;
+};
+
+struct cpu_tag
+{
+   template <typename T>
+   using buffer_type = std::pair<T*, blas::Arena>;
+
+   template <typename T>
+   using storage_type = T*;
+
+   template <typename T>
+   using const_storage_type = T const*;
+
+   template <typename T>
+   Arena default_arena() { return get_malloc_arena(); }
+
+   static int select_leading_dimension(int ld)
+   {
+      return ld;
+   }
+};
+
+
+
+template <typename T, typename Tag>
+class Matrix : public NormalMatrix<T, Matrix<T>, Tag>
 {
    public:
-      typedef T value_type;
+      using value_type         = T;
+      using tag                = Tag;
+      using buffer_type        = tag::template buffer_type<T>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
+      using reference          = typename buffer_type::reference;
+      using const_reference    = typename buffer_type::const_reference;
 
       Matrix() = delete;
 
       Matrix(Matrix const&) = delete;
 
-      Matrix(Matrix&& Other) : Rows(Other.Rows), Cols(Other.Cols),
-                               LeadingDimension(Other.LeadingDimension),
-			       Arena(std::move(Other.Arena)),
-			       Data(Other.Data) { Other.Data = nullptr; }
+      Matrix(Matrix&& Other) = default;
 
       Matrix(int Rows_, int Cols_, arena Arena_);
 
-      Matrix(int Rows_, int Cols_) : Matrix(Rows_, Cols_, get_malloc_arena()) {}
+      Matrix(int Rows_, int Cols_) : Matrix(Rows_, Cols_, tag::default_arena<T>()) {}
 
       Matrix(int Rows_, int Cols_, T const& Fill, arena Arena_);
 
-      Matrix(int Rows_, int Cols_, T const& Fill) : Matrix(Rows_, Cols_, Fill, get_malloc_arena()) {}
+      Matrix(int Rows_, int Cols_, T const& Fill) : Matrix(Rows_, Cols_, Fill, tag::default_arena<T>()) {}
 
       // construction via expression template
       template <typename U>
@@ -99,16 +156,16 @@ class Matrix : public NormalMatrix<T, Matrix<T>, cpu_tag>
       Matrix(std::initializer_list<std::initializer_list<U>> x, arena Arena_);
 
       template <typename U>
-      Matrix(std::initializer_list<std::initializer_list<U>> x) : Matrix(x, get_malloc_arena()) {}
+      Matrix(std::initializer_list<std::initializer_list<U>> x) : Matrix(x, tag::default_arena<T>()) {}
 
       template <typename U>
-      Matrix(MatrixRef<T, U, cpu_tag> const& E)
+      Matrix(MatrixRef<T, U, tag> const& E)
          : Matrix(E.rows(), E.cols())
       {
          assign(*this, E.as_derived());
       }
 
-      ~Matrix() { if (Data) Arena.free(Data, LeadingDimension*Cols); }
+      ~Matrix() = default;
 
       Matrix& operator=(Matrix const& Other)
       {
@@ -116,12 +173,7 @@ class Matrix : public NormalMatrix<T, Matrix<T>, cpu_tag>
 	 return *this;
       }
 
-      Matrix& operator=(Matrix&& Other)
-      {
-	 Rows = Other.Rows; Cols = Other.Cols; LeadingDimension = Other.LeadingDimension;
-	 Arena = std::move(Other.Arena); Data = Other.Data; Other.Data = nullptr;
-	 return *this;
-      }
+      Matrix& operator=(Matrix&& Other) = default;
 
       // assignment of expressions based on the same matrix type -- we don't allow assignment
       // of expression templates of other matrix types (eg gpu_matrix)
@@ -129,21 +181,21 @@ class Matrix : public NormalMatrix<T, Matrix<T>, cpu_tag>
       // eg they would generally block, and we can get the same effect with
       // move construction/assignment and get/set operations.
       template <typename U>
-      Matrix& operator=(MatrixRef<T, U, cpu_tag> const& E)
+      Matrix& operator=(MatrixRef<T, U, tag> const& E)
       {
 	 assign(*this, E.as_derived());
 	 return *this;
       }
 
       template <typename U>
-      Matrix& operator+=(MatrixRef<T, U, cpu_tag> const& E)
+      Matrix& operator+=(MatrixRef<T, U, tag> const& E)
       {
 	 add(*this, E.as_derived());
 	 return *this;
       }
 
       template <typename U>
-      Matrix& operator-=(MatrixRef<T, U, cpu_tag> const& E)
+      Matrix& operator-=(MatrixRef<T, U, tag> const& E)
       {
 	 subtract(*this, E.as_derived());
 	 return *this;
@@ -156,72 +208,77 @@ class Matrix : public NormalMatrix<T, Matrix<T>, cpu_tag>
 
       constexpr char trans() const { return 'N'; }
 
-      VectorView<T>
+      vector_view<T, tag>
       row(int r)
       {
-         return VectorView<T>(Cols, LeadingDimension, Data + r);
+         return vector_view<T, tag>(Cols, LeadingDimension, Buf.ptr(r));
       }
 
-      ConstVectorView<T>
+      const_vector_view<T, tag>
       row(int r) const
       {
-         return ConstVectorView<T>(Cols, LeadingDimension, Data + r);
+         return const_vector_view<T, tag>(Cols, LeadingDimension, Buf.ptr(r));
       }
 
-      NormalVectorView<T>
+      normal_vector_view<T, tag>
       column(int c)
       {
-         return VectorView<T>(Rows, Data + LeadingDimension*c);
+         return normal_vector_view<T, tag>(Rows, Buf.ptr(LeadingDimension*c));
       }
 
-      ConstNormalVectorView<T>
+      const_normal_vector_view<T, tag>
       column(int c) const
       {
-         return ConstVectorView<T>(Rows, Data + LeadingDimension*c);
+         return const_normal_vector_view<T, tag>(Rows, Buf.ptr(LeadingDimension*c));
       }
 
-      VectorView<T>
+      vector_view<T, tag>
       diagonal()
       {
-         return VectorView<T>(std::min(Rows,Cols), LeadingDimension+1, Data);
+         return vector_view<T, tag>(std::min(Rows,Cols), LeadingDimension+1, Buf.ptr());
       }
 
-      ConstVectorView<T>
+      const_vector_view<T, tag>
       diagonal() const
       {
-         return ConstVectorView<T>(std::min(Rows,Cols), LeadingDimension+1, Data);
+         return const_vector_view<T, tag>(std::min(Rows,Cols), LeadingDimension+1, Buf.ptr());
       }
 
       // sets all elements to zero
       void clear()
       {
-         std::memset(Data, 0, LeadingDimension*Cols*sizeof(T));
+         clear(*this);
       }
 
-      T* storage() { return Data; }
-      T const* storage() const { return Data; }
+      buffer_type& buffer() { return Buf; }
+      buffer_type const& buffer() const { return Buf; }
 
-      T& operator()(int r, int c)
+      storage_type storage() { return Buf.ptr(); }
+      const_storage_type storage() const { return Buf.cptr(); }
+
+      reference operator()(int r, int c)
       {
          DEBUG_RANGE_CHECK(r, 0, Rows);
          DEBUG_RANGE_CHECK(c, 0, Cols);
-         return Data[c*LeadingDimension+r];
+         return Buf[c*LeadingDimension+r];
       }
 
-      T const& operator()(int r, int c) const
+      const_reference operator()(int r, int c) const
       {
          DEBUG_RANGE_CHECK(r, 0, Rows);
          DEBUG_RANGE_CHECK(c, 0, Cols);
-         return Data[c*LeadingDimension+r];
+         return Buf[c*LeadingDimension+r];
       }
 
    private:
-      arena Arena;
       int Rows;
       int Cols;
       int LeadingDimension;
-      T* Data;
+      buffer_type Buf;
 };
+
+}
+
 
 // copy
 

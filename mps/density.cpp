@@ -19,7 +19,6 @@
 
 #include "density.h"
 #include "common/proccontrol.h"
-#include "blas/matrix-eigen.h"
 
 
 LinearBasis<VectorBasis>::LinearBasis(VectorBasis const& B)

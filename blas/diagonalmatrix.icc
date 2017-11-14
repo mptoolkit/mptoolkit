@@ -17,8 +17,6 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "diagonalmatrix.h"
-
 namespace blas
 {
 

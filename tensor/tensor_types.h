@@ -24,6 +24,7 @@
 #include "tensor/tensor.h"
 #include "tensor/reducible.h"
 #include "blas/matrix.h"
+#include "blas/diagonalmatrix.h"
 
 using namespace Tensor;
 

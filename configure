@@ -653,7 +653,7 @@ CC
 EGREP
 GREP
 CXXCPP
-LIBSLURM
+SLURM_LIBS
 HAVE_MPI
 MPILIBS
 MPICXX
@@ -6071,7 +6071,7 @@ return slurm_get_end_time ();
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
   acx_slurm_ok=yes
-       LIBSLURM="$slurm_lib"
+       SLURM_LIBS="$slurm_lib"
 
 
 $as_echo "#define CONFIG_SLURM /**/" >>confdefs.h
