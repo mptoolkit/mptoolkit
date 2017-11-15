@@ -105,6 +105,16 @@ class BlasVector : public VectorRef<ValueType, DerivedType, Tag>
       ~BlasVector() = default;
       BlasVector(BlasVector&& Other) = default;
 
+      vector_view<ValueType, Tag> operator[](Range r)
+      {
+	 return vector_view<ValueType, Tag>(r.size(), this->stride(), this->storage()+r.start);
+      }
+
+      const_vector_view<ValueType, Tag> operator[](Range r) const
+      {
+	 return const_vector_view<ValueType, Tag>(r.size(), this->stride(), this->storage()+r.start);
+      }
+
       int stride() const { return this->as_derived().stride(); }
 
       storage_type storage() & { return this->as_derived().storage(); }
