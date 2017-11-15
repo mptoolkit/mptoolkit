@@ -27,6 +27,7 @@
 #if !defined(MPTOOLKIT_TENSOR_TENSOR_H)
 #define MPTOOLKIT_TENSOR_TENSOR_H
 
+#include "common/types.h"
 #include "basis.h"
 #include "quantumnumbers/quantumnumber.h"
 #include "pstream/pstream.h"
@@ -34,7 +35,7 @@
 #include "blas/sparsematrix.h"
 #include "blas/arena.h"
 #include "blas/number_traits.h"
-//#include "blas/diagonalmatrix.h"
+#include "blas/diagonalmatrix.h"
 #include <cmath>
 
 using real_type = double;
@@ -78,20 +79,39 @@ struct ConjugateProxy
 using QuantumNumbers::QuantumNumber;
 using QuantumNumbers::SymmetryList;
 
+template <typename T>
+struct TagOf
+{
+   using type = typename T::tag_type;
+};
+
+template <>
+struct TagOf<double>
+{
+   using type = blas::cpu_tag;
+};
+
+template <>
+struct TagOf<std::complex<double>>
+{
+   using type = blas::cpu_tag;
+};
+
 // Structure traits types
 struct DefaultStructure
 {
    template <typename T>
    using value = blas::SparseMatrix<T>;
+
+   template <typename T>
+   using tag_type = typename TagOf<T>::type;
 };
 
-#if 0
 struct DiagonalStructure
 {
    template <typename T>
    using value = blas::DiagonalMatrix<T>;
 };
-#endif
 
 // For operations that act on the structure and potentially modify it,
 // we need to map the transformed concrete type back to a structure trait.
@@ -107,13 +127,11 @@ struct StructureOf<blas::SparseMatrix<T>>
    using type = DefaultStructure;
 };
 
-#if 0
 template <typename T>
 struct StructureOf<blas::DiagonalMatrix<T>>
 {
    using type = DiagonalStructure;
 };
-#endif
 
 template <typename T,
           typename Basis1T = BasisList,
@@ -143,13 +161,15 @@ class IrredTensor
       using value_type     = T;
       using structure_type = Structure;
 
-      using MatrixType     = typename Structure::template value<T>;
+      using StructureType  = typename Structure::template value<T>;
 
-      using numeric_type   = typename MatrixType::value_type;
+      using numeric_type   = typename StructureType::value_type;
 
-      using iterator       = typename MatrixType::iterator;
-      using const_iterator = typename MatrixType::const_iterator;
-      using row_type       = typename MatrixType::row_type;
+      using iterator       = typename StructureType::iterator;
+      using const_iterator = typename StructureType::const_iterator;
+      using row_type       = typename StructureType::row_type;
+
+      using tag_type       = typename Structure::template tag_type<T>;
 
       typedef Basis1T basis1_type;
       typedef Basis2T basis2_type;
@@ -170,7 +190,7 @@ class IrredTensor
 
 
       IrredTensor(basis1_type const& Basis1, basis2_type const& Basis2,
-                  QuantumNumber const& Trans, MatrixType&& Data);
+                  QuantumNumber const& Trans, StructureType&& Data);
 
       explicit IrredTensor(basis1_type const& Basis);
 
@@ -267,8 +287,8 @@ class IrredTensor
       int size1() const { return Basis1_.size(); }
       int size2() const { return Basis2_.size(); }
 
-      MatrixType& data() { return Data_; }
-      MatrixType const& data() const { return Data_; }
+      StructureType& data() { return Data_; }
+      StructureType const& data() const { return Data_; }
 
       QuantumNumber const& TransformsAs() const { return Trans_; }
 
@@ -295,7 +315,7 @@ class IrredTensor
       basis1_type Basis1_;
       basis2_type Basis2_;
       QuantumNumber Trans_;
-      MatrixType Data_;
+      StructureType Data_;
 
       friend PStream::opstream& operator<< <>(PStream::opstream& out, IrredTensor const& x);
       friend PStream::ipstream& operator>> <>(PStream::ipstream& in, IrredTensor& x);
@@ -483,6 +503,29 @@ inner_prod(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& 
    }
    return Result;
 }
+
+template <typename T, typename B1, typename B2, typename S>
+void
+inner_prod(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& y,
+           typename IrredTensor<T, B1, B2, S>::tag_type::template async_ref<complex> Result)
+{
+   PRECONDITION_EQUAL(x.TransformsAs(), y.TransformsAs());
+   PRECONDITION_EQUAL(x.Basis1(), y.Basis1());
+   PRECONDITION_EQUAL(x.Basis2(), y.Basis2());
+
+   using tag_type = typename IrredTensor<T, B1, B2, S>::tag_type;
+
+   blas::Vector<complex, tag_type> Temp(x.data().rows());
+   blas::Vector<complex> QDim(x.data().rows());
+   for (int r = 0; r < x.data().rows(); ++r)
+   {
+      inner_prod(x.data()[r], y.data()[r], Temp[r]);
+      QDim[r] = qdim(x.qn1(r));
+   }
+   inner_prod(blas::Vector<complex, tag_type>(std::move(QDim)), Temp, Result);
+   return Result;
+}
+
 
 // scalar_prod - this is a new function
 

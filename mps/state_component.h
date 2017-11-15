@@ -67,7 +67,7 @@ struct BasicStateComponent
    typedef T OperatorType;
    typedef T operator_type;
 
-   typedef LinearAlgebra::Vector<value_type> DataType;
+   typedef blas::Vector<value_type> DataType;
 
    typedef typename DataType::const_iterator const_iterator;
    typedef typename DataType::iterator       iterator;
@@ -228,28 +228,14 @@ operator+=(StateComponent& x, StateComponent const& y);
 StateComponent&
 operator-=(StateComponent& x, StateComponent const& y);
 
-namespace LinearAlgebra
-{
-
-template <>
-struct interface<StateComponent>
-{
-   typedef void type;
-};
-
 // hermitian conjugation
 
 template <typename T>
-struct Herm<BasicStateComponent<T>>
+HermitianProxy<BasicStateComponent<T>>
+herm(BasicStateComponent<T> const& x)
 {
-   typedef HermitianProxy<BasicStateComponent<T>> result_type;
-   typedef BasicStateComponent<T> const& argument_type;
-
-   result_type operator()(argument_type x) const
-   {
-      return result_type(x);
-   }
-};
+   return HermitianProxy<BasicStateComponent<T>>(x);
+}
 
 // complex conjugation
 
@@ -271,55 +257,6 @@ BasicStateComponent<T> conj(BasicStateComponent<T> const& x)
 // generalized ScalarProd.  This means that,
 // for example, scalar_direct_prod works automatically.
 
-template <typename T, typename U, typename Func>
-struct ScalarProd<BasicStateComponent<T>, HermitianProxy<BasicStateComponent<U>>, Func>
-{
-   //   typedef typename Func::result_type result_type;
-   using result_type = MatrixOperator;
-   typedef BasicStateComponent<T> const& first_argument_type;
-   typedef HermitianProxy<BasicStateComponent<U>> const& second_argument_type;
-
-   result_type operator()(first_argument_type x, second_argument_type y) const;
-   result_type operator()(first_argument_type x, second_argument_type y, Func f) const;
-};
-
-template <typename Func>
-struct ScalarProd<HermitianProxy<StateComponent>, StateComponent, Func>
-{
-   typedef typename Func::result_type result_type;
-   typedef HermitianProxy<StateComponent> const& first_argument_type;
-   typedef StateComponent const& second_argument_type;
-
-   result_type operator()(first_argument_type x, second_argument_type y) const;
-   result_type operator()(first_argument_type x, second_argument_type y, Func f) const;
-};
-
-// the common case is explicitly specialized
-#if 0
-template <>
-struct ScalarProd<StateComponent, HermitianProxy<StateComponent> >
-{
-   typedef MatrixOperator result_type;
-   typedef StateComponent const& first_argument_type;
-   typedef HermitianProxy<StateComponent> const& second_argument_type;
-
-   result_type operator()(first_argument_type x, second_argument_type y) const;
-};
-#endif
-
-template <>
-struct ScalarProd<HermitianProxy<StateComponent>, StateComponent>
-{
-   typedef MatrixOperator result_type;
-   typedef HermitianProxy<StateComponent> const& first_argument_type;
-   typedef StateComponent const& second_argument_type;
-
-   result_type operator()(first_argument_type x, second_argument_type y) const;
-};
-
-} // namespace LinearAlgebra
-
-
 std::complex<double>
 inner_prod(StateComponent const& x, StateComponent const& y);
 
@@ -328,12 +265,12 @@ std::complex<double>
 inner_prod(StateComponent const& x, StateComponent const& y)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
-   std::complex<double> r = 0.0;
+   Vector Temp(x.size());
    for (unsigned i = 0; i < x.size(); ++i)
    {
-      r += inner_prod(x[i], y[i]);
+      inner_prod(x[i], y[i], Temp[i]);
    }
-   return r;
+   return vector_sum(Temp);
 }
 
 template <typename T>
@@ -402,93 +339,93 @@ StateComponent reflect(StateComponent const& S);
 // Result' transforms the same way as M.
 MatrixOperator operator_prod(SimpleOperator const& M,
                              StateComponent const& A,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& B);
+                             HermitianProxy<StateComponent> const& B);
 
 MatrixOperator operator_prod(SimpleRedOperator const& M,
                              StateComponent const& A,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& B);
+                             HermitianProxy<StateComponent> const& B);
 
 // does Result' = sum_{s,t} conj(M(s,t)) * herm(A^s) * B^t
 // Result' transforms as adjoint(M).
-MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const& M,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& A,
+MatrixOperator operator_prod(HermitianProxy<SimpleOperator> const& M,
+                             HermitianProxy<StateComponent> const& A,
                              StateComponent const& B);
 
-MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleRedOperator> const& M,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& A,
+MatrixOperator operator_prod(HermitianProxy<SimpleRedOperator> const& M,
+                             HermitianProxy<StateComponent> const& A,
                              StateComponent const& B);
 
 // does Result' = sum_{s,t} M(t,s) * A^t * E * herm(B^s)
 MatrixOperator operator_prod(SimpleOperator const& M,
                              StateComponent const& A,
                              MatrixOperator const& E,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& B,
+                             HermitianProxy<StateComponent> const& B,
                              QuantumNumbers::QuantumNumber const& q);
 
 MatrixOperator operator_prod(SimpleOperator const& M,
                              StateComponent const& A,
                              MatrixOperator const& E,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& B);
+                             HermitianProxy<StateComponent> const& B);
 
 MatrixOperator operator_prod(SimpleRedOperator const& M,
                              StateComponent const& A,
                              MatrixOperator const& E,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& B,
+                             HermitianProxy<StateComponent> const& B,
                              QuantumNumbers::QuantumNumber const& q);
 
 // does Result' = sum_{s,t} M(t,s) * herm(A^t) * E * B^s
-MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const& M,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& A,
+MatrixOperator operator_prod(HermitianProxy<SimpleOperator> const& M,
+                             HermitianProxy<StateComponent> const& A,
                              MatrixOperator const& E,
                              StateComponent const& B,
                              QuantumNumbers::QuantumNumber const& q);
 
-MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleRedOperator> const& M,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& A,
+MatrixOperator operator_prod(HermitianProxy<SimpleRedOperator> const& M,
+                             HermitianProxy<StateComponent> const& A,
                              MatrixOperator const& E,
                              StateComponent const& B,
                              QuantumNumbers::QuantumNumber const& q);
 
-MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const& M,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& A,
+MatrixOperator operator_prod(HermitianProxy<SimpleOperator> const& M,
+                             HermitianProxy<StateComponent> const& A,
                              MatrixOperator const& E,
                              StateComponent const& B);
 
 // Calculates E' = sum_s herm(A[s]) * E * B[s]
-MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<StateComponent> const& A,
+MatrixOperator operator_prod(HermitianProxy<StateComponent> const& A,
                              MatrixOperator const& E,
                              StateComponent const& B);
 
 MatrixOperator operator_prod(StateComponent const& A,
                              MatrixOperator const& E,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& B);
+                             HermitianProxy<StateComponent> const& B);
 
 // Calculates E'[q] = sum_s herm(A[s]) * E[q] * B[s]
-StateComponent operator_prod(LinearAlgebra::HermitianProxy<StateComponent> const& A,
+StateComponent operator_prod(HermitianProxy<StateComponent> const& A,
                              StateComponent const& E,
                              StateComponent const& B);
 
 StateComponent operator_prod(StateComponent const& A,
                              StateComponent const& E,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& B);
+                             HermitianProxy<StateComponent> const& B);
 
 // Variant for A,B matrices arising from a triangular MPO, where
 // A.front() = identity and B.back() = identity
 MatrixOperator
 operator_prod_regular(StateComponent const& A,
                       MatrixOperator const& E,
-                      LinearAlgebra::HermitianProxy<StateComponent> const& B);
+                      HermitianProxy<StateComponent> const& B);
 
 
 // returns the operator M(s,t) = trace(herm(A^s) B^t)
 // This is necessarily a scalar operator (the trace of a non-scalar operator is zero).
-SimpleOperator trace_prod(LinearAlgebra::HermitianProxy<StateComponent> const& A,
+SimpleOperator trace_prod(HermitianProxy<StateComponent> const& A,
                           StateComponent const& B);
 
 // returns the operator M(s,t) = trace(A^s herm(B^t))
 // This is necessarily a scalar operator (the trace of a non-scalar operator is zero).
 SimpleOperator trace_prod(StateComponent const& A,
-                          LinearAlgebra::HermitianProxy<StateComponent> const& B);
+                          HermitianProxy<StateComponent> const& B);
 
 // product of a StateComponent and a MatrixOperator.
 // The BasicOperator must transform as a scalar - eg typically it will be unitary.
@@ -502,6 +439,7 @@ StateComponent prod(MatrixOperator const& Op, StateComponent const& A);
 
 StateComponent prod(HermitianProxy<MatrixOperator> const& Op, StateComponent const& A);
 
+#if 0
 namespace LinearAlgebra
 {
 
@@ -545,6 +483,7 @@ struct Multiplication<IrredTensor<U, VectorBasis, VectorBasis, S>, BasicStateCom
 
 
 } // namespace LinearAlgebra
+#endif
 
 // returns the operator a'^s' = sum_s A^s * x(s,s').  x must transform as a scalar.
 StateComponent local_prod(StateComponent const& A, SimpleOperator const& x);
@@ -565,9 +504,9 @@ StateComponent renyi_product(StateComponent const& A, StateComponent const& B);
 
 StateComponent triple_prod(MatrixOperator const& Op1,
                              StateComponent const& A,
-                             LinearAlgebra::HermitianProxy<MatrixOperator> const&Op2);
+                             HermitianProxy<MatrixOperator> const&Op2);
 
-StateComponent triple_prod(LinearAlgebra::HermitianProxy<MatrixOperator> const& Op1,
+StateComponent triple_prod(HermitianProxy<MatrixOperator> const& Op1,
                              StateComponent const& A,
                              MatrixOperator const&Op2);
 
@@ -597,7 +536,7 @@ StateComponent tensor_col_sum(StateComponent const& A,
 // Returns the diagonal components of the operator F given by
 // F(x) = operator_prod(A, x, herm(B))
 MatrixOperator extract_diagonal(StateComponent const& A,
-                                LinearAlgebra::HermitianProxy<StateComponent> const& B);
+                                HermitianProxy<StateComponent> const& B);
 
 // shift the basis of an StateComponent by some quantum number; the local basis
 // is shifted by QL, the incoming matrix basis is shifted by QM, the outgoing matrix basis
@@ -647,9 +586,11 @@ OrthogonalizeBasis2(StateComponent& A);
 std::pair<MatrixOperator, RealDiagonalOperator>
 OrthogonalizeBasis1(StateComponent& A);
 
+#if 0
 // experimental ExpandBasis1 variant that returns a SimpleStateComponent
 std::pair<MatrixOperator, SimpleStateComponent>
 ExpandBasis1_(StateComponent const& A);
+#endif
 
 // Constructs an 'expanded' basis given the input right hand basis
 StateComponent ConstructFromRightBasis(BasisList const& LocalBasis,
@@ -659,19 +600,7 @@ StateComponent ConstructFromRightBasis(BasisList const& LocalBasis,
 StateComponent ConstructFromLeftBasis(BasisList const& LocalBasis,
                                         VectorBasis const& LeftBasis);
 
-// StateProject
-// A functor to project onto the given component of a StateComponent
-struct StateProject
-{
-   typedef StateComponent::OperatorType result_type;
-   typedef StateComponent argument_type;
-   StateProject(int s_) : s(s_) {}
-
-   result_type operator()(StateComponent const& x) const { return x[s]; }
-
-   int s;
-};
-
+#if 0
 template <typename FwdIter>
 StateComponent tensor_col_accumulate(FwdIter first, FwdIter last,
                                        SumBasis<VectorBasis> const& B1)
@@ -719,6 +648,7 @@ StateComponent tensor_accumulate(FwdIter first, FwdIter last,
    }
    return Result;
 }
+#endif
 
 // utility functions to generate random matrices.
 // Typically used to initialize iterative eigensolvers etc

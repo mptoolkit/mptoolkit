@@ -20,36 +20,32 @@
 namespace blas
 {
 
-template <typename T>
+template <typename T, typename Tag>
 template <typename U>
-DiagonalMatrix<T>::DiagonalMatrix(std::initializer_list<U> m, arena Arena_)
-   : Arena(Arena_),
-     Size(m.size())
+DiagonalMatrix<T, Tag>::DiagonalMatrix(std::initializer_list<U> m, arena Arena_)
+   : DiagonalMatrix(m.size(), m.size(), Arena_)
 {
-   Data = Arena.allocate_type<T>(Size);
-   std::copy(m.begin(), m.end(), Data);
+   vector_copy_from_stl(m.begin(), m.end(), Buf.ptr(), 1);
 }
 
-template <typename T>
+template <typename T, typename Tag>
 template <typename U>
-DiagonalMatrix<T>::DiagonalMatrix(DiagonalMatrixRef<T, Matrix<T>, U> const& E, arena Arena_)
-   : Size(E.rows())
-     Arena(Arena_),
-     Data(Arena.allocate(Size, sizeof(T)))
+DiagonalMatrix<T, Tag>::DiagonalMatrix(DiagonalMatrixRef<T, U, Tag> const& E, arena Arena_)
+   : DiagonalMatrix(E.rows(), E.cols(), Arena_)
 {
    assign(*this, E.as_derived());
 }
 
-template <typename T>
-DiagonalMatrix<T>::DiagonalMatrix(int R, int C, arena Arena_)
-   : Arena(Arena_), Size(R), Data(Arena.allocate_type<T>(Size))
+template <typename T, typename Tag>
+DiagonalMatrix<T, Tag>::DiagonalMatrix(int R, int C, arena Arena_)
+   : Size(R),  Buf(buffer_type::allocate(R, Arena_))
 {
    CHECK_EQUAL(R,C)("Diagonal matrix must be square");
 }
 
 template <typename T>
 std::ostream&
-operator<<(std::ostream& out, DiagonalMatrix<T> const& x)
+operator<<(std::ostream& out, DiagonalMatrix<T, cpu_tag> const& x)
 {
    out << "diagonal[" << x.rows() << ", " << x.cols() << "]\n";
    bool first = true;

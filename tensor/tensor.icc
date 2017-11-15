@@ -61,7 +61,7 @@ IrredTensor<T, B1, B2, S>::IrredTensor(basis1_type const& Basis1, basis2_type co
 #if 0
 template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>::IrredTensor(basis1_type const& Basis1, basis2_type const& Basis2,
-                               QuantumNumber const& Trans, MatrixType const& Data)
+                               QuantumNumber const& Trans, StructureType const& Data)
    : Basis1_(Basis1), Basis2_(Basis2), Trans_(Trans), Data_(Data)
 {
    DEBUG_CHECK_EQUAL(Basis1.GetSymmetryList(), Basis2.GetSymmetryList());

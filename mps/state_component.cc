@@ -44,13 +44,13 @@ BasicStateComponent<T>::ConstructFullBasis1(BasisList const& S, VectorBasis cons
       int Dim = FullLeftBasis.dim(t);
       CHECK_EQUAL(Dim, Basis2.dim(b2));
 
-      // Make an identity matrix of the correct size
-      LinearAlgebra::set_element(Result[s], t, b2, LinearAlgebra::identity_matrix<double>(Dim));
+      Result[s].insert(t, b2, value_type::make_identity(Dim));
    }
 
    // check the normalization
-   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(Result, herm(Result))),
-                     FullLeftBasis.total_degree());
+   //   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(Result, herm(Result))),
+   //                     FullLeftBasis.total_degree());
+   //DEBUG_CHECK_CLOSE(norm_frob_sq(Result), FullLeftBasis.total_degree());
 
    return Result;
 }
@@ -83,14 +83,14 @@ BasicStateComponent<T>::ConstructFullBasis2(VectorBasis const& Basis1, BasisList
       CHECK_EQUAL(Dim, Basis1.dim(b1));
 
       // Make an identity matrix of the correct size
-      set_element(Result[s], b1, t,
-                                 std::sqrt(double(degree(FullRightBasis[t])) / degree(Basis1[b1]))
-                                 * LinearAlgebra::identity_matrix<double>(Dim));
+      Result[s].insert(b1, t,
+                       std::sqrt(double(degree(FullRightBasis[t])) / degree(Basis1[b1]))
+                       * value_type::make_identity(Dim));
    }
 
    // check the normalization
-   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(herm(Result), Result)),
-                     FullRightBasis.total_degree());
+   //DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(herm(Result), Result)),
+   //                FullRightBasis.total_degree());
 
    return Result;
 }
@@ -107,6 +107,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, BasicStateComponent<T>& Op)
    return in >> Op.SBasis >> Op.VBasis1 >> Op.VBasis2 >> Op.Data;
 }
 
+#if 0
 namespace LinearAlgebra
 {
 
@@ -131,3 +132,4 @@ operator()(BasicStateComponent<T> const& A, HermitianProxy<BasicStateComponent<U
 
 
 } //namespace LinearAlgebra
+#endif

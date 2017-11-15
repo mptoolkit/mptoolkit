@@ -21,8 +21,8 @@
 // A simple dense matrix class designed for scalar types.
 //
 
-#if !defined(MPTOOLKIT_BLAS_MATRIX_H)
-#define MPTOOLKIT_BLAS_MATRIX_H
+#if !defined(MPTOOLKIT_BLAS_DIAGONALMATRIX_H)
+#define MPTOOLKIT_BLAS_DIAGONALMATRIX_H
 
 #include "common/trace.h"
 #include "arena.h"
@@ -41,47 +41,48 @@ namespace blas
 // Moveable, non-copyable, non-resizable (except by moving).
 //
 
-template <typename T>
-class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T>, cpu_tag>
+template <typename T, typename Tag = cpu_tag>
+class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
 {
    public:
-      using value_type     = T;
-      using iterator       = T*;
-      using const_iterator = T const*;
-      using pointer        = T*;
-      using reference      = T&;
+      using value_type         = T;
+      using tag_type           = Tag;
+      using buffer_type        = typename tag_type::template buffer_type<T>;
+      using storage_type       = typename buffer_type::storage_type;
+      using const_storage_type = typename buffer_type::const_storage_type;
+      using reference          = typename buffer_type::reference;
+      using const_reference    = typename buffer_type::const_reference;
 
       DiagonalMatrix() = delete;
 
       DiagonalMatrix(DiagonalMatrix const&) = delete;
 
-      DiagonalMatrix(DiagonalMatrix&& Other) : Size(Other.Size),
-			       Arena(std::move(Other.Arena)),
-			       Data(Other.Data) { Other.Data = nullptr; }
+      DiagonalMatrix(DiagonalMatrix&& Other) = default;
 
       DiagonalMatrix(int Rows_, int Cols_, arena Arena_);
 
-      DiagonalMatrix(int Rows_, int Cols_) : DiagonalMatrix(Rows_, Cols_, get_malloc_arena()) {}
+      DiagonalMatrix(int Rows_, int Cols_) : DiagonalMatrix(Rows_, Cols_, tag_type::template default_arena<T>()) {}
 
       DiagonalMatrix(int Rows_, int Cols_, T const& Fill, arena Arena_);
 
-      DiagonalMatrix(int Rows_, int Cols_, T const& Fill) : DiagonalMatrix(Rows_, Cols_, Fill, get_malloc_arena()) {}
+      DiagonalMatrix(int Rows_, int Cols_, T const& Fill)
+         : DiagonalMatrix(Rows_, Cols_, Fill, tag_type::template default_arena<T>()) {}
 
       // construction via expression template
       template <typename U>
-      DiagonalMatrix(DiagonalMatrixRef<T, U, cpu_tag> const& E, arena Arena_);
+      DiagonalMatrix(DiagonalMatrixRef<T, U, tag_type> const& E, arena Arena_);
 
       template <typename U>
-      DiagonalMatrix(DiagonalMatrixRef<T, U, cpu_tag> const& E) : DiagonalMatrix(E, get_malloc_arena()) {}
+      DiagonalMatrix(DiagonalMatrixRef<T, U, tag_type> const& E) : DiagonalMatrix(E, tag_type::template default_arena<T>()) {}
 
       // construction from intializer list
       template <typename U>
       DiagonalMatrix(std::initializer_list<U> x, arena Arena_);
 
       template <typename U>
-      DiagonalMatrix(std::initializer_list<U> x) : DiagonalMatrix(x, get_malloc_arena()) {}
+      DiagonalMatrix(std::initializer_list<U> x) : DiagonalMatrix(x, tag_type::template default_arena<T>()) {}
 
-      ~DiagonalMatrix() { if (Data) Arena.free(Data, Size); }
+      ~DiagonalMatrix() = default;
 
       DiagonalMatrix& operator=(DiagonalMatrix const& Other)
       {
@@ -89,12 +90,7 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T>, cpu_tag>
 	 return *this;
       }
 
-      DiagonalMatrix& operator=(DiagonalMatrix&& Other)
-      {
-	 Size = Other.Size;
-	 Arena = std::move(Other.Arena); Data = Other.Data; Other.Data = nullptr;
-	 return *this;
-      }
+      DiagonalMatrix& operator=(DiagonalMatrix&& Other) = default;
 
       // assignment of expressions based on the same matrix type -- we don't allow assignment
       // of expression templates of other matrix types (eg gpu_matrix)
@@ -102,36 +98,36 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T>, cpu_tag>
       // eg they would generally block, and we can get the same effect with
       // move construction/assignment and get/set operations.
       template <typename U>
-      DiagonalMatrix& operator=(DiagonalMatrixRef<T, U, cpu_tag> const& E)
+      DiagonalMatrix& operator=(DiagonalMatrixRef<T, U, tag_type> const& E)
       {
 	 assign(*this, E.as_derived());
 	 return *this;
       }
 
       template <typename U>
-      DiagonalMatrix& operator+=(DiagonalMatrixRef<T, U, cpu_tag> const& E)
+      DiagonalMatrix& operator+=(DiagonalMatrixRef<T, U, tag_type> const& E)
       {
 	 add(*this, E.as_derived());
 	 return *this;
       }
 
       template <typename U>
-      DiagonalMatrix& operator-=(DiagonalMatrixRef<T, U, cpu_tag> const& E)
+      DiagonalMatrix& operator-=(DiagonalMatrixRef<T, U, tag_type> const& E)
       {
 	 subtract(*this, E.as_derived());
 	 return *this;
       }
 
-      NormalVectorView<T>
+      normal_vector_view<T, tag_type>
       diagonal()
       {
-         return NormalVectorView<T>(Size, Data);
+         return normal_vector_view<T, tag_type>(Size, Buf.ptr());
       }
 
-      ConstNormalVectorView<T>
+      const_normal_vector_view<T, tag_type>
       diagonal() const
       {
-         return ConstNormalVectorView<T>(Size, Data);
+         return const_normal_vector_view<T, tag_type>(Size, Buf.cptr());
       }
 
       int rows() const { return Size; }
@@ -140,29 +136,41 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T>, cpu_tag>
 
       constexpr int stride() const { return 1; }
 
-      T* storage() { return Data; }
-      T const* storage() const { return Data; }
+      buffer_type& buffer() { return Buf; }
+      buffer_type const& buffer() const { return Buf; }
 
-      T& operator()(int i, int ii)
+      storage_type storage() { return Buf.ptr(); }
+      const_storage_type storage() const { return Buf.cptr(); }
+
+      reference operator()(int i, int ii)
       {
          CHECK_EQUAL(i, ii);
          DEBUG_RANGE_CHECK(i, 0, Size);
-         return Data[i];
+         return Buf[i];
       }
 
-      T const& operator()(int i, int ii) const
+      const_reference operator()(int i, int ii) const
       {
-         DEBUG_RANGE_CHECK(i, 0, Size);
          CHECK_EQUAL(i, ii);
-         return Data[i];
+         DEBUG_RANGE_CHECK(i, 0, Size);
+         return Buf[i];
       }
+
+      static DiagonalMatrix make_identity(int Size);
 
    private:
-      arena Arena;
       int Size;
-      T* Data;
+      buffer_type Buf;
 };
 
+template <typename T, typename Tag>
+inline
+DiagonalMatrix<T, Tag>
+DiagonalMatrix<T, Tag>::make_identity(int Size)
+{
+   DiagonalMatrix<T, Tag> Result(Size, Size, blas::number_traits<T>::identity());
+   return Result;
+}
 
 } // namespace blas
 

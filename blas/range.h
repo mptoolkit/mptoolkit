@@ -47,13 +47,13 @@ class RangeIterator
       RangeIterator(int n_)
          : n(n_) {}
 
-      RangeIterator& operator++() { ++n_; return *this; }
+      RangeIterator& operator++() { ++n; return *this; }
       RangeIterator operator++(int) { return RangeIterator(n++); }
       RangeIterator& operator+=(int i) { n += i; return *this; }
 
       value_type operator[](int i) const { return n+i; }
 
-      value_type operator*() const { return n_; }
+      value_type operator*() const { return n; }
 
       pointer operator*() { return &n; }
 
@@ -73,6 +73,10 @@ class Range : public VectorRef<int, Range, cpu_tag>
       Range(int First, int Last)
         : First_(First), Last_(Last) { DEBUG_PRECONDITION(First <= Last); }
 
+      Range(Range&& Other) = default;
+
+      Range(Range const& Other) : First_(Other.First_), Last_(Other.Last_) {}
+
       Range& operator=(Range const& r) { First_ = r.First_; Last_ = r.Last_; return *this; }
 
       const_iterator begin() const { return iterator(First_); }
@@ -86,10 +90,10 @@ class Range : public VectorRef<int, Range, cpu_tag>
 
       int size() const { return Last_-First_; }
 
-      s operator()(int n) const { return n + First_; }
+      int operator()(int n) const { return n + First_; }
       int operator[](int n) const { return n + First_; }
 
-      constexpr int stride() const { return 1; }
+      static constexpr int stride() { return 1; }
 
       bool operator==(Range const& r) const { return First_ == r.First_ && Last_ == r.Last_; }
       bool operator!=(Range const& r) const { return First_ != r.First_ || Last_ != r.Last_; }
@@ -104,37 +108,26 @@ Range range(int first, int last)
    return Range(first, last);
 }
 
-// Blitz++ style arithmetic on ranges
+// assign_slice is the catch-all for assigning combinations of range, slice, and indices.  Only a few combinations
+// are supported; add others as needed
 
+template <typename T, typename U, typename V, typename Tag>
+void
+assign_slice(NormalMatrix<T, U, Tag>& Out, NormalMatrix<T, V, Tag> const& In, std::vector<int> const& RowTrans, Range ColTrans);
+
+template <typename T, typename U, typename V, typename Tag>
 inline
-Range
-operator+(Range const& r, int x)
+void
+assign_slice(NormalMatrix<T, U, Tag>& Out, NormalMatrix<T, V, Tag> const& In, std::vector<int> const& RowTrans, Range ColTrans)
 {
-   return Range(int(r.first())+x, int(r.last())+x);
+   CHECK_EQUAL(Out.rows(), RowTrans.size());
+   CHECK_EQUAL(Out.cols(), ColTrans.size());
+   for (int r = 0; r < RowTrans.size(); ++r)
+   {
+      Out.as_derived().row(r) = In.as_derived().row(RowTrans[r])[Range];
+   }
 }
 
-inline
-Range
-operator-(Range const& r, int x)
-{
-   return Range(int(r.first())-x, int(r.last())-x);
-}
-
-// FIXME: these should be implemented as specializations of Multiplication
-
-inline
-Range
-operator*(Range const& r, int n)
-{
-   return Range(r.first()*n, r.last()*n);
-}
-
-inline
-Range
-operator*(int n, Range const& r)
-{
-   return Range(n*r.first(), n*r.last());
-}
 
 } // namespace blas
 

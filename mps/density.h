@@ -204,7 +204,7 @@ class DensityMatrixBase
 
    protected:
       // RawDM is (new, old)
-      typedef std::vector<Matrix_Device> RawDMType;
+      typedef std::vector<Matrix> RawDMType;
 
       std::vector<RawDMType> RawDMList;
       std::vector<EigenInfo> EigenInfoList;
@@ -221,6 +221,7 @@ class DensityMatrix<MatrixOperator> : public DensityMatrixBase
    public:
       typedef MatrixOperator OperatorType;
       typedef OperatorType::basis1_type BasisType;
+      using MatrixType = OperatorType::value_type;
 
       // constructs the density matrix eigenstates from Op.  Op must be symmetric (Hermitian)
       DensityMatrix(OperatorType const& Op);
@@ -295,7 +296,7 @@ class SingularDecompositionBase
       double EigenSum() const { return ESum; }
 
    protected:
-      using RawDMType = Matrix_Device;
+      using RawDMType = Matrix;
 
       SingularDecompositionBase();
 

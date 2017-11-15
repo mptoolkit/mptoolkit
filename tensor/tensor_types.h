@@ -30,23 +30,21 @@ using namespace Tensor;
 
 // matrix types
 
+namespace cpu
+{
 using Matrix             = blas::Matrix<complex>;
 using RealMatrix         = blas::Matrix<real>;
 using DiagonalMatrix     = blas::DiagonalMatrix<complex>;
 using RealDiagonalMatrix = blas::DiagonalMatrix<real>;
 using Vector             = blas::Vector<complex>;
 using RealVector         = blas::Vector<real>;
+} // namspace cpu
 
 #if defined(HAVE_CUDA)
 #include "cuda/gpu_matrix.h"
 #include "cuda/gpu_vector.h"
 
-using Matrix_Device             = cuda::gpu_matrix<complex>;
-using RealMatrix_Device         = cuda::gpu_matrix<real>;
-using DiagonalMatrix_Device     = cuda::gpu_diagonal_matrix<complex>;
-using RealDiagonalMatrix_Device = cuda::gpu_diagonal_matrix<real>;
-using Vector_Device             = cuda::gpu_vector<complex>;
-using RealVector_Device         = cuda::gpu_vector<real>;
+using device_tag = blas::gpu_tag;
 
 #elif defined(USE_THREADS)
 #error "thread pool not implemented yet"
@@ -54,30 +52,35 @@ using RealVector_Device         = cuda::gpu_vector<real>;
 #else
 // Fallback to synchronous CPU
 
-using Matrix_Device = Matrix;
-using RealMatrix_Device = RealMatrix;
-using DiagonalMatrix_Device = DiagonalMatrix;
-using RealDiagonalMatrix_Device = RealDiagonalMatrix;
-using Vector_Device = Vector;
-using RealVector_Device = RealVector;
+using device_tag = blas::cpu_tag;
 
 #endif
+
+using Matrix             = blas::Matrix<complex, device_tag>;
+using RealMatrix         = blas::Matrix<real, device_tag>;
+using DiagonalMatrix     = blas::DiagonalMatrix<complex, device_tag>;
+using RealDiagonalMatrix = blas::DiagonalMatrix<real, device_tag>;
+using Vector             = blas::Vector<complex, device_tag>;
+using RealVector         = blas::Vector<real, device_tag>;
 
 // Tensor types.  The matrix versions use device matrices
 
 using SimpleOperator       = IrredTensor<complex>;
 using RealSimpleOperator   = IrredTensor<real>;
 
-using MatrixOperator       = IrredTensor<LinearAlgebra::Matrix_Device<complex>,
+using MatrixOperator       = IrredTensor<Matrix,
                                          VectorBasis,
-                                         VectorBasis>
-using RealMatrixOperator   = IrredTensor<LinearAlgebra::Matrix_Device<real>,
-                                         VectorBasis,
-                                         VectorBasis>
+                                         VectorBasis>;
 
-using RealDiagonalOperator = IrredTensor<LinearAlgebra::DiagonalMatrix_Device<double>,
+using RealMatrixOperator   = IrredTensor<RealMatrix,
+                                         VectorBasis,
+                                         VectorBasis>;
+
+using RealDiagonalOperator = IrredTensor<RealDiagonalMatrix,
                                          VectorBasis,
                                          VectorBasis,
                                          Tensor::DiagonalStructure>;
+
+using SimpleRedOperator = ReducibleTensor<complex, BasisList, BasisList>;
 
 #endif

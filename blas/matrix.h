@@ -143,7 +143,7 @@ class Matrix : public NormalMatrix<T, Matrix<T, Tag>, Tag>
 
       int leading_dimension() const { return LeadingDimension; }
 
-      constexpr char trans() const { return 'N'; }
+      static constexpr char trans() { return 'N'; }
 
       vector_view<T, tag_type>
       row(int r)
@@ -207,12 +207,24 @@ class Matrix : public NormalMatrix<T, Matrix<T, Tag>, Tag>
          return Buf[c*LeadingDimension+r];
       }
 
+      static Matrix make_identity(int Size);
+
    private:
       int Rows;
       int Cols;
       int LeadingDimension;
       buffer_type Buf;
 };
+
+template <typename T, typename Tag>
+inline
+Matrix<T, Tag>
+Matrix<T, Tag>::make_identity(int Size)
+{
+   Matrix<T, Tag> Result(Size, Size, blas::number_traits<T>::zero());
+   fill(Result.diagonal(), blas::number_traits<T>::identity());
+   return Result;
+}
 
 // copy
 

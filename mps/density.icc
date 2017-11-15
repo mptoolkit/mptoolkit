@@ -57,7 +57,9 @@ MatrixOperator DensityMatrix<MatrixOperator>::ConstructTruncator(FwdIterX Start,
       int sp = NewSubspace[q];
       if (sp == -1) continue;
 
-      Transform(sp, s) = RawDMList[q](std::vector<int>(LinearMapping[q].begin(), LinearMapping[q].end()), LinRange);
+      MatrixType Temp(LinearMapping[q].size(), LinRange.size());
+      assign_slice(Temp, RawDMList[q], LinearMapping[q], LinRange);
+      Transform.insert(sp, s, std::move(Temp));
 
 #if defined(RANDOMIZE_VECTORS)
       for (unsigned i = 0; i < LinearMapping[q].size(); ++i)
