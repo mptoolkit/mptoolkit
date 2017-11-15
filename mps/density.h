@@ -204,7 +204,7 @@ class DensityMatrixBase
 
    protected:
       // RawDM is (new, old)
-      typedef std::vector<Matrix> RawDMType;
+      using RawDMType = Matrix;
 
       std::vector<RawDMType> RawDMList;
       std::vector<EigenInfo> EigenInfoList;

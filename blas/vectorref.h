@@ -90,6 +90,13 @@ void subtract(VectorRef<T, U, Tag>& A, VectorRef<T, V, Tag> const& B)
 // storage() returns an opaque type that contains the backing storage of the vector,
 // and stride() is the array stride (the INC parameter in BLAS calls).
 
+// some forward declarations for the operator[]
+template <typename T, typename Tag>
+class vector_view;
+template <typename T, typename Tag>
+class const_vector_view;
+class Range;
+
 template <typename ValueType, typename DerivedType, typename Tag>
 class BlasVector : public VectorRef<ValueType, DerivedType, Tag>
 {
@@ -105,15 +112,9 @@ class BlasVector : public VectorRef<ValueType, DerivedType, Tag>
       ~BlasVector() = default;
       BlasVector(BlasVector&& Other) = default;
 
-      vector_view<ValueType, Tag> operator[](Range r)
-      {
-	 return vector_view<ValueType, Tag>(r.size(), this->stride(), this->storage()+r.start);
-      }
+      vector_view<ValueType, Tag> operator[](Range r);
 
-      const_vector_view<ValueType, Tag> operator[](Range r) const
-      {
-	 return const_vector_view<ValueType, Tag>(r.size(), this->stride(), this->storage()+r.start);
-      }
+      const_vector_view<ValueType, Tag> operator[](Range r) const;
 
       int stride() const { return this->as_derived().stride(); }
 
@@ -317,5 +318,7 @@ void subtract(BlasVectorProxy<T, U, Tag>&& A, ScaledVector<T, V, Tag> const& B)
 }
 
 } // namespace blas
+
+#include "vectorref.icc"
 
 #endif

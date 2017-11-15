@@ -116,6 +116,10 @@ class BlasMatrix : public MatrixRef<ValueType, DerivedType, Tag>
       const_storage_type storage() const& { return this->as_derived().storage(); }
 };
 
+// forward
+template <typename ValueType, typename Tag>
+class matrix_range_view;
+
 // Denotes an L-value matrix, which is a BlasMatrix with the trans() parameter equal to 'N'
 template <typename ValueType, typename DerivedType, typename Tag>
 class NormalMatrix : public BlasMatrix<ValueType, DerivedType, Tag>
@@ -137,14 +141,17 @@ class NormalMatrix : public BlasMatrix<ValueType, DerivedType, Tag>
       // The BLAS trans parameter ('N', 'T', 'C', 'R' - note 'R' is a BLAS extension denoting conjugation)
       constexpr char trans() const { return 'N'; }
 
+      matrix_range_view<ValueType, Tag>
+      operator()(Range rows, Range cols);
+
       storage_type storage() & { return this->as_derived().storage(); }
       const_storage_type storage() const& { return this->as_derived().storage(); }
 };
 
-// proxy class for a matrix that can appear on the left-hand side of an expression
+// proxy class for a matrix that can appear on the left-hand side of an expression as an r-value reference
 
 template <typename ValueType, typename DerivedType, typename Tag>
-class MatrixProxy : public BlasMatrix<ValueType, DerivedType, Tag>
+class NormalMatrixProxy : public BlasMatrix<ValueType, DerivedType, Tag>
 {
    public:
       using value_type         = ValueType;
@@ -154,14 +161,14 @@ class MatrixProxy : public BlasMatrix<ValueType, DerivedType, Tag>
       using storage_type       = typename buffer_type::storage_type;
       using const_storage_type = typename buffer_type::const_storage_type;
 
-      MatrixProxy() = default;
-      ~MatrixProxy() = default;
-      MatrixProxy(MatrixProxy&& Other) = default;
+      NormalMatrixProxy() = default;
+      ~NormalMatrixProxy() = default;
+      NormalMatrixProxy(NormalMatrixProxy&& Other) = default;
 
       int leading_dimension() const { return this->as_derived().leading_dimension(); }
 
       // The BLAS trans parameter ('N', 'T', 'C', 'R' - note 'R' is a BLAS extension denoting conjugation)
-      char trans() const { return this->as_derived().trans(); }
+      constexpr char trans() const { return 'N'; }
 
       storage_type storage() && { return this->as_derived().storage(); }
       const_storage_type storage() const& { return this->as_derived().storage(); }
@@ -802,6 +809,28 @@ vector_sum(blas::BlasVector<T, U, Tag> const& x)
 // MATRIX middle-layer BLAS wrappers, that forward from a matrix/vector ref to low-level storage
 //
 
+// assign_slice is the catch-all for assigning combinations of range, slice, and indices.  Only a few combinations
+// are supported; add others as needed
+
+template <typename T, typename U, typename V, typename Tag>
+void
+assign_slice(NormalMatrix<T, U, Tag>& Out, NormalMatrix<T, V, Tag> const& In,
+             std::vector<int> const& RowTrans, Range ColTrans);
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void
+assign_slice(NormalMatrix<T, U, Tag>& Out, NormalMatrix<T, V, Tag> const& In,
+             std::vector<int> const& RowTrans, Range ColTrans)
+{
+   CHECK_EQUAL(Out.rows(), RowTrans.size());
+   CHECK_EQUAL(Out.cols(), ColTrans.size());
+   for (int r = 0; r < RowTrans.size(); ++r)
+   {
+      Out.as_derived().row(r) = In.as_derived().row(RowTrans[r])[ColTrans];
+   }
+}
+
 template <typename T, typename U, typename Tag>
 inline
 void clear(NormalMatrix<T, U, Tag>& C)
@@ -811,7 +840,7 @@ void clear(NormalMatrix<T, U, Tag>& C)
 
 template <typename T, typename U, typename Tag>
 inline
-void clear(MatrixProxy<T, U, Tag>&& C)
+void clear(NormalMatrixProxy<T, U, Tag>&& C)
 {
    matrix_clear(C.rows(), C.cols(), std::move(C).storage(), C.leading_dimension());
 }
@@ -858,7 +887,7 @@ template <typename T, typename U, typename V, typename W, typename Tag>
 inline
 void gemm(T alpha, BlasMatrix<T, U, Tag> const& A,
           T beta, BlasMatrix<T, V, Tag> const& B,
-          MatrixProxy<T, W, Tag>&& C)
+          NormalMatrixProxy<T, W, Tag>&& C)
 {
    DEBUG_CHECK_EQUAL(A.cols(), B.rows());
    DEBUG_CHECK_EQUAL(A.rows(), C.rows());
@@ -878,7 +907,7 @@ void matrix_copy_scaled(T alpha, BlasMatrix<T, U, Tag> const& A, NormalMatrix<T,
 
 template <typename T, typename U, typename V, typename Tag>
 inline
-void matrix_copy_scaled(T alpha, BlasMatrix<T, U, Tag> const& A, MatrixProxy<T, V, Tag>&& C)
+void matrix_copy_scaled(T alpha, BlasMatrix<T, U, Tag> const& A, NormalMatrixProxy<T, V, Tag>&& C)
 {
    matrix_copy_scaled(A.trans(), A.rows(), A.cols(), alpha, A.storage(), A.leading_dimension(),
                       std::move(C).storage(), C.leading_dimension());
@@ -894,7 +923,7 @@ void matrix_copy(BlasMatrix<T, U, Tag> const& A, NormalMatrix<T, V, Tag>& C)
 
 template <typename T, typename U, typename V, typename Tag>
 inline
-void matrix_copy(BlasMatrix<T, U, Tag> const& A, MatrixProxy<T, V, Tag>&& C)
+void matrix_copy(BlasMatrix<T, U, Tag> const& A, NormalMatrixProxy<T, V, Tag>&& C)
 {
    matrix_copy(A.trans(), A.rows(), A.cols(), A.storage(), A.leading_dimension(),
                std::move(C).storage(), C.leading_dimension());
@@ -910,7 +939,7 @@ void matrix_add_scaled(T alpha, BlasMatrix<T, U, Tag> const& A, NormalMatrix<T, 
 
 template <typename T, typename U, typename V, typename Tag>
 inline
-void matrix_add_scaled(T alpha, BlasMatrix<T, U, Tag> const& A, MatrixProxy<T, V, Tag>&& C)
+void matrix_add_scaled(T alpha, BlasMatrix<T, U, Tag> const& A, NormalMatrixProxy<T, V, Tag>&& C)
 {
    matrix_add_scaled(A.trans(), A.rows(), A.cols(), alpha, A.storage(), A.leading_dimension(),
                      std::move(C).storage(), C.leading_dimension());
@@ -926,7 +955,7 @@ void matrix_add(BlasMatrix<T, U, Tag> const& A, NormalMatrix<T, V, Tag>& C)
 
 template <typename T, typename U, typename V, typename Tag>
 inline
-void matrix_add(BlasMatrix<T, U, Tag> const& A, MatrixProxy<T, V, Tag>&& C)
+void matrix_add(BlasMatrix<T, U, Tag> const& A, NormalMatrixProxy<T, V, Tag>&& C)
 {
    matrix_add(A.trans(), A.rows(), A.cols(), A.storage(), A.leading_dimension(),
               C.storage(), C.leading_dimension());
@@ -962,7 +991,7 @@ void DiagonalizeSymmetric(NormalMatrix<double, U, Tag>& M, NormalVectorProxy<dou
    DiagonalizeSymmetric(M.rows(), M.storage(), M.leading_dimension(), v.storage());
 }
 
-// TODO: we could also add versions where M is passed as a MatrixProxy
+// TODO: we could also add versions where M is passed as a NormalMatrixProxy
 
 template <typename U, typename V, typename Tag>
 inline
@@ -999,5 +1028,7 @@ void DiagonalizeHermitian(NormalMatrix<std::complex<double>, U, Tag>& M, NormalV
 }
 
 } // namespace blas
+
+#include "matrixref.icc"
 
 #endif

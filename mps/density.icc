@@ -29,10 +29,10 @@ MatrixOperator DensityMatrix<MatrixOperator>::ConstructTruncator(FwdIterX Start,
    // make a pass over the eigenvalue list and get the linear indices of the
    // states to keep for each quantum number
    int NumQ = B.size();
-   std::vector<std::set<int> > LinearMapping(NumQ);
+   std::vector<std::vector<int> > LinearMapping(NumQ);
    for (FwdIterX Iter = Start; Iter != End; ++Iter)
    {
-      LinearMapping[Iter->Subspace].insert(Iter->Index);
+      LinearMapping[Iter->Subspace].push_back(Iter->Index);
    }
 
    // Now we construct the truncated basis
@@ -72,56 +72,6 @@ MatrixOperator DensityMatrix<MatrixOperator>::ConstructTruncator(FwdIterX Start,
    return Transform;
 }
 
-template <typename FwdIterX>
-RealMatrixOperator DensityMatrix<MatrixOperator>::ConstructTruncator(FwdIterX Start, FwdIterX End) const
-{
-   VectorBasis NewBasis(B.GetSymmetryList());
-
-   // make a pass over the eigenvalue list and get the linear indices of the
-   // states to keep for each quantum number
-   int NumQ = B.size();
-   std::vector<std::set<int> > LinearMapping(NumQ);
-   for (FwdIterX Iter = Start; Iter != End; ++Iter)
-   {
-      LinearMapping[Iter->Subspace].insert(Iter->Index);
-   }
-
-   // Now we construct the truncated basis
-   std::vector<int> NewSubspace(NumQ, -1); // maps the q to the new label
-   for (int q = 0; q < NumQ; ++q)
-   {
-      if (LinearMapping[q].size() > 0)
-      {
-         NewSubspace[q] = NewBasis.size();
-         NewBasis.push_back(B[q], LinearMapping[q].size());
-      }
-   }
-   // Now we construct the actual transform
-   RealMatrixOperator Transform(NewBasis, B.MappedBasis(), QuantumNumber(B.GetSymmetryList()));
-   for (std::size_t s = 0; s < Transform.Basis2().size(); ++s)
-   {
-      int q;
-      blas::Range LinRange;
-      std::tie(q, LinRange) = B.Lookup(s);
-
-      // sp is the subspace in NewBasis
-      int sp = NewSubspace[q];
-      if (sp == -1) continue;
-
-      Transform(sp, s) = RawDMList[q](std::vector<int>(LinearMapping[q].begin(), LinearMapping[q].end()), LinRange);
-
-#if defined(RANDOMIZE_VECTORS)
-      for (unsigned i = 0; i < LinearMapping[q].size(); ++i)
-      {
-         Transform(sp, s)(i, LinearAlgebra::all) *= std::pow(-1, i);
-      }
-#endif
-
-   }
-   return Transform;
-}
-
-
 //
 // DensityMatrix<SimpleOperator>
 //
@@ -153,7 +103,7 @@ SimpleOperator DensityMatrix<SimpleOperator>::ConstructTruncator(FwdIter Start, 
          int qp, qpi;
          std::tie(qp, qpi) = KeptStates[sp];
          if (qp == q)
-            Transform(sp, s) = RawDMList[q](qpi, qi);
+            Transform.insert(sp, s, RawDMList[q](qpi, qi));
       }
    }
    return Transform;
@@ -188,7 +138,7 @@ SimpleOperator DensityMatrix<SimpleOperator>::ConstructUnnormalizedTruncator(Fwd
          int qp, qpi;
          std::tie(qp, qpi) = KeptStates[sp];
          if (qp == q)
-            Transform(sp, s) = RawDMList[q](qpi, qi) * KeptEigenvalue[sp];
+            Transform.insert(sp, s, get_wait(RawDMList[q](qpi, qi)) * KeptEigenvalue[sp]);
       }
    }
    return Transform;

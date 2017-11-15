@@ -199,10 +199,11 @@ void DensityMatrixBase::DiagonalizeDMHelper(bool Sort)
       int CurrentDegree = degree(this->Lookup(q1));
       //      std::cout << "Raw DM is\n" << RawDMList[q1] << std::endl;
       //      TRACE(RawDMList[q1])(RawDMList[q1].size1())(RawDMList[q1].size2());
-      Eigenvalues = DiagonalizeHermitian(RawDMList[q1]);
-
+      blas::Vector<double, blas::gpu_tag> EVal(RawDMList[q1].rows());
+      DiagonalizeHermitian(RawDMList[q1], EVal);
+      blas::Vector<double> Eigenvalues = get_wait(EVal);
       // add the eigenvalues and eigenvector pointers to EigenInfoList
-      for (std::size_t i = 0; i < RawDMList[q1].size1(); ++i)
+      for (std::size_t i = 0; i < RawDMList[q1].cols(); ++i)
       {
          EigenInfoList.push_back(EigenInfo(Eigenvalues[i], CurrentDegree, q1, i));
          ESum += Eigenvalues[i] * CurrentDegree;
@@ -240,13 +241,13 @@ DensityMatrix<MatrixOperator>::DensityMatrix(MatrixOperator const& Op)
       for (auto const& cOp : rOp)
       {
          int tp;
-         LinearAlgebra::Range rtp;
+         blas::Range rtp;
          std::tie(tp, rtp) = B.Lookup(rOp.row());
          int t;
-         LinearAlgebra::Range rt;
+         blas::Range rt;
          std::tie(t, rt) = B.Lookup(cOp.col());
          CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal")(B[tp])(B[t])(Op)(B);
-         RawDMList[tp](rtp, rt) = *J;
+         RawDMList[tp](rtp, rt) = cOp.value;
       }
    }
    // diagonalize them
@@ -342,7 +343,7 @@ DensityMatrix<SimpleOperator>::DensityMatrix(SimpleOperator const& Op)
    {
       int Dim = B.dim(q);
       //      std::cout << "dimension of " << q << " is " << Dim << std::endl;
-      RawDMList[q] = Matrix_Device(Dim, Dim, 0);
+      RawDMList[q] = Matrix(Dim, Dim, 0);
       MaxLinearDimension = std::max<int>(MaxLinearDimension, Dim);
    }
    // Fill the raw density matrices
@@ -355,7 +356,7 @@ DensityMatrix<SimpleOperator>::DensityMatrix(SimpleOperator const& Op)
          int t, rt;
          std::tie(t, rt) = B.Lookup(cOp.col());
          CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal");
-         RawDMList[tp](rtp, rt) = *J;
+         RawDMList[tp](rtp, rt).set_wait(cOp.value);
       }
    }
    // diagonalize them
@@ -439,8 +440,8 @@ void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType> const& M)
    ESum = 0;  // Running sum of squares of the singular values
    for (std::size_t i = 0; i < M.size(); ++i)
    {
-      Matrix_Device U, Vh;
-      RealVector_Device D;
+      Matrix U, Vh;
+      RealVector D;
       SingularValueDecomposition(M[i], U, D, Vh);
 
       LeftVectors.push_back(U);

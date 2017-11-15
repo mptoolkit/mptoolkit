@@ -27,6 +27,7 @@
 #include "common/trace.h"
 #include "arena.h"
 #include "vectorref.h"
+#include "matrixref.h"
 #include "vector_view.h"
 #include <list>
 #include <mutex>

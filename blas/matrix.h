@@ -64,6 +64,8 @@ class Matrix : public NormalMatrix<T, Matrix<T, Tag>, Tag>
       using reference          = typename buffer_type::reference;
       using const_reference    = typename buffer_type::const_reference;
 
+      using NormalMatrix<T, Matrix<T, Tag>, Tag>::operator();
+
       Matrix() = delete;
 
       Matrix(Matrix const&) = delete;

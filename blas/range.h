@@ -20,7 +20,7 @@
 #if !defined(MPTOOLKIT_BLAS_RANGE_H)
 #define MPTOOLKIT_BLAS_RANGE_H
 
-#include "vector.h"
+#include "vectorref.h"
 
 namespace blas
 {
@@ -33,6 +33,7 @@ namespace blas
 //
 
 class Range;
+class cpu_tag;
 
 class RangeIterator
 {
@@ -107,27 +108,6 @@ Range range(int first, int last)
 {
    return Range(first, last);
 }
-
-// assign_slice is the catch-all for assigning combinations of range, slice, and indices.  Only a few combinations
-// are supported; add others as needed
-
-template <typename T, typename U, typename V, typename Tag>
-void
-assign_slice(NormalMatrix<T, U, Tag>& Out, NormalMatrix<T, V, Tag> const& In, std::vector<int> const& RowTrans, Range ColTrans);
-
-template <typename T, typename U, typename V, typename Tag>
-inline
-void
-assign_slice(NormalMatrix<T, U, Tag>& Out, NormalMatrix<T, V, Tag> const& In, std::vector<int> const& RowTrans, Range ColTrans)
-{
-   CHECK_EQUAL(Out.rows(), RowTrans.size());
-   CHECK_EQUAL(Out.cols(), ColTrans.size());
-   for (int r = 0; r < RowTrans.size(); ++r)
-   {
-      Out.as_derived().row(r) = In.as_derived().row(RowTrans[r])[Range];
-   }
-}
-
 
 } // namespace blas
 
