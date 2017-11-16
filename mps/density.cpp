@@ -440,16 +440,19 @@ void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType> const& M)
    ESum = 0;  // Running sum of squares of the singular values
    for (std::size_t i = 0; i < M.size(); ++i)
    {
-      Matrix U, Vh;
-      RealVector D;
-      SingularValueDecomposition(M[i], U, D, Vh);
+      int nv = std::min(M[i].rows(), M[i].cols());
+      Matrix U(M[i].rows(),nv);
+      Matrix Vh(nv, M[i].cols());
+      RealVector D_device(nv);
+      SingularValueDecomposition(M[i], U, D_device, Vh);
+      cpu::RealVector D = get_wait(std::move(D_device));
 
       LeftVectors.push_back(U);
       RightVectors.push_back(Vh);
-      SingularValues.push_back(D);
+      SingularValues.push_back(D_device);
 
       int CurrentDegree = degree(this->Lookup(i));
-      for (unsigned j = 0; j < size(D); ++j)
+      for (unsigned j = 0; j < D.size(); ++j)
       {
          double Weight = D[j]*D[j];
          EigenInfoList.push_back(EigenInfo(Weight, CurrentDegree, i, j));
@@ -491,18 +494,18 @@ SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(Mat
    }
 
    // fill the raw matrices with the components in M
-   for (MatrixOperator::const_iterator I = iterate(M); I; ++I)
+   for (auto const& Mr : M)
    {
-      for (MatrixOperator::const_inner_iterator J = iterate(I); J; ++J)
+      std::pair<int, blas::Range> iIndex = B1.Lookup(Mr.row());
+      for (auto const& Mc : Mr)
       {
-         // determine where this (i,j) component fits within the matrices
-         std::pair<int, blas::Range> iIndex = B1.Lookup(J.index1());
-         std::pair<int, blas::Range> jIndex = B2.Lookup(J.index2());
+                  // determine where this (i,j) component fits within the matrices
+         std::pair<int, blas::Range> jIndex = B2.Lookup(Mc.col());
          // map the index into the used subspaces
          int Subspace = IndexOfi[iIndex.first];
          CHECK(Subspace != -1);
          CHECK_EQUAL(q_jLinear[Subspace], jIndex.first);
-         Matrices[Subspace](iIndex.second, jIndex.second) = *J;
+         Matrices[Subspace](iIndex.second, jIndex.second) = Mc.value;
       }
    }
 
@@ -516,10 +519,9 @@ SingularDecomposition<MatrixOperator, MatrixOperator>::Lookup(int Subspace) cons
    return UsedQuantumNumbers[Subspace];
 }
 
-void
+std::tuple<MatrixOperator, RealDiagonalOperator, MatrixOperator>
 SingularDecomposition<MatrixOperator, MatrixOperator>::
-ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
-                  MatrixOperator& A, RealDiagonalOperator& C, MatrixOperator& B)
+ConstructOrthoMatrices(std::vector<std::vector<int> > const& LinearMapping)
 {
    // Construct the truncated basis
    int NumQ = UsedQuantumNumbers.size();
@@ -535,8 +537,8 @@ ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
    }
 
    // Now we construct the actual matrices
-   A = MatrixOperator(B1.MappedBasis(), NewBasis);
-   B = MatrixOperator(NewBasis, B2.MappedBasis());
+   MatrixOperator A = MatrixOperator(B1.MappedBasis(), NewBasis);
+   MatrixOperator B = MatrixOperator(NewBasis, B2.MappedBasis());
    for (int q = 0; q < NumQ; ++q)
    {
       int ss = NewSubspace[q];
@@ -552,7 +554,9 @@ ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
       int i = B1.MappedBasis().find_first(Q);
       while (i != -1)
       {
-         A(i,ss) = LeftVectors[q](B1.Lookup(i).second, lm);
+         Matrix Temp(B1.Lookup(i).second.size(), lm.size());
+         assign_slice(Temp, LeftVectors[q], B1.Lookup(i).second, lm);
+         A.insert(i,ss, std::move(Temp));
          i = B1.MappedBasis().find_next(Q, i);
       }
 
@@ -560,19 +564,23 @@ ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
       int j = B2.MappedBasis().find_first(Q);
       while (j != -1)
       {
-         B(ss,j) = RightVectors[q](lm, B2.Lookup(j).second);
+         Matrix Temp(lm.size(), B2.Lookup(j).second.size());
+         assign_slice(Temp, RightVectors[q], lm, B2.Lookup(j).second);
+         B.insert(ss,j, std::move(Temp));
          j = B2.MappedBasis().find_next(Q, j);
       }
    }
 
    // Finally the center matrix
-   C = RealDiagonalOperator(NewBasis, NewBasis);
+   RealDiagonalOperator C = RealDiagonalOperator(NewBasis, NewBasis);
    for (int i = 0; i < NumQ; ++i)
    {
       if (!LinearMapping[i].empty())
       {
          int b = NewSubspace[i];
-         C(b,b) = DiagonalMatrix_Device(SingularValues[i][std::vector<int>(LinearMapping[i].begin(), LinearMapping[i].end())]);
+         RealDiagonalMatrix Temp(int(LinearMapping[i].size()));
+         assign_permutation(Temp.diagonal(), SingularValues[i], &LinearMapping[i][0]);
+         C.insert(b,b, std::move(Temp));
       }
    }
 
@@ -587,8 +595,8 @@ SingularDecomposition<StateComponent, StateComponent>::Lookup(int Subspace) cons
 }
 
 SingularDecomposition<StateComponent, StateComponent>::
-SingularDecomposition(StateComponent const& A, ProductBasis<BasisList, BasisList> const& Factors_)
-   : SingularDecompositionBase(), B1(A.Basis1()), B2(A.Basis2()), Factors(Factors_)
+SingularDecomposition(StateComponent const& A, ProductBasis<BasisList, BasisList> Factors_)
+   : SingularDecompositionBase(), B1(A.Basis1()), B2(A.Basis2()), Factors(std::move(Factors_))
 {
    using QuantumNumbers::QuantumNumberList;
 
@@ -703,10 +711,8 @@ SingularDecomposition(StateComponent const& A, ProductBasis<BasisList, BasisList
                             RightSubspaceInfo[lin_2].k);
          for ( ; klIter != klEnd; ++klIter)
          {
-            const_inner_iterator<MatrixOperator>::type J = iterate_at(A[*klIter].data(),
-                                                                      LeftSubspaceInfo[lin_1].s,
-                                                                      RightSubspaceInfo[lin_2].s);
-            if (J)
+            auto J = A[*klIter].data().row(LeftSubspaceInfo[lin_1].s).find(RightSubspaceInfo[lin_2].s);
+            if (J != A[*klIter].data().row(LeftSubspaceInfo[lin_1].s).end())
             {
                double Coeff
                   = inverse_product_coefficient(Factors.Left()[LeftSubspaceInfo[lin_1].k],
@@ -728,7 +734,7 @@ SingularDecomposition(StateComponent const& A, ProductBasis<BasisList, BasisList
 
                Matrices[LeftSubspaceInfo[lin_1].LinearIndex](LeftSubspaceInfo[lin_1].LinearRange,
                                                              RightSubspaceInfo[lin_2].LinearRange)
-                  += NormFactor * Coeff * (*J);
+                  += NormFactor * Coeff * (*J).value;
             }
          }
       }
@@ -738,10 +744,9 @@ SingularDecomposition(StateComponent const& A, ProductBasis<BasisList, BasisList
    this->Diagonalize(Matrices);
 }
 
-void
+std::tuple<StateComponent, RealDiagonalOperator, StateComponent>
 SingularDecomposition<StateComponent, StateComponent>::
-ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
-                  StateComponent& A, RealDiagonalOperator& C, StateComponent& B)
+ConstructOrthoMatrices(std::vector<std::vector<int> > const& LinearMapping)
 {
    int NumQ = UsedQuantumNumbers.size();
    VectorBasis NewBasis(B1.GetSymmetryList());
@@ -757,7 +762,7 @@ ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
       }
    }
    // Now we construct the actual matrices, firstly for the left
-   A = StateComponent(Factors.Left(), B1, NewBasis);
+   StateComponent A(Factors.Left(), B1, NewBasis);
    for (unsigned i = 0; i < LeftSubspaceInfo.size(); ++i)
    {
       int ss = LeftSubspaceInfo[i].LinearIndex;
@@ -770,32 +775,37 @@ ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
          double NormFactor = std::sqrt(double(degree(A.Basis2()[NewSubspace[ss]]))
                                        / degree(A.Basis1()[LeftSubspaceInfo[i].s]));
 
-         A[LeftSubspaceInfo[i].k](LeftSubspaceInfo[i].s, NewSubspace[ss])
-            = NormFactor * LeftVectors[ss](LeftSubspaceInfo[i].LinearRange, lm);
+         Matrix Temp(LeftSubspaceInfo[i].LinearRange.size(), lm.size());
+         assign_slice(Temp,  LeftVectors[ss], LeftSubspaceInfo[i].LinearRange, lm);
+         scale(Temp, complex(NormFactor));
+         A[LeftSubspaceInfo[i].k].insert(LeftSubspaceInfo[i].s, NewSubspace[ss], std::move(Temp));
       }
    }
 
    // now the right
-   B = StateComponent(Factors.Right(), NewBasis, B2);
+   StateComponent B(Factors.Right(), NewBasis, B2);
    for (unsigned i = 0; i < RightSubspaceInfo.size(); ++i)
    {
       int ss = RightSubspaceInfo[i].LinearIndex;
       std::vector<int> lm(LinearMapping[ss].begin(), LinearMapping[ss].end());
       if (!lm.empty())
       {
-         B[RightSubspaceInfo[i].k](NewSubspace[ss], RightSubspaceInfo[i].s)
-            = RightVectors[ss](lm, RightSubspaceInfo[i].LinearRange);
+         Matrix Temp(lm.size(), RightSubspaceInfo[i].LinearRange.size());
+         assign_slice(Temp, RightVectors[ss], lm, RightSubspaceInfo[i].LinearRange);
+         B[RightSubspaceInfo[i].k].insert(NewSubspace[ss], RightSubspaceInfo[i].s, Temp);
       }
    }
 
    // Finally the center matrix
-   C = RealDiagonalOperator(NewBasis, NewBasis);
+   RealDiagonalOperator C(NewBasis, NewBasis);
    for (int i = 0; i < NumQ; ++i)
    {
       if (!LinearMapping[i].empty())
       {
          int b = NewSubspace[i];
-         C(b,b) = DiagonalMatrix_Device(SingularValues[i][std::vector<int>(LinearMapping[i].begin(), LinearMapping[i].end())]);
+         RealDiagonalMatrix Temp(int(LinearMapping[i].size()));
+         assign_permutation(Temp.diagonal(), SingularValues[i], &LinearMapping[i][0]);
+         C.insert(b,b, std::move(Temp));
       }
    }
 }

@@ -805,6 +805,18 @@ vector_sum(blas::BlasVector<T, U, Tag> const& x)
    return y;
 }
 
+template <typename T, typename U, typename V, typename Tag>
+void assign_permutation(BlasVector<T, U, Tag>& A, BlasVector<T, V, Tag> const& B, int const* Iter)
+{
+   vector_permute(A.size(), A.storage(), A.stride(), B.storage(), B.stride(), Iter);
+}
+
+template <typename T, typename U, typename V, typename Tag>
+void assign_permutation(BlasVectorProxy<T, U, Tag>&& A, BlasVector<T, V, Tag> const& B, int const* Iter)
+{
+   vector_permute(A.size(), std::move(A).storage(), A.stride(), B.storage(), B.stride(), Iter);
+}
+
 //
 // MATRIX middle-layer BLAS wrappers, that forward from a matrix/vector ref to low-level storage
 //
@@ -831,6 +843,20 @@ assign_slice(NormalMatrix<T, U, Tag>& Out, NormalMatrix<T, V, Tag> const& In,
    }
 }
 
+template <typename T, typename U, typename V, typename Tag>
+inline
+void
+assign_slice(NormalMatrix<T, U, Tag>& Out, NormalMatrix<T, V, Tag> const& In,
+             Range RowTrans, std::vector<int> const& ColTrans)
+{
+   CHECK_EQUAL(Out.rows(), RowTrans.size());
+   CHECK_EQUAL(Out.cols(), ColTrans.size());
+   for (int c = 0; c < ColTrans.size(); ++c)
+   {
+      Out.as_derived().col(c) = In.as_derived().col(ColTrans[c])[RowTrans];
+   }
+}
+
 template <typename T, typename U, typename Tag>
 inline
 void clear(NormalMatrix<T, U, Tag>& C)
@@ -843,6 +869,13 @@ inline
 void clear(NormalMatrixProxy<T, U, Tag>&& C)
 {
    matrix_clear(C.rows(), C.cols(), std::move(C).storage(), C.leading_dimension());
+}
+
+template <typename T, typename U, typename Tag>
+inline
+void scale(NormalMatrix<T, U, Tag>& C, T x)
+{
+   matrix_scale(C.rows(), C.cols(), x, C.storage(), C.leading_dimension());
 }
 
 template <typename T, typename U, typename V, typename W, typename Tag>
@@ -1025,6 +1058,40 @@ void DiagonalizeHermitian(NormalMatrix<std::complex<double>, U, Tag>& M, NormalV
 {
    CHECK_EQUAL(M.rows(), M.cols());
    DiagonalizeHermitian(M.rows(), M.storage(), M.leading_dimension(), v.storage());
+}
+
+//
+// SingularValueDecomposition
+//
+
+template <typename M, typename U, typename D, typename V, typename Tag>
+void
+SingularValueDecomposition(NormalMatrix<double, M, Tag> const& Mmat, NormalMatrix<double, U, Tag>& Umat,
+                           NormalVector<double, D, Tag>& Dvec, NormalMatrix<double, V, Tag>& Vmat)
+{
+   CHECK_EQUAL(Dvec.size(), std::min(Mmat.rows(), Mmat.cols()));
+   CHECK_EQUAL(Mmat.rows(), Umat.rows());
+   CHECK_EQUAL(Umat.rows(), Dvec.size());
+   CHECK_EQUAL(Dvec.size(), Vmat.rows());
+   CHECK_EQUAL(Vmat.cols(), Mmat.cols());
+   SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(), Dvec.storage(),
+                              Vmat.storage(), Vmat.leading_dimension());
+}
+
+template <typename M, typename U, typename D, typename V, typename Tag>
+void
+SingularValueDecomposition(NormalMatrix<std::complex<double>, M, Tag> const& Mmat,
+                           NormalMatrix<std::complex<double>, U, Tag>& Umat,
+                           NormalVector<double, D, Tag>& Dvec,
+                           NormalMatrix<std::complex<double>, V, Tag>& Vmat)
+{
+   CHECK_EQUAL(Dvec.size(), std::min(Mmat.rows(), Mmat.cols()));
+   CHECK_EQUAL(Mmat.rows(), Umat.rows());
+   CHECK_EQUAL(Umat.rows(), Dvec.size());
+   CHECK_EQUAL(Dvec.size(), Vmat.rows());
+   CHECK_EQUAL(Vmat.cols(), Mmat.cols());
+   SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(), Dvec.storage(),
+                              Vmat.storage(), Vmat.leading_dimension());
 }
 
 } // namespace blas

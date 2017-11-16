@@ -149,39 +149,35 @@ SimpleOperator DensityMatrix<SimpleOperator>::ConstructUnnormalizedTruncator(Fwd
 //
 
 template <typename FwdIter>
-void
+std::tuple<StateComponent, RealDiagonalOperator, StateComponent>
 SingularDecomposition<StateComponent, StateComponent>::
-ConstructMatrices(FwdIter first, FwdIter last,
-                  StateComponent& A, RealDiagonalOperator& C, StateComponent& B)
+ConstructMatrices(FwdIter first, FwdIter last)
 {
    // make a pass over the eigenvalue list and get the linear indices of the
    // states to keep for each quantum number
    int NumQ = UsedQuantumNumbers.size();
-   std::vector<std::set<int> > LinearMapping(NumQ);
+   std::vector<std::vector<int> > LinearMapping(NumQ);
    for (FwdIter Iter = first; Iter != last; ++Iter)
    {
-      LinearMapping[Iter->Subspace].insert(Iter->Index);
+      LinearMapping[Iter->Subspace].push_back(Iter->Index);
    }
 
-   this->ConstructOrthoMatrices(LinearMapping, A, C, B);
+   return this->ConstructOrthoMatrices(LinearMapping);
 }
 
 template <typename FwdIter>
-void
+std::tuple<MatrixOperator, RealDiagonalOperator, MatrixOperator>
 SingularDecomposition<MatrixOperator, MatrixOperator>::
-ConstructMatrices(FwdIter first, FwdIter last,
-                       MatrixOperator& A,
-                       RealDiagonalOperator& C,
-                       MatrixOperator& B)
+ConstructMatrices(FwdIter first, FwdIter last)
 {
    // make a pass over the eigenvalue list and get the linear indices of the
    // states to keep for each quantum number
    int NumQ = UsedQuantumNumbers.size();
-   std::vector<std::set<int> > LinearMapping(NumQ);
+   std::vector<std::vector<int> > LinearMapping(NumQ);
    for (FwdIter Iter = first; Iter != last; ++Iter)
    {
-      LinearMapping[Iter->Subspace].insert(Iter->Index);
+      LinearMapping[Iter->Subspace].push_back(Iter->Index);
    }
 
-   this->ConstructOrthoMatrices(LinearMapping, A, C, B);
+   return this->ConstructOrthoMatrices(LinearMapping);
 }

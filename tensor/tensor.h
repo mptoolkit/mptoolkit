@@ -111,6 +111,9 @@ struct DiagonalStructure
 {
    template <typename T>
    using value = blas::DiagonalMatrix<T>;
+
+   template <typename T>
+   using tag_type = typename TagOf<T>::type;
 };
 
 // For operations that act on the structure and potentially modify it,
@@ -165,9 +168,9 @@ class IrredTensor
 
       using numeric_type   = typename StructureType::value_type;
 
-      using iterator       = typename StructureType::iterator;
-      using const_iterator = typename StructureType::const_iterator;
-      using row_type       = typename StructureType::row_type;
+      //      using row_type       = typename StructureType::row_type;
+      //using iterator       = typename StructureType::iterator;
+      //using const_iterator = typename StructureType::const_iterator;
 
       using tag_type       = typename Structure::template tag_type<T>;
 
@@ -220,16 +223,16 @@ class IrredTensor
 
       int nnz() const { return Data_.nnz(); }
 
-      iterator begin() noexcept { return Data_.begin(); }
-      const_iterator begin() const noexcept { return Data_.begin(); }
-      const_iterator cbegin() const noexcept { return Data_.begin(); }
+      typename StructureType::iterator begin() noexcept { return Data_.begin(); }
+      typename StructureType::const_iterator begin() const noexcept { return Data_.begin(); }
+      typename StructureType::const_iterator cbegin() const noexcept { return Data_.begin(); }
 
-      iterator end() noexcept { return Data_.end(); }
-      const_iterator end() const noexcept { return Data_.end(); }
-      const_iterator cend() const noexcept { return Data_.end(); }
+      typename StructureType::iterator end() noexcept { return Data_.end(); }
+      typename StructureType::const_iterator end() const noexcept { return Data_.end(); }
+      typename StructureType::const_iterator cend() const noexcept { return Data_.end(); }
 
-      row_type& operator[](int r) { return Data_[r]; }
-      row_type const& operator[](int r) const { return Data_[r]; }
+      typename StructureType::row_type& operator[](int r) { return Data_[r]; }
+      typename StructureType::row_type const& operator[](int r) const { return Data_[r]; }
 
       IrredTensor& operator+=(IrredTensor const& Op);
       IrredTensor& operator+=(IrredTensor&& Op);
@@ -365,7 +368,7 @@ IrredTensor<T, B, B2, S>::make_identity(B const& b)
    IrredTensor<T, B, B, S> Result(b, b, QuantumNumber(b.GetSymmetryList()));
    for (std::size_t i = 0; i < b.size(); ++i)
    {
-      Result(i,i) = ::Tensor::make_identity<T>(b, i);
+      Result.insert(i,i, Tensor::make_identity<T>(b, i));
    }
    return Result;
 }

@@ -25,7 +25,6 @@
 #include "blas/diagonalmatrix.h"
 #include "blas/range.h"
 #include <tuple>
-#include <set>
 #include <list>
 
 // sometimes we need a number of states that stands for 'infinite'
@@ -339,10 +338,8 @@ class SingularDecomposition<MatrixOperator, MatrixOperator> : public SingularDec
       SingularDecomposition(MatrixOperator const& M);
 
       template <typename FwdIter>
-      void ConstructMatrices(FwdIter first, FwdIter last,
-                             MatrixOperator& A,
-                             RealDiagonalOperator& C,
-                             MatrixOperator& B);
+      std::tuple<MatrixOperator, RealDiagonalOperator, MatrixOperator>
+      ConstructMatrices(FwdIter first, FwdIter last);
 
    private:
       QuantumNumber Lookup(int Subspace) const;
@@ -352,8 +349,8 @@ class SingularDecomposition<MatrixOperator, MatrixOperator> : public SingularDec
       std::vector<int> IndexOfi;
       std::vector<QuantumNumber> UsedQuantumNumbers;  // in order
 
-      void ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
-                                  MatrixOperator& A, RealDiagonalOperator& C, MatrixOperator& B);
+      std::tuple<MatrixOperator, RealDiagonalOperator, MatrixOperator>
+      ConstructOrthoMatrices(std::vector<std::vector<int> > const& LinearMapping);
 };
 
 typedef SingularDecomposition<MatrixOperator, MatrixOperator> CMatSVD;  // avoid typing...
@@ -366,19 +363,17 @@ class SingularDecomposition<StateComponent, StateComponent> : public SingularDec
       typedef StateComponent right_type;
       typedef RealDiagonalOperator diagonal_type;
 
-      SingularDecomposition(StateComponent const& A, ProductBasis<BasisList, BasisList> const& Factors);
+      SingularDecomposition(StateComponent const& A, ProductBasis<BasisList, BasisList> Factors);
 
       template <typename FwdIter>
-      void ConstructMatrices(FwdIter first, FwdIter last,
-                             StateComponent& A,
-                             RealDiagonalOperator& C,
-                             StateComponent& B);
+      std::tuple<StateComponent, RealDiagonalOperator, StateComponent>
+      ConstructMatrices(FwdIter first, FwdIter last);
 
    private:
       QuantumNumber Lookup(int Subspace) const;
 
-      void ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
-                                  StateComponent& A, RealDiagonalOperator& C, StateComponent& B);
+      std::tuple<StateComponent, RealDiagonalOperator, StateComponent>
+      ConstructOrthoMatrices(std::vector<std::vector<int> > const& LinearMapping);
 
       VectorBasis B1, B2;
       ProductBasis<BasisList, BasisList> Factors;

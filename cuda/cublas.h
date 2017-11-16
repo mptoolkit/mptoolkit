@@ -34,6 +34,11 @@
 #include <cublas_v2.h>
 #include "cub.h"
 
+#include <thrust/device_ptr.h>
+#include <thrust/device_vector.h>
+#include <thrust/copy.h>
+#include <thrust/iterator/permutation_iterator.h>
+
 #include <iostream>
 
 namespace cublas
@@ -224,6 +229,18 @@ vector_add(int n, cuda::const_gpu_ptr<double> x, int incx,
            cuda::gpu_ptr<double> y, int incy)
 {
    vector_add_scaled(n, 1.0, x, incx, y, incy);
+}
+
+inline
+void
+vector_permute(int n, cuda::const_gpu_ptr<double> x, int incx, cuda::gpu_ptr<double> y, int incy, int const* Perm)
+{
+   CHECK_EQUAL(incx, 1);
+   CHECK_EQUAL(incy, 1);
+   thrust::device_vector<int> DevPerm(Perm, Perm+n);
+   thrust::copy(thrust::make_permutation_iterator(thrust::device_pointer_cast(y.device_ptr()), DevPerm.begin()),
+                thrust::make_permutation_iterator(thrust::device_pointer_cast(y.device_ptr()+n), DevPerm.end()),
+                thrust::device_pointer_cast(x.device_ptr()));
 }
 
 // BLAS level 2
