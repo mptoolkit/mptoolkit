@@ -198,6 +198,20 @@ struct number_traits<std::complex<float128>> : public detail::blas_trans_complex
 };
 #endif
 
+// some miscellaneous functions for scalars
+
+inline
+void add_inner_prod(double x, double y, double& r)
+{
+   r += x*y;
+}
+
+inline
+void add_inner_prod(std::complex<double> x, std::complex<double> y, std::complex<double>& r)
+{
+   r += std::conj(x)*y;
+}
+
 } // namespace blas
 
 #endif

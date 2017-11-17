@@ -178,6 +178,28 @@ BasicSparseVector<T, U, V>& operator+=(BasicSparseVector<T, U, V>& x, BasicSpars
    return x;
 }
 
+template <typename T, typename U, typename V, typename W, typename X, typename R>
+void
+add_inner_prod(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y, R& result)
+{
+   auto xi = x.begin();
+   auto yi = y.begin();
+   while (xi != x.end() && yi != y.end())
+   {
+      if (xi.index == yi.index)
+      {
+         add_inner_prod(xi.value, yi.value, result);
+         ++xi;
+         ++yi;
+      }
+      // can't allow fall through here since we need to loop back and check against end()
+      else if (xi.index < yi.index)
+         ++xi;
+      else // if (yi.index < xi.index)
+         ++yi;
+   }
+}
+
 template <typename T>
 using SparseRowVector = BasicSparseVector<T, detail::SparseRowIterator<T>, detail::ConstSparseRowIterator<T>>;
 
@@ -197,7 +219,6 @@ class SparseMatrixRow : public SparseRowVector<T>
    private:
       int Row;
 };
-
 
 template <typename T>
 class SparseMatrix
