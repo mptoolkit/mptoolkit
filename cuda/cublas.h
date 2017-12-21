@@ -231,6 +231,8 @@ vector_add(int n, cuda::const_gpu_ptr<double> x, int incx,
    vector_add_scaled(n, 1.0, x, incx, y, incy);
 }
 
+#if 0
+// alternative implementation in cub.h
 inline
 void
 vector_permute(int n, cuda::const_gpu_ptr<double> x, int incx, cuda::gpu_ptr<double> y, int incy, int const* Perm)
@@ -238,10 +240,11 @@ vector_permute(int n, cuda::const_gpu_ptr<double> x, int incx, cuda::gpu_ptr<dou
    CHECK_EQUAL(incx, 1);
    CHECK_EQUAL(incy, 1);
    thrust::device_vector<int> DevPerm(Perm, Perm+n);
-   thrust::copy(thrust::make_permutation_iterator(thrust::device_pointer_cast(y.device_ptr()), DevPerm.begin()),
-                thrust::make_permutation_iterator(thrust::device_pointer_cast(y.device_ptr()+n), DevPerm.end()),
-                thrust::device_pointer_cast(x.device_ptr()));
+   thrust::copy_n(thrust::make_permutation_iterator(thrust::device_pointer_cast(x.device_ptr()), DevPerm.begin()),
+		  n,
+		  thrust::device_pointer_cast(y.device_ptr()));
 }
+#endif
 
 // BLAS level 2
 

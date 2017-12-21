@@ -342,25 +342,25 @@ class const_gpu_ptr
 
       ~const_gpu_ptr() = default;
 
-      void wait(event const& e)
+      void wait(event const& e) const
       {
          Buf.wait(e);
       }
 
       template <typename U>
-      void wait_for(gpu_buffer<U> const& Other)
+      void wait_for(gpu_buffer<U> const& Other) const
       {
          Buf.wait_for(Other);
       }
 
       template <typename U>
-      void wait_for(gpu_ptr<U> const& Other)
+      void wait_for(gpu_ptr<U> const& Other) const
       {
          Buf.wait_for(Other);
       }
 
       template <typename U>
-      void wait_for(const_gpu_ptr<U> const& Other)
+      void wait_for(const_gpu_ptr<U> const& Other) const
       {
          Buf.wait_for(Other);
       }
@@ -565,6 +565,8 @@ gpu_buffer<T>::operator[](int n)
 //
 // helper functions for temporary allocations
 //
+
+// TODO: **BUG** deallocations should be done with respect to a stream
 
 void* allocate_gpu_temporary(int Size);
 

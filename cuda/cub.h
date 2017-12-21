@@ -39,6 +39,10 @@ vector_sum(int Size, cuda::const_gpu_ptr<T> const& x, int incx, cuda::gpu_ref<T>
 template <typename T>
 void vector_fill(double alpha, int N, cuda::gpu_ptr<T>  y, int incy);
 
+template <typename T>
+void
+vector_permute(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::gpu_ptr<T> y, int incy, int const* Perm);
+
 } // namespace cuda
 
 #endif

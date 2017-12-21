@@ -98,24 +98,36 @@ std::list<cudaStream_t> StreamFreeList;
 cudaStream_t AllocateStream()
 {
    std::lock_guard<std::mutex> lock(StreamFreeListMutex);
-   if (StreamFreeList.empty())
+   // search for a stream that isn't in use, we search in reverse order
+   // just to simplify the logic
+   std::list<cudaStream_t>::iterator sIter = StreamFreeList.end();
+   cudaError_t e = cudaErrorNotReady;
+   while (e == cudaErrorNotReady && sIter != StreamFreeList.begin())
    {
+      --sIter;
+      cudaError_t e = cudaStreamQuery(*sIter);
+   }
+   if (e == cudaErrorNotReady) // did we fail to find an unused stream?
+   {
+      // create some more streams
       for (int i = 0; i < 10; ++i)
       {
 	 cudaStream_t s;
 	 check_error(cudaStreamCreate(&s));
 	 StreamFreeList.push_back(s);
       }
+      // return the last one
+      sIter = StreamFreeList.end();
+      --sIter;
    }
-   cudaStream_t s = StreamFreeList.back();
-   StreamFreeList.pop_back();
-   return s;
+   StreamFreeList.erase(sIter);
+   return *sIter;
 }
 
 void FreeStream(cudaStream_t stream_)
 {
    std::lock_guard<std::mutex> lock(StreamFreeListMutex);
-   StreamFreeList.push_back(stream_);
+   StreamFreeList.push_front(stream_);
 }
 
 // event management
