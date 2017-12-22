@@ -112,13 +112,14 @@ class BlasVector : public VectorRef<ValueType, DerivedType, Tag>
       ~BlasVector() = default;
       BlasVector(BlasVector&& Other) = default;
 
-      vector_view<ValueType, Tag> operator[](Range r);
+      vector_view<ValueType, Tag> operator[](Range r) &;
 
-      const_vector_view<ValueType, Tag> operator[](Range r) const;
+      const_vector_view<ValueType, Tag> operator[](Range r) const&;
 
       int stride() const { return this->as_derived().stride(); }
 
       storage_type storage() & { return this->as_derived().storage(); }
+      storage_type storage() && { return this->as_derived().storage(); }
       const_storage_type storage() const & { return this->as_derived().storage(); }
 };
 
@@ -140,6 +141,9 @@ class BlasVectorProxy : public BlasVector<ValueType, DerivedType, Tag>
       BlasVectorProxy(BlasVectorProxy&& Other) = default;
 
       int stride() const { return this->as_derived().stride(); }
+
+      vector_view<ValueType, Tag> operator[](Range r) &&;
+      const_vector_view<ValueType, Tag> operator[](Range r) const&;
 
       storage_type storage() && { return static_cast<derived_type&&>(this->as_derived()).storage(); }
       const_storage_type storage() const& { return this->as_derived().storage(); }

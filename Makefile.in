@@ -146,7 +146,7 @@ blasobj = matrix-lapack.o
 cudakernelobj = cub.cu.o
 
 # all cuda-related objects; this includes the cuda kernel objects as host objects
-cudaobj = cuda.o cublas.o cusolver.o gpu.o $(cudakernelobj)
+cudaobj = cuda.o cublas.o cusolver.o gpu.o gpu_buffer.o $(cudakernelobj)
 
 mpobj = $(mpoobj) $(mpsobj) $(latticeobj) $(wavefunctionobj) $(blasobj)
 

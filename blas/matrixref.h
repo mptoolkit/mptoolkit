@@ -75,7 +75,7 @@ class MatrixRef
 // derived class for a diagonal matrix
 
 template <typename ValueType, typename DerivedType, typename Tag>
-class DiagonalMatrixRef : MatrixRef<ValueType, DerivedType, Tag>
+class DiagonalMatrixRef : public MatrixRef<ValueType, DerivedType, Tag>
 {
    public:
       using value_type     = ValueType;
@@ -144,8 +144,36 @@ class NormalMatrix : public BlasMatrix<ValueType, DerivedType, Tag>
       matrix_range_view<ValueType, Tag>
       operator()(Range rows, Range cols);
 
-      storage_type storage() & { return this->as_derived().storage(); }
-      const_storage_type storage() const& { return this->as_derived().storage(); }
+      normal_vector_view<ValueType, Tag>
+      col(int c)
+      {
+	 DEBUG_RANGE_CHECK_OPEN(c, 0, this->cols());
+	 return normal_vector_view<ValueType, Tag>(this->rows(), this->storage()+c*this->leading_dimension());
+      }
+
+      const_normal_vector_view<ValueType, Tag>
+      col(int c) const
+      {
+	 DEBUG_RANGE_CHECK_OPEN(c, 0, this->cols());
+	 return const_normal_vector_view<ValueType, Tag>(this->rows(), this->storage()+c*this->leading_dimension());
+      }
+
+      vector_view<ValueType, Tag>
+      row(int r)
+      {
+	 DEBUG_RANGE_CHECK_OPEN(r, 0, this->rows());
+	 return vector_view<ValueType, Tag>(this->cols(), this->leading_dimension(), this->storage()+r);
+      }
+
+      const_vector_view<ValueType, Tag>
+      row(int r) const
+      {
+	 DEBUG_RANGE_CHECK_OPEN(r, 0, this->rows());
+	 return vector_view<ValueType, Tag>(this->cols(), this->leading_dimension(), this->storage()+r);
+      }
+      
+      storage_type storage() { return this->as_derived().storage(); }
+      const_storage_type storage() const { return this->as_derived().storage(); }
 };
 
 // proxy class for a matrix that can appear on the left-hand side of an expression as an r-value reference
@@ -169,6 +197,37 @@ class NormalMatrixProxy : public BlasMatrix<ValueType, DerivedType, Tag>
 
       // The BLAS trans parameter ('N', 'T', 'C', 'R' - note 'R' is a BLAS extension denoting conjugation)
       constexpr char trans() const { return 'N'; }
+
+      matrix_range_view<ValueType, Tag>
+      operator()(Range rows, Range cols) &&;
+
+      normal_vector_view<ValueType, Tag>
+      col(int c) &&
+      {
+	 DEBUG_RANGE_CHECK_OPEN(c, 0, this->cols());
+	 return normal_vector_view<ValueType, Tag>(this->rows(), this->storage()+c*this->leading_dimension());
+      }
+
+      const_normal_vector_view<ValueType, Tag>
+      col(int c) const&
+      {
+	 DEBUG_RANGE_CHECK_OPEN(c, 0, this->cols());
+	 return const_normal_vector_view<ValueType, Tag>(this->rows(), this->storage()+c*this->leading_dimension());
+      }
+
+      vector_view<ValueType, Tag>
+      row(int r) &&
+      {
+	 DEBUG_RANGE_CHECK_OPEN(r, 0, this->rows());
+	 return vector_view<ValueType, Tag>(this->cols(), this->leading_dimension(), this->storage()+r);
+      }
+
+      const_vector_view<ValueType, Tag>
+      row(int r) const&
+      {
+	 DEBUG_RANGE_CHECK_OPEN(r, 0, this->rows());
+	 return vector_view<ValueType, Tag>(this->cols(), this->leading_dimension(), this->storage()+r);
+      }
 
       storage_type storage() && { return this->as_derived().storage(); }
       const_storage_type storage() const& { return this->as_derived().storage(); }
@@ -411,6 +470,14 @@ void assign(MatrixRef<T, U, Tag>& A, MatrixRef<T, V, Tag> const& B)
 
 template <typename T, typename U, typename V, typename Tag>
 inline
+void assign(MatrixRef<T, U, Tag>&& A, MatrixRef<T, V, Tag> const& B)
+{
+   matrix_copy(B.as_derived(), std::move(A.as_derived()));
+}
+
+
+template <typename T, typename U, typename V, typename Tag>
+inline
 void add(MatrixRef<T, U, Tag>& A, MatrixRef<T, V, Tag> const& B)
 {
    matrix_add(B.as_derived(), A.as_derived());
@@ -418,9 +485,23 @@ void add(MatrixRef<T, U, Tag>& A, MatrixRef<T, V, Tag> const& B)
 
 template <typename T, typename U, typename V, typename Tag>
 inline
+void add(MatrixRef<T, U, Tag>&& A, MatrixRef<T, V, Tag> const& B)
+{
+   matrix_add(B.as_derived(), std::move(A.as_derived()));
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
 void subtract(MatrixRef<T, U, Tag>& A, MatrixRef<T, V, Tag> const& B)
 {
    matrix_add_scaled(-number_traits<T>::identity(), B.as_derived(), A.as_derived());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void subtract(MatrixRef<T, U, Tag>&& A, MatrixRef<T, V, Tag> const& B)
+{
+   matrix_add_scaled(-number_traits<T>::identity(), B.as_derived(), std::move(A.as_derived()));
 }
 
 template <typename T, typename U, typename Tag>
@@ -471,6 +552,13 @@ inline
 void add(MatrixRef<T, U, Tag>& A, ScaledMatrix<T, V, Tag> const& B)
 {
    matrix_add_scaled(B.factor(), B.base(), A.as_derived());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void add(MatrixRef<T, U, Tag>&& A, ScaledMatrix<T, V, Tag> const& B)
+{
+   matrix_add_scaled(B.factor(), B.base(), std::move(A.as_derived()));
 }
 
 template <typename T, typename U, typename V, typename Tag>
@@ -797,7 +885,7 @@ vector_sum(blas::BlasVector<T, U, Tag> const& x, typename Tag::template async_re
 }
 
 template <typename T, typename U, typename Tag>
-T
+typename Tag::template async_ref<T>
 vector_sum(blas::BlasVector<T, U, Tag> const& x)
 {
    typename Tag::template async_ref<T> y;
@@ -806,15 +894,70 @@ vector_sum(blas::BlasVector<T, U, Tag> const& x)
 }
 
 template <typename T, typename U, typename V, typename Tag>
+inline
+void
+inner_prod(blas::BlasVector<T, U, Tag> const& x, 
+	   blas::BlasVector<T, V, Tag> const& y, 
+	   typename Tag::template async_ref<T>& z)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_inner_prod(x.size(), x.storage(), x.stride(), y.storage(), y.stride(), z);
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void
+inner_prod(blas::BlasVector<T, U, Tag> const& x, 
+	   blas::BlasVector<T, V, Tag> const& y, 
+	   typename Tag::template async_ref<T>&& z)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_inner_prod(x.size(), x.storage(), x.stride(), y.storage(), y.stride(), std::move(z));
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+typename Tag::template async_ref<T>
+inner_prod(blas::BlasVector<T, U, Tag> const& x, 
+	   blas::BlasVector<T, V, Tag> const& y)
+{
+   typename Tag::template async_ref<T> z;
+   vector_inner_prod(x,y,z);
+   return z;
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void
+add_inner_prod(blas::BlasVector<T, U, Tag> const& x, 
+	       blas::BlasVector<T, V, Tag> const& y, 
+	       typename Tag::template async_ref<T>& z)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_add_inner_prod(x.size(), x.storage(), y.storage(), z);
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+typename Tag::template async_ref<T>
+add_inner_prod(blas::BlasVector<T, U, Tag> const& x, 
+	       blas::BlasVector<T, V, Tag> const& y)
+{
+   typename Tag::template async_ref<T> z;
+   vector_add_inner_prod(x,y,z);
+   return z;
+}
+
+template <typename T, typename U, typename V, typename Tag>
 void assign_permutation(BlasVector<T, U, Tag>& A, BlasVector<T, V, Tag> const& B, int const* Iter)
 {
-   vector_permute(A.size(), A.storage(), A.stride(), B.storage(), B.stride(), Iter);
+   vector_permute(A.size(), B.storage(), B.stride(), A.storage(), A.stride(), Iter);
 }
 
 template <typename T, typename U, typename V, typename Tag>
 void assign_permutation(BlasVectorProxy<T, U, Tag>&& A, BlasVector<T, V, Tag> const& B, int const* Iter)
 {
-   vector_permute(A.size(), std::move(A).storage(), A.stride(), B.storage(), B.stride(), Iter);
+   vector_permute(A.size(), B.storage(), B.stride(), std::move(A).storage(), A.stride(), Iter);
 }
 
 //
@@ -876,6 +1019,63 @@ inline
 void scale(NormalMatrix<T, U, Tag>& C, T x)
 {
    matrix_scale(C.rows(), C.cols(), x, C.storage(), C.leading_dimension());
+}
+
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void
+inner_prod(blas::BlasMatrix<T, U, Tag> const& x, 
+	   blas::BlasMatrix<T, V, Tag> const& y, 
+	   typename Tag::template async_ref<T>& z)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   matrix_inner_prod(x.trans(), y.trans(), x.rows(), x.cols(), 
+		     x.storage(), x.leading_dimension(), 
+		     y.storage(), y.leading_dimension(),
+		     z);
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void
+inner_prod(blas::BlasMatrix<T, U, Tag> const& x, 
+	   blas::BlasMatrix<T, V, Tag> const& y, 
+	   typename Tag::template async_ref<T>&& z)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   matrix_inner_prod(x.trans(), y.trans(), x.rows(), x.cols(), 
+		     x.storage(), x.leading_dimension(), 
+		     y.storage(), y.leading_dimension(),
+		     z);
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void
+add_inner_prod(blas::BlasMatrix<T, U, Tag> const& x, 
+	       blas::BlasMatrix<T, V, Tag> const& y, 
+	       typename Tag::template async_ref<T>& z)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   matrix_add_inner_prod(x.trans(), y.trans(), x.rows(), x.cols(), 
+			 x.storage(), x.leading_dimension(), 
+			 y.storage(), y.leading_dimension(),
+			 z);
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void
+add_inner_prod(blas::BlasMatrix<T, U, Tag> const& x, 
+	       blas::BlasMatrix<T, V, Tag> const& y, 
+	       typename Tag::template async_ref<T>&& z)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   matrix_add_inner_prod(x.trans(), y.trans(), x.rows(), x.cols(), 
+			 x.storage(), x.leading_dimension(), 
+			 y.storage(), y.leading_dimension(),
+			 z);
 }
 
 template <typename T, typename U, typename V, typename W, typename Tag>
@@ -951,7 +1151,7 @@ inline
 void matrix_copy(BlasMatrix<T, U, Tag> const& A, NormalMatrix<T, V, Tag>& C)
 {
    matrix_copy(A.trans(), A.rows(), A.cols(), A.storage(), A.leading_dimension(),
-                      C.storage(), C.leading_dimension());
+	       C.storage(), C.leading_dimension());
 }
 
 template <typename T, typename U, typename V, typename Tag>
@@ -1066,7 +1266,7 @@ void DiagonalizeHermitian(NormalMatrix<std::complex<double>, U, Tag>& M, NormalV
 
 template <typename M, typename U, typename D, typename V, typename Tag>
 void
-SingularValueDecomposition(NormalMatrix<double, M, Tag> const& Mmat, NormalMatrix<double, U, Tag>& Umat,
+SingularValueDecomposition(NormalMatrix<double, M, Tag>&& Mmat, NormalMatrix<double, U, Tag>& Umat,
                            NormalVector<double, D, Tag>& Dvec, NormalMatrix<double, V, Tag>& Vmat)
 {
    CHECK_EQUAL(Dvec.size(), std::min(Mmat.rows(), Mmat.cols()));
@@ -1075,12 +1275,13 @@ SingularValueDecomposition(NormalMatrix<double, M, Tag> const& Mmat, NormalMatri
    CHECK_EQUAL(Dvec.size(), Vmat.rows());
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
    SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(), Dvec.storage(),
+			      Umat.storage(), Umat.leading_domension(),
                               Vmat.storage(), Vmat.leading_dimension());
 }
 
 template <typename M, typename U, typename D, typename V, typename Tag>
 void
-SingularValueDecomposition(NormalMatrix<std::complex<double>, M, Tag> const& Mmat,
+SingularValueDecomposition(NormalMatrix<std::complex<double>, M, Tag>&& Mmat,
                            NormalMatrix<std::complex<double>, U, Tag>& Umat,
                            NormalVector<double, D, Tag>& Dvec,
                            NormalMatrix<std::complex<double>, V, Tag>& Vmat)
@@ -1091,6 +1292,7 @@ SingularValueDecomposition(NormalMatrix<std::complex<double>, M, Tag> const& Mma
    CHECK_EQUAL(Dvec.size(), Vmat.rows());
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
    SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(), Dvec.storage(),
+			      Umat.storage(), Umat.leading_dimension(),
                               Vmat.storage(), Vmat.leading_dimension());
 }
 

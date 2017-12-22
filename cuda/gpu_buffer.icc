@@ -20,6 +20,43 @@
 namespace cuda
 {
 
+inline
+void* BlockAllocator::allocate(std::size_t Size, std::size_t Align)
+{
+   // walk the existing allocations and try to find somewhere that fits
+   for (auto& a : Allocations)
+   {
+      void* p = a.try_allocate(Size, Align);
+      if (p)
+	 return p;
+   }
+   // failed to allocate, need another block.  Allocating another block forces a device synchronization
+   // so we might as well flush the gpu_buffers now.
+   size_t BlockSize = round_up(Size, BlockMultiple);
+   Allocations.push_back(AllocationBlock(BlockSize, FreeOnDestructor));
+   void* p = Allocations.back().try_allocate(Size, Align);
+   TryFlushGpuBuffers();  // async here to avoid blocking in the event that another thread
+   // has allocated a buffer since we allocated the new block.
+   return p;
+}
+
+inline
+void* BlockAllocator::allocate(std::size_t Size)
+{
+   return this->allocate(Size, 1);
+}
+
+inline
+void BlockAllocator::free(void* Ptr, std::size_t Size)
+{
+   for (auto& a : Allocations)
+   {
+      if (a.try_free(Ptr, Size))
+	 return;
+   }
+   PANIC("Attempt to free memory that wasn't allocated by this allocator!")(Ptr);
+}
+
 template <typename T>
 template <typename U>
 inline
@@ -34,6 +71,15 @@ template <typename U>
 inline
 void
 gpu_buffer<T>::wait_for(const_gpu_ptr<U> const& Other) const
+{
+   this->wait(Other.sync());
+}
+
+template <typename T>
+template <typename U>
+inline
+void
+gpu_buffer<T>::wait_for(gpu_ref<U> const& Other) const
 {
    this->wait(Other.sync());
 }
@@ -80,24 +126,47 @@ gpu_buffer<T>::cptr(int Offset) const
    return const_gpu_ptr<T>(*this, Offset);
 }
 
+template <typename T>
+gpu_buffer<T>::~gpu_buffer()
+{
+   if (Stream.is_running())
+   {
+      AddToPendingDelete(Stream, Arena, Ptr, ByteSize);
+   }
+   else
+   {
+      Arena.free(Ptr, ByteSize);
+   }
+}
+
 namespace detail
 {
 extern blas::arena gpu_temp_arena;
+
+using GpuBufferDeleteRecType = std::tuple<cuda::stream, blas::arena, void*, std::size_t>;
+
 } // namespace detail
+
+template <typename T>
+inline
+gpu_buffer<T>
+allocate_gpu_temporary(int Size)
+{
+   return gpu_buffer<T>::allocate(Size, detail::gpu_temp_arena);
+}
 
 inline
 void*
-allocate_gpu_temporary(int Size)
+allocate_gpu_temp_memory(int Size)
 {
    return detail::gpu_temp_arena.allocate(Size, 32*8);
 }
 
 inline
 void
-free_gpu_temporary(void* Buf, int Size)
+free_gpu_temp_memory(void* Buf, int Size)
 {
    detail::gpu_temp_arena.free(Buf, Size);
 }
-
 
 } // namespace cuda

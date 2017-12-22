@@ -228,6 +228,62 @@ vector_sum(int N, std::complex<double> const* x, int incx, std::complex<double>&
    r = rr;
 }
 
+void
+vector_inner_prod(int N, double const* x, int incx, double const* y, int incy, double& r)
+{
+   double rr = 0.0;
+   for (int i = 0; i < N; ++i)
+   {
+      rr += (*x) * (*y);
+      x += incx;
+      y += incy;
+   }
+   r = rr;
+}
+
+void
+vector_inner_prod(int N, std::complex<double> const* x, int incx, 
+		  std::complex<double> const* y, int incy, 
+		  std::complex<double>& r)
+{
+   std::complex<double> rr = 0.0;
+   for (int i = 0; i < N; ++i)
+   {
+      rr += std::conj(*x) * (*y);
+      x += incx;
+      y += incy;
+   }
+   r = rr;
+}
+
+void
+vector_add_inner_prod(int N, double const* x, int incx, double const* y, int incy, double& r)
+{
+   double rr = 0.0;
+   for (int i = 0; i < N; ++i)
+   {
+      rr += (*x) * (*y);
+      x += incx;
+      y += incy;
+   }
+   r += rr;
+}
+
+void
+vector_add_inner_prod(int N, std::complex<double> const* x, int incx, 
+		      std::complex<double> const* y, int incy, 
+		      std::complex<double>& r)
+{
+   std::complex<double> rr = 0.0;
+   for (int i = 0; i < N; ++i)
+   {
+      rr += std::conj(*x) * (*y);
+      x += incx;
+      y += incy;
+   }
+   r += rr;
+}
+
 //
 // matrix_clear
 //
@@ -658,5 +714,76 @@ matrix_add_scaled(char Atrans, int M, int N, std::complex<double> alpha,
    }
 }
 
+void
+matrix_inner_prod(char Atrans, char Btrans, int M, int N,
+		  double const* A, int ldA,
+		  double const* B, int ldB,
+		  double& r)
+{
+   r = 0.0;
+   matrix_add_inner_prod(Atrans, Btrans, M, N, A, ldA, B, ldB, r);
+}
+
+void
+matrix_inner_prod(char Atrans, char Btrans, int M, int N,
+		  std::complex<double> const* A, int ldA,
+		  std::complex<double> const* B, int ldB,
+		  std::complex<double>& r)
+{
+   r = 0.0;
+   matrix_add_inner_prod(Atrans, Btrans, M, N, A, ldA, B, ldB, r);
+}
+
+void
+matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
+		      double const* A, int ldA,
+		      double const* B, int ldB,
+		      double& r)
+{
+   double rr = 0.0;
+   if (Atrans == 'N' && Btrans == 'N')
+   {
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+	    rr += A[r] * B[r];
+	 }
+         A += ldA;
+         B += ldB;
+      }
+   }
+   else
+   {
+      PANIC("not yet implemented");
+   }
+   r += rr;
+}
+
+void
+matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
+		      std::complex<double> const* A, int ldA,
+		      std::complex<double> const* B, int ldB,
+		      std::complex<double>& r)
+{
+   std::complex<double> rr = 0.0;
+   if (Atrans == 'N' && Btrans == 'N')
+   {
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+	    rr += std::conj(A[r]) * B[r];
+	 }
+         A += ldA;
+         B += ldB;
+      }
+   }
+   else
+   {
+      PANIC("not yet implemented");
+   }
+   r += rr;
+}
 
 } // namespace blas

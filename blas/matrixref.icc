@@ -27,7 +27,15 @@ matrix_range_view<ValueType, Tag>
 NormalMatrix<ValueType, DerivedType, Tag>::operator()(Range R, Range C)
 {
    return matrix_range_view<ValueType, Tag>(R.size(), C.size(), this->leading_dimension(),
-                                            this->storage().ptr(C.first()*this->leading_dimension() + R.first()));
+                                            this->storage() + C.first()*this->leading_dimension() + R.first());
+}
+
+template <typename ValueType, typename DerivedType, typename Tag>
+matrix_range_view<ValueType, Tag>
+NormalMatrixProxy<ValueType, DerivedType, Tag>::operator()(Range R, Range C) &&
+{
+   return matrix_range_view<ValueType, Tag>(R.size(), C.size(), this->leading_dimension(),
+                                            this->storage() + C.first()*this->leading_dimension() + R.first());
 }
 
 } // namespace blas

@@ -19,6 +19,7 @@
 
 #include "cub/cub.cuh"
 #include "cuda/cub.h"
+#include "cuda/gpu_buffer.h"
 #include <type_traits>
 #include "common/trace.h"
 
@@ -77,15 +78,16 @@ template <typename T>
 void
 vector_sum(int Size, cuda::const_gpu_ptr<T> const& x, int incx, cuda::gpu_ref<T>&& r)
 {
-   r.wait(x.sync());
    std::size_t TempStorageBytes = 0;
-   void* TempStorage = nullptr;
-   cub::DeviceReduce::Sum(TempStorage, TempStorageBytes, detail::stride_ptr<T const>(x.device_ptr(), incx),
-                          r.device_ptr(), Size, r.get_stream().raw_stream());
-   TempStorage = cuda::allocate_gpu_temporary(TempStorageBytes);
-   cub::DeviceReduce::Sum(TempStorage, TempStorageBytes, detail::stride_ptr<T const>(x.device_ptr(), incx),
-                          r.device_ptr(), Size, r.get_stream().raw_stream());
-   cuda::free_gpu_temporary(TempStorage, TempStorageBytes);
+   cub::DeviceReduce::Sum(nullptr, TempStorageBytes, detail::stride_ptr<T const>(x.device_ptr(), incx),
+                          r.device_ptr(), Size);
+   gpu_buffer<unsigned char> TempBuffer = allocate_gpu_temporary<unsigned char>(TempStorageBytes);
+   TempBuffer.wait_for(x);
+   TempBuffer.wait_for(r);
+   cub::DeviceReduce::Sum(static_cast<void*>(TempBuffer.device_ptr()), TempStorageBytes, 
+			  detail::stride_ptr<T const>(x.device_ptr(), incx),
+                          r.device_ptr(), Size, TempBuffer.get_stream().raw_stream());
+   r.wait(TempBuffer.sync());
    x.wait(r.sync());
 }
 
@@ -93,107 +95,106 @@ template <typename T>
 void
 vector_sum(int Size, cuda::const_gpu_ptr<T> const& x, int incx, cuda::gpu_ref<T>& r)
 {
-   r.wait(x.sync());
    std::size_t TempStorageBytes = 0;
-   void* TempStorage = nullptr;
-   cub::DeviceReduce::Sum(TempStorage, TempStorageBytes, detail::stride_ptr<T const>(x.device_ptr(), incx),
-                          r.device_ptr(), Size, r.get_stream().raw_stream());
-   TempStorage = cuda::allocate_gpu_temporary(TempStorageBytes);
-   cub::DeviceReduce::Sum(TempStorage, TempStorageBytes, detail::stride_ptr<T const>(x.device_ptr(), incx),
-                          r.device_ptr(), Size, r.get_stream().raw_stream());
-   cuda::free_gpu_temporary(TempStorage, TempStorageBytes);
+   cub::DeviceReduce::Sum(nullptr, TempStorageBytes, detail::stride_ptr<T const>(x.device_ptr(), incx),
+                          r.device_ptr(), Size);
+   gpu_buffer<unsigned char> TempBuffer = allocate_gpu_temporary<unsigned char>(TempStorageBytes);
+   TempBuffer.wait_for(x);
+   TempBuffer.wait_for(r);
+   cub::DeviceReduce::Sum(static_cast<void*>(TempBuffer.device_ptr()), 
+			  TempStorageBytes, detail::stride_ptr<T const>(x.device_ptr(), incx),
+                          r.device_ptr(), Size, TempBuffer.get_stream().raw_stream());
+   r.wait(TempBuffer.sync());
    x.wait(r.sync());
 }
 
 template <typename T>
 void
-vector_sum(int Size, cuda::const_gpu_ptr<std::complex<T>> const& x, int incx, cuda::gpu_ref<std::complex<T>>&& r)
+vector_sum(int Size, cuda::const_gpu_ptr<std::complex<T>> const& x, int incx, 
+	   cuda::gpu_ref<std::complex<T>>&& r)
 {
-   cuda::stream Stream1, Stream2;
    std::size_t TempStorageBytes1 = 0;
-   void* TempStorage1 = nullptr;
    // real part
    // workspace query
-   Stream1.wait(x.sync());
-   Stream1.wait(r.sync());
-   cub::DeviceReduce::Sum(TempStorage1, TempStorageBytes1, 
+   cub::DeviceReduce::Sum(nullptr, TempStorageBytes1, 
 			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr())), incx*2),
-                          static_cast<T*>(static_cast<void*>(r.device_ptr())), Size, r.get_stream().raw_stream());
-   TempStorage1 = cuda::allocate_gpu_temporary(TempStorageBytes1);
-   // do the work
-   cub::DeviceReduce::Sum(TempStorage1, TempStorageBytes1, 
-			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr())), incx*2),
-                          static_cast<T*>(static_cast<void*>(r.device_ptr())), Size, r.get_stream().raw_stream());
+                          static_cast<T*>(static_cast<void*>(r.device_ptr())), Size);
 
-   std::size_t TempStorageBytes2 = 0;
-   void* TempStorage2 = nullptr;
+   gpu_buffer<unsigned char> TempBuffer1 = allocate_gpu_temporary<unsigned char>(TempStorageBytes1);
+   TempBuffer1.wait_for(x);
+   TempBuffer1.wait_for(r);
+   // do the work
+   cub::DeviceReduce::Sum(static_cast<void*>(TempBuffer1.device_ptr()), TempStorageBytes1,
+			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr())), incx*2),
+                          static_cast<T*>(static_cast<void*>(r.device_ptr())), Size, 
+			  TempBuffer1.get_stream().raw_stream());
 
    // imag part
    // workspace query
-   Stream2.wait(x.sync());
-   Stream2.wait(r.sync());
-   cub::DeviceReduce::Sum(TempStorage2, TempStorageBytes2, 
+   std::size_t TempStorageBytes2 = 0;
+   cub::DeviceReduce::Sum(nullptr, TempStorageBytes2, 
 			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr()))+1, incx*2),
-                          static_cast<T*>(static_cast<void*>(r.device_ptr()))+1, Size, r.get_stream().raw_stream());
-   TempStorage1 = cuda::allocate_gpu_temporary(TempStorageBytes1);
+                          static_cast<T*>(static_cast<void*>(r.device_ptr()))+1, Size);
+   gpu_buffer<unsigned char> TempBuffer2 = allocate_gpu_temporary<unsigned char>(TempStorageBytes2);
+   TempBuffer2.wait_for(x);
+   TempBuffer2.wait_for(r);
    // do the work
-   cub::DeviceReduce::Sum(TempStorage2, TempStorageBytes2, 
+   cub::DeviceReduce::Sum(static_cast<void*>(TempBuffer2.device_ptr()), TempStorageBytes2, 
 			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr()))+1, incx*2),
-                          static_cast<T*>(static_cast<void*>(r.device_ptr()))+1, Size, r.get_stream().raw_stream());
+                          static_cast<T*>(static_cast<void*>(r.device_ptr()))+1, Size, 
+			  TempBuffer2.get_stream().raw_stream());
 
-   r.wait(Stream1.record());
-   r.wait(Stream2.record());
-
-   cuda::free_gpu_temporary(TempStorage1, TempStorageBytes1);
-   cuda::free_gpu_temporary(TempStorage2, TempStorageBytes2);
+   r.wait(TempBuffer1.sync());
+   r.wait(TempBuffer2.sync());
+   x.wait(r.sync());
 }
 
 template <typename T>
 void
-vector_sum(int Size, cuda::const_gpu_ptr<std::complex<T>> const& x, int incx, cuda::gpu_ref<std::complex<T>>& r)
+vector_sum(int Size, cuda::const_gpu_ptr<std::complex<T>> const& x, int incx, 
+	   cuda::gpu_ref<std::complex<T>>& r)
 {
-   cuda::stream Stream1, Stream2;
    std::size_t TempStorageBytes1 = 0;
-   void* TempStorage1 = nullptr;
    // real part
    // workspace query
-   Stream1.wait(x.sync());
-   Stream1.wait(r.sync());
-   cub::DeviceReduce::Sum(TempStorage1, TempStorageBytes1, 
+   cub::DeviceReduce::Sum(nullptr, TempStorageBytes1, 
 			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr())), incx*2),
-                          static_cast<T*>(static_cast<void*>(r.device_ptr())), Size, r.get_stream().raw_stream());
-   TempStorage1 = cuda::allocate_gpu_temporary(TempStorageBytes1);
-   // do the work
-   cub::DeviceReduce::Sum(TempStorage1, TempStorageBytes1, 
-			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr())), incx*2),
-                          static_cast<T*>(static_cast<void*>(r.device_ptr())), Size, r.get_stream().raw_stream());
+                          static_cast<T*>(static_cast<void*>(r.device_ptr())), Size);
 
-   std::size_t TempStorageBytes2 = 0;
-   void* TempStorage2 = nullptr;
+   gpu_buffer<unsigned char> TempBuffer1 = allocate_gpu_temporary<unsigned char>(TempStorageBytes1);
+   TempBuffer1.wait_for(x);
+   TempBuffer1.wait_for(r);
+   // do the work
+   cub::DeviceReduce::Sum(static_cast<void*>(TempBuffer1.device_ptr()), TempStorageBytes1,
+			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr())), incx*2),
+                          static_cast<T*>(static_cast<void*>(r.device_ptr())), Size, 
+			  TempBuffer1.get_stream().raw_stream());
 
    // imag part
    // workspace query
-   Stream2.wait(x.sync());
-   Stream2.wait(r.sync());
-   cub::DeviceReduce::Sum(TempStorage2, TempStorageBytes2, 
+   std::size_t TempStorageBytes2 = 0;
+   cub::DeviceReduce::Sum(nullptr, TempStorageBytes2, 
 			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr()))+1, incx*2),
-                          static_cast<T*>(static_cast<void*>(r.device_ptr()))+1, Size, r.get_stream().raw_stream());
-   TempStorage1 = cuda::allocate_gpu_temporary(TempStorageBytes1);
+                          static_cast<T*>(static_cast<void*>(r.device_ptr()))+1, Size);
+   gpu_buffer<unsigned char> TempBuffer2 = allocate_gpu_temporary<unsigned char>(TempStorageBytes2);
+   TempBuffer2.wait_for(x);
+   TempBuffer2.wait_for(r);
    // do the work
-   cub::DeviceReduce::Sum(TempStorage2, TempStorageBytes2, 
+   cub::DeviceReduce::Sum(static_cast<void*>(TempBuffer2.device_ptr()), TempStorageBytes2, 
 			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr()))+1, incx*2),
-                          static_cast<T*>(static_cast<void*>(r.device_ptr()))+1, Size, r.get_stream().raw_stream());
+                          static_cast<T*>(static_cast<void*>(r.device_ptr()))+1, Size, 
+			  TempBuffer2.get_stream().raw_stream());
 
-   r.wait(Stream1.record());
-   r.wait(Stream2.record());
-
-   cuda::free_gpu_temporary(TempStorage1, TempStorageBytes1);
-   cuda::free_gpu_temporary(TempStorage2, TempStorageBytes2);
+   r.wait(TempBuffer1.sync());
+   r.wait(TempBuffer2.sync());
+   x.wait(r.sync());
 }
 
 // template instantiations
-template void vector_sum<double>(int Size, cuda::const_gpu_ptr<double> const& x, int incx, cuda::gpu_ref<double>&& r);
-template void vector_sum<double>(int Size, cuda::const_gpu_ptr<double> const& x, int incx, cuda::gpu_ref<double>& r);
+template void vector_sum<double>(int Size, cuda::const_gpu_ptr<double> const& x, int incx, 
+				 cuda::gpu_ref<double>&& r);
+template void vector_sum<double>(int Size, cuda::const_gpu_ptr<double> const& x, int incx, 
+				 cuda::gpu_ref<double>& r);
 
 template void vector_sum<double>(int Size, 
 				 cuda::const_gpu_ptr<std::complex<double>> const& x, int incx, 
@@ -202,8 +203,10 @@ template void vector_sum<double>(int Size,
 				 cuda::const_gpu_ptr<std::complex<double>> const& x, int incx, 
 				 cuda::gpu_ref<std::complex<double>>& r);
 
-template void vector_sum<float>(int Size, cuda::const_gpu_ptr<float> const& x, int incx, cuda::gpu_ref<float>&& r);
-template void vector_sum<float>(int Size, cuda::const_gpu_ptr<float> const& x, int incx, cuda::gpu_ref<float>& r);
+template void vector_sum<float>(int Size, cuda::const_gpu_ptr<float> const& x, int incx, 
+				cuda::gpu_ref<float>&& r);
+template void vector_sum<float>(int Size, cuda::const_gpu_ptr<float> const& x, int incx, 
+				cuda::gpu_ref<float>& r);
 
 template void vector_sum<float>(int Size, 
 				cuda::const_gpu_ptr<std::complex<float>> const& x, int incx, 
@@ -234,25 +237,28 @@ void
 vector_permute(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::gpu_ptr<T> y, int incy, int const* Perm)
 {
    y.wait_for(x);
-   int* PermDevice = static_cast<int*>(allocate_gpu_temporary(n*sizeof(int)));
-   memcpy_host_to_device_async(y.get_stream(), Perm, PermDevice, n);
+   gpu_buffer<int> PermDevice = allocate_gpu_temporary<int>(n);
+   memcpy_host_to_device_async(PermDevice.get_stream(), Perm, PermDevice.device_ptr(), n*sizeof(int));
+   PermDevice.wait_for(y);
+   PermDevice.wait_for(x);
    if (incx == 1 && incy == 1)
    {
       unsigned threads_per_block = 64;
       unsigned nblocks = (n + threads_per_block-1) / threads_per_block;      
-      permute_vector_cuda<<<nblocks,threads_per_block, 0, y.get_stream().raw_stream()>>>(n, x.device_ptr(), y.device_ptr(), 
-											 PermDevice);
+      permute_vector_cuda<<<nblocks,threads_per_block, 0, 
+	 PermDevice.get_stream().raw_stream()>>>(n, x.device_ptr(), y.device_ptr(), 
+						 PermDevice.device_ptr());
    }
    else
    {
       unsigned threads_per_block = 64;
       unsigned nblocks = (n + threads_per_block-1) / threads_per_block;      
-      permute_vector_stride_cuda<<<nblocks,threads_per_block, 0, y.get_stream().raw_stream()>>>(n, x.device_ptr(), incx,
-												y.device_ptr(), incy,
-												PermDevice);
+      permute_vector_stride_cuda<<<nblocks,threads_per_block, 0, 
+	 PermDevice.get_stream().raw_stream()>>>(n, x.device_ptr(), incx,
+						 y.device_ptr(), incy,
+						 PermDevice.device_ptr());
    }
-   x.wait_for(y);
-   free_gpu_temporary(static_cast<void*>(PermDevice), n*sizeof(int));
+   x.wait_for(PermDevice);
 }
 
 // template instantiations

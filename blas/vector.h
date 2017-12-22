@@ -149,14 +149,21 @@ class Vector : public NormalVector<T, Vector<T, Tag>, Tag>
       Vector(VectorRef<T, U, tag_type> const& E, arena Arena_);
 
       template <typename U>
-      Vector(VectorRef<T, U, tag_type> const& E) : Vector(E, get_malloc_arena()) {}
+      Vector(VectorRef<T, U, tag_type> const& E) : Vector(E, tag_type::template default_arena<T>()) {}
+
+      // construction via copy from another tag type
+      template <typename U, typename OtherTag>
+      Vector(VectorRef<T, U, OtherTag> const& E, arena Arena_);
+
+      template <typename U, typename OtherTag>
+      Vector(VectorRef<T, U, OtherTag> const& E) : Vector(E, tag_type::template default_arena<T>()) {}
 
       // construction from intializer list
       template <typename U>
       Vector(std::initializer_list<U> x, arena Arena_);
 
       template <typename U>
-      Vector(std::initializer_list<U> x) : Vector(x, get_malloc_arena()) {}
+      Vector(std::initializer_list<U> x) : Vector(x, tag_type::template default_arena<T>()) {}
 
       ~Vector() = default;
 

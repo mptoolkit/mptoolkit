@@ -180,20 +180,55 @@ BasicSparseVector<T, U, V>& operator+=(BasicSparseVector<T, U, V>& x, BasicSpars
 
 template <typename T, typename U, typename V, typename W, typename X, typename R>
 void
-add_inner_prod(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y, R& result)
+inner_prod(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y, R&& result)
+{
+   bool Set = false;
+   auto xi = x.begin();
+   auto yi = y.begin();
+   while (xi != x.end() && yi != y.end())
+   {
+      if (xi.index() == yi.index())
+      {
+	 if (!Set)
+	 {
+	    inner_prod(xi.value(), yi.value(), static_cast<R&&>(result));
+	    Set = true;
+	 }
+	 else
+	    add_inner_prod(xi.value(), yi.value(), static_cast<R&&>(result));
+         ++xi;
+         ++yi;
+      }
+      // can't allow fall through here since we need to loop back and check against end()
+      else if (xi.index() < yi.index())
+         ++xi;
+      else // if (yi.index < xi.index)
+         ++yi;
+   }
+   if (!Set)
+   {
+      // TODO: implement this
+      //      clear(result);
+      PANIC("Not implemented");
+   }
+}
+
+template <typename T, typename U, typename V, typename W, typename X, typename R>
+void
+add_inner_prod(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y, R&& result)
 {
    auto xi = x.begin();
    auto yi = y.begin();
    while (xi != x.end() && yi != y.end())
    {
-      if (xi.index == yi.index)
+      if (xi.index() == yi.index())
       {
-         add_inner_prod(xi.value, yi.value, result);
+         add_inner_prod(xi.value(), yi.value(), static_cast<R&&>(result));
          ++xi;
          ++yi;
       }
       // can't allow fall through here since we need to loop back and check against end()
-      else if (xi.index < yi.index)
+      else if (xi.index() < yi.index())
          ++xi;
       else // if (yi.index < xi.index)
          ++yi;
@@ -272,25 +307,27 @@ class SparseMatrix
          CHECK(Inserted);
       }
 
-      void insert(int r, int c, T const& value)
+      template <typename U>
+      void insert(int r, int c, U const& value)
       {
-         DEBUG_RANGE_CHECK(r, 0, RowStorage.size());
-         DEBUG_RANGE_CHECK(c, 0, Cols);
+         DEBUG_RANGE_CHECK_OPEN(r, 0, RowStorage.size());
+         DEBUG_RANGE_CHECK_OPEN(c, 0, Cols);
          RowStorage[r].insert(c, value);
       }
 
       template <typename U>
       void insert(int r, int c, U&& value)
       {
-         DEBUG_RANGE_CHECK(r, 0, RowStorage.size());
-         DEBUG_RANGE_CHECK(c, 0, Cols);
+         DEBUG_RANGE_CHECK_OPEN(r, 0, RowStorage.size());
+         DEBUG_RANGE_CHECK_OPEN(c, 0, Cols);
          RowStorage[r].insert(c, std::move(value));
       }
 
-      void add(int r, int c, T const& value)
+      template <typename U>
+      void add(int r, int c, U const& value)
       {
-         DEBUG_RANGE_CHECK(r, 0, RowStorage.size());
-         DEBUG_RANGE_CHECK(c, 0, Cols);
+         DEBUG_RANGE_CHECK_OPEN(r, 0, RowStorage.size());
+         DEBUG_RANGE_CHECK_OPEN(c, 0, Cols);
          RowStorage[r].add(c, value);
       }
 
@@ -302,10 +339,11 @@ class SparseMatrix
          RowStorage[r].add(c, std::move(value));
       }
 
-      void subtract(int r, int c, T const& value)
+      template <typename U>
+      void subtract(int r, int c, U const& value)
       {
-         DEBUG_RANGE_CHECK(r, 0, RowStorage.size());
-         DEBUG_RANGE_CHECK(c, 0, Cols);
+         DEBUG_RANGE_CHECK_OPEN(r, 0, RowStorage.size());
+         DEBUG_RANGE_CHECK_OPEN(c, 0, Cols);
          RowStorage[r].subtract(c, value);
       }
 
@@ -313,8 +351,8 @@ class SparseMatrix
       template <typename U>
       void subtract(int r, int c, U&& value)
       {
-         DEBUG_RANGE_CHECK(r, 0, RowStorage.size());
-         DEBUG_RANGE_CHECK(c, 0, Cols);
+         DEBUG_RANGE_CHECK_OPEN(r, 0, RowStorage.size());
+         DEBUG_RANGE_CHECK_OPEN(c, 0, Cols);
          RowStorage[r].subtract(c, std::move(value));
       }
 

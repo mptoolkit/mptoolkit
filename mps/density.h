@@ -299,7 +299,8 @@ class SingularDecompositionBase
 
       SingularDecompositionBase();
 
-      void Diagonalize(std::vector<RawDMType> const& M);
+      // invokes the SVD, which destroys M
+      void Diagonalize(std::vector<RawDMType>&& M);
 
    public:
       virtual QuantumNumber Lookup(int Subspace) const = 0;

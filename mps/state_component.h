@@ -67,7 +67,7 @@ struct BasicStateComponent
    typedef T OperatorType;
    typedef T operator_type;
 
-   typedef blas::Vector<value_type> DataType;
+   typedef std::vector<value_type> DataType;
 
    typedef typename DataType::const_iterator const_iterator;
    typedef typename DataType::iterator       iterator;
@@ -270,7 +270,7 @@ inner_prod(StateComponent const& x, StateComponent const& y)
    {
       inner_prod(x[i], y[i], Temp[i]);
    }
-   return vector_sum(Temp);
+   return get_wait(vector_sum(Temp));
 }
 
 template <typename T>

@@ -42,6 +42,14 @@ Vector<T, Tag>::Vector(int Size_, arena Arena_)
 {
 }
 
+template <typename T, typename Tag>
+template <typename U, typename OtherTag>
+Vector<T, Tag>::Vector(VectorRef<T, U, OtherTag> const& E, arena Arena_)
+   : Vector(E.size(), Arena_)
+{
+   set_wait(*this, E.as_derived());
+}
+
 //
 // cpu_tag specialization
 //

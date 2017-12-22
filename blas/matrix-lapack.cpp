@@ -85,4 +85,26 @@ void DiagonalizeHermitian(int Size, std::complex<double>* Data, int LeadingDim, 
    delete[] rwork;
 }
 
+void SingularValueDecomposition(int m, int n, double* A, int ldA, double* D, double* U, int ldU, double* VT, int ldVT)
+{
+   char jobu = 'S';
+   char jobvt = 'S';
+   double worksize;
+   double* work = &worksize;
+   int lwork = -1;
+   Fortran::integer info = 0;
+
+   // query for the optimial sizes of the workspace
+   LAPACK::dgesvd(jobu, jobvt, m, n, A, ldA, D, U, ldU, VT, ldVT, work, lwork, info);
+
+   lwork = int(work[0]);
+   work = new double[lwork];
+
+   // do the actual call
+   LAPACK::dgesvd(jobu, jobvt, m, n, A, ldA, D, U, ldU, VT, ldVT, work, lwork, info);
+   CHECK(info == 0)("LAPACK::dgesvd")(info);
+
+   delete[] work;
+}
+
 } // namespace blas

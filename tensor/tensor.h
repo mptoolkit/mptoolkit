@@ -518,17 +518,15 @@ inner_prod(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& 
 
    using tag_type = typename IrredTensor<T, B1, B2, S>::tag_type;
 
-   blas::Vector<complex, tag_type> Temp(x.data().rows(), 0.0);
+   blas::Vector<complex, tag_type> Temp(x.data().rows());
    blas::Vector<complex> QDim(x.data().rows());
    for (int r = 0; r < x.data().rows(); ++r)
    {
-      add_inner_prod(x.data()[r], y.data()[r], Temp[r]);
+      inner_prod(x.data()[r], y.data()[r], Temp[r]);
       QDim[r] = qdim(x.qn1(r));
    }
    inner_prod(blas::Vector<complex, tag_type>(std::move(QDim)), Temp, Result);
-   return Result;
 }
-
 
 // scalar_prod - this is a new function
 

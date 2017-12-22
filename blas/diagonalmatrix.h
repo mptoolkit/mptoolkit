@@ -285,6 +285,54 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
          return Buf[i];
       }
 
+      template <typename U>
+      void insert(int r, int c, U const& value)
+      {
+	 DEBUG_CHECK_EQUAL(r,c);
+         DEBUG_RANGE_CHECK_OPEN(r, 0, Size);
+	 Buf[r] = value;
+      }
+
+      template <typename U>
+      void insert(int r, int c, U&& value)
+      {
+	 DEBUG_CHECK_EQUAL(r,c);
+         DEBUG_RANGE_CHECK_OPEN(r, 0, Size);
+	 Buf[r] = std::move(value);
+      }
+
+      template <typename U>
+      void add(int r, int c, U const& value)
+      {
+	 DEBUG_CHECK_EQUAL(r,c);
+         DEBUG_RANGE_CHECK_OPEN(r, 0, Size);
+	 Buf[r] += value;
+      }
+
+      template <typename U>
+      void add(int r, int c, U&& value)
+      {
+	 DEBUG_CHECK_EQUAL(r,c);
+         DEBUG_RANGE_CHECK_OPEN(r, 0, Size);
+	 Buf[r] += std::move(value);
+      }
+
+      template <typename U>
+      void subtract(int r, int c, U const& value)
+      {
+	 DEBUG_CHECK_EQUAL(r,c);
+         DEBUG_RANGE_CHECK_OPEN(r, 0, Size);
+	 Buf[r] -= value;
+      }
+
+      template <typename U>
+      void subtract(int r, int c, U&& value)
+      {
+	 DEBUG_CHECK_EQUAL(r,c);
+         DEBUG_RANGE_CHECK_OPEN(r, 0, Size);
+	 Buf[r] -= std::move(value);
+      }
+
       static DiagonalMatrix make_identity(int Size);
 
       iterator begin() { return Buf.ptr(); }

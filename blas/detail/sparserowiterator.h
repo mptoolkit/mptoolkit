@@ -63,7 +63,11 @@ class SparseRowIterator
 
       explicit SparseRowIterator(base_iterator Other) : I(std::move(Other)) {}
 
-      int col() { return I->first; }
+      int col() const { return I->first; }
+
+      int index() const { return I->first; }
+
+      T& value() const { return I->second; }
 
       reference operator*() const { return reference(I->first, I->second); }
       pointer operator->() const { return &I->second; }
@@ -130,7 +134,11 @@ class ConstSparseRowIterator
       ConstSparseRowIterator(ConstSparseRowIterator<T>&& Other)
          : I(std::move(Other.base())) {}
 
-      int col() { return I->first; }
+      int col() const { return I->first; }
+
+      int index() const { return I->first; }
+
+      T const& value() const { return I->second; }
 
       reference operator*() const { return reference(I->first, I->second); }
       pointer operator->() const { return &I->second; }

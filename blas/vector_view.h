@@ -170,7 +170,11 @@ class vector_view : public BlasVectorProxy<T, vector_view<T, Tag>, Tag>
 
       vector_view(vector_view const&) = delete;
 
-      vector_view& operator=(vector_view&&) = delete;
+      vector_view&& operator=(vector_view&& E) &&
+      {
+	 assign(static_cast<vector_view&&>(*this), E.as_derived());
+	 return std::move(*this);
+      }
 
       ~vector_view() = default;
 

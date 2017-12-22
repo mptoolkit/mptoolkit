@@ -225,13 +225,14 @@ DensityMatrix<MatrixOperator>::DensityMatrix(MatrixOperator const& Op)
 {
    DEBUG_PRECONDITION_EQUAL(Op.Basis1(), Op.Basis2());
    // initialize the RawDMList.  At the same time, get the maximum linear size of the subspaces
-   RawDMList.resize(B.size());
+   RawDMList.clear();
+   RawDMList.reserve(B.size());
    MaxLinearDimension = 0;
    for (std::size_t q = 0; q < B.size(); ++q)
    {
       int Dim = B.dim(q);
       //      std::cout << "dimension of " << q1 << " is " << Dim << std::endl;
-      RawDMList[q] = RawDMType(Dim, Dim, 0.0);
+      RawDMList.emplace_back(Dim, Dim, 0.0);
       MaxLinearDimension = std::max<int>(MaxLinearDimension, Dim);
    }
 
@@ -337,13 +338,14 @@ DensityMatrix<SimpleOperator>::DensityMatrix(SimpleOperator const& Op)
 {
    DEBUG_PRECONDITION_EQUAL(Op.Basis1(), Op.Basis2());
    // initialize the RawDMList.  At the same time, get the maximum linear size of the subspaces
-   RawDMList.resize(B.size());
+   RawDMList.clear();
+   RawDMList.reserve(B.size());
    MaxLinearDimension = 0;
    for (std::size_t q = 0; q < B.size(); ++q)
    {
       int Dim = B.dim(q);
       //      std::cout << "dimension of " << q << " is " << Dim << std::endl;
-      RawDMList[q] = Matrix(Dim, Dim, 0);
+      RawDMList.emplace_back(Dim, Dim, 0);
       MaxLinearDimension = std::max<int>(MaxLinearDimension, Dim);
    }
    // Fill the raw density matrices
@@ -435,7 +437,7 @@ SingularDecompositionBase::~SingularDecompositionBase()
 {
 }
 
-void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType> const& M)
+void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType>&& M)
 {
    ESum = 0;  // Running sum of squares of the singular values
    for (std::size_t i = 0; i < M.size(); ++i)
@@ -444,12 +446,12 @@ void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType> const& M)
       Matrix U(M[i].rows(),nv);
       Matrix Vh(nv, M[i].cols());
       RealVector D_device(nv);
-      SingularValueDecomposition(M[i], U, D_device, Vh);
-      cpu::RealVector D = get_wait(std::move(D_device));
+      SingularValueDecomposition(std::move(M[i]), U, D_device, Vh);
+      cpu::RealVector D = get_wait(D_device);
 
-      LeftVectors.push_back(U);
-      RightVectors.push_back(Vh);
-      SingularValues.push_back(D_device);
+      LeftVectors.push_back(std::move(U));
+      RightVectors.push_back(std::move(Vh));
+      SingularValues.push_back(std::move(D_device));
 
       int CurrentDegree = degree(this->Lookup(i));
       for (unsigned j = 0; j < D.size(); ++j)
@@ -487,10 +489,11 @@ SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(Mat
    }
 
    // Now assemble the list of raw matrices, initialized to zero
-   std::vector<RawDMType> Matrices(q_iLinear.size());
+   std::vector<RawDMType> Matrices;
+   Matrices.reserve(q_iLinear.size());
    for (unsigned n = 0; n < q_iLinear.size(); ++n)
    {
-      Matrices[n] = RawDMType(B1.dim(q_iLinear[n]), B2.dim(q_jLinear[n]), 0.0);
+      Matrices.emplace_back(B1.dim(q_iLinear[n]), B2.dim(q_jLinear[n]), 0.0);
    }
 
    // fill the raw matrices with the components in M
@@ -510,7 +513,7 @@ SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(Mat
    }
 
    // do the SVD
-   this->Diagonalize(Matrices);
+   this->Diagonalize(std::move(Matrices));
 }
 
 QuantumNumber
@@ -685,9 +688,10 @@ SingularDecomposition(StateComponent const& A, ProductBasis<BasisList, BasisList
    NumQuantum = UsedQuantumNumbers.size();
 
    // Now we can construct the actual matrices, initialized to zero
-   std::vector<RawDMType> Matrices(NumQuantum);
+   std::vector<RawDMType> Matrices;
+   Matrices.reserve(NumQuantum);
    for (int i = 0; i < NumQuantum; ++i)
-      Matrices[i] = RawDMType(LinearDimensions[i].first, LinearDimensions[i].second, 0.0);
+      Matrices.emplace_back(LinearDimensions[i].first, LinearDimensions[i].second, 0.0);
 
    // and fill them
    for (unsigned lin_1 = 0; lin_1 < LeftSubspaceInfo.size(); ++lin_1)
@@ -741,7 +745,7 @@ SingularDecomposition(StateComponent const& A, ProductBasis<BasisList, BasisList
    }
 
    // do the SVD
-   this->Diagonalize(Matrices);
+   this->Diagonalize(std::move(Matrices));
 }
 
 std::tuple<StateComponent, RealDiagonalOperator, StateComponent>

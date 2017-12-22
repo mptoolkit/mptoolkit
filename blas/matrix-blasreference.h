@@ -88,6 +88,22 @@ vector_add_scaled(int N, std::complex<double> alpha,
 void
 vector_sum(int N, double const* x, int incx, double& r);
 
+void
+vector_inner_prod(int N, double const* x, int incx, double const* y, int incy, double& r);
+
+void
+vector_inner_prod(int N, std::complex<double> const* x, int incx, 
+		  std::complex<double> const* y, int incy,
+		  std::complex<double>& r);
+
+void
+vector_add_inner_prod(int N, double const* x, int incx, double const* y, int incy, double& r);
+
+void
+vector_add_inner_prod(int N, std::complex<double> const* x, int incx, 
+		      std::complex<double> const* y, int incy, 
+		      std::complex<double>& r);
+
 //
 // matrix
 //
@@ -129,6 +145,31 @@ void
 matrix_add_scaled(char Atrans, int M, int N, std::complex<double> alpha,
                   std::complex<double> const* A, int lda,
                   std::complex<double>* B, int ldb);
+
+void
+matrix_inner_prod(char Atrans, char Btrans, int M, int N,
+		  double const* A, int ldA,
+		  double const* B, int ldB,
+		  double& r);
+
+void
+matrix_inner_prod(char Atrans, char Btrans, int M, int N,
+		  std::complex<double> const* A, int ldA,
+		  std::complex<double> const* B, int ldB,
+		  std::complex<double>& r);
+
+
+void
+matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
+		      double const* A, int ldA,
+		      double const* B, int ldB,
+		      double& r);
+
+void
+matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
+		      std::complex<double> const* A, int ldA,
+		      std::complex<double> const* B, int ldB,
+		      std::complex<double>& r);
 
 // level 3
 

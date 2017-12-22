@@ -180,6 +180,19 @@ vector_copy(int n, cuda::const_gpu_ptr<double> x, int incx, cuda::gpu_ptr<double
 
 inline
 void
+vector_copy(int n, cuda::const_gpu_ptr<std::complex<double>> x, int incx, cuda::gpu_ptr<std::complex<double>> y, int incy)
+{
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(y.get_stream());
+   y.wait_for(x);
+   cublas::check_error(cublasZcopy(H.raw_handle(), n, 
+				   reinterpret_cast<cuDoubleComplex const*>(x.device_ptr()), incx, 
+				   reinterpret_cast<cuDoubleComplex*>(y.device_ptr()), incy));
+   x.wait_for(y);
+}
+
+inline
+void
 vector_scale(int n, double alpha, cuda::gpu_ptr<double> y, int incy)
 {
    cublas::handle& H = cublas::get_handle();
@@ -229,6 +242,158 @@ vector_add(int n, cuda::const_gpu_ptr<double> x, int incx,
            cuda::gpu_ptr<double> y, int incy)
 {
    vector_add_scaled(n, 1.0, x, incx, y, incy);
+}
+
+inline
+void
+vector_inner_prod(int n, 
+		  cuda::const_gpu_ptr<float> x, int incx,
+                  cuda::const_gpu_ptr<float> y, int incy,
+		  cuda::gpu_ref<float>& r)
+{
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(r.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_DEVICE);
+   r.wait(x.sync());
+   r.wait(y.sync());
+   cublas::check_error(cublasSdot(H.raw_handle(), n, x.device_ptr(), incx, y.device_ptr(), incy,
+				  r.device_ptr()));
+   x.wait(r.sync());
+   y.wait(r.sync());
+}
+
+inline
+void
+vector_inner_prod(int n, 
+		  cuda::const_gpu_ptr<float> x, int incx,
+                  cuda::const_gpu_ptr<float> y, int incy,
+		  cuda::gpu_ref<float>&& r)
+{
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(r.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_DEVICE);
+   r.wait(x.sync());
+   r.wait(y.sync());
+   cublas::check_error(cublasSdot(H.raw_handle(), n, x.device_ptr(), incx, y.device_ptr(), incy,
+				  r.device_ptr()));
+   x.wait(r.sync());
+   y.wait(r.sync());
+}
+
+inline
+void
+vector_inner_prod(int n, 
+		  cuda::const_gpu_ptr<double> x, int incx,
+                  cuda::const_gpu_ptr<double> y, int incy,
+		  cuda::gpu_ref<double>& r)
+{
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(r.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_DEVICE);
+   r.wait(x.sync());
+   r.wait(y.sync());
+   cublas::check_error(cublasDdot(H.raw_handle(), n, x.device_ptr(), incx, y.device_ptr(), incy,
+				  r.device_ptr()));
+   x.wait(r.sync());
+   y.wait(r.sync());
+}
+
+inline
+void
+vector_inner_prod(int n, 
+		  cuda::const_gpu_ptr<double> x, int incx,
+                  cuda::const_gpu_ptr<double> y, int incy,
+		  cuda::gpu_ref<double>&& r)
+{
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(r.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_DEVICE);
+   r.wait(x.sync());
+   r.wait(y.sync());
+   cublas::check_error(cublasDdot(H.raw_handle(), n, x.device_ptr(), incx, y.device_ptr(), incy,
+				  r.device_ptr()));
+   x.wait(r.sync());
+   y.wait(r.sync());
+}
+
+inline
+void
+vector_inner_prod(int n, 
+		  cuda::const_gpu_ptr<std::complex<float>> x, int incx,
+                  cuda::const_gpu_ptr<std::complex<float>> y, int incy,
+		  cuda::gpu_ref<std::complex<float>>& r)
+{
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(r.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_DEVICE);
+   r.wait(x.sync());
+   r.wait(y.sync());
+   cublas::check_error(cublasCdotc(H.raw_handle(), n, 
+				   reinterpret_cast<cuComplex const*>(x.device_ptr()), incx, 
+				   reinterpret_cast<cuComplex const*>(y.device_ptr()), incy,
+				   reinterpret_cast<cuComplex*>(r.device_ptr())));
+   x.wait(r.sync());
+   y.wait(r.sync());
+}
+
+inline
+void
+vector_inner_prod(int n, 
+		  cuda::const_gpu_ptr<std::complex<float>> x, int incx,
+                  cuda::const_gpu_ptr<std::complex<float>> y, int incy,
+		  cuda::gpu_ref<std::complex<float>>&& r)
+{
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(r.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_DEVICE);
+   r.wait(x.sync());
+   r.wait(y.sync());
+   cublas::check_error(cublasCdotc(H.raw_handle(), n, 
+				   reinterpret_cast<cuComplex const*>(x.device_ptr()), incx, 
+				   reinterpret_cast<cuComplex const*>(y.device_ptr()), incy,
+				   reinterpret_cast<cuComplex*>(r.device_ptr())));
+   x.wait(r.sync());
+   y.wait(r.sync());
+}
+
+inline
+void
+vector_inner_prod(int n, 
+		  cuda::const_gpu_ptr<std::complex<double>> x, int incx,
+                  cuda::const_gpu_ptr<std::complex<double>> y, int incy,
+		  cuda::gpu_ref<std::complex<double>>& r)
+{
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(r.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_DEVICE);
+   r.wait(x.sync());
+   r.wait(y.sync());
+   cublas::check_error(cublasZdotc(H.raw_handle(), n, 
+				   reinterpret_cast<cuDoubleComplex const*>(x.device_ptr()), incx, 
+				   reinterpret_cast<cuDoubleComplex const*>(y.device_ptr()), incy,
+				   reinterpret_cast<cuDoubleComplex*>(r.device_ptr())));
+   x.wait(r.sync());
+   y.wait(r.sync());
+}
+
+inline
+void
+vector_inner_prod(int n, 
+		  cuda::const_gpu_ptr<std::complex<double>> x, int incx,
+                  cuda::const_gpu_ptr<std::complex<double>> y, int incy,
+		  cuda::gpu_ref<std::complex<double>>&& r)
+{
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(r.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_DEVICE);
+   r.wait(x.sync());
+   r.wait(y.sync());
+   cublas::check_error(cublasZdotc(H.raw_handle(), n, 
+				   reinterpret_cast<cuDoubleComplex const*>(x.device_ptr()), incx, 
+				   reinterpret_cast<cuDoubleComplex const*>(y.device_ptr()), incy,
+				   reinterpret_cast<cuDoubleComplex*>(r.device_ptr())));
+   x.wait(r.sync());
+   y.wait(r.sync());
 }
 
 #if 0
@@ -287,6 +452,25 @@ geam(char Atrans, int M, int N,
    A.wait_for(C);
 }
 
+inline
+void
+geam(char Atrans, int M, int N,
+     std::complex<double> alpha, cuda::const_gpu_ptr<std::complex<double>> A, int lda,
+     std::complex<double> beta, cuda::gpu_ptr<std::complex<double>> C, int ldc)
+{
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(C.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
+   C.wait_for(A);
+   cublas::check_error(cublasZgeam(H.raw_handle(), cublas::cublas_trans(Atrans), CUBLAS_OP_N, M, N,
+				   reinterpret_cast<cuDoubleComplex const*>(&alpha), 
+				   reinterpret_cast<cuDoubleComplex const*>(A.device_ptr()), lda,
+				   reinterpret_cast<cuDoubleComplex const*>(&beta), 
+				   reinterpret_cast<cuDoubleComplex const*>(C.device_ptr()), ldc,
+				   reinterpret_cast<cuDoubleComplex*>(C.device_ptr()), ldc));
+   A.wait_for(C);
+}
+
 // out-of-place version implements
 // C = alpha*A + beta*B
 inline
@@ -302,37 +486,63 @@ geam(char Atrans, char Btrans, int M, int N,
    C.wait_for(A);
    C.wait_for(B);
    cublas::check_error(cublasDgeam(H.raw_handle(), cublas::cublas_trans(Atrans), cublas::cublas_trans(Btrans), M, N,
-                           &alpha, A.device_ptr(), lda,
-                           &beta, B.device_ptr(), ldb,
-                           C.device_ptr(), ldc));
+				   &alpha, A.device_ptr(), lda,
+				   &beta, B.device_ptr(), ldb,
+				   C.device_ptr(), ldc));
    A.wait_for(C);
    B.wait_for(C);
 }
 
 inline
 void
-matrix_copy(char Atrans, int M, int N, const_gpu_ptr<double> A, int lda, gpu_ptr<double> B, int ldb)
+geam(char Atrans, char Btrans, int M, int N,
+     std::complex<double> alpha, cuda::const_gpu_ptr<std::complex<double>> A, int lda,
+     std::complex<double> beta,  cuda::const_gpu_ptr<std::complex<double>> B, int ldb,
+     cuda::gpu_ptr<std::complex<double>> C, int ldc)
+{
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(C.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
+   C.wait_for(A);
+   C.wait_for(B);
+   cublas::check_error(cublasZgeam(H.raw_handle(), cublas::cublas_trans(Atrans), cublas::cublas_trans(Btrans), M, N,
+				   reinterpret_cast<cuDoubleComplex const*>(&alpha), 
+				   reinterpret_cast<cuDoubleComplex const*>(A.device_ptr()), lda,
+				   reinterpret_cast<cuDoubleComplex const*>(&beta), 
+				   reinterpret_cast<cuDoubleComplex const*>(B.device_ptr()), ldb,
+				   reinterpret_cast<cuDoubleComplex*>(C.device_ptr()), ldc));
+   A.wait_for(C);
+   B.wait_for(C);
+}
+
+template <typename T>
+inline
+void
+matrix_copy(char Atrans, int M, int N, const_gpu_ptr<T> A, int lda, gpu_ptr<T> B, int ldb)
 {
    geam(Atrans, M, N, 1.0, A, lda, 0.0, B, ldb);
 }
 
+template <typename T>
 inline
 void
-matrix_copy_scaled(char Atrans, int M, int N, double alpha, const_gpu_ptr<double> A, int lda, gpu_ptr<double> B, int ldb)
+matrix_copy_scaled(char Atrans, int M, int N, T alpha, const_gpu_ptr<T> A, int lda, gpu_ptr<T> B, int ldb)
 {
    geam(Atrans, M, N, alpha, A, lda, 0.0, B, ldb);
 }
 
+template <typename T>
 inline
 void
-matrix_add(char Atrans, int M, int N, const_gpu_ptr<double> A, int lda, gpu_ptr<double> B, int ldb)
+matrix_add(char Atrans, int M, int N, const_gpu_ptr<T> A, int lda, gpu_ptr<T> B, int ldb)
 {
    geam(Atrans, M, N, 1.0, A, lda, 1.0, B, ldb);
 }
 
+template <typename T>
 inline
 void
-matrix_add_scaled(char Atrans, int M, int N, double alpha, const_gpu_ptr<double> A, int lda, gpu_ptr<double> B, int ldb)
+matrix_add_scaled(char Atrans, int M, int N, T alpha, const_gpu_ptr<T> A, int lda, gpu_ptr<T> B, int ldb)
 {
    geam(Atrans, M, N, alpha, A, lda, 1.0, B, ldb);
 }
@@ -352,6 +562,21 @@ matrix_scale(int M, int N, double alpha, cuda::gpu_ptr<double> A, int lda)
 }
 
 inline
+void
+matrix_scale(int M, int N, std::complex<double> alpha, cuda::gpu_ptr<std::complex<double>> A, int lda)
+{
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(A.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
+   double beta = 0.0;
+   cublas::check_error(cublasZgeam(H.raw_handle(), CUBLAS_OP_N, CUBLAS_OP_N, M, N,
+				   reinterpret_cast<cuDoubleComplex const*>(&alpha), 
+				   reinterpret_cast<cuDoubleComplex const*>(A.device_ptr()), lda,
+				   reinterpret_cast<cuDoubleComplex const*>(&beta), nullptr, 1,
+				   reinterpret_cast<cuDoubleComplex*>(A.device_ptr()), lda));
+}
+
+inline
 void matrix_clear(int M, int N, cuda::gpu_ptr<double> A, int lda)
 {
    cublas::handle& H = cublas::get_handle();
@@ -362,6 +587,73 @@ void matrix_clear(int M, int N, cuda::gpu_ptr<double> A, int lda)
                                    &beta, A.device_ptr(), lda,
                                    &beta, A.device_ptr(), lda,
                                    A.device_ptr(), lda));
+}
+
+void
+matrix_inner_prod(char Atrans, char Btrans, int M, int N,
+		      cuda::const_gpu_ptr<double> A, int ldA,
+		      cuda::const_gpu_ptr<double> B, int ldB,
+		      cuda::gpu_ref<double>& r)
+{
+   if (Atrans == 'N' && Btrans == 'N')
+   {
+      gpu_buffer<double> Acc = allocate_gpu_temporary<double>(N);
+
+      for (int i = 0; i < N; ++i)
+      {
+	 vector_inner_prod(M, A+i, 1, B+i, 1, Acc[i]);
+      }
+      vector_sum(N, Acc.cptr(), 1, r);
+   }
+   else
+   {
+      PANIC("not implemented");
+   }
+}
+
+void
+matrix_inner_prod(char Atrans, char Btrans, int M, int N,
+		  cuda::const_gpu_ptr<std::complex<double>> A, int ldA,
+		  cuda::const_gpu_ptr<std::complex<double>> B, int ldB,
+		  cuda::gpu_ref<std::complex<double>>& r)
+{
+   if (Atrans == 'N' && Btrans == 'N')
+   {
+      gpu_buffer<std::complex<double>> Acc = allocate_gpu_temporary<std::complex<double>>(N);
+
+      for (int i = 0; i < N; ++i)
+      {
+	 vector_inner_prod(M, A+i, 1, B+i, 1, Acc[i]);
+      }
+      vector_sum(N, Acc.cptr(), 1, r);
+   }
+   else
+   {
+      PANIC("not implemented");
+   }
+}
+
+void
+matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
+		  cuda::const_gpu_ptr<std::complex<double>> A, int ldA,
+		  cuda::const_gpu_ptr<std::complex<double>> B, int ldB,
+		  cuda::gpu_ref<std::complex<double>>& r)
+{
+   if (Atrans == 'N' && Btrans == 'N')
+   {
+      gpu_buffer<std::complex<double>> Acc = allocate_gpu_temporary<std::complex<double>>(N+1);
+      Acc[0] = r;
+
+      for (int i = 0; i < N; ++i)
+      {
+	 vector_inner_prod(M, A+i, 1, B+i, 1, Acc[i]);
+      }
+      vector_sum(N, Acc.cptr(), 1, r);
+   }
+   else
+   {
+      PANIC("not implemented");
+   }
 }
 
 // BLAS level 3

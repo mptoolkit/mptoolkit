@@ -33,6 +33,9 @@ void DiagonalizeSymmetric(int Size, double* Data, int LeadingDim, double* Eigen)
 
 void DiagonalizeHermitian(int Size, std::complex<double>* Data, int LeadingDim, double* Eigen);
 
+void SingularValueDecomposition(int Rows, int Cols, double* Data, int LeadingDim, double* Dvec,
+				double* Umat, int ldU, double* Vmat, int ldV);
+
 } // namespace blas
 
 

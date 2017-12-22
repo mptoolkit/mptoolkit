@@ -25,14 +25,28 @@ namespace blas
 
 template <typename ValueType, typename DerivedType, typename Tag>
 vector_view<ValueType, Tag>
-BlasVector<ValueType, DerivedType, Tag>::operator[](Range r)
+BlasVector<ValueType, DerivedType, Tag>::operator[](Range r) &
 {
    return vector_view<ValueType, Tag>(r.size(), this->stride(), this->storage()+r.first());
 }
 
 template <typename ValueType, typename DerivedType, typename Tag>
 const_vector_view<ValueType, Tag>
-BlasVector<ValueType, DerivedType, Tag>::operator[](Range r) const
+BlasVector<ValueType, DerivedType, Tag>::operator[](Range r) const&
+{
+   return const_vector_view<ValueType, Tag>(r.size(), this->stride(), this->storage()+r.first());
+}
+
+template <typename ValueType, typename DerivedType, typename Tag>
+vector_view<ValueType, Tag>
+BlasVectorProxy<ValueType, DerivedType, Tag>::operator[](Range r) &&
+{
+   return vector_view<ValueType, Tag>(r.size(), this->stride(), this->storage()+r.first());
+}
+
+template <typename ValueType, typename DerivedType, typename Tag>
+const_vector_view<ValueType, Tag>
+BlasVectorProxy<ValueType, DerivedType, Tag>::operator[](Range r) const&
 {
    return const_vector_view<ValueType, Tag>(r.size(), this->stride(), this->storage()+r.first());
 }

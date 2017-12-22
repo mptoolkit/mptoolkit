@@ -78,8 +78,8 @@ using RealMatrixOperator   = IrredTensor<RealMatrix,
 
 using RealDiagonalOperator = IrredTensor<RealDiagonalMatrix,
                                          VectorBasis,
-                                         VectorBasis,
-                                         Tensor::DiagonalStructure>;
+                                         VectorBasis>;//,
+//                                         Tensor::DiagonalStructure>;
 
 using SimpleRedOperator = ReducibleTensor<complex, BasisList, BasisList>;
 

@@ -81,6 +81,13 @@ set(gpu_matrix<T>& A, blas::Matrix<T> const& B)
    return A.storage().sync();
 }
 
+template <typename T>
+std::ostream& operator<<(std::ostream& out, gpu_matrix<T> const& A)
+{
+   out << "gpu_matrix<" << tracer::typeid_name<T>() << " [" << A.rows() << "," << A.cols() << ']';
+   return out;
+}
+
 } // namespace cublas
 
 #endif

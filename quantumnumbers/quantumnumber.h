@@ -655,6 +655,12 @@ bool is_scalar(QuantumNumber const& q)
 // returns the degee (dimension) of the representation q
 int degree(QuantumNumber const& q);
 
+inline
+double qdim(QuantumNumber const& q)
+{
+   return degree(q);
+}
+
 // The trace of a scalar matrix element |q><q|.
 // For our choice of normalization, this is always degree(q).
 double trace(QuantumNumber const& q);

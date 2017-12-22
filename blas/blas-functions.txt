@@ -46,9 +46,15 @@ vector_scale(alpha, Vector& y)
 vector_sum(BlasVector x, Ref& y)
 
 // y = alpha * (sum x[i])
-vector_sum_scaled(alpha, BlasVector x, Ref& y)
+//vector_sum_scaled(alpha, BlasVector x, Ref& y)
 
 // z = sum conj(x[i]) * y[i]
+inner_prod(BlasVector x, BlasVector y, Ref& z)
+
+// z += sum conj(x[i]) * y[i]
+add_inner_prod(BlasVector x, BlasVector y, Ref& z)
+
+// z = sum x[i] * y[i]
 vector_dot(BlasVector x, BlasVector y, Ref& z)
 
 vector_clear(Vector& y)
@@ -78,15 +84,28 @@ matrix_scale(alpha, Matrix& y)
 
 matrix_clear(Matrix& y)
 
+// z = sum herm(x[i]) ** y[i]
+inner_prod(BlasMatrix x, BlasMatrix y, Ref& z)
+
+// z += sum herm(x[i]) ** y[i]
+add_inner_prod(BlasMatrix x, BlasMatrix y, Ref& z)
+
 
 // For conventional CPU storage, the low-level BLAS library implements, for
 // T = float/double/complex<float>/complex<double> :
+
+void vector_sum(int N, T const* x, int incx, T& r)
+
+void vector_inner_prod(int N, T const* x, int incx, T const* y, int incy, T& z)
+
+
 
 void vector_copy(int N, T const* x, int incx, T* y, int incy)
 
 void vector_add(int N, T const* x, int incx, T* y, int incy)
 
 void vector_add_scaled(int N, T alpha, T const* x, int incx, T* y, int incy)
+
 
 gemv(char Atrans, int M, int N, int K, T alpha, T const* A, int lda,
      T const* B, int ldb, T beta, T* C, int ldc)
@@ -106,3 +125,7 @@ gemm(char Atrans, char Btrans, int M, int N, int K, T alpha, T const* A, int lda
 geam(char Atrans, char Btrans, int M, int N, T alpha, T const* A, int lda,
      T beta, T const* B, int ldb,
      T* C, int ldc)
+
+void matrix_inner_prod(char Atrans, char Btrans, int M, int N, T const* A, int lda,  T const* B, int ldb, T& z)
+
+void matrix_add_inner_prod(char Atrans, char Btrans, int M, int N, T const* A, int lda,  T const* B, int ldb, T& z)

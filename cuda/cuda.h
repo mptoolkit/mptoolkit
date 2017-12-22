@@ -262,6 +262,11 @@ void memcpy_device_to_host(void const* src, void* dest, std::size_t size)
    cudaMemcpyAsync(dest, src, size, cudaMemcpyDeviceToHost);
 }
 
+inline
+void memcpy_host_to_device(void const* src, void* dest, std::size_t size)
+{
+   cudaMemcpyAsync(dest, src, size, cudaMemcpyHostToDevice);
+}
 
 // copy GPU memory asyncronously
 void memcpy_device_to_device_async(stream const& s, void const* src, void* dest, std::size_t size);

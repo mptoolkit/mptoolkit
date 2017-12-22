@@ -126,6 +126,7 @@ AllocationBlock::AllocationBlock(std::size_t Size_, bool Free)
 {
    void* Ptr;
    // memory alignment from cudaMalloc is always at least 256 bytes
+   // TODO: handle out-of-memory conditions properly.
    check_error(cudaMalloc(&Ptr, Size_));
    BasePtr = static_cast<unsigned char*>(Ptr);
 }
@@ -162,44 +163,25 @@ class BlockAllocator : public blas::AllocatorBase
 };
 
 inline
-void* BlockAllocator::allocate(std::size_t Size, std::size_t Align)
-{
-   // walk the existing allocations and try to find somewhere that fits
-   for (auto& a : Allocations)
-   {
-      void* p = a.try_allocate(Size, Align);
-      if (p)
-	 return p;
-   }
-   // failed to allocate, need another block
-   size_t BlockSize = round_up(Size, BlockMultiple);
-   Allocations.push_back(AllocationBlock(BlockSize, FreeOnDestructor));
-   void* p = Allocations.back().try_allocate(Size, Align);
-   return p;
-}
-
-inline
-void* BlockAllocator::allocate(std::size_t Size)
-{
-   return this->allocate(Size, 1);
-}
-
-inline
-void BlockAllocator::free(void* Ptr, std::size_t Size)
-{
-   for (auto& a : Allocations)
-   {
-      if (a.try_free(Ptr, Size))
-	 return;
-   }
-   PANIC("Attempt to free memory that wasn't allocated by this allocator!")(Ptr);
-}
-
-inline
 blas::arena make_gpu_block_allocator()
 {
    return blas::arena(new BlockAllocator());
 }
+
+// The destructor of gpu_buffer must block until the stream is finshed.
+// When run in async mode we want the destructor of an async gpu matrix to run as a task.
+// The way to handle this is to provide a way to move the memory buffer out of the
+// gpu_buffer so that it can be destroyed asynchronously.
+
+// Walk the GpuBufferPendingDelete list and deallocate buffers associated with any streams
+// that have finished execution.  Non-blocking.
+void TryFlushGpuBuffers();
+
+// Force synchronization and memory deallocation of all streams 
+void SyncFlushGpuBuffers();
+
+// 
+void AddToPendingDelete(cuda::stream& Stream, blas::arena& Arena, void* Ptr, std::size_t ByteSize);
 
 template <typename T>
 class gpu_ptr;
@@ -207,10 +189,9 @@ class gpu_ptr;
 template <typename T>
 class const_gpu_ptr;
 
-// The destructor of gpu_buffer must block until the stream is finshed.
-// When run in async mode we want the destructor of an async gpu matrix to run as a task.
-// The way to handle this is to provide a way to move the memory buffer out of the
-// gpu_buffer so that it can be destroyed asynchronously.
+template <typename T>
+class gpu_ref;
+
 template <typename T>
 class gpu_buffer
 {
@@ -222,14 +203,14 @@ class gpu_buffer
 
       gpu_buffer() = delete;
 
-      ~gpu_buffer() { Stream.synchronize(); Arena.free(Ptr, ByteSize); }
+      // Async version
+      ~gpu_buffer();
 
       gpu_buffer(gpu_buffer&& other) : Ptr(other.Ptr), ByteSize(other.ByteSize), Stream(std::move(other.Stream)),
                                        Sync(std::move(other.Sync)), Arena(std::move(other.Arena))
       {
          other.Ptr = nullptr;
       }
-
 
       gpu_buffer(gpu_buffer const& other) = delete;
 
@@ -246,6 +227,10 @@ class gpu_buffer
       const_gpu_ptr<T> ptr(int Offset) const;
       const_gpu_ptr<T> cptr(int Offset) const;
 
+      std::size_t size() const { return ByteSize / sizeof(T); }
+
+      std::size_t byte_size() const { return ByteSize; }
+
       // block modifications to this buffer until event e has been triggered
       void wait(event const& e) const
       {
@@ -257,6 +242,9 @@ class gpu_buffer
 
       template <typename U>
       void wait_for(const_gpu_ptr<U> const& Other) const;
+
+      template <typename U>
+      void wait_for(gpu_ref<U> const& Other) const;
 
       template <typename U>
       void wait_for(gpu_buffer<U> const& Other) const
@@ -297,17 +285,6 @@ class gpu_buffer
       static gpu_buffer allocate(std::size_t Size, blas::arena A)
       {
 	 return gpu_buffer(Size, A);
-      }
-
-      // move the memory buffer information out, in prepration for
-      // destroying the buffer asynchronously (since the destructor must
-      // synchronize the stream).
-      std::tuple<void*, std::size_t, cuda::stream, blas::arena>
-      move_buffer() &&
-      {
-         void* P = static_cast<void*>(Ptr);
-         Ptr = nullptr;
-         return std::make_tuple(P, ByteSize, std::move(Stream), std::move(Arena));
       }
 
    private:
@@ -374,10 +351,19 @@ class const_gpu_ptr
 
       cuda::stream const& get_stream() const { return Buf.get_stream(); }
 
+      gpu_buffer<T> const& buffer() const { return Buf; }
+      int offset() const { return Offset; }
+
    private:
       gpu_buffer<T> const& Buf;
       int Offset;
 };
+
+template <typename T>
+const_gpu_ptr<T> operator+(const_gpu_ptr<T> const& x, int Offset)
+{
+   return const_gpu_ptr<T>(x.buffer(), x.offset() + Offset);
+}
 
 template <typename T>
 class gpu_ptr
@@ -429,17 +415,26 @@ class gpu_ptr
 
       cuda::stream const& get_stream() const { return Buf.get_stream(); }
 
+      gpu_buffer<T>& buffer() const { return Buf; }
+      int offset() const { return Offset; }
+
    private:
       gpu_buffer<T>& Buf;
       int Offset;
 };
+
+template <typename T>
+gpu_ptr<T> operator+(gpu_ptr<T> const& x, int Offset)
+{
+   return gpu_ptr<T>(x.buffer(), x.offset() + Offset);
+}
 
 // a reference to a location within a gpu_buffer
 template <typename T>
 class gpu_ref
 {
    public:
-      gpu_ref() = delete;
+      gpu_ref(); // = delete;
 
       explicit gpu_ref(T* Ptr_, stream* ParentStream_ = nullptr)
          : Ptr(Ptr_), ParentStream(ParentStream_)
@@ -498,7 +493,7 @@ class gpu_ref
       {
          Stream.synchronize();
          Sync.clear();
-	 memcpy_host_to_device(Stream, &x, Ptr, sizeof(T));
+	 memcpy_host_to_device(&x, Ptr, sizeof(T));
       }
 
       // sets the element asynchronously.
@@ -550,8 +545,15 @@ template <typename T>
 gpu_ref<T>
 allocate_gpu_ref()
 {
-   static gpu_buffer<T> Buf = gpu_buffer<T>::allocate(100, make_gpu_block_allocator());
+   static gpu_buffer<T> Buf = gpu_buffer<T>::allocate(1, make_gpu_block_allocator());
    return Buf[0];
+}
+
+template <typename T>
+inline
+gpu_ref<T>::gpu_ref()
+   : gpu_ref(allocate_gpu_ref<T>())
+{
 }
 
 template <typename T>
@@ -566,11 +568,13 @@ gpu_buffer<T>::operator[](int n)
 // helper functions for temporary allocations
 //
 
-// TODO: **BUG** deallocations should be done with respect to a stream
+void* allocate_gpu_temp_memory(int Size);
 
-void* allocate_gpu_temporary(int Size);
+void free_gpu_temp_memory(void* Buf, int Size);
 
-void free_gpu_temporary(void* Buf, int Size);
+template <typename T>
+gpu_buffer<T>
+allocate_gpu_temporary(int Size);
 
 } // namsepace cuda
 

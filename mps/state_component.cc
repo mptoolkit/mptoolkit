@@ -21,11 +21,11 @@ template <typename T>
 BasicStateComponent<T>::BasicStateComponent(BasisList const& SBasis_,
                                       VectorBasis const& V1,
                                       VectorBasis const& V2)
-   : SBasis(SBasis_), VBasis1(V1), VBasis2(V2), Data(SBasis_.size())
+   : SBasis(SBasis_), VBasis1(V1), VBasis2(V2)
 {
    for (std::size_t i = 0; i < SBasis.size(); ++i)
    {
-      Data[i] = value_type(VBasis1, VBasis2, SBasis[i]);
+      Data.push_back(value_type(VBasis1, VBasis2, SBasis[i]));
    }
 }
 
