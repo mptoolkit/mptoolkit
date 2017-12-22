@@ -591,70 +591,21 @@ void matrix_clear(int M, int N, cuda::gpu_ptr<double> A, int lda)
 
 void
 matrix_inner_prod(char Atrans, char Btrans, int M, int N,
-		      cuda::const_gpu_ptr<double> A, int ldA,
-		      cuda::const_gpu_ptr<double> B, int ldB,
-		      cuda::gpu_ref<double>& r)
-{
-   if (Atrans == 'N' && Btrans == 'N')
-   {
-      gpu_buffer<double> Acc = allocate_gpu_temporary<double>(N);
-
-      for (int i = 0; i < N; ++i)
-      {
-	 vector_inner_prod(M, A+i, 1, B+i, 1, Acc[i]);
-      }
-      vector_sum(N, Acc.cptr(), 1, r);
-   }
-   else
-   {
-      PANIC("not implemented");
-   }
-}
+		  cuda::const_gpu_ptr<double> A, int ldA,
+		  cuda::const_gpu_ptr<double> B, int ldB,
+		  cuda::gpu_ref<double>& r);
 
 void
 matrix_inner_prod(char Atrans, char Btrans, int M, int N,
 		  cuda::const_gpu_ptr<std::complex<double>> A, int ldA,
 		  cuda::const_gpu_ptr<std::complex<double>> B, int ldB,
-		  cuda::gpu_ref<std::complex<double>>& r)
-{
-   if (Atrans == 'N' && Btrans == 'N')
-   {
-      gpu_buffer<std::complex<double>> Acc = allocate_gpu_temporary<std::complex<double>>(N);
-
-      for (int i = 0; i < N; ++i)
-      {
-	 vector_inner_prod(M, A+i, 1, B+i, 1, Acc[i]);
-      }
-      vector_sum(N, Acc.cptr(), 1, r);
-   }
-   else
-   {
-      PANIC("not implemented");
-   }
-}
+		  cuda::gpu_ref<std::complex<double>>& r);
 
 void
 matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
-		  cuda::const_gpu_ptr<std::complex<double>> A, int ldA,
-		  cuda::const_gpu_ptr<std::complex<double>> B, int ldB,
-		  cuda::gpu_ref<std::complex<double>>& r)
-{
-   if (Atrans == 'N' && Btrans == 'N')
-   {
-      gpu_buffer<std::complex<double>> Acc = allocate_gpu_temporary<std::complex<double>>(N+1);
-      Acc[0] = r;
-
-      for (int i = 0; i < N; ++i)
-      {
-	 vector_inner_prod(M, A+i, 1, B+i, 1, Acc[i]);
-      }
-      vector_sum(N, Acc.cptr(), 1, r);
-   }
-   else
-   {
-      PANIC("not implemented");
-   }
-}
+		      cuda::const_gpu_ptr<std::complex<double>> A, int ldA,
+		      cuda::const_gpu_ptr<std::complex<double>> B, int ldB,
+		      cuda::gpu_ref<std::complex<double>>& r);
 
 // BLAS level 3
 

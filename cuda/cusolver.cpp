@@ -94,7 +94,7 @@ GetErrorString(cusolverStatus_t error)
 namespace cuda
 {
 
-void DiagonalizeSymmetric(int Size, cuda::const_gpu_ptr<double> A, int ldA, cuda::gpu_ptr<double> Eigen)
+void DiagonalizeSymmetric(int Size, cuda::gpu_ptr<double> A, int ldA, cuda::gpu_ptr<double> Eigen)
 {
    cusolver::handle& H = cusolver::get_handle();
    H.set_stream(A.get_stream());
@@ -116,7 +116,7 @@ void DiagonalizeSymmetric(int Size, cuda::const_gpu_ptr<double> A, int ldA, cuda
    cuda::free_gpu_temp_memory(Work, lWork*sizeof(double));
 }
 
-void DiagonalizeHermitian(int Size, cuda::const_gpu_ptr<std::complex<double>> A, int ldA, 
+void DiagonalizeHermitian(int Size, cuda::gpu_ptr<std::complex<double>> A, int ldA, 
 			  cuda::gpu_ptr<double> Eigen)
 {
    cusolver::handle& H = cusolver::get_handle();
@@ -128,7 +128,7 @@ void DiagonalizeHermitian(int Size, cuda::const_gpu_ptr<std::complex<double>> A,
                                                      Size, 
 						     reinterpret_cast<cuDoubleComplex*>(A.device_ptr()),
 						     ldA, Eigen.device_ptr(), &lWork));
-   double* Work = static_cast<double*>(cuda::allocate_gpu_temp_memory(lWork*sizeof(double)));
+   cuDoubleComplex* Work = static_cast<cuDoubleComplex*>(cuda::allocate_gpu_temp_memory(lWork*sizeof(cuDoubleComplex)));
    int* DevInfo = static_cast<int*>(cuda::allocate_gpu_temp_memory(sizeof(int)));
    cusolver::check_error(cusolverDnZheevd(H.raw_handle(),
                                           CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER,
@@ -140,7 +140,7 @@ void DiagonalizeHermitian(int Size, cuda::const_gpu_ptr<std::complex<double>> A,
    CHECK_EQUAL(Info, 0);
    Eigen.wait_for(A);
    cuda::free_gpu_temp_memory(DevInfo, sizeof(int));
-   cuda::free_gpu_temp_memory(Work, lWork*sizeof(double));
+   cuda::free_gpu_temp_memory(Work, lWork*sizeof(cuDoubleComplex));
 }
 
 void SingularValueDecomposition(int Rows, int Cols, 
@@ -169,15 +169,15 @@ void SingularValueDecomposition(int Rows, int Cols,
    Dvec.wait_for(Data);
    Umat.wait_for(Data);
    Vmat.wait_for(Data);
-   cuda::free_gpu_temp_memory(Work, lwork*sizeof(double));
-   cuda::free_gpu_memory(rWork, (min_mn-1)*sizeof(double));
+   cuda::free_gpu_temp_memory(Work, lWork*sizeof(double));
+   cuda::free_gpu_temp_memory(rWork, (min_mn-1)*sizeof(double));
 }
 
 void SingularValueDecomposition(int Rows, int Cols, 
-				cuda::gpu_ptr<double> Data, int LeadingDim, 
+				cuda::gpu_ptr<std::complex<double>> Data, int LeadingDim, 
 				cuda::gpu_ptr<double> Dvec,
-				cuda::gpu_ptr<double> Umat, int ldU, 
-				cuda::gpu_ptr<double> Vmat, int ldV)
+				cuda::gpu_ptr<std::complex<double>> Umat, int ldU, 
+				cuda::gpu_ptr<std::complex<double>> Vmat, int ldV)
 {
    int min_mn = std::min(Rows, Cols);
    cusolver::handle& H = cusolver::get_handle();
@@ -186,23 +186,24 @@ void SingularValueDecomposition(int Rows, int Cols,
    Data.wait_for(Umat);
    Data.wait_for(Vmat);
    int lWork;
-   cusolver::check_error(cusolverDnDgesvd_bufferSize(H.raw_handle(), Rows, Cols, &lWork));
+   cusolver::check_error(cusolverDnZgesvd_bufferSize(H.raw_handle(), Rows, Cols, &lWork));
    
    cuDoubleComplex* Work = static_cast<cuDoubleComplex*>(cuda::allocate_gpu_temp_memory(lWork*sizeof(cuDoubleComplex)));
-   cuDoubleComplex* rWork = static_cast<cuDoubleComplex*>(cuda::allocate_gpu_temp_memory((min_mn-1)*sizeof(cuDoubleComplex)));
+   double* rWork = static_cast<double*>(cuda::allocate_gpu_temp_memory((min_mn-1)*sizeof(double)));
 
    gpu_ref<int> DevInfo;
-   cusolver::check_error(cusolverDnDgesvd(H.raw_handle(), 'S', 'S', Rows, Cols, 
-					  reintrepret_cast<cuDoubleComplex*>(Data.device_ptr()), LeadingDim,
-					  Dvec.device_ptr(), reintrepret_cast<cuDoubleComplex*>(Umat.device_ptr()), ldU,
-					  reintrepret_cast<cuDoubleComplex*>(Vmat.device_ptr()), ldV, 
+   cusolver::check_error(cusolverDnZgesvd(H.raw_handle(), 'S', 'S', Rows, Cols, 
+					  reinterpret_cast<cuDoubleComplex*>(Data.device_ptr()), LeadingDim,
+					  Dvec.device_ptr(), 
+					  reinterpret_cast<cuDoubleComplex*>(Umat.device_ptr()), ldU,
+					  reinterpret_cast<cuDoubleComplex*>(Vmat.device_ptr()), ldV, 
 					  Work, lWork, rWork, DevInfo.device_ptr()));
 
    Dvec.wait_for(Data);
    Umat.wait_for(Data);
    Vmat.wait_for(Data);
-   cuda::free_gpu_temp_memory(Work, lwork*sizeof(cuDoubleComplex));
-   cuda::free_gpu_memory(rWork, (min_mn-1)*sizeof(cuDoubleComplex));
+   cuda::free_gpu_temp_memory(Work, lWork*sizeof(cuDoubleComplex));
+   cuda::free_gpu_temp_memory(rWork, (min_mn-1)*sizeof(cuDoubleComplex));
 }
 
 } // namespace cuda
