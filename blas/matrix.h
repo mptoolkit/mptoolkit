@@ -40,6 +40,7 @@
 #include <iomanip>
 #include "common/formatting.h"
 #include "common/randutil.h"
+#include "common/types.h"
 
 namespace blas
 {
@@ -50,9 +51,10 @@ class PermutationMatrix;
 //
 // Memory-based matrix type.  Column-major format for compatability with BLAS.
 // Moveable, non-copyable, non-resizable (except by moving).
+// Default Tag type is cpu_tag.
 //
 
-template <typename T, typename Tag = cpu_tag>
+template <typename T, typename Tag>
 class Matrix : public NormalMatrix<T, Matrix<T, Tag>, Tag>
 {
    public:
@@ -282,6 +284,9 @@ std::ostream&
 operator<<(std::ostream& out, NormalMatrix<T, U, cpu_tag> const& x);
 
 } // namespace blas
+
+template <typename T, typename Tag>
+struct ScalarTypes<blas::Matrix<T, Tag>> : ScalarTypes<T> {};
 
 #include "matrix.icc"
 

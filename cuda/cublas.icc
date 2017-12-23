@@ -27,5 +27,56 @@ handle& get_handle()
    return H;
 }
 
+// convert from rvalue ref to lvalue ref, to aid handling proxies
+template <typename T>
+constexpr T &lvalue(T &&r) noexcept { return r; }
+
+template <typename T>
+void
+matrix_inner_prod(char Atrans, char Btrans, int M, int N,
+		      cuda::const_gpu_ptr<T> A, int ldA,
+		      cuda::const_gpu_ptr<T> B, int ldB,
+		      cuda::gpu_ref<T>& r)
+{
+   if (Atrans == 'N' && Btrans == 'N')
+   {
+      auto Acc = cuda::allocate_gpu_temporary<T>(N);
+
+      for (int i = 0; i < N; ++i)
+      {
+	 vector_inner_prod(M, A+i, 1, B+i, 1, lvalue(Acc[i]));
+      }
+      vector_sum(N, Acc.cptr(), 1, r);
+   }
+   else
+   {
+      PANIC("not implemented");
+   }
+}
+
+template <typename T>
+void
+matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
+		  cuda::const_gpu_ptr<T> A, int ldA,
+		  cuda::const_gpu_ptr<T> B, int ldB,
+		  cuda::gpu_ref<T>& r)
+{
+   if (Atrans == 'N' && Btrans == 'N')
+   {
+      auto Acc = cuda::allocate_gpu_temporary<T>(N+1);
+      Acc[0] = r;
+
+      for (int i = 0; i < N; ++i)
+      {
+	 vector_inner_prod(M, A+i, 1, B+i, 1, lvalue(Acc[i]));
+      }
+      vector_sum(N, Acc.cptr(), 1, r);
+   }
+   else
+   {
+      PANIC("not implemented");
+   }
+}
+
 } // namespace cublas
 

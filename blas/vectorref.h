@@ -36,6 +36,11 @@ namespace blas
 // and can be constructed, used as a temporary, etc.
 //
 
+struct cpu_tag;
+
+template <typename T, typename Tag = cpu_tag>
+class Vector;
+
 template <typename ValueType, typename DerivedType, typename Tag>
 class VectorRef
 {
@@ -43,6 +48,7 @@ class VectorRef
       using value_type     = ValueType;
       using derived_type   = DerivedType;
       using tag_type       = Tag;
+      using remove_proxy_t = Vector<ValueType, Tag>;
 
       // default construction and move construction are defined, no copying.
 

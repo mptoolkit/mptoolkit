@@ -15,6 +15,10 @@ between these functions and the low-level BLAS library.
 // subtract(A&, B)
 // evaluate(A&&) // evaluates the expression and returns a concrete value (can be used for type deduction)
 
+// The expression templates layer handles async_ref and async_proxy types as references
+// and r-value references respectively.  In both cases, they are forwarded to the middle-level
+// blas-like functions as ordinary references; the middle-layer doesn't need to handle separately
+// the r-value reference case.
 
 Middle-level BLAS-like functions:
 

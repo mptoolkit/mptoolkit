@@ -33,6 +33,7 @@
 #include <set>
 #include "common/set_operations.h"
 #include <boost/iterator/transform_iterator.hpp>
+#include "blas/number_traits.h"
 
 namespace Tensor
 {
@@ -156,8 +157,9 @@ class ReducibleTensor
       value_type project(QuantumNumber const& q) const;
       value_type& project(QuantumNumber const& q);
 
-      void insert(value_type const& x);
-      void insert(value_type&& x);
+      void insert(value_type x);
+
+      void add(value_type x);
 
       // projects onto the scalar component
       value_type scalar() const;
@@ -210,6 +212,14 @@ class ReducibleTensor
    friend void CoerceSymmetryListInPlace<>(ReducibleTensor& t, SymmetryList const& sl);
    friend ReducibleTensor CoerceSymmetryList<>(ReducibleTensor const& t, SymmetryList const& sl);
 };
+
+} // namespace Tensor
+
+template <typename T, typename B1, typename B2, typename S>
+struct ScalarTypes<Tensor::ReducibleTensor<T, B1, B2, S>> : ScalarTypes<T> {};
+
+namespace Tensor
+{
 
 // project an irred tensor onto some irreducible subspace.
 template <typename T, typename B1, typename B2, typename S>
@@ -298,7 +308,7 @@ flip_conj(ReducibleTensor<T, B1, B2, S> const& x)
    ReducibleTensor<T, B2, B1, S> Result(adjoint(x.Basis1()), adjoint(x.Basis2()));
    for (auto const& c : x)
    {
-      Result.insert(flip_conj(c));
+      Result.insert(flip_conj(c.value));
    }
    return Result;
 }
@@ -310,342 +320,158 @@ flip_conj(ReducibleTensor<T, B1, B2, S>&& x)
    ReducibleTensor<T, B2, B1, S> Result(adjoint(x.Basis1()), adjoint(x.Basis2()));
    for (auto&& c : x)
    {
-      Result.insert(flip_conj(std::move(c)));
+      Result.insert(flip_conj(std::move(c.value)));
    }
    return Result;
 }
 
-
-#if 0
 // trace
 
 template <typename T, typename B1, typename B2, typename S>
-struct Trace<Tensor::ReducibleTensor<T, B1, B2, S> >
+auto
+trace(Tensor::ReducibleTensor<T, B1, B2, S> const& x)
 {
-   typedef Tensor::ReducibleTensor<T, B1, B2, S> const& argument_type;
-   typedef typename Trace<Tensor::IrredTensor<T, B1, B2, S> >::result_type result_type;
-
-   result_type operator()(argument_type x) const
-   {
-      return trace(project(x, QuantumNumber(x.GetSymmetryList())));
-   }
-};
+   return trace(project(x,  QuantumNumber(x.GetSymmetryList())));
+}
 
 // norm_frob
 
 template <typename T, typename B1, typename B2, typename S>
-struct NormFrobSq<Tensor::ReducibleTensor<T, B1, B2, S> >
+real_t<T>
+norm_frob_sq(Tensor::ReducibleTensor<T, B1, B2, S> const& x)
 {
-   typedef Tensor::ReducibleTensor<T, B1, B2, S> const& argument_type;
-   typedef typename result_value<NormFrobSq<T> >::type result_type;
-
-   result_type operator()(argument_type x) const
+   real_t<T> Result = 0;
+   for (auto const& Component : x)
    {
-      result_type Result = 0;
-      for (typename Tensor::ReducibleTensor<T, B1, B2, S>::const_iterator I = x.begin();
-           I != x.end(); ++I)
-      {
-         Result += norm_frob_sq(*I);
-      }
-      return Result;
+      Result += norm_frob_sq(Component);
    }
-};
+   return Result;
+}
 
 // inner_prod
 
 template <typename T1, typename B1, typename B2, typename S1, typename T2, typename S2>
-struct InnerProd<Tensor::ReducibleTensor<T1, B1, B2, S1>,
-                 Tensor::ReducibleTensor<T2, B1, B2, S2> >
+scalar_t<decltype(std::declval<T1>()*std::declval<T2>())>
+inner_prod(ReducibleTensor<T1, B1, B2, S1> const& x, ReducibleTensor<T2, B1, B2, S2> const& y)
 {
-   typedef Tensor::ReducibleTensor<T1, B1, B2, S1> first_argument_type;
-   typedef Tensor::ReducibleTensor<T2, B1, B2, S2> second_argument_type;
-   typedef typename result_value<InnerProd<T1, T2> >::type result_type;
-
-   result_type operator()(first_argument_type const& x, second_argument_type const& y) const
+   scalar_t<decltype(std::declval<T1>()*std::declval<T2>())> Result = 0.0;
+   std::set<QuantumNumber> q1 = x.components(), q2 = y.components();
+   std::set<QuantumNumber> Intersect;
+   std::set_intersection(q1.begin(), q1.end(), q2.begin(), q2.end(), std::inserter(Intersect, Intersect.begin()));
+   for (auto const& q : Intersect)
    {
-      using QuantumNumbers::QuantumNumber;
-      result_type Result = 0;
-      std::set<QuantumNumber> q1 = x.components(), q2 = y.components();
-      std::set<QuantumNumber> Intersect;
-      std::set_intersection(q1.begin(), q1.end(), q2.begin(), q2.end(), std::inserter(Intersect, Intersect.begin()));
-      for (std::set<QuantumNumber>::const_iterator I = Intersect.begin(); I != Intersect.end(); ++I)
-      {
-         Result += inner_prod(x.project_assert(*I), y.project_assert(*I));
-      }
-      return Result;
+      Result += inner_prod(x.project_assert(q), y.project_assert(q));
    }
-};
-
-// parallel_prod - do we need this?
+   return Result;
+}
 
 // scalar_prod
 
-template <typename T1, typename B1, typename B2, typename S1,
-          typename T2, typename B3, typename S2, typename Functor>
-struct ScalarProd<Tensor::ReducibleTensor<T1, B1, B2, S1>,
-                  HermitianProxy<Tensor::ReducibleTensor<T2, B3, B2, S2> >,
-                  Functor>
+template <typename T1, typename B1, typename B2, typename S1, typename T2, typename S2>
+decltype(std::declval<T1>()*std::declval<T2>())
+scalar_prod(ReducibleTensor<T1, B1, B2, S1> const& x, HermitianProxy<ReducibleTensor<T2, B1, B2, S2>> const& y)
 {
-   typedef Tensor::ReducibleTensor<T1, B1, B2, S1> const& first_argument_type;
-   typedef HermitianProxy<Tensor::ReducibleTensor<T2, B3, B2, S2> > const& second_argument_type;
-   typedef Tensor::IrredTensor<T1, B1, B3> result_type;
+   decltype(std::declval<T1>()*std::declval<T2>()) Result(x.Basis1(), y.base().Basis1());
+   std::set<QuantumNumber> q1 = x.components(), q2 = y.base().components();
+   intersection_iterator<std::set<QuantumNumber> > IEnd = set_intersection_end(q1,q2);
+   intersection_iterator<std::set<QuantumNumber> > I = set_intersection_begin(q1,q2);
 
-   ScalarProd(Functor f = Functor()) : Impl_(f) {}
-
-   result_type operator()(first_argument_type x, second_argument_type y) const
+   while (I != IEnd)
    {
-      using QuantumNumbers::QuantumNumber;
-      std::set<QuantumNumber> q1 = x.components(), q2 = y.base().components();
-      intersection_iterator<std::set<QuantumNumber> > IEnd = set_intersection_end(q1,q2);
-      intersection_iterator<std::set<QuantumNumber> > I = set_intersection_begin(q1,q2);
-      if (I == IEnd)
-         return result_type();
-
-      result_type Result = scalar_prod(x.project_assert(*I), herm(y.base().project_assert(*I)));
-      //Impl_(x.project_assert(*I), herm(y.base().project_assert(*I)));
+      Result += scalar_prod(x.project_assert(*I), herm(y.base().project_assert(*I)));
       ++I;
-      while (I != IEnd)
-      {
-         Result += scalar_prod(x.project_assert(*I), herm(y.base().project_assert(*I)));
-         //Impl_(x.project_assert(*I), herm(y.base().project_assert(*I)));
-         ++I;
-      }
-      return Result;
    }
-
-   ScalarProd<Tensor::IrredTensor<T1, B1, B2, S1>,
-              HermitianProxy<Tensor::IrredTensor<T2, B3, B2, S2> >,
-              Functor> Impl_;
-};
-
-template <typename T1, typename B1, typename B2, typename S1,
-          typename T2, typename B3, typename S2, typename Functor>
-struct ScalarProd<HermitianProxy<Tensor::ReducibleTensor<T1, B1, B2, S1> >,
-                  Tensor::ReducibleTensor<T2, B1, B3, S2>,
-                  Functor>
-{
-   typedef HermitianProxy<Tensor::ReducibleTensor<T1, B1, B2, S1> > const& first_argument_type;
-   typedef Tensor::ReducibleTensor<T2, B1, B3, S2> const& second_argument_type;
-   typedef Tensor::IrredTensor<T1, B2, B3> result_type;
-
-   ScalarProd(Functor f = Functor()) : Impl_(f) {}
-
-   result_type operator()(first_argument_type x, second_argument_type y) const
-   {
-      using QuantumNumbers::QuantumNumber;
-      std::set<QuantumNumber> q1 = x.base().components(), q2 = y.components();
-      intersection_iterator<std::set<QuantumNumber> > IEnd = set_intersection_end(q1,q2);
-      intersection_iterator<std::set<QuantumNumber> > I = set_intersection_begin(q1,q2);
-      if (I == IEnd)
-         return result_type();
-
-      result_type Result = scalar_prod(herm(x.base().project_assert(*I)), y.project_assert(*I));
-      ++I;
-      while (I != IEnd)
-      {
-         Result += scalar_prod(herm(x.base().project_assert(*I)), y.project_assert(*I));
-         ++I;
-      }
-      return Result;
-   }
-
-   ScalarProd<HermitianProxy<Tensor::IrredTensor<T1, B1, B2, S1> >,
-              Tensor::IrredTensor<T2, B1, B3, S2>,
-              Functor> Impl_;
-};
-
-//
-// this needs to use IrredProd directly.
-//
-
-template <typename S, typename T, typename Nest>
-struct ReducibleProd {};
-
-
-template <typename S, typename T, typename Nest>
-inline
-typename ReducibleProd<S, T, Nest>::result_type
-prod(S const& x, T const& y, Nest const& n)
-{
-   return ReducibleProd<S, T, Nest>()(x,y,n);
+   return Result;
 }
 
-template <typename T1, typename B1, typename B2, typename S1,
-          typename T2, typename B3, typename S2, typename Nest>
-struct ReducibleProd<Tensor::ReducibleTensor<T1, B1, B2, S1>,
-                     Tensor::ReducibleTensor<T2, B2, B3, S2>, Nest >
+template <typename T1, typename B1, typename B2, typename S1, typename T2, typename S2>
+decltype(std::declval<T1>()*std::declval<T2>())
+scalar_prod(HermitianProxy<ReducibleTensor<T1, B1, B2, S1>> const& x, ReducibleTensor<T2, B1, B2, S2> const& y)
 {
-   typedef Tensor::ReducibleTensor<T1, B1, B2, S1> const& first_argument_type;
-   typedef Tensor::ReducibleTensor<T2, B2, B3, S2> const& second_argument_type;
-   typedef Nest third_argument_type;
-   typedef Tensor::ReducibleTensor<typename result_value<Nest>::type, B1, B3> result_type;
-   typedef IrredProd<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2,B2,B3,S2> > IrredProdType;
-
-   result_type operator()(first_argument_type x, second_argument_type y, third_argument_type f) const
+   decltype(std::declval<T1>()*std::declval<T2>()) Result(x.base().Basis2(), y.Basis2());
+   std::set<QuantumNumber> q1 = x.base().components(), q2 = y.components();
+   intersection_iterator<std::set<QuantumNumber> > IEnd = set_intersection_end(q1,q2);
+   intersection_iterator<std::set<QuantumNumber> > I = set_intersection_begin(q1,q2);
+   while (I != IEnd)
    {
-      using QuantumNumbers::QuantumNumber;
-      using QuantumNumbers::QuantumNumberList;
-      typedef Tensor::ReducibleTensor<T1, B1, B2, S1> t1;
-      typedef Tensor::ReducibleTensor<T2, B2, B3, S2> t2;
-      result_type Result(x.Basis1(), y.Basis2());
-      for (typename t1::const_iterator I1 = x.begin(); I1 != x.end(); ++I1)
-      {
-         for (typename t2::const_iterator I2 = y.begin(); I2 != y.end(); ++I2)
-         {
-            QuantumNumberList QL = transform_targets(I1->TransformsAs(),I2->TransformsAs());
-            for (QuantumNumberList::const_iterator I = QL.begin(); I != QL.end(); ++I)
-            {
-               project(Result, *I) += IrredProdType(*I)(*I1, *I2, f);
-            }
-         }
-      }
-      return Result;
+      Result += scalar_prod(herm(x.base().project_assert(*I)), y.project_assert(*I));
+      ++I;
    }
+   return Result;
+}
 
-   result_type operator()(first_argument_type x, second_argument_type y) const
-   {
-      return this->operator()(x,y, Nest());
-   }
-
-};
-
-template <typename T1, typename B1, typename B2, typename S1,
-          typename T2, typename B3, typename S2, typename Nest>
-struct ReducibleProd<Tensor::ReducibleTensor<T1, B1, B2, S1>,
-                     Tensor::IrredTensor<T2, B2, B3, S2>, Nest >
+template <typename T, typename B, typename S>
+ReducibleTensor<T, B, B, S>
+prod(ReducibleTensor<T, B, B, S> const& x, ReducibleTensor<T, B, B, S> const& y)
 {
-   typedef Tensor::ReducibleTensor<T1, B1, B2, S1> const& first_argument_type;
-   typedef Tensor::IrredTensor<T2, B2, B3, S2> const& second_argument_type;
-   typedef Nest third_argument_type;
-   typedef Tensor::ReducibleTensor<typename result_value<Nest>::type, B1, B3> result_type;
-   typedef IrredProd<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2,B2,B3,S2> > IrredProdType;
-
-   result_type operator()(first_argument_type x, second_argument_type y,
-                          Nest F) const
+   using QuantumNumbers::QuantumNumber;
+   using QuantumNumbers::QuantumNumberList;
+   ReducibleTensor<T, B, B, S> Result(x.Basis1(), y.Basis2());
+   for (auto const& Ix : x)
    {
-      using QuantumNumbers::QuantumNumber;
-      using QuantumNumbers::QuantumNumberList;
-      typedef Tensor::ReducibleTensor<T1, B1, B2, S1> t1;
-      typedef Tensor::IrredTensor<T2, B2, B3, S2> t2;
-      result_type Result(x.Basis1(), y.Basis2());
-      for (typename t1::const_iterator I1 = x.begin(); I1 != x.end(); ++I1)
+      for (auto const& Iy : y)
       {
-         QuantumNumberList QL = transform_targets(I1->TransformsAs(), y.TransformsAs());
-         for (QuantumNumberList::const_iterator I = QL.begin(); I != QL.end(); ++I)
-         {
-            project(Result, *I) += IrredProdType(*I)(*I1, y, *I, F);
-         }
+	 for (auto const& q : x.TransformsAs() * y.TransformsAs())
+	 {
+	    Result.add(prod(Ix, Iy, q));
+	 }
       }
-      return Result;
    }
-};
+   return Result;
+}
 
-template <typename T1, typename B1, typename B2, typename S1,
-          typename T2, typename B3, typename S2, typename Nest>
-struct ReducibleProd<Tensor::IrredTensor<T1, B1, B2, S1>,
-                     Tensor::ReducibleTensor<T2, B2, B3, S2>, Nest >
+template <typename T, typename B, typename S>
+inline
+ReducibleTensor<T, B, B, S>
+operator*(ReducibleTensor<T, B, B, S> const& x, ReducibleTensor<T, B, B, S> const& y)
 {
-   typedef Tensor::IrredTensor<T1, B1, B2, S1> const& first_argument_type;
-   typedef Tensor::ReducibleTensor<T2, B2, B3, S2> const& second_argument_type;
-   typedef Nest third_argument_type;
-   typedef Tensor::ReducibleTensor<typename result_value<Nest>::type, B1, B3> result_type;
-   typedef IrredProd<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2,B2,B3,S2> > IrredProdType;
+   return prod(x,y);
+}
 
-   result_type operator()(first_argument_type x, second_argument_type y,
-                          Nest F) const
-   {
-      using QuantumNumbers::QuantumNumber;
-      using QuantumNumbers::QuantumNumberList;
-      typedef Tensor::IrredTensor<T1, B1, B2, S1> t1;
-      typedef Tensor::ReducibleTensor<T2, B2, B3, S2> t2;
-      result_type Result(x.Basis1(), y.Basis2());
-      for (typename t2::const_iterator I2 = y.begin(); I2 != y.end(); ++I2)
-      {
-         QuantumNumberList QL = transform_targets(x.TransformsAs(), I2->TransformsAs());
-         for (QuantumNumberList::const_iterator I = QL.begin(); I != QL.end(); ++I)
-         {
-            project(Result, *I) += IrredProdType(*I)(x, *I2, *I, F);
-         }
-      }
-      return Result;
-   }
-};
-
-template <typename T1, typename B1, typename B2, typename S1,
-          typename T2, typename B3, typename S2>
-struct Multiplication<Tensor::ReducibleTensor<T1, B1, B2, S1>, Tensor::ReducibleTensor<T2, B2, B3, S2> >
-   : ReducibleProd<Tensor::ReducibleTensor<T1, B1, B2, S1>,
-                   Tensor::ReducibleTensor<T2, B2, B3, S2>, Multiplication<T1, T2> > {};
-
-template <typename T1, typename B1, typename B2, typename S1,
-          typename T2, typename B3, typename S2>
-struct Multiplication<Tensor::ReducibleTensor<T1, B1, B2, S1>, Tensor::IrredTensor<T2, B2, B3, S2> >
-   : ReducibleProd<Tensor::ReducibleTensor<T1, B1, B2, S1>,
-                   Tensor::IrredTensor<T2, B2, B3, S2>,
-                   Multiplication<T1, T2> > {};
-
-template <typename T1, typename B1, typename B2, typename S1,
-          typename T2, typename B3, typename S2>
-struct Multiplication<Tensor::IrredTensor<T1, B1, B2, S1>, Tensor::ReducibleTensor<T2, B2, B3, S2> >
-   : ReducibleProd<Tensor::IrredTensor<T1, B1, B2, S1>,
-                   Tensor::ReducibleTensor<T2, B2, B3, S2>,
-                   Multiplication<T1, T2> > {};
-
-template <typename T, typename B1, typename B2, typename S, typename F>
-struct TensorAdjoint<Tensor::ReducibleTensor<T, B1, B2, S>, F>
+// multiplication by scalar
+template <typename T, typename B, typename S, typename U>
+inline
+std::enable_if_t<blas::is_numeric_v<U>, ReducibleTensor<T, B, B, S>>
+operator*(ReducibleTensor<T, B, B, S> const& x, U a)
 {
-   TensorAdjoint(F f = F()) : f_(f) {}
+   ReducibleTensor<T, B, B, S> Result(x);
+   Result *= a;
+   return Result;
+}
 
-   typedef Tensor::ReducibleTensor<typename result_value<F>::type, B2, B1> result_type;
-   typedef Tensor::ReducibleTensor<T, B1, B2, S> const& argument_type;
-
-   result_type operator()(Tensor::ReducibleTensor<T, B1, B2, S> const& x) const
-   {
-      result_type Result(x.Basis2(), x.Basis1());
-      for (typename Tensor::ReducibleTensor<T, B1, B2, S>::const_iterator I = x.begin(); I != x.end(); ++I)
-      {
-         Result += adjoint(*I, f_);
-      }
-      return Result;
-   }
-
-   F f_;
-};
+template <typename T, typename B, typename S, typename U>
+inline
+std::enable_if_t<blas::is_numeric_v<U>, ReducibleTensor<T, B, B, S>>
+operator*(U a, ReducibleTensor<T, B, B, S> const& x)
+{
+   ReducibleTensor<T, B, B, S> Result(x);
+   Result *= a;
+   return Result;
+}
 
 template <typename T, typename B1, typename B2, typename S>
-struct Adjoint<Tensor::ReducibleTensor<T, B1, B2, S> > : TensorAdjoint<Tensor::ReducibleTensor<T, B1, B2, S>,
-                                                                       Adjoint<typename Tensor::IrredTensor<T, B1, B2, S>::value_type> > {};
-
-template <typename T, typename B1, typename B2, typename S, typename F>
-struct TensorInvAdjoint<Tensor::ReducibleTensor<T, B1, B2, S>, F>
+ReducibleTensor<T,B2,B1,S>
+adjoint(ReducibleTensor<T, B1, B2, S> const& x)
 {
-   TensorInvAdjoint(F f = F()) : f_(f) {}
-
-   typedef Tensor::ReducibleTensor<typename result_value<F>::type, B2, B1> result_type;
-   typedef Tensor::ReducibleTensor<T, B1, B2, S> const& argument_type;
-
-   result_type operator()(Tensor::ReducibleTensor<T, B1, B2, S> const& x) const
+   ReducibleTensor<T,B2,B1,S> Result(x.Basis2(), x.Basis1());
+   for (auto const& xc : x)
    {
-      result_type Result(x.Basis2(), x.Basis1());
-      for (typename Tensor::ReducibleTensor<T, B1, B2, S>::const_iterator I = x.begin(); I != x.end(); ++I)
-      {
-         Result += inv_adjoint(*I, f_);
-      }
-      return Result;
+      Result.insert(adjoint(xc));
    }
-
-   F f_;
-};
+}
 
 template <typename T, typename B1, typename B2, typename S>
-struct InvAdjoint<Tensor::ReducibleTensor<T, B1, B2, S> > : TensorInvAdjoint<Tensor::ReducibleTensor<T, B1, B2, S>,
-                                                                       InvAdjoint<typename Tensor::IrredTensor<T, B1, B2, S>::value_type> > {};
-
-} // namespace LinearAlgebra
-
-namespace Tensor
+ReducibleTensor<T,B2,B1,S>
+inv_adjoint(ReducibleTensor<T, B1, B2, S> const& x)
 {
+   ReducibleTensor<T,B2,B1,S> Result(x.Basis2(), x.Basis1());
+   for (auto const& xc : x)
+   {
+      Result.insert(inv_adjoint(xc));
+   }
+}
 
+#if 0
 template <typename T, typename B1, typename B2, typename S1, typename T2, typename B3, typename B4, typename S2>
 struct TensorProd<ReducibleTensor<T, B1, B2, S1>, ReducibleTensor<T2, B3, B4, S2> >
 {
@@ -686,7 +512,6 @@ tensor_prod(ReducibleTensor<T, B1, B2, S1> const& x, ReducibleTensor<T2, B3, B4,
 {
    return  TensorProd<ReducibleTensor<T, B1, B2, S1>, ReducibleTensor<T2, B3, B4, S2> >()(x,y);
 }
-
 #endif
 
 } // namespace Tensor

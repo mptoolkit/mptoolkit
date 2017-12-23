@@ -17,6 +17,8 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+#include "tensor_types.h"
+
 namespace Tensor
 {
 
@@ -677,6 +679,25 @@ delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
    DEBUG_PRECONDITION_EQUAL(q.degree(), 1);
 
    return delta_shift(x, q, PL[0], delta_shift(x.Basis1(), PL[0]), delta_shift(x.Basis2(), PL[0]));
+}
+
+// trace
+template <typename T, typename B, typename S>
+typename IrredTensor<T, B, B, S>::numeric_type
+trace(IrredTensor<T, B, B, S> const& x)
+{
+   CHECK_EQUAL(x.Basis1(), x.Basis2());
+   using numeric_type = typename IrredTensor<T, B, B, S>::numeric_type;
+   Vector_t<numeric_type> Results(x.size1(), 0.0);
+   for (auto const& r : x)
+   {
+      auto I = r.find(r.row());
+      if (I != r.end())
+      {
+	 trace(I.value(), Results[r.row()]);
+      }
+   }
+   return sum(Results);
 }
 
 } // namespace Tensor

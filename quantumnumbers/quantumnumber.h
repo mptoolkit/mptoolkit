@@ -773,6 +773,12 @@ QuantumNumberList transform_targets(QuantumNumber const& q1, QuantumNumber const
    return Q;
 }
 
+inline
+QuantumNumberList operator*(QuantumNumber const& q1, QuantumNumber const& q2)
+{
+   return transform_targets(q1,q2);
+}
+
 // 'addition' of quantum numbers.  This is only possible if tghe quantum numbers
 // are abelian (possibly through being in the abelian sector of a non-abelian symmetry).
 inline

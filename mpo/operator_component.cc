@@ -17,9 +17,44 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+template <typename T>
+BasicOperatorComponent<T>::BasicOperatorComponent(BasisList const& LocalB,
+						  BasisList const& B1, BasisList const& B2)
+   : LocalBasis1_(LocalB), LocalBasis2_(LocalB), Basis1_(B1), Basis2_(B2),
+     Data_(Basis1_.size(), Basis2_.size())
+{
+}
+
+template <typename T>
+BasicOperatorComponent<T>::BasicOperatorComponent(BasisList const& LocalB1, BasisList const& LocalB2,
+						  BasisList const& B1, BasisList const& B2)
+   : LocalBasis1_(LocalB1), LocalBasis2_(LocalB2), Basis1_(B1), Basis2_(B2),
+     Data_(Basis1_.size(), Basis2_.size())
+{
+}
+
+
+template <typename T>
+void
+BasicOperatorComponent<T>::check_structure() const
+{
+   for (auto const& r : (*this))
+   {
+      for (auto const& c : r)
+      {
+	 for (auto const& q : c.value)
+	 {
+	    CHECK(is_transform_target(this->qn2(c.col()), q.TransformsAs(), this->qn1(r.row())))
+	       (this->qn2(c.col()))(q.TransformsAs())(this->qn1(r.row()));
+	 }
+      }
+   }
+}
+
+template <typename T>
 inline
-OperatorComponent&
-OperatorComponent::operator+=(OperatorComponent const& x)
+BasicOperatorComponent<T>&
+BasicOperatorComponent<T>::operator+=(BasicOperatorComponent<T> const& x)
 {
    DEBUG_CHECK_EQUAL(LocalBasis1_, x.LocalBasis1_);
    DEBUG_CHECK_EQUAL(LocalBasis2_, x.LocalBasis2_);
@@ -29,9 +64,10 @@ OperatorComponent::operator+=(OperatorComponent const& x)
    return *this;
 }
 
+template <typename T>
 inline
-OperatorComponent&
-OperatorComponent::operator-=(OperatorComponent const& x)
+BasicOperatorComponent<T>&
+BasicOperatorComponent<T>::operator-=(BasicOperatorComponent<T> const& x)
 {
    DEBUG_CHECK_EQUAL(LocalBasis1_, x.LocalBasis1_);
    DEBUG_CHECK_EQUAL(LocalBasis2_, x.LocalBasis2_);
@@ -41,10 +77,13 @@ OperatorComponent::operator-=(OperatorComponent const& x)
    return *this;
 }
 
+#if 0
+template <typename T>
 inline
-OperatorComponent::value_type
-OperatorComponent::operator()(int i, int j) const
+BasicOperatorComponent<T>::value_type
+BasicOperatorComponent<T>::operator()(int i, int j) const
 {
+   
    const_inner_iterator I = LinearAlgebra::iterate_at(Data_, i,j);
    if (I)
       return *I;
@@ -65,41 +104,127 @@ OperatorComponent::operator()(int i, int j)
    }
    return *I;
 }
+#endif
 
+template <typename T>
 inline
-OperatorComponent::value_type
-OperatorComponent::top_left() const
+typename BasicOperatorComponent<T>::value_type
+BasicOperatorComponent<T>::top_left() const
 {
-   return this->operator()(0,0);
+   typename data_type::row_type::const_iterator I = Data_[0].find(0);
+   if (I == Data_[0].end())
+      return value_type(LocalBasis1_, LocalBasis2_);
+   // else
+   return I.value;
 }
 
+template <typename T>
 inline
-OperatorComponent::value_type
-OperatorComponent::bottom_right() const
+typename BasicOperatorComponent<T>::value_type
+BasicOperatorComponent<T>::bottom_right() const
 {
-   return this->operator()(this->size1()-1, this->size2()-1);
+   typename data_type::row_type::const_iterator I = Data_.back().find(Basis2_.size()-1);
+   if (I == Data_.back().end())
+      return value_type(LocalBasis1_, LocalBasis2_);
+   // else
+   return I.value;
 }
 
-inline
-bool
-OperatorComponent::is_lower_triangular() const
-{
-   for (const_iterator I = iterate(Data_); I; ++I)
-   {
-      for (const_inner_iterator J = iterate(I); J; ++J)
-      {
-         if (J.index1() > J.index2())
-            return false;
-      }
-   }
-   return true;
-}
-
+template <typename T>
 inline
 void
-OperatorComponent::debug_check_structure() const
+BasicOperatorComponent<T>::debug_check_structure() const
 {
 #if !defined(NDEBUG)
    this->check_structure();
 #endif
+}
+
+template <typename T>
+void print_structure(BasicOperatorComponent<T> const& Op, std::ostream& out, double UnityEpsilon)
+{
+   for (auto const& r : Op)
+   {
+      out << '[';
+      int next_r = 0;
+      for (auto const& c : r)
+      {
+	 while (next_r++ < r)
+	    out << ' ';
+
+	 if (c.value.size() > 1)
+	    out << 'x';       // some compound operator
+	 else if (!is_scalar(c.value))
+	    out << 'v';       // a non-scalar
+	 else
+	 {
+	    SimpleOperator Y = c.value.scalar();
+
+	    complex x = PropIdent(Y);
+	    if (x == 0.0)
+	    {
+	       complex x = PropIdent(scalar_prod(herm(Y),Y), UnityEpsilon);
+	       if (norm_frob(x-1.0) < 1E-12)
+		  out << 'U';      // a unitary
+	       else
+		  out << 's';      // a generic scalar
+	    }
+	    else if (norm_frob(x-1.0) < 1E-12)
+	    {
+	       out << 'I';         // the identity
+	    }
+	    else
+	       out << 'i';         // something proportional to the identity
+	 }
+      }
+      out << "]\n";
+   }
+}
+
+template <typename T>
+PStream::opstream&
+operator<<(PStream::opstream& out, BasicOperatorComponent<T> const& Op)
+{
+   out << Op.LocalBasis1_ << Op.LocalBasis2_
+       << Op.Basis1_ << Op.Basis2_
+       << Op.Data_
+      ;
+   return out;
+}
+
+template <typename T>
+PStream::ipstream&
+operator>>(PStream::ipstream& in, BasicOperatorComponent<T>& Op)
+{
+   in >> Op.LocalBasis1_ >> Op.LocalBasis2_
+      >> Op.Basis1_ >> Op.Basis2_
+      >> Op.Data_
+      ;
+   return in;
+}
+
+template <typename T>
+BasicOperatorComponent<T>
+operator+(BasicOperatorComponent<T> const& A, BasicOperatorComponent<T> const& B)
+{
+   DEBUG_CHECK_EQUAL(A.LocalBasis1(), B.LocalBasis1());
+   DEBUG_CHECK_EQUAL(A.LocalBasis2(), B.LocalBasis2());
+   DEBUG_CHECK_EQUAL(A.Basis1(), B.Basis1());
+   DEBUG_CHECK_EQUAL(A.Basis2(), B.Basis2());
+   BasicOperatorComponent<T> Result(A.LocalBasis1(), A.LocalBasis2(), A.Basis1(), A.Basis2());
+   Result.data() = A.data() + B.data();
+   return Result;
+}
+
+template <typename T>
+BasicOperatorComponent<T>
+operator-(BasicOperatorComponent<T> const& A, BasicOperatorComponent<T> const& B)
+{
+   DEBUG_CHECK_EQUAL(A.LocalBasis1(), B.LocalBasis1());
+   DEBUG_CHECK_EQUAL(A.LocalBasis2(), B.LocalBasis2());
+   DEBUG_CHECK_EQUAL(A.Basis1(), B.Basis1());
+   DEBUG_CHECK_EQUAL(A.Basis2(), B.Basis2());
+   BasicOperatorComponent<T> Result(A.LocalBasis1(), A.LocalBasis2(), A.Basis1(), A.Basis2());
+   Result.data() = A.data() - B.data();
+   return Result;
 }

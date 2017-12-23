@@ -56,6 +56,18 @@ using device_tag = blas::cpu_tag;
 
 #endif
 
+// The template aliases are intended to be templated over
+// an arithmetic type
+
+template <typename T>
+using Matrix_t = blas::Matrix<T, device_tag>;
+
+template <typename T>
+using DiagonalMatrix_t = blas::DiagonalMatrix<T, device_tag>;
+
+template <typename T>
+using Vector_t = blas::Vector<T, device_tag>;
+
 using Matrix             = blas::Matrix<complex, device_tag>;
 using RealMatrix         = blas::Matrix<real, device_tag>;
 using DiagonalMatrix     = blas::DiagonalMatrix<complex, device_tag>;
@@ -65,8 +77,14 @@ using RealVector         = blas::Vector<real, device_tag>;
 
 // Tensor types.  The matrix versions use device matrices
 
+template <typename T>
+using SimpleOperator_t = IrredTensor<T>;
+
 using SimpleOperator       = IrredTensor<complex>;
 using RealSimpleOperator   = IrredTensor<real>;
+
+template <typename T>
+using MatrixOperator_t = IrredTensor<Matrix_t<T>, VectorBasis, VectorBasis>;
 
 using MatrixOperator       = IrredTensor<Matrix,
                                          VectorBasis,
@@ -76,10 +94,16 @@ using RealMatrixOperator   = IrredTensor<RealMatrix,
                                          VectorBasis,
                                          VectorBasis>;
 
+template <typename T>
+using DiagonalOperator_t = IrredTensor<DiagonalMatrix_t<T>, VectorBasis, VectorBasis>;
+
 using RealDiagonalOperator = IrredTensor<RealDiagonalMatrix,
                                          VectorBasis,
                                          VectorBasis>;//,
 //                                         Tensor::DiagonalStructure>;
+
+template <typename T>
+using SimpleRedOperator_t =  ReducibleTensor<T, BasisList, BasisList>;
 
 using SimpleRedOperator = ReducibleTensor<complex, BasisList, BasisList>;
 

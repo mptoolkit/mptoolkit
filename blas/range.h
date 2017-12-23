@@ -109,6 +109,10 @@ Range range(int first, int last)
    return Range(first, last);
 }
 
+struct all_t {};
+
+extern all_t all;
+
 } // namespace blas
 
 #endif

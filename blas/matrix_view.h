@@ -34,6 +34,7 @@ class matrix_range_view : public NormalMatrixProxy<ValueType, matrix_range_view<
       using buffer_type        = typename tag_type::template buffer_type<ValueType>;
       using storage_type       = typename buffer_type::storage_type;
       using const_storage_type = typename buffer_type::const_storage_type;
+      using remove_proxy_t     = Matrix<ValueType, Tag>;
 
       matrix_range_view(int Rows_, int Cols_, int LeadingDimension_, storage_type Ptr_)
          : Rows(Rows_), Cols(Cols_), LeadingDimension(LeadingDimension_), Ptr(Ptr_) {}

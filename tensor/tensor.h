@@ -48,9 +48,9 @@ namespace Tensor
 template <typename T>
 struct HermitianProxy
 {
-   typedef T base_type;
-   typedef typename T::value_type value_type;
-   typedef T const& reference;
+   using base_type  = T;
+   using value_type = typename T::value_type;
+   using reference  = T const&;
 
    explicit HermitianProxy(T const& x) : x_(x) {}
 
@@ -64,9 +64,9 @@ struct HermitianProxy
 template <typename T>
 struct ConjugateProxy
 {
-   typedef T base_type;
-   typedef typename T::value_type value_type;
-   typedef T const& reference;
+   using base_type  = T;
+   using value_type = typename T::value_type;
+   using reference  = T const&;
 
    explicit ConjugateProxy(T const& x) : x_(x) {}
 
@@ -331,6 +331,14 @@ class IrredTensor
       //      friend IrredTensor ::Tensor::CoerceSymmetryList<>(IrredTensor const& t, SymmetryList const& sl);
 };
 
+} // namespace Tensor
+
+template <typename T, typename B1, typename B2, typename S>
+struct ScalarTypes<Tensor::IrredTensor<T, B1, B2, S>> : ScalarTypes<T> {};
+
+namespace Tensor
+{
+
 template <typename T, typename U, typename B1, typename B2, typename S>
 void
 set(IrredTensor<T, B1, B2, S>& x, IrredTensor<U, B1, B2, S> const& y)
@@ -349,6 +357,13 @@ set(IrredTensor<T, B1, B2, S>& x, IrredTensor<U, B1, B2, S> const& y)
       }
    }
    x.check_structure();
+}
+
+template <typename T, typename B1, typename B2, typename S>
+HermitianProxy<IrredTensor<T, B1, B2, S>>
+herm(IrredTensor<T, B1, B2, S> const& x)
+{
+   return HermitianProxy<IrredTensor<T, B1, B2, S>>(x);
 }
 
 // text I/O
@@ -453,25 +468,9 @@ inplace_conj(IrredTensor<T, B1, B2, S>& x)
 }
 
 // trace
-#if 0
 template <typename T, typename B, typename S>
 typename IrredTensor<T, B, B, S>::numeric_type
-trace(IrredTensor<T, B, B, S> const& x)
-{
-   CHECK_EQUAL(x.Basis1(), x.Basis2());
-   using numeric_type = typename IrredTensor<T, B1, B2, S>::numeric_type;
-   std::vector<async_<numeric_type>> Results;
-   for (auto const& r : x)
-   {
-      auto c = r.iterate_at(r.row());
-      if (c != r.end())
-      {
-         Results.emplace_back(qdim(x.qn1(r.row())) * trace(c));
-      }
-   }
-   return sum(Results);
-}
-#endif
+trace(IrredTensor<T, B, B, S> const& x);
 
 // norm_frob
 

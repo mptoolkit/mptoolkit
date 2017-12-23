@@ -26,6 +26,7 @@
 
 #include "common/trace.h"
 #include "detail/sparserowiterator.h"
+#include "number_traits.h"
 #include <vector>
 #include <map>
 
@@ -279,6 +280,14 @@ class SparseMatrix
          }
       }
 
+      SparseMatrix& operator=(SparseMatrix<T>&& x)
+      {
+	 Cols = x.Cols;
+	 RowStorage = std::move(x.RowStorage);
+	 x.Cols = 0;
+	 return *this;
+      }
+
       int rows() const { return RowStorage.size(); }
       int cols() const { return Cols; }
       int nnz() const { int Result = 0; for (auto const& x : RowStorage) { Result += x.nnz(); } return Result; }
@@ -406,6 +415,113 @@ SparseMatrix<T>& operator*=(SparseMatrix<T>& x, T const& a)
    return x;
 }
 
+// A proxy class to represent the Hermitian conjugate of a matrix
+template <typename T>
+struct SparseMatrixHermitian
+{
+   using base_type  = T;
+   using value_type = typename T::value_type;
+   using reference  = T const&;
+
+   explicit SparseMatrixHermitian(T const& x) : x_(x) {}
+
+   reference base() const { return x_; }
+
+   private:
+      reference x_;
+};
+
+template <typename T>
+inline
+SparseMatrixHermitian<SparseMatrix<T>>
+herm(SparseMatrix<T> const& x)
+{
+   return SparseMatrixHermitian<SparseMatrix<T>>(x);
+}
+
+template <typename T, typename U>
+SparseMatrix<remove_proxy_t<decltype(std::declval<T>() * std::declval<U>())>>
+operator*(SparseMatrix<T> const& x, SparseMatrix<U> const& y)
+{
+   SparseMatrix<remove_proxy_t<decltype(std::declval<T>() * std::declval<U>())>> Result(x.rows(), y.cols());
+   for (auto const& rx : x)
+   {
+      for (auto const& cx : rx)
+      {
+	 for (auto const& cy : y.row(cx.col()))
+	 {
+	    Result.add(rx.row(), cy.col(), cx.value * cy.value);
+	 }
+      }
+   }
+   return Result;
+}
+
+template <typename T, typename U>
+SparseMatrix<remove_proxy_t<decltype(std::declval<T>() * std::declval<U>())>>
+operator*(SparseMatrix<T> const& x, SparseMatrixHermitian<SparseMatrix<U>> const& y)
+{
+   using element_type = remove_proxy_t<decltype(std::declval<T>() * std::declval<U>())>;
+   SparseMatrix<element_type> Result(x.rows(), y.base().rows());
+   for (auto const& rx : x)
+   {
+      for (auto const& ry : y.base())
+      {
+	 bool HasElement = false;
+	 auto xi = rx.begin();
+	 auto yi = ry.begin();
+	 // find the first occurance of an element with xi.col == yi.col
+	 while (xi != rx.end() && yi != ry.end() && (xi.col() != yi.col()))
+	 {
+	    if (xi.col() < yi.col())
+	       ++xi;
+	    else if (yi.col() < xi.col())
+	       ++yi;
+	 }
+	 if (xi != rx.end() && yi != ry.end())
+	 {
+	    // we have an element
+	    element_type E = rx.value * ry.value;
+	    // search for others
+	    while (xi != rx.end() && yi != ry.end())
+	    {
+	       if (xi.col() == yi.col())
+	       {
+		  E += rx.value * ry.value;
+		  ++xi;
+		  ++yi;
+	       }
+	       else if (xi.col() < yi.col())
+		  ++xi;
+	       else if (yi.col() < xi.col())
+		  ++yi;
+	    }
+	    Result.insert(rx.row(), ry.row(), std::move(E));
+	 }
+      }
+   }
+   return Result;
+}
+
+template <typename T, typename U>
+SparseMatrix<remove_proxy_t<decltype(std::declval<T>() * std::declval<U>())>>
+operator*(SparseMatrixHermitian<SparseMatrix<U>> const& x, SparseMatrix<T> const& y)
+{
+   using element_type = remove_proxy_t<decltype(std::declval<T>() * std::declval<U>())>;
+   SparseMatrix<element_type> Result(x.rows(), y.base().rows());
+   for (auto const& rx : x.base())
+   {
+      for (auto const& cx : rx)
+      {
+	 for (auto const& cy : y.row(cx.col()))
+	 {
+	    Result.add(rx.row(), cy.col(), cx.value * cy.value);
+	 }
+      }
+   }
+   return Result;
+}
+
 inline
 void write_matrix_market(std::ostream& out, SparseMatrix<double> const& x)
 {
@@ -450,5 +566,8 @@ std::ostream& operator<<(std::ostream& out, SparseMatrix<double> const& x)
 }
 
 } // namespace blas
+
+template <typename T>
+struct ScalarTypes<blas::SparseMatrix<T>> : ScalarTypes<T> {};
 
 #endif

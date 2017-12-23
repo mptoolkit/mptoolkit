@@ -118,7 +118,7 @@ struct cpu_tag
 // Moveable, non-copyable, non-resizable (except by moving).
 //
 
-template <typename T, typename Tag = cpu_tag>
+template <typename T, typename Tag>
 class Vector : public NormalVector<T, Vector<T, Tag>, Tag>
 {
    public:

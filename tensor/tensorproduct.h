@@ -228,7 +228,6 @@ tensor_coefficient(ProductBasis<B1a, B1b> const& P1, ProductBasis<B2a, B2b> cons
 }
 
 
-#if 0
 template <typename T1, typename B1, typename B2, typename S1,
           typename T2, typename B3, typename B4, typename S2, typename ProductFunctor>
 IrredTensor<typename LinearAlgebra::result_value<ProductFunctor>::type,
@@ -581,8 +580,6 @@ decompose_tensor_prod(IrredTensor<T, B1, B2, S> const& x,
 
    return Result;
 }
-
-#endif
 
 } // namespace Tensor
 

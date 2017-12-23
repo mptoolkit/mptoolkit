@@ -48,6 +48,10 @@ class VectorRef;
 // The tag is also used for blas_traits<tag>.
 //
 
+
+template <typename T, typename Tag = cpu_tag>
+class Matrix;
+
 template <typename ValueType, typename DerivedType, typename Tag>
 class MatrixRef
 {
@@ -55,6 +59,7 @@ class MatrixRef
       using value_type     = ValueType;
       using derived_type   = DerivedType;
       using tag_type       = Tag;
+      using remove_proxy_t = Matrix<ValueType, Tag>;
 
       // default construction and move construction are defined, no copying.
 
@@ -143,6 +148,12 @@ class NormalMatrix : public BlasMatrix<ValueType, DerivedType, Tag>
 
       matrix_range_view<ValueType, Tag>
       operator()(Range rows, Range cols);
+
+      matrix_range_view<ValueType, Tag>
+      operator()(Range rows, all_t);
+
+      matrix_range_view<ValueType, Tag>
+      operator()(all_t, Range cols);
 
       normal_vector_view<ValueType, Tag>
       col(int c)
@@ -909,10 +920,10 @@ inline
 void
 inner_prod(blas::BlasVector<T, U, Tag> const& x, 
 	   blas::BlasVector<T, V, Tag> const& y, 
-	   typename Tag::template async_ref<T>&& z)
+	   typename Tag::template async_proxy<T>&& z)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
-   vector_inner_prod(x.size(), x.storage(), x.stride(), y.storage(), y.stride(), std::move(z));
+   vector_inner_prod(x.size(), x.storage(), x.stride(), y.storage(), y.stride(), z);
 }
 
 template <typename T, typename U, typename V, typename Tag>
@@ -1041,7 +1052,7 @@ inline
 void
 inner_prod(blas::BlasMatrix<T, U, Tag> const& x, 
 	   blas::BlasMatrix<T, V, Tag> const& y, 
-	   typename Tag::template async_ref<T>&& z)
+	   typename Tag::template async_proxy<T>&& z)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
    matrix_inner_prod(x.trans(), y.trans(), x.rows(), x.cols(), 

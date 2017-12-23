@@ -59,18 +59,18 @@ Regularize(VectorBasis const& b)
                              b.dim(i),
                              0.0);
 
-      Result(Dest,i)(RangeOfSubspace[i], blas::all)
-         = blas::identity_matrix<double>(b.dim(i));
+      Result(Dest,i)(RangeOfSubspace[i], blas::all) = RealMatrix::make_identity(b.dim(i));
    }
 
    return Result;
 }
 
+#if 0
 template <typename T>
 IrredTensor<T, BasisList, BasisList>
-map_1x1_operator(IrredTensor<LinearAlgebra::Matrix<T>, BasisList, BasisList> const& Op)
+map_1x1_operator(IrredTensor<blas::Matrix<T>, BasisList, BasisList> const& Op)
 {
-   typedef IrredTensor<LinearAlgebra::Matrix<T>, BasisList, BasisList> MatOpType;
+   typedef IrredTensor<blas::Matrix<T>, BasisList, BasisList> MatOpType;
    IrredTensor<T, BasisList, BasisList> Result(Op.Basis1(), Op.Basis2(), Op.TransformsAs());
 
    for (typename const_iterator<MatOpType>::type I = iterate(Op); I; ++I)
@@ -86,13 +86,14 @@ map_1x1_operator(IrredTensor<LinearAlgebra::Matrix<T>, BasisList, BasisList> con
 }
 
 template <typename T>
-IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
+IrredTensor<blas::Matrix<T>, VectorBasis, VectorBasis>
 ToMatrixOperator(IrredTensor<T, BasisList, BasisList> const& Op)
 {
-   IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
+   IrredTensor<blas::Matrix<T>, VectorBasis, VectorBasis>
       Result(VectorBasis(Op.Basis1()), VectorBasis(Op.Basis2()), Op.TransformsAs());
    Result.data() = LinearAlgebra::scalar(LinearAlgebra::Matrix<T>(1,1,1.0)) * Op.data();
    return Result;
 }
+#endif
 
 } // namespace Tensor

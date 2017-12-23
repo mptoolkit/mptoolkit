@@ -45,6 +45,8 @@
 #define MPTOOLKIT_BLAS_NUMBER_TRAITS_H
 
 #include "common/trace.h"
+#include <cmath>
+#include <type_traits>
 
 namespace blas
 {
@@ -212,6 +214,93 @@ void add_inner_prod(std::complex<double> x, std::complex<double> y, std::complex
    r += std::conj(x)*y;
 }
 
+namespace detail
+{
+
+template <typename T, typename Enable = void>
+struct remove_proxy_helper
+{
+   using type = T;
+};
+
+template <typename T>
+struct void_
+{
+   using type = void;
+};
+
+template <typename T>
+struct remove_proxy_helper<T, typename void_<typename T::remove_proxy_t>::type>
+{
+   using type = typename T::remove_proxy_t;
+};
+
+} // namespace detail
+
+//
+// remove_proxy
+//
+// Metafunction to get the 'base' type of a proxy reference.
+
+template <typename T>
+struct remove_proxy : public detail::remove_proxy_helper<T> {};
+
+template <typename T>
+using remove_proxy_t = typename remove_proxy<T>::type;
+
+//
+// is_numeric
+//
+// metafunction to determine if a type is a scalar type (ie, an arithmetic type
+// or a user type that emulates an arithmetic type).
+//
+
+template <typename T>
+struct is_numeric : std::is_arithmetic<T> {};
+
+template <typename T>
+struct is_numeric<std::complex<T>> : is_numeric<T> {};
+
+#if defined(HAVE_FLOAT128)
+template <>
+struct is_numeric<float128> : std::true_type {};
+#endif
+
+template <typename T>
+constexpr bool is_numeric_v = is_numeric<T>::value;
+
 } // namespace blas
+
+template <typename T>
+inline
+std::enable_if_t<std::is_floating_point<T>::value, T>
+norm_frob(T x)
+{
+   return x;
+}
+
+template <typename T>
+inline
+T
+norm_frob(std::complex<T> const& x)
+{
+   return std::hypot(x.real(), x.imag());
+}
+
+template <typename T>
+inline
+std::enable_if_t<std::is_floating_point<T>::value, T>
+norm_frob_sq(T x)
+{
+   return x*x;
+}
+
+template <typename T>
+inline
+T
+norm_frob_sq(std::complex<T> const& x)
+{
+   return std::norm(x);
+}
 
 #endif

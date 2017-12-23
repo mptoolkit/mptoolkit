@@ -201,6 +201,29 @@ ReducibleTensor<T, B1, B2, S>::scalar()
 }
 
 template <typename T, typename B1, typename B2, typename S>
+inline
+void
+ReducibleTensor<T, B1, B2, S>::insert(IrredTensor<T,B1,B2,S> x)
+{
+   CHECK(data_.find(x.TransformsAs()) == data_.end());
+   data_.insert(std::make_pair(x.TransformsAs(), std::move(x)));
+}
+
+template <typename T, typename B1, typename B2, typename S>
+inline
+void
+ReducibleTensor<T, B1, B2, S>::add(IrredTensor<T,B1,B2,S> x)
+{
+   typename data_type::iterator I = data_.find(x.TransformsAs());
+   if (I == data_.end())
+      this->insert(std::move(x));
+   else
+   {
+      I->second += std::move(x);
+   }
+}
+
+template <typename T, typename B1, typename B2, typename S>
 void
 ReducibleTensor<T, B1, B2, S>::check_structure() const
 {

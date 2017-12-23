@@ -265,45 +265,9 @@ vector_inner_prod(int n,
 inline
 void
 vector_inner_prod(int n, 
-		  cuda::const_gpu_ptr<float> x, int incx,
-                  cuda::const_gpu_ptr<float> y, int incy,
-		  cuda::gpu_ref<float>&& r)
-{
-   cublas::handle& H = cublas::get_handle();
-   H.set_stream(r.get_stream());
-   H.set_pointer_mode(CUBLAS_POINTER_MODE_DEVICE);
-   r.wait(x.sync());
-   r.wait(y.sync());
-   cublas::check_error(cublasSdot(H.raw_handle(), n, x.device_ptr(), incx, y.device_ptr(), incy,
-				  r.device_ptr()));
-   x.wait(r.sync());
-   y.wait(r.sync());
-}
-
-inline
-void
-vector_inner_prod(int n, 
 		  cuda::const_gpu_ptr<double> x, int incx,
                   cuda::const_gpu_ptr<double> y, int incy,
 		  cuda::gpu_ref<double>& r)
-{
-   cublas::handle& H = cublas::get_handle();
-   H.set_stream(r.get_stream());
-   H.set_pointer_mode(CUBLAS_POINTER_MODE_DEVICE);
-   r.wait(x.sync());
-   r.wait(y.sync());
-   cublas::check_error(cublasDdot(H.raw_handle(), n, x.device_ptr(), incx, y.device_ptr(), incy,
-				  r.device_ptr()));
-   x.wait(r.sync());
-   y.wait(r.sync());
-}
-
-inline
-void
-vector_inner_prod(int n, 
-		  cuda::const_gpu_ptr<double> x, int incx,
-                  cuda::const_gpu_ptr<double> y, int incy,
-		  cuda::gpu_ref<double>&& r)
 {
    cublas::handle& H = cublas::get_handle();
    H.set_stream(r.get_stream());
@@ -339,49 +303,9 @@ vector_inner_prod(int n,
 inline
 void
 vector_inner_prod(int n, 
-		  cuda::const_gpu_ptr<std::complex<float>> x, int incx,
-                  cuda::const_gpu_ptr<std::complex<float>> y, int incy,
-		  cuda::gpu_ref<std::complex<float>>&& r)
-{
-   cublas::handle& H = cublas::get_handle();
-   H.set_stream(r.get_stream());
-   H.set_pointer_mode(CUBLAS_POINTER_MODE_DEVICE);
-   r.wait(x.sync());
-   r.wait(y.sync());
-   cublas::check_error(cublasCdotc(H.raw_handle(), n, 
-				   reinterpret_cast<cuComplex const*>(x.device_ptr()), incx, 
-				   reinterpret_cast<cuComplex const*>(y.device_ptr()), incy,
-				   reinterpret_cast<cuComplex*>(r.device_ptr())));
-   x.wait(r.sync());
-   y.wait(r.sync());
-}
-
-inline
-void
-vector_inner_prod(int n, 
 		  cuda::const_gpu_ptr<std::complex<double>> x, int incx,
                   cuda::const_gpu_ptr<std::complex<double>> y, int incy,
 		  cuda::gpu_ref<std::complex<double>>& r)
-{
-   cublas::handle& H = cublas::get_handle();
-   H.set_stream(r.get_stream());
-   H.set_pointer_mode(CUBLAS_POINTER_MODE_DEVICE);
-   r.wait(x.sync());
-   r.wait(y.sync());
-   cublas::check_error(cublasZdotc(H.raw_handle(), n, 
-				   reinterpret_cast<cuDoubleComplex const*>(x.device_ptr()), incx, 
-				   reinterpret_cast<cuDoubleComplex const*>(y.device_ptr()), incy,
-				   reinterpret_cast<cuDoubleComplex*>(r.device_ptr())));
-   x.wait(r.sync());
-   y.wait(r.sync());
-}
-
-inline
-void
-vector_inner_prod(int n, 
-		  cuda::const_gpu_ptr<std::complex<double>> x, int incx,
-                  cuda::const_gpu_ptr<std::complex<double>> y, int incy,
-		  cuda::gpu_ref<std::complex<double>>&& r)
 {
    cublas::handle& H = cublas::get_handle();
    H.set_stream(r.get_stream());
@@ -589,23 +513,19 @@ void matrix_clear(int M, int N, cuda::gpu_ptr<double> A, int lda)
                                    A.device_ptr(), lda));
 }
 
+template <typename T>
 void
 matrix_inner_prod(char Atrans, char Btrans, int M, int N,
-		  cuda::const_gpu_ptr<double> A, int ldA,
-		  cuda::const_gpu_ptr<double> B, int ldB,
-		  cuda::gpu_ref<double>& r);
+		  cuda::const_gpu_ptr<T> A, int ldA,
+		  cuda::const_gpu_ptr<T> B, int ldB,
+		  cuda::gpu_ref<T>& r);
 
-void
-matrix_inner_prod(char Atrans, char Btrans, int M, int N,
-		  cuda::const_gpu_ptr<std::complex<double>> A, int ldA,
-		  cuda::const_gpu_ptr<std::complex<double>> B, int ldB,
-		  cuda::gpu_ref<std::complex<double>>& r);
-
+template <typename T>
 void
 matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
-		      cuda::const_gpu_ptr<std::complex<double>> A, int ldA,
-		      cuda::const_gpu_ptr<std::complex<double>> B, int ldB,
-		      cuda::gpu_ref<std::complex<double>>& r);
+		      cuda::const_gpu_ptr<T> A, int ldA,
+		      cuda::const_gpu_ptr<T> B, int ldB,
+		      cuda::gpu_ref<T>& r);
 
 // BLAS level 3
 

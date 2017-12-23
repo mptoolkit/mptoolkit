@@ -19,9 +19,7 @@
 
 #include "operator_component.h"
 #include "tensor/tensorproduct.h"
-#include "linearalgebra/eigen.h"
 #include "tensor/regularize.h"
-#include "linearalgebra/matrix_utility.h"
 #include <tuple>
 
 #include "common/environment.h"
@@ -37,46 +35,12 @@ double const QREpsilon = getenv_or_default("MP_QR_EPS", 1E-13);
 
 double const RemoveRowEpsilon = getenv_or_default("MP_RRE", 1E-40);
 
-//using namespace LinearAlgebra;
-using LinearAlgebra::operator*;
-using LinearAlgebra::adjoint;
-
-OperatorComponent::OperatorComponent(BasisList const& LocalB,
-                                     BasisList const& B1, BasisList const& B2)
-   : LocalBasis1_(LocalB), LocalBasis2_(LocalB), Basis1_(B1), Basis2_(B2),
-     Data_(Basis1_.size(), Basis2_.size())
-{
-}
-
-OperatorComponent::OperatorComponent(BasisList const& LocalB1, BasisList const& LocalB2,
-                                     BasisList const& B1, BasisList const& B2)
-   : LocalBasis1_(LocalB1), LocalBasis2_(LocalB2), Basis1_(B1), Basis2_(B2),
-     Data_(Basis1_.size(), Basis2_.size())
-{
-}
-
 double
 norm_frob_sq(OperatorComponent const& x)
 {
    // TODO: this implementation is not very efficient
    return trace(local_inner_prod(herm(x), x)).real();
    //   return norm_frob_sq(local_inner_prod(herm(x), x));
-}
-
-void
-OperatorComponent::check_structure() const
-{
-   for (const_iterator I = iterate(*this); I; ++I)
-   {
-      for (const_inner_iterator J = iterate(I); J; ++J)
-      {
-         for (SimpleRedOperator::const_iterator q = J->begin(); q != J->end(); ++q)
-         {
-            CHECK(is_transform_target(this->Basis2()[J.index2()], q->TransformsAs(), this->Basis1()[J.index1()]))
-               (this->Basis1())(J.index1())(this->Basis2())(J.index2())(q->TransformsAs())(*this);
-         }
-      }
-   }
 }
 
 #if 0
@@ -121,10 +85,10 @@ translate_right(BasisList const& LeftBasis, BasisList const& ThisBasis)
          for (auto const& q : k)
          {
             SimpleOperator xComponent(LeftBasis, ThisBasis, q);
-            xComponent(i,j) = double(degree(q)) / degree(ThisBasis[j]);
-            x.project(q) = xComponent;
+            xComponent.insert(i,j, qdim(q) / qdim(ThisBasis[j]));
+	    x.insert(std::move(xComponent));
          }
-         Result(i,j) = x;
+         Result.insert(i,j, x);
       }
    }
    return Result;
@@ -134,102 +98,14 @@ std::ostream&
 operator<<(std::ostream& out, OperatorComponent const& op)
 {
    out << "OperatorComponent: Basis1=" << op.Basis1() << "\nBasis2=" << op.Basis2() << '\n';
-   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(op); I; ++I)
+   for (auto const& r : op)
    {
-      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
+      for (auto const& c : r)
       {
-         out << "element (" << J.index1() << "," << J.index2() << ") = " << *J << '\n';
+         out << "element (" << r.row() << "," << c.col() << ") = " << c.value << '\n';
       }
    }
    return out;
-}
-
-void print_structure(OperatorComponent const& Op, std::ostream& out, double UnityEpsilon)
-{
-   for (unsigned i = 0; i < Op.size1(); ++i)
-   {
-      out << '[';
-      for (unsigned j = 0; j < Op.size2(); ++j)
-      {
-         if (Op.iterate_at(i,j))
-         {
-            SimpleRedOperator X = Op(i,j);
-            if (X.size() > 1)
-               out << 'x';       // some compound operator
-            else if (!is_scalar(X.begin()->TransformsAs()))
-            {
-               out << 'v';       // a non-scalar
-            }
-            else
-            {
-               SimpleOperator Y = X.scalar();
-
-               std::complex<double> x = PropIdent(Y);
-               if (x == 0.0)
-               {
-                  std::complex<double> x = PropIdent(scalar_prod(herm(Y),Y), UnityEpsilon);
-                  if (norm_frob(x-1.0) < 1E-12)
-                     out << 'U';      // a unitary
-                  else
-                     out << 's';      // a generic scalar
-               }
-               else if (norm_frob(x-1.0) < 1E-12)
-               {
-                  out << 'I';         // the identity
-               }
-               else
-                  out << 'i';         // something proportional to the identity
-            }
-         }
-         else
-            out << ' ';
-      }
-      out << "]\n";
-   }
-}
-
-PStream::opstream&
-operator<<(PStream::opstream& out, OperatorComponent const& Op)
-{
-   out << Op.LocalBasis1_ << Op.LocalBasis2_
-       << Op.Basis1_ << Op.Basis2_
-       << Op.Data_
-      ;
-   return out;
-}
-
-PStream::ipstream&
-operator>>(PStream::ipstream& in, OperatorComponent& Op)
-{
-   in >> Op.LocalBasis1_ >> Op.LocalBasis2_
-      >> Op.Basis1_ >> Op.Basis2_
-      >> Op.Data_
-      ;
-   return in;
-}
-
-OperatorComponent
-operator+(OperatorComponent const& A, OperatorComponent const& B)
-{
-   DEBUG_CHECK_EQUAL(A.LocalBasis1(), B.LocalBasis1());
-   DEBUG_CHECK_EQUAL(A.LocalBasis2(), B.LocalBasis2());
-   DEBUG_CHECK_EQUAL(A.Basis1(), B.Basis1());
-   DEBUG_CHECK_EQUAL(A.Basis2(), B.Basis2());
-   OperatorComponent Result(A.LocalBasis1(), A.LocalBasis2(), A.Basis1(), A.Basis2());
-   Result.data() = A.data() + B.data();
-   return Result;
-}
-
-OperatorComponent
-operator-(OperatorComponent const& A, OperatorComponent const& B)
-{
-   DEBUG_CHECK_EQUAL(A.LocalBasis1(), B.LocalBasis1());
-   DEBUG_CHECK_EQUAL(A.LocalBasis2(), B.LocalBasis2());
-   DEBUG_CHECK_EQUAL(A.Basis1(), B.Basis1());
-   DEBUG_CHECK_EQUAL(A.Basis2(), B.Basis2());
-   OperatorComponent Result(A.LocalBasis1(), A.LocalBasis2(), A.Basis1(), A.Basis2());
-   Result.data() = A.data() - B.data();
-   return Result;
 }
 
 OperatorComponent
@@ -242,20 +118,20 @@ tensor_sum(OperatorComponent const& A, OperatorComponent const& B,
    OperatorComponent Result(A.LocalBasis1(), A.LocalBasis2(), B1.Basis(), B2.Basis());
 
    // set the matrix elements corresponding to operator A (subspace 0 in the SumBasis)
-   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(A); I; ++I)
+   for (auto const& r : A)
    {
-      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
+      for (auto const& c : r)
       {
-         Result(B1(0,J.index1()), B2(0,J.index2())) = *J;
+         Result.insert(B1(0,r.row()), B2(0,c.col()), c.value);
       }
    }
 
    // set the matrix elements corresponding to operator A (subspace 1 in the SumBasis)
-   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(B); I; ++I)
+   for (auto const& r : B)
    {
-      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
+      for (auto const& c : r)
       {
-         Result(B1(1,J.index1()), B2(1,J.index2())) = *J;
+         Result.insert(B1(1,r.row()), B2(1,c.col()), c.value);
       }
    }
    Result.debug_check_structure();
@@ -274,20 +150,20 @@ tensor_row_sum(OperatorComponent const& A,
    OperatorComponent Result(A.LocalBasis1(), A.LocalBasis2(), A.Basis1(), B2.Basis());
 
    // set the matrix elements corresponding to operator A (subspace 0 in the SumBasis)
-   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(A); I; ++I)
+   for (auto const& r : A)
    {
-      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
+      for (auto const& c : r)
       {
-         Result(J.index1(),B2(0, J.index2())) = *J;
+         Result.insert(r.row(), B2(0,c.col()), c.value);
       }
    }
 
    // set the matrix elements corresponding to operator A (subspace 1 in the SumBasis)
-   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(B); I; ++I)
+   for (auto const& r : B)
    {
-      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
+      for (auto const& c : r)
       {
-         Result(J.index1(),B2(1, J.index2())) = *J;
+         Result.insert(r.row(), B2(1,c.col()), c.value);
       }
    }
    Result.debug_check_structure();
@@ -317,28 +193,28 @@ tensor_col_sum(OperatorComponent const& A,
    OperatorComponent Result(A.LocalBasis1(), A.LocalBasis2(), B1.Basis(), A.Basis2());
 
    // set the matrix elements corresponding to operator A (subspace 0 in the SumBasis)
-   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(A); I; ++I)
+   for (auto const& r : A)
    {
-      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
+      for (auto const& c : r)
       {
-         Result(B1(0,J.index1()), J.index2()) = *J;
+         Result.insert(B1(0,r.row()), c.col(), c.value);
       }
    }
 
    // set the matrix elements corresponding to operator A (subspace 1 in the SumBasis)
-   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(B); I; ++I)
+   for (auto const& r : B)
    {
-      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
+      for (auto const& c : r)
       {
-         Result(B1(1,J.index1()), J.index2()) = *J;
+         Result.insert(B1(0,r.row()), c.col(), c.value);
       }
    }
    Result.debug_check_structure();
    return Result;
 }
 
- OperatorComponent
-   tensor_col_sum(OperatorComponent const& A,
+OperatorComponent
+tensor_col_sum(OperatorComponent const& A,
                OperatorComponent const& B)
 {
    if (A.is_null())
@@ -395,7 +271,7 @@ OperatorComponent prod(HermitianProxy<SimpleOperator> const& Op, OperatorCompone
 OperatorComponent
 triple_prod(SimpleOperator const& x,
             OperatorComponent const& Op,
-            LinearAlgebra::HermitianProxy<SimpleOperator> const& y)
+            HermitianProxy<SimpleOperator> const& y)
 {
    return prod(x, prod(Op, y));
 }
@@ -411,28 +287,27 @@ OperatorComponent local_tensor_prod(OperatorComponent const& A, OperatorComponen
 
    typedef OperatorComponent::data_type MatType;
 
-   for (const_iterator<MatType>::type AI = iterate(A); AI; ++AI)
+   for (auto const& rA : A)
    {
-      for (const_inner_iterator<MatType>::type AJ = iterate(AI); AJ; ++AJ)
+      for (auto const& cA : rA)
       {
-         const_iterator<MatType>::type BI = iterate(B);
-         BI += AJ.index2();
-         for (const_inner_iterator<MatType>::type BJ = iterate(BI); BJ; ++BJ)
-         {
-            for (SimpleRedOperator::const_iterator AComp = AJ->begin(); AComp != AJ->end(); ++AComp)
-            {
-               for (SimpleRedOperator::const_iterator BComp = BJ->begin(); BComp != BJ->end(); ++BComp)
-               {
-                  QuantumNumbers::QuantumNumberList qL = transform_targets(BComp->TransformsAs(), AComp->TransformsAs());
-                  for (QuantumNumbers::QuantumNumberList::const_iterator qI = qL.begin(); qI != qL.end(); ++qI)
-                  {
+	 for (auto const& cB : B.row(cA.col()))
+	 {
+	    for (auto const& Acomponent : cA.value)
+	    {
+	       for (auto const& Bcomponent : cB.value)
+	       {
+		  QuantumNumberList qL = Acomponent.TransformsAs() * Bcomponent.TransformsAs();
+		  for (auto const& q : qL)
+		  {
                      // Ensure that the final operator is a possible target
-                     if (is_transform_target(B.Basis2()[BJ.index2()], *qI, A.Basis1()[AJ.index1()]))
+                     if (is_transform_target(B.qn2(cB.col()), q, A.qn1(rA.row())))
                      {
-                        double Coeff = product_coefficient(AComp->TransformsAs(), BComp->TransformsAs(), *qI,
-                                                           A.Basis1()[AJ.index1()], B.Basis2()[BJ.index2()], B.Basis1()[BJ.index1()]);
-                        if (LinearAlgebra::norm_2(Coeff) > 1E-14)
-                           Result(AJ.index1(), BJ.index2()) += Coeff * tensor_prod(*AComp, *BComp, *qI);
+                        real Coeff = product_coefficient(Acomponent.TransformsAs(), Bcomponent.TransformsAs(), q,
+							 A.qn1(rA.row()), B.qn2(cB.col()), B.qn1(cA.col()));
+			// TODO: the product_coefficient should handle small values better and return true zero
+                        if (norm_frob(Coeff) > 1E-14)
+			   Result.add(rA.row(), cB.col(), Coeff * tensor_prod(Acomponent, Bcomponent, q));
                      }
                   }
                }
@@ -2188,6 +2063,7 @@ decompose_local_tensor_prod(SimpleOperator const& Op,
    return decompose_local_tensor_prod(Op, B, B);
 }
 
+#if 0
 OperatorComponent
 RotateToOperatorRightBoundary(StateComponent const& x)
 {
@@ -2220,6 +2096,7 @@ RotateToOperatorLeftBoundary(StateComponent const& x)
 
    return Result;
 }
+#endif
 
 OperatorComponent
 conj(OperatorComponent const& x)

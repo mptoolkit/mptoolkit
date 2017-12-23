@@ -17,8 +17,8 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#if !defined(REGULARIZE_H_DHCKJDHUREYT7845Y78Y78TY78TY78T)
-#define REGULARIZE_H_DHCKJDHUREYT7845Y78Y78TY78TY78T
+#if !defined(MPTOOLKIT_TENSOR_REGULARIZE_H_)
+#define MPTOOLKIT_TENSOR_REGULARIZE_H_
 
 #include "tensor.h"
 #include "blas/matrix.h"
@@ -61,6 +61,6 @@ ToMatrixOperator(IrredTensor<T, BasisList, BasisList> const& Op);
 
 } // namespace Tensor
 
-#include "regularize.cc"
+#include "regularize.icc"
 
 #endif
