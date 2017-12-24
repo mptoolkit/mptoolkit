@@ -914,6 +914,25 @@ delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
 
 } // namespace Tensor
 
+// helper function objects, extends blas/functors.h
+namespace blas
+{
+
+struct Prod
+{
+   Prod(QuantumNumbers::QuantumNumber const& q_) : q(q_) {}
+
+   template <typename T, typename U>
+   auto operator()(T const& x, U const& y) const
+   {
+      return prod(x,y,q);
+   }
+
+   QuantumNumbers::QuantumNumber q;
+};
+
+} // mamespace blas
+
 #include "tensor.icc"
 
 #endif

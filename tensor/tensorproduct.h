@@ -24,6 +24,7 @@
 #include "pstream/pstream.h"
 #include <tuple>
 #include "blas/matrix.h"
+#include "blas/functors.h"
 
 namespace Tensor
 {
@@ -227,16 +228,15 @@ tensor_coefficient(ProductBasis<B1a, B1b> const& P1, ProductBasis<B2a, B2b> cons
                               P1.Left()[s1prime], P1.Right()[s2prime], P1[sprime]);
 }
 
-
 template <typename T1, typename B1, typename B2, typename S1,
           typename T2, typename B3, typename B4, typename S2, typename ProductFunctor>
-IrredTensor<typename LinearAlgebra::result_value<ProductFunctor>::type,
-            typename ProductBasis<B1, B3>::basis_type,
-            typename ProductBasis<B2, B4>::basis_type>
+	  IrredTensor<blas::remove_proxy_t<decltype(std::declval<ProductFunctor>()(std::declval<T1>(), std::declval<T2>()))>,
+	   typename ProductBasis<B1, B3>::basis_type,
+	   typename ProductBasis<B2, B4>::basis_type>
 tensor_prod(IrredTensor<T1, B1, B2, S1> const& ML, IrredTensor<T2, B3, B4, S2> const& MR,
             ProductBasis<B1, B3> const& PBasis1,
             ProductBasis<B2, B4> const& PBasis2, QuantumNumber q,
-            ProductFunctor TensorProd)
+            ProductFunctor ProdFunctor = blas::Multiplication())
 {
    DEBUG_PRECONDITION_EQUAL(ML.Basis1(), PBasis1.Left());
    DEBUG_PRECONDITION_EQUAL(MR.Basis1(), PBasis1.Right());
@@ -252,53 +252,36 @@ tensor_prod(IrredTensor<T1, B1, B2, S1> const& ML, IrredTensor<T2, B3, B4, S2> c
       q = QL[0];
    }
 
-   typedef IrredTensor<typename  LinearAlgebra::result_value<ProductFunctor>::type,
+   using result_value = blas::remove_proxy_t<decltype(std::declval<ProductFunctor>()(std::declval<T1>(), std::declval<T2>()))>;
+
+   using ResultType = IrredTensor<result_value,
       typename ProductBasis<B1, B3>::basis_type,
-      typename ProductBasis<B2, B4>::basis_type> ResultType;
+      typename ProductBasis<B2, B4>::basis_type>;
 
    ResultType Result(PBasis1.Basis(), PBasis2.Basis(), q);
 
-   typedef typename const_iterator<IrredTensor<T1, B1, B2, S1> >::type Liter;
-   typedef typename const_iterator<IrredTensor<T2, B3, B4, S2> >::type Riter;
-
-   typedef typename const_inner_iterator<IrredTensor<T1, B1, B2, S1> >::type Linner;
-   typedef typename const_inner_iterator<IrredTensor<T2, B3, B4, S2> >::type Rinner;
-
-   for (Liter iL = iterate(ML); iL; ++iL)
+   for (auto const& rML : ML)
    {
-      for (Riter iR = iterate(MR); iR; ++iR)
+      for (auto const& rMR : MR)
       {
-
-         for (Linner jL = iterate(iL); jL; ++jL)
-         {
-            for (Rinner jR = iterate(iR); jR; ++jR)
-            {
-
-               typename ProductBasis<B1,B3>::const_iterator TiIter,
-                  TiEnd = PBasis1.end(jL.index1(), jR.index1());
-               for (TiIter = PBasis1.begin(jL.index1(), jR.index1()); TiIter != TiEnd; ++TiIter)
-               {
-                  typename ProductBasis<B2,B4>::const_iterator TjIter,
-                     TjEnd = PBasis2.end(jL.index2(), jR.index2());
-                  for (TjIter = PBasis2.begin(jL.index2(), jR.index2()); TjIter != TjEnd;
-                       ++TjIter)
-                  {
-                     if (is_transform_target(q, PBasis2[*TjIter], PBasis1[*TiIter]))
-                     {
+	 for (auto const& cML : rML)
+	 {
+	    for (auto const& cMR : rMR)
+	    {
+	       for (auto const& b1 : PBasis1(rML.row(), rMR.row()))
+	       {
+		  for (auto const& b2 : PBasis2(cML.col(), cMR.col()))
+		  {
+		     if (is_transform_target(q, PBasis2[b2], PBasis1[b1]))
+		     {
                         double Coeff = tensor_coefficient(PBasis1, PBasis2,
                                                           ML.TransformsAs(), MR.TransformsAs(), q,
-                                                          jL.index1(), jR.index1(), *TiIter,
-                                                          jL.index2(), jR.index2(), *TjIter);
-
-                        if (LinearAlgebra::norm_2(Coeff) > 1E-14)
-                           set_new_element(Result.data(),
-                                           *TiIter, *TjIter,
-                                           Coeff * TensorProd(*jL, *jR));
-                        //else if (Coeff != 0)
-                        //{
-                        //   DEBUG_WARNING("Coeff is small")(Coeff);
-                        //}
-                     }
+                                                          rML.row(), rMR.row(), b1,
+                                                          cML.col(), cMR.col(), b2);
+			
+                        if (norm_frob(Coeff) > 1E-14)
+			   Result.insert(b1, b2, Coeff * ProdFunctor(cML.value, cMR.value));
+		     }
                   }
                }
             }
@@ -311,35 +294,29 @@ tensor_prod(IrredTensor<T1, B1, B2, S1> const& ML, IrredTensor<T2, B3, B4, S2> c
 template <typename T1, typename B1, typename B2, typename S1,
           typename T2, typename B3, typename B4, typename S2>
 inline
-IrredTensor<typename LinearAlgebra::result_value<LinearAlgebra::DirectProduct<T1, T2> >::type,
-            typename ProductBasis<B1, B3>::basis_type,
-            typename ProductBasis<B2, B4>::basis_type>
+auto
 tensor_prod(IrredTensor<T1, B1, B2, S1> const& ML, IrredTensor<T2, B3, B4, S2> const& MR,
             ProductBasis<B1,B3> const& PBasis1, ProductBasis<B2,B4> const& PBasis2,
             QuantumNumber const& q = QuantumNumber())
 {
-   return tensor_prod(ML, MR, PBasis1, PBasis2,  q, LinearAlgebra::DirectProduct<T1, T2>());
+   return tensor_prod(ML, MR, PBasis1, PBasis2,  q, blas::Prod());
 }
 
 template <typename T1, typename B1, typename B2, typename S1,
           typename T2, typename B3, typename B4, typename S2>
 inline
-IrredTensor<typename LinearAlgebra::result_value<LinearAlgebra::DirectProduct<T1, T2> >::type,
-            typename ProductBasis<B1, B2>::basis_type,
-            typename ProductBasis<B1, B2>::basis_type>
+auto
 tensor_prod(IrredTensor<T1, B1, B1, S1> const& ML, IrredTensor<T2, B2, B2, S2> const& MR,
             ProductBasis<B1, B2> const& PBasis,
             QuantumNumber const& q = QuantumNumber())
 {
-   return tensor_prod(ML, MR, PBasis, PBasis,  q, LinearAlgebra::DirectProduct<T1, T2>());
+   return tensor_prod(ML, MR, PBasis, PBasis,  q, blas::Prod());
 }
 
 template <typename T1, typename B1, typename B2, typename S1,
           typename T2, typename B3, typename B4, typename S2>
 inline
-IrredTensor<typename LinearAlgebra::result_value<LinearAlgebra::DirectProduct<T1, T2> >::type,
-            typename ProductBasis<B1, B3>::basis_type,
-            typename ProductBasis<B2, B4>::basis_type>
+auto
 tensor_prod(IrredTensor<T1, B1, B2, S1> const& ML,
             IrredTensor<T2, B3, B4, S2> const& MR,
             QuantumNumber const& q)
@@ -353,9 +330,7 @@ tensor_prod(IrredTensor<T1, B1, B2, S1> const& ML,
 template <typename T1, typename B1, typename B2, typename S1,
           typename T2, typename B3, typename B4, typename S2>
 inline
-IrredTensor<typename LinearAlgebra::result_value<LinearAlgebra::DirectProduct<T1, T2> >::type,
-            typename ProductBasis<B1, B3>::basis_type,
-            typename ProductBasis<B2, B4>::basis_type>
+auto
 tensor_prod(IrredTensor<T1, B1, B2, S1> const& ML, IrredTensor<T2, B3, B4, S2> const& MR)
 {
    return tensor_prod(ML, MR,
@@ -363,45 +338,6 @@ tensor_prod(IrredTensor<T1, B1, B2, S1> const& ML, IrredTensor<T2, B3, B4, S2> c
                       ProductBasis<B2, B4>(ML.Basis2(), MR.Basis2()),
                       QuantumNumber());
 }
-
-//
-// TensorProd
-//
-// A binary functor to calculate the tensor product of two operators, given
-// the target quantum number and the product basis types as fixed.
-//
-// TL and TR are assumed to be IrredTensors's.
-//
-
-template <typename TL, typename TR>
-struct TensorProd
-{
-};
-
-template <typename TL, typename B1, typename B2, typename SL,
-          typename TR, typename C1, typename C2, typename SR>
-struct TensorProd<IrredTensor<TL, B1, B2, SL>, IrredTensor<TR, C1, C2, SR> >
-{
-   TensorProd(ProductBasis<B1, C1> const& b1, ProductBasis<B2, C2> const& b2, QuantumNumber q)
-      : Basis1_(b1), Basis2_(b2), q_(q) {}
-
-   typedef IrredTensor<TL, B1, B2, SL> const& first_argument_type;
-   typedef IrredTensor<TR, C1, C2, SR> const& second_argument_type;
-
-   typedef IrredTensor<typename LinearAlgebra::result_value<
-      LinearAlgebra::DirectProduct<TL, TR> >::type,
-                       typename ProductBasis<B1, C1>::basis_type,
-                       typename ProductBasis<B2, C2>::basis_type> result_type;
-
-   result_type operator()(first_argument_type A, second_argument_type B) const
-   {
-      return tensor_prod(A, B, Basis1_, Basis2_, q_);
-   }
-
-   ProductBasis<B1, C1> Basis1_;
-   ProductBasis<B2, C2> Basis2_;
-   QuantumNumber q_;
-};
 
 //
 // partial transpose
@@ -534,24 +470,21 @@ decompose_tensor_prod(IrredTensor<T, B1, B2, S> const& x,
 
    using QuantumNumbers::QuantumNumberList;
 
-   typedef typename const_iterator<IrredTensor<T, B1, B2, S> >::type iter;
-   typedef typename const_inner_iterator<IrredTensor<T, B1, B2, S> >::type inner;
-
    typedef typename  ProductBasis<B3, B4>::const_iterator basis1_iter;
    typedef typename  ProductBasis<B5, B6>::const_iterator basis2_iter;
 
    std::map<PartialProdIndex, T> Result;
 
-   for (iter I = iterate(x); I; ++I)
+   for (auto const& rx : x)
    {
-      for (inner J = iterate(I); J; ++J)
+      for (auto const& cx : rx)
       {
-         QuantumNumber q1 = Basis1[J.index1()];
-         QuantumNumber q2 = Basis2[J.index2()];
+         QuantumNumber q1 = Basis1[rx.row()];
+         QuantumNumber q2 = Basis2[cx.col()];
 
          int Left1, Left2, Right1, Right2;
-         std::tie(Left1,Right1) = Basis1.rmap(J.index1());
-         std::tie(Left2,Right2) = Basis2.rmap(J.index2());
+         std::tie(Left1,Right1) = Basis1.rmap(rx.row());
+         std::tie(Left2,Right2) = Basis2.rmap(cx.col());
 
          QuantumNumber qLeft1 = Basis1.Left()[Left1];
          QuantumNumber qRight1 = Basis1.Right()[Right1];
@@ -561,18 +494,18 @@ decompose_tensor_prod(IrredTensor<T, B1, B2, S> const& x,
          QuantumNumberList qLeft = inverse_transform_targets(qLeft2, qLeft1);
          QuantumNumberList qRight = inverse_transform_targets(qRight2, qRight1);
 
-         for (QuantumNumberList::const_iterator qL = qLeft.begin(); qL != qLeft.end(); ++qL)
-         {
-            for (QuantumNumberList::const_iterator qR = qRight.begin(); qR != qRight.end(); ++qR)
-            {
-               if (!is_transform_target(*qL, *qR, x.TransformsAs()))
+	 for (auto const& qL : qLeft)
+	 {
+	    for (auto const& qR : qRight)
+	    {
+               if (!is_transform_target(qL, qR, x.TransformsAs()))
                   continue;
 
                double Coeff = inverse_tensor_coefficient(qLeft2, qRight2, q2,
-                                                         *qL, *qR, x.TransformsAs(),
+                                                         qL, qR, x.TransformsAs(),
                                                          qLeft1, qRight1, q1);
 
-               Result[PartialProdIndex(*qL, Left1, Left2, *qR, Right1, Right2)] += Coeff * (*J);
+               Result[PartialProdIndex(qL, Left1, Left2, qR, Right1, Right2)] += Coeff * cx.value;
             }
          }
       }
