@@ -82,6 +82,16 @@ class BasicOperatorComponent
       BasicOperatorComponent(BasisList const& LocalB1, BasisList const& LocalB2,
                         BasisList const& B1, BasisList const& B2);
 
+      BasicOperatorComponent& operator=(BasicOperatorComponent&& Other)
+      {
+	 LocalBasis1_ = std::move(Other.LocalBasis1_);
+	 LocalBasis2_ = std::move(Other.LocalBasis2_);
+	 Basis1_ = std::move(Other.Basis1_);
+	 Basis2_ = std::move(Other.Basis2_);
+	 Data_ = std::move(Other.Data_);
+	 return *this;
+      }
+
       SymmetryList const& GetSymmetryList() const
       { return LocalBasis1_.GetSymmetryList(); }
 
@@ -123,7 +133,7 @@ class BasicOperatorComponent
       int size1() const { return Basis1_.size(); }
       int size2() const { return Basis2_.size(); }
 
-      bool is_null() const { return is_zero(Data_); }
+      bool is_null() const { return Data_.empty(); }
 
       iterator begin() { return Data_.begin(); }
       iterator end() { return Data_.end(); }
@@ -383,21 +393,27 @@ local_inner_prod(HermitianProxy<OperatorComponent> const& A, OperatorComponent c
 SimpleOperator
 local_inner_prod(OperatorComponent const& A, HermitianProxy<OperatorComponent> const& B);
 
+#if 0
+// UNUSED
 // constructs the matrix of the squared norm of the local operators.  This is NOT the same
 // operation as local_inner_prod(herm(A), A), but is rather
 // Result'(i,j) = norm_frob_sq(A(i,j))
 RealSimpleOperator
 local_norm_frob_sq(OperatorComponent const& A);
+#endif
 
 // constructs the tensor product matrix Result((i',j'), (i,j)) = inner(A(i',i), B(j',j))
 // This is the matrix representation of the MPO transfer matrix
 SimpleOperator
 local_inner_tensor_prod(HermitianProxy<OperatorComponent> const& A, OperatorComponent const& B);
 
+#if 0
+// UNUSED
 // Performs the adjoint operation on the local operators.  The auxiliary basis
 // transforms into the adjoint basis but preserves the basis1 / basis2 relationship
 OperatorComponent
 local_adjoint(OperatorComponent const& A);
+#endif
 
 // Flip-conjugates all bases
 OperatorComponent flip_conj(OperatorComponent const& A);
@@ -434,18 +450,16 @@ operator-(OperatorComponent const& A, OperatorComponent const& Op);
 
 inline
 OperatorComponent
-operator*(double x, OperatorComponent const& Op)
+operator*(double x, OperatorComponent Result)
 {
-   OperatorComponent Result(Op);
    Result *= x;
    return Result;
 }
 
 inline
 OperatorComponent
-operator*(std::complex<double> x, OperatorComponent const& Op)
+operator*(std::complex<double> x, OperatorComponent Result)
 {
-   OperatorComponent Result(Op);
    Result *= x;
    return Result;
 }

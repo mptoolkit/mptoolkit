@@ -35,6 +35,7 @@ double const QREpsilon = getenv_or_default("MP_QR_EPS", 1E-13);
 
 double const RemoveRowEpsilon = getenv_or_default("MP_RRE", 1E-40);
 
+#if 0
 double
 norm_frob_sq(OperatorComponent const& x)
 {
@@ -42,6 +43,7 @@ norm_frob_sq(OperatorComponent const& x)
    return trace(local_inner_prod(herm(x), x)).real();
    //   return norm_frob_sq(local_inner_prod(herm(x), x));
 }
+#endif
 
 #if 0
 OperatorComponent
@@ -175,9 +177,9 @@ tensor_row_sum(OperatorComponent const& A,
                OperatorComponent const& B)
 {
    if (A.is_null())
-      return B;
+      return copy(B);
    if (B.is_null())
-      return A;
+      return copy(A);
    return tensor_row_sum(A, B, SumBasis<BasisList>(A.Basis2(), B.Basis2()));
 }
 
@@ -319,6 +321,7 @@ OperatorComponent local_tensor_prod(OperatorComponent const& A, OperatorComponen
    return Result;
 }
 
+// TODO: the old implemention looks buggy
 SimpleOperator
 local_inner_prod(HermitianProxy<OperatorComponent> const& A, OperatorComponent const& B)
 {
@@ -330,28 +333,25 @@ local_inner_prod(HermitianProxy<OperatorComponent> const& A, OperatorComponent c
    SimpleOperator Result(A.base().Basis2(), B.Basis2());
 
    // AI/BI point at the same quantum number, and is the inner summation of the product
-   OperatorComponent::const_iterator AI = iterate(A.base());
-   OperatorComponent::const_iterator BI = iterate(B);
-   while (AI)
+   for (int i = 0; i < B.size1(); ++i)
    {
-      double InnerDegree = degree(B.Basis1()[BI.index()]);
-
-      for (OperatorComponent::const_inner_iterator AJ = iterate(AI); AJ; ++AJ)
+      double InnerDegree = qdim(B.qn1(i));
+      for (auto const& cA : A.base().row(i))
       {
-         for (OperatorComponent::const_inner_iterator BJ = iterate(BI); BJ; ++BJ)
-         {
-            if (A.base().Basis2()[AJ.index2()] == B.Basis2()[BJ.index2()])
-               Result(AJ.index2(), BJ.index2()) += InnerDegree / degree(Result.Basis1()[AJ.index2()]) * inner_prod(*AJ, *BJ);
-         }
+	 for (auto const& cB : B.row(i))
+	 {
+            if (A.base().qn2(cA.col()) == B.qn2(cB.col()))
+               Result.add(cA.col(), cB.col(), InnerDegree / qdim(A.base().qn2(cA.col())) * inner_prod(cA.value, cB.value));
+	 }
       }
-      ++AI;
-      ++BI;
    }
    Result.debug_check_structure();
    return Result;
 }
 
 
+#if 0
+// this doesn't appear to be used
 SimpleOperator
 local_inner_prod(OperatorComponent const& A, HermitianProxy<OperatorComponent> const& B)
 {
@@ -392,6 +392,7 @@ local_inner_prod(OperatorComponent const& A, HermitianProxy<OperatorComponent> c
    Result.debug_check_structure();
    return Result;
 }
+#endif
 
 SimpleOperator
 local_inner_tensor_prod(HermitianProxy<OperatorComponent> const& A, OperatorComponent const& B)
@@ -405,49 +406,42 @@ local_inner_tensor_prod(HermitianProxy<OperatorComponent> const& A, OperatorComp
 
    SimpleOperator Result(PBasis1.Basis(), PBasis2.Basis(), Ident);
 
-   for (OperatorComponent::const_iterator iL = iterate(A.base()); iL; ++iL)
+   for (auto const& rA : A.base())
    {
-      for (OperatorComponent::const_iterator iR = iterate(B); iR; ++iR)
+      for (auto const& rB : B)
       {
-
-         for (OperatorComponent::const_inner_iterator jL = iterate(iL); jL; ++jL)
-         {
-            for (OperatorComponent::const_inner_iterator jR = iterate(iR); jR; ++jR)
-            {
-
-               ProductBasis<BasisList, BasisList>::const_iterator TiIter,
-                  TiEnd = PBasis1.end(jL.index1(), jR.index1());
-               for (TiIter = PBasis1.begin(jL.index1(), jR.index1()); TiIter != TiEnd; ++TiIter)
-               {
-                  ProductBasis<BasisList, BasisList>::const_iterator TjIter,
-                     TjEnd = PBasis2.end(jL.index2(), jR.index2());
-                  for (TjIter = PBasis2.begin(jL.index2(), jR.index2()); TjIter != TjEnd;
-                       ++TjIter)
-                  {
-                     for (SimpleRedOperator::const_iterator RedL = jL->begin(); RedL != jL->end(); ++RedL)
-                     {
-                        for (SimpleRedOperator::const_iterator RedR = jR->begin(); RedR != jR->end(); ++RedR)
-                        {
+	 for (auto const& cA : rA)
+	 {
+	    for (auto const& cB : rB)
+	    {
+	       for (auto const& b1 : PBasis1(rA.row(), rB.row()))
+	       {
+		  for (auto const& b2 : PBasis2(cA.col(), cB.col()))
+		  {
+		     for (auto const& Areduced : cA.value)
+		     {
+			for (auto const& Breduced : cB.value)
+			{
                            // we are taking the inner product, so we require the quantum numbers match
-                           if (RedL->TransformsAs() != RedR->TransformsAs())
-                              continue;
+			   if (Areduced.TransformsAs() != Breduced.TransformsAs())
+			      continue;
 
-                           if (!is_transform_target(PBasis2[*TjIter], Ident, PBasis1[*TiIter]))
-                              continue;
+			   if (!is_transform_target(PBasis2[b2], Ident, PBasis1[b1]))
+			      continue;
 
-                           double Coeff = tensor_coefficient(PBasis1, PBasis2,
-                                                             adjoint(RedL->TransformsAs()), RedR->TransformsAs(), Ident,
-                                                             jL.index1(), jR.index1(), *TiIter,
-                                                             jL.index2(), jR.index2(), *TjIter);
-                           if (LinearAlgebra::norm_2(Coeff) > 1E-14)
+			   real Coeff = tensor_coefficient(PBasis1, PBasis2,
+							   adjoint(Areduced.TransformsAs()), Breduced.TransformsAs(), Ident,
+							   rA.row(), rB.row(), b1,
+							   cA.col(), cB.col(), b2);
+                           if (norm_frob(Coeff) > 1E-14)
                            {
-                              Result(*TiIter, *TjIter) += Coeff * inner_prod(*RedL, *RedR);
-                           }
-                        }
-                     }
-                  }
-               }
-            }
+			      Result.add(b1, b2, Coeff * inner_prod(Areduced, Breduced));
+			   }
+			}
+		     }
+		  }
+	       }
+	    }
          }
       }
    }
@@ -455,6 +449,7 @@ local_inner_tensor_prod(HermitianProxy<OperatorComponent> const& A, OperatorComp
    return Result;
 }
 
+#if 0
 RealSimpleOperator
 local_norm_frob_sq(OperatorComponent const& A)
 {
@@ -468,7 +463,9 @@ local_norm_frob_sq(OperatorComponent const& A)
    }
    return Result;
 }
+#endif
 
+#if 0
 OperatorComponent
 local_adjoint(OperatorComponent const& A)
 {
@@ -483,6 +480,7 @@ local_adjoint(OperatorComponent const& A)
    Result.debug_check_structure();
    return Result;
 }
+#endif
 
 OperatorComponent aux_tensor_prod(OperatorComponent const& ML, OperatorComponent const& MR)
 {
@@ -492,43 +490,36 @@ OperatorComponent aux_tensor_prod(OperatorComponent const& ML, OperatorComponent
 
    OperatorComponent Result(ML.LocalBasis1(), MR.LocalBasis2(), PBasis1.Basis(), PBasis2.Basis());
 
-   for (OperatorComponent::const_iterator iL = iterate(ML); iL; ++iL)
+   for (auto const& rML : ML)
    {
-      for (OperatorComponent::const_iterator iR = iterate(MR); iR; ++iR)
+      for (auto const& cML : rML)
       {
+	 for (auto const& rMR : MR)
+	 {
+	    for (auto  const& cMR : rMR)
+	    {
 
-         for (OperatorComponent::const_inner_iterator jL = iterate(iL); jL; ++jL)
-         {
-            for (OperatorComponent::const_inner_iterator jR = iterate(iR); jR; ++jR)
-            {
-
-               ProductBasis<BasisList, BasisList>::const_iterator TiIter,
-                  TiEnd = PBasis1.end(jL.index1(), jR.index1());
-               for (TiIter = PBasis1.begin(jL.index1(), jR.index1()); TiIter != TiEnd; ++TiIter)
-               {
-                  ProductBasis<BasisList, BasisList>::const_iterator TjIter,
-                     TjEnd = PBasis2.end(jL.index2(), jR.index2());
-                  for (TjIter = PBasis2.begin(jL.index2(), jR.index2()); TjIter != TjEnd;
-                       ++TjIter)
-                  {
-                     for (SimpleRedOperator::const_iterator RedL = jL->begin(); RedL != jL->end(); ++RedL)
-                     {
-                        for (SimpleRedOperator::const_iterator RedR = jR->begin(); RedR != jR->end(); ++RedR)
-                        {
-                           QuantumNumbers::QuantumNumberList FinalQ = transform_targets(RedL->TransformsAs(), RedR->TransformsAs());
-                           for (QuantumNumbers::QuantumNumberList::const_iterator q = FinalQ.begin(); q != FinalQ.end(); ++q)
-                           {
-                              if (is_transform_target(PBasis2[*TjIter], *q, PBasis1[*TiIter]))
-                              {
+	       for (auto const& b1 : PBasis1(rML.row(), rMR.row()))
+	       {
+		  for (auto const& b2 : PBasis2(cML.col(), cMR.col()))
+		  {
+		     for (auto const& Areduced : cML.value)
+		     {
+			for (auto const& Breduced : cMR.value)
+			{
+			   for (auto const& q : transform_targets(Areduced.TransformsAs(), Breduced.TransformsAs()))
+			   {
+			      if (is_transform_target(PBasis2[b2], q, PBasis2[b1]))
+			      {
                                  double Coeff = tensor_coefficient(PBasis1, PBasis2,
-                                                                   RedL->TransformsAs(), RedR->TransformsAs(), *q,
-                                                                   jL.index1(), jR.index1(), *TiIter,
-                                                                   jL.index2(), jR.index2(), *TjIter);
-                                 if (LinearAlgebra::norm_2(Coeff) > 1E-14)
+                                                                   Areduced.TransformsAs(), Breduced.TransformsAs(), q,
+                                                                   rML.row(), rMR.row(), b1,
+                                                                   cML.col(), cMR.col(), b2);
+                                 if (norm_frob(Coeff) > 1E-14)
                                  {
-                                    Result(*TiIter, *TjIter) += Coeff * prod(*RedL, *RedR, *q);
-                                 }
-                              }
+				    Result.add(b1, b2, Coeff * prod(Areduced, Breduced, q));
+				 }
+			      }
                            }
                         }
                      }
@@ -542,6 +533,7 @@ OperatorComponent aux_tensor_prod(OperatorComponent const& ML, OperatorComponent
    return Result;
 }
 
+#if 0
 // Result[s'][i'a,j'b] = Op(s',s)(a,b) * S(s)(i,j)
 StateComponent aux_tensor_prod(OperatorComponent const& Op, StateComponent const& S)
 {
@@ -612,8 +604,7 @@ StateComponent aux_tensor_prod(OperatorComponent const& Op, StateComponent const
    Result.debug_check_structure();
    return Result;
 }
-
-
+#endif
 
 #if 0
 //  *** This isn't correct for SU(2), the direct_product of the matrix doesn't
@@ -631,6 +622,7 @@ OperatorComponent global_tensor_prod(OperatorComponent const& A, OperatorCompone
 }
 #endif
 
+#if 0
 OperatorComponent exchange(OperatorComponent const& A)
 {
    // Swap the local and aux indices.  A(i,j)[k](r,s) -> Result(r,s)[k](i,j)
@@ -659,6 +651,7 @@ OperatorComponent exchange(OperatorComponent const& A)
    Result.debug_check_structure();
    return Result;
 }
+#endif
 
 SimpleOperator TruncateBasis1(OperatorComponent& A)
 {
@@ -719,7 +712,7 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
          double jmat = Overlaps(j,j).real();
          std::complex<double> ijmat = Overlaps(i,j);
          // are rows i and j parallel?
-         if (LinearAlgebra::norm_frob(ijmat) / std::sqrt(imat*jmat) > (1.0 - TruncateOverlapEpsilon))
+         if (norm_frob(ijmat) / std::sqrt(imat*jmat) > (1.0 - TruncateOverlapEpsilon))
          {
             NewRows[i] = std::make_pair(j, conj(ijmat) / jmat);
             // corner case: i is parallel to j, but we might have previously determined that
@@ -777,7 +770,7 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
    CHECK(norm_frob_sq(A - ACheck) <= Scale*TruncateOverlapEpsilon)(norm_frob_sq(A - ACheck))(A)(ACheck)(A-ACheck)(Trunc)(Reg)(Overlaps);
    //#endif
 
-   A = tA;
+   A = std::move(tA);
    return Reg;
 }
 
@@ -834,7 +827,7 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
          double jmat = Overlaps(j,j).real();
          std::complex<double> ijmat = Overlaps(j,i);
          // are rows i and j parallel?
-         if (LinearAlgebra::norm_frob(ijmat) / std::sqrt(imat*jmat) > (1.0 - TruncateOverlapEpsilon))
+         if (norm_frob(ijmat) / std::sqrt(imat*jmat) > (1.0 - TruncateOverlapEpsilon))
          {
             NewCols[i] = std::make_pair(j, ijmat / jmat);
             // corner case: i is parallel to j, but we might have previously determined that
@@ -897,10 +890,11 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
    CHECK(norm_frob_sq(A - ACheck) <= (Scale*TruncateOverlapEpsilon))(norm_frob_sq(A - ACheck))(A)(ACheck)(A-ACheck)(Trunc)(Reg)(Overlaps);
    //#endif
 
-   A = tA;
+   A = std::move(tA);
    return Reg;
 }
 
+#if 0
 SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
 {
    // We want to work from the last row to the first, so that we preserve the last row exacrly.
@@ -929,11 +923,11 @@ SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
    TRACE(A);
 
    // make a dense matrix
-   LinearAlgebra::Matrix<SimpleRedOperator> M = A.data();
+   blas::Matrix<SimpleRedOperator> M(A.data());
 
    // these are stored in the reverse order
-   std::vector<LinearAlgebra::Vector<SimpleRedOperator> > Rows;
-   std::vector<LinearAlgebra::Vector<std::complex<double> > > T;
+   std::vector<blas::Vector<SimpleRedOperator> > Rows;
+   std::vector<blas::Vector<std::complex<double> > > T;
 
    std::vector<double> RowNormSq;
 
@@ -1033,7 +1027,9 @@ SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
    A = ANew;
    return Trunc;
 }
+#endif
 
+#if 0
 SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
 {
    // We want to work from the first column to last, so that we preserve the first column exactly.
@@ -1158,10 +1154,12 @@ SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
    A = ANew;
    return Trunc;
 }
+#endif
 
 // compress the bond dimension of basis 2 using the stabilized
 // 'generalized deparallelization' algorithm
 
+#if 0
 SimpleOperator CompressBasis2_LinDep(OperatorComponent& A)
 {
    // if the operator is trivially zero, then return early
@@ -1332,6 +1330,7 @@ SimpleOperator CompressBasis2_LinDep(OperatorComponent& A)
    return Reg;
 #endif
 }
+#endif
 
 #if 0
 // See optimized version in f-optim.cpp
@@ -1619,14 +1618,14 @@ project_rows(OperatorComponent const& x, std::set<int> const& Rows)
    }
 
    OperatorComponent Result(x.LocalBasis1(), x.LocalBasis2(), ProjectedBasis, x.Basis2());
-   for (OperatorComponent::const_iterator I = iterate(x.data()); I; ++I)
+   for (auto const& r : x)
    {
-      for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
+      if (Map[r.row()] < 0)
+	 continue;
+
+      for (auto const& c : r)
       {
-         if (Map[J.index1()] >= 0)
-         {
-            Result(Map[J.index1()], J.index2()) = *J;
-         }
+	 Result.insert(Map[r.row()], c.col(), c.value);
       }
    }
 
@@ -1646,17 +1645,16 @@ project_columns(OperatorComponent const& x, std::set<int> const& Cols)
    }
 
    OperatorComponent Result(x.LocalBasis1(), x.LocalBasis2(), x.Basis1(), ProjectedBasis);
-   for (OperatorComponent::const_iterator I = iterate(x.data()); I; ++I)
+   for (auto const& r : x)
    {
-      for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
+      for (auto const& c : r)
       {
-         if (Map[J.index2()] >= 0)
-         {
-            Result(J.index1(), Map[J.index2()]) = *J;
-         }
+	 if (Map[c.col()] >= 0)
+	 {
+	    Result.insert(r.row(), Map[c.col()], c.value);
+	 }
       }
    }
-
    return Result;
 }
 
@@ -1703,7 +1701,7 @@ decompose_tensor_prod(SimpleOperator const& Op,
    }
 
    // Now assemble the matrix
-   LinearAlgebra::Matrix<std::complex<double> > Mat(LeftIndex.size(), RightIndex.size(), 0.0);
+   blas::Matrix<std::complex<double> > Mat(LeftIndex.size(), RightIndex.size(), 0.0);
    for (PartialProdType::const_iterator I = PartialProd.begin(); I != PartialProd.end(); ++I)
    {
       PartialProdIndex Left(I->first.qLeft, I->first.Left1, I->first.Left2);
@@ -1712,24 +1710,25 @@ decompose_tensor_prod(SimpleOperator const& Op,
    }
 
    // Perform the singular decomposition
-   LinearAlgebra::Matrix<std::complex<double> > U, Vh;
-   LinearAlgebra::Vector<double> D;
-   SingularValueDecomposition(Mat, U, D, Vh);
+   int mn = std::min(Mat.rows(), Mat.cols());
+   blas::Matrix<complex> U(Mat.rows(), mn), Vh(mn, Mat.cols());
+   blas::Vector<double> D(mn);
+   SingularValueDecomposition(std::move(Mat), U, D, Vh);
 
    // This sets the scale of the singular values.  Any singular values smaller than
    // KeepThreshold are removed.
-   double KeepThreshold = std::numeric_limits<double>::epsilon() * LinearAlgebra::max(D) * 10;
+   double KeepThreshold = std::numeric_limits<double>::epsilon() * sum(D) * 10;
 
    // split into pairs of operators, keeping only the non-zero singular values
    std::vector<std::pair<SimpleRedOperator, SimpleRedOperator> > Result;
-   for (unsigned k = 0; k < size(D); ++k)
+   for (unsigned k = 0; k < D.size(); ++k)
    {
       DEBUG_TRACE(D[k]);
       if (D[k] > KeepThreshold)
       {
          double Coeff = std::sqrt(D[k]);  // distribute sqrt(D) to each operator
          SimpleRedOperator L(B1.Left(), B2.Left());
-         for (unsigned x = 0; x < size1(U); ++x)
+         for (unsigned x = 0; x < U.rows(); ++x)
          {
             if (norm_frob(U(x,k)) > std::numeric_limits<double>::epsilon() * 10)
             {
@@ -1739,7 +1738,7 @@ decompose_tensor_prod(SimpleOperator const& Op,
          }
 
          SimpleRedOperator R(B1.Right(), B2.Right());
-         for (unsigned x = 0; x < size2(Vh); ++x)
+         for (unsigned x = 0; x < Vh.cols(); ++x)
          {
             if (norm_frob(Vh(k,x)) > std::numeric_limits<double>::epsilon() * 10)
             {
@@ -1795,16 +1794,16 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
    // Reverse mapping from integer index to ComponentIndex for left and right operators
    std::map<QuantumNumbers::QuantumNumber, std::vector<ComponentIndex> > LeftRevMapping, RightRevMapping;
 
-   for (OperatorComponent::const_iterator I = iterate(Op); I; ++I)
+   for (auto const& rOp : Op)
    {
-      int LeftAux1 = I.index();
-      for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
+      int LeftAux1 = rOp.row();
+      for (auto const& cOp : rOp)
       {
-         int RightAux2 = J.index2();
-         for (SimpleRedOperator::const_iterator RI = J->begin(); RI != J->end(); ++RI)
-         {
+	 int RightAux2 = cOp.col();
+	 for (auto const& Comp : cOp.value)
+	 {
             // Decompose the tensor product component
-            PartialProdType PartialProd = Tensor::decompose_tensor_prod(*RI, B1, B2);
+            PartialProdType PartialProd = Tensor::decompose_tensor_prod(Comp, B1, B2);
 
             // decompose the product in the auxiliary basis
             // This is the operator <q' | AB(k) | q > where
@@ -1819,43 +1818,38 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
             // and this determines internal basis.
 
             // For each possible q'', we assemble the matrix, into DecomposedOperator[q'']
-            for (PartialProdType::const_iterator P = PartialProd.begin(); P != PartialProd.end(); ++P)
-            {
-               QuantumNumbers::QuantumNumberList QL
-                  = transform_targets(Op.Basis2()[RightAux2], P->first.qRight);
-
-               for (QuantumNumbers::QuantumNumberList::const_iterator Qpp = QL.begin(); Qpp != QL.end(); ++Qpp)
-               {
-                  // Skip quantum numbers that are not possible (structural zero in the coupling coefficient)
-                  if (!is_transform_target(*Qpp,  P->first.qLeft, Op.Basis1()[LeftAux1]))
-                     continue;
-
-                  // Qpp is the quantum number of the inner basis
-
-                  double Coeff = inverse_product_coefficient(P->first.qLeft, P->first.qRight, RI->TransformsAs(),
-                                                             Op.Basis1()[J.index1()], Op.Basis2()[J.index2()], *Qpp);
-                  if (LinearAlgebra::norm_2(Coeff) > 1E-14)
+	    for (auto const& P : PartialProd)
+	    {
+	       for (auto const& Qpp :  Op.qn2(cOp.col()) * P.first.qRight)
+	       {
+		  // Skip quantum numbers that are not possible (structural zero in the coupling coefficient)
+                  if (!is_transform_target(Qpp,  P.first.qLeft, Op.qn1(rOp.row())))
+		     continue;
+		      
+		  // Qpp is the quantum number of the inner basis
+		  
+		  auto Coeff = inverse_product_coefficient(P.first.qLeft, P.first.qRight, Comp.TransformsAs(),
+                                                             Op.qn1(rOp.row()), Op.qn2(cOp.col()), Qpp);
+                  if (norm_frob(Coeff) > 1E-14)
                   {
                      ComponentIndex LeftIndex
-                        = std::make_tuple(LeftAux1, P->first.Left1, P->first.Left2,
-                                            P->first.qLeft);
-                     if (LeftMapping[*Qpp].find(LeftIndex) == LeftMapping[*Qpp].end())
+                        = std::make_tuple(LeftAux1, P.first.Left1, P.first.Left2, P.first.qLeft);
+                     if (LeftMapping[Qpp].find(LeftIndex) == LeftMapping[Qpp].end())
                      {
-                        LeftMapping[*Qpp][LeftIndex] = LeftRevMapping[*Qpp].size();
-                        LeftRevMapping[*Qpp].push_back(LeftIndex);
+                        LeftMapping[Qpp][LeftIndex] = LeftRevMapping[Qpp].size();
+                        LeftRevMapping[Qpp].push_back(LeftIndex);
                      }
 
                      ComponentIndex RightIndex
-                        = std::make_tuple(RightAux2, P->first.Right1, P->first.Right2,
-                                            P->first.qRight);
-                     if (RightMapping[*Qpp].find(RightIndex) == RightMapping[*Qpp].end())
+                        = std::make_tuple(RightAux2, P.first.Right1, P.first.Right2, P.first.qRight);
+                     if (RightMapping[Qpp].find(RightIndex) == RightMapping[Qpp].end())
                      {
-                        RightMapping[*Qpp][RightIndex] = RightRevMapping[*Qpp].size();
-                        RightRevMapping[*Qpp].push_back(RightIndex);
+                        RightMapping[Qpp][RightIndex] = RightRevMapping[Qpp].size();
+                        RightRevMapping[Qpp].push_back(RightIndex);
                      }
 
-                     DecomposedOperator[*Qpp][std::make_pair(LeftIndex, RightIndex)]
-                        = Coeff * P->second;
+                     DecomposedOperator[Qpp][std::make_pair(LeftIndex, RightIndex)]
+                        = Coeff * P.second;
                   }
                }
             }
@@ -1882,20 +1876,22 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
       QuantumNumbers::QuantumNumber Qpp = Q->first;
 
       // assemble the matrix
-      LinearAlgebra::Matrix<std::complex<double> > Mat(LeftMapping[Qpp].size(), RightMapping[Qpp].size(), 0.0);
+      blas::Matrix<complex> Mat(LeftMapping[Qpp].size(), RightMapping[Qpp].size(), 0.0);
       for (DecomposedMPOType::const_iterator I = Q->second.begin(); I != Q->second.end(); ++I)
       {
          Mat(LeftMapping[Qpp][I->first.first], RightMapping[Qpp][I->first.second]) = I->second;
       }
 
       // Do the SVD
-      LinearAlgebra::Matrix<std::complex<double> > U, Vh;
-      LinearAlgebra::Vector<double> D;
-      SingularValueDecomposition(Mat, U, D, Vh);
+      int mn = std::min(Mat.rows(), Mat.cols());
+      blas::Matrix<std::complex<double> > U(Mat.rows(), mn), Vh(mn, Mat.cols());
+      blas::Vector<double> D(mn);
+      SingularValueDecomposition(std::move(Mat), U, D, Vh);
 
       DEBUG_TRACE(D);
 
-      double m = LinearAlgebra::max(D);
+      // TODO: this used to be 'max'
+      double m = sum(D);
       if (m > LargestSingular)
          LargestSingular = m;
    }
@@ -1915,19 +1911,20 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
       QuantumNumbers::QuantumNumber Qpp = Q->first;
 
       // assemble the matrix
-      LinearAlgebra::Matrix<std::complex<double> > Mat(LeftMapping[Qpp].size(), RightMapping[Qpp].size(), 0.0);
+      blas::Matrix<std::complex<double> > Mat(LeftMapping[Qpp].size(), RightMapping[Qpp].size(), 0.0);
       for (DecomposedMPOType::const_iterator I = Q->second.begin(); I != Q->second.end(); ++I)
       {
          Mat(LeftMapping[Qpp][I->first.first], RightMapping[Qpp][I->first.second]) = I->second;
       }
 
       // Do the SVD
-      LinearAlgebra::Matrix<std::complex<double> > U, Vh;
-      LinearAlgebra::Vector<double> D;
-      SingularValueDecomposition(Mat, U, D, Vh);
+      int mn = std::min(Mat.rows(), Mat.cols());
+      blas::Matrix<std::complex<double> > U(Mat.rows(), mn), Vh(mn, Mat.cols());
+      blas::Vector<double> D(mn);
+      SingularValueDecomposition(std::move(Mat), U, D, Vh);
 
       // Assemble the singular vectors
-      for (unsigned k = 0; k < size(D); ++k)
+      for (unsigned k = 0; k < D.size(); ++k)
       {
          // Skip over vectors that don't reach the threshold
          if (D[k] < KeepThreshold)
@@ -1940,7 +1937,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
          double RightCoeff = D[k] / LeftCoeff;
 
          SingularVectorType LeftVec;
-         for (unsigned x = 0; x < size1(U); ++x)
+         for (unsigned x = 0; x < U.rows(); ++x)
          {
             // We might have some components that are in forbidden quantum number sectors - these should be small.
             // In the auxiliary space, we should have a matrix element that transforms as q,
@@ -1969,7 +1966,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
          }
 
          SingularVectorType RightVec;
-         for (unsigned x = 0; x < size2(Vh); ++x)
+         for (unsigned x = 0; x < Vh.cols(); ++x)
          {
             if (norm_frob(Vh(k,x)) > std::numeric_limits<double>::epsilon() * 10)
             {
@@ -1999,18 +1996,20 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
          SingularVectorType LeftVec = LeftSingularVectors[Qpp][i];
          for (SingularVectorType::const_iterator I = LeftVec.begin(); I != LeftVec.end(); ++I)
          {
-            project(MA(std::get<0>(I->first), b), std::get<3>(I->first))
-               (std::get<1>(I->first), std::get<2>(I->first))
-               = I->second;
-         }
+	    SimpleOperator x(B1.Left(), B2.Left(), std::get<3>(I->first));
+	    x.insert(std::get<1>(I->first), std::get<2>(I->first), I->second);
+	    
+	    MA.add(std::get<0>(I->first), b, x);
+	 }
 
          SingularVectorType RightVec = RightSingularVectors[Qpp][i];
          for (SingularVectorType::const_iterator I = RightVec.begin(); I != RightVec.end(); ++I)
          {
-            project(MB(b, std::get<0>(I->first)), std::get<3>(I->first))
-               (std::get<1>(I->first), std::get<2>(I->first))
-               = I->second;
-         }
+	    SimpleOperator x(B1.Right(), B2.Right(), std::get<3>(I->first));
+	    x.insert(std::get<1>(I->first), std::get<2>(I->first), I->second);
+	    
+	    MB.add(b, std::get<0>(I->first), x);
+	 }
 
          ++b;
       }
@@ -2044,7 +2043,7 @@ decompose_local_tensor_prod(SimpleOperator const& Op,
 {
    OperatorComponent OpC(Op.Basis1(), Op.Basis2(),
                          make_single_basis(Op.TransformsAs()), make_vacuum_basis(Op.GetSymmetryList()));
-   project(OpC(0,0), Op.TransformsAs()) = Op;
+   OpC.insert(0, 0, Op);
    return decompose_local_tensor_prod(OpC, B1, B2);
 }
 
@@ -2098,30 +2097,34 @@ RotateToOperatorLeftBoundary(StateComponent const& x)
 }
 #endif
 
-OperatorComponent
-conj(OperatorComponent const& x)
+void
+inplace_conj(OperatorComponent& x)
 {
-   OperatorComponent Result(x);
-   for (OperatorComponent::iterator I = iterate(Result.data()); I; ++I)
+   for (auto& r : x)
    {
-      for (OperatorComponent::inner_iterator J = iterate(I); J; ++J)
+      for (auto&& c : r)
       {
-         *J = conj(*J);
+	 inplace_conj(c.value);
       }
    }
-   return Result;
+}
+
+OperatorComponent
+conj(OperatorComponent x)
+{
+   inplace_conj(x);
+   return x;
 }
 
 OperatorComponent
 flip_conj(OperatorComponent const& x)
 {
    OperatorComponent Result(adjoint(x.LocalBasis1()), adjoint(x.LocalBasis2()), adjoint(x.Basis1()), adjoint(x.Basis2()));
-   for (OperatorComponent::const_iterator I = iterate(x.data()); I; ++I)
+   for (auto& r : Result)
    {
-      for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
+      for (auto&& c : r)
       {
-         DEBUG_TRACE(*J)(flip_conj(*J));
-         Result(J.index1(), J.index2()) = flip_conj(*J);
+	 c.value = flip_conj(c.value);
       }
    }
    return Result;
@@ -2162,12 +2165,12 @@ MatrixOperator ExpandBasis2Used(StateComponent& A, OperatorComponent const& Op)
 void
 update_mask_basis1(std::vector<int>& Mask1, SimpleOperator const& Op, std::vector<int> const& Mask2)
 {
-   for (const_iterator<SimpleOperator>::type I = iterate(Op); I; ++I)
+   for (auto const& r : Op)
    {
-      for (const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
+      for (auto const& c : r)
       {
-         if (Mask2[J.index2()])
-            Mask1[J.index1()] = true;
+	 if (Mask2[c.col()])
+	    Mask1[r.row()] = true;
       }
    }
 }
@@ -2175,20 +2178,20 @@ update_mask_basis1(std::vector<int>& Mask1, SimpleOperator const& Op, std::vecto
 void
 update_mask_basis1(std::vector<int>& Mask1, SimpleRedOperator const& Op, std::vector<int> const& Mask2)
 {
-   for (SimpleRedOperator::const_iterator I = Op.begin(); I != Op.end(); ++I)
+   for (auto const& c : Op)
    {
-      update_mask_basis1(Mask1, *I, Mask2);
+      update_mask_basis1(Mask1, c, Mask2);
    }
 }
 
 void
 update_mask_basis1(std::vector<int>& Mask1, OperatorComponent const& Op, std::vector<int> const& Mask2)
 {
-   for (OperatorComponent::const_iterator I = iterate(Op.data()); I; ++I)
+   for (auto const& r : Op)
    {
-      for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
+      for (auto const& c : r)
       {
-         update_mask_basis1(Mask1, *J, Mask2);
+         update_mask_basis1(Mask1, c.value, Mask2);
       }
    }
 }
@@ -2196,12 +2199,12 @@ update_mask_basis1(std::vector<int>& Mask1, OperatorComponent const& Op, std::ve
 void
 update_mask_basis2(std::vector<int> const& Mask1, SimpleOperator const& Op, std::vector<int>& Mask2)
 {
-   for (const_iterator<SimpleOperator>::type I = iterate(Op); I; ++I)
+   for (auto const& r : Op)
    {
-      for (const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
+      for (auto const& c : r)
       {
-         if (Mask1[J.index1()])
-            Mask2[J.index2()] = true;
+	 if (Mask1[r.row()])
+	    Mask2[c.col()] = true;
       }
    }
 }
@@ -2209,20 +2212,20 @@ update_mask_basis2(std::vector<int> const& Mask1, SimpleOperator const& Op, std:
 void
 update_mask_basis2(std::vector<int> const& Mask1, SimpleRedOperator const& Op, std::vector<int>& Mask2)
 {
-   for (SimpleRedOperator::const_iterator I = Op.begin(); I != Op.end(); ++I)
+   for (auto const& c : Op)
    {
-      update_mask_basis2(Mask1, *I, Mask2);
+      update_mask_basis2(Mask1, c, Mask2);
    }
 }
 
 void
 update_mask_basis2(std::vector<int> const& Mask1, OperatorComponent const& Op, std::vector<int>& Mask2)
 {
-   for (OperatorComponent::const_iterator I = iterate(Op.data()); I; ++I)
+   for (auto const& r : Op)
    {
-      for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
+      for (auto const& c : r)
       {
-         update_mask_basis2(Mask1, *J, Mask2);
+         update_mask_basis2(Mask1, c.value, Mask2);
       }
    }
 }

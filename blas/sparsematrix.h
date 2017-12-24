@@ -294,6 +294,8 @@ class SparseMatrix
 
       void clear() { for (auto& r : RowStorage) { r.clear(); } }
 
+      bool empty() const { return RowStorage.empty(); }
+
       iterator begin() { return RowStorage.begin(); }
       iterator end() { return RowStorage.end(); }
 
@@ -365,6 +367,19 @@ class SparseMatrix
          RowStorage[r].subtract(c, std::move(value));
       }
 
+      template <typename U>
+      SparseMatrix operator*=(U const& x)
+      {
+	 for (auto& r : RowStorage)
+	 {
+	    for (auto&& c : r)
+	    {
+	       c.value *= x;
+	    }
+	 }
+	 return *this;
+      }
+
       std::vector<SparseMatrixRow<T>> const& access_rows() const { return RowStorage; }
       std::vector<SparseMatrixRow<T>>& access_rows() { return RowStorage; }
 
@@ -413,6 +428,40 @@ SparseMatrix<T>& operator*=(SparseMatrix<T>& x, T const& a)
       }
    }
    return x;
+}
+
+template <typename T>
+inline
+std::enable_if_t<std::is_copy_constructible<T>::value, T>
+copy(T const& x)
+{
+   return x;
+}
+
+// for a temporary, the version that takes a universal reference is found first
+// in overload resolution and we can avoid the copy im this case
+template <typename T>
+inline
+std::enable_if_t<std::is_move_constructible<T>::value && !std::is_lvalue_reference<T>::value, T>
+copy(T&& x) // x is a universal reference here, which isn't really what we want
+{
+   return std::move(x);
+}
+
+template <typename T>
+inline
+SparseMatrix<T>
+copy(SparseMatrix<T> const& x)
+{
+   SparseMatrix<T> Result(x.rows(), x.cols());
+   for (auto const& r : x)
+   {
+      for (auto const& c : r)
+      {
+	 Result.insert(r.row(), c.col(), copy(c.value));
+      }
+   }
+   return Result;
 }
 
 // A proxy class to represent the Hermitian conjugate of a matrix

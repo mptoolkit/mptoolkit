@@ -116,11 +116,18 @@ class ReducibleTensor
       ReducibleTensor(basis1_type const& Basis);
       ReducibleTensor(basis1_type const& Basis1, basis2_type const& Basis2);
 
+      ReducibleTensor(basis1_type const& Basis1, basis2_type const& Basis2,
+		      data_type&& Data)
+	 : Basis1_(Basis1), Basis2_(Basis2), data_(Data) {}
+
+
       template <typename U, typename US>
       ReducibleTensor(IrredTensor<U, basis1_type, basis2_type, US> const& x);
 
+#if 0
       template <typename U, typename US>
       ReducibleTensor(ReducibleTensor<U, basis1_type, basis2_type, US> const& x);
+#endif
 
       bool empty() const { return data_.empty(); }
 
@@ -221,6 +228,14 @@ struct ScalarTypes<Tensor::ReducibleTensor<T, B1, B2, S>> : ScalarTypes<T> {};
 namespace Tensor
 {
 
+template <typename T, typename B1, typename B2, typename S>
+inline
+ReducibleTensor<T, B1, B2, S>
+copy(ReducibleTensor<T, B1, B2, S> const& x)
+{
+   ReducibleTensor<T, B1, B2, S>(x.Basis1(), x.Basis2(), copy(x.data_));
+}
+
 // project an irred tensor onto some irreducible subspace.
 template <typename T, typename B1, typename B2, typename S>
 inline
@@ -283,6 +298,28 @@ ReducibleTensor<T, B1, B2, S>::make_identity(B1 const& b)
 }
 
 // complex conjugation
+
+template <typename T, typename B1, typename B2, typename S>
+void
+inplace_conj(ReducibleTensor<T, B1, B2, S>& x)
+{
+   for (auto const& c : x)
+   {
+      inplace_conj(c);
+   }
+}
+
+template <typename T, typename B1, typename B2, typename S>
+ReducibleTensor<T, B2, B1, S>
+conj(ReducibleTensor<T, B1, B2, S> const& x)
+{
+   ReducibleTensor<T, B2, B1, S> Result(x.Basis1(), x.Basis2());
+   for (auto const& c : x)
+   {
+      Result.insert(conj(c));
+   }
+   return Result;
+}
 
 template <typename T, typename B1, typename B2, typename S>
 ConjugateProxy<ReducibleTensor<T, B1, B2, S>>

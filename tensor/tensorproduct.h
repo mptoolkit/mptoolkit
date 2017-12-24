@@ -25,6 +25,7 @@
 #include <tuple>
 #include "blas/matrix.h"
 #include "blas/functors.h"
+#include "blas/number_traits.h"
 
 namespace Tensor
 {
@@ -72,6 +73,11 @@ class ProductBasisBase
 
       const_iterator begin(int s1, int s2) const { return TransformData_(s1,s2).begin(); }
       const_iterator end(int s1, int s2) const { return TransformData_(s1,s2).end(); }
+
+      TargetListType const& operator()(int s1, int s2) const
+      {
+	 return TransformData_(s1,s2);
+      }
 
       const_iterator begin(source_type const& s12) const
         { return this->begin(s12.first, s12.second); }
@@ -274,10 +280,10 @@ tensor_prod(IrredTensor<T1, B1, B2, S1> const& ML, IrredTensor<T2, B3, B4, S2> c
 		  {
 		     if (is_transform_target(q, PBasis2[b2], PBasis1[b1]))
 		     {
-                        double Coeff = tensor_coefficient(PBasis1, PBasis2,
-                                                          ML.TransformsAs(), MR.TransformsAs(), q,
-                                                          rML.row(), rMR.row(), b1,
-                                                          cML.col(), cMR.col(), b2);
+                        auto Coeff = tensor_coefficient(PBasis1, PBasis2,
+							ML.TransformsAs(), MR.TransformsAs(), q,
+							rML.row(), rMR.row(), b1,
+							cML.col(), cMR.col(), b2);
 			
                         if (norm_frob(Coeff) > 1E-14)
 			   Result.insert(b1, b2, Coeff * ProdFunctor(cML.value, cMR.value));
@@ -299,7 +305,7 @@ tensor_prod(IrredTensor<T1, B1, B2, S1> const& ML, IrredTensor<T2, B3, B4, S2> c
             ProductBasis<B1,B3> const& PBasis1, ProductBasis<B2,B4> const& PBasis2,
             QuantumNumber const& q = QuantumNumber())
 {
-   return tensor_prod(ML, MR, PBasis1, PBasis2,  q, blas::Prod());
+   return tensor_prod(ML, MR, PBasis1, PBasis2,  q, blas::Multiplication());
 }
 
 template <typename T1, typename B1, typename B2, typename S1,

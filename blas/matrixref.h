@@ -883,21 +883,21 @@ void vector_scale(T alpha, BlasVectorProxy<T, U, Tag>&& y)
 
 template <typename T, typename U, typename Tag>
 void
-vector_sum(blas::BlasVector<T, U, Tag> const& x, typename Tag::template async_proxy<T>&& y)
+sum(blas::BlasVector<T, U, Tag> const& x, typename Tag::template async_proxy<T>&& y)
 {
    vector_sum(x.size(), x.storage(), x.stride(), std::move(y));
 }
 
 template <typename T, typename U, typename Tag>
 void
-vector_sum(blas::BlasVector<T, U, Tag> const& x, typename Tag::template async_ref<T>& y)
+sum(blas::BlasVector<T, U, Tag> const& x, typename Tag::template async_ref<T>& y)
 {
    vector_sum(x.size(), x.storage(), x.stride(), y);
 }
 
 template <typename T, typename U, typename Tag>
 typename Tag::template async_ref<T>
-vector_sum(blas::BlasVector<T, U, Tag> const& x)
+sum(blas::BlasVector<T, U, Tag> const& x)
 {
    typename Tag::template async_ref<T> y;
    vector_sum(x.size(), x.storage(), x.stride(), y);
@@ -972,7 +972,7 @@ void assign_permutation(BlasVectorProxy<T, U, Tag>&& A, BlasVector<T, V, Tag> co
 }
 
 //
-// MATRIX middle-layer BLAS wrappers, that forward from a matrix/vector ref to low-level storage
+// MATRIX high-level BLAS wrappers, that forward from a matrix/vector ref to low-level storage
 //
 
 // assign_slice is the catch-all for assigning combinations of range, slice, and indices.  Only a few combinations
@@ -1032,6 +1032,42 @@ void scale(NormalMatrix<T, U, Tag>& C, T x)
    matrix_scale(C.rows(), C.cols(), x, C.storage(), C.leading_dimension());
 }
 
+template <typename T, typename U, typename Tag>
+inline
+void
+norm_frob_sq(blas::BlasMatrix<T, U, Tag> const& x, 
+	     typename Tag::template async_ref<decltype(norm_frob(std::declval<T>()))>& z)
+{
+   matrix_norm_frob_sq(x.rows(), x.cols(), x.storage(), x.leading_dimension(), z);
+}
+
+template <typename T, typename U, typename Tag>
+decltype(norm_frob(std::declval<T>()))
+   norm_frob_sq(blas::BlasMatrix<T, U, Tag> const& x)
+{
+   typename Tag::template async_ref<decltype(norm_frob(std::declval<T>()))> z;
+   norm_frob_sq(x, z);
+   return get_wait(z);
+}
+
+#if 0
+// TODO: how to implement sqrt on the GPU?
+template <typename T, typename U, typename Tag>
+inline
+void
+norm_frob(blas::BlasMatrix<T, U, Tag> const& x, 
+	  typename Tag::template async_ref<decltype(norm_frob(std::declval<T>()))>& z)
+{
+   matrix_norm_frob_sq(x.rows(), x.cols(), x.storage(), x.leading_dimension(), z);
+}
+#endif
+
+template <typename T, typename U, typename Tag>
+auto
+norm_frob(blas::BlasMatrix<T, U, Tag> const& x)
+{
+   return std::sqrt(norm_frob_sq(x));
+}
 
 template <typename T, typename U, typename V, typename Tag>
 inline
@@ -1088,6 +1124,8 @@ add_inner_prod(blas::BlasMatrix<T, U, Tag> const& x,
 			 y.storage(), y.leading_dimension(),
 			 z);
 }
+
+// middle-level wrappers
 
 template <typename T, typename U, typename V, typename W, typename Tag>
 inline

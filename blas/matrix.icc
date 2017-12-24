@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "matrix.h"
+#include "sparsematrix.h"
 
 namespace blas
 {
@@ -41,6 +41,20 @@ Matrix<T, Tag>::Matrix(int R, int C, arena Arena_)
    : Rows(R), Cols(C), LeadingDimension(Tag::template select_leading_dimension<T>(Cols)),
      Buf(buffer_type::allocate(LeadingDimension*Cols, Arena_))
 {
+}
+
+template <typename T, typename Tag>
+Matrix<T, Tag>::Matrix(SparseMatrix<value_type> const& Other, arena Arena_)
+   : Rows(Other.rows()), Cols(Other.cols()), LeadingDimension(Tag::template select_leading_dimension<T>(Cols)),
+     Buf(buffer_type::allocate(LeadingDimension*Cols, Arena_))
+{
+   for (auto const& r : Other)
+   {
+      for (auto const& c : r)
+      {
+	 Buf[c.col()*LeadingDimension+r.row()] = c.value;
+      }
+   }
 }
 
 template <typename T, typename U>

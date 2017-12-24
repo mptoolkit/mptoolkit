@@ -46,12 +46,15 @@ ReducibleTensor<T, B1, B2, S>::ReducibleTensor(IrredTensor<U, B1, B2, US> const&
    data_[x.TransformsAs()] = x;
 }
 
+#if 0
+// TODO: copy ctor isn't needed ?!?!
 template <typename T, typename B1, typename B2, typename S>
 template <typename U, typename US>
 ReducibleTensor<T, B1, B2, S>::ReducibleTensor(ReducibleTensor<U, basis1_type, basis2_type, US> const& x)
    : Basis1_(x.Basis1()), Basis2_(x.Basis2()), data_(x.data_.begin(), x.data_.end())
 {
 }
+#endif
 
 template <typename T, typename B1, typename B2, typename S>
 ReducibleTensor<T, B1, B2, S>&

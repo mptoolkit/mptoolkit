@@ -157,6 +157,11 @@ template <typename T, typename B1, typename B2, typename S>
 void
 CoerceSymmetryListInPlace(IrredTensor<T, B1, B2, S>& t, SymmetryList const& sl);
 
+// forward declaration so we can make it a friend
+template <typename T, typename B1, typename B2, typename S>
+IrredTensor<T, B1, B2, S>
+copy(IrredTensor<T, B1, B2, S> const& x);
+
 template <typename T, typename Basis1T, typename Basis2T, typename Structure>
 class IrredTensor
 {
@@ -290,6 +295,15 @@ class IrredTensor
       int size1() const { return Basis1_.size(); }
       int size2() const { return Basis2_.size(); }
 
+      value_type operator()(int r, int c) const
+      {
+	 auto i = Data_.row(r).find(c);
+	 if (i == Data_.row(r).end())
+	    return value_type();
+	 // else
+	 return i.value;
+      }
+
       StructureType& data() { return Data_; }
       StructureType const& data() const { return Data_; }
 
@@ -327,6 +341,7 @@ class IrredTensor
       friend IrredTensor<T2, B12, B22, S2>
       CoerceSymmetryList(IrredTensor<T2, B12, B22, S2> const& t, SymmetryList const& sl);
 
+      friend IrredTensor copy<>(IrredTensor const& x);
 
       //      friend IrredTensor ::Tensor::CoerceSymmetryList<>(IrredTensor const& t, SymmetryList const& sl);
 };
@@ -467,6 +482,14 @@ inplace_conj(IrredTensor<T, B1, B2, S>& x)
    inplace_conj(x.data());
 }
 
+template <typename T, typename B1, typename B2, typename S>
+IrredTensor<T, B1, B2, S>
+conj(IrredTensor<T, B1, B2, S> x)
+{
+   inplace_conj(x);
+   return x;
+}
+
 // trace
 template <typename T, typename B, typename S>
 typename IrredTensor<T, B, B, S>::numeric_type
@@ -475,7 +498,7 @@ trace(IrredTensor<T, B, B, S> const& x);
 // norm_frob
 
 template <typename T, typename B1, typename B2, typename S>
-typename blas::number_traits<typename IrredTensor<T, B1, B2, S>::numeric_type>::real_type
+decltype(norm_frob(std::declval<T>()))
 norm_frob_sq(IrredTensor<T, B1, B2, S> const& x)
 {
    using type = typename blas::number_traits<typename IrredTensor<T, B1, B2, S>::numeric_type>::real_type;
@@ -487,6 +510,13 @@ norm_frob_sq(IrredTensor<T, B1, B2, S> const& x)
          Result += qdim(x.qn1(r.row())) * norm_frob_sq(c.value);
       }
    }
+}
+
+template <typename T, typename B1, typename B2, typename S>
+auto
+norm_frob(IrredTensor<T, B1, B2, S> const& x)
+{
+   return std::sqrt(norm_frob_sq(x));
 }
 
 // inner_prod
@@ -593,7 +623,7 @@ scalar_prod(IrredTensor<T, B1, B3, Tensor::DefaultStructure> const& x,
 // adjoint and inv_adjoint
 //
 
-template <typename T, typename B1, typename B2, typename S, typename F>
+template <typename T, typename B1, typename B2, typename S>
 Tensor::IrredTensor<T, B1, B2, S>
 adjoint(Tensor::IrredTensor<T, B1, B2, S> const& x)
 {
@@ -604,13 +634,13 @@ adjoint(Tensor::IrredTensor<T, B1, B2, S> const& x)
    {
       for (auto const& cx : rx)
       {
-         Result.data().emplace(adjoint_coefficient(x.qn2(cx.col()), q, x.qn1(rx.row())) * cx.value());
+         Result.data().emplace(adjoint_coefficient(x.qn2(cx.col()), q, x.qn1(rx.row())) * adjoint(cx.value()));
       }
    }
    return Result;
 }
 
-template <typename T, typename B1, typename B2, typename S, typename F>
+template <typename T, typename B1, typename B2, typename S>
 Tensor::IrredTensor<T, B1, B2, S>
 inv_adjoint(Tensor::IrredTensor<T, B1, B2, S> const& x)
 {
@@ -621,7 +651,7 @@ inv_adjoint(Tensor::IrredTensor<T, B1, B2, S> const& x)
    {
       for (auto const& cx : rx)
       {
-         Result.data().emplace(inverse_adjoint_coefficient(x.qn2(cx.col()), q, x.qn1(rx.row())) * cx.value());
+         Result.data().emplace(inverse_adjoint_coefficient(x.qn2(cx.col()), q, x.qn1(rx.row())) * inv_adjoint(cx.value()));
       }
    }
    return Result;
@@ -719,6 +749,27 @@ operator*(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S> const& y
    CHECK(QL.size() == 1)("Transform product is not specified and not unique")
       (x.TransformsAs())(y.TransformsAs())(QL);
    return prod(x, y, QL[0]);
+}
+
+// multiply by scalar
+template <typename T, typename B1, typename B2, typename S, typename U>
+inline
+std::enable_if_t<blas::is_numeric_v<U>, IrredTensor<T, B1, B2, S>>
+operator*(IrredTensor<T, B1, B2, S> x, U const& a)
+{
+   auto Result(x);
+   Result.data() *= a;
+   return Result;
+}
+
+template <typename T, typename B1, typename B2, typename S, typename U>
+inline
+std::enable_if_t<blas::is_numeric_v<U>, IrredTensor<T, B1, B2, S>>
+operator*(U const& a, IrredTensor<T, B1, B2, S> x)
+{
+   auto Result(x);
+   Result.data() *= a;
+   return Result;
 }
 
 // outer_product: outer product of tensor operators.

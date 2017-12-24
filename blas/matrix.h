@@ -54,6 +54,10 @@ class PermutationMatrix;
 // Default Tag type is cpu_tag.
 //
 
+// forward declaration to construct a dense matrix from a sparse matrix
+template <typename T>
+class SparseMatrix;
+
 template <typename T, typename Tag>
 class Matrix : public NormalMatrix<T, Matrix<T, Tag>, Tag>
 {
@@ -82,6 +86,11 @@ class Matrix : public NormalMatrix<T, Matrix<T, Tag>, Tag>
 
       Matrix(int Rows_, int Cols_, T const& Fill)
          : Matrix(Rows_, Cols_, Fill, tag_type::template default_arena<T>()) {}
+
+      Matrix(SparseMatrix<value_type> const& Other, arena Arena_);
+
+      explicit Matrix(SparseMatrix<value_type> const& Other)
+	 : Matrix(Other, tag_type::template default_arena<T>()) {}
 
       // construction via expression template
       template <typename U>

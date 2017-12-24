@@ -345,29 +345,6 @@ delta_shift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
 // make_zero
 //
 
-#if 0
-template <typename T, typename B1, typename B2>
-struct MakeZeroImpl {};
-
-// NOTE: T is not deduced here
-template <typename T, typename B1, typename B2>
-typename MakeZeroImpl<T, B1, B2>::result_type
-make_zero(B1 const& b1, B2 const& b2, int i, int j)
-{
-   return MakeZeroImpl<T, B1, B2>(b1, b2, i, j);
-}
-
-template <typename T>
-struct MakeZeroImpl<T, VectorBasis, VectorBasis>
-{
-   typedef T result_type;
-   T operator()(VectorBasis const& b1, VectorBasis const& b2, int i, int j) const
-   {
-      return LinearAlgebra::SparseMatrix<double>(b1.dim(i), b2.dim(j));
-   }
-};
-#endif
-
 //
 // make_identity
 //

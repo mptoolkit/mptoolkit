@@ -270,7 +270,7 @@ inner_prod(StateComponent const& x, StateComponent const& y)
    {
       inner_prod(x[i], y[i], Temp[i]);
    }
-   return get_wait(vector_sum(Temp));
+   return get_wait(sum(Temp));
 }
 
 template <typename T>
