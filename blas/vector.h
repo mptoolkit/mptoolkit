@@ -54,14 +54,14 @@ struct cpu_buffer
    cpu_buffer() = delete;
 
    cpu_buffer(arena const& a, T* p, int s) : Arena(a), Ptr(p), Size(s) {}
-   cpu_buffer(cpu_buffer&& other) : Arena(std::move(other.Arena)), Ptr(other.Ptr), Size(other.Size)
+   cpu_buffer(cpu_buffer&& other) noexcept : Arena(std::move(other.Arena)), Ptr(other.Ptr), Size(other.Size)
    {
       other.Ptr = nullptr;
    }
 
    cpu_buffer(cpu_buffer&) = delete;
 
-   ~cpu_buffer()
+   ~cpu_buffer() noexcept
    {
       if (Ptr)
          Arena.free(Ptr, Size);

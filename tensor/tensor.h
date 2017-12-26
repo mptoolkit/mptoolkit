@@ -186,7 +186,7 @@ class IrredTensor
 
       IrredTensor(IrredTensor const& Other) = delete;
 
-      IrredTensor(IrredTensor&& Other) = default;
+      IrredTensor(IrredTensor&& Other) noexcept = default;
 
       IrredTensor(basis1_type const& Basis, QuantumNumber const& Trans);
 
@@ -301,7 +301,7 @@ class IrredTensor
 	 if (i == Data_.row(r).end())
 	    return value_type();
 	 // else
-	 return i.value;
+	 return i.value();
       }
 
       StructureType& data() { return Data_; }
@@ -328,7 +328,12 @@ class IrredTensor
       // force change the symmetry list
       void CoerceSymmetryList(SymmetryList const& sl);
 
-   private:
+      static_assert(std::is_nothrow_move_constructible<basis1_type>::value, "");
+      static_assert(std::is_nothrow_move_constructible<basis2_type>::value, "");
+      static_assert(std::is_nothrow_move_constructible<QuantumNumber>::value, "");
+      static_assert(std::is_nothrow_move_constructible<StructureType>::value, "");
+
+  private:
       basis1_type Basis1_;
       basis2_type Basis2_;
       QuantumNumber Trans_;
@@ -468,13 +473,6 @@ operator-(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& y
 
 // multiply by scalar
 
-template <typename T, typename B1, typename B2, typename S, typename U>
-IrredTensor<T, B1, B2, S>&
-operator*=(IrredTensor<T, B1, B2, S>& x, U const& a)
-{
-   x.data() *= a;
-}
-
 template <typename T, typename B1, typename B2, typename S>
 void
 inplace_conj(IrredTensor<T, B1, B2, S>& x)
@@ -491,8 +489,13 @@ conj(IrredTensor<T, B1, B2, S> x)
 }
 
 // trace
+// we split the implementation into scalar and compound types.
 template <typename T, typename B, typename S>
-typename IrredTensor<T, B, B, S>::numeric_type
+std::enable_if_t<!blas::is_numeric_v<T>, blas::remove_proxy_t<decltype(trace(std::declval<T>()))>>
+trace(IrredTensor<T, B, B, S> const& x);
+
+template <typename T, typename B, typename S>
+std::enable_if_t<blas::is_numeric_v<T>, T>
 trace(IrredTensor<T, B, B, S> const& x);
 
 // norm_frob
@@ -501,8 +504,7 @@ template <typename T, typename B1, typename B2, typename S>
 decltype(norm_frob(std::declval<T>()))
 norm_frob_sq(IrredTensor<T, B1, B2, S> const& x)
 {
-   using type = typename blas::number_traits<typename IrredTensor<T, B1, B2, S>::numeric_type>::real_type;
-   type Result = 0.0;
+   decltype(norm_frob(std::declval<T>())) Result{};
    for (auto const& r : x)
    {
       for (auto const& c : r)
@@ -623,35 +625,51 @@ scalar_prod(IrredTensor<T, B1, B3, Tensor::DefaultStructure> const& x,
 // adjoint and inv_adjoint
 //
 
+template <typename T>
+std::enable_if_t<blas::is_numeric_v<T>, T>
+adjoint(T x)
+{
+   using std::conj;
+   return conj(x);
+}
+
 template <typename T, typename B1, typename B2, typename S>
 Tensor::IrredTensor<T, B1, B2, S>
 adjoint(Tensor::IrredTensor<T, B1, B2, S> const& x)
 {
-   if (x.is_null()) return x;
+   //   if (x.is_null()) return Tensor::IrredTensor<T, B1, B2, S>();
    QuantumNumbers::QuantumNumber q = x.TransformsAs();
    Tensor::IrredTensor<T, B1, B2, S> Result(x.Basis2(), x.Basis1(), adjoint(q));
    for (auto const& rx : x.data())
    {
       for (auto const& cx : rx)
       {
-         Result.data().emplace(adjoint_coefficient(x.qn2(cx.col()), q, x.qn1(rx.row())) * adjoint(cx.value()));
+         Result.data().emplace(cx.col(), rx.row(), adjoint_coefficient(x.qn2(cx.col()), q, x.qn1(rx.row())) * adjoint(cx.value));
       }
    }
    return Result;
+}
+
+template <typename T>
+std::enable_if_t<blas::is_numeric_v<T>, T>
+inv_adjoint(T x)
+{
+   using std::conj;
+   return conj(x);
 }
 
 template <typename T, typename B1, typename B2, typename S>
 Tensor::IrredTensor<T, B1, B2, S>
 inv_adjoint(Tensor::IrredTensor<T, B1, B2, S> const& x)
 {
-   if (x.is_null()) return x;
+   //   if (x.is_null()) return x;
    QuantumNumbers::QuantumNumber q = x.TransformsAs();
    Tensor::IrredTensor<T, B1, B2, S> Result(x.Basis2(), x.Basis1(), adjoint(q));
    for (auto const& rx : x.data())
    {
       for (auto const& cx : rx)
       {
-         Result.data().emplace(inverse_adjoint_coefficient(x.qn2(cx.col()), q, x.qn1(rx.row())) * inv_adjoint(cx.value()));
+         Result.data().emplace(cx.col(), rx.row(), inverse_adjoint_coefficient(x.qn2(cx.col()), q, x.qn1(rx.row())) * inv_adjoint(cx.value));
       }
    }
    return Result;
@@ -663,10 +681,10 @@ template <typename T, typename B1, typename B2, typename S>
 Tensor::IrredTensor<T, B1, B2, S>
 flip_conj(Tensor::IrredTensor<T, B1, B2, S> const& x)
 {
-   if (x.is_null()) return x;
+   //   if (x.is_null()) return Tensor::IrredTensor<T, B1, B2, S>();
    QuantumNumbers::QuantumNumber q = x.TransformsAs();
    Tensor::IrredTensor<T, B1, B2, S> Result(adjoint(x.Basis1()), adjoint(x.Basis2()), adjoint(q));
-   Result.data() = conj(x.data());
+   Result.data() = conj(copy(x.data()));
    return Result;
 }
 
@@ -675,10 +693,10 @@ template <typename T, typename B1, typename B2, typename S>
 Tensor::IrredTensor<T, B1, B2, S>
 flip_conj(Tensor::IrredTensor<T, B1, B2, S>&& x)
 {
-   if (x.is_null()) return x;
+   //   if (x.is_null()) return Tensor::IrredTensor<T, B1, B2, S>();
    QuantumNumbers::QuantumNumber q = x.TransformsAs();
    Tensor::IrredTensor<T, B1, B2, S> Result(adjoint(x.Basis1()), adjoint(x.Basis2()), adjoint(q));
-   Result.data() = std::move(conj(x.data()));
+   Result.data() = conj(std::move(x.data()));
    return Result;
 }
 
@@ -755,9 +773,8 @@ operator*(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S> const& y
 template <typename T, typename B1, typename B2, typename S, typename U>
 inline
 std::enable_if_t<blas::is_numeric_v<U>, IrredTensor<T, B1, B2, S>>
-operator*(IrredTensor<T, B1, B2, S> x, U const& a)
+operator*(IrredTensor<T, B1, B2, S> Result, U const& a)
 {
-   auto Result(x);
    Result.data() *= a;
    return Result;
 }
@@ -765,9 +782,8 @@ operator*(IrredTensor<T, B1, B2, S> x, U const& a)
 template <typename T, typename B1, typename B2, typename S, typename U>
 inline
 std::enable_if_t<blas::is_numeric_v<U>, IrredTensor<T, B1, B2, S>>
-operator*(U const& a, IrredTensor<T, B1, B2, S> x)
+operator*(U const& a, IrredTensor<T, B1, B2, S> Result)
 {
-   auto Result(x);
    Result.data() *= a;
    return Result;
 }

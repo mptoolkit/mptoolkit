@@ -249,6 +249,8 @@ tensor_prod(IrredTensor<T1, B1, B2, S1> const& ML, IrredTensor<T2, B3, B4, S2> c
    DEBUG_PRECONDITION_EQUAL(ML.Basis2(), PBasis2.Left());
    DEBUG_PRECONDITION_EQUAL(MR.Basis2(), PBasis2.Right());
 
+   using blas::norm_frob;
+
    if (q.is_null())
    {
       QuantumNumbers::QuantumNumberList QL =

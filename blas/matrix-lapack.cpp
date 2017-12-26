@@ -107,4 +107,42 @@ void SingularValueDecomposition(int m, int n, double* A, int ldA, double* D, dou
    delete[] work;
 }
 
+
+
+void SingularValueDecomposition(int m, int m,
+                                std::complex<double>* A, int ldA,
+                                double* D,
+                                std::complex<double>* U, int ldU,
+                                std::complex<double>* VH, int ldVT)
+{
+   char jobu = 'S';
+   char jobvh = 'S';
+   int min_mn = std::min(m,n);
+   DEBUG_CHECK(ldvh != 0); // This corner case is not allowed by LAPACK
+   std::complex<double> worksize;
+   std::complex<double>* work = &worksize;
+   int lwork = -1;
+   int lrwork = 5 * min_mn;
+   Fortran::integer info = 0;
+
+   double* rwork = new double[lrwork];
+
+   // query for the optimial sizes of the workspace
+   LAPACK::zgesvd(jobu, jobvh, m, n, A, ldA, D, U, ldU, VH, ldVH, work, lwork, rwork, info);
+   CHECK(info == 0)("LAPACK::zgesvd")(info);
+
+   lwork = int(work[0].real());
+   work = new std::complex<double>[lwork];
+
+   // do the actual call
+   LAPACK::zgesvd(jobu, jobvh, m, n, A, ldA, D, U, ldU, VH, ldVH, work, lwork, rwork, info);
+   CHECK(info == 0)("LAPACK::zgesvd")(info);
+
+   delete[] work;
+   delete[] rwork;
+}
+
+
 } // namespace blas
+
+

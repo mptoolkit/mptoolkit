@@ -20,10 +20,12 @@
 namespace Tensor
 {
 
+#if 0
 template <typename T, typename B1, typename B2, typename S>
 ReducibleTensor<T, B1, B2, S>::ReducibleTensor()
 {
 }
+#endif
 
 template <typename T, typename B1, typename B2, typename S>
 ReducibleTensor<T, B1, B2, S>::ReducibleTensor(basis1_type const& Basis)
@@ -40,10 +42,11 @@ ReducibleTensor<T, B1, B2, S>::ReducibleTensor(basis1_type const& Basis1,
 
 template <typename T, typename B1, typename B2, typename S>
 template <typename U, typename US>
-ReducibleTensor<T, B1, B2, S>::ReducibleTensor(IrredTensor<U, B1, B2, US> const& x)
+ReducibleTensor<T, B1, B2, S>::ReducibleTensor(IrredTensor<U, B1, B2, US> x)
    : Basis1_(x.Basis1()), Basis2_(x.Basis2())
 {
-   data_[x.TransformsAs()] = x;
+   data_.emplace(std::make_pair(x.TransformsAs(), std::move(x)));
+   //   data_[x.TransformsAs()] = std::move(x);
 }
 
 #if 0
@@ -62,7 +65,7 @@ ReducibleTensor<T, B1, B2, S>::operator+=(ReducibleTensor const& x)
 {
    if (this->is_null())
    {
-      (*this) = x;
+      (*this) = copy(x);
       return *this;
    }
    for (typename ReducibleTensor<T,B1,B2,S>::const_iterator I = x.begin(); I != x.end(); ++I)
@@ -78,7 +81,7 @@ ReducibleTensor<T, B1, B2, S>::operator-=(ReducibleTensor const& x)
 {
    if (this->is_null())
    {
-      (*this) = -x;
+      (*this) = -copy(x);
       return *this;
    }
    for (typename ReducibleTensor<T,B1,B2,S>::const_iterator I = x.begin(); I != x.end(); ++I)
@@ -92,9 +95,9 @@ template <typename T, typename B1, typename B2, typename S>
 ReducibleTensor<T, B1, B2, S>&
 ReducibleTensor<T, B1, B2, S>::operator+=(IrredTensorType const& x)
 {
-   if (this->is_null())
-      (*this) = x;
-   else
+   //   if (this->is_null())
+      //      (*this) = ReducibleTensor<T, B1, B2, S>();
+   //      else
       this->project(x.TransformsAs()) += x;
    return *this;
 }
@@ -103,9 +106,9 @@ template <typename T, typename B1, typename B2, typename S>
 ReducibleTensor<T, B1, B2, S>&
 ReducibleTensor<T, B1, B2, S>::operator-=(IrredTensorType const& x)
 {
-   if (this->is_null())
-      (*this) = -x;
-   else
+   //   if (this->is_null())
+   //      (*this) = -x;
+   //   else
       this->project(x.TransformsAs()) -= x;
    return *this;
 }

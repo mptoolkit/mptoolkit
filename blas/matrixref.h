@@ -30,6 +30,8 @@
 // ADL doesn't find standard blas calls in 2-phase lookup.  So we need to include them
 // before defining the wrapper functions.
 #include "matrix-blas.h"
+#include "matrix-lapack.h"
+#include "functors.h"
 
 namespace blas
 {
@@ -896,14 +898,15 @@ sum(blas::BlasVector<T, U, Tag> const& x, typename Tag::template async_ref<T>& y
 }
 
 template <typename T, typename U, typename Tag>
-typename Tag::template async_ref<T>
+std::remove_reference_t<typename Tag::template async_ref<T>>
 sum(blas::BlasVector<T, U, Tag> const& x)
 {
-   typename Tag::template async_ref<T> y;
+   std::remove_reference_t<typename Tag::template async_ref<T>> y{};
    vector_sum(x.size(), x.storage(), x.stride(), y);
    return y;
 }
 
+#if 0
 template <typename T, typename U, typename V, typename Tag>
 inline
 void
@@ -914,7 +917,22 @@ inner_prod(blas::BlasVector<T, U, Tag> const& x,
    DEBUG_CHECK_EQUAL(x.size(), y.size());
    vector_inner_prod(x.size(), x.storage(), x.stride(), y.storage(), y.stride(), z);
 }
+#endif
 
+template <typename T, typename U, typename V, typename Tag, typename Nested>
+inline
+void
+inner_prod_nested(blas::BlasVector<T, U, Tag> const& x, 
+		  blas::BlasVector<T, V, Tag> const& y, 
+		  typename Tag::template async_ref<T>& z,
+		  Nested&& Nest)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_inner_prod_nested(x.size(), x.storage(), x.stride(), y.storage(), y.stride(), z, 
+			    std::forward<Nested>(Nest));
+}
+
+#if 0
 template <typename T, typename U, typename V, typename Tag>
 inline
 void
@@ -925,18 +943,35 @@ inner_prod(blas::BlasVector<T, U, Tag> const& x,
    DEBUG_CHECK_EQUAL(x.size(), y.size());
    vector_inner_prod(x.size(), x.storage(), x.stride(), y.storage(), y.stride(), z);
 }
+#endif
 
-template <typename T, typename U, typename V, typename Tag>
+template <typename T, typename U, typename V, typename Tag, typename Nested>
+inline
+void
+inner_prod_nested(blas::BlasVector<T, U, Tag> const& x, 
+		  blas::BlasVector<T, V, Tag> const& y, 
+		  typename Tag::template async_proxy<T>&& z, Nested&& Nest)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_inner_prod_nested(x.size(), x.storage(), x.stride(), y.storage(), y.stride(), z, 
+			    std::forward<Nested>(Nest));
+}
+
+#if 0
+template <typename T, typename U, typename V, typename Tag, typename Nested>
 inline
 typename Tag::template async_ref<T>
 inner_prod(blas::BlasVector<T, U, Tag> const& x, 
-	   blas::BlasVector<T, V, Tag> const& y)
+	   blas::BlasVector<T, V, Tag> const& y,
+	   Nested&& Nest)
 {
    typename Tag::template async_ref<T> z;
-   vector_inner_prod(x,y,z);
+   vector_inner_prod(x,y,z, std::forward<Nested>(Nest));
    return z;
 }
+#endif
 
+#if 0
 template <typename T, typename U, typename V, typename Tag>
 inline
 void
@@ -945,17 +980,18 @@ add_inner_prod(blas::BlasVector<T, U, Tag> const& x,
 	       typename Tag::template async_ref<T>& z)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
-   vector_add_inner_prod(x.size(), x.storage(), y.storage(), z);
+   vector_add_inner_prod_nested(x.size(), x.storage(), y.storage(), z, InnerProd());
 }
+#endif
 
-template <typename T, typename U, typename V, typename Tag>
+template <typename T, typename U, typename V, typename Tag, typename Nested>
 inline
 typename Tag::template async_ref<T>
-add_inner_prod(blas::BlasVector<T, U, Tag> const& x, 
-	       blas::BlasVector<T, V, Tag> const& y)
+add_inner_prod_nested(blas::BlasVector<T, U, Tag> const& x, 
+		      blas::BlasVector<T, V, Tag> const& y, Nested&& Nest)
 {
    typename Tag::template async_ref<T> z;
-   vector_add_inner_prod(x,y,z);
+   vector_add_inner_prod_nested(x,y,z,std::forward<Nested>(Nest));
    return z;
 }
 
@@ -1036,16 +1072,18 @@ template <typename T, typename U, typename Tag>
 inline
 void
 norm_frob_sq(blas::BlasMatrix<T, U, Tag> const& x, 
-	     typename Tag::template async_ref<decltype(norm_frob(std::declval<T>()))>& z)
+	     typename Tag::template async_ref<decltype(norm_frob(std::declval<real_t<T>>()))>& z)
 {
    matrix_norm_frob_sq(x.rows(), x.cols(), x.storage(), x.leading_dimension(), z);
 }
 
 template <typename T, typename U, typename Tag>
-decltype(norm_frob(std::declval<T>()))
+//decltype(norm_frob_sq(std::declval<T>()))
+auto
    norm_frob_sq(blas::BlasMatrix<T, U, Tag> const& x)
 {
-   typename Tag::template async_ref<decltype(norm_frob(std::declval<T>()))> z;
+   using blas::norm_frob_sq;
+   typename Tag::template async_ref<decltype(norm_frob_sq(std::declval<T>()))> z;
    norm_frob_sq(x, z);
    return get_wait(z);
 }
@@ -1055,7 +1093,7 @@ decltype(norm_frob(std::declval<T>()))
 template <typename T, typename U, typename Tag>
 inline
 void
-norm_frob(blas::BlasMatrix<T, U, Tag> const& x, 
+norm_frob_sq(blas::BlasMatrix<T, U, Tag> const& x, 
 	  typename Tag::template async_ref<decltype(norm_frob(std::declval<T>()))>& z)
 {
    matrix_norm_frob_sq(x.rows(), x.cols(), x.storage(), x.leading_dimension(), z);
@@ -1066,63 +1104,66 @@ template <typename T, typename U, typename Tag>
 auto
 norm_frob(blas::BlasMatrix<T, U, Tag> const& x)
 {
-   return std::sqrt(norm_frob_sq(x));
+   using std::sqrt;
+   return sqrt(norm_frob_sq(x));
 }
 
-template <typename T, typename U, typename V, typename Tag>
+template <typename T, typename U, typename V, typename Tag, typename Nested>
 inline
 void
-inner_prod(blas::BlasMatrix<T, U, Tag> const& x, 
-	   blas::BlasMatrix<T, V, Tag> const& y, 
-	   typename Tag::template async_ref<T>& z)
+inner_prod_nested(blas::BlasMatrix<T, U, Tag> const& x, 
+		  blas::BlasMatrix<T, V, Tag> const& y, 
+		  typename Tag::template async_ref<T>& z, Nested&& Nest)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
-   matrix_inner_prod(x.trans(), y.trans(), x.rows(), x.cols(), 
-		     x.storage(), x.leading_dimension(), 
-		     y.storage(), y.leading_dimension(),
-		     z);
+   matrix_inner_prod_nested(x.trans(), y.trans(), x.rows(), x.cols(), 
+			    x.storage(), x.leading_dimension(), 
+			    y.storage(), y.leading_dimension(),
+			    z, std::forward<Nested>(Nest));
 }
 
-template <typename T, typename U, typename V, typename Tag>
+template <typename T, typename U, typename V, typename Tag, typename Nested>
 inline
 void
-inner_prod(blas::BlasMatrix<T, U, Tag> const& x, 
-	   blas::BlasMatrix<T, V, Tag> const& y, 
-	   typename Tag::template async_proxy<T>&& z)
+inner_prod_nested(blas::BlasMatrix<T, U, Tag> const& x, 
+		  blas::BlasMatrix<T, V, Tag> const& y, 
+		  typename Tag::template async_proxy<T>&& z, Nested&& Nest)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
-   matrix_inner_prod(x.trans(), y.trans(), x.rows(), x.cols(), 
-		     x.storage(), x.leading_dimension(), 
-		     y.storage(), y.leading_dimension(),
-		     z);
+   matrix_inner_prod_nested(x.trans(), y.trans(), x.rows(), x.cols(), 
+			    x.storage(), x.leading_dimension(), 
+			    y.storage(), y.leading_dimension(),
+			    z, std::forward<Nested>(Nest));
 }
 
-template <typename T, typename U, typename V, typename Tag>
+template <typename T, typename U, typename V, typename Tag, typename Nested>
 inline
 void
-add_inner_prod(blas::BlasMatrix<T, U, Tag> const& x, 
-	       blas::BlasMatrix<T, V, Tag> const& y, 
-	       typename Tag::template async_ref<T>& z)
+add_inner_prod_nested(blas::BlasMatrix<T, U, Tag> const& x, 
+		      blas::BlasMatrix<T, V, Tag> const& y, 
+		      typename Tag::template async_ref<T>& z,
+		      Nested&& Nest)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
-   matrix_add_inner_prod(x.trans(), y.trans(), x.rows(), x.cols(), 
-			 x.storage(), x.leading_dimension(), 
-			 y.storage(), y.leading_dimension(),
-			 z);
+   matrix_add_inner_prod_nested(x.trans(), y.trans(), x.rows(), x.cols(), 
+				x.storage(), x.leading_dimension(), 
+				y.storage(), y.leading_dimension(),
+				z, std::forward<Nested>(Nest));
 }
 
-template <typename T, typename U, typename V, typename Tag>
+template <typename T, typename U, typename V, typename Tag, typename Nested>
 inline
 void
-add_inner_prod(blas::BlasMatrix<T, U, Tag> const& x, 
-	       blas::BlasMatrix<T, V, Tag> const& y, 
-	       typename Tag::template async_ref<T>&& z)
+add_inner_prod_nested(blas::BlasMatrix<T, U, Tag> const& x, 
+		      blas::BlasMatrix<T, V, Tag> const& y, 
+		      typename Tag::template async_ref<T>&& z,
+		      Nested&& Nest)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
-   matrix_add_inner_prod(x.trans(), y.trans(), x.rows(), x.cols(), 
-			 x.storage(), x.leading_dimension(), 
-			 y.storage(), y.leading_dimension(),
-			 z);
+   matrix_add_inner_prod_nested(x.trans(), y.trans(), x.rows(), x.cols(), 
+				x.storage(), x.leading_dimension(), 
+				y.storage(), y.leading_dimension(),
+				z, std::forward<Nested>(Nest));
 }
 
 // middle-level wrappers

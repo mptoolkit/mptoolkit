@@ -96,13 +96,33 @@ vector_inner_prod(int N, std::complex<double> const* x, int incx,
 		  std::complex<double> const* y, int incy,
 		  std::complex<double>& r);
 
+template <typename Nested>
+inline
 void
-vector_add_inner_prod(int N, double const* x, int incx, double const* y, int incy, double& r);
+vector_inner_prod_nested(int N, double const* x, int incx, double const* y, int incy, double& r, Nested&&)
+{
+   vector_inner_prod(N, x, incx, y, incy, r);
+}
 
+template <typename Nested>
 void
-vector_add_inner_prod(int N, std::complex<double> const* x, int incx, 
-		      std::complex<double> const* y, int incy, 
-		      std::complex<double>& r);
+vector_inner_prod_nested(int N, std::complex<double> const* x, int incx, 
+			 std::complex<double> const* y, int incy,
+			 std::complex<double>& r, Nested&&)
+{
+   vector_inner_prod(N, x, incx, y, incy, r);
+}
+
+template <typename T>
+std::enable_if_t<blas::is_numeric_v<T>, void>
+vector_add_inner_prod(int N, T const* x, int incx, T const* y, int incy, T& r);
+
+template <typename T, typename Nested>
+std::enable_if_t<blas::is_numeric_v<T>, void>
+vector_add_inner_prod_nested(int N, T const* x, int incx, T const* y, int incy, T& r, Nested&&)
+{
+   vector_add_inner_prod(N, x, incx, y, incy, r);
+}
 
 //
 // matrix
@@ -113,6 +133,10 @@ void matrix_clear(int N, std::complex<double>* y, int incy);
 
 void matrix_fill(double alpha, int M, int N, double* A, int lda);
 void matrix_fill(std::complex<double> alpha, int M, int N, std::complex<double>* A, int lda);
+
+template <typename T>
+decltype(norm_frob_sq(std::declval<T>()))
+matrix_norm_frob_sq(int M, int N, T const* A, int lda);
 
 void
 matrix_copy(char Atrans, int M, int N, double const* A, int lda, double* B, int ldb);
@@ -158,7 +182,7 @@ matrix_inner_prod(char Atrans, char Btrans, int M, int N,
 		  std::complex<double> const* B, int ldB,
 		  std::complex<double>& r);
 
-
+#if 0
 void
 matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
 		      double const* A, int ldA,
@@ -170,6 +194,27 @@ matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
 		      std::complex<double> const* A, int ldA,
 		      std::complex<double> const* B, int ldB,
 		      std::complex<double>& r);
+#endif
+
+template <typename T, typename Nested>
+std::enable_if_t<std::is_floating_point<T>::value, void>
+matrix_inner_prod_nested(char Atrans, char Btrans, int M, int N,
+			 T const* A, int ldA,
+			 T const* B, int ldB,
+			 T& r, Nested&)
+{
+   matrix_inner_prod(Atrans, Btrans, M, N, A, ldA, B, ldB, r);
+}
+
+template <typename T, typename Nested>
+std::enable_if_t<std::is_floating_point<T>::value, void>
+matrix_inner_prod_nested(char Atrans, char Btrans, int M, int N,
+			 std::complex<T> const* A, int ldA,
+			 std::complex<T> const* B, int ldB,
+			 std::complex<T>& r, Nested&)
+{
+   matrix_inner_prod(Atrans, Btrans, M, N, A, ldA, B, ldB, r);
+}
 
 // level 3
 

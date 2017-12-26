@@ -47,6 +47,7 @@
 #include "common/trace.h"
 #include <cmath>
 #include <type_traits>
+#include "common/types.h"
 
 namespace blas
 {
@@ -269,38 +270,51 @@ struct is_numeric<float128> : std::true_type {};
 template <typename T>
 constexpr bool is_numeric_v = is_numeric<T>::value;
 
-} // namespace blas
+// is_real, is_complex
 
 template <typename T>
+struct is_real : std::is_floating_point<T> {};
+
+template <typename T>
+constexpr bool is_real_v = is_real<T>::value;
+
+template <typename T>
+struct is_complex : std::false_type {};
+
+template <typename T>
+struct is_complex<std::complex<T>> : std::true_type {};
+
+template <typename T>
+constexpr bool is_complex_v = is_complex<T>::value;
+
+} // namespace blas
+
+//
+// remainder of header is in the global namespace
+//
+
+// copy() function for deep copy.  The two generic versions
+// do no-operations for:
+// (1) the case where the type has a copy constructor
+// (2) the case where we are copying a temporary (or moved-from value) and we have a move constructor
+
+// global copy functions
+template <typename T>
 inline
-std::enable_if_t<std::is_floating_point<T>::value, T>
-norm_frob(T x)
+std::enable_if_t<std::is_copy_constructible<T>::value, T>
+copy(T const& x)
 {
    return x;
 }
 
+// for a temporary, the version that takes a universal reference is found first
+// in overload resolution and we can avoid the copy im this case
 template <typename T>
 inline
-T
-norm_frob(std::complex<T> const& x)
+std::enable_if_t<std::is_move_constructible<T>::value && !std::is_lvalue_reference<T>::value, T>
+copy(T&& x) // x is a universal reference here, which isn't really what we want
 {
-   return std::hypot(x.real(), x.imag());
-}
-
-template <typename T>
-inline
-std::enable_if_t<std::is_floating_point<T>::value, T>
-norm_frob_sq(T x)
-{
-   return x*x;
-}
-
-template <typename T>
-inline
-T
-norm_frob_sq(std::complex<T> const& x)
-{
-   return std::norm(x);
+   return std::move(x);
 }
 
 #endif

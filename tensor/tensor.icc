@@ -668,12 +668,13 @@ delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
 
 // trace
 template <typename T, typename B, typename S>
-typename IrredTensor<T, B, B, S>::numeric_type
+std::enable_if_t<!blas::is_numeric_v<T>, blas::remove_proxy_t<decltype(trace(std::declval<T>()))>>
 trace(IrredTensor<T, B, B, S> const& x)
 {
+   using blas::trace;
    CHECK_EQUAL(x.Basis1(), x.Basis2());
-   using numeric_type = typename IrredTensor<T, B, B, S>::numeric_type;
-   Vector_t<numeric_type> Results(x.size1(), 0.0);
+   using numeric_type = blas::remove_proxy_t<decltype(trace(std::declval<T>()))>;
+   blas::Vector<numeric_type, typename T::tag_type> Results(x.size1(), 0.0);
    for (auto const& r : x)
    {
       auto I = r.find(r.row());
@@ -684,5 +685,24 @@ trace(IrredTensor<T, B, B, S> const& x)
    }
    return sum(Results);
 }
+
+template <typename T, typename B, typename S>
+std::enable_if_t<blas::is_numeric_v<T>, T>
+trace(IrredTensor<T, B, B, S> const& x)
+{
+   using blas::trace;
+   CHECK_EQUAL(x.Basis1(), x.Basis2());
+   T Result{};
+   for (auto const& r : x)
+   {
+      auto I = r.find(r.row());
+      if (I != r.end())
+      {
+	 Result += trace(I.value());
+      }
+   }
+   return Result;
+}
+
 
 } // namespace Tensor

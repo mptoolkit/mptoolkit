@@ -33,6 +33,7 @@
 #include <mutex>
 #include <cublas_v2.h>
 #include "cub.h"
+#include "blas/functors.h"
 
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
@@ -158,6 +159,46 @@ setVector(int N, T const* A, int stridea, cuda::gpu_ptr<T> B, int strideb)
    check_error(cublasSetVector(N, sizeof(T), A, stridea, B.device_ptr(), strideb));
 }
 
+// helper forwarding functions
+
+void dotc(cublasHandle_t handle, int n,
+	  float const* x, int incx,
+	  float const* y, int incy,
+	  float* result)
+{
+   cublas::check_error(cublasSdot(handle, n, x, incx, y, incy, result));
+}
+
+void dotc(cublasHandle_t handle, int n,
+	  double const* x, int incx,
+	  double const* y, int incy,
+	  double* result)
+{
+   cublas::check_error(cublasDdot(handle, n, x, incx, y, incy, result));
+}
+
+void dotc(cublasHandle_t handle, int n,
+	  std::complex<float> const* x, int incx,
+	  std::complex<float> const* y, int incy,
+	  std::complex<float>* result)
+{
+   cublas::check_error(cublasCdotc(handle, n, 
+				   reinterpret_cast<cuComplex const*>(x), incx, 
+				   reinterpret_cast<cuComplex const*>(y), incy, 
+				   reinterpret_cast<cuComplex*>(result)));
+}
+
+void dotc(cublasHandle_t handle, int n,
+	  std::complex<double> const* x, int incx,
+	  std::complex<double> const* y, int incy,
+	  std::complex<double>* result)
+{
+   cublas::check_error(cublasZdotc(handle, n, 
+				   reinterpret_cast<cuDoubleComplex const*>(x), incx, 
+				   reinterpret_cast<cuDoubleComplex const*>(y), incy, 
+				   reinterpret_cast<cuDoubleComplex*>(result)));
+}
+
 } // namespace cublas
 
 // BLAS functions must go in namespace cuda so they are found during ADL
@@ -244,96 +285,59 @@ vector_add(int n, cuda::const_gpu_ptr<double> x, int incx,
    vector_add_scaled(n, 1.0, x, incx, y, incy);
 }
 
+template <typename T>
 inline
-void
+std::enable_if_t<is_cuda_floating_point_v<T>, void>
 vector_inner_prod(int n, 
-		  cuda::const_gpu_ptr<float> x, int incx,
-                  cuda::const_gpu_ptr<float> y, int incy,
-		  cuda::gpu_ref<float>& r)
+		  cuda::const_gpu_ptr<T> x, int incx,
+                  cuda::const_gpu_ptr<T> y, int incy,
+		  cuda::gpu_ref<T>& r)
 {
    cublas::handle& H = cublas::get_handle();
    H.set_stream(r.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_DEVICE);
    r.wait(x.sync());
    r.wait(y.sync());
-   cublas::check_error(cublasSdot(H.raw_handle(), n, x.device_ptr(), incx, y.device_ptr(), incy,
-				  r.device_ptr()));
+   cublas::dotc(H.raw_handle(), n, x.device_ptr(), incx, y.device_ptr(), incy, r.device_ptr());
    x.wait(r.sync());
    y.wait(r.sync());
 }
 
+template <typename T>
 inline
-void
-vector_inner_prod(int n, 
-		  cuda::const_gpu_ptr<double> x, int incx,
-                  cuda::const_gpu_ptr<double> y, int incy,
-		  cuda::gpu_ref<double>& r)
+std::enable_if_t<is_cuda_floating_point_v<T>, void>
+vector_inner_prod_nested(int n, 
+			 cuda::const_gpu_ptr<T> x, int incx,
+			 cuda::const_gpu_ptr<T> y, int incy,
+			 cuda::gpu_ref<T>& r, blas::InnerProd)
 {
    cublas::handle& H = cublas::get_handle();
    H.set_stream(r.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_DEVICE);
    r.wait(x.sync());
    r.wait(y.sync());
-   cublas::check_error(cublasDdot(H.raw_handle(), n, x.device_ptr(), incx, y.device_ptr(), incy,
-				  r.device_ptr()));
+   cublas::dotc(H.raw_handle(), n, x.device_ptr(), incx, y.device_ptr(), incy, r.device_ptr());
    x.wait(r.sync());
    y.wait(r.sync());
 }
 
+template <typename T>
 inline
-void
-vector_inner_prod(int n, 
-		  cuda::const_gpu_ptr<std::complex<float>> x, int incx,
-                  cuda::const_gpu_ptr<std::complex<float>> y, int incy,
-		  cuda::gpu_ref<std::complex<float>>& r)
+std::enable_if<is_cuda_floating_point_v<T>, void>
+vector_inner_prod_nested(int n, 
+			 cuda::const_gpu_ptr<T> x, int incx,
+			 cuda::const_gpu_ptr<T> y, int incy,
+			 cuda::gpu_ref<T>& r, blas::InnerProdNested)
 {
    cublas::handle& H = cublas::get_handle();
    H.set_stream(r.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_DEVICE);
    r.wait(x.sync());
    r.wait(y.sync());
-   cublas::check_error(cublasCdotc(H.raw_handle(), n, 
-				   reinterpret_cast<cuComplex const*>(x.device_ptr()), incx, 
-				   reinterpret_cast<cuComplex const*>(y.device_ptr()), incy,
-				   reinterpret_cast<cuComplex*>(r.device_ptr())));
+   cublas::dotc(H.raw_handle(), n, x.device_ptr(), incx, y.device_ptr(), incy, r.device_ptr());
    x.wait(r.sync());
    y.wait(r.sync());
 }
-
-inline
-void
-vector_inner_prod(int n, 
-		  cuda::const_gpu_ptr<std::complex<double>> x, int incx,
-                  cuda::const_gpu_ptr<std::complex<double>> y, int incy,
-		  cuda::gpu_ref<std::complex<double>>& r)
-{
-   cublas::handle& H = cublas::get_handle();
-   H.set_stream(r.get_stream());
-   H.set_pointer_mode(CUBLAS_POINTER_MODE_DEVICE);
-   r.wait(x.sync());
-   r.wait(y.sync());
-   cublas::check_error(cublasZdotc(H.raw_handle(), n, 
-				   reinterpret_cast<cuDoubleComplex const*>(x.device_ptr()), incx, 
-				   reinterpret_cast<cuDoubleComplex const*>(y.device_ptr()), incy,
-				   reinterpret_cast<cuDoubleComplex*>(r.device_ptr())));
-   x.wait(r.sync());
-   y.wait(r.sync());
-}
-
-#if 0
-// alternative implementation in cub.h
-inline
-void
-vector_permute(int n, cuda::const_gpu_ptr<double> x, int incx, cuda::gpu_ptr<double> y, int incy, int const* Perm)
-{
-   CHECK_EQUAL(incx, 1);
-   CHECK_EQUAL(incy, 1);
-   thrust::device_vector<int> DevPerm(Perm, Perm+n);
-   thrust::copy_n(thrust::make_permutation_iterator(thrust::device_pointer_cast(x.device_ptr()), DevPerm.begin()),
-		  n,
-		  thrust::device_pointer_cast(y.device_ptr()));
-}
-#endif
 
 // BLAS level 2
 
@@ -514,18 +518,55 @@ void matrix_clear(int M, int N, cuda::gpu_ptr<double> A, int lda)
 }
 
 template <typename T>
-void
+std::enable_if_t<is_cuda_floating_point_v<T>, void>
 matrix_inner_prod(char Atrans, char Btrans, int M, int N,
 		  cuda::const_gpu_ptr<T> A, int ldA,
 		  cuda::const_gpu_ptr<T> B, int ldB,
 		  cuda::gpu_ref<T>& r);
 
+template <typename T, typename Nested>
+inline
+std::enable_if_t<is_cuda_floating_point_v<T>, void>
+matrix_inner_prod_nested(char Atrans, char Btrans, int M, int N,
+			 cuda::const_gpu_ptr<T> A, int ldA,
+			 cuda::const_gpu_ptr<T> B, int ldB,
+			 cuda::gpu_ref<T>& r, Nested&&)
+{
+   matrix_inner_prod(Atrans, Btrans, M, N, A, ldA, B, ldB, r);
+}
+
 template <typename T>
-void
+std::enable_if_t<is_cuda_floating_point_v<T>, void>
 matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
 		      cuda::const_gpu_ptr<T> A, int ldA,
 		      cuda::const_gpu_ptr<T> B, int ldB,
 		      cuda::gpu_ref<T>& r);
+
+template <typename T, typename Nested>
+inline
+std::enable_if_t<is_cuda_floating_point_v<T>, void>
+matrix_add_inner_prod_nested(char Atrans, char Btrans, int M, int N,
+			     cuda::const_gpu_ptr<T> A, int ldA,
+			     cuda::const_gpu_ptr<T> B, int ldB,
+			     cuda::gpu_ref<T>& r, Nested&&)
+{
+   matrix_add_inner_prod(Atrans, Btrans, M, N, A, ldA, B, ldB, r);
+}
+
+// TODO: this implementation is not ideal
+void
+matrix_norm_frob_sq(int M, int N, const_gpu_ptr<double> A, int lda, gpu_ref<double>& Result)
+{
+   matrix_inner_prod('N', 'N', M, N, A, lda, A, lda, Result);
+}
+
+void
+matrix_norm_frob_sq(int M, int N, const_gpu_ptr<std::complex<double>> A, int lda, gpu_ref<double>& Result)
+{
+   cuda::gpu_ref<std::complex<double>> R;
+   matrix_inner_prod('N', 'N', M, N, A, lda, A, lda, R);
+   Result.set_wait(get_wait(R).real());
+}
 
 // BLAS level 3
 

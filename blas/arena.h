@@ -44,11 +44,11 @@ class AllocatorBase
 
       virtual void free(void* Ptr, std::size_t Size) = 0;
 
-      virtual ~AllocatorBase() = 0;
+      virtual ~AllocatorBase() noexcept = 0;
 };
 
 inline
-AllocatorBase::~AllocatorBase()
+AllocatorBase::~AllocatorBase() noexcept
 {
 }
 
@@ -105,7 +105,7 @@ class MallocAllocator : public AllocatorBase
          std::free(Ptr);
       }
 
-      virtual ~MallocAllocator() {}
+      virtual ~MallocAllocator() noexcept {}
 };
 
 inline

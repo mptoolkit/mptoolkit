@@ -204,10 +204,11 @@ class gpu_buffer
       gpu_buffer() = delete;
 
       // Async version
-      ~gpu_buffer();
+      ~gpu_buffer() noexcept;
 
-      gpu_buffer(gpu_buffer&& other) : Ptr(other.Ptr), ByteSize(other.ByteSize), Stream(std::move(other.Stream)),
-                                       Sync(std::move(other.Sync)), Arena(std::move(other.Arena))
+      gpu_buffer(gpu_buffer&& other) noexcept 
+      : Ptr(other.Ptr), ByteSize(other.ByteSize), Stream(std::move(other.Stream)),
+	Sync(std::move(other.Sync)), Arena(std::move(other.Arena))
       {
          other.Ptr = nullptr;
       }

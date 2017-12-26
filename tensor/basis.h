@@ -40,9 +40,12 @@ using QuantumNumbers::Projection;
 class BasisList
 {
    public:
-      typedef QuantumNumber value_type;
+      using value_type     = QuantumNumber;
+      using const_iterator = QuantumNumbers::QuantumNumberList::const_iterator;
 
       BasisList() {}
+
+      ~BasisList() noexcept = default;
 
       explicit BasisList(QuantumNumbers::SymmetryList const& S) : S_(S) {}
 
@@ -59,7 +62,11 @@ class BasisList
       template <typename FwdIter>
       BasisList(QuantumNumbers::SymmetryList const& S, FwdIter first, FwdIter last);
 
-      typedef QuantumNumbers::QuantumNumberList::const_iterator const_iterator;
+      BasisList(BasisList const& Other) = default;
+      BasisList(BasisList&& Other) = default;
+
+      BasisList& operator=(BasisList const& Other) = default;
+      BasisList& operator=(BasisList&& Other) noexcept = default;
 
       const_iterator begin() const { return Q_.begin(); }
       const_iterator end() const { return Q_.end(); }
@@ -115,7 +122,7 @@ class BasisList
       { return b1.Q_ != b2.Q_; }
 
    friend PStream::opstream& operator<<(PStream::opstream& out, BasisList const& B);
-   friend PStream::ipstream& operator>>(PStream::ipstream& in, BasisList& B);
+      friend PStream::ipstream& operator>>(PStream::ipstream& in, BasisList& B);
    friend BasisList CoerceSymmetryList(BasisList const& b, SymmetryList const& sl)
    __attribute__((warn_unused_result));
 
@@ -196,8 +203,12 @@ class VectorBasis
 
       VectorBasis() {}
 
+      static_assert(std::is_nothrow_move_constructible<BasisList>::value, "");
+      static_assert(std::is_nothrow_move_constructible<std::vector<int> >::value, "");
+
+
       explicit VectorBasis(SymmetryList const& sl);
-      explicit VectorBasis(BasisList const& Basis);
+      explicit VectorBasis(BasisList Basis);
 
       // Constructor from a BasisList and a container of dimensions
       template <typename FwdIter>
@@ -206,6 +217,11 @@ class VectorBasis
       // Constructor from a container of std::pair<QuantumNumber, integer>
       template <typename FwdIter>
       VectorBasis(FwdIter first, FwdIter last);
+
+      VectorBasis(VectorBasis const& Other) = default;
+      VectorBasis(VectorBasis&& Other) noexcept = default;
+      VectorBasis& operator=(VectorBasis const& Other) = default;
+      VectorBasis& operator=(VectorBasis&& Other) noexcept = default;
 
       void push_back(QuantumNumber const& q, int Dimension);
 
@@ -258,8 +274,8 @@ class VectorBasis
       void delta_shift(QuantumNumber const& q);
 
  private:
-      VectorBasis(BasisList const& b, std::vector<int> const& dim)
-         : Basis_(b), Dimension_(dim) {}
+      VectorBasis(BasisList b, std::vector<int> dim)
+         : Basis_(std::move(b)), Dimension_(std::move(dim)) {}
 
       BasisList Basis_;
       std::vector<int> Dimension_;

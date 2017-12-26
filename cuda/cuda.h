@@ -253,6 +253,19 @@ class timer
       cudaEvent_t stop_;
 };
 
+// cuda floating point types
+
+template <typename T>
+struct is_cuda_floating_point : std::false_type {};
+
+template <typename T>
+constexpr bool is_cuda_floating_point_v = is_cuda_floating_point<T>::value;
+
+template <> struct is_cuda_floating_point<float> : std::true_type {};
+template <> struct is_cuda_floating_point<double> : std::true_type {};
+template <> struct is_cuda_floating_point<std::complex<float>> : std::true_type {};
+template <> struct is_cuda_floating_point<std::complex<double>> : std::true_type {};
+
 // copy GPU memory syncronously
 void memcpy_device_to_host(void const* src, void* dest, std::size_t size);
 

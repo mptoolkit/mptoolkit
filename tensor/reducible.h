@@ -72,6 +72,11 @@ template <typename T, typename B1, typename B2, typename S>
 void
 CoerceSymmetryListInPlace(ReducibleTensor<T, B1, B2, S>& t, SymmetryList const& sl);
 
+template <typename T, typename B1, typename B2, typename S>
+inline
+ReducibleTensor<T, B1, B2, S>
+copy(ReducibleTensor<T, B1, B2, S> const& x);
+
 template <typename T, typename Basis1T, typename Basis2T, typename Structure>
 class ReducibleTensor
 {
@@ -111,18 +116,24 @@ class ReducibleTensor
       typedef boost::transform_iterator<GetSecond, map_iterator> iterator;
       typedef boost::transform_iterator<GetSecondConst, const_map_iterator> const_iterator;
 
-      ReducibleTensor();
+      //      ReducibleTensor();
+
+      ReducibleTensor(ReducibleTensor const&) = delete;
+
+      ReducibleTensor(ReducibleTensor&& Other) noexcept = default;
+
+      ReducibleTensor& operator=(ReducibleTensor&& Other) noexcept = default;
 
       ReducibleTensor(basis1_type const& Basis);
       ReducibleTensor(basis1_type const& Basis1, basis2_type const& Basis2);
 
       ReducibleTensor(basis1_type const& Basis1, basis2_type const& Basis2,
 		      data_type&& Data)
-	 : Basis1_(Basis1), Basis2_(Basis2), data_(Data) {}
+	 : Basis1_(Basis1), Basis2_(Basis2), data_(std::move(Data)) {}
 
 
       template <typename U, typename US>
-      ReducibleTensor(IrredTensor<U, basis1_type, basis2_type, US> const& x);
+      ReducibleTensor(IrredTensor<U, basis1_type, basis2_type, US> x);
 
 #if 0
       template <typename U, typename US>
@@ -210,6 +221,10 @@ class ReducibleTensor
       basis2_type Basis2_;
       data_type data_;
 
+      static_assert(std::is_nothrow_move_constructible<basis1_type>::value, "");
+      static_assert(std::is_nothrow_move_constructible<basis2_type>::value, "");
+      static_assert(std::is_nothrow_move_constructible<data_type>::value, "");
+
    template <typename U, typename B1, typename B2, typename S>
    friend class ReducibleTensor;
 
@@ -218,6 +233,8 @@ class ReducibleTensor
 
    friend void CoerceSymmetryListInPlace<>(ReducibleTensor& t, SymmetryList const& sl);
    friend ReducibleTensor CoerceSymmetryList<>(ReducibleTensor const& t, SymmetryList const& sl);
+
+      friend ReducibleTensor copy<T,Basis1T,Basis2T,Structure>(ReducibleTensor const& x);
 };
 
 } // namespace Tensor
@@ -233,7 +250,12 @@ inline
 ReducibleTensor<T, B1, B2, S>
 copy(ReducibleTensor<T, B1, B2, S> const& x)
 {
-   ReducibleTensor<T, B1, B2, S>(x.Basis1(), x.Basis2(), copy(x.data_));
+   typename ReducibleTensor<T, B1, B2, S>::data_type Copy;
+   for (auto const& c : x.data_)
+   {
+      Copy.insert(std::make_pair(c.first, copy(c.second)));
+   }
+   return ReducibleTensor<T, B1, B2, S>(x.Basis1(), x.Basis2(), std::move(Copy));
 }
 
 // project an irred tensor onto some irreducible subspace.
@@ -303,7 +325,7 @@ template <typename T, typename B1, typename B2, typename S>
 void
 inplace_conj(ReducibleTensor<T, B1, B2, S>& x)
 {
-   for (auto const& c : x)
+   for (auto& c : x)
    {
       inplace_conj(c);
    }
@@ -345,7 +367,7 @@ flip_conj(ReducibleTensor<T, B1, B2, S> const& x)
    ReducibleTensor<T, B2, B1, S> Result(adjoint(x.Basis1()), adjoint(x.Basis2()));
    for (auto const& c : x)
    {
-      Result.insert(flip_conj(c.value));
+      Result.insert(flip_conj(c));
    }
    return Result;
 }
@@ -471,7 +493,7 @@ inline
 std::enable_if_t<blas::is_numeric_v<U>, ReducibleTensor<T, B, B, S>>
 operator*(ReducibleTensor<T, B, B, S> const& x, U a)
 {
-   ReducibleTensor<T, B, B, S> Result(x);
+   ReducibleTensor<T, B, B, S> Result(copy(x));
    Result *= a;
    return Result;
 }
@@ -479,9 +501,28 @@ operator*(ReducibleTensor<T, B, B, S> const& x, U a)
 template <typename T, typename B, typename S, typename U>
 inline
 std::enable_if_t<blas::is_numeric_v<U>, ReducibleTensor<T, B, B, S>>
+operator*(ReducibleTensor<T, B, B, S>&& Result, U a)
+{
+   Result *= a;
+   return Result;
+}
+
+
+template <typename T, typename B, typename S, typename U>
+inline
+std::enable_if_t<blas::is_numeric_v<U>, ReducibleTensor<T, B, B, S>>
 operator*(U a, ReducibleTensor<T, B, B, S> const& x)
 {
-   ReducibleTensor<T, B, B, S> Result(x);
+   ReducibleTensor<T, B, B, S> Result(copy(x));
+   Result *= a;
+   return Result;
+}
+
+template <typename T, typename B, typename S, typename U>
+inline
+std::enable_if_t<blas::is_numeric_v<U>, ReducibleTensor<T, B, B, S>>
+operator*(U a, ReducibleTensor<T, B, B, S>&& Result)
+{
    Result *= a;
    return Result;
 }

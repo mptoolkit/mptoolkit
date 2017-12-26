@@ -228,10 +228,11 @@ vector_sum(int N, std::complex<double> const* x, int incx, std::complex<double>&
    r = rr;
 }
 
-void
-vector_inner_prod(int N, double const* x, int incx, double const* y, int incy, double& r)
+template <typename T>
+std::enable_if_t<blas::is_numeric_v<T>, void>
+vector_inner_prod(int N, T const* x, int incx, T const* y, int incy, T& r)
 {
-   double rr = 0.0;
+   T rr = 0.0;
    for (int i = 0; i < N; ++i)
    {
       rr += (*x) * (*y);
@@ -256,25 +257,11 @@ vector_inner_prod(int N, std::complex<double> const* x, int incx,
    r = rr;
 }
 
-void
-vector_add_inner_prod(int N, double const* x, int incx, double const* y, int incy, double& r)
+template <typename T>
+std::enable_if_t<blas::is_numeric_v<T>, void>
+vector_add_inner_prod(int N, T const* x, int incx, T const* y, int incy, T& r)
 {
-   double rr = 0.0;
-   for (int i = 0; i < N; ++i)
-   {
-      rr += (*x) * (*y);
-      x += incx;
-      y += incy;
-   }
-   r += rr;
-}
-
-void
-vector_add_inner_prod(int N, std::complex<double> const* x, int incx, 
-		      std::complex<double> const* y, int incy, 
-		      std::complex<double>& r)
-{
-   std::complex<double> rr = 0.0;
+   T rr = 0.0;
    for (int i = 0; i < N; ++i)
    {
       rr += std::conj(*x) * (*y);
@@ -350,6 +337,24 @@ void matrix_fill(std::complex<double> alpha, int M, int N, std::complex<double>*
    }
 }
 
+template <typename T>
+decltype(norm_frob_sq(std::declval<T>()))
+matrix_norm_frob_sq(int M, int N, T const* A, int lda)
+{
+   decltype(norm_frob_sq(std::declval<T>())) Result{};
+   for (int c = 0; c < N; ++c)
+   {
+      for (int r = 0; r < M; ++r)
+      {
+	 Result += norm_frob_sq(A[c*lda+r]);
+      }
+   }
+   return Result;
+}
+   
+double matrix_norm_frob_sq(int M, int N, std::complex<double>* A, int lda);
+
+
 //
 // matrix_copy
 //
@@ -410,7 +415,7 @@ matrix_copy(char Atrans, int M, int N,
          }
       }
    }
-   else if (Atrans = 'R')
+   else if (Atrans == 'R')
    {
       // conjugate
       for (int c = 0; c < N; ++c)
@@ -423,7 +428,7 @@ matrix_copy(char Atrans, int M, int N,
          B += ldb;
       }
    }
-   else if (Atrans = 'T')
+   else if (Atrans == 'T')
    {
       // transpose
       for (int c = 0; c < N; ++c)
@@ -435,7 +440,7 @@ matrix_copy(char Atrans, int M, int N,
          B += ldb;
       }
    }
-   else if (Atrans = 'C')
+   else if (Atrans == 'C')
    {
       // hermitian conjugate
       for (int c = 0; c < N; ++c)
@@ -497,7 +502,7 @@ matrix_copy_scaled(char Atrans, int M, int N, std::complex<double> alpha,
          B += ldb;
       }
    }
-   else if (Atrans = 'R')
+   else if (Atrans == 'R')
    {
       // conjugate
       for (int c = 0; c < N; ++c)
@@ -510,7 +515,7 @@ matrix_copy_scaled(char Atrans, int M, int N, std::complex<double> alpha,
          B += ldb;
       }
    }
-   else if (Atrans = 'T')
+   else if (Atrans == 'T')
    {
       // transpose
       for (int c = 0; c < N; ++c)
@@ -522,7 +527,7 @@ matrix_copy_scaled(char Atrans, int M, int N, std::complex<double> alpha,
          B += ldb;
       }
    }
-   else if (Atrans = 'C')
+   else if (Atrans == 'C')
    {
       // hermitian conjugate
       for (int c = 0; c < N; ++c)
@@ -588,7 +593,7 @@ matrix_add(char Atrans, int M, int N,
          B += ldb;
       }
    }
-   else if (Atrans = 'R')
+   else if (Atrans == 'R')
    {
       // conjugate
       for (int c = 0; c < N; ++c)
@@ -601,7 +606,7 @@ matrix_add(char Atrans, int M, int N,
          B += ldb;
       }
    }
-   else if (Atrans = 'T')
+   else if (Atrans == 'T')
    {
       // transpose
       for (int c = 0; c < N; ++c)
@@ -613,7 +618,7 @@ matrix_add(char Atrans, int M, int N,
          B += ldb;
       }
    }
-   else if (Atrans = 'C')
+   else if (Atrans == 'C')
    {
       // hermitian conjugate
       for (int c = 0; c < N; ++c)
@@ -675,7 +680,7 @@ matrix_add_scaled(char Atrans, int M, int N, std::complex<double> alpha,
          B += ldb;
       }
    }
-   else if (Atrans = 'R')
+   else if (Atrans == 'R')
    {
       // conjugate
       for (int c = 0; c < N; ++c)
@@ -688,7 +693,7 @@ matrix_add_scaled(char Atrans, int M, int N, std::complex<double> alpha,
          B += ldb;
       }
    }
-   else if (Atrans = 'T')
+   else if (Atrans == 'T')
    {
       // transpose
       for (int c = 0; c < N; ++c)
@@ -700,7 +705,7 @@ matrix_add_scaled(char Atrans, int M, int N, std::complex<double> alpha,
          B += ldb;
       }
    }
-   else if (Atrans = 'C')
+   else if (Atrans == 'C')
    {
       // hermitian conjugate
       for (int c = 0; c < N; ++c)
@@ -712,26 +717,6 @@ matrix_add_scaled(char Atrans, int M, int N, std::complex<double> alpha,
          B += ldb;
       }
    }
-}
-
-void
-matrix_inner_prod(char Atrans, char Btrans, int M, int N,
-		  double const* A, int ldA,
-		  double const* B, int ldB,
-		  double& r)
-{
-   r = 0.0;
-   matrix_add_inner_prod(Atrans, Btrans, M, N, A, ldA, B, ldB, r);
-}
-
-void
-matrix_inner_prod(char Atrans, char Btrans, int M, int N,
-		  std::complex<double> const* A, int ldA,
-		  std::complex<double> const* B, int ldB,
-		  std::complex<double>& r)
-{
-   r = 0.0;
-   matrix_add_inner_prod(Atrans, Btrans, M, N, A, ldA, B, ldB, r);
 }
 
 void
@@ -784,6 +769,28 @@ matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
       PANIC("not yet implemented");
    }
    r += rr;
+}
+
+inline
+void
+matrix_inner_prod(char Atrans, char Btrans, int M, int N,
+		  double const* A, int ldA,
+		  double const* B, int ldB,
+		  double& r)
+{
+   r = 0.0;
+   matrix_add_inner_prod(Atrans, Btrans, M, N, A, ldA, B, ldB, r);
+}
+
+inline
+void
+matrix_inner_prod(char Atrans, char Btrans, int M, int N,
+		  std::complex<double> const* A, int ldA,
+		  std::complex<double> const* B, int ldB,
+		  std::complex<double>& r)
+{
+   r = 0.0;
+   matrix_add_inner_prod(Atrans, Btrans, M, N, A, ldA, B, ldB, r);
 }
 
 } // namespace blas

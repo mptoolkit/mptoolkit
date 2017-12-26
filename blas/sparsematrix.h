@@ -27,6 +27,7 @@
 #include "common/trace.h"
 #include "detail/sparserowiterator.h"
 #include "number_traits.h"
+#include "functors.h"
 #include <vector>
 #include <map>
 
@@ -47,9 +48,10 @@ class BasicSparseVector
       using iterator         = IteratorType;
       using const_iterator   = ConstIteratorType;
 
+      static_assert(std::is_nothrow_move_constructible<value_type>::value, "");
 
       BasicSparseVector() = default;
-      BasicSparseVector(BasicSparseVector&& Other) = default;
+      BasicSparseVector(BasicSparseVector&& Other) noexcept = default;
       BasicSparseVector& operator=(BasicSparseVector&& Other) = default;
       ~BasicSparseVector() = default;
 
@@ -81,20 +83,16 @@ class BasicSparseVector
       template<typename... Args>
       void emplace(int Col, Args&&... args)
       {
-         bool Inserted = Elements.emplace(std::forward<Args>(args)...).second;
-         CHECK(Inserted);
+         bool Inserted = Elements.emplace(std::piecewise_construct, std::forward_as_tuple(Col), 
+					  std::forward_as_tuple(std::forward<Args>(args)...)).second;
+         DEBUG_CHECK(Inserted);
       }
 
-      void insert(int Col, T const& value)
+      template <typename U>
+      void insert(int Col, U&& value)
       {
-         bool Inserted = Elements.insert(std::make_pair(Col, value)).second;
-         CHECK(Inserted);
-      }
-
-      void insert(int Col, T&& value)
-      {
-         bool Inserted = Elements.insert(std::make_pair(Col, std::move(value))).second;
-         CHECK(Inserted);
+         bool Inserted = Elements.insert(std::make_pair(Col, std::forward<U>(value))).second;
+         DEBUG_CHECK(Inserted);
       }
 
       void add(int Col, T const& value)
@@ -116,7 +114,7 @@ class BasicSparseVector
          base_iterator I = Elements.find(Col);
          if (I == Elements.end())
          {
-            Elements.insert(std::make_pair(Col, T(std::move(value))));
+            Elements.emplace(std::make_pair(Col, T(std::move(value))));
          }
          else
          {
@@ -179,9 +177,9 @@ BasicSparseVector<T, U, V>& operator+=(BasicSparseVector<T, U, V>& x, BasicSpars
    return x;
 }
 
-template <typename T, typename U, typename V, typename W, typename X, typename R>
+template <typename T, typename U, typename V, typename W, typename X, typename R, typename Nested>
 void
-inner_prod(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y, R&& result)
+inner_prod_nested(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y, R&& result, Nested&& Nest)
 {
    bool Set = false;
    auto xi = x.begin();
@@ -192,11 +190,11 @@ inner_prod(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y,
       {
 	 if (!Set)
 	 {
-	    inner_prod(xi.value(), yi.value(), static_cast<R&&>(result));
+	    Nest(xi.value(), yi.value(), static_cast<R&&>(result));
 	    Set = true;
 	 }
 	 else
-	    add_inner_prod(xi.value(), yi.value(), static_cast<R&&>(result));
+	    Nest.add(xi.value(), yi.value(), static_cast<R&&>(result));
          ++xi;
          ++yi;
       }
@@ -214,9 +212,20 @@ inner_prod(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y,
    }
 }
 
-template <typename T, typename U, typename V, typename W, typename X, typename R>
+template <typename T, typename U, typename V, typename W, typename X, typename Nested>
+inline
+decltype(std::declval<Nested>()(std::declval<T>(),std::declval<T>()))
+inner_prod_nested(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y, Nested&& Nest)
+{
+   using result_type = decltype(std::declval<Nested>()(std::declval<T>(),std::declval<T>()));
+   result_type R{};
+   inner_prod_nested(x, y, R, std::forward<Nested>(Nest));
+   return R;
+}
+
+template <typename T, typename U, typename V, typename W, typename X, typename R, typename Nested>
 void
-add_inner_prod(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y, R&& result)
+add_inner_prod_nested(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y, R&& result, Nested&& Nest)
 {
    auto xi = x.begin();
    auto yi = y.begin();
@@ -267,7 +276,7 @@ class SparseMatrix
 
       SparseMatrix() = delete;
 
-      SparseMatrix(SparseMatrix&& other) = default;
+      SparseMatrix(SparseMatrix&& other) noexcept = default;
 
       SparseMatrix(SparseMatrix const&) = delete;
 
@@ -280,7 +289,7 @@ class SparseMatrix
          }
       }
 
-      SparseMatrix& operator=(SparseMatrix<T>&& x)
+      SparseMatrix& operator=(SparseMatrix<T>&& x) noexcept
       {
 	 Cols = x.Cols;
 	 RowStorage = std::move(x.RowStorage);
@@ -314,8 +323,7 @@ class SparseMatrix
       template<typename... Args>
       void emplace(int Row, int Col, Args&&... args)
       {
-         bool Inserted = RowStorage[Row].emplace(std::forward<Args>(args)...).second;
-         CHECK(Inserted);
+         RowStorage[Row].emplace(Col, std::forward<Args>(args)...);
       }
 
       template <typename U>
@@ -368,7 +376,7 @@ class SparseMatrix
       }
 
       template <typename U>
-      SparseMatrix operator*=(U const& x)
+      SparseMatrix& operator*=(U const& x)
       {
 	 for (auto& r : RowStorage)
 	 {
@@ -418,41 +426,11 @@ SparseMatrix<T>& operator+=(SparseMatrix<T>& x, SparseMatrix<T>&& Other)
 }
 
 template <typename T>
-SparseMatrix<T>& operator*=(SparseMatrix<T>& x, T const& a)
-{
-   for (auto& r : x)
-   {
-      for (auto& c : r)
-      {
-         c *= a;
-      }
-   }
-   return x;
-}
-
-template <typename T>
-inline
-std::enable_if_t<std::is_copy_constructible<T>::value, T>
-copy(T const& x)
-{
-   return x;
-}
-
-// for a temporary, the version that takes a universal reference is found first
-// in overload resolution and we can avoid the copy im this case
-template <typename T>
-inline
-std::enable_if_t<std::is_move_constructible<T>::value && !std::is_lvalue_reference<T>::value, T>
-copy(T&& x) // x is a universal reference here, which isn't really what we want
-{
-   return std::move(x);
-}
-
-template <typename T>
 inline
 SparseMatrix<T>
 copy(SparseMatrix<T> const& x)
 {
+   using ::copy;
    SparseMatrix<T> Result(x.rows(), x.cols());
    for (auto const& r : x)
    {
@@ -487,6 +465,49 @@ herm(SparseMatrix<T> const& x)
 {
    return SparseMatrixHermitian<SparseMatrix<T>>(x);
 }
+
+// conj
+
+template <typename T>
+inline
+void
+inplace_conj(SparseMatrix<T>& x)
+{
+   for (auto& r : x)
+   {
+      for (auto&& c : r)
+      {
+	 inplace_conj(c.value);
+      }
+   }
+}
+
+template <typename T>
+inline
+SparseMatrix<T>
+conj(SparseMatrix<T> const& x)
+{
+   using std::conj;
+   SparseMatrix<T> Result(x.rows(), x.cols());
+   for (auto const& r : x)
+   {
+      for (auto const& c : r)
+      {
+	 Result.insert(r.row(), c.col(), conj(c.value));
+      }
+   }
+   return Result;
+}
+
+template <typename T>
+inline
+SparseMatrix<T>
+conj(SparseMatrix<T>&& x)
+{
+   inplace_conj(x);
+   return std::move(x);
+}
+
 
 template <typename T, typename U>
 SparseMatrix<remove_proxy_t<decltype(std::declval<T>() * std::declval<U>())>>
@@ -530,13 +551,13 @@ operator*(SparseMatrix<T> const& x, SparseMatrixHermitian<SparseMatrix<U>> const
 	 if (xi != rx.end() && yi != ry.end())
 	 {
 	    // we have an element
-	    element_type E = rx.value * ry.value;
+	    element_type E = xi.value() * yi.value();
 	    // search for others
 	    while (xi != rx.end() && yi != ry.end())
 	    {
 	       if (xi.col() == yi.col())
 	       {
-		  E += rx.value * ry.value;
+		  E += xi.value() * yi.value();
 		  ++xi;
 		  ++yi;
 	       }
@@ -557,7 +578,7 @@ SparseMatrix<remove_proxy_t<decltype(std::declval<T>() * std::declval<U>())>>
 operator*(SparseMatrixHermitian<SparseMatrix<U>> const& x, SparseMatrix<T> const& y)
 {
    using element_type = remove_proxy_t<decltype(std::declval<T>() * std::declval<U>())>;
-   SparseMatrix<element_type> Result(x.rows(), y.base().rows());
+   SparseMatrix<element_type> Result(x.base().cols(), y.cols());
    for (auto const& rx : x.base())
    {
       for (auto const& cx : rx)

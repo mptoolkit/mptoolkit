@@ -143,6 +143,7 @@ BasicOperatorComponent<T>::debug_check_structure() const
 template <typename T>
 void print_structure(BasicOperatorComponent<T> const& Op, std::ostream& out, double UnityEpsilon)
 {
+   using blas::norm_frob;
    for (auto const& r : Op)
    {
       out << '[';

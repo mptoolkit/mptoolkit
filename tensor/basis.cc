@@ -103,8 +103,8 @@ VectorBasis::VectorBasis(SymmetryList const& sl)
 }
 
 inline
-VectorBasis::VectorBasis(BasisList const& Basis)
-   : Basis_(Basis), Dimension_(Basis.size(), 1)
+VectorBasis::VectorBasis(BasisList Basis)
+   : Basis_(std::move(Basis)), Dimension_(Basis_.size(), 1)
 {
 }
 

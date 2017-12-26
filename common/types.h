@@ -54,7 +54,12 @@ struct ScalarTypes
 };
 
 template <typename T>
-struct ScalarTypes<std::complex<T>> : ScalarTypes<T> {};
+struct ScalarTypes<std::complex<T>>
+{
+   using real_t = T;
+   using complex_t = std::complex<T>;
+   using scalar_t = std::complex<T>;
+};
 
 template <typename T>
 using real_t = typename ScalarTypes<T>::real_t;

@@ -122,7 +122,7 @@ class SymmetryListImpl
         return Where == Names.end() ? -1 : Where-Names.begin(); }
 
       // deletes the owned SymmetryBase objects and detaches itself from the instance list
-      ~SymmetryListImpl();
+      ~SymmetryListImpl() noexcept;
 
       // searches the static instance list for an already created list of the same name.
       static SymmetryListImpl* SearchForCreated(std::string const& Name);
@@ -159,16 +159,18 @@ class SymmetryList
 
       SymmetryList();
       SymmetryList(SymmetryList const& QList);
+      SymmetryList(SymmetryList&& Other) noexcept;
 
       explicit SymmetryList(SymmetryListImpl const* Impl);
 
-      ~SymmetryList();
+      ~SymmetryList() noexcept;
 
       // constructs a list from the given Name, which is of the form N:U(1),S:SU(2) etc.
       SymmetryList(std::string const& List);
       SymmetryList(char const* List);
 
       SymmetryList& operator=(SymmetryList const& QList);
+      SymmetryList& operator=(SymmetryList&& QList)  noexcept;
 
       bool is_null() const { return pImpl == NULL; }
 
@@ -364,7 +366,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, SymmetryList& L);
 //
 
 inline
-SymmetryList::~SymmetryList()
+SymmetryList::~SymmetryList() noexcept
 {
 }
 
@@ -372,6 +374,13 @@ inline
 SymmetryList::SymmetryList(SymmetryList const& QList)
   : pImpl(QList.pImpl)
 {
+}
+
+inline
+SymmetryList::SymmetryList(SymmetryList&& QList) noexcept
+  : pImpl(QList.pImpl)
+{
+   QList.pImpl = nullptr;
 }
 
 inline

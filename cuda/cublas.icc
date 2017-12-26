@@ -31,6 +31,24 @@ handle& get_handle()
 template <typename T>
 constexpr T &lvalue(T &&r) noexcept { return r; }
 
+#if 0
+template <typename T>
+void
+matrix_norm_frob_sq(int M, int N,
+		    cuda::const_gpu_ptr<T> A, int ldA,
+		    cuda::gpu_ref<real_t<T>>& r)
+{
+   auto Acc = cuda::allocate_gpu_temporary<T>(N);
+   cuda::gpu_ref<T> CResult;
+   for (int i = 0; i < N; ++i)
+   {
+      vector_inner_prod(M, A+i, 1, A+i, 1, lvalue(Acc[i]));
+   }
+   vector_sum(N, Acc.cptr(), 1, CResult);
+   r = get_wait(CResult).real();  // TODO: implement real() for a gpu_ref of complex
+}
+#endif
+
 template <typename T>
 void
 matrix_inner_prod(char Atrans, char Btrans, int M, int N,

@@ -84,7 +84,7 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
       template <typename U>
       DiagonalMatrix(std::initializer_list<U> x) : DiagonalMatrix(x, tag_type::template default_arena<T>()) {}
 
-      ~DiagonalMatrix() = default;
+      ~DiagonalMatrix() noexcept = default;
 
       DiagonalMatrix& operator=(DiagonalMatrix const& Other)
       {
@@ -211,7 +211,7 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
       template <typename U>
       DiagonalMatrix(std::initializer_list<U> x) : DiagonalMatrix(x, tag_type::template default_arena<T>()) {}
 
-      ~DiagonalMatrix() = default;
+      ~DiagonalMatrix() noexcept = default;
 
       DiagonalMatrix& operator=(DiagonalMatrix const& Other)
       {

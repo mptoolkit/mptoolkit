@@ -30,6 +30,18 @@ BasicStateComponent<T>::BasicStateComponent(BasisList const& SBasis_,
 }
 
 template <typename T>
+BasicStateComponent<T>::BasicStateComponent(BasisList const& SBasis_,
+                                      VectorBasis const& V1,
+					    VectorBasis const& V2, DataType const& D)
+   : SBasis(SBasis_), VBasis1(V1), VBasis2(V2)
+{
+   for (std::size_t i = 0; i < SBasis.size(); ++i)
+   {
+      Data.push_back(copy(D[i]));
+   }
+}
+
+template <typename T>
 BasicStateComponent<T>
 BasicStateComponent<T>::ConstructFullBasis1(BasisList const& S, VectorBasis const& Basis2)
 {

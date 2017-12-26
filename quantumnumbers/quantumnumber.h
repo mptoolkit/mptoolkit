@@ -138,8 +138,10 @@ class RepLabelBase
    protected:
       RepLabelBase();
       RepLabelBase(RepLabelBase const& q);
-      ~RepLabelBase();
+      RepLabelBase(RepLabelBase&& Other) = default;
+      ~RepLabelBase() noexcept;
       RepLabelBase& operator=(RepLabelBase const& q);
+      RepLabelBase& operator=(RepLabelBase&& q) noexcept;
 
       // assigns the quantum number list, and allocates the storage array, does not initialize it
       RepLabelBase(SymmetryListImpl const* q, int Size);
@@ -187,6 +189,12 @@ class QuantumNumber : public RepLabelBase<QuantumNumber>
       QuantumNumber();
 
       // Compiler-generated copy ctor/assignment are OK
+
+      QuantumNumber(QuantumNumber const& Other) = default;
+      QuantumNumber(QuantumNumber&& Other) noexcept = default;
+
+      QuantumNumber& operator=(QuantumNumber const& Other) = default;
+      QuantumNumber& operator=(QuantumNumber&& Other) noexcept = default;
 
       // assigns the identity quantum number to this
       explicit QuantumNumber(SymmetryList const& q);
@@ -359,13 +367,10 @@ class QuantumNumberList
       explicit QuantumNumberList(size_t Size, QuantumNumber const& q = QuantumNumber())
          : Impl(Size, q) {}
 
-      QuantumNumberList(QuantumNumberList const& q) : Impl(q.Impl) {}
+      // compiler generated copy/assignment/move are OK
 
       template <typename FwdIter>
       QuantumNumberList(FwdIter first, FwdIter last) : Impl(first, last) {}
-
-      QuantumNumberList& operator=(QuantumNumberList const& q)
-      { Impl = q.Impl; return *this; }
 
       void push_back(QuantumNumber const& q)
       { DEBUG_CHECK(Impl.empty() || q.GetSymmetryList() == Impl.back().GetSymmetryList());

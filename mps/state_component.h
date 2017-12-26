@@ -61,6 +61,10 @@ template <typename T>
 PStream::ipstream& operator>>(PStream::ipstream& in, BasicStateComponent<T>& Op);
 
 template <typename T>
+BasicStateComponent<T>
+copy(BasicStateComponent<T> const& Other);
+
+template <typename T>
 struct BasicStateComponent
 {
    typedef T value_type;
@@ -74,12 +78,15 @@ struct BasicStateComponent
 
    typedef VectorBasis BasisType;
 
-   BasicStateComponent() {}
+   //BasicStateComponent() {}
 
    BasicStateComponent(BasisList const& SBasis_, VectorBasis const& V1,
                     VectorBasis const& V2);
 
-   BasicStateComponent(BasicStateComponent const& Other) = default;
+   BasicStateComponent(BasicStateComponent const& Other) = delete;
+   BasicStateComponent(BasicStateComponent&& Other) noexcept = default;
+
+   BasicStateComponent& operator=(BasicStateComponent&& Other) noexcept = default;
 
    template <typename U>
    BasicStateComponent(BasicStateComponent<U> const& Other)
@@ -146,7 +153,19 @@ struct BasicStateComponent
    //   template <typename U>
    //   friend class BasicStateComponent<U>;
 
+   BasicStateComponent(BasisList const& SBasis_, VectorBasis const& V1,
+		       VectorBasis const& V2, DataType const& D);
+
+   friend BasicStateComponent<T> copy<T>(BasicStateComponent<T> const& Other);
+
 };
+
+template <typename T>
+BasicStateComponent<T>
+copy(BasicStateComponent<T> const& Other)
+{
+   return BasicStateComponent<T>(Other.SBasis, Other.VBasis1, Other.VBasis2, Other.Data);
+}
 
 template <typename T>
 void

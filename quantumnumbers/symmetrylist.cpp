@@ -93,7 +93,7 @@ SymmetryListImpl::SymmetryListImpl(std::string const& FName_)
    MyInstance = Instances->begin();
 }
 
-SymmetryListImpl::~SymmetryListImpl()
+SymmetryListImpl::~SymmetryListImpl() noexcept
 {
    QN_TRACE("SymmetryListImpl::~SymmetryListImpl()")(this);
 

@@ -69,7 +69,7 @@ RepLabelBase<Tag>::RepLabelBase(SymmetryListImpl const* q, int Size, InputIter I
 
 template <typename Tag>
 inline
-RepLabelBase<Tag>::~RepLabelBase()
+RepLabelBase<Tag>::~RepLabelBase() noexcept
 {
 }
 
@@ -80,6 +80,16 @@ RepLabelBase<Tag>::operator=(RepLabelBase<Tag> const& q)
    Storage = q.Storage;
    return *this;
 }
+
+template <typename Tag>
+RepLabelBase<Tag>&
+RepLabelBase<Tag>::operator=(RepLabelBase<Tag>&& q) noexcept
+{
+   using std::swap;
+   swap(Storage, q.Storage);
+   return *this;
+}
+
 
 template <typename Tag>
 inline

@@ -133,3 +133,7 @@ geam(char Atrans, char Btrans, int M, int N, T alpha, T const* A, int lda,
 void matrix_inner_prod(char Atrans, char Btrans, int M, int N, T const* A, int lda,  T const* B, int ldb, T& z)
 
 void matrix_add_inner_prod(char Atrans, char Btrans, int M, int N, T const* A, int lda,  T const* B, int ldb, T& z)
+
+matrix_inner_prod_nested
+
+matrix_norm_frob_sq

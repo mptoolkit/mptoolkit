@@ -40,6 +40,7 @@ using Tensor::SumBasis;
 using Tensor::HermitianProxy;
 using QuantumNumbers::SymmetryList;
 
+#if 1
 template <typename T>
 class BasicOperatorComponent;
 
@@ -50,6 +51,11 @@ operator<<(PStream::opstream& out, BasicOperatorComponent<T> const& Op);
 template <typename T>
 PStream::ipstream&
 operator>>(PStream::ipstream& in, BasicOperatorComponent<T>& Op);
+
+template <typename T>
+BasicOperatorComponent<T>
+copy(BasicOperatorComponent<T> const& x);
+#endif
 
 template <typename T>
 class BasicOperatorComponent
@@ -67,14 +73,9 @@ class BasicOperatorComponent
       using iterator       = typename data_type::iterator;
       using const_iterator = typename data_type::const_iterator;
 
-      BasicOperatorComponent() {}
-
-      BasicOperatorComponent(BasicOperatorComponent&& Other) = default;
-
-      BasicOperatorComponent(BasicOperatorComponent const& Other)
-	 : LocalBasis1_(Other.LocalBasis1_), LocalBasis2_(Other.LocalBasis2_),
-	   Basis1_(Other.Basis1_), Basis2_(Other.Basis2_),
-	   Data_(Other.Data_) {}
+      static_assert(std::is_nothrow_move_constructible<data_type>::value, "");
+      static_assert(std::is_nothrow_destructible<data_type>::value, "");
+      static_assert(std::is_destructible<data_type>::value, "");
 
       // Construction of an empty BasicOperatorComponent.  The local basis comes first.
       BasicOperatorComponent(BasisList const& LocalB,
@@ -82,15 +83,12 @@ class BasicOperatorComponent
       BasicOperatorComponent(BasisList const& LocalB1, BasisList const& LocalB2,
                         BasisList const& B1, BasisList const& B2);
 
-      BasicOperatorComponent& operator=(BasicOperatorComponent&& Other)
-      {
-	 LocalBasis1_ = std::move(Other.LocalBasis1_);
-	 LocalBasis2_ = std::move(Other.LocalBasis2_);
-	 Basis1_ = std::move(Other.Basis1_);
-	 Basis2_ = std::move(Other.Basis2_);
-	 Data_ = std::move(Other.Data_);
-	 return *this;
-      }
+      BasicOperatorComponent(BasicOperatorComponent&& Other) noexcept = default;
+
+      ~BasicOperatorComponent() noexcept = default;
+
+      BasicOperatorComponent& operator=(BasicOperatorComponent const& Other) = delete;
+      BasicOperatorComponent& operator=(BasicOperatorComponent&& Other) noexcept = default;
 
       SymmetryList const& GetSymmetryList() const
       { return LocalBasis1_.GetSymmetryList(); }
@@ -102,13 +100,12 @@ class BasicOperatorComponent
       BasisList const& LocalBasis2() const { return LocalBasis2_; }
 
       template <typename U>
-      BasicOperatorComponent operator*=(U const& x)
+      BasicOperatorComponent& operator*=(U const& x)
       { Data_ *= x; return *this; }
 
       BasicOperatorComponent& operator+=(BasicOperatorComponent const& x);
       BasicOperatorComponent& operator-=(BasicOperatorComponent const& x);
 
-#if 0
       // element access.  Returns a zero operator if the component does not exist.
       value_type operator()(int i, int j) const;
 
@@ -122,7 +119,6 @@ class BasicOperatorComponent
       // returns true if this matrix is in lower-triangular form.  This is only
       // useful if the matrix is square.
       bool is_lower_triangular() const;
-#endif
 
       // returns the top-left entry, equivalent to operator()(0,0)
       value_type top_left() const;
@@ -213,11 +209,40 @@ class BasicOperatorComponent
       friend PStream::ipstream&
       operator>> <T>(PStream::ipstream& in, BasicOperatorComponent<T>& Op);
 
+      friend BasicOperatorComponent copy<T>(BasicOperatorComponent const& x);
+
+      static_assert(std::is_nothrow_move_constructible<BasisList>::value, "");
+      static_assert(std::is_nothrow_move_constructible<data_type>::value, "");
+      static_assert(std::is_nothrow_destructible<BasisList>::value, "");
+      static_assert(std::is_nothrow_destructible<data_type>::value, "");
+
+      BasicOperatorComponent(BasisList const& LocalB1, BasisList const& LocalB2,
+			     BasisList const& B1, BasisList const& B2,
+			     data_type const& Data)
+	 : LocalBasis1_(LocalB1), LocalBasis2_(LocalB2), Basis1_(B1), Basis2_(B2),
+	   Data_(copy(Data)) {}
+
    private:
-      BasisList LocalBasis1_, LocalBasis2_;
-      BasisList Basis1_, Basis2_;
+      BasisList LocalBasis1_;
+      BasisList LocalBasis2_;
+      BasisList Basis1_;
+      BasisList Basis2_;
       data_type Data_;
 };
+
+using OperatorComponent = BasicOperatorComponent<complex>;
+
+static_assert(std::is_nothrow_destructible<OperatorComponent>::value, "");
+static_assert(std::is_destructible<OperatorComponent>::value, "");
+static_assert(std::is_nothrow_move_constructible<OperatorComponent>::value, "");
+
+
+template <typename T>
+BasicOperatorComponent<T>
+copy(BasicOperatorComponent<T> const& x)
+{
+   return BasicOperatorComponent<T>(x.LocalBasis1(), x.LocalBasis2(), x.Basis1(), x.Basis2(), x.Data_);
+}
 
 template <typename T>
 inline
@@ -227,7 +252,6 @@ herm(BasicOperatorComponent<T> const& x)
    return HermitianProxy<BasicOperatorComponent<T>>(x);
 }
 
-using OperatorComponent = BasicOperatorComponent<complex>;
 
 template <typename T>
 std::ostream&
@@ -245,6 +269,7 @@ void print_structure(BasicOperatorComponent<T> const& Op, std::ostream& out)
    print_structure(Op, out, DefaultClassifyUnityEpsilon<T>);
 }
 
+#if 0
 template <typename T>
 inline
 BasicOperatorComponent<T>
@@ -269,6 +294,7 @@ BasicOperatorComponent<T>::make_identity(BasisList const& LocalBasis, BasisList 
    }
    return Result;
 }
+#endif
 
 // Constructs an MPO that represents a shift operator
 //     |
@@ -299,6 +325,7 @@ translate_right(BasisList const& LeftBasis, BasisList const& ThisBasis);
 
 OperatorComponent adjoint(OperatorComponent const& x)
 {
+   //   static_assert(std::is_nothrow_move_constructible<OperatorComponent>::value, "");
    OperatorComponent Result(x.LocalBasis2(), x.LocalBasis1(), adjoint(x.Basis1()), adjoint(x.Basis2()));
    for (auto const& r : x)
    {
@@ -510,8 +537,8 @@ contract_from_right(HermitianProxy<OperatorComponent> const& M,
                     HermitianProxy<StateComponent> const& B)
 {
    // TODO: optimize this implementation
-   StateComponent AX = A;
-   StateComponent BX = B.base();
+   StateComponent AX = copy(A);
+   StateComponent BX = copy(B.base());
    return contract_from_right(M, AX, F, herm(BX));
 }
 
@@ -689,6 +716,6 @@ update_mask_basis2(std::vector<int> const& Mask1, OperatorComponent const& Op, s
 MatrixOperator ExpandBasis1Used(StateComponent& A, OperatorComponent const& Op);
 MatrixOperator ExpandBasis2Used(StateComponent& A, OperatorComponent const& Op);
 
-#include "operator_component.cc"
+#include "operator_component.icc"
 
 #endif

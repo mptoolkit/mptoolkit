@@ -117,6 +117,8 @@ tensor_sum(OperatorComponent const& A, OperatorComponent const& B,
    DEBUG_CHECK_EQUAL(A.LocalBasis1(), B.LocalBasis1());
    DEBUG_CHECK_EQUAL(A.LocalBasis2(), B.LocalBasis2());
 
+   using ::copy;
+
    OperatorComponent Result(A.LocalBasis1(), A.LocalBasis2(), B1.Basis(), B2.Basis());
 
    // set the matrix elements corresponding to operator A (subspace 0 in the SumBasis)
@@ -124,7 +126,7 @@ tensor_sum(OperatorComponent const& A, OperatorComponent const& B,
    {
       for (auto const& c : r)
       {
-         Result.insert(B1(0,r.row()), B2(0,c.col()), c.value);
+         Result.insert(B1(0,r.row()), B2(0,c.col()), copy(c.value));
       }
    }
 
@@ -133,7 +135,7 @@ tensor_sum(OperatorComponent const& A, OperatorComponent const& B,
    {
       for (auto const& c : r)
       {
-         Result.insert(B1(1,r.row()), B2(1,c.col()), c.value);
+         Result.insert(B1(1,r.row()), B2(1,c.col()), copy(c.value));
       }
    }
    Result.debug_check_structure();
@@ -149,6 +151,8 @@ tensor_row_sum(OperatorComponent const& A,
    DEBUG_CHECK_EQUAL(A.LocalBasis2(), B.LocalBasis2());
    DEBUG_CHECK_EQUAL(A.Basis1(), B.Basis1());
 
+   using ::copy;
+
    OperatorComponent Result(A.LocalBasis1(), A.LocalBasis2(), A.Basis1(), B2.Basis());
 
    // set the matrix elements corresponding to operator A (subspace 0 in the SumBasis)
@@ -156,7 +160,7 @@ tensor_row_sum(OperatorComponent const& A,
    {
       for (auto const& c : r)
       {
-         Result.insert(r.row(), B2(0,c.col()), c.value);
+         Result.insert(r.row(), B2(0,c.col()), copy(c.value));
       }
    }
 
@@ -165,7 +169,7 @@ tensor_row_sum(OperatorComponent const& A,
    {
       for (auto const& c : r)
       {
-         Result.insert(r.row(), B2(1,c.col()), c.value);
+         Result.insert(r.row(), B2(1,c.col()), copy(c.value));
       }
    }
    Result.debug_check_structure();
@@ -192,6 +196,8 @@ tensor_col_sum(OperatorComponent const& A,
    DEBUG_CHECK_EQUAL(A.LocalBasis2(), B.LocalBasis2());
    DEBUG_CHECK_EQUAL(A.Basis2(), B.Basis2());
 
+   using ::copy;
+
    OperatorComponent Result(A.LocalBasis1(), A.LocalBasis2(), B1.Basis(), A.Basis2());
 
    // set the matrix elements corresponding to operator A (subspace 0 in the SumBasis)
@@ -199,7 +205,7 @@ tensor_col_sum(OperatorComponent const& A,
    {
       for (auto const& c : r)
       {
-         Result.insert(B1(0,r.row()), c.col(), c.value);
+         Result.insert(B1(0,r.row()), c.col(), copy(c.value));
       }
    }
 
@@ -208,7 +214,7 @@ tensor_col_sum(OperatorComponent const& A,
    {
       for (auto const& c : r)
       {
-         Result.insert(B1(0,r.row()), c.col(), c.value);
+         Result.insert(B1(0,r.row()), c.col(), copy(c.value));
       }
    }
    Result.debug_check_structure();
@@ -220,9 +226,9 @@ tensor_col_sum(OperatorComponent const& A,
                OperatorComponent const& B)
 {
    if (A.is_null())
-      return B;
+      return copy(B);
    if (B.is_null())
-      return A;
+      return copy(A);
    return tensor_col_sum(A, B, SumBasis<BasisList>(A.Basis1(), B.Basis1()));
 }
 
@@ -234,7 +240,7 @@ OperatorComponent prod(OperatorComponent const& A, SimpleOperator const& Op, dou
    OperatorComponent Result(A.LocalBasis1(), A.LocalBasis2(), A.Basis1(), Op.Basis2());
    // for our convention on the coupling constants, this should be a trivial operation
    // of a standard matrix-matrix multiply (the nested operation is a SimpleRedOperator * scalar)
-   Result.data() = A.data() * Op.data();
+   Result.data() = copy(A.data()) * Op.data();
    return Result;
 }
 
@@ -281,6 +287,8 @@ triple_prod(SimpleOperator const& x,
 OperatorComponent local_tensor_prod(OperatorComponent const& A, OperatorComponent const& B)
 {
    DEBUG_PRECONDITION_EQUAL(A.Basis2(), B.Basis1());
+
+   using blas::norm_frob;
 
    ProductBasis<BasisList, BasisList> LB1(A.LocalBasis1(), B.LocalBasis1());
    ProductBasis<BasisList, BasisList> LB2(A.LocalBasis2(), B.LocalBasis2());
@@ -399,6 +407,8 @@ local_inner_tensor_prod(HermitianProxy<OperatorComponent> const& A, OperatorComp
 {
    DEBUG_PRECONDITION_EQUAL(A.base().Basis1(), B.Basis1());
 
+   using blas::norm_frob;
+
    ProductBasis<BasisList, BasisList> PBasis1(adjoint(A.base().Basis1()), B.Basis1());
    ProductBasis<BasisList, BasisList> PBasis2(adjoint(A.base().Basis2()), B.Basis2());
 
@@ -429,7 +439,7 @@ local_inner_tensor_prod(HermitianProxy<OperatorComponent> const& A, OperatorComp
 			   if (!is_transform_target(PBasis2[b2], Ident, PBasis1[b1]))
 			      continue;
 
-			   real Coeff = tensor_coefficient(PBasis1, PBasis2,
+			   auto Coeff = tensor_coefficient(PBasis1, PBasis2,
 							   adjoint(Areduced.TransformsAs()), Breduced.TransformsAs(), Ident,
 							   rA.row(), rB.row(), b1,
 							   cA.col(), cB.col(), b2);
@@ -487,6 +497,8 @@ OperatorComponent aux_tensor_prod(OperatorComponent const& ML, OperatorComponent
    DEBUG_PRECONDITION_EQUAL(ML.LocalBasis2(), MR.LocalBasis1());
    ProductBasis<BasisList, BasisList> PBasis1(ML.Basis1(), MR.Basis1());
    ProductBasis<BasisList, BasisList> PBasis2(ML.Basis2(), MR.Basis2());
+
+   using blas::norm_frob;
 
    OperatorComponent Result(ML.LocalBasis1(), MR.LocalBasis2(), PBasis1.Basis(), PBasis2.Basis());
 
@@ -663,6 +675,8 @@ SimpleOperator TruncateBasis1(OperatorComponent& A)
    // We cannot safely remove rows that are merely linearly dependent on the previous
    // rows without potential trouble with catastrophic cancellation.
 
+   using blas::norm_frob;
+
    // if the operator is trivially zero, then return early
    if (A.Basis1().size() == 0)
    {
@@ -780,6 +794,8 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
    // For a BasicTriangularMPO the first column will contain the identity.
    // We don't have to worry about accidentally eliminating the last column of a triangular MPO,
    // since if it is triangular then the last column cannot be parallel to anything else.
+
+   using blas::norm_frob;
 
    // if the operator is trivially zero, then return early
    if (A.Basis2().size() == 0)
@@ -1609,6 +1625,8 @@ operator_prod_inner(HermitianProxy<OperatorComponent> const& M,
 OperatorComponent
 project_rows(OperatorComponent const& x, std::set<int> const& Rows)
 {
+   using ::copy;
+   
    BasisList ProjectedBasis(x.Basis1().GetSymmetryList());
    std::vector<int> Map(x.Basis1().size(), -1);
    for (std::set<int>::const_iterator I = Rows.begin(); I != Rows.end(); ++I)
@@ -1625,7 +1643,7 @@ project_rows(OperatorComponent const& x, std::set<int> const& Rows)
 
       for (auto const& c : r)
       {
-	 Result.insert(Map[r.row()], c.col(), c.value);
+	 Result.insert(Map[r.row()], c.col(), copy(c.value));
       }
    }
 
@@ -1636,6 +1654,8 @@ project_rows(OperatorComponent const& x, std::set<int> const& Rows)
 OperatorComponent
 project_columns(OperatorComponent const& x, std::set<int> const& Cols)
 {
+   using ::copy;
+
    BasisList ProjectedBasis(x.Basis2().GetSymmetryList());
    std::vector<int> Map(x.Basis2().size(), -1);
    for (std::set<int>::const_iterator I = Cols.begin(); I != Cols.end(); ++I)
@@ -1651,7 +1671,7 @@ project_columns(OperatorComponent const& x, std::set<int> const& Cols)
       {
 	 if (Map[c.col()] >= 0)
 	 {
-	    Result.insert(r.row(), Map[c.col()], c.value);
+	    Result.insert(r.row(), Map[c.col()], copy(c.value));
 	 }
       }
    }
@@ -1746,8 +1766,7 @@ decompose_tensor_prod(SimpleOperator const& Op,
                   (std::get<1>(RightReverse[x]), std::get<2>(RightReverse[x])) = Vh(k,x) * Coeff;
             }
          }
-
-         Result.push_back(std::make_pair(L, R));
+         Result.emplace_back(std::move(L),std::move(R));
       }
    }
 
@@ -1986,6 +2005,10 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
    OperatorComponent MA(B1.Left(), B2.Left(), Op.Basis1(), Inner);
    OperatorComponent MB(B1.Right(), B2.Right(), Inner, Op.Basis2());
 
+   //   static_assert(std::is_nothrow_move_constructible<OperatorComponent>::value, "");
+
+   return std::pair<OperatorComponent,OperatorComponent>(std::move(MA), std::move(MB));
+
    int b = 0; // linear index into the Inner basis
    for (DecomposedByQuantumType::const_iterator Q = DecomposedOperator.begin();
         Q != DecomposedOperator.end(); ++Q)
@@ -2033,7 +2056,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
       (MA)(MB);
 #endif
 
-   return std::make_pair(MA, MB);
+   return std::make_pair(std::move(MA), std::move(MB));
 }
 
 std::pair<OperatorComponent, OperatorComponent>
@@ -2043,7 +2066,7 @@ decompose_local_tensor_prod(SimpleOperator const& Op,
 {
    OperatorComponent OpC(Op.Basis1(), Op.Basis2(),
                          make_single_basis(Op.TransformsAs()), make_vacuum_basis(Op.GetSymmetryList()));
-   OpC.insert(0, 0, Op);
+   OpC.insert(0, 0, copy(Op));
    return decompose_local_tensor_prod(OpC, B1, B2);
 }
 

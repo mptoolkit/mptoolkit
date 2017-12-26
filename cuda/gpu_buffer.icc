@@ -127,10 +127,11 @@ gpu_buffer<T>::cptr(int Offset) const
 }
 
 template <typename T>
-gpu_buffer<T>::~gpu_buffer()
+gpu_buffer<T>::~gpu_buffer() noexcept
 {
    if (Stream.is_running())
    {
+      // TODO: this might actually throw - ideally we want a no-throw guarantee here
       AddToPendingDelete(Stream, Arena, Ptr, ByteSize);
    }
    else

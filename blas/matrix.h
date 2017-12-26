@@ -115,7 +115,7 @@ class Matrix : public NormalMatrix<T, Matrix<T, Tag>, Tag>
       Matrix(std::initializer_list<std::initializer_list<U>> x)
          : Matrix(x, tag_type::template default_arena<T>()) {}
 
-      ~Matrix() = default;
+      ~Matrix() noexcept = default;
 
       Matrix& operator=(Matrix const& Other)
       {
@@ -259,14 +259,6 @@ copy(Matrix<T, Tag_Type> const& x)
    Matrix<T, Tag_Type> Result(x.rows(), x.cols());
    Result = x;
    return Result;
-}
-
-template <typename T, typename Tag_Type>
-inline
-Matrix<T, Tag_Type>
-copy(Matrix<T, Tag_Type>&& x)
-{
-   return std::move(x);
 }
 
 // random_matrix
