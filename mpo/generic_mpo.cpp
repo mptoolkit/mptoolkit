@@ -147,33 +147,31 @@ void zero_unused_elements(GenericMPO& Op)
       std::set<int> RowsToKeep;
       for (unsigned i = 0; i < I->size1(); ++i)
          for (unsigned j = 0; j < I->size2(); ++j)
-            if (I->iterate_at(i,j))
-               {
-                  RowsToKeep.insert(j);
-               }
+	    if (I->exists(i,j))
+	    {
+	       RowsToKeep.insert(j);
+	    }
       ++I;
 
       while (I != Op.end())
       {
-         OperatorComponent Current = *I;
-         for (unsigned i = 0; i < Current.size1(); ++i)
+         for (unsigned i = 0; i < I->size1(); ++i)
          {
-            for (unsigned j = 0; j < Current.size2(); ++j)
+            for (unsigned j = 0; j < I->size2(); ++j)
             {
-               if (!Current.iterate_at(i,j))
+               if (!I->exists(i,j))
                   continue;
 
                if (RowsToKeep.count(i))
                   NextKeep.insert(j);
                else
                {
-                  zero_element(Current.data(), i,j);
+		  I->erase(i,j);
                   Done = false;
                }
 
             }
          }
-         *I = Current;
 
          RowsToKeep = NextKeep;
          NextKeep.clear();
@@ -186,32 +184,30 @@ void zero_unused_elements(GenericMPO& Op)
       std::set<int> ColumnsToKeep;
       for (unsigned i = 0; i < I->size1(); ++i)
          for (unsigned j = 0; j < I->size2(); ++j)
-            if (I->iterate_at(i,j))
+            if (I->exists(i,j))
                ColumnsToKeep.insert(i);
 
       while (I != Op.begin())
       {
          --I;
 
-         OperatorComponent Current = *I;
-         for (unsigned i = 0; i < Current.size1(); ++i)
+         for (unsigned i = 0; i < I->size1(); ++i)
          {
-            for (unsigned j = 0; j < Current.size2(); ++j)
+            for (unsigned j = 0; j < I->size2(); ++j)
             {
-               if (!Current.iterate_at(i,j))
+               if (!I->exists(i,j))
                   continue;
 
                if (ColumnsToKeep.count(j))
                   NextKeep.insert(i);
                else
                {
-                  zero_element(Current.data(), i,j);
+		  I->erase(i,j);
                   Done = false;
                }
 
             }
          }
-         *I = Current;
 
          ColumnsToKeep = NextKeep;
          NextKeep.clear();
@@ -223,29 +219,24 @@ void zero_unused_elements(GenericMPO& Op)
 bool update_mask(OperatorComponent const& x, OperatorComponent const& y,
                  std::vector<int> const& M1, std::vector<int>& Mask, std::vector<int> const& M2)
 {
-   typedef OperatorComponent::data_type OpMatrixType;
-   typedef OpMatrixType::outer_value_type VecOfVecType;
-   //   typedef VecOfVecType::value_type InnerType;
-   typedef LinearAlgebra::MapVector<SimpleRedOperator> InnerType;
-
    bool Updated = false;
-   for (const_iterator<OperatorComponent::data_type>::type I = iterate(x.data()); I; ++I)
+   for (auto const& I : x)
    {
-      if (!M1[I.index()])
+      if (!M1[I.row()])
          continue;
 
-      for (const_inner_iterator<OperatorComponent::data_type>::type J = iterate(I); J; ++J)
+      for (auto const& J : I)
       {
          //         if (M1[J.index1()] && Mask[J.index2()])
-         if (Mask[J.index2()])
+         if (Mask[J.col()])
          {
-            const_iterator<InnerType>::type K = iterate(y.data().vec()[J.index2()]);
-            while (K && !M2[K.index()])
+	    auto K = y[J.col()].begin();
+            while (K != y[J.col()].end() && !M2[K.col()])
                ++K;
 
-            if (!K)
+            if (K != y[J.col()].end())
             {
-               Mask[J.index2()] = 0;
+               Mask[J.col()] = 0;
                Updated = true;
             }
          }
@@ -257,29 +248,24 @@ bool update_mask(OperatorComponent const& x, OperatorComponent const& y,
 
 bool update_mask(OperatorComponent const& x, std::vector<int>& M1, std::vector<int>& M2)
 {
-   typedef OperatorComponent::data_type OpMatrixType;
-   typedef OpMatrixType::outer_value_type VecOfVecType;
-   //   typedef VecOfVecType::value_type InnerType;
-   typedef LinearAlgebra::MapVector<SimpleRedOperator> InnerType;
-
    bool Updated = false;
-   for (const_iterator<OperatorComponent::data_type>::type I = iterate(x.data()); I; ++I)
+   for (auto const& I : x)
    {
-      if (!M1[I.index()])
+      if (!M1[I.row()])
          continue;
 
       bool Found = false;
-      for (const_inner_iterator<OperatorComponent::data_type>::type J = iterate(I); J; ++J)
+      for (auto const& J : I)
       {
-         if (M2[J.index2()])
+         if (M2[J.col()])
          {
-            M2[J.index2()] = 2;  // tag as accessible
+            M2[J.col()] = 2;  // tag as accessible
             Found = true;
          }
       }
       if (!Found)
       {
-         M1[I.index()] = 0;
+         M1[I.row()] = 0;
          Updated = true;
       }
    }
@@ -304,12 +290,12 @@ bool update_mask(OperatorComponent const& x, std::vector<int>& M1, std::vector<i
 bool cull_boundary(OperatorComponent& x, OperatorComponent& y)
 {
    std::set<int> ToKeep;
-   for (const_iterator<OperatorComponent::data_type>::type I = iterate(x.data()); I; ++I)
+   for (auto const& I : x)
    {
-      for (const_inner_iterator<OperatorComponent::data_type>::type J = iterate(I); J; ++J)
+      for (auto const& J : I)
       {
-         if (nnz(y.data().vec()[J.index2()]) > 0)
-            ToKeep.insert(J.index2());
+         if (y[J.col()].nnz() > 0)
+            ToKeep.insert(J.col());
       }
    }
    if (ToKeep.size() != x.Basis2().size())
@@ -414,7 +400,7 @@ mask_column(GenericMPO const& Op, int Col)
    return Mask;
 }
 
-std::vector<std::vector<int> >
+std::vector<std::vector<int>>
 mask_row(GenericMPO const& Op, int Row)
 {
    std::vector<std::vector<int> > Mask;
@@ -428,7 +414,7 @@ mask_row(GenericMPO const& Op, int Row)
 GenericMPO coarse_grain(GenericMPO const& Op, int N)
 {
    if (N == 1)
-      return Op;
+      return copy(Op);
 
    CHECK(Op.size() % N == 0);
    std::vector<OperatorComponent> Result;
@@ -439,7 +425,7 @@ GenericMPO coarse_grain(GenericMPO const& Op, int N)
       {
          c = local_tensor_prod(c, Op[j]);
       }
-      Result.push_back(c);
+      Result.push_back(std::move(c));
    }
    return GenericMPO(Result.begin(), Result.end());
 }
@@ -449,13 +435,13 @@ GenericMPO coarse_grain_range(GenericMPO const& Op, int beg, int end)
    CHECK(0 <= beg && beg <= end && end <= int(Op.size()));
    // coarse-graining 0 or 1 sites is a no-op
    if (end-beg < 2)
-      return Op;
+      return copy(Op);
 
    // sites up to beg are unaffected
    std::vector<OperatorComponent> Result;
    for (int i = 0; i < beg; ++i)
    {
-      Result.push_back(Op[i]);
+      Result.push_back(copy(Op[i]));
    }
 
    // coarse-grain [beg,end)
@@ -464,12 +450,12 @@ GenericMPO coarse_grain_range(GenericMPO const& Op, int beg, int end)
    {
       c = local_tensor_prod(c, Op[j]);
    }
-   Result.push_back(c);
+   Result.push_back(std::move(c));
 
    // sites [end, Op.size) are unaffected
    for (int i = end; i < int(Op.size()); ++i)
    {
-      Result.push_back(Op[i]);
+      Result.push_back(copy(Op[i]));
    }
    return GenericMPO(Result.begin(), Result.end());
 }
@@ -607,8 +593,8 @@ OperatorClassification classify(GenericMPO const& Op, double UnityEpsilon)
          if (!IsPropIdentity)
          {
             // is it unitary?
-            std::complex<double> x = PropIdent(scalar_prod(X, herm(X)), UnityEpsilon);
-            std::complex<double> y = PropIdent(scalar_prod(herm(X), X), UnityEpsilon);
+	    complex x = PropIdent(scalar_prod(X, herm(X)), UnityEpsilon);
+            complex y = PropIdent(scalar_prod(herm(X), X), UnityEpsilon);
 
             if (x == 0.0 || y == 0.0)
             {
@@ -631,19 +617,19 @@ OperatorClassification classify(GenericMPO const& Op, double UnityEpsilon)
       if (IsPropIdentity)
       {
          Result.PropIdentity_ = true;
-         Result.Identity_ = LinearAlgebra::norm_frob_sq(Factor - std::complex<double>(1.0, 0))
+         Result.Identity_ = norm_frob_sq(Factor - complex(1.0, 0))
             < UnityEpsilon*UnityEpsilon;
 
          // if we claim to be an identity operator, we might as well make it exact
          if (Result.Identity_)
             Factor = 1.0;
 
-         Result.Unitary_ = LinearAlgebra::norm_frob_sq(norm_frob(Factor) - 1.0) < UnityEpsilon*UnityEpsilon;
+         Result.Unitary_ = norm_frob_sq(norm_frob(Factor) - 1.0) < UnityEpsilon*UnityEpsilon;
          Result.Factor_ = Factor;
       }
       else
       {
-         Result.Unitary_ = LinearAlgebra::norm_frob_sq(norm_frob(Factor) - 1.0) < UnityEpsilon*UnityEpsilon;
+         Result.Unitary_ = norm_frob_sq(norm_frob(Factor) - 1.0) < UnityEpsilon*UnityEpsilon;
          Result.Factor_ = Factor;
       }
    }

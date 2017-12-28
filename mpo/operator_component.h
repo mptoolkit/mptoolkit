@@ -23,8 +23,8 @@
 // It can also support operators that act between different local basis sets,
 // via the LocalBasis1() and LocalBasis2() functions.
 
-#if !defined(MPO_COMPONENT_H_JKVH8RY894367R789YH9P8H)
-#define MPO_COMPONENT_H_JKVH8RY894367R789YH9P8H
+#if !defined(MPTOOLKIT_MPO_OPERATOR_COMPONENT_H)
+#define MPTOOLKIT_MPO_OPERATOR_COMPONENT_H
 
 #include "tensor/tensor.h"
 #include "tensor/reducible.h"
@@ -40,7 +40,6 @@ using Tensor::SumBasis;
 using Tensor::HermitianProxy;
 using QuantumNumbers::SymmetryList;
 
-#if 1
 template <typename T>
 class BasicOperatorComponent;
 
@@ -55,7 +54,6 @@ operator>>(PStream::ipstream& in, BasicOperatorComponent<T>& Op);
 template <typename T>
 BasicOperatorComponent<T>
 copy(BasicOperatorComponent<T> const& x);
-#endif
 
 template <typename T>
 class BasicOperatorComponent
@@ -77,12 +75,15 @@ class BasicOperatorComponent
       static_assert(std::is_nothrow_destructible<data_type>::value, "");
       static_assert(std::is_destructible<data_type>::value, "");
 
+      BasicOperatorComponent() = default;
+
       // Construction of an empty BasicOperatorComponent.  The local basis comes first.
       BasicOperatorComponent(BasisList const& LocalB,
                         BasisList const& B1, BasisList const& B2);
       BasicOperatorComponent(BasisList const& LocalB1, BasisList const& LocalB2,
                         BasisList const& B1, BasisList const& B2);
 
+      BasicOperatorComponent(BasicOperatorComponent const& Other) = delete;
       BasicOperatorComponent(BasicOperatorComponent&& Other) noexcept = default;
 
       ~BasicOperatorComponent() noexcept = default;
@@ -111,10 +112,6 @@ class BasicOperatorComponent
 
       // element access, inserts the element if it does not exist
       value_type& operator()(int i, int j);
-
-      // depreciated - exists for backwards compatibility, don't use.
-      void set_operator(int i, int j, value_type const& x)
-      { this->operator()(i,j) = x; }
 
       // returns true if this matrix is in lower-triangular form.  This is only
       // useful if the matrix is square.
@@ -145,6 +142,16 @@ class BasicOperatorComponent
 
       row_type& row(int r) { return Data_.row(r); }
       row_type const& row(int r) const { return Data_.row(r); }
+
+      bool exists(int r, int c) const
+      {
+	 return Data_.row(r).exists(c);
+      }
+
+      void erase(int r, int c)
+      {
+	 Data_.row(r).erase(c);
+      }
 
       template<typename... Args>
       void emplace(int Row, int Col, Args&&... args)
@@ -392,6 +399,30 @@ OperatorComponent prod(SimpleOperator const& Op, OperatorComponent const& A, dou
 
 OperatorComponent prod(OperatorComponent const& A, HermitianProxy<SimpleOperator> const& Op, double Tol = 1e-14);
 OperatorComponent prod(HermitianProxy<SimpleOperator> const& Op, OperatorComponent const& A, double Tol = 1e-14);
+
+OperatorComponent
+operator*(OperatorComponent const& A, SimpleOperator const& Op)
+{
+   return prod(A,Op);
+}
+
+OperatorComponent
+operator*(SimpleOperator const& Op, OperatorComponent const& A)
+{
+   return prod(Op, A);
+}
+
+OperatorComponent
+operator*(OperatorComponent const& A, HermitianProxy<SimpleOperator> const& Op)
+{
+   return prod(A, Op);
+}
+
+OperatorComponent
+operator*(HermitianProxy<SimpleOperator> const& Op, OperatorComponent const& A)
+{
+   return prod(Op, A);
+}
 
 OperatorComponent triple_prod(SimpleOperator const& x, OperatorComponent const& Op, HermitianProxy<SimpleOperator> const& y);
 

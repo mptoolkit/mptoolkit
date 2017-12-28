@@ -27,12 +27,11 @@
   just the LinearSparsePart of a BlockOperator.
 */
 
-#if !defined(SITEBASIS_H_F56734H8972NB78F3UY568)
-#define SITEBASIS_H_F56734H8972NB78F3UY568
+#if !defined(MPTOOLKIT_LATTICE_SITEBASIS_H)
+#define MPTOOLKIT_LATTICE_SITEBASIS_H
 
 #include "tensor/tensor.h"
 #include "tensor/tensorproduct.h"
-#include "linearalgebra/matrix.h"
 #include "common/numerics.h"
 #include <map>
 #include <iostream>
@@ -46,7 +45,6 @@ using QuantumNumbers::QuantumNumber;
 using QuantumNumbers::Projection;
 using QuantumNumbers::ProjectionList;
 using QuantumNumbers::SymmetryList;
-using LinearAlgebra::size_type;
 using Tensor::BasisList;
 using Tensor::ProductBasis;
 
@@ -75,7 +73,7 @@ class SiteBasis
 
       value_type operator[](int i) const { return value_type((*Label_)[i], Basis_[i]); }
 
-      size_type size() const { return Basis_.size(); }
+      int size() const { return Basis_.size(); }
 
       // returns the label corresponding to the given state.
       int Lookup(std::string const& Label) const;
@@ -152,7 +150,7 @@ class SiteProductBasis
 
       ProductBasis<BasisList, BasisList> const& PBasis() const { return ProductBasis_; }
 
-      std::size_t size() const { return ProductBasis_.size(); }
+      int size() const { return ProductBasis_.size(); }
 
       SiteBasis Basis1() const { return Basis1_; }
       SiteBasis Basis2() const { return Basis2_; }

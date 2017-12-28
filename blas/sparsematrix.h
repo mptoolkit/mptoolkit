@@ -30,6 +30,10 @@
 #include "functors.h"
 #include <vector>
 #include <map>
+#if defined(USE_PSTREAM)
+#include "pstream/pstream.h"
+#include "blas/pstreamio.h"
+#endif
 
 namespace blas
 {
@@ -148,6 +152,10 @@ class BasicSparseVector
             I->second -= std::move(value);
          }
       }
+
+      bool exists(int Col) const { return Elements.find(Col) != Elements.end(); }
+
+      void erase(int Col) { Elements.erase(Col); }
 
       iterator at(int Col) { return iterator(Elements.find(Col)); }
       const_iterator at(int Col) const { return iterator(Elements.find(Col)); }
@@ -274,7 +282,7 @@ class SparseMatrix
       using iterator       = typename std::vector<SparseMatrixRow<T>>::iterator;
       using const_iterator = typename std::vector<SparseMatrixRow<T>>::const_iterator;
 
-      SparseMatrix() = delete;
+      SparseMatrix() : Cols(0) {}
 
       SparseMatrix(SparseMatrix&& other) noexcept = default;
 
@@ -304,6 +312,20 @@ class SparseMatrix
       void clear() { for (auto& r : RowStorage) { r.clear(); } }
 
       bool empty() const { return RowStorage.empty(); }
+
+      void erase(int r, int c)
+      {
+	 DEBUG_RANGE_CHECK_OPEN(r,0,RowStorage.size());
+	 DEBUG_RANGE_CHECK_OPEN(c,0,Cols);
+	 RowStorage[r].erase(c);
+      }
+
+      bool exists(int r, int c) const
+      {
+	 DEBUG_RANGE_CHECK_OPEN(r,0,RowStorage.size());
+	 DEBUG_RANGE_CHECK_OPEN(c,0,Cols);
+	 return RowStorage[r].exists(c);
+      }
 
       iterator begin() { return RowStorage.begin(); }
       iterator end() { return RowStorage.end(); }
@@ -395,6 +417,58 @@ class SparseMatrix
       int Cols;
       std::vector<SparseMatrixRow<T>> RowStorage;
 };
+
+#if defined(USE_PSTREAM)
+template <int Format, typename T>
+PStream::opstreambuf<Format>&
+operator<<(PStream::opstreambuf<Format>& out, SparseMatrix<T> const& M)
+{
+   using st = typename PStream::opstreambuf<Format>::size_type;
+   st Rows = M.rows(), Cols = M.cols(), Nnz = M.nnz();
+   out << MatrixFormats::Coordinate;
+   out << Rows << Cols << Nnz;
+
+   for (auto const& r : M)
+   {
+      for (auto const& c : r)
+      {
+	 st row = r.row();
+	 st col = c.col();
+	 out << row << col;
+	 out << c.value;
+      }
+   }
+   return out;
+}
+
+template <int Format, typename T>
+PStream::ipstreambuf<Format>&
+operator>>(PStream::ipstreambuf<Format>& in, SparseMatrix<T>& M)
+{
+   MatrixFormats::type t;
+   in >> t;
+   if (t == MatrixFormats::Coordinate)
+   {
+      using st = typename PStream::opstreambuf<Format>::size_type;
+      st Rows, Cols, Nnz;
+      in >> Rows >> Cols;
+      SparseMatrix<T> Result(Rows, Cols);
+      in >> Nnz;
+      for (unsigned i = 0; i < Nnz; ++i)
+      {
+	 st r,c;
+	 in >> r >> c;
+	 Result.insert(r, c, in.template read<T>());
+      }
+      M = std::move(Result);
+   }
+   else
+   {
+      PANIC("Format not implemented")(t);
+   }
+   return in;
+}
+#endif
 
 template <typename T>
 SparseMatrix<T>& operator+=(SparseMatrix<T>& x, SparseMatrix<T> const& Other)

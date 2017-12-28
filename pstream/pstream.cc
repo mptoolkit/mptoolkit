@@ -785,8 +785,12 @@ ipstreambuf<Format>& operator>>(ipstreambuf<Format>& stream, std::vector<T>& vec
 {
    typename ipstreambuf<Format>::size_type Size;
    stream >> Size;
-   vec.resize(Size);
-   copy_n(ipstreambuf_iterator<Format, T>(stream), Size, &vec[0]);
+   vec.clear();
+   vec.reserve(Size);
+   for (unsigned i = 0; i < Size; ++i)
+   {
+      vec.push_back(stream.template read<T>());
+   }
    return stream;
 }
 
@@ -881,8 +885,12 @@ opstreambuf<Format>& operator<<(opstreambuf<Format>& stream, const std::map<T1, 
 {
    typename opstreambuf<Format>::size_type Size = vec.size();
    stream << Size;
-   using std::copy;
-   copy(vec.begin(), vec.end(), opstreambuf_iterator<Format, std::pair<T1, T2> >(stream));
+   //   using std::copy;
+   for (auto const& x : vec)
+   {
+      stream << x;
+   }
+   //   copy(vec.begin(), vec.end(), opstreambuf_iterator<Format, std::pair<T1, T2> >(stream));
    return stream;
 }
 
@@ -896,7 +904,7 @@ ipstreambuf<Format>& operator>>(ipstreambuf<Format>& stream, std::map<T1, T2, Co
    {
       std::pair<T1, T2> x;
       stream >> x;
-      vec.insert(x);
+      vec.insert(std::move(x));
       --Size;
    }
    //   copy_n(ipstreambuf_iterator<Format, std::pair<T1, T2> >(stream), Size, std::inserter(vec));

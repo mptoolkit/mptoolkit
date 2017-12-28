@@ -182,7 +182,7 @@ class IrredTensor
       typedef Basis1T basis1_type;
       typedef Basis2T basis2_type;
 
-      //      IrredTensor() : Data_(0,0) {}
+      IrredTensor() = default;
 
       IrredTensor(IrredTensor const& Other) = delete;
 
@@ -566,6 +566,7 @@ IrredTensor<T, B2, B3, Tensor::DefaultStructure>
 scalar_prod(HermitianProxy<IrredTensor<T, B1, B2, Tensor::DefaultStructure>> const& x,
             IrredTensor<T, B1, B3, Tensor::DefaultStructure> const& y)
 {
+   using blas::herm;
    using result_type = IrredTensor<T, B2, B3, Tensor::DefaultStructure>;
 
    //if (x.is_null() || y.base().is_null()) return result_type();
@@ -584,7 +585,7 @@ scalar_prod(HermitianProxy<IrredTensor<T, B1, B2, Tensor::DefaultStructure>> con
             if (Result.qn1(cx.col()) == Result.qn2(cy.col()))
             {
                Result.add(cx.col(), cy.col(), (qdim(y.qn2(rx.row())) / qdim(Result.qn1(cx.col()))) *
-                          herm(cx.value()) * cy.value);
+                          herm(cx.value) * cy.value);
             }
          }
       }
@@ -597,6 +598,8 @@ IrredTensor<T, B2, B3, Tensor::DefaultStructure>
 scalar_prod(IrredTensor<T, B1, B3, Tensor::DefaultStructure> const& x,
             HermitianProxy<IrredTensor<T, B1, B2, Tensor::DefaultStructure>> const& y)
 {
+   using blas::herm;
+
    using result_type = IrredTensor<T, B2, B3, Tensor::DefaultStructure>;
 
    //if (x.is_null() || y.base().is_null()) return result_type();
@@ -610,10 +613,10 @@ scalar_prod(IrredTensor<T, B1, B3, Tensor::DefaultStructure> const& x,
       {
          for (auto const& ry : y.base().data())
          {
-            auto cy = ry.iterate_at(cx.col());
+            auto cy = ry.find(cx.col());
             if (cy != ry.end())
             {
-               Result.add(rx.row(), ry.row(), cx.value() * herm(cy->value));
+               Result.add(rx.row(), ry.row(), cx.value * herm(cy.value()));
             }
          }
       }

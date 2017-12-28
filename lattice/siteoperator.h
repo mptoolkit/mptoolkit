@@ -21,7 +21,6 @@
 #define SITEOPERATOR_H_CHIUH38Y9GYEA89EY9
 
 #include "sitebasis.h"
-#include "linearalgebra/eigen.h"
 #include "tensor/tensor_exponential.h"
 
 using Tensor::IrredTensor;

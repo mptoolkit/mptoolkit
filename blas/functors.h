@@ -197,18 +197,38 @@ trace(T x)
 
 template <typename T>
 inline
-std::enable_if_t<blas::is_real_v<T>, T>
+std::enable_if_t<blas::is_real_v<T>, void>
 inplace_conj(T& x)
 {
 }
 
 template <typename T>
 inline
-std::enable_if_t<blas::is_complex_v<T>, T>
+std::enable_if_t<blas::is_complex_v<T>, void>
 inplace_conj(T& x)
 {
    using std::conj;
    x = conj(x);
+}
+
+// herm
+
+template <typename T>
+inline
+std::enable_if_t<blas::is_real_v<T>, T>
+herm(T const& x)
+{
+   using std::conj;
+   return x;
+}
+
+template <typename T>
+inline
+std::enable_if_t<blas::is_complex_v<T>, T>
+herm(T const& x)
+{
+   using std::conj;
+   return conj(x);
 }
 
 } // namespace blas
@@ -216,5 +236,7 @@ inplace_conj(T& x)
 using blas::norm_frob;
 using blas::norm_frob_sq;
 using blas::inner_prod;
+using blas::inplace_conj;
+using blas::herm;
 
 #endif

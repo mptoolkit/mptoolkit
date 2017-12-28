@@ -116,7 +116,8 @@ class ReducibleTensor
       typedef boost::transform_iterator<GetSecond, map_iterator> iterator;
       typedef boost::transform_iterator<GetSecondConst, const_map_iterator> const_iterator;
 
-      //      ReducibleTensor();
+      // need default ctor for persistent streaming
+      ReducibleTensor() = default;
 
       ReducibleTensor(ReducibleTensor const&) = delete;
 
@@ -427,10 +428,11 @@ inner_prod(ReducibleTensor<T1, B1, B2, S1> const& x, ReducibleTensor<T2, B1, B2,
 // scalar_prod
 
 template <typename T1, typename B1, typename B2, typename S1, typename T2, typename S2>
-decltype(std::declval<T1>()*std::declval<T2>())
+IrredTensor<blas::remove_proxy_t<decltype(std::declval<T1>()*std::declval<T2>())>,B1, B1>
 scalar_prod(ReducibleTensor<T1, B1, B2, S1> const& x, HermitianProxy<ReducibleTensor<T2, B1, B2, S2>> const& y)
 {
-   decltype(std::declval<T1>()*std::declval<T2>()) Result(x.Basis1(), y.base().Basis1());
+   IrredTensor<blas::remove_proxy_t<decltype(std::declval<T1>()*std::declval<T2>())>,B1, B1>
+      Result(x.Basis1(), y.base().Basis1());
    std::set<QuantumNumber> q1 = x.components(), q2 = y.base().components();
    intersection_iterator<std::set<QuantumNumber> > IEnd = set_intersection_end(q1,q2);
    intersection_iterator<std::set<QuantumNumber> > I = set_intersection_begin(q1,q2);
@@ -444,10 +446,11 @@ scalar_prod(ReducibleTensor<T1, B1, B2, S1> const& x, HermitianProxy<ReducibleTe
 }
 
 template <typename T1, typename B1, typename B2, typename S1, typename T2, typename S2>
-decltype(std::declval<T1>()*std::declval<T2>())
+IrredTensor<blas::remove_proxy_t<decltype(std::declval<T1>()*std::declval<T2>())>,B1, B1>
 scalar_prod(HermitianProxy<ReducibleTensor<T1, B1, B2, S1>> const& x, ReducibleTensor<T2, B1, B2, S2> const& y)
 {
-   decltype(std::declval<T1>()*std::declval<T2>()) Result(x.base().Basis2(), y.Basis2());
+   IrredTensor<blas::remove_proxy_t<decltype(std::declval<T1>()*std::declval<T2>())>,B1, B1>
+      Result(x.base().Basis2(), y.Basis2());
    std::set<QuantumNumber> q1 = x.base().components(), q2 = y.components();
    intersection_iterator<std::set<QuantumNumber> > IEnd = set_intersection_end(q1,q2);
    intersection_iterator<std::set<QuantumNumber> > I = set_intersection_begin(q1,q2);

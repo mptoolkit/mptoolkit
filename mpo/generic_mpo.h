@@ -40,18 +40,36 @@ class GenericMPO
       typedef value_type::basis1_type basis1_type;
       typedef value_type::basis2_type basis2_type;
 
-      GenericMPO() {}
+      GenericMPO() = default;
 
       explicit GenericMPO(int Size) : Data_(Size) {}
 
-      explicit GenericMPO(OperatorComponent const& x) : Data_(1, x) {}
+      explicit GenericMPO(OperatorComponent&& x) { Data_.push_back(std::move(x)); }
+
+      explicit GenericMPO(OperatorComponent const& x) { Data_.push_back(copy(x)); }
 
       // Size repeated copies of x
-      GenericMPO(int Size, OperatorComponent const& x) : Data_(Size, x) {}
+      GenericMPO(int Size, OperatorComponent const& x) 
+      { Data_.reserve(Size); for (int i = 0; i < Size; ++i) Data_.push_back(copy(x)); }
+
+      GenericMPO(GenericMPO const& Other) 
+      { Data_.reserve(Other.size()); for (int i = 0; i < Other.size(); ++i) Data_.push_back(copy(Other[i])); }
+
+      GenericMPO(GenericMPO&& Other) noexcept = default;
+
+      GenericMPO& operator=(GenericMPO&& Other) noexcept = default;
+
+      GenericMPO& operator=(GenericMPO const& Other) { (*this) = copy(Other); return *this; }
 
       // from an iterator
       template <typename InIter>
-      GenericMPO(InIter first, InIter last) : Data_(first, last) {}
+      GenericMPO(InIter first, InIter last) 
+      {
+	 while (first != last)
+	 {
+	    Data_.push_back(copy(*first));
+	 }
+      }
 
       bool empty() const { return Data_.empty(); }
       std::size_t size() const { return Data_.size(); }
@@ -100,6 +118,20 @@ class GenericMPO
    friend PStream::opstream& operator<<(PStream::opstream& out, GenericMPO const& op);
    friend PStream::ipstream& operator>>(PStream::ipstream& in, GenericMPO& op);
 };
+
+inline
+GenericMPO
+copy(GenericMPO const& x)
+{
+   return GenericMPO(x.begin(), x.end());
+}
+
+inline
+Tensor::HermitianProxy<GenericMPO>
+herm(GenericMPO const& x)
+{
+   return Tensor::HermitianProxy<GenericMPO>(x);
+}
 
 std::ostream&
 operator<<(std::ostream& out, GenericMPO const& op);
@@ -192,7 +224,7 @@ OperatorClassification classify(GenericMPO const& Op, double UnityEpsilon);
 inline
 OperatorClassification classify(GenericMPO const& Op)
 {
-   return classify(Op, DefaultClassifyUnityEpsilon);
+   return classify(Op, DefaultClassifyUnityEpsilon<real>);
 }
 
 // plus various functions for acting on states etc
@@ -207,78 +239,6 @@ ExtractLocalBasis1(GenericMPO const& Op);
 
 std::vector<BasisList>
 ExtractLocalBasis2(GenericMPO const& Op);
-
-namespace LinearAlgebra
-{
-
-template <>
-struct interface<GenericMPO>
-{
-   typedef void type;
-};
-
-template <>
-struct Herm<GenericMPO>
-{
-   typedef GenericMPO const& argument_type;
-   typedef HermitianProxy<GenericMPO> result_type;
-
-   result_type operator()(argument_type x) const
-   { return result_type(x); }
-};
-
-template <>
-struct Conj<GenericMPO>
-{
-   typedef GenericMPO const& argument_type;
-   typedef GenericMPO result_type;
-
-   result_type operator()(argument_type x) const
-   {
-      GenericMPO Result(x);
-      for (GenericMPO::iterator I = Result.begin(); I != Result.end(); ++I)
-      {
-         *I = conj(*I);
-      }
-      return Result;
-   }
-};
-
-template <>
-struct Adjoint<GenericMPO>
-{
-   typedef GenericMPO const& argument_type;
-   typedef GenericMPO result_type;
-
-   result_type operator()(argument_type x) const
-   {
-      GenericMPO Result(x);
-      for (GenericMPO::iterator I = Result.begin(); I != Result.end(); ++I)
-      {
-         *I = adjoint(*I);
-      }
-      return Result;
-   }
-};
-
-template <>
-struct InvAdjoint<GenericMPO>
-{
-   typedef GenericMPO const& argument_type;
-   typedef GenericMPO result_type;
-
-   result_type operator()(argument_type x) const
-   {
-      GenericMPO Result(x);
-      for (GenericMPO::iterator I = Result.begin(); I != Result.end(); ++I)
-      {
-         *I = inv_adjoint(*I);
-      }
-      return Result;
-   }
-};
-
-} // namespace LinearAlgebra
 
 #include "generic_mpo.cc"
 
