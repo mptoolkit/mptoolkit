@@ -151,7 +151,7 @@ ReducibleTensor<T, B1, B2, S>::project(QuantumNumber const& q) const
    {
       return IrredTensor<T,B1,B2,S>(Basis1_, Basis2_, q);
    }
-   return *I;
+   return copy(*I);
 }
 
 template <typename T, typename B1, typename B2, typename S>

@@ -150,7 +150,7 @@ void print_structure(BasicOperatorComponent<T> const& Op, std::ostream& out, dou
       int next_r = 0;
       for (auto const& c : r)
       {
-	 while (next_r++ < r)
+	 while (next_r++ < r.row())
 	    out << ' ';
 
 	 if (c.value.size() > 1)

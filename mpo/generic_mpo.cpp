@@ -578,7 +578,7 @@ OperatorClassification classify(GenericMPO const& Op, double UnityEpsilon)
 
          if (IsPropIdentity)
          {
-            if (X.Basis1() != X.Basis2() || !is_pure_scalar(X))
+            if (X.Basis1() != X.Basis2() || !is_scalar(X))
                IsPropIdentity = false;
             else
             {

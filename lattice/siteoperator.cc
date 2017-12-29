@@ -51,26 +51,6 @@ void CoerceSymmetryListInPlace(SiteOperator& s, SymmetryList const& sl)
 }
 
 inline
-SiteOperator prod(SiteOperator const& x, SiteOperator const& y, QuantumNumber Trans)
-{
-   DEBUG_PRECONDITION_EQUAL(x.Basis(), y.Basis());
-   return SiteOperator(x.Basis(), prod(x.base(), y.base(), Trans),
-                       x.Commute() * y.Commute());
-}
-
-inline
-SiteOperator adjoint(SiteOperator const& x)
-{
-   return SiteOperator(x.Basis(), adjoint(x.base()), x.Commute());
-}
-
-inline
-SiteOperator inv_adjoint(SiteOperator const& x)
-{
-   return SiteOperator(x.Basis(), inv_adjoint(x.base()), x.Commute());
-}
-
-inline
 SiteOperator
 tensor_prod(SiteOperator const& S1, SiteOperator const& S2,
             SiteProductBasis const& SPBasis,

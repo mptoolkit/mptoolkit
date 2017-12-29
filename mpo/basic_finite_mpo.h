@@ -249,7 +249,7 @@ void print_structure(BasicFiniteMPO const& Op, std::ostream& out, double UnityEp
 inline
 void print_structure(BasicFiniteMPO const& Op, std::ostream& out)
 {
-   print_structure(Op, out, DefaultClassifyUnityEpsilon);
+   print_structure(Op, out, DefaultClassifyUnityEpsilon<real>);
 }
 
 // returns the BasicFiniteMPO for the identity operator acting on the unit cell

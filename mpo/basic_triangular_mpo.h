@@ -130,7 +130,7 @@ void print_structure(BasicTriangularMPO const& Op, std::ostream& out, double Uni
 inline
 void print_structure(BasicTriangularMPO const& Op, std::ostream& out)
 {
-   print_structure(Op, out, DefaultClassifyUnityEpsilon);
+   print_structure(Op, out, DefaultClassifyUnityEpsilon<real>);
 }
 
 #if 0
@@ -262,76 +262,6 @@ BasicTriangularMPO::debug_check_structure() const
 #endif
 }
 
-namespace LinearAlgebra
-{
-
-template <>
-struct interface<BasicTriangularMPO>
-{
-   typedef void type;
-};
-
-template <>
-struct Herm<BasicTriangularMPO>
-{
-   typedef BasicTriangularMPO const& argument_type;
-   typedef HermitianProxy<BasicTriangularMPO> result_type;
-
-   result_type operator()(argument_type x) const
-   { return result_type(x); }
-};
-
-template <>
-struct Conj<BasicTriangularMPO>
-{
-   typedef BasicTriangularMPO const& argument_type;
-   typedef BasicTriangularMPO result_type;
-
-   result_type operator()(argument_type x) const
-   {
-      BasicTriangularMPO Result(x);
-      for (BasicTriangularMPO::iterator I = Result.begin(); I != Result.end(); ++I)
-      {
-         *I = conj(*I);
-      }
-      return Result;
-   }
-};
-
-template <>
-struct Adjoint<BasicTriangularMPO>
-{
-   typedef BasicTriangularMPO const& argument_type;
-   typedef BasicTriangularMPO result_type;
-
-   result_type operator()(argument_type x) const
-   {
-      BasicTriangularMPO Result(x);
-      for (BasicTriangularMPO::iterator I = Result.begin(); I != Result.end(); ++I)
-      {
-         *I = adjoint(*I);
-      }
-      return Result;
-   }
-};
-
-template <>
-struct InvAdjoint<BasicTriangularMPO>
-{
-   typedef BasicTriangularMPO const& argument_type;
-   typedef BasicTriangularMPO result_type;
-
-   result_type operator()(argument_type x) const
-   {
-      BasicTriangularMPO Result(x);
-      for (BasicTriangularMPO::iterator I = Result.begin(); I != Result.end(); ++I)
-      {
-         *I = inv_adjoint(*I);
-      }
-      return Result;
-   }
-};
-
-} // namespace LinearAlgebra
+// herm, conj, adjoint, inv_adjoint
 
 #endif

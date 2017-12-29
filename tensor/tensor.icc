@@ -103,7 +103,7 @@ IrredTensor<T, B1, B2, S>::CoerceSymmetryList(SymmetryList const& sl)
    Basis1_.CoerceSymmetryList(sl);
    Basis2_.CoerceSymmetryList(sl);
    Trans_.CoerceSymmetryList(sl);
-   Data_ = CoerceSymmetryList(Data_, sl);
+   Data_ = CoerceSymmetryList(std::move(Data_), sl);
    this->debug_check_structure();
 }
 

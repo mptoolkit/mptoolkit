@@ -17,10 +17,11 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#if !defined(TENSOR_EXPONENTIAL_H_DHCKJDHUREYT7845Y78Y78TY78TY78T)
-#define TENSOR_EXPONENTIAL_H_DHCKJDHUREYT7845Y78Y78TY78TY78T
+#if !defined(MPTOOLKIT_TENSOR_TENSOR_EXPONENTIAL_H)
+#define MPTOOLKIT_TENSOR_TENSOR_EXPONENTIAL_H
 
 #include "tensor.h"
+#include "blas/matrix.h"
 
 namespace Tensor
 {
@@ -36,8 +37,8 @@ exp(IrredTensor<std::complex<double>, BasisList, BasisList> const& m)
    return Exponentiate(m);
 }
 
-IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>
-exp(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> const& m);
+IrredTensor<blas::Matrix<std::complex<double>, blas::cpu_tag>, VectorBasis, VectorBasis>
+exp(IrredTensor<blas::Matrix<std::complex<double>, blas::cpu_tag>, VectorBasis, VectorBasis> const& m);
 
 } // namespace Tensor
 

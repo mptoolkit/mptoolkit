@@ -92,7 +92,7 @@ GenericMPO extract_lower_column(BasicTriangularMPO const& Op, int Col)
    // at (Col, x) to zero.
    for (unsigned k = 0; k < MPOp.front().Basis2().size(); ++k)
    {
-      zero_element(MPOp.front().data(), Col, k);
+      MPOp.front().erase(Col,  k);
    }
 
    std::set<int> Cols;
@@ -194,7 +194,7 @@ void qr_optimize(BasicTriangularMPO& Op)
    {
       Reduced = false;
 
-      OperatorComponent Op2 = Op.front();
+      OperatorComponent Op2 = copy(Op.front());
       if (!First && Second)
       {
          TRACE("XXXXX");
@@ -445,54 +445,58 @@ void print_structure(BasicTriangularMPO const& Op, std::ostream& out, double Uni
 
 // arithmetic
 
-BasicTriangularMPO& operator*=(BasicTriangularMPO& Op, double x)
+// multiply by scalar works by multiplying all elements in the first row by x, except for the first element.
+// I A B ..
+//   ....
+// here A,B, ... get multiplied by x.
+BasicTriangularMPO& operator*=(BasicTriangularMPO& Op, real x)
 {
    for (int i = 0; i < Op.size(); ++i)
    {
-      for (unsigned j = 1; j < Op[i].Basis2().size(); ++j)
+      for (auto const& c : Op[i].row(0))
       {
-         if (iterate_at(Op[i].data(), 0, j))
-            set_element(Op[i].data(), 0, j, get_element(Op[i].data(),0,j) * x);
+	 if (c.col() > 0)
+	    c.value *= x;
       }
    }
    return Op;
 }
 
-BasicTriangularMPO& operator*=(BasicTriangularMPO& Op, std::complex<double> x)
+BasicTriangularMPO& operator*=(BasicTriangularMPO& Op, complex x)
 {
    for (int i = 0; i < Op.size(); ++i)
    {
-      for (unsigned j = 1; j < Op[i].Basis2().size(); ++j)
+      for (auto const& c : Op[i].row(0))
       {
-         if (iterate_at(Op[i].data(), 0, j))
-            set_element(Op[i].data(), 0, j, get_element(Op[i].data(),0,j) * x);
+	 if (c.col() > 0)
+	    c.value *= x;
       }
    }
    return Op;
 }
 
-BasicTriangularMPO operator*(BasicTriangularMPO const& Op, double x)
+BasicTriangularMPO operator*(BasicTriangularMPO const& Op, real x)
 {
    BasicTriangularMPO Result(Op);
    Result *= x;
    return Result;
 }
 
-BasicTriangularMPO operator*(double x, BasicTriangularMPO const& Op)
+BasicTriangularMPO operator*(real x, BasicTriangularMPO const& Op)
 {
    BasicTriangularMPO Result(Op);
    Result *= x;
    return Result;
 }
 
-BasicTriangularMPO operator*(BasicTriangularMPO const& Op, std::complex<double> x)
+BasicTriangularMPO operator*(BasicTriangularMPO const& Op, complex x)
 {
    BasicTriangularMPO Result(Op);
    Result *= x;
    return Result;
 }
 
-BasicTriangularMPO operator*(std::complex<double> x, BasicTriangularMPO const& Op)
+BasicTriangularMPO operator*(complex x, BasicTriangularMPO const& Op)
 {
    BasicTriangularMPO Result(Op);
    Result *= x;
@@ -571,7 +575,7 @@ BasicTriangularMPO operator+(BasicTriangularMPO const& x, BasicTriangularMPO con
       Next(0,0) = x[Here](0,0);
       Next(Next.size1()-1, Next.size2()-1) = x[Here](x[Here].size1()-1, x[Here].size2()-1);
 
-      Result[Here] = Next;
+      Result[Here] = std::move(Next);
    }
 
    //   TRACE(x)(y)(Result);
@@ -618,45 +622,46 @@ BasicTriangularMPO prod(BasicTriangularMPO const& x, BasicTriangularMPO const& y
    BasicTriangularMPO Result(x.size());
 
    // The basis that wraps around gets the final element projected onto component q only
-   PBasisType ProjectedBasis = PBasisType::MakeTriangularProjected(x.front().Basis1(), y.front().Basis1(), q);
+   //   PBasisType ProjectedBasis = PBasisType::MakeTriangularProjected(x.front().Basis1(), y.front().Basis1(), q);
 
    for (int Here = 0; Here < x.size(); ++Here)
    {
-      Tensor::ProductBasis<BasisList, BasisList> B1 = (Here == 0) ? ProjectedBasis : PBasisType(x[Here].Basis1(), y[Here].Basis1());
-      Tensor::ProductBasis<BasisList, BasisList> B2 = (Here == x.size()-1) ? ProjectedBasis : PBasisType(x[Here].Basis2(), y[Here].Basis2());
+      Tensor::ProductBasis<BasisList, BasisList> B1 = (Here == 0) ?  PBasisType::MakeTriangularProjected(x.front().Basis1(), y.front().Basis1(), q)
+	 : PBasisType(x[Here].Basis1(), y[Here].Basis1());
+      Tensor::ProductBasis<BasisList, BasisList> B2 = (Here == x.size()-1) ? PBasisType::MakeTriangularProjected(x.front().Basis1(), y.front().Basis1(), q)
+	 : PBasisType(x[Here].Basis2(), y[Here].Basis2());
 
       OperatorComponent Op(x[Here].LocalBasis1(), y[Here].LocalBasis2(), B1.Basis(), B2.Basis());
 
-      for (OperatorComponent::const_iterator I1 = iterate(x[Here].data()); I1; ++I1)
+      for (auto const& I1 : x[Here])
       {
-         for (OperatorComponent::const_inner_iterator I2 = iterate(I1); I2; ++I2)
-         {
+	 for (auto const& I2 : I1)
+	 {
 
-            for (OperatorComponent::const_iterator J1 = iterate(y[Here].data()); J1; ++J1)
-            {
-               for (OperatorComponent::const_inner_iterator J2 = iterate(J1); J2; ++J2)
-               {
+	    for (auto const& J1 : y[Here])
+	    {
+	       for (auto const& J2 : J1)
+	       {
 
-                  ProductBasis<BasisList, BasisList>::const_iterator B1End = B1.end(I2.index1(), J2.index1());
-                  ProductBasis<BasisList, BasisList>::const_iterator B2End = B2.end(I2.index2(), J2.index2());
+		  auto B1End = B1.end(I1.row(), J1.row());
+                  auto B2End = B2.end(I2.col(), J2.col());
 
-                  ProductBasis<BasisList, BasisList>::const_iterator B1Iter = B1.begin(I2.index1(), J2.index1());
+		  auto B1Iter = B1.begin(I1.row(), J1.row());
 
                   while (B1Iter != B1End)
                   {
-                     ProductBasis<BasisList, BasisList>::const_iterator B2Iter = B2.begin(I2.index2(), J2.index2());
+                     auto B2Iter = B2.begin(I2.col(), J2.col());
                      while (B2Iter != B2End)
                      {
                         SimpleRedOperator ToInsert(x[Here].LocalBasis1(), y[Here].LocalBasis2());
 
                         // iterate over components of the reducible operators *I1 and *I2
-                        for (SimpleRedOperator::const_iterator IComponent = I2->begin(); IComponent != I2->end(); ++IComponent)
-                        {
-                           for (SimpleRedOperator::const_iterator JComponent = J2->begin(); JComponent != J2->end(); ++JComponent)
-                           {
-
-                              QuantumNumbers::QuantumNumberList ql = transform_targets(IComponent->TransformsAs(),
-                                                                                       JComponent->TransformsAs());
+			for (auto const& IComponent : I2.value)
+			{
+			   for (auto const& JComponent : J2.value)
+			   {
+                              QuantumNumbers::QuantumNumberList ql = transform_targets(IComponent.TransformsAs(),
+                                                                                       JComponent.TransformsAs());
 
                               for (QuantumNumbers::QuantumNumberList::const_iterator q = ql.begin(); q != ql.end(); ++q)
                               {
@@ -664,20 +669,18 @@ BasicTriangularMPO prod(BasicTriangularMPO const& x, BasicTriangularMPO const& y
                                  {
                                     SimpleOperator Next =
                                        tensor_coefficient(B1, B2,
-                                                          IComponent->TransformsAs(), JComponent->TransformsAs(), *q,
-                                                          I2.index1(), J2.index1(), *B1Iter,
-                                                          I2.index2(), J2.index2(), *B2Iter) *
-                                       prod(*IComponent, *JComponent, *q);
-                                    if (!is_zero(Next.data()))
+                                                          IComponent.TransformsAs(), JComponent.TransformsAs(), *q,
+                                                          I1.row(), J1.row(), *B1Iter,
+                                                          I2.col(), J2.col(), *B2Iter) *
+                                       prod(IComponent, JComponent, *q);
                                        ToInsert += Next;
-
                                  }
                               }
                            }
                         }
 
                         if (!ToInsert.empty())
-                           Op.data()(*B1Iter, *B2Iter) = ToInsert;
+                           Op.insert(*B1Iter, *B2Iter, std::move(ToInsert));
 
                         ++B2Iter;
                      }
@@ -688,7 +691,7 @@ BasicTriangularMPO prod(BasicTriangularMPO const& x, BasicTriangularMPO const& y
          }
       }
 
-      Result[Here] = Op;
+      Result[Here] = std::move(Op);
    }
    optimize(Result);
    return Result;
@@ -700,7 +703,7 @@ repeat(BasicTriangularMPO const& x, int count)
    BasicTriangularMPO Result(x.size() * count);
    for (int i = 0; i < count; ++i)
       for (int j = 0; j < x.size(); ++j)
-         Result[i*x.size()+j] = x[j];
+         Result[i*x.size()+j] = copy(x[j]);
    return Result;
 }
 

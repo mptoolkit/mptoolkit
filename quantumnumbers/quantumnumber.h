@@ -272,6 +272,14 @@ T CoerceSymmetryList(T const& x, SymmetryList const&)
 
 template <typename T>
 inline
+T CoerceSymmetryList(T&& x, SymmetryList const&)
+{
+   return std::forward<T>(x);
+}
+
+
+template <typename T>
+inline
 void CoerceSymmetryListInPlace(T&, SymmetryList const&)
 {
 }

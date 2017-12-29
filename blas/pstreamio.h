@@ -2,9 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// linearalgebra/exponential.h
+// blas/pstreamio.h
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2005-2017 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,37 +16,22 @@
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER
-//
-// Exponential function for matrices.
 
-#if !defined(EXPONENTIAL_H_SDJKCH48935Y78Y7RFEH89P)
-#define EXPONENTIAL_H_SDJKCH48935Y78Y7RFEH89P
+#if !defined(MPTOOLKIT_BLAS_PSTREAMIO_H)
+#define MPTOOLKIT_BLAS_PSTREAMIO_H
 
-#include "matrix.h"
-
-namespace LinearAlgebra
+namespace blas
 {
 
-
-//
-// Exponentiate
-//
-// Calculate exp(M) of a matrix M, using Expokit.
-//
-
-template <typename M, typename Mi = typename interface<M>::type>
-struct ImplementExponentiate {};
-
-template <typename M>
-inline
-typename ImplementExponentiate<M>::result_type
-Exponentiate(double t, M const& m)
+struct MatrixFormats
 {
-   return ImplementExponentiate<M>()(t, m);
-}
+   typedef char type;
+   static type const DenseRowMajor = 'm';
+   static type const Coordinate = 'c';
+   static type const Diagonal = 'd';
+   static type const Fixed = 'f';
+};
 
-} // namespace LinearAlgebra
-
-#include "exponential.cc"
+} // namespace blas
 
 #endif

@@ -1,8 +1,0 @@
-// matrix-vector multiply, row-major
-// Result_i = parallel_prod(*i, x)
-//
-// col-major
-// Result = sum_i(vector_scalar_prod(*i, x))
-//
-// the vector should be a stride-vector (for BLAS), but the matrix elements are used only once
-

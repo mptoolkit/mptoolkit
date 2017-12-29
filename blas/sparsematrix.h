@@ -59,10 +59,18 @@ class BasicSparseVector
       BasicSparseVector& operator=(BasicSparseVector&& Other) = default;
       ~BasicSparseVector() = default;
 
-      BasicSparseVector(BasicSparseVector&) = delete;
-      BasicSparseVector& operator=(BasicSparseVector&) = delete;
+      BasicSparseVector(BasicSparseVector const&)  = delete;
+
+      template <typename U>
+      explicit BasicSparseVector(BasicSparseVector const& Other)
+	 : Elements(Other.Elements) {}
+
+      BasicSparseVector& operator=(BasicSparseVector const&) = delete;
 
       int nnz() const { return Elements.size(); }
+
+      bool empty() const { return Elements.empty(); }
+      bool is_zero() const { return Elements.empty(); }
 
       iterator begin() noexcept { return iterator(Elements.begin()); }
       const_iterator begin() const noexcept { return const_iterator(Elements.begin()); }
@@ -93,10 +101,12 @@ class BasicSparseVector
       }
 
       template <typename U>
-      void insert(int Col, U&& value)
+      iterator insert(int Col, U&& value)
       {
+	 auto i = Elements.insert(std::make_pair(Col, std::forward<U>(value)));
          bool Inserted = Elements.insert(std::make_pair(Col, std::forward<U>(value))).second;
-         DEBUG_CHECK(Inserted);
+         DEBUG_CHECK(i.second);
+	 return iterator(i.first);
       }
 
       void add(int Col, T const& value)
@@ -184,6 +194,28 @@ BasicSparseVector<T, U, V>& operator+=(BasicSparseVector<T, U, V>& x, BasicSpars
    Other.clear();
    return x;
 }
+
+template <typename T, typename U, typename V>
+BasicSparseVector<T, U, V>& operator-=(BasicSparseVector<T, U, V>& x, BasicSparseVector<T, U, V> const& Other)
+{
+   for (auto const& e : Other)
+   {
+      x.add(e.index, -e.value);
+   }
+   return x;
+}
+
+template <typename T, typename U, typename V>
+BasicSparseVector<T, U, V>& operator-=(BasicSparseVector<T, U, V>& x, BasicSparseVector<T, U, V>&& Other)
+{
+   for (auto&& e : Other)
+   {
+      x.add(e.index, -std::move(e.value));
+   }
+   Other.clear();
+   return x;
+}
+
 
 template <typename T, typename U, typename V, typename W, typename X, typename R, typename Nested>
 void
@@ -288,6 +320,10 @@ class SparseMatrix
 
       SparseMatrix(SparseMatrix const&) = delete;
 
+      template <typename U>
+      explicit SparseMatrix(SparseMatrix<U> const& Other)
+	 : Cols(Other.Cols), RowStorage(Other.RowStorage) {}
+
       SparseMatrix(int Rows_, int Cols_) : Cols(Cols_)
       {
          RowStorage.reserve(Rows_);
@@ -312,6 +348,16 @@ class SparseMatrix
       void clear() { for (auto& r : RowStorage) { r.clear(); } }
 
       bool empty() const { return RowStorage.empty(); }
+
+      bool is_zero() const
+      {
+	 for (auto const& r : RowStorage)
+	 {
+	    if (!r.empty())
+	       return false;
+	 }
+	 return true;
+      }
 
       void erase(int r, int c)
       {
@@ -470,8 +516,8 @@ operator>>(PStream::ipstreambuf<Format>& in, SparseMatrix<T>& M)
 }
 #endif
 
-template <typename T>
-SparseMatrix<T>& operator+=(SparseMatrix<T>& x, SparseMatrix<T> const& Other)
+template <typename T, typename U>
+SparseMatrix<T>& operator+=(SparseMatrix<T>& x, SparseMatrix<U> const& Other)
 {
    CHECK_EQUAL(x.rows(), Other.rows());
    CHECK_EQUAL(x.cols(), Other.cols());
@@ -484,8 +530,8 @@ SparseMatrix<T>& operator+=(SparseMatrix<T>& x, SparseMatrix<T> const& Other)
    return x;
 }
 
-template <typename T>
-SparseMatrix<T>& operator+=(SparseMatrix<T>& x, SparseMatrix<T>&& Other)
+template <typename T, typename U>
+SparseMatrix<T>& operator+=(SparseMatrix<T>& x, SparseMatrix<U>&& Other)
 {
    CHECK_EQUAL(x.rows(), Other.rows());
    CHECK_EQUAL(x.cols(), Other.cols());
@@ -497,6 +543,83 @@ SparseMatrix<T>& operator+=(SparseMatrix<T>& x, SparseMatrix<T>&& Other)
    }
    Other.clear();
    return x;
+}
+
+template <typename T, typename U>
+SparseMatrix<T>& operator-=(SparseMatrix<T>& x, SparseMatrix<U> const& Other)
+{
+   CHECK_EQUAL(x.rows(), Other.rows());
+   CHECK_EQUAL(x.cols(), Other.cols());
+
+   int Sz = x.rows();
+   for (int r = 0; r < Sz; ++r)
+   {
+      x[r] -= Other[r];
+   }
+   return x;
+}
+
+template <typename T, typename U>
+SparseMatrix<T>& operator-=(SparseMatrix<T>& x, SparseMatrix<U>&& Other)
+{
+   CHECK_EQUAL(x.rows(), Other.rows());
+   CHECK_EQUAL(x.cols(), Other.cols());
+
+   int Sz = x.rows();
+   for (int r = 0; r < Sz; ++r)
+   {
+      x[r] -= std::move(Other[r]);
+   }
+   Other.clear();
+   return x;
+}
+
+
+template <typename T>
+SparseMatrix<T> operator-(SparseMatrix<T> const& x)
+{
+   SparseMatrix<T> Result(x.rows(), x.cols());
+   for (auto const& r : x)
+   {
+      for (auto const& c : r)
+      {
+	 Result.insert(r.row(), c.col(), -c.value());
+      }
+   }
+   return Result;
+}
+
+template <typename T>
+SparseMatrix<T> operator-(SparseMatrix<T>&& x)
+{
+   for (auto& r : x)
+   {
+      for (auto&& c : r)
+      {
+	 c.value = -std::move(c.value);
+      }
+   }
+   return std::move(x);
+}
+
+template <typename T, typename U>
+SparseMatrix<remove_proxy_t<decltype(std::declval<T>() + std::declval<U>())>>
+operator+(SparseMatrix<T> const& x, SparseMatrix<U> const& y)
+{
+   SparseMatrix<remove_proxy_t<decltype(std::declval<T>() + std::declval<U>())>>
+      Result(copy(x));
+   Result += y;
+   return Result;
+}
+
+template <typename T, typename U>
+SparseMatrix<remove_proxy_t<decltype(std::declval<T>() - std::declval<U>())>>
+operator-(SparseMatrix<T> const& x, SparseMatrix<U> const& y)
+{
+   SparseMatrix<remove_proxy_t<decltype(std::declval<T>() + std::declval<U>())>>
+      Result(copy(x));
+   Result -= y;
+   return Result;
 }
 
 template <typename T>

@@ -508,17 +508,35 @@ operator-(OperatorComponent const& A, OperatorComponent const& Op);
 
 inline
 OperatorComponent
-operator*(double x, OperatorComponent Result)
+operator*(double x, OperatorComponent&& Result)
 {
    Result *= x;
+   return std::move(Result);
+}
+
+inline
+OperatorComponent
+operator*(double a, OperatorComponent const& x)
+{
+   OperatorComponent Result(copy(x));
+   Result *= a;
    return Result;
 }
 
 inline
 OperatorComponent
-operator*(std::complex<double> x, OperatorComponent Result)
+operator*(std::complex<double> a, OperatorComponent&& Result)
 {
-   Result *= x;
+   Result *= a;
+   return std::move(Result);
+}
+
+inline
+OperatorComponent
+operator*(std::complex<double> a, OperatorComponent const& x)
+{
+   OperatorComponent Result(copy(x));
+   Result *= a;
    return Result;
 }
 

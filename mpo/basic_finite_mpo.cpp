@@ -97,11 +97,11 @@ join(BasicFiniteMPO const& Op1, BasicFiniteMPO const& Op2)
    BasicFiniteMPO Result(Op1.size() + Op2.size());
    for (int i = 0; i < Op1.size(); ++i)
    {
-      Result[i] = Op1[i];
+      Result[i] = copy(Op1[i]);
    }
    for (int i = 0; i < Op2.size(); ++i)
    {
-      Result[i+Op1.size()] = Op2[i];
+      Result[i+Op1.size()] = copy(Op2[i]);
    }
    return Result;
 }
@@ -113,7 +113,7 @@ repeat(BasicFiniteMPO const& Op, int Count)
    BasicFiniteMPO Result(Op.size()*Count);
    for (int i = 0; i < Result.size(); ++i)
    {
-      Result[i] = Op[i%Op.size()];
+      Result[i] = copy(Op[i%Op.size()]);
    }
    return Result;
 }
@@ -195,7 +195,7 @@ void qr_optimize(BasicFiniteMPO& Op)
    {
       Reduced = false;
 
-      OperatorComponent Op2 = Op.front();
+      OperatorComponent Op2 = copy(Op.front());
       if (!First && Second)
       {
          TRACE("XXXXX");
@@ -554,7 +554,7 @@ SimpleRedOperator coarse_grain(BasicFiniteMPO const& x)
    // else
 
    BasicFiniteMPO::const_iterator I = x.begin();
-   OperatorComponent Op = *I;
+   OperatorComponent Op = copy(*I);
    ++I;
    while (I != x.end())
    {
@@ -589,7 +589,7 @@ BasicFiniteMPO fine_grain(SimpleOperator const& x,
       BasisList B1(x.GetSymmetryList());
       B1.push_back(x.TransformsAs());
       Result[0] = OperatorComponent(x.Basis1(), x.Basis2(), B1, Vacuum);
-      Result[0](0,0) = x;
+      Result[0](0,0) = copy(x);
       return Result;
    }
 
@@ -612,22 +612,22 @@ BasicFiniteMPO fine_grain(SimpleOperator const& x,
    OperatorComponent R1, R2;
    std::tie(R1, R2) = decompose_local_tensor_prod(x, TensorProdBasis1.top(), TensorProdBasis2.top());
    int i = LocalBasis1.size()-1;
-   Result[i] = R2;
+   Result[i] = std::move(R2);
    --i;
    TensorProdBasis1.pop();
    TensorProdBasis2.pop();
    while (!TensorProdBasis1.empty())
    {
       std::tie(R1, R2) = decompose_local_tensor_prod(R1, TensorProdBasis1.top(), TensorProdBasis2.top());
-      Result[i] = R2;
+      Result[i] = std::move(R2);
       --i;
       TensorProdBasis1.pop();
       TensorProdBasis2.pop();
    }
    CHECK(i == 0);
    CHECK(TensorProdBasis2.empty());
-   Result[0] = R1;
-
+   Result[0] = std::move(R1);
+ 
    optimize(Result);
    return Result;
 }
@@ -636,7 +636,7 @@ BasicFiniteMPO exp(BasicFiniteMPO const& x)
 {
    CHECK(x.is_scalar())("Must be a scalar operator to calculate the operator exponential!");
 
-   SimpleOperator Op = coarse_grain(x).scalar();
+   SimpleOperator Op = copy(coarse_grain(x).scalar());
    Op = Tensor::Exponentiate(Op);
    BasicFiniteMPO Result = fine_grain(Op, x.LocalBasis1List(), x.LocalBasis2List());
    return Result;
@@ -783,10 +783,10 @@ BasicFiniteMPO string_mpo(SiteListType const& SiteList,
       {
          WARNING("JW-string operator doesn't exist at a lattice site, using the identity")(i)(OpName);
       }
-      SimpleOperator Op = SiteList[i].operator_exists(OpName) ? SiteList[i][OpName]
-         : SiteList[i].identity();
+      SimpleOperator Op = SiteList[i].operator_exists(OpName) ? copy(SiteList[i][OpName])
+	 : SiteList[i].identity();
       Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Vacuum, Vacuum);
-      Result[i](0,0) = Op;
+      Result[i](0,0) = std::move(Op);
    }
    return Result;
 }
@@ -813,7 +813,7 @@ ParseStringOperator(SiteListType const& SiteList, std::string const& Expr, int S
       SiteOperator Op = ParseSiteOperator(SiteList[i], Expr);
       CHECK_EQUAL(Op.Commute(), LatticeCommute::Bosonic)("String operator must have bosonic commutation");
       Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Vacuum, Vacuum);
-      Result[i](0,0) = Op;
+      Result[i](0,0) = std::move(Op);
    }
    Result = repeat(Result, Size / SiteList.size());
 

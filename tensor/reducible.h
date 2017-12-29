@@ -200,6 +200,12 @@ class ReducibleTensor
          }
       }
 
+      // front element of the container
+      value_type const& front() const
+      {
+	 return data_.begin()->second;
+      }
+
       // variant where we know in advance that the corresponding component
       // exists in the container
       value_type const& project_assert(QuantumNumber const& q) const;
@@ -245,6 +251,31 @@ struct ScalarTypes<Tensor::ReducibleTensor<T, B1, B2, S>> : ScalarTypes<T> {};
 
 namespace Tensor
 {
+
+// arithmetic
+
+template <typename T, typename B1, typename B2, typename S>
+ReducibleTensor<T, B1, B2, S> operator+(ReducibleTensor<T, B1, B2, S> const& x, 
+					ReducibleTensor<T, B1, B2, S> const& y)
+{
+   ReducibleTensor<T, B1, B2, S> Result = copy(x);
+   Result += y;
+   return Result;
+}
+template <typename T, typename B1, typename B2, typename S>
+ReducibleTensor<T, B1, B2, S> operator-(ReducibleTensor<T, B1, B2, S> const& x, 
+					ReducibleTensor<T, B1, B2, S> const& y)
+{
+   ReducibleTensor<T, B1, B2, S> Result = copy(x);
+   Result -= y;
+   return Result;
+}
+
+template <typename T, typename B1, typename B2, typename S>
+bool is_scalar(ReducibleTensor<T, B1, B2, S> const& x)
+{
+   return x.size() == 1 && is_scalar(x.front());
+}
 
 template <typename T, typename B1, typename B2, typename S>
 inline
@@ -293,16 +324,6 @@ IrredTensor<T, B1, B2, S>&
 scalar(ReducibleTensor<T, B1, B2, S>& x)
 {
    return x.scalar();
-}
-
-// is_pure_scalar, returns true only if the operator contains only scalar (or zero) components
-template <typename T, typename B1, typename B2, typename S>
-inline
-bool
-is_pure_scalar(ReducibleTensor<T, B1, B2, S> const& x)
-{
-   std::set<QuantumNumber> comp = x.components();
-   return comp.empty() || (comp.size() == 1 && comp.count(QuantumNumbers::QuantumNumber(x.GetSymmetryList())));
 }
 
 // text I/O
@@ -406,6 +427,15 @@ norm_frob_sq(Tensor::ReducibleTensor<T, B1, B2, S> const& x)
       Result += norm_frob_sq(Component);
    }
    return Result;
+}
+
+template <typename T, typename B1, typename B2, typename S>
+inline
+real_t<T>
+norm_frob(Tensor::ReducibleTensor<T, B1, B2, S> const& x)
+{
+   using std::sqrt;
+   return sqrt(norm_frob_sq(x));
 }
 
 // inner_prod

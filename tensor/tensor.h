@@ -185,6 +185,11 @@ class IrredTensor
       IrredTensor() = default;
 
       IrredTensor(IrredTensor const& Other) = delete;
+      
+      template <typename U>
+      explicit IrredTensor(IrredTensor<U, Basis1T, Basis2T, Structure> const& Other)
+	 : Basis1_(Other.Basis1_), Basis2_(Other.Basis2_), Trans_(Other.Trans_),
+	   Data_(Other.Data_) {}
 
       IrredTensor(IrredTensor&& Other) noexcept = default;
 
@@ -227,6 +232,8 @@ class IrredTensor
       void clear() { Data_.clear(); }
 
       int nnz() const { return Data_.nnz(); }
+
+      bool is_zero() const { return Data_.is_zero(); }
 
       typename StructureType::iterator begin() noexcept { return Data_.begin(); }
       typename StructureType::const_iterator begin() const noexcept { return Data_.begin(); }
@@ -304,6 +311,16 @@ class IrredTensor
 	 return i.value();
       }
 
+      value_type& operator()(int r, int c)
+      {
+	 auto i = Data_.row(r).find(c);
+	 if (i == Data_.row(r).end())
+	 {
+	    i = Data_.row(r).insert(c, value_type{});
+	 }
+	 return i.value();
+      }
+
       StructureType& data() { return Data_; }
       StructureType const& data() const { return Data_; }
 
@@ -359,6 +376,7 @@ struct ScalarTypes<Tensor::IrredTensor<T, B1, B2, S>> : ScalarTypes<T> {};
 namespace Tensor
 {
 
+#if 0
 template <typename T, typename U, typename B1, typename B2, typename S>
 void
 set(IrredTensor<T, B1, B2, S>& x, IrredTensor<U, B1, B2, S> const& y)
@@ -377,6 +395,13 @@ set(IrredTensor<T, B1, B2, S>& x, IrredTensor<U, B1, B2, S> const& y)
       }
    }
    x.check_structure();
+}
+#endif
+
+template <typename T, typename B1, typename B2, typename S>
+bool is_scalar(IrredTensor<T, B1, B2, S> const& x)
+{
+   return is_scalar(x.TransformsAs());
 }
 
 template <typename T, typename B1, typename B2, typename S>
@@ -737,6 +762,15 @@ prod(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S> const& y, Qua
    return Result;
 }
 
+template <typename T, typename B1, typename B2, typename B3, typename S>
+inline
+IrredTensor<T, B1, B3, S>
+prod(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S> const& y)
+{
+   CHECK_EQUAL((x.TransformsAs()*y.TransformsAs()).size(), 1);
+   return prod(x, y, (x.TransformsAs()*y.TransformsAs())[0]);  // TODO: should be x+y
+}
+
 template <typename T, typename B1, typename B2, typename B3, typename S, typename U>
 void
 add_prod(U Factor, IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S> const& y, IrredTensor<T, B1, B3, S>& Result)
@@ -776,19 +810,42 @@ operator*(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S> const& y
 template <typename T, typename B1, typename B2, typename S, typename U>
 inline
 std::enable_if_t<blas::is_numeric_v<U>, IrredTensor<T, B1, B2, S>>
-operator*(IrredTensor<T, B1, B2, S> Result, U const& a)
+operator*(IrredTensor<T, B1, B2, S>&& Result, U const& a)
 {
    Result.data() *= a;
-   return Result;
+   return std::move(Result);
 }
 
 template <typename T, typename B1, typename B2, typename S, typename U>
 inline
 std::enable_if_t<blas::is_numeric_v<U>, IrredTensor<T, B1, B2, S>>
-operator*(U const& a, IrredTensor<T, B1, B2, S> Result)
+operator*(IrredTensor<T, B1, B2, S> const& x, U const& a)
+{
+   IrredTensor<T, B1, B2, S> Result(x);
+   Result *= a;
+   return Result;
+}
+
+
+template <typename T, typename B1, typename B2, typename S, typename U>
+inline
+std::enable_if_t<blas::is_numeric_v<U>, IrredTensor<T, B1, B2, S>>
+operator*(U const& a, IrredTensor<T, B1, B2, S>&& Result)
 {
    Result.data() *= a;
+   return std::move(Result);
+}
+
+template <typename T, typename B1, typename B2, typename S, typename U>
+inline
+std::enable_if_t<blas::is_numeric_v<U>, IrredTensor<T, B1, B2, S>>
+operator*(U const& a, IrredTensor<T, B1, B2, S> const& x)
+{
+   IrredTensor<T, B1, B2, S> Result(copy(x));
+   Result *= a;
    return Result;
+   Result.data() *= a;
+   return std::move(Result);
 }
 
 // outer_product: outer product of tensor operators.
