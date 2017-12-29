@@ -255,7 +255,7 @@ namespace Tensor
 // arithmetic
 
 template <typename T, typename B1, typename B2, typename S>
-ReducibleTensor<T, B1, B2, S> operator+(ReducibleTensor<T, B1, B2, S> const& x, 
+ReducibleTensor<T, B1, B2, S> operator+(ReducibleTensor<T, B1, B2, S> const& x,
 					ReducibleTensor<T, B1, B2, S> const& y)
 {
    ReducibleTensor<T, B1, B2, S> Result = copy(x);
@@ -263,11 +263,22 @@ ReducibleTensor<T, B1, B2, S> operator+(ReducibleTensor<T, B1, B2, S> const& x,
    return Result;
 }
 template <typename T, typename B1, typename B2, typename S>
-ReducibleTensor<T, B1, B2, S> operator-(ReducibleTensor<T, B1, B2, S> const& x, 
+ReducibleTensor<T, B1, B2, S> operator-(ReducibleTensor<T, B1, B2, S> const& x,
 					ReducibleTensor<T, B1, B2, S> const& y)
 {
    ReducibleTensor<T, B1, B2, S> Result = copy(x);
    Result -= y;
+   return Result;
+}
+
+template <typename T, typename B1, typename B2, typename S>
+ReducibleTensor<T, B1, B2, S> operator-(ReducibleTensor<T, B1, B2, S> const& x)
+{
+   ReducibleTensor<T, B1, B2, S> Result(x.Basis1(), x.Basis2());
+   for (auto const& c : x)
+   {
+      Result.insert(-c);
+   }
    return Result;
 }
 
@@ -528,7 +539,7 @@ operator*(ReducibleTensor<T, B, B, S> const& x, U a)
 {
    ReducibleTensor<T, B, B, S> Result(copy(x));
    Result *= a;
-   return Result;
+   return std::move(Result);
 }
 
 template <typename T, typename B, typename S, typename U>
@@ -537,7 +548,7 @@ std::enable_if_t<blas::is_numeric_v<U>, ReducibleTensor<T, B, B, S>>
 operator*(ReducibleTensor<T, B, B, S>&& Result, U a)
 {
    Result *= a;
-   return Result;
+   return std::move(Result);
 }
 
 
@@ -548,7 +559,7 @@ operator*(U a, ReducibleTensor<T, B, B, S> const& x)
 {
    ReducibleTensor<T, B, B, S> Result(copy(x));
    Result *= a;
-   return Result;
+   return std::move(Result);
 }
 
 template <typename T, typename B, typename S, typename U>
@@ -557,7 +568,7 @@ std::enable_if_t<blas::is_numeric_v<U>, ReducibleTensor<T, B, B, S>>
 operator*(U a, ReducibleTensor<T, B, B, S>&& Result)
 {
    Result *= a;
-   return Result;
+   return std::move(Result);
 }
 
 template <typename T, typename B1, typename B2, typename S>

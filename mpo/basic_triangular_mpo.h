@@ -262,6 +262,36 @@ BasicTriangularMPO::debug_check_structure() const
 #endif
 }
 
-// herm, conj, adjoint, inv_adjoint
+inline
+BasicTriangularMPO conj(BasicTriangularMPO x)
+{
+   for (auto& c : x)
+   {
+      c = conj(std::move(c));
+   }
+   return x;
+}
+
+inline
+BasicTriangularMPO adjoint(BasicTriangularMPO x)
+{
+   for (auto& c : x)
+   {
+      c = adjoint(std::move(c));
+   }
+   return x;
+}
+
+inline
+BasicTriangularMPO inv_adjoint(BasicTriangularMPO x)
+{
+   for (auto& c : x)
+   {
+      c = inv_adjoint(std::move(c));
+   }
+   return x;
+}
+
+
 
 #endif

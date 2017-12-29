@@ -161,6 +161,7 @@ setVector(int N, T const* A, int stridea, cuda::gpu_ptr<T> B, int strideb)
 
 // helper forwarding functions
 
+inline
 void dotc(cublasHandle_t handle, int n,
 	  float const* x, int incx,
 	  float const* y, int incy,
@@ -169,6 +170,7 @@ void dotc(cublasHandle_t handle, int n,
    cublas::check_error(cublasSdot(handle, n, x, incx, y, incy, result));
 }
 
+inline
 void dotc(cublasHandle_t handle, int n,
 	  double const* x, int incx,
 	  double const* y, int incy,
@@ -177,25 +179,27 @@ void dotc(cublasHandle_t handle, int n,
    cublas::check_error(cublasDdot(handle, n, x, incx, y, incy, result));
 }
 
+inline
 void dotc(cublasHandle_t handle, int n,
 	  std::complex<float> const* x, int incx,
 	  std::complex<float> const* y, int incy,
 	  std::complex<float>* result)
 {
-   cublas::check_error(cublasCdotc(handle, n, 
-				   reinterpret_cast<cuComplex const*>(x), incx, 
-				   reinterpret_cast<cuComplex const*>(y), incy, 
+   cublas::check_error(cublasCdotc(handle, n,
+				   reinterpret_cast<cuComplex const*>(x), incx,
+				   reinterpret_cast<cuComplex const*>(y), incy,
 				   reinterpret_cast<cuComplex*>(result)));
 }
 
+inline
 void dotc(cublasHandle_t handle, int n,
 	  std::complex<double> const* x, int incx,
 	  std::complex<double> const* y, int incy,
 	  std::complex<double>* result)
 {
-   cublas::check_error(cublasZdotc(handle, n, 
-				   reinterpret_cast<cuDoubleComplex const*>(x), incx, 
-				   reinterpret_cast<cuDoubleComplex const*>(y), incy, 
+   cublas::check_error(cublasZdotc(handle, n,
+				   reinterpret_cast<cuDoubleComplex const*>(x), incx,
+				   reinterpret_cast<cuDoubleComplex const*>(y), incy,
 				   reinterpret_cast<cuDoubleComplex*>(result)));
 }
 
@@ -226,8 +230,8 @@ vector_copy(int n, cuda::const_gpu_ptr<std::complex<double>> x, int incx, cuda::
    cublas::handle& H = cublas::get_handle();
    H.set_stream(y.get_stream());
    y.wait_for(x);
-   cublas::check_error(cublasZcopy(H.raw_handle(), n, 
-				   reinterpret_cast<cuDoubleComplex const*>(x.device_ptr()), incx, 
+   cublas::check_error(cublasZcopy(H.raw_handle(), n,
+				   reinterpret_cast<cuDoubleComplex const*>(x.device_ptr()), incx,
 				   reinterpret_cast<cuDoubleComplex*>(y.device_ptr()), incy));
    x.wait_for(y);
 }
@@ -288,7 +292,7 @@ vector_add(int n, cuda::const_gpu_ptr<double> x, int incx,
 template <typename T>
 inline
 std::enable_if_t<is_cuda_floating_point_v<T>, void>
-vector_inner_prod(int n, 
+vector_inner_prod(int n,
 		  cuda::const_gpu_ptr<T> x, int incx,
                   cuda::const_gpu_ptr<T> y, int incy,
 		  cuda::gpu_ref<T>& r)
@@ -306,7 +310,7 @@ vector_inner_prod(int n,
 template <typename T>
 inline
 std::enable_if_t<is_cuda_floating_point_v<T>, void>
-vector_inner_prod_nested(int n, 
+vector_inner_prod_nested(int n,
 			 cuda::const_gpu_ptr<T> x, int incx,
 			 cuda::const_gpu_ptr<T> y, int incy,
 			 cuda::gpu_ref<T>& r, blas::InnerProd)
@@ -324,7 +328,7 @@ vector_inner_prod_nested(int n,
 template <typename T>
 inline
 std::enable_if<is_cuda_floating_point_v<T>, void>
-vector_inner_prod_nested(int n, 
+vector_inner_prod_nested(int n,
 			 cuda::const_gpu_ptr<T> x, int incx,
 			 cuda::const_gpu_ptr<T> y, int incy,
 			 cuda::gpu_ref<T>& r, blas::InnerProdNested)
@@ -391,9 +395,9 @@ geam(char Atrans, int M, int N,
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    C.wait_for(A);
    cublas::check_error(cublasZgeam(H.raw_handle(), cublas::cublas_trans(Atrans), CUBLAS_OP_N, M, N,
-				   reinterpret_cast<cuDoubleComplex const*>(&alpha), 
+				   reinterpret_cast<cuDoubleComplex const*>(&alpha),
 				   reinterpret_cast<cuDoubleComplex const*>(A.device_ptr()), lda,
-				   reinterpret_cast<cuDoubleComplex const*>(&beta), 
+				   reinterpret_cast<cuDoubleComplex const*>(&beta),
 				   reinterpret_cast<cuDoubleComplex const*>(C.device_ptr()), ldc,
 				   reinterpret_cast<cuDoubleComplex*>(C.device_ptr()), ldc));
    A.wait_for(C);
@@ -434,9 +438,9 @@ geam(char Atrans, char Btrans, int M, int N,
    C.wait_for(A);
    C.wait_for(B);
    cublas::check_error(cublasZgeam(H.raw_handle(), cublas::cublas_trans(Atrans), cublas::cublas_trans(Btrans), M, N,
-				   reinterpret_cast<cuDoubleComplex const*>(&alpha), 
+				   reinterpret_cast<cuDoubleComplex const*>(&alpha),
 				   reinterpret_cast<cuDoubleComplex const*>(A.device_ptr()), lda,
-				   reinterpret_cast<cuDoubleComplex const*>(&beta), 
+				   reinterpret_cast<cuDoubleComplex const*>(&beta),
 				   reinterpret_cast<cuDoubleComplex const*>(B.device_ptr()), ldb,
 				   reinterpret_cast<cuDoubleComplex*>(C.device_ptr()), ldc));
    A.wait_for(C);
@@ -498,7 +502,7 @@ matrix_scale(int M, int N, std::complex<double> alpha, cuda::gpu_ptr<std::comple
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    double beta = 0.0;
    cublas::check_error(cublasZgeam(H.raw_handle(), CUBLAS_OP_N, CUBLAS_OP_N, M, N,
-				   reinterpret_cast<cuDoubleComplex const*>(&alpha), 
+				   reinterpret_cast<cuDoubleComplex const*>(&alpha),
 				   reinterpret_cast<cuDoubleComplex const*>(A.device_ptr()), lda,
 				   reinterpret_cast<cuDoubleComplex const*>(&beta), nullptr, 1,
 				   reinterpret_cast<cuDoubleComplex*>(A.device_ptr()), lda));
@@ -554,12 +558,14 @@ matrix_add_inner_prod_nested(char Atrans, char Btrans, int M, int N,
 }
 
 // TODO: this implementation is not ideal
+inline
 void
 matrix_norm_frob_sq(int M, int N, const_gpu_ptr<double> A, int lda, gpu_ref<double>& Result)
 {
    matrix_inner_prod('N', 'N', M, N, A, lda, A, lda, Result);
 }
 
+inline
 void
 matrix_norm_frob_sq(int M, int N, const_gpu_ptr<std::complex<double>> A, int lda, gpu_ref<double>& Result)
 {

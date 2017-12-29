@@ -902,19 +902,18 @@ bool remove_redundant_by_row(OperatorComponent& Op)
             }
             //            TRACE(ijInner)(iNormSq)(jNormSq);
             // are rows i,j proportional to each other?
-            if (LinearAlgebra::norm_frob(LinearAlgebra::norm_frob_sq(ijInner) - iNormSq*jNormSq)
+            if (norm_frob(norm_frob_sq(ijInner) - iNormSq*jNormSq)
                 < std::numeric_limits<double>::epsilon() * iNormSq*jNormSq*100)
             {
-               //DEBUG_TRACE((LinearAlgebra::norm_frob_sq(ijInner) - iNormSq*jNormSq)/(iNormSq*jNormSq))(iNormSq)(jNormSq);
                // they are proportional: get the constant of proportionality
                std::complex<double> Factor = ijInner / iNormSq;
                ToCollapseOnto[j] = std::make_pair(i, Factor);
                ToDelete.insert(j);
             }
-            else if (LinearAlgebra::norm_frob(LinearAlgebra::norm_frob_sq(ijInner) - iNormSq*jNormSq)
+            else if (norm_frob(norm_frob_sq(ijInner) - iNormSq*jNormSq)
                 < std::numeric_limits<double>::epsilon() * iNormSq*jNormSq*10000000)
             {
-               TRACE("smallish norm")(LinearAlgebra::norm_frob_sq(ijInner))(iNormSq)(jNormSq);
+               TRACE("smallish norm")(norm_frob_sq(ijInner))(iNormSq)(jNormSq);
             }
             ++j;
          }
@@ -945,7 +944,7 @@ bool remove_redundant_by_row(OperatorComponent& Op)
 
       for (int j = 0; j < i; ++j)
       {
-         if (!iterate_at(ConstOp.data(), i, j))
+         if (!ConstOp.exists(i,j))
             continue;
 
          if (ToCollapseOnto.find(j) != ToCollapseOnto.end())
@@ -958,11 +957,11 @@ bool remove_redundant_by_row(OperatorComponent& Op)
          }
       }
       // the diagonal part
-      if (iterate_at(ConstOp.data(), i, i))
+      if (ConstOp.exists(i,i))
          Result(NewBasisMapping[i], NewBasisMapping[i]) = ConstOp(i,i);
    }
 
-   Op = Result;
+   Op = std::move(Result);
    return true;
 }
 
@@ -1029,7 +1028,7 @@ bool remove_redundant_by_column(OperatorComponent& Op)
             }
             //            TRACE(ijInner)(iNormSq)(jNormSq);
             // are rows i,j proportional to each other?
-            if (LinearAlgebra::norm_frob(LinearAlgebra::norm_frob_sq(ijInner) - iNormSq*jNormSq)
+            if (norm_frob(norm_frob_sq(ijInner) - iNormSq*jNormSq)
                 < std::numeric_limits<double>::epsilon()*iNormSq*jNormSq*100)
             {
                // yes, get the constant of proportionality
@@ -1038,11 +1037,11 @@ bool remove_redundant_by_column(OperatorComponent& Op)
                ToDelete.insert(j);
                //               TRACE("Collapsible")(i)(j)(Factor);
             }
-            else if (LinearAlgebra::norm_frob(LinearAlgebra::norm_frob_sq(ijInner)
+            else if (norm_frob(norm_frob_sq(ijInner)
                                               - iNormSq*jNormSq)
                 < std::numeric_limits<double>::epsilon() * iNormSq*jNormSq*10000000)
             {
-               TRACE("smallish norm")(LinearAlgebra::norm_frob_sq(ijInner))(iNormSq)(jNormSq);
+               TRACE("smallish norm")(norm_frob_sq(ijInner))(iNormSq)(jNormSq);
             }
 
             --j;
@@ -1074,7 +1073,7 @@ bool remove_redundant_by_column(OperatorComponent& Op)
 
       for (int j = i+1; j < Size; ++j)
       {
-         if (!iterate_at(ConstOp.data(), j, i))
+         if (!ConstOp.exists(j,i))
             continue;
 
          if (ToCollapseOnto.find(j) != ToCollapseOnto.end())
@@ -1090,11 +1089,11 @@ bool remove_redundant_by_column(OperatorComponent& Op)
          }
       }
       // the diagonal part
-      if (iterate_at(ConstOp.data(), i, i))
+      if (ConstOp.exists(i,i))
          Result(NewBasisMapping[i], NewBasisMapping[i]) = ConstOp(i,i);
    }
 
-   Op = Result;
+   Op = std::move(Result);
    return true;
 }
 

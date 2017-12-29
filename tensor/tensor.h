@@ -185,7 +185,7 @@ class IrredTensor
       IrredTensor() = default;
 
       IrredTensor(IrredTensor const& Other) = delete;
-      
+
       template <typename U>
       explicit IrredTensor(IrredTensor<U, Basis1T, Basis2T, Structure> const& Other)
 	 : Basis1_(Other.Basis1_), Basis2_(Other.Basis2_), Trans_(Other.Trans_),
@@ -207,12 +207,10 @@ class IrredTensor
 
       explicit IrredTensor(basis1_type const& Basis);
 
-#if 0
       template <typename U, typename US>
-      IrredTensor(IrredTensor<U, Basis1T, Basis2T, US> const& r)
+      explicit IrredTensor(IrredTensor<U, Basis1T, Basis2T, US> const& r)
          : Basis1_(r.Basis1()), Basis2_(r.Basis2()), Trans_(r.TransformsAs()),
            Data_(r.data()) {}
-#endif
 
       IrredTensor& operator=(IrredTensor const& Other) = default;
       IrredTensor& operator=(IrredTensor&& Other) = default;
@@ -376,7 +374,7 @@ struct ScalarTypes<Tensor::IrredTensor<T, B1, B2, S>> : ScalarTypes<T> {};
 namespace Tensor
 {
 
-#if 0
+// copy across tag types, eg gpu -> cpu
 template <typename T, typename U, typename B1, typename B2, typename S>
 void
 set(IrredTensor<T, B1, B2, S>& x, IrredTensor<U, B1, B2, S> const& y)
@@ -396,7 +394,6 @@ set(IrredTensor<T, B1, B2, S>& x, IrredTensor<U, B1, B2, S> const& y)
    }
    x.check_structure();
 }
-#endif
 
 template <typename T, typename B1, typename B2, typename S>
 bool is_scalar(IrredTensor<T, B1, B2, S> const& x)
@@ -474,6 +471,13 @@ operator-(IrredTensor<T, B1, B2, S>&& x)
 
 template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>
+operator-(IrredTensor<T, B1, B2, S> const& x)
+{
+   return IrredTensor<T, B1, B2, S>(x.Basis1(), x.Basis2(), x.TransformsAs(), -x.data());
+}
+
+template <typename T, typename B1, typename B2, typename S>
+IrredTensor<T, B1, B2, S>
 operator+(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& y)
 {
    if (x.is_null()) return copy(y);
@@ -530,6 +534,7 @@ decltype(norm_frob(std::declval<T>()))
 norm_frob_sq(IrredTensor<T, B1, B2, S> const& x)
 {
    decltype(norm_frob(std::declval<T>())) Result{};
+   using ::norm_frob_sq;
    for (auto const& r : x)
    {
       for (auto const& c : r)

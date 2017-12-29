@@ -196,7 +196,7 @@ void print_structure(ProductMPO const& Op, std::ostream& out, double UnityEpsilo
 inline
 void print_structure(ProductMPO const& Op, std::ostream& out)
 {
-   print_structure(Op, out, DefaultClassifyUnityEpsilon);
+   print_structure(Op, out, DefaultClassifyUnityEpsilon<real>);
 }
 
 #endif

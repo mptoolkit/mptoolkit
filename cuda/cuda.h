@@ -20,6 +20,8 @@
 #if !defined(MPTOOLKIT_CUDA_CUDA_H)
 #define MPTOOLKIT_CUDA_CUDA_H
 
+// cuda.h must be valid C++11, since CUDA 8 doesn't have C++14 support.
+
 #include <list>
 #include <mutex>
 #include <memory>
@@ -258,8 +260,10 @@ class timer
 template <typename T>
 struct is_cuda_floating_point : std::false_type {};
 
+#if defined(__cpp_variable_templates)
 template <typename T>
 constexpr bool is_cuda_floating_point_v = is_cuda_floating_point<T>::value;
+#endif
 
 template <> struct is_cuda_floating_point<float> : std::true_type {};
 template <> struct is_cuda_floating_point<double> : std::true_type {};

@@ -117,8 +117,9 @@ class ParserError : public std::exception
 inline
 int as_int(complex x)
 {
+   using ::norm_frob;
    int j = boost::math::iround(x.real());
-   if (LinearAlgebra::norm_frob(x - double(j)) > 1E-7)
+   if (norm_frob(x - real(j)) > 1E-7)
        throw ParserError("expected an integer, got a real/complex number: " + format_complex(x));
    return j;
 }
@@ -126,7 +127,8 @@ int as_int(complex x)
 inline
 double as_real(complex x)
 {
-   if (LinearAlgebra::norm_frob(x.imag()) > 1E-7)
+   using ::norm_frob;
+   if (norm_frob(x.imag()) > 1E-7)
        throw ParserError("expected a real number, got a complex number: " + format_complex(x));
    return x.real();
 }
@@ -150,7 +152,8 @@ struct ElementConj : boost::static_visitor<element_type>
 {
    element_type operator()(complex c) const
    {
-      return LinearAlgebra::conj(c);
+      using std::conj;
+      return conj(c);
    }
 
    template <typename T>
@@ -165,7 +168,8 @@ struct ElementAdjoint : boost::static_visitor<element_type>
 {
    element_type operator()(complex c) const
    {
-      return LinearAlgebra::conj(c);
+      using std::conj;
+      return conj(c);
    }
 
    template <typename T>
@@ -180,7 +184,8 @@ struct ElementInvAdjoint : boost::static_visitor<element_type>
 {
    element_type operator()(complex c) const
    {
-      return LinearAlgebra::conj(c);
+      using std::conj;
+      return conj(c);
    }
 
    template <typename T>
@@ -539,13 +544,15 @@ struct binary_inner_product : boost::static_visitor<element_type>
 {
    element_type operator()(complex const& x, complex const& y) const
    {
-      return element_type(LinearAlgebra::conj(x)*y);
+      using std::conj;
+      return element_type(conj(x)*y);
    }
 
    template <typename T>
    element_type operator()(complex const& x, T const& y) const
    {
-      return element_type(LinearAlgebra::conj(x)*y);
+      using std::conj;
+      return element_type(conj(x)*y);
    }
 
    template <typename T>

@@ -94,11 +94,11 @@ join(ProductMPO const& Op1, ProductMPO const& Op2)
    ProductMPO Result(Op1.size() + Op2.size());
    for (int i = 0; i < Op1.size(); ++i)
    {
-      Result[i] = Op1[i];
+      Result[i] = copy(Op1[i]);
    }
    for (int i = 0; i < Op2.size(); ++i)
    {
-      Result[i+Op1.size()] = Op2[i];
+      Result[i+Op1.size()] = copy(Op2[i]);
    }
    return Result;
 }
@@ -110,7 +110,7 @@ repeat(ProductMPO const& Op, int Count)
    ProductMPO Result(Op.size()*Count);
    for (int i = 0; i < Result.size(); ++i)
    {
-      Result[i] = Op[i%Op.size()];
+      Result[i] = copy(Op[i%Op.size()]);
    }
    return Result;
 }
@@ -230,7 +230,7 @@ prod_unit_right_to_left(BasicFiniteMPO const& Op, int UnitCellSize)
    // initialize the first unit cell
    for (int i = 0; i < UnitCellSize; ++i)
    {
-      Result[i] = Op[i];
+      Result[i] = copy(Op[i]);
    }
 
    // remaining unit cells
@@ -264,7 +264,7 @@ prod_unit_left_to_right(BasicFiniteMPO const& Op, int UnitCellSize)
    // initialize the first unit cell
    for (int i = 0; i < UnitCellSize; ++i)
    {
-      Result[i] = Op[i];
+      Result[i] = copy(Op[i]);
    }
 
    // remaining unit cells

@@ -25,7 +25,6 @@
 
 #include "common/math_const.h"
 #include "quantumnumbers/quantumnumber.h"  // for the ternary_prod implementation
-#include "linearalgebra/scalar.h"
 #include "parser/visitor_actions.h"
 #include "lattice/function.h"
 

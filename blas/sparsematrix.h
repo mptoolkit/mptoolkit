@@ -95,7 +95,7 @@ class BasicSparseVector
       template<typename... Args>
       void emplace(int Col, Args&&... args)
       {
-         bool Inserted = Elements.emplace(std::piecewise_construct, std::forward_as_tuple(Col), 
+         bool Inserted = Elements.emplace(std::piecewise_construct, std::forward_as_tuple(Col),
 					  std::forward_as_tuple(std::forward<Args>(args)...)).second;
          DEBUG_CHECK(Inserted);
       }
@@ -583,7 +583,7 @@ SparseMatrix<T> operator-(SparseMatrix<T> const& x)
    {
       for (auto const& c : r)
       {
-	 Result.insert(r.row(), c.col(), -c.value());
+	 Result.insert(r.row(), c.col(), -c.value);
       }
    }
    return Result;
