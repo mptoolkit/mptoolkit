@@ -588,8 +588,29 @@ gemm(char Atrans, char Btrans, int M, int N, int K, double alpha,
    C.wait_for(A);
    C.wait_for(B);
    cublas::check_error(cublasDgemm(H.raw_handle(), cublas::cublas_trans(Atrans), cublas::cublas_trans(Btrans), M, N, K,
-                           &alpha, A.device_ptr(), lda, B.device_ptr(), ldb,
-                           &beta, C.device_ptr(), ldc));
+                                   &alpha, A.device_ptr(), lda, B.device_ptr(), ldb,
+                                   &beta, C.device_ptr(), ldc));
+   A.wait_for(C);
+   B.wait_for(C);
+}
+
+inline
+void
+gemm(char Atrans, char Btrans, int M, int N, int K, std::complex<double> alpha,
+     cuda::const_gpu_ptr<std::complex<double>> A, int lda, cuda::const_gpu_ptr<std::complex<double>> B, int ldb,
+     std::complex<double> beta, cuda::gpu_ptr<std::complex<double>> C, int ldc)
+{
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(C.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
+   C.wait_for(A);
+   C.wait_for(B);
+   cublas::check_error(cublasZgemm(H.raw_handle(), cublas::cublas_trans(Atrans), cublas::cublas_trans(Btrans), M, N, K,
+                                   reinterpret_cast<cuDoubleComplex const*>(&alpha),
+                                   reinterpret_cast<cuDoubleComplex const*>(A.device_ptr()), lda,
+                                   reinterpret_cast<cuDoubleComplex const*>(B.device_ptr()), ldb,
+                                   reinterpret_cast<cuDoubleComplex const*>(&beta),
+                                   reinterpret_cast<cuDoubleComplex*>(C.device_ptr()), ldc));
    A.wait_for(C);
    B.wait_for(C);
 }

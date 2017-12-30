@@ -248,7 +248,21 @@ inject_right_mask(StateComponent const& In,
 
       --I1; --I2; --OpIter; --MaskIter;
 
-      Result = contract_from_right_mask(herm(*OpIter), *I1, E, herm(*I2), *(MaskIter-1), *MaskIter);
+      std::set<int> Mask1;
+      for (unsigned i = 0; i < (MaskIter-1)->size(); ++i)
+      {
+         if ((*(MaskIter-1))[i] == 0)
+            Mask1.insert(i);
+      }
+
+      std::set<int> Mask2;
+      for (unsigned i = 0; i < (MaskIter)->size(); ++i)
+      {
+         if ((*(MaskIter))[i] == 0)
+            Mask2.insert(i);
+      }
+
+      Result = contract_from_right_mask(herm(*OpIter), *I1, E, herm(*I2), Mask1, Mask2);
 
    }
    return Result;

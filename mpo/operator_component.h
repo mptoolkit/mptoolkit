@@ -197,7 +197,7 @@ class BasicOperatorComponent
 
       QuantumNumber const& qn1(int i) const { return Basis1_[i]; }
       QuantumNumber const& qn2(int j) const { return Basis2_[j]; }
-      
+
       data_type& data() { return Data_; }
       data_type const& data() const { return Data_; }
 
@@ -578,10 +578,11 @@ contract_from_right(HermitianProxy<OperatorComponent> const& M,
                     StateComponent const& F,
                     HermitianProxy<StateComponent> const& B);
 
+#if 0
 inline
 StateComponent
 contract_from_right(HermitianProxy<OperatorComponent> const& M,
-                    StateComponent const& A,
+                    SimpleStateComponent const& A,
                     StateComponent const& F,
                     HermitianProxy<StateComponent> const& B)
 {
@@ -590,14 +591,17 @@ contract_from_right(HermitianProxy<OperatorComponent> const& M,
    StateComponent BX = copy(B.base());
    return contract_from_right(M, AX, F, herm(BX));
 }
+#endif
 
+// version of contract_from_right where we exclude elements
+// in Mask1/Mask2
 StateComponent
 contract_from_right_mask(HermitianProxy<OperatorComponent> const& M,
                          StateComponent const& A,
                          StateComponent const& F,
                          HermitianProxy<StateComponent> const& B,
-                         std::vector<int> const& Mask1,
-                         std::vector<int> const& Mask2);
+                         std::set<int> const& Mask1,
+                         std::set<int> const& Mask2);
 
 // Contraction from the left
 // Result'[a](i,j) = herm(M(s',s)(a',a)) herm(A[s'](i',i)) E[a'](i',j') B[s](j',j)

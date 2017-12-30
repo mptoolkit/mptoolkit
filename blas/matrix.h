@@ -72,7 +72,7 @@ class Matrix : public NormalMatrix<T, Matrix<T, Tag>, Tag>
 
       using NormalMatrix<T, Matrix<T, Tag>, Tag>::operator();
 
-      Matrix() = delete;
+      Matrix() : Rows(0), Cols(0), LeadingDimension(0) {}
 
       Matrix(Matrix const&) = delete;
 

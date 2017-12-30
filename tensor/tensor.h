@@ -244,6 +244,9 @@ class IrredTensor
       typename StructureType::row_type& operator[](int r) { return Data_[r]; }
       typename StructureType::row_type const& operator[](int r) const { return Data_[r]; }
 
+      typename StructureType::row_type& row(int r) { return Data_[r]; }
+      typename StructureType::row_type const& row(int r) const { return Data_[r]; }
+
       IrredTensor& operator+=(IrredTensor const& Op);
       IrredTensor& operator+=(IrredTensor&& Op);
 
