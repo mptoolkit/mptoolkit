@@ -28,7 +28,7 @@ LatticeSite::arg(std::string const& a) const
    const_argument_iterator I = this->find_arg(a);
    if (I != this->end_arg())
       return I->second;
-   return 0.0;
+   PANIC("argument not found");  // TODO: this should throw an exception
 }
 
 LatticeSite::operator_type const&
