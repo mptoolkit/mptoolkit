@@ -3,7 +3,7 @@
 #   AX_CUSOLVER([ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
 
 AC_DEFUN([AX_CUSOLVER], [
-AC_REQUIRE([AX_CUDA])
+AC_REQUIRE([AX_CUDA_CONFIG])
 AC_REQUIRE([AX_OPENMP])
 ax_cusolver_ok=no
 
@@ -33,17 +33,18 @@ elif test "x$CUSOLVER_LIBS" != x; then
                 CUSOLVER_LIBS=""
         fi
 else
-   # CUSOLVER in standard location?
-   for cusolver in cusolver; do
-           if test $ax_cusolver_ok = no; then
-                   save_LIBS="$LIBS"; LIBS="$CUDA_LIBS $LIBS"
-                   save_CXXFLAGS="$CXXFLAGS"; CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
-                   AC_CHECK_LIB($cusolver, cusolverDnCreate,
-                      [ax_cusolver_ok=yes; CUSOLVER_LIBS="-l$cusolver"], [], [$FLIBS])
-                   LIBS="$save_LIBS"
-                   CXXFLAGS="$save_CXXFLAGS"
-           fi
-   done
+  	# CUSOLVER in standard location?
+	ax_cusolver_ok=no
+	for cusolver in cusolver; do
+	        if test $ax_cusolver_ok = no; then
+          		save_LIBS="$LIBS"; LIBS="$CUDA_LIBS $LIBS"
+                   	save_CXXFLAGS="$CXXFLAGS"; CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
+                   	AC_CHECK_LIB($cusolver, cusolverDnCreate,
+                      		[ax_cusolver_ok=yes; CUSOLVER_LIBS="-l$cusolver"], [], [$FLIBS])
+                   	LIBS="$save_LIBS"
+                   	CXXFLAGS="$save_CXXFLAGS"
+           	fi
+   	done
 fi
 
 AC_SUBST(CUSOLVER_LIBS)

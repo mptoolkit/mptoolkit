@@ -32,7 +32,7 @@ else
    # CUBLAS in standard location?
    ax_cublas_ok=no
    for cublas in cublas; do
-        if test "x$ax_cublas_ok" = no; then
+        if test "$ax_cublas_ok" = no; then
 	   	save_LIBS="$LIBS"; LIBS="$CUDA_LIBS $LIBS"
         	AC_CHECK_LIB($cublas, cublasSetMatrix,
         		[ax_cublas_ok=yes; CUBLAS_LIBS="-l$cublas"], [], [$FLIBS])
