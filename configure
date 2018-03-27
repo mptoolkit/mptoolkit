@@ -12057,6 +12057,8 @@ case $with_cublas in
         *) CUBLAS_LIBS="-l$with_cublas" ;;
 esac
 
+
+
 # We cannot use CUBLAS if CUDA is not found
 if test "x$ax_cuda_ok" = xdisable; then
         CUBLAS_LIBS=""
@@ -12094,7 +12096,7 @@ _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
   ax_cublas_ok=yes
 else
-  CUBLAS_LIBS=""
+  ax_cublas_ok="no"
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
@@ -12107,9 +12109,9 @@ $as_echo "$ax_cublas_ok" >&6; }
 else
    # CUBLAS in standard location?
    for cublas in cublas; do
-           if test $ax_cublas_ok = no; then
-                   save_LIBS="$LIBS"; LIBS="$CUDA_LIBS $LIBS"
-                   as_ac_Lib=`$as_echo "ac_cv_lib_$cublas''_cublasSetMatrix" | $as_tr_sh`
+        if test "x$ax_cublas_ok" = no; then
+	   	save_LIBS="$LIBS"; LIBS="$CUDA_LIBS $LIBS"
+        	as_ac_Lib=`$as_echo "ac_cv_lib_$cublas''_cublasSetMatrix" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for cublasSetMatrix in -l$cublas" >&5
 $as_echo_n "checking for cublasSetMatrix in -l$cublas... " >&6; }
 if eval \${$as_ac_Lib+:} false; then :
@@ -12159,8 +12161,8 @@ if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
   ax_cublas_ok=yes; CUBLAS_LIBS="-l$cublas"
 fi
 
-                   LIBS="$save_LIBS"
-           fi
+	        LIBS="$save_LIBS"
+        fi
    done
 fi
 

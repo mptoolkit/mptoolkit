@@ -16,6 +16,8 @@ case $with_cublas in
         *) CUBLAS_LIBS="-l$with_cublas" ;;
 esac
 
+
+
 # We cannot use CUBLAS if CUDA is not found
 if test "x$ax_cuda_ok" = xdisable; then
         CUBLAS_LIBS=""
@@ -23,7 +25,7 @@ elif test "x$CUBLAS_LIBS" != x; then
 # check CUBLAS_LIBS environment variable
         save_LIBS="$LIBS"; LIBS="$CUBLAS_LIBS $CUDA_LIBS $LIBS"
         AC_MSG_CHECKING([for cublasSetMatrix in $CUBLAS_LIBS])
-        AC_TRY_LINK_FUNC(cublasSetMatrix, [ax_cublas_ok=yes], [CUBLAS_LIBS=""])
+        AC_TRY_LINK_FUNC(cublasSetMatrix, [ax_cublas_ok=yes], [ax_cublas_ok="no"])
         AC_MSG_RESULT($ax_cublas_ok)
         LIBS="$save_LIBS"
         if test $ax_cublas_ok = no; then
@@ -32,12 +34,12 @@ elif test "x$CUBLAS_LIBS" != x; then
 else
    # CUBLAS in standard location?
    for cublas in cublas; do
-           if test $ax_cublas_ok = no; then
-                   save_LIBS="$LIBS"; LIBS="$CUDA_LIBS $LIBS"
-                   AC_CHECK_LIB($cublas, cublasSetMatrix,
-                      [ax_cublas_ok=yes; CUBLAS_LIBS="-l$cublas"], [], [$FLIBS])
-                   LIBS="$save_LIBS"
-           fi
+        if test "x$ax_cublas_ok" = no; then
+	   	save_LIBS="$LIBS"; LIBS="$CUDA_LIBS $LIBS"
+        	AC_CHECK_LIB($cublas, cublasSetMatrix,
+        		[ax_cublas_ok=yes; CUBLAS_LIBS="-l$cublas"], [], [$FLIBS])
+	        LIBS="$save_LIBS"
+        fi
    done
 fi
 
