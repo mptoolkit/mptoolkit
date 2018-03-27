@@ -3,7 +3,7 @@
 #   AX_CUBLAS([ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
 
 AC_DEFUN([AX_CUBLAS], [
-AC_REQUIRE([AX_CUDA])
+AC_REQUIRE([AX_CUDA_CONFIG])
 ax_cublas_ok=no
 
 AC_ARG_WITH(cublas,
@@ -16,10 +16,7 @@ case $with_cublas in
         *) CUBLAS_LIBS="-l$with_cublas" ;;
 esac
 
-
-
-# We cannot use CUBLAS if CUDA is not found
-if test "x$ax_cuda_ok" = xdisable; then
+if test "x$ax_cublas_ok" = xdisable; then
         CUBLAS_LIBS=""
 elif test "x$CUBLAS_LIBS" != x; then
 # check CUBLAS_LIBS environment variable

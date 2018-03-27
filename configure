@@ -1421,8 +1421,8 @@ Optional Packages:
                           --with-boost-program-options=boost_program_options-gcc-mt-1_33_1
   --with-arpack=<lib>     use ARPACK library, default=-larpack
   --with-cuda             use CUDA
-  --with-cuda=<lib>       use CUDA library <lib>
   --with-cublas=<lib>     use CUBLAS library <lib> (requires CUDA)
+  --with-cuda=<lib>       use CUDA library <lib>
   --with-cusolver=<lib>   use CUSOLVER library <lib> (requires CUDA)
 
 Some influential environment variables:
@@ -11903,143 +11903,6 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
 
-ax_cuda_ok=no
-
-
-# Check whether --with-cuda was given.
-if test "${with_cuda+set}" = set; then :
-  withval=$with_cuda;
-fi
-
-
-case $with_cuda in
-        yes) ;;
-        no | "") ax_cuda_ok=disable ;;
-        -* | */* | *.a | *.so | *.so.* | *.o) CUDA_LIBS="$with_cuda" ;;
-        *) CUDA_LIBS="-l$with_cuda" ;;
-esac
-
-if test "x$ax_cuda_ok" = xdisable; then
-   CUDA_LIBS=""
-elif test "x$CUDA_LIBS" != x; then
-# First, check CUDA_LIBS environment variable
-        save_LIBS="$LIBS"; LIBS="$CUDA_LIBS $LIBS"
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for cudaGetDeviceCount in $CUDA_LIBS" >&5
-$as_echo_n "checking for cudaGetDeviceCount in $CUDA_LIBS... " >&6; }
-        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char cudaGetDeviceCount ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return cudaGetDeviceCount ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ax_cuda_ok=yes
-else
-  CUDA_LIBS=""
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cuda_ok" >&5
-$as_echo "$ax_cuda_ok" >&6; }
-        LIBS="$save_LIBS"
-        if test $ax_cuda_ok = no; then
-                CUDA_LIBS=""
-        fi
-else
-   # CUDA library in standard place?
-   for cuda in cudart ; do
-           if test $ax_cuda_ok = no; then
-                   as_ac_Lib=`$as_echo "ac_cv_lib_$cuda''_cudaGetDeviceCount" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cudaGetDeviceCount in -l$cuda" >&5
-$as_echo_n "checking for cudaGetDeviceCount in -l$cuda... " >&6; }
-if eval \${$as_ac_Lib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-l$cuda $LIBS $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char cudaGetDeviceCount ();
-#ifdef F77_DUMMY_MAIN
-
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-
-#endif
-int
-main ()
-{
-return cudaGetDeviceCount ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  eval "$as_ac_Lib=yes"
-else
-  eval "$as_ac_Lib=no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-eval ac_res=\$$as_ac_Lib
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  ax_cuda_ok=yes; CUDA_LIBS="-l$cuda"
-fi
-
-           fi
-   done
-fi
-
-
-
-# Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
-
-if test x"$ax_cuda_ok" = xyes; then
-
-$as_echo "#define HAVE_CUDA 1" >>confdefs.h
-
-        HAVE_CUDA=1
-
-
-else
-
-        echo -n
-fi
-
-
 
 ax_cublas_ok=no
 
@@ -12057,10 +11920,7 @@ case $with_cublas in
         *) CUBLAS_LIBS="-l$with_cublas" ;;
 esac
 
-
-
-# We cannot use CUBLAS if CUDA is not found
-if test "x$ax_cuda_ok" = xdisable; then
+if test "x$ax_cublas_ok" = xdisable; then
         CUBLAS_LIBS=""
 elif test "x$CUBLAS_LIBS" != x; then
 # check CUBLAS_LIBS environment variable
@@ -12196,6 +12056,143 @@ fi
 fi
 
 
+
+
+ax_cuda_ok=no
+
+
+# Check whether --with-cuda was given.
+if test "${with_cuda+set}" = set; then :
+  withval=$with_cuda;
+fi
+
+
+case $with_cuda in
+        yes) ;;
+        no | "") ax_cuda_ok=disable ;;
+        -* | */* | *.a | *.so | *.so.* | *.o) CUDA_LIBS="$with_cuda" ;;
+        *) CUDA_LIBS="-l$with_cuda" ;;
+esac
+
+if test "x$ax_cuda_ok" = xdisable; then
+   CUDA_LIBS=""
+elif test "x$CUDA_LIBS" != x; then
+# First, check CUDA_LIBS environment variable
+        save_LIBS="$LIBS"; LIBS="$CUDA_LIBS $LIBS"
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for cudaGetDeviceCount in $CUDA_LIBS" >&5
+$as_echo_n "checking for cudaGetDeviceCount in $CUDA_LIBS... " >&6; }
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char cudaGetDeviceCount ();
+#ifdef F77_DUMMY_MAIN
+
+#  ifdef __cplusplus
+     extern "C"
+#  endif
+   int F77_DUMMY_MAIN() { return 1; }
+
+#endif
+int
+main ()
+{
+return cudaGetDeviceCount ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ax_cuda_ok=yes
+else
+  CUDA_LIBS=""
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cuda_ok" >&5
+$as_echo "$ax_cuda_ok" >&6; }
+        LIBS="$save_LIBS"
+        if test $ax_cuda_ok = no; then
+                CUDA_LIBS=""
+        fi
+else
+   # CUDA library in standard place?
+   for cuda in cudart ; do
+           if test $ax_cuda_ok = no; then
+                   as_ac_Lib=`$as_echo "ac_cv_lib_$cuda''_cudaGetDeviceCount" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cudaGetDeviceCount in -l$cuda" >&5
+$as_echo_n "checking for cudaGetDeviceCount in -l$cuda... " >&6; }
+if eval \${$as_ac_Lib+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-l$cuda $LIBS $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char cudaGetDeviceCount ();
+#ifdef F77_DUMMY_MAIN
+
+#  ifdef __cplusplus
+     extern "C"
+#  endif
+   int F77_DUMMY_MAIN() { return 1; }
+
+#endif
+int
+main ()
+{
+return cudaGetDeviceCount ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  eval "$as_ac_Lib=yes"
+else
+  eval "$as_ac_Lib=no"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+eval ac_res=\$$as_ac_Lib
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
+  ax_cuda_ok=yes; CUDA_LIBS="-l$cuda"
+fi
+
+           fi
+   done
+fi
+
+
+
+# Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
+
+if test x"$ax_cuda_ok" = xyes; then
+
+$as_echo "#define HAVE_CUDA 1" >>confdefs.h
+
+        HAVE_CUDA=1
+
+
+else
+
+        echo -n
+fi
 
 
 
