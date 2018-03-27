@@ -30,7 +30,7 @@ elif test "x$CUBLAS_LIBS" != x; then
         fi
 else
    # CUBLAS in standard location?
-   $ax_cublas_ok=no
+   ax_cublas_ok=no
    for cublas in cublas; do
         if test "x$ax_cublas_ok" = no; then
 	   	save_LIBS="$LIBS"; LIBS="$CUDA_LIBS $LIBS"
