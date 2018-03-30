@@ -85,7 +85,7 @@ GMatrixRefList::Lookup(Matrix const& F, Matrix const& BH)
    {
       int r = Data.size();
       Indices[Index] = r;
-      Data.push_back(std::make_pair(Index, Matrix(F.rows(), BH.cols())));
+      Data.push_back(std::make_pair(Index, Matrix(F.rows(), BH.rows())));
       return r;
    }
    return I->second;

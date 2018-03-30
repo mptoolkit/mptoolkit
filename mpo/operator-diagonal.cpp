@@ -22,18 +22,15 @@
 
 // note: we could parallelize the construction of the G and H indices over jP
 
-typedef std::complex<double> NumberType;
-typedef LinearAlgebra::Matrix<NumberType> MatrixType;
-
 #if 0
 
 // This version uses a Matrix* directly
 struct JMatrixRef
 {
-   MatrixType const* AH;
-   MatrixType const* E;
+   Matrix const* AH;
+   Matrix const* E;
 
-   JMatrixRef(MatrixType const& AH_, MatrixType const& E_) : AH(&AH_), E(&E_) {}
+   JMatrixRef(Matrix const& AH_, Matrix const& E_) : AH(&AH_), E(&E_) {}
 };
 
 bool
@@ -52,13 +49,13 @@ class JMatrixRefList
       void reserve(int MaxSize);
 
       // returns the index of a G-matrix (which is inserted if it didn't exist previously)
-      int Lookup(MatrixType const& AH, MatrixType const& E);
+      int Lookup(Matrix const& AH, Matrix const& E);
 
       // do the actual evaluations (in parallel)
       void Evaluate();
 
       // after the evaluation, return the n'th matrix
-      MatrixType const& operator[](int n) const
+      Matrix const& operator[](int n) const
       {
          return Data[n].second;
       }
@@ -66,7 +63,7 @@ class JMatrixRefList
    private:
       typedef std::map<JMatrixRef, int> IndexType;
       IndexType Indices;
-      std::vector<std::pair<JMatrixRef, MatrixType> > Data;
+      std::vector<std::pair<JMatrixRef, Matrix> > Data;
 };
 
 void
@@ -76,7 +73,7 @@ JMatrixRefList::reserve(int MaxSize)
 }
 
 int
-JMatrixRefList::Lookup(MatrixType const& AH, MatrixType const& E)
+JMatrixRefList::Lookup(Matrix const& AH, Matrix const& E)
 {
    JMatrixRef Index(AH, E);
    IndexType::const_iterator I = Indices.find(Index);
@@ -84,7 +81,7 @@ JMatrixRefList::Lookup(MatrixType const& AH, MatrixType const& E)
    {
       int r = Data.size();
       Indices[Index] = r;
-      Data.push_back(std::make_pair(Index, MatrixType()));
+      Data.push_back(std::make_pair(Index, Matrix()));
       return r;
    }
    return I->second;
@@ -100,13 +97,13 @@ JMatrixRefList::Evaluate()
 }
 
 // array of coefficient * index into the GMatrices array
-typedef std::vector<std::pair<NumberType, int> > KMatrixDescriptor;
+typedef std::vector<std::pair<complex, int> > KMatrixDescriptor;
 
-MatrixType EvaluateK(KMatrixDescriptor const& K, JMatrixRefList const& J)
+Matrix EvaluateK(KMatrixDescriptor const& K, JMatrixRefList const& J)
 {
    CHECK(!K.empty())("K Matrix descriptor should not be empty!");
 
-   MatrixType Result = K[0].first * J[K[0].second];
+   Matrix Result = K[0].first * J[K[0].second];
    for (unsigned n = 1; n < K.size(); ++n)
    {
       Result += K[n].first * J[K[n].second];
@@ -131,20 +128,20 @@ struct OuterIndex
    bool empty() const { return Components.empty(); }
 
    // do the final evaluation.  Precondition: !empty()
-   MatrixType Evaluate(StateComponent const& A, JMatrixRefList const& J) const;
+   Matrix Evaluate(StateComponent const& A, JMatrixRefList const& J) const;
 
    int i, a, j;
    std::vector<ElementRec> Components;
 };
 
-MatrixType
+Matrix
 OuterIndex::Evaluate(StateComponent const& B, JMatrixRefList const& J) const
 {
    DEBUG_CHECK(!Components.empty());
    MatrixOperator::const_inner_iterator x = iterate_at(B[Components[0].s].data(), Components[0].jP, j);
    DEBUG_CHECK(x);
 
-   MatrixType Result = EvaluateK(Components[0].K, J) * (*x);
+   Matrix Result = EvaluateK(Components[0].K, J) * (*x);
 
    for (unsigned n = 1; n < Components.size(); ++n)
    {
@@ -157,17 +154,20 @@ OuterIndex::Evaluate(StateComponent const& B, JMatrixRefList const& J) const
 
 #endif
 
-LinearAlgebra::Matrix<std::complex<double>>
-outer_diagonal_conj(LinearAlgebra::Matrix<std::complex<double>> const& M1, LinearAlgebra::Matrix<std::complex<double>> const& M2)
+Matrix
+outer_diagonal_conj(Matrix const& M1, Matrix const& M2)
 {
-   LinearAlgebra::Matrix<std::complex<double>> Result(size1(M1), size2(M2), 0.0);
-   for (unsigned i = 0; i < size1(M1); ++i)
+   using std::conj;
+   Matrix Result(M1.rows(), M2.rows());
+#if 0
+   for (unsigned i = 0; i < M1.rows(); ++i)
    {
-      for (unsigned j = 0; j < size1(M2); ++j)
+      for (unsigned j = 0; j < M2.cols(); ++j)
       {
-	 Result(i,j) += M1(i,i) * conj(M2(j,j));
+	 Result(i,j) = M1(i,i) * conj(M2(j,j));
       }
    }
+#endif
    return Result;
 }
 
@@ -175,10 +175,12 @@ outer_diagonal_conj(LinearAlgebra::Matrix<std::complex<double>> const& M1, Linea
 StateComponent
 operator_prod_inner_diagonal(OperatorComponent const& M,
 			     StateComponent const& E,
-			     LinearAlgebra::HermitianProxy<StateComponent> const& F)
+			     HermitianProxy<StateComponent> const& F)
 {
    DEBUG_PRECONDITION_EQUAL(M.Basis1(), E.LocalBasis());
    DEBUG_PRECONDITION_EQUAL(M.Basis2(), F.base().LocalBasis());
+
+   using ::norm_frob;
 
    // firstly, assemble the required H matrix descriptors
    //   JMatrixRefList JList;
@@ -213,10 +215,8 @@ operator_prod_inner_diagonal(OperatorComponent const& M,
 	       int j = i;
 	       int jP = iP;
 
-               MatrixOperator::const_inner_iterator
-		  J = iterate_at(F.base()[a].data(), i, j);
-
-	       if (!J)
+               auto J = F.base()[a].row(i).find(j);
+               if (J == F.base()[a].row(i).end())
 		  continue;
 
 
@@ -225,20 +225,19 @@ operator_prod_inner_diagonal(OperatorComponent const& M,
 	       // over both indices
 	       for (unsigned aP = 0; aP < M.Basis1().size(); ++aP)
 	       {
-		  OperatorComponent::const_inner_iterator AA = iterate_at(M.data(), aP, a);
-		  if (!AA)
+                  auto AA = M.row(aP).find(a);
+                  if (AA == M.row(aP).end())
 		     continue;
 
 		  // Iterate over the irreducible components of M(aP,a)
-		  for (SimpleRedOperator::const_iterator k = AA->begin(); k != AA->end(); ++k)
-		  {
-		     // *k is an irreducible operator.  Iterate over the components of this operator.
+                  for (auto const& k : (*AA).value)
+                  {
+		     // k is an irreducible operator.  Iterate over the components of this operator.
 		     // We already know sP
 		     // We already know the index sP, so iterate over that row
-		     for (SimpleOperator::MatrixType::data_type::value_type::const_iterator
-			     S = iterate(k->data().vec()[sP]); S; ++S)
-		     {
-			int s = S.index();
+                     for (auto const& S : k.row(sP))
+                     {
+			int s = S.col();
 			if (s != sP)
 			   continue;
 
@@ -246,8 +245,8 @@ operator_prod_inner_diagonal(OperatorComponent const& M,
 			// element exists in both E.base()[a'](i',j')
 			//and B.base()[s](j',j)
 
-			MatrixOperator::const_inner_iterator EjP = iterate_at(E[aP].data(), iP, jP);
-			if (!EjP)
+                        auto EjP = E[aP].row(iP).find(jP);
+			if (EjP == E[aP].row(iP).end())
 			   continue;
 
 			//double degree_iP = degree(A.base().Basis1()[iP]);
@@ -258,23 +257,16 @@ operator_prod_inner_diagonal(OperatorComponent const& M,
 							  E.Basis1()[jP],
 
 							  M.Basis2()[a],
-							  k->TransformsAs(),
+							  k.TransformsAs(),
 							  M.Basis1()[aP],
 
 							  F.base().Basis1()[i],
 							  M.LocalBasis1()[sP],
 							  E.Basis1()[iP]);
 
-			if (LinearAlgebra::norm_frob(Coeff) > 1E-14)
+			if (norm_frob(Coeff) > 1E-14)
 			{
-			   if (!iterate_at(Result[sP].data(), iP, i))
-			   {
-			      set_element(Result[sP].data(), iP, i, Coeff * (*S) * outer_diagonal_conj(*EjP, *J));
-			   }
-			   else
-			   {
-			      Result[sP](iP, i) += Coeff * (*S) * outer_diagonal_conj(*EjP, *J);
-			   }
+                           Result[sP].add(iP, i, Coeff * S.value * outer_diagonal_conj(*EjP, *J));
 			}
 		     }
                   }

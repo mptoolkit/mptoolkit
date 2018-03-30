@@ -22,7 +22,6 @@
 #include "quantumnumbers/u1.h"
 #include "tensor/tensorproduct.h"
 #include <tuple>
-#include "linearalgebra/matrix_utility.h"
 #include "tensor/tensor_eigen.h"
 
 StateComponent make_vacuum_state(QuantumNumbers::SymmetryList const& S)
@@ -109,28 +108,7 @@ StateComponent reflect(StateComponent const& S)
    return Result;
 }
 
-namespace LinearAlgebra
-{
-
 #if 0
-MatrixOperator
-ScalarProd<StateComponent, HermitianProxy<StateComponent> >::
-operator()(StateComponent const& A, HermitianProxy<StateComponent> const& B) const
-{
-   DEBUG_PRECONDITION_EQUAL(A.LocalBasis(), B.base().LocalBasis());
-   DEBUG_PRECONDITION_EQUAL(A.Basis2(), B.base().Basis2());
-
-   QuantumNumbers::QuantumNumber Ident(A.GetSymmetryList());
-   MatrixOperator Result(A.Basis1(), B.base().Basis1(), Ident);
-
-   for (std::size_t s = 0; s < A.LocalBasis().size(); ++s)
-   {
-      Result += scalar_prod(A[s], herm(B.base()[s]));
-   }
-   return Result;
-}
-#endif
-
 MatrixOperator
 ScalarProd<HermitianProxy<StateComponent>, StateComponent>::
 operator()(HermitianProxy<StateComponent> const& A, StateComponent const& B) const
@@ -147,10 +125,9 @@ operator()(HermitianProxy<StateComponent> const& A, StateComponent const& B) con
    }
    return Result;
 }
+#endif
 
-} // namespace LinearAlgebra
-
-SimpleOperator trace_prod(LinearAlgebra::HermitianProxy<StateComponent> const& A,
+SimpleOperator trace_prod(Tensor::HermitianProxy<StateComponent> const& A,
                           StateComponent const& B)
 {
    QuantumNumbers::QuantumNumber Ident(B.GetSymmetryList());
@@ -172,7 +149,7 @@ SimpleOperator trace_prod(LinearAlgebra::HermitianProxy<StateComponent> const& A
 }
 
 SimpleOperator trace_prod(StateComponent const& A,
-                          LinearAlgebra::HermitianProxy<StateComponent> const& B)
+                          Tensor::HermitianProxy<StateComponent> const& B)
 {
    QuantumNumbers::QuantumNumber Ident(A.GetSymmetryList());
 
@@ -201,7 +178,7 @@ SimpleOperator trace_prod(StateComponent const& A,
 // FIXME: This probably depends on the matrix elements of M having the correct norm convention
 MatrixOperator operator_prod(SimpleOperator const& M,
                              StateComponent const& A,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& B)
+                             Tensor::HermitianProxy<StateComponent> const& B)
 {
    DEBUG_PRECONDITION_EQUAL(M.Basis1(), A.LocalBasis());
    DEBUG_PRECONDITION_EQUAL(M.Basis2(), B.base().LocalBasis());
@@ -227,7 +204,7 @@ MatrixOperator operator_prod(SimpleOperator const& M,
 
 MatrixOperator operator_prod(SimpleRedOperator const& M,
                              StateComponent const& A,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& B)
+                             Tensor::HermitianProxy<StateComponent> const& B)
 {
    MatrixOperator Result;
    for (SimpleRedOperator::const_iterator I = M.begin(); I != M.end(); ++I)
@@ -237,8 +214,8 @@ MatrixOperator operator_prod(SimpleRedOperator const& M,
    return Result;
 }
 
-MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const& M,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& A,
+MatrixOperator operator_prod(Tensor::HermitianProxy<SimpleOperator> const& M,
+                             Tensor::HermitianProxy<StateComponent> const& A,
                              StateComponent const& B)
 {
    DEBUG_PRECONDITION_EQUAL(M.base().Basis1(), A.base().LocalBasis());
@@ -263,8 +240,8 @@ MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const
    return Result;
 }
 
-MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleRedOperator> const& M,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& A,
+MatrixOperator operator_prod(Tensor::HermitianProxy<SimpleRedOperator> const& M,
+                             Tensor::HermitianProxy<StateComponent> const& A,
                              StateComponent const& B)
 {
    MatrixOperator Result;
@@ -290,7 +267,7 @@ std::ostream& operator<<(std::ostream& out, StateComponent const& Psi)
 MatrixOperator operator_prod(SimpleOperator const& M,
                              StateComponent const& A,
                              MatrixOperator const& E,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& B,
+                             Tensor::HermitianProxy<StateComponent> const& B,
                              QuantumNumbers::QuantumNumber const& q)
 {
    DEBUG_PRECONDITION_EQUAL(M.Basis1(), A.LocalBasis());
@@ -314,7 +291,7 @@ MatrixOperator operator_prod(SimpleOperator const& M,
 MatrixOperator operator_prod(SimpleRedOperator const& M,
                              StateComponent const& A,
                              MatrixOperator const& E,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& B,
+                             Tensor::HermitianProxy<StateComponent> const& B,
                              QuantumNumbers::QuantumNumber const& q)
 {
    MatrixOperator Result;
@@ -326,8 +303,8 @@ MatrixOperator operator_prod(SimpleRedOperator const& M,
 }
 
 
-MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const& M,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& A,
+MatrixOperator operator_prod(Tensor::HermitianProxy<SimpleOperator> const& M,
+                             Tensor::HermitianProxy<StateComponent> const& A,
                              MatrixOperator const& E,
                              StateComponent const& B,
                              QuantumNumbers::QuantumNumber const& q)
@@ -350,8 +327,8 @@ MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const
    return Result;
 }
 
-MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleRedOperator> const& M,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& A,
+MatrixOperator operator_prod(Tensor::HermitianProxy<SimpleRedOperator> const& M,
+                             Tensor::HermitianProxy<StateComponent> const& A,
                              MatrixOperator const& E,
                              StateComponent const& B,
                              QuantumNumbers::QuantumNumber const& q)
@@ -364,7 +341,7 @@ MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleRedOperator> co
    return Result;
 }
 
-MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<StateComponent> const& A,
+MatrixOperator operator_prod(Tensor::HermitianProxy<StateComponent> const& A,
                              MatrixOperator const& E,
                              StateComponent const& B)
 {
@@ -384,7 +361,7 @@ MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<StateComponent> const
 
 MatrixOperator operator_prod(StateComponent const& A,
                              MatrixOperator const& E,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& B)
+                             Tensor::HermitianProxy<StateComponent> const& B)
 {
    DEBUG_PRECONDITION_EQUAL(A.Basis2(), E.Basis1());
    DEBUG_PRECONDITION_EQUAL(E.Basis2(), B.base().Basis2());
@@ -400,7 +377,7 @@ MatrixOperator operator_prod(StateComponent const& A,
    return Result;
 }
 
-StateComponent operator_prod(LinearAlgebra::HermitianProxy<StateComponent> const& A,
+StateComponent operator_prod(Tensor::HermitianProxy<StateComponent> const& A,
                              StateComponent const& E,
                              StateComponent const& B)
 {
@@ -414,7 +391,7 @@ StateComponent operator_prod(LinearAlgebra::HermitianProxy<StateComponent> const
 
 StateComponent operator_prod(StateComponent const& A,
                              StateComponent const& E,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& B)
+                             Tensor::HermitianProxy<StateComponent> const& B)
 {
    StateComponent Result(E.LocalBasis(), A.Basis1(), B.base().Basis1());
    for (unsigned q = 0; q < E.size(); ++q)
@@ -427,7 +404,7 @@ StateComponent operator_prod(StateComponent const& A,
 MatrixOperator
 operator_prod_regular(StateComponent const& A,
                       MatrixOperator const& E,
-                      LinearAlgebra::HermitianProxy<StateComponent> const& B)
+                      Tensor::HermitianProxy<StateComponent> const& B)
 {
    DEBUG_PRECONDITION_EQUAL(A.Basis2(), E.Basis1());
    DEBUG_PRECONDITION_EQUAL(E.Basis2(), B.base().Basis2());
@@ -447,8 +424,8 @@ operator_prod_regular(StateComponent const& A,
    return Result;
 }
 
-MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const& M,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& A,
+MatrixOperator operator_prod(Tensor::HermitianProxy<SimpleOperator> const& M,
+                             Tensor::HermitianProxy<StateComponent> const& A,
                              MatrixOperator const& E,
                              StateComponent const& B)
 {
@@ -462,7 +439,7 @@ MatrixOperator operator_prod(LinearAlgebra::HermitianProxy<SimpleOperator> const
 MatrixOperator operator_prod(SimpleOperator const& M,
                              StateComponent const& A,
                              MatrixOperator const& E,
-                             LinearAlgebra::HermitianProxy<StateComponent> const& B)
+                             Tensor::HermitianProxy<StateComponent> const& B)
 {
    QuantumNumbers::QuantumNumberList ql = transform_targets(M.TransformsAs(), E.TransformsAs());
    PRECONDITION_EQUAL(ql.size(), 1)("Quantum number is ambiguous, must be specified.")(ql);
@@ -609,7 +586,7 @@ StateComponent local_prod(SimpleOperator const& x, StateComponent const& A)
 
 StateComponent triple_prod(MatrixOperator const& Op1,
                              StateComponent const& A,
-                             LinearAlgebra::HermitianProxy<MatrixOperator> const&Op2)
+                             Tensor::HermitianProxy<MatrixOperator> const&Op2)
 {
    StateComponent Result(A.LocalBasis(), Op1.Basis1(), Op2.base().Basis1());
    for (std::size_t s = 0; s < A.size(); ++s)
@@ -619,7 +596,7 @@ StateComponent triple_prod(MatrixOperator const& Op1,
    return Result;
 }
 
-StateComponent triple_prod(LinearAlgebra::HermitianProxy<MatrixOperator> const& Op1,
+StateComponent triple_prod(Tensor::HermitianProxy<MatrixOperator> const& Op1,
                              StateComponent const& A,
                              MatrixOperator const&Op2)
 {
@@ -632,7 +609,7 @@ StateComponent triple_prod(LinearAlgebra::HermitianProxy<MatrixOperator> const& 
 }
 
 MatrixOperator extract_diagonal(StateComponent const& A,
-                                LinearAlgebra::HermitianProxy<StateComponent> const& B)
+                                Tensor::HermitianProxy<StateComponent> const& B)
 {
    MatrixOperator Result(A.Basis2(), B.base().Basis2());
    for (unsigned i = 0; i < A.Basis2().size(); ++i)

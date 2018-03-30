@@ -39,9 +39,11 @@ class stride_ptr
       using reference         = T&;
       using difference_type   = std::ptrdiff_t;
 
-      __host__ __device__ stride_ptr() {}
+      // CUDA 9 compiler doesn't like __host__ or __device__ designations on trivial constructors
+      // __host__ __device__ stride_ptr() {}
+      // __host__ __device__ stride_ptr(stride_ptr const& Other) = default;
+
       __host__ __device__ stride_ptr(T* x, int stride) : x_(x), stride_(stride) {}
-      __host__ __device__ stride_ptr(stride_ptr const& Other) = default;
 
       __host__ __device__ reference operator*() const { return *x_; }
       __host__ __device__ pointer operator->() const { return x_; }
@@ -84,7 +86,7 @@ vector_sum(int Size, cuda::const_gpu_ptr<T> const& x, int incx, cuda::gpu_ref<T>
    gpu_buffer<unsigned char> TempBuffer = allocate_gpu_temporary<unsigned char>(TempStorageBytes);
    TempBuffer.wait_for(x);
    TempBuffer.wait_for(r);
-   cub::DeviceReduce::Sum(static_cast<void*>(TempBuffer.device_ptr()), 
+   cub::DeviceReduce::Sum(static_cast<void*>(TempBuffer.device_ptr()),
 			  TempStorageBytes, detail::stride_ptr<T const>(x.device_ptr(), incx),
                           r.device_ptr(), Size, TempBuffer.get_stream().raw_stream());
    r.wait(TempBuffer.sync());
@@ -93,13 +95,13 @@ vector_sum(int Size, cuda::const_gpu_ptr<T> const& x, int incx, cuda::gpu_ref<T>
 
 template <typename T>
 void
-vector_sum(int Size, cuda::const_gpu_ptr<std::complex<T>> const& x, int incx, 
+vector_sum(int Size, cuda::const_gpu_ptr<std::complex<T>> const& x, int incx,
 	   cuda::gpu_ref<std::complex<T>>& r)
 {
    std::size_t TempStorageBytes1 = 0;
    // real part
    // workspace query
-   cub::DeviceReduce::Sum(nullptr, TempStorageBytes1, 
+   cub::DeviceReduce::Sum(nullptr, TempStorageBytes1,
 			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr())), incx*2),
                           static_cast<T*>(static_cast<void*>(r.device_ptr())), Size);
 
@@ -109,22 +111,22 @@ vector_sum(int Size, cuda::const_gpu_ptr<std::complex<T>> const& x, int incx,
    // do the work
    cub::DeviceReduce::Sum(static_cast<void*>(TempBuffer1.device_ptr()), TempStorageBytes1,
 			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr())), incx*2),
-                          static_cast<T*>(static_cast<void*>(r.device_ptr())), Size, 
+                          static_cast<T*>(static_cast<void*>(r.device_ptr())), Size,
 			  TempBuffer1.get_stream().raw_stream());
 
    // imag part
    // workspace query
    std::size_t TempStorageBytes2 = 0;
-   cub::DeviceReduce::Sum(nullptr, TempStorageBytes2, 
+   cub::DeviceReduce::Sum(nullptr, TempStorageBytes2,
 			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr()))+1, incx*2),
                           static_cast<T*>(static_cast<void*>(r.device_ptr()))+1, Size);
    gpu_buffer<unsigned char> TempBuffer2 = allocate_gpu_temporary<unsigned char>(TempStorageBytes2);
    TempBuffer2.wait_for(x);
    TempBuffer2.wait_for(r);
    // do the work
-   cub::DeviceReduce::Sum(static_cast<void*>(TempBuffer2.device_ptr()), TempStorageBytes2, 
+   cub::DeviceReduce::Sum(static_cast<void*>(TempBuffer2.device_ptr()), TempStorageBytes2,
 			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr()))+1, incx*2),
-                          static_cast<T*>(static_cast<void*>(r.device_ptr()))+1, Size, 
+                          static_cast<T*>(static_cast<void*>(r.device_ptr()))+1, Size,
 			  TempBuffer2.get_stream().raw_stream());
 
    r.wait(TempBuffer1.sync());
@@ -133,18 +135,18 @@ vector_sum(int Size, cuda::const_gpu_ptr<std::complex<T>> const& x, int incx,
 }
 
 // template instantiations
-template void vector_sum<double>(int Size, cuda::const_gpu_ptr<double> const& x, int incx, 
+template void vector_sum<double>(int Size, cuda::const_gpu_ptr<double> const& x, int incx,
 				 cuda::gpu_ref<double>& r);
 
-template void vector_sum<double>(int Size, 
-				 cuda::const_gpu_ptr<std::complex<double>> const& x, int incx, 
+template void vector_sum<double>(int Size,
+				 cuda::const_gpu_ptr<std::complex<double>> const& x, int incx,
 				 cuda::gpu_ref<std::complex<double>>& r);
 
-template void vector_sum<float>(int Size, cuda::const_gpu_ptr<float> const& x, int incx, 
+template void vector_sum<float>(int Size, cuda::const_gpu_ptr<float> const& x, int incx,
 				cuda::gpu_ref<float>& r);
 
-template void vector_sum<float>(int Size, 
-				cuda::const_gpu_ptr<std::complex<float>> const& x, int incx, 
+template void vector_sum<float>(int Size,
+				cuda::const_gpu_ptr<std::complex<float>> const& x, int incx,
 				cuda::gpu_ref<std::complex<float>>& r);
 
 template <typename T>
@@ -176,16 +178,16 @@ vector_permute(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::gpu_ptr<T> y, in
    if (incx == 1 && incy == 1)
    {
       unsigned threads_per_block = 64;
-      unsigned nblocks = (n + threads_per_block-1) / threads_per_block;      
-      permute_vector_cuda<<<nblocks,threads_per_block, 0, 
-	 PermDevice.get_stream().raw_stream()>>>(n, x.device_ptr(), y.device_ptr(), 
+      unsigned nblocks = (n + threads_per_block-1) / threads_per_block;
+      permute_vector_cuda<<<nblocks,threads_per_block, 0,
+	 PermDevice.get_stream().raw_stream()>>>(n, x.device_ptr(), y.device_ptr(),
 						 PermDevice.device_ptr());
    }
    else
    {
       unsigned threads_per_block = 64;
-      unsigned nblocks = (n + threads_per_block-1) / threads_per_block;      
-      permute_vector_stride_cuda<<<nblocks,threads_per_block, 0, 
+      unsigned nblocks = (n + threads_per_block-1) / threads_per_block;
+      permute_vector_stride_cuda<<<nblocks,threads_per_block, 0,
 	 PermDevice.get_stream().raw_stream()>>>(n, x.device_ptr(), incx,
 						 y.device_ptr(), incy,
 						 PermDevice.device_ptr());
@@ -194,8 +196,8 @@ vector_permute(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::gpu_ptr<T> y, in
 }
 
 // template instantiations
-template void vector_permute<double>(int n, cuda::const_gpu_ptr<double> x, int incx, 
-				     cuda::gpu_ptr<double> y, int incy, 
+template void vector_permute<double>(int n, cuda::const_gpu_ptr<double> x, int incx,
+				     cuda::gpu_ptr<double> y, int incy,
 				     int const* Perm);
 
 } // namespace cuda
