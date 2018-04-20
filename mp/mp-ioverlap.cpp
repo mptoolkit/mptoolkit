@@ -310,7 +310,7 @@ int main(int argc, char** argv)
          StringOp = ProductMPO::make_identity(ExtractLocalBasis(Psi2));
       }
 
-      Size = statistics::lcm(Psi1.size, Psi2.size(), StringOp.size());
+      Size = statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size());
       StringOp = repeat(StringOp, Size / StringOp.size());
       if (Verbose > 0 && Psi1.size() != Psi2.size())
       {
