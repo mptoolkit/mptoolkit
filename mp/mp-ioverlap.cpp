@@ -310,15 +310,12 @@ int main(int argc, char** argv)
          StringOp = ProductMPO::make_identity(ExtractLocalBasis(Psi2));
       }
 
-      Size = statistics::lcm(Size, StringOp.size());
+      Size = statistics::lcm(Psi1.size, Psi2.size(), StringOp.size());
       StringOp = repeat(StringOp, Size / StringOp.size());
-
       if (Verbose > 0 && Psi1.size() != Psi2.size())
       {
          std::cerr << "Wavefunction unit cells differ, extending wavefunctions to size " << Size << '\n';
       }
-
-      Size = statistics::lcm(Psi1.size(), Psi2.size());
       Psi1 = repeat(Psi1, Size/Psi1.size());
       Psi2 = repeat(Psi2, Size/Psi2.size());
 
