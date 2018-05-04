@@ -83,6 +83,19 @@ int main(int argc, char** argv)
       {
          Psi.mutate()->get<FiniteWavefunctionLeft>() *= x;
       }
+      else if (Psi->is<InfiniteWavefunctionLeft>())
+      {
+	 std::complex<double> y = x / std::abs(x);
+	 if (std::abs(y-x) > 1e-10)
+	 {
+	    std::cout << "warning: phase factor for infinite wavefunction was normalized from " << 
+	       format_complex(x) << " to " << format_complex(y) << "\n";
+	 }
+	 std::pair<LinearWavefunction, RealDiagonalOperator> p = get_left_canonical(Psi->get<InfiniteWavefunctionLeft>());
+	 (*p.first.begin()) *= y;
+	 *Psi.mutate() = InfiniteWavefunctionLeft::ConstructFromOrthogonal(p.first, p.second, 
+									   Psi->get<InfiniteWavefunctionLeft>().qshift());
+      }
       else
       {
          std::cerr << "mp-scale: fatal: wavefunction type " << Psi->Type() << " is not supported.\n";
