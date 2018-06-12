@@ -71,6 +71,10 @@ LocalEigensolver::SolverFromStr(std::string Str)
       return Solver::Lanczos;
    else if (Str == "arnoldi")
       return Solver::Arnoldi;
+   else if (Str == "arnoldi-smallest")
+      return Solver::ArnoldiSmallest;
+   else if (Str == "arnoldi-lowest")
+      return Solver::ArnoldiLowest;
    else if (Str == "davidson")
       return Solver::Davidson;
    else if (Str == "shift-invert")
@@ -317,11 +321,18 @@ LocalEigensolver::Solve(StateComponent& C,
 	 LastEnergy_ = Lanczos(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
 			       LastIter_, LastTol_, MinIter, Verbose-1);
       }
-      else if (Solver_ == Solver::Arnoldi)
+      else if (Solver_ == Solver::Arnoldi || Solver_ == Solver::ArnoldiSmallest)
       {
 	 LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
 					      LastIter_, LastTol_,
 					      LinearSolvers::SmallestMagnitude,
+					      true, Verbose-1);
+      }
+      else if (Solver_ == Solver::ArnoldiLowest)
+      {
+	 LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
+					      LastIter_, LastTol_,
+					      LinearSolvers::SmallestAlgebraicReal,
 					      true, Verbose-1);
       }
       else if (Solver_ == Solver::ShiftInvert)

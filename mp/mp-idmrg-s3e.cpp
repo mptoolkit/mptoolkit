@@ -1028,7 +1028,7 @@ int main(int argc, char** argv)
          ("gmrestol", prog_opt::value(&GMRESTol),
           FormatDefault("tolerance for GMRES linear solver for the initial H matrix elements", GMRESTol).c_str())
 	 ("solver", prog_opt::value<std::string>(),
-	  "Eigensolver to use.  Supported values are lanzcos [default], arnoldi, shift-invert")
+	  "Eigensolver to use.  Supported values are lanzcos [default], arnoldi, arnoldi-lowest, shift-invert")
 	 ("shift-invert-energy", prog_opt::value(&ShiftInvertEnergy),
 	  "For the shift-invert solver, the target energy")
 

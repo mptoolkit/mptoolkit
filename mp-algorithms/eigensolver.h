@@ -27,7 +27,7 @@
 class LocalEigensolver
 {
    public:
-      enum class Solver { InvalidSolver, Lanczos, Arnoldi, ShiftInvert, ShiftInvertDirect,
+      enum class Solver { InvalidSolver, Lanczos, Arnoldi, ArnoldiSmallest, ArnoldiLowest, ShiftInvert, ShiftInvertDirect,
                              Davidson, DavidsonTarget, DavidsonMaxOverlap,
                              LastSolver = DavidsonMaxOverlap};
 
