@@ -49,7 +49,7 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/spin-su2.h"
+#include "models/spin-u1.h"
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 
@@ -97,10 +97,12 @@ int main(int argc, char** argv)
 
       // Descriptions of each operator
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("Hexagonal lattice zigzag configuration, no spin symmetry");
+      OpDescriptions.set_description("SU(2) hexagonal lattice zigzag configuration");
       OpDescriptions.author("IP McCullocch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_cell_operators()
-         ("S"          , "Total spin on a leg of the cylinder")
+         ("Sp"          , "S+ on a leg of the cylinder")
+         ("Sm"          , "S- on a leg of the cylinder")
+         ("Sz"          , "Sz on a leg of the cylinder")
          ("Trans"      , "translation by one site (rotation by 2\u0071/w) in lattice short direction")
          ("Ref"        , "reflection in lattice short direction",
           "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
@@ -129,18 +131,22 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      LatticeSite Site = SpinSU2(Spin);
+      LatticeSite Site = SpinU1(Spin);
       UnitCell Cell = repeat(Site, w);
       InfiniteLattice Lattice(&Cell);
 
-      UnitCellOperator S(Cell, "S");
+      UnitCellOperator Sp(Cell, "Sp");
+      UnitCellOperator Sm(Cell, "Sm");
+      UnitCellOperator Sz(Cell, "Sz");
       UnitCellOperator I(Cell, "I"); // identity operator
       UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
       UnitCellOperator RyUnit(Cell, "RyUnit");
 
       for (int i = 0; i < w; ++i)
       {
-         S += S[i];                    // total spin on a leg of cylinder
+         Sp += Sp[i];                    // total spin on a leg of cylinder
+         Sm += Sm[i];                    // total spin on a leg of cylinder
+         Sz += Sz[i];                    // total spin on a leg of cylinder
       }
 
       Trans = I(0);
@@ -168,13 +174,19 @@ int main(int argc, char** argv)
       {
 	 if (i % 2 == 0)
          {
-            Heven += inner(S(0)[i], S(0)[(i+1)%w]);   // vertical bonds
+            Heven += 0.5 * inner(Sp(0)[i], Sp(0)[(i+1)%w]);   // vertical bonds
+            Heven += 0.5 * inner(Sm(0)[i], Sm(0)[(i+1)%w]);   // vertical bonds
+            Heven += inner(Sz(0)[i], Sz(0)[(i+1)%w]);   // vertical bonds
 
-	    Hx += inner(S(0)[i], S(1)[(i+1)%w]);
+	    Hx += 0.5 * inner(Sp(0)[i], Sp(1)[(i+1)%w]);
+	    Hx += 0.5 * inner(Sm(0)[i], Sm(1)[(i+1)%w]);
+	    Hx += inner(Sz(0)[i], Sz(1)[(i+1)%w]);
          }
          else
          {
-            Hodd += inner(S(0)[i], S(0)[(i+1)%w]);   // vertical bonds
+            Hodd+= 0.5 * inner(Sp(0)[i], Sp(0)[(i+1)%w]);   // vertical bonds
+            Hodd += 0.5 * inner(Sm(0)[i], Sm(0)[(i+1)%w]);   // vertical bonds
+            Hodd += inner(Sz(0)[i], Sz(0)[(i+1)%w]);   // vertical bonds
          }
       }
 

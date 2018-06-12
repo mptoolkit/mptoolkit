@@ -121,7 +121,6 @@ void ShowEntropyInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
       out << std::setw(10) << (*I) << ' ' << std::setw(11) << (Psi.size() - (*I)) << ' '
           << std::setw(18) << Entropy << '\n';
    }
-   out << std::endl;
 }
 
 void ShowDM(CanonicalWavefunctionBase const& Psi, std::ostream& out)
