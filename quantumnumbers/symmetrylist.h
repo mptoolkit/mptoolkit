@@ -158,19 +158,19 @@ class SymmetryList
       typedef int const* sc_iter;
 
       SymmetryList();
-      SymmetryList(SymmetryList const& QList);
+      SymmetryList(SymmetryList const& QList) = default;
       SymmetryList(SymmetryList&& Other) noexcept;
 
       explicit SymmetryList(SymmetryListImpl const* Impl);
 
-      ~SymmetryList() noexcept;
+      ~SymmetryList() noexcept = default;
 
       // constructs a list from the given Name, which is of the form N:U(1),S:SU(2) etc.
       SymmetryList(std::string const& List);
       SymmetryList(char const* List);
 
       SymmetryList& operator=(SymmetryList const& QList) = default;
-      SymmetryList& operator=(SymmetryList&& QList) noexcept = default;
+      SymmetryList& operator=(SymmetryList&& QList) noexcept;
 
       bool is_null() const { return pImpl == NULL; }
 
@@ -366,17 +366,6 @@ PStream::ipstream& operator>>(PStream::ipstream& in, SymmetryList& L);
 //
 
 inline
-SymmetryList::~SymmetryList() noexcept
-{
-}
-
-inline
-SymmetryList::SymmetryList(SymmetryList const& QList)
-  : pImpl(QList.pImpl)
-{
-}
-
-inline
 SymmetryList::SymmetryList(SymmetryList&& QList) noexcept
   : pImpl(QList.pImpl)
 {
@@ -387,6 +376,13 @@ inline
 SymmetryList::SymmetryList(SymmetryListImpl const* Impl)
   : pImpl(Impl)
 {
+}
+
+inline
+SymmetryList&
+SymmetryList::operator=(SymmetryList&& QList) noexcept
+{
+   std::swap(pImpl, QList.pImpl);
 }
 
 namespace
