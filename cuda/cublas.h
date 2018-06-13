@@ -35,10 +35,13 @@
 #include "cub.h"
 #include "blas/functors.h"
 
+#if 0
+// we're not using thrust anymore, replaced with cub
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 #include <thrust/copy.h>
 #include <thrust/iterator/permutation_iterator.h>
+#endif
 
 #include <iostream>
 

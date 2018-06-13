@@ -169,8 +169,8 @@ class SymmetryList
       SymmetryList(std::string const& List);
       SymmetryList(char const* List);
 
-      SymmetryList& operator=(SymmetryList const& QList);
-      SymmetryList& operator=(SymmetryList&& QList)  noexcept;
+      SymmetryList& operator=(SymmetryList const& QList) = default;
+      SymmetryList& operator=(SymmetryList&& QList) noexcept = default;
 
       bool is_null() const { return pImpl == NULL; }
 
@@ -387,14 +387,6 @@ inline
 SymmetryList::SymmetryList(SymmetryListImpl const* Impl)
   : pImpl(Impl)
 {
-}
-
-inline
-SymmetryList&
-SymmetryList::operator=(SymmetryList const& QList)
-{
-   pImpl = QList.pImpl;
-   return *this;
 }
 
 namespace

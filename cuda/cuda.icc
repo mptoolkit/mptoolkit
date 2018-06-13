@@ -187,6 +187,10 @@ stream::is_running() const
       return true;
    if (e == cudaSuccess)
       return false;
+   // This function ends up getting called when a stream is destroyed on program termination,
+   // and the cuda device has already been unloaded.
+   if (e == cudaErrorCudartUnloading)
+      return false;
    throw error(e);
 }
 

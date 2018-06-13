@@ -79,4 +79,6 @@ int main()
    // should be original matrix
    std::cout << get_wait(gC) << '\n';
 
+   std::cout << "Finished.\n";
+
 }

@@ -106,21 +106,21 @@ namespace cuda
 
 // LAPACK functions must go in namespace cuda so they are found during ADL
 
-void DiagonalizeSymmetric(int Size, cuda::const_gpu_ptr<double> A, int ldA, cuda::gpu_ptr<double> Eigen);
+void DiagonalizeSymmetric(int Size, cuda::gpu_ptr<double> A, int ldA, cuda::gpu_ptr<double> Eigen);
 
-void DiagonalizeHermitian(int Size, cuda::const_gpu_ptr<std::complex<double>> A, int ldA, 
+void DiagonalizeHermitian(int Size, cuda::gpu_ptr<std::complex<double>> A, int ldA,
 			  cuda::gpu_ptr<double> Eigen);
 
-void SingularValueDecomposition(int Rows, int Cols, 
-				cuda::gpu_ptr<double> Data, int LeadingDim, 
+void SingularValueDecomposition(int Rows, int Cols,
+				cuda::gpu_ptr<double> Data, int LeadingDim,
 				cuda::gpu_ptr<double> Dvec,
-				cuda::gpu_ptr<double> Umat, int ldU, 
+				cuda::gpu_ptr<double> Umat, int ldU,
 				cuda::gpu_ptr<double> Vmat, int ldV);
 
-void SingularValueDecomposition(int Rows, int Cols, 
-				cuda::gpu_ptr<std::complex<double>> Data, int LeadingDim, 
+void SingularValueDecomposition(int Rows, int Cols,
+				cuda::gpu_ptr<std::complex<double>> Data, int LeadingDim,
 				cuda::gpu_ptr<double> Dvec,
-				cuda::gpu_ptr<std::complex<double>> Umat, int ldU, 
+				cuda::gpu_ptr<std::complex<double>> Umat, int ldU,
 				cuda::gpu_ptr<std::complex<double>> Vmat, int ldV);
 
 } // namespace cuda

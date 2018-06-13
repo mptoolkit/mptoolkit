@@ -63,7 +63,7 @@ class BasisList
       BasisList(QuantumNumbers::SymmetryList const& S, FwdIter first, FwdIter last);
 
       BasisList(BasisList const& Other) = default;
-      BasisList(BasisList&& Other) = default;
+      BasisList(BasisList&& Other) noexcept = default;
 
       BasisList& operator=(BasisList const& Other) = default;
       BasisList& operator=(BasisList&& Other) noexcept = default;
