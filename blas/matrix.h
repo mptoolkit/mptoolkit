@@ -154,6 +154,8 @@ class Matrix : public NormalMatrix<T, Matrix<T, Tag>, Tag>
       int rows() const { return Rows; }
       int cols() const { return Cols; }
 
+      std::pair<int,int> size() const { return {Rows,Cols}; }
+
       int leading_dimension() const { return LeadingDimension; }
 
       static constexpr char trans() { return 'N'; }

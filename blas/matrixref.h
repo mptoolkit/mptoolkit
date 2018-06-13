@@ -77,6 +77,7 @@ class MatrixRef
 
       int rows() const { return this->as_derived().rows(); }
       int cols() const { return this->as_derived().cols(); }
+      std::pair<int,int> size() const { return this->as_derived().size(); }
 };
 
 // derived class for a diagonal matrix
@@ -263,6 +264,7 @@ class BlasMatrixTrans : public BlasMatrix<T, BlasMatrixTrans<T, BaseType, Tag>, 
 
       int rows() const { return Base.cols(); }
       int cols() const { return Base.rows(); }
+      std::pair<int,int> size() const { return {Base.cols(), Base.rows()}; }
       int leading_dimension() const { return Base.leading_dimension(); }
       char trans() const { return number_traits<value_type>::blas_trans(Base.trans()); }
 
@@ -291,6 +293,7 @@ class BlasMatrixHerm : public BlasMatrix<T, BlasMatrixHerm<T, BaseType, Tag>, Ta
 
       int rows() const { return Base.cols(); }
       int cols() const { return Base.rows(); }
+      std::pair<int,int> size() const { return {Base.cols(), Base.rows()}; }
       int leading_dimension() const { return Base.leading_dimension(); }
       char trans() const { return number_traits<value_type>::blas_herm(Base.trans()); }
 
@@ -319,6 +322,7 @@ class BlasMatrixConj : public BlasMatrix<T, BlasMatrixConj<T, BaseType, Tag>, Ta
 
       int rows() const { return Base.rows(); }
       int cols() const { return Base.cols(); }
+      std::pair<int,int> size() const { return Base.size(); }
       int leading_dimension() const { return Base.leading_dimension(); }
       char trans() const { return number_traits<value_type>::blas_conj(Base.trans()); }
       T* data() { return Base.data(); }

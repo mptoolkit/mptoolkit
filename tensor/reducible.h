@@ -514,7 +514,7 @@ prod(ReducibleTensor<T, B, B, S> const& x, ReducibleTensor<T, B, B, S> const& y)
    {
       for (auto const& Iy : y)
       {
-	 for (auto const& q : x.TransformsAs() * y.TransformsAs())
+	 for (auto const& q : Ix.TransformsAs() * Iy.TransformsAs())
 	 {
 	    Result.add(prod(Ix, Iy, q));
 	 }

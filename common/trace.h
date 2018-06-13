@@ -290,6 +290,19 @@ void show_backtrace_handler(char const* Msg)
 #include <pthread.h>
 #endif
 
+// This is a really bad hack, need to either remove it (and add the appropriate operator<< where it is needed)
+// or find a way to put this operator in another namespace, ideally namespace tracer.
+// I think it is possible to put overloads into namespace tracer if we make the istream object a new class
+// in namespace tracer that inherits from std::ostream.
+namespace std
+{
+template <typename T1, typename T2>
+std::ostream& operator<<(std::ostream& out, std::pair<T1,T2> const& x)
+{
+   out << "[ " << x.first << ", " << x.second << " ]";
+   return out;
+}
+}
 namespace tracer
 {
 
@@ -608,8 +621,8 @@ Assert<Dummy>::~Assert()
    if (!this->ShouldHandle) return;
 
    this->msg(ExtraBuf.str());
-   std::string FullMessage = Preamble + " in file " + File 
-      + " at line " + ToString(Line) 
+   std::string FullMessage = Preamble + " in file " + File
+      + " at line " + ToString(Line)
       + " in function " + Func
       + ": " + Message + '\n';
    if (!VariableList.empty())

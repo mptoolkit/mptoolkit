@@ -84,8 +84,7 @@ template <typename T, typename U>
 void
 set_wait(gpu_vector<T>& A, blas::BlasVector<T, U, blas::cpu_tag> const& B)
 {
-   DEBUG_CHECK_EQUAL(A.rows(), B.rows());
-   DEBUG_CHECK_EQUAL(A.cols(), B.cols());
+   DEBUG_CHECK_EQUAL(A.size(), B.size());
    cublas::setVector(A.size(), B.storage(), B.stride(), A.storage(), A.stride());
 }
 
@@ -93,8 +92,7 @@ template <typename T, typename U>
 void
 set_wait(vector_view<T, gpu_tag>&& A, blas::BlasVector<T, U, blas::cpu_tag> const& B)
 {
-   DEBUG_CHECK_EQUAL(A.rows(), B.rows());
-   DEBUG_CHECK_EQUAL(A.cols(), B.cols());
+   DEBUG_CHECK_EQUAL(A.size(), B.size());
    cublas::setVector(A.size(), B.storage(), B.stride(), A.storage(), A.stride());
 }
 
