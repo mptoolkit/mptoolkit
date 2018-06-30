@@ -231,6 +231,10 @@ class Matrix : public NormalMatrix<T, Matrix<T, Tag>, Tag>
       buffer_type Buf;
 };
 
+// numeric_type_of specialization
+template <typename T, typename Tag>
+struct numeric_type_of<Matrix<T, Tag>> : numeric_type_of<T> {};
+
 template <typename T, typename Tag>
 inline
 Matrix<T, Tag>

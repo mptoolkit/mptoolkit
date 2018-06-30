@@ -171,7 +171,7 @@ class IrredTensor
 
       using StructureType  = typename Structure::template value<T>;
 
-      using numeric_type   = typename StructureType::value_type;
+      using numeric_type   = blas::numeric_type_of_t<StructureType>;
 
       //      using row_type       = typename StructureType::row_type;
       //using iterator       = typename StructureType::iterator;
@@ -813,6 +813,18 @@ operator*(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S> const& y
       (x.TransformsAs())(y.TransformsAs())(QL);
    return prod(x, y, QL[0]);
 }
+
+// multiplication A * herm(B) and herm(A) * B.
+// The operator inside herm() must be a scalar.
+template <typename T, typename B1, typename B2, typename B3,
+	  typename S>
+IrredTensor<T, B1, B3, S>
+operator*(IrredTensor<T, B1, B2, S> const& x, HermitianProxy<IrredTensor<T, B3, B2, S>> const& y);
+
+template <typename T, typename B1, typename B2, typename B3,
+	  typename S>
+IrredTensor<T, B1, B3, S>
+operator*(HermitianProxy<IrredTensor<T, B2, B1, S>> const& x, IrredTensor<T, B2, B3, S> const& y);
 
 // multiply by scalar
 template <typename T, typename B1, typename B2, typename S, typename U>

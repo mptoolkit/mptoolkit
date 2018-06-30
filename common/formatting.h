@@ -28,6 +28,7 @@
 #include <complex>
 #include <sstream>
 #include <ostream>
+#include <iomanip>
 
 inline
 std::string

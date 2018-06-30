@@ -29,6 +29,8 @@
 namespace Tensor
 {
 
+#if 0
+
 // DiagonalizeHermitian, diagonalizes 'x', returns the transform matrix
 // such that x' = result' * x * herm(result') is diagonal.
 // x must be a symmetric scalar operator, with a regular basis
@@ -37,8 +39,6 @@ namespace Tensor
 template <typename T>
 IrredTensor<T, VectorBasis, VectorBasis>
 DiagonalizeHermitian(IrredTensor<T, VectorBasis, VectorBasis>& x);
-
-
 
 
 LinearAlgebra::Vector<double>
@@ -182,6 +182,8 @@ SingularFactorizeRegular(IrredTensor<LinearAlgebra::Matrix<std::complex<double> 
 IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
 SingularFactorize(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
                   VectorBasis, VectorBasis> const& m);
+
+#endif
 
 } // namespace Tensor
 

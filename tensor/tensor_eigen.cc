@@ -20,6 +20,8 @@
 namespace Tensor
 {
 
+#if 0
+
 template <typename T>
 IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis>
 InvertDiagonal(IrredTensor<LinearAlgebra::DiagonalMatrix<T>,
@@ -54,5 +56,7 @@ InvertDiagonal(IrredTensor<LinearAlgebra::DiagonalMatrix<T>,
 {
    return InvertDiagonal(Op, std::sqrt(std::numeric_limits<double>::epsilon()));
 }
+
+#endif
 
 } // namespace Tensor

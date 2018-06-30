@@ -28,7 +28,7 @@ StateComponent make_vacuum_state(QuantumNumbers::SymmetryList const& S)
 {
    BasisList Vacuum = make_vacuum_basis(S);
    StateComponent Result(Vacuum, VectorBasis(Vacuum), VectorBasis(Vacuum));
-   Result[0](0,0) = LinearAlgebra::Matrix<double>(1,1,1);
+   Result[0](0,0) = MatrixOperator::value_type(1,1,1.0);
    return Result;
 }
 
@@ -39,7 +39,7 @@ StateComponent make_vacuum_state(QuantumNumbers::QuantumNumber const& Q)
    vq.push_back(Q);
    VectorBasis V(vq);
    StateComponent Result(Vacuum, V, V);
-   Result[0](0,0) = LinearAlgebra::Matrix<double>(1,1,1);
+   Result[0](0,0) =  MatrixOperator::value_type(1,1,1.0);
    return Result;
 }
 
@@ -57,12 +57,12 @@ operator+=(StateComponent& x, StateComponent const& y)
 }
 
 StateComponent
-operator+(StateComponent const& x, StateComponent const& y)
+operator+(StateComponent x, StateComponent const& y)
 {
    CHECK_EQUAL(x.LocalBasis(), y.LocalBasis());
    CHECK_EQUAL(x.Basis1(), y.Basis1());
    CHECK_EQUAL(x.Basis2(), y.Basis2());
-   StateComponent Result(x);
+   StateComponent Result(std::move(x));
    for (unsigned i = 0; i < Result.size(); ++i)
    {
       Result[i] += y[i];
@@ -84,12 +84,12 @@ operator-=(StateComponent& x, StateComponent const& y)
 }
 
 StateComponent
-operator-(StateComponent const& x, StateComponent const& y)
+operator-(StateComponent x, StateComponent const& y)
 {
    CHECK_EQUAL(x.LocalBasis(), y.LocalBasis());
    CHECK_EQUAL(x.Basis1(), y.Basis1());
    CHECK_EQUAL(x.Basis2(), y.Basis2());
-   StateComponent Result(x);
+   StateComponent Result(std::move(x));
    for (unsigned i = 0; i < Result.size(); ++i)
    {
       Result[i] -= y[i];
@@ -172,6 +172,7 @@ SimpleOperator trace_prod(StateComponent const& A,
    return Result;
 }
 
+#if 0
 // does Result' = sum_{s',s} A[s'] * herm(B[s]) * M(s',s)
 // M must transform as the identity representation.
 // TODO: generalize this beyond identity op
@@ -201,6 +202,7 @@ MatrixOperator operator_prod(SimpleOperator const& M,
    }
    return Result;
 }
+#endif
 
 MatrixOperator operator_prod(SimpleRedOperator const& M,
                              StateComponent const& A,
@@ -226,15 +228,15 @@ MatrixOperator operator_prod(Tensor::HermitianProxy<SimpleOperator> const& M,
    QuantumNumbers::QuantumNumber Ident(B.GetSymmetryList());
    MatrixOperator Result(A.base().Basis2(), B.Basis2(), adjoint(M.base().TransformsAs()));
 
-   for (const_iterator<SimpleOperator>::type I = iterate(M.base()); I; ++I)
+   for (auto const& I : M.base())
    {
-      for (const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
+      for (auto const& J : I)
       {
-         Result += herm(*J) * triple_prod(herm(A.base()[J.index1()]),
-                                          MatrixOperator::make_identity(B.Basis1()),
-                                          B[J.index2()],
-                                          adjoint(Result.TransformsAs()),
-                                          Result.TransformsAs());
+         Result += std::conj(J.value) * triple_prod(herm(A.base()[I.row()]),
+						    MatrixOperator::make_identity(B.Basis1()),
+						    B[J.col()],
+						    adjoint(Result.TransformsAs()),
+						    Result.TransformsAs());
       }
    }
    return Result;
@@ -277,12 +279,12 @@ MatrixOperator operator_prod(SimpleOperator const& M,
 
    MatrixOperator Result(A.Basis1(), B.base().Basis1(), q);
 
-   for (const_iterator<SimpleOperator>::type I = iterate(M); I; ++I)
+   for (auto const& I : M)
    {
-      for (const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
+      for (auto const& J : I)
       {
-         Result += (*J) * triple_prod(A[J.index1()], E, herm(B.base()[J.index2()]),
-                                      M.TransformsAs(), q);
+         Result += J.value * triple_prod(A[I.row()], E, herm(B.base()[J.col()]),
+					 M.TransformsAs(), q);
       }
    }
    return Result;
@@ -316,12 +318,12 @@ MatrixOperator operator_prod(Tensor::HermitianProxy<SimpleOperator> const& M,
 
    MatrixOperator Result(A.base().Basis2(), B.Basis2(), q);
 
-   for (const_iterator<SimpleOperator>::type I = iterate(M.base()); I; ++I)
+   for (auto const& I : M.base())
    {
-      for (const_inner_iterator<SimpleOperator>::type J = iterate(I); J; ++J)
+      for (auto const& J : I)
       {
-         Result += herm(*J) * triple_prod(herm(A.base()[J.index1()]), E, B[J.index2()],
-                                          M.base().TransformsAs(), q);
+         Result += herm(J.value) * triple_prod(herm(A.base()[I.row()]), E, B[J.col()],
+					       M.base().TransformsAs(), q);
       }
    }
    return Result;
@@ -415,7 +417,7 @@ operator_prod_regular(StateComponent const& A,
    MatrixOperator Result(A.Basis1(), B.base().Basis1(), E.TransformsAs());
    QuantumNumbers::QuantumNumber Ident(A.GetSymmetryList());
 
-   Result += E * herm(B.base().front());
+   Result += scalar_prod(E, herm(B.base().front()));
    for (std::size_t i = 1; i < A.size()-1; ++i)
    {
       Result += triple_prod(A[i], E, herm(B.base()[i]), Ident, E.TransformsAs());
@@ -556,11 +558,11 @@ StateComponent local_prod(StateComponent const& A, SimpleOperator const& x)
 {
    DEBUG_CHECK_EQUAL(A.LocalBasis(), x.Basis1());
    StateComponent Result(x.Basis2(), A.Basis1(), A.Basis2());
-   for (SimpleOperator::const_iterator I = iterate(x); I; ++I)
+   for (auto const& I : x)
    {
-      for (SimpleOperator::const_inner_iterator J = iterate(I); J; ++J)
+      for (auto const& J : I)
       {
-         Result[J.index2()] += (*J) * A[J.index1()];
+         Result[J.col()] += J.value * A[I.row()];
       }
    }
    return Result;
@@ -571,12 +573,12 @@ StateComponent local_prod(SimpleOperator const& x, StateComponent const& A)
    // The conj_phase enters here for the same reason as prod(mp-operator, mp-state)
    DEBUG_CHECK_EQUAL(x.Basis2(), A.LocalBasis());
    StateComponent Result(x.Basis1(), A.Basis1(), A.Basis2());
-   for (SimpleOperator::const_iterator I = iterate(x); I; ++I)
+   for (auto const& I : x)
    {
-      for (SimpleOperator::const_inner_iterator J = iterate(I); J; ++J)
+      for (auto const& J : I)
       {
-         Result[J.index1()] += conj_phase(x.Basis2()[J.index2()], x.TransformsAs(), x.Basis1()[J.index1()])
-            * (*J) * A[J.index2()];
+	 Result[I.row()] += conj_phase(x.Basis2()[J.col()], x.TransformsAs(), x.Basis1()[I.row()])
+            * J.value * A[J.col()];
       }
    }
    return Result;

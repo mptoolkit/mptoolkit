@@ -4,7 +4,7 @@
 //
 // tensor/types.h
 //
-// Copyright (C) 2019 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2018 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

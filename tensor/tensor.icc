@@ -433,16 +433,15 @@ add_triple_prod(U Factor,
 }
 
 template <typename T, typename B1, typename B2, typename S1,
-          typename B3, typename S2,
-          typename B4, typename S3, typename T4, typename S4>
-Tensor::IrredTensor<T, B1, B4, S4>
+          typename B3, typename S2, typename B4>
+Tensor::IrredTensor<T, B1, B4, S1>
 triple_prod(Tensor::IrredTensor<T, B1, B2, S1> const& x,
             Tensor::IrredTensor<T, B2, B3, S2> const& E,
-            HermitianProxy<Tensor::IrredTensor<T, B4, B3, S3> > const& y,
+            HermitianProxy<Tensor::IrredTensor<T, B4, B3, S1> > const& y,
             QuantumNumber qxy, QuantumNumber qEp)
 {
 
-   Tensor::IrredTensor<T, B1, B4, S4> Result(x.Basis1(), y.base().Basis1(), qEp);
+   Tensor::IrredTensor<T, B1, B4, S1> Result(x.Basis1(), y.base().Basis1(), qEp);
    add_triple_prod(1.0, x, E, y, qxy, Result);
    return Result;
 }
@@ -475,44 +474,34 @@ add_triple_prod(U Factor,
 }
 
 //
-// prod for hermitian
+// A * herm(B)
+// B must be a scalar type
 //
 
-#if 0
-template <typename T1, typename B1, typename B2, typename S1,
-           typename T2, typename B3, typename S2>
-typename IrredProd_Herm<IrredTensor<T2, B1, B2, S2>,
-               HermitianProxy<IrredTensor<T1, B3, B2, S1> > >::result_type
-IrredProd_Herm<IrredTensor<T2, B1, B2, S2>,
-               HermitianProxy<IrredTensor<T1, B3, B2, S1> > >
-::operator()(first_argument_type x, second_argument_type y) const
+template <typename T, typename B1, typename B2, typename B3,
+	  typename S>
+IrredTensor<T, B1, B3, S>
+operator*(IrredTensor<T, B1, B2, S> const& x, HermitianProxy<IrredTensor<T, B3, B2, S>> const& y)
 {
    DEBUG_PRECONDITION_EQUAL(x.Basis2(), y.base().Basis2());
    DEBUG_CHECK(is_scalar(y.base().TransformsAs()));
 
-   result_type Result(x.Basis1(), y.base().Basis1(), x.TransformsAs());
+   IrredTensor<T, B1, B3, S> Result(x.Basis1(), y.base().Basis1(), x.TransformsAs());
    QuantumNumber Trans = x.TransformsAs();
    QuantumNumber Ident(x.GetSymmetryList());
-   IrredTensor<T1, B3, B2, S1> const& yb = y.base();  // shortcut
 
-   typedef typename const_iterator< IrredTensor<T1, B1, B2, S1> >::type       x_iter;
-   typedef typename const_inner_iterator< IrredTensor<T1, B1, B2, S1> >::type x_inner;
-
-   typedef typename const_iterator< IrredTensor<T2, B1, B3, S2> >::type       y_iter;
-   typedef typename const_inner_iterator< IrredTensor<T2, B1, B3, S2> >::type y_inner;
-
-   for (x_iter xi = iterate(x.data()); xi; ++xi)
+   for (auto const& xi : x)
    {
-      QuantumNumber qp = x.Basis1()[xi.index1()];
-      for (x_inner xin = iterate(xi); xin; ++xin)
+      QuantumNumber qp = x.Basis1()[xi.row()];
+      for (auto const& xj : xi)
       {
-         QuantumNumber qpp = x.Basis2()[xin.index2()];
+         QuantumNumber qpp = x.Basis2()[xj.row()];
 
-         for (y_iter yi = iterate(yb); yi; ++yi)
-         {
-            for (y_inner yin = iterate(yi); yin; ++yin)
-            {
-               if (yin.index2() != xin.index2())
+	 for (auto const& yi : y.base())
+	 {
+	    for (auto const& yj : iterate(yi))
+	    {
+               if (yj.row() != xj.row())
                   continue;
 
                // because y is a scalar, q == qpp always
@@ -523,8 +512,8 @@ IrredProd_Herm<IrredTensor<T2, B1, B2, S2>,
                                                      qp, qpp, qpp);
                if (fabs(Coefficient) > 1E-10)
                {
-                  add_element(Result.data(), xin.index1(), yin.index1(), Coefficient *
-                              (*xin) * herm(*yin));
+                  add_element(Result.data(), xi.row(), yi.row(), Coefficient *
+                              (xj.value) * herm(yj.value));
                }
             }
          }
@@ -534,39 +523,28 @@ IrredProd_Herm<IrredTensor<T2, B1, B2, S2>,
    return Result;
 }
 
-template <typename T1, typename B1, typename B2, typename S1,
-           typename T2, typename B3, typename S2>
-typename IrredProd_Herm<HermitianProxy<IrredTensor<T1, B1, B2, S1> >,
-               IrredTensor<T2, B1, B3, S2> >::result_type
-IrredProd_Herm<HermitianProxy<IrredTensor<T1, B1, B2, S1> >,
-               IrredTensor<T2, B1, B3, S2> >
-::operator()(first_argument_type x, second_argument_type y) const
+template <typename T, typename B1, typename B2, typename B3,
+	  typename S>
+IrredTensor<T, B1, B3, S>
+operator*(HermitianProxy<IrredTensor<T, B2, B1, S>> const& x, IrredTensor<T, B2, B3, S> const& y)
 {
    DEBUG_PRECONDITION_EQUAL(x.base().Basis1(), y.Basis1());
    DEBUG_PRECONDITION(is_scalar(x.base().TransformsAs()));
 
-   result_type Result(x.base().Basis2(), y.Basis2(), y.TransformsAs());
+   IrredTensor<T, B1, B3, S> Result(x.base().Basis2(), y.Basis2(), y.TransformsAs());
    QuantumNumber Trans = y.TransformsAs();
    QuantumNumber Ident(y.GetSymmetryList());
-   IrredTensor<T1, B1, B2, S1> const& xb = x.base();  // shortcut
 
-   typedef typename const_iterator< IrredTensor<T1, B1, B2, S1> >::type       x_iter;
-   typedef typename const_inner_iterator< IrredTensor<T1, B1, B2, S1> >::type x_inner;
-
-   typedef typename const_iterator< IrredTensor<T2, B1, B3, S2> >::type       y_iter;
-   typedef typename const_inner_iterator< IrredTensor<T2, B1, B3, S2> >::type y_inner;
-
-   y_iter yi = iterate(y.data());  // always in sync with xi
-   for (x_iter xi = iterate(xb.data()); xi; ++xi, ++yi)
+   for (int i = 0; i < y.Basis1().size(); ++i)
    {
-      QuantumNumber qpp = y.Basis1()[yi.index1()];
-      for (x_inner xin = iterate(xi); xin; ++xin)
+      QuantumNumber qpp = y.Basis1()[i];
+      for (auto const& xj : x.base().data().row(i))
       {
          // because x is a scalar, qp == qpp always
          // QuantumNumber qp = x.base().Basis2()[xin.index2()];
-         for (y_inner yin = iterate(yi); yin; ++yin)
-         {
-            QuantumNumber q = y.Basis2()[yin.index2()];
+	 for (auto const& yj : y.data().row(i))
+	 {
+            QuantumNumber q = y.Basis2()[yj.row()];
 
             //if (!(is_transform_target(q, Result.TransformsAs(), qpp))) continue;
 
@@ -575,8 +553,8 @@ IrredProd_Herm<HermitianProxy<IrredTensor<T1, B1, B2, S1> >,
                                                      qpp, q, qpp);
             if (fabs(Coefficient) > 1E-10)
             {
-               add_element(Result.data(), xin.index2(), yin.index2(), Coefficient *
-                           herm(*xin) * (*yin));
+               add_element(Result.data(), xj.row(), yj.row(), Coefficient *
+                           herm(xj.value) * yj.value);
             }
          }
       }
@@ -584,8 +562,6 @@ IrredProd_Herm<HermitianProxy<IrredTensor<T1, B1, B2, S1> >,
    Result.debug_check_structure();
    return Result;
 }
-
-#endif
 
 //
 // delta_shift

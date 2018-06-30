@@ -287,6 +287,15 @@ struct is_complex<std::complex<T>> : std::true_type {};
 template <typename T>
 constexpr bool is_complex_v = is_complex<T>::value;
 
+// metafunction to get the underlying numeric type (ie, real or complex, of some precision)
+// of a matrix or vector
+
+template <typename T>
+struct numeric_type_of;
+
+template <typename T>
+using numeric_type_of_t = typename numeric_type_of<T>::type;
+
 } // namespace blas
 
 //
@@ -316,5 +325,7 @@ copy(T&& x) // x is a universal reference here, which isn't really what we want
 {
    return std::move(x);
 }
+
+#include "number_traits.icc"
 
 #endif

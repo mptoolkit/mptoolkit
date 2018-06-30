@@ -236,10 +236,10 @@ SimpleOperator make_vacuum_simple(QuantumNumbers::SymmetryList const& SList)
 }
 
 StateComponent
-operator+(StateComponent const& x, StateComponent const& y);
+operator+(StateComponent x, StateComponent const& y);
 
 StateComponent
-operator-(StateComponent const& x, StateComponent const& y);
+operator-(StateComponent x, StateComponent const& y);
 
 StateComponent&
 operator+=(StateComponent& x, StateComponent const& y);

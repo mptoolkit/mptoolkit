@@ -358,6 +358,11 @@ DiagonalMatrix<T, Tag>::make_identity(int Size)
    return Result;
 }
 
+// numeric_type_of specialization
+template <typename T, typename Tag>
+struct numeric_type_of<DiagonalMatrix<T, Tag>> : numeric_type_of<T> {};
+
+
 } // namespace blas
 
 #include "diagonalmatrix.icc"

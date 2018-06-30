@@ -464,6 +464,10 @@ class SparseMatrix
       std::vector<SparseMatrixRow<T>> RowStorage;
 };
 
+// numeric_type_of specialization
+template <typename T>
+struct numeric_type_of<SparseMatrix<T>> : numeric_type_of<T> {};
+
 #if defined(USE_PSTREAM)
 template <int Format, typename T>
 PStream::opstreambuf<Format>&

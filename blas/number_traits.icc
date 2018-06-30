@@ -1,0 +1,40 @@
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// blas/number_traits.icc
+//
+// Copyright (C) 2018 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
+// base implementation of blas::numeric_type_of
+
+namespace blas
+{
+
+namespace detail
+{
+template <typename T, typename Enable = void>
+struct numeric_type_of_impl {};
+
+template <typename T>
+struct numeric_type_of_impl<T, std::enable_if_t<is_numeric_v<T>>>
+{
+   using type = T;
+};
+} // namespace detail
+
+template <typename T>
+struct numeric_type_of : detail::numeric_type_of_impl<T> {};
+
+} // namespace blas
