@@ -151,6 +151,12 @@ class Matrix : public NormalMatrix<T, Matrix<T, Tag>, Tag>
 	 return *this;
       }
 
+      Matrix& operator*=(T const& x)
+      {
+	 scale(*this, x);
+	 return *this;
+      }
+
       int rows() const { return Rows; }
       int cols() const { return Cols; }
 
@@ -264,23 +270,6 @@ copy(Matrix<T, Tag_Type> const& x)
 {
    Matrix<T, Tag_Type> Result(x.rows(), x.cols());
    Result = x;
-   return Result;
-}
-
-// random_matrix
-
-template <typename T>
-Matrix<T>
-random_matrix(int Rows, int Cols)
-{
-   Matrix<T> Result(Rows, Cols);
-   for (int r = 0; r < Rows; ++r)
-   {
-      for (int c = 0; c < Cols; ++c)
-      {
-         Result(r,c) = randutil::rand<T>();
-      }
-   }
    return Result;
 }
 

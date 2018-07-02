@@ -278,6 +278,8 @@ void show_backtrace_handler(char const* Msg)
 #include <cstdlib>
 #include <vector>
 #include <string>
+#include <cmath>
+#include <limits>
 #include <boost/type_traits.hpp>
 
 #ifdef __GNUC__
@@ -1040,6 +1042,43 @@ else INVOKE_TRACE("WARNING", #Msg, (Msg))
 #define PANIC(Msg)                              \
 if (false) ;                                    \
 else INVOKE_PANIC("PANIC", #Msg, (Msg))
+
+// check for closeness for floating point
+
+template <typename T>
+bool check_close(T x, T y)
+{
+   return x == y;
+}
+
+bool check_close(float x, float y)
+{
+   return std::abs(x-y) < std::numeric_limits<float>::epsilon() * 100;
+}
+
+bool check_close(double x, double y)
+{
+   return std::abs(x-y) < std::numeric_limits<double>::epsilon() * 100;
+}
+
+#if defined(NDEBUG) || defined(TRACER_DISABLE_ALL_CHECKS)
+#define DEBUG_CHECK_CLOSE(x,y)                  \
+if (true) ;                                     \
+else INVOKE_DUMMY("")
+#else
+#define DEBUG_CHECK_CLOSE(x, y)                                                 \
+   if (::tracer::check_close((x), (y))) ;				\
+else INVOKE_ASSERT("CHECK_CLOSE", "equal(" #x ", " #y ") is false")(x)(y)
+#endif
+#if defined(TRACER_DISABLE_ALL_CHECKS)
+#define CHECK_CLOSE(x,y)                        \
+if (true) ;                                     \
+else INVOKE_DUMMY("")
+#else
+#define CHECK_CLOSE(x, y)                                                       \
+   if (::tracer::check_close((x), (y))) ;				\
+else INVOKE_ASSERT("CHECK_CLOSE", "equal(" #x ", " #y ") is false")(x)(y)
+#endif
 
 } // namespace tracer
 

@@ -337,6 +337,18 @@ void matrix_fill(std::complex<double> alpha, int M, int N, std::complex<double>*
    }
 }
 
+inline
+void matrix_conj(int M, int N, std::complex<double>* A, int lda)
+{
+   for (int c = 0; c < N; ++c)
+   {
+      for (int r = 0; r < M; ++r)
+      {
+         A[c*lda+r] = conj(A[c*lda+r]);
+      }
+   }
+}
+
 template <typename T>
 decltype(norm_frob_sq(std::declval<T>()))
 matrix_norm_frob_sq(int M, int N, T const* A, int lda)

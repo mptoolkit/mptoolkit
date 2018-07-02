@@ -524,6 +524,25 @@ void matrix_clear(int M, int N, cuda::gpu_ptr<double> A, int lda)
                                    A.device_ptr(), lda));
 }
 
+void matrix_conj(int M, int N, cuda::gpu_ptr<std::complex<double>> A, int lda)
+{
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(A.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
+   double alpha = -1.0;
+   if (lda == M)
+   {
+      cublas::check_error(cublasDscal(H.raw_handle(), M*N, &alpha, reinterpret_cast<double*>(A.device_ptr())+1, 2));
+   }
+   else
+   {
+      for (int r = 0; r < N; ++r)
+      {
+	 cublas::check_error(cublasDscal(H.raw_handle(), M, &alpha, reinterpret_cast<double*>(A.device_ptr())+r*lda+1, 2));
+      }
+   }
+}
+
 template <typename T>
 std::enable_if_t<is_cuda_floating_point_v<T>, void>
 matrix_inner_prod(char Atrans, char Btrans, int M, int N,

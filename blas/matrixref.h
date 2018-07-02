@@ -476,6 +476,62 @@ conj(BlasMatrix<float128, BaseType, Tag> const& x)
 }
 #endif
 
+// inplace_conj
+
+template <typename T, typename U, typename Tag>
+inline
+void inplace_conj(NormalMatrix<T, U, Tag>& A)
+{
+   matrix_conj(A.rows(), A.cols(), A.storage(), A.leading_dimension());
+}
+
+template <typename T, typename U, typename Tag>
+inline
+void inplace_conj(NormalMatrixProxy<T, U, Tag>&& A)
+{
+   matrix_conj(A.rows(), A.cols(), std::move(A).storage(), A.leading_dimension());
+}
+
+// specalizations for real types are no-ops
+
+template <typename U, typename Tag>
+inline
+void inplace_conj(NormalMatrix<float, U, Tag>&)
+{
+}
+
+template <typename U, typename Tag>
+inline
+void inplace_conj(NormalMatrixProxy<float, U, Tag>&&)
+{
+}
+
+template <typename U, typename Tag>
+inline
+void inplace_conj(NormalMatrix<double, U, Tag>&)
+{
+}
+
+template <typename U, typename Tag>
+inline
+void inplace_conj(NormalMatrixProxy<double, U, Tag>&&)
+{
+}
+
+#if defined(HAVE_FLOAT128)
+template <typename U, typename Tag>
+inline
+void inplace_conj(NormalMatrix<float128, U, Tag>&)
+{
+}
+
+template <typename U, typename Tag>
+inline
+void inplace_conj(NormalMatrixProxy<float128, U, Tag>&&)
+{
+}
+#endif
+
 // assignment
 
 template <typename T, typename U, typename V, typename Tag>
@@ -585,6 +641,69 @@ void subtract(MatrixRef<T, U, Tag>& A, ScaledMatrix<T, V, Tag> const& B)
    matrix_add_scaled(-B.factor(), B.base(), A.as_derived());
 }
 
+// expression template for -A
+
+template <typename T, typename BaseType, typename Tag>
+class NegatedMatrix : public MatrixRef<T, NegatedMatrix<T, BaseType, Tag>, Tag>
+{
+   public:
+      using base_type = BaseType;
+
+      NegatedMatrix(base_type const& A_) : A(A_) {}
+
+      int rows() const { return A.rows(); }
+      int cols() const { return A.cols(); }
+
+      base_type const& base() const { return A; }
+
+   private:
+      base_type const& A;
+};
+
+template <typename T, typename BaseType, typename Tag>
+inline
+NegatedMatrix<T, BaseType, Tag>
+operator-(MatrixRef<T, BaseType, Tag> const& M)
+{
+   return NegatedMatrix<T, BaseType, Tag>(M.as_derived());
+}
+
+template <typename T, typename BaseType, typename Tag>
+inline
+BaseType const&
+operator-(NegatedMatrix<T, BaseType, Tag> const& M)
+{
+   return M.base();
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void assign(MatrixRef<T, U, Tag>& A, NegatedMatrix<T, V, Tag> const& B)
+{
+   matrix_copy_scaled(-number_traits<T>::identity(), B.base(), A.as_derived());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void add(MatrixRef<T, U, Tag>& A, NegatedMatrix<T, V, Tag> const& B)
+{
+   matrix_add_scaled(-number_traits<T>::identity(), B.base(), A.as_derived());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void add(MatrixRef<T, U, Tag>&& A, NegatedMatrix<T, V, Tag> const& B)
+{
+   matrix_add_scaled(-number_traits<T>::identity(), B.base(), std::move(A.as_derived()));
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void subtract(MatrixRef<T, U, Tag>& A, NegatedMatrix<T, V, Tag> const& B)
+{
+   matrix_add(B.base(), A.as_derived());
+}
+
 // expression template for alpha * op(A) * op(B)
 
 template <typename T, typename U, typename V, typename Tag>
@@ -653,6 +772,12 @@ inline
 void subtract(MatrixRef<T, Derived, Tag>& C, MatrixProduct<T, U, V, Tag> const& a)
 {
    gemm(-a.Factor, a.A, number_traits<T>::zero(), a.B, C.as_derived());
+}
+
+template <typename T, typename Derived, typename Tag>
+void fill(MatrixRef<T, Derived, Tag>& C, T const& x)
+{
+   matrix_fill(x, C.as_derived());
 }
 
 // miscellaneous
@@ -889,6 +1014,20 @@ void vector_scale(T alpha, BlasVectorProxy<T, U, Tag>&& y)
 
 template <typename T, typename U, typename Tag>
 void
+vector_fill(T alpha, blas::BlasVector<T, U, Tag>& y)
+{
+   vector_fill(alpha, y.size(), y.storage(), y.stride());
+}
+
+template <typename T, typename U, typename Tag>
+void
+vector_fill(T alpha, blas::BlasVectorProxy<T, U, Tag>&& y)
+{
+   vector_fill(alpha, y.size(), std::move(y).storage(), y.stride());
+}
+
+template <typename T, typename U, typename Tag>
+void
 sum(blas::BlasVector<T, U, Tag> const& x, typename Tag::template async_proxy<T>&& y)
 {
    vector_sum(x.size(), x.storage(), x.stride(), std::move(y));
@@ -1063,6 +1202,20 @@ inline
 void clear(NormalMatrixProxy<T, U, Tag>&& C)
 {
    matrix_clear(C.rows(), C.cols(), std::move(C).storage(), C.leading_dimension());
+}
+
+template <typename T, typename U, typename Tag>
+inline
+void matrix_fill(T const& x, NormalMatrix<T, U, Tag>& C)
+{
+   matrix_fill(x, C.rows(), C.cols(), C.storage(), C.leading_dimension());
+}
+
+template <typename T, typename U, typename Tag>
+inline
+void matrix_fill(T const& x, NormalMatrixProxy<T, U, Tag>&& C)
+{
+   matrix_fill(x, C.rows(), C.cols(), std::move(C).storage(), C.leading_dimension());
 }
 
 template <typename T, typename U, typename Tag>

@@ -65,8 +65,8 @@ set_wait(gpu_matrix<T>& A, blas::Matrix<T> const& B)
    DEBUG_CHECK_EQUAL(A.cols(), B.cols());
    //TRACE(A.cols())(A.rows())(A.device_ptr())(A.leading_dim())(B.data())(leading_dimension(B));
    cublas::check_error(cublasSetMatrix(A.rows(), A.cols(), sizeof(T),
-				       B.data(), leading_dimension(B),
-				       A.device_ptr(), A.leading_dim()));
+				       B.storage(), B.leading_dimension(),
+				       A.storage().device_ptr(), A.leading_dimension()));
 }
 
 // non-blocking set

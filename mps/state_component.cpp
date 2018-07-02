@@ -23,12 +23,13 @@
 #include "tensor/tensorproduct.h"
 #include <tuple>
 #include "tensor/tensor_eigen.h"
+#include "blas/matrix_utility.h"
 
 StateComponent make_vacuum_state(QuantumNumbers::SymmetryList const& S)
 {
    BasisList Vacuum = make_vacuum_basis(S);
    StateComponent Result(Vacuum, VectorBasis(Vacuum), VectorBasis(Vacuum));
-   Result[0](0,0) = MatrixOperator::value_type(1,1,1.0);
+   Result[0].emplace(0,0, 1,1,1.0); // MatrixOperator::value_type(1,1,1.0);
    return Result;
 }
 
@@ -39,7 +40,7 @@ StateComponent make_vacuum_state(QuantumNumbers::QuantumNumber const& Q)
    vq.push_back(Q);
    VectorBasis V(vq);
    StateComponent Result(Vacuum, V, V);
-   Result[0](0,0) =  MatrixOperator::value_type(1,1,1.0);
+   Result[0].emplace(0,0, 1,1,1.0); // MatrixOperator::value_type(1,1,1.0);
    return Result;
 }
 
@@ -136,13 +137,25 @@ SimpleOperator trace_prod(Tensor::HermitianProxy<StateComponent> const& A,
    BasisList const& Sa = Result.Basis1();
    BasisList const& Sb = Result.Basis2();
 
+   // we need a temporary Matrix to exist in device memory
+   Matrix Temp(Sa.size(), Sb.size());
    for (std::size_t sa = 0; sa < Sa.size(); ++sa)
    {
       for (std::size_t sb = 0; sb < Sb.size(); ++sb)
       {
          //if (is_transform_target(Sb[sb], adjoint(Sa[sa]), Ident))
          if (Sb[sb] == Sa[sa])
-            Result(sa, sb) = inner_prod(A.base()[sa], B[sb]);
+            inner_prod(A.base()[sa], B[sb], Temp(sa, sb));
+      }
+   }
+
+   // copy from device memory to the SimpleOperator
+   for (std::size_t sa = 0; sa < Sa.size(); ++sa)
+   {
+      for (std::size_t sb = 0; sb < Sb.size(); ++sb)
+      {
+         if (Sb[sb] == Sa[sa])
+	    Result(sa,sb) = get_wait(Temp(sa,sb));
       }
    }
    return Result;
@@ -158,6 +171,7 @@ SimpleOperator trace_prod(StateComponent const& A,
    BasisList const& Sa = Result.Basis1();
    BasisList const& Sb = Result.Basis2();
 
+   Matrix Temp(Sa.size(), Sb.size());
    for (std::size_t sa = 0; sa < Sa.size(); ++sa)
    {
       for (std::size_t sb = 0; sb < Sb.size(); ++sb)
@@ -165,8 +179,16 @@ SimpleOperator trace_prod(StateComponent const& A,
          //if (is_transform_target(adjoint(Sb[sb]), Sa[sa], Ident))
          if (Sb[sb] == Sa[sa])
          {
-            Result(sa, sb) = inner_prod(A[sa], B.base()[sb]);
+            inner_prod(B.base()[sb], A[sa], Temp(sa,sb));
          }
+      }
+   }
+   for (std::size_t sa = 0; sa < Sa.size(); ++sa)
+   {
+      for (std::size_t sb = 0; sb < Sb.size(); ++sb)
+      {
+         if (Sb[sb] == Sa[sa])
+	    Result(sa,sb) = get_wait(Temp(sa,sb));
       }
    }
    return Result;
@@ -610,6 +632,7 @@ StateComponent triple_prod(Tensor::HermitianProxy<MatrixOperator> const& Op1,
    return Result;
 }
 
+#if 0
 MatrixOperator extract_diagonal(StateComponent const& A,
                                 Tensor::HermitianProxy<StateComponent> const& B)
 {
@@ -645,6 +668,7 @@ MatrixOperator extract_diagonal(StateComponent const& A,
    }
    return Result;
 }
+#endif
 
 MatrixOperator ExpandBasis1(StateComponent& A)
 {
@@ -660,15 +684,17 @@ MatrixOperator ExpandBasis1(StateComponent& A)
       DEBUG_CHECK_EQUAL(Dim, A.Basis2().dim(b2));
 
       // Make an identity matrix of the correct size
-      LinearAlgebra::set_element(Result[s], t, b2, LinearAlgebra::identity_matrix<double>(Dim));
+      Result[s].insert(t, b2, MatrixOperator::value_type::make_identity(Dim));
    }
 
    // check the normalization
+   //   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(Result, herm(Result))),
+   //                     FullBasis1.total_degree());
    DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(Result, herm(Result))),
                      FullBasis1.total_degree());
 
    MatrixOperator Res = scalar_prod(A, herm(Result));
-   A = Result;
+   A = std::move(Result);
    return Res;
 }
 
@@ -685,9 +711,8 @@ MatrixOperator ExpandBasis2(StateComponent& A)
       DEBUG_CHECK_EQUAL(Dim, A.Basis1().dim(b1));
 
       // Make an identity matrix of the correct size
-      set_element(Result[s], b1, t,
-                                 std::sqrt(double(degree(FullBasis2[t])) / degree(A.Basis1()[b1]))
-                                 * LinearAlgebra::identity_matrix<double>(Dim));
+      Result[s].insert(b1, t, std::sqrt(double(degree(FullBasis2[t])) / degree(A.Basis1()[b1]))
+		       * MatrixOperator::value_type::make_identity(Dim));
    }
 
    // check the normalization
@@ -695,7 +720,7 @@ MatrixOperator ExpandBasis2(StateComponent& A)
                      FullBasis2.total_degree());
 
    MatrixOperator Res = scalar_prod(herm(Result), A);
-   A = Result;
+   A = std::move(Result);
    return Res;
 }
 
@@ -725,7 +750,7 @@ MatrixOperator ExpandBasis1Used(StateComponent& A, std::vector<int> const& Used)
       DEBUG_CHECK_EQUAL(Dim, A.Basis2().dim(b2));
 
       // Make an identity matrix of the correct size
-      LinearAlgebra::set_element(Result[s], t, b2, LinearAlgebra::identity_matrix<double>(Dim));
+      Result[s].insert(t,b2, MatrixOperator::value_type::make_identity(Dim));
    }
 
    // check the normalization
@@ -733,7 +758,7 @@ MatrixOperator ExpandBasis1Used(StateComponent& A, std::vector<int> const& Used)
                      FullBasis1.total_degree());
 
    MatrixOperator Res = scalar_prod(A, herm(Result));
-   A = Result;
+   A = std::move(Result);
    return Res;
 }
 
@@ -750,7 +775,7 @@ MatrixOperator ExpandBasis2Used(StateComponent& A, std::vector<int> const& Used)
          UsedBasis.push_back(A.LocalBasis()[i]);
       }
    }
-   CHECK(UsedBasis.size() != 0)(UsedBasis)(LinearAlgebra::Vector<int>(Used));
+   CHECK(UsedBasis.size() != 0)(UsedBasis);
 
    ProductBasis<VectorBasis, BasisList> FullBasis2(A.Basis1(), adjoint(UsedBasis));
    StateComponent Result(A.LocalBasis(), A.Basis1(), FullBasis2.Basis());
@@ -764,9 +789,8 @@ MatrixOperator ExpandBasis2Used(StateComponent& A, std::vector<int> const& Used)
       DEBUG_CHECK_EQUAL(Dim, A.Basis1().dim(b1));
 
       // Make an identity matrix of the correct size
-      set_element(Result[s], b1, t,
-                                 std::sqrt(double(degree(FullBasis2[t])) / degree(A.Basis1()[b1]))
-                                 * LinearAlgebra::identity_matrix<double>(Dim));
+      Result[s].insert(b1,t, std::sqrt(double(degree(FullBasis2[t])) / degree(A.Basis1()[b1]))
+		       * MatrixOperator::value_type::make_identity(Dim));
    }
 
    // check the normalization
@@ -774,10 +798,11 @@ MatrixOperator ExpandBasis2Used(StateComponent& A, std::vector<int> const& Used)
                      FullBasis2.total_degree());
 
    MatrixOperator Res = scalar_prod(herm(Result), A);
-   A = Result;
+   A = std::move(Result);
    return Res;
 }
 
+#if 0
 std::pair<MatrixOperator, SimpleStateComponent>
 ExpandBasis1_(StateComponent const& A)
 {
@@ -793,7 +818,7 @@ ExpandBasis1_(StateComponent const& A)
       DEBUG_CHECK_EQUAL(Dim, A.Basis2().dim(b2));
 
       // Make an identity matrix of the correct size
-      Result[s](t, b2) = LinearAlgebra::ScalarMatrix<std::complex<double>>(Dim, Dim, 1.0);
+      Result[s].insert(t, b2, LinearAlgebra::ScalarMatrix<std::complex<double>>(Dim, Dim, 1.0));
    }
 
    // check the normalization
@@ -803,6 +828,7 @@ ExpandBasis1_(StateComponent const& A)
    MatrixOperator Res = scalar_prod(A, herm(Result));
    return std::make_pair(Res, Result);
 }
+#endif
 
 std::pair<RealDiagonalOperator, MatrixOperator>
 OrthogonalizeBasis2(StateComponent& A)
@@ -812,9 +838,9 @@ OrthogonalizeBasis2(StateComponent& A)
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
    MatrixOperator M = ExpandBasis2(A);
-   SingularValueDecomposition(M, U, D, Vh);
+   SVD(M, U, D, Vh);
    A = prod(A, U);
-   return std::make_pair(D, Vh);
+   return std::make_pair(std::move(D), std::move(Vh));
 }
 
 std::pair<MatrixOperator, RealDiagonalOperator>
@@ -824,9 +850,9 @@ OrthogonalizeBasis1(StateComponent& A)
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
    MatrixOperator M = ExpandBasis1(A);
-   SingularValueDecomposition(M, U, D, Vh);
+   SVD(M, U, D, Vh);
    A = prod(Vh, A);
-   return std::make_pair(U, D);
+   return std::make_pair(std::move(U), std::move(D));
 }
 
 StateComponent ConstructFromRightBasis(BasisList const& LocalBasis,
@@ -843,7 +869,7 @@ StateComponent ConstructFromRightBasis(BasisList const& LocalBasis,
       DEBUG_CHECK_EQUAL(Dim, RightBasis.dim(b2));
 
       // Make an identity matrix of the correct size
-      LinearAlgebra::set_element(Result[s], t, b2, LinearAlgebra::identity_matrix<double>(Dim));
+      Result[s].insert(t,b2, MatrixOperator::value_type::make_identity(Dim));
    }
    return Result;
 }
@@ -862,16 +888,15 @@ StateComponent ConstructFromLeftBasis(BasisList const& LocalBasis,
       DEBUG_CHECK_EQUAL(Dim, LeftBasis.dim(b1));
 
       // Make an identity matrix of the correct size
-      set_element(Result[s], b1, t,
-                                 std::sqrt(double(degree(FullBasis2[t])) / degree(LeftBasis[b1]))
-                                 * LinearAlgebra::identity_matrix<double>(Dim));
+      Result[s].insert(b1,t, std::sqrt(double(degree(FullBasis2[t])) / degree(LeftBasis[b1]))
+		       * MatrixOperator::value_type::make_identity(Dim));
    }
    return Result;
 }
 
-StateComponent ShiftLocalBasis(StateComponent const& Op,
-                                 QuantumNumber QL,
-                                 QuantumNumber QM)
+StateComponent ShiftLocalBasis(StateComponent&& Op,
+			       QuantumNumber QL,
+			       QuantumNumber QM)
 {
    CHECK_EQUAL(degree(QL), 1);
    CHECK_EQUAL(degree(QM), 1);
@@ -895,19 +920,13 @@ StateComponent ShiftLocalBasis(StateComponent const& Op,
    // new component, and set the matrix elements
    StateComponent Result(NewLocal, NewBasis1, NewBasis2);
    for (unsigned i = 0; i < NewLocal.size(); ++i)
-      Result[i].data() = Op[i].data();
+      Result[i].data() = std::move(Op[i].data());
 
    return Result;
 }
 
 StateComponent delta_shift(StateComponent const& Op, QuantumNumber const& q)
 {
-#if 0
-   // Alternative implementation; not as efficient
-   StateComponent Result(Op);
-   Result.delta_shift(q);
-   return Result;
-#else
    CHECK_EQUAL(degree(q), 1);
 
    // Update basis 2
@@ -923,12 +942,34 @@ StateComponent delta_shift(StateComponent const& Op, QuantumNumber const& q)
    // new component, and set the matrix elements
    StateComponent Result(Op.LocalBasis(), NewBasis1, NewBasis2);
    for (unsigned i = 0; i < Op.size(); ++i)
-      Result[i].data() = Op[i].data();
+      Result[i].data() = copy(Op[i].data());
 
    return Result;
-#endif
 }
 
+StateComponent delta_shift(StateComponent&& Op, QuantumNumber const& q)
+{
+   CHECK_EQUAL(degree(q), 1);
+
+   // Update basis 2
+   VectorBasis NewBasis2(Op.GetSymmetryList());
+   for (unsigned i = 0; i < Op.Basis2().size(); ++i)
+      NewBasis2.push_back(transform_targets(Op.Basis2()[i], q)[0], Op.Basis2().dim(i));
+
+   // Update basis 1
+   VectorBasis NewBasis1(Op.GetSymmetryList());
+   for (unsigned i = 0; i < Op.Basis1().size(); ++i)
+      NewBasis1.push_back(transform_targets(Op.Basis1()[i], q)[0], Op.Basis1().dim(i));
+
+   // new component, and set the matrix elements
+   StateComponent Result(Op.LocalBasis(), NewBasis1, NewBasis2);
+   for (unsigned i = 0; i < Op.size(); ++i)
+      Result[i].data() = std::move(Op[i].data());
+
+   return Result;
+}
+
+#if 0
 StateComponent ScaleBasisU1(StateComponent const& Op,
                               std::string const& Name,
                               double Factor)
@@ -975,6 +1016,7 @@ StateComponent ScaleBasisU1(StateComponent const& Op,
 
    return Result;
 }
+#endif
 
 #if 0
 MatrixOperator RenameSymmetry(MatrixOperator const& Op, SymmetryList const& NewSL)
@@ -1019,8 +1061,21 @@ StateComponent ReorderLocalBasis(StateComponent const& Op, std::list<int> const&
    int i = 0;
    for (std::list<int>::const_iterator I = NewOrder.begin(); I != NewOrder.end(); ++I)
    {
-      Result[i++] = Op[*I];
+      Result[i++] = copy(Op[*I]);
    }
+
+   return Result;
+}
+
+StateComponent CoerceSymmetryList(StateComponent&& Op, SymmetryList const& NewSL)
+{
+   BasisList NewLocal = CoerceSymmetryList(Op.LocalBasis(), NewSL);
+   VectorBasis NewBasis1 = CoerceSymmetryList(Op.Basis1(), NewSL);
+   VectorBasis NewBasis2 = CoerceSymmetryList(Op.Basis2(), NewSL);
+
+   StateComponent Result(NewLocal, NewBasis1, NewBasis2);
+   for (unsigned i = 0; i < Result.size(); ++i)
+      Result[i].data() = std::move(Op[i].data());
 
    return Result;
 }
@@ -1033,7 +1088,7 @@ StateComponent CoerceSymmetryList(StateComponent const& Op, SymmetryList const& 
 
    StateComponent Result(NewLocal, NewBasis1, NewBasis2);
    for (unsigned i = 0; i < Result.size(); ++i)
-      Result[i].data() = Op[i].data();
+      Result[i].data() = copy(Op[i].data());
 
    return Result;
 }
@@ -1069,7 +1124,9 @@ MatrixOperator MakeRandomMatrixOperator(VectorBasis const& B1,
       {
          if (is_transform_target(B2[j], q, B1[i]))
          {
-            Result(i,j) = LinearAlgebra::random_matrix<std::complex<double> >(B1.dim(i), B2.dim(j));
+	    Matrix Temp(B1.dim(i), B2.dim(j));
+	    set_wait(Temp, blas::random_matrix<blas::numeric_type_of_t<Matrix>>(B1.dim(i), B2.dim(j)));
+	    Result.insert(i,j, Temp);
          }
       }
    }

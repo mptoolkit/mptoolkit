@@ -87,6 +87,12 @@ void subtract(VectorRef<T, U, Tag>& A, VectorRef<T, V, Tag> const& B)
    vector_add_scaled(-number_traits<T>::identity(), B.as_derived(), A.as_derived());
 }
 
+template <typename T, typename U, typename Tag>
+void fill(VectorRef<T, U, Tag>& A, T const& x)
+{
+   vector_fill(x, A.as_derived());
+}
+
 // Specialization of a VectorRef for a matrix that can be directly used in BLAS-like calls,
 // ie it physically exists and can be addressed (although not necessarily in main memory,
 // eg it might be on some other device such as a GPU), and has a fixed stride.
@@ -324,7 +330,14 @@ void subtract(VectorRef<T, U, Tag>& A, ScaledVector<T, V, Tag> const& B)
 template <typename T, typename U, typename V, typename Tag>
 void subtract(BlasVectorProxy<T, U, Tag>&& A, ScaledVector<T, V, Tag> const& B)
 {
-   vector_add_scaled(-B.factor(), B.base(), static_cast<U&&>(A.as_derived()));
+   vector_add_scaled(-B.factor(), B.base(), std::move(A).as_derived());
+		     //static_cast<U&&>(A.as_derived()));
+}
+
+template <typename T, typename U, typename Tag>
+void fill(BlasVectorProxy<T, U, Tag>&& A, T const& x)
+{
+   vector_fill(x, std::move(A).as_derived());
 }
 
 } // namespace blas

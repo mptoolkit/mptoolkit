@@ -40,6 +40,13 @@ struct Dist
    {
       return NormalDist(u_rand);
    }
+
+   static T crand()
+   {
+      // this actually gives the interval [-1,1), which might be a problem?
+      T x = UniformDist(u_rand);
+      return 2*x-1;
+   }
 };
 
 template <typename T>
@@ -47,6 +54,29 @@ std::uniform_real_distribution<T> Dist<T>::UniformDist(0,1);
 
 template <typename T>
 std::normal_distribution<T> Dist<T>::NormalDist;
+
+template <typename T>
+struct Dist<std::complex<T>>
+{
+   static std::complex<T> rand()
+   {
+      return {Dist<T>::rand(), Dist<T>::rand()};
+   }
+
+   static std::complex<T> randn()
+   {
+      return {Dist<T>::randn(), Dist<T>::randn()};
+   }
+
+   static std::complex<T> crand()
+   {
+      std::complex<T> x{Dist<T>::rand(), Dist<T>::rand()};
+      while (std::norm(x) >= 1.0)
+      {
+	 x = std::complex<T>{Dist<T>::rand(), Dist<T>::rand()};
+      }
+   }
+};
 
 } // namespace detail
 
@@ -72,6 +102,15 @@ T randn()
 {
    return detail::Dist<T>::randn();
 }
+
+// return uniform random number with magnitude < 1
+template <typename T>
+inline
+T crand()
+{
+   return detail::Dist<T>::crand();
+}
+
 
 template <typename T>
 void seed(std::initializer_list<T> s)

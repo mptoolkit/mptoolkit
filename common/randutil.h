@@ -33,6 +33,7 @@
 #include <random>
 #include <initializer_list>
 #include <vector>
+#include <complex>
 
 namespace randutil
 {
@@ -59,13 +60,20 @@ unsigned crypto_rand();
 // a random integer in the closed interval [Min, Max]
 int rand_int(int Min, int Max);
 
-// returns a real number in the range [0,1)
+// returns a real number in the range [0,1),
+// or for complex types, the real and imag parts are in the range [0,1)
 template <typename T = double>
 T rand();
 
 // returns a uniformly distributed real number, with mean 0, standard deviation 1
 template <typename T = double>
 T randn();
+
+// returns a number with magnitude <= 1,
+// in the complex case this is inside the unit circle,
+// in the real case this is in the interval (-1,1)
+template <typename T = double>
+T crand();
 
 //
 // functions seed the generator

@@ -680,7 +680,7 @@ adjoint(Tensor::IrredTensor<T, B1, B2, S> const& x)
    {
       for (auto const& cx : rx)
       {
-         Result.data().emplace(cx.col(), rx.row(), adjoint_coefficient(x.qn2(cx.col()), q, x.qn1(rx.row())) * adjoint(cx.value));
+         Result.data().emplace(cx.col(), rx.row(), adjoint_coefficient(x.qn2(cx.col()), q, x.qn1(rx.row())) * blas::herm(cx.value));
       }
    }
    return Result;

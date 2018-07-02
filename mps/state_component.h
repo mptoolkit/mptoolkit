@@ -273,8 +273,12 @@ BasicStateComponent<T> conj(BasicStateComponent<T> const& x)
 // scalar_prod
 
 // does Result' = sum_s A[s] * herm(B[s])
-// generalized ScalarProd.  This means that,
-// for example, scalar_direct_prod works automatically.
+
+MatrixOperator
+scalar_prod(StateComponent const& x, HermitianProxy<StateComponent> const& y);
+
+MatrixOperator
+scalar_prod(HermitianProxy<StateComponent> const& x, StateComponent const& y);
 
 std::complex<double>
 inner_prod(StateComponent const& x, StateComponent const& y);
@@ -560,7 +564,9 @@ MatrixOperator extract_diagonal(StateComponent const& A,
 // shift the basis of an StateComponent by some quantum number; the local basis
 // is shifted by QL, the incoming matrix basis is shifted by QM, the outgoing matrix basis
 // is shifted by QM+QL.  This only works if QL and QM are degree 1 reps.
-StateComponent ShiftLocalBasis(StateComponent const& Op, QuantumNumber QL, QuantumNumber QM);
+StateComponent ShiftLocalBasis(StateComponent&& Op, QuantumNumber QL, QuantumNumber QM);
+
+StateComponent delta_shift(StateComponent&& Op, QuantumNumber const& q);
 
 StateComponent delta_shift(StateComponent const& Op, QuantumNumber const& q);
 

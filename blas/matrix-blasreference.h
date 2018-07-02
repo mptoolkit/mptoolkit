@@ -134,6 +134,8 @@ void matrix_clear(int N, std::complex<double>* y, int incy);
 void matrix_fill(double alpha, int M, int N, double* A, int lda);
 void matrix_fill(std::complex<double> alpha, int M, int N, std::complex<double>* A, int lda);
 
+void matrix_conj(int M, int N, std::complex<double>* A, int lda);
+
 template <typename T>
 decltype(norm_frob_sq(std::declval<T>()))
 matrix_norm_frob_sq(int M, int N, T const* A, int lda);

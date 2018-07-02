@@ -296,7 +296,7 @@ add_triple_prod(U Factor,
 
       QuantumNumber qEi = E.qn1(Ei.row());
       double DegEi = qdim(qEi);
-      for (auto& Ein : Ei)
+      for (auto const& Ein : Ei)
       {
          QuantumNumber qEj = E.qn2(Ein.col());
          for (auto const& xin : xb[Ei.row()])
@@ -305,7 +305,7 @@ add_triple_prod(U Factor,
             double DegXi = qdim(qxip);
             for (auto const& yin : y[Ein.col()])
             {
-               QuantumNumber qyj = y.Basis2()[yin.index2()];
+               QuantumNumber qyj = y.Basis2()[yin.col()];
                if (!(is_transform_target(qyj, qEp, qxip))) continue;
 
                double Coefficient = (DegEi / DegXi) *
@@ -315,8 +315,8 @@ add_triple_prod(U Factor,
 
                if (fabs(Coefficient) > 1E-10)
                {
-                  auto Temp = evaluate(Ein->value * yin->value);
-                  Result.add(xin.col(), yin.col(), (Factor*Coefficient) * herm(xin->value) * Temp);
+                  Matrix Temp = Ein.value * yin.value;
+                  Result.add(xin.col(), yin.col(), (Factor*Coefficient) * herm(xin.value) * Temp);
                }
             }
          }
@@ -420,8 +420,8 @@ add_triple_prod(U Factor,
 
                   if (fabs(Coefficient) > 1E-10)
                   {
-                     auto Temp = evaluate(EIn->value * herm(yin->value));
-                     Result.add(xin.row(), yin.row(), (Factor * Coefficient) * xin->value * Temp);
+                     Matrix Temp = EIn.value() * herm(yin.value);
+                     Result.add(xin.col(), yin.col(), (Factor * Coefficient) * xin.value * Temp);
                   }
                }
             }
@@ -495,13 +495,13 @@ operator*(IrredTensor<T, B1, B2, S> const& x, HermitianProxy<IrredTensor<T, B3, 
       QuantumNumber qp = x.Basis1()[xi.row()];
       for (auto const& xj : xi)
       {
-         QuantumNumber qpp = x.Basis2()[xj.row()];
+         QuantumNumber qpp = x.Basis2()[xj.col()];
 
 	 for (auto const& yi : y.base())
 	 {
-	    for (auto const& yj : iterate(yi))
+	    for (auto const& yj : yi)
 	    {
-               if (yj.row() != xj.row())
+               if (yj.col() != xj.col())
                   continue;
 
                // because y is a scalar, q == qpp always
@@ -512,8 +512,7 @@ operator*(IrredTensor<T, B1, B2, S> const& x, HermitianProxy<IrredTensor<T, B3, 
                                                      qp, qpp, qpp);
                if (fabs(Coefficient) > 1E-10)
                {
-                  add_element(Result.data(), xi.row(), yi.row(), Coefficient *
-                              (xj.value) * herm(yj.value));
+		  Result.add(xi.row(), yi.row(), Coefficient * (xj.value * herm(yj.value)));
                }
             }
          }
@@ -544,7 +543,7 @@ operator*(HermitianProxy<IrredTensor<T, B2, B1, S>> const& x, IrredTensor<T, B2,
          // QuantumNumber qp = x.base().Basis2()[xin.index2()];
 	 for (auto const& yj : y.data().row(i))
 	 {
-            QuantumNumber q = y.Basis2()[yj.row()];
+            QuantumNumber q = y.Basis2()[yj.col()];
 
             //if (!(is_transform_target(q, Result.TransformsAs(), qpp))) continue;
 
@@ -553,8 +552,7 @@ operator*(HermitianProxy<IrredTensor<T, B2, B1, S>> const& x, IrredTensor<T, B2,
                                                      qpp, q, qpp);
             if (fabs(Coefficient) > 1E-10)
             {
-               add_element(Result.data(), xj.row(), yj.row(), Coefficient *
-                           herm(xj.value) * yj.value);
+	       Result.add(xj.col(), xj.col(), Coefficient * (herm(xj.value) * yj.value));
             }
          }
       }

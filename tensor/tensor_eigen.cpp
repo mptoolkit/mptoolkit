@@ -24,6 +24,84 @@
 namespace Tensor
 {
 
+void
+SVD(MatrixOperator const& m,
+    MatrixOperator& U,
+    RealDiagonalOperator& D,
+    MatrixOperator& Vh)
+{
+   // If the basis is already regular, don't bother with the extra work
+   if (is_regular_basis(m.Basis1()) && is_regular_basis(m.Basis2()))
+   {
+      SVD_Regular(m, U, D, Vh);
+      return;
+   }
+   // else
+
+   MatrixOperator U1 = Regularize(m.Basis1());
+   MatrixOperator U2 = Regularize(m.Basis2());
+
+   SVD_Regular(triple_prod(U1, m, herm(U2)), U, D, Vh);
+   U = herm(U1) * U;
+   Vh = Vh * U2;
+}
+
+void
+SVD_Regular(MatrixOperator const& m,
+	    MatrixOperator& U,
+	    RealDiagonalOperator& D,
+	    MatrixOperator& Vh)
+{
+   typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
+      VectorBasis, VectorBasis> IrredT;
+   typedef IrredTensor<LinearAlgebra::DiagonalMatrix<double>,
+      VectorBasis, VectorBasis, DiagonalStructure> DiagonalT;
+   DEBUG_CHECK(is_scalar(m.TransformsAs()));
+   DEBUG_CHECK(is_regular_basis(m.Basis1()))(m.Basis1());
+   DEBUG_CHECK(is_regular_basis(m.Basis2()))(m.Basis2());
+   // make the basis for the D matrix
+   std::vector<int> BasisMap(m.Basis1().size(), 0);
+   VectorBasis DBasis(m.GetSymmetryList());
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+   {
+      for (unsigned j = 0; j < m.Basis2().size(); ++j)
+      {
+         if (m.Basis1()[i] != m.Basis2()[j])
+            continue;
+
+         BasisMap[i] = DBasis.size();
+         DBasis.push_back(m.Basis1()[i], std::min(m.Basis1().dim(i), m.Basis2().dim(j)));
+      }
+   }
+
+   U = IrredT(m.Basis1(), DBasis);
+   D = DiagonalT(DBasis, DBasis);
+   Vh = IrredT(DBasis, m.Basis2());
+
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+   {
+      for (unsigned j = 0; j < m.Basis2().size(); ++j)
+      {
+         if (m.Basis1()[i] != m.Basis2()[j])
+            continue;
+
+         if (!iterate_at(m.data(), i, j))
+            continue;
+         set_element(U.data(), i,BasisMap[i], LinearAlgebra::Matrix<std::complex<double> >());
+         set_element(Vh.data(), BasisMap[i], j, LinearAlgebra::Matrix<std::complex<double> >());
+         LinearAlgebra::Vector<double> Dvec;
+         LinearAlgebra::SingularValueDecomposition(m(i,j),
+                                                   U(i,BasisMap[i]),
+                                                   Dvec,
+                                                   Vh(BasisMap[i], j));
+         set_element(D, BasisMap[i], BasisMap[i], LinearAlgebra::DiagonalMatrix<double>(Dvec));
+      }
+   }
+}
+
+
+#if 0
+
 IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>
 DiagonalizeHermitian(IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>& x)
 {
@@ -914,5 +992,7 @@ SingularFactorize(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
    IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis> R = Regularize(m.Basis1());
    return triple_prod(herm(R), SingularFactorize(triple_prod(R, m, herm(R))), R);
 }
+
+#endif
 
 } // namespace Tensor

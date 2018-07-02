@@ -29,6 +29,20 @@
 namespace Tensor
 {
 
+// singular value decomposition, singular values returned as a diagonal matrix
+void
+SVD(MatrixOperator const& m,
+    MatrixOperator& U,
+    RealDiagonalOperator& D,
+    MatrixOperator& Vh);
+
+// SVD where every basis is a regular basis
+void
+SVD_Regular(MatrixOperator const& m,
+	    MatrixOperator& U,
+	    RealDiagonalOperator& D,
+	    MatrixOperator& Vh);
+
 #if 0
 
 // DiagonalizeHermitian, diagonalizes 'x', returns the transform matrix
@@ -65,17 +79,6 @@ SingularValueDecomposition(IrredTensor<LinearAlgebra::Matrix<std::complex<double
                                        VectorBasis, VectorBasis>& U,
                            IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
                                        VectorBasis, VectorBasis>& D,
-                           IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
-                                       VectorBasis, VectorBasis>& Vh);
-
-// version to use explicitly a diagonal matrix
-void
-SingularValueDecomposition(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
-                                       VectorBasis, VectorBasis> const& m,
-                           IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
-                                       VectorBasis, VectorBasis>& U,
-                           IrredTensor<LinearAlgebra::DiagonalMatrix<double>,
-                           VectorBasis, VectorBasis, DiagonalStructure>& D,
                            IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
                                        VectorBasis, VectorBasis>& Vh);
 
