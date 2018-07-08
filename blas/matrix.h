@@ -279,10 +279,36 @@ template <typename T, typename U>
 std::ostream&
 operator<<(std::ostream& out, NormalMatrix<T, U, cpu_tag> const& x);
 
+template <int Format, typename T>
+PStream::opstreambuf<Format>&
+operator<<(PStream::opstreambuf<Format>& out, Matrix<T, cpu_tag> const& M);
+
+template <int Format, typename T, typename Tag>
+PStream::opstreambuf<Format>&
+operator<<(PStream::opstreambuf<Format>& out, Matrix<T, Tag> const& M);
+
 } // namespace blas
 
 template <typename T, typename Tag>
 struct ScalarTypes<blas::Matrix<T, Tag>> : ScalarTypes<T> {};
+
+namespace PStream
+{
+
+template <typename T, typename Tag>
+struct stream_extract<blas::Matrix<T, Tag>>
+{
+   template <int Format>
+   blas::Matrix<T,Tag> operator()(PStream::ipstreambuf<Format>& in) const;
+};
+template <typename T>
+struct stream_extract<blas::Matrix<T,blas::cpu_tag>>
+{
+   template <int Format>
+   blas::Matrix<T,blas::cpu_tag> operator()(PStream::ipstreambuf<Format>& in) const;
+};
+
+} // namespace PStream
 
 #include "matrix.icc"
 

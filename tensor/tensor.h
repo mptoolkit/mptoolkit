@@ -182,16 +182,16 @@ class IrredTensor
       typedef Basis1T basis1_type;
       typedef Basis2T basis2_type;
 
-      IrredTensor() = default;
+      IrredTensor() noexcept = default;
 
       IrredTensor(IrredTensor const& Other) = delete;
+
+      IrredTensor(IrredTensor&& Other) noexcept = default;
 
       template <typename U>
       explicit IrredTensor(IrredTensor<U, Basis1T, Basis2T, Structure> const& Other)
 	 : Basis1_(Other.Basis1_), Basis2_(Other.Basis2_), Trans_(Other.Trans_),
 	   Data_(Other.Data_) {}
-
-      IrredTensor(IrredTensor&& Other) noexcept = default;
 
       IrredTensor(basis1_type const& Basis, QuantumNumber const& Trans);
 
@@ -212,9 +212,14 @@ class IrredTensor
          : Basis1_(r.Basis1()), Basis2_(r.Basis2()), Trans_(r.TransformsAs()),
            Data_(r.data()) {}
 
-      IrredTensor& operator=(IrredTensor const& Other) = default;
-      IrredTensor& operator=(IrredTensor&& Other) = default;
+      IrredTensor& operator=(IrredTensor&& Other) noexcept = default;
 
+      IrredTensor& operator=(IrredTensor const& r)
+      {
+         Basis1_ = r.Basis1(); Basis2_ = r.Basis2(); Trans_ = r.TransformsAs();
+         Data_ = r.data();
+         return *this;
+      }
 
       template <typename U, typename US>
       IrredTensor& operator=(IrredTensor<U, Basis1T, Basis2T, US> const& r)
@@ -841,7 +846,7 @@ inline
 std::enable_if_t<blas::is_numeric_v<U>, IrredTensor<T, B1, B2, S>>
 operator*(IrredTensor<T, B1, B2, S> const& x, U const& a)
 {
-   IrredTensor<T, B1, B2, S> Result(x);
+   IrredTensor<T, B1, B2, S> Result(copy(x));
    Result *= a;
    return Result;
 }

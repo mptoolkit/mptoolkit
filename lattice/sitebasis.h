@@ -64,6 +64,9 @@ class SiteBasis
 
       SiteBasis(std::string const& SList);
 
+      SiteBasis(SiteBasis&&) noexcept = default;
+      SiteBasis(SiteBasis const&) = default;
+
       // Adds a quantum number to the basis.  Label is a unique string identifier,
       // and q is the quantum number of the state.  All states have a dimension 1,
       // thus the label uniquely identifies a single basis state.

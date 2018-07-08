@@ -136,9 +136,9 @@ class RepLabelBase
       void ReadRaw(PStream::ipstream& in);
 
    protected:
-      RepLabelBase();
+      RepLabelBase() noexcept;
       RepLabelBase(RepLabelBase const& q);
-      RepLabelBase(RepLabelBase&& Other) = default;
+      RepLabelBase(RepLabelBase&& Other) noexcept = default;
       ~RepLabelBase() noexcept;
       RepLabelBase& operator=(RepLabelBase const& q);
       RepLabelBase& operator=(RepLabelBase&& q) noexcept;
@@ -186,7 +186,7 @@ class QuantumNumber : public RepLabelBase<QuantumNumber>
       struct NoInitialization {};  // tag class for the constructor that
                                    // allocates space but does not initialize
 
-      QuantumNumber();
+      QuantumNumber() noexcept;
 
       // Compiler-generated copy ctor/assignment are OK
 

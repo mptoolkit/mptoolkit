@@ -31,6 +31,12 @@ struct LatticeCommute
 
    LatticeCommute() : Value_(None) {}
 
+   // These are redundant, but defined here for debugging
+   LatticeCommute(LatticeCommute&&) noexcept = default;
+   LatticeCommute(LatticeCommute const&) = default;
+   LatticeCommute& operator=(LatticeCommute&&) noexcept = default;
+   LatticeCommute& operator=(LatticeCommute const&) = default;
+   
    LatticeCommute(Values v) : Value_(v) {}
 
    LatticeCommute(std::string const& s) : Value_(Custom), SignOperator_(s) {}
@@ -171,7 +177,7 @@ class SiteOperator : public IrredTensor<std::complex<double> >
 
       using base_type::operator();
 
-      SiteOperator() {}
+      SiteOperator() noexcept {}
 
       SiteOperator(SiteBasis const& B, QuantumNumber const& q, LatticeCommute Com = LatticeCommute::None,
                    std::string Description = "")
@@ -182,11 +188,20 @@ class SiteOperator : public IrredTensor<std::complex<double> >
          : base_type(std::move(b)), Basis_(B), Com_(Com), Description_(Description)
          { CHECK_EQUAL(b.Basis1(), b.Basis2()); CHECK_EQUAL(B, b.Basis1()); }
 
-      SiteOperator(SiteOperator const& Other)
-	 : base_type(copy(Other.base())), Basis_(Other.Basis_), Com_(Other.Com_), 
-	   Description_(Other.Description_) {}
+      SiteOperator(SiteOperator&& Other) noexcept
+      : Basis_(std::move(Other.Basis_)),
+	Com_(std::move(Other.Com_)),
+	Description_(std::move(Other.Description_))
+      {}
 
-      SiteOperator(SiteOperator&& Other) noexcept = default;
+      SiteOperator(SiteOperator const& Other)
+	 : base_type(copy(static_cast<base_type const&>(Other))),
+	   Com_(Other.Com_),
+	   Description_(Other.Description_)
+      {}
+
+      SiteOperator& operator=(SiteOperator&&) = default;
+      SiteOperator& operator=(SiteOperator const&) = default;
 
       SiteBasis const& Basis() const { return Basis_; }
       SiteBasis const& Basis1() const { return Basis_; }
@@ -273,6 +288,13 @@ inplace_conj(SiteOperator& x)
 {
    inplace_conj(x.base());
 }
+
+inline
+SiteOperator conj(SiteOperator const& x)
+{
+   SiteOperator(x.Basis(), conj(copy(x.base())), x.Commute());
+}
+
 
 inline
 SiteOperator adjoint(SiteOperator const& x)

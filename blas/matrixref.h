@@ -867,7 +867,7 @@ operator*(ScaledMatrix<T, U, Tag> const& A, VectorRef<T, V, Tag> const& B)
 
 template <typename T, typename U, typename V, typename Tag>
 MatrixVectorProduct<T, U, V, Tag>
-operator*(VectorRef<T, U, Tag> const& A, ScaledVector<T, V, Tag> const& B)
+operator*(MatrixRef<T, U, Tag> const& A, ScaledVector<T, V, Tag> const& B)
 {
    return MatrixVectorProduct<T, U, V, Tag>(B.factor(), A.as_derived(), B.base());
 }
@@ -879,6 +879,7 @@ operator*(ScaledMatrix<T, U, Tag> const& A, ScaledVector<T, V, Tag> const& B)
    return MatrixVectorProduct<T, U, V, Tag>(A.factor() * B.factor(), A.base(), B.as_derived());
 }
 
+// this overload doesn't appear to be called properly??
 template <typename T, typename U, typename V, typename Tag, typename X>
 MatrixVectorProduct<decltype(safe_convert<T>(std::declval<X>())), U, V, Tag>
 operator*(X const& alpha, MatrixVectorProduct<T, U, V, Tag> const& x)
@@ -1444,6 +1445,46 @@ void matrix_add(BlasMatrix<T, U, Tag> const& A, NormalMatrixProxy<T, V, Tag>&& C
 //
 // middle-layer ARPACK wrappers, that forward from a matrix/vector ref to low-level storage
 //
+
+//
+// Diagonalize
+//
+// Diagonalizes a matrix.  The left and right eigenvectors are returned
+// as successive column vectors of Left and Right respectively.
+// The input matrix is destroyed, so we have two versions were we either copy
+// the input matrix, or if it is an rvalue-reference, we can destroy it.
+/// On input, M is an NxN matrix, V is an N-dimensional vector,
+// and Left and Right are NxN matrices.
+//
+// TODO: add NormalVectorProxy versions
+
+template <typename U, typename V, typename W, typename X, typename Tag>
+inline
+void Diagonalize(NormalMatrix<std::complex<double>, U, Tag>&& M,
+		 NormalVector<std::complex<double>, V, Tag>& v,
+		 NormalMatrix<std::complex<double>, W, Tag>& Left,
+		 NormalMatrix<std::complex<double>, X, Tag>& Right)
+{
+   CHECK_EQUAL(M.rows(), M.cols());
+   CHECK_EQUAL(M.rows(), v.size());
+   CHECK_EQUAL(M.rows(), Left.rows());
+   CHECK_EQUAL(M.rows(), Left.cols());
+   CHECK_EQUAL(M.rows(), Right.rows());
+   CHECK_EQUAL(M.rows(), Right.cols());
+   Diagonalize(M.rows(), std::move(M).storage(), M.leading_dimension(), v.storage(),
+	       Left.storage(), Left.leading_dimension(),
+	       Right.storage(), Right.leading_dimension());
+}
+
+template <typename U, typename V, typename W, typename X, typename Tag>
+inline
+void Diagonalize(NormalMatrix<std::complex<double>, U, Tag> const& M,
+		 NormalVector<std::complex<double>, V, Tag>& v,
+		 NormalMatrix<std::complex<double>, W, Tag>& Left,
+		 NormalMatrix<std::complex<double>, X, Tag>& Right)
+{
+   Diagonalize(copy(M), v, Left, Right);
+}
 
 //
 // DiagonalizeSymmetric

@@ -201,7 +201,8 @@ class gpu_buffer
       using reference          = gpu_ref<T>;
       using const_reference    = gpu_ref<T>;
 
-      gpu_buffer() = delete;
+      gpu_buffer() noexcept
+      : Ptr(nullptr), ByteSize(0) {}
 
       // Async version
       ~gpu_buffer() noexcept;

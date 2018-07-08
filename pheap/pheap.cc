@@ -19,6 +19,7 @@
 
 #include "pheapstream.h"
 #include "pheapallocator.h"
+#include <type_traits>
 
 namespace pheap
 {
@@ -73,10 +74,39 @@ PointerToValue<T>::~PointerToValue()
    delete Ptr;
 }
 
+namespace detail
+{
+
+template <typename T, typename Enable = void>
+struct copy_helper;
+
+template <typename T>
+struct copy_helper<T, typename std::enable_if<std::is_copy_constructible<T>::value>::type>
+{
+   T* operator()(T const& x) const
+   {
+      return new T(x);
+   }
+};
+
+
+// use global copy() function, if it exists
+template <typename T>
+struct copy_helper<T, typename std::enable_if<!std::is_copy_constructible<T>::value>::type>
+{
+   T* operator()(T const& x) const
+   {
+      // With no copy constuctor, the global copy() function must be defined
+      return new T(copy(x));
+   }
+};
+
+} // namespace detail
+
 template <typename T>
 PointerToObject* PointerToValue<T>::clone() const
 {
-   return new PointerToValue<T>(new T(*Ptr));
+   return new PointerToValue<T>(detail::copy_helper<T>()(*Ptr));
 }
 
 template <typename T>

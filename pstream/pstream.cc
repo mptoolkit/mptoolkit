@@ -40,8 +40,8 @@ struct PackList
 
 //
 // If no streaming function is defined at all, then ordinarily we would
-// do a conversion from opstream to opstreambuf<Format> which would then
-// implicitly be converted back again, resulting in a recursive call
+// do a dispatch from opstream to opstreambuf<Format> and converted back
+// again via the opstreambuf implicit conversion to opstream, resulting in a recursive call
 // and a runtime stack overflow.  Much preferable is a compile-time
 // error.  This is achieved by checking the type of the expression
 // static_cast<opstreambuf<Format>&>(*Buf.get_buffer()) << Obj
@@ -85,8 +85,11 @@ template <int Format, typename T>
 inline
 void DoUnpack(ipstream& Buf, T& Obj)
 {
+   Obj = PStream::extract<T>(Buf);
+#if 0
    templated_ipstreambuf_extractor_does_not_exist_for_this_type(
    static_cast<ipstreambuf<Format>&>(*Buf.get_buffer()) >> Obj);
+#endif
 }
 
 template <typename T>
@@ -612,9 +615,7 @@ template <typename T>
 inline
 T ipstreambuf<Format>::read()
 {
-   T temp;
-   (*this) >> temp;
-   return temp;
+   return PStream::extract<T>(*this);
 }
 
 //
@@ -902,9 +903,7 @@ ipstreambuf<Format>& operator>>(ipstreambuf<Format>& stream, std::map<T1, T2, Co
    vec.clear();
    while (Size > 0)
    {
-      std::pair<T1, T2> x;
-      stream >> x;
-      vec.insert(std::move(x));
+      vec.insert(stream.template read<std::pair<T1,T2>>());
       --Size;
    }
    //   copy_n(ipstreambuf_iterator<Format, std::pair<T1, T2> >(stream), Size, std::inserter(vec));

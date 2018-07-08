@@ -18,6 +18,17 @@
 // ENDHEADER
 
 /*
+  2018-07-02: TODO:
+  we have added the exract<T>(stream) function to allow stream extraction
+  of types that don't have default constructors.  But this isn't implemented
+  the best way, we probably have a recursion loop between extract and operator>>.
+
+  StreamableBase isn't actually used, we could probably get rid of it.
+
+  We could probably simplify a lot of the code.
+*/
+
+/*
   The new version of pstream.h
 
   Created 2002-04-08 Ian McCulloch
@@ -734,6 +745,44 @@ opstream& operator<<(opstream& Buf, T const& Obj);
 template <typename T>
 ipstream& operator>>(ipstream& Buf, T& Obj);
 
+// alternative extraction that is move-friendly.  To customize, make a (partial) specialization
+// of the template struct stream_extract<T>.  This requires the templated
+// ipstreambuf<Format> version.
+
+template <typename T>
+struct stream_extract
+{
+   template <int Format>
+   T operator()(ipstreambuf<Format>& in) const
+   {
+      T temp;
+      in >> temp;
+      return temp;
+   }
+};
+
+// the extract function - use this inside stream exractors
+
+template <typename T>
+T extract(ipstream& in)
+{
+   int Format = in.format();
+   switch (Format)
+   {
+   case 0 : return stream_extract<T>()(static_cast<ipstreambuf<0>&>(*in.get_buffer()));
+   case 1 : return stream_extract<T>()(static_cast<ipstreambuf<1>&>(*in.get_buffer()));
+   case 2 : return stream_extract<T>()(static_cast<ipstreambuf<2>&>(*in.get_buffer()));
+   case 3 : return stream_extract<T>()(static_cast<ipstreambuf<3>&>(*in.get_buffer()));
+   }
+   PANIC("unknown pstream format");
+}
+
+template <typename T, int Format>
+T extract(ipstreambuf<Format>& in)
+{
+   return stream_extract<T>()(in);
+}
+
 //
 // Support for streaming polymorphic objects.
 // The underlying library is capable of streaming polymorphic objects
@@ -880,8 +929,7 @@ struct ConstructHelper<T, false>
 {
    static T* apply(ipstream& in)
    {
-      T* Result = new T;
-      in >> *Result;
+      T* Result = new T(extract<T>(in));
       return Result;
    }
 };
@@ -964,7 +1012,7 @@ opstreambuf<Format>& operator<<(opstreambuf<Format>& stream, std::complex<T> con
 template <int Format, typename T>
 ipstreambuf<Format>& operator>>(ipstreambuf<Format>& stream, std::complex<T>& vec);
 
-} // namespace pstream
+} // namespace PStream
 
 #include "pstream.cc"
 

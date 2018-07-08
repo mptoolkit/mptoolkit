@@ -52,26 +52,26 @@ void LinearWavefunction::normalize()
 }
 #endif
 
-LinearWavefunction::value_type
+LinearWavefunction::const_proxy_type
 LinearWavefunction::get_front() const
 {
-   return *Data.front().lock();
+   return Data.front().lock();
 }
 
-LinearWavefunction::value_type
+LinearWavefunction::const_proxy_type
 LinearWavefunction::get_back() const
 {
-   return *Data.back().lock();
+   return Data.back().lock();
 }
 
 void LinearWavefunction::set_front(value_type const& x)
 {
-   Data.front() = handle_type(new value_type(x));
+   Data.front() = handle_type(new value_type(copy(x)));
 }
 
 void LinearWavefunction::set_back(value_type const& x)
 {
-   Data.back() = handle_type(new value_type(x));
+   Data.back() = handle_type(new value_type(copy(x)));
 }
 
 PStream::opstream& operator<<(PStream::opstream& out, LinearWavefunction const& psi)
@@ -144,7 +144,7 @@ MatrixOperator CollapseBasis(VectorBasis const& b)
    for (unsigned j = 0; j < b.size(); ++j)
    {
       unsigned i = std::find(NewB.begin(), NewB.end(), b[j]) - NewB.begin();
-      C(i,j) = LinearAlgebra::Matrix<double>(1, b.dim(j), 1.0);
+      C.emplace(i,j, 1, b.dim(j), 1.0); // Matrix<double>(1, b.dim(j), 1.0);
    }
    return C;
 }
@@ -196,9 +196,9 @@ LinearWavefunction operator+(LinearWavefunction const& x, LinearWavefunction con
 
 void Conjugate(StateComponent& x)
 {
-   for (std::size_t i = 0; i < x.size(); ++i)
+   for (auto& c : x)
    {
-      x[i] = conj(x[i]);
+      inplace_conj(c);
    }
 }
 
@@ -225,99 +225,93 @@ LinearWavefunction operator-(LinearWavefunction const& x, LinearWavefunction con
 }
 
 MatrixOperator
-inject_left(MatrixOperator const& m, LinearWavefunction const& Psi)
+inject_left(MatrixOperator m, LinearWavefunction const& Psi)
 {
-   MatrixOperator Result = m;
    LinearWavefunction::const_iterator I = Psi.begin();
    while (I != Psi.end())
    {
-      Result = operator_prod(herm(*I), Result, *I);
+      m = operator_prod(herm(*I), m, *I);
       ++I;
    }
-   return Result;
+   return m;
 }
 
 MatrixOperator
-inject_left(MatrixOperator const& m,
+inject_left(MatrixOperator m,
             LinearWavefunction const& Psi1,
             LinearWavefunction const& Psi2)
 {
    CHECK_EQUAL(Psi1.size(), Psi2.size());
-   MatrixOperator Result = m;
    LinearWavefunction::const_iterator I1 = Psi1.begin();
    LinearWavefunction::const_iterator I2 = Psi2.begin();
    while (I1 != Psi1.end())
    {
-      Result = operator_prod(herm(*I1), Result, *I2);
+      m = operator_prod(herm(*I1), m, *I2);
       ++I1; ++I2;
    }
-   return Result;
+   return m;
 }
 
 MatrixOperator
-inject_right(MatrixOperator const& m, LinearWavefunction const& Psi)
+inject_right(MatrixOperator m, LinearWavefunction const& Psi)
 {
-   MatrixOperator Result = m;
    LinearWavefunction::const_iterator I = Psi.end();
    while (I != Psi.begin())
    {
       --I;
-      Result = operator_prod(*I, Result, herm(*I));
+      m = operator_prod(*I, m, herm(*I));
    }
-   return Result;
+   return m;
 }
 
 MatrixOperator
-inject_right(MatrixOperator const& m,
+inject_right(MatrixOperator m,
             LinearWavefunction const& Psi1,
             LinearWavefunction const& Psi2)
 {
    CHECK_EQUAL(Psi1.size(), Psi2.size());
-   MatrixOperator Result = m;
    LinearWavefunction::const_iterator I1 = Psi1.end();
    LinearWavefunction::const_iterator I2 = Psi2.end();
    while (I1 != Psi1.begin())
    {
       --I1; --I2;
-      Result = operator_prod(*I1, Result, herm(*I2));
+      m = operator_prod(*I1, m, herm(*I2));
    }
-   return Result;
+   return m;
 }
 
 MatrixOperator
 operator_prod(HermitianProxy<LinearWavefunction> const& A,
-              MatrixOperator const& m,
+              MatrixOperator m,
               LinearWavefunction const& B)
 {
    PRECONDITION_EQUAL(A.base().size(), B.size());
    DEBUG_PRECONDITION_EQUAL(m.Basis1(), A.base().Basis1());
    DEBUG_PRECONDITION_EQUAL(m.Basis2(), B.Basis1());
-   MatrixOperator Result = m;
    LinearWavefunction::const_iterator AI = A.base().begin(), BI = B.begin();
    while (BI != B.end())
    {
-      Result = operator_prod(herm(*AI), Result, *BI);
+      m = operator_prod(herm(*AI), m, *BI);
       ++AI; ++BI;
    }
-   return Result;
+   return m;
 }
 
 MatrixOperator
 operator_prod(LinearWavefunction const& A,
-              MatrixOperator const& m,
+              MatrixOperator m,
               HermitianProxy<LinearWavefunction> const& B)
 {
    PRECONDITION_EQUAL(A.size(), B.base().size());
    DEBUG_PRECONDITION_EQUAL(m.Basis1(), A.Basis2());
    DEBUG_PRECONDITION_EQUAL(m.Basis2(), B.base().Basis2());
-   MatrixOperator Result = m;
    LinearWavefunction::const_iterator AI = A.end(), BI = B.base().end();
    while (AI != A.begin())
    {
       --AI; --BI;
-      Result = operator_prod(*AI, Result, herm(*BI));
+      m = operator_prod(*AI, std::move(m), herm(*BI));
    }
-   return Result;
+   return m;
 }
 
 std::complex<double>
@@ -331,7 +325,7 @@ overlap(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2)
    while (I1 != Psi1.begin())
    {
       --I1; --I2;
-      E = operator_prod(*I2, E, herm(*I1));
+      E = operator_prod(*I2, std::move(E), herm(*I1));
    }
    return trace(E);
 }
@@ -347,7 +341,8 @@ overlap_conj(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2)
    while (I1 != Psi1.begin())
    {
       --I1; --I2;
-      E = operator_prod(conj(*I2), E, herm(*I1));
+      // TODO: making a copy here isn't very efficient
+      E = operator_prod(conj(copy(*I2)), std::move(E), herm(*I1));
    }
    return trace(E);
 }
@@ -444,7 +439,7 @@ left_orthogonalize(MatrixOperator M, LinearWavefunction& Psi, int Verbose)
          std::cout << "orthogonalizing site " << n << std::endl;
       StateComponent x = prod(M, *Pi);
       M = TruncateBasis2(x);
-      *Pi = x;
+      *Pi = std::move(x);
       ++Pi; ++n;
    }
    return M;
@@ -469,7 +464,7 @@ right_orthogonalize(LinearWavefunction& Psi, MatrixOperator M, int Verbose)
          std::cout << "orthogonalizing site " << n << std::endl;
       StateComponent x = prod(*Pi, M);
       M = TruncateBasis1(x);
-      *Pi = x;
+      *Pi = std::move(x);
    }
    return M;
 }
@@ -576,7 +571,7 @@ void truncate(LinearWavefunction& Psi, StatesInfo const& SInfo, bool ShowStates)
    if (ShowStates)
       std::cerr << "Orthogonalizing...\n";
 
-   M = right_orthogonalize(Psi, M);
+   M = right_orthogonalize(Psi, std::move(M));
    I = Psi.begin();
    *I = prod(M, *I);
 
@@ -600,12 +595,12 @@ void project(LinearWavefunction& x, QuantumNumbers::QuantumNumber const& q)
    VectorBasis FinalB(x.GetSymmetryList());
    FinalB.push_back(q, 1);
    MatrixOperator Up(FinalB, U.Basis1());
-   Up(0, i) = LinearAlgebra::Matrix<std::complex<double> >(1,1,1.0);
+   Up.emplace(0, i, 1,1,1.0); // Matrix<std::complex<double> >(1,1,1.0);
 
    MatrixOperator C = Up*U;
-   C = left_orthogonalize(C, x);
+   C = left_orthogonalize(std::move(C), x);
    C = C * herm(CollapseBasis(C.Basis2()));
-   C = right_orthogonalize(x, C);
+   C = right_orthogonalize(x, std::move(C));
    //   C = RemoveEmptyRows(C);
    LinearWavefunction::iterator It = x.begin();
    *It = prod(C, *It);
@@ -643,7 +638,7 @@ LinearWavefunction coarse_grain(LinearWavefunction const& x, int N)
    LinearWavefunction::const_iterator I = x.begin();
    while (I != x.end())
    {
-      StateComponent A = *I;
+      StateComponent A = copy(*I);
       for (int i = 1; i < N; ++i)
       {
 	 ++I;

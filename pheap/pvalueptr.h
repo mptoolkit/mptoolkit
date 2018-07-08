@@ -62,19 +62,18 @@ template <class T>
 class pvalue_lock
 {
    public:
-      explicit pvalue_lock(pvalue_ptr<T>&);
+      pvalue_lock() = delete;
 
-      T& operator*()             { return *Ptr; }
-      T const& operator*() const { return *Ptr; }
+      explicit pvalue_lock(pvalue_ptr<T> const& Ptr);
 
-      T* operator->()             { return Ptr; }
-      T const* operator->() const { return Ptr; }
+      T& operator*()             { return *p.get_direct(); }
+      T const& operator*() const { return *p.get_direct(); }
+
+      T* operator->()             { return p.get_direct(); }
+      T const* operator->() const { return p.get_direct(); }
 
    private:
-      pvalue_lock(); // not implemented
-      explicit pvalue_lock(T* Ptr_) : Ptr(Ptr_) {}
-
-      T* Ptr;
+      pvalue_ptr<T> p;
 };
 
 template <class T>
@@ -135,7 +134,12 @@ class pvalue_ptr
       //      operator bool() const { return Ptr != nullptr; }
 
    private:
+      friend class pvalue_lock<T>;
+
       pvalue_ptr(T* Ptr_, pheap::Private::PHeapObject* Handle_) : Handle(Handle_), Ptr(Ptr_) {}
+
+      // used by pvalue_lock
+      T* get_direct() const { return Ptr; }
 
       pheap::Private::PHeapObject* Handle;
       T* Ptr;
@@ -244,12 +248,103 @@ struct poly_cast_helper<pvalue_ptr<T>, pvalue_ptr<U> >
    }
 };
 
+// pvalue_proxy
+// Similar to the pvalue_ptr, but behaves as a value type
+// rather than a pointer.
+
+template <typename T>
+class pvalue_proxy
+{
+   public:
+      using value_type      = T;
+      using reference       = T&;
+      using const_reference = T const&;
+
+      pvalue_proxy(pvalue_ptr<T> const& x)
+	 : Unique(false), p(x) {}
+
+      T& get();
+
+      T& get() const { return *p.get(); }
+
+      operator T&() { return this->get(); }
+
+      operator T const&() const { return *p.get(); }
+
+      pvalue_proxy<T>& operator=(T const& x)
+      {
+	 if (Unique)
+	 {
+	    *p.get_direct() = x;
+	 }
+	 else
+	 {
+	    Unique = true;
+	    // TODO: mutate() does an extraneous copy here
+	    *p.mutate() = x;
+	 }
+	 return *this;
+      }
+
+      pvalue_proxy<T>& operator=(T&& x)
+      {
+	 if (Unique)
+	 {
+	    *p.get_direct() = std::move(x);
+	 }
+	 else
+	 {
+	    Unique = true;
+	    // TODO: mutate() does an extraneous copy here
+	    *p.mutate() = std::move(x);
+	 }
+	 return *this;
+      }
+
+   private:
+      bool Unique;
+      pvalue_ptr<T> p;
+};
+
+template <typename T>
+inline
+T&
+pvalue_proxy<T>::get()
+{
+   if (!Unique)
+   {
+      Unique = true;
+      return *p.mutate();
+   }
+   return *p.get_direct();
+};
+
+template <typename T>
+class const_pvalue_proxy
+{
+   public:
+      using value_type      = T;
+      using reference       = T&;
+      using const_reference = T const&;
+
+      const_pvalue_proxy(pvalue_ptr<T> const& x)
+	 : p(x) {}
+
+      T const& get() const { return *p.get(); }
+
+      operator T const&() const { return *p.get(); }
+
+   private:
+      pvalue_ptr<T> p;
+};
+
 // inlines
 
 template <class T>
 inline
-pvalue_lock<T>::pvalue_lock(pvalue_ptr<T>& PVal) : Ptr(PVal.mutate())
+pvalue_lock<T>::pvalue_lock(pvalue_ptr<T> const& PVal) : p(PVal)
 {
+   p.mutate();
 }
 
 template <class T>

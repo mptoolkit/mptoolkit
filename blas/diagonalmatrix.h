@@ -53,7 +53,8 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
       using reference          = typename buffer_type::reference;
       using const_reference    = typename buffer_type::const_reference;
 
-      DiagonalMatrix() = delete;
+      DiagonalMatrix() noexcept 
+      : Size(0), Buf{} {}
 
       DiagonalMatrix(DiagonalMatrix const&) = delete;
 
@@ -88,11 +89,11 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
 
       DiagonalMatrix& operator=(DiagonalMatrix const& Other)
       {
-	 assign(*this, Other);
+	 assign(this->diagonal(), Other.diagonal());
 	 return *this;
       }
 
-      DiagonalMatrix& operator=(DiagonalMatrix&& Other) = default;
+      DiagonalMatrix& operator=(DiagonalMatrix&& Other) noexcept = default;
 
       // assignment of expressions based on the same matrix type -- we don't allow assignment
       // of expression templates of other matrix types (eg gpu_matrix)
@@ -102,21 +103,21 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
       template <typename U>
       DiagonalMatrix& operator=(DiagonalMatrixRef<T, U, tag_type> const& E)
       {
-	 assign(*this, E.as_derived());
+	 assign(this.diagonal(), E.as_derived().diagonal());
 	 return *this;
       }
 
       template <typename U>
       DiagonalMatrix& operator+=(DiagonalMatrixRef<T, U, tag_type> const& E)
       {
-	 add(*this, E.as_derived());
+	 add(this->diagonal(), E.as_derived().diagonal());
 	 return *this;
       }
 
       template <typename U>
       DiagonalMatrix& operator-=(DiagonalMatrixRef<T, U, tag_type> const& E)
       {
-	 subtract(*this, E.as_derived());
+	 subtract(this->diagonal(), E.as_derived().diagonal());
 	 return *this;
       }
 
@@ -215,7 +216,7 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
 
       DiagonalMatrix& operator=(DiagonalMatrix const& Other)
       {
-	 assign(*this, Other);
+	 assign(this->diagonal(), Other.diagonal());
 	 return *this;
       }
 
@@ -229,21 +230,21 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
       template <typename U>
       DiagonalMatrix& operator=(DiagonalMatrixRef<T, U, tag_type> const& E)
       {
-	 assign(*this, E.as_derived());
+	 assign(this->diagonal(), E.as_derived().diagonal());
 	 return *this;
       }
 
       template <typename U>
       DiagonalMatrix& operator+=(DiagonalMatrixRef<T, U, tag_type> const& E)
       {
-	 add(*this, E.as_derived());
+	 add(this->diagonal(), E.as_derived().diagonal());
 	 return *this;
       }
 
       template <typename U>
       DiagonalMatrix& operator-=(DiagonalMatrixRef<T, U, tag_type> const& E)
       {
-	 subtract(*this, E.as_derived());
+	 subtract(this->diagonal(), E.as_derived().diagonal());
 	 return *this;
       }
 
@@ -350,6 +351,15 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
 };
 
 template <typename T, typename Tag>
+DiagonalMatrix<T, Tag>
+copy(DiagonalMatrix<T, Tag> const& x)
+{
+   DiagonalMatrix<T, Tag> Result(x.rows());
+   Result = x;
+   return Result;
+}
+
+template <typename T, typename Tag>
 inline
 DiagonalMatrix<T, Tag>
 DiagonalMatrix<T, Tag>::make_identity(int Size)
@@ -362,8 +372,33 @@ DiagonalMatrix<T, Tag>::make_identity(int Size)
 template <typename T, typename Tag>
 struct numeric_type_of<DiagonalMatrix<T, Tag>> : numeric_type_of<T> {};
 
+template <typename T, typename Tag>
+std::ostream&
+operator<<(std::ostream& out, DiagonalMatrix<T, Tag> const& x);
+
+template <int Format, typename T, typename Tag>
+PStream::opstreambuf<Format>&
+operator<<(PStream::opstreambuf<Format>& out, DiagonalMatrix<T, Tag> const& M);
 
 } // namespace blas
+
+namespace PStream
+{
+
+template <typename T, typename Tag>
+struct stream_extract<blas::DiagonalMatrix<T, Tag>>
+{
+   template <int Format>
+   blas::DiagonalMatrix<T,Tag> operator()(PStream::ipstreambuf<Format>& in) const;
+};
+template <typename T>
+struct stream_extract<blas::DiagonalMatrix<T, blas::cpu_tag>>
+{
+   template <int Format>
+   blas::DiagonalMatrix<T,blas::cpu_tag> operator()(PStream::ipstreambuf<Format>& in) const;
+};
+
+} // namespace PStream
 
 #include "diagonalmatrix.icc"
 

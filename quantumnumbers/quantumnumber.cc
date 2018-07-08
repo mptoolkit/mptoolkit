@@ -26,7 +26,7 @@ namespace QuantumNumbers
 
 template <typename Tag>
 inline
-RepLabelBase<Tag>::RepLabelBase()
+RepLabelBase<Tag>::RepLabelBase() noexcept
 {
    Storage.SList = NULL;
 }
@@ -132,7 +132,7 @@ RepLabelBase<Tag>::ReadRaw(PStream::ipstream& in)
 //
 
 inline
-QuantumNumber::QuantumNumber()
+QuantumNumber::QuantumNumber() noexcept
 {
 }
 

@@ -69,14 +69,14 @@ CanonicalWavefunctionBase::check_structure() const
 
    for (int i = 0; i < this->size(); ++i)
    {
-      CHECK_EQUAL(this->lambda(i).Basis2(), this->operator[](i).Basis1())(i);
-      CHECK_EQUAL(this->operator[](i).Basis2(), this->lambda(i+1).Basis1())(i);
-      this->lambda(i).check_structure();
-      this->operator[](i).check_structure();
+      CHECK_EQUAL(this->lambda(i).get().Basis2(), this->operator[](i).get().Basis1())(i);
+      CHECK_EQUAL(this->operator[](i).get().Basis2(), this->lambda(i+1).get().Basis1())(i);
+      this->lambda(i).get().check_structure();
+      this->operator[](i).get().check_structure();
    }
-   this->lambda(this->size()).check_structure();
-   CHECK_EQUAL(Basis1_, this->lambda(0).Basis1());
-   CHECK_EQUAL(Basis2_, this->lambda(this->size()).Basis2());
+   this->lambda(this->size()).get().check_structure();
+   CHECK_EQUAL(Basis1_, this->lambda(0).get().Basis1());
+   CHECK_EQUAL(Basis2_, this->lambda(this->size()).get().Basis2());
 }
 
 CanonicalWavefunctionBase&
@@ -121,6 +121,9 @@ CanonicalWavefunctionBase::ReadStream(PStream::ipstream& in)
 
    if (Sentry.version() < 4)
    {
+#if 1
+      PANIC("FIXME: This version of the code doesn't support reading old format wavefunctions.");
+#else
       using old_lambda_type           = RealSemiDiagonalOperator;
       using old_lambda_handle_type    = pvalue_handle<old_lambda_type>;
       using old_lambda_container_type = std::vector<old_lambda_handle_type>;
@@ -159,6 +162,7 @@ CanonicalWavefunctionBase::ReadStream(PStream::ipstream& in)
             Lambda.push_back(new RealDiagonalOperator(*LambdaTemp[i].lock()));
          }
       }
+#endif
    }
    else
    {

@@ -79,7 +79,7 @@ void show_projections(std::ostream& out, SiteBasis const& Basis)
       out << "{ ";
       std::vector<QuantumNumbers::Projection> Projections;
       enumerate_projections(Basis.qn(i), std::back_inserter(Projections));
-      for (size_type j = 0; j < Projections.size(); ++j)
+      for (unsigned j = 0; j < Projections.size(); ++j)
       {
         if (j != 0) out << ", ";
         out << '|' << Basis.Label(i) << ' ' << Basis.qn(i)
@@ -118,7 +118,7 @@ SiteProductBasis::SiteProductBasis(SiteBasis const& B1, SiteBasis const& B2)
 
 std::ostream& operator<<(std::ostream& out, SiteProductBasis const& Basis)
 {
-   for (size_type i = 0; i < Basis.size(); ++i)
+   for (unsigned i = 0; i < Basis.size(); ++i)
    {
       if (i != 0) out << ", ";
       out << "{ " << i << " = (" << Basis.PBasis().rmap(i).first
@@ -196,7 +196,7 @@ void show_projections(std::ostream& out, SiteOperator const& Op)
 
    std::vector<QuantumNumbers::Projection> Projections;
    enumerate_projections(Op.TransformsAs(), std::back_inserter(Projections));
-   for (size_type km = 0; km < Projections.size(); ++km)
+   for (unsigned km = 0; km < Projections.size(); ++km)
    {
       out << "Projection " << std::setw(10) << Projections[km] << " :\n";
 
@@ -308,7 +308,7 @@ SiteOperator flip_conj(SiteOperator const& s, SiteBasis const& ReflectedBasis)
 {
    DEBUG_CHECK_EQUAL(ReflectedBasis, adjoint(s.Basis()));
    SiteOperator Result(ReflectedBasis, adjoint(s.TransformsAs()), s.Commute());
-   Result.data() = s.data();
+   Result.data() = copy(s.data());
    return Result;
 }
 

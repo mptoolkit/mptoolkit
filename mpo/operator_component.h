@@ -75,7 +75,7 @@ class BasicOperatorComponent
       static_assert(std::is_nothrow_destructible<data_type>::value, "");
       static_assert(std::is_destructible<data_type>::value, "");
 
-      BasicOperatorComponent() = default;
+      BasicOperatorComponent() noexcept = default;
 
       // Construction of an empty BasicOperatorComponent.  The local basis comes first.
       BasicOperatorComponent(BasisList const& LocalB,
@@ -83,13 +83,29 @@ class BasicOperatorComponent
       BasicOperatorComponent(BasisList const& LocalB1, BasisList const& LocalB2,
                         BasisList const& B1, BasisList const& B2);
 
-      BasicOperatorComponent(BasicOperatorComponent const& Other) = delete;
+      BasicOperatorComponent(BasicOperatorComponent const& Other)
+	 : LocalBasis1_(Other.LocalBasis1_),
+	   LocalBasis2_(Other.LocalBasis2_),
+	   Basis1_(Other.Basis1_),
+	   Basis2_(Other.Basis2_),
+	   Data_(copy(Other.Data_))
+      {}
+
       BasicOperatorComponent(BasicOperatorComponent&& Other) noexcept = default;
 
       ~BasicOperatorComponent() noexcept = default;
 
-      BasicOperatorComponent& operator=(BasicOperatorComponent const& Other) = delete;
       BasicOperatorComponent& operator=(BasicOperatorComponent&& Other) noexcept = default;
+
+      BasicOperatorComponent& operator=(BasicOperatorComponent const& Other)
+      {
+	 LocalBasis1_ = Other.LocalBasis1_;
+	 LocalBasis2_ = Other.LocalBasis2_;
+	 Basis1_ = Other.Basis1_;
+	 Basis2_ = Other.Basis2_;
+	 Data_ = copy(Other.Data_);
+	 return *this;
+      }
 
       SymmetryList const& GetSymmetryList() const
       { return LocalBasis1_.GetSymmetryList(); }

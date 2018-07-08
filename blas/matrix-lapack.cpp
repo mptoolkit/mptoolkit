@@ -28,6 +28,38 @@
 namespace blas
 {
 
+void Diagonalize(int Size, std::complex<double>* Data, int LeadingDim, std::complex<double>* Eigen,
+		 std::complex<double>* LeftVectors, int LeftLeadingDim,
+		 std::complex<double>* RightVectors, int RightLeadingDim)
+{
+   char jobl = 'V';
+   char jobr = 'V';
+   std::complex<double>  worksize;
+   std::complex<double>* work = &worksize;
+   int lwork = -1;                         // for query of lwork
+   double* rwork;
+   int lrwork = 2 * Size;
+   Fortran::integer info = 0;
+
+   rwork = new double[lrwork];
+
+   // query for the optimial size of the workspace
+   LAPACK::zgeev(jobl, jobr, Size, Data, LeadingDim, Eigen, LeftVectors, LeftLeadingDim,
+                 RightVectors, RightLeadingDim, work, lwork, rwork, info);
+
+   lwork = int(work[0].real());
+   work = new std::complex<double>[lwork];
+
+   // do the actual call
+   LAPACK::zgeev(jobl, jobr, Size, Data, LeadingDim, Eigen, LeftVectors, LeftLeadingDim,
+                 RightVectors, RightLeadingDim, work, lwork, rwork, info);
+
+   CHECK(info == 0)("LAPACK::zgeev")(info);
+
+   delete[] work;
+   delete[] rwork;
+}
+
 void DiagonalizeSymmetric(int Size, double* Data, int LeadingDim, double* Eigen)
 {
    char jobz = 'V';

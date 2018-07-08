@@ -464,13 +464,13 @@ JoinBasis(BasisList& b, BasisList const& Other)
 void
 SetComponents(OperatorComponent& C, OperatorComponent const& Op, int xStart, int yStart)
 {
-   for (OperatorComponent::const_iterator I = iterate(Op); I; ++I)
+   for (auto const& I : Op)
    {
-      for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
+      for (auto const& J : I)
       {
-         CHECK_EQUAL(C.Basis1()[J.index1()+xStart], Op.Basis1()[J.index1()])(J.index1())(xStart);
-         CHECK_EQUAL(C.Basis2()[J.index2()+yStart], Op.Basis2()[J.index2()])(J.index2())(yStart);
-         C.data()(J.index1()+xStart, J.index2()+yStart) = *J;
+         CHECK_EQUAL(C.Basis1()[I.row()+xStart], Op.Basis1()[I.row()])(I.row())(xStart);
+         CHECK_EQUAL(C.Basis2()[J.col()+yStart], Op.Basis2()[J.col()])(J.col())(yStart);
+         C.data().insert(I.row()+xStart, J.col()+yStart, copy(J.value));
       }
    }
 }

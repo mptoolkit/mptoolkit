@@ -119,7 +119,7 @@ class ReducibleTensor
       // need default ctor for persistent streaming
       ReducibleTensor() = default;
 
-      ReducibleTensor(ReducibleTensor const&) = delete;
+      ReducibleTensor(ReducibleTensor const&) = default;
 
       ReducibleTensor(ReducibleTensor&& Other) noexcept = default;
 

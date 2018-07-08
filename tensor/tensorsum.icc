@@ -151,14 +151,14 @@ tensor_sum(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& 
    {
       for (auto const& cx : rx)
       {
-         Result.insert(b1(0,rx.row()), b2(0,cx.col()), cx.value);
+         Result.insert(b1(0,rx.row()), b2(0,cx.col()), copy(cx.value));
       }
    }
    for (auto const& ry : y)
    {
       for (auto const& cy : ry)
       {
-         Result.insert(b1(1,ry.row()), b2(1,cy.col()), cy.value);
+         Result.insert(b1(1,ry.row()), b2(1,cy.col()), copy(cy.value));
       }
    }
    return Result;
@@ -180,14 +180,14 @@ tensor_row_sum(IrredTensor<T, B1, B2, S> const& x,
    {
       for (auto const& cx : rx)
       {
-         Result.insert(rx.row(), b2(0,cx.col()), cx.value);
+         Result.insert(rx.row(), b2(0,cx.col()), copy(cx.value));
       }
    }
    for (auto const& ry : y)
    {
       for (auto const& cy : ry)
       {
-         Result.insert(ry.row(), b2(1,cy.col()), cy.value);
+         Result.insert(ry.row(), b2(1,cy.col()), copy(cy.value));
       }
    }
    return Result;
@@ -210,14 +210,14 @@ tensor_col_sum(IrredTensor<T, B1, B2, S> const& x,
    {
       for (auto const& cx : rx)
       {
-         Result.insert(b1(0,rx.row()), cx.col(), cx.value);
+         Result.insert(b1(0,rx.row()), cx.col(), copy(cx.value));
       }
    }
    for (auto const& ry : y)
    {
       for (auto const& cy : ry)
       {
-         Result.insert(b1(1,ry.row()), cy.col(), cy.value);
+         Result.insert(b1(1,ry.row()), cy.col(), copy(cy.value));
       }
    }
    return Result;

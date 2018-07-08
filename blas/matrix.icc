@@ -76,4 +76,71 @@ operator<<(std::ostream& out, NormalMatrix<T, U, cpu_tag> const& x)
    return out;
 }
 
+template <int Format, typename T>
+PStream::opstreambuf<Format>&
+operator<<(PStream::opstreambuf<Format>& out, Matrix<T, cpu_tag> const& M)
+{
+   typedef typename PStream::opstreambuf<Format>::size_type st;
+   st Rows = M.rows(), Cols = M.cols();
+   out << MatrixFormats::DenseRowMajor;
+   out << Rows << Cols;
+   for (unsigned i = 0; i < Rows; ++i)
+   {
+      for (unsigned j = 0; j < Cols; ++j)
+      {
+	 out << M(i,j);
+      }
+   }
+   return out;
+}
+
+template <int Format, typename T, typename Tag>
+PStream::opstreambuf<Format>&
+operator<<(PStream::opstreambuf<Format>& out, Matrix<T, Tag> const& M)
+{
+   out << get_wait(M);
+   return out;
+}
+
 } // namespace blas
+
+namespace PStream
+{
+
+template <typename T, typename Tag>
+template <int Format>
+blas::Matrix<T,Tag>
+stream_extract<blas::Matrix<T, Tag>>::operator()(PStream::ipstreambuf<Format>& in) const
+{
+   blas::Matrix<T,blas::cpu_tag> M = stream_extract<blas::Matrix<T,blas::cpu_tag>>()(in);
+   blas::Matrix<T,Tag> Result(M.rows(), M.cols());
+   set_wait(Result, std::move(M));
+   return Result;
+}
+
+template <typename T>
+template <int Format>
+blas::Matrix<T,blas::cpu_tag>
+stream_extract<blas::Matrix<T,blas::cpu_tag>>::operator()(PStream::ipstreambuf<Format>& in) const
+{
+   typedef typename PStream::opstreambuf<Format>::size_type st;
+   st Rows, Cols;
+   blas::MatrixFormats::type t;
+   in >> t;
+   if (t != blas::MatrixFormats::DenseRowMajor)
+   {
+      PANIC("Unsupported dense matrix format");
+   }
+   in >> Rows >> Cols;
+   blas::Matrix<T, blas::cpu_tag> Result(Rows, Cols);
+   for (unsigned i = 0; i < Rows; ++i)
+   {
+      for (unsigned j = 0; j < Cols; ++j)
+      {
+	 in >> Result(i,j);
+      }
+   }
+   return Result;
+}
+
+} // namespace PStream

@@ -512,7 +512,7 @@ operator*(IrredTensor<T, B1, B2, S> const& x, HermitianProxy<IrredTensor<T, B3, 
                                                      qp, qpp, qpp);
                if (fabs(Coefficient) > 1E-10)
                {
-		  Result.add(xi.row(), yi.row(), Coefficient * (xj.value * herm(yj.value)));
+		  Result.add(xi.row(), yi.row(), Coefficient * xj.value * herm(yj.value));
                }
             }
          }
@@ -552,7 +552,7 @@ operator*(HermitianProxy<IrredTensor<T, B2, B1, S>> const& x, IrredTensor<T, B2,
                                                      qpp, q, qpp);
             if (fabs(Coefficient) > 1E-10)
             {
-	       Result.add(xj.col(), xj.col(), Coefficient * (herm(xj.value) * yj.value));
+	       Result.add(xj.col(), xj.col(), Coefficient * herm(xj.value) * yj.value);
             }
          }
       }
@@ -657,7 +657,7 @@ trace(IrredTensor<T, B, B, S> const& x)
 	 trace(I.value(), Results[r.row()]);
       }
    }
-   return sum(Results);
+   return get_wait(sum(Results));
 }
 
 template <typename T, typename B, typename S>

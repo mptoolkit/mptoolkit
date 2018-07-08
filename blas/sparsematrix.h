@@ -32,7 +32,7 @@
 #include <map>
 #if defined(USE_PSTREAM)
 #include "pstream/pstream.h"
-#include "blas/pstreamio.h"
+#include "pstreamio.h"
 #endif
 
 namespace blas
@@ -57,15 +57,17 @@ class BasicSparseVector
       BasicSparseVector() = default;
       BasicSparseVector(BasicSparseVector&& Other) noexcept = default;
       BasicSparseVector& operator=(BasicSparseVector&& Other) = default;
+      BasicSparseVector& operator=(BasicSparseVector const& Other) = default;
       ~BasicSparseVector() = default;
 
-      BasicSparseVector(BasicSparseVector const&)  = delete;
+      BasicSparseVector(BasicSparseVector const&) = default;
 
+#if 0
+      // this is bogus?
       template <typename U>
       explicit BasicSparseVector(BasicSparseVector const& Other)
 	 : Elements(Other.Elements) {}
-
-      BasicSparseVector& operator=(BasicSparseVector const&) = delete;
+#endif
 
       int nnz() const { return Elements.size(); }
 
@@ -104,7 +106,7 @@ class BasicSparseVector
       iterator insert(int Col, U&& value)
       {
 	 auto i = Elements.insert(std::make_pair(Col, std::forward<U>(value)));
-         bool Inserted = Elements.insert(std::make_pair(Col, std::forward<U>(value))).second;
+         //bool Inserted = Elements.insert(std::make_pair(Col, std::forward<U>(value))).second;
          DEBUG_CHECK(i.second);
 	 return iterator(i.first);
       }
@@ -314,7 +316,7 @@ class SparseMatrix
       using iterator       = typename std::vector<SparseMatrixRow<T>>::iterator;
       using const_iterator = typename std::vector<SparseMatrixRow<T>>::const_iterator;
 
-      SparseMatrix() : Cols(0) {}
+      SparseMatrix() noexcept  : Cols(0) {}
 
       SparseMatrix(SparseMatrix&& other) noexcept = default;
 
@@ -340,6 +342,8 @@ class SparseMatrix
 	 x.Cols = 0;
 	 return *this;
       }
+
+      SparseMatrix& operator=(SparseMatrix<T> const& x) = default;
 
       int rows() const { return RowStorage.size(); }
       int cols() const { return Cols; }
@@ -518,6 +522,53 @@ operator>>(PStream::ipstreambuf<Format>& in, SparseMatrix<T>& M)
    }
    return in;
 }
+
+#if 0
+operator<<(PStream::opstreambuf<Format>& out, SparseMatrix<T> const& M)
+{
+   typedef typename PStream::opstreambuf<Format>::size_type st;
+   st Rows = M.rows(), Cols = M.cols(), Nnz = M.nnz();
+   out << MatrixFormats::Coordinate;
+   out << Rows << Cols << Nnz;
+   for (auto const& I : M)
+   {
+      for (auto const& J : I)
+      {
+	 st i = I.row();
+	 st j = J.col();
+	 out << i << j << J.value;
+      }
+   }
+   return out;
+}
+
+template <typename T>
+struct stream_extract<blas::SparseMatrix<T>>
+{
+   template <typename Format>
+   blas::SparseMatrix<T> operator()(PStream::ipstreambuf<Format>& in) const
+   {
+      typedef typename PStream::ipstreambuf<Format>::size_type st;
+      st Rows, Cols, Nnz;
+      blas::MatrixFormats::type t;
+      in >> t;
+      if (t != blas::MatrixFormats::Coordinate)
+      {
+	 PANIC("Unsupported sparse matrix format");
+      }
+      in >> Rows >> Cols >> Nnz;
+      blas::SparseMatrix<T> Result(Rows, Cols);
+      for (unsigned n = 0; n < Nnz; ++n)
+      {
+	 st i, j;
+	 in >> i >> j;
+	 Result.insert(i,j, PStream::extract<T>(in));
+      }
+      return Result;
+   }
+};
+#endif
+
 #endif
 
 template <typename T, typename U>

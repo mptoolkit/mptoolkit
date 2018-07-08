@@ -43,7 +43,7 @@ class BasisList
       using value_type     = QuantumNumber;
       using const_iterator = QuantumNumbers::QuantumNumberList::const_iterator;
 
-      BasisList() {}
+      BasisList() noexcept {}
 
       ~BasisList() noexcept = default;
 
@@ -201,7 +201,7 @@ class VectorBasis
    public:
       typedef BasisList::value_type value_type;
 
-      VectorBasis() {}
+      VectorBasis() noexcept {}
 
       static_assert(std::is_nothrow_move_constructible<BasisList>::value, "");
       static_assert(std::is_nothrow_move_constructible<std::vector<int> >::value, "");

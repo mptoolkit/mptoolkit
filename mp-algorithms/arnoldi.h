@@ -39,11 +39,11 @@
 
 */
 
-#include "linearalgebra/eigen.h"
 #include "common/proccontrol.h"
 //#include "gram-schmidt.h"
 #include <iostream>
 #include <cmath>
+#include "blas/functors.h"
 
 #if defined(SOLVER_TRACE_DETAILED)
 #define TRACE_ARNOLDI(Msg) TRACE(Msg)
@@ -53,8 +53,6 @@
 
 namespace LinearSolvers
 {
-
-using namespace LinearAlgebra;
 
 double const DGKS_Threshold = 1.0 / std::sqrt(2.0); // 1.0; // between 0 and 1.
 
@@ -69,7 +67,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
    typedef std::complex<double> complex;
    std::vector<VectorType> v;                                 // the subspace vectors
    std::vector<VectorType> Hv;                                // H * the subspace vectors
-   Matrix<complex>         SubH(Iterations, Iterations, 0.0); // matrix elements of H in the subspace
+   blas::Matrix<complex>   SubH(Iterations, Iterations, 0.0); // matrix elements of H in the subspace
    complex Theta;         // eigenvalue
    v.reserve(Iterations);
    Hv.reserve(Iterations);
@@ -139,7 +137,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
          complex z = inner_prod(v[i], w);
 	 //TRACE_ARNOLDI(z);
          SubH(i,j) = z;
-         NormFrobSqH += LinearAlgebra::norm_frob_sq(z);
+         NormFrobSqH += norm_frob_sq(z);
          w -= z * v[i];
       }
 
@@ -154,7 +152,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
             complex z = inner_prod(v[i], w);
 	    //TRACE_ARNOLDI(z);
             SubH(i,j) += z;
-            NormFrobSqH += LinearAlgebra::norm_frob_sq(SubH(i,j));
+            NormFrobSqH += norm_frob_sq(SubH(i,j));
             w -= z * v[i];
          }
          NormFrobSqF = norm_frob_sq(w);
@@ -174,10 +172,11 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
 
       }
 
-      Matrix<complex> sH = SubH(range(0,j+1), range(0,j+1));
+      blas::Matrix<complex> sH = SubH(blas::range(0,j+1), blas::range(0,j+1));
       //TRACE_ARNOLDI(sH);
-      Matrix<complex> Left, Right; // left and right eigenvectors
-      Vector<complex> Eigen = Diagonalize(sH, Left, Right);
+      blas::Matrix<complex> Left(j,j), Right(j,j); // left and right eigenvectors
+      blas::Vector<complex> Eigen(j);
+      Diagonalize(std::move(sH), Eigen, Left, Right);
 
       //      TRACE(Eigen);
       int EigenIndex = 0;
@@ -192,7 +191,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
             //         case ClosestUnity : ThetaMag = -norm_frob(1.0 - Theta); break;
       }
 
-      for (unsigned i = 1; i < size(Eigen); ++i)
+      for (unsigned i = 1; i < Eigen.size(); ++i)
       {
          double NextMag = 0;
          switch (Mode)

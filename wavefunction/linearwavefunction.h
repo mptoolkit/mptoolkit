@@ -33,17 +33,28 @@
 class LinearWavefunction
 {
    public:
-      typedef StateComponent value_type;
-      typedef pvalue_handle<StateComponent> handle_type;
+      using value_type       = StateComponent;
+      using handle_type      = pvalue_handle<StateComponent>;
+      using pointer_type     = pvalue_ptr<StateComponent>;
+      using proxy_type       = pvalue_proxy<StateComponent>;
+      using const_proxy_type = const_pvalue_proxy<StateComponent>;
+
+
       typedef std::list<handle_type> container_type;
       typedef container_type::iterator base_iterator;
       typedef container_type::const_iterator const_base_iterator;
       typedef pvalue_handle_iterator<base_iterator> iterator;
       typedef const_pvalue_handle_iterator<const_base_iterator> const_iterator;
 
-      LinearWavefunction() {}
+      LinearWavefunction() noexcept {}
 
       explicit LinearWavefunction(SymmetryList const& sl) : SList(sl) {}
+
+      LinearWavefunction(LinearWavefunction&& Other) noexcept = default;
+      LinearWavefunction(LinearWavefunction const& Other) = default;
+
+      LinearWavefunction& operator=(LinearWavefunction&& Other) noexcept = default;
+      LinearWavefunction& operator=(LinearWavefunction const& Other) = default;
 
       // construction from an array of handles
       template <typename FwdIter>
@@ -88,11 +99,29 @@ class LinearWavefunction
       const_iterator begin() const { return const_iterator(Data.begin()); }
       const_iterator end() const { return const_iterator(Data.end()); }
 
+      void push_front(value_type&& x)
+      {
+	 if (SList.is_null()) SList = x.GetSymmetryList(); 
+	 Data.push_front(handle_type(new value_type(std::move(x)))); 
+      }
+
       void push_front(value_type const& x)
-      { Data.push_front(handle_type(new value_type(x))); if (SList.is_null()) SList = x.GetSymmetryList(); }
+      { 
+	 if (SList.is_null()) SList = x.GetSymmetryList(); 
+	 Data.push_front(handle_type(new value_type(copy(x)))); 
+      }
+
+      void push_back(value_type&& x)
+      { 
+	 if (SList.is_null()) SList = x.GetSymmetryList(); 
+	 Data.push_back(handle_type(new value_type(std::move(x))));
+      }
 
       void push_back(value_type const& x)
-      { Data.push_back(handle_type(new value_type(x))); if (SList.is_null()) SList = x.GetSymmetryList(); }
+      { 
+	 if (SList.is_null()) SList = x.GetSymmetryList(); 
+	 Data.push_back(handle_type(new value_type(copy(x))));
+      }
 
       void push_front(LinearWavefunction const& x)
       {
@@ -101,7 +130,7 @@ class LinearWavefunction
          while (I != x.begin())
          {
             --I;
-            this->push_front(*I);
+            this->push_front(copy(*I));
          }
          if (SList.is_null())
             SList = x.GetSymmetryList();
@@ -121,15 +150,35 @@ class LinearWavefunction
       // Because the items are stored by handle, we can't provide a
       // reference-returning front() or back() function.  Instead,
       // we use get/set.
-      value_type get_front() const;
-      value_type get_back() const;
+      const_proxy_type get_front() const;
+      const_proxy_type get_back() const;
 
       void set_front(value_type const& x);
       void set_back(value_type const& x);
 
-      iterator insert(iterator pos, value_type const& x)
+      proxy_type front()
       {
-         return iterator(Data.insert(pos.base(), handle_type(new value_type(x))));
+	 return proxy_type(Data.front().lock());
+      }
+
+      const_proxy_type front() const
+      {
+	 return const_proxy_type(Data.front().lock());
+      }
+
+      proxy_type back()
+      {
+	 return proxy_type(Data.back().lock());
+      }
+
+      const_proxy_type back() const
+      {
+	 return const_proxy_type(Data.back().lock());
+      }
+
+      iterator insert(iterator pos, value_type x)
+      {
+         return iterator(Data.insert(pos.base(), handle_type(new value_type(std::move(x)))));
       }
 
       iterator erase(iterator pos)
@@ -259,13 +308,13 @@ LinearWavefunction prod(LinearOperator const& Op, LinearWavefunction const& Psi,
 // |  |          |
 // +-Psi2-- ... Psi2--
 MatrixOperator
-inject_left(MatrixOperator const& m,
+inject_left(MatrixOperator m,
             LinearWavefunction const& Psi1,
             LinearWavefunction const& Psi2);
 
 // equivalent to inject_left(m, Psi, Psi);
 MatrixOperator
-inject_left(MatrixOperator const& m, LinearWavefunction const& Psi);
+inject_left(MatrixOperator m, LinearWavefunction const& Psi);
 
 // Calculates the operator contraction, with a matrix
 // actong on the left hand side of the wavefunction.
@@ -277,13 +326,13 @@ inject_left(MatrixOperator const& m, LinearWavefunction const& Psi);
 // --Psi2*- ... Psi2*-+
 // Two argument version, for a different wavefunction on the left and right.
 MatrixOperator
-inject_right(MatrixOperator const& m,
+inject_right(MatrixOperator m,
             LinearWavefunction const& Psi1,
             LinearWavefunction const& Psi2);
 
 // equivalent to inject_right(m, Psi, Psi)
 MatrixOperator
-inject_right(MatrixOperator const& m, LinearWavefunction const& Psi);
+inject_right(MatrixOperator, LinearWavefunction const& Psi);
 
 
 HermitianProxy<LinearWavefunction>
@@ -296,13 +345,13 @@ herm(LinearWavefunction const& x)
 // from left to right, calculates the action of the transfer operator R = A^\dagger m B
 MatrixOperator
 operator_prod(HermitianProxy<LinearWavefunction> const& A,
-              MatrixOperator const& E,
+              MatrixOperator E,
               LinearWavefunction const& B);
 
 // from right to left, calculates the action of the transfer operator R = A m B^\dagger
 MatrixOperator
 operator_prod(LinearWavefunction const& A,
-              MatrixOperator const& F,
+              MatrixOperator F,
               HermitianProxy<LinearWavefunction> const& B);
 
 #if 0

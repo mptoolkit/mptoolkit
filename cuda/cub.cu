@@ -26,6 +26,30 @@
 namespace cuda
 {
 
+template <typename T>
+__global__ void cuda_fill(T alpha, unsigned n, T* y, unsigned incy)
+{
+   unsigned i = blockIdx.x*blockDim.x + threadIdx.x;
+   if (i < N)
+      y[i*incy] = alpha;
+}
+
+template <typename T>
+void vector_fill(T alpha, int n, cuda::gpu_ptr<T> y, int incy)
+{
+   unsigned threads_per_block = 64;
+   unsigned nblocks = (n + threads_per_block-1) / threads_per_block;
+   cuda_fill<<<nblocks,threads_per_block, 0, y.get_stream().raw_stream()>>>(alpha, n, y.device_ptr(), incy);
+}
+
+// template instantiations
+template void vector_fill<float>(float alpha, int n, cuda::gpu_ptr<float> y, int incy);
+template void vector_fill<double>(double alpha, int n, cuda::gpu_ptr<double> y, int incy);
+template void vector_fill<std::complex<float>>(std::complex<float> alpha, int n, 
+					       cuda::gpu_ptr<std::complex<float>> y, int incy);
+template void vector_fill<std::complex<double>>(zstd::complex<double> alpha, int n, 
+						cuda::gpu_ptr<std::complex<double>> y, int incy);
+
 namespace detail
 {
 
@@ -150,20 +174,42 @@ template void vector_sum<float>(int Size,
 				cuda::gpu_ref<std::complex<float>>& r);
 
 template <typename T>
+void
+vector_sum(int Size, cuda::const_gpu_ptr<std::complex<T>> const& x, int incx,
+	   cuda::gpu_ref<std::complex<T>>&& r)
+{
+   vector_sum(Size, x, incx, r);
+}
+
+template void vector_sum<double>(int Size, cuda::const_gpu_ptr<double> const& x, int incx,
+				 cuda::gpu_ref<double>&& r);
+
+template void vector_sum<double>(int Size,
+				 cuda::const_gpu_ptr<std::complex<double>> const& x, int incx,
+				 cuda::gpu_ref<std::complex<double>>&& r);
+
+template void vector_sum<float>(int Size, cuda::const_gpu_ptr<float> const& x, int incx,
+				cuda::gpu_ref<float>&& r);
+
+template void vector_sum<float>(int Size,
+				cuda::const_gpu_ptr<std::complex<float>> const& x, int incx,
+				cuda::gpu_ref<std::complex<float>>&& r);
+
+template <typename T>
 __global__ void permute_vector_cuda(unsigned n, T const* In, T* Out, int const* Perm)
 {
-        unsigned i =  blockIdx.x*blockDim.x + threadIdx.x;
-        if (i < n)
-               Out[i] = In[Perm[i]];
+   unsigned i =  blockIdx.x*blockDim.x + threadIdx.x;
+   if (i < n)
+      Out[i] = In[Perm[i]];
 }
 
 template <typename T>
 __global__ void permute_vector_stride_cuda(unsigned n, T const* In, int InStride, T* Out, int OutStride,
 						  int const* Perm)
 {
-        unsigned i =  blockIdx.x*blockDim.x + threadIdx.x;
-        if (i < n)
-               Out[i*OutStride] = In[Perm[i]*InStride];
+   unsigned i =  blockIdx.x*blockDim.x + threadIdx.x;
+   if (i < n)
+      Out[i*OutStride] = In[Perm[i]*InStride];
 }
 
 template <typename T>

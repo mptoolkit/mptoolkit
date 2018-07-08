@@ -36,11 +36,11 @@ linear_dimension(SimpleOperator const& c)
    return n;
 }
 
-LinearAlgebra::Vector<std::complex<double>>
+blas::Vector<std::complex<double>>
 linearize(SimpleOperator const& c)
 {
    int TotalSize = linear_dimension(c);
-   LinearAlgebra::Vector<std::complex<double>> Result(TotalSize);
+   blas::Vector<std::complex<double>> Result(TotalSize);
    int n = 0;
    for (unsigned i = 0; i < c.Basis1().size(); ++i)
    {
@@ -56,17 +56,17 @@ linearize(SimpleOperator const& c)
    return Result;
 }
 
-LinearAlgebra::Vector<std::complex<double>>
+blas::Vector<std::complex<double>>
 linearize(SimpleRedOperator const& c, QuantumNumberList const& QList)
 {
    int TotalSize = linear_dimension(c, QList);
-   LinearAlgebra::Vector<std::complex<double>> Result(TotalSize);
+   blas::Vector<std::complex<double>> Result(TotalSize);
    int i = 0;
    for (auto q : QList)
    {
       SimpleOperator x = project(c, q);
       int n = linear_dimension(x);
-      Result[LinearAlgebra::range(i, i+n)] = linearize(x);
+      Result[blas::range(i, i+n)] = linearize(x);
       i += n;
    }
    return Result;
@@ -145,8 +145,8 @@ swap_gate(BasisList const& B1, BasisList const& B2,
 }
 
 SimpleOperator
-swap_gate_fermion(BasisList const& B1, LinearAlgebra::Vector<double> const& Parity1,
-                  BasisList const& B2, LinearAlgebra::Vector<double> const& Parity2,
+swap_gate_fermion(BasisList const& B1, blas::Vector<double> const& Parity1,
+                  BasisList const& B2, blas::Vector<double> const& Parity2,
                   ProductBasis<BasisList, BasisList> const& Basis_21,
                   ProductBasis<BasisList, BasisList> const& Basis_12)
 {

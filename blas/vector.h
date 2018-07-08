@@ -34,6 +34,7 @@
 #include <iostream>
 #include <iomanip>
 #include "common/formatting.h"
+#include "pstream/pstream.h"
 
 namespace blas
 {
@@ -229,6 +230,18 @@ class Vector : public NormalVector<T, Vector<T, Tag>, Tag>
          return Buf[i];
       }
 
+      vector_view<T, Tag> operator[](Range r)
+      {
+	 DEBUG_RANGE_CHECK(r.first(), 0, Size);
+	 return vector_view<T, Tag>(r.size(), 1, Buf.ptr()+r.first());
+      }
+
+      const_vector_view<T, Tag> operator[](Range r) const
+      {
+	 DEBUG_RANGE_CHECK(r.first(), 0, Size);
+	 return const_vector_view<T, Tag>(r.size(), 1, Buf.ptr()+r.first());
+      }
+
    private:
       int Size;
       buffer_type Buf;
@@ -356,6 +369,18 @@ class Vector<T, cpu_tag> : public NormalVector<T, Vector<T, cpu_tag>, cpu_tag>
          return Data[i];
       }
 
+      vector_view<T, cpu_tag> operator[](Range r)
+      {
+	 DEBUG_RANGE_CHECK(r.first(), 0, Size);
+	 return vector_view<T, cpu_tag>(r.size(), 1, Data+r.first());
+      }
+
+      const_vector_view<T, cpu_tag> operator[](Range r) const
+      {
+	 DEBUG_RANGE_CHECK(r.first(), 0, Size);
+	 return const_vector_view<T, cpu_tag>(r.size(), 1, Data+r.first());
+      }
+
    private:
       arena Arena;
       int Size;
@@ -398,6 +423,24 @@ copy(blas::BlasVector<T, U, Tag> const& x)
    assign(Result, x.derived());
    return Result;
 }
+
+// io
+
+template <typename T, int Format>
+PStream::opstreambuf<Format>&
+operator<<(PStream::opstreambuf<Format>& out, Vector<T, cpu_tag> const& x);
+
+template <typename T, typename U, typename Tag, int Format>
+PStream::opstreambuf<Format>&
+operator<<(PStream::opstreambuf<Format>& out, VectorRef<T, U, Tag> const& x);
+
+template <typename T, int Format>
+PStream::ipstreambuf<Format>&
+operator>>(PStream::ipstreambuf<Format>& in, Vector<T, cpu_tag>& x);
+
+template <typename T, typename Tag, int Format>
+PStream::ipstreambuf<Format>&
+operator>>(PStream::ipstreambuf<Format>& in, Vector<T, Tag>& x);
 
 } // namespace blas
 

@@ -38,7 +38,6 @@
 #define MPTOOLKIT_MPS_CANONICALWAVEFUNCTION_H
 
 #include "mps/state_component.h"
-#include "linearalgebra/diagonalmatrix.h"
 #include "pheap/pvalueiterator.h"
 #include "mps/density.h"  // for RealDiagonalOperator
 
@@ -66,6 +65,13 @@ class CanonicalWavefunctionBase
       typedef pvalue_handle_iterator<base_lambda_iterator>             lambda_iterator;
       typedef const_pvalue_handle_iterator<const_base_lambda_iterator> const_lambda_iterator;
 
+      using proxy_type              = pvalue_proxy<mps_type>;
+      using const_proxy_type        = const_pvalue_proxy<mps_type>;
+      using pointer_type            = pvalue_ptr<StateComponent>;
+      using lambda_pointer_type     = pvalue_ptr<lambda_type>;
+      using lambda_proxy_type       = pvalue_proxy<lambda_type>;
+      using const_lambda_proxy_type = const_pvalue_proxy<lambda_type>;
+
       // number of sites in the wavefunction
       int size() const { return Data.size(); }
 
@@ -81,8 +87,8 @@ class CanonicalWavefunctionBase
       SymmetryList GetSymmetryList() const { return Basis1_.GetSymmetryList(); }
 
       // shortcuts to the left and right lambda operators
-      RealDiagonalOperator lambda_l() const { return this->lambda(0); }
-      RealDiagonalOperator lambda_r() const { return this->lambda(this->size()); }
+      const_lambda_proxy_type lambda_l() const { return this->lambda(0); }
+      const_lambda_proxy_type lambda_r() const { return this->lambda(this->size()); }
 
       // precondition: is_irreducible
       QuantumNumbers::QuantumNumber TransformsAs() const;
@@ -104,17 +110,21 @@ class CanonicalWavefunctionBase
       const_base_lambda_iterator lambda_base_begin() const { return Lambda.begin(); }
       const_base_lambda_iterator lambda_base_end() const { return Lambda.end(); }
 
-      // return the i'th MPS matrix.  Because they are stored by handle, we can't
-      // return a reference, but the tensors are reference counted anyway so a copy is cheap
-      mps_type operator[](int i) const
-      { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return *Data[i].lock(); }
+      // return the i'th MPS matrix.
+      const_proxy_type operator[](int i) const
+      { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return Data[i].lock(); }
+
+      proxy_type operator[](int i)
+      { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return Data[i].lock(); }
 
       // returns the final MPS matrix
-      mps_type get_back() { return *Data.back().lock(); }
+      const pointer_type get_back() const { return Data.back().lock(); }
+
+      const_lambda_proxy_type lambda_front() const { return Lambda.front().lock(); }
 
       // returns the lambda matrix at partition i
-      lambda_type lambda(int i) const
-      { DEBUG_RANGE_CHECK(i, 0, int(Data.size())); return *Lambda[i].lock(); }
+      const_lambda_proxy_type lambda(int i) const
+      { DEBUG_RANGE_CHECK(i, 0, int(Data.size())); return Lambda[i].lock(); }
 
       static PStream::VersionTag VersionT;
 
@@ -143,17 +153,17 @@ class CanonicalWavefunctionBase
       base_lambda_iterator lambda_base_end_() { return Lambda.end(); }
 
       void push_back(mps_handle_type const& x) { Data.push_back(x); }
-      void push_back(mps_type const& x) { Data.push_back(new mps_type(x)); }
+      void push_back(mps_type x) { Data.push_back(new mps_type(std::move(x))); }
 
-      void push_back_lambda(lambda_type const& x) { Lambda.push_back(new lambda_type(x)); }
+      void push_back_lambda(lambda_type x) { Lambda.push_back(new lambda_type(std::move(x))); }
       void push_back_lambda(lambda_handle_type const& x) { Lambda.push_back(x); }
 
       void pop_back() { Data.pop_back(); }
       void pop_back_lambda() { Lambda.pop_back(); }
 
-      void set(int i, mps_type const& A) { Data[i] = new mps_type(A); }
-      void set_back(mps_type const& A) { Data.back() = new mps_type(A); }
-      void set_lambda(int i, lambda_type const& L) { Lambda[i] = new lambda_type(L); }
+      void set(int i, mps_type A) { Data[i] = new mps_type(std::move(A)); }
+      void set_back(mps_type A) { Data.back() = new mps_type(std::move(A)); }
+      void set_lambda(int i, lambda_type L) { Lambda[i] = new lambda_type(std::move(L)); }
 
       void setBasis1(VectorBasis const& B) { Basis1_ = B; }
       void setBasis2(VectorBasis const& B) { Basis2_ = B; }

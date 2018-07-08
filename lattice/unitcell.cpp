@@ -333,17 +333,17 @@ UnitCell::map_local_operator(SiteOperator const& Operator, int Cell, int n) cons
             (i)(SignOperator);
       }
       SimpleOperator Op = (*Sites)[i].operator_exists(SignOperator) ?
-         (*Sites)[i][SignOperator] : (*Sites)[i].identity();
+         copy((*Sites)[i][SignOperator]) : (*Sites)[i].identity();
       Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Basis, Basis);
-      Result[i](0,0) = Op;
+      Result[i](0,0) = std::move(Op);
    }
    Result[n] = OperatorComponent(Operator.Basis1(), Operator.Basis2(), Basis, Vacuum);
-   Result[n](0,0) = Operator;
+   Result[n](0,0) = copy(Operator);
    for (int i = n+1; i < this->size(); ++i)
    {
       SimpleOperator I = (*Sites)[i].identity();
       Result[i] = OperatorComponent(I.Basis1(), I.Basis2(), Vacuum, Vacuum);
-      Result[i](0,0) = I;
+      Result[i](0,0) = std::move(I);
    }
 
    return UnitCellMPO(Sites, Result, Operator.Commute(), Cell*this->size(),
@@ -479,13 +479,13 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
    // Construct the parity operators
    // TODO: we should verify that the P operator is diagonal.  We are also
    // assuming that the diagonal matrix elements are purely real.
-   LinearAlgebra::Vector<double> Parity_i(Basis_i.size(), 1.0);
+   blas::Vector<double> Parity_i(Basis_i.size(), 1.0);
    for (unsigned n = 0; n < Parity_i.size(); ++n)
    {
       Parity_i[n] = this->operator[](i)["P"](n,n).real();
    }
 
-   LinearAlgebra::Vector<double> Parity_j(Basis_j.size(), 1.0);
+   blas::Vector<double> Parity_j(Basis_j.size(), 1.0);
    for (unsigned n = 0; n < Parity_j.size(); ++n)
    {
       Parity_j[n] = this->operator[](j)["P"](n,n).real();
@@ -513,7 +513,7 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
    }
 
    // site i
-   Result[i] = R1;
+   Result[i] = std::move(R1);
 
    // sites between i and j need to get the parity treatment
    for (int n = i + 1; n < (Cell_j-Cell_i)*this->size() + j; ++n)
@@ -521,7 +521,8 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
       // Construct the operator component manually
       // if Parity_i * Parity_j is +1, then the component is the identity
       // if -1 then its the local P operator
-      Result[n] = OperatorComponent(this->LocalBasis(n % this->size()), R1.Basis2(), R1.Basis2());
+      Result[n] = OperatorComponent(this->LocalBasis(n % this->size()), 
+				    Result[i].Basis2(), Result[i].Basis2());
       for (unsigned p = 0; p < Basis_ji.size(); ++p)
       {
          std::pair<int,int> x = Basis_ji.rmap(p);
@@ -529,18 +530,18 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
          if (int(Parity_i[x.second]) == int(Parity_j[x.first]))
          {
             // identity
-            Result[n](p,p) = this->operator[](n % this->size())["I"];
+            Result[n](p,p) = copy(this->operator[](n % this->size())["I"]);
          }
          else
          {
             // parity
-            Result[n](p,p) = this->operator[](n % this->size())["P"];
+            Result[n](p,p) = copy(this->operator[](n % this->size())["P"]);
          }
       }
    }
 
    // site j
-   Result[(Cell_j-Cell_i)*this->size() + j] = R2;
+   Result[(Cell_j-Cell_i)*this->size() + j] = std::move(R2);
 
    // remaining sites to the end of the unit cell are identity
    for (int n = (Cell_j-Cell_i)*this->size() + j + 1; n < (Cell_j-Cell_i+1)*this->size(); ++n)
@@ -600,12 +601,12 @@ UnitCell::swap_gate_no_sign(int Cell_i, int i, int Cell_j, int j) const
    {
       Result[n] = OperatorComponent::make_identity(this->LocalBasis(n % this->size()));
    }
-   Result[i] = R1;
+   Result[i] = std::move(R1);
    for (int n = i + 1; n < (Cell_j-Cell_i)*this->size() + j; ++n)
    {
-      Result[n] = OperatorComponent::make_identity(this->LocalBasis(n % this->size()), R1.Basis2());
+      Result[n] = OperatorComponent::make_identity(this->LocalBasis(n % this->size()), Result[i].Basis2());
    }
-   Result[(Cell_j-Cell_i)*this->size() + j] = R2;
+   Result[(Cell_j-Cell_i)*this->size() + j] = std::move(R2);
    for (int n = (Cell_j-Cell_i)*this->size() + j + 1; n < (Cell_j-Cell_i+1)*this->size(); ++n)
    {
       Result[n] = OperatorComponent::make_identity(this->LocalBasis(n % this->size()));

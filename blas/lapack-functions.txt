@@ -24,3 +24,5 @@ SingularValueDecompositionFullRight
 DiagonalizeHermitian
 
 EigenvaluesHermitian
+
+Diagonalize

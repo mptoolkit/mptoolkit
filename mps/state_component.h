@@ -78,12 +78,14 @@ struct BasicStateComponent
 
    typedef VectorBasis BasisType;
 
-   //BasicStateComponent() {}
+   BasicStateComponent() = default;
 
    BasicStateComponent(BasisList const& SBasis_, VectorBasis const& V1,
                     VectorBasis const& V2);
 
+   // TODO: copy ctor should be deleted, but we need it for pstreams
    BasicStateComponent(BasicStateComponent const& Other) = delete;
+
    BasicStateComponent(BasicStateComponent&& Other) noexcept = default;
 
    BasicStateComponent& operator=(BasicStateComponent&& Other) noexcept = default;
@@ -236,10 +238,22 @@ SimpleOperator make_vacuum_simple(QuantumNumbers::SymmetryList const& SList)
 }
 
 StateComponent
-operator+(StateComponent x, StateComponent const& y);
+operator+(StateComponent&& x, StateComponent const& y);
 
 StateComponent
-operator-(StateComponent x, StateComponent const& y);
+operator+(StateComponent const& x, StateComponent const& y)
+{
+   return copy(x)+y;
+}
+
+StateComponent
+operator-(StateComponent&& x, StateComponent const& y);
+
+StateComponent
+operator-(StateComponent const& x, StateComponent const& y)
+{
+   return copy(x)+y;
+}
 
 StateComponent&
 operator+=(StateComponent& x, StateComponent const& y);
@@ -262,10 +276,22 @@ template <typename T>
 inline
 BasicStateComponent<T> conj(BasicStateComponent<T> const& x)
 {
-   BasicStateComponent<T> Result(x);
+   BasicStateComponent<T> Result(copy(x));
    for (auto& I : Result)
    {
-      I = conj(I);
+      inplace_conj(I);
+   }
+   return Result;
+}
+
+template <typename T>
+inline
+BasicStateComponent<T> conj(BasicStateComponent<T>&& x)
+{
+   BasicStateComponent<T> Result(std::move(x));
+   for (auto& I : Result)
+   {
+      inplace_conj(I);
    }
    return Result;
 }

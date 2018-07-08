@@ -29,6 +29,7 @@
 #include <boost/math/special_functions/round.hpp>
 #include "common/numerics.h"
 #include "common/formatting.h"
+#include "common/types.h"
 
 namespace Parser
 {
@@ -117,9 +118,9 @@ class ParserError : public std::exception
 inline
 int as_int(complex x)
 {
-   using ::norm_frob;
+   using std::abs;
    int j = boost::math::iround(x.real());
-   if (norm_frob(x - real(j)) > 1E-7)
+   if (abs(x - real(j)) > 1E-7)
        throw ParserError("expected an integer, got a real/complex number: " + format_complex(x));
    return j;
 }
@@ -127,8 +128,8 @@ int as_int(complex x)
 inline
 double as_real(complex x)
 {
-   using ::norm_frob;
-   if (norm_frob(x.imag()) > 1E-7)
+   using std::abs;
+   if (abs(x.imag()) > 1E-7)
        throw ParserError("expected a real number, got a complex number: " + format_complex(x));
    return x.real();
 }

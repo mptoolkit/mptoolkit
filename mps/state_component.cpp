@@ -58,7 +58,7 @@ operator+=(StateComponent& x, StateComponent const& y)
 }
 
 StateComponent
-operator+(StateComponent x, StateComponent const& y)
+operator+(StateComponent&& x, StateComponent const& y)
 {
    CHECK_EQUAL(x.LocalBasis(), y.LocalBasis());
    CHECK_EQUAL(x.Basis1(), y.Basis1());
@@ -85,7 +85,7 @@ operator-=(StateComponent& x, StateComponent const& y)
 }
 
 StateComponent
-operator-(StateComponent x, StateComponent const& y)
+operator-(StateComponent&& x, StateComponent const& y)
 {
    CHECK_EQUAL(x.LocalBasis(), y.LocalBasis());
    CHECK_EQUAL(x.Basis1(), y.Basis1());

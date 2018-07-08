@@ -29,6 +29,10 @@
 namespace blas
 {
 
+void Diagonalize(int Size, std::complex<double>* Data, int LeadingDim, std::complex<double>* Eigen,
+		 std::complex<double>* Left, int LeftLeadingDim,
+		 std::complex<double>* Right, int RightLeadingDim);
+
 void DiagonalizeSymmetric(int Size, double* Data, int LeadingDim, double* Eigen);
 
 void DiagonalizeHermitian(int Size, std::complex<double>* Data, int LeadingDim, double* Eigen);
