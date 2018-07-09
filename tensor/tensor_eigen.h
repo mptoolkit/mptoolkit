@@ -43,6 +43,32 @@ SVD_Regular(MatrixOperator const& m,
 	    RealDiagonalOperator& D,
 	    MatrixOperator& Vh);
 
+
+// DiagonalizeHermitian
+//
+// U is modified to be the transform matrix, such that
+// U' * Result' * herm(U') = U
+
+RealDiagonalOperator
+DiagonalizeHermitian(MatrixOperator& U);
+
+// SqrtDiagonal
+//
+// Takes the square root of a real positive matrix.
+// Elements that are < OrthoTol are assumed to be zero
+
+RealDiagonalOperator
+SqrtDiagonal(RealDiagonalOperator x, double OrthoTol);
+
+// InvertDiagonal
+//
+// Takes the inverse root of a real positive matrix.
+// Elements that are < OrthoTol are assumed to be zero
+
+RealDiagonalOperator
+InvertDiagonal(RealDiagonalOperator x, double OrthoTol);
+
+
 #if 0
 
 // DiagonalizeHermitian, diagonalizes 'x', returns the transform matrix

@@ -52,7 +52,8 @@ struct cpu_buffer
    using reference       = T&;
    using const_reference = T const&;
 
-   cpu_buffer() = delete;
+   cpu_buffer() noexcept 
+   : Ptr(nullptr), Size(0) {}
 
    cpu_buffer(arena const& a, T* p, int s) : Arena(a), Ptr(p), Size(s) {}
    cpu_buffer(cpu_buffer&& other) noexcept : Arena(std::move(other.Arena)), Ptr(other.Ptr), Size(other.Size)
@@ -430,9 +431,9 @@ template <typename T, int Format>
 PStream::opstreambuf<Format>&
 operator<<(PStream::opstreambuf<Format>& out, Vector<T, cpu_tag> const& x);
 
-template <typename T, typename U, typename Tag, int Format>
+template <typename T, typename Tag, int Format>
 PStream::opstreambuf<Format>&
-operator<<(PStream::opstreambuf<Format>& out, VectorRef<T, U, Tag> const& x);
+operator<<(PStream::opstreambuf<Format>& out, Vector<T, Tag> const& x);
 
 template <typename T, int Format>
 PStream::ipstreambuf<Format>&

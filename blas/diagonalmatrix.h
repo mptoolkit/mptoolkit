@@ -36,11 +36,6 @@
 namespace blas
 {
 
-//
-// Memory-based vector type.
-// Moveable, non-copyable, non-resizable (except by moving).
-//
-
 template <typename T, typename Tag = cpu_tag>
 class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
 {
@@ -166,22 +161,393 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
       buffer_type Buf;
 };
 
+//
+// a DiagonalMatrix that exists ono the CPU.  This has direct access to memory,
+// and an iterator interface.
+//
+
+// proxy type for a an element of a diagonal matrix row.
+// This is the 'inner' iterator of a 2-dimensional iteration scheme.
+
+template <typename T>
+struct DiagonalMatrixElementRef
+{
+   int Col;
+   T& value;
+
+   DiagonalMatrixElementRef() = delete;
+
+   DiagonalMatrixElementRef(int Col_, T& value_)
+	 : Col(Col_), value(value_) {}
+   
+   int col() const { return Col; }
+
+   operator T&() const { return value; }
+};
+
+//iterator to a column of a DiagonalMatrixRow
+
+template <typename T>
+class DiagonalMatrixColIterator
+{
+   public:
+      using value_type = DiagonalMatrixElementRef<T>;
+      using pointer    = T*;
+      using reference  = DiagonalMatrixElementRef<T>;
+      using iterator_category = std::random_access_iterator_tag;
+
+      DiagonalMatrixColIterator() noexcept
+      : Col(0), Ptr(nullptr) {}
+
+      DiagonalMatrixColIterator(int Col_, T* Ptr_)
+	 : Col(Col_), Ptr(Ptr_) {}
+
+      int col() const { return Col; }
+
+      reference operator*() const
+      {
+	 return reference(Col, *Ptr);
+      }
+
+      pointer operator->() const
+      {
+	 return Ptr;
+      }
+
+      reference operator[](int i) const
+      {
+	 return reference(Col+i, Ptr[i]);
+      }
+
+      DiagonalMatrixColIterator& operator++() noexcept
+      {
+	 ++Col;
+	 ++Ptr;
+	 return *this;
+      }
+
+      DiagonalMatrixColIterator operator++(int) noexcept
+      {
+	 return DiagonalMatrixColIterator(Col++, Ptr++);
+      }
+
+      DiagonalMatrixColIterator& operator--() noexcept
+      {
+	 --Col;
+	 --Ptr;
+	 return *this;
+      }
+
+      DiagonalMatrixColIterator operator--(int) noexcept
+      {
+	 return DiagonalMatrixColIterator(Col--, Ptr--);
+      }
+
+      bool operator==(DiagonalMatrixColIterator const& x) const
+      {
+	 return Ptr == x.Ptr;
+      }
+
+      bool operator!=(DiagonalMatrixColIterator const& x) const
+      {
+	 return Ptr != x.Ptr;
+      }
+
+   private:
+      int Col;
+      T* Ptr;
+};
+
+template <typename T>
+class ConstDiagonalMatrixColIterator
+{
+   public:
+      using value_type = DiagonalMatrixElementRef<T const>;
+      using pointer    = T const*;
+      using reference  = DiagonalMatrixElementRef<T const>;
+      using iterator_category = std::random_access_iterator_tag;
+
+      ConstDiagonalMatrixColIterator() noexcept
+      : Col(0), Ptr(nullptr) {}
+
+      ConstDiagonalMatrixColIterator(int Col_, T const* Ptr_)
+	 : Col(Col_), Ptr(Ptr_) {}
+
+      int col() const { return Col; }
+
+      reference operator*() const
+      {
+	 return reference(Col, *Ptr);
+      }
+
+      pointer operator->() const
+      {
+	 return Ptr;
+      }
+
+      reference operator[](int i) const
+      {
+	 return reference(Col+i, Ptr[i]);
+      }
+
+      ConstDiagonalMatrixColIterator& operator++() noexcept
+      {
+	 ++Col;
+	 ++Ptr;
+	 return *this;
+      }
+
+      ConstDiagonalMatrixColIterator operator++(int) noexcept
+      {
+	 return ConstDiagonalMatrixColIterator(Col++, Ptr++);
+      }
+
+      ConstDiagonalMatrixColIterator& operator--() noexcept
+      {
+	 --Col;
+	 --Ptr;
+	 return *this;
+      }
+
+      ConstDiagonalMatrixColIterator operator--(int) noexcept
+      {
+	 return ConstDiagonalMatrixColIterator(Col--, Ptr--);
+      }
+
+      bool operator==(ConstDiagonalMatrixColIterator const& x) const
+      {
+	 return Ptr == x.Ptr;
+      }
+
+      bool operator!=(ConstDiagonalMatrixColIterator const& x) const
+      {
+	 return Ptr != x.Ptr;
+      }
+
+   private:
+      int Col;
+      T const* Ptr;
+};
+
+
+// proxy type for a row of a diagonal matrix.  This contains only one element,
+// and exists primarily for consistent iterator semantics with a SparseMatrix
+
+template <typename T>
+class DiagonalMatrixRowRef
+{
+   public:
+      using iterator       = DiagonalMatrixColIterator<T>;
+      using const_iterator = ConstDiagonalMatrixColIterator<T>;
+
+      DiagonalMatrixRowRef(int Row_, T& value_)
+	 : Row(Row_), value(value_) {}
+
+      // we can point one beyond the end because the value will always be a member of an
+      // array
+
+      iterator begin() noexcept { return iterator(Row, &value); }
+      const_iterator begin() const noexcept { return const_iterator(Row, &value); }
+      const_iterator cbegin() const noexcept { return const_iterator(Row, &value); }
+
+      iterator end() noexcept { return iterator(Row+1, value+1); }
+      const_iterator end() const noexcept { return const_iterator(Row+1, &value+1); }
+      const_iterator cend() const noexcept { return const_iterator(Row+1, &value+1); }
+
+      int row() const { return Row; }
+
+      T& operator()(int c)
+      {
+	 DEBUG_CHECK_EQUAL(c, Row);
+	 return value;
+      }
+
+      T const& operator()(int c) const
+      {
+	 DEBUG_CHECK_EQUAL(c, Row);
+	 return value;
+      }
+
+      iterator find(int Col)
+      {
+	 if (Col == Row)
+	    return iterator(Row, &value);
+	 return iterator(Row, &value+1);
+      }
+
+      const_iterator find(int Col) const
+      {
+	 if (Col == Row)
+	    return const_iterator(Row, &value);
+	 return const_iterator(Row+1, &value+1);
+      }
+
+   private:
+      int Row;
+      T& value;
+      
+};
+
+template <typename T>
+class DiagonalMatrixRowIterator
+{
+   public:
+      using value_type = DiagonalMatrixRowRef<T>;
+      using pointer    = T*;
+      using reference  = DiagonalMatrixRowRef<T>;
+      using iterator_category = std::random_access_iterator_tag;
+
+      DiagonalMatrixRowIterator() noexcept
+      : Row(0), Ptr(nullptr) {}
+
+      DiagonalMatrixRowIterator(int Row_, T* Ptr_)
+	 : Row(Row_), Ptr(Ptr_) {}
+
+      int row() const { return Row; }
+
+      reference operator*() const
+      {
+	 return reference(Row, *Ptr);
+      }
+
+      pointer operator->() const
+      {
+	 return Ptr;
+      }
+
+      reference operator[](int i) const
+      {
+	 return reference(Row+i, Ptr[i]);
+      }
+
+      DiagonalMatrixRowIterator& operator++() noexcept
+      {
+	 ++Row;
+	 ++Ptr;
+	 return *this;
+      }
+
+      DiagonalMatrixRowIterator operator++(int) noexcept
+      {
+	 return DiagonalMatrixRowIterator(Row++, Ptr++);
+      }
+
+      DiagonalMatrixRowIterator& operator--() noexcept
+      {
+	 --Row;
+	 --Ptr;
+	 return *this;
+      }
+
+      DiagonalMatrixRowIterator operator--(int) noexcept
+      {
+	 return DiagonalMatrixRowIterator(Row--, Ptr--);
+      }
+
+      bool operator==(DiagonalMatrixRowIterator const& x) const
+      {
+	 return Ptr == x.Ptr;
+      }
+
+      bool operator!=(DiagonalMatrixRowIterator const& x) const
+      {
+	 return Ptr != x.Ptr;
+      }
+
+   private:
+      int Row;
+      T* Ptr;
+};
+
+template <typename T>
+class ConstDiagonalMatrixRowIterator
+{
+   public:
+      using value_type = DiagonalMatrixRowRef<T const>;
+      using pointer    = T const*;
+      using reference  = DiagonalMatrixRowRef<T const>;
+      using iterator_category = std::random_access_iterator_tag;
+
+      ConstDiagonalMatrixRowIterator() noexcept
+      : Row(0), Ptr(nullptr) {}
+
+      ConstDiagonalMatrixRowIterator(int Row_, T const* Ptr_)
+	 : Row(Row_), Ptr(Ptr_) {}
+
+      int row() const { return Row; }
+
+      reference operator*() const
+      {
+	 return reference(Row, *Ptr);
+      }
+
+      pointer operator->() const
+      {
+	 return Ptr;
+      }
+
+      reference operator[](int i) const
+      {
+	 return reference(Row+i, Ptr[i]);
+      }
+
+      ConstDiagonalMatrixRowIterator& operator++() noexcept
+      {
+	 ++Row;
+	 ++Ptr;
+	 return *this;
+      }
+
+      ConstDiagonalMatrixRowIterator operator++(int) noexcept
+      {
+	 return ConstDiagonalMatrixRowIterator(Row++, Ptr++);
+      }
+
+      ConstDiagonalMatrixRowIterator& operator--() noexcept
+      {
+	 --Row;
+	 --Ptr;
+	 return *this;
+      }
+
+      ConstDiagonalMatrixRowIterator operator--(int) noexcept
+      {
+	 return ConstDiagonalMatrixRowIterator(Row--, Ptr--);
+      }
+
+      bool operator==(ConstDiagonalMatrixRowIterator const& x) const
+      {
+	 return Ptr == x.Ptr;
+      }
+
+      bool operator!=(ConstDiagonalMatrixRowIterator const& x) const
+      {
+	 return Ptr != x.Ptr;
+      }
+
+   private:
+      int Row;
+      T const* Ptr;
+};
+
 template <typename T>
 class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T, cpu_tag>, cpu_tag>
 {
    public:
       using value_type         = T;
-      using iterator           = T*;
-      using const_iterator     = T const*;
       using tag_type           = cpu_tag;
       using buffer_type        = typename tag_type::template buffer_type<T>;
       using storage_type       = typename buffer_type::storage_type;
       using const_storage_type = typename buffer_type::const_storage_type;
       using reference          = typename buffer_type::reference;
       using const_reference    = typename buffer_type::const_reference;
-      using row_type           = T;
 
-      DiagonalMatrix() = delete;
+      using row_type           = DiagonalMatrixRowRef<T>;
+      using iterator           = DiagonalMatrixRowIterator<T>;
+      using const_iterator     = ConstDiagonalMatrixRowIterator<T>;
+
+      DiagonalMatrix() noexcept
+      : Size(0) {}
 
       DiagonalMatrix(DiagonalMatrix const&) = delete;
 
@@ -272,6 +638,18 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
       storage_type storage() { return Buf.ptr(); }
       const_storage_type storage() const { return Buf.cptr(); }
 
+      row_type& row(int r)
+      {
+	 DEBUG_RANGE_CHECK(r, 0, Size);
+	 return row_type(r, Buf[r]);
+      }
+
+      row_type const& row(int r) const
+      {
+	 DEBUG_RANGE_CHECK(r, 0, Size);
+	 return row_type(r, Buf[r]);
+      }
+
       reference operator()(int i, int ii)
       {
          CHECK_EQUAL(i, ii);
@@ -336,14 +714,14 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
 
       static DiagonalMatrix make_identity(int Size);
 
-      iterator begin() { return Buf.ptr(); }
-      iterator end() { return Buf.ptr() + Size; }
+      iterator begin() noexcept { return iterator(0, Buf.ptr()); }
+      iterator end() noexcept { return iterator(Size, Buf.ptr() + Size); }
 
-      const_iterator begin() const { return Buf.cptr(); }
-      const_iterator end() const { return Buf.cptr() + Size; }
+      const_iterator begin() const noexcept { return const_iterator(0, Buf.ptr()); }
+      const_iterator end() const noexcept { return const_iterator(Size, Buf.ptr() + Size); }
 
-      const_iterator cbegin() const { return Buf.cptr(); }
-      const_iterator cend() const { return Buf.cptr() + Size; }
+      const_iterator cbegin() const noexcept { return const_iterator(0, Buf.ptr()); }
+      const_iterator cend() const noexcept { return const_iterator(Size, Buf.ptr() + Size); }
 
    private:
       int Size;

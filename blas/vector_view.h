@@ -75,6 +75,8 @@ class normal_vector_view : public NormalVectorProxy<T, normal_vector_view<T, Tag
 	 return std::move(*this);
       }
 
+      // TODO: move assignment from a Vector
+
       template <typename U>
       normal_vector_view&& operator+=(blas::VectorRef<T, U, Tag> const& E) &&
       {
@@ -257,6 +259,66 @@ class const_vector_view : public blas::BlasVector<T,vector_view<T, Tag>, Tag>
       int Stride;
       const_storage_type Ptr;
 };
+
+#if defined(USE_PSTREAM)
+
+template <typename T, int Format>
+PStream::opstreambuf<Format>&
+operator<<(PStream::opstreambuf<Format>& out, normal_vector_view<T, cpu_tag> const& x)
+{
+   typedef typename PStream::opstreambuf<Format>::size_type st;
+   st s = x.size();
+   out << s;
+   for (auto const& i : x)
+   {
+      out << i;
+   }
+   return out;
+}
+
+template <typename T, int Format>
+PStream::opstreambuf<Format>&
+operator<<(PStream::opstreambuf<Format>& out, const_normal_vector_view<T, cpu_tag> const& x)
+{
+   typedef typename PStream::opstreambuf<Format>::size_type st;
+   st s = x.size();
+   out << s;
+   for (auto const& i : x)
+   {
+      out << i;
+   }
+   return out;
+}
+
+template <typename T, int Format>
+PStream::opstreambuf<Format>&
+operator<<(PStream::opstreambuf<Format>& out, vector_view<T, cpu_tag> const& x)
+{
+   typedef typename PStream::opstreambuf<Format>::size_type st;
+   st s = x.size();
+   out << s;
+   for (auto const& i : x)
+   {
+      out << i;
+   }
+   return out;
+}
+
+template <typename T, int Format>
+PStream::opstreambuf<Format>&
+operator<<(PStream::opstreambuf<Format>& out, const_vector_view<T, cpu_tag> const& x)
+{
+   typedef typename PStream::opstreambuf<Format>::size_type st;
+   st s = x.size();
+   out << s;
+   for (auto const& i : x)
+   {
+      out << i;
+   }
+   return out;
+}
+
+#endif
 
 } // namespace blas
 

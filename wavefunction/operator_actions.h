@@ -262,7 +262,7 @@ struct LeftMultiplyOperator
    {
       DEBUG_CHECK_EQUAL(x.Basis1(), Psi1.Basis1());
       DEBUG_CHECK_EQUAL(x.Basis2(), Psi2.Basis1());
-      StateComponent R = x;
+      StateComponent R = copy(x);
       LinearWavefunction::const_iterator I1 = Psi1.begin();
       LinearWavefunction::const_iterator I2 = Psi2.begin();
       ProductMPO::const_iterator OpIter = StringOp.begin();
@@ -346,7 +346,7 @@ struct RightMultiplyOperator
    {
       DEBUG_CHECK_EQUAL(x.Basis1(), Psi1.Basis1());
       DEBUG_CHECK_EQUAL(x.Basis2(), Psi2.Basis1());
-      StateComponent R = x;
+      StateComponent R = copy(x);
       LinearWavefunction::const_iterator I1 = Psi1.end();
       LinearWavefunction::const_iterator I2 = Psi2.end();
       ProductMPO::const_iterator OpIter = StringOp.end();

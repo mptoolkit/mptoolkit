@@ -305,6 +305,9 @@ class IrredTensor
          Data_.subtract(r, c, std::move(value));
       }
 
+      int rows() const { return Basis1_.size(); }
+      int cols() const { return Basis2_.size(); }
+
       int size1() const { return Basis1_.size(); }
       int size2() const { return Basis2_.size(); }
 

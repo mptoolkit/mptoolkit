@@ -95,12 +95,13 @@ using RealMatrixOperator   = IrredTensor<RealMatrix,
                                          VectorBasis>;
 
 template <typename T>
-using DiagonalOperator_t = IrredTensor<DiagonalMatrix_t<T>, VectorBasis, VectorBasis>;
+using DiagonalOperator_t = IrredTensor<DiagonalMatrix_t<T>, VectorBasis, VectorBasis, 
+				       Tensor::DiagonalStructure>;
 
 using RealDiagonalOperator = IrredTensor<RealDiagonalMatrix,
                                          VectorBasis,
-                                         VectorBasis>;//,
-//                                         Tensor::DiagonalStructure>;
+                                         VectorBasis,
+                                         Tensor::DiagonalStructure>;
 
 template <typename T>
 using SimpleRedOperator_t =  ReducibleTensor<T, BasisList, BasisList>;

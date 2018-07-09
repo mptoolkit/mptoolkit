@@ -90,9 +90,9 @@ operator<<(PStream::opstreambuf<Format>& out, Vector<T, cpu_tag> const& x)
    return out;
 }
 
-template <typename T, typename U, typename Tag, int Format>
+template <typename T, typename Tag, int Format>
 PStream::opstreambuf<Format>&
-operator<<(PStream::opstreambuf<Format>& out, VectorRef<T, U, Tag> const& x)
+operator<<(PStream::opstreambuf<Format>& out, Vector<T, Tag> const& x)
 {
    Vector<T, cpu_tag> y = get_wait(x);
    out << y;

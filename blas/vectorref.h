@@ -22,6 +22,7 @@
 
 #include "safe-conversions.h"
 #include "number_traits.h"
+#include "stride_ptr.h"
 
 namespace blas
 {
@@ -135,6 +136,42 @@ class BlasVector : public VectorRef<ValueType, DerivedType, Tag>
       const_storage_type storage() const & { return this->as_derived().storage(); }
 };
 
+template <typename T, typename U>
+stride_ptr<T> begin(BlasVector<T,U,cpu_tag>& v)
+{
+   return stride_ptr<T>(v.storage(), v.stride());
+}
+
+template <typename T, typename U>
+stride_ptr<T const> begin(BlasVector<T,U,cpu_tag> const& v)
+{
+   return stride_ptr<T const>(v.storage(), v.stride());
+}
+
+template <typename T, typename U>
+stride_ptr<T const> cbegin(BlasVector<T,U,cpu_tag> const& v)
+{
+   return stride_ptr<T const>(v.storage(), v.stride());
+}
+
+template <typename T, typename U>
+stride_ptr<T> end(BlasVector<T,U,cpu_tag>& v)
+{
+   return stride_ptr<T>(v.storage()+v.stride()*v.size(), v.stride());
+}
+
+template <typename T, typename U>
+stride_ptr<T const> end(BlasVector<T,U,cpu_tag> const& v)
+{
+   return stride_ptr<T const>(v.storage()+v.stride()*v.size(), v.stride());
+}
+
+template <typename T, typename U>
+stride_ptr<T const> cend(BlasVector<T,U,cpu_tag> const& v)
+{
+   return stride_ptr<T const>(v.storage()+v.stride()*v.size(), v.stride());
+}
+
 // Specialization of BlasVector that can act as an rvalue-reference, ie
 // a temporary proxy that can appear on the left-hand side of an expression.
 template <typename ValueType, typename DerivedType, typename Tag>
@@ -167,6 +204,19 @@ void assign(BlasVectorProxy<T, U, Tag>&& A, VectorRef<T, V, Tag> const& B)
    vector_copy(B.as_derived(), static_cast<U&&>(A.as_derived()));
 }
 
+
+template <typename T, typename U>
+stride_ptr<T> begin(BlasVector<T,U,cpu_tag>&& v)
+{
+   return stride_ptr<T>(std::move(v).storage(), v.stride());
+}
+
+template <typename T, typename U>
+stride_ptr<T> end(BlasVector<T,U,cpu_tag>&& v)
+{
+   return stride_ptr<T>(std::move(v).storage()+v.stride()*v.size(), v.stride());
+}
+
 // Specialization of a BlasVector for a vector that exists in memory and has stride 1
 
 template <typename ValueType, typename DerivedType, typename Tag>
@@ -189,6 +239,42 @@ class NormalVector : public BlasVector<ValueType, DerivedType, Tag>
       storage_type storage() & { return this->as_derived().storage(); }
       const_storage_type storage() const & { return this->as_derived().storage(); }
 };
+
+template <typename T, typename U>
+T* begin(NormalVector<T,U,cpu_tag>& v)
+{
+   return v.storage();
+}
+
+template <typename T, typename U>
+T const* begin(NormalVector<T,U,cpu_tag> const& v)
+{
+   return v.storage();
+}
+
+template <typename T, typename U>
+T const* cbegin(NormalVector<T,U,cpu_tag> const& v)
+{
+   return v.storage();
+}
+
+template <typename T, typename U>
+T* end(NormalVector<T,U,cpu_tag>& v)
+{
+   return v.storage()+v.size();
+}
+
+template <typename T, typename U>
+T const* end(NormalVector<T,U,cpu_tag> const& v)
+{
+   return v.storage()+v.size();
+}
+
+template <typename T, typename U>
+T const* cend(NormalVector<T,U,cpu_tag> const& v)
+{
+   return v.storage()+v.size();
+}
 
 // Specialization of BlasVectorProxy that can act as an rvalue-reference, ie
 // a temporary proxy that can appear on the left-hand side of an expression.
@@ -213,6 +299,53 @@ class NormalVectorProxy : public BlasVectorProxy<ValueType, DerivedType, Tag>
       const_storage_type storage() const& { return this->as_derived().storage(); }
 };
 
+template <typename T, typename U>
+T* begin(NormalVectorProxy<T,U,cpu_tag>&& v)
+{
+   return std::move(v).storage();
+}
+
+template <typename T, typename U>
+T* begin(NormalVectorProxy<T,U,cpu_tag>& v)
+{
+   return std::move(v).storage();
+}
+
+template <typename T, typename U>
+T const* begin(NormalVectorProxy<T,U,cpu_tag> const& v)
+{
+   return v.storage();
+}
+
+template <typename T, typename U>
+T const* cbegin(NormalVectorProxy<T,U,cpu_tag> const& v)
+{
+   return v.storage();
+}
+
+template <typename T, typename U>
+T* end(NormalVectorProxy<T,U,cpu_tag>&& v)
+{
+   return std::move(v).storage()+v.size();
+}
+
+template <typename T, typename U>
+T* end(NormalVectorProxy<T,U,cpu_tag>& v)
+{
+   return std::move(v).storage()+v.size();
+}
+
+template <typename T, typename U>
+T const* end(NormalVectorProxy<T,U,cpu_tag> const& v)
+{
+   return v.storage()+v.size();
+}
+
+template <typename T, typename U>
+T const* cend(NormalVectorProxy<T,U,cpu_tag> const& v)
+{
+   return v.storage()+v.size();
+}
 
 // proxy class for the complex conjugate of a vector
 

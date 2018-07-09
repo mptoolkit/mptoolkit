@@ -22,6 +22,12 @@
 #if !defined(MPTOOLKIT_BLAS_MATRIX_BLAS_H)
 #define MPTOOLKIT_BLAS_MATRIX_BLAS_H
 
+// generic template versions
+
+#include "matrix-blas-generic.h"
+
+// optimized versions for float/double/complex
+
 // determine which BLAS library we use
 #if defined(HAVE_OPENBLAS)
 // openblas

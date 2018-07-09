@@ -98,7 +98,7 @@ struct RightMultiply
 
    result_type operator()(argument_type const& x) const
    {
-      result_type r = x;
+      result_type r = copy(x);
       int s = R.size();
       LinearWavefunction::const_iterator I = R.end();
       while (I != R.begin())
@@ -154,7 +154,7 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    // initialize LeftEigen to a guess eigenvector.  Since L satisfies the left orthogonality
    // constraint (except for the final matrix), we can do one iteration beyond the identity
    // and intialize it to herm(Xu) * Xu
-   MatrixOperator LeftEigen = Guess;
+   MatrixOperator LeftEigen = std::move(Guess);
 
    if (Verbose > 0)
       std::cout << "Obtaining left orthogonality eigenvector..." << std::endl;
@@ -198,10 +198,14 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    //   MatrixOperator A = CholeskyFactorizeUpper(LeftEigen);
    //   MatrixOperator B = CholeskyFactorizeUpper(RightEigen);
 
-   MatrixOperator D = LeftEigen;
-   MatrixOperator U = DiagonalizeHermitian(D);
-   D = SqrtDiagonal(D, OrthoTol);
-   MatrixOperator DInv = InvertDiagonal(D, OrthoTol);
+   MatrixOperator U = copy(LeftEigen);
+   RealDiagonalOperator D = DiagonalizeHermitian(U);
+   //   DiagonalizeHermitian(U, D);
+
+   //MatrixOperator D = copy(LeftEigen);
+   //MatrixOperator U = DiagonalizeHermitian(D);
+   D = SqrtDiagonal(std::move(D), OrthoTol);
+   RealDiagonalOperator DInv = InvertDiagonal(copy(D), OrthoTol);
 
    // At this point, any matrix elements in D that are smaller than OrthoTol can be removed
    // from the basis, because they have negligible weight in the wavefunction.
