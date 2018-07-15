@@ -106,6 +106,14 @@ struct cpu_tag
 
    template <typename T>
    static
+   inline
+   T allocate_async_ref()
+   {
+      return T();  // no initialization
+   }
+
+   template <typename T>
+   static
    arena default_arena() { return get_malloc_arena(); }
 
    template <typename T>

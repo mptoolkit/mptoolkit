@@ -26,8 +26,6 @@
 #define MPTOOLKIT_MPS_PACKUNPACK_H
 
 #include "state_component.h"  // for MatrixOperator definition
-#include "linearalgebra/vector.h"
-#include "linearalgebra/matrix.h"
 #include <complex>
 
 class PackMatrixOperator
@@ -69,7 +67,7 @@ class PackMatrixOperator
       QuantumNumbers::QuantumNumber q_;
       int Size_;  // linear size
       std::vector<OffsetRecType> OffsetArray_;   // array of blocks
-      LinearAlgebra::Matrix<int> OffsetMatrix_;  // offset of each valid block
+      blas::Matrix<int> OffsetMatrix_;  // offset of each valid block
 };
 
 class PackStateComponent
@@ -110,7 +108,7 @@ class PackStateComponent
       VectorBasis B1_, B2_;
       int Size_;  // linear size
       std::vector<OffsetRecType> OffsetArray_;   // array of blocks
-      typedef std::vector<LinearAlgebra::Matrix<int>> OffsetMatrixType;
+      typedef std::vector<blas::Matrix<int>> OffsetMatrixType;
       OffsetMatrixType OffsetMatrix_;  // offset of each valid block
 };
 
@@ -192,11 +190,11 @@ struct ApplyToPackedStateComponent
 // construct the full matrix representation of some superoperator
 // given by the functor F : MatrixOperator -> MatrixOperator
 template <typename F>
-LinearAlgebra::Matrix<std::complex<double> >
+blas::Matrix<std::complex<double> >
 ConstructSuperOperator(F f, MatrixOperator const& Init);
 
 template <typename F>
-LinearAlgebra::Matrix<std::complex<double> >
+blas::Matrix<std::complex<double> >
 ConstructSuperOperator(F f, MatrixOperator const& Init)
 {
    PackMatrixOperator Pack(Init);
@@ -205,7 +203,7 @@ ConstructSuperOperator(F f, MatrixOperator const& Init)
 
    TRACE(Size)(Size*Size);
 
-   LinearAlgebra::Matrix<std::complex<double> > Out(Size, Size);
+   blas::Matrix<std::complex<double> > Out(Size, Size);
 
    std::vector<std::complex<double> > L(Size), R(Size);
    for (unsigned i = 0; i < Size; ++i)
@@ -230,18 +228,18 @@ ConstructSuperOperator(F f, MatrixOperator const& Init)
 // construct the full matrix representation of some superoperator
 // given by the functor F : StateComponent -> StateComponent
 template <typename F>
-LinearAlgebra::Matrix<std::complex<double> >
+blas::Matrix<std::complex<double> >
 ConstructSuperOperator(F f, StateComponent const& Init);
 
 template <typename F>
-LinearAlgebra::Matrix<std::complex<double> >
+blas::Matrix<std::complex<double> >
 ConstructSuperOperator(F f, StateComponent const& Init)
 {
    PackStateComponent Pack(Init);
 
    std::size_t Size = Pack.size();
 
-   LinearAlgebra::Matrix<std::complex<double> > Out(Size, Size);
+   blas::Matrix<std::complex<double> > Out(Size, Size);
 
    std::vector<std::complex<double> > L(Size), R(Size);
    for (unsigned i = 0; i < Size; ++i)
@@ -265,14 +263,14 @@ ConstructSuperOperator(F f, StateComponent const& Init)
 
 
 template <typename F>
-LinearAlgebra::SparseMatrix<std::complex<double> >
+blas::SparseMatrix<std::complex<double> >
 ConstructSuperOperatorSparse(F f, MatrixOperator const& Init)
 {
    PackMatrixOperator Pack(Init);
 
    std::size_t Size = Pack.size();
 
-   LinearAlgebra::SparseMatrix<std::complex<double> > Out(Size, Size);
+   blas::SparseMatrix<std::complex<double> > Out(Size, Size);
 
    std::vector<std::complex<double> > L(Size), R(Size);
    for (unsigned i = 0; i < Size; ++i)

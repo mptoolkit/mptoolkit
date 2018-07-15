@@ -36,7 +36,7 @@
 namespace blas
 {
 
-template <typename T, typename Tag = cpu_tag>
+template <typename T, typename Tag>
 class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
 {
    public:
@@ -113,6 +113,13 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
       DiagonalMatrix& operator-=(DiagonalMatrixRef<T, U, tag_type> const& E)
       {
 	 subtract(this->diagonal(), E.as_derived().diagonal());
+	 return *this;
+      }
+
+      template <typename U>
+      DiagonalMatrix& operator*=(U const& x)
+      {
+	 scale(this->diagonal(), x);
 	 return *this;
       }
 
@@ -350,7 +357,7 @@ class DiagonalMatrixRowRef
       const_iterator begin() const noexcept { return const_iterator(Row, &value); }
       const_iterator cbegin() const noexcept { return const_iterator(Row, &value); }
 
-      iterator end() noexcept { return iterator(Row+1, value+1); }
+      iterator end() noexcept { return iterator(Row+1, &value+1); }
       const_iterator end() const noexcept { return const_iterator(Row+1, &value+1); }
       const_iterator cend() const noexcept { return const_iterator(Row+1, &value+1); }
 
@@ -534,17 +541,18 @@ template <typename T>
 class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T, cpu_tag>, cpu_tag>
 {
    public:
-      using value_type         = T;
-      using tag_type           = cpu_tag;
-      using buffer_type        = typename tag_type::template buffer_type<T>;
-      using storage_type       = typename buffer_type::storage_type;
-      using const_storage_type = typename buffer_type::const_storage_type;
-      using reference          = typename buffer_type::reference;
-      using const_reference    = typename buffer_type::const_reference;
+      using value_type          = T;
+      using tag_type            = cpu_tag;
+      using buffer_type         = typename tag_type::template buffer_type<T>;
+      using storage_type        = typename buffer_type::storage_type;
+      using const_storage_type  = typename buffer_type::const_storage_type;
+      using reference           = typename buffer_type::reference;
+      using const_reference     = typename buffer_type::const_reference;
 
-      using row_type           = DiagonalMatrixRowRef<T>;
-      using iterator           = DiagonalMatrixRowIterator<T>;
-      using const_iterator     = ConstDiagonalMatrixRowIterator<T>;
+      using row_reference       = DiagonalMatrixRowRef<T>;
+      using const_row_reference = DiagonalMatrixRowRef<T const>;
+      using iterator            = DiagonalMatrixRowIterator<T>;
+      using const_iterator      = ConstDiagonalMatrixRowIterator<T>;
 
       DiagonalMatrix() noexcept
       : Size(0) {}
@@ -614,6 +622,13 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
 	 return *this;
       }
 
+      template <typename U>
+      DiagonalMatrix& operator*=(U const& x)
+      {
+	 scale(*this, x);
+	 return *this;
+      }
+
       normal_vector_view<T, tag_type>
       diagonal()
       {
@@ -638,16 +653,16 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
       storage_type storage() { return Buf.ptr(); }
       const_storage_type storage() const { return Buf.cptr(); }
 
-      row_type& row(int r)
+      row_reference row(int r)
       {
 	 DEBUG_RANGE_CHECK(r, 0, Size);
 	 return row_type(r, Buf[r]);
       }
 
-      row_type const& row(int r) const
+      const_row_reference row(int r) const
       {
 	 DEBUG_RANGE_CHECK(r, 0, Size);
-	 return row_type(r, Buf[r]);
+	 return const_row_type(r, Buf[r]);
       }
 
       reference operator()(int i, int ii)
@@ -737,6 +752,69 @@ copy(DiagonalMatrix<T, Tag> const& x)
    return Result;
 }
 
+// conj
+
+template <typename T>
+inline
+void
+inplace_conj(DiagonalMatrix<T>& x)
+{
+   for (auto& r : x)
+   {
+      for (auto&& c : r)
+      {
+	 inplace_conj(c.value);
+      }
+   }
+}
+
+template <typename T>
+inline
+DiagonalMatrix<T>
+conj(DiagonalMatrix<T> const& x)
+{
+   using std::conj;
+   DiagonalMatrix<T> Result(x.rows(), x.cols());
+   Result.diagonal() = conj(x.diagonal());
+   return Result;
+}
+
+template <typename T>
+inline
+DiagonalMatrix<T>
+conj(DiagonalMatrix<T>&& x)
+{
+   inplace_conj(x);
+   return std::move(x);
+}
+
+template <typename T, typename U, typename Tag>
+inline
+void
+norm_frob_sq(blas::DiagonalBlasMatrix<T, U, Tag> const& x,
+	     typename Tag::template async_ref<decltype(norm_frob(std::declval<T>()))>& z)
+{
+   // TODO: DiagonalBlasMatrix should implement its own diagonal() function
+   norm_frob_sq(x.as_derived().diagonal(), z);
+}
+
+template <typename T, typename U, typename Tag>
+//decltype(norm_frob_sq(std::declval<T>()))
+auto norm_frob_sq(blas::DiagonalBlasMatrix<T, U, Tag> const& x)
+{
+   using blas::norm_frob_sq;
+   typename Tag::template async_ref<decltype(norm_frob_sq(std::declval<T>()))> z;
+   norm_frob_sq(x, z);
+   return get_wait(z);
+}
+
+template <typename T, typename U, typename Tag>
+auto norm_frob(blas::DiagonalBlasMatrix<T, U, Tag> const& x)
+{
+   using std::sqrt;
+   return sqrt(norm_frob_sq(x));
+}
+
 template <typename T, typename Tag>
 inline
 DiagonalMatrix<T, Tag>
@@ -744,6 +822,14 @@ DiagonalMatrix<T, Tag>::make_identity(int Size)
 {
    DiagonalMatrix<T, Tag> Result(Size, Size, blas::number_traits<T>::identity());
    return Result;
+}
+
+template <typename T, typename U, typename Tag, typename V>
+inline
+void scale(DiagonalBlasMatrix<T, U, Tag>& M, V const& Factor)
+{
+   // TODO: DiagonalBlasMatrix should have its own diagonal() function
+   scale(M.as_derived().diagonal(), Factor);
 }
 
 // numeric_type_of specialization

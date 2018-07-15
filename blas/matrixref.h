@@ -54,6 +54,9 @@ class VectorRef;
 template <typename T, typename Tag = cpu_tag>
 class Matrix;
 
+template <typename T, typename Tag = cpu_tag>
+class DiagonalMatrix;
+
 template <typename ValueType, typename DerivedType, typename Tag>
 class MatrixRef
 {
@@ -89,6 +92,7 @@ class DiagonalMatrixRef : public MatrixRef<ValueType, DerivedType, Tag>
       using value_type     = ValueType;
       using derived_type   = DerivedType;
       using tag_type       = Tag;
+      using remove_proxy_t = DiagonalMatrix<ValueType, Tag>;
 };
 
 // Specialization of a MatrixRef for a matrix that can be directly used in BLAS-like calls,
@@ -706,22 +710,26 @@ void subtract(MatrixRef<T, U, Tag>& A, NegatedMatrix<T, V, Tag> const& B)
 
 // expression template for alpha * op(A) * op(B)
 
-template <typename T, typename U, typename V, typename Tag>
-struct MatrixProduct : public MatrixRef<T, MatrixProduct<T, U, V, Tag>, Tag>
+template <typename T, typename U, typename D1, typename D2, typename Tag>
+struct MatrixProduct : public MatrixRef<remove_proxy_t<decltype(std::declval<T>()*std::declval<U>())>, 
+					MatrixProduct<T, U, D1, D2, Tag>, Tag>
 {
-   MatrixProduct(MatrixRef<T, U, Tag> const& A_, MatrixRef<T, V, Tag> const& B_)
-      : Factor(number_traits<T>::identity()), A(A_.as_derived()), B(B_.as_derived()) {}
+   using value_type = remove_proxy_t<decltype(std::declval<T>()*std::declval<U>())>;
 
-   MatrixProduct(T const& Factor_, MatrixRef<T, U, Tag> const& A_, MatrixRef<T, V, Tag> const& B_)
+   MatrixProduct(MatrixRef<T, D1, Tag> const& A_, MatrixRef<U, D2, Tag> const& B_)
+      : Factor(number_traits<value_type>::identity()), A(A_.as_derived()), B(B_.as_derived()) {}
+
+   MatrixProduct(value_type const& Factor_, MatrixRef<T, D1, Tag> const& A_, 
+		 MatrixRef<U, D2, Tag> const& B_)
       : Factor(Factor_), A(A_.as_derived()), B(B_.as_derived()) {}
 
    int rows() const { return A.rows(); }
    int cols() const { return B.cols(); }
-   T factor() const { return Factor; }
+   value_type factor() const { return Factor; }
 
-   T Factor;
-   U const& A;
-   V const& B;
+   value_type Factor;
+   D1 const& A;
+   D2 const& B;
 };
 
 #if 0
@@ -735,41 +743,79 @@ evaluate(MatrixProduct<T, U, V, Tag>&& x)
 }
 #endif
 
-template <typename T, typename U, typename V, typename Tag>
+template <typename T, typename U, typename D1, typename D2, typename Tag>
 inline
-MatrixProduct<T, U, V, Tag>
-operator*(MatrixRef<T, U, Tag> const& A, MatrixRef<T, V, Tag> const& B)
+MatrixProduct<T, U, D1, D2, Tag>
+operator*(MatrixRef<T, D1, Tag> const& A, MatrixRef<U, D2, Tag> const& B)
 {
-   return MatrixProduct<T, U, V, Tag>(A.as_derived(), B.as_derived());
+   return MatrixProduct<T, U, D1, D2, Tag>(A.as_derived(), B.as_derived());
 }
 
-template <typename T, typename U, typename V, typename Tag>
+template <typename T, typename U, typename D1, typename D2, typename Tag>
 inline
-MatrixProduct<T, U, V, Tag>
-operator*(ScaledMatrix<T, U, Tag> const& A, MatrixRef<T, V, Tag> const& B)
+MatrixProduct<T, U, D1, D2, Tag>
+operator*(ScaledMatrix<T, D1, Tag> const& A, MatrixRef<U, D2, Tag> const& B)
 {
-   return MatrixProduct<T, U, V, Tag>(A.factor(), A.base(), B.as_derived());
+   return MatrixProduct<T, U, D1, D2, Tag>(A.factor(), A.base(), B.as_derived());
 }
+
+// operator* involving a DiagonalMatrix and a Matrix
+
+template <typename T, typename U, typename D1, typename D2, typename Tag>
+inline
+MatrixProduct<T, U, D1, D2, Tag>
+operator*(MatrixRef<T, D1, Tag> const& A, DiagonalMatrixRef<U, D2, Tag> const& B)
+{
+   return MatrixProduct<T, U, D1, D2, Tag>(A.as_derived(), B.as_derived());
+}
+
+template <typename T, typename U, typename D1, typename D2, typename Tag>
+inline
+MatrixProduct<T, U, D1, D2, Tag>
+operator*(DiagonalMatrixRef<T, D1, Tag> const& A, MatrixRef<U, D2, Tag> const& B)
+{
+   return MatrixProduct<T, U, D1, D2, Tag>(A.as_derived(), B.as_derived());
+}
+
+
+template <typename T, typename U, typename D1, typename D2, typename Tag>
+inline
+MatrixProduct<T, U, D1, D2, Tag>
+operator*(ScaledMatrix<T, D1, Tag> const& A, DiagonalMatrixRef<U, D2, Tag> const& B)
+{
+   return MatrixProduct<T, U, D1, D2, Tag>(A.factor(), A.base(), B.as_derived());
+}
+
+#if 0
+// TODO: need a DiagonalMatrixProduct class
+template <typename T, typename U, typename D1, typename D2, typename Tag>
+inline
+MatrixProduct<T, U, D1, D2, Tag>
+operator*(DiagonalMatrixRef<T, D1, Tag> const& A, DiagonalMatrixRef<U, D2, Tag> const& B)
+{
+   return MatrixProduct<T, U, D1, D2, Tag>(A.as_derived(), B.as_derived());
+}
+#endif
 
 // matrix product with a scalar, alpha * A * B
 
-template <typename T, typename Derived, typename U, typename V, typename Tag>
+template <typename T, typename Derived, typename U, typename V, typename D1, typename D2, typename Tag>
 inline
-void assign(MatrixRef<T, Derived, Tag>& C, MatrixProduct<T, U, V, Tag> const& a)
+void assign(MatrixRef<T, Derived, Tag>& C, MatrixProduct<U, V, D1, D2, Tag> const& a)
 {
    gemm(a.Factor, a.A, number_traits<T>::zero(), a.B, C.as_derived());
 }
 
-template <typename T, typename Derived, typename U, typename V, typename Tag>
+template <typename T, typename Derived, typename U, typename V, typename D1, typename D2, typename Tag>
 inline
-void add(MatrixRef<T, Derived, Tag>& C, MatrixProduct<T, U, V, Tag> const& a)
+void add(MatrixRef<T, Derived, Tag>& C, MatrixProduct<U, V, D1, D2, Tag> const& a)
 {
    gemm(a.Factor, a.A, number_traits<T>::identity(), a.B, C.as_derived());
 }
 
-template <typename T, typename Derived, typename U, typename V, typename Tag>
+template <typename T, typename Derived, typename U, typename V, typename D1, typename D2, typename Tag>
 inline
-void subtract(MatrixRef<T, Derived, Tag>& C, MatrixProduct<T, U, V, Tag> const& a)
+void subtract(MatrixRef<T, Derived, Tag>& C, MatrixProduct<U, V, D1, D2, Tag> const& a)
 {
    gemm(-a.Factor, a.A, number_traits<T>::zero(), a.B, C.as_derived());
 }
@@ -812,7 +858,7 @@ trace(BlasMatrix<T, U, Tag> const& x)
 //
 
 template <typename ValueType, typename DerivedType, typename Tag>
-class DiagonalBlasMatrix : DiagonalMatrixRef<ValueType, DerivedType, Tag>
+class DiagonalBlasMatrix : public DiagonalMatrixRef<ValueType, DerivedType, Tag>
 {
    public:
       using value_type     = ValueType;
@@ -1045,9 +1091,24 @@ template <typename T, typename U, typename Tag>
 std::remove_reference_t<typename Tag::template async_ref<T>>
 sum(blas::BlasVector<T, U, Tag> const& x)
 {
-   std::remove_reference_t<typename Tag::template async_ref<T>> y{};
+   //   std::remove_reference_t<typename Tag::template async_ref<T>> y{};
+   auto y = Tag::template allocate_async_ref<T>();
    vector_sum(x.size(), x.storage(), x.stride(), y);
    return y;
+}
+
+template <typename T, typename U, typename Tag>
+void
+norm_frob_sq(blas::BlasVector<T, U, Tag> const& x, typename Tag::template async_proxy<T>&& y)
+{
+   vector_norm_frob_sq(x.size(), x.storage(), x.stride(), std::move(y));
+}
+
+template <typename T, typename U, typename Tag>
+void
+norm_frob_sq(blas::BlasVector<T, U, Tag> const& x, typename Tag::template async_ref<T>& y)
+{
+   vector_norm_frob_sq(x.size(), x.storage(), x.stride(), y);
 }
 
 #if 0
@@ -1101,19 +1162,18 @@ inner_prod_nested(blas::BlasVector<T, U, Tag> const& x,
 			    std::forward<Nested>(Nest));
 }
 
-#if 0
 template <typename T, typename U, typename V, typename Tag, typename Nested>
 inline
-typename Tag::template async_ref<T>
-inner_prod(blas::BlasVector<T, U, Tag> const& x,
-	   blas::BlasVector<T, V, Tag> const& y,
-	   Nested&& Nest)
+auto
+inner_prod_nested(blas::BlasVector<T, U, Tag> const& x,
+		  blas::BlasVector<T, V, Tag> const& y,
+		  Nested&& Nest)
 {
-   typename Tag::template async_ref<T> z;
+   using result_value = remove_proxy_t<decltype(Nested(std::declval<T>(),std::declval<T>()))>;
+   auto z = Tag::template allocate_async_ref<result_value>();
    vector_inner_prod(x,y,z, std::forward<Nested>(Nest));
    return z;
 }
-#endif
 
 #if 0
 template <typename T, typename U, typename V, typename Tag>
@@ -1296,6 +1356,14 @@ inner_prod_nested(blas::BlasMatrix<T, U, Tag> const& x,
 
 template <typename T, typename U, typename V, typename Tag, typename Nested>
 inline
+typename Tag::template async_ref<T>
+inner_prod_nested(blas::BlasMatrix<T, U, Tag> const& x,
+		  blas::BlasMatrix<T, V, Tag> const& y,
+		  Nested&& Nest);
+// not implemented, but used for return-type deduction
+
+template <typename T, typename U, typename V, typename Tag, typename Nested>
+inline
 void
 add_inner_prod_nested(blas::BlasMatrix<T, U, Tag> const& x,
 		      blas::BlasMatrix<T, V, Tag> const& y,
@@ -1376,6 +1444,66 @@ void gemm(T alpha, BlasMatrix<T, U, Tag> const& A,
    gemm(A.trans(), B.trans(), A.rows(), A.cols(), B.cols(), alpha, A.storage(),
         A.leading_dimension(), B.storage(), B.leading_dimension(), beta,
         std::move(C).storage(), C.leading_dimension());
+}
+
+// gemm for DiagonalMatrix * Matrix
+
+template <typename T, typename U, typename V, typename W, typename Tag>
+inline
+void gemm(T alpha, DiagonalBlasMatrix<T, U, Tag> const& A,
+          T beta, BlasMatrix<T, V, Tag> const& B,
+          NormalMatrix<T, W, Tag>& C)
+{
+   DEBUG_CHECK_EQUAL(A.cols(), B.rows());
+   DEBUG_CHECK_EQUAL(A.rows(), C.rows());
+   DEBUG_CHECK_EQUAL(B.cols(), C.cols());
+   dgmm_left(B.trans(), A.cols(), B.cols(), alpha, A.storage(),
+	     A.stride(), B.storage(), B.leading_dimension(), beta,
+	     C.storage(), C.leading_dimension());
+}
+
+template <typename T, typename U, typename V, typename W, typename Tag>
+inline
+void gemm(T alpha, DiagonalBlasMatrix<T, U, Tag> const& A,
+          T beta, BlasMatrix<T, V, Tag> const& B,
+          NormalMatrixProxy<T, W, Tag>&& C)
+{
+   DEBUG_CHECK_EQUAL(A.cols(), B.rows());
+   DEBUG_CHECK_EQUAL(A.rows(), C.rows());
+   DEBUG_CHECK_EQUAL(B.cols(), C.cols());
+   dgmm_left(B.trans(), A.cols(), B.cols(), alpha, A.storage(),
+	     A.stride(), B.storage(), B.leading_dimension(), beta,
+	     std::move(C).storage(), C.leading_dimension());
+}
+
+// gemm for Matrix * DiagonalMatrix
+
+template <typename T, typename U, typename V, typename W, typename Tag>
+inline
+void gemm(T alpha, BlasMatrix<T, U, Tag> const& A,
+          T beta, DiagonalBlasMatrix<T, V, Tag> const& B,
+          NormalMatrix<T, W, Tag>& C)
+{
+   DEBUG_CHECK_EQUAL(A.cols(), B.rows());
+   DEBUG_CHECK_EQUAL(A.rows(), C.rows());
+   DEBUG_CHECK_EQUAL(B.cols(), C.cols());
+   dgmm_right(A.trans(), A.rows(), A.cols(), alpha, A.storage(),
+	      A.leading_dimension(), B.storage(), B.stride(), beta,
+	      C.storage(), C.leading_dimension());
+}
+
+template <typename T, typename U, typename V, typename W, typename Tag>
+inline
+void gemm(T alpha, BlasMatrix<T, U, Tag> const& A,
+          T beta, DiagonalBlasMatrix<T, V, Tag> const& B,
+          NormalMatrixProxy<T, W, Tag>&& C)
+{
+   DEBUG_CHECK_EQUAL(A.cols(), B.rows());
+   DEBUG_CHECK_EQUAL(A.rows(), C.rows());
+   DEBUG_CHECK_EQUAL(B.cols(), C.cols());
+   dgmm_right(A.trans(), A.rows(), A.cols(), alpha, A.storage(),
+	      A.leading_dimension(), B.storage(), B.stride(), beta,
+	      std::move(C).storage(), C.leading_dimension());
 }
 
 template <typename T, typename U, typename V, typename Tag>

@@ -88,12 +88,12 @@ struct InnerProdNested
    template <typename T, typename U, typename V, typename Nested>
    auto operator()(T const& x, U const& y, V&& Result, Nested&& Nest) const
    {
-      return inner_prod_nested(x,y,Result,std::forward<Nested>(Nest));
+      return inner_prod_nested(x,y,std::forward<V>(Result),std::forward<Nested>(Nest));
    }
    template <typename T, typename U, typename V, typename Nested>
    auto add(T const& x, U const& y, V&& Result, Nested&& Nest) const
    {
-      add_inner_prod_nested(x,y, Result, std::forward<Nested>(Nest));
+      add_inner_prod_nested(x,y, std::forward<V>(Result), std::forward<Nested>(Nest));
    }
 };
 
@@ -117,6 +117,42 @@ auto add_inner_prod(T const& x, U const& y, R&& Result)
 {
    return add_inner_prod_nested(x,y,std::forward<R>(Result), InnerProd());
 }
+
+#if 0
+// default version of innder_prod_nested delegates to the tagged version
+// ** THESE DON'T BELONG HERE
+template <typename T, typename U, typename V, typename Nested>
+inline
+auto inner_prod_nested(T const& x, U const& y, V&& Result, Nested&& Nest)
+{
+   return inner_prod_nested_tag(x, y, std::forward<V>(Result), std::forward<Nested>(Nest),
+				tag_of_t<remove_proxy_t<T>>());
+}
+
+template <typename T, typename U, typename V, typename Nested>
+inline
+auto add_inner_prod_nested(T const& x, U const& y, V&& Result, Nested&& Nest)
+{
+   return add_inner_prod_nested_tag(x, y, std::forward<V>(Result), std::forward<Nested>(Nest),
+				    tag_of_t<remove_proxy_t<T>>());
+}
+
+template <typename T, typename U, typename V, typename Nested>
+inline
+auto inner_prod_nested(T const& x, U const& y, Nested&& Nest)
+{
+   return inner_prod_nested_tag(x, y, std::forward<Nested>(Nest),
+				tag_of_t<remove_proxy_t<T>>());
+}
+
+template <typename T, typename U, typename V, typename Nested>
+inline
+auto add_inner_prod_nested(T const& x, U const& y, Nested&& Nest)
+{
+   return add_inner_prod_nested_tag(x, y, std::forward<Nested>(Nest),
+				    tag_of_t<remove_proxy_t<T>>());
+}
+#endif
 
 //
 // inner_prod for floating point and complex types

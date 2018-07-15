@@ -16,6 +16,7 @@ between these functions and the low-level BLAS library.
 // evaluate(A&&) // evaluates the expression and returns a concrete value (can be used for type deduction)
 // fill(A&, v)
 // scale(A&, v)
+// clear(A&)
 
 // The expression templates layer handles async_ref and async_proxy types as references
 // and r-value references respectively.  In both cases, they are forwarded to the middle-level
@@ -55,7 +56,7 @@ vector_scale(alpha, Vector& y)
 // for traits::async_ref<T>
 
 // y = sum x[i]
-vector_sum(BlasVector x, Ref& y)
+sum(BlasVector x, Ref& y)
 
 // y = alpha * (sum x[i])
 //vector_sum_scaled(alpha, BlasVector x, Ref& y)
@@ -68,6 +69,8 @@ add_inner_prod(BlasVector x, BlasVector y, Ref& z)
 
 // z = sum x[i] * y[i]
 vector_dot(BlasVector x, BlasVector y, Ref& z)
+
+norm_frob_sq(BlasVector x, Ref& z)
 
 vector_clear(Vector& y)
 
@@ -110,6 +113,10 @@ add_inner_prod(BlasMatrix x, BlasMatrix y, Ref& z)
 // T = float/double/complex<float>/complex<double> :
 
 void vector_sum(int N, T const* x, int incx, T& r)
+
+void vector_norm_frob_sq(int N, T const* x, int incx, T& r)
+
+void vector_norm_frob(int N, T const* x, int incx, T& r)
 
 void vector_inner_prod(int N, T const* x, int incx, T const* y, int incy, T& z)
 
@@ -155,3 +162,4 @@ void matrix_add_inner_prod(char Atrans, char Btrans, int M, int N, T const* A, i
 matrix_inner_prod_nested
 
 matrix_norm_frob_sq
+

@@ -55,6 +55,14 @@ struct gpu_tag
 
    template <typename T>
    static
+   inline
+   async_ref<T> allocate_async_ref()
+   {
+      return cuda::allocate_gpu_ref<T>();
+   }
+
+   template <typename T>
+   static
    blas::arena default_arena() { return gpu_default_arena; }
 
    template <typename T>

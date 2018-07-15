@@ -436,6 +436,8 @@ template <typename T>
 class gpu_ref
 {
    public:
+      using remove_proxy_t = T;
+
       gpu_ref(); // = delete;
 
       explicit gpu_ref(T* Ptr_, stream* ParentStream_ = nullptr)

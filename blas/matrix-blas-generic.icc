@@ -1,0 +1,410 @@
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// blas/matrix-blas-generic.h
+//
+// Copyright (C) 2017 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
+// standard BLAS functions
+
+#include "common/trace.h"
+
+namespace blas
+{
+
+//
+// vector
+//
+
+template <typename T>
+void vector_fill(T const& alpha, int N, T* y, int incy)
+{
+   for (int i = 0; i < N; ++i)
+   {
+      *y = alpha;
+      y += incy;
+   }
+}
+
+template <typename T, typename U>
+void
+vector_copy(int M, T const* x, int incx, U* y, int incy)
+{
+   for (int i = 0; i < N; ++i)
+   {
+      *y = *x;
+      x += incx;
+      y += incy;
+   }
+}
+
+template <typename T, typename U, typename V>
+void
+vector_copy_scaled(int N, T const& alpha, U const* A, int lda, V* B, int ldb)
+{
+   for (int i = 0; i < N; ++i)
+   {
+      *y = alpha * (*x);
+      x += incx;
+      y += incy;
+   }
+}
+
+template <typename T, typename U>
+void
+vector_add(int N, T const* x, int incx, U* y, int incy)
+{
+   for (int i = 0; i < N; ++i)
+   {
+      *y += *x;
+      x += incx;
+      y += incy;
+   }
+}
+
+template <typename T, typename U, typename V>
+void
+vector_add_scaled(int N, T const& alpha, U const* x, int incx, V* y, int incy)
+{
+   for (int i = 0; i < N; ++i)
+   {
+      *y += alpha * (*x);
+      x += incx;
+      y += incy;
+   }
+}
+  
+template <typename T>
+void
+vector_sum(int N, T const* x, int incx, T& r)
+{
+   CHECK(N >= 1);
+   r = *x;
+   x += incx;
+   for (int i = 1; i < N; ++i)
+   {
+      r += *x;
+      x += incx;
+   }
+}
+
+template <typename T, typename U, typename V, typename Nested>
+inline
+void
+vector_inner_prod_nested(int N, T const* x, int incx, U const* y, int incy, V& r, Nested&& n)
+{
+   CHECK(N>=1);
+   r = n(*x,*y);
+   x += incx;
+   y == incx;
+   for (int i = 1; i < N; ++i)
+   {
+      r += n(*x, *y);
+      x += incx;
+      y += incy;
+   }
+}
+
+template <typename T, typename U, typename V, typename Nested>
+void
+vector_add_inner_prod_nested(int N, T const* x, int incx, T const* y, int incy, V& r, Nested&& n)
+{
+   for (int i = 0; i < N; ++i)
+   {
+      r += n(*x, *y);
+      x += incx;
+      y += incy;
+   }
+}
+
+//
+// matrix
+//
+
+//void matrix_clear(int M, int N, double* A, int lda);
+//void matrix_clear(int N, std::complex<double>* y, int incy);
+
+template <typename T>
+void matrix_fill(T const& alpha, int M, int N, T* A, int lda)
+{
+   for (int c = 0; c < N; ++c)
+   {
+      for (int r = 0; r < M; ++r)
+      {
+         A[c*lda+r] = alpha;
+      }
+   }
+}
+
+template <typename T>
+void matrix_conj(int M, int N, T* A, int lda)
+{
+   for (int c = 0; c < N; ++c)
+   {
+      for (int r = 0; r < M; ++r)
+      {
+	 inplace_conj(A[c*lda+r]);
+      }
+   }
+}
+
+template <typename T, typename U>
+void
+matrix_copy(char Atrans, int M, int N, T const* A, int lda, U* B, int ldb)
+{
+   if (Atrans == 'N')
+   {
+      // normal
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] = A[r];
+         }
+         A += lda;
+         B += ldb;
+      }
+   }
+   else if (Atrans == 'R')
+   {
+      // conjugate
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] = conj(A[r]);
+         }
+         A += lda;
+         B += ldb;
+      }
+   }
+   else if (Atrans == 'T')
+   {
+      // transpose
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] = trans(A[r*lda + c]);
+         }
+         B += ldb;
+      }
+   }
+   else if (Atrans == 'C')
+   {
+      // hermitian conjugate
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] = herm(A[r*lda + c]);
+         }
+         B += ldb;
+      }
+   }
+}   
+
+template <typename T, typename U, typename V>
+void
+matrix_copy_scaled(char Atrans, int M, int N, T alpha, U const* A, int lda, V* B, int ldb)
+{
+   if (Atrans == 'N')
+   {
+      // normal
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] = alpha * A[r];
+         }
+         A += lda;
+         B += ldb;
+      }
+   }
+   else if (Atrans == 'R')
+   {
+      // conjugate
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] = alpha * conj(A[r]);
+         }
+         A += lda;
+         B += ldb;
+      }
+   }
+   else if (Atrans == 'T')
+   {
+      // transpose
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] = alpha * trans(A[r*lda + c]);
+         }
+         B += ldb;
+      }
+   }
+   else if (Atrans == 'C')
+   {
+      // hermitian conjugate
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] = alpha * herm(A[r*lda + c]);
+         }
+         B += ldb;
+      }
+   }
+}   
+
+template <typename T, typename U>
+void
+matrix_add(char Atrans, int M, int N, T const* A, int lda, U* , int ldbB)
+{
+   if (Atrans == 'N')
+   {
+      // normal
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += A[r];
+         }
+         A += lda;
+         B += ldb;
+      }
+   }
+   else if (Atrans == 'R')
+   {
+      // conjugate
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += conj(A[r]);
+         }
+         A += lda;
+         B += ldb;
+      }
+   }
+   else if (Atrans == 'T')
+   {
+      // transpose
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += trans(A[r*lda + c]);
+         }
+         B += ldb;
+      }
+   }
+   else if (Atrans == 'C')
+   {
+      // hermitian conjugate
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += herm(A[r*lda + c]);
+         }
+         B += ldb;
+      }
+   }
+}   
+
+template <typename T, typename U, typename V>
+void
+matrix_add_scaled(char Atrans, int M, int N, T alpha, U const* A, int lda, V* B, int ldb)
+{
+   if (Atrans == 'N')
+   {
+      // normal
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += alpha * A[r];
+         }
+         A += lda;
+         B += ldb;
+      }
+   }
+   else if (Atrans == 'R')
+   {
+      // conjugate
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += alpha * conj(A[r]);
+         }
+         A += lda;
+         B += ldb;
+      }
+   }
+   else if (Atrans == 'T')
+   {
+      // transpose
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += alpha * trans(A[r*lda + c]);
+         }
+         B += ldb;
+      }
+   }
+   else if (Atrans == 'C')
+   {
+      // hermitian conjugate
+      for (int c = 0; c < N; ++c)
+      {
+         for (int r = 0; r < M; ++r)
+         {
+            B[r] += alpha * herm(A[r*lda + c]);
+         }
+         B += ldb;
+      }
+   }
+}   
+
+template <typename T, typename U, typename V, typename Nested>
+void
+matrix_inner_prod_nested(char Atrans, char Btrans, int M, int N,
+			 T const* A, int ldA,
+			 U const* B, int ldB,
+			 V& r, Nested&& n)
+{
+   
+}
+
+// level 3
+
+template <typename T, typename U, typename V, typename W, typename X>
+inline
+void
+gemm(char Atrans, char Btrans, int M, int N, int K, T const& alpha,
+     U const* A, int lda,
+     V const* B, int ldb,
+     W beta, X* C, int ldc)
+{
+   PANIC("not yet implemented");
+}
+
+} // namespace blas

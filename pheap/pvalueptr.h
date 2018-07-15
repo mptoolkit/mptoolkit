@@ -146,8 +146,9 @@ class pvalue_ptr
 
       void cow();
 
-   template <class U> friend class pvalue_ptr;
-   template <class U> friend class pvalue_handle;
+      template <class U> friend class pvalue_ptr;
+      template <class U> friend class pvalue_handle;
+      template <typename U> friend class pvalue_proxy;
 
    // SGI compiler is broken & wont accept explicit function template parameter.
    // This doesnt need to be a template friend.

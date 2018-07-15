@@ -213,6 +213,24 @@ void dotc(cublasHandle_t handle, int n,
 namespace cuda
 {
 
+// functions acting on scalars (BLAS 'level 0')
+
+template <typename T>
+inline
+void
+clear(cuda::gpu_ref<T>& r)
+{
+   r.set_wait(T{});
+}
+
+template <typename T>
+inline
+void
+clear(cuda::gpu_ref<T>&& r)
+{
+   r.set_wait(T{});
+}
+
 // BLAS level 1
 
 inline

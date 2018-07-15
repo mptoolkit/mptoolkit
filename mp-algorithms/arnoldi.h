@@ -72,7 +72,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
    v.reserve(Iterations);
    Hv.reserve(Iterations);
 
-   VectorType w = Guess;
+   VectorType w = copy(Guess);
 
    double Beta = norm_frob(w);
    double OrigBeta = Beta;
@@ -102,7 +102,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
       if (Verbose > 0)
          std::cerr << "arnoldi: immediate return, invariant subspace found, Beta=" << Beta << '\n';
       TRACE_ARNOLDI("Immediate return - invariant subspace found")(Beta);
-      Guess = v[0];
+      Guess = std::move(v[0]);
       if (Normalize)
          Guess *= OrigBeta;
       Iterations = 1;
@@ -238,7 +238,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
                       << ", iterations=" << (j+1) << '\n';
          TRACE_ARNOLDI("Early return - residual below threshold")(ResidNorm)(j);
          //      TRACE_ARNOLDI(Eigen);
-         Guess = y;
+         Guess = std::move(y);
          if (Normalize)
             Guess *= OrigBeta;
          Iterations = j+1;
@@ -252,7 +252,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
          if (Verbose > 0)
             std::cerr << "arnoldi: reached the maximum number of iterations, ResidNorm="
                       << ResidNorm << '\n';
-         Guess = y;
+         Guess = std::move(y);
          if (Normalize)
             Guess *= OrigBeta;
          //TRACE_ARNOLDI(Eigen);
@@ -269,7 +269,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
                       << ", iterations=" << (j+1) << '\n';
          TRACE_ARNOLDI("Early return - invariant subspace found")(Beta)(j);
          //      TRACE_ARNOLDI(Eigen);
-         Guess = y;
+         Guess = std::move(y);
          if (Normalize)
             Guess *= OrigBeta;
          Iterations = j+1;

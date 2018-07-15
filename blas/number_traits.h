@@ -52,6 +52,8 @@
 namespace blas
 {
 
+struct cpu_tag;
+
 namespace detail
 {
 
@@ -236,7 +238,33 @@ struct remove_proxy_helper<T, typename void_<typename T::remove_proxy_t>::type>
    using type = typename T::remove_proxy_t;
 };
 
+template <typename T, typename Enable = void>
+struct tag_of_helper
+{
+   using type = cpu_tag;
+};
+
+template <typename T>
+struct tag_of_helper<T, typename void_<typename T::tag_type>::type>
+{
+   using type = typename T::tag_type;
+};
+
 } // namespace detail
+
+//
+// tag_of
+//
+// Metafunction to get the storage tag of an arbitrary type.
+//
+
+template <typename T>
+struct tag_of : detail::tag_of_helper<T>
+{
+};
+
+template <typename T>
+using tag_of_t = typename tag_of<T>::type;
 
 //
 // remove_proxy

@@ -44,7 +44,7 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       // matrix on the right)
       static
       InfiniteWavefunctionLeft ConstructFromOrthogonal(LinearWavefunction const& Psi,
-                                                       MatrixOperator const& Lambda,
+                                                       MatrixOperator Lambda,
                                                        QuantumNumbers::QuantumNumber const& QShift_,
                                                        int Verbose = 0);
 
@@ -58,7 +58,7 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       // for the right-most density matrix
       static
       InfiniteWavefunctionLeft Construct(LinearWavefunction const& Psi,
-                                         MatrixOperator const& GuessRho,
+                                         MatrixOperator GuessRho,
                                          QuantumNumbers::QuantumNumber const& QShift,
                                          int Verbose = 0);
 
@@ -98,7 +98,7 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
    private:
       explicit InfiniteWavefunctionLeft(QuantumNumber const& QShift_);
 
-      void Initialize(LinearWavefunction const& Psi, MatrixOperator const& Lambda, int Verbose);
+      void Initialize(LinearWavefunction const& Psi, MatrixOperator Lambda, int Verbose);
 
       QuantumNumber QShift;
 

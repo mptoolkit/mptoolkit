@@ -28,6 +28,8 @@
 #include "detail/sparserowiterator.h"
 #include "number_traits.h"
 #include "functors.h"
+#include "diagonalmatrix.h"
+#include "number_traits.h"
 #include <vector>
 #include <map>
 #if defined(USE_PSTREAM)
@@ -116,6 +118,7 @@ class BasicSparseVector
          base_iterator I = Elements.find(Col);
          if (I == Elements.end())
          {
+	    using ::copy;
             Elements.insert(std::make_pair(Col, copy(value)));
          }
          else
@@ -218,11 +221,52 @@ BasicSparseVector<T, U, V>& operator-=(BasicSparseVector<T, U, V>& x, BasicSpars
    return x;
 }
 
+template <typename T, typename U, typename V, typename W, typename X, typename R, typename Nested, typename Tag>
+auto
+inner_prod_nested_tag(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y, R&& Result, Nested&& Nest, Tag)
+{
+   // device version, allocate a device vector to accumulate the partial results
+   using result_value = remove_proxy_t<R>;
+
+   // determine the maximum size we need
+   auto xlast = x.end();
+   auto ylast = y.end();
+   if (xlast == x.begin() || ylast == y.begin())
+   {
+      clear(Result);
+      return;
+   }
+   xlast--;
+   ylast--;
+   auto Size = std::max(xlast.index(), ylast.index());
+   blas::Vector<result_value, Tag> Acc(Size, 0.0);
+   bool Set = false;
+   auto xi = x.begin();
+   auto yi = y.begin();
+   while (xi != x.end() && yi != y.end())
+   {
+      if (xi.index() == yi.index())
+      {
+	 Nest(xi.value(), yi.value(), Acc[xi.index()]);
+         ++xi;
+         ++yi;
+      }
+      // can't allow fall through here since we need to loop back and check against end()
+      else if (xi.index() < yi.index())
+         ++xi;
+      else // if (yi.index < xi.index)
+         ++yi;
+   }
+   sum(Acc, Result);
+}
 
 template <typename T, typename U, typename V, typename W, typename X, typename R, typename Nested>
 void
-inner_prod_nested(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y, R&& result, Nested&& Nest)
+inner_prod_nested_tag(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y, R&& Result,
+		      Nested&& Nest, cpu_tag)
 {
+   // CPU version, accumulate results into a value
+   using result_value = remove_proxy_t<decltype(std::declval<Nested>()(std::declval<T>(),std::declval<T>()))>;
    bool Set = false;
    auto xi = x.begin();
    auto yi = y.begin();
@@ -232,11 +276,11 @@ inner_prod_nested(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> co
       {
 	 if (!Set)
 	 {
-	    Nest(xi.value(), yi.value(), static_cast<R&&>(result));
+	    Result = Nest(xi.value(), yi.value());
 	    Set = true;
 	 }
 	 else
-	    Nest.add(xi.value(), yi.value(), static_cast<R&&>(result));
+	    Result += Nest(xi.value(), yi.value());
          ++xi;
          ++yi;
       }
@@ -254,15 +298,69 @@ inner_prod_nested(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> co
    }
 }
 
+template <typename T, typename U, typename V, typename W, typename X, typename R, typename Nested>
+auto
+inner_prod_nested(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y, R&& Result, Nested&& Nest)
+{
+   return inner_prod_nested_tag(x, y, std::forward<R>(Result), std::forward<Nested>(Nest), tag_of_t<T>());
+}
+
+// The case where T is a device type but we want the result on the CPU
+template <typename T, typename U, typename V, typename W, typename X, typename Nested, typename Tag>
+auto
+inner_prod_nested_tag(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y, Nested&& Nest, Tag)
+{
+   // device version, allocate a device vector to accumulate the partial results
+   using result_value = remove_proxy_t<decltype(std::declval<Nested>()(std::declval<T>(),std::declval<T>()))>;
+
+   // determine the maximum size we need
+   auto xlast = x.end();
+   auto ylast = y.end();
+   if (xlast == x.begin() || ylast == y.begin())
+   {
+      return result_value{};
+   }
+   xlast--;
+   ylast--;
+   auto Size = std::max(xlast.index(), ylast.index());
+   blas::Vector<result_value, Tag> Acc(Size, 0.0);
+   bool Set = false;
+   auto xi = x.begin();
+   auto yi = y.begin();
+   while (xi != x.end() && yi != y.end())
+   {
+      if (xi.index() == yi.index())
+      {
+	 Nest(xi.value(), yi.value(), Acc[xi.index()]);
+         ++xi;
+         ++yi;
+      }
+      // can't allow fall through here since we need to loop back and check against end()
+      else if (xi.index() < yi.index())
+         ++xi;
+      else // if (yi.index < xi.index)
+         ++yi;
+   }
+   return get_wait(sum(Acc));
+}
+
 template <typename T, typename U, typename V, typename W, typename X, typename Nested>
 inline
-decltype(std::declval<Nested>()(std::declval<T>(),std::declval<T>()))
+auto
+inner_prod_nested_tag(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y, Nested&& Nest, cpu_tag)
+{
+   using result_type = remove_proxy_t<decltype(std::declval<Nested>()(std::declval<T>(),std::declval<T>()))>;
+   result_type Acc(0.0);
+   inner_prod_nested(x, y, Acc, std::forward<Nested>(Nest));
+   return Acc;
+}
+
+template <typename T, typename U, typename V, typename W, typename X, typename Nested>
+inline
+auto
 inner_prod_nested(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y, Nested&& Nest)
 {
-   using result_type = decltype(std::declval<Nested>()(std::declval<T>(),std::declval<T>()));
-   result_type R{};
-   inner_prod_nested(x, y, R, std::forward<Nested>(Nest));
-   return R;
+   return inner_prod_nested_tag(x, y, std::forward<Nested>(Nest), tag_of_t<T>());
 }
 
 template <typename T, typename U, typename V, typename W, typename X, typename R, typename Nested>
@@ -313,6 +411,8 @@ class SparseMatrix
    public:
       using value_type     = T;
       using row_type       = SparseMatrixRow<T>;
+      using row_reference  = row_type&;
+      using const_row_reference = row_type const&;
       using iterator       = typename std::vector<SparseMatrixRow<T>>::iterator;
       using const_iterator = typename std::vector<SparseMatrixRow<T>>::const_iterator;
 
@@ -325,6 +425,11 @@ class SparseMatrix
       template <typename U>
       explicit SparseMatrix(SparseMatrix<U> const& Other)
 	 : Cols(Other.Cols), RowStorage(Other.RowStorage) {}
+
+      template <typename U>
+      explicit SparseMatrix(DiagonalMatrix<U> const& Other);
+
+      explicit SparseMatrix(DiagonalMatrix<T>&& Other);
 
       SparseMatrix(int Rows_, int Cols_) : Cols(Cols_)
       {
@@ -389,8 +494,8 @@ class SparseMatrix
       row_type& operator[](int r) { DEBUG_RANGE_CHECK(r, 0, RowStorage.size()); return RowStorage[r]; }
       row_type const& operator[](int r) const { DEBUG_RANGE_CHECK(r, 0, RowStorage.size()); return RowStorage[r]; }
 
-      row_type& row(int r) { DEBUG_RANGE_CHECK(r, 0, RowStorage.size()); return RowStorage[r]; }
-      row_type const& row(int r) const { DEBUG_RANGE_CHECK(r, 0, RowStorage.size()); return RowStorage[r]; }
+      row_reference row(int r) { DEBUG_RANGE_CHECK(r, 0, RowStorage.size()); return RowStorage[r]; }
+      const_row_reference row(int r) const { DEBUG_RANGE_CHECK(r, 0, RowStorage.size()); return RowStorage[r]; }
 
       template<typename... Args>
       void emplace(int Row, int Col, Args&&... args)
@@ -661,6 +766,7 @@ template <typename T, typename U>
 SparseMatrix<remove_proxy_t<decltype(std::declval<T>() + std::declval<U>())>>
 operator+(SparseMatrix<T> const& x, SparseMatrix<U> const& y)
 {
+   using ::copy;
    SparseMatrix<remove_proxy_t<decltype(std::declval<T>() + std::declval<U>())>>
       Result(copy(x));
    Result += y;
@@ -671,6 +777,7 @@ template <typename T, typename U>
 SparseMatrix<remove_proxy_t<decltype(std::declval<T>() - std::declval<U>())>>
 operator-(SparseMatrix<T> const& x, SparseMatrix<U> const& y)
 {
+   using ::copy;
    SparseMatrix<remove_proxy_t<decltype(std::declval<T>() + std::declval<U>())>>
       Result(copy(x));
    Result -= y;
@@ -764,6 +871,42 @@ conj(SparseMatrix<T>&& x)
 template <typename T, typename U>
 SparseMatrix<remove_proxy_t<decltype(std::declval<T>() * std::declval<U>())>>
 operator*(SparseMatrix<T> const& x, SparseMatrix<U> const& y)
+{
+   SparseMatrix<remove_proxy_t<decltype(std::declval<T>() * std::declval<U>())>> Result(x.rows(), y.cols());
+   for (auto const& rx : x)
+   {
+      for (auto const& cx : rx)
+      {
+	 for (auto const& cy : y.row(cx.col()))
+	 {
+	    Result.add(rx.row(), cy.col(), cx.value * cy.value);
+	 }
+      }
+   }
+   return Result;
+}
+
+template <typename T, typename U>
+SparseMatrix<remove_proxy_t<decltype(std::declval<T>() * std::declval<U>())>>
+operator*(SparseMatrix<T> const& x, DiagonalMatrix<U> const& y)
+{
+   SparseMatrix<remove_proxy_t<decltype(std::declval<T>() * std::declval<U>())>> Result(x.rows(), y.cols());
+   for (auto const& rx : x)
+   {
+      for (auto const& cx : rx)
+      {
+	 for (auto const& cy : y.row(cx.col()))
+	 {
+	    Result.add(rx.row(), cy.col(), cx.value * cy.value);
+	 }
+      }
+   }
+   return Result;
+}
+
+template <typename T, typename U>
+SparseMatrix<remove_proxy_t<decltype(std::declval<T>() * std::declval<U>())>>
+operator*(DiagonalMatrix<T> const& x, SparseMatrix<U> const& y)
 {
    SparseMatrix<remove_proxy_t<decltype(std::declval<T>() * std::declval<U>())>> Result(x.rows(), y.cols());
    for (auto const& rx : x)
@@ -885,6 +1028,31 @@ std::ostream& operator<<(std::ostream& out, SparseMatrix<double> const& x)
       }
    }
    return out;
+}
+
+template <typename T>
+template <typename U>
+SparseMatrix<T>::SparseMatrix(DiagonalMatrix<U> const& Other)
+   : Cols(Other.cols()), RowStorage(Other.rows())
+{
+   int c = 0;
+   for (auto const& x : Other.diagonal())
+   {
+      this->insert(c, c, copy(x));
+      ++c;
+   }
+}
+
+template <typename T>
+SparseMatrix<T>::SparseMatrix(DiagonalMatrix<T>&& Other)
+   : Cols(Other.cols()), RowStorage(Other.rows())
+{
+   int c = 0;
+   for (auto&& x : Other.diagonal())
+   {
+      this->insert(c, c, copy(x));
+      ++c;
+   }
 }
 
 } // namespace blas

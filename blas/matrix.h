@@ -273,6 +273,33 @@ copy(Matrix<T, Tag_Type> const& x)
    return Result;
 }
 
+// addition and subtraction
+// TODO: we could perhaps do better with some expression templates
+// but we can mostly avoid copies with move semantics anyway, sp
+// that is probably of marginal benefit.
+
+template <typename T, typename D1, typename U, typename D2, typename Tag>
+Matrix<remove_proxy_t<decltype(std::declval<T>()+std::declval<U>())>, Tag>
+operator+(MatrixRef<T, D1, Tag> const& A, MatrixRef<U, D2, Tag> const& B)
+{
+   Matrix<remove_proxy_t<decltype(std::declval<T>()+std::declval<U>())>, Tag>
+      Result(A.rows(), B.rows());
+   Result = A;
+   Result += B;
+   return Result;
+}
+
+template <typename T, typename D1, typename U, typename D2, typename Tag>
+Matrix<remove_proxy_t<decltype(std::declval<T>()+std::declval<U>())>, Tag>
+operator-(MatrixRef<T, D1, Tag> const& A, MatrixRef<U, D2, Tag> const& B)
+{
+   Matrix<remove_proxy_t<decltype(std::declval<T>()+std::declval<U>())>, Tag>
+      Result(A.rows(), B.rows());
+   Result = A;
+   Result -= B;
+   return Result;
+}
+
 // I/O
 
 template <typename T, typename U>

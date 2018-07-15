@@ -292,18 +292,18 @@ add_triple_prod(U Factor,
    // iterate over elements in E first
    for (auto const& Ei : E)
    {
-      auto& xi = xb[Ei.row()];
+      auto& xi = xb.row(Ei.row());
 
       QuantumNumber qEi = E.qn1(Ei.row());
       double DegEi = qdim(qEi);
       for (auto const& Ein : Ei)
       {
          QuantumNumber qEj = E.qn2(Ein.col());
-         for (auto const& xin : xb[Ei.row()])
+         for (auto const& xin : xb.row(Ei.row()))
          {
             QuantumNumber qxip = xb.qn2(xin.col());
             double DegXi = qdim(qxip);
-            for (auto const& yin : y[Ein.col()])
+            for (auto const& yin : y.row(Ein.col()))
             {
                QuantumNumber qyj = y.Basis2()[yin.col()];
                if (!(is_transform_target(qyj, qEp, qxip))) continue;
@@ -406,8 +406,8 @@ add_triple_prod(U Factor,
          {
             for (auto const& yin : yi)
             {
-               auto const& EIn = E[xin.col()].find(yin.col());
-               if (EIn != E[xin.col()].end())
+               auto const& EIn = E.row(xin.col()).find(yin.col());
+               if (EIn != E.row(xin.col()).end())
                {
                   /*
                   double Coefficient = tensor_coefficient(x.Basis2()[xin.index2()], Transx, qxp,
@@ -583,14 +583,11 @@ delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
    if (x.is_null())
    {
       DEBUG_TRACE("delta_shift: null tensor");
-      return x;
+      return Tensor::IrredTensor<T, B1, B2, S>();
    }
 
    DEBUG_CHECK_EQUAL(NewBasis1, delta_shift(x.Basis1(), p));
    DEBUG_CHECK_EQUAL(NewBasis2, delta_shift(x.Basis2(), p));
-
-   typedef typename IrredTensor<T, B1, B2, S>::const_iterator       const_iterator;
-   typedef typename IrredTensor<T, B1, B2, S>::const_inner_iterator const_inner_iterator;
 
    QuantumNumber Ident(x.GetSymmetryList());
 
@@ -599,6 +596,9 @@ delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
    Result.data() = x.data();
 
 #if 0
+   typedef typename IrredTensor<T, B1, B2, S>::const_iterator       const_iterator;
+   typedef typename IrredTensor<T, B1, B2, S>::const_inner_iterator const_inner_iterator;
+
    // This was a misguided attempt for non-abelian shifts (which dont actually exist)
    for (const_iterator I = iterate(x); I; ++I)
    {

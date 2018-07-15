@@ -228,6 +228,30 @@ vector_sum(int N, std::complex<double> const* x, int incx, std::complex<double>&
    r = rr;
 }
 
+void
+vector_norm_frob_sq(int N, double const* x, int incx, double& r)
+{
+   double rr = 0.0;
+   for (int i = 0; i < N; ++i)
+   {
+      rr += (*x) * (*x);
+      x += incx;
+   }
+   r = rr;
+}
+
+void
+vector_norm_frob_sq(int N, std::complex<double> const* x, int incx, std::complex<double>& r)
+{
+   std::complex<double> rr = 0.0;
+   for (int i = 0; i < N; ++i)
+   {
+      rr += norm_frob_sq(*x);
+      x += incx;
+   }
+   r = rr;
+}
+
 template <typename T>
 std::enable_if_t<blas::is_numeric_v<T>, void>
 vector_inner_prod(int N, T const* x, int incx, T const* y, int incy, T& r)

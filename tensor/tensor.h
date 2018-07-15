@@ -79,24 +79,6 @@ struct ConjugateProxy
 using QuantumNumbers::QuantumNumber;
 using QuantumNumbers::SymmetryList;
 
-template <typename T>
-struct TagOf
-{
-   using type = typename T::tag_type;
-};
-
-template <>
-struct TagOf<double>
-{
-   using type = blas::cpu_tag;
-};
-
-template <>
-struct TagOf<std::complex<double>>
-{
-   using type = blas::cpu_tag;
-};
-
 // Structure traits types
 struct DefaultStructure
 {
@@ -104,7 +86,7 @@ struct DefaultStructure
    using value = blas::SparseMatrix<T>;
 
    template <typename T>
-   using tag_type = typename TagOf<T>::type;
+   using tag_type = blas::tag_of_t<T>;
 };
 
 struct DiagonalStructure
@@ -113,7 +95,7 @@ struct DiagonalStructure
    using value = blas::DiagonalMatrix<T>;
 
    template <typename T>
-   using tag_type = typename TagOf<T>::type;
+   using tag_type = blas::tag_of_t<T>;
 };
 
 // For operations that act on the structure and potentially modify it,
@@ -246,11 +228,13 @@ class IrredTensor
       typename StructureType::const_iterator end() const noexcept { return Data_.end(); }
       typename StructureType::const_iterator cend() const noexcept { return Data_.end(); }
 
+#if 0
       typename StructureType::row_type& operator[](int r) { return Data_[r]; }
       typename StructureType::row_type const& operator[](int r) const { return Data_[r]; }
+#endif
 
-      typename StructureType::row_type& row(int r) { return Data_[r]; }
-      typename StructureType::row_type const& row(int r) const { return Data_[r]; }
+      typename StructureType::row_reference row(int r) { return Data_.row(r); }
+      typename StructureType::const_row_reference row(int r) const { return Data_.row(r); }
 
       IrredTensor& operator+=(IrredTensor const& Op);
       IrredTensor& operator+=(IrredTensor&& Op);
@@ -508,7 +492,7 @@ operator-(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& y
    PRECONDITION_EQUAL(x.Basis1(), y.Basis1());
    PRECONDITION_EQUAL(x.Basis2(), y.Basis2());
    PRECONDITION_EQUAL(x.TransformsAs(), y.TransformsAs());
-   return IrredTensor<T, B1, B2, S>(x.Basis1(), x.Basis2(), x.TransformsAs(), x.data() + y.data());
+   return IrredTensor<T, B1, B2, S>(x.Basis1(), x.Basis2(), x.TransformsAs(), x.data() - y.data());
 }
 
 // multiply by scalar
@@ -597,7 +581,9 @@ inner_prod(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B1, B2, S> const& 
       inner_prod(x.data()[r], y.data()[r], Temp[r]);
       QDim[r] = qdim(x.qn1(r));
    }
-   inner_prod(blas::Vector<complex, tag_type>(std::move(QDim)), Temp, Result);
+   blas::Vector<complex, tag_type> QDimDevice(QDim.size());
+   set_wait(QDimDevice, QDim);
+   inner_prod(QDimDevice, Temp, Result);
 }
 
 // scalar_prod - this is a new function
@@ -620,7 +606,7 @@ scalar_prod(HermitianProxy<IrredTensor<T, B1, B2, Tensor::DefaultStructure>> con
    {
       for (auto const& cx : rx)
       {
-         for (auto const& cy : y[rx.row()])
+         for (auto const& cy : y.row(rx.row()))
          {
             // only diagonal components
             if (Result.qn1(cx.col()) == Result.qn2(cy.col()))
@@ -767,7 +753,7 @@ prod(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S> const& y, Qua
    {
       for (auto const& cx : rx)
       {
-         for (auto const& cy : y[cx.col()])
+         for (auto const& cy : y.row(cx.col()))
          {
             real_type r = product_coefficient(x.TransformsAs(), y.TransformsAs(), Trans,
                                               x.qn1(rx.row()), y.qn2(cy.col()), x.qn2(cx.col()));
@@ -778,10 +764,46 @@ prod(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S> const& y, Qua
    return Result;
 }
 
-template <typename T, typename B1, typename B2, typename B3, typename S>
+// version that allows mixed precision and mixed structures
+template <typename T, typename U, typename B1, typename B2, typename B3, typename ST, typename SU>
+auto
+prod(IrredTensor<T, B1, B2, ST> const& x, IrredTensor<U, B2, B3, SU> const& y, QuantumNumber const& Trans)
+{
+   using result_value = blas::remove_proxy_t<decltype(std::declval<T>() * std::declval<U>())>;
+   using result_structure = blas::remove_proxy_t<decltype(std::declval<typename ST::template value<T>>() * 
+							  std::declval<typename SU::template value<U>>())>;
+   using result_structure_type = typename StructureOf<result_structure>::type;
+
+   using result_type = IrredTensor<result_value, B1, B3, result_structure_type>;
+   //   if (x.is_null() || y.is_null()) return result_type();
+
+   DEBUG_PRECONDITION_EQUAL(x.Basis2(), y.Basis1());
+
+   result_type Result(x.Basis1(), y.Basis2(), Trans);
+
+   // early return if TransformsAs is not in the clebsch-gordan expansion of (x*y)
+   if (!is_transform_target(x.TransformsAs(), y.TransformsAs(), Trans))
+      return Result;
+
+   for (auto const& rx : x.data())
+   {
+      for (auto const& cx : rx)
+      {
+         for (auto const& cy : y.row(cx.col()))
+         {
+            real_type r = product_coefficient(x.TransformsAs(), y.TransformsAs(), Trans,
+                                              x.qn1(rx.row()), y.qn2(cy.col()), x.qn2(cx.col()));
+            Result.add(rx.row(), cy.col(), r * cx.value * cy.value);
+         }
+      }
+   }
+   return Result;
+}
+
+template <typename T, typename U, typename B1, typename B2, typename B3, typename ST, typename SU>
 inline
-IrredTensor<T, B1, B3, S>
-prod(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S> const& y)
+auto
+prod(IrredTensor<T, B1, B2, ST> const& x, IrredTensor<U, B2, B3, SU> const& y)
 {
    CHECK_EQUAL((x.TransformsAs()*y.TransformsAs()).size(), 1);
    return prod(x, y, (x.TransformsAs()*y.TransformsAs())[0]);  // TODO: should be x+y
@@ -800,7 +822,7 @@ add_prod(U Factor, IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S>
    {
       for (auto const& cx : rx)
       {
-         for (auto const& cy : y[cx.col()])
+         for (auto const& cy : y.row(cx.col()))
          {
             real_type r = product_coefficient(x.TransformsAs(), y.TransformsAs(), Trans,
                                               x.qn1(rx.row()), y.qn2(cy.col()), x.qn2(cx.col()));
@@ -810,10 +832,10 @@ add_prod(U Factor, IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S>
    }
 }
 
-template <typename T, typename B1, typename B2, typename B3, typename S>
+template <typename T, typename U, typename B1, typename B2, typename B3, typename ST, typename SU>
 inline
-IrredTensor<T, B1, B3, S>
-operator*(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S> const& y)
+auto
+operator*(IrredTensor<T, B1, B2, ST> const& x, IrredTensor<U, B2, B3, SU> const& y)
 {
    QuantumNumbers::QuantumNumberList QL =
       transform_targets(x.TransformsAs(), y.TransformsAs());

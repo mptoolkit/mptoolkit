@@ -92,9 +92,9 @@ struct InjectLeftQShift
    {
    }
 
-   MatrixOperator operator()(MatrixOperator const& m) const
+   MatrixOperator operator()(MatrixOperator m) const
    {
-      return delta_shift(inject_left(m, Op_, Psi_), QShift_);
+      return delta_shift(inject_left(std::move(m), Op_, Psi_), QShift_);
    }
 
    GenericMPO const& Op_;

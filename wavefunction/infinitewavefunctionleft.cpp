@@ -125,12 +125,12 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(QuantumNumbers::QuantumNumber
 }
 
 InfiniteWavefunctionLeft
-InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction const& Psi, MatrixOperator const& Lambda,
+InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction const& Psi, MatrixOperator Lambda,
                                                   QuantumNumbers::QuantumNumber const& QShift_,
                                                   int Verbose)
 {
    InfiniteWavefunctionLeft Result(QShift_);
-   Result.Initialize(Psi, Lambda, Verbose-1);
+   Result.Initialize(Psi, std::move(Lambda), Verbose-1);
    return Result;
 }
 
@@ -143,7 +143,7 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi,
 }
 
 InfiniteWavefunctionLeft
-InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperator const& GuessRho,
+InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperator GuessRho,
                                     QuantumNumbers::QuantumNumber const& QShift,
                                     int Verbose)
 {
@@ -227,7 +227,7 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
 #if 1
    // Explicitly re-othogonalize.  In principle this is not necessary,
    // but it gives some more robustness
-   A = left_orthogonalize(A, PsiL);
+   A = left_orthogonalize(std::move(A), PsiL);
    PsiL.set_back(prod(PsiL.get_back(), A*AInv));
 #else
    PsiL.set_front(prod(A, PsiL.get_front()));
@@ -246,7 +246,7 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    // same for the right eigenvector, which will be the density matrix
 
    // initialize the guess eigenvector
-   MatrixOperator RightEigen = GuessRho;
+   MatrixOperator RightEigen = std::move(GuessRho);
 
    if (Verbose > 0)
       std::cout << "Obtaining right orthogonality eigenvector..." << std::endl;
@@ -279,9 +279,9 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    DEBUG_CHECK(norm_frob(RightEigen - adjoint(RightEigen)) < 1e-12)
       (norm_frob(RightEigen - adjoint(RightEigen)))(RightEigen);
 
-   D = RightEigen;
-   U = DiagonalizeHermitian(D);
-   D = SqrtDiagonal(D, OrthoTol);
+   U = copy(RightEigen);
+   D = DiagonalizeHermitian(U);
+   D = SqrtDiagonal(std::move(D), OrthoTol);
 
    // normalize
    D *= 1.0 / norm_frob(D);
@@ -330,11 +330,11 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    PsiL.set_back(prod(PsiL.get_back(), I));
 #endif
 
-   return InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiL, D, QShift, Verbose-1);
+   return InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiL, MatrixOperator(D), QShift, Verbose-1);
 }
 
 void
-InfiniteWavefunctionLeft::Initialize(LinearWavefunction const& Psi_, MatrixOperator const& Lambda, int Verbose)
+InfiniteWavefunctionLeft::Initialize(LinearWavefunction const& Psi_, MatrixOperator Lambda, int Verbose)
 {
    if (Verbose > 0)
    {
@@ -343,17 +343,18 @@ InfiniteWavefunctionLeft::Initialize(LinearWavefunction const& Psi_, MatrixOpera
    }
 
    LinearWavefunction Psi = Psi_;
-   MatrixOperator M = right_orthogonalize(Psi, Lambda, Verbose-1);
+   MatrixOperator M = right_orthogonalize(Psi, std::move(Lambda), Verbose-1);
    // normalize
    M *= 1.0 / norm_frob(M);
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
    // we can't initialize lambda_l yet, as we don't have it in the correct (diagonal) basis.
    // We will only get this at the end, when we obtain lambda_r.  So just set it to a dummy
-   this->push_back_lambda(D);
+   this->push_back_lambda(RealDiagonalOperator());
 
    if (Verbose > 0)
       std::cout << "Constructing left ortho matrices..." << std::endl;
+
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
 
    int n = 0;
    for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I, ++n)
@@ -362,9 +363,9 @@ InfiniteWavefunctionLeft::Initialize(LinearWavefunction const& Psi_, MatrixOpera
          std::cout << "orthogonalizing site " << n << std::endl;
       StateComponent A = prod(M, *I);
       M = ExpandBasis2(A);
-      SingularValueDecomposition(M, U, D, Vh);
+      SVD(M, U, D, Vh);
       this->push_back(prod(A, U));
-      this->push_back_lambda(D);
+      this->push_back_lambda(std::move(D));
       M = D*Vh;
    }
 
@@ -396,14 +397,14 @@ void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Vers
       in >> C_right;
       in >> Attr;
 
-      Psi = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiLinear, C_right, QShift);
+      Psi = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiLinear, std::move(C_right), QShift);
    }
    else if (Version == 2)
    {
       int BaseVersion = Psi.CanonicalWavefunctionBase::ReadStream(in);
       in >> Psi.QShift;
       if (BaseVersion < 3)
-         Psi.set_lambda(0, delta_shift(Psi.lambda_r(), Psi.qshift()));
+         Psi.set_lambda(0, delta_shift(Psi.lambda_r().get(), Psi.qshift()));
    }
    else
    {
@@ -454,14 +455,14 @@ std::pair<LinearWavefunction, RealDiagonalOperator>
 get_left_canonical(InfiniteWavefunctionLeft const& Psi)
 {
    return std::make_pair(LinearWavefunction(Psi.Basis1().GetSymmetryList(),
-                                            Psi.base_begin(), Psi.base_end()), Psi.lambda_r());
+                                            Psi.base_begin(), Psi.base_end()), copy(Psi.lambda_r().get()));
 }
 
 std::tuple<MatrixOperator, RealDiagonalOperator, LinearWavefunction>
 get_right_canonical(InfiniteWavefunctionLeft const& Psi)
 {
    LinearWavefunction Result;
-   RealDiagonalOperator D = Psi.lambda_r();
+   RealDiagonalOperator D = copy(Psi.lambda_r().get());
    MatrixOperator U = MatrixOperator::make_identity(D.Basis1());
    MatrixOperator Vh;
    InfiniteWavefunctionLeft::const_mps_iterator I = Psi.end();
@@ -471,11 +472,11 @@ get_right_canonical(InfiniteWavefunctionLeft const& Psi)
 
       StateComponent A = prod(*I, U*D);
       MatrixOperator M = ExpandBasis1(A);
-      SingularValueDecomposition(M, U, D, Vh);
+      SVD(M, U, D, Vh);
       Result.push_front(prod(Vh, A));
    }
 
-   return std::make_tuple(U, D, Result);
+   return std::make_tuple(std::move(U), std::move(D), std::move(Result));
 }
 
 void
@@ -508,11 +509,11 @@ InfiniteWavefunctionLeft::rotate_left(int Count)
    // and rotate
    std::rotate(this->lambda_base_begin_(), this->lambda_base_begin_()+Count, this->lambda_base_end_());
    // and put back the boundary lambda
-   this->push_back_lambda(delta_shift(this->lambda_l(), adjoint(this->qshift())));
+   this->push_back_lambda(delta_shift(this->lambda_l().get(), adjoint(this->qshift())));
 
    // set the left and right basis
-   this->setBasis1(lambda_l().Basis1());
-   this->setBasis2(lambda_r().Basis2());
+   this->setBasis1(lambda_l().get().Basis1());
+   this->setBasis2(lambda_r().get().Basis2());
 
    this->debug_check_structure();
 }
@@ -548,12 +549,12 @@ void inplace_reflect(InfiniteWavefunctionLeft& Psi)
 
    int Size = Psi.size();
 
-   RealDiagonalOperator D = Psi.lambda_r();
+   RealDiagonalOperator D = copy(Psi.lambda_r().get());
    MatrixOperator U = MatrixOperator::make_identity(D.Basis1());
 
    // left-most lambda matrix, this is a place-holder
    Result.push_back_lambda(flip_conj(D));
-   RealDiagonalOperator DSave = D;
+   RealDiagonalOperator DSave = copy(D);
 
    InfiniteWavefunctionLeft::const_base_mps_iterator I = Psi.base_end();
    while (I != Psi.base_begin())
@@ -564,7 +565,7 @@ void inplace_reflect(InfiniteWavefunctionLeft& Psi)
       MatrixOperator M = ExpandBasis1(A);
 
       MatrixOperator Vh;
-      SingularValueDecomposition(M, U, D, Vh);
+      SVD(M, U, D, Vh);
       A = prod(Vh, A);
 
       Result.push_back(reflect(A));
@@ -590,14 +591,14 @@ void inplace_reflect(InfiniteWavefunctionLeft& Psi)
 
    Result.set(Size-1, prod(Result[Size-1], herm(flip_conj(U))));
 
-   Result.setBasis1(Result[0].Basis1());
-   Result.setBasis2(Result[Size-1].Basis2());
+   Result.setBasis1(Result[0].get().Basis1());
+   Result.setBasis2(Result[Size-1].get().Basis2());
 #else
    // old code that used the D basis (and hence introduces a gauge transformation)
    Result.set_lambda(0, delta_shift(flip_conj(D), Psi.qshift()));
    Result.set(0, prod(herm(delta_shift(flip_conj(U), Psi.qshift())), Result[0]));
 
-   Result.setBasis1(Result[0].Basis1());
+   Result.setBasis1(Result[0].get().Basis1());
    Result.setBasis2(adjoint(D.Basis2()));
 #endif
 
@@ -670,7 +671,7 @@ InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
          {
             StateComponent A = delta_shift(*I, q);
             Result.setBasis1(A.Basis1());
-            Result.push_back(A);
+            Result.push_back(std::move(A));
             Result.QShift = q;
             First = false;
          }
@@ -753,7 +754,7 @@ overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
       std::cerr << "Converged.  TotalIterations=" << TotalIterations
                 << ", Tol=" << MyTol << '\n';
 
-   return std::make_tuple(Eta, Length, Init);
+   return std::make_tuple(Eta, Length, std::move(Init));
 }
 
 #if 0
@@ -807,7 +808,7 @@ overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefunctionLeft const& y,
    CHECK_EQUAL(x.size(), y.size());
    std::tuple<std::complex<double>, int, StateComponent> Result =
       overlap(x, ProductMPO::make_identity(ExtractLocalBasis(y)), y, Sector, Iter, Tol, Verbose);
-   return std::make_pair(std::get<0>(Result), std::get<2>(Result));
+   return std::make_pair(std::get<0>(Result), std::move(std::get<2>(Result)));
 }
 
 InfiniteWavefunctionLeft
@@ -826,7 +827,7 @@ InfiniteWavefunctionLeft::SetDefaultAttributes(AttributeList& A) const
 
 // inject_left for a BasicFiniteMPO.  This can have support on multiple wavefunction unit cells
 MatrixOperator
-inject_left(MatrixOperator const& m,
+inject_left(MatrixOperator m,
             InfiniteWavefunctionLeft const& Psi1,
             BasicFiniteMPO const& Op,
             InfiniteWavefunctionLeft const& Psi2)
@@ -842,9 +843,8 @@ inject_left(MatrixOperator const& m,
    CHECK_EQUAL(Op.Basis1().size(), 1);
    CHECK_EQUAL(Op.Basis2().size(), 1);
    CHECK_EQUAL(Op.Basis1()[0], m.TransformsAs());
-   MatrixOperator Result = m;
    StateComponent E(Op.Basis1(), m.Basis1(), m.Basis2());
-   E[0] = m;
+   E[0] = std::move(m);
    E.debug_check_structure();
    InfiniteWavefunctionLeft::const_mps_iterator I1 = Psi1.begin();
    InfiniteWavefunctionLeft::const_mps_iterator I2 = Psi2.begin();
@@ -866,10 +866,9 @@ inject_left(MatrixOperator const& m,
 std::complex<double>
 expectation(InfiniteWavefunctionLeft const& Psi, BasicFiniteMPO const& Op)
 {
-   MatrixOperator X = MatrixOperator::make_identity(Psi.Basis1());
-   X = inject_left(X, Psi, Op, Psi);
+   MatrixOperator X = inject_left(MatrixOperator::make_identity(Psi.Basis1()), Psi, Op, Psi);
 
-   MatrixOperator Rho = Psi.lambda_r();
+   MatrixOperator Rho = MatrixOperator(Psi.lambda_r().get());
    Rho = Rho*Rho;
 
    return inner_prod(delta_shift(Rho, Psi.qshift()), X);
