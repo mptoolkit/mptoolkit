@@ -74,6 +74,7 @@ norm_frob_sq(BlasVector x, Ref& z)
 
 vector_clear(Vector& y)
 
+conj(Vector&)
 
 // y = x, also does transpose etc operations
 matrix_copy(BlasMatrix x, Matrix& y)

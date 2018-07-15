@@ -96,6 +96,7 @@ class normal_vector_view : public NormalVectorProxy<T, normal_vector_view<T, Tag
       int size() const { return Size; }
 
       storage_type storage() && { return Ptr; }
+      storage_type storage() & { return Ptr; }
       const_storage_type storage() const& { return Ptr; }
 
    private:

@@ -107,6 +107,13 @@ class Matrix : public NormalMatrix<T, Matrix<T, Tag>, Tag>
          assign(*this, E.as_derived());
       }
 
+      template <typename U, typename V>
+      Matrix(MatrixRef<U, V, tag_type> const& E)
+         : Matrix(E.rows(), E.cols())
+      {
+         assign(*this, E.as_derived());
+      }
+
       // construction from intializer list
       template <typename U>
       Matrix(std::initializer_list<std::initializer_list<U>> x, arena Arena_);

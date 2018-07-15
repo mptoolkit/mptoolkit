@@ -77,7 +77,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
    double Beta = norm_frob(w);
    double OrigBeta = Beta;
    w *= 1.0 / Beta;
-   v.push_back(w);
+   v.push_back(std::move(w));
 
    if (Verbose > 1)
    {
@@ -92,7 +92,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
       w = MatVecMultiply(v[0]);
    }
    SubH(0,0) = inner_prod(v[0], w);
-   Hv.push_back(w);
+   Hv.push_back(copy(w));
    w -= SubH(0,0) * v[0];
 
    Beta = norm_frob(w);
@@ -114,7 +114,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
    {
       SubH(j, j-1) = Beta;
       w *= 1.0 / Beta;
-      v.push_back(w);
+      v.push_back(std::move(w));
 
       // Matrix vector multiply
       if (Verbose > 1)
@@ -129,7 +129,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
       {
          w = MatVecMultiply(v[j]);
       }
-      Hv.push_back(w);
+      Hv.push_back(copy(w));
       // Subspace matrix elements
       double NormFrobSqH = 0;
       for (int i = 0; i <= j; ++i)

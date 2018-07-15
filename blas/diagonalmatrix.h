@@ -656,13 +656,13 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
       row_reference row(int r)
       {
 	 DEBUG_RANGE_CHECK(r, 0, Size);
-	 return row_type(r, Buf[r]);
+	 return row_reference(r, Buf[r]);
       }
 
       const_row_reference row(int r) const
       {
 	 DEBUG_RANGE_CHECK(r, 0, Size);
-	 return const_row_type(r, Buf[r]);
+	 return const_row_reference(r, Buf[r]);
       }
 
       reference operator()(int i, int ii)
@@ -759,13 +759,7 @@ inline
 void
 inplace_conj(DiagonalMatrix<T>& x)
 {
-   for (auto& r : x)
-   {
-      for (auto&& c : r)
-      {
-	 inplace_conj(c.value);
-      }
-   }
+   inplace_conj(x.diagonal());
 }
 
 template <typename T>

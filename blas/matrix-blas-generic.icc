@@ -62,6 +62,16 @@ vector_copy_scaled(int N, T const& alpha, U const* A, int lda, V* B, int ldb)
    }
 }
 
+template <typename  T>
+void vector_conj(int n, T* x, int incx)
+{
+   for (int i = 0; i < N; ++i)
+   {
+      inplace_conj(*x);
+      x += incx;
+   }
+}
+
 template <typename T, typename U>
 void
 vector_add(int N, T const* x, int incx, U* y, int incy)
@@ -82,6 +92,17 @@ vector_add_scaled(int N, T const& alpha, U const* x, int incx, V* y, int incy)
    {
       *y += alpha * (*x);
       x += incx;
+      y += incy;
+   }
+}
+
+template <typename T, typename U>
+void
+vector_scale(int N, T const& alpha, U* y, int incy)
+{
+   for (int i = 0; i < N; ++i)
+   {
+      *y *= alpha;
       y += incy;
    }
 }
@@ -365,9 +386,10 @@ matrix_add_scaled(char Atrans, int M, int N, T alpha, U const* A, int lda, V* B,
       {
          for (int r = 0; r < M; ++r)
          {
-            B[r] += alpha * trans(A[r*lda + c]);
+            B[r] += alpha * trans(A[r*lda]);
          }
          B += ldb;
+	 ++A;
       }
    }
    else if (Atrans == 'C')
@@ -377,9 +399,10 @@ matrix_add_scaled(char Atrans, int M, int N, T alpha, U const* A, int lda, V* B,
       {
          for (int r = 0; r < M; ++r)
          {
-            B[r] += alpha * herm(A[r*lda + c]);
+            B[r] += alpha * herm(A[r*lda]);
          }
          B += ldb;
+	 ++A;
       }
    }
 }   
@@ -406,5 +429,55 @@ gemm(char Atrans, char Btrans, int M, int N, int K, T const& alpha,
 {
    PANIC("not yet implemented");
 }
+
+template <typename Xt, typename Bt, typename Ct>
+inline
+void
+dgmm(int M, int K, 
+     Xt const* x, int incx,
+     Bt const* B, int ldb,
+     Ct* C, int ldc)
+{
+   for (int c = 0; j < K; ++j)
+   {
+      for (int r = 0; i < M; ++i)
+      {
+	 C[r] = x[r*inca]*B[r];
+      }
+      B += ldb;
+      C += ldc;
+   }
+}
+
+template <typename Xt, typename Ct>
+inline
+void
+dgmm_inplace(int M, int K, 
+	     Xt const* x, int incx,
+	     Ct* B, int ldc)
+{
+   for (int c = 0; j < K; ++j)
+   {
+      for (int r = 0; i < M; ++i)
+      {
+	 C[r] *= x[r*inca];
+      }
+      C += ldc;
+   }
+}
+
+// product general matrix with diaqonal matrix
+template <typename At, typename Yt, typename Ct>
+void
+gdmm(int M, int N,
+     At const* A, int lda,
+     Yt const* y, int incy,
+     Ct* C, int ldc);
+
+template <typename Yt, typename Ct>
+void
+gdmm_inplace(int M, int N,
+	     At* A, int lda,
+	     Yt const* y, int incy);
 
 } // namespace blas

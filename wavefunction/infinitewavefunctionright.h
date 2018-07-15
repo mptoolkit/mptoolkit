@@ -40,7 +40,7 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
 
       // construction from a LinearWavefunction (in right-canonical form with
       // lambda matrix on the left)
-      InfiniteWavefunctionRight(MatrixOperator const& Lambda, LinearWavefunction const& Psi,
+      InfiniteWavefunctionRight(MatrixOperator Lambda, LinearWavefunction const& Psi,
                                 QuantumNumbers::QuantumNumber const& QShift_);
 
       // constructs and canonicalizes the wavefunction
@@ -80,7 +80,7 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
       void debug_check_structure() const;
 
    private:
-      void Initialize(MatrixOperator const& Lambda, LinearWavefunction const& Psi);
+      void Initialize(MatrixOperator Lambda, LinearWavefunction const& Psi);
 
       QuantumNumber QShift;
 

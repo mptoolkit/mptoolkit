@@ -78,14 +78,14 @@ struct RightMultiply
 
    result_type operator()(argument_type const& x) const
    {
-      result_type r = x;
+      result_type r = copy(x);
       LinearWavefunction::const_iterator I = R.end();
       while (I != R.begin())
       {
          --I;
-         r = operator_prod(*I, r, herm(*I));
+         r = operator_prod(*I, std::move(r), herm(*I));
       }
-      return delta_shift(r, adjoint(QShift));
+      return delta_shift(std::move(r), adjoint(QShift));
    }
 
    LinearWavefunction const& R;
@@ -94,50 +94,53 @@ struct RightMultiply
 
 } // namespace
 
-InfiniteWavefunctionRight::InfiniteWavefunctionRight(MatrixOperator const& Lambda,
+InfiniteWavefunctionRight::InfiniteWavefunctionRight(MatrixOperator Lambda,
                                                      LinearWavefunction const& Psi,
                                                      QuantumNumbers::QuantumNumber const& QShift_)
    : QShift(QShift_)
 {
-   this->Initialize(Lambda, Psi);
+   this->Initialize(std::move(Lambda), Psi);
 }
 
 void
-InfiniteWavefunctionRight::Initialize(MatrixOperator const& Lambda,
+InfiniteWavefunctionRight::Initialize(MatrixOperator Lambda,
                                       LinearWavefunction const& Psi_)
 {
    LinearWavefunction Psi = Psi_;
-   MatrixOperator M = left_orthogonalize(Lambda, Psi);
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
+   MatrixOperator M = left_orthogonalize(std::move(Lambda), Psi);
 
    // we need to assemble the MPS in reverse order, so make a temporary container
    std::list<StateComponent> AMat;
    std::list<RealDiagonalOperator> Lam;
 
+   MatrixOperator U;
+   RealDiagonalOperator D;
    LinearWavefunction::const_iterator I = Psi.end();
    while (I != Psi.begin())
    {
       --I;
       StateComponent A = prod(*I, M);
       M = ExpandBasis1(A);
-      SingularValueDecomposition(M, U, D, Vh);
+      MatrixOperator Vh;
+      U = MatrixOperator();
+      D = RealDiagonalOperator();
+      SVD(M, U, D, Vh);
       AMat.push_front(prod(Vh, A));
-      Lam.push_front(D);
       M = U*D;
+      Lam.push_front(std::move(D));
    }
    U = delta_shift(U, adjoint(QShift));
    AMat.back() = prod(AMat.back(), U);
    Lam.push_back(delta_shift(D, adjoint(QShift)));
 
-   for (auto const& A : AMat)
+   for (auto& A : AMat)
    {
-      this->push_back(A);
+      this->push_back(std::move(A));
    }
 
-   for (auto const& L : Lam)
+   for (auto& L : Lam)
    {
-      this->push_back_lambda(L);
+      this->push_back_lambda(std::move(L));
    }
 
    this->setBasis1(D.Basis1());
@@ -168,7 +171,7 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
 
    MatrixOperator Guess = MatrixOperator::make_identity(PsiR.Basis2());
 
-   MatrixOperator RightEigen = Guess;
+   MatrixOperator RightEigen = copy(Guess);
 
    // get the eigenmatrix.  Do some dodgy explict restarts.
    int Iterations = 20;
@@ -197,10 +200,10 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
    DEBUG_CHECK(norm_frob(RightEigen - adjoint(RightEigen)) < 1e-12)
       (norm_frob(RightEigen - adjoint(RightEigen)));
 
-   MatrixOperator D = RightEigen;
-   MatrixOperator U = DiagonalizeHermitian(D);
-   D = SqrtDiagonal(D, OrthoTol);
-   MatrixOperator DInv = InvertDiagonal(D, OrthoTol);
+   MatrixOperator U = copy(RightEigen);
+   RealDiagonalOperator D = DiagonalizeHermitian(U);
+   D = SqrtDiagonal(std::move(D), OrthoTol);
+   RealDiagonalOperator DInv = InvertDiagonal(copy(D), OrthoTol);
 
    // RightEigen = triple_prod(U, D*D, herm(U))
    DEBUG_CHECK(norm_frob(RightEigen - triple_prod(herm(U), D*D, U)) < 1e-10)
@@ -215,7 +218,7 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
    PsiR.set_front(prod(RInv, PsiR.get_front()));
 
    // Get the left eigenvector, which is the density matrix
-   MatrixOperator LeftEigen = Guess;
+   MatrixOperator LeftEigen = std::move(Guess);
 
    // get the eigenmatrix
    Iterations = 20; Tol = ArnoldiTol;
@@ -234,9 +237,9 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
                                     Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
    }
 
-   D = LeftEigen;
-   U = DiagonalizeHermitian(D);
-   D = SqrtDiagonal(D, OrthoTol);
+   U = copy(LeftEigen);
+   D = DiagonalizeHermitian(U);
+   D = SqrtDiagonal(std::move(D), OrthoTol);
 
    // normalize
    D *= 1.0 / norm_frob(D);
@@ -250,7 +253,7 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
    PsiR.set_back(prod(PsiR.get_back(), adjoint(U)));
 
    // And now we have the right-orthogonalized form and the left-most lambda matrix
-   this->Initialize(D, PsiR);
+   this->Initialize(MatrixOperator(std::move(D)), PsiR);
 }
 
 InfiniteWavefunctionRight::InfiniteWavefunctionRight(InfiniteWavefunctionLeft const& Psi)
@@ -297,14 +300,14 @@ PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunctionRight 
 std::pair<RealDiagonalOperator, LinearWavefunction>
 get_right_canonical(InfiniteWavefunctionRight const& Psi)
 {
-   return std::make_pair(Psi.lambda(0), LinearWavefunction(Psi.base_begin(), Psi.base_end()));
+   return std::make_pair(copy(Psi.lambda(0).get()), LinearWavefunction(Psi.base_begin(), Psi.base_end()));
 }
 
 std::tuple<LinearWavefunction, RealDiagonalOperator, MatrixOperator>
 get_left_canonical(InfiniteWavefunctionRight const& Psi)
 {
    LinearWavefunction Result;
-   RealDiagonalOperator D = Psi.lambda_l();
+   RealDiagonalOperator D = copy(Psi.lambda_l().get());
    MatrixOperator Vh = MatrixOperator::make_identity(D.Basis2());
    for (auto const& I : Psi)
    {
@@ -313,7 +316,7 @@ get_left_canonical(InfiniteWavefunctionRight const& Psi)
       Result.push_back(A);
    }
 
-   return std::make_tuple(Result, D, Vh);
+   return std::make_tuple(Result, std::move(D), std::move(Vh));
 }
 
 void
@@ -347,11 +350,11 @@ InfiniteWavefunctionRight::rotate_left(int Count)
    std::rotate(this->lambda_base_begin_(), this->lambda_base_begin_()+Count,
                this->lambda_base_end_());
    // and put back the boundary lambda
-   this->push_back_lambda(delta_shift(this->lambda_l(), adjoint(this->qshift())));
+   this->push_back_lambda(delta_shift(this->lambda_l().get(), adjoint(this->qshift())));
 
    // set the right and right basis
-   this->setBasis1(lambda_l().Basis1());
-   this->setBasis2(lambda_r().Basis2());
+   this->setBasis1(lambda_l().get().Basis1());
+   this->setBasis2(lambda_r().get().Basis2());
 
    this->debug_check_structure();
 }

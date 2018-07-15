@@ -285,8 +285,8 @@ ConstructSuperOperatorSparse(F f, MatrixOperator const& Init)
       Pack.pack(M, &L[0]);
       for (unsigned j = 0; j < Size; ++j)
       {
-         if (norm_frob(Out(j,i)) != 0)
-            Out(j,i) = L[j];
+         if (norm_frob(L[j]) != 0)
+            Out.insert(j,i, L[j]);
       }
    }
 

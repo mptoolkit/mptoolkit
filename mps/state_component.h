@@ -365,7 +365,7 @@ template <typename T>
 inline
 BasicStateComponent<T> operator*(double y, BasicStateComponent<T> const& x)
 {
-   BasicStateComponent<T> Res(x);
+   BasicStateComponent<T> Res(copy(x));
    Res *= y;
    return Res;
 }
@@ -374,7 +374,7 @@ template <typename T>
 inline
 BasicStateComponent<T> operator*(std::complex<double> y, BasicStateComponent<T> const& x)
 {
-   StateComponent Res(x);
+   StateComponent Res(copy(x));
    Res *= y;
    return Res;
 }

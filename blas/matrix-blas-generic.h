@@ -40,6 +40,9 @@ template <typename T, typename U, typename V>
 void
 vector_copy_scaled(int N, T const& alpha, U const* A, int lda, V* B, int ldb);
 
+template <typename  T>
+void vector_conj(int N, T* x, int incx);
+
 template <typename T, typename U>
 void
 vector_add(int N, T const* x, int incx, U* y, int incy);
@@ -47,6 +50,10 @@ vector_add(int N, T const* x, int incx, U* y, int incy);
 template <typename T, typename U, typename V>
 void
 vector_add_scaled(int N, T const& alpha, U const* x, int incx, V* y, int incy);
+
+template <typename T, typename U>
+void
+vector_scale(int N, T const& alpha, U* y, int incy);
 
 template <typename T>
 void
@@ -131,12 +138,39 @@ matrix_inner_prod_nested(char Atrans, char Btrans, int M, int N,
 
 // We constrain beta to be a scalar here
 template <typename T, typename U, typename V, typename W, typename X>
-inline
 void
 gemm(char Atrans, char Btrans, int M, int N, int K, T const& alpha,
      U const* A, int lda,
      V const* B, int ldb,
      W beta, X* C, int ldc);
+
+// product diagonal with general matrix
+template <typename Xt, typename Bt, typename Ct>
+void
+dgmm(int M, int K, 
+     Xt const* x, int incx,
+     Bt const* B, int ldb,
+     Ct* C, int ldc);
+
+template <typename Xt, typename Ct>
+void
+dgmm_inplace(int M, int K,
+	     Xt const* x, int incx,
+	     Ct* B, int ldc);
+
+// product general matrix with diaqonal matrix
+template <typename At, typename Yt, typename Ct>
+void
+gdmm(int M, int N,
+     At const* A, int lda,
+     Yt const* y, int incy,
+     Ct* C, int ldc);
+
+template <typename At, typename Yt>
+void
+gdmm_inplace(int M, int N,
+	     At* A, int lda,
+	     Yt const* y, int incy);
 
 } // namespace blas
 

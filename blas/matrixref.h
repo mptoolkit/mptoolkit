@@ -552,6 +552,17 @@ void assign(MatrixRef<T, U, Tag>&& A, MatrixRef<T, V, Tag> const& B)
    matrix_copy(B.as_derived(), std::move(A.as_derived()));
 }
 
+template <typename T, typename U, typename V, typename W, typename Tag>
+inline
+void assign(MatrixRef<T, U, Tag>& A, DiagonalMatrixRef<V, W, Tag> const& B)
+{
+   clear(A.as_derived());
+   vector_copy(B.as_derived().diagonal(), A.as_derived().diagonal());
+   //   A.as_derived().diagonal() = B.diagonal();
+   //   matrix_copy(B.as_derived(), std::move(A.as_derived()));
+}
+
+// add
 
 template <typename T, typename U, typename V, typename Tag>
 inline
@@ -579,13 +590,6 @@ inline
 void subtract(MatrixRef<T, U, Tag>&& A, MatrixRef<T, V, Tag> const& B)
 {
    matrix_add_scaled(-number_traits<T>::identity(), B.as_derived(), std::move(A.as_derived()));
-}
-
-template <typename T, typename U, typename Tag>
-inline
-void clear(MatrixRef<T, U, Tag>& A)
-{
-   matrix_clear(A.as_derived());
 }
 
 // expression template for alpha * op(A)
@@ -810,7 +814,7 @@ template <typename T, typename Derived, typename U, typename V, typename D1, typ
 inline
 void add(MatrixRef<T, Derived, Tag>& C, MatrixProduct<U, V, D1, D2, Tag> const& a)
 {
-   gemm(a.Factor, a.A, number_traits<T>::identity(), a.B, C.as_derived());
+   gemm(a.Factor, a.A, number_traits<T>::identity(), a.B.as_derived(), C.as_derived());
 }
 
 template <typename T, typename Derived, typename U, typename V, typename D1, typename D2, typename Tag>
@@ -993,17 +997,17 @@ void vector_copy_scaled(T alpha, blas::BlasVector<T, U, Tag> const& x, BlasVecto
    vector_copy_scaled(x.size(), alpha, x.storage(), x.stride(), std::move(y).storage(), y.stride());
 }
 
-template <typename T, typename U, typename V, typename Tag>
+template <typename T, typename U, typename V, typename W, typename Tag>
 inline
-void vector_copy(blas::BlasVector<T, U, Tag> const& x, BlasVector<T, V, Tag>& y)
+void vector_copy(blas::BlasVector<T, U, Tag> const& x, BlasVector<V, W, Tag>& y)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
    vector_copy(x.size(), x.storage(), x.stride(), y.storage(), y.stride());
 }
 
-template <typename T, typename U, typename V, typename Tag>
+template <typename T, typename U, typename V, typename W, typename Tag>
 inline
-void vector_copy(blas::BlasVector<T, U, Tag> const& x, BlasVectorProxy<T, V, Tag>&& y)
+void vector_copy(blas::BlasVector<T, U, Tag> const& x, BlasVectorProxy<V, W, Tag>&& y)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
    vector_copy(x.size(), x.storage(), x.stride(), std::move(y).storage(), y.stride());
@@ -1052,6 +1056,21 @@ void vector_scale(T alpha, BlasVector<T, U, Tag>& y)
    vector_scale(y.size(), alpha, y.storage(), y.stride());
 }
 
+template <typename T, typename U, typename V, typename Tag>
+inline
+void scale(BlasVector<T, U, Tag>& C, V const& x)
+{
+   vector_scale(C.size(), x, C.storage(), C.stride());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void scale(BlasVectorProxy<T, U, Tag>&& C, V const& x)
+{
+   vector_scale(C.size(), x, std::move(C).storage(), C.stride());
+}
+
+// TODO: these middle-layer functions should disappear, eg this is just an overload of scale()
 template <typename T, typename U, typename Tag>
 inline
 void vector_scale(T alpha, BlasVectorProxy<T, U, Tag>&& y)
@@ -1110,6 +1129,62 @@ norm_frob_sq(blas::BlasVector<T, U, Tag> const& x, typename Tag::template async_
 {
    vector_norm_frob_sq(x.size(), x.storage(), x.stride(), y);
 }
+
+// inplace_conj
+
+template <typename T, typename U, typename Tag>
+inline
+void inplace_conj(BlasVector<T, U, Tag>& x)
+{
+   vector_conj(x.size(), x.storage(),x.stride());
+}
+
+template <typename T, typename U, typename Tag>
+inline
+void inplace_conj(BlasVectorProxy<T, U, Tag>&& x)
+{
+   vector_conj(x.size(), std::move(x).storage(), x.stride());
+}
+
+// inplace_conj is a no-op for real types
+
+template <typename U, typename Tag>
+inline
+void inplace_conj(BlasVector<float, U, Tag>& x)
+{
+}
+
+template <typename U, typename Tag>
+inline
+void inplace_conj(BlasVectorProxy<float, U, Tag>&& x)
+{
+}
+
+template <typename U, typename Tag>
+inline
+void inplace_conj(BlasVector<double, U, Tag>& x)
+{
+}
+
+template <typename U, typename Tag>
+inline
+void inplace_conj(BlasVectorProxy<double, U, Tag>&& x)
+{
+}
+
+#if defined(HAVE_FLOAT128)
+template <typename U, typename Tag>
+inline
+void inplace_conj(BlasVector<float128, U, Tag>& x)
+{
+}
+
+template <typename U, typename Tag>
+inline
+void inplace_conj(BlasVectorProxy<float128, U, Tag>&& x)
+{
+}
+#endif
 
 #if 0
 template <typename T, typename U, typename V, typename Tag>
@@ -1448,62 +1523,117 @@ void gemm(T alpha, BlasMatrix<T, U, Tag> const& A,
 
 // gemm for DiagonalMatrix * Matrix
 
-template <typename T, typename U, typename V, typename W, typename Tag>
+template <typename Scalar, typename T, typename U, typename V, typename W, typename X, typename Y, typename Tag>
 inline
-void gemm(T alpha, DiagonalBlasMatrix<T, U, Tag> const& A,
-          T beta, BlasMatrix<T, V, Tag> const& B,
-          NormalMatrix<T, W, Tag>& C)
+void gemm(Scalar alpha, DiagonalBlasMatrix<T, U, Tag> const& A,
+          Scalar beta, NormalMatrix<V, W, Tag> const& B,
+          NormalMatrix<X, Y, Tag>& C)
 {
    DEBUG_CHECK_EQUAL(A.cols(), B.rows());
    DEBUG_CHECK_EQUAL(A.rows(), C.rows());
    DEBUG_CHECK_EQUAL(B.cols(), C.cols());
-   dgmm_left(B.trans(), A.cols(), B.cols(), alpha, A.storage(),
-	     A.stride(), B.storage(), B.leading_dimension(), beta,
-	     C.storage(), C.leading_dimension());
+   
+   // The dgmm call only supports beta=0, alpha=1 so other cases need emulation
+   if (beta != number_traits<Scalar>::zero())
+   {
+      PANIC("unsupported");
+#if 0
+      Matrix<X, Tag> Temp(A*B);
+      if (alpha != number_traits<Scalar>::identity())
+	 Temp *= alpha;
+      C += Temp;
+#endif
+   }
+   else
+   {
+      dgmm(A.rows(), B.cols(), A.storage(), A.stride(), 
+	   B.storage(), B.leading_dimension(),
+	   C.storage(), C.leading_dimension());
+      if (alpha != number_traits<Scalar>::identity())
+	 C.as_derived() *= alpha;
+   }
 }
 
-template <typename T, typename U, typename V, typename W, typename Tag>
+template <typename Scalar, typename T, typename U, typename V, typename W, typename X, typename Y, typename Tag>
 inline
-void gemm(T alpha, DiagonalBlasMatrix<T, U, Tag> const& A,
-          T beta, BlasMatrix<T, V, Tag> const& B,
-          NormalMatrixProxy<T, W, Tag>&& C)
+void gemm(Scalar alpha, DiagonalBlasMatrix<T, U, Tag> const& A,
+          Scalar beta, NormalMatrix<V, W, Tag> const& B,
+          NormalMatrixProxy<X, Y, Tag>&& C)
 {
    DEBUG_CHECK_EQUAL(A.cols(), B.rows());
    DEBUG_CHECK_EQUAL(A.rows(), C.rows());
    DEBUG_CHECK_EQUAL(B.cols(), C.cols());
-   dgmm_left(B.trans(), A.cols(), B.cols(), alpha, A.storage(),
-	     A.stride(), B.storage(), B.leading_dimension(), beta,
-	     std::move(C).storage(), C.leading_dimension());
+   
+   // The dgmm call only supports beta=0, alpha=1 so other cases need emulation
+   if (beta != number_traits<Scalar>::zero())
+   {
+      PANIC("unsupported");
+#if 0
+      // need a temporary
+      Matrix<X, Tag> Temp(A*B);
+      if (alpha != number_traits<Scalar>::identity())
+	 Temp *= alpha;
+      std::move(C) += Temp;
+#endif
+   }
+   else
+   {
+      dgmm(A.rows(), B.cols(), A.storage(), A.stride(), 
+	   B.storage(), B.leading_dimension(),
+	   std::move(C).storage(), C.leading_dimension());
+      if (alpha != number_traits<Scalar>::identity())
+	 std::move(C).as_derived() *= alpha;
+   }
 }
 
 // gemm for Matrix * DiagonalMatrix
 
-template <typename T, typename U, typename V, typename W, typename Tag>
+template <typename Scalar, typename T, typename U, typename V, typename W, typename X, typename Y, typename Tag>
 inline
-void gemm(T alpha, BlasMatrix<T, U, Tag> const& A,
-          T beta, DiagonalBlasMatrix<T, V, Tag> const& B,
-          NormalMatrix<T, W, Tag>& C)
+void gemm(Scalar alpha, BlasMatrix<T, U, Tag> const& A,
+          Scalar beta, DiagonalBlasMatrix<V, W, Tag> const& B,
+          NormalMatrix<X, Y, Tag>& C)
 {
    DEBUG_CHECK_EQUAL(A.cols(), B.rows());
    DEBUG_CHECK_EQUAL(A.rows(), C.rows());
    DEBUG_CHECK_EQUAL(B.cols(), C.cols());
-   dgmm_right(A.trans(), A.rows(), A.cols(), alpha, A.storage(),
-	      A.leading_dimension(), B.storage(), B.stride(), beta,
-	      C.storage(), C.leading_dimension());
+   // The dgmm call only supports beta=0, alpha=1 so other cases need emulation
+   if (beta != number_traits<Scalar>::zero())
+   {
+      PANIC("unsupported");
+   }
+   else
+   {
+      gdmm(A.rows(), A.cols(), A.storage(), A.leading_dimension(),
+	   B.storage(), B.stride(),
+	   C.storage(), C.leading_dimension());
+      if (alpha != number_traits<Scalar>::identity())
+	 C.as_derived() *= alpha;
+   }
 }
 
-template <typename T, typename U, typename V, typename W, typename Tag>
+template <typename Scalar, typename T, typename U, typename V, typename W, typename X, typename Y, typename Tag>
 inline
-void gemm(T alpha, BlasMatrix<T, U, Tag> const& A,
-          T beta, DiagonalBlasMatrix<T, V, Tag> const& B,
-          NormalMatrixProxy<T, W, Tag>&& C)
+void gemm(Scalar alpha, BlasMatrix<T, U, Tag> const& A,
+          Scalar beta, DiagonalBlasMatrix<V, W, Tag> const& B,
+          NormalMatrixProxy<X, Y, Tag>&& C)
 {
    DEBUG_CHECK_EQUAL(A.cols(), B.rows());
    DEBUG_CHECK_EQUAL(A.rows(), C.rows());
    DEBUG_CHECK_EQUAL(B.cols(), C.cols());
-   dgmm_right(A.trans(), A.rows(), A.cols(), alpha, A.storage(),
-	      A.leading_dimension(), B.storage(), B.stride(), beta,
-	      std::move(C).storage(), C.leading_dimension());
+   // The dgmm call only supports beta=0, alpha=1 so other cases need emulation
+   if (beta != number_traits<Scalar>::zero())
+   {
+      PANIC("unsupported");
+   }
+   else
+   {
+      gdmm(A.rows(), A.cols(), A.storage(), A.leading_dimension(),
+	   B.storage(), B.stride(),
+	   std::move(C).storage(), C.leading_dimension());
+      if (alpha != number_traits<Scalar>::identity())
+	 std::move(C).as_derived() *= alpha;
+   }
 }
 
 template <typename T, typename U, typename V, typename Tag>

@@ -192,7 +192,7 @@ class IrredTensor
       template <typename U, typename US>
       explicit IrredTensor(IrredTensor<U, Basis1T, Basis2T, US> const& r)
          : Basis1_(r.Basis1()), Basis2_(r.Basis2()), Trans_(r.TransformsAs()),
-           Data_(r.data()) {}
+           Data_(copy(r.data())) {}
 
       IrredTensor& operator=(IrredTensor&& Other) noexcept = default;
 
@@ -714,7 +714,8 @@ flip_conj(Tensor::IrredTensor<T, B1, B2, S> const& x)
    //   if (x.is_null()) return Tensor::IrredTensor<T, B1, B2, S>();
    QuantumNumbers::QuantumNumber q = x.TransformsAs();
    Tensor::IrredTensor<T, B1, B2, S> Result(adjoint(x.Basis1()), adjoint(x.Basis2()), adjoint(q));
-   Result.data() = conj(copy(x.data()));
+   inplace_conj(Result.data());
+   //   Result.data() = conj(copy(x.data()));
    return Result;
 }
 

@@ -593,7 +593,7 @@ delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
 
    IrredTensor<T, B1, B2, S> Result(NewBasis1, NewBasis2, x.TransformsAs());
 
-   Result.data() = x.data();
+   Result.data() = copy(x.data());
 
 #if 0
    typedef typename IrredTensor<T, B1, B2, S>::const_iterator       const_iterator;

@@ -107,7 +107,15 @@ class BasicSparseVector
       template <typename U>
       iterator insert(int Col, U&& value)
       {
-	 auto i = Elements.insert(std::make_pair(Col, std::forward<U>(value)));
+	 auto i = Elements.insert(std::make_pair(Col, T(std::forward<U>(value))));
+         //bool Inserted = Elements.insert(std::make_pair(Col, std::forward<U>(value))).second;
+         DEBUG_CHECK(i.second);
+	 return iterator(i.first);
+      }
+
+      iterator insert(int Col, T value)
+      {
+	 auto i = Elements.insert(std::make_pair(Col, std::move(value)));
          //bool Inserted = Elements.insert(std::make_pair(Col, std::forward<U>(value))).second;
          DEBUG_CHECK(i.second);
 	 return iterator(i.first);
@@ -1033,12 +1041,14 @@ std::ostream& operator<<(std::ostream& out, SparseMatrix<double> const& x)
 template <typename T>
 template <typename U>
 SparseMatrix<T>::SparseMatrix(DiagonalMatrix<U> const& Other)
-   : Cols(Other.cols()), RowStorage(Other.rows())
+   : Cols(Other.cols())
 {
+   RowStorage.reserve(Other.rows());
    int c = 0;
    for (auto const& x : Other.diagonal())
    {
-      this->insert(c, c, copy(x));
+      RowStorage.push_back(SparseMatrixRow<T>(c));
+      RowStorage.back().insert(c, copy(x));
       ++c;
    }
 }
@@ -1047,12 +1057,22 @@ template <typename T>
 SparseMatrix<T>::SparseMatrix(DiagonalMatrix<T>&& Other)
    : Cols(Other.cols()), RowStorage(Other.rows())
 {
+   RowStorage.reserve(Other.rows());
+   int c = 0;
+   for (auto const& x : Other.diagonal())
+   {
+      RowStorage.push_back(SparseMatrixRow<T>(c));
+      RowStorage.back().insert(c, copy(x));
+      ++c;
+   }
+#if 0
    int c = 0;
    for (auto&& x : Other.diagonal())
    {
       this->insert(c, c, copy(x));
       ++c;
    }
+#endif
 }
 
 } // namespace blas
