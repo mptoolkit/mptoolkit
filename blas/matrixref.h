@@ -971,14 +971,14 @@ template <typename T, typename U, typename Tag>
 inline
 void clear(BlasVector<T, U, Tag>& C)
 {
-   vector_clear(C.size, C.storage(), C.stride());
+   vector_clear(C.size(), C.storage(), C.stride());
 }
 
 template <typename T, typename U, typename Tag>
 inline
 void clear(BlasVectorProxy<T, U, Tag>&& C)
 {
-   vector_clear(C.size, std::move(C).storage(), C.stride());
+   vector_clear(C.size(), std::move(C).storage(), C.stride());
 }
 
 template <typename T, typename U, typename V, typename Tag>
@@ -1886,6 +1886,7 @@ void Diagonalize(NormalMatrix<std::complex<double>, U, Tag> const& M,
 // X = M' is the transform matrix, E is the diagonal matrix of eigenvalues,
 // we have MX = XE
 //
+// The vector v must be initialized to the correct size.
 
 template <typename U, typename V, typename Tag>
 inline
@@ -1975,6 +1976,37 @@ SingularValueDecomposition(NormalMatrix<std::complex<double>, M, Tag>&& Mmat,
 			      Umat.storage(), Umat.leading_dimension(),
                               Vmat.storage(), Vmat.leading_dimension());
 }
+
+//
+// LinearSolve
+//
+// Solves a general system of linear equations  M*v=rhs.
+// For input M is a general square matrix,
+// and RHS is a matrix, with rows representing different right hand sides
+// for which the system of equations is to be solved.
+// On exit, the RHS matrix is replaced by the solution vectors.
+// Satisfies m * result' = rhs
+
+// version with one RHS vector
+template <typename U, typename V, typename Tag>
+void
+LinearSolve(NormalMatrix<double, U, Tag> const& M, NormalVector<double, V, Tag>& RHS);
+
+// version with multiple RHS's
+template <typename U, typename V, typename Tag>
+void
+LinearSolve(NormalMatrix<double, U, Tag> const& M, NormalMatrix<double, V, Tag>& RHS);
+
+template <typename U, typename V, typename Tag>
+void
+LinearSolve(NormalMatrix<std::complex<double>, U, Tag> const& M,
+	    NormalVector<std::complex<double>, V, Tag>& RHS);
+
+// version with multiple RHS's
+template <typename U, typename V, typename Tag>
+void
+LinearSolve(NormalMatrix<std::complex<double>, U, Tag> const& M,
+	    NormalMatrix<std::complex<double>, V, Tag>& RHS);
 
 } // namespace blas
 

@@ -59,17 +59,17 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 
    blas::Matrix<double> SubH(Iterations+1, Iterations+1, 0.0);
 
-   VectorType w = Guess;
+   VectorType w = copy(Guess);
 
    double Beta = norm_frob(w);
    CHECK(!std::isnan(Beta));
    // double OrigBeta = Beta;      // original norm, not used
    w *= 1.0 / Beta;
-   v.push_back(w);
+   v.push_back(copy(w));
 
    w = MatVecMultiply(v[0]);
-   Hv.push_back(w);
-   SubH(0,0) = real(inner_prod(v[0], w));
+   Hv.push_back(copy(w));
+   SubH(0,0) = std::real(inner_prod(v[0], w));
    w -= SubH(0,0) * v[0];
 
    Beta = norm_frob(w);
@@ -78,7 +78,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       if (Verbose > 0)
          std::cerr << "lanczos: immediate return, invariant subspace found, Beta="
                    << Beta << '\n';
-      Guess = v[0];
+      Guess = std::move(v[0]);
       Iterations = 1;
       Tol = Beta;
       return SubH(0,0);
@@ -95,11 +95,11 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
    {
       SubH(i, i-1) = SubH(i-1, i) = Beta;
       w *= 1.0 / Beta;
-      v.push_back(w);
+      v.push_back(copy(w));
       w = MatVecMultiply(v[i]);
-      Hv.push_back(w);
+      Hv.push_back(copy(w));
       w -= Beta*v[i-1];
-      SubH(i,i) = real(inner_prod(v[i], w));
+      SubH(i,i) = std::real(inner_prod(v[i], w));
       w -= SubH(i,i) * v[i];
       Beta = norm_frob(w);
 
@@ -113,7 +113,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
          Iterations = i+1;
          blas::Matrix<double> M = SubH(blas::range(0,i+1),
 				       blas::range(0,i+1));
-         blas::Vector<double> EValues;
+         blas::Vector<double> EValues(i+1);
 	 DiagonalizeHermitian(M, EValues);
          double Theta = EValues[0];    // smallest eigenvalue
          double SpectralDiameter = EValues[i] - EValues[0];  // largest - smallest
@@ -121,7 +121,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
          for (int j = 1; j <= i; ++j)
             y += M(j,0) * v[j];
          Tol = Beta / SpectralDiameter;
-         Guess = y;
+         Guess = std::move(y);
          return Theta;
       }
 
@@ -143,7 +143,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
          }
       }
 
-      blas::Vector<double> EValues;
+      blas::Vector<double> EValues(M.rows());
       DiagonalizeHermitian(M, EValues);
       double Theta = EValues[0];    // smallest eigenvalue
       double SpectralDiameter = EValues[i] - EValues[0];  // largest - smallest
@@ -167,13 +167,13 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
                       << ", iterations=" << (i+1) << '\n';
          Iterations = i+1;
          Tol = ResidNorm / SpectralDiameter;
-         Guess = y;
+         Guess = std::move(y);
          return Theta;
       }
 
       if (i == Iterations-1) // finished?
       {
-         Guess = y;
+         Guess = std::move(y);
          Tol = -ResidNorm / SpectralDiameter;
          return Theta;
       }

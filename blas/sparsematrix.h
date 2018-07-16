@@ -121,6 +121,35 @@ class BasicSparseVector
 	 return iterator(i.first);
       }
 
+      template <typename U>
+      iterator set(int Col, U&& value)
+      {
+	 auto i = Elements.find(Col);
+	 if (i == Elements.end())
+	 {
+	    return this->set(Col, std::forward<U>(value));
+	 }
+	 else
+	 {
+	    i->second = std::forward<U>(value);
+	    return iterator(i);
+	 } 
+      }
+
+      iterator set(int Col, T value)
+      {
+	 auto i = Elements.find(Col);
+	 if (i == Elements.end())
+	 {
+	    return this->set(Col, std::move(value));
+	 }
+	 else
+	 {
+	    i->second = std::move(value);
+	    return iterator(i);
+	 } 
+      }
+
       void add(int Col, T const& value)
       {
          base_iterator I = Elements.find(Col);
@@ -525,6 +554,22 @@ class SparseMatrix
          DEBUG_RANGE_CHECK_OPEN(r, 0, RowStorage.size());
          DEBUG_RANGE_CHECK_OPEN(c, 0, Cols);
          RowStorage[r].insert(c, std::move(value));
+      }
+
+      template <typename U>
+      void set(int r, int c, U const& value)
+      {
+         DEBUG_RANGE_CHECK_OPEN(r, 0, RowStorage.size());
+         DEBUG_RANGE_CHECK_OPEN(c, 0, Cols);
+         RowStorage[r].set(c, value);
+      }
+
+      template <typename U>
+      void set(int r, int c, U&& value)
+      {
+         DEBUG_RANGE_CHECK_OPEN(r, 0, RowStorage.size());
+         DEBUG_RANGE_CHECK_OPEN(c, 0, Cols);
+         RowStorage[r].set(c, std::move(value));
       }
 
       template <typename U>

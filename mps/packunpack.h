@@ -28,173 +28,25 @@
 #include "state_component.h"  // for MatrixOperator definition
 #include <complex>
 
-class PackMatrixOperator
-{
-   public:
-      typedef std::complex<double> value_type;
+// pack a MatrixOperator into an inner-product conserving linear vector
+void pack(MatrixOperator const& m, std::vector<complex>& v);
 
-      PackMatrixOperator(VectorBasis const& Basis1,
-                         VectorBasis const& Basis2,
-                         QuantumNumbers::QuantumNumber const& q);
+// unpack a linear vector into a MatrixOpearator
+void unpack(MatrixOperator& m, std::vector<complex> const& v);
 
-      PackMatrixOperator(MatrixOperator const& m);
+void pack(StateComponent const& m, std::vector<complex>& v);
+void unpack(StateComponent& m, std::vector<complex> const& v);
 
-      value_type* pack(MatrixOperator const& m, value_type* Iter) const;
 
-      MatrixOperator unpack(value_type const* Iter) const;
-
-      std::size_t size() const { return Size_; }
-
-   private:
-      void Initialize(VectorBasis const& Basis1,
-                      VectorBasis const& Basis2,
-                      QuantumNumbers::QuantumNumber const& q_);
-
-      // OffsetRecType contains the information for an individual dense block
-      struct OffsetRecType
-      {
-         int r, c;          // row and column of the MatrixOperator
-         int Offset;        // offset into the packed array of this section
-         unsigned Size;     // size of this block
-         OffsetRecType() {}
-         OffsetRecType(int r_, int c_, int Offset_, int Size_)
-            : r(r_), c(c_), Offset(Offset_), Size(Size_) {}
-      };
-
-      typedef  std::vector<OffsetRecType> OffsetArrayType;
-
-      VectorBasis B1_, B2_;
-      QuantumNumbers::QuantumNumber q_;
-      int Size_;  // linear size
-      std::vector<OffsetRecType> OffsetArray_;   // array of blocks
-      blas::Matrix<int> OffsetMatrix_;  // offset of each valid block
-};
-
-class PackStateComponent
-{
-   public:
-      typedef std::complex<double> value_type;
-
-      PackStateComponent(BasisList const& LocalBasis, VectorBasis const& Basis1,
-                         VectorBasis const& Basis2);
-
-      PackStateComponent(StateComponent const& m);
-
-      value_type* pack(StateComponent const& m, value_type* Iter) const;
-
-      StateComponent unpack(value_type const* Iter) const;
-
-      std::size_t size() const { return Size_; }
-
-   private:
-      void Initialize(BasisList const& LocalBasis, VectorBasis const& Basis1,
-                      VectorBasis const& Basis2);
-
-      // OffsetRecType contains the information for an individual dense block
-      struct OffsetRecType
-      {
-         int q;             // index into the StateComponent
-         int r, c;          // row and column of the StateComponent
-         int Offset;        // offset into the packed array of this section
-         unsigned Size;     // size of this block
-         OffsetRecType() {}
-         OffsetRecType(int q_, int r_, int c_, int Offset_, int Size_)
-            : q(q_), r(r_), c(c_), Offset(Offset_), Size(Size_) {}
-      };
-
-      typedef  std::vector<OffsetRecType> OffsetArrayType;
-
-      BasisList B_;
-      VectorBasis B1_, B2_;
-      int Size_;  // linear size
-      std::vector<OffsetRecType> OffsetArray_;   // array of blocks
-      typedef std::vector<blas::Matrix<int>> OffsetMatrixType;
-      OffsetMatrixType OffsetMatrix_;  // offset of each valid block
-};
-
-// some helper functors
-
-template <typename F>
-struct ApplyToPackedOperator
-{
-   ApplyToPackedOperator(F const& f, VectorBasis const& B1, VectorBasis const& B2, 
-			 QuantumNumbers::QuantumNumber const& q) 
-      : f_(f),
-	Pack(B1, B2, q)
-   {}
-
-   ApplyToPackedOperator(F const& f, MatrixOperator const& M)
-      : f_(f),
-	Pack(M.Basis1(), M.Basis2(), M.TransformsAs())
-   {}
-
-   int pack_size() const { return Pack.size(); }
-
-   void pack(MatrixOperator const& x, std::complex<double>* Out) const
-   {
-      Pack.pack(x, Out);
-   }
-
-   MatrixOperator unpack(std::complex<double> const* In) const
-   {
-      return Pack.unpack(In);
-   }
-
-   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
-   {
-      MatrixOperator x = Pack.unpack(In);
-      x = f_(x);
-      Pack.pack(x, Out);
-   }
-
-   PackMatrixOperator Pack;
-   F f_;
-};
-
-template <typename F>
-struct ApplyToPackedStateComponent
-{
-   ApplyToPackedStateComponent(F const& f, BasisList const& B, 
-			       VectorBasis const& B1, VectorBasis const& B2) 
-      : f_(f),
-	Pack(B, B1, B2)
-   {}
-
-   ApplyToPackedStateComponent(F const& f, StateComponent const& M)
-      : f_(f),
-	Pack(M.LocalBasis(), M.Basis1(), M.Basis2())
-   {}
-
-   int pack_size() const { return Pack.size(); }
-
-   void pack(StateComponent const& x, std::complex<double>* Out) const
-   {
-      Pack.pack(x, Out);
-   }
-
-   StateComponent unpack(std::complex<double> const* In) const
-   {
-      return Pack.unpack(In);
-   }
-   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
-   {
-      StateComponent x = Pack.unpack(In);
-      x = f_(x);
-      Pack.pack(x, Out);
-   }
-
-   PackStateComponent Pack;
-   F f_;
-};
 
 // construct the full matrix representation of some superoperator
 // given by the functor F : MatrixOperator -> MatrixOperator
 template <typename F>
-blas::Matrix<std::complex<double> >
+blas::Matrix<std::complex<double>>
 ConstructSuperOperator(F f, MatrixOperator const& Init);
 
 template <typename F>
-blas::Matrix<std::complex<double> >
+blas::Matrix<std::complex<double>>
 ConstructSuperOperator(F f, MatrixOperator const& Init)
 {
    PackMatrixOperator Pack(Init);

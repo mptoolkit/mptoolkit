@@ -55,17 +55,17 @@ template <typename Matrix, typename Vector1, typename Vector2>
 void
 Update(Vector1& x, int k, Matrix const& h, Vector2 const& s, Vector1 v[])
 {
-  Vector2 y(s);
+   Vector2 y(copy(s));
 
-  // Backsolve:
-  for (int i = k; i >= 0; i--) {
-    y[i] /= h(i,i);
-    for (int j = i - 1; j >= 0; j--)
-      y[j] -= h(j,i) * y[i];
-  }
+   // Backsolve:
+   for (int i = k; i >= 0; i--) {
+      y[i] /= h(i,i);
+      for (int j = i - 1; j >= 0; j--)
+	 y[j] -= h(j,i) * y[i];
+   }
 
-  for (int j = 0; j <= k; j++)
-    x += v[j] * y[j];
+   for (int j = 0; j <= k; j++)
+      x += v[j] * y[j];
 }
 
 template<typename Real>
@@ -129,7 +129,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, double normb, Vector const& b,
   blas::Matrix<value_type> H(m+1, m+1, 0.0);
 
   Vector w = Precondition(MatVecMultiply(x));
-  Vector r = Precondition(b) - w; // - MatVecMultiply(x));
+  Vector r = Precondition(copy(b)) - w; // - MatVecMultiply(x));
   double beta = norm_frob(r);
 
   // Initial guess for x:

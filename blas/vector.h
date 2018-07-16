@@ -429,7 +429,7 @@ Vector<T, Tag>
 copy(blas::BlasVector<T, U, Tag> const& x)
 {
    Vector<T, Tag> Result(x.size());
-   assign(Result, x.derived());
+   assign(Result, x.as_derived());
    return Result;
 }
 

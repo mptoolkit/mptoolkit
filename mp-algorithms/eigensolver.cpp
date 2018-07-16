@@ -163,7 +163,7 @@ template <typename Func>
 void
 LinearSolveDirect(StateComponent& x, Func F, StateComponent const& Rhs, int Verbose = 0)
 {
-   blas::Matrix<double> HMat = real(ConstructSuperOperator(F, x));
+   blas::Matrix<std::complex<double>> HMat = ConstructSuperOperator(F, x);
 
    PackStateComponent Pack(x);
    if (Verbose > 0)
@@ -173,12 +173,8 @@ LinearSolveDirect(StateComponent& x, Func F, StateComponent const& Rhs, int Verb
 
    blas::Vector<std::complex<double>> v(Pack.size());
    Pack.pack(Rhs, v.storage());
-
-   blas::Matrix<double> vv(v.size(),1);
-   vv.column(0) = real(v);
-   blas::Vector<std::complex<double>> xx = LinearSolve(HMat, vv).column(0);
-
-   x = Pack.unpack(xx);
+   LinearSolve(HMat, v);
+   x = Pack.unpack(v.storage());
 }
 
 template <typename Func, typename Prec>
@@ -188,7 +184,7 @@ LinearSolve(StateComponent& x, Func F, Prec P, StateComponent const& Rhs, int k,
    int m = k;     // krylov subspace size
    int iter = 0;   // total number of iterations performed
 
-   double normb = norm_frob(P(Rhs));
+   double normb = norm_frob(P(copy(Rhs)));
 
    int IterThisRound = m*500;
    if (IterThisRound > MaxIter)
@@ -209,7 +205,7 @@ LinearSolve(StateComponent& x, Func F, Prec P, StateComponent const& Rhs, int k,
       //      TRACE("Refinement step")(iter);
       // iterative refinement step
       StateComponent R = Rhs- F(x);
-      StateComponent xRefine = R;
+      StateComponent xRefine = copy(R);
       IterThisRound = m*500;
       tol = Tol;
       Ret = GmRes(xRefine, F, normb, R, m, IterThisRound, tol, P, Verbose);
@@ -300,7 +296,7 @@ LocalEigensolver::Solve(StateComponent& C,
    DEBUG_CHECK_EQUAL(RightBlockHam.LocalBasis(), H.Basis2());
    DEBUG_CHECK_EQUAL(C.LocalBasis(), H.LocalBasis2());
 
-   StateComponent ROld = C;
+   StateComponent ROld = copy(C);
 
    if (EvolveDelta == 0.0)
    {
@@ -328,9 +324,11 @@ LocalEigensolver::Solve(StateComponent& C,
       }
       else if (Solver_ == Solver::ShiftInvert)
       {
-	 StateComponent RHS = C;
+	 StateComponent RHS = copy(C);
 	 if (UsePreconditioning)
 	 {
+	    PANIC("not implemented");
+#if 0
 	    if (Verbose > 2)
 	    {
 	       std::cerr << "Using diagonal preconditioning\n";
@@ -358,11 +356,12 @@ LocalEigensolver::Solve(StateComponent& C,
 			InverseDiagonalPrecondition(D, ShiftInvertEnergy),
 			RHS, SubspaceSize, LastIter_, LastTol_, Verbose-1);
 	    //TRACE(C);
+#endif
 	 }
 	 else
 	 {
 	    LinearSolve(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy),
-			LinearAlgebra::Identity<StateComponent>(),
+			[](auto a){return a;},
 			RHS, SubspaceSize, LastIter_, LastTol_, Verbose-1);
 	 }
 
@@ -376,7 +375,7 @@ LocalEigensolver::Solve(StateComponent& C,
       }
       else if (Solver_ == Solver::ShiftInvertDirect)
       {
-	 StateComponent RHS = C;
+	 StateComponent RHS = copy(C);
 	 //TRACE(ShiftInvertEnergy);
 	 LinearSolveDirect(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy), RHS, Verbose-1);
 	 LastTol_ = norm_frob(MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy)(C) - RHS);

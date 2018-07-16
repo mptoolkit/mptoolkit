@@ -54,7 +54,7 @@ bool GramSchmidtAppend(std::vector<VectorType>& Basis,
       return false;
 
    int BasisSize = Basis.size();
-   Basis.push_back(NewVec);
+   Basis.push_back(std::move(NewVec));
 
    double Norm2 = OriginalNorm;
    for (int n = 0; n < 2; ++n)
@@ -152,17 +152,17 @@ double Davidson(VectorType& Guess, VectorType const& Diagonal, MultiplyFunctor M
 
    MaxEnergy = TargetEnergy+1.0;
 
-   VectorType w = Guess;
+   VectorType w = copy(Guess);
 
    double Beta = norm_frob(w);
    w *= 1.0 / Beta;
-   v.push_back(w);
+   v.push_back(copy(w));
 
    for (int j = 1; j <= Iterations; ++j)
    {
       // Matrix vector multiply
       w = MatVecMultiply(v[j-1]);
-      Hv.push_back(w);
+      Hv.push_back(copy(w));
       // Subspace matrix elements
       for (int i = 0; i < j; ++i)
       {
@@ -224,7 +224,7 @@ double Davidson(VectorType& Guess, VectorType const& Diagonal, MultiplyFunctor M
 
       if (j == Iterations)  // finished?
       {
-         Guess = y;
+         Guess = std::move(y);
          Guess *= Beta; // normalize to the norm of the initial guess vector
          return Theta;
       }
@@ -239,12 +239,12 @@ double Davidson(VectorType& Guess, VectorType const& Diagonal, MultiplyFunctor M
       JacobiDavidsonIteration(r, Diagonal, Theta, y);
 
       // Orthogonalization step
-      bool Added = GramSchmidtAppend(v, r, 1E-6);
+      bool Added = GramSchmidtAppend(v, copy(r), 1E-6);
       if (!Added)
       {
          if (Verbose > 1)
             std::cerr << "Happy breakdown: failed to add subspace vector\n";
-         Guess = y;
+         Guess = std::move(y);
          Guess *= Beta; // normalize to the norm of the initial guess vector
          Iterations = j;
          return Theta;

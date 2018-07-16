@@ -31,7 +31,7 @@ void PackMatrixOperator::Initialize(VectorBasis const& Basis1,
    B1_ = Basis1;
    B2_ = Basis2;
    q_ = q;
-   OffsetMatrix_ = LinearAlgebra::Matrix<int>(Basis1.size(), Basis2.size(), -1);
+   OffsetMatrix_ = blas::Matrix<int>(Basis1.size(), Basis2.size(), -1);
    unsigned Offset = 0;
    for (unsigned i = 0; i < Basis1.size(); ++i)
    {
@@ -61,21 +61,50 @@ PackMatrixOperator::PackMatrixOperator(MatrixOperator const& m)
    Initialize(m.Basis1(), m.Basis2(), m.TransformsAs());
 }
 
+void
+PackMatrixOperator::pack(cpu::Matrix const& m, value_type* Iter, double Factor)
+{
+   // pack in column-major format
+   for (int i = 0; i < m.cols(); ++i)
+   {
+      vector_view(m.rows(), 1, Iter+i*m.leading_dimension())
+	 = m.column(i);
+   }
+}
+
+void
+PackMatrixOperator::unpack(cpu::Matrix& m, value_type const* Iter, double Factor)
+{
+   // pack in column-major format
+   for (int i = 0; i < m.cols(); ++i)
+   {
+      vector_view(m.rows(), 1, Iter+i*m.leading_dimension())
+	 = Factor * m.column(i);
+   }
+}
+
+void
+PackMatrixOperator::unpack(cpu::Matrix& m, value_type const* Iter, double Factor)
+{
+   // pack in column-major format
+   for (int i = 0; i < m.cols(); ++i)
+   {
+      m.column(i) = Factor * const_vector_view(m.rows(), 1, Iter+i*m.leading_dimension());
+   }
+}
+
 PackMatrixOperator::value_type*
 PackMatrixOperator::pack(MatrixOperator const& m, value_type* Iter) const
 {
-   typedef LinearAlgebra::VectorMemProxy<value_type> VecProxy;
-   typedef LinearAlgebra::VectorMemProxy<value_type const> ConstVecProxy;
-   for (OffsetArrayType::const_iterator I = OffsetArray_.begin();
-        I != OffsetArray_.end(); ++I)
+   for (auto const& I : OffsetArray_)
    {
-      const_inner_iterator<MatrixOperator>::type J = iterate_at(m.data(), I->r, I->c);
-      if (J)
+      auto J = m.row(I.r).find(I.c);
+      if (J != m.row(I.r).end())
       {
-         DEBUG_CHECK_EQUAL(I->Size, size1(*J)*size2(*J));
+      {
+	 DEBUG_CHECK_EQUAL(I.Size, J.value.rows()*J.value.cols());
          // normalization correction is sqrt(degree(B1[I->r]))
-         VecProxy(Iter+I->Offset, I->Size)
-            = std::sqrt(double(degree(B1_[I->r]))) * ConstVecProxy(data(*J), I->Size);
+	 pack(get_wait(J.value), Iter+I.offset, std::sqrt(double(degree(B1_[I.r]))));
       }
       else
       {
@@ -88,15 +117,12 @@ PackMatrixOperator::pack(MatrixOperator const& m, value_type* Iter) const
 MatrixOperator
 PackMatrixOperator::unpack(value_type const* Iter) const
 {
-   //   typedef LinearAlgebra::VectorMemProxy<value_type> VecProxy;
    MatrixOperator Result(B1_, B2_, q_);
-   for (OffsetArrayType::const_iterator I = OffsetArray_.begin();
-        I != OffsetArray_.end(); ++I)
+   for (auto const& I : OffsetArray_)
    {
-      LinearAlgebra::Matrix<value_type> m(B1_.dim(I->r), B2_.dim(I->c));
-      std::memcpy(data(m), Iter+I->Offset, I->Size * sizeof(value_type));
-      // reverse the normalization correction
-      Result(I->r, I->c) = (1.0 / std::sqrt(double(degree(B1_[I->r])))) * m;
+      blas::Matrix<value_type> m(B1_.dim(I->r), B2_.dim(I->c));
+      unpack(m, Iter+I.Offset, 1.0 / std::sqrt(double(degree(B1_[I->r]))));
+      Result.set(I.r, I.c, std::move(m));
    }
    return Result;
 }
@@ -112,7 +138,7 @@ void PackStateComponent::Initialize(BasisList const& LocalBasis, VectorBasis con
    B1_ = Basis1;
    B2_ = Basis2;
    OffsetMatrix_ = OffsetMatrixType(B_.size(),
-                                    LinearAlgebra::Matrix<int>(Basis1.size(), Basis2.size(), -1));
+                                    blas::Matrix<int>(Basis1.size(), Basis2.size(), -1));
    unsigned Offset = 0;
    for (unsigned q = 0; q < B_.size(); ++q)
    {
@@ -152,8 +178,7 @@ PackStateComponent::pack(StateComponent const& m, value_type* Iter) const
    DEBUG_CHECK_EQUAL(m.Basis2(), B2_);
    typedef LinearAlgebra::VectorMemProxy<value_type> VecProxy;
    typedef LinearAlgebra::VectorMemProxy<value_type const> ConstVecProxy;
-   for (OffsetArrayType::const_iterator I = OffsetArray_.begin();
-        I != OffsetArray_.end(); ++I)
+   for (auto const& I : OffsetArray_)
    {
       const_inner_iterator<MatrixOperator>::type J = iterate_at(m[I->q].data(), I->r, I->c);
       if (J)
