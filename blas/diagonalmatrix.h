@@ -73,6 +73,15 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
       template <typename U>
       DiagonalMatrix(DiagonalMatrixRef<T, U, tag_type> const& E) : DiagonalMatrix(E, tag_type::template default_arena<T>()) {}
 
+      // assignment from a generic matrix - this will fail if the matrix isn't ultimately some kind onf
+      // diagonal structure
+      template <typename U>
+      DiagonalMatrix(MatrixRef<T, U, tag_type> const& E)
+	 : DiagonalMatrix(E.rows(), E.cols())
+      {
+	 assign(*this, E.as_derived());
+      }
+
       // construction from intializer list
       template <typename U>
       DiagonalMatrix(std::initializer_list<U> x, arena Arena_);
@@ -115,6 +124,30 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
 	 subtract(this->diagonal(), E.as_derived().diagonal());
 	 return *this;
       }
+
+      // operations involving MatrixRef - this is for expression templates, 
+      // it will fail if the type isn't ultimately based on a diagonal matrix
+      template <typename U>
+      DiagonalMatrix& operator=(MatrixRef<T, U, tag_type> const& E)
+      {
+	 assign(*this, E.as_derived());
+	 return *this;
+      }
+
+      template <typename U>
+      DiagonalMatrix& operator+=(MatrixRef<T, U, tag_type> const& E)
+      {
+	 add(*this, E.as_derived());
+	 return *this;
+      }
+
+      template <typename U>
+      DiagonalMatrix& operator-=(MatrixRef<T, U, tag_type> const& E)
+      {
+	 subtract(*this, E.as_derived());
+	 return *this;
+      }
+
 
       template <typename U>
       DiagonalMatrix& operator*=(U const& x)
@@ -837,6 +870,53 @@ operator<<(std::ostream& out, DiagonalMatrix<T, Tag> const& x);
 template <int Format, typename T, typename Tag>
 PStream::opstreambuf<Format>&
 operator<<(PStream::opstreambuf<Format>& out, DiagonalMatrix<T, Tag> const& M);
+
+template <typename T, typename U, typename V, typename Tag>
+void
+matrix_copy_scaled(T alpha, DiagonalMatrixRef<T, U, Tag> const& x, DiagonalMatrixRef<T, V, Tag>& y)
+{
+   vector_copy_scaled(alpha, x.as_derived().diagonal(), y.as_derived().diagonal());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+void
+matrix_copy_scaled(T alpha, DiagonalMatrixRef<T, U, Tag> const& x, DiagonalMatrixRef<T, V, Tag>&& y)
+{
+   vector_copy_scaled(alpha, x.as_derived().diagonal(), std::move(y).as_derived().diagonal());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+void
+matrix_add_scaled(T alpha, DiagonalMatrixRef<T, U, Tag> const& x, DiagonalMatrixRef<T, V, Tag>& y)
+{
+   vector_add_scaled(alpha, x.as_derived().diagonal(), y.as_derived().diagonal());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+void
+matrix_add_scaled(T alpha, DiagonalMatrixRef<T, U, Tag> const& x, DiagonalMatrixRef<T, V, Tag>&& y)
+{
+   vector_add_scaled(alpha, x.as_derived().diagonal(), std::move(y).as_derived().diagonal());
+}
+
+template <typename T, typename U, typename V, typename W, typename Tag>
+void
+gemm(T alpha, DiagonalBlasMatrix<T, U, Tag> const& A, T beta, DiagonalBlasMatrix<T, V, Tag> const& B,
+     DiagonalBlasMatrix<T, W, Tag>& C)
+{
+   if (beta == number_traits<T>::zero())
+   {
+      vector_parallel_scaled(alpha, A.as_derived().diagonal(), B.as_derived().diagonal(), C.as_derived().diagonal());
+   }
+   else if (beta == number_traits<T>::identity())
+   {
+      vector_add_parallel_scaled(alpha, A.as_derived().diagonal(), B.as_derived().diagonal(), C.as_derived().diagonal());
+   }
+   else
+   {
+      PANIC("not implemented");
+   }
+}
 
 } // namespace blas
 

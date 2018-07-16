@@ -53,7 +53,18 @@ class WavefunctionSectionLeft : public CanonicalWavefunctionBase
    public:
       WavefunctionSectionLeft();
 
-      WavefunctionSectionLeft(WavefunctionSectionLeft const& Psi) = default;
+      WavefunctionSectionLeft(WavefunctionSectionLeft&& Psi) = default;
+      WavefunctionSectionLeft(WavefunctionSectionLeft const& Psi)
+	 : CanonicalWavefunctionBase(Psi), LeftU_(copy(Psi.LeftU_)), RightU_(copy(Psi.RightU_)) {}
+
+      WavefunctionSectionLeft& operator=(WavefunctionSectionLeft&& Psi) = default;
+      WavefunctionSectionLeft& operator=(WavefunctionSectionLeft const& Psi)
+      {
+	 CanonicalWavefunctionBase::operator=(Psi);
+	 LeftU_ = copy(Psi.LeftU_);
+	 RightU_ = copy(Psi.RightU_);
+	 return *this;
+      }
 
       explicit WavefunctionSectionLeft(InfiniteWavefunctionLeft const& Psi);
 
@@ -65,12 +76,12 @@ class WavefunctionSectionLeft : public CanonicalWavefunctionBase
       // We could also use a CentreWavefunction with no loss of efficiency if we wanted
       static
       WavefunctionSectionLeft ConstructFromLeftOrthogonal(LinearWavefunction&& Psi,
-                                                          MatrixOperator const& Lambda,
+                                                          MatrixOperator Lambda,
                                                           int Verbose = 0);
 
       static
       WavefunctionSectionLeft ConstructFromLeftOrthogonal(LinearWavefunction const& Psi,
-                                                          MatrixOperator const& Lambda,
+                                                          MatrixOperator Lambda,
                                                           int Verbose = 0);
       void check_structure() const;
       void debug_check_structure() const;

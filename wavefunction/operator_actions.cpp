@@ -34,12 +34,11 @@ inject_left(MatrixOperator const& m,
    CHECK_EQUAL(Op.Basis1().size(), 1);
    CHECK_EQUAL(Op.Basis2().size(), 1);
    CHECK_EQUAL(Op.Basis1()[0], m.TransformsAs());
-   MatrixOperator Result = m;
    StateComponent E(Op.Basis1(), m.Basis1(), m.Basis2());
-   E[0] = m;
+   E[0] = copy(m);
    E.debug_check_structure();
    E = inject_left(E, Psi1, Op, Psi2);
-   return E[0];
+   return std::move(E[0]);
 }
 
 
@@ -57,7 +56,7 @@ inject_left_qshift(MatrixOperator const& m,
                    LinearWavefunction const& Psi,
                    QuantumNumber const& QShift)
 {
-   return inject_left(delta_shift(m, QShift), Op, Psi);
+   return inject_left(delta_shift(copy(m), QShift), Op, Psi);
 }
 
 StateComponent
@@ -68,7 +67,7 @@ inject_left(StateComponent const& In,
 {
    PRECONDITION_EQUAL(Psi1.size(), Op.size());
    PRECONDITION_EQUAL(Psi1.size(), Psi2.size());
-   StateComponent Result = In;
+   StateComponent Result = copy(In);
    In.debug_check_structure();
    LinearWavefunction::const_iterator I1 = Psi1.begin();
    LinearWavefunction::const_iterator I2 = Psi2.begin();
@@ -97,9 +96,8 @@ inject_right(MatrixOperator const& m,
    CHECK_EQUAL(Op.Basis1().size(), 1);
    CHECK_EQUAL(Op.Basis2().size(), 1);
    StateComponent E(Op.Basis2(), m.Basis1(), m.Basis2());
-   E[0] = m;
+   E[0] = copy(m);
    E.debug_check_structure();
-   MatrixOperator Result = m;
    LinearWavefunction::const_iterator I = Psi.end();
    GenericMPO::const_iterator OpIter = Op.end();
    while (I != Psi.begin())
@@ -107,7 +105,7 @@ inject_right(MatrixOperator const& m,
       --I; --OpIter;
       E = contract_from_right(herm(*OpIter), *I, E, herm(*I));
    }
-   return E[0];
+   return std::move(E[0]);
 }
 
 MatrixOperator
@@ -125,17 +123,16 @@ inject_right(MatrixOperator const& m,
    CHECK_EQUAL(Op.Basis1().size(), 1);
    CHECK_EQUAL(Op.Basis2().size(), 1);
    StateComponent E(Op.Basis2(), m.Basis1(), m.Basis2());
-   E[0] = m;
-   MatrixOperator Result = m;
+   E[0] = copy(m);
    LinearWavefunction::const_iterator I1 = Psi1.end();
    LinearWavefunction::const_iterator I2 = Psi2.end();
    GenericMPO::const_iterator OpIter = Op.end();
    while (I1 != Psi1.begin())
    {
       --I1; --I2; --OpIter;
-      E = contract_from_right(herm(*OpIter), *I1, E, herm(*I2));
+      E = contract_from_right(herm(*OpIter), *I1, std::move(E), herm(*I2));
    }
-   return E[0];
+   return std::move(E[0]);
 }
 
 MatrixOperator
@@ -144,7 +141,7 @@ inject_right_qshift(MatrixOperator const& m,
                     LinearWavefunction const& Psi,
                     QuantumNumber const& QShift)
 {
-   return delta_shift(inject_right(m, Op, Psi), adjoint(QShift));
+   return delta_shift(inject_right(copy(m), Op, Psi), adjoint(QShift));
 }
 
 
@@ -162,34 +159,33 @@ contract_from_left_mask(OperatorComponent const& M,
    StateComponent Result(M.Basis2(), A.base().Basis2(), B.Basis2());
 
    // Iterate over the components in M, first index
-   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(M); I; ++I)
+   for (auto const& I : M)
    {
       // skip over masked components
-      if (!Mask1[I.index()])
+      if (!Mask1[I.row()])
          continue;
 
-      // second index in M
-      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
+      for (auto const& J : I)
       {
          // skip over masked components
-         if (!Mask2[J.index2()])
+         if (!Mask2[J.col()])
             continue;
 
          // Iterate over the irreducible components of M(I,J)
-         for (SimpleRedOperator::const_iterator k = J->begin(); k != J->end(); ++k)
-         {
-            // *k is an irreducible operator.  Iterate over the components of this operator
-            for (LinearAlgebra::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
-            {
-               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type
-                       S = iterate(R); S; ++S)
-               {
-                  add_triple_prod(Result[J.index2()], *S,
-                                  herm(A.base()[S.index1()]),
-                                  E[J.index1()],
-                                  B[S.index2()],
-                                  k->TransformsAs(),
-                                  M.Basis2()[J.index2()]);
+	 for (auto const& k : J.value)
+	 {
+            // k is an irreducible operator.  Iterate over the components of this operator
+	    for (auto const& R : k)
+	    {
+	       for (auto const& S : R)
+	       {
+                  add_triple_prod(S.value,
+                                  herm(A.base()[R.row()]),
+                                  E[I.row()],
+                                  B[S.col()],
+                                  k.TransformsAs(),
+                                  //M.Basis2()[J.col()],
+				  Result[J.col()]);
                }
             }
          }
@@ -214,7 +210,7 @@ inject_left_mask(StateComponent const& In,
    GenericMPO::const_iterator OpIter = Op.begin();
    std::vector<std::vector<int> >::const_iterator MaskIter = Mask.begin();
 
-   StateComponent Result(In);
+   StateComponent Result(copy(In));
 
    while (OpIter != Op.end())
    {
@@ -240,7 +236,7 @@ inject_right_mask(StateComponent const& In,
    std::vector<std::vector<int> >::const_iterator MaskIter = Mask.end();
 
    StateComponent E;
-   StateComponent Result(In);
+   StateComponent Result(copy(In));
 
    while (OpIter != Op.begin())
    {

@@ -118,7 +118,7 @@ class CanonicalWavefunctionBase
       { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return Data[i].lock(); }
 
       // returns the final MPS matrix
-      const pointer_type get_back() const { return Data.back().lock(); }
+      const_proxy_type get_back() const { return Data.back().lock(); }
 
       const_lambda_proxy_type lambda_front() const { return Lambda.front().lock(); }
 

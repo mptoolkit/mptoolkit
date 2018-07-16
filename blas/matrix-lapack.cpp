@@ -141,11 +141,11 @@ void SingularValueDecomposition(int m, int n, double* A, int ldA, double* D, dou
 
 
 
-void SingularValueDecomposition(int m, int m,
+void SingularValueDecomposition(int m, int n,
                                 std::complex<double>* A, int ldA,
                                 double* D,
                                 std::complex<double>* U, int ldU,
-                                std::complex<double>* VH, int ldVT)
+                                std::complex<double>* VH, int ldVH)
 {
    char jobu = 'S';
    char jobvh = 'S';

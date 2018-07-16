@@ -122,8 +122,6 @@ InfiniteWavefunctionRight::Initialize(MatrixOperator Lambda,
       StateComponent A = prod(*I, M);
       M = ExpandBasis1(A);
       MatrixOperator Vh;
-      U = MatrixOperator();
-      D = RealDiagonalOperator();
       SVD(M, U, D, Vh);
       AMat.push_front(prod(Vh, A));
       M = U*D;

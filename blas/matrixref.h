@@ -814,7 +814,7 @@ template <typename T, typename Derived, typename U, typename V, typename D1, typ
 inline
 void add(MatrixRef<T, Derived, Tag>& C, MatrixProduct<U, V, D1, D2, Tag> const& a)
 {
-   gemm(a.Factor, a.A, number_traits<T>::identity(), a.B.as_derived(), C.as_derived());
+   gemm(a.Factor, a.A.as_derived(), number_traits<T>::identity(), a.B.as_derived(), C.as_derived());
 }
 
 template <typename T, typename Derived, typename U, typename V, typename D1, typename D2, typename Tag>
@@ -1076,6 +1076,114 @@ inline
 void vector_scale(T alpha, BlasVectorProxy<T, U, Tag>&& y)
 {
    vector_scale(y.size(), alpha, std::move(y).storage(), y.stride());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void vector_parallel(blas::BlasVector<T, U, Tag> const& x, blas::BlasVector<T, U, Tag> const& y,
+		     BlasVector<T, V, Tag>& z)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   DEBUG_CHECK_EQUAL(x.size(), z.size());
+   vector_parallel(x.size(),
+		   x.storage(), x.stride(),
+		   y.storage(), y.stride(),
+		   z.storage(), z.stride());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void vector_parallel(blas::BlasVector<T, U, Tag> const& x, blas::BlasVector<T, U, Tag> const& y,
+		     BlasVectorProxy<T, V, Tag>&& z)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   DEBUG_CHECK_EQUAL(x.size(), z.size());
+   vector_parallel(x.size(),
+		   x.storage(), x.stride(),
+		   y.storage(), y.stride(),
+		   std::move(z).storage(), z.stride());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void vector_add_parallel(blas::BlasVector<T, U, Tag> const& x, blas::BlasVector<T, U, Tag> const& y,
+			 BlasVector<T, V, Tag>& z)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   DEBUG_CHECK_EQUAL(x.size(), z.size());
+   vector_add_parallel(x.size(),
+		       x.storage(), x.stride(),
+		       y.storage(), y.stride(),
+		       z.storage(), z.stride());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void vector_add_parallel(blas::BlasVector<T, U, Tag> const& x, blas::BlasVector<T, U, Tag> const& y,
+			 BlasVectorProxy<T, V, Tag>&& z)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   DEBUG_CHECK_EQUAL(x.size(), z.size());
+   vector_add_parallel(x.size(),
+		       x.storage(), x.stride(),
+		       y.storage(), y.stride(),
+		       std::move(z).storage(), z.stride());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void vector_parallel_scaled(T const& scale, BlasVector<T, U, Tag> const& x, 
+			    BlasVector<T, U, Tag> const& y,
+			    BlasVector<T, V, Tag>& z)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   DEBUG_CHECK_EQUAL(x.size(), z.size());
+   vector_parallel_scaled(x.size(), scale,
+			  x.storage(), x.stride(),
+			  y.storage(), y.stride(),
+			  z.storage(), z.stride());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void vector_parallel_scaled(T const& scale, BlasVector<T, U, Tag> const& x, 
+			    BlasVector<T, U, Tag> const& y,
+			    BlasVectorProxy<T, V, Tag>&& z)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   DEBUG_CHECK_EQUAL(x.size(), z.size());
+   vector_parallel_scaled(x.size(), scale,
+			  x.storage(), x.stride(),
+			  y.storage(), y.stride(),
+			  std::move(z).storage(), z.stride());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void vector_add_parallel_scaled(T const& scale, BlasVector<T, U, Tag> const& x, 
+				BlasVector<T, U, Tag> const& y,
+				BlasVector<T, V, Tag>& z)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   DEBUG_CHECK_EQUAL(x.size(), z.size());
+   vector_add_parallel_scaled(x.size(), scale,
+			      x.storage(), x.stride(),
+			      y.storage(), y.stride(),
+			      z.storage(), z.stride());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void vector_add_parallel_scaled(T const& scale, BlasVector<T, U, Tag> const& x, 
+				BlasVector<T, U, Tag> const& y,
+				BlasVectorProxy<T, V, Tag>&& z)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   DEBUG_CHECK_EQUAL(x.size(), z.size());
+   vector_add_parallel_scaled(x.size(), scale,
+			      x.storage(), x.stride(),
+			      y.storage(), y.stride(),
+			      std::move(z).storage(), z.stride());
 }
 
 template <typename T, typename U, typename Tag>
@@ -1519,6 +1627,33 @@ void gemm(T alpha, BlasMatrix<T, U, Tag> const& A,
    gemm(A.trans(), B.trans(), A.rows(), A.cols(), B.cols(), alpha, A.storage(),
         A.leading_dimension(), B.storage(), B.leading_dimension(), beta,
         std::move(C).storage(), C.leading_dimension());
+}
+
+// for a multiplication involving a ScaledMatrix, push the factors into the
+// alpha parameter
+
+template <typename T, typename U, typename V, typename W, typename Tag>
+inline
+void gemm(T alpha, ScaledMatrix<T, U, Tag> const& A,
+          T beta, MatrixRef<T, V, Tag> const& B, W&& C)
+{
+   gemm(alpha*A.factor(), A.base(), beta, B.as_derived(), std::forward<W>(C).as_derived());
+}
+
+template <typename T, typename U, typename V, typename W, typename Tag>
+inline
+void gemm(T alpha, MatrixRef<T, U, Tag> const& A,
+          T beta, ScaledMatrix<T, V, Tag> const& B, W&& C)
+{
+   gemm(alpha*B.factor(), A.as_derived(), beta, B.base(), std::forward<W>(C).as_derived());
+}
+
+template <typename T, typename U, typename V, typename W, typename Tag>
+inline
+void gemm(T alpha, ScaledMatrix<T, U, Tag> const& A,
+          T beta, ScaledMatrix<T, V, Tag> const& B, W&& C)
+{
+   gemm(alpha*A.factor()*B.factor(), A.base(), beta, B.base(), std::forward<W>(C).as_derived());
 }
 
 // gemm for DiagonalMatrix * Matrix

@@ -646,6 +646,20 @@ contract_from_left(OperatorComponent const& M,
                    StateComponent const& E,
                    StateComponent const& B);
 
+// In this version, the MPO must have dimension 1, and we call using a
+// MatrixOperator instead
+// TODO: this isn't so efficient
+inline
+StateComponent
+contract_from_left(OperatorComponent const& M,
+                   HermitianProxy<StateComponent> const& A,
+                   MatrixOperator const& E,
+                   StateComponent const& B)
+{
+   StateComponent EE(M.Basis1(), E.Basis1(), E.Basis2());
+   EE[0] = copy(E);
+   return contract_from_left(M, A, EE, B);
+}
 
 // Action of an operator on B
 // Result[s'](i',i) = M(s',s)[a',a] E[a'](i',j') B[s](j',j) herm(F[a](i,j))

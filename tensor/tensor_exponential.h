@@ -27,18 +27,17 @@ namespace Tensor
 {
 
 // exponentiate a scalar operator
-IrredTensor<std::complex<double>, BasisList, BasisList>
-Exponentiate(IrredTensor<std::complex<double>, BasisList, BasisList> const& m);
-
 inline
 IrredTensor<std::complex<double>, BasisList, BasisList>
-exp(IrredTensor<std::complex<double>, BasisList, BasisList> const& m)
-{
-   return Exponentiate(m);
-}
+exp(IrredTensor<std::complex<double>, BasisList, BasisList> const& m);
 
 IrredTensor<blas::Matrix<std::complex<double>, blas::cpu_tag>, VectorBasis, VectorBasis>
 exp(IrredTensor<blas::Matrix<std::complex<double>, blas::cpu_tag>, VectorBasis, VectorBasis> const& m);
+
+// the exponential is done on the CPU, so with a device tag we simply copy to/from the CPU
+template <typename Tag>
+IrredTensor<blas::Matrix<std::complex<double>, Tag>, VectorBasis, VectorBasis>
+exp(IrredTensor<blas::Matrix<std::complex<double>, Tag>, VectorBasis, VectorBasis> const& m);
 
 } // namespace Tensor
 

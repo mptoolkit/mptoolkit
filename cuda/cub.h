@@ -43,6 +43,26 @@ template <typename T>
 void
 vector_permute(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::gpu_ptr<T> y, int incy, int const* Perm);
 
+template <typename T>
+void
+vector_parallel(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::const_gpu_ptr<T> y, int incy, 
+		cuda::gpu_ptr<T> z, int incz);
+
+template <typename T>
+void
+vector_add_parallel(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::const_gpu_ptr<T> y, int incy, 
+		    cuda::gpu_ptr<T> z, int incz);
+
+template <typename T>
+void
+vector_parallel_scaled(int n, T const& alpha, cuda::const_gpu_ptr<T> x, int incx, cuda::const_gpu_ptr<T> y, int incy, 
+		       cuda::gpu_ptr<T> z, int incz);
+
+template <typename T>
+void
+vector_add_parallel_scaled(int n, T const& alpha, cuda::const_gpu_ptr<T> x, int incx, cuda::const_gpu_ptr<T> y, int incy, 
+			   cuda::gpu_ptr<T> z, int incz);
+
 } // namespace cuda
 
 #endif

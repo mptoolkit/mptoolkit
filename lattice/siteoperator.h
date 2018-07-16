@@ -317,7 +317,7 @@ SiteOperator operator-(SiteOperator const& x)
 inline
 SiteOperator exp(SiteOperator const& x)
 {
-   return SiteOperator(x.Basis(), Tensor::Exponentiate(x.base()), x.Commute()); 
+   return SiteOperator(x.Basis(), Tensor::exp(x.base()), x.Commute()); 
 }
 
 inline

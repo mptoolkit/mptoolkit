@@ -156,9 +156,9 @@ struct InjectRight
    {
    }
 
-   MatrixOperator operator()(MatrixOperator const& m) const
+   MatrixOperator operator()(MatrixOperator m) const
    {
-      return inject_right(m, Op_, Psi_);
+      return inject_right(std::move(m), Op_, Psi_);
    }
 
    GenericMPO const& Op_;
@@ -177,7 +177,7 @@ struct InjectRightQShift
 
    MatrixOperator operator()(MatrixOperator const& m) const
    {
-      return inject_right(delta_shift(m, adjoint(QShift_)), Op_, Psi_);
+      return inject_right(delta_shift(std::move(m), adjoint(QShift_)), Op_, Psi_);
    }
 
    GenericMPO const& Op_;
@@ -216,12 +216,12 @@ struct LeftMultiplyString
          ("The string operator must be the same length as the unit cell");
    }
 
-   result_type operator()(argument_type const& x) const
+   result_type operator()(argument_type x) const
    {
       DEBUG_CHECK_EQUAL(x.Basis1(), L1.Basis1());
       DEBUG_CHECK_EQUAL(x.Basis2(), L2.Basis1());
       //      result_type r = delta_shift(x, QShift);
-      return delta_shift(inject_left(x, L1, StringOp, L2), QShift);
+      return delta_shift(inject_left(std::move(x), L1, StringOp, L2), QShift);
    }
 
    LinearWavefunction const& L1;
@@ -262,7 +262,6 @@ struct LeftMultiplyOperator
    {
       DEBUG_CHECK_EQUAL(x.Basis1(), Psi1.Basis1());
       DEBUG_CHECK_EQUAL(x.Basis2(), Psi2.Basis1());
-      StateComponent R = copy(x);
       LinearWavefunction::const_iterator I1 = Psi1.begin();
       LinearWavefunction::const_iterator I2 = Psi2.begin();
       ProductMPO::const_iterator OpIter = StringOp.begin();
@@ -273,6 +272,15 @@ struct LeftMultiplyOperator
       {
          std::cerr << "contracting operator, total length is " << Length << " sites.\n";
       }
+
+      // do the first iteration that starts from x
+      StateComponent R = contract_from_left(*OpIter, herm(delta_shift(*I1, adjoint(q1))), x,
+					    delta_shift(*I2, adjoint(q2)));
+      ++n;
+      ++I1;
+      ++I2;
+      ++OpIter;
+
       while (I1 != Psi1.end() || I2 != Psi2.end() || OpIter != StringOp.end())
       {
          if (Verbose > 1)
@@ -307,7 +315,7 @@ struct LeftMultiplyOperator
       q2 = delta_shift(q2, QShift2);
       CHECK_EQUAL(q1, q2);
       CHECK_EQUAL(n, Length);
-      return delta_shift(R, q1);
+      return delta_shift(std::move(R), q1);
    }
 
    LinearWavefunction const& Psi1;
@@ -452,9 +460,9 @@ struct OneMinusTransferLeft
    OneMinusTransferLeft(BasicFiniteMPO const& Op, LinearWavefunction const& Psi, QuantumNumber const& QShift)
       : Op_(Op), Psi_(Psi), QShift_(QShift) {}
 
-   MatrixOperator operator()(MatrixOperator const& x) const
+   MatrixOperator operator()(MatrixOperator x) const
    {
-      return x-delta_shift(inject_left(x, Op_, Psi_), QShift_);
+      return x-delta_shift(inject_left(std::move(x), Op_, Psi_), QShift_);
    }
 
    BasicFiniteMPO const& Op_;
@@ -479,9 +487,9 @@ struct OneMinusTransferLeft_Ortho
         QShift_(QShift), LeftUnit_(LeftUnit),
         RightUnit_(RightUnit), Orthogonalize_(Orthogonalize) { }
 
-   MatrixOperator operator()(MatrixOperator const& x) const
+   MatrixOperator operator()(MatrixOperator x) const
    {
-      MatrixOperator r = x-delta_shift(inject_left(x, Op_, Psi_), QShift_);
+      MatrixOperator r = x-delta_shift(inject_left(std::move(x), Op_, Psi_), QShift_);
       if (Orthogonalize_ && r.TransformsAs() == RightUnit_.TransformsAs())
          {
             DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be small");
@@ -512,9 +520,9 @@ struct OneMinusTransferRight
    OneMinusTransferRight(BasicFiniteMPO const& Op, LinearWavefunction const& Psi, QuantumNumber const& QShift)
       : Op_(Op), Psi_(Psi), QShift_(QShift) {}
 
-   MatrixOperator operator()(MatrixOperator const& x) const
+   MatrixOperator operator()(MatrixOperator x) const
    {
-      return x-delta_shift(inject_right(x, Op_, Psi_), adjoint(QShift_));
+      return x-delta_shift(inject_right(std::move(x), Op_, Psi_), adjoint(QShift_));
    }
 
    BasicFiniteMPO const& Op_;

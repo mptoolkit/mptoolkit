@@ -36,12 +36,12 @@ FiniteWavefunctionLeft::ConstructFromRightOrthogonal(LinearWavefunction Psi,
    FiniteWavefunctionLeft Result;
    RealDiagonalOperator D(Psi.Basis1());
    double Norm = norm_frob(a);
-   D(0,0) = LinearAlgebra::DiagonalMatrix<double>(1,1, Norm);
+   D.insert(0,0, Norm * RealDiagonalMatrix::make_identity(1));
 
-   Result.push_back_lambda(D);
+   Result.push_back_lambda(copy(D));
    Result.setBasis1(D.Basis1());
 
-   MatrixOperator M = D;
+   MatrixOperator M = MatrixOperator(D);
    MatrixOperator U, Vh;
    int n = 0;
    for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I, ++n)
@@ -50,16 +50,16 @@ FiniteWavefunctionLeft::ConstructFromRightOrthogonal(LinearWavefunction Psi,
 	 std::cout << "orthogonalizing site " << n << std::endl;
       StateComponent A = prod(M, *I);
       M = ExpandBasis2(A);
-      SingularValueDecomposition(M, U, D, Vh);
-      Result.push_back(prod(A, U));
-      Result.push_back_lambda(D);
+      SVD(M, U, D, Vh);
       M = D*Vh;
+      Result.push_back(prod(A, U));
+      Result.push_back_lambda(std::move(D));
       ++n;
    }
    // The final Vh is a 1x1 unitary matrix.  To preserve
    // the phase of the wavefunction we need to incorporate it
    // back into the wavefunction.  Also incorporate the phase part of a
-   Result.set_back(prod(Result.get_back(), Vh * (a / Norm)));
+   Result.set_back(prod(Result.get_back(), (a / Norm) * Vh));
    Result.setBasis2(D.Basis2());
 
    if (Verbose > 0)
@@ -127,7 +127,7 @@ overlap(FiniteWavefunctionLeft const& Psi1, FiniteWavefunctionLeft const& Psi2)
    if (Psi1.TransformsAs() != Psi2.TransformsAs())
       return 0.0;
 
-   MatrixOperator E = scalar_prod(herm(Psi1.lambda_l()), Psi2.lambda_l());
+   MatrixOperator E = MatrixOperator(Psi1.lambda_l().get() * Psi2.lambda_l().get());
    FiniteWavefunctionLeft::const_mps_iterator I1 = Psi1.begin(), I2 = Psi2.begin();
    while (I1 != Psi1.end())
    {
@@ -147,7 +147,7 @@ overlap_conj(FiniteWavefunctionLeft const& Psi1, FiniteWavefunctionLeft const& P
    if (Psi1.TransformsAs() != Psi2.TransformsAs())
       return 0.0;
 
-   MatrixOperator E = scalar_prod(herm(Psi1.lambda_l()), Psi2.lambda_l());
+   MatrixOperator E = MatrixOperator(Psi1.lambda_l().get() *Psi2.lambda_l().get());
    FiniteWavefunctionLeft::const_mps_iterator I1 = Psi1.begin(), I2 = Psi2.begin();
    while (I1 != Psi1.end())
    {
@@ -172,7 +172,7 @@ expectation(FiniteWavefunctionLeft const& Psi1,
       return 0.0;
 
    StateComponent E(M.Basis1(), Psi1.Basis1(), Psi2.Basis1());
-   E[0] = scalar_prod(herm(Psi1.lambda_l()), Psi2.lambda_l());
+   E[0] = MatrixOperator(Psi1.lambda_l().get() * Psi2.lambda_l().get());
    FiniteWavefunctionLeft::const_mps_iterator I1 = Psi1.begin(), I2 = Psi2.begin();
    BasicFiniteMPO::const_iterator I = M.begin();
    while (I1 != Psi1.end())
@@ -187,12 +187,12 @@ expectation(FiniteWavefunctionLeft const& Psi1,
 
 double norm_2(FiniteWavefunctionLeft const& Psi)
 {
-   return norm_frob(Psi.lambda_l());
+   return norm_frob(Psi.lambda_l().get());
 }
 
 double norm_2_sq(FiniteWavefunctionLeft const& Psi)
 {
-   return norm_frob_sq(Psi.lambda_l());
+   return norm_frob_sq(Psi.lambda_l().get());
 }
 
 FiniteWavefunctionLeft operator*(double a, FiniteWavefunctionLeft x)
@@ -221,7 +221,7 @@ FiniteWavefunctionLeft operator*(FiniteWavefunctionLeft x, std::complex<double> 
 
 FiniteWavefunctionLeft& operator*=(FiniteWavefunctionLeft& psi, double a)
 {
-   for (auto I = psi.lambda_begin_(); I != psi.lambda_end_(); ++I)
+   for (auto&& I = psi.lambda_begin_(); I != psi.lambda_end_(); ++I)
    {
       *I *= a;
    }
@@ -233,7 +233,7 @@ FiniteWavefunctionLeft& operator*=(FiniteWavefunctionLeft& psi, std::complex<dou
    double aNorm = norm_frob(a);
    psi *= aNorm;
    if (aNorm != 0.0)
-      psi.set(0, psi[0] * (a / aNorm));
+      psi.set(0, psi[0].get() * (a / aNorm));
    return psi;
 }
 

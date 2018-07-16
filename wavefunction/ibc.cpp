@@ -85,16 +85,16 @@ inplace_conj(WavefunctionSectionLeft& Psi)
 
 WavefunctionSectionLeft
 WavefunctionSectionLeft::ConstructFromLeftOrthogonal(LinearWavefunction const& Psi,
-                                                     MatrixOperator const& Lambda,
+                                                     MatrixOperator Lambda,
                                                      int Verbose)
 {
-   return ConstructFromLeftOrthogonal(std::move(LinearWavefunction(Psi)), Lambda, Verbose);
+   return ConstructFromLeftOrthogonal(LinearWavefunction(Psi), std::move(Lambda), Verbose);
 }
 
 // version of ConstructFromLeftOrthogonal with move semantics on Psi
 WavefunctionSectionLeft
 WavefunctionSectionLeft::ConstructFromLeftOrthogonal(LinearWavefunction&& Psi,
-                                                     MatrixOperator const& Lambda,
+                                                     MatrixOperator Lambda,
                                                      int Verbose)
 {
    WavefunctionSectionLeft Result;
@@ -104,18 +104,18 @@ WavefunctionSectionLeft::ConstructFromLeftOrthogonal(LinearWavefunction&& Psi,
       std::cout << "Constructing right ortho matrices..." << std::endl;
    }
 
-   MatrixOperator M = right_orthogonalize(Psi, Lambda, Verbose-1);
+   MatrixOperator M = right_orthogonalize(Psi, std::move(Lambda), Verbose-1);
 
    MatrixOperator U;
    RealDiagonalOperator D;
    MatrixOperator Vh;
-   SingularValueDecomposition(M, U, D, Vh);
-
-   Result.LeftU_ = U;
-   Result.push_back_lambda(D);
-   Result.setBasis1(D.Basis1());
+   SVD(M, U, D, Vh);
 
    M = D*Vh;
+   Result.LeftU_ = std::move(U);
+   Result.push_back_lambda(std::move(D));
+   Result.setBasis1(D.Basis1());
+
 
    if (Verbose > 0)
       std::cout << "Constructing left ortho matrices..." << std::endl;
@@ -129,13 +129,13 @@ WavefunctionSectionLeft::ConstructFromLeftOrthogonal(LinearWavefunction&& Psi,
       StateComponent A = prod(M, Psi.get_front());
       Psi.pop_front();
       std::tie(D, Vh) = OrthogonalizeBasis2(A);
-      Result.push_back(A);
-      Result.push_back_lambda(D);
       M = D*Vh;
+      Result.push_back(std::move(A));
+      Result.push_back_lambda(std::move(D));
       ++n;
    }
    Result.setBasis2(D.Basis2());
-   Result.RightU_ = Vh;
+   Result.RightU_ = std::move(Vh);
 
    if (Verbose > 0)
       std::cout << "Finished constructing canonical wavefunction." << std::endl;
@@ -147,11 +147,11 @@ std::pair<LinearWavefunction, MatrixOperator>
 get_left_canonical(WavefunctionSectionLeft const& Psi)
 {
    LinearWavefunction PsiLinear(Psi.base_begin(), Psi.base_end());
-   MatrixOperator Lambda = Psi.lambda_r();
+   MatrixOperator Lambda = MatrixOperator(Psi.lambda_r().get());
    // incorporate the U matrices
    Lambda = Lambda*Psi.RightU();
    PsiLinear.set_front(prod(Psi.LeftU(), PsiLinear.get_front()));
-   return std::make_pair(PsiLinear, Lambda);
+   return std::make_pair(std::move(PsiLinear), std::move(Lambda));
 }
 
 void

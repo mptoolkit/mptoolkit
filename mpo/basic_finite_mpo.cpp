@@ -637,7 +637,7 @@ BasicFiniteMPO exp(BasicFiniteMPO const& x)
    CHECK(x.is_scalar())("Must be a scalar operator to calculate the operator exponential!");
 
    SimpleOperator Op = copy(coarse_grain(x).scalar());
-   Op = Tensor::Exponentiate(Op);
+   Op = Tensor::exp(Op);
    BasicFiniteMPO Result = fine_grain(Op, x.LocalBasis1List(), x.LocalBasis2List());
    return Result;
 }
