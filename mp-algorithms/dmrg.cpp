@@ -27,7 +27,6 @@
 #include "pstream/optional.h"
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
-#include "linearalgebra/matrix_utility.h"
 #include "common/statistics.h"
 #include "common/environment.h"
 #include "tensor/tensor_eigen.h"
@@ -117,12 +116,12 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
-   SingularValueDecompositionKeepBasis2(Lambda, U, D, Vh);
+   SVD_FullColumns(Lambda, U, D, Vh);
 
    //TRACE(U)(D)(Vh);
 
    C = prod(Vh, C);
-   return std::make_pair(U, D);
+   return std::make_pair(std::move(U), std::move(D));
 }
 
 // Apply subspace expansion / truncation on the right (C.Basis2()).
@@ -187,11 +186,11 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
 
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
-   SingularValueDecompositionKeepBasis1(Lambda, U, D, Vh);
+   SVD_FullRows(Lambda, U, D, Vh);
 
    C = prod(C, U);
 
-   return std::make_pair(D, Vh);
+   return std::make_pair(std::move(D), std::move(Vh));
 }
 
 
@@ -310,7 +309,8 @@ DMRG::DMRG(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_, i
    }
    HamMatrices.push_right(Initial_F(Ham_, Psi_.Basis2()));
    // Probably no need to incorporate lambda_r(), this is just a normalization
-   Psi.set_back(prod(Psi.get_back(), Psi_.lambda_r()));
+   // TODO: StateComponent * RealDiagonalOperator is not yet implemented
+   Psi.set_back(prod(Psi.get_back().get(), MatrixOperator(Psi_.lambda_r().get())));
 
    // initialize to the right-most site
    HamMatrices.pop_left();
@@ -510,7 +510,7 @@ void DMRG::StartSweep(bool IncrementSweepNumber, double /* Broad_ */)
    SweepTruncatedEnergy = 0;
    IterationEnergyVec.clear();
 
-   PsiPrevC = *C;
+   PsiPrevC = copy(*C);
 
    // Initialize the keep list
    KeepList.clear();
@@ -596,7 +596,7 @@ DMRG::Solve()
    Solver_.Solve(*C, HamMatrices.left(), *H, HamMatrices.right());
 
    DEBUG_TRACE("DMRG::Solve");
-   StateComponent PsiOld = *C;
+   StateComponent PsiOld = copy(*C);
 
    IterationEnergy = Solver_.LastEnergy();
    IterationNumMultiplies = Solver_.LastIter();

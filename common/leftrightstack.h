@@ -49,8 +49,8 @@ class left_right_stack
       value_type& left() { return *leftTop.mutate(); }
       value_type& right() { return *rightTop.mutate(); }
 
-      void push_left(value_type const& L);
-      void push_right(value_type const& R);
+      void push_left(value_type L);
+      void push_right(value_type R);
 
       void pop_left();
       void pop_right();
@@ -76,18 +76,18 @@ left_right_stack<T>::left_right_stack()
 
 template <typename T>
 inline
-void left_right_stack<T>::push_left(value_type const& L)
+void left_right_stack<T>::push_left(value_type L)
 {
    if (!leftTop.is_null()) leftStack.push_back(leftTop);
-   leftTop = ptr_type(new value_type(L));
+   leftTop = ptr_type(new value_type(std::move(L)));
 }
 
 template <typename T>
 inline
-void left_right_stack<T>::push_right(value_type const& R)
+void left_right_stack<T>::push_right(value_type R)
 {
    if (!rightTop.is_null()) rightStack.push_back(rightTop);
-   rightTop = ptr_type(new value_type(R));
+   rightTop = ptr_type(new value_type(std::move(R)));
 }
 
 template <typename T>

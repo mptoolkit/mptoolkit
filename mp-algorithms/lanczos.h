@@ -43,7 +43,6 @@
 #if !defined(LANCZOS_H_H2348975894UFP389P0)
 #define LANCZOS_H_H2348975894UFP389P0
 
-#include "linearalgebra/eigen.h"
 #include "common/proccontrol.h"
 #include <iostream>
 #include <cmath>
@@ -58,7 +57,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
    std::vector<VectorType>     v;          // the Krylov vectors
    std::vector<VectorType>     Hv;         // H * the Krylov vectors
 
-   LinearAlgebra::Matrix<double> SubH(Iterations+1, Iterations+1, 0.0);
+   blas::Matrix<double> SubH(Iterations+1, Iterations+1, 0.0);
 
    VectorType w = Guess;
 
@@ -112,22 +111,23 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
             std::cerr << "lanczos: early return, invariant subspace found, Beta="
                       << Beta << ", iterations=" << (i+1) << '\n';
          Iterations = i+1;
-         LinearAlgebra::Matrix<double> M = SubH(LinearAlgebra::range(0,i+1),
-                                                LinearAlgebra::range(0,i+1));
-         LinearAlgebra::Vector<double> EValues = DiagonalizeHermitian(M);
+         blas::Matrix<double> M = SubH(blas::range(0,i+1),
+				       blas::range(0,i+1));
+         blas::Vector<double> EValues;
+	 DiagonalizeHermitian(M, EValues);
          double Theta = EValues[0];    // smallest eigenvalue
          double SpectralDiameter = EValues[i] - EValues[0];  // largest - smallest
          VectorType y = M(0,0) * v[0];
          for (int j = 1; j <= i; ++j)
-            y += M(0,j) * v[j];
+            y += M(j,0) * v[j];
          Tol = Beta / SpectralDiameter;
          Guess = y;
          return Theta;
       }
 
       // solution of the tridiagonal subproblem
-      LinearAlgebra::Matrix<double> M = SubH(LinearAlgebra::range(0,i+1),
-                                             LinearAlgebra::range(0,i+1));
+      blas::Matrix<double> M = SubH(blas::range(0,i+1),
+				    blas::range(0,i+1));
       if (std::isnan(M(0,0)))
       {
          std::ofstream Out("lanczos_debug.txt");
@@ -143,7 +143,8 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
          }
       }
 
-      LinearAlgebra::Vector<double> EValues = DiagonalizeHermitian(M);
+      blas::Vector<double> EValues;
+      DiagonalizeHermitian(M, EValues);
       double Theta = EValues[0];    // smallest eigenvalue
       double SpectralDiameter = EValues[i] - EValues[0];  // largest - smallest
       VectorType y = M(0,0) * v[0];

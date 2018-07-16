@@ -2,9 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// tensor/tensor_exponential.h
+// blas/exponential.h
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2018 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,25 +17,36 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#if !defined(MPTOOLKIT_TENSOR_TENSOR_EXPONENTIAL_H)
-#define MPTOOLKIT_TENSOR_TENSOR_EXPONENTIAL_H
+//
+// A simple dense matrix class designed for scalar types.
+//
 
-#include "tensor.h"
-#include "blas/matrix.h"
+#if !defined(MPTOOLKIT_BLAS_EXPONENTIAL_H)
+#define MPTOOLKIT_BLAS_EXPONENTIAL_H
 
-namespace Tensor
+#include "matrix.h"
+
+namespace blas
 {
 
-// exponentiate a scalar operator
-IrredTensor<std::complex<double>, BasisList, BasisList>
-exp(IrredTensor<std::complex<double>, BasisList, BasisList> const& m);
-
 template <typename T, typename Tag>
-IrredTensor<blas::Matrix<T, Tag>, VectorBasis, VectorBasis>
-exp(IrredTensor<blas::Matrix<T, Tag>, VectorBasis, VectorBasis> const& m);
+Matrix<T, Tag>
+exp(Matrix<T, Tag> const& m);
 
-} // namespace Tensor
+Matrix<float>
+exp(Matrix<float> const& m);
 
-#include "tensor_exponential.icc"
+Matrix<std::complex<float>>
+exp(Matrix<std::complex<float>> const& m);
+
+Matrix<double>
+exp(Matrix<double> const& m);
+
+Matrix<std::complex<double>>
+exp(Matrix<std::complex<double>> const& m);
+
+} // namepsace blas
+
+#include "exponential.icc"
 
 #endif

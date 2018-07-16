@@ -17,6 +17,8 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+#include "functors.h"
+
 namespace blas
 {
 
@@ -246,7 +248,7 @@ vector_norm_frob_sq(int N, std::complex<double> const* x, int incx, std::complex
    std::complex<double> rr = 0.0;
    for (int i = 0; i < N; ++i)
    {
-      rr += norm_frob_sq(*x);
+      rr += norm(*x);
       x += incx;
    }
    r = rr;

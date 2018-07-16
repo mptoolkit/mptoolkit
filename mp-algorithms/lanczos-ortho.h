@@ -21,7 +21,6 @@
 //  user-supplied vectors.
 //
 
-#include "linearalgebra/eigen.h"
 #include "common/proccontrol.h"
 #include <iostream>
 #include <cmath>
@@ -82,7 +81,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
    }
    Iterations = i-1;
 
-   LinearAlgebra::Matrix<double> M(Iterations, Iterations, 0.0);
+   blas::Matrix<double> M(Iterations, Iterations, 0.0);
    M(0,0) = Alpha[1];
    for (int k = 1; k < Iterations; ++k)
    {
@@ -90,7 +89,8 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       M(k,k-1) = M(k-1,k) = Beta[k];
    }
 
-   LinearAlgebra::Vector<double> EValues = DiagonalizeHermitian(M);
+   blas::Vector<double> EValues(M.rows());
+   DiagonalizeHermitian(M, EValues);
 
    DEBUG_TRACE(EValues);
 
@@ -98,7 +98,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
    Guess = M(0,0) * v[1];
    for (int k = 1; k < i-1; ++k)
    {
-      Guess += M(0,k) * v[k+1];
+      Guess += M(k,0) * v[k+1];
    }
 
    // Normalize the result vector

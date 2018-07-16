@@ -29,7 +29,7 @@
    with the initial guess vector.
 */
 
-#include "linearalgebra/eigen.h"
+#include "blas/matrix.h"
 #include "common/proccontrol.h"
 #include <iostream>
 #include <cmath>
@@ -40,7 +40,6 @@
 namespace LinearSolvers
 {
 //
-using namespace LinearAlgebra;
 typedef std::complex<double> complex;
 
 enum class DavidsonMode { Lowest, Target, MaxOverlap };
@@ -82,43 +81,40 @@ bool GramSchmidtAppend(std::vector<VectorType>& Basis,
 struct InverseDiagonalPrecondition
 {
    InverseDiagonalPrecondition(StateComponent const& Diag_, std::complex<double> Energy_)
-      : Diag(Diag_), Energy(Energy_)
+      : Diag(copy(Diag_)), Energy(Energy_)
    {
       //      TRACE(Diag);
       for (unsigned i = 0; i < Diag.size(); ++i)
       {
-	 for (StateComponent::operator_type::iterator I = iterate(Diag[i]); I;  ++I)
+	 for (auto&& I : Diag[i])
 	 {
-	    for (StateComponent::operator_type::inner_iterator J = iterate(I); J; ++J)
+	    for (auto&& J : I)
 	    {
-	       for (auto II = iterate(*J); II; ++II)
-	       {
-		  for (auto JJ = iterate(II); JJ; ++JJ)
-		  {
-                     // regularized inverse
-                     *JJ = conj(*JJ - Energy) / (norm_frob_sq(*JJ-Energy) + 1E-8);
-		  }
-	       }
+	       // regularized inverse element-wise
+	       // *JJ = conj(*JJ - Energy) / (norm_frob_sq(*JJ-Energy) + 1E-8)
+	       PANIC("not implemented");
 	    }
 	 }
       }
-      //TRACE(Diag)(Energy);
    }
 
    StateComponent operator()(StateComponent const& x) const
    {
-      StateComponent Result(x);
+      StateComponent Result(copy(x));
       for (unsigned i = 0; i < x.size(); ++i)
       {
-	 for (StateComponent::operator_type::iterator I = iterate(Result[i]); I;  ++I)
+	 for (auto&& I : Result[i])
 	 {
-	    for (StateComponent::operator_type::inner_iterator J = iterate(I); J; ++J)
+	    for (auto&& J : I)
 	    {
+	       PANIC("not implemented");
+#if 0
 	       StateComponent::operator_type::const_inner_iterator d = iterate_at(Diag[i].data(), J.index1(), J.index2());
 	       if (d)
 	       {
-		  *J = transform(*J, *d, LinearAlgebra::Multiplication<std::complex<double>, std::complex<double>>());
+		  //*J = transform(*J, *d, LinearAlgebra::Multiplication<std::complex<double>, std::complex<double>>());
 	       }
+#endif
 	    }
 	 }
       }
@@ -149,7 +145,7 @@ double Davidson(VectorType& Guess, VectorType const& Diagonal, MultiplyFunctor M
 {
    std::vector<VectorType> v;                                 // the subspace vectors
    std::vector<VectorType> Hv;                                // H * the subspace vectors
-   Matrix<complex>         SubH(Iterations, Iterations, 0.0); // matrix elements of H in the subspace
+   blas::Matrix<complex>   SubH(Iterations, Iterations, 0.0); // matrix elements of H in the subspace
    double Theta;         // eigenvalue
    v.reserve(Iterations);
    Hv.reserve(Iterations);
@@ -176,9 +172,10 @@ double Davidson(VectorType& Guess, VectorType const& Diagonal, MultiplyFunctor M
          w -= z * v[i];
       }
 
-      Matrix<complex> sH = SubH(range(0,j), range(0,j));
+      blas::Matrix<complex> sH = SubH(blas::range(0,j), blas::range(0,j));
       //      TRACE(sH);
-      Vector<double> Eigen = DiagonalizeHermitian(sH);
+      blas::Vector<double> Eigen(sH.rows());
+      DiagonalizeHermitian(sH, Eigen);
       //TRACE(sH)(Eigen);
       // The eigenvalues are ordered, so lowest energy is in Eigen[0]
       int n = 0;
@@ -192,7 +189,7 @@ double Davidson(VectorType& Guess, VectorType const& Diagonal, MultiplyFunctor M
          {
             if ((E < TargetEnergy) || (Eigen[i] >= TargetEnergy && Eigen[i] <= MaxEnergy))
             {
-               double ThisMaxElement = norm_frob_sq(sH(i,0));
+               double ThisMaxElement = norm_frob_sq(sH(0,i));
                if (E < TargetEnergy || ThisMaxElement > MaxElement)
                {
                   MaxElement = ThisMaxElement;

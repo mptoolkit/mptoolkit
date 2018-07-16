@@ -172,6 +172,11 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
 
       int cols() const { return Size; }
 
+      bool exists(int r, int c) const
+      {
+	 return r == c;
+      }
+
       constexpr int stride() const { return 1; }
 
       buffer_type& buffer() { return Buf; }
@@ -677,6 +682,11 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
       int rows() const { return Size; }
 
       int cols() const { return Size; }
+
+      bool exists(int r, int c) const
+      {
+	 return r == c;
+      }
 
       constexpr int stride() const { return 1; }
 

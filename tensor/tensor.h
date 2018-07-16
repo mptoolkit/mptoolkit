@@ -250,6 +250,11 @@ class IrredTensor
 
       SymmetryList GetSymmetryList() const { return Basis1_.GetSymmetryList(); }
 
+      bool exists(int r, int c) const
+      {
+	 return Data_.exists(r,c);
+      }
+
       template<typename... Args>
       void emplace(int Row, int Col, Args&&... args)
       {

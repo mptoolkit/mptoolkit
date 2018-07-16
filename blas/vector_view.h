@@ -21,6 +21,9 @@
 #define MPTOOLKIT_BLAS_VECTOR_VIEW_H
 
 #include "vectorref.h"
+#if defined(USE_PSTREAM)
+#include "pstream/pstream.h"
+#endif
 
 // vector_view is a proxy class that interprets strided 'view' of a
 // buffer as a vector.  vector_view can be used as an l-value.
@@ -262,7 +265,6 @@ class const_vector_view : public blas::BlasVector<T,vector_view<T, Tag>, Tag>
 };
 
 #if defined(USE_PSTREAM)
-
 template <typename T, int Format>
 PStream::opstreambuf<Format>&
 operator<<(PStream::opstreambuf<Format>& out, normal_vector_view<T, cpu_tag> const& x)

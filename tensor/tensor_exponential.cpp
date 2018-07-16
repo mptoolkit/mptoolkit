@@ -18,14 +18,15 @@
 // ENDHEADER
 
 #include "tensor_exponential.h"
-#include "linearalgebra/exponential.h"
+#include "blas/exponential.h"
 #include "tensor/regularize.h"
+#include "blas/functors.h"
 
 namespace Tensor
 {
 
 IrredTensor<std::complex<double>, BasisList, BasisList>
-Exponentiate(IrredTensor<std::complex<double>, BasisList, BasisList> const& m)
+exp(IrredTensor<std::complex<double>, BasisList, BasisList> const& m)
 {
    typedef IrredTensor<std::complex<double>, BasisList, BasisList> TensorType;
    PRECONDITION(is_scalar(m.TransformsAs()))("Can only exponentiate a scalar operator")(m.TransformsAs());
@@ -39,66 +40,33 @@ Exponentiate(IrredTensor<std::complex<double>, BasisList, BasisList> const& m)
    std::set<QuantumNumber> UsedQ = QuantumNumbersInBasis(m.Basis1());
 
    // linearize the basis
-   for (std::set<QuantumNumber>::const_iterator Q = UsedQ.begin(); Q != UsedQ.end(); ++Q)
+   for (auto const& Q : UsedQ)
    {
-      std::map<int, int> LinearMap = LinearizeQuantumNumberSubspace(m.Basis1(), *Q);
-      LinearAlgebra::Matrix<std::complex<double> > M(LinearMap.size(), LinearMap.size(), 0.0);
-      for (const_iterator<TensorType>::type I = iterate(m); I; ++I)
+      std::map<int, int> LinearMap = LinearizeQuantumNumberSubspace(m.Basis1(), Q);
+      blas::Matrix<std::complex<double>> M(LinearMap.size(), LinearMap.size(), 0.0);
+      for (auto const& I : m)
       {
-         if (m.Basis1()[I.index()] != *Q)
+         if (m.Basis1()[I.row()] != Q)
             continue;
-         for (const_inner_iterator<TensorType>::type J = iterate(I); J; ++J)
-         {
-            if (m.Basis2()[J.index2()] != *Q)
+	 for (auto const& J : I)
+	 {
+            if (m.Basis2()[J.col()] != Q)
                continue;
 
-            M(LinearMap[J.index1()], LinearMap[J.index2()]) = *J;
+            M(LinearMap[I.row()], LinearMap[J.col()]) = J.value;
          }
       }
 
-      M = LinearAlgebra::Exponentiate(1.0, M);
-      for (std::map<int, int>::const_iterator I = LinearMap.begin(); I != LinearMap.end(); ++I)
+      M = exp(std::move(M));
+      for (auto const& I : LinearMap)
       {
-         for (std::map<int, int>::const_iterator J = LinearMap.begin(); J != LinearMap.end(); ++J)
-         {
-            std::complex<double> x = M(I->second, J->second);
-            if (LinearAlgebra::norm_frob(x) > 1e-14)
-               Result(I->first, J->first) = x;
-         }
-      }
-   }
-
-   return Result;
-}
-
-IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>
-exp(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> const& m)
-{
-   PRECONDITION(is_scalar(m.TransformsAs()))("Can only exponentiate a scalar operator")(m.TransformsAs());
-   PRECONDITION_EQUAL(m.Basis1(), m.Basis2());
-
-   if (!is_regular_basis(m.Basis1()))
-   {
-      IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis> X
-         = Regularize(m.Basis1());
-
-      return triple_prod(herm(X), exp(triple_prod(X, m, herm(X))), X);
-   }
-
-   IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>
-      Result = m;
-
-   for (unsigned i = 0; i < Result.Basis1().size(); ++i)
-   {
-      if (!iterate_at(Result.data(), i,i))
-      {
-         int Dim = Result.Basis1().dim(i);
-         // element is zero, so the exponential is the identity
-         Result.data()(i,i) = LinearAlgebra::DiagonalMatrix<double>(Dim, Dim, 1.0);
-      }
-      else
-      {
-         Result.data()(i,i) = LinearAlgebra::Exponentiate(1.0, Result.data()(i,i));
+	 for (auto const& J : LinearMap)
+	 {
+            std::complex<double> x = M(I.second, J.second);
+	    // TODO: culling matrix elements here needs some thought
+            if (std::abs(x) > std::numeric_limits<double>::epsilon())
+               Result.insert(I.first, J.first, x);
+	 }
       }
    }
 

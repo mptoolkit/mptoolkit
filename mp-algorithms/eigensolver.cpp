@@ -163,7 +163,7 @@ template <typename Func>
 void
 LinearSolveDirect(StateComponent& x, Func F, StateComponent const& Rhs, int Verbose = 0)
 {
-   LinearAlgebra::Matrix<double> HMat = real(ConstructSuperOperator(F, x));
+   blas::Matrix<double> HMat = real(ConstructSuperOperator(F, x));
 
    PackStateComponent Pack(x);
    if (Verbose > 0)
@@ -171,14 +171,14 @@ LinearSolveDirect(StateComponent& x, Func F, StateComponent const& Rhs, int Verb
       std::cerr << "Linear solver dimension " << Pack.size() << '\n';
    }
 
-   LinearAlgebra::Vector<std::complex<double>> v(Pack.size());
-   Pack.pack(Rhs, v.data());
+   blas::Vector<std::complex<double>> v(Pack.size());
+   Pack.pack(Rhs, v.storage());
 
-   LinearAlgebra::Matrix<double> vv(size(v),1);
-   vv(LinearAlgebra::all,0) = real(v);
-   LinearAlgebra::Vector<std::complex<double>> xx = LinearAlgebra::LinearSolve(HMat, vv)(LinearAlgebra::all, 0);
+   blas::Matrix<double> vv(v.size(),1);
+   vv.column(0) = real(v);
+   blas::Vector<std::complex<double>> xx = LinearSolve(HMat, vv).column(0);
 
-   x = Pack.unpack(xx.data());
+   x = Pack.unpack(xx);
 }
 
 template <typename Func, typename Prec>
@@ -236,6 +236,7 @@ LinearSolve(StateComponent& x, Func F, Prec P, StateComponent const& Rhs, int k,
    MaxIter = iter;
 }
 
+#if 0
 struct InverseDiagonalPrecondition
 {
    InverseDiagonalPrecondition(StateComponent const& Diag_, std::complex<double> Energy_)
@@ -285,6 +286,7 @@ struct InverseDiagonalPrecondition
    std::complex<double> Energy;
 
 };
+#endif
 
 std::complex<double>
 LocalEigensolver::Solve(StateComponent& C,

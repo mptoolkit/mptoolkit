@@ -41,14 +41,13 @@
 #if !defined(MPTOOLKIT_MP_ALGORITHMS_GMRES_H)
 #define MPTOOLKIT_MP_ALGORITHMS_GMRES_H
 
-#include "linearalgebra/eigen.h"
 #include "common/proccontrol.h"
 #include <iostream>
 #include <cmath>
+#include "blas/functors.h"
 
-using LinearAlgebra::range;
-using LinearAlgebra::norm_2_sq;
-using LinearAlgebra::norm_2;
+using blas::norm_frob;
+using blas::norm_frob_sq;
 
 double const DGKS_Threshold = 1.0 / std::sqrt(2.0); // 1.0; // between 0 and 1.
 
@@ -77,22 +76,22 @@ void GeneratePlaneRotation(Real &dx, Real &dy, Real &cs, Real &sn)
       cs = 1.0;
       sn = 0.0;
    }
-   else if (norm_2_sq(dy) > norm_2_sq(dx))
+   else if (norm_frob_sq(dy) > norm_frob_sq(dx))
    {
       Real temp = dx / dy;
-      sn = 1.0 / std::sqrt( 1.0 + norm_2_sq(temp) );
+      sn = 1.0 / std::sqrt( 1.0 + norm_frob_sq(temp) );
       cs = temp * sn;
    }
    else
    {
       Real temp = dy / dx;
-      cs = 1.0 / std::sqrt( 1.0 + norm_2_sq(temp) );
+      cs = 1.0 / std::sqrt( 1.0 + norm_frob_sq(temp) );
       sn = temp * cs;
    }
 
 #if 0
    // debug: This is the matrix that we want to be Unitary
-   LinearAlgebra::Matrix<std::complex<double> > M(2,2);
+   blas::Matrix<std::complex<double> > M(2,2);
    M(0,0) = cs;
    M(1,1) = cs;
    M(0,1) = conj(sn) * (cs / conj(cs));
@@ -125,9 +124,9 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, double normb, Vector const& b,
 {
   //  typedef typename Vector::value_type value_type;
   typedef std::complex<double> value_type;
-  typedef LinearAlgebra::Vector<value_type> VecType;
+  typedef blas::Vector<value_type> VecType;
   VecType s(m+1), cs(m+1), sn(m+1);
-  LinearAlgebra::Matrix<value_type> H(m+1, m+1, 0.0);
+  blas::Matrix<value_type> H(m+1, m+1, 0.0);
 
   Vector w = Precondition(MatVecMultiply(x));
   Vector r = Precondition(b) - w; // - MatVecMultiply(x));
@@ -190,7 +189,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, double normb, Vector const& b,
   while (j <= max_iter)
   {
      v[0] = (1.0 / beta) * r;
-     zero_all(s);
+     clear(s);
      s[0] = beta;
 
      int i = 0;
@@ -206,7 +205,8 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, double normb, Vector const& b,
         {
            H(k, i) = inner_prod(v[k], w);
            w -= H(k, i) * v[k];
-           NormFrobSqH += LinearAlgebra::norm_frob_sq(H(k,i));
+	   using blas::norm_frob_sq;
+           NormFrobSqH += norm_frob_sq(H(k,i));
         }
 
         // Apply DGKS correction, if necessary
@@ -233,7 +233,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, double normb, Vector const& b,
         ApplyPlaneRotation(H(i,i), H(i+1,i), cs[i], sn[i]);
         ApplyPlaneRotation(s[i], s[i+1], cs[i], sn[i]);
 
-        resid = norm_2(s[i+1]) / normb;
+        resid = norm_frob(s[i+1]) / normb;
 
         if (Verbose > 2)
            std::cerr << "GMRES: resid=" << resid << '\n';
@@ -247,7 +247,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, double normb, Vector const& b,
            Vector X2 = x;
            Update(X2, i-1, H, s, v);
            Vector R = Precondition(b - MatVecMultiply(X2));
-           TRACE(i)(norm_2(s[i]))(norm_frob(R));
+           TRACE(i)(norm_frob(s[i]))(norm_frob(R));
 	   X2 = R;
            for (int k = 0; k <= i; k++)
            {

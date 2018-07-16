@@ -288,6 +288,9 @@ template <typename T>
 struct is_numeric : std::is_arithmetic<T> {};
 
 template <typename T>
+constexpr bool is_numeric_v = is_numeric<T>::value;
+
+template <typename T>
 struct is_numeric<std::complex<T>> : is_numeric<T> {};
 
 #if defined(HAVE_FLOAT128)

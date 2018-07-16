@@ -22,6 +22,8 @@
 #if !defined(MPTOOLKIT_BLAS_MATRIX_BLAS_GENERIC_H)
 #define MPTOOLKIT_BLAS_MATRIX_BLAS_GENERIC_H
 
+#include "functors.h"
+
 namespace blas
 {
 

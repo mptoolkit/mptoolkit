@@ -29,12 +29,35 @@
 namespace Tensor
 {
 
-// singular value decomposition, singular values returned as a diagonal matrix
+// singular value decomposition, singular values returned as a diagonal matrix.
+// It is not necessary to initialize U,D,Vh with the correct dimensions,
+// they will be move-assigned with new matrices anyway.
 void
 SVD(MatrixOperator const& m,
     MatrixOperator& U,
     RealDiagonalOperator& D,
     MatrixOperator& Vh);
+
+// Version of the SVD where the dimension of D is the number of columns of m
+void
+SVD_FullColumns(MatrixOperator const& m,
+		MatrixOperator& U,
+		RealDiagonalOperator& D,
+		MatrixOperator& Vh);
+
+// Version of the SVD where the dimension of D is the number of rows of m
+void
+SVD_FullRows(MatrixOperator const& m,
+	     MatrixOperator& U,
+	     RealDiagonalOperator& D,
+	     MatrixOperator& Vh);
+
+// Version of the SVD where the dimension of D is max(m.rows(), m.cols())
+void
+SVD_Full(MatrixOperator const& m,
+	 MatrixOperator& U,
+	 RealDiagonalOperator& D,
+	 MatrixOperator& Vh);
 
 // SVD where every basis is a regular basis
 void

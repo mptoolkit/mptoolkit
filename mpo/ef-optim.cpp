@@ -25,7 +25,6 @@
 // note: we could parallelize the construction of the G and H indices over jP
 
 typedef std::complex<double> NumberType;
-typedef LinearAlgebra::Matrix<NumberType> MatrixType;
 
 #if 0
 
@@ -164,7 +163,7 @@ StateComponent
 operator_prod_inner(OperatorComponent const& M,
                     StateComponent const& E,
                     StateComponent const& B,
-                    LinearAlgebra::HermitianProxy<StateComponent> const& F)
+                    HermitianProxy<StateComponent> const& F)
 {
    DEBUG_PRECONDITION_EQUAL(M.Basis1(), E.LocalBasis());
    DEBUG_PRECONDITION_EQUAL(M.Basis2(), F.base().LocalBasis());
@@ -203,10 +202,11 @@ operator_prod_inner(OperatorComponent const& M,
             for (unsigned a = 0; a < F.base().LocalBasis().size(); ++a)
             {
                // We already know i, we don't need to iterate
-               for (MatrixOperator::MatrixType::data_type::value_type::const_iterator
-                       J = iterate(F.base()[a].data().vec()[i]); J; ++J)
-               {
-                  int j = J.index();
+	       for (auto const& J : F.base()[a].row(i))
+	       {
+		  //               for (MatrixOperator::MatrixType::data_type::value_type::const_iterator
+		  //                       J = iterate(F.base()[a].data().vec()[i]); J; ++J)
+                  int j = J.col();
 
                   //KMatrixDescriptor KMat;
 
@@ -215,20 +215,22 @@ operator_prod_inner(OperatorComponent const& M,
                   // over both indices
                   for (unsigned aP = 0; aP < M.Basis1().size(); ++aP)
                   {
-                     OperatorComponent::const_inner_iterator AA = iterate_at(M.data(), aP, a);
-                     if (!AA)
-                        continue;
+		     auto AA = M.row(aP).find(a);
+		     if (AA == M.row(aP).end())
+			continue;
+		     //                     OperatorComponent::const_inner_iterator AA = iterate_at(M.data(), aP, a);
+		     //                     if (!AA)
+		     //                        continue;
 
                      // Iterate over the irreducible components of M(aP,a)
-                     for (SimpleRedOperator::const_iterator k = AA->begin(); k != AA->end(); ++k)
-                     {
-                        // *k is an irreducible operator.  Iterate over the components of this operator.
+		     for (auto const& k : (*AA).value)
+		     {
+                        // k is an irreducible operator.  Iterate over the components of this operator.
                         // We already know sP
                         // We already know the index sP, so iterate over that row
-                        for (SimpleOperator::MatrixType::data_type::value_type::const_iterator
-                                S = iterate(k->data().vec()[sP]); S; ++S)
-                        {
-                           int s = S.index();
+			for (auto const& S : k.row(sP))
+			{
+                           int s = S.col();
 
                            // The final index is j' - we only need this if the
                            // element exists in both E.base()[a'](i',j')
@@ -236,12 +238,13 @@ operator_prod_inner(OperatorComponent const& M,
 
                            for (unsigned jP = 0; jP < E.Basis2().size(); ++jP)
                            {
-                              MatrixOperator::const_inner_iterator EjP = iterate_at(E[aP].data(), iP, jP);
-                              if (!EjP)
-                                 continue;
-                              MatrixOperator::const_inner_iterator BjP = iterate_at(B[s].data(), jP, j);
-                              if (!BjP)
-                                 continue;
+			      auto EjP = E[aP].row(iP).find(jP);
+			      if (EjP == E[aP].row(iP).end())
+				 continue;
+
+			      auto BjP = B[s].row(jP).find(j);
+			      if (BjP == B[s].row(jP).end())
+				 continue;
 
                               //double degree_iP = degree(A.base().Basis1()[iP]);
 
@@ -251,23 +254,17 @@ operator_prod_inner(OperatorComponent const& M,
                                                                 B.Basis1()[jP],
 
                                                                 M.Basis2()[a],
-                                                                k->TransformsAs(),
+                                                                k.TransformsAs(),
                                                                 M.Basis1()[aP],
 
                                                                 F.base().Basis1()[i],
                                                                 M.LocalBasis1()[sP],
                                                                 E.Basis1()[iP]);
 
-                              if (LinearAlgebra::norm_frob(Coeff) > 1E-14)
+                              if (std::abs(Coeff) > 1E-14)
                               {
-                                 if (!iterate_at(Result[sP].data(), iP, i))
-                                 {
-                                    set_element(Result[sP].data(), iP, i, Coeff * (*S) * (*EjP) * (*BjP) * herm(*J));
-                                 }
-                                 else
-                                 {
-                                    Result[sP](iP, i) += Coeff * (*S) * (*EjP) * (*BjP) * herm(*J);
-                                 }
+				 Matrix Temp = (*BjP).value * herm(J.value);
+				 Result[sP].add(iP, i, Coeff * S.value * (*EjP).value * Temp);
                               }
                            }
                         }

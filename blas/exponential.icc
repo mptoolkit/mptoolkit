@@ -2,9 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// tensor/tensor_exponential.h
+// blas/exponential.icc
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2018 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,25 +17,17 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#if !defined(MPTOOLKIT_TENSOR_TENSOR_EXPONENTIAL_H)
-#define MPTOOLKIT_TENSOR_TENSOR_EXPONENTIAL_H
-
-#include "tensor.h"
-#include "blas/matrix.h"
-
-namespace Tensor
+namespace blas
 {
 
-// exponentiate a scalar operator
-IrredTensor<std::complex<double>, BasisList, BasisList>
-exp(IrredTensor<std::complex<double>, BasisList, BasisList> const& m);
-
 template <typename T, typename Tag>
-IrredTensor<blas::Matrix<T, Tag>, VectorBasis, VectorBasis>
-exp(IrredTensor<blas::Matrix<T, Tag>, VectorBasis, VectorBasis> const& m);
+Matrix<T, Tag>
+exp(Matrix<T, Tag> const& m)
+{
+   Matrix<T> M = exp(get_wait(m));
+   Matrix<T, Tag> Result(M.rows(), M.cols());
+   set_wait(Result, M);
+   return Result;
+}
 
-} // namespace Tensor
-
-#include "tensor_exponential.icc"
-
-#endif
+} // namepsace blas

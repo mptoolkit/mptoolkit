@@ -1,0 +1,59 @@
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// tensor/tensor_exponoential.icc
+//
+// Copyright (C) 2004-2018 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
+#include "regularize.h"
+
+namespace Tensor
+{
+
+template <typename T, typename Tag>
+IrredTensor<blas::Matrix<T, Tag>, VectorBasis, VectorBasis>
+exp(IrredTensor<blas::Matrix<T, Tag>, VectorBasis, VectorBasis> const& m)
+{
+   PRECONDITION(is_scalar(m.TransformsAs()))("Can only exponentiate a scalar operator")(m.TransformsAs());
+   PRECONDITION_EQUAL(m.Basis1(), m.Basis2());
+
+
+   if (!is_regular_basis(m.Basis1()))
+   {
+      using real_t = typename blas::number_traits<T>::real_type;
+      IrredTensor<blas::Matrix<T>, VectorBasis, VectorBasis> X(Regularize<real_t>(m.Basis1()));
+      return triple_prod(herm(X), exp(triple_prod(X, m, herm(X))), X);
+   }
+
+   IrredTensor<blas::Matrix<T, Tag>, VectorBasis, VectorBasis> Result = oopy(m);
+
+   for (unsigned i = 0; i < Result.Basis1().size(); ++i)
+   {
+      if (!Result.exists(i,i))
+      {
+         Result.insert(i,i,blas::Matrix<T, Tag>::make_identity(Result.Basis1().dim(i)));
+      }
+      else
+      {
+	 // access via iterator -- guaranteed to exist because we already checked that it exists
+	 auto I = Result.row(i).at(i);
+	 *I = exp(std::move(*I));
+      }
+   }
+
+   return Result;
+}
+
+} // namespace Tensor

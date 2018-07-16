@@ -1537,16 +1537,15 @@ inner_prod_nested(blas::BlasMatrix<T, U, Tag> const& x,
 			    z, std::forward<Nested>(Nest));
 }
 
+// not implemented, but used for return-type deduction
 template <typename T, typename U, typename V, typename Tag, typename Nested>
-inline
 typename Tag::template async_ref<T>
 inner_prod_nested(blas::BlasMatrix<T, U, Tag> const& x,
 		  blas::BlasMatrix<T, V, Tag> const& y,
 		  Nested&& Nest);
-// not implemented, but used for return-type deduction
 
+// not implemented, but used for return-type deduction
 template <typename T, typename U, typename V, typename Tag, typename Nested>
-inline
 void
 add_inner_prod_nested(blas::BlasMatrix<T, U, Tag> const& x,
 		      blas::BlasMatrix<T, V, Tag> const& y,

@@ -18,7 +18,6 @@
 // ENDHEADER
 
 #include "random_wavefunc.h"
-#include "linearalgebra/matrix_utility.h"
 #include "common/randutil.h"
 
 bool
@@ -117,7 +116,7 @@ CreateRandomConfiguration(std::vector<BasisList> const& Basis,
       QuantumNumbers::QuantumNumberList QList = transform_targets(Psi.Height[Site+1], Basis[Site][NewState]);
       //      for (std::size_t Qi = 0; Qi < QList.size(); ++Qi)
       {
-         std::size_t Qi = std::size_t(LinearAlgebra::random<double>() * QList.size());
+         std::size_t Qi = randutil::rand_int(0, QList.size()-1);
 
          QuantumNumber NewQ(QList[Qi]);
          WavefunctionDesc New = Psi;
@@ -132,7 +131,7 @@ CreateRandomConfiguration(std::vector<BasisList> const& Basis,
             }
             double Newc = weight(difference(q, New.TransformsAs()));
             //TRACE(Newc);
-            if (LinearAlgebra::random<double>() < exp(Beta * (c-Newc)))
+            if (randutil::rand<double>() < exp(Beta * (c-Newc)))
             {
                //TRACE("Accepted");
                Psi = New;
@@ -154,16 +153,16 @@ LinearWavefunction WavefunctionFromConfiguration(WavefunctionDesc const& Psi, st
    LinearWavefunction Result;
 
    MatrixOperator Center(B2, B2, Ident);
-   Center(0,0) = LinearAlgebra::Matrix<double>(1,1,1);
+   Center.insert(0,0, Matrix::make_identity(1));
    for (int i = Basis.size()-1; i >= 0; --i)
    {
       //      TRACE(i)(Psi.Height[i]);
       VectorBasis B1(Basis[i].GetSymmetryList());
       B1.push_back(Psi.Height[i], 1);
       MatrixOperator Next(B1, B2, Basis[i][Psi.State[i]]);
-      Next(0,0) = LinearAlgebra::Matrix<double>(1,1,1);
+      Next.insert(0,0, Matrix::make_identity(1));
       StateComponent R(Basis[i], B1, B2);
-      R[Psi.State[i]] = Next;
+      R[Psi.State[i]] = std::move(Next);
       R = prod(R, Center);
       Center = TruncateBasis1(R);
       Result.push_front(R);

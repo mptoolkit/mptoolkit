@@ -23,6 +23,7 @@
 #define MPTOOLKIT_BLAS_MATRIX_BLASREFERENCE_H
 
 #include "matrix-blas-base.h"
+#include "number_traits.h"
 
 namespace blas
 {
