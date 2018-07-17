@@ -240,6 +240,7 @@ SimpleOperator make_vacuum_simple(QuantumNumbers::SymmetryList const& SList)
 StateComponent
 operator+(StateComponent&& x, StateComponent const& y);
 
+inline
 StateComponent
 operator+(StateComponent const& x, StateComponent const& y)
 {
@@ -249,6 +250,7 @@ operator+(StateComponent const& x, StateComponent const& y)
 StateComponent
 operator-(StateComponent&& x, StateComponent const& y);
 
+inline
 StateComponent
 operator-(StateComponent const& x, StateComponent const& y)
 {
@@ -264,6 +266,7 @@ operator-=(StateComponent& x, StateComponent const& y);
 // hermitian conjugation
 
 template <typename T>
+inline
 HermitianProxy<BasicStateComponent<T>>
 herm(BasicStateComponent<T> const& x)
 {

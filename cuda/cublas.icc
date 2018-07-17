@@ -29,7 +29,8 @@ handle& get_handle()
 
 // convert from rvalue ref to lvalue ref, to aid handling proxies
 template <typename T>
-constexpr T &lvalue(T &&r) noexcept { return r; }
+inline
+constexpr T& lvalue(T &&r) noexcept { return r; }
 
 #if 0
 template <typename T>

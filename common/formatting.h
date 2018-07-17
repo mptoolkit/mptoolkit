@@ -52,12 +52,14 @@ wite_format(std::ostream& out, T x)
    out << std::setw(6) << x;
 }
 
+inline
 void
 write_format(std::ostream& out, double x)
 {
    out << std::setw(10) << x;
 }
 
+inline
 void
 write_format(std::ostream& out, std::complex<double> x)
 {

@@ -269,7 +269,7 @@ vector_copy(int n, cuda::const_gpu_ptr<double> x, int incx, cuda::gpu_ptr<std::c
    y.wait_for(x);
    double alpha = 0.0;
    cublas::check_error(cublasDscal(H.raw_handle(), n, &alpha, reinterpret_cast<double*>(y.device_ptr())+1, incy*2));
-   cublas::check_error(cublasDcopy(H.raw_handle(), n, x.device_ptr(), incx, 
+   cublas::check_error(cublasDcopy(H.raw_handle(), n, x.device_ptr(), incx,
 				   reinterpret_cast<double*>(y.device_ptr()), incy*2));
    x.wait_for(y);
 }
@@ -381,6 +381,7 @@ vector_inner_prod_nested(int n,
    y.wait(r.sync());
 }
 
+inline
 void
 vector_norm_frob_sq(int n, cuda::const_gpu_ptr<double>x, int incx, cuda::gpu_ref<double>& r)
 {
@@ -392,6 +393,7 @@ vector_norm_frob_sq(int n, cuda::const_gpu_ptr<double>x, int incx, cuda::gpu_ref
    x.wait(r.sync());
 }
 
+inline
 void vector_conj(int n, cuda::gpu_ptr<std::complex<double>> x, int incx)
 {
    cublas::handle& H = cublas::get_handle();
@@ -597,6 +599,7 @@ void matrix_clear(int M, int N, cuda::gpu_ptr<std::complex<double>> A, int lda)
                                    reinterpret_cast<cuDoubleComplex*>(A.device_ptr()), lda));
 }
 
+inline
 void matrix_conj(int M, int N, cuda::gpu_ptr<std::complex<double>> A, int lda)
 {
    cublas::handle& H = cublas::get_handle();
@@ -712,7 +715,7 @@ gemm(char Atrans, char Btrans, int M, int N, int K, std::complex<double> alpha,
 
 inline
 void
-dgmm(int M, int K, 
+dgmm(int M, int K,
      cuda::const_gpu_ptr<std::complex<double>> x, int incx,
      cuda::const_gpu_ptr<std::complex<double>> B, int ldb,
      cuda::gpu_ptr<std::complex<double>> C, int ldc)
@@ -722,7 +725,7 @@ dgmm(int M, int K,
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    C.wait_for(x);
    C.wait_for(B);
-   cublas::check_error(cublasZdgmm(H.raw_handle(), CUBLAS_SIDE_LEFT, M, K, 
+   cublas::check_error(cublasZdgmm(H.raw_handle(), CUBLAS_SIDE_LEFT, M, K,
 				   reinterpret_cast<cuDoubleComplex const*>(B.device_ptr()), ldb,
 				   reinterpret_cast<cuDoubleComplex const*>(x.device_ptr()), incx,
 				   reinterpret_cast<cuDoubleComplex*>(C.device_ptr()), ldc));
@@ -734,7 +737,7 @@ dgmm(int M, int K,
 
 inline
 void
-dgmm(int M, int K, 
+dgmm(int M, int K,
      cuda::const_gpu_ptr<double> x, int incx,
      cuda::const_gpu_ptr<std::complex<double>> B, int ldb,
      cuda::gpu_ptr<std::complex<double>> C, int ldc)
@@ -744,7 +747,7 @@ dgmm(int M, int K,
 
 inline
 void
-gdmm(int M, int K, 
+gdmm(int M, int K,
      cuda::const_gpu_ptr<std::complex<double>> A, int lda,
      cuda::const_gpu_ptr<std::complex<double>> y, int incy,
      cuda::gpu_ptr<std::complex<double>> C, int ldc)
@@ -754,7 +757,7 @@ gdmm(int M, int K,
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    C.wait_for(A);
    C.wait_for(y);
-   cublas::check_error(cublasZdgmm(H.raw_handle(), CUBLAS_SIDE_RIGHT, M, K, 
+   cublas::check_error(cublasZdgmm(H.raw_handle(), CUBLAS_SIDE_RIGHT, M, K,
 				   reinterpret_cast<cuDoubleComplex const*>(A.device_ptr()), lda,
 				   reinterpret_cast<cuDoubleComplex const*>(y.device_ptr()), incy,
 				   reinterpret_cast<cuDoubleComplex*>(C.device_ptr()), ldc));
@@ -765,7 +768,7 @@ gdmm(int M, int K,
 // mixed real/complex
 inline
 void
-gdmm(int M, int K, 
+gdmm(int M, int K,
      cuda::const_gpu_ptr<std::complex<double>> A, int lda,
      cuda::const_gpu_ptr<double> y, int incy,
      cuda::gpu_ptr<std::complex<double>> C, int ldc)

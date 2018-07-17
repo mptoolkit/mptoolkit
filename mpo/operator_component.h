@@ -346,6 +346,7 @@ translate_right(BasisList const& LeftBasis, BasisList const& ThisBasis);
 
 // hermitian conjugation
 
+inline
 OperatorComponent adjoint(OperatorComponent const& x)
 {
    //   static_assert(std::is_nothrow_move_constructible<OperatorComponent>::value, "");
@@ -361,6 +362,7 @@ OperatorComponent adjoint(OperatorComponent const& x)
    return Result;
 }
 
+inline
 OperatorComponent inv_adjoint(OperatorComponent const& x)
 {
    OperatorComponent Result(x.LocalBasis2(), x.LocalBasis1(), adjoint(x.Basis1()), adjoint(x.Basis2()));
@@ -416,24 +418,28 @@ OperatorComponent prod(SimpleOperator const& Op, OperatorComponent const& A, dou
 OperatorComponent prod(OperatorComponent const& A, HermitianProxy<SimpleOperator> const& Op, double Tol = 1e-14);
 OperatorComponent prod(HermitianProxy<SimpleOperator> const& Op, OperatorComponent const& A, double Tol = 1e-14);
 
+inline
 OperatorComponent
 operator*(OperatorComponent const& A, SimpleOperator const& Op)
 {
    return prod(A,Op);
 }
 
+inline
 OperatorComponent
 operator*(SimpleOperator const& Op, OperatorComponent const& A)
 {
    return prod(Op, A);
 }
 
+inline
 OperatorComponent
 operator*(OperatorComponent const& A, HermitianProxy<SimpleOperator> const& Op)
 {
    return prod(A, Op);
 }
 
+inline
 OperatorComponent
 operator*(HermitianProxy<SimpleOperator> const& Op, OperatorComponent const& A)
 {

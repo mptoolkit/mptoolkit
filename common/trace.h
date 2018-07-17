@@ -1046,16 +1046,19 @@ else INVOKE_PANIC("PANIC", #Msg, (Msg))
 // check for closeness for floating point
 
 template <typename T>
+inline
 bool check_close(T x, T y)
 {
    return x == y;
 }
 
+inline
 bool check_close(float x, float y)
 {
    return std::abs(x-y) < std::numeric_limits<float>::epsilon() * 100;
 }
 
+inline
 bool check_close(double x, double y)
 {
    return std::abs(x-y) < std::numeric_limits<double>::epsilon() * 100;

@@ -127,6 +127,7 @@ vector_copy(int N, std::complex<double> const* x, int incx, std::complex<double>
 // vector_copy_scaled
 //
 
+inline
 void
 vector_copy_scaled(int N, double alpha, double const* x, int incx, double* y, int incy)
 {
@@ -138,6 +139,7 @@ vector_copy_scaled(int N, double alpha, double const* x, int incx, double* y, in
    }
 }
 
+inline
 void
 vector_copy_scaled(int N, std::complex<double> alpha,
                    std::complex<double> const* x, int incx,
@@ -155,6 +157,7 @@ vector_copy_scaled(int N, std::complex<double> alpha,
 // vector_add
 //
 
+inline
 void
 vector_add(int N, double const* x, int incx, double* y, int incy)
 {
@@ -166,6 +169,7 @@ vector_add(int N, double const* x, int incx, double* y, int incy)
    }
 }
 
+inline
 void
 vector_add(int N, std::complex<double> const* x, int incx,
            std::complex<double>* y, int incy)
@@ -182,6 +186,7 @@ vector_add(int N, std::complex<double> const* x, int incx,
 // vector_add_scaled
 //
 
+inline
 void
 vector_add_scaled(int N, double alpha, double const* x, int incx, double* y, int incy)
 {
@@ -193,6 +198,7 @@ vector_add_scaled(int N, double alpha, double const* x, int incx, double* y, int
    }
 }
 
+inline
 void
 vector_add_scaled(int N, std::complex<double> alpha,
                   std::complex<double> const* x, int incx,
@@ -206,6 +212,7 @@ vector_add_scaled(int N, std::complex<double> alpha,
    }
 }
 
+inline
 void
 vector_sum(int N, double const* x, int incx, double& r)
 {
@@ -218,6 +225,7 @@ vector_sum(int N, double const* x, int incx, double& r)
    r = rr;
 }
 
+inline
 void
 vector_sum(int N, std::complex<double> const* x, int incx, std::complex<double>& r)
 {
@@ -230,6 +238,7 @@ vector_sum(int N, std::complex<double> const* x, int incx, std::complex<double>&
    r = rr;
 }
 
+inline
 void
 vector_norm_frob_sq(int N, double const* x, int incx, double& r)
 {
@@ -242,6 +251,7 @@ vector_norm_frob_sq(int N, double const* x, int incx, double& r)
    r = rr;
 }
 
+inline
 void
 vector_norm_frob_sq(int N, std::complex<double> const* x, int incx, std::complex<double>& r)
 {
@@ -255,6 +265,7 @@ vector_norm_frob_sq(int N, std::complex<double> const* x, int incx, std::complex
 }
 
 template <typename T>
+inline
 std::enable_if_t<blas::is_numeric_v<T>, void>
 vector_inner_prod(int N, T const* x, int incx, T const* y, int incy, T& r)
 {
@@ -268,9 +279,10 @@ vector_inner_prod(int N, T const* x, int incx, T const* y, int incy, T& r)
    r = rr;
 }
 
+inline
 void
-vector_inner_prod(int N, std::complex<double> const* x, int incx, 
-		  std::complex<double> const* y, int incy, 
+vector_inner_prod(int N, std::complex<double> const* x, int incx,
+		  std::complex<double> const* y, int incy,
 		  std::complex<double>& r)
 {
    std::complex<double> rr = 0.0;
@@ -284,6 +296,7 @@ vector_inner_prod(int N, std::complex<double> const* x, int incx,
 }
 
 template <typename T>
+inline
 std::enable_if_t<blas::is_numeric_v<T>, void>
 vector_add_inner_prod(int N, T const* x, int incx, T const* y, int incy, T& r)
 {
@@ -376,6 +389,7 @@ void matrix_conj(int M, int N, std::complex<double>* A, int lda)
 }
 
 template <typename T>
+inline
 decltype(norm_frob_sq(std::declval<T>()))
 matrix_norm_frob_sq(int M, int N, T const* A, int lda)
 {
@@ -389,9 +403,8 @@ matrix_norm_frob_sq(int M, int N, T const* A, int lda)
    }
    return Result;
 }
-   
-double matrix_norm_frob_sq(int M, int N, std::complex<double>* A, int lda);
 
+double matrix_norm_frob_sq(int M, int N, std::complex<double>* A, int lda);
 
 //
 // matrix_copy
@@ -757,6 +770,7 @@ matrix_add_scaled(char Atrans, int M, int N, std::complex<double> alpha,
    }
 }
 
+inline
 void
 matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
 		      double const* A, int ldA,
@@ -783,6 +797,7 @@ matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
    r += rr;
 }
 
+inline
 void
 matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
 		      std::complex<double> const* A, int ldA,
