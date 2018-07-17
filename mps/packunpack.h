@@ -29,15 +29,17 @@
 #include <complex>
 
 // pack a MatrixOperator into an inner-product conserving linear vector
-void pack(MatrixOperator const& m, std::vector<complex>& v);
+blas::Vector<complex>
+pack(MatrixOperator const& m);
 
-// unpack a linear vector into a MatrixOpearator
-void unpack(MatrixOperator& m, std::vector<complex> const& v);
+// unpack a linear vector into a MatrixOperator.  The operator
+// must have the appropriate basis and quantum numbers set
+void unpack(MatrixOperator& m, blas::Vector<complex> const& v);
 
-void pack(StateComponent const& m, std::vector<complex>& v);
-void unpack(StateComponent& m, std::vector<complex> const& v);
+blas::Vector<complex>
+pack(StateComponent const& m);
 
-
+void unpack(StateComponent& m, blas::Vector<complex> const& v);
 
 // construct the full matrix representation of some superoperator
 // given by the functor F : MatrixOperator -> MatrixOperator
@@ -45,6 +47,8 @@ template <typename F>
 blas::Matrix<std::complex<double>>
 ConstructSuperOperator(F f, MatrixOperator const& Init);
 
+#if 0
+// not updated yet to use the new pack/unpack API
 template <typename F>
 blas::Matrix<std::complex<double>>
 ConstructSuperOperator(F f, MatrixOperator const& Init)
@@ -57,7 +61,7 @@ ConstructSuperOperator(F f, MatrixOperator const& Init)
 
    blas::Matrix<std::complex<double> > Out(Size, Size);
 
-   std::vector<std::complex<double> > L(Size), R(Size);
+   blas::Vector<std::complex<double> > L(Size), R(Size);
    for (unsigned i = 0; i < Size; ++i)
    {
       if (i > 0)
@@ -93,7 +97,7 @@ ConstructSuperOperator(F f, StateComponent const& Init)
 
    blas::Matrix<std::complex<double> > Out(Size, Size);
 
-   std::vector<std::complex<double> > L(Size), R(Size);
+   blas::Vector<std::complex<double> > L(Size), R(Size);
    for (unsigned i = 0; i < Size; ++i)
    {
       if (i > 0)
@@ -124,7 +128,7 @@ ConstructSuperOperatorSparse(F f, MatrixOperator const& Init)
 
    blas::SparseMatrix<std::complex<double> > Out(Size, Size);
 
-   std::vector<std::complex<double> > L(Size), R(Size);
+   blas::Vector<std::complex<double> > L(Size), R(Size);
    for (unsigned i = 0; i < Size; ++i)
    {
       if (i > 0)
@@ -154,7 +158,7 @@ ConstructSuperOperatorBinaryFile(F f, MatrixOperator const& Init, std::streambuf
 
    std::size_t Size = Pack.size();
 
-   std::vector<std::complex<double> > L(Size), R(Size);
+   blas::Vector<std::complex<double> > L(Size), R(Size);
    for (unsigned i = 0; i < Size; ++i)
    {
       if (i > 0)
@@ -176,5 +180,7 @@ ConstructSuperOperatorBinaryFile(F f, MatrixOperator const& Init, std::streambuf
 
    return Out;
 }
+
+#endif
 
 #endif

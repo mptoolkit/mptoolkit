@@ -19,195 +19,148 @@
 
 #include "packunpack.h"
 #include <cstring>
+#include "blas/vector_view.h"
 
-//
-// PackMatrixOperator
-//
+// helper function.  Returns the new iterator pointing to one-past the end
 
-void PackMatrixOperator::Initialize(VectorBasis const& Basis1,
-                                     VectorBasis const& Basis2,
-                                     QuantumNumbers::QuantumNumber const& q)
-{
-   B1_ = Basis1;
-   B2_ = Basis2;
-   q_ = q;
-   OffsetMatrix_ = blas::Matrix<int>(Basis1.size(), Basis2.size(), -1);
-   unsigned Offset = 0;
-   for (unsigned i = 0; i < Basis1.size(); ++i)
-   {
-      for (unsigned j = 0; j < Basis2.size(); ++j)
-      {
-         if (is_transform_target(Basis2[j], q, Basis1[i]))
-         {
-            unsigned Sz = Basis1.dim(i) * Basis2.dim(j);
-            OffsetMatrix_(i,j) = Offset;
-            OffsetArray_.push_back(OffsetRecType(i,j,Offset,Sz));
-            Offset += Sz;
-         }
-      }
-   }
-   Size_ = Offset;
-}
-
-PackMatrixOperator::PackMatrixOperator(VectorBasis const& Basis1,
-                                       VectorBasis const& Basis2,
-                                       QuantumNumbers::QuantumNumber const& q)
-{
-   this->Initialize(Basis1, Basis2, q);
-}
-
-PackMatrixOperator::PackMatrixOperator(MatrixOperator const& m)
-{
-   Initialize(m.Basis1(), m.Basis2(), m.TransformsAs());
-}
-
-void
-PackMatrixOperator::pack(cpu::Matrix const& m, value_type* Iter, double Factor)
+template <typename T>
+T*
+pack_to(double Factor, blas::Matrix<T> const& m, T* Iter)
 {
    // pack in column-major format
    for (int i = 0; i < m.cols(); ++i)
    {
-      vector_view(m.rows(), 1, Iter+i*m.leading_dimension())
-	 = m.column(i);
-   }
-}
-
-void
-PackMatrixOperator::unpack(cpu::Matrix& m, value_type const* Iter, double Factor)
-{
-   // pack in column-major format
-   for (int i = 0; i < m.cols(); ++i)
-   {
-      vector_view(m.rows(), 1, Iter+i*m.leading_dimension())
+      blas::make_vector_view<T>(m.rows(), 1, Iter+i*m.leading_dimension())
 	 = Factor * m.column(i);
    }
+   return Iter+m.rows()*m.cols();
 }
 
-void
-PackMatrixOperator::unpack(cpu::Matrix& m, value_type const* Iter, double Factor)
+template <typename T>
+T const*
+unpack_from(double Factor, blas::Matrix<T>& m, T const* Iter)
 {
    // pack in column-major format
    for (int i = 0; i < m.cols(); ++i)
    {
-      m.column(i) = Factor * const_vector_view(m.rows(), 1, Iter+i*m.leading_dimension());
+      m.column(i) = Factor *
+         blas::make_const_vector_view<T>(m.rows(), 1, Iter+i*m.leading_dimension());
    }
+   return Iter+m.rows()*m.cols();
 }
 
-PackMatrixOperator::value_type*
-PackMatrixOperator::pack(MatrixOperator const& m, value_type* Iter) const
+// determine the array size of the packed form of a MatrixOperator
+int
+pack_size(MatrixOperator const& m)
 {
-   for (auto const& I : OffsetArray_)
+   int Result = 0;
+   for (int i = 0; i < m.Basis1().size(); ++i)
    {
-      auto J = m.row(I.r).find(I.c);
-      if (J != m.row(I.r).end())
+      for (int j = 0; j < m.Basis2().size(); ++j)
       {
-      {
-	 DEBUG_CHECK_EQUAL(I.Size, J.value.rows()*J.value.cols());
-         // normalization correction is sqrt(degree(B1[I->r]))
-	 pack(get_wait(J.value), Iter+I.offset, std::sqrt(double(degree(B1_[I.r]))));
-      }
-      else
-      {
-         std::memset(Iter+I->Offset, 0, I->Size * sizeof(value_type));
-      }
-   }
-   return Iter+Size_;
-}
-
-MatrixOperator
-PackMatrixOperator::unpack(value_type const* Iter) const
-{
-   MatrixOperator Result(B1_, B2_, q_);
-   for (auto const& I : OffsetArray_)
-   {
-      blas::Matrix<value_type> m(B1_.dim(I->r), B2_.dim(I->c));
-      unpack(m, Iter+I.Offset, 1.0 / std::sqrt(double(degree(B1_[I->r]))));
-      Result.set(I.r, I.c, std::move(m));
-   }
-   return Result;
-}
-
-//
-// PackStateComponent
-//
-
-void PackStateComponent::Initialize(BasisList const& LocalBasis, VectorBasis const& Basis1,
-                                    VectorBasis const& Basis2)
-{
-   B_ = LocalBasis;
-   B1_ = Basis1;
-   B2_ = Basis2;
-   OffsetMatrix_ = OffsetMatrixType(B_.size(),
-                                    blas::Matrix<int>(Basis1.size(), Basis2.size(), -1));
-   unsigned Offset = 0;
-   for (unsigned q = 0; q < B_.size(); ++q)
-   {
-      for (unsigned i = 0; i < Basis1.size(); ++i)
-      {
-         for (unsigned j = 0; j < Basis2.size(); ++j)
+         if (is_transform_target(m.Basis2()[j], m.TransformsAs(), m.Basis1()[i]))
          {
-            if (is_transform_target(Basis2[j], B_[q], Basis1[i]))
-            {
-               unsigned Sz = Basis1.dim(i) * Basis2.dim(j);
-               OffsetMatrix_[q](i,j) = Offset;
-               OffsetArray_.push_back(OffsetRecType(q,i,j,Offset,Sz));
-               Offset += Sz;
-            }
+            Result += m.Basis1().dim(i) * m.Basis2().dim(j);
          }
       }
    }
-   Size_ = Offset;
+   return Result;
 }
 
-PackStateComponent::PackStateComponent(BasisList const& LocalBasis, VectorBasis const& Basis1,
-                                       VectorBasis const& Basis2)
+complex*
+pack_to(MatrixOperator const& m, complex* Iter)
 {
-   this->Initialize(LocalBasis, Basis1, Basis2);
-}
-
-PackStateComponent::PackStateComponent(StateComponent const& m)
-{
-   Initialize(m.LocalBasis(), m.Basis1(), m.Basis2());
-}
-
-PackStateComponent::value_type*
-PackStateComponent::pack(StateComponent const& m, value_type* Iter) const
-{
-   DEBUG_CHECK_EQUAL(m.LocalBasis(), B_);
-   DEBUG_CHECK_EQUAL(m.Basis1(), B1_);
-   DEBUG_CHECK_EQUAL(m.Basis2(), B2_);
-   typedef LinearAlgebra::VectorMemProxy<value_type> VecProxy;
-   typedef LinearAlgebra::VectorMemProxy<value_type const> ConstVecProxy;
-   for (auto const& I : OffsetArray_)
+   for (int i = 0; i < m.Basis1().size(); ++i)
    {
-      const_inner_iterator<MatrixOperator>::type J = iterate_at(m[I->q].data(), I->r, I->c);
-      if (J)
+      for (int j = 0; j < m.Basis2().size(); ++j)
       {
-         DEBUG_CHECK_EQUAL(I->Size, size1(*J)*size2(*J));
-         // normalization correction is sqrt(degree(B1[I->r]))
-         VecProxy(Iter+I->Offset, I->Size)
-            = std::sqrt(double(degree(B1_[I->r]))) * ConstVecProxy(data(*J), I->Size);
-      }
-      else
-      {
-         std::memset(Iter+I->Offset, 0, I->Size * sizeof(value_type));
+         if (is_transform_target(m.Basis2()[j], m.TransformsAs(), m.Basis1()[i]))
+         {
+            int Size = m.Basis1().dim(i) * m.Basis2().dim(j);
+            auto J = m.row(i).find(j);
+            if (J != m.row(i).end())
+            {
+               // normalization correction is sqrt(degree(B1[I->r]))
+               pack_to(std::sqrt(double(degree(m.Basis1()[i]))), get_wait(J.value()), Iter);
+            }
+            else
+            {
+               std::memset(Iter, 0, Size * sizeof(complex));
+            }
+            Iter += Size;
+         }
       }
    }
-   return Iter+Size_;
+   return Iter;
 }
 
-StateComponent
-PackStateComponent::unpack(value_type const* Iter) const
+blas::Vector<complex>
+pack(MatrixOperator const& m)
 {
-   //   typedef LinearAlgebra::VectorMemProxy<value_type> VecProxy;
-   StateComponent Result(B_, B1_, B2_);
-   for (OffsetArrayType::const_iterator I = OffsetArray_.begin();
-        I != OffsetArray_.end(); ++I)
+   blas::Vector<complex> Result(pack_size(m));
+   pack_to(m, Result.storage());
+   return Result;
+}
+
+// unpack a linear vector into a MatrixOperator.  The operator
+// must have the appropriate basis and quantum numbers set
+complex const*
+unpack_from(MatrixOperator& m, complex const* Iter)
+{
+   for (int i = 0; i < m.Basis1().size(); ++i)
    {
-      LinearAlgebra::Matrix<value_type> m(B1_.dim(I->r), B2_.dim(I->c));
-      std::memcpy(data(m), Iter+I->Offset, I->Size * sizeof(value_type));
-      // reverse the normalization correction
-      Result[I->q](I->r, I->c) = (1.0 / std::sqrt(double(degree(B1_[I->r])))) * m;
+      for (int j = 0; j < m.Basis2().size(); ++j)
+      {
+         if (is_transform_target(m.Basis2()[j], m.TransformsAs(), m.Basis1()[i]))
+         {
+            double Factor = 1.0 / std::sqrt(double(degree(m.Basis1()[i])));
+            blas::Matrix<complex> Temp(m.Basis1().dim(i), m.Basis2().dim(j));
+            Iter = unpack_from(Factor, Temp, Iter);
+            blas::Matrix<complex, MatrixOperator::tag_type>
+               DeviceTemp(Temp.rows(), Temp.cols());
+            set_wait(DeviceTemp, Temp);
+            m.set(i,j,DeviceTemp);
+         }
+      }
+   }
+}
+
+void unpack(MatrixOperator& m, blas::Vector<complex> const& v)
+{
+   CHECK_EQUAL(v.size(), pack_size(m));
+   unpack_from(m, v.storage());
+}
+
+int
+pack_size(StateComponent const& m)
+{
+   int Result = 0;
+   for (auto const& mm : m)
+   {
+      Result += pack_size(mm);
    }
    return Result;
+}
+
+blas::Vector<complex>
+pack(StateComponent const& m)
+{
+   blas::Vector<complex> Result(pack_size(m));
+   complex* Iter = Result.storage();
+   for (auto const& mm : m)
+   {
+      Iter = pack_to(mm, Iter);
+   }
+   CHECK_EQUAL(Iter-Result.storage(), Result.size());
+   return Result;
+}
+
+void unpack(StateComponent& m, blas::Vector<complex> const& v)
+{
+   complex const* Iter = v.storage();
+   for (auto& mm : m)
+   {
+      Iter = unpack_from(mm, Iter);
+   }
+   CHECK_EQUAL(Iter-v.storage(), v.size());
 }

@@ -163,18 +163,17 @@ template <typename Func>
 void
 LinearSolveDirect(StateComponent& x, Func F, StateComponent const& Rhs, int Verbose = 0)
 {
+   PANIC("not implemented");
+#if 0
    blas::Matrix<std::complex<double>> HMat = ConstructSuperOperator(F, x);
-
-   PackStateComponent Pack(x);
+   blas::Vector<std::complex<double>> v = pack(x);
    if (Verbose > 0)
    {
-      std::cerr << "Linear solver dimension " << Pack.size() << '\n';
+      std::cerr << "Linear solver dimension " << v.size() << '\n';
    }
-
-   blas::Vector<std::complex<double>> v(Pack.size());
-   Pack.pack(Rhs, v.storage());
    LinearSolve(HMat, v);
-   x = Pack.unpack(v.storage());
+   unpack(x, v);
+#endif
 }
 
 template <typename Func, typename Prec>

@@ -48,7 +48,7 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
       using reference          = typename buffer_type::reference;
       using const_reference    = typename buffer_type::const_reference;
 
-      DiagonalMatrix() noexcept 
+      DiagonalMatrix() noexcept
       : Size(0), Buf{} {}
 
       DiagonalMatrix(DiagonalMatrix const&) = delete;
@@ -125,7 +125,7 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
 	 return *this;
       }
 
-      // operations involving MatrixRef - this is for expression templates, 
+      // operations involving MatrixRef - this is for expression templates,
       // it will fail if the type isn't ultimately based on a diagonal matrix
       template <typename U>
       DiagonalMatrix& operator=(MatrixRef<T, U, tag_type> const& E)
@@ -224,7 +224,7 @@ struct DiagonalMatrixElementRef
 
    DiagonalMatrixElementRef(int Col_, T& value_)
 	 : Col(Col_), value(value_) {}
-   
+
    int col() const { return Col; }
 
    operator T&() const { return value; }
@@ -430,7 +430,7 @@ class DiagonalMatrixRowRef
    private:
       int Row;
       T& value;
-      
+
 };
 
 template <typename T>
@@ -732,6 +732,22 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
 
       template <typename U>
       void insert(int r, int c, U&& value)
+      {
+	 DEBUG_CHECK_EQUAL(r,c);
+         DEBUG_RANGE_CHECK_OPEN(r, 0, Size);
+	 Buf[r] = std::move(value);
+      }
+
+      template <typename U>
+      void set(int r, int c, U const& value)
+      {
+	 DEBUG_CHECK_EQUAL(r,c);
+         DEBUG_RANGE_CHECK_OPEN(r, 0, Size);
+	 Buf[r] = value;
+      }
+
+      template <typename U>
+      void set(int r, int c, U&& value)
       {
 	 DEBUG_CHECK_EQUAL(r,c);
          DEBUG_RANGE_CHECK_OPEN(r, 0, Size);

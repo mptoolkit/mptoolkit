@@ -267,6 +267,17 @@ class IrredTensor
       }
 
       template <typename U>
+      void set(int r, int c, U&& value)
+      {
+         Data_.set(r, c, std::move(value));
+      }
+
+      void set(int r, int c, T const& value)
+      {
+         Data_.set(r, c, value);
+      }
+
+      template <typename U>
       void insert(int r, int c, U&& value)
       {
          Data_.insert(r, c, std::move(value));
@@ -776,7 +787,7 @@ auto
 prod(IrredTensor<T, B1, B2, ST> const& x, IrredTensor<U, B2, B3, SU> const& y, QuantumNumber const& Trans)
 {
    using result_value = blas::remove_proxy_t<decltype(std::declval<T>() * std::declval<U>())>;
-   using result_structure = blas::remove_proxy_t<decltype(std::declval<typename ST::template value<T>>() * 
+   using result_structure = blas::remove_proxy_t<decltype(std::declval<typename ST::template value<T>>() *
 							  std::declval<typename SU::template value<U>>())>;
    using result_structure_type = typename StructureOf<result_structure>::type;
 

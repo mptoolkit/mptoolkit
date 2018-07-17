@@ -264,6 +264,22 @@ class const_vector_view : public blas::BlasVector<T,vector_view<T, Tag>, Tag>
       const_storage_type Ptr;
 };
 
+// helper functions
+
+template <typename T, typename Tag = cpu_tag>
+vector_view<T, Tag>
+make_vector_view(int Size, int Stride, typename Tag::template storage_type<T> s)
+{
+   return vector_view<T, Tag>(Size, Stride, s);
+}
+
+template <typename T, typename Tag = cpu_tag>
+const_vector_view<T, Tag>
+make_const_vector_view(int Size, int Stride, typename Tag::template const_storage_type<T> s)
+{
+   return const_vector_view<T, Tag>(Size, Stride, s);
+}
+
 #if defined(USE_PSTREAM)
 template <typename T, int Format>
 PStream::opstreambuf<Format>&
