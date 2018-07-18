@@ -44,6 +44,14 @@ Matrix<T, Tag>::Matrix(int R, int C, arena Arena_)
 }
 
 template <typename T, typename Tag>
+Matrix<T, Tag>::Matrix(int R, int C, T const& Fill, arena Arena_)
+   : Rows(R), Cols(C), LeadingDimension(Tag::template select_leading_dimension<T>(Cols)),
+     Buf(buffer_type::allocate(LeadingDimension*Cols, Arena_))
+{
+   fill(*this, Fill);
+}
+
+template <typename T, typename Tag>
 Matrix<T, Tag>::Matrix(SparseMatrix<value_type> const& Other, arena Arena_)
    : Rows(Other.rows()), Cols(Other.cols()), LeadingDimension(Tag::template select_leading_dimension<T>(Cols)),
      Buf(buffer_type::allocate(LeadingDimension*Cols, Arena_))

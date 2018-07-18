@@ -126,9 +126,6 @@ class BasicOperatorComponent
       // element access.  Returns a zero operator if the component does not exist.
       value_type operator()(int i, int j) const;
 
-      // element access, inserts the element if it does not exist
-      value_type& operator()(int i, int j);
-
       // returns true if this matrix is in lower-triangular form.  This is only
       // useful if the matrix is square.
       bool is_lower_triangular() const;
@@ -292,7 +289,6 @@ void print_structure(BasicOperatorComponent<T> const& Op, std::ostream& out)
    print_structure(Op, out, DefaultClassifyUnityEpsilon<T>);
 }
 
-#if 0
 template <typename T>
 inline
 BasicOperatorComponent<T>
@@ -300,7 +296,7 @@ BasicOperatorComponent<T>::make_identity(BasisList const& LocalBasis)
 {
    BasisList bl = Tensor::make_vacuum_basis(LocalBasis.GetSymmetryList());
    BasicOperatorComponent<T> Result(LocalBasis, LocalBasis, bl, bl);
-   Result(0,0) = SimpleRedOperator_t<T>::make_identity(LocalBasis);
+   Result.insert(0,0, SimpleRedOperator_t<T>::make_identity(LocalBasis));
    return Result;
 }
 
@@ -313,11 +309,10 @@ BasicOperatorComponent<T>::make_identity(BasisList const& LocalBasis, BasisList 
    auto I = SimpleRedOperator_t<T>::make_identity(LocalBasis);
    for (unsigned i = 0; i < AuxBasis.size(); ++i)
    {
-      Result(i,i) = I;
+      Result.insert(i,i, copy(I));
    }
    return Result;
 }
-#endif
 
 // Constructs an MPO that represents a shift operator
 //     |
@@ -525,8 +520,9 @@ TruncateBasis2MkII(OperatorComponent& A, double Epsilon = 0.0);
 OperatorComponent
 operator+(OperatorComponent const& A, OperatorComponent const& Op);
 
-OperatorComponent
-operator-(OperatorComponent const& A, OperatorComponent const& Op);
+template <typename T>
+BasicOperatorComponent<T>
+operator-(BasicOperatorComponent<T> const& A, BasicOperatorComponent<T> const& Op);
 
 inline
 OperatorComponent

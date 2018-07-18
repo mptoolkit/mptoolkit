@@ -85,6 +85,10 @@ TARDIR=$(PACKAGE_TARNAME)
 
 LIB = $(BOOST_LIBS) $(LAPACK_LIBS) $(BLAS_LIBS) $(CUDA_LIBS) $(SLURM_LIBS) $(LIBS) $(FLIBS) $(LIBS_EXTRA)
 
+ifdef HAVE_CUDA
+   LIB += $(CUDA_LIBS) $(CUBLAS_LIBS) $(CUSOLVER_LIBS)
+endif
+
 GIT_TAG_VERSION := $(shell cd $(SRCDIR) && git describe --dirty --always --tags)
 
 GIT_BRANCH := $(shell cd $(SRCDIR) && git rev-parse --symbolic-full-name --abbrev-ref HEAD)

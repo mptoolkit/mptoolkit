@@ -35,7 +35,6 @@ double const QREpsilon = getenv_or_default("MP_QR_EPS", 1E-13);
 
 double const RemoveRowEpsilon = getenv_or_default("MP_RRE", 1E-40);
 
-#if 0
 double
 norm_frob_sq(OperatorComponent const& x)
 {
@@ -43,7 +42,6 @@ norm_frob_sq(OperatorComponent const& x)
    return trace(local_inner_prod(herm(x), x)).real();
    //   return norm_frob_sq(local_inner_prod(herm(x), x));
 }
-#endif
 
 #if 0
 OperatorComponent
@@ -1626,7 +1624,7 @@ OperatorComponent
 project_rows(OperatorComponent const& x, std::set<int> const& Rows)
 {
    using ::copy;
-   
+
    BasisList ProjectedBasis(x.Basis1().GetSymmetryList());
    std::vector<int> Map(x.Basis1().size(), -1);
    for (std::set<int>::const_iterator I = Rows.begin(); I != Rows.end(); ++I)
@@ -1844,9 +1842,9 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
 		  // Skip quantum numbers that are not possible (structural zero in the coupling coefficient)
                   if (!is_transform_target(Qpp,  P.first.qLeft, Op.qn1(rOp.row())))
 		     continue;
-		      
+
 		  // Qpp is the quantum number of the inner basis
-		  
+
 		  auto Coeff = inverse_product_coefficient(P.first.qLeft, P.first.qRight, Comp.TransformsAs(),
                                                              Op.qn1(rOp.row()), Op.qn2(cOp.col()), Qpp);
                   if (norm_frob(Coeff) > 1E-14)
@@ -2021,7 +2019,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
          {
 	    SimpleOperator x(B1.Left(), B2.Left(), std::get<3>(I->first));
 	    x.insert(std::get<1>(I->first), std::get<2>(I->first), I->second);
-	    
+
 	    MA.add(std::get<0>(I->first), b, x);
 	 }
 
@@ -2030,7 +2028,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
          {
 	    SimpleOperator x(B1.Right(), B2.Right(), std::get<3>(I->first));
 	    x.insert(std::get<1>(I->first), std::get<2>(I->first), I->second);
-	    
+
 	    MB.add(b, std::get<0>(I->first), x);
 	 }
 
