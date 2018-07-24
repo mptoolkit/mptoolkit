@@ -110,6 +110,34 @@ StateComponent reflect(StateComponent const& S)
 }
 
 #if 0
+
+
+
+
+MatrixOperator
+scalar_prod(StateComponent const& x, HermitianProxy<StateComponent> const& y);
+
+template <typename T, typename U, typename Func>
+MatrixOperator
+ScalarProd<BasicStateComponent<T>, HermitianProxy<BasicStateComponent<U>>, Func>::
+operator()(BasicStateComponent<T> const& A, HermitianProxy<BasicStateComponent<U>> const& B) const
+{
+   DEBUG_PRECONDITION_EQUAL(A.LocalBasis(), B.base().LocalBasis());
+   DEBUG_PRECONDITION_EQUAL(A.Basis2(), B.base().Basis2());
+
+   QuantumNumbers::QuantumNumber Ident(A.GetSymmetryList());
+   MatrixOperator Result(A.Basis1(), B.base().Basis1(), Ident);
+
+   for (std::size_t s = 0; s < A.LocalBasis().size(); ++s)
+   {
+      Result += scalar_prod(A[s], herm(B.base()[s]));
+   }
+   return Result;
+}
+
+MatrixOperator
+scalar_prod(HermitianProxy<StateComponent> const& x, StateComponent const& y);
+
 MatrixOperator
 ScalarProd<HermitianProxy<StateComponent>, StateComponent>::
 operator()(HermitianProxy<StateComponent> const& A, StateComponent const& B) const

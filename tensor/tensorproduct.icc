@@ -41,7 +41,6 @@ ProductBasisBase<BL, BR, Base>::ProductBasisBase(left_basis_type const& Left,
    DEBUG_PRECONDITION_EQUAL(Left.GetSymmetryList(), Right.GetSymmetryList());
 
    // construct the reverse mapping into a std::vector, so we can use push_back.
-   // copy it later into a LinearAlgebra::Vector so we have reference counting.
    std::vector<source_type> RMap;
 
    for (std::size_t s1 = 0; s1 < Left_.size(); ++s1)
@@ -73,7 +72,6 @@ ProductBasisBase<BL, BR, Base>::ProductBasisBase(left_basis_type const& Left,
    DEBUG_PRECONDITION_EQUAL(Left.GetSymmetryList(), Right.GetSymmetryList());
 
    // construct the reverse mapping into a std::vector, so we can use push_back.
-   // copy it later into a LinearAlgebra::Vector so we have reference counting.
    std::vector<source_type> RMap;
 
    for (std::size_t s1 = 0; s1 < Left_.size(); ++s1)
@@ -107,10 +105,9 @@ ProductBasisBase<BL, BR, Base>::MakeTriangularProjected(left_basis_type const& L
    Result.Basis_ = basis_type(Left_.GetSymmetryList());
    Result.Left_ = Left_;
    Result.Right_ = Right_;
-   Result.TransformData_ = LinearAlgebra::Matrix<TargetListType>(Left_.size(), Right_.size());
+   Result.TransformData_ = blas::Matrix<TargetListType>(Left_.size(), Right_.size());
 
    // construct the reverse mapping into a std::vector, so we can use push_back.
-   // copy it later into a LinearAlgebra::Vector so we have reference counting.
    std::vector<source_type> RMap;
 
    int s1 = 0;

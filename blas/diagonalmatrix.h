@@ -813,10 +813,10 @@ copy(DiagonalMatrix<T, Tag> const& x)
 
 // conj
 
-template <typename T>
+template <typename T, typename Tag>
 inline
 void
-inplace_conj(DiagonalMatrix<T>& x)
+inplace_conj(DiagonalMatrix<T, Tag>& x)
 {
    inplace_conj(x.diagonal());
 }

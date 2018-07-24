@@ -559,7 +559,7 @@ operator*(std::complex<double> a, OperatorComponent const& x)
 }
 
 OperatorComponent
-conj(OperatorComponent const& x);
+conj(OperatorComponent x);
 
 // This grouping treats A as a bra, and herm(B) as a ket
 

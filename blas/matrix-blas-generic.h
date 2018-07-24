@@ -17,7 +17,8 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-// standard BLAS functions
+// generic versions of BLAS functions, for BLAS-like extensions and
+// blas functions that work for non-scalar types
 
 #if !defined(MPTOOLKIT_BLAS_MATRIX_BLAS_GENERIC_H)
 #define MPTOOLKIT_BLAS_MATRIX_BLAS_GENERIC_H
@@ -100,6 +101,10 @@ matrix_norm_frob_sq(int M, int N, T const* A, int lda);
 
 template <typename T, typename U>
 void
+matrix_copy(int M, int N, T const* A, int lda, U* B, int ldb);
+
+template <typename T, typename U>
+void
 matrix_copy(char Atrans, int M, int N, T const* A, int lda, U* B, int ldb);
 
 template <typename T, typename U, typename V>
@@ -175,5 +180,7 @@ gdmm_inplace(int M, int N,
 	     Yt const* y, int incy);
 
 } // namespace blas
+
+#include "matrix-blas-generic.icc"
 
 #endif

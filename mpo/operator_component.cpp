@@ -356,7 +356,6 @@ local_inner_prod(HermitianProxy<OperatorComponent> const& A, OperatorComponent c
 }
 
 
-#if 0
 // this doesn't appear to be used
 SimpleOperator
 local_inner_prod(OperatorComponent const& A, HermitianProxy<OperatorComponent> const& B)
@@ -368,23 +367,22 @@ local_inner_prod(OperatorComponent const& A, HermitianProxy<OperatorComponent> c
 
    SimpleOperator Result(A.Basis1(), B.base().Basis1());
 
-   for (OperatorComponent::const_iterator AI = iterate(A); AI; ++AI)
+   for (auto const& AI : A)
    {
-      for (OperatorComponent::const_iterator BI = iterate(B.base()); BI; ++BI)
+      for (auto const& BI : B.base())
       {
-         OperatorComponent::const_inner_iterator AJ = iterate(AI);
-         OperatorComponent::const_inner_iterator BJ = iterate(BI);
-
-         while (AJ && BJ)
-         {
-            if (AJ.index2() == BJ.index2())
-            {
-               if (A.Basis1()[AJ.index1()] == B.base().Basis1()[BJ.index1()])
-                  Result(AJ.index1(), BJ.index1()) += adjoint(inner_prod(*BJ, *AJ));
-               ++AJ;
-               ++BJ;
-            }
-            else if (AJ.index2() < BJ.index2())
+	 auto AJ = AI.begin();
+	 auto BJ = BI.begin();
+	 while (AJ != AI.end() && BJ != BI.end())
+	 {
+	    if (AJ.col() == BJ.col())
+	    {
+               if (A.Basis1()[AJ.row()] == B.base().Basis1()[BJ.row()])
+                  Result.add(AJ.row(), BJ.row(), adjoint(inner_prod(*BJ, *AJ)));
+	       ++AJ;
+	       ++BJ;
+	    }
+            else if (AJ.col() < BJ.col())
             {
                ++AJ;
             }
@@ -398,7 +396,6 @@ local_inner_prod(OperatorComponent const& A, HermitianProxy<OperatorComponent> c
    Result.debug_check_structure();
    return Result;
 }
-#endif
 
 SimpleOperator
 local_inner_tensor_prod(HermitianProxy<OperatorComponent> const& A, OperatorComponent const& B)

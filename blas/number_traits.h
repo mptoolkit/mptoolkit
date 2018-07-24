@@ -288,6 +288,18 @@ template <typename T>
 struct is_numeric : std::is_arithmetic<T> {};
 
 template <typename T>
+struct is_numeric<T const> : is_numeric<T> {};
+
+template <typename T>
+struct is_numeric<T volatile> : is_numeric<T> {};
+   
+template <typename T>
+struct is_numeric<T&> : is_numeric<T> {};
+
+template <typename T>
+struct is_numeric<T&&> : is_numeric<T> {};
+
+template <typename T>
 constexpr bool is_numeric_v = is_numeric<T>::value;
 
 template <typename T>

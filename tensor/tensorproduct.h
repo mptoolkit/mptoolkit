@@ -90,7 +90,7 @@ class ProductBasisBase
       value_type const& operator[](int s) const { return Basis_[s]; }
 
    protected:
-      //      ProductBasisBase() {}
+      ProductBasisBase() {}
       ProductBasisBase(left_basis_type const& B1, right_basis_type const& B2);
       ProductBasisBase(left_basis_type const& B1, right_basis_type const& B2,
                        QuantumNumber const& q);
@@ -524,6 +524,6 @@ decompose_tensor_prod(IrredTensor<T, B1, B2, S> const& x,
 
 } // namespace Tensor
 
-//#include "tensorproduct.cc"
+#include "tensorproduct.icc"
 
 #endif

@@ -43,6 +43,14 @@ DiagonalMatrix<T, Tag>::DiagonalMatrix(int R, int C, arena Arena_)
    CHECK_EQUAL(R,C)("Diagonal matrix must be square");
 }
 
+template <typename T, typename Tag>
+DiagonalMatrix<T, Tag>::DiagonalMatrix(int R, int C, T const& Fill, arena Arena_)
+   : Size(R),  Buf(buffer_type::allocate(R, Arena_))
+{
+   CHECK_EQUAL(R,C)("Diagonal matrix must be square");
+   fill(this->diagonal(), Fill);
+}
+
 template <typename T>
 std::ostream&
 operator<<(std::ostream& out, DiagonalMatrix<T, cpu_tag> const& x)
@@ -84,6 +92,39 @@ operator<<(PStream::opstreambuf<Format>& out, DiagonalMatrix<T, Tag> const& M)
    return out;
 }
 
+// cpu_tag
+
+template <typename T>
+template <typename U>
+DiagonalMatrix<T>::DiagonalMatrix(std::initializer_list<U> m, arena Arena_)
+   : DiagonalMatrix(m.size(), m.size(), Arena_)
+{
+   vector_copy_from_stl(m.begin(), m.end(), Buf.ptr(), 1);
+}
+
+template <typename T>
+template <typename U>
+DiagonalMatrix<T>::DiagonalMatrix(DiagonalMatrixRef<T, U, blas::cpu_tag> const& E, arena Arena_)
+   : DiagonalMatrix(E.rows(), E.cols(), Arena_)
+{
+   assign(*this, E.as_derived());
+}
+
+template <typename T>
+DiagonalMatrix<T>::DiagonalMatrix(int R, int C, arena Arena_)
+   : Size(R),  Buf(buffer_type::allocate(R, Arena_))
+{
+   CHECK_EQUAL(R,C)("Diagonal matrix must be square");
+}
+
+template <typename T              >
+DiagonalMatrix<T>::DiagonalMatrix(int R, int C, T const& Fill, arena Arena_)
+   : Size(R),  Buf(buffer_type::allocate(R, Arena_))
+{
+   CHECK_EQUAL(R,C)("Diagonal matrix must be square");
+   fill(this->diagonal(), Fill);
+}
+
 } // namespace blas
 
 namespace PStream
@@ -102,6 +143,17 @@ stream_extract<blas::DiagonalMatrix<T,blas::cpu_tag>>::operator()(PStream::ipstr
    {
       in >> x;
    }
+   return Result;
+}
+
+template <typename T, typename Tag>
+template <int Format>
+blas::DiagonalMatrix<T, Tag>
+stream_extract<blas::DiagonalMatrix<T, Tag>>::operator()(PStream::ipstreambuf<Format>& in) const
+{ 
+   blas::DiagonalMatrix<T,blas::cpu_tag> Temp = in.template read<blas::DiagonalMatrix<T,blas::cpu_tag>>();
+   blas::DiagonalMatrix<T, Tag> Result(Temp.rows());
+   set_wait(Result, Temp);
    return Result;
 }
 

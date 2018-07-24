@@ -37,7 +37,15 @@ void
 vector_sum(int Size, cuda::const_gpu_ptr<T> const& x, int incx, cuda::gpu_ref<T>&& r);
 
 template <typename T>
-void vector_fill(T alpha, int N, cuda::gpu_ptr<T>  y, int incy);
+void
+vector_sum(int Size, cuda::const_gpu_ptr<std::complex<T>> const& x, int incx, cuda::gpu_ref<std::complex<T>>& r);
+
+template <typename T>
+void
+vector_sum(int Size, cuda::const_gpu_ptr<std::complex<T>> const& x, int incx, cuda::gpu_ref<std::complex<T>>&& r);
+
+template <typename T>
+void vector_fill(T alpha, int N, cuda::gpu_ptr<T> y, int incy);
 
 template <typename T>
 void
@@ -62,6 +70,9 @@ template <typename T>
 void
 vector_add_parallel_scaled(int n, T const& alpha, cuda::const_gpu_ptr<T> x, int incx, cuda::const_gpu_ptr<T> y, int incy, 
 			   cuda::gpu_ptr<T> z, int incz);
+
+template <typename T>
+void matrix_fill(T alpha, int M, int N, cuda::gpu_ptr<T> A, int lda);
 
 } // namespace cuda
 

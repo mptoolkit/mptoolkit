@@ -22,6 +22,7 @@ namespace blas
 
 template <typename T, typename Tag>
 template <typename U>
+inline
 Vector<T, Tag>::Vector(std::initializer_list<U> m, arena Arena_)
    : Vector(m.size(), Arena_)
 {
@@ -30,6 +31,7 @@ Vector<T, Tag>::Vector(std::initializer_list<U> m, arena Arena_)
 
 template <typename T, typename Tag>
 template <typename U>
+inline
 Vector<T, Tag>::Vector(VectorRef<T, U, Tag> const& E, arena Arena_)
    : Vector(E.size(), Arena_)
 {
@@ -37,13 +39,23 @@ Vector<T, Tag>::Vector(VectorRef<T, U, Tag> const& E, arena Arena_)
 }
 
 template <typename T, typename Tag>
+inline
 Vector<T, Tag>::Vector(int Size_, arena Arena_)
    : Size(Size_), Buf(buffer_type::allocate(Size_, Arena_))
 {
 }
 
 template <typename T, typename Tag>
+inline
+Vector<T, Tag>::Vector(int Size_, T const& Fill, arena Arena_)
+   : Size(Size_), Buf(buffer_type::allocate(Size_, Arena_))
+{
+   fill(*this, Fill);
+}
+
+template <typename T, typename Tag>
 template <typename U, typename OtherTag>
+inline
 Vector<T, Tag>::Vector(VectorRef<T, U, OtherTag> const& E, arena Arena_)
    : Vector(E.size(), Arena_)
 {
@@ -56,6 +68,7 @@ Vector<T, Tag>::Vector(VectorRef<T, U, OtherTag> const& E, arena Arena_)
 
 template <typename T>
 template <typename U>
+inline
 Vector<T, cpu_tag>::Vector(std::initializer_list<U> m, arena Arena_)
    : Vector(m.size(), Arena_)
 {
@@ -64,6 +77,7 @@ Vector<T, cpu_tag>::Vector(std::initializer_list<U> m, arena Arena_)
 
 template <typename T>
 template <typename U>
+inline
 Vector<T, cpu_tag>::Vector(VectorRef<T, U, cpu_tag> const& E, arena Arena_)
    : Vector(E.size(), Arena_)
 {
@@ -71,9 +85,18 @@ Vector<T, cpu_tag>::Vector(VectorRef<T, U, cpu_tag> const& E, arena Arena_)
 }
 
 template <typename T>
+inline
 Vector<T, cpu_tag>::Vector(int Size_, arena Arena_)
    : Arena(Arena_), Size(Size_), Data(Arena.allocate_type<T>(Size))
 {
+}
+
+template <typename T>
+inline
+Vector<T, cpu_tag>::Vector(int Size_, T const& Fill, arena Arena_)
+   : Arena(Arena_), Size(Size_), Data(Arena.allocate_type<T>(Size))
+{
+   fill(*this, Fill);
 }
 
 template <typename T, int Format>

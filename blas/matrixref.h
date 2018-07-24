@@ -1802,6 +1802,23 @@ void matrix_copy(BlasMatrix<T, U, Tag> const& A, NormalMatrixProxy<T, V, Tag>&& 
                std::move(C).storage(), C.leading_dimension());
 }
 
+// matrix_copy for normal matrices; this allows types that don't have conj/herm defined
+template <typename T, typename U, typename V, typename Tag>
+inline
+void matrix_copy(NormalMatrix<T, U, Tag> const& A, NormalMatrix<T, V, Tag>& C)
+{
+   matrix_copy(A.rows(), A.cols(), A.storage(), A.leading_dimension(),
+	       C.storage(), C.leading_dimension());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+void matrix_copy(NormalMatrix<T, U, Tag> const& A, NormalMatrixProxy<T, V, Tag>&& C)
+{
+   matrix_copy(A.rows(), A.cols(), A.storage(), A.leading_dimension(),
+               std::move(C).storage(), C.leading_dimension());
+}
+
 template <typename T, typename U, typename V, typename Tag>
 inline
 void matrix_add_scaled(T alpha, BlasMatrix<T, U, Tag> const& A, NormalMatrix<T, V, Tag>& C)

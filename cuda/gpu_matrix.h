@@ -33,6 +33,7 @@
 #include "blas/matrixref.h"
 #include "blas/matrix.h"
 #include "blas/vector_view.h"
+#include "blas/diagonalmatrix.h"
 #include "cublas.h"
 #include "cusolver.h"
 #include "gpu_vector.h"
@@ -43,6 +44,10 @@ namespace blas
 
 template <typename T>
 using gpu_matrix = blas::Matrix<T, gpu_tag>;
+
+template <typename T>
+using gpu_diagonal_matrix = blas::DiagonalMatrix<T, gpu_tag>;
+
 
 // blocking matrix get
 template <typename T>
@@ -87,6 +92,28 @@ std::ostream& operator<<(std::ostream& out, gpu_matrix<T> const& A)
    out << "gpu_matrix<" << tracer::typeid_name<T>() << " [" << A.rows() << "," << A.cols() << ']';
    return out;
 }
+
+// DiagonalMatrix
+
+template <typename T>
+blas::DiagonalMatrix<T>
+get_wait(gpu_diagonal_matrix<T> const& M)
+{
+   blas::DiagonalMatrix<T> Result(M.rows());
+   Result.diagonal() = get_wait(M.diagonal());
+   return Result;
+}
+
+template <typename T>
+void
+set_wait(gpu_diagonal_matrix<T>& A, blas::DiagonalMatrix<T> const& B)
+{
+   DEBUG_CHECK_EQUAL(A.rows(), B.rows());
+   DEBUG_CHECK_EQUAL(A.cols(), B.cols());
+   set_wait(A.diagonal(), B.diagonal());
+}
+
+// TODO: non-blocking
 
 } // namespace cublas
 

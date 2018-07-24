@@ -267,6 +267,16 @@ herm(T const& x)
    return conj(x);
 }
 
+// trans
+
+template <typename T>
+inline
+std::enable_if_t<blas::is_numeric_v<T>, T>
+trans(T&& x)
+{
+   return std::forward<T>(x);
+}
+
 } // namespace blas
 
 using blas::norm_frob;
@@ -274,5 +284,6 @@ using blas::norm_frob_sq;
 using blas::inner_prod;
 using blas::inplace_conj;
 using blas::herm;
+using blas::trans;
 
 #endif

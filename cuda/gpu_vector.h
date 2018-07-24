@@ -96,18 +96,18 @@ set_wait(gpu_vector<T>& A, blas::BlasVector<T, U, blas::cpu_tag> const& B)
    cublas::setVector(A.size(), B.storage(), B.stride(), A.storage(), A.stride());
 }
 
-template <typename T, typename U>
+template <typename T, typename U, typename V>
 void
-set_wait(vector_view<T, gpu_tag>&& A, blas::BlasVector<T, U, blas::cpu_tag> const& B)
+set_wait(blas::BlasVectorProxy<T, U, gpu_tag>&& A, blas::BlasVector<T, V, blas::cpu_tag> const& B)
 {
    DEBUG_CHECK_EQUAL(A.size(), B.size());
-   cublas::setVector(A.size(), B.storage(), B.stride(), A.storage(), A.stride());
+   cublas::setVector(A.size(), B.storage(), B.stride(), std::move(A).storage(), A.stride());
 }
 
 // non-blocking set
-template <typename T>
+template <typename T, typename U>
 cuda::event
-set(gpu_vector<T>& A, blas::Vector<T> const& B)
+set(gpu_vector<T>& A, blas::BlasVector<T, U, blas::cpu_tag> const& B)
 {
    DEBUG_CHECK_EQUAL(A.size(), B.size());
    cublas::setVectorAsync(A.size(), B.storage(), B.stride(),
@@ -115,13 +115,13 @@ set(gpu_vector<T>& A, blas::Vector<T> const& B)
    return A.storage().sync();
 }
 
-template <typename T>
+template <typename T, typename U, typename V>
 cuda::event
-set(vector_view<T, gpu_tag>&& A, blas::Vector<T> const& B)
+set(blas::BlasVectorProxy<T, U, gpu_tag>&& A, blas::BlasVector<T, V, blas::cpu_tag> const& B)
 {
    DEBUG_CHECK_EQUAL(A.size(), B.size());
    cublas::setVectorAsync(A.size(), B.storage(), B.stride(),
-                          A.storage(), A.stride());
+                          std::move(A).storage(), A.stride());
    return A.storage().sync();
 }
 

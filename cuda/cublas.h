@@ -34,15 +34,6 @@
 #include <cublas_v2.h>
 #include "cub.h"
 #include "blas/functors.h"
-
-#if 0
-// we're not using thrust anymore, replaced with cub
-#include <thrust/device_ptr.h>
-#include <thrust/device_vector.h>
-#include <thrust/copy.h>
-#include <thrust/iterator/permutation_iterator.h>
-#endif
-
 #include <iostream>
 
 namespace cublas
@@ -329,7 +320,7 @@ vector_add(int n, cuda::const_gpu_ptr<double> x, int incx,
 
 template <typename T>
 inline
-std::enable_if_t<is_cuda_floating_point_v<T>, void>
+std::enable_if_t<cuda::is_cuda_floating_point_v<T>, void>
 vector_inner_prod(int n,
 		  cuda::const_gpu_ptr<T> x, int incx,
                   cuda::const_gpu_ptr<T> y, int incy,
@@ -347,7 +338,7 @@ vector_inner_prod(int n,
 
 template <typename T>
 inline
-std::enable_if_t<is_cuda_floating_point_v<T>, void>
+std::enable_if_t<cuda::is_cuda_floating_point_v<T>, void>
 vector_inner_prod_nested(int n,
 			 cuda::const_gpu_ptr<T> x, int incx,
 			 cuda::const_gpu_ptr<T> y, int incy,
@@ -365,7 +356,7 @@ vector_inner_prod_nested(int n,
 
 template <typename T>
 inline
-std::enable_if<is_cuda_floating_point_v<T>, void>
+std::enable_if<cuda::is_cuda_floating_point_v<T>, void>
 vector_inner_prod_nested(int n,
 			 cuda::const_gpu_ptr<T> x, int incx,
 			 cuda::const_gpu_ptr<T> y, int incy,
@@ -521,6 +512,14 @@ matrix_copy(char Atrans, int M, int N, const_gpu_ptr<T> A, int lda, gpu_ptr<T> B
 template <typename T>
 inline
 void
+matrix_copy(int M, int N, const_gpu_ptr<T> A, int lda, gpu_ptr<T> B, int ldb)
+{
+   geam('N', M, N, 1.0, A, lda, 0.0, B, ldb);
+}
+
+template <typename T>
+inline
+void
 matrix_copy_scaled(char Atrans, int M, int N, T alpha, const_gpu_ptr<T> A, int lda, gpu_ptr<T> B, int ldb)
 {
    geam(Atrans, M, N, alpha, A, lda, 0.0, B, ldb);
@@ -620,7 +619,7 @@ void matrix_conj(int M, int N, cuda::gpu_ptr<std::complex<double>> A, int lda)
 }
 
 template <typename T>
-std::enable_if_t<is_cuda_floating_point_v<T>, void>
+std::enable_if_t<cuda::is_cuda_floating_point_v<T>, void>
 matrix_inner_prod(char Atrans, char Btrans, int M, int N,
 		  cuda::const_gpu_ptr<T> A, int ldA,
 		  cuda::const_gpu_ptr<T> B, int ldB,
@@ -628,7 +627,7 @@ matrix_inner_prod(char Atrans, char Btrans, int M, int N,
 
 template <typename T, typename Nested>
 inline
-std::enable_if_t<is_cuda_floating_point_v<T>, void>
+std::enable_if_t<cuda::is_cuda_floating_point_v<T>, void>
 matrix_inner_prod_nested(char Atrans, char Btrans, int M, int N,
 			 cuda::const_gpu_ptr<T> A, int ldA,
 			 cuda::const_gpu_ptr<T> B, int ldB,
@@ -638,7 +637,7 @@ matrix_inner_prod_nested(char Atrans, char Btrans, int M, int N,
 }
 
 template <typename T>
-std::enable_if_t<is_cuda_floating_point_v<T>, void>
+std::enable_if_t<cuda::is_cuda_floating_point_v<T>, void>
 matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
 		      cuda::const_gpu_ptr<T> A, int ldA,
 		      cuda::const_gpu_ptr<T> B, int ldB,
@@ -646,7 +645,7 @@ matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
 
 template <typename T, typename Nested>
 inline
-std::enable_if_t<is_cuda_floating_point_v<T>, void>
+std::enable_if_t<cuda::is_cuda_floating_point_v<T>, void>
 matrix_add_inner_prod_nested(char Atrans, char Btrans, int M, int N,
 			     cuda::const_gpu_ptr<T> A, int ldA,
 			     cuda::const_gpu_ptr<T> B, int ldB,

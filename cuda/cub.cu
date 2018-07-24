@@ -27,7 +27,7 @@ namespace cuda
 {
 
 template <typename T>
-__global__ void cuda_fill(T alpha, unsigned n, T* y, unsigned incy)
+__global__ void cuda_vector_fill(T alpha, unsigned n, T* y, unsigned incy)
 {
    unsigned i = blockIdx.x*blockDim.x + threadIdx.x;
    if (i < n)
@@ -39,7 +39,7 @@ void vector_fill(T alpha, int n, cuda::gpu_ptr<T> y, int incy)
 {
    unsigned threads_per_block = 64;
    unsigned nblocks = (n + threads_per_block-1) / threads_per_block;
-   cuda_fill<<<nblocks,threads_per_block, 0, y.get_stream().raw_stream()>>>(alpha, n, y.device_ptr(), incy);
+   cuda_vector_fill<<<nblocks,threads_per_block, 0, y.get_stream().raw_stream()>>>(alpha, n, y.device_ptr(), incy);
 }
 
 // template instantiations
@@ -49,6 +49,34 @@ template void vector_fill<std::complex<float>>(std::complex<float> alpha, int n,
 					       cuda::gpu_ptr<std::complex<float>> y, int incy);
 template void vector_fill<std::complex<double>>(std::complex<double> alpha, int n, 
 						cuda::gpu_ptr<std::complex<double>> y, int incy);
+
+
+template <typename T>
+__global__ void cuda_matrix_fill(T alpha, unsigned M, unsigned N, T* y, unsigned lda)
+{
+   unsigned Col = blockIdx.x*blockDim.x + threadIdx.x;
+   unsigned Row = blockIdx.y*blockDim.y + threadIdx.y;
+   if (Row < M && Col < N)
+      y[lda*Col + Row] = alpha;
+}
+
+template <typename T>
+void matrix_fill(T alpha, int M, int N, cuda::gpu_ptr<T> A, int lda)
+{
+   dim3 BlockDim(16, 16);
+   dim3 GridDim((M+BlockDim.x-1) / BlockDim.x, (N+BlockDim.y-1) / BlockDim.y);
+   cuda_matrix_fill<<<GridDim, BlockDim, 0, A.get_stream().raw_stream()>>>(alpha, M, N, A.device_ptr(), lda);
+}
+
+// template instantiations
+template void matrix_fill<float>(float alpha, int m, int n, cuda::gpu_ptr<float> y, int lda);
+template void matrix_fill<double>(double alpha, int m, int n, cuda::gpu_ptr<double> y, int lda);
+template void matrix_fill<std::complex<float>>(std::complex<float> alpha, int m, int n, 
+					       cuda::gpu_ptr<std::complex<float>> y, int lda);
+template void matrix_fill<std::complex<double>>(std::complex<double> alpha, int m, int n, 
+						cuda::gpu_ptr<std::complex<double>> y, int lda);
+
+
 
 namespace detail
 {

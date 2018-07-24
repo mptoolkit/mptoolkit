@@ -118,30 +118,3 @@ PStream::ipstream& operator>>(PStream::ipstream& in, BasicStateComponent<T>& Op)
 {
    return in >> Op.SBasis >> Op.VBasis1 >> Op.VBasis2 >> Op.Data;
 }
-
-#if 0
-namespace LinearAlgebra
-{
-
-template <typename T, typename U, typename Func>
-MatrixOperator
-ScalarProd<BasicStateComponent<T>, HermitianProxy<BasicStateComponent<U>>, Func>::
-operator()(BasicStateComponent<T> const& A, HermitianProxy<BasicStateComponent<U>> const& B) const
-{
-   DEBUG_PRECONDITION_EQUAL(A.LocalBasis(), B.base().LocalBasis());
-   DEBUG_PRECONDITION_EQUAL(A.Basis2(), B.base().Basis2());
-
-   QuantumNumbers::QuantumNumber Ident(A.GetSymmetryList());
-   MatrixOperator Result(A.Basis1(), B.base().Basis1(), Ident);
-
-   for (std::size_t s = 0; s < A.LocalBasis().size(); ++s)
-   {
-      Result += scalar_prod(A[s], herm(B.base()[s]));
-   }
-   return Result;
-}
-
-
-
-} //namespace LinearAlgebra
-#endif

@@ -468,7 +468,7 @@ template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>
 copy(IrredTensor<T, B1, B2, S>&& x)
 {
-   return x;
+   return std::move(x);
 }
 
 // arithmetic

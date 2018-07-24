@@ -20,6 +20,7 @@
 // standard BLAS functions
 
 #include "common/trace.h"
+#include "blas/functors.h"
 
 namespace blas
 {
@@ -40,7 +41,7 @@ void vector_fill(T const& alpha, int N, T* y, int incy)
 
 template <typename T, typename U>
 void
-vector_copy(int M, T const* x, int incx, U* y, int incy)
+vector_copy(int N, T const* x, int incx, U* y, int incy)
 {
    for (int i = 0; i < N; ++i)
    {
@@ -52,7 +53,7 @@ vector_copy(int M, T const* x, int incx, U* y, int incy)
 
 template <typename T, typename U, typename V>
 void
-vector_copy_scaled(int N, T const& alpha, U const* A, int lda, V* B, int ldb)
+vector_copy_scaled(int N, T const& alpha, U const* x, int incx, V* y, int incy)
 {
    for (int i = 0; i < N; ++i)
    {
@@ -63,7 +64,7 @@ vector_copy_scaled(int N, T const& alpha, U const* A, int lda, V* B, int ldb)
 }
 
 template <typename  T>
-void vector_conj(int n, T* x, int incx)
+void vector_conj(int N, T* x, int incx)
 {
    for (int i = 0; i < N; ++i)
    {
@@ -183,6 +184,21 @@ void matrix_conj(int M, int N, T* A, int lda)
 
 template <typename T, typename U>
 void
+matrix_copy(int M, int N, T const* A, int lda, U* B, int ldb)
+{
+   for (int c = 0; c < N; ++c)
+   {
+      for (int r = 0; r < M; ++r)
+      {
+	 B[r] = A[r];
+      }
+      A += lda;
+      B += ldb;
+   }
+}
+
+template <typename T, typename U>
+void
 matrix_copy(char Atrans, int M, int N, T const* A, int lda, U* B, int ldb)
 {
    if (Atrans == 'N')
@@ -241,6 +257,9 @@ template <typename T, typename U, typename V>
 void
 matrix_copy_scaled(char Atrans, int M, int N, T alpha, U const* A, int lda, V* B, int ldb)
 {
+   using blas::trans;
+   using blas::herm;
+   using std::conj;
    if (Atrans == 'N')
    {
       // normal
@@ -295,7 +314,7 @@ matrix_copy_scaled(char Atrans, int M, int N, T alpha, U const* A, int lda, V* B
 
 template <typename T, typename U>
 void
-matrix_add(char Atrans, int M, int N, T const* A, int lda, U* , int ldbB)
+matrix_add(char Atrans, int M, int N, T const* A, int lda, U* B, int ldb)
 {
    if (Atrans == 'N')
    {
@@ -438,11 +457,11 @@ dgmm(int M, int K,
      Bt const* B, int ldb,
      Ct* C, int ldc)
 {
-   for (int c = 0; j < K; ++j)
+   for (int c = 0; c < K; ++c)
    {
-      for (int r = 0; i < M; ++i)
+      for (int r = 0; r < M; ++r)
       {
-	 C[r] = x[r*inca]*B[r];
+	 C[r] = x[r*incx]*B[r];
       }
       B += ldb;
       C += ldc;
@@ -454,13 +473,13 @@ inline
 void
 dgmm_inplace(int M, int K, 
 	     Xt const* x, int incx,
-	     Ct* B, int ldc)
+	     Ct* C, int ldc)
 {
-   for (int c = 0; j < K; ++j)
+   for (int c = 0; c < K; ++c)
    {
-      for (int r = 0; i < M; ++i)
+      for (int r = 0; r < M; ++r)
       {
-	 C[r] *= x[r*inca];
+	 C[r] *= x[r*incx];
       }
       C += ldc;
    }
@@ -474,7 +493,7 @@ gdmm(int M, int N,
      Yt const* y, int incy,
      Ct* C, int ldc);
 
-template <typename Yt, typename Ct>
+template <typename At, typename Yt>
 void
 gdmm_inplace(int M, int N,
 	     At* A, int lda,

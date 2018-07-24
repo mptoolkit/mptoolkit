@@ -43,19 +43,24 @@ matrix_norm_frob_sq(int M, int N,
    cuda::gpu_ref<T> CResult;
    for (int i = 0; i < N; ++i)
    {
-      vector_inner_prod(M, A+i, 1, A+i, 1, lvalue(Acc[i]));
+      vector_inner_prod(M, A+i, 1, A+i, 1, cublas::lvalue(Acc[i]));
    }
    vector_sum(N, Acc.cptr(), 1, CResult);
    r = get_wait(CResult).real();  // TODO: implement real() for a gpu_ref of complex
 }
 #endif
 
+} // namespace cublas
+
+namespace cuda
+{
+
 template <typename T>
-void
+std::enable_if_t<cuda::is_cuda_floating_point_v<T>, void>
 matrix_inner_prod(char Atrans, char Btrans, int M, int N,
-		      cuda::const_gpu_ptr<T> A, int ldA,
-		      cuda::const_gpu_ptr<T> B, int ldB,
-		      cuda::gpu_ref<T>& r)
+		  cuda::const_gpu_ptr<T> A, int ldA,
+		  cuda::const_gpu_ptr<T> B, int ldB,
+		  cuda::gpu_ref<T>& r)
 {
    if (Atrans == 'N' && Btrans == 'N')
    {
@@ -63,7 +68,7 @@ matrix_inner_prod(char Atrans, char Btrans, int M, int N,
 
       for (int i = 0; i < N; ++i)
       {
-	 vector_inner_prod(M, A+i, 1, B+i, 1, lvalue(Acc[i]));
+	 vector_inner_prod(M, A+i, 1, B+i, 1, cublas::lvalue(Acc[i]));
       }
       vector_sum(N, Acc.cptr(), 1, r);
    }
@@ -74,11 +79,11 @@ matrix_inner_prod(char Atrans, char Btrans, int M, int N,
 }
 
 template <typename T>
-void
+std::enable_if_t<cuda::is_cuda_floating_point_v<T>, void>
 matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
-		  cuda::const_gpu_ptr<T> A, int ldA,
-		  cuda::const_gpu_ptr<T> B, int ldB,
-		  cuda::gpu_ref<T>& r)
+		      cuda::const_gpu_ptr<T> A, int ldA,
+		      cuda::const_gpu_ptr<T> B, int ldB,
+		      cuda::gpu_ref<T>& r)
 {
    if (Atrans == 'N' && Btrans == 'N')
    {
@@ -87,7 +92,7 @@ matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
 
       for (int i = 0; i < N; ++i)
       {
-	 vector_inner_prod(M, A+i, 1, B+i, 1, lvalue(Acc[i]));
+	 vector_inner_prod(M, A+i, 1, B+i, 1, cublas::lvalue(Acc[i]));
       }
       vector_sum(N, Acc.cptr(), 1, r);
    }
@@ -97,5 +102,5 @@ matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
    }
 }
 
-} // namespace cublas
+} // namespace cuda
 
