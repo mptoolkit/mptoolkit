@@ -722,6 +722,6 @@ MakeRandomStateComponent(BasisList const& Local, VectorBasis const& B1, VectorBa
 // this belongs somewhere else
 MatrixOperator RenameSymmetry(MatrixOperator const& Op, SymmetryList const& NewSL);
 
-#include "state_component.cc"
+#include "state_component.icc"
 
 #endif

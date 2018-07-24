@@ -377,8 +377,8 @@ local_inner_prod(OperatorComponent const& A, HermitianProxy<OperatorComponent> c
 	 {
 	    if (AJ.col() == BJ.col())
 	    {
-               if (A.Basis1()[AJ.row()] == B.base().Basis1()[BJ.row()])
-                  Result.add(AJ.row(), BJ.row(), adjoint(inner_prod(*BJ, *AJ)));
+               if (A.Basis1()[AI.row()] == B.base().Basis1()[BI.row()])
+                  Result.add(AI.row(), BI.row(), conj(inner_prod((*BJ).value, (*AJ).value)));
 	       ++AJ;
 	       ++BJ;
 	    }

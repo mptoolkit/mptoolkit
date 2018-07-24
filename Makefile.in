@@ -144,7 +144,7 @@ wavefunctionobj = linearwavefunction.o canonicalwavefunction.o infinitewavefunct
 
 parserobj = parser.o
 
-blasobj = matrix-lapack.o
+blasobj = matrix-lapack.o exponential.o
 
 # cuda kernels, which are linked together to make gpu.o as the device objects
 cudakernelobj = cub.cu.o

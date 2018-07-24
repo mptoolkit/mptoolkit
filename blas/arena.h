@@ -36,7 +36,7 @@ namespace blas
 class AllocatorBase
 {
    public:
-      AllocatorBase() {}
+      AllocatorBase() = default;
 
       virtual void* allocate(std::size_t Size, std::size_t Align) = 0;
 
@@ -46,11 +46,6 @@ class AllocatorBase
 
       virtual ~AllocatorBase() noexcept = 0;
 };
-
-inline
-AllocatorBase::~AllocatorBase() noexcept
-{
-}
 
 // memory arena
 
@@ -62,6 +57,8 @@ class arena
       explicit arena(std::shared_ptr<AllocatorBase> Alloc_) : Alloc(Alloc_) {}
 
       explicit arena(AllocatorBase* Alloc_) : Alloc(Alloc_) {}
+
+      ~arena() noexcept = default;
 
       template <typename T>
       T* allocate_type(std::size_t Size) const
@@ -122,6 +119,6 @@ struct default_arena
 {
 };
 
-} // namespace
+} // namespace blas
 
 #endif

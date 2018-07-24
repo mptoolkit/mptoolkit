@@ -24,9 +24,15 @@
 
 #include "matrix-lapack.h"
 #include "common/lapackf.h"
+#include "arena.h"
 
 namespace blas
 {
+
+// this needs to be defined somewhere...
+AllocatorBase:: ~AllocatorBase() noexcept
+{
+}
 
 void Diagonalize(int Size, std::complex<double>* Data, int LeadingDim, std::complex<double>* Eigen,
 		 std::complex<double>* LeftVectors, int LeftLeadingDim,

@@ -34,7 +34,10 @@ namespace blas
 //
 
 // defined in cublas.cpp
+namespace detail
+{
 extern arena gpu_default_arena;
+} // namespace detail
 
 struct gpu_tag
 {
@@ -63,7 +66,7 @@ struct gpu_tag
 
    template <typename T>
    static
-   blas::arena default_arena() { return gpu_default_arena; }
+   blas::arena default_arena() { return detail::gpu_default_arena; }
 
    template <typename T>
    static int select_leading_dimension(int ld)

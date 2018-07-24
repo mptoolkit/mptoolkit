@@ -22,7 +22,12 @@
 namespace blas
 {
 
+namespace detail
+{
+
 arena gpu_default_arena = blas::arena(new cuda::BlockAllocator(cuda::DefaultBlockMultiple, false));
+
+} // namespace detail
 
 } // namespace blas
 

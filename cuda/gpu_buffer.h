@@ -66,7 +66,7 @@ class AllocationBlock
       AllocationBlock& operator=(AllocationBlock&&) = delete;
       AllocationBlock& operator=(AllocationBlock const&) = delete;
 
-      ~AllocationBlock();
+      ~AllocationBlock() noexcept;
 
       // attempts to allocate Size bytes, aligned at Align.  Returns nullptr if no allocation
       // was possible.
@@ -132,7 +132,7 @@ AllocationBlock::AllocationBlock(std::size_t Size_, bool Free)
 }
 
 inline
-AllocationBlock::~AllocationBlock()
+AllocationBlock::~AllocationBlock() noexcept
 {
    if (FreeOnDestructor && BasePtr)
    {
@@ -154,6 +154,8 @@ class BlockAllocator : public blas::AllocatorBase
       void* allocate(std::size_t Size);
 
       void free(void* Ptr, std::size_t Size);
+
+      virtual ~BlockAllocator() noexcept {}
 
    private:
       std::list<AllocationBlock> Allocations;
@@ -177,10 +179,10 @@ blas::arena make_gpu_block_allocator()
 // that have finished execution.  Non-blocking.
 void TryFlushGpuBuffers();
 
-// Force synchronization and memory deallocation of all streams 
+// Force synchronization and memory deallocation of all streams
 void SyncFlushGpuBuffers();
 
-// 
+//
 void AddToPendingDelete(cuda::stream& Stream, blas::arena& Arena, void* Ptr, std::size_t ByteSize);
 
 template <typename T>
@@ -207,7 +209,7 @@ class gpu_buffer
       // Async version
       ~gpu_buffer() noexcept;
 
-      gpu_buffer(gpu_buffer&& other) noexcept 
+      gpu_buffer(gpu_buffer&& other) noexcept
       : Ptr(other.Ptr), ByteSize(other.ByteSize), Stream(std::move(other.Stream)),
 	Sync(std::move(other.Sync)), Arena(std::move(other.Arena))
       {
