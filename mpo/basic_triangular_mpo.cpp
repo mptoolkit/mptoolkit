@@ -177,6 +177,7 @@ void optimize(BasicTriangularMPO& Op)
    }
 }
 
+#if 0
 void qr_optimize(BasicTriangularMPO& Op)
 {
    //   if (Op.size() < 2)
@@ -235,6 +236,7 @@ void qr_optimize(BasicTriangularMPO& Op)
    TRACE(Op);
 
 }
+#endif
 
 std::pair<std::complex<double>, double>
 log_inner_prod(BasicTriangularMPO const& Op1, BasicTriangularMPO const& Op2)

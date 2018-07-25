@@ -243,6 +243,39 @@ SVD_FullCols(MatrixOperator const& m,
    Vh = Vh * U2;
 }
 
+RealDiagonalOperator
+DiagonalizeHermitian(MatrixOperator& x)
+{
+   CHECK(is_scalar(x.TransformsAs()));
+   CHECK_EQUAL(x.Basis1(), x.Basis2());
+   CHECK(is_regular_basis(x.Basis1()))(x.Basis1());
+
+   RealDiagonalOperator Result(x.Basis1(), x.Basis2());
+
+   for (unsigned i = 0; i < x.Basis1().size(); ++i)
+   {
+      auto I = x.row(i).find(i);
+      if (I == x.row(i).end())
+         continue;
+
+      RealDiagonalMatrix D(x.Basis1().dim(i));
+      blas::DiagonalizeHermitian((*I).value, D.diagonal());
+      Result.insert(i,i, std::move(D));
+   }
+   return Result;
+}
+
+RealDiagonalOperator
+SqrtDiagonal(RealDiagonalOperator x, double OrthoTol)
+{
+   PANIC("not implemented");
+}
+
+RealDiagonalOperator
+InvertDiagonal(RealDiagonalOperator x, double OrthoTol)
+{
+   PANIC("not implemented");
+}
 
 
 #if 0

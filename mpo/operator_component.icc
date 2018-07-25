@@ -206,6 +206,21 @@ operator>>(PStream::ipstream& in, BasicOperatorComponent<T>& Op)
 }
 
 template <typename T>
+std::ostream&
+operator<<(std::ostream& out, BasicOperatorComponent<T> const& op)
+{
+   out << "OperatorComponent: Basis1=" << op.Basis1() << "\nBasis2=" << op.Basis2() << '\n';
+   for (auto const& r : op)
+   {
+      for (auto const& c : r)
+      {
+         out << "element (" << r.row() << "," << c.col() << ") = " << c.value << '\n';
+      }
+   }
+   return out;
+}
+
+template <typename T>
 BasicOperatorComponent<T>
 operator+(BasicOperatorComponent<T> const& A, BasicOperatorComponent<T> const& B)
 {

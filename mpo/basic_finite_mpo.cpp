@@ -170,6 +170,7 @@ void optimize(BasicFiniteMPO& Op)
 #endif
 }
 
+#if 0
 void qr_optimize(BasicFiniteMPO& Op)
 {
    if (Op.size() < 2)
@@ -245,6 +246,7 @@ void qr_optimize(BasicFiniteMPO& Op)
 #endif
 #endif
 }
+#endif
 
 BasicFiniteMPO&
 operator+=(BasicFiniteMPO& x, BasicFiniteMPO const& y)
@@ -627,7 +629,7 @@ BasicFiniteMPO fine_grain(SimpleOperator const& x,
    CHECK(i == 0);
    CHECK(TensorProdBasis2.empty());
    Result[0] = std::move(R1);
- 
+
    optimize(Result);
    return Result;
 }

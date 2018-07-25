@@ -45,9 +45,9 @@ void vector_fill(T alpha, int n, cuda::gpu_ptr<T> y, int incy)
 // template instantiations
 template void vector_fill<float>(float alpha, int n, cuda::gpu_ptr<float> y, int incy);
 template void vector_fill<double>(double alpha, int n, cuda::gpu_ptr<double> y, int incy);
-template void vector_fill<std::complex<float>>(std::complex<float> alpha, int n, 
+template void vector_fill<std::complex<float>>(std::complex<float> alpha, int n,
 					       cuda::gpu_ptr<std::complex<float>> y, int incy);
-template void vector_fill<std::complex<double>>(std::complex<double> alpha, int n, 
+template void vector_fill<std::complex<double>>(std::complex<double> alpha, int n,
 						cuda::gpu_ptr<std::complex<double>> y, int incy);
 
 
@@ -71,9 +71,9 @@ void matrix_fill(T alpha, int M, int N, cuda::gpu_ptr<T> A, int lda)
 // template instantiations
 template void matrix_fill<float>(float alpha, int m, int n, cuda::gpu_ptr<float> y, int lda);
 template void matrix_fill<double>(double alpha, int m, int n, cuda::gpu_ptr<double> y, int lda);
-template void matrix_fill<std::complex<float>>(std::complex<float> alpha, int m, int n, 
+template void matrix_fill<std::complex<float>>(std::complex<float> alpha, int m, int n,
 					       cuda::gpu_ptr<std::complex<float>> y, int lda);
-template void matrix_fill<std::complex<double>>(std::complex<double> alpha, int m, int n, 
+template void matrix_fill<std::complex<double>>(std::complex<double> alpha, int m, int n,
 						cuda::gpu_ptr<std::complex<double>> y, int lda);
 
 
@@ -285,7 +285,7 @@ template void vector_permute<double>(int n, cuda::const_gpu_ptr<double> x, int i
 // vector_parallel
 
 template <typename T>
-__global__ void cuda_vector_parallel(unsigned n, T const* x, unsigned incx, 
+__global__ void cuda_vector_parallel(unsigned n, T const* x, unsigned incx,
 				     T const* y, unsigned incy,
 				     T* z, unsigned incz)
 {
@@ -294,8 +294,28 @@ __global__ void cuda_vector_parallel(unsigned n, T const* x, unsigned incx,
       z[i*incz] = x[i*incx] * y[i*incy];
 }
 
+template <>
+__global__ void cuda_vector_parallel<cuFloatComplex>(unsigned n, cuFloatComplex const* x, unsigned incx,
+				     cuFloatComplex const* y, unsigned incy,
+				     cuFloatComplex* z, unsigned incz)
+{
+   unsigned i = blockIdx.x*blockDim.x + threadIdx.x;
+   if (i < n)
+      z[i*incz] = cuCmulf(x[i*incx], y[i*incy]);
+}
+
+template <>
+__global__ void cuda_vector_parallel<cuDoubleComplex>(unsigned n, cuDoubleComplex const* x, unsigned incx,
+				     cuDoubleComplex const* y, unsigned incy,
+				     cuDoubleComplex* z, unsigned incz)
+{
+   unsigned i = blockIdx.x*blockDim.x + threadIdx.x;
+   if (i < n)
+      z[i*incz] = cuCmul(x[i*incx], y[i*incy]);
+}
+
 template <typename T>
-__global__ void cuda_vector_add_parallel(unsigned n, T const* x, unsigned incx, 
+__global__ void cuda_vector_add_parallel(unsigned n, T const* x, unsigned incx,
 					 T const* y, unsigned incy,
 					 T* z, unsigned incz)
 {
@@ -304,8 +324,30 @@ __global__ void cuda_vector_add_parallel(unsigned n, T const* x, unsigned incx,
       z[i*incz] += x[i*incx] * y[i*incy];
 }
 
+
+
+template <>
+__global__ void cuda_vector_add_parallel<cuFloatComplex>(unsigned n, cuFloatComplex const* x, unsigned incx,
+					 cuFloatComplex const* y, unsigned incy,
+					 cuFloatComplex* z, unsigned incz)
+{
+   unsigned i = blockIdx.x*blockDim.x + threadIdx.x;
+   if (i < n)
+      z[i*incz] = cuCfmaf(x[i*incx], y[i*incy], z[i*incz]);
+}
+
+template <>
+__global__ void cuda_vector_add_parallel<cuDoubleComplex>(unsigned n, cuDoubleComplex const* x, unsigned incx,
+					 cuDoubleComplex const* y, unsigned incy,
+					 cuDoubleComplex* z, unsigned incz)
+{
+   unsigned i = blockIdx.x*blockDim.x + threadIdx.x;
+   if (i < n)
+      z[i*incz] = cuCfma(x[i*incx], y[i*incy], z[i*incz]);
+}
+
 template <typename T>
-__global__ void cuda_vector_parallel_scaled(unsigned n, T alpha, T const* x, unsigned incx, 
+__global__ void cuda_vector_parallel_scaled(unsigned n, T alpha, T const* x, unsigned incx,
 					    T const* y, unsigned incy,
 					    T* z, unsigned incz)
 {
@@ -314,8 +356,30 @@ __global__ void cuda_vector_parallel_scaled(unsigned n, T alpha, T const* x, uns
       z[i*incz] = alpha * x[i*incx] * y[i*incy];
 }
 
+template <>
+__global__ void cuda_vector_parallel_scaled<cuFloatComplex>(unsigned n, cuFloatComplex alpha,
+                                                            cuFloatComplex const* x, unsigned incx,
+                                                            cuFloatComplex const* y, unsigned incy,
+                                                            cuFloatComplex* z, unsigned incz)
+{
+   unsigned i = blockIdx.x*blockDim.x + threadIdx.x;
+   if (i < n)
+      z[i*incz] = cuCmulf(cuCmulf(alpha, x[i*incx]), y[i*incy]);
+}
+
+template <>
+__global__ void cuda_vector_parallel_scaled<cuDoubleComplex>(unsigned n, cuDoubleComplex alpha,
+                                                            cuDoubleComplex const* x, unsigned incx,
+                                                            cuDoubleComplex const* y, unsigned incy,
+                                                            cuDoubleComplex* z, unsigned incz)
+{
+   unsigned i = blockIdx.x*blockDim.x + threadIdx.x;
+   if (i < n)
+      z[i*incz] = cuCmul(cuCmul(alpha, x[i*incx]), y[i*incy]);
+}
+
 template <typename T>
-__global__ void cuda_vector_add_parallel_scaled(unsigned n, T alpha, T const* x, unsigned incx, 
+__global__ void cuda_vector_add_parallel_scaled(unsigned n, T alpha, T const* x, unsigned incx,
 						T const* y, unsigned incy,
 						T* z, unsigned incz)
 {
@@ -324,50 +388,140 @@ __global__ void cuda_vector_add_parallel_scaled(unsigned n, T alpha, T const* x,
       z[i*incz] += alpha * x[i*incx] * y[i*incy];
 }
 
+template <>
+__global__ void cuda_vector_add_parallel_scaled<cuFloatComplex>(unsigned n, cuFloatComplex alpha,
+                                                                cuFloatComplex const* x, unsigned incx,
+                                                                cuFloatComplex const* y, unsigned incy,
+                                                                cuFloatComplex* z, unsigned incz)
+{
+   unsigned i = blockIdx.x*blockDim.x + threadIdx.x;
+   if (i < n)
+      z[i*incz] = cuCfmaf(cuCmulf(alpha, x[i*incx]), y[i*incy], z[i*incz]);
+}
+
+template <>
+__global__ void cuda_vector_add_parallel_scaled<cuDoubleComplex>(unsigned n, cuDoubleComplex alpha,
+                                                                 cuDoubleComplex const* x, unsigned incx,
+                                                                 cuDoubleComplex const* y, unsigned incy,
+                                                                 cuDoubleComplex* z, unsigned incz)
+{
+   unsigned i = blockIdx.x*blockDim.x + threadIdx.x;
+   if (i < n)
+      z[i*incz] = cuCfma(cuCmul(alpha, x[i*incx]), y[i*incy], z[i*incz]);
+}
+
 template <typename T>
 void
-vector_parallel(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::const_gpu_ptr<T> y, int incy, 
+vector_parallel(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::const_gpu_ptr<T> y, int incy,
 		cuda::gpu_ptr<T> z, int incz)
 {
    unsigned threads_per_block = 64;
    unsigned nblocks = (n + threads_per_block-1) / threads_per_block;
    cuda_vector_parallel<<<nblocks,threads_per_block, 0, y.get_stream().raw_stream()>>>
-      (n, x.device_ptr(), incx, y.device_ptr(), incy, z.device_ptr(), incz);
+      (n, cuda_complex_cast(x.device_ptr()), incx,
+       cuda_complex_cast(y.device_ptr()), incy,
+       cuda_complex_cast(z.device_ptr()), incz);
 }
 
 template <typename T>
 void
-vector_add_parallel(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::const_gpu_ptr<T> y, int incy, 
+vector_add_parallel(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::const_gpu_ptr<T> y, int incy,
 		    cuda::gpu_ptr<T> z, int incz)
 {
    unsigned threads_per_block = 64;
    unsigned nblocks = (n + threads_per_block-1) / threads_per_block;
    cuda_vector_add_parallel<<<nblocks,threads_per_block, 0, y.get_stream().raw_stream()>>>
-      (n, x.device_ptr(), incx, y.device_ptr(), incy, z.device_ptr(), incz);
+      (n, cuda_complex_cast(x.device_ptr()), incx,
+       cuda_complex_cast(y.device_ptr()), incy,
+       cuda_complex_cast(z.device_ptr()), incz);
 }
 
 template <typename T>
 void
-vector_parallel_scaled(int n, T const& alpha, cuda::const_gpu_ptr<T> x, int incx, 
-		       cuda::const_gpu_ptr<T> y, int incy, 
+vector_parallel_scaled(int n, T const& alpha, cuda::const_gpu_ptr<T> x, int incx,
+		       cuda::const_gpu_ptr<T> y, int incy,
 		       cuda::gpu_ptr<T> z, int incz)
 {
    unsigned threads_per_block = 64;
    unsigned nblocks = (n + threads_per_block-1) / threads_per_block;
-   cuda_vector_parallel<<<nblocks,threads_per_block, 0, y.get_stream().raw_stream()>>>
-      (n, alpha, x.device_ptr(), incx, y.device_ptr(), incy, z.device_ptr(), incz);
+   cuda_vector_parallel_scaled<<<nblocks,threads_per_block, 0, y.get_stream().raw_stream()>>>
+      (n, *cuda_complex_cast(&alpha), cuda_complex_cast(x.device_ptr()), incx,
+       cuda_complex_cast(y.device_ptr()), incy,
+       cuda_complex_cast(z.device_ptr()), incz);
 }
 
 template <typename T>
 void
-vector_add_parallel_scaled(int n, T const& alpha, cuda::const_gpu_ptr<T> x, int incx, 
-			   cuda::const_gpu_ptr<T> y, int incy, 
+vector_add_parallel_scaled(int n, T const& alpha, cuda::const_gpu_ptr<T> x, int incx,
+			   cuda::const_gpu_ptr<T> y, int incy,
 			   cuda::gpu_ptr<T> z, int incz)
 {
    unsigned threads_per_block = 64;
    unsigned nblocks = (n + threads_per_block-1) / threads_per_block;
    cuda_vector_add_parallel_scaled<<<nblocks,threads_per_block, 0, y.get_stream().raw_stream()>>>
-      (n, alpha, x.device_ptr(), incx, y.device_ptr(), incy, z.device_ptr(), incz);
+      (n, *cuda_complex_cast(&alpha), cuda_complex_cast(x.device_ptr()), incx,
+       cuda_complex_cast(y.device_ptr()), incy,
+       cuda_complex_cast(z.device_ptr()), incz);
 }
+
+
+// template instantiations
+
+template void vector_parallel<float>(int n, cuda::const_gpu_ptr<float> x, int incx,
+                                      cuda::const_gpu_ptr<float> y, int incy,
+                                      cuda::gpu_ptr<float> z, int incz);
+template void vector_parallel<double>(int n, cuda::const_gpu_ptr<double> x, int incx,
+                                      cuda::const_gpu_ptr<double> y, int incy,
+                                      cuda::gpu_ptr<double> z, int incz);
+template void vector_parallel<std::complex<float>>(int n, cuda::const_gpu_ptr<std::complex<float>> x, int incx,
+                                                   cuda::const_gpu_ptr<std::complex<float>> y, int incy,
+                                                   cuda::gpu_ptr<std::complex<float>> z, int incz);
+template void vector_parallel<std::complex<double>>(int n, cuda::const_gpu_ptr<std::complex<double>> x, int incx,
+                                                    cuda::const_gpu_ptr<std::complex<double>> y, int incy,
+                                                    cuda::gpu_ptr<std::complex<double>> z, int incz);
+
+template void vector_parallel_scaled<float>(int n, float const& alpha, cuda::const_gpu_ptr<float> x, int incx,
+                                            cuda::const_gpu_ptr<float> y, int incy,
+                                            cuda::gpu_ptr<float> z, int incz);
+template void vector_parallel_scaled<double>(int n, double const& alpha, cuda::const_gpu_ptr<double> x, int incx,
+                                             cuda::const_gpu_ptr<double> y, int incy,
+                                             cuda::gpu_ptr<double> z, int incz);
+template void vector_parallel_scaled<std::complex<float>>(int n, std::complex<float> const& alpha,
+                                                          cuda::const_gpu_ptr<std::complex<float>> x, int incx,
+                                                          cuda::const_gpu_ptr<std::complex<float>> y, int incy,
+                                                          cuda::gpu_ptr<std::complex<float>> z, int incz);
+template void vector_parallel_scaled<std::complex<double>>(int n, std::complex<double> const& alpha,
+                                                           cuda::const_gpu_ptr<std::complex<double>> x, int incx,
+                                                           cuda::const_gpu_ptr<std::complex<double>> y, int incy,
+                                                           cuda::gpu_ptr<std::complex<double>> z, int incz);
+
+template void vector_add_parallel<float>(int n, cuda::const_gpu_ptr<float> x, int incx,
+                                         cuda::const_gpu_ptr<float> y, int incy,
+                                         cuda::gpu_ptr<float> z, int incz);
+template void vector_add_parallel<double>(int n, cuda::const_gpu_ptr<double> x, int incx,
+                                          cuda::const_gpu_ptr<double> y, int incy,
+                                          cuda::gpu_ptr<double> z, int incz);
+template void vector_add_parallel<std::complex<float>>(int n, cuda::const_gpu_ptr<std::complex<float>> x, int incx,
+                                                       cuda::const_gpu_ptr<std::complex<float>> y, int incy,
+                                                       cuda::gpu_ptr<std::complex<float>> z, int incz);
+template void vector_add_parallel<std::complex<double>>(int n, cuda::const_gpu_ptr<std::complex<double>> x, int incx,
+                                                        cuda::const_gpu_ptr<std::complex<double>> y, int incy,
+                                                        cuda::gpu_ptr<std::complex<double>> z, int incz);
+
+template void vector_add_parallel_scaled<float>(int n, float const& alpha, cuda::const_gpu_ptr<float> x, int incx,
+                                                cuda::const_gpu_ptr<float> y, int incy,
+                                                cuda::gpu_ptr<float> z, int incz);
+template void vector_add_parallel_scaled<double>(int n, double const& alpha, cuda::const_gpu_ptr<double> x, int incx,
+                                          cuda::const_gpu_ptr<double> y, int incy,
+                                          cuda::gpu_ptr<double> z, int incz);
+template void vector_add_parallel_scaled<std::complex<float>>(int n, std::complex<float> const& alpha,
+                                                              cuda::const_gpu_ptr<std::complex<float>> x, int incx,
+                                                              cuda::const_gpu_ptr<std::complex<float>> y, int incy,
+                                                              cuda::gpu_ptr<std::complex<float>> z, int incz);
+template void vector_add_parallel_scaled<std::complex<double>>(int n, std::complex<double> const& alpha,
+                                                               cuda::const_gpu_ptr<std::complex<double>> x, int incx,
+                                                               cuda::const_gpu_ptr<std::complex<double>> y, int incy,
+                                                               cuda::gpu_ptr<std::complex<double>> z, int incz);
+
 
 } // namespace cuda

@@ -26,6 +26,7 @@
 #include <mutex>
 #include <memory>
 #include <cuda_runtime.h>
+#include <cuComplex.h>
 #include "common/atomicrefcount.h"
 
 #include <iostream>
@@ -256,6 +257,8 @@ class timer
 };
 
 // cuda floating point types
+// is_cuda_floating_point metafunction is true for floating point and complex
+// types that are supported on cuda.
 
 template <typename T>
 struct is_cuda_floating_point : std::false_type {};
@@ -269,6 +272,63 @@ template <> struct is_cuda_floating_point<float> : std::true_type {};
 template <> struct is_cuda_floating_point<double> : std::true_type {};
 template <> struct is_cuda_floating_point<std::complex<float>> : std::true_type {};
 template <> struct is_cuda_floating_point<std::complex<double>> : std::true_type {};
+
+// standard complex arithmetic doesn't work on cuda - the std::complex functions
+// are not specified to run on the GPU.  instead we need to cast to the types
+// cuComplex and cuDoubleComplex.
+
+template <typename T>
+struct cuda_complex;
+
+template <typename T>
+struct cuda_complex<T const> : cuda_complex<T> {};
+
+template <typename T>
+struct cuda_complex<T&> : cuda_complex<T> {};
+
+template <typename T>
+struct cuda_complex<T&&> : cuda_complex<T> {};
+
+template <>
+struct cuda_complex<float>
+{
+   using type = float;
+};
+
+template <>
+struct cuda_complex<double>
+{
+   using type = double;
+};
+
+template <>
+struct cuda_complex<std::complex<float>>
+{
+   using type = cuFloatComplex;
+};
+
+template <>
+struct cuda_complex<std::complex<double>>
+{
+   using type = cuDoubleComplex;
+};
+
+template <typename T>
+using cuda_complex_t = typename cuda_complex<T>::type;
+
+template <typename T>
+typename cuda_complex<T>::type*
+cuda_complex_cast(T* x)
+{
+   return reinterpret_cast<cuda_complex_t<T>*>(x);
+}
+
+template <typename T>
+typename cuda_complex<T>::type const*
+cuda_complex_cast(T const* x)
+{
+   return reinterpret_cast<cuda_complex_t<T> const*>(x);
+}
 
 // copy GPU memory syncronously
 void memcpy_device_to_host(void const* src, void* dest, std::size_t size);

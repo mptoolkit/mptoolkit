@@ -373,7 +373,8 @@ void optimize(UnitCellMPO& Op)
 
 void qr_optimize(UnitCellMPO& Op)
 {
-   qr_optimize(Op.MPO());
+   PANIC("not implemented");
+   //   qr_optimize(Op.MPO());
 }
 
 UnitCellMPO translate(UnitCellMPO x, int Sites)

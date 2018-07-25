@@ -240,6 +240,7 @@ MatrixOperator operator_prod(SimpleOperator const& M,
 }
 #endif
 
+#if 0
 MatrixOperator operator_prod(SimpleRedOperator const& M,
                              StateComponent const& A,
                              Tensor::HermitianProxy<StateComponent> const& B)
@@ -289,6 +290,8 @@ MatrixOperator operator_prod(Tensor::HermitianProxy<SimpleRedOperator> const& M,
    }
    return Result;
 }
+
+#endif
 
 std::ostream& operator<<(std::ostream& out, StateComponent const& Psi)
 {

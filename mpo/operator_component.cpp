@@ -95,20 +95,6 @@ translate_right(BasisList const& LeftBasis, BasisList const& ThisBasis)
    return Result;
 }
 
-std::ostream&
-operator<<(std::ostream& out, OperatorComponent const& op)
-{
-   out << "OperatorComponent: Basis1=" << op.Basis1() << "\nBasis2=" << op.Basis2() << '\n';
-   for (auto const& r : op)
-   {
-      for (auto const& c : r)
-      {
-         out << "element (" << r.row() << "," << c.col() << ") = " << c.value << '\n';
-      }
-   }
-   return out;
-}
-
 OperatorComponent
 tensor_sum(OperatorComponent const& A, OperatorComponent const& B,
            SumBasis<BasisList> const& B1, SumBasis<BasisList> const& B2)

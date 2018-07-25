@@ -130,7 +130,7 @@ inline
 void DiagonalizeHermitian(NormalMatrix<std::complex<double>, U, Tag>& M, NormalVectorProxy<double, V, Tag>&& v)
 {
    CHECK_EQUAL(M.rows(), M.cols());
-   detail::DiagonalizeHermitian(M.rows(), M.storage(), M.leading_dimension(), v.storage());
+   detail::DiagonalizeHermitian(M.rows(), M.storage(), M.leading_dimension(), std::move(v).storage());
 }
 
 //
@@ -163,7 +163,7 @@ SVD(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& Umat,
    CHECK_EQUAL(Umat.rows(), Dvec.size());
    CHECK_EQUAL(Dvec.size(), Vmat.rows());
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
-   detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(), 
+   detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(),
 				      std::move(Dvec).storage(),
 				      Umat.storage(), Umat.leading_dimension(),
 				      Vmat.storage(), Vmat.leading_dimension());
@@ -213,7 +213,7 @@ SVD_FullRows(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
    if (Mmat.rows() < Mmat.cols())
    {
-      detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(), 
+      detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(),
 					 std::move(Dvec).storage(),
 					 Umat.storage(), Umat.leading_dimension(),
 					 Vmat.storage(), Vmat.leading_dimension());
@@ -222,7 +222,7 @@ SVD_FullRows(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
    {
       // need to zero the additional elements in Dvec
       clear(Dvec);
-      detail::SingularValueDecompositionFull(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(), 
+      detail::SingularValueDecompositionFull(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(),
 					     std::move(Dvec).storage(),
 					     Umat.storage(), Umat.leading_dimension(),
 					     Vmat.storage(), Vmat.leading_dimension());
@@ -272,7 +272,7 @@ SVD_FullCols(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
    if (Mmat.cols() < Mmat.rows())
    {
-      detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(), 
+      detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(),
 					 std::move(Dvec).storage(),
 					 Umat.storage(), Umat.leading_dimension(),
 					 Vmat.storage(), Vmat.leading_dimension());
@@ -281,7 +281,7 @@ SVD_FullCols(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
    {
       // need to zero the additional elements in Dvec
       clear(Dvec);
-      detail::SingularValueDecompositionFull(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(), 
+      detail::SingularValueDecompositionFull(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(),
 					     std::move(Dvec).storage(),
 					     Umat.storage(), Umat.leading_dimension(),
 					     Vmat.storage(), Vmat.leading_dimension());
