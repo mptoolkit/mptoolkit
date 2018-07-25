@@ -218,8 +218,10 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    // then we should remove small elements as they have no effect on the final wavefunction.
 
    // LeftEigen = triple_prod(U, D*D, herm(U))
+#if 0
    DEBUG_CHECK(norm_frob(LeftEigen - triple_prod(herm(U), D*D, U)) < 1e-10)
       (norm_frob(LeftEigen - triple_prod(herm(U), D*D, U)))(D)(DInv);
+#endif
 
    MatrixOperator A = delta_shift(D * U, QShift);
    MatrixOperator AInv = adjoint(U) * DInv;
@@ -235,12 +237,14 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
 #endif
 
    // At this point, the left eigenvector is the identity matrix.
+#if 0
 #if !defined(NDEBUG)
    MatrixOperator I = MatrixOperator::make_identity(PsiL.Basis1());
    MatrixOperator R = delta_shift(D*D, QShift);
    A = delta_shift(LeftMultiply(PsiL, QShift)(delta_shift(I, adjoint(QShift))), QShift);
    CHECK(norm_frob(inner_prod(A-EtaL*I, R)) < 10*A.Basis1().total_dimension() * ArnoldiTol)(norm_frob(A-EtaL*I))(A)(I)(D);
    TRACE(norm_frob(inner_prod(A-EtaL*I, R)));
+#endif
 #endif
 
    // same for the right eigenvector, which will be the density matrix
@@ -293,12 +297,13 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    PsiL.set_front(prod(delta_shift(U, QShift), PsiL.get_front()));
 
    // D is now the Lambda matrix.  Check that
+#if 0
 #if !defined(NDEBUG)
    MatrixOperator Rho = D*D;
    A = RightMultiply(PsiL, QShift)(Rho);
    CHECK(norm_frob(A-EtaR*Rho) < 10*A.Basis2().total_dimension() * ArnoldiTol);
 #endif
-
+#endif
 
 #else
 

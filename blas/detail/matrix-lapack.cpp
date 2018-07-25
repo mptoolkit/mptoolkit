@@ -164,7 +164,7 @@ void SingularValueDecomposition(char job, int m, int n,
                                 std::complex<double>* VH, int ldVH)
 {
    int min_mn = std::min(m,n);
-   DEBUG_CHECK(ldvh != 0); // This corner case is not allowed by LAPACK
+   DEBUG_CHECK(ldVH != 0); // This corner case is not allowed by LAPACK
    std::complex<double> worksize;
    std::complex<double>* work = &worksize;
    int lwork = -1;

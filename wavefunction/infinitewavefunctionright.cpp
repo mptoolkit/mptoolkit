@@ -145,6 +145,7 @@ InfiniteWavefunctionRight::Initialize(MatrixOperator Lambda,
    this->setBasis2(U.Basis2());
 
 
+#if 0
 #if !defined(NDEBUG)
    // check
    LinearWavefunction PsiCheck(this->base_begin(), this->base_end());
@@ -156,6 +157,7 @@ InfiniteWavefunctionRight::Initialize(MatrixOperator Lambda,
    MatrixOperator RhoCheck = inject_left(Rho, PsiCheck);
    RhoCheck = delta_shift(RhoCheck, QShift);
    TRACE(norm_frob(Rho-RhoCheck))("Rho - should be epsilon");
+#endif
 #endif
 
    this->debug_check_structure();
@@ -204,8 +206,10 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
    RealDiagonalOperator DInv = InvertDiagonal(copy(D), OrthoTol);
 
    // RightEigen = triple_prod(U, D*D, herm(U))
+#if 0
    DEBUG_CHECK(norm_frob(RightEigen - triple_prod(herm(U), D*D, U)) < 1e-10)
       (norm_frob(RightEigen - triple_prod(herm(U), D*D, U)));
+#endif
 
    MatrixOperator R = adjoint(U)*D;
    MatrixOperator RInv = delta_shift(DInv * U, QShift);
@@ -242,8 +246,10 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
    // normalize
    D *= 1.0 / norm_frob(D);
 
+#if 0
    DEBUG_CHECK(norm_frob(LeftEigen - triple_prod(herm(U), D*D, U)) < 1e-10)
       (norm_frob(LeftEigen - triple_prod(herm(U), D*D, U)));
+#endif
 
    // incorporate U into the MPS
 
