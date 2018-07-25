@@ -517,8 +517,9 @@ TruncateBasis2(OperatorComponent& A);
 SimpleOperator
 TruncateBasis2MkII(OperatorComponent& A, double Epsilon = 0.0);
 
-OperatorComponent
-operator+(OperatorComponent const& A, OperatorComponent const& Op);
+template <typename T>
+BasicOperatorComponent<T>
+operator+(BasicOperatorComponent<T> const& A, BasicOperatorComponent<T> const& Op);
 
 template <typename T>
 BasicOperatorComponent<T>

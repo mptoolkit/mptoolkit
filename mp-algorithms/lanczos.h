@@ -47,6 +47,7 @@
 #include <iostream>
 #include <cmath>
 #include <fstream>
+#include "blas/matrix-eigen.h"
 
 double const LanczosBetaTol = 1E-14;
 

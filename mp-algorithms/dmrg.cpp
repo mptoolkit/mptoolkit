@@ -116,7 +116,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
-   SVD_FullColumns(Lambda, U, D, Vh);
+   SVD_FullCols(Lambda, U, D, Vh);
 
    //TRACE(U)(D)(Vh);
 

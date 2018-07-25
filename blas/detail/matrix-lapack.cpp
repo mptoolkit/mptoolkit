@@ -24,7 +24,7 @@
 
 #include "matrix-lapack.h"
 #include "common/lapackf.h"
-#include "arena.h"
+#include "blas/arena.h"
 
 namespace blas
 {
@@ -33,6 +33,9 @@ namespace blas
 AllocatorBase:: ~AllocatorBase() noexcept
 {
 }
+
+namespace detail
+{
 
 void Diagonalize(int Size, std::complex<double>* Data, int LeadingDim, std::complex<double>* Eigen,
 		 std::complex<double>* LeftVectors, int LeftLeadingDim,
@@ -123,38 +126,43 @@ void DiagonalizeHermitian(int Size, std::complex<double>* Data, int LeadingDim, 
    delete[] rwork;
 }
 
-void SingularValueDecomposition(int m, int n, double* A, int ldA, double* D, double* U, int ldU, double* VT, int ldVT)
+void SingularValueDecomposition(char job, int m, int n, double* A, int ldA, double* D, double* U, int ldU, double* VT, int ldVT)
 {
-   char jobu = 'S';
-   char jobvt = 'S';
    double worksize;
    double* work = &worksize;
    int lwork = -1;
    Fortran::integer info = 0;
 
    // query for the optimial sizes of the workspace
-   LAPACK::dgesvd(jobu, jobvt, m, n, A, ldA, D, U, ldU, VT, ldVT, work, lwork, info);
+   LAPACK::dgesvd(job, job, m, n, A, ldA, D, U, ldU, VT, ldVT, work, lwork, info);
 
    lwork = int(work[0]);
    work = new double[lwork];
 
    // do the actual call
-   LAPACK::dgesvd(jobu, jobvt, m, n, A, ldA, D, U, ldU, VT, ldVT, work, lwork, info);
+   LAPACK::dgesvd(job, job, m, n, A, ldA, D, U, ldU, VT, ldVT, work, lwork, info);
    CHECK(info == 0)("LAPACK::dgesvd")(info);
 
    delete[] work;
 }
 
 
+void SingularValueDecomposition(int m, int n, double* A, int ldA, double* D, double* U, int ldU, double* VT, int ldVT)
+{
+   SingularValueDecomposition('S', m, n, A, ldA, D, U, ldU, VT, ldVT);
+}
 
-void SingularValueDecomposition(int m, int n,
+void SingularValueDecompositionFull(int m, int n, double* A, int ldA, double* D, double* U, int ldU, double* VT, int ldVT)
+{
+   SingularValueDecomposition('A', m, n, A, ldA, D, U, ldU, VT, ldVT);
+}
+
+void SingularValueDecomposition(char job, int m, int n,
                                 std::complex<double>* A, int ldA,
                                 double* D,
                                 std::complex<double>* U, int ldU,
                                 std::complex<double>* VH, int ldVH)
 {
-   char jobu = 'S';
-   char jobvh = 'S';
    int min_mn = std::min(m,n);
    DEBUG_CHECK(ldvh != 0); // This corner case is not allowed by LAPACK
    std::complex<double> worksize;
@@ -166,20 +174,40 @@ void SingularValueDecomposition(int m, int n,
    double* rwork = new double[lrwork];
 
    // query for the optimial sizes of the workspace
-   LAPACK::zgesvd(jobu, jobvh, m, n, A, ldA, D, U, ldU, VH, ldVH, work, lwork, rwork, info);
+   LAPACK::zgesvd(job, job, m, n, A, ldA, D, U, ldU, VH, ldVH, work, lwork, rwork, info);
    CHECK(info == 0)("LAPACK::zgesvd")(info);
 
    lwork = int(work[0].real());
    work = new std::complex<double>[lwork];
 
    // do the actual call
-   LAPACK::zgesvd(jobu, jobvh, m, n, A, ldA, D, U, ldU, VH, ldVH, work, lwork, rwork, info);
+   LAPACK::zgesvd(job, job, m, n, A, ldA, D, U, ldU, VH, ldVH, work, lwork, rwork, info);
    CHECK(info == 0)("LAPACK::zgesvd")(info);
 
    delete[] work;
    delete[] rwork;
 }
 
+
+void SingularValueDecomposition(int m, int n,
+                                std::complex<double>* A, int ldA,
+                                double* D,
+                                std::complex<double>* U, int ldU,
+                                std::complex<double>* VH, int ldVH)
+{
+   SingularValueDecomposition('S', m, n, A, ldA, D, U, ldU, VH, ldVH);
+}
+
+void SingularValueDecompositionFull(int m, int n,
+				    std::complex<double>* A, int ldA,
+				    double* D,
+				    std::complex<double>* U, int ldU,
+				    std::complex<double>* VH, int ldVH)
+{
+   SingularValueDecomposition('A', m, n, A, ldA, D, U, ldU, VH, ldVH);
+}
+
+} // namespace detail
 
 } // namespace blas
 

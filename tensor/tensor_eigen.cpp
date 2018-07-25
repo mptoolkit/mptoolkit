@@ -25,37 +25,11 @@ namespace Tensor
 {
 
 void
-SVD(MatrixOperator const& m,
-    MatrixOperator& U,
-    RealDiagonalOperator& D,
-    MatrixOperator& Vh)
-{
-   // If the basis is already regular, don't bother with the extra work
-   if (is_regular_basis(m.Basis1()) && is_regular_basis(m.Basis2()))
-   {
-      SVD_Regular(m, U, D, Vh);
-      return;
-   }
-   // else
-
-   MatrixOperator U1 = Regularize(m.Basis1());
-   MatrixOperator U2 = Regularize(m.Basis2());
-
-   SVD_Regular(triple_prod(U1, m, herm(U2)), U, D, Vh);
-   U = herm(U1) * U;
-   Vh = Vh * U2;
-}
-
-void
 SVD_Regular(MatrixOperator const& m,
 	    MatrixOperator& U,
 	    RealDiagonalOperator& D,
 	    MatrixOperator& Vh)
 {
-   typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
-      VectorBasis, VectorBasis> IrredT;
-   typedef IrredTensor<LinearAlgebra::DiagonalMatrix<double>,
-      VectorBasis, VectorBasis, DiagonalStructure> DiagonalT;
    DEBUG_CHECK(is_scalar(m.TransformsAs()));
    DEBUG_CHECK(is_regular_basis(m.Basis1()))(m.Basis1());
    DEBUG_CHECK(is_regular_basis(m.Basis2()))(m.Basis2());
@@ -74,9 +48,9 @@ SVD_Regular(MatrixOperator const& m,
       }
    }
 
-   U = IrredT(m.Basis1(), DBasis);
-   D = DiagonalT(DBasis, DBasis);
-   Vh = IrredT(DBasis, m.Basis2());
+   U = MatrixOperator(m.Basis1(), DBasis);
+   D = RealDiagonalOperator(DBasis, DBasis);
+   Vh = MatrixOperator(DBasis, m.Basis2());
 
    for (unsigned i = 0; i < m.Basis1().size(); ++i)
    {
@@ -85,19 +59,190 @@ SVD_Regular(MatrixOperator const& m,
          if (m.Basis1()[i] != m.Basis2()[j])
             continue;
 
-         if (!iterate_at(m.data(), i, j))
-            continue;
-         set_element(U.data(), i,BasisMap[i], LinearAlgebra::Matrix<std::complex<double> >());
-         set_element(Vh.data(), BasisMap[i], j, LinearAlgebra::Matrix<std::complex<double> >());
-         LinearAlgebra::Vector<double> Dvec;
-         LinearAlgebra::SingularValueDecomposition(m(i,j),
-                                                   U(i,BasisMap[i]),
-                                                   Dvec,
-                                                   Vh(BasisMap[i], j));
-         set_element(D, BasisMap[i], BasisMap[i], LinearAlgebra::DiagonalMatrix<double>(Dvec));
+	 auto I = m.row(i).find(j);
+	 if (I == m.row(i).end())
+	    continue;
+
+	 int s = std::min(I->rows(), I->cols());
+	 Matrix UU(I->rows(), s);
+	 RealDiagonalMatrix DD(s,s);
+	 Matrix VV(s, I->cols());
+	 blas::SVD(copy((*I).value), UU, DD.diagonal(), VV);
+	 U.insert(i, BasisMap[i], std::move(UU));
+	 D.insert(BasisMap[i], BasisMap[i], std::move(DD));
+	 Vh.insert(BasisMap[i], j, std::move(VV));
       }
    }
 }
+
+void
+SVD_FullRows_Regular(MatrixOperator const& m,
+		     MatrixOperator& U,
+		     RealDiagonalOperator& D,
+		     MatrixOperator& Vh)
+{
+   DEBUG_CHECK(is_scalar(m.TransformsAs()));
+   DEBUG_CHECK(is_regular_basis(m.Basis1()))(m.Basis1());
+   DEBUG_CHECK(is_regular_basis(m.Basis2()))(m.Basis2());
+   // make the basis for the D matrix
+   std::vector<int> BasisMap(m.Basis1().size(), 0);
+   VectorBasis DBasis(m.GetSymmetryList());
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+   {
+      for (unsigned j = 0; j < m.Basis2().size(); ++j)
+      {
+         if (m.Basis1()[i] != m.Basis2()[j])
+            continue;
+
+         BasisMap[i] = DBasis.size();
+         DBasis.push_back(m.Basis1()[i], std::min(m.Basis1().dim(i), m.Basis2().dim(j)));
+      }
+   }
+
+   U = MatrixOperator(m.Basis1(), DBasis);
+   D = RealDiagonalOperator(DBasis, DBasis);
+   Vh = MatrixOperator(DBasis, m.Basis2());
+
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+   {
+      for (unsigned j = 0; j < m.Basis2().size(); ++j)
+      {
+         if (m.Basis1()[i] != m.Basis2()[j])
+            continue;
+
+	 auto I = m.row(i).find(j);
+	 if (I == m.row(i).end())
+	    continue;
+
+	 Matrix UU(I->rows(), I->rows());
+	 RealDiagonalMatrix DD(I->rows(), I->rows());
+	 Matrix VV(I->rows(), I->cols());
+	 blas::SVD_FullRows(copy((*I).value), UU, DD.diagonal(), VV);
+	 U.insert(i, BasisMap[i], std::move(UU));
+	 D.insert(BasisMap[i], BasisMap[i], std::move(DD));
+	 Vh.insert(BasisMap[i], j, std::move(VV));
+      }
+   }
+}
+
+void
+SVD_FullCols_Regular(MatrixOperator const& m,
+		     MatrixOperator& U,
+		     RealDiagonalOperator& D,
+		     MatrixOperator& Vh)
+{
+   DEBUG_CHECK(is_scalar(m.TransformsAs()));
+   DEBUG_CHECK(is_regular_basis(m.Basis1()))(m.Basis1());
+   DEBUG_CHECK(is_regular_basis(m.Basis2()))(m.Basis2());
+   // make the basis for the D matrix
+   std::vector<int> BasisMap(m.Basis1().size(), 0);
+   VectorBasis DBasis(m.GetSymmetryList());
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+   {
+      for (unsigned j = 0; j < m.Basis2().size(); ++j)
+      {
+         if (m.Basis1()[i] != m.Basis2()[j])
+            continue;
+
+         BasisMap[i] = DBasis.size();
+         DBasis.push_back(m.Basis1()[i], std::min(m.Basis1().dim(i), m.Basis2().dim(j)));
+      }
+   }
+
+   U = MatrixOperator(m.Basis1(), DBasis);
+   D = RealDiagonalOperator(DBasis, DBasis);
+   Vh = MatrixOperator(DBasis, m.Basis2());
+
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+   {
+      for (unsigned j = 0; j < m.Basis2().size(); ++j)
+      {
+         if (m.Basis1()[i] != m.Basis2()[j])
+            continue;
+
+	 auto I = m.row(i).find(j);
+	 if (I == m.row(i).end())
+	    continue;
+
+	 Matrix UU(I->rows(), I->cols());
+	 RealDiagonalMatrix DD(I->cols(),I->cols());
+	 Matrix VV(I->cols(), I->cols());
+	 blas::SVD(copy((*I).value), UU, DD.diagonal(), VV);
+	 U.insert(i, BasisMap[i], std::move(UU));
+	 D.insert(BasisMap[i], BasisMap[i], std::move(DD));
+	 Vh.insert(BasisMap[i], j, std::move(VV));
+      }
+   }
+}
+
+
+void
+SVD(MatrixOperator const& m,
+    MatrixOperator& U,
+    RealDiagonalOperator& D,
+    MatrixOperator& Vh)
+{
+   // If the basis is already regular, don't bother with the extra work
+   if (is_regular_basis(m.Basis1()) && is_regular_basis(m.Basis2()))
+   {
+      SVD_Regular(m, U, D, Vh);
+      return;
+   }
+   // else
+
+   MatrixOperator U1 = MatrixOperator(Regularize(m.Basis1()));
+   MatrixOperator U2 = MatrixOperator(Regularize(m.Basis2()));
+
+   SVD_Regular(triple_prod(U1, m, herm(U2)), U, D, Vh);
+   U = herm(U1) * U;
+   Vh = Vh * U2;
+}
+
+
+void
+SVD_FullRows(MatrixOperator const& m,
+	     MatrixOperator& U,
+	     RealDiagonalOperator& D,
+	     MatrixOperator& Vh)
+{
+   // If the basis is already regular, don't bother with the extra work
+   if (is_regular_basis(m.Basis1()) && is_regular_basis(m.Basis2()))
+   {
+      SVD_FullRows_Regular(m, U, D, Vh);
+      return;
+   }
+   // else
+
+   MatrixOperator U1 = MatrixOperator(Regularize(m.Basis1()));
+   MatrixOperator U2 = MatrixOperator(Regularize(m.Basis2()));
+
+   SVD_FullRows_Regular(triple_prod(U1, m, herm(U2)), U, D, Vh);
+   U = herm(U1) * U;
+   Vh = Vh * U2;
+}
+
+void
+SVD_FullCols(MatrixOperator const& m,
+	     MatrixOperator& U,
+	     RealDiagonalOperator& D,
+	     MatrixOperator& Vh)
+{
+   // If the basis is already regular, don't bother with the extra work
+   if (is_regular_basis(m.Basis1()) && is_regular_basis(m.Basis2()))
+   {
+      SVD_FullCols_Regular(m, U, D, Vh);
+      return;
+   }
+   // else
+
+   MatrixOperator U1 = MatrixOperator(Regularize(m.Basis1()));
+   MatrixOperator U2 = MatrixOperator(Regularize(m.Basis2()));
+
+   SVD_FullCols_Regular(triple_prod(U1, m, herm(U2)), U, D, Vh);
+   U = herm(U1) * U;
+   Vh = Vh * U2;
+}
+
 
 
 #if 0

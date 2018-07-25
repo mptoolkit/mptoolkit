@@ -24,6 +24,7 @@
 #include "common/proccontrol.h"
 #include <iostream>
 #include <cmath>
+#include "blas/matrix-eigen.h"
 
 template <typename VectorType, typename MultiplyFunctor>
 double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iterations,

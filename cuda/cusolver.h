@@ -101,10 +101,13 @@ handle& get_handle();
 } // namespace cusolver
 
 
-namespace cuda
+namespace blas
 {
 
-// LAPACK functions must go in namespace cuda so they are found during ADL
+namespace detail
+{
+
+// LAPACK functions must go in namespace blas::detail
 
 void DiagonalizeSymmetric(int Size, cuda::gpu_ptr<double> A, int ldA, cuda::gpu_ptr<double> Eigen);
 
@@ -123,7 +126,21 @@ void SingularValueDecomposition(int Rows, int Cols,
 				cuda::gpu_ptr<std::complex<double>> Umat, int ldU,
 				cuda::gpu_ptr<std::complex<double>> Vmat, int ldV);
 
-} // namespace cuda
+void SingularValueDecompositionFull(int Rows, int Cols,
+				    cuda::gpu_ptr<double> Data, int LeadingDim,
+				    cuda::gpu_ptr<double> Dvec,
+				    cuda::gpu_ptr<double> Umat, int ldU,
+				    cuda::gpu_ptr<double> Vmat, int ldV);
+
+void SingularValueDecompositionFull(int Rows, int Cols,
+				    cuda::gpu_ptr<std::complex<double>> Data, int LeadingDim,
+				    cuda::gpu_ptr<double> Dvec,
+				    cuda::gpu_ptr<std::complex<double>> Umat, int ldU,
+				    cuda::gpu_ptr<std::complex<double>> Vmat, int ldV);
+
+} // namespace detail
+
+} // namespace blas
 
 #include "cusolver.icc"
 

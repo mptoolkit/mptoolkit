@@ -38,27 +38,6 @@ SVD(MatrixOperator const& m,
     RealDiagonalOperator& D,
     MatrixOperator& Vh);
 
-// Version of the SVD where the dimension of D is the number of columns of m
-void
-SVD_FullColumns(MatrixOperator const& m,
-		MatrixOperator& U,
-		RealDiagonalOperator& D,
-		MatrixOperator& Vh);
-
-// Version of the SVD where the dimension of D is the number of rows of m
-void
-SVD_FullRows(MatrixOperator const& m,
-	     MatrixOperator& U,
-	     RealDiagonalOperator& D,
-	     MatrixOperator& Vh);
-
-// Version of the SVD where the dimension of D is max(m.rows(), m.cols())
-void
-SVD_Full(MatrixOperator const& m,
-	 MatrixOperator& U,
-	 RealDiagonalOperator& D,
-	 MatrixOperator& Vh);
-
 // SVD where every basis is a regular basis
 void
 SVD_Regular(MatrixOperator const& m,
@@ -66,6 +45,19 @@ SVD_Regular(MatrixOperator const& m,
 	    RealDiagonalOperator& D,
 	    MatrixOperator& Vh);
 
+// Version of the SVD where the dimension of D is the number of columns of m
+void
+SVD_FullCols(MatrixOperator const& m,
+	     MatrixOperator& U,
+	     RealDiagonalOperator& D,
+	     MatrixOperator& Vh);
+
+// Version of the SVD where the dimension of D is the number of rows of m
+void
+SVD_FullRows(MatrixOperator const& m,
+	     MatrixOperator& U,
+	     RealDiagonalOperator& D,
+	     MatrixOperator& Vh);
 
 // DiagonalizeHermitian
 //

@@ -30,7 +30,7 @@
 #include "common/trace.h"
 #include "arena.h"
 #include "matrix-blas.h"
-#include "matrix-lapack.h"
+#include "detail/matrix-lapack.h"
 #include "matrixref.h"
 #include "vector.h"
 #include "vector_view.h"

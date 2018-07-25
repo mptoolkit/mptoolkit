@@ -29,6 +29,9 @@
 namespace blas
 {
 
+namespace detail
+{
+
 void Diagonalize(int Size, std::complex<double>* Data, int LeadingDim, std::complex<double>* Eigen,
 		 std::complex<double>* Left, int LeftLeadingDim,
 		 std::complex<double>* Right, int RightLeadingDim);
@@ -42,6 +45,14 @@ void SingularValueDecomposition(int Rows, int Cols, double* Data, int LeadingDim
 
 void SingularValueDecomposition(int Rows, int Cols, std::complex<double>* Data, int LeadingDim, double* Dvec,
 				std::complex<double>* Umat, int ldU, std::complex<double>* Vmat, int ldV);
+
+void SingularValueDecompositionFull(int Rows, int Cols, double* Data, int LeadingDim, double* Dvec,
+				    double* Umat, int ldU, double* Vmat, int ldV);
+
+void SingularValueDecompositionFull(int Rows, int Cols, std::complex<double>* Data, int LeadingDim, double* Dvec,
+				    std::complex<double>* Umat, int ldU, std::complex<double>* Vmat, int ldV);
+
+} // namespace detail
 
 } // namespace blas
 

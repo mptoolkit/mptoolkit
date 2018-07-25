@@ -29,8 +29,7 @@ namespace Tensor
 // Regularizes the basis, returns the transform matrix.
 // The regular basis is Result'.Basis1()
 // Result'.Basis2() is b.
-template <typename T>
-IrredTensor<T, VectorBasis, VectorBasis>
+MatrixOperator
 Regularize(VectorBasis const& b);
 
 // is_regular_basis

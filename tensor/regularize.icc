@@ -20,12 +20,10 @@
 namespace Tensor
 {
 
-
-template <typename T>
-IrredTensor<T, VectorBasis, VectorBasis>
+inline
+MatrixOperator
 Regularize(VectorBasis const& b)
 {
-   typedef IrredTensor<T, VectorBasis, VectorBasis> ResultType;
    // Iterate through b and determine the total dimension of
    // each quantum number space, and also map the subspaces of b
    // onto a range of the total space.
@@ -50,16 +48,18 @@ Regularize(VectorBasis const& b)
    }
 
    VectorBasis RegularBasis(SizeMap.begin(), SizeMap.end());
-   ResultType Result(RegularBasis, b, QuantumNumbers::QuantumNumber(b.GetSymmetryList()));
+   MatrixOperator Result(RegularBasis, b, QuantumNumbers::QuantumNumber(b.GetSymmetryList()));
    for (std::size_t i = 0; i < b.size(); ++i)
    {
       int Dest = IndexOfQ[b[i]];
-      if (size1(Result(Dest, i)) == 0)
-         Result(Dest, i) = T(RegularBasis.dim(Dest),
-                             b.dim(i),
-                             0.0);
+      auto I = Result.row(Dest).find(i);
+      if (I == Result.row(Dest).end())
+      {
+	 Result.insert(Dest, i, Matrix(RegularBasis.dim(Dest), b.dim(i), 0.0));
+	 I = Result.row(Dest).find(i);
+      }
 
-      Result(Dest,i)(RangeOfSubspace[i], blas::all) = RealMatrix::make_identity(b.dim(i));
+      (*I).value(RangeOfSubspace[i], blas::all) = Matrix::make_identity(b.dim(i));
    }
 
    return Result;

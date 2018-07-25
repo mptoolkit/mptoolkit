@@ -44,6 +44,7 @@
 #include <iostream>
 #include <cmath>
 #include "blas/functors.h"
+#include "blas/matrix-eigen.h"
 
 #if defined(SOLVER_TRACE_DETAILED)
 #define TRACE_ARNOLDI(Msg) TRACE(Msg)

@@ -109,18 +109,9 @@ StateComponent reflect(StateComponent const& S)
    return Result;
 }
 
-#if 0
-
-
-
 
 MatrixOperator
-scalar_prod(StateComponent const& x, HermitianProxy<StateComponent> const& y);
-
-template <typename T, typename U, typename Func>
-MatrixOperator
-ScalarProd<BasicStateComponent<T>, HermitianProxy<BasicStateComponent<U>>, Func>::
-operator()(BasicStateComponent<T> const& A, HermitianProxy<BasicStateComponent<U>> const& B) const
+scalar_prod(StateComponent const& A, HermitianProxy<StateComponent> const& B)
 {
    DEBUG_PRECONDITION_EQUAL(A.LocalBasis(), B.base().LocalBasis());
    DEBUG_PRECONDITION_EQUAL(A.Basis2(), B.base().Basis2());
@@ -136,11 +127,7 @@ operator()(BasicStateComponent<T> const& A, HermitianProxy<BasicStateComponent<U
 }
 
 MatrixOperator
-scalar_prod(HermitianProxy<StateComponent> const& x, StateComponent const& y);
-
-MatrixOperator
-ScalarProd<HermitianProxy<StateComponent>, StateComponent>::
-operator()(HermitianProxy<StateComponent> const& A, StateComponent const& B) const
+scalar_prod(HermitianProxy<StateComponent> const& A, StateComponent const& B)
 {
    DEBUG_PRECONDITION_EQUAL(A.base().LocalBasis(), B.LocalBasis());
    DEBUG_PRECONDITION_EQUAL(A.base().Basis1(), B.Basis1());
@@ -154,7 +141,6 @@ operator()(HermitianProxy<StateComponent> const& A, StateComponent const& B) con
    }
    return Result;
 }
-#endif
 
 SimpleOperator trace_prod(Tensor::HermitianProxy<StateComponent> const& A,
                           StateComponent const& B)

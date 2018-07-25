@@ -19,6 +19,7 @@
 
 #include "density.h"
 #include "common/proccontrol.h"
+#include "blas/matrix-eigen.h"
 
 
 LinearBasis<VectorBasis>::LinearBasis(VectorBasis const& B)
@@ -446,7 +447,7 @@ void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType>&& M)
       Matrix U(M[i].rows(),nv);
       Matrix Vh(nv, M[i].cols());
       RealVector D_device(nv);
-      SingularValueDecomposition(std::move(M[i]), U, D_device, Vh);
+      SVD(std::move(M[i]), U, D_device, Vh);
       cpu::RealVector D = get_wait(D_device);
 
       LeftVectors.push_back(std::move(U));

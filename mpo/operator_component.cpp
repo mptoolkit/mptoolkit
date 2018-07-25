@@ -20,6 +20,7 @@
 #include "operator_component.h"
 #include "tensor/tensorproduct.h"
 #include "tensor/regularize.h"
+#include "blas/matrix-eigen.h"
 #include <tuple>
 
 #include "common/environment.h"
@@ -1716,7 +1717,7 @@ decompose_tensor_prod(SimpleOperator const& Op,
    }
 
    // Now assemble the matrix
-   blas::Matrix<std::complex<double> > Mat(LeftIndex.size(), RightIndex.size(), 0.0);
+   cpu::Matrix Mat(LeftIndex.size(), RightIndex.size(), 0.0);
    for (PartialProdType::const_iterator I = PartialProd.begin(); I != PartialProd.end(); ++I)
    {
       PartialProdIndex Left(I->first.qLeft, I->first.Left1, I->first.Left2);
@@ -1726,9 +1727,9 @@ decompose_tensor_prod(SimpleOperator const& Op,
 
    // Perform the singular decomposition
    int mn = std::min(Mat.rows(), Mat.cols());
-   blas::Matrix<complex> U(Mat.rows(), mn), Vh(mn, Mat.cols());
-   blas::Vector<double> D(mn);
-   SingularValueDecomposition(std::move(Mat), U, D, Vh);
+   cpu::Matrix U(Mat.rows(), mn), Vh(mn, Mat.cols());
+   cpu::RealVector D(mn);
+   SVD(std::move(Mat), U, D, Vh);
 
    // This sets the scale of the singular values.  Any singular values smaller than
    // KeepThreshold are removed.
@@ -1900,7 +1901,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
       int mn = std::min(Mat.rows(), Mat.cols());
       blas::Matrix<std::complex<double> > U(Mat.rows(), mn), Vh(mn, Mat.cols());
       blas::Vector<double> D(mn);
-      SingularValueDecomposition(std::move(Mat), U, D, Vh);
+      SVD(std::move(Mat), U, D, Vh);
 
       DEBUG_TRACE(D);
 
@@ -1935,7 +1936,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
       int mn = std::min(Mat.rows(), Mat.cols());
       blas::Matrix<std::complex<double> > U(Mat.rows(), mn), Vh(mn, Mat.cols());
       blas::Vector<double> D(mn);
-      SingularValueDecomposition(std::move(Mat), U, D, Vh);
+      SVD(std::move(Mat), U, D, Vh);
 
       // Assemble the singular vectors
       for (unsigned k = 0; k < D.size(); ++k)

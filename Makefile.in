@@ -100,7 +100,7 @@ CXXFLAGS += -DGIT_VERSION="$(GIT_VERSION)"
 SRCDIRS = common common/private quantumnumbers pstream pheap \
           tensor lattice mp-algorithms wavefunction \
           tutorial mp misc conf scripts utils interface expokit mpo \
-          benchmark misc misc/oogl junk mpo mps parser models models/contrib cuda blas
+          benchmark misc misc/oogl junk mpo mps parser models models/contrib cuda blas blas/detail
 
 TESTDIRS = tensor/test siteoperator/test matrixproduct/test pheap/test \
            common/test quantumnumbers/test mp-algorithms/test mpo/test
@@ -119,7 +119,7 @@ GSRCSUBDIRS = $(patsubst %,$(SRCDIR)/%, $(GSRCDIRS))
 quantumnumbersobj = quantumnumber.o symmetrybase.o symmetrylist.o \
 		    coupling.o u1.o su2.o null-quantumnumber.o z2.o zn.o
 
-tensorobj = tensorproduct.o tensorsum.o basis.o # tensor_eigen.o # regularize.o
+tensorobj = tensorproduct.o tensorsum.o basis.o tensor_eigen.o regularize.o
 
 latticeobj = siteoperator.o latticesite.o unitcell.o unitcell-parser.o unitcell_mpo.o \
              infinitelattice.o siteoperator-parser.o infinite-parser.o \

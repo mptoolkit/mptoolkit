@@ -35,10 +35,12 @@ bool is_regular_basis(VectorBasis const& b)
    return true;
 }
 
-IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, BasisList>
+#if 0
+
+IrredTensor<blas::Matrix<double>, VectorBasis, BasisList>
 Regularize(BasisList const& b)
 {
-   typedef IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, BasisList> ResultType;
+   typedef IrredTensor<blas::Matrix<double>, VectorBasis, BasisList> ResultType;
    // Iterate through b and determine the total dimension of
    // each quantum number space, and also map the subspaces of b
    // onto an index of the total space.
@@ -68,16 +70,20 @@ Regularize(BasisList const& b)
    for (std::size_t i = 0; i < b.size(); ++i)
    {
       int Dest = IndexOfQ[b[i]];
-      if (size1(Result(Dest, i)) == 0)
-         Result(Dest, i) = LinearAlgebra::Matrix<double>(RegularBasis.dim(Dest),1, 0.0);
-
+      auto I = Result.row(Dest).find(i);
+      if (I == Result.row(Dest).end())
+      {
+	 Result.insert(Dest, i, RealMatrix(RegularBasis.dim(Dest), 1, 0.0));
+	 I = Result.row(Dest).find(i);
+      }
       Result(Dest,i)(IndexOfSubspace[i], 0) = 1.0;
    }
 
    return Result;
 }
+#endif
 
-IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, BasisList>
+IrredTensor<blas::Matrix<double>, VectorBasis, BasisList>
 SplitBasis(VectorBasis const& b)
 {
    BasisList ResultBasis(b.GetSymmetryList());
@@ -89,13 +95,13 @@ SplitBasis(VectorBasis const& b)
       }
    }
 
-   IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, BasisList> Result(b, ResultBasis, QuantumNumber(b.GetSymmetryList()));
+   IrredTensor<blas::Matrix<double>, VectorBasis, BasisList> Result(b, ResultBasis, QuantumNumber(b.GetSymmetryList()));
    int Index = 0;
    for (unsigned i = 0; i < b.size(); ++i)
    {
       for (int j = 0; j < b.dim(i); ++j)
       {
-         Result(i, Index) = LinearAlgebra::Matrix<double>(b.dim(i), 1, 0.0);
+         Result.insert(i, Index, blas::Matrix<double>(b.dim(i), 1, 0.0));
          Result(i, Index)(j, 0) = 1.0;
          ++Index;
       }
