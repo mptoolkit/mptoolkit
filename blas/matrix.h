@@ -80,12 +80,13 @@ class Matrix : public NormalMatrix<T, Matrix<T, Tag>, Tag>
 
       Matrix(int Rows_, int Cols_, arena Arena_);
 
-      Matrix(int Rows_, int Cols_) : Matrix(Rows_, Cols_, tag_type::template default_arena<T>()) {}
+      Matrix(int Rows_, int Cols_) : Matrix(Rows_, Cols_, tag_type::template default_arena<T>())
+      { TRACE(this); }
 
       Matrix(int Rows_, int Cols_, T const& Fill, arena Arena_);
 
       Matrix(int Rows_, int Cols_, T const& Fill)
-         : Matrix(Rows_, Cols_, Fill, tag_type::template default_arena<T>()) {}
+         : Matrix(Rows_, Cols_, Fill, tag_type::template default_arena<T>()) { TRACE(this); }
 
       Matrix(SparseMatrix<value_type> const& Other, arena Arena_);
 

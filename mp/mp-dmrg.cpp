@@ -44,6 +44,7 @@
 #include "lattice/unitcelloperator.h"
 #include "lattice/infinite-parser.h"
 #include "mp-algorithms/dmrg.h"
+#include "cuda/cuda-setup.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -101,6 +102,7 @@ void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum)
 
 int main(int argc, char** argv)
 {
+   cuda::setup_cuda();
    try
    {
       int NumIter = 20;

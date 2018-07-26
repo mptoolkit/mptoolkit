@@ -106,6 +106,7 @@ cudaStream_t AllocateStream()
    {
       --sIter;
       cudaError_t e = cudaStreamQuery(*sIter);
+      TRACE(e)(*sIter);
    }
    if (e == cudaErrorNotReady) // did we fail to find an unused stream?
    {
@@ -114,14 +115,16 @@ cudaStream_t AllocateStream()
       {
 	 cudaStream_t s;
 	 check_error(cudaStreamCreate(&s));
+         TRACE("adding stream")(s);
 	 StreamFreeList.push_back(s);
       }
       // return the last one
       sIter = StreamFreeList.end();
       --sIter;
    }
+   cudaStream_t Result = *sIter;
    StreamFreeList.erase(sIter);
-   return *sIter;
+   return Result;
 }
 
 void FreeStream(cudaStream_t stream_)

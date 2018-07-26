@@ -110,11 +110,21 @@ BasicStateComponent<T>::ConstructFullBasis2(VectorBasis const& Basis1, BasisList
 template <typename T>
 PStream::opstream& operator<<(PStream::opstream& out, BasicStateComponent<T> const& Op)
 {
-   return out << Op.SBasis << Op.VBasis1 << Op.VBasis2 << Op.Data;
+   out << Op.SBasis << Op.VBasis1 << Op.VBasis2;
+   // for compatibility with the old LinearAlgebra lib, we need an extra cahr here
+   // for the vector serialization format
+   out << 'm';
+   out << Op.Data;
+   return out;
 }
 
 template <typename T>
 PStream::ipstream& operator>>(PStream::ipstream& in, BasicStateComponent<T>& Op)
 {
-   return in >> Op.SBasis >> Op.VBasis1 >> Op.VBasis2 >> Op.Data;
+   in >> Op.SBasis >> Op.VBasis1 >> Op.VBasis2;
+   // for compatibility with the old LinearAlgebra lib, we need an extra cahr here
+   // for the vector serialization format
+   in.read<char>();
+   in >> Op.Data;
+   return in;
 }

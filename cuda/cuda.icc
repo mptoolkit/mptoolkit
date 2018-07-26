@@ -182,7 +182,9 @@ inline
 bool
 stream::is_running() const
 {
+   TRACE(stream_);
    cudaError_t e = cudaStreamQuery(stream_);
+   TRACE(e);
    if (e == cudaErrorNotReady)
       return true;
    if (e == cudaSuccess)

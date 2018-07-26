@@ -87,13 +87,16 @@ make_single_basis(QuantumNumbers::QuantumNumber const& q)
 inline
 PStream::opstream& operator<<(PStream::opstream& out, VectorBasis const& B)
 {
-   return out << B.Basis_ << B.Dimension_;
+   return out << B.Basis_ << 'm' << B.Dimension_;
 }
 
 inline
 PStream::ipstream& operator>>(PStream::ipstream& in, VectorBasis& B)
 {
-   return in >> B.Basis_ >> B.Dimension_;
+   in >> B.Basis_;
+   in.read<char>();
+   in >> B.Dimension_;
+   return in;
 }
 
 inline

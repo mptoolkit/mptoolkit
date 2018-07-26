@@ -23,6 +23,7 @@ namespace cuda
 inline
 void* BlockAllocator::allocate(std::size_t Size, std::size_t Align)
 {
+   TRACE(Size);
    // walk the existing allocations and try to find somewhere that fits
    for (auto& a : Allocations)
    {

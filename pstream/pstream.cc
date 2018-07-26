@@ -85,7 +85,7 @@ template <int Format, typename T>
 inline
 void DoUnpack(ipstream& Buf, T& Obj)
 {
-   Obj = PStream::extract<T>(Buf);
+   Obj = PStream::stream_extract<T>()(static_cast<ipstreambuf<Format>&>(*Buf.get_buffer()));
 #if 0
    templated_ipstreambuf_extractor_does_not_exist_for_this_type(
    static_cast<ipstreambuf<Format>&>(*Buf.get_buffer()) >> Obj);
@@ -615,7 +615,7 @@ template <typename T>
 inline
 T ipstreambuf<Format>::read()
 {
-   return PStream::extract<T>(*this);
+   return PStream::extract<T, Format>(*this);
 }
 
 //

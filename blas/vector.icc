@@ -105,6 +105,7 @@ operator<<(PStream::opstreambuf<Format>& out, Vector<T, cpu_tag> const& x)
 {
    typedef typename PStream::opstreambuf<Format>::size_type st;
    st s = x.size();
+   out << 'm';
    out << s;
    for (auto const& i : x)
    {
@@ -126,6 +127,12 @@ template <typename T, int Format>
 PStream::ipstreambuf<Format>&
 operator>>(PStream::ipstreambuf<Format>& in, Vector<T, cpu_tag>& x)
 {
+   // for compatibility with previous version of the LinearAlgebra library
+   char c = in.template read<char>();
+   if (c != 'm')
+   {
+      PANIC("unexpected vector format");
+   }
    using st = typename PStream::ipstreambuf<Format>::size_type;
    st s = in.template read<st>();
    x = Vector<T,cpu_tag>(s);

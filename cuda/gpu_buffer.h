@@ -74,6 +74,8 @@ class AllocationBlock
       {
 	 CHECK(Align % RequestAlign == 0)(Align)(RequestAlign);
 
+         TRACE(RequestSize);
+         TRACE(Size);
 	 if (RequestSize > Size)
 	    return nullptr;
 
@@ -295,6 +297,8 @@ class gpu_buffer
       gpu_buffer(int Count, blas::arena a)
 	 : ByteSize(Count*sizeof(T)), Arena(a)
       {
+         TRACE(Count);
+         TRACE(ByteSize);
 	 Ptr = static_cast<T*>(Arena.allocate(ByteSize, sizeof(T)));
 	 if (!Ptr)
 	    throw std::runtime_error("No GPU memory");

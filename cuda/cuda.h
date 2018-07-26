@@ -40,7 +40,7 @@ class error : public std::runtime_error
    public:
       error() = delete;
       error(cudaError_t Err) : std::runtime_error(cudaGetErrorString(Err)), err_(Err)
-      {std::cerr << "CUDA Error " << int(Err) << '\n';}
+      {std::cerr << "CUDA Error " << int(Err) << ' ' << cudaGetErrorString(Err) << '\n';}
 
       cudaError_t code() const { return err_; }
       operator cudaError_t() const { return err_; }
