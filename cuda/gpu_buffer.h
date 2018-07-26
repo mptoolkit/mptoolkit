@@ -218,7 +218,17 @@ class gpu_buffer
 
       gpu_buffer(gpu_buffer const& other) = delete;
 
-      gpu_buffer& operator=(gpu_buffer&&) = delete;
+      gpu_buffer& operator=(gpu_buffer&& other) noexcept
+      {
+	 Ptr = other.Ptr;
+	 ByteSize = other.ByteSize;
+	 Stream = std::move(other.Stream);
+	 Sync = std::move(other.Sync);
+	 Arena = std::move(other.Arena);
+	 other.Ptr = nullptr;
+	 return *this;
+      }
+
       gpu_buffer& operator=(gpu_buffer const&) = delete;
 
       gpu_ref<T> operator[](int n);

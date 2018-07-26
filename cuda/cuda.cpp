@@ -95,9 +95,17 @@ namespace detail
 std::mutex StreamFreeListMutex;
 std::list<cudaStream_t> StreamFreeList;
 
+int NumAllocatedStreams = 0;
+
 cudaStream_t AllocateStream()
 {
    std::lock_guard<std::mutex> lock(StreamFreeListMutex);
+#if 1
+   // we don't need to find a stream that is unused; they all will be by the
+   // time we get here
+   std::list<cudaStream_t>::iterator sIter = StreamFreeList.begin();
+   if (StreamFreeList.empty())
+#else
    // search for a stream that isn't in use, we search in reverse order
    // just to simplify the logic
    std::list<cudaStream_t>::iterator sIter = StreamFreeList.end();
@@ -108,6 +116,7 @@ cudaStream_t AllocateStream()
       cudaError_t e = cudaStreamQuery(*sIter);
    }
    if (e == cudaErrorNotReady) // did we fail to find an unused stream?
+#endif
    {
       // create some more streams
       for (int i = 0; i < 10; ++i)
@@ -115,7 +124,9 @@ cudaStream_t AllocateStream()
 	 cudaStream_t s;
 	 check_error(cudaStreamCreate(&s));
 	 StreamFreeList.push_back(s);
+	 ++NumAllocatedStreams;
       }
+      TRACE(NumAllocatedStreams);
       // return the last one
       sIter = StreamFreeList.end();
       --sIter;

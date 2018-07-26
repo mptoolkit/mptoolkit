@@ -91,13 +91,20 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
 
       ~DiagonalMatrix() noexcept = default;
 
+#if 1
       DiagonalMatrix& operator=(DiagonalMatrix const& Other)
       {
 	 assign(this->diagonal(), Other.diagonal());
 	 return *this;
       }
+#endif
 
-      DiagonalMatrix& operator=(DiagonalMatrix&& Other) noexcept = default;
+      DiagonalMatrix& operator=(DiagonalMatrix&& Other) noexcept
+      {
+	 Size = Other.Size;
+	 Buf = std::move(Other.Buf);
+	 return *this;
+      }
 
       // assignment of expressions based on the same matrix type -- we don't allow assignment
       // of expression templates of other matrix types (eg gpu_matrix)
