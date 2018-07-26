@@ -382,8 +382,7 @@ struct MakeIdentityImpl<T, VectorBasis>
    typedef T result_type;
    T operator()(VectorBasis const& b, int i) const
    {
-      //      return LinearAlgebra::identity_matrix<double>(b.dim(i));
-      //return LinearAlgebra::DiagonalMatrix<double>(b.dim(i), b.dim(i), 1.0);
+      return T::make_identity(b.dim(i));
    }
 };
 

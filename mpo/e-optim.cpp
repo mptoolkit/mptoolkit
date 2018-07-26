@@ -85,8 +85,6 @@ JMatrixRefList::Lookup(Matrix const& AH, Matrix const& E)
    {
       int r = Data.size();
       Indices[Index] = r;
-      TRACE(AH.cols());
-      TRACE(E.cols());
       Data.push_back(std::make_pair(Index, Matrix(AH.cols(), E.cols())));
       return r;
    }
@@ -247,9 +245,6 @@ contract_from_left(OperatorComponent const& M,
                               auto Ei = E[aP].row(iP).find(jP);
                               if (Ei == E[aP].row(iP).end())
                                  continue;
-
-                              TRACE(aP)(iP)(jP);
-                              TRACE(&((*Ei).value));
 
                               double degree_iP = degree(A.base().Basis1()[iP]);
 

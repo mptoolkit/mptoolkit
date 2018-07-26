@@ -720,7 +720,7 @@ void subtract(MatrixRef<T, U, Tag>& A, NegatedMatrix<T, V, Tag> const& B)
 // expression template for alpha * op(A) * op(B)
 
 template <typename T, typename U, typename D1, typename D2, typename Tag>
-struct MatrixProduct : public MatrixRef<remove_proxy_t<decltype(std::declval<T>()*std::declval<U>())>, 
+struct MatrixProduct : public MatrixRef<remove_proxy_t<decltype(std::declval<T>()*std::declval<U>())>,
 					MatrixProduct<T, U, D1, D2, Tag>, Tag>
 {
    using value_type = remove_proxy_t<decltype(std::declval<T>()*std::declval<U>())>;
@@ -728,7 +728,7 @@ struct MatrixProduct : public MatrixRef<remove_proxy_t<decltype(std::declval<T>(
    MatrixProduct(MatrixRef<T, D1, Tag> const& A_, MatrixRef<U, D2, Tag> const& B_)
       : Factor(number_traits<value_type>::identity()), A(A_.as_derived()), B(B_.as_derived()) {}
 
-   MatrixProduct(value_type const& Factor_, MatrixRef<T, D1, Tag> const& A_, 
+   MatrixProduct(value_type const& Factor_, MatrixRef<T, D1, Tag> const& A_,
 		 MatrixRef<U, D2, Tag> const& B_)
       : Factor(Factor_), A(A_.as_derived()), B(B_.as_derived()) {}
 
@@ -1137,7 +1137,7 @@ void vector_add_parallel(blas::BlasVector<T, U, Tag> const& x, blas::BlasVector<
 
 template <typename T, typename U, typename V, typename Tag>
 inline
-void vector_parallel_scaled(T const& scale, BlasVector<T, U, Tag> const& x, 
+void vector_parallel_scaled(T const& scale, BlasVector<T, U, Tag> const& x,
 			    BlasVector<T, U, Tag> const& y,
 			    BlasVector<T, V, Tag>& z)
 {
@@ -1151,7 +1151,7 @@ void vector_parallel_scaled(T const& scale, BlasVector<T, U, Tag> const& x,
 
 template <typename T, typename U, typename V, typename Tag>
 inline
-void vector_parallel_scaled(T const& scale, BlasVector<T, U, Tag> const& x, 
+void vector_parallel_scaled(T const& scale, BlasVector<T, U, Tag> const& x,
 			    BlasVector<T, U, Tag> const& y,
 			    BlasVectorProxy<T, V, Tag>&& z)
 {
@@ -1165,7 +1165,7 @@ void vector_parallel_scaled(T const& scale, BlasVector<T, U, Tag> const& x,
 
 template <typename T, typename U, typename V, typename Tag>
 inline
-void vector_add_parallel_scaled(T const& scale, BlasVector<T, U, Tag> const& x, 
+void vector_add_parallel_scaled(T const& scale, BlasVector<T, U, Tag> const& x,
 				BlasVector<T, U, Tag> const& y,
 				BlasVector<T, V, Tag>& z)
 {
@@ -1179,7 +1179,7 @@ void vector_add_parallel_scaled(T const& scale, BlasVector<T, U, Tag> const& x,
 
 template <typename T, typename U, typename V, typename Tag>
 inline
-void vector_add_parallel_scaled(T const& scale, BlasVector<T, U, Tag> const& x, 
+void vector_add_parallel_scaled(T const& scale, BlasVector<T, U, Tag> const& x,
 				BlasVector<T, U, Tag> const& y,
 				BlasVectorProxy<T, V, Tag>&& z)
 {
@@ -1614,7 +1614,7 @@ void gemm(T alpha, BlasMatrix<T, U, Tag> const& A,
    DEBUG_CHECK_EQUAL(A.cols(), B.rows());
    DEBUG_CHECK_EQUAL(A.rows(), C.rows());
    DEBUG_CHECK_EQUAL(B.cols(), C.cols());
-   gemm(A.trans(), B.trans(), A.rows(), A.cols(), B.cols(), alpha, A.storage(),
+   gemm(A.trans(), B.trans(), A.rows(), B.cols(), A.cols(), alpha, A.storage(),
         A.leading_dimension(), B.storage(), B.leading_dimension(), beta,
         C.storage(), C.leading_dimension());
 }
@@ -1628,7 +1628,7 @@ void gemm(T alpha, BlasMatrix<T, U, Tag> const& A,
    DEBUG_CHECK_EQUAL(A.cols(), B.rows());
    DEBUG_CHECK_EQUAL(A.rows(), C.rows());
    DEBUG_CHECK_EQUAL(B.cols(), C.cols());
-   gemm(A.trans(), B.trans(), A.rows(), A.cols(), B.cols(), alpha, A.storage(),
+   gemm(A.trans(), B.trans(), A.rows(), B.cols(), A.cols(), alpha, A.storage(),
         A.leading_dimension(), B.storage(), B.leading_dimension(), beta,
         std::move(C).storage(), C.leading_dimension());
 }
@@ -1671,7 +1671,7 @@ void gemm(Scalar alpha, DiagonalBlasMatrix<T, U, Tag> const& A,
    DEBUG_CHECK_EQUAL(A.cols(), B.rows());
    DEBUG_CHECK_EQUAL(A.rows(), C.rows());
    DEBUG_CHECK_EQUAL(B.cols(), C.cols());
-   
+
    // The dgmm call only supports beta=0, alpha=1 so other cases need emulation
    if (beta != number_traits<Scalar>::zero())
    {
@@ -1685,7 +1685,7 @@ void gemm(Scalar alpha, DiagonalBlasMatrix<T, U, Tag> const& A,
    }
    else
    {
-      dgmm(A.rows(), B.cols(), A.storage(), A.stride(), 
+      dgmm(A.rows(), B.cols(), A.storage(), A.stride(),
 	   B.storage(), B.leading_dimension(),
 	   C.storage(), C.leading_dimension());
       if (alpha != number_traits<Scalar>::identity())
@@ -1702,7 +1702,7 @@ void gemm(Scalar alpha, DiagonalBlasMatrix<T, U, Tag> const& A,
    DEBUG_CHECK_EQUAL(A.cols(), B.rows());
    DEBUG_CHECK_EQUAL(A.rows(), C.rows());
    DEBUG_CHECK_EQUAL(B.cols(), C.cols());
-   
+
    // The dgmm call only supports beta=0, alpha=1 so other cases need emulation
    if (beta != number_traits<Scalar>::zero())
    {
@@ -1717,7 +1717,7 @@ void gemm(Scalar alpha, DiagonalBlasMatrix<T, U, Tag> const& A,
    }
    else
    {
-      dgmm(A.rows(), B.cols(), A.storage(), A.stride(), 
+      dgmm(A.rows(), B.cols(), A.storage(), A.stride(),
 	   B.storage(), B.leading_dimension(),
 	   std::move(C).storage(), C.leading_dimension());
       if (alpha != number_traits<Scalar>::identity())

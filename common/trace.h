@@ -507,9 +507,10 @@ class Assert
       Assert& SMART_ASSERT_A;
       Assert& SMART_ASSERT_B;
 
-      Assert(Assert const& Other);
+      Assert(Assert const& Other) = delete;
+      Assert(Assert&& Other) = default;
 
-      ~Assert();
+      [[noreturn]] ~Assert();
 
       Assert& msg(std::string const& Msg);
 
@@ -576,6 +577,7 @@ Assert<Dummy> Assert<Dummy>::MakeAssert(char const* Preamble_, char const* File_
 #endif
 }
 
+#if 0
 template <int Dummy>
 inline
 Assert<Dummy>::Assert(Assert const& Other)
@@ -588,6 +590,7 @@ Assert<Dummy>::Assert(Assert const& Other)
    ExtraBuf << Other.ExtraBuf.rdbuf();
    Other.ShouldHandle = false;
 }
+#endif
 
 template <int Dummy>
 inline
@@ -620,7 +623,155 @@ Assert<Dummy>& Assert<Dummy>::print_value(char const* Name,// T const& Value,
 template <int Dummy>
 Assert<Dummy>::~Assert()
 {
-   if (!this->ShouldHandle) return;
+   //   if (!this->ShouldHandle) return;
+
+   this->msg(ExtraBuf.str());
+   std::string FullMessage = Preamble + " in file " + File
+      + " at line " + ToString(Line)
+      + " in function " + Func
+      + ": " + Message + '\n';
+   if (!VariableList.empty())
+   {
+      int PadSize = int(Preamble.size() + 1);
+      if (PadSize < 2) PadSize = 2;
+      std::string Padding(PadSize, ' ');
+      FullMessage += Padding + VariableList[0].first + " = " + VariableList[0].second + '\n';
+      for (int i = 1; i < int(VariableList.size()); ++i)
+      {
+         FullMessage += Padding + VariableList[i].first + " = " + VariableList[i].second + '\n';
+      }
+   }
+   this->Handler(FullMessage.c_str());
+   std::cerr << "aborting.\n";
+   abort();
+}
+
+
+template <int Dummy = 0>
+class Trace
+{
+   public:
+      // helpers to enable the recursive macros
+      Trace& SMART_ASSERT_A;
+      Trace& SMART_ASSERT_B;
+
+      Trace(Trace const& Other) = delete;
+      Trace(Trace&& Other) = default;
+
+      ~Trace();
+
+      Trace& msg(std::string const& Msg);
+
+      // Adds a (Name, Value) pair to the list of variables to display.
+      // This attempts to disambiguate string literals from other expressions.
+      // if Name starts with '"' then it is assumed to be a string literal, in which case
+      // msg(Value) is invoked instead.
+      // Additionally, if T is an arithmetic type and the string conversion coincides with
+      // Name, then nothing is displayed.  This avoids silly messages like "0 = 0".
+   //      template <typename T>
+      Trace& print_value(char const* Name, //T const& Value,
+                          std::string const& ValueStr);
+
+      template <typename T>
+      Trace& operator<<(T const& x);
+
+      static Trace MakeAssert(char const* Preamble_, char const* File_,
+                              int Line_, char const* Func_,
+                              char const* Message_, assert_handler Handler);
+
+  private:
+      Trace(char const* Preamble_, char const* File_, int Line_, char const* Func_,
+             char const* Message_, assert_handler Handler_)
+        : SMART_ASSERT_A(*this), SMART_ASSERT_B(*this),
+          ShouldHandle(true), Preamble(Preamble_), File(File_), Line(Line_), Func(Func_),
+          Message(Message_),
+        Handler(Handler_) {}
+
+      Trace& operator=(Trace const&); // not implemented
+
+      typedef std::pair<std::string, std::string> NameValuePair;
+      typedef std::vector<NameValuePair>          VariableListType;
+
+      mutable bool ShouldHandle;
+      std::string Preamble, File;
+      int Line;
+      std::string Func;
+      std::string Message;
+      assert_handler Handler;
+      VariableListType VariableList;
+      std::ostringstream ExtraBuf;
+};
+
+template <int Dummy>
+template <typename T>
+Trace<Dummy>& Trace<Dummy>::operator<<(T const& x)
+{
+   ExtraBuf << ToString(x);
+   return *this;
+}
+
+template <int Dummy>
+inline
+Trace<Dummy> Trace<Dummy>::MakeAssert(char const* Preamble_, char const* File_,
+                                      int Line_, char const* Func_, char const* Message_,
+                                      assert_handler Handler)
+{
+#if defined(MULTITHREAD)
+   std::ostringstream obuf;
+   obuf << pthread_self();
+   return Trace(("THREAD " + obuf.str() + ": " + Preamble_).c_str(), File_, Line_, Message_, Handler);
+#else
+   return Trace(Preamble_, File_, Line_, Func_, Message_, Handler);
+#endif
+}
+
+#if 0
+template <int Dummy>
+inline
+Trace<Dummy>::Trace(Trace const& Other)
+  : SMART_ASSERT_A(*this), SMART_ASSERT_B(*this),
+    ShouldHandle(Other.ShouldHandle), Preamble(Other.Preamble),
+    File(Other.File), Line(Other.Line),
+    Message(Other.Message), Handler(Other.Handler),
+     VariableList(Other.VariableList)
+{
+   ExtraBuf << Other.ExtraBuf.rdbuf();
+   Other.ShouldHandle = false;
+}
+#endif
+
+template <int Dummy>
+inline
+Trace<Dummy>& Trace<Dummy>::msg(std::string const& Msg)
+{
+   if (!Message.empty() && !Msg.empty())
+      Message += '\n' + std::string(Preamble.size()+1, ' ');
+   Message += Msg;
+   return *this;
+}
+
+template <int Dummy>
+//template <typename T>
+Trace<Dummy>& Trace<Dummy>::print_value(char const* Name,// T const& Value,
+                                          std::string const& ValueStr)
+{
+   if (Name[0] == '"')
+     this->msg(ValueStr);
+   else
+   {
+      // do nothing for (literal,literal) pairs
+      //      if (boost::is_fundamental<T>::value && ValueStr == Name) return *this;
+      if (ValueStr == Name) return *this;
+
+      VariableList.push_back(NameValuePair(Name, ValueStr));
+   }
+   return *this;
+}
+
+template <int Dummy>
+Trace<Dummy>::~Trace()
+{
+   //   if (!this->ShouldHandle) return;
 
    this->msg(ExtraBuf.str());
    std::string FullMessage = Preamble + " in file " + File
@@ -640,6 +791,12 @@ Assert<Dummy>::~Assert()
    }
    this->Handler(FullMessage.c_str());
 }
+
+
+
+
+
+
 
 inline
 void DefaultPanicHandler(char const* msg)
@@ -740,24 +897,24 @@ DummyAssert DummyAssertHandler<T>::value;
 
 #define INVOKE_ASSERT(Preamble, Message)                                        \
    ::tracer::Assert<>::MakeAssert((Preamble), __FILE__, __LINE__, __PRETTYFUNC__, (Message), \
-                                ::tracer::GetPanicHandler()).SMART_ASSERT_A     \
+                                       ::tracer::GetPanicHandler()).SMART_ASSERT_A \
    /**/
 
 #define INVOKE_PANIC(Preamble, Name, Value)                                     \
    ::tracer::Assert<>::MakeAssert((Preamble), __FILE__, __LINE__, __PRETTYFUNC__, "",           \
-                                ::tracer::GetPanicHandler()).                   \
+                                  ::tracer::GetPanicHandler()).         \
        print_value(Name, TRACER_CONVERT_TO_STRING((Value))).SMART_ASSERT_A      \
    /**/
 
 #define INVOKE_TRACE(Preamble, Name, Value)                                     \
-   ::tracer::Assert<>::MakeAssert((Preamble), __FILE__, __LINE__,  __PRETTYFUNC__, "",           \
-                                ::tracer::GettraceHandler()).                   \
+   ::tracer::Trace<>::MakeAssert((Preamble), __FILE__, __LINE__,  __PRETTYFUNC__, "",           \
+                                 ::tracer::GettraceHandler()).          \
       print_value(Name, TRACER_CONVERT_TO_STRING((Value))).SMART_ASSERT_A       \
    /**/
 
 #define INVOKE_TRACE_IF(Preamble, Message)                                      \
-   ::tracer::Assert<>::MakeAssert((Preamble), __FILE__, __LINE__,  __PRETTYFUNC__, (Message),    \
-                                ::tracer::GettraceHandler()).SMART_ASSERT_A     \
+   ::tracer::Trace<>::MakeAssert((Preamble), __FILE__, __LINE__,  __PRETTYFUNC__, (Message),    \
+                                 ::tracer::GettraceHandler()).SMART_ASSERT_A \
    /**/
 
 #if 0

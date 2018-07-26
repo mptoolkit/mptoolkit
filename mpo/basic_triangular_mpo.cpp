@@ -804,6 +804,7 @@ StateComponent Initial_E(BasicTriangularMPO const& m, VectorBasis const& Vac)
 {
    StateComponent Result(m.data().Basis1(), Vac, Vac);
    Result[0] = MatrixOperator::make_identity(Vac);
+   TRACE(Result);
    return Result;
 }
 

@@ -27,7 +27,6 @@ template <typename U>
 Matrix<T, Tag>::Matrix(std::initializer_list<std::initializer_list<U>> m, arena Arena_)
    : Matrix(m.size(), m.size() == 0 ? 0 : m.begin()->size(), Arena_)
 {
-   TRACE(this);
    int r = 0;
    for (auto x : m)
    {
@@ -42,7 +41,6 @@ Matrix<T, Tag>::Matrix(int R, int C, arena Arena_)
    : Rows(R), Cols(C), LeadingDimension(Tag::template select_leading_dimension<T>(R)),
      Buf(buffer_type::allocate(Tag::template select_leading_dimension<T>(R)*C, Arena_))
 {
-   TRACE(this);
 }
 
 template <typename T, typename Tag>
@@ -50,7 +48,6 @@ Matrix<T, Tag>::Matrix(int R, int C, T const& Fill, arena Arena_)
    : Rows(R), Cols(C), LeadingDimension(Tag::template select_leading_dimension<T>(R)),
      Buf(buffer_type::allocate(LeadingDimension*Cols, Arena_))
 {
-   TRACE(this);
    fill(*this, Fill);
 }
 
@@ -60,7 +57,6 @@ Matrix<T, Tag>::Matrix(SparseMatrix<value_type> const& Other, arena Arena_)
      LeadingDimension(Tag::template select_leading_dimension<T>(Other.rows())),
      Buf(buffer_type::allocate(LeadingDimension*Cols, Arena_))
 {
-   TRACE(this);
    for (auto const& r : Other)
    {
       for (auto const& c : r)

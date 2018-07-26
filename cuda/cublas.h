@@ -278,7 +278,6 @@ vector_scale(int n, double alpha, cuda::gpu_ptr<double> y, int incy)
 inline
 void vector_clear(int N, cuda::gpu_ptr<double> y, int incy)
 {
-   cublas::handle& H = cublas::get_handle();
    if (incy == 1)
    {
       cuda::memset_async(y.get_stream(), y.device_ptr(), 0, N*sizeof(double));
@@ -702,7 +701,10 @@ gemm(char Atrans, char Btrans, int M, int N, int K, std::complex<double> alpha,
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    C.wait_for(A);
    C.wait_for(B);
-   cublas::check_error(cublasZgemm(H.raw_handle(), cublas::cublas_trans(Atrans), cublas::cublas_trans(Btrans), M, N, K,
+   //TRACE(Atrans)(Btrans)(M)(N)(K)(alpha)(A.device_ptr())(lda)(B.device_ptr())(ldb)(beta)(C.device_ptr())(ldc);
+   cublas::check_error(cublasZgemm(H.raw_handle(),
+                                   cublas::cublas_trans(Atrans),
+                                   cublas::cublas_trans(Btrans), M, N, K,
                                    reinterpret_cast<cuDoubleComplex const*>(&alpha),
                                    reinterpret_cast<cuDoubleComplex const*>(A.device_ptr()), lda,
                                    reinterpret_cast<cuDoubleComplex const*>(B.device_ptr()), ldb,

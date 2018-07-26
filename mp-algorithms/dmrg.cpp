@@ -299,6 +299,7 @@ DMRG::DMRG(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_, i
       std::cout << "Constructing Hamiltonian block operators..." << std::endl;
    H = Hamiltonian.begin();
    HamMatrices.push_left(Initial_E(Ham_, Psi_.Basis1()));
+   TRACE(HamMatrices.left());
    for (FiniteWavefunctionLeft::const_mps_iterator I = Psi_.begin(); I != Psi_.end(); ++I)
    {
       if (Verbose > 1)
