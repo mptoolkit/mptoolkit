@@ -553,6 +553,8 @@ norm_frob_sq(IrredTensor<T, B1, B2, S> const& x)
          Result += qdim(x.qn1(r.row())) * norm_frob_sq(c.value);
       }
    }
+   //   CHECK(!std::isnan(Result));
+   return Result;
 }
 
 template <typename T, typename B1, typename B2, typename S>
@@ -627,7 +629,7 @@ scalar_prod(HermitianProxy<IrredTensor<T, B1, B2, Tensor::DefaultStructure>> con
             // only diagonal components
             if (Result.qn1(cx.col()) == Result.qn2(cy.col()))
             {
-               Result.add(cx.col(), cy.col(), (qdim(y.qn2(rx.row())) / qdim(Result.qn1(cx.col()))) *
+               Result.add(cx.col(), cy.col(), (qdim(y.qn1(rx.row())) / qdim(Result.qn1(cx.col()))) *
                           herm(cx.value) * cy.value);
             }
          }
@@ -657,7 +659,7 @@ scalar_prod(IrredTensor<T, B1, B3, Tensor::DefaultStructure> const& x,
          for (auto const& ry : y.base().data())
          {
             auto cy = ry.find(cx.col());
-            if (cy != ry.end())
+            if (cy != ry.end() && Result.qn1(rx.row()) == Result.qn2(ry.row()))
             {
                Result.add(rx.row(), ry.row(), cx.value * herm(cy.value()));
             }
@@ -755,7 +757,6 @@ template <typename T, typename B1, typename B2, typename B3, typename S>
 IrredTensor<T, B1, B3, S>
 prod(IrredTensor<T, B1, B2, S> const& x, IrredTensor<T, B2, B3, S> const& y, QuantumNumber const& Trans)
 {
-   using result_type = IrredTensor<T, B1, B3, S>;
    //   if (x.is_null() || y.is_null()) return result_type();
 
    DEBUG_PRECONDITION_EQUAL(x.Basis2(), y.Basis1());

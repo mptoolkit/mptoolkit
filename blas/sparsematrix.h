@@ -101,7 +101,7 @@ class BasicSparseVector
       {
          bool Inserted = Elements.emplace(std::piecewise_construct, std::forward_as_tuple(Col),
 					  std::forward_as_tuple(std::forward<Args>(args)...)).second;
-         DEBUG_CHECK(Inserted);
+         CHECK(Inserted);
       }
 
       template <typename U>
@@ -133,7 +133,7 @@ class BasicSparseVector
 	 {
 	    i->second = std::forward<U>(value);
 	    return iterator(i);
-	 } 
+	 }
       }
 
       iterator set(int Col, T value)
@@ -147,7 +147,7 @@ class BasicSparseVector
 	 {
 	    i->second = std::move(value);
 	    return iterator(i);
-	 } 
+	 }
       }
 
       void add(int Col, T const& value)
@@ -277,7 +277,6 @@ inner_prod_nested_tag(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X
    ylast--;
    auto Size = std::max(xlast.index(), ylast.index());
    blas::Vector<result_value, Tag> Acc(Size, 0.0);
-   bool Set = false;
    auto xi = x.begin();
    auto yi = y.begin();
    while (xi != x.end() && yi != y.end())
@@ -303,7 +302,6 @@ inner_prod_nested_tag(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X
 		      Nested&& Nest, cpu_tag)
 {
    // CPU version, accumulate results into a value
-   using result_value = remove_proxy_t<decltype(std::declval<Nested>()(std::declval<T>(),std::declval<T>()))>;
    bool Set = false;
    auto xi = x.begin();
    auto yi = y.begin();
@@ -361,7 +359,6 @@ inner_prod_nested_tag(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X
    ylast--;
    auto Size = std::max(xlast.index(), ylast.index());
    blas::Vector<result_value, Tag> Acc(Size, 0.0);
-   bool Set = false;
    auto xi = x.begin();
    auto yi = y.begin();
    while (xi != x.end() && yi != y.end())
@@ -985,7 +982,6 @@ operator*(SparseMatrix<T> const& x, SparseMatrixHermitian<SparseMatrix<U>> const
    {
       for (auto const& ry : y.base())
       {
-	 bool HasElement = false;
 	 auto xi = rx.begin();
 	 auto yi = ry.begin();
 	 // find the first occurance of an element with xi.col == yi.col

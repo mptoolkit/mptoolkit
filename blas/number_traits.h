@@ -90,6 +90,7 @@ struct blas_trans_complex
       case 'C' : return 'R';
       case 'R' : return 'C';
       }
+      return 'x';
    }
 
    static char blas_conj(char c)
@@ -102,6 +103,7 @@ struct blas_trans_complex
       case 'C' : return 'T';
       case 'R' : return 'N';
       }
+      return 'x';
    }
 
    static char blas_herm(char c)
@@ -114,6 +116,7 @@ struct blas_trans_complex
       case 'C' : return 'N';
       case 'R' : return 'T';
       }
+      return 'x';
    }
 };
 
@@ -292,7 +295,7 @@ struct is_numeric<T const> : is_numeric<T> {};
 
 template <typename T>
 struct is_numeric<T volatile> : is_numeric<T> {};
-   
+
 template <typename T>
 struct is_numeric<T&> : is_numeric<T> {};
 
@@ -368,6 +371,45 @@ copy(T&& x) // x is a universal reference here, which isn't really what we want
 {
    return std::move(x);
 }
+
+// uninitialized_default_construct doesn't exist intil C++17 so define it here as an extension
+
+namespace stdext
+{
+
+template<class T>
+void destroy_at(T* p)
+{
+    p->~T();
+}
+
+template<class ForwardIt, class Size>
+ForwardIt destroy_n(ForwardIt first, Size n)
+{
+  for (; n > 0; (void) ++first, --n)
+    stdext::destroy_at(std::addressof(*first));
+  return first;
+}
+
+template<class ForwardIt, class Size>
+ForwardIt uninitialized_default_construct_n(ForwardIt first, Size n)
+{
+    typedef typename std::iterator_traits<ForwardIt>::value_type Value;
+    ForwardIt current = first;
+    try {
+        for (; n > 0 ; (void) ++current, --n) {
+            ::new (static_cast<void*>(std::addressof(*current))) Value;
+        }
+        return current;
+    }  catch (...) {
+        for (; first != current; ++first) {
+            first->~Value();
+        }
+        throw;
+    }
+}
+
+} // namespace stdext
 
 #include "number_traits.icc"
 

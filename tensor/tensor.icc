@@ -94,9 +94,9 @@ void implement_check_structure(IrredTensor<T, VectorBasis, VectorBasis, S> const
          CHECK(is_transform_target(x.qn2(cx.col()),
                                    x.TransformsAs(),
                                    x.qn1(rx.row())))
-            (x.qn2(cx.col()))(x.TransformsAs())(x.qn1(rx.row()));
-         CHECK_EQUAL(cx.value.rows(), x.Basis1().dim(rx.row()));
-         CHECK_EQUAL(cx.value.cols(), x.Basis1().dim(cx.col()));
+            (x.qn2(cx.col()))(x.TransformsAs())(x.qn1(rx.row()))(x);
+         CHECK_EQUAL(cx.value.rows(), x.Basis1().dim(rx.row()))(rx.row())(cx.col())(x)(cx.value);
+         CHECK_EQUAL(cx.value.cols(), x.Basis2().dim(cx.col()))(rx.row())(cx.col())(x)(cx.value);
       }
    }
 }
@@ -163,8 +163,11 @@ PStream::ipstream& operator>>(PStream::ipstream& in, IrredTensor<T, B1, B2, S>& 
 template <typename T, typename B1, typename B2, typename S>
 std::ostream& operator<<(std::ostream& out, IrredTensor<T, B1, B2, S> const& Op)
 {
-   return out << "Operator transforms with symmetry " << Op.GetSymmetryList()
-              << " as " << Op.TransformsAs() << ":\n" << Op.data();
+   out << "Operator transforms with symmetry " << Op.GetSymmetryList()
+       << " as " << Op.TransformsAs() << ":\nBasis1: " << Op.Basis1()
+       << "\nBasis2: " << Op.Basis2() << "\n"
+       << Op.data();
+   return out;
 }
 
 template <typename T, typename B1, typename B2, typename S>
@@ -195,20 +198,19 @@ template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>&
 IrredTensor<T, B1, B2, S>::operator+=(IrredTensor&& Op)
 {
-#if 0
    // quick return if the right hand side is zero
    if (Op.is_null()) return *this;
 
    if (this->is_null())
    {
-      *this = Op;
+      *this = std::move(Op);
       return *this;
    }
-#endif
 
    PRECONDITION(Basis1_ == Op.Basis1_)(Basis1_)(Op.Basis1_);
    PRECONDITION(Basis2_ == Op.Basis2_)(Basis2_)(Op.Basis2_);
    PRECONDITION(Trans_ == Op.Trans_)(Trans_)(Op.Trans_);
+
    Data_ += std::move(Op.Data_);
 
    this->debug_check_structure();
@@ -304,7 +306,7 @@ add_triple_prod(U Factor,
    // iterate over elements in E first
    for (auto const& Ei : E)
    {
-      auto& xi = xb.row(Ei.row());
+      //      auto& xi = xb.row(Ei.row());
 
       QuantumNumber qEi = E.qn1(Ei.row());
       double DegEi = qdim(qEi);

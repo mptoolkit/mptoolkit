@@ -43,7 +43,7 @@ matrix_norm_frob_sq(int M, int N,
    cuda::gpu_ref<T> CResult;
    for (int i = 0; i < N; ++i)
    {
-      vector_inner_prod(M, A+i, 1, A+i, 1, cublas::lvalue(Acc[i]));
+      vector_inner_prod(M, A+i*ldA, 1, A+i*ldA, 1, cublas::lvalue(Acc[i]));
    }
    vector_sum(N, Acc.cptr(), 1, CResult);
    r = get_wait(CResult).real();  // TODO: implement real() for a gpu_ref of complex
@@ -68,7 +68,7 @@ matrix_inner_prod(char Atrans, char Btrans, int M, int N,
 
       for (int i = 0; i < N; ++i)
       {
-	 vector_inner_prod(M, A+i, 1, B+i, 1, cublas::lvalue(Acc[i]));
+	 vector_inner_prod(M, A+i*ldA, 1, B+i*ldB, 1, cublas::lvalue(Acc[i]));
       }
       vector_sum(N, Acc.cptr(), 1, r);
    }
@@ -92,7 +92,7 @@ matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
 
       for (int i = 0; i < N; ++i)
       {
-	 vector_inner_prod(M, A+i, 1, B+i, 1, cublas::lvalue(Acc[i]));
+	 vector_inner_prod(M, A+i*ldA, 1, B+i*ldB, 1, cublas::lvalue(Acc[i]));
       }
       vector_sum(N, Acc.cptr(), 1, r);
    }

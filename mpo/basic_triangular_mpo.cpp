@@ -241,16 +241,19 @@ void qr_optimize(BasicTriangularMPO& Op)
 std::pair<std::complex<double>, double>
 log_inner_prod(BasicTriangularMPO const& Op1, BasicTriangularMPO const& Op2)
 {
+   PANIC("not implemented");
 }
 
 double
 log_norm_frob_sq(BasicTriangularMPO const& Op)
 {
+   PANIC("not implemented");
 }
 
 bool
 equal(BasicFiniteMPO const& Op1, BasicFiniteMPO const& Op2, double Tol)
 {
+   PANIC("not implemented");
 }
 
 bool

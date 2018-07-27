@@ -79,6 +79,7 @@ operator-=(StateComponent& x, StateComponent const& y)
    CHECK_EQUAL(x.Basis2(), y.Basis2());
    for (unsigned i = 0; i < x.size(); ++i)
    {
+      TRACE(x[i])(y[i]);
       x[i] -= y[i];
    }
    return x;
@@ -689,6 +690,7 @@ MatrixOperator extract_diagonal(StateComponent const& A,
 
 MatrixOperator ExpandBasis1(StateComponent& A)
 {
+   TRACE(A);
    ProductBasis<BasisList, VectorBasis> FullBasis1(A.LocalBasis(), A.Basis2());
    QuantumNumber Ident(A.GetSymmetryList());
    StateComponent Result(A.LocalBasis(), FullBasis1.Basis(), A.Basis2());
@@ -705,12 +707,11 @@ MatrixOperator ExpandBasis1(StateComponent& A)
    }
 
    // check the normalization
-   //   DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(Result, herm(Result))),
-   //                     FullBasis1.total_degree());
    DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(Result, herm(Result))),
-                     FullBasis1.total_degree());
+                     FullBasis1.total_degree())(Result)(scalar_prod(Result, herm(Result)));
 
    MatrixOperator Res = scalar_prod(A, herm(Result));
+   TRACE(Res)(Result)(A);
    A = std::move(Result);
    return Res;
 }
@@ -732,9 +733,11 @@ MatrixOperator ExpandBasis2(StateComponent& A)
 		       * MatrixOperator::value_type::make_identity(Dim));
    }
 
+   TRACE(Result);
+
    // check the normalization
    DEBUG_CHECK_CLOSE(norm_frob_sq(scalar_prod(herm(Result), Result)),
-                     FullBasis2.total_degree());
+                     FullBasis2.total_degree())(scalar_prod(herm(Result), Result));
 
    MatrixOperator Res = scalar_prod(herm(Result), A);
    A = std::move(Result);

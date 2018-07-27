@@ -52,7 +52,7 @@ struct cpu_buffer
    using reference       = T&;
    using const_reference = T const&;
 
-   cpu_buffer() noexcept 
+   cpu_buffer() noexcept
    : Ptr(nullptr), Size(0) {}
 
    cpu_buffer(arena const& a, T* p, int s) : Arena(a), Ptr(p), Size(s) {}
@@ -71,7 +71,18 @@ struct cpu_buffer
    }
 
    cpu_buffer& operator=(cpu_buffer&) = delete;
-   cpu_buffer& operator=(cpu_buffer&&) = delete;
+
+   cpu_buffer& operator=(cpu_buffer&& other)
+   {
+      Arena = std::move(other.Arena);
+      T* Temp = other.Ptr;
+      other.Ptr = nullptr;
+      Ptr = Temp;
+      int TempSize = other.Size;
+      other.Size = 0;
+      Size = TempSize;
+      return *this;
+   }
 
    T* ptr() { return Ptr; }
    T* ptr() const { return Ptr; }
@@ -121,7 +132,27 @@ struct cpu_tag
    {
       return ld;
    }
+
+   template <typename T>
+   static void uninitialized_default_construct_n(T* p, int n)
+   {
+      stdext::uninitialized_default_construct_n(p,n);
+   }
+
+   template <typename T>
+   static void uninitialized_fill_n(T* p, int n, T const& fill)
+   {
+      std::uninitialized_fill_n(p, n, fill);
+   }
+
+   template <typename T>
+   static void destroy_n(T* p, int n)
+   {
+      stdext::destroy_n(p, n);
+   }
 };
+
+
 
 //
 // Memory-based vector type.
@@ -283,8 +314,8 @@ class Vector<T, cpu_tag> : public NormalVector<T, Vector<T, cpu_tag>, cpu_tag>
 
       Vector(Vector const&) = delete;
 
-      Vector(Vector&& Other) : Size(Other.Size),
-			       Arena(std::move(Other.Arena)),
+      Vector(Vector&& Other) : Arena(std::move(Other.Arena)),
+                               Size(Other.Size),
 			       Data(Other.Data) { Other.Data = nullptr; }
 
       Vector(int Size_, arena Arena_);
@@ -309,7 +340,15 @@ class Vector<T, cpu_tag> : public NormalVector<T, Vector<T, cpu_tag>, cpu_tag>
       template <typename U>
       Vector(std::initializer_list<U> x) : Vector(x, get_malloc_arena()) {}
 
-      ~Vector() { if (Data) Arena.free(Data, Size); }
+      // TODO: this needs to call destructors on the components
+      ~Vector()
+      {
+         if (Data)
+         {
+            stdext::destroy_n(Data, Size);
+            Arena.free(Data, Size);
+         }
+      }
 
       Vector& operator=(Vector const& Other)
       {

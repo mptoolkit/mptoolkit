@@ -50,9 +50,10 @@ GetErrorName(cusolverStatus_t error)
 
         case CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED:
            return "CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED";
-    }
 
-    return "<unknown>";
+    default:
+       return "<unknown>";
+    }
 }
 
 char const*
@@ -84,9 +85,10 @@ GetErrorString(cusolverStatus_t error)
         case CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED:
            return "cuSOLVER: matrix type not supported";
 
-    }
+    default:
+       return "<cusolver-unknown>";
 
-    return "<cusolver-unknown>";
+    }
 }
 
 } // namespace cusolver
@@ -103,11 +105,13 @@ void DiagonalizeSymmetric(int Size, cuda::gpu_ptr<double> A, int ldA, cuda::gpu_
    H.set_stream(A.get_stream());
    A.wait_for(Eigen);
    int lWork;
+   TRACE_CUDA("cusolverDnDsyevd_bufferSize")(Size)(A.device_ptr())(ldA)(Eigen.device_ptr())(&lWork);
    cusolver::check_error(cusolverDnDsyevd_bufferSize(H.raw_handle(),
                                                      CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER,
                                                      Size, A.device_ptr(), ldA, Eigen.device_ptr(), &lWork));
    double* Work = static_cast<double*>(cuda::allocate_gpu_temp_memory(lWork*sizeof(double)));
    int* DevInfo = static_cast<int*>(cuda::allocate_gpu_temp_memory(sizeof(int)));
+   TRACE_CUDA("cusolverDnDsyevd")(Size)(A.device_ptr())(ldA)(Eigen.device_ptr())(&lWork)(lWork)(DevInfo);
    cusolver::check_error(cusolverDnDsyevd(H.raw_handle(),
                                           CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER,
                                           Size, A.device_ptr(), ldA, Eigen.device_ptr(), Work, lWork, DevInfo));
@@ -119,24 +123,26 @@ void DiagonalizeSymmetric(int Size, cuda::gpu_ptr<double> A, int ldA, cuda::gpu_
    cuda::free_gpu_temp_memory(Work, lWork*sizeof(double));
 }
 
-void DiagonalizeHermitian(int Size, cuda::gpu_ptr<std::complex<double>> A, int ldA, 
+void DiagonalizeHermitian(int Size, cuda::gpu_ptr<std::complex<double>> A, int ldA,
 			  cuda::gpu_ptr<double> Eigen)
 {
    cusolver::handle& H = cusolver::get_handle();
    H.set_stream(A.get_stream());
    A.wait_for(Eigen);
    int lWork;
+   TRACE_CUDA("cusolverDnZheevd_bufferSize")(Size)(A.device_ptr())(ldA)(Eigen.device_ptr())(&lWork);
    cusolver::check_error(cusolverDnZheevd_bufferSize(H.raw_handle(),
                                                      CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER,
-                                                     Size, 
+                                                     Size,
 						     reinterpret_cast<cuDoubleComplex*>(A.device_ptr()),
 						     ldA, Eigen.device_ptr(), &lWork));
    cuDoubleComplex* Work = static_cast<cuDoubleComplex*>(cuda::allocate_gpu_temp_memory(lWork*sizeof(cuDoubleComplex)));
    int* DevInfo = static_cast<int*>(cuda::allocate_gpu_temp_memory(sizeof(int)));
+   TRACE_CUDA("cusolverDnZheevd")(Size)(A.device_ptr())(ldA)(Eigen.device_ptr())(&lWork)(lWork)(DevInfo);
    cusolver::check_error(cusolverDnZheevd(H.raw_handle(),
                                           CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER,
-                                          Size, 
-					  reinterpret_cast<cuDoubleComplex*>(A.device_ptr()), 
+                                          Size,
+					  reinterpret_cast<cuDoubleComplex*>(A.device_ptr()),
 					  ldA, Eigen.device_ptr(), Work, lWork, DevInfo));
    int Info;
    cuda::memcpy_device_to_host(DevInfo, &Info, sizeof(int));
@@ -146,10 +152,10 @@ void DiagonalizeHermitian(int Size, cuda::gpu_ptr<std::complex<double>> A, int l
    cuda::free_gpu_temp_memory(Work, lWork*sizeof(cuDoubleComplex));
 }
 
-void SingularValueDecomposition(char job, int Rows, int Cols, 
-				cuda::gpu_ptr<double> Data, int LeadingDim, 
+void SingularValueDecomposition(char job, int Rows, int Cols,
+				cuda::gpu_ptr<double> Data, int LeadingDim,
 				cuda::gpu_ptr<double> Dvec,
-				cuda::gpu_ptr<double> Umat, int ldU, 
+				cuda::gpu_ptr<double> Umat, int ldU,
 				cuda::gpu_ptr<double> Vmat, int ldV)
 {
    int min_mn = std::min(Rows, Cols);
@@ -176,29 +182,29 @@ void SingularValueDecomposition(char job, int Rows, int Cols,
    cuda::free_gpu_temp_memory(rWork, (min_mn-1)*sizeof(double));
 }
 
-void SingularValueDecomposition(int Rows, int Cols, 
-				cuda::gpu_ptr<double> Data, int LeadingDim, 
+void SingularValueDecomposition(int Rows, int Cols,
+				cuda::gpu_ptr<double> Data, int LeadingDim,
 				cuda::gpu_ptr<double> Dvec,
-				cuda::gpu_ptr<double> Umat, int ldU, 
+				cuda::gpu_ptr<double> Umat, int ldU,
 				cuda::gpu_ptr<double> Vmat, int ldV)
 {
    SingularValueDecomposition('S', Rows, Cols, Data, LeadingDim, Dvec, Umat, ldU, Vmat, ldV);
 }
 
-void SingularValueDecompositionFull(int Rows, int Cols, 
-				    cuda::gpu_ptr<double> Data, int LeadingDim, 
+void SingularValueDecompositionFull(int Rows, int Cols,
+				    cuda::gpu_ptr<double> Data, int LeadingDim,
 				    cuda::gpu_ptr<double> Dvec,
-				    cuda::gpu_ptr<double> Umat, int ldU, 
+				    cuda::gpu_ptr<double> Umat, int ldU,
 				    cuda::gpu_ptr<double> Vmat, int ldV)
 {
    SingularValueDecomposition('A', Rows, Cols, Data, LeadingDim, Dvec, Umat, ldU, Vmat, ldV);
 }
 
 
-void SingularValueDecomposition(char job, int Rows, int Cols, 
-				cuda::gpu_ptr<std::complex<double>> Data, int LeadingDim, 
+void SingularValueDecomposition(char job, int Rows, int Cols,
+				cuda::gpu_ptr<std::complex<double>> Data, int LeadingDim,
 				cuda::gpu_ptr<double> Dvec,
-				cuda::gpu_ptr<std::complex<double>> Umat, int ldU, 
+				cuda::gpu_ptr<std::complex<double>> Umat, int ldU,
 				cuda::gpu_ptr<std::complex<double>> Vmat, int ldV)
 {
    int min_mn = std::min(Rows, Cols);
@@ -209,16 +215,18 @@ void SingularValueDecomposition(char job, int Rows, int Cols,
    Data.wait_for(Vmat);
    int lWork;
    cusolver::check_error(cusolverDnZgesvd_bufferSize(H.raw_handle(), Rows, Cols, &lWork));
-   
+
+   TRACE("ZXZX")(Rows)(Cols);
+
    cuDoubleComplex* Work = static_cast<cuDoubleComplex*>(cuda::allocate_gpu_temp_memory(lWork*sizeof(cuDoubleComplex)));
    double* rWork = static_cast<double*>(cuda::allocate_gpu_temp_memory((min_mn-1)*sizeof(double)));
 
    cuda::gpu_ref<int> DevInfo;
-   cusolver::check_error(cusolverDnZgesvd(H.raw_handle(), job, job, Rows, Cols, 
+   cusolver::check_error(cusolverDnZgesvd(H.raw_handle(), job, job, Rows, Cols,
 					  reinterpret_cast<cuDoubleComplex*>(Data.device_ptr()), LeadingDim,
-					  Dvec.device_ptr(), 
+					  Dvec.device_ptr(),
 					  reinterpret_cast<cuDoubleComplex*>(Umat.device_ptr()), ldU,
-					  reinterpret_cast<cuDoubleComplex*>(Vmat.device_ptr()), ldV, 
+					  reinterpret_cast<cuDoubleComplex*>(Vmat.device_ptr()), ldV,
 					  Work, lWork, rWork, DevInfo.device_ptr()));
 
    Dvec.wait_for(Data);
@@ -228,19 +236,19 @@ void SingularValueDecomposition(char job, int Rows, int Cols,
    cuda::free_gpu_temp_memory(rWork, (min_mn-1)*sizeof(cuDoubleComplex));
 }
 
-void SingularValueDecomposition(int Rows, int Cols, 
-				cuda::gpu_ptr<std::complex<double>> Data, int LeadingDim, 
+void SingularValueDecomposition(int Rows, int Cols,
+				cuda::gpu_ptr<std::complex<double>> Data, int LeadingDim,
 				cuda::gpu_ptr<double> Dvec,
-				cuda::gpu_ptr<std::complex<double>> Umat, int ldU, 
+				cuda::gpu_ptr<std::complex<double>> Umat, int ldU,
 				cuda::gpu_ptr<std::complex<double>> Vmat, int ldV)
 {
    SingularValueDecomposition('S', Rows, Cols, Data, LeadingDim, Dvec, Umat, ldU, Vmat, ldV);
 }
 
-void SingularValueDecompositionFull(int Rows, int Cols, 
-				    cuda::gpu_ptr<std::complex<double>> Data, int LeadingDim, 
+void SingularValueDecompositionFull(int Rows, int Cols,
+				    cuda::gpu_ptr<std::complex<double>> Data, int LeadingDim,
 				    cuda::gpu_ptr<double> Dvec,
-				    cuda::gpu_ptr<std::complex<double>> Umat, int ldU, 
+				    cuda::gpu_ptr<std::complex<double>> Umat, int ldU,
 				    cuda::gpu_ptr<std::complex<double>> Vmat, int ldV)
 {
    SingularValueDecomposition('A', Rows, Cols, Data, LeadingDim, Dvec, Umat, ldU, Vmat, ldV);

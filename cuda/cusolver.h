@@ -61,9 +61,12 @@ inline
 void check_error(cusolverStatus_t Status)
 {
    if (Status != CUSOLVER_STATUS_SUCCESS)
-   {
       throw error(Status);
-   }
+#if defined(CUDA_SYNCHRONIZE)
+   cudaError_t e = cudaDeviceSynchronize();
+   if (e != cudaSuccess)
+      throw cuda::error(e);
+#endif
 }
 
 // cublas handle.  Moveable, but not copyable.

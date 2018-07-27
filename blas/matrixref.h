@@ -82,6 +82,14 @@ class MatrixRef
       std::pair<int,int> size() const { return this->as_derived().size(); }
 };
 
+template <typename T, typename U, typename Tag>
+std::ostream&
+operator<<(std::ostream& out, MatrixRef<T,U,Tag> const& M)
+{
+   out << M.as_derived();
+   return out;
+}
+
 // derived class for a diagonal matrix
 
 template <typename ValueType, typename DerivedType, typename Tag>
@@ -1013,6 +1021,24 @@ void vector_copy(blas::BlasVector<T, U, Tag> const& x, BlasVector<V, W, Tag>& y)
 template <typename T, typename U, typename V, typename W, typename Tag>
 inline
 void vector_copy(blas::BlasVector<T, U, Tag> const& x, BlasVectorProxy<V, W, Tag>&& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_copy(x.size(), x.storage(), x.stride(), std::move(y).storage(), y.stride());
+}
+
+template <typename T, typename U, typename V, typename W, typename Tag>
+inline
+void vector_deep_copy(blas::BlasVector<T, U, Tag> const& x, BlasVectorProxy<V, W, Tag>&& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_deep_copy(x.size(), x.storage(), x.stride(), std::move(y).storage(), y.stride());
+}
+
+// for simple types, forward to vector_copy instead
+template <typename T, typename U, typename V, typename Tag>
+inline
+typename std::enable_if<blas::is_numeric_v<T>, void>::type
+vector_deep_copy(blas::BlasVector<T, U, Tag> const& x, BlasVectorProxy<T, V, Tag>&& y)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
    vector_copy(x.size(), x.storage(), x.stride(), std::move(y).storage(), y.stride());

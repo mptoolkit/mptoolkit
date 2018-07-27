@@ -287,6 +287,7 @@ operator<<(PStream::opstreambuf<Format>& out, normal_vector_view<T, cpu_tag> con
 {
    typedef typename PStream::opstreambuf<Format>::size_type st;
    st s = x.size();
+   out << 'm';
    out << s;
    for (auto const& i : x)
    {
@@ -301,6 +302,7 @@ operator<<(PStream::opstreambuf<Format>& out, const_normal_vector_view<T, cpu_ta
 {
    typedef typename PStream::opstreambuf<Format>::size_type st;
    st s = x.size();
+   out << 'm';
    out << s;
    for (auto const& i : x)
    {
@@ -329,6 +331,7 @@ operator<<(PStream::opstreambuf<Format>& out, const_vector_view<T, cpu_tag> cons
 {
    typedef typename PStream::opstreambuf<Format>::size_type st;
    st s = x.size();
+   out << 'm';
    out << s;
    for (auto const& i : x)
    {

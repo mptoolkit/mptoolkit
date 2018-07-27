@@ -77,6 +77,18 @@ void assign(VectorRef<T, U, Tag>& A, VectorRef<T, V, Tag> const& B)
 }
 
 template <typename T, typename U, typename V, typename Tag>
+void assign_copy(VectorRef<T, U, Tag>& A, VectorRef<T, V, Tag> const& B)
+{
+   vector_deep_copy(B.as_derived(), A.as_derived());
+}
+
+template <typename T, typename U, typename V, typename Tag>
+void assign_copy(VectorRef<T, U, Tag>&& A, VectorRef<T, V, Tag> const& B)
+{
+   vector_deep_copy(B.as_derived(), std::move(A).as_derived());
+}
+
+template <typename T, typename U, typename V, typename Tag>
 void add(VectorRef<T, U, Tag>& A, VectorRef<T, V, Tag> const& B)
 {
    vector_add(B.as_derived(), A.as_derived());

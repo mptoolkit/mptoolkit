@@ -72,11 +72,12 @@ class Range : public VectorRef<int, Range, cpu_tag>
       Range() : First_(0), Last_(0) {}
 
       Range(int First, int Last)
-        : First_(First), Last_(Last) { DEBUG_PRECONDITION(First <= Last); }
+         : First_(First), Last_(Last) { DEBUG_PRECONDITION(First <= Last); }
 
       Range(Range&& Other) = default;
 
-      Range(Range const& Other) : First_(Other.First_), Last_(Other.Last_) {}
+      Range(Range const& Other) : VectorRef<int, Range, cpu_tag>(),
+                                  First_(Other.First_), Last_(Other.Last_) {}
 
       Range& operator=(Range const& r) { First_ = r.First_; Last_ = r.Last_; return *this; }
 

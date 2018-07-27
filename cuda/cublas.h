@@ -131,6 +131,7 @@ inline
 void
 setMatrixAsync(int N, int M, T const* A, int lda, cuda::gpu_ptr<T> B, int ldb)
 {
+   TRACE_CUDA("cublasSetMatrixAsync")(N)(M)(sizeof(T))(A)(lda)(B)(ldb)(B.get_stream().raw_stream());
    check_error(cublasSetMatrixAsync(N, M, sizeof(T), A, lda, B.device_ptr(), ldb,
                                     B.get_stream().raw_stream()));
 }
@@ -140,6 +141,7 @@ inline
 void
 setVectorAsync(int N, T const* A, int stridea, cuda::gpu_ptr<T> B, int strideb)
 {
+   TRACE_CUDA("cublasSetVectorAsync")(N)(sizeof(T))(A)(stridea)(B.device_pr())(strideb)(B.get_stream().raw_stream());
    check_error(cublasSetVectorAsync(N, sizeof(T), A, stridea, B.device_ptr(), strideb,
                                     B.get_stream().raw_stream()));
 }
@@ -150,6 +152,7 @@ inline
 void
 setVector(int N, T const* A, int stridea, cuda::gpu_ptr<T> B, int strideb)
 {
+   TRACE_CUDA("cublasSetVector")(N)(A)(stridea)(B)(strideb);
    check_error(cublasSetVector(N, sizeof(T), A, stridea, B.device_ptr(), strideb));
 }
 
@@ -161,6 +164,7 @@ void dotc(cublasHandle_t handle, int n,
 	  float const* y, int incy,
 	  float* result)
 {
+   TRACE_CUDA("cublasSdot")(n)(x)(incx)(y)(incy)(result);
    cublas::check_error(cublasSdot(handle, n, x, incx, y, incy, result));
 }
 
@@ -170,6 +174,7 @@ void dotc(cublasHandle_t handle, int n,
 	  double const* y, int incy,
 	  double* result)
 {
+   TRACE_CUDA("cublasDdot")(n)(x)(incx)(y)(incy)(result);
    cublas::check_error(cublasDdot(handle, n, x, incx, y, incy, result));
 }
 
@@ -179,6 +184,7 @@ void dotc(cublasHandle_t handle, int n,
 	  std::complex<float> const* y, int incy,
 	  std::complex<float>* result)
 {
+   TRACE_CUDA("cublasCdotc")(n)(x)(incx)(y)(incy)(result);
    cublas::check_error(cublasCdotc(handle, n,
 				   reinterpret_cast<cuComplex const*>(x), incx,
 				   reinterpret_cast<cuComplex const*>(y), incy,
@@ -191,12 +197,169 @@ void dotc(cublasHandle_t handle, int n,
 	  std::complex<double> const* y, int incy,
 	  std::complex<double>* result)
 {
+   TRACE_CUDA("cublasZdotc")(n)(x)(incx)(y)(incy)(result);
    cublas::check_error(cublasZdotc(handle, n,
 				   reinterpret_cast<cuDoubleComplex const*>(x), incx,
 				   reinterpret_cast<cuDoubleComplex const*>(y), incy,
 				   reinterpret_cast<cuDoubleComplex*>(result)));
 }
 
+inline
+void copy(cublasHandle_t handle, int n,
+          double const* x, int incx,
+          double* y, int incy)
+{
+   TRACE_CUDA("cublasDcopy")(n)(x)(incx)(y)(incy);
+   cublas::check_error(cublasDcopy(handle, n, x, incx, y, incy));
+}
+
+inline
+void copy(cublasHandle_t handle, int n,
+          std::complex<double> const* x, int incx,
+          std::complex<double>* y, int incy)
+{
+   TRACE_CUDA("cublasZcopy")(n)(x)(incx)(y)(incy);
+   cublas::check_error(cublasZcopy(handle, n,
+				   reinterpret_cast<cuDoubleComplex const*>(x), incx,
+				   reinterpret_cast<cuDoubleComplex*>(y), incy));
+}
+
+inline
+void copy(cublasHandle_t handle, int n,
+          double const* x, int incx,
+          std::complex<double>* y, int incy)
+{
+   double alpha = 0.0;
+   cublasPointerMode_t OldMode;
+   cublas::check_error(cublasGetPointerMode(handle, &OldMode));
+   if (OldMode != CUBLAS_POINTER_MODE_HOST)
+      cublas::check_error(cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST));
+   TRACE_CUDA("cublasDscal")(n)(&alpha)(reinterpret_cast<double*>(y)+1)(incy*2);
+   cublas::check_error(cublasDscal(handle, n, &alpha,
+                                   reinterpret_cast<double*>(y)+1, incy*2));
+   if (OldMode != CUBLAS_POINTER_MODE_HOST)
+      cublas::check_error(cublasSetPointerMode(handle, OldMode));
+   TRACE_CUDA("cublasDcopy")(n)(x)(incx)(y)(incy*2);
+   cublas::check_error(cublasDcopy(handle, n, x, incx,
+				   reinterpret_cast<double*>(y), incy*2));
+}
+
+ inline
+void scale(cublasHandle_t handle, int n,
+           double const* alpha, double* y, int incy)
+{
+   TRACE_CUDA("cublasDscal")(n)(alpha)(y)(incy);
+   cublas::check_error(cublasDscal(handle, n, alpha, y, incy));
+}
+
+inline
+void scale(cublasHandle_t handle, int n,
+           std::complex<double> const* alpha, std::complex<double>* y, int incy)
+{
+   TRACE_CUDA("cublasZscal")(n)(alpha)(y)(incy);
+   cublas::check_error(cublasZscal(handle, n, reinterpret_cast<cuDoubleComplex const*>(alpha),
+                                   reinterpret_cast<cuDoubleComplex*>(y), incy));
+}
+
+inline
+void axpy(cublasHandle_t handle, int n,
+          double* alpha, double const* x, int incx,
+          double* y, int incy)
+{
+   TRACE_CUDA("cublasDaxpy")(n)(alpha)(x)(incx)(y)(incy);
+   cublas::check_error(cublasDaxpy(handle, n, alpha, x, incx, y, incy));
+}
+
+inline
+void geam(cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t transb,
+          int m, int n, double const* alpha, double const* A, int lda,
+          double const* beta, double const* B, int ldb, double* C, int ldc)
+{
+   TRACE_CUDA("cublasDgeam")(transa)(transb)(m)(n)(alpha)(A)(lda)(beta)(B)(ldb)(C)(ldc);
+   cublas::check_error(cublasDgeam(handle, transa, transb, m, n,
+                                   alpha, A, lda,
+                                   beta, B, ldb,
+                                   C, ldc));
+}
+
+inline
+void geam(cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t transb,
+          int m, int n, std::complex<double> const* alpha, std::complex<double> const* A, int lda,
+          std::complex<double> const* beta, std::complex<double> const* B, int ldb,
+          std::complex<double>* C, int ldc)
+{
+   TRACE_CUDA("cublasZgeam")(transa)(transb)(m)(n)(alpha)(A)(lda)(beta)(B)(ldb)(C)(ldc);
+   cublas::check_error(cublasZgeam(handle, transa, transb, m, n,
+				   reinterpret_cast<cuDoubleComplex const*>(alpha),
+				   reinterpret_cast<cuDoubleComplex const*>(A), lda,
+				   reinterpret_cast<cuDoubleComplex const*>(beta),
+				   reinterpret_cast<cuDoubleComplex const*>(B), ldb,
+				   reinterpret_cast<cuDoubleComplex*>(C), ldc));
+}
+
+inline
+void gemm(cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t transb,
+          int m, int n, int k, double const* alpha, double const* A, int lda,
+          double const* B, int ldb,
+          double const* beta, double* C, int ldc)
+{
+   TRACE_CUDA("cublasDgemm")(transa)(transb)(m)(n)(k)(alpha)(A)(lda)(B)(ldb)(beta)(C)(ldc);
+   cublas::check_error(cublasDgemm(handle, transa, transb, m, n, k,
+                                   alpha, A, lda, B, ldb,
+                                   beta, C, ldc));
+}
+
+inline
+void gemm(cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t transb,
+          int m, int n, int k, std::complex<double> const* alpha,
+          std::complex<double> const* A, int lda,
+          std::complex<double> const* B, int ldb,
+          std::complex<double> const* beta, std::complex<double>* C, int ldc)
+{
+   TRACE_CUDA("cublasZgemm")(transa)(transb)(m)(n)(k)(alpha)(A)(lda)(B)(ldb)(beta)(C)(ldc);
+   cublas::check_error(cublasZgemm(handle, transa, transb, m, n, k,
+                                   reinterpret_cast<cuDoubleComplex const*>(alpha),
+                                   reinterpret_cast<cuDoubleComplex const*>(A), lda,
+                                   reinterpret_cast<cuDoubleComplex const*>(B), ldb,
+                                   reinterpret_cast<cuDoubleComplex const*>(beta),
+                                   reinterpret_cast<cuDoubleComplex*>(C), ldc));
+}
+
+inline
+void dgmm(cublasHandle_t handle, cublasSideMode_t mode,
+          int m, int n,
+          double const* A, int lda,
+          double const* x, int incx,
+          double* C, int ldc)
+{
+   TRACE_CUDA("cublasDgmm")(mode)(m)(n)(A)(lda)(x)(incx)(C)(ldc);
+   cublas::check_error(cublasDdgmm(handle, mode, m, n, A, lda, x, incx, C, ldc));
+}
+
+inline
+void dgmm(cublasHandle_t handle, cublasSideMode_t mode,
+          int m, int n,
+          std::complex<double> const* A, int lda,
+          std::complex<double> const* x, int incx,
+          std::complex<double>* C, int ldc)
+{
+   TRACE_CUDA("cublasZgmm")(mode)(m)(n)(A)(lda)(x)(incx)(C)(ldc);
+   cublas::check_error(cublasZdgmm(handle, mode, m, n,
+                                   reinterpret_cast<cuDoubleComplex const*>(A), lda,
+                                   reinterpret_cast<cuDoubleComplex const*>(x), incx,
+                                   reinterpret_cast<cuDoubleComplex*>(C), ldc));
+}
+
+inline
+void gemv(cublasHandle_t handle, cublasOperation_t transa,
+          int m, int n, double const* alpha, double const* A, int lda,
+          double const* x, int incx, double const* beta,
+          double* y, int incy)
+{
+   TRACE_CUDA("cublasDgemv")(transa)(m)(n)(alpha)(A)(lda)(x)(incx)(beta)(y)(incy);
+   cublas::check_error(cublasDgemv(handle, transa, m, n, alpha, A, lda,
+                                   x, incx, beta, y, incy));
+}
 } // namespace cublas
 
 // BLAS functions must go in namespace cuda so they are found during ADL
@@ -224,44 +387,17 @@ clear(cuda::gpu_ref<T>&& r)
 
 // BLAS level 1
 
+// this allows for mixed real/complex
+template <typename T, typename U>
 inline
 void
-vector_copy(int n, cuda::const_gpu_ptr<double> x, int incx, cuda::gpu_ptr<double> y, int incy)
+vector_copy(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::gpu_ptr<U> y, int incy)
 {
-   cublas::handle& H = cublas::get_handle();
-   H.set_stream(y.get_stream());
-   y.wait_for(x);
-   cublas::check_error(cublasDcopy(H.raw_handle(), n, x.device_ptr(), incx, y.device_ptr(), incy));
-   x.wait_for(y);
-}
-
-inline
-void
-vector_copy(int n, cuda::const_gpu_ptr<std::complex<double>> x, int incx, cuda::gpu_ptr<std::complex<double>> y, int incy)
-{
-   cublas::handle& H = cublas::get_handle();
-   H.set_stream(y.get_stream());
-   y.wait_for(x);
-   cublas::check_error(cublasZcopy(H.raw_handle(), n,
-				   reinterpret_cast<cuDoubleComplex const*>(x.device_ptr()), incx,
-				   reinterpret_cast<cuDoubleComplex*>(y.device_ptr()), incy));
-   x.wait_for(y);
-}
-
-// mixed real/complex
-inline
-void
-vector_copy(int n, cuda::const_gpu_ptr<double> x, int incx, cuda::gpu_ptr<std::complex<double>> y, int incy)
-{
-   // we do this in two steps - clear the imaginary parts and copy the array into the real part
    cublas::handle& H = cublas::get_handle();
    H.set_stream(y.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    y.wait_for(x);
-   double alpha = 0.0;
-   cublas::check_error(cublasDscal(H.raw_handle(), n, &alpha, reinterpret_cast<double*>(y.device_ptr())+1, incy*2));
-   cublas::check_error(cublasDcopy(H.raw_handle(), n, x.device_ptr(), incx,
-				   reinterpret_cast<double*>(y.device_ptr()), incy*2));
+   cublas::copy(H.raw_handle(), n, x.device_ptr(), incx, y.device_ptr(), incy);
    x.wait_for(y);
 }
 
@@ -272,7 +408,7 @@ vector_scale(int n, double alpha, cuda::gpu_ptr<double> y, int incy)
    cublas::handle& H = cublas::get_handle();
    H.set_stream(y.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
-   cublas::check_error(cublasDscal(H.raw_handle(), n, &alpha, y.device_ptr(), incy));
+   cublas::scale(H.raw_handle(), n, &alpha, y.device_ptr(), incy);
 }
 
 inline
@@ -305,7 +441,7 @@ vector_add_scaled(int n, double alpha, cuda::const_gpu_ptr<double> x, int incx,
    H.set_stream(y.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    y.wait_for(x);
-   cublas::check_error(cublasDaxpy(H.raw_handle(), n, &alpha, x.device_ptr(), incx, y.device_ptr(), incy));
+   cublas::axpy(H.raw_handle(), n, &alpha, x.device_ptr(), incx, y.device_ptr(), incy);
    x.wait_for(y);
 }
 
@@ -390,7 +526,7 @@ void vector_conj(int n, cuda::gpu_ptr<std::complex<double>> x, int incx)
    H.set_stream(x.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    double alpha = -1.0;
-   cublas::check_error(cublasDscal(H.raw_handle(), n, &alpha, reinterpret_cast<double*>(x.device_ptr())+1, incx*2));
+   cublas::scale(H.raw_handle(), n, &alpha, reinterpret_cast<double*>(x.device_ptr())+1, incx*2);
 }
 
 //  TODO: vector_norm_frob
@@ -409,9 +545,9 @@ gemv(char Atrans, int M, int N, double alpha,
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    y.wait_for(A);
    y.wait_for(x);
-   cublas::check_error(cublasDgemv(H.raw_handle(), cublas::cublas_trans(Atrans), M, N,
-                           &alpha, A.device_ptr(), lda, x.device_ptr(), incx,
-                           &beta, y.device_ptr(), incy));
+   cublas::gemv(H.raw_handle(), cublas::cublas_trans(Atrans), M, N,
+                &alpha, A.device_ptr(), lda, x.device_ptr(), incx,
+                &beta, y.device_ptr(), incy);
    A.wait_for(y);
    x.wait_for(y);
 }
@@ -420,82 +556,43 @@ gemv(char Atrans, int M, int N, double alpha,
 
 // in-place two matrix version implements
 // C = alpha*A + beta*C
+template <typename T>
 inline
 void
 geam(char Atrans, int M, int N,
-     double alpha, cuda::const_gpu_ptr<double> A, int lda,
-     double beta, cuda::gpu_ptr<double> C, int ldc)
+     T alpha, cuda::const_gpu_ptr<T> A, int lda,
+     T beta, cuda::gpu_ptr<T> C, int ldc)
 {
    cublas::handle& H = cublas::get_handle();
    H.set_stream(C.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    C.wait_for(A);
-   cublas::check_error(cublasDgeam(H.raw_handle(), cublas::cublas_trans(Atrans), CUBLAS_OP_N, M, N,
-                           &alpha, A.device_ptr(), lda,
-                           &beta, C.device_ptr(), ldc,
-                           C.device_ptr(), ldc));
-   A.wait_for(C);
-}
-
-inline
-void
-geam(char Atrans, int M, int N,
-     std::complex<double> alpha, cuda::const_gpu_ptr<std::complex<double>> A, int lda,
-     std::complex<double> beta, cuda::gpu_ptr<std::complex<double>> C, int ldc)
-{
-   cublas::handle& H = cublas::get_handle();
-   H.set_stream(C.get_stream());
-   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
-   C.wait_for(A);
-   cublas::check_error(cublasZgeam(H.raw_handle(), cublas::cublas_trans(Atrans), CUBLAS_OP_N, M, N,
-				   reinterpret_cast<cuDoubleComplex const*>(&alpha),
-				   reinterpret_cast<cuDoubleComplex const*>(A.device_ptr()), lda,
-				   reinterpret_cast<cuDoubleComplex const*>(&beta),
-				   reinterpret_cast<cuDoubleComplex const*>(C.device_ptr()), ldc,
-				   reinterpret_cast<cuDoubleComplex*>(C.device_ptr()), ldc));
+   cublas::geam(H.raw_handle(), cublas::cublas_trans(Atrans), CUBLAS_OP_N, M, N,
+                &alpha, A.device_ptr(), lda,
+                &beta, C.device_ptr(), ldc,
+                C.device_ptr(), ldc);
    A.wait_for(C);
 }
 
 // out-of-place version implements
 // C = alpha*A + beta*B
+template <typename T>
 inline
 void
 geam(char Atrans, char Btrans, int M, int N,
-     double alpha, cuda::const_gpu_ptr<double> A, int lda,
-     double beta,  cuda::const_gpu_ptr<double> B, int ldb,
-     cuda::gpu_ptr<double> C, int ldc)
+     T alpha, cuda::const_gpu_ptr<T> A, int lda,
+     T beta,  cuda::const_gpu_ptr<T> B, int ldb,
+     cuda::gpu_ptr<T> C, int ldc)
 {
    cublas::handle& H = cublas::get_handle();
    H.set_stream(C.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    C.wait_for(A);
    C.wait_for(B);
-   cublas::check_error(cublasDgeam(H.raw_handle(), cublas::cublas_trans(Atrans), cublas::cublas_trans(Btrans), M, N,
-				   &alpha, A.device_ptr(), lda,
-				   &beta, B.device_ptr(), ldb,
-				   C.device_ptr(), ldc));
-   A.wait_for(C);
-   B.wait_for(C);
-}
-
-inline
-void
-geam(char Atrans, char Btrans, int M, int N,
-     std::complex<double> alpha, cuda::const_gpu_ptr<std::complex<double>> A, int lda,
-     std::complex<double> beta,  cuda::const_gpu_ptr<std::complex<double>> B, int ldb,
-     cuda::gpu_ptr<std::complex<double>> C, int ldc)
-{
-   cublas::handle& H = cublas::get_handle();
-   H.set_stream(C.get_stream());
-   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
-   C.wait_for(A);
-   C.wait_for(B);
-   cublas::check_error(cublasZgeam(H.raw_handle(), cublas::cublas_trans(Atrans), cublas::cublas_trans(Btrans), M, N,
-				   reinterpret_cast<cuDoubleComplex const*>(&alpha),
-				   reinterpret_cast<cuDoubleComplex const*>(A.device_ptr()), lda,
-				   reinterpret_cast<cuDoubleComplex const*>(&beta),
-				   reinterpret_cast<cuDoubleComplex const*>(B.device_ptr()), ldb,
-				   reinterpret_cast<cuDoubleComplex*>(C.device_ptr()), ldc));
+   cublas::geam(H.raw_handle(), cublas::cublas_trans(Atrans), cublas::cublas_trans(Btrans), M, N,
+                &alpha, A.device_ptr(), lda,
+                &beta, B.device_ptr(), ldb,
+                C.device_ptr(), ldc);
    A.wait_for(C);
    B.wait_for(C);
 }
@@ -513,7 +610,7 @@ inline
 void
 matrix_copy(int M, int N, const_gpu_ptr<T> A, int lda, gpu_ptr<T> B, int ldb)
 {
-   geam('N', M, N, 1.0, A, lda, 0.0, B, ldb);
+   geam('N', M, N, T(1.0), A, lda, T(0.0), B, ldb);
 }
 
 template <typename T>
@@ -521,7 +618,7 @@ inline
 void
 matrix_copy_scaled(char Atrans, int M, int N, T alpha, const_gpu_ptr<T> A, int lda, gpu_ptr<T> B, int ldb)
 {
-   geam(Atrans, M, N, alpha, A, lda, 0.0, B, ldb);
+   geam(Atrans, M, N, alpha, A, lda, T(0.0), B, ldb);
 }
 
 template <typename T>
@@ -529,7 +626,7 @@ inline
 void
 matrix_add(char Atrans, int M, int N, const_gpu_ptr<T> A, int lda, gpu_ptr<T> B, int ldb)
 {
-   geam(Atrans, M, N, 1.0, A, lda, 1.0, B, ldb);
+   geam(Atrans, M, N, T(1.0), A, lda, T(1.0), B, ldb);
 }
 
 template <typename T>
@@ -537,64 +634,36 @@ inline
 void
 matrix_add_scaled(char Atrans, int M, int N, T alpha, const_gpu_ptr<T> A, int lda, gpu_ptr<T> B, int ldb)
 {
-   geam(Atrans, M, N, alpha, A, lda, 1.0, B, ldb);
+   geam(Atrans, M, N, alpha, A, lda, T(1.0), B, ldb);
 }
 
+template <typename T>
 inline
 void
-matrix_scale(int M, int N, double alpha, cuda::gpu_ptr<double> A, int lda)
+matrix_scale(int M, int N, T alpha, cuda::gpu_ptr<T> A, int lda)
 {
    cublas::handle& H = cublas::get_handle();
    H.set_stream(A.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
-   double beta = 0.0;
-   cublas::check_error(cublasDgeam(H.raw_handle(), CUBLAS_OP_N, CUBLAS_OP_N, M, N,
-                           &alpha, A.device_ptr(), lda,
-                           &beta, nullptr, 1,
-                           A.device_ptr(), lda));
+   T beta = 0.0;
+   cublas::geam(H.raw_handle(), CUBLAS_OP_N, CUBLAS_OP_N, M, N,
+                &alpha, A.device_ptr(), lda,
+                &beta, A.device_ptr(), lda,
+                A.device_ptr(), lda);
 }
 
+template <typename T>
 inline
-void
-matrix_scale(int M, int N, std::complex<double> alpha, cuda::gpu_ptr<std::complex<double>> A, int lda)
+void matrix_clear(int M, int N, cuda::gpu_ptr<T> A, int lda)
 {
    cublas::handle& H = cublas::get_handle();
    H.set_stream(A.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
-   double beta = 0.0;
-   cublas::check_error(cublasZgeam(H.raw_handle(), CUBLAS_OP_N, CUBLAS_OP_N, M, N,
-				   reinterpret_cast<cuDoubleComplex const*>(&alpha),
-				   reinterpret_cast<cuDoubleComplex const*>(A.device_ptr()), lda,
-				   reinterpret_cast<cuDoubleComplex const*>(&beta), nullptr, 1,
-				   reinterpret_cast<cuDoubleComplex*>(A.device_ptr()), lda));
-}
-
-inline
-void matrix_clear(int M, int N, cuda::gpu_ptr<double> A, int lda)
-{
-   cublas::handle& H = cublas::get_handle();
-   H.set_stream(A.get_stream());
-   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
-   double beta = 0.0;
-   cublas::check_error(cublasDgeam(H.raw_handle(), CUBLAS_OP_N, CUBLAS_OP_N, M, N,
-                                   &beta, A.device_ptr(), lda,
-                                   &beta, A.device_ptr(), lda,
-                                   A.device_ptr(), lda));
-}
-
-inline
-void matrix_clear(int M, int N, cuda::gpu_ptr<std::complex<double>> A, int lda)
-{
-   cublas::handle& H = cublas::get_handle();
-   H.set_stream(A.get_stream());
-   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
-   std::complex<double> beta = 0.0;
-   cublas::check_error(cublasZgeam(H.raw_handle(), CUBLAS_OP_N, CUBLAS_OP_N, M, N,
-                                   reinterpret_cast<cuDoubleComplex const*>(&beta),
-				   reinterpret_cast<cuDoubleComplex const*>(A.device_ptr()), lda,
-                                   reinterpret_cast<cuDoubleComplex const*>(&beta),
-				   reinterpret_cast<cuDoubleComplex const*>(A.device_ptr()), lda,
-                                   reinterpret_cast<cuDoubleComplex*>(A.device_ptr()), lda));
+   T beta = 0.0;
+   cublas::geam(H.raw_handle(), CUBLAS_OP_N, CUBLAS_OP_N, M, N,
+                &beta, A.device_ptr(), lda,
+                &beta, A.device_ptr(), lda,
+                A.device_ptr(), lda);
 }
 
 inline
@@ -606,13 +675,13 @@ void matrix_conj(int M, int N, cuda::gpu_ptr<std::complex<double>> A, int lda)
    double alpha = -1.0;
    if (lda == M)
    {
-      cublas::check_error(cublasDscal(H.raw_handle(), M*N, &alpha, reinterpret_cast<double*>(A.device_ptr())+1, 2));
+      cublas::scale(H.raw_handle(), M*N, &alpha, reinterpret_cast<double*>(A.device_ptr())+1, 2);
    }
    else
    {
       for (int r = 0; r < N; ++r)
       {
-	 cublas::check_error(cublasDscal(H.raw_handle(), M, &alpha, reinterpret_cast<double*>(A.device_ptr())+r*lda+1, 2));
+	 cublas::scale(H.raw_handle(), M, &alpha, reinterpret_cast<double*>(A.device_ptr())+r*lda+1, 2);
       }
    }
 }
@@ -672,44 +741,21 @@ matrix_norm_frob_sq(int M, int N, const_gpu_ptr<std::complex<double>> A, int lda
 
 // BLAS level 3
 
+template <typename T>
 inline
 void
-gemm(char Atrans, char Btrans, int M, int N, int K, double alpha,
-     cuda::const_gpu_ptr<double> A, int lda, cuda::const_gpu_ptr<double> B, int ldb,
-     double beta, cuda::gpu_ptr<double> C, int ldc)
+gemm(char Atrans, char Btrans, int M, int N, int K, T alpha,
+     cuda::const_gpu_ptr<T> A, int lda, cuda::const_gpu_ptr<T> B, int ldb,
+     T beta, cuda::gpu_ptr<T> C, int ldc)
 {
    cublas::handle& H = cublas::get_handle();
    H.set_stream(C.get_stream());
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    C.wait_for(A);
    C.wait_for(B);
-   cublas::check_error(cublasDgemm(H.raw_handle(), cublas::cublas_trans(Atrans), cublas::cublas_trans(Btrans), M, N, K,
-                                   &alpha, A.device_ptr(), lda, B.device_ptr(), ldb,
-                                   &beta, C.device_ptr(), ldc));
-   A.wait_for(C);
-   B.wait_for(C);
-}
-
-inline
-void
-gemm(char Atrans, char Btrans, int M, int N, int K, std::complex<double> alpha,
-     cuda::const_gpu_ptr<std::complex<double>> A, int lda, cuda::const_gpu_ptr<std::complex<double>> B, int ldb,
-     std::complex<double> beta, cuda::gpu_ptr<std::complex<double>> C, int ldc)
-{
-   cublas::handle& H = cublas::get_handle();
-   H.set_stream(C.get_stream());
-   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
-   C.wait_for(A);
-   C.wait_for(B);
-   //TRACE(Atrans)(Btrans)(M)(N)(K)(alpha)(A.device_ptr())(lda)(B.device_ptr())(ldb)(beta)(C.device_ptr())(ldc);
-   cublas::check_error(cublasZgemm(H.raw_handle(),
-                                   cublas::cublas_trans(Atrans),
-                                   cublas::cublas_trans(Btrans), M, N, K,
-                                   reinterpret_cast<cuDoubleComplex const*>(&alpha),
-                                   reinterpret_cast<cuDoubleComplex const*>(A.device_ptr()), lda,
-                                   reinterpret_cast<cuDoubleComplex const*>(B.device_ptr()), ldb,
-                                   reinterpret_cast<cuDoubleComplex const*>(&beta),
-                                   reinterpret_cast<cuDoubleComplex*>(C.device_ptr()), ldc));
+   cublas::gemm(H.raw_handle(), cublas::cublas_trans(Atrans), cublas::cublas_trans(Btrans), M, N, K,
+                &alpha, A.device_ptr(), lda, B.device_ptr(), ldb,
+                &beta, C.device_ptr(), ldc);
    A.wait_for(C);
    B.wait_for(C);
 }
@@ -726,25 +772,18 @@ dgmm(int M, int K,
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    C.wait_for(x);
    C.wait_for(B);
-   cublas::check_error(cublasZdgmm(H.raw_handle(), CUBLAS_SIDE_LEFT, M, K,
-				   reinterpret_cast<cuDoubleComplex const*>(B.device_ptr()), ldb,
-				   reinterpret_cast<cuDoubleComplex const*>(x.device_ptr()), incx,
-				   reinterpret_cast<cuDoubleComplex*>(C.device_ptr()), ldc));
+   cublas::dgmm(H.raw_handle(), CUBLAS_SIDE_LEFT, M, K,
+                B.device_ptr(), ldb,
+                x.device_ptr(), incx,
+                C.device_ptr(), ldc);
    x.wait_for(C);
    B.wait_for(C);
 }
 
 // mixed real/complex
 
-inline
-void
-dgmm(int M, int K,
-     cuda::const_gpu_ptr<double> x, int incx,
-     cuda::const_gpu_ptr<std::complex<double>> B, int ldb,
-     cuda::gpu_ptr<std::complex<double>> C, int ldc)
-{
-   PANIC("not yet implemented");
-}
+// dgmm for mixed real/complex can't be implemented as a cublas call,
+// instead we have our own kernel, in cub.h
 
 inline
 void
@@ -758,10 +797,10 @@ gdmm(int M, int K,
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    C.wait_for(A);
    C.wait_for(y);
-   cublas::check_error(cublasZdgmm(H.raw_handle(), CUBLAS_SIDE_RIGHT, M, K,
-				   reinterpret_cast<cuDoubleComplex const*>(A.device_ptr()), lda,
-				   reinterpret_cast<cuDoubleComplex const*>(y.device_ptr()), incy,
-				   reinterpret_cast<cuDoubleComplex*>(C.device_ptr()), ldc));
+   cublas::dgmm(H.raw_handle(), CUBLAS_SIDE_RIGHT, M, K,
+                A.device_ptr(), lda,
+                y.device_ptr(), incy,
+                C.device_ptr(), ldc);
    A.wait_for(C);
    y.wait_for(C);
 }
@@ -774,7 +813,18 @@ gdmm(int M, int K,
      cuda::const_gpu_ptr<double> y, int incy,
      cuda::gpu_ptr<std::complex<double>> C, int ldc)
 {
-   PANIC("not yet implemented");
+   // We can treat an M*K complex matrix as a real matrix of size (2M)*K.
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(C.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
+   C.wait_for(A);
+   C.wait_for(y);
+   cublas::dgmm(H.raw_handle(), CUBLAS_SIDE_RIGHT, 2*M, K,
+                reinterpret_cast<double const*>(A.device_ptr()), 2*lda,
+                y.device_ptr(), incy,
+                reinterpret_cast<double*>(C.device_ptr()), 2*ldc);
+   A.wait_for(C);
+   y.wait_for(C);
 }
 
 } // namespace cuda

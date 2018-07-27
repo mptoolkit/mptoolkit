@@ -149,7 +149,7 @@ class moving_exponential
    public:
       typedef T value_type;
 
-      moving_exponential() : Factor_(0.0) {}
+      moving_exponential() : Factor_(0.0), Value(0), Accum(0) {}
 
       explicit moving_exponential(double RelaxationFactor) : Factor_(RelaxationFactor), Value(), Accum(0.0) {}
 
@@ -159,7 +159,7 @@ class moving_exponential
       void clear() { Value = 0; Accum = 0; }
 
       value_type value() const
-      { return (1.0 / Accum) * Value; }
+      { return (Accum == 0.0) ? 0.0 : (1.0 / Accum) * Value; }
 
       value_type operator()() const
       { return this->value(); }

@@ -383,6 +383,7 @@ SymmetryList&
 SymmetryList::operator=(SymmetryList&& QList) noexcept
 {
    std::swap(pImpl, QList.pImpl);
+   return *this;
 }
 
 namespace

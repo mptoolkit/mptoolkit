@@ -145,7 +145,7 @@ SVD(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& Umat,
 {
    CHECK_EQUAL(Dvec.size(), std::min(Mmat.rows(), Mmat.cols()));
    CHECK_EQUAL(Mmat.rows(), Umat.rows());
-   CHECK_EQUAL(Umat.rows(), Dvec.size());
+   CHECK_EQUAL(Umat.cols(), Dvec.size());
    CHECK_EQUAL(Dvec.size(), Vmat.rows());
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
    detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(), Dvec.storage(),
@@ -182,7 +182,7 @@ SVD_FullRows(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
 {
    CHECK_EQUAL(Dvec.size(), Mmat.rows());
    CHECK_EQUAL(Mmat.rows(), Umat.rows());
-   CHECK_EQUAL(Umat.rows(), Dvec.size());
+   CHECK_EQUAL(Umat.cols(), Dvec.size());
    CHECK_EQUAL(Dvec.size(), Vmat.rows());
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
    if (Mmat.rows() < Mmat.cols())
@@ -208,7 +208,7 @@ SVD_FullRows(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
 {
    CHECK_EQUAL(Dvec.size(), Mmat.rows());
    CHECK_EQUAL(Mmat.rows(), Umat.rows());
-   CHECK_EQUAL(Umat.rows(), Dvec.size());
+   CHECK_EQUAL(Umat.cols(), Dvec.size());
    CHECK_EQUAL(Dvec.size(), Vmat.rows());
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
    if (Mmat.rows() < Mmat.cols())
@@ -241,12 +241,13 @@ SVD_FullCols(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
 {
    CHECK_EQUAL(Dvec.size(), Mmat.cols());
    CHECK_EQUAL(Mmat.rows(), Umat.rows());
-   CHECK_EQUAL(Umat.rows(), Dvec.size());
+   CHECK_EQUAL(Umat.cols(), Dvec.size());
    CHECK_EQUAL(Dvec.size(), Vmat.rows());
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
    if (Mmat.cols() < Mmat.rows())
    {
-      detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(), Dvec.storage(),
+      detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(),
+                                         Mmat.storage(), Mmat.leading_dimension(), Dvec.storage(),
 					 Umat.storage(), Umat.leading_dimension(),
 					 Vmat.storage(), Vmat.leading_dimension());
    }
@@ -254,7 +255,8 @@ SVD_FullCols(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
    {
       // need to zero the additional elements in Dvec
       clear(Dvec);
-      detail::SingularValueDecompositionFull(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(), Dvec.storage(),
+      detail::SingularValueDecompositionFull(Mmat.rows(), Mmat.cols(),
+                                             Mmat.storage(), Mmat.leading_dimension(), Dvec.storage(),
 					     Umat.storage(), Umat.leading_dimension(),
 					     Vmat.storage(), Vmat.leading_dimension());
    }
@@ -267,9 +269,10 @@ SVD_FullCols(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
 {
    CHECK_EQUAL(Dvec.size(), Mmat.cols());
    CHECK_EQUAL(Mmat.rows(), Umat.rows());
-   CHECK_EQUAL(Umat.rows(), Dvec.size());
+   CHECK_EQUAL(Umat.cols(), Dvec.size());
    CHECK_EQUAL(Dvec.size(), Vmat.rows());
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
+   TRACE("WWWW")(Mmat);
    if (Mmat.cols() < Mmat.rows())
    {
       detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(),
@@ -286,6 +289,7 @@ SVD_FullCols(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
 					     Umat.storage(), Umat.leading_dimension(),
 					     Vmat.storage(), Vmat.leading_dimension());
    }
+   TRACE(Umat)(Vmat);
 }
 
 //

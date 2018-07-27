@@ -53,26 +53,33 @@ vector_permute(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::gpu_ptr<T> y, in
 
 template <typename T>
 void
-vector_parallel(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::const_gpu_ptr<T> y, int incy, 
+vector_parallel(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::const_gpu_ptr<T> y, int incy,
 		cuda::gpu_ptr<T> z, int incz);
 
 template <typename T>
 void
-vector_add_parallel(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::const_gpu_ptr<T> y, int incy, 
+vector_add_parallel(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::const_gpu_ptr<T> y, int incy,
 		    cuda::gpu_ptr<T> z, int incz);
 
 template <typename T>
 void
-vector_parallel_scaled(int n, T const& alpha, cuda::const_gpu_ptr<T> x, int incx, cuda::const_gpu_ptr<T> y, int incy, 
+vector_parallel_scaled(int n, T const& alpha, cuda::const_gpu_ptr<T> x, int incx, cuda::const_gpu_ptr<T> y, int incy,
 		       cuda::gpu_ptr<T> z, int incz);
 
 template <typename T>
 void
-vector_add_parallel_scaled(int n, T const& alpha, cuda::const_gpu_ptr<T> x, int incx, cuda::const_gpu_ptr<T> y, int incy, 
+vector_add_parallel_scaled(int n, T const& alpha, cuda::const_gpu_ptr<T> x, int incx, cuda::const_gpu_ptr<T> y, int incy,
 			   cuda::gpu_ptr<T> z, int incz);
 
 template <typename T>
 void matrix_fill(T alpha, int M, int N, cuda::gpu_ptr<T> A, int lda);
+
+void
+dgmm(int M, int K,
+     cuda::const_gpu_ptr<double> x, int incx,
+     cuda::const_gpu_ptr<std::complex<double>> B, int ldb,
+     cuda::gpu_ptr<std::complex<double>> C, int ldc);
+
 
 } // namespace cuda
 

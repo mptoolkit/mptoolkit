@@ -28,8 +28,13 @@
 #include <cuda_runtime.h>
 #include <cuComplex.h>
 #include "common/atomicrefcount.h"
-
 #include <iostream>
+
+#if defined(CUDA_TRACE_FUNCTIONS)
+#define TRACE_CUDA(Msg) TRACE(Msg)
+#else
+#define TRACE_CUDA(Msg) DUMMY_TRACE(Msg)
+#endif
 
 namespace cuda
 {
@@ -58,6 +63,11 @@ void check_error(cudaError_t e)
 {
    if (e != cudaSuccess)
       throw error(e);
+#if defined(CUDA_SYNCHRONIZE)
+   e = cudaDeviceSynchronize();
+   if (e != cudaSuccess)
+      throw error(e);
+#endif
 }
 
 // device enumeration
@@ -336,13 +346,15 @@ void memcpy_device_to_host(void const* src, void* dest, std::size_t size);
 inline
 void memcpy_device_to_host(void const* src, void* dest, std::size_t size)
 {
-   cudaMemcpyAsync(dest, src, size, cudaMemcpyDeviceToHost);
+   TRACE_CUDA("cudaMemcpy cudaMemcpyDeviceToHost")(dest)(src)(size);
+   check_error(cudaMemcpy(dest, src, size, cudaMemcpyDeviceToHost));
 }
 
 inline
 void memcpy_host_to_device(void const* src, void* dest, std::size_t size)
 {
-   cudaMemcpyAsync(dest, src, size, cudaMemcpyHostToDevice);
+   TRACE_CUDA("cudaMemcpy cudaMemcpyHostToDevice")(dest)(src)(size);
+   check_error(cudaMemcpy(dest, src, size, cudaMemcpyHostToDevice));
 }
 
 // copy GPU memory asyncronously
@@ -351,6 +363,7 @@ void memcpy_device_to_device_async(stream const& s, void const* src, void* dest,
 inline
 void memcpy_device_to_device_async(stream const& s, void const* src, void* dest, std::size_t size)
 {
+   TRACE_CUDA("cudaMemcpyAsync cudaMemcpyDeviceToDevice")(dest)(src)(size)(s.raw_stream());
    check_error(cudaMemcpyAsync(dest, src, size, cudaMemcpyDeviceToDevice, s.raw_stream()));
 }
 
@@ -359,18 +372,21 @@ void memcpy_host_to_device_async(stream const& s, void const* src, void* dest, s
 inline
 void memcpy_host_to_device_async(stream const& s, void const* src, void* dest, std::size_t size)
 {
+   TRACE_CUDA("cudaMemcpyAsync cudaMemcpyHostToDevice")(dest)(src)(size)(s.raw_stream());
    check_error(cudaMemcpyAsync(dest, src, size, cudaMemcpyHostToDevice, s.raw_stream()));
 }
 
 inline
 void memset(void* dest, int x, std::size_t size)
 {
+   TRACE_CUDA("cudaMemset")(dest)(x)(size);
    check_error(cudaMemset(dest, x, size));
 }
 
 inline
 void memset_async(stream const& s, void* dest, int x, std::size_t size)
 {
+   TRACE_CUDA("cudaMemsetAsync")(dest)(x)(size)(s.raw_stream());
    check_error(cudaMemsetAsync(dest, x, size, s.raw_stream()));
 }
 

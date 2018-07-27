@@ -18,6 +18,7 @@
 // ENDHEADER
 
 #include "sparsematrix.h"
+#include "vector.h"
 
 namespace blas
 {
@@ -31,7 +32,7 @@ Matrix<T, Tag>::Matrix(std::initializer_list<std::initializer_list<U>> m, arena 
    for (auto x : m)
    {
       assert(x.size() == Cols);
-      vector_copy_from_stl(x.begin(), x.end(), Buf.ptr(r), LeadingDimension);
+      vector_uninitialized_copy_from_stl(x.begin(), x.end(), Buf.ptr(r), LeadingDimension);
       ++r;
    }
 }
@@ -41,6 +42,10 @@ Matrix<T, Tag>::Matrix(int R, int C, arena Arena_)
    : Rows(R), Cols(C), LeadingDimension(Tag::template select_leading_dimension<T>(R)),
      Buf(buffer_type::allocate(Tag::template select_leading_dimension<T>(R)*C, Arena_))
 {
+   for (int c = 0; c < C; ++c)
+   {
+      Tag::uninitialized_default_construct_n(Buf.ptr() + c*LeadingDimension, R);
+   }
 }
 
 template <typename T, typename Tag>
@@ -48,14 +53,15 @@ Matrix<T, Tag>::Matrix(int R, int C, T const& Fill, arena Arena_)
    : Rows(R), Cols(C), LeadingDimension(Tag::template select_leading_dimension<T>(R)),
      Buf(buffer_type::allocate(LeadingDimension*Cols, Arena_))
 {
-   fill(*this, Fill);
+   for (int c = 0; c < C; ++c)
+   {
+      Tag::uninitialized_fill_n(Buf.ptr() + c*LeadingDimension, R, Fill);
+   }
 }
 
 template <typename T, typename Tag>
 Matrix<T, Tag>::Matrix(SparseMatrix<value_type> const& Other, arena Arena_)
-   : Rows(Other.rows()), Cols(Other.cols()),
-     LeadingDimension(Tag::template select_leading_dimension<T>(Other.rows())),
-     Buf(buffer_type::allocate(LeadingDimension*Cols, Arena_))
+   : Matrix(Other.rows(), Other.cols(), T{}, Arena_)
 {
    for (auto const& r : Other)
    {
@@ -63,6 +69,16 @@ Matrix<T, Tag>::Matrix(SparseMatrix<value_type> const& Other, arena Arena_)
       {
 	 Buf[c.col()*LeadingDimension+r.row()] = c.value;
       }
+   }
+}
+
+
+template <typename T, typename Tag>
+Matrix<T, Tag>::~Matrix() noexcept
+{
+   for (int c = 0; c < Cols; ++c)
+   {
+      Tag::destroy_n(Buf.ptr() + c*LeadingDimension, Rows);
    }
 }
 
@@ -77,8 +93,9 @@ operator<<(std::ostream& out, NormalMatrix<T, U, cpu_tag> const& x)
       for (int c = 0; c < x.cols(); ++c)
       {
          if (!first)
-            out << ", ";
+            out << " ";
          write_format(out, x.as_derived()(r,c));
+         first = false;
       }
       out << '\n';
    }

@@ -32,7 +32,7 @@ exp(IrredTensor<blas::Matrix<T, Tag>, VectorBasis, VectorBasis> const& m)
 
    if (!is_regular_basis(m.Basis1()))
    {
-      using real_t = typename blas::number_traits<T>::real_type;
+      //      using real_t = typename blas::number_traits<T>::real_type;
       IrredTensor<blas::Matrix<T, Tag>, VectorBasis, VectorBasis> X(m.Basis1());
       return triple_prod(herm(X), exp(triple_prod(X, m, herm(X))), X);
    }

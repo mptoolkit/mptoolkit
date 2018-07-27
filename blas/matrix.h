@@ -123,7 +123,7 @@ class Matrix : public NormalMatrix<T, Matrix<T, Tag>, Tag>
       Matrix(std::initializer_list<std::initializer_list<U>> x)
          : Matrix(x, tag_type::template default_arena<T>()) {}
 
-      ~Matrix() noexcept = default;
+      ~Matrix() noexcept;
 
       Matrix& operator=(Matrix const& Other)
       {

@@ -42,6 +42,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 		     StatesInfo const& States, TruncationInfo& Info,
                      StateComponent const& LeftHam)
 {
+   //TRACE(C);
    // truncate - FIXME: this is the s3e step
 #if defined(SSC)
    MatrixOperator Lambda;
@@ -51,7 +52,11 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
    MatrixOperator Lambda = ExpandBasis1(C);
 #endif
 
+   //TRACE(Lambda);
+   //TRACE(C);
+
    MatrixOperator Rho = scalar_prod(herm(Lambda), Lambda);
+   //TRACE(Rho);
    if (Mix.MixFactor > 0)
    {
 #if defined(SSC)
@@ -68,6 +73,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
          double Prefactor = trace(triple_prod(herm(LeftHam[i]), RhoL, LeftHam[i])).real();
          if (Prefactor == 0)
             Prefactor = 1;
+         //TRACE(Prefactor*triple_prod(herm(RH[i]), Rho, RH[i]));
          RhoMix += Prefactor * triple_prod(herm(RH[i]), Rho, RH[i]);
 	 //TRACE(i)(Prefactor);
       }
@@ -84,9 +90,10 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
       Rho += (Mix.RandomMixFactor / trace(RhoMix)) * RhoMix;
    }
 
-   //TRACE(Rho);
+   //   TRACE(Rho);
 
    DensityMatrix<MatrixOperator> DM(Rho);
+   DM.DensityMatrixReport(std::cerr);
    DensityMatrix<MatrixOperator>::const_iterator DMPivot =
       TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
                                          States,
@@ -120,7 +127,12 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 
    //TRACE(U)(D)(Vh);
 
+   TRACE("QAZ")(U)(D)(Vh);
+
    C = prod(Vh, C);
+
+   TRACE("WSX")(C);
+
    return std::make_pair(std::move(U), std::move(D));
 }
 
@@ -134,6 +146,8 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
 		     StatesInfo const& States, TruncationInfo& Info,
                      StateComponent const& RightHam)
 {
+   //TRACE(C);
+
    // truncate - FIXME: this is the s3e step
    MatrixOperator Lambda = ExpandBasis2(C);
 
@@ -164,6 +178,7 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
       Rho += (Mix.RandomMixFactor / trace(RhoMix)) * RhoMix;
    }
    DensityMatrix<MatrixOperator> DM(Rho);
+   DM.DensityMatrixReport(std::cerr);
    DensityMatrix<MatrixOperator>::const_iterator DMPivot =
       TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
                                          States,
@@ -288,8 +303,9 @@ PStream::ipstream& operator>>(PStream::ipstream& in, DMRG& d)
 
 DMRG::DMRG(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_, int Verbose_)
    : Hamiltonian(Ham_),
+     IsPsiConverged(false),
      NormalizeWavefunction(false),
-     IsPsiConverged(false), IsConvergedValid(false),
+     IsConvergedValid(false),
      MixUseEnvironment(false), UseDGKS(false), Solver_(LocalEigensolver::Solver::Lanczos),
      Verbose(Verbose_)
 
@@ -525,6 +541,7 @@ double DMRG::FidelityLoss() const
    return 2.0 * (1.0 - norm_frob(inner_prod(Psi.Center(), PsiPrevC))
                  / norm_frob(Psi.Center()));
 #endif
+   return 0;
 }
 
 void DMRG::EndSweep()
@@ -619,6 +636,9 @@ TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)
    TruncationInfo Info;
    LinearWavefunction::const_iterator CNext = C;
    --CNext;
+
+   TRACE(*C);
+
    std::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixingInfo,
 					      KeepList, QuantumNumbersInBasis(CNext->LocalBasis()),
 					      States, Info,
@@ -629,7 +649,13 @@ TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)
       std::cerr << "Truncating left basis, states=" << Info.KeptStates() << '\n';
    }
    // update blocks
+
+   TRACE(*C);
+
    HamMatrices.push_right(contract_from_right(herm(*H), *C, HamMatrices.right(), herm(*C)));
+
+   TRACE(HamMatrices.right());
+
    HamMatrices.pop_left();
 
    // next site

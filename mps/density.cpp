@@ -204,7 +204,7 @@ void DensityMatrixBase::DiagonalizeDMHelper(bool Sort)
       DiagonalizeHermitian(RawDMList[q1], EVal);
       blas::Vector<double> Eigenvalues = get_wait(EVal);
       // add the eigenvalues and eigenvector pointers to EigenInfoList
-      for (std::size_t i = 0; i < RawDMList[q1].cols(); ++i)
+      for (std::size_t i = 0; i < Eigenvalues.size(); ++i)
       {
          EigenInfoList.push_back(EigenInfo(Eigenvalues[i], CurrentDegree, q1, i));
          ESum += Eigenvalues[i] * CurrentDegree;
@@ -590,6 +590,8 @@ ConstructOrthoMatrices(std::vector<std::vector<int> > const& LinearMapping)
 
    A.debug_check_structure();
    B.debug_check_structure();
+
+   return std::make_tuple(std::move(A),std::move(C),std::move(B));
 }
 
 QuantumNumber
@@ -813,4 +815,5 @@ ConstructOrthoMatrices(std::vector<std::vector<int> > const& LinearMapping)
          C.insert(b,b, std::move(Temp));
       }
    }
+   return std::make_tuple(std::move(A),std::move(C),std::move(B));
 }

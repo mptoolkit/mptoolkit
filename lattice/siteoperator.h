@@ -36,7 +36,7 @@ struct LatticeCommute
    LatticeCommute(LatticeCommute const&) = default;
    LatticeCommute& operator=(LatticeCommute&&) noexcept = default;
    LatticeCommute& operator=(LatticeCommute const&) = default;
-   
+
    LatticeCommute(Values v) : Value_(v) {}
 
    LatticeCommute(std::string const& s) : Value_(Custom), SignOperator_(s) {}
@@ -292,32 +292,32 @@ inplace_conj(SiteOperator& x)
 inline
 SiteOperator conj(SiteOperator const& x)
 {
-   SiteOperator(x.Basis(), conj(copy(x.base())), x.Commute());
+   return SiteOperator(x.Basis(), conj(copy(x.base())), x.Commute());
 }
 
 
 inline
 SiteOperator adjoint(SiteOperator const& x)
 {
-   SiteOperator(x.Basis(), adjoint(copy(x.base())), x.Commute());
+   return SiteOperator(x.Basis(), adjoint(copy(x.base())), x.Commute());
 }
 
 inline
 SiteOperator inv_adjoint(SiteOperator const& x)
 {
-   SiteOperator(x.Basis(), inv_adjoint(copy(x.base())), x.Commute());
+   return SiteOperator(x.Basis(), inv_adjoint(copy(x.base())), x.Commute());
 }
 
 inline
 SiteOperator operator-(SiteOperator const& x)
 {
-   return SiteOperator(x.Basis(), -copy(x.base()), x.Commute()); 
+   return SiteOperator(x.Basis(), -copy(x.base()), x.Commute());
 }
 
 inline
 SiteOperator exp(SiteOperator const& x)
 {
-   return SiteOperator(x.Basis(), Tensor::exp(x.base()), x.Commute()); 
+   return SiteOperator(x.Basis(), Tensor::exp(x.base()), x.Commute());
 }
 
 inline
@@ -365,7 +365,7 @@ inline
 std::enable_if_t<blas::is_numeric_v<T>, SiteOperator>
 operator*(SiteOperator const& x, T a)
 {
-   return SiteOperator(x.Basis(), x.base() * a, x.Commute()); 
+   return SiteOperator(x.Basis(), x.base() * a, x.Commute());
 }
 
 template <typename T>
@@ -373,7 +373,7 @@ inline
 std::enable_if_t<blas::is_numeric_v<T>, SiteOperator>
 operator*(T a, SiteOperator const& x)
 {
-   return SiteOperator(x.Basis(), a * x.base(), x.Commute()); 
+   return SiteOperator(x.Basis(), a * x.base(), x.Commute());
 }
 
 inline
@@ -412,7 +412,7 @@ scalar_prod(SiteOperator const& x, Tensor::HermitianProxy<SiteOperator> const& y
    return SiteOperator(x.Basis(), scalar_prod(x.base(), herm(y.base().base())),
 		       x.Commute()*y.base().Commute());
 }
-   
+
 inline
 SiteOperator
 scalar_prod(Tensor::HermitianProxy<SiteOperator> const& x, SiteOperator const& y)

@@ -49,6 +49,18 @@ void vector_copy_from_stl(I1 start, I2 finish, T* y, int incy)
    }
 }
 
+template <typename I1, typename I2, typename T>
+inline
+void vector_uninitialized_copy_from_stl(I1 start, I2 finish, T* y, int incy)
+{
+   while (start != finish)
+   {
+      ::new(static_cast<void*>(y)) T(*start);
+      y += incy;
+      ++start;
+   }
+}
+
 void vector_clear(int N, double* y, int incy);
 
 void vector_clear(int N, std::complex<double>* y, int incy);
@@ -93,7 +105,7 @@ void
 vector_inner_prod(int N, double const* x, int incx, double const* y, int incy, double& r);
 
 void
-vector_inner_prod(int N, std::complex<double> const* x, int incx, 
+vector_inner_prod(int N, std::complex<double> const* x, int incx,
 		  std::complex<double> const* y, int incy,
 		  std::complex<double>& r);
 
@@ -107,7 +119,7 @@ vector_inner_prod_nested(int N, double const* x, int incx, double const* y, int 
 
 template <typename Nested>
 void
-vector_inner_prod_nested(int N, std::complex<double> const* x, int incx, 
+vector_inner_prod_nested(int N, std::complex<double> const* x, int incx,
 			 std::complex<double> const* y, int incy,
 			 std::complex<double>& r, Nested&&)
 {

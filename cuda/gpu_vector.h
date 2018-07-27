@@ -73,7 +73,37 @@ struct gpu_tag
    {
       return  ld == 1 ? 1 : cuda::round_up(ld, 32);
    }
+
+   template <typename T>
+   static void uninitialized_default_construct_n(cuda::gpu_ptr<T> p, int n);
+
+   template <typename T>
+   static void uninitialized_fill_n(cuda::gpu_ptr<T> p, int n, T fill);
+
+   template <typename T>
+   static void destroy_n(cuda::gpu_ptr<T> p, int n);
 };
+
+template <typename T>
+inline
+void gpu_tag::uninitialized_default_construct_n(cuda::gpu_ptr<T> p, int n)
+{
+   static_assert(cuda::is_cuda_floating_point_v<T>);
+}
+
+template <typename T>
+inline
+void gpu_tag::uninitialized_fill_n(cuda::gpu_ptr<T> p, int n, T fill)
+{
+   static_assert(cuda::is_cuda_floating_point_v<T>);
+}
+
+template <typename T>
+inline
+void gpu_tag::destroy_n(cuda::gpu_ptr<T> p, int n)
+{
+   static_assert(cuda::is_cuda_floating_point_v<T>);
+}
 
 template <typename T>
 using gpu_vector = Vector<T, gpu_tag>;

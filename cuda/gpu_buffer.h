@@ -220,12 +220,14 @@ class gpu_buffer
 
       gpu_buffer& operator=(gpu_buffer&& other) noexcept
       {
-	 Ptr = other.Ptr;
+         TRACE(this);
+         T* Temp = other.Ptr;
+         other.Ptr = nullptr;
+	 Ptr = Temp;
 	 ByteSize = other.ByteSize;
 	 Stream = std::move(other.Stream);
 	 Sync = std::move(other.Sync);
 	 Arena = std::move(other.Arena);
-	 other.Ptr = nullptr;
 	 return *this;
       }
 
@@ -319,6 +321,13 @@ class gpu_buffer
       blas::arena Arena;
 };
 
+template <typename T>
+std::ostream& operator<<(std::ostream& out, gpu_buffer<T> const& x)
+{
+   out << "gpu_buffer: " << x.device_ptr();
+   return out;
+}
+
 // a gpu_ptr is a weak version of a gpu_buffer - it contains a stream and a device pointer.
 // Use when the access to the pointer happens via buffer backing stream, ie no effective
 // parallelization over different components of the buffer.
@@ -372,6 +381,13 @@ class const_gpu_ptr
       gpu_buffer<T> const& Buf;
       int Offset;
 };
+
+template <typename T>
+std::ostream& operator<<(std::ostream& out, const_gpu_ptr<T> const& x)
+{
+   out << "const_gpu_ptr: buffer " << x.buffer().device_ptr() << " offset " << x.offset();
+   return out;
+}
 
 template <typename T>
 const_gpu_ptr<T> operator+(const_gpu_ptr<T> const& x, int Offset)
@@ -441,6 +457,13 @@ template <typename T>
 gpu_ptr<T> operator+(gpu_ptr<T> const& x, int Offset)
 {
    return gpu_ptr<T>(x.buffer(), x.offset() + Offset);
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& out, gpu_ptr<T> const& x)
+{
+   out << "gpu_ptr: buffer " << x.buffer().device_ptr() << " offset " << x.offset();
+   return out;
 }
 
 // a reference to a location within a gpu_buffer
@@ -547,6 +570,14 @@ class gpu_ref
       mutable cuda::stream Stream;
       mutable cuda::event Sync;
 };
+
+template <typename T>
+std::ostream& operator<<(std::ostream& out, gpu_ref<T> const& x)
+{
+   out << "gpu_ref: " << x.device_ptr();
+   return out;
+}
+
 
 template <typename T>
 inline

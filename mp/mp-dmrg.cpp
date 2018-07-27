@@ -113,7 +113,7 @@ int main(int argc, char** argv)
       int MaxStates = 100000;
       double MixFactor = 0.01;
       double RandomMixFactor = 0.0;
-      bool TwoSite = false;
+      //      bool TwoSite = false;
       int NumSweeps = 10;
       double TruncCutoff = 0;
       double EigenCutoff = -1;

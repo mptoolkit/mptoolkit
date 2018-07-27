@@ -17,6 +17,8 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+#include <memory>
+
 namespace blas
 {
 
@@ -61,6 +63,22 @@ operator<<(std::ostream& out, DiagonalMatrix<T, cpu_tag> const& x)
    {
       if (!first)
          out << '\n';
+      out << a;
+      first = false;
+   }
+   return out;
+}
+
+template <typename T>
+std::ostream&
+operator<<(std::ostream& out, DiagonalMatrix<std::complex<T>, cpu_tag> const& x)
+{
+   out << "diagonal[" << x.rows() << ", " << x.cols() << "]\n";
+   bool first = true;
+   for (auto const& a : x.diagonal())
+   {
+      if (!first)
+         out << '\n';
       write_format(out, a);
       first = false;
    }
@@ -71,7 +89,7 @@ template <typename T, typename Tag>
 std::ostream&
 operator<<(std::ostream& out, DiagonalMatrix<T, Tag> const& x)
 {
-   out << x.diagonal();
+   out << get_wait(x);
    return out;
 }
 
@@ -97,32 +115,35 @@ operator<<(PStream::opstreambuf<Format>& out, DiagonalMatrix<T, Tag> const& M)
 template <typename T>
 template <typename U>
 DiagonalMatrix<T>::DiagonalMatrix(std::initializer_list<U> m, arena Arena_)
-   : DiagonalMatrix(m.size(), m.size(), Arena_)
+   : Size(m.size()), Buf(buffer_type::allocate(m.size(), Arena_))
 {
-   vector_copy_from_stl(m.begin(), m.end(), Buf.ptr(), 1);
+   std::uninitialized_copy(m.begin(), m.end(), Buf.ptr());
 }
 
 template <typename T>
 template <typename U>
 DiagonalMatrix<T>::DiagonalMatrix(DiagonalMatrixRef<T, U, blas::cpu_tag> const& E, arena Arena_)
-   : DiagonalMatrix(E.rows(), E.cols(), Arena_)
+   : Size(E.rows()), Buf(buffer_type::allocate(E.rows(), Arena_))
 {
-   assign(*this, E.as_derived());
+   std::uninitialized_copy_n(E.as_derived().Buf.ptr(), E.rows(), Buf.ptr());
+   // assign(this->diagonal(), E.diagonal());
 }
 
 template <typename T>
 DiagonalMatrix<T>::DiagonalMatrix(int R, int C, arena Arena_)
    : Size(R),  Buf(buffer_type::allocate(R, Arena_))
 {
+   stdext::uninitialized_default_construct_n(Buf.ptr(), Size);
    CHECK_EQUAL(R,C)("Diagonal matrix must be square");
 }
 
-template <typename T              >
+template <typename T>
 DiagonalMatrix<T>::DiagonalMatrix(int R, int C, T const& Fill, arena Arena_)
    : Size(R),  Buf(buffer_type::allocate(R, Arena_))
 {
+   std::uninitialized_fill_n(Buf.ptr(), Size, Fill);
    CHECK_EQUAL(R,C)("Diagonal matrix must be square");
-   fill(this->diagonal(), Fill);
+   //   fill(this->diagonal(), Fill);
 }
 
 } // namespace blas
@@ -134,14 +155,32 @@ template <typename T>
 template <int Format>
 blas::DiagonalMatrix<T,blas::cpu_tag>
 stream_extract<blas::DiagonalMatrix<T,blas::cpu_tag>>::operator()(PStream::ipstreambuf<Format>& in) const
-{ 
+{
    typedef typename PStream::opstreambuf<Format>::size_type st;
    st Size;
+   in.template read<char>();
    in >> Size;
    blas::DiagonalMatrix<T,blas::cpu_tag> Result(Size);
    for (auto&& x : Result.diagonal())
    {
-      in >> x;
+      x = std::move(in.template read<T>());
+   }
+   return Result;
+}
+
+template <typename T, typename Tag>
+template <int Format>
+blas::DiagonalMatrix<blas::DiagonalMatrix<T,Tag>,blas::cpu_tag>
+stream_extract<blas::DiagonalMatrix<blas::DiagonalMatrix<T,Tag>,blas::cpu_tag>>::operator()(PStream::ipstreambuf<Format>& in) const
+{
+   typedef typename PStream::opstreambuf<Format>::size_type st;
+   st Size;
+   in.template read<char>();
+   in >> Size;
+   blas::DiagonalMatrix<blas::DiagonalMatrix<T,Tag>,blas::cpu_tag> Result(Size);
+   for (auto&& x : Result.diagonal())
+   {
+      x.move_from(in.template read<blas::DiagonalMatrix<T,Tag>>());
    }
    return Result;
 }
@@ -150,7 +189,7 @@ template <typename T, typename Tag>
 template <int Format>
 blas::DiagonalMatrix<T, Tag>
 stream_extract<blas::DiagonalMatrix<T, Tag>>::operator()(PStream::ipstreambuf<Format>& in) const
-{ 
+{
    blas::DiagonalMatrix<T,blas::cpu_tag> Temp = in.template read<blas::DiagonalMatrix<T,blas::cpu_tag>>();
    blas::DiagonalMatrix<T, Tag> Result(Temp.rows());
    set_wait(Result, Temp);

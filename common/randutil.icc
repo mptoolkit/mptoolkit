@@ -75,6 +75,7 @@ struct Dist<std::complex<T>>
       {
 	 x = std::complex<T>{Dist<T>::rand(), Dist<T>::rand()};
       }
+      return x;
    }
 };
 

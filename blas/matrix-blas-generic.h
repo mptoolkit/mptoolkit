@@ -39,6 +39,10 @@ template <typename T, typename U>
 void
 vector_copy(int M, T const* x, int incx, U* y, int incy);
 
+template <typename T, typename U>
+void
+vector_deep_copy(int M, T const* x, int incx, U* y, int incy);
+
 template <typename T, typename U, typename V>
 void
 vector_copy_scaled(int N, T const& alpha, U const* A, int lda, V* B, int ldb);
@@ -68,7 +72,7 @@ void
 vector_inner_prod(int N, double const* x, int incx, double const* y, int incy, double& r);
 
 void
-vector_inner_prod(int N, std::complex<double> const* x, int incx, 
+vector_inner_prod(int N, std::complex<double> const* x, int incx,
 		  std::complex<double> const* y, int incy,
 		  std::complex<double>& r);
 #endif
@@ -154,7 +158,7 @@ gemm(char Atrans, char Btrans, int M, int N, int K, T const& alpha,
 // product diagonal with general matrix
 template <typename Xt, typename Bt, typename Ct>
 void
-dgmm(int M, int K, 
+dgmm(int M, int K,
      Xt const* x, int incx,
      Bt const* B, int ldb,
      Ct* C, int ldc);

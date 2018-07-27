@@ -89,7 +89,10 @@ set(gpu_matrix<T>& A, blas::Matrix<T> const& B)
 template <typename T>
 std::ostream& operator<<(std::ostream& out, gpu_matrix<T> const& A)
 {
-   out << "gpu_matrix<" << tracer::typeid_name<T>() << " [" << A.rows() << "," << A.cols() << ']';
+   out << "gpu_matrix<" << tracer::typeid_name<T>() << "> [" << A.rows() << "," << A.cols() << ']';
+#if !defined(NDEBUG)
+   out << get_wait(A);
+#endif
    return out;
 }
 

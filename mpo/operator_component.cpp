@@ -280,8 +280,6 @@ OperatorComponent local_tensor_prod(OperatorComponent const& A, OperatorComponen
 
    OperatorComponent Result(LB1.Basis(), LB2.Basis(), A.Basis1(), B.Basis2());
 
-   typedef OperatorComponent::data_type MatType;
-
    for (auto const& rA : A)
    {
       for (auto const& cA : rA)

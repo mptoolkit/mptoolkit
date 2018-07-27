@@ -127,6 +127,7 @@ inline
 stream::~stream()
 {
    this->sub_reference();
+   stream_ = nullptr;  // for debugging
 }
 
 inline
@@ -255,7 +256,8 @@ event::~event()
 {
    if (event_)
       this->sub_reference();
- }
+   event_.reset();
+}
 
 inline
 void
@@ -282,7 +284,7 @@ event::sub_reference()
    if (*event_ && (--count_ == 0))
    {
       detail::FreeEvent(*event_);
-      // NOTE: we do not set event_ = nullltr here, caller must do this if necessary
+      // NOTE: we do not set event_ = nullptr here, caller must do this if necessary
       count_.deallocate();
    }
 }

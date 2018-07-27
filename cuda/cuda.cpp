@@ -99,6 +99,9 @@ int NumAllocatedStreams = 0;
 
 cudaStream_t AllocateStream()
 {
+#if defined(CUDA_SYNCHRONIZE)
+   return 0;
+#else
    std::lock_guard<std::mutex> lock(StreamFreeListMutex);
 #if 1
    // we don't need to find a stream that is unused; they all will be by the
@@ -126,7 +129,6 @@ cudaStream_t AllocateStream()
 	 StreamFreeList.push_back(s);
 	 ++NumAllocatedStreams;
       }
-      TRACE(NumAllocatedStreams);
       // return the last one
       sIter = StreamFreeList.end();
       --sIter;
@@ -134,6 +136,7 @@ cudaStream_t AllocateStream()
    cudaStream_t Result = *sIter;
    StreamFreeList.erase(sIter);
    return Result;
+#endif
 }
 
 void FreeStream(cudaStream_t stream_)

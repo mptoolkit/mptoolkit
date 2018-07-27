@@ -454,6 +454,7 @@ left_orthogonalize(LinearWavefunction& Psi, int Verbose)
 MatrixOperator
 right_orthogonalize(LinearWavefunction& Psi, MatrixOperator M, int Verbose)
 {
+   TRACE(M);
    LinearWavefunction Result(Psi.GetSymmetryList());
    LinearWavefunction::iterator Pi = Psi.end();
    int n = Psi.size();
@@ -462,6 +463,7 @@ right_orthogonalize(LinearWavefunction& Psi, MatrixOperator M, int Verbose)
       --Pi; --n;
       if (Verbose > 0)
          std::cout << "orthogonalizing site " << n << std::endl;
+      TRACE(*Pi);
       StateComponent x = prod(*Pi, M);
       M = TruncateBasis1(x);
       *Pi = std::move(x);

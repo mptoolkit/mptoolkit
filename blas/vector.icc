@@ -70,18 +70,18 @@ template <typename T>
 template <typename U>
 inline
 Vector<T, cpu_tag>::Vector(std::initializer_list<U> m, arena Arena_)
-   : Vector(m.size(), Arena_)
+   : Arena(Arena_), Size(m.size()), Data(Arena.allocate_type<T>(Size))
 {
-   vector_copy_from_stl(m.begin(), m.end(), Data, this->stride());
+   std::uninitialized_copy(m.begin(), m.end(), Data);
 }
 
 template <typename T>
 template <typename U>
 inline
 Vector<T, cpu_tag>::Vector(VectorRef<T, U, cpu_tag> const& E, arena Arena_)
-   : Vector(E.size(), Arena_)
+   : Arena(Arena_), Size(E.rows()), Data(Arena.allocate_type<T>(Size))
 {
-   assign(*this, E.as_derived());
+   std::uninitialized_copy_n(E.as_derived().Data, E.rows(), Data);
 }
 
 template <typename T>
@@ -89,6 +89,7 @@ inline
 Vector<T, cpu_tag>::Vector(int Size_, arena Arena_)
    : Arena(Arena_), Size(Size_), Data(Arena.allocate_type<T>(Size))
 {
+   stdext::uninitialized_default_construct_n(Data, Size);
 }
 
 template <typename T>
@@ -96,7 +97,7 @@ inline
 Vector<T, cpu_tag>::Vector(int Size_, T const& Fill, arena Arena_)
    : Arena(Arena_), Size(Size_), Data(Arena.allocate_type<T>(Size))
 {
-   fill(*this, Fill);
+   std::uninitialized_fill_n(Data, Size, Fill);
 }
 
 template <typename T, int Format>

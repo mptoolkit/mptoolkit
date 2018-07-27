@@ -580,6 +580,7 @@ adjoint(ReducibleTensor<T, B1, B2, S> const& x)
    {
       Result.insert(adjoint(xc));
    }
+   return Result;
 }
 
 template <typename T, typename B1, typename B2, typename S>
@@ -591,6 +592,7 @@ inv_adjoint(ReducibleTensor<T, B1, B2, S> const& x)
    {
       Result.insert(inv_adjoint(xc));
    }
+   return Result;
 }
 
 #if 0

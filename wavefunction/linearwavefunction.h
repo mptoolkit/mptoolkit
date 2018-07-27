@@ -101,25 +101,25 @@ class LinearWavefunction
 
       void push_front(value_type&& x)
       {
-	 if (SList.is_null()) SList = x.GetSymmetryList(); 
-	 Data.push_front(handle_type(new value_type(std::move(x)))); 
+	 if (SList.is_null()) SList = x.GetSymmetryList();
+	 Data.push_front(handle_type(new value_type(std::move(x))));
       }
 
       void push_front(value_type const& x)
-      { 
-	 if (SList.is_null()) SList = x.GetSymmetryList(); 
-	 Data.push_front(handle_type(new value_type(copy(x)))); 
+      {
+	 if (SList.is_null()) SList = x.GetSymmetryList();
+	 Data.push_front(handle_type(new value_type(copy(x))));
       }
 
       void push_back(value_type&& x)
-      { 
-	 if (SList.is_null()) SList = x.GetSymmetryList(); 
+      {
+	 if (SList.is_null()) SList = x.GetSymmetryList();
 	 Data.push_back(handle_type(new value_type(std::move(x))));
       }
 
       void push_back(value_type const& x)
-      { 
-	 if (SList.is_null()) SList = x.GetSymmetryList(); 
+      {
+	 if (SList.is_null()) SList = x.GetSymmetryList();
 	 Data.push_back(handle_type(new value_type(copy(x))));
       }
 
@@ -428,16 +428,18 @@ TruncateBasis1(StateComponent& A)
 {
    typedef StateComponent::operator_type operator_type;
    operator_type Trunc = ExpandBasis1(A);  // the original component is prod(Trunc, A)
+   TRACE(A)(Trunc);
    // Do the singular value decomposition via a (reduced) density matrix
    DensityMatrix<operator_type> DM(scalar_prod(herm(Trunc), Trunc));
 
-   //   DM.DensityMatrixReport(std::cerr);
+   DM.DensityMatrixReport(std::cerr);
    DensityMatrix<operator_type>::const_iterator E = DM.begin();
    // take all eigenvalues that are bigger than EigenvalueEpsilon (normalized to EigenSum)
    while (E != DM.end() && E->Eigenvalue > EigenvalueEpsilon * DM.EigenSum()) ++E;
    operator_type U = DM.ConstructTruncator(DM.begin(), E);
    // apply the truncation
    A = prod(U, A);
+   TRACE(Trunc)(U);
    return Trunc * herm(U);
 }
 

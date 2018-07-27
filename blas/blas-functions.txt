@@ -34,6 +34,9 @@ char const* <type>_blas_library()
 // y = x
 vector_copy(BlasVector x, BlasVector& y)
 
+// y[i] = copy(x[i])
+vector_deep_copy(BlasVector x, BlasVector& y)
+
 y = alpha * x
 vector_copy_scaled(alpha, BlasVector x, BlasVector& y)
 

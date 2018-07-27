@@ -286,7 +286,7 @@ tensor_prod(IrredTensor<T1, B1, B2, S1> const& ML, IrredTensor<T2, B3, B4, S2> c
 							ML.TransformsAs(), MR.TransformsAs(), q,
 							rML.row(), rMR.row(), b1,
 							cML.col(), cMR.col(), b2);
-			
+
                         if (norm_frob(Coeff) > 1E-14)
 			   Result.insert(b1, b2, Coeff * ProdFunctor(cML.value, cMR.value));
 		     }
@@ -477,9 +477,6 @@ decompose_tensor_prod(IrredTensor<T, B1, B2, S> const& x,
    DEBUG_PRECONDITION_EQUAL(x.Basis2(), Basis2.Basis());
 
    using QuantumNumbers::QuantumNumberList;
-
-   typedef typename  ProductBasis<B3, B4>::const_iterator basis1_iter;
-   typedef typename  ProductBasis<B5, B6>::const_iterator basis2_iter;
 
    std::map<PartialProdIndex, T> Result;
 

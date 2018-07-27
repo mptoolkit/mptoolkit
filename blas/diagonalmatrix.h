@@ -99,12 +99,20 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
       }
 #endif
 
-      DiagonalMatrix& operator=(DiagonalMatrix&& Other) noexcept
+      DiagonalMatrix& operator=(DiagonalMatrix&& Other)
       {
 	 Size = Other.Size;
 	 Buf = std::move(Other.Buf);
 	 return *this;
       }
+
+      DiagonalMatrix& move_from(DiagonalMatrix&& Other)
+      {
+	 Size = Other.Size;
+	 Buf = std::move(Other.Buf);
+	 return *this;
+      }
+
 
       // assignment of expressions based on the same matrix type -- we don't allow assignment
       // of expression templates of other matrix types (eg gpu_matrix)
@@ -631,7 +639,14 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
       template <typename U>
       DiagonalMatrix(std::initializer_list<U> x) : DiagonalMatrix(x, tag_type::template default_arena<T>()) {}
 
-      ~DiagonalMatrix() noexcept = default;
+      // TODO: this needs to call destructors on the components
+      ~DiagonalMatrix() noexcept
+      {
+         if (Buf.ptr())
+         {
+            stdext::destroy_n(Buf.ptr(), Size);
+         }
+      }
 
       DiagonalMatrix& operator=(DiagonalMatrix const& Other)
       {
@@ -639,7 +654,12 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
 	 return *this;
       }
 
-      DiagonalMatrix& operator=(DiagonalMatrix&& Other) = default;
+      DiagonalMatrix& operator=(DiagonalMatrix&& Other) noexcept
+      {
+         Size = Other.Size;
+         Buf = std::move(Other.Buf);
+         return *this;
+      }
 
       // assignment of expressions based on the same matrix type -- we don't allow assignment
       // of expression templates of other matrix types (eg gpu_matrix)
@@ -814,7 +834,7 @@ DiagonalMatrix<T, Tag>
 copy(DiagonalMatrix<T, Tag> const& x)
 {
    DiagonalMatrix<T, Tag> Result(x.rows());
-   Result = x;
+   assign_copy(Result.diagonal(), x.diagonal());
    return Result;
 }
 
@@ -968,6 +988,14 @@ struct stream_extract<blas::DiagonalMatrix<T, blas::cpu_tag>>
    template <int Format>
    blas::DiagonalMatrix<T,blas::cpu_tag> operator()(PStream::ipstreambuf<Format>& in) const;
 };
+
+template <typename T, typename Tag>
+struct stream_extract<blas::DiagonalMatrix<blas::DiagonalMatrix<T,Tag>, blas::cpu_tag>>
+{
+   template <int Format>
+   blas::DiagonalMatrix<blas::DiagonalMatrix<T,Tag>,blas::cpu_tag> operator()(PStream::ipstreambuf<Format>& in) const;
+};
+
 
 } // namespace PStream
 

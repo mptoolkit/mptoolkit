@@ -123,6 +123,7 @@ unpack_from(MatrixOperator& m, complex const* Iter)
          }
       }
    }
+   return Iter;
 }
 
 void unpack(MatrixOperator& m, blas::Vector<complex> const& v)

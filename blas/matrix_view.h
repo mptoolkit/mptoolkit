@@ -45,22 +45,29 @@ class matrix_range_view : public NormalMatrixProxy<ValueType, matrix_range_view<
       ~matrix_range_view() = default;
 
       template <typename U>
-      matrix_range_view&& operator=(MatrixRef<ValueType, U, Tag> const& E) &&
+      matrix_range_view& operator=(MatrixRef<ValueType, U, Tag> const& E) &&
       {
          assign(static_cast<matrix_range_view&&>(*this), E.as_derived());
+         return *this;
       }
 
       template <typename U>
-      matrix_range_view&& operator+=(MatrixRef<ValueType, U, Tag> const& E) &&
+      matrix_range_view& operator+=(MatrixRef<ValueType, U, Tag> const& E) &&
       {
          add(static_cast<matrix_range_view&&>(*this), E.as_derived());
+         return *this;
       }
 
       template <typename U>
-      matrix_range_view&& operator-=(MatrixRef<ValueType, U, Tag> const& E) &&
+      matrix_range_view& operator-=(MatrixRef<ValueType, U, Tag> const& E) &&
       {
          subtract(static_cast<matrix_range_view&&>(*this), E.as_derived());
+         return *this;
       }
+
+      int rows() const { return Rows; }
+      int cols() const { return Cols; }
+      int leading_dimension() const { return LeadingDimension; }
 
       storage_type storage() & { return Ptr; }
       const_storage_type storage() const& { return Ptr; }

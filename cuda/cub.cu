@@ -524,4 +524,35 @@ template void vector_add_parallel_scaled<std::complex<double>>(int n, std::compl
                                                                cuda::gpu_ptr<std::complex<double>> z, int incz);
 
 
+__global__ void cuda_dgmm(int M, int N, double const* x, int incx,
+                          cuDoubleComplex const* B, int ldb,
+                          cuDoubleComplex* C, int ldc)
+{
+   unsigned Col = blockIdx.x*blockDim.x + threadIdx.x;
+   unsigned Row = blockIdx.y*blockDim.y + threadIdx.y;
+   if (Row < M && Col < N)
+   {
+      C[ldc*Col + Row].x = x[Row*incx] * B[ldc*Col + Row].x;
+      C[ldc*Col + Row].y = x[Row*incx] * B[ldc*Col + Row].y;
+   }
+}
+
+void
+dgmm(int M, int N,
+     cuda::const_gpu_ptr<double> x, int incx,
+     cuda::const_gpu_ptr<std::complex<double>> B, int ldb,
+     cuda::gpu_ptr<std::complex<double>> C, int ldc)
+{
+   C.wait_for(x);
+   C.wait_for(B);
+   TRACE_CUDA("cuda_dgmm")(M)(N)(x.device_ptr())(incx)(B.device_ptr())(ldb)(C.device_ptr())(ldc);
+   dim3 BlockDim(16, 16);
+   dim3 GridDim((M+BlockDim.x-1) / BlockDim.x, (N+BlockDim.y-1) / BlockDim.y);
+   cuda_dgmm<<<GridDim, BlockDim, 0, C.get_stream().raw_stream()>>>(M, N, x.device_ptr(), incx,
+                                                                    cuda_complex_cast(B.device_ptr()), ldb,
+                                                                    cuda_complex_cast(C.device_ptr()), ldc);
+   x.wait_for(C);
+   B.wait_for(C);
+}
+
 } // namespace cuda
