@@ -132,6 +132,7 @@ template <typename T>
 void
 vector_sum(int Size, cuda::const_gpu_ptr<T> const& x, int incx, cuda::gpu_ref<T>& r)
 {
+   TRACE_CUDA("vector_sum")(Size)(x)(incx)(r);
    std::size_t TempStorageBytes = 0;
    cub::DeviceReduce::Sum(nullptr, TempStorageBytes, detail::stride_ptr<T const>(x.device_ptr(), incx),
                           r.device_ptr(), Size);
@@ -150,6 +151,7 @@ void
 vector_sum(int Size, cuda::const_gpu_ptr<std::complex<T>> const& x, int incx,
 	   cuda::gpu_ref<std::complex<T>>& r)
 {
+   TRACE_CUDA("vector_sum")(Size)(x)(incx)(r);
    std::size_t TempStorageBytes1 = 0;
    // real part
    // workspace query
@@ -166,6 +168,8 @@ vector_sum(int Size, cuda::const_gpu_ptr<std::complex<T>> const& x, int incx,
                           static_cast<T*>(static_cast<void*>(r.device_ptr())), Size,
 			  TempBuffer1.get_stream().raw_stream());
 
+   cuda::device_synchronize();
+
    // imag part
    // workspace query
    std::size_t TempStorageBytes2 = 0;
@@ -180,6 +184,8 @@ vector_sum(int Size, cuda::const_gpu_ptr<std::complex<T>> const& x, int incx,
 			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr()))+1, incx*2),
                           static_cast<T*>(static_cast<void*>(r.device_ptr()))+1, Size,
 			  TempBuffer2.get_stream().raw_stream());
+
+   cuda::device_synchronize();
 
    r.wait(TempBuffer1.sync());
    r.wait(TempBuffer2.sync());

@@ -54,6 +54,7 @@ SVD_Regular(MatrixOperator const& m,
 
    for (unsigned i = 0; i < m.Basis1().size(); ++i)
    {
+      bool Inserted = false;
       for (unsigned j = 0; j < m.Basis2().size(); ++j)
       {
          if (m.Basis1()[i] != m.Basis2()[j])
@@ -61,7 +62,9 @@ SVD_Regular(MatrixOperator const& m,
 
 	 auto I = m.row(i).find(j);
 	 if (I == m.row(i).end())
-	    continue;
+            continue;
+
+         DEBUG_CHECK(!Inserted); // can't insert twice!
 
 	 int s = std::min(I->rows(), I->cols());
 	 Matrix UU(I->rows(), s);
@@ -71,8 +74,21 @@ SVD_Regular(MatrixOperator const& m,
 	 U.insert(i, BasisMap[i], std::move(UU));
 	 D.insert(BasisMap[i], BasisMap[i], std::move(DD));
 	 Vh.insert(BasisMap[i], j, std::move(VV));
+         Inserted = true;
+      }
+      if (!Inserted)
+      {
+         // In this case there is no element at m(i,j), so the corresponding
+         // singular values are therefore zero.  We need to add these in separately
+         // to D.
+         int Dim = DBasis.dim(BasisMap[i]);
+         D.insert(BasisMap[i],BasisMap[i], RealDiagonalMatrix(Dim, Dim, 0.0));
+         continue;
       }
    }
+   U.debug_check_structure();
+   D.debug_check_structure();
+   Vh.debug_check_structure();
 }
 
 void
@@ -85,26 +101,14 @@ SVD_FullRows_Regular(MatrixOperator const& m,
    DEBUG_CHECK(is_regular_basis(m.Basis1()))(m.Basis1());
    DEBUG_CHECK(is_regular_basis(m.Basis2()))(m.Basis2());
    // make the basis for the D matrix
-   std::vector<int> BasisMap(m.Basis1().size(), 0);
-   VectorBasis DBasis(m.GetSymmetryList());
-   for (unsigned i = 0; i < m.Basis1().size(); ++i)
-   {
-      for (unsigned j = 0; j < m.Basis2().size(); ++j)
-      {
-         if (m.Basis1()[i] != m.Basis2()[j])
-            continue;
 
-         BasisMap[i] = DBasis.size();
-         DBasis.push_back(m.Basis1()[i], std::min(m.Basis1().dim(i), m.Basis2().dim(j)));
-      }
-   }
-
-   U = MatrixOperator(m.Basis1(), DBasis);
-   D = RealDiagonalOperator(DBasis, DBasis);
-   Vh = MatrixOperator(DBasis, m.Basis2());
+   U = MatrixOperator(m.Basis1(), m.Basis1());
+   D = RealDiagonalOperator(m.Basis1(), m.Basis1());
+   Vh = MatrixOperator(m.Basis1(), m.Basis2());
 
    for (unsigned i = 0; i < m.Basis1().size(); ++i)
    {
+      bool Inserted = false;
       for (unsigned j = 0; j < m.Basis2().size(); ++j)
       {
          if (m.Basis1()[i] != m.Basis2()[j])
@@ -112,17 +116,33 @@ SVD_FullRows_Regular(MatrixOperator const& m,
 
 	 auto I = m.row(i).find(j);
 	 if (I == m.row(i).end())
-	    continue;
+            continue;
+
+         DEBUG_CHECK(!Inserted); // can't insert twice!
 
 	 Matrix UU(I->rows(), I->rows());
 	 RealDiagonalMatrix DD(I->rows(), I->rows());
 	 Matrix VV(I->rows(), I->cols());
 	 blas::SVD_FullRows(copy((*I).value), UU, DD.diagonal(), VV);
-	 U.insert(i, BasisMap[i], std::move(UU));
-	 D.insert(BasisMap[i], BasisMap[i], std::move(DD));
-	 Vh.insert(BasisMap[i], j, std::move(VV));
+	 U.insert(i, i, std::move(UU));
+	 D.insert(i, i, std::move(DD));
+	 Vh.insert(i, j, std::move(VV));
+         Inserted = true;
+      }
+      if (!Inserted)
+      {
+         // In this case there is no element in m at row i, either because it
+         // just happens to be zero, or there isn't a column j that matches the quantum
+         // number.  Hence the corresponding
+         // singular values are zero.  We need to add these in separately
+         // to D.
+         D.insert(i,i, RealDiagonalMatrix(m.Basis1().dim(i), m.Basis1().dim(i), 0.0));
+         continue;
       }
    }
+   U.debug_check_structure();
+   D.debug_check_structure();
+   Vh.debug_check_structure();
 }
 
 void
@@ -136,44 +156,51 @@ SVD_FullCols_Regular(MatrixOperator const& m,
    DEBUG_CHECK(is_regular_basis(m.Basis2()))(m.Basis2());
    // make the basis for the D matrix
    std::vector<int> BasisMap(m.Basis1().size(), 0);
-   VectorBasis DBasis(m.GetSymmetryList());
-   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+
+   U = MatrixOperator(m.Basis1(), m.Basis2());
+   D = RealDiagonalOperator(m.Basis2(), m.Basis2());
+   Vh = MatrixOperator(m.Basis2(), m.Basis2());
+
+   for (unsigned j = 0; j < m.Basis2().size(); ++j)
    {
-      for (unsigned j = 0; j < m.Basis2().size(); ++j)
-      {
-         if (m.Basis1()[i] != m.Basis2()[j])
-            continue;
-
-         BasisMap[i] = DBasis.size();
-         DBasis.push_back(m.Basis1()[i], std::min(m.Basis1().dim(i), m.Basis2().dim(j)));
-      }
-   }
-
-   U = MatrixOperator(m.Basis1(), DBasis);
-   D = RealDiagonalOperator(DBasis, DBasis);
-   Vh = MatrixOperator(DBasis, m.Basis2());
-
-   for (unsigned i = 0; i < m.Basis1().size(); ++i)
-   {
-      for (unsigned j = 0; j < m.Basis2().size(); ++j)
+      bool Inserted = false;
+      for (unsigned i = 0; i < m.Basis1().size(); ++i)
       {
          if (m.Basis1()[i] != m.Basis2()[j])
             continue;
 
 	 auto I = m.row(i).find(j);
 	 if (I == m.row(i).end())
-	    continue;
+            continue;
+
+         DEBUG_CHECK(!Inserted); // can't insert twice!
 
 	 Matrix UU(I->rows(), I->cols());
 	 RealDiagonalMatrix DD(I->cols(),I->cols());
+         TRACE(I->cols());
+         TRACE(DD);
 	 Matrix VV(I->cols(), I->cols());
 	 blas::SVD_FullCols(copy((*I).value), UU, DD.diagonal(), VV);
-         TRACE("QQQQ")(VV);
-	 U.insert(i, BasisMap[i], std::move(UU));
-	 D.insert(BasisMap[i], BasisMap[i], std::move(DD));
-	 Vh.insert(BasisMap[i], j, std::move(VV));
+         TRACE(DD);
+	 U.insert(i, j, std::move(UU));
+	 D.insert(j, j, std::move(DD));
+	 Vh.insert(j, j, std::move(VV));
+         Inserted = true;
+      }
+      if (!Inserted)
+      {
+         // In this case there is no element in m at column j, either because it
+         // just happens to be zero, or there isn't a row i that matches the quantum
+         // number.  Hence the corresponding
+         // singular values are zero.  We need to add these in separately
+         // to D.
+         D.insert(j,j, RealDiagonalMatrix(m.Basis2().dim(j), m.Basis2().dim(j), 0.0));
+         continue;
       }
    }
+   U.debug_check_structure();
+   D.debug_check_structure();
+   Vh.debug_check_structure();
 }
 
 
@@ -263,6 +290,7 @@ DiagonalizeHermitian(MatrixOperator& x)
       blas::DiagonalizeHermitian((*I).value, D.diagonal());
       Result.insert(i,i, std::move(D));
    }
+
    return Result;
 }
 

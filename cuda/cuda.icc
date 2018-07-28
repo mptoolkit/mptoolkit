@@ -84,12 +84,14 @@ void device_synchronize()
 inline
 stream::stream() : stream_(detail::AllocateStream())
 {
+   TRACE_STREAM(stream_);
    count_.allocate(1);
 }
 
 inline
 stream::stream(stream&& other) : stream_(other.stream_), count_(std::move(other.count_))
 {
+   TRACE_STREAM(stream_);
    other.stream_ = nullptr;
 }
 
@@ -105,6 +107,7 @@ stream::operator=(stream&& other)
 inline
 stream::stream(stream const& other) : stream_(other.stream_), count_(other.count_)
 {
+   TRACE_STREAM(stream_);
    if (stream_)
       ++count_;
 }
@@ -113,6 +116,7 @@ inline
 stream&
 stream::operator=(stream const& other)
 {
+   TRACE_STREAM(stream_)(other.stream_);
    if (other.stream_)
       ++other.count_;
 
@@ -126,6 +130,7 @@ stream::operator=(stream const& other)
 inline
 stream::~stream()
 {
+   TRACE_STREAM(stream_);
    this->sub_reference();
    stream_ = nullptr;  // for debugging
 }
@@ -147,6 +152,7 @@ inline
 void
 stream::sub_reference()
 {
+   TRACE_STREAM(stream_);
    if (stream_ && (--count_ == 0))
    {
       if (this->is_running())
@@ -168,15 +174,16 @@ stream::wait(event const& e) const
 
 inline
 event
-stream::record()
+stream::record() const
 {
    return event(stream_);
 }
 
 inline
 void
-stream::synchronize()
+stream::synchronize() const
 {
+   TRACE_STREAM(stream_);
    check_error(cudaStreamSynchronize(stream_));
 }
 
@@ -184,6 +191,7 @@ inline
 bool
 stream::is_running() const
 {
+   TRACE_STREAM(stream_);
    cudaError_t e = cudaStreamQuery(stream_);
    if (e == cudaErrorNotReady)
       return true;

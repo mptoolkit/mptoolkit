@@ -29,6 +29,7 @@
 
 #include "cuda.h"
 #include "gpu_buffer.h"
+#include "gpu_vector.h"
 #include <cusolverDn.h>
 
 namespace cusolver
@@ -142,6 +143,185 @@ void SingularValueDecompositionFull(int Rows, int Cols,
 				    cuda::gpu_ptr<std::complex<double>> Vmat, int ldV);
 
 } // namespace detail
+
+// CUBLAS svd requires transpositions in some cases
+
+template <typename Scalar, typename Real, typename M, typename U, typename D, typename V>
+void
+SVD(NormalMatrix<Scalar, M, gpu_tag>&& Mmat, NormalMatrix<Scalar, U, blas::gpu_tag>& Umat,
+    NormalVector<Real, D, gpu_tag>& Dvec, NormalMatrix<Scalar, V, blas::gpu_tag>& Vmat)
+{
+   CHECK_EQUAL(Dvec.size(), std::min(Mmat.rows(), Mmat.cols()));
+   CHECK_EQUAL(Mmat.rows(), Umat.rows());
+   CHECK_EQUAL(Umat.cols(), Dvec.size());
+   CHECK_EQUAL(Dvec.size(), Vmat.rows());
+   CHECK_EQUAL(Vmat.cols(), Mmat.cols());
+
+   if (Mmat.rows() < Mmat.cols())
+   {
+      blas::Matrix<Scalar, gpu_tag> TempM(trans(Mmat));
+      blas::Matrix<Scalar, gpu_tag> TempU(Vmat.cols(), Vmat.rows());
+      blas::Matrix<Scalar, gpu_tag> TempV(Umat.cols(), Umat.rows());
+      SVD(std::move(TempM), TempU, Dvec, TempV);
+      assign(Umat, trans(std::move(TempV)));
+      assign(Vmat, trans(std::move(TempU)));
+   }
+   else
+   {
+      detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(), Dvec.storage(),
+                                         Umat.storage(), Umat.leading_dimension(),
+                                         Vmat.storage(), Vmat.leading_dimension());
+   }
+}
+
+template <typename Scalar, typename Real, typename M, typename U, typename D, typename V>
+void
+SVD(NormalMatrix<Scalar, M, gpu_tag>&& Mmat, NormalMatrix<Scalar, U, gpu_tag>& Umat,
+    NormalVectorProxy<Real, D, gpu_tag>&& Dvec, NormalMatrix<Scalar, V, gpu_tag>& Vmat)
+{
+   CHECK_EQUAL(Dvec.size(), std::min(Mmat.rows(), Mmat.cols()));
+   CHECK_EQUAL(Mmat.rows(), Umat.rows());
+   CHECK_EQUAL(Umat.rows(), Dvec.size());
+   CHECK_EQUAL(Dvec.size(), Vmat.rows());
+   CHECK_EQUAL(Vmat.cols(), Mmat.cols());
+
+   if (Mmat.rows() < Mmat.cols())
+   {
+      blas::Matrix<Scalar, gpu_tag> TempM(trans(Mmat));
+      blas::Matrix<Scalar, gpu_tag> TempU(Vmat.cols(), Vmat.rows());
+      blas::Matrix<Scalar, gpu_tag> TempV(Umat.cols(), Umat.rows());
+      SVD(std::move(TempM), TempU, std::move(Dvec), TempV);
+      assign(Umat, trans(std::move(TempV)));
+      assign(Vmat, trans(std::move(TempU)));
+   }
+   else
+   {
+      detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(),
+                                         std::move(Dvec).storage(),
+                                         Umat.storage(), Umat.leading_dimension(),
+                                         Vmat.storage(), Vmat.leading_dimension());
+   }
+}
+
+template <typename Scalar, typename Real, typename M, typename U, typename D, typename V>
+void
+SVD_FullRows(NormalMatrix<Scalar, M, gpu_tag>&& Mmat, NormalMatrix<Scalar, U, gpu_tag>& Umat,
+	     NormalVector<Real, D, gpu_tag>& Dvec, NormalMatrix<Scalar, V, gpu_tag>& Vmat)
+{
+   CHECK_EQUAL(Dvec.size(), Mmat.rows());
+   CHECK_EQUAL(Mmat.rows(), Umat.rows());
+   CHECK_EQUAL(Umat.cols(), Dvec.size());
+   CHECK_EQUAL(Dvec.size(), Vmat.rows());
+   CHECK_EQUAL(Vmat.cols(), Mmat.cols());
+   if (Mmat.rows() < Mmat.cols())
+   {
+      blas::Matrix<Scalar, gpu_tag> TempM(trans(Mmat));
+      blas::Matrix<Scalar, gpu_tag> TempU(Vmat.cols(), Vmat.rows());
+      blas::Matrix<Scalar, gpu_tag> TempV(Umat.cols(), Umat.rows());
+      SVD_FullCols(std::move(TempM), TempU, Dvec, TempV);
+      assign(Umat, trans(std::move(TempV)));
+      assign(Vmat, trans(std::move(TempU)));
+   }
+   else
+   {
+      // need to zero the additional elements in Dvec
+      clear(Dvec);
+      detail::SingularValueDecompositionFull(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(), Dvec.storage(),
+					     Umat.storage(), Umat.leading_dimension(),
+					     Vmat.storage(), Vmat.leading_dimension());
+   }
+}
+
+template <typename Scalar, typename Real, typename M, typename U, typename D, typename V>
+void
+SVD_FullRows(NormalMatrix<Scalar, M, gpu_tag>&& Mmat, NormalMatrix<Scalar, U, gpu_tag>& Umat,
+	     NormalVectorProxy<Real, D, gpu_tag>&& Dvec, NormalMatrix<Scalar, V, gpu_tag>& Vmat)
+{
+   CHECK_EQUAL(Dvec.size(), Mmat.rows());
+   CHECK_EQUAL(Mmat.rows(), Umat.rows());
+   CHECK_EQUAL(Umat.cols(), Dvec.size());
+   CHECK_EQUAL(Dvec.size(), Vmat.rows());
+   CHECK_EQUAL(Vmat.cols(), Mmat.cols());
+   if (Mmat.rows() < Mmat.cols())
+   {
+      blas::Matrix<Scalar, gpu_tag> TempM(trans(Mmat));
+      blas::Matrix<Scalar, gpu_tag> TempU(Vmat.cols(), Vmat.rows());
+      blas::Matrix<Scalar, gpu_tag> TempV(Umat.cols(), Umat.rows());
+      SVD_FullCols(std::move(TempM), TempU, std::move(Dvec), TempV);
+      assign(Umat, trans(std::move(TempV)));
+      assign(Vmat, trans(std::move(TempU)));
+   }
+   else
+   {
+      // need to zero the additional elements in Dvec
+      clear(Dvec);
+      detail::SingularValueDecompositionFull(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(),
+					     std::move(Dvec).storage(),
+					     Umat.storage(), Umat.leading_dimension(),
+					     Vmat.storage(), Vmat.leading_dimension());
+   }
+}
+
+// SVD_FullCols
+//
+// Given M as an m*n matrix, U is m*n, D is n*n, V is n*n
+//
+
+template <typename Scalar, typename Real, typename M, typename U, typename D, typename V>
+void
+SVD_FullCols(NormalMatrix<Scalar, M, gpu_tag>&& Mmat, NormalMatrix<Scalar, U, gpu_tag>& Umat,
+	     NormalVector<Real, D, gpu_tag>& Dvec, NormalMatrix<Scalar, V, gpu_tag>& Vmat)
+{
+   CHECK_EQUAL(Dvec.size(), Mmat.cols());
+   CHECK_EQUAL(Mmat.rows(), Umat.rows());
+   CHECK_EQUAL(Umat.cols(), Dvec.size());
+   CHECK_EQUAL(Dvec.size(), Vmat.rows());
+   CHECK_EQUAL(Vmat.cols(), Mmat.cols());
+   if (Mmat.cols() <= Mmat.rows())
+   {
+      detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(),
+                                         Mmat.storage(), Mmat.leading_dimension(), Dvec.storage(),
+					 Umat.storage(), Umat.leading_dimension(),
+					 Vmat.storage(), Vmat.leading_dimension());
+   }
+   else
+   {
+      blas::Matrix<Scalar, gpu_tag> TempM(trans(Mmat));
+      blas::Matrix<Scalar, gpu_tag> TempU(Vmat.cols(), Vmat.rows());
+      blas::Matrix<Scalar, gpu_tag> TempV(Umat.cols(), Umat.rows());
+      SVD_FullRows(std::move(TempM), TempU, Dvec, TempV);
+      assign(Umat, trans(std::move(TempV)));
+      assign(Vmat, trans(std::move(TempU)));
+   }
+}
+
+template <typename Scalar, typename Real, typename M, typename U, typename D, typename V>
+void
+SVD_FullCols(NormalMatrix<Scalar, M, blas::gpu_tag>&& Mmat, NormalMatrix<Scalar, U, gpu_tag>& Umat,
+	     NormalVectorProxy<Real, D, blas::gpu_tag>&& Dvec, NormalMatrix<Scalar, V, gpu_tag>& Vmat)
+{
+   CHECK_EQUAL(Dvec.size(), Mmat.cols());
+   CHECK_EQUAL(Mmat.rows(), Umat.rows());
+   CHECK_EQUAL(Umat.cols(), Dvec.size());
+   CHECK_EQUAL(Dvec.size(), Vmat.rows());
+   CHECK_EQUAL(Vmat.cols(), Mmat.cols());
+   if (Mmat.cols() < Mmat.rows())
+   {
+      detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(),
+					 std::move(Dvec).storage(),
+					 Umat.storage(), Umat.leading_dimension(),
+					 Vmat.storage(), Vmat.leading_dimension());
+   }
+   else
+   {
+      blas::Matrix<Scalar, gpu_tag> TempM(trans(Mmat));
+      blas::Matrix<Scalar, gpu_tag> TempU(Vmat.cols(), Vmat.rows());
+      blas::Matrix<Scalar, gpu_tag> TempV(Umat.cols(), Umat.rows());
+      SVD_FullRows(std::move(TempM), TempU, std::move(Dvec), TempV);
+      assign(Umat, trans(std::move(TempV)));
+      assign(Vmat, trans(std::move(TempU)));
+   }
+}
 
 } // namespace blas
 

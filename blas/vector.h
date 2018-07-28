@@ -260,25 +260,27 @@ class Vector : public NormalVector<T, Vector<T, Tag>, Tag>
 
       reference operator[](int i)
       {
-         DEBUG_RANGE_CHECK(i, 0, Size);
+         DEBUG_RANGE_CHECK_OPEN(i, 0, Size);
          return Buf[i];
       }
 
       const_reference operator[](int i) const
       {
-         DEBUG_RANGE_CHECK(i, 0, Size);
+         DEBUG_RANGE_CHECK_OPEN(i, 0, Size);
          return Buf[i];
       }
 
       vector_view<T, Tag> operator[](Range r)
       {
-	 DEBUG_RANGE_CHECK(r.first(), 0, Size);
+	 DEBUG_RANGE_CHECK_OPEN(r.first(), 0, Size);
+	 DEBUG_RANGE_CHECK(r.first()+r.size(), 0, Size);
 	 return vector_view<T, Tag>(r.size(), 1, Buf.ptr()+r.first());
       }
 
       const_vector_view<T, Tag> operator[](Range r) const
       {
-	 DEBUG_RANGE_CHECK(r.first(), 0, Size);
+	 DEBUG_RANGE_CHECK_OPEN(r.first(), 0, Size);
+	 DEBUG_RANGE_CHECK(r.first()+r.size(), 0, Size);
 	 return const_vector_view<T, Tag>(r.size(), 1, Buf.ptr()+r.first());
       }
 

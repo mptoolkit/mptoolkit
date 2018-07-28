@@ -129,9 +129,13 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 
    TRACE("QAZ")(U)(D)(Vh);
 
+   C.debug_check_structure();
+
    C = prod(Vh, C);
 
    TRACE("WSX")(C);
+
+   C.debug_check_structure();
 
    return std::make_pair(std::move(U), std::move(D));
 }

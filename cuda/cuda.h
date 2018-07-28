@@ -17,6 +17,16 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+//
+// Debug support:
+// define CUDA_TRACE_FUNCTIONS to get detailed information for CUDA API calls.
+//
+// define CUDA_SYNCHRONIZE to force all streams to use stream 0, and synchronize
+// after each API call.
+//
+// define CUDA_TRACE_STREAMS to print debug info whenever a stream is created or destroyed.
+//
+
 #if !defined(MPTOOLKIT_CUDA_CUDA_H)
 #define MPTOOLKIT_CUDA_CUDA_H
 
@@ -35,6 +45,13 @@
 #else
 #define TRACE_CUDA(Msg) DUMMY_TRACE(Msg)
 #endif
+
+#if defined(CUDA_TRACE_STREAMS)
+#define TRACE_STREAM(Msg) TRACE(Msg)
+#else
+#define TRACE_STREAM(Msg) DUMMY_TRACE(Msg)
+#endif
+
 
 namespace cuda
 {
@@ -129,10 +146,10 @@ class stream
 
       // record the event at the current location in the stream,
       // as a single-use event
-      event record();
+      event record() const;
 
       // blocks until the stream has completed all operations
-      void synchronize();
+      void synchronize() const;
 
       // wait for the given event
       void wait(event const& e) const;

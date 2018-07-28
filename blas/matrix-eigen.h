@@ -122,6 +122,7 @@ inline
 void DiagonalizeHermitian(NormalMatrix<std::complex<double>, U, Tag>& M, NormalVector<double, V, Tag>& v)
 {
    CHECK_EQUAL(M.rows(), M.cols());
+   TRACE(M.as_derived());
    detail::DiagonalizeHermitian(M.rows(), M.storage(), M.leading_dimension(), v.storage());
 }
 

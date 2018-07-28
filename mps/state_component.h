@@ -179,6 +179,7 @@ BasicStateComponent<T>::check_structure() const
       CHECK_EQUAL(Data[i].TransformsAs(), SBasis[i])("StateComponent TransformsAs() doesn't match local basis");
       CHECK_EQUAL(Data[i].Basis1(), VBasis1)("StateComponent Basis1 mismatch at component")(i);
       CHECK_EQUAL(Data[i].Basis2(), VBasis2)("StateComponent Basis2 mismatch at component")(i);
+      Data[i].check_structure();
    }
 }
 

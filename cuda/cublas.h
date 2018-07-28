@@ -602,7 +602,7 @@ inline
 void
 matrix_copy(char Atrans, int M, int N, const_gpu_ptr<T> A, int lda, gpu_ptr<T> B, int ldb)
 {
-   geam(Atrans, M, N, 1.0, A, lda, 0.0, B, ldb);
+   geam(Atrans, M, N, T(1.0), A, lda, T(0.0), B, ldb);
 }
 
 template <typename T>

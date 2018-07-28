@@ -31,7 +31,7 @@ CXXFLAGS = -I. -I$(SRCDIR) @CPPFLAGS@ @BOOST_CPPFLAGS@ @CXXFLAGS@ -DHAVE_CONFIG_
 # -DPHEAP_TRACE_DETAILED \
 # -DDATABLOCK_TRACE_DETAILED -DPOOL_ALLOCATOR_VERBOSE -DPOOLALLOC_TRACE_DETAILED \
 
-NVFLAGS = @NVFLAGS@ -I. -I$(SRCDIR) @CPPFLAGS@ @BOOST_CPPFLAGS@
+NVFLAGS = @NVFLAGS@ -I. -I$(SRCDIR) @CPPFLAGS@ @BOOST_CPPFLAGS@ @CXXFLAGS@ -DHAVE_CONFIG_H $(CXXFLAGS_EXTRA)
 
 #either MAKEDEPEND line here will work (although the makedepend version hasn't been tested
 # since the last modifications).  We could possibly add a configure check for -MM and

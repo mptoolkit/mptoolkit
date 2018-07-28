@@ -88,6 +88,8 @@ template <typename T>
 inline
 void gpu_tag::uninitialized_default_construct_n(cuda::gpu_ptr<T> p, int n)
 {
+   // cuda types have trivial constructors (or std::complex, we assume
+   // doesn't need the constructor to be called)
    static_assert(cuda::is_cuda_floating_point_v<T>);
 }
 
@@ -95,13 +97,18 @@ template <typename T>
 inline
 void gpu_tag::uninitialized_fill_n(cuda::gpu_ptr<T> p, int n, T fill)
 {
+   // cuda types have trivial constructors (or std::complex, we assume
+   // doesn't need the constructor to be called)
    static_assert(cuda::is_cuda_floating_point_v<T>);
+   vector_fill(fill, n, p, 1);
 }
 
 template <typename T>
 inline
 void gpu_tag::destroy_n(cuda::gpu_ptr<T> p, int n)
 {
+   // cuda types have trivial constructors (or std::complex, we assume
+   // doesn't need the constructor to be called)
    static_assert(cuda::is_cuda_floating_point_v<T>);
 }
 

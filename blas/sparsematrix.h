@@ -275,7 +275,7 @@ inner_prod_nested_tag(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X
    }
    xlast--;
    ylast--;
-   auto Size = std::max(xlast.index(), ylast.index());
+   auto Size = std::max(xlast.index(), ylast.index()) + 1;  // +1 since we want this index to be the last valid entry
    blas::Vector<result_value, Tag> Acc(Size, 0.0);
    auto xi = x.begin();
    auto yi = y.begin();
@@ -357,7 +357,7 @@ inner_prod_nested_tag(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X
    }
    xlast--;
    ylast--;
-   auto Size = std::max(xlast.index(), ylast.index());
+   auto Size = std::max(xlast.index(), ylast.index()) + 1;  // +1 since we want this index to be the last valid entry
    blas::Vector<result_value, Tag> Acc(Size, 0.0);
    auto xi = x.begin();
    auto yi = y.begin();

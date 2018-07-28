@@ -72,6 +72,7 @@ class AllocationBlock
       // was possible.
       void* try_allocate(size_t RequestSize, size_t RequestAlign)
       {
+         CHECK(RequestSize > 0);
 	 CHECK(Align % RequestAlign == 0)(Align)(RequestAlign);
 
 	 if (RequestSize > Size)
@@ -107,7 +108,7 @@ class AllocationBlock
 	 if (BasePtr+Size <= static_cast<unsigned char*>(Ptr))
 	    return false;
 
-	 this->free(Ptr, Size);
+	 this->free(Ptr, AllocSize);
 	 return true;
       }
 
@@ -220,7 +221,6 @@ class gpu_buffer
 
       gpu_buffer& operator=(gpu_buffer&& other) noexcept
       {
-         TRACE(this);
          T* Temp = other.Ptr;
          other.Ptr = nullptr;
 	 Ptr = Temp;
@@ -307,9 +307,14 @@ class gpu_buffer
       gpu_buffer(int Count, blas::arena a)
 	 : ByteSize(Count*sizeof(T)), Arena(a)
       {
-	 Ptr = static_cast<T*>(Arena.allocate(ByteSize, sizeof(T)));
-	 if (!Ptr)
-	    throw std::runtime_error("No GPU memory");
+         if (ByteSize == 0)
+            Ptr = nullptr;
+         else
+         {
+            Ptr = static_cast<T*>(Arena.allocate(ByteSize, sizeof(T)));
+            if (!Ptr)
+               throw std::runtime_error("No GPU memory");
+         }
       }
 
       friend class gpu_ref<T>;
@@ -561,6 +566,7 @@ class gpu_ref
       }
 
       T* device_ptr() { return Ptr; }
+      T const* device_ptr() const { return Ptr; }
       cuda::stream const& get_stream() const { return Stream; }
       cuda::stream& get_stream() { return Stream; }
 

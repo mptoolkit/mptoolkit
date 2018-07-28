@@ -145,6 +145,8 @@ void DiagonalizeHermitian(int Size, cuda::gpu_ptr<std::complex<double>> A, int l
 					  reinterpret_cast<cuDoubleComplex*>(A.device_ptr()),
 					  ldA, Eigen.device_ptr(), Work, lWork, DevInfo));
    int Info;
+   // FiXME: avoid the synchronization and get DevInfo to synchronize with the stream as a proper gpu_ref
+   A.get_stream().synchronize();
    cuda::memcpy_device_to_host(DevInfo, &Info, sizeof(int));
    CHECK_EQUAL(Info, 0);
    Eigen.wait_for(A);
@@ -158,6 +160,7 @@ void SingularValueDecomposition(char job, int Rows, int Cols,
 				cuda::gpu_ptr<double> Umat, int ldU,
 				cuda::gpu_ptr<double> Vmat, int ldV)
 {
+   CHECK(Rows >= Cols)("cusolver SVD only supports Rows >= Cols")(Rows)(Cols);
    int min_mn = std::min(Rows, Cols);
    cusolver::handle& H = cusolver::get_handle();
    H.set_stream(Data.get_stream());
@@ -165,12 +168,15 @@ void SingularValueDecomposition(char job, int Rows, int Cols,
    Data.wait_for(Umat);
    Data.wait_for(Vmat);
    int lWork;
+   TRACE_CUDA("cusolverDnDgesvd_bufferSize")(Rows)(Cols)(&lWork);
    cusolver::check_error(cusolverDnDgesvd_bufferSize(H.raw_handle(), Rows, Cols, &lWork));
 
    double* Work = static_cast<double*>(cuda::allocate_gpu_temp_memory(lWork*sizeof(double)));
    double* rWork = static_cast<double*>(cuda::allocate_gpu_temp_memory((min_mn-1)*sizeof(double)));
 
    cuda::gpu_ref<int> DevInfo;
+   TRACE_CUDA("cusolverDnDgesvd")(job)(job)(Rows)(Cols)(Data.device_ptr())(LeadingDim)(Dvec.device_ptr())(Umat.device_ptr())(ldU)
+      (Vmat.device_ptr())(ldV)(Work)(lWork)(rWork)(DevInfo.device_ptr());
    cusolver::check_error(cusolverDnDgesvd(H.raw_handle(), job, job, Rows, Cols, Data.device_ptr(), LeadingDim,
 					  Dvec.device_ptr(), Umat.device_ptr(), ldU,
 					  Vmat.device_ptr(), ldV, Work, lWork, rWork, DevInfo.device_ptr()));
@@ -200,13 +206,19 @@ void SingularValueDecompositionFull(int Rows, int Cols,
    SingularValueDecomposition('A', Rows, Cols, Data, LeadingDim, Dvec, Umat, ldU, Vmat, ldV);
 }
 
-
 void SingularValueDecomposition(char job, int Rows, int Cols,
 				cuda::gpu_ptr<std::complex<double>> Data, int LeadingDim,
 				cuda::gpu_ptr<double> Dvec,
 				cuda::gpu_ptr<std::complex<double>> Umat, int ldU,
 				cuda::gpu_ptr<std::complex<double>> Vmat, int ldV)
 {
+   // cusolver gesvd only allows the case where Rows >= Cols.  If it is the other way around,
+   // we need to transpose.
+   // Alternatively we can use gesvdj but this returns V, not the usual V^\dagger.
+   // So either way we need to do some
+   // transposition.  We assume that this is handled at a higher level.
+
+   CHECK(Rows >= Cols)("cusolver SVD only supports Rows >= Cols")(Rows)(Cols);
    int min_mn = std::min(Rows, Cols);
    cusolver::handle& H = cusolver::get_handle();
    H.set_stream(Data.get_stream());
@@ -214,14 +226,15 @@ void SingularValueDecomposition(char job, int Rows, int Cols,
    Data.wait_for(Umat);
    Data.wait_for(Vmat);
    int lWork;
+   TRACE_CUDA("cusolverZnDgesvd_bufferSize")(Rows)(Cols)(&lWork);
    cusolver::check_error(cusolverDnZgesvd_bufferSize(H.raw_handle(), Rows, Cols, &lWork));
 
-   TRACE("ZXZX")(Rows)(Cols);
-
    cuDoubleComplex* Work = static_cast<cuDoubleComplex*>(cuda::allocate_gpu_temp_memory(lWork*sizeof(cuDoubleComplex)));
-   double* rWork = static_cast<double*>(cuda::allocate_gpu_temp_memory((min_mn-1)*sizeof(double)));
+   double* rWork = static_cast<double*>(cuda::allocate_gpu_temp_memory(std::max(1,min_mn-1)*sizeof(double)));
 
    cuda::gpu_ref<int> DevInfo;
+   TRACE_CUDA("cusolverZnDgesvd")(job)(job)(Rows)(Cols)(Data.device_ptr())(LeadingDim)(Dvec.device_ptr())(Umat.device_ptr())(ldU)
+      (Vmat.device_ptr())(ldV)(Work)(lWork)(rWork)(DevInfo.device_ptr());
    cusolver::check_error(cusolverDnZgesvd(H.raw_handle(), job, job, Rows, Cols,
 					  reinterpret_cast<cuDoubleComplex*>(Data.device_ptr()), LeadingDim,
 					  Dvec.device_ptr(),
@@ -256,4 +269,4 @@ void SingularValueDecompositionFull(int Rows, int Cols,
 
 } // namespace detail
 
-} // namespace cuda
+} // namespace blas
