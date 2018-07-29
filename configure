@@ -11452,7 +11452,8 @@ if test "x$with_cuda" = x; then
    fi
 fi
 
-ac_ext=c
+if test "x$with_cuda" = xyes; then
+   ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
@@ -11901,8 +11902,6 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
 
-
-
 ax_cublas_ok=no
 
 
@@ -12217,6 +12216,7 @@ else
 fi
 fi
 
+fi
 
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or

@@ -474,6 +474,31 @@ copy(blas::BlasVector<T, U, Tag> const& x)
    return Result;
 }
 
+// get_wait for cpu_tag
+
+template <typename T>
+inline
+Vector<T, cpu_tag>
+get_wait(Vector<T, cpu_tag>&& x)
+{
+   return std::move(x);
+}
+
+template <typename T, typename U>
+inline
+Vector<T, cpu_tag>
+get_wait(blas::VectorRef<T, U, cpu_tag> const& x)
+{
+   return Vector<T, cpu_tag>(copy(x.as_derived()));
+}
+
+template <typename T, typename U>
+inline
+void set_wait(Vector<T, cpu_tag>& x, blas::VectorRef<T, U, cpu_tag> const& y)
+{
+   x = y;
+}
+
 // io
 
 template <typename T, int Format>

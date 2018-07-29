@@ -311,11 +311,11 @@ inner_prod_nested_tag(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X
       {
 	 if (!Set)
 	 {
-	    Result = Nest(xi.value(), yi.value());
+	    Nest(xi.value(), yi.value(), Result);
 	    Set = true;
 	 }
 	 else
-	    Result += Nest(xi.value(), yi.value());
+	    Nest.add(xi.value(), yi.value(), Result);
          ++xi;
          ++yi;
       }

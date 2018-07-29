@@ -197,7 +197,6 @@ matrix_inner_prod(char Atrans, char Btrans, int M, int N,
 		  std::complex<double> const* B, int ldB,
 		  std::complex<double>& r);
 
-#if 0
 void
 matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
 		      double const* A, int ldA,
@@ -209,7 +208,6 @@ matrix_add_inner_prod(char Atrans, char Btrans, int M, int N,
 		      std::complex<double> const* A, int ldA,
 		      std::complex<double> const* B, int ldB,
 		      std::complex<double>& r);
-#endif
 
 template <typename T, typename Nested>
 std::enable_if_t<std::is_floating_point<T>::value, void>
@@ -229,6 +227,26 @@ matrix_inner_prod_nested(char Atrans, char Btrans, int M, int N,
 			 std::complex<T>& r, Nested&)
 {
    matrix_inner_prod(Atrans, Btrans, M, N, A, ldA, B, ldB, r);
+}
+
+template <typename T, typename Nested>
+std::enable_if_t<std::is_floating_point<T>::value, void>
+matrix_add_inner_prod_nested(char Atrans, char Btrans, int M, int N,
+                             T const* A, int ldA,
+                             T const* B, int ldB,
+                             T& r, Nested&)
+{
+   matrix_add_inner_prod(Atrans, Btrans, M, N, A, ldA, B, ldB, r);
+}
+
+template <typename T, typename Nested>
+std::enable_if_t<std::is_floating_point<T>::value, void>
+matrix_add_inner_prod_nested(char Atrans, char Btrans, int M, int N,
+                             std::complex<T> const* A, int ldA,
+                             std::complex<T> const* B, int ldB,
+                             std::complex<T>& r, Nested&)
+{
+   matrix_add_inner_prod(Atrans, Btrans, M, N, A, ldA, B, ldB, r);
 }
 
 // level 3

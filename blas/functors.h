@@ -59,11 +59,10 @@ struct Subtraction
 
 struct InnerProd
 {
+   // not implemented, but used for return type deduction
    template <typename T, typename U>
-   auto operator()(T const& x, U const& y) const
-   {
-      return inner_prod_nested(x,y, *this);
-   }
+   auto operator()(T const& x, U const& y) const -> decltype(inner_prod_nested(x,y, *this));
+
    // 3-argument version takes the result as a parameter
    template <typename T, typename U, typename V>
    auto operator()(T const& x, U const& y, V&& Result) const
@@ -76,7 +75,7 @@ struct InnerProd
       add_inner_prod_nested(x,y, Result, *this);
    }
 };
- 
+
 struct InnerProdNested
 {
    template <typename T, typename U, typename Nested>
@@ -278,6 +277,82 @@ trans(T&& x)
 }
 
 } // namespace blas
+
+//
+// get_wait function is used to copy an abject into single-thread CPU context.
+// For simple types that are already on the CPU, this reduces to a no-op.
+//
+
+inline
+float get_wait(float x)
+{
+   return x;
+}
+inline
+std::complex<float> get_wait(std::complex<float> x)
+{
+   return x;
+}
+inline
+double get_wait(double x)
+{
+   return x;
+}
+inline
+std::complex<double> get_wait(std::complex<double> x)
+{
+   return x;
+}
+#if defined(HAVE_FLOAT128)
+inline
+float128 get_wait(float128 x)
+{
+   return x;
+}
+inline
+std::complex<float128> get_wait(std::complex<float128> x)
+{
+   return x;
+}
+#endif
+
+//
+// set_wait function copies an object from CPU context to a device context.
+// For setting a simple type already on the CPU, this is a no-op.
+//
+
+inline
+void set_wait(float&x, float y)
+{
+   x=y;
+}
+inline
+void set_wait(std::complex<float>& x, std::complex<float> y)
+{
+   x=y;
+}
+inline
+void set_wait(double&x, double y)
+{
+   x=y;
+}
+inline
+void set_wait(std::complex<double>& x, std::complex<double> y)
+{
+   x=y;
+}
+#if defined(HAVE_FLOAT128)
+inline
+void set_wait(float128&x, float128 y)
+{
+   x=y;
+}
+inline
+void set_wait(std::complex<float128>& x, std::complex<float128> y)
+{
+   x=y;
+}
+#endif
 
 using blas::norm_frob;
 using blas::norm_frob_sq;

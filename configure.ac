@@ -206,22 +206,18 @@ if test "x$with_cuda" = x; then
    fi
 fi
 
-AX_CUDA_CONFIG
-dnl ([AC_CHECK_HEADERS(cuda_runtime.h, [], [AC_MSG_ERROR([Cannot find cuda_runtime.h header])])], 
-dnl [ AS_IF([test "x$ax_cuda_ok" != xdisable], [AC_MSG_ERROR([Cannot find CUDA library])]) ])
+if test "x$with_cuda" = xyes; then
+   AX_CUDA_CONFIG
 
+   dnl cublas support
+   AX_CUBLAS([AC_CHECK_HEADERS(cublas_v2.h, [], [AC_MSG_ERROR([Cannot find cublas_v2.h header])])], 
+   [ AS_IF([test "x$ax_cublas_ok" != xdisable], [AC_MSG_ERROR([Cannot find cuBLAS library])]) ])
 
-dnl AX_CUDA([AC_CHECK_HEADERS(cuda_runtime.h, [], [AC_MSG_ERROR([Cannot find cuda_runtime.h header])])], 
-dnl [ AS_IF([test "x$ax_cuda_ok" != xdisable], [AC_MSG_ERROR([Cannot find CUDA library])]) ])
+   dnl cusovler support
 
-dnl cublas support
-AX_CUBLAS([AC_CHECK_HEADERS(cublas_v2.h, [], [AC_MSG_ERROR([Cannot find cublas_v2.h header])])], 
-[ AS_IF([test "x$ax_cublas_ok" != xdisable], [AC_MSG_ERROR([Cannot find cuBLAS library])]) ])
-
-dnl cusovler support
-
-AX_CUSOLVER([AC_CHECK_HEADERS(cusolverDn.h, [], [AC_MSG_ERROR([Cannot find cusolverDn.h header])])], 
-[ AS_IF([test "x$ax_cusolver_ok" != xdisable], [AC_MSG_ERROR([Cannot find cuSOLVER library])]) ])
+   AX_CUSOLVER([AC_CHECK_HEADERS(cusolverDn.h, [], [AC_MSG_ERROR([Cannot find cusolverDn.h header])])], 
+   [ AS_IF([test "x$ax_cusolver_ok" != xdisable], [AC_MSG_ERROR([Cannot find cuSOLVER library])]) ])
+fi
 
 AC_PROG_INSTALL
 

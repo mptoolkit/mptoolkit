@@ -31,6 +31,7 @@
 #include "vector_view.h"
 #include <iostream>
 #include <iomanip>
+#include "functors.h"
 #include "common/formatting.h"
 
 namespace blas
@@ -106,14 +107,6 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
 	 return *this;
       }
 
-      DiagonalMatrix& move_from(DiagonalMatrix&& Other)
-      {
-	 Size = Other.Size;
-	 Buf = std::move(Other.Buf);
-	 return *this;
-      }
-
-
       // assignment of expressions based on the same matrix type -- we don't allow assignment
       // of expression templates of other matrix types (eg gpu_matrix)
       // We could allow assignment of different concrete types, but probably not advisable,
@@ -162,7 +155,6 @@ class DiagonalMatrix : public DiagonalBlasMatrix<T, DiagonalMatrix<T, Tag>, Tag>
 	 subtract(*this, E.as_derived());
 	 return *this;
       }
-
 
       template <typename U>
       DiagonalMatrix& operator*=(U const& x)
@@ -632,6 +624,15 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
       template <typename U>
       DiagonalMatrix(DiagonalMatrixRef<T, U, tag_type> const& E) : DiagonalMatrix(E, tag_type::template default_arena<T>()) {}
 
+      // assignment from a generic matrix - this will fail if the matrix isn't ultimately some kind onf
+      // diagonal structure
+      template <typename U>
+      DiagonalMatrix(MatrixRef<T, U, tag_type> const& E)
+	 : DiagonalMatrix(E.rows(), E.cols())
+      {
+	 assign(*this, E.as_derived());
+      }
+
       // construction from intializer list
       template <typename U>
       DiagonalMatrix(std::initializer_list<U> x, arena Arena_);
@@ -676,6 +677,7 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
       template <typename U>
       DiagonalMatrix& operator+=(DiagonalMatrixRef<T, U, tag_type> const& E)
       {
+         using blas::add;
 	 add(this->diagonal(), E.as_derived().diagonal());
 	 return *this;
       }
@@ -683,7 +685,24 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
       template <typename U>
       DiagonalMatrix& operator-=(DiagonalMatrixRef<T, U, tag_type> const& E)
       {
+         using blas::subtract;
 	 subtract(this->diagonal(), E.as_derived().diagonal());
+	 return *this;
+      }
+
+      template <typename U>
+      DiagonalMatrix& operator+=(MatrixRef<T, U, tag_type> const& E)
+      {
+         using blas::add;
+	 add(*this, E.as_derived());
+	 return *this;
+      }
+
+      template <typename U>
+      DiagonalMatrix& operator-=(MatrixRef<T, U, tag_type> const& E)
+      {
+         using blas::subtract;
+	 subtract(*this, E.as_derived());
 	 return *this;
       }
 
@@ -882,8 +901,9 @@ template <typename T, typename U, typename Tag>
 //decltype(norm_frob_sq(std::declval<T>()))
 auto norm_frob_sq(blas::DiagonalBlasMatrix<T, U, Tag> const& x)
 {
+   using ::get_wait;
    using blas::norm_frob_sq;
-   typename Tag::template async_ref<decltype(norm_frob_sq(std::declval<T>()))> z;
+   auto z = Tag::template allocate_async_ref<decltype(norm_frob_sq(std::declval<T>()))>();
    norm_frob_sq(x, z);
    return get_wait(z);
 }
@@ -900,8 +920,15 @@ inline
 DiagonalMatrix<T, Tag>
 DiagonalMatrix<T, Tag>::make_identity(int Size)
 {
-   DiagonalMatrix<T, Tag> Result(Size, Size, blas::number_traits<T>::identity());
-   return Result;
+   return DiagonalMatrix<T, Tag>(Size, Size, blas::number_traits<T>::identity());
+}
+
+template <typename T>
+inline
+DiagonalMatrix<T, cpu_tag>
+DiagonalMatrix<T, cpu_tag>::make_identity(int Size)
+{
+   return DiagonalMatrix<T, cpu_tag>(Size, Size, blas::number_traits<T>::identity());
 }
 
 template <typename T, typename U, typename Tag, typename V>

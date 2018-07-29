@@ -66,6 +66,18 @@ template <typename T>
 void
 vector_sum(int N, T const* x, int incx, T& r);
 
+template <typename T, typename U, typename V, typename W>
+void
+vector_parallel_scaled(int n, T alpha, U const* x, int incx,
+		       V const* y, int incy,
+		       W* z, int incz);
+
+template <typename T, typename U, typename V, typename W>
+void
+vector_add_parallel_scaled(int n, T alpha, U const* x, int incx,
+                           V const* y, int incy,
+                           W* z, int incz);
+
 #if 0
 template <typename T>
 void
@@ -85,6 +97,10 @@ vector_inner_prod_nested(int N, T const* x, int incx, U const* y, int incy, V& r
 template <typename T, typename U, typename V, typename Nested>
 void
 vector_add_inner_prod_nested(int N, T const* x, int incx, T const* y, int incy, V& r, Nested&& n);
+
+template <typename T>
+void
+vector_permute(int n, T const* x, int incx, T* y, int incy, int const* Perm);
 
 //
 // matrix
@@ -117,11 +133,19 @@ matrix_copy_scaled(char Atrans, int M, int N, T alpha, U const* A, int lda, V* B
 
 template <typename T, typename U>
 void
+matrix_scale(int M, int N, T alpha, U* A, int lda);
+
+template <typename T, typename U>
+void
 matrix_add(char Atrans, int M, int N, T const* A, int lda, U* , int ldbB);
 
 template <typename T, typename U, typename V>
 void
 matrix_add_scaled(char Atrans, int M, int N, T alpha, U const* A, int lda, V* B, int ldb);
+
+template <typename T, typename Real>
+void
+matrix_norm_frob_sq(int M, int N, T const* A, int lda, Real& Result);
 
 #if 0
 template <typename T, typename U, typename V>

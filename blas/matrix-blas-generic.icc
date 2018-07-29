@@ -163,6 +163,48 @@ vector_add_inner_prod_nested(int N, T const* x, int incx, T const* y, int incy, 
    }
 }
 
+template <typename T, typename U, typename V, typename W>
+void
+vector_parallel_scaled(int n, T alpha, U const* x, int incx,
+		       V const* y, int incy,
+		       W* z, int incz)
+{
+   for (int i = 0; i < n; ++i)
+   {
+      *z = alpha * (*x) * (*y);
+      x += incx;
+      y += incy;
+      z += incz;
+   }
+}
+
+template <typename T, typename U, typename V, typename W>
+void
+vector_add_parallel_scaled(int n, T alpha, U const* x, int incx,
+                           V const* y, int incy,
+                           W* z, int incz)
+{
+   for (int i = 0; i < n; ++i)
+   {
+      *z += alpha * (*x) * (*y);
+      x += incx;
+      y += incy;
+      z += incz;
+   }
+}
+
+template <typename T>
+void
+vector_permute(int n, T const* x, int incx, T* y, int incy, int const* Perm)
+{
+   for (int i = 0; i < n; ++i)
+   {
+      *y = x[(*Perm)*incx];
+      y += incy;
+      ++Perm;
+   }
+}
+
 //
 // matrix
 //
@@ -177,8 +219,9 @@ void matrix_fill(T const& alpha, int M, int N, T* A, int lda)
    {
       for (int r = 0; r < M; ++r)
       {
-         A[c*lda+r] = alpha;
+         A[r] = alpha;
       }
+      A += lda;
    }
 }
 
@@ -326,6 +369,21 @@ matrix_copy_scaled(char Atrans, int M, int N, T alpha, U const* A, int lda, V* B
 
 template <typename T, typename U>
 void
+matrix_scale(int M, int N, T alpha, U* A, int lda)
+{
+   // normal
+   for (int c = 0; c < N; ++c)
+   {
+      for (int r = 0; r < M; ++r)
+      {
+         A[r] *= alpha;
+      }
+      A += lda;
+   }
+}
+
+template <typename T, typename U>
+void
 matrix_add(char Atrans, int M, int N, T const* A, int lda, U* B, int ldb)
 {
    if (Atrans == 'N')
@@ -438,6 +496,23 @@ matrix_add_scaled(char Atrans, int M, int N, T alpha, U const* A, int lda, V* B,
    }
 }
 
+template <typename T, typename Real>
+void
+matrix_norm_frob_sq(int M, int N, T const* A, int lda, Real& Result)
+{
+   // Accumulate the result into a local to avoid aliasing problems
+   decltype(norm_frob_sq(A[0])) R = 0.0;
+   for (int c = 0; c < N; ++c)
+   {
+      for (int r = 0; r < M; ++r)
+      {
+         R += norm_frob_sq(A[r]);
+      }
+      A += lda;
+   }
+   Result = R;
+}
+
 template <typename T, typename U, typename V, typename Nested>
 void
 matrix_inner_prod_nested(char Atrans, char Btrans, int M, int N,
@@ -503,12 +578,37 @@ void
 gdmm(int M, int N,
      At const* A, int lda,
      Yt const* y, int incy,
-     Ct* C, int ldc);
+     Ct* C, int ldc)
+{
+   for (int c = 0; c < N; ++c)
+   {
+      auto yTemp = *y;
+      for (int r = 0; r < M; ++r)
+      {
+	 C[r] = A[r]*yTemp;
+      }
+      A += lda;
+      C += ldc;
+      y += incy;
+   }
+}
 
 template <typename At, typename Yt>
 void
 gdmm_inplace(int M, int N,
 	     At* A, int lda,
-	     Yt const* y, int incy);
+	     Yt const* y, int incy)
+{
+   for (int c = 0; c < N; ++c)
+   {
+      auto yTemp = *y;
+      for (int r = 0; r < M; ++r)
+      {
+	 A[r] *= yTemp;
+      }
+      A += lda;
+      y += incy;
+   }
+}
 
 } // namespace blas

@@ -194,15 +194,14 @@ void DensityMatrixBase::DiagonalizeDMHelper(bool Sort)
 
    ESum = 0;  // running sum of the eigenvalues
    // diagonalize the DM
-   blas::Vector<double> Eigenvalues(MaxLinearDimension);
    for (std::size_t q1 = 0; q1 < RawDMList.size(); ++q1)
    {
       int CurrentDegree = degree(this->Lookup(q1));
       //      std::cout << "Raw DM is\n" << RawDMList[q1] << std::endl;
       //      TRACE(RawDMList[q1])(RawDMList[q1].size1())(RawDMList[q1].size2());
-      blas::Vector<double, blas::gpu_tag> EVal(RawDMList[q1].rows());
+      RealVector EVal(RawDMList[q1].rows());
       DiagonalizeHermitian(RawDMList[q1], EVal);
-      blas::Vector<double> Eigenvalues = get_wait(EVal);
+      cpu::RealVector Eigenvalues = get_wait(std::move(EVal));
       // add the eigenvalues and eigenvector pointers to EigenInfoList
       for (std::size_t i = 0; i < Eigenvalues.size(); ++i)
       {
@@ -359,7 +358,7 @@ DensityMatrix<SimpleOperator>::DensityMatrix(SimpleOperator const& Op)
          int t, rt;
          std::tie(t, rt) = B.Lookup(cOp.col());
          CHECK_EQUAL(tp,t)("The density matrix must be block-diagonal");
-         RawDMList[tp](rtp, rt).set_wait(cOp.value);
+         set_wait(RawDMList[tp](rtp, rt), cOp.value);
       }
    }
    // diagonalize them

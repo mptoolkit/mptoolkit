@@ -308,6 +308,31 @@ operator-(MatrixRef<T, D1, Tag> const& A, MatrixRef<U, D2, Tag> const& B)
    return Result;
 }
 
+// get_wait for cpu_tag
+
+template <typename T>
+inline
+Matrix<T, cpu_tag>
+get_wait(Matrix<T, cpu_tag>&& x)
+{
+   return std::move(x);
+}
+
+template <typename T, typename U>
+inline
+Matrix<T, cpu_tag>
+get_wait(blas::MatrixRef<T, U, cpu_tag> const& x)
+{
+   return Matrix<T, cpu_tag>(copy(x.as_derived()));
+}
+
+template <typename T, typename U>
+inline
+void set_wait(Matrix<T, cpu_tag>& x, blas::MatrixRef<T, U, cpu_tag> const& y)
+{
+   x = y;
+}
+
 // I/O
 
 template <typename T, typename U>

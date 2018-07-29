@@ -180,7 +180,7 @@ stream_extract<blas::DiagonalMatrix<blas::DiagonalMatrix<T,Tag>,blas::cpu_tag>>:
    blas::DiagonalMatrix<blas::DiagonalMatrix<T,Tag>,blas::cpu_tag> Result(Size);
    for (auto&& x : Result.diagonal())
    {
-      x.move_from(in.template read<blas::DiagonalMatrix<T,Tag>>());
+      x = in.template read<blas::DiagonalMatrix<T,Tag>>();
    }
    return Result;
 }

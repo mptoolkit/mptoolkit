@@ -1515,7 +1515,8 @@ auto
    norm_frob_sq(blas::BlasMatrix<T, U, Tag> const& x)
 {
    using blas::norm_frob_sq;
-   typename Tag::template async_ref<decltype(norm_frob_sq(std::declval<T>()))> z;
+   auto z = Tag::template allocate_async_ref<decltype(norm_frob_sq(std::declval<T>()))>();
+   //   typename Tag::template async_ref<decltype(norm_frob_sq(std::declval<T>()))> z;
    norm_frob_sq(x, z);
    return get_wait(z);
 }
@@ -1570,7 +1571,7 @@ inner_prod_nested(blas::BlasMatrix<T, U, Tag> const& x,
 
 // not implemented, but used for return-type deduction
 template <typename T, typename U, typename V, typename Tag, typename Nested>
-typename Tag::template async_ref<T>
+std::remove_reference_t<typename Tag::template async_ref<T>>
 inner_prod_nested(blas::BlasMatrix<T, U, Tag> const& x,
 		  blas::BlasMatrix<T, V, Tag> const& y,
 		  Nested&& Nest);
