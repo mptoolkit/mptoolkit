@@ -71,7 +71,7 @@ struct gpu_tag
    template <typename T>
    static int select_leading_dimension(int ld)
    {
-      return  ld == 1 ? 1 : cuda::round_up(ld, 32);
+      return  ld == 1 ? 1 : blas::round_up(ld, 32);
    }
 
    template <typename T>

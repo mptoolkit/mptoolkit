@@ -76,9 +76,22 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 
    Hv.push_back(copy(w));
    SubH(0,0) = std::real(inner_prod(v[0], w));
+   TRACE(inner_prod(v[0], w));
    w -= SubH(0,0) * v[0];
+   TRACE(w);
+   TRACE(inner_prod(v[0], w));
+
+   // At the first iteration we need to apply a correction to ensure that
+   // the next vector is truely orthogonal to the first vector, to get a stable
+   // Lanczos iteration.  This is more sensitive to errors than later iterations.
+
+   double Correction = std::real(inner_prod(v[0], w));
+   w -= Correction * v[0];
+   SubH(0,0) += Correction;
 
    Beta = norm_frob(w);
+
+   TRACE(Beta)(inner_prod(w,w));
    if (Beta < LanczosBetaTol)
    {
       if (Verbose > 0)
@@ -103,12 +116,23 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       w *= 1.0 / Beta;
       v.push_back(copy(w));
       w = MatVecMultiply(v[i]);
+      TRACE(w);
       Hv.push_back(copy(w));
-      w -= Beta*v[i-1];
       SubH(i,i) = std::real(inner_prod(v[i], w));
       w -= SubH(i,i) * v[i];
+      w -= Beta*v[i-1];
+      // apparently it is more numerically stable to calculate the inner_prod(v[i],w)
+      // nefore subtracting off Beta*v[i-1]
       Beta = norm_frob(w);
 
+      for (int k = 0; k <= i; ++k)
+      {
+         TRACE(k)(inner_prod(w, v[k]));
+         for (int l = 0; l < k; ++l)
+         {
+            TRACE(l)(inner_prod(v[l], v[k]));
+         }
+      }
 
       if (Beta < LanczosBetaTol)
       {
@@ -134,6 +158,8 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       // solution of the tridiagonal subproblem
       blas::Matrix<double> M = SubH(blas::range(0,i+1),
 				    blas::range(0,i+1));
+
+      TRACE(M);
       if (std::isnan(M(0,0)))
       {
          std::ofstream Out("lanczos_debug.txt");
@@ -155,14 +181,15 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       double SpectralDiameter = EValues[i] - EValues[0];  // largest - smallest
       VectorType y = M(0,0) * v[0];
       for (int j = 1; j <= i; ++j)
-         y += M(0,j) * v[j];
+         y += M(j,0) * v[j];
 
       // residual = H*y - Theta*y
       VectorType r = (-Theta) * y;
       for (int j = 0; j < i; ++j)
-         r += M(0,j) * Hv[j];
+         r += M(j,0) * Hv[j];
 
       double ResidNorm = norm_frob(r);
+      TRACE(ResidNorm);
 
       if (ResidNorm < fabs(Tol * SpectralDiameter) && i+1 >= MinIter)
          //if (ResidNorm < Tol && i+1 >= MinIter)
@@ -179,6 +206,10 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 
       if (i == Iterations-1) // finished?
       {
+         if (Verbose > 1)
+            std::cerr << "lanczos: return after reaching max iterations, ResidNorm="
+                      << ResidNorm << ", SpectralDiameter=" << SpectralDiameter
+                      << ", iterations=" << (i+1) << '\n';
          Guess = std::move(y);
          Tol = -ResidNorm / SpectralDiameter;
          return Theta;

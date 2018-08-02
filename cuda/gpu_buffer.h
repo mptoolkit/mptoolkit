@@ -31,19 +31,6 @@ namespace cuda
 template <typename T>
 class gpu_ref;
 
-inline
-std::size_t round_up(std::size_t numToRound, std::size_t multiple)
-{
-    if (multiple == 0)
-        return numToRound;
-
-    std::size_t remainder = numToRound % multiple;
-    if (remainder == 0)
-        return numToRound;
-
-    return numToRound + multiple - remainder;
-}
-
 class AllocationBlock
 {
    public:

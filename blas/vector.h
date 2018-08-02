@@ -130,6 +130,8 @@ struct cpu_tag
    template <typename T>
    static int select_leading_dimension(int ld)
    {
+      // round up to multiple of 256 bytes for AVX
+      return blas::round_up(ld*sizeof(T), 256) / sizeof(T);
       return ld;
    }
 
