@@ -33,8 +33,11 @@ SVD_Regular(MatrixOperator const& m,
    DEBUG_CHECK(is_scalar(m.TransformsAs()));
    DEBUG_CHECK(is_regular_basis(m.Basis1()))(m.Basis1());
    DEBUG_CHECK(is_regular_basis(m.Basis2()))(m.Basis2());
+#if !defined(NDEBUG)
+   MatrixOperator MOrig(copy(m));
+#endif
    // make the basis for the D matrix
-   std::vector<int> BasisMap(m.Basis1().size(), 0);
+   std::vector<int> BasisMap(m.Basis1().size(), -1);
    VectorBasis DBasis(m.GetSymmetryList());
    for (unsigned i = 0; i < m.Basis1().size(); ++i)
    {
@@ -54,7 +57,6 @@ SVD_Regular(MatrixOperator const& m,
 
    for (unsigned i = 0; i < m.Basis1().size(); ++i)
    {
-      bool Inserted = false;
       for (unsigned j = 0; j < m.Basis2().size(); ++j)
       {
          if (m.Basis1()[i] != m.Basis2()[j])
@@ -64,8 +66,6 @@ SVD_Regular(MatrixOperator const& m,
 	 if (I == m.row(i).end())
             continue;
 
-         DEBUG_CHECK(!Inserted); // can't insert twice!
-
 	 int s = std::min(I->rows(), I->cols());
 	 Matrix UU(I->rows(), s);
 	 RealDiagonalMatrix DD(s,s);
@@ -74,21 +74,15 @@ SVD_Regular(MatrixOperator const& m,
 	 U.insert(i, BasisMap[i], std::move(UU));
 	 D.insert(BasisMap[i], BasisMap[i], std::move(DD));
 	 Vh.insert(BasisMap[i], j, std::move(VV));
-         Inserted = true;
-      }
-      if (!Inserted)
-      {
-         // In this case there is no element at m(i,j), so the corresponding
-         // singular values are therefore zero.  We need to add these in separately
-         // to D.
-         int Dim = DBasis.dim(BasisMap[i]);
-         D.insert(BasisMap[i],BasisMap[i], RealDiagonalMatrix(Dim, Dim, 0.0));
-         continue;
       }
    }
    U.debug_check_structure();
    D.debug_check_structure();
    Vh.debug_check_structure();
+#if defined(NDEBUG)
+   MatrixOperator MCheck = U * D * Vh;
+   CHECK(norm_frob_sq(MOrig-MCheck) < 1E-10)(norm_frob_sq(MOrig-MCheck))(MOrig)(MCheck)(U)(D)(Vh);
+#endif
 }
 
 void
