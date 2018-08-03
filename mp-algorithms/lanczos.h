@@ -62,8 +62,6 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 
    VectorType w = copy(Guess);
 
-   TRACE(w);
-
    double Beta = norm_frob(w);
    CHECK(!std::isnan(Beta));
    // double OrigBeta = Beta;      // original norm, not used
@@ -72,14 +70,9 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 
    w = MatVecMultiply(v[0]);
 
-   TRACE(w);
-
    Hv.push_back(copy(w));
    SubH(0,0) = std::real(inner_prod(v[0], w));
-   TRACE(inner_prod(v[0], w));
    w -= SubH(0,0) * v[0];
-   TRACE(w);
-   TRACE(inner_prod(v[0], w));
 
    // At the first iteration we need to apply a correction to ensure that
    // the next vector is truely orthogonal to the first vector, to get a stable
@@ -91,7 +84,6 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 
    Beta = norm_frob(w);
 
-   TRACE(Beta)(inner_prod(w,w));
    if (Beta < LanczosBetaTol)
    {
       if (Verbose > 0)
@@ -116,7 +108,6 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       w *= 1.0 / Beta;
       v.push_back(copy(w));
       w = MatVecMultiply(v[i]);
-      TRACE(w);
       Hv.push_back(copy(w));
       SubH(i,i) = std::real(inner_prod(v[i], w));
       w -= SubH(i,i) * v[i];
@@ -124,15 +115,6 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       // apparently it is more numerically stable to calculate the inner_prod(v[i],w)
       // nefore subtracting off Beta*v[i-1]
       Beta = norm_frob(w);
-
-      for (int k = 0; k <= i; ++k)
-      {
-         TRACE(k)(inner_prod(w, v[k]));
-         for (int l = 0; l < k; ++l)
-         {
-            TRACE(l)(inner_prod(v[l], v[k]));
-         }
-      }
 
       if (Beta < LanczosBetaTol)
       {
@@ -159,7 +141,6 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       blas::Matrix<double> M = SubH(blas::range(0,i+1),
 				    blas::range(0,i+1));
 
-      TRACE(M);
       if (std::isnan(M(0,0)))
       {
          std::ofstream Out("lanczos_debug.txt");
@@ -189,7 +170,6 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
          r += M(j,0) * Hv[j];
 
       double ResidNorm = norm_frob(r);
-      TRACE(ResidNorm);
 
       if (ResidNorm < fabs(Tol * SpectralDiameter) && i+1 >= MinIter)
          //if (ResidNorm < Tol && i+1 >= MinIter)

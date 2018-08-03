@@ -299,7 +299,6 @@ LocalEigensolver::Solve(StateComponent& C,
 
    if (EvolveDelta == 0.0)
    {
-      TRACE(this->AverageFidelity());
       LastTol_ = std::min(std::sqrt(this->AverageFidelity()) * FidelityScale, MaxTol);
       LastTol_ = std::max(LastTol_, MinTol);
       //LastTol_ = std::min(this->AverageFidelity() * FidelityScale, MaxTol);
@@ -312,13 +311,8 @@ LocalEigensolver::Solve(StateComponent& C,
       }
       if (Solver_ == Solver::Lanczos)
       {
-         TRACE(LastTol_);
-         TRACE(C);
-         TRACE(LeftBlockHam);
-         TRACE(RightBlockHam);
 	 LastEnergy_ = Lanczos(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
 			       LastIter_, LastTol_, MinIter, Verbose-1);
-         TRACE(LastEnergy_);
       }
       else if (Solver_ == Solver::Arnoldi)
       {

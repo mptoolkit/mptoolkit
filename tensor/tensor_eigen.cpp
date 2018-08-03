@@ -79,7 +79,7 @@ SVD_Regular(MatrixOperator const& m,
    U.debug_check_structure();
    D.debug_check_structure();
    Vh.debug_check_structure();
-#if defined(NDEBUG)
+#if !defined(NDEBUG)
    MatrixOperator MCheck = U * D * Vh;
    CHECK(norm_frob_sq(MOrig-MCheck) < 1E-10)(norm_frob_sq(MOrig-MCheck))(MOrig)(MCheck)(U)(D)(Vh);
 #endif

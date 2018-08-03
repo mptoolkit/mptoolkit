@@ -432,8 +432,6 @@ TruncateBasis1(StateComponent& A)
    // Do the singular value decomposition via a (reduced) density matrix
    DensityMatrix<operator_type> DM(scalar_prod(herm(Trunc), Trunc));
 
-   TRACE("TruncateBassi1DM report");
-   DM.DensityMatrixReport(std::cerr);
    DensityMatrix<operator_type>::const_iterator E = DM.begin();
    // take all eigenvalues that are bigger than EigenvalueEpsilon (normalized to EigenSum)
    while (E != DM.end() && E->Eigenvalue > EigenvalueEpsilon * DM.EigenSum()) ++E;

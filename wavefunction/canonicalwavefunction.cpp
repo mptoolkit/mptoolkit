@@ -191,8 +191,6 @@ CanonicalWavefunctionBase::ReadStream(PStream::ipstream& in)
 
    CHECK_EQUAL(Lambda.size(), Data.size()+1);
 
-   TRACE(Basis2_);
-
    return Sentry.version();
 }
 
