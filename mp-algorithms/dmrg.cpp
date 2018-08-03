@@ -605,6 +605,8 @@ DMRG::Energy() const
 std::complex<double>
 DMRG::Solve()
 {
+   this->StartIteration();
+
 #if 0
    // if the wavefunction is zero, add a random component
    double pNorm = norm_frob_sq(Psi.Center());
@@ -626,6 +628,8 @@ DMRG::Solve()
    IterationEnergyBeforeTrunc = IterationEnergy;
 
    return IterationEnergy;
+
+   this->EndIteration();
 }
 
 bool DMRG::IsConverged() const

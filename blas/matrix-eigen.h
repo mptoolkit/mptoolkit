@@ -273,7 +273,7 @@ SVD_FullCols(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
    CHECK_EQUAL(Umat.cols(), Dvec.size());
    CHECK_EQUAL(Dvec.size(), Vmat.rows());
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
-   TRACE("WWWW")(Mmat);
+   //TRACE("WWWW")(Mmat);
    if (Mmat.cols() < Mmat.rows())
    {
       detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(),

@@ -318,7 +318,7 @@ std::complex<double>
 inner_prod(StateComponent const& x, StateComponent const& y)
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
-   Vector Temp(x.size());
+   Vector Temp(x.size(), 0.0);
    for (unsigned i = 0; i < x.size(); ++i)
    {
       inner_prod(x[i], y[i], Temp[i]);
