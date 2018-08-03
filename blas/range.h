@@ -114,6 +114,13 @@ struct all_t {};
 
 extern all_t all;
 
+inline
+std::ostream& operator<<(std::ostream& out, Range const& r)
+{
+   out << "range[" << r.first() << "," << r.last() << ']';
+   return out;
+}
+
 } // namespace blas
 
 #endif

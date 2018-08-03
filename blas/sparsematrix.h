@@ -301,6 +301,7 @@ void
 inner_prod_nested_tag(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X> const& y, R&& Result,
 		      Nested&& Nest, cpu_tag)
 {
+   using blas::clear;
    // CPU version, accumulate results into a value
    bool Set = false;
    auto xi = x.begin();
@@ -327,9 +328,7 @@ inner_prod_nested_tag(BasicSparseVector<T,U,V> const& x, BasicSparseVector<T,W,X
    }
    if (!Set)
    {
-      // TODO: implement this
-      //      clear(result);
-      PANIC("Not implemented");
+      clear(Result);
    }
 }
 
@@ -580,8 +579,8 @@ class SparseMatrix
       template <typename U>
       void add(int r, int c, U&& value)
       {
-         DEBUG_RANGE_CHECK(r, 0, RowStorage.size());
-         DEBUG_RANGE_CHECK(c, 0, Cols);
+         DEBUG_RANGE_CHECK_OPEN(r, 0, RowStorage.size());
+         DEBUG_RANGE_CHECK_OPEN(c, 0, Cols);
          RowStorage[r].add(c, std::move(value));
       }
 

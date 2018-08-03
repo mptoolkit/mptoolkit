@@ -57,8 +57,9 @@ MatrixOperator DensityMatrix<MatrixOperator>::ConstructTruncator(FwdIterX Start,
       int sp = NewSubspace[q];
       if (sp == -1) continue;
 
-      MatrixType Temp(LinearMapping[q].size(), LinRange.size());
-      assign_slice(Temp, RawDMList[q], LinearMapping[q], LinRange);
+      // need to initialize to zero here
+      MatrixType Temp(LinearMapping[q].size(), LinRange.size(), 0.0);
+      assign_slice(Temp, trans(RawDMList[q]), LinearMapping[q], LinRange);
       Transform.insert(sp, s, std::move(Temp));
 
 #if defined(RANDOMIZE_VECTORS)
@@ -100,10 +101,11 @@ SimpleOperator DensityMatrix<SimpleOperator>::ConstructTruncator(FwdIter Start, 
 
       for (std::size_t sp = 0; sp < NewBasis.size(); ++sp)
       {
+         PANIC("untested - check transpose of RawDMList");
          int qp, qpi;
          std::tie(qp, qpi) = KeptStates[sp];
          if (qp == q)
-            Transform.insert(sp, s, RawDMList[q](qpi, qi));
+            Transform.insert(sp, s, RawDMList[q](qi, qpi));
       }
    }
    return Transform;
@@ -135,10 +137,11 @@ SimpleOperator DensityMatrix<SimpleOperator>::ConstructUnnormalizedTruncator(Fwd
 
       for (std::size_t sp = 0; sp < NewBasis.size(); ++sp)
       {
+         PANIC("untested - check transpose of RawDMList");
          int qp, qpi;
          std::tie(qp, qpi) = KeptStates[sp];
          if (qp == q)
-            Transform.insert(sp, s, get_wait(RawDMList[q](qpi, qi)) * KeptEigenvalue[sp]);
+            Transform.insert(sp, s, get_wait(RawDMList[q](qi, qpi)) * KeptEigenvalue[sp]);
       }
    }
    return Transform;

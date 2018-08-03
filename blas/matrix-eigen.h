@@ -122,7 +122,6 @@ inline
 void DiagonalizeHermitian(NormalMatrix<std::complex<double>, U, Tag>& M, NormalVector<double, V, Tag>& v)
 {
    CHECK_EQUAL(M.rows(), M.cols());
-   TRACE(M.as_derived())(M.rows())(M.leading_dimension());
    detail::DiagonalizeHermitian(M.rows(), M.storage(), M.leading_dimension(), v.storage());
 }
 
@@ -161,7 +160,7 @@ SVD(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& Umat,
 {
    CHECK_EQUAL(Dvec.size(), std::min(Mmat.rows(), Mmat.cols()));
    CHECK_EQUAL(Mmat.rows(), Umat.rows());
-   CHECK_EQUAL(Umat.rows(), Dvec.size());
+   CHECK_EQUAL(Umat.cols(), Dvec.size());
    CHECK_EQUAL(Dvec.size(), Vmat.rows());
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
    detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(),
@@ -273,7 +272,6 @@ SVD_FullCols(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
    CHECK_EQUAL(Umat.cols(), Dvec.size());
    CHECK_EQUAL(Dvec.size(), Vmat.rows());
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
-   //TRACE("WWWW")(Mmat);
    if (Mmat.cols() < Mmat.rows())
    {
       detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(),
@@ -290,7 +288,6 @@ SVD_FullCols(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
 					     Umat.storage(), Umat.leading_dimension(),
 					     Vmat.storage(), Vmat.leading_dimension());
    }
-   TRACE(Umat)(Vmat);
 }
 
 //

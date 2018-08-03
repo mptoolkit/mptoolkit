@@ -483,21 +483,24 @@ T& make_lvalue(T const& x)
    return const_cast<T&>(x);
 }
 
+// make a new stream type in namespace tracer so that namespace tracer becomes associated
+// for ADL
+
+class tracer_ostringstream : public std::ostringstream
+{
+   public:
+      tracer_ostringstream() = default;
+};
+
 inline
-std::ostream&& PrepareStream(std::ostream&& out)
+tracer_ostringstream& PrepareStream(tracer_ostringstream&& out)
 {
    out.precision(TracerDummyClass<>::Precision);
-   return static_cast<std::ostream&&>(out);
+   return out;
 }
 
-#if 1
 #define TRACER_CONVERT_TO_STRING(x)                                             \
-(static_cast<std::ostringstream&>(::tracer::PrepareStream(std::ostringstream()) << (x)).str())
-#else
-
-#define TRACER_CONVERT_TO_STRING(x)                                             \
-(static_cast<std::ostringstream&&>(::tracer::PrepareStream(std::ostringstream().flush()) << (x)).str())
-#endif
+   (static_cast<::tracer::tracer_ostringstream&>(::tracer::PrepareStream(::tracer::tracer_ostringstream()) << (x)).str())
 
 template <int Dummy = 0>
 class Assert
@@ -1239,6 +1242,23 @@ else INVOKE_DUMMY("")
    if (::tracer::check_close((x), (y))) ;				\
 else INVOKE_ASSERT("CHECK_CLOSE", "equal(" #x ", " #y ") is false")(x)(y)
 #endif
+
+template <typename T>
+std::ostream& operator<<(std::ostream& out, std::vector<T> const& v)
+{
+   out << "vector<" << typeid_name<T>() << "> size " << v.size() << " [ ";
+   bool first = true;
+   for (auto const& x : v)
+   {
+      if (!first)
+         out << ", ";
+      else
+         first = false;
+      out << x;
+   }
+   out << " ]";
+   return out;
+}
 
 } // namespace tracer
 

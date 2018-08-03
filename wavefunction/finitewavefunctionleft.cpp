@@ -50,9 +50,13 @@ FiniteWavefunctionLeft::ConstructFromRightOrthogonal(LinearWavefunction Psi,
 	 std::cout << "orthogonalizing site " << n << std::endl;
       StateComponent A = prod(M, *I);
       M = ExpandBasis2(A);
+      TRACE(M);
+      TRACE(norm_frob_sq(M));
       SVD(M, U, D, Vh);
       M = D*Vh;
       Result.push_back(prod(A, U));
+      TRACE(D);
+      TRACE(norm_frob_sq(D));
       Result.push_back_lambda(std::move(D));
       ++n;
    }
@@ -60,7 +64,7 @@ FiniteWavefunctionLeft::ConstructFromRightOrthogonal(LinearWavefunction Psi,
    // the phase of the wavefunction we need to incorporate it
    // back into the wavefunction.  Also incorporate the phase part of a
    Result.set_back(prod(Result.get_back(), (a / Norm) * Vh));
-   Result.setBasis2(D.Basis2());
+   Result.setBasis2(Vh.Basis2());
 
    if (Verbose > 0)
       std::cout << "Finished constructing canonical wavefunction." << std::endl;

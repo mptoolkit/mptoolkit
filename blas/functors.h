@@ -276,6 +276,15 @@ trans(T&& x)
    return std::forward<T>(x);
 }
 
+template <typename T>
+inline
+std::enable_if_t<blas::is_numeric_v<T>, T>
+clear(T& x)
+{
+   x = 0.0;
+}
+
+
 } // namespace blas
 
 //

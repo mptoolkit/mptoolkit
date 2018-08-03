@@ -111,6 +111,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 		  Info);
 
    MatrixOperator UKeep = DM.ConstructTruncator(KeptStates.begin(), KeptStates.end());
+   TRACE(UKeep);
    Lambda = Lambda * herm(UKeep);
 
    //TRACE(Lambda);

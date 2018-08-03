@@ -428,10 +428,11 @@ TruncateBasis1(StateComponent& A)
 {
    typedef StateComponent::operator_type operator_type;
    operator_type Trunc = ExpandBasis1(A);  // the original component is prod(Trunc, A)
-   TRACE(A)(Trunc);
+   //TRACE(A)(Trunc);
    // Do the singular value decomposition via a (reduced) density matrix
    DensityMatrix<operator_type> DM(scalar_prod(herm(Trunc), Trunc));
 
+   TRACE("TruncateBassi1DM report");
    DM.DensityMatrixReport(std::cerr);
    DensityMatrix<operator_type>::const_iterator E = DM.begin();
    // take all eigenvalues that are bigger than EigenvalueEpsilon (normalized to EigenSum)
@@ -439,7 +440,7 @@ TruncateBasis1(StateComponent& A)
    operator_type U = DM.ConstructTruncator(DM.begin(), E);
    // apply the truncation
    A = prod(U, A);
-   TRACE(Trunc)(U);
+   //TRACE(Trunc)(U);
    return Trunc * herm(U);
 }
 

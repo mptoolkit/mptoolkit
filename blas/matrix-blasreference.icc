@@ -449,18 +449,19 @@ matrix_copy(char Atrans, int M, int N,
             std::complex<double> const* A, int lda,
             std::complex<double>* B, int ldb)
 {
+   //TRACE(Atrans)(M)(N)(A)(lda)(B)(ldb);
    if (Atrans == 'N')
    {
       // normal
       if (lda == N && ldb == N)
       {
-         std::memcpy(B, A, M*N*sizeof(double));
+         std::memcpy(B, A, M*N*sizeof(std::complex<double>));
       }
       else
       {
          for (int c = 0; c < N; ++c)
          {
-            std::memcpy(B, A, M*sizeof(double));
+            std::memcpy(B, A, M*sizeof(std::complex<double>));
             A += lda;
             B += ldb;
          }
@@ -541,6 +542,7 @@ matrix_copy_scaled(char Atrans, int M, int N, std::complex<double> alpha,
                    std::complex<double> const* A, int lda,
                    std::complex<double>* B, int ldb)
 {
+   //TRACE(Atrans)(M)(N)(alpha)(A)(lda)(B)(ldb);
    if (Atrans == 'N')
    {
       for (int c = 0; c < N; ++c)

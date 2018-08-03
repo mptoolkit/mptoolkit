@@ -435,7 +435,7 @@ add_triple_prod(U Factor,
                   if (fabs(Coefficient) > 1E-10)
                   {
                      Matrix Temp = EIn.value() * herm(yin.value);
-                     Result.add(xin.col(), yin.col(), (Factor * Coefficient) * xin.value * Temp);
+                     Result.add(xi.row(), yi.row(), (Factor * Coefficient) * xin.value * Temp);
                   }
                }
             }
@@ -524,7 +524,7 @@ operator*(IrredTensor<T, B1, B2, S> const& x, HermitianProxy<IrredTensor<T, B3, 
                // There is no extra coefficient from the transpose of a scalar operator
                double Coefficient = product_coefficient(Trans, Ident, Trans,
                                                      qp, qpp, qpp);
-               if (fabs(Coefficient) > 1E-10)
+               if (fabs(Coefficient) > 1E-14)
                {
 		  Result.add(xi.row(), yi.row(), Coefficient * xj.value * herm(yj.value));
                }
@@ -566,7 +566,7 @@ operator*(HermitianProxy<IrredTensor<T, B2, B1, S>> const& x, IrredTensor<T, B2,
                                                      qpp, q, qpp);
             if (fabs(Coefficient) > 1E-10)
             {
-	       Result.add(xj.col(), xj.col(), Coefficient * herm(xj.value) * yj.value);
+	       Result.add(xj.col(), yj.col(), Coefficient * herm(xj.value) * yj.value);
             }
          }
       }

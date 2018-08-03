@@ -28,6 +28,8 @@
 
 #include <memory>
 
+#include <valgrind/memcheck.h>
+
 namespace blas
 {
 
@@ -63,6 +65,33 @@ class AllocatorBase
 
 // memory arena
 
+template <typename T>
+inline
+typename std::enable_if<!std::numeric_limits<T>::has_signaling_NaN, void>::type
+debug_fill(T* Ptr, int Size)
+{
+   std::memset(Ptr, 0xca, Size*sizeof(T));
+   VALGRIND_MAKE_MEM_UNDEFINED(static_cast<void*>(Ptr), Size*sizeof(T));
+}
+
+template <typename T>
+inline
+typename std::enable_if<std::numeric_limits<T>::has_signaling_NaN, void>::type
+debug_fill(T* Ptr, int Size)
+{
+   std::fill_n(Ptr, Size, std::numeric_limits<T>::signaling_NaN());
+   VALGRIND_MAKE_MEM_UNDEFINED(static_cast<void*>(Ptr), Size*sizeof(T));
+}
+
+template <typename T>
+inline
+typename std::enable_if<std::numeric_limits<T>::has_signaling_NaN, void>::type
+debug_fill(std::complex<T>* Ptr, int Size)
+{
+   std::fill_n(reinterpret_cast<T*>(Ptr), Size*2, std::numeric_limits<T>::signaling_NaN());
+   VALGRIND_MAKE_MEM_UNDEFINED(static_cast<void*>(Ptr), 2*Size*sizeof(T));
+}
+
 class arena
 {
    public:
@@ -77,7 +106,14 @@ class arena
       template <typename T>
       T* allocate_type(std::size_t Size) const
       {
+#if defined(NDEBUG)
          return static_cast<T*>(this->allocate(Size*sizeof(T), sizeof(T)));
+#else
+         T* ptr = static_cast<T*>(this->allocate(Size*sizeof(T), sizeof(T)));
+         debug_fill(ptr, Size);
+         return ptr;
+#endif
+
       }
 
       void* allocate(std::size_t Size, std::size_t Align) const
@@ -103,12 +139,14 @@ class MallocAllocator : public AllocatorBase
 
       virtual void* allocate(std::size_t Size, std::size_t Align)
       {
-         return std::malloc(Size);
+         void* p = std::malloc(Size);
+         return p;
       }
 
       virtual void* allocate(std::size_t Size)
       {
-         return std::malloc(Size);
+         void* p = std::malloc(Size);
+         return p;
       }
 
       virtual void free(void* Ptr, std::size_t Size)

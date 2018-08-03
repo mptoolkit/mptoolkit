@@ -61,7 +61,7 @@ write_format(std::ostream& out, double x)
 
 inline
 void
-write_format(std::ostream& out, std::complex<double> x)
+write_format(std::ostream& out, std::complex<double> const& x)
 {
    out << format_complex(x);
 }

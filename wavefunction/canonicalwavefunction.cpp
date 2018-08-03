@@ -92,7 +92,7 @@ CanonicalWavefunctionBase::operator=(CanonicalWavefunctionBase const& Psi)
 QuantumNumbers::QuantumNumber
 CanonicalWavefunctionBase::TransformsAs() const
 {
-   PRECONDITION(this->is_irreducible());
+   PRECONDITION(this->is_irreducible())(this->Basis1())(this->Basis2());
    return transform_targets(this->Basis1()[0], adjoint(this->Basis2()[0]))[0];
 }
 
@@ -190,6 +190,8 @@ CanonicalWavefunctionBase::ReadStream(PStream::ipstream& in)
    }
 
    CHECK_EQUAL(Lambda.size(), Data.size()+1);
+
+   TRACE(Basis2_);
 
    return Sentry.version();
 }

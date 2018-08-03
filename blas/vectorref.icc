@@ -27,28 +27,28 @@ template <typename ValueType, typename DerivedType, typename Tag>
 vector_view<ValueType, Tag>
 BlasVector<ValueType, DerivedType, Tag>::operator[](Range r) &
 {
-   return vector_view<ValueType, Tag>(r.size(), this->stride(), this->storage()+r.first());
+   return vector_view<ValueType, Tag>(r.size(), this->stride(), this->storage()+r.first()*this->stride());
 }
 
 template <typename ValueType, typename DerivedType, typename Tag>
 const_vector_view<ValueType, Tag>
 BlasVector<ValueType, DerivedType, Tag>::operator[](Range r) const&
 {
-   return const_vector_view<ValueType, Tag>(r.size(), this->stride(), this->storage()+r.first());
+   return const_vector_view<ValueType, Tag>(r.size(), this->stride(), this->storage()+r.first()*this->stride());
 }
 
 template <typename ValueType, typename DerivedType, typename Tag>
 vector_view<ValueType, Tag>
 BlasVectorProxy<ValueType, DerivedType, Tag>::operator[](Range r) &&
 {
-   return vector_view<ValueType, Tag>(r.size(), this->stride(), this->storage()+r.first());
+   return vector_view<ValueType, Tag>(r.size(), this->stride(), this->storage()+r.first()*this->stride());
 }
 
 template <typename ValueType, typename DerivedType, typename Tag>
 const_vector_view<ValueType, Tag>
 BlasVectorProxy<ValueType, DerivedType, Tag>::operator[](Range r) const&
 {
-   return const_vector_view<ValueType, Tag>(r.size(), this->stride(), this->storage()+r.first());
+   return const_vector_view<ValueType, Tag>(r.size(), this->stride(), this->storage()+r.first()*this->stride());
 }
 
 } // namespace blas

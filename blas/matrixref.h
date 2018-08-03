@@ -285,6 +285,34 @@ class BlasMatrixTrans : public BlasMatrix<T, BlasMatrixTrans<T, BaseType, Tag>, 
       int leading_dimension() const { return Base.leading_dimension(); }
       char trans() const { return number_traits<value_type>::blas_trans(Base.trans()); }
 
+      normal_vector_view<T, Tag>
+      row(int r)
+      {
+	 DEBUG_RANGE_CHECK_OPEN(r, 0, this->rows());
+	 return normal_vector_view<T, Tag>(this->cols(), this->storage()+r*this->leading_dimension());
+      }
+
+      const_normal_vector_view<T, Tag>
+      row(int r) const
+      {
+	 DEBUG_RANGE_CHECK_OPEN(r, 0, this->rows());
+	 return const_normal_vector_view<T, Tag>(this->cols(), this->storage()+r*this->leading_dimension());
+      }
+
+      vector_view<T, Tag>
+      col(int c)
+      {
+	 DEBUG_RANGE_CHECK_OPEN(c, 0, this->cols());
+	 return vector_view<T, Tag>(this->rows(), this->leading_dimension(), this->storage()+c);
+      }
+
+      const_vector_view<T, Tag>
+      col(int c) const
+      {
+	 DEBUG_RANGE_CHECK_OPEN(c, 0, this->cols());
+	 return vector_view<T, Tag>(this->rows(), this->leading_dimension(), this->storage()+c);
+      }
+
       base_type const& base() const { return Base; }
 
       const_storage_type storage() const& { return Base.storage(); }
@@ -292,6 +320,14 @@ class BlasMatrixTrans : public BlasMatrix<T, BlasMatrixTrans<T, BaseType, Tag>, 
    private:
       base_type const& Base;
 };
+
+template <typename T, typename U, typename Tag>
+std::ostream&
+operator<<(std::ostream& out, BlasMatrixTrans<T,U,Tag> const& M)
+{
+   out << "Transposed matrix: " << M.base();
+   return out;
+}
 
 // proxy class for the hermitian conjugate of a BlasMatrix
 
@@ -321,6 +357,14 @@ class BlasMatrixHerm : public BlasMatrix<T, BlasMatrixHerm<T, BaseType, Tag>, Ta
    private:
       base_type const& Base;
 };
+
+template <typename T, typename U, typename Tag>
+std::ostream&
+operator<<(std::ostream& out, BlasMatrixHerm<T,U,Tag> const& M)
+{
+   out << "Hermitian-conjugate matrix: " << M.base();
+   return out;
+}
 
 // proxy class for the complex conjugate of a BlasMatrix
 
@@ -352,6 +396,14 @@ class BlasMatrixConj : public BlasMatrix<T, BlasMatrixConj<T, BaseType, Tag>, Ta
    private:
       base_type const& Base;
 };
+
+template <typename T, typename U, typename Tag>
+std::ostream&
+operator<<(std::ostream& out, BlasMatrixConj<T,U,Tag> const& M)
+{
+   out << "Complex-conjugate matrix: " << M.base();
+   return out;
+}
 
 // trans
 
@@ -1434,13 +1486,13 @@ void assign_permutation(BlasVectorProxy<T, U, Tag>&& A, BlasVector<T, V, Tag> co
 
 template <typename T, typename U, typename V, typename Tag>
 void
-assign_slice(NormalMatrix<T, U, Tag>& Out, NormalMatrix<T, V, Tag> const& In,
+assign_slice(NormalMatrix<T, U, Tag>& Out, BlasMatrix<T, V, Tag> const& In,
              std::vector<int> const& RowTrans, Range ColTrans);
 
 template <typename T, typename U, typename V, typename Tag>
 inline
 void
-assign_slice(NormalMatrix<T, U, Tag>& Out, NormalMatrix<T, V, Tag> const& In,
+assign_slice(NormalMatrix<T, U, Tag>& Out, BlasMatrix<T, V, Tag> const& In,
              std::vector<int> const& RowTrans, Range ColTrans)
 {
    CHECK_EQUAL(Out.rows(), RowTrans.size());
@@ -1454,7 +1506,7 @@ assign_slice(NormalMatrix<T, U, Tag>& Out, NormalMatrix<T, V, Tag> const& In,
 template <typename T, typename U, typename V, typename Tag>
 inline
 void
-assign_slice(NormalMatrix<T, U, Tag>& Out, NormalMatrix<T, V, Tag> const& In,
+assign_slice(NormalMatrix<T, U, Tag>& Out, BlasMatrix<T, V, Tag> const& In,
              Range RowTrans, std::vector<int> const& ColTrans)
 {
    CHECK_EQUAL(Out.rows(), RowTrans.size());
