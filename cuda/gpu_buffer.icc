@@ -32,7 +32,7 @@ void* BlockAllocator::allocate(std::size_t Size, std::size_t Align)
    }
    // failed to allocate, need another block.  Allocating another block forces a device synchronization
    // so we might as well flush the gpu_buffers now.
-   size_t BlockSize = round_up(Size, BlockMultiple);
+   size_t BlockSize = blas::round_up(Size, BlockMultiple);
    Allocations.push_back(AllocationBlock(BlockSize, FreeOnDestructor));
    void* p = Allocations.back().try_allocate(Size, Align);
    TryFlushGpuBuffers();  // async here to avoid blocking in the event that another thread

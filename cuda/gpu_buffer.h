@@ -65,7 +65,7 @@ class AllocationBlock
 	 if (RequestSize > Size)
 	    return nullptr;
 
-	 size_t NextOffset = round_up(CurrentOffset, RequestAlign);
+	 size_t NextOffset = blas::round_up(CurrentOffset, RequestAlign);
 	 if (NextOffset > Size - RequestSize)
 	    return nullptr;
 
@@ -578,6 +578,34 @@ T
 get_wait(gpu_ref<T> const& x)
 {
    return x.get_wait();
+}
+
+template <typename T>
+void
+set_wait(gpu_ref<T>& x, T const& y)
+{
+   x.set_wait(y);
+}
+
+template <typename T>
+void
+set_wait(gpu_ref<T>&& x, T const& y)
+{
+   x.set_wait(y);
+}
+
+template <typename T>
+void
+set(gpu_ref<T>& x, T const& y)
+{
+   x.set(y);
+}
+
+template <typename T>
+void
+set(gpu_ref<T>&& x, T const& y)
+{
+   x.set(y);
 }
 
 // function to return a newly allocated gpu_ref

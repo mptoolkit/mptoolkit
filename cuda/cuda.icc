@@ -139,7 +139,7 @@ inline
 void
 stream::safe_to_destroy()
 {
-   if (stream_ && !count_.is_shared())
+   if (stream_ && count_.is_unique())
    {
       // we are the only reference to the stream, we can kill it
       stream_ = nullptr;

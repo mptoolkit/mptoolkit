@@ -26,53 +26,62 @@
 class AtomicRefCount
 {
    public:
-      AtomicRefCount();
-      AtomicRefCount(int Initial);
+      AtomicRefCount() noexcept;
+      AtomicRefCount(int Initial) noexcept;
 
       AtomicRefCount(AtomicRefCount&) = delete;
       AtomicRefCount& operator==(AtomicRefCount const&) = delete;
 
       // atomically increments the counter
-      void operator++();
+      void operator++() noexcept;
 
       // atomically decrements the counter.  Returns zero if the
       // new value of the counter is zero, otherwise returns a positive number.
-      int operator--();
+      int operator--() noexcept;
 
       // returns true if the counter is zero.
-      bool is_zero() const;
+      bool is_zero() const noexcept;
 
-      // returns true if the value of the counter is 1, false otherwise
-      bool is_shared() const;
+      // returns true if the counter is exactly 1.  This operation is synchronized
+      // with decrementing the counter
+      bool is_unique() const noexcept;
 
-      int value() const { return Count.load(); }
+      // returns the value of the counter; useful for debug only as there
+      // is no synchronization
+      int value() const noexcept { return Count.load(); }
 
    private:
       std::atomic<unsigned> Count;
 };
 
 inline
-AtomicRefCount::AtomicRefCount() : Count(0)
+AtomicRefCount::AtomicRefCount() noexcept : Count(0)
 {
 }
 
 inline
-AtomicRefCount::AtomicRefCount(int Initial) : Count(Initial)
+AtomicRefCount::AtomicRefCount(int Initial) noexcept : Count(Initial)
 {
 }
 
 inline
-void AtomicRefCount::operator++()
+void AtomicRefCount::operator++() noexcept
 {
    std::atomic_fetch_add_explicit(&Count, 1u, std::memory_order_relaxed);
 }
 
 inline
-int AtomicRefCount::operator--()
+int AtomicRefCount::operator--() noexcept
 {
+   // decrement the count with release semantics: prior read or write operations
+   // cannot be reordered to occur below the atomic fetch
    unsigned c = std::atomic_fetch_sub_explicit(&Count, 1u, std::memory_order_release);
    if (c == 1u)
    {
+      // If the counter has hit zero, then we are going to call the destructor soon.
+      // Don't reorder any operations that are called in the destructor above the
+      // acquire barrier.  (note that the memory barrier also imposes an ordering that
+      // no read operations can be shifted below it, but I don't think we use that constraint).
       std::atomic_thread_fence(std::memory_order_acquire);
       return 0;
    }
@@ -80,15 +89,15 @@ int AtomicRefCount::operator--()
 }
 
 inline
-bool AtomicRefCount::is_zero() const
+bool AtomicRefCount::is_zero() const noexcept
 {
    return Count.load() == 0;
 }
 
 inline
-bool AtomicRefCount::is_shared() const
+bool AtomicRefCount::is_unique() const noexcept
 {
-   return Count.load() != 1;
+   return Count.load(std::memory_order_acquire) == 1;
 }
 
 class shared_counter
@@ -96,10 +105,10 @@ class shared_counter
    public:
       shared_counter() { Count  = nullptr; }
       shared_counter(shared_counter const& Other) = default;
-      shared_counter(shared_counter&& Other) : Count(Other.Count) { Other.Count = nullptr; }
+      shared_counter(shared_counter&& Other) noexcept : Count(Other.Count) { Other.Count = nullptr; }
       ~shared_counter() = default;
       shared_counter& operator=(shared_counter const& Other) = default;
-      shared_counter& operator=(shared_counter&& Other)
+      shared_counter& operator=(shared_counter&& Other) noexcept
       {
 	 Count = Other.Count;
 	 Other.Count = nullptr;
@@ -125,24 +134,24 @@ class shared_counter
 	 Count = nullptr;
       }
 
-      void operator++() const
+      void operator++() const noexcept
       {
 	 ++*Count;
       }
 
-      int operator--() const
+      int operator--() const noexcept
       {
 	 return --*Count;
       }
 
-      bool is_zero() const
+      bool is_zero() const noexcept
       {
 	 return Count->is_zero();
       }
 
-      bool is_shared() const
+      bool is_unique() const noexcept
       {
-	 return Count->is_shared();
+	 return Count->is_unique();
       }
 
    private:
