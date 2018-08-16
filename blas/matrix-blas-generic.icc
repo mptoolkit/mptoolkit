@@ -53,6 +53,19 @@ vector_copy(int N, T const* x, int incx, U* y, int incy)
 
 template <typename T, typename U>
 void
+vector_copy_conj(int N, T const* x, int incx, U* y, int incy)
+{
+   using std::conj;
+   for (int i = 0; i < N; ++i)
+   {
+      *y = conj(*x);
+      x += incx;
+      y += incy;
+   }
+}
+
+template <typename T, typename U>
+void
 vector_deep_copy(int N, T const* x, int incx, U* y, int incy)
 {
    for (int i = 0; i < N; ++i)

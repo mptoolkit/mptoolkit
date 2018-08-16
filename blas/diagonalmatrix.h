@@ -867,23 +867,75 @@ inplace_conj(DiagonalMatrix<T, Tag>& x)
    inplace_conj(x.diagonal());
 }
 
-template <typename T>
+template <typename T, typename Tag>
 inline
-DiagonalMatrix<T>
-conj(DiagonalMatrix<T> const& x)
+typename std::enable_if<blas::is_complex_v<T>, DiagonalMatrix<T, Tag>>::type
+conj(DiagonalMatrix<T, Tag> const& x)
 {
    using std::conj;
-   DiagonalMatrix<T> Result(x.rows(), x.cols());
+   DiagonalMatrix<T, Tag> Result(x.rows(), x.cols());
    Result.diagonal() = conj(x.diagonal());
    return Result;
 }
 
-template <typename T>
+template <typename T, typename Tag>
 inline
-DiagonalMatrix<T>
-conj(DiagonalMatrix<T>&& x)
+typename std::enable_if<blas::is_complex_v<T>, DiagonalMatrix<T, Tag>>::type
+conj(DiagonalMatrix<T, Tag>&& x)
 {
    inplace_conj(x);
+   return std::move(x);
+}
+
+template <typename T, typename Tag>
+inline
+typename std::enable_if<!blas::is_complex_v<T>, DiagonalMatrix<T, Tag>>::type
+conj(DiagonalMatrix<T, Tag> const& x)
+{
+   return copy(x);
+}
+
+template <typename T, typename Tag>
+inline
+typename std::enable_if<!blas::is_complex_v<T>, DiagonalMatrix<T, Tag>>::type
+conj(DiagonalMatrix<T, Tag>&& x)
+{
+   return std::move(x);
+}
+
+template <typename T, typename Tag>
+inline
+typename std::enable_if<blas::is_complex_v<T>, DiagonalMatrix<T, Tag>>::type
+herm(DiagonalMatrix<T, Tag> const& x)
+{
+   using std::conj;
+   DiagonalMatrix<T, Tag> Result(x.rows(), x.cols());
+   Result.diagonal() = conj(x.diagonal());
+   return Result;
+}
+
+template <typename T, typename Tag>
+inline
+typename std::enable_if<blas::is_complex_v<T>, DiagonalMatrix<T, Tag>>::type
+herm(DiagonalMatrix<T, Tag>&& x)
+{
+   inplace_conj(x);
+   return std::move(x);
+}
+
+template <typename T, typename Tag>
+inline
+typename std::enable_if<!blas::is_complex_v<T>, DiagonalMatrix<T, Tag>>::type
+herm(DiagonalMatrix<T, Tag> const& x)
+{
+   return copy(x);
+}
+
+template <typename T, typename Tag>
+inline
+typename std::enable_if<!blas::is_complex_v<T>, DiagonalMatrix<T, Tag>>::type
+herm(DiagonalMatrix<T, Tag>&& x)
+{
    return std::move(x);
 }
 

@@ -41,6 +41,10 @@ vector_copy(int M, T const* x, int incx, U* y, int incy);
 
 template <typename T, typename U>
 void
+vector_copy_conj(int M, T const* x, int incx, U* y, int incy);
+
+template <typename T, typename U>
+void
 vector_deep_copy(int M, T const* x, int incx, U* y, int incy);
 
 template <typename T, typename U, typename V>

@@ -194,6 +194,13 @@ class Vector : public NormalVector<T, Vector<T, Tag>, Tag>
       template <typename U>
       Vector(VectorRef<T, U, tag_type> const& E) : Vector(E, tag_type::template default_arena<T>()) {}
 
+      // mixed types
+      template <typename T2, typename U>
+      Vector(VectorRef<T2, U, tag_type> const& E, arena Arena_);
+
+      template <typename T2, typename U>
+      Vector(VectorRef<T2, U, tag_type> const& E) : Vector(E, tag_type::template default_arena<T>()) {}
+
       // construction via copy from another tag type
       template <typename U, typename OtherTag>
       Vector(VectorRef<T, U, OtherTag> const& E, arena Arena_);
@@ -225,6 +232,14 @@ class Vector : public NormalVector<T, Vector<T, Tag>, Tag>
       // move construction/assignment and get/set operations.
       template <typename U>
       Vector& operator=(VectorRef<T, U, tag_type> const& E)
+      {
+	 assign(*this, E.as_derived());
+	 return *this;
+      }
+
+      // mixed component tyoes
+      template <typename U, typename T2>
+      Vector& operator=(VectorRef<T2, U, tag_type> const& E)
       {
 	 assign(*this, E.as_derived());
 	 return *this;

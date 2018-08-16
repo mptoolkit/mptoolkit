@@ -1205,12 +1205,14 @@ else INVOKE_PANIC("PANIC", #Msg, (Msg))
 
 // check for closeness for floating point
 
-template <typename T>
+#if 0
+template <typename T, typename U>
 inline
-bool check_close(T x, T y)
+bool check_close(T&& x, U&& y)
 {
    return x == y;
 }
+#endif
 
 inline
 bool check_close(float x, float y)

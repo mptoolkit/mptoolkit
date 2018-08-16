@@ -1062,6 +1062,8 @@ void vector_copy_scaled(T alpha, blas::BlasVector<T, U, Tag> const& x, BlasVecto
    vector_copy_scaled(x.size(), alpha, x.storage(), x.stride(), std::move(y).storage(), y.stride());
 }
 
+// high-level copy
+
 template <typename T, typename U, typename V, typename W, typename Tag>
 inline
 void vector_copy(blas::BlasVector<T, U, Tag> const& x, BlasVector<V, W, Tag>& y)
@@ -1076,6 +1078,23 @@ void vector_copy(blas::BlasVector<T, U, Tag> const& x, BlasVectorProxy<V, W, Tag
 {
    DEBUG_CHECK_EQUAL(x.size(), y.size());
    vector_copy(x.size(), x.storage(), x.stride(), std::move(y).storage(), y.stride());
+}
+
+// conjugated
+template <typename T, typename U, typename V, typename W, typename Tag>
+inline
+void vector_copy(blas::VectorConj<T, U, Tag> const& x, BlasVector<V, W, Tag>& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_copy_conj(x.size(), x.base().storage(), x.base().stride(), y.storage(), y.stride());
+}
+
+template <typename T, typename U, typename V, typename W, typename Tag>
+inline
+void vector_copy(blas::VectorConj<T, U, Tag> const& x, BlasVectorProxy<V, W, Tag>&& y)
+{
+   DEBUG_CHECK_EQUAL(x.size(), y.size());
+   vector_copy_conj(x.size(), x.base().storage(), x.base().stride(), std::move(y).storage(), y.stride());
 }
 
 template <typename T, typename U, typename V, typename W, typename Tag>
@@ -1936,6 +1955,23 @@ void matrix_add(BlasMatrix<T, U, Tag> const& A, NormalMatrixProxy<T, V, Tag>&& C
 }
 
 } // namespace blas
+
+// for debugging
+namespace tracer
+{
+
+template <typename T, typename U, typename V, typename Tag>
+inline
+bool check_close(blas::MatrixRef<T, U, Tag> const& x, blas::MatrixRef<T, V, Tag> const& y)
+{
+   using blas::norm_frob_sq;
+   auto Norm = std::sqrt(norm_frob_sq(x.as_derived()) * norm_frob_sq(y.as_derived()));
+   if (Norm == 0.0)
+      return true;
+   return (norm_frob_sq(x.as_derived() - y.as_derived()) / Norm) < 1E-12;
+}
+
+} // namespace tracer
 
 #include "matrixref.icc"
 

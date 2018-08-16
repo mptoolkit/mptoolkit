@@ -55,9 +55,20 @@ void Diagonalize(NormalMatrix<std::complex<double>, U, Tag>&& M,
    CHECK_EQUAL(M.rows(), Left.cols());
    CHECK_EQUAL(M.rows(), Right.rows());
    CHECK_EQUAL(M.rows(), Right.cols());
+
+#if !defined(NDEBUG)
+   Matrix<std::complex<double>, Tag> TempM(copy(M));
+#endif
+
    detail::Diagonalize(M.rows(), std::move(M).storage(), M.leading_dimension(), v.storage(),
 		       Left.storage(), Left.leading_dimension(),
 		       Right.storage(), Right.leading_dimension());
+
+#if !defined(NDEBUG)
+   DiagonalMatrix<std::complex<double>, Tag> D(v.size(), v.size());
+   D.diagonal() = v;
+   DEBUG_CHECK_CLOSE(TempM, (Matrix<std::complex<double>, Tag>(herm(Left)*Matrix<std::complex<double>, Tag>(D*Right))));
+#endif
 }
 
 template <typename U, typename V, typename W, typename X, typename Tag>
@@ -85,7 +96,16 @@ inline
 void DiagonalizeSymmetric(NormalMatrix<double, U, Tag>& M, NormalVector<double, V, Tag>& v)
 {
    CHECK_EQUAL(M.rows(), M.cols());
+#if !defined(NDEBUG)
+   Matrix<double, Tag> TempM(copy(M));
+#endif
    detail::DiagonalizeSymmetric(M.rows(), M.storage(), M.leading_dimension(), v.storage());
+
+#if !defined(NDEBUG)
+   DiagonalMatrix<double, Tag> D(v.size(), v.size());
+   D.diagonal() = v;
+   DEBUG_CHECK_CLOSE(TempM, (Matrix<double, Tag>(Matrix<double, Tag>(M*D)*herm(M))));
+#endif
 }
 
 // Version that takes a proxy-reference for the eigenvalues
@@ -94,7 +114,16 @@ inline
 void DiagonalizeSymmetric(NormalMatrix<double, U, Tag>& M, NormalVectorProxy<double, V, Tag>&& v)
 {
    CHECK_EQUAL(M.rows(), M.cols());
+#if !defined(NDEBUG)
+   Matrix<double, Tag> TempM(copy(M));
+#endif
    detail::DiagonalizeSymmetric(M.rows(), M.storage(), M.leading_dimension(), v.storage());
+
+#if !defined(NDEBUG)
+   DiagonalMatrix<double, Tag> D(v.size(), v.size());
+   D.diagonal() = v;
+   DEBUG_CHECK_CLOSE(TempM, (Matrix<double, Tag>(Matrix<double, Tag>(M*D)*herm(M))));
+#endif
 }
 
 // TODO: we could also add versions where M is passed as a NormalMatrixProxy
@@ -121,8 +150,17 @@ template <typename U, typename V, typename Tag>
 inline
 void DiagonalizeHermitian(NormalMatrix<std::complex<double>, U, Tag>& M, NormalVector<double, V, Tag>& v)
 {
+   //TRACE(M);
    CHECK_EQUAL(M.rows(), M.cols());
+#if !defined(NDEBUG)
+   Matrix<std::complex<double>, Tag> TempM(copy(M));
+#endif
    detail::DiagonalizeHermitian(M.rows(), M.storage(), M.leading_dimension(), v.storage());
+#if !defined(NDEBUG)
+   DiagonalMatrix<std::complex<double>, Tag> D(v.size(), v.size());
+   D.diagonal() = v;
+   DEBUG_CHECK_CLOSE(TempM, (Matrix<std::complex<double>, Tag>(Matrix<std::complex<double>, Tag>(M*D)*herm(M))))(M.as_derived())(v.as_derived());
+#endif
 }
 
 template <typename U, typename V, typename Tag>
@@ -130,7 +168,15 @@ inline
 void DiagonalizeHermitian(NormalMatrix<std::complex<double>, U, Tag>& M, NormalVectorProxy<double, V, Tag>&& v)
 {
    CHECK_EQUAL(M.rows(), M.cols());
+#if !defined(NDEBUG)
+   Matrix<std::complex<double>, Tag> TempM(copy(M));
+#endif
    detail::DiagonalizeHermitian(M.rows(), M.storage(), M.leading_dimension(), std::move(v).storage());
+#if !defined(NDEBUG)
+   DiagonalMatrix<std::complex<double>, Tag> D(v.size(), v.size());
+   D.diagonal() = v.as_derived();
+   DEBUG_CHECK_CLOSE(TempM, (Matrix<std::complex<double>, Tag>(Matrix<std::complex<double>, Tag>(M*D)*herm(M))));
+#endif
 }
 
 //
@@ -143,6 +189,9 @@ void
 SVD(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& Umat,
     NormalVector<Real, D, Tag>& Dvec, NormalMatrix<Scalar, V, Tag>& Vmat)
 {
+#if !defined(NDEBUG)
+   Matrix<Scalar, Tag> TempM(copy(Mmat));
+#endif
    CHECK_EQUAL(Dvec.size(), std::min(Mmat.rows(), Mmat.cols()));
    CHECK_EQUAL(Mmat.rows(), Umat.rows());
    CHECK_EQUAL(Umat.cols(), Dvec.size());
@@ -151,6 +200,12 @@ SVD(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& Umat,
    detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(), Dvec.storage(),
 				      Umat.storage(), Umat.leading_dimension(),
 				      Vmat.storage(), Vmat.leading_dimension());
+#if !defined(NDEBUG)
+   DiagonalMatrix<Scalar, Tag> DD(Dvec.size(), Dvec.size());
+   DD.diagonal() = Dvec;
+   using mtype = Matrix<Scalar, Tag>;
+   DEBUG_CHECK_CLOSE(TempM, mtype(Umat*mtype(DD*Vmat)));
+#endif
 }
 
 template <typename Scalar, typename Real, typename M, typename U, typename D, typename V, typename Tag>
@@ -158,6 +213,9 @@ void
 SVD(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& Umat,
     NormalVectorProxy<Real, D, Tag>&& Dvec, NormalMatrix<Scalar, V, Tag>& Vmat)
 {
+#if !defined(NDEBUG)
+   Matrix<Scalar, Tag> TempM(copy(Mmat));
+#endif
    CHECK_EQUAL(Dvec.size(), std::min(Mmat.rows(), Mmat.cols()));
    CHECK_EQUAL(Mmat.rows(), Umat.rows());
    CHECK_EQUAL(Umat.cols(), Dvec.size());
@@ -167,8 +225,14 @@ SVD(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& Umat,
 				      std::move(Dvec).storage(),
 				      Umat.storage(), Umat.leading_dimension(),
 				      Vmat.storage(), Vmat.leading_dimension());
+#if !defined(NDEBUG)
+   DiagonalMatrix<Scalar, Tag> DD(Dvec.size(), Dvec.size());
+   DD.diagonal() = Dvec;
+   using mtype = Matrix<Scalar, Tag>;
+   DEBUG_CHECK_CLOSE(TempM, mtype(Umat*mtype(DD*Vmat)));
+   DEBUG_CHECK_CLOSE(TempM, (Matrix<Scalar, Tag>(Umat*Matrix<Scalar,Tag>(DD*Vmat))));
+#endif
 }
-
 
 // SVD_FullRows
 //
@@ -185,6 +249,9 @@ SVD_FullRows(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
    CHECK_EQUAL(Umat.cols(), Dvec.size());
    CHECK_EQUAL(Dvec.size(), Vmat.rows());
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
+#if !defined(NDEBUG)
+   Matrix<Scalar, Tag> TempM(copy(Mmat));
+#endif
    if (Mmat.rows() < Mmat.cols())
    {
       detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(), Dvec.storage(),
@@ -199,6 +266,13 @@ SVD_FullRows(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
 					     Umat.storage(), Umat.leading_dimension(),
 					     Vmat.storage(), Vmat.leading_dimension());
    }
+#if !defined(NDEBUG)
+   DiagonalMatrix<Scalar, Tag> DD(Dvec.size(), Dvec.size());
+   DD.diagonal() = Dvec;
+   using mtype = Matrix<Scalar, Tag>;
+   DEBUG_CHECK_CLOSE(TempM, mtype(Umat*mtype(DD*Vmat)));
+   DEBUG_CHECK_CLOSE(TempM, (Matrix<Scalar, Tag>(Umat*Matrix<Scalar,Tag>(DD*Vmat))));
+#endif
 }
 
 template <typename Scalar, typename Real, typename M, typename U, typename D, typename V, typename Tag>
@@ -211,6 +285,9 @@ SVD_FullRows(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
    CHECK_EQUAL(Umat.cols(), Dvec.size());
    CHECK_EQUAL(Dvec.size(), Vmat.rows());
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
+#if !defined(NDEBUG)
+   Matrix<Scalar, Tag> TempM(copy(Mmat));
+#endif
    if (Mmat.rows() < Mmat.cols())
    {
       detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(),
@@ -227,6 +304,13 @@ SVD_FullRows(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
 					     Umat.storage(), Umat.leading_dimension(),
 					     Vmat.storage(), Vmat.leading_dimension());
    }
+#if !defined(NDEBUG)
+   DiagonalMatrix<Scalar, Tag> DD(Dvec.size(), Dvec.size());
+   DD.diagonal() = Dvec;
+   using mtype = Matrix<Scalar, Tag>;
+   DEBUG_CHECK_CLOSE(TempM, mtype(Umat*mtype(DD*Vmat)));
+   DEBUG_CHECK_CLOSE(TempM, (Matrix<Scalar, Tag>(Umat*Matrix<Scalar,Tag>(DD*Vmat))));
+#endif
 }
 
 // SVD_FullCols
@@ -244,6 +328,9 @@ SVD_FullCols(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
    CHECK_EQUAL(Umat.cols(), Dvec.size());
    CHECK_EQUAL(Dvec.size(), Vmat.rows());
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
+#if !defined(NDEBUG)
+   Matrix<Scalar, Tag> TempM(copy(Mmat));
+#endif
    if (Mmat.cols() < Mmat.rows())
    {
       detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(),
@@ -260,6 +347,13 @@ SVD_FullCols(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
 					     Umat.storage(), Umat.leading_dimension(),
 					     Vmat.storage(), Vmat.leading_dimension());
    }
+#if !defined(NDEBUG)
+   DiagonalMatrix<Scalar, Tag> DD(Dvec.size(), Dvec.size());
+   DD.diagonal() = Dvec;
+   using mtype = Matrix<Scalar, Tag>;
+   DEBUG_CHECK_CLOSE(TempM, mtype(Umat*mtype(DD*Vmat)));
+   DEBUG_CHECK_CLOSE(TempM, (Matrix<Scalar, Tag>(Umat*Matrix<Scalar,Tag>(DD*Vmat))));
+#endif
 }
 
 template <typename Scalar, typename Real, typename M, typename U, typename D, typename V, typename Tag>
@@ -272,6 +366,9 @@ SVD_FullCols(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
    CHECK_EQUAL(Umat.cols(), Dvec.size());
    CHECK_EQUAL(Dvec.size(), Vmat.rows());
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
+#if !defined(NDEBUG)
+   Matrix<Scalar, Tag> TempM(copy(Mmat));
+#endif
    if (Mmat.cols() < Mmat.rows())
    {
       detail::SingularValueDecomposition(Mmat.rows(), Mmat.cols(), Mmat.storage(), Mmat.leading_dimension(),
@@ -288,6 +385,13 @@ SVD_FullCols(NormalMatrix<Scalar, M, Tag>&& Mmat, NormalMatrix<Scalar, U, Tag>& 
 					     Umat.storage(), Umat.leading_dimension(),
 					     Vmat.storage(), Vmat.leading_dimension());
    }
+#if !defined(NDEBUG)
+   DiagonalMatrix<Scalar, Tag> DD(Dvec.size(), Dvec.size());
+   DD.diagonal() = Dvec;
+   using mtype = Matrix<Scalar, Tag>;
+   DEBUG_CHECK_CLOSE(TempM, mtype(Umat*mtype(DD*Vmat)));
+   DEBUG_CHECK_CLOSE(TempM, (Matrix<Scalar, Tag>(Umat*Matrix<Scalar,Tag>(DD*Vmat))));
+#endif
 }
 
 //

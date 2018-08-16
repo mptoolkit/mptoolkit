@@ -401,6 +401,21 @@ vector_copy(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::gpu_ptr<U> y, int i
    x.wait_for(y);
 }
 
+template <typename T, typename U>
+inline
+void
+vector_copy_conj(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::gpu_ptr<U> y, int incy)
+{
+   cublas::handle& H = cublas::get_handle();
+   H.set_stream(y.get_stream());
+   H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
+   y.wait_for(x);
+   cublas::copy(H.raw_handle(), n, x.device_ptr(), incx, y.device_ptr(), incy);
+   x.wait_for(y);
+   double alpha = -1.0;
+   cublas::scale(H.raw_handle(), n, &alpha, reinterpret_cast<double*>(y.device_ptr())+1, incy*2);
+}
+
 inline
 void
 vector_scale(int n, double alpha, cuda::gpu_ptr<double> y, int incy)

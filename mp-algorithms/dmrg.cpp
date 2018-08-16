@@ -596,7 +596,6 @@ DMRG::Solve()
 
    Solver_.Solve(*C, HamMatrices.left(), *H, HamMatrices.right());
 
-   DEBUG_TRACE("DMRG::Solve");
    StateComponent PsiOld = copy(*C);
 
    IterationEnergy = Solver_.LastEnergy();

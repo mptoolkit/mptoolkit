@@ -165,6 +165,16 @@ set(blas::BlasVectorProxy<T, U, gpu_tag>&& A, blas::BlasVector<T, V, blas::cpu_t
    return A.storage().sync();
 }
 
+template <typename T>
+std::ostream& operator<<(std::ostream& out, gpu_vector<T> const& A)
+{
+   out << "gpu_vector<" << tracer::typeid_name<T>() << "> [" << A.size() << ']';
+#if !defined(NDEBUG)
+   out << get_wait(A);
+#endif
+   return out;
+}
+
 } // namespace blas
 
 #endif
