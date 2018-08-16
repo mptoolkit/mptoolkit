@@ -773,7 +773,9 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
       {
 	 DEBUG_CHECK_EQUAL(r,c);
          DEBUG_RANGE_CHECK_OPEN(r, 0, Size);
-	 Buf[r] = value;
+         // inserting calls the constuctor, so destroy the old one first
+         (&Buf[r])->~T();
+         new(&Buf[r]) T(value);
       }
 
       template <typename U>
@@ -781,7 +783,9 @@ class DiagonalMatrix<T, cpu_tag> : public DiagonalBlasMatrix<T, DiagonalMatrix<T
       {
 	 DEBUG_CHECK_EQUAL(r,c);
          DEBUG_RANGE_CHECK_OPEN(r, 0, Size);
-	 Buf[r] = std::move(value);
+         // inserting calls the constuctor, so destroy the old one first
+         (&Buf[r])->~T();
+         new(&Buf[r]) T(std::move(value));
       }
 
       template <typename U>

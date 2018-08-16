@@ -181,7 +181,7 @@ SVD(NormalMatrix<Scalar, M, gpu_tag>&& Mmat, NormalMatrix<Scalar, U, gpu_tag>& U
 {
    CHECK_EQUAL(Dvec.size(), std::min(Mmat.rows(), Mmat.cols()));
    CHECK_EQUAL(Mmat.rows(), Umat.rows());
-   CHECK_EQUAL(Umat.rows(), Dvec.size());
+   CHECK_EQUAL(Umat.cols(), Dvec.size());
    CHECK_EQUAL(Dvec.size(), Vmat.rows());
    CHECK_EQUAL(Vmat.cols(), Mmat.cols());
 
