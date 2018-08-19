@@ -43,7 +43,12 @@ class AtomicRefCount
       bool is_zero() const noexcept;
 
       // returns true if the counter is exactly 1.  This operation is synchronized
-      // with decrementing the counter
+      // with decrementing the counter.  Do we need to synchronize with incrementing
+      // the counter too?  In that case, operator++ would need release semantics on the
+      // counter.  I don't think so, because if the count is currently 1, and one
+      // thread wants to increase the count while another wants to call is_unique() (in
+      // preparation for modifying whatever the counter is protecting) then there must
+      // be some external synchronization anyway.
       bool is_unique() const noexcept;
 
       // returns the value of the counter; useful for debug only as there

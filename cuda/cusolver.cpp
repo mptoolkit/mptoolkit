@@ -139,6 +139,17 @@ void DiagonalizeHermitian(int Size, cuda::gpu_ptr<std::complex<double>> A, int l
    cuDoubleComplex* Work = static_cast<cuDoubleComplex*>(cuda::allocate_gpu_temp_memory(lWork*sizeof(cuDoubleComplex)));
    int* DevInfo = static_cast<int*>(cuda::allocate_gpu_temp_memory(sizeof(int)));
    TRACE_CUDA("cusolverDnZheevd")(Size)(A.device_ptr())(ldA)(Eigen.device_ptr())(&lWork)(lWork)(DevInfo);
+
+   std::vector<std::complex<double>> Memory(Size*ldA);
+   cuda::memcpy_device_to_host(A.device_ptr(), Memory.data(), Size*ldA*sizeof(std::complex<double>));
+   for (int i = 0; i < Size; ++i)
+   {
+      for (int j = 0; j < Size; ++j)
+      {
+         std::cout << "A(" << i << ',' << j << ") = " << Memory[j*ldA+i].real() << " + " << Memory[j*ldA+i].imag() << "i\n";
+      }
+   }
+
    cusolver::check_error(cusolverDnZheevd(H.raw_handle(),
                                           CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER,
                                           Size,
@@ -150,6 +161,14 @@ void DiagonalizeHermitian(int Size, cuda::gpu_ptr<std::complex<double>> A, int l
    cuda::memcpy_device_to_host(DevInfo, &Info, sizeof(int));
    CHECK_EQUAL(Info, 0);
    Eigen.wait_for(A);
+
+   std::vector<double> E(Size);
+   cuda::memcpy_device_to_host(Eigen.device_ptr(), E.data(), Size*sizeof(double));
+   for (int i = 0; i < Size; ++i)
+   {
+      std::cout << "Eigenvalue[" << i << "] = " << E[i] << '\n';
+   }
+
    cuda::free_gpu_temp_memory(DevInfo, sizeof(int));
    cuda::free_gpu_temp_memory(Work, lWork*sizeof(cuDoubleComplex));
 }

@@ -169,9 +169,9 @@ template <typename T>
 std::ostream& operator<<(std::ostream& out, gpu_vector<T> const& A)
 {
    out << "gpu_vector<" << tracer::typeid_name<T>() << "> [" << A.size() << ']';
-#if !defined(NDEBUG)
+   //#if !defined(NDEBUG)
    out << get_wait(A);
-#endif
+   //#endif
    return out;
 }
 
