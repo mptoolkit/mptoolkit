@@ -27,8 +27,7 @@
 #define MPTOOLKIT_BLAS_ARENA_H
 
 #include <memory>
-
-#include <valgrind/memcheck.h>
+#include "common/valgrind-wrapper.h"
 
 namespace blas
 {

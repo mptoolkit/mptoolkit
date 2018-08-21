@@ -1,6 +1,6 @@
-# generated automatically by aclocal 1.15 -*- Autoconf -*-
+# generated automatically by aclocal 1.15.1 -*- Autoconf -*-
 
-# Copyright (C) 1996-2014 Free Software Foundation, Inc.
+# Copyright (C) 1996-2017 Free Software Foundation, Inc.
 
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
@@ -20,7 +20,6 @@ m4_include([m4/ax_check_enable_debug.m4])
 m4_include([m4/ax_compiler_vendor.m4])
 m4_include([m4/ax_compiler_version.m4])
 m4_include([m4/ax_cublas.m4])
-m4_include([m4/ax_cuda.m4])
 m4_include([m4/ax_cuda_config.m4])
 m4_include([m4/ax_cusolver.m4])
 m4_include([m4/ax_cxx_compile_stdcxx.m4])

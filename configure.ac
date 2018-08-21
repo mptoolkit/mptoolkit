@@ -219,6 +219,9 @@ if test "x$with_cuda" = xyes; then
    [ AS_IF([test "x$ax_cusolver_ok" != xdisable], [AC_MSG_ERROR([Cannot find cuSOLVER library])]) ])
 fi
 
+dnl valgrind support
+AC_CHECK_HEADERS(valgrind/memcheck.h)
+
 AC_PROG_INSTALL
 
 dnl shared library configuration
