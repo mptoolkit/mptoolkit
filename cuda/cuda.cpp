@@ -46,6 +46,11 @@ int num_cuda_devices()
    return cuda::num_devices();
 }
 
+std::string num_cuda_devices_str()
+{
+   return cuda::num_devices_str();
+}
+
 std::vector<std::string> get_cuda_device_names()
 {
    int n = cuda::num_devices();
@@ -177,5 +182,19 @@ void FreeEvent(cudaEvent_t event_)
 blas::arena gpu_temp_arena(new BlockAllocator(DefaultBlockMultiple, false));
 
 } // namespace detail
+
+std::string
+num_devices_str()
+{
+   int Result;
+   cudaError_t e = cudaGetDeviceCount(&Result);
+   if (e == cudaSuccess)
+      return std::to_string(Result);
+   if (e == cudaErrorNoDevice)
+      return "0 (no devices)";
+   if (e == cudaErrorInsufficientDriver)
+      return "0 (insufficient driver)";
+   return std::string("0 (") + cudaGetErrorString(e) + ")";
+}
 
 } // namespace cuda

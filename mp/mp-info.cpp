@@ -90,7 +90,7 @@ void ShowStateInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
 
    for (std::vector<int>::const_iterator I = Partition.begin(); I != Partition.end(); ++I)
    {
-      VectorBasis B = Psi.lambda(*I).Basis1();
+      VectorBasis B = Psi.lambda(*I).get().Basis1();
       out << std::setw(10) << (*I) << "  "
           << std::setw(10) << B.total_dimension() << "  "
           << std::setw(7) <<  B.total_degree()
@@ -103,7 +103,7 @@ void ShowBasisInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
 {
    for (std::vector<int>::const_iterator I = Partition.begin(); I != Partition.end(); ++I)
    {
-      VectorBasis B = Psi.lambda(*I).Basis1();
+      VectorBasis B = Psi.lambda(*I).get().Basis1();
       out << "Basis at partition " << (*I) << ":\n" << B << '\n';
    }
    out << std::endl;
@@ -115,9 +115,9 @@ void ShowEntropyInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
       out << "#left-size #right-size   #entropy" << (Base2 ? "(base-2)" : "(base-e)") << '\n';
    for (std::vector<int>::const_iterator I = Partition.begin(); I != Partition.end(); ++I)
    {
-      RealDiagonalOperator Rho = Psi.lambda(*I);
-      Rho = scalar_prod(Rho, herm(Rho));
-      DensityMatrix<MatrixOperator> DM(Rho);
+      RealDiagonalOperator Rho = copy(Psi.lambda(*I).get());
+      //Rho = scalar_prod(Rho, herm(Rho));
+      DensityMatrix<MatrixOperator> DM = DensityMatrix<MatrixOperator>(MatrixOperator(Rho));
 
       double Entropy = DensityEntropy(DM.begin(), DM.end(), DM.EigenSum(), Base2);
       out << std::setw(10) << (*I) << ' ' << std::setw(11) << (Psi.size() - (*I)) << ' '
@@ -130,7 +130,7 @@ void ShowDM(CanonicalWavefunctionBase const& Psi, std::ostream& out)
 {
    for (std::vector<int>::const_iterator I = Partition.begin(); I != Partition.end(); ++I)
    {
-      MatrixOperator Rho = Psi.lambda(*I);
+      MatrixOperator Rho = MatrixOperator(copy(Psi.lambda(*I).get()));
       Rho = scalar_prod(Rho, herm(Rho));
 
       DensityMatrix<MatrixOperator> DM(Rho);
@@ -160,7 +160,7 @@ void ShowCasimirInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
 
    for (std::vector<int>::const_iterator I = Partition.begin(); I != Partition.end(); ++I)
    {
-      MatrixOperator Rho = Psi.lambda(*I);
+      MatrixOperator Rho = MatrixOperator(copy(Psi.lambda(*I).get()));
       Rho = scalar_prod(Rho, herm(Rho));
 
       DensityMatrix<MatrixOperator> DM(Rho);
@@ -183,7 +183,7 @@ void ShowLocalBasisInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
    for (int i = 0; i < Psi.size(); ++i)
    {
       out << "Basis at site " << i << '\n';
-      out << Psi[i].LocalBasis() << std::endl;
+      out << Psi[i].get().LocalBasis() << std::endl;
    }
    out << std::endl;
 }

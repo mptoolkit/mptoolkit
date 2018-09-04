@@ -92,6 +92,11 @@ void check_error(cudaError_t e)
 // returns the number of devices with compute capability >= 2
 int num_devices();
 
+// returns a string representation of the number of cuda devices;
+// this gives more information in the case where there are no cuda
+// devices (eg, whether there are no devices or whether there is some driver error).
+std::string num_devices_str();
+
 // sets the device.  This must be called per host thread.
 void set_device(int d);
 

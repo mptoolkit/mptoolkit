@@ -165,6 +165,8 @@ class DensityMatrixBase
       typedef std::vector<EigenInfo> EigenInfoListType;
       typedef EigenInfoListType::const_iterator const_iterator;
 
+      DensityMatrixBase(DensityMatrixBase&& Other) noexcept = default;
+
       // iterators for the beginning and end of the sorted list of eigenvalues.
       const_iterator begin() const { return EigenInfoList.begin(); }
       const_iterator end() const { return EigenInfoList.end(); }

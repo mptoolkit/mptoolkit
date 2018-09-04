@@ -42,6 +42,9 @@ bool is_cuda_enabled();
 // returns the number of available cuda devices (0 if cuda isn't available)
 int num_cuda_devices();
 
+// returns the number of available cuda devices (0 and error message if cuda isn't available)
+std::string num_cuda_devices_str();
+
 // returns a vector of names of the available cuda devices (empty
 // if cuda isn't available)
 std::vector<std::string> get_cuda_device_names();
@@ -71,6 +74,12 @@ inline
 int num_cuda_devices()
 {
    return 0;
+}
+
+inline
+std::string num_cuda_devices()
+{
+   return "0 (cuda is not enabled)";
 }
 
 inline

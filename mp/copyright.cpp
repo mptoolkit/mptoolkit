@@ -64,13 +64,17 @@ void print_copyright(std::ostream& out)
        << "." << (BOOST_VERSION % 100) << "\n";
    if (cuda::is_cuda_enabled())
    {
-      out << "Using CUDA: yes\n"
-	  << "CUDA device: ";
-      int d = cuda::mp_cuda_device();
-      if (d == -1)
-	 out << "(no devices available)\n";
-      else
-	 out << cuda::get_cuda_device_names()[d] << "\n";
+      out << "Using CUDA: yes\n";
+      out << "Number of CUDA devices: " << cuda::num_cuda_devices_str() << '\n';
+      if (cuda::num_cuda_devices() > 0)
+      {
+         out << "CUDA device: ";
+         int d = cuda::mp_cuda_device();
+         if (d == -1)
+            out << "(no devices available)\n";
+         else
+            out << cuda::get_cuda_device_names()[d] << "\n";
+      }
    }
    else
    {

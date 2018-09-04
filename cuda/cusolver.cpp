@@ -123,7 +123,7 @@ void DiagonalizeSymmetric(int Size, cuda::gpu_ptr<double> A, int ldA, cuda::gpu_
    cuda::free_gpu_temp_memory(Work, lWork*sizeof(double));
 }
 
-void DiagonalizeHermitian(int Size, cuda::gpu_ptr<std::complex<double>> A, int ldA,
+void DiagonalizeHermitianQR(int Size, cuda::gpu_ptr<std::complex<double>> A, int ldA,
 			  cuda::gpu_ptr<double> Eigen)
 {
    cusolver::handle& H = cusolver::get_handle();
@@ -139,17 +139,6 @@ void DiagonalizeHermitian(int Size, cuda::gpu_ptr<std::complex<double>> A, int l
    cuDoubleComplex* Work = static_cast<cuDoubleComplex*>(cuda::allocate_gpu_temp_memory(lWork*sizeof(cuDoubleComplex)));
    int* DevInfo = static_cast<int*>(cuda::allocate_gpu_temp_memory(sizeof(int)));
    TRACE_CUDA("cusolverDnZheevd")(Size)(A.device_ptr())(ldA)(Eigen.device_ptr())(&lWork)(lWork)(DevInfo);
-
-   std::vector<std::complex<double>> Memory(Size*ldA);
-   cuda::memcpy_device_to_host(A.device_ptr(), Memory.data(), Size*ldA*sizeof(std::complex<double>));
-   for (int i = 0; i < Size; ++i)
-   {
-      for (int j = 0; j < Size; ++j)
-      {
-         std::cout << "A(" << i << ',' << j << ") = " << Memory[j*ldA+i].real() << " + " << Memory[j*ldA+i].imag() << "i\n";
-      }
-   }
-
    cusolver::check_error(cusolverDnZheevd(H.raw_handle(),
                                           CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER,
                                           Size,
@@ -162,15 +151,55 @@ void DiagonalizeHermitian(int Size, cuda::gpu_ptr<std::complex<double>> A, int l
    CHECK_EQUAL(Info, 0);
    Eigen.wait_for(A);
 
-   std::vector<double> E(Size);
-   cuda::memcpy_device_to_host(Eigen.device_ptr(), E.data(), Size*sizeof(double));
-   for (int i = 0; i < Size; ++i)
-   {
-      std::cout << "Eigenvalue[" << i << "] = " << E[i] << '\n';
-   }
+   cuda::free_gpu_temp_memory(DevInfo, sizeof(int));
+   cuda::free_gpu_temp_memory(Work, lWork*sizeof(cuDoubleComplex));
+}
+
+void DiagonalizeHermitianJacobi(int Size, cuda::gpu_ptr<std::complex<double>> A, int ldA,
+			  cuda::gpu_ptr<double> Eigen)
+{
+   cusolver::handle& H = cusolver::get_handle();
+   H.set_stream(A.get_stream());
+   A.wait_for(Eigen);
+   syevjInfo_t params;
+   //   syevjInfo_t params;
+   cusolver::check_error(cusolverDnCreateSyevjInfo(&params));
+   // don't bother sorting the eigenvalues
+   cusolver::check_error(cusolverDnXsyevjSetSortEig(params, 0));
+
+   int lWork;
+   TRACE_CUDA("cusolverDnZheevd_bufferSize")(Size)(A.device_ptr())(ldA)(Eigen.device_ptr())(&lWork);
+   cusolver::check_error(cusolverDnZheevj_bufferSize(H.raw_handle(),
+                                                     CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER,
+                                                     Size,
+						     reinterpret_cast<cuDoubleComplex*>(A.device_ptr()),
+						     ldA, Eigen.device_ptr(), &lWork, params));
+   cuDoubleComplex* Work = static_cast<cuDoubleComplex*>(cuda::allocate_gpu_temp_memory(lWork*sizeof(cuDoubleComplex)));
+   int* DevInfo = static_cast<int*>(cuda::allocate_gpu_temp_memory(sizeof(int)));
+   TRACE_CUDA("cusolverDnZheevd")(Size)(A.device_ptr())(ldA)(Eigen.device_ptr())(&lWork)(lWork)(DevInfo);
+   cusolver::check_error(cusolverDnZheevj(H.raw_handle(),
+                                          CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER,
+                                          Size,
+					  reinterpret_cast<cuDoubleComplex*>(A.device_ptr()),
+					  ldA, Eigen.device_ptr(), Work, lWork, DevInfo,
+                                          params));
+   int Info;
+   // FiXME: avoid the synchronization and get DevInfo to synchronize with the stream as a proper gpu_ref
+   A.get_stream().synchronize();
+   cuda::memcpy_device_to_host(DevInfo, &Info, sizeof(int));
+   CHECK_EQUAL(Info, 0);
+   Eigen.wait_for(A);
+
+   cusolver::check_error(cusolverDnDestroySyevjInfo(params));
 
    cuda::free_gpu_temp_memory(DevInfo, sizeof(int));
    cuda::free_gpu_temp_memory(Work, lWork*sizeof(cuDoubleComplex));
+}
+
+void DiagonalizeHermitian(int Size, cuda::gpu_ptr<std::complex<double>> A, int ldA,
+			  cuda::gpu_ptr<double> Eigen)
+{
+   DiagonalizeHermitianJacobi(Size, A, ldA, Eigen);
 }
 
 void SingularValueDecomposition(char job, int Rows, int Cols,
