@@ -127,9 +127,9 @@ cudaStream_t AllocateStream()
 #endif
    {
       // create some more streams
+      DEBUG_TRACE("construcing some more streams")(NumAllocatedStreams);
       for (int i = 0; i < 10; ++i)
       {
-         DEBUG_TRACE("construcing some more streams")(NumAllocatedStreams);
 	 cudaStream_t s;
 	 check_error(cudaStreamCreate(&s));
 	 StreamFreeList.push_back(s);
