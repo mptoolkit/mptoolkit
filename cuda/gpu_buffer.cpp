@@ -36,11 +36,13 @@ void TryFlushGpuBuffers()
 {
    std::lock_guard<std::mutex> lock(GpuBufferPendingDeleteMutex);
    GpuBufferDeleteListType::iterator I = GpuBufferPendingDelete.begin();
+   int CountRunning = 0;
    while (I != GpuBufferPendingDelete.end())
    {
       if (std::get<0>(*I).is_running())
       {
 	 ++I;
+         ++CountRunning;
       }
       else
       {
@@ -48,6 +50,7 @@ void TryFlushGpuBuffers()
 	 I = GpuBufferPendingDelete.erase(I);
       }
    }
+   TRACE(CountRunning);
 }
 
 void SyncFlushGpuBuffers()
