@@ -1,0 +1,256 @@
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// common/atomicrefcount.h
+//
+// Copyright (C) 2018 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
+template <typename T>
+value_ptr<T>::value_ptr() noexcept
+: Ptr(null_ptr), Control(null_ptr)
+{
+}
+
+template <typename T>
+value_ptr<T>::value_ptr(std::null_ptr_t) noexcept
+: Ptr(null_ptr), Control(null_ptr)
+{
+}
+
+template <typename T>
+template <typename U>
+value_ptr<T>::value_ptr(U* ptr)
+   : Ptr(ptr), Control(new value_ptr_control_block(ptr))
+{
+}
+
+template <typename T>
+template <typename U, typename Deleter>
+value_ptr<T>::value_ptr(U* ptr, Deleter d)
+   : Ptr(ptr), Control(new value_ptr_control_block(Ptr, std::bind(d, Ptr)))
+{
+}
+
+template <typename T>
+template <typename U>
+value_ptr<T>::value_ptr(value_ptr<U> const& x, element_type* ptr) noexcept
+: Ptr(ptr), Control(x.Control)
+{
+   if (Control)
+      Control->add_ref();
+}
+
+template <typename T>
+value_ptr<T>::value_ptr(value_ptr const& x) noexcept
+: Ptr(x.ptr), Control(x.Control)
+{
+   Control->add_ref();
+}
+
+template <typename T>
+template <typename U>
+value_ptr<T>::value_ptr(value_ptr<U> const& x) noexcept
+: Ptr(x.Ptr), Control(x.Control)
+{
+   if (Control)
+      Control->add_ref();
+}
+
+template <typename T>
+value_ptr<T>::value_ptr(value_ptr&& x) noexcept
+: Ptr(x.Ptr), Control(x.Control)
+{
+   x.Ptr = null_ptr;
+   x.Control = null_ptr;
+}
+
+template <typename T>
+template <typename U>
+value_ptr<T>::value_ptr(value_ptr<U>&& x) noexcept
+: Ptr(x.Ptr), Control(x.Control)
+{
+   x.Ptr = null_ptr;
+   x.Control = null_ptr;
+}
+
+template <typename T>
+template< class U, class Deleter>
+value_ptr<T>::value_ptr(std::unique_ptr<U, Deleter>&& r)
+   : Ptr(r.get()), Control(new pvalue_control_block(r.get_deleter()))
+{
+}
+
+template <typename T>
+value_ptr<T>::~value_ptr()
+{
+   if (Control)
+   {
+      if (Control->sub_ref() == 0)
+      {
+         Control->invoke_deleter();
+         delete Control;
+      }
+   }
+}
+
+template <typename T>
+value_ptr& value_ptr<T>::operator=(value_ptr const& x) noexcept
+{
+   if (x.Control)
+   {
+      x.Control->add_ref();
+   }
+   if (Control)
+   {
+      if (Control->sub_ref() == 0)
+      {
+         Control->invoke_deleter();
+         delete Control;
+      }
+   }
+   Ptr = x.Ptr;
+   Control = x.Control;
+   return *this;
+}
+
+template <typename T>
+template <typename U>
+value_ptr& value_ptr<T>::operator=(value_ptr<U> const& x) noexcept
+{
+   if (x.Control)
+   {
+      x.Control->add_ref();
+   }
+   if (Control)
+   {
+      if (Control->sub_ref() == 0)
+      {
+         Control->invoke_deleter();
+         delete Control;
+      }
+   }
+   Ptr = x.Ptr;
+   Control = x.Control;
+   return *this;
+}
+
+template <typename T>
+value_ptr& value_ptr<T>::operator=(value_ptr&& x) noexcept
+{
+   std::swap(Ptr, x.Ptr);
+   std::swap(Control, x.Control);
+   return *this;
+}
+
+template <typename T>
+template <typename U>
+value_ptr& value_ptr<T>::operator=(value_ptr<U>&& x) noexcept
+{
+   auto TempPtr = x.Ptr;
+   auto TempControl = x.Control;
+   x.Ptr = Ptr;
+   x.Control = Control;
+   Ptr = TempPtr;
+   Control = TempControl;
+   return *this;
+}
+
+template <typename T>
+template <typename U, typename Deleter>
+value_ptr& value_ptr<T>::operator=(std::unique_ptr<U, Deleter>&& x) noexcept;
+
+template <typename T>
+void value_ptr<T>::reset() noexcept
+{
+   if (Control)
+   {
+      if (Control->sub_ref() == 0)
+      {
+         Control->invoke_deleter();
+         delete Control;
+      }
+   }
+   Ptr = null_ptr;
+   Control = null_ptr;
+}
+
+template <typename T>
+template <typename U>
+void value_ptr<T>::reset(U* ptr)
+{
+   if (Control)
+   {
+      if (Control->sub_ref() == 0)
+      {
+         Control->invoke_deleter();
+         delete Control;
+      }
+   }
+   Ptr = ptr;
+   Control = new value_ptr_control_block(Ptr);
+}
+
+template <typename T>
+template <typename U, typename Deleter>
+void value_ptr<T>::reset(U* ptr, Deleter d)
+{
+   if (Control)
+   {
+      if (Control->sub_ref() == 0)
+      {
+         Control->invoke_deleter();
+         delete Control;
+      }
+   }
+   Ptr = ptr;
+   Control = new value_ptr_control_block(std::bind(d, Ptr));
+}
+
+
+template <typename T>
+void value_ptr<T>::swap(value_ptr& x) noexcept
+{
+   std::swap(Ptr, x.Ptr);
+   std::swap(Control, x.Control);
+}
+
+template <typename T>
+bool value_ptr<T>::unique() const noexcept
+{
+   return !Control || Control->unique();
+}
+
+template <typename T>
+T* value_ptr<T>::assert_unique() const noexcept
+{
+   DEBUG_CHECK(this->unique());
+   return Ptr;
+}
+
+template <typename T>
+T* value_ptr<T>::ensure_unique()
+{
+   PANIC("not yet implemented");
+}
+
+template <typename T>
+int value_ptr<T>::use_count() const noexcept
+{
+   if (!Control)
+      return 1;
+   return Control->use_count();
+}
+
+#endif

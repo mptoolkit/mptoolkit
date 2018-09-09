@@ -44,7 +44,7 @@ struct value_ptr_control_block
    ~value_ptr_control_block() noexcept = default;
 
    void add_ref() noexcept { ++UseCount; }
-   void sub_ref() noexcept { --UseCount; }
+   int sub_ref() noexcept { return --UseCount; }
 
    bool unique() const noexcept { return UseCount.is_unique(); }
 

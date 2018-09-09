@@ -151,6 +151,9 @@ class value_ptr
 
       explicit operator bool() const noexcept { return Ptr != nullptr; }
 
+      template <typename U>
+      friend class value_ptr<U>;
+
    private:
       T* Ptr;
       detail::value_ptr_control_block* Control;
