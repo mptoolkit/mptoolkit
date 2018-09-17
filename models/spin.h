@@ -91,6 +91,9 @@ LatticeSite SpinSite(half_int Spin)
    Site["Sx"] = Sx;
    Site["Sy"] = Sy;
    Site["Sz"] = Sz;
+   Site["X"] = 2*Sx;
+   Site["Y"] = 2*Sy;
+   Site["Z"] = 2*Sz;
 
    Site.set_operator_descriptions(OpDescriptions);
 

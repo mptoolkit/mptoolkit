@@ -37,7 +37,7 @@ LatticeSite SpinZ2(half_int Spin)
    QuantumNumbers::QNConstructor<QuantumNumbers::Z2> QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator Sz, Sx, Sy, mSz, R, P, I, Z;
-   LatticeSite Site;
+   LatticeSite Site("Spin "+to_string_fraction(Spin) + " " + Symmetry.FullName());
 
    PRECONDITION(Spin >= 0)("Spin must be >= 0")(Spin);
 
@@ -58,7 +58,6 @@ LatticeSite SpinZ2(half_int Spin)
    Sz = SiteOperator(Basis, QN(-1), LatticeCommute::Bosonic);
    P = SiteOperator(Basis, QN(1), LatticeCommute::Bosonic);
    R = SiteOperator(Basis, QN(1), LatticeCommute::Bosonic);
-   Z = SiteOperator(Basis, QN(1), LatticeCommute::Bosonic);
    I = SiteOperator::Identity(Basis);
 
    P = I; // bosonic, so the parity operator is identity
@@ -71,10 +70,6 @@ LatticeSite SpinZ2(half_int Spin)
    // Since Base > 0 we do the s=0 components later (these are special anyway)
    for (half_int s = Base; s <= Spin; ++s)
    {
-      Z(StateName(s, true), StateName(s, true)) = 1;
-
-      Z(StateName(s, false), StateName(s, false)) = -1;
-
       Sz(StateName(s, true), StateName(s, false)) = s.to_double();
       Sz(StateName(s, false), StateName(s, true)) = s.to_double();
 
@@ -95,7 +90,7 @@ LatticeSite SpinZ2(half_int Spin)
    // do the s == 0 part
    if (Spin.is_integral())
    {
-      Z("0s", "0s") = 1;
+      Sz("0s", "0s") = Spin.to_double();
       if (Spin > 0)
       {
          Sx("0s", "1s")
@@ -132,9 +127,6 @@ LatticeSite SpinZ2(half_int Spin)
 
    Sy("s", "a") = std::complex<double>(0.0, -0.5);
    Sy("a", "s") = std::complex<double>(0.0,  0.5);
-
-   Z("s", "s") =  1.0;
-   Z("a", "a") = -1.0;
 #endif
 
    Site["I"] = I;
@@ -143,7 +135,9 @@ LatticeSite SpinZ2(half_int Spin)
    Site["Sx"] = Sx;
    Site["Sy"] = Sy;
    Site["Sz"] = Sz;
+   Site["X"] = 2*Sx;
+   Site["Y"] = 2*Sy;
+   Site["Z"] = 2*Sz;
    Site["Sz2"] = Sz * Sz;
-   Site["Z"] = Z;
    return Site;
 }

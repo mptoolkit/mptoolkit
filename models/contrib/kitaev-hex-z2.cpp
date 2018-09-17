@@ -42,7 +42,12 @@
 // 5     (6)-(13)
 //  \    /
 //  (0)-(7)
-
+//
+//     Y
+//    /
+// X--
+//    \
+//     Z
 // Interactions are:
 // (vertical)    (0)[i] (0)[(i+1)%(2w)]  (for i = 0..2w), 2w terms per unit cell
 // (horizontal)  (0)[i] (1)[(i+1)%(2w)]  (for i = 0,2,4,...,2(w-1)), w terms per unit cell
@@ -51,7 +56,7 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/spin-u1.h"
+#include "models/spin-z2.h"
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 
@@ -89,16 +94,17 @@ int main(int argc, char** argv)
       OpDescriptions.set_description("SU(2) hexagonal lattice zigzag configuration");
       OpDescriptions.author("IP McCullocch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_cell_operators()
-         ("Trans"      , "translation by one site (rotation by 2\u0071/w) in lattice short direction")
-         ("Ref"        , "reflection in lattice short direction",
+         ("W0"         , "Plaquette operator 0")
+         ("Trans"      , "Translation by one site (rotation by 2\u0071/w) in lattice short direction")
+         ("Ref"        , "Reflection in lattice short direction",
           "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
          ("RyUnit"     , "Reflection of a single unit cell",
           "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
          ;
       OpDescriptions.add_operators()
-         ("H_x"       , "Horizontal Sx-Sx interaction")
-         ("H_y"       , "+60 degrees Sy-Sy interaction")
-         ("H_z"       , "-60 degrees Sz-Sz interaction")
+         ("H_x"        , "Horizontal Sx-Sx interaction")
+         ("H_y"        , "+60 degrees Sy-Sy interaction")
+         ("H_z"        , "-60 degrees Sz-Sz interaction")
          ("Ty"         , "momentum operator in lattice short direction")
          ("TyPi"       , "translation by w sites in the Y direction (requires w even)",
           "width even, not present with --noreflect",
@@ -116,12 +122,15 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      LatticeSite Site = SpinU1(Spin);
+      LatticeSite Site = SpinZ2(Spin);
       int u = w*2;
       UnitCell Cell = repeat(Site, u);
       InfiniteLattice Lattice(&Cell);
 
       UnitCellOperator I(Cell, "I"); // identity operator
+      UnitCellOperator X(Cell, "X");
+      UnitCellOperator Y(Cell, "Y");
+      UnitCellOperator Z(Cell, "Z");
       UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
       UnitCellOperator RyUnit(Cell, "RyUnit");
 
@@ -146,29 +155,24 @@ int main(int argc, char** argv)
       // Construct the Hamiltonian for a single unit-cell,
       UnitCellMPO Hx, Hy, Hz;
 
-      for (int i = 0; i < u; ++i)
+      // Plaquette operators.  There are w of these.
+      for (int i = 0; i < u; i += 2)
       {
-	 if (i % 2 == 0)
-         {
-            Hy += inner(Sy(0)[i], Sy(0)[(i+1)%u]);
-
-            Heven += 0.5 * inner(Sp(0)[i], Sp(0)[(i+1)%u]);   // vertical bonds
-            Heven += 0.5 * inner(Sm(0)[i], Sm(0)[(i+1)%u]);   // vertical bonds
-            Heven += inner(Sz(0)[i], Sz(0)[(i+1)%u]);   // vertical bonds
-
-	    Hx += 0.5 * inner(Sp(0)[i], Sp(1)[(i+1)%u]);
-	    Hx += 0.5 * inner(Sm(0)[i], Sm(1)[(i+1)%u]);
-	    Hx += inner(Sz(0)[i], Sz(1)[(i+1)%u]);
-         }
-         else
-         {
-            Hodd+= 0.5 * inner(Sp(0)[i], Sp(0)[(i+1)%u]);   // vertical bonds
-            Hodd += 0.5 * inner(Sm(0)[i], Sm(0)[(i+1)%u]);   // vertical bonds
-            Hodd += inner(Sz(0)[i], Sz(0)[(i+1)%u]);   // vertical bonds
-         }
+         UnitCellMPO W = Z(0)[i] * X(0)[(i+1)%u] * Y(0)[(i+2)%u]
+            * Z(1)[(i+3)%u] * X(1)[(i+2)%u] * Y(1)[(i+1)%u];
+         W.set_description("Plaquette operator " + std::to_string(i/2));
+         std::string Name = "W" + std::to_string(i/2);
+         Lattice.GetUnitCell().assign_operator(Name, W);
       }
 
-      // Reflection.  This is in the 'wrong' 45 degree angle
+      for (int i = 0; i < u; i += 2)
+      {
+         Hx += inner(X(0)[i], X(1)[(i+1)%u]);
+         Hy += inner(Y(0)[i], Y(0)[(i+1)%u]);
+         Hz += inner(Z(0)[i], Z(0)[(i+u-1)%u]);
+      }
+
+      // Reflection.
       UnitCellMPO Ry = I(0);
       if (!NoReflect)
       {
@@ -199,12 +203,10 @@ int main(int argc, char** argv)
          RyUnit = Ry;
       }
 
-      // Now we construct the InfiniteLattice,
-
-      Lattice["H_even"]  = sum_unit(Heven);
-      Lattice["H_odd"]   = sum_unit(Hodd);
-      Lattice["H_x"]   = sum_unit(Hx);
-      Lattice["H_J1"] = Lattice["H_even"] + Lattice["H_odd"] + Lattice["H_x"];
+      // The operators have a minus sign, following Kitaev convention
+      Lattice["H_x"] = -sum_unit(Hx);
+      Lattice["H_y"] = -sum_unit(Hy);
+      Lattice["H_z"] = -sum_unit(Hz);
 
       // Momentum operators in Y-direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), u);
