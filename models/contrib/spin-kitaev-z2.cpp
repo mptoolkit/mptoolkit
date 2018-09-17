@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// models/contrib/spin-hex-zigzag-su2.cpp
+// models/contrib/spin-kitaev-z3.cpp
 //
 // Copyright (C) 2018 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
@@ -17,8 +17,10 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-// Hexagonal lattice spin model
-// Example for a width-6 lattice (site numbers in brackets are periodic repeats
+// Hexagonal lattice Kitaev model
+// Horizontal bonds are Sx, +60 degree bonds are Sy, -60 degree bonds are Sz.
+//
+// Example for a width-3 lattice (site numbers in brackets are periodic repeats
 // in the vertical
 // direction (i.e. top-left (5) is the same site as the bottom-left 5).
 // Sites 6,7,8,9,10,11 are the second unit cell, e.g. 6 is (1)[0].
@@ -42,14 +44,14 @@
 //  (0)-(7)
 
 // Interactions are:
-// (vertical)    (0)[i] (0)[(i+1)%w]  (for i = 0..w), w terms per unit cell
-// (horizontal)  (0)[i] (1)[(i+1)%w]  (for i = 0,2,4,...,w-1), (w/2) terms per unit cell
+// (vertical)    (0)[i] (0)[(i+1)%(2w)]  (for i = 0..2w), 2w terms per unit cell
+// (horizontal)  (0)[i] (1)[(i+1)%(2w)]  (for i = 0,2,4,...,2(w-1)), w terms per unit cell
 
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/spin-su2.h"
+#include "models/spin-u1.h"
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 
@@ -61,7 +63,7 @@ int main(int argc, char** argv)
    try
    {
       half_int Spin = 0.5;
-      int w = 3;
+      int w = 4;
       std::string FileName;
       bool NoReflect = false;
 
@@ -69,7 +71,7 @@ int main(int argc, char** argv)
       desc.add_options()
          ("help", "show this help message")
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
-         ("width,w", prog_opt::value(&w), "width of the cylinder [default 3]")
+         ("width,w", prog_opt::value(&w), "width of the cylinder [default 4]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ("noreflect", prog_opt::bool_switch(&NoReflect),
           "don't include the spatial reflection operator (expensive for large width lattices)")
@@ -84,10 +86,9 @@ int main(int argc, char** argv)
 
       // Descriptions of each operator
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("Hexagonal lattice zigzag configuration, no spin symmetry");
+      OpDescriptions.set_description("SU(2) hexagonal lattice zigzag configuration");
       OpDescriptions.author("IP McCullocch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_cell_operators()
-         ("S"          , "Total spin on a leg of the cylinder")
          ("Trans"      , "translation by one site (rotation by 2\u0071/w) in lattice short direction")
          ("Ref"        , "reflection in lattice short direction",
           "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
@@ -95,12 +96,11 @@ int main(int argc, char** argv)
           "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
          ;
       OpDescriptions.add_operators()
-         ("H_J1"       , "nearest neighbor spin exchange")
-         ("H_x"        , "nearest neighbor spin exchange in the X direction")
-         ("H_even"        , "nearest neighbor spin exchange in the even bonds in the Y direction")
-         ("H_odd"        , "nearest neighbor spin exchange in the odd bonds in the U direction")
+         ("H_x"       , "Horizontal Sx-Sx interaction")
+         ("H_y"       , "+60 degrees Sy-Sy interaction")
+         ("H_z"       , "-60 degrees Sz-Sz interaction")
          ("Ty"         , "momentum operator in lattice short direction")
-         ("TyPi"       , "translation by w/2 sites in the Y direction",
+         ("TyPi"       , "translation by w sites in the Y direction (requires w even)",
           "width even, not present with --noreflect",
           [&NoReflect,&w]()->bool{return !NoReflect && w%2 == 0;})
          ("Ry"         , "Reflection in the Y direction",
@@ -116,22 +116,17 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      LatticeSite Site = SpinSU2(Spin);
-      UnitCell Cell = repeat(Site, w);
+      LatticeSite Site = SpinU1(Spin);
+      int u = w*2;
+      UnitCell Cell = repeat(Site, u);
       InfiniteLattice Lattice(&Cell);
 
-      UnitCellOperator S(Cell, "S");
       UnitCellOperator I(Cell, "I"); // identity operator
       UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
       UnitCellOperator RyUnit(Cell, "RyUnit");
 
-      for (int i = 0; i < w; ++i)
-      {
-         S += S[i];                    // total spin on a leg of cylinder
-      }
-
       Trans = I(0);
-      for (int i = 0; i < w-1; ++i)
+      for (int i = 0; i < u-1; ++i)
        {
            //T *= 0.5*( 0.25*inner(S[i],S[i+1]) + 1 );
            Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
@@ -140,28 +135,36 @@ int main(int argc, char** argv)
       if (!NoReflect)
       {
          Ref = I(0); // old way of representing an explicit R-operator.
-         for (int i = 0; i < w/2; ++i)
+         for (int i = 0; i < w; ++i)
          {
             //R *= 0.5*( 0.25*inner(S[i],S[w-i-1]) + 1 );
-            Ref = Ref(0) * Cell.swap_gate_no_sign(i, w-i-1);
+            Ref = Ref(0) * Cell.swap_gate_no_sign(i, u-i-1);
          }
       }
 
 
       // Construct the Hamiltonian for a single unit-cell,
-      UnitCellMPO Heven, Hodd, Hx;
+      UnitCellMPO Hx, Hy, Hz;
 
-      for (int i = 0; i < w; ++i)
+      for (int i = 0; i < u; ++i)
       {
 	 if (i % 2 == 0)
          {
-            Heven += inner(S(0)[i], S(0)[(i+1)%w]);   // vertical bonds
+            Hy += inner(Sy(0)[i], Sy(0)[(i+1)%u]);
 
-	    Hx += inner(S(0)[i], S(1)[(i+1)%w]);
+            Heven += 0.5 * inner(Sp(0)[i], Sp(0)[(i+1)%u]);   // vertical bonds
+            Heven += 0.5 * inner(Sm(0)[i], Sm(0)[(i+1)%u]);   // vertical bonds
+            Heven += inner(Sz(0)[i], Sz(0)[(i+1)%u]);   // vertical bonds
+
+	    Hx += 0.5 * inner(Sp(0)[i], Sp(1)[(i+1)%u]);
+	    Hx += 0.5 * inner(Sm(0)[i], Sm(1)[(i+1)%u]);
+	    Hx += inner(Sz(0)[i], Sz(1)[(i+1)%u]);
          }
          else
          {
-            Hodd += inner(S(0)[i], S(0)[(i+1)%w]);   // vertical bonds
+            Hodd+= 0.5 * inner(Sp(0)[i], Sp(0)[(i+1)%u]);   // vertical bonds
+            Hodd += 0.5 * inner(Sm(0)[i], Sm(0)[(i+1)%u]);   // vertical bonds
+            Hodd += inner(Sz(0)[i], Sz(0)[(i+1)%u]);   // vertical bonds
          }
       }
 
@@ -169,7 +172,7 @@ int main(int argc, char** argv)
       UnitCellMPO Ry = I(0);
       if (!NoReflect)
       {
-         for (int c = 0; c < w; ++c)
+         for (int c = 0; c < u; ++c)
          {
             UnitCellMPO ThisR = I(0);
             // get the 'pivot' site/bond that we reflect about
@@ -180,17 +183,17 @@ int main(int argc, char** argv)
             if (p1 != p2)
                ThisR = ThisR * Cell.swap_gate_no_sign(p1,p2);
 
-            int i1 = (p1+w-1)%w;
-            int i2 = (p2+1)%w;
+            int i1 = (p1+w-1)%u;
+            int i2 = (p2+1)%u;
 
-            while (i1 != p1 + w/2)
+            while (i1 != p1 + w)
             {
                ThisR = ThisR * Cell.swap_gate_no_sign(i1,i2);
-               i1 = (i1+w-1)%w;
-               i2 = (i2+1)%w;
+               i1 = (i1+w-1)%u;
+               i2 = (i2+1)%u;
             }
 
-            ThisR.translate(c*w);
+            ThisR.translate(c*u);
             Ry = Ry * ThisR;
          }
          RyUnit = Ry;
@@ -204,18 +207,18 @@ int main(int argc, char** argv)
       Lattice["H_J1"] = Lattice["H_even"] + Lattice["H_odd"] + Lattice["H_x"];
 
       // Momentum operators in Y-direction
-      Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
+      Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), u);
 
       if (!NoReflect)
-         Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), w*w);
+         Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), u*w);
 
       // for even size unit cell, add rotation by pi
-      if (w%2 == 0 && !NoReflect)
+      if (u%2 == 0 && !NoReflect)
       {
          UnitCellMPO TyPi = I(0);
-         for (int i = 0; i < w/2; ++i)
+         for (int i = 0; i < w; ++i)
          {
-            TyPi = TyPi * Cell.swap_gate_no_sign(i, i+w/2);
+            TyPi = TyPi * Cell.swap_gate_no_sign(i, i+w);
          }
          Lattice["TyPi"] = prod_unit_left_to_right(TyPi.MPO(), w);
       }

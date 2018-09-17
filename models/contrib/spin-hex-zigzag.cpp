@@ -56,19 +56,6 @@
 using math_const::pi;
 namespace prog_opt = boost::program_options;
 
-
-std::complex<double> phase(double theta)
-{
-   return std::exp(std::complex<double>(0.0, theta));
-}
-
-
-int IntPow(int x, int p) {
-  if (p == 0) return 1;
-  if (p == 1) return x;
-  return x * IntPow(x, p-1);
-}
-
 int main(int argc, char** argv)
 {
    try
