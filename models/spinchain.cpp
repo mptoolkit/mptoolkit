@@ -64,6 +64,7 @@ int main(int argc, char** argv)
          ("H_J1t" , "transverse spin exchange, H_xx + H_yy")
          ("H_J1"  , "nearest neighbor spin exchange = H_J1z + H_J1t")
          ("H_B1"  , "nearest neighbor biquadratic spin exchange (S.S)^2")
+         ("H_B1xy" , "nearest neighbor biquadratic XY spin exchange (Sx.Sx + Sy.Sy)^2")
          ("H_mu"  , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
          ("X"     , "pi rotation about the X axis, equivalent to prod_unit(exp(i*pi*Sx(0)))")
          ("Y"     , "pi rotation about the Y axis, equivalent to prod_unit(exp(i*pi*Sy(0)))")
@@ -107,6 +108,8 @@ int main(int argc, char** argv)
       Lattice["H_J1t"] = Lattice["H_xx"] + Lattice["H_yy"];
       Lattice["H_J1"] = sum_unit(SpinExchange);
       Lattice["H_B1"] = sum_unit(SpinExchange*SpinExchange);
+
+      Lattice["H_B1xy"] = sum_unit(pow(Sx(0)*Sx(1) + Sy(0)*Sy(1),2));
 
       Lattice["H_mu"] = sum_unit(Sz(0)*Sz(0));
 

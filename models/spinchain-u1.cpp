@@ -52,20 +52,21 @@ int main(int argc, char** argv)
       OpDescriptions.set_description("U(1) Spin chain");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
-         ("H_J1z" , "nearest neighbor spin coupling Sz Sz")
-         ("H_J1t" , "nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
-         ("H_J1"  , "nearest neighbor spin exchange = H_J1z + H_J1t")
-         ("H_J2z" , "next-nearest neighbor spin coupling Sz Sz")
-         ("H_J2t" , "next-nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
-         ("H_J2"  , "next-nearest neighbor spin exchange = H_J1z + H_J1t")
-         ("H_B1"  , "nearest neighbor biquadratic spin exchange (S.S)^2")
-         ("H_B2"  , "next-nearest neighbor biquadratic spin exchange (S.S)^2")
-         ("H_mu"  , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
-         ("H_AKLT", "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
+         ("H_J1z"  , "nearest neighbor spin coupling Sz Sz")
+         ("H_J1t"  , "nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
+         ("H_J1"   , "nearest neighbor spin exchange = H_J1z + H_J1t")
+         ("H_J2z"  , "next-nearest neighbor spin coupling Sz Sz")
+         ("H_J2t"  , "next-nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
+         ("H_J2"   , "next-nearest neighbor spin exchange = H_J1z + H_J1t")
+         ("H_B1"   , "nearest neighbor biquadratic spin exchange (S.S)^2")
+         ("H_B2"   , "next-nearest neighbor biquadratic spin exchange (S.S)^2")
+         ("H_B1xy" , "nearest neighbor biquadratic XY spin exchange (Sx.Sx + Sy.Sy)^2")
+         ("H_mu"   , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
+         ("H_AKLT" , "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
          ;
 
       OpDescriptions.add_functions()
-	 ("H_BQ"  , "Bilinear-biquadratic model, parameterized by theta", "spin 1", 
+	 ("H_BQ"  , "Bilinear-biquadratic model, parameterized by theta", "spin 1",
 	  [&Spin]()->bool {return Spin==1;})
 	 ;
 
@@ -93,6 +94,8 @@ int main(int argc, char** argv)
 
       Lattice["H_B1"] = sum_unit(pow(Sz(0)*Sz(1) + 0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)), 2));
       Lattice["H_B2"] = sum_unit(pow(Sz(0)*Sz(2) + 0.5*(Sp(0)*Sm(2) + Sm(0)*Sp(2)), 2));
+
+      Lattice["H_B1xy"] = sum_unit(pow(0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)), 2));
 
       Lattice["H_mu"] = sum_unit(Sz(0)*Sz(0));
 
