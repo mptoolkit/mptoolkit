@@ -90,7 +90,7 @@ LatticeSite SpinZ2(half_int Spin)
    // do the s == 0 part
    if (Spin.is_integral())
    {
-      Sz("0s", "0s") = Spin.to_double();
+      Sz("0s", "0s") = 1;
       if (Spin > 0)
       {
          Sx("0s", "1s")
