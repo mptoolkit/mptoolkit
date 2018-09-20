@@ -108,7 +108,7 @@ cudaStream_t AllocateStream()
    return 0;
 #else
    std::lock_guard<std::mutex> lock(StreamFreeListMutex);
-   TRACE(StreamFreeList.size());
+   TRACE_STREAM(StreamFreeList.size())(NumAllocatedStreams);
 #if 1
    // we don't need to find a stream that is unused; they all will be by the
    // time we get here

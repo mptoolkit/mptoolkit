@@ -81,17 +81,28 @@ void device_synchronize()
 // stream
 //
 
+namespace detail
+{
+extern int NumAllocatedStreams;
+}
+
 inline
 stream::stream() : stream_(detail::AllocateStream())
 {
-   TRACE_STREAM(stream_);
+   TRACE_STREAM(this)(stream_);
+#if 0
+   if (detail::NumAllocatedStreams == 39070)
+   {
+      std::abort();
+   }
+#endif
    count_.allocate(1);
 }
 
 inline
 stream::stream(stream&& other) : stream_(other.stream_), count_(std::move(other.count_))
 {
-   TRACE_STREAM(stream_);
+   TRACE_STREAM(this)(stream_);
    other.stream_ = nullptr;
 }
 
@@ -99,6 +110,7 @@ inline
 stream&
 stream::operator=(stream&& other)
 {
+   TRACE_STREAM(this)(stream_)(other.stream_);
    std::swap(stream_, other.stream_);
    std::swap(count_, other.count_);
    return *this;
@@ -107,7 +119,7 @@ stream::operator=(stream&& other)
 inline
 stream::stream(stream const& other) : stream_(other.stream_), count_(other.count_)
 {
-   TRACE_STREAM(stream_);
+   TRACE_STREAM(this)(stream_);
    if (stream_)
       ++count_;
 }
@@ -116,7 +128,7 @@ inline
 stream&
 stream::operator=(stream const& other)
 {
-   TRACE_STREAM(stream_)(other.stream_);
+   TRACE_STREAM(this)(stream_)(other.stream_);
    if (other.stream_)
       ++other.count_;
 
@@ -130,7 +142,7 @@ stream::operator=(stream const& other)
 inline
 stream::~stream()
 {
-   TRACE_STREAM(stream_);
+   TRACE_STREAM(this)(stream_);
    this->sub_reference();
    stream_ = nullptr;  // for debugging
 }
@@ -139,20 +151,20 @@ inline
 void
 stream::safe_to_destroy()
 {
-   if (stream_ && count_.is_unique())
+   TRACE_STREAM(this)(stream_);
+   if (stream_)
    {
-      // we are the only reference to the stream, we can kill it
+      detail::FreeStream(stream_);
       stream_ = nullptr;
       count_.deallocate();
    }
 }
 
-
 inline
 void
 stream::sub_reference()
 {
-   TRACE_STREAM(stream_);
+   TRACE_STREAM(this)(stream_);
    if (stream_ && (--count_ == 0))
    {
       if (this->is_running())
@@ -191,7 +203,9 @@ inline
 bool
 stream::is_running() const
 {
-   TRACE_STREAM(stream_);
+   TRACE_STREAM(this)(stream_);
+   if (stream_ == nullptr)
+      return false;
    cudaError_t e = cudaStreamQuery(stream_);
    if (e == cudaErrorNotReady)
       return true;
