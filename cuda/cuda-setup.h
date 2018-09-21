@@ -77,7 +77,7 @@ int num_cuda_devices()
 }
 
 inline
-std::string num_cuda_devices()
+std::string num_cuda_devices_str()
 {
    return "0 (cuda is not enabled)";
 }
