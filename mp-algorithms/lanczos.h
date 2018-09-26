@@ -49,6 +49,8 @@
 #include <fstream>
 #include "blas/matrix-eigen.h"
 
+//#define OLD_ALGO
+
 double const LanczosBetaTol = 1E-14;
 
 template <typename VectorType, typename MultiplyFunctor>
@@ -78,9 +80,11 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
    // the next vector is truely orthogonal to the first vector, to get a stable
    // Lanczos iteration.  This is more sensitive to errors than later iterations.
 
+#if !defined(OLD_ALGO)
    double Correction = std::real(inner_prod(v[0], w));
    w -= Correction * v[0];
    SubH(0,0) += Correction;
+#endif
 
    Beta = norm_frob(w);
 
@@ -109,9 +113,14 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       v.push_back(copy(w));
       w = MatVecMultiply(v[i]);
       Hv.push_back(copy(w));
+#if defined(OLD_ALGO)
+      w -= Beta*v[i-1];
+#endif
       SubH(i,i) = std::real(inner_prod(v[i], w));
       w -= SubH(i,i) * v[i];
+#if !defined(OLD_ALGO)
       w -= Beta*v[i-1];
+#endif
       // apparently it is more numerically stable to calculate the inner_prod(v[i],w)
       // nefore subtracting off Beta*v[i-1]
       Beta = norm_frob(w);
@@ -182,6 +191,12 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
          Tol = ResidNorm / SpectralDiameter;
          Guess = std::move(y);
          return Theta;
+      }
+      else if (Verbose > 2)
+      {
+         std::cerr << "lanczos: Eigen=" << Theta << ", ResidNorm="
+                      << ResidNorm << ", SpectralDiameter=" << SpectralDiameter
+                      << ", iterations=" << (i+1) << '\n';
       }
 
       if (i == Iterations-1) // finished?

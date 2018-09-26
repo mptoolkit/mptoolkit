@@ -50,12 +50,6 @@ int num_devices()
 }
 
 inline
-void set_device(int d)
-{
-   check_error(cudaSetDevice(d));
-}
-
-inline
 int get_device()
 {
    int Result;

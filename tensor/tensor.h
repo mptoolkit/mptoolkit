@@ -311,7 +311,7 @@ class IrredTensor
       int size1() const { return Basis1_.size(); }
       int size2() const { return Basis2_.size(); }
 
-      value_type operator()(int r, int c) const
+      value_type const operator()(int r, int c) const
       {
 	 auto i = Data_.row(r).find(c);
 	 if (i == Data_.row(r).end())

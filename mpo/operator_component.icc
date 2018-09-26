@@ -80,7 +80,7 @@ BasicOperatorComponent<T>::operator-=(BasicOperatorComponent<T> const& x)
 template <typename T>
 inline
 typename BasicOperatorComponent<T>::value_type
-BasicOperatorComponent<T>::operator()(int i, int j) const
+BasicOperatorComponent<T>::operator()(int i, int j) const&
 {
    auto I = Data_.row(i).find(j);
    if (I == Data_.row(i).end())
@@ -91,21 +91,18 @@ BasicOperatorComponent<T>::operator()(int i, int j) const
    return copy(I.value());
 }
 
-#if 0
+template <typename T>
 inline
-OperatorComponent::value_type&
-OperatorComponent::operator()(int i, int j)
+typename BasicOperatorComponent<T>::value_type&
+BasicOperatorComponent<T>::operator()(int i, int j) &
 {
-   inner_iterator I = LinearAlgebra::iterate_at(Data_, i,j);
-   if (!I)
+   auto I = Data_.row(i).find(j);
+   if (I == Data_.row(i).end())
    {
-      Data_(i,j) = value_type(LocalBasis1_, LocalBasis2_);
-      I = LinearAlgebra::iterate_at(Data_, i,j);
-      DEBUG_CHECK(!!I);
+      I = Data_.row(i).insert(j, value_type(LocalBasis1_, LocalBasis2_));
    }
    return *I;
 }
-#endif
 
 template <typename T>
 inline

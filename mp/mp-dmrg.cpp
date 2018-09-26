@@ -125,7 +125,10 @@ int main(int argc, char** argv)
       int Verbose = 0;
       std::complex<double> ShiftInvertEnergy = 0.0;
       double MaxTol = 4E-4;  // never use an eigensolver tolerance larger than this
-      double MinTol = 1E-16; // lower bound for the eigensolver tolerance - seems we dont really need it
+      double MinTol = 1E-8;
+      // lower bound for the eigensolver tolerance - seems we dont really need it,
+      // except at the very first iteration when the fidelity is zero
+
       std::string States = "100";
       double EvolveDelta = 0.0;
 

@@ -591,7 +591,7 @@ BasicFiniteMPO fine_grain(SimpleOperator const& x,
       BasisList B1(x.GetSymmetryList());
       B1.push_back(x.TransformsAs());
       Result[0] = OperatorComponent(x.Basis1(), x.Basis2(), B1, Vacuum);
-      Result[0](0,0) = copy(x);
+      Result[0].insert(0,0, copy(x));
       return Result;
    }
 
@@ -700,7 +700,7 @@ BasicFiniteMPO::make_identity(std::vector<BasisList> const& Basis)
    for (unsigned i = 0; i < Basis.size(); ++i)
    {
       Result[i] = OperatorComponent(Basis[i], Basis[i], b, b);
-      Result[i](0,0) = SimpleOperator::make_identity(Basis[i]);
+      Result[i].insert(0,0, SimpleOperator::make_identity(Basis[i]));
    }
    return Result;
 }
@@ -716,7 +716,7 @@ BasicFiniteMPO::make_identity(std::vector<BasisList> const& Basis, QuantumNumber
    for (unsigned i = 0; i < Basis.size(); ++i)
    {
       Result[i] = OperatorComponent(Basis[i], Basis[i], b, b);
-      Result[i](0,0) = SimpleOperator::make_identity(Basis[i]);
+      Result[i].insert(0,0, SimpleOperator::make_identity(Basis[i]));
    }
    return Result;
 }
@@ -732,7 +732,7 @@ MakeIdentityFrom(BasicFiniteMPO const& x)
    {
       CHECK_EQUAL(x.LocalBasis1(i), x.LocalBasis2(i));
       Result[i] = OperatorComponent(x.LocalBasis1(i), x.LocalBasis1(i), b, b);
-      Result[i](0,0) = SimpleOperator::make_identity(x.LocalBasis1(i));
+      Result[i].insert(0,0, SimpleOperator::make_identity(x.LocalBasis1(i)));
    }
    return Result;
 }
@@ -747,7 +747,7 @@ MakeIdentityFrom(BasicFiniteMPO const& x, QuantumNumber const& q)
    {
       CHECK_EQUAL(x.LocalBasis1(i), x.LocalBasis2(i));
       Result[i] = OperatorComponent(x.LocalBasis1(i), x.LocalBasis1(i), b, b);
-      Result[i](0,0) = SimpleOperator::make_identity(x.LocalBasis1(i));
+      Result[i].insert(0,0, SimpleOperator::make_identity(x.LocalBasis1(i)));
    }
    return Result;
 }
@@ -759,7 +759,7 @@ BasicFiniteMPO identity_mpo(SiteListType const& SiteList, QuantumNumbers::Quantu
    for (unsigned i = 0; i < SiteList.size(); ++i)
    {
       Result[i] = OperatorComponent(SiteList[i].Basis1(), b, b);
-      Result[i](0,0) = SiteList[i].identity();
+      Result[i].insert(0,0, SiteList[i].identity());
    }
    return Result;
 }
@@ -788,7 +788,7 @@ BasicFiniteMPO string_mpo(SiteListType const& SiteList,
       SimpleOperator Op = SiteList[i].operator_exists(OpName) ? copy(SiteList[i][OpName])
 	 : SiteList[i].identity();
       Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Vacuum, Vacuum);
-      Result[i](0,0) = std::move(Op);
+      Result[i].insert(0,0, std::move(Op));
    }
    return Result;
 }
@@ -815,7 +815,7 @@ ParseStringOperator(SiteListType const& SiteList, std::string const& Expr, int S
       SiteOperator Op = ParseSiteOperator(SiteList[i], Expr);
       CHECK_EQUAL(Op.Commute(), LatticeCommute::Bosonic)("String operator must have bosonic commutation");
       Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Vacuum, Vacuum);
-      Result[i](0,0) = std::move(Op);
+      Result[i].insert(0,0, std::move(Op));
    }
    Result = repeat(Result, Size / SiteList.size());
 

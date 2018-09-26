@@ -159,6 +159,8 @@ void FreeStream(cudaStream_t stream_)
 std::mutex EventFreeListMutex;
 std::list<cudaEvent_t> EventFreeList;
 
+device_properties DeviceProps;
+
 cudaEvent_t AllocateEvent()
 {
    std::lock_guard<std::mutex> lock(EventFreeListMutex);
@@ -186,6 +188,18 @@ void FreeEvent(cudaEvent_t event_)
 blas::arena gpu_temp_arena(new BlockAllocator(DefaultBlockMultiple, false));
 
 } // namespace detail
+
+void set_device(int d)
+{
+   check_error(cudaSetDevice(d));
+   detail::DeviceProps = get_device_properties(d);
+}
+
+device_properties const&
+get_device_properties()
+{
+   return detail::DeviceProps;
+}
 
 std::string
 num_devices_str()

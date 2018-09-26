@@ -314,6 +314,10 @@ void print_cuda_config(std::ostream& out)
       for (unsigned i = 0; i < Devices.size(); ++i)
       {
 	 out << "Device " << i << " is " << Devices[i] << "\n";
+         cuda::device_properties p = cuda::get_device_properties(i);
+         out << "   Memory: " << p.total_global_memory() << "\n";
+         out << "   Compute capability " << p.compute_capability_major() << "."
+             << p.compute_capability_minor() << "\n";
       }
    }
    out << '\n';

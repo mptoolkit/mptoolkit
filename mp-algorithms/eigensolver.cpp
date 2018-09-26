@@ -313,6 +313,7 @@ LocalEigensolver::Solve(StateComponent& C,
       {
 	 LastEnergy_ = Lanczos(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
 			       LastIter_, LastTol_, MinIter, Verbose-1);
+         TRACE(C);
       }
       else if (Solver_ == Solver::Arnoldi)
       {

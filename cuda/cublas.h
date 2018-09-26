@@ -36,6 +36,8 @@
 #include "blas/functors.h"
 #include <iostream>
 
+#define USE_GEMM3M
+
 namespace cublas
 {
 
@@ -317,12 +319,26 @@ void gemm(cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t tra
           std::complex<double> const* beta, std::complex<double>* C, int ldc)
 {
    TRACE_CUDA("cublasZgemm")(transa)(transb)(m)(n)(k)(alpha)(A)(lda)(B)(ldb)(beta)(C)(ldc);
-   cublas::check_error(cublasZgemm(handle, transa, transb, m, n, k,
-                                   reinterpret_cast<cuDoubleComplex const*>(alpha),
-                                   reinterpret_cast<cuDoubleComplex const*>(A), lda,
-                                   reinterpret_cast<cuDoubleComplex const*>(B), ldb,
-                                   reinterpret_cast<cuDoubleComplex const*>(beta),
-                                   reinterpret_cast<cuDoubleComplex*>(C), ldc));
+#if defined(USE_GEMM3M)
+   if (cuda::get_device_properties().compute_capability_major() >= 5)
+   {
+      cublas::check_error(cublasZgemm3m(handle, transa, transb, m, n, k,
+                                        reinterpret_cast<cuDoubleComplex const*>(alpha),
+                                        reinterpret_cast<cuDoubleComplex const*>(A), lda,
+                                        reinterpret_cast<cuDoubleComplex const*>(B), ldb,
+                                        reinterpret_cast<cuDoubleComplex const*>(beta),
+                                        reinterpret_cast<cuDoubleComplex*>(C), ldc));
+   }
+   else
+#endif
+   {
+      cublas::check_error(cublasZgemm(handle, transa, transb, m, n, k,
+                                      reinterpret_cast<cuDoubleComplex const*>(alpha),
+                                      reinterpret_cast<cuDoubleComplex const*>(A), lda,
+                                      reinterpret_cast<cuDoubleComplex const*>(B), ldb,
+                                      reinterpret_cast<cuDoubleComplex const*>(beta),
+                                      reinterpret_cast<cuDoubleComplex*>(C), ldc));
+   }
 }
 
 inline

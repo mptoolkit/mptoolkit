@@ -185,8 +185,6 @@ void qr_optimize(BasicTriangularMPO& Op)
 
    double const Eps = 1E-13;
 
-   TRACE(Op);
-
    bool Reduced = true; // flag to indicate that we reduced a dimension
    // loop until we do a complete sweep with no reduction in dimensions
    bool First = true;
@@ -577,13 +575,11 @@ BasicTriangularMPO operator+(BasicTriangularMPO const& x, BasicTriangularMPO con
       OperatorComponent Next = triple_prod(xProjector1, x[Here], herm(xProjector2))
          + triple_prod(yProjector1, y[Here], herm(yProjector2));
 
-      Next(0,0) = x[Here](0,0);
-      Next(Next.size1()-1, Next.size2()-1) = x[Here](x[Here].size1()-1, x[Here].size2()-1);
+      Next.set(0,0, copy(x[Here](0,0)));
+      Next.set(Next.size1()-1, Next.size2()-1, copy(x[Here](x[Here].size1()-1, x[Here].size2()-1)));
 
       Result[Here] = std::move(Next);
    }
-
-   //   TRACE(x)(y)(Result);
 
    optimize(Result);
 
@@ -954,16 +950,16 @@ bool remove_redundant_by_row(OperatorComponent& Op)
 
          if (ToCollapseOnto.find(j) != ToCollapseOnto.end())
          {
-            Result(NewBasisMapping[i], NewBasisMapping[ToCollapseOnto[j].first]) += ToCollapseOnto[j].second * ConstOp(i,j);
+            Result.add(NewBasisMapping[i], NewBasisMapping[ToCollapseOnto[j].first], ToCollapseOnto[j].second * ConstOp(i,j));
          }
          else if (NewBasisMapping[j] >= 0)
          {
-            Result(NewBasisMapping[i], NewBasisMapping[j]) += ConstOp(i,j);
+            Result.add(NewBasisMapping[i], NewBasisMapping[j], ConstOp(i,j));
          }
       }
       // the diagonal part
       if (ConstOp.exists(i,i))
-         Result(NewBasisMapping[i], NewBasisMapping[i]) = ConstOp(i,i);
+         Result.set(NewBasisMapping[i], NewBasisMapping[i], ConstOp(i,i));
    }
 
    Op = std::move(Result);
@@ -1084,18 +1080,18 @@ bool remove_redundant_by_column(OperatorComponent& Op)
          if (ToCollapseOnto.find(j) != ToCollapseOnto.end())
          {
             DEBUG_CHECK(NewBasisMapping[ToCollapseOnto[j].first] > NewBasisMapping[i]);
-            Result(NewBasisMapping[ToCollapseOnto[j].first], NewBasisMapping[i])
-               += ToCollapseOnto[j].second * ConstOp(j,i);
+            Result.add(NewBasisMapping[ToCollapseOnto[j].first], NewBasisMapping[i],
+                       ToCollapseOnto[j].second * ConstOp(j,i));
          }
          else if (NewBasisMapping[j] >= 0)
          {
             DEBUG_CHECK(NewBasisMapping[j] > NewBasisMapping[i]);
-            Result(NewBasisMapping[j], NewBasisMapping[i]) += ConstOp(j,i);
+            Result.add(NewBasisMapping[j], NewBasisMapping[i], ConstOp(j,i));
          }
       }
       // the diagonal part
       if (ConstOp.exists(i,i))
-         Result(NewBasisMapping[i], NewBasisMapping[i]) = ConstOp(i,i);
+         Result.set(NewBasisMapping[i], NewBasisMapping[i], ConstOp(i,i));
    }
 
    Op = std::move(Result);

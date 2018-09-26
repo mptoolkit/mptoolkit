@@ -703,8 +703,8 @@ BasicTriangularMPO make_zero(SiteListType const& SiteList)
    {
 
       OperatorComponent C(SiteList[i].Basis1(), SiteList[i].Basis2(), b, b);
-      C(0,0) = SimpleOperator::make_identity(SiteList[i].Basis1());
-      C(1,1) = SimpleOperator::make_identity(SiteList[i].Basis1());
+      C.set(0,0, SimpleOperator::make_identity(SiteList[i].Basis1()));
+      C.set(1,1, SimpleOperator::make_identity(SiteList[i].Basis1()));
       Result[i] = C;
    }
 

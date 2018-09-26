@@ -335,15 +335,15 @@ UnitCell::map_local_operator(SiteOperator const& Operator, int Cell, int n) cons
       SimpleOperator Op = (*Sites)[i].operator_exists(SignOperator) ?
          copy((*Sites)[i][SignOperator]) : (*Sites)[i].identity();
       Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Basis, Basis);
-      Result[i](0,0) = std::move(Op);
+      Result[i].set(0,0, std::move(Op));
    }
    Result[n] = OperatorComponent(Operator.Basis1(), Operator.Basis2(), Basis, Vacuum);
-   Result[n](0,0) = copy(Operator);
+   Result[n].set(0,0, copy(Operator));
    for (int i = n+1; i < this->size(); ++i)
    {
       SimpleOperator I = (*Sites)[i].identity();
       Result[i] = OperatorComponent(I.Basis1(), I.Basis2(), Vacuum, Vacuum);
-      Result[i](0,0) = std::move(I);
+      Result[i].set(0,0, std::move(I));
    }
 
    return UnitCellMPO(Sites, Result, Operator.Commute(), Cell*this->size(),
@@ -521,7 +521,7 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
       // Construct the operator component manually
       // if Parity_i * Parity_j is +1, then the component is the identity
       // if -1 then its the local P operator
-      Result[n] = OperatorComponent(this->LocalBasis(n % this->size()), 
+      Result[n] = OperatorComponent(this->LocalBasis(n % this->size()),
 				    Result[i].Basis2(), Result[i].Basis2());
       for (unsigned p = 0; p < Basis_ji.size(); ++p)
       {
@@ -530,12 +530,12 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
          if (int(Parity_i[x.second]) == int(Parity_j[x.first]))
          {
             // identity
-            Result[n](p,p) = copy(this->operator[](n % this->size())["I"]);
+            Result[n].set(p,p, copy(this->operator[](n % this->size())["I"]));
          }
          else
          {
             // parity
-            Result[n](p,p) = copy(this->operator[](n % this->size())["P"]);
+            Result[n].set(p,p, copy(this->operator[](n % this->size())["P"]));
          }
       }
    }

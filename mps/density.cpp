@@ -201,6 +201,7 @@ void DensityMatrixBase::DiagonalizeDMHelper(bool Sort)
       //      TRACE(RawDMList[q1])(RawDMList[q1].size1())(RawDMList[q1].size2());
       RealVector EVal(RawDMList[q1].rows());
       DiagonalizeHermitian(RawDMList[q1], EVal);
+      TRACE(RawDMList[q1]);
       cpu::RealVector Eigenvalues = get_wait(std::move(EVal));
       // add the eigenvalues and eigenvector pointers to EigenInfoList
       for (std::size_t i = 0; i < Eigenvalues.size(); ++i)

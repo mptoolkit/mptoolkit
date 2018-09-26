@@ -111,6 +111,8 @@ class device_properties
 
       std::string name() const { return p_.name; }
       std::size_t total_global_memory() const { return p_.totalGlobalMem; }
+      int compute_capability_major() const { return p_.major; }
+      int compute_capability_minor() const { return p_.minor; }
 
       // TODO: many other properties we can add here
 
@@ -121,6 +123,9 @@ class device_properties
 
 // get the properties of a specific device
 device_properties get_device_properties(int d);
+
+// get the properties of the current device
+device_properties const& get_device_properties();
 
 // synchronize on the device, and block until all submitted tasks are finished
 void device_synchronize();

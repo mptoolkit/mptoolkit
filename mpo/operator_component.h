@@ -124,7 +124,10 @@ class BasicOperatorComponent
       BasicOperatorComponent& operator-=(BasicOperatorComponent const& x);
 
       // element access.  Returns a zero operator if the component does not exist.
-      value_type operator()(int i, int j) const;
+      value_type operator()(int i, int j) const&;
+
+      // mutable element access.  Inserts a zero operator at (r,c) if it doesn't exist
+      value_type& operator()(int r, int c) &;
 
       // returns true if this matrix is in lower-triangular form.  This is only
       // useful if the matrix is square.
@@ -182,6 +185,12 @@ class BasicOperatorComponent
       void insert(int r, int c, U&& value)
       {
 	 Data_.insert(r, c, std::move(value));
+      }
+
+      template <typename U>
+      void set(int i, int j, U&& x)
+      {
+         Data_.set(i,j,x);
       }
 
       template <typename U>

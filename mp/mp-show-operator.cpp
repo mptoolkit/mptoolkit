@@ -39,7 +39,7 @@ int main(int argc, char** argv)
       std::vector<std::string> FiniteOperators;
       std::vector<std::string> ProductOperators;
       std::vector<std::string> TriangularOperators;
-      double UnityEpsilon = DefaultClassifyUnityEpsilon;
+      double UnityEpsilon = DefaultClassifyUnityEpsilon<double>;
       int Verbose = 0;
       bool Optimize = false;
       bool CoarseGrain = false;
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
          std::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(FiniteOperators[i]);
          if (CoarseGrain)
          {
-            SimpleOperator S = coarse_grain(Op.MPO()).scalar();
+            SimpleOperator S = copy(coarse_grain(Op.MPO()).scalar());
             Op.MPO() = fine_grain(S, Op.MPO().LocalBasis1List(), Op.MPO().LocalBasis2List());
          }
          if (Optimize)
