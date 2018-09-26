@@ -890,9 +890,9 @@ SimpleOperator TruncateBasis2(OperatorComponent& A)
    return Reg;
 }
 
-#if 0
 SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
 {
+#if 0
    // We want to work from the last row to the first, so that we preserve the last row exacrly.
    // For a BasicTriangularMPO the last row will contain the identity.
    // We don't have to worry about accidentally eliminating the first row of a triangular MPO,
@@ -971,7 +971,7 @@ SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
          // we have a column
          //      Rows.push_back((std::sqrt(Normalization / NextRowNormSq)) * NextRow);
          Rows.push_back(NextRow);
-         T.push_back(LinearAlgebra::Vector<std::complex<double> >(M.size1(), 0.0));
+         T.push_back(blas::Vector<std::complex<double> >(M.size1(), 0.0));
          //T[Rows.size()-1][r] = std::sqrt(NextRowNormSq / Normalization);
          T[Rows.size()-1][r] = 1;
          NewBasis1Q.push_back(A.Basis1()[r]);
@@ -1022,12 +1022,12 @@ SimpleOperator TruncateBasis1MkII(OperatorComponent& A, double Epsilon)
 
    A = ANew;
    return Trunc;
-}
 #endif
+}
 
-#if 0
 SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
 {
+#if 0
    // We want to work from the first column to last, so that we preserve the first column exactly.
    // For a BasicTriangularMPO the first column will contain the identity.
    // We don't have to worry about accidentally eliminating the last column of a triangular MPO,
@@ -1049,10 +1049,10 @@ SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
    double Scale = std::sqrt(norm_frob_sq(A) / (A.Basis1().total_degree() * A.Basis2().total_degree()));
 
    // make a dense matrix
-   LinearAlgebra::Matrix<SimpleRedOperator> M = A.data();
+   blas::Matrix<SimpleRedOperator> M = A.data();
 
-   std::vector<LinearAlgebra::Vector<SimpleRedOperator> > Columns;
-   std::vector<LinearAlgebra::Vector<std::complex<double> > > T;
+   std::vector<blas::Vector<SimpleRedOperator> > Columns;
+   std::vector<blas::Vector<std::complex<double> > > T;
 
    std::vector<double> ColNormSq;
 
@@ -1065,7 +1065,7 @@ SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
    {
       //      LinearAlgebra::Vector<std::complex<double> > v(M.size2(), 0.0);
 
-      LinearAlgebra::Vector<SimpleRedOperator> NextCol = M(LinearAlgebra::all, c);
+      blas::Vector<SimpleRedOperator> NextCol = M(LinearAlgebra::all, c);
 
       // orthogonalize against the previous rows
       for (unsigned i = 0; i < Columns.size(); ++i)
@@ -1078,7 +1078,7 @@ SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
             T[i][c] += x;
             if (norm_frob(x) > 0)
                //Epsilon*Epsilon)
-               NextCol = NextCol - LinearAlgebra::Vector<SimpleRedOperator>(x * Columns[i]);
+               NextCol = NextCol - blas::Vector<SimpleRedOperator>(x * Columns[i]);
          }
       }
 
@@ -1093,7 +1093,7 @@ SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
             T[i][c] += x;
             if (norm_frob(x) > 0)
                //Epsilon*Epsilon)
-               NextCol = NextCol - LinearAlgebra::Vector<SimpleRedOperator>(x * Columns[i]);
+               NextCol = NextCol - blas::Vector<SimpleRedOperator>(x * Columns[i]);
          }
       }
 
@@ -1104,7 +1104,7 @@ SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
          // we have a column
          //Columns.push_back((std::sqrt(Normalization / NextColNormSq)) * NextCol);
          Columns.push_back(NextCol);
-         T.push_back(LinearAlgebra::Vector<std::complex<double> >(M.size2(), 0.0));
+         T.push_back(blas::Vector<std::complex<double>>(M.cols(), 0.0));
          //T[Columns.size()-1][c] = std::sqrt(NextColNormSq / Normalization);
          T[Columns.size()-1][c] = 1;
          NewBasis2.push_back(A.Basis2()[c]);
@@ -1123,8 +1123,8 @@ SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
       {
          if (norm_frob(Columns[c][r]) > 0)
          {
-            ANew.data()(r,c) = Columns[c][r];
-            ANew.data()(r,c).trim();
+            ANew.insert(r,c, Columns[c][r]);
+            ANew(r,c).trim();
          }
       }
    }
@@ -1149,8 +1149,8 @@ SimpleOperator TruncateBasis2MkII(OperatorComponent& A, double Epsilon)
 
    A = ANew;
    return Trunc;
-}
 #endif
+}
 
 // compress the bond dimension of basis 2 using the stabilized
 // 'generalized deparallelization' algorithm
@@ -1176,7 +1176,7 @@ SimpleOperator CompressBasis2_LinDep(OperatorComponent& A)
    // The transform matrix.  Trans[c] is the transform matrix for column c.
    // If Trans[c] is empty, then the corresponding column is linearly dependent and will be removed.
    // Effecively, Trans[i][j] is the entry (i,j) of the transform matrix of A = A' * Trans
-   std::vector<LinearAlgebra::MapVector<std::complex<double>>> Trans(A.Basis2().size());
+   std::vector<blas::MapVector<std::complex<double>>> Trans(A.Basis2().size());
 
    for (int i = 0; i < int(A.Basis2().size()); ++i)
    {
@@ -1245,24 +1245,24 @@ SimpleOperator CompressBasis2_LinDep(OperatorComponent& A)
          }
          OffsetOfRow.push_back(TotalRows);
 
-         LinearAlgebra::Matrix<std::complex<double>> X(TotalRows, Candidates.size(), 0.0);
-         LinearAlgebra::Vector<std::complex<double>> RHS(TotalRows, 0.0);
+         blas::Matrix<std::complex<double>> X(TotalRows, Candidates.size(), 0.0);
+         blas::Vector<std::complex<double>> RHS(TotalRows, 0.0);
          for (int r = 0; r < int(UsedRows.size()); ++r)
          {
             double Scale = LocalNorms(r,i);
             for (int c = 0; c < int(Candidates.size()); ++c)
             {
-               X(LinearAlgebra::range(OffsetOfRow[r], OffsetOfRow[r+1]),LinearAlgebra::all)(LinearAlgebra::all, c)
+               X(blas::range(OffsetOfRow[r], OffsetOfRow[r+1]),blas::all)(blas::all, c)
                   = (1.0/Scale) * linearize(A(UsedRows[r],Candidates[c]),
                                             transform_targets(A.Basis2()[Candidates[c]],
                                                               adjoint(A.Basis1()[UsedRows[r]])));
             }
-            RHS[LinearAlgebra::range(OffsetOfRow[r], OffsetOfRow[r+1])]
+            RHS[blas::range(OffsetOfRow[r], OffsetOfRow[r+1])]
                = (1.0/Scale) * linearize(A(UsedRows[r],i),
                                          transform_targets(A.Basis2()[i], adjoint(A.Basis1()[r])));
          }
 
-         LinearAlgebra::Vector<std::complex<double>> x;
+         blas::Vector<std::complex<double>> x;
          double Resid;
          std::tie(Resid, x) = LeastSquaresRegularized(X, RHS);
 
@@ -1280,7 +1280,7 @@ SimpleOperator CompressBasis2_LinDep(OperatorComponent& A)
       else
       {
          // the column is linearly independent
-         Trans[i] = LinearAlgebra::MapVector<std::complex<double>>(A.Basis2().size());
+         Trans[i] = blas::MapVector<std::complex<double>>(A.Basis2().size());
          Trans[i][i] = 1.0;
       }
    }
@@ -1344,18 +1344,18 @@ operator_prod(OperatorComponent const& M,
 
    StateComponent Result(M.Basis1(), A.Basis1(), B.base().Basis1());
    // Iterate over the components in M, first index
-   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(M); I; ++I)
+   for (blas::const_iterator<OperatorComponent>::type I = iterate(M); I; ++I)
    {
       // second index in M
-      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
+      for (blas::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
       {
          // Iterate over the irreducible components of M(I,J)
          for (SimpleRedOperator::const_iterator k = J->begin(); k != J->end(); ++k)
          {
             // *k is an irreducible operator.  Iterate over the components of this operator
-            for (LinearAlgebra::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
+            for (blas::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
             {
-               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type
+               for (blas::const_inner_iterator<SimpleOperator>::type
                        S = iterate(R); S; ++S)
                {
                   add_triple_prod(Result[J.index1()], *S,
@@ -1388,18 +1388,18 @@ operator_prod(HermitianProxy<OperatorComponent> const& M,
 
    StateComponent Result(M.base().Basis2(), A.base().Basis2(), B.Basis2());
    // Iterate over the components in M, first index
-   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(M.base()); I; ++I)
+   for (blas::const_iterator<OperatorComponent>::type I = iterate(M.base()); I; ++I)
    {
       // second index in M
-      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
+      for (blas::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
       {
          // Iterate over the irreducible components of M(I,J)
          for (SimpleRedOperator::const_iterator k = J->begin(); k != J->end(); ++k)
          {
             // *k is an irreducible operator.  Iterate over the components of this operator
-            for (LinearAlgebra::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
+            for (blas::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
             {
-               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type
+               for (blas::const_inner_iterator<SimpleOperator>::type
                        S = iterate(R); S; ++S)
                {
                   add_triple_prod(Result[J.index2()], herm(*S),
@@ -1422,14 +1422,14 @@ StateComponent
 operator_prod_regular(OperatorComponent const& M,
                       StateComponent const& A,
                       StateComponent const& F,
-                      LinearAlgebra::HermitianProxy<StateComponent> const& B)
+                      blas::HermitianProxy<StateComponent> const& B)
 {
    return operator_prod(M, A, F, B);
 }
 
 StateComponent
-operator_prod_regular(LinearAlgebra::HermitianProxy<OperatorComponent> const& M,
-                      LinearAlgebra::HermitianProxy<StateComponent> const& A,
+operator_prod_regular(blas::HermitianProxy<OperatorComponent> const& M,
+                      blas::HermitianProxy<StateComponent> const& A,
                       StateComponent const& E,
                       StateComponent const& B)
 {
@@ -1485,18 +1485,18 @@ operator_prod_inner(OperatorComponent const& M,
 
    StateComponent Result(M.LocalBasis1(), A.Basis1(), B.base().Basis1());
    // Iterate over the components in M, first index
-   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(M); I; ++I)
+   for (blas::const_iterator<OperatorComponent>::type I = iterate(M); I; ++I)
    {
       // second index in M
-      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
+      for (blas::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
       {
          // Iterate over the irreducible components of M(I,J)
          for (SimpleRedOperator::const_iterator k = J->begin(); k != J->end(); ++k)
          {
             // *k is an irreducible operator.  Iterate over the components of this operator
-            for (LinearAlgebra::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
+            for (blas::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
             {
-               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type
+               for (blas::const_inner_iterator<SimpleOperator>::type
                        S = iterate(R); S; ++S)
                {
                   Result[S.index1()] += (*S) * triple_prod(A[J.index1()],
@@ -1529,18 +1529,18 @@ operator_prod_inner(OperatorComponent const& M,
    StateComponent Result(M.LocalBasis1(), E.base().Basis2(), F.Basis2());
 
    // Iterate over the components in M, first index
-   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(M); I; ++I)
+   for (blas::const_iterator<OperatorComponent>::type I = iterate(M); I; ++I)
    {
       // second index in M
-      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
+      for (blas::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
       {
          // Iterate over the irreducible components of M(I,J)
          for (SimpleRedOperator::const_iterator k = J->begin(); k != J->end(); ++k)
          {
             // *k is an irreducible operator.  Iterate over the components of this operator
-            for (LinearAlgebra::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
+            for (blas::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
             {
-               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type
+               for (blas::const_inner_iterator<SimpleOperator>::type
                        S = iterate(R); S; ++S)
                {
 
@@ -1574,18 +1574,18 @@ operator_prod_inner(HermitianProxy<OperatorComponent> const& M,
 
    StateComponent Result(M.base().LocalBasis2(), A.base().Basis2(), B.Basis2());
    // Iterate over the components in M, first index
-   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(M.base()); I; ++I)
+   for (blas::const_iterator<OperatorComponent>::type I = iterate(M.base()); I; ++I)
    {
       // second index in M
-      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
+      for (blas::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
       {
          // Iterate over the irreducible components of M(I,J)
          for (SimpleRedOperator::const_iterator k = J->begin(); k != J->end(); ++k)
          {
             // *k is an irreducible operator.  Iterate over the components of this operator
-            for (LinearAlgebra::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
+            for (blas::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
             {
-               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type
+               for (blas::const_inner_iterator<SimpleOperator>::type
                        S = iterate(R); S; ++S)
                {
                   Result[S.index2()] += herm(*S) * triple_prod(herm(A.base()[J.index1()]),
@@ -2069,8 +2069,8 @@ decompose_local_tensor_prod(SimpleOperator const& Op,
 OperatorComponent
 RotateToOperatorRightBoundary(StateComponent const& x)
 {
-   IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, BasisList> Splitter1 = SplitBasis(x.Basis1());
-   IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, BasisList> Splitter2 = SplitBasis(x.Basis2());
+   IrredTensor<blas::Matrix<double>, VectorBasis, BasisList> Splitter1 = SplitBasis(x.Basis1());
+   IrredTensor<blas::Matrix<double>, VectorBasis, BasisList> Splitter2 = SplitBasis(x.Basis2());
 
    OperatorComponent Result(Splitter1.Basis2(), Splitter2.Basis2(), x.LocalBasis(), make_vacuum_basis(x.GetSymmetryList()));
 
@@ -2085,8 +2085,8 @@ RotateToOperatorRightBoundary(StateComponent const& x)
 OperatorComponent
 RotateToOperatorLeftBoundary(StateComponent const& x)
 {
-   IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, BasisList> Splitter1 = SplitBasis(x.Basis1());
-   IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, BasisList> Splitter2 = SplitBasis(x.Basis2());
+   IrredTensor<blas::Matrix<double>, VectorBasis, BasisList> Splitter1 = SplitBasis(x.Basis1());
+   IrredTensor<blas::Matrix<double>, VectorBasis, BasisList> Splitter2 = SplitBasis(x.Basis2());
 
    OperatorComponent Result(adjoint(Splitter1.Basis2()), adjoint(Splitter2.Basis2()),
                             make_vacuum_basis(x.GetSymmetryList()), x.LocalBasis());
