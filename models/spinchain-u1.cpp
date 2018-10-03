@@ -62,6 +62,8 @@ int main(int argc, char** argv)
          ("H_B2"   , "next-nearest neighbor biquadratic spin exchange (S.S)^2")
          ("H_B1xy" , "nearest neighbor biquadratic XY spin exchange (Sx.Sx + Sy.Sy)^2")
          ("H_mu"   , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
+	 ("H_dimer", "dimerized spin exchange, sum_i S(2*i).S(2*i+1) - S(2*i+1).S(2*i+2)")
+	 ("H_stag" , "staggered field (-1)^n Sz(n)")
          ("H_AKLT" , "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
          ;
 
@@ -98,6 +100,11 @@ int main(int argc, char** argv)
       Lattice["H_B1xy"] = sum_unit(pow(0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)), 2));
 
       Lattice["H_mu"] = sum_unit(Sz(0)*Sz(0));
+
+      Lattice["H_dimer"] = sum_unit(Sz(0)*Sz(1) + 0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)) 
+				    - (Sz(1)*Sz(2) + 0.5*(Sp(1)*Sm(2) + Sm(1)*Sp(2))), 2);
+
+      Lattice["H_stag"] = sum_unit(Sz(0) - Sz(1), 2);
 
       if (Spin == 1)
       {

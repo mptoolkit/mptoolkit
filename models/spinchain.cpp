@@ -54,22 +54,24 @@ int main(int argc, char** argv)
       OpDescriptions.set_description("Spin chain");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
-         ("H_xx"  , "nearest neighbor spin coupling Sx Sx")
-         ("H_yy"  , "nearest neighbor spin exchange Sy Sy")
-         ("H_zz"  , "nearest neighbor spin exchange Sz Sz")
-         ("H_x"   , "magnetic field in the x direction")
-         ("H_y"   , "magnetic field in the y direction")
-         ("H_z"   , "magnetic field in the z direction")
-         ("H_J1z" , "same as H_zz")
-         ("H_J1t" , "transverse spin exchange, H_xx + H_yy")
-         ("H_J1"  , "nearest neighbor spin exchange = H_J1z + H_J1t")
-         ("H_B1"  , "nearest neighbor biquadratic spin exchange (S.S)^2")
-         ("H_B1xy" , "nearest neighbor biquadratic XY spin exchange (Sx.Sx + Sy.Sy)^2")
-         ("H_mu"  , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
-         ("X"     , "pi rotation about the X axis, equivalent to prod_unit(exp(i*pi*Sx(0)))")
-         ("Y"     , "pi rotation about the Y axis, equivalent to prod_unit(exp(i*pi*Sy(0)))")
-         ("Z"     , "pi rotation about the Z axis, equivalent to prod_unit(exp(i*pi*Sz(0)))")
-         ("H_AKLT", "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
+         ("H_xx"    , "nearest neighbor spin coupling Sx Sx")
+         ("H_yy"    , "nearest neighbor spin exchange Sy Sy")
+         ("H_zz"    , "nearest neighbor spin exchange Sz Sz")
+         ("H_x"     , "magnetic field in the x direction")
+         ("H_y"     , "magnetic field in the y direction")
+         ("H_z"     , "magnetic field in the z direction")
+         ("H_J1z"   , "same as H_zz")
+         ("H_J1t"   , "transverse spin exchange, H_xx + H_yy")
+         ("H_J1"    , "nearest neighbor spin exchange = H_J1z + H_J1t")
+         ("H_B1"    , "nearest neighbor biquadratic spin exchange (S.S)^2")
+         ("H_B1xy"  , "nearest neighbor biquadratic XY spin exchange (Sx.Sx + Sy.Sy)^2")
+         ("H_mu"    , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
+         ("X"       , "pi rotation about the X axis, equivalent to prod_unit(exp(i*pi*Sx(0)))")
+         ("Y"       , "pi rotation about the Y axis, equivalent to prod_unit(exp(i*pi*Sy(0)))")
+         ("Z"       , "pi rotation about the Z axis, equivalent to prod_unit(exp(i*pi*Sz(0)))")
+	 ("H_dimer" , "dimerized spin exchange, sum_i S(2*i).S(2*i+1) - S(2*i+1).S(2*i+2)")
+	 ("H_stag"  , "staggered field (-1)^n Sz(n)")
+         ("H_AKLT"  , "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
          ;
       OpDescriptions.add_functions()
 	 ("H_expx", "Exponentially decaying spin exchange in x direction parametrized by lambda s exp(-lambda*r)")
@@ -112,6 +114,11 @@ int main(int argc, char** argv)
       Lattice["H_B1xy"] = sum_unit(pow(Sx(0)*Sx(1) + Sy(0)*Sy(1),2));
 
       Lattice["H_mu"] = sum_unit(Sz(0)*Sz(0));
+
+      Lattice["H_dimer"] = sum_unit(Sz(0)*Sz(1) + 0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)) 
+				    - (Sz(1)*Sz(2) + 0.5*(Sp(1)*Sm(2) + Sm(1)*Sp(2))), 2);
+
+      Lattice["H_stag"] = sum_unit(Sz(0) - Sz(1), 2);
 
       if (Spin == 1)
       {
