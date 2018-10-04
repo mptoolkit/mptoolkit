@@ -79,6 +79,8 @@ int main(int argc, char** argv)
 	 ("H_expz", "Exponentially decaying spin exchange in z direction parametrized by lambda s exp(-lambda*r)")
 	 ("H_expS", "Exponentially decaying spin-spin exchange")
 	 ("H_BQ"  , "Bilinear-biquadratic model, parameterized by theta", "spin 1", [&Spin]()->bool {return Spin==1;})
+         ("H_murray", "Biquadratic model with anisotropy, parameterized by xy and z", "spin 1",
+	  [&Spin]()->bool {return Spin==1;})
 	 ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -124,6 +126,7 @@ int main(int argc, char** argv)
       {
          Lattice["H_AKLT"] = Lattice["H_J1"] + (1.0/3.0)*Lattice["H_B1"];
 	 Lattice.func("H_BQ")("theta") = "cos(theta)*H_J1 + sin(theta)*H_B1";
+         Lattice.func("H_murray")(arg("x"), arg("y")=1, arg("z")=1) = "-sum_unit((x*Sx(0)*Sx(1) + y*Sy(0)*Sy(1) + z*Sz(0)*Sz(1))^2)";
       }
 
       Lattice.func("H_expx")(arg("lambda")=0.5)

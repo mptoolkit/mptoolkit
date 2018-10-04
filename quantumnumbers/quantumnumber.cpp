@@ -38,6 +38,8 @@ QuantumNumber::QuantumNumber(SymmetryList const& qL, std::string const& Str)
 
    for (int i = 0; i < qL.NumSymmetries(); ++i)
    {
+      while (*beg == ' ')
+         ++beg;
       size_t Offset = qL.QuantumNumberOffset(i);
 
       std::string::const_iterator next = std::find(beg, end, ',');
@@ -57,6 +59,8 @@ QuantumNumber::QuantumNumber(SymmetryList const& qL, char const* s)
 
    for (int i = 0; i < qL.NumSymmetries(); ++i)
    {
+      while (*beg == ' ')
+         ++beg;
       size_t Offset = qL.QuantumNumberOffset(i);
 
       char const* next = std::find(beg, end, ',');
@@ -76,6 +80,8 @@ QuantumNumber::QuantumNumber(SymmetryList const& qL, char* s)
 
    for (int i = 0; i < qL.NumSymmetries(); ++i)
    {
+      while (*beg == ' ')
+         ++beg;
       size_t Offset = qL.QuantumNumberOffset(i);
 
       char const* next = std::find(beg, end, ',');

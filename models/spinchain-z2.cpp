@@ -62,7 +62,14 @@ int main(int argc, char** argv)
          ("H_B1" , "nearest neighbor biquadratic spin exchange (S.S)^2")
          ("H_mu" , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
          ("H_ITF", "Ising transverse-field model, equivalent to -4*H_zz + 2*H_x")
+         ("H_AKLT" , "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
          ;
+
+      OpDescriptions.add_functions()
+	 ("H_BQ"  , "Bilinear-biquadratic model, parameterized by theta", "spin 1",
+	  [&Spin]()->bool {return Spin==1;})
+         ("H_murray", "Biquadratic model with anisotropy, parameterized by x, y and z", "spin 1")
+          ;
 
       if (vm.count("help") || !vm.count("out"))
       {
@@ -76,7 +83,7 @@ int main(int argc, char** argv)
       LatticeSite Site = SpinZ2(Spin);
       UnitCell Cell(Site);
       InfiniteLattice Lattice(&Cell);
-      UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz");
+      UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz"), Sp(Cell, "Sp"), Sm(Cell, "Sm");
       UnitCellOperator I(Cell, "I"); // identity operator
 
       UnitCellMPO SpinExchange = Sx(0)*Sx(1) + Sy(0)*Sy(1) + Sz(0)*Sz(1);
@@ -95,6 +102,15 @@ int main(int argc, char** argv)
       Lattice["H_mu"] = sum_unit(Sz(0)*Sz(0));
 
       Lattice["H_ITF"] = -4*Lattice["H_zz"] + 2*Lattice["H_x"];
+
+      if (Spin == 1)
+      {
+         Lattice["H_AKLT"] = Lattice["H_J1"] + (1.0/3.0)*Lattice["H_B1"];
+	 Lattice.func("H_BQ")("theta") = "cos(theta)*H_J1 + sin(theta)*H_B1";
+         // note the parser doesn't handle precedence of negation and power properly,
+         // -3^2 == (-3)^2 rather than -(3^2).  So we need to include brackets.
+         Lattice.func("H_murray")("x", arg("y")=1, arg("z")=1) = "sum_unit(-((x*Sx(0)*Sx(1) + y*Sy(0)*Sy(1) + z*Sz(0)*Sz(1))^2))";
+      }
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);
