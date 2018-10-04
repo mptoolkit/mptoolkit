@@ -16,8 +16,6 @@
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER
-// Ising exact energy 4/pi per site.
-// finite size OBC: 1 / sin(pi / (4L+w))
 
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"
@@ -79,7 +77,7 @@ int main(int argc, char** argv)
 	 ("H_expz", "Exponentially decaying spin exchange in z direction parametrized by lambda s exp(-lambda*r)")
 	 ("H_expS", "Exponentially decaying spin-spin exchange")
 	 ("H_BQ"  , "Bilinear-biquadratic model, parameterized by theta", "spin 1", [&Spin]()->bool {return Spin==1;})
-         ("H_murray", "Biquadratic model with anisotropy, parameterized by xy and z", "spin 1",
+         ("H_murray", "Biquadratic model with anisotropy, parameterized by x, y and z", "spin 1",
 	  [&Spin]()->bool {return Spin==1;})
 	 ;
 
