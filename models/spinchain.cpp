@@ -92,7 +92,7 @@ int main(int argc, char** argv)
 
       LatticeSite Site = SpinSite(Spin);
       UnitCell Cell(Site);
-      UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz");
+      UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz"), Sp(Cell, "Sp"), Sm(Cell, "Sm");
       UnitCellOperator I(Cell, "I"); // identity operator
       InfiniteLattice Lattice(&Cell);
 
@@ -115,7 +115,7 @@ int main(int argc, char** argv)
 
       Lattice["H_mu"] = sum_unit(Sz(0)*Sz(0));
 
-      Lattice["H_dimer"] = sum_unit(Sz(0)*Sz(1) + 0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)) 
+      Lattice["H_dimer"] = sum_unit(Sz(0)*Sz(1) + 0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1))
 				    - (Sz(1)*Sz(2) + 0.5*(Sp(1)*Sm(2) + Sm(1)*Sp(2))), 2);
 
       Lattice["H_stag"] = sum_unit(Sz(0) - Sz(1), 2);

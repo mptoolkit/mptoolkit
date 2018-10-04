@@ -70,6 +70,8 @@ int main(int argc, char** argv)
       OpDescriptions.add_functions()
 	 ("H_BQ"  , "Bilinear-biquadratic model, parameterized by theta", "spin 1",
 	  [&Spin]()->bool {return Spin==1;})
+         ("H_murray", "Biquadratic model with anisotropy, parameterized by xy and z", "spin 1",
+	  [&Spin]()->bool {return Spin==1;})
 	 ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -101,7 +103,7 @@ int main(int argc, char** argv)
 
       Lattice["H_mu"] = sum_unit(Sz(0)*Sz(0));
 
-      Lattice["H_dimer"] = sum_unit(Sz(0)*Sz(1) + 0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)) 
+      Lattice["H_dimer"] = sum_unit(Sz(0)*Sz(1) + 0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1))
 				    - (Sz(1)*Sz(2) + 0.5*(Sp(1)*Sm(2) + Sm(1)*Sp(2))), 2);
 
       Lattice["H_stag"] = sum_unit(Sz(0) - Sz(1), 2);
@@ -110,6 +112,10 @@ int main(int argc, char** argv)
       {
          Lattice["H_AKLT"] = Lattice["H_J1"] + (1.0/3.0)*Lattice["H_B1"];
 	 Lattice.func("H_BQ")("theta") = "cos(theta)*H_J1 + sin(theta)*H_B1";
+         // note the parser doesn't handle precedence of negation and power properly,
+         // -3^2 == (-3)^2 rather than -(3^2).  So we need to include brackets.
+         Lattice.func("H_murray")("xy", "z") = "sum_unit(-((xy*0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)) "
+            " + z*Sz(0)*Sz(1))^2))";
       }
 
       Lattice.func("H_J1t_twist")("theta") =
