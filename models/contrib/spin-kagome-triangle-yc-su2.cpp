@@ -168,7 +168,7 @@ int main(int argc, char** argv)
          // first triangle
          Haa += inner(S(0)[i*9+1], S(0)[i*9+2]);
          Haa += inner(S(0)[i*9+2], S(0)[i*9+3]);
-         Haa += inner(S(0)[i*9+3], S(0)[i*9+2]);
+         Haa += inner(S(0)[i*9+3], S(0)[i*9+1]);
          // second triangle
          Haa += inner(S(0)[i*9+6], S(0)[i*9+7]);
          Haa += inner(S(0)[i*9+7], S(0)[i*9+8]);
