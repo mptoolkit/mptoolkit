@@ -134,14 +134,16 @@ vector_sum(int Size, cuda::const_gpu_ptr<T> const& x, int incx, cuda::gpu_ref<T>
 {
    TRACE_CUDA("vector_sum")(Size)(x)(incx)(r);
    std::size_t TempStorageBytes = 0;
-   cub::DeviceReduce::Sum(nullptr, TempStorageBytes, detail::stride_ptr<T const>(x.device_ptr(), incx),
-                          r.device_ptr(), Size);
+   cuda::check_error(cub::DeviceReduce::Sum(nullptr, TempStorageBytes, detail::stride_ptr<T const>(x.device_ptr(), incx),
+					    r.device_ptr(), Size));
+   if (TempStorageBytes == 0)
+      TempStorageBytes = 1;
    gpu_buffer<unsigned char> TempBuffer = allocate_gpu_temporary<unsigned char>(TempStorageBytes);
    TempBuffer.wait_for(x);
    TempBuffer.wait_for(r);
-   cub::DeviceReduce::Sum(static_cast<void*>(TempBuffer.device_ptr()),
-			  TempStorageBytes, detail::stride_ptr<T const>(x.device_ptr(), incx),
-                          r.device_ptr(), Size, TempBuffer.get_stream().raw_stream());
+   cuda::check_error(cub::DeviceReduce::Sum(static_cast<void*>(TempBuffer.device_ptr()),
+					    TempStorageBytes, detail::stride_ptr<T const>(x.device_ptr(), incx),
+					    r.device_ptr(), Size, TempBuffer.get_stream().raw_stream()));
    r.wait(TempBuffer.sync());
    x.wait(r.sync());
 }
@@ -155,37 +157,39 @@ vector_sum(int Size, cuda::const_gpu_ptr<std::complex<T>> const& x, int incx,
    std::size_t TempStorageBytes1 = 0;
    // real part
    // workspace query
-   cub::DeviceReduce::Sum(nullptr, TempStorageBytes1,
+   cuda::check_error(cub::DeviceReduce::Sum(nullptr, TempStorageBytes1,
 			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr())), incx*2),
-                          static_cast<T*>(static_cast<void*>(r.device_ptr())), Size);
-
+					    static_cast<T*>(static_cast<void*>(r.device_ptr())), Size));
+   if (TempStorageBytes1 == 0)
+      TempStorageBytes1 = 1;
    gpu_buffer<unsigned char> TempBuffer1 = allocate_gpu_temporary<unsigned char>(TempStorageBytes1);
    TempBuffer1.wait_for(x);
    TempBuffer1.wait_for(r);
    // do the work
-   cub::DeviceReduce::Sum(static_cast<void*>(TempBuffer1.device_ptr()), TempStorageBytes1,
-			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr())), incx*2),
-                          static_cast<T*>(static_cast<void*>(r.device_ptr())), Size,
-			  TempBuffer1.get_stream().raw_stream());
-
-   cuda::device_synchronize();
+   cuda::check_error(cub::DeviceReduce::Sum(static_cast<void*>(TempBuffer1.device_ptr()), TempStorageBytes1,
+					    detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr())), incx*2),
+					    static_cast<T*>(static_cast<void*>(r.device_ptr())), Size,
+					    TempBuffer1.get_stream().raw_stream()));
+   //   cuda::device_synchronize();
 
    // imag part
    // workspace query
    std::size_t TempStorageBytes2 = 0;
-   cub::DeviceReduce::Sum(nullptr, TempStorageBytes2,
+   cuda::check_error(cub::DeviceReduce::Sum(nullptr, TempStorageBytes2,
 			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr()))+1, incx*2),
-                          static_cast<T*>(static_cast<void*>(r.device_ptr()))+1, Size);
+					    static_cast<T*>(static_cast<void*>(r.device_ptr()))+1, Size));
+   if (TempStorageBytes2 == 0)
+      TempStorageBytes2 = 1;
    gpu_buffer<unsigned char> TempBuffer2 = allocate_gpu_temporary<unsigned char>(TempStorageBytes2);
    TempBuffer2.wait_for(x);
    TempBuffer2.wait_for(r);
    // do the work
-   cub::DeviceReduce::Sum(static_cast<void*>(TempBuffer2.device_ptr()), TempStorageBytes2,
+   cuda::check_error(cub::DeviceReduce::Sum(static_cast<void*>(TempBuffer2.device_ptr()), TempStorageBytes2,
 			  detail::stride_ptr<T const>(static_cast<T const*>(static_cast<void const*>(x.device_ptr()))+1, incx*2),
                           static_cast<T*>(static_cast<void*>(r.device_ptr()))+1, Size,
-			  TempBuffer2.get_stream().raw_stream());
+					    TempBuffer2.get_stream().raw_stream()));
 
-   cuda::device_synchronize();
+   //   cuda::device_synchronize();
 
    r.wait(TempBuffer1.sync());
    r.wait(TempBuffer2.sync());

@@ -54,8 +54,11 @@ void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum)
    dmrg.StartSweep();
    while (dmrg.Site < dmrg.RightStop)
    {
+      cuda::CudaDebugReport();
       dmrg.Solve();
       TruncationInfo States = dmrg.TruncateAndShiftRight(SInfo);
+      std::cerr << "After truncate\n";
+      cuda::CudaDebugReport();
       std::cout << "Sweep=" << SweepNum
 		<< " Site=" << dmrg.Site
 		<< " Energy=";
@@ -80,8 +83,11 @@ void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum)
    dmrg.StartSweep();
    while (dmrg.Site > dmrg.LeftStop)
    {
+      cuda::CudaDebugReport();
       dmrg.Solve();
       TruncationInfo States = dmrg.TruncateAndShiftLeft(SInfo);
+      std::cerr << "After truncate\n";
+      cuda::CudaDebugReport();
       std::cout << "Sweep=" << SweepNum
 		<< " Site=" << dmrg.Site
 		<< " Energy=";

@@ -36,6 +36,8 @@
 namespace cuda
 {
 
+void CudaDebugReport();
+
 // returns true if the cuda runtime library is available
 bool is_cuda_enabled();
 
@@ -64,6 +66,12 @@ int setup_cuda_thread();
 
 // dummy implementation for the case where we don't have cuda enabled
 #if !defined(HAVE_CUDA)
+
+inline
+void CudaDebugReport()
+{
+}
+
 inline
 bool is_cuda_enabled()
 {

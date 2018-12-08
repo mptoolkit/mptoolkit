@@ -17,6 +17,8 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+#include <execinfo.h>
+
 #include "cuda-setup.h"
 
 #if defined(HAVE_CONFIG_H)
@@ -102,8 +104,18 @@ std::list<cudaStream_t> StreamFreeList;
 
 int NumAllocatedStreams = 0;
 
+void print_trace()
+{
+   void *array[30];
+   size_t size = backtrace(array, 30);
+   backtrace_symbols_fd(array+1, size-1, 2);
+}
+
 cudaStream_t AllocateStream()
 {
+   //   TRACE("AllocateStream")(detail::NumAllocatedStreams);
+   //print_trace();
+   TRACE_CUDA("AllocateStream");
 #if defined(CUDA_SYNCHRONIZE)
    return 0;
 #else
@@ -149,6 +161,8 @@ cudaStream_t AllocateStream()
 
 void FreeStream(cudaStream_t stream_)
 {
+   //TRACE("FreeStream")(detail::NumAllocatedStreams);
+   //print_trace();
    TRACE_STREAM(stream_);
    std::lock_guard<std::mutex> lock(StreamFreeListMutex);
    StreamFreeList.push_front(stream_);
@@ -188,6 +202,11 @@ void FreeEvent(cudaEvent_t event_)
 blas::arena gpu_temp_arena(new BlockAllocator(DefaultBlockMultiple, false));
 
 } // namespace detail
+
+void CudaDebugReport()
+{
+   std::cerr << "Number of allocated streams: " << detail::NumAllocatedStreams << '\n';
+}
 
 void set_device(int d)
 {

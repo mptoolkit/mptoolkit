@@ -221,6 +221,7 @@ class gpu_buffer
       gpu_buffer& operator=(gpu_buffer const&) = delete;
 
       gpu_ref<T> operator[](int n);
+      const gpu_ref<T> operator[](int n) const;
 
       gpu_ptr<T> ptr();
       const_gpu_ptr<T> ptr() const;
@@ -628,6 +629,14 @@ template <typename T>
 inline
 gpu_ref<T>
 gpu_buffer<T>::operator[](int n)
+{
+   return gpu_ref<T>(Ptr+n, &Stream);
+}
+
+template <typename T>
+inline
+const gpu_ref<T>
+gpu_buffer<T>::operator[](int n) const
 {
    return gpu_ref<T>(Ptr+n, &Stream);
 }

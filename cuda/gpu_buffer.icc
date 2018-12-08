@@ -153,6 +153,10 @@ inline
 gpu_buffer<T>
 allocate_gpu_temporary(int Size)
 {
+   // Zero allocations need to do something, not return a null ptr,
+   // since CUB DeviceReduce interprets the null as a workspace query
+   //   if (Size == 0)
+   //      Size = 1;
    return gpu_buffer<T>::allocate(Size, detail::gpu_temp_arena);
 }
 

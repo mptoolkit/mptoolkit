@@ -67,9 +67,12 @@ void SyncFlushGpuBuffers()
 
 void AddToPendingDelete(cuda::stream& Stream, blas::arena& Arena, void* Ptr, std::size_t ByteSize)
 {
-   //   TRACE("PENDING DELETE")(Stream.raw_stream());
-   std::lock_guard<std::mutex> lock(GpuBufferPendingDeleteMutex);
-   GpuBufferPendingDelete.emplace_back(std::move(Stream), std::move(Arena), Ptr, ByteSize);
+   TRACE_CUDA("AddToPendingDelete")(Stream.raw_stream());
+   {
+      std::lock_guard<std::mutex> lock(GpuBufferPendingDeleteMutex);
+      GpuBufferPendingDelete.emplace_back(std::move(Stream), std::move(Arena), Ptr, ByteSize);
+   }
+   SyncFlushGpuBuffers();
 }
 
 } // namespace cuda

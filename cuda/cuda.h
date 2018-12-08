@@ -56,6 +56,8 @@
 namespace cuda
 {
 
+void CudaDebugReport();
+
 // wrapper for a cudaError_t, which can also function as an exception object
 class error : public std::runtime_error
 {

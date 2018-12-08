@@ -69,8 +69,10 @@ matrix_inner_prod(char Atrans, char Btrans, int M, int N,
       for (int i = 0; i < N; ++i)
       {
 	 vector_inner_prod(M, A+i*ldA, 1, B+i*ldB, 1, cublas::lvalue(Acc[i]));
+	 //TRACE(get_wait(Acc[i]));
       }
       vector_sum(N, Acc.cptr(), 1, r);
+      //TRACE(get_wait(r));
    }
    else
    {
