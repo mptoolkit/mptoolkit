@@ -102,6 +102,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 		  Info);
 
    MatrixOperator UKeep = DM.ConstructTruncator(KeptStates.begin(), KeptStates.end());
+   inplace_conj(UKeep);
    Lambda = Lambda * herm(UKeep);
 
 #if defined(SSC)
@@ -110,9 +111,15 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
    C = prod(UKeep, C);
 #endif
 
+   CHECK(!isnan(norm_frob(Lambda)))(Lambda);
+
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
    SVD_FullCols(Lambda, U, D, Vh);
+
+   CHECK(!isnan(norm_frob(U)))(U);
+   CHECK(!isnan(norm_frob(D)))(D);
+   CHECK(!isnan(norm_frob(Vh)))(Vh);
 
    C.debug_check_structure();
 
@@ -178,6 +185,7 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
 		  Info);
 
    MatrixOperator UKeep = DM.ConstructTruncator(KeptStates.begin(), KeptStates.end());
+   inplace_conj(UKeep);
 
    Lambda = UKeep * Lambda;
    C = prod(C, herm(UKeep));
@@ -333,7 +341,7 @@ DMRG::DMRG(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_, i
 FiniteWavefunctionLeft
 DMRG::Wavefunction() const
 {
-   return FiniteWavefunctionLeft::Construct(Psi);
+   return FiniteWavefunctionLeft::Construct(Psi, Verbose);
 }
 
 void DMRG::CreateLogFiles(std::string const& BasePath, ConfList const& Conf)
@@ -595,6 +603,8 @@ DMRG::Solve()
    }
 #endif
 
+   //   cuda::device_synchronize();
+   CHECK(!isnan(norm_frob(*C)))(*C);
    Solver_.Solve(*C, HamMatrices.left(), *H, HamMatrices.right());
 
    StateComponent PsiOld = copy(*C);
@@ -627,6 +637,8 @@ TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)
 					      States, Info,
 					      HamMatrices.left());
 
+   CHECK(!isnan(norm_frob(U)))(U);
+
    if (Verbose > 1)
    {
       std::cerr << "Truncating left basis, states=" << Info.KeptStates() << '\n';
@@ -644,6 +656,7 @@ TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)
    *C = prod(*C, U*Lambda);
 
    // normalize
+   CHECK(!isnan(norm_frob(*C)))(*C)(U)(Lambda);
    *C *= 1.0 / norm_frob(*C);
 
    IterationNumStates = Info.KeptStates();
@@ -681,6 +694,7 @@ TruncationInfo DMRG::TruncateAndShiftRight(StatesInfo const& States)
    *C = prod(Lambda*U, *C);
 
    // normalize
+   TRACE(norm_frob(*C));
    *C *= 1.0 / norm_frob(*C);
 
    IterationNumStates = Info.KeptStates();

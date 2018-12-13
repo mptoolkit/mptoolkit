@@ -24,6 +24,7 @@
 template <typename FwdIterX>
 MatrixOperator DensityMatrix<MatrixOperator>::ConstructTruncator(FwdIterX Start, FwdIterX End) const
 {
+   TRACE("ConstructTruncator");
    VectorBasis NewBasis(B.GetSymmetryList());
 
    // make a pass over the eigenvalue list and get the linear indices of the
@@ -44,9 +45,11 @@ MatrixOperator DensityMatrix<MatrixOperator>::ConstructTruncator(FwdIterX Start,
          NewSubspace[q] = NewBasis.size();
          NewBasis.push_back(B[q], LinearMapping[q].size());
       }
+      TRACE(RawDMList[q]);
    }
    // Now we construct the actual transform
    MatrixOperator Transform(NewBasis, B.MappedBasis(), QuantumNumber(B.GetSymmetryList()));
+   TRACE(NewBasis)(B.MappedBasis());
    for (std::size_t s = 0; s < Transform.Basis2().size(); ++s)
    {
       int q;

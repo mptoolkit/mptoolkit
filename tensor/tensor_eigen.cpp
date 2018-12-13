@@ -173,6 +173,8 @@ SVD_FullCols_Regular(MatrixOperator const& m,
 	 RealDiagonalMatrix DD(I->cols(),I->cols());
 	 Matrix VV(I->cols(), I->cols());
 	 blas::SVD_FullCols(copy((*I).value), UU, DD.diagonal(), VV);
+	 CHECK(!isnan(norm_frob(UU)))(UU);
+	 CHECK(!isnan(norm_frob(VV)))(VV);
 	 U.insert(i, j, std::move(UU));
 	 D.insert(j, j, std::move(DD));
 	 Vh.insert(j, j, std::move(VV));

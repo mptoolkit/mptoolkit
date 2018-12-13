@@ -189,7 +189,8 @@ class SiteOperator : public IrredTensor<std::complex<double> >
          { CHECK_EQUAL(b.Basis1(), b.Basis2()); CHECK_EQUAL(B, b.Basis1()); }
 
       SiteOperator(SiteOperator&& Other) noexcept
-      : Basis_(std::move(Other.Basis_)),
+      : base_type(std::move(Other)),
+	Basis_(std::move(Other.Basis_)),
 	Com_(std::move(Other.Com_)),
 	Description_(std::move(Other.Description_))
       {}

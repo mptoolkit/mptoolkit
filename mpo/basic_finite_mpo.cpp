@@ -772,7 +772,7 @@ BasicFiniteMPO identity_mpo(SiteListType const& SiteList)
 }
 
 BasicFiniteMPO string_mpo(SiteListType const& SiteList,
-                     std::string const& OpName, QuantumNumbers::QuantumNumber const& Trans)
+			  std::string const& OpName, QuantumNumbers::QuantumNumber const& Trans)
 {
    BasicFiniteMPO Result(SiteList.size());
 

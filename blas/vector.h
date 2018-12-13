@@ -467,6 +467,7 @@ operator<<(std::ostream& out, BlasVector<T, U, cpu_tag> const& x)
          out << '\n';
       write_format(out, *Ptr);
       Ptr += x.stride();
+      first = false;
    }
    return out;
 }

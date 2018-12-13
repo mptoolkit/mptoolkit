@@ -120,6 +120,7 @@ template <typename T, typename U>
 blas::Vector<T>
 get_wait(blas::BlasVector<T, U, gpu_tag> const& M)
 {
+   M.storage().get_stream().synchronize();
    blas::Vector<T> Result(M.size());
    cublas::check_error(cublasGetVector(M.size(), sizeof(T),
 				       M.storage().device_ptr(), M.stride(),
@@ -132,6 +133,7 @@ template <typename T, typename U>
 void
 set_wait(gpu_vector<T>& A, blas::BlasVector<T, U, blas::cpu_tag> const& B)
 {
+   A.storage().get_stream().synchronize(); // Wait until pending operations on A are complete, otherwise they will overwrite the matrix
    DEBUG_CHECK_EQUAL(A.size(), B.size());
    cublas::setVector(A.size(), B.storage(), B.stride(), A.storage(), A.stride());
 }
@@ -140,6 +142,7 @@ template <typename T, typename U, typename V>
 void
 set_wait(blas::BlasVectorProxy<T, U, gpu_tag>&& A, blas::BlasVector<T, V, blas::cpu_tag> const& B)
 {
+   A.storage().get_stream().synchronize(); // Wait until pending operations on A are complete, otherwise they will overwrite the matrix
    DEBUG_CHECK_EQUAL(A.size(), B.size());
    cublas::setVector(A.size(), B.storage(), B.stride(), std::move(A).storage(), A.stride());
 }
@@ -168,9 +171,11 @@ set(blas::BlasVectorProxy<T, U, gpu_tag>&& A, blas::BlasVector<T, V, blas::cpu_t
 template <typename T>
 std::ostream& operator<<(std::ostream& out, gpu_vector<T> const& A)
 {
-   out << "gpu_vector<" << tracer::typeid_name<T>() << "> [" << A.size() << ']';
+   out << "gpu_vector<" << tracer::typeid_name<T>() << "> ";
    //#if !defined(NDEBUG)
    out << get_wait(A);
+   //#else
+   //out << '[' << A.size() << ']';
    //#endif
    return out;
 }

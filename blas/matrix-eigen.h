@@ -157,9 +157,19 @@ void DiagonalizeHermitian(NormalMatrix<std::complex<double>, U, Tag>& M, NormalV
 #endif
    detail::DiagonalizeHermitian(M.rows(), M.storage(), M.leading_dimension(), v.storage());
 #if !defined(NDEBUG)
-   DiagonalMatrix<std::complex<double>, Tag> D(v.size(), v.size());
-   D.diagonal() = v;
-   DEBUG_CHECK_CLOSE(TempM, (Matrix<std::complex<double>, Tag>(Matrix<std::complex<double>, Tag>(M*D)*herm(M))))(M.as_derived())(v.as_derived());
+   DiagonalMatrix<std::complex<double>, Tag> DD(v.size(), v.size());
+   DD.diagonal() = v;
+   Matrix<std::complex<double>, Tag> D(DD);
+   Matrix<std::complex<double>, Tag> E(M*D);
+   Matrix<std::complex<double>, Tag> EE(M*DD);
+   //cuda::device_synchronize();
+   Matrix<std::complex<double>, Tag> F(E*herm(M));
+
+   Matrix<std::complex<double>, Tag> Diff(E-EE);
+
+   //cuda::device_synchronize();
+   TRACE(F.storage());
+   DEBUG_CHECK_CLOSE(TempM, (Matrix<std::complex<double>, Tag>(Matrix<std::complex<double>, Tag>(M*DD)*herm(M))))((Matrix<std::complex<double>, Tag>(E*herm(M))))(E.as_derived())(D.as_derived())(F)(M.as_derived())(v.as_derived())(Diff);
 #endif
 }
 

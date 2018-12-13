@@ -199,7 +199,7 @@ void DiagonalizeHermitianJacobi(int Size, cuda::gpu_ptr<std::complex<double>> A,
 void DiagonalizeHermitian(int Size, cuda::gpu_ptr<std::complex<double>> A, int ldA,
 			  cuda::gpu_ptr<double> Eigen)
 {
-   DiagonalizeHermitianJacobi(Size, A, ldA, Eigen);
+   DiagonalizeHermitianQR(Size, A, ldA, Eigen);
 }
 
 void SingularValueDecomposition(char job, int Rows, int Cols,
@@ -251,6 +251,24 @@ void SingularValueDecompositionFull(int Rows, int Cols,
 				    cuda::gpu_ptr<double> Umat, int ldU,
 				    cuda::gpu_ptr<double> Vmat, int ldV)
 {
+   // Zero out the sections of Dvec, Umat and Vmat that are not used
+   // Note that cusolver only supports the case Rows > Cols
+   if (Rows > Cols)
+   {
+      // Number of non-zero singular values is equal to Cols
+      // Umat is Rows*Rows, we get all entries set
+      // D has length Rows, we need to zero out the final Rows-Cols of these
+      // Vmat is Rows*Cols, we need to zero out the bottom (Rows-Cols) rows
+      // Zero out the additional entries in D
+      cuda::vector_clear(Rows-Cols, Dvec+Cols, 1);
+      // Zero out the additional rows in Vmat
+      cuda::matrix_clear(Rows-Cols, Cols, Vmat + Cols, ldV);
+   }
+   if (Cols > Rows)
+   {
+      // note: this is currently not supported by cuSOLVER
+      PANIC("not supported");
+   }
    SingularValueDecomposition('A', Rows, Cols, Data, LeadingDim, Dvec, Umat, ldU, Vmat, ldV);
 }
 
@@ -312,6 +330,24 @@ void SingularValueDecompositionFull(int Rows, int Cols,
 				    cuda::gpu_ptr<std::complex<double>> Umat, int ldU,
 				    cuda::gpu_ptr<std::complex<double>> Vmat, int ldV)
 {
+   // Zero out the sections of Dvec, Umat and Vmat that are not used
+   // Note that cusolver only supports the case Rows > Cols
+   if (Rows > Cols)
+   {
+      // Number of non-zero singular values is equal to Cols
+      // Umat is Rows*Rows, we get all entries set
+      // D has length Rows, we need to zero out the final Rows-Cols of these
+      // Vmat is Rows*Cols, we need to zero out the bottom (Rows-Cols) rows
+      // Zero out the additional entries in D
+      cuda::vector_clear(Rows-Cols, Dvec+Cols, 1);
+      // Zero out the additional rows in Vmat
+      cuda::matrix_clear(Rows-Cols, Cols, Vmat + Cols, ldV);
+   }
+   if (Cols > Rows)
+   {
+      // note: this is currently not supported by cuSOLVER
+      PANIC("not supported");
+   }
    SingularValueDecomposition('A', Rows, Cols, Data, LeadingDim, Dvec, Umat, ldU, Vmat, ldV);
 }
 

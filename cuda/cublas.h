@@ -417,10 +417,10 @@ vector_copy(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::gpu_ptr<U> y, int i
    x.wait_for(y);
 }
 
-template <typename T, typename U>
+template <typename T>
 inline
 void
-vector_copy_conj(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::gpu_ptr<U> y, int incy)
+vector_copy_conj(int n, cuda::const_gpu_ptr<std::complex<T>> x, int incx, cuda::gpu_ptr<std::complex<T>> y, int incy)
 {
    cublas::handle& H = cublas::get_handle();
    H.set_stream(y.get_stream());
@@ -428,8 +428,8 @@ vector_copy_conj(int n, cuda::const_gpu_ptr<T> x, int incx, cuda::gpu_ptr<U> y, 
    y.wait_for(x);
    cublas::copy(H.raw_handle(), n, x.device_ptr(), incx, y.device_ptr(), incy);
    x.wait_for(y);
-   double alpha = -1.0;
-   cublas::scale(H.raw_handle(), n, &alpha, reinterpret_cast<double*>(y.device_ptr())+1, incy*2);
+   T alpha = -1.0;
+   cublas::scale(H.raw_handle(), n, &alpha, reinterpret_cast<T*>(y.device_ptr())+1, incy*2);
 }
 
 inline
@@ -712,7 +712,7 @@ void matrix_conj(int M, int N, cuda::gpu_ptr<std::complex<double>> A, int lda)
    {
       for (int r = 0; r < N; ++r)
       {
-	 cublas::scale(H.raw_handle(), M, &alpha, reinterpret_cast<double*>(A.device_ptr())+r*lda+1, 2);
+	 cublas::scale(H.raw_handle(), M, &alpha, reinterpret_cast<double*>(A.device_ptr())+r*lda*2+1, 2);
       }
    }
 }
@@ -784,6 +784,7 @@ gemm(char Atrans, char Btrans, int M, int N, int K, T alpha,
    H.set_pointer_mode(CUBLAS_POINTER_MODE_HOST);
    C.wait_for(A);
    C.wait_for(B);
+   //   TRACE(alpha)(beta);
    cublas::gemm(H.raw_handle(), cublas::cublas_trans(Atrans), cublas::cublas_trans(Btrans), M, N, K,
                 &alpha, A.device_ptr(), lda, B.device_ptr(), ldb,
                 &beta, C.device_ptr(), ldc);

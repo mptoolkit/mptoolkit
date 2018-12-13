@@ -801,6 +801,10 @@ struct MatrixProduct : public MatrixRef<remove_proxy_t<decltype(std::declval<T>(
    D2 const& B;
 };
 
+template <typename T, typename U, typename D1, typename D2, typename Tag>
+std::ostream&
+operator<<(std::ostream& out, MatrixProduct<T,U,D1,D2,Tag> const& M) = delete;
+
 #if 0
 template <typename T, typename U, typename V, typename Tag>
 typename blas_traits<Tag>::template matrix_type<T>

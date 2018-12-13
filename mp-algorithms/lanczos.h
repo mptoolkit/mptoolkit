@@ -66,7 +66,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 
    //TRACE(w);
    double Beta = norm_frob(w);
-   CHECK(!std::isnan(Beta));
+   CHECK(!std::isnan(Beta))(w);
    // double OrigBeta = Beta;      // original norm, not used
    w *= 1.0 / Beta;
    v.push_back(copy(w));

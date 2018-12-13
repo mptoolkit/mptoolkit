@@ -282,12 +282,6 @@ UnitCellMPO prod(UnitCellMPO const& x, UnitCellMPO const& y)
 UnitCellMPO operator*(UnitCellMPO const& x, UnitCellMPO const& y)
 {
    return prod(x,y);
-   UnitCellMPO xCopy(x);
-   xCopy.ExtendToCover(y.size(), y.offset());
-   UnitCellMPO yCopy(y);
-   yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(xCopy.GetSiteList(), prod(xCopy.MPO(), yCopy.MPO()),
-                      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
 UnitCellMPO dot(UnitCellMPO const& x, UnitCellMPO const& y)

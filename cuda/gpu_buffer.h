@@ -71,6 +71,9 @@ class AllocationBlock
 
          ++NumAllocations;
 	 CurrentOffset = NextOffset + RequestSize;
+
+	 // debug fill memory
+
 	 return static_cast<void*>(BasePtr + NextOffset);
       }
 
