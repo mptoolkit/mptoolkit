@@ -812,11 +812,6 @@ dgmm(int M, int K,
    B.wait_for(C);
 }
 
-// mixed real/complex
-
-// dgmm for mixed real/complex can't be implemented as a cublas call,
-// instead we have our own kernel, in cub.h
-
 inline
 void
 gdmm(int M, int K,
@@ -836,6 +831,11 @@ gdmm(int M, int K,
    A.wait_for(C);
    y.wait_for(C);
 }
+
+// mixed real/complex
+
+// dgmm for mixed real/complex can't be implemented as a cublas call,
+// instead we have our own kernel, in cub.h
 
 // mixed real/complex
 inline

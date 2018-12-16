@@ -693,8 +693,7 @@ TruncationInfo DMRG::TruncateAndShiftRight(StatesInfo const& States)
 
    *C = prod(Lambda*U, *C);
 
-   // normalize
-   TRACE(norm_frob(*C));
+   // normalize -- perhaps we are always already normalized here?
    *C *= 1.0 / norm_frob(*C);
 
    IterationNumStates = Info.KeptStates();

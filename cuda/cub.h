@@ -74,6 +74,7 @@ vector_add_parallel_scaled(int n, T const& alpha, cuda::const_gpu_ptr<T> x, int 
 template <typename T>
 void matrix_fill(T alpha, int M, int N, cuda::gpu_ptr<T> A, int lda);
 
+// mixed double/complex diagonal * matrix
 void
 dgmm(int M, int K,
      cuda::const_gpu_ptr<double> x, int incx,

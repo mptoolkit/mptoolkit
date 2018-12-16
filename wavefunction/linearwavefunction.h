@@ -426,8 +426,6 @@ inline
 StateComponent::operator_type
 TruncateBasis1(StateComponent& A)
 {
-   TRACE("TruncateBasis1");
-   StateComponent ACheck = copy(A);
    typedef StateComponent::operator_type operator_type;
    operator_type Trunc = ExpandBasis1(A);  // the original component is prod(Trunc, A)
    //TRACE(A)(Trunc);
@@ -435,23 +433,15 @@ TruncateBasis1(StateComponent& A)
    DensityMatrix<operator_type> DM(scalar_prod(herm(Trunc), Trunc));
 
    DensityMatrix<operator_type>::const_iterator E = DM.begin();
-   TRACE(DM.EigenSum());
    // take all eigenvalues that are bigger than EigenvalueEpsilon (normalized to EigenSum)
    while (E != DM.end() && E->Eigenvalue > EigenvalueEpsilon * DM.EigenSum())
    {
       ++E;
    }
    operator_type U = DM.ConstructTruncator(DM.begin(), E);
-   TRACE(U);
    inplace_conj(U);
-   TRACE(U);
    // apply the truncation
    A = prod(U, A);
-   TRACE(Trunc.Basis1())(Trunc.Basis2())(U.Basis1())(U.Basis2());
-   TRACE(norm_frob(prod(Trunc * herm(U), A)))(norm_frob(prod(Trunc * herm(U),A) - ACheck));
-   CHECK(norm_frob(prod(Trunc * herm(U), A) - ACheck) < 0.05);
-   CHECK(norm_frob_sq(Trunc*herm(U)) > 0.8)(Trunc)(U);
-   //TRACE(Trunc)(U);
    return Trunc * herm(U);
 }
 

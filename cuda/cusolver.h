@@ -232,8 +232,8 @@ SVD_FullRows(NormalMatrix<Scalar, M, gpu_tag>&& Mmat, NormalMatrix<Scalar, U, gp
 					     std::move(Dvec).storage(),
 					     Umat.storage(), Umat.leading_dimension(),
 					     Vmat.storage(), Vmat.leading_dimension());
-      CHECK(!isnan(norm_frob(Umat)))(Umat)(Mmat);
-      CHECK(!isnan(norm_frob(Vmat)))(Vmat)(Mmat);
+      DEBUG_CHECK(!isnan(norm_frob(Umat)))(Umat)(Mmat);
+      DEBUG_CHECK(!isnan(norm_frob(Vmat)))(Vmat)(Mmat);
    }
 }
 
@@ -275,7 +275,6 @@ void
 SVD_FullCols(NormalMatrix<Scalar, M, blas::gpu_tag>&& Mmat, NormalMatrix<Scalar, U, gpu_tag>& Umat,
 	     NormalVectorProxy<Real, D, blas::gpu_tag>&& Dvec, NormalMatrix<Scalar, V, gpu_tag>& Vmat)
 {
-   TRACE("here");
    CHECK_EQUAL(Dvec.size(), Mmat.cols());
    CHECK_EQUAL(Mmat.rows(), Umat.rows());
    CHECK_EQUAL(Umat.cols(), Dvec.size());
@@ -294,8 +293,8 @@ SVD_FullCols(NormalMatrix<Scalar, M, blas::gpu_tag>&& Mmat, NormalMatrix<Scalar,
       Matrix<Scalar, gpu_tag> TempU(Vmat.cols(), Vmat.rows());
       Matrix<Scalar, gpu_tag> TempV(Umat.cols(), Umat.rows());
       SVD_FullRows(std::move(TempM), TempU, std::move(Dvec), TempV); 
-      CHECK(!isnan(norm_frob(TempU)))(TempU);
-      CHECK(!isnan(norm_frob(TempV)))(TempV);
+      DEBUG_CHECK(!isnan(norm_frob(TempU)))(TempU);
+      DEBUG_CHECK(!isnan(norm_frob(TempV)))(TempV);
       assign(Umat, trans(std::move(TempV)));
       assign(Vmat, trans(std::move(TempU)));
    }

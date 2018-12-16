@@ -462,11 +462,8 @@ right_orthogonalize(LinearWavefunction& Psi, MatrixOperator M, int Verbose)
       --Pi; --n;
       if (Verbose > 0)
          std::cout << "orthogonalizing site " << n << std::endl;
-      MatrixOperator MCopy = copy(M);
       StateComponent x = prod(*Pi, M);
       M = TruncateBasis1(x);
-      TRACE(norm_frob_sq(M));
-      CHECK(norm_frob_sq(M) > 0.8)(M)(x)(*Pi)(MCopy);
       *Pi = std::move(x);
    }
    return M;

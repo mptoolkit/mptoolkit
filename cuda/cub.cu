@@ -538,8 +538,8 @@ __global__ void cuda_dgmm(int M, int N, double const* x, int incx,
                           cuDoubleComplex const* B, int ldb,
                           cuDoubleComplex* C, int ldc)
 {
-   unsigned Col = blockIdx.x*blockDim.x + threadIdx.x;
-   unsigned Row = blockIdx.y*blockDim.y + threadIdx.y;
+   unsigned Row = blockIdx.x*blockDim.x + threadIdx.x;
+   unsigned Col = blockIdx.y*blockDim.y + threadIdx.y;
    if (Row < M && Col < N)
    {
       C[ldc*Col + Row].x = x[Row*incx] * B[ldc*Col + Row].x;

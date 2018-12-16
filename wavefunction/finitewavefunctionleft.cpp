@@ -80,7 +80,6 @@ FiniteWavefunctionLeft::Construct(LinearWavefunction Psi,
 
    MatrixOperator M = right_orthogonalize(Psi, Verbose-1);
 
-   TRACE(trace(M));
    return ConstructFromRightOrthogonal(Psi, trace(M), Verbose);
 }
 
