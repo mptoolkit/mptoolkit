@@ -635,7 +635,6 @@ BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& 
    return Result;
 }
 
-
 BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op, int UnitCellSize)
 {
    if (Op.is_null() || Kink.is_null())
@@ -953,4 +952,124 @@ ProductMPO prod_unit(UnitCellMPO const& Op_)
 ProductMPO prod_unit(UnitCellMPO const& Op_, int UnitCellSize)
 {
    return prod_unit_left_to_right(Op_.MPO(), UnitCellSize);
+}
+
+BasicTriangularMPO sum_partial(SiteListType const& SiteList, BasicTriangularMPO const& Op, BasicFiniteMPO const& Pivot, /* BasicFiniteMPO const& JW2, */ int UnitCellSize)
+{
+   //   CHECK_EQUAL(Pivot.size(), UnitCellSize);
+
+   //BasicFiniteMPO JW = JW2;
+
+   // Suppose that the unit cell size is 1.  Then we take the triangular MPO and form the sum
+   // of all partial sums of it.
+   // Eg, suppose the original triangular operator is 3x3. Then the resulting BasicTriangularMPO is
+   // 4xr, and
+   // ( X X X 0 )
+   // ( 0 X X 0 )
+   // ( 0 0 X P )
+   // ( 0 0 0 I )
+   // Now what happens if the JW string of P is non-trivial?  For the time being, we assume that
+   // there is no JW string associated with P.
+
+   // If the unit cell of P is bigger then 1 site, then we are summing over a larger unit cell.  In this case,
+   // we take a unit cell of X, followed by a unit cell of P.  Eg, suppose we have a unit cell of 3 sites.
+   // Then
+   // (X X X 0  0) (X X X 0  0) (X X X 0)
+   // (0 X X 0  0) (0 X X 0  0) (0 X X 0)
+   // (0 0 X PP 0) (0 0 X 0  0) (0 0 X 0)
+   // (0 0 0 0  I) (0 0 0 PP 0) (0 0 0 P)
+   //              (0 0 0 PP 0) (0 0 0 P)
+   //              (0 0 0 0  I) (0 0 0 I)
+   // where we show the shape of P if it has bond dimensions 1x2x1
+   //
+   // Now it can also be the case that the pivot operator is multiple unit cells.  eg suppose it is
+   // PPPQQQ.  Then we have
+   // (X X X 0  0  0) (X X X 0  0  0) (X X X 0  0)
+   // (0 X X 0  0  0) (0 X X 0  0  0) (0 X X 0  0)
+   // (0 0 X PP 0  0) (0 0 X 0  0  0) (0 0 X 0  0)
+   // (0 0 0 0  QQ 0) (0 0 0 PP 0  0) (0 0 0 PP 0)
+   // (0 0 0 0  QQ 0) (0 0 0 PP 0  0) (0 0 0 PP 0)
+   // (0 0 0 0  0  I) (0 0 0 0  QQ 0) (0 0 0 0  Q)
+   //                 (0 0 0 0  QQ 0) (0 0 0 0  Q)
+   //                 (0 0 0 0  0  I) (0 0 0 0  I)
+
+   DEBUG_TRACE(Op.size())(UnitCellSize)(SiteList.size());
+
+   // To construct this operator, we firstly split Pivot into UnitCellSize pieces
+   std::vector<std::vector<OperatorComponent>> SplitPivot = SplitOperator(Pivot, UnitCellSize);
+
+   // and we need the identity operator
+   BasicFiniteMPO Ident = identity_mpo(SiteList, Pivot.qn2());
+
+   BasicTriangularMPO Result(UnitCellSize);
+   for (int i = 0; i < UnitCellSize; ++i)
+   {
+      // Construct the basis.  Start from the triangular operator
+      BasisList Basis1(Op.Basis1());
+      BasisList Basis2(Op.Basis2());
+
+      // Now the pivot operator
+      for (unsigned n = 0; n < SplitPivot.size(); ++n)
+      {
+         if (i != 0 || n != 0)
+	    JoinBasis(Basis1, SplitPivot[n][i].Basis1());
+         JoinBasis(Basis2, SplitPivot[n][i].Basis2());
+      }
+
+      // And finally the identity
+      JoinBasis(Basis1, Ident[i%SiteList.size()].Basis1());
+      if (i != int(UnitCellSize)-1)
+         JoinBasis(Basis2, Ident[i%SiteList.size()].Basis2());
+
+      DEBUG_TRACE(Basis1)(Basis2)(SplitPivot.size());
+
+      // Construct the OperatorComponent
+      OperatorComponent C(Op[i%Op.size()].LocalBasis1(), Op[i%Op.size()].LocalBasis2(), Basis1, Basis2);
+
+      int r = 0, c = 0;
+      // Teh triangular MPO goes in the top left
+      SetComponents(C, Op[i%Op.size()], r, c);
+      r += Op[i%Op.size()].Basis1().size();
+      c += Op[i%Op.size()].Basis2().size();
+
+      // at the first entry, move back a row.
+      if (i == 0)
+	 --r;
+
+      // Now the pivot operator
+      for (unsigned n = 0; n < SplitPivot.size(); ++n)
+      {
+	 SetComponents(C, SplitPivot[n][i], r, c);
+         r += SplitPivot[n][i].Basis1().size();
+	 c += SplitPivot[n][i].Basis2().size();
+      }
+
+      // At the last entry, move back a column
+      if (i == int(UnitCellSize)-1)
+	 --c;
+
+      // Finally, the identity in the bottom right
+      SetComponents(C, Ident[i%SiteList.size()], r, c);
+
+      // check that we're at the end
+      CHECK_EQUAL(r+Ident[i%SiteList.size()].Basis1().size(), Basis1.size());
+      CHECK_EQUAL(c+Ident[i%SiteList.size()].Basis2().size(), Basis2.size());
+
+      DEBUG_TRACE(C);
+
+      C.debug_check_structure();
+
+      Result[i] = C;
+   }
+
+   Result.check_structure();
+   optimize(Result);
+   return Result;
+}
+
+BasicTriangularMPO sum_partial(BasicTriangularMPO const& Op, UnitCellMPO const& Pivot, int UnitCellSize)
+{
+   return sum_partial(*Pivot.GetSiteList(), Op, 
+		      ExtendToCoverUnitCell(Pivot, UnitCellSize).MPO(), 
+		      UnitCellSize);
 }

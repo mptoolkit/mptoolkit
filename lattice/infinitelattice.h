@@ -254,4 +254,6 @@ ProductMPO prod_unit(UnitCellMPO const& Op_);
 
 ProductMPO prod_unit(UnitCellMPO const& Op_, int UnitCellSize);
 
+BasicTriangularMPO sum_partial(BasicTriangularMPO const& Op, UnitCellMPO const& Pivot, int UnitCellSize);
+
 #endif
