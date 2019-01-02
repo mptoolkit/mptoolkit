@@ -66,12 +66,14 @@ double const DefaultTol = 1E-14;
 // power can be re-used to speed up the next power.
 // The final matrix element is EMatK.back()' on exit, the expectation value is the
 // overlap of this matrix element with the density matrix (RightIdentity).
+// If Degree is set, then set the maximum degree to this, and cull elements of a larger
+// degree (with a warning if the matrix element is numerically non-zero).
 void
 SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
               LinearWavefunction const& Psi, QuantumNumber const& QShift,
               BasicTriangularMPO const& Op, MatrixOperator const& LeftIdentity,
               MatrixOperator const& RightIdentity,
-              bool NeedFinalMatrix, double Tol = DefaultTol,
+              bool NeedFinalMatrix, int Degree = 0, double Tol = DefaultTol,
               double EigenUnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
 
 //

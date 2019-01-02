@@ -151,7 +151,7 @@ void ShowCasimirInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
          out << " ";
       std::string Name = "#" + SList.CasimirName(i);
       out << std::setw(20) << Name << ' '
-          << std::setw(20) << std::string(Name+"^2");
+          << std::setw(20) << std::string("central-"+Name+"^2");
    }
    out << '\n';
 
@@ -168,7 +168,7 @@ void ShowCasimirInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
          if (i != 0)
             out << ' ';
          out << std::setw(20) << DM.EvaluateCasimir(i);
-         out << std::setw(20) << DM.EvaluateCasimirMoment(i);
+         out << ' ' << std::setw(20) << DM.EvaluateCasimirMoment(i);
       }
       out << '\n';
    }

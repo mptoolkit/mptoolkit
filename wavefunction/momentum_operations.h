@@ -77,6 +77,10 @@ MultiplyLeft(std::vector<MatrixPolyType> const& E,
 ComplexPolyType
 ExtractOverlap(MatrixPolyType const& E, MatrixOperator const& Rho);
 
+// Extract overlaps, decomposed into momenta
+KComplexPolyType
+ExtractOverlap(KMatrixPolyType const& E, MatrixOperator const& Rho);
+
 //
 // With momentum
 //

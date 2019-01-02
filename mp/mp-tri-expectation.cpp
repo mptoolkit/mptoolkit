@@ -34,6 +34,7 @@
 #include "mp-algorithms/triangular_mpo_solver.h"
 #include "common/prog_opt_accum.h"
 #include <boost/algorithm/string.hpp>
+#include "common/randutil.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -245,63 +246,22 @@ int main(int argc, char** argv)
 {
    std::string FName;
    std::string OpStr;
+   int N = 100;
+   bool ShowAll = false;
+   bool Randomize = false;
 
-   int Power = 1;
    int Verbose = 0;
-   int UnitCellSize = 0;
-   int Degree = 0;
-   bool ShowRealPart = false;
-   bool ShowImagPart = false;
-   bool ShowMagnitude = false;
-   bool ShowArgument = false;
-   bool ShowRadians = false;
-   bool ShowPolar = false;
-   bool ShowCartesian = false;
-   bool Quiet = false;
-   bool CalculateMoments = false;
-   bool CalculateCumulants = false;
-   double UnityEpsilon = DefaultEigenUnityEpsilon;
-   double Tol = 1E-15;
-   bool ShouldShowAllComponents = false;
 
    try
    {
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
+	 ("sites,n", prog_opt::value(&N), "maximum length to calculate (sites)")
+	 ("showall", prog_opt::bool_switch(&ShowAll), "show all columns of the MPO")
+	 ("randomize", prog_opt::bool_switch(&Randomize), "randomize boundary tensors")
          ("help", "show this help message")
-         ("power", prog_opt::value(&Power),
-          FormatDefault("Calculate expectation value of operator to this power", Power).c_str())
-         ("moments", prog_opt::bool_switch(&CalculateMoments),
-          "calculate the moments [default, unless --cumulants is specified]")
-         ("cumulants,t", prog_opt::bool_switch(&CalculateCumulants),
-          "calculate the commulants kappa")
-         ("cart,c", prog_opt::bool_switch(&ShowCartesian),
-          "show the result in cartesian coordinates [equivalent to --real --imag]")
-         ("polar,p", prog_opt::bool_switch(&ShowPolar),
-          "show the result in polar coodinates [equivalent to --mag --arg]")
-         ("real,r", prog_opt::bool_switch(&ShowRealPart),
-          "display the real part of the result")
-         ("imag,i", prog_opt::bool_switch(&ShowImagPart),
-          "display the imaginary part of the result")
-         ("mag,m", prog_opt::bool_switch(&ShowMagnitude),
-          "display the magnitude of the result")
-         ("arg,a", prog_opt::bool_switch(&ShowArgument),
-          "display the argument (angle) of the result")
-         ("radians", prog_opt::bool_switch(&ShowRadians),
-          "display the argument in radians instead of degrees")
-         ("unitcell,u", prog_opt::value(&UnitCellSize),
-          "scale the results to use this unit cell size [default wavefunction unit cell]")
-         ("degree,d", prog_opt::value(&Degree),
-          "force setting the degree of the MPO")
-         ("quiet,q", prog_opt::bool_switch(&Quiet), "don't show column headings")
-         ("tol", prog_opt::value(&Tol),
-          FormatDefault("Linear solver convergence tolerance", Tol).c_str())
-         ("unityepsilon", prog_opt::value(&UnityEpsilon),
-          FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose),
           "extra debug output (can be used more than once)")
-	 ("showall", prog_opt::bool_switch(&ShouldShowAllComponents), "show all columns of the fixed-point "
-	  "solutions (mostly for debugging)")
          ;
 
       prog_opt::options_description hidden("Hidden options");
@@ -333,31 +293,6 @@ int main(int argc, char** argv)
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-      // If no output switches are used, default to showing everything
-      if (!ShowRealPart && !ShowImagPart && !ShowMagnitude
-          && !ShowCartesian && !ShowPolar && !ShowArgument)
-      {
-         ShowCartesian = true;
-         ShowPolar = true;
-      }
-
-      if (ShowCartesian)
-      {
-         ShowRealPart = true;
-         ShowImagPart = true;
-      }
-      if (ShowPolar)
-      {
-         ShowMagnitude = true;
-         ShowArgument = true;
-      }
-      if (ShowRadians)
-         ShowArgument = true;
-
-      // If none of --cumulants and --moments are specified, then the default is to calculate moments
-      if (!CalculateMoments && !CalculateCumulants)
-         CalculateMoments = true;
-
       long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
       pvalue_ptr<MPWavefunction> PsiPtr = pheap::OpenPersistent(FName, CacheSize, true);
       InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
@@ -374,36 +309,10 @@ int main(int argc, char** argv)
          }
       }
 
-      // The default UnitCellSize for output is the wavefunction size
-      if (UnitCellSize == 0)
-         UnitCellSize = WavefuncUnitCellSize;
-      double ScaleFactor = double(UnitCellSize) / double(WavefuncUnitCellSize);
-
-      if (!Quiet)
-      {
-         print_preamble(std::cout, argc, argv);
-         if (!vm.count("operator"))
-         {
-            std::cout << "#operator " << EscapeArgument(OpStr) << '\n';
-         }
-         std::cout << "#quantities are calculated per unit cell size of " << UnitCellSize
-                   << (UnitCellSize == 1 ? " site\n" : " sites\n");
-      }
-
       BasicTriangularMPO Op;
-
       InfiniteLattice Lattice;
       std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(OpStr);
 
-      int Size = statistics::lcm(Psi.size(), Op.size());
-
-      // TODO: a better approach would be to get SolveMPO to understand how to do
-      // a multiple unit-cell operator.
-      Psi = repeat(Psi, Size / Psi.size());
-      Op = repeat(Op, Size / Op.size());
-
-      // Make a LinearWavefunction in the symmetric orthogonality constraint
-      // TODO: actually this is left-orthogonal.  Which might be OK?
       RealDiagonalOperator D;
       LinearWavefunction Phi;
       std::tie(Phi, D) = get_left_canonical(Psi);
@@ -427,86 +336,39 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      BasicTriangularMPO OriginalOp = Op;  // keep a copy so we can do repeated powers
-
-      std::vector<Polynomial<std::complex<double> > > Moments;
-
-      // first power
-      std::vector<KMatrixPolyType> E;
-      SolveMPO_Left(E, Phi, Psi.qshift(), Op, Identity, Rho, Power > 1, Degree, Tol, UnityEpsilon, Verbose);
-      Moments.push_back(ExtractOverlap(E.back()[1.0], Rho));
-      if (ShouldShowAllComponents)
+      StateComponent E = Initial_E(Op, Psi.Basis1());
+      if (Randomize)
       {
-	 ShowAllComponents(E, Rho);
+	 srand(randutil::crypto_rand());
+	 for (unsigned j = 1; j < E.size(); ++j)
+	 {
+	    E[j] = MakeRandomMatrixOperator(E[j].Basis1(), E[j].Basis2(), E[j].TransformsAs());
+	 }
       }
-      // If we're not calculating the cumulants, then we can print the moments as we calculate them.
-      // BUT, if we have Verbose > 0, then don't print anything until the end, so that it doesn't get
-      // mixed up with the verbose output.
-      if (CalculateMoments && !Quiet && Verbose <= 0)
-         ShowMomentsHeading(ShowRealPart, ShowImagPart,
-                            ShowMagnitude, ShowArgument, ShowRadians);
-
-      // Force the degree of the MPO
-      if (Degree != 0)
-         Moments.back()[Degree] += 0.0;
-      if (CalculateMoments && Verbose <= 0)
-         ShowMoments(Moments.back(), ShowRealPart, ShowImagPart,
-                     ShowMagnitude, ShowArgument, ShowRadians,
-                     ScaleFactor);
-
-      // loop over the powers of the operator
-      for (int p = 1; p < Power; ++p)
+      LinearWavefunction::const_iterator PsiI = Phi.cbegin();
+      for (unsigned i = 0; i < N; ++i)
       {
-         // construct the operator to the given power
-         // The way we have defined prod() for MPO's, is A*B is
-         // [A_00 B   A_01 B ... ]
-         // [A_10 B   A_11 B ... ]
-         // [ ..       ..        ]
-         // That is, in order to re-use the E matrices for a higher power, we need
-         // to multiply the new operator on the left, where the identity in the top right corner (A_00)
-         // will correspond to the already calculated terms.
-
-         // 2016-08-15: Due to a misunderstanding/bug this reuse doesnt work.
-         E = std::vector<KMatrixPolyType>();
-
-         Op = OriginalOp * Op;
-         SolveMPO_Left(E, Phi, Psi.qshift(), Op, Identity, Rho, p < Power-1, Degree*(p+1),
-                       Tol, UnityEpsilon, Verbose);
-         Moments.push_back(ExtractOverlap(E.back()[1.0], Rho));
-         // Force the degree of the MPO
-         if (Degree != 0)
-            Moments.back()[Degree*(p+1)] += 0.0;
-	 //            Moments.back()[ipow(Degree, p+1)] += 0.0;
-         if (CalculateMoments && Verbose <= 0)
-            ShowMoments(Moments.back(), ShowRealPart, ShowImagPart,
-                        ShowMagnitude, ShowArgument, ShowRadians,
-                        ScaleFactor);
-      }
-
-      // if we had verbose output, then we delay printing the moments until now
-      if (CalculateMoments && Verbose > 0)
-      {
-         if (!Quiet)
-            ShowMomentsHeading(ShowRealPart, ShowImagPart,
-                               ShowMagnitude, ShowArgument, ShowRadians);
-         for (unsigned i = 0; i < Moments.size(); ++i)
-         {
-            ShowMoments(Moments[i], ShowRealPart, ShowImagPart,
-                        ShowMagnitude, ShowArgument, ShowRadians,
-                        ScaleFactor);
-         }
-      }
-
-      if (CalculateCumulants)
-      {
-         // If we calculated the moments, then put in a blank line to separate them
-         if (CalculateMoments)
-            std::cout << '\n';
-
-         std::vector<std::complex<double> > Cumulants = MomentsToCumulants(Moments, Tol, Quiet);
-         ShowCumulants(Cumulants, Quiet, ShowRealPart,
-                       ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians,
-                       ScaleFactor);
+	 E = contract_from_left(Op[i%Op.size()], herm(*PsiI), E, *PsiI);
+	 ++PsiI;
+	 if (PsiI == Phi.end())
+	    PsiI = Phi.begin();
+	 if (ShowAll)
+	 {
+	    for (unsigned j = 0; j < E.size(); ++j)
+	    {
+	       if (E[j].TransformsAs() == Rho.TransformsAs())
+	       {
+		  std::cout << (i+1) << " column " << (j+1) << ' ' << format_complex(inner_prod(E[j], Rho)) << '\n';
+	       }
+	    }
+	 }
+	 else
+	 {
+	    if (E.back().TransformsAs() == Rho.TransformsAs())
+	    {
+	       std::cout << (i+1) << ' ' << format_complex(inner_prod(E.back(), Rho)) << '\n';
+	    }
+	 }
       }
 
       pheap::Shutdown();

@@ -133,11 +133,11 @@ FindClosestUnitEigenvalue(MatrixOperator& M, T Func, double tol, int Verbose)
    int Iterations = 20;
    double Tol = tol;
    std::complex<double> EtaL;
-   EtaL = LinearSolvers::Arnoldi(M, Func, Iterations, Tol, LinearSolvers::LargestMagnitude, Verbose);
+   EtaL = LinearSolvers::Arnoldi(M, Func, Iterations, Tol, LinearSolvers::LargestMagnitude, false, Verbose);
    while (Iterations == 20)
    {
-      Tol = Tol;
-      EtaL = LinearSolvers::Arnoldi(M, Func, Iterations, Tol, LinearSolvers::LargestMagnitude, Verbose);
+      Tol = tol;
+      EtaL = LinearSolvers::Arnoldi(M, Func, Iterations, Tol, LinearSolvers::LargestMagnitude, false, Verbose);
    }
    return EtaL;
 }
@@ -145,7 +145,7 @@ FindClosestUnitEigenvalue(MatrixOperator& M, T Func, double tol, int Verbose)
 KComplexPolyType
 DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
                        MatrixOperator const& UnitMatrixLeft,
-                       MatrixOperator const& UnitMatrixRight, double UnityEpsilon)
+                       MatrixOperator const& UnitMatrixRight, double UnityEpsilon, int Degree)
 {
    KComplexPolyType EParallel;
    // diagonal element is the identity, up to a unitary factor
@@ -168,8 +168,9 @@ DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
          //if (!is_scalar(I->second.TransformsAs()))
          //continue;
 
+	 DEBUG_TRACE(I->second)(UnitMatrixRight);
          std::complex<double> Overlap = inner_prod(I->second, UnitMatrixRight);
-         DEBUG_TRACE(Overlap);
+         DEBUG_TRACE(Overlap)(I->first);
          I->second -= conj(Overlap)*UnitMatrixLeft;
          DEBUG_TRACE(inner_prod(I->second, UnitMatrixRight))("should be zero");
          DEBUG_TRACE(inner_prod(UnitMatrixLeft, UnitMatrixRight));
@@ -178,7 +179,17 @@ DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
          // This is the important one
          //      if (norm_frob(Overlap) > 1E-16)
 
+	 // Only keep parts if they are degree one less (or more) than the maximum degree.
+	 if ((Degree == 0 || I->first < Degree))
+	 {
             CParallel[I->first] = Overlap;
+	    DEBUG_TRACE("Adding component")(I->first)(Overlap);
+	 }
+	 else if (norm_frob(Overlap) > 1E-10)
+	 {
+	    std::cerr << "Warning: ignoring component at degree " << I->first << " magnitude "
+		      << norm_frob(Overlap) << '\n';
+	 }
       }
 
       // Is this the same momentum as our unit operator?
@@ -186,20 +197,26 @@ DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
       {
          DEBUG_TRACE("Component at equal momenta")(K);
          // same momenta, these components diverge
+	 DEBUG_TRACE(CParallel);
          for (int m = CParallel.degree(); m >= 0; --m)
          {
             if (CParallel.has_term(m))
             {
                EParallel[Factor][m+1] = conj(Factor) * CParallel[m]; // include momentum
-               for (int k = m+2; k <= CParallel.degree()+1; ++k)
-               {
-                  if (EParallel[Factor].has_term(k))
-                  {
-                     EParallel[Factor][m+1] -= double(Binomial(k,m))
-                        * EParallel[Factor][k];
-                  }
-               }
-               EParallel[Factor][m+1] *= 1.0 / (1.0 + m);
+	    }
+
+	    for (int k = m+2; k <= CParallel.degree()+1; ++k)
+	    {
+	       if (EParallel[Factor].has_term(k))
+	       {
+		  EParallel[Factor][m+1] -= double(Binomial(k,m))
+		     * EParallel[Factor][k];
+	       }
+	    }
+	    if (EParallel[Factor].has_term(m+1))
+	    {
+	       EParallel[Factor][m+1] *= 1.0 / (1.0 + m);
+	       DEBUG_TRACE("Component at ")(m+1)(EParallel[Factor][m+1]);
             }
          }
       }
@@ -231,6 +248,7 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
                             double Tol,
                             int Verbose)
 {
+   // UnitMatrixLeft and UnitMatrixRight are only used if HasEigenvalue1 is true
    // Components perpendicular to the identity satisfy equation (24)
    KMatrixPolyType E;
    for (KMatrixPolyType::const_iterator I = C.begin(); I != C.end(); ++I) // sum over momenta
@@ -248,7 +266,7 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
 
          DEBUG_TRACE("degree")(m);
          MatrixOperator Rhs = conj(K) * I->second[m];
-         for (int k = m+1; k <= I->second.degree(); ++k)
+         for (int k = m+1; k <= E[K].degree(); ++k)
          {
             // avoid accessing E[K][k] if it doesn't exist, to avoid adding a null term
             if (E.has_element(K) && E[K].has_term(k))
@@ -282,11 +300,15 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
             if (HasEigenvalue1 && Rhs.TransformsAs() == UnitMatrixRight.TransformsAs())
             {
                E[K][m] -= conj(inner_prod(E[K][m], UnitMatrixRight)) * UnitMatrixLeft;
+	       DEBUG_TRACE("should be zero")(inner_prod(E[K][m], UnitMatrixRight));
             }
 
             LinearSolve(E[K][m], OneMinusTransferLeft_Ortho(K*Diag, Psi, QShift,
                                                             UnitMatrixLeft, UnitMatrixRight, HasEigenvalue1),
                         Rhs, Tol, Verbose);
+
+
+	    DEBUG_TRACE(K)(m)(norm_frob(E[K][m]))(inner_prod(E[K][m], UnitMatrixRight));
 
             // do another orthogonalization -- this should be unncessary but for the paranoid...
             if (HasEigenvalue1 && E[K][m].TransformsAs() == UnitMatrixRight.TransformsAs())
@@ -345,13 +367,15 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
               LinearWavefunction const& Psi, QuantumNumber const& QShift,
               BasicTriangularMPO const& Op, MatrixOperator const& LeftIdentity,
               MatrixOperator const& RightIdentity, bool NeedFinalMatrix,
-              double Tol,
+	      int Degree, double Tol,
               double UnityEpsilon, int Verbose)
 {
    CHECK_EQUAL(RightIdentity.Basis1(), Psi.Basis1());
    CHECK_EQUAL(RightIdentity.Basis2(), Psi.Basis1());
    CHECK_EQUAL(LeftIdentity.Basis1(), Psi.Basis1());
    CHECK_EQUAL(LeftIdentity.Basis2(), Psi.Basis1());
+
+   DEBUG_TRACE(Verbose)(Degree)(Tol);
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
    EMatK.reserve(Dim);
@@ -404,14 +428,12 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
    {
       if (Verbose > 0)
       {
-         std::cerr << "Solving column " << Col << " of " << (Dim-1) << '\n';
+         std::cerr << "Solving column " << (Col+1) << " of " << Dim << '\n';
       }
 
       // Generate the next C matrices, C(n) = sum_{j<Col} Op(j,Col) E_j(n)
-      KMatrixPolyType C;
-
-      std::vector<std::vector<int> > Mask = mask_column(Op, Col);
-      C = inject_left_mask(EMatK, Psi, QShift, Op.data(), Psi, Mask)[Col];
+      KMatrixPolyType C = inject_left_mask(EMatK, Psi, QShift, Op.data(), 
+					   Psi, mask_column(Op, Col))[Col];
 
       // Now do the classification, based on the properties of the diagonal operator
       BasicFiniteMPO Diag = Op(Col, Col);
@@ -421,13 +443,13 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
       {
          DEBUG_TRACE("Zero diagonal element")(Col)(Diag);
          if (Verbose > 0)
-            std::cerr << "Zero diagonal matrix element at column " << Col << std::endl;
+            std::cerr << "Zero diagonal matrix element at column " << (Col+1) << std::endl;
          EMatK[Col] = SolveZeroDiagonal(C);
       }
       else
       {
          if (Verbose > 0)
-            std::cerr << "Non-zero diagonal matrix element at column " << Col << std::endl;
+            std::cerr << "Non-zero diagonal matrix element at column " << (Col+1) << std::endl;
 
          // Non-zero diagonal element.
          // In this case we have to consider a possible component with eigenvalue magnitude 1.
@@ -469,9 +491,15 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
             // We need initial guess vectors in the correct symmetry sector
             UnitMatrixLeft = MakeRandomMatrixOperator(LeftIdentity.Basis1(), LeftIdentity.Basis2(), Diag.Basis2()[0]);
 
+	    DEBUG_TRACE(norm_frob(UnitMatrixLeft));
+	    double lnorm = norm_frob(UnitMatrixLeft);
+	    //UnitMatrixLeft *= 1.0 / lnorm;
+	    //UnitMatrixLeft *= 1.0 / norm_frob(UnitMatrixLeft);
+	    //	    UnitMatrixLeft *= 2.0; // adding this brings in spurious components
             std::complex<double> EtaL = FindClosestUnitEigenvalue(UnitMatrixLeft,
                                                                   InjectLeftQShift(Diag, Psi, QShift),
                                                                   Tol, Verbose);
+	    //UnitMatrixLeft *= lnorm;
             EtaL = conj(EtaL); // left eigenvalue, so conjugate (see comment at operator_actions.h)
             if (Verbose > 0)
                std::cerr << "Eigenvalue of unitary operator is " << EtaL << std::endl;
@@ -482,24 +510,44 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
                if (Verbose > 0)
                   std::cerr << "Found an eigenvalue 1, so we need the right eigenvector..." << std::endl;
 
-               UnitMatrixRight = UnitMatrixLeft;
                // we have an eigenvalue of magnitude 1.  Find the right eigenvalue too
+               UnitMatrixRight = UnitMatrixLeft;
+	       UnitMatrixRight = MakeRandomMatrixOperator(LeftIdentity.Basis1(), LeftIdentity.Basis2(), Diag.Basis2()[0]);
+	       //UnitMatrixRight *= 1.0 / norm_frob(UnitMatrixRight);
+	       DEBUG_TRACE(norm_frob(UnitMatrixRight));
+	       double ddd = norm_frob(UnitMatrixRight);
+	       //UnitMatrixRight *= 1.0 / ddd; //norm_frob(UnitMatrixRight);
                std::complex<double> EtaR = FindClosestUnitEigenvalue(UnitMatrixRight,
                                                                      InjectRightQShift(Diag, Psi,
                                                                                        QShift),
                                                                      Tol, Verbose);
+	       //UnitMatrixRight *= 3.141;
                if (Verbose > 0)
                   std::cerr << "Right eigenvalue is " << EtaR << std::endl;
 
                CHECK(norm_frob(EtaL-EtaR) < UnityEpsilon)("Left and right eigenvalues do not agree!")(EtaL)(EtaR);
                // we already determined that the norm is sufficiently close to 1, but
-               // fine-tune normalization
+               // fine-tune normalization, which also guarantees that we ultimately set
+	       // HasEigenvalue1 below
                Factor = EtaL / norm_frob(EtaL);
+
+	       //UnitMatrixRight *= 100;
 
                // normalize the left/right eigenvector pair
                //              UnitMatrixLeft *= 1.0 / (inner_prod(UnitMatrixRight, UnitMatrixLeft));
+
+	       //	       TRACE(trace(UnitMatrixLeft))(trace(UnitMatrixRight));
+
+
                UnitMatrixRight *= 1.0 / (inner_prod(UnitMatrixLeft, UnitMatrixRight));
+	       CHECK(norm_frob(inner_prod(UnitMatrixLeft, UnitMatrixRight) - 1.0) < 1E-12);
                DEBUG_TRACE(inner_prod(UnitMatrixLeft, UnitMatrixRight));
+
+	       //TRACE(trace(UnitMatrixLeft))(trace(UnitMatrixRight));
+
+	       //	       TRACE(inner_prod(UnitMatrixLeft, LeftIdentity) / norm_frob(UnitMatrixLeft));
+	       //TRACE(inner_prod(UnitMatrixRight, RightIdentity) / norm_frob(UnitMatrixRight));
+
             }
             else if (std::abs(norm_frob(EtaL) - 1.0) < UnityEpsilon*100)
             {
@@ -526,13 +574,13 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
             //DEBUG_TRACE(UnitMatrixLeft)(UnitMatrixRight);
             if (Verbose > 0)
                std::cerr << "Decomposing parts parallel to the unit matrix\n";
-            EParallel = DecomposeParallelParts(C, Factor, UnitMatrixLeft, UnitMatrixRight, UnityEpsilon);
+            EParallel = DecomposeParallelParts(C, Factor, UnitMatrixLeft, UnitMatrixRight, UnityEpsilon, Degree);
          }
          else
          {
             if (Verbose > 0)
             {
-               std::cerr << "Diagonal component is not unitary, assuming spectral radius < 1\n";
+               std::cerr << "Diagonal component has spectral radius < 1\n";
                DEBUG_TRACE(Diag)(Classification);
             }
          }
@@ -562,7 +610,8 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
             {
                // Conj here because this comes from an overlap(x, RightUnitMatrix)
                E[I->first][J->first] += conj(J->second) * UnitMatrixLeft;
-               DEBUG_TRACE(inner_prod(E[I->first][J->first], UnitMatrixRight));
+               DEBUG_TRACE(conj(J->second));
+               DEBUG_TRACE(I->first)(J->first)(inner_prod(E[I->first][J->first], RightIdentity));
             }
          }
 
@@ -653,13 +702,13 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
       {
          DEBUG_TRACE("Zero diagonal element")(Col)(Diag);
          if (Verbose > 0)
-            std::cerr << "Zero diagonal matrix element at column " << Col << std::endl;
+            std::cerr << "Zero diagonal matrix element at column " << (Col+1) << std::endl;
          E[Col] = C;
       }
       else
       {
          if (Verbose > 0)
-            std::cerr << "Non-zero diagonal matrix element at column " << Col << std::endl;
+            std::cerr << "Non-zero diagonal matrix element at column " << (Col+1) << std::endl;
 
          // non-zero diagonal element.  The only case that we support here is
          // an operator with spectral radius strictly < 1

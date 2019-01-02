@@ -88,6 +88,9 @@ class LinearWavefunction
       const_iterator begin() const { return const_iterator(Data.begin()); }
       const_iterator end() const { return const_iterator(Data.end()); }
 
+      const_iterator cbegin() const { return const_iterator(Data.begin()); }
+      const_iterator cend() const { return const_iterator(Data.end()); }
+
       void push_front(value_type const& x)
       { Data.push_front(handle_type(new value_type(x))); if (SList.is_null()) SList = x.GetSymmetryList(); }
 

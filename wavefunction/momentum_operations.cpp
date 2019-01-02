@@ -103,9 +103,19 @@ ExtractOverlap(Polynomial<MatrixOperator> const& E, MatrixOperator const& Rho)
    Polynomial<std::complex<double> > Overlap;
    for (Polynomial<MatrixOperator>::const_iterator I = E.begin(); I != E.end(); ++I)
    {
-      Overlap[I->first] = inner_prod(I->second, Rho);
+      if (I->second.TransformsAs() == Rho.TransformsAs())
+	 Overlap[I->first] = inner_prod(I->second, Rho);
    }
    return Overlap;
+}
+
+KComplexPolyType
+ExtractOverlap(KMatrixPolyType const& E, MatrixOperator const& Rho)
+{
+   KComplexPolyType Result;
+   for (auto const& x : E)
+      Result[x.first] = ExtractOverlap(x.second, Rho);
+   return Result;
 }
 
 //
