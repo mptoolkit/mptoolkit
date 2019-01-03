@@ -145,6 +145,17 @@ make_single_basis(QuantumNumbers::QuantumNumber const& q);
 
 std::ostream& operator<<(std::ostream& out, BasisList const& b);
 
+std::ostream&
+operator<<(std::ostream& out, std::vector<BasisList> const& u);
+
+// Returns true if two vectors of BasisList are compatible.
+// A compatible site list is one where we firstly make each vector
+// the same size by repeating the unit cell as many times as necessary,
+// and the lists are compatible if the individual BasisList's match exactly
+// at each site.
+bool
+is_compatible(std::vector<BasisList> const& a, std::vector<BasisList> const& b);
+
 BasisList adjoint(BasisList const& b);
 
 std::string show_projections(BasisList const& B);

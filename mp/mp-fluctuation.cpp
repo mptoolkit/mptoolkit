@@ -359,7 +359,7 @@ int main(int argc, char** argv)
          Op = repeat(Op, Psi1.size() / Op.size());
 
          std::vector<KMatrixPolyType> E;
-         SolveMPO_Left(E, Psi1, InfPsi.qshift(), Op, Identity, delta_shift(Rho, InfPsi.qshift()), true, Tol, UnityEpsilon, Verbose);
+         SolveMPO_Left(E, Psi1, InfPsi.qshift(), Op, Identity, delta_shift(Rho, InfPsi.qshift()), true, 0, Tol, UnityEpsilon, Verbose);
 
          Polynomial<MatrixOperator> v = E.back()[1.0];
 

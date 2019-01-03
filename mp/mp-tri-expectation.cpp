@@ -313,20 +313,11 @@ int main(int argc, char** argv)
       InfiniteLattice Lattice;
       std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(OpStr);
 
-      RealDiagonalOperator D;
-      LinearWavefunction Phi;
-      std::tie(Phi, D) = get_left_canonical(Psi);
-
-      MatrixOperator Rho = D;
-      Rho = scalar_prod(Rho, herm(Rho));
-      Rho = delta_shift(Rho, Psi.qshift());
-
-      MatrixOperator Identity = MatrixOperator::make_identity(Phi.Basis1());
-
       // Check that the local basis for the wavefunction and hamiltonian are compatible
-      if (ExtractLocalBasis(Psi) != ExtractLocalBasis1(Op))
+      if (!is_compatible(ExtractLocalBasis(Psi), ExtractLocalBasis1(Op)))
       {
          std::cerr << "fatal: operator is defined on a different local basis to the wavefunction.\n";
+	 TRACE(ExtractLocalBasis(Psi))(ExtractLocalBasis1(Op));
          return 1;
       }
 
@@ -345,18 +336,18 @@ int main(int argc, char** argv)
 	    E[j] = MakeRandomMatrixOperator(E[j].Basis1(), E[j].Basis2(), E[j].TransformsAs());
 	 }
       }
-      LinearWavefunction::const_iterator PsiI = Phi.cbegin();
+      InfiniteWavefunctionLeft::const_mps_iterator PsiI = Psi.begin();
+      InfiniteWavefunctionLeft::const_lambda_iterator RhoI = Psi.lambda_begin();
+      ++RhoI;
       for (unsigned i = 0; i < N; ++i)
       {
 	 E = contract_from_left(Op[i%Op.size()], herm(*PsiI), E, *PsiI);
-	 ++PsiI;
-	 if (PsiI == Phi.end())
-	    PsiI = Phi.begin();
+	 MatrixOperator Rho = *RhoI;
 	 if (ShowAll)
 	 {
 	    for (unsigned j = 0; j < E.size(); ++j)
 	    {
-	       if (E[j].TransformsAs() == Rho.TransformsAs())
+	       if (is_scalar(E[j].TransformsAs()))
 	       {
 		  std::cout << (i+1) << " column " << (j+1) << ' ' << format_complex(inner_prod(E[j], Rho)) << '\n';
 	       }
@@ -368,6 +359,15 @@ int main(int argc, char** argv)
 	    {
 	       std::cout << (i+1) << ' ' << format_complex(inner_prod(E.back(), Rho)) << '\n';
 	    }
+	 }
+	 ++PsiI;
+	 if (PsiI == Psi.end())
+	    PsiI = Psi.begin();
+	 ++RhoI;
+	 if (RhoI == Psi.lambda_end())
+	 {
+	    RhoI = Psi.lambda_begin();
+	    ++RhoI;
 	 }
       }
 

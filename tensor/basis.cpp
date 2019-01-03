@@ -18,6 +18,7 @@
 // ENDHEADER
 
 #include "basis.h"
+#include "common/statistics.h"
 
 namespace Tensor
 {
@@ -97,6 +98,17 @@ std::ostream& operator<<(std::ostream& Out, BasisList const& B)
       Out << std::left << std::setw(16) << x.first << ' ' << x.second << '\n';
    }
    return Out;
+}
+
+std::ostream&
+operator<<(std::ostream& out, std::vector<BasisList> const& u)
+{
+   out << "vector of BasisList, length " << u.size() << '\n';
+   for (auto const& x : u)
+   {
+      out << x << '\n';
+   }
+   return out;
 }
 
 std::string show_projections(BasisList const& B)
@@ -277,5 +289,17 @@ VectorBasis RenameSymmetry(VectorBasis const& BL, SymmetryList const& NewSL)
    return VectorBasis(RenameSymmetry(BL.Basis_, NewSL), BL.Dimension_);
 }
 #endif
+
+bool
+is_compatible(std::vector<BasisList> const& a, std::vector<BasisList> const& b)
+{
+   int Size = statistics::lcm(a.size(), b.size());
+   for (int i = 0; i < Size; ++i)
+   {
+      if (a[i%a.size()] != b[i%b.size()])
+	 return false;
+   }
+   return true;
+}
 
 } // namespace Tensor
