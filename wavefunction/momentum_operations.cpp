@@ -97,14 +97,14 @@ MultiplyLeft(std::vector<MatrixPolyType> const& E,
 }
 #endif
 
-Polynomial<std::complex<double> >
-ExtractOverlap(Polynomial<MatrixOperator> const& E, MatrixOperator const& Rho)
+ComplexPolyType
+ExtractOverlap(MatrixPolyType const& E, MatrixOperator const& Rho)
 {
-   Polynomial<std::complex<double> > Overlap;
-   for (Polynomial<MatrixOperator>::const_iterator I = E.begin(); I != E.end(); ++I)
+   ComplexPolyType Overlap;
+   for (auto const& x : E)
    {
-      if (I->second.TransformsAs() == Rho.TransformsAs())
-	 Overlap[I->first] = inner_prod(I->second, Rho);
+      if (x.second.TransformsAs() == Rho.TransformsAs())
+	 Overlap[x.first] = inner_prod(x.second, Rho);
    }
    return Overlap;
 }
