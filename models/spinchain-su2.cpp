@@ -60,6 +60,8 @@ int main(int argc, char** argv)
          ("H_J1"  , "nearest neighbor spin exchange")
          ("H_J2"  , "next-nearest neighbor spin exchange")
          ("H_J3"  , "next-next-nearest neighbor spin exchange")
+         ("H_D"   , "-3*P_D, projector onto singlet dimer")
+         ("H_T"   , "-6*P_T, projector onto singlet trimer")
          ("H_B1"  , "nearest neighbor biquadratic spin exchange (S.S)^2")
          ("H_B2"  , "next-nearest neighbor biquadratic spin exchange (S.S)^2")
          ("H_B3"  , "next-next-nearest neighbor biquadratic spin exchange (S.S)^2")
@@ -107,6 +109,10 @@ int main(int argc, char** argv)
       Lattice["H_Q1"] = sum_unit(inner(Q(0), Q(1)));
       Lattice["H_Q2"] = sum_unit(inner(Q(0), Q(2)));
       Lattice["H_Q3"] = sum_unit(inner(Q(0), Q(3)));
+
+      Lattice["H_D"] = -sum_unit(pow(inner(S(0), S(1)), 2) - I(0));
+      UnitCellMPO S3 = inner(S(0)+S(1)+S(2), S(0)+S(1)+S(2));
+      Lattice["H_T"] = (1.0/24.0) * sum_unit((S3 - 2*I(0)) * (S3 - 6*I(0)) * (S3 - 12*I(0)));
 
       if (Spin == 1)
       {

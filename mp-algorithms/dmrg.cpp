@@ -88,6 +88,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
    //TRACE(Rho);
 
    DensityMatrix<MatrixOperator> DM(Rho);
+   DM.DensityMatrixReport(std::cout);
    DensityMatrix<MatrixOperator>::const_iterator DMPivot =
       TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
                                          States,

@@ -3913,7 +3913,7 @@ ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ex
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
-as_CACHEVAR=`$as_echo "ax_cv_check_cxxflags__"-march=native"" | $as_tr_sh`
+as_CACHEVAR=`$as_echo "ax_cv_check_cxxflags_-Werror_"-march=native"" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ compiler accepts \"-march=native\"" >&5
 $as_echo_n "checking whether C++ compiler accepts \"-march=native\"... " >&6; }
 if eval \${$as_CACHEVAR+:} false; then :
@@ -3921,7 +3921,7 @@ if eval \${$as_CACHEVAR+:} false; then :
 else
 
   ax_check_save_flags=$CXXFLAGS
-  CXXFLAGS="$CXXFLAGS  "-march=native""
+  CXXFLAGS="$CXXFLAGS -Werror "-march=native""
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -3950,7 +3950,7 @@ else
   :
 fi
 
-      as_CACHEVAR=`$as_echo "ax_cv_check_cxxflags__"-flto"" | $as_tr_sh`
+      as_CACHEVAR=`$as_echo "ax_cv_check_cxxflags_-Werror_"-flto"" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ compiler accepts \"-flto\"" >&5
 $as_echo_n "checking whether C++ compiler accepts \"-flto\"... " >&6; }
 if eval \${$as_CACHEVAR+:} false; then :
@@ -3958,7 +3958,7 @@ if eval \${$as_CACHEVAR+:} false; then :
 else
 
   ax_check_save_flags=$CXXFLAGS
-  CXXFLAGS="$CXXFLAGS  "-flto""
+  CXXFLAGS="$CXXFLAGS -Werror "-flto""
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -3987,7 +3987,7 @@ else
   :
 fi
 
-      as_CACHEVAR=`$as_echo "ax_cv_check_cxxflags__"-Wno-lto-type-mismatch"" | $as_tr_sh`
+      as_CACHEVAR=`$as_echo "ax_cv_check_cxxflags_-Werror_"-Wno-lto-type-mismatch"" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ compiler accepts \"-Wno-lto-type-mismatch\"" >&5
 $as_echo_n "checking whether C++ compiler accepts \"-Wno-lto-type-mismatch\"... " >&6; }
 if eval \${$as_CACHEVAR+:} false; then :
@@ -3995,7 +3995,7 @@ if eval \${$as_CACHEVAR+:} false; then :
 else
 
   ax_check_save_flags=$CXXFLAGS
-  CXXFLAGS="$CXXFLAGS  "-Wno-lto-type-mismatch""
+  CXXFLAGS="$CXXFLAGS -Werror "-Wno-lto-type-mismatch""
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -4035,7 +4035,7 @@ ac_compile='$F77 -c $FFLAGS conftest.$ac_ext >&5'
 ac_link='$F77 -o conftest$ac_exeext $FFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_f77_compiler_gnu
 
-      as_CACHEVAR=`$as_echo "ax_cv_check_f77flags__"-flto"" | $as_tr_sh`
+      as_CACHEVAR=`$as_echo "ax_cv_check_f77flags_-Werror_"-flto"" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether Fortran 77 compiler accepts \"-flto\"" >&5
 $as_echo_n "checking whether Fortran 77 compiler accepts \"-flto\"... " >&6; }
 if eval \${$as_CACHEVAR+:} false; then :
@@ -4043,7 +4043,7 @@ if eval \${$as_CACHEVAR+:} false; then :
 else
 
   ax_check_save_flags=$FFLAGS
-  FFLAGS="$FFLAGS  "-flto""
+  FFLAGS="$FFLAGS -Werror "-flto""
   cat > conftest.$ac_ext <<_ACEOF
       program main
 

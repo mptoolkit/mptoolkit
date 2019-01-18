@@ -169,6 +169,12 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
          Guess = y;
          return Theta;
       }
+      else if (Verbose > 2)
+      {
+         std::cerr << "lanczos: Eigen=" << Theta << ", ResidNorm="
+                      << ResidNorm << ", SpectralDiameter=" << SpectralDiameter
+                      << ", iterations=" << (i+1) << '\n';
+      }
 
       if (i == Iterations-1) // finished?
       {

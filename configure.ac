@@ -33,12 +33,12 @@ if test "x$enable_debug" != "xyes" ; then
       AC_MSG_NOTICE([Setting default CXXFLAGS])
       CXXFLAGS="${CXXFLAGS} -O2"
       AC_LANG_PUSH(C++)
-      AX_CHECK_COMPILE_FLAG("-march=native", [CXXFLAGS="${CXXFLAGS} -march=native"])
-      AX_CHECK_COMPILE_FLAG("-flto", [CXXFLAGS="${CXXFLAGS} -flto"])
-      AX_CHECK_COMPILE_FLAG("-Wno-lto-type-mismatch", [CXXFLAGS="${CXXFLAGS} -Wno-lto-type-mismatch"])
+      AX_CHECK_COMPILE_FLAG("-march=native", [CXXFLAGS="${CXXFLAGS} -march=native"], , [-Werror])
+      AX_CHECK_COMPILE_FLAG("-flto", [CXXFLAGS="${CXXFLAGS} -flto"], ,[-Werror])
+      AX_CHECK_COMPILE_FLAG("-Wno-lto-type-mismatch", [CXXFLAGS="${CXXFLAGS} -Wno-lto-type-mismatch"], , [-Werror])
       AC_LANG_POP(C++)
       AC_LANG_PUSH([Fortran 77])
-      AX_CHECK_COMPILE_FLAG("-flto", [FFLAGS="${FFLAGS} -flto"])
+      AX_CHECK_COMPILE_FLAG("-flto", [FFLAGS="${FFLAGS} -flto"], , [-Werror])
       AC_LANG_POP([Fortran 77])
       AC_MSG_NOTICE([CXXFLAGS are $CXXFLAGS])
    fi
