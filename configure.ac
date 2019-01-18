@@ -38,7 +38,9 @@ if test "x$enable_debug" != "xyes" ; then
       AX_CHECK_COMPILE_FLAG("-Wno-lto-type-mismatch", [CXXFLAGS="${CXXFLAGS} -Wno-lto-type-mismatch"], , [-Werror])
       AC_LANG_POP(C++)
       AC_LANG_PUSH([Fortran 77])
-      AX_CHECK_COMPILE_FLAG("-flto", [FFLAGS="${FFLAGS} -flto"], , [-Werror])
+      dnl only attempt -flto for fortran if we also use LTO with C++
+      AS_VAR_IF([ax_cv_cxxflags__Werror__flto], [yes],
+      	[ AX_CHECK_COMPILE_FLAG("-flto", [FFLAGS="${FFLAGS} -flto"], , [-Werror]) ] )
       AC_LANG_POP([Fortran 77])
       AC_MSG_NOTICE([CXXFLAGS are $CXXFLAGS])
    fi

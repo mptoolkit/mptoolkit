@@ -4035,7 +4035,8 @@ ac_compile='$F77 -c $FFLAGS conftest.$ac_ext >&5'
 ac_link='$F77 -o conftest$ac_exeext $FFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_f77_compiler_gnu
 
-      as_CACHEVAR=`$as_echo "ax_cv_check_f77flags_-Werror_"-flto"" | $as_tr_sh`
+            if test "x$ax_cv_cxxflags__Werror__flto" = xyes; then :
+   as_CACHEVAR=`$as_echo "ax_cv_check_f77flags_-Werror_"-flto"" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether Fortran 77 compiler accepts \"-flto\"" >&5
 $as_echo_n "checking whether Fortran 77 compiler accepts \"-flto\"... " >&6; }
 if eval \${$as_CACHEVAR+:} false; then :
@@ -4066,6 +4067,7 @@ else
   :
 fi
 
+fi
       ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
