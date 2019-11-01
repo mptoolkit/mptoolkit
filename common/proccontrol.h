@@ -30,8 +30,8 @@
   error message before calling abort().
 */
 
-#if !defined(PROCCONTROL_H_DSFHG3478R6D3JDYR38Y8E347YERFHUI)
-#define PROCCONTROL_H_DSFHG3478R6D3JDYR38Y8E347YERFHUI
+#if !defined(MPTOOLKIT_COMMON_PROCCONTROL_H)
+#define MPTOOLKIT_COMMON_PROCCONTROL_H
 
 #include "messagelogger.h"
 #include <string>

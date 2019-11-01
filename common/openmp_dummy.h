@@ -28,8 +28,12 @@ namespace omp
 {
 
 inline
-void initialize()
+void initialize(int Verbose = 0)
 {
+   if (Verbose > 0)
+   {
+      std::cout << "OpenMP is disabled.\n";
+   }
 }
 
 inline

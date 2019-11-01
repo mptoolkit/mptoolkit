@@ -67,9 +67,9 @@ dnl large file support
 AC_SYS_LARGEFILE
 
 dnl openmp support, defines variable OPENMP_CXXFLAGS and sets HAVE_OPENMP
-AC_ARG_WITH([openmp], [AC_HELP_STRING([--with-openmp], [enable OpenMP parallelization @<:@default=check@:>@])],
+AC_ARG_WITH([openmp], [AC_HELP_STRING([--with-openmp], [enable OpenMP parallelization @<:@default=no@:>@])],
 	[],
-	[with_open=check])
+	[with_open=no])
 if test "x$with_openmp" != xno; then
    AC_LANG_PUSH(C++)
    AX_OPENMP([
