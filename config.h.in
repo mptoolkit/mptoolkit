@@ -95,9 +95,6 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
-/* Use OpenMP threading */
-#undef HAVE_OPENMP
-
 /* Whether __PRETTY_FUNCTION__ has a useful value. */
 #undef HAVE_PRETTYFUNC
 
