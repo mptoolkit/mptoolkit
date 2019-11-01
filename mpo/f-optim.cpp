@@ -21,6 +21,7 @@
 //
 
 #include "mpo/operator_component.h"
+#include "common/openmp.h"
 
 // note: we could parallelize the construction of the G and H indices over jP
 
@@ -144,9 +145,20 @@ MatrixType
 OuterIndex::Evaluate(StateComponent const& A, GMatrixRefList const& G) const
 {
    DEBUG_CHECK(!Components.empty());
+
+#if defined(HAVE_OPENMP)
+   int Sz = Components.size();
+   std::vector<MatrixType> Result(Sz);
+#pragma omp parallel for schedule(dynamic) num_threads(omp::threads_to_use(Sz))
+   for (int n = 0; n < Sz; ++n)
+   {
+      MatrixOperator::const_inner_iterator x = iterate_at(A[Components[n].sP].data(), iP, Components[n].i);
+      Result[n] = (*x) * EvaluateH(Components[n].H, G);
+   }
+   return omp::parallel_sum(std::move(Result));
+#else
    MatrixOperator::const_inner_iterator x = iterate_at(A[Components[0].sP].data(), iP, Components[0].i);
    DEBUG_CHECK(x);
-
    MatrixType Result = (*x) * EvaluateH(Components[0].H, G);
 
    for (unsigned n = 1; n < Components.size(); ++n)
@@ -156,6 +168,7 @@ OuterIndex::Evaluate(StateComponent const& A, GMatrixRefList const& G) const
       Result += (*x) * EvaluateH(Components[n].H, G);
    }
    return Result;
+#endif
 }
 
 } // namespace
@@ -290,7 +303,7 @@ operator_prod(OperatorComponent const& M,
    // do the evaluations
    G.Evaluate();
 
-   for (unsigned n = 0; n < C.size(); ++n)
+   for (int n = 0; n < Sz; ++n)
    {
       if (!C[n].empty())
       {
@@ -430,11 +443,13 @@ contract_from_right(HermitianProxy<OperatorComponent> const& M,
    // do the evaluations
    G.Evaluate();
 
-   for (unsigned n = 0; n < C.size(); ++n)
+   int Sz = C.size();
+#pragma omp parallel for schedule(dynamic) num_threads(omp::threads_to_use(Sz))
+   for (int n = 0; n < Sz; ++n)
    {
       if (!C[n].empty())
       {
-         set_element(Result[C[n].aP].data(), C[n].iP, C[n].jP, C[n].Evaluate(A,G));
+         set_element_lock(Result[C[n].aP].data(), C[n].iP, C[n].jP, C[n].Evaluate(A,G));
       }
    }
 
@@ -581,11 +596,13 @@ contract_from_right_mask(HermitianProxy<OperatorComponent> const& M,
    // do the evaluations
    G.Evaluate();
 
-   for (unsigned n = 0; n < C.size(); ++n)
+   int Sz = C.size();
+#pragma omp parallel for schedule(dynamic) num_threads(omp::threads_to_use(Sz))
+   for (int n = 0; n < Sz; ++n)
    {
       if (!C[n].empty())
       {
-         set_element(Result[C[n].aP].data(), C[n].iP, C[n].jP, C[n].Evaluate(A,G));
+         set_element_lock(Result[C[n].aP].data(), C[n].iP, C[n].jP, C[n].Evaluate(A,G));
       }
    }
 

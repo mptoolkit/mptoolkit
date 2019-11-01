@@ -803,16 +803,35 @@ set_element(T& m, size_type i, size_type j, V const& x)
    return SetMatrixElement<T&,V>()(m, i, j, x);
 }
 
+// set_element_lock
+
+template <typename T, typename V, typename TInterface = typename interface<T>::type>
+struct SetMatrixElementLockInterface {};
+
+template <typename T, typename V, typename Enable = void>
+struct SetMatrixElementLock : SetMatrixElementLockInterface<T, V> {};
+
 template <typename T, typename V>
 inline
-typename SetMatrixElement<T&, V>::result_type
+typename SetMatrixElementLock<T&, V>::result_type
+set_element_lock(T& m, size_type i, size_type j, V const& x)
+{
+   return SetMatrixElementLock<T&,V>()(m, i, j, x);
+}
+
+#if 0
+// TODO: ZeroMatrixElementLock<> function
+template <typename T, typename V>
+inline
+typename SetMatrixElementLock<T&, V>::result_type
 set_element(T& m, size_type i, size_type j, value_with_zero<V> const& x)
 {
    if (x.is_zero())
-      ZeroMatrixElement<T&>(m,i,j);
+      ZeroMatrixElementLock<T&>(m,i,j);
    else
-      SetMatrixElement<T&,V>()(m, i, j, x.get());
+      SetMatrixElementLock<T&,V>()(m, i, j, x.get());
 }
+#endif
 
 // TODO: this simply forwards to SetMatrixElement, it should instead
 // forward to a new function SetNewMatrixElement

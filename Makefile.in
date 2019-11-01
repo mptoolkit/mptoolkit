@@ -17,7 +17,7 @@ HAVE_MPI = @HAVE_MPI@
 MPICXX = @MPICXX@
 MPILIBS = @MPILIBS@
 
-CXXFLAGS = -I. -I$(SRCDIR) @CPPFLAGS@ @BOOST_CPPFLAGS@ @CXXFLAGS@ -DHAVE_CONFIG_H $(CXXFLAGS_EXTRA)
+CXXFLAGS = -I. -I$(SRCDIR) @CPPFLAGS@ @OPENMP_CXXFLAGS@ @BOOST_CPPFLAGS@ @CXXFLAGS@ -DHAVE_CONFIG_H $(CXXFLAGS_EXTRA)
 # -DBLAS1_TRACE_DETAILED \
 # -DBLAS3_TRACE_DETAILED \
 # -DLAPACK_TRACE_DETAILED \
@@ -199,6 +199,22 @@ allobj = $(quantumnumbersobj) \
 	 $(linearalgebraobj)  \
 	 $(commonobj)         \
          $(parserobj)
+
+# contributed models.  Add new models here
+#contrib-models = spin-tri-yc-su2 spin-tri-xc-su2 spin-tri-yc-su2-NonEff \
+#                 spin-tri-2SiteUnitCell-su2 spin-tri-1SiteUnitCell-su2 spin-tri-yc-u1 spin-tri-yc \
+#                 tki-u1su2 tki-u1u1 hubbard-tri-u1su2 hubbard-tri-u1u1 hubbard-tri \
+#                 spin-tri-yc-z2 spinchain-random-field-u1 hubbard \
+#                 tki-u1su2_perp_hubb_cylinder3
+
+# default / examplar models
+#default-models = spinchain-su2 spinchain-spin2-su2 \
+#                 hubbard-u1su2 bosehubbard-flux-2leg-u1 \
+#                 bosehubbard-flux-3leg-u1 spinchain-u1 spincylinder-su2 spincylinder-u1 \
+#                 spinchain bosehubbard-ladder-u1 bosehubbard-2component-u1z2 \
+#                 hubbard-so4 bosehubbard-u1 bosehubbard hubbard-u1u1 \
+#                 hubbard-su2 spinladder-su2 spinchain-z2 hubbardcylinder-u1su2 \
+#                 hubbardcylinder-u1su2-k hubbardcylinder-u1su2-k2 klm-u1su2
 
 tools = mp-idmrg-s3e mp-ioverlap \
         mp-info mp-history mp-reflect mp-conj \

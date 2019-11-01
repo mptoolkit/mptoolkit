@@ -53,6 +53,7 @@ extern MessageLogger::Logger ProcControlLog;
 // or, if CatchTERM is set and either SIGINT, SIGTERM,SIGUSR1 or SIGUSR2 signal is caught.
 // Passing a time of zero means infinite (no limit).  The SIGINT handler is one-shot;
 // a second SIGINT signal reverts to the default behaviour and terminates the process.
+// This also initializes the OpenMP state.
 void Initialize(std::string const& ProgName,
                 double CumulativeCPUTime_ = 0, double CumulativeWallTime_ = 0,
                 bool CatchTERM = false, bool CatchSEGV = true);
