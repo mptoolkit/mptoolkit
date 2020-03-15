@@ -22,35 +22,35 @@
 // The lattice for a cylinder with w=2 is shown below (bracketed numbers are
 // periodically repeated sites).
 //
-//             +-(3)-+-(8)-+-(9)-+
+//             +-(3)-+-(7)-+-(11)+
 //             |     |     |
-//             0     5     9
+//             0     4     8
 //             |     |     |
-//       +--1--+--6--+--10-+
+//       +--1--+--5--+--9--+
 //       |     |     |     
-//       2     7     11
+//       2     6     10
 //       |     |     |
-// +--3--+--8--+--12-+
+// +--3--+--7--+--11-+
 //
 // Alternatively, rotating by 45 degrees so the unit cell is vertical.
 //
 // \    /\
-// (2)(8) 9
+// (2)(7) 8
 //   \/    \/
 //   /\    /\
-// (3) 5  10
+// (3) 4  9
 // /    \/
 // \    /\
-//  0  6  11
+//  0  5  10
 //   \/    \/
 //   /\    /\
-//  1  7  12
+//  1  6  11
 // /    \/
 // \    /\
-//  2  8 (9)
+//  2  7 (8)
 //   \/    \/
 //   /\    /\
-//  3 (5)(10)
+//  3 (4)(9)
 // /    \/
 
 #include "pheap/pheap.h"
@@ -134,9 +134,9 @@ int main(int argc, char** argv)
       {
          A[i] = X(0)[2*i] * X(1)[(2*i+1)%u] * X(0)[(2*i+1)%u] * X(1)[(2*i+2)%u];
          B[i] = Z(0)[(2*i+1)%u] * Z(1)[(2*i+2)%u] * Z(0)[(2*i+2)%u] * Z(1)[(2*i+3)%u];
-         A[i].set_description("Star operator " + std::to_string(i));
+         A[i].set_description("star operator " + std::to_string(i));
          Lattice.GetUnitCell().assign_operator("A" + std::to_string(i), A[i]);
-         B[i].set_description("Plaquette operator " + std::to_string(i));
+         B[i].set_description("plaquette operator " + std::to_string(i));
          Lattice.GetUnitCell().assign_operator("B" + std::to_string(i), B[i]);
       }
 

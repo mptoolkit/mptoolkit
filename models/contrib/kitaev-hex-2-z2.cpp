@@ -90,12 +90,13 @@ int main(int argc, char** argv)
       OpDescriptions.set_description("Z2 Kitaev honeycomb model with a two-site unit cell");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
       OpDescriptions.add_cell_operators()
-         ("W"          , "Plaquette operator")
+         ("W"          , "plaquette operator")
          ;
       OpDescriptions.add_operators()
-         ("H_x"        , "Horizontal Sx-Sx interaction")
-         ("H_y"        , "+60 degrees Sy-Sy interaction")
-         ("H_z"        , "-60 degrees Sz-Sz interaction")
+         ("H_x"        , "magnetic field in the x direction")
+         ("H_xx"       , "horizontal X-X interaction")
+         ("H_yy"       , "+60 degrees Y-Y interaction")
+         ("H_zz"       , "-60 degrees Z-Z interaction")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -113,13 +114,16 @@ int main(int argc, char** argv)
       UnitCellOperator I(Cell, "I"), X(Cell, "X"), Y(Cell, "Y"), Z(Cell, "Z");
       UnitCellOperator W(Cell, "W");
 
+      // Magnetic field.
+      Lattice["H_x"] = sum_unit(X(0)[0] + X(0)[1]);
+
       // Plaquette operator.
       W = Z(0)[0] * X(0)[1] * Y(1)[0] * Z(w+1)[1] * X(w+1)[0] * Y(w)[1];
 
       // The operators have a minus sign, following Kitaev convention
-      Lattice["H_x"] = -sum_unit(inner(X(0)[0], X(w)[1]));
-      Lattice["H_y"] = -sum_unit(inner(Y(0)[0], Y(0)[1]));
-      Lattice["H_z"] = -sum_unit(inner(Z(0)[0], Z(-1)[1]));
+      Lattice["H_xx"] = -sum_unit(X(0)[0] * X(w)[1]);
+      Lattice["H_yy"] = -sum_unit(Y(0)[0] * Y(0)[1]);
+      Lattice["H_zz"] = -sum_unit(Z(0)[0] * Z(-1)[1]);
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);
