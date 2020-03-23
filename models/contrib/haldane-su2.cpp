@@ -68,12 +68,15 @@ int main(int argc, char** argv)
    {
       int w = 4;
       std::string FileName;
+      bool NoReflect = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
          ("width,w", prog_opt::value(&w), FormatDefault("width of the cylinder", w).c_str())
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
+         ("noreflect", prog_opt::bool_switch(&NoReflect),
+          "don't include the spatial reflection operator (expensive for large width lattices)")
          ;
 
       prog_opt::variables_map vm;
@@ -86,13 +89,26 @@ int main(int argc, char** argv)
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("SU(2) Haldane model");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
+      OpDescriptions.add_cell_operators()
+         ("Trans"      , "translation by one site (rotation by 2\u0071/w) in lattice short direction")
+         ("Ref"        , "reflection in lattice short direction",
+          "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
+         ("RyUnit"     , "reflection of a single unit cell",
+          "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
+         ;
       OpDescriptions.add_operators()
-         ("H_t1"        , "Nearest-neighbour hopping")
-         ("H_t2cw"      , "Next-nearest-neighbour clockwise hopping")
-         ("H_t2acw"     , "Next-nearest-neighbour anticlockwise hopping")
+         ("H_t1"       , "nearest-neighbour hopping")
+         ("H_t2cw"     , "next-nearest-neighbour clockwise hopping")
+         ("H_t2acw"    , "next-nearest-neighbour anticlockwise hopping")
+         ("H_t3"       , "next-next-nearest-neighbour hopping")
+         ("Ty"         , "momentum operator in lattice short direction")
+         ("TyPi"       , "translation by w sites in lattice short direction",
+          "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
+         ("Ry"         , "reflection in lattice short direction",
+          "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
          ;
       OpDescriptions.add_functions()
-         ("H_t2"        , "Next-nearest-neighbour complex hopping with phase phi")
+         ("H_t2"       , "next-nearest-neighbour complex hopping with phase phi")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -110,14 +126,16 @@ int main(int argc, char** argv)
       InfiniteLattice Lattice(&Cell);
 
       UnitCellOperator I(Cell, "I"), CH(Cell, "CH"), C(Cell, "C"), Pdouble(Cell, "Pdouble"), Hu(Cell, "Hu"), N(Cell, "N");
+      UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
+      UnitCellOperator RyUnit(Cell, "RyUnit");
 
-      UnitCellMPO H_t1, H_t2cw, H_t2acw;
+      UnitCellMPO H_t1, H_t2cw, H_t2acw, H_t3;
 
       for (int i = 0; i < u; i += 2)
       {
          H_t1 += dot(CH(0)[i], C(0)[(i+1)%u]) + dot(C(0)[i], CH(0)[(i+1)%u])
                + dot(CH(0)[i], C(1)[(i+1)%u]) + dot(C(0)[i], CH(1)[(i+1)%u])
-               + dot(CH(0)[(i+1)%u], C(0)[(i+2)%u]) + dot(C(0)[(i+1)%u], CH(0)[(i+2)%u]);
+               + dot(CH(0)[i], C(0)[(i+u-1)%u]) + dot(C(0)[i], CH(0)[(i+u-1)%u]);
          H_t2cw += dot(CH(0)[i], C(0)[(i+2)%u])
                  + dot(CH(0)[(i+1)%u], C(1)[(i+3)%u])
                  + dot(CH(0)[(i+2)%u], C(1)[(i+2)%u])
@@ -130,12 +148,81 @@ int main(int argc, char** argv)
                   + dot(C(1)[(i+3)%u], CH(1)[(i+1)%u])
                   + dot(C(1)[(i+2)%u], CH(0)[i])
                   + dot(C(1)[(i+1)%u], CH(0)[(i+1)%u]);
+         H_t3 += dot(CH(0)[i], C(1)[(i+3)%u]) + dot(C(0)[i], CH(1)[(i+3)%u])
+               + dot(CH(0)[i], C(1)[(i+u-1)%u]) + dot(C(0)[i], CH(1)[(i+u-1)%u])
+               + dot(CH(0)[i], C(-1)[(i+u-1)%u]) + dot(C(0)[i], CH(-1)[(i+u-1)%u]);
       }
 
       Lattice["H_t1"] = sum_unit(H_t1);
       Lattice["H_t2cw"] = sum_unit(H_t2cw);
       Lattice["H_t2acw"] = sum_unit(H_t2acw);
       Lattice.func("H_t2")(arg("phi")) = "exp(i*phi)*H_t2cw + exp(-i*phi)*H_t2acw";
+      Lattice["H_t3"] = sum_unit(H_t3);
+
+      // Translation and relfection operators.
+      Trans = I(0);
+      for (int i = 0; i < u-1; ++i)
+      {
+         //T *= 0.5*( 0.25*inner(S[i],S[i+1]) + 1 );
+         Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
+      }
+
+      if (!NoReflect)
+      {
+         Ref = I(0); // old way of representing an explicit R-operator.
+         for (int i = 0; i < w; ++i)
+         {
+            //R *= 0.5*( 0.25*inner(S[i],S[w-i-1]) + 1 );
+            Ref = Ref(0) * Cell.swap_gate_no_sign(i, u-i-1);
+         }
+      }
+
+      UnitCellMPO Ry = I(0);
+      if (!NoReflect)
+      {
+         for (int c = 0; c < u; ++c)
+         {
+            UnitCellMPO ThisR = I(0);
+            // get the 'pivot' site/bond that we reflect about
+            int const p1 = c/2;
+            int const p2 = (c+1)/2;
+
+            // if we're reflecting about a bond, do that first
+            if (p1 != p2)
+               ThisR = ThisR * Cell.swap_gate_no_sign(p1,p2);
+
+            int i1 = (p1+u-1)%u;
+            int i2 = (p2+1)%u;
+
+            while (i1 != p1 + w)
+            {
+               ThisR = ThisR * Cell.swap_gate_no_sign(i1,i2);
+               i1 = (i1+u-1)%u;
+               i2 = (i2+1)%u;
+            }
+
+            ThisR.translate(c*u);
+            Ry = Ry * ThisR;
+         }
+         RyUnit = Ry;
+      }
+
+      // Momentum operators in Y-direction
+      Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), u);
+
+      if (!NoReflect)
+         Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), u*u);
+
+      // add rotation by pi
+      if (!NoReflect)
+      {
+         UnitCellMPO TyPi = I(0);
+         for (int i = 0; i < w; ++i)
+         {
+            TyPi = TyPi * Cell.swap_gate_no_sign(i, i+w);
+         }
+         Lattice["TyPi"] = prod_unit_left_to_right(TyPi.MPO(), u);
+      }
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);

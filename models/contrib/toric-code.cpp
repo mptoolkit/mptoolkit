@@ -70,6 +70,7 @@ int main(int argc, char** argv)
       half_int Spin = 0.5;
       int w = 4;
       std::string FileName;
+      bool NoReflect = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -77,6 +78,8 @@ int main(int argc, char** argv)
          ("Spin,S", prog_opt::value(&Spin), FormatDefault("magnitude of the spin", Spin).c_str())
          ("width,w", prog_opt::value(&w), FormatDefault("width of the cylinder", w).c_str())
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
+         ("noreflect", prog_opt::bool_switch(&NoReflect),
+          "don't include the spatial reflection operator (expensive for large width lattices)")
          ;
 
       prog_opt::variables_map vm;
@@ -89,12 +92,26 @@ int main(int argc, char** argv)
       OperatorDescriptions OpDescriptions;
       OpDescriptions.description("Toric code");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
+      OpDescriptions.add_cell_operators()
+         ("WX"         , "Wilson loop of X operators across the unit cell")
+         ("WZ"         , "Wilson loop of Z operators across the unit cell")
+         ("Trans"      , "translation by one site (rotation by 2\u0071/w) in lattice short direction")
+         ("Ref"        , "reflection in lattice short direction",
+          "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
+         ("RyUnit"     , "reflection of a single unit cell",
+          "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
+         ;
       OpDescriptions.add_operators()
-         ("H_x"   , "magnetic field in x direction")
-         ("H_y"   , "magnetic field in y direction")
-         ("H_z"   , "magnetic field in z direction")
-         ("H_star", "sum of star operators")
-         ("H_plaq", "sum of plaquette operators")
+         ("H_x"        , "magnetic field in x direction")
+         ("H_y"        , "magnetic field in y direction")
+         ("H_z"        , "magnetic field in z direction")
+         ("H_star"     , "sum of star operators")
+         ("H_plaq"     , "sum of plaquette operators")
+         ("Ty"         , "momentum operator in lattice short direction")
+         ("TyPi"       , "translation by w sites in lattice short direction",
+          "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
+         ("Ry"         , "reflection in lattice short direction",
+          "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -112,6 +129,9 @@ int main(int argc, char** argv)
       UnitCell Cell(repeat(Site, u));
       InfiniteLattice Lattice(&Cell);
       UnitCellOperator I(Cell, "I"), X(Cell, "X"), Y(Cell, "Y"), Z(Cell, "Z");
+      UnitCellOperator WX(Cell, "WX"), WZ(Cell, "WZ");
+      UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
+      UnitCellOperator RyUnit(Cell, "RyUnit");
       
       // Magnetic fields.
       UnitCellMPO H_x, H_y, H_z;
@@ -151,6 +171,80 @@ int main(int argc, char** argv)
 
       Lattice["H_star"] = sum_unit(H_star);
       Lattice["H_plaq"] = sum_unit(H_plaq);
+
+      // Wilson loop operators.
+      WX = I(0);
+      WZ = I(0);
+      for (int i = 0; i < u; i++)
+      {
+         WX = WX * X(0)[i];
+         WZ = WZ * Z(0)[i];
+      }
+
+      // Translation and relfection operators.
+      Trans = I(0);
+      for (int i = 0; i < u-1; ++i)
+      {
+         //T *= 0.5*( 0.25*inner(S[i],S[i+1]) + 1 );
+         Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
+      }
+
+      if (!NoReflect)
+      {
+         Ref = I(0); // old way of representing an explicit R-operator.
+         for (int i = 0; i < w; ++i)
+         {
+            //R *= 0.5*( 0.25*inner(S[i],S[w-i-1]) + 1 );
+            Ref = Ref(0) * Cell.swap_gate_no_sign(i, u-i-1);
+         }
+      }
+
+      UnitCellMPO Ry = I(0);
+      if (!NoReflect)
+      {
+         for (int c = 0; c < u; ++c)
+         {
+            UnitCellMPO ThisR = I(0);
+            // get the 'pivot' site/bond that we reflect about
+            int const p1 = c/2;
+            int const p2 = (c+1)/2;
+
+            // if we're reflecting about a bond, do that first
+            if (p1 != p2)
+               ThisR = ThisR * Cell.swap_gate_no_sign(p1,p2);
+
+            int i1 = (p1+u-1)%u;
+            int i2 = (p2+1)%u;
+
+            while (i1 != p1 + w)
+            {
+               ThisR = ThisR * Cell.swap_gate_no_sign(i1,i2);
+               i1 = (i1+u-1)%u;
+               i2 = (i2+1)%u;
+            }
+
+            ThisR.translate(c*u);
+            Ry = Ry * ThisR;
+         }
+         RyUnit = Ry;
+      }
+
+      // Momentum operators in Y-direction
+      Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), u);
+
+      if (!NoReflect)
+         Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), u*u);
+
+      // add rotation by pi
+      if (!NoReflect)
+      {
+         UnitCellMPO TyPi = I(0);
+         for (int i = 0; i < w; ++i)
+         {
+            TyPi = TyPi * Cell.swap_gate_no_sign(i, i+w);
+         }
+         Lattice["TyPi"] = prod_unit_left_to_right(TyPi.MPO(), u);
+      }
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);

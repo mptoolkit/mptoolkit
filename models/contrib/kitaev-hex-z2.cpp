@@ -106,9 +106,8 @@ int main(int argc, char** argv)
          ("H_y"        , "+60 degrees Sy-Sy interaction")
          ("H_z"        , "-60 degrees Sz-Sz interaction")
          ("Ty"         , "momentum operator in lattice short direction")
-         ("TyPi"       , "translation by w sites in the Y direction (requires w even)",
-          "width even, not present with --noreflect",
-          [&NoReflect,&w]()->bool{return !NoReflect && w%2 == 0;})
+         ("TyPi"       , "translation by w sites in the Y direction",
+          "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
          ("Ry"         , "Reflection in the Y direction",
           "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
          ;
@@ -187,13 +186,13 @@ int main(int argc, char** argv)
             if (p1 != p2)
                ThisR = ThisR * Cell.swap_gate_no_sign(p1,p2);
 
-            int i1 = (p1+w-1)%u;
+            int i1 = (p1+u-1)%u;
             int i2 = (p2+1)%u;
 
             while (i1 != p1 + w)
             {
                ThisR = ThisR * Cell.swap_gate_no_sign(i1,i2);
-               i1 = (i1+w-1)%u;
+               i1 = (i1+u-1)%u;
                i2 = (i2+1)%u;
             }
 
@@ -212,17 +211,17 @@ int main(int argc, char** argv)
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), u);
 
       if (!NoReflect)
-         Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), u*w);
+         Lattice["Ry"] = prod_unit_left_to_right(Ry.MPO(), u*u);
 
-      // for even size unit cell, add rotation by pi
-      if (u%2 == 0 && !NoReflect)
+      // add rotation by pi
+      if (!NoReflect)
       {
          UnitCellMPO TyPi = I(0);
          for (int i = 0; i < w; ++i)
          {
             TyPi = TyPi * Cell.swap_gate_no_sign(i, i+w);
          }
-         Lattice["TyPi"] = prod_unit_left_to_right(TyPi.MPO(), w);
+         Lattice["TyPi"] = prod_unit_left_to_right(TyPi.MPO(), u);
       }
 
 
