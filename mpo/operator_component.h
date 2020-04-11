@@ -4,7 +4,7 @@
 //
 // mpo/operator_component.h
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -94,6 +94,9 @@ class OperatorComponent
       // returns true if this matrix is in lower-triangular form.  This is only
       // useful if the matrix is square.
       bool is_lower_triangular() const;
+
+      // returns true if this operator_component is a 1x1 identity MPO
+      bool is_identity() const;
 
       // returns the top-left entry, equivalent to operator()(0,0)
       value_type top_left() const;

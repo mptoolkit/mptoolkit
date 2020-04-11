@@ -4,7 +4,7 @@
 //
 // mpo/operator_component.cpp
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -53,6 +53,23 @@ OperatorComponent::OperatorComponent(BasisList const& LocalB1, BasisList const& 
    : LocalBasis1_(LocalB1), LocalBasis2_(LocalB2), Basis1_(B1), Basis2_(B2),
      Data_(Basis1_.size(), Basis2_.size())
 {
+}
+
+bool
+OperatorComponent::is_identity() const
+{
+   if (LocalBasis1_.size() != 1)
+      return false;
+   if (LocalBasis2_.size() != 1)
+      return false;
+   SimpleRedOperator X = Data_(0,0);
+   if (X.Basis1() != X.Basis2() || !is_pure_scalar(X))
+      return false;
+   // is it unitary?
+   std::complex<double> x = PropIdent(scalar_prod(X, herm(X)), DefaultClassifyUnityEpsilon);
+   std::complex<double> Factor = std::sqrt(x);
+   return LinearAlgebra::norm_frob_sq(Factor - std::complex<double>(1.0, 0))
+      < DefaultClassifyUnityEpsilon*DefaultClassifyUnityEpsilon;
 }
 
 double

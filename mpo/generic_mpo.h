@@ -4,7 +4,7 @@
 //
 // mpo/generic_mpo.h
 //
-// Copyright (C) 2013-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2013-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -193,6 +193,14 @@ inline
 OperatorClassification classify(GenericMPO const& Op)
 {
    return classify(Op, DefaultClassifyUnityEpsilon);
+}
+
+OperatorClassification classify(OperatorComponent c, double UnityEpsilon);
+
+inline
+OperatorClassification classify(OperatorComponent c)
+{
+   return classify(c, DefaultClassifyUnityEpsilon);
 }
 
 // plus various functions for acting on states etc

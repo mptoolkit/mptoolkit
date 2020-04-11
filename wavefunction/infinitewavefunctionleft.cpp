@@ -4,7 +4,7 @@
 //
 // wavefunction/infinitewavefunctionleft.cpp
 //
-// Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -862,6 +862,7 @@ inject_left(MatrixOperator const& m,
 std::complex<double>
 expectation(InfiniteWavefunctionLeft const& Psi, BasicFiniteMPO const& Op)
 {
+#if 0
    MatrixOperator X = MatrixOperator::make_identity(Psi.Basis1());
    X = inject_left(X, Psi, Op, Psi);
 
@@ -869,6 +870,64 @@ expectation(InfiniteWavefunctionLeft const& Psi, BasicFiniteMPO const& Op)
    Rho = Rho*Rho;
 
    return inner_prod(delta_shift(Rho, Psi.qshift()), X);
+#else
+   // find the first non-trivial site of the MPO
+   BasicFiniteMPO::const_iterator i = Op.begin();
+   int n = 0;
+   OperatorClassification c;
+   c.Identity_ = true;
+   if (i != Op.end())
+      c = classify(*i);
+   while (i != Op.end() && c.is_identity())
+   {
+      ++i; ++n;
+      if (i != Op.end())
+         c = classify(*i);
+   }
+   // find the last non-trivial site of the MPO
+   BasicFiniteMPO::const_iterator j = Op.end();
+   int m = Op.size();
+   c = OperatorClassification();
+   c.Identity_ = true;
+   while (j != i && c.is_identity())
+   {
+      --j; --m;
+      c = classify(*j);
+   }
+   if (i == j && c.is_identity())
+      return 1.0;
+   // we could optimize for the case i==j and c.is_identity()
+   ++j; ++m;
+   // get an iterator into the wavefunction
+   InfiniteWavefunctionLeft::const_mps_iterator I = Psi.begin();
+   for (int a = 0; a < n; ++a)
+   {
+      ++I;
+      if (I == Psi.end())
+         I == Psi.begin();
+   }
+   //TRACE(m-n);
+   MatrixOperator X = MatrixOperator::make_identity(I->Basis1());
+   StateComponent E(i->Basis1(), X.Basis1(), X.Basis2());
+   E[0] = X;
+   while (n < m)
+   {
+      if (I == Psi.end())
+      {
+         I = Psi.begin();
+         E = delta_shift(E, Psi.qshift());
+      }
+      E = contract_from_left(*i, herm(*I), E, *I);
+      ++I;
+      ++i;
+      ++n;
+   }
+
+   MatrixOperator Rho = Psi.lambda(m % Psi.size());
+   Rho = Rho*Rho;
+
+   return inner_prod(Rho, E[0]);
+#endif
 }
 
 #if 0

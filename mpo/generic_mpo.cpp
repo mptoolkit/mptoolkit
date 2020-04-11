@@ -4,7 +4,7 @@
 //
 // mpo/generic_mpo.cpp
 //
-// Copyright (C) 2013-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2013-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -563,6 +563,87 @@ std::ostream& operator<<(std::ostream& out, OperatorClassification const& Class)
    out << "identity: " << Class.is_identity() << '\n';
    out << "factor: " << Class.factor() << '\n';
    return out;
+}
+
+OperatorClassification classify(OperatorComponent c, double UnityEpsilon)
+{
+   OperatorClassification Result;
+
+   // Early return if the component is null
+   if (c.is_null())
+   {
+      Result.Null_ = true;
+      return Result;
+   }
+
+   bool IsPropIdentity = true;  // true if the operator is proportional to identity
+   bool IsPropUnitary = true;   // true if the operator is proportional to a unitary operator
+   std::complex<double> Factor  = 1.0;
+
+   // firstly, check to see if it is 1x1
+   if (c.Basis1().size() != 1 || c.Basis2().size() != 1)
+      return Result;  // default constructed return is unclassified
+
+   if (IsPropUnitary)
+   {
+      SimpleRedOperator X = c(0,0);
+
+      if (IsPropIdentity)
+      {
+         if (X.Basis1() != X.Basis2() || !is_pure_scalar(X))
+            IsPropIdentity = false;
+         else
+         {
+            std::complex<double> x = PropIdent(X.scalar(), UnityEpsilon);
+            if (x == 0.0)
+               IsPropIdentity = false;
+            else
+               Factor *= x;
+         }
+      }
+
+      if (!IsPropIdentity)
+      {
+         // is it unitary?
+         std::complex<double> x = PropIdent(scalar_prod(X, herm(X)), UnityEpsilon);
+         std::complex<double> y = PropIdent(scalar_prod(herm(X), X), UnityEpsilon);
+
+         if (x == 0.0 || y == 0.0)
+         {
+            IsPropUnitary = false;
+         }
+         else
+         {
+            Factor *= std::sqrt(x);
+         }
+      }
+   }
+
+   Result.Product_ = true;
+   if (IsPropUnitary)
+   {
+      Result.PropUnitary_ = true;
+
+      if (IsPropIdentity)
+      {
+         Result.PropIdentity_ = true;
+         Result.Identity_ = LinearAlgebra::norm_frob_sq(Factor - std::complex<double>(1.0, 0))
+            < UnityEpsilon*UnityEpsilon;
+
+         // if we claim to be an identity operator, we might as well make it exact
+         if (Result.Identity_)
+            Factor = 1.0;
+
+         Result.Unitary_ = LinearAlgebra::norm_frob_sq(norm_frob(Factor) - 1.0) < UnityEpsilon*UnityEpsilon;
+         Result.Factor_ = Factor;
+      }
+      else
+      {
+         Result.Unitary_ = LinearAlgebra::norm_frob_sq(norm_frob(Factor) - 1.0) < UnityEpsilon*UnityEpsilon;
+         Result.Factor_ = Factor;
+      }
+   }
+   return Result;
 }
 
 OperatorClassification classify(GenericMPO const& Op, double UnityEpsilon)
