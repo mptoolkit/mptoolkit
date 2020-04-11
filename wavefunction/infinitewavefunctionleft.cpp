@@ -922,8 +922,10 @@ expectation(InfiniteWavefunctionLeft const& Psi, BasicFiniteMPO const& Op)
       ++i;
       ++n;
    }
-
-   MatrixOperator Rho = Psi.lambda(m % Psi.size());
+   m = m % Psi.size();
+   if (m == 0)
+      m = Psi.size();    // if we're at the edge of the unit cell, use lambda_r
+   MatrixOperator Rho = Psi.lambda(m);
    Rho = Rho*Rho;
 
    return inner_prod(Rho, E[0]);
