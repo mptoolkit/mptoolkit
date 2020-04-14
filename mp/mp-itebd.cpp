@@ -159,6 +159,7 @@ LeapfrogDecompositionOdd(int Order, std::string Description, std::vector<double>
 
 std::map<std::string, LTSDecomposition>
 Decompositions = {
+   {"firstorder",     LTSDecomposition(1, "First order decomposition", {1.0}, {1.0})},
    {"leapfrog2",      LeapfrogDecompositionOdd(2, "Traditional 2nd order 3-term leapfrog decomposition", {})},
    {"optimized2-5",   SymmetricDecomposition(2, "Optimized 2nd order 5-term decomposition",
                                              {0.211324865405187}, {})},
