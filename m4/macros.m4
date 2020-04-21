@@ -139,7 +139,8 @@ int main()
      AC_DEFINE(FORTRAN_COMPLEX_RETURN_FIRST_ARG,,[Defined if the Fortran returns complex as first arg])
    ], [AS_IF([test "$acx_cv_fortran_complex_return" == return_in_register], [
      AC_DEFINE(FORTRAN_COMPLEX_RETURN_IN_REGISTER,,[Defined if the Fortran returns complex in registers])
-      ]
+      ],
+        [AC_MSG_ERROR([cannot determine how to return complex values from fortran])]
    )])
  ]
 ) dnl ACX_FORTRAN_COMPLEX_RETURN
