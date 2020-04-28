@@ -200,6 +200,9 @@ BasicFiniteMPO pow(BasicFiniteMPO const& x, int n);
 // Exponential operator.
 BasicFiniteMPO exp(BasicFiniteMPO const& x);
 
+// Absolute value operator.
+BasicFiniteMPO abs(BasicFiniteMPO const& x);
+
 // Conjugate
 BasicFiniteMPO conj(BasicFiniteMPO const& x);
 

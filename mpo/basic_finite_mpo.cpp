@@ -637,7 +637,7 @@ BasicFiniteMPO exp(BasicFiniteMPO const& x)
    CHECK(x.is_scalar())("Must be a scalar operator to calculate the operator exponential!");
 
    SimpleOperator Op = coarse_grain(x).scalar();
-   Op = Tensor::Exponentiate(Op);
+   Op = Tensor::exp(Op);
    BasicFiniteMPO Result = fine_grain(Op, x.LocalBasis1List(), x.LocalBasis2List());
    return Result;
 }
@@ -661,6 +661,16 @@ pow(BasicFiniteMPO const& x, int n)
    {
       return x*pow(x*x, (n-1)/2);
    }
+}
+
+BasicFiniteMPO abs(BasicFiniteMPO const& x)
+{
+   CHECK(x.is_scalar())("Must be a scalar operator to calculate the operator exponential!");
+
+   SimpleOperator Op = coarse_grain(x).scalar();
+   Op = Tensor::abs(Op);
+   BasicFiniteMPO Result = fine_grain(Op, x.LocalBasis1List(), x.LocalBasis2List());
+   return Result;
 }
 
 BasicFiniteMPO

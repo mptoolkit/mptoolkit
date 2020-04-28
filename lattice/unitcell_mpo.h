@@ -192,6 +192,9 @@ UnitCellMPO pow(UnitCellMPO const& x, int n);
 // Exponential operator.
 UnitCellMPO exp(UnitCellMPO const& x);
 
+// Absolute value of an operator.
+UnitCellMPO abs(UnitCellMPO const& x);
+
 // Conjugate
 UnitCellMPO conj(UnitCellMPO const& x);
 

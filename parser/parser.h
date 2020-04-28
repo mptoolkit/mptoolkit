@@ -375,6 +375,7 @@ struct unary_funcs : symbols<boost::function<element_type(element_type)> >
          ("acos", make_unary_math<element_type>(&cacos))
          ("atan", make_unary_math<element_type>(&catan))
          ("exp", make_apply_unary_math<element_type>(ElementExp<element_type>()))
+         ("abs", make_apply_unary_math<element_type>(ElementAbs<element_type>()))
          ("ln", make_unary_math<element_type>(&cln))
          ("log", make_unary_math<element_type>(&cln))
          ("log10", make_unary_math<element_type>(&clog10))

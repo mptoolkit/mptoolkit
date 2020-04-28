@@ -149,6 +149,11 @@ complex csqrt(complex x)
    return sqrt(x);
 }
 
+complex cabs(complex x)
+{
+   return std::sqrt(std::norm(x));
+}
+
 
 typedef boost::function<element_type(element_type)> unary_func_type;
 
@@ -186,6 +191,7 @@ struct unary_funcs : symbols<unary_func_type>
          ("sin", make_unary_math(&csin))
          ("cos", make_unary_math(&ccos))
          ("exp", make_unary_math(&cexp))
+         ("abs", make_unary_math(&cabs))
          ("ln", make_unary_math(&cln))
          ("log", make_unary_math(&cln))
          ("log10", make_unary_math(&clog10))

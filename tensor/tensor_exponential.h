@@ -39,6 +39,12 @@ exp(IrredTensor<std::complex<double>, BasisList, BasisList> const& m)
 IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>
 exp(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> const& m);
 
+IrredTensor<std::complex<double>, BasisList, BasisList>
+abs(IrredTensor<std::complex<double>, BasisList, BasisList> const& m);
+
+IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>
+abs(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> const& m);
+
 } // namespace Tensor
 
 #endif

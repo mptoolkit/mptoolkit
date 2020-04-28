@@ -77,6 +77,30 @@ struct ElementExp<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement
    }
 };
 
+template <>
+struct ElementAbs<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+{
+   InfiniteMPOElement operator()(complex c) const
+   {
+      return std::norm(c);
+   }
+
+   InfiniteMPOElement operator()(ZeroMPO const& c) const
+   {
+      return c;
+   }
+
+   InfiniteMPOElement operator()(ProductMPO const&) const
+   {
+      throw ParserError("abs() is not implemented for ProductMPO's!");
+   }
+
+   InfiniteMPOElement operator()(BasicTriangularMPO const&) const
+   {
+      throw ParserError("abs() is not implemented for BasicTriangularMPO's!");
+   }
+};
+
 // Default for ElementSq is OK
 // Default for ElementAdjoint is OK
 // Default for ElementInvAdjoint is OK

@@ -343,6 +343,13 @@ UnitCellMPO exp(UnitCellMPO const& x)
    return UnitCellMPO(x.GetSiteList(), exp(x.MPO()), LatticeCommute::Bosonic, x.offset());
 }
 
+// Absolute value
+UnitCellMPO abs(UnitCellMPO const& x)
+{
+   CHECK_EQUAL(x.Commute(), LatticeCommute::Bosonic)("Operator must be bosonic to calculate the absolute value");
+   return UnitCellMPO(x.GetSiteList(), abs(x.MPO()), LatticeCommute::Bosonic, x.offset());
+}
+
 // Conjugate
 UnitCellMPO conj(UnitCellMPO const& x)
 {

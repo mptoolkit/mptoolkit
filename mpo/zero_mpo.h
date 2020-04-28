@@ -56,6 +56,12 @@ ZeroMPO conj(ZeroMPO)
 }
 
 inline
+ZeroMPO abs(ZeroMPO)
+{
+   return ZeroMPO();
+}
+
+inline
 ZeroMPO adjoint(ZeroMPO)
 {
    return ZeroMPO();

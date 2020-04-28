@@ -221,6 +221,22 @@ struct ElementExp : boost::static_visitor<element_type>
 };
 
 template <typename element_type>
+struct ElementAbs : boost::static_visitor<element_type>
+{
+   element_type operator()(complex c) const
+   {
+      return std::norm(c);
+   }
+
+   template <typename T>
+   element_type operator()(T const& x) const
+   {
+      using LinearAlgebra::abs;
+      return abs(x);
+   }
+};
+
+template <typename element_type>
 struct element_flip_conj : boost::static_visitor<element_type>
 {
    element_flip_conj() {}

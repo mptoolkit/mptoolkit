@@ -345,7 +345,21 @@ struct Exp<SiteOperator>
    result_type operator()(argument_type x) const
    {
       SiteOperator Result(x);
-      Result.base() = Tensor::Exponentiate(x.base());
+      Result.base() = Tensor::exp(x.base());
+      return Result;
+   }
+};
+
+template <>
+struct Abs<SiteOperator>
+{
+   typedef SiteOperator const& argument_type;
+   typedef SiteOperator result_type;
+
+   result_type operator()(argument_type x) const
+   {
+      SiteOperator Result(x);
+      Result.base() = Tensor::abs(x.base());
       return Result;
    }
 };
