@@ -136,10 +136,12 @@ class RepLabelBase
       void ReadRaw(PStream::ipstream& in);
 
    protected:
-      RepLabelBase();
+      RepLabelBase() noexcept;
       RepLabelBase(RepLabelBase const& q);
-      ~RepLabelBase();
+      RepLabelBase(RepLabelBase&& Other) noexcept = default;
+      ~RepLabelBase() noexcept;
       RepLabelBase& operator=(RepLabelBase const& q);
+      RepLabelBase& operator=(RepLabelBase&& q) noexcept;
 
       // assigns the quantum number list, and allocates the storage array, does not initialize it
       RepLabelBase(SymmetryListImpl const* q, int Size);
@@ -184,7 +186,7 @@ class QuantumNumber : public RepLabelBase<QuantumNumber>
       struct NoInitialization {};  // tag class for the constructor that
                                    // allocates space but does not initialize
 
-      QuantumNumber();
+      QuantumNumber() noexcept;
 
       // Compiler-generated copy ctor/assignment are OK
 
@@ -286,7 +288,7 @@ class Projection : public RepLabelBase<Projection>
       struct NoInitialization {};  // tag class for the constructor that
                                    // allocates space but does not initialize
 
-      Projection();
+      Projection() noexcept;
 
       // Occasionally, we want to construct a projection and initialize it later.
       // This allocates memory but does not initialize it.
@@ -359,13 +361,10 @@ class QuantumNumberList
       explicit QuantumNumberList(size_t Size, QuantumNumber const& q = QuantumNumber())
          : Impl(Size, q) {}
 
-      QuantumNumberList(QuantumNumberList const& q) : Impl(q.Impl) {}
+      // compiler generated copy and assignment are OK
 
       template <typename FwdIter>
       QuantumNumberList(FwdIter first, FwdIter last) : Impl(first, last) {}
-
-      QuantumNumberList& operator=(QuantumNumberList const& q)
-      { Impl = q.Impl; return *this; }
 
       void push_back(QuantumNumber const& q)
       { DEBUG_CHECK(Impl.empty() || q.GetSymmetryList() == Impl.back().GetSymmetryList());

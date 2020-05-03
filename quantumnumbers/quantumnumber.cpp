@@ -210,7 +210,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, QuantumNumber& L)
 // Projection
 //
 
-Projection::Projection()
+Projection::Projection() noexcept
 {
 }
 
