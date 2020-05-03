@@ -109,10 +109,10 @@ struct BasicStateComponent
    // returns true if this is a zero matrix
    bool is_null() const { return SBasis.size() == 0; }
 
-   BasisList LocalBasis() const { return SBasis; }
+   BasisList const& LocalBasis() const { return SBasis; }
 
-   BasisType Basis1() const { return VBasis1; }
-   BasisType Basis2() const { return VBasis2; }
+   BasisType const& Basis1() const { return VBasis1; }
+   BasisType const& Basis2() const { return VBasis2; }
 
    std::size_t size() const { return Data.size(); }
 
