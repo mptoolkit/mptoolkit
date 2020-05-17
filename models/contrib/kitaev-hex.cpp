@@ -171,9 +171,9 @@ int main(int argc, char** argv)
 
       for (int i = 0; i < u; i += 2)
       {
-         Hxx += X(0)[i] * X(1)[(i+1)%u];
-         Hyy += Y(0)[i] * Y(0)[(i+1)%u];
-         Hzz += Z(0)[i] * Z(0)[(i+u-1)%u];
+         Hxx -= X(0)[i] * X(1)[(i+1)%u];
+         Hyy -= Y(0)[i] * Y(0)[(i+1)%u];
+         Hzz -= Z(0)[i] * Z(0)[(i+u-1)%u];
       }
 
       Lattice["H_xx"] = sum_unit(Hxx);
