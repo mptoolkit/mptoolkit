@@ -108,6 +108,7 @@ int main(int argc, char** argv)
          ("H_xx"       , "horizontal X-X interaction")
          ("H_yy"       , "+60 degrees Y-Y interaction")
          ("H_zz"       , "-60 degrees Z-Z interaction")
+         ("H_3"        , "three-spin interaction")
          ("Ty"         , "momentum operator in lattice short direction")
          ("TyPi"       , "translation by w sites in the Y direction",
           "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
@@ -166,7 +167,7 @@ int main(int argc, char** argv)
       Lattice["H_y"] = sum_unit(Hy);
       Lattice["H_z"] = sum_unit(Hz);
 
-      // Kitaev model interactions
+      // Kitaev model interactions.
       UnitCellMPO Hxx, Hyy, Hzz;
 
       for (int i = 0; i < u; i += 2)
@@ -180,13 +181,28 @@ int main(int argc, char** argv)
       Lattice["H_yy"] = sum_unit(Hyy);
       Lattice["H_zz"] = sum_unit(Hzz);
 
+      // Three spin interaction term.
+      UnitCellMPO H3;
+
+      for (int i = 0; i < u; i += 2)
+      {
+         H3 += Y(0)[(i+1)%u] * X(1)[(i+1)%u] * Z(0)[i]
+             + X(0)[(i+1)%u] * Z(0)[(i+2)%u] * Y(0)[i]
+             + Z(0)[(i+1)%u] * Y(0)[(i+2)%u] * X(1)[(i+3)%u]
+             + Y(1)[(i+2)%u] * X(0)[(i+2)%u] * Z(1)[(i+3)%u]
+             + X(1)[(i+2)%u] * Z(1)[(i+1)%u] * Y(1)[(i+3)%u]
+             + Z(1)[(i+2)%u] * Y(1)[(i+1)%u] * X(0)[i];
+      }
+
+      Lattice["H_3"] = sum_unit(H3);
+
       // Translation and relfection operators.
       Trans = I(0);
       for (int i = 0; i < u-1; ++i)
-       {
-           //T *= 0.5*( 0.25*inner(S[i],S[i+1]) + 1 );
-           Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
-       }
+      {
+         //T *= 0.5*( 0.25*inner(S[i],S[i+1]) + 1 );
+         Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
+      }
 
       if (!NoReflect)
       {
@@ -198,6 +214,7 @@ int main(int argc, char** argv)
          }
       }
 
+      // Reflection.
       UnitCellMPO Ry = I(0);
       if (!NoReflect)
       {

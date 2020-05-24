@@ -90,6 +90,7 @@ int main(int argc, char** argv)
       OpDescriptions.set_description("Kitaev honeycomb model with a two-site unit cell");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
       OpDescriptions.add_cell_operators()
+         ("WY"         , "Wilson loop in the Y direction")
          ("W"          , "plaquette operator")
          ;
       OpDescriptions.add_operators()
@@ -99,6 +100,7 @@ int main(int argc, char** argv)
          ("H_xx"       , "horizontal X-X interaction")
          ("H_yy"       , "+60 degrees Y-Y interaction")
          ("H_zz"       , "-60 degrees Z-Z interaction")
+         ("H_3"        , "three-spin interaction")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -114,7 +116,7 @@ int main(int argc, char** argv)
       UnitCell Cell = repeat(Site, 2);
       InfiniteLattice Lattice(&Cell);
       UnitCellOperator I(Cell, "I"), X(Cell, "X"), Y(Cell, "Y"), Z(Cell, "Z");
-      UnitCellOperator W(Cell, "W");
+      UnitCellOperator W(Cell, "W"), WY(Cell, "WY");
 
       // Magnetic fields.
       Lattice["H_x"] = sum_unit(X(0)[0] + X(0)[1]);
@@ -124,10 +126,24 @@ int main(int argc, char** argv)
       // Plaquette operator.
       W = Z(0)[0] * X(0)[1] * Y(1)[0] * Z(w+1)[1] * X(w+1)[0] * Y(w)[1];
 
-      // The operators have a minus sign, following Kitaev convention
+      // Wilson loop operator.
+      WY = Z(0)[0] * X(0)[1];
+      for (int i = 1; i < w; ++i)
+         WY = WY * X(i)[0] * X(i)[1];
+      WY = WY * X(w)[0] * Z(w)[1];
+
+      // Kitaev model interactions.
       Lattice["H_xx"] = -sum_unit(X(0)[0] * X(w)[1]);
       Lattice["H_yy"] = -sum_unit(Y(0)[0] * Y(0)[1]);
       Lattice["H_zz"] = -sum_unit(Z(0)[0] * Z(-1)[1]);
+
+      // Three spin interaction term.
+      Lattice["H_3"] = sum_unit(Y(0)[1] * X(w)[1] * Z(0)[0]
+                              + X(0)[1] * Z(1)[0] * Y(0)[0]
+                              + Z(0)[1] * Y(1)[0] * X(w+1)[1]
+                              + Y(w+1)[0] * X(1)[0] * Z(w+1)[1]
+                              + X(w+1)[0] * Z(w)[0] * Y(w+1)[1]
+                              + Z(w+1)[0] * Y(w)[0] * X(0)[0]);
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);
