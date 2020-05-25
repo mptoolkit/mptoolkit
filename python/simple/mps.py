@@ -36,7 +36,7 @@ def contract_from_left(W, A, E, B):
     Temp = np.einsum("sajk,abst->tbjk", Temp, W)
     return np.einsum("tbjk,tkl->bjl", Temp, B)
 
-# construct the E-matrices for all sites except the first
+# construct the F-matrices for all sites except the first
 def construct_F(Alist, MPO, Blist):
     F = [initial_F(MPO[-1])]
 
@@ -191,7 +191,7 @@ Sm = np.array([[0, 1],
              [0, 0]])
 
 ## Hamiltonian MPO
-W = np.array([[I, Sz, 0.5*Sp, 0.5*Sm,   Z],
+W = np.array([[I, Sz, 0.5*Sp,  0.5*Sm,  Z],
               [Z,  Z,      Z,       Z, Sz], 
               [Z,  Z,      Z,       Z, Sm],
               [Z,  Z,      Z,       Z, Sp],
