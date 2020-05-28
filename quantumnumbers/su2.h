@@ -4,7 +4,7 @@
 //
 // quantumnumbers/su2.h
 //
-// Copyright (C) 2000-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2000-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,8 +31,8 @@
 // pointed: all dimensions are 1
 
 
-#if !defined(MPTOOKLIT_QUANTUMNUMBERS_SU2_H)
-#define MPTOOKLIT_QUANTUMNUMBERS_SU2_H
+#if !defined(MPTOOLKIT_QUANTUMNUMBERS_SU2_H)
+#define MPTOOLKIT_QUANTUMNUMBERS_SU2_H
 
 // definitions:
 // integral: all dimensions are integers
@@ -346,7 +346,7 @@ class FermionicParticle : public FermionicParticleImpl<typename Symmetry::value_
 {
    public:
       using is_real = std::true_type;
-      using is_symmetric = std::true_type;     // alias for is_real
+      using is_symmetric = std::true_type;     // implies is_real
       using value_type = Symmetry::value_type;
 
       static_assert(std::is_same<value_type, half_int>::value
@@ -417,7 +417,7 @@ class SU2 : public StaticLieGroup_MF<SU2>
       // This must be consistent with the ordering from the 'less' function:
       // for integers i,j, we have:
       // i < j iff less(enumerate(i), enumerate(j))
-      // (this implies that the scalar (identity) quantum number is n=0
+      // We also require that the scalar (identity) quantum number enumerates to n=0
       static half_int enumerate(int n)
       {
          if (n == 0)
@@ -429,7 +429,7 @@ class SU2 : public StaticLieGroup_MF<SU2>
          return -half_int::from_twice(n/2);
       }
 
-      using std::tuple<FermionicSpin<SU2>, Bosonic<SU2>> braid_rep_types;
+      using braid_rep_types = std::tuple<FermionicSpin<SU2>, Bosonic<SU2>>;
 
       using default_braid_type = Bosonic;
 
