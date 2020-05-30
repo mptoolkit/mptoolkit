@@ -899,7 +899,7 @@ struct TensorProd<ReducibleTensor<T, B1, B2, S1>, ReducibleTensor<T2, B3, B4, S2
    typedef ReducibleTensor<typename IrredResultType::value_type,
                            typename IrredResultType::basis1_type,
                            typename IrredResultType::basis2_type,
-                           typename IrredResultType::MatrixType> result_type;
+                           typename IrredResultType::StructureType> result_type;
 
    result_type operator()(first_argument_type const& x, second_argument_type const& y) const
    {

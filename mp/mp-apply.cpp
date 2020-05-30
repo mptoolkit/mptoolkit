@@ -28,7 +28,6 @@
 #include "tensor/tensor_eigen.h"
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcell-parser.h"
-#include "lattice/infinite-parser.h"
 #include "common/statistics.h"
 
 namespace prog_opt = boost::program_options;
@@ -78,7 +77,7 @@ int main(int argc, char** argv)
 
       if (vm.count("help") > 0 || vm.count("psi2") < 1)
       {
-         print_copyright(std::cerr, "tools", "mp-iapply");
+         print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] <operator> <input-psi> <output-psi>\n";
          std::cerr << desc << '\n';
          std::cerr << "This tool calculates the action of an operator on an iMPS.\n";
@@ -107,46 +106,27 @@ int main(int argc, char** argv)
          PsiPtr = pheap::ImportHeap(InputFile);
       }
 
-      InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
+      FiniteWavefunctionLeft Psi = PsiPtr->get<FiniteWavefunctionLeft>();
 
       InfiniteLattice Lattice;
-      ProductMPO StringOp;
-      std::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(OpStr);
+      UnitCellMPO Op;
+      std::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(OpStr);
 
-      if (Psi.size() != StringOp.size())
-      {
-         int Size = statistics::lcm(Psi.size(), StringOp.size());
-         if (Psi.size() < Size)
-         {
-            std::cerr << "mp-iapply: warning: extending wavefunction size to lowest common multiple, which is "
-                      << Size << " sites.\n";
-         }
-         Psi = repeat(Psi, Size / Psi.size());
-         StringOp = repeat(StringOp, Size / StringOp.size());
-      }
+      Op.ExtendToCoverUnitCell(Psi.size());
 
-      LinearWavefunction PsiL = get_left_canonical(Psi).first;
+      std::deque<StateComponent> PsiVec(Psi.begin(), Psi.end());
 
       if (Verbose > 0)
          std::cout << "Applying operator..." << std::endl;
 
       // apply the string operator
-      ProductMPO::const_iterator MI = StringOp.begin();
-      for (LinearWavefunction::iterator I = PsiL.begin(); I != PsiL.end(); ++I, ++MI)
+      BasicFiniteMPO::const_iterator MI = Op.MPO().begin();
+      for (auto I = PsiVec.begin(); I != PsiVec.end(); ++I, ++MI)
       {
          (*I) = aux_tensor_prod(*MI, *I);
       }
 
-      if (AssumeOrthogonal)
-      {
-         MatrixOperator Rho = Psi.lambda_r();
-         Rho = scalar_prod(herm(Rho), Rho);
-         PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiL, Rho, Psi.qshift(), Verbose);
-      }
-      else
-      {
-         PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::Construct(PsiL, Psi.qshift(), Verbose);
-      }
+      PsiPtr.mutate()->Wavefunction() = FiniteWavefunctionLeft::Construct(LinearWavefunction::FromContainer(PsiVec.begin(), PsiVec.end()));
 
       PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));
       PsiPtr.mutate()->SetDefaultAttributes();

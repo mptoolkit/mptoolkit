@@ -115,8 +115,18 @@ int main(int argc, char** argv)
       if (ShowReal || ShowImag)
          ShowDefault = false;
 
-      mp_pheap::InitializeTempPHeap();
-      pvalue_ptr<MPWavefunction> PsiPtr = pheap::ImportHeap(PsiStr);
+      pvalue_ptr<MPWavefunction> PsiPtr;
+      // if we are calculating a mixed expectation value, then we need two wavefunctions so
+      // allocate a temporary heap.  Otherwise we can use one heap in read-only mode
+      if (vm.count("psi2"))
+      {
+         mp_pheap::InitializeTempPHeap();
+         PsiPtr = pheap::ImportHeap(PsiStr);
+      }
+      else
+      {
+         PsiPtr = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
+      }
 
       UnitCellMPO Op;
       InfiniteLattice Lattice;

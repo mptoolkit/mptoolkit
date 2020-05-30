@@ -2,9 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// mp/mp-scale.cpp
+// mp/mp-iapply.cpp
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,30 +17,28 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "wavefunction/mpwavefunction.h"
 #include "mp/copyright.h"
-#include <boost/program_options.hpp>
+#include "wavefunction/mpwavefunction.h"
+#include "common/environment.h"
+#include "common/terminal.h"
+#include "common/prog_options.h"
+#include "common/prog_opt_accum.h"
 #include "common/environment.h"
 #include "interface/inittemp.h"
-#include "common/terminal.h"
-#include "common/environment.h"
-#include "common/prog_options.h"
-#include "parser/number-parser.h"
-
-#include "pheap/pheap.h"
-#include <iostream>
-#include "mp/copyright.h"
-#include "common/environment.h"
+#include "tensor/tensor_eigen.h"
+#include "lattice/infinitelattice.h"
+#include "lattice/unitcell-parser.h"
+#include "common/statistics.h"
 
 namespace prog_opt = boost::program_options;
+
 
 int main(int argc, char** argv)
 {
    try
    {
-      int Verbose = 0;
-      std::string PsiStr;
-      std::string Expression;
+      std::string InputFile;
+
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
@@ -48,13 +46,11 @@ int main(int argc, char** argv)
 
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
-         ("psi", prog_opt::value<std::string>(&PsiStr), "psi")
-         ("expr", prog_opt::value<std::string>(&Expression), "expr")
+         ("psi1", prog_opt::value(&InputFile), "psi1")
          ;
 
       prog_opt::positional_options_description p;
-      p.add("psi", 1);
-      p.add("expr", 1);
+      p.add("psi1", 1);
 
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
@@ -64,60 +60,40 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") > 0 || vm.count("expr") == 0)
+      if (vm.count("help") > 0 || vm.count("psi1") < 1)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi1> <factor>\n";
+         std::cerr << "usage: " << basename(argv[0]) << " <psi>\n";
          std::cerr << desc << '\n';
+         std::cerr << "Displays the 2-norm of a finite or IBC wavefunction.\n";
+
          return 1;
       }
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-      pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize());
+      pvalue_ptr<MPWavefunction> PsiPtr = pheap::OpenPersistent(InputFile, mp_pheap::CacheSize(), true);
+      std::cout << norm_2(PsiPtr->get<FiniteWavefunctionLeft>()) << '\n';
 
-      std::complex<double> x = ParseNumber(Expression);
-
-      if (Psi->is<FiniteWavefunctionLeft>())
-      {
-         Psi.mutate()->get<FiniteWavefunctionLeft>() *= x;
-      }
-      else if (Psi->is<InfiniteWavefunctionLeft>())
-      {
-	 std::complex<double> y = x / std::abs(x);
-	 if (std::abs(y-x) > 1e-10)
-	 {
-	    std::cout << "warning: phase factor for infinite wavefunction was normalized from " <<
-	       format_complex(x) << " to " << format_complex(y) << "\n";
-	 }
-	 std::pair<LinearWavefunction, RealDiagonalOperator> p = get_left_canonical(Psi->get<InfiniteWavefunctionLeft>());
-	 (*p.first.begin()) *= y;
-	 *Psi.mutate() = InfiniteWavefunctionLeft::ConstructFromOrthogonal(p.first, p.second,
-									   Psi->get<InfiniteWavefunctionLeft>().qshift());
-      }
-      else
-      {
-         std::cerr << "mp-scale: fatal: wavefunction type " << Psi->Type() << " is not supported.\n";
-         return 1;
-      }
-      Psi.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));
-
-      pheap::ShutdownPersistent(Psi);
+      pheap::Shutdown();
    }
    catch (prog_opt::error& e)
    {
       std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      pheap::Cleanup();
       return 1;
    }
    catch (std::exception& e)
    {
       std::cerr << "Exception: " << e.what() << '\n';
+      pheap::Cleanup();
       return 1;
    }
    catch (...)
    {
       std::cerr << "Unknown exception!\n";
+      pheap::Cleanup();
       return 1;
    }
 }

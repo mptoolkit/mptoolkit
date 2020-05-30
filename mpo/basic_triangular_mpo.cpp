@@ -835,7 +835,95 @@ StateComponent Initial_F(OperatorComponent const& m, VectorBasis const& Vac)
    return Result;
 }
 
+// SplitMPO
 
+std::vector<std::vector<BasicFiniteMPO>>
+SplitMPO(BasicTriangularMPO const& m)
+{
+   // Operators is a list of MPO's that span the site boundary
+   // Which is the corresponding row of the MPO
+   std::vector<std::vector<OperatorComponent>> Operators;
+   std::vector<int> Which;
+   std::vector<std::vector<BasicFiniteMPO>> Result(m.size());
+   int sz = m.size();
+   int i = 0;
+   // loop through the entire unit cell, and also make sure we cover any operators that span beyond
+   // the edge of the unit cell.
+   while (i < m.size() || !Operators.empty())
+   {
+      // go through the operators that span the site, and add the new site to them
+      std::vector<std::vector<OperatorComponent>> NewOperators;
+      std::vector<int> NewWhich;
+      for (int j = 0; j < Operators.size(); ++j)
+      {
+         // elements up to the final column will continue for another site
+         for (int k = 0; k < m[i%sz].Basis2().size(); ++k)
+         {
+            SimpleRedOperator x = m[i%sz](Which[j],k);
+            if (!x.is_null())
+            {
+               std::vector<OperatorComponent> y = Operators[j];
+               BasisList b1(m[i%sz].Basis1().GetSymmetryList());
+               b1.push_back(m[i%sz].Basis1()[Which[j]]);
+               BasisList b2(m[i%sz].Basis2().GetSymmetryList());
+               b2.push_back(m[i%sz].Basis2()[k]);
+               OperatorComponent w(x.Basis1(), x.Basis2(), b1, b2);
+               w(0,0) = x;
+               y.push_back(std::move(w));
+               if (k < m[i%sz].Basis2().size()-1)
+               {
+                  // these operators continue on for another site
+                  NewOperators.push_back(y);
+                  NewWhich.push_back(k);
+               }
+               else
+               {
+                  // the final column will be the identity - these are operators that finish at this site
+                  Result[i-y.size()+1].push_back(BasicFiniteMPO(GenericMPO(y.begin(), y.end())));
+               }
+            }
+         }
+      }
+      // operators in the first row of the MPO are new that have support starting from this site
+      // only do this for the first unit cell
+      if (i < sz)
+      {
+         for (int k = 1; k < m[i%sz].Basis2().size(); ++k)
+         {
+            SimpleRedOperator x = m[i%sz](0,k);
+            if (!x.is_null())
+            {
+               std::vector<OperatorComponent> y;
+               BasisList b1(m[i%sz].Basis1().GetSymmetryList());
+               b1.push_back(m[i%sz].Basis1()[0]);
+               BasisList b2(m[i%sz].Basis2().GetSymmetryList());
+               b2.push_back(m[i%sz].Basis2()[k]);
+               OperatorComponent w(x.Basis1(), x.Basis2(), b1, b2);
+               w(0,0) = x;
+               y.push_back(std::move(w));
+               if (k < m[i%sz].Basis2().size()-1)
+               {
+                  // these operators continue on for another site
+                  NewOperators.push_back(y);
+                  NewWhich.push_back(k);
+               }
+               else
+               {
+                  // the final column will be the identity - these are operators that finish at this site
+                  Result[i-y.size()+1].push_back(BasicFiniteMPO(GenericMPO(y.begin(), y.end())));
+               }
+            }
+         }
+      }
+      Operators = std::move(NewOperators);
+      Which = std::move(NewWhich);
+      ++i;
+   }
+
+   // The starting point of every operator should be within the first unit cell
+   CHECK(Result.size() <= m.size());
+   return Result;
+}
 
 bool remove_redundant_by_row(OperatorComponent& Op)
 {

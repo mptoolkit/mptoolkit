@@ -4,7 +4,7 @@
 //
 // mp/mp-dmrg.cpp
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,7 +16,6 @@
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER
-
 
 #include "mpo/basic_triangular_mpo.h"
 #include "wavefunction/finitewavefunctionleft.h"

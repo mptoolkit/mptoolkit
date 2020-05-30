@@ -377,6 +377,7 @@ class IrredTensor
       typedef T                                                     value_type;
       //      typedef Structure                                             MatrixType;
 
+      using StructureType = Structure;
       using MatrixType = typename Structure::template value<T>;
 
       BOOST_MPL_ASSERT((boost::is_same<value_type,

@@ -206,6 +206,12 @@ StateComponent Initial_F(BasicTriangularMPO const& m);
 StateComponent Initial_E(BasicTriangularMPO const& m, VectorBasis const& B);
 StateComponent Initial_F(BasicTriangularMPO const& m, VectorBasis const& B);
 
+// Split an MPO into local operators.
+// Result'[i] is a vector of 1x1 MPO's that have support starting from site i
+// the length of the MPO is the number of sites where the operator is supported.
+std::vector<std::vector<BasicFiniteMPO>>
+SplitMPO(BasicTriangularMPO const& m);
+
 // *Not yet implemented
 // Analyze the dependencies of the MPO, for the E matrices.
 // This returns a vector listing the largest row number (for E matrices) or
