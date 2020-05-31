@@ -364,7 +364,7 @@ int main(int argc, char** argv)
       double EigenCutoff = 1E-16;
       int OutputDigits = 0;
       int Coarsegrain = 1;
-      std::string DecompositionStr = "opimized4-11";
+      std::string DecompositionStr = "optimized4-11";
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()

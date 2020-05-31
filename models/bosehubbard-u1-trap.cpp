@@ -87,7 +87,7 @@ int main(int argc, char** argv)
       Lattice["H_V"] = sum_unit(N(0)*N(1));
       UnitCellMPO Trap;
       UnitCellMPO com; // center of mass
-      double Center = (TrapWidth+1)/2.0;
+      double Center = (TrapWidth-1)/2.0;
       for (int i = 0; i < TrapWidth; ++i)
       {
          Trap += N(i) * std::pow(i-Center,2.0);
