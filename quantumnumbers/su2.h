@@ -17,26 +17,8 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-/*
-  Created 2000-09-07 Ian McCulloch
-
-  The SU(2) quantum number registers an object that allows the name "SU(2)"
-  in the SymmetryList.  eg, MyQuantumNumbers = SymmetryList("S:SU(2)")
-
-  We have two braid group representations defined, bosonic and fermionic.
-*/
-
-// definitions:
-// integral: all dimensions are integers
-// pointed: all dimensions are 1
-
-
 #if !defined(MPTOOLKIT_QUANTUMNUMBERS_SU2_H)
 #define MPTOOLKIT_QUANTUMNUMBERS_SU2_H
-
-// definitions:
-// integral: all dimensions are integers
-// pointed: all dimensions are 1
 
 #include "common/types.h"
 #include "common/niftycounter.h"
@@ -45,6 +27,18 @@
 #include "coupling_su2.h"
 #include <iostream>
 #include <type_traits>
+
+//
+// A symmetry specifies the quantum number labels (== representations),
+// and the coupling coefficients, including the braid group.
+
+// definitions:
+// integral: all dimensions are integers
+// pointed: all dimensions are 1
+// multiplicity_free: each rep occurs at most once in the Clebsch-Gordan expansion
+// finite: there is a finite number of representations
+// real: all coefficients are real-valued
+
 
 namespace QuantumNumbers
 {
@@ -106,8 +100,6 @@ class StaticFiniteGroup_MF
       }
 };
 
-
->>>>>>> Work in progress on new QN library
 // the identity rep of the braid group
 template <typename Symmetry>
 class Bosonic
@@ -233,7 +225,6 @@ class FermionicParticle : public FermionicParticleImpl<typename Symmetry::value_
 };
 
 class SU2 : public StaticLieGroup_MF<SU2>
->>>>>>> sketch for how braid reps would work
 {
    public:
       using value_type = Derived::value_type;
@@ -286,7 +277,6 @@ template <typename Symmetry>
 class FermionicSpin
 {
    public:
-<<<<<<< HEAD
       using is_real = std::true_type;
       using is_symmetric = std::true_type;     // alias for is_real
       using value_type = Symmetry::value_type;

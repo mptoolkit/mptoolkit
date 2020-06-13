@@ -42,7 +42,8 @@
 namespace EXPOKIT
 {
 
-using namespace Fortran;
+using integer = Fortran::integer;
+using complex = Fortran::complex;
 
 // wrapper functions
 

@@ -368,7 +368,7 @@ double casimir(U1 const& s, int n)
 
 namespace
 {
-   NiftyCounter::nifty_counter<U1::Register> U1HalfIntCounter;
+NiftyCounter::nifty_counter<U1::Register> U1Counter;
 }
 
 } // namespace QuantumNumbers

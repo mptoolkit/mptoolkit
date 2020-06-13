@@ -23,13 +23,13 @@
   Helper to include all known symmetries.
 */
 
-#if !defined(ALL_SYMMETRIES_H_HY643787FR8Y4378YO)
-#define ALL_SYMMETRIES_H_HY643787FR8Y4378YO
+#if !defined(MPTOOLKIT_QUANTUMNUMBERS_ALL_SYMMETRIES_H)
+#define MPTOOLKIT_QUANTUMNUMBERS_ALL_SYMMETRIES_H
 
-#include "u1.h"
-#include "su2.h"
 #include "null-quantumnumber.h"
-#include "z2.h"
-#include "zn.h"
+#include "u1.h"
+//#include "su2.h"
+//#include "z2.h"
+//#include "zn.h"
 
 #endif

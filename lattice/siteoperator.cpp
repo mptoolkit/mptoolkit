@@ -70,26 +70,6 @@ std::ostream& operator<<(std::ostream& out, SiteBasis const& Basis)
    return out;
 }
 
-void show_projections(std::ostream& out, SiteBasis const& Basis)
-{
-   for (std::size_t i = 0; i < Basis.size(); ++i)
-   {
-      if (i != 0) out << ", ";
-
-      out << "{ ";
-      std::vector<QuantumNumbers::Projection> Projections;
-      enumerate_projections(Basis.qn(i), std::back_inserter(Projections));
-      for (size_type j = 0; j < Projections.size(); ++j)
-      {
-        if (j != 0) out << ", ";
-        out << '|' << Basis.Label(i) << ' ' << Basis.qn(i)
-            << ", " << Projections[j]
-            << ">";
-      }
-      out << " }";
-   }
-}
-
 PStream::opstream& operator<<(PStream::opstream& out, SiteBasis const& B)
 {
    return out << B.Basis_ << B.Label_;
@@ -186,63 +166,6 @@ std::ostream& operator<<(std::ostream& out, SiteOperator const& Op)
    if (first)
       out << "(zero)";
    return out;
-}
-
-void show_projections(std::ostream& out, SiteOperator const& Op)
-{
-   out << "transforms as " << Op.TransformsAs() << '\n';
-
-   SiteBasis Basis(Op.Basis());
-
-   std::vector<QuantumNumbers::Projection> Projections;
-   enumerate_projections(Op.TransformsAs(), std::back_inserter(Projections));
-   for (size_type km = 0; km < Projections.size(); ++km)
-   {
-      out << "Projection " << std::setw(10) << Projections[km] << " :\n";
-
-      for (std::size_t i = 0; i < Basis.size(); ++i)
-      {
-         QuantumNumber qi = Basis.qn(i);
-         for (std::size_t j = 0; j < Basis.size(); ++j)
-         {
-            if (!is_transform_target(Op.Basis()[j].second, Op.TransformsAs(), Op.Basis()[i].second))
-               continue;
-
-            std::complex<double> x(Op(i,j));
-            if (x == 0.0) continue;
-
-            //      out << x << std::endl;
-
-            QuantumNumber qj = Basis.qn(j);
-
-            std::vector<QuantumNumbers::Projection> mi, mj;
-            enumerate_projections(qi, std::back_inserter(mi));
-            enumerate_projections(qj, std::back_inserter(mj));
-
-            for (std::size_t ii = 0; ii < mi.size(); ++ii)
-            {
-               for (std::size_t jj = 0; jj < mj.size(); ++jj)
-               {
-                  std::complex<double> y = x * clebsch_gordan(qj,    Op.TransformsAs(),  qi,
-                                                              mj[jj], Projections[km], mi[ii]);
-
-                  if (numerics::norm_2(y) > 1E-10)
-                  {
-                     out << "   " << y
-                         << " |" << Basis.Label(i) << ' ' << qi
-                         << ", " << mi[ii]
-                         << "> <"
-                         << Basis.Label(j) << ' '
-                         << qj
-                         << ", " << mj[jj]
-                         << "|\n";
-                  }
-               }
-            }
-         }
-      }
-      //      out << '\n';
-   }
 }
 
 #if 0

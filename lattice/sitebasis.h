@@ -43,8 +43,6 @@
 #include <pheap/pvalueptr.h>
 
 using QuantumNumbers::QuantumNumber;
-using QuantumNumbers::Projection;
-using QuantumNumbers::ProjectionList;
 using QuantumNumbers::SymmetryList;
 using LinearAlgebra::size_type;
 using Tensor::BasisList;

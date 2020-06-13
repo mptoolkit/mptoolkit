@@ -1,14 +1,13 @@
 dnl -$- Autoconf -$-
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([Matrix Product Toolkit], [(git)], [ianmcc@physics.uq.edu.au],
-        [mptoolkit], [https://people.smp.uq.edu.au/IanMcCulloch/mptoolkit/])
+AC_INIT([Matrix Product Toolkit],[(git)],[ianmcc@physics.uq.edu.au],[mptoolkit],[https://people.smp.uq.edu.au/IanMcCulloch/mptoolkit/])
 
 dnl use C++ mode by default
 AC_LANG(C++)
 
 AC_CONFIG_SRCDIR([common/trace.h])
-AC_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 m4_include([m4/macros.m4])
 AC_PREFIX_DEFAULT("$HOME")
@@ -67,7 +66,7 @@ dnl large file support
 AC_SYS_LARGEFILE
 
 dnl openmp support, defines variable OPENMP_CXXFLAGS and sets HAVE_OPENMP
-AC_ARG_WITH([openmp], [AC_HELP_STRING([--with-openmp], [enable OpenMP parallelization @<:@default=no@:>@])],
+AC_ARG_WITH([openmp], [AS_HELP_STRING([--with-openmp],[enable OpenMP parallelization @<:@default=no@:>@])],
   [],
   [with_openmp=no])
   if test "x$with_openmp" != xno; then
@@ -88,7 +87,7 @@ AC_ARG_WITH([openmp], [AC_HELP_STRING([--with-openmp], [enable OpenMP paralleliz
 AC_SUBST([OPENMP_CXXFLAGS])
 
 dnl MPI support, if found sets HAVE_MPI and defines MPICXX and MPILIBS
-AC_ARG_WITH([mpi], [AC_HELP_STRING([--with-mpi], [enable MPI @<:@default=check@:>@])],
+AC_ARG_WITH([mpi], [AS_HELP_STRING([--with-mpi],[enable MPI @<:@default=check@:>@])],
 	[],
 	[with_mpi=check])
 if test "x$with_mpi" != xno; then
@@ -100,13 +99,13 @@ if test "x$with_mpi" != xno; then
    AC_LANG_POP(C++)
 fi
 
-AC_ARG_WITH([pstream], AC_HELP_STRING([--without-pstream],[disables persistent streams support]))
+AC_ARG_WITH([pstream], AS_HELP_STRING([--without-pstream],[disables persistent streams support]))
 test x"$with_pstream" != xno && AC_DEFINE([USE_PSTREAM], [], [Define if you want persistent streams])
 
 dnl AC_CHECK_LIB(pthread, pthread_create)
 
 dnl PBS integration (eg for PBS walltime)
-AC_ARG_WITH([pbs], AC_HELP_STRING([--with-pbs@<:@=ARG@:>@],[PBS queue integration for checkpointing, libpbs from standard location (ARG=yes), from the specified location (ARG=<path>) or disable it (ARG=no) @<:@ARG=yes@:>@]),
+AC_ARG_WITH([pbs], AS_HELP_STRING([--with-pbs@<:@=ARG@:>@],[PBS queue integration for checkpointing, libpbs from standard location (ARG=yes), from the specified location (ARG=<path>) or disable it (ARG=no) @<:@ARG=yes@:>@]),
            [], [with_pbs=check])
 
 if test "x$with_pbs" != xno; then
@@ -143,8 +142,7 @@ AC_TYPE_SIZE_T
 AC_CHECK_TYPE([long long], [])
 
    AC_DEFINE([HAVE_LONGLONG], [], [Do we have long long?])
-   AC_ARG_WITH([longlong], AC_HELP_STRING([--without-longlong],
-               [disables 'long long' support in the streaming lib]))
+   AC_ARG_WITH([longlong], AS_HELP_STRING([--without-longlong],[disables 'long long' support in the streaming lib]))
    test x"$with_longlong" != xno && AC_DEFINE([USE_LONGLONG], [], [If we need to use long long])
    AC_CHECK_SIZEOF(long long)
 
@@ -179,9 +177,8 @@ AX_BOOST_BASE([1.47], [], [AC_MSG_ERROR([boost libraries not found, aborting.])]
 AX_BOOST_PROGRAM_OPTIONS
 
 dnl do we want to use float128?
-AC_ARG_ENABLE([float128], AC_HELP_STRING([--enable-float128], 
-  [use 128-bit quad precision instead of 64-bit precision]), 
-        [, action-if-not-present)
+dnl AC_ARG_ENABLE([float128], AS_HELP_STRING([--enable-float128],[dnl  use 128-bit quad precision instead of 64-bit precision]), 
+dnl        [, action-if-not-present)
 
 AS_IF([test "x$enable_float128" = "xyes"], [
   dnl should do some checking here to see if it will actually work
@@ -205,7 +202,19 @@ ACX_CXX_RESTRICT
 
 dnl Checks for library functions.
 AC_FUNC_MEMCMP
-AC_TYPE_SIGNAL
+m4_warn([obsolete],
+[your code may safely assume C89 semantics that RETSIGTYPE is void.
+Remove this warning and the `AC_CACHE_CHECK' when you adjust the code.])dnl
+AC_CACHE_CHECK([return type of signal handlers],[ac_cv_type_signal],[AC_COMPILE_IFELSE(
+[AC_LANG_PROGRAM([#include <sys/types.h>
+#include <signal.h>
+],
+		 [return *(signal (0, 0)) (0) == 1;])],
+		   [ac_cv_type_signal=int],
+		   [ac_cv_type_signal=void])])
+AC_DEFINE_UNQUOTED([RETSIGTYPE],[$ac_cv_type_signal],[Define as the return type of signal handlers
+		    (`int' or `void').])
+
 AC_CHECK_FUNCS(gettimeofday)
 AC_HEADER_TIOCGWINSZ
 AC_CHECK_HEADERS(sys/ioctl.h)
@@ -219,7 +228,7 @@ AC_PROG_INSTALL
 dnl shared library configuration
 # Check for enable shared library build option
 private_enable_shared=yes
-AC_ARG_ENABLE(shared, AC_HELP_STRING([--disable-shared],[build static libraries (default is shared libraries)]),
+AC_ARG_ENABLE(shared, AS_HELP_STRING([--disable-shared],[build static libraries (default is shared libraries)]),
  [
   if test "x$enableval" = "xno"
   then
@@ -236,4 +245,6 @@ escopenmpcxxflags="${OPENMP_CXXFLAGS//\"/\\\"}"
 AC_DEFINE_UNQUOTED([CONFIG_OPENMP_CXXFLAGS], ["${OPENMP_CXXFLAGS//\"/\\\"}"], [C++ OpenMP compiler flags])
 
 
-AC_OUTPUT(Makefile, echo timestamp > stamp-h)
+AC_CONFIG_FILES([Makefile])
+AC_CONFIG_COMMANDS([default],[echo timestamp > stamp-h],[])
+AC_OUTPUT

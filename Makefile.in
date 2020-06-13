@@ -100,8 +100,9 @@ GSRCSUBDIRS = $(patsubst %,$(SRCDIR)/%, $(GSRCDIRS))
 
 # GPATH = $(GSRCSUBDIRS)
 
-quantumnumbersobj = quantumnumber.o symmetrybase.o symmetrylist.o \
-		    coupling.o u1.o su2.o null-quantumnumber.o z2.o zn.o
+quantumnumbersobj = quantumnumber.o symmetrybase.o symmetrylist.o null-quantumnumber.o \
+                    u1.o \
+#		    coupling.o su2.o null-quantumnumber.o z2.o zn.o
 
 tensorobj = tensorproduct.o tensorsum.o basis.o regularize.o tensor_eigen.o
 

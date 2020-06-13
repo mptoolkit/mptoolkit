@@ -70,7 +70,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 
    w = MatVecMultiply(v[0]);
    Hv.push_back(w);
-   SubH(0,0) = real(inner_prod(v[0], w));
+   SubH(0,0) = std::real(inner_prod(v[0], w));
    w -= SubH(0,0) * v[0];
 
    Beta = norm_frob(w);
@@ -100,7 +100,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       w = MatVecMultiply(v[i]);
       Hv.push_back(w);
       w -= Beta*v[i-1];
-      SubH(i,i) = real(inner_prod(v[i], w));
+      SubH(i,i) = std::real(inner_prod(v[i], w));
       w -= SubH(i,i) * v[i];
       Beta = norm_frob(w);
 

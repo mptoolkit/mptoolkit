@@ -270,7 +270,7 @@ void RegisterSymmetry(SymmetryFactory* F)
 
 namespace
 {
-    NiftyCounter::nifty_counter<SymmetryBase::InitializeInstances> SymmetryBaseInitCounter;
+NiftyCounter::nifty_counter<SymmetryBase::InitializeInstances> SymmetryBaseInitCounter;
 } // namespace
 
 } // namespace QuantumNumbers

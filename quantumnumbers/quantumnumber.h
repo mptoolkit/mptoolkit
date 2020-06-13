@@ -466,77 +466,6 @@ QuantumNumber MakeQN(SymmetryList SList, T1 n1, T2 n2, T3 n3, T4 n4, T5 n5)
 }
 
 //
-// MakeP
-//
-// Helper function to convert from concrete symmetries to Projection.
-//
-
-template <typename T1>
-inline
-Projection MakeP(SymmetryList SList, T1 n1)
-{
-   PRECONDITION(SList.NumSymmetries() == 1);
-   PRECONDITION(SList.SymmetryType(0) == n1.Type());
-   Projection q(SList, Projection::NoInitialization());
-   n1.Convert(q.begin());
-   return q;
-}
-
-template <typename T1, typename T2>
-inline
-Projection MakeP(SymmetryList SList, T1 n1, T2 n2)
-{
-   PRECONDITION(SList.NumSymmetries() == 2);
-   PRECONDITION(SList.SymmetryType(0) == n1.Type());
-   PRECONDITION(SList.SymmetryType(1) == n2.Type());
-   Projection q(SList, Projection::NoInitialization());
-   n2.Convert(n1.Convert(q.begin()));
-   return q;
-}
-
-template <typename T1, typename T2, typename T3>
-inline
-Projection MakeP(SymmetryList SList, T1 n1, T2 n2, T3 n3)
-{
-   PRECONDITION(SList.NumSymmetries() == 3);
-   PRECONDITION(SList.SymmetryType(0) == n1.Type());
-   PRECONDITION(SList.SymmetryType(1) == n2.Type());
-   PRECONDITION(SList.SymmetryType(2) == n3.Type());
-   Projection q(SList, Projection::NoInitialization());
-   n3.Convert(n2.Convert(n1.Convert(q.begin())));
-   return q;
-}
-
-template <typename T1, typename T2, typename T3, typename T4>
-inline
-Projection MakeP(SymmetryList SList, T1 n1, T2 n2, T3 n3, T4 n4)
-{
-   PRECONDITION(SList.NumSymmetries() == 4);
-   PRECONDITION(SList.SymmetryType(0) == n1.Type());
-   PRECONDITION(SList.SymmetryType(1) == n2.Type());
-   PRECONDITION(SList.SymmetryType(2) == n3.Type());
-   PRECONDITION(SList.SymmetryType(3) == n4.Type());
-   Projection q(SList, Projection::NoInitialization());
-   n4.Convert(n3.Convert(n2.Convert(n1.Convert(q.begin()))));
-   return q;
-}
-
-template <typename T1, typename T2, typename T3, typename T4, typename T5>
-inline
-Projection MakeP(SymmetryList SList, T1 n1, T2 n2, T3 n3, T4 n4, T5 n5)
-{
-   PRECONDITION(SList.NumSymmetries() == 5);
-   PRECONDITION(SList.SymmetryType(0) == n1.Type());
-   PRECONDITION(SList.SymmetryType(1) == n2.Type());
-   PRECONDITION(SList.SymmetryType(2) == n3.Type());
-   PRECONDITION(SList.SymmetryType(3) == n4.Type());
-   PRECONDITION(SList.SymmetryType(4) == n5.Type());
-   Projection q(SList, Projection::NoInitialization());
-   n5.Convert(n4.Convert(n3.Convert(n2.Convert(n1.Convert(q.begin())))));
-   return q;
-}
-
-//
 // QNConstructor
 //
 // A functor that can be used to quickly convert from concrete quantum number types
@@ -593,7 +522,7 @@ bool is_scalar(QuantumNumber const& q)
 
 // returns the degee (dimension) of the representation q
 // this can be fractional, in the case of anyonic quantum numbers
-double degree(QuantumNumber const& q);
+int degree(QuantumNumber const& q);
 
 // The multiplicity of the representation.  Currently, we do not handle
 // non-multiplicity-free algebras at all, so this must always be 0 or 1.  But
@@ -613,11 +542,11 @@ std::complex<double> cross_product_factor(QuantumNumber const& q1, QuantumNumber
 // coupling coefficent c such that
 // <q' | AB(k) | q > = sum_{q''} c * < q' | A(k1) | q'' > < q'' | B(k2) | q >
 double product_coefficient(QuantumNumber const& k1, QuantumNumber const& k2, QuantumNumber const& k,
-                           QuantumNumber const& qp, QuantumNumber const& q, QuantumNumber const& qpp)
-{
-   return coupling_3j_phase(q, qp, k) * sqrt(degree(qpp) / degree(k))
-      * coupling_6j(qp, k1, qpp, k2, q, k);
-}
+                           QuantumNumber const& qp, QuantumNumber const& q, QuantumNumber const& qpp);
+//{
+//   return coupling_3j_phase(q, qp, k) * sqrt(degree(qpp) / degree(k))
+//      * coupling_6j(qp, k1, qpp, k2, q, k);
+//}
 
 // coupling coefficent c such that a product can be decomposed as
 // < q' | A(k1) | q'' > < q'' | B(k2) | q > = sum_k c * <q' | AB(k) | q >
@@ -716,68 +645,6 @@ QuantumNumberList inverse_transform_targets(QuantumNumber const& q1, QuantumNumb
    inverse_transform_targets(q1, q, std::back_inserter(Q));
    return Q;
 }
-
-template <typename OutIter>
-void enumerate_projections(QuantumNumber const& q, OutIter Out);
-
-inline
-ProjectionList enumerate_projections(QuantumNumber const& q)
-{
-   ProjectionList P;
-   enumerate_projections(q, std::back_inserter(P));
-   return P;
-}
-
-// returns true if p is a valid projection of the quantum number q
-bool is_projection(QuantumNumber const& q, Projection const& p);
-
-// returns true if an operator that transforms as (Q,P) could
-// contain a non-zero matrix element <q1 | T(Q,P) | q2>
-bool is_delta(QuantumNumber const& q1, QuantumNumber const& Q, Projection const& P,
-              QuantumNumber const& q2);
-
-// returns the projection p such that q1 = q2 + p
-Projection difference(QuantumNumber const& q1, QuantumNumber const& q2);
-
-// returns the inverse projection.  Ie if q1 = q2 + p then return
-// the projection such that q2 = q1 + p.
-Projection negate(Projection const& p);
-
-// sum of two projections
-Projection sum(Projection const& p1, Projection const& p2);
-
-// returns true if it is possible to change q by the projection p.
-bool is_possible(QuantumNumber const& q, Projection const& p);
-
-QuantumNumber change(QuantumNumber const& q, Projection const& p);
-
-double weight(Projection const& p);
-
-// Returns the smallest quantum number q such that p is a valid projection
-QuantumNumber heighest_weight(Projection const& p);
-
-// returns true if there exists a projection p in PList such that is_delta(q1, q, p, q2)
-inline
-bool is_possibleDelta(QuantumNumber const& q1, QuantumNumber const& q,
-                     ProjectionList const& PList, QuantumNumber const& q2)
-{
-   for (ProjectionList::const_iterator P = PList.begin(); P != PList.end(); ++P)
-   {
-      if (is_delta(q1, q, *P, q2)) return true;
-   }
-   return false;
-}
-
-// returns the coefficient of the tensor product
-// < qp+Delta | A(k) | q+Delta > = c * < qp | A(k) | q > < Delta | I | Delta >
-double delta_shift_coefficient(QuantumNumber const& qp, QuantumNumber const& k,
-                               QuantumNumber const& q, QuantumNumber const& Delta);
-
-// Here, we map a projection onto a corresponding set of abelian quantum numbers.
-// This is done by blindly assuming that the integers representing the projection
-// map 1-1 onto the integers representing the quantum number.
-// Maybe we could introduce some better error checking sometime ;)
-QuantumNumber map_projection_to_quantum(Projection const& p,  SymmetryList const& SL);
 
 double casimir(QuantumNumber const& q, int n);
 

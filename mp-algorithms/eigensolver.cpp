@@ -167,7 +167,7 @@ template <typename Func>
 void
 LinearSolveDirect(StateComponent& x, Func F, StateComponent const& Rhs, int Verbose = 0)
 {
-   LinearAlgebra::Matrix<double> HMat = real(ConstructSuperOperator(F, x));
+   LinearAlgebra::Matrix<double> HMat = LinearAlgebra::real(ConstructSuperOperator(F, x));
 
    PackStateComponent Pack(x);
    if (Verbose > 0)
@@ -179,7 +179,7 @@ LinearSolveDirect(StateComponent& x, Func F, StateComponent const& Rhs, int Verb
    Pack.pack(Rhs, v.data());
 
    LinearAlgebra::Matrix<double> vv(size(v),1);
-   vv(LinearAlgebra::all,0) = real(v);
+   vv(LinearAlgebra::all,0) = LinearAlgebra::real(v);
    LinearAlgebra::Vector<std::complex<double>> xx = LinearAlgebra::LinearSolve(HMat, vv)(LinearAlgebra::all, 0);
 
    x = Pack.unpack(xx.data());
@@ -352,7 +352,7 @@ LocalEigensolver::Solve(StateComponent& C,
 	    PackStateComponent Pack(D);
    	    LinearAlgebra::Vector<std::complex<double>> v(Pack.size());
 	    Pack.pack(D, v.data());
-	    LinearAlgebra::Vector<double> Diag = real(v);
+	    LinearAlgebra::Vector<double> Diag = std::real(v);
 	    for (int i = 0; i < size(Diag); ++i)
 	    {
 	       if (norm_frob(Diag[i] - HMat(i,i)) > 1E-10)

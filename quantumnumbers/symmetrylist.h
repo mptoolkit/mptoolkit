@@ -69,9 +69,6 @@ class SymmetryListImpl
       // returns the size in ints required to store a quantum number
       int QuantumNumberSize() const { return count; }
 
-      // returns the size in ints required to store a projection
-      int ProjectionSize() const { return projectionCount; }
-
       // returns the size in ints required to store a multiplicity label.
       // This is a place-holder that always returns zero.
       int MultiplicitySize() const { return 0; }
@@ -86,14 +83,6 @@ class SymmetryListImpl
       // returns the offset of the quantum numbers associated with the i'th symmetry
       int QuantumNumberOffset(int i) const
         { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return Offsets[i]; }
-
-      // returns size in ints of the projection for the i'th symmetry
-      int ProjectionSize(int i) const
-        { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return Data[i]->ProjectionSize(); }
-
-      // returns the offset of the projection numbers associated with the i'th symmetry
-      int ProjectionOffset(int i) const
-        { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return ProjectionOffsets[i]; }
 
       // returns the complete name of the quantum number list
       std::string FullName() const { return FName; }
@@ -137,12 +126,11 @@ class SymmetryListImpl
       typedef std::list<SymmetryListImpl*> InstanceListType;
 
       std::string FName;     // full name of the symmetry list
-      int count, projectionCount;  // size in ints of the memory required for a quantum number/projection
+      int count;  // size in ints of the memory required for a quantum number
       std::vector<SymmetryBase const*> Data;
       std::vector<std::string> Names;  // the names of the symmetries
       // The Offset array is a set of offsets into the raw data representing each component of the quantum number
       std::vector<int> Offsets;
-      std::vector<int> ProjectionOffsets;
       InstanceListType::iterator MyInstance;  // iterator into the list of all instances
 
       // maintain a static list of all instances
@@ -152,7 +140,7 @@ class SymmetryListImpl
 class SymmetryList
 {
    public:
-      // iterators into the quantum number/projection storage.  These MUST coincide
+      // iterators into the quantum number storage.  These MUST coincide
       // with RepLabelBase<T>::iterator and RepLabelBase<T>::const_iterator
       typedef int*       s_iter;
       typedef int const* sc_iter;
@@ -175,10 +163,6 @@ class SymmetryList
       // returns the size in ints required to store a quantum number
       int QuantumNumberSize() const
          { DEBUG_CHECK(pImpl); return pImpl->QuantumNumberSize(); }
-
-      // returns the size in ints required to store a projection
-      int ProjectionSize() const
-         { DEBUG_CHECK(pImpl); return pImpl->ProjectionSize(); }
 
       // returns the size in ints required to store a multiplicity label.
       int MultiplicitySize() const
@@ -204,14 +188,6 @@ class SymmetryList
       // returns the offset of the given quantum number
       int QuantumNumberOffset(int i) const
          { DEBUG_CHECK(pImpl); return pImpl->QuantumNumberOffset(i); }
-
-      // reuturns the size in ints of the i'th projection
-      int ProjectionSize(int i) const
-         { DEBUG_CHECK(pImpl); return pImpl->ProjectionSize(i); }
-
-      // returns the offset of the i'th projection
-      int ProjectionOffset(int i) const
-         { DEBUG_CHECK(pImpl); return pImpl->ProjectionOffset(i); }
 
       int NumCasimirOperators() const
          { DEBUG_CHECK(pImpl); return pImpl->NumCasimirOperators(); }
@@ -278,34 +254,11 @@ class SymmetryList
 
       double conj_phase(sc_iter qp, sc_iter k, sc_iter q) const;
 
-      void enumerate_projections(sc_iter q, std::vector<int>& RetList) const;
-
-      double clebsch_gordan(sc_iter qp,  sc_iter k,  sc_iter q,
-                            sc_iter qpm, sc_iter km, sc_iter qm) const;
-
       std::string QuantumNumberToString(sc_iter q) const;
 
       void StringToQuantumNumber(std::string const& s, s_iter q) const;
 
-      std::string ProjectionToString(sc_iter p) const;
-
-      void StringToProjection(std::string const& s, s_iter p) const;
-
       void scalar_transforms_as(s_iter q) const;
-
-      bool is_delta(sc_iter q1, sc_iter Q, sc_iter P, sc_iter q2) const;
-
-      void difference(sc_iter q1, sc_iter q2, s_iter P) const;
-
-      void negate(s_iter p) const;
-
-      void sum(sc_iter p1, sc_iter p2, s_iter p) const;
-
-      bool is_projection(sc_iter q, sc_iter p) const;
-
-      bool is_possible(sc_iter q, sc_iter p) const;
-
-      void change(sc_iter q, sc_iter p, s_iter Q) const;
 
       void heighest_weight(sc_iter p, s_iter q) const;
 
@@ -390,7 +343,7 @@ SymmetryList::operator=(SymmetryList const& QList)
 
 namespace
 {
-   NiftyCounter::nifty_counter<SymmetryListImpl::InitializeInstances> SymmetryListInitCounter;
+NiftyCounter::nifty_counter<SymmetryListImpl::InitializeInstances> SymmetryListInitCounter;
 } // namespace
 
 } // namespace QuantumNumbers

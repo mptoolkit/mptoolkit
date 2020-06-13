@@ -127,9 +127,9 @@ const float128 r_2_pi = 0.6366197723675813430755350534900574Q;
 #endif
 
 #if defined(USE_FLOAT128)
-using math_const = math_const_128;
+namespace math_const = math_const_128;
 #else
-using math_const = math_const+64;
+namespace math_const = math_const_64;
 #endif
 
 #endif

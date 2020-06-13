@@ -35,46 +35,37 @@
 namespace NiftyCounter
 {
 
+template <typename T>
+struct DoNothing
+{
+   static void DoIt() {}
+};
 
-template <typename Init, typename Exit = void>
+typedef void(*InitFuncType)();
+
+template <InitFuncType Init, InitFuncType = DoNothing<void>::DoIt>
 class nifty_counter;
 
-template <typename Init, typename Exit>
+template <InitFuncType Init, InitFuncType Exit>
 class nifty_counter
 {
    public:
       nifty_counter()
       {
-         if (count++ == 0) InitFunc();
+         if (count++ == 0) Init();
       }
 
       ~nifty_counter()
       {
-         if (--count == 0) ExitFunc();
+         if (--count == 0) Exit();
       }
 
    private:
-      Init InitFunc;
-      Exit ExitFunc;
       static int count;
 };
 
-template <typename Init>
-class nifty_counter<Init, void>
-{
-   public:
-      nifty_counter()
-      {
-         if (count++ == 0) InitFunc();
-      }
-
-   private:
-      Init InitFunc;
-      static int count;
-};
-
-template <typename Init, typename Exit>
-int nifty_counter<Init, Exit>::count = 0;
+template <InitFuncType InitFunc, InitFuncType ExitFunc>
+int nifty_counter<InitFunc, ExitFunc>::count = 0;
 
 } // namespace NiftyCounter
 

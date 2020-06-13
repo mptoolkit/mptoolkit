@@ -282,7 +282,6 @@ namespace Tensor
 {
 
 using QuantumNumbers::QuantumNumber;
-using QuantumNumbers::Projection;
 using QuantumNumbers::SymmetryList;
 
 using LinearAlgebra::size_type;
@@ -1398,28 +1397,12 @@ add_triple_prod(Tensor::IrredTensor<T4, B1, B4, S4>& Result,
 // Shifts the basis by some delta factor, with normalization.
 //
 
-template <typename T, typename B1, typename B2, typename S>
-Tensor::IrredTensor<T, B1, B2, S>
-delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
-            QuantumNumbers::QuantumNumber q,
-            QuantumNumbers::Projection p);
-
 // Shift the basis by a strictly Abelian shift.
 // Precondition: degree(q) == 1
 template <typename T, typename B1, typename B2, typename S>
 Tensor::IrredTensor<T, B1, B2, S>
 delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
             QuantumNumbers::QuantumNumber q);
-
-// The basis here must have been obtained with the DeltaShift() function for the
-// basis.  For use when the shifted basis is already constructed.
-template <typename T, typename B1, typename B2, typename S>
-Tensor::IrredTensor<T, B1, B2, S>
-delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
-            QuantumNumbers::QuantumNumber q,
-            QuantumNumbers::Projection p,
-            B1 const& NewBasis1,
-            B2 const& NewBasis2);
 
 //
 // prod variants for HermitianProxy.  The hermitian argument is

@@ -39,7 +39,6 @@ namespace Tensor
 using QuantumNumbers::SymmetryList;
 using QuantumNumbers::QuantumNumber;
 using QuantumNumbers::QuantumNumberList;
-using QuantumNumbers::Projection;
 
 //
 // BasisList
@@ -200,10 +199,6 @@ QuantumNumbersInBasis(BasisList const& b)
 std::map<int, int>
 LinearizeQuantumNumberSubspace(BasisList const& b, QuantumNumbers::QuantumNumber const& q);
 
-// Apply a shift operator to the basis.  This will fail if any of the shifts
-// are not possible (eg, if it shifts beyond the highest weight rep)
-BasisList delta_shift(BasisList const& Orig, QuantumNumbers::Projection const& p);
-
 //
 // VectorBasis
 //
@@ -300,9 +295,6 @@ class VectorBasis
    friend void CoerceSymmetryListInPlace(VectorBasis& b, SymmetryList const& sl);
 
    friend VectorBasis delta_shift(VectorBasis const& Orig,
-                                 QuantumNumbers::Projection const& p);
-
-   friend VectorBasis delta_shift(VectorBasis const& Orig,
                                  QuantumNumbers::QuantumNumber const& q);
 
    friend VectorBasis RenameSymmetry(VectorBasis const& BL, SymmetryList const& NewSL);
@@ -338,29 +330,6 @@ QuantumNumbersInBasis(VectorBasis const& b)
 }
 
 VectorBasis RenameSymmetry(VectorBasis const& BL, SymmetryList const& NewSL);
-
-// Apply a shift operator to the basis.  This will fail if any of the shifts
-// are not possible (eg, if it shifts beyond the highest weight rep)
-VectorBasis delta_shift(VectorBasis const& Orig, QuantumNumbers::Projection const& p);
-
-#if 0
-// Apply a shift operation, where q is a degree 1 rep
-inline
-VectorBasis
-delta_shift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
-{
-   QuantumNumbers::ProjectionList PL = enumerate_projections(q);
-   DEBUG_PRECONDITION_EQUAL(PL.size(), 1);
-   return delta_shift(Orig, PL[0]);
-}
-
-inline
-VectorBasis
-delta_shift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
-{
-   return delta_shift(Orig, q);
-}
-#endif
 
 //
 // make_zero

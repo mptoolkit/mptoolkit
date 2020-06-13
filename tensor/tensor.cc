@@ -199,59 +199,6 @@ std::ostream& operator<<(std::ostream& out, IrredTensor<T, B1, B2, S> const& Op)
 }
 
 template <typename T, typename B1, typename B2, typename S>
-std::string show_projections(IrredTensor<T, B1, B2, S> const& Op)
-{
-   std::ostringstream out;
-   out << "Operator transforms with symmetry " << Op.GetSymmetryList()
-       << " as " << Op.TransformsAs() << ":\n";
-
-   std::vector<QuantumNumbers::Projection> Projections;
-   enumerate_projections(Op.TransformsAs(), std::back_inserter(Projections));
-   for (size_type km = 0; km < Projections.size(); ++km)
-   {
-      out << "Projection " << std::setw(10) << Projections[km] << " :\n";
-
-      typename IrredTensor<T, B1, B2, S>::const_iterator I = iterate(Op);
-      while (I)
-      {
-         typename IrredTensor<T, B1, B2, S>::const_inner_iterator J = iterate(I);
-         while (J)
-         {
-            QuantumNumber qi = Op.qn1(J.index1());
-            QuantumNumber qj = Op.qn2(J.index2());
-
-            std::vector<QuantumNumbers::Projection> mi, mj;
-            enumerate_projections(qi, std::back_inserter(mi));
-            enumerate_projections(qj, std::back_inserter(mj));
-
-            for (size_type ii = 0; ii < mi.size(); ++ii)
-            {
-               for (size_type jj = 0; jj < mj.size(); ++jj)
-               {
-                  T elem = *J * clebsch_gordan(qj,    Op.TransformsAs(),  qi,
-                                               mj[jj], Projections[km], mi[ii]);
-
-                  if (LinearAlgebra::norm_frob(elem) > 1E-10)
-                  {
-                     out << "   " << elem
-                         << " |" << J.index1() << ": " << qi
-                         << ", " << mi[ii]
-                         << "> <"
-                         << J.index2() << ": " << qj
-                         << ", " << mj[jj]
-                         << "|\n";
-                  }
-               }
-            }
-            ++J;
-         }
-         ++I;
-      }
-   }
-   return out.str();
-}
-
-template <typename T, typename B1, typename B2, typename S>
 IrredTensor<T, B1, B2, S>&
 IrredTensor<T, B1, B2, S>::operator+=(IrredTensor const& Op)
 {
@@ -819,7 +766,6 @@ template <typename T, typename B1, typename B2, typename S>
 Tensor::IrredTensor<T, B1, B2, S>
 delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
             QuantumNumbers::QuantumNumber q,
-            QuantumNumbers::Projection p,
             B1 const& NewBasis1, B2 const& NewBasis2)
 {
    if (x.is_null())
@@ -828,8 +774,8 @@ delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
       return x;
    }
 
-   DEBUG_CHECK_EQUAL(NewBasis1, delta_shift(x.Basis1(), p));
-   DEBUG_CHECK_EQUAL(NewBasis2, delta_shift(x.Basis2(), p));
+   DEBUG_CHECK_EQUAL(NewBasis1, delta_shift(x.Basis1(), q));
+   DEBUG_CHECK_EQUAL(NewBasis2, delta_shift(x.Basis2(), q));
 
    typedef typename IrredTensor<T, B1, B2, S>::const_iterator       const_iterator;
    typedef typename IrredTensor<T, B1, B2, S>::const_inner_iterator const_inner_iterator;
@@ -839,36 +785,7 @@ delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
    IrredTensor<T, B1, B2, S> Result(NewBasis1, NewBasis2, x.TransformsAs());
 
    Result.data() = x.data();
-
-#if 0
-   // This was a misguided attempt for non-abelian shifts (which dont actually exist)
-   for (const_iterator I = iterate(x); I; ++I)
-   {
-      for (const_inner_iterator J = iterate(I); J; ++J)
-      {
-         // The scale factor here depends on the normalization of the coupling
-         // coefficients.
-
-         //double Scale = std::sqrt(double(degree(x.qn1(J.index1())))
-         // degree(NewBasis1[J.index1()]));
-                 //double Scale = 1.0;
-         double Scale = delta_shift_coefficient(x.qn1(J.index1()), x.TransformsAs(),
-                                                x.qn2(J.index2()), q);
-
-         Result(J.index1(), J.index2()) = Scale * (*J);
-      }
-   }
-#endif
    return Result;
-}
-
-template <typename T, typename B1, typename B2, typename S>
-Tensor::IrredTensor<T, B1, B2, S>
-delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
-            QuantumNumbers::QuantumNumber q,
-            QuantumNumbers::Projection p)
-{
-   return delta_shift(x, q, p, delta_shift(x.Basis1(), p), delta_shift(x.Basis2(), p));
 }
 
 template <typename T, typename B1, typename B2, typename S>
@@ -876,10 +793,7 @@ Tensor::IrredTensor<T, B1, B2, S>
 delta_shift(Tensor::IrredTensor<T, B1, B2, S> const& x,
             QuantumNumbers::QuantumNumber q)
 {
-   QuantumNumbers::ProjectionList PL = enumerate_projections(q);
-   DEBUG_PRECONDITION_EQUAL(q.degree(), 1);
-
-   return delta_shift(x, q, PL[0], delta_shift(x.Basis1(), PL[0]), delta_shift(x.Basis2(), PL[0]));
+   return delta_shift(x, q, delta_shift(x.Basis1(), q), delta_shift(x.Basis2(), q));
 }
 
 } // namespace Tensor

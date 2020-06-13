@@ -304,7 +304,7 @@ double casimir(NullQN const&, int)
 
 namespace
 {
-   NiftyCounter::nifty_counter<NullQN::Register> NullQNHalfIntCounter;
+NiftyCounter::nifty_counter<NullQN::Register> NullQNCounter;
 }
 
 } // namespace QuantumNumbers

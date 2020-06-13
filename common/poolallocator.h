@@ -107,14 +107,17 @@ inline void operator delete(void* p)                                            
 // For debugging, walks the heap and reports the count of allocated vs freed blocks
 void walk_heap();
 
+namespace Private
+{
 // internal use only
 void PoolAllocatorInit();
 void PoolAllocatorExit();
+} // namespace Private
 
 // declare a nifty counter to do the initialization and shutdown
 namespace
 {
-  NiftyCounter::nifty_counter<PoolAllocatorInit, PoolAllocatorExit> PoolAllocCounter;
+NiftyCounter::nifty_counter<Private::PoolAllocatorInit, Private::PoolAllocatorExit> PoolAllocCounter;
 } // namespace
 
 // inlines

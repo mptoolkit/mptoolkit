@@ -243,37 +243,6 @@ QuantumNumber::set(std::string Name, T const& q)
 }
 
 //
-// Projection
-//
-
-template <typename InputIter>
-inline
-Projection::Projection(SymmetryList const& qList, InputIter InitIter)
-  : RepLabelBase<Projection>(qList.GetSymmetryListImpl(), qList.ProjectionSize(), InitIter)
-{
-}
-
-inline
-Projection::Projection(SymmetryList const& qList, NoInitialization)
-  : RepLabelBase<Projection>(qList.GetSymmetryListImpl(), qList.ProjectionSize())
-{
-}
-
-inline
-bool
-Projection::operator==(Projection const& Q) const
-{
-   return is_equal_to(Q);
-}
-
-inline
-bool
-Projection::operator!=(Projection const& Q) const
-{
-   return !is_equal_to(Q);
-}
-
-//
 // free functions for coupling coefficients etc
 //
 
@@ -322,20 +291,6 @@ std::complex<double> cross_product_factor(QuantumNumber const& q1, QuantumNumber
 {
    DEBUG_PRECONDITION(q1.GetSymmetryList() == q2.GetSymmetryList());
    return q1.GetSymmetryList().cross_product_factor(q1.begin(), q2.begin());
-}
-
-inline
-double clebsch_gordan(QuantumNumber const& q1, QuantumNumber const& q2, QuantumNumber const& q,
-                      Projection const&    m1, Projection const&    m2, Projection const&    m)
-{
-   DEBUG_PRECONDITION(q.GetSymmetryList() == q1.GetSymmetryList());
-   DEBUG_PRECONDITION(q.GetSymmetryList() == q2.GetSymmetryList());
-   DEBUG_PRECONDITION(q.GetSymmetryList() == m1.GetSymmetryList());
-   DEBUG_PRECONDITION(q.GetSymmetryList() == m2.GetSymmetryList());
-   DEBUG_PRECONDITION(q.GetSymmetryList() == m.GetSymmetryList());
-   DEBUG_PRECONDITION_EQUAL(multiplicity(q1, q2, q), 1)(q1)(q2)(q);
-   return q.GetSymmetryList().
-      clebsch_gordan(q1.begin(), q2.begin(), q.begin(), m1.begin(), m2.begin(), m.begin());
 }
 
 inline
@@ -512,95 +467,6 @@ inverse_transform_targets(QuantumNumber const& q1, QuantumNumber const& q, OutIt
    {
       *Out++ = QuantumNumber(q1.GetSymmetryList(), I);
    }
-}
-
-template <typename OutIter>
-inline
-void
-enumerate_projections(QuantumNumber const& q, OutIter Out)
-{
-  //  std::cout << "quantumnumber.cc: enumerating projections of " << q << std::endl;
-   std::vector<int> RetList;
-   q.GetSymmetryList().enumerate_projections(q.begin(), RetList);
-   //   std::cout << "RetList size is " << RetList.size() << std::endl;
-   int Size = q.GetSymmetryList().ProjectionSize();
-   for (std::vector<int>::const_iterator I = RetList.begin(); I != RetList.end(); I += Size)
-   {
-      *Out++ = Projection(q.GetSymmetryList(), I);
-      //      std::cout << "Projection is " << Projection(q.GetSymmetryList(), I) << std::endl;
-   }
-}
-
-inline
-bool is_projection(QuantumNumber const& q, Projection const& p)
-{
-   DEBUG_PRECONDITION(q.GetSymmetryList() == p.GetSymmetryList());
-   return q.GetSymmetryList().is_projection(q.begin(), p.begin());
-}
-
-inline
-bool is_delta(QuantumNumber const& q1, QuantumNumber const& Q,
-              Projection const& P, QuantumNumber const& q2)
-{
-   DEBUG_PRECONDITION(q1.GetSymmetryList() == Q.GetSymmetryList());
-   DEBUG_PRECONDITION(q2.GetSymmetryList() == Q.GetSymmetryList());
-   DEBUG_PRECONDITION(P.GetSymmetryList() == Q.GetSymmetryList());
-   return Q.GetSymmetryList().is_delta(q1.begin(), Q.begin(), P.begin(), q2.begin());
-}
-
-inline
-Projection difference(QuantumNumber const& q1, QuantumNumber const& q2)
-{
-   DEBUG_PRECONDITION_EQUAL(q1.GetSymmetryList(), q2.GetSymmetryList());
-   Projection p(q1.GetSymmetryList());
-   q1.GetSymmetryList().difference(q1.begin(), q2.begin(), p.begin());
-   return p;
-}
-
-inline
-Projection negate(Projection const& p)
-{
-   Projection r = p;
-   r.GetSymmetryList().negate(r.begin());
-   return r;
-}
-
-inline
-Projection sum(Projection const& p1, Projection const& p2)
-{
-   Projection r(p1.GetSymmetryList());
-   r.GetSymmetryList().sum(p1.begin(), p2.begin(), r.begin());
-   return r;
-}
-
-inline
-bool is_possible(QuantumNumber const& q, Projection const& p)
-{
-   DEBUG_PRECONDITION_EQUAL(q.GetSymmetryList(), p.GetSymmetryList());
-   return q.GetSymmetryList().is_possible(q.begin(), p.begin());
-}
-
-inline
-QuantumNumber change(QuantumNumber const& q, Projection const& p)
-{
-   DEBUG_PRECONDITION_EQUAL(q.GetSymmetryList(), p.GetSymmetryList());
-   QuantumNumber Q(q.GetSymmetryList());
-   q.GetSymmetryList().change(q.begin(), p.begin(), Q.begin());
-   return Q;
-}
-
-inline
-QuantumNumber heighest_weight(Projection const& p)
-{
-   QuantumNumber Ret(p.GetSymmetryList());
-   p.GetSymmetryList().heighest_weight(p.begin(), Ret.begin());
-   return Ret;
-}
-
-inline
-double weight(Projection const& p)
-{
-   return p.GetSymmetryList().weight(p.begin());
 }
 
 inline

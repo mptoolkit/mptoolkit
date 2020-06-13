@@ -241,6 +241,8 @@ void walk_heap()
    }
 }
 
+namespace Private
+{
 void PoolAllocatorInit()
 {
    // nothing to do here
@@ -273,5 +275,6 @@ void PoolAllocatorExit()
    }
 #endif
 }
+} // namespace Private
 
 } // namespace PoolAlloc

@@ -173,15 +173,7 @@ LinearWavefunction CreateRandomWavefunction(std::vector<BasisList> const& Basis,
 					    QuantumNumber const& q, double Beta,
 					    QuantumNumber const& RightBoundary, int NConfig, int Verbose)
 {
-   LinearWavefunction Result;
-   for (int i = 0; i < NConfig; ++i)
-   {
-      WavefunctionDesc Psi = CreateRandomConfiguration(Basis, q, Beta, RightBoundary);
-      Result = Result + (randutil::rand()*2-1) * WavefunctionFromConfiguration(Psi, Basis, RightBoundary);
-      if (Verbose > 0)
-	 std::cout << "." << std::flush;
-   }
-   return Result;
+   PANIC("Not implemented");
 }
 
 LinearWavefunction CreateRandomWavefunction(std::vector<BasisList> const& Basis,

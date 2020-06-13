@@ -43,7 +43,8 @@
 namespace LAPACK
 {
 
-using namespace Fortran;
+using complex = Fortran::complex;
+using integer = Fortran::integer;
 
 // wrapper functions
 

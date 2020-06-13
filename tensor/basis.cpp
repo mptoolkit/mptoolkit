@@ -111,51 +111,10 @@ operator<<(std::ostream& out, std::vector<BasisList> const& u)
    return out;
 }
 
-std::string show_projections(BasisList const& B)
-{
-   using QuantumNumbers::ProjectionList;
-
-   std::ostringstream Out;
-   Out << "Basis has symmetry " << B.GetSymmetryList()
-      << ", size = " << B.size() << '\n';
-   Out << "   N  QuantumNumber  Degree  Projection\n";
-   int N = 0;
-   for (BasisList::const_iterator I = B.begin(); I != B.end(); ++I)
-   {
-      bool First = true;
-      ProjectionList Pr = enumerate_projections(*I);
-      for (ProjectionList::const_iterator PrI = Pr.begin(); PrI != Pr.end(); ++PrI)
-      {
-         if (First)
-         {
-            Out << std::setw(4) << N << "  "
-                << std::setw(13) << *I << "  "
-                << std::setw(6) << degree(*I) << "  ";
-            First = false;
-         }
-         else
-            Out << "                             ";
-
-         Out << std::setw(10) << *PrI << '\n';
-      }
-      ++N;
-   }
-   return Out.str();
-}
-
 void
 BasisList::delta_shift(QuantumNumbers::QuantumNumber const& q)
 {
    Q_.delta_shift(q);
-}
-
-BasisList delta_shift(BasisList const& Orig, QuantumNumbers::Projection const& p)
-{
-   BasisList Result(Orig.GetSymmetryList());
-   for (BasisList::const_iterator I = Orig.begin(); I != Orig.end(); ++I)
-      Result.push_back(change(*I, p));
-
-   return Result;
 }
 
 BasisList delta_shift(BasisList const& Orig, QuantumNumbers::QuantumNumber const& q)
@@ -221,50 +180,10 @@ std::ostream& operator<<(std::ostream& Out, VectorBasis const& B)
    return Out;
 }
 
-std::string show_projections(VectorBasis const& B)
-{
-   using QuantumNumbers::ProjectionList;
-
-   std::ostringstream Out;
-   Out << "Basis has symmetry " << B.GetSymmetryList()
-       << ", subspace size = " << B.size()
-       << ", dimension = " << B.total_dimension()
-       << ", degree = " << B.total_degree() << '\n';
-   Out << "   N  QuantumNumber  Dimension  Degree  Projection\n";
-   for (std::size_t N = 0; N < B.size(); ++N)
-   {
-      bool First = true;
-      ProjectionList Pr = enumerate_projections(B[N]);
-      for (ProjectionList::const_iterator PrI = Pr.begin(); PrI != Pr.end(); ++PrI)
-      {
-         if (First)
-         {
-            Out << std::setw(4) << N << "  "
-                << std::setw(13) << B[N] << "  "
-                << std::setw(9) << B.dim(N) << "  "
-                << std::setw(6) << degree(B[N]) << "  ";
-            First = false;
-         }
-         else
-            Out << "                                        ";
-
-         Out << std::setw(10) << *PrI << '\n';
-      }
-   }
-   return Out.str();
-}
-
 void
 VectorBasis::delta_shift(QuantumNumbers::QuantumNumber const& q)
 {
    Basis_.delta_shift(q);
-}
-
-VectorBasis delta_shift(VectorBasis const& Orig, QuantumNumbers::Projection const& p)
-{
-   return VectorBasis(delta_shift(Orig.Basis(), p),
-                      Orig.Dimension_.begin(),
-                      Orig.Dimension_.end());
 }
 
 VectorBasis delta_shift(VectorBasis const& Orig, QuantumNumbers::QuantumNumber const& q)
