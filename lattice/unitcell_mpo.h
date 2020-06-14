@@ -41,7 +41,7 @@ class UnitCellMPO
       UnitCellMPO() = default;
 
       UnitCellMPO(SiteListPtrType const& SiteList_, BasicFiniteMPO Op_,
-                  LatticeCommute Com_, int Offset_ = 0, std::string Description = "",
+                  int Offset_ = 0, std::string Description = "",
 		  int CoarseGrain_ = 1);
 
       // When we assign a UnitCellMPO, we don't want to copy the description
@@ -119,8 +119,6 @@ class UnitCellMPO
       // Access to the underlying MPO
       BasicFiniteMPO& MPO() { return Op; }
 
-      LatticeCommute Commute() const { return Com; }
-
       SiteListPtrType const& GetSiteList() const { return SiteList; }
 
       // Extends the MPO with JW-strings on the left and identity on the right
@@ -138,7 +136,6 @@ class UnitCellMPO
    private:
       SiteListPtrType SiteList;
       BasicFiniteMPO Op;
-      LatticeCommute Com;
       int Offset;
       std::string Description;
       int CoarseGrain;
@@ -240,7 +237,7 @@ UnitCellMPO ExtendToCoverUnitCell(UnitCellMPO const& Op, int OtherSize)
 inline
 UnitCellMPO coarse_grain(UnitCellMPO const& Op, int N)
 {
-   return UnitCellMPO(Op.SiteList, coarse_grain(ExtendToCoverUnitCell(Op,N).Op, N), Op.Com, Op.Offset, Op.Description,
+   return UnitCellMPO(Op.SiteList, coarse_grain(ExtendToCoverUnitCell(Op,N).Op, N), Op.Offset, Op.Description,
 		      Op.CoarseGrain*N);
 }
 

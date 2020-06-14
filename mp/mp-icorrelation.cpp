@@ -389,11 +389,6 @@ int main(int argc, char** argv)
       }
 
       // consistency checks
-      if (Op1.Commute() * Op2.Commute() != LatticeCommute::Bosonic)
-      {
-         std::cerr << "mp-icorrelation: fatal: cannot mix bosonic and fermionic operators!\n";
-         return 1;
-      }
       if (adjoint(Op1.TransformsAs()) != Op2.TransformsAs())
       {
          std::cerr << "mp-icorrelation: fatal: product of Op1 and Op2 is not a scalar!\n";
@@ -402,11 +397,6 @@ int main(int argc, char** argv)
 
       if (Connected)
       {
-         if (Op1.Commute() != LatticeCommute::Bosonic)
-         {
-            std::cerr << "mp-icorrelation: fatal: cannot construct a connected correlator of a non-bosonic operator!\n";
-            return 1;
-         }
          if (!is_scalar(Op1.TransformsAs()))
          {
             std::cerr << "mp-icorrelation: fatal: cannot construct a connected correlator of a non-scalar operator!\n";
@@ -484,8 +474,7 @@ int main(int argc, char** argv)
       StringOp = repeat(StringOp, UnitCellSize / StringOp.size());
 
       // get a finite MPO version of the string operator
-      UnitCellMPO StringOpPerUnitCell = UnitCellMPO(Op1.GetSiteList(), BasicFiniteMPO(StringOp),
-                                                    LatticeCommute::Bosonic, 0);
+      UnitCellMPO StringOpPerUnitCell = UnitCellMPO(Op1.GetSiteList(), BasicFiniteMPO(StringOp), 0);
 
       MatrixOperator LeftIdent = MatrixOperator::make_identity(Psi.Basis1());
 

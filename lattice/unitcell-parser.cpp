@@ -308,85 +308,7 @@ struct push_local_argument
 };
 
 //
-// swapb - swap without fermion signs
-//
-
-// notation for swapb(cell1,cell2)[site1,site2]
-struct push_swapb_cell_site
-{
-   push_swapb_cell_site(UnitCell const& Cell_, int NumCells_,
-                       std::stack<ElementType>& eval_)
-      : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
-
-   void operator()(char const*, char const*) const
-   {
-      int Site2 = pop_int(eval);
-      int Site1 = pop_int(eval);
-      int Cell2 = pop_int(eval);
-      int Cell1 = pop_int(eval);
-
-      CHECK(NumCells == 0 || (Cell1 >= 0 && Cell1 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
-      CHECK(NumCells == 0 || (Cell2 >= 0 && Cell2 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
-
-      eval.push(ElementType(Cell.swap_gate_no_sign(Cell1, Site1, Cell2, Site2)));
-   }
-
-   UnitCell const& Cell;
-   int NumCells;
-   std::stack<ElementType >& eval;
-};
-
-// notation for swapb[site1,site2]
-struct push_swapb_site
-{
-   push_swapb_site(UnitCell const& Cell_, int NumCells_,
-                  std::stack<ElementType>& eval_)
-      : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
-
-   void operator()(char const*, char const*) const
-   {
-      CHECK(NumCells == 0 || NumCells == 1)("Cell index required");
-      int Cell2 = 0;
-      int Cell1 = 0;
-      int Site2 = pop_int(eval);
-      int Site1 = pop_int(eval);
-
-      eval.push(ElementType(Cell.swap_gate_no_sign(Cell1, Site1, Cell2, Site2)));
-   }
-
-   UnitCell const& Cell;
-   int NumCells;
-   std::stack<ElementType >& eval;
-};
-
-// notation for swapb(cell1,cell2)
-struct push_swapb_cell
-{
-   push_swapb_cell(UnitCell const& Cell_, int NumCells_,
-                  std::stack<ElementType>& eval_)
-      : Cell(Cell_), NumCells(NumCells_), eval(eval_) {}
-
-   void operator()(char const*, char const*) const
-   {
-      CHECK_EQUAL(Cell.size(), 1)("Unit cell is more than one site, so a site index required here");
-      int Cell2 = pop_int(eval);
-      int Cell1 = pop_int(eval);
-      int Site2 = 0;
-      int Site1 = 0;
-
-      CHECK(NumCells == 0 || (Cell1 >= 0 && Cell1 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
-      CHECK(NumCells == 0 || (Cell2 >= 0 && Cell2 < NumCells))("Cell index out of bounds")(Cell1)(NumCells);
-
-      eval.push(ElementType(Cell.swap_gate_no_sign(Cell1, Site1, Cell2, Site2)));
-   }
-
-   UnitCell const& Cell;
-   int NumCells;
-   std::stack<ElementType >& eval;
-};
-
-//
-// swap (with fermion signs)
+// swap
 //
 
 // notation for swap(cell1,cell2)[site1,site2]
@@ -439,7 +361,7 @@ struct push_swap_site
    std::stack<ElementType >& eval;
 };
 
-// notation for swapb(cell1,cell2)
+// notation for swap(cell1,cell2)
 struct push_swap_cell
 {
    push_swap_cell(UnitCell const& Cell_, int NumCells_,
@@ -481,7 +403,7 @@ struct push_string
    {
       BasicFiniteMPO Op = ParseStringOperator(*Cell.GetSiteList(),
                                          std::string(Start, End), NumCells*Cell.size());
-      eval.push(UnitCellMPO(Cell.GetSiteList(), Op, LatticeCommute::Bosonic, 0));
+      eval.push(UnitCellMPO(Cell.GetSiteList(), Op, 0));
    }
 
    UnitCell const& Cell;
@@ -552,7 +474,7 @@ struct push_fsup
       InfiniteMPOElement Op = ParseInfiniteOperator(*ILattice, Str);
 
       BasicFiniteMPO NewOp = fsup(Cell1*Cell.size(), Cell2*Cell.size(), Op);
-      eval.push(UnitCellMPO(Cell.GetSiteList(), NewOp, LatticeCommute::Bosonic, Cell1*Cell.size()));
+      eval.push(UnitCellMPO(Cell.GetSiteList(), NewOp, Cell1*Cell.size()));
    }
 
    UnitCell const& Cell;
@@ -843,19 +765,6 @@ struct UnitCellParser : public grammar<UnitCellParser>
                      >> *(',' >> expression[increment_num_param_stack(self.NumParameterStack)]) >> ')')
             [push_rand_expr(self.NumParameterStack, self.eval)];
 
-         swapb_cell_expr_t = (str_p("swapb") >> '(' >> expression_t >> ',' >> expression_t >> ')')
-            >> !('[' >> expression_t >> ',' >> expression_t >> ']');
-
-         swapb_cell_expr = (str_p("swapb") >> '(' >> expression >> ',' >> expression >> ')')
-            >> (('[' >> expression >> ',' >> expression >> ']')
-                [push_swapb_cell_site(self.Cell, self.NumCells, self.eval)]
-                |  eps_p[push_swapb_cell(self.Cell, self.NumCells, self.eval)]);
-
-         swapb_site_expr_t = (str_p("swapb") >> '[' >> expression_t >> ',' >> expression_t >> ']');
-
-         swapb_site_expr = (str_p("swapb") >> '[' >> expression >> ',' >> expression >> ']')
-            [push_swapb_site(self.Cell, self.NumCells, self.eval)];
-
          swap_cell_expr_t = (str_p("swap") >> '(' >> expression_t >> ',' >> expression_t >> ')')
             >> !('[' >> expression_t >> ',' >> expression_t >> ']');
 
@@ -1028,8 +937,6 @@ struct UnitCellParser : public grammar<UnitCellParser>
             |   fsup_t
             |   randexpr_t
             |   coarse_grain_expression_t
-            |   swapb_cell_expr_t
-            |   swapb_site_expr_t
             |   swap_cell_expr_t
             |   swap_site_expr_t
             |   filegrid_expression_t
@@ -1052,8 +959,6 @@ struct UnitCellParser : public grammar<UnitCellParser>
             |   fsup
             |   randexpr
 	    |   coarse_grain_expression
-            |   swapb_cell_expr
-            |   swapb_site_expr
             |   swap_cell_expr
             |   swap_site_expr
             |   filegrid_expression
@@ -1114,7 +1019,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
          parameter, named_parameter, parameter_list,
          prod_expression,
          bracket_expr, sq_bracket_expr,
-         swap_cell_expr, swap_site_expr, swapb_cell_expr, swapb_site_expr,
+         swap_cell_expr, swap_site_expr,
          local_function, local_c_function, local_operator, cell_function, cell_operator,
          local_arg, cell_c_function,
          operator_expression, fsup, randexpr,
@@ -1128,7 +1033,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
          parameter_t, named_parameter_t, parameter_list_t,
          prod_expression_t,
          bracket_expr_t, sq_bracket_expr_t,
-         swap_cell_expr_t, swap_site_expr_t, swapb_cell_expr_t, swapb_site_expr_t,
+         swap_cell_expr_t, swap_site_expr_t,
          local_function_t, local_c_function_t, local_operator_t, cell_function_t, cell_operator_t,
          local_arg_t, cell_c_function_t,
          operator_expression_t, fsup_t, randexpr_t,

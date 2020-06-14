@@ -489,12 +489,12 @@ BasicTriangularMPO sum_unit(UnitCellMPO const& Op, int UnitCellSize)
    return sum_unit(*Op.GetSiteList(), ExtendToCoverUnitCell(Op, UnitCellSize).MPO(), Op.Commute(), UnitCellSize);
 }
 
-BasicTriangularMPO sum_unit(UnitCell const& Cell, BasicFiniteMPO const& Op, LatticeCommute Com)
+BasicTriangularMPO sum_unit(UnitCell const& Cell, BasicFiniteMPO const& Op)
 {
-   return sum_unit(*Cell.GetSiteList(), Op, Com, Cell.size());
+   return sum_unit(*Cell.GetSiteList(), Op, Cell.size());
 }
 
-BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize)
+BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& Op, int UnitCellSize)
 {
    CHECK_EQUAL(Op.Basis1().size(), 1)("Operator Basis1 is not one dimensional.  Basis must contain only one quantum number for sum_unit()");
    CHECK_EQUAL(Op.Basis2().size(), 1)("Operator Basis2 is not one dimensional.  Basis must contain only one quantum number for sum_unit()");
@@ -656,14 +656,14 @@ BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op)
    return sum_kink(*Op.GetSiteList(), Kink.MPO(), Op.MPO(), Op.Commute(), Op.GetSiteList()->size());
 }
 
-BasicTriangularMPO sum_kink(SiteListType const& SiteList, BasicFiniteMPO const& Kink, BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize)
+BasicTriangularMPO sum_kink(SiteListType const& SiteList, BasicFiniteMPO const& Kink, BasicFiniteMPO const& Op, int UnitCellSize)
 {
    BasicFiniteMPO Ident = repeat(string_mpo(SiteList, Com.SignOperator(), Op.qn1()), Kink.size() / SiteList.size());
    return sum_unit(SiteList, Kink*Ident, Op, UnitCellSize);
 }
 
 BasicTriangularMPO sum_k(SiteListType const& SiteList, std::complex<double> const& k,
-                       BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize)
+                       BasicFiniteMPO const& Op, int UnitCellSize)
 {
    return sum_unit(SiteList, exp(std::complex<double>(0,1)*k)
                    *string_mpo(SiteList, Com.SignOperator(), Op.qn1()), Op, UnitCellSize);

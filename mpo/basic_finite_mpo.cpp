@@ -821,7 +821,6 @@ ParseStringOperator(SiteListType const& SiteList, std::string const& Expr, int S
    for (unsigned i = 0; i < SiteList.size(); ++i)
    {
       SiteOperator Op = ParseSiteOperator(SiteList[i], Expr);
-      CHECK_EQUAL(Op.Commute(), LatticeCommute::Bosonic)("String operator must have bosonic commutation");
       Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Vacuum, Vacuum);
       Result[i](0,0) = Op;
    }

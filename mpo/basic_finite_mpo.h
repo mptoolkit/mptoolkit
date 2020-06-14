@@ -47,10 +47,6 @@ class BasicFiniteMPO
 
       BasicFiniteMPO(BasicFiniteMPO const& Other) : Data(Other.Data) {}
 
-      // Removed this constructor because it doesn't make much sense to define a BasicFiniteMPO
-      // without specifying the LatticeCommute
-      //      explicit BasicFiniteMPO(int Size) : Data(Size) {}
-
       explicit BasicFiniteMPO(int Size) : Data(Size) {}
 
       // Construction from a generic MPO.  The generic MPO must already be in finite form.

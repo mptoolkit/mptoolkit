@@ -113,13 +113,13 @@ std::ostream& operator<<(std::ostream& out, SiteProductBasis const& Basis)
 
 PStream::opstream& operator<<(PStream::opstream& out, SiteOperator const& Op)
 {
-   out << Op.base() << Op.Basis_ << Op.Com_ << Op.Description_;
+   out << Op.base() << Op.Basis_ << Op.Description_;
    return out;
 }
 
 PStream::ipstream& operator>>(PStream::ipstream& in, SiteOperator& Op)
 {
-   in >> Op.base() >> Op.Basis_ >> Op.Com_;
+   in >> Op.base() >> Op.Basis_;
    if (in.version_of(LatticeVersion) > 0)
       in >> Op.Description_;
    else
@@ -129,7 +129,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, SiteOperator& Op)
 
 std::ostream& operator<<(std::ostream& out, SiteOperator const& Op)
 {
-   out << Op.Commute() << " [" << Op.TransformsAs() << "] ";
+   out << "[" << Op.TransformsAs() << "] ";
    bool first = true;
    for (std::size_t i = 0; i < Op.size1(); ++i)
    {
@@ -230,7 +230,7 @@ decompose_tensor_prod(SiteOperator const& S, SiteProductBasis const& SPBasis)
 SiteOperator flip_conj(SiteOperator const& s, SiteBasis const& ReflectedBasis)
 {
    DEBUG_CHECK_EQUAL(ReflectedBasis, adjoint(s.Basis()));
-   SiteOperator Result(ReflectedBasis, adjoint(s.TransformsAs()), s.Commute());
+   SiteOperator Result(ReflectedBasis, adjoint(s.TransformsAs()));
    Result.data() = s.data();
    return Result;
 }

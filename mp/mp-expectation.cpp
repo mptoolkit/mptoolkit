@@ -153,7 +153,7 @@ int main(int argc, char** argv)
       };
 
       // Check that Op is bosonic, otherwise it is not defined
-      CHECK(Op.Commute() == LatticeCommute::Bosonic)("Cannot evaluate non-bosonic operator")(Op.Commute());
+      CHECK(is_scalar(Op.TransformsAs()))("Cannot evaluate non-bosonic operator")(Op.TransformsAs());
 
       std::complex<double> x; // the expectation value
 

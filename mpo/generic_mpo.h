@@ -17,10 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-// GenericMPO represents an MPO that is in no particular form
-// It contains a LatticeCommute, so that we can determine the
-// Jordan-Wigner string that should be used when extending the
-// operator onto a lattice.
+// GenericMPO represents an MPO that is in no particular form.
 
 #if !defined(MPTOOLKIT_MPO_GENERIC_MPO_H)
 #define MPTOOLKIT_MPO_GENERIC_MPO_H

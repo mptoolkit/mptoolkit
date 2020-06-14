@@ -38,9 +38,8 @@ void SetMatElement(SiteOperator& s, int n1, int n2, double x)
 inline
 LatticeSite Boson(int MaxN)
 {
-   SymmetryList Symmetry("N:Null");
-   QuantumNumbers::QuantumNumber QNum(Symmetry); // no symmetries, only one quantum number
-   SiteBasis Basis(Symmetry);
+   SymmetryList Symmetry;
+   SiteBasis Basis;
    SiteOperator B, BH, P, R, N, N2, Q, I, U;
    LatticeSite Site;
 
@@ -48,10 +47,10 @@ LatticeSite Boson(int MaxN)
    for (int n = 0; n <= MaxN; ++n)
    {
       std::string q = boost::lexical_cast<std::string>(n);
-      Basis.push_back(q, QNum);
+      Basis.push_back(q);
    }
 
-   BH = SiteOperator(Basis, QNum, LatticeCommute::Bosonic);
+   BH = SiteOperator(Basis);
    for (int n = 0; n <= MaxN; ++n)
    {
      SetMatElement(BH, n+1, n, std::sqrt(double(n + 1)));
@@ -63,14 +62,14 @@ LatticeSite Boson(int MaxN)
    Site["B"] = B;
    I = SiteOperator::Identity(Basis);
    Site["I"] = I;
-   N = prod(BH, B, QNum);
+   N = prod(BH, B);
    Site["N"] = N;
-   N2 = prod(N, N-I, QNum);
+   N2 = prod(N, N-I);
    Site["N2"] = N2;
    R = I;
    Site["R"] = R;
 
-   U = SiteOperator(Basis, QNum, LatticeCommute::Bosonic);
+   U = SiteOperator(Basis);
    for (int n = 0; n <= MaxN; ++n)
    {
       SetMatElement(U, n, n, minus1pow(n));
@@ -80,7 +79,7 @@ LatticeSite Boson(int MaxN)
    // projections onto each state
    for (int n = 0; n <= MaxN; ++n)
    {
-      SiteOperator X(Basis, QNum, LatticeCommute::Bosonic);
+      SiteOperator X(Basis);
       SetMatElement(X, n, n, 1);
       std::string OpName = std::string("P_")
         + boost::lexical_cast<std::string>(n);

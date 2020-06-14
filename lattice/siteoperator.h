@@ -26,125 +26,6 @@
 
 using Tensor::IrredTensor;
 
-struct LatticeCommute
-{
-   enum Values { Fermionic = -1, None = 0, Bosonic = 1, Custom = 2 };
-
-   LatticeCommute() : Value_(None) {}
-
-   LatticeCommute(Values v) : Value_(v) {}
-
-   LatticeCommute(std::string const& s) : Value_(Custom), SignOperator_(s) {}
-
-   LatticeCommute& operator=(Values v)
-   {
-      Value_ = v;
-      return *this;
-   }
-
-   std::string SignOperator() const
-   {
-      if (Value_ == Fermionic)
-         return "P";
-      else if (Value_ == Bosonic)
-         return "I";
-      else if (Value_ == Custom)
-         return SignOperator_;
-      PANIC("Undefined commutation operation");
-      return "";
-   }
-
-   Values Value_;
-   std::string SignOperator_;
-};
-
-inline
-LatticeCommute operator*(LatticeCommute x, LatticeCommute y)
-{
-   if (x.Value_ == LatticeCommute::Custom || y.Value_ == LatticeCommute::Custom)
-   {
-      if (x.SignOperator() == y.SignOperator())
-         return LatticeCommute(LatticeCommute::Bosonic);
-      else
-         PANIC("unsupported custom commutation string")(x.SignOperator())(y.SignOperator());
-   }
-
-   return LatticeCommute(LatticeCommute::Values(int(x.Value_) * (int(y.Value_))));
-}
-
-inline LatticeCommute operator*(LatticeCommute x, int N)
-{
-   // if x is None then return None.
-   // Otherwise, if N is even then we must be bosonic.
-   // Otherwise, if N is odd then return x.
-   return (int(x.Value_) != 0 && N % 2 == 0) ? LatticeCommute::Bosonic : x;
-}
-
-inline LatticeCommute operator*(int N, LatticeCommute x)
-{
-   return x*N;
-}
-
-inline LatticeCommute& operator*=(LatticeCommute& x, LatticeCommute const& y)
-{
-   x = x*y;
-   return x;
-}
-
-inline LatticeCommute& operator*=(LatticeCommute& x, int N)
-{
-   x = x*N;
-   return x;
-}
-
-inline bool operator==(LatticeCommute const& x, LatticeCommute const& y)
-{
-   return x.Value_ == y.Value_ && (x.Value_ != LatticeCommute::Custom || x.SignOperator_ == y.SignOperator_);
-}
-
-inline bool operator!=(LatticeCommute const& x, LatticeCommute const& y)
-{
-   return !(x == y);
-}
-
-inline
-std::ostream& operator<<(std::ostream& out, LatticeCommute const& x)
-{
-   if (x.Value_ == LatticeCommute::Fermionic)
-      out << "Fermionic";
-   else if (x.Value_ == LatticeCommute::Bosonic)
-      out << "Bosonic";
-   else if (x.Value_ == LatticeCommute::None)
-      out << "None";
-   else if (x.Value_ == LatticeCommute::Custom)
-      out << "Custom(" << x.SignOperator_ << ")";
-   return out;
-}
-
-inline
-PStream::opstream& operator<<(PStream::opstream& out, LatticeCommute const& x)
-{
-   out << int(x.Value_);
-   if (x.Value_ == LatticeCommute::Custom)
-   {
-      out << x.SignOperator_;
-   }
-   return out;
-}
-
-inline
-PStream::ipstream& operator>>(PStream::ipstream& in, LatticeCommute& x)
-{
-   int Com;
-   in >> Com;
-   x.Value_ = LatticeCommute::Values(Com);
-   if (x.Value_ == LatticeCommute::Custom)
-   {
-      in >> x.SignOperator_;
-   }
-   return in;
-}
-
 class SiteOperator : public IrredTensor<std::complex<double> >
 {
    public:
@@ -174,13 +55,11 @@ class SiteOperator : public IrredTensor<std::complex<double> >
 
       SiteOperator() {}
 
-      SiteOperator(SiteBasis const& B, QuantumNumber const& q, LatticeCommute Com = LatticeCommute::None,
-                   std::string Description = "")
-         : base_type(B, q), Basis_(B), Com_(Com), Description_(Description) {}
+      SiteOperator(SiteBasis const& B, QuantumNumber const& q, std::string Description = "")
+         : base_type(B, q), Basis_(B), Description_(Description) {}
 
-      SiteOperator(SiteBasis const& B, base_type const& b, LatticeCommute Com = LatticeCommute::None,
-                   std::string Description = "")
-         : base_type(b), Basis_(B), Com_(Com), Description_(Description)
+      SiteOperator(SiteBasis const& B, base_type const& b, std::string Description = "")
+         : base_type(b), Basis_(B), Description_(Description)
          { CHECK_EQUAL(b.Basis1(), b.Basis2()); CHECK_EQUAL(B, b.Basis1()); }
 
       SiteBasis const& Basis() const { return Basis_; }
@@ -198,10 +77,6 @@ class SiteOperator : public IrredTensor<std::complex<double> >
       base_type& base() { return *this; }
       base_type const& base() const { return *this; }
 
-      LatticeCommute Commute() const { return Com_; }
-
-      void SetCommute(LatticeCommute x) { Com_ = x; }
-
       std::string const& description() const { return Description_; }
       std::string description_or_none() const
       { return Description_.empty() ? "(no description)" : Description_; }
@@ -215,7 +90,6 @@ class SiteOperator : public IrredTensor<std::complex<double> >
 
    private:
       SiteBasis Basis_;
-      LatticeCommute Com_;
       std::string Description_;
 
    friend PStream::opstream& operator<<(PStream::opstream& out, SiteOperator const& Op);
@@ -303,7 +177,7 @@ struct Conj<SiteOperator>
    typedef SiteOperator result_type;
 
    result_type operator()(argument_type x) const
-   { return SiteOperator(x.Basis(), conj(x.base()), x.Commute()); }
+   { return SiteOperator(x.Basis(), conj(x.base())); }
 };
 
 template <>
@@ -313,7 +187,7 @@ struct Adjoint<SiteOperator>
    typedef SiteOperator result_type;
 
    result_type operator()(argument_type x) const
-   { return SiteOperator(x.Basis(), adjoint(x.base()), x.Commute()); }
+   { return SiteOperator(x.Basis(), adjoint(x.base())); }
 };
 
 template <>
@@ -323,7 +197,7 @@ struct InvAdjoint<SiteOperator>
    typedef SiteOperator result_type;
 
    result_type operator()(argument_type x) const
-   { return SiteOperator(x.Basis(), inv_adjoint(x.base()), x.Commute()); }
+   { return SiteOperator(x.Basis(), inv_adjoint(x.base())); }
 };
 
 template <>
@@ -333,7 +207,7 @@ struct Negate<SiteOperator>
    typedef SiteOperator result_type;
 
    result_type operator()(argument_type x) const
-   { return SiteOperator(x.Basis(), -x.base(), x.Commute()); }
+   { return SiteOperator(x.Basis(), -x.base()); }
 };
 
 template <>
@@ -380,8 +254,7 @@ struct Addition<SiteOperator, SiteOperator>
 
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      PRECONDITION_EQUAL(x.Commute(), y.Commute());
-      return SiteOperator(x.Basis(), x.base() + y.base(), x.Commute());
+      return SiteOperator(x.Basis(), x.base() + y.base());
    }
 };
 
@@ -394,8 +267,7 @@ struct Subtraction<SiteOperator, SiteOperator>
 
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      PRECONDITION_EQUAL(x.Commute(), y.Commute());
-      return SiteOperator(x.Basis(), x.base() - y.base(), x.Commute());
+      return SiteOperator(x.Basis(), x.base() - y.base());
    }
 };
 
@@ -408,7 +280,7 @@ struct Multiplication<SiteOperator, int>
 
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      return SiteOperator(x.Basis(), x.base() * double(y), x.Commute());
+      return SiteOperator(x.Basis(), x.base() * double(y));
    }
 };
 
@@ -421,7 +293,7 @@ struct Multiplication<int, SiteOperator>
 
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      return SiteOperator(y.Basis(), double(x) * y.base(), y.Commute());
+      return SiteOperator(y.Basis(), double(x) * y.base());
    }
 };
 
@@ -434,7 +306,7 @@ struct Multiplication<SiteOperator, double>
 
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      return SiteOperator(x.Basis(), x.base() * y, x.Commute());
+      return SiteOperator(x.Basis(), x.base() * y);
    }
 };
 
@@ -447,7 +319,7 @@ struct Multiplication<double, SiteOperator>
 
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      return SiteOperator(y.Basis(), x * y.base(), y.Commute());
+      return SiteOperator(y.Basis(), x * y.base());
    }
 };
 
@@ -460,7 +332,7 @@ struct Multiplication<SiteOperator, std::complex<double> >
 
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      return SiteOperator(x.Basis(), x.base() * y, x.Commute());
+      return SiteOperator(x.Basis(), x.base() * y);
    }
 };
 
@@ -473,7 +345,7 @@ struct Multiplication<std::complex<double>, SiteOperator>
 
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      return SiteOperator(y.Basis(), x * y.base(), y.Commute());
+      return SiteOperator(y.Basis(), x * y.base());
    }
 };
 
@@ -499,8 +371,7 @@ struct ScalarProd<SiteOperator, HermitianProxy<SiteOperator> >
 
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      return SiteOperator(x.Basis(), scalar_prod(x.base(), herm(y.base().base())),
-                          x.Commute()*y.base().Commute());
+      return SiteOperator(x.Basis(), scalar_prod(x.base(), herm(y.base().base())));
    }
 };
 
@@ -513,8 +384,7 @@ struct ScalarProd<HermitianProxy<SiteOperator>, SiteOperator>
 
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      return SiteOperator(y.Basis(), scalar_prod(herm(x.base().base()), y.base()),
-                          x.base().Commute()*y.Commute());
+      return SiteOperator(y.Basis(), scalar_prod(herm(x.base().base()), y.base()));
    }
 };
 
@@ -530,7 +400,7 @@ struct IrredProd<SiteOperator, SiteOperator, Nest>
 
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      return SiteOperator(x.Basis(), prod(x.base(), y.base(), Trans_), x.Commute()*y.Commute());
+      return SiteOperator(x.Basis(), prod(x.base(), y.base(), Trans_));
    }
 
    QuantumNumbers::QuantumNumber Trans_;

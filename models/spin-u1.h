@@ -46,13 +46,13 @@ LatticeSite SpinU1(half_int Spin, std::string const& Sym = "Sz")
       ("Sz"  , "z-component of spin")
       ;
 
-   Sp = SiteOperator(Basis, QN(1), LatticeCommute::Bosonic);
-   Sm = SiteOperator(Basis, QN(-1), LatticeCommute::Bosonic);
-   Sz = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
+   Sp = SiteOperator(Basis, QN(1));
+   Sm = SiteOperator(Basis, QN(-1));
+   Sz = SiteOperator(Basis, QN(0));
 
-   P = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   R = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
-   I = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
+   P = SiteOperator(Basis, QN(0));
+   R = SiteOperator(Basis, QN(0));
+   I = SiteOperator(Basis, QN(0));
 
    for (half_int s = -Spin; s <= Spin; ++s)
    {

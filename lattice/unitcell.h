@@ -244,23 +244,15 @@ class UnitCell
 
       // special UnitCell operators
 
-      // Returns an MPO that effects a swap gate between sites i and j
+      // Returns an MPO that effects a swap gate between sites i and j,
+      // In the new quantum number implementation, this will get the correct commutation
+      // automatically.  So this function does the same thing that swap_gate_no_sign
+      // used to do.
       operator_type swap_gate(int i, int j) const;
 
       // Returns an MPO that effects a swap gate between different unit cells
+      // this version ignores fermions / JW strings
       operator_type swap_gate(int iCell, int i, int jCell, int j) const;
-
-      // Returns an MPO that effects a swap gate between sites i and j,
-      // this version ignores fermions / JW strings
-      operator_type swap_gate_no_sign(int i, int j) const;
-
-      // Returns an MPO that effects a swap gate between different unit cells
-      // this version ignores fermions / JW strings
-      operator_type swap_gate_no_sign(int iCell, int i, int jCell, int j) const;
-
-      // returns the commutation attribute of the operator, equivalent
-      // to as_operator(OpName, n).Commute()
-      LatticeCommute Commute(std::string const& OpName, int n) const;
 
       void debug_check_structure() const;
       void check_structure() const;

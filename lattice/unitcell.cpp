@@ -278,7 +278,7 @@ UnitCell::operator()(std::string const& Op, int n) const
    OperatorListType::const_iterator I = Operators.find(Op);
    if (I != Operators.end())
    {
-      return UnitCellMPO(Sites, I->second.MPO(), I->second.Commute(), I->second.offset()+n*this->size());
+      return UnitCellMPO(Sites, I->second.MPO(), I->second.offset()+n*this->size());
    }
    // else
    if (Sites->size() != 1)
@@ -298,13 +298,6 @@ UnitCell::local_operator_exists(std::string const& Op, int n) const
    return (*Sites)[n].operator_exists(Op);
 }
 
-LatticeCommute
-UnitCell::Commute(std::string const& Op, int n) const
-{
-   CHECK(0 <= n && n < int(Sites->size()))("Site index is out of range")(n)(Sites->size());
-   return (*Sites)[n][Op].Commute();
-}
-
 UnitCell::operator_type
 UnitCell::local_operator(std::string const& Op, int Cell, int n) const
 {
@@ -317,23 +310,15 @@ UnitCell::local_operator(std::string const& Op, int Cell, int n) const
 UnitCell::operator_type
 UnitCell::map_local_operator(SiteOperator const& Operator, int Cell, int n) const
 {
-   std::string SignOperator = Operator.Commute().SignOperator();
-
    BasicFiniteMPO Result(Sites->size());
 
    BasisList Vacuum = make_vacuum_basis(Operator.GetSymmetryList());
    BasisList Basis = make_single_basis(Operator.TransformsAs());
 
-   // Assemble the JW-string.
+   // Assemble the JW-string.  TODO: this becomes the identity
    for (int i = 0; i < n; ++i)
    {
-      if (!(*Sites)[i].operator_exists(SignOperator))
-      {
-         WARNING("JW-string operator doesn't exist at a lattice site, using the identity")
-            (i)(SignOperator);
-      }
-      SimpleOperator Op = (*Sites)[i].operator_exists(SignOperator) ?
-         (*Sites)[i][SignOperator] : (*Sites)[i].identity();
+      SimpleOperator Op = (*Sites)[i].identity();
       Result[i] = OperatorComponent(Op.Basis1(), Op.Basis2(), Basis, Basis);
       Result[i](0,0) = Op;
    }
@@ -346,7 +331,7 @@ UnitCell::map_local_operator(SiteOperator const& Operator, int Cell, int n) cons
       Result[i](0,0) = I;
    }
 
-   return UnitCellMPO(Sites, Result, Operator.Commute(), Cell*this->size(),
+   return UnitCellMPO(Sites, Result, Cell*this->size(),
                       Operator.description());
 }
 
@@ -423,6 +408,7 @@ UnitCell::eval_local_function(std::string const& Func, int Cell, int Site,
    return this->map_local_operator(Op, Cell, Site);
 }
 
+#if 0
 UnitCellMPO
 UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
 {
@@ -470,7 +456,7 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
 
    if (Cell_i == Cell_j && i == j)
    {
-      return UnitCellMPO(Sites, identity_mpo(*Sites), LatticeCommute::Bosonic, Cell_i*this->size());
+      return UnitCellMPO(Sites, identity_mpo(*Sites), Cell_i*this->size());
    }
 
    BasisList Basis_i = this->operator[](i).Basis1();
@@ -495,9 +481,9 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
    ProductBasis<BasisList, BasisList> Basis_ji(Basis_j, Basis_i);
 
    // The actual gate operator
-   SimpleOperator Op = ::swap_gate_fermion(Basis_i, Parity_i,
-                                           Basis_j, Parity_j,
-                                           Basis_ji, Basis_ij);
+   SimpleOperator Op = ::swap_gate(Basis_i, Parity_i,
+                                   Basis_j, Parity_j,
+                                   Basis_ji, Basis_ij);
 
    // decompose it back into sites
    OperatorComponent R1, R2;
@@ -549,8 +535,9 @@ UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
    }
 
    Result.debug_check_structure();
-   return UnitCellMPO(Sites, Result, LatticeCommute::Bosonic, Cell_i*this->size());
+   return UnitCellMPO(Sites, Result, Cell_i*this->size());
 }
+#endif
 
 UnitCellMPO
 UnitCell::swap_gate(int i, int j) const
@@ -559,13 +546,7 @@ UnitCell::swap_gate(int i, int j) const
 }
 
 UnitCellMPO
-UnitCell::swap_gate_no_sign(int i, int j) const
-{
-   return this->swap_gate_no_sign(0, i, 0, j);
-}
-
-UnitCellMPO
-UnitCell::swap_gate_no_sign(int Cell_i, int i, int Cell_j, int j) const
+UnitCell::swap_gate(int Cell_i, int i, int Cell_j, int j) const
 {
    CHECK(i >= 0 && i < this->size())("Site index is outside the unit cell!")(i)(this->size());
    CHECK(j >= 0 && j < this->size())("Site index is outside the unit cell!")(j)(this->size());
@@ -578,7 +559,7 @@ UnitCell::swap_gate_no_sign(int Cell_i, int i, int Cell_j, int j) const
 
    if (Cell_i == Cell_j && i == j)
    {
-      return UnitCellMPO(Sites, identity_mpo(*Sites), LatticeCommute::Bosonic, Cell_i*this->size());
+      return UnitCellMPO(Sites, identity_mpo(*Sites), Cell_i*this->size());
    }
 
    BasisList Basis_i = this->operator[](i).Basis1();
@@ -612,7 +593,7 @@ UnitCell::swap_gate_no_sign(int Cell_i, int i, int Cell_j, int j) const
    }
 
    Result.debug_check_structure();
-   return UnitCellMPO(Sites, Result, LatticeCommute::Bosonic, Cell_i*this->size());
+   return UnitCellMPO(Sites, Result, Cell_i*this->size());
 }
 
 void
@@ -622,11 +603,9 @@ UnitCell::SetDefaultOperators()
    if (this->empty())
       return;
 
-   Operators["I"] = UnitCellMPO(Sites, identity_mpo(*Sites), LatticeCommute::Bosonic, 0,
+   Operators["I"] = UnitCellMPO(Sites, identity_mpo(*Sites), 0,
                                 "Identity");
 
-   // we don't need the R operator if we have string() in the parser.
-   //   Operators["R"] = UnitCellMPO(Sites, string_mpo(Sites, ), LatticeCommute::Bosonic, 0);
 }
 
 #if 0
@@ -671,9 +650,9 @@ UnitCell::string_mpo(std::string const& OpName, QuantumNumbers::QuantumNumber co
 }
 
 BasicFiniteMPO
-UnitCell::string_mpo(LatticeCommute Com, QuantumNumbers::QuantumNumber const& Trans) const
+UnitCell::string_mpo(QuantumNumbers::QuantumNumber const& Trans) const
 {
-   return this->string_mpo(Com.SignOperator(), Trans);
+   return this->string_mpo(Trans);
 }
 #endif
 

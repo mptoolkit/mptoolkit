@@ -59,15 +59,15 @@ LatticeSite SpinSite(half_int Spin)
    }
 
 
-   Sp = SiteOperator(Basis, q, LatticeCommute::Bosonic);
-   Sm = SiteOperator(Basis, q, LatticeCommute::Bosonic);
-   Sx = SiteOperator(Basis, q, LatticeCommute::Bosonic);
-   Sy = SiteOperator(Basis, q, LatticeCommute::Bosonic);
-   Sz = SiteOperator(Basis, q, LatticeCommute::Bosonic);
+   Sp = SiteOperator(Basis, q);
+   Sm = SiteOperator(Basis, q);
+   Sx = SiteOperator(Basis, q);
+   Sy = SiteOperator(Basis, q);
+   Sz = SiteOperator(Basis, q);
 
-   P = SiteOperator(Basis, q, LatticeCommute::Bosonic);
-   R = SiteOperator(Basis, q, LatticeCommute::Bosonic);
-   I = SiteOperator(Basis, q, LatticeCommute::Bosonic);
+   P = SiteOperator(Basis, q);
+   R = SiteOperator(Basis, q);
+   I = SiteOperator(Basis, q);
 
    for (half_int s = -Spin; s <= Spin; ++s)
    {

@@ -200,9 +200,9 @@ BasicTriangularMPO make_zero(SiteListType const& SiteList);
 // The aux basis for JW is assumed to be compatible with Op -- that is, JW.qn2() == Op.qn1()
 BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& JW, BasicFiniteMPO const& Op, int UnitCellSize);
 
-BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
+BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& Op, int UnitCellSize);
 
-BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& Op, LatticeCommute Com);
+BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& Op);
 
 BasicTriangularMPO sum_unit(UnitCellMPO const& Op, int UnitCellSize);
 
@@ -222,7 +222,7 @@ ProductMPO prod_unit(UnitCellMPO const& Op_, int UnitCellSize)
 
 // Variant of sum_unit where we add the kink operator (generally will be unitary) to the left hand side
 BasicTriangularMPO sum_kink(SiteListType const& SiteList, BasicFiniteMPO const& Kink,
-                       BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
+                       BasicFiniteMPO const& Op, int UnitCellSize);
 
 BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op, int UnitCellSize);
 
@@ -232,7 +232,7 @@ BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op);
 // Consruct an operator at finite momentum.  This is a special case of sum_kink where the kink operator is
 // e^{ik} times the identity.
 BasicTriangularMPO sum_k(SiteListType const& SiteList, std::complex<double> const& k,
-                       BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
+                       BasicFiniteMPO const& Op, int UnitCellSize);
 
 BasicTriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op, int UnitCellSize);
 

@@ -20,7 +20,7 @@
 inline
 SiteOperator SiteOperator::Identity(SiteBasis const& Basis)
 {
-   SiteOperator Result(Basis, QuantumNumber(Basis.GetSymmetryList()), LatticeCommute::Bosonic);
+   SiteOperator Result(Basis, QuantumNumber(Basis.GetSymmetryList()));
    for (std::size_t i = 0; i < Basis.size(); ++i)
    {
       Result(i,i) = 1.0;
@@ -54,20 +54,19 @@ inline
 SiteOperator prod(SiteOperator const& x, SiteOperator const& y, QuantumNumber Trans)
 {
    DEBUG_PRECONDITION_EQUAL(x.Basis(), y.Basis());
-   return SiteOperator(x.Basis(), prod(x.base(), y.base(), Trans),
-                       x.Commute() * y.Commute());
+   return SiteOperator(x.Basis(), prod(x.base(), y.base(), Trans));
 }
 
 inline
 SiteOperator adjoint(SiteOperator const& x)
 {
-   return SiteOperator(x.Basis(), adjoint(x.base()), x.Commute());
+   return SiteOperator(x.Basis(), adjoint(x.base()));
 }
 
 inline
 SiteOperator inv_adjoint(SiteOperator const& x)
 {
-   return SiteOperator(x.Basis(), inv_adjoint(x.base()), x.Commute());
+   return SiteOperator(x.Basis(), inv_adjoint(x.base()));
 }
 
 inline
@@ -78,8 +77,7 @@ tensor_prod(SiteOperator const& S1, SiteOperator const& S2,
 {
    return SiteOperator(SPBasis.Basis(),
                        tensor_prod(S1.base(), S2.base(),
-                                   SPBasis.PBasis(), SPBasis.PBasis(),q),
-                       S1.Commute() * S2.Commute());
+                                   SPBasis.PBasis(), SPBasis.PBasis(),q));
 }
 
 inline
