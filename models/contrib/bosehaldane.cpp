@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// models/contrib/haldane-su2.cpp
+// models/contrib/bosehaldane.cpp
 //
 // Copyright (C) 2020 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-// SU(2) Haldane model.
+// Bosonic Haldane model.
 //
 // Example for a width-3 lattice (site numbers in brackets are periodic repeats
 // in the vertical direction (i.e. top-left (5) is the same site as the
@@ -55,7 +55,7 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/fermion-su2.h"
+#include "models/boson.h"
 #include "common/terminal.h"
 #include "common/prog_options.h"
 
@@ -69,10 +69,13 @@ int main(int argc, char** argv)
       int w = 4;
       std::string FileName;
       bool NoReflect = false;
+      int MaxN = DefaultMaxN;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
+         ("NumBosons,N", prog_opt::value(&MaxN),
+          FormatDefault("Maximum number of bosons per site", MaxN).c_str())
          ("width,w", prog_opt::value(&w), FormatDefault("width of the cylinder", w).c_str())
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ("noreflect", prog_opt::bool_switch(&NoReflect),
@@ -87,7 +90,7 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("SU(2) Haldane model");
+      OpDescriptions.set_description("Bosonic Haldane model");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
       OpDescriptions.add_cell_operators()
          ("Trans"      , "translation by one site (rotation by 2\u0071/w) in lattice short direction")
@@ -102,8 +105,7 @@ int main(int argc, char** argv)
          ("H_t2acw"    , "next-nearest-neighbour anticlockwise hopping")
          ("H_t3"       , "third-nearest-neighbour hopping")
          ("H_M"        , "asymmetric potential energy")
-         ("H_U"        , "on-site interaction n_up*n_down")
-         ("H_Us"       , "on-site interaction (n_up-1/2)*(n_down-1/2)")
+         ("H_U"        , "on-site interaction n*(n-1)/2")
          ("H_V1"       , "nearest-neighbour interaction")
          ("H_V2"       , "next-nearest-neighbour interaction")
          ("Ty"         , "momentum operator in lattice short direction")
@@ -125,12 +127,12 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      LatticeSite Site = FermionSU2();
+      LatticeSite Site = Boson(MaxN);
       int u = w*2;
       UnitCell Cell = repeat(Site, u);
       InfiniteLattice Lattice(&Cell);
 
-      UnitCellOperator I(Cell, "I"), CH(Cell, "CH"), C(Cell, "C"), Pdouble(Cell, "Pdouble"), Hu(Cell, "Hu"), N(Cell, "N"), N2(Cell, "N2");
+      UnitCellOperator I(Cell, "I"), BH(Cell, "BH"), B(Cell, "B"), N(Cell, "N"), N2(Cell, "N2");
       UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
       UnitCellOperator RyUnit(Cell, "RyUnit");
 
@@ -139,24 +141,24 @@ int main(int argc, char** argv)
 
       for (int i = 0; i < u; i += 2)
       {
-         H_t1 += dot(CH(0)[i], C(0)[(i+1)%u]) + dot(C(0)[i], CH(0)[(i+1)%u])
-               + dot(CH(0)[i], C(1)[(i+1)%u]) + dot(C(0)[i], CH(1)[(i+1)%u])
-               + dot(CH(0)[i], C(0)[(i+u-1)%u]) + dot(C(0)[i], CH(0)[(i+u-1)%u]);
-         H_t2cw += dot(CH(0)[i], C(0)[(i+2)%u])
-                 + dot(CH(0)[(i+1)%u], C(1)[(i+3)%u])
-                 + dot(CH(0)[(i+2)%u], C(1)[(i+2)%u])
-                 + dot(CH(1)[(i+3)%u], C(1)[(i+1)%u])
-                 + dot(CH(1)[(i+2)%u], C(0)[i])
-                 + dot(CH(1)[(i+1)%u], C(0)[(i+1)%u]);
-         H_t2acw += dot(C(0)[i], CH(0)[(i+2)%u])
-                  + dot(C(0)[(i+1)%u], CH(1)[(i+3)%u])
-                  + dot(C(0)[(i+2)%u], CH(1)[(i+2)%u])
-                  + dot(C(1)[(i+3)%u], CH(1)[(i+1)%u])
-                  + dot(C(1)[(i+2)%u], CH(0)[i])
-                  + dot(C(1)[(i+1)%u], CH(0)[(i+1)%u]);
-         H_t3 += dot(CH(0)[i], C(1)[(i+3)%u]) + dot(C(0)[i], CH(1)[(i+3)%u])
-               + dot(CH(0)[i], C(1)[(i+u-1)%u]) + dot(C(0)[i], CH(1)[(i+u-1)%u])
-               + dot(CH(0)[i], C(-1)[(i+u-1)%u]) + dot(C(0)[i], CH(-1)[(i+u-1)%u]);
+         H_t1 += dot(BH(0)[i], B(0)[(i+1)%u]) + dot(B(0)[i], BH(0)[(i+1)%u])
+               + dot(BH(0)[i], B(1)[(i+1)%u]) + dot(B(0)[i], BH(1)[(i+1)%u])
+               + dot(BH(0)[i], B(0)[(i+u-1)%u]) + dot(B(0)[i], BH(0)[(i+u-1)%u]);
+         H_t2cw += dot(BH(0)[i], B(0)[(i+2)%u])
+                 + dot(BH(0)[(i+1)%u], B(1)[(i+3)%u])
+                 + dot(BH(0)[(i+2)%u], B(1)[(i+2)%u])
+                 + dot(BH(1)[(i+3)%u], B(1)[(i+1)%u])
+                 + dot(BH(1)[(i+2)%u], B(0)[i])
+                 + dot(BH(1)[(i+1)%u], B(0)[(i+1)%u]);
+         H_t2acw += dot(B(0)[i], BH(0)[(i+2)%u])
+                  + dot(B(0)[(i+1)%u], BH(1)[(i+3)%u])
+                  + dot(B(0)[(i+2)%u], BH(1)[(i+2)%u])
+                  + dot(B(1)[(i+3)%u], BH(1)[(i+1)%u])
+                  + dot(B(1)[(i+2)%u], BH(0)[i])
+                  + dot(B(1)[(i+1)%u], BH(0)[(i+1)%u]);
+         H_t3 += dot(BH(0)[i], B(1)[(i+3)%u]) + dot(B(0)[i], BH(1)[(i+3)%u])
+               + dot(BH(0)[i], B(1)[(i+u-1)%u]) + dot(B(0)[i], BH(1)[(i+u-1)%u])
+               + dot(BH(0)[i], B(-1)[(i+u-1)%u]) + dot(B(0)[i], BH(-1)[(i+u-1)%u]);
          H_M += N(0)[i] - N(0)[(i+1)%u];
       }
 
@@ -168,15 +170,13 @@ int main(int argc, char** argv)
       Lattice["H_M"] = sum_unit(H_M);
 
       // On-site interaction.
-      UnitCellMPO H_U, H_Us;
+      UnitCellMPO H_U;
 
       for (int i = 0; i < u; ++i) {
-         H_U += Pdouble(0)[i];
-         H_Us += Hu(0)[i];
+         H_U += 0.5*N2(0)[i];
       }
       
       Lattice["H_U"] = sum_unit(H_U);
-      Lattice["H_Us"] = sum_unit(H_Us);
 
       // Neighbouring site interaction.
       UnitCellMPO H_V1, H_V2;

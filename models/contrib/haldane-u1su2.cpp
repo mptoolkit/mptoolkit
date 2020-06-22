@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// models/contrib/haldane-su2.cpp
+// models/contrib/haldane-u1su2.cpp
 //
 // Copyright (C) 2020 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-// SU(2) Haldane model.
+// U(1)xSU(2) Haldane model.
 //
 // Example for a width-3 lattice (site numbers in brackets are periodic repeats
 // in the vertical direction (i.e. top-left (5) is the same site as the
@@ -55,7 +55,7 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/fermion-su2.h"
+#include "models/fermion-u1su2.h"
 #include "common/terminal.h"
 #include "common/prog_options.h"
 
@@ -87,7 +87,7 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("SU(2) Haldane model");
+      OpDescriptions.set_description("U(1)xSU(2) Haldane model");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
       OpDescriptions.add_cell_operators()
          ("Trans"      , "translation by one site (rotation by 2\u0071/w) in lattice short direction")
@@ -125,7 +125,7 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      LatticeSite Site = FermionSU2();
+      LatticeSite Site = FermionU1SU2();
       int u = w*2;
       UnitCell Cell = repeat(Site, u);
       InfiniteLattice Lattice(&Cell);
