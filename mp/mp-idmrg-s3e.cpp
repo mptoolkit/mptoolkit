@@ -78,15 +78,11 @@
 
 #include "interface/inittemp.h"
 #include "mp-algorithms/random_wavefunc.h"
-
-#if !defined(NDEBUG)
 #include "mp-algorithms/triangular_mpo_solver.h"
-#endif
 
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "lattice/infinite-parser.h"
-#include "mp-algorithms/triangular_mpo_solver.h"
 #include "mp-algorithms/eigensolver.h"
 
 namespace prog_opt = boost::program_options;

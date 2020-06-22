@@ -226,7 +226,7 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-expectation mp-overlap mp-scale mp-matrix mp-tebd mp-apply mp-normalize \
 				mp-iexpectation-cross mp-imoments-cross mp-right-canonicalize mp-left-canonicalize
 
-experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg mp-fluctuation
+experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg mp-fluctuation mp-ibc-join
 
 
 benchmarks = benchtripleprod
@@ -505,7 +505,7 @@ mp-simple-marshall-qmc : random_wavefunc.o
 
 mp-tebd : tebd.o number-parser.o
 mp-itebd : tebd.o number-parser.o
-
+mp-ibc-join : triangular_mpo_solver.o
 mp-idmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o
 mp-idmrg-s3e : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o
 mp-ibc-dmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o

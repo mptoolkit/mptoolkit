@@ -46,17 +46,13 @@
 
 #include "interface/inittemp.h"
 #include "mp-algorithms/random_wavefunc.h"
-
-#if !defined(NDEBUG)
 #include "mp-algorithms/triangular_mpo_solver.h"
-#endif
 
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "lattice/infinite-parser.h"
 
 #include "mp-algorithms/eigensolver.h"
-#include "mp-algorithms/triangular_mpo_solver.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -712,7 +708,7 @@ int main(int argc, char** argv)
       Wavefunction.SetDefaultAttributes();
 
       // History log
-      Wavefunction.AppendHistory(EscapeCommandline(argc, argv));
+      Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
 
       // save wavefunction
       pvalue_ptr<MPWavefunction> P(new MPWavefunction(Wavefunction));

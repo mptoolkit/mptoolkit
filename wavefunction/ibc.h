@@ -57,6 +57,9 @@ class WavefunctionSectionLeft : public CanonicalWavefunctionBase
 
       explicit WavefunctionSectionLeft(InfiniteWavefunctionLeft const& Psi);
 
+      // Make a zero-site WavefunctionSection from a Centre matrix
+      explicit WavefunctionSectionLeft(MatrixOperator const& C);
+
       // Constructs a WavefunctionSectionLeft from a LinearWavefunction that is
       // in left-orthogonal form, with the Lambda matrix at the right-hand edge
       // (this isn't a proper WavefunctionSectionLeft form until the lambda matrix
