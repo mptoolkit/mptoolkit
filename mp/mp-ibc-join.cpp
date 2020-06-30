@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// mp/mp-ibc-create.cpp
+// mp/mp-ibc-join.cpp
 //
 // Copyright (C) 2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
