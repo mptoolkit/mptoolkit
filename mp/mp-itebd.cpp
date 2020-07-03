@@ -262,7 +262,7 @@ int main(int argc, char** argv)
                // the split wraps around the unit cell
                SimpleRedOperator p = tensor_prod(op[0](0,0),HamMPO[i+1](0,0));
                BondH[i] += 0.5 * p.scalar();
-               SimpleRedOperator q = tensor_prod(HamMPO[i-1](0,0), op[0](0,0));
+               SimpleRedOperator q = tensor_prod(HamMPO[(i+UnitCellSize-1)%UnitCellSize](0,0), op[0](0,0));
                BondH[(i+UnitCellSize-1)%UnitCellSize] += 0.5 * q.scalar();
             }
             else if (op.size() == 2)
