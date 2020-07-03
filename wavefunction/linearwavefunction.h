@@ -214,6 +214,14 @@ void project(LinearWavefunction& x, QuantumNumbers::QuantumNumber const& q);
 // N-to-1 coarsegraining of a wavefunction
 LinearWavefunction coarse_grain(LinearWavefunction const& x, int N);
 
+// 1-to-N finegraining of a wavefunction.
+// This takes a wavefunction in left-orthogonal form (psi,M) into a wavefunction
+// in right-orthogonal form (M,psi).
+std::pair<MatrixOperator, LinearWavefunction>
+fine_grain(LinearWavefunction const& x, MatrixOperator M,
+           std::vector<BasisList> const& FullBasis, int N,
+           StatesInfo const& SInfo, int Verbose = 0);
+
 LinearWavefunction conj(LinearWavefunction const& x);
 
 // calculates the inner product <Psi1|Psi2>

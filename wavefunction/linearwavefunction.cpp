@@ -18,6 +18,7 @@
 // ENDHEADER
 
 #include "linearwavefunction.h"
+#include "tensor/tensor_eigen.h"
 
 VectorBasis
 LinearWavefunction::Basis1() const
@@ -653,4 +654,76 @@ LinearWavefunction coarse_grain(LinearWavefunction const& x, int N)
       Result.push_back(A);
    }
    return Result;
+}
+
+std::pair<MatrixOperator, LinearWavefunction>
+fine_grain(LinearWavefunction const& x, MatrixOperator M,
+           std::vector<BasisList> const& FullBasis, int N,
+           StatesInfo const& SInfo, int Verbose)
+{
+   CHECK_EQUAL(x.size() * N, FullBasis.size());
+   LinearWavefunction Result(x.GetSymmetryList());
+   LinearWavefunction::const_iterator I = x.end();
+   auto BEnd = FullBasis.end();
+   while (I != x.begin())
+   {
+      --I;
+      StateComponent A = *I;
+      auto BStart = BEnd - N;
+      --BEnd;
+
+      // Make a stack of tensor products.  If we are only fine-graining 1-into-2 this stack
+      // is only depth 1
+      std::stack<BasisList> BStack;
+      BStack.push(*BStart);
+      ++BStart;
+      while (BStart != BEnd)
+      {
+         BStack.push(Tensor::ProductBasis<BasisList, BasisList>(BStack.top(), *BStart).Basis());
+         ++BStart;
+      }
+
+      // now unwind the stack with SVD's
+      while (!BStack.empty())
+      {
+         A = prod(A, M);
+         double Norm = norm_frob(M);
+         AMatSVD SL(A, Tensor::ProductBasis<BasisList, BasisList>(BStack.top(), *BEnd));
+         TruncationInfo Info;
+         AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(),
+                                                                     SInfo, Info);
+         if (Verbose > 0)
+         {
+            std::cout << "Bond=" << (x.size() * N - Result.size() - 1)
+                      << " Entropy=" << Info.TotalEntropy()
+                      << " States=" << Info.KeptStates()
+                      << " Trunc=" << Info.TruncationError()
+                      << '\n';
+         }
+
+         StateComponent B;
+         RealDiagonalOperator Lambda;
+         SL.ConstructMatrices(SL.begin(), Cutoff, A, Lambda, B);
+         // normalize
+         Lambda *= Norm / norm_frob(Lambda);
+         Result.push_front(B);
+         BStack.pop();
+         --BEnd;
+         M = Lambda;
+      }
+      // Do another SVD to rotate Lambda to the next cell
+      A = prod(A, M);
+      M = ExpandBasis1(A);
+      MatrixOperator U, Vh;
+      RealDiagonalOperator Lambda;
+      SingularValueDecomposition(M, U, Lambda, Vh);
+      Result.push_front(prod(Vh, A));
+      M = U*Lambda;
+   }
+
+   CHECK(BEnd == FullBasis.begin());
+   CHECK(Result.size() == x.size()*N);
+   DEBUG_CHECK(M.Basis2() == Result.Basis1());
+
+   return std::make_pair(std::move(M), std::move(Result));
 }

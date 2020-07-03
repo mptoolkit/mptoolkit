@@ -176,7 +176,7 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
                                     Tol, LinearSolvers::LargestAlgebraicReal, false, Verbose-1);
    }
 
-   CHECK(EtaL.real() > 0)("Eigenvalue must be positive");
+   CHECK(EtaL.real() > 0)("Eigenvalue must be positive")(EtaL);
 
    DEBUG_TRACE(EtaL);
 
