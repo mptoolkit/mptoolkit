@@ -130,8 +130,8 @@ int main(int argc, char** argv)
       desc.add_options()
          ("help", "show this help message")
          ("Hamiltonian,H", prog_opt::value(&HamStr),
-          "operator to use for the Hamiltonian (wavefunction attribute \"EvolutionHamiltonian\")")
-	 ("wavefunction,w", prog_opt::value(&InputFile), "input wavefunction")
+          "operator to use for the Hamiltonian (wavefunction attribute \"EvolutionHamiltonian\") [required]")
+	 ("wavefunction,w", prog_opt::value(&InputFile), "input wavefunction [required]")
 	 ("output,o", prog_opt::value(&OutputPrefix), "prefix for saving output files")
 	 ("timestep,t", prog_opt::value(&TimestepStr), "timestep (required)")
          ("decomposition,c", prog_opt::value(&DecompositionStr), FormatDefault("choice of decomposition", DecompositionStr).c_str())
@@ -156,8 +156,7 @@ int main(int argc, char** argv)
                       options(desc).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") > 0 || vm.count("wavefunction") < 1
-          || vm.count("timestep") < 1)
+      if (vm.count("help") > 0 || vm.count("wavefunction") < 1 || vm.count("timestep") < 1)
       {
          print_copyright(std::cerr, "tools", "mp-itebd");
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
@@ -192,6 +191,11 @@ int main(int argc, char** argv)
       pvalue_ptr<MPWavefunction> PsiPtr = pheap::ImportHeap(InputFile);
 
       InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
+      if (Psi.size()%2 != 0)
+      {
+         std::cerr << "mp-itebd: warning: wavefunction is not a multiple of 2 sites, doubling unit cell...\n";
+         Psi = repeat(Psi, 2);
+      }
 
       if (OutputPrefix.empty())
          OutputPrefix = PsiPtr->Attributes()["Prefix"].as<std::string>();
@@ -324,12 +328,6 @@ int main(int argc, char** argv)
       SInfo.EigenvalueCutoff = EigenCutoff;
 
       std::cout << SInfo << '\n';
-
-      if (Psi.size()%2 != 0)
-      {
-         std::cerr << "mp-itebd: warning: wavefunction is not a multiple of 2 sites, doubling unit cell...\n";
-         Psi = repeat(Psi, 2);
-      }
 
       QuantumNumber QShift = Psi.qshift();
 
