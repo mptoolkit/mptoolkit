@@ -157,7 +157,7 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       if (vm.count("help") > 0 || vm.count("wavefunction") < 1
-          || vm.count("operator") < 1 || vm.count("timestep") < 1)
+          || vm.count("timestep") < 1)
       {
          print_copyright(std::cerr, "tools", "mp-itebd");
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
