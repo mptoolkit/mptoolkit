@@ -73,132 +73,6 @@ void ShowHeading(bool ShowRealPart, bool ShowImagPart,
       std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
 }
 
-// copied from mp-ispectrum.cpp
-// inject_left for a BasicFiniteMPO.  This can have support on multiple wavefunction unit cells
-
-// TODO: convert this to act on InfiniteWavefunctionLeft and UnitCellMPO
-
-// On input, m is an operator acting on Psi.Basis1()
-// result' is an operator acting on Psi.Basis2()
-MatrixOperator
-contract_from_left(MatrixOperator const& m,
-                   InfiniteWavefunctionLeft const& Psi,
-                   BasicFiniteMPO const& Op)
-{
-   CHECK(Op.size() % Psi.size() == 0)(Op.size())(Psi.size());
-   DEBUG_CHECK_EQUAL(m.Basis2(), Psi.Basis1());
-   if (Op.is_null())
-      return MatrixOperator();
-
-   // we currently only support simple irreducible operators
-   DEBUG_CHECK_EQUAL(m.Basis1(), Psi.Basis1());
-   CHECK_EQUAL(Op.Basis1().size(), 1);
-   CHECK_EQUAL(Op.Basis2().size(), 1);
-   CHECK_EQUAL(Op.Basis1()[0], m.TransformsAs());
-   StateComponent E(Op.Basis1(), m.Basis1(), m.Basis2());
-   E[0] = m;
-   E.debug_check_structure();
-   InfiniteWavefunctionLeft::const_mps_iterator I = Psi.begin();
-   BasicFiniteMPO::const_iterator OpIter = Op.begin();
-   while (OpIter != Op.end())
-   {
-      if (I == Psi.end())
-      {
-         I = Psi.begin();
-         E = delta_shift(E, Psi.qshift());
-      }
-      E = contract_from_left(*OpIter, herm(*I), E, *I);
-      ++I; ++OpIter;
-   }
-   return E[0];
-}
-
-MatrixOperator
-contract_from_right(MatrixOperator const& m,
-                    LinearWavefunction const& Psi1,
-                    QuantumNumbers::QuantumNumber const& QShift,
-                    GenericMPO const& Op,
-                    LinearWavefunction const& Psi2)
-{
-   PRECONDITION_EQUAL(Psi1.size(), Psi2.size());
-   if (Op.is_null())
-      return MatrixOperator();
-
-   // we currently only support simple irreducible operators
-   CHECK_EQUAL(Op.Basis1().size(), 1);
-   CHECK_EQUAL(Op.Basis2().size(), 1);
-   StateComponent E(Op.Basis2(), m.Basis1(), m.Basis2());
-   E[0] = m;
-   MatrixOperator Result = m;
-   LinearWavefunction::const_iterator I1 = Psi1.end();
-   LinearWavefunction::const_iterator I2 = Psi2.end();
-   GenericMPO::const_iterator OpIter = Op.end();
-   while (OpIter != Op.begin())
-   {
-      if (I1 == Psi1.begin())
-      {
-         I1 = Psi1.end();
-         I2 = Psi2.end();
-         E = delta_shift(E, adjoint(QShift));
-      }
-      --I1; --I2; --OpIter;
-      E = contract_from_right(herm(*OpIter), *I1, E, herm(*I2));
-   }
-   return E[0];
-}
-
-MatrixOperator
-contract_from_right(MatrixOperator const& m,
-                    InfiniteWavefunctionLeft const& Psi,
-                    GenericMPO const& Op)
-{
-   LinearWavefunction PsiLinear = get_left_canonical(Psi).first;
-   return contract_from_right(m, PsiLinear, Psi.qshift(), Op, PsiLinear);
-}
-
-int RoundUp(int numToRound, int multiple)
-{
-    int remainder = std::abs(numToRound) % multiple;
-    if (remainder == 0)
-        return numToRound;
-
-    if (numToRound < 0)
-       return -(std::abs(numToRound) - remainder);
-    else
-        return numToRound + multiple - remainder;
-}
-
-int RoundDown(int numToRound, int multiple)
-{
-    int remainder = std::abs(numToRound) % multiple;
-    if (remainder == 0)
-        return numToRound;
-
-    if (numToRound < 0)
-       return -(std::abs(numToRound) + multiple - remainder);
-    else
-        return numToRound - remainder;
-}
-
-std::complex<double>
-mean(std::vector<std::complex<double>> const& v)
-{
-   std::complex<double> sum = 0.0;
-   for (auto x : v)
-      sum += x;
-   return (1.0 / v.size()) * sum;
-}
-
-double
-variance(std::vector<std::complex<double>> const& v)
-{
-   std::complex<double> me = mean(v);
-   double var = 0.0;
-   for (auto x : v)
-      var += norm_frob_sq(me-x);
-   return var / v.size();
-}
-
 int main(int argc, char** argv)
 {
    try
@@ -387,6 +261,8 @@ int main(int argc, char** argv)
       int const LeftUnitCells = NumUnitCells / 2;
       int const RightUnitCells = NumUnitCells - LeftUnitCells;
 
+      // TODO: OP1 will be Op1 * identity (in the Op2.TransformsAs() string)
+      // and we will also have that identity as the 'string' term between the MPO's
       GenericMPO OP1 = Op1.MPO();
       GenericMPO OP2 = Op2.MPO();
 
