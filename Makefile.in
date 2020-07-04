@@ -220,7 +220,7 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-info mp-history mp-reflect mp-conj \
         mp-imoments mp-wigner-eckart mp-reorder-symmetry \
         mp-ispectrum mp-lattice-info mp-show-operator mp-aux-matrix mp-aux-algebra mp-iapply mp-attr \
-        mp-idivide mp-ies mp-irepeat mp-norm mp-itebd-old \
+        mp-idivide mp-ies mp-irepeat mp-norm mp-itebd-old mp-allcorrelation \
         mp-irotate mp-icorrelation mp-fluctuation mp-itebd mp-coarsegrain mp-finegrain mp-dmrg mp-random \
         mp-expectation mp-overlap mp-scale mp-matrix mp-tri-expectation mp-tebd mp-apply mp-normalize 
 
