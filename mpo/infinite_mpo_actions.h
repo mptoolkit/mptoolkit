@@ -169,7 +169,7 @@ struct binary_power<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEleme
 
       int i = int(round(y.real()));
       if (std::norm(complex(double(i)) - y) > 1E-7)
-         throw ParserError("cannot take a fractional or complex power " + format_complex(y)
+         throw ParserError("cannot take a fractional or complex power " + formatting::format_complex(y)
                            + " of a BasicTriangularMPO");
       if (i < 0)
          throw ParserError("cannot take negative power " + boost::lexical_cast<std::string>(i)
@@ -182,7 +182,7 @@ struct binary_power<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEleme
 
       int i = int(round(y.real()));
       if (std::norm(complex(double(i)) - y) > 1E-7)
-         throw ParserError("cannot take a fractional or complex power " + format_complex(y)
+         throw ParserError("cannot take a fractional or complex power " + formatting::format_complex(y)
                            + " of a ProductMPO");
       if (i < 0)
          throw ParserError("cannot take negative power " + boost::lexical_cast<std::string>(i)

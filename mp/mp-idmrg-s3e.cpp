@@ -1473,7 +1473,7 @@ int main(int argc, char** argv)
       std::cerr << "Orthogonalization finished.\n";
 
       // any other attributes?
-      Wavefunction.Attributes()["LastEnergy"] = idmrg.Solver().LastEnergy();
+      Wavefunction.Attributes()["LastEnergy"] = formatting::format_complex(idmrg.Solver().LastEnergy());
       Wavefunction.SetDefaultAttributes();
 
       // History log

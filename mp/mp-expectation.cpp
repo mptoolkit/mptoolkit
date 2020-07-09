@@ -31,6 +31,7 @@
 #include "wavefunction/operator_actions.h"
 
 namespace prog_opt = boost::program_options;
+using formatting::format_complex;
 
 void DisplayHeading(bool ShowReal, bool ShowImag)
 {

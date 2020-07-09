@@ -42,6 +42,8 @@
 namespace Function
 {
 
+using formatting::format_complex;
+
 // FormalArgument - a Name,Default pair that represents
 // a named formal argument of a function
 

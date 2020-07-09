@@ -26,11 +26,6 @@
 #include "mps/state_component.h"
 #include "mps/truncation.h"
 
-// returns the number of digits of precision used in the decimal number f
-int Digits(std::string const& f);
-
-std::string FormatDigits(double x, int Digits);
-
 // generic Lie-Trotter-Suzuki decomposition with two slices, A and B.
 class LTSDecomposition
 {

@@ -43,6 +43,7 @@
 #include <unistd.h>
 
 namespace prog_opt = boost::program_options;
+using formatting::format_complex;
 
 // returns true if Name exists and is a regular file
 bool FileExists(std::string const& Name)

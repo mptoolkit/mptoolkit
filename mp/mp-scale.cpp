@@ -33,6 +33,7 @@
 #include "common/environment.h"
 
 namespace prog_opt = boost::program_options;
+using formatting::format_complex;
 
 int main(int argc, char** argv)
 {

@@ -27,6 +27,10 @@
 #include <string>
 #include <complex>
 #include <sstream>
+#include <iomanip>
+
+namespace formatting
+{
 
 inline
 std::string
@@ -36,11 +40,59 @@ format_complex(std::complex<double> const& c)
    Out.precision(16);
    Out << c.real();
    if (c.imag() > 0)
-      Out << " + " << c.imag() << 'i';
+      Out << "+" << c.imag() << 'i';
    else if (c.imag() < 0)
-      Out << ' ' << c.imag() << 'i';
+      Out << c.imag() << 'i';
    Out.flush();
    return Out.str();
 }
+
+inline
+int digits(double x)
+{
+   using std::abs;
+   using std::floor;
+   using std::pow;
+   double const eps = std::numeric_limits<double>::epsilon() * 8;
+   int d = 0;
+   while (abs(x - floor(x * pow(10,d)) / pow(10,d)) > eps)
+   {
+      TRACE(x)( floor(x * pow(10,d)) / pow(10,d))(abs(x - floor(x * pow(10,d)) / pow(10,d)))(d);
+      ++d;
+   }
+   return d;
+}
+
+inline
+int digits(std::complex<double> x)
+{
+   using std::real;
+   using std::imag;
+   using std::max;
+   return max(digits(real(x)), digits(imag(x)));
+}
+
+inline
+std::string
+format_digits(double x, int Digits)
+{
+   std::ostringstream str;
+   str << std::fixed << std::setprecision(Digits) << std::setfill('0') << x;
+   return str.str();
+}
+
+inline
+std::string
+format_digita(std::complex<double> c, int Digits)
+{
+   std::string Result = format_digits(c.real(), Digits);
+   if (c.imag() > 0)
+      Result += " + " + format_digits(c.imag(), Digits) + 'i';
+   else if (c.imag() < 0)
+      Result += ' ' + format_digits(c.imag(), Digits) + 'i';
+   return Result;
+}
+
+} // namespace formatting
 
 #endif

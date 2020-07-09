@@ -32,6 +32,7 @@
 #include "tensor/tensor_eigen.h"
 
 using QuantumNumbers::QuantumNumber;
+using formatting::format_complex;
 
 namespace prog_opt = boost::program_options;
 

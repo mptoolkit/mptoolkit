@@ -33,6 +33,8 @@
 namespace Parser
 {
 
+using formatting::format_complex;
+
 enum ShowColors { ColorNever, ColorAuto, ColorAlways };
 
 // set the color for output, never, auto, always

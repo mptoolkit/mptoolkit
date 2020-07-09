@@ -40,13 +40,6 @@ int Digits(std::string const& f)
    return x-dot;
 }
 
-std::string FormatDigits(double x, int Digits)
-{
-   std::ostringstream str;
-   str << std::fixed << std::setprecision(Digits) << std::setfill('0') << x;
-   return str.str();
-}
-
 // Symmetric decompositions
 // Even slice A, odd slice B.
 // We always have either a.size() == b.size() OR a.size() == b.size()+1.

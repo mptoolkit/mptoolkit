@@ -59,7 +59,7 @@ void DescribeLattice(InfiniteLattice const& L, int Verbose)
               I != L.GetUnitCell()[i].end_arg(); ++I)
          {
             std::cout << "         " << std::setw(10) << std::left << I->first
-                      << " = " << format_complex(I->second) << '\n';
+                      << " = " << formatting::format_complex(I->second) << '\n';
          }
          std::cout << "      local operators:\n";
          for (LatticeSite::const_operator_iterator I = L.GetUnitCell()[i].begin_operator();
@@ -118,7 +118,7 @@ void DescribeLattice(InfiniteLattice const& L, int Verbose)
         I != L.end_arg(); ++I)
    {
       std::cout << "   " << std::setw(10) << std::left << I->first
-                << " = " << format_complex(I->second) << '\n';
+                << " = " << formatting::format_complex(I->second) << '\n';
    }
 
    std::cout << "\nLattice operators:\n";

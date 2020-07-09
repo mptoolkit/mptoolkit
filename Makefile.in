@@ -501,8 +501,8 @@ mp-simple-marshall-qmc : random_wavefunc.o
 
 # infinite tools
 
-mp-tebd : tebd.o
-mp-itebd : tebd.o
+mp-tebd : tebd.o number-parser.o
+mp-itebd : tebd.o number-parser.o
 
 mp-idmrg5 : $(mpoobj) infinitewavefunctionleft.o random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o
 mp-idmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o

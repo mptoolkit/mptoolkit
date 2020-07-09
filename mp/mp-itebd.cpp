@@ -26,12 +26,14 @@
 #include "mp/copyright.h"
 #include "common/environment.h"
 #include "common/terminal.h"
+#include "parser/number-parser.h"
 #include <boost/program_options.hpp>
 #include <iostream>
 #include "common/environment.h"
 #include "interface/inittemp.h"
 #include "common/prog_options.h"
 #include "lattice/infinite-parser.h"
+#include "common/formatting.h"
 #include <cctype>
 #include "interface/inittemp.h"
 
@@ -110,8 +112,10 @@ int main(int argc, char** argv)
    try
    {
       int Verbose = 0;
-      std::string TimestepStr;  // so we can get the number of digits to use
+      std::string TimestepStr;
+      std::string BetastepStr;
       std::string InitialTimeStr;
+      std::string InitialBetaStr;
       int N = 1;
       int SaveEvery = 1;
       std::string OpStr;
@@ -134,6 +138,7 @@ int main(int argc, char** argv)
 	 ("wavefunction,w", prog_opt::value(&InputFile), "input wavefunction [required]")
 	 ("output,o", prog_opt::value(&OutputPrefix), "prefix for saving output files")
 	 ("timestep,t", prog_opt::value(&TimestepStr), "timestep (required)")
+	 ("betastep,b", prog_opt::value(&BetastepStr), "betastep (alternative to timestep)")
          ("decomposition,c", prog_opt::value(&DecompositionStr), FormatDefault("choice of decomposition", DecompositionStr).c_str())
 	 ("num-timesteps,n", prog_opt::value(&N), FormatDefault("number of timesteps to calculate", N).c_str())
 	 ("save-timesteps,s", prog_opt::value(&SaveEvery), "save the wavefunction every s timesteps")
@@ -156,7 +161,7 @@ int main(int argc, char** argv)
                       options(desc).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") > 0 || vm.count("wavefunction") < 1 || vm.count("timestep") < 1)
+      if (vm.count("help") > 0 || vm.count("wavefunction") < 1 || (vm.count("timestep") < 1 && vm.count("betastep") < 1))
       {
          print_copyright(std::cerr, "tools", "mp-itebd");
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
@@ -197,25 +202,39 @@ int main(int argc, char** argv)
          Psi = repeat(Psi, 2);
       }
 
+      // Ooutput prefix - if it wasn't specified then use the wavefunction attribute, or
+      // fallback to the wavefunction name
       if (OutputPrefix.empty())
          OutputPrefix = PsiPtr->Attributes()["Prefix"].as<std::string>();
 
       if (OutputPrefix.empty())
+         OutputPrefix = InputFile;
+
+      // Get the initial time & beta from the wavefunction attributes
+      std::complex<double> InitialTime = 0.0;
+      if (InitialTimeStr.empty())
       {
-         std::cerr << "mp-itebd: fatal: no output prefix specified\n";
-         return 1;
+         std::string T = PsiPtr->Attributes()["Time"].as<std::string>();
+         if (!T.empty())
+            InitialTime.real(std::stod(T));
+      }
+      if (InitialBetaStr.empty())
+      {
+         std::string B = PsiPtr->Attributes()["Beta"].as<std::string>();
+         if (!B.empty())
+            InitialTime.imag(-std::stod(B));
       }
 
-      if (InitialTimeStr.empty())
-         InitialTimeStr = PsiPtr->Attributes()["Time"].as<std::string>();
-
-      double InitialTime = InitialTimeStr.empty() ? 0.0 : stod(InitialTimeStr);
-
-      double Timestep = stod(TimestepStr);
+      // Allow both timestep and betastep.
+      std::complex<double> Timestep = 0.0;
+      if (!TimestepStr.empty())
+         Timestep += ParseNumber(TimestepStr);
+      if (!BetastepStr.empty())
+         Timestep += std::complex<double>(0.0,-1.0)* ParseNumber(BetastepStr);
 
       if (OutputDigits == 0)
       {
-         OutputDigits = std::max(Digits(InitialTimeStr), Digits(TimestepStr));
+         OutputDigits = std::max(formatting::digits(Timestep), formatting::digits(InitialTime));
       }
 
       InfiniteLattice Lattice;
@@ -286,7 +305,7 @@ int main(int argc, char** argv)
          std::vector<SimpleOperator> Terms;
          for (int i = 0; i < BondH.size(); i += 2)
          {
-            Terms.push_back(Exponentiate(std::complex<double>(0, -Timestep * x) * BondH[i]));
+            Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
          }
          EvenU.push_back(std::move(Terms));
       }
@@ -297,7 +316,7 @@ int main(int argc, char** argv)
          std::vector<SimpleOperator> Terms;
          for (int i = 1; i < BondH.size(); i += 2)
          {
-            Terms.push_back(Exponentiate(std::complex<double>(0, -Timestep * x) * BondH[i]));
+            Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
          }
          OddU.push_back(std::move(Terms));
       }
@@ -308,9 +327,9 @@ int main(int argc, char** argv)
       if (decomp.a_.size() == decomp.b_.size()+1)
       {
          double x = decomp.a_.front() + decomp.a_.back();
-          for (int i = 0; i < BondH.size(); i += 2)
+         for (int i = 0; i < BondH.size(); i += 2)
          {
-            EvenContinuation.push_back(Exponentiate(std::complex<double>(0, -Timestep * x) * BondH[i]));
+            EvenContinuation.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
          }
       }
 
@@ -373,7 +392,8 @@ int main(int argc, char** argv)
          Continue = EvenU.size() > OddU.size();
 
          ++tstep;
-         std::cout << "Timestep " << tstep << " time " << (InitialTime+tstep*Timestep) << '\n';
+         std::cout << "Timestep " << formatting::format_complex(tstep)
+                   << " time " << formatting::format_complex(InitialTime+double(tstep)*Timestep) << '\n';
 
          // do we save the wavefunction?
          if ((tstep % SaveEvery) == 0 || tstep == N)
@@ -396,15 +416,27 @@ int main(int argc, char** argv)
             // save the wavefunction
             std::cout << "Saving wavefunction\n";
             MPWavefunction Wavefunction;
-            std::string TimeStr = FormatDigits(InitialTime + tstep * Timestep, OutputDigits);
+            std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), OutputDigits);
+            std::string BetaStr = formatting::format_digits(-std::imag(InitialTime + double(tstep)*Timestep), OutputDigits);
             InfiniteWavefunctionLeft PsiL = InfiniteWavefunctionLeft::Construct(Psi, QShift);
             Wavefunction.Wavefunction() = std::move(PsiL);
             Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
             Wavefunction.SetDefaultAttributes();
             Wavefunction.Attributes()["Time"] = TimeStr;
+            Wavefunction.Attributes()["Beta"] = BetaStr;
             Wavefunction.Attributes()["Prefix"] = OutputPrefix;
+            Wavefunction.Attributes()["EvolutionHamiltonian"] = HamStr;
+            std::string FName = OutputPrefix;
+            if (std::real(InitialTime + double(tstep)*Timestep) != 0.0)
+            {
+               FName += ".t" + TimeStr;
+            }
+            if (std::imag(InitialTime + double(tstep)*Timestep) != 0.0)
+            {
+               FName += ".b" + BetaStr;
+            }
             *PsiPtr.mutate() = std::move(Wavefunction);
-            pheap::ExportHeap(OutputPrefix + TimeStr, PsiPtr);
+            pheap::ExportHeap(FName, PsiPtr);
          }
       }
    }
