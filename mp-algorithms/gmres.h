@@ -105,6 +105,7 @@ void GeneratePlaneRotation(Real &dx, Real &dy, Real &cs, Real &sn)
 template<typename Real>
 void ApplyPlaneRotation(Real &dx, Real &dy, Real cs, Real sn)
 {
+   using std::conj;
    Real temp  = conj(cs) * dx + conj(sn) * dy;
    dy = -sn * dx + cs * dy;
    dx = temp;
@@ -255,7 +256,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, double normb, Vector const& b,
            }
 	   TRACE(norm_frob(X2));
 
-	   
+
         }
 #endif
 
