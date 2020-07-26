@@ -486,7 +486,7 @@ struct OneMinusTransferLeft_Ortho
          {
             DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be small");
             DEBUG_TRACE(inner_prod(LeftUnit_, r));
-            r -= conj(inner_prod(r, RightUnit_)) * LeftUnit_; // orthogonalize to the identity
+            r -= std::conj(inner_prod(r, RightUnit_)) * LeftUnit_; // orthogonalize to the identity
             DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be zero");
          }
       return r;

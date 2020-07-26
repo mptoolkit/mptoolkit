@@ -181,7 +181,7 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    DEBUG_TRACE(EtaL);
 
    // Adjust the phase of the eigenvector to maximize the trace (ie, make it positive)
-   std::complex<double> Alpha = conj(trace(LeftEigen));
+   std::complex<double> Alpha = std::conj(trace(LeftEigen));
    Alpha *= 1.0 / norm_frob(Alpha);
    LeftEigen *= Alpha;
 
@@ -266,7 +266,7 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    DEBUG_TRACE(EtaR);
 
    // Adjust the phase of the eigenvector to maximize the trace (ie, make it positive)
-   Alpha = conj(trace(RightEigen));
+   Alpha = std::conj(trace(RightEigen));
    Alpha *= 1.0 / norm_frob(Alpha);
    RightEigen *= Alpha;
 
