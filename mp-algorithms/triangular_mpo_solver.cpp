@@ -171,7 +171,7 @@ DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
 	 DEBUG_TRACE(I->second)(UnitMatrixRight);
          std::complex<double> Overlap = inner_prod(I->second, UnitMatrixRight);
          DEBUG_TRACE(Overlap)(I->first);
-         I->second -= conj(Overlap)*UnitMatrixLeft;
+         I->second -= std::conj(Overlap)*UnitMatrixLeft;
          DEBUG_TRACE(inner_prod(I->second, UnitMatrixRight))("should be zero");
          DEBUG_TRACE(inner_prod(UnitMatrixLeft, UnitMatrixRight));
 
@@ -202,7 +202,7 @@ DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
          {
             if (CParallel.has_term(m))
             {
-               EParallel[Factor][m+1] = conj(Factor) * CParallel[m]; // include momentum
+               EParallel[Factor][m+1] = std::conj(Factor) * CParallel[m]; // include momentum
 	    }
 
 	    for (int k = m+2; k <= CParallel.degree()+1; ++k)
@@ -265,7 +265,7 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
             std::cerr << "Degree " << m << std::endl;
 
          DEBUG_TRACE("degree")(m);
-         MatrixOperator Rhs = conj(K) * I->second[m];
+         MatrixOperator Rhs = std::conj(K) * I->second[m];
          for (int k = m+1; k <= E[K].degree(); ++k)
          {
             // avoid accessing E[K][k] if it doesn't exist, to avoid adding a null term
@@ -278,7 +278,7 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
          if (HasEigenvalue1 && Rhs.TransformsAs() == UnitMatrixRight.TransformsAs())
          {
             DEBUG_TRACE(inner_prod(Rhs, UnitMatrixRight))("should be small");
-            Rhs -= conj(inner_prod(Rhs, UnitMatrixRight)) * UnitMatrixLeft;
+            Rhs -= std::conj(inner_prod(Rhs, UnitMatrixRight)) * UnitMatrixLeft;
             DEBUG_TRACE(inner_prod(Rhs, UnitMatrixRight))("should be zero");
             DEBUG_TRACE(inner_prod(Rhs, UnitMatrixLeft));
          }
@@ -299,7 +299,7 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
             // Orthogonalize the initial guess -- this is important for the numerical stability
             if (HasEigenvalue1 && Rhs.TransformsAs() == UnitMatrixRight.TransformsAs())
             {
-               E[K][m] -= conj(inner_prod(E[K][m], UnitMatrixRight)) * UnitMatrixLeft;
+               E[K][m] -= std::conj(inner_prod(E[K][m], UnitMatrixRight)) * UnitMatrixLeft;
 	       DEBUG_TRACE("should be zero")(inner_prod(E[K][m], UnitMatrixRight));
             }
 
@@ -319,7 +319,7 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
                {
                   WARNING("Possible numerical instability in triangular MPO solver")(z);
                };
-               E[K][m] -= conj(z) * UnitMatrixLeft;
+               E[K][m] -= std::conj(z) * UnitMatrixLeft;
                DEBUG_TRACE(inner_prod(E[K][m], UnitMatrixRight))("should be zero");
             }
          }
@@ -346,7 +346,7 @@ SolveZeroDiagonal(KMatrixPolyType const& C)
          if (I->second.has_term(i))
          {
             DEBUG_CHECK(!I->second[i].is_null());
-            E[K][i] = conj(K) * I->second[i];
+            E[K][i] = std::conj(K) * I->second[i];
          }
          for (int j = i+1; j <= MaxDegree; ++j)
          {
@@ -432,7 +432,7 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
       }
 
       // Generate the next C matrices, C(n) = sum_{j<Col} Op(j,Col) E_j(n)
-      KMatrixPolyType C = inject_left_mask(EMatK, Psi, QShift, Op.data(), 
+      KMatrixPolyType C = inject_left_mask(EMatK, Psi, QShift, Op.data(),
 					   Psi, mask_column(Op, Col))[Col];
 
       // Now do the classification, based on the properties of the diagonal operator
@@ -500,7 +500,7 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
                                                                   InjectLeftQShift(Diag, Psi, QShift),
                                                                   Tol, Verbose);
 	    //UnitMatrixLeft *= lnorm;
-            EtaL = conj(EtaL); // left eigenvalue, so conjugate (see comment at operator_actions.h)
+            EtaL = std::conj(EtaL); // left eigenvalue, so conjugate (see comment at operator_actions.h)
             if (Verbose > 0)
                std::cerr << "Eigenvalue of unitary operator is " << EtaL << std::endl;
             Factor = EtaL;
@@ -609,8 +609,8 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
             for (ComplexPolyType::const_iterator J = I->second.begin(); J != I->second.end(); ++J)
             {
                // Conj here because this comes from an overlap(x, RightUnitMatrix)
-               E[I->first][J->first] += conj(J->second) * UnitMatrixLeft;
-               DEBUG_TRACE(conj(J->second));
+               E[I->first][J->first] += std::conj(J->second) * UnitMatrixLeft;
+               DEBUG_TRACE(std::conj(J->second));
                DEBUG_TRACE(I->first)(J->first)(inner_prod(E[I->first][J->first], RightIdentity));
             }
          }
@@ -951,7 +951,7 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
 
    // Everything here is in the Hermitian representation, so the actual energy is
    // the conjugate
-   return conj(Energy);
+   return std::conj(Energy);
 }
 
 std::complex<double>
