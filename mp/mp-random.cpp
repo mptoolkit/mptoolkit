@@ -25,6 +25,7 @@
 #include "common/environment.h"
 #include "common/proccontrol.h"
 #include "common/prog_options.h"
+#include "common/randutil.h"
 #include "interface/inittemp.h"
 #include "lattice/infinitelattice.h"
 
@@ -44,6 +45,7 @@ int main(int argc, char** argv)
       bool Quiet = false;
       int Verbose = 0;
       bool Infinite = false;
+      unsigned RandSeed = 0;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -54,8 +56,8 @@ int main(int argc, char** argv)
          ("count,c", prog_opt::value(&Count), FormatDefault("Count of m=1 states to make a superposition", Count).c_str())
          ("out,o", prog_opt::value(&FName), "Output file (required)")
          ("beta,b", prog_opt::value(&Beta), FormatDefault("Inverse temperature for monte-carlo sampling", Beta).c_str())
-         ("seed,s", prog_opt::value<unsigned int>(),
-          ("Random seed [range 0.."+boost::lexical_cast<std::string>(RAND_MAX)+"]").c_str())
+         ("seed,s", prog_opt::value(&RandSeed),
+          ("Random seed [range 0.."+boost::lexical_cast<std::string>(std::numeric_limits<unsigned>::max())+"]").c_str())
          ("infinite,i", prog_opt::bool_switch(&Infinite), "Construct an infinite wavefunction")
          ("force,f", prog_opt::bool_switch(&Force), "Allow overwriting output files")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
@@ -75,8 +77,10 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      unsigned int RandSeed = vm.count("seed") ? (vm["seed"].as<unsigned long>() % RAND_MAX) : (ext::get_unique() % RAND_MAX);
-      srand(RandSeed);
+      if (!vm.count("seed"))
+      {
+         RandSeed = randutil::crypto_rand();
+      }
 
       pheap::Initialize(FName, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
 

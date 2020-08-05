@@ -55,10 +55,10 @@ WavefunctionDesc::WavefunctionDesc(std::vector<BasisList> const& L)
    for (int i = L.size()-1; i >= 0; --i)
    {
       BasisList Basis = L[i];
-      State[i] = rand() % Basis.size();
+      State[i] = randutil::rand_int(0, Basis.size()-1);
 
       QuantumNumbers::QuantumNumberList QList = transform_targets(Q, Basis[State[i]]);
-      Q = QList[rand() % QList.size()];
+      Q = QList[randutil::rand_int(0, QList.size()-1)];
       Height[i] = Q;
    }
 }
@@ -71,10 +71,10 @@ WavefunctionDesc::WavefunctionDesc(std::vector<BasisList> const& L,
    for (int i = L.size()-1; i >= 0; --i)
    {
       BasisList Basis = L[i];
-      State[i] = rand() % Basis.size();
+      State[i] = randutil::rand_int(0, Basis.size()-1);
 
       QuantumNumbers::QuantumNumberList QList = transform_targets(Q, Basis[State[i]]);
-      Q = QList[rand() % QList.size()];
+      Q = QList[randutil::rand_int(0, QList.size()-1)];
       Height[i] = Q;
    }
 }
@@ -112,16 +112,13 @@ CreateRandomConfiguration(std::vector<BasisList> const& Basis,
    while (q != Psi.TransformsAs())
    {
       double c = weight(difference(q, Psi.TransformsAs()));
-      int Site = rand() % Basis.size();
-      int NewState = rand() % Basis[Site].size();
+      int Site = randutil::rand_int(0, Basis.size()-1);
+      int NewState = randutil::rand_int(0, Basis[Site].size()-1);
       QuantumNumbers::QuantumNumberList QList = transform_targets(Psi.Height[Site+1], Basis[Site][NewState]);
       //      for (std::size_t Qi = 0; Qi < QList.size(); ++Qi)
       {
-         std::size_t Qi = std::size_t(LinearAlgebra::random<double>() * QList.size());
-
-         QuantumNumber NewQ(QList[Qi]);
+         QuantumNumber NewQ(QList[randutil::rand_int(0, QList.size()-1)]);
          WavefunctionDesc New = Psi;
-         //      TRACE(Site)(c)(NewState)(Psi.Height[Site+1])(Psi.Height[Site])(Psi.State[Site])(NewQ)(Basis[Site].qn(Psi.State[Site]))(Basis[Site].qn(NewState))(QList);
          if (New.Flip(Basis, Site, NewState, NewQ))
          {
             //      TRACE(Psi.TransformsAs())(New.TransformsAs());
@@ -132,7 +129,7 @@ CreateRandomConfiguration(std::vector<BasisList> const& Basis,
             }
             double Newc = weight(difference(q, New.TransformsAs()));
             //TRACE(Newc);
-            if (LinearAlgebra::random<double>() < exp(Beta * (c-Newc)))
+            if (randutil::rand() < exp(Beta * (c-Newc)))
             {
                //TRACE("Accepted");
                Psi = New;

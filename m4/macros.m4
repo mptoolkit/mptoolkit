@@ -172,7 +172,7 @@ AC_DEFUN([ACX_ARPACK],
         fi
         
         if test "x$acx_want_arpack" != "xno"; then
-                AC_MSG_CHECKING([for znaupd in $LIBARPACK])
+                AC_MSG_CHECKING([for ARPACK library])
                 dnl get fortran name of the function we are interested in
                 AC_F77_FUNC(znaupd)
                 save_LIBS="$LIBS"; LIBS="$LIBARPACK $LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
