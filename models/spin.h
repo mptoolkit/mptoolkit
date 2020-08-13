@@ -49,6 +49,16 @@ LatticeSite SpinSite(half_int Spin)
       ("Sz"  , "z-component of spin")
       ;
 
+   if (Spin == 0.5)
+   {
+      OpDescriptions.add_operators()
+         ("X", "Pauli Sigma-X")
+         ("Y", "Pauli Sigma-X")
+         ("Z", "Pauli Sigma-X")
+         ;
+   }
+
+
    Sp = SiteOperator(Basis, q, LatticeCommute::Bosonic);
    Sm = SiteOperator(Basis, q, LatticeCommute::Bosonic);
    Sx = SiteOperator(Basis, q, LatticeCommute::Bosonic);
@@ -91,9 +101,12 @@ LatticeSite SpinSite(half_int Spin)
    Site["Sx"] = Sx;
    Site["Sy"] = Sy;
    Site["Sz"] = Sz;
-   Site["X"] = 2*Sx;
-   Site["Y"] = 2*Sy;
-   Site["Z"] = 2*Sz;
+   if (Spin == 0.5)
+   {
+      Site["X"] = 2*Sx;
+      Site["Y"] = 2*Sy;
+      Site["Z"] = 2*Sz;
+   }
 
    Site.set_operator_descriptions(OpDescriptions);
 
