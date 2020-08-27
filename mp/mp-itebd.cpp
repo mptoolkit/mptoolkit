@@ -32,6 +32,7 @@
 #include "common/environment.h"
 #include "interface/inittemp.h"
 #include "common/prog_options.h"
+#include "common/statistics.h"
 #include "lattice/infinite-parser.h"
 #include "common/formatting.h"
 #include <cctype>
@@ -196,11 +197,6 @@ int main(int argc, char** argv)
       pvalue_ptr<MPWavefunction> PsiPtr = pheap::ImportHeap(InputFile);
 
       InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
-      if (Psi.size()%2 != 0)
-      {
-         std::cerr << "mp-itebd: warning: wavefunction is not a multiple of 2 sites, doubling unit cell...\n";
-         Psi = repeat(Psi, 2);
-      }
 
       // Ooutput prefix - if it wasn't specified then use the wavefunction attribute, or
       // fallback to the wavefunction name
@@ -261,16 +257,23 @@ int main(int argc, char** argv)
       }
 
       std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
-      if (HamMPO.size() < Psi.size())
-	 HamMPO = repeat(HamMPO, Psi.size() / HamMPO.size());
 
-      int UnitCellSize = Psi.size();
-
-      // TODO: Coarse-grain, if necessary
+      //Coarse-grain, if necessary
       if (vm.count("coarsegrain"))
       {
-         PANIC("coarsegrain is not yet implemented");
+         HamMPO = coarse_grain(HamMPO, Coarsegrain);
       }
+
+      // Make sure the unit cell is an even size
+      int UnitCellSize = statistics::lcm(Psi.size(), HamMPO.size(), 2);
+
+      // and adjust the wavefunction and hamiltonian to match the unit cell size
+      if (Psi.size() != UnitCellSize)
+      {
+         std::cerr << "mp-itebd: warning: extending wavefunction unit cell to " << UnitCellSize << " sites.\n";
+         Psi = repeat(Psi, UnitCellSize / Psi.size());
+      }
+      HamMPO = repeat(HamMPO, UnitCellSize / HamMPO.size());
 
       // Assemble the Hamiltonian into the bond terms
       std::vector<SimpleOperator> BondH(UnitCellSize);

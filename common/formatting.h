@@ -57,7 +57,6 @@ int digits(double x)
    int d = 0;
    while (abs(x - floor(x * pow(10,d)) / pow(10,d)) > eps)
    {
-      TRACE(x)( floor(x * pow(10,d)) / pow(10,d))(abs(x - floor(x * pow(10,d)) / pow(10,d)))(d);
       ++d;
    }
    return d;
