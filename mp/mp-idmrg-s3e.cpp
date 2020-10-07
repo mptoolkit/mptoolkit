@@ -972,8 +972,8 @@ int main(int argc, char** argv)
          ("wavefunction,w", prog_opt::value(&FName),
           "wavefunction to apply DMRG (required)")
          ("force,f", prog_opt::bool_switch(&Force), "Allow overwriting output files")
-         ("two-site,2", prog_opt::bool_switch(&TwoSite), "Modify two sites at once (default)")
-         ("one-site,1", prog_opt::bool_switch(&OneSite), "Modify one site at a time")
+         //("two-site", prog_opt::bool_switch(&TwoSite), "Modify two sites at once (default)") // not currently implemented
+         //("one-site", prog_opt::bool_switch(&OneSite), "Modify one site at a time")
 #if defined(ENABLE_ONE_SITE_SCHEME)
          ("onesiteboundary", prog_opt::bool_switch(&UseOneSiteScheme), "Modify one site also at the boundary")
 #endif

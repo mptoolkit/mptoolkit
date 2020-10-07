@@ -302,6 +302,7 @@ int main(int argc, char** argv)
          }
       }
 
+      // Exponentiate the bond operators and split into even and odd slices
       std::vector<std::vector<SimpleOperator>> EvenU;
       for (auto x : decomp.a_)
       {
@@ -314,10 +315,14 @@ int main(int argc, char** argv)
       }
 
       std::vector<std::vector<SimpleOperator>> OddU;
+      // The odd slice uses a rotation of the unit cell that takes the right-most site and puts it on the left.
+      // This means that the first odd-bond operator we need is the one that wraps around, which is at the end of the list.
+      // To allow for this, we reserve the first element of the Terms vector and move the last element to the front
       for (auto x : decomp.b_)
       {
          std::vector<SimpleOperator> Terms;
-         for (int i = 1; i < BondH.size(); i += 2)
+         Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[BondH.size()-2]));
+         for (int i = 1; i < BondH.size()-2; i += 2)
          {
             Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
          }
