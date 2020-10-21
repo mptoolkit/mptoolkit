@@ -132,7 +132,7 @@ int main(int argc, char** argv)
           "rotate the unit cell of psi2 this many sites to the left before calculating the overlap [default 0]")
          ("reflect", prog_opt::bool_switch(&Reflect),
           "reflect psi2 (gives parity eigenvalue)")
-	 ("coarsegrain1", prog_opt::value(&CoarseGrain1),
+	      ("coarsegrain1", prog_opt::value(&CoarseGrain1),
 	  "coarse-grain wavefunction 1 by this amount")
 	 ("coarsegrain2", prog_opt::value(&CoarseGrain2),
 	  "coarse-grain wavefunction 2 by this amount")
@@ -231,11 +231,11 @@ int main(int argc, char** argv)
 
       if (CoarseGrain1 != 1)
       {
-	 if (Psi1.size() % CoarseGrain1 != 0)
-	 {
-	    std::cerr << "Wavefunction 1 size is not a multiple of the coarsegran size, expending...\n";
-	    Psi1 = repeat(Psi1, statistics::lcm(Psi1.size(), CoarseGrain1) / Psi1.size());
-	 }
+	      if (Psi1.size() % CoarseGrain1 != 0)
+	      {
+	         std::cerr << "Wavefunction 1 size is not a multiple of the coarsegran size, expanding...\n";
+	         Psi1 = repeat(Psi1, statistics::lcm(Psi1.size(), CoarseGrain1) / Psi1.size());
+	      }
 
 	 LinearWavefunction PsiL;
 	 RealDiagonalOperator Lambda;
@@ -259,7 +259,7 @@ int main(int argc, char** argv)
 	 {
 	    if (Psi2.size() % CoarseGrain1 != 0)
 	    {
-	       std::cerr << "Wavefunction 2 size is not a multiple of the coarsegran size, expending...\n";
+	       std::cerr << "Wavefunction 2 size is not a multiple of the coarsegran size, expanding...\n";
 	       Psi2 = repeat(Psi1, statistics::lcm(Psi2.size(), CoarseGrain2) / Psi2.size());
 	    }
 

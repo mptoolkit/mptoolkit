@@ -478,12 +478,15 @@ void
 InfiniteWavefunctionLeft::rotate_left(int Count)
 {
    // Rotation is fairly straightforward, we just rotate the vectors around
-   if (Count == 0)
-      return;
-   else if (Count < 0)
+   if (Count < 0)
+   {
       this->rotate_right(-Count);
+      return;
+   }
 
    Count = Count % this->size();
+   if (Count == 0)
+      return;
 
    // the first Count elements are going to get shifted to the right hand side, so we need to
    // delta_shift them
@@ -516,12 +519,15 @@ InfiniteWavefunctionLeft::rotate_left(int Count)
 void
 InfiniteWavefunctionLeft::rotate_right(int Count)
 {
-   if (Count == 0)
-      return;
-   else if (Count < 0)
+   if (Count < 0)
+   {
       this->rotate_left(-Count);
+      return;
+   }
 
    Count = Count % this->size();
+   if (Count == 0)
+      return;
 
    this->rotate_left(this->size() - Count);
 }
