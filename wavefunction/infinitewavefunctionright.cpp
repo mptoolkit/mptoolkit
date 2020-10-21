@@ -320,7 +320,7 @@ void
 InfiniteWavefunctionRight::rotate_left(int Count)
 {
    // Rotation is fairly straightforward, we just rotate the vectors around
-   else if (Count < 0)
+   if (Count < 0)
    {
       this->rotate_right(-Count);
       return;
