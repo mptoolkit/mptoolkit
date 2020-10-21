@@ -276,6 +276,10 @@ int main(int argc, char** argv)
          std::cout << "Calculating overlap...\n";
 
       // Rotate as necessary.  Do this BEFORE determining the quantum number sectors!
+      if (Verbose)
+      {
+         std::cout << "Rotating Psi1 right by" << Rotate << " sites\n";
+      }
       Psi1.rotate_right(Rotate);
 
       UnitCell Cell;
