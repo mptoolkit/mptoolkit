@@ -505,7 +505,7 @@ mp-simple-marshall-qmc : random_wavefunc.o
 
 mp-tebd : tebd.o number-parser.o
 mp-itebd : tebd.o number-parser.o
-mp-ibc-join : triangular_mpo_solver.o
+mp-ibc-join : random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o
 mp-idmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o
 mp-idmrg-s3e : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o
 mp-ibc-dmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o

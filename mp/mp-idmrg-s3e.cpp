@@ -1139,7 +1139,7 @@ int main(int argc, char** argv)
             std::cout << "mp-idmrg: fatal: the wavefunction unit cell must be a multiple of the Hamiltonian unit cell.\n";
             return 1;
          }
-         std::cout << "Creating exact diagonalization basis.  Wvaefunction unit cell size = "
+         std::cout << "Creating exact diagonalization basis.  Wavefunction unit cell size = "
                    << WavefuncUnitCellSize << '\n';
 
          QuantumNumbers::QuantumNumberList BoundaryQ;

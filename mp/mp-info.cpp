@@ -419,7 +419,7 @@ int main(int argc, char** argv)
       if (!ShowEntropy && !ShowStates && !ShowLocalBasis && !ShowBasis && !ShowCasimir && !ShowDensity)
          ShowBasic = true;
 
-      SetExpectedPageFileVersion(-1);
+      pheap::SetExpectedPageFileVersion(-1);
       pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(WavefuncFile, mp_pheap::CacheSize(), true);
 
       if (ShowBasic)

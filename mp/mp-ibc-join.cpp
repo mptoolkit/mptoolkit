@@ -26,25 +26,29 @@
 #include "common/prog_opt_accum.h"
 #include "common/environment.h"
 #include "interface/inittemp.h"
-#include "mp-algorithms/lanczos.h"
 #include "lattice/infinitelattice.h"
 #include "lattice/infinite-parser.h"
 #include "mp-algorithms/triangular_mpo_solver.h"
+#include "linearalgebra/arpack_wrapper.h"
+#include "mps/packunpack.h"
 
 namespace prog_opt = boost::program_options;
 
 struct CMultiply
 {
    CMultiply(StateComponent const& E_, StateComponent const& F_)
-      : E(E_), F(F_)
+      : P(E_.Basis2(), F_.Basis2(), E_[0].TransformsAs()), E(E_), F(F_)
    {
    }
 
-   MatrixOperator operator()(MatrixOperator const& C) const
+   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
    {
-      return operator_prod(E, C, herm(F));
+      MatrixOperator C = P.unpack(In);
+      C = operator_prod(E, C, herm(F));
+      P.pack(C, Out);
    }
 
+   PackMatrixOperator P;
    StateComponent const& E;
    StateComponent const& F;
 };
@@ -61,6 +65,7 @@ int main(int argc, char** argv)
       bool Random = false;
       bool Force = false;
       double GMRESTol = 1E-13;    // tolerance for GMRES for the initial H matrix elements.
+      double Tol = 1E-15;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -74,6 +79,7 @@ int main(int argc, char** argv)
          ("random", prog_opt::bool_switch(&Random), "Don't minimize the Hamiltonian, make a random state instead")
          ("Hamiltonian,H", prog_opt::value(&HamStr),
           "model Hamiltonian, of the form lattice:operator")
+         ("tol", prog_opt::value(&Tol), FormatDefault("Tolerance of the eigensolver", Tol).c_str())
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "extra debug output [can be used multiple times]")
          ;
@@ -126,6 +132,10 @@ int main(int argc, char** argv)
          BasicTriangularMPO HamMPO;
          std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
 
+         int WavefuncUnitCellSize = PsiLeft.size();
+         HamMPO = repeat(HamMPO, WavefuncUnitCellSize / HamMPO.size());
+         CHECK_EQUAL(int(HamMPO.size()), WavefuncUnitCellSize);
+
          std::cout << "Solving fixed-point Hamiltonian..." << std::endl;
          StateComponent BlockHamL = Initial_E(HamMPO, PsiLeft.Basis2());
          std::complex<double> LeftEnergy = SolveSimpleMPO_Left(BlockHamL, PsiLeft, HamMPO,
@@ -137,13 +147,21 @@ int main(int argc, char** argv)
                                                                  GMRESTol, Verbose);
          std::cout << "Starting energy (right eigenvalue) = " << RightEnergy << std::endl;
 
-         int Iter = 20;
-         int MinIter = 4;
-         double Tol = 1E-16;
-	 double Energy = Lanczos(C, CMultiply(BlockHamL, BlockHamR),
-                                 Iter, Tol, MinIter, Verbose-1);
+         CMultiply Mult(BlockHamL, BlockHamR);
 
-         std::cout << "Energy is " << Energy << '\n';
+         int NumEigen = 10;
+         double Tol = 1e-12;
+
+         std::vector<std::vector<std::complex<double>>> OutputVectors(NumEigen, std::vector<std::complex<double>>(Mult.P.size()));
+
+         auto Eigs = LinearAlgebra::DiagonalizeARPACK(Mult, Mult.P.size(), NumEigen, LinearAlgebra::WhichEigenvalues::SmallestReal, Tol, OutputVectors.data(), 0, false, Verbose-1);
+
+         C = Mult.P.unpack(OutputVectors[0].data());
+
+         for (auto e : Eigs)
+         {
+            std::cout << "Energy = " << format_complex(remove_small_imag(e)) << '\n';
+         }
       }
       else
       {

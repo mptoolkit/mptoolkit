@@ -352,7 +352,7 @@ LocalEigensolver::Solve(StateComponent& C,
 	    PackStateComponent Pack(D);
    	    LinearAlgebra::Vector<std::complex<double>> v(Pack.size());
 	    Pack.pack(D, v.data());
-	    LinearAlgebra::Vector<double> Diag = std::real(v);
+	    LinearAlgebra::Vector<double> Diag = LinearAlgebra::real(v);
 	    for (int i = 0; i < size(Diag); ++i)
 	    {
 	       if (norm_frob(Diag[i] - HMat(i,i)) > 1E-10)

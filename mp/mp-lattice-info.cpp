@@ -93,8 +93,7 @@ void DescribeLattice(InfiniteLattice const& L, int Verbose)
       if (Verbose > 0)
       {
          std::cout << "                -transforms: "
-                   << std::setw(10) << std::left << I->second.TransformsAs()
-                   << "  commutes: " << I->second.Commute() << '\n';
+                   << std::setw(10) << std::left << I->second.TransformsAs() << '\n';
       }
    }
 
