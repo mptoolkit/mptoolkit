@@ -75,17 +75,19 @@ class WavefunctionSectionLeft : public CanonicalWavefunctionBase
       WavefunctionSectionLeft ConstructFromLeftOrthogonal(LinearWavefunction const& Psi,
                                                           MatrixOperator const& Lambda,
                                                           int Verbose = 0);
-      void check_structure() const;
-      void debug_check_structure() const;
 
       MatrixOperator const& LeftU() const { return LeftU_; }
       MatrixOperator const& RightU() const { return RightU_; }
 
-      static std::string const Type;
-
-      static PStream::VersionTag VersionT;
+      void check_structure() const;
+      void debug_check_structure() const;
 
    private:
+      static std::string const Type;
+      static PStream::VersionTag VersionT;
+
+      // The LeftU and RightU operators are scalar unitary transformations that join the left and right infinite wavefunctions
+      // to the window.
       MatrixOperator LeftU_, RightU_;
 
       friend void inplace_reflect(WavefunctionSectionLeft& Psi);
@@ -98,6 +100,8 @@ class WavefunctionSectionLeft : public CanonicalWavefunctionBase
 
       friend PStream::opstream& operator<<(PStream::opstream& out, WavefunctionSectionLeft const& Psi);
       friend PStream::ipstream& operator>>(PStream::ipstream& in, WavefunctionSectionLeft& Psi);
+
+      friend class IBCWavefunction;
 };
 
 std::pair<LinearWavefunction, MatrixOperator>
@@ -150,6 +154,10 @@ class IBCWavefunction
 
       void SetDefaultAttributes(AttributeList& A) const;
 
+      // translate the wavefunction to the left or right
+      void translate_left(int Sites);
+      void translate_right(int Sites);
+
       static std::string const Type;
 
       static PStream::VersionTag VersionT;
@@ -176,6 +184,12 @@ class IBCWavefunction
       InfiniteWavefunctionLeft Left;
       WavefunctionSectionLeft Window;
       InfiniteWavefunctionRight Right;
+
+      // Quantum numbers that denote the required shift in quantum number from the edge of the window to the
+      // infinite boundary.  Each time a unit cell is incorporated into the left, the LeftShift increases by
+      // Left.qshift().  Each time a unit cell is incorporated into the right, the RightShift increases by Right.qshift().
+      // The total quantum number shift across the window is LeftShift * adjoint(RightShift)
+      QuantumNumbers::QuantumNumber LeftShift, RightShift;
 
       friend void inplace_reflect(IBCWavefunction& Psi);
       friend void inplace_conj(IBCWavefunction& Psi);

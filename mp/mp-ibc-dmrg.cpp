@@ -208,7 +208,10 @@ class IBC_DMRG
       // LambdaR being the lambda matrix on the right edge.
       IBC_DMRG(LinearWavefunction const& Psi_, MatrixOperator const& LambdaR,
                BasicTriangularMPO const& Hamiltonian_,
-               StateComponent const& LeftHam, StateComponent const& RightHam,
+               InfiniteWavefunctionLeft const& LeftPsi_,
+               std::deque<StateComponent> const& LeftHam_, int WindowLeftSites,_
+               InfiniteWavefunctionRight const& RightPsi_;
+               std::deque<StateComponent const>& RightHam_, int WindowRightSites_,
                int Verbose = 0);
 
       void SetMixInfo(MixInfo const& m);
@@ -235,6 +238,14 @@ class IBC_DMRG
       void TruncateAndShiftLeft(StatesInfo const& States);
       void TruncateAndShiftRight(StatesInfo const& States);
 
+      // called after Solve() when optimizing the left-most site of the window;
+      // determines whether the window should be extended to the left
+      void TryExtendWindowLeft();
+
+      // called after Solve() when optimizing the right-most site of the window;
+      // determines whether the window should be extended to the right
+      void TryExtendWindowRight();
+
       void ShowInfo(char c);
 
       void CheckConsistency() const;
@@ -243,6 +254,14 @@ class IBC_DMRG
       //   private:
       BasicTriangularMPO Hamiltonian;
       LinearWavefunction Psi;
+
+      int WindowOffset;
+      InfiniteWavefunctionLeft LeftPsi;
+      std::deque<StateComponent>LeftHam;
+      int WindowLeftSites;
+      InfiniteWavefunctionRight RightPsi;
+      std::deque<StateComponent RightHam;
+      int WindowRightSites;
 
       std::deque<StateComponent> LeftHamiltonian;
       std::deque<StateComponent> RightHamiltonian;
@@ -263,18 +282,35 @@ class IBC_DMRG
       TruncationInfo Info;
 
       int SweepNumber;
+
+      // maximum number of sites we are allowed to extend the window to the left and right
+      int MaxSitesExtendLeft;
+      int MaxSitesExtendRight;
 };
 
 
 
 IBC_DMRG::IBC_DMRG(LinearWavefunction const& Psi_, MatrixOperator const& LambdaR,
                    BasicTriangularMPO const& Hamiltonian_,
-                   StateComponent const& LeftHam, StateComponent const& RightHam,
+                   int WindowOffset_,
+                   InfiniteWavefunctionLeft const& LeftPsi_,
+                   std::deque<StateComponent> const& LeftHam_, int WindowLeftSites,_
+                   InfiniteWavefunctionRight const& RightPsi_;
+                   std::deque<StateComponent const>& RightHam_, int WindowRightSites_,
                    int Verbose_)
    : Hamiltonian(Hamiltonian_),
      Psi(Psi_),
+     WindowOffset(WindowOffset_)
+     LeftPsi(LeftPsi_),
+     LeftHam(LeftHam_),
+     WindowSitesLeft(WindowSitesLeft_),
+     RightPsi(RightPsi_),
+     RightHam(RightHam_),
+     WindowSitesRight(WindowSitesRight_),
      Verbose(Verbose_),
-     SweepNumber(1)
+     SweepNumber(1),
+     MaxSitesExtendLeft(0),
+     MaxSitesExtendRight(0)
 {
    FirstSite = Psi.begin();
    LastSite = Psi.end();
@@ -287,8 +323,8 @@ IBC_DMRG::IBC_DMRG(LinearWavefunction const& Psi_, MatrixOperator const& LambdaR
 
    *C = prod(*C, LambdaR);
 
-   LeftHamiltonian.push_back(LeftHam);
-   RightHamiltonian.push_front(RightHam);
+   LeftHamiltonian.push_back(LeftHam[LeftHam.size()-WindowSitesLeft]);
+   RightHamiltonian.push_front(RightHam[WindowSitesRight]);
 
    this->ConstructInitialHamiltonian();
 }
@@ -387,6 +423,10 @@ IBC_DMRG::SweepRight(StatesInfo const& States, double HMix)
       this->TruncateAndShiftRight(States);
       this->Solve();
       this->ShowInfo('R');
+      if (C == LastSite)
+      {
+         this->TryExtendWindowRight();
+      }
    }
 
    SweepNumber++;
@@ -403,6 +443,10 @@ IBC_DMRG::SweepLeft(StatesInfo const& States, double HMix)
       this->TruncateAndShiftLeft(States);
       this->Solve();
       this->ShowInfo('L');
+      if (C == FirstSite)
+      {
+         this->TryExtendWindowLeft();
+      }
    }
 
    SweepNumber++;
@@ -517,6 +561,10 @@ int main(int argc, char** argv)
          ("initialfidelity", prog_opt::value(&InitialFidelity),
           FormatDefault("Initial value for the fidelity to set the eigensolver tolerance, for the first iteration",
                         InitialFidelity).c_str())
+         ("maxextendleft", prog_opt::value(&MaxExtendLeft),
+         "allow extending the unit cell this many sites to the left")
+         ("maxextendright", prog_opt::value(&MaxExtendRight),
+         "allow extending the unit cell this many sites to the right")
          ("seed", prog_opt::value<unsigned long>(), "random seed")
          ("gmrestol", prog_opt::value(&GMRESTol),
           FormatDefault("tolerance for GMRES linear solver for the initial H matrix elements", GMRESTol).c_str())
@@ -635,13 +683,35 @@ int main(int argc, char** argv)
                                                               GMRESTol, Verbose);
       std::cout << "Starting energy (right eigenvalue) = " << RightEnergy << std::endl;
 
+      // Assemble all of the block hamiltonians, in case we need to expand the window
+      std::deque<StateComponent> IBC_BlockHamL;
+      BlockHamL.delta_shift(Psi.Left.qshift());
+      IBC_BlockHamL.push_back(BlockHamL);
+      auto H = LeftHamMPO.begin();
+      for (auto i = Psi.Left.begin(); i != Psi.Left.end(); ++i)
+      {
+         IBC_BlockHamL.push_back(contract_from_left(*H, herm(*i), IBC_BlockHamL.back(), *i));
+         ++H;
+      }
+      std::deque<StateComponent> IBC_BlockHamR;
+      BlockHamR.delta_shift(adjoint(Psi.Right.qshift()));
+      IBC_BlockHamR.push_front(BlockHamR);
+      H = RightHamMPO.end();
+      for (auto i = Psi.Right.end(); i != Psi.Right.begin(); --i)
+      {
+         auto j = i;
+         --j;
+         --H;
+         IBC_BlockHamR.push_front(contract_from_right(herm(*H), *j, IBC_BlockHamR.front(), herm(*j)));
+      }
+
       // The LinearWavefunction representation of the Window
       LinearWavefunction PsiLinear;
       MatrixOperator Lambda;
       std::tie(PsiLinear, Lambda) = get_left_canonical(Psi.Window);
 
       // Construct the IBC_DMRG object
-      IBC_DMRG dmrg(PsiLinear, Lambda, HamMPO, BlockHamL, BlockHamR, Verbose);
+      IBC_DMRG dmrg(PsiLinear, Lambda, HamMPO, IBC_BlockHamL, WindowLeftSites, IBC_BlockHamR, WindowRightSites, Verbose);
 
       dmrg.MixingInfo.MixFactor = MixFactor;
       dmrg.MixingInfo.RandomMixFactor = RandomMixFactor;

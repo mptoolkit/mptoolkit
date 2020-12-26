@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// mp/mp-irotate.cpp
+// mp/mp-translate.cpp
 //
 // Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
@@ -50,9 +50,9 @@ int main(int argc, char** argv)
       desc.add_options()
          ("help", "show this help message")
          ("left,l", prog_opt::value(&Left),
-          "rotate this many sites to the left")
+          "translate this many sites to the left")
          ("right,r", prog_opt::value(&Right),
-          "rotate this many sites to the right")
+          "translate this many sites to the right")
          ("force,f", prog_opt::bool_switch(&Force),
           "allow overwriting the output file, if it already exists")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
@@ -77,16 +77,19 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") > 0 || vm.count("psi2") < 1 || (vm.count("left") == 0 && vm.count("right") == 0))
+      if (vm.count("help") > 0 || vm.count("psi1") < 1 || (vm.count("left") == 0 && vm.count("right") == 0))
       {
-         print_copyright(std::cerr, "tools", "mp-irotate");
-         std::cerr << "usage: " << basename(argv[0]) << " [options] <input-psi> <output-psi>\n";
+         print_copyright(std::cerr, "tools", "mp-translate");
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <input-psi> [output-psi]\n";
          std::cerr << desc << '\n';
-         std::cerr << "This tool rotates an iMPS wavefunction unit cell by an arbitrary number of sites.\n"
+         std::cerr << "This tool translates a wavefunction unit cell by an arbitrary number of sites.\n"
                    << "This can be specified as a rotation to the left (--left <sites>) or to the right (--right <sites>)\n"
                    << "A rotation to the left by N sites is equivalent to a rotation to the right by UnitCellSize-N sites.\n";
          return 1;
       }
+
+      if (vm.count(psi2) < 1)
+         OutputFile = InputFile;
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));

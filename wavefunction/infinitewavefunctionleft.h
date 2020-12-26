@@ -95,6 +95,8 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       // Conversion from an InfiniteWavefunctionRight
       explicit InfiniteWavefunctionLeft(InfiniteWavefunctionRight const& Psi);
 
+      // returns the quantum number shift per unit cell.  Given a state q on the right hand side of the unit cell,
+      // the corresponding state on the left hand side is q + qshift()
       QuantumNumber qshift() const { return QShift; }
 
       double log_amplitude() const { return LogAmplitude; }

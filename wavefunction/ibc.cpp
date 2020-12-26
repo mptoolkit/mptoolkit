@@ -232,6 +232,16 @@ IBCWavefunction::IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
 {
 }
 
+void IBCWavefunction::translate_left(int Sites)
+{
+   WindowOffset += Sites;
+}
+
+void IBCWavefunction::translate_right(int Sites)
+{
+   WindowOffset -= Sites;
+}
+
 void IBCWavefunction::check_structure() const
 {
    Left.check_structure();
@@ -331,6 +341,10 @@ inplace_reflect(IBCWavefunction& Psi)
    Psi.Left = reflect(Psi.Right);
    Psi.Right = Temp;
    inplace_reflect(Psi.Window);
+   std::swap(Psi.WindowLeftSites, Psi.WindowRightSites);
+   QuantumNumbers::QuantumNumber q = adjoint(Psi.LeftShift);
+   Psi.LeftShift = adjoint(Psi.RightShift);
+   Psi.RightShift = q;
 }
 
 void

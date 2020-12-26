@@ -524,6 +524,13 @@ bool is_scalar(QuantumNumber const& q)
 // this can be fractional, in the case of anyonic quantum numbers
 int degree(QuantumNumber const& q);
 
+inline
+bool is_pointed(QuantumNumber const& q)
+{
+   // TODO: optimize this implementation
+   return degree(q) == 1;
+}
+
 // The multiplicity of the representation.  Currently, we do not handle
 // non-multiplicity-free algebras at all, so this must always be 0 or 1.  But
 // one day we will maybe do SU(3) ?  And this will be useful ;)
@@ -621,8 +628,23 @@ QuantumNumberList transform_targets(QuantumNumber const& q1, QuantumNumber const
    return Q;
 }
 
+inline
+QuantumNumberList operator*(QuantumNumber const& q1, QuantumNumber const& q2)
+{
+   return transform_targets(q1, q2);
+}
+
+inline
+QuantumNumber operator+(QuantumNumber const& q1, QuantumNumber const& q2)
+{
+   PRECONDITION(is_pointed(q1));
+   PRECONDITION(is_pointed(q2));
+   return transform_targets(q1, q2)[0];
+}
+
 // 'addition' of quantum numbers.  This is only possible if tghe quantum numbers
-// are abelian (possibly through being in the abelian sector of a non-abelian symmetry).
+// are pointed (possibly through being in the abelian sector of a non-abelian symmetry).
+// This is an alias for operator+
 inline
 QuantumNumber delta_shift(QuantumNumber const& q1, QuantumNumber const& q2)
 {
