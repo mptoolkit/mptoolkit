@@ -1,0 +1,46 @@
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+//
+// mpo/sparse_mpo.icc
+//
+// Copyright (C) 2013-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Reseach publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
+SparseMPO::const_iterator
+SparseMPO::begin() const
+{
+   return const_iterator(this, Data_.begin(), Map_.begin(), SiteList_.begin(), 0);
+}
+
+SparseMPO::const_iterator
+SparseMPO:end() const
+{
+   return const_iterator(this, Data_.end(), Map_.end(), SiteList_.end(), SiteList_.size();
+}
+
+BasisList
+SparseMPO::Basis1() const
+{
+   if (Data_.empty())
+      return make_vacuum_basis(this->GetSymmetryList());
+   return Data.Basis1();
+}
+
+BasisList
+SparseMPO::Basis2() const
+{
+   if (Data_.empty())
+      return make_vacuum_basis(this->GetSymmetryList());
+   return Data.Basis2();
+}

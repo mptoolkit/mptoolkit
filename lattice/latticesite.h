@@ -38,6 +38,7 @@
 #include "operator_descriptions.h"
 #include <boost/variant.hpp>
 #include <map>
+#include "common/runlengthcompressed.h"
 
 using QuantumNumbers::SymmetryList;
 
@@ -160,7 +161,7 @@ class LatticeSite
          OperatorListType Operators;
          ArgumentListType Arguments;
          FunctionListType Functions;
-	 BraidGroup Braid;
+         BraidGroup Braid;
 
          ImplType() {}
          ImplType(std::string const& Desc_) : Description(Desc_) {}
@@ -186,12 +187,36 @@ std::ostream& operator<<(std::ostream& out, LatticeSite const& s);
 
 using Function::par;  // shortcut for constructing parameters
 
+// SiteBasisList is an array of BasisList, that represents the basis corresponding to some
+// section of a lattice.  It is a light-weight replacement for the full lattice, when MPO's need
+// to know the actual basis at each site of a lattice, but don't need the full lattice itself.
+class SiteBasisList
+{
+   public:
+      using value_type     = BasisList;
+      using const_iterator = run_length_compressed<BasisList>::const_iterator;
+
+      explicit SiteBasisList(run_length_compressed<BasisList> const& L);
+
+      QuantumNumbers::SymmetryList GetSymmetryList() const;
+
+      int size() const { return ListPtr->size(); }
+
+      const_iterator begin() const { return ListPtr->begin(); }
+      const_iterator end() const { return ListPtr->end(); }
+
+      BasisList const& operator[](int n) const { return ListPtr->find(n); }
+
+   private:
+      pvalue_ptr<run_length_compressed<BasisList>> ListPtr;
+}
+
 // This is used by UnitCell and UnitCellMPO
-typedef std::vector<LatticeSite> SiteListType;
-typedef pvalue_ptr<SiteListType> SiteListPtrType;
+//typedef std::vector<LatticeSite> SiteListType;
+//typedef pvalue_ptr<SiteListType> SiteListPtrType;
 
 // utility to gt a vector of the local basis from a SiteListType
-std::vector<BasisList>
-Basis1FromSiteList(SiteListType const& s);
+//std::vector<BasisList>
+//Basis1FromSiteList(SiteListType const& s);
 
 #endif

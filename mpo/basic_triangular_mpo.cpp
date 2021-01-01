@@ -71,19 +71,6 @@ PStream::ipstream&
    return in;
 }
 
-GenericMPO extract_column(BasicTriangularMPO const& Op, int Col)
-{
-   GenericMPO MPOp(Op.begin(), Op.end());
-
-   std::set<int> Cols;
-   Cols.insert(Col);
-   SimpleOperator ColP = make_projector_onto(MPOp.Basis2(), Cols);
-   MPOp.back() = prod(MPOp.back(), herm(ColP));
-
-   cull_unused_elements(MPOp);
-   return MPOp;
-}
-
 GenericMPO extract_lower_column(BasicTriangularMPO const& Op, int Col)
 {
    GenericMPO MPOp(Op.begin(), Op.end());

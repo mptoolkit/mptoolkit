@@ -73,17 +73,18 @@ class GenericMPO
       basis1_type Basis1() const { DEBUG_CHECK(!this->empty()); return Data_.front().Basis1(); }
       basis2_type Basis2() const { DEBUG_CHECK(!this->empty()); return Data_.back().Basis2(); }
 
-      QuantumNumbers::SymmetryList GetSymmetryList() const { return Data_[0].GetSymmetryList(); }
+      SymmetryList GetSymmetryList() const { return Data_.front().GetSymmetryList(); }
 
       // Return the local basis at the n'th site
       BasisList const& LocalBasis1(int n) const
       { return Data_[n].LocalBasis1(); }
+
       BasisList const& LocalBasis2(int n) const
       { return Data_[n].LocalBasis2(); }
 
       // returns the list of local hilbert spaces for this operator
-      std::vector<BasisList> LocalBasis1List() const;
-      std::vector<BasisList> LocalBasis2List() const;
+      SiteBasisList LocalBasis1List() const;
+      SiteBasisList LocalBasis2List() const;
 
       std::vector<OperatorComponent> const& data() const { return Data_; }
 
@@ -137,74 +138,6 @@ GenericMPO coarse_grain_range(GenericMPO const& Op, int beg, int end);
 SimpleOperator
 construct_transfer_matrix(HermitianProxy<GenericMPO> const& A, GenericMPO const& B);
 
-struct OperatorClassification
-{
-   // indicates that the operator is zero
-   bool is_null() const;
-
-   // indicates that the operator a product state, ie a product of 1x1 MPO's
-   bool is_product() const;
-
-   // indicates that the operator is a unitary product state, ie a string operator
-   bool is_unitary() const;
-
-   // indicates that the operator is proportional to a unitary product state,
-   // up to some factor
-   bool is_prop_unitary() const;
-
-   // indicates that the operator is proportional to the identity operator
-   bool is_prop_identity() const;
-
-   // returns true if the operator is the identity multiplied by a complex phase factor of magnitude 1
-   bool is_complex_identity() const
-   {
-      return this->is_prop_identity() && norm_frob(norm_frob(this->factor())-1.0) < 1E-12;
-   }
-
-   // indicates that the operator is equal to the identity
-   bool is_identity() const;
-
-   // returns true only if the operator fits into no other classification
-   bool is_unclassified() const;
-
-   // for operators that are proportional to the identity, returns the factor
-   std::complex<double> factor() const;
-
-   // private use only
-   std::complex<double> Factor_;
-   bool Product_;
-   bool Unitary_;
-   bool Identity_;
-   bool PropUnitary_;
-   bool PropIdentity_;
-   bool Null_;
-
-   OperatorClassification();
-};
-
-std::ostream& operator<<(std::ostream& out, OperatorClassification const& Class);
-
-OperatorClassification classify(GenericMPO const& Op, double UnityEpsilon);
-
-inline
-OperatorClassification classify(GenericMPO const& Op)
-{
-   return classify(Op, DefaultClassifyUnityEpsilon);
-}
-
-OperatorClassification classify(OperatorComponent c, double UnityEpsilon);
-
-inline
-OperatorClassification classify(OperatorComponent c)
-{
-   return classify(c, DefaultClassifyUnityEpsilon);
-}
-
-// plus various functions for acting on states etc
-
-// TODO: find a better location for this function
-// Construct an operator that projects onto a given subset of a basis.
-SimpleOperator make_projector_onto(BasisList const& Basis, std::set<int> const& Onto);
 
 // extract the local basis at each site of the MPO
 std::vector<BasisList>

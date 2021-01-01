@@ -704,6 +704,7 @@ struct RLE_find : public boost::static_visitor<T const&>
 
    T const& operator()(run_length_repeat<T> const& x) const
    {
+      DEBUG_CHECK(n < x.nested().size() * x.size());
       return x.nested().find(x.nested().size() % Sz);
    }
 
@@ -711,11 +712,12 @@ struct RLE_find : public boost::static_visitor<T const&>
    {
       run_length_array<T>::const_iterator I = x.begin();
       int Sz = I->size();
-      while (Sz >= n)
+      while (n >= Sz)      // BUG FIX here, reversed logic
       {
-	 n -= Sz;
-	 ++I;
-	 Sz = I->size();
+         n -= Sz;
+         ++I;
+         DEBUG_CHECK(I != x.end());
+         Sz = I->size();
       }
       return I->find(n);
    }
@@ -725,11 +727,7 @@ struct RLE_find : public boost::static_visitor<T const&>
       DEBUG_CHECK_EQUAL(n, 0);
       return x;
    }
-   template <typename U>
-   T const& operator()(U const& x) const
-   {
-      return boost::apply_visitor(RLE_back<T>(), x.back());
-   }
+
    int n;
 };
 

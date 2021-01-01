@@ -118,7 +118,7 @@ class OperatorComponent
       // Makes a 1x1 MPO with the local identity operator
       static OperatorComponent make_identity(BasisList const& LocalBasis);
 
-      // Makes a diagonl MPO with the local identity operator repeated in each position of the AuxBasis
+      // Makes a diagonal MPO with the local identity operator repeated in each position of the AuxBasis
       static OperatorComponent make_identity(BasisList const& LocalBasis, BasisList const& AuxBasis);
 
       void check_structure() const;

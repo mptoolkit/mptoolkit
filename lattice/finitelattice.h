@@ -84,7 +84,7 @@ class FiniteLattice
       int sites() const;
 
       // returns the n'th unit cell (zero-based)
-      UnitCell const& operator[](int i) const;
+      UnitCell const& operator()(int i) const;
 
       std::string description() const { return Description_; }
       void set_description(std::string s) { Description_ = s; }
@@ -174,8 +174,8 @@ class FiniteLattice
       authors_type Authors_;
       std::string CommandLine_;
       std::string Timestamp_;
-      UnitCell* UnitCell_;
-      bool OwnUnitCell_;               // true if UnitCell_ is owned by us on the heap
+      run_length_repeat<UnitCell> UnitCells_;
+      std::vector<int> SiteOffsets_;  // site offset of each unit cell
       OperatorListType Operators_;
       ArgumentListType Arguments_;
       FunctionListType Functions_;
