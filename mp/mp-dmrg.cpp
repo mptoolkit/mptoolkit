@@ -193,14 +193,13 @@ int main(int argc, char** argv)
          print_preamble(std::cout, argc, argv);
 
       std::cout << "Starting DMRG...\n";
-      std::string InputWavefunction = vm["wavefunction"].as<std::string>();
-      std::cout << "Input wavefunction: " << InputWavefunction << std::endl;
+      std::cout << "Input wavefunction: " << FName << std::endl;
 
       // Open the wavefunction
       MPWavefunction Wavefunction;
       {
-	 pvalue_ptr<MPWavefunction> PsiPtr = pheap::OpenPersistent(FName.c_str(), mp_pheap::CacheSize());
-	 Wavefunction = *PsiPtr;
+	     pvalue_ptr<MPWavefunction> PsiPtr = pheap::OpenPersistent(FName.c_str(), mp_pheap::CacheSize());
+	     Wavefunction = *PsiPtr;
       }
       FiniteWavefunctionLeft Psi = Wavefunction.get<FiniteWavefunctionLeft>();
 
