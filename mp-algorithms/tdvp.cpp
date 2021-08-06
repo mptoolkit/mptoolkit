@@ -34,9 +34,7 @@ VectorType LanczosExponential(VectorType const& x,
    std::vector<double> Beta(Iterations);
    double const BetaTol = 1e-14;
 
-   double xNorm = norm_frob(x);
-
-   v[0] = x * (1.0/xNorm);
+   v[0] = x * (1.0/norm_frob(x));
 
    VectorType w = MatVecMultiply(v[0]);
    Alpha[0] = real(inner_prod(w, v[0]));
@@ -69,7 +67,7 @@ VectorType LanczosExponential(VectorType const& x,
       T(j, j+1) = T(j+1, j) = Beta[j];
    }
    T(Iterations, Iterations) = Alpha[Iterations];
-   
+
    LinearAlgebra::Matrix<std::complex<double>> P = Theta * T;
    LinearAlgebra::Matrix<std::complex<double>> X = LinearAlgebra::Exponentiate(1.0, P);
 
@@ -79,9 +77,9 @@ VectorType LanczosExponential(VectorType const& x,
    {
       Out += v[j] * X(j, 0);
    }
-   
+
    // Normalise Out.
-   Out *= xNorm;
+   Out *= 1.0/norm_frob(Out);
 
    return Out;
 }
@@ -134,7 +132,7 @@ TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
    for (FiniteWavefunctionLeft::const_mps_iterator I = Psi_.begin(); I != Psi_.end(); ++I)
    {
       if (Verbose > 1)
-         std::cout << "site " << (HamMatrices.size_left()) << std::endl;
+         std::cout << "Site " << (HamMatrices.size_left()) << std::endl;
       HamMatrices.push_left(contract_from_left(*H, herm(*I), HamMatrices.left(), *I));
       Psi.push_back(*I);
       ++H;
@@ -163,9 +161,8 @@ TDVP::Wavefunction() const
 std::complex<double>
 TDVP::Energy() const
 {
-   // FIXME?
-   return inner_prod(HamMatrices.right(),
-		     contract_from_left(*H, herm(HamMatrices.left()), *C, HamMatrices.right()));
+   //return inner_prod(HamMatrices.right(), contract_from_left(*H, herm(HamMatrices.left()), *C, HamMatrices.right()));
+   return inner_prod(contract_from_left(*H, herm(*C), HamMatrices.left(), *C), HamMatrices.right());
 }
 
 void TDVP::IterateLeft()
@@ -176,19 +173,24 @@ void TDVP::IterateLeft()
 
    *C = LanczosExponential(*C, HEff1(HamMatrices.left(), *H, HamMatrices.right()), Iter, 0.5*Timestep, Err);
 
+   if (Verbose > 1) {
+      std::cout << "Site=" << Site
+                << " C Iter=" << Iter
+                << " Err=" << Err << std::endl;
+   }
+
    // Perform SVD to right-orthogonalise current site.
    MatrixOperator M = ExpandBasis1(*C);
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
 
-   //SingularValueDecompositionKeepBasis2(M, U, D, Vh);
    SingularValueDecomposition(M, U, D, Vh);
 
    *C = prod(Vh, *C);
 
    // Update the effective Hamiltonian.
    HamMatrices.push_right(contract_from_right(herm(*H), *C, HamMatrices.right(), herm(*C)));
-   
+
    // Evolve the UD term backwards in time.
    Iter = MaxIter;
    Err = ErrTol;
@@ -196,23 +198,41 @@ void TDVP::IterateLeft()
 
    UD = LanczosExponential(UD, HEff2(HamMatrices.left(), HamMatrices.right()), Iter, -0.5*Timestep, Err);
 
+   if (Verbose > 1) {
+      std::cout << "Site=" << Site
+                << " UD Iter=" << Iter
+                << " Err=" << Err << std::endl;
+   }
+
    // Move to the next site.
    --Site;
    --H;
    --C;
 
    *C = prod(*C, UD);
-   *C *= 1.0 / norm_frob(*C);
 
    HamMatrices.pop_left();
 }
 
 void TDVP::EvolveLeftmostSite()
 {
+   // Evolve current site.
    int Iter = MaxIter;
    double Err = ErrTol;
 
    *C = LanczosExponential(*C, HEff1(HamMatrices.left(), *H, HamMatrices.right()), Iter, Timestep, Err);
+
+   // Calculate error measure epsilon_1 and add to sum.
+   StateComponent Y = contract_from_right(herm(*H), NullSpace1(*C), HamMatrices.right(), herm(*C));
+   double Eps1Sq = norm_frob_sq(scalar_prod(HamMatrices.left(), herm(Y)));
+   Eps1SqSum += Eps1Sq;
+
+   if (Verbose > 1) {
+      std::cout << "Site=" << Site
+                << " C Iter=" << Iter
+                << " Err=" << Err
+                << " Eps1Sq=" << Eps1Sq << std::endl;
+   }
 }
 
 void TDVP::IterateRight()
@@ -222,20 +242,28 @@ void TDVP::IterateRight()
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
 
-   //SingularValueDecompositionKeepBasis1(M, U, D, Vh);
    SingularValueDecomposition(M, U, D, Vh);
 
    *C = prod(*C, U);
 
+   // Calculate the left half of epsilon_2 (see below).
+   StateComponent X = contract_from_left(*H, herm(NullSpace2(*C)), HamMatrices.left(), *C);
+
    // Update the effective Hamiltonian.
    HamMatrices.push_left(contract_from_left(*H, herm(*C), HamMatrices.left(), *C));
-   
+
    // Evolve the DVh term backwards in time.
    int Iter = MaxIter;
    double Err = ErrTol;
    MatrixOperator DVh = D*Vh;
 
    DVh = LanczosExponential(DVh, HEff2(HamMatrices.left(), HamMatrices.right()), Iter, -0.5*Timestep, Err);
+
+   if (Verbose > 1) {
+      std::cout << "Site=" << Site
+                << " DVh Iter=" << Iter
+                << " Err=" << Err << std::endl;
+   }
 
    // Move to the next site.
    ++Site;
@@ -244,26 +272,38 @@ void TDVP::IterateRight()
 
    *C = prod(DVh, *C);
 
-   *C *= 1.0 / norm_frob(*C);
-
    HamMatrices.pop_right();
 
-   // Evolve next site.
+   // Evolve current site.
    Iter = MaxIter;
    Err = ErrTol;
 
    *C = LanczosExponential(*C, HEff1(HamMatrices.left(), *H, HamMatrices.right()), Iter, 0.5*Timestep, Err);
+
+   // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
+   StateComponent Y = contract_from_right(herm(*H), NullSpace1(*C), HamMatrices.right(), herm(*C));
+   double Eps1Sq = norm_frob_sq(scalar_prod(HamMatrices.left(), herm(Y)));
+   double Eps2Sq = norm_frob_sq(scalar_prod(X, herm(Y)));
+   Eps1SqSum += Eps1Sq;
+   Eps2SqSum += Eps2Sq;
+
+   if (Verbose > 1) {
+      std::cout << "Site=" << Site
+                << " C Iter=" << Iter
+                << " Err=" << Err
+                << " Eps1Sq=" << Eps1Sq
+                << " Eps2Sq=" << Eps2Sq << std::endl;
+   }
 }
 
 void TDVP::Evolve()
 {
+   Eps1SqSum = 0.0;
+   Eps2SqSum = 0.0;
+
    while (Site > LeftStop)
    {
       this->IterateLeft();
-      if (Verbose > 1)
-      {
-         std::cout << "Site=" << Site << std::endl;
-      }
    }
 
    this->EvolveLeftmostSite();
@@ -271,9 +311,5 @@ void TDVP::Evolve()
    while (Site < RightStop)
    {
       this->IterateRight();
-      if (Verbose > 1)
-      {
-         std::cout << "Site=" << Site << std::endl;
-      }
    }
 }

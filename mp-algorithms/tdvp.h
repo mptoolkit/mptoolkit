@@ -66,6 +66,10 @@ class TDVP
       int MaxIter;
       double ErrTol;
       int Verbose;
+
+      // Cumulative error measures.
+      double Eps1SqSum;
+      double Eps2SqSum;
 };
 
 #endif

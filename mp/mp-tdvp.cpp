@@ -103,7 +103,7 @@ int main(int argc, char** argv)
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-      std::cout << "Starting TDVP...\n";
+      std::cout << "Starting TDVP..." << std::endl;
       std::cout << "Hamiltonian: " << HamStr << std::endl;
       std::cout << "Wavefunction: " << InputFile << std::endl;
 
@@ -160,7 +160,7 @@ int main(int argc, char** argv)
          {
             if (PsiPtr->Attributes().count("Hamiltonian") == 0)
             {
-               std::cerr << "fatal: no Hamiltonian specified, use -H option or set wavefunction attribute EvolutionHamiltonian.\n";
+               std::cerr << "fatal: no Hamiltonian specified, use -H option or set wavefunction attribute EvolutionHamiltonian." << std::endl;
                return 1;
             }
             HamStr = PsiPtr->Attributes()["Hamiltonian"].as<std::string>();
@@ -187,13 +187,15 @@ int main(int argc, char** argv)
       {
          tdvp.Evolve();
 
-         std::cout << "Timestep " << formatting::format_complex(tstep)
-                   << " time " << formatting::format_complex(InitialTime+double(tstep)*Timestep) << '\n';
+         std::cout << "Timestep=" << formatting::format_complex(tstep)
+                   << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
+                   << " Eps1SqSum=" << tdvp.Eps1SqSum
+                   << " Eps2SqSum=" << tdvp.Eps2SqSum << std::endl;
 
          // Save the wavefunction.
          if ((tstep % SaveEvery) == 0 || tstep == N)
          {
-            std::cout << "Saving wavefunction\n";
+            std::cout << "Saving wavefunction" << std::endl;
             MPWavefunction Wavefunction;
             std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), OutputDigits);
             std::string BetaStr = formatting::format_digits(-std::imag(InitialTime + double(tstep)*Timestep), OutputDigits);
