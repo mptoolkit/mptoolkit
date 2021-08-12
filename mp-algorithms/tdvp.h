@@ -34,7 +34,8 @@ class TDVP
       TDVP() {}
 
       TDVP(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
-           std::complex<double> Timestep_, int MaxIter_, double ErrTol_, int Verbose_);
+           std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
+           StatesInfo SInfo_, int Verbose_);
 
       // Return the current wavefunction.
       FiniteWavefunctionLeft Wavefunction() const;
@@ -51,8 +52,23 @@ class TDVP
       // Move right and evolve the next site.
       void IterateRight();
 
-      // Evolve the chain by one time step.
+      // Evolve the chain by one time step using single-site TDVP.
       void Evolve();
+
+      // Evolve the current two-site block and move left.
+      void IterateLeft2();
+
+      // Evolve the leftmost two-site block in the chain.
+      void EvolveLeftmostSite2();
+
+      // Move right and evolve the next two-site block.
+      void IterateRight2();
+
+      // Evolve the chain by one time step using two-site TDVP.
+      void Evolve2();
+
+      // Calculate the error measures epsilon_1 and epsilon_2.
+      void CalculateEps();
 
       OperatorStackType HamMatrices;
       LinearWavefunction Psi;
@@ -65,11 +81,20 @@ class TDVP
       std::complex<double> Timestep;    // The complex timestep in the form -i*dt.
       int MaxIter;
       double ErrTol;
+      StatesInfo SInfo;
       int Verbose;
+
+      int TStep = 0;
 
       // Cumulative error measures.
       double Eps1SqSum;
       double Eps2SqSum;
+      
+      // The maximum bond dimension in the chain (2TDVP only).
+      int MaxStates;
+
+      // Cumulative truncation error (2TDVP only).
+      double TruncErrSum;
 };
 
 #endif

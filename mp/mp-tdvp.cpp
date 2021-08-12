@@ -18,34 +18,23 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+#include "common/environment.h"
+#include "common/environment.h"
+#include "common/prog_opt_accum.h"
+#include "common/prog_options.h"
+#include "common/terminal.h"
+#include "interface/inittemp.h"
+#include "lattice/infinite-parser.h"
+#include "lattice/infinitelattice.h"
+#include "mp-algorithms/tdvp.h"
+#include "mp/copyright.h"
 #include "mpo/basic_triangular_mpo.h"
+#include "parser/number-parser.h"
+#include "pheap/pheap.h"
+#include "quantumnumbers/all_symmetries.h"
 #include "wavefunction/finitewavefunctionleft.h"
 #include "wavefunction/mpwavefunction.h"
-#include "quantumnumbers/all_symmetries.h"
-#include "pheap/pheap.h"
-#include "mp/copyright.h"
-#include "common/environment.h"
-#include "common/terminal.h"
-#include "common/proccontrol.h"
-#include "common/prog_options.h"
 #include <iostream>
-#include "common/environment.h"
-#include "common/statistics.h"
-#include "common/prog_opt_accum.h"
-#include "tensor/tensor_eigen.h"
-#include "tensor/regularize.h"
-#include "mp-algorithms/stateslist.h"
-#include "wavefunction/operator_actions.h"
-
-#include "interface/inittemp.h"
-#include "mp-algorithms/random_wavefunc.h"
-
-#include "lattice/infinitelattice.h"
-#include "lattice/unitcelloperator.h"
-#include "lattice/infinite-parser.h"
-#include "mp-algorithms/tdvp.h"
-
-#include "parser/number-parser.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -63,25 +52,41 @@ int main(int argc, char** argv)
       int N = 1;
       int SaveEvery = 1;
       int MaxIter = 10;
-      double ErrTol = 0.0;
-      int OutputDigits = 0;
+      double ErrTol = 1e-16;
+      int MinStates = 1;
+      int MaxStates = 100000;
+      double TruncCutoff = 0;
+      double EigenCutoff = 1e-16;
+      bool TwoSite = false;
+      double Eps2SqTol = 0.0;
       int Verbose = 0;
+      int OutputDigits = 0;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
-         ("help", "show this help message")
+         ("help", "Show this help message")
          ("Hamiltonian,H", prog_opt::value(&HamStr),
-          "operator to use for the Hamiltonian (wavefunction attribute \"EvolutionHamiltonian\")")
-         ("wavefunction,w", prog_opt::value(&InputFile), "input wavefunction (required)")
-	 ("output,o", prog_opt::value(&OutputPrefix), "prefix for saving output files")
-	 ("timestep,t", prog_opt::value(&TimestepStr), "timestep (required)")
-	 ("num-timesteps,n", prog_opt::value(&N), FormatDefault("number of timesteps to calculate", N).c_str())
-	 ("save-timesteps,s", prog_opt::value(&SaveEvery), "save the wavefunction every s timesteps")
-         ("maxiter", prog_opt::value<int>(&MaxIter),
-          FormatDefault("maximum number of Lanczos iterations per step", MaxIter).c_str())
-         ("errtol", prog_opt::value<double>(&ErrTol),
-          FormatDefault("error tolerance for the Lanczos evolution", ErrTol).c_str())
-         ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
+          "Operator to use for the Hamiltonian (wavefunction attribute \"EvolutionHamiltonian\")")
+         ("wavefunction,w", prog_opt::value(&InputFile), "Input wavefunction (required)")
+	 ("output,o", prog_opt::value(&OutputPrefix), "Prefix for saving output files")
+	 ("timestep,t", prog_opt::value(&TimestepStr), "Timestep (required)")
+	 ("num-timesteps,n", prog_opt::value(&N), FormatDefault("Number of timesteps to calculate", N).c_str())
+	 ("save-timesteps,s", prog_opt::value(&SaveEvery), "Save the wavefunction every s timesteps")
+         ("maxiter", prog_opt::value(&MaxIter),
+          FormatDefault("Maximum number of Lanczos iterations per step", MaxIter).c_str())
+         ("errtol", prog_opt::value(&ErrTol),
+          FormatDefault("Error tolerance for the Lanczos evolution", ErrTol).c_str())
+         ("min-states", prog_opt::value(&MinStates),
+          FormatDefault("Minimum number of states to keep", MinStates).c_str())
+         ("states,m", prog_opt::value(&MaxStates),
+          FormatDefault("Maximum number of states", MaxStates).c_str())
+         ("trunc,r", prog_opt::value(&TruncCutoff),
+          FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
+         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
+          FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
+         ("two-site,2", prog_opt::bool_switch(&TwoSite), "Use two-site TDVP")
+         ("eps2sqtol", prog_opt::value(&Eps2SqTol), "Use 2TDVP if Eps2Sq falls below this value [EXPERIMENTAL]")
+         ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
       prog_opt::options_description opt;
@@ -178,19 +183,49 @@ int main(int argc, char** argv)
       std::cout << "Maximum number of Lanczos iterations: " << MaxIter << std::endl;
       std::cout << "Error tolerance for the Lanczos evolution: " << ErrTol << std::endl;
 
-      TDVP tdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, MaxIter, ErrTol, Verbose);
+      StatesInfo SInfo;
+      SInfo.MinStates = MinStates;
+      SInfo.MaxStates = MaxStates;
+      SInfo.TruncationCutoff = TruncCutoff;
+      SInfo.EigenvalueCutoff = EigenCutoff;
+
+      std::cout << SInfo << std::endl;
+
+      TDVP tdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, MaxIter, ErrTol, SInfo, Verbose);
 
       if (SaveEvery == 0)
          SaveEvery = N;
 
       for (int tstep = 1; tstep <= N; ++tstep)
       {
-         tdvp.Evolve();
+         if (TwoSite)
+         {
+            tdvp.Evolve2();
 
-         std::cout << "Timestep=" << formatting::format_complex(tstep)
-                   << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
-                   << " Eps1SqSum=" << tdvp.Eps1SqSum
-                   << " Eps2SqSum=" << tdvp.Eps2SqSum << std::endl;
+            std::cout << "Timestep=" << tstep
+                      << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
+                      << " MaxStates=" << tdvp.MaxStates
+                      << " TruncErrSum=" << tdvp.TruncErrSum
+                      << " Eps1SqSum=" << tdvp.Eps1SqSum
+                      << " Eps2SqSum=" << tdvp.Eps2SqSum << std::endl;
+         }
+         else
+         {
+            tdvp.Evolve();
+
+            std::cout << "Timestep=" << tstep
+                      << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
+                      << " Eps1SqSum=" << tdvp.Eps1SqSum
+                      << " Eps2SqSum=" << tdvp.Eps2SqSum << std::endl;
+         }
+
+         if (Eps2SqTol != 0.0)
+         {
+            if (tdvp.Eps2SqSum > Eps2SqTol)
+               TwoSite = true;
+            else
+               TwoSite = false;
+         }
 
          // Save the wavefunction.
          if ((tstep % SaveEvery) == 0 || tstep == N)
