@@ -355,9 +355,10 @@ void TDVP::ExpandLeftBond()
    CMatSVD SL(scalar_prod(X, herm(Y)));
    TruncationInfo Info;
    StatesInfo SInfoLocal = SInfo;
-   // Subtract the current bond dimension from the maximum number of additional
-   // states to be added.
-   SInfoLocal.MaxStates -= (*CNext).Basis2().total_dimension();
+   // Subtract the current bond dimension from the number of additional states
+   // to be added.
+   SInfoLocal.MinStates = std::max(0, SInfoLocal.MinStates - (*C).Basis1().total_dimension());
+   SInfoLocal.MaxStates = std::max(0, SInfoLocal.MaxStates - (*C).Basis1().total_dimension());
    CMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfoLocal, Info);
 
    MatrixOperator U, Vh;
@@ -394,7 +395,8 @@ void TDVP::EvolveExpand()
 
    while (Site > LeftStop)
    {
-      this->ExpandLeftBond();
+      if ((*C).Basis1().total_dimension() < SInfo.MaxStates)
+         this->ExpandLeftBond();
       this->IterateLeft();
    }
 
