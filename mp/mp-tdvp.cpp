@@ -58,6 +58,7 @@ int main(int argc, char** argv)
       double TruncCutoff = 0;
       double EigenCutoff = 1e-16;
       bool TwoSite = false;
+      bool Expand = false;
       double Eps2SqTol = 0.0;
       int Verbose = 0;
       int OutputDigits = 0;
@@ -85,7 +86,7 @@ int main(int argc, char** argv)
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
          ("two-site,2", prog_opt::bool_switch(&TwoSite), "Use two-site TDVP")
-         ("eps2sqtol", prog_opt::value(&Eps2SqTol), "Use 2TDVP if Eps2Sq falls below this value [EXPERIMENTAL]")
+         ("eps2sqtol", prog_opt::value(&Eps2SqTol), "Expand the bond dimension in the next step if Eps2SqSum rises above this value [1TDVP only]")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -211,26 +212,36 @@ int main(int argc, char** argv)
          }
          else
          {
-            tdvp.Evolve();
+            if (Expand)
+            {
+               std::cout << "Eps2Sq tolerance reached, expanding bond dimension..." << std::endl;
+               tdvp.EvolveExpand();
+            }
+            else
+            {
+               tdvp.Evolve();
+            }
 
             std::cout << "Timestep=" << tstep
                       << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
+                      << " MaxStates=" << tdvp.MaxStates
                       << " Eps1SqSum=" << tdvp.Eps1SqSum
                       << " Eps2SqSum=" << tdvp.Eps2SqSum << std::endl;
-         }
 
-         if (Eps2SqTol != 0.0)
-         {
-            if (tdvp.Eps2SqSum > Eps2SqTol)
-               TwoSite = true;
-            else
-               TwoSite = false;
+            if (Eps2SqTol != 0.0)
+            {
+               if (tdvp.Eps2SqSum > Eps2SqTol)
+                  Expand = true;
+               else
+                  Expand = false;
+            }
          }
 
          // Save the wavefunction.
          if ((tstep % SaveEvery) == 0 || tstep == N)
          {
-            std::cout << "Saving wavefunction" << std::endl;
+            if (Verbose > 0)
+               std::cout << "Saving wavefunction" << std::endl;
             MPWavefunction Wavefunction;
             std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), OutputDigits);
             std::string BetaStr = formatting::format_digits(-std::imag(InitialTime + double(tstep)*Timestep), OutputDigits);

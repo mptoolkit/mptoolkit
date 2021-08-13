@@ -37,7 +37,7 @@ class TDVP
            std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
            StatesInfo SInfo_, int Verbose_);
 
-      // Return the current wavefunction.
+      // Return the current wavefunction in left-canonical form.
       FiniteWavefunctionLeft Wavefunction() const;
 
       // Calculate the energy.
@@ -55,16 +55,25 @@ class TDVP
       // Evolve the chain by one time step using single-site TDVP.
       void Evolve();
 
-      // Evolve the current two-site block and move left.
+      // Expand the dimension of the left bond of the current site using the
+      // projection of H|Psi> onto the subspace of orthogonal two-site
+      // variations.
+      void ExpandLeftBond();
+
+      // Evolve the chain by one time step using 1TDVP, expanding the bond
+      // dimensions on the right-to-left sweep.
+      void EvolveExpand();
+
+      // Evolve the current site and move left using 2TDVP.
       void IterateLeft2();
 
-      // Evolve the leftmost two-site block in the chain.
+      // Evolve the leftmost two-site block in the chain using 2TDVP.
       void EvolveLeftmostSite2();
 
-      // Move right and evolve the next two-site block.
+      // Move right and evolve the next site using 2TDVP.
       void IterateRight2();
 
-      // Evolve the chain by one time step using two-site TDVP.
+      // Evolve the chain by one time step using 2TDVP.
       void Evolve2();
 
       // Calculate the error measures epsilon_1 and epsilon_2.
@@ -78,7 +87,7 @@ class TDVP
       BasicTriangularMPO::const_iterator H;
       int LeftStop;                      // The site indices where we stop iterations,
       int RightStop;
-      std::complex<double> Timestep;    // The complex timestep in the form -i*dt.
+      std::complex<double> Timestep;     // The complex timestep in the form -i*dt.
       int MaxIter;
       double ErrTol;
       StatesInfo SInfo;
@@ -86,12 +95,14 @@ class TDVP
 
       int TStep = 0;
 
-      // Cumulative error measures.
+      // Cumulative error measures epsilon_1^2 and epsilon_2^2, given by the
+      // squared Frobenius norms of the projection of H|Psi> onto the subspace
+      // of orthogonal 1- and 2-site variations, respectively.
       double Eps1SqSum;
       double Eps2SqSum;
       
-      // The maximum bond dimension in the chain (2TDVP only).
-      int MaxStates;
+      // The maximum bond dimension in the chain.
+      int MaxStates = 1;
 
       // Cumulative truncation error (2TDVP only).
       double TruncErrSum;

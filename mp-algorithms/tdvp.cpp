@@ -144,10 +144,11 @@ TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
          std::cout << "Site " << (HamMatrices.size_left()) << std::endl;
       HamMatrices.push_left(contract_from_left(*H, herm(*I), HamMatrices.left(), *I));
       Psi.push_back(*I);
+      MaxStates = std::max(MaxStates, (*I).Basis2().total_dimension());
       ++H;
    }
    HamMatrices.push_right(Initial_F(Ham_, Psi_.Basis2()));
-   // Probably no need to incorporate lambda_r(), this is just a normalization
+   // Probably no need to incorporate lambda_r(), this is just a normalization.
    Psi.set_back(prod(Psi.get_back(), Psi_.lambda_r()));
 
    // Initialize to the right-most site.
@@ -323,6 +324,77 @@ void TDVP::Evolve()
 
    while (Site > LeftStop)
    {
+      this->IterateLeft();
+   }
+
+   this->EvolveLeftmostSite();
+
+   while (Site < RightStop)
+   {
+      this->IterateRight();
+   }
+}
+
+void TDVP::ExpandLeftBond()
+{
+   // Construct the projection of H|Psi> onto the space of two-site variations.
+   LinearWavefunction::iterator CNext = C;
+   --CNext;
+   BasicTriangularMPO::const_iterator HNext = H;
+   --HNext;
+
+   HamMatrices.pop_left();
+
+   StateComponent NL = NullSpace2(*CNext);
+   StateComponent NR = NullSpace1(*C);
+
+   StateComponent X = contract_from_left(*HNext, herm(NL), HamMatrices.left(), *CNext);
+   StateComponent Y = contract_from_right(herm(*H), NR, HamMatrices.right(), herm(*C));
+
+   // Take the truncated SVD of P_2 H|Psi>.
+   CMatSVD SL(scalar_prod(X, herm(Y)));
+   TruncationInfo Info;
+   StatesInfo SInfoLocal = SInfo;
+   // Subtract the current bond dimension from the maximum number of additional
+   // states to be added.
+   SInfoLocal.MaxStates -= (*CNext).Basis2().total_dimension();
+   CMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfoLocal, Info);
+
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SL.ConstructMatrices(SL.begin(), Cutoff, U, D, Vh);
+
+   // Add the new states to CNext, and add zeros to C.
+   SumBasis<VectorBasis> NewBasis((*CNext).Basis2(), U.Basis2());
+
+   MaxStates = std::max(MaxStates, NewBasis.total_dimension());
+
+   *CNext = tensor_row_sum(*CNext, prod(NL, U), NewBasis);
+   // prod(0.0*Vh, NR) is a hack to produce a zero tensor with the correct shape.
+   *C = tensor_col_sum(*C, prod(0.0*Vh, NR), NewBasis);
+
+   if (Verbose > 1) {
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site
+                << " NewStates=" << Info.KeptStates()
+                << " TotalStates=" << NewBasis.total_dimension()
+                << std::endl;
+   }
+
+   // Update the effective Hamiltonian.
+   HamMatrices.push_left(contract_from_left(*HNext, herm(*CNext), HamMatrices.left(), *CNext));
+}
+
+void TDVP::EvolveExpand()
+{
+   ++TStep;
+   Eps1SqSum = 0.0;
+   Eps2SqSum = 0.0;
+   MaxStates = 1;
+
+   while (Site > LeftStop)
+   {
+      this->ExpandLeftBond();
       this->IterateLeft();
    }
 
