@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// mp/mp-tdvp.cpp
+// mp/mp-itdvp.cpp
 //
 // Copyright (C) 2004-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
 // Copyright (C) 2021 Jesse Osborne <j.osborne@uqconnect.edu.au>
@@ -22,17 +22,18 @@
 #include "common/environment.h"
 #include "common/prog_opt_accum.h"
 #include "common/prog_options.h"
+#include "common/statistics.h"
 #include "common/terminal.h"
 #include "interface/inittemp.h"
 #include "lattice/infinite-parser.h"
 #include "lattice/infinitelattice.h"
-#include "mp-algorithms/tdvp.h"
+#include "mp-algorithms/itdvp.h"
 #include "mp/copyright.h"
 #include "mpo/basic_triangular_mpo.h"
 #include "parser/number-parser.h"
 #include "pheap/pheap.h"
 #include "quantumnumbers/all_symmetries.h"
-#include "wavefunction/finitewavefunctionleft.h"
+#include "wavefunction/infinitewavefunctionleft.h"
 #include "wavefunction/mpwavefunction.h"
 #include <iostream>
 
@@ -53,11 +54,11 @@ int main(int argc, char** argv)
       int SaveEvery = 1;
       int MaxIter = 10;
       double ErrTol = 1e-16;
+      double GMRESTol = 1e-13;
       int MinStates = 1;
       int MaxStates = 100000;
       double TruncCutoff = 0;
       double EigenCutoff = 1e-16;
-      bool TwoSite = false;
       bool Expand = false;
       double Eps2SqTol = 0.0;
       int Verbose = 0;
@@ -77,6 +78,8 @@ int main(int argc, char** argv)
           FormatDefault("Maximum number of Lanczos iterations per step", MaxIter).c_str())
          ("errtol", prog_opt::value(&ErrTol),
           FormatDefault("Error tolerance for the Lanczos evolution", ErrTol).c_str())
+         ("gmrestol", prog_opt::value(&ErrTol),
+          FormatDefault("Error tolerance for the GMRES algorithm", GMRESTol).c_str())
          ("min-states", prog_opt::value(&MinStates),
           FormatDefault("Minimum number of states to keep", MinStates).c_str())
          ("states,m", prog_opt::value(&MaxStates),
@@ -85,8 +88,7 @@ int main(int argc, char** argv)
           FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
-         ("eps2sqtol,e", prog_opt::value(&Eps2SqTol), "Expand the bond dimension in the next step if Eps2SqSum rises above this value [1TDVP only]")
-         ("two-site,2", prog_opt::bool_switch(&TwoSite), "Use two-site TDVP")
+         ("eps2sqtol,e", prog_opt::value(&Eps2SqTol), "Expand the bond dimension in the next step if Eps2SqSum rises above this value")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -109,7 +111,7 @@ int main(int argc, char** argv)
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-      std::cout << "Starting TDVP..." << std::endl;
+      std::cout << "Starting iTDVP..." << std::endl;
       std::cout << "Hamiltonian: " << HamStr << std::endl;
       std::cout << "Wavefunction: " << InputFile << std::endl;
 
@@ -117,7 +119,7 @@ int main(int argc, char** argv)
       mp_pheap::InitializeTempPHeap();
       pvalue_ptr<MPWavefunction> PsiPtr = pheap::ImportHeap(InputFile);
 
-      FiniteWavefunctionLeft Psi = PsiPtr->get<FiniteWavefunctionLeft>();
+      InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
 
       // Output prefix - if it wasn't specified then use the wavefunction attribute, or
       // fallback to the wavefunction name.
@@ -178,8 +180,17 @@ int main(int argc, char** argv)
       }
 
       std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
-      if (HamMPO.size() < Psi.size())
-         HamMPO = repeat(HamMPO, Psi.size() / HamMPO.size());
+
+      // Make sure that Psi and HamMPO have the same unit cell.
+      int UnitCellSize = statistics::lcm(Psi.size(), HamMPO.size());
+
+      if (Psi.size() != UnitCellSize)
+      {
+         std::cout << "Warning: Extending wavefunction unit cell to " << UnitCellSize << " sites." << std::endl;
+         Psi = repeat(Psi, UnitCellSize / Psi.size());
+      }
+
+      HamMPO = repeat(HamMPO, UnitCellSize / HamMPO.size());
 
       std::cout << "Maximum number of Lanczos iterations: " << MaxIter << std::endl;
       std::cout << "Error tolerance for the Lanczos evolution: " << ErrTol << std::endl;
@@ -192,51 +203,32 @@ int main(int argc, char** argv)
 
       std::cout << SInfo << std::endl;
 
-      TDVP tdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, MaxIter, ErrTol, SInfo, Verbose);
+      iTDVP itdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, MaxIter, ErrTol, GMRESTol, SInfo, Verbose);
 
       if (SaveEvery == 0)
          SaveEvery = N;
 
       for (int tstep = 1; tstep <= N; ++tstep)
       {
-         if (TwoSite)
+         if (Eps2SqTol != 0.0)
          {
-            tdvp.Evolve2();
-
-            std::cout << "Timestep=" << tstep
-                      << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
-                      << " MaxStates=" << tdvp.MaxStates
-                      << " TruncErrSum=" << tdvp.TruncErrSum
-                      << " Eps1SqSum=" << tdvp.Eps1SqSum
-                      << " Eps2SqSum=" << tdvp.Eps2SqSum << std::endl;
-         }
-         else
-         {
-            if (Expand)
+            if (itdvp.Eps2SqSum > Eps2SqTol)
             {
                if (Verbose > 0)
                   std::cout << "Eps2Sq tolerance reached, expanding bond dimension..." << std::endl;
-               tdvp.EvolveExpand();
-            }
-            else
-            {
-               tdvp.Evolve();
-            }
-
-            std::cout << "Timestep=" << tstep
-                      << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
-                      << " MaxStates=" << tdvp.MaxStates
-                      << " Eps1SqSum=" << tdvp.Eps1SqSum
-                      << " Eps2SqSum=" << tdvp.Eps2SqSum << std::endl;
-
-            if (Eps2SqTol != 0.0)
-            {
-               if (tdvp.Eps2SqSum > Eps2SqTol)
-                  Expand = true;
-               else
-                  Expand = false;
+               itdvp.ExpandBonds();
             }
          }
+
+         itdvp.Evolve();
+
+         std::cout << "Timestep=" << tstep
+                   << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
+                   << " MaxStates=" << itdvp.MaxStates
+                   << " EpsLSqSum=" << itdvp.EpsLSqSum
+                   << " EpsRSqSum=" << itdvp.EpsRSqSum
+                   << " Eps1SqSum=" << itdvp.Eps1SqSum
+                   << " Eps2SqSum=" << itdvp.Eps2SqSum << std::endl;
 
          // Save the wavefunction.
          if ((tstep % SaveEvery) == 0 || tstep == N)
@@ -246,7 +238,7 @@ int main(int argc, char** argv)
             MPWavefunction Wavefunction;
             std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), OutputDigits);
             std::string BetaStr = formatting::format_digits(-std::imag(InitialTime + double(tstep)*Timestep), OutputDigits);
-            FiniteWavefunctionLeft PsiL = tdvp.Wavefunction();
+            InfiniteWavefunctionLeft PsiL = itdvp.Wavefunction();
             Wavefunction.Wavefunction() = std::move(PsiL);
             Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
             Wavefunction.SetDefaultAttributes();

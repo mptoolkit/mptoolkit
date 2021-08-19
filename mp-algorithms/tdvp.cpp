@@ -52,7 +52,8 @@ VectorType LanczosExponential(VectorType const& x,
    {
       Beta[i-1] = norm_frob(w);
 
-      if (Beta[i-1] < BetaTol) {
+      if (Beta[i-1] < BetaTol)
+      {
          DEBUG_TRACE("Beta hit tolerance")(Beta[i-1]);
          break;
       }
@@ -183,7 +184,8 @@ void TDVP::IterateLeft()
 
    *C = LanczosExponential(*C, HEff1(HamMatrices.left(), *H, HamMatrices.right()), Iter, 0.5*Timestep, Err);
 
-   if (Verbose > 1) {
+   if (Verbose > 1)
+   {
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
                 << " C Iter=" << Iter
@@ -210,7 +212,8 @@ void TDVP::IterateLeft()
 
    UD = LanczosExponential(UD, HEff2(HamMatrices.left(), HamMatrices.right()), Iter, -0.5*Timestep, Err);
 
-   if (Verbose > 1) {
+   if (Verbose > 1)
+   {
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
                 << " UD Iter=" << Iter
@@ -241,7 +244,8 @@ void TDVP::EvolveLeftmostSite()
    double Eps1Sq = norm_frob_sq(scalar_prod(HamMatrices.left(), herm(Y)));
    Eps1SqSum += Eps1Sq;
 
-   if (Verbose > 1) {
+   if (Verbose > 1)
+   {
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
                 << " C Iter=" << Iter
@@ -275,7 +279,8 @@ void TDVP::IterateRight()
 
    DVh = LanczosExponential(DVh, HEff2(HamMatrices.left(), HamMatrices.right()), Iter, -0.5*Timestep, Err);
 
-   if (Verbose > 1) {
+   if (Verbose > 1)
+   {
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
                 << " DVh Iter=" << Iter
@@ -305,7 +310,8 @@ void TDVP::IterateRight()
    Eps1SqSum += Eps1Sq;
    Eps2SqSum += Eps2Sq;
 
-   if (Verbose > 1) {
+   if (Verbose > 1)
+   {
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
                 << " C Iter=" << Iter
@@ -355,8 +361,7 @@ void TDVP::ExpandLeftBond()
    CMatSVD SL(scalar_prod(X, herm(Y)));
    TruncationInfo Info;
    StatesInfo SInfoLocal = SInfo;
-   // Subtract the current bond dimension from the number of additional states
-   // to be added.
+   // Subtract the current bond dimension from the number of additional states to be added.
    SInfoLocal.MinStates = std::max(0, SInfoLocal.MinStates - (*C).Basis1().total_dimension());
    SInfoLocal.MaxStates = std::max(0, SInfoLocal.MaxStates - (*C).Basis1().total_dimension());
    CMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfoLocal, Info);
@@ -374,7 +379,8 @@ void TDVP::ExpandLeftBond()
    // prod(0.0*Vh, NR) is a hack to produce a zero tensor with the correct shape.
    *C = tensor_col_sum(*C, prod(0.0*Vh, NR), NewBasis);
 
-   if (Verbose > 1) {
+   if (Verbose > 1)
+   {
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
                 << " NewStates=" << Info.KeptStates()
@@ -437,7 +443,8 @@ void TDVP::IterateLeft2()
    SL.ConstructMatrices(SL.begin(), Cutoff, *C, D, *CPrev);
    *C = prod(*C, D);
 
-   if (Verbose > 1) {
+   if (Verbose > 1)
+   {
       std::cout << "Timestep=" << TStep
                 << " Sites=" << Site << "," << Site+1
                 << " C2 Iter=" << Iter
@@ -458,7 +465,8 @@ void TDVP::IterateLeft2()
 
    *C = LanczosExponential(*C, HEff1(HamMatrices.left(), *H, HamMatrices.right()), Iter, -0.5*Timestep, Err);
 
-   if (Verbose > 1) {
+   if (Verbose > 1)
+   {
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
                 << " C Iter=" << Iter
@@ -494,7 +502,8 @@ void TDVP::EvolveLeftmostSite2()
    SL.ConstructMatrices(SL.begin(), Cutoff, *CPrev, D, *C);
    *C = prod(D, *C);
 
-   if (Verbose > 1) {
+   if (Verbose > 1)
+   {
       std::cout << "Timestep=" << TStep
                 << " Sites=" << Site-1 << "," << Site
                 << " C2 Iter=" << Iter
@@ -519,7 +528,8 @@ void TDVP::IterateRight2()
 
    *C = LanczosExponential(*C, HEff1(HamMatrices.left(), *H, HamMatrices.right()), Iter, -0.5*Timestep, Err);
 
-   if (Verbose > 1) {
+   if (Verbose > 1)
+   {
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
                 << " C Iter=" << Iter
@@ -554,7 +564,8 @@ void TDVP::IterateRight2()
    SL.ConstructMatrices(SL.begin(), Cutoff, *CPrev, D, *C);
    *C = prod(D, *C);
 
-   if (Verbose > 1) {
+   if (Verbose > 1)
+   {
       std::cout << "Timestep=" << TStep
                 << " Sites=" << Site-1 << "," << Site
                 << " C2 Iter=" << Iter
@@ -608,14 +619,16 @@ void TDVP::CalculateEps()
    double Eps1Sq = norm_frob_sq(scalar_prod(X, herm(HamMatricesLocal.right())));
    Eps1SqSum += Eps1Sq;
 
-   if (Verbose > 1) {
+   if (Verbose > 1)
+   {
       std::cout << "Timestep=" << TStep
                 << " Site=" << SiteLocal
                 << " Eps1Sq=" << Eps1Sq
                 << std::endl;
    }
 
-   while (SiteLocal > LeftStop) {
+   while (SiteLocal > LeftStop)
+   {
       // Perform SVD to right-orthogonalise current site.
       MatrixOperator M = ExpandBasis1(*CLocal);
       MatrixOperator U, Vh;
@@ -647,7 +660,8 @@ void TDVP::CalculateEps()
       Eps1SqSum += Eps1Sq;
       Eps2SqSum += Eps2Sq;
 
-      if (Verbose > 1) {
+      if (Verbose > 1)
+      {
          std::cout << "Timestep=" << TStep
                    << " Site=" << SiteLocal
                    << " Eps1Sq=" << Eps1Sq
