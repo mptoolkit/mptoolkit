@@ -20,10 +20,10 @@
 
 #include "itdvp.h"
 //#include "lanczos-exponential.h"
+#include "triangular_mpo_solver.h"
 #include "tensor/tensor_eigen.h"
 #include "linearalgebra/eigen.h"
 #include "linearalgebra/exponential.h"
-#include "mp-algorithms/triangular_mpo_solver.h"
 
 template <typename VectorType, typename MultiplyFunctor>
 VectorType LanczosExponential(VectorType const& x,
@@ -131,266 +131,541 @@ struct HEff2
 
 iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
              std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
-             double GMRESTol_, StatesInfo SInfo_, int Verbose_)
+             double GMRESTol_, double FidelityTol_, int MaxSweeps_, StatesInfo SInfo_,
+             int Verbose_)
    : Hamiltonian(Ham_), Timestep(Timestep_), MaxIter(MaxIter_), ErrTol(ErrTol_),
-     GMRESTol(GMRESTol_), SInfo(SInfo_), Verbose(Verbose_)
+     GMRESTol(GMRESTol_), FidelityTol(FidelityTol_), MaxSweeps(MaxSweeps_),
+     SInfo(SInfo_), Verbose(Verbose_)
 {
    QShift = Psi_.qshift();
+   LambdaR = Psi_.lambda_r();
 
-   // Initialise AC and C tensors.
-   InfiniteWavefunctionLeft::const_mps_iterator A = Psi_.begin();
-   InfiniteWavefunctionLeft::const_lambda_iterator Lambda = Psi_.lambda_begin();
-   ++Lambda;
-   while (A != Psi_.end())
+   // Initialise Psi and Ham.
+   if (Verbose > 0)
+      std::cout << "Constructing Hamiltonian block operators..." << std::endl;
+
+   H = Hamiltonian.begin();
+
+   BlockHamL = Initial_E(Hamiltonian, Psi_.Basis1());
+   SolveSimpleMPO_Left(BlockHamL, Psi_, Hamiltonian, GMRESTol, Verbose-1);
+   HamL.push_back(BlockHamL);
+
+   for (InfiniteWavefunctionLeft::const_mps_iterator I = Psi_.begin(); I != Psi_.end(); ++I)
    {
-      PsiAC.push_back(prod(*A, *Lambda));
-      PsiC.push_back(*Lambda);
-
-      MaxStates = std::max(MaxStates, (*A).Basis1().total_dimension());
-
-      ++A, ++Lambda;
+      if (Verbose > 1)
+         std::cout << "Site " << (HamL.size()) << std::endl;
+      HamL.push_back(contract_from_left(*H, herm(*I), HamL.back(), *I));
+      Psi.push_back(*I);
+      MaxStates = std::max(MaxStates, (*I).Basis2().total_dimension());
+      ++H;
    }
 
-   // Initialise left- and right-canonical PsiAL and PsiAR
-   RealDiagonalOperator LambdaR, LambdaL;
+   // Calculate initial right Hamiltonian.
+   LinearWavefunction PsiR;
    MatrixOperator U;
-   std::tie(PsiAL, LambdaR) = get_left_canonical(Psi_);
-   std::tie(U, LambdaL, PsiAR) = get_right_canonical(Psi_);
-   PsiAR.set_front(prod(U, PsiAR.get_front()));
+   RealDiagonalOperator D;
+   std::tie(U, D, PsiR) = get_right_canonical(Psi_);
 
-   // Calculate initial left and right Hamiltonians.
-   HamL = std::deque<StateComponent>(1, Initial_E(Hamiltonian, PsiAL.Basis1()));
-   HamR = std::deque<StateComponent>(1, Initial_F(Hamiltonian, PsiAR.Basis2()));
-   this->UpdateHam();
+   PsiR.set_back(prod(PsiR.get_back(), delta_shift(U, adjoint(QShift))));
+
+   BlockHamR = Initial_F(Hamiltonian, PsiR.Basis2());
+   MatrixOperator Rho = scalar_prod(D, herm(D));
+   Rho = delta_shift(Rho, adjoint(QShift));
+   SolveSimpleMPO_Right(BlockHamR, PsiR, QShift, Hamiltonian, Rho, GMRESTol, Verbose-1);
+
+   HamR.push_front(BlockHamR);
+
+   // Initialize to the right-most site.
+   HamL.pop_back();
+   C = Psi.end();
+   --C;
+   --H;
+   Site = Psi.size() - 1;
+
+   LeftStop = 0;
+   RightStop = Psi.size() - 1;
 }
 
-InfiniteWavefunctionLeft
-iTDVP::Wavefunction() const
+InfiniteWavefunctionLeft iTDVP::Wavefunction() const
 {
-   return InfiniteWavefunctionLeft::Construct(PsiAL, QShift);
+   return InfiniteWavefunctionLeft::ConstructFromOrthogonal(Psi, LambdaR, QShift);
 }
 
-void iTDVP::UpdateHam()
+void iTDVP::IterateLeft()
 {
-   MatrixOperator Rho = delta_shift(scalar_prod(PsiC.back(), herm(PsiC.back())), QShift);
-   //StateComponent BlockHamL = HamL.front();
-   StateComponent BlockHamL = Initial_E(Hamiltonian, PsiAL.Basis1());
-   SolveSimpleMPO_Left(BlockHamL, PsiAL, QShift, Hamiltonian, Rho, GMRESTol, Verbose);
-   HamL = std::deque<StateComponent>(1, BlockHamL);
+   // Evolve current site.
+   int Iter = MaxIter;
+   double Err = ErrTol;
 
-   LinearWavefunction::const_iterator C = PsiAL.begin();
-   BasicTriangularMPO::const_iterator H = Hamiltonian.begin();
-   while (C != PsiAL.end())
+   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, 0.5*Timestep, Err);
+
+   if (Verbose > 1)
    {
-      HamL.push_back(contract_from_left(*H, herm(*C), HamL.back(), *C));
-      ++C, ++H;
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site
+                << " C Iter=" << Iter
+                << " Err=" << Err
+                << std::endl;
    }
 
-   Rho = delta_shift(scalar_prod(PsiC.back(), herm(PsiC.back())), adjoint(QShift));
-   //StateComponent BlockHamR = HamR.back();
-   StateComponent BlockHamR = Initial_F(Hamiltonian, PsiAR.Basis2());
-   SolveSimpleMPO_Right(BlockHamR, PsiAR, QShift, Hamiltonian, Rho, GMRESTol, Verbose);
-   HamR = std::deque<StateComponent>(1, BlockHamR);
+   // Perform SVD to right-orthogonalise current site.
+   MatrixOperator M = ExpandBasis1(*C);
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
 
-   C = PsiAR.end();
-   H = Hamiltonian.end();
-   while (C != PsiAR.begin())
+   SingularValueDecomposition(M, U, D, Vh);
+
+   *C = prod(Vh, *C);
+
+   // Update the effective Hamiltonian.
+   HamR.push_front(contract_from_right(herm(*H), *C, HamR.front(), herm(*C)));
+
+   // Evolve the UD term backwards in time.
+   Iter = MaxIter;
+   Err = ErrTol;
+   MatrixOperator UD = U*D;
+
+   UD = LanczosExponential(UD, HEff2(HamL.back(), HamR.front()), Iter, -0.5*Timestep, Err);
+
+   if (Verbose > 1)
    {
-      --C, --H;
-      HamR.push_front(contract_from_right(herm(*H), *C, HamR.front(), herm(*C)));
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site
+                << " UD Iter=" << Iter
+                << " Err=" << Err
+                << std::endl;
+   }
+
+   // Move to the next site.
+   --Site;
+   --H;
+   --C;
+
+   *C = prod(*C, UD);
+
+   HamL.pop_back();
+}
+
+void iTDVP::EvolveLeftmostSite()
+{
+   // Evolve current site.
+   int Iter = MaxIter;
+   double Err = ErrTol;
+
+   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, 0.5*Timestep, Err);
+
+   if (Verbose > 1)
+   {
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site
+                << " C Iter=" << Iter
+                << " Err=" << Err
+                << std::endl;
+   }
+}
+
+void iTDVP::IterateRight()
+{
+   // Perform SVD to left-orthogonalise current site.
+   MatrixOperator M = ExpandBasis2(*C);
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+
+   SingularValueDecomposition(M, U, D, Vh);
+
+   *C = prod(*C, U);
+
+   // Update the effective Hamiltonian.
+   HamL.push_back(contract_from_left(*H, herm(*C), HamL.back(), *C));
+
+   // Evolve the DVh term backwards in time.
+   int Iter = MaxIter;
+   double Err = ErrTol;
+   MatrixOperator DVh = D*Vh;
+
+   DVh = LanczosExponential(DVh, HEff2(HamL.back(), HamR.front()), Iter, -0.5*Timestep, Err);
+
+   if (Verbose > 1)
+   {
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site
+                << " DVh Iter=" << Iter
+                << " Err=" << Err
+                << std::endl;
+   }
+
+   // Move to the next site.
+   ++Site;
+   ++H;
+   ++C;
+
+   *C = prod(DVh, *C);
+
+   HamR.pop_front();
+
+   // Evolve current site.
+   Iter = MaxIter;
+   Err = ErrTol;
+
+   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, 0.5*Timestep, Err);
+
+   if (Verbose > 1)
+   {
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site
+                << " C Iter=" << Iter
+                << " Err=" << Err
+                << std::endl;
+   }
+}
+
+void iTDVP::OrthogonaliseLeftmostSite()
+{
+   // Right-orthogonalise current site.
+   MatrixOperator M = ExpandBasis1(*C);
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+
+   SingularValueDecomposition(M, U, D, Vh);
+
+   // Ensure that the left and right bases of LambdaR are the same.
+   *C = prod(U*Vh, *C);
+   LambdaR = (U*D)*herm(U);
+
+   // Update right block Hamiltonian.
+   BlockHamR = contract_from_right(herm(*H), *C, HamR.front(), herm(*C));
+   HamR.back() = BlockHamR;
+}
+
+void iTDVP::OrthogonaliseRightmostSite()
+{
+   // Left-orthogonalise current site.
+   MatrixOperator M = ExpandBasis2(*C);
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+
+   SingularValueDecomposition(M, U, D, Vh);
+
+   // Ensure that the left and right bases of LambdaR are the same.
+   *C = prod(*C, U*Vh);
+   LambdaR = herm(Vh)*(D*Vh);
+
+   // Update left block Hamiltonian.
+   BlockHamL = contract_from_left(*H, herm(*C), HamL.back(), *C);
+   HamL.front() = BlockHamL;
+}
+
+void iTDVP::EvolveLambdaR()
+{
+   int Iter = MaxIter;
+   double Err = ErrTol;
+   LambdaR = LanczosExponential(LambdaR, HEff2(BlockHamL, BlockHamR), Iter, -0.5*Timestep, Err);
+
+   if (Verbose > 1)
+   {
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site
+                << " LambdaR Iter=" << Iter
+                << " Err=" << Err
+                << std::endl;
    }
 }
 
 void iTDVP::Evolve()
 {
    ++TStep;
-   EpsLSqSum = 0.0;
-   EpsRSqSum = 0.0;
 
-   // Evolve the AC matrices forward in time.
-   std::deque<StateComponent>::iterator AC = PsiAC.begin();
-   std::deque<StateComponent>::iterator HL = HamL.begin();
-   std::deque<StateComponent>::iterator HR = HamR.begin();
-   ++HR;
-   BasicTriangularMPO::const_iterator H = Hamiltonian.begin();
-   int Site = 0;
-   while (AC != PsiAC.end())
-   {
-      int Iter = MaxIter;
-      double Err = ErrTol;
+   // Sweep left to evolve the unit cell for half a time step.
+   SweepL = 0;
+   FidelityL = 1.0;
 
-      *AC = LanczosExponential(*AC, HEff1(*HL, *H, *HR), Iter, Timestep, Err);
+   LinearWavefunction PsiOld = Psi;
+   std::deque<StateComponent> HamLOld = HamL;
 
-      if (Verbose > 1)
+   do {
+      ++SweepL;
+
+      LinearWavefunction PsiPrev = Psi;
+      MatrixOperator LambdaRPrev = LambdaR;
+
+      Psi = PsiOld;
+      C = Psi.end();
+      --C;
+      H = Hamiltonian.end();
+      --H;
+      Site = RightStop;
+
+      HamL = HamLOld;
+      HamR = std::deque<StateComponent>(1, BlockHamR);
+
+      if (SweepL > 1)
+         this->EvolveLambdaR();
+
+      *C = prod(*C, LambdaR);
+
+      while (Site > LeftStop)
+         this->IterateLeft();
+
+      this->EvolveLeftmostSite();
+
+      this->OrthogonaliseLeftmostSite();
+
+      if (SweepL > 1)
       {
-         std::cout << "Timestep=" << TStep
-                   << " Site=" << Site
-                   << " AC Iter=" << Iter
-                   << " Err=" << Err
-                   << std::endl;
+         MatrixOperator Rho = scalar_prod(herm(LambdaRPrev), LambdaR);
+         FidelityL = 1.0 - sum(SingularValues(inject_left(Rho, Psi, PsiPrev)));
+
+         if (Verbose > 0)
+         {
+            std::cout << "Timestep=" << TStep
+                      << " SweepL=" << SweepL
+                      << " FidelityL=" << FidelityL
+                      << std::endl;
+         }
       }
-
-      ++AC, ++HL, ++HR, ++H, ++Site;
-   }
-
-   // Evolve the C matrices forward in time.
-   std::deque<MatrixOperator>::iterator C = PsiC.begin();
-   HL = HamL.begin();
-   HR = HamR.begin();
-   ++HL, ++HR;
-   Site = 0;
-   while (C != PsiC.end())
-   {
-      int Iter = MaxIter;
-      double Err = ErrTol;
-
-      *C = LanczosExponential(*C, HEff2(*HL, *HR), Iter, Timestep, Err);
-
-      if (Verbose > 1)
+      else
       {
-         std::cout << "Timestep=" << TStep
-                   << " Site=" << Site
-                   << " C Iter=" << Iter
-                   << " Err=" << Err
-                   << std::endl;
+         if (Verbose > 0)
+         {
+            std::cout << "Timestep=" << TStep
+                      << " SweepL=" << SweepL
+                      << std::endl;
+         }
       }
-
-      ++C, ++HL, ++HR, ++Site;
    }
+   while (FidelityL > FidelityTol && SweepL < MaxSweeps);
 
-   // Find the optimal isometric AL corresponding to the time-evolved AC and C.
-   AC = PsiAC.begin();
-   C = PsiC.begin();
-   LinearWavefunction::iterator AL = PsiAL.begin();
-   Site = 0;
-   while (AC != PsiAC.end())
-   {
-#if 0
-      StateComponent ALNew = prod(*AC, herm(*C));
+   // Sweep right to evolve the unit cell for half a time step.
+   SweepR = 0;
+   FidelityR = 1.0;
 
-      MatrixOperator M = ExpandBasis2(ALNew);
-      MatrixOperator U, Vh;
-      RealDiagonalOperator D;
+   PsiOld = Psi;
+   std::deque<StateComponent> HamROld = HamR;
 
-      SingularValueDecomposition(M, U, D, Vh);
-      
-      *AL = prod(ALNew, U*Vh);
-#else
-      StateComponent ACCopy = *AC;
+   do {
+      ++SweepR;
 
-      MatrixOperator M = ExpandBasis2(ACCopy);
-      MatrixOperator U, Vh;
-      RealDiagonalOperator D;
+      LinearWavefunction PsiPrev = Psi;
+      MatrixOperator LambdaRPrev = LambdaR;
 
-      SingularValueDecomposition(M, U, D, Vh);
+      Psi = PsiOld;
+      C = Psi.begin();
+      H = Hamiltonian.begin();
+      Site = LeftStop;
 
-      ACCopy = prod(ACCopy, U*Vh);
+      HamL = std::deque<StateComponent>(1, BlockHamL);
+      HamR = HamROld;
 
-      SingularValueDecomposition(*C, U, D, Vh);
+      if (SweepR > 1)
+         this->EvolveLambdaR();
 
-      *AL = prod(ACCopy, herm(U*Vh));
-#endif
+      *C = prod(LambdaR, *C);
 
-      double EpsLSq = norm_frob_sq(*AC - prod(*AL, *C));
-      EpsLSqSum += EpsLSq;
+      this->EvolveLeftmostSite();
 
-      if (Verbose > 1)
+      while (Site < RightStop)
+         this->IterateRight();
+
+      this->OrthogonaliseRightmostSite();
+
+      if (SweepR > 1)
       {
-         std::cout << "Timestep=" << TStep
-                   << " Site=" << Site
-                   << " AL EpsLSq=" << EpsLSq
-                   << std::endl;
+         MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaRPrev));
+         FidelityR = 1.0 - sum(SingularValues(inject_right(Rho, Psi, PsiPrev)));
+
+         if (Verbose > 0)
+         {
+            std::cout << "Timestep=" << TStep
+                      << " SweepR=" << SweepR
+                      << " FidelityR=" << FidelityR
+                      << std::endl;
+         }
       }
-
-      ++AC, ++C, ++AL, ++Site;
-   }
-
-   // Find the optimal isometric AR corresponding to the time-evolved AC and C.
-   AC = PsiAC.begin();
-   C = PsiC.end();
-   --C;
-   LinearWavefunction::iterator AR = PsiAR.begin();
-   Site = 0;
-   while (AC != PsiAC.end())
-   {
-#if 0
-      StateComponent ARNew = prod(herm(*C), *AC);
-
-      MatrixOperator M = ExpandBasis1(ARNew);
-      MatrixOperator U, Vh;
-      RealDiagonalOperator D;
-
-      SingularValueDecomposition(M, U, D, Vh);
-      
-      *AR = prod(U*Vh, ARNew);
-#else
-      StateComponent ACCopy = *AC;
-
-      MatrixOperator M = ExpandBasis1(ACCopy);
-      MatrixOperator U, Vh;
-      RealDiagonalOperator D;
-
-      SingularValueDecomposition(M, U, D, Vh);
-
-      ACCopy = prod(U*Vh, ACCopy);
-
-      SingularValueDecomposition(*C, U, D, Vh);
-
-      *AR = prod(herm(U*Vh), ACCopy);
-#endif
-      
-      double EpsRSq = norm_frob_sq(*AC - prod(*C, *AR));
-      EpsRSqSum += EpsRSq;
-
-      if (Verbose > 1)
+      else
       {
-         std::cout << "Timestep=" << TStep
-                   << " Site=" << Site
-                   << " AR EpsRSq=" << EpsRSq
-                   << std::endl;
+         if (Verbose > 0)
+         {
+            std::cout << "Timestep=" << TStep
+                      << " SweepR=" << SweepR
+                      << std::endl;
+         }
       }
-
-      ++AC, ++C, ++AR, ++Site;
-      if (C == PsiC.end())
-         C = PsiC.begin();
    }
-
-   this->UpdateHam();
+   while (FidelityR > FidelityTol && SweepR < MaxSweeps);
 
    this->CalculateEps();
 }
 
+#if 0
 void iTDVP::CalculateEps()
 {
+   X = std::deque<StateComponent>();
+   Y = std::deque<StateComponent>();
+
    Eps1SqSum = 0.0;
    Eps2SqSum = 0.0;
 
-   std::deque<StateComponent>::iterator AC = PsiAC.begin();
-   LinearWavefunction::iterator AL = PsiAL.end();
-   --AL;
-   std::deque<StateComponent>::iterator HL = HamL.end();
-   --HL, --HL;
-   std::deque<StateComponent>::iterator HR = HamR.begin();
-   ++HR;
-   BasicTriangularMPO::const_iterator H = Hamiltonian.end();
-   --H;
-   int Site = 0;
+   // Create a local copy of Psi so we can perform a single right-to-left sweep
+   // without having to go back to the right.
+   LinearWavefunction PsiLocal = Psi;
+   LinearWavefunction::iterator CLocal = Psi.end();
+   --CLocal;
+   BasicTriangularMPO::const_iterator HLocal = Hamiltonian.end();
+   --HLocal;
+   std::deque<StateComponent> HamLLocal = HamL;
+   std::deque<StateComponent> HamRLocal = HamR;
+   int SiteLocal = RightStop;
 
-   while (AC != PsiAC.end())
+   *CLocal = prod(*CLocal, LambdaR);
+
+   // Calcaulate the left half of epsilon_2 for the right end of the unit cell.
+   X.push_front(contract_from_left(*HLocal, herm(NullSpace2(*CLocal)), HamLLocal.back(), *CLocal));
+
+   while (SiteLocal > LeftStop)
    {
-      StateComponent X = contract_from_left(*H, herm(NullSpace2(*AL)), *HL, *AL);
-      ++AL, ++HL, ++H;
-      if (AL == PsiAL.end())
-      {
-         AL = PsiAL.begin();
-         HL = HamL.begin();
-         H = Hamiltonian.begin();
-      }
-      StateComponent Y = contract_from_right(herm(*H), NullSpace1(*AC), *HR, herm(*AC));
-      ++AC, ++HR;
+      // Perform SVD to right-orthogonalise current site.
+      MatrixOperator M = ExpandBasis1(*CLocal);
+      MatrixOperator U, Vh;
+      RealDiagonalOperator D;
 
-      double Eps1Sq = norm_frob_sq(scalar_prod(*HL, herm(Y)));
-      double Eps2Sq = norm_frob_sq(scalar_prod(X, herm(Y)));
+      SingularValueDecomposition(M, U, D, Vh);
+
+      *CLocal = prod(Vh, *CLocal);
+
+      // Calculate the right half of epsilon_2.
+      Y.push_front(contract_from_right(herm(*HLocal), NullSpace1(*CLocal), HamRLocal.front(), herm(*CLocal)));
+
+      // Update the effective Hamiltonian.
+      HamRLocal.push_front(contract_from_right(herm(*HLocal), *CLocal, HamRLocal.front(), herm(*CLocal)));
+
+      // Move to the next site.
+      --SiteLocal;
+      --HLocal;
+      --CLocal;
+
+      *CLocal = prod(*CLocal, U*D);
+
+      HamLLocal.pop_back();
+
+      // Calculate the left half of epsilon_2.
+      X.push_front(contract_from_left(*HLocal, herm(NullSpace2(*CLocal)), HamLLocal.back(), *CLocal));
+
+      // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
+      double Eps1Sq = norm_frob_sq(scalar_prod(X.front(), herm(HamRLocal.front())));
+      double Eps2Sq = norm_frob_sq(scalar_prod(X.front(), herm(Y.front())));
+      Eps1SqSum += Eps1Sq;
+      Eps2SqSum += Eps2Sq;
+
+      if (Verbose > 1)
+      {
+         std::cout << "Timestep=" << TStep
+                   << " Site=" << SiteLocal
+                   << " Eps1Sq=" << Eps1Sq
+                   << " Eps2Sq=" << Eps2Sq
+                   << std::endl;
+      }
+   }
+
+   // Perform SVD to right-orthogonalise the leftmost site.
+   MatrixOperator M = ExpandBasis1(*CLocal);
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+
+   SingularValueDecomposition(M, U, D, Vh);
+
+   // Ensure that the left and right bases of LambdaR are the same.
+   *CLocal = prod(U*Vh, *CLocal);
+
+   // Calculate the right half of epsilon_2.
+   Y.push_back(contract_from_right(herm(*HLocal), NullSpace1(*CLocal), HamRLocal.front(), herm(*CLocal)));
+
+   // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
+   double Eps1Sq = norm_frob_sq(scalar_prod(X.back(), herm(HamRLocal.back())));
+   double Eps2Sq = norm_frob_sq(scalar_prod(X.back(), herm(Y.back())));
+   Eps1SqSum += Eps1Sq;
+   Eps2SqSum += Eps2Sq;
+
+   if (Verbose > 1)
+   {
+      std::cout << "Timestep=" << TStep
+                << " Site=" << RightStop
+                << " Eps1Sq=" << Eps1Sq
+                << " Eps2Sq=" << Eps2Sq
+                << std::endl;
+   }
+}
+#endif
+
+void iTDVP::CalculateEps()
+{
+   X = std::deque<StateComponent>();
+   Y = std::deque<StateComponent>();
+
+   Eps1SqSum = 0.0;
+   Eps2SqSum = 0.0;
+
+   *C = prod(*C, LambdaR);
+
+   // Right-orthogonalise the unit cell.
+   while (Site > LeftStop)
+   {
+      // Perform SVD to right-orthogonalise current site.
+      MatrixOperator M = ExpandBasis1(*C);
+      MatrixOperator U, Vh;
+      RealDiagonalOperator D;
+
+      SingularValueDecomposition(M, U, D, Vh);
+
+      *C = prod(Vh, *C);
+
+      // Update the effective Hamiltonian.
+      HamR.push_front(contract_from_right(herm(*H), *C, HamR.front(), herm(*C)));
+
+      // Move to the next site.
+      --Site;
+      --H;
+      --C;
+
+      *C = prod(*C, U*D);
+
+      HamL.pop_back();
+   }
+
+   // Calcaulate the right half of epsilon_2 for the left end of the unit cell.
+   Y.push_back(contract_from_right(herm(*H), NullSpace1(*C), HamR.front(), herm(*C)));
+
+   while (Site < RightStop)
+   {
+      // Perform SVD to left-orthogonalise current site.
+      MatrixOperator M = ExpandBasis2(*C);
+      MatrixOperator U, Vh;
+      RealDiagonalOperator D;
+
+      SingularValueDecomposition(M, U, D, Vh);
+
+      *C = prod(*C, U);
+
+      // Calculate the left half of epsilon_2.
+      X.push_back(contract_from_left(*H, herm(NullSpace2(*C)), HamL.back(), *C));
+
+      // Update the effective Hamiltonian.
+      HamL.push_back(contract_from_left(*H, herm(*C), HamL.back(), *C));
+
+      // Move to the next site.
+      ++Site;
+      ++H;
+      ++C;
+
+      *C = prod(D*Vh, *C);
+
+      HamR.pop_front();
+
+      // Calculate the right half of epsilon_2.
+      Y.push_back(contract_from_right(herm(*H), NullSpace1(*C), HamR.front(), herm(*C)));
+
+      // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
+      double Eps1Sq = norm_frob_sq(scalar_prod(HamL.back(), herm(Y.back())));
+      double Eps2Sq = norm_frob_sq(scalar_prod(X.back(), herm(Y.back())));
       Eps1SqSum += Eps1Sq;
       Eps2SqSum += Eps2Sq;
 
@@ -402,112 +677,123 @@ void iTDVP::CalculateEps()
                    << " Eps2Sq=" << Eps2Sq
                    << std::endl;
       }
-
-      ++Site;
    }
+
+   // Perform SVD to left-orthogonalise the rightmost site.
+   MatrixOperator M = ExpandBasis2(*C);
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+
+   SingularValueDecomposition(M, U, D, Vh);
+
+   // Ensure that the left and right bases of LambdaR are the same.
+   *C = prod(*C, U*Vh);
+   LambdaR = herm(Vh)*(D*Vh);
+
+   // Update left block Hamiltonian.
+   BlockHamL = contract_from_left(*H, herm(*C), HamL.back(), *C);
+   HamL.front() = BlockHamL;
+
+   // Calculate the left half of epsilon_2.
+   X.push_back(contract_from_left(*H, herm(NullSpace2(*C)), HamL.back(), *C));
+
+   Y.push_back(Y.front());
+   Y.pop_front();
+
+   // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
+   double Eps1Sq = norm_frob_sq(scalar_prod(HamL.front(), herm(Y.back())));
+   double Eps2Sq = norm_frob_sq(scalar_prod(X.back(), herm(Y.back())));
+   Eps1SqSum += Eps1Sq;
+   Eps2SqSum += Eps2Sq;
+
+   if (Verbose > 1)
+   {
+      std::cout << "Timestep=" << TStep
+                << " Site=" << LeftStop
+                << " Eps1Sq=" << Eps1Sq
+                << " Eps2Sq=" << Eps2Sq
+                << std::endl;
+   }
+}
+
+void iTDVP::ExpandRightBond()
+{
+   // Take the truncated SVD of P_2 H|Psi>.
+   CMatSVD SL(scalar_prod(X.front(), herm(Y.front())));
+   TruncationInfo Info;
+   StatesInfo SInfoLocal = SInfo;
+   // Subtract the current bond dimension from the number of additional states to be added.
+   SInfoLocal.MinStates = std::max(0, SInfoLocal.MinStates - (*C).Basis2().total_dimension());
+   SInfoLocal.MaxStates = std::max(0, SInfoLocal.MaxStates - (*C).Basis2().total_dimension());
+   CMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfoLocal, Info);
+
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SL.ConstructMatrices(SL.begin(), Cutoff, U, D, Vh);
+
+   // Add the new states to current site.
+   SumBasis<VectorBasis> NewBasis((*C).Basis2(), U.Basis2());
+
+   MaxStates = std::max(MaxStates, NewBasis.total_dimension());
+
+   // ??
+   StateComponent CExpand = tensor_row_sum(*C, prod(NullSpace2(*C), U), NewBasis);
+   *C = tensor_row_sum(*C, prod(NullSpace2(*C), U), NewBasis);
+
+   if (Verbose > 1)
+   {
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site
+                << " NewStates=" << Info.KeptStates()
+                << " TotalStates=" << NewBasis.total_dimension()
+                << std::endl;
+   }
+
+   // Move to next site, handling the rightmost site separately.
+   if (Site < RightStop)
+   {
+      HamL.push_back(contract_from_left(*H, herm(CExpand), HamL.back(), CExpand));
+      TRACE(HamL.back());
+      ++C;
+   }
+   else
+   {
+      BlockHamL = contract_from_left(*H, herm(CExpand), HamL.back(), CExpand);
+      HamL.front() = BlockHamL;
+      TRACE(HamL.front());
+
+      C = Psi.begin();
+
+      // Add zeros to LambdaR so the bonds match. 
+      //MatrixOperator Z = MatrixOperator(Vh.Basis1(), Vh.Basis1());
+      //LambdaR = tensor_sum(LambdaR, Z, NewBasis, NewBasis);
+      MatrixOperator Z = MatrixOperator(Vh.Basis1(), LambdaR.Basis2());
+      LambdaR = tensor_col_sum(LambdaR, Z, NewBasis);
+   }
+
+   ++Site;
+   ++H;
+   X.pop_front();
+   Y.pop_front();
+
+   // Add zeros to the current site so the left bond matches. 
+   StateComponent Z = StateComponent((*C).LocalBasis(), Vh.Basis1(), (*C).Basis2());
+   *C = tensor_col_sum(*C, Z, NewBasis);
 }
 
 void iTDVP::ExpandBonds()
 {
-   MaxStates = 1;
+   C = Psi.begin();
+   H = Hamiltonian.begin();
+   Site = LeftStop;
+   HamL = std::deque<StateComponent>(1, BlockHamL);
 
-   std::deque<StateComponent>::iterator AC = PsiAC.begin();
-   LinearWavefunction::iterator AL = PsiAL.end();
-   --AL;
-   LinearWavefunction::iterator AR = PsiAR.begin();
-   std::deque<StateComponent>::iterator HL = HamL.end();
-   --HL, --HL;
-   std::deque<StateComponent>::iterator HR = HamR.begin();
-   ++HR;
-   BasicTriangularMPO::const_iterator H = Hamiltonian.end();
+   while (Site <= RightStop)
+      this->ExpandRightBond();
+
+   C = Psi.end();
+   --C;
+   H = Hamiltonian.end();
    --H;
-   int Site = 0;
-
-   std::deque<VectorBasis> AddBasis;
-
-   while (AC != PsiAC.end())
-   {
-      StateComponent NL = NullSpace2(*AL);
-      StateComponent NR = NullSpace1(*AR);
-
-      StateComponent X = contract_from_left(*H, herm(NL), *HL, *AL);
-      ++H;
-      if (H == Hamiltonian.end())
-         H = Hamiltonian.begin();
-      StateComponent Y = contract_from_right(herm(*H), NR, *HR, herm(*AC));
-
-      // Calculate the truncated SVD of XY to find the most relevant states to be added.
-      CMatSVD SL(scalar_prod(X, herm(Y)));
-      TruncationInfo Info;
-      StatesInfo SInfoLocal = SInfo;
-      // Subtract the current bond dimension from the number of additional states to be added.
-      SInfoLocal.MinStates = std::max(0, SInfoLocal.MinStates - (*AL).Basis2().total_dimension());
-      SInfoLocal.MaxStates = std::max(0, SInfoLocal.MaxStates - (*AL).Basis2().total_dimension());
-      CMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfoLocal, Info);
-
-      MatrixOperator U, Vh;
-      RealDiagonalOperator D;
-      SL.ConstructMatrices(SL.begin(), Cutoff, U, D, Vh);
-
-      // Add the new states to AL and AR.
-      AddBasis.push_back(U.Basis2());
-      SumBasis<VectorBasis> NewBasis((*AL).Basis2(), AddBasis.back());
-
-      MaxStates = std::max(MaxStates, NewBasis.total_dimension());
-
-      *AL = tensor_row_sum(*AL, prod(NL, U), NewBasis);
-      *AR = tensor_col_sum(*AR, prod(Vh, NR), NewBasis);
-
-      if (Verbose > 1)
-      {
-         std::cout << "Timestep=" << TStep
-                   << " Site=" << Site
-                   << " NewStates=" << Info.KeptStates()
-                   << " TotalStates=" << NewBasis.total_dimension()
-                   << std::endl;
-      }
-
-      ++AC, ++AL, ++AR, ++HL, ++HR, ++Site;
-      if (AL == PsiAL.end())
-      {
-         AL = PsiAL.begin();
-         HL = HamL.begin();
-      }
-   }
-
-   // Fill the rest of AC, C, AL and AR with zeros.
-   AC = PsiAC.begin();
-   std::deque<MatrixOperator>::iterator C = PsiC.begin();
-   AL = PsiAL.begin();
-   AR = PsiAR.begin();
-   std::deque<VectorBasis>::iterator BasisL = AddBasis.begin();
-   std::deque<VectorBasis>::iterator BasisR = AddBasis.begin();
-   ++BasisR;
-   Site = 0;
-
-   while (AC != PsiAC.end())
-   {
-      TRACE(Site++);
-      if (BasisR == AddBasis.end())
-         BasisR = AddBasis.begin();
-
-      SumBasis<VectorBasis> NewBasisL((*AC).Basis1(), *BasisL);
-      SumBasis<VectorBasis> NewBasisR((*AC).Basis2(), *BasisR);
-
-      StateComponent Zeros1 = StateComponent((*AC).LocalBasis(), *BasisL, *BasisR);
-      *AC = tensor_sum(*AC, Zeros1, NewBasisL, NewBasisR);
-
-      MatrixOperator Zeros2 = MatrixOperator(*BasisL, *BasisR);
-      *C = tensor_sum(*C, Zeros2, NewBasisL, NewBasisR);
-
-      StateComponent Zeros3 = StateComponent((*AL).LocalBasis(), *BasisL, (*AL).Basis2());
-      *AL = tensor_col_sum(*AL, Zeros3, NewBasisL);
-
-      StateComponent Zeros4 = StateComponent((*AR).LocalBasis(), (*AR).Basis1(), *BasisR);
-      *AR = tensor_row_sum(*AR, Zeros4, NewBasisR);
-
-      ++AC, ++C, ++AL, ++AR, ++BasisL, ++BasisR;
-   }
-
-   this->UpdateHam();
+   Site = RightStop;
 }

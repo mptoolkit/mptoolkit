@@ -59,8 +59,9 @@ int main(int argc, char** argv)
       int MaxStates = 100000;
       double TruncCutoff = 0;
       double EigenCutoff = 1e-16;
-      bool Expand = false;
       double Eps2SqTol = 0.0;
+      double FidelityTol = 1e-10;
+      int MaxSweeps = 10;
       int Verbose = 0;
       int OutputDigits = 0;
 
@@ -89,6 +90,10 @@ int main(int argc, char** argv)
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
          ("eps2sqtol,e", prog_opt::value(&Eps2SqTol), "Expand the bond dimension in the next step if Eps2SqSum rises above this value")
+         ("fidelitytol", prog_opt::value(&FidelityTol),
+          FormatDefault("Tolerance for 1 - <PsiOld|Psi>", FidelityTol).c_str())
+         ("max-sweeps", prog_opt::value(&MaxSweeps),
+          FormatDefault("Maximum number of sweeps", MaxSweeps).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -203,10 +208,20 @@ int main(int argc, char** argv)
 
       std::cout << SInfo << std::endl;
 
-      iTDVP itdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, MaxIter, ErrTol, GMRESTol, SInfo, Verbose);
+      iTDVP itdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, MaxIter,
+                  ErrTol, GMRESTol, FidelityTol, MaxSweeps, SInfo, Verbose);
 
       if (SaveEvery == 0)
          SaveEvery = N;
+
+      // Calculate initial values of epsilon_1 and epsilon_2.
+      itdvp.CalculateEps();
+
+      std::cout << "Timestep=" << 0
+                << " Time=" << formatting::format_complex(InitialTime)
+                << " Eps1SqSum=" << itdvp.Eps1SqSum
+                << " Eps2SqSum=" << itdvp.Eps2SqSum
+                << std::endl;
 
       for (int tstep = 1; tstep <= N; ++tstep)
       {
@@ -225,10 +240,9 @@ int main(int argc, char** argv)
          std::cout << "Timestep=" << tstep
                    << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
                    << " MaxStates=" << itdvp.MaxStates
-                   << " EpsLSqSum=" << itdvp.EpsLSqSum
-                   << " EpsRSqSum=" << itdvp.EpsRSqSum
                    << " Eps1SqSum=" << itdvp.Eps1SqSum
-                   << " Eps2SqSum=" << itdvp.Eps2SqSum << std::endl;
+                   << " Eps2SqSum=" << itdvp.Eps2SqSum
+                   << std::endl;
 
          // Save the wavefunction.
          if ((tstep % SaveEvery) == 0 || tstep == N)
