@@ -59,7 +59,7 @@ int main(int argc, char** argv)
       int MaxStates = 100000;
       double TruncCutoff = 0;
       double EigenCutoff = 1e-16;
-      double Eps2SqTol = 0.0;
+      double Eps2SqTol = std::numeric_limits<double>::infinity();
       double FidelityTol = 1e-10;
       int MaxSweeps = 10;
       int Verbose = 0;
@@ -225,14 +225,11 @@ int main(int argc, char** argv)
 
       for (int tstep = 1; tstep <= N; ++tstep)
       {
-         if (Eps2SqTol != 0.0)
+         if (itdvp.Eps2SqSum > Eps2SqTol)
          {
-            if (itdvp.Eps2SqSum > Eps2SqTol)
-            {
-               if (Verbose > 0)
-                  std::cout << "Eps2Sq tolerance reached, expanding bond dimension..." << std::endl;
-               itdvp.ExpandBonds();
-            }
+            if (Verbose > 0)
+               std::cout << "Eps2Sq tolerance reached, expanding bond dimension..." << std::endl;
+            itdvp.ExpandBonds();
          }
 
          itdvp.Evolve();

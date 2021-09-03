@@ -134,26 +134,25 @@ TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
    : Hamiltonian(Ham_), Timestep(Timestep_), MaxIter(MaxIter_), ErrTol(ErrTol_),
      SInfo(SInfo_), Verbose(Verbose_)
 {
-   // Construct the HamMatrix elements.
+   // Initialise Psi and Ham.
    if (Verbose > 0)
       std::cout << "Constructing Hamiltonian block operators..." << std::endl;
    H = Hamiltonian.begin();
-   HamMatrices.push_left(Initial_E(Ham_, Psi_.Basis1()));
+   Ham.push_left(Initial_E(Ham_, Psi_.Basis1()));
    for (FiniteWavefunctionLeft::const_mps_iterator I = Psi_.begin(); I != Psi_.end(); ++I)
    {
       if (Verbose > 1)
-         std::cout << "Site " << (HamMatrices.size_left()) << std::endl;
-      HamMatrices.push_left(contract_from_left(*H, herm(*I), HamMatrices.left(), *I));
+         std::cout << "Site " << (Ham.size_left()) << std::endl;
+      Ham.push_left(contract_from_left(*H, herm(*I), Ham.left(), *I));
       Psi.push_back(*I);
       MaxStates = std::max(MaxStates, (*I).Basis2().total_dimension());
       ++H;
    }
-   HamMatrices.push_right(Initial_F(Ham_, Psi_.Basis2()));
-   // Probably no need to incorporate lambda_r(), this is just a normalization.
+   Ham.push_right(Initial_F(Ham_, Psi_.Basis2()));
    Psi.set_back(prod(Psi.get_back(), Psi_.lambda_r()));
 
    // Initialize to the right-most site.
-   HamMatrices.pop_left();
+   Ham.pop_left();
    C = Psi.end();
    --C;
    --H;
@@ -172,8 +171,8 @@ TDVP::Wavefunction() const
 std::complex<double>
 TDVP::Energy() const
 {
-   //return inner_prod(HamMatrices.right(), contract_from_left(*H, herm(HamMatrices.left()), *C, HamMatrices.right()));
-   return inner_prod(contract_from_left(*H, herm(*C), HamMatrices.left(), *C), HamMatrices.right());
+   //return inner_prod(Ham.right(), contract_from_left(*H, herm(Ham.left()), *C, Ham.right()));
+   return inner_prod(contract_from_left(*H, herm(*C), Ham.left(), *C), Ham.right());
 }
 
 void TDVP::IterateLeft()
@@ -182,7 +181,7 @@ void TDVP::IterateLeft()
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   *C = LanczosExponential(*C, HEff1(HamMatrices.left(), *H, HamMatrices.right()), Iter, 0.5*Timestep, Err);
+   *C = LanczosExponential(*C, HEff1(Ham.left(), *H, Ham.right()), Iter, 0.5*Timestep, Err);
 
    if (Verbose > 1)
    {
@@ -203,14 +202,14 @@ void TDVP::IterateLeft()
    *C = prod(Vh, *C);
 
    // Update the effective Hamiltonian.
-   HamMatrices.push_right(contract_from_right(herm(*H), *C, HamMatrices.right(), herm(*C)));
+   Ham.push_right(contract_from_right(herm(*H), *C, Ham.right(), herm(*C)));
 
    // Evolve the UD term backwards in time.
    Iter = MaxIter;
    Err = ErrTol;
    MatrixOperator UD = U*D;
 
-   UD = LanczosExponential(UD, HEff2(HamMatrices.left(), HamMatrices.right()), Iter, -0.5*Timestep, Err);
+   UD = LanczosExponential(UD, HEff2(Ham.left(), Ham.right()), Iter, -0.5*Timestep, Err);
 
    if (Verbose > 1)
    {
@@ -228,7 +227,7 @@ void TDVP::IterateLeft()
 
    *C = prod(*C, UD);
 
-   HamMatrices.pop_left();
+   Ham.pop_left();
 }
 
 void TDVP::EvolveLeftmostSite()
@@ -237,11 +236,11 @@ void TDVP::EvolveLeftmostSite()
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   *C = LanczosExponential(*C, HEff1(HamMatrices.left(), *H, HamMatrices.right()), Iter, Timestep, Err);
+   *C = LanczosExponential(*C, HEff1(Ham.left(), *H, Ham.right()), Iter, Timestep, Err);
 
    // Calculate error measure epsilon_1 and add to sum.
-   StateComponent Y = contract_from_right(herm(*H), NullSpace1(*C), HamMatrices.right(), herm(*C));
-   double Eps1Sq = norm_frob_sq(scalar_prod(HamMatrices.left(), herm(Y)));
+   StateComponent Y = contract_from_right(herm(*H), NullSpace1(*C), Ham.right(), herm(*C));
+   double Eps1Sq = norm_frob_sq(scalar_prod(Ham.left(), herm(Y)));
    Eps1SqSum += Eps1Sq;
 
    if (Verbose > 1)
@@ -267,17 +266,17 @@ void TDVP::IterateRight()
    *C = prod(*C, U);
 
    // Calculate the left half of epsilon_2 (see below).
-   StateComponent X = contract_from_left(*H, herm(NullSpace2(*C)), HamMatrices.left(), *C);
+   StateComponent X = contract_from_left(*H, herm(NullSpace2(*C)), Ham.left(), *C);
 
    // Update the effective Hamiltonian.
-   HamMatrices.push_left(contract_from_left(*H, herm(*C), HamMatrices.left(), *C));
+   Ham.push_left(contract_from_left(*H, herm(*C), Ham.left(), *C));
 
    // Evolve the DVh term backwards in time.
    int Iter = MaxIter;
    double Err = ErrTol;
    MatrixOperator DVh = D*Vh;
 
-   DVh = LanczosExponential(DVh, HEff2(HamMatrices.left(), HamMatrices.right()), Iter, -0.5*Timestep, Err);
+   DVh = LanczosExponential(DVh, HEff2(Ham.left(), Ham.right()), Iter, -0.5*Timestep, Err);
 
    if (Verbose > 1)
    {
@@ -295,17 +294,17 @@ void TDVP::IterateRight()
 
    *C = prod(DVh, *C);
 
-   HamMatrices.pop_right();
+   Ham.pop_right();
 
    // Evolve current site.
    Iter = MaxIter;
    Err = ErrTol;
 
-   *C = LanczosExponential(*C, HEff1(HamMatrices.left(), *H, HamMatrices.right()), Iter, 0.5*Timestep, Err);
+   *C = LanczosExponential(*C, HEff1(Ham.left(), *H, Ham.right()), Iter, 0.5*Timestep, Err);
 
    // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
-   StateComponent Y = contract_from_right(herm(*H), NullSpace1(*C), HamMatrices.right(), herm(*C));
-   double Eps1Sq = norm_frob_sq(scalar_prod(HamMatrices.left(), herm(Y)));
+   StateComponent Y = contract_from_right(herm(*H), NullSpace1(*C), Ham.right(), herm(*C));
+   double Eps1Sq = norm_frob_sq(scalar_prod(Ham.left(), herm(Y)));
    double Eps2Sq = norm_frob_sq(scalar_prod(X, herm(Y)));
    Eps1SqSum += Eps1Sq;
    Eps2SqSum += Eps2Sq;
@@ -349,13 +348,13 @@ void TDVP::ExpandLeftBond()
    BasicTriangularMPO::const_iterator HNext = H;
    --HNext;
 
-   HamMatrices.pop_left();
+   Ham.pop_left();
 
    StateComponent NL = NullSpace2(*CNext);
    StateComponent NR = NullSpace1(*C);
 
-   StateComponent X = contract_from_left(*HNext, herm(NL), HamMatrices.left(), *CNext);
-   StateComponent Y = contract_from_right(herm(*H), NR, HamMatrices.right(), herm(*C));
+   StateComponent X = contract_from_left(*HNext, herm(NL), Ham.left(), *CNext);
+   StateComponent Y = contract_from_right(herm(*H), NR, Ham.right(), herm(*C));
 
    // Take the truncated SVD of P_2 H|Psi>.
    CMatSVD SL(scalar_prod(X, herm(Y)));
@@ -389,7 +388,7 @@ void TDVP::ExpandLeftBond()
    }
 
    // Update the effective Hamiltonian.
-   HamMatrices.push_left(contract_from_left(*HNext, herm(*CNext), HamMatrices.left(), *CNext));
+   Ham.push_left(contract_from_left(*HNext, herm(*CNext), Ham.left(), *CNext));
 }
 
 void TDVP::EvolveExpand()
@@ -427,13 +426,13 @@ void TDVP::IterateLeft2()
    --H;
    OperatorComponent H2 = local_tensor_prod(*H, *HPrev);
 
-   HamMatrices.pop_left();
+   Ham.pop_left();
 
    // Evolve two-site centre block.
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   C2 = LanczosExponential(C2, HEff1(HamMatrices.left(), H2, HamMatrices.right()), Iter, 0.5*Timestep, Err);
+   C2 = LanczosExponential(C2, HEff1(Ham.left(), H2, Ham.right()), Iter, 0.5*Timestep, Err);
 
    // Perform SVD on new C2.
    AMatSVD SL(C2, Tensor::ProductBasis<BasisList, BasisList>((*C).LocalBasis(), (*CPrev).LocalBasis()));
@@ -457,13 +456,13 @@ void TDVP::IterateLeft2()
    TruncErrSum += Info.TruncationError();
 
    // Update the effective Hamiltonian.
-   HamMatrices.push_right(contract_from_right(herm(*HPrev), *CPrev, HamMatrices.right(), herm(*CPrev)));
+   Ham.push_right(contract_from_right(herm(*HPrev), *CPrev, Ham.right(), herm(*CPrev)));
 
    // Evolve the current site backwards in time.
    Iter = MaxIter;
    Err = ErrTol;
 
-   *C = LanczosExponential(*C, HEff1(HamMatrices.left(), *H, HamMatrices.right()), Iter, -0.5*Timestep, Err);
+   *C = LanczosExponential(*C, HEff1(Ham.left(), *H, Ham.right()), Iter, -0.5*Timestep, Err);
 
    if (Verbose > 1)
    {
@@ -486,13 +485,13 @@ void TDVP::EvolveLeftmostSite2()
    --HPrev;
    OperatorComponent H2 = local_tensor_prod(*HPrev, *H);
 
-   HamMatrices.pop_left();
+   Ham.pop_left();
 
    // Evolve two-site centre block.
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   C2 = LanczosExponential(C2, HEff1(HamMatrices.left(), H2, HamMatrices.right()), Iter, Timestep, Err);
+   C2 = LanczosExponential(C2, HEff1(Ham.left(), H2, Ham.right()), Iter, Timestep, Err);
 
    // Perform SVD on new C2.
    AMatSVD SL(C2, Tensor::ProductBasis<BasisList, BasisList>((*CPrev).LocalBasis(), (*C).LocalBasis()));
@@ -517,7 +516,7 @@ void TDVP::EvolveLeftmostSite2()
    TruncErrSum += Info.TruncationError();
 
    // Update the effective Hamiltonian.
-   HamMatrices.push_left(contract_from_left(*HPrev, herm(*CPrev), HamMatrices.left(), *CPrev));
+   Ham.push_left(contract_from_left(*HPrev, herm(*CPrev), Ham.left(), *CPrev));
 }
 
 void TDVP::IterateRight2()
@@ -526,7 +525,7 @@ void TDVP::IterateRight2()
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   *C = LanczosExponential(*C, HEff1(HamMatrices.left(), *H, HamMatrices.right()), Iter, -0.5*Timestep, Err);
+   *C = LanczosExponential(*C, HEff1(Ham.left(), *H, Ham.right()), Iter, -0.5*Timestep, Err);
 
    if (Verbose > 1)
    {
@@ -548,13 +547,13 @@ void TDVP::IterateRight2()
    ++H;
    OperatorComponent H2 = local_tensor_prod(*HPrev, *H);
 
-   HamMatrices.pop_right();
+   Ham.pop_right();
 
    // Evolve two-site centre block.
    Iter = MaxIter;
    Err = ErrTol;
 
-   C2 = LanczosExponential(C2, HEff1(HamMatrices.left(), H2, HamMatrices.right()), Iter, 0.5*Timestep, Err);
+   C2 = LanczosExponential(C2, HEff1(Ham.left(), H2, Ham.right()), Iter, 0.5*Timestep, Err);
 
    // Perform SVD on new C2.
    AMatSVD SL(C2, Tensor::ProductBasis<BasisList, BasisList>((*CPrev).LocalBasis(), (*C).LocalBasis()));
@@ -579,7 +578,7 @@ void TDVP::IterateRight2()
    TruncErrSum += Info.TruncationError();
 
    // Update the effective Hamiltonian.
-   HamMatrices.push_left(contract_from_left(*HPrev, herm(*CPrev), HamMatrices.left(), *CPrev));
+   Ham.push_left(contract_from_left(*HPrev, herm(*CPrev), Ham.left(), *CPrev));
 }
 
 void TDVP::Evolve2()
@@ -607,16 +606,19 @@ void TDVP::CalculateEps()
    Eps1SqSum = 0.0;
    Eps2SqSum = 0.0;
 
-   // Create local copies so we can perform a single right-to-left sweep
+   // Create a local copy so we can perform a single right-to-left sweep
    // without having to go back to the right.
-   LinearWavefunction::iterator CLocal = C;
-   BasicTriangularMPO::const_iterator HLocal = H;
-   OperatorStackType HamMatricesLocal = HamMatrices;
-   int SiteLocal = Site;
+   LinearWavefunction PsiLocal = Psi;
+   LinearWavefunction::iterator CLocal = PsiLocal.end();
+   --CLocal;
+   BasicTriangularMPO::const_iterator HLocal = Hamiltonian.end();
+   --HLocal;
+   OperatorStackType HamLocal = Ham;
+   int SiteLocal = RightStop;
 
    // Calculate error measure epsilon_1 and add to sum.
-   StateComponent X = contract_from_left(*HLocal, herm(NullSpace2(*CLocal)), HamMatricesLocal.left(), *CLocal);
-   double Eps1Sq = norm_frob_sq(scalar_prod(X, herm(HamMatricesLocal.right())));
+   StateComponent X = contract_from_left(*HLocal, herm(NullSpace2(*CLocal)), HamLocal.left(), *CLocal);
+   double Eps1Sq = norm_frob_sq(scalar_prod(X, herm(HamLocal.right())));
    Eps1SqSum += Eps1Sq;
 
    if (Verbose > 1)
@@ -639,10 +641,10 @@ void TDVP::CalculateEps()
       *CLocal = prod(Vh, *CLocal);
 
       // Calculate the right half of epsilon_2 (see below).
-      StateComponent Y = contract_from_right(herm(*HLocal), NullSpace1(*CLocal), HamMatricesLocal.right(), herm(*CLocal));
+      StateComponent Y = contract_from_right(herm(*HLocal), NullSpace1(*CLocal), HamLocal.right(), herm(*CLocal));
 
       // Update the effective Hamiltonian.
-      HamMatricesLocal.push_right(contract_from_right(herm(*HLocal), *CLocal, HamMatricesLocal.right(), herm(*CLocal)));
+      HamLocal.push_right(contract_from_right(herm(*HLocal), *CLocal, HamLocal.right(), herm(*CLocal)));
 
       // Move to the next site.
       --SiteLocal;
@@ -651,11 +653,11 @@ void TDVP::CalculateEps()
 
       *CLocal = prod(*CLocal, U*D);
 
-      HamMatricesLocal.pop_left();
+      HamLocal.pop_left();
 
       // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
-      StateComponent X = contract_from_left(*HLocal, herm(NullSpace2(*CLocal)), HamMatricesLocal.left(), *CLocal);
-      Eps1Sq = norm_frob_sq(scalar_prod(X, herm(HamMatricesLocal.right())));
+      StateComponent X = contract_from_left(*HLocal, herm(NullSpace2(*CLocal)), HamLocal.left(), *CLocal);
+      Eps1Sq = norm_frob_sq(scalar_prod(X, herm(HamLocal.right())));
       double Eps2Sq = norm_frob_sq(scalar_prod(X, herm(Y)));
       Eps1SqSum += Eps1Sq;
       Eps2SqSum += Eps2Sq;

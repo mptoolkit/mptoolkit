@@ -79,7 +79,7 @@ class TDVP
       // Calculate the error measures epsilon_1 and epsilon_2.
       void CalculateEps();
 
-      OperatorStackType HamMatrices;
+      OperatorStackType Ham;
       LinearWavefunction Psi;
       int Site;                          // The index of the iterator C.
       LinearWavefunction::iterator C;
@@ -87,6 +87,7 @@ class TDVP
       BasicTriangularMPO::const_iterator H;
       int LeftStop;                      // The site indices where we stop iterations,
       int RightStop;
+
       std::complex<double> Timestep;     // The complex timestep in the form -i*dt.
       int MaxIter;
       double ErrTol;

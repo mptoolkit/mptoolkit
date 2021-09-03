@@ -58,8 +58,7 @@ int main(int argc, char** argv)
       double TruncCutoff = 0;
       double EigenCutoff = 1e-16;
       bool TwoSite = false;
-      bool Expand = false;
-      double Eps2SqTol = 0.0;
+      double Eps2SqTol = std::numeric_limits<double>::infinity();
       int Verbose = 0;
       int OutputDigits = 0;
 
@@ -197,6 +196,15 @@ int main(int argc, char** argv)
       if (SaveEvery == 0)
          SaveEvery = N;
 
+      // Calculate initial values of epsilon_1 and epsilon_2.
+      tdvp.CalculateEps();
+
+      std::cout << "Timestep=" << 0
+                << " Time=" << formatting::format_complex(InitialTime)
+                << " Eps1SqSum=" << tdvp.Eps1SqSum
+                << " Eps2SqSum=" << tdvp.Eps2SqSum
+                << std::endl;
+
       for (int tstep = 1; tstep <= N; ++tstep)
       {
          if (TwoSite)
@@ -212,7 +220,7 @@ int main(int argc, char** argv)
          }
          else
          {
-            if (Expand)
+            if (tdvp.Eps2SqSum > Eps2SqTol)
             {
                if (Verbose > 0)
                   std::cout << "Eps2Sq tolerance reached, expanding bond dimension..." << std::endl;
@@ -228,14 +236,6 @@ int main(int argc, char** argv)
                       << " MaxStates=" << tdvp.MaxStates
                       << " Eps1SqSum=" << tdvp.Eps1SqSum
                       << " Eps2SqSum=" << tdvp.Eps2SqSum << std::endl;
-
-            if (Eps2SqTol != 0.0)
-            {
-               if (tdvp.Eps2SqSum > Eps2SqTol)
-                  Expand = true;
-               else
-                  Expand = false;
-            }
          }
 
          // Save the wavefunction.
