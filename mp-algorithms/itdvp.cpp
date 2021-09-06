@@ -731,14 +731,16 @@ void iTDVP::ExpandRightBond()
    RealDiagonalOperator D;
    SL.ConstructMatrices(SL.begin(), Cutoff, U, D, Vh);
 
-   // Add the new states to current site.
+   // Add the new states to CExpand.
    SumBasis<VectorBasis> NewBasis((*C).Basis2(), U.Basis2());
 
    MaxStates = std::max(MaxStates, NewBasis.total_dimension());
 
-   // ??
-   StateComponent CExpand = tensor_row_sum(*C, prod(NullSpace2(*C), U), NewBasis);
-   *C = tensor_row_sum(*C, prod(NullSpace2(*C), U), NewBasis);
+   StateComponent CExpand = tensor_row_sum(*COld, prod(NullSpace2(*COld), U), NewBasis);
+
+   // Add a zero tensor of the same dimensions to C.
+   StateComponent Z = StateComponent((*C).LocalBasis(), (*C).Basis1(), U.Basis2());
+   *C = tensor_row_sum(*C, Z, NewBasis);
 
    if (Verbose > 1)
    {
@@ -752,21 +754,20 @@ void iTDVP::ExpandRightBond()
    // Move to next site, handling the rightmost site separately.
    if (Site < RightStop)
    {
-      HamL.push_back(contract_from_left(*H, herm(CExpand), HamL.back(), CExpand));
-      TRACE(HamL.back());
+      HamL.push_back(contract_from_left(*H, herm(CExpand), HamLOld.front(), CExpand));
+
+      HamLOld.pop_front();
       ++C;
+      ++COld;
    }
    else
    {
-      BlockHamL = contract_from_left(*H, herm(CExpand), HamL.back(), CExpand);
+      BlockHamL = contract_from_left(*H, herm(CExpand), HamLOld.front(), CExpand);
       HamL.front() = BlockHamL;
-      TRACE(HamL.front());
 
       C = Psi.begin();
 
       // Add zeros to LambdaR so the bonds match. 
-      //MatrixOperator Z = MatrixOperator(Vh.Basis1(), Vh.Basis1());
-      //LambdaR = tensor_sum(LambdaR, Z, NewBasis, NewBasis);
       MatrixOperator Z = MatrixOperator(Vh.Basis1(), LambdaR.Basis2());
       LambdaR = tensor_col_sum(LambdaR, Z, NewBasis);
    }
@@ -777,7 +778,7 @@ void iTDVP::ExpandRightBond()
    Y.pop_front();
 
    // Add zeros to the current site so the left bond matches. 
-   StateComponent Z = StateComponent((*C).LocalBasis(), Vh.Basis1(), (*C).Basis2());
+   Z = StateComponent((*C).LocalBasis(), Vh.Basis1(), (*C).Basis2());
    *C = tensor_col_sum(*C, Z, NewBasis);
 }
 
@@ -786,7 +787,11 @@ void iTDVP::ExpandBonds()
    C = Psi.begin();
    H = Hamiltonian.begin();
    Site = LeftStop;
+   HamLOld = HamL;
    HamL = std::deque<StateComponent>(1, BlockHamL);
+
+   LinearWavefunction PsiOld = Psi;
+   COld = PsiOld.begin();
 
    while (Site <= RightStop)
       this->ExpandRightBond();

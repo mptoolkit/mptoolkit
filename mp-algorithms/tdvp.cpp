@@ -375,8 +375,8 @@ void TDVP::ExpandLeftBond()
    MaxStates = std::max(MaxStates, NewBasis.total_dimension());
 
    *CNext = tensor_row_sum(*CNext, prod(NL, U), NewBasis);
-   // prod(0.0*Vh, NR) is a hack to produce a zero tensor with the correct shape.
-   *C = tensor_col_sum(*C, prod(0.0*Vh, NR), NewBasis);
+   StateComponent Z = StateComponent((*C).LocalBasis(), Vh.Basis1(), (*C).Basis2());
+   *C = tensor_col_sum(*C, Z, NewBasis);
 
    if (Verbose > 1)
    {

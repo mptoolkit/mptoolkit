@@ -73,11 +73,13 @@ class iTDVP
       MatrixOperator LambdaR;
       QuantumNumber QShift;
       std::deque<StateComponent> HamL;
+      std::deque<StateComponent> HamLOld;
       std::deque<StateComponent> HamR;
       StateComponent BlockHamL;
       StateComponent BlockHamR;
       int Site;                          // The index of the iterator C.
       LinearWavefunction::iterator C;
+      LinearWavefunction::iterator COld;
       BasicTriangularMPO Hamiltonian;
       BasicTriangularMPO::const_iterator H;
       int LeftStop;                      // The site indices where we stop iterations,
