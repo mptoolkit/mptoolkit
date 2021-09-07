@@ -21,6 +21,7 @@
 #include "itdvp.h"
 //#include "lanczos-exponential.h"
 #include "triangular_mpo_solver.h"
+#include "tensor/regularize.h"
 #include "tensor/tensor_eigen.h"
 #include "linearalgebra/eigen.h"
 #include "linearalgebra/exponential.h"
@@ -88,7 +89,7 @@ VectorType LanczosExponential(VectorType const& x,
       Out += v[j] * C[j];
    }
 
-   // Normalise Out.
+   // Normalize Out.
    Out *= 1.0/norm_frob(Out);
 
    return Out;
@@ -140,7 +141,7 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham
    QShift = Psi_.qshift();
    LambdaR = Psi_.lambda_r();
 
-   // Initialise Psi and Ham.
+   // Initialize Psi and Ham.
    if (Verbose > 0)
       std::cout << "Constructing Hamiltonian block operators..." << std::endl;
 
@@ -208,7 +209,7 @@ void iTDVP::IterateLeft()
                 << std::endl;
    }
 
-   // Perform SVD to right-orthogonalise current site.
+   // Perform SVD to right-orthogonalize current site.
    MatrixOperator M = ExpandBasis1(*C);
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
@@ -266,7 +267,7 @@ void iTDVP::EvolveLeftmostSite()
 
 void iTDVP::IterateRight()
 {
-   // Perform SVD to left-orthogonalise current site.
+   // Perform SVD to left-orthogonalize current site.
    MatrixOperator M = ExpandBasis2(*C);
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
@@ -319,9 +320,9 @@ void iTDVP::IterateRight()
    }
 }
 
-void iTDVP::OrthogonaliseLeftmostSite()
+void iTDVP::OrthogonalizeLeftmostSite()
 {
-   // Right-orthogonalise current site.
+   // Right-orthogonalize current site.
    MatrixOperator M = ExpandBasis1(*C);
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
@@ -337,9 +338,9 @@ void iTDVP::OrthogonaliseLeftmostSite()
    HamR.back() = BlockHamR;
 }
 
-void iTDVP::OrthogonaliseRightmostSite()
+void iTDVP::OrthogonalizeRightmostSite()
 {
-   // Left-orthogonalise current site.
+   // Left-orthogonalize current site.
    MatrixOperator M = ExpandBasis2(*C);
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
@@ -408,7 +409,7 @@ void iTDVP::Evolve()
 
       this->EvolveLeftmostSite();
 
-      this->OrthogonaliseLeftmostSite();
+      this->OrthogonalizeLeftmostSite();
 
       if (SweepL > 1)
       {
@@ -466,7 +467,7 @@ void iTDVP::Evolve()
       while (Site < RightStop)
          this->IterateRight();
 
-      this->OrthogonaliseRightmostSite();
+      this->OrthogonalizeRightmostSite();
 
       if (SweepR > 1)
       {
@@ -523,7 +524,7 @@ void iTDVP::CalculateEps()
 
    while (SiteLocal > LeftStop)
    {
-      // Perform SVD to right-orthogonalise current site.
+      // Perform SVD to right-orthogonalize current site.
       MatrixOperator M = ExpandBasis1(*CLocal);
       MatrixOperator U, Vh;
       RealDiagonalOperator D;
@@ -566,7 +567,7 @@ void iTDVP::CalculateEps()
       }
    }
 
-   // Perform SVD to right-orthogonalise the leftmost site.
+   // Perform SVD to right-orthogonalize the leftmost site.
    MatrixOperator M = ExpandBasis1(*CLocal);
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
@@ -606,10 +607,10 @@ void iTDVP::CalculateEps()
 
    *C = prod(*C, LambdaR);
 
-   // Right-orthogonalise the unit cell.
+   // Right-orthogonalize the unit cell.
    while (Site > LeftStop)
    {
-      // Perform SVD to right-orthogonalise current site.
+      // Perform SVD to right-orthogonalize current site.
       MatrixOperator M = ExpandBasis1(*C);
       MatrixOperator U, Vh;
       RealDiagonalOperator D;
@@ -636,7 +637,7 @@ void iTDVP::CalculateEps()
 
    while (Site < RightStop)
    {
-      // Perform SVD to left-orthogonalise current site.
+      // Perform SVD to left-orthogonalize current site.
       MatrixOperator M = ExpandBasis2(*C);
       MatrixOperator U, Vh;
       RealDiagonalOperator D;
@@ -679,7 +680,7 @@ void iTDVP::CalculateEps()
       }
    }
 
-   // Perform SVD to left-orthogonalise the rightmost site.
+   // Perform SVD to left-orthogonalize the rightmost site.
    MatrixOperator M = ExpandBasis2(*C);
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
@@ -731,16 +732,21 @@ void iTDVP::ExpandRightBond()
    RealDiagonalOperator D;
    SL.ConstructMatrices(SL.begin(), Cutoff, U, D, Vh);
 
-   // Add the new states to CExpand.
+   // Construct new basis.
    SumBasis<VectorBasis> NewBasis((*C).Basis2(), U.Basis2());
+   // Construct a unitary to regularize the new basis.
+   MatrixOperator UReg = Regularize(NewBasis);
 
    MaxStates = std::max(MaxStates, NewBasis.total_dimension());
 
+   // Add the new states to CExpand.
    StateComponent CExpand = tensor_row_sum(*COld, prod(NullSpace2(*COld), U), NewBasis);
+   CExpand = prod(CExpand, herm(UReg));
 
    // Add a zero tensor of the same dimensions to C.
    StateComponent Z = StateComponent((*C).LocalBasis(), (*C).Basis1(), U.Basis2());
    *C = tensor_row_sum(*C, Z, NewBasis);
+   *C = prod(*C, herm(UReg));
 
    if (Verbose > 1)
    {
@@ -770,6 +776,7 @@ void iTDVP::ExpandRightBond()
       // Add zeros to LambdaR so the bonds match. 
       MatrixOperator Z = MatrixOperator(Vh.Basis1(), LambdaR.Basis2());
       LambdaR = tensor_col_sum(LambdaR, Z, NewBasis);
+      LambdaR = UReg * LambdaR;
    }
 
    ++Site;
@@ -780,6 +787,7 @@ void iTDVP::ExpandRightBond()
    // Add zeros to the current site so the left bond matches. 
    Z = StateComponent((*C).LocalBasis(), Vh.Basis1(), (*C).Basis2());
    *C = tensor_col_sum(*C, Z, NewBasis);
+   *C = prod(UReg, *C);
 }
 
 void iTDVP::ExpandBonds()

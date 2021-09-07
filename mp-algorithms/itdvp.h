@@ -47,11 +47,11 @@ class iTDVP
       // Move right and evolve the next site.
       void IterateRight();
 
-      // Orthogonalise the leftmost/rightmost site in the unit cell, ensuring
+      // Orthogonalize the leftmost/rightmost site in the unit cell, ensuring
       // that the left and right bases of LambdaR are the same, and calculate
       // the left/right block Hamiltonian.
-      void OrthogonaliseLeftmostSite();
-      void OrthogonaliseRightmostSite();
+      void OrthogonalizeLeftmostSite();
+      void OrthogonalizeRightmostSite();
 
       // Evolve LambdaR backwards in time.
       void EvolveLambdaR();

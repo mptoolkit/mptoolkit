@@ -87,7 +87,7 @@ VectorType LanczosExponential(VectorType const& x,
       Out += v[j] * C[j];
    }
 
-   // Normalise Out.
+   // Normalize Out.
    Out *= 1.0/norm_frob(Out);
 
    return Out;
@@ -134,7 +134,7 @@ TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
    : Hamiltonian(Ham_), Timestep(Timestep_), MaxIter(MaxIter_), ErrTol(ErrTol_),
      SInfo(SInfo_), Verbose(Verbose_)
 {
-   // Initialise Psi and Ham.
+   // Initialize Psi and Ham.
    if (Verbose > 0)
       std::cout << "Constructing Hamiltonian block operators..." << std::endl;
    H = Hamiltonian.begin();
@@ -192,7 +192,7 @@ void TDVP::IterateLeft()
                 << std::endl;
    }
 
-   // Perform SVD to right-orthogonalise current site.
+   // Perform SVD to right-orthogonalize current site.
    MatrixOperator M = ExpandBasis1(*C);
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
@@ -256,7 +256,7 @@ void TDVP::EvolveLeftmostSite()
 
 void TDVP::IterateRight()
 {
-   // Perform SVD to left-orthogonalise current site.
+   // Perform SVD to left-orthogonalize current site.
    MatrixOperator M = ExpandBasis2(*C);
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
@@ -631,7 +631,7 @@ void TDVP::CalculateEps()
 
    while (SiteLocal > LeftStop)
    {
-      // Perform SVD to right-orthogonalise current site.
+      // Perform SVD to right-orthogonalize current site.
       MatrixOperator M = ExpandBasis1(*CLocal);
       MatrixOperator U, Vh;
       RealDiagonalOperator D;
