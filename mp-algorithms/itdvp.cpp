@@ -139,7 +139,7 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham
      SInfo(SInfo_), Verbose(Verbose_)
 {
    QShift = Psi_.qshift();
-   LambdaR = Psi_.lambda_r();
+   std::tie(Psi, LambdaR) = get_left_canonical(Psi_);
 
    // Initialize Psi and Ham.
    if (Verbose > 0)
@@ -148,7 +148,10 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham
    H = Hamiltonian.begin();
 
    BlockHamL = Initial_E(Hamiltonian, Psi_.Basis1());
-   SolveSimpleMPO_Left(BlockHamL, Psi_, Hamiltonian, GMRESTol, Verbose-1);
+   MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaR));
+   Rho = delta_shift(Rho, QShift);
+   //SolveSimpleMPO_Left(BlockHamL, Psi_, Hamiltonian, GMRESTol, Verbose-1);
+   SolveSimpleMPO_Left(BlockHamL, Psi, QShift, Hamiltonian, Rho, GMRESTol, Verbose-1);
    HamL.push_back(BlockHamL);
 
    for (InfiniteWavefunctionLeft::const_mps_iterator I = Psi_.begin(); I != Psi_.end(); ++I)
@@ -156,7 +159,6 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham
       if (Verbose > 1)
          std::cout << "Site " << (HamL.size()) << std::endl;
       HamL.push_back(contract_from_left(*H, herm(*I), HamL.back(), *I));
-      Psi.push_back(*I);
       MaxStates = std::max(MaxStates, (*I).Basis2().total_dimension());
       ++H;
    }
@@ -170,11 +172,15 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham
    PsiR.set_back(prod(PsiR.get_back(), delta_shift(U, adjoint(QShift))));
 
    BlockHamR = Initial_F(Hamiltonian, PsiR.Basis2());
-   MatrixOperator Rho = scalar_prod(D, herm(D));
+   Rho = scalar_prod(D, herm(D));
    Rho = delta_shift(Rho, adjoint(QShift));
    SolveSimpleMPO_Right(BlockHamR, PsiR, QShift, Hamiltonian, Rho, GMRESTol, Verbose-1);
 
+   U = delta_shift(U, adjoint(QShift));
+   BlockHamR = prod(prod(U, BlockHamR), herm(U));
+
    HamR.push_front(BlockHamR);
+   BlockHamR = delta_shift(BlockHamR, QShift);
 
    // Initialize to the right-most site.
    HamL.pop_back();
@@ -332,10 +338,11 @@ void iTDVP::OrthogonalizeLeftmostSite()
    // Ensure that the left and right bases of LambdaR are the same.
    *C = prod(U*Vh, *C);
    LambdaR = (U*D)*herm(U);
+   LambdaR = delta_shift(LambdaR, adjoint(QShift));
 
    // Update right block Hamiltonian.
    BlockHamR = contract_from_right(herm(*H), *C, HamR.front(), herm(*C));
-   HamR.back() = BlockHamR;
+   HamR.back() = delta_shift(BlockHamR, adjoint(QShift));
 }
 
 void iTDVP::OrthogonalizeRightmostSite()
@@ -350,17 +357,36 @@ void iTDVP::OrthogonalizeRightmostSite()
    // Ensure that the left and right bases of LambdaR are the same.
    *C = prod(*C, U*Vh);
    LambdaR = herm(Vh)*(D*Vh);
+   LambdaR = delta_shift(LambdaR, QShift);
 
    // Update left block Hamiltonian.
    BlockHamL = contract_from_left(*H, herm(*C), HamL.back(), *C);
-   HamL.front() = BlockHamL;
+   HamL.front() = delta_shift(BlockHamL, QShift);
 }
 
-void iTDVP::EvolveLambdaR()
+void iTDVP::EvolveLambdaRRight()
 {
    int Iter = MaxIter;
    double Err = ErrTol;
-   LambdaR = LanczosExponential(LambdaR, HEff2(BlockHamL, BlockHamR), Iter, -0.5*Timestep, Err);
+
+   LambdaR = LanczosExponential(LambdaR, HEff2(BlockHamL, HamR.back()), Iter, -0.5*Timestep, Err);
+
+   if (Verbose > 1)
+   {
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site
+                << " LambdaR Iter=" << Iter
+                << " Err=" << Err
+                << std::endl;
+   }
+}
+
+void iTDVP::EvolveLambdaRLeft()
+{
+   int Iter = MaxIter;
+   double Err = ErrTol;
+
+   LambdaR = LanczosExponential(LambdaR, HEff2(HamL.front(), BlockHamR), Iter, -0.5*Timestep, Err);
 
    if (Verbose > 1)
    {
@@ -397,10 +423,10 @@ void iTDVP::Evolve()
       Site = RightStop;
 
       HamL = HamLOld;
-      HamR = std::deque<StateComponent>(1, BlockHamR);
+      HamR = std::deque<StateComponent>(1, delta_shift(BlockHamR, adjoint(QShift)));
 
       if (SweepL > 1)
-         this->EvolveLambdaR();
+         this->EvolveLambdaRRight();
 
       *C = prod(*C, LambdaR);
 
@@ -414,6 +440,7 @@ void iTDVP::Evolve()
       if (SweepL > 1)
       {
          MatrixOperator Rho = scalar_prod(herm(LambdaRPrev), LambdaR);
+         Rho = delta_shift(Rho, QShift);
          FidelityL = 1.0 - sum(SingularValues(inject_left(Rho, Psi, PsiPrev)));
 
          if (Verbose > 0)
@@ -443,6 +470,8 @@ void iTDVP::Evolve()
    PsiOld = Psi;
    std::deque<StateComponent> HamROld = HamR;
 
+   LambdaR = delta_shift(LambdaR, QShift);
+
    do {
       ++SweepR;
 
@@ -454,11 +483,11 @@ void iTDVP::Evolve()
       H = Hamiltonian.begin();
       Site = LeftStop;
 
-      HamL = std::deque<StateComponent>(1, BlockHamL);
+      HamL = std::deque<StateComponent>(1, delta_shift(BlockHamL, QShift));
       HamR = HamROld;
 
       if (SweepR > 1)
-         this->EvolveLambdaR();
+         this->EvolveLambdaRLeft();
 
       *C = prod(LambdaR, *C);
 
@@ -472,6 +501,7 @@ void iTDVP::Evolve()
       if (SweepR > 1)
       {
          MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaRPrev));
+         Rho = delta_shift(Rho, adjoint(QShift));
          FidelityR = 1.0 - sum(SingularValues(inject_right(Rho, Psi, PsiPrev)));
 
          if (Verbose > 0)
@@ -493,6 +523,8 @@ void iTDVP::Evolve()
       }
    }
    while (FidelityR > FidelityTol && SweepR < MaxSweeps);
+
+   LambdaR = delta_shift(LambdaR, adjoint(QShift));
 
    this->CalculateEps();
 }
@@ -693,16 +725,16 @@ void iTDVP::CalculateEps()
 
    // Update left block Hamiltonian.
    BlockHamL = contract_from_left(*H, herm(*C), HamL.back(), *C);
-   HamL.front() = BlockHamL;
+   HamL.front() = delta_shift(BlockHamL, QShift);
 
    // Calculate the left half of epsilon_2.
    X.push_back(contract_from_left(*H, herm(NullSpace2(*C)), HamL.back(), *C));
 
-   Y.push_back(Y.front());
+   Y.push_back(delta_shift(Y.front(), adjoint(QShift)));
    Y.pop_front();
 
    // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
-   double Eps1Sq = norm_frob_sq(scalar_prod(HamL.front(), herm(Y.back())));
+   double Eps1Sq = norm_frob_sq(scalar_prod(BlockHamL, herm(Y.back())));
    double Eps2Sq = norm_frob_sq(scalar_prod(X.back(), herm(Y.back())));
    Eps1SqSum += Eps1Sq;
    Eps2SqSum += Eps2Sq;
@@ -769,9 +801,10 @@ void iTDVP::ExpandRightBond()
    else
    {
       BlockHamL = contract_from_left(*H, herm(CExpand), HamLOld.front(), CExpand);
-      HamL.front() = BlockHamL;
+      HamL.front() = delta_shift(BlockHamL, QShift);
 
       C = Psi.begin();
+      *C = delta_shift(*C, adjoint(QShift));
 
       // Add zeros to LambdaR so the bonds match. 
       MatrixOperator Z = MatrixOperator(Vh.Basis1(), LambdaR.Basis2());
@@ -803,6 +836,8 @@ void iTDVP::ExpandBonds()
 
    while (Site <= RightStop)
       this->ExpandRightBond();
+
+   *C = delta_shift(*C, QShift);
 
    C = Psi.end();
    --C;

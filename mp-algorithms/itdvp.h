@@ -54,7 +54,8 @@ class iTDVP
       void OrthogonalizeRightmostSite();
 
       // Evolve LambdaR backwards in time.
-      void EvolveLambdaR();
+      void EvolveLambdaRRight();
+      void EvolveLambdaRLeft();
 
       // Evolve the chain by one time step using single-site TDVP.
       void Evolve();
