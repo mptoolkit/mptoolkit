@@ -219,6 +219,7 @@ int main(int argc, char** argv)
 
       std::cout << "Timestep=" << 0
                 << " Time=" << formatting::format_complex(InitialTime)
+                << " MaxStates=" << itdvp.MaxStates
                 << " Eps1SqSum=" << itdvp.Eps1SqSum
                 << " Eps2SqSum=" << itdvp.Eps2SqSum
                 << std::endl;

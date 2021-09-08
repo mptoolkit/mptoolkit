@@ -20,6 +20,7 @@
 
 #include "tdvp.h"
 //#include "lanczos-exponential.h"
+#include "tensor/regularize.h"
 #include "tensor/tensor_eigen.h"
 #include "linearalgebra/eigen.h"
 #include "linearalgebra/exponential.h"
@@ -369,14 +370,20 @@ void TDVP::ExpandLeftBond()
    RealDiagonalOperator D;
    SL.ConstructMatrices(SL.begin(), Cutoff, U, D, Vh);
 
-   // Add the new states to CNext, and add zeros to C.
+   // Construct new basis.
    SumBasis<VectorBasis> NewBasis((*CNext).Basis2(), U.Basis2());
+   // Construct a unitary to regularize the new basis.
+   MatrixOperator UReg = Regularize(NewBasis);
 
    MaxStates = std::max(MaxStates, NewBasis.total_dimension());
 
+   // Add the new states to CNext, and add zeros to C.
    *CNext = tensor_row_sum(*CNext, prod(NL, U), NewBasis);
+   *CNext = prod(*CNext, herm(UReg));
+
    StateComponent Z = StateComponent((*C).LocalBasis(), Vh.Basis1(), (*C).Basis2());
    *C = tensor_col_sum(*C, Z, NewBasis);
+   *C = prod(UReg, *C);
 
    if (Verbose > 1)
    {
