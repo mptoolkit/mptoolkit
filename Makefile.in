@@ -533,7 +533,7 @@ mp-dmrg : dmrg.o $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-o
 mp-overlap : finitewavefunctionleft.o
 mp-scale : finitewavefunctionleft.o number-parser.o
 
-mp-itdvp : itdvp.o ef-optim.o number-parser.o triangular_mpo_solver.o
+mp-itdvp : itdvp.o ef-optim.o number-parser.o triangular_mpo_solver.o momentum_operations.o
 
 mp-ireorder-symmetry : infinitewavefunctionleft.o
 
