@@ -664,8 +664,20 @@ void iTDVP::CalculateEps()
       HamL.pop_back();
    }
 
-   // Calcaulate the right half of epsilon_2 for the left end of the unit cell.
-   Y.push_back(contract_from_right(herm(*H), NullSpace1(*C), HamR.front(), herm(*C)));
+   {
+      // Perform SVD to right-orthogonalize current site.
+      MatrixOperator M = ExpandBasis1(*C);
+      MatrixOperator U, Vh;
+      RealDiagonalOperator D;
+
+      SingularValueDecomposition(M, U, D, Vh);
+
+      StateComponent CRightOrtho = prod(Vh, *C);
+      *C = prod(U*D*Vh, *C);
+
+      // Calculate the right half of epsilon_2 for the left end of the unit cell.
+      Y.push_back(contract_from_right(herm(*H), NullSpace1(CRightOrtho), HamR.front(), herm(*C)));
+   }
 
    while (Site < RightStop)
    {
@@ -689,12 +701,13 @@ void iTDVP::CalculateEps()
       ++H;
       ++C;
 
+      StateComponent CRightOrtho = prod(Vh, *C);
       *C = prod(D*Vh, *C);
 
       HamR.pop_front();
 
       // Calculate the right half of epsilon_2.
-      Y.push_back(contract_from_right(herm(*H), NullSpace1(*C), HamR.front(), herm(*C)));
+      Y.push_back(contract_from_right(herm(*H), NullSpace1(CRightOrtho), HamR.front(), herm(*C)));
 
       // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
       double Eps1Sq = norm_frob_sq(scalar_prod(HamL.back(), herm(Y.back())));
