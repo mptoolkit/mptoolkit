@@ -808,7 +808,7 @@ SolveSimpleMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
    std::tie(PsiLinear, Lambda) = get_left_canonical(Psi);
    MatrixOperator Rho = Lambda*Lambda;
 
-   return SolveSimpleMPO_Left(E, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
+   return SolveSimpleMPO_Left(E, PsiLinear, Psi.qshift(), Op, delta_shift(Rho, Psi.qshift()), Tol, Verbose);
 }
 
 //
