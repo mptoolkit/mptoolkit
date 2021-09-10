@@ -272,6 +272,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, double normb, Vector const& b,
      if (resid < tol)
      {
         double UpdatedResid = beta / normb;
+        double ExpectedResid = tol;
         tol = UpdatedResid;
         max_iter = j;
         delete [] v;
@@ -279,6 +280,10 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, double normb, Vector const& b,
         if (Verbose > 0)
            std::cerr << "GMRES: finished, iter=" << (j-1) << ", approx resid=" << resid
                      << ", actual resid=" << UpdatedResid << std::endl;
+         // If the exact residual is not close to the required residual, then indicate an error.
+         // What we *should* do here is go back and do some more iterations.
+         if (UpdatedResid > ExpectedResid*10)
+            return 1;
         return 0;
      }
      else
