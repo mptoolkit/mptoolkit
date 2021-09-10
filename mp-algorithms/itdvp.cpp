@@ -440,7 +440,13 @@ void iTDVP::Evolve()
       {
          MatrixOperator Rho = scalar_prod(herm(LambdaRPrev), LambdaR);
          Rho = delta_shift(Rho, QShift);
-         FidelityL = 1.0 - sum(SingularValues(inject_left(Rho, Psi, PsiPrev)));
+         Rho = inject_left(Rho, Psi, PsiPrev);
+
+         MatrixOperator U, Vh;
+         RealDiagonalOperator D;
+         SingularValueDecomposition(Rho, U, D, Vh);
+
+         FidelityL = 1.0 - trace(D);
 
          if (Verbose > 0)
          {
@@ -501,7 +507,13 @@ void iTDVP::Evolve()
       {
          MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaRPrev));
          Rho = delta_shift(Rho, adjoint(QShift));
-         FidelityR = 1.0 - sum(SingularValues(inject_right(Rho, Psi, PsiPrev)));
+         Rho = inject_right(Rho, Psi, PsiPrev);
+
+         MatrixOperator U, Vh;
+         RealDiagonalOperator D;
+         SingularValueDecomposition(Rho, U, D, Vh);
+
+         FidelityR = 1.0 - trace(D);
 
          if (Verbose > 0)
          {
