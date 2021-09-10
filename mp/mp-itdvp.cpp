@@ -79,7 +79,7 @@ int main(int argc, char** argv)
           FormatDefault("Maximum number of Lanczos iterations per step", MaxIter).c_str())
          ("errtol", prog_opt::value(&ErrTol),
           FormatDefault("Error tolerance for the Lanczos evolution", ErrTol).c_str())
-         ("gmrestol", prog_opt::value(&ErrTol),
+         ("gmrestol", prog_opt::value(&GMRESTol),
           FormatDefault("Error tolerance for the GMRES algorithm", GMRESTol).c_str())
          ("min-states", prog_opt::value(&MinStates),
           FormatDefault("Minimum number of states to keep", MinStates).c_str())

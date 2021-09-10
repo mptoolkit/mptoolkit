@@ -150,7 +150,6 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham
    BlockHamL = Initial_E(Hamiltonian, Psi_.Basis1());
    MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaR));
    Rho = delta_shift(Rho, QShift);
-   //SolveSimpleMPO_Left(BlockHamL, Psi_, Hamiltonian, GMRESTol, Verbose-1);
    SolveSimpleMPO_Left(BlockHamL, Psi, QShift, Hamiltonian, Rho, GMRESTol, Verbose-1);
    HamL.push_back(BlockHamL);
 
