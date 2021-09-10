@@ -664,7 +664,7 @@ void iTDVP::CalculateEps()
    }
 
    {
-      // Perform SVD to right-orthogonalize current site.
+      // Perform SVD to right-orthogonalize current site for NullSpace1.
       MatrixOperator M = ExpandBasis1(*C);
       MatrixOperator U, Vh;
       RealDiagonalOperator D;

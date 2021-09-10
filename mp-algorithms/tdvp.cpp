@@ -303,8 +303,16 @@ void TDVP::IterateRight()
 
    *C = LanczosExponential(*C, HEff1(Ham.left(), *H, Ham.right()), Iter, 0.5*Timestep, Err);
 
+   // Perform SVD to right-orthogonalize current site for NullSpace1.
+   M = ExpandBasis1(*C);
+
+   SingularValueDecomposition(M, U, D, Vh);
+
+   StateComponent CRightOrtho = prod(Vh, *C);
+   *C = prod(U*D*Vh, *C);
+
    // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
-   StateComponent Y = contract_from_right(herm(*H), NullSpace1(*C), Ham.right(), herm(*C));
+   StateComponent Y = contract_from_right(herm(*H), NullSpace1(CRightOrtho), Ham.right(), herm(*C));
    double Eps1Sq = norm_frob_sq(scalar_prod(Ham.left(), herm(Y)));
    double Eps2Sq = norm_frob_sq(scalar_prod(X, herm(Y)));
    Eps1SqSum += Eps1Sq;
@@ -352,7 +360,18 @@ void TDVP::ExpandLeftBond()
    Ham.pop_left();
 
    StateComponent NL = NullSpace2(*CNext);
-   StateComponent NR = NullSpace1(*C);
+
+   // Perform SVD to right-orthogonalize current site for NullSpace1.
+   MatrixOperator M = ExpandBasis1(*C);
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+
+   SingularValueDecomposition(M, U, D, Vh);
+
+   StateComponent CRightOrtho = prod(Vh, *C);
+   *C = prod(U*D*Vh, *C);
+
+   StateComponent NR = NullSpace1(CRightOrtho);
 
    StateComponent X = contract_from_left(*HNext, herm(NL), Ham.left(), *CNext);
    StateComponent Y = contract_from_right(herm(*H), NR, Ham.right(), herm(*C));
@@ -366,8 +385,6 @@ void TDVP::ExpandLeftBond()
    SInfoLocal.MaxStates = std::max(0, SInfoLocal.MaxStates - (*C).Basis1().total_dimension());
    CMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfoLocal, Info);
 
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
    SL.ConstructMatrices(SL.begin(), Cutoff, U, D, Vh);
 
    // Construct new basis.
@@ -623,8 +640,18 @@ void TDVP::CalculateEps()
    OperatorStackType HamLocal = Ham;
    int SiteLocal = RightStop;
 
+   // Perform SVD to left-orthogonalize current site for NullSpace2.
+   MatrixOperator M = ExpandBasis2(*CLocal);
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+
+   SingularValueDecomposition(M, U, D, Vh);
+
+   StateComponent CLeftOrtho = prod(*CLocal, U);
+   *CLocal = prod(*CLocal, U*D*Vh);
+
    // Calculate error measure epsilon_1 and add to sum.
-   StateComponent X = contract_from_left(*HLocal, herm(NullSpace2(*CLocal)), HamLocal.left(), *CLocal);
+   StateComponent X = contract_from_left(*HLocal, herm(NullSpace2(CLeftOrtho)), HamLocal.left(), *CLocal);
    double Eps1Sq = norm_frob_sq(scalar_prod(X, herm(HamLocal.right())));
    Eps1SqSum += Eps1Sq;
 
@@ -639,9 +666,7 @@ void TDVP::CalculateEps()
    while (SiteLocal > LeftStop)
    {
       // Perform SVD to right-orthogonalize current site.
-      MatrixOperator M = ExpandBasis1(*CLocal);
-      MatrixOperator U, Vh;
-      RealDiagonalOperator D;
+      M = ExpandBasis1(*CLocal);
 
       SingularValueDecomposition(M, U, D, Vh);
 
@@ -662,8 +687,16 @@ void TDVP::CalculateEps()
 
       HamLocal.pop_left();
 
+      // Perform SVD to left-orthogonalize current site for NullSpace2.
+      M = ExpandBasis2(*CLocal);
+
+      SingularValueDecomposition(M, U, D, Vh);
+
+      CLeftOrtho = prod(*CLocal, U);
+      *CLocal = prod(*CLocal, U*D*Vh);
+
       // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
-      StateComponent X = contract_from_left(*HLocal, herm(NullSpace2(*CLocal)), HamLocal.left(), *CLocal);
+      StateComponent X = contract_from_left(*HLocal, herm(NullSpace2(CLeftOrtho)), HamLocal.left(), *CLocal);
       Eps1Sq = norm_frob_sq(scalar_prod(X, herm(HamLocal.right())));
       double Eps2Sq = norm_frob_sq(scalar_prod(X, herm(Y)));
       Eps1SqSum += Eps1Sq;
