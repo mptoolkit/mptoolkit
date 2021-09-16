@@ -427,7 +427,7 @@ LocalEigensolver::Solve(StateComponent& C,
       LastTol_ = 0.0;
    }
 
-   LastFidelity_ = std::max(1.0 - norm_frob(inner_prod(ROld, C)), 0.0);
-   FidelityAv_.push(LastFidelity_);
+   LastFidelityLoss_ = std::max(1.0 - norm_frob(inner_prod(ROld, C)), 0.0);
+   FidelityAv_.push(LastFidelityLoss_);
    return LastEnergy_;
 }

@@ -63,7 +63,7 @@ void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum)
 	 std::cout << dmrg.Solver().LastEnergyReal();
       std::cout << " States=" << States.KeptStates()
 		<< " Truncrror=" << States.TruncationError()
-		<< " Fidelity=" << dmrg.Solver().LastFidelity()
+		<< " FidelityLoss=" << dmrg.Solver().LastFidelityLoss()
 		<< " Iter=" << dmrg.Solver().LastIter()
 		<< " Tol=" << dmrg.Solver().LastTol()
 		<< '\n';
@@ -89,7 +89,7 @@ void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum)
 	 std::cout << dmrg.Solver().LastEnergyReal();
       std::cout << " States=" << States.KeptStates()
 		<< " Truncrror=" << States.TruncationError()
-		<< " Fidelity=" << dmrg.Solver().LastFidelity()
+		<< " FidelityLoss=" << dmrg.Solver().LastFidelityLoss()
 		<< " Iter=" << dmrg.Solver().LastIter()
 		<< " Tol=" << dmrg.Solver().LastTol()
 		<< '\n';
