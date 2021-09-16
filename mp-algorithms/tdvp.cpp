@@ -54,10 +54,7 @@ VectorType LanczosExponential(VectorType const& x,
       Beta[i-1] = norm_frob(w);
 
       if (Beta[i-1] < BetaTol)
-      {
-         DEBUG_TRACE("Beta hit tolerance")(Beta[i-1]);
          break;
-      }
 
       v[i] = w * (1.0/Beta[i-1]);
 
@@ -420,7 +417,6 @@ void TDVP::EvolveExpand()
    ++TStep;
    Eps1SqSum = 0.0;
    Eps2SqSum = 0.0;
-   MaxStates = 1;
 
    while (Site > LeftStop)
    {

@@ -51,7 +51,7 @@ int main(int argc, char** argv)
       std::string InitialBetaStr;
       int N = 1;
       int SaveEvery = 1;
-      int MaxIter = 10;
+      int MaxIter = 20;
       double ErrTol = 1e-16;
       int MinStates = 1;
       int MaxStates = 100000;

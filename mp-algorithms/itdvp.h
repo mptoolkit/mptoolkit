@@ -32,7 +32,7 @@ class iTDVP
 
       iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
             std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
-            double GMRESTol_, double FidelityTol_, int MaxSweeps_, StatesInfo SInfo_,
+            double GMRESTol_, double FidelityLossTol_, int MaxSweeps_, StatesInfo SInfo_,
             int Verbose_);
 
       // Return the current wavefunction in left-canonical form.
@@ -91,7 +91,7 @@ class iTDVP
       double ErrTol;
       StatesInfo SInfo;
       double GMRESTol;
-      double FidelityTol;
+      double FidelityLossTol;
       int MaxSweeps;
       int Verbose;
 
@@ -101,9 +101,9 @@ class iTDVP
       int SweepL;
       int SweepR;
 
-      // The fidelity of Psi and PsiPrev from the left left/right sweep: 1 - <PsiPrev|Psi>.
-      double FidelityL;
-      double FidelityR;
+      // The fidelity loss of Psi and PsiPrev from the left left/right sweep: 1 - <PsiPrev|Psi>.
+      double FidelityLossL;
+      double FidelityLossR;
 
       // Partial terms used to calculate epsilon_1/2 and expand the bond
       // dimension of the unit cell.
@@ -118,6 +118,9 @@ class iTDVP
 
       // The maximum bond dimension in the chain.
       int MaxStates = 1;
+
+      // Current energy per unit cell.
+      std::complex<double> E;
 };
 
 #endif

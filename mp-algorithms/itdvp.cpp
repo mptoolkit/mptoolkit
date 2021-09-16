@@ -55,10 +55,7 @@ VectorType LanczosExponential(VectorType const& x,
       Beta[i-1] = norm_frob(w);
 
       if (Beta[i-1] < BetaTol)
-      {
-         DEBUG_TRACE("Beta hit tolerance")(Beta[i-1]);
          break;
-      }
 
       v[i] = w * (1.0/Beta[i-1]);
 
@@ -132,10 +129,10 @@ struct HEff2
 
 iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
              std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
-             double GMRESTol_, double FidelityTol_, int MaxSweeps_, StatesInfo SInfo_,
+             double GMRESTol_, double FidelityLossTol_, int MaxSweeps_, StatesInfo SInfo_,
              int Verbose_)
    : Hamiltonian(Ham_), Timestep(Timestep_), MaxIter(MaxIter_), ErrTol(ErrTol_),
-     GMRESTol(GMRESTol_), FidelityTol(FidelityTol_), MaxSweeps(MaxSweeps_),
+     GMRESTol(GMRESTol_), FidelityLossTol(FidelityLossTol_), MaxSweeps(MaxSweeps_),
      SInfo(SInfo_), Verbose(Verbose_)
 {
    QShift = Psi_.qshift();
@@ -327,6 +324,8 @@ void iTDVP::IterateRight()
 
 void iTDVP::OrthogonalizeLeftmostSite()
 {
+   E = inner_prod(HamL.back(), contract_from_right(herm(*H), *C, HamR.front(), herm(*C)));
+
    // Right-orthogonalize current site.
    MatrixOperator M = ExpandBasis1(*C);
    MatrixOperator U, Vh;
@@ -341,11 +340,14 @@ void iTDVP::OrthogonalizeLeftmostSite()
 
    // Update right block Hamiltonian.
    BlockHamR = contract_from_right(herm(*H), *C, HamR.front(), herm(*C));
+   BlockHamR.front() -= E * BlockHamR.back();
    HamR.back() = delta_shift(BlockHamR, adjoint(QShift));
 }
 
 void iTDVP::OrthogonalizeRightmostSite()
 {
+   E = inner_prod(contract_from_left(*H, herm(*C), HamL.back(), *C), HamR.front());
+
    // Left-orthogonalize current site.
    MatrixOperator M = ExpandBasis2(*C);
    MatrixOperator U, Vh;
@@ -360,6 +362,7 @@ void iTDVP::OrthogonalizeRightmostSite()
 
    // Update left block Hamiltonian.
    BlockHamL = contract_from_left(*H, herm(*C), HamL.back(), *C);
+   BlockHamL.back() -= E * BlockHamL.front();
    HamL.front() = delta_shift(BlockHamL, QShift);
 }
 
@@ -403,7 +406,7 @@ void iTDVP::Evolve()
 
    // Sweep left to evolve the unit cell for half a time step.
    SweepL = 0;
-   FidelityL = 1.0;
+   FidelityLossL = 1.0;
 
    LinearWavefunction PsiOld = Psi;
    std::deque<StateComponent> HamLOld = HamL;
@@ -446,13 +449,13 @@ void iTDVP::Evolve()
          RealDiagonalOperator D;
          SingularValueDecomposition(Rho, U, D, Vh);
 
-         FidelityL = 1.0 - trace(D);
+         FidelityLossL = 1.0 - trace(D);
 
          if (Verbose > 0)
          {
             std::cout << "Timestep=" << TStep
                       << " SweepL=" << SweepL
-                      << " FidelityL=" << FidelityL
+                      << " FidelityLossL=" << FidelityLossL
                       << std::endl;
          }
       }
@@ -466,11 +469,11 @@ void iTDVP::Evolve()
          }
       }
    }
-   while (FidelityL > FidelityTol && SweepL < MaxSweeps);
+   while (FidelityLossL > FidelityLossTol && SweepL < MaxSweeps);
 
    // Sweep right to evolve the unit cell for half a time step.
    SweepR = 0;
-   FidelityR = 1.0;
+   FidelityLossR = 1.0;
 
    PsiOld = Psi;
    std::deque<StateComponent> HamROld = HamR;
@@ -513,13 +516,13 @@ void iTDVP::Evolve()
          RealDiagonalOperator D;
          SingularValueDecomposition(Rho, U, D, Vh);
 
-         FidelityR = 1.0 - trace(D);
+         FidelityLossR = 1.0 - trace(D);
 
          if (Verbose > 0)
          {
             std::cout << "Timestep=" << TStep
                       << " SweepR=" << SweepR
-                      << " FidelityR=" << FidelityR
+                      << " FidelityLossR=" << FidelityLossR
                       << std::endl;
          }
       }
@@ -533,112 +536,12 @@ void iTDVP::Evolve()
          }
       }
    }
-   while (FidelityR > FidelityTol && SweepR < MaxSweeps);
+   while (FidelityLossR > FidelityLossTol && SweepR < MaxSweeps);
 
    LambdaR = delta_shift(LambdaR, adjoint(QShift));
 
    this->CalculateEps();
 }
-
-#if 0
-void iTDVP::CalculateEps()
-{
-   X = std::deque<StateComponent>();
-   Y = std::deque<StateComponent>();
-
-   Eps1SqSum = 0.0;
-   Eps2SqSum = 0.0;
-
-   // Create a local copy of Psi so we can perform a single right-to-left sweep
-   // without having to go back to the right.
-   LinearWavefunction PsiLocal = Psi;
-   LinearWavefunction::iterator CLocal = Psi.end();
-   --CLocal;
-   BasicTriangularMPO::const_iterator HLocal = Hamiltonian.end();
-   --HLocal;
-   std::deque<StateComponent> HamLLocal = HamL;
-   std::deque<StateComponent> HamRLocal = HamR;
-   int SiteLocal = RightStop;
-
-   *CLocal = prod(*CLocal, LambdaR);
-
-   // Calcaulate the left half of epsilon_2 for the right end of the unit cell.
-   X.push_front(contract_from_left(*HLocal, herm(NullSpace2(*CLocal)), HamLLocal.back(), *CLocal));
-
-   while (SiteLocal > LeftStop)
-   {
-      // Perform SVD to right-orthogonalize current site.
-      MatrixOperator M = ExpandBasis1(*CLocal);
-      MatrixOperator U, Vh;
-      RealDiagonalOperator D;
-
-      SingularValueDecomposition(M, U, D, Vh);
-
-      *CLocal = prod(Vh, *CLocal);
-
-      // Calculate the right half of epsilon_2.
-      Y.push_front(contract_from_right(herm(*HLocal), NullSpace1(*CLocal), HamRLocal.front(), herm(*CLocal)));
-
-      // Update the effective Hamiltonian.
-      HamRLocal.push_front(contract_from_right(herm(*HLocal), *CLocal, HamRLocal.front(), herm(*CLocal)));
-
-      // Move to the next site.
-      --SiteLocal;
-      --HLocal;
-      --CLocal;
-
-      *CLocal = prod(*CLocal, U*D);
-
-      HamLLocal.pop_back();
-
-      // Calculate the left half of epsilon_2.
-      X.push_front(contract_from_left(*HLocal, herm(NullSpace2(*CLocal)), HamLLocal.back(), *CLocal));
-
-      // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
-      double Eps1Sq = norm_frob_sq(scalar_prod(X.front(), herm(HamRLocal.front())));
-      double Eps2Sq = norm_frob_sq(scalar_prod(X.front(), herm(Y.front())));
-      Eps1SqSum += Eps1Sq;
-      Eps2SqSum += Eps2Sq;
-
-      if (Verbose > 1)
-      {
-         std::cout << "Timestep=" << TStep
-                   << " Site=" << SiteLocal
-                   << " Eps1Sq=" << Eps1Sq
-                   << " Eps2Sq=" << Eps2Sq
-                   << std::endl;
-      }
-   }
-
-   // Perform SVD to right-orthogonalize the leftmost site.
-   MatrixOperator M = ExpandBasis1(*CLocal);
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-
-   SingularValueDecomposition(M, U, D, Vh);
-
-   // Ensure that the left and right bases of LambdaR are the same.
-   *CLocal = prod(U*Vh, *CLocal);
-
-   // Calculate the right half of epsilon_2.
-   Y.push_back(contract_from_right(herm(*HLocal), NullSpace1(*CLocal), HamRLocal.front(), herm(*CLocal)));
-
-   // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
-   double Eps1Sq = norm_frob_sq(scalar_prod(X.back(), herm(HamRLocal.back())));
-   double Eps2Sq = norm_frob_sq(scalar_prod(X.back(), herm(Y.back())));
-   Eps1SqSum += Eps1Sq;
-   Eps2SqSum += Eps2Sq;
-
-   if (Verbose > 1)
-   {
-      std::cout << "Timestep=" << TStep
-                << " Site=" << RightStop
-                << " Eps1Sq=" << Eps1Sq
-                << " Eps2Sq=" << Eps2Sq
-                << std::endl;
-   }
-}
-#endif
 
 void iTDVP::CalculateEps()
 {
@@ -736,6 +639,8 @@ void iTDVP::CalculateEps()
       }
    }
 
+   E = inner_prod(contract_from_left(*H, herm(*C), HamL.back(), *C), HamR.front());
+
    // Perform SVD to left-orthogonalize the rightmost site.
    MatrixOperator M = ExpandBasis2(*C);
    MatrixOperator U, Vh;
@@ -749,6 +654,7 @@ void iTDVP::CalculateEps()
 
    // Update left block Hamiltonian.
    BlockHamL = contract_from_left(*H, herm(*C), HamL.back(), *C);
+   BlockHamL.back() -= E * BlockHamL.front();
    HamL.front() = delta_shift(BlockHamL, QShift);
 
    // Calculate the left half of epsilon_2.
@@ -825,6 +731,7 @@ void iTDVP::ExpandRightBond()
    else
    {
       BlockHamL = contract_from_left(*H, herm(CExpand), HamLOld.front(), CExpand);
+      BlockHamL.back() -= E * BlockHamL.front();
       HamL.front() = delta_shift(BlockHamL, QShift);
 
       C = Psi.begin();

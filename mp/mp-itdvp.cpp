@@ -52,7 +52,7 @@ int main(int argc, char** argv)
       std::string InitialBetaStr;
       int N = 1;
       int SaveEvery = 1;
-      int MaxIter = 10;
+      int MaxIter = 20;
       double ErrTol = 1e-16;
       double GMRESTol = 1e-13;
       int MinStates = 1;
@@ -60,7 +60,7 @@ int main(int argc, char** argv)
       double TruncCutoff = 0;
       double EigenCutoff = 1e-16;
       double Eps2SqTol = std::numeric_limits<double>::infinity();
-      double FidelityTol = 1e-10;
+      double FidelityLossTol = 1e-10;
       int MaxSweeps = 10;
       int Verbose = 0;
       int OutputDigits = 0;
@@ -90,8 +90,8 @@ int main(int argc, char** argv)
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
          ("eps2sqtol,e", prog_opt::value(&Eps2SqTol), "Expand the bond dimension in the next step if Eps2SqSum rises above this value")
-         ("fidelitytol", prog_opt::value(&FidelityTol),
-          FormatDefault("Tolerance for 1 - <PsiOld|Psi>", FidelityTol).c_str())
+         ("fidtol", prog_opt::value(&FidelityLossTol),
+          FormatDefault("Tolerance for the fidelity loss 1 - <PsiOld|Psi>", FidelityLossTol).c_str())
          ("max-sweeps", prog_opt::value(&MaxSweeps),
           FormatDefault("Maximum number of sweeps", MaxSweeps).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
@@ -209,7 +209,7 @@ int main(int argc, char** argv)
       std::cout << SInfo << std::endl;
 
       iTDVP itdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, MaxIter,
-                  ErrTol, GMRESTol, FidelityTol, MaxSweeps, SInfo, Verbose);
+                  ErrTol, GMRESTol, FidelityLossTol, MaxSweeps, SInfo, Verbose);
 
       if (SaveEvery == 0)
          SaveEvery = N;
