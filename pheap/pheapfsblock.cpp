@@ -94,7 +94,7 @@ BlockFileSystem::~BlockFileSystem()
 
 OutputBuffer* BlockFileSystem::allocate_output_buffer()
 {
-   pthread::mutex::sentry Lock(BufferListMutex);
+   std::lock_guard<std::mutex> Lock(BufferListMutex);
    if (Buffers.empty())
    {
       //     std::cout << "Allocating buffer: new buffer." << std::endl;
@@ -124,7 +124,7 @@ void BlockFileSystem::return_output_buffer(OutputBuffer* Buf)
    }
    else
    {
-      pthread::mutex::sentry Lock(BufferListMutex);
+      std::lock_guard<std::mutex> Lock(BufferListMutex);
       Buffers.push_back(Buf);
    }
 }

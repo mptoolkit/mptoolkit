@@ -20,12 +20,12 @@
 #include "coupling.h"
 #include "common/gmprational.h"
 #include "common/sortsearch.h"
-#include "common/mutex.h"
-#include "common/hash_map.h"
 #include <fstream>
 #include <iomanip>
 #include <limits>
 #include <vector>
+#include <unordered_map>
+#include <mutex>
 using gmp::rational;
 using gmp::bigint;
 using gmp::factorial;
@@ -266,7 +266,7 @@ std::ostream& operator<<(std::ostream& out, Coefficients6j const& x) // for debu
 
 // specialization of the ext::hash<> function for Coefficients6j
 
-namespace ext
+namespace std
 {
 
 template <>
@@ -291,11 +291,11 @@ struct hash<Coefficients6j>
    }
 };
 
-} // namespace ext
+} // namespace std
 
-typedef ext::hash_map<Coefficients6j, double> Hash6jType;
+typedef std::unordered_map<Coefficients6j, double> Hash6jType;
 Hash6jType HashTable;
-pthread::mutex HashMutex;
+std::mutex HashMutex;
 
 double Coupling6j(half_int j1, half_int j2, half_int j3, half_int j4, half_int j5, half_int j6)
 {
@@ -313,7 +313,7 @@ double Coupling6j(half_int j1, half_int j2, half_int j3, half_int j4, half_int j
    Coeff.Canonicalize();
 #endif
 
-   pthread::mutex::sentry MyLock(HashMutex);
+   std::lock_guard<std::mutex> MyLock(HashMutex);
 
    Hash6jType::iterator I = HashTable.find(Coeff);
    if (I == HashTable.end())

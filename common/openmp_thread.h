@@ -21,6 +21,7 @@
 #define MPTOOLKIT_COMMON_OPENMP_THREAD_H
 
 #include <omp.h>
+#include <string>
 
 namespace omp
 {
@@ -28,16 +29,23 @@ namespace omp
 inline
 void initialize(int Verbose = 0)
 {
-   omp_set_dynamic(true);
-   omp_set_nested(true);
    int NumProcs = omp_get_num_procs();
-   omp_set_num_threads(NumProcs*2);
+   char const* Str = getenv("MP_NUM_THREADS");
+   if (Str)
+   {
+      int n = std::stoi(std::string(Str));
+      omp_set_num_threads(n);
+      if (Verbose > 0)
+      {
+         std::cout << "MP_NUM_THREADS is " << n << '\n';
+      }
+   }
    if (Verbose > 0)
    {
       std::cout << "Number of processors: " << NumProcs << '\n';
-#pragma omp parallel num_threads(100)
+      #pragma omp parallel
       {
-         //#pragma omp single
+         #pragma omp single
          std::cout << "Number of threads: " << omp_get_num_threads() << '\n';
       }
       std::cout << "Max threads per section: " << omp_get_max_threads() << '\n';
@@ -49,37 +57,6 @@ inline
 int threads_to_use(int Request)
 {
    return Request;
-}
-
-// some parallel algorithms
-template <typename T>
-T
-parallel_sum(std::vector<T>&& x)
-{
-   CHECK(x.size() > 0);
-#if 1
-   T Result = x[0];
-   for (unsigned n = 1; n < x.size(); ++n)
-   {
-      Result += x[n];
-   }
-   return Result;
-
-#else
-   int TotalSz = x.size();
-   int Stride = 1;
-   while (Stride < TotalSz)
-   {
-      int Sz = TotalSz / (2*Stride);
-#pragma omp parallel for schedule(dynamic) num_threads(omp::threads_to_use(Sz))
-      for (int n = 0; n < Sz; ++n)
-      {
-         x[n*Stride*2] += x[n*Stride*2 + Stride];
-      }
-      Stride *= 2;
-   }
-   return x[0];
-#endif
 }
 
 } // namespace omp

@@ -1,7 +1,7 @@
 dnl -$- Autoconf -$-
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([Matrix Product Toolkit], [(git)], [ianmcc@physics.uq.edu.au], 
+AC_INIT([Matrix Product Toolkit], [(git)], [ianmcc@physics.uq.edu.au],
         [mptoolkit], [https://people.smp.uq.edu.au/IanMcCulloch/mptoolkit/])
 
 dnl use C++ mode by default
@@ -67,24 +67,25 @@ dnl large file support
 AC_SYS_LARGEFILE
 
 dnl openmp support, defines variable OPENMP_CXXFLAGS and sets HAVE_OPENMP
-dnl AC_ARG_WITH([openmp], [AC_HELP_STRING([--with-openmp], [enable OpenMP parallelization @<:@default=no@:>@])],
-dnl	[],
-dnl	[with_openmp=no])
-dnl if test "x$with_openmp" != xno; then
-dnl    AC_LANG_PUSH(C++)
-dnl    AX_OPENMP([
-dnl        AC_SUBST([OPENMP_CXXFLAGS]) 
-dnl        AC_SUBST([HAVE_OPENMP], [1]) 
-dnl        AC_DEFINE([HAVE_OPENMP], [], [Use OpenMP threading])
-dnl     ], [AC_SUBST([HAVE_OPENMP], []) 
-dnl         if test "x$with_openmp" = yes; then
-dnl            AC_MSG_FAILURE([--with-openmp was given, but the test for OpenMP failed!])
-dnl         fi
-dnl      ])
-dnl   AC_LANG_POP(C++)
-dnl fi
+AC_ARG_WITH([openmp], [AC_HELP_STRING([--with-openmp], [enable OpenMP parallelization @<:@default=no@:>@])],
+  [],
+  [with_openmp=no])
+  if test "x$with_openmp" != xno; then
+    AC_LANG_PUSH(C++)
+    AX_OPENMP([
+        AC_SUBST([OPENMP_CXXFLAGS])
+        AC_SUBST([HAVE_OPENMP], [1])
+        AC_DEFINE([HAVE_OPENMP], [], [Use OpenMP threading])
+        AC_DEFINE(MULTITHREAD, [], [Multithread support])
+     ], [AC_SUBST([HAVE_OPENMP], [])
+         if test "x$with_openmp" = yes; then
+            AC_MSG_FAILURE([--with-openmp was given, but the test for OpenMP failed!])
+         fi
+      ])
+   AC_LANG_POP(C++)
+  fi
 
-AC_SUBST([OPENMP_CXXFLAGS]) 
+AC_SUBST([OPENMP_CXXFLAGS])
 
 dnl MPI support, if found sets HAVE_MPI and defines MPICXX and MPILIBS
 AC_ARG_WITH([mpi], [AC_HELP_STRING([--with-mpi], [enable MPI @<:@default=check@:>@])],
@@ -116,11 +117,11 @@ if test "x$with_pbs" != xno; then
    fi
    save_LIBS="$LIBS"; LIBS="$pbs_lib $LIBS"
    AC_MSG_CHECKING([for pbs_connect in "$pbs_lib"])
-   AC_TRY_LINK_FUNC([pbs_connect], 
+   AC_TRY_LINK_FUNC([pbs_connect],
       [acx_pbs_ok=yes
        AC_SUBST([LIBPBS], "$pbs_lib")
        AC_DEFINE([CONFIG_PBS_WALLTIME], [], [Define if you want PBS walltime integration])
-      ], 
+      ],
       [
        if test "x$with_pbs" != xcheck; then
          AC_MSG_FAILURE([--with-pbs was given, but test for libpbs failed])
@@ -148,7 +149,7 @@ AC_CHECK_TYPE([long long], [])
    AC_CHECK_SIZEOF(long long)
 
 
-AC_DEFINE([CURRENTFORMAT_AUTOCONF], [], 
+AC_DEFINE([CURRENTFORMAT_AUTOCONF], [],
    [Define if we can determine the pstream binary format from autoconf])
 
 AC_DEFINE([CONFIG_EXPOKIT], [],
@@ -209,7 +210,7 @@ dnl shared library configuration
 private_enable_shared=yes
 AC_ARG_ENABLE(shared, AC_HELP_STRING([--disable-shared],[build static libraries (default is shared libraries)]),
  [
-  if test "x$enableval" = "xno" 
+  if test "x$enableval" = "xno"
   then
    private_enable_shared=no
   fi
