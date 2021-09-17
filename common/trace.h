@@ -280,6 +280,10 @@ void show_backtrace_handler(char const* Msg)
 #include <string>
 #include <boost/type_traits.hpp>
 
+#if defined(MULTITHREAD)
+#include <thread>
+#endif
+
 #ifdef __GNUC__
 #include <cxxabi.h>
 #endif
@@ -554,8 +558,8 @@ Assert<Dummy> Assert<Dummy>::MakeAssert(char const* Preamble_, char const* File_
 {
 #if defined(MULTITHREAD)
    std::ostringstream obuf;
-   obuf << pthread_self();
-   return Assert(("THREAD " + obuf.str() + ": " + Preamble_).c_str(), File_, Line_, Message_, Handler);
+   obuf << std::this_thread::get_id();
+   return Assert(("THREAD " + obuf.str() + ": " + Preamble_).c_str(), File_, Line_, Func_, Message_, Handler);
 #else
    return Assert(Preamble_, File_, Line_, Func_, Message_, Handler);
 #endif
@@ -608,8 +612,8 @@ Assert<Dummy>::~Assert()
    if (!this->ShouldHandle) return;
 
    this->msg(ExtraBuf.str());
-   std::string FullMessage = Preamble + " in file " + File 
-      + " at line " + ToString(Line) 
+   std::string FullMessage = Preamble + " in file " + File
+      + " at line " + ToString(Line)
       + " in function " + Func
       + ": " + Message + '\n';
    if (!VariableList.empty())

@@ -42,15 +42,15 @@
   (but not necessary) that the offset be a multiple of the allocator page_size().
 */
 
-#if ~defined(BUFFERALLOC_H_FH37Y3897Y879YWE89UY489PYWE89)
-#define BUFFERALLOC_H_FH37Y3897Y879YWE89UY489PYWE89
+#if ~defined(MPTOOLKIT_PHEAP_BUFFERALLOC_H)
+#define MPTOOLKIT_PHEAP_BUFFERALLOC_H
 
 #if defined(HAVE_CONFIG_H)
 #include "config.h"    // for LARGEFILE configuration
 #endif
 #include <sys/types.h> // for off_t and size_t
-#include "common/mutex.h"
-#include "common/hash_set.h"
+#include <mutex>
+#include <unordered_set>
 
 // for large file support
 #if defined(HAVE_CONFIG_H)
@@ -84,13 +84,13 @@ class BufferAllocator
       BufferAllocator(BufferAllocator const&); // not implemented
       BufferAllocator& operator=(BufferAllocator const);
 
-      pthread::mutex PageBufferMutex;
+      std::mutex PageBufferMutex;
       size_t PageSize;
       void* FirstFreePageBuffer;
 
       // So that we know which method to use when deallocating buffers, we keep
       // a hash of mmap'ed buffers.
-      typedef ext::hash_set<unsigned char const*, ext::hash<void const*> > MappedBuffersType;
+      using MappedBuffersType = std::unordered_set<unsigned char const*>;
       MappedBuffersType MappedBuffers;
 };
 

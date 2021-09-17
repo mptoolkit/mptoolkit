@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// common/mutex.h
+// common/hash.h
 //
 // Copyright (C) 2002-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
@@ -18,21 +18,29 @@
 // ENDHEADER
 
 /*
-  mutex.h
+  hash.h
 
-  Split the locking primitives out of thread.h, to allow for
-  a dummy non-threaded implementation.
+  Portable hashing.
 
-  Created 2002-07-22 Ian McCulloch
+  Created 2002-11-17 Ian McCulloch
 */
 
-#if !defined(MUTEX_H_HFUIY5T78Y78FHUIH789T7F43YF89ER8YH5RAHY)
-#define MUTEX_H_HFUIY5T78Y78FHUIH789T7F43YF89ER8YH5RAHY
+#if !defined(HASH_H_HDSFJKHUIRY879YHF8HQ38HF8OH389UWEO)
+#define HASH_H_HDSFJKHUIRY879YHF8HQ38HF8OH389UWEO
 
-#if defined(MULTITHREAD)
-#include "mutex_mt.h"
-#else
-#include "mutex_st.h"
+#if defined(HAVE_CONFIG_H)
+#include "config.h"
 #endif
+#include "common/inttype.h"
+
+namespace ext
+{
+
+// Returns a hash constructed such that the return value is unique with a probability
+// of 1 in 2^32.  The data hashed includes the current time from gettimeofday(),
+// the process id, the hostname, and the value from the previous call.
+uint32_t get_unique();
+
+} // namespace ext
 
 #endif

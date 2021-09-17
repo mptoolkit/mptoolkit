@@ -150,7 +150,7 @@ unsigned char* PageInfoType::LoadAddLock()
    // just do nothing - since we increase the lock count inside the mutex, the double checked lock
    // inside DoLockCountZero will notice.
 
-   pthread::mutex::sentry MyLock(PageMutex);
+   std::lock_guard<std::mutex> Lock(PageMutex);
 
    TRACE_PHEAP("LoadAddLock")(this)(LocalPage);
 
@@ -189,7 +189,7 @@ void PageInfoType::DoLockCountZero()
    // we had better only to it once!
 
    //   std::cout << "DoLockCountZero PageInfo " << (void*)this << std::endl;
-   pthread::mutex::sentry MyLock(PageMutex);
+   std::lock_guard<std::mutex> Lock(PageMutex);
 
    // re-check the state of LockCount inside the mutex
    if (!LockCount.is_zero()) return;
@@ -213,7 +213,7 @@ void PageInfoType::DoReferenceCountZero()
 {
    TRACE_PHEAP("DoReferenceCountZero")(this)(LocalPage);
    //   std::cout << "DoReferenceCountZero PageInfo " << (void*)this << std::endl;
-   pthread::mutex::sentry MyLock(PageMutex);
+   std::lock_guard<std::mutex> Lock(PageMutex);
 
    if (ReferenceCount.is_zero() && LockCount.is_zero() && BackFS != NULL)
    {
@@ -582,7 +582,7 @@ PageId FileSystem::open(std::string const& FilePath, size_t PageCacheByteSize, b
 void FileSystem::defragment()
 {
    notify_log(20, pheap::PHeapLog) << "Defragmenting page files...\n";
-   pthread::mutex::sentry MyLock(PageCacheMutex);
+   std::lock_guard<std::mutex> Lock(PageCacheMutex);
 
    for (std::size_t i = 0; i < PageFileList.size(); ++i)
    {
@@ -601,7 +601,7 @@ void FileSystem::defragment()
 void FileSystem::flush()
 {
    notify_log(20, pheap::PHeapLog) << "Flushing page files...\n";
-   pthread::mutex::sentry MyLock(PageCacheMutex);
+   std::lock_guard<std::mutex> Lock(PageCacheMutex);
 
    // firstly, clean out the page cache
    while (!PageCache.empty())
@@ -732,7 +732,7 @@ void FileSystem::WritePageFileMetadata(int FileNumber, uint32_t MetaHook)
 
 WriteBuffer FileSystem::allocate()
 {
-   pthread::mutex::sentry MyLock(PageCacheMutex);
+   std::lock_guard<std::mutex> Lock(PageCacheMutex);
 
    unsigned char* Buf = AllocatePageBuffer();
    Private::PageInfoType* Page;
@@ -765,7 +765,7 @@ PageId FileSystem::get_page(size_t Page) const
    // the PageList.  However it is technically correct.
    Private::PageInfoType* PageInfo;
    {
-      pthread::mutex::sentry MyLock(PageCacheMutex);
+      std::lock_guard<std::mutex> Lock(PageCacheMutex);
       PageInfo = PageList[Page];
    }
 
@@ -794,7 +794,7 @@ void FileSystem::read(Private::PageInfoType* PageInfo)
    {
       if (PageInfo->InPageCache)
       {
-         pthread::mutex::sentry MyLock(PageCacheMutex);
+         std::lock_guard<std::mutex> Lock(PageCacheMutex);
          //              std::cout << "reading PageInfo " << PageInfo->Page << " is in cache." << std::endl;
          PageCache.erase(PageInfo->PageCacheLoc);
          PageInfo->InPageCache = false;
@@ -819,7 +819,7 @@ void FileSystem::read(Private::PageInfoType* PageInfo)
 
 void FileSystem::write(Private::PageInfoType* PageInfo)
 {
-   pthread::mutex::sentry MyLock(PageCacheMutex);
+   std::lock_guard<std::mutex> Lock(PageCacheMutex);
 
    TRACE_PHEAP("Writing page")(PageInfo->LocalPage);
 
@@ -867,7 +867,7 @@ void FileSystem::write(Private::PageInfoType* PageInfo)
 void FileSystem::deallocate(Private::PageInfoType* PageInfo)
 {
    TRACE_PHEAP("deallocate")(PageInfo);
-   pthread::mutex::sentry MyLock(PageCacheMutex);
+   std::lock_guard<std::mutex> Lock(PageCacheMutex);
    DEBUG_PRECONDITION(PageInfo->LockCount.is_zero() && PageInfo->ReferenceCount.is_zero());
    if (PageInfo->InPageCache)
    {
