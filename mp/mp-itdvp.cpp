@@ -62,6 +62,7 @@ int main(int argc, char** argv)
       double Eps2SqTol = std::numeric_limits<double>::infinity();
       double FidelityLossTol = 1e-10;
       int MaxSweeps = 10;
+      int NEps = 2;
       int Verbose = 0;
       int OutputDigits = 0;
 
@@ -94,6 +95,7 @@ int main(int argc, char** argv)
           FormatDefault("Tolerance for the fidelity loss 1 - <PsiOld|Psi>", FidelityLossTol).c_str())
          ("max-sweeps", prog_opt::value(&MaxSweeps),
           FormatDefault("Maximum number of sweeps", MaxSweeps).c_str())
+         ("neps,N", prog_opt::value(&NEps), FormatDefault("Calculate EpsNSqSum up to N = NEps", NEps).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -209,20 +211,24 @@ int main(int argc, char** argv)
       std::cout << SInfo << std::endl;
 
       iTDVP itdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, MaxIter,
-                  ErrTol, GMRESTol, FidelityLossTol, MaxSweeps, SInfo, Verbose);
+                  ErrTol, GMRESTol, FidelityLossTol, MaxSweeps, SInfo, NEps, Verbose);
 
       if (SaveEvery == 0)
          SaveEvery = N;
 
-      // Calculate initial values of epsilon_1 and epsilon_2.
+      // Calculate initial values of epsilon.
       itdvp.CalculateEps();
 
       std::cout << "Timestep=" << 0
                 << " Time=" << formatting::format_complex(InitialTime)
                 << " MaxStates=" << itdvp.MaxStates
                 << " Eps1SqSum=" << itdvp.Eps1SqSum
-                << " Eps2SqSum=" << itdvp.Eps2SqSum
-                << std::endl;
+                << " Eps2SqSum=" << itdvp.Eps2SqSum;
+
+      for (int i = 0; i < NEps-2; ++i)
+         std::cout << " Eps" << i+3 << "SqSum=" << itdvp.EpsNSqSum[i];
+
+      std::cout << std::endl;
 
       for (int tstep = 1; tstep <= N; ++tstep)
       {
@@ -239,8 +245,12 @@ int main(int argc, char** argv)
                    << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
                    << " MaxStates=" << itdvp.MaxStates
                    << " Eps1SqSum=" << itdvp.Eps1SqSum
-                   << " Eps2SqSum=" << itdvp.Eps2SqSum
-                   << std::endl;
+                   << " Eps2SqSum=" << itdvp.Eps2SqSum;
+
+         for (int i = 0; i < NEps-2; ++i)
+            std::cout << " Eps" << i+3 << "SqSum=" << itdvp.EpsNSqSum[i];
+
+         std::cout << std::endl;
 
          // Save the wavefunction.
          if ((tstep % SaveEvery) == 0 || tstep == N)

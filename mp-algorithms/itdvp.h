@@ -33,7 +33,7 @@ class iTDVP
       iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
             std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
             double GMRESTol_, double FidelityLossTol_, int MaxSweeps_, StatesInfo SInfo_,
-            int Verbose_);
+            int NEps_, int Verbose_);
 
       // Return the current wavefunction in left-canonical form.
       InfiniteWavefunctionLeft Wavefunction() const;
@@ -62,6 +62,9 @@ class iTDVP
 
       // Calculate the error measures epsilon_1 and epsilon_2.
       void CalculateEps();
+
+      // Calculate the error measures epsilon_3 to epsilon_NEps.
+      void CalculateEpsN();
 
       // Expand the dimension of the right bond of the current site and move right.
       void ExpandRightBond();
@@ -93,6 +96,7 @@ class iTDVP
       double GMRESTol;
       double FidelityLossTol;
       int MaxSweeps;
+      int NEps;
       int Verbose;
 
       int TStep = 0;
@@ -115,6 +119,9 @@ class iTDVP
       // of orthogonal 1- and 2-site variations, respectively.
       double Eps1SqSum;
       double Eps2SqSum;
+
+      // Error measures epsilon_3^2 to epsilon_NEps^2.
+      std::vector<double> EpsNSqSum;
 
       // The maximum bond dimension in the chain.
       int MaxStates = 1;

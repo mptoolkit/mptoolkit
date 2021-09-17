@@ -130,10 +130,10 @@ struct HEff2
 iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
              std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
              double GMRESTol_, double FidelityLossTol_, int MaxSweeps_, StatesInfo SInfo_,
-             int Verbose_)
+             int NEps_, int Verbose_)
    : Hamiltonian(Ham_), Timestep(Timestep_), MaxIter(MaxIter_), ErrTol(ErrTol_),
      GMRESTol(GMRESTol_), FidelityLossTol(FidelityLossTol_), MaxSweeps(MaxSweeps_),
-     SInfo(SInfo_), Verbose(Verbose_)
+     SInfo(SInfo_), NEps(NEps_), Verbose(Verbose_)
 {
    QShift = Psi_.qshift();
    std::tie(Psi, LambdaR) = get_left_canonical(Psi_);
@@ -677,6 +677,75 @@ void iTDVP::CalculateEps()
                 << " Eps2Sq=" << Eps2Sq
                 << std::endl;
    }
+
+   if (NEps > 2)
+      this->CalculateEpsN();
+}
+
+void iTDVP::CalculateEpsN()
+{
+   EpsNSqSum = std::vector<double>(NEps-2, 0.0);
+   std::deque<StateComponent>::const_iterator Xi = X.end();
+   --Xi;
+   std::deque<StateComponent>::const_iterator Yi = Y.end();
+   --Yi;
+
+   while (Site >= LeftStop)
+   {
+      LinearWavefunction::iterator CiLocal = C;
+      BasicTriangularMPO::const_iterator HLocal = H;
+      std::deque<StateComponent>::const_iterator XiLocal = Xi;
+      StateComponent YLocal = *Yi;
+      int SiteLocal = Site;
+      int NShifts = 0;
+
+      if (Verbose > 1)
+      {
+         std::cout << "Timestep=" << TStep
+                   << " Site=" << Site;
+      }
+
+      for (int i = 0; i < NEps-2; ++i)
+      {
+         StateComponent CLocal = *CiLocal;
+         for (int j = 0; j < NShifts; ++j)
+            CLocal = delta_shift(CLocal, QShift);
+
+         StateComponent I = StateComponent::ConstructFullBasis1((CLocal).LocalBasis(), YLocal.Basis1());
+         YLocal = contract_from_right(herm(*HLocal), I, YLocal, herm(CLocal));
+
+         if (SiteLocal == LeftStop)
+         {
+            CiLocal = Psi.end();
+            HLocal = Hamiltonian.end();
+            XiLocal = X.end();
+            SiteLocal = RightStop+1;
+            ++NShifts;
+         }
+         --CiLocal, --HLocal, --XiLocal, --SiteLocal;
+
+         StateComponent XLocal = *XiLocal;
+         for (int j = 0; j < NShifts; ++j)
+            XLocal = delta_shift(XLocal, QShift);
+
+         double EpsNSq = norm_frob_sq(scalar_prod(XLocal, herm(YLocal)));
+         EpsNSqSum[i] += EpsNSq;
+
+         if (Verbose > 1)
+            std::cout << " Eps" << i+3 << "Sq=" << EpsNSq;
+      }
+
+      if (Verbose > 1)
+         std::cout << std::endl;
+
+      --C, --H, --Xi, --Yi, --Site;
+   }
+
+   C = Psi.end();
+   --C;
+   H = Hamiltonian.end();
+   --H;
+   Site = RightStop;
 }
 
 void iTDVP::ExpandRightBond()
