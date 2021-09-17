@@ -1,4 +1,4 @@
-g// -*- C++ -*-
+// -*- C++ -*-
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
