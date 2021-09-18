@@ -12226,6 +12226,14 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+escopenmpcxxflags="${OPENMP_CXXFLAGS//\"/\\\"}"
+
+cat >>confdefs.h <<_ACEOF
+#define CONFIG_OPENMP_CXXFLAGS "${OPENMP_CXXFLAGS//\"/\\\"}"
+_ACEOF
+
+
+
 ac_config_files="$ac_config_files Makefile"
 
 ac_config_commands="$ac_config_commands default"

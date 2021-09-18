@@ -21,6 +21,9 @@
 /* Define if debugging is disabled */
 #undef CONFIG_NODEBUG
 
+/* C++ OpenMP compiler flags */
+#undef CONFIG_OPENMP_CXXFLAGS
+
 /* Define if you want PBS walltime integration */
 #undef CONFIG_PBS_WALLTIME
 

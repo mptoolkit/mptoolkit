@@ -221,4 +221,8 @@ dnl save the compiler flags to the config header
 esccxxflags="${CXXFLAGS//\"/\\\"}"
 AC_DEFINE_UNQUOTED([CONFIG_CXXFLAGS], ["${CXXFLAGS//\"/\\\"}"], [C++ compiler flags])
 
+escopenmpcxxflags="${OPENMP_CXXFLAGS//\"/\\\"}"
+AC_DEFINE_UNQUOTED([CONFIG_OPENMP_CXXFLAGS], ["${OPENMP_CXXFLAGS//\"/\\\"}"], [C++ OpenMP compiler flags])
+
+
 AC_OUTPUT(Makefile, echo timestamp > stamp-h)
