@@ -222,6 +222,7 @@ int main(int argc, char** argv)
       std::cout << "Timestep=" << 0
                 << " Time=" << formatting::format_complex(InitialTime)
                 << " MaxStates=" << itdvp.MaxStates
+                << " E=" << std::real(itdvp.InitialE)
                 << " Eps1SqSum=" << itdvp.Eps1SqSum
                 << " Eps2SqSum=" << itdvp.Eps2SqSum;
 
@@ -244,6 +245,7 @@ int main(int argc, char** argv)
          std::cout << "Timestep=" << tstep
                    << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
                    << " MaxStates=" << itdvp.MaxStates
+                   << " E=" << std::real(itdvp.E)
                    << " Eps1SqSum=" << itdvp.Eps1SqSum
                    << " Eps2SqSum=" << itdvp.Eps2SqSum;
 

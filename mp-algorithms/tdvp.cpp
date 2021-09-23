@@ -169,7 +169,6 @@ TDVP::Wavefunction() const
 std::complex<double>
 TDVP::Energy() const
 {
-   //return inner_prod(Ham.right(), contract_from_left(*H, herm(Ham.left()), *C, Ham.right()));
    return inner_prod(contract_from_left(*H, herm(*C), Ham.left(), *C), Ham.right());
 }
 

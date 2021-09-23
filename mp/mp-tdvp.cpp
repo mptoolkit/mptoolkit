@@ -202,6 +202,7 @@ int main(int argc, char** argv)
       std::cout << "Timestep=" << 0
                 << " Time=" << formatting::format_complex(InitialTime)
                 << " MaxStates=" << tdvp.MaxStates
+                << " E=" << std::real(tdvp.Energy())
                 << " Eps1SqSum=" << tdvp.Eps1SqSum
                 << " Eps2SqSum=" << tdvp.Eps2SqSum
                 << std::endl;
@@ -215,6 +216,7 @@ int main(int argc, char** argv)
             std::cout << "Timestep=" << tstep
                       << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
                       << " MaxStates=" << tdvp.MaxStates
+                      << " E=" << std::real(tdvp.Energy())
                       << " TruncErrSum=" << tdvp.TruncErrSum
                       << " Eps1SqSum=" << tdvp.Eps1SqSum
                       << " Eps2SqSum=" << tdvp.Eps2SqSum << std::endl;
@@ -235,6 +237,7 @@ int main(int argc, char** argv)
             std::cout << "Timestep=" << tstep
                       << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
                       << " MaxStates=" << tdvp.MaxStates
+                      << " E=" << std::real(tdvp.Energy())
                       << " Eps1SqSum=" << tdvp.Eps1SqSum
                       << " Eps2SqSum=" << tdvp.Eps2SqSum << std::endl;
          }

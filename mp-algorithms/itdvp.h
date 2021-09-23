@@ -126,6 +126,9 @@ class iTDVP
       // The maximum bond dimension in the chain.
       int MaxStates = 1;
 
+      // Initial energy per unit cell.
+      std::complex<double> InitialE;
+
       // Current energy per unit cell.
       std::complex<double> E;
 };
