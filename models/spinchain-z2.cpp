@@ -49,7 +49,7 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("Spin chain");
+      OpDescriptions.set_description("Spin chain with Z_2 symmetry");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_xx", "nearest neighbor spin coupling Sx Sx")
