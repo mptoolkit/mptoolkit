@@ -8121,6 +8121,7 @@ fi
 # BLAS in Intel MKL library?
 if test $ax_blas_ok = no; then
 	# MKL for gfortran
+	echo "$ac_cv_fc_compiler_gnu"
 	if test x"$ac_cv_fc_compiler_gnu" = xyes; then
 		# 64 bit
 		if test $host_cpu = x86_64; then
@@ -9859,8 +9860,8 @@ fi
         fi
 
         if test "x$acx_want_arpack" != "xno"; then
-                { $as_echo "$as_me:${as_lineno-$LINENO}: checking for znaupd in $LIBARPACK" >&5
-$as_echo_n "checking for znaupd in $LIBARPACK... " >&6; }
+                { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ARPACK library" >&5
+$as_echo_n "checking for ARPACK library... " >&6; }
                                 ac_ext=f
 ac_compile='$F77 -c $FFLAGS conftest.$ac_ext >&5'
 ac_link='$F77 -o conftest$ac_exeext $FFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
@@ -10449,6 +10450,7 @@ fi
 # BLAS in Intel MKL library?
 if test $ax_blas_ok = no; then
 	# MKL for gfortran
+	echo "$ac_cv_fc_compiler_gnu"
 	if test x"$ac_cv_fc_compiler_gnu" = xyes; then
 		# 64 bit
 		if test $host_cpu = x86_64; then

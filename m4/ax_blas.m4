@@ -138,6 +138,7 @@ fi
 # BLAS in Intel MKL library?
 if test $ax_blas_ok = no; then
 	# MKL for gfortran
+	echo "$ac_cv_fc_compiler_gnu"
 	if test x"$ac_cv_fc_compiler_gnu" = xyes; then
 		# 64 bit
 		if test $host_cpu = x86_64; then
