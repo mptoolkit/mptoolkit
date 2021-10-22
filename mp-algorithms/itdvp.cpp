@@ -441,6 +441,7 @@ void iTDVP::Evolve()
 
       if (SweepL > 1)
       {
+         // Calculate the fidelity loss compared to the previous sweep.
          MatrixOperator Rho = scalar_prod(herm(LambdaRPrev), LambdaR);
          Rho = delta_shift(Rho, QShift);
          Rho = inject_left(Rho, Psi, PsiPrev);
@@ -470,6 +471,9 @@ void iTDVP::Evolve()
       }
    }
    while (FidelityLossL > FidelityLossTol && SweepL < MaxSweeps);
+
+   if (SweepL == MaxSweeps)
+      std::cout << "WARNING: MaxSweeps reached, FidelityLossL=" << FidelityLossL << std::endl;
 
    // Sweep right to evolve the unit cell for half a time step.
    SweepR = 0;
@@ -508,6 +512,7 @@ void iTDVP::Evolve()
 
       if (SweepR > 1)
       {
+         // Calculate the fidelity loss compared to the previous sweep.
          MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaRPrev));
          Rho = delta_shift(Rho, adjoint(QShift));
          Rho = inject_right(Rho, Psi, PsiPrev);
@@ -537,6 +542,9 @@ void iTDVP::Evolve()
       }
    }
    while (FidelityLossR > FidelityLossTol && SweepR < MaxSweeps);
+
+   if (SweepR == MaxSweeps)
+      std::cout << "WARNING: MaxSweeps reached, FidelityLossR=" << FidelityLossR << std::endl;
 
    LambdaR = delta_shift(LambdaR, adjoint(QShift));
 
