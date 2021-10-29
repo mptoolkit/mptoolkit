@@ -55,6 +55,33 @@ Display(std::complex<double> x, int s1, int s2, bool ShowReal, bool ShowImag)
    std::cout << '\n';
 }
 
+// TODO:
+// Move this function to the correct place.
+// Add the ability to calculate expectation values outside of the window.
+// Handle the case where the window is offset.
+std::complex<double>
+expectation(IBCWavefunction const& Psi,
+            BasicFiniteMPO const& M)
+{
+   LinearWavefunction PsiLinear;
+   MatrixOperator Lambda;
+   std::tie(PsiLinear, Lambda) = get_left_canonical(Psi.Window);
+
+   MatrixOperator I = MatrixOperator::make_identity(PsiLinear.Basis1());
+   StateComponent E(M.Basis1(), I.Basis1(), I.Basis2());
+   E[0] = I;
+
+   LinearWavefunction::const_iterator C = PsiLinear.begin();
+   BasicFiniteMPO::const_iterator W = M.begin();
+   while (C != PsiLinear.end())
+   {
+      E = contract_from_left(*W, herm(*C), E, *C);
+      ++C, ++W;
+   }
+
+   return inner_prod(Lambda*herm(Lambda), E[0]);
+}
+
 int main(int argc, char** argv)
 {
    try
@@ -76,7 +103,7 @@ int main(int argc, char** argv)
          ("imag,i", prog_opt::bool_switch(&ShowImag),
           "display only the imaginary part of the result")
          ("print,p", prog_opt::bool_switch(&Print), "Print the MPO to standard output (use --verbose to see more detail)")
-	 ("coarsegrain", prog_opt::value(&Coarsegrain), "coarse-grain N-to-1 sites")
+         ("coarsegrain", prog_opt::value(&Coarsegrain), "coarse-grain N-to-1 sites")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose),
           "Verbose output (use multiple times for more output)")
          ;
@@ -159,38 +186,57 @@ int main(int argc, char** argv)
 
       if (PsiPtr->is<InfiniteWavefunctionLeft>())
       {
-	 if (vm.count("psi2"))
-	 {
-	    std::cerr << "mp-expectation: fatal: cannot calculate a mixed expectation value of infnite MPS.\n";
-	    return 1;
-	 }
-	 InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
+         if (vm.count("psi2"))
+         {
+            std::cerr << "mp-expectation: fatal: cannot calculate a mixed expectation value of infinite MPS.\n";
+            return 1;
+         }
+         InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
 
-	 // extend Op1 to a multiple of the wavefunction size
-	 Op.ExtendToCoverUnitCell(Psi.size() * Coarsegrain);
+         // extend Op1 to a multiple of the wavefunction size
+         Op.ExtendToCoverUnitCell(Psi.size() * Coarsegrain);
 
-	 x = expectation(Psi, coarse_grain(Op.MPO(), Coarsegrain));
+         x = expectation(Psi, coarse_grain(Op.MPO(), Coarsegrain));
       }
       else if (PsiPtr->is<FiniteWavefunctionLeft>())
       {
-	 FiniteWavefunctionLeft Psi = PsiPtr->get<FiniteWavefunctionLeft>();
-	 FiniteWavefunctionLeft Psi2;
-	 if (vm.count("psi2"))
-	 {
-	    pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::ImportHeap(Psi2Str);
-	    if (!Psi2Ptr->is<FiniteWavefunctionLeft>())
-	    {
-	       std::cerr << "mp-expectation: fatal: cannot calculate a mixed expectation value between different types!\n";
-	       return 1;
-	    }
-	    Psi2 = Psi2Ptr->get<FiniteWavefunctionLeft>();
-	 }
-	 else
-	    Psi2 = Psi;
+         FiniteWavefunctionLeft Psi = PsiPtr->get<FiniteWavefunctionLeft>();
+         FiniteWavefunctionLeft Psi2;
+         if (vm.count("psi2"))
+         {
+            pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::ImportHeap(Psi2Str);
+            if (!Psi2Ptr->is<FiniteWavefunctionLeft>())
+            {
+               std::cerr << "mp-expectation: fatal: cannot calculate a mixed expectation value between different types!\n";
+               return 1;
+            }
+            Psi2 = Psi2Ptr->get<FiniteWavefunctionLeft>();
+         }
+         else
+            Psi2 = Psi;
 
-	 Op.ExtendToCoverUnitCell(Psi.size());
+         Op.ExtendToCoverUnitCell(Psi.size());
 
-	 x = expectation(Psi, Op.MPO(), Psi2);
+         x = expectation(Psi, Op.MPO(), Psi2);
+      }
+      else if (PsiPtr->is<IBCWavefunction>())
+      {
+         if (vm.count("psi2"))
+         {
+            std::cerr << "mp-expectation: fatal: cannot calculate a mixed expectation value of IBC wavefunctions.\n";
+            return 1;
+         }
+
+         IBCWavefunction Psi = PsiPtr->get<IBCWavefunction>();
+
+         Op.ExtendToCoverUnitCell(Psi.window_size());
+
+         x = expectation(Psi, Op.MPO());
+      }
+      else
+      {
+         std::cerr << "mp-expectation: fatal: unknown wavefunction type.\n";
+         return 1;
       }
 
       if (ShowDefault)
