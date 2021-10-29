@@ -20,6 +20,7 @@
 /*
   Calculates the exact solution of the time evolution of the XX model
   starting from the initial state |up ... up up down down ... down>
+  See https://journals.aps.org/pre/abstract/10.1103/PhysRevE.59.4912
   Link with GNU scientific library.
 */
 

@@ -30,7 +30,7 @@ AC_DEFUN([ACX_GMP],
    AC_TRY_LINK([
 #include <cstddef> // workaround for bug https://gcc.gnu.org/gcc-4.9/porting_to.html
 #include "gmp.h"
-], [], 
+], [],
       acx_gmp_dir="$try_dir" ; break)
   done
   CPPFLAGS="$acx_save_CPPFLAGS"
@@ -70,11 +70,11 @@ AC_DEFUN(
    acx_cv_cxx_restrict=unsupported
     AC_LANG_PUSH(C++)
     for acx_kw in restrict __restrict__ __restrict ; do
-     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [[double* $acx_kw x; ]])], 
+     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [[double* $acx_kw x; ]])],
 	               acx_cv_cxx_restrict="$acx_kw" ; break)
     done
     AC_LANG_POP(C++)
-   
+
   )
   if test "$acx_cv_cxx_restrict" != unsupported; then
    acx_kw="$acx_cv_cxx_restrict"
@@ -102,7 +102,7 @@ AC_DEFUN(
     CXXFLAGS_save="$CXXFLAGS"
     LIBS_save="$LIBS"
     LIBS="$BLAS_LIBS $FLIBS"
-    CXXFLAGS="-I. -I$srcdir $CXXFLAGS"
+    CXXFLAGS="-I. -I$srcdir $CXXFLAGS $BOOST_CPPFLAGS"
     AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #define FORTRAN_COMPLEX_RETURN_FIRST_ARG
 #include "common/blas1f.h"
@@ -147,12 +147,12 @@ int main()
 
 
 dnl check for ARPACK
-AC_DEFUN([ACX_ARPACK], 
+AC_DEFUN([ACX_ARPACK],
 [
         AC_REQUIRE([ACX_LAPACK])
 
         AC_ARG_WITH(arpack,
-                [AS_HELP_STRING([--with-arpack=<lib>], 
+                [AS_HELP_STRING([--with-arpack=<lib>],
                         [use ARPACK library, default=-larpack])],
                 [with_arpack=$withval],
                 [with_arpack=check])
@@ -170,7 +170,7 @@ AC_DEFUN([ACX_ARPACK],
                 acx_want_arpack="yes"
                 LIBARPACK="$with_arpack"
         fi
-        
+
         if test "x$acx_want_arpack" != "xno"; then
                 AC_MSG_CHECKING([for ARPACK library])
                 dnl get fortran name of the function we are interested in
@@ -190,4 +190,3 @@ AC_DEFUN([ACX_ARPACK],
         AC_SUBST(LIBARPACK)
 
 ]) dnl ACX_ARPACK
-
