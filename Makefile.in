@@ -223,7 +223,7 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-idivide mp-ies mp-irepeat mp-norm mp-itebd-old mp-allcorrelation \
         mp-irotate mp-icorrelation mp-fluctuation mp-itebd mp-coarsegrain mp-finegrain mp-dmrg mp-random \
         mp-expectation mp-overlap mp-scale mp-matrix mp-tri-expectation mp-tebd mp-apply mp-normalize \
-	mp-tdvp mp-itdvp
+	mp-tdvp mp-itdvp mp-ibc-tdvp
 
 experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg
 
@@ -534,6 +534,7 @@ mp-overlap : finitewavefunctionleft.o
 mp-scale : finitewavefunctionleft.o number-parser.o
 
 mp-itdvp : itdvp.o ef-optim.o number-parser.o triangular_mpo_solver.o momentum_operations.o
+mp-ibc-tdvp : ibc-tdvp.o tdvp.o ef-optim.o number-parser.o triangular_mpo_solver.o momentum_operations.o
 
 mp-ireorder-symmetry : infinitewavefunctionleft.o
 
