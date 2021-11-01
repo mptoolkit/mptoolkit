@@ -21,7 +21,6 @@
 #if !defined(MPTOOLKIT_MP_ALGORITHMS_TDVP_H)
 #define MPTOOLKIT_MP_ALGORITHMS_TDVP_H
 
-#include "common/leftrightstack.h"
 #include "wavefunction/finitewavefunctionleft.h"
 #include "wavefunction/linearwavefunction.h"
 #include "mpo/basic_triangular_mpo.h"
@@ -29,8 +28,6 @@
 class TDVP
 {
    public:
-      typedef left_right_stack<StateComponent> OperatorStackType;
-
       TDVP() {}
 
       TDVP(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
@@ -79,12 +76,13 @@ class TDVP
       // Calculate the error measures epsilon_1 and epsilon_2.
       void CalculateEps();
 
-      OperatorStackType Ham;
       LinearWavefunction Psi;
       int Site;                          // The index of the iterator C.
       LinearWavefunction::iterator C;
       BasicTriangularMPO Hamiltonian;
       BasicTriangularMPO::const_iterator H;
+      std::deque<StateComponent> HamL;
+      std::deque<StateComponent> HamR;
       int LeftStop;                      // The site indices where we stop iterations,
       int RightStop;
 
