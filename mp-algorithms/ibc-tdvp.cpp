@@ -39,20 +39,16 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
    SInfo = SInfo_;
    Verbose = Verbose_;
 
-   // Initialize Psi and Ham.
-   MatrixOperator Lambda;
-   std::tie(Psi, Lambda) = get_left_canonical(Psi_.Window);
-
    PsiLeft = Psi_.Left;
    PsiRight = Psi_.Right;
 
+   if (Verbose > 0)
+      std::cout << "Constructing Hamiltonian block operators..." << std::endl;
+
    // Set Hamiltonian sizes to match the unit cell/window sizes.
    // TODO: Is there a better place to do this?
-   HamiltonianLeft = std::move(Hamiltonian);
-   HamiltonianRight = std::move(Hamiltonian);
-
-   if (Hamiltonian.size() < Psi.size())
-      Hamiltonian = repeat(Hamiltonian, Psi.size() / Hamiltonian.size());
+   HamiltonianLeft = Hamiltonian;
+   HamiltonianRight = Hamiltonian;
 
    if (HamiltonianLeft.size() < PsiLeft.size())
       HamiltonianLeft = repeat(HamiltonianLeft, PsiLeft.size() / HamiltonianLeft.size());
@@ -60,53 +56,183 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
    if (HamiltonianRight.size() < PsiRight.size())
       HamiltonianRight = repeat(HamiltonianRight, PsiRight.size() / HamiltonianRight.size());
 
-   if (Verbose > 0)
-      std::cout << "Constructing Hamiltonian block operators..." << std::endl;
-
+   // Construct left Hamiltonian environment.
    StateComponent BlockHamL = Initial_E(HamiltonianLeft, PsiLeft.Basis2());
    std::complex<double> LeftEnergy = SolveSimpleMPO_Left(BlockHamL, PsiLeft, HamiltonianLeft,
                                                          GMRESTol, Verbose-1);
    if (Verbose > 0)
       std::cout << "Starting energy (left eigenvalue) = " << LeftEnergy << std::endl;
 
+   HamLeftL.push_back(BlockHamL);
+
+   BasicTriangularMPO::const_iterator HLeft = HamiltonianLeft.begin();
+   InfiniteWavefunctionLeft::const_mps_iterator CLeft = PsiLeft.begin();
+   while (CLeft != PsiLeft.end())
+   {
+      HamLeftL.push_back(contract_from_left(*HLeft, herm(*CLeft), HamLeftL.back(), *CLeft));
+      ++HLeft, ++CLeft;
+   }
+
+   // Construct right Hamiltonian environment.
    StateComponent BlockHamR = Initial_F(HamiltonianRight, PsiRight.Basis1());
    std::complex<double> RightEnergy = SolveSimpleMPO_Right(BlockHamR, PsiRight, HamiltonianRight,
                                                            GMRESTol, Verbose-1);
    if (Verbose > 0)
       std::cout << "Starting energy (right eigenvalue) = " << RightEnergy << std::endl;
 
-   Ham.push_left(BlockHamL);
-   Ham.push_right(BlockHamR);
+   HamRightR.push_front(BlockHamR);
 
-   C = Psi.begin();
-   H = Hamiltonian.begin();
-   while (C != Psi.end())
+   BasicTriangularMPO::const_iterator HRight = HamiltonianRight.end();
+   InfiniteWavefunctionLeft::const_mps_iterator CRight = PsiRight.end();
+   while (CRight != PsiRight.begin())
    {
-      if (Verbose > 1)
-         std::cout << "Site " << (Ham.size_left()) << std::endl;
-      Ham.push_left(contract_from_left(*H, herm(*C), Ham.left(), *C));
-      MaxStates = std::max(MaxStates, (*C).Basis2().total_dimension());
-      ++H, ++C;
+      --HRight, --CRight;
+      HamRightR.push_front(contract_from_right(herm(*HRight), *CRight, HamRightR.front(), herm(*CRight)));
    }
 
-   Psi.set_back(prod(Psi.get_back(), Lambda));
-
-   // Initialize to the right-most site.
-   Ham.pop_left();
-   C = Psi.end();
-   --C;
-   --H;
-   Site = Psi.size() - 1;
-
+   // Construct window Hamiltonian environment.
+   Site = 0;
    LeftStop = 0;
-   RightStop = Psi.size() - 1;
+   RightStop = Psi_.window_size() - 1;
+
+   HamL.push_back(BlockHamL);
+   HamR.push_front(BlockHamR);
+   
+   // Check whether there are any sites in the window, and if not, add two unit cells.
+   if (Psi_.window_size() == 0)
+   {
+      if (Verbose > 1)
+         std::cout << "Initial window size = 0, adding two unit cells to window..." << std::endl;
+
+      Psi = LinearWavefunction();
+      MatrixOperator Lambda = Psi_.Window.lambda_r();
+      Lambda = Psi_.Window.LeftU() * Lambda * Psi_.Window.RightU();
+
+      Hamiltonian = BasicTriangularMPO();
+      H = Hamiltonian.begin();
+
+      this->ExpandWindowLeft();
+
+      C = Psi.end();
+      --C;
+      *C = prod(*C, Lambda);
+
+      this->ExpandWindowRight();
+   }
+   else
+   {
+      MatrixOperator Lambda;
+      std::tie(Psi, Lambda) = get_left_canonical(Psi_.Window);
+
+      C = Psi.begin();
+
+      if (Hamiltonian.size() < Psi.size())
+         Hamiltonian = repeat(Hamiltonian, Psi.size() / Hamiltonian.size());
+      H = Hamiltonian.begin();
+
+      while (C != Psi.end())
+      {
+         if (Verbose > 1)
+            std::cout << "Site " << Site << std::endl;
+         HamL.push_back(contract_from_left(*H, herm(*C), HamL.back(), *C));
+         MaxStates = std::max(MaxStates, (*C).Basis2().total_dimension());
+         ++H, ++C, ++Site;
+      }
+
+      --H, --C, --Site;
+      *C = prod(*C, Lambda);
+      HamL.pop_back();
+   }
 }
 
 IBCWavefunction
 IBC_TDVP::Wavefunction() const
 {
    MatrixOperator I = MatrixOperator::make_identity(Psi.Basis2());
-   WavefunctionSectionLeft PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(Psi), I, Verbose);
+   WavefunctionSectionLeft PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(Psi), I, Verbose-1);
 
-   return IBCWavefunction(PsiLeft, PsiWindow, PsiRight);
+   return IBCWavefunction(PsiLeft, PsiWindow, PsiRight, -LeftStop);
+}
+
+void
+IBC_TDVP::ExpandWindowLeft()
+{
+   // Add the unit cell to the window.
+   LinearWavefunction PsiCell;
+   RealDiagonalOperator Lambda;
+   std::tie(PsiCell, Lambda) = get_left_canonical(PsiLeft);
+
+   //PsiCell.set_back(prod(PsiCell.get_back(), Lambda));
+
+   Psi.push_front(PsiCell);
+
+   // Add the unit cell to the Hamiltonian.
+   std::vector<OperatorComponent> HamNew;
+   HamNew.insert(HamNew.begin(), HamiltonianLeft.data().begin(), HamiltonianLeft.data().end());
+   HamNew.insert(HamNew.begin(), Hamiltonian.data().begin(), Hamiltonian.data().end());
+   Hamiltonian = BasicTriangularMPO(HamNew);
+
+   H = Hamiltonian.end();
+   --H;
+
+   // Add the unit cell to the Hamiltonian environment.
+   HamL.insert(HamL.begin(), HamLeftL.begin(), HamLeftL.end());
+
+   // Change the leftmost index.
+   LeftStop -= PsiLeft.size();
+}
+
+void
+IBC_TDVP::ExpandWindowRight()
+{
+   // Add the unit cell to the window.
+   LinearWavefunction PsiCell;
+   RealDiagonalOperator Lambda;
+   std::tie(Lambda, PsiCell) = get_right_canonical(PsiRight);
+
+   //PsiCell.set_front(prod(Lambda, PsiCell.get_front()));
+
+   Psi.push_back(PsiCell);
+
+   // Add the unit cell to the Hamiltonian.
+   std::vector<OperatorComponent> HamNew;
+   HamNew.insert(HamNew.begin(), Hamiltonian.data().begin(), Hamiltonian.data().end());
+   HamNew.insert(HamNew.begin(), HamiltonianRight.data().begin(), HamiltonianRight.data().end());
+   Hamiltonian = BasicTriangularMPO(HamNew);
+
+   // Add the unit cell to the Hamiltonian environment.
+   HamR.insert(HamR.end(), HamRightR.begin(), HamRightR.end());
+
+   // Change the rightmost index.
+   RightStop += PsiRight.size();
+
+   H = HamiltonianRight.begin();
+
+   // Left-orthogonalize the window.
+   while (Site < RightStop)
+   {
+      // Perform SVD to left-orthogonalize current site.
+      MatrixOperator M = ExpandBasis2(*C);
+      MatrixOperator U, Vh;
+      RealDiagonalOperator D;
+
+      SingularValueDecomposition(M, U, D, Vh);
+
+      *C = prod(*C, U);
+
+      // Update the effective Hamiltonian.
+      HamL.push_back(contract_from_left(*H, herm(*C), HamL.back(), *C));
+
+      // Move to the next site.
+      ++Site;
+      ++H;
+      ++C;
+
+      *C = prod(*C, U*D);
+
+      HamR.pop_front();
+   }
+
+   H = Hamiltonian.end();
+   --H;
 }

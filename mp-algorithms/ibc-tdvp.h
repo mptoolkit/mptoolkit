@@ -35,11 +35,17 @@ class IBC_TDVP : public TDVP
 
       IBCWavefunction Wavefunction() const;
 
+      // Expands the IBC window by adding one unit cell to the left/right.
+      void ExpandWindowLeft();
+      void ExpandWindowRight();
+
       double GMRESTol;
       InfiniteWavefunctionLeft PsiLeft;
       InfiniteWavefunctionRight PsiRight;
       BasicTriangularMPO HamiltonianLeft;
       BasicTriangularMPO HamiltonianRight;
+      std::deque<StateComponent> HamLeftL;
+      std::deque<StateComponent> HamRightR;
 };
 
 #endif
