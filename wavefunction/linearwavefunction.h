@@ -115,7 +115,7 @@ class LinearWavefunction
          const_iterator Iend = x.end();
          for (const_iterator I = x.begin(); I != Iend; ++I)
          {
-            this->push_front(*I);
+            this->push_back(*I);
          }
          if (SList.is_null())
             SList = x.GetSymmetryList();
