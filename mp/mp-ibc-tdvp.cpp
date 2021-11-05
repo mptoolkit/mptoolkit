@@ -58,8 +58,9 @@ int main(int argc, char** argv)
       int MaxStates = 100000;
       double TruncCutoff = 0;
       double EigenCutoff = 1e-16;
-      bool TwoSite = false;
       double Eps2SqTol = std::numeric_limits<double>::infinity();
+      bool TwoSite = false;
+      int NExpand = 0;
       int Verbose = 0;
       int OutputDigits = 0;
 
@@ -89,6 +90,7 @@ int main(int argc, char** argv)
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
          ("eps2sqtol,e", prog_opt::value(&Eps2SqTol), "Expand the bond dimension in the next step if Eps2SqSum rises above this value [1TDVP only]")
          ("two-site,2", prog_opt::bool_switch(&TwoSite), "Use two-site TDVP")
+         ("n-expand", prog_opt::value(&NExpand), "Expand the window by two unit cells every n timesteps.")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -180,10 +182,6 @@ int main(int argc, char** argv)
       }
 
       std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
-#if 0
-      if (HamMPO.size() < Psi.window_size())
-         HamMPO = repeat(HamMPO, Psi.window_size() / HamMPO.size());
-#endif
 
       std::cout << "Maximum number of Lanczos iterations: " << MaxIter << std::endl;
       std::cout << "Error tolerance for the Lanczos evolution: " << ErrTol << std::endl;
@@ -197,7 +195,7 @@ int main(int argc, char** argv)
       std::cout << SInfo << std::endl;
 
       IBC_TDVP tdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, MaxIter, ErrTol,
-                        GMRESTol, SInfo, Verbose);
+                        GMRESTol, SInfo, NExpand, Verbose);
 
       if (SaveEvery == 0)
          SaveEvery = N;
@@ -207,6 +205,7 @@ int main(int argc, char** argv)
 
       std::cout << "Timestep=" << 0
                 << " Time=" << formatting::format_complex(InitialTime)
+                << " WindowSize=" << tdvp.Psi.size()
                 << " MaxStates=" << tdvp.MaxStates
                 << " E=" << std::real(tdvp.Energy())
                 << " Eps1SqSum=" << tdvp.Eps1SqSum
@@ -221,6 +220,7 @@ int main(int argc, char** argv)
 
             std::cout << "Timestep=" << tstep
                       << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
+                      << " WindowSize=" << tdvp.Psi.size()
                       << " MaxStates=" << tdvp.MaxStates
                       << " E=" << std::real(tdvp.Energy())
                       << " TruncErrSum=" << tdvp.TruncErrSum
@@ -242,6 +242,7 @@ int main(int argc, char** argv)
 
             std::cout << "Timestep=" << tstep
                       << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
+                      << " WindowSize=" << tdvp.Psi.size()
                       << " MaxStates=" << tdvp.MaxStates
                       << " E=" << std::real(tdvp.Energy())
                       << " Eps1SqSum=" << tdvp.Eps1SqSum

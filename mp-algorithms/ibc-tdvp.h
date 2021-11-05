@@ -31,15 +31,37 @@ class IBC_TDVP : public TDVP
 
       IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
                std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
-               double GMRESTol_, StatesInfo SInfo_, int Verbose_);
+               double GMRESTol_, StatesInfo SInfo_, int NExpand_, int Verbose_);
 
       IBCWavefunction Wavefunction() const;
 
-      // Expands the IBC window by adding one unit cell to the left/right.
+      // Expand the IBC window by adding one unit cell to the left/right.
+      // NB: These functions assume that the window is left/right orthogonal
+      // respectively, and that the window does not end in the middle of a unit
+      // cell.
       void ExpandWindowLeft();
       void ExpandWindowRight();
 
+      // Calculate the fidelity loss of the left/right edge of the window
+      // compared to the semi-infinite boundaries.
+      // NB: These functions assume that the window is left/right orthogonal
+      // respectively, and that the window does not end in the middle of a unit
+      // cell.
+      double CalculateFidelityLossLeft();
+      double CalculateFidelityLossRight();
+
+      // Evolve the window for one time step.
+      void Evolve();
+
+      // Evolve the window for one time step, with bond expansion.
+      void EvolveExpand();
+
+      // Evolve the window by one time step using 2TDVP.
+      void Evolve2();
+
       double GMRESTol;
+      int NExpand;
+
       InfiniteWavefunctionLeft PsiLeft;
       InfiniteWavefunctionRight PsiRight;
       BasicTriangularMPO HamiltonianLeft;

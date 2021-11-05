@@ -28,8 +28,8 @@
 
 IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
                    std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
-                   double GMRESTol_, StatesInfo SInfo_, int Verbose_)
-   : GMRESTol(GMRESTol_)
+                   double GMRESTol_, StatesInfo SInfo_, int NExpand_, int Verbose_)
+   : GMRESTol(GMRESTol_), NExpand(NExpand_)
 {
    // TODO: Fix member initializer list.
    Hamiltonian = Ham_;
@@ -45,8 +45,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
    if (Verbose > 0)
       std::cout << "Constructing Hamiltonian block operators..." << std::endl;
 
-   // Set Hamiltonian sizes to match the unit cell/window sizes.
-   // TODO: Is there a better place to do this?
+   // Set left/right Hamiltonian sizes to match the unit cell sizes.
    HamiltonianLeft = Hamiltonian;
    HamiltonianRight = Hamiltonian;
 
@@ -109,15 +108,41 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
       Lambda = Psi_.Window.LeftU() * Lambda * Psi_.Window.RightU();
 
       Hamiltonian = BasicTriangularMPO();
-      H = Hamiltonian.begin();
 
       this->ExpandWindowLeft();
 
-      C = Psi.end();
-      --C;
-      *C = prod(*C, Lambda);
+      Psi.set_back(prod(Psi.get_back(), Lambda));
 
       this->ExpandWindowRight();
+
+      // Move the iterators to the left of the unit cell added on the right.
+      for (int i = 0; i < PsiLeft.size(); ++i)
+         ++C, ++H, ++Site;
+
+      // Left-orthogonalize the window.
+      while (Site < RightStop)
+      {
+         // Perform SVD to left-orthogonalize current site.
+         MatrixOperator M = ExpandBasis2(*C);
+         MatrixOperator U, Vh;
+         RealDiagonalOperator D;
+
+         SingularValueDecomposition(M, U, D, Vh);
+
+         *C = prod(*C, U);
+
+         // Update the effective Hamiltonian.
+         HamL.push_back(contract_from_left(*H, herm(*C), HamL.back(), *C));
+
+         // Move to the next site.
+         ++Site;
+         ++H;
+         ++C;
+
+         *C = prod(*C, U*D);
+
+         HamR.pop_front();
+      }
    }
    else
    {
@@ -172,14 +197,18 @@ IBC_TDVP::ExpandWindowLeft()
    HamNew.insert(HamNew.begin(), Hamiltonian.data().begin(), Hamiltonian.data().end());
    Hamiltonian = BasicTriangularMPO(HamNew);
 
-   H = Hamiltonian.end();
-   --H;
-
    // Add the unit cell to the Hamiltonian environment.
    HamL.insert(HamL.begin(), HamLeftL.begin(), HamLeftL.end());
 
    // Change the leftmost index.
    LeftStop -= PsiLeft.size();
+
+   // Reset iterators.
+   C = Psi.end();
+   --C;
+   H = Hamiltonian.end();
+   --H;
+   Site = RightStop;
 }
 
 void
@@ -206,33 +235,136 @@ IBC_TDVP::ExpandWindowRight()
    // Change the rightmost index.
    RightStop += PsiRight.size();
 
-   H = HamiltonianRight.begin();
+   // Reset iterators.
+   C = Psi.begin();
+   H = Hamiltonian.begin();
+   Site = LeftStop;
+}
 
-   // Left-orthogonalize the window.
-   while (Site < RightStop)
+double
+IBC_TDVP::CalculateFidelityLossLeft()
+{
+   MatrixOperator Rho = PsiLeft.lambda_l();
+   Rho = scalar_prod(herm(Rho), Rho);
+
+   InfiniteWavefunctionLeft::const_mps_iterator CLeft = PsiLeft.begin();
+   LinearWavefunction::const_iterator CWindow = Psi.begin();
+   while (CLeft != PsiLeft.end())
    {
-      // Perform SVD to left-orthogonalize current site.
-      MatrixOperator M = ExpandBasis2(*C);
-      MatrixOperator U, Vh;
-      RealDiagonalOperator D;
-
-      SingularValueDecomposition(M, U, D, Vh);
-
-      *C = prod(*C, U);
-
-      // Update the effective Hamiltonian.
-      HamL.push_back(contract_from_left(*H, herm(*C), HamL.back(), *C));
-
-      // Move to the next site.
-      ++Site;
-      ++H;
-      ++C;
-
-      *C = prod(*C, U*D);
-
-      HamR.pop_front();
+      Rho = operator_prod(herm(*CWindow), Rho, *CLeft);
+      ++CWindow, ++CLeft;
    }
 
-   H = Hamiltonian.end();
-   --H;
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SingularValueDecomposition(Rho, U, D, Vh);
+
+   return (1.0 - trace(D));
+}
+
+double
+IBC_TDVP::CalculateFidelityLossRight()
+{
+   MatrixOperator Rho = PsiRight.lambda_r();
+   Rho = scalar_prod(Rho, herm(Rho));
+
+   InfiniteWavefunctionLeft::const_mps_iterator CRight = PsiRight.end();
+   LinearWavefunction::const_iterator CWindow = Psi.end();
+   while (CRight != PsiRight.begin())
+   {
+      --CWindow, --CRight;
+      Rho = operator_prod(*CWindow, Rho, herm(*CRight));
+   }
+
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SingularValueDecomposition(Rho, U, D, Vh);
+
+   return (1.0 - trace(D));
+}
+
+
+void
+IBC_TDVP::Evolve()
+{
+   ++TStep;
+   Eps1SqSum = 0.0;
+   Eps2SqSum = 0.0;
+
+   while (Site > LeftStop)
+      this->IterateLeft();
+
+   //TRACE(this->CalculateFidelityLossRight());
+
+   if (NExpand != 0)
+      if (TStep % NExpand == 0)
+         this->ExpandWindowRight();
+
+   this->EvolveLeftmostSite();
+
+   while (Site < RightStop)
+      this->IterateRight();
+
+   //TRACE(this->CalculateFidelityLossLeft());
+
+   if (NExpand != 0)
+      if (TStep % NExpand == 0)
+         this->ExpandWindowLeft();
+}
+
+void
+IBC_TDVP::EvolveExpand()
+{
+   ++TStep;
+   Eps1SqSum = 0.0;
+   Eps2SqSum = 0.0;
+
+   while (Site > LeftStop)
+   {
+      if ((*C).Basis1().total_dimension() < SInfo.MaxStates)
+         this->ExpandLeftBond();
+      this->IterateLeft();
+   }
+
+   //TRACE(this->CalculateFidelityLossRight());
+
+   if (NExpand != 0)
+      if (TStep % NExpand == 0)
+         this->ExpandWindowRight();
+
+   this->EvolveLeftmostSite();
+
+   while (Site < RightStop)
+      this->IterateRight();
+
+   //TRACE(this->CalculateFidelityLossLeft());
+
+   if (NExpand != 0)
+      if (TStep % NExpand == 0)
+         this->ExpandWindowLeft();
+}
+
+void
+IBC_TDVP::Evolve2()
+{
+   ++TStep;
+   TruncErrSum = 0.0;
+
+   while (Site > LeftStop + 1)
+      this->IterateLeft2();
+
+   if (NExpand != 0)
+      if (TStep % NExpand == 0)
+         this->ExpandWindowRight();
+
+   this->EvolveLeftmostSite2();
+
+   while (Site < RightStop)
+      this->IterateRight2();
+
+   if (NExpand != 0)
+      if (TStep % NExpand == 0)
+         this->ExpandWindowLeft();
+
+   this->CalculateEps();
 }
