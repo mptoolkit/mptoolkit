@@ -220,7 +220,7 @@ int main(int argc, char** argv)
       itdvp.CalculateEps();
 
       std::cout << "Timestep=" << 0
-                << " Time=" << formatting::format_complex(InitialTime)
+                << " Time=" << formatting::format_digits(InitialTime, OutputDigits)
                 << " MaxStates=" << itdvp.MaxStates
                 << " E=" << std::real(itdvp.InitialE)
                 << " Eps1SqSum=" << itdvp.Eps1SqSum
@@ -243,7 +243,7 @@ int main(int argc, char** argv)
          itdvp.Evolve();
 
          std::cout << "Timestep=" << tstep
-                   << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
+                   << " Time=" << formatting::format_digits(InitialTime+double(tstep)*Timestep, OutputDigits)
                    << " MaxStates=" << itdvp.MaxStates
                    << " E=" << std::real(itdvp.E)
                    << " Eps1SqSum=" << itdvp.Eps1SqSum

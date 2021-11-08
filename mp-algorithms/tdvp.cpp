@@ -126,11 +126,17 @@ struct HEff2
    StateComponent const& F;
 };
 
+TDVP::TDVP(BasicTriangularMPO const& Ham_, std::complex<double> Timestep_,
+           int MaxIter_, double ErrTol_, StatesInfo SInfo_, int Verbose_)
+   : Hamiltonian(Ham_), Timestep(Timestep_), MaxIter(MaxIter_), ErrTol(ErrTol_),
+     SInfo(SInfo_), Verbose(Verbose_)
+{
+}
+
 TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
            std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
            StatesInfo SInfo_, int Verbose_)
-   : Hamiltonian(Ham_), Timestep(Timestep_), MaxIter(MaxIter_), ErrTol(ErrTol_),
-     SInfo(SInfo_), Verbose(Verbose_)
+   : TDVP(Ham_, Timestep_, MaxIter_, ErrTol_, SInfo_, Verbose_)
 {
    // Initialize Psi and Ham.
    if (Verbose > 0)
@@ -172,7 +178,8 @@ TDVP::Energy() const
    return inner_prod(contract_from_left(*H, herm(*C), HamL.back(), *C), HamR.front());
 }
 
-void TDVP::IterateLeft()
+void
+TDVP::IterateLeft()
 {
    // Evolve current site.
    int Iter = MaxIter;
@@ -227,7 +234,8 @@ void TDVP::IterateLeft()
    HamL.pop_back();
 }
 
-void TDVP::EvolveLeftmostSite()
+void
+TDVP::EvolveLeftmostSite()
 {
    // Evolve current site.
    int Iter = MaxIter;
@@ -251,7 +259,8 @@ void TDVP::EvolveLeftmostSite()
    }
 }
 
-void TDVP::IterateRight()
+void
+TDVP::IterateRight()
 {
    // Perform SVD to left-orthogonalize current site.
    MatrixOperator M = ExpandBasis2(*C);
@@ -326,26 +335,24 @@ void TDVP::IterateRight()
    }
 }
 
-void TDVP::Evolve()
+void
+TDVP::Evolve()
 {
    ++TStep;
    Eps1SqSum = 0.0;
    Eps2SqSum = 0.0;
 
    while (Site > LeftStop)
-   {
       this->IterateLeft();
-   }
 
    this->EvolveLeftmostSite();
 
    while (Site < RightStop)
-   {
       this->IterateRight();
-   }
 }
 
-void TDVP::ExpandLeftBond()
+void
+TDVP::ExpandLeftBond()
 {
    // Construct the projection of H|Psi> onto the space of two-site variations.
    LinearWavefunction::iterator CNext = C;
@@ -411,7 +418,8 @@ void TDVP::ExpandLeftBond()
    HamL.push_back(contract_from_left(*HNext, herm(*CNext), HamL.back(), *CNext));
 }
 
-void TDVP::EvolveExpand()
+void
+TDVP::EvolveExpand()
 {
    ++TStep;
    Eps1SqSum = 0.0;
@@ -427,12 +435,11 @@ void TDVP::EvolveExpand()
    this->EvolveLeftmostSite();
 
    while (Site < RightStop)
-   {
       this->IterateRight();
-   }
 }
 
-void TDVP::IterateLeft2()
+void
+TDVP::IterateLeft2()
 {
    // Form two-site centre block.
    --Site;
@@ -493,7 +500,8 @@ void TDVP::IterateLeft2()
    }
 }
 
-void TDVP::EvolveLeftmostSite2()
+void
+TDVP::EvolveLeftmostSite2()
 {
    // Form two-site centre block.
    LinearWavefunction::iterator CPrev = C;
@@ -538,7 +546,8 @@ void TDVP::EvolveLeftmostSite2()
    HamL.push_back(contract_from_left(*HPrev, herm(*CPrev), HamL.back(), *CPrev));
 }
 
-void TDVP::IterateRight2()
+void
+TDVP::IterateRight2()
 {
    // Evolve the current site backwards in time.
    int Iter = MaxIter;
@@ -600,27 +609,25 @@ void TDVP::IterateRight2()
    HamL.push_back(contract_from_left(*HPrev, herm(*CPrev), HamL.back(), *CPrev));
 }
 
-void TDVP::Evolve2()
+void
+TDVP::Evolve2()
 {
    ++TStep;
    TruncErrSum = 0.0;
 
    while (Site > LeftStop + 1)
-   {
       this->IterateLeft2();
-   }
 
    this->EvolveLeftmostSite2();
 
    while (Site < RightStop)
-   {
       this->IterateRight2();
-   }
 
    this->CalculateEps();
 }
 
-void TDVP::CalculateEps()
+void
+TDVP::CalculateEps()
 {
    Eps1SqSum = 0.0;
    Eps2SqSum = 0.0;
