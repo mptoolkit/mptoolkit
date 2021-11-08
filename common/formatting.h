@@ -82,13 +82,13 @@ format_digits(double x, int Digits)
 
 inline
 std::string
-format_digita(std::complex<double> c, int Digits)
+format_digits(std::complex<double> c, int Digits)
 {
    std::string Result = format_digits(c.real(), Digits);
    if (c.imag() > 0)
-      Result += " + " + format_digits(c.imag(), Digits) + 'i';
+      Result += "+" + format_digits(c.imag(), Digits) + 'i';
    else if (c.imag() < 0)
-      Result += ' ' + format_digits(c.imag(), Digits) + 'i';
+      Result += format_digits(c.imag(), Digits) + 'i';
    return Result;
 }
 
