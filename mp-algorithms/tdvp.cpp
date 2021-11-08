@@ -126,11 +126,17 @@ struct HEff2
    StateComponent const& F;
 };
 
+TDVP::TDVP(BasicTriangularMPO const& Ham_, std::complex<double> Timestep_,
+           int MaxIter_, double ErrTol_, StatesInfo SInfo_, int Verbose_)
+   : Hamiltonian(Ham_), Timestep(Timestep_), MaxIter(MaxIter_), ErrTol(ErrTol_),
+     SInfo(SInfo_), Verbose(Verbose_)
+{
+}
+
 TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
            std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
            StatesInfo SInfo_, int Verbose_)
-   : Hamiltonian(Ham_), Timestep(Timestep_), MaxIter(MaxIter_), ErrTol(ErrTol_),
-     SInfo(SInfo_), Verbose(Verbose_)
+   : TDVP(Ham_, Timestep_, MaxIter_, ErrTol_, SInfo_, Verbose_)
 {
    // Initialize Psi and Ham.
    if (Verbose > 0)

@@ -30,6 +30,9 @@ class TDVP
    public:
       TDVP() {}
 
+      TDVP(BasicTriangularMPO const& Ham_, std::complex<double> Timestep_,
+           int MaxIter_, double ErrTol_, StatesInfo SInfo_, int Verbose_);
+
       TDVP(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
            std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
            StatesInfo SInfo_, int Verbose_);
