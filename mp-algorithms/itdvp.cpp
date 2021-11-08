@@ -189,12 +189,14 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham
    RightStop = Psi.size() - 1;
 }
 
-InfiniteWavefunctionLeft iTDVP::Wavefunction() const
+InfiniteWavefunctionLeft
+iTDVP::Wavefunction() const
 {
    return InfiniteWavefunctionLeft::ConstructFromOrthogonal(Psi, LambdaR, QShift);
 }
 
-void iTDVP::IterateLeft()
+void
+iTDVP::IterateLeft()
 {
    // Evolve current site.
    int Iter = MaxIter;
@@ -249,7 +251,8 @@ void iTDVP::IterateLeft()
    HamL.pop_back();
 }
 
-void iTDVP::EvolveLeftmostSite()
+void
+iTDVP::EvolveLeftmostSite()
 {
    // Evolve current site.
    int Iter = MaxIter;
@@ -267,7 +270,8 @@ void iTDVP::EvolveLeftmostSite()
    }
 }
 
-void iTDVP::IterateRight()
+void
+iTDVP::IterateRight()
 {
    // Perform SVD to left-orthogonalize current site.
    MatrixOperator M = ExpandBasis2(*C);
@@ -322,7 +326,8 @@ void iTDVP::IterateRight()
    }
 }
 
-void iTDVP::OrthogonalizeLeftmostSite()
+void
+iTDVP::OrthogonalizeLeftmostSite()
 {
    E = inner_prod(HamL.back(), contract_from_right(herm(*H), *C, HamR.front(), herm(*C)));
 
@@ -344,7 +349,8 @@ void iTDVP::OrthogonalizeLeftmostSite()
    HamR.back() = delta_shift(BlockHamR, adjoint(QShift));
 }
 
-void iTDVP::OrthogonalizeRightmostSite()
+void
+iTDVP::OrthogonalizeRightmostSite()
 {
    E = inner_prod(contract_from_left(*H, herm(*C), HamL.back(), *C), HamR.front());
 
@@ -366,7 +372,8 @@ void iTDVP::OrthogonalizeRightmostSite()
    HamL.front() = delta_shift(BlockHamL, QShift);
 }
 
-void iTDVP::EvolveLambdaRRight()
+void
+iTDVP::EvolveLambdaRRight()
 {
    int Iter = MaxIter;
    double Err = ErrTol;
@@ -383,7 +390,8 @@ void iTDVP::EvolveLambdaRRight()
    }
 }
 
-void iTDVP::EvolveLambdaRLeft()
+void
+iTDVP::EvolveLambdaRLeft()
 {
    int Iter = MaxIter;
    double Err = ErrTol;
@@ -400,7 +408,8 @@ void iTDVP::EvolveLambdaRLeft()
    }
 }
 
-void iTDVP::Evolve()
+void
+iTDVP::Evolve()
 {
    ++TStep;
 
@@ -551,7 +560,8 @@ void iTDVP::Evolve()
    this->CalculateEps();
 }
 
-void iTDVP::CalculateEps()
+void
+iTDVP::CalculateEps()
 {
    X = std::deque<StateComponent>();
    Y = std::deque<StateComponent>();
@@ -690,7 +700,8 @@ void iTDVP::CalculateEps()
       this->CalculateEpsN();
 }
 
-void iTDVP::CalculateEpsN()
+void
+iTDVP::CalculateEpsN()
 {
    EpsNSqSum = std::vector<double>(NEps-2, 0.0);
    std::deque<StateComponent>::const_iterator Xi = X.end();
@@ -756,7 +767,8 @@ void iTDVP::CalculateEpsN()
    Site = RightStop;
 }
 
-void iTDVP::ExpandRightBond()
+void
+iTDVP::ExpandRightBond()
 {
    // Take the truncated SVD of P_2 H|Psi>.
    CMatSVD SL(scalar_prod(X.front(), herm(Y.front())));
@@ -831,7 +843,8 @@ void iTDVP::ExpandRightBond()
    *C = prod(UReg, *C);
 }
 
-void iTDVP::ExpandBonds()
+void
+iTDVP::ExpandBonds()
 {
    C = Psi.begin();
    H = Hamiltonian.begin();
