@@ -204,7 +204,7 @@ int main(int argc, char** argv)
       tdvp.CalculateEps();
 
       std::cout << "Timestep=" << 0
-                << " Time=" << formatting::format_complex(InitialTime)
+                << " Time=" << formatting::format_digits(InitialTime, OutputDigits)
                 << " WindowSize=" << tdvp.Psi.size()
                 << " MaxStates=" << tdvp.MaxStates
                 << " E=" << std::real(tdvp.Energy())
@@ -219,7 +219,7 @@ int main(int argc, char** argv)
             tdvp.Evolve2();
 
             std::cout << "Timestep=" << tstep
-                      << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
+                      << " Time=" << formatting::format_digits(InitialTime+double(tstep)*Timestep, OutputDigits)
                       << " WindowSize=" << tdvp.Psi.size()
                       << " MaxStates=" << tdvp.MaxStates
                       << " E=" << std::real(tdvp.Energy())
@@ -241,7 +241,7 @@ int main(int argc, char** argv)
             }
 
             std::cout << "Timestep=" << tstep
-                      << " Time=" << formatting::format_complex(InitialTime+double(tstep)*Timestep)
+                      << " Time=" << formatting::format_digits(InitialTime+double(tstep)*Timestep, OutputDigits)
                       << " WindowSize=" << tdvp.Psi.size()
                       << " MaxStates=" << tdvp.MaxStates
                       << " E=" << std::real(tdvp.Energy())

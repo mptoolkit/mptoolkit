@@ -29,16 +29,9 @@
 IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
                    std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
                    double GMRESTol_, StatesInfo SInfo_, int NExpand_, int Verbose_)
-   : GMRESTol(GMRESTol_), NExpand(NExpand_)
+   : TDVP(Ham_, Timestep_, MaxIter_, ErrTol_, SInfo_, Verbose_),
+   GMRESTol(GMRESTol_), NExpand(NExpand_)
 {
-   // TODO: Fix member initializer list.
-   Hamiltonian = Ham_;
-   Timestep = Timestep_;
-   MaxIter = MaxIter_;
-   ErrTol = ErrTol_;
-   SInfo = SInfo_;
-   Verbose = Verbose_;
-
    PsiLeft = Psi_.Left;
    PsiRight = Psi_.Right;
 
