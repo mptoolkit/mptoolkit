@@ -2632,7 +2632,6 @@ ac_config_headers="$ac_config_headers config.h"
 
 
 
-
 CXXFLAGS_MPTK_SAVE="$CXXFLAGS"
 
 
@@ -11375,7 +11374,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
     CXXFLAGS_save="$CXXFLAGS"
     LIBS_save="$LIBS"
     LIBS="$BLAS_LIBS $FLIBS"
-    CXXFLAGS="-I. -I$srcdir $CXXFLAGS"
+    CXXFLAGS="-I. -I$srcdir $CXXFLAGS $BOOST_CPPFLAGS"
     if test "$cross_compiling" = yes; then :
   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
