@@ -21,6 +21,9 @@
 /* Define if debugging is disabled */
 #undef CONFIG_NODEBUG
 
+/* C++ OpenMP compiler flags */
+#undef CONFIG_OPENMP_CXXFLAGS
+
 /* Define if you want PBS walltime integration */
 #undef CONFIG_PBS_WALLTIME
 
@@ -95,6 +98,9 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
+/* Use OpenMP threading */
+#undef HAVE_OPENMP
+
 /* Whether __PRETTY_FUNCTION__ has a useful value. */
 #undef HAVE_PRETTYFUNC
 
@@ -124,6 +130,9 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Multithread support */
+#undef MULTITHREAD
 
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT

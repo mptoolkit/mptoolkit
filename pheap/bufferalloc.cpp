@@ -31,7 +31,7 @@
 namespace
 {
    std::map<size_t, BufferAllocator*> AllocatorList;
-   pthread::mutex AllocatorListMutex;
+   std::mutex AllocatorListMutex;
 
 } // namespace
 
@@ -45,7 +45,7 @@ std::set<void*> FreeBuffers;
 unsigned char*
 BufferAllocator::allocate()
 {
-   pthread::mutex::sentry Lock(PageBufferMutex);
+   std::lock_guard<std::mutex> Lock(PageBufferMutex);
    if (FirstFreePageBuffer)
    {
       unsigned char* Ret = static_cast<unsigned char*>(FirstFreePageBuffer);
@@ -70,7 +70,7 @@ BufferAllocator::allocate()
 
 void BufferAllocator::deallocate(unsigned char const* Buf)
 {
-   pthread::mutex::sentry Lock(PageBufferMutex);
+   std::lock_guard<std::mutex> Lock(PageBufferMutex);
    void* Buffer = static_cast<void*>(const_cast<unsigned char*>(Buf));
 
    CHECK(FreeBuffers.count(Buffer) == 0);
@@ -98,7 +98,7 @@ void BufferAllocator::deallocate(unsigned char const* Buf)
 
 unsigned char* BufferAllocator::allocate_file(int fd, off_t offset)
 {
-   pthread::mutex::sentry Lock(PageBufferMutex);
+   std::lock_guard<std::mutex> Lock(PageBufferMutex);
    void* Buf = mmap(NULL, PageSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
    if (Buf == MAP_FAILED)
    {
@@ -116,7 +116,7 @@ unsigned char const* BufferAllocator::read_file(int fd, off_t offset)
    if (Buf != MAP_FAILED)
    {
       unsigned char* CBuf = static_cast<unsigned char*>(Buf);
-      pthread::mutex::sentry Lock(PageBufferMutex);
+      std::lock_guard<std::mutex> Lock(PageBufferMutex);
       MappedBuffers.insert(CBuf);
       return CBuf;
    }
@@ -138,7 +138,7 @@ unsigned char const* BufferAllocator::read_file(int fd, off_t offset)
 BufferAllocator*
 BufferAllocator::GetAllocator(size_t PageSize)
 {
-   pthread::mutex::sentry Lock(AllocatorListMutex);
+   std::lock_guard<std::mutex> Lock(AllocatorListMutex);
    // make sure that PageSize is a multiple of the PageGranularity
    PRECONDITION(PageSize % PageGranularity == 0);
 

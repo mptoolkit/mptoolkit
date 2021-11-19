@@ -86,7 +86,7 @@ class BlockFileSystem : public FileSystem
       BlockRecord ReadBlockRecord(PStream::ipstream& in);
 
    private:
-      pthread::mutex BufferListMutex;
+      std::mutex BufferListMutex;
       std::vector<OutputBuffer*> Buffers;
 };
 

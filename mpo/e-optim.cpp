@@ -145,7 +145,7 @@ MatrixType
 OuterIndex::Evaluate(StateComponent const& B, JMatrixRefList const& J) const
 {
    DEBUG_CHECK(!Components.empty());
-#if defined(HAVE_OPENMP)
+#if defined(USE_OPENMP_OPTIM)
    int Sz = Components.size();
    std::vector<MatrixType> Result(Sz);
    //   std::cout << "Size:" << Sz << '\n';
