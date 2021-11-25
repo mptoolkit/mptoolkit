@@ -192,7 +192,7 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham
 InfiniteWavefunctionLeft
 iTDVP::Wavefunction() const
 {
-   return InfiniteWavefunctionLeft::ConstructFromOrthogonal(Psi, LambdaR, QShift);
+   return InfiniteWavefunctionLeft::Construct(Psi, QShift);
 }
 
 void
