@@ -49,7 +49,7 @@ bool operator<(TransEigenInfo const& x, TransEigenInfo const& y)
 }
 
 void PrintFormat(QuantumNumber const& q, int n, std::complex<double> x, int NumEigen, bool ShowRealPart, bool ShowImagPart,
-                 bool ShowCorrLength, bool ShowMagnitude, bool ShowArgument,
+                 bool ShowCorrLength, bool ShowRate, bool ShowMagnitude, bool ShowArgument,
                  bool ShowRadians, double ScaleFactor)
 {
    std::string SectorStr = boost::lexical_cast<std::string>(q);
@@ -70,6 +70,11 @@ void PrintFormat(QuantumNumber const& q, int n, std::complex<double> x, int NumE
    if (ShowCorrLength)
    {
       std::cout << std::setw(20) << (-1.0/std::log(LinearAlgebra::norm_frob(Value)))
+                << "    ";
+   }
+   if (ShowRate)
+   {
+      std::cout << std::setw(20) << (-std::log(LinearAlgebra::norm_frob_sq(Value)))
                 << "    ";
    }
    if (ShowMagnitude)
@@ -94,7 +99,7 @@ int main(int argc, char** argv)
       bool UseTempFile = false;
       bool ShowRealPart = false, ShowImagPart = false, ShowMagnitude = false;
       bool ShowCartesian = false, ShowPolar = false, ShowArgument = false;
-      bool ShowRadians = false, ShowCorrLength = false;
+      bool ShowRadians = false, ShowCorrLength = false, ShowRate = false;
       int Rotate = 0;
       int UnitCellSize = 0;
       std::string LhsStr, RhsStr;
@@ -130,6 +135,8 @@ int main(int argc, char** argv)
           "display the argument in radians instead of degrees")
          ("corr,x", prog_opt::bool_switch(&ShowCorrLength),
           "display the equivalent correlation length")
+         ("rate", prog_opt::bool_switch(&ShowRate),
+          "display the rate function -2*log(real_part)")
          ("unitcell,u", prog_opt::value(&UnitCellSize),
           "scale the results to use this unit cell size [default wavefunction unit cell]")
          ("tempfile", prog_opt::bool_switch(&UseTempFile),
@@ -198,11 +205,12 @@ int main(int argc, char** argv)
       // If no output switches are used, default to showing everything
       if (!ShowRealPart && !ShowImagPart && !ShowMagnitude
           && !ShowCartesian && !ShowPolar && !ShowArgument
-          && !ShowRadians && !ShowCorrLength)
+          && !ShowRadians && !ShowCorrLength && !ShowRate)
       {
          ShowCartesian = true;
          ShowPolar = true;
          ShowCorrLength = true;
+         ShowRate = true;
       }
 
       if (ShowCartesian)
@@ -344,7 +352,6 @@ int main(int argc, char** argv)
       // The default UnitCellSize for output is the wavefunction size
       if (UnitCellSize == 0)
          UnitCellSize = Size;
-      double ScaleFactor = double(UnitCellSize) / double(Psi1.size());
 
       // get the list of quantum number sectors
       std::set<QuantumNumber> Sectors;
@@ -400,6 +407,8 @@ int main(int argc, char** argv)
             std::cout << "#imag                   ";
          if (ShowCorrLength)
             std::cout << "#corr_length            ";
+         if (ShowRate)
+            std::cout << "#rate                   ";
          if (ShowMagnitude)
             std::cout << "#magnitude              ";
          if (ShowArgument)
@@ -407,6 +416,8 @@ int main(int argc, char** argv)
          std::cout << '\n';
       }
       std::cout << std::left;
+
+      double ScaleFactor = 0;  // sentinel value - we set this once we get the acual length from overlap_arpack
 
       // Calculate the actual overlaps
       std::vector<TransEigenInfo> EigenList;
@@ -416,7 +427,7 @@ int main(int argc, char** argv)
          std::vector<std::complex<double>> Eigen;
          int Length;
          std::tie(Eigen, Length) = overlap_arpack(Psi1, StringOp, Psi2, NumEigen, *I, Iter, Tol, Verbose);
-         CHECK_EQUAL(UnitCellSize, Length);
+         ScaleFactor = double(UnitCellSize) / double(Length);
 
          if (Sort)
          {
@@ -431,7 +442,7 @@ int main(int argc, char** argv)
             int n = 0;
             for (auto const& e : Eigen)
             {
-               PrintFormat(*I, n++, e, NumEigen, ShowRealPart, ShowImagPart, ShowCorrLength, ShowMagnitude,
+               PrintFormat(*I, n++, e, NumEigen, ShowRealPart, ShowImagPart, ShowCorrLength, ShowRate, ShowMagnitude,
                            ShowArgument, ShowRadians, ScaleFactor);
             }
 
@@ -443,7 +454,7 @@ int main(int argc, char** argv)
          std::sort(EigenList.begin(), EigenList.end());
          for (auto const& e : EigenList)
          {
-            PrintFormat(e.q, e.n, e.x, NumEigen, ShowRealPart, ShowImagPart, ShowCorrLength, ShowMagnitude, ShowArgument,
+            PrintFormat(e.q, e.n, e.x, NumEigen, ShowRealPart, ShowImagPart, ShowCorrLength, ShowRate, ShowMagnitude, ShowArgument,
                         ShowRadians, ScaleFactor);
          }
       }
