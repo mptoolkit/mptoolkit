@@ -32,7 +32,7 @@ class iTDVP
 
       iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
             std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
-            double GMRESTol_, double FidelityLossTol_, int MaxSweeps_, StatesInfo SInfo_,
+            double GMRESTol_, int MaxSweeps_, double LambdaTol_, StatesInfo SInfo_,
             int NEps_, int Verbose_);
 
       // Return the current wavefunction in left-canonical form.
@@ -94,20 +94,12 @@ class iTDVP
       double ErrTol;
       StatesInfo SInfo;
       double GMRESTol;
-      double FidelityLossTol;
+      double LambdaTol;
       int MaxSweeps;
       int NEps;
       int Verbose;
 
       int TStep = 0;
-
-      // Number of left/right sweeps performed in the last time step.
-      int SweepL;
-      int SweepR;
-
-      // The fidelity loss of Psi and PsiPrev from the left left/right sweep: 1 - <PsiPrev|Psi>.
-      double FidelityLossL;
-      double FidelityLossR;
 
       // Partial terms used to calculate epsilon_1/2 and expand the bond
       // dimension of the unit cell.

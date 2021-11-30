@@ -60,7 +60,7 @@ int main(int argc, char** argv)
       double TruncCutoff = 0;
       double EigenCutoff = 1e-16;
       double Eps2SqTol = std::numeric_limits<double>::infinity();
-      double FidelityLossTol = 1e-10;
+      double LambdaTol = 1e-10;
       int MaxSweeps = 10;
       int NEps = 2;
       int Verbose = 0;
@@ -91,8 +91,8 @@ int main(int argc, char** argv)
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
          ("eps2sqtol,e", prog_opt::value(&Eps2SqTol), "Expand the bond dimension in the next step if Eps2SqSum rises above this value")
-         ("fidtol", prog_opt::value(&FidelityLossTol),
-          FormatDefault("Tolerance for the fidelity loss 1 - <PsiOld|Psi>", FidelityLossTol).c_str())
+         ("lambdatol,l", prog_opt::value(&LambdaTol),
+          FormatDefault("Tolerance for the Frobenius norm of the difference of LambdaR for succesive sweeps", LambdaTol).c_str())
          ("max-sweeps", prog_opt::value(&MaxSweeps),
           FormatDefault("Maximum number of sweeps", MaxSweeps).c_str())
          ("neps,N", prog_opt::value(&NEps), FormatDefault("Calculate EpsNSqSum up to N = NEps", NEps).c_str())
@@ -202,6 +202,9 @@ int main(int argc, char** argv)
       std::cout << "Maximum number of Lanczos iterations: " << MaxIter << std::endl;
       std::cout << "Error tolerance for the Lanczos evolution: " << ErrTol << std::endl;
 
+      std::cout << "Maximum number of sweeps: " << MaxSweeps << std::endl;
+      std::cout << "Error tolerance for LambdaR: " << LambdaTol << std::endl;
+
       StatesInfo SInfo;
       SInfo.MinStates = MinStates;
       SInfo.MaxStates = MaxStates;
@@ -211,7 +214,7 @@ int main(int argc, char** argv)
       std::cout << SInfo << std::endl;
 
       iTDVP itdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, MaxIter,
-                  ErrTol, GMRESTol, FidelityLossTol, MaxSweeps, SInfo, NEps, Verbose);
+                  ErrTol, GMRESTol, MaxSweeps, LambdaTol, SInfo, NEps, Verbose);
 
       if (SaveEvery == 0)
          SaveEvery = N;

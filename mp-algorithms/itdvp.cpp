@@ -129,10 +129,10 @@ struct HEff2
 
 iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
              std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
-             double GMRESTol_, double FidelityLossTol_, int MaxSweeps_, StatesInfo SInfo_,
+             double GMRESTol_, int MaxSweeps_, double LambdaTol_, StatesInfo SInfo_,
              int NEps_, int Verbose_)
    : Hamiltonian(Ham_), Timestep(Timestep_), MaxIter(MaxIter_), ErrTol(ErrTol_),
-     GMRESTol(GMRESTol_), FidelityLossTol(FidelityLossTol_), MaxSweeps(MaxSweeps_),
+     GMRESTol(GMRESTol_), MaxSweeps(MaxSweeps_), LambdaTol(LambdaTol_),
      SInfo(SInfo_), NEps(NEps_), Verbose(Verbose_)
 {
    QShift = Psi_.qshift();
@@ -414,14 +414,15 @@ iTDVP::Evolve()
    ++TStep;
 
    // Sweep left to evolve the unit cell for half a time step.
-   SweepL = 0;
-   FidelityLossL = 1.0;
+   int Sweep = 0;
+   double FidelityLoss = 1.0;
+   double LambdaRDiff = 1.0;
 
    LinearWavefunction PsiOld = Psi;
    std::deque<StateComponent> HamLOld = HamL;
 
    do {
-      ++SweepL;
+      ++Sweep;
 
       LinearWavefunction PsiPrev = Psi;
       MatrixOperator LambdaRPrev = LambdaR;
@@ -436,7 +437,7 @@ iTDVP::Evolve()
       HamL = HamLOld;
       HamR = std::deque<StateComponent>(1, delta_shift(BlockHamR, adjoint(QShift)));
 
-      if (SweepL > 1)
+      if (Sweep > 1)
          this->EvolveLambdaRRight();
 
       *C = prod(*C, LambdaR);
@@ -448,7 +449,7 @@ iTDVP::Evolve()
 
       this->OrthogonalizeLeftmostSite();
 
-      if (SweepL > 1)
+      if (Sweep > 1)
       {
          // Calculate the fidelity loss compared to the previous sweep.
          MatrixOperator Rho = scalar_prod(herm(LambdaRPrev), LambdaR);
@@ -459,13 +460,16 @@ iTDVP::Evolve()
          RealDiagonalOperator D;
          SingularValueDecomposition(Rho, U, D, Vh);
 
-         FidelityLossL = 1.0 - trace(D);
+         FidelityLoss = 1.0 - trace(D);
+
+         LambdaRDiff = norm_frob(LambdaR - LambdaRPrev);
 
          if (Verbose > 0)
          {
             std::cout << "Timestep=" << TStep
-                      << " SweepL=" << SweepL
-                      << " FidelityLossL=" << FidelityLossL
+                      << " Sweep=" << Sweep
+                      << " FidelityLoss=" << FidelityLoss
+                      << " LambdaRDiff=" << LambdaRDiff
                       << std::endl;
          }
       }
@@ -474,19 +478,20 @@ iTDVP::Evolve()
          if (Verbose > 0)
          {
             std::cout << "Timestep=" << TStep
-                      << " SweepL=" << SweepL
+                      << " Sweep=" << Sweep
                       << std::endl;
          }
       }
    }
-   while (FidelityLossL > FidelityLossTol && SweepL < MaxSweeps);
+   while (LambdaRDiff > LambdaTol && Sweep < MaxSweeps);
 
-   if (SweepL == MaxSweeps)
-      std::cout << "WARNING: MaxSweeps reached, FidelityLossL=" << FidelityLossL << std::endl;
+   if (Sweep == MaxSweeps)
+      std::cout << "WARNING: MaxSweeps reached, LambdaRDiff=" << LambdaRDiff << std::endl;
 
    // Sweep right to evolve the unit cell for half a time step.
-   SweepR = 0;
-   FidelityLossR = 1.0;
+   Sweep = 0;
+   FidelityLoss = 1.0;
+   LambdaRDiff = 1.0;
 
    PsiOld = Psi;
    std::deque<StateComponent> HamROld = HamR;
@@ -494,7 +499,7 @@ iTDVP::Evolve()
    LambdaR = delta_shift(LambdaR, QShift);
 
    do {
-      ++SweepR;
+      ++Sweep;
 
       LinearWavefunction PsiPrev = Psi;
       MatrixOperator LambdaRPrev = LambdaR;
@@ -507,7 +512,7 @@ iTDVP::Evolve()
       HamL = std::deque<StateComponent>(1, delta_shift(BlockHamL, QShift));
       HamR = HamROld;
 
-      if (SweepR > 1)
+      if (Sweep > 1)
          this->EvolveLambdaRLeft();
 
       *C = prod(LambdaR, *C);
@@ -519,7 +524,7 @@ iTDVP::Evolve()
 
       this->OrthogonalizeRightmostSite();
 
-      if (SweepR > 1)
+      if (Sweep > 1)
       {
          // Calculate the fidelity loss compared to the previous sweep.
          MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaRPrev));
@@ -530,13 +535,16 @@ iTDVP::Evolve()
          RealDiagonalOperator D;
          SingularValueDecomposition(Rho, U, D, Vh);
 
-         FidelityLossR = 1.0 - trace(D);
+         FidelityLoss = 1.0 - trace(D);
+
+         LambdaRDiff = norm_frob(LambdaR - LambdaRPrev);
 
          if (Verbose > 0)
          {
             std::cout << "Timestep=" << TStep
-                      << " SweepR=" << SweepR
-                      << " FidelityLossR=" << FidelityLossR
+                      << " Sweep=" << Sweep
+                      << " FidelityLoss=" << FidelityLoss
+                      << " LambdaRDiff=" << LambdaRDiff
                       << std::endl;
          }
       }
@@ -545,15 +553,15 @@ iTDVP::Evolve()
          if (Verbose > 0)
          {
             std::cout << "Timestep=" << TStep
-                      << " SweepR=" << SweepR
+                      << " Sweep=" << Sweep
                       << std::endl;
          }
       }
    }
-   while (FidelityLossR > FidelityLossTol && SweepR < MaxSweeps);
+   while (LambdaRDiff > LambdaTol && Sweep < MaxSweeps);
 
-   if (SweepR == MaxSweeps)
-      std::cout << "WARNING: MaxSweeps reached, FidelityLossR=" << FidelityLossR << std::endl;
+   if (Sweep == MaxSweeps)
+      std::cout << "WARNING: MaxSweeps reached, LambdaRDiff=" << LambdaRDiff << std::endl;
 
    LambdaR = delta_shift(LambdaR, adjoint(QShift));
 
