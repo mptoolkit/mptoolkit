@@ -19,96 +19,11 @@
 // ENDHEADER
 
 #include "itdvp.h"
-//#include "lanczos-exponential.h"
+#include "lanczos-exponential-new.h"
 #include "triangular_mpo_solver.h"
 #include "tensor/regularize.h"
 #include "tensor/tensor_eigen.h"
 #include "linearalgebra/eigen.h"
-#include "linearalgebra/exponential.h"
-
-template <typename VectorType, typename MultiplyFunctor>
-VectorType LanczosExponential(VectorType const& x,
-                              MultiplyFunctor MatVecMultiply, int& Iterations,
-                              std::complex<double> const& Theta, double& ErrTol)
-{
-   typedef std::complex<double> complex;
-
-   std::vector<VectorType> v(Iterations+1);
-   std::vector<double> Alpha(Iterations+1);
-   std::vector<double> Beta(Iterations);
-   LinearAlgebra::Matrix<double> T(Iterations+1, Iterations+1, 0.0);
-   LinearAlgebra::Vector<complex> C(1, 1.0);
-   double Err = 1.0;
-   double const BetaTol = 1e-14;
-
-   v[0] = x * (1.0/norm_frob(x));
-
-   VectorType w = MatVecMultiply(v[0]);
-   Alpha[0] = real(inner_prod(w, v[0]));
-   w = w - Alpha[0] * v[0];
-
-   T(0, 0) = Alpha[0];
-
-   int i;
-   for (i = 1; i <= Iterations && Err > ErrTol; ++i)
-   {
-      Beta[i-1] = norm_frob(w);
-
-      if (Beta[i-1] < BetaTol)
-         break;
-
-      v[i] = w * (1.0/Beta[i-1]);
-
-      w = MatVecMultiply(v[i]);
-      Alpha[i] = real(inner_prod(w, v[i]));
-      w = w - Alpha[i] * v[i] - Beta[i-1] * v[i-1];
-
-      T(i, i) = Alpha[i];
-      T(i-1, i) = T(i, i-1) = Beta[i-1];
-
-      LinearAlgebra::Matrix<complex> P = Theta * T(LinearAlgebra::range(0, i+1),
-                                                   LinearAlgebra::range(0, i+1));
-      LinearAlgebra::Matrix<complex> X = LinearAlgebra::Exponentiate(1.0, P);
-      LinearAlgebra::Vector<complex> CNew = X(LinearAlgebra::all, 0);
-
-      Err = norm_2(direct_sum(C, complex(0.0)) - CNew);
-
-      C = CNew;
-   }
-
-   Iterations = i-1;
-   ErrTol = Err;
-
-   // Calculate the time-evolved vector.
-   VectorType Out = v[0] * C[0];
-   for (int j = 1; j <= Iterations; ++j)
-   {
-      Out += v[j] * C[j];
-   }
-
-   // Normalize Out.
-   Out *= 1.0/norm_frob(Out);
-
-   return Out;
-}
-
-struct HEff1
-{
-   HEff1(StateComponent const& E_, OperatorComponent const& H_, StateComponent const& F_)
-      : E(E_), H(H_), F(F_)
-   {
-   }
-
-   StateComponent operator()(StateComponent const& x) const
-   {
-      StateComponent R = operator_prod_inner(H, E, x, herm(F));
-      return R;
-   }
-
-   StateComponent const& E;
-   OperatorComponent const& H;
-   StateComponent const& F;
-};
 
 struct HEff2
 {
@@ -128,12 +43,11 @@ struct HEff2
 };
 
 iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
-             std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
-             double GMRESTol_, int MaxSweeps_, double LambdaTol_, StatesInfo SInfo_,
-             int NEps_, int Verbose_)
-   : Hamiltonian(Ham_), Timestep(Timestep_), MaxIter(MaxIter_), ErrTol(ErrTol_),
-     GMRESTol(GMRESTol_), MaxSweeps(MaxSweeps_), LambdaTol(LambdaTol_),
-     SInfo(SInfo_), NEps(NEps_), Verbose(Verbose_)
+             std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
+             double ErrTol_, double GMRESTol_, int MaxSweeps_, double
+             LambdaTol_, StatesInfo SInfo_, int NEps_, int Verbose_)
+   : TDVP(Ham_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_, Verbose_),
+     GMRESTol(GMRESTol_), MaxSweeps(MaxSweeps_), LambdaTol(LambdaTol_), NEps(NEps_) 
 {
    QShift = Psi_.qshift();
    std::tie(Psi, LambdaR) = get_left_canonical(Psi_);
@@ -196,137 +110,6 @@ iTDVP::Wavefunction() const
 }
 
 void
-iTDVP::IterateLeft()
-{
-   // Evolve current site.
-   int Iter = MaxIter;
-   double Err = ErrTol;
-
-   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, 0.5*Timestep, Err);
-
-   if (Verbose > 1)
-   {
-      std::cout << "Timestep=" << TStep
-                << " Site=" << Site
-                << " C Iter=" << Iter
-                << " Err=" << Err
-                << std::endl;
-   }
-
-   // Perform SVD to right-orthogonalize current site.
-   MatrixOperator M = ExpandBasis1(*C);
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-
-   SingularValueDecomposition(M, U, D, Vh);
-
-   *C = prod(Vh, *C);
-
-   // Update the effective Hamiltonian.
-   HamR.push_front(contract_from_right(herm(*H), *C, HamR.front(), herm(*C)));
-
-   // Evolve the UD term backwards in time.
-   Iter = MaxIter;
-   Err = ErrTol;
-   MatrixOperator UD = U*D;
-
-   UD = LanczosExponential(UD, HEff2(HamL.back(), HamR.front()), Iter, -0.5*Timestep, Err);
-
-   if (Verbose > 1)
-   {
-      std::cout << "Timestep=" << TStep
-                << " Site=" << Site
-                << " UD Iter=" << Iter
-                << " Err=" << Err
-                << std::endl;
-   }
-
-   // Move to the next site.
-   --Site;
-   --H;
-   --C;
-
-   *C = prod(*C, UD);
-
-   HamL.pop_back();
-}
-
-void
-iTDVP::EvolveLeftmostSite()
-{
-   // Evolve current site.
-   int Iter = MaxIter;
-   double Err = ErrTol;
-
-   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, 0.5*Timestep, Err);
-
-   if (Verbose > 1)
-   {
-      std::cout << "Timestep=" << TStep
-                << " Site=" << Site
-                << " C Iter=" << Iter
-                << " Err=" << Err
-                << std::endl;
-   }
-}
-
-void
-iTDVP::IterateRight()
-{
-   // Perform SVD to left-orthogonalize current site.
-   MatrixOperator M = ExpandBasis2(*C);
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-
-   SingularValueDecomposition(M, U, D, Vh);
-
-   *C = prod(*C, U);
-
-   // Update the effective Hamiltonian.
-   HamL.push_back(contract_from_left(*H, herm(*C), HamL.back(), *C));
-
-   // Evolve the DVh term backwards in time.
-   int Iter = MaxIter;
-   double Err = ErrTol;
-   MatrixOperator DVh = D*Vh;
-
-   DVh = LanczosExponential(DVh, HEff2(HamL.back(), HamR.front()), Iter, -0.5*Timestep, Err);
-
-   if (Verbose > 1)
-   {
-      std::cout << "Timestep=" << TStep
-                << " Site=" << Site
-                << " DVh Iter=" << Iter
-                << " Err=" << Err
-                << std::endl;
-   }
-
-   // Move to the next site.
-   ++Site;
-   ++H;
-   ++C;
-
-   *C = prod(DVh, *C);
-
-   HamR.pop_front();
-
-   // Evolve current site.
-   Iter = MaxIter;
-   Err = ErrTol;
-
-   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, 0.5*Timestep, Err);
-
-   if (Verbose > 1)
-   {
-      std::cout << "Timestep=" << TStep
-                << " Site=" << Site
-                << " C Iter=" << Iter
-                << " Err=" << Err
-                << std::endl;
-   }
-}
-
-void
 iTDVP::OrthogonalizeLeftmostSite()
 {
    E = inner_prod(HamL.back(), contract_from_right(herm(*H), *C, HamR.front(), herm(*C)));
@@ -373,12 +156,12 @@ iTDVP::OrthogonalizeRightmostSite()
 }
 
 void
-iTDVP::EvolveLambdaRRight()
+iTDVP::EvolveLambdaRRight(std::complex<double> Tau)
 {
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   LambdaR = LanczosExponential(LambdaR, HEff2(BlockHamL, HamR.back()), Iter, -0.5*Timestep, Err);
+   LambdaR = LanczosExponential(LambdaR, HEff2(BlockHamL, HamR.back()), Iter, -Tau, Err);
 
    if (Verbose > 1)
    {
@@ -391,12 +174,12 @@ iTDVP::EvolveLambdaRRight()
 }
 
 void
-iTDVP::EvolveLambdaRLeft()
+iTDVP::EvolveLambdaRLeft(std::complex<double> Tau)
 {
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   LambdaR = LanczosExponential(LambdaR, HEff2(HamL.front(), BlockHamR), Iter, -0.5*Timestep, Err);
+   LambdaR = LanczosExponential(LambdaR, HEff2(HamL.front(), BlockHamR), Iter, -Tau, Err);
 
    if (Verbose > 1)
    {
@@ -409,11 +192,8 @@ iTDVP::EvolveLambdaRLeft()
 }
 
 void
-iTDVP::Evolve()
+iTDVP::EvolveLeft(std::complex<double> Tau)
 {
-   ++TStep;
-
-   // Sweep left to evolve the unit cell for half a time step.
    int Sweep = 0;
    double FidelityLoss = 1.0;
    double LambdaRDiff = 1.0;
@@ -438,14 +218,11 @@ iTDVP::Evolve()
       HamR = std::deque<StateComponent>(1, delta_shift(BlockHamR, adjoint(QShift)));
 
       if (Sweep > 1)
-         this->EvolveLambdaRRight();
+         this->EvolveLambdaRRight(Tau);
 
       *C = prod(*C, LambdaR);
 
-      while (Site > LeftStop)
-         this->IterateLeft();
-
-      this->EvolveLeftmostSite();
+      this->SweepLeft(Tau);
 
       this->OrthogonalizeLeftmostSite();
 
@@ -488,15 +265,18 @@ iTDVP::Evolve()
    if (Sweep == MaxSweeps)
       std::cout << "WARNING: MaxSweeps reached, LambdaRDiff=" << LambdaRDiff << std::endl;
 
-   // Sweep right to evolve the unit cell for half a time step.
-   Sweep = 0;
-   FidelityLoss = 1.0;
-   LambdaRDiff = 1.0;
-
-   PsiOld = Psi;
-   std::deque<StateComponent> HamROld = HamR;
-
    LambdaR = delta_shift(LambdaR, QShift);
+}
+
+void
+iTDVP::EvolveRight(std::complex<double> Tau)
+{
+   int Sweep = 0;
+   double FidelityLoss = 1.0;
+   double LambdaRDiff = 1.0;
+
+   LinearWavefunction PsiOld = Psi;
+   std::deque<StateComponent> HamROld = HamR;
 
    do {
       ++Sweep;
@@ -513,14 +293,11 @@ iTDVP::Evolve()
       HamR = HamROld;
 
       if (Sweep > 1)
-         this->EvolveLambdaRLeft();
+         this->EvolveLambdaRLeft(Tau);
 
       *C = prod(LambdaR, *C);
 
-      this->EvolveLeftmostSite();
-
-      while (Site < RightStop)
-         this->IterateRight();
+      this->SweepRight(Tau);
 
       this->OrthogonalizeRightmostSite();
 
@@ -564,6 +341,23 @@ iTDVP::Evolve()
       std::cout << "WARNING: MaxSweeps reached, LambdaRDiff=" << LambdaRDiff << std::endl;
 
    LambdaR = delta_shift(LambdaR, adjoint(QShift));
+}
+
+void
+iTDVP::Evolve()
+{
+   ++TStep;
+
+   std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
+
+   while(Gamma != Comp.Gamma.cend())
+   {
+      this->EvolveLeft((*Gamma)*Timestep);
+      ++Gamma;
+
+      this->EvolveRight((*Gamma)*Timestep);
+      ++Gamma;
+   }
 
    this->CalculateEps();
 }

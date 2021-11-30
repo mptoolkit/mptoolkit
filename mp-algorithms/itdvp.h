@@ -21,31 +21,21 @@
 #if !defined(MPTOOLKIT_MP_ALGORITHMS_ITDVP_H)
 #define MPTOOLKIT_MP_ALGORITHMS_ITDVP_H
 
+#include "tdvp.h"
 #include "wavefunction/infinitewavefunctionleft.h"
-#include "wavefunction/linearwavefunction.h"
-#include "mpo/basic_triangular_mpo.h"
 
-class iTDVP
+class iTDVP : public TDVP
 {
    public:
       iTDVP() {}
 
       iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
-            std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
-            double GMRESTol_, int MaxSweeps_, double LambdaTol_, StatesInfo SInfo_,
-            int NEps_, int Verbose_);
+            std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
+            double ErrTol_, double GMRESTol_, int MaxSweeps_, double
+            LambdaTol_, StatesInfo SInfo_, int NEps_, int Verbose_);
 
       // Return the current wavefunction in left-canonical form.
       InfiniteWavefunctionLeft Wavefunction() const;
-
-      // Evolve the current site and move left.
-      void IterateLeft();
-
-      // Evolve the leftmost site in the chain.
-      void EvolveLeftmostSite();
-
-      // Move right and evolve the next site.
-      void IterateRight();
 
       // Orthogonalize the leftmost/rightmost site in the unit cell, ensuring
       // that the left and right bases of LambdaR are the same, and calculate
@@ -54,10 +44,15 @@ class iTDVP
       void OrthogonalizeRightmostSite();
 
       // Evolve LambdaR backwards in time.
-      void EvolveLambdaRRight();
-      void EvolveLambdaRLeft();
+      void EvolveLambdaRRight(std::complex<double> Tau);
+      void EvolveLambdaRLeft(std::complex<double> Tau);
 
-      // Evolve the chain by one time step using single-site TDVP.
+      // Evolve the chain by sweeping left/right until the LambdaTol or
+      // MaxSweeps is reached.
+      void EvolveLeft(std::complex<double> Tau);
+      void EvolveRight(std::complex<double> Tau);
+
+      // Evolve the chain by one timestep using single-site TDVP.
       void Evolve();
 
       // Calculate the error measures epsilon_1 and epsilon_2.
@@ -73,50 +68,25 @@ class iTDVP
       // CalculateEps to generate X and Y)
       void ExpandBonds();
 
-      LinearWavefunction Psi;
       MatrixOperator LambdaR;
       QuantumNumber QShift;
-      std::deque<StateComponent> HamL;
       std::deque<StateComponent> HamLOld;
-      std::deque<StateComponent> HamR;
       StateComponent BlockHamL;
       StateComponent BlockHamR;
-      int Site;                          // The index of the iterator C.
-      LinearWavefunction::iterator C;
       LinearWavefunction::iterator COld;
-      BasicTriangularMPO Hamiltonian;
-      BasicTriangularMPO::const_iterator H;
-      int LeftStop;                      // The site indices where we stop iterations,
-      int RightStop;
 
-      std::complex<double> Timestep;     // The complex timestep in the form -i*dt.
-      int MaxIter;
-      double ErrTol;
-      StatesInfo SInfo;
       double GMRESTol;
       double LambdaTol;
       int MaxSweeps;
       int NEps;
-      int Verbose;
-
-      int TStep = 0;
 
       // Partial terms used to calculate epsilon_1/2 and expand the bond
       // dimension of the unit cell.
       std::deque<StateComponent> X;
       std::deque<StateComponent> Y;
 
-      // Cumulative error measures epsilon_1^2 and epsilon_2^2, given by the
-      // squared Frobenius norms of the projection of H|Psi> onto the subspace
-      // of orthogonal 1- and 2-site variations, respectively.
-      double Eps1SqSum;
-      double Eps2SqSum;
-
       // Error measures epsilon_3^2 to epsilon_NEps^2.
       std::vector<double> EpsNSqSum;
-
-      // The maximum bond dimension in the chain.
-      int MaxStates = 1;
 
       // Initial energy per unit cell.
       std::complex<double> InitialE;
